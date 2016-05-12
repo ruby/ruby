@@ -898,7 +898,7 @@ Emacs to Ruby."
       (goto-char ruby-indent-point)
       (beginning-of-line)
       (skip-syntax-forward " ")
-      (if (looking-at "\\.[^.]")
+      (if (looking-at "\\.[^.]\\|&\\.")
           (+ indent ruby-indent-level)
         indent))))
 
@@ -1304,7 +1304,7 @@ balanced expression is found."
           ;; ?' ?" ?` are ascii codes
           ("\\(^\\|[^\\\\]\\)\\(\\\\\\\\\\)*[?$]\\([#\"'`]\\)" 3 (1 . nil))
           ;; regexps
-          ("\\(^\\|[[=(,~?:;<>]\\|\\(^\\|\\s \\)\\(if\\|elsif\\|unless\\|while\\|until\\|when\\|and\\|or\\|&&\\|||\\)\\|g?sub!?\\|scan\\|split!?\\)\\s *\\(/\\)[^/\n\\\\]*\\(\\\\.[^/\n\\\\]*\\)*\\(/\\)"
+          ("\\(^\\|[[{|=(,~?:;<>]\\|\\(^\\|\\s \\)\\(if\\|elsif\\|unless\\|while\\|until\\|when\\|and\\|or\\|&&\\|||\\)\\|g?sub!?\\|scan\\|split!?\\)\\s *\\(/\\)[^/\n\\\\]*\\(\\\\.[^/\n\\\\]*\\)*\\(/\\)"
            (4 (7 . ?/))
            (6 (7 . ?/)))
           ("^\\(=\\)begin\\(\\s \\|$\\)" 1 (7 . nil))

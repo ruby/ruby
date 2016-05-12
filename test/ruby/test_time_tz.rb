@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestTimeTZ < Test::Unit::TestCase
@@ -148,10 +149,18 @@ class TestTimeTZ < Test::Unit::TestCase
   def test_europe_brussels
     with_tz(tz="Europe/Brussels") {
       assert_time_constructor(tz, "1916-04-30 23:59:59 +0100", :local, [1916,4,30,23,59,59])
-      assert_time_constructor(tz, "1916-05-01 01:00:00 +0200", :local, [1916,5,1], "[ruby-core:30672]")
+      assert_time_constructor(tz, "1916-05-01 01:00:00 +0200", :local, [1916,5,1], "[ruby-core:30672] [Bug #3411]")
       assert_time_constructor(tz, "1916-05-01 01:59:59 +0200", :local, [1916,5,1,0,59,59])
       assert_time_constructor(tz, "1916-05-01 01:00:00 +0200", :local, [1916,5,1,1,0,0])
       assert_time_constructor(tz, "1916-05-01 01:59:59 +0200", :local, [1916,5,1,1,59,59])
+    }
+  end
+
+  def test_europe_berlin
+    with_tz(tz="Europe/Berlin") {
+      assert_time_constructor(tz, "2011-10-30 02:00:00 +0100", :local, [2011,10,30,2,0,0], "[ruby-core:67345] [Bug #10698]")
+      assert_time_constructor(tz, "2011-10-30 02:00:00 +0100", :local, [0,0,2,30,10,2011,nil,nil,false,nil])
+      assert_time_constructor(tz, "2011-10-30 02:00:00 +0200", :local, [0,0,2,30,10,2011,nil,nil,true,nil])
     }
   end
 
@@ -160,13 +169,6 @@ class TestTimeTZ < Test::Unit::TestCase
       assert_equal("LMT", Time.new(-0x1_0000_0000_0000_0000).zone)
     }
   end if has_lisbon_tz
-
-  def test_europe_moscow
-    with_tz(tz="Europe/Moscow") {
-      assert_time_constructor(tz, "1992-03-29 00:00:00 +0400", :local, [1992,3,28,23,0,0])
-      assert_time_constructor(tz, "1992-03-29 00:59:59 +0400", :local, [1992,3,28,23,59,59])
-    }
-  end
 
   def test_pacific_kiritimati
     with_tz(tz="Pacific/Kiritimati") {
@@ -259,6 +261,7 @@ class TestTimeTZ < Test::Unit::TestCase
           assert_equal(format_gmtoff(gmtoff), t.strftime("%z"))
           assert_equal(format_gmtoff(gmtoff, true), t.strftime("%:z"))
           assert_equal(format_gmtoff2(gmtoff), t.strftime("%::z"))
+          assert_equal(Encoding::US_ASCII, t.zone.encoding)
         }
       }
     }
@@ -346,12 +349,6 @@ Europe/London  Sun Aug 10 00:59:59 1947 UTC = Sun Aug 10 02:59:59 1947 BDST isds
 Europe/London  Sun Aug 10 01:00:00 1947 UTC = Sun Aug 10 02:00:00 1947 BST isdst=1 gmtoff=3600
 Europe/London  Sun Nov  2 01:59:59 1947 UTC = Sun Nov  2 02:59:59 1947 BST isdst=1 gmtoff=3600
 Europe/London  Sun Nov  2 02:00:00 1947 UTC = Sun Nov  2 02:00:00 1947 GMT isdst=0 gmtoff=0
-Europe/Moscow  Sat Jan 18 23:59:59 1992 UTC = Sun Jan 19 01:59:59 1992 MSK isdst=0 gmtoff=7200
-Europe/Moscow  Sun Jan 19 00:00:00 1992 UTC = Sun Jan 19 03:00:00 1992 MSK isdst=0 gmtoff=10800
-Europe/Moscow  Sat Mar 28 19:59:59 1992 UTC = Sat Mar 28 22:59:59 1992 MSK isdst=0 gmtoff=10800
-Europe/Moscow  Sat Mar 28 20:00:00 1992 UTC = Sun Mar 29 00:00:00 1992 MSD isdst=1 gmtoff=14400
-Europe/Moscow  Sat Sep 26 18:59:59 1992 UTC = Sat Sep 26 22:59:59 1992 MSD isdst=1 gmtoff=14400
-Europe/Moscow  Sat Sep 26 19:00:00 1992 UTC = Sat Sep 26 22:00:00 1992 MSK isdst=0 gmtoff=10800
 Pacific/Kiritimati  Sun Jan  1 09:59:59 1995 UTC = Sat Dec 31 23:59:59 1994 LINT isdst=0 gmtoff=-36000
 Pacific/Kiritimati  Sun Jan  1 10:00:00 1995 UTC = Mon Jan  2 00:00:00 1995 LINT isdst=0 gmtoff=50400
 End

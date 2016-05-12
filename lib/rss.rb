@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # = RSS reading and writing
 #

@@ -23,11 +23,11 @@
  * This behavior is consistent with the document of pack/unpack.
  */
 #ifdef HAVE_TRUE_LONG_LONG
-static const char natstr[] = "sSiIlLqQ";
+static const char natstr[] = "sSiIlLqQjJ";
 #else
-static const char natstr[] = "sSiIlL";
+static const char natstr[] = "sSiIlLjJ";
 #endif
-static const char endstr[] = "sSiIlLqQ";
+static const char endstr[] = "sSiIlLqQjJ";
 
 #ifdef HAVE_TRUE_LONG_LONG
 /* It is intentional to use long long instead of LONG_LONG. */
@@ -220,15 +220,13 @@ str_associated(VALUE str)
 void
 rb_str_associate(VALUE str, VALUE add)
 {
-    rb_warn("rb_str_associate() is only for internal use and deprecated; do not use");
-    str_associate(str, add);
+    ONLY_FOR_INTERNAL_USE("rb_str_associate()");
 }
 
 VALUE
 rb_str_associated(VALUE str)
 {
-    rb_warn("rb_str_associated() is only for internal use and deprecated; do not use");
-    return str_associated(str);
+    ONLY_FOR_INTERNAL_USE("rb_str_associated()");
 }
 
 /*
@@ -264,11 +262,15 @@ rb_str_associated(VALUE str)
  *      S         | Integer | 16-bit unsigned, native endian (uint16_t)
  *      L         | Integer | 32-bit unsigned, native endian (uint32_t)
  *      Q         | Integer | 64-bit unsigned, native endian (uint64_t)
+ *      J         | Integer | pointer width unsigned, native endian (uintptr_t)
+ *                |         | (J is available since Ruby 2.3.)
  *                |         |
  *      c         | Integer | 8-bit signed (signed char)
  *      s         | Integer | 16-bit signed, native endian (int16_t)
  *      l         | Integer | 32-bit signed, native endian (int32_t)
  *      q         | Integer | 64-bit signed, native endian (int64_t)
+ *      j         | Integer | pointer width signed, native endian (intptr_t)
+ *                |         | (j is available since Ruby 2.3.)
  *                |         |
  *      S_, S!    | Integer | unsigned short, native endian
  *      I, I_, I! | Integer | unsigned int, native endian
@@ -276,6 +278,8 @@ rb_str_associated(VALUE str)
  *      Q_, Q!    | Integer | unsigned long long, native endian (ArgumentError
  *                |         | if the platform has no long long type.)
  *                |         | (Q_ and Q! is available since Ruby 2.1.)
+ *      J!        | Integer | uintptr_t, native endian (same with J)
+ *                |         | (J! is available since Ruby 2.3.)
  *                |         |
  *      s_, s!    | Integer | signed short, native endian
  *      i, i_, i! | Integer | signed int, native endian
@@ -283,20 +287,26 @@ rb_str_associated(VALUE str)
  *      q_, q!    | Integer | signed long long, native endian (ArgumentError
  *                |         | if the platform has no long long type.)
  *                |         | (q_ and q! is available since Ruby 2.1.)
+ *      j!        | Integer | intptr_t, native endian (same with j)
+ *                |         | (j! is available since Ruby 2.3.)
  *                |         |
  *      S> L> Q>  | Integer | same as the directives without ">" except
- *      s> l> q>  |         | big endian
- *      S!> I!>   |         | (available since Ruby 1.9.3)
- *      L!> Q!>   |         | "S>" is same as "n"
- *      s!> i!>   |         | "L>" is same as "N"
- *      l!> q!>   |         |
+ *      J> s> l>  |         | big endian
+ *      q> j>     |         | (available since Ruby 1.9.3)
+ *      S!> I!>   |         | "S>" is same as "n"
+ *      L!> Q!>   |         | "L>" is same as "N"
+ *      J!> s!>   |         |
+ *      i!> l!>   |         |
+ *      q!> j!>   |         |
  *                |         |
  *      S< L< Q<  | Integer | same as the directives without "<" except
- *      s< l< q<  |         | little endian
- *      S!< I!<   |         | (available since Ruby 1.9.3)
- *      L!< Q!<   |         | "S<" is same as "v"
- *      s!< i!<   |         | "L<" is same as "V"
- *      l!< q!<   |         |
+ *      J< s< l<  |         | little endian
+ *      q< j<     |         | (available since Ruby 1.9.3)
+ *      S!< I!<   |         | "S<" is same as "v"
+ *      L!< Q!<   |         | "L<" is same as "V"
+ *      J!< s!<   |         |
+ *      i!< l!<   |         |
+ *      q!< j!<   |         |
  *                |         |
  *      n         | Integer | 16-bit unsigned, network (big-endian) byte order
  *      N         | Integer | 32-bit unsigned, network (big-endian) byte order
@@ -349,7 +359,7 @@ pack_pack(VALUE ary, VALUE fmt)
     const char *p, *pend;
     VALUE res, from, associates = 0;
     char type;
-    long items, len, idx, plen;
+    long len, idx, plen;
     const char *ptr;
     int enc_info = 1;		/* 0 - BINARY, 1 - US-ASCII, 2 - UTF-8 */
 #ifdef NATINT_PACK
@@ -362,12 +372,12 @@ pack_pack(VALUE ary, VALUE fmt)
     pend = p + RSTRING_LEN(fmt);
     res = rb_str_buf_new(0);
 
-    items = RARRAY_LEN(ary);
     idx = 0;
 
 #define TOO_FEW (rb_raise(rb_eArgError, toofew), 0)
-#define THISFROM (items > 0 ? RARRAY_AREF(ary, idx) : TOO_FEW)
-#define NEXTFROM (items-- > 0 ? RARRAY_AREF(ary, idx++) : TOO_FEW)
+#define MORE_ITEM (idx < RARRAY_LEN(ary))
+#define THISFROM (MORE_ITEM ? RARRAY_AREF(ary, idx) : TOO_FEW)
+#define NEXTFROM (MORE_ITEM ? RARRAY_AREF(ary, idx++) : TOO_FEW)
 
     while (p < pend) {
 	int explicit_endian = 0;
@@ -419,7 +429,7 @@ pack_pack(VALUE ary, VALUE fmt)
 	if (*p == '*') {	/* set data length */
 	    len = strchr("@Xxu", type) ? 0
                 : strchr("PMm", type) ? 1
-                : items;
+                : RARRAY_LEN(ary) - idx;
 	    p++;
 	}
 	else if (ISDIGIT(*p)) {
@@ -657,6 +667,16 @@ pack_pack(VALUE ary, VALUE fmt)
 	    integer_size = NATINT_LEN_Q;
             bigendian_p = BIGENDIAN_P();
             goto pack_integer;
+
+	  case 'j':		/* j for intptr_t */
+	    integer_size = sizeof(intptr_t);
+	    bigendian_p = BIGENDIAN_P();
+	    goto pack_integer;
+
+	  case 'J':		/* J for uintptr_t */
+	    integer_size = sizeof(uintptr_t);
+	    bigendian_p = BIGENDIAN_P();
+	    goto pack_integer;
 
 	  case 'n':		/* 16 bit (2 bytes) integer (network byte-order)  */
             integer_size = 2;
@@ -1078,6 +1098,15 @@ hex2num(char c)
 	rb_ary_store(ary, RARRAY_LEN(ary)+tmp_len-1, Qnil); \
 } while (0)
 
+/* Workaround for Oracle Solaris Studio 12.4 C compiler optimization bug
+ * with "-xO4" optimization option.
+ */
+#if defined(__SUNPRO_C) && __SUNPRO_C == 0x5130
+# define AVOID_CC_BUG volatile
+#else
+# define AVOID_CC_BUG
+#endif
+
 static VALUE
 infected_str_new(const char *ptr, long len, VALUE str)
 {
@@ -1204,12 +1233,13 @@ infected_str_new(const char *ptr, long len, VALUE str)
 static VALUE
 pack_unpack(VALUE str, VALUE fmt)
 {
-    static const char hexdigits[] = "0123456789abcdef";
+#define hexdigits ruby_hexdigits
     char *s, *send;
     char *p, *pend;
     VALUE ary;
     char type;
-    long len, tmp_len;
+    long len;
+    AVOID_CC_BUG long tmp_len;
     int star;
 #ifdef NATINT_PACK
     int natint;			/* native integer */
@@ -1477,6 +1507,18 @@ pack_unpack(VALUE str, VALUE fmt)
 	  case 'Q':
 	    signed_p = 0;
 	    integer_size = NATINT_LEN_Q;
+	    bigendian_p = BIGENDIAN_P();
+	    goto unpack_integer;
+
+	  case 'j':
+	    signed_p = 1;
+	    integer_size = sizeof(intptr_t);
+	    bigendian_p = BIGENDIAN_P();
+	    goto unpack_integer;
+
+	  case 'J':
+	    signed_p = 0;
+	    integer_size = sizeof(uintptr_t);
 	    bigendian_p = BIGENDIAN_P();
 	    goto unpack_integer;
 

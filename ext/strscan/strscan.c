@@ -181,11 +181,7 @@ static size_t
 strscan_memsize(const void *ptr)
 {
     const struct strscanner *p = ptr;
-    size_t size = 0;
-    if (p) {
-	size = sizeof(*p) - sizeof(p->regs) + onig_region_memsize(&p->regs);
-    }
-    return size;
+    return sizeof(*p) - sizeof(p->regs) + onig_region_memsize(&p->regs);
 }
 
 static const rb_data_type_t strscanner_type = {
@@ -198,12 +194,12 @@ static VALUE
 strscan_s_allocate(VALUE klass)
 {
     struct strscanner *p;
+    VALUE obj = TypedData_Make_Struct(klass, struct strscanner, &strscanner_type, p);
 
-    p = ZALLOC(struct strscanner);
     CLEAR_MATCH_STATUS(p);
     onig_region_init(&(p->regs));
     p->str = Qnil;
-    return TypedData_Wrap_Struct(klass, &strscanner_type, p);
+    return obj;
 }
 
 /*
@@ -464,7 +460,7 @@ strscan_do_scan(VALUE self, VALUE regex, int succptr, int getstr, int headonly)
 
     p->regex = regex;
     re = rb_reg_prepare_re(regex, p->str);
-    tmpreg = re != RREGEXP(regex)->ptr;
+    tmpreg = re != RREGEXP_PTR(regex);
     if (!tmpreg) RREGEXP(regex)->usecnt++;
 
     if (headonly) {
@@ -484,8 +480,8 @@ strscan_do_scan(VALUE self, VALUE regex, int succptr, int getstr, int headonly)
             onig_free(re);
         }
         else {
-            onig_free(RREGEXP(regex)->ptr);
-            RREGEXP(regex)->ptr = re;
+            onig_free(RREGEXP_PTR(regex));
+            RREGEXP_PTR(regex) = re;
         }
     }
 
@@ -982,7 +978,7 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
 {
     int num;
 
-    num = onig_name_to_backref_number(RREGEXP(regexp)->ptr,
+    num = onig_name_to_backref_number(RREGEXP_PTR(regexp),
 	(const unsigned char* )name, (const unsigned char* )name_end, regs);
     if (num >= 1) {
 	return num;

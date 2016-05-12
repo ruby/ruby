@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # Represents a specification retrieved via the rubygems.org API.
 #

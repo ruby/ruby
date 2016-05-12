@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/command'
 require 'rubygems/package'
 
@@ -40,6 +41,10 @@ with gem spec:
 
   def execute
     gemspec = get_one_gem_name
+
+    unless File.exist? gemspec
+      gemspec += '.gemspec' if File.exist? gemspec + '.gemspec'
+    end
 
     if File.exist? gemspec then
       spec = Gem::Specification.load gemspec

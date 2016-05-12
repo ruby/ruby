@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  winico -- Windows Icon extension support
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

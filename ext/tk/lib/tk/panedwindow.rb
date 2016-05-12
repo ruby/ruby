@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/panedwindow.rb : treat panedwindow
 #

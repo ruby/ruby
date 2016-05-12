@@ -1,3 +1,4 @@
+# frozen-string-literal: true
 ##
 # == Manipulates strings like the UNIX Bourne shell
 #
@@ -63,20 +64,27 @@ module Shellwords
   #   argv = Shellwords.split('here are "two words"')
   #   argv #=> ["here", "are", "two words"]
   #
+  # Note, however, that this is not a command line parser.  Shell
+  # metacharacters except for the single and double quotes and
+  # backslash are not treated as such.
+  #
+  #   argv = Shellwords.split('ruby my_prog.rb | less')
+  #   argv #=> ["ruby", "my_prog.rb", "|", "less"]
+  #
   # String#shellsplit is a shortcut for this function.
   #
   #   argv = 'here are "two words"'.shellsplit
   #   argv #=> ["here", "are", "two words"]
   def shellsplit(line)
     words = []
-    field = ''
+    field = String.new
     line.scan(/\G\s*(?>([^\s\\\'\"]+)|'([^\']*)'|"((?:[^\"\\]|\\.)*)"|(\\.?)|(\S))(\s|\z)?/m) do
       |word, sq, dq, esc, garbage, sep|
       raise ArgumentError, "Unmatched double quote: #{line.inspect}" if garbage
       field << (word || sq || (dq || esc).gsub(/\\(.)/, '\\1'))
       if sep
         words << field
-        field = ''
+        field = String.new
       end
     end
     words
@@ -124,7 +132,7 @@ module Shellwords
     str = str.to_s
 
     # An empty argument will be skipped, so return empty quotes.
-    return "''" if str.empty?
+    return "''".dup if str.empty?
 
     str = str.dup
 

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # msgbox.rb
 #
 # This demonstration script creates message boxes of various type

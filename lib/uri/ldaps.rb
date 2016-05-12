@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # = uri/ldap.rb
 #
 # License:: You can redistribute it and/or modify it under the same term as Ruby.

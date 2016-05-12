@@ -1,4 +1,5 @@
 # encoding: utf-8
+# frozen_string_literal: false
 
 require "optparse"
 require "rbconfig"
@@ -73,12 +74,6 @@ module MiniTest
   # printed if the assertion fails.
 
   module Assertions
-    UNDEFINED = Object.new # :nodoc:
-
-    def UNDEFINED.inspect # :nodoc:
-      "UNDEFINED" # again with the rdoc bugs... :(
-    end
-
     ##
     # Returns the diff command to use in #diff. Tries to intelligently
     # figure out what diff to use.
@@ -311,8 +306,8 @@ module MiniTest
     #
     #   assert_operator 5, :<=, 4
 
-    def assert_operator o1, op, o2 = UNDEFINED, msg = nil
-      return assert_predicate o1, op, msg if UNDEFINED == o2
+    def assert_operator o1, op, o2 = (predicate = true; nil), msg = nil
+      return assert_predicate o1, op, msg if predicate
       msg = message(msg) { "Expected #{mu_pp(o1)} to be #{op} #{mu_pp(o2)}" }
       assert o1.__send__(op, o2), msg
     end
@@ -676,8 +671,8 @@ module MiniTest
     #   refute_operator 1, :>, 2 #=> pass
     #   refute_operator 1, :<, 2 #=> fail
 
-    def refute_operator o1, op, o2 = UNDEFINED, msg = nil
-      return refute_predicate o1, op, msg if UNDEFINED == o2
+    def refute_operator o1, op, o2 = (predicate = true; nil), msg = nil
+      return refute_predicate o1, op, msg if predicate
       msg = message(msg) { "Expected #{mu_pp(o1)} to not be #{op} #{mu_pp(o2)}"}
       refute o1.__send__(op, o2), msg
     end
@@ -1003,7 +998,7 @@ module MiniTest
           else
             @errors += 1
             bt = MiniTest::filter_backtrace(e.backtrace).join "\n    "
-            "Error:\n#{klass}##{meth}:\n#{e.class}: #{e.message}\n    #{bt}\n"
+            "Error:\n#{klass}##{meth}:\n#{e.class}: #{e.message.b}\n    #{bt}\n"
           end
       @report << e
       e[0, 1]
@@ -1333,18 +1328,6 @@ module MiniTest
       end
 
       reset
-
-      ##
-      # Call this at the top of your tests when you absolutely
-      # positively need to have ordered tests. In doing so, you're
-      # admitting that you suck and your tests are weak.
-
-      def self.i_suck_and_my_tests_are_order_dependent!
-        class << self
-          undef_method :test_order if method_defined? :test_order
-          define_method :test_order do :alpha end
-        end
-      end
 
       ##
       # Make diffs for this TestCase use #pretty_inspect so that diff

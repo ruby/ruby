@@ -19,7 +19,7 @@
 #undef Sleep
 
 #define native_thread_yield() Sleep(0)
-#define remove_signal_thread_list(th)
+#define unregister_ubf_list(th)
 
 static volatile DWORD ruby_native_thread_key = TLS_OUT_OF_INDEXES;
 
@@ -111,13 +111,6 @@ gvl_yield(rb_vm_t *vm, rb_thread_t *th)
   gvl_release(th->vm);
   native_thread_yield();
   gvl_acquire(vm, th);
-}
-
-
-static void
-gvl_atfork(rb_vm_t *vm)
-{
-    rb_bug("gvl_atfork() is called on win32");
 }
 
 static void
@@ -730,7 +723,7 @@ rb_thread_create_timer_thread(void)
 }
 
 static int
-native_stop_timer_thread(int close_anyway)
+native_stop_timer_thread(void)
 {
     int stopped = --system_working <= 0;
     if (stopped) {

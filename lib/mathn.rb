@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #--
 # $Release Version: 0.5 $
 # $Revision: 1.1.1.1.4.1 $
@@ -78,7 +79,7 @@ end
 #
 #   (2**72) / ((2**70) * 3)  # => 4/3
 
-class Bignum
+class Integer
   remove_method :/
 
   ##

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #               tk.rb - Tk interface module using tcltklib
 #                       by Yukihiro Matsumoto <matz@netlab.jp>
@@ -912,7 +913,7 @@ end
   def install_win(ppath,name=nil)
     if name
       if name == ''
-        raise ArgumentError, "invalid wiget-name '#{name}'"
+        raise ArgumentError, "invalid widget-name '#{name}'"
       end
       if name[0] == ?.
         @path = '' + name
@@ -1785,9 +1786,7 @@ EOS
   end
 
   def appsend(interp, async, *args)
-    if $SAFE >= 4
-      fail SecurityError, "cannot send Tk commands at level 4"
-    elsif $SAFE >= 1 && args.find{|obj| obj.tainted?}
+    if $SAFE >= 1 && args.find{|obj| obj.tainted?}
       fail SecurityError, "cannot send tainted Tk commands at level #{$SAFE}"
     end
     if async != true && async != false && async != nil
@@ -1802,9 +1801,7 @@ EOS
   end
 
   def rb_appsend(interp, async, *args)
-    if $SAFE >= 4
-      fail SecurityError, "cannot send Ruby commands at level 4"
-    elsif $SAFE >= 1 && args.find{|obj| obj.tainted?}
+    if $SAFE >= 1 && args.find{|obj| obj.tainted?}
       fail SecurityError, "cannot send tainted Ruby commands at level #{$SAFE}"
     end
     if async != true && async != false && async != nil
@@ -1820,9 +1817,7 @@ EOS
   end
 
   def appsend_displayof(interp, win, async, *args)
-    if $SAFE >= 4
-      fail SecurityError, "cannot send Tk commands at level 4"
-    elsif $SAFE >= 1 && args.find{|obj| obj.tainted?}
+    if $SAFE >= 1 && args.find{|obj| obj.tainted?}
       fail SecurityError, "cannot send tainted Tk commands at level #{$SAFE}"
     end
     win = '.' if win == nil
@@ -1838,9 +1833,7 @@ EOS
   end
 
   def rb_appsend_displayof(interp, win, async, *args)
-    if $SAFE >= 4
-      fail SecurityError, "cannot send Ruby commands at level 4"
-    elsif $SAFE >= 1 && args.find{|obj| obj.tainted?}
+    if $SAFE >= 1 && args.find{|obj| obj.tainted?}
       fail SecurityError, "cannot send tainted Ruby commands at level #{$SAFE}"
     end
     win = '.' if win == nil
@@ -1899,7 +1892,7 @@ EOS
             INTERP_ROOT_CHECK.wait(INTERP_MUTEX)
             status = INTERP_THREAD_STATUS.value
             if status && TkCore::INTERP.default_master?
-              INTERP_THREAD_STATUS.value = nil if $SAFE < 4
+              INTERP_THREAD_STATUS.value = nil
               raise status if status.kind_of?(Exception)
             end
           }
@@ -2209,9 +2202,6 @@ module Tk
     #  tk_split_simplelist(INTERP._invoke('set', 'tcl_libPath'))
 
     when :PLATFORM, :TCL_PLATFORM
-      if $SAFE >= 4
-        fail SecurityError, "can't get #{sym} when $SAFE >= 4"
-      end
       INTERP._invoke_without_enc('global', 'tcl_platform')
       Hash[*tk_split_simplelist(INTERP._invoke_without_enc('array', 'get',
                                                            'tcl_platform'))]
@@ -2655,7 +2645,7 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
         def ENCODING_TABLE.get_name(enc)
           orig_enc = enc
 
-          # unles enc, use system default
+          # unless enc, use system default
           #  1st: Ruby/Tk default encoding
           #  2nd: Tcl/Tk default encoding
           #  3rd: Ruby's default_external
@@ -2897,7 +2887,7 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
     # from tkencoding.rb by ttate@jaist.ac.jp
     #attr_accessor :encoding
     def encoding=(name)
-      self.force_default_encoding = true  # for comaptibility
+      self.force_default_encoding = true  # for compatibility
       self.default_encoding = name
     end
 
@@ -3746,7 +3736,6 @@ module TkConfigMethod
     @mode || false
   end
   def TkConfigMethod.__set_IGNORE_UNKNOWN_CONFIGURE_OPTION__!(mode)
-    fail SecurityError, "can't change the mode" if $SAFE>=4
     @mode = (mode)? true: false
   end
 
@@ -5176,7 +5165,7 @@ class TkWindow<TkObject
               # try to configure
               configure(keys)
             rescue
-              # fail => includes options adaptable when creattion only?
+              # fail => includes options adaptable when creation only?
               begin
                 tk_call_without_enc('destroy', @path)
               rescue
@@ -5650,9 +5639,6 @@ class TkWindow<TkObject
   end
 
   def wait_visibility(on_thread = true)
-    if $SAFE >= 4
-      fail SecurityError, "can't wait visibility at $SAFE >= 4"
-    end
     on_thread &= (Thread.list.size != 1)
     if on_thread
       INTERP._thread_tkwait('visibility', path)
@@ -5676,9 +5662,6 @@ class TkWindow<TkObject
   alias thread_tkwait_visibility thread_wait_visibility
 
   def wait_destroy(on_thread = true)
-    if $SAFE >= 4
-      fail SecurityError, "can't wait destroy at $SAFE >= 4"
-    end
     on_thread &= (Thread.list.size != 1)
     if on_thread
       INTERP._thread_tkwait('window', epath)

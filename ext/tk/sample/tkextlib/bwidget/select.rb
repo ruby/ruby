@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  select demo  ---  called from demo.rb
 #

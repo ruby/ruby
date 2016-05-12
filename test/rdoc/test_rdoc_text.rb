@@ -1,4 +1,5 @@
 # coding: utf-8
+# frozen_string_literal: false
 
 require 'rdoc/test_case'
 
@@ -56,6 +57,9 @@ class TestRDocText < RDoc::TestCase
 
     assert_equal('.               .',
                  expand_tabs(".\t\t."), 'dot tab tab dot')
+
+    assert_equal('a       a',
+                 Timeout.timeout(1) {expand_tabs("\ra\ta")}, "carriage return")
   end
 
   def test_expand_tabs_encoding

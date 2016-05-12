@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # Indicates this parser is text and doesn't contain code constructs.
 #

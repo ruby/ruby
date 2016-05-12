@@ -1,21 +1,26 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'cgi'
 require 'stringio'
+require_relative 'update_env'
 
 
 class CGICookieTest < Test::Unit::TestCase
+  include UpdateEnv
 
 
   def setup
-    ENV['REQUEST_METHOD'] = 'GET'
+    @environ = {}
+    update_env(
+      'REQUEST_METHOD' => 'GET',
+      'SCRIPT_NAME' => nil,
+    )
     @str1="\xE3\x82\x86\xE3\x82\x93\xE3\x82\x86\xE3\x82\x93"
     @str1.force_encoding("UTF-8") if defined?(::Encoding)
   end
 
   def teardown
-    %W[REQUEST_METHOD SCRIPT_NAME].each do |name|
-      ENV.delete(name)
-    end
+    ENV.update(@environ)
   end
 
 
@@ -27,6 +32,7 @@ class CGICookieTest < Test::Unit::TestCase
     assert_nil(cookie.expires)
     assert_equal('', cookie.path)
     assert_equal(false, cookie.secure)
+    assert_equal(false, cookie.httponly)
     assert_equal("name1=val1&%26%3C%3E%22&%E3%82%86%E3%82%93%E3%82%86%E3%82%93; path=", cookie.to_s)
   end
 
@@ -40,7 +46,8 @@ class CGICookieTest < Test::Unit::TestCase
                              'path'=>'/cgi-bin/myapp/',
                              'domain'=>'www.example.com',
                              'expires'=>t,
-                             'secure'=>true
+                             'secure'=>true,
+                             'httponly'=>true
                              )
     assert_equal('name1', cookie.name)
     assert_equal(value, cookie.value)
@@ -48,7 +55,8 @@ class CGICookieTest < Test::Unit::TestCase
     assert_equal(t, cookie.expires)
     assert_equal('/cgi-bin/myapp/', cookie.path)
     assert_equal(true, cookie.secure)
-    assert_equal('name1=val1&%26%3C%3E%22&%A5%E0%A5%B9%A5%AB; domain=www.example.com; path=/cgi-bin/myapp/; expires=Tue, 31 Dec 2030 23:59:59 GMT; secure', cookie.to_s)
+    assert_equal(true, cookie.httponly)
+    assert_equal('name1=val1&%26%3C%3E%22&%A5%E0%A5%B9%A5%AB; domain=www.example.com; path=/cgi-bin/myapp/; expires=Tue, 31 Dec 2030 23:59:59 GMT; secure; HttpOnly', cookie.to_s)
   end
 
 

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'test/unit'
 require 'open3'
 
@@ -78,6 +80,23 @@ class TestOpen3 < Test::Unit::TestCase
       output = out.read
       assert_equal("\"B\"\n", output)
     end
+  end
+
+  def test_numeric_file_descriptor2
+    with_pipe {|r, w|
+      Open3.popen2(RUBY, '-e', 'STDERR.puts "foo"', 2 => w) {|i,o,t|
+        assert_equal("foo\n", r.gets)
+      }
+    }
+  end
+
+  def test_numeric_file_descriptor3
+    skip "passing FDs bigger than 2 is not supported on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+    with_pipe {|r, w|
+      Open3.popen3(RUBY, '-e', 'IO.open(3).puts "foo"', 3 => w) {|i,o,e,t|
+        assert_equal("foo\n", r.gets, "[GH-808] [ruby-core:67347] [Bug #10699]")
+      }
+    }
   end
 
   def with_pipe

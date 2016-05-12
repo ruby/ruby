@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # text.rb
 #
 # This demonstration script creates a text widget that describes

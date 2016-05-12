@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tkextlib/bwidget/tree.rb
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
@@ -27,7 +28,7 @@ class Tk::BWidget::Tree
   class Event_for_Items < TkEvent::Event
     def self._get_extra_args_tbl
       [
-        TkComm.method(:string)   # item idenfier
+        TkComm.method(:string)   # item identifier
       ]
     end
   end

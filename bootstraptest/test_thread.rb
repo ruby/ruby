@@ -25,8 +25,9 @@ rescue ThreadError => e
   :ok if /can't create Thread/ =~ e.message
 end
 }
-assert_equal %q{5000}, %q{
-  5000.times{|e|
+assert_equal %q{ok}, %q{
+begin
+  :ok if 5000 == 5000.times{|e|
     (1..2).map{
       Thread.new{
       }
@@ -34,9 +35,13 @@ assert_equal %q{5000}, %q{
       e.join()
     }
   }
+rescue ThreadError => e
+  :ok if /can't create Thread/ =~ e.message
+end
 }
-assert_equal %q{5000}, %q{
-  5000.times{|e|
+assert_equal %q{ok}, %q{
+begin
+  :ok if 5000 == 5000.times{|e|
     (1..2).map{
       Thread.new{
       }
@@ -44,6 +49,9 @@ assert_equal %q{5000}, %q{
       e.join(1000000000)
     }
   }
+rescue ThreadError => e
+  :ok if /can't create Thread/ =~ e.message
+end
 }
 assert_equal %q{ok}, %q{
 begin

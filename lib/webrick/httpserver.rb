@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # httpserver.rb -- HTTPServer Class
 #
@@ -8,6 +9,7 @@
 #
 # $IPR: httpserver.rb,v 1.63 2002/10/01 17:16:32 gotoyuzo Exp $
 
+require 'io/wait'
 require 'webrick/server'
 require 'webrick/httputils'
 require 'webrick/httpstatus'
@@ -72,7 +74,7 @@ module WEBrick
         begin
           timeout = @config[:RequestTimeout]
           while timeout > 0
-            break if IO.select([sock], nil, nil, 0.5)
+            break if sock.to_io.wait_readable(0.5)
             break if @status != :Running
             timeout -= 0.5
           end

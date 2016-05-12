@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tkextlib/bwidget/dropsite.rb
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

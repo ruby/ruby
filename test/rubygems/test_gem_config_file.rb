@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/config_file'
 
@@ -269,6 +270,29 @@ if you believe they were disclosed to a third party.
     assert_equal true, @cfg.backtrace
   end
 
+  def test_handle_arguments_norc
+    assert_equal @temp_conf, @cfg.config_file_name
+
+    File.open @temp_conf, 'w' do |fp|
+      fp.puts ":backtrace: true"
+      fp.puts ":update_sources: false"
+      fp.puts ":bulk_threshold: 10"
+      fp.puts ":verbose: false"
+      fp.puts ":sources:"
+      fp.puts "  - http://more-gems.example.com"
+    end
+
+    args = %W[--norc]
+
+    util_config_file args
+
+    assert_equal false, @cfg.backtrace
+    assert_equal true, @cfg.update_sources
+    assert_equal Gem::ConfigFile::DEFAULT_BULK_THRESHOLD, @cfg.bulk_threshold
+    assert_equal true, @cfg.verbose
+    assert_equal [@gem_repo], Gem.sources
+  end
+
   def test_load_api_keys
     temp_cred = File.join Gem.user_home, '.gem', 'credentials'
     FileUtils.mkdir File.dirname(temp_cred)
@@ -416,7 +440,7 @@ if you believe they were disclosed to a third party.
 
   def test_ignore_invalid_config_file
     File.open @temp_conf, 'w' do |fp|
-      fp.puts "some-non-yaml-hash-string"
+      fp.puts "invalid: yaml:"
     end
 
     begin

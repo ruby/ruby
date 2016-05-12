@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'timeout'
 begin
@@ -28,7 +29,7 @@ class TestIONonblock < Test::Unit::TestCase
     w.flush
     w << "a" * 4096
     result = ""
-    timeout(10) {
+    Timeout.timeout(10) {
       t0 = Thread.new {
         Thread.pass
         w.close

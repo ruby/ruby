@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby -w
 # encoding: UTF-8
+# frozen_string_literal: false
 
 # tc_headers.rb
 #

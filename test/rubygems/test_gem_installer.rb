@@ -1,6 +1,21 @@
+# frozen_string_literal: true
 require 'rubygems/installer_test_case'
 
 class TestGemInstaller < Gem::InstallerTestCase
+  @@symlink_supported = nil
+
+  def symlink_supported?
+    if @@symlink_supported.nil?
+      begin
+        File.symlink("", "")
+      rescue Errno::ENOENT, Errno::EEXIST
+        @@symlink_supported = true
+      rescue NotImplementedError, SystemCallError
+        @@symlink_supported = false
+      end
+    end
+    @@symlink_supported
+  end
 
   def setup
     super
@@ -36,7 +51,7 @@ class TestGemInstaller < Gem::InstallerTestCase
 
 require 'rubygems'
 
-version = \">= 0\"
+version = \">= 0.a\"
 
 if ARGV.first
   str = ARGV.first
@@ -47,8 +62,7 @@ if ARGV.first
   end
 end
 
-gem 'a', version
-load Gem.bin_path('a', 'executable', version)
+load Gem.activate_bin_path('a', 'executable', version)
     EOF
 
     wrapper = @installer.app_script_text 'executable'
@@ -257,7 +271,7 @@ gem 'other', version
       s.add_dependency 'garbage ~> 5'
     end
 
-    installer = Gem::Installer.new a_gem
+    installer = Gem::Installer.at a_gem
 
     e = assert_raises Gem::InstallError do
       installer.ensure_loadable_spec
@@ -275,7 +289,7 @@ gem 'other', version
     end
 
     policy = Gem::Security::HighSecurity
-    installer = Gem::Installer.new a_gem, :security_policy => policy
+    installer = Gem::Installer.at a_gem, :security_policy => policy
 
     assert_raises Gem::Security::Exception do
       installer.ensure_loadable_spec
@@ -319,10 +333,10 @@ gem 'other', version
 
     options = {
       :bin_dir => bin_dir,
-      :install_dir => "/non/existant"
+      :install_dir => "/non/existent"
     }
 
-    inst = Gem::Installer.new '', options
+    inst = Gem::Installer.at '', options
 
     Gem::Installer.path_warning = false
 
@@ -552,7 +566,7 @@ gem 'other', version
   end
 
   def test_generate_bin_symlink_update_older
-    return if win_platform? #Windows FS do not support symlinks
+    return if !symlink_supported?
 
     @installer.wrappers = false
     util_make_exec
@@ -575,8 +589,8 @@ gem 'other', version
     util_make_exec
     one = @spec.dup
     one.version = 1
+    @installer = Gem::Installer.for_spec spec
     @installer.gem_dir = util_gem_dir one
-    @installer.spec = spec
 
     @installer.generate_bin
 
@@ -588,7 +602,7 @@ gem 'other', version
   end
 
   def test_generate_bin_symlink_update_remove_wrapper
-    return if win_platform? #Windows FS do not support symlinks
+    return if !symlink_supported?
 
     @installer.wrappers = true
     util_make_exec
@@ -639,7 +653,12 @@ gem 'other', version
     installed_exec = File.join(util_inst_bindir, 'executable')
     assert_path_exists installed_exec
 
-    assert_match(/Unable to use symlinks on Windows, installing wrapper/i,
+    if symlink_supported?
+      assert_send([File, :symlink?, installed_exec])
+      return
+    end
+
+    assert_match(/Unable to use symlinks, installing wrapper/i,
                  @ui.error)
 
     wrapper = File.read installed_exec
@@ -651,7 +670,7 @@ gem 'other', version
   end
 
   def test_generate_bin_uses_default_shebang
-    return if win_platform? #Windows FS do not support symlinks
+    return if !symlink_supported?
 
     @installer.wrappers = true
     util_make_exec
@@ -672,14 +691,14 @@ gem 'other', version
     util_build_gem spec
     FileUtils.mv spec.cache_file, @tempdir
 
-    installer = Gem::Installer.new gem
+    installer = Gem::Installer.at gem
 
     assert_equal File.join(@gemhome, 'gems', spec.full_name), installer.gem_dir
     assert_equal File.join(@gemhome, 'bin'), installer.bin_dir
   end
 
   def test_initialize_user_install
-    installer = Gem::Installer.new @gem, :user_install => true
+    installer = Gem::Installer.at @gem, :user_install => true
 
     assert_equal File.join(Gem.user_dir, 'gems', @spec.full_name),
                  installer.gem_dir
@@ -688,7 +707,7 @@ gem 'other', version
 
   def test_initialize_user_install_bin_dir
     installer =
-      Gem::Installer.new @gem, :user_install => true, :bin_dir => @tempdir
+      Gem::Installer.at @gem, :user_install => true, :bin_dir => @tempdir
 
     assert_equal File.join(Gem.user_dir, 'gems', @spec.full_name),
                  installer.gem_dir
@@ -781,6 +800,55 @@ gem 'other', version
     assert_match(/ran executable/, e.message)
   end
 
+  def test_conflicting_binstubs
+    Dir.mkdir util_inst_bindir
+    util_clear_gems
+
+    # build old version that has a bin file
+    util_setup_gem do |spec|
+      File.open File.join('bin', 'executable'), 'w' do |f|
+        f.puts "require 'code'"
+      end
+      File.open File.join('lib', 'code.rb'), 'w' do |f|
+        f.puts 'raise "I have an executable"'
+      end
+    end
+
+    @installer.wrappers = true
+    build_rake_in do
+      use_ui @ui do
+        @newspec = @installer.install
+      end
+    end
+
+    old_bin_file = File.join @installer.bin_dir, 'executable'
+
+    # build new version that doesn't have a bin file
+    util_setup_gem do |spec|
+      FileUtils.rm File.join('bin', 'executable')
+      spec.files.delete File.join('bin', 'executable')
+      spec.executables.delete 'executable'
+      spec.version = @spec.version.bump
+      File.open File.join('lib', 'code.rb'), 'w' do |f|
+        f.puts 'raise "I do not have an executable"'
+      end
+    end
+
+    build_rake_in do
+      use_ui @ui do
+        @newspec = @installer.install
+      end
+    end
+
+    e = assert_raises RuntimeError do
+      instance_eval File.read(old_bin_file)
+    end
+
+    # We expect the bin stub to activate the version that actually contains
+    # the binstub.
+    assert_match('I have an executable', e.message)
+  end
+
   def test_install_creates_binstub_that_understand_version
     Dir.mkdir util_inst_bindir
     util_setup_gem
@@ -802,14 +870,14 @@ gem 'other', version
     begin
       Gem::Specification.reset
 
-      e = assert_raises Gem::LoadError do
+      e = assert_raises Gem::GemNotFoundException do
         instance_eval File.read(exe)
       end
     ensure
       ARGV.shift if ARGV.first == "_3.0_"
     end
 
-    assert_match(/\(= 3\.0\)/, e.message)
+    assert_includes(e.message, "can't find gem a (= 3.0)")
   end
 
   def test_install_creates_binstub_that_dont_trust_encoding
@@ -830,7 +898,7 @@ gem 'other', version
 
     exe = File.join @gemhome, 'bin', 'executable'
 
-    extra_arg = "\xE4pfel".force_encoding("UTF-8")
+    extra_arg = "\xE4pfel".dup.force_encoding("UTF-8")
     ARGV.unshift extra_arg
 
     begin
@@ -870,7 +938,7 @@ gem 'other', version
         Gem::Package.build @spec
       end
     end
-    @installer = Gem::Installer.new @gem
+    @installer = Gem::Installer.at @gem
     build_rake_in do
       use_ui @ui do
         assert_equal @spec, @installer.install
@@ -884,7 +952,7 @@ gem 'other', version
 
   def test_install_force
     use_ui @ui do
-      installer = Gem::Installer.new old_ruby_required, :force => true
+      installer = Gem::Installer.at old_ruby_required, :force => true
       installer.install
     end
 
@@ -993,11 +1061,24 @@ gem 'other', version
     use_ui @ui do
       path = Gem::Package.build @spec
 
-      @installer = Gem::Installer.new path
+      @installer = Gem::Installer.at path
       @installer.install
     end
 
     assert_match %r|I am a shiny gem!|, @ui.output
+  end
+
+  def test_install_with_skipped_message
+    @spec.post_install_message = 'I am a shiny gem!'
+
+    use_ui @ui do
+      path = Gem::Package.build @spec
+
+      @installer = Gem::Installer.at path, :post_install_message => false
+      @installer.install
+    end
+
+    refute_match %r|I am a shiny gem!|, @ui.output
   end
 
   def test_install_extension_dir
@@ -1016,7 +1097,7 @@ gem 'other', version
     use_ui @ui do
       path = Gem::Package.build @spec
 
-      installer = Gem::Installer.new path, :install_dir => gemhome2
+      installer = Gem::Installer.at path, :install_dir => gemhome2
       installer.install
     end
 
@@ -1056,7 +1137,7 @@ gem 'other', version
     use_ui @ui do
       path = Gem::Package.build @spec
 
-      @installer = Gem::Installer.new path
+      @installer = Gem::Installer.at path
       @installer.install
     end
     assert_path_exists File.join @spec.gem_dir, rb
@@ -1097,7 +1178,7 @@ gem 'other', version
     use_ui @ui do
       path = Gem::Package.build @spec
 
-      @installer = Gem::Installer.new path
+      @installer = Gem::Installer.at path
       @installer.install
     end
     assert_path_exists so
@@ -1175,7 +1256,7 @@ gem 'other', version
     # that it work everything out on it's own.
     Gem::Specification.reset
 
-    installer = Gem::Installer.new gem, :install_dir => gemhome2
+    installer = Gem::Installer.at gem, :install_dir => gemhome2
 
     build_rake_in do
       use_ui @ui do
@@ -1186,7 +1267,7 @@ gem 'other', version
 
   def test_pre_install_checks_ruby_version
     use_ui @ui do
-      installer = Gem::Installer.new old_ruby_required
+      installer = Gem::Installer.at old_ruby_required
       e = assert_raises Gem::InstallError do
         installer.pre_install_checks
       end
@@ -1205,7 +1286,7 @@ gem 'other', version
     gem = File.join(@gemhome, 'cache', spec.file_name)
 
     use_ui @ui do
-      @installer = Gem::Installer.new gem
+      @installer = Gem::Installer.at gem
       e = assert_raises Gem::InstallError do
         @installer.pre_install_checks
       end
@@ -1231,7 +1312,7 @@ gem 'other', version
   def test_process_options_build_root
     build_root = File.join @tempdir, 'build_root'
 
-    @installer = Gem::Installer.new @gem, :build_root => build_root
+    @installer = Gem::Installer.at @gem, :build_root => build_root
 
     assert_equal Pathname(build_root), @installer.build_root
     assert_equal File.join(build_root, @gemhome, 'bin'), @installer.bin_dir
@@ -1406,7 +1487,7 @@ gem 'other', version
   end
 
   def test_write_build_info_file_install_dir
-    installer = Gem::Installer.new @gem, :install_dir => "#{@gemhome}2"
+    installer = Gem::Installer.at @gem, :install_dir => "#{@gemhome}2"
 
     installer.build_args = %w[
       --with-libyaml-dir /usr/local/Cellar/libyaml/0.1.4
@@ -1426,8 +1507,7 @@ gem 'other', version
     FileUtils.mv cache_file, gem
     refute_path_exists cache_file
 
-    installer = Gem::Installer.new gem
-    installer.spec = @spec
+    installer = Gem::Installer.at gem
     installer.gem_home = @gemhome
 
     installer.write_cache_file
@@ -1439,7 +1519,7 @@ gem 'other', version
     FileUtils.rm @spec.spec_file
     refute_path_exists @spec.spec_file
 
-    @installer.spec = @spec
+    @installer = Gem::Installer.for_spec @spec
     @installer.gem_home = @gemhome
 
     @installer.write_spec
@@ -1459,7 +1539,7 @@ gem 'other', version
 
     @spec.files = %w[a.rb b.rb c.rb]
 
-    @installer.spec = @spec
+    @installer = Gem::Installer.for_spec @spec
     @installer.gem_home = @gemhome
 
     @installer.write_spec
@@ -1472,6 +1552,13 @@ gem 'other', version
 
   def test_dir
     assert_match %r!/gemhome/gems/a-2$!, @installer.dir
+  end
+
+  def test_default_gem_loaded_from
+    spec = util_spec 'a'
+    installer = Gem::Installer.for_spec spec, :install_as_default => true
+    installer.install
+    assert_predicate spec, :default_gem?
   end
 
   def test_default_gem
@@ -1490,10 +1577,10 @@ gem 'other', version
     installed_exec = File.join util_inst_bindir, 'executable'
     assert_path_exists installed_exec
 
-    assert File.directory? File.join(Gem.dir, 'specifications')
-    assert File.directory? File.join(Gem.dir, 'specifications', 'default')
+    assert File.directory? File.join(Gem.default_dir, 'specifications')
+    assert File.directory? File.join(Gem.default_dir, 'specifications', 'default')
 
-    default_spec = eval File.read File.join(Gem.dir, 'specifications', 'default', 'a-2.gemspec')
+    default_spec = eval File.read File.join(Gem.default_dir, 'specifications', 'default', 'a-2.gemspec')
     assert_equal Gem::Version.new("2"), default_spec.version
     assert_equal ['bin/executable'], default_spec.files
   end

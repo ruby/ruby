@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   tk/msgcat.rb : methods for Tcl message catalog
 #                     by Hidetoshi Nagai <nagai@ai.kyutech.ac.jp>

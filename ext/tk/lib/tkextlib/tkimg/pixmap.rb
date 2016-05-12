@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  TkImg - format 'pixmap'
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

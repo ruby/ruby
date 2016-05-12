@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: false
 #
 #  TkTextIO class :: handling I/O stream on a TkText widget
 #                             by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
@@ -7,7 +8,7 @@
 #        So, for example, TkTextIO#getc returns a character, TkTextIO#pos
 #        means the character position, TkTextIO#read(size) counts by
 #        characters, and so on.
-#        Of course, it is available to make TkTextIO class to suuport
+#        Of course, it is available to make TkTextIO class to support
 #        'byte' access. However, it may break multi-byte characters.
 #        and then, displayed string on the text widget may be garbled.
 #        I think that it is not good on the supposed situation of using
@@ -420,7 +421,7 @@ class TkTextIO < TkText
     nil
   end
   def close_write
-    @open[:w] = false if @opne[:w]
+    @open[:w] = false if @open[:w]
     nil
   end
 
@@ -511,7 +512,7 @@ class TkTextIO < TkText
   end
 
   def ioctrl(*args)
-    fail NotImplementedError, 'iocntl is not implemented on TkTextIO'
+    fail NotImplementedError, 'ioctrl is not implemented on TkTextIO'
   end
 
   def isatty
@@ -835,7 +836,7 @@ class TkTextIO < TkText
     self
   end
 
-  def trancate(len)
+  def truncate(len)
     delete("1.0 + #{len} char", :end)
     0
   end
@@ -935,7 +936,7 @@ if __FILE__ == $0
   $stdout = tio
   $stderr = tio
 
-  STDOUT.print("\n========= TkTextIO#gets for inital text ========\n\n")
+  STDOUT.print("\n========= TkTextIO#gets for initial text ========\n\n")
 
   while(s = gets)
     STDOUT.print(s)

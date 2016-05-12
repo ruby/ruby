@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 =begin
  external service manager
         Copyright (c) 2000 Masatoshi SEKI
@@ -37,7 +38,7 @@ module DRb
       synchronize do
         while true
           server = @servers[name]
-          return server if server && server.alive?
+          return server if server&.alive?
           invoke_service(name)
           @cond.wait
         end

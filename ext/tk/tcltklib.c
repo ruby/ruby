@@ -42,6 +42,12 @@ int rb_thread_check_trap_pending(void);
 #define RARRAY_PTR(s) (RARRAY(s)->ptr)
 #define RARRAY_LEN(s) (RARRAY(s)->len)
 #endif
+#if !defined(RARRAY_CONST_PTR)
+#define RARRAY_CONST_PTR(s) (const VALUE *)RARRAY_PTR(s)
+#endif
+#if !defined(RARRAY_AREF)
+#define RARRAY_AREF(a, i) RARRAY_CONST_PTR(a)[i]
+#endif
 
 #ifdef OBJ_UNTRUST
 #define RbTk_OBJ_UNTRUST(x)  do {OBJ_TAINT(x); OBJ_UNTRUST(x);} while (0)
@@ -394,7 +400,7 @@ Tcl_SetVar2Ex(interp, name1, name2, newValObj, flags)
 /* from tkAppInit.c */
 
 #if TCL_MAJOR_VERSION < 8 || (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION < 4)
-#  if !defined __MINGW32__ && !defined __BORLANDC__
+#  if !defined __MINGW32__
 /*
  * The following variable is a special hack that is needed in order for
  * Sun shared libraries to be used for Tcl.
@@ -1263,10 +1269,17 @@ setup_rubytkkit(void)
 #ifdef __WIN32__
     /* rbtk_win32_SetHINSTANCE("tcltklib.so"); */
     {
-      volatile VALUE basename;
+# ifdef HAVE_RUBY_ENC_FIND_BASENAME
+      const char *base = ruby_enc_find_basename(rb_sourcefile(), NULL, NULL,
+						rb_filesystem_encoding());
+      rbtk_win32_SetHINSTANCE(base);
+# else
+      VALUE basename;
       basename = rb_funcall(rb_cFile, rb_intern("basename"), 1,
 			    rb_str_new2(rb_sourcefile()));
       rbtk_win32_SetHINSTANCE(RSTRING_PTR(basename));
+      RB_GC_GUARD(basename);
+# endif
     }
 #endif
     set_rubytk_kitpath(rb_sourcefile());
@@ -1882,19 +1895,19 @@ set_max_block_time(self, time)
     case T_BIGNUM:
         /* time is micro-second value */
         divmod = rb_funcall(time, rb_intern("divmod"), 1, LONG2NUM(1000000));
-        tcl_time.sec  = NUM2LONG(RARRAY_PTR(divmod)[0]);
-        tcl_time.usec = NUM2LONG(RARRAY_PTR(divmod)[1]);
+        tcl_time.sec  = NUM2LONG(RARRAY_AREF(divmod, 0));
+        tcl_time.usec = NUM2LONG(RARRAY_AREF(divmod, 1));
         break;
 
     case T_FLOAT:
         /* time is second value */
         divmod = rb_funcall(time, rb_intern("divmod"), 1, INT2FIX(1));
-        tcl_time.sec  = NUM2LONG(RARRAY_PTR(divmod)[0]);
-        tcl_time.usec = (long)(NUM2DBL(RARRAY_PTR(divmod)[1]) * 1000000);
+        tcl_time.sec  = NUM2LONG(RARRAY_AREF(divmod, 0));
+        tcl_time.usec = (long)(NUM2DBL(RARRAY_AREF(divmod, 1)) * 1000000);
 
     default:
         {
-	    VALUE tmp = rb_funcall(time, ID_inspect, 0, 0);
+	    VALUE tmp = rb_funcallv(time, ID_inspect, 0, 0);
 	    rb_raise(rb_eArgError, "invalid value for time: '%s'",
 		     StringValuePtr(tmp));
 	}
@@ -3039,7 +3052,7 @@ lib_do_one_event_core(argc, argv, self, is_ip)
         flags = FIX2INT(vflags);
     }
 
-    if (rb_safe_level() >= 4 || (rb_safe_level() >=1 && OBJ_TAINTED(vflags))) {
+    if (rb_safe_level() >=1 && OBJ_TAINTED(vflags)) {
       flags |= TCL_DONT_WAIT;
     }
 
@@ -3109,7 +3122,7 @@ ip_set_exc_message(interp, exc)
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
 
-    msg = rb_funcall(exc, ID_message, 0, 0);
+    msg = rb_funcallv(exc, ID_message, 0, 0);
     StringValue(msg);
 
 #if TCL_MAJOR_VERSION > 8 || (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION > 0)
@@ -3123,7 +3136,7 @@ ip_set_exc_message(interp, exc)
         /* encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc)); */
         encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, RSTRING_PTR(enc));
     } else {
-        enc = rb_funcall(enc, ID_to_s, 0, 0);
+        enc = rb_funcallv(enc, ID_to_s, 0, 0);
         /* encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc)); */
         encoding = Tcl_GetEncoding((Tcl_Interp*)NULL, RSTRING_PTR(enc));
     }
@@ -3176,11 +3189,11 @@ TkStringValue(obj)
 
     default:
         if (rb_respond_to(obj, ID_to_s)) {
-            return rb_funcall(obj, ID_to_s, 0, 0);
+            return rb_funcallv(obj, ID_to_s, 0, 0);
         }
     }
 
-    return rb_funcall(obj, ID_inspect, 0, 0);
+    return rb_funcallv(obj, ID_inspect, 0, 0);
 }
 
 static int
@@ -3298,7 +3311,7 @@ tcl_protect_core(interp, proc, data) /* should not raise exception */
         rb_thread_critical = Qtrue;
 
         DUMP1("set backtrace");
-        if (!NIL_P(backtrace = rb_funcall(exc, ID_backtrace, 0, 0))) {
+        if (!NIL_P(backtrace = rb_funcallv(exc, ID_backtrace, 0, 0))) {
             backtrace = rb_ary_join(backtrace, rb_str_new2("\n"));
             Tcl_AddErrorInfo(interp, StringValuePtr(backtrace));
         }
@@ -3623,11 +3636,7 @@ ip_ruby_cmd(clientData, interp, argc, argv)
         s = rb_tainted_str_new2(str);
 #endif
         DUMP2("arg:%s",str);
-#ifndef HAVE_STRUCT_RARRAY_LEN
         rb_ary_push(args, s);
-#else
-        RARRAY(args)->ptr[RARRAY(args)->len++] = s;
-#endif
     }
 
     if (old_gc == Qfalse) rb_gc_enable();
@@ -3750,7 +3759,7 @@ ip_RubyExitCommand(clientData, interp, argc, argv)
 
     Tcl_ResetResult(interp);
 
-    if (rb_safe_level() >= 4 || Tcl_IsSafe(interp)) {
+    if (Tcl_IsSafe(interp)) {
 	if (!Tcl_InterpDeleted(interp)) {
 	  ip_finalize(interp);
 
@@ -3801,7 +3810,7 @@ ip_RubyExitCommand(clientData, interp, argc, argv)
         return TCL_RETURN;
 
     default:
-        /* arguemnt error */
+        /* argument error */
         Tcl_AppendResult(interp,
                          "wrong number of arguments: should be \"",
                          cmd, " ?returnCode?\"", (char *)NULL);
@@ -6125,15 +6134,11 @@ ip_init(argc, argv, self)
     int with_tk = 1;
     Tk_Window mainWin = (Tk_Window)NULL;
 
-    /* security check */
-    if (rb_safe_level() >= 4) {
-        rb_raise(rb_eSecurityError,
-                 "Cannot create a TclTkIp object at level %d",
-                 rb_safe_level());
-    }
-
     /* create object */
     TypedData_Get_Struct(self, struct tcltkip, &tcltkip_type, ptr);
+    if (DATA_PTR(self)) {
+	rb_raise(rb_eArgError, "already initialized interpreter");
+    }
     ptr = ALLOC(struct tcltkip);
     /* ptr = RbTk_ALLOC_N(struct tcltkip, 1); */
     DATA_PTR(self) = ptr;
@@ -6371,10 +6376,11 @@ ip_create_slave_core(interp, argc, argv)
     VALUE *argv;
 {
     struct tcltkip *master = get_ip(interp);
-    struct tcltkip *slave = ALLOC(struct tcltkip);
+    struct tcltkip *slave;
     /* struct tcltkip *slave = RbTk_ALLOC_N(struct tcltkip, 1); */
     VALUE safemode;
     VALUE name;
+    VALUE new_ip;
     int safe;
     int thr_crit_bup;
     Tk_Window mainWin;
@@ -6413,6 +6419,8 @@ ip_create_slave_core(interp, argc, argv)
     }
 #endif
 
+    new_ip = TypedData_Make_Struct(CLASS_OF(interp), struct tcltkip,
+				   &tcltkip_type, slave);
     /* create slave-ip */
 #ifdef RUBY_USE_NATIVE_THREAD
     /* slave->tk_thread_id = 0; */
@@ -6472,7 +6480,7 @@ ip_create_slave_core(interp, argc, argv)
 
     rb_thread_critical = thr_crit_bup;
 
-    return TypedData_Wrap_Struct(CLASS_OF(interp), &tcltkip_type, slave);
+    return new_ip;
 }
 
 static VALUE
@@ -7021,7 +7029,7 @@ call_queue_handler(evPtr, flags)
     }
 
     /* set result */
-    RARRAY_PTR(q->result)[0] = ret;
+    RARRAY_ASET(q->result, 0, ret);
     ret = (VALUE)NULL;
 
     /* decr internal handler mark */
@@ -7204,7 +7212,7 @@ tk_funcall(func, argc, argv, obj)
     DUMP2("back from handler (current thread:%"PRIxVALUE")", current);
 
     /* get result & free allocated memory */
-    ret = RARRAY_PTR(result)[0];
+    ret = RARRAY_AREF(result, 0);
 #if 0 /* use Tcl_EventuallyFree */
     Tcl_EventuallyFree((ClientData)alloc_done, TCL_DYNAMIC); /* XXXXXXXX */
 #else
@@ -7245,7 +7253,7 @@ tk_funcall(func, argc, argv, obj)
         DUMP1("raise exception");
         /* rb_exc_raise(ret); */
 	rb_exc_raise(rb_exc_new3(rb_obj_class(ret),
-				 rb_funcall(ret, ID_to_s, 0, 0)));
+				 rb_funcallv(ret, ID_to_s, 0, 0)));
     }
 
     DUMP1("exit tk_funcall");
@@ -7513,7 +7521,7 @@ eval_queue_handler(evPtr, flags)
     }
 
     /* set result */
-    RARRAY_PTR(q->result)[0] = ret;
+    RARRAY_ASET(q->result, 0, ret);
     ret = (VALUE)NULL;
 
     /* decr internal handler mark */
@@ -7688,7 +7696,7 @@ ip_eval(self, str)
     DUMP2("back from handler (current thread:%"PRIxVALUE")", current);
 
     /* get result & free allocated memory */
-    ret = RARRAY_PTR(result)[0];
+    ret = RARRAY_AREF(result, 0);
 
 #if 0 /* use Tcl_EventuallyFree */
     Tcl_EventuallyFree((ClientData)alloc_done, TCL_DYNAMIC); /* XXXXXXXX */
@@ -7722,7 +7730,7 @@ ip_eval(self, str)
         DUMP1("raise exception");
         /* rb_exc_raise(ret); */
 	rb_exc_raise(rb_exc_new3(rb_obj_class(ret),
-				 rb_funcall(ret, ID_to_s, 0, 0)));
+				 rb_funcallv(ret, ID_to_s, 0, 0)));
     }
 
     return ret;
@@ -7746,7 +7754,8 @@ ip_cancel_eval_core(interp, msg, flag)
     if (NIL_P(msg)) {
       msg_obj = NULL;
     } else {
-      msg_obj = Tcl_NewStringObj(RSTRING_PTR(msg), RSTRING_LEN(msg));
+      char *s = StringValuePtr(msg);
+      msg_obj = Tcl_NewStringObj(s, RSTRING_LENINT(msg));
       Tcl_IncrRefCount(msg_obj);
     }
 
@@ -7949,7 +7958,7 @@ lib_toUTF8_core(ip_obj, src, encodename)
             volatile VALUE enc;
 
 #ifdef HAVE_RUBY_ENCODING_H
-            enc = rb_funcall(rb_obj_encoding(str), ID_to_s, 0, 0);
+            enc = rb_funcallv(rb_obj_encoding(str), ID_to_s, 0, 0);
 #else
             enc = rb_attr_get(str, ID_at_enc);
 #endif
@@ -7962,7 +7971,7 @@ lib_toUTF8_core(ip_obj, src, encodename)
                         encoding = (Tcl_Encoding)NULL;
                     } else {
                         /* StringValue(enc); */
-                        enc = rb_funcall(enc, ID_to_s, 0, 0);
+                        enc = rb_funcallv(enc, ID_to_s, 0, 0);
                         /* encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc)); */
 			if (!RSTRING_LEN(enc)) {
 			  encoding = (Tcl_Encoding)NULL;
@@ -8153,7 +8162,7 @@ lib_fromUTF8_core(ip_obj, src, encodename)
                 encoding = (Tcl_Encoding)NULL;
             } else {
                 /* StringValue(enc); */
-                enc = rb_funcall(enc, ID_to_s, 0, 0);
+                enc = rb_funcallv(enc, ID_to_s, 0, 0);
                 /* encoding = Tcl_GetEncoding(interp, RSTRING_PTR(enc)); */
 		if (!RSTRING_LEN(enc)) {
 		  encoding = (Tcl_Encoding)NULL;
@@ -8408,7 +8417,7 @@ lib_set_system_encoding(self, enc_name)
         return lib_get_system_encoding(self);
     }
 
-    enc_name = rb_funcall(enc_name, ID_to_s, 0, 0);
+    enc_name = rb_funcallv(enc_name, ID_to_s, 0, 0);
     if (Tcl_SetSystemEncoding((Tcl_Interp *)NULL,
                               StringValuePtr(enc_name)) != TCL_OK) {
         rb_raise(rb_eArgError, "unknown encoding name '%s'",
@@ -8613,7 +8622,7 @@ ip_invoke_core(interp, argc, argv)
 #else
             char **unknown_argv;
 #endif
-            DUMP1("find 'unknown' command -> set arguemnts");
+            DUMP1("find 'unknown' command -> set arguments");
             unknown_flag = 1;
 
 #if TCL_MAJOR_VERSION >= 8
@@ -9013,7 +9022,7 @@ invoke_queue_handler(evPtr, flags)
     }
 
     /* set result */
-    RARRAY_PTR(q->result)[0] = ret;
+    RARRAY_ASET(q->result, 0, ret);
     ret = (VALUE)NULL;
 
     /* decr internal handler mark */
@@ -9186,7 +9195,7 @@ ip_invoke_with_position(argc, argv, obj, position)
     DUMP2("back from handler (current thread:%"PRIxVALUE")", current);
 
     /* get result & free allocated memory */
-    ret = RARRAY_PTR(result)[0];
+    ret = RARRAY_AREF(result, 0);
 #if 0 /* use Tcl_EventuallyFree */
     Tcl_EventuallyFree((ClientData)alloc_done, TCL_DYNAMIC); /* XXXXXXXX */
 #else
@@ -9218,7 +9227,7 @@ ip_invoke_with_position(argc, argv, obj, position)
         DUMP1("raise exception");
         /* rb_exc_raise(ret); */
 	rb_exc_raise(rb_exc_new3(rb_obj_class(ret),
-				 rb_funcall(ret, ID_to_s, 0, 0)));
+				 rb_funcallv(ret, ID_to_s, 0, 0)));
     }
 
     DUMP1("exit ip_invoke");
@@ -10187,7 +10196,7 @@ encoding_table_get_name_core(table, enc_arg, error_mode)
   /* 1st: default encoding setting of interp */
   if (ptr && NIL_P(enc)) {
     if (rb_respond_to(interp, ID_encoding_name)) {
-      enc = rb_funcall(interp, ID_encoding_name, 0, 0);
+      enc = rb_funcallv(interp, ID_encoding_name, 0, 0);
     }
   }
   /* 2nd: Encoding.default_internal */
@@ -10230,7 +10239,7 @@ encoding_table_get_name_core(table, enc_arg, error_mode)
 
   } else {
     /* String or Symbol? */
-    name = rb_funcall(enc, ID_to_s, 0, 0);
+    name = rb_funcallv(enc, ID_to_s, 0, 0);
 
     if (!NIL_P(rb_hash_lookup(table, name))) {
       /* find */
@@ -10264,7 +10273,7 @@ encoding_table_get_name_core(table, enc_arg, error_mode)
   }
 
   if (RTEST(error_mode)) {
-    enc = rb_funcall(enc_arg, ID_to_s, 0, 0);
+    enc = rb_funcallv(enc_arg, ID_to_s, 0, 0);
     rb_raise(rb_eArgError, "unsupported Tk encoding '%s'", RSTRING_PTR(enc));
   }
   return Qnil;
@@ -10342,7 +10351,7 @@ encoding_table_get_name_core(table, enc, error_mode)
 {
   volatile VALUE name = Qnil;
 
-  enc = rb_funcall(enc, ID_to_s, 0, 0);
+  enc = rb_funcallv(enc, ID_to_s, 0, 0);
   name = rb_hash_lookup(table, enc);
 
   if (!NIL_P(name)) {

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # $Id$
 #
@@ -29,16 +30,21 @@ class Ripper
 
   private
 
+  def _dispatch_0() nil end
+  def _dispatch_1(a) a end
+  def _dispatch_2(a, b) a end
+  def _dispatch_3(a, b, c) a end
+  def _dispatch_4(a, b, c, d) a end
+  def _dispatch_5(a, b, c, d, e) a end
+  def _dispatch_6(a, b, c, d, e, f) a end
+  def _dispatch_7(a, b, c, d, e, f, g) a end
+
   #
   # Parser Events
   #
 
   PARSER_EVENT_TABLE.each do |id, arity|
-    module_eval(<<-End, __FILE__, __LINE__ + 1)
-      def on_#{id}(#{ ('a'..'z').to_a[0, arity].join(', ') })
-        #{arity == 0 ? 'nil' : 'a'}
-      end
-    End
+    alias_method "on_#{id}", "_dispatch_#{arity}"
   end
 
   # This method is called when weak warning is produced by the parser.
@@ -60,11 +66,7 @@ class Ripper
   #
 
   SCANNER_EVENTS.each do |id|
-    module_eval(<<-End, __FILE__, __LINE__ + 1)
-      def on_#{id}(token)
-        token
-      end
-    End
+    alias_method "on_#{id}", :_dispatch_1
   end
 
 end

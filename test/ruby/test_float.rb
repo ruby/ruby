@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestFloat < Test::Unit::TestCase
@@ -356,6 +357,30 @@ class TestFloat < Test::Unit::TestCase
     assert_not_predicate(1.0, :zero?)
   end
 
+  def test_positive_p
+    assert_predicate(+1.0, :positive?)
+    assert_not_predicate(+0.0, :positive?)
+    assert_not_predicate(-0.0, :positive?)
+    assert_not_predicate(-1.0, :positive?)
+    assert_predicate(+(0.0.next_float), :positive?)
+    assert_not_predicate(-(0.0.next_float), :positive?)
+    assert_predicate(Float::INFINITY, :positive?)
+    assert_not_predicate(-Float::INFINITY, :positive?)
+    assert_not_predicate(Float::NAN, :positive?)
+  end
+
+  def test_negative_p
+    assert_predicate(-1.0, :negative?)
+    assert_not_predicate(-0.0, :negative?)
+    assert_not_predicate(+0.0, :negative?)
+    assert_not_predicate(+1.0, :negative?)
+    assert_predicate(-(0.0.next_float), :negative?)
+    assert_not_predicate(+(0.0.next_float), :negative?)
+    assert_predicate(-Float::INFINITY, :negative?)
+    assert_not_predicate(Float::INFINITY, :negative?)
+    assert_not_predicate(Float::NAN, :negative?)
+  end
+
   def test_infinite_p
     inf = Float::INFINITY
     assert_equal(1, inf.infinite?)
@@ -403,6 +428,11 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(1.110, 1.111.round(2))
     assert_equal(11110.0, 11111.1.round(-1))
     assert_equal(11100.0, 11111.1.round(-2))
+    assert_equal(-1.100, -1.111.round(1))
+    assert_equal(-1.110, -1.111.round(2))
+    assert_equal(-11110.0, -11111.1.round(-1))
+    assert_equal(-11100.0, -11111.1.round(-2))
+    assert_equal(0, 11111.1.round(-5))
 
     assert_equal(10**300, 1.1e300.round(-300))
     assert_equal(-10**300, -1.1e300.round(-300))
@@ -417,6 +447,84 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(TypeError) {1.0.round(nil)}
     def (prec = Object.new).to_int; 2; end
     assert_equal(1.0, 0.998.round(prec))
+  end
+
+  def test_floor_with_precision
+    assert_equal(1.100, 1.111.floor(1))
+    assert_equal(1.110, 1.111.floor(2))
+    assert_equal(11110, 11119.9.floor(-1))
+    assert_equal(11100, 11100.0.floor(-2))
+    assert_equal(11100, 11199.9.floor(-2))
+    assert_equal(-1.200, -1.111.floor(1))
+    assert_equal(-1.120, -1.111.floor(2))
+    assert_equal(-11120, -11119.9.floor(-1))
+    assert_equal(-11100, -11100.0.floor(-2))
+    assert_equal(-11200, -11199.9.floor(-2))
+    assert_equal(0, 11111.1.floor(-5))
+
+    assert_equal(10**300, 1.1e300.floor(-300))
+    assert_equal(-2*10**300, -1.1e300.floor(-300))
+    assert_equal(1.0e-300, 1.1e-300.floor(300))
+    assert_equal(-2.0e-300, -1.1e-300.floor(300))
+
+    assert_equal(42.0, 42.0.floor(308))
+    assert_equal(1.0e307, 1.0e307.floor(2))
+
+    assert_raise(TypeError) {1.0.floor("4")}
+    assert_raise(TypeError) {1.0.floor(nil)}
+    def (prec = Object.new).to_int; 2; end
+    assert_equal(0.99, 0.998.floor(prec))
+  end
+
+  def test_ceil_with_precision
+    assert_equal(1.200, 1.111.ceil(1))
+    assert_equal(1.120, 1.111.ceil(2))
+    assert_equal(11120, 11111.1.ceil(-1))
+    assert_equal(11200, 11111.1.ceil(-2))
+    assert_equal(-1.100, -1.111.ceil(1))
+    assert_equal(-1.110, -1.111.ceil(2))
+    assert_equal(-11110, -11111.1.ceil(-1))
+    assert_equal(-11100, -11111.1.ceil(-2))
+    assert_equal(100000, 11111.1.ceil(-5))
+
+    assert_equal(2*10**300, 1.1e300.ceil(-300))
+    assert_equal(-10**300, -1.1e300.ceil(-300))
+    assert_equal(2.0e-300, 1.1e-300.ceil(300))
+    assert_equal(-1.0e-300, -1.1e-300.ceil(300))
+
+    assert_equal(42.0, 42.0.ceil(308))
+    assert_equal(1.0e307, 1.0e307.ceil(2))
+
+    assert_raise(TypeError) {1.0.ceil("4")}
+    assert_raise(TypeError) {1.0.ceil(nil)}
+    def (prec = Object.new).to_int; 2; end
+    assert_equal(0.99, 0.981.ceil(prec))
+  end
+
+  def test_truncate_with_precision
+    assert_equal(1.100, 1.111.truncate(1))
+    assert_equal(1.110, 1.111.truncate(2))
+    assert_equal(11110, 11119.9.truncate(-1))
+    assert_equal(11100, 11100.0.truncate(-2))
+    assert_equal(11100, 11199.9.truncate(-2))
+    assert_equal(-1.100, -1.111.truncate(1))
+    assert_equal(-1.110, -1.111.truncate(2))
+    assert_equal(-11110, -11111.1.truncate(-1))
+    assert_equal(-11100, -11111.1.truncate(-2))
+    assert_equal(0, 11111.1.truncate(-5))
+
+    assert_equal(10**300, 1.1e300.truncate(-300))
+    assert_equal(-10**300, -1.1e300.truncate(-300))
+    assert_equal(1.0e-300, 1.1e-300.truncate(300))
+    assert_equal(-1.0e-300, -1.1e-300.truncate(300))
+
+    assert_equal(42.0, 42.0.truncate(308))
+    assert_equal(1.0e307, 1.0e307.truncate(2))
+
+    assert_raise(TypeError) {1.0.truncate("4")}
+    assert_raise(TypeError) {1.0.truncate(nil)}
+    def (prec = Object.new).to_int; 2; end
+    assert_equal(0.99, 0.998.truncate(prec))
   end
 
   VS = [
@@ -576,7 +684,7 @@ class TestFloat < Test::Unit::TestCase
   end
 
   def test_num2dbl
-    assert_raise(ArgumentError) do
+    assert_raise(TypeError) do
       1.0.step(2.0, "0.5") {}
     end
     assert_raise(TypeError) do
@@ -671,5 +779,13 @@ class TestFloat < Test::Unit::TestCase
     z = 0.0.prev_float.next_float
     assert_equal(0.0, z)
     assert_equal(-Float::INFINITY, 1.0/z)
+  end
+
+  def test_hash_0
+    bug10979 = '[ruby-core:68541] [Bug #10979]'
+    assert_equal(+0.0.hash, -0.0.hash)
+    assert_operator(+0.0, :eql?, -0.0)
+    h = {0.0 => bug10979}
+    assert_equal(bug10979, h[-0.0])
   end
 end

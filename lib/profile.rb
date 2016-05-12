@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'profiler'
 
 RubyVM::InstructionSequence.compile_option = {

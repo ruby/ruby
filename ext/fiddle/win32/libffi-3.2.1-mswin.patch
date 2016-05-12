@@ -174,3 +174,18 @@ diff -ru libffi-3.2.1/src/x86/win64.S libffi-3.2.1/src/x86/win64.S
  ffi_call_win64 ENDP
  _TEXT	ENDS
  END
+diff -ru libffi-3.2.1/include/ffi.h.in libffi-3.2.1/include/ffi.h.in
+--- libffi-3.2.1/include/ffi.h.in	2014-11-08 21:47:24.000000000 +0900
++++ libffi-3.2.1/include/ffi.h.in	2015-01-11 12:35:30.000000000 +0900
+@@ -103,6 +103,11 @@
+ #   undef  FFI_64_BIT_MAX
+ #   define FFI_64_BIT_MAX 9223372036854775807LL
+ #  endif
++#  ifdef _MSC_VER
++#   define FFI_LONG_LONG_MAX _I64_MAX
++#   undef  FFI_64_BIT_MAX
++#   define FFI_64_BIT_MAX 9223372036854775807I64
++#  endif
+ # endif
+ #endif
+ 

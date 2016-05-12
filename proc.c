@@ -14,15 +14,23 @@
 #include "gc.h"
 #include "iseq.h"
 
-const NODE *rb_vm_cref_in_context(VALUE self, VALUE cbase);
+/* Proc.new with no block will raise an exception in the future
+ * versions */
+#define PROC_NEW_REQUIRES_BLOCK 0
+
+#if !defined(__GNUC__) || __GNUC__ < 5
+# define NO_CLOBBERED(v) (*(volatile VALUE *)&(v))
+#else
+# define NO_CLOBBERED(v) (v)
+#endif
+
+const rb_cref_t *rb_vm_cref_in_context(VALUE self, VALUE cbase);
 
 struct METHOD {
-    VALUE recv;
-    VALUE rclass;
-    VALUE defined_class;
-    ID id;
-    rb_method_entry_t *me;
-    struct unlinked_method_entry_list_entry *ume;
+    const VALUE recv;
+    const VALUE klass;
+    const rb_method_entry_t * const me;
+    /* for bound methods, `me' should be rb_callable_method_entry_t * */
 };
 
 VALUE rb_cUnboundMethod;
@@ -33,30 +41,42 @@ VALUE rb_cProc;
 static VALUE bmcall(VALUE, VALUE, int, VALUE *, VALUE);
 static int method_arity(VALUE);
 static int method_min_max_arity(VALUE, int *max);
+
 #define attached id__attached__
 
 /* Proc */
 
-#define IS_METHOD_PROC_NODE(node) (nd_type(node) == NODE_IFUNC && (node)->nd_cfnc == bmcall)
+#define IS_METHOD_PROC_IFUNC(ifunc) ((ifunc)->func == bmcall)
+#define IS_METHOD_PROC_ISEQ(iseq) \
+    (RUBY_VM_IFUNC_P(iseq) && \
+     IS_METHOD_PROC_IFUNC((struct vm_ifunc *)(iseq)))
 
 static void
 proc_mark(void *ptr)
 {
     rb_proc_t *proc = ptr;
-    RUBY_MARK_ENTER("proc");
-    RUBY_MARK_UNLESS_NULL(proc->envval);
-    RUBY_MARK_UNLESS_NULL(proc->blockprocval);
     RUBY_MARK_UNLESS_NULL(proc->block.proc);
     RUBY_MARK_UNLESS_NULL(proc->block.self);
+    if (proc->block.ep) {
+	RUBY_MARK_UNLESS_NULL(rb_vm_proc_envval(proc));
+    }
     if (proc->block.iseq && RUBY_VM_IFUNC_P(proc->block.iseq)) {
-	RUBY_MARK_UNLESS_NULL((VALUE)(proc->block.iseq));
+	rb_gc_mark((VALUE)(proc->block.iseq));
     }
     RUBY_MARK_LEAVE("proc");
 }
 
+typedef struct {
+    rb_proc_t basic;
+    VALUE env[3]; /* me, specval, envval */
+} cfunc_proc_t;
+
 static size_t
 proc_memsize(const void *ptr)
 {
+    const rb_proc_t *proc = ptr;
+    if (proc->block.ep == ((const cfunc_proc_t *)ptr)->env+1)
+	return sizeof(cfunc_proc_t);
     return sizeof(rb_proc_t);
 }
 
@@ -71,11 +91,10 @@ static const rb_data_type_t proc_data_type = {
 };
 
 VALUE
-rb_proc_wrap(VALUE klass, rb_proc_t *proc)
+rb_proc_alloc(VALUE klass)
 {
-    proc->block.proc = TypedData_Wrap_Struct(klass, &proc_data_type, proc);
-
-    return proc->block.proc;
+    rb_proc_t *proc;
+    return TypedData_Make_Struct(klass, rb_proc_t, &proc_data_type, proc);
 }
 
 VALUE
@@ -95,11 +114,13 @@ proc_dup(VALUE self)
 {
     VALUE procval;
     rb_proc_t *src;
-    rb_proc_t *dst = ALLOC(rb_proc_t);
+    rb_proc_t *dst;
 
     GetProcPtr(self, src);
+    procval = rb_proc_alloc(rb_cProc);
+    GetProcPtr(procval, dst);
     *dst = *src;
-    procval = rb_proc_wrap(rb_cProc, dst);
+    dst->block.proc = procval;
     RB_GC_GUARD(self); /* for: body = proc_dup(body) */
 
     return procval;
@@ -241,21 +262,20 @@ binding_free(void *ptr)
 static void
 binding_mark(void *ptr)
 {
-    rb_binding_t *bind;
+    rb_binding_t *bind = ptr;
+
     RUBY_MARK_ENTER("binding");
-    if (ptr) {
-	bind = ptr;
-	RUBY_MARK_UNLESS_NULL(bind->env);
-	RUBY_MARK_UNLESS_NULL(bind->path);
-	RUBY_MARK_UNLESS_NULL(bind->blockprocval);
-    }
+
+    RUBY_MARK_UNLESS_NULL(bind->env);
+    RUBY_MARK_UNLESS_NULL(bind->path);
+
     RUBY_MARK_LEAVE("binding");
 }
 
 static size_t
 binding_memsize(const void *ptr)
 {
-    return ptr ? sizeof(rb_binding_t) : 0;
+    return sizeof(rb_binding_t);
 }
 
 const rb_data_type_t ruby_binding_data_type = {
@@ -287,7 +307,6 @@ binding_dup(VALUE self)
     GetBindingPtr(bindval, dst);
     dst->env = src->env;
     dst->path = src->path;
-    dst->blockprocval = src->blockprocval;
     dst->first_lineno = src->first_lineno;
     return bindval;
 }
@@ -363,19 +382,24 @@ get_local_variable_ptr(VALUE envval, ID lid)
 
     do {
 	const rb_iseq_t *iseq;
-	int i;
+	unsigned int i;
 
 	GetEnvPtr(envval, env);
 	iseq = env->block.iseq;
 
-	for (i=0; i<iseq->local_table_size; i++) {
-	    if (iseq->local_table[i] == lid) {
-		return &env->env[i];
+	if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
+	    for (i=0; i<iseq->body->local_table_size; i++) {
+		if (iseq->body->local_table[i] == lid) {
+		    return &env->env[i];
+		}
 	    }
 	}
-    } while ((envval = env->prev_envval) != 0);
+	else {
+	    return NULL;
+	}
+    } while ((envval = rb_vm_env_prev_envval(env)) != Qfalse);
 
-    return 0;
+    return NULL;
 }
 
 /*
@@ -387,18 +411,19 @@ static ID
 check_local_id(VALUE bindval, volatile VALUE *pname)
 {
     ID lid = rb_check_id(pname);
-    VALUE name = *pname, sym = name;
+    VALUE name = *pname;
 
     if (lid) {
 	if (!rb_is_local_id(lid)) {
-	    name = rb_id2str(lid);
-	  wrong:
-	    rb_name_error_str(sym, "wrong local variable name `% "PRIsVALUE"' for %"PRIsVALUE,
-			      name, bindval);
+	    rb_name_err_raise("wrong local variable name `%1$s' for %2$s",
+			      bindval, ID2SYM(lid));
 	}
     }
     else {
-	if (!rb_is_local_name(sym)) goto wrong;
+	if (!rb_is_local_name(name)) {
+	    rb_name_err_raise("wrong local variable name `%1$s' for %2$s",
+			      bindval, name);
+	}
 	return 0;
     }
     return lid;
@@ -426,9 +451,12 @@ static VALUE
 bind_local_variables(VALUE bindval)
 {
     const rb_binding_t *bind;
+    const rb_env_t *env;
 
     GetBindingPtr(bindval, bind);
-    return rb_vm_env_local_variables(bind->env);
+    GetEnvPtr(bind->env, env);
+
+    return rb_vm_env_local_variables(env);
 }
 
 /*
@@ -460,9 +488,10 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
     GetBindingPtr(bindval, bind);
 
     if ((ptr = get_local_variable_ptr(bind->env, lid)) == NULL) {
+	sym = ID2SYM(lid);
       undefined:
-	rb_name_error_str(sym, "local variable `%"PRIsVALUE"' not defined for %"PRIsVALUE,
-			  sym, bindval);
+	rb_name_err_raise("local variable `%1$s' not defined for %2$s",
+			  bindval, sym);
     }
 
     return *ptr;
@@ -476,12 +505,12 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
  *
  *	def foo
  *  	  a = 1
- *  	  b = binding
- *  	  b.local_variable_set(:a, 2) # set existing local variable `a'
- *  	  b.local_variable_set(:b, 3) # create new local variable `b'
- *  	                              # `b' exists only in binding.
- *  	  b.local_variable_get(:a) #=> 2
- *  	  b.local_variable_get(:b) #=> 3
+ *  	  bind = binding
+ *  	  bind.local_variable_set(:a, 2) # set existing local variable `a'
+ *  	  bind.local_variable_set(:b, 3) # create new local variable `b'
+ *  	                                 # `b' exists only in binding.
+ *  	  p bind.local_variable_get(:a) #=> 2
+ *  	  p bind.local_variable_get(:b) #=> 3
  *  	  p a #=> 2
  *  	  p b #=> NameError
  *  	end
@@ -559,6 +588,41 @@ bind_receiver(VALUE bindval)
 }
 
 static VALUE
+cfunc_proc_new(VALUE klass, VALUE ifunc, int8_t is_lambda)
+{
+    rb_proc_t *proc;
+    cfunc_proc_t *sproc;
+    VALUE procval = TypedData_Make_Struct(klass, cfunc_proc_t, &proc_data_type, sproc);
+    sproc->env[1] = VM_ENVVAL_BLOCK_PTR(0);
+    proc = &sproc->basic;
+    proc->block.ep = sproc->env+1;
+    proc->block.iseq = (rb_iseq_t *)ifunc;
+    proc->block.proc = procval;
+    proc->is_lambda = is_lambda;
+    return procval;
+}
+
+static VALUE
+sym_proc_new(VALUE klass, VALUE sym)
+{
+    return cfunc_proc_new(klass, sym, 0);
+}
+
+VALUE
+rb_func_proc_new(rb_block_call_func_t func, VALUE val)
+{
+    return cfunc_proc_new(rb_cProc, (VALUE)IFUNC_NEW(func, val, 0), 0);
+}
+
+VALUE
+rb_func_lambda_new(rb_block_call_func_t func, VALUE val)
+{
+    return cfunc_proc_new(rb_cProc, (VALUE)IFUNC_NEW(func, val, 0), 1);
+}
+
+static const char proc_without_block[] = "tried to create Proc object without a block";
+
+static VALUE
 proc_new(VALUE klass, int8_t is_lambda)
 {
     VALUE procval = Qnil;
@@ -567,23 +631,29 @@ proc_new(VALUE klass, int8_t is_lambda)
     rb_block_t *block;
 
     if (!(block = rb_vm_control_frame_block_ptr(cfp))) {
+#if !PROC_NEW_REQUIRES_BLOCK
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 
 	if ((block = rb_vm_control_frame_block_ptr(cfp)) != 0) {
 	    if (is_lambda) {
-		rb_warn("tried to create Proc object without a block");
+		rb_warn(proc_without_block);
 	    }
 	}
+#else
+	if (0)
+#endif
 	else {
-	    rb_raise(rb_eArgError,
-		     "tried to create Proc object without a block");
+	    rb_raise(rb_eArgError, proc_without_block);
 	}
     }
 
     procval = block->proc;
 
     if (procval) {
-	if (RBASIC(procval)->klass == klass) {
+	if (SYMBOL_P(procval)) {
+	    return (klass != rb_cProc) ? sym_proc_new(klass, procval) : rb_sym_to_proc(procval);
+	}
+	else if (RBASIC_CLASS(procval) == klass) {
 	    return procval;
 	}
 	else {
@@ -650,17 +720,6 @@ rb_block_lambda(void)
     return proc_new(rb_cProc, TRUE);
 }
 
-VALUE
-rb_block_clear_env_self(VALUE proc)
-{
-    rb_proc_t *po;
-    rb_env_t *env;
-    GetProcPtr(proc, po);
-    GetEnvPtr(po->envval, env);
-    env->env[0] = Qnil;
-    return proc;
-}
-
 /*  Document-method: ===
  *
  *  call-seq:
@@ -683,46 +742,49 @@ rb_block_clear_env_self(VALUE proc)
  *  <i>params</i> using something close to method calling semantics.
  *  Generates a warning if multiple values are passed to a proc that
  *  expects just one (previously this silently converted the parameters
- *  to an array).  Note that prc.() invokes prc.call() with the parameters
- *  given.  It's a syntax sugar to hide "call".
+ *  to an array).  Note that <code>prc.()</code> invokes
+ *  <code>prc.call()</code> with the parameters given.  It's a syntax sugar to
+ *  hide "call".
+ *
+ *  Returns the value of the last expression evaluated in the block. See
+ *  also Proc#yield.
+ *
+ *     a_proc = Proc.new { |scalar, *values| values.collect { |value| value*scalar } }
+ *     a_proc.call(9, 1, 2, 3)   #=> [9, 18, 27]
+ *     a_proc[9, 1, 2, 3]        #=> [9, 18, 27]
+ *     a_proc.(9, 1, 2, 3)       #=> [9, 18, 27]
  *
  *  For procs created using <code>lambda</code> or <code>->()</code> an error
  *  is generated if the wrong number of parameters are passed to a Proc with
  *  multiple parameters.  For procs created using <code>Proc.new</code> or
  *  <code>Kernel.proc</code>, extra parameters are silently discarded.
  *
- *  Returns the value of the last expression evaluated in the block. See
- *  also <code>Proc#yield</code>.
- *
- *     a_proc = Proc.new {|a, *b| b.collect {|i| i*a }}
- *     a_proc.call(9, 1, 2, 3)   #=> [9, 18, 27]
- *     a_proc[9, 1, 2, 3]        #=> [9, 18, 27]
  *     a_proc = lambda {|a,b| a}
  *     a_proc.call(1,2,3)
  *
  *  <em>produces:</em>
  *
- *     prog.rb:4:in `block in <main>': wrong number of arguments (3 for 2) (ArgumentError)
+ *     prog.rb:4:in `block in <main>': wrong number of arguments (given 3, expected 2) (ArgumentError)
  *     	from prog.rb:5:in `call'
  *     	from prog.rb:5:in `<main>'
  *
  */
-
+#if 0
 static VALUE
 proc_call(int argc, VALUE *argv, VALUE procval)
 {
     VALUE vret;
+    const rb_block_t *blockptr = 0;
+    const rb_iseq_t *iseq;
     rb_proc_t *proc;
-    rb_block_t *blockptr = 0;
-    rb_iseq_t *iseq;
     VALUE passed_procval;
     GetProcPtr(procval, proc);
 
     iseq = proc->block.iseq;
-    if (BUILTIN_TYPE(iseq) == T_NODE || iseq->param.flags.has_block) {
+    if (RUBY_VM_IFUNC_P(iseq) || iseq->body->param.flags.has_block) {
 	if (rb_block_given_p()) {
 	    rb_proc_t *passed_proc;
-	    RB_GC_GUARD(passed_procval) = rb_block_proc();
+	    passed_procval = rb_block_proc();
 	    GetProcPtr(passed_procval, passed_proc);
 	    blockptr = &passed_proc->block;
 	}
@@ -730,8 +792,10 @@ proc_call(int argc, VALUE *argv, VALUE procval)
 
     vret = rb_vm_invoke_proc(GET_THREAD(), proc, argc, argv, blockptr);
     RB_GC_GUARD(procval);
+    RB_GC_GUARD(passed_procval);
     return vret;
 }
+#endif
 
 #if SIZEOF_LONG > SIZEOF_INT
 static inline int
@@ -746,6 +810,17 @@ check_argc(long argc)
 #else
 #define check_argc(argc) (argc)
 #endif
+
+static rb_block_t *
+passed_block(VALUE pass_procval)
+{
+    if (!NIL_P(pass_procval)) {
+	rb_proc_t *pass_proc;
+	GetProcPtr(pass_procval, pass_proc);
+	return &pass_proc->block;
+    }
+    return 0;
+}
 
 VALUE
 rb_proc_call(VALUE self, VALUE args)
@@ -767,12 +842,7 @@ rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE pass_proc
     rb_block_t *block = 0;
     GetProcPtr(self, proc);
 
-    if (!NIL_P(pass_procval)) {
-	rb_proc_t *pass_proc;
-	GetProcPtr(pass_procval, pass_proc);
-	block = &pass_proc->block;
-    }
-
+    block = passed_block(pass_procval);
     vret = rb_vm_invoke_proc(GET_THREAD(), proc, argc, argv, block);
     RB_GC_GUARD(self);
     RB_GC_GUARD(pass_procval);
@@ -831,26 +901,27 @@ proc_arity(VALUE self)
 static inline int
 rb_iseq_min_max_arity(const rb_iseq_t *iseq, int *max)
 {
-    *max = iseq->param.flags.has_rest == FALSE ?
-      iseq->param.lead_num + iseq->param.opt_num + iseq->param.post_num +
-      (iseq->param.flags.has_kw == TRUE || iseq->param.flags.has_kwrest == TRUE)
+    *max = iseq->body->param.flags.has_rest == FALSE ?
+      iseq->body->param.lead_num + iseq->body->param.opt_num + iseq->body->param.post_num +
+      (iseq->body->param.flags.has_kw == TRUE || iseq->body->param.flags.has_kwrest == TRUE)
       : UNLIMITED_ARGUMENTS;
-    return iseq->param.lead_num + iseq->param.post_num + (iseq->param.flags.has_kw && iseq->param.keyword->required_num > 0);
+    return iseq->body->param.lead_num + iseq->body->param.post_num + (iseq->body->param.flags.has_kw && iseq->body->param.keyword->required_num > 0);
 }
 
 static int
 rb_block_min_max_arity(rb_block_t *block, int *max)
 {
-    rb_iseq_t *iseq = block->iseq;
+    const rb_iseq_t *iseq = block->iseq;
+
     if (iseq) {
-	if (BUILTIN_TYPE(iseq) != T_NODE) {
+	if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	    return rb_iseq_min_max_arity(iseq, max);
 	}
 	else {
-	    NODE *node = (NODE *)iseq;
-	    if (IS_METHOD_PROC_NODE(node)) {
+	    if (IS_METHOD_PROC_ISEQ(iseq)) {
+		const struct vm_ifunc *ifunc = (struct vm_ifunc *)iseq;
 		/* e.g. method(:foo).to_proc.arity */
-		return method_min_max_arity(node->nd_tval, max);
+		return method_min_max_arity((VALUE)ifunc->data, max);
 	    }
 	}
     }
@@ -896,46 +967,56 @@ rb_block_arity(void)
     min = rb_block_min_max_arity(block, &max);
     proc_value = block->proc;
     if (proc_value) {
-	rb_proc_t *proc;
-	GetProcPtr(proc_value, proc);
-	if (proc)
-	    return (proc->is_lambda ? min == max : max != UNLIMITED_ARGUMENTS) ? min : -min-1;
+	if (SYMBOL_P(proc_value)) {
+	    return -1;
+	}
+	else {
+	    rb_proc_t *proc;
+	    GetProcPtr(proc_value, proc);
+	    if (proc)
+		return (proc->is_lambda ? min == max : max != UNLIMITED_ARGUMENTS) ? min : -min-1;
+	}
     }
     return max != UNLIMITED_ARGUMENTS ? min : -min-1;
 }
 
-#define get_proc_iseq rb_proc_get_iseq
-
-rb_iseq_t *
+const rb_iseq_t *
 rb_proc_get_iseq(VALUE self, int *is_proc)
 {
-    rb_proc_t *proc;
-    rb_iseq_t *iseq;
+    const rb_proc_t *proc;
+    const rb_iseq_t *iseq;
 
     GetProcPtr(self, proc);
     iseq = proc->block.iseq;
     if (is_proc) *is_proc = !proc->is_lambda;
-    if (!RUBY_VM_NORMAL_ISEQ_P(iseq)) {
-	NODE *node = (NODE *)iseq;
+    if (RUBY_VM_IFUNC_P(iseq)) {
+	const struct vm_ifunc *ifunc = (struct vm_ifunc *)iseq;
 	iseq = 0;
-	if (IS_METHOD_PROC_NODE(node)) {
+	if (IS_METHOD_PROC_IFUNC(ifunc)) {
 	    /* method(:foo).to_proc */
-	    iseq = rb_method_get_iseq(node->nd_tval);
+	    iseq = rb_method_iseq((VALUE)ifunc->data);
 	    if (is_proc) *is_proc = 0;
 	}
+	return iseq;
     }
-    return iseq;
+    else if (SYMBOL_P(iseq)) {
+	return NULL;
+    }
+    else {
+	return rb_iseq_check(iseq);
+    }
 }
 
 static VALUE
-iseq_location(rb_iseq_t *iseq)
+iseq_location(const rb_iseq_t *iseq)
 {
     VALUE loc[2];
 
     if (!iseq) return Qnil;
-    loc[0] = iseq->location.path;
-    if (iseq->line_info_table) {
-	loc[1] = rb_iseq_first_lineno(iseq->self);
+    rb_iseq_check(iseq);
+    loc[0] = iseq->body->location.path;
+    if (iseq->body->line_info_table) {
+	loc[1] = rb_iseq_first_lineno(iseq);
     }
     else {
 	loc[1] = Qnil;
@@ -954,7 +1035,7 @@ iseq_location(rb_iseq_t *iseq)
 VALUE
 rb_proc_location(VALUE self)
 {
-    return iseq_location(get_proc_iseq(self, 0));
+    return iseq_location(rb_proc_get_iseq(self, 0));
 }
 
 static VALUE
@@ -990,7 +1071,7 @@ static VALUE
 rb_proc_parameters(VALUE self)
 {
     int is_proc;
-    rb_iseq_t *iseq = get_proc_iseq(self, &is_proc);
+    const rb_iseq_t *iseq = rb_proc_get_iseq(self, &is_proc);
     if (!iseq) {
 	return unnamed_parameters(rb_proc_arity(self));
     }
@@ -1003,8 +1084,38 @@ rb_hash_proc(st_index_t hash, VALUE prc)
     rb_proc_t *proc;
     GetProcPtr(prc, proc);
     hash = rb_hash_uint(hash, (st_index_t)proc->block.iseq);
-    hash = rb_hash_uint(hash, (st_index_t)proc->envval);
     return rb_hash_uint(hash, (st_index_t)proc->block.ep >> 16);
+}
+
+VALUE
+rb_sym_to_proc(VALUE sym)
+{
+    static VALUE sym_proc_cache = Qfalse;
+    enum {SYM_PROC_CACHE_SIZE = 67};
+    VALUE proc;
+    long index;
+    ID id;
+    VALUE *aryp;
+
+    if (!sym_proc_cache) {
+	sym_proc_cache = rb_ary_tmp_new(SYM_PROC_CACHE_SIZE * 2);
+	rb_gc_register_mark_object(sym_proc_cache);
+	rb_ary_store(sym_proc_cache, SYM_PROC_CACHE_SIZE*2 - 1, Qnil);
+    }
+
+    id = SYM2ID(sym);
+    index = (id % SYM_PROC_CACHE_SIZE) << 1;
+
+    aryp = RARRAY_PTR(sym_proc_cache);
+    if (aryp[index] == sym) {
+	return aryp[index + 1];
+    }
+    else {
+	proc = sym_proc_new(rb_cProc, ID2SYM(id));
+	aryp[index] = sym;
+	aryp[index + 1] = proc;
+	return proc;
+    }
 }
 
 /*
@@ -1040,21 +1151,25 @@ proc_to_s(VALUE self)
     VALUE str = 0;
     rb_proc_t *proc;
     const char *cname = rb_obj_classname(self);
-    rb_iseq_t *iseq;
+    const rb_iseq_t *iseq;
     const char *is_lambda;
 
     GetProcPtr(self, proc);
     iseq = proc->block.iseq;
     is_lambda = proc->is_lambda ? " (lambda)" : "";
 
-    if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
+    if (RUBY_VM_NORMAL_ISEQ_P(iseq) && rb_iseq_check(iseq)) {
 	int first_lineno = 0;
 
-	if (iseq->line_info_table) {
-	    first_lineno = FIX2INT(rb_iseq_first_lineno(iseq->self));
+	if (iseq->body->line_info_table) {
+	    first_lineno = FIX2INT(rb_iseq_first_lineno(iseq));
 	}
 	str = rb_sprintf("#<%s:%p@%"PRIsVALUE":%d%s>", cname, (void *)self,
-			 iseq->location.path, first_lineno, is_lambda);
+			 iseq->body->location.path, first_lineno, is_lambda);
+    }
+    else if (SYMBOL_P(iseq)) {
+	str = rb_sprintf("#<%s:%p(&%+"PRIsVALUE")%s>", cname, (void *)self,
+			 (VALUE)iseq, is_lambda);
     }
     else {
 	str = rb_sprintf("#<%s:%p%s>", cname, (void *)proc->block.iseq,
@@ -1086,35 +1201,22 @@ static void
 bm_mark(void *ptr)
 {
     struct METHOD *data = ptr;
-    rb_gc_mark(data->defined_class);
-    rb_gc_mark(data->rclass);
     rb_gc_mark(data->recv);
-    if (data->me) rb_mark_method_entry(data->me);
-}
-
-static void
-bm_free(void *ptr)
-{
-    struct METHOD *data = ptr;
-    struct unlinked_method_entry_list_entry *ume = data->ume;
-    data->me->mark = 0;
-    ume->me = data->me;
-    ume->next = GET_VM()->unlinked_method_entry_list;
-    GET_VM()->unlinked_method_entry_list = ume;
-    xfree(ptr);
+    rb_gc_mark(data->klass);
+    rb_gc_mark((VALUE)data->me);
 }
 
 static size_t
 bm_memsize(const void *ptr)
 {
-    return ptr ? sizeof(struct METHOD) : 0;
+    return sizeof(struct METHOD);
 }
 
 static const rb_data_type_t method_data_type = {
     "method",
     {
 	bm_mark,
-	bm_free,
+	RUBY_TYPED_DEFAULT_FREE,
 	bm_memsize,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
@@ -1131,84 +1233,36 @@ rb_obj_is_method(VALUE m)
     }
 }
 
-static VALUE
-mnew_internal(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
-	      VALUE obj, ID id, VALUE mclass, int scope, int error)
+static int
+respond_to_missing_p(VALUE klass, VALUE obj, VALUE sym, int scope)
 {
-    VALUE method;
-    VALUE rclass = klass;
-    ID rid = id;
+    /* TODO: merge with obj_respond_to() */
+    ID rmiss = idRespond_to_missing;
+
+    if (obj == Qundef) return 0;
+    if (rb_method_basic_definition_p(klass, rmiss)) return 0;
+    return RTEST(rb_funcall(obj, rmiss, 2, sym, scope ? Qfalse : Qtrue));
+}
+
+
+static VALUE
+mnew_missing(VALUE klass, VALUE obj, ID id, ID rid, VALUE mclass)
+{
     struct METHOD *data;
-    rb_method_definition_t *def = 0;
-    rb_method_flag_t flag = NOEX_UNDEF;
+    VALUE method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
+    rb_method_entry_t *me;
+    rb_method_definition_t *def;
 
-  again:
-    if (UNDEFINED_METHOD_ENTRY_P(me)) {
-	ID rmiss = idRespond_to_missing;
-	VALUE sym = ID2SYM(id);
+    RB_OBJ_WRITE(method, &data->recv, obj);
+    RB_OBJ_WRITE(method, &data->klass, klass);
 
-	if (obj != Qundef && !rb_method_basic_definition_p(klass, rmiss)) {
-	    if (RTEST(rb_funcall(obj, rmiss, 2, sym, scope ? Qfalse : Qtrue))) {
-		me = 0;
-		defined_class = klass;
+    def = ZALLOC(rb_method_definition_t);
+    def->type = VM_METHOD_TYPE_MISSING;
+    def->original_id = id;
 
-		goto gen_method;
-	    }
-	}
-	if (!error) return Qnil;
-	rb_print_undef(klass, id, 0);
-    }
-    def = me->def;
-    if (flag == NOEX_UNDEF) {
-	flag = me->flag;
-	if (scope && (flag & NOEX_MASK) != NOEX_PUBLIC) {
-	    if (!error) return Qnil;
-	    rb_print_inaccessible(klass, id, flag & NOEX_MASK);
-	}
-    }
-    if (def && def->type == VM_METHOD_TYPE_ZSUPER) {
-	klass = RCLASS_SUPER(defined_class);
-	id = def->original_id;
-	me = rb_method_entry_without_refinements(klass, id, &defined_class);
-	goto again;
-    }
+    me = rb_method_entry_create(id, klass, METHOD_VISI_UNDEF, def);
 
-    klass = defined_class;
-
-    while (rclass != klass &&
-	   (FL_TEST(rclass, FL_SINGLETON) || RB_TYPE_P(rclass, T_ICLASS))) {
-	rclass = RCLASS_SUPER(rclass);
-    }
-
-  gen_method:
-    method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
-
-    data->recv = obj;
-    data->rclass = rclass;
-    data->defined_class = defined_class;
-    data->id = rid;
-    data->me = ALLOC(rb_method_entry_t);
-    if (me) {
-	*data->me = *me;
-    }
-    else {
-	me = data->me;
-	me->flag = 0;
-	me->mark = 0;
-	me->called_id = id;
-	me->klass = klass;
-	me->def = 0;
-
-	def = ALLOC(rb_method_definition_t);
-	me->def = def;
-
-	def->type = VM_METHOD_TYPE_MISSING;
-	def->original_id = id;
-	def->alias_count = 0;
-
-    }
-    data->ume = ALLOC(struct unlinked_method_entry_list_entry);
-    data->me->def->alias_count++;
+    RB_OBJ_WRITE(method, &data->me, me);
 
     OBJ_INFECT(method, klass);
 
@@ -1216,21 +1270,84 @@ mnew_internal(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
 }
 
 static VALUE
-mnew_from_me(rb_method_entry_t *me, VALUE defined_class, VALUE klass,
+mnew_internal(const rb_method_entry_t *me, VALUE klass,
+	      VALUE obj, ID id, VALUE mclass, int scope, int error)
+{
+    struct METHOD *data;
+    VALUE method;
+    ID rid = id;
+    rb_method_visibility_t visi = METHOD_VISI_UNDEF;
+
+  again:
+    if (UNDEFINED_METHOD_ENTRY_P(me)) {
+	if (respond_to_missing_p(klass, obj, ID2SYM(id), scope)) {
+	    return mnew_missing(klass, obj, id, rid, mclass);
+	}
+	if (!error) return Qnil;
+	rb_print_undef(klass, id, METHOD_VISI_UNDEF);
+    }
+    if (visi == METHOD_VISI_UNDEF) {
+	visi = METHOD_ENTRY_VISI(me);
+	if (scope && (visi != METHOD_VISI_PUBLIC)) {
+	    if (!error) return Qnil;
+	    rb_print_inaccessible(klass, id, visi);
+	}
+    }
+    if (me->def->type == VM_METHOD_TYPE_ZSUPER) {
+	if (me->defined_class) {
+	    VALUE klass = RCLASS_SUPER(me->defined_class);
+	    id = me->def->original_id;
+	    me = (rb_method_entry_t *)rb_callable_method_entry_without_refinements(klass, id);
+	}
+	else {
+	    VALUE klass = RCLASS_SUPER(me->owner);
+	    id = me->def->original_id;
+	    me = rb_method_entry_without_refinements(klass, id);
+	}
+	goto again;
+    }
+
+    while (klass != me->owner && (FL_TEST(klass, FL_SINGLETON) || RB_TYPE_P(klass, T_ICLASS))) {
+	klass = RCLASS_SUPER(klass);
+    }
+
+    method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
+
+    RB_OBJ_WRITE(method, &data->recv, obj);
+    RB_OBJ_WRITE(method, &data->klass, klass);
+    RB_OBJ_WRITE(method, &data->me, me);
+
+    OBJ_INFECT(method, klass);
+    return method;
+}
+
+static VALUE
+mnew_from_me(const rb_method_entry_t *me, VALUE klass,
 	     VALUE obj, ID id, VALUE mclass, int scope)
 {
-    return mnew_internal(me, defined_class, klass, obj, id, mclass, scope, TRUE);
+    return mnew_internal(me, klass, obj, id, mclass, scope, TRUE);
 }
 
 static VALUE
 mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 {
-    VALUE defined_class;
-    rb_method_entry_t *me =
-	rb_method_entry_without_refinements(klass, id, &defined_class);
-    return mnew_from_me(me, defined_class, klass, obj, id, mclass, scope);
+    const rb_method_entry_t *me;
+
+    if (obj == Qundef) { /* UnboundMethod */
+	me = rb_method_entry_without_refinements(klass, id);
+    }
+    else {
+	me = (rb_method_entry_t *)rb_callable_method_entry_without_refinements(klass, id);
+    }
+    return mnew_from_me(me, klass, obj, id, mclass, scope);
 }
 
+static inline VALUE
+method_entry_defined_class(const rb_method_entry_t *me)
+{
+    VALUE defined_class = me->defined_class;
+    return defined_class ? defined_class : me->owner;
+}
 
 /**********************************************************************
  *
@@ -1270,6 +1387,7 @@ static VALUE
 method_eq(VALUE method, VALUE other)
 {
     struct METHOD *m1, *m2;
+    VALUE klass1, klass2;
 
     if (!rb_obj_is_method(other))
 	return Qfalse;
@@ -1280,8 +1398,12 @@ method_eq(VALUE method, VALUE other)
     m1 = (struct METHOD *)DATA_PTR(method);
     m2 = (struct METHOD *)DATA_PTR(other);
 
+    klass1 = method_entry_defined_class(m1->me);
+    klass2 = method_entry_defined_class(m2->me);
+
     if (!rb_method_entry_eq(m1->me, m2->me) ||
-	m1->rclass != m2->rclass ||
+	klass1 != klass2 ||
+	m1->klass != m2->klass ||
 	m1->recv != m2->recv) {
 	return Qfalse;
     }
@@ -1305,8 +1427,7 @@ method_hash(VALUE method)
     st_index_t hash;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, m);
-    hash = rb_hash_start((st_index_t)m->rclass);
-    hash = rb_hash_uint(hash, (st_index_t)m->recv);
+    hash = rb_hash_start((st_index_t)m->recv);
     hash = rb_hash_method_entry(hash, m->me);
     hash = rb_hash_end(hash);
 
@@ -1331,14 +1452,9 @@ method_unbind(VALUE obj)
     TypedData_Get_Struct(obj, struct METHOD, &method_data_type, orig);
     method = TypedData_Make_Struct(rb_cUnboundMethod, struct METHOD,
 				   &method_data_type, data);
-    data->recv = Qundef;
-    data->id = orig->id;
-    data->me = ALLOC(rb_method_entry_t);
-    *data->me = *orig->me;
-    if (orig->me->def) orig->me->def->alias_count++;
-    data->rclass = orig->rclass;
-    data->defined_class = orig->defined_class;
-    data->ume = ALLOC(struct unlinked_method_entry_list_entry);
+    RB_OBJ_WRITE(method, &data->recv, Qundef);
+    RB_OBJ_WRITE(method, &data->klass, orig->klass);
+    RB_OBJ_WRITE(method, &data->me, rb_method_entry_clone(orig->me));
     OBJ_INFECT(method, obj);
 
     return method;
@@ -1373,7 +1489,7 @@ method_name(VALUE obj)
     struct METHOD *data;
 
     TypedData_Get_Struct(obj, struct METHOD, &method_data_type, data);
-    return ID2SYM(data->id);
+    return ID2SYM(data->me->called_id);
 }
 
 /*
@@ -1403,39 +1519,54 @@ static VALUE
 method_owner(VALUE obj)
 {
     struct METHOD *data;
-    VALUE defined_class;
-
     TypedData_Get_Struct(obj, struct METHOD, &method_data_type, data);
-    defined_class = data->defined_class;
-
-    if (RB_TYPE_P(defined_class, T_ICLASS)) {
-	defined_class = RBASIC_CLASS(defined_class);
-    }
-
-    return defined_class;
+    return data->me->owner;
 }
 
 void
 rb_method_name_error(VALUE klass, VALUE str)
 {
-    const char *s0 = " class";
+#define MSG(s) rb_fstring_cstr("undefined method `%1$s' for"s" `%2$s'")
     VALUE c = klass;
+    VALUE s;
 
     if (FL_TEST(c, FL_SINGLETON)) {
 	VALUE obj = rb_ivar_get(klass, attached);
 
-	switch (TYPE(obj)) {
+	switch (BUILTIN_TYPE(obj)) {
 	  case T_MODULE:
 	  case T_CLASS:
 	    c = obj;
-	    s0 = "";
+	    s = MSG("");
 	}
+	goto normal_class;
     }
     else if (RB_TYPE_P(c, T_MODULE)) {
-	s0 = " module";
+	s = MSG(" module");
     }
-    rb_name_error_str(str, "undefined method `%"PRIsVALUE"' for%s `%"PRIsVALUE"'",
-		      QUOTE(str), s0, rb_class_name(c));
+    else {
+      normal_class:
+	s = MSG(" class");
+    }
+    rb_name_err_raise_str(s, c, str);
+#undef MSG
+}
+
+static VALUE
+obj_method(VALUE obj, VALUE vid, int scope)
+{
+    ID id = rb_check_id(&vid);
+    const VALUE klass = CLASS_OF(obj);
+    const VALUE mclass = rb_cMethod;
+
+    if (!id) {
+	if (respond_to_missing_p(klass, obj, vid, scope)) {
+	    id = rb_intern_str(vid);
+	    return mnew_missing(klass, obj, id, id, mclass);
+	}
+	rb_method_name_error(klass, vid);
+    }
+    return mnew(klass, obj, id, mclass, scope);
 }
 
 /*
@@ -1469,11 +1600,7 @@ rb_method_name_error(VALUE klass, VALUE str)
 VALUE
 rb_obj_method(VALUE obj, VALUE vid)
 {
-    ID id = rb_check_id(&vid);
-    if (!id) {
-	rb_method_name_error(CLASS_OF(obj), vid);
-    }
-    return mnew(CLASS_OF(obj), obj, id, rb_cMethod, FALSE);
+    return obj_method(obj, vid, FALSE);
 }
 
 /*
@@ -1486,11 +1613,7 @@ rb_obj_method(VALUE obj, VALUE vid)
 VALUE
 rb_obj_public_method(VALUE obj, VALUE vid)
 {
-    ID id = rb_check_id(&vid);
-    if (!id) {
-	rb_method_name_error(CLASS_OF(obj), vid);
-    }
-    return mnew(CLASS_OF(obj), obj, id, rb_cMethod, TRUE);
+    return obj_method(obj, vid, TRUE);
 }
 
 /*
@@ -1520,19 +1643,27 @@ rb_obj_public_method(VALUE obj, VALUE vid)
 VALUE
 rb_obj_singleton_method(VALUE obj, VALUE vid)
 {
-    rb_method_entry_t *me;
+    const rb_method_entry_t *me;
     VALUE klass;
     ID id = rb_check_id(&vid);
+
     if (!id) {
-	rb_name_error_str(vid, "undefined singleton method `%"PRIsVALUE"' for `%"PRIsVALUE"'",
-			  QUOTE(vid), obj);
+	if (!NIL_P(klass = rb_singleton_class_get(obj)) &&
+	    respond_to_missing_p(klass, obj, vid, FALSE)) {
+	    id = rb_intern_str(vid);
+	    return mnew_missing(klass, obj, id, id, rb_cMethod);
+	}
+      undef:
+	rb_name_err_raise("undefined singleton method `%1$s' for `%2$s'",
+			  obj, vid);
     }
     if (NIL_P(klass = rb_singleton_class_get(obj)) ||
-	!(me = rb_method_entry_at(klass, id))) {
-	rb_name_error(id, "undefined singleton method `%"PRIsVALUE"' for `%"PRIsVALUE"'",
-		      QUOTE_ID(id), obj);
+	UNDEFINED_METHOD_ENTRY_P(me = rb_method_entry_at(klass, id)) ||
+	UNDEFINED_REFINED_METHOD_P(me->def)) {
+	vid = ID2SYM(id);
+	goto undef;
     }
-    return mnew_from_me(me, klass, klass, obj, id, rb_cMethod, FALSE);
+    return mnew_from_me(me, klass, obj, id, rb_cMethod, FALSE);
 }
 
 /*
@@ -1635,68 +1766,86 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 {
     ID id;
     VALUE body;
-    int noex = NOEX_PUBLIC;
-    const NODE *cref = rb_vm_cref_in_context(mod, mod);
+    VALUE name;
+    const rb_cref_t *cref = rb_vm_cref_in_context(mod, mod);
+    const rb_scope_visibility_t default_scope_visi = {METHOD_VISI_PUBLIC, FALSE};
+    const rb_scope_visibility_t *scope_visi = &default_scope_visi;
+    int is_method = FALSE;
 
     if (cref) {
-	noex = (int)cref->nd_visi;
+	scope_visi = CREF_SCOPE_VISI(cref);
     }
 
+    rb_check_arity(argc, 1, 2);
+    name = argv[0];
+    id = rb_check_id(&name);
     if (argc == 1) {
-	id = rb_to_id(argv[0]);
+#if PROC_NEW_REQUIRES_BLOCK
 	body = rb_block_lambda();
+#else
+	rb_thread_t *th = GET_THREAD();
+	rb_block_t *block = rb_vm_control_frame_block_ptr(th->cfp);
+	if (!block) rb_raise(rb_eArgError, proc_without_block);
+
+	body = block->proc;
+
+	if (SYMBOL_P(body)) {
+	    body = rb_sym_to_proc(body);
+	}
+	else if (!body) {
+	    body = rb_vm_make_proc_lambda(th, block, rb_cProc, TRUE);
+	}
+#endif
     }
     else {
-	rb_check_arity(argc, 1, 2);
-	id = rb_to_id(argv[0]);
 	body = argv[1];
-	if (!rb_obj_is_method(body) && !rb_obj_is_proc(body)) {
+
+	if (rb_obj_is_method(body)) {
+	    is_method = TRUE;
+	}
+	else if (rb_obj_is_proc(body)) {
+	    is_method = FALSE;
+	}
+	else {
 	    rb_raise(rb_eTypeError,
 		     "wrong argument type %s (expected Proc/Method)",
 		     rb_obj_classname(body));
 	}
     }
+    if (!id) id = rb_to_id(name);
 
-    if (rb_obj_is_method(body)) {
+    if (is_method) {
 	struct METHOD *method = (struct METHOD *)DATA_PTR(body);
-	VALUE rclass = method->rclass;
-	if (rclass != mod && !RB_TYPE_P(rclass, T_MODULE) &&
-	    !RTEST(rb_class_inherited_p(mod, rclass))) {
-	    if (FL_TEST(rclass, FL_SINGLETON)) {
+	if (method->me->owner != mod && !RB_TYPE_P(method->me->owner, T_MODULE) &&
+	    !RTEST(rb_class_inherited_p(mod, method->me->owner))) {
+	    if (FL_TEST(method->me->owner, FL_SINGLETON)) {
 		rb_raise(rb_eTypeError,
 			 "can't bind singleton method to a different class");
 	    }
 	    else {
 		rb_raise(rb_eTypeError,
 			 "bind argument must be a subclass of % "PRIsVALUE,
-			 rb_class_name(rclass));
+			 rb_class_name(method->me->owner));
 	    }
 	}
-	rb_method_entry_set(mod, id, method->me, noex);
-	if (noex == NOEX_MODFUNC) {
-	    rb_method_entry_set(rb_singleton_class(mod), id, method->me, NOEX_PUBLIC);
+	rb_method_entry_set(mod, id, method->me, scope_visi->method_visi);
+	if (scope_visi->module_func) {
+	    rb_method_entry_set(rb_singleton_class(mod), id, method->me, METHOD_VISI_PUBLIC);
 	}
 	RB_GC_GUARD(body);
     }
-    else if (rb_obj_is_proc(body)) {
+    else {
 	rb_proc_t *proc;
 	body = proc_dup(body);
 	GetProcPtr(body, proc);
-	if (BUILTIN_TYPE(proc->block.iseq) != T_NODE) {
-	    proc->block.iseq->defined_method_id = id;
-	    RB_OBJ_WRITE(proc->block.iseq->self, &proc->block.iseq->klass, mod);
+	if (RUBY_VM_NORMAL_ISEQ_P(proc->block.iseq)) {
 	    proc->is_lambda = TRUE;
 	    proc->is_from_method = TRUE;
-	    proc->block.klass = mod;
 	}
-	rb_add_method(mod, id, VM_METHOD_TYPE_BMETHOD, (void *)body, noex);
-	if (noex == NOEX_MODFUNC) {
-	    rb_add_method(rb_singleton_class(mod), id, VM_METHOD_TYPE_BMETHOD, (void *)body, NOEX_PUBLIC);
+	rb_add_method(mod, id, VM_METHOD_TYPE_BMETHOD, (void *)body, scope_visi->method_visi);
+	if (scope_visi->module_func) {
+	    rb_add_method(rb_singleton_class(mod), id, VM_METHOD_TYPE_BMETHOD, (void *)body, METHOD_VISI_PUBLIC);
 	}
-    }
-    else {
-	/* type error */
-	rb_raise(rb_eTypeError, "wrong argument type (expected Proc/Method)");
     }
 
     return ID2SYM(id);
@@ -1785,12 +1934,9 @@ method_clone(VALUE self)
     TypedData_Get_Struct(self, struct METHOD, &method_data_type, orig);
     clone = TypedData_Make_Struct(CLASS_OF(self), struct METHOD, &method_data_type, data);
     CLONESETUP(clone, self);
-    *data = *orig;
-    data->me = ALLOC(rb_method_entry_t);
-    *data->me = *orig->me;
-    if (data->me->def) data->me->def->alias_count++;
-    data->ume = ALLOC(struct unlinked_method_entry_list_entry);
-
+    RB_OBJ_WRITE(clone, &data->recv, orig->recv);
+    RB_OBJ_WRITE(clone, &data->klass, orig->klass);
+    RB_OBJ_WRITE(clone, &data->me, rb_method_entry_clone(orig->me));
     return clone;
 }
 
@@ -1814,49 +1960,62 @@ rb_method_call(int argc, const VALUE *argv, VALUE method)
     return rb_method_call_with_block(argc, argv, method, proc);
 }
 
+static const rb_callable_method_entry_t *
+method_callable_method_entry(const struct METHOD *data)
+{
+    if (data->me->defined_class == 0) rb_bug("method_callable_method_entry: not callable.");
+    return (const rb_callable_method_entry_t *)data->me;
+}
+
+static inline VALUE
+call_method_data(rb_thread_t *th, const struct METHOD *data,
+		 int argc, const VALUE *argv, VALUE pass_procval)
+{
+    th->passed_block = passed_block(pass_procval);
+    return rb_vm_call(th, data->recv, data->me->called_id, argc, argv,
+		      method_callable_method_entry(data));
+}
+
+static VALUE
+call_method_data_safe(rb_thread_t *th, const struct METHOD *data,
+		      int argc, const VALUE *argv, VALUE pass_procval,
+		      int safe)
+{
+    VALUE result = Qnil;	/* OK */
+    int state;
+
+    TH_PUSH_TAG(th);
+    if ((state = TH_EXEC_TAG()) == 0) {
+	/* result is used only if state == 0, no exceptions is caught. */
+	/* otherwise it doesn't matter even if clobbered. */
+	NO_CLOBBERED(result) = call_method_data(th, data, argc, argv, pass_procval);
+    }
+    TH_POP_TAG();
+    rb_set_safe_level_force(safe);
+    if (state)
+	TH_JUMP_TAG(th, state);
+    return result;
+}
+
 VALUE
 rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE pass_procval)
 {
-    VALUE result = Qnil;	/* OK */
-    struct METHOD *data;
-    int state;
-    volatile int safe = -1;
+    const struct METHOD *data;
+    rb_thread_t *const th = GET_THREAD();
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     if (data->recv == Qundef) {
 	rb_raise(rb_eTypeError, "can't call unbound method; bind first");
     }
-    PUSH_TAG();
     if (OBJ_TAINTED(method)) {
 	const int safe_level_to_run = RUBY_SAFE_LEVEL_MAX;
-	safe = rb_safe_level();
+	int safe = rb_safe_level();
 	if (safe < safe_level_to_run) {
 	    rb_set_safe_level_force(safe_level_to_run);
+	    return call_method_data_safe(th, data, argc, argv, pass_procval, safe);
 	}
     }
-    if ((state = EXEC_TAG()) == 0) {
-	rb_thread_t *th = GET_THREAD();
-	rb_block_t *block = 0;
-	VALUE defined_class;
-
-	if (!NIL_P(pass_procval)) {
-	    rb_proc_t *pass_proc;
-	    GetProcPtr(pass_procval, pass_proc);
-	    block = &pass_proc->block;
-	}
-
-	th->passed_block = block;
-	VAR_INITIALIZED(data);
-	defined_class = data->defined_class;
-	if (BUILTIN_TYPE(defined_class) == T_MODULE) defined_class = data->rclass;
-	result = rb_vm_call(th, data->recv, data->id, argc, argv, data->me, defined_class);
-    }
-    POP_TAG();
-    if (safe >= 0)
-	rb_set_safe_level_force(safe);
-    if (state)
-	JUMP_TAG(state);
-    return result;
+    return call_method_data(th, data, argc, argv, pass_procval);
 }
 
 /**********************************************************************
@@ -1876,7 +2035,7 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE pass_
  *  these is an <code>UnboundMethod</code> object.
  *
  *  Unbound methods can only be called after they are bound to an
- *  object. That object must be be a kind_of? the method's original
+ *  object. That object must be a kind_of? the method's original
  *  class.
  *
  *     class Square
@@ -1954,12 +2113,12 @@ static VALUE
 umethod_bind(VALUE method, VALUE recv)
 {
     struct METHOD *data, *bound;
-    VALUE methclass;
-    VALUE rclass;
+    VALUE methclass, klass;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
 
-    methclass = data->rclass;
+    methclass = data->me->owner;
+
     if (!RB_TYPE_P(methclass, T_MODULE) &&
 	methclass != CLASS_OF(recv) && !rb_obj_is_kind_of(recv, methclass)) {
 	if (FL_TEST(methclass, FL_SINGLETON)) {
@@ -1972,24 +2131,23 @@ umethod_bind(VALUE method, VALUE recv)
 	}
     }
 
+    klass  = CLASS_OF(recv);
+
     method = TypedData_Make_Struct(rb_cMethod, struct METHOD, &method_data_type, bound);
-    *bound = *data;
-    bound->me = ALLOC(rb_method_entry_t);
-    *bound->me = *data->me;
-    if (bound->me->def) bound->me->def->alias_count++;
-    rclass = CLASS_OF(recv);
-    if (BUILTIN_TYPE(bound->defined_class) == T_MODULE) {
-	VALUE ic = rb_class_search_ancestor(rclass, bound->defined_class);
+    RB_OBJ_WRITE(method, &bound->recv, recv);
+    RB_OBJ_WRITE(method, &bound->klass, data->klass);
+    RB_OBJ_WRITE(method, &bound->me, rb_method_entry_clone(data->me));
+
+    if (RB_TYPE_P(bound->me->owner, T_MODULE)) {
+	VALUE ic = rb_class_search_ancestor(klass, bound->me->owner);
 	if (ic) {
-	    rclass = ic;
+	    klass = ic;
 	}
 	else {
-	    rclass = rb_include_class_new(methclass, rclass);
+	    klass = rb_include_class_new(methclass, klass);
 	}
+	RB_OBJ_WRITE(method, &bound->me, rb_method_entry_complement_defined_class(bound->me, klass));
     }
-    bound->recv = recv;
-    bound->rclass = rclass;
-    data->ume = ALLOC(struct unlinked_method_entry_list_entry);
 
     return method;
 }
@@ -2003,6 +2161,7 @@ static int
 rb_method_entry_min_max_arity(const rb_method_entry_t *me, int *max)
 {
     const rb_method_definition_t *def = me->def;
+
     if (!def) return *max = 0;
     switch (def->type) {
       case VM_METHOD_TYPE_CFUNC:
@@ -2018,10 +2177,12 @@ rb_method_entry_min_max_arity(const rb_method_entry_t *me, int *max)
 	return *max = 1;
       case VM_METHOD_TYPE_IVAR:
 	return *max = 0;
+      case VM_METHOD_TYPE_ALIAS:
+	return rb_method_entry_min_max_arity(def->body.alias.original_me, max);
       case VM_METHOD_TYPE_BMETHOD:
 	return rb_proc_min_max_arity(def->body.proc, max);
       case VM_METHOD_TYPE_ISEQ: {
-	rb_iseq_t *iseq = def->body.iseq;
+	const rb_iseq_t *iseq = rb_iseq_check(def->body.iseq.iseqptr);
 	return rb_iseq_min_max_arity(iseq, max);
       }
       case VM_METHOD_TYPE_UNDEF:
@@ -2033,6 +2194,9 @@ rb_method_entry_min_max_arity(const rb_method_entry_t *me, int *max)
       case VM_METHOD_TYPE_OPTIMIZED: {
 	switch (def->body.optimize_type) {
 	  case OPTIMIZED_METHOD_TYPE_SEND:
+	    *max = UNLIMITED_ARGUMENTS;
+	    return 0;
+	  case OPTIMIZED_METHOD_TYPE_CALL:
 	    *max = UNLIMITED_ARGUMENTS;
 	    return 0;
 	  default:
@@ -2104,16 +2268,15 @@ method_arity(VALUE method)
     return rb_method_entry_arity(data->me);
 }
 
-static rb_method_entry_t *
+static const rb_method_entry_t *
 original_method_entry(VALUE mod, ID id)
 {
-    VALUE rclass;
-    rb_method_entry_t *me;
-    while ((me = rb_method_entry(mod, id, &rclass)) != 0) {
-	rb_method_definition_t *def = me->def;
-	if (!def) break;
+    const rb_method_entry_t *me;
+
+    while ((me = rb_method_entry(mod, id)) != 0) {
+	const rb_method_definition_t *def = me->def;
 	if (def->type != VM_METHOD_TYPE_ZSUPER) break;
-	mod = RCLASS_SUPER(rclass);
+	mod = RCLASS_SUPER(me->owner);
 	id = def->original_id;
     }
     return me;
@@ -2122,7 +2285,7 @@ original_method_entry(VALUE mod, ID id)
 static int
 method_min_max_arity(VALUE method, int *max)
 {
-    struct METHOD *data;
+    const struct METHOD *data;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     return rb_method_entry_min_max_arity(data->me, max);
@@ -2131,7 +2294,7 @@ method_min_max_arity(VALUE method, int *max)
 int
 rb_mod_method_arity(VALUE mod, ID id)
 {
-    rb_method_entry_t *me = original_method_entry(mod, id);
+    const rb_method_entry_t *me = original_method_entry(mod, id);
     if (!me) return 0;		/* should raise? */
     return rb_method_entry_arity(me);
 }
@@ -2142,56 +2305,84 @@ rb_obj_method_arity(VALUE obj, ID id)
     return rb_mod_method_arity(CLASS_OF(obj), id);
 }
 
-static inline rb_method_definition_t *
-method_get_def(VALUE method)
+static inline const rb_method_definition_t *
+method_def(VALUE method)
 {
-    struct METHOD *data;
+    const struct METHOD *data;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     return data->me->def;
 }
 
-static rb_iseq_t *
-method_get_iseq(rb_method_definition_t *def)
+static const rb_iseq_t *
+method_def_iseq(const rb_method_definition_t *def)
 {
     switch (def->type) {
-      case VM_METHOD_TYPE_BMETHOD:
-	return get_proc_iseq(def->body.proc, 0);
       case VM_METHOD_TYPE_ISEQ:
-	return def->body.iseq;
+	return rb_iseq_check(def->body.iseq.iseqptr);
+      case VM_METHOD_TYPE_BMETHOD:
+	return rb_proc_get_iseq(def->body.proc, 0);
+      case VM_METHOD_TYPE_ALIAS:
+	return method_def_iseq(def->body.alias.original_me->def);
+      case VM_METHOD_TYPE_CFUNC:
+      case VM_METHOD_TYPE_ATTRSET:
+      case VM_METHOD_TYPE_IVAR:
+      case VM_METHOD_TYPE_ZSUPER:
+      case VM_METHOD_TYPE_UNDEF:
+      case VM_METHOD_TYPE_NOTIMPLEMENTED:
+      case VM_METHOD_TYPE_OPTIMIZED:
+      case VM_METHOD_TYPE_MISSING:
+      case VM_METHOD_TYPE_REFINED:
+	break;
+    }
+    return NULL;
+}
+
+const rb_iseq_t *
+rb_method_iseq(VALUE method)
+{
+    return method_def_iseq(method_def(method));
+}
+
+static const rb_cref_t *
+method_cref(VALUE method)
+{
+    const rb_method_definition_t *def = method_def(method);
+
+  again:
+    switch (def->type) {
+      case VM_METHOD_TYPE_ISEQ:
+	return def->body.iseq.cref;
+      case VM_METHOD_TYPE_ALIAS:
+	def = def->body.alias.original_me->def;
+	goto again;
       default:
-	return 0;
+	return NULL;
     }
 }
 
-rb_iseq_t *
-rb_method_get_iseq(VALUE method)
-{
-    return method_get_iseq(method_get_def(method));
-}
-
 static VALUE
-method_def_location(rb_method_definition_t *def)
+method_def_location(const rb_method_definition_t *def)
 {
     if (def->type == VM_METHOD_TYPE_ATTRSET || def->type == VM_METHOD_TYPE_IVAR) {
 	if (!def->body.attr.location)
 	    return Qnil;
 	return rb_ary_dup(def->body.attr.location);
     }
-    return iseq_location(method_get_iseq(def));
+    return iseq_location(method_def_iseq(def));
 }
 
 VALUE
-rb_method_entry_location(rb_method_entry_t *me)
+rb_method_entry_location(const rb_method_entry_t *me)
 {
-    if (!me || !me->def) return Qnil;
+    if (!me) return Qnil;
     return method_def_location(me->def);
 }
 
 VALUE
 rb_mod_method_location(VALUE mod, ID id)
 {
-    rb_method_entry_t *me = original_method_entry(mod, id);
+    const rb_method_entry_t *me = original_method_entry(mod, id);
     return rb_method_entry_location(me);
 }
 
@@ -2212,8 +2403,7 @@ rb_obj_method_location(VALUE obj, ID id)
 VALUE
 rb_method_location(VALUE method)
 {
-    rb_method_definition_t *def = method_get_def(method);
-    return method_def_location(def);
+    return method_def_location(method_def(method));
 }
 
 /*
@@ -2221,12 +2411,24 @@ rb_method_location(VALUE method)
  *    meth.parameters  -> array
  *
  * Returns the parameter information of this method.
+ *
+ *    def foo(bar); end
+ *    method(:foo).parameters #=> [[:req, :bar]]
+ *
+ *    def foo(bar, baz, bat, &blk); end
+ *    method(:foo).parameters #=> [[:req, :bar], [:req, :baz], [:req, :bat], [:block, :blk]]
+ *
+ *    def foo(bar, *args); end
+ *    method(:foo).parameters #=> [[:req, :bar], [:rest, :args]]
+ *
+ *    def foo(bar, baz, *args, &blk); end
+ *    method(:foo).parameters #=> [[:req, :bar], [:req, :baz], [:rest, :args], [:block, :blk]]
  */
 
 static VALUE
 rb_method_parameters(VALUE method)
 {
-    rb_iseq_t *iseq = rb_method_get_iseq(method);
+    const rb_iseq_t *iseq = rb_method_iseq(method);
     if (!iseq) {
 	return unnamed_parameters(method_arity(method));
     }
@@ -2251,6 +2453,7 @@ method_inspect(VALUE method)
     const char *s;
     const char *sharp = "#";
     VALUE mklass;
+    VALUE defined_class;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     str = rb_str_buf_new2("#<");
@@ -2258,7 +2461,19 @@ method_inspect(VALUE method)
     rb_str_buf_cat2(str, s);
     rb_str_buf_cat2(str, ": ");
 
-    mklass = data->me->klass;
+    mklass = data->klass;
+
+    if (data->me->def->type == VM_METHOD_TYPE_ALIAS) {
+	defined_class = data->me->def->body.alias.original_me->owner;
+    }
+    else {
+	defined_class = method_entry_defined_class(data->me);
+    }
+
+    if (RB_TYPE_P(defined_class, T_ICLASS)) {
+	defined_class = RBASIC_CLASS(defined_class);
+    }
+
     if (FL_TEST(mklass, FL_SINGLETON)) {
 	VALUE v = rb_ivar_get(mklass, attached);
 
@@ -2278,16 +2493,16 @@ method_inspect(VALUE method)
 	}
     }
     else {
-	rb_str_buf_append(str, rb_class_name(data->rclass));
-	if (data->rclass != mklass) {
+	rb_str_buf_append(str, rb_class_name(mklass));
+	if (defined_class != mklass) {
 	    rb_str_buf_cat2(str, "(");
-	    rb_str_buf_append(str, rb_class_name(mklass));
+	    rb_str_buf_append(str, rb_class_name(defined_class));
 	    rb_str_buf_cat2(str, ")");
 	}
     }
     rb_str_buf_cat2(str, sharp);
-    rb_str_append(str, rb_id2str(data->id));
-    if (data->id != data->me->def->original_id) {
+    rb_str_append(str, rb_id2str(data->me->called_id));
+    if (data->me->called_id != data->me->def->original_id) {
 	rb_str_catf(str, "(%"PRIsVALUE")",
 		    rb_id2str(data->me->def->original_id));
     }
@@ -2302,31 +2517,19 @@ method_inspect(VALUE method)
 static VALUE
 mproc(VALUE method)
 {
-    return rb_funcall2(rb_mRubyVMFrozenCore, idProc, 0, 0);
+    return rb_funcallv(rb_mRubyVMFrozenCore, idProc, 0, 0);
 }
 
 static VALUE
 mlambda(VALUE method)
 {
-    return rb_funcall(rb_mRubyVMFrozenCore, idLambda, 0, 0);
+    return rb_funcallv(rb_mRubyVMFrozenCore, idLambda, 0, 0);
 }
 
 static VALUE
 bmcall(VALUE args, VALUE method, int argc, VALUE *argv, VALUE passed_proc)
 {
-    volatile VALUE a;
-    VALUE ret;
-
-    if (CLASS_OF(args) != rb_cArray) {
-	args = rb_ary_new3(1, args);
-	argc = 1;
-    }
-    else {
-	argc = check_argc(RARRAY_LEN(args));
-    }
-    ret = rb_method_call_with_block(argc, RARRAY_PTR(args), method, passed_proc);
-    RB_GC_GUARD(a) = args;
-    return ret;
+    return rb_method_call_with_block(argc, argv, method, passed_proc);
 }
 
 VALUE
@@ -2346,55 +2549,47 @@ rb_proc_new(
  */
 
 static VALUE
-method_proc(VALUE method)
+method_to_proc(VALUE method)
 {
     VALUE procval;
-    struct METHOD *meth;
     rb_proc_t *proc;
-    rb_env_t *env;
 
     /*
      * class Method
      *   def to_proc
-     *     proc{|*args|
+     *     lambda{|*args|
      *       self.call(*args)
      *     }
      *   end
      * end
      */
-    TypedData_Get_Struct(method, struct METHOD, &method_data_type, meth);
     procval = rb_iterate(mlambda, 0, bmcall, method);
     GetProcPtr(procval, proc);
     proc->is_from_method = 1;
-    proc->block.self = meth->recv;
-    proc->block.klass = meth->defined_class;
-    GetEnvPtr(proc->envval, env);
-    env->block.self = meth->recv;
-    env->block.klass = meth->defined_class;
-    env->block.iseq = method_get_iseq(meth->me->def);
     return procval;
 }
 
 /*
- * Returns a Method of superclass, which would be called when super is used.
+ * call-seq:
+ *   meth.super_method  -> method
+ *
+ * Returns a Method of superclass which would be called when super is used
+ * or nil if there is no method on superclass.
  */
+
 static VALUE
 method_super_method(VALUE method)
 {
-    struct METHOD *data;
-    VALUE defined_class, super_class;
-    rb_method_entry_t *me;
+    const struct METHOD *data;
+    VALUE super_class;
+    const rb_method_entry_t *me;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    defined_class = data->defined_class;
-    if (BUILTIN_TYPE(defined_class) == T_MODULE) defined_class = data->rclass;
-    super_class = RCLASS_SUPER(defined_class);
+    super_class = RCLASS_SUPER(method_entry_defined_class(data->me));
     if (!super_class) return Qnil;
-    me = rb_method_entry_without_refinements(super_class, data->id, &defined_class);
+    me = (rb_method_entry_t *)rb_callable_method_entry_without_refinements(super_class, data->me->called_id);
     if (!me) return Qnil;
-    return mnew_internal(me, defined_class,
-			 super_class, data->recv, data->id,
-			 rb_obj_class(method), FALSE, FALSE);
+    return mnew_internal(me, super_class, data->recv, data->me->called_id, rb_obj_class(method), FALSE, FALSE);
 }
 
 /*
@@ -2423,6 +2618,29 @@ localjump_reason(VALUE exc)
     return rb_iv_get(exc, "@reason");
 }
 
+rb_cref_t *rb_vm_cref_new_toplevel(void); /* vm.c */
+
+static VALUE
+env_clone(VALUE envval, VALUE receiver, const rb_cref_t *cref)
+{
+    VALUE newenvval = TypedData_Wrap_Struct(RBASIC_CLASS(envval), RTYPEDDATA_TYPE(envval), 0);
+    rb_env_t *env, *newenv;
+    int envsize;
+
+    if (cref == NULL) {
+	cref = rb_vm_cref_new_toplevel();
+    }
+
+    GetEnvPtr(envval, env);
+    envsize = sizeof(rb_env_t) + (env->env_size - 1) * sizeof(VALUE);
+    newenv = xmalloc(envsize);
+    memcpy(newenv, env, envsize);
+    RTYPEDDATA_DATA(newenvval) = newenv;
+    newenv->block.self = receiver;
+    newenv->block.ep[-1] = (VALUE)cref;
+    return newenvval;
+}
+
 /*
  *  call-seq:
  *     prc.binding    -> binding
@@ -2441,32 +2659,42 @@ localjump_reason(VALUE exc)
 static VALUE
 proc_binding(VALUE self)
 {
-    rb_proc_t *proc;
-    VALUE bindval;
+    VALUE bindval, envval;
+    const rb_proc_t *proc;
+    const rb_iseq_t *iseq;
     rb_binding_t *bind;
-    rb_iseq_t *iseq;
 
     GetProcPtr(self, proc);
+    envval = rb_vm_proc_envval(proc);
     iseq = proc->block.iseq;
-    if (RB_TYPE_P((VALUE)iseq, T_NODE)) {
-	if (!IS_METHOD_PROC_NODE((NODE *)iseq)) {
+    if (SYMBOL_P(iseq)) goto error;
+    if (RUBY_VM_IFUNC_P(iseq)) {
+	struct vm_ifunc *ifunc = (struct vm_ifunc *)iseq;
+	if (IS_METHOD_PROC_IFUNC(ifunc)) {
+	    VALUE method = (VALUE)ifunc->data;
+	    envval = env_clone(envval, method_receiver(method), method_cref(method));
+	    iseq = rb_method_iseq(method);
+	}
+	else {
+	  error:
 	    rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
 	}
-	iseq = rb_method_get_iseq(RNODE(iseq)->u2.value);
     }
 
     bindval = rb_binding_alloc(rb_cBinding);
     GetBindingPtr(bindval, bind);
-    bind->env = proc->envval;
-    bind->blockprocval = proc->blockprocval;
-    if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
-	bind->path = iseq->location.path;
-	bind->first_lineno = FIX2INT(rb_iseq_first_lineno(iseq->self));
+    bind->env = envval;
+
+    if (iseq) {
+	rb_iseq_check(iseq);
+	bind->path = iseq->body->location.path;
+	bind->first_lineno = FIX2INT(rb_iseq_first_lineno(iseq));
     }
     else {
 	bind->path = Qnil;
 	bind->first_lineno = 0;
     }
+
     return bindval;
 }
 
@@ -2540,16 +2768,16 @@ curry(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
   *
   *     b = lambda {|x, y, z| (x||0) + (y||0) + (z||0) }
   *     p b.curry[1][2][3]           #=> 6
-  *     p b.curry[1, 2][3, 4]        #=> wrong number of arguments (4 for 3)
-  *     p b.curry(5)                 #=> wrong number of arguments (5 for 3)
-  *     p b.curry(1)                 #=> wrong number of arguments (1 for 3)
+  *     p b.curry[1, 2][3, 4]        #=> wrong number of arguments (given 4, expected 3)
+  *     p b.curry(5)                 #=> wrong number of arguments (given 5, expected 3)
+  *     p b.curry(1)                 #=> wrong number of arguments (given 1, expected 3)
   *
   *     b = lambda {|x, y, z, *w| (x||0) + (y||0) + (z||0) + w.inject(0, &:+) }
   *     p b.curry[1][2][3]           #=> 6
   *     p b.curry[1, 2][3, 4]        #=> 10
   *     p b.curry(5)[1][2][3][4][5]  #=> 15
   *     p b.curry(5)[1, 2][3, 4][5]  #=> 15
-  *     p b.curry(1)                 #=> wrong number of arguments (1 for 3)
+  *     p b.curry(1)                 #=> wrong number of arguments (given 1, expected 3)
   *
   *     b = proc { :foo }
   *     p b.curry[]                  #=> :foo
@@ -2609,7 +2837,7 @@ proc_curry(int argc, const VALUE *argv, VALUE self)
 static VALUE
 rb_method_curry(int argc, const VALUE *argv, VALUE self)
 {
-    VALUE proc = method_proc(self);
+    VALUE proc = method_to_proc(self);
     return proc_curry(argc, argv, proc);
 }
 
@@ -2682,21 +2910,15 @@ Init_Proc(void)
     rb_undef_alloc_func(rb_cProc);
     rb_define_singleton_method(rb_cProc, "new", rb_proc_s_new, -1);
 
-#if 0 /* incomplete. */
     rb_add_method(rb_cProc, rb_intern("call"), VM_METHOD_TYPE_OPTIMIZED,
-		  (void *)OPTIMIZED_METHOD_TYPE_CALL, 0);
+		  (void *)OPTIMIZED_METHOD_TYPE_CALL, METHOD_VISI_PUBLIC);
     rb_add_method(rb_cProc, rb_intern("[]"), VM_METHOD_TYPE_OPTIMIZED,
-		  (void *)OPTIMIZED_METHOD_TYPE_CALL, 0);
+		  (void *)OPTIMIZED_METHOD_TYPE_CALL, METHOD_VISI_PUBLIC);
     rb_add_method(rb_cProc, rb_intern("==="), VM_METHOD_TYPE_OPTIMIZED,
-		  (void *)OPTIMIZED_METHOD_TYPE_CALL, 0);
+		  (void *)OPTIMIZED_METHOD_TYPE_CALL, METHOD_VISI_PUBLIC);
     rb_add_method(rb_cProc, rb_intern("yield"), VM_METHOD_TYPE_OPTIMIZED,
-		  (void *)OPTIMIZED_METHOD_TYPE_CALL, 0);
-#else
-    rb_define_method(rb_cProc, "call", proc_call, -1);
-    rb_define_method(rb_cProc, "[]", proc_call, -1);
-    rb_define_method(rb_cProc, "===", proc_call, -1);
-    rb_define_method(rb_cProc, "yield", proc_call, -1);
-#endif
+		  (void *)OPTIMIZED_METHOD_TYPE_CALL, METHOD_VISI_PUBLIC);
+
     rb_define_method(rb_cProc, "to_proc", proc_to_proc, 0);
     rb_define_method(rb_cProc, "arity", proc_arity, 0);
     rb_define_method(rb_cProc, "clone", proc_clone, 0);
@@ -2736,7 +2958,7 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "arity", method_arity_m, 0);
     rb_define_method(rb_cMethod, "inspect", method_inspect, 0);
     rb_define_method(rb_cMethod, "to_s", method_inspect, 0);
-    rb_define_method(rb_cMethod, "to_proc", method_proc, 0);
+    rb_define_method(rb_cMethod, "to_proc", method_to_proc, 0);
     rb_define_method(rb_cMethod, "receiver", method_receiver, 0);
     rb_define_method(rb_cMethod, "name", method_name, 0);
     rb_define_method(rb_cMethod, "original_name", method_original_name, 0);
@@ -2831,4 +3053,3 @@ Init_Binding(void)
     rb_define_method(rb_cBinding, "receiver", bind_receiver, 0);
     rb_define_global_function("binding", rb_f_binding, 0);
 }
-

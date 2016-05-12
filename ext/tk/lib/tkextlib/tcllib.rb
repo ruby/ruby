@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tcllib extension support
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

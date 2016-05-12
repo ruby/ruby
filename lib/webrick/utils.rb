@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # utils.rb -- Miscellaneous utilities
 #
@@ -9,7 +10,7 @@
 # $IPR: utils.rb,v 1.10 2003/02/16 22:22:54 gotoyuzo Exp $
 
 require 'socket'
-require 'fcntl'
+require 'io/nonblock'
 require 'etc'
 
 module WEBrick
@@ -17,20 +18,14 @@ module WEBrick
     ##
     # Sets IO operations on +io+ to be non-blocking
     def set_non_blocking(io)
-      flag = File::NONBLOCK
-      if defined?(Fcntl::F_GETFL)
-        flag |= io.fcntl(Fcntl::F_GETFL)
-      end
-      io.fcntl(Fcntl::F_SETFL, flag)
+      io.nonblock = true if io.respond_to?(:nonblock=)
     end
     module_function :set_non_blocking
 
     ##
     # Sets the close on exec flag for +io+
     def set_close_on_exec(io)
-      if defined?(Fcntl::FD_CLOEXEC)
-        io.fcntl(Fcntl::F_SETFD, Fcntl::FD_CLOEXEC)
-      end
+      io.close_on_exec = true if io.respond_to?(:close_on_exec=)
     end
     module_function :set_close_on_exec
 
@@ -63,7 +58,7 @@ module WEBrick
     # Creates TCP server sockets bound to +address+:+port+ and returns them.
     #
     # It will create IPV4 and IPV6 sockets on all interfaces.
-    def create_listeners(address, port, logger=nil)
+    def create_listeners(address, port)
       unless port
         raise ArgumentError, "must specify port"
       end
@@ -129,8 +124,6 @@ module WEBrick
     class TimeoutHandler
       include Singleton
 
-      class Thread < ::Thread; end
-
       ##
       # Mutex used to synchronize access across threads
       TimeoutMutex = Mutex.new # :nodoc:
@@ -141,48 +134,81 @@ module WEBrick
       # +time+:: Timeout in seconds
       # +exception+:: Exception to raise when timeout elapsed
       def TimeoutHandler.register(seconds, exception)
-        TimeoutMutex.synchronize{
-          instance.register(Thread.current, Time.now + seconds, exception)
-        }
+        instance.register(Thread.current, Time.now + seconds, exception)
       end
 
       ##
       # Cancels the timeout handler +id+
       def TimeoutHandler.cancel(id)
-        TimeoutMutex.synchronize{
-          instance.cancel(Thread.current, id)
-        }
+        instance.cancel(Thread.current, id)
+      end
+
+      def self.terminate
+        instance.terminate
       end
 
       ##
       # Creates a new TimeoutHandler.  You should use ::register and ::cancel
       # instead of creating the timeout handler directly.
       def initialize
-        @timeout_info = Hash.new
-        Thread.start{
+        TimeoutMutex.synchronize{
+          @timeout_info = Hash.new
+        }
+        @queue = Queue.new
+        @watcher = nil
+      end
+
+      # :nodoc:
+      private \
+        def watch
+          to_interrupt = []
           while true
             now = Time.now
-            @timeout_info.keys.each{|thread|
-              ary = @timeout_info[thread]
-              next unless ary
-              ary.dup.each{|info|
-                time, exception = *info
-                interrupt(thread, info.object_id, exception) if time < now
+            wakeup = nil
+            to_interrupt.clear
+            TimeoutMutex.synchronize{
+              @timeout_info.each {|thread, ary|
+                next unless ary
+                ary.each{|info|
+                  time, exception = *info
+                  if time < now
+                    to_interrupt.push [thread, info.object_id, exception]
+                  elsif !wakeup || time < wakeup
+                    wakeup = time
+                  end
+                }
               }
             }
-            sleep 0.5
+            to_interrupt.each {|arg| interrupt(*arg)}
+            if !wakeup
+              @queue.pop
+            elsif (wakeup -= now) > 0
+              begin
+                (th = Thread.start {@queue.pop}).join(wakeup)
+              ensure
+                th&.kill&.join
+              end
+            end
+            @queue.clear
           end
-        }
-      end
+        end
+
+      # :nodoc:
+      private \
+        def watcher
+          (w = @watcher)&.alive? and return w # usual case
+          TimeoutMutex.synchronize{
+            (w = @watcher)&.alive? and next w # pathological check
+            @watcher = Thread.start(&method(:watch))
+          }
+        end
 
       ##
       # Interrupts the timeout handler +id+ and raises +exception+
       def interrupt(thread, id, exception)
-        TimeoutMutex.synchronize{
-          if cancel(thread, id) && thread.alive?
-            thread.raise(exception, "execution timeout")
-          end
-        }
+        if cancel(thread, id) && thread.alive?
+          thread.raise(exception, "execution timeout")
+        end
       end
 
       ##
@@ -191,22 +217,36 @@ module WEBrick
       # +time+:: Timeout in seconds
       # +exception+:: Exception to raise when timeout elapsed
       def register(thread, time, exception)
-        @timeout_info[thread] ||= Array.new
-        @timeout_info[thread] << [time, exception]
-        return @timeout_info[thread].last.object_id
+        info = nil
+        TimeoutMutex.synchronize{
+          (@timeout_info[thread] ||= []) << (info = [time, exception])
+        }
+        @queue.push nil
+        watcher
+        return info.object_id
       end
 
       ##
       # Cancels the timeout handler +id+
       def cancel(thread, id)
-        if ary = @timeout_info[thread]
-          ary.delete_if{|info| info.object_id == id }
-          if ary.empty?
-            @timeout_info.delete(thread)
+        TimeoutMutex.synchronize{
+          if ary = @timeout_info[thread]
+            ary.delete_if{|info| info.object_id == id }
+            if ary.empty?
+              @timeout_info.delete(thread)
+            end
+            return true
           end
-          return true
-        end
-        return false
+          return false
+        }
+      end
+
+      ##
+      def terminate
+        TimeoutMutex.synchronize{
+          @timeout_info.clear
+          @watcher&.kill&.join
+        }
       end
     end
 

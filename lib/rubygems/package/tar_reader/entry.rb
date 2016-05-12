@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: true
 #++
 # Copyright (C) 2004 Mauricio Julio Fernández Pradier
 # See LICENSE.txt for additional licensing information.
@@ -103,6 +104,13 @@ class Gem::Package::TarReader::Entry
   end
 
   ##
+  # Is this tar entry a symlink?
+
+  def symlink?
+    @header.typeflag == "2"
+  end
+
+  ##
   # The position in the tar entry
 
   def pos
@@ -144,4 +152,3 @@ class Gem::Package::TarReader::Entry
   end
 
 end
-

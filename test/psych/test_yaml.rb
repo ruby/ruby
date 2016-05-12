@@ -1,4 +1,5 @@
 # -*- coding: us-ascii; mode: ruby; ruby-indent-level: 4; tab-width: 4 -*-
+# frozen_string_literal: false
 #												vim:sw=4:ts=4
 # $Id$
 #
@@ -25,6 +26,10 @@ class Psych_Unit_Tests < Psych::TestCase
       time = Time.utc(2010, 10, 10)
       yaml = Psych.dump time
       assert_match "2010-10-10 00:00:00.000000000 Z", yaml
+    end
+
+    def test_multiline_regexp
+        assert_cycle(Regexp.new("foo\nbar"))
     end
 
     # [ruby-core:34969]

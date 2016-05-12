@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   sync.rb - 2 phase lock with counter
 #       $Release Version: 1.0$

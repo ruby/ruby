@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # menubar sample 3 : vertical layout menubar; use frame and menubuttons
 #
@@ -7,7 +8,7 @@ require 'tk'
 radio_var = TkVariable.new('y')
 
 menu_spec = [
-  [['&File', true], # when underline option is ture, '&' index is the position
+  [['&File', true], # when underline option is true, '&' index is the position
     {:label=>'Open', :command=>proc{puts('Open clicked')}, :underline=>0},
     '---',
     ['Check_A', TkVariable.new(true), 6],
@@ -62,7 +63,7 @@ menubar = TkMenubar.new(nil, menu_spec,
                         'tearoff'=>false,
                         'foreground'=>'grey40',
                         'activeforeground'=>'red',
-                        'font'=>'Helvetia 12 bold')
+                        'font'=>'Helvetica 12 bold')
 menubar.pack('side'=>'left', 'fill'=>'y')
 
 TkText.new(:wrap=>'word').pack.insert('1.0', 'This sample script generates "Menu Sidebar".

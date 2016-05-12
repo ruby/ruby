@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rubygems'
 require 'rubygems/user_interaction'
 require 'fileutils'

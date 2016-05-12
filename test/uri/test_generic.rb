@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'uri'
 
@@ -12,6 +13,13 @@ class URI::TestGeneric < Test::Unit::TestCase
 
   def uri_to_ary(uri)
     uri.class.component.collect {|c| uri.send(c)}
+  end
+
+  def test_to_s
+    exp = 'http://example.com/'.freeze
+    str = URI(exp).to_s
+    assert_equal exp, str
+    assert_not_predicate str, :frozen?, '[ruby-core:71785] [Bug #11759]'
   end
 
   def test_parse
@@ -760,6 +768,11 @@ class URI::TestGeneric < Test::Unit::TestCase
   def test_build
     u = URI::Generic.build(['http', nil, 'example.com', 80, nil, '/foo', nil, nil, nil])
     assert_equal('http://example.com:80/foo', u.to_s)
+    assert_equal(Encoding::UTF_8, u.to_s.encoding)
+
+    u = URI::Generic.build(:port => "5432")
+    assert_equal(":5432", u.to_s)
+    assert_equal(5432, u.port)
 
     u = URI::Generic.build(:scheme => "http", :host => "::1", :path => "/bar/baz")
     assert_equal("http://[::1]/bar/baz", u.to_s)
@@ -782,12 +795,18 @@ class URI::TestGeneric < Test::Unit::TestCase
 
   # 192.0.2.0/24 is TEST-NET.  [RFC3330]
 
-  def test_find_proxy
+  def test_find_proxy_bad_uri
     assert_raise(URI::BadURIError){ URI("foo").find_proxy }
+  end
+
+  def test_find_proxy_no_env
     with_env({}) {
       assert_nil(URI("http://192.0.2.1/").find_proxy)
       assert_nil(URI("ftp://192.0.2.1/").find_proxy)
     }
+  end
+
+  def test_find_proxy
     with_env('http_proxy'=>'http://127.0.0.1:8080') {
       assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
       assert_nil(URI("ftp://192.0.2.1/").find_proxy)
@@ -796,16 +815,41 @@ class URI::TestGeneric < Test::Unit::TestCase
       assert_nil(URI("http://192.0.2.1/").find_proxy)
       assert_equal(URI('http://127.0.0.1:8080'), URI("ftp://192.0.2.1/").find_proxy)
     }
+  end
+
+  def test_find_proxy_get
     with_env('REQUEST_METHOD'=>'GET') {
       assert_nil(URI("http://192.0.2.1/").find_proxy)
     }
     with_env('CGI_HTTP_PROXY'=>'http://127.0.0.1:8080', 'REQUEST_METHOD'=>'GET') {
       assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
     }
+  end
+
+  def test_find_proxy_no_proxy
     with_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'192.0.2.2') {
       assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy)
       assert_nil(URI("http://192.0.2.2/").find_proxy)
     }
+    with_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'example.org') {
+      assert_nil(URI("http://example.org/").find_proxy)
+      assert_nil(URI("http://www.example.org/").find_proxy)
+    }
+    with_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'.example.org') {
+      assert_nil(URI("http://example.org/").find_proxy)
+      assert_nil(URI("http://www.example.org/").find_proxy)
+    }
+  end
+
+  def test_find_proxy_no_proxy_cidr
+    with_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'192.0.2.0/24') {
+      assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.1.1/").find_proxy)
+      assert_nil(URI("http://192.0.2.1/").find_proxy)
+      assert_nil(URI("http://192.0.2.2/").find_proxy)
+    }
+  end
+
+  def test_find_proxy_bad_value
     with_env('http_proxy'=>'') {
       assert_nil(URI("http://192.0.2.1/").find_proxy)
       assert_nil(URI("ftp://192.0.2.1/").find_proxy)

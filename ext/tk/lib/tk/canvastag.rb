@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/canvastag.rb - methods for treating canvas tags
 #

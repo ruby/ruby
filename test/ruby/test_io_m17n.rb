@@ -1,6 +1,8 @@
 # coding: US-ASCII
+# frozen_string_literal: false
 require 'test/unit'
 require 'tmpdir'
+require 'tempfile'
 require 'timeout'
 
 class TestIO_M17N < Test::Unit::TestCase
@@ -468,7 +470,7 @@ EOT
            w.close
          end,
          proc do |r|
-           timeout(1) {
+           Timeout.timeout(1) {
              assert_equal("before \xa2\xa2".encode("utf-8", "euc-jp"),
                           r.gets(rs))
            }
@@ -1223,7 +1225,6 @@ EOT
   end
 
   def test_stdin_external_encoding_with_reopen
-    skip "passing non-stdio fds is not supported" if /mswin|mingw/ =~ RUBY_PLATFORM
     with_tmpdir {
       open("tst", "w+") {|f|
         pid = spawn(EnvUtil.rubybin, '-e', <<-'End', 10=>f)
@@ -1239,7 +1240,7 @@ EOT
         assert_equal("\u3042".force_encoding("ascii-8bit"), result)
       }
     }
-  end
+  end unless /mswin|mingw/ =~ RUBY_PLATFORM # passing non-stdio fds is not supported
 
   def test_popen_r_enc
     IO.popen("#{EnvUtil.rubybin} -e 'putc 255'", "r:ascii-8bit") {|f|
@@ -1711,8 +1712,7 @@ EOT
         args.each {|arg| f.print arg }
       }
       content = File.read("t", :mode=>"rb:ascii-8bit")
-      assert_equal(expected.dup.force_encoding("ascii-8bit"),
-                   content.force_encoding("ascii-8bit"))
+      assert_equal(expected.b, content.b)
     }
   end
 
@@ -1892,7 +1892,7 @@ EOT
     with_tmpdir {
       src = "\u3042\r\n"
       generate_file("t.txt", src)
-      srcbin = src.dup.force_encoding("ascii-8bit")
+      srcbin = src.b
       open("t.txt", "rt:utf-8:euc-jp") {|f|
         f.binmode
         result = f.read
@@ -2080,6 +2080,54 @@ EOT
       result = File.read(path, encoding: 'BOM|UTF-8:UTF-8')
       assert_equal(stripped, result, bug8323)
     }
+  end
+
+  def test_bom_too_long_utfname
+    assert_separately([], <<-'end;') # do
+      assert_warn(/Unsupported encoding/) {
+        open(IO::NULL, "r:bom|utf-" + "x" * 10000) {}
+      }
+    end;
+    assert_separately([], <<-'end;') # do
+      assert_warn(/Unsupported encoding/) {
+        open(IO::NULL, encoding: "bom|utf-" + "x" * 10000) {}
+      }
+    end;
+  end
+
+  def test_bom_non_utf
+    enc = nil
+
+    assert_warn(/BOM/) {
+      open(__FILE__, "r:bom|us-ascii") {|f| enc = f.external_encoding}
+    }
+    assert_equal(Encoding::US_ASCII, enc)
+
+    enc = nil
+    assert_warn(/BOM/) {
+      open(__FILE__, "r", encoding: "bom|us-ascii") {|f| enc = f.external_encoding}
+    }
+    assert_equal(Encoding::US_ASCII, enc)
+
+    enc = nil
+    assert_warn(/BOM/) {
+      open(IO::NULL, "w:bom|us-ascii") {|f| enc = f.external_encoding}
+    }
+    assert_equal(Encoding::US_ASCII, enc)
+
+    enc = nil
+    assert_warn(/BOM/) {
+      open(IO::NULL, "w", encoding: "bom|us-ascii") {|f| enc = f.external_encoding}
+    }
+    assert_equal(Encoding::US_ASCII, enc)
+
+    tlhInganHol = "\u{f8e4 f8d9 f8d7 f8dc f8d0 f8db} \u{f8d6 f8dd f8d9}"
+    assert_warn(/#{tlhInganHol}/) {
+      EnvUtil.with_default_internal(nil) {
+        open(IO::NULL, "w:bom|#{tlhInganHol}") {|f| enc = f.external_encoding}
+      }
+    }
+    assert_nil(enc)
   end
 
   def test_cbuf
@@ -2562,5 +2610,43 @@ EOT
   ensure
     a.close rescue nil
     b.close rescue nil
+  end
+
+  def test_each_codepoint_need_more
+    bug11444 = '[ruby-core:70379] [Bug #11444]'
+    tests = [
+      ["incomplete multibyte", "\u{1f376}".b[0,3], [], ["invalid byte sequence in UTF-8"]],
+      ["multibyte at boundary", "x"*8190+"\u{1f376}", ["1f376"], []],
+    ]
+    failure = []
+    ["bin", "text"].product(tests) do |mode, (test, data, out, err)|
+      code = <<-"end;"
+        c = nil
+        begin
+          open(ARGV[0], "r#{mode[0]}:utf-8") do |f|
+            f.each_codepoint{|i| c = i}
+          end
+        rescue ArgumentError => e
+          STDERR.puts e.message
+        else
+          printf "%x", c
+        end
+      end;
+      Tempfile.create("codepoint") do |f|
+        args = ['-e', code, f.path]
+        f.print data
+        f.close
+        begin
+          assert_in_out_err(args, "", out, err,
+                            "#{bug11444}: #{test} in #{mode} mode",
+                            timeout: 10)
+        rescue Exception => e
+          failure << e
+        end
+      end
+    end
+    unless failure.empty?
+      flunk failure.join("\n---\n")
+    end
   end
 end

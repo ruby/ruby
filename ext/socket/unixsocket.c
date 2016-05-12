@@ -65,14 +65,16 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
     }
 
     if (status < 0) {
+	int e = errno;
 	close(fd);
-        rsock_sys_fail_path("connect(2)", path);
+	rsock_syserr_fail_path(e, "connect(2)", path);
     }
 
     if (server) {
 	if (listen(fd, SOMAXCONN) < 0) {
+	    int e = errno;
 	    close(fd);
-            rsock_sys_fail_path("listen(2)", path);
+	    rsock_syserr_fail_path(e, "listen(2)", path);
 	}
     }
 
@@ -131,13 +133,16 @@ unix_path(VALUE sock)
 
 /*
  * call-seq:
- *   unixsocket.recvfrom(maxlen [, flags]) => [mesg, unixaddress]
+ *   unixsocket.recvfrom(maxlen [, flags[, outbuf]]) => [mesg, unixaddress]
  *
  * Receives a message via _unixsocket_.
  *
  * _maxlen_ is the maximum number of bytes to receive.
  *
  * _flags_ should be a bitwise OR of Socket::MSG_* constants.
+ *
+ * _outbuf_ will contain only the received data after the method call
+ * even if it is not empty at the beginning.
  *
  *   s1 = Socket.new(:UNIX, :DGRAM, 0)
  *   s1_ai = Addrinfo.unix("/tmp/sock1")
@@ -198,6 +203,8 @@ sendmsg_blocking(void *data)
  *   p stdout.fileno #=> 6
  *
  *   stdout.puts "hello" # outputs "hello\n" to standard output.
+ *
+ * _io_ may be any kind of IO object or integer file descriptor.
  */
 static VALUE
 unix_send_io(VALUE sock, VALUE val)
@@ -294,6 +301,11 @@ recvmsg_blocking(void *data)
  *     }
  *   }
  *
+ * _klass_ will determine the class of _io_ returned (using the
+ * IO.for_fd singleton method or similar).
+ * If _klass_ is +nil+, an integer file descriptor is returned.
+ *
+ * _mode_ is the same as the argument passed to IO.for_fd
  */
 static VALUE
 unix_recv_io(int argc, VALUE *argv, VALUE sock)

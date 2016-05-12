@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestSymbol < Test::Unit::TestCase
@@ -10,6 +11,19 @@ class TestSymbol < Test::Unit::TestCase
       assert_not_match(/\A:"/, n, bug5136)
     end
     assert_nothing_raised(SyntaxError) {assert_equal(sym, eval(n))}
+  end
+
+  def test_intern
+    assert_equal(':""', ''.intern.inspect)
+    assert_equal(':$foo', '$foo'.intern.inspect)
+    assert_equal(':"!foo"', '!foo'.intern.inspect)
+    assert_equal(':"foo=="', "foo==".intern.inspect)
+  end
+
+  def test_all_symbols
+    x = Symbol.all_symbols
+    assert_kind_of(Array, x)
+    assert_empty(x.reject {|s| s.is_a?(Symbol) })
   end
 
   def test_inspect_invalid
@@ -106,6 +120,71 @@ class TestSymbol < Test::Unit::TestCase
     end
   end
 
+  def test_to_proc_yield
+    assert_ruby_status([], <<-"end;", timeout: 5.0)
+      GC.stress = true
+      true.tap(&:itself)
+    end;
+  end
+
+  def test_to_proc_new_proc
+    assert_ruby_status([], <<-"end;", timeout: 5.0)
+      GC.stress = true
+      2.times {Proc.new(&:itself)}
+    end;
+  end
+
+  def test_to_proc_no_method
+    assert_separately([], <<-"end;", timeout: 5.0)
+      bug11566 = '[ruby-core:70980] [Bug #11566]'
+      assert_raise(NoMethodError, bug11566) {Proc.new(&:foo).(1)}
+      assert_raise(NoMethodError, bug11566) {:foo.to_proc.(1)}
+    end;
+  end
+
+  def test_to_proc_arg
+    assert_separately([], <<-"end;", timeout: 5.0)
+      def (obj = Object.new).proc(&b) b; end
+      assert_same(:itself.to_proc, obj.proc(&:itself))
+    end;
+  end
+
+  def test_to_proc_call_with_symbol_proc
+    first = 1
+    bug11594 = "[ruby-core:71088] [Bug #11594] corrupted the first local variable"
+    # symbol which does not have a Proc
+    ->(&blk) {}.call(&:test_to_proc_call_with_symbol_proc)
+    assert_equal(1, first, bug11594)
+  end
+
+  def test_to_proc_for_hash_each
+    bug11830 = '[ruby-core:72205] [Bug #11830]'
+    assert_normal_exit(<<-'end;', bug11830) # do
+      {}.each(&:destroy)
+    end;
+  end
+
+  def test_to_proc_iseq
+    assert_separately([], <<~"end;", timeout: 1) # do
+      bug11845 = '[ruby-core:72381] [Bug #11845]'
+      assert_nil(:class.to_proc.source_location, bug11845)
+      assert_equal([[:rest]], :class.to_proc.parameters, bug11845)
+      c = Class.new {define_method(:klass, :class.to_proc)}
+      m = c.instance_method(:klass)
+      assert_nil(m.source_location, bug11845)
+      assert_equal([[:rest]], m.parameters, bug11845)
+    end;
+  end
+
+  def test_to_proc_binding
+    assert_separately([], <<~"end;", timeout: 1) # do
+      bug12137 = '[ruby-core:74100] [Bug #12137]'
+      assert_raise(ArgumentError, bug12137) {
+        :succ.to_proc.binding
+      }
+    end;
+  end
+
   def test_call
     o = Object.new
     def o.foo(x, y); x + y; end
@@ -176,6 +255,30 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal(:fOo, :FoO.swapcase)
   end
 
+  def test_MATCH # '=~'
+    assert_equal(10,  :"FeeFieFoo-Fum" =~ /Fum$/)
+    assert_equal(nil, "FeeFieFoo-Fum" =~ /FUM$/)
+
+    o = Object.new
+    def o.=~(x); x + "bar"; end
+    assert_equal("foobar", :"foo" =~ o)
+
+    assert_raise(TypeError) { :"foo" =~ "foo" }
+  end
+
+  def test_match_method
+    assert_equal("bar", :"foobarbaz".match(/bar/).to_s)
+
+    o = Regexp.new('foo')
+    def o.match(x, y, z); x + y + z; end
+    assert_equal("foobarbaz", :"foo".match(o, "bar", "baz"))
+    x = nil
+    :"foo".match(o, "bar", "baz") {|y| x = y }
+    assert_equal("foobarbaz", x)
+
+    assert_raise(ArgumentError) { :"foo".match }
+  end
+
   def test_symbol_poped
     assert_nothing_raised { eval('a = 1; :"#{ a }"; 1') }
   end
@@ -192,11 +295,40 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal(Encoding::US_ASCII, "$-A".force_encoding("iso-8859-15").intern.encoding)
     assert_equal(Encoding::US_ASCII, "foobar~!".force_encoding("iso-8859-15").intern.encoding)
     assert_equal(Encoding::UTF_8, "\u{2192}".intern.encoding)
-    assert_raise(EncodingError) {"\xb0a".force_encoding("utf-8").intern}
+    assert_raise_with_message(EncodingError, /\\xb0/i) {"\xb0a".force_encoding("utf-8").intern}
   end
 
   def test_singleton_method
     assert_raise(TypeError) { a = :foo; def a.foo; end }
+  end
+
+  SymbolsForEval = [
+    :foo,
+    "dynsym_#{Random.rand(10000)}_#{Time.now}".to_sym
+  ]
+
+  def test_instance_eval
+    bug11086 = '[ruby-core:68961] [Bug #11086]'
+    SymbolsForEval.each do |sym|
+      assert_nothing_raised(TypeError, sym, bug11086) {
+        sym.instance_eval {}
+      }
+      assert_raise(TypeError, sym, bug11086) {
+        sym.instance_eval {def foo; end}
+      }
+    end
+  end
+
+  def test_instance_exec
+    bug11086 = '[ruby-core:68961] [Bug #11086]'
+    SymbolsForEval.each do |sym|
+      assert_nothing_raised(TypeError, sym, bug11086) {
+        sym.instance_exec {}
+      }
+      assert_raise(TypeError, sym, bug11086) {
+        sym.instance_exec {def foo; end}
+      }
+    end
   end
 
   def test_frozen_symbol
@@ -229,5 +361,40 @@ class TestSymbol < Test::Unit::TestCase
       attr_writer :unagi
     end
     assert_nothing_raised(NoMethodError, bug10259) {obj.send("unagi=".intern, 1)}
+  end
+
+  def test_symbol_fstr_leak
+    bug10686 = '[ruby-core:67268] [Bug #10686]'
+    x = x = 0
+    assert_no_memory_leak([], '200_000.times { |i| i.to_s.to_sym }; GC.start', <<-"end;", bug10686, limit: 1.71, rss: true)
+      200_000.times { |i| (i + 200_000).to_s.to_sym }
+    end;
+  end
+
+  def test_hash_redefinition
+    assert_separately([], <<-'end;')
+      bug11035 = '[ruby-core:68767] [Bug #11035]'
+      class Symbol
+        def hash
+          raise
+        end
+      end
+
+      h = {}
+      assert_nothing_raised(RuntimeError, bug11035) {
+        h[:foo] = 1
+      }
+      assert_nothing_raised(RuntimeError, bug11035) {
+        h['bar'.to_sym] = 2
+      }
+    end;
+  end
+
+  def test_not_freeze
+    bug11721 = '[ruby-core:71611] [Bug #11721]'
+    str = "\u{1f363}".taint
+    assert_not_predicate(str, :frozen?)
+    assert_equal str, str.to_sym.to_s
+    assert_not_predicate(str, :frozen?, bug11721)
   end
 end

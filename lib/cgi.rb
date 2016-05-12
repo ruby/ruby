@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # cgi.rb - cgi support library
 #
@@ -80,7 +81,7 @@
 #
 # For instance, suppose the request contains the parameter
 # "favourite_colours" with the multiple values "blue" and "green".  The
-# following behaviour would occur:
+# following behavior would occur:
 #
 #   cgi.params["favourite_colours"]  # => ["blue", "green"]
 #   cgi["favourite_colours"]         # => "blue"

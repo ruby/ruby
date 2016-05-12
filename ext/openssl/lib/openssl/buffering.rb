@@ -1,18 +1,14 @@
 # coding: binary
+# frozen_string_literal: false
 #--
-#= $RCSfile$ -- Buffering mix-in module.
-#
 #= Info
 #  'OpenSSL for Ruby 2' project
 #  Copyright (C) 2001 GOTOU YUUZOU <gotoyuzo@notwork.org>
 #  All rights reserved.
 #
 #= Licence
-#  This program is licenced under the same licence as Ruby.
+#  This program is licensed under the same licence as Ruby.
 #  (See the file 'LICENCE'.)
-#
-#= Version
-#  $Id$
 #++
 
 ##
@@ -213,7 +209,7 @@ module OpenSSL::Buffering
     else
       size = idx ? idx+eol.size : nil
     end
-    if limit and limit >= 0
+    if size && limit && limit >= 0
       size = [size, limit].min
     end
     consume_rbuff(size)

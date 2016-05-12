@@ -1,11 +1,10 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #if !defined(_OSSL_H_)
@@ -45,7 +44,7 @@ extern "C" {
 #  define assert(condition)
 #endif
 
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(LIBRESSL_VERSION_NUMBER)
 #  include <openssl/e_os2.h>
 #  define OSSL_NO_CONF_API 1
 #  if !defined(OPENSSL_SYS_WIN32)
@@ -64,6 +63,9 @@ extern "C" {
 #include <openssl/rand.h>
 #include <openssl/conf.h>
 #include <openssl/conf_api.h>
+#if !defined(_WIN32)
+#  include <openssl/crypto.h>
+#endif
 #undef X509_NAME
 #undef PKCS7_SIGNER_INFO
 #if defined(HAVE_OPENSSL_ENGINE_H) && defined(HAVE_EVP_CIPHER_CTX_ENGINE)
@@ -244,4 +246,3 @@ void Init_openssl(void);
 #endif
 
 #endif /* _OSSL_H_ */
-

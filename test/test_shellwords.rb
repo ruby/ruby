@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: false
 require 'test/unit'
 require 'shellwords'
 
@@ -6,15 +7,15 @@ class TestShellwords < Test::Unit::TestCase
 
   include Shellwords
 
-  def setup
-    @not_string = Class.new
-    @cmd = "ruby my_prog.rb | less"
-  end
+  def test_shellwords
+    cmd1 = "ruby -i'.bak' -pe \"sub /foo/, '\\\\&bar'\" foobar\\ me.txt\n"
+    assert_equal(['ruby', '-i.bak', '-pe', "sub /foo/, '\\&bar'", "foobar me.txt"],
+                 shellwords(cmd1))
 
-
-  def test_string
-    assert_instance_of(Array, shellwords(@cmd))
-    assert_equal(4, shellwords(@cmd).length)
+    # shellwords does not interpret meta-characters
+    cmd2 = "ruby my_prog.rb | less"
+    assert_equal(['ruby', 'my_prog.rb', '|', 'less'],
+                 shellwords(cmd2))
   end
 
   def test_unmatched_double_quote
@@ -48,8 +49,60 @@ class TestShellwords < Test::Unit::TestCase
   end
 
   def test_stringification
-    assert_equal "3", shellescape(3)
-    assert_equal "ps -p #{$$}", ['ps', '-p', $$].shelljoin
+    three = shellescape(3)
+    assert_equal '3', three
+
+    joined = ['ps', '-p', $$].shelljoin
+    assert_equal "ps -p #{$$}", joined
+  end
+
+  def test_whitespace
+    empty = ''
+    space = " "
+    newline = "\n"
+    tab = "\t"
+
+    tokens = [
+      empty,
+      space,
+      space * 2,
+      newline,
+      newline * 2,
+      tab,
+      tab * 2,
+      empty,
+      space + newline + tab,
+      empty
+    ]
+
+    tokens.each { |token|
+      assert_equal [token], shellescape(token).shellsplit
+    }
+
+
+    assert_equal tokens, shelljoin(tokens).shellsplit
+  end
+
+  def test_frozenness
+    [
+      shellescape(String.new),
+      shellescape(String.new('foo')),
+      shellescape(''.freeze),
+      shellescape("\n".freeze),
+      shellescape('foo'.freeze),
+      shelljoin(['ps'.freeze, 'ax'.freeze]),
+    ].each { |object|
+      assert_not_predicate object, :frozen?
+    }
+
+    [
+      shellsplit('ps'),
+      shellsplit('ps ax'),
+    ].each { |array|
+      array.each { |arg|
+        assert_not_predicate arg, :frozen?, array.inspect
+      }
+    }
   end
 
   def test_multibyte_characters

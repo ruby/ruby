@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # Hold details of a special sequence
 

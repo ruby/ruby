@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestVariable < Test::Unit::TestCase
@@ -89,14 +90,26 @@ class TestVariable < Test::Unit::TestCase
 
   def test_shadowing_local_variables
     bug9486 = '[ruby-core:60501] [Bug #9486]'
-    x = tap {|x| break local_variables}
-    assert_equal([:x, :bug9486], x)
+    assert_equal([:x, :bug9486], tap {|x| break local_variables}, bug9486)
   end
 
   def test_shadowing_block_local_variables
     bug9486 = '[ruby-core:60501] [Bug #9486]'
-    x = tap {|;x| break local_variables}
-    assert_equal([:x, :bug9486], x)
+    assert_equal([:x, :bug9486], tap {|;x| x = x; break local_variables}, bug9486)
+  end
+
+  def test_global_variables
+    gv = global_variables
+    assert_empty(gv.grep(/\A(?!\$)/))
+    assert_nil($~)
+    assert_not_include(gv, :$1)
+    /(\w)(\d)?(.)(.)(.)(.)(.)(.)(.)(.)(\d)?(.)/ =~ "globalglobalglobal"
+    assert_not_nil($~)
+    gv = global_variables - gv
+    assert_include(gv, :$1)
+    assert_not_include(gv, :$2)
+    assert_not_include(gv, :$11)
+    assert_include(gv, :$12)
   end
 
   def test_global_variable_0
@@ -117,5 +130,34 @@ class TestVariable < Test::Unit::TestCase
         eval("TestVariable::Gods; 1")
       }
     }
+  end
+
+  def test_special_constant_ivars
+    [ true, false, :symbol, "dsym#{rand(9999)}".to_sym, 1, 1.0 ].each do |v|
+      assert_empty v.instance_variables
+      msg = "can't modify frozen #{v.class}"
+
+      assert_raise_with_message(RuntimeError, msg) do
+        v.instance_variable_set(:@foo, :bar)
+      end
+
+      assert_nil EnvUtil.suppress_warning {v.instance_variable_get(:@foo)}
+      assert_not_send([v, :instance_variable_defined?, :@foo])
+
+      assert_raise_with_message(RuntimeError, msg) do
+        v.remove_instance_variable(:@foo)
+      end
+    end
+  end
+
+  def test_local_variables_with_kwarg
+    bug11674 = '[ruby-core:71437] [Bug #11674]'
+    v = with_kwargs_11(v1:1,v2:2,v3:3,v4:4,v5:5,v6:6,v7:7,v8:8,v9:9,v10:10,v11:11)
+    assert_equal(%i(v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11), v, bug11674)
+  end
+
+  private
+  def with_kwargs_11(v1:, v2:, v3:, v4:, v5:, v6:, v7:, v8:, v9:, v10:, v11:)
+    local_variables
   end
 end

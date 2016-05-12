@@ -1,21 +1,17 @@
+# frozen_string_literal: false
 =begin
-= $RCSfile$ -- Ruby-space definitions that completes C-space funcs for SSL
-
 = Info
   'OpenSSL for Ruby 2' project
   Copyright (C) 2001 GOTOU YUUZOU <gotoyuzo@notwork.org>
   All rights reserved.
 
 = Licence
-  This program is licenced under the same licence as Ruby.
+  This program is licensed under the same licence as Ruby.
   (See the file 'LICENCE'.)
-
-= Version
-  $Id$
 =end
 
 require "openssl/buffering"
-require "fcntl"
+require "io/nonblock"
 
 module OpenSSL
   module SSL
@@ -74,6 +70,48 @@ module OpenSSL
         DEFAULT_CERT_STORE.flags = OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
       end
 
+      INIT_VARS = ["cert", "key", "client_ca", "ca_file", "ca_path",
+        "timeout", "verify_mode", "verify_depth", "renegotiation_cb",
+        "verify_callback", "cert_store", "extra_chain_cert",
+        "client_cert_cb", "session_id_context", "tmp_dh_callback",
+        "session_get_cb", "session_new_cb", "session_remove_cb",
+        "tmp_ecdh_callback", "servername_cb", "npn_protocols",
+        "alpn_protocols", "alpn_select_cb",
+        "npn_select_cb"].map { |x| "@#{x}" }
+
+      # A callback invoked when DH parameters are required.
+      #
+      # The callback is invoked with the Session for the key exchange, an
+      # flag indicating the use of an export cipher and the keylength
+      # required.
+      #
+      # The callback must return an OpenSSL::PKey::DH instance of the correct
+      # key length.
+
+      attr_accessor :tmp_dh_callback
+
+      if ExtConfig::HAVE_TLSEXT_HOST_NAME
+        # A callback invoked at connect time to distinguish between multiple
+        # server names.
+        #
+        # The callback is invoked with an SSLSocket and a server name.  The
+        # callback must return an SSLContext for the server name or nil.
+        attr_accessor :servername_cb
+      end
+
+      # call-seq:
+      #    SSLContext.new => ctx
+      #    SSLContext.new(:TLSv1) => ctx
+      #    SSLContext.new("SSLv23_client") => ctx
+      #
+      # You can get a list of valid methods with OpenSSL::SSL::SSLContext::METHODS
+      def initialize(version = nil)
+        INIT_VARS.each { |v| instance_variable_set v, nil }
+        self.options = self.options | OpenSSL::SSL::OP_ALL
+        return unless version
+        self.ssl_version = version
+      end
+
       ##
       # Sets the parameters for this SSL context to the values in +params+.
       # The keys in +params+ must be assignment methods on SSLContext.
@@ -124,15 +162,6 @@ module OpenSSL
       end
     end
 
-    module Nonblock
-      def initialize(*args)
-        flag = File::NONBLOCK
-        flag |= @io.fcntl(Fcntl::F_GETFL) if defined?(Fcntl::F_GETFL)
-        @io.fcntl(Fcntl::F_SETFL, flag)
-        super
-      end
-    end
-
     def verify_certificate_identity(cert, hostname)
       should_verify_common_name = true
       cert.extensions.each{|ext|
@@ -143,8 +172,7 @@ module OpenSSL
           case san.tag
           when 2 # dNSName in GeneralName (RFC5280)
             should_verify_common_name = false
-            reg = Regexp.escape(san.value).gsub(/\\\*/, "[^.]+")
-            return true if /\A#{reg}\z/i =~ hostname
+            return true if verify_hostname(hostname, san.value)
           when 7 # iPAddress in GeneralName (RFC5280)
             should_verify_common_name = false
             # follows GENERAL_NAME_print() in x509v3/v3_alt.c
@@ -159,8 +187,7 @@ module OpenSSL
       if should_verify_common_name
         cert.subject.to_a.each{|oid, value|
           if oid == "CN"
-            reg = Regexp.escape(value).gsub(/\\\*/, "[^.]+")
-            return true if /\A#{reg}\z/i =~ hostname
+            return true if verify_hostname(hostname, value)
           end
         }
       end
@@ -168,12 +195,122 @@ module OpenSSL
     end
     module_function :verify_certificate_identity
 
+    def verify_hostname(hostname, san) # :nodoc:
+      # RFC 5280, IA5String is limited to the set of ASCII characters
+      return false unless san.ascii_only?
+      return false unless hostname.ascii_only?
+
+      # See RFC 6125, section 6.4.1
+      # Matching is case-insensitive.
+      san_parts = san.downcase.split(".")
+
+      # TODO: this behavior should probably be more strict
+      return san == hostname if san_parts.size < 2
+
+      # Matching is case-insensitive.
+      host_parts = hostname.downcase.split(".")
+
+      # RFC 6125, section 6.4.3, subitem 2.
+      # If the wildcard character is the only character of the left-most
+      # label in the presented identifier, the client SHOULD NOT compare
+      # against anything but the left-most label of the reference
+      # identifier (e.g., *.example.com would match foo.example.com but
+      # not bar.foo.example.com or example.com).
+      return false unless san_parts.size == host_parts.size
+
+      # RFC 6125, section 6.4.3, subitem 1.
+      # The client SHOULD NOT attempt to match a presented identifier in
+      # which the wildcard character comprises a label other than the
+      # left-most label (e.g., do not match bar.*.example.net).
+      return false unless verify_wildcard(host_parts.shift, san_parts.shift)
+
+      san_parts.join(".") == host_parts.join(".")
+    end
+    module_function :verify_hostname
+
+    def verify_wildcard(domain_component, san_component) # :nodoc:
+      parts = san_component.split("*", -1)
+
+      return false if parts.size > 2
+      return san_component == domain_component if parts.size == 1
+
+      # RFC 6125, section 6.4.3, subitem 3.
+      # The client SHOULD NOT attempt to match a presented identifier
+      # where the wildcard character is embedded within an A-label or
+      # U-label of an internationalized domain name.
+      return false if domain_component.start_with?("xn--") && san_component != "*"
+
+      parts[0].length + parts[1].length < domain_component.length &&
+      domain_component.start_with?(parts[0]) &&
+      domain_component.end_with?(parts[1])
+    end
+    module_function :verify_wildcard
+
     class SSLSocket
       include Buffering
       include SocketForwarder
-      include Nonblock
 
+      if ExtConfig::OPENSSL_NO_SOCK
+        def initialize(io, ctx = nil); raise NotImplementedError; end
+      else
+        if ExtConfig::HAVE_TLSEXT_HOST_NAME
+          attr_accessor :hostname
+        end
+
+        attr_reader :io, :context
+        attr_accessor :sync_close
+        alias :to_io :io
+
+        # call-seq:
+        #    SSLSocket.new(io) => aSSLSocket
+        #    SSLSocket.new(io, ctx) => aSSLSocket
+        #
+        # Creates a new SSL socket from +io+ which must be a real ruby object (not an
+        # IO-like object that responds to read/write).
+        #
+        # If +ctx+ is provided the SSL Sockets initial params will be taken from
+        # the context.
+        #
+        # The OpenSSL::Buffering module provides additional IO methods.
+        #
+        # This method will freeze the SSLContext if one is provided;
+        # however, session management is still allowed in the frozen SSLContext.
+
+        def initialize(io, context = OpenSSL::SSL::SSLContext.new)
+          @io         = io
+          @context    = context
+          @sync_close = false
+          @hostname   = nil
+          @io.nonblock = true if @io.respond_to?(:nonblock=)
+          context.setup
+          super()
+        end
+      end
+
+      # call-seq:
+      #    ssl.sysclose => nil
+      #
+      # Shuts down the SSL connection and prepares it for another connection.
+      def sysclose
+        return if closed?
+        stop
+        io.close if sync_close
+      end
+
+      ##
+      # Perform hostname verification after an SSL connection is established
+      #
+      # This method MUST be called after calling #connect to ensure that the
+      # hostname of a remote peer has been verified.
       def post_connection_check(hostname)
+        if peer_cert.nil?
+          msg = "Peer verification enabled, but no certificate received."
+          if using_anon_cipher?
+            msg += " Anonymous cipher suite #{cipher[0]} was negotiated. Anonymous suites must be disabled to use peer verification."
+          end
+          raise SSLError, msg
+        end
+
         unless OpenSSL::SSL.verify_certificate_identity(peer_cert, hostname)
           raise SSLError, "hostname \"#{hostname}\" does not match the server certificate"
         end
@@ -184,6 +321,34 @@ module OpenSSL
         SSL::Session.new(self)
       rescue SSL::Session::SessionError
         nil
+      end
+
+      private
+
+      def using_anon_cipher?
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.ciphers = "aNULL"
+        ctx.ciphers.include?(cipher)
+      end
+
+      def client_cert_cb
+        @context.client_cert_cb
+      end
+
+      def tmp_dh_callback
+        @context.tmp_dh_callback || OpenSSL::PKey::DEFAULT_TMP_DH_CALLBACK
+      end
+
+      def tmp_ecdh_callback
+        @context.tmp_ecdh_callback
+      end
+
+      def session_new_cb
+        @context.session_new_cb
+      end
+
+      def session_get_cb
+        @context.session_get_cb
       end
     end
 

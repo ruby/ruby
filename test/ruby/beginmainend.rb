@@ -1,8 +1,7 @@
-errout = ARGV.shift
-
+# frozen_string_literal: false
 BEGIN {
   puts "b1"
-  local_begin1 = "local_begin1"
+  # local_begin1 = "local_begin1"
   $global_begin1 = "global_begin1"
   ConstBegin1 = "ConstBegin1"
 }

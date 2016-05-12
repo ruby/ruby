@@ -7,12 +7,14 @@ static void stub_sysinit(int *argc, char ***argv);
 void
 stub_sysinit(int *argc, char ***argv)
 {
-    char exename[4096];
-    size_t lenexe, len0, lenall;
+    WCHAR exename[4096];
+    size_t wlenexe, len0, lenall;
+    int lenexe;
     int i, ac;
     char **av, *p;
 
-    lenexe = (size_t)GetModuleFileName(NULL, exename, sizeof exename);
+    wlenexe = (size_t)GetModuleFileNameW(NULL, exename, sizeof(exename) / sizeof(*exename));
+    lenexe = WideCharToMultiByte(CP_UTF8, 0, exename, wlenexe, NULL, 0, NULL, NULL);
     ruby_sysinit(argc, argv);
     ac = *argc;
     av = *argv;
@@ -21,7 +23,7 @@ stub_sysinit(int *argc, char ***argv)
     for (i = 1; i < ac; ++i) {
 	lenall += strlen(av[i]) + 1;
     }
-    av = realloc(av, lenall + (lenexe + 1) * 2 + sizeof(char *) * (i + 2));
+    av = realloc(av, lenall + len0 + (lenexe + 1) + sizeof(char *) * (i + 2));
     if (!av) {
 	perror("realloc command line");
 	exit(-1);
@@ -29,12 +31,11 @@ stub_sysinit(int *argc, char ***argv)
     *argv = av;
     *argc = ++ac;
     p = (char *)(av + i + 2);
-    memmove(p + (lenexe + 1) * 2, (char *)(av + ac) + len0, lenall);
-    memcpy(p, exename, lenexe);
-    p[lenexe] = '\0';
+    memmove(p + len0 + lenexe + 1, (char *)(av + ac) + len0, lenall);
+    memmove(p, (char *)(av + ac), len0);
     *av++ = p;
-    p += lenexe + 1;
-    memcpy(p, exename, lenexe);
+    p += len0;
+    WideCharToMultiByte(CP_UTF8, 0, exename, wlenexe, p, lenexe, NULL, NULL);
     p[lenexe] = '\0';
     *av++ = p;
     p += lenexe + 1;

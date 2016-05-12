@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 begin
   require "socket"
   require "test/unit"
@@ -48,7 +50,7 @@ class TestSocket_UDPSocket < Test::Unit::TestCase
 
     s = UDPSocket.new
 
-    e = assert_raises(Errno::EADDRINUSE) do
+    e = assert_raise(Errno::EADDRINUSE) do
       s.bind(host, port)
     end
 
@@ -61,12 +63,39 @@ class TestSocket_UDPSocket < Test::Unit::TestCase
   def test_send_too_long
     u = UDPSocket.new
 
-    e = assert_raises Errno::EMSGSIZE do
+    e = assert_raise(Errno::EMSGSIZE) do
       u.send "\0" * 100_000, 0, "127.0.0.1", 7 # echo
     end
 
     assert_match 'for "127.0.0.1" port 7', e.message
   ensure
     u.close if u
+  end
+
+  def test_bind_no_memory_leak
+    assert_no_memory_leak(["-rsocket"], <<-"end;", <<-"end;", rss: true)
+      s = UDPSocket.new
+      s.close
+    end;
+      100_000.times {begin s.bind("127.0.0.1", 1) rescue IOError; end}
+    end;
+  end
+
+  def test_connect_no_memory_leak
+    assert_no_memory_leak(["-rsocket"], <<-"end;", <<-"end;", rss: true)
+      s = UDPSocket.new
+      s.close
+    end;
+      100_000.times {begin s.connect("127.0.0.1", 1) rescue IOError; end}
+    end;
+  end
+
+  def test_send_no_memory_leak
+    assert_no_memory_leak(["-rsocket"], <<-"end;", <<-"end;", rss: true)
+      s = UDPSocket.new
+      s.close
+    end;
+      100_000.times {begin s.send("\0"*100, 0, "127.0.0.1", 1) rescue IOError; end}
+    end;
   end
 end if defined?(UDPSocket)

@@ -1,4 +1,5 @@
 #include <fiddle.h>
+#include <ruby/thread.h>
 
 #ifdef PRIsVALUE
 # define RB_OBJ_CLASSNAME(obj) rb_obj_class(obj)
@@ -14,12 +15,16 @@ VALUE cFiddleFunction;
 #define MAX_ARGS (SIZE_MAX / (sizeof(void *) + sizeof(fiddle_generic)) - 1)
 
 #define Check_Max_Args(name, len) \
+    Check_Max_Args_(name, len, "")
+#define Check_Max_Args_Long(name, len) \
+    Check_Max_Args_(name, len, "l")
+#define Check_Max_Args_(name, len, fmt) \
     if ((size_t)(len) < MAX_ARGS) { \
 	/* OK */ \
     } \
     else { \
 	rb_raise(rb_eTypeError, \
-		 name" is so large that it can cause integer overflow (%d)", \
+		 name" is so large that it can cause integer overflow (%"fmt"d)", \
 		 (len)); \
     }
 
@@ -37,12 +42,11 @@ function_memsize(const void *p)
     /* const */ffi_cif *ptr = (ffi_cif *)p;
     size_t size = 0;
 
-    if (ptr) {
-	size += sizeof(*ptr);
+    size += sizeof(*ptr);
 #if !defined(FFI_NO_RAW_API) || !FFI_NO_RAW_API
-	size += ffi_raw_size(ptr);
+    size += ffi_raw_size(ptr);
 #endif
-    }
+
     return size;
 }
 
@@ -87,16 +91,34 @@ static VALUE
 initialize(int argc, VALUE argv[], VALUE self)
 {
     ffi_cif * cif;
-    ffi_type **arg_types;
+    ffi_type **arg_types, *rtype;
     ffi_status result;
-    VALUE ptr, args, ret_type, abi, kwds;
-    int i;
+    VALUE ptr, args, ret_type, abi, kwds, ary;
+    int i, len;
+    int nabi;
+    void *cfunc;
 
     rb_scan_args(argc, argv, "31:", &ptr, &args, &ret_type, &abi, &kwds);
-    if(NIL_P(abi)) abi = INT2NUM(FFI_DEFAULT_ABI);
+    ptr = rb_Integer(ptr);
+    cfunc = NUM2PTR(ptr);
+    PTR2NUM(cfunc);
+    nabi = NIL_P(abi) ? FFI_DEFAULT_ABI : NUM2INT(abi);
+    abi = INT2FIX(nabi);
+    i = NUM2INT(ret_type);
+    rtype = INT2FFI_TYPE(i);
+    ret_type = INT2FIX(i);
 
     Check_Type(args, T_ARRAY);
-    Check_Max_Args("args", RARRAY_LENINT(args));
+    len = RARRAY_LENINT(args);
+    Check_Max_Args("args", len);
+    ary = rb_ary_subseq(args, 0, len);
+    for (i = 0; i < RARRAY_LEN(args); i++) {
+	VALUE a = RARRAY_PTR(args)[i];
+	int type = NUM2INT(a);
+	(void)INT2FFI_TYPE(type); /* raise */
+	if (INT2FIX(type) != a) rb_ary_store(ary, i, INT2FIX(type));
+    }
+    OBJ_FREEZE(ary);
 
     rb_iv_set(self, "@ptr", ptr);
     rb_iv_set(self, "@args", args);
@@ -107,20 +129,15 @@ initialize(int argc, VALUE argv[], VALUE self)
 
     TypedData_Get_Struct(self, ffi_cif, &function_data_type, cif);
 
-    arg_types = xcalloc(RARRAY_LEN(args) + 1, sizeof(ffi_type *));
+    arg_types = xcalloc(len + 1, sizeof(ffi_type *));
 
     for (i = 0; i < RARRAY_LEN(args); i++) {
-	int type = NUM2INT(RARRAY_PTR(args)[i]);
+	int type = NUM2INT(RARRAY_AREF(args, i));
 	arg_types[i] = INT2FFI_TYPE(type);
     }
-    arg_types[RARRAY_LEN(args)] = NULL;
+    arg_types[len] = NULL;
 
-    result = ffi_prep_cif (
-	    cif,
-	    NUM2INT(abi),
-	    RARRAY_LENINT(args),
-	    INT2FFI_TYPE(NUM2INT(ret_type)),
-	    arg_types);
+    result = ffi_prep_cif(cif, nabi, len, rtype, arg_types);
 
     if (result)
 	rb_raise(rb_eRuntimeError, "error creating CIF %d", result);
@@ -128,13 +145,28 @@ initialize(int argc, VALUE argv[], VALUE self)
     return self;
 }
 
+struct nogvl_ffi_call_args {
+    ffi_cif *cif;
+    void (*fn)(void);
+    void **values;
+    fiddle_generic retval;
+};
+
+static void *
+nogvl_ffi_call(void *ptr)
+{
+    struct nogvl_ffi_call_args *args = ptr;
+
+    ffi_call(args->cif, args->fn, &args->retval, args->values);
+
+    return NULL;
+}
+
 static VALUE
 function_call(int argc, VALUE argv[], VALUE self)
 {
-    ffi_cif * cif;
-    fiddle_generic retval;
+    struct nogvl_ffi_call_args args = { 0 };
     fiddle_generic *generic_args;
-    void **values;
     VALUE cfunc, types, cPointer;
     int i;
     VALUE alloc_buffer = 0;
@@ -144,12 +176,11 @@ function_call(int argc, VALUE argv[], VALUE self)
     cPointer = rb_const_get(mFiddle, rb_intern("Pointer"));
 
     Check_Max_Args("number of arguments", argc);
-    if(argc != RARRAY_LENINT(types)) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
-		argc, RARRAY_LENINT(types));
+    if (argc != (i = RARRAY_LENINT(types))) {
+	rb_error_arity(argc, i, i);
     }
 
-    TypedData_Get_Struct(self, ffi_cif, &function_data_type, cif);
+    TypedData_Get_Struct(self, ffi_cif, &function_data_type, args.cif);
 
     if (rb_safe_level() >= 1) {
 	for (i = 0; i < argc; i++) {
@@ -162,13 +193,15 @@ function_call(int argc, VALUE argv[], VALUE self)
 
     generic_args = ALLOCV(alloc_buffer,
 	(size_t)(argc + 1) * sizeof(void *) + (size_t)argc * sizeof(fiddle_generic));
-    values = (void **)((char *)generic_args + (size_t)argc * sizeof(fiddle_generic));
+    args.values = (void **)((char *)generic_args +
+			    (size_t)argc * sizeof(fiddle_generic));
 
     for (i = 0; i < argc; i++) {
-	VALUE type = RARRAY_PTR(types)[i];
+	VALUE type = RARRAY_AREF(types, i);
 	VALUE src = argv[i];
+	int argtype = FIX2INT(type);
 
-	if(NUM2INT(type) == TYPE_VOIDP) {
+	if (argtype == TYPE_VOIDP) {
 	    if(NIL_P(src)) {
 		src = INT2FIX(0);
 	    } else if(cPointer != CLASS_OF(src)) {
@@ -177,12 +210,13 @@ function_call(int argc, VALUE argv[], VALUE self)
 	    src = rb_Integer(src);
 	}
 
-	VALUE2GENERIC(NUM2INT(type), src, &generic_args[i]);
-	values[i] = (void *)&generic_args[i];
+	VALUE2GENERIC(argtype, src, &generic_args[i]);
+	args.values[i] = (void *)&generic_args[i];
     }
-    values[argc] = NULL;
+    args.values[argc] = NULL;
+    args.fn = NUM2PTR(cfunc);
 
-    ffi_call(cif, NUM2PTR(rb_Integer(cfunc)), &retval, values);
+    (void)rb_thread_call_without_gvl(nogvl_ffi_call, &args, 0, 0);
 
     rb_funcall(mFiddle, rb_intern("last_error="), 1, INT2NUM(errno));
 #if defined(_WIN32)
@@ -191,7 +225,7 @@ function_call(int argc, VALUE argv[], VALUE self)
 
     ALLOCV_END(alloc_buffer);
 
-    return GENERIC2VALUE(rb_iv_get(self, "@return_type"), retval);
+    return GENERIC2VALUE(rb_iv_get(self, "@return_type"), args.retval);
 }
 
 void
@@ -256,7 +290,9 @@ Init_fiddle_function(void)
     /*
      * Document-method: call
      *
-     * Calls the constructed Function, with +args+
+     * Calls the constructed Function, with +args+.
+     * Caller must ensure the underlying function is called in a
+     * thread-safe manner if running in a multi-threaded process.
      *
      * For an example see Fiddle::Function
      *

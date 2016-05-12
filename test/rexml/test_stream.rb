@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "test/unit/testcase"
 require "rexml/document"
 require 'rexml/streamlistener'

@@ -1,9 +1,16 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'delegate'
 require 'timeout'
 require 'bigdecimal'
 
 class TestRange < Test::Unit::TestCase
+  def test_new
+    assert_equal((0..2), Range.new(0, 2))
+    assert_equal((0..2), Range.new(0, 2, false))
+    assert_equal((0...2), Range.new(0, 2, true))
+  end
+
   def test_range_string
     # XXX: Is this really the test of Range?
     assert_equal([], ("a" ... "a").to_a)
@@ -132,6 +139,8 @@ class TestRange < Test::Unit::TestCase
 
   def test_hash
     assert_kind_of(Fixnum, (0..1).hash)
+    assert_equal((0..1).hash, (0..1).hash)
+    assert_not_equal((0..1).hash, (0...1).hash)
   end
 
   def test_step
@@ -251,6 +260,7 @@ class TestRange < Test::Unit::TestCase
   def test_begin_end
     assert_equal(0, (0..1).begin)
     assert_equal(1, (0..1).end)
+    assert_equal(1, (0...1).end)
   end
 
   def test_first_last
@@ -265,22 +275,67 @@ class TestRange < Test::Unit::TestCase
     assert_equal([0, 1, 2], (0...10).first(3))
     assert_equal([7, 8, 9], (0...10).last(3))
     assert_equal(0, (0...10).first)
+    assert_equal(10, (0...10).last)
     assert_equal("a", ("a"..."c").first)
+    assert_equal("c", ("a"..."c").last)
+    assert_equal(0, (2...0).last)
   end
 
   def test_to_s
     assert_equal("0..1", (0..1).to_s)
     assert_equal("0...1", (0...1).to_s)
+
+    bug11767 = '[ruby-core:71811] [Bug #11767]'
+    assert_predicate(("0".taint.."1").to_s, :tainted?, bug11767)
+    assert_predicate(("0".."1".taint).to_s, :tainted?, bug11767)
+    assert_predicate(("0".."1").taint.to_s, :tainted?, bug11767)
   end
 
   def test_inspect
     assert_equal("0..1", (0..1).inspect)
     assert_equal("0...1", (0...1).inspect)
+
+    bug11767 = '[ruby-core:71811] [Bug #11767]'
+    assert_predicate(("0".taint.."1").inspect, :tainted?, bug11767)
+    assert_predicate(("0".."1".taint).inspect, :tainted?, bug11767)
+    assert_predicate(("0".."1").taint.inspect, :tainted?, bug11767)
   end
 
   def test_eqq
     assert_operator(0..10, :===, 5)
     assert_not_operator(0..10, :===, 11)
+  end
+
+  def test_eqq_time
+    bug11113 = '[ruby-core:69052] [Bug #11113]'
+    t = Time.now
+    assert_nothing_raised(TypeError, bug11113) {
+      assert_operator(t..(t+10), :===, t+5)
+    }
+  end
+
+  def test_eqq_non_linear
+    bug12003 = '[ruby-core:72908] [Bug #12003]'
+    c = Class.new {
+      attr_reader :value
+
+      def initialize(value)
+        @value = value
+      end
+
+      def succ
+        self.class.new(@value.succ)
+      end
+
+      def ==(other)
+        @value == other.value
+      end
+
+      def <=>(other)
+        @value <=> other.value
+      end
+    }
+    assert_operator(c.new(0)..c.new(10), :===, c.new(5), bug12003)
   end
 
   def test_include
@@ -377,6 +432,10 @@ class TestRange < Test::Unit::TestCase
   def test_bsearch_typechecks_return_values
     assert_raise(TypeError) do
       (1..42).bsearch{ "not ok" }
+    end
+    c = eval("class C\u{309a 26a1 26c4 1f300};self;end")
+    assert_raise_with_message(TypeError, /C\u{309a 26a1 26c4 1f300}/) do
+      (1..42).bsearch {c.new}
     end
     assert_equal (1..42).bsearch{}, (1..42).bsearch{false}
   end

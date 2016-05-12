@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 begin
   require 'win32ole'
 rescue LoadError
@@ -21,7 +22,7 @@ def ado_installed?
   installed
 end
 
-def swbemsink_avairable?
+def swbemsink_available?
   available = false
   if defined?(WIN32OLE)
     wmi = nil
@@ -50,7 +51,7 @@ if defined?(WIN32OLE_EVENT)
   end
 
   class TestWIN32OLE_EVENT_SWbemSink < Test::Unit::TestCase
-    unless swbemsink_avairable?
+    unless swbemsink_available?
       def test_dummy_for_skip_message
         skip "'WbemScripting.SWbemSink' is not available"
       end
@@ -91,7 +92,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_s_new_loop
-        @wmi.ExecNotificationQueryAsync(@sws, @sql)
+        exec_notification_query_async
         ev = WIN32OLE_EVENT.new(@sws)
         ev.on_event {|*args| default_handler(*args)}
         message_loop
@@ -104,7 +105,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_on_event
-        @wmi.ExecNotificationQueryAsync(@sws, @sql)
+        exec_notification_query_async
         ev = WIN32OLE_EVENT.new(@sws, 'ISWbemSinkEvents')
         ev.on_event {|*args| default_handler(*args)}
         message_loop
@@ -112,7 +113,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_on_event_symbol
-        @wmi.ExecNotificationQueryAsync(@sws, @sql)
+        exec_notification_query_async
         ev = WIN32OLE_EVENT.new(@sws)
         ev.on_event(:OnObjectReady) {|*args|
           handler1
@@ -121,6 +122,15 @@ if defined?(WIN32OLE_EVENT)
         assert_equal("handler1", @event1)
       end
 
+      private
+      def exec_notification_query_async
+        @wmi.ExecNotificationQueryAsync(@sws, @sql)
+      rescue => e
+        if /OLE error code:80041008 in SWbemServicesEx/ =~ e.message
+          skip "No administrator privilege?"
+        end
+        raise
+      end
     end
   end
 

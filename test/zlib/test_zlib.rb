@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'stringio'
 require 'tempfile'
@@ -233,7 +234,7 @@ if defined? Zlib
 
   class TestZlibInflate < Test::Unit::TestCase
     def test_class_inflate_dictionary
-      assert_raises(Zlib::NeedDict) do
+      assert_raise(Zlib::NeedDict) do
         Zlib::Inflate.inflate([0x08,0x3C,0x0,0x0,0x0,0x0].pack("c*"))
       end
     end
@@ -929,7 +930,7 @@ if defined? Zlib
         f = open(t.path)
         f.binmode
         assert_equal("foo", Zlib::GzipReader.wrap(f) {|gz| gz.read })
-        assert_raise(IOError) { f.close }
+        assert(f.closed?)
       }
     end
 
@@ -953,7 +954,10 @@ if defined? Zlib
         content = (0..255).to_a.pack('c*')
         Zlib::GzipWriter.wrap(t) {|gz| gz.print(content) }
 
-        read_all = Zlib::GzipReader.open(t.path) {|gz| gz.read }
+        read_all = Zlib::GzipReader.open(t.path) do |gz|
+          assert_equal(Encoding.default_external, gz.external_encoding)
+          gz.read
+        end
         assert_equal(Encoding.default_external, read_all.encoding)
 
         # chunks are in BINARY regardless of encoding settings
@@ -962,6 +966,19 @@ if defined? Zlib
         assert_equal(content, read_size)
       }
     end
+
+    def test_double_close
+      Tempfile.create("test_zlib_gzip_reader_close") {|t|
+        t.binmode
+        content = "foo"
+        Zlib::GzipWriter.wrap(t) {|gz| gz.print(content) }
+        r = Zlib::GzipReader.open(t.path)
+        assert_equal(content, r.read)
+        assert_nothing_raised { r.close }
+        assert_nothing_raised { r.close }
+      }
+    end
+
   end
 
   class TestZlibGzipWriter < Test::Unit::TestCase
@@ -1022,6 +1039,15 @@ if defined? Zlib
         assert_equal("foo", Zlib::GzipReader.open(t.path) {|gz| gz.read })
       }
     end
+
+    def test_double_close
+      Tempfile.create("test_zlib_gzip_reader_close") {|t|
+        t.binmode
+        w = Zlib::GzipWriter.wrap(t)
+        assert_nothing_raised { w.close }
+        assert_nothing_raised { w.close }
+      }
+    end
   end
 
   class TestZlib < Test::Unit::TestCase
@@ -1044,6 +1070,11 @@ if defined? Zlib
         assert_equal(0x02820145, Zlib.adler32_combine(one, two, 1))
       rescue NotImplementedError
         skip "adler32_combine is not implemented"
+      rescue Minitest::Assertion
+        if /aix/ =~ RUBY_PLATFORM
+          skip "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
+        end
+        raise $!
       end
     end
 
@@ -1061,6 +1092,11 @@ if defined? Zlib
         assert_equal(0x8c736521, Zlib.crc32_combine(one, two, 1))
       rescue NotImplementedError
         skip "crc32_combine is not implemented"
+      rescue Minitest::Assertion
+        if /aix/ =~ RUBY_PLATFORM
+          skip "zconf.h in zlib does not handle _LARGE_FILES in AIX. Skip until it is fixed"
+        end
+        raise $!
       end
     end
 

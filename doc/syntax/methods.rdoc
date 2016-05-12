@@ -47,23 +47,23 @@ exist on all keyboards.
 Method names may end with a <code>!</code> (bang or exclamation mark), a
 <code>?</code> (question mark) or <code>=</code> equals sign.
 
-The bang methods(<code>!</code> at the end of method name) are called and
+The bang methods (<code>!</code> at the end of method name) are called and
 executed just like any other method. However, by convention, a method with an
 exclamation point or bang is considered dangerous. In ruby core library the
-dangerous method implies that when a method ends with a bang(<code>!</code>),
+dangerous method implies that when a method ends with a bang (<code>!</code>),
 it indicates that unlike its non-bang equivalent, permanently modifies its
-receiver. Almost always, Ruby core library will have a non-bang
-counterpart(method name which does NOT end with <code>!</code>) of every bang
-method (method name which does end with <code>!</code>) that has does not
-modify the receiver. This convention is typically true for ruby core libary but
-may/may not hold true for other ruby libraries.
+receiver. Almost always, ruby core library will have a non-bang
+counterpart (method name which does NOT end with <code>!</code>) of every bang
+method (method name which does end with <code>!</code>) that does not modify
+the receiver. This convention is typically true for ruby core library but
+may or may not hold true for other ruby libraries.
 
-Methods that end with a question mark by convention return boolean. But they
-may not always return just +true+ or +false+.  Often they will may return an
+Methods that end with a question mark by convention return boolean, but they
+may not always return just +true+ or +false+.  Often, they will return an
 object to indicate a true value (or "truthy" value).
 
 Methods that end with an equals sign indicate an assignment method.  For
-assignment methods the return value is ignored, the arguments are returned
+assignment methods, the return value is ignored and the arguments are returned
 instead.
 
 These are method names for the various ruby operators.  Each of these
@@ -148,7 +148,7 @@ evaluated.
   end
 
 Note that for assignment methods the return value will always be ignored.
-Instead the argument will be returned:
+Instead, the argument will be returned:
 
   def a=(value)
     return 1 + value
@@ -450,7 +450,6 @@ May be written as:
     # handle exception
   end
 
-If you wish to rescue an exception for only part of your method use +begin+ and
+If you wish to rescue an exception for only part of your method, use +begin+ and
 +end+.  For more details see the page on {exception
 handling}[rdoc-ref:syntax/exceptions.rdoc].
-

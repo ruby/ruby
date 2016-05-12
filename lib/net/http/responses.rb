@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # :stopdoc:
 class Net::HTTPUnknownResponse < Net::HTTPResponse
   HAS_BODY = true
@@ -168,6 +169,9 @@ end
 class Net::HTTPRequestHeaderFieldsTooLarge < Net::HTTPClientError   # 431 - RFC 6585
   HAS_BODY = true
 end
+class Net::HTTPUnavailableForLegalReasons < Net::HTTPClientError    # 451
+  HAS_BODY = true
+end
 # 444 No Response - Nginx
 # 449 Retry With - Microsoft
 # 450 Blocked by Windows Parental Controls - Microsoft
@@ -231,6 +235,7 @@ class Net::HTTPResponse
     '304' => Net::HTTPNotModified,
     '305' => Net::HTTPUseProxy,
     '307' => Net::HTTPTemporaryRedirect,
+    '308' => Net::HTTPPermanentRedirect,
 
     '400' => Net::HTTPBadRequest,
     '401' => Net::HTTPUnauthorized,

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'tsort'
 
 ##
@@ -77,6 +78,11 @@ class Gem::RequestSet
   attr_reader :vendor_set # :nodoc:
 
   ##
+  # The set of source gems imported via load_gemdeps.
+
+  attr_reader :source_set
+
+  ##
   # Creates a RequestSet for a list of Gem::Dependency objects, +deps+.  You
   # can then #resolve and #install the resolved list of dependencies.
   #
@@ -105,6 +111,7 @@ class Gem::RequestSet
     @sorted              = nil
     @specs               = nil
     @vendor_set          = nil
+    @source_set          = nil
 
     yield self if block_given?
   end
@@ -116,7 +123,7 @@ class Gem::RequestSet
     if dep = @dependency_names[name] then
       dep.requirement.concat reqs
     else
-      dep = Gem::Dependency.new name, reqs
+      dep = Gem::Dependency.new name, *reqs
       @dependency_names[name] = dep
       @dependencies << dep
     end
@@ -142,7 +149,6 @@ class Gem::RequestSet
       return requests
     end
 
-    cache_dir = options[:cache_dir] || Gem.dir
     @prerelease = options[:prerelease]
 
     requests = []
@@ -157,18 +163,13 @@ class Gem::RequestSet
         end
       end
 
-      path = req.download cache_dir
+      spec = req.spec.install options do |installer|
+        yield req, installer if block_given?
+      end
 
-      inst = Gem::Installer.new path, options
-
-      yield req, inst if block_given?
-
-      requests << inst.install
+      requests << spec
     end
 
-    requests
-  ensure
-    raise if $!
     return requests if options[:gemdeps]
 
     specs = requests.map do |request|
@@ -187,6 +188,8 @@ class Gem::RequestSet
     Gem.done_installing_hooks.each do |hook|
       hook.call inst, specs
     end unless Gem.done_installing_hooks.empty?
+
+    requests
   end
 
   ##
@@ -223,7 +226,7 @@ class Gem::RequestSet
 
       if options.fetch :lock, true then
         lockfile =
-          Gem::RequestSet::Lockfile.new self, gemdeps, gem_deps_api.dependencies
+          Gem::RequestSet::Lockfile.build self, gemdeps, gem_deps_api.dependencies
         lockfile.write
       end
 
@@ -272,11 +275,17 @@ class Gem::RequestSet
   def load_gemdeps path, without_groups = [], installing = false
     @git_set    = Gem::Resolver::GitSet.new
     @vendor_set = Gem::Resolver::VendorSet.new
+    @source_set = Gem::Resolver::SourceSet.new
 
     @git_set.root_dir = @install_dir
 
-    lockfile = Gem::RequestSet::Lockfile.new self, path
-    lockfile.parse
+    lock_file = "#{File.expand_path(path)}.lock".dup.untaint
+    begin
+      tokenizer = Gem::RequestSet::Lockfile::Tokenizer.from_file lock_file
+      parser = tokenizer.make_parser self, []
+      parser.parse
+    rescue Errno::ENOENT
+    end
 
     gf = Gem::RequestSet::GemDependencyAPI.new self, path
     gf.installing = installing
@@ -334,6 +343,7 @@ class Gem::RequestSet
     @sets << set
     @sets << @git_set
     @sets << @vendor_set
+    @sets << @source_set
 
     set = Gem::Resolver.compose_sets(*@sets)
     set.remote = @remote
@@ -411,3 +421,4 @@ end
 
 require 'rubygems/request_set/gem_dependency_api'
 require 'rubygems/request_set/lockfile'
+require 'rubygems/request_set/lockfile/tokenizer'

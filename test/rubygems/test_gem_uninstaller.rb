@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/installer_test_case'
 require 'rubygems/uninstaller'
 
@@ -158,6 +159,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
     uninstaller = Gem::Uninstaller.new nil
 
     @spec.loaded_from = @spec.loaded_from.gsub @spec.full_name, '\&-legacy'
+    @spec.internal_init # blow out cache. but why did ^^ depend on cache?
     @spec.platform = 'legacy'
 
     assert_equal true, uninstaller.path_ok?(@gemhome, @spec)
@@ -236,7 +238,7 @@ create_makefile '#{@spec.name}'
     use_ui @ui do
       path = Gem::Package.build @spec
 
-      installer = Gem::Installer.new path
+      installer = Gem::Installer.at path
       installer.install
     end
 
@@ -385,7 +387,7 @@ create_makefile '#{@spec.name}'
     assert_match %r!Successfully uninstalled q-1!, lines.last
   end
 
-  def test_uninstall_only_lists_unsatified_deps
+  def test_uninstall_only_lists_unsatisfied_deps
     quick_gem 'r', '1' do |s| s.add_dependency 'q', '~> 1.0' end
     quick_gem 'x', '1' do |s| s.add_dependency 'q', '= 1.0'  end
     quick_gem 'q', '1.0'
@@ -409,7 +411,7 @@ create_makefile '#{@spec.name}'
     assert_match %r!Successfully uninstalled q-1.0!, lines.last
   end
 
-  def test_uninstall_doesnt_prompt_when_other_gem_satifies_requirement
+  def test_uninstall_doesnt_prompt_when_other_gem_satisfies_requirement
     quick_gem 'r', '1' do |s| s.add_dependency 'q', '~> 1.0' end
     quick_gem 'q', '1.0'
     quick_gem 'q', '1.1'

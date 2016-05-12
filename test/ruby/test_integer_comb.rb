@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestIntegerComb < Test::Unit::TestCase
@@ -109,25 +110,21 @@ class TestIntegerComb < Test::Unit::TestCase
   #VS.concat VS.find_all {|v| Fixnum === v }.map {|v| 0x4000000000000000.coerce(v)[0] }
   #VS.sort! {|a, b| a.abs <=> b.abs }
 
-  min = -1
-  min *= 2 while min.class == Fixnum
-  FIXNUM_MIN = min/2
-  max = 1
-  max *= 2 while (max-1).class == Fixnum
-  FIXNUM_MAX = max/2-1
+  FIXNUM_MIN = Integer::FIXNUM_MIN
+  FIXNUM_MAX = Integer::FIXNUM_MAX
 
   def test_fixnum_range
-    assert_instance_of(Bignum, FIXNUM_MIN-1)
-    assert_instance_of(Fixnum, FIXNUM_MIN)
-    assert_instance_of(Fixnum, FIXNUM_MAX)
-    assert_instance_of(Bignum, FIXNUM_MAX+1)
+    assert_bignum(FIXNUM_MIN-1)
+    assert_fixnum(FIXNUM_MIN)
+    assert_fixnum(FIXNUM_MAX)
+    assert_bignum(FIXNUM_MAX+1)
   end
 
   def check_class(n)
     if FIXNUM_MIN <= n && n <= FIXNUM_MAX
-      assert_instance_of(Fixnum, n)
+      assert_fixnum(n)
     else
-      assert_instance_of(Bignum, n)
+      assert_bignum(n)
     end
   end
 
@@ -300,7 +297,7 @@ class TestIntegerComb < Test::Unit::TestCase
           assert_equal(a, c >> b, "(#{a} << #{b}) >> #{b}")
           assert_equal(a * 2**b, c, "#{a} << #{b}")
         end
-        0.upto(c.size*8+10) {|nth|
+        0.upto(c.bit_length+10) {|nth|
           assert_equal(a[nth-b], c[nth], "(#{a} << #{b})[#{nth}]")
         }
       }
@@ -317,7 +314,7 @@ class TestIntegerComb < Test::Unit::TestCase
           assert_equal(a, c << b, "(#{a} >> #{b}) << #{b}")
           assert_equal(a * 2**(-b), c, "#{a} >> #{b}")
         end
-        0.upto(c.size*8+10) {|nth|
+        0.upto(c.bit_length+10) {|nth|
           assert_equal(a[nth+b], c[nth], "(#{a} >> #{b})[#{nth}]")
         }
       }

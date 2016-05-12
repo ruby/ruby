@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   irb/context.rb - irb context
 #   	$Release Version: 0.9.6$

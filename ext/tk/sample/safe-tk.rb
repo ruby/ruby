@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: false
 # This script is a sample of MultiTkIp class
 
 require "multi-tk"
@@ -116,9 +117,6 @@ p ip.eval_str("
               :relief=>:sunken).pack(:fill=>:x, :expand=>true,
                                      :padx=>10, :pady=>7)
 ", bind)
-
-puts "\n---- change the safe slave IP's safe-level ==> 4 ----------"
-ip.safe_level = 4
 
 puts "\n---- call 3rd and 4th eval_proc ----------"
 p ip.eval_proc{

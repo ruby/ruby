@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 =begin
  external service
         Copyright (c) 2000,2002 Masatoshi SEKI

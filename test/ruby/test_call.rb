@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestCall < Test::Unit::TestCase
@@ -30,5 +31,63 @@ class TestCall < Test::Unit::TestCase
     e = assert_raise(ArgumentError) {o.foo(100)}
     assert_nothing_raised(ArgumentError) {o.foo}
     assert_raise_with_message(ArgumentError, e.message, bug9622) {o.foo(100)}
+  end
+
+  def test_safe_call
+    s = Struct.new(:x, :y, :z)
+    o = s.new("x")
+    assert_equal("X", o.x&.upcase)
+    assert_nil(o.y&.upcase)
+    assert_equal("x", o.x)
+    o&.x = 6
+    assert_equal(6, o.x)
+    o&.x *= 7
+    assert_equal(42, o.x)
+    o&.y = 5
+    assert_equal(5, o.y)
+    o&.z ||= 6
+    assert_equal(6, o.z)
+
+    o = nil
+    assert_nil(o&.x)
+    assert_nothing_raised(NoMethodError) {o&.x = 6}
+    assert_nothing_raised(NoMethodError) {o&.x *= 7}
+  end
+
+  def test_safe_call_evaluate_arguments_only_method_call_is_made
+    count = 0
+    proc = proc { count += 1; 1 }
+    s = Struct.new(:x, :y)
+    o = s.new(["a", "b", "c"])
+
+    o.y&.at(proc.call)
+    assert_equal(0, count)
+
+    o.x&.at(proc.call)
+    assert_equal(1, count)
+  end
+
+  def test_safe_call_block_command
+    assert_nil(("a".sub! "b" do end&.foo 1))
+  end
+
+  def test_safe_call_block_call
+    assert_nil(("a".sub! "b" do end&.foo))
+  end
+
+  def test_safe_call_block_call_brace
+    assert_nil(("a".sub! "b" do end&.foo {}))
+    assert_nil(("a".sub! "b" do end&.foo do end))
+  end
+
+  def test_safe_call_block_call_command
+    assert_nil(("a".sub! "b" do end&.foo 1 do end))
+  end
+
+  def test_invalid_safe_call
+    h = nil
+    assert_raise(NoMethodError) {
+      h[:foo] = nil
+    }
   end
 end

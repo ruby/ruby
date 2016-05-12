@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   mutex_m.rb -
 #       $Release Version: 3.0$

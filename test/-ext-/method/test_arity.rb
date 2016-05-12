@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require '-test-/method'
 require 'test/unit'
 

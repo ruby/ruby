@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  charts -- Create and manipulate canvas Add-On Items
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 begin
   require 'win32ole'
 rescue LoadError
@@ -36,14 +37,10 @@ if defined?(WIN32OLE_VARIANT)
     end
 
     def test_s_new_no_argument
-      ex = nil
-      begin
+      pat = /wrong number of arguments \(.*\b0\b.* 1\.\.3\)/
+      assert_raise_with_message(ArgumentError, pat) do
         WIN32OLE_VARIANT.new
-      rescue ArgumentError
-        ex = $!
       end
-      assert_instance_of(ArgumentError, ex)
-      assert_equal("wrong number of arguments (0 for 1..3)", ex.message);
     end
 
     def test_s_new_one_argument

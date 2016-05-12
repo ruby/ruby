@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # httpauth/htdigest.rb -- Apache compatible htdigest file
 #

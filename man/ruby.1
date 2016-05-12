@@ -1,5 +1,5 @@
 .\"Ruby is copyrighted by Yukihiro Matsumoto <matz@netlab.jp>.
-.Dd November 7, 2012
+.Dd October 31, 2015
 .Dt RUBY(1) "" "Ruby Programmers Reference Guide"
 .\".Dt RUBY 1
 .Os UNIX
@@ -14,16 +14,16 @@
 .Op Fl 0 Ns Op Ar octal
 .Op Fl C Ar directory
 .Op Fl E Ar external Ns Op : Ns Ar internal
-.Op Fl F Ar pattern
+.Op Fl F Ns Op Ar pattern
 .Op Fl I Ar directory
-.Op Fl K Ar c
+.Op Fl K Ns Op Ar c
 .Op Fl T Ns Op Ar level
 .Op Fl W Ns Op Ar level
 .Op Fl e Ar command
 .Op Fl i Ns Op Ar extension
 .Op Fl r Ar library
 .Op Fl x Ns Op Ar directory
-.Op - Ns Bro Cm enable Ns | Ns Cm disable Brc Ns - Ns Ar FEATURE
+.Op Fl - Ns Bro Cm enable Ns | Ns Cm disable Brc Ns - Ns Ar FEATURE
 .Op Fl -dump Ns = Ns Ar target
 .Op Fl -verbose
 .Op Fl -
@@ -409,18 +409,40 @@ Disables (or enables) all features.
 .El
 .Pp
 .It Fl -dump Ns = Ns Ar target
-DO NOT USE.
+Dump some informations.
 .Pp
 Prints the specified target.
 .Ar target
 can be one of;
 .Bl -hang -offset indent
+.It Sy version
+version description same as
+.Fl -version
+.It Sy usage
+brief usage message same as
+.Fl h
+.It Sy help
+Show long help message same as
+.Fl -help
+.It Sy syntax
+check of syntax same as
+.Fl c
+.Fl -yydebug
+.It Sy yydebug
+compiler debug mode, same as
+.Fl -yydebug
+.Pp
+Only specify this switch if you are going to debug the Ruby interpreter.
+.It Sy parsetree
+.It Sy parsetree_with_comment
+AST nodes tree
+.Pp
+Only specify this switch if you are going to debug the Ruby interpreter.
 .It Sy insns
 disassembled instructions
 .Pp
-.El
-.Pp
 Only specify this switch if you are going to debug the Ruby interpreter.
+.El
 .Pp
 .It Fl -verbose
 Enables verbose mode without printing version message at the
@@ -484,14 +506,14 @@ as below.
 .Pp
 .Sh GC ENVIRONMENT
 The Ruby garbage collector (GC) tracks objects in fixed-sized slots,
-but each object may have auxillary memory allocations handled by the
+but each object may have auxiliary memory allocations handled by the
 malloc family of C standard library calls (
 .Xr malloc 3 ,
 .Xr calloc 3 ,
 and
 .Xr realloc 3 ) .
 In this documentatation, the "heap" refers to the Ruby object heap
-of fixed-sized slots, while "malloc" refers to auxillary
+of fixed-sized slots, while "malloc" refers to auxiliary
 allocations commonly referred to as the "process heap".
 Thus there are at least two possible ways to trigger GC:
 .Bl -hang -offset indent
@@ -512,7 +534,7 @@ Reaching the old malloc limit.
 .El
 .Pp
 There are currently 4 possible areas where the GC may be tuned by
-the the following 11 environment variables:
+the following 11 environment variables:
 .Bl -hang -compact -width "RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR"
 .It Ev RUBY_GC_HEAP_INIT_SLOTS
 Initial allocation slots.  Introduced in Ruby 2.1, default: 10000.

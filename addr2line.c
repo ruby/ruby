@@ -812,8 +812,7 @@ next_line:
 
 #include <stdarg.h>
 #define MAXNBUF (sizeof(intmax_t) * CHAR_BIT + 1)
-extern int rb_toupper(int c);
-#define    toupper(c)  rb_toupper(c)
+static inline int toupper(int c) { return ('A' <= c && c <= 'Z') ? (c&0x5f) : c; }
 #define    hex2ascii(hex)  (hex2ascii_data[hex])
 char const hex2ascii_data[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 static inline int imax(int a, int b) { return (a > b ? a : b); }

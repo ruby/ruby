@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rexml/parsers/streamparser'
 require 'rexml/parsers/baseparser'
 require 'rexml/light/node'

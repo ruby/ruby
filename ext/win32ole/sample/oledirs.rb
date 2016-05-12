@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # You need WSH(Windows Scripting Host) to run this script.
 #

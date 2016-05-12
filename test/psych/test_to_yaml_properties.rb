@@ -1,7 +1,8 @@
+# frozen_string_literal: false
 require_relative 'helper'
 
 module Psych
-  class TestToYamlProperties < MiniTest::Unit::TestCase
+  class TestToYamlProperties < Psych::TestCase
     class Foo
       attr_accessor :a, :b, :c
       def initialize

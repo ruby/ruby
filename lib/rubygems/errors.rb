@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #--
 # This file contains all the various exceptions and other errors that are used
 # inside of RubyGems.
@@ -17,6 +18,49 @@ module Gem
 
     # Version requirement of gem
     attr_accessor :requirement
+  end
+
+  ##
+  # Raised when trying to activate a gem, and that gem does not exist on the
+  # system.  Instead of rescuing from this class, make sure to rescue from the
+  # superclass Gem::LoadError to catch all types of load errors.
+  class MissingSpecError < Gem::LoadError
+    def initialize name, requirement
+      @name        = name
+      @requirement = requirement
+    end
+
+    def message # :nodoc:
+      build_message +
+        "Checked in 'GEM_PATH=#{Gem.path.join(File::PATH_SEPARATOR)}', execute `gem env` for more information"
+    end
+
+    private
+
+    def build_message
+      total = Gem::Specification.stubs.size
+      "Could not find '#{name}' (#{requirement}) among #{total} total gem(s)\n"
+    end
+  end
+
+  ##
+  # Raised when trying to activate a gem, and the gem exists on the system, but
+  # not the requested version. Instead of rescuing from this class, make sure to
+  # rescue from the superclass Gem::LoadError to catch all types of load errors.
+  class MissingSpecVersionError < MissingSpecError
+    attr_reader :specs
+
+    def initialize name, requirement, specs
+      super(name, requirement)
+      @specs = specs
+    end
+
+    private
+
+    def build_message
+      names = specs.map(&:full_name)
+      "Could not find '#{name}' (#{requirement}) - did find: [#{names.join ','}]\n"
+    end
   end
 
   # Raised when there are conflicting gem specs loaded
@@ -126,6 +170,7 @@ module Gem
     # An English description of the error.
 
     def wordy
+      @source.uri.password = 'REDACTED' unless @source.uri.password.nil?
       "Unable to download data from #{@source.uri} - #{@error.message}"
     end
 

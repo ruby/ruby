@@ -33,6 +33,9 @@
 #if defined(HAVE_SYS_TIME_H)
 #include <sys/time.h>
 #endif
+#if defined(__HAIKU__)
+#include <kernel/OS.h>
+#endif
 
 static void native_mutex_lock(rb_nativethread_lock_t *lock);
 static void native_mutex_unlock(rb_nativethread_lock_t *lock);
@@ -417,12 +420,8 @@ native_cond_timeout(rb_nativethread_cond_t *cond, struct timespec timeout_rel)
 #endif
 
 #if defined(SIGVTALRM) && !defined(__CYGWIN__)
-#define USE_SIGNAL_THREAD_LIST 1
-#endif
-#ifdef USE_SIGNAL_THREAD_LIST
-static void add_signal_thread_list(rb_thread_t *th);
-static void remove_signal_thread_list(rb_thread_t *th);
-static rb_nativethread_lock_t signal_thread_list_lock;
+#define USE_UBF_LIST 1
+static rb_nativethread_lock_t ubf_list_lock;
 #endif
 
 static pthread_key_t ruby_native_thread_key;
@@ -456,8 +455,8 @@ Init_native_thread(void)
     th->thread_id = pthread_self();
     fill_thread_id_str(th);
     native_thread_init(th);
-#ifdef USE_SIGNAL_THREAD_LIST
-    native_mutex_initialize(&signal_thread_list_lock);
+#ifdef USE_UBF_LIST
+    native_mutex_initialize(&ubf_list_lock);
 #endif
 #ifndef __native_client__
     posix_signal(SIGVTALRM, null_func);
@@ -467,7 +466,12 @@ Init_native_thread(void)
 static void
 native_thread_init(rb_thread_t *th)
 {
-    native_cond_initialize(&th->native_thread_data.sleep_cond, RB_CONDATTR_CLOCK_MONOTONIC);
+    native_thread_data_t *nd = &th->native_thread_data;
+
+#ifdef USE_UBF_LIST
+    list_node_init(&nd->ubf_list);
+#endif
+    native_cond_initialize(&nd->sleep_cond, RB_CONDATTR_CLOCK_MONOTONIC);
     ruby_thread_set_native(th);
 }
 
@@ -497,6 +501,8 @@ size_t pthread_get_stacksize_np(pthread_t);
 #define STACKADDR_AVAILABLE 1
 #elif defined HAVE_PTHREAD_GETTHRDS_NP
 #define STACKADDR_AVAILABLE 1
+#elif defined __HAIKU__
+#define STACKADDR_AVAILABLE 1
 #elif defined __ia64 && defined _HPUX_SOURCE
 #include <sys/dyntune.h>
 
@@ -514,7 +520,7 @@ size_t pthread_get_stacksize_np(pthread_t);
 
 /*
  * As the PTHREAD_STACK_MIN is undefined and
- * noone touches the default stacksize,
+ * no one touches the default stacksize,
  * it is just fine to use the default.
  */
 #define pthread_attr_get_np(thid, attr) 0
@@ -613,7 +619,17 @@ get_stack(void **addr, size_t *size)
 				   &thinfo, sizeof(thinfo),
 				   &reg, &regsiz));
     *addr = thinfo.__pi_stackaddr;
-    *size = thinfo.__pi_stacksize;
+    /* Must not use thinfo.__pi_stacksize for size.
+       It is around 3KB smaller than the correct size
+       calculated by thinfo.__pi_stackend - thinfo.__pi_stackaddr. */
+    *size = thinfo.__pi_stackend - thinfo.__pi_stackaddr;
+    STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
+#elif defined __HAIKU__
+    thread_info info;
+    STACK_GROW_DIR_DETECTION;
+    CHECK_ERR(get_thread_info(find_thread(NULL), &info));
+    *addr = info.stack_base;
+    *size = (uintptr_t)info.stack_end - (uintptr_t)info.stack_base;
     STACK_DIR_UPPER((void)0, (void)(*addr = (char *)*addr + *size));
 #else
 #error STACKADDR_AVAILABLE is defined but not implemented.
@@ -653,6 +669,62 @@ space_size(size_t stack_size)
     }
 }
 
+#ifdef __linux__
+static __attribute__((noinline)) void
+reserve_stack(volatile char *limit, size_t size)
+{
+# ifdef C_ALLOCA
+#   error needs alloca()
+# endif
+    struct rlimit rl;
+    volatile char buf[0x100];
+    enum {stack_check_margin = 0x1000}; /* for -fstack-check */
+
+    STACK_GROW_DIR_DETECTION;
+
+    if (!getrlimit(RLIMIT_STACK, &rl) && rl.rlim_cur == RLIM_INFINITY)
+	return;
+
+    if (size < stack_check_margin) return;
+    size -= stack_check_margin;
+
+    size -= sizeof(buf); /* margin */
+    if (IS_STACK_DIR_UPPER()) {
+	const volatile char *end = buf + sizeof(buf);
+	limit += size;
+	if (limit > end) {
+	    /* |<-bottom (=limit(a))                                     top->|
+	     * | .. |<-buf 256B |<-end                          | stack check |
+	     * |  256B  |              =size=                   | margin (4KB)|
+	     * |              =size=         limit(b)->|  256B  |             |
+	     * |                |       alloca(sz)     |        |             |
+	     * | .. |<-buf      |<-limit(c)    [sz-1]->0>       |             |
+	     */
+	    size_t sz = limit - end;
+	    limit = alloca(sz);
+	    limit[sz-1] = 0;
+	}
+    }
+    else {
+	limit -= size;
+	if (buf > limit) {
+	    /* |<-top (=limit(a))                                     bottom->|
+	     * | .. | 256B buf->|                               | stack check |
+	     * |  256B  |              =size=                   | margin (4KB)|
+	     * |              =size=         limit(b)->|  256B  |             |
+	     * |                |       alloca(sz)     |        |             |
+	     * | .. |      buf->|           limit(c)-><0>       |             |
+	     */
+	    size_t sz = buf - limit;
+	    limit = alloca(sz);
+	    limit[0] = 0;
+	}
+    }
+}
+#else
+# define reserve_stack(limit, size) ((void)(limit), (void)(size))
+#endif
+
 #undef ruby_init_stack
 /* Set stack bottom of Ruby implementation.
  *
@@ -674,6 +746,7 @@ ruby_init_stack(volatile VALUE *addr
 	if (get_main_stack(&stackaddr, &size) == 0) {
 	    native_main_thread.stack_maxsize = size;
 	    native_main_thread.stack_start = stackaddr;
+	    reserve_stack(stackaddr, size);
 	    return;
 	}
     }
@@ -969,6 +1042,7 @@ native_thread_create(rb_thread_t *th)
     return err;
 }
 
+#if USE_SLEEPY_TIMER_THREAD
 static void
 native_thread_join(pthread_t th)
 {
@@ -977,6 +1051,7 @@ native_thread_join(pthread_t th)
 	rb_raise(rb_eThreadError, "native_thread_join() failed (%d)", err);
     }
 }
+#endif
 
 
 #if USE_NATIVE_THREAD_PRIORITY
@@ -1078,144 +1153,93 @@ native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
     thread_debug("native_sleep done\n");
 }
 
-#ifdef USE_SIGNAL_THREAD_LIST
-struct signal_thread_list {
-    rb_thread_t *th;
-    struct signal_thread_list *prev;
-    struct signal_thread_list *next;
-};
+#ifdef USE_UBF_LIST
+static LIST_HEAD(ubf_list_head);
 
-static struct signal_thread_list signal_thread_list_anchor = {
-    0, 0, 0,
-};
-
-#define FGLOCK(lock, body) do { \
-    native_mutex_lock(lock); \
-    { \
-	body; \
-    } \
-    native_mutex_unlock(lock); \
-} while (0)
-
-#if 0 /* for debug */
+/* The thread 'th' is registered to be trying unblock. */
 static void
-print_signal_list(char *str)
+register_ubf_list(rb_thread_t *th)
 {
-    struct signal_thread_list *list =
-      signal_thread_list_anchor.next;
-    thread_debug("list (%s)> ", str);
-    while (list) {
-	thread_debug("%p (%p), ", list->th, list->th->thread_id);
-	list = list->next;
-    }
-    thread_debug("\n");
-}
-#endif
+    struct list_node *node = &th->native_thread_data.ubf_list;
 
-static void
-add_signal_thread_list(rb_thread_t *th)
-{
-    if (!th->native_thread_data.signal_thread_list) {
-	FGLOCK(&signal_thread_list_lock, {
-	    struct signal_thread_list *list =
-	      malloc(sizeof(struct signal_thread_list));
-
-	    if (list == 0) {
-		fprintf(stderr, "[FATAL] failed to allocate memory\n");
-		exit(EXIT_FAILURE);
-	    }
-
-	    list->th = th;
-
-	    list->prev = &signal_thread_list_anchor;
-	    list->next = signal_thread_list_anchor.next;
-	    if (list->next) {
-		list->next->prev = list;
-	    }
-	    signal_thread_list_anchor.next = list;
-	    th->native_thread_data.signal_thread_list = list;
-	});
+    if (list_empty((struct list_head*)node)) {
+	native_mutex_lock(&ubf_list_lock);
+	list_add(&ubf_list_head, node);
+	native_mutex_unlock(&ubf_list_lock);
     }
 }
 
+/* The thread 'th' is unblocked. It no longer need to be registered. */
 static void
-remove_signal_thread_list(rb_thread_t *th)
+unregister_ubf_list(rb_thread_t *th)
 {
-    if (th->native_thread_data.signal_thread_list) {
-	FGLOCK(&signal_thread_list_lock, {
-	    struct signal_thread_list *list =
-	      (struct signal_thread_list *)
-		th->native_thread_data.signal_thread_list;
+    struct list_node *node = &th->native_thread_data.ubf_list;
 
-	    list->prev->next = list->next;
-	    if (list->next) {
-		list->next->prev = list->prev;
-	    }
-	    th->native_thread_data.signal_thread_list = 0;
-	    list->th = 0;
-	    free(list); /* ok */
-	});
+    if (!list_empty((struct list_head*)node)) {
+	native_mutex_lock(&ubf_list_lock);
+	list_del_init(node);
+	native_mutex_unlock(&ubf_list_lock);
     }
 }
 
+/*
+ * send a signal to intent that a target thread return from blocking syscall.
+ * Maybe any signal is ok, but we chose SIGVTALRM.
+ */
 static void
-ubf_select_each(rb_thread_t *th)
+ubf_wakeup_thread(rb_thread_t *th)
 {
-    thread_debug("ubf_select_each (%"PRI_THREAD_ID")\n", thread_id_str(th));
-    if (th) {
+    thread_debug("thread_wait_queue_wakeup (%"PRI_THREAD_ID")\n", thread_id_str(th));
+    if (th)
 	pthread_kill(th->thread_id, SIGVTALRM);
-    }
 }
 
 static void
 ubf_select(void *ptr)
 {
     rb_thread_t *th = (rb_thread_t *)ptr;
-    add_signal_thread_list(th);
+    register_ubf_list(th);
 
     /*
-     * ubf_select_each() doesn't guarantee to wake up the target thread.
-     * Therefore, we need to activate timer thread when called from
-     * Thread#kill etc.
+     * ubf_wakeup_thread() doesn't guarantee to wake up a target thread.
+     * Therefore, we repeatedly call ubf_wakeup_thread() until a target thread
+     * exit from ubf function.
      * In the other hands, we shouldn't call rb_thread_wakeup_timer_thread()
      * if running on timer thread because it may make endless wakeups.
      */
     if (!pthread_equal(pthread_self(), timer_thread.id))
 	rb_thread_wakeup_timer_thread();
-    ubf_select_each(th);
-}
-
-static void
-ping_signal_thread_list(void)
-{
-    if (signal_thread_list_anchor.next) {
-	FGLOCK(&signal_thread_list_lock, {
-	    struct signal_thread_list *list;
-
-	    list = signal_thread_list_anchor.next;
-	    while (list) {
-		ubf_select_each(list->th);
-		list = list->next;
-	    }
-	});
-    }
+    ubf_wakeup_thread(th);
 }
 
 static int
-check_signal_thread_list(void)
+ubf_threads_empty(void)
 {
-    if (signal_thread_list_anchor.next)
-	return 1;
-    else
-	return 0;
+    return list_empty(&ubf_list_head);
 }
-#else /* USE_SIGNAL_THREAD_LIST */
-#define add_signal_thread_list(th) (void)(th)
-#define remove_signal_thread_list(th) (void)(th)
+
+static void
+ubf_wakeup_all_threads(void)
+{
+    rb_thread_t *th;
+
+    if (!ubf_threads_empty()) {
+	native_mutex_lock(&ubf_list_lock);
+	list_for_each(&ubf_list_head, th,
+		      native_thread_data.ubf_list) {
+	    ubf_wakeup_thread(th);
+	}
+	native_mutex_unlock(&ubf_list_lock);
+    }
+}
+
+#else /* USE_UBF_LIST */
+#define register_ubf_list(th) (void)(th)
+#define unregister_ubf_list(th) (void)(th)
 #define ubf_select 0
-static void ping_signal_thread_list(void) { return; }
-static int check_signal_thread_list(void) { return 0; }
-#endif /* USE_SIGNAL_THREAD_LIST */
+static void ubf_wakeup_all_threads(void) { return; }
+static int ubf_threads_empty(void) { return 1; }
+#endif /* USE_UBF_LIST */
 
 #define TT_DEBUG 0
 #define WRITE_CONST(fd, str) (void)(write((fd),(str),sizeof(str)-1)<0)
@@ -1227,23 +1251,43 @@ static int check_signal_thread_list(void) { return 0; }
 
 #if USE_SLEEPY_TIMER_THREAD
 static struct {
+    /*
+     * Read end of each pipe is closed inside timer thread for shutdown
+     * Write ends are closed by a normal Ruby thread during shutdown
+     */
     int normal[2];
     int low[2];
-    int owner_process;
+
+    /* volatile for signal handler use: */
+    volatile rb_pid_t owner_process;
+    rb_atomic_t writing;
 } timer_thread_pipe = {
     {-1, -1},
     {-1, -1}, /* low priority */
 };
 
+NORETURN(static void async_bug_fd(const char *mesg, int errno_arg, int fd));
+static void
+async_bug_fd(const char *mesg, int errno_arg, int fd)
+{
+    char buff[64];
+    size_t n = strlcpy(buff, mesg, sizeof(buff));
+    if (n < sizeof(buff)-3) {
+	ruby_snprintf(buff, sizeof(buff)-n, "(%d)", fd);
+    }
+    rb_async_bug_errno(buff, errno_arg);
+}
+
 /* only use signal-safe system calls here */
 static void
-rb_thread_wakeup_timer_thread_fd(int fd)
+rb_thread_wakeup_timer_thread_fd(volatile int *fdp)
 {
     ssize_t result;
+    int fd = *fdp; /* access fdp exactly once here and do not reread fdp */
 
     /* already opened */
-    if (timer_thread_pipe.owner_process == getpid()) {
-	const char *buff = "!";
+    if (fd >= 0 && timer_thread_pipe.owner_process == getpid()) {
+	static const char buff[1] = {'!'};
       retry:
 	if ((result = write(fd, buff, 1)) <= 0) {
 	    int e = errno;
@@ -1255,7 +1299,7 @@ rb_thread_wakeup_timer_thread_fd(int fd)
 #endif
 		break;
 	      default:
-		rb_async_bug_errno("rb_thread_wakeup_timer_thread - write", e);
+		async_bug_fd("rb_thread_wakeup_timer_thread: write", e, fd);
 	    }
 	}
 	if (TT_DEBUG) WRITE_CONST(2, "rb_thread_wakeup_timer_thread: write\n");
@@ -1268,13 +1312,18 @@ rb_thread_wakeup_timer_thread_fd(int fd)
 void
 rb_thread_wakeup_timer_thread(void)
 {
-    rb_thread_wakeup_timer_thread_fd(timer_thread_pipe.normal[1]);
+    /* must be safe inside sighandler, so no mutex */
+    ATOMIC_INC(timer_thread_pipe.writing);
+    rb_thread_wakeup_timer_thread_fd(&timer_thread_pipe.normal[1]);
+    ATOMIC_DEC(timer_thread_pipe.writing);
 }
 
 static void
 rb_thread_wakeup_timer_thread_low(void)
 {
-    rb_thread_wakeup_timer_thread_fd(timer_thread_pipe.low[1]);
+    ATOMIC_INC(timer_thread_pipe.writing);
+    rb_thread_wakeup_timer_thread_fd(&timer_thread_pipe.low[1]);
+    ATOMIC_DEC(timer_thread_pipe.writing);
 }
 
 /* VM-dependent API is not available for this function */
@@ -1302,22 +1351,23 @@ consume_communication_pipe(int fd)
 #endif
 		return;
 	      default:
-		rb_async_bug_errno("consume_communication_pipe: read\n", e);
+		async_bug_fd("consume_communication_pipe: read", e, fd);
 	    }
 	}
     }
 }
 
+#define CLOSE_INVALIDATE(expr) \
+    close_invalidate(&timer_thread_pipe.expr,"close_invalidate: "#expr)
 static void
-close_communication_pipe(int pipes[2])
+close_invalidate(volatile int *fdp, const char *msg)
 {
-    if (close(pipes[0]) < 0) {
-	rb_bug_errno("native_stop_timer_thread - close(ttp[0])", errno);
+    int fd = *fdp; /* access fdp exactly once here and do not reread fdp */
+
+    *fdp = -1;
+    if (close(fd) < 0) {
+	async_bug_fd(msg, errno, fd);
     }
-    if (close(pipes[1]) < 0) {
-	rb_bug_errno("native_stop_timer_thread - close(ttp[1])", errno);
-    }
-    pipes[0] = pipes[1] = -1;
 }
 
 static void
@@ -1335,39 +1385,45 @@ set_nonblock(int fd)
 	rb_sys_fail(0);
 }
 
-static void
+static int
 setup_communication_pipe_internal(int pipes[2])
 {
     int err;
 
-    if (pipes[0] != -1) {
-	/* close pipe of parent process */
-	close_communication_pipe(pipes);
-    }
-
     err = rb_cloexec_pipe(pipes);
     if (err != 0) {
-	rb_bug_errno("setup_communication_pipe: Failed to create communication pipe for timer thread", errno);
+	rb_warn("Failed to create communication pipe for timer thread: %s",
+	        strerror(errno));
+	return -1;
     }
     rb_update_max_fd(pipes[0]);
     rb_update_max_fd(pipes[1]);
     set_nonblock(pipes[0]);
     set_nonblock(pipes[1]);
+    return 0;
 }
 
 /* communication pipe with timer thread and signal handler */
-static void
+static int
 setup_communication_pipe(void)
 {
-    if (timer_thread_pipe.owner_process == getpid()) {
-	/* already set up. */
-	return;
-    }
-    setup_communication_pipe_internal(timer_thread_pipe.normal);
-    setup_communication_pipe_internal(timer_thread_pipe.low);
+    VM_ASSERT(timer_thread_pipe.owner_process == 0);
+    VM_ASSERT(timer_thread_pipe.normal[0] == -1);
+    VM_ASSERT(timer_thread_pipe.normal[1] == -1);
+    VM_ASSERT(timer_thread_pipe.low[0] == -1);
+    VM_ASSERT(timer_thread_pipe.low[1] == -1);
 
-    /* validate pipe on this process */
-    timer_thread_pipe.owner_process = getpid();
+    if (setup_communication_pipe_internal(timer_thread_pipe.normal) < 0) {
+	return errno;
+    }
+    if (setup_communication_pipe_internal(timer_thread_pipe.low) < 0) {
+	int e = errno;
+	CLOSE_INVALIDATE(normal[0]);
+	CLOSE_INVALIDATE(normal[1]);
+	return e;
+    }
+
+    return 0;
 }
 
 /**
@@ -1388,7 +1444,7 @@ timer_thread_sleep(rb_global_vm_lock_t* gvl)
     pollfds[1].fd = timer_thread_pipe.low[0];
     pollfds[1].events = POLLIN;
 
-    need_polling = check_signal_thread_list();
+    need_polling = !ubf_threads_empty();
 
     if (gvl->waiting > 0 || need_polling) {
 	/* polling (TIME_QUANTUM_USEC usec) */
@@ -1440,43 +1496,42 @@ timer_thread_sleep(rb_global_vm_lock_t* unused)
 }
 #endif /* USE_SLEEPY_TIMER_THREAD */
 
-#if defined(__linux__) && defined(PR_SET_NAME)
-# undef SET_THREAD_NAME
-# define SET_THREAD_NAME(name) prctl(PR_SET_NAME, name)
-#elif !defined(SET_THREAD_NAME)
-# define SET_THREAD_NAME(name) (void)0
+#if !defined(SET_CURRENT_THREAD_NAME) && defined(__linux__) && defined(PR_SET_NAME)
+# define SET_CURRENT_THREAD_NAME(name) prctl(PR_SET_NAME, name)
 #endif
-
-static VALUE rb_thread_inspect_msg(VALUE thread, int show_enclosure, int show_location, int show_status);
 
 static void
 native_set_thread_name(rb_thread_t *th)
 {
-#if defined(__linux__) && defined(PR_SET_NAME)
-    VALUE str;
-    char *name, *p;
-    char buf[16];
-    size_t len;
+#ifdef SET_CURRENT_THREAD_NAME
+    if (!th->first_func && th->first_proc) {
+	VALUE loc;
+	if (!NIL_P(loc = th->name)) {
+	    SET_CURRENT_THREAD_NAME(RSTRING_PTR(loc));
+	}
+	else if (!NIL_P(loc = rb_proc_location(th->first_proc))) {
+	    const VALUE *ptr = RARRAY_CONST_PTR(loc); /* [ String, Fixnum ] */
+	    char *name, *p;
+	    char buf[16];
+	    size_t len;
+	    int n;
 
-    str = rb_thread_inspect_msg(th->self, 0, 1, 0);
-    name = StringValueCStr(str);
-    if (*name == '@')
-        name++;
-    p = strrchr(name, '/'); /* show only the basename of the path. */
-    if (p && p[1])
-        name = p + 1;
+	    name = RSTRING_PTR(ptr[0]);
+	    p = strrchr(name, '/'); /* show only the basename of the path. */
+	    if (p && p[1])
+		name = p + 1;
 
-    len = strlen(name);
-    if (len < sizeof(buf)) {
-        memcpy(buf, name, len);
-        buf[len] = '\0';
+	    n = snprintf(buf, sizeof(buf), "%s:%d", name, NUM2INT(ptr[1]));
+	    rb_gc_force_recycle(loc); /* acts as a GC guard, too */
+
+	    len = (size_t)n;
+	    if (len >= sizeof(buf)) {
+		buf[sizeof(buf)-2] = '*';
+		buf[sizeof(buf)-1] = '\0';
+	    }
+	    SET_CURRENT_THREAD_NAME(buf);
+	}
     }
-    else {
-        memcpy(buf, name, sizeof(buf)-2);
-        buf[sizeof(buf)-2] = '*';
-        buf[sizeof(buf)-1] = '\0';
-    }
-    SET_THREAD_NAME(buf);
 #endif
 }
 
@@ -1487,7 +1542,9 @@ thread_timer(void *p)
 
     if (TT_DEBUG) WRITE_CONST(2, "start timer thread\n");
 
-    SET_THREAD_NAME("ruby-timer-thr");
+#ifdef SET_CURRENT_THREAD_NAME
+    SET_CURRENT_THREAD_NAME("ruby-timer-thr");
+#endif
 
 #if !USE_SLEEPY_TIMER_THREAD
     native_mutex_initialize(&timer_thread_lock);
@@ -1497,7 +1554,7 @@ thread_timer(void *p)
     while (system_working > 0) {
 
 	/* timer function */
-	ping_signal_thread_list();
+	ubf_wakeup_all_threads();
 	timer_thread_function(0);
 
 	if (TT_DEBUG) WRITE_CONST(2, "tick\n");
@@ -1505,7 +1562,10 @@ thread_timer(void *p)
         /* wait */
 	timer_thread_sleep(gvl);
     }
-#if !USE_SLEEPY_TIMER_THREAD
+#if USE_SLEEPY_TIMER_THREAD
+    CLOSE_INVALIDATE(normal[0]);
+    CLOSE_INVALIDATE(low[0]);
+#else
     native_mutex_unlock(&timer_thread_lock);
     native_cond_destroy(&timer_thread_cond);
     native_mutex_destroy(&timer_thread_lock);
@@ -1525,8 +1585,9 @@ rb_thread_create_timer_thread(void)
 
 	err = pthread_attr_init(&attr);
 	if (err != 0) {
-	    fprintf(stderr, "[FATAL] Failed to initialize pthread attr: %s\n", strerror(err));
-	    exit(EXIT_FAILURE);
+	    rb_warn("pthread_attr_init failed for timer: %s, scheduling broken",
+		    strerror(err));
+	    return;
         }
 # ifdef PTHREAD_STACK_MIN
 	{
@@ -1544,7 +1605,12 @@ rb_thread_create_timer_thread(void)
 #endif
 
 #if USE_SLEEPY_TIMER_THREAD
-	setup_communication_pipe();
+	err = setup_communication_pipe();
+	if (err != 0) {
+	    rb_warn("pipe creation failed for timer: %s, scheduling broken",
+		    strerror(err));
+	    return;
+	}
 #endif /* USE_SLEEPY_TIMER_THREAD */
 
 	/* create timer thread */
@@ -1553,46 +1619,64 @@ rb_thread_create_timer_thread(void)
 	}
 #ifdef HAVE_PTHREAD_ATTR_INIT
 	err = pthread_create(&timer_thread.id, &attr, thread_timer, &GET_VM()->gvl);
+	pthread_attr_destroy(&attr);
 #else
 	err = pthread_create(&timer_thread.id, NULL, thread_timer, &GET_VM()->gvl);
 #endif
 	if (err != 0) {
-	    fprintf(stderr, "[FATAL] Failed to create timer thread: %s\n", strerror(err));
-	    exit(EXIT_FAILURE);
-	}
-	timer_thread.created = 1;
-#ifdef HAVE_PTHREAD_ATTR_INIT
-	pthread_attr_destroy(&attr);
+	    rb_warn("pthread_create failed for timer: %s, scheduling broken",
+		    strerror(err));
+#if USE_SLEEPY_TIMER_THREAD
+	    CLOSE_INVALIDATE(normal[0]);
+	    CLOSE_INVALIDATE(normal[1]);
+	    CLOSE_INVALIDATE(low[0]);
+	    CLOSE_INVALIDATE(low[1]);
 #endif
+	    return;
+	}
+
+	/* validate pipe on this process */
+	timer_thread_pipe.owner_process = getpid();
+	timer_thread.created = 1;
     }
 }
 
 static int
-native_stop_timer_thread(int close_anyway)
+native_stop_timer_thread(void)
 {
     int stopped;
     stopped = --system_working <= 0;
 
     if (TT_DEBUG) fprintf(stderr, "stop timer thread\n");
+#if USE_SLEEPY_TIMER_THREAD
     if (stopped) {
-	/* join */
-	rb_thread_wakeup_timer_thread();
+	/* prevent wakeups from signal handler ASAP */
+	timer_thread_pipe.owner_process = 0;
+
+	/*
+	 * however, the above was not enough: the FD may already be
+	 * captured and in the middle of a write while we are running,
+	 * so wait for that to finish:
+	 */
+	while (ATOMIC_CAS(timer_thread_pipe.writing, (rb_atomic_t)0, 0)) {
+	    native_thread_yield();
+	}
+
+	/* stop writing ends of pipes so timer thread notices EOF */
+	CLOSE_INVALIDATE(normal[1]);
+	CLOSE_INVALIDATE(low[1]);
+
+	/* timer thread will stop looping when system_working <= 0: */
 	native_thread_join(timer_thread.id);
+
+	/* timer thread will close the read end on exit: */
+	VM_ASSERT(timer_thread_pipe.normal[0] == -1);
+	VM_ASSERT(timer_thread_pipe.low[0] == -1);
+
 	if (TT_DEBUG) fprintf(stderr, "joined timer thread\n");
 	timer_thread.created = 0;
-
-	/* close communication pipe */
-	if (close_anyway) {
-	    /* TODO: Uninstall all signal handlers or mask all signals.
-	     *       This pass is cleaning phase (terminate ruby process).
-	     *       To avoid such race, we skip to close communication
-	     *       pipe.  OS will close it at process termination.
-	     *       It may not good practice, but pragmatic.
-	     *       We remain it is TODO.
-	     */
-	    /* close_communication_pipe(); */
-	}
     }
+#endif
     return stopped;
 }
 
@@ -1650,10 +1734,11 @@ int
 rb_reserved_fd_p(int fd)
 {
 #if USE_SLEEPY_TIMER_THREAD
-    if (fd == timer_thread_pipe.normal[0] ||
-	fd == timer_thread_pipe.normal[1] ||
-	fd == timer_thread_pipe.low[0] ||
-	fd == timer_thread_pipe.low[1]) {
+    if ((fd == timer_thread_pipe.normal[0] ||
+	 fd == timer_thread_pipe.normal[1] ||
+	 fd == timer_thread_pipe.low[0] ||
+	 fd == timer_thread_pipe.low[1]) &&
+	timer_thread_pipe.owner_process == getpid()) { /* async-signal-safe */
 	return 1;
     }
     else {

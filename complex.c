@@ -5,17 +5,30 @@
   which is written in ruby.
 */
 
-#include "internal.h"
+#include "ruby/config.h"
+#if defined _MSC_VER
+/* Microsoft Visual C does not define M_PI and others by default */
+# define _USE_MATH_DEFINES 1
+#endif
 #include <math.h>
+#include "internal.h"
 
 #define NDEBUG
-#include <assert.h>
+#include "ruby_assert.h"
 
 #define ZERO INT2FIX(0)
 #define ONE INT2FIX(1)
 #define TWO INT2FIX(2)
+#define RFLOAT_0 DBL2NUM(0)
+#if defined(HAVE_SIGNBIT) && defined(__GNUC__) && defined(__sun) && \
+    !defined(signbit)
+extern int signbit(double);
+#endif
 
 VALUE rb_cComplex;
+
+static VALUE nucomp_abs(VALUE self);
+static VALUE nucomp_arg(VALUE self);
 
 static ID id_abs, id_arg, id_convert,
     id_denominator, id_eqeq_p, id_expt, id_fdiv,
@@ -225,13 +238,13 @@ k_numeric_p(VALUE x)
 inline static VALUE
 k_fixnum_p(VALUE x)
 {
-    return f_kind_of_p(x, rb_cFixnum);
+    return FIXNUM_P(x);
 }
 
 inline static VALUE
 k_bignum_p(VALUE x)
 {
-    return f_kind_of_p(x, rb_cBignum);
+    return RB_TYPE_P(x, T_BIGNUM);
 }
 
 inline static VALUE
@@ -253,19 +266,14 @@ k_complex_p(VALUE x)
 }
 
 #define k_exact_p(x) (!k_float_p(x))
-#define k_inexact_p(x) k_float_p(x)
 
 #define k_exact_zero_p(x) (k_exact_p(x) && f_zero_p(x))
-#define k_exact_one_p(x) (k_exact_p(x) && f_one_p(x))
 
 #define get_dat1(x) \
-    struct RComplex *dat;\
-    dat = ((struct RComplex *)(x))
+    struct RComplex *dat = RCOMPLEX(x)
 
 #define get_dat2(x,y) \
-    struct RComplex *adat, *bdat;\
-    adat = ((struct RComplex *)(x));\
-    bdat = ((struct RComplex *)(y))
+    struct RComplex *adat = RCOMPLEX(x), *bdat = RCOMPLEX(y)
 
 inline static VALUE
 nucomp_s_new_internal(VALUE klass, VALUE real, VALUE imag)
@@ -335,6 +343,8 @@ nucomp_canonicalization(int f)
 {
     canonicalization = f;
 }
+#else
+#define canonicalization 0
 #endif
 
 inline static void
@@ -548,11 +558,44 @@ m_sqrt(VALUE x)
 }
 #endif
 
-inline static VALUE
+static VALUE
 f_complex_polar(VALUE klass, VALUE x, VALUE y)
 {
     assert(!k_complex_p(x));
     assert(!k_complex_p(y));
+    if (f_zero_p(x) || f_zero_p(y)) {
+	if (canonicalization) return x;
+	return nucomp_s_new_internal(klass, x, RFLOAT_0);
+    }
+    if (RB_FLOAT_TYPE_P(y)) {
+	const double arg = RFLOAT_VALUE(y);
+	if (arg == M_PI) {
+	    x = f_negate(x);
+	    if (canonicalization) return x;
+	    y = RFLOAT_0;
+	}
+	else if (arg == M_PI_2) {
+	    y = x;
+	    x = RFLOAT_0;
+	}
+	else if (arg == M_PI_2+M_PI) {
+	    y = f_negate(x);
+	    x = RFLOAT_0;
+	}
+	else if (RB_FLOAT_TYPE_P(x)) {
+	    const double abs = RFLOAT_VALUE(x);
+	    const double real = abs * cos(arg), imag = abs * sin(arg);
+	    x = DBL2NUM(real);
+	    if (canonicalization && imag == 0.0) return x;
+	    y = DBL2NUM(imag);
+	}
+	else {
+	    y = f_mul(x, DBL2NUM(sin(arg)));
+	    x = f_mul(x, DBL2NUM(cos(arg)));
+	    if (canonicalization && f_zero_p(y)) return x;
+	}
+	return nucomp_s_new_internal(klass, x, y);
+    }
     return nucomp_s_canonicalize_internal(klass,
 					  f_mul(x, m_cos(y)),
 					  f_mul(x, m_sin(y)));
@@ -577,8 +620,8 @@ nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
     switch (rb_scan_args(argc, argv, "11", &abs, &arg)) {
       case 1:
 	nucomp_real_check(abs);
-	arg = ZERO;
-	break;
+	if (canonicalization) return abs;
+	return nucomp_s_new_internal(klass, abs, ZERO);
       default:
 	nucomp_real_check(abs);
 	nucomp_real_check(arg);
@@ -671,11 +714,12 @@ f_addsub(VALUE self, VALUE other,
  *    Complex(9, 8)  + 4               #=> (13+8i)
  *    Complex(20, 9) + 9.8             #=> (29.8+9i)
  */
-static VALUE
-nucomp_add(VALUE self, VALUE other)
+VALUE
+rb_nucomp_add(VALUE self, VALUE other)
 {
     return f_addsub(self, other, f_add, '+');
 }
+#define nucomp_add rb_nucomp_add
 
 /*
  * call-seq:
@@ -695,6 +739,19 @@ nucomp_sub(VALUE self, VALUE other)
     return f_addsub(self, other, f_sub, '-');
 }
 
+static VALUE
+safe_mul(VALUE a, VALUE b, int az, int bz)
+{
+    double v;
+    if (!az && bz && RB_FLOAT_TYPE_P(a) && (v = RFLOAT_VALUE(a), !isnan(v))) {
+	a = signbit(v) ? DBL2NUM(-1.0) : DBL2NUM(1.0);
+    }
+    if (!bz && az && RB_FLOAT_TYPE_P(b) && (v = RFLOAT_VALUE(b), !isnan(v))) {
+	b = signbit(v) ? DBL2NUM(-1.0) : DBL2NUM(1.0);
+    }
+    return f_mul(a, b);
+}
+
 /*
  * call-seq:
  *    cmp * numeric  ->  complex
@@ -707,18 +764,24 @@ nucomp_sub(VALUE self, VALUE other)
  *    Complex(9, 8)  * 4               #=> (36+32i)
  *    Complex(20, 9) * 9.8             #=> (196.0+88.2i)
  */
-static VALUE
-nucomp_mul(VALUE self, VALUE other)
+VALUE
+rb_nucomp_mul(VALUE self, VALUE other)
 {
     if (k_complex_p(other)) {
 	VALUE real, imag;
+	VALUE areal, aimag, breal, bimag;
+	int arzero, aizero, brzero, bizero;
 
 	get_dat2(self, other);
 
-	real = f_sub(f_mul(adat->real, bdat->real),
-		     f_mul(adat->imag, bdat->imag));
-	imag = f_add(f_mul(adat->real, bdat->imag),
-		     f_mul(adat->imag, bdat->real));
+	arzero = !!f_zero_p(areal = adat->real);
+	aizero = !!f_zero_p(aimag = adat->imag);
+	brzero = !!f_zero_p(breal = bdat->real);
+	bizero = !!f_zero_p(bimag = bdat->imag);
+	real = f_sub(safe_mul(areal, breal, arzero, brzero),
+		     safe_mul(aimag, bimag, aizero, bizero));
+	imag = f_add(safe_mul(areal, bimag, arzero, bizero),
+		     safe_mul(aimag, breal, aizero, brzero));
 
 	return f_complex_new2(CLASS_OF(self), real, imag);
     }
@@ -731,6 +794,7 @@ nucomp_mul(VALUE self, VALUE other)
     }
     return rb_num_coerce_bin(self, other, '*');
 }
+#define nucomp_mul rb_nucomp_mul
 
 inline static VALUE
 f_divide(VALUE self, VALUE other,
@@ -953,8 +1017,8 @@ nucomp_coerce(VALUE self, VALUE other)
     if (RB_TYPE_P(other, T_COMPLEX))
 	return rb_assoc_new(other, self);
 
-    rb_raise(rb_eTypeError, "%s can't be coerced into %s",
-	     rb_obj_classname(other), rb_obj_classname(self));
+    rb_raise(rb_eTypeError, "%"PRIsVALUE" can't be coerced into %"PRIsVALUE,
+	     rb_obj_class(other), rb_obj_class(self));
     return Qnil;
 }
 
@@ -1188,10 +1252,6 @@ nucomp_eql_p(VALUE self, VALUE other)
 inline static VALUE
 f_signbit(VALUE x)
 {
-#if defined(HAVE_SIGNBIT) && defined(__GNUC__) && defined(__sun) && \
-    !defined(signbit)
-    extern int signbit(double);
-#endif
     if (RB_TYPE_P(x, T_FLOAT)) {
 	double f = RFLOAT_VALUE(x);
 	return f_boolcast(!isnan(f) && signbit(f));
@@ -1351,7 +1411,7 @@ rb_complex_set_real(VALUE cmp, VALUE r)
 VALUE
 rb_complex_set_imag(VALUE cmp, VALUE i)
 {
-    RCOMPLEX_SET_REAL(cmp, i);
+    RCOMPLEX_SET_IMAG(cmp, i);
     return cmp;
 }
 
@@ -1371,7 +1431,7 @@ nucomp_to_i(VALUE self)
 {
     get_dat1(self);
 
-    if (k_inexact_p(dat->imag) || f_nonzero_p(dat->imag)) {
+    if (!k_exact_zero_p(dat->imag)) {
 	rb_raise(rb_eRangeError, "can't convert %"PRIsVALUE" into Integer",
 		 self);
     }
@@ -1394,7 +1454,7 @@ nucomp_to_f(VALUE self)
 {
     get_dat1(self);
 
-    if (k_inexact_p(dat->imag) || f_nonzero_p(dat->imag)) {
+    if (!k_exact_zero_p(dat->imag)) {
 	rb_raise(rb_eRangeError, "can't convert %"PRIsVALUE" into Float",
 		 self);
     }
@@ -1419,7 +1479,7 @@ nucomp_to_r(VALUE self)
 {
     get_dat1(self);
 
-    if (k_inexact_p(dat->imag) || f_nonzero_p(dat->imag)) {
+    if (!k_exact_zero_p(dat->imag)) {
 	rb_raise(rb_eRangeError, "can't convert %"PRIsVALUE" into Rational",
 		 self);
     }
@@ -1446,7 +1506,7 @@ nucomp_rationalize(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "01", NULL);
 
-    if (k_inexact_p(dat->imag) || f_nonzero_p(dat->imag)) {
+    if (!k_exact_zero_p(dat->imag)) {
        rb_raise(rb_eRangeError, "can't convert %"PRIsVALUE" into Rational",
                 self);
     }
@@ -2024,9 +2084,10 @@ float_arg(VALUE self)
  * and i is imaginary unit.  Real a equals complex a+0i
  * mathematically.
  *
- * In ruby, you can create complex object with Complex, Complex::rect,
- * Complex::polar or to_c method.
+ * Complex object can be created as literal, and also by using
+ * Kernel#Complex, Complex::rect, Complex::polar or to_c method.
  *
+ *    2+1i                 #=> (2+1i)
  *    Complex(1)           #=> (1+0i)
  *    Complex(2, 3)        #=> (2+3i)
  *    Complex.polar(2, 3)  #=> (-1.9799849932008908+0.2822400161197344i)
@@ -2112,10 +2173,6 @@ Init_Complex(void)
     rb_undef_method(rb_cComplex, "truncate");
     rb_undef_method(rb_cComplex, "i");
 
-#if 0 /* NUBY */
-    rb_undef_method(rb_cComplex, "//");
-#endif
-
     rb_define_method(rb_cComplex, "real", nucomp_real, 0);
     rb_define_method(rb_cComplex, "imaginary", nucomp_imag, 0);
     rb_define_method(rb_cComplex, "imag", nucomp_imag, 0);
@@ -2162,6 +2219,9 @@ Init_Complex(void)
 
     rb_define_method(rb_cComplex, "to_s", nucomp_to_s, 0);
     rb_define_method(rb_cComplex, "inspect", nucomp_inspect, 0);
+
+    rb_undef_method(rb_cComplex, "positive?");
+    rb_undef_method(rb_cComplex, "negative?");
 
     rb_define_private_method(rb_cComplex, "marshal_dump", nucomp_marshal_dump, 0);
     compat = rb_define_class_under(rb_cComplex, "compatible", rb_cObject); /* :nodoc: */

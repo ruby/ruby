@@ -1,4 +1,5 @@
 # encoding: utf-8
+# frozen_string_literal: false
 
 require 'pathname'
 require 'minitest/metametameta'
@@ -1622,15 +1623,11 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
       def test_test1; assert "does not matter" end
       def test_test2; assert "does not matter" end
       def test_test3; assert "does not matter" end
+      @test_order = [1, 0, 2]
+      def self.rand(n) @test_order.shift; end
     end
 
-    srand 42
-    expected = case
-               when maglev? then
-                 %w(test_test2 test_test3 test_test1)
-               else
-                 %w(test_test2 test_test1 test_test3)
-               end
+    expected = %w(test_test2 test_test1 test_test3)
     assert_equal expected, sample_test_case.test_methods
   end
 
@@ -1646,28 +1643,6 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
 
     expected = %w(test_test1 test_test2 test_test3)
     assert_equal expected, sample_test_case.test_methods
-  end
-
-  def test_i_suck_and_my_tests_are_order_dependent_bang_sets_test_order_alpha
-    @assertion_count = 0
-
-    shitty_test_case = Class.new MiniTest::Unit::TestCase
-
-    shitty_test_case.i_suck_and_my_tests_are_order_dependent!
-
-    assert_equal :alpha, shitty_test_case.test_order
-  end
-
-  def test_i_suck_and_my_tests_are_order_dependent_bang_does_not_warn
-    @assertion_count = 0
-
-    shitty_test_case = Class.new MiniTest::Unit::TestCase
-
-    def shitty_test_case.test_order ; :lol end
-
-    assert_silent do
-      shitty_test_case.i_suck_and_my_tests_are_order_dependent!
-    end
   end
 
   def util_assert_triggered expected, klass = MiniTest::Assertion

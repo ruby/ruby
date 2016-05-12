@@ -8,6 +8,8 @@ THESE ARE BAD EXAMPLES!  You must NOT use them as a sample code.
 * shinh/entry.rb: "Most Readable" - Silver award
 * yhara/entry.rb: "Worst abuse of constants" - Dishonorable mention
 
+These files are licensed under MIT license.
+
 For the contest outline and other winning entries, see:
 
 https://github.com/tric/trick2013

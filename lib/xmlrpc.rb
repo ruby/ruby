@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # == Author and Copyright
 #
 # Copyright (C) 2001-2004 by Michael Neumann (mailto:mneumann@ntecs.de)
@@ -52,15 +53,16 @@
 #   * HTTPS protocol (SSL)
 #
 # * Parsers
-#   * NQXML (XMLParser::NQXMLStreamParser, XMLParser::NQXMLTreeParser)
-#   * Expat (XMLParser::XMLStreamParser, XMLParser::XMLTreeParser)
 #   * REXML (XMLParser::REXMLStreamParser)
-#   * xml-scan (XMLParser::XMLScanStreamParser)
-#   * Fastest parser is Expat's XMLParser::XMLStreamParser!
+#     * Not compiled (pure ruby)
+#     * See ruby standard library
+#   * libxml (LibXMLStreamParser)
+#     * Compiled
+#     * See https://rubygems.org/gems/libxml-ruby/
 #
 # * General
-#   * possible to choose between XMLParser module (Expat wrapper) and REXML/NQXML (pure Ruby) parsers
-#   * Marshalling Ruby objects to Hashs and reconstruct them later from a Hash
+#   * possible to choose between XMLParser module (Expat wrapper) and REXML (pure Ruby) parsers
+#   * Marshalling Ruby objects to Hashes and reconstruct them later from a Hash
 #   * SandStorm component architecture XMLRPC::Client interface
 #
 # == Howto
@@ -281,21 +283,9 @@
 #
 #   # ...
 #   s = XMLRPC::CGIServer.new
-#   s.set_parser(XMLRPC::XMLParser::XMLStreamParser.new)
+#   s.set_parser(XMLRPC::XMLParser::XMLParser.new)
 #   # ...
 #
-# or:
-#
-#   # ...
-#   server = XMLRPC::Server.new(8080)
-#   server.set_parser(XMLRPC::XMLParser::NQXMLParser.new)
-#   # ...
-#
-#
-# Note that XMLParser::XMLStreamParser is incredible faster (and uses less memory) than any
-# other parser and scales well for large documents. For example for a 0.5 MB XML
-# document with many tags, XMLParser::XMLStreamParser is ~350 (!) times faster than
-# XMLParser::NQXMLTreeParser and still ~18 times as fast as XMLParser::XMLTreeParser.
 #
 # You can change the XML-writer by calling method ParserWriterChooseMixin#set_writer.
 module XMLRPC; end

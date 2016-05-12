@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'mkmf'
 
 AF_INET6_SOCKET_CREATION_TEST = <<EOF
@@ -384,7 +385,9 @@ if have_type("struct tcp_info", headers)
   have_const("TCP_LISTEN", headers)
   have_const("TCP_CLOSING", headers)
   have_struct_member('struct tcp_info', 'tcpi_state', headers)
-  have_struct_member('struct tcp_info', 'tcpi_ca_state', headers)
+  if /solaris/ !~ RUBY_PLATFORM
+    have_struct_member('struct tcp_info', 'tcpi_ca_state', headers)
+  end
   have_struct_member('struct tcp_info', 'tcpi_retransmits', headers)
   have_struct_member('struct tcp_info', 'tcpi_probes', headers)
   have_struct_member('struct tcp_info', 'tcpi_backoff', headers)
@@ -433,15 +436,9 @@ when /mswin(32|64)|mingw/
   have_library("ws2_32", "WSACleanup", headers)
 when /cygwin/
   test_func = "socket(0,0,0)"
-when /beos/
-  test_func = "socket(0,0,0)"
-  have_library("net", "socket(0,0,0)", headers)
 when /haiku/
   test_func = "socket(0,0,0)"
   have_library("network", "socket(0,0,0)", headers)
-when /i386-os2_emx/
-  test_func = "socket(0,0,0)"
-  have_library("socket", "socket(0,0,0)", headers)
 else
   test_func = "socket(0,0,0)"
   have_library("nsl", 't_open("", 0, (struct t_info *)NULL)', headers) # SunOS
@@ -508,7 +505,7 @@ EOF
   end
 
   ipv6 = false
-  default_ipv6 = /beos|haiku/ !~ RUBY_PLATFORM
+  default_ipv6 = /haiku/ !~ RUBY_PLATFORM
   if enable_config("ipv6", default_ipv6)
     if checking_for("ipv6") {try_link(AF_INET6_SOCKET_CREATION_TEST)}
       $defs << "-DENABLE_IPV6" << "-DINET6"
@@ -565,29 +562,15 @@ EOS
   case enable_config("wide-getaddrinfo")
   when true
     getaddr_info_ok = :wide
-  when nil
+  when nil, false
+    getaddr_info_ok = (:wide if getaddr_info_ok.nil?)
     if have_func("getnameinfo", headers) and have_func("getaddrinfo", headers)
-      getaddr_info_ok = :os
-      if !CROSS_COMPILING &&
-         !checking_for("system getaddrinfo working") {
+      if CROSS_COMPILING ||
+         checking_for("system getaddrinfo working") {
            try_run(cpp_include(headers) + GETADDRINFO_GETNAMEINFO_TEST)
          }
-        getaddr_info_ok = :wide
+        getaddr_info_ok = :os
       end
-    else
-      getaddr_info_ok = :wide
-    end
-  when false
-    if have_func("getnameinfo", headers) and have_func("getaddrinfo", headers)
-      getaddr_info_ok = :os
-      if !CROSS_COMPILING &&
-         !checking_for("system getaddrinfo working") {
-           try_run(cpp_include(headers) + GETADDRINFO_GETNAMEINFO_TEST)
-         }
-        getaddr_info_ok = nil
-      end
-    else
-      getaddr_info_ok = nil
     end
   else
     raise "unexpected enable_config() value"

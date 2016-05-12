@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'socket'
 require 'openssl'
 require 'drb/drb'

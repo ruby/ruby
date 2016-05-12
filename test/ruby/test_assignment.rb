@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestAssignment < Test::Unit::TestCase
@@ -102,7 +103,7 @@ class TestAssignment < Test::Unit::TestCase
   end
 
   def test_assign_private_self
-    bug9907 = '[ruby-core:62949] [Bug #9907]'
+    bug11096 = '[ruby-core:68984] [Bug #11096]'
 
     o = Object.new
     class << o
@@ -127,17 +128,17 @@ class TestAssignment < Test::Unit::TestCase
       assert_equal(1, o.instance_eval {self[0] = 1})
     }
 
-    assert_nothing_raised(NoMethodError, bug9907) {
+    assert_raise(NoMethodError, bug11096) {
       assert_equal(43, o.instance_eval {self.foo += 1})
     }
-    assert_nothing_raised(NoMethodError, bug9907) {
+    assert_raise(NoMethodError, bug11096) {
       assert_equal(1, o.instance_eval {self.foo &&= 1})
     }
 
-    assert_nothing_raised(NoMethodError, bug9907) {
+    assert_raise(NoMethodError, bug11096) {
       assert_equal(43, o.instance_eval {self[0] += 1})
     }
-    assert_nothing_raised(NoMethodError, bug9907) {
+    assert_raise(NoMethodError, bug11096) {
       assert_equal(1, o.instance_eval {self[0] &&= 1})
     }
   end
@@ -551,6 +552,11 @@ class TestAssignment < Test::Unit::TestCase
     a, b = Base::A, Base::B
     assert_equal [3,4], [a,b]
   end
+
+  def test_massign_in_cond
+    result = eval("if (a, b = MyObj.new); [a, b]; end", nil, __FILE__, __LINE__)
+    assert_equal [[1,2],[3,4]], result
+  end
 end
 
 require_relative 'sentence'
@@ -756,5 +762,13 @@ class TestAssignmentGen < Test::Unit::TestCase
     end
     o = bug9448.new
     assert_equal("ok", o['current'] = "ok")
+  end
+
+  def test_massign_aref_lhs_splat
+    bug11970 = '[ruby-core:72777] [Bug #11970]'
+    h = {}
+    k = [:key]
+    h[*k], = ["ok", "ng"]
+    assert_equal("ok", h[:key], bug11970)
   end
 end

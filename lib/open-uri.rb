@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'uri'
 require 'stringio'
 require 'time'
@@ -269,6 +270,9 @@ module OpenURI
     if URI::HTTP === target
       # HTTP or HTTPS
       if proxy
+        unless proxy_user && proxy_pass
+          proxy_user, proxy_pass = proxy_uri.userinfo.split(':') if proxy_uri.userinfo
+        end
         if proxy_user && proxy_pass
           klass = Net::HTTP::Proxy(proxy_uri.hostname, proxy_uri.port, proxy_user, proxy_pass)
         else
@@ -284,7 +288,8 @@ module OpenURI
       target_port = proxy_uri.port
       request_uri = target.to_s
       if proxy_user && proxy_pass
-        header["Proxy-Authorization"] = 'Basic ' + ["#{proxy_user}:#{proxy_pass}"].pack('m').delete("\r\n")
+        header["Proxy-Authorization"] =
+                        'Basic ' + ["#{proxy_user}:#{proxy_pass}"].pack('m0')
       end
     end
 
@@ -772,7 +777,7 @@ module URI
       # The access sequence is defined by RFC 1738
       ftp = Net::FTP.new
       ftp.connect(self.hostname, self.port)
-      ftp.passive = true if !options[:ftp_active_mode]
+      ftp.passive = !options[:ftp_active_mode]
       # todo: extract user/passwd from .netrc.
       user = 'anonymous'
       passwd = nil

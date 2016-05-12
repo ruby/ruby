@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: false
 require "tkcanvas"
 
-if defined?($hscale_demo) && $hscale_deom
+if defined?($hscale_demo) && $hscale_demo
   $hscale_demo.destroy
   $hscale_demo = nil
 end

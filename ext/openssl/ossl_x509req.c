@@ -1,20 +1,21 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #include "ossl.h"
 
-#define WrapX509Req(klass, obj, req) do { \
+#define NewX509Req(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_x509req_type, 0)
+#define SetX509Req(obj, req) do { \
     if (!(req)) { \
 	ossl_raise(rb_eRuntimeError, "Req wasn't initialized!"); \
     } \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509req_type, (req)); \
+    RTYPEDDATA_DATA(obj) = (req); \
 } while (0)
 #define GetX509Req(obj, req) do { \
     TypedData_Get_Struct((obj), X509_REQ, &ossl_x509req_type, (req)); \
@@ -56,6 +57,7 @@ ossl_x509req_new(X509_REQ *req)
     X509_REQ *new;
     VALUE obj;
 
+    obj = NewX509Req(cX509Req);
     if (!req) {
 	new = X509_REQ_new();
     } else {
@@ -64,7 +66,7 @@ ossl_x509req_new(X509_REQ *req)
     if (!new) {
 	ossl_raise(eX509ReqError, NULL);
     }
-    WrapX509Req(cX509Req, obj, new);
+    SetX509Req(obj, new);
 
     return obj;
 }
@@ -101,10 +103,11 @@ ossl_x509req_alloc(VALUE klass)
     X509_REQ *req;
     VALUE obj;
 
+    obj = NewX509Req(klass);
     if (!(req = X509_REQ_new())) {
 	ossl_raise(eX509ReqError, NULL);
     }
-    WrapX509Req(klass, obj, req);
+    SetX509Req(obj, req);
 
     return obj;
 }
@@ -415,18 +418,18 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
 {
     X509_REQ *req;
     X509_ATTRIBUTE *attr;
-    int i;
+    long i;
     VALUE item;
 
     Check_Type(ary, T_ARRAY);
     for (i=0;i<RARRAY_LEN(ary); i++) {
-	OSSL_Check_Kind(RARRAY_PTR(ary)[i], cX509Attr);
+	OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Attr);
     }
     GetX509Req(self, req);
     sk_X509_ATTRIBUTE_pop_free(req->req_info->attributes, X509_ATTRIBUTE_free);
     req->req_info->attributes = NULL;
     for (i=0;i<RARRAY_LEN(ary); i++) {
-	item = RARRAY_PTR(ary)[i];
+	item = RARRAY_AREF(ary, i);
 	attr = DupX509AttrPtr(item);
 	if (!X509_REQ_add1_attr(req, attr)) {
 	    ossl_raise(eX509ReqError, NULL);
@@ -479,4 +482,3 @@ Init_ossl_x509req(void)
     rb_define_method(cX509Req, "attributes=", ossl_x509req_set_attributes, 1);
     rb_define_method(cX509Req, "add_attribute", ossl_x509req_add_attribute, 1);
 }
-

@@ -1,9 +1,10 @@
+# frozen_string_literal: false
 require 'net/smtp'
 require 'stringio'
-require 'minitest/autorun'
+require 'test/unit'
 
 module Net
-  class TestSMTP < MiniTest::Unit::TestCase
+  class TestSMTP < Test::Unit::TestCase
     class FakeSocket
       def initialize out = "250 OK\n"
         @write_io = StringIO.new
@@ -24,7 +25,7 @@ module Net
     def test_critical
       smtp = Net::SMTP.new 'localhost', 25
 
-      assert_raises RuntimeError do
+      assert_raise RuntimeError do
         smtp.send :critical do
           raise 'fail on purpose'
         end

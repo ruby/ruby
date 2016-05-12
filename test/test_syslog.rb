@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # Please only run this test on machines reasonable for testing.
 # If in doubt, ask your admin.
 
@@ -11,7 +12,7 @@ end
 
 class TestSyslog < Test::Unit::TestCase
   def test_new
-    assert_raises(NoMethodError) {
+    assert_raise(NoMethodError) {
       Syslog.new
     }
   end
@@ -37,7 +38,7 @@ class TestSyslog < Test::Unit::TestCase
     assert_equal(Syslog::LOG_USER, Syslog.facility)
 
     # open without close
-    assert_raises(RuntimeError) {
+    assert_raise(RuntimeError) {
       Syslog.open
     }
 
@@ -88,7 +89,7 @@ class TestSyslog < Test::Unit::TestCase
   end
 
   def test_close
-    assert_raises(RuntimeError) {
+    assert_raise(RuntimeError) {
       Syslog.close
     }
   end

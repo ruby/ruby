@@ -177,7 +177,7 @@ typedef	struct __sFILE {
 	struct	__sbuf _bf;	/* the buffer (at least 1 byte, if !NULL) */
 	size_t	_lbfsize;	/* 0 or -_bf._size, for inline putc */
 	int	(*vwrite)(/* struct __sFILE*, struct __suio * */);
-	char	*(*vextra)(/* struct __sFILE*, size_t, void*, long*, int */);
+	const char *(*vextra)(/* struct __sFILE*, size_t, void*, long*, int */);
 } FILE;
 
 
@@ -510,6 +510,12 @@ static int exponent(char *, int, int);
 
 #endif /* FLOATING_POINT */
 
+#ifndef lower_hexdigits
+# define lower_hexdigits "0123456789abcdef"
+#endif
+#ifndef upper_hexdigits
+# define upper_hexdigits "0123456789ABCDEF"
+#endif
 
 /*
  * Flags used during conversion.
@@ -636,7 +642,7 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 	    flags&SHORTINT ? (u_long)(u_short)va_arg(ap, int) : \
 	    (u_long)va_arg(ap, u_int))
 
-	/* optimise fprintf(stderr) (and other unbuffered Unix files) */
+	/* optimize fprintf(stderr) (and other unbuffered Unix files) */
 	if ((fp->_flags & (__SNBF|__SWR|__SRW)) == (__SNBF|__SWR) &&
 	    fp->_file >= 0)
 		return (BSD__sbprintf(fp, fmt0, ap));
@@ -993,7 +999,7 @@ fp_begin:		_double = va_arg(ap, double);
 #endif /* _HAVE_SANE_QUAD_ */
 #endif
 			base = 16;
-			xdigs = "0123456789abcdef";
+			xdigs = lower_hexdigits;
 			ch = 'x';
 			goto nosign;
 		case 's':
@@ -1031,10 +1037,10 @@ fp_begin:		_double = va_arg(ap, double);
 			base = 10;
 			goto nosign;
 		case 'X':
-			xdigs = "0123456789ABCDEF";
+			xdigs = upper_hexdigits;
 			goto hex;
 		case 'x':
-			xdigs = "0123456789abcdef";
+			xdigs = lower_hexdigits;
 hex:
 #ifdef _HAVE_SANE_QUAD_
 			if (flags & QUADINT)
@@ -1251,7 +1257,7 @@ cvt(double value, int ndigits, int flags, char *sign, int *decpt, int ch, int *l
 	}
 	if (ch == 'a' || ch =='A') {
 	    digits = BSD__hdtoa(value,
-		    ch == 'a' ? "0123456789abcdef" : "0123456789ABCDEF",
+		    ch == 'a' ? lower_hexdigits : upper_hexdigits,
 		    ndigits, decpt, &dsgn, &rve);
 	}
 	else {
@@ -1305,43 +1311,3 @@ exponent(char *p0, int exp, int fmtch)
 	return (int)(p - p0);
 }
 #endif /* FLOATING_POINT */
-
-int
-ruby_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
-{
-	int ret;
-	FILE f;
-
-	if ((int)n < 1)
-		return (EOF);
-	f._flags = __SWR | __SSTR;
-	f._bf._base = f._p = (unsigned char *)str;
-	f._bf._size = f._w = n - 1;
-	f.vwrite = BSD__sfvwrite;
-	f.vextra = 0;
-	ret = (int)BSD_vfprintf(&f, fmt, ap);
-	*f._p = 0;
-	return (ret);
-}
-
-int
-ruby_snprintf(char *str, size_t n, char const *fmt, ...)
-{
-	int ret;
-	va_list ap;
-	FILE f;
-
-	if ((int)n < 1)
-		return (EOF);
-
-	va_start(ap, fmt);
-	f._flags = __SWR | __SSTR;
-	f._bf._base = f._p = (unsigned char *)str;
-	f._bf._size = f._w = n - 1;
-	f.vwrite = BSD__sfvwrite;
-	f.vextra = 0;
-	ret = (int)BSD_vfprintf(&f, fmt, ap);
-	*f._p = 0;
-	va_end(ap);
-	return (ret);
-}

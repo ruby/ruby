@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: false
 #
 # This script generates a directory browser, which lists the working
 # directory and allows you to open files or subdirectories by

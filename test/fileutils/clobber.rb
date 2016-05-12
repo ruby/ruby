@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'fileutils'
 require 'test/unit'
 require 'tmpdir'

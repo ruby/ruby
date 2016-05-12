@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tkextlib/iwidgets/selectiondialog.rb
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

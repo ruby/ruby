@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 module DRb
   class DRbObject # :nodoc:
     def ==(other)

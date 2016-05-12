@@ -1,11 +1,22 @@
+# frozen_string_literal: false
 require "envutil"
+require "shellwords"
 
 class TestExtLibs < Test::Unit::TestCase
+  @extdir = $".grep(/\/rbconfig\.rb\z/) {break "#$`/ext"}
+
   def self.check_existence(ext, add_msg = nil)
+    return if @excluded.any? {|i| File.fnmatch?(i, ext, File::FNM_CASEFOLD)}
     add_msg = ".  #{add_msg}" if add_msg
+    log = "#{@extdir}/#{ext}/mkmf.log"
     define_method("test_existence_of_#{ext}") do
       assert_separately([], <<-"end;", ignore_stderr: true) # do
-        assert_nothing_raised("extension library `#{ext}' is not found#{add_msg}") do
+        log = #{log.dump}
+        msg = proc {
+          "extension library `#{ext}' is not found#{add_msg}\n" <<
+            (File.exist?(log) ? File.binread(log) : "\#{log} not found")
+        }
+        assert_nothing_raised(msg) do
           require "#{ext}"
         end
       end;
@@ -15,6 +26,20 @@ class TestExtLibs < Test::Unit::TestCase
   def windows?
     /mswin|mingw/ =~ RUBY_PLATFORM
   end
+
+  excluded = [RbConfig::CONFIG, ENV].map do |conf|
+    if args = conf['configure_args']
+      args.shellsplit.grep(/\A--without-ext=/) {$'.split(/,/)}
+    end
+  end.flatten.compact
+  excluded << '+' if excluded.empty?
+  if windows?
+    excluded.map! {|i| i == '+' ? ['pty', 'syslog'] : i}
+    excluded.flatten!
+  else
+    excluded.map! {|i| i == '+' ? '*win32*' : i}
+  end
+  @excluded = excluded
 
   check_existence "bigdecimal"
   check_existence "continuation"
@@ -43,7 +68,7 @@ class TestExtLibs < Test::Unit::TestCase
   check_existence "openssl", "this may be false positive, but should assert because rubygems requires this"
   check_existence "pathname"
   check_existence "psych"
-  check_existence "pty" unless windows?
+  check_existence "pty"
   check_existence "racc/cparse"
   check_existence "rbconfig/sizeof"
   #check_existence "readline" # depend on libreadline
@@ -52,11 +77,11 @@ class TestExtLibs < Test::Unit::TestCase
   check_existence "socket"
   check_existence "stringio"
   check_existence "strscan"
-  check_existence "syslog" unless windows?
+  check_existence "syslog"
   check_existence "thread"
   #check_existence "tk" # depend on Tcl/Tk
   #check_existence "tk/tkutil" # depend on Tcl/Tk
-  check_existence "Win32API" if windows?
-  check_existence "win32ole" if windows?
+  check_existence "Win32API"
+  check_existence "win32ole"
   check_existence "zlib", "this may be false positive, but should assert because rubygems requires this"
 end

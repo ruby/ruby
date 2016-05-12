@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 if $mingw or $mswin
   $srcs = Dir[File.join($srcdir, "*.{#{SRC_EXT.join(%q{,})}}")]
   inits = $srcs.map {|s| File.basename(s, ".*")}

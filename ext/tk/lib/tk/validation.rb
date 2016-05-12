@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tk/validation.rb - validation support module for entry, spinbox, and so on
 #

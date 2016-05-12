@@ -276,13 +276,15 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 	    }
 	    goto next;
 	}
-#endif /* _WIN32 or __EMX__ */
+#endif
 
-	if (stat(fbuf, &st) == 0) {
+#ifndef S_ISREG
+# define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+#endif
+	if (stat(fbuf, &st) == 0 && S_ISREG(st.st_mode)) {
 	    if (exe_flag == 0) return fbuf;
 	    /* looking for executable */
-	    if (!S_ISDIR(st.st_mode) && eaccess(fbuf, X_OK) == 0)
-		return fbuf;
+	    if (eaccess(fbuf, X_OK) == 0) return fbuf;
 	}
       next:
 	/* if not, and no other alternatives, life is bleak */

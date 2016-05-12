@@ -1,4 +1,5 @@
 # coding: utf-8
+# frozen_string_literal: false
 
 ##
 # For RDoc::Text#to_html
@@ -10,10 +11,10 @@ require 'strscan'
 
 begin
   gem 'json'
+rescue NameError => e # --disable-gems
+  raise unless e.name == :gem
 rescue Gem::LoadError
 end
-
-require 'json'
 
 ##
 # Methods for manipulating comment text
@@ -68,11 +69,11 @@ module RDoc::Text
     expanded = []
 
     text.each_line do |line|
-      line.gsub!(/^((?:.{8})*?)([^\t\r\n]{0,7})\t/) do
+      nil while line.gsub!(/(?:\G|\r)((?:.{8})*?)([^\t\r\n]{0,7})\t/) do
         r = "#{$1}#{$2}#{' ' * (8 - $2.size)}"
         r.force_encoding text.encoding if Object.const_defined? :Encoding
         r
-      end until line !~ /\t/
+      end
 
       expanded << line
     end
@@ -321,4 +322,3 @@ module RDoc::Text
   end
 
 end
-

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'minitest/autorun'
 require 'fiddle'
 
@@ -26,7 +27,8 @@ when /linux/
   libm_so = File.join(libdir, "libm.so.6")
 when /mingw/, /mswin/
   require "rbconfig"
-  libc_so = libm_so = RbConfig::CONFIG["RUBY_SO_NAME"].split(/-/).find{|e| /^msvc/ =~ e} + ".dll"
+  crtname = RbConfig::CONFIG["RUBY_SO_NAME"][/msvc\w+/] || 'ucrtbase'
+  libc_so = libm_so = "#{crtname}.dll"
 when /darwin/
   libc_so = "/usr/lib/libc.dylib"
   libm_so = "/usr/lib/libm.dylib"

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: false
 #
 # text widget peering demo (called by 'widget')
 #
@@ -11,7 +12,7 @@ end
 
 # demo toplevel widget
 $textpeer_demo = TkToplevel.new {|w|
-  title("Text Wdget Peering Demonstration")
+  title("Text Widget Peering Demonstration")
   iconname("textpeer")
   positionWindow(w)
 }

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/indexer'
 
@@ -48,11 +49,11 @@ class TestGemIndexer < Gem::TestCase
     assert indexer.build_modern
   end
 
-  def test_build_indicies
+  def test_build_indices
     @indexer.make_temp_directories
 
     use_ui @ui do
-      @indexer.build_indicies
+      @indexer.build_indices
     end
 
     specs_path = File.join @indexer.directory, "specs.#{@marshal_version}"
@@ -198,7 +199,7 @@ class TestGemIndexer < Gem::TestCase
     assert_match %r%^Generating latest specs index$%, @ui.output
     assert_match %r%^Generating prerelease specs index$%, @ui.output
     assert_match %r%^Complete$%, @ui.output
-    assert_match %r%^Compressing indicies$%, @ui.output
+    assert_match %r%^Compressing indices$%, @ui.output
 
     assert_equal '', @ui.error
   end
@@ -294,7 +295,7 @@ class TestGemIndexer < Gem::TestCase
 
     sys_gem = util_spec 'systemgem', '1.0'
     util_build_gem sys_gem
-    Gem::Specification.add_spec sys_gem
+    install_default_gems sys_gem
     yield
     util_remove_gem sys_gem
   end

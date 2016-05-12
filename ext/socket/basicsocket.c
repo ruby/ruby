@@ -213,9 +213,8 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
         rb_scan_args(argc, argv, "30", &lev, &optname, &val);
     }
 
-    rb_secure(2);
     GetOpenFile(sock, fptr);
-    family = rsock_getfamily(fptr->fd);
+    family = rsock_getfamily(fptr);
     level = rsock_level_arg(family, lev);
     option = rsock_optname_arg(family, level, optname);
 
@@ -245,7 +244,6 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
     return INT2FIX(0);
 }
 
-#if !defined(__BEOS__)
 /*
  * Document-method: getsockopt
  * call-seq:
@@ -312,7 +310,7 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
     int family;
 
     GetOpenFile(sock, fptr);
-    family = rsock_getfamily(fptr->fd);
+    family = rsock_getfamily(fptr);
     level = rsock_level_arg(family, lev);
     option = rsock_optname_arg(family, level, optname);
     len = 256;
@@ -325,9 +323,6 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
 
     return rsock_sockopt_new(family, level, option, rb_str_new(buf, len));
 }
-#else
-#define bsock_getsockopt rb_f_notimplement
-#endif
 
 /*
  * call-seq:
@@ -570,11 +565,13 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
  *
  * Gets the do_not_reverse_lookup flag of _basicsocket_.
  *
+ *   BasicSocket.do_not_reverse_lookup = false
  *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|
  *     p sock.do_not_reverse_lookup      #=> false
- *     p sock.peeraddr                   #=> ["AF_INET", 80, "carbon.ruby-lang.org", "221.186.184.68"]
- *     sock.do_not_reverse_lookup = true
- *     p sock.peeraddr                   #=> ["AF_INET", 80, "221.186.184.68", "221.186.184.68"]
+ *   }
+ *   BasicSocket.do_not_reverse_lookup = true
+ *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|
+ *     p sock.do_not_reverse_lookup      #=> true
  *   }
  */
 static VALUE
@@ -592,10 +589,12 @@ bsock_do_not_reverse_lookup(VALUE sock)
  *
  * Sets the do_not_reverse_lookup flag of _basicsocket_.
  *
- *   BasicSocket.do_not_reverse_lookup = false
- *   p TCPSocket.new("127.0.0.1", 80).do_not_reverse_lookup #=> false
- *   BasicSocket.do_not_reverse_lookup = true
- *   p TCPSocket.new("127.0.0.1", 80).do_not_reverse_lookup #=> true
+ *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|
+ *     p sock.do_not_reverse_lookup       #=> true
+ *     p sock.peeraddr                    #=> ["AF_INET", 80, "221.186.184.68", "221.186.184.68"]
+ *     sock.do_not_reverse_lookup = false
+ *     p sock.peeraddr                    #=> ["AF_INET", 80, "carbon.ruby-lang.org", "54.163.249.195"]
+ *   }
  *
  */
 static VALUE
@@ -615,14 +614,16 @@ bsock_do_not_reverse_lookup_set(VALUE sock, VALUE state)
 
 /*
  * call-seq:
- *   basicsocket.recv(maxlen) => mesg
- *   basicsocket.recv(maxlen, flags) => mesg
+ *   basicsocket.recv(maxlen[, flags[, outbuf]]) => mesg
  *
  * Receives a message.
  *
  * _maxlen_ is the maximum number of bytes to receive.
  *
  * _flags_ should be a bitwise OR of Socket::MSG_* constants.
+ *
+ * _outbuf_ will contain only the received data after the method call
+ * even if it is not empty at the beginning.
  *
  *   UNIXSocket.pair {|s1, s2|
  *     s1.puts "Hello World"
@@ -638,55 +639,11 @@ bsock_recv(int argc, VALUE *argv, VALUE sock)
     return rsock_s_recvfrom(sock, argc, argv, RECV_RECV);
 }
 
-/*
- * call-seq:
- * 	basicsocket.recv_nonblock(maxlen) => mesg
- * 	basicsocket.recv_nonblock(maxlen, flags) => mesg
- *
- * Receives up to _maxlen_ bytes from +socket+ using recvfrom(2) after
- * O_NONBLOCK is set for the underlying file descriptor.
- * _flags_ is zero or more of the +MSG_+ options.
- * The result, _mesg_, is the data received.
- *
- * When recvfrom(2) returns 0, Socket#recv_nonblock returns
- * an empty string as data.
- * The meaning depends on the socket: EOF on TCP, empty packet on UDP, etc.
- *
- * === Parameters
- * * +maxlen+ - the number of bytes to receive from the socket
- * * +flags+ - zero or more of the +MSG_+ options
- *
- * === Example
- * 	serv = TCPServer.new("127.0.0.1", 0)
- * 	af, port, host, addr = serv.addr
- * 	c = TCPSocket.new(addr, port)
- * 	s = serv.accept
- * 	c.send "aaa", 0
- * 	begin # emulate blocking recv.
- * 	  p s.recv_nonblock(10) #=> "aaa"
- * 	rescue IO::WaitReadable
- * 	  IO.select([s])
- * 	  retry
- * 	end
- *
- * Refer to Socket#recvfrom for the exceptions that may be thrown if the call
- * to _recv_nonblock_ fails.
- *
- * BasicSocket#recv_nonblock may raise any error corresponding to recvfrom(2) failure,
- * including Errno::EWOULDBLOCK.
- *
- * If the exception is Errno::EWOULDBLOCK or Errno::AGAIN,
- * it is extended by IO::WaitReadable.
- * So IO::WaitReadable can be used to rescue the exceptions for retrying recv_nonblock.
- *
- * === See
- * * Socket#recvfrom
- */
-
+/* :nodoc: */
 static VALUE
-bsock_recv_nonblock(int argc, VALUE *argv, VALUE sock)
+bsock_recv_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str, VALUE ex)
 {
-    return rsock_s_recvfrom_nonblock(sock, argc, argv, RECV_RECV);
+    return rsock_s_recvfrom_nonblock(sock, len, flg, str, ex, RECV_RECV);
 }
 
 /*
@@ -755,13 +712,22 @@ rsock_init_basicsocket(void)
     rb_define_method(rb_cBasicSocket, "remote_address", bsock_remote_address, 0);
     rb_define_method(rb_cBasicSocket, "send", rsock_bsock_send, -1);
     rb_define_method(rb_cBasicSocket, "recv", bsock_recv, -1);
-    rb_define_method(rb_cBasicSocket, "recv_nonblock", bsock_recv_nonblock, -1);
+
     rb_define_method(rb_cBasicSocket, "do_not_reverse_lookup", bsock_do_not_reverse_lookup, 0);
     rb_define_method(rb_cBasicSocket, "do_not_reverse_lookup=", bsock_do_not_reverse_lookup_set, 1);
 
-    rb_define_method(rb_cBasicSocket, "sendmsg", rsock_bsock_sendmsg, -1); /* in ancdata.c */
-    rb_define_method(rb_cBasicSocket, "sendmsg_nonblock", rsock_bsock_sendmsg_nonblock, -1); /* in ancdata.c */
-    rb_define_method(rb_cBasicSocket, "recvmsg", rsock_bsock_recvmsg, -1); /* in ancdata.c */
-    rb_define_method(rb_cBasicSocket, "recvmsg_nonblock", rsock_bsock_recvmsg_nonblock, -1); /* in ancdata.c */
+    /* for ext/socket/lib/socket.rb use only: */
+    rb_define_private_method(rb_cBasicSocket,
+			     "__recv_nonblock", bsock_recv_nonblock, 4);
+
+    /* in ancdata.c */
+    rb_define_private_method(rb_cBasicSocket, "__sendmsg",
+			     rsock_bsock_sendmsg, 4);
+    rb_define_private_method(rb_cBasicSocket, "__sendmsg_nonblock",
+			     rsock_bsock_sendmsg_nonblock, 5);
+    rb_define_private_method(rb_cBasicSocket, "__recvmsg",
+			     rsock_bsock_recvmsg, 4);
+    rb_define_private_method(rb_cBasicSocket, "__recvmsg_nonblock",
+			    rsock_bsock_recvmsg_nonblock, 5);
 
 }

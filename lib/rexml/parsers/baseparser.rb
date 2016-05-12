@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rexml/parseexception'
 require 'rexml/undefinednamespaceexception'
 require 'rexml/source'

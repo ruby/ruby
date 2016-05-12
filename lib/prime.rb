@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # = prime.rb
 #
@@ -31,7 +32,14 @@ class Integer
 
   # Returns true if +self+ is a prime number, else returns false.
   def prime?
-    Prime.prime?(self)
+    return self >= 2 if self <= 3
+    return false if self % 2 == 0 or self % 3 == 0
+    (5..(self**0.5).floor).step(6).each do |i|
+      if self % i == 0 || self % (i + 2) == 0
+        return false
+      end
+    end
+    true
   end
 
   # Iterates the given block over all prime numbers.
@@ -56,9 +64,6 @@ end
 #   Prime.first 5 # => [2, 3, 5, 7, 11]
 #
 # == Retrieving the instance
-#
-# +Prime+.new is obsolete. Now +Prime+ has the default instance and you can
-# access it as +Prime+.instance.
 #
 # For convenience, each instance method of +Prime+.instance can be accessed
 # as a class method of +Prime+.
@@ -90,20 +95,11 @@ end
 
 class Prime
   include Enumerable
-  @the_instance = Prime.new
-
-  # obsolete. Use +Prime+::+instance+ or class methods of +Prime+.
-  def initialize
-    @generator = EratosthenesGenerator.new
-    extend OldCompatibility
-    warn "Prime::new is obsolete. use Prime::instance or class methods of Prime."
-  end
+  include Singleton
 
   class << self
     extend Forwardable
     include Enumerable
-    # Returns the default instance of Prime.
-    def instance; @the_instance end
 
     def method_added(method) # :nodoc:
       (class<< self;self;end).def_delegator :instance, method
@@ -136,14 +132,6 @@ class Prime
   #   Upper bound of prime numbers. The iterator stops after it
   #   yields all prime numbers p <= +ubound+.
   #
-  # == Note
-  #
-  # +Prime+.+new+ returns an object extended by +Prime+::+OldCompatibility+
-  # in order to be compatible with Ruby 1.8, and +Prime+#each is overwritten
-  # by +Prime+::+OldCompatibility+#+each+.
-  #
-  # +Prime+.+new+ is now obsolete. Use +Prime+.+instance+.+each+ or simply
-  # +Prime+.+each+.
   def each(ubound = nil, generator = EratosthenesGenerator.new, &block)
     generator.upper_bound = ubound
     generator.each(&block)
@@ -157,8 +145,10 @@ class Prime
   # +value+:: an arbitrary integer to be checked.
   # +generator+:: optional. A pseudo-prime generator.
   def prime?(value, generator = Prime::Generator23.new)
+    raise ArgumentError, "Expected a prime generator, got #{generator}" unless generator.respond_to? :each
+    raise ArgumentError, "Expected an integer, got #{value}" unless value.respond_to?(:integer?) && value.integer?
     return false if value < 2
-    for num in generator
+    generator.each do |num|
       q,r = value.divmod num
       return true if q < num
       return false if r == 0
@@ -216,7 +206,7 @@ class Prime
     else
       pv = []
     end
-    for prime in generator
+    generator.each do |prime|
       count = 0
       while (value1, mod = value.divmod(prime)
              mod) == 0
@@ -231,7 +221,7 @@ class Prime
     if value > 1
       pv.push [value, 1]
     end
-    return pv
+    pv
   end
 
   # An abstract class for enumerating pseudo-prime numbers.
@@ -289,14 +279,26 @@ class Prime
     end
 
     # see +Enumerator+#with_index.
-    alias with_index each_with_index
+    def with_index(offset = 0)
+      return enum_for(:with_index, offset) { Float::INFINITY } unless block_given?
+      return each_with_index(&proc) if offset == 0
+
+      each do |prime|
+        yield prime, offset
+        offset += 1
+      end
+    end
 
     # see +Enumerator+#with_object.
     def with_object(obj)
-      return enum_for(:with_object) unless block_given?
+      return enum_for(:with_object, obj) { Float::INFINITY } unless block_given?
       each do |prime|
         yield prime, obj
       end
+    end
+
+    def size
+      Float::INFINITY
     end
   end
 
@@ -360,7 +362,7 @@ class Prime
         when 3; @prime = 5; @step = 2
         end
       end
-      return @prime
+      @prime
     end
     alias next succ
     def rewind
@@ -387,7 +389,7 @@ class Prime
 
     # Returns the cached prime numbers.
     def cache
-      return @primes
+      @primes
     end
     alias primes cache
     alias primes_so_far cache
@@ -412,7 +414,7 @@ class Prime
         @primes.push @next_to_check if @primes[2..@ulticheck_index].find {|prime| @next_to_check % prime == 0 }.nil?
         @next_to_check += 2
       end
-      return @primes[index]
+      @primes[index]
     end
   end
 
@@ -444,44 +446,21 @@ class Prime
       segment_max = [segment_min + max_segment_size, max_cached_prime * 2].min
       root = Integer(Math.sqrt(segment_max).floor)
 
-      sieving_primes = @primes[1 .. -1].take_while { |prime| prime <= root }
-      offsets = Array.new(sieving_primes.size) do |i|
-        (-(segment_min + 1 + sieving_primes[i]) / 2) % sieving_primes[i]
-      end
-
       segment = ((segment_min + 1) .. segment_max).step(2).to_a
-      sieving_primes.each_with_index do |prime, index|
-        composite_index = offsets[index]
+
+      (1..Float::INFINITY).each do |sieving|
+        prime = @primes[sieving]
+        break if prime > root
+        composite_index = (-(segment_min + 1 + prime) / 2) % prime
         while composite_index < segment.size do
           segment[composite_index] = nil
           composite_index += prime
         end
       end
 
-      segment.each do |prime|
-        @primes.push prime unless prime.nil?
-      end
+      @primes.concat(segment.compact!)
+
       @max_checked = segment_max
-    end
-  end
-
-  # Provides a +Prime+ object with compatibility to Ruby 1.8 when instantiated via +Prime+.+new+.
-  module OldCompatibility
-    # Returns the next prime number and forwards internal pointer.
-    def succ
-      @generator.succ
-    end
-    alias next succ
-
-    # Overwrites Prime#each.
-    #
-    # Iterates the given block over all prime numbers. Note that enumeration
-    # starts from the current position of internal pointer, not rewound.
-    def each
-      return @generator.dup unless block_given?
-      loop do
-        yield succ
-      end
     end
   end
 end

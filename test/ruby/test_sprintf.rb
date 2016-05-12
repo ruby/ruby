@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestSprintf < Test::Unit::TestCase
@@ -148,6 +149,11 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal(" Inf", sprintf("% e", inf), '[ruby-dev:34002]')
   end
 
+  def test_bignum
+    assert_match(/\A10{120}\.0+\z/, sprintf("%f", 100**60))
+    assert_match(/\A10{180}\.0+\z/, sprintf("%f", 1000**60))
+  end
+
   def test_rational
     assert_match(/\A0\.10+\z/, sprintf("%.60f", 0.1r))
     assert_match(/\A0\.010+\z/, sprintf("%.60f", 0.01r))
@@ -155,10 +161,10 @@ class TestSprintf < Test::Unit::TestCase
     assert_match(/\A0\.3+\z/, sprintf("%.60f", 1/3r))
     assert_match(/\A1\.20+\z/, sprintf("%.60f", 1.2r))
 
-    0.upto(9) do |len|
-      -1.upto(9) do |prec|
+    ["", *"0".."9"].each do |len|
+      ["", *".0"..".9"].each do |prec|
         ['', '+', '-', ' ', '0', '+0', '-0', ' 0', '+ ', '- ', '+ 0', '- 0'].each do |flags|
-          fmt = "%#{flags}#{len > 0 ? len : ''}#{prec >= 0 ? ".#{prec}" : ''}f"
+          fmt = "%#{flags}#{len}#{prec}f"
           [0, 0.1, 0.01, 0.001, 1.001, 100.0, 100.001, 10000000000.0, 0.00000000001, 1/3r, 2/3r, 1.2r, 10r].each do |num|
             assert_equal(sprintf(fmt, num.to_f), sprintf(fmt, num.to_r), "sprintf(#{fmt.inspect}, #{num.inspect}.to_r)")
             assert_equal(sprintf(fmt, -num.to_f), sprintf(fmt, -num.to_r), "sprintf(#{fmt.inspect}, #{(-num).inspect}.to_r)") if num > 0
@@ -166,6 +172,13 @@ class TestSprintf < Test::Unit::TestCase
         end
       end
     end
+
+    bug11766 = '[ruby-core:71806] [Bug #11766]'
+    assert_equal("x"*10+"     1.0", sprintf("x"*10+"%8.1f", 1r), bug11766)
+  end
+
+  def test_rational_precision
+    assert_match(/\A0\.\d{600}\z/, sprintf("%.600f", 600**~60))
   end
 
   def test_hash
@@ -408,5 +421,16 @@ class TestSprintf < Test::Unit::TestCase
       e = assert_raise_with_message(KeyError, "key{#{k}} not found") {sprintf("%{#{k}}", {})}
       assert_equal(enc, e.message.encoding)
     end
+  end
+
+  def test_named_default
+    h = Hash.new('world')
+    assert_equal("hello world", "hello %{location}" % h)
+    assert_equal("hello world", "hello %<location>s" % h)
+  end
+
+  def test_named_with_nil
+    h = { key: nil, key2: "key2_val" }
+    assert_equal("key is , key2 is key2_val", "key is %{key}, key2 is %{key2}" % h)
   end
 end

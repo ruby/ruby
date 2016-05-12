@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/labelframe.rb : treat labelframe widget
 #

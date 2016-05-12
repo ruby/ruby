@@ -85,10 +85,6 @@ char *getenv();
 # endif
 #endif
 
-#if defined(__BEOS__) || defined(__HAIKU__)
-# include <image.h>
-#endif
-
 #ifndef dln_loaderror
 static void
 dln_loaderror(const char *format, ...)
@@ -106,13 +102,12 @@ dln_loaderror(const char *format, ...)
 # define USE_DLN_DLOPEN
 #endif
 
-#ifndef FUNCNAME_PATTERN
-# if defined(__hp9000s300) || ((defined(__NetBSD__) || defined(__FreeBSD__) || defined(__OpenBSD__)) && !defined(__ELF__)) || defined(__BORLANDC__) || defined(NeXT) || defined(__WATCOMC__) || defined(MACOSX_DYLD)
-#  define FUNCNAME_PREFIX "_Init_"
-# else
-#  define FUNCNAME_PREFIX "Init_"
-# endif
+#if defined(__hp9000s300) || ((defined(__NetBSD__) || defined(__FreeBSD__) || defined(__OpenBSD__)) && !defined(__ELF__)) || defined(NeXT) || defined(MACOSX_DYLD)
+# define EXTERNAL_PREFIX "_"
+#else
+# define EXTERNAL_PREFIX ""
 #endif
+#define FUNCNAME_PREFIX EXTERNAL_PREFIX"Init_"
 
 #if defined __CYGWIN__ || defined DOSISH
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
@@ -1118,12 +1113,12 @@ dln_sym(const char *name)
 #endif
 #endif
 
-#if defined _WIN32 && !defined __CYGWIN__
+#ifdef _WIN32
 #include <windows.h>
 #include <imagehlp.h>
 #endif
 
-#if defined _WIN32 && !defined __CYGWIN__
+#ifdef _WIN32
 static const char *
 dln_strerror(char *message, size_t size)
 {
@@ -1250,12 +1245,15 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 void*
 dln_load(const char *file)
 {
+#if (defined _WIN32 || defined USE_DLN_DLOPEN) && defined RUBY_EXPORT
+    static const char incompatible[] = "incompatible library version";
+#endif
 #if !defined(_AIX) && !defined(NeXT)
     const char *error = 0;
 #define DLN_ERROR() (error = dln_strerror(), strcpy(ALLOCA_N(char, strlen(error) + 1), error))
 #endif
 
-#if defined _WIN32 && !defined __CYGWIN__
+#if defined _WIN32
     HINSTANCE handle;
     WCHAR *winfile;
     char message[1024];
@@ -1283,7 +1281,7 @@ dln_load(const char *file)
 #if defined _WIN32 && defined RUBY_EXPORT
     if (!rb_w32_check_imported(handle, rb_libruby_handle())) {
 	FreeLibrary(handle);
-	error = "incompatible library version";
+	error = incompatible;
 	goto failed;
     }
 #endif
@@ -1330,6 +1328,22 @@ dln_load(const char *file)
 	    error = dln_strerror();
 	    goto failed;
 	}
+# if defined RUBY_EXPORT
+	{
+	    void *ex = dlsym(handle, EXTERNAL_PREFIX"ruby_xmalloc");
+	    if (ex && ex != ruby_xmalloc) {
+
+#   if defined __APPLE__
+		/* dlclose() segfaults */
+		rb_fatal("%s - %s", incompatible, file);
+#   else
+		dlclose(handle);
+		error = incompatible;
+		goto failed;
+#   endif
+	    }
+	}
+# endif
 
 	init_fct = (void(*)())(VALUE)dlsym(handle, buf);
 	if (init_fct == NULL) {
@@ -1425,54 +1439,6 @@ dln_load(const char *file)
 	return (void*)init_fct;
     }
 #endif
-
-#if defined(__BEOS__) || defined(__HAIKU__)
-# define DLN_DEFINED
-    {
-      status_t err_stat;  /* BeOS error status code */
-      image_id img_id;    /* extension module unique id */
-      void (*init_fct)(); /* initialize function for extension module */
-
-      /* load extension module */
-      img_id = load_add_on(file);
-      if (img_id <= 0) {
-	dln_loaderror("Failed to load add_on %.200s error_code=%x",
-	  file, img_id);
-      }
-
-      /* find symbol for module initialize function. */
-      /* The Be Book KernelKit Images section described to use
-	 B_SYMBOL_TYPE_TEXT for symbol of function, not
-	 B_SYMBOL_TYPE_CODE. Why ? */
-      /* strcat(init_fct_symname, "__Fv"); */  /* parameter nothing. */
-      /* "__Fv" dont need! The Be Book Bug ? */
-      err_stat = get_image_symbol(img_id, buf,
-				  B_SYMBOL_TYPE_TEXT, (void **)&init_fct);
-
-      if (err_stat != B_NO_ERROR) {
-	char real_name[MAXPATHLEN];
-
-	strlcpy(real_name, buf, MAXPATHLEN);
-	strlcat(real_name, "__Fv", MAXPATHLEN);
-        err_stat = get_image_symbol(img_id, real_name,
-				    B_SYMBOL_TYPE_TEXT, (void **)&init_fct);
-      }
-
-      if ((B_BAD_IMAGE_ID == err_stat) || (B_BAD_INDEX == err_stat)) {
-	unload_add_on(img_id);
-	dln_loaderror("Failed to lookup Init function %.200s", file);
-      }
-      else if (B_NO_ERROR != err_stat) {
-	char errmsg[] = "Internal of BeOS version. %.200s (symbol_name = %s)";
-	unload_add_on(img_id);
-	dln_loaderror(errmsg, strerror(err_stat), buf);
-      }
-
-      /* call module initialize function. */
-      (*init_fct)();
-      return (void*)img_id;
-    }
-#endif /* __BEOS__ || __HAIKU__ */
 
 #ifndef DLN_DEFINED
     dln_notimplement();

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/commands/stale_command'
 
@@ -13,10 +14,12 @@ class TestGemCommandsStaleCommand < Gem::TestCase
     foo_bar = util_spec 'foo_bar' do |gem|
       gem.files = files
     end
+    install_specs foo_bar
 
     bar_baz = util_spec 'bar_baz' do |gem|
       gem.files = files
     end
+    install_specs bar_baz
 
     files.each do |file|
       filename = File.join(bar_baz.full_gem_path, file)

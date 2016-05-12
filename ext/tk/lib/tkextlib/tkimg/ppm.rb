@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  TkImg - format 'ppm'
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

@@ -1,7 +1,8 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestWaitForSingleFD < Test::Unit::TestCase
-  require '-test-/wait_for_single_fd/wait_for_single_fd'
+  require '-test-/wait_for_single_fd'
 
   def with_pipe
     r, w = IO.pipe

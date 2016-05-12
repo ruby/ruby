@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # A List is a homogeneous set of ListItems.
 #

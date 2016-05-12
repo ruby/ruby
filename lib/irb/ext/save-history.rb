@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #   save-history.rb -
 #   	$Release Version: 0.9.6$
 #   	$Revision$
@@ -26,6 +27,7 @@ module IRB
       IRB.conf[:SAVE_HISTORY]
     end
 
+    remove_method :save_history= if respond_to?(:save_history=)
     # Sets <code>IRB.conf[:SAVE_HISTORY]</code> to the given +val+ and calls
     # #init_save_history with this context.
     #

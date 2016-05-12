@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: false
 # This script generates a counter with start and stop buttons.
 
 require "tk"

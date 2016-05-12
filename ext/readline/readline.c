@@ -229,8 +229,7 @@ readline_getc(FILE *input)
                 goto again;
             rb_sys_fail("rb_wait_for_single_fd");
         }
-        errno = data.err;
-        rb_sys_fail("read");
+        rb_syserr_fail(data.err, "read");
     }
     return data.ret;
 }
@@ -359,6 +358,34 @@ clear_rl_outstream(void)
     readline_outstream = Qfalse;
 }
 
+static void
+prepare_readline(void)
+{
+    static int initialized = 0;
+    if (!initialized) {
+	rl_initialize();
+	initialized = 1;
+    }
+
+    if (readline_instream) {
+        rb_io_t *ifp;
+        rb_io_check_initialized(ifp = RFILE(rb_io_taint_check(readline_instream))->fptr);
+        if (ifp->fd < 0) {
+            clear_rl_instream();
+            rb_raise(rb_eIOError, "closed readline input");
+        }
+    }
+
+    if (readline_outstream) {
+        rb_io_t *ofp;
+        rb_io_check_initialized(ofp = RFILE(rb_io_taint_check(readline_outstream))->fptr);
+        if (ofp->fd < 0) {
+            clear_rl_outstream();
+            rb_raise(rb_eIOError, "closed readline output");
+        }
+    }
+}
+
 /*
  * call-seq:
  *   Readline.readline(prompt = "", add_hist = false) -> string or nil
@@ -460,23 +487,7 @@ readline_readline(int argc, VALUE *argv, VALUE self)
         prompt = RSTRING_PTR(tmp);
     }
 
-    if (readline_instream) {
-        rb_io_t *ifp;
-        rb_io_check_initialized(ifp = RFILE(rb_io_taint_check(readline_instream))->fptr);
-        if (ifp->fd < 0) {
-            clear_rl_instream();
-            rb_raise(rb_eIOError, "closed readline input");
-        }
-    }
-
-    if (readline_outstream) {
-        rb_io_t *ofp;
-        rb_io_check_initialized(ofp = RFILE(rb_io_taint_check(readline_outstream))->fptr);
-        if (ofp->fd < 0) {
-            clear_rl_outstream();
-            rb_raise(rb_eIOError, "closed readline output");
-        }
-    }
+    prepare_readline();
 
 #ifdef _WIN32
     rl_prep_terminal(1);
@@ -545,8 +556,7 @@ readline_s_set_input(VALUE self, VALUE input)
         if (f == NULL) {
             int save_errno = errno;
             close(fd);
-            errno = save_errno;
-            rb_sys_fail("fdopen");
+            rb_syserr_fail(save_errno, "fdopen");
         }
         rl_instream = readline_rl_instream = f;
         readline_instream = input;
@@ -582,8 +592,7 @@ readline_s_set_output(VALUE self, VALUE output)
         if (f == NULL) {
             int save_errno = errno;
             close(fd);
-            errno = save_errno;
-            rb_sys_fail("fdopen");
+            rb_syserr_fail(save_errno, "fdopen");
         }
         rl_outstream = readline_rl_outstream = f;
         readline_outstream = output;
@@ -954,7 +963,7 @@ readline_attempted_completion_function(const char *text, int start, int end)
     enc = rb_locale_encoding();
     encobj = rb_enc_from_encoding(enc);
     for (i = 0; i < matches; i++) {
-        temp = rb_obj_as_string(RARRAY_PTR(ary)[i]);
+        temp = rb_obj_as_string(RARRAY_AREF(ary, i));
         StringValueCStr(temp);  /* must be NUL-terminated */
         rb_enc_check(encobj, temp);
         result[i + 1] = (char*)malloc(RSTRING_LEN(temp) + 1);
@@ -1549,6 +1558,7 @@ readline_s_get_filename_quote_characters(VALUE self, VALUE str)
 static VALUE
 readline_s_refresh_line(VALUE self)
 {
+    prepare_readline();
     rl_refresh_line(0, 0);
     return Qnil;
 }

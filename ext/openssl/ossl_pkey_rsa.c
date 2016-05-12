@@ -1,11 +1,10 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #if !defined(OPENSSL_NO_RSA)
@@ -40,6 +39,7 @@ rsa_instance(VALUE klass, RSA *rsa)
     if (!rsa) {
 	return Qfalse;
     }
+    obj = NewPKey(klass);
     if (!(pkey = EVP_PKEY_new())) {
 	return Qfalse;
     }
@@ -47,7 +47,7 @@ rsa_instance(VALUE klass, RSA *rsa)
 	EVP_PKEY_free(pkey);
 	return Qfalse;
     }
-    WrapPKey(klass, obj, pkey);
+    SetPKey(obj, pkey);
 
     return obj;
 }
@@ -61,10 +61,11 @@ ossl_rsa_new(EVP_PKEY *pkey)
 	obj = rsa_instance(cRSA, RSA_new());
     }
     else {
+	obj = NewPKey(cRSA);
 	if (EVP_PKEY_type(pkey->type) != EVP_PKEY_RSA) {
 	    ossl_raise(rb_eTypeError, "Not a RSA key!");
 	}
-	WrapPKey(cRSA, obj, pkey);
+	SetPKey(obj, pkey);
     }
     if (obj == Qfalse) {
 	ossl_raise(eRSAError, NULL);
@@ -698,4 +699,3 @@ Init_ossl_rsa(void)
 {
 }
 #endif /* NO_RSA */
-

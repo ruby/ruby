@@ -1,20 +1,21 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #include "ossl.h"
 
-#define WrapX509(klass, obj, x509) do { \
+#define NewX509(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_x509_type, 0)
+#define SetX509(obj, x509) do { \
     if (!(x509)) { \
 	ossl_raise(rb_eRuntimeError, "CERT wasn't initialized!"); \
     } \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509_type, (x509)); \
+    RTYPEDDATA_DATA(obj) = (x509); \
 } while (0)
 #define GetX509(obj, x509) do { \
     TypedData_Get_Struct((obj), X509, &ossl_x509_type, (x509)); \
@@ -56,6 +57,7 @@ ossl_x509_new(X509 *x509)
     X509 *new;
     VALUE obj;
 
+    obj = NewX509(cX509Cert);
     if (!x509) {
 	new = X509_new();
     } else {
@@ -64,7 +66,7 @@ ossl_x509_new(X509 *x509)
     if (!new) {
 	ossl_raise(eX509CertError, NULL);
     }
-    WrapX509(cX509Cert, obj, new);
+    SetX509(obj, new);
 
     return obj;
 }
@@ -77,6 +79,7 @@ ossl_x509_new_from_file(VALUE filename)
     VALUE obj;
 
     SafeStringValue(filename);
+    obj = NewX509(cX509Cert);
     if (!(fp = fopen(RSTRING_PTR(filename), "r"))) {
 	ossl_raise(eX509CertError, "%s", strerror(errno));
     }
@@ -97,7 +100,7 @@ ossl_x509_new_from_file(VALUE filename)
     if (!x509) {
 	ossl_raise(eX509CertError, NULL);
     }
-    WrapX509(cX509Cert, obj, x509);
+    SetX509(obj, x509);
 
     return obj;
 }
@@ -133,10 +136,10 @@ ossl_x509_alloc(VALUE klass)
     X509 *x509;
     VALUE obj;
 
+    obj = NewX509(klass);
     x509 = X509_new();
     if (!x509) ossl_raise(eX509CertError, NULL);
-
-    WrapX509(klass, obj, x509);
+    SetX509(obj, x509);
 
     return obj;
 }
@@ -660,18 +663,18 @@ ossl_x509_set_extensions(VALUE self, VALUE ary)
 {
     X509 *x509;
     X509_EXTENSION *ext;
-    int i;
+    long i;
 
     Check_Type(ary, T_ARRAY);
     /* All ary's members should be X509Extension */
     for (i=0; i<RARRAY_LEN(ary); i++) {
-	OSSL_Check_Kind(RARRAY_PTR(ary)[i], cX509Ext);
+	OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Ext);
     }
     GetX509(self, x509);
     sk_X509_EXTENSION_pop_free(x509->cert_info->extensions, X509_EXTENSION_free);
     x509->cert_info->extensions = NULL;
     for (i=0; i<RARRAY_LEN(ary); i++) {
-	ext = DupX509ExtPtr(RARRAY_PTR(ary)[i]);
+	ext = DupX509ExtPtr(RARRAY_AREF(ary, i));
 
 	if (!X509_add_ext(x509, ext, -1)) { /* DUPs ext - FREE it */
 	    X509_EXTENSION_free(ext);
@@ -857,4 +860,3 @@ Init_ossl_x509cert(void)
     rb_define_method(cX509Cert, "add_extension", ossl_x509_add_extension, 1);
     rb_define_method(cX509Cert, "inspect", ossl_x509_inspect, 0);
 }
-

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/commands/dependency_command'
 
@@ -28,6 +29,8 @@ class TestGemCommandsDependencyCommand < Gem::TestCase
   end
 
   def test_execute_no_args
+    install_specs new_spec 'x', '2'
+
     spec_fetcher do |fetcher|
       fetcher.spec 'a', 1
       fetcher.spec 'a', '2.a'
@@ -51,6 +54,8 @@ Gem dep_x-1
 
 Gem pl-1-x86-linux
 
+Gem x-2
+
     EOF
 
     assert_equal expected, @ui.output
@@ -71,9 +76,11 @@ Gem pl-1-x86-linux
   end
 
   def test_execute_pipe_format
-    util_spec 'foo' do |gem|
+    spec = util_spec 'foo' do |gem|
       gem.add_dependency 'bar', '> 1'
     end
+    install_specs util_spec 'bar', 2
+    install_specs spec
 
     @cmd.options[:args] = %w[foo]
     @cmd.options[:pipe_format] = true
@@ -164,6 +171,8 @@ ERROR:  Only reverse dependencies for local gems are supported.
   end
 
   def test_execute_remote
+    install_specs new_spec 'bar', '2'
+
     spec_fetcher do |fetcher|
       fetcher.spec 'foo', 2, 'bar' => '> 1'
     end

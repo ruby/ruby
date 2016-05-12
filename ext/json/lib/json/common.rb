@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'json/version'
 require 'json/generic_object'
 
@@ -148,7 +149,7 @@ module JSON
   #   the default.
   # * *create_additions*: If set to false, the Parser doesn't create
   #   additions even if a matching class and create_id was found. This option
-  #   defaults to true.
+  #   defaults to false.
   # * *object_class*: Defaults to Hash
   # * *array_class*: Defaults to Array
   def parse(source, opts = {})
@@ -169,7 +170,7 @@ module JSON
   #   to true.
   # * *create_additions*: If set to false, the Parser doesn't create
   #   additions even if a matching class and create_id was found. This option
-  #   defaults to true.
+  #   defaults to false.
   def parse!(source, opts = {})
     opts = {
       :max_nesting  => false,
@@ -390,7 +391,7 @@ module JSON
       end
     end
     opts = JSON.dump_default_options
-    limit and opts.update(:max_nesting => limit)
+    opts = opts.merge(:max_nesting => limit) if limit
     result = generate(obj, opts)
     if anIO
       anIO.write result
@@ -411,7 +412,7 @@ module JSON
     string
   end
 
-  # Shortuct for iconv.
+  # Shortcut for iconv.
   if ::String.method_defined?(:encode)
     # Encodes string using Ruby's _String.encode_
     def self.iconv(to, from, string)

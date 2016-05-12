@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestRand < Test::Unit::TestCase
@@ -523,5 +524,29 @@ END
     end
     [1, 2].sample(1, random: gen)
     assert_equal(2, gen.limit, bug7935)
+  end
+
+  def test_random_ulong_limited_no_rand
+    c = Class.new do
+      undef rand
+      def bytes(n)
+        "\0"*n
+      end
+    end
+    gen = c.new.extend(Random::Formatter)
+    assert_equal(1, [1, 2].sample(random: gen))
+  end
+
+  def test_default_seed
+    assert_separately([], <<-End)
+      seed = Random::DEFAULT::seed
+      rand1 = Random::DEFAULT::rand
+      rand2 = Random.new(seed).rand
+      assert_equal(rand1, rand2)
+
+      srand seed
+      rand3 = rand
+      assert_equal(rand1, rand3)
+    End
   end
 end

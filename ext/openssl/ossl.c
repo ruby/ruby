@@ -1,11 +1,10 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #include "ossl.h"
@@ -556,6 +555,20 @@ static void Init_ossl_locks(void)
  * OpenSSL provides SSL, TLS and general purpose cryptography.  It wraps the
  * OpenSSL[http://www.openssl.org/] library.
  *
+ * = Install
+ *
+ * OpenSSL comes bundled with the Standard Library of Ruby.
+ *
+ * This means the OpenSSL extension is compiled with Ruby and packaged on
+ * build. During compile time, Ruby will need to link against the OpenSSL
+ * library on your system. However, you cannot use openssl provided by Apple to
+ * build standard library openssl.
+ *
+ * If you use OSX, you should install another openssl and run ```./configure
+ * --with-openssl-dir=/path/to/another-openssl```. For Homebrew user, run `brew
+ * install openssl` and then ```./configure --with-openssl-dir=`brew --prefix
+ * openssl` ```.
+ *
  * = Examples
  *
  * All examples assume you have loaded OpenSSL with:
@@ -613,6 +626,7 @@ static void Init_ossl_locks(void)
  * loading the key:
  *
  *   key4_pem = File.read 'private.secure.pem'
+ *   pass_phrase = 'my secure pass phrase goes here'
  *   key4 = OpenSSL::PKey::RSA.new key4_pem, pass_phrase
  *
  * == RSA Encryption
@@ -777,6 +791,7 @@ static void Init_ossl_locks(void)
  * This example creates a self-signed certificate using an RSA key and a SHA1
  * signature.
  *
+ *   key = OpenSSL::PKey::RSA.new 2048
  *   name = OpenSSL::X509::Name.parse 'CN=nobody/DC=example'
  *
  *   cert = OpenSSL::X509::Certificate.new
@@ -846,6 +861,7 @@ static void Init_ossl_locks(void)
  * not readable by other users.
  *
  *   ca_key = OpenSSL::PKey::RSA.new 2048
+ *   pass_phrase = 'my secure pass phrase goes here'
  *
  *   cipher = OpenSSL::Cipher::Cipher.new 'AES-128-CBC'
  *
@@ -1165,4 +1181,3 @@ main(int argc, char *argv[])
     return 0;
 }
 #endif /* OSSL_DEBUG */
-

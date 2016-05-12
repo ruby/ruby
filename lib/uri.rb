@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # URI is a module providing classes to handle Uniform Resource Identifiers
 # (RFC2396[http://tools.ietf.org/html/rfc2396])
 #

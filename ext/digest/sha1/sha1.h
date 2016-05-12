@@ -11,7 +11,7 @@
 #ifndef _SYS_SHA1_H_
 #define	_SYS_SHA1_H_
 
-#include "defs.h"
+#include "../defs.h"
 
 typedef struct {
 	uint32_t state[5];

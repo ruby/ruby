@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'ostruct'
 
 module JSON
@@ -45,14 +46,6 @@ module JSON
 
     def to_hash
       table
-    end
-
-    def [](name)
-      table[name.to_sym]
-    end
-
-    def []=(name, value)
-      __send__ "#{name}=", value
     end
 
     def |(other)

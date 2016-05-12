@@ -25,42 +25,11 @@ const union {
     enum node_type              node_type;
     enum ruby_method_ids        method_ids;
     enum ruby_id_types          id_types;
+    enum ruby_fl_type           fl_types;
+    enum ruby_encoding_consts   encoding_consts;
+    enum ruby_coderange_type    enc_coderange_types;
+    enum ruby_econv_flag_type   econv_flag_types;
     enum {
-        RUBY_ENCODING_INLINE_MAX = ENCODING_INLINE_MAX,
-        RUBY_ENCODING_SHIFT = ENCODING_SHIFT,
-        RUBY_ENC_CODERANGE_MASK    = ENC_CODERANGE_MASK,
-        RUBY_ENC_CODERANGE_UNKNOWN = ENC_CODERANGE_UNKNOWN,
-        RUBY_ENC_CODERANGE_7BIT    = ENC_CODERANGE_7BIT,
-        RUBY_ENC_CODERANGE_VALID   = ENC_CODERANGE_VALID,
-        RUBY_ENC_CODERANGE_BROKEN  = ENC_CODERANGE_BROKEN,
-        RUBY_FL_PROMOTED0   = FL_PROMOTED0,
-        RUBY_FL_PROMOTED1   = FL_PROMOTED1,
-        RUBY_FL_PROMOTED    = FL_PROMOTED0|FL_PROMOTED1,
-        RUBY_FL_FINALIZE    = FL_FINALIZE,
-        RUBY_FL_TAINT       = FL_TAINT,
-        RUBY_FL_EXIVAR      = FL_EXIVAR,
-        RUBY_FL_FREEZE      = FL_FREEZE,
-        RUBY_FL_SINGLETON   = FL_SINGLETON,
-        RUBY_FL_USER0       = FL_USER0,
-        RUBY_FL_USER1       = FL_USER1,
-        RUBY_FL_USER2       = FL_USER2,
-        RUBY_FL_USER3       = FL_USER3,
-        RUBY_FL_USER4       = FL_USER4,
-        RUBY_FL_USER5       = FL_USER5,
-        RUBY_FL_USER6       = FL_USER6,
-        RUBY_FL_USER7       = FL_USER7,
-        RUBY_FL_USER8       = FL_USER8,
-        RUBY_FL_USER9       = FL_USER9,
-        RUBY_FL_USER10      = FL_USER10,
-        RUBY_FL_USER11      = FL_USER11,
-        RUBY_FL_USER12      = FL_USER12,
-        RUBY_FL_USER13      = FL_USER13,
-        RUBY_FL_USER14      = FL_USER14,
-        RUBY_FL_USER15      = FL_USER15,
-        RUBY_FL_USER16      = FL_USER16,
-        RUBY_FL_USER17      = FL_USER17,
-        RUBY_FL_USER18      = FL_USER18,
-        RUBY_FL_USHIFT      = FL_USHIFT,
         RUBY_NODE_TYPESHIFT = NODE_TYPESHIFT,
         RUBY_NODE_TYPEMASK  = NODE_TYPEMASK,
         RUBY_NODE_LSHIFT    = NODE_LSHIFT,
@@ -68,9 +37,7 @@ const union {
     } various;
 } ruby_dummy_gdb_enums;
 
-const VALUE RUBY_FL_USER19    = FL_USER19;
 const SIGNED_VALUE RUBY_NODE_LMASK = NODE_LMASK;
-const VALUE RUBY_ENCODING_MASK  = ENCODING_MASK;
 
 int
 ruby_debug_print_indent(int level, int debug_level, int indent_level)
@@ -115,7 +82,7 @@ ID
 ruby_debug_print_id(int level, int debug_level, const char *header, ID id)
 {
     if (level < debug_level) {
-	fprintf(stderr, "DBG> %s: %"PRIsVALUE"\n", header, rb_id2str(id));
+	fprintf(stderr, "DBG> %s: %s\n", header, rb_id2name(id));
 	fflush(stderr);
     }
     return id;

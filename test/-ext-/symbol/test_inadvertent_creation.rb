@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require "-test-/symbol"
 
@@ -53,6 +54,14 @@ module Test_Symbol
       assert_not_interned_error(cl, :const_get, name.to_sym)
     end
 
+    def test_module_const_get_toplevel
+      bug12089 = '[ruby-dev:49498] [Bug #12089]'
+      name = noninterned_name("A")
+      e = assert_not_interned_error(Object, :const_get, name)
+      assert_equal(name, e.name)
+      assert_not_match(/Object::/, e.message, bug12089)
+    end
+
     def test_module_const_defined?
       cl = Class.new
       name = noninterned_name("A")
@@ -61,6 +70,28 @@ module Test_Symbol
 
       name = noninterned_name
       assert_not_interned_error(cl, :const_defined?, name.to_sym)
+    end
+
+    def test_module_define_method_type_error
+      cl = Class.new
+      name = noninterned_name
+
+      assert_raise(TypeError) {cl.class_eval {define_method(name, "")}}
+      assert_not_interned(name)
+
+      assert_raise(TypeError) {cl.class_eval {define_method(name.to_sym, "")}}
+      assert_not_pinneddown(name)
+    end
+
+    def test_module_define_method_argument_error
+      cl = Class.new
+      name = noninterned_name
+
+      assert_raise(ArgumentError) {cl.class_eval {define_method(name)}}
+      assert_not_interned(name)
+
+      assert_raise(ArgumentError) {cl.class_eval {define_method(name.to_sym)}}
+      assert_not_pinneddown(name)
     end
 
     def test_respond_to_missing
@@ -82,10 +113,32 @@ module Test_Symbol
       assert_not_interned_false(c, :class_variable_defined?, noninterned_name("@@"), feature5072)
     end
 
+    def test_missing_method
+      bug10985 = '[ruby-core:68564] [Bug #10985]'
+      m = nil
+      c = Class.new do
+        def self.respond_to_missing?(*)
+          true
+        end
+      end
+
+      s = noninterned_name
+      assert_nothing_raised(NameError, bug10985) {m = c.method(s)}
+      assert_raise_with_message(NoMethodError, /#{s}/) {m.call}
+
+      s = noninterned_name
+      assert_nothing_raised(NameError, bug10985) {m = c.public_method(s.to_sym)}
+      assert_raise_with_message(NoMethodError, /#{s}/) {m.call}
+
+      s = noninterned_name
+      assert_nothing_raised(NameError, bug10985) {m = c.singleton_method(s.to_sym)}
+      assert_raise_with_message(NoMethodError, /#{s}/) {m.call}
+    end
+
     Feature5079 = '[ruby-core:38404]'
 
     def test_undefined_instance_variable
-      feature5079 = feature5079
+      feature5079 = Feature5079
       c = Class.new
       iv = noninterned_name("@")
 
@@ -94,7 +147,7 @@ module Test_Symbol
     end
 
     def test_undefined_class_variable
-      feature5079 = feature5079
+      feature5079 = Feature5079
       c = Class.new
       cv = noninterned_name("@@")
 
@@ -104,7 +157,7 @@ module Test_Symbol
 
 
     def test_undefined_const
-      feature5079 = feature5079
+      feature5079 = Feature5079
       c = Class.new
       s = noninterned_name("A")
 
@@ -112,7 +165,7 @@ module Test_Symbol
     end
 
     def test_undefined_method
-      feature5079 = feature5079
+      feature5079 = Feature5079
       c = Class.new
       s = noninterned_name
 
@@ -120,6 +173,7 @@ module Test_Symbol
       assert_not_interned_error(c, :public_method, s, feature5079)
       assert_not_interned_error(c, :instance_method, s, feature5079)
       assert_not_interned_error(c, :public_instance_method, s, feature5079)
+      assert_not_interned_error(c, :singleton_method, s, feature5079)
     end
 
     Feature5089 = '[ruby-core:38447]'
@@ -202,7 +256,13 @@ module Test_Symbol
       Thread.current.thread_variable_set(:test, nil)
       name = noninterned_name
       assert_nil(Thread.current.thread_variable_get(name))
-      assert_not_interned(name)
+      assert_not_pinneddown(name)
+    end
+
+    def test_thread_variable_set
+      name = noninterned_name
+      Thread.current.thread_variable_set(name, 42)
+      assert_not_pinneddown(name)
     end
 
     def test_thread_variable?
@@ -351,6 +411,95 @@ module Test_Symbol
         system(".", in: name)
       }
       assert_not_pinneddown(name)
+    end
+
+    def assert_no_immortal_symbol_created(name)
+      name = noninterned_name(name)
+      yield(name)
+      assert_not_pinneddown(name)
+    end
+
+    def assert_no_immortal_symbol_in_method_missing(name)
+      assert_no_immortal_symbol_created("send should not leak - #{name}") do |name|
+        assert_raise(NoMethodError) {yield(name)}
+      end
+    end
+
+    def test_send_leak_string
+      assert_no_immortal_symbol_in_method_missing("str") do |name|
+        42.send(name)
+      end
+    end
+
+    def test_send_leak_symbol
+      assert_no_immortal_symbol_in_method_missing("sym") do |name|
+        42.send(name.to_sym)
+      end
+    end
+
+    def test_send_leak_string_custom_method_missing
+      x = Object.new
+      def x.method_missing(*); super; end
+      assert_no_immortal_symbol_in_method_missing("str mm") do |name|
+        x.send(name)
+      end
+    end
+
+    def test_send_leak_symbol_custom_method_missing
+      x = Object.new
+      def x.method_missing(*); super; end
+      assert_no_immortal_symbol_in_method_missing("sym mm") do |name|
+        x.send(name.to_sym)
+      end
+    end
+
+    def test_send_leak_string_no_optimization
+      assert_no_immortal_symbol_in_method_missing("str slow") do |name|
+        42.method(:send).call(name)
+      end
+    end
+
+    def test_send_leak_symbol_no_optimization
+      assert_no_immortal_symbol_in_method_missing("sym slow") do |name|
+        42.method(:send).call(name.to_sym)
+      end
+    end
+
+    def test_send_leak_string_custom_method_missing_no_optimization
+      x = Object.new
+      def x.method_missing(*); super; end
+      assert_no_immortal_symbol_in_method_missing("str mm slow") do |name|
+        x.method(:send).call(name)
+      end
+    end
+
+    def test_send_leak_symbol_custom_method_missing_no_optimization
+      x = Object.new
+      def x.method_missing(*); super; end
+      assert_no_immortal_symbol_in_method_missing("sym mm slow") do |name|
+        x.method(:send).call(name.to_sym)
+      end
+    end
+
+    def test_kwarg_symbol_leak_no_rest
+      foo = -> (arg: 42) {}
+      assert_no_immortal_symbol_created("kwarg no rest") do |name|
+        assert_raise(ArgumentError) { foo.call(name.to_sym => 42) }
+      end
+    end
+
+    def test_kwarg_symbol_leak_with_rest
+      foo = -> (arg: 2, **options) {}
+      assert_no_immortal_symbol_created("kwarg with rest") do |name|
+        foo.call(name.to_sym => 42)
+      end
+    end
+
+    def test_kwarg_symbol_leak_just_rest
+      foo = -> (**options) {}
+      assert_no_immortal_symbol_created("kwarg just rest") do |name|
+        foo.call(name.to_sym => 42)
+      end
     end
   end
 end

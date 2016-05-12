@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # ssl.rb -- SSL/TLS enhancement for GenericServer
 #
@@ -51,6 +52,8 @@ module WEBrick
     #   Maximum session lifetime
     # :SSLOptions           ::
     #   Various SSL options
+    # :SSLCiphers           ::
+    #   Ciphers to be used
     # :SSLStartImmediately  ::
     #   Immediately start SSL upon connection?  Defaults to true
     # :SSLCertName          ::
@@ -75,6 +78,7 @@ module WEBrick
       :SSLVerifyCallback    => nil,   # custom verification
       :SSLTimeout           => nil,
       :SSLOptions           => nil,
+      :SSLCiphers           => nil,
       :SSLStartImmediately  => true,
       # Must specify if you use auto generated certificate.
       :SSLCertName          => nil,
@@ -104,7 +108,8 @@ module WEBrick
       cert = OpenSSL::X509::Certificate.new
       cert.version = 2
       cert.serial = 1
-      name = OpenSSL::X509::Name.new(cn)
+      name = (cn.kind_of? String) ? OpenSSL::X509::Name.parse(cn)
+                                  : OpenSSL::X509::Name.new(cn)
       cert.subject = name
       cert.issuer = name
       cert.not_before = Time.now
@@ -149,7 +154,7 @@ module WEBrick
     # Updates +listen+ to enable SSL when the SSL configuration is active.
 
     def listen(address, port) # :nodoc:
-      listeners = Utils::create_listeners(address, port, @logger)
+      listeners = Utils::create_listeners(address, port)
       if @config[:SSLEnable]
         unless ssl_context
           @ssl_context = setup_ssl_context(@config)
@@ -190,6 +195,7 @@ module WEBrick
       ctx.verify_callback = config[:SSLVerifyCallback]
       ctx.timeout = config[:SSLTimeout]
       ctx.options = config[:SSLOptions]
+      ctx.ciphers = config[:SSLCiphers]
       ctx
     end
   end

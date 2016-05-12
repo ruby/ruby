@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 begin
   require 'gdbm'
 rescue LoadError
@@ -64,6 +65,13 @@ if defined? GDBM
       assert_nil(@gdbm.close)
       ObjectSpace.each_object(GDBM) do |obj|
         obj.close unless obj.closed?
+      end
+      begin
+        FileUtils.remove_entry_secure @tmpdir
+      rescue
+        system("fuser", *Dir.entries(@tmpdir).grep(/\A(?!\.\.?\z)/), chdir: @tmpdir)
+      else
+        return
       end
       FileUtils.remove_entry_secure @tmpdir
     end
@@ -146,7 +154,7 @@ if defined? GDBM
     end
 
     def test_s_open_lock
-      skip "GDBM.open would block when opening already locked gdbm file on platforms without flock and with lockf" if /solaris/ =~ RUBY_PLATFORM
+      skip "GDBM.open would block when opening already locked gdbm file on platforms without flock and with lockf" if /solaris|aix/ =~ RUBY_PLATFORM
 
       dbname = "#{@tmpdir}/#{@prefix}"
 
@@ -265,7 +273,7 @@ if defined? GDBM
         num += 1 if i == 0
         assert_equal(num, @gdbm.size)
 
-        # Fixnum
+        # Integer
         assert_equal('200', @gdbm['100'] = '200')
         assert_equal('200', @gdbm['100'])
 
@@ -586,6 +594,7 @@ if defined? GDBM
 
       size2 = File.size(@path)
       @gdbm.reorganize
+      @gdbm.sync
       size3 = File.size(@path)
 
       # p [size1, size2, size3]

@@ -55,7 +55,7 @@ http://www.ruby-lang.org/
 
 ## メーリングリスト
 
-Rubyのメーリングリストがあります。参加希望の方は
+Rubyのメーリングリストがあります．参加希望の方は
 
 mailto:ruby-list-request@ruby-lang.org
 
@@ -63,22 +63,22 @@ mailto:ruby-list-request@ruby-lang.org
 
     subscribe
 
-と書いて送って下さい。
+と書いて送って下さい．
 
-Ruby開発者向けメーリングリストもあります。こちらではrubyのバグ、将来の仕様拡張など実装上の問題について議論されています。 参加希望の方は
+Ruby開発者向けメーリングリストもあります．こちらではrubyのバグ，将来の仕様拡張など実装上の問題について議論されています． 参加希望の方は
 
 mailto:ruby-dev-request@ruby-lang.org
 
-までruby-listと同様の方法でメールしてください。
+までruby-listと同様の方法でメールしてください．
 
 Ruby拡張モジュールについて話し合うruby-extメーリングリストと数学関係の話題について話し合うruby-mathメーリングリストと
-英語でrubyについて話し合うruby-talkメーリングリストもあります。参加方法はどれも同じです。
+英語でrubyについて話し合うruby-talkメーリングリストもあります．参加方法はどれも同じです．
 
 ## コンパイル・インストール
 
 以下の手順で行ってください．
 
-1.  もし `configure` ファイルが見つからない、もしくは `configure.in` より古いようなら、 `autoconf` を実行して
+1.  もし `configure` ファイルが見つからない，もしくは `configure.in` より古いようなら， `autoconf` を実行して
     新しく `configure` を生成する
 
 2.  `configure` を実行して `Makefile` などを生成する
@@ -109,20 +109,17 @@ Ruby拡張モジュールについて話し合うruby-extメーリングリス�
 
     *   `${DESTDIR}${prefix}/bin`
     *   `${DESTDIR}${prefix}/include/ruby-${MAJOR}.${MINOR}.${TEENY}`
-    *   `${DESTDIR}${prefix}/include/ruby-${MAJOR}.${MINOR}.${TEENY}/${PLATFOR
-        M}`
+    *   `${DESTDIR}${prefix}/include/ruby-${MAJOR}.${MINOR}.${TEENY}/${PLATFORM}`
     *   `${DESTDIR}${prefix}/lib`
     *   `${DESTDIR}${prefix}/lib/ruby`
     *   `${DESTDIR}${prefix}/lib/ruby/${MAJOR}.${MINOR}.${TEENY}`
     *   `${DESTDIR}${prefix}/lib/ruby/${MAJOR}.${MINOR}.${TEENY}/${PLATFORM}`
     *   `${DESTDIR}${prefix}/lib/ruby/site_ruby`
     *   `${DESTDIR}${prefix}/lib/ruby/site_ruby/${MAJOR}.${MINOR}.${TEENY}`
-    *   `${DESTDIR}${prefix}/lib/ruby/site_ruby/${MAJOR}.${MINOR}.${TEENY}/${P
-        LATFORM}`
+    *   `${DESTDIR}${prefix}/lib/ruby/site_ruby/${MAJOR}.${MINOR}.${TEENY}/${PLATFORM}`
     *   `${DESTDIR}${prefix}/lib/ruby/vendor_ruby`
     *   `${DESTDIR}${prefix}/lib/ruby/vendor_ruby/${MAJOR}.${MINOR}.${TEENY}`
-    *   `${DESTDIR}${prefix}/lib/ruby/vendor_ruby/${MAJOR}.${MINOR}.${TEENY}/$
-        {PLATFORM}`
+    *   `${DESTDIR}${prefix}/lib/ruby/vendor_ruby/${MAJOR}.${MINOR}.${TEENY}/${PLATFORM}`
     *   `${DESTDIR}${prefix}/lib/ruby/gems/${MAJOR}.${MINOR}.${TEENY}`
     *   `${DESTDIR}${prefix}/share/man/man1`
     *   `${DESTDIR}${prefix}/share/ri/${MAJOR}.${MINOR}.${TEENY}/system`
@@ -147,17 +144,28 @@ UNIXであれば `configure` がほとんどの差異を吸収してくれるは
 のアーキテクチャが`setjmp()`または`getcontext()`によって全てのレジスタを `jmp_buf` や `ucontext_t`
 に格納することと， `jmp_buf` や `ucontext_t` とスタックが32bitアラインメントされていることを仮定
 しています．特に前者が成立しない場合の対応は非常に困難でしょう． 後者の解決は比較的簡単で， `gc.c` でスタックをマークしている
-部分にアラインメントのバイト数だけずらしてマークするコードを追加するだけで済みます．`defined(_\*mc68000*\_)`で括られてい
+部分にアラインメントのバイト数だけずらしてマークするコードを追加するだけで済みます．`defined(__mc68000__)`で括られてい
 る部分を参考にしてください．
 
 レジスタウィンドウを持つCPUでは，レジスタウィンドウをスタックにフラッシュするアセンブラコードを追加する必要があるかもしれません．
 
 ## 配布条件
 
-`COPYING.ja` ファイルを参照してください。
+[COPYING.ja](COPYING.ja) ファイルを参照してください．
+
+## フィードバック
+
+Rubyに関する質問は Ruby-Talk（英語）や Ruby-List（日本語） (https://www.ruby-lang.org/ja/community/mailing-lists) や，
+stackoverflow (http://ja.stackoverflow.com/) などのWebサイトに投稿してください．
+
+バグ報告は http://bugs.ruby-lang.org で受け付けています．
+
 
 ## 著者
 
-コメント，バグレポートその他は mailto:matz@ruby-lang.org まで．
+Rubyのオリジナル版は，1995年にまつもとゆきひろ氏によって設計・開発されました．
+
+<mailto:matz@ruby-lang.org>
+
 ---
 created at: Thu Aug  3 11:57:36 JST 1995

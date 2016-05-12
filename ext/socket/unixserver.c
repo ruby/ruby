@@ -57,41 +57,9 @@ unix_accept(VALUE sock)
 		          (struct sockaddr*)&from, &fromlen);
 }
 
-/*
- * call-seq:
- *   unixserver.accept_nonblock => unixsocket
- *
- * Accepts an incoming connection using accept(2) after
- * O_NONBLOCK is set for the underlying file descriptor.
- * It returns an accepted UNIXSocket for the incoming connection.
- *
- * === Example
- * 	require 'socket'
- * 	serv = UNIXServer.new("/tmp/sock")
- * 	begin # emulate blocking accept
- * 	  sock = serv.accept_nonblock
- * 	rescue IO::WaitReadable, Errno::EINTR
- * 	  IO.select([serv])
- * 	  retry
- * 	end
- * 	# sock is an accepted socket.
- *
- * Refer to Socket#accept for the exceptions that may be thrown if the call
- * to UNIXServer#accept_nonblock fails.
- *
- * UNIXServer#accept_nonblock may raise any error corresponding to accept(2) failure,
- * including Errno::EWOULDBLOCK.
- *
- * If the exception is Errno::EWOULDBLOCK, Errno::AGAIN, Errno::ECONNABORTED or Errno::EPROTO,
- * it is extended by IO::WaitReadable.
- * So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
- *
- * === See
- * * UNIXServer#accept
- * * Socket#accept
- */
+/* :nodoc: */
 static VALUE
-unix_accept_nonblock(VALUE sock)
+unix_accept_nonblock(VALUE sock, VALUE ex)
 {
     rb_io_t *fptr;
     struct sockaddr_un from;
@@ -99,7 +67,7 @@ unix_accept_nonblock(VALUE sock)
 
     GetOpenFile(sock, fptr);
     fromlen = (socklen_t)sizeof(from);
-    return rsock_s_accept_nonblock(rb_cUNIXSocket, fptr,
+    return rsock_s_accept_nonblock(rb_cUNIXSocket, ex, fptr,
 			           (struct sockaddr *)&from, &fromlen);
 }
 
@@ -148,7 +116,10 @@ rsock_init_unixserver(void)
     rb_cUNIXServer = rb_define_class("UNIXServer", rb_cUNIXSocket);
     rb_define_method(rb_cUNIXServer, "initialize", unix_svr_init, 1);
     rb_define_method(rb_cUNIXServer, "accept", unix_accept, 0);
-    rb_define_method(rb_cUNIXServer, "accept_nonblock", unix_accept_nonblock, 0);
+
+    rb_define_private_method(rb_cUNIXServer,
+			     "__accept_nonblock", unix_accept_nonblock, 1);
+
     rb_define_method(rb_cUNIXServer, "sysaccept", unix_sysaccept, 0);
     rb_define_method(rb_cUNIXServer, "listen", rsock_sock_listen, 1); /* in socket.c */
 #endif

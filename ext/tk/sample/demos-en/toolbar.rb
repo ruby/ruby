@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # toolbar.rb --
 #
 # This demonstration script creates a toolbar that can be torn off.
@@ -22,7 +23,7 @@ if Tk.windowingsystem != 'aqua'
                        :text=>Tk::UTF8_String.new(<<EOL))
 This is a demonstration of how to do \
 a toolbar that is styled correctly \
-and which can be torn off (this feature reqrires Tcl/Tk8.5). \
+and which can be torn off (this feature requires Tcl/Tk8.5). \
 The buttons are configured to be \\u201Ctoolbar style\\u201D buttons by \
 telling them that they are to use the Toolbutton style. At the left \
 end of the toolbar is a simple marker that the cursor changes to a \
@@ -42,7 +43,7 @@ EOL
 end
 
 ## Set up the toolbar hull
-tbar_base = Tk::Frame.new(base_frame, # Must be a starndard Tk frame!
+tbar_base = Tk::Frame.new(base_frame, # Must be a standard Tk frame!
                           :widgetname=>'toolbar') # for window title
 sep = Ttk::Separator.new(base_frame)
 to_base = Ttk::Frame.new(tbar_base, :cursor=>'fleur')

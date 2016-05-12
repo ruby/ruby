@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 $LOAD_PATH.unshift "#{File.dirname(__FILE__)}/../.."
 require 'test/unit'
 
@@ -112,7 +113,7 @@ module Test
               suites = MiniTest::Unit::TestCase.test_suites
 
               begin
-                require $1
+                require File.realpath($1)
               rescue LoadError
                 _report "after", Marshal.dump([$1, ProxyError.new($!)])
                 _report "ready"
@@ -138,7 +139,7 @@ module Test
         rescue Errno::EPIPE
         rescue Exception => e
           begin
-            trace = e.backtrace
+            trace = e.backtrace || ['unknown method']
             err = ["#{trace.shift}: #{e.message} (#{e.class})"] + trace.map{|t| t.prepend("\t") }
 
             _report "bye", Marshal.dump(err.join("\n"))
@@ -183,7 +184,7 @@ if $0 == __FILE__
   module Gem # :nodoc:
   end
   class Gem::TestCase < MiniTest::Unit::TestCase # :nodoc:
-    @@project_dir = File.expand_path('../../../..', __FILE__)
+    @@project_dir = File.expand_path('../../../../..', __FILE__)
   end
 
   Test::Unit::Worker.new.run(ARGV)

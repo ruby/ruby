@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'erb'
 
 module RSS

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems'
 require 'rubygems/request'
 require 'rubygems/uri_formatter'
@@ -26,7 +27,13 @@ class Gem::RemoteFetcher
 
     def initialize(message, uri)
       super message
-      @uri = uri
+      begin
+        uri = URI(uri)
+        uri.password = 'REDACTED' if uri.password
+        @uri = uri.to_s
+      rescue URI::InvalidURIError, ArgumentError
+        @uri = uri
+      end
     end
 
     def to_s # :nodoc:
@@ -51,6 +58,8 @@ class Gem::RemoteFetcher
     @fetcher ||= self.new Gem.configuration[:http_proxy]
   end
 
+  attr_accessor :headers
+
   ##
   # Initialize a remote fetcher using the source URI and possible proxy
   # information.
@@ -64,8 +73,11 @@ class Gem::RemoteFetcher
   #
   # +dns+: An object to use for DNS resolution of the API endpoint.
   #        By default, use Resolv::DNS.
+  #
+  # +headers+: A set of additional HTTP headers to be sent to the server when
+  #            fetching the gem.
 
-  def initialize(proxy=nil, dns=Resolv::DNS.new)
+  def initialize(proxy=nil, dns=Resolv::DNS.new, headers={})
     require 'net/http'
     require 'stringio'
     require 'time'
@@ -79,6 +91,7 @@ class Gem::RemoteFetcher
     @cert_files = Gem::Request.get_cert_files
 
     @dns = dns
+    @headers = headers
   end
 
   ##
@@ -91,10 +104,17 @@ class Gem::RemoteFetcher
     begin
       res = @dns.getresource "_rubygems._tcp.#{host}",
                              Resolv::DNS::Resource::IN::SRV
-    rescue Resolv::ResolvError
+    rescue Resolv::ResolvError => e
+      verbose "Getting SRV record failed: #{e}"
       uri
     else
-      URI.parse "#{uri.scheme}://#{res.target}#{uri.path}"
+      target = res.target.to_s.strip
+
+      if /\.#{Regexp.quote(host)}\z/ =~ target
+        return URI.parse "#{uri.scheme}://#{target}#{uri.path}"
+      end
+
+      uri
     end
   end
 
@@ -103,7 +123,7 @@ class Gem::RemoteFetcher
   # filename. Returns nil if the gem cannot be located.
   #--
   # Should probably be integrated with #download below, but that will be a
-  # larger, more emcompassing effort. -erikh
+  # larger, more encompassing effort. -erikh
 
   def download_to_cache dependency
     found, _ = Gem::SpecFetcher.fetcher.spec_for_dependency dependency
@@ -228,7 +248,9 @@ class Gem::RemoteFetcher
 
   def fetch_http uri, last_modified = nil, head = false, depth = 0
     fetch_type = head ? Net::HTTP::Head : Net::HTTP::Get
-    response   = request uri, fetch_type, last_modified
+    response   = request uri, fetch_type, last_modified do |req|
+      headers.each { |k,v| req.add_field(k,v) }
+    end
 
     case response
     when Net::HTTPOK, Net::HTTPNotModified then
@@ -306,9 +328,19 @@ class Gem::RemoteFetcher
     end
 
     if update and path
-      open(path, 'wb') do |io|
-        io.flock(File::LOCK_EX)
-        io.write data
+      begin
+        open(path, 'wb') do |io|
+          io.flock(File::LOCK_EX)
+          io.write data
+        end
+      rescue Errno::ENOLCK # NFS
+        if Thread.main != Thread.current
+          raise
+        else
+          open(path, 'wb') do |io|
+            io.write data
+          end
+        end
       end
     end
 

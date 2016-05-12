@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'tempfile'
 require 'thread'
@@ -53,6 +54,32 @@ p Foo::Bar
       assert_equal(tmpfile, a.autoload?(:X), bug4565)
       assert_equal(tmpfile, b.autoload?(:X), bug4565)
     }
+  end
+
+  def test_autoload_with_unqualified_file_name # [ruby-core:69206]
+    lp = $LOAD_PATH.dup
+    lf = $LOADED_FEATURES.dup
+
+    Dir.mktmpdir('autoload') { |tmpdir|
+      $LOAD_PATH << tmpdir
+
+      Dir.chdir(tmpdir) do
+        eval <<-END
+          class ::Object
+            module A
+              autoload :C, 'b'
+            end
+          end
+        END
+
+        File.open('b.rb', 'w') {|file| file.puts 'module A; class C; end; end'}
+        assert_kind_of Class, ::A::C
+      end
+    }
+  ensure
+    $LOAD_PATH.replace lp
+    $LOADED_FEATURES.replace lf
+    Object.send(:remove_const, :A) if Object.const_defined?(:A)
   end
 
   def test_require_explicit
@@ -161,21 +188,66 @@ p Foo::Bar
     }
   end
 
+  def ruby_impl_require
+    Kernel.module_eval do
+      alias old_require require
+    end
+    called_with = []
+    Kernel.send :define_method, :require do |path|
+      called_with << path
+      old_require path
+    end
+    yield called_with
+  ensure
+    Kernel.module_eval do
+      undef require
+      alias require old_require
+      undef old_require
+    end
+  end
+
+  def test_require_implemented_in_ruby_is_called
+    ruby_impl_require do |called_with|
+      Tempfile.create(['autoload', '.rb']) {|file|
+        file.puts 'class AutoloadTest; end'
+        file.close
+        add_autoload(file.path)
+        begin
+          assert(Object::AutoloadTest)
+        ensure
+          remove_autoload_constant
+        end
+        assert_equal [file.path], called_with
+      }
+    end
+  end
+
+  def test_autoload_while_autoloading
+    ruby_impl_require do |called_with|
+      Tempfile.create(%w(a .rb)) do |a|
+        Tempfile.create(%w(b .rb)) do |b|
+          a.puts "require '#{b.path}'; class AutoloadTest; end"
+          b.puts "class AutoloadTest; module B; end; end"
+          [a, b].each(&:flush)
+          add_autoload(a.path)
+          begin
+            assert(Object::AutoloadTest)
+          ensure
+            remove_autoload_constant
+          end
+          assert_equal [a.path, b.path], called_with
+        end
+      end
+    end
+  end
+
   def add_autoload(path)
     (@autoload_paths ||= []) << path
-    eval <<-END
-      class ::Object
-        autoload :AutoloadTest, #{path.dump}
-      end
-    END
+    ::Object.class_eval {autoload(:AutoloadTest, path)}
   end
 
   def remove_autoload_constant
     $".replace($" - @autoload_paths)
-    eval <<-END
-      class ::Object
-        remove_const(:AutoloadTest)
-      end
-    END
+    ::Object.class_eval {remove_const(:AutoloadTest)}
   end
 end

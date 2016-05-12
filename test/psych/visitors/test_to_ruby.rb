@@ -1,4 +1,5 @@
 # coding: US-ASCII
+# frozen_string_literal: false
 require 'psych/helper'
 
 module Psych
@@ -166,16 +167,14 @@ description:
         assert_equal Complex(1,2), mapping.to_ruby
       end
 
-      if RUBY_VERSION >= '1.9'
-        def test_complex_string
-          node = Nodes::Scalar.new '3+4i', nil, "!ruby/object:Complex"
-          assert_equal Complex(3, 4), node.to_ruby
-        end
+      def test_complex_string
+        node = Nodes::Scalar.new '3+4i', nil, "!ruby/object:Complex"
+        assert_equal Complex(3, 4), node.to_ruby
+      end
 
-        def test_rational_string
-          node = Nodes::Scalar.new '1/2', nil, "!ruby/object:Rational"
-          assert_equal Rational(1, 2), node.to_ruby
-        end
+      def test_rational_string
+        node = Nodes::Scalar.new '1/2', nil, "!ruby/object:Rational"
+        assert_equal Rational(1, 2), node.to_ruby
       end
 
       def test_range_string
@@ -320,6 +319,13 @@ description:
         list = seq.to_ruby
         assert_equal %w{ foo foo }, list
         assert_equal list[0].object_id, list[1].object_id
+      end
+
+      def test_mapping_with_str_tag
+        mapping = Nodes::Mapping.new(nil, '!strawberry')
+        mapping.children << Nodes::Scalar.new('foo')
+        mapping.children << Nodes::Scalar.new('bar')
+        assert_equal({'foo' => 'bar'}, mapping.to_ruby)
       end
     end
   end

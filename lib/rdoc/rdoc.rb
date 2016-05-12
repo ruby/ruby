@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rdoc'
 
 require 'find'
@@ -353,7 +354,11 @@ option)
     return unless content
 
     filename_path = Pathname(filename).expand_path
-    relative_path = filename_path.relative_path_from @options.root
+    begin
+      relative_path = filename_path.relative_path_from @options.root
+    rescue ArgumentError
+      relative_path = filename_path
+    end
 
     if @options.page_dir and
        relative_path.to_s.start_with? @options.page_dir.to_s then

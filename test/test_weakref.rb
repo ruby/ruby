@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'weakref'
 
@@ -61,7 +62,7 @@ class TestWeakRef < Test::Unit::TestCase
     }, bug7304
   end
 
-  def test_repeated_object_leak
+  def test_repeated_object_memory_leak
     bug10537 = '[ruby-core:66428]'
     assert_no_memory_leak(%w(-rweakref), '', <<-'end;', bug10537, timeout: 60)
       a = Object.new

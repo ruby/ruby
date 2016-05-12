@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "test/unit"
 require "objspace"
 
@@ -46,37 +47,52 @@ class TestObjSpace < Test::Unit::TestCase
   def test_memsize_of_all
     assert_kind_of(Integer, a = ObjectSpace.memsize_of_all)
     assert_kind_of(Integer, b = ObjectSpace.memsize_of_all(String))
-    assert(a > b)
-    assert(a > 0)
-    assert(b > 0)
+    assert_operator(a, :>, b)
+    assert_operator(a, :>, 0)
+    assert_operator(b, :>, 0)
     assert_raise(TypeError) {ObjectSpace.memsize_of_all('error')}
   end
 
   def test_count_objects_size
     res = ObjectSpace.count_objects_size
-    assert_equal(false, res.empty?)
-    assert_equal(true, res[:TOTAL] > 0)
+    assert_not_empty(res)
+    assert_operator(res[:TOTAL], :>, 0)
     arg = {}
     ObjectSpace.count_objects_size(arg)
-    assert_equal(false, arg.empty?)
+    assert_not_empty(arg)
   end
 
   def test_count_nodes
     res = ObjectSpace.count_nodes
-    assert_equal(false, res.empty?)
+    assert_not_empty(res)
     arg = {}
     ObjectSpace.count_nodes(arg)
     assert_not_empty(arg)
     bug8014 = '[ruby-core:53130] [Bug #8014]'
     assert_empty(arg.select {|k, v| !(Symbol === k && Integer === v)}, bug8014)
-  end
+  end if false
 
   def test_count_tdata_objects
     res = ObjectSpace.count_tdata_objects
-    assert_equal(false, res.empty?)
+    assert_not_empty(res)
     arg = {}
     ObjectSpace.count_tdata_objects(arg)
-    assert_equal(false, arg.empty?)
+    assert_not_empty(arg)
+  end
+
+  def test_count_imemo_objects
+    res = ObjectSpace.count_imemo_objects
+    assert_not_empty(res)
+    assert_not_nil(res[:imemo_cref])
+    arg = {}
+    res = ObjectSpace.count_imemo_objects(arg)
+    assert_not_empty(res)
+  end
+
+  def test_memsize_of_iseq
+    iseqw = RubyVM::InstructionSequence.compile('def a; a = :b; end')
+    base_obj_size = ObjectSpace.memsize_of(Object.new)
+    assert_operator(ObjectSpace.memsize_of(iseqw), :>, base_obj_size)
   end
 
   def test_reachable_objects_from
@@ -162,6 +178,8 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_trace_object_allocations_start_stop_clear
+    ObjectSpace.trace_object_allocations_clear # clear object_table to get rid of erroneous detection for obj3
+    GC.disable # suppress potential object reuse. see [Bug #11271]
     begin
       ObjectSpace.trace_object_allocations_start
       begin
@@ -192,11 +210,13 @@ class TestObjSpace < Test::Unit::TestCase
     assert_equal(nil, ObjectSpace.allocation_sourcefile(obj1))
     assert_equal(nil, ObjectSpace.allocation_sourcefile(obj2))
     assert_equal(nil, ObjectSpace.allocation_sourcefile(obj3))
+  ensure
+    GC.enable
   end
 
   def test_dump_flags
     info = ObjectSpace.dump("foo".freeze)
-    assert_match /"wb_protected":true, "old":true, "long_lived":true, "marked":true/, info
+    assert_match /"wb_protected":true, "old":true/, info
     assert_match /"fstring":true/, info
   end
 
@@ -232,6 +252,21 @@ class TestObjSpace < Test::Unit::TestCase
     assert_match /"embedded":true, "bytesize":11, "value":"hello world", "encoding":"UTF-8"/, info
     assert_match /"file":"#{Regexp.escape __FILE__}", "line":#{line}/, info
     assert_match /"method":"#{loc.base_label}"/, info
+  end
+
+  def test_dump_special_consts
+    # [ruby-core:69692] [Bug #11291]
+    assert_equal('null', ObjectSpace.dump(nil))
+    assert_equal('true', ObjectSpace.dump(true))
+    assert_equal('false', ObjectSpace.dump(false))
+    assert_equal('0', ObjectSpace.dump(0))
+    assert_equal('{"type":"SYMBOL", "value":"foo"}', ObjectSpace.dump(:foo))
+  end
+
+  def test_dump_dynamic_symbol
+    dump = ObjectSpace.dump(("foobar%x" % rand(0x10000)).to_sym)
+    assert_match /"type":"SYMBOL"/, dump
+    assert_match /"value":"foobar\h+"/, dump
   end
 
   def test_dump_all
@@ -275,5 +310,67 @@ class TestObjSpace < Test::Unit::TestCase
       assert_match /"type":"FILE"/, output
       assert_not_match /"fd":/, output
     end
+  end
+
+  def traverse_classes klass
+    h = {}
+    while klass && !h.has_key?(klass)
+      h[klass] = true
+      klass = ObjectSpace.internal_class_of(klass)
+    end
+  end
+
+  def test_internal_class_of
+    i = 0
+    ObjectSpace.each_object{|o|
+      traverse_classes ObjectSpace.internal_class_of(o)
+      i += 1
+    }
+    assert_operator i, :>, 0
+  end
+
+  def traverse_super_classes klass
+    while klass
+      klass = ObjectSpace.internal_super_of(klass)
+    end
+  end
+
+  def all_super_classes klass
+    klasses = []
+    while klass
+      klasses << klass
+      klass = ObjectSpace.internal_super_of(klass)
+    end
+    klasses
+  end
+
+  def test_internal_super_of
+    klasses = all_super_classes(String)
+    String.ancestors.each{|k|
+      case k
+      when Class
+        assert_equal(true, klasses.include?(k), k.inspect)
+      when Module
+        assert_equal(false, klasses.include?(k), k.inspect) # Internal object (T_ICLASS)
+      end
+    }
+
+    i = 0
+    ObjectSpace.each_object(Module){|o|
+      traverse_super_classes ObjectSpace.internal_super_of(o)
+      i += 1
+    }
+    assert_operator i, :>, 0
+  end
+
+  def test_count_symbols
+    syms = (1..128).map{|i| ("xyzzy#{i}" * 128).to_sym}
+    c = Class.new{define_method(syms[-1]){}}
+
+    h = ObjectSpace.count_symbols
+    assert_operator h[:mortal_dynamic_symbol],   :>=, 128, h.inspect
+    assert_operator h[:immortal_dynamic_symbol], :>=, 1, h.inspect
+    assert_operator h[:immortal_static_symbol],  :>=, Object.methods.size, h.inspect
+    assert_equal h[:immortal_symbol], h[:immortal_dynamic_symbol] + h[:immortal_static_symbol], h.inspect
   end
 end

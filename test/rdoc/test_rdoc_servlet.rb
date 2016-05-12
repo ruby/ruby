@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rdoc/test_case'
 
 class TestRDocServlet < RDoc::TestCase
@@ -185,7 +186,7 @@ class TestRDocServlet < RDoc::TestCase
 
     @s.do_GET @req, @res
 
-    assert_equal 'application/javascript', @res.content_type
+    assert_equal 'application/javascript', @res.content_type, @res.body
   end
 
   def test_documentation_page_class
@@ -532,4 +533,3 @@ class TestRDocServlet < RDoc::TestCase
   end
 
 end
-

@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby -w
 # encoding: UTF-8
+# frozen_string_literal: false
 
 # tc_features.rb
 #
@@ -139,6 +140,29 @@ class TestCSV::Features < TestCSV
       assert_equal("line", row.first)
     end
     assert_equal(3, count)
+  end
+
+  def test_liberal_parsing
+    input = '"Johnson, Dwayne",Dwayne "The Rock" Johnson'
+    assert_raise(CSV::MalformedCSVError) do
+        CSV.parse_line(input)
+    end
+    assert_equal(["Johnson, Dwayne", 'Dwayne "The Rock" Johnson'],
+                 CSV.parse_line(input, liberal_parsing: true))
+
+    input = '"quoted" field'
+    assert_raise(CSV::MalformedCSVError) do
+        CSV.parse_line(input)
+    end
+    assert_equal(['"quoted" field'],
+                 CSV.parse_line(input, liberal_parsing: true))
+
+    assert_raise(CSV::MalformedCSVError) do
+      CSV.parse_line('is,this "three," or four,fields', liberal_parsing: true)
+    end
+
+    assert_equal(["is", 'this "three', ' or four"', "fields"],
+      CSV.parse_line('is,this "three, or four",fields', liberal_parsing: true))
   end
 
   def test_csv_behavior_readers

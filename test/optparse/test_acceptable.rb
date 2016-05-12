@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require_relative 'test_optparse'
 
 class TestOptionParser::Acceptable < TestOptionParser
@@ -32,19 +33,19 @@ class TestOptionParser::Acceptable < TestOptionParser
     assert_equal(%w"", no_error {@opt.parse!(%w"--integer 0x3")})
     assert_equal(3, @integer)
 
-    assert_raises(OptionParser::InvalidArgument) do
+    assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--integer 0b")
     end
 
-    assert_raises(OptionParser::InvalidArgument) do
+    assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--integer 09")
     end
 
-    assert_raises(OptionParser::InvalidArgument) do
+    assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--integer 0x")
     end
 
-    assert_raises(OptionParser::InvalidArgument) do
+    assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--integer 1234xyz")
     end
   end
@@ -65,11 +66,11 @@ class TestOptionParser::Acceptable < TestOptionParser
     assert_equal(%w"", no_error {@opt.parse!(%w"--float 1E-2")})
     assert_in_epsilon(0.01, @float)
 
-    assert_raises(OptionParser::InvalidArgument) do
+    assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--float 0e")
     end
 
-    assert_raises(OptionParser::InvalidArgument) do
+    assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--float 1.234xyz")
     end
   end
@@ -87,15 +88,15 @@ class TestOptionParser::Acceptable < TestOptionParser
     assert_equal(%w"", no_error {@opt.parse!(%w"--numeric 1.2/2.3")})
     assert_equal(Rational(12, 23), @numeric)
 
-    assert_raises(OptionParser::InvalidArgument) do
+    assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--numeric 1/")
     end
 
-    assert_raises(OptionParser::InvalidArgument) do
+    assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--numeric 12/34xyz")
     end
 
-    assert_raises(OptionParser::InvalidArgument) do
+    assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--numeric 12x/34yz")
     end
   end
@@ -107,21 +108,21 @@ class TestOptionParser::Acceptable < TestOptionParser
     assert_equal(%w"", no_error {@opt.parse!(%w"--decimal-integer 10")})
     assert_equal(10, @decimal_integer)
 
-    assert_raises(OptionParser::InvalidArgument) do
+    assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--decimal-integer 0b1")
     end
 
-    e = assert_raises(OptionParser::InvalidArgument) do
+    e = assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--decimal-integer 09")
     end
 
     assert_equal("invalid argument: --decimal-integer 09", e.message)
 
-    assert_raises(OptionParser::InvalidArgument) do
+    assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--decimal-integer x")
     end
 
-    assert_raises(OptionParser::InvalidArgument) do
+    assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--decimal-integer 1234xyz")
     end
   end
@@ -142,19 +143,19 @@ class TestOptionParser::Acceptable < TestOptionParser
     assert_equal(%w"", no_error {@opt.parse!(%w"--octal-integer 011")})
     assert_equal(9, @octal_integer)
 
-    assert_raises(OptionParser::InvalidArgument) do
+    assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--octal-integer 09")
     end
 
-    assert_raises(OptionParser::InvalidArgument) do
+    assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--octal-integer 0b1")
     end
 
-    assert_raises(OptionParser::InvalidArgument) do
+    assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--octal-integer x")
     end
 
-    assert_raises(OptionParser::InvalidArgument) do
+    assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--octal-integer 01234xyz")
     end
   end
@@ -172,21 +173,21 @@ class TestOptionParser::Acceptable < TestOptionParser
     assert_equal(%w"", no_error {@opt.parse!(%w"--decimal-numeric 1E2")})
     assert_in_delta(100.0, @decimal_numeric)
 
-    assert_raises(OptionParser::InvalidArgument) do
+    assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--decimal-numeric 0b1")
     end
 
-    e = assert_raises(OptionParser::InvalidArgument) do
+    e = assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--decimal-numeric 09")
     end
 
     assert_equal("invalid argument: --decimal-numeric 09", e.message)
 
-    assert_raises(OptionParser::InvalidArgument) do
+    assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--decimal-integer 1234xyz")
     end
 
-    assert_raises(OptionParser::InvalidArgument) do
+    assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--decimal-integer 12.34xyz")
     end
   end

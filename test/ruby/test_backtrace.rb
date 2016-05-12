@@ -1,5 +1,7 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'thread'
+require 'tempfile'
 
 class TestBacktrace < Test::Unit::TestCase
   def test_exception
@@ -78,10 +80,10 @@ class TestBacktrace < Test::Unit::TestCase
         cs << caller(5)
       }.call
     }.resume
-    assert_equal(3, cs[0].size)
-    assert_equal(2, cs[1].size)
-    assert_equal(1, cs[2].size)
-    assert_equal(0, cs[3].size)
+    assert_equal(2, cs[0].size)
+    assert_equal(1, cs[1].size)
+    assert_equal(0, cs[2].size)
+    assert_equal(nil, cs[3])
     assert_equal(nil, cs[4])
 
     #
@@ -161,6 +163,59 @@ class TestBacktrace < Test::Unit::TestCase
       assert_equal(str, loc.to_s)
       assert_equal(str.inspect, loc.inspect)
     }
+  end
+
+  def test_caller_locations_path
+    loc, = caller_locations(0, 1)
+    assert_equal(__FILE__, loc.path)
+    Tempfile.create(%w"caller_locations .rb") do |f|
+      f.puts "caller_locations(0, 1)[0].tap {|loc| puts loc.path}"
+      f.close
+      dir, base = File.split(f.path)
+      assert_in_out_err(["-C", dir, base], "", [base])
+    end
+  end
+
+  def test_caller_locations_absolute_path
+    loc, = caller_locations(0, 1)
+    assert_equal(__FILE__, loc.absolute_path)
+    Tempfile.create(%w"caller_locations .rb") do |f|
+      f.puts "caller_locations(0, 1)[0].tap {|loc| puts loc.absolute_path}"
+      f.close
+      assert_in_out_err(["-C", *File.split(f.path)], "", [File.realpath(f.path)])
+    end
+  end
+
+  def test_caller_locations_lineno
+    loc, = caller_locations(0, 1)
+    assert_equal(__LINE__-1, loc.lineno)
+    Tempfile.create(%w"caller_locations .rb") do |f|
+      f.puts "caller_locations(0, 1)[0].tap {|loc| puts loc.lineno}"
+      f.close
+      assert_in_out_err(["-C", *File.split(f.path)], "", ["1"])
+    end
+  end
+
+  def test_caller_locations_base_label
+    assert_equal("#{__method__}", caller_locations(0, 1)[0].base_label)
+    loc, = tap {break caller_locations(0, 1)}
+    assert_equal("#{__method__}", loc.base_label)
+    begin
+      raise
+    rescue
+      assert_equal("#{__method__}", caller_locations(0, 1)[0].base_label)
+    end
+  end
+
+  def test_caller_locations_label
+    assert_equal("#{__method__}", caller_locations(0, 1)[0].label)
+    loc, = tap {break caller_locations(0, 1)}
+    assert_equal("block in #{__method__}", loc.label)
+    begin
+      raise
+    rescue
+      assert_equal("rescue in #{__method__}", caller_locations(0, 1)[0].label)
+    end
   end
 
   def th_rec q, n=10

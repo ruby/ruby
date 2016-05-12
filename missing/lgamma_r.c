@@ -66,7 +66,7 @@ lgamma_r(double x, int *signp)
         double i, f, s;
         f = modf(-x, &i);
         if (f == 0.0) { /* pole error */
-            *signp = 1;
+            *signp = signbit(x) ? -1 : 1;
             errno = ERANGE;
             return HUGE_VAL;
         }

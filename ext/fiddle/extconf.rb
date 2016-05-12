@@ -1,8 +1,10 @@
+# frozen_string_literal: false
 require 'mkmf'
 
 # :stopdoc:
 
-if ! enable_config('bundled-libffi', false)
+bundle = enable_config('bundled-libffi')
+if ! bundle
   dir_config 'libffi'
 
   pkg_config("libffi") and
@@ -16,7 +18,8 @@ if ! enable_config('bundled-libffi', false)
   end and (have_library('ffi') || have_library('libffi'))
 end or
 begin
-  ver = Dir.glob("#{$srcdir}/libffi-*/")
+  ver = bundle != false &&
+        Dir.glob("#{$srcdir}/libffi-*/")
         .map {|n| File.basename(n)}
         .max_by {|n| n.scan(/\d+/).map(&:to_i)}
   unless ver
@@ -46,6 +49,9 @@ begin
   libffi.ldflags = RbConfig.expand("$(LDFLAGS) #{libpathflag([relative_from($topdir, "..")])} #{$LIBRUBYARG}")
   libffi.arch = RbConfig::CONFIG['host']
   if $mswin
+    unless find_executable(as = /x64/ =~ libffi.arch ? "ml64" : "ml")
+      raise "missing #{as} command."
+    end
     $defs << "-DFFI_BUILDING"
     libffi_config = "#{relative_from($srcdir, '..')}/win32/libffi-config.rb"
     config = CONFIG.merge("top_srcdir" => $top_srcdir)
@@ -67,7 +73,7 @@ begin
     --host=#{libffi.arch}
     --enable-builddir=#{RUBY_PLATFORM}
   ]
-  args << ($enable_shared && !$static ? '--enable-shared' : '--enable-static')
+  args << ($enable_shared || !$static ? '--enable-shared' : '--enable-static')
   args << libffi.opt if libffi.opt
   args.concat %W[
       CC=#{cc} CFLAGS=#{libffi.cflags}
@@ -78,8 +84,14 @@ begin
   FileUtils.rm_f("#{libffi.include}/ffitarget.h")
   Logging::open do
     Logging.message("%p in %p\n", args, opts)
-    system(*args, **opts) or
+    unless system(*args, **opts)
+      begin
+        IO.copy_stream(libffi.dir + "/config.log", Logging.instance_variable_get(:@logfile))
+      rescue SystemCallError => e
+        Logfile.message("%s\n", e.message)
+      end
       raise "failed to configure libffi. Please install libffi."
+    end
   end
   if $mswin && File.file?("#{libffi.include}/ffitarget.h")
     FileUtils.rm_f("#{libffi.include}/ffitarget.h")
@@ -129,8 +141,10 @@ types.each do |type, signed|
 end
 
 if libffi
-  $LOCAL_LIBS.prepend("./#{libffi.a} ").strip!
+  $LOCAL_LIBS.prepend("./#{libffi.a} ").strip! # to exts.mk
+  $INCFLAGS.gsub!(/-I#{libffi.dir}/, '-I$(LIBFFI_DIR)')
 end
+$INCFLAGS << " -I$(top_srcdir)"
 create_makefile 'fiddle' do |conf|
   if !libffi
     next conf << "LIBFFI_CLEAN = none\n"
@@ -150,9 +164,9 @@ create_makefile 'fiddle' do |conf|
    PWD =
    LIBFFI_CONFIGURE = #{cmd}
    LIBFFI_ARCH = #{libffi.arch}
-   LIBFFI_SRCDIR = #{libffi.srcdir}
+   LIBFFI_SRCDIR = #{libffi.srcdir.sub(libffi.dir, '$(LIBFFI_DIR)')}
    LIBFFI_DIR = #{libffi.dir}
-   LIBFFI_A = #{libffi.a}
+   LIBFFI_A = #{libffi.a.sub(libffi.dir, '$(LIBFFI_DIR)')}
    LIBFFI_CFLAGS = #{libffi.cflags}
    LIBFFI_LDFLAGS = #{libffi.ldflags}
    FFI_H = $(LIBFFI_DIR)/include/ffi.h

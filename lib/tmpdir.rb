@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #
 # tmpdir - retrieve temporary directory path
 #
@@ -19,7 +20,7 @@ class Dir
 
   def self.tmpdir
     if $SAFE > 0
-      @@systmpdir
+      @@systmpdir.dup
     else
       tmp = nil
       [ENV['TMPDIR'], ENV['TMP'], ENV['TEMP'], @@systmpdir, '/tmp', '.'].each do |dir|
@@ -81,7 +82,7 @@ class Dir
   #    FileUtils.remove_entry dir
   #  end
   #
-  def Dir.mktmpdir(prefix_suffix=nil, *rest)
+  def self.mktmpdir(prefix_suffix=nil, *rest)
     path = Tmpname.create(prefix_suffix || "d", *rest) {|n| mkdir(n, 0700)}
     if block_given?
       begin
@@ -111,7 +112,7 @@ class Dir
       suffix &&= (String.try_convert(suffix) or
                   raise ArgumentError, "unexpected suffix: #{suffix.inspect}")
       t = Time.now.strftime("%Y%m%d")
-      path = "#{prefix}#{t}-#{$$}-#{rand(0x100000000).to_s(36)}"
+      path = "#{prefix}#{t}-#{$$}-#{rand(0x100000000).to_s(36)}".dup
       path << "-#{n}" if n
       path << suffix if suffix
       path

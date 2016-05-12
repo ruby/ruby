@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # ttkprogress.rb --
 #
 # This demonstration script creates several progress bar widgets.

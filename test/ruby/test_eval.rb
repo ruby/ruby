@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestEval < Test::Unit::TestCase
@@ -126,6 +127,10 @@ class TestEval < Test::Unit::TestCase
     }
   end
 
+  def test_module_eval_block_symbol
+    assert_equal "Math", Math.module_eval(&:to_s)
+  end
+
   def forall_TYPE
     objects = [Object.new, [], nil, true, false] # TODO: check
     objects.each do |obj|
@@ -199,6 +204,12 @@ class TestEval < Test::Unit::TestCase
     assert_equal self, pr.call
   end
 
+  def test_instance_eval_block_symbol
+    forall_TYPE do |o|
+      assert_equal o.to_s, o.instance_eval(&:to_s)
+    end
+  end
+
   def test_instance_eval_cvar
     [Object.new, [], 7, :sym, true, false, nil].each do |obj|
       assert_equal(13, obj.instance_eval("@@cvar"))
@@ -247,9 +258,9 @@ class TestEval < Test::Unit::TestCase
   #
 
   def make_test_binding
-    local1 = "local1"
+    local1 = local1 = "local1"
     lambda {
-      local2 = "local2"
+      local2 = local2 = "local2"
       return binding
     }.call
   end
@@ -276,7 +287,7 @@ class TestEval < Test::Unit::TestCase
 
     assert_equal('assert(true)', eval("$foo"))
     assert_equal(true, eval("true"))
-    i = 5
+    i = i = 5
     assert(eval("i == 5"))
     assert_equal(5, eval("i"))
     assert(eval("defined? i"))
@@ -297,6 +308,7 @@ class TestEval < Test::Unit::TestCase
       module EvTest
 	EVTEST1 = 25
 	evtest2 = 125
+	evtest2 = evtest2
 	binding
       end
     )
@@ -343,7 +355,7 @@ class TestEval < Test::Unit::TestCase
       p = binding
       eval "foo11 = 1", p
       foo22 = 5
-      proc{foo11=22}.call
+      proc{foo11=22;foo11}.call
       proc{foo22=55}.call
       # assert_equal(eval("foo11"), eval("foo11", p))
       # assert_equal(1, eval("foo11"))

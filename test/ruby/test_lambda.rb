@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestLambdaParameters < Test::Unit::TestCase
@@ -60,9 +61,9 @@ class TestLambdaParameters < Test::Unit::TestCase
     assert_equal(nil, ->(&b){ b }.call)
     foo { puts "bogus block " }
     assert_equal(1, ->(&b){ b.call }.call { 1 })
-    b = nil
-    assert_equal(1, ->(&b){ b.call }.call { 1 })
-    assert_nil(b)
+    _b = nil
+    assert_equal(1, ->(&_b){ _b.call }.call { 1 })
+    assert_nil(_b)
   end
 
   def test_call_block_from_lambda
@@ -88,7 +89,7 @@ class TestLambdaParameters < Test::Unit::TestCase
       ["lambda", lambda {|a, b, c| [a, b, c]}],
     ] do
       |(vtype, val), (btype, block)|
-      define_method("test_yeild_relaxed(#{vtype},&#{btype})") do
+      define_method("test_yield_relaxed(#{vtype},&#{btype})") do
         result = assert_nothing_raised(ArgumentError, bug9605) {
           break yield_1(val, &block)
         }

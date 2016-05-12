@@ -43,15 +43,21 @@ Activate the refinement with #using:
 
 == Scope
 
-You may only activate refinements at top-level, not inside any class, module
-or method scope.  You may activate refinements in a string passed to
-Kernel#eval that is evaluated at top-level.  Refinements are active until the
-end of the file or the end of the eval string, respectively.
+You may activate refinements at top-level, and inside classes and modules.
+You may not activate refinements in method scope.  Refinements are activated
+until the end of the current class or module definition, or until the end of
+the current file if used at the top-level.
 
-Refinements are lexical in scope.  When control is transferred outside the
-scope the refinement is deactivated.  This means that if you require or load a
-file or call a method that is defined outside the current scope the refinement
-will be deactivated:
+You may activate refinements in a string passed to Kernel#eval. Refinements
+are active the end of the eval string.
+
+Refinements are lexical in scope.  Refinements are only active within a scope
+after the call to using. Any code before the using statement will not have the
+refinement activated.
+
+When control is transferred outside the scope the refinement is deactivated.
+This means that if you require or load a file or call a method that is defined
+outside the current scope the refinement will be deactivated:
 
   class C
   end
@@ -136,6 +142,26 @@ In a file:
   end
   # activated here
 
+In a class:
+
+  # not activated here
+  class Foo
+    # not activated here
+    def foo
+      # not activated here
+    end
+    using M
+    # activated here
+    def bar
+      # activated here
+    end
+    # activated here
+  end
+  # not activated here
+
+Note that the refinements in M are not activated automatically if the class
+Foo is reopened later.
+
 In eval:
 
   # not activated here
@@ -182,24 +208,6 @@ called:
 
   p [{1=>2}, {3=>4}].to_json # prints "[{\"1\":2},{\"3\":4}]"
 
-You may also activate refinements in a class or module definition, in which
-case the refinements are activated from the point where using is called to
-the end of the class or module definition:
-
-  # not activated here
-  class Foo
-    # not activated here
-    using M
-    # activated here
-    def foo
-      # activated here
-    end
-    # activated here
-  end
-  # not activated here
-
-Note that the refinements in M are not activated automatically even if the class
-Foo is reopened later.
 
 == Method Lookup
 
@@ -247,15 +255,8 @@ method lookup.
 
 This behavior may be changed in the future.
 
-== Refinements and module inclusion
-
-Refinements are inherited by module inclusion.  That is, using activates all
-refinements in the ancestors of the specified module.  Refinements in a
-descendant have priority over refinements in an ancestor.
-
 == Further Reading
 
 See http://bugs.ruby-lang.org/projects/ruby-trunk/wiki/RefinementsSpec for the
 current specification for implementing refinements.  The specification also
 contains more details.
-

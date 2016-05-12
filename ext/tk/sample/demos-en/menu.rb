@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # menus widget demo (called by 'widget')
 #
@@ -87,7 +88,7 @@ TkMenubutton.new($menu_frame, 'text'=>'Basic', 'underline'=>0) {|m|
     add('command', 'label'=>'Long entry that does nothing')
     ['A','B','C','D','E','F','G'].each{|c|
       add('command', 'label'=>"Print letter \"#{c}\"",
-          'underline'=>14, 'accelerator'=>"Meta+#{c}",
+          'underline'=>14,
           'command'=>proc{print c,"\n"}, 'accelerator'=>"#{modifier}+#{c}")
       $menu_demo.bind("#{modifier}-#{c.downcase}", proc{print c,"\n"})
     }

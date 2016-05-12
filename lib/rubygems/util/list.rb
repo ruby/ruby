@@ -1,7 +1,14 @@
+# frozen_string_literal: true
 module Gem
-  List = Struct.new(:value, :tail)
-
   class List
+    include Enumerable
+    attr_accessor :value, :tail
+
+    def initialize(value = nil, tail = nil)
+      @value = value
+      @tail = tail
+    end
+
     def each
       n = self
       while n
@@ -11,25 +18,7 @@ module Gem
     end
 
     def to_a
-      ary = []
-      n = self
-      while n
-        ary.unshift n.value
-        n = n.tail
-      end
-
-      ary
-    end
-
-    def find
-      n = self
-      while n
-        v = n.value
-        return v if yield(v)
-        n = n.tail
-      end
-
-      nil
+      super.reverse
     end
 
     def prepend(value)

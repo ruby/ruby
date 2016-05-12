@@ -1,6 +1,28 @@
 #include "../fbuffer/fbuffer.h"
 #include "parser.h"
 
+#if defined HAVE_RUBY_ENCODING_H
+# define EXC_ENCODING UTF_8,
+# ifndef HAVE_RB_ENC_RAISE
+static void
+enc_raise(rb_encoding *enc, VALUE exc, const char *fmt, ...)
+{
+    va_list args;
+    VALUE mesg;
+
+    va_start(args, fmt);
+    mesg = rb_enc_vsprintf(enc, fmt, args);
+    va_end(args);
+
+    rb_exc_raise(rb_exc_new3(exc, mesg));
+}
+#   define rb_enc_raise enc_raise
+# endif
+#else
+# define EXC_ENCODING /* nothing */
+# define rb_enc_raise rb_raise
+#endif
+
 /* unicode */
 
 static const char digit_values[256] = {
@@ -66,9 +88,7 @@ static int convert_UTF32_to_UTF8(char *buf, UTF32 ch)
 }
 
 #ifdef HAVE_RUBY_ENCODING_H
-static VALUE CEncoding_ASCII_8BIT, CEncoding_UTF_8, CEncoding_UTF_16BE,
-    CEncoding_UTF_16LE, CEncoding_UTF_32BE, CEncoding_UTF_32LE;
-static ID i_encoding, i_encode;
+static rb_encoding *UTF_8, *UTF_16BE, *UTF_16LE, *UTF_32BE, *UTF_32LE;
 #else
 static ID i_iconv;
 #endif
@@ -206,14 +226,14 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
         if (json->allow_nan) {
             *result = CNaN;
         } else {
-            rb_raise(eParserError, "%u: unexpected token at '%s'", __LINE__, p - 2);
+            rb_enc_raise(EXC_ENCODING eParserError, "%u: unexpected token at '%s'", __LINE__, p - 2);
         }
     }
     action parse_infinity {
         if (json->allow_nan) {
             *result = CInfinity;
         } else {
-            rb_raise(eParserError, "%u: unexpected token at '%s'", __LINE__, p - 8);
+            rb_enc_raise(EXC_ENCODING eParserError, "%u: unexpected token at '%s'", __LINE__, p - 8);
         }
     }
     action parse_string {
@@ -229,7 +249,7 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
                 fexec p + 10;
                 fhold; fbreak;
             } else {
-                rb_raise(eParserError, "%u: unexpected token at '%s'", __LINE__, p);
+                rb_enc_raise(EXC_ENCODING eParserError, "%u: unexpected token at '%s'", __LINE__, p);
             }
         }
         np = JSON_parse_float(json, fpc, pe, result);
@@ -396,7 +416,7 @@ static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *resul
     if(cs >= JSON_array_first_final) {
         return p + 1;
     } else {
-        rb_raise(eParserError, "%u: unexpected token at '%s'", __LINE__, p);
+        rb_enc_raise(EXC_ENCODING eParserError, "%u: unexpected token at '%s'", __LINE__, p);
         return NULL;
     }
 }
@@ -550,29 +570,29 @@ static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *resu
 
 static VALUE convert_encoding(VALUE source)
 {
-    char *ptr = RSTRING_PTR(source);
+    const char *ptr = RSTRING_PTR(source);
     long len = RSTRING_LEN(source);
     if (len < 2) {
         rb_raise(eParserError, "A JSON text must at least contain two octets!");
     }
 #ifdef HAVE_RUBY_ENCODING_H
     {
-        VALUE encoding = rb_funcall(source, i_encoding, 0);
-        if (encoding == CEncoding_ASCII_8BIT) {
+        rb_encoding *enc = rb_enc_get(source);
+        if (enc == rb_ascii8bit_encoding()) {
             if (len >= 4 &&  ptr[0] == 0 && ptr[1] == 0 && ptr[2] == 0) {
-                source = rb_funcall(source, i_encode, 2, CEncoding_UTF_8, CEncoding_UTF_32BE);
+                source = rb_str_conv_enc(source, UTF_32BE, rb_utf8_encoding());
             } else if (len >= 4 && ptr[0] == 0 && ptr[2] == 0) {
-                source = rb_funcall(source, i_encode, 2, CEncoding_UTF_8, CEncoding_UTF_16BE);
+                source = rb_str_conv_enc(source, UTF_16BE, rb_utf8_encoding());
             } else if (len >= 4 && ptr[1] == 0 && ptr[2] == 0 && ptr[3] == 0) {
-                source = rb_funcall(source, i_encode, 2, CEncoding_UTF_8, CEncoding_UTF_32LE);
+                source = rb_str_conv_enc(source, UTF_32LE, rb_utf8_encoding());
             } else if (len >= 4 && ptr[1] == 0 && ptr[3] == 0) {
-                source = rb_funcall(source, i_encode, 2, CEncoding_UTF_8, CEncoding_UTF_16LE);
+                source = rb_str_conv_enc(source, UTF_16LE, rb_utf8_encoding());
             } else {
                 source = rb_str_dup(source);
                 FORCE_UTF8(source);
             }
         } else {
-            source = rb_funcall(source, i_encode, 1, CEncoding_UTF_8);
+            source = rb_str_conv_enc(source, NULL, rb_utf8_encoding());
         }
     }
 #else
@@ -610,8 +630,8 @@ static VALUE convert_encoding(VALUE source)
  *   (keys) in a JSON object. Otherwise strings are returned, which is also
  *   the default.
  * * *create_additions*: If set to false, the Parser doesn't create
- *   additions even if a matchin class and create_id was found. This option
- *   defaults to true.
+ *   additions even if a matching class and create_id was found. This option
+ *   defaults to false.
  * * *object_class*: Defaults to Hash
  * * *array_class*: Defaults to Array
  */
@@ -623,12 +643,18 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
     if (json->Vsource) {
         rb_raise(rb_eTypeError, "already initialized instance");
     }
+#ifdef HAVE_RB_SCAN_ARGS_OPTIONAL_HASH
+    rb_scan_args(argc, argv, "1:", &source, &opts);
+#else
     rb_scan_args(argc, argv, "11", &source, &opts);
+#endif
     if (!NIL_P(opts)) {
+#ifndef HAVE_RB_SCAN_ARGS_OPTIONAL_HASH
         opts = rb_convert_type(opts, T_HASH, "Hash", "to_hash");
         if (NIL_P(opts)) {
             rb_raise(rb_eArgError, "opts needs to be like a hash");
         } else {
+#endif
             VALUE tmp = ID2SYM(i_max_nesting);
             if (option_given_p(opts, tmp)) {
                 VALUE max_nesting = rb_hash_aref(opts, tmp);
@@ -691,7 +717,9 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
             } else {
                 json->match_string = Qnil;
             }
+#ifndef HAVE_RB_SCAN_ARGS_OPTIONAL_HASH
         }
+#endif
     } else {
         json->max_nesting = 100;
         json->allow_nan = 0;
@@ -700,12 +728,11 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
         json->object_class = Qnil;
         json->array_class = Qnil;
     }
-    source = rb_convert_type(source, T_STRING, "String", "to_str");
+    StringValue(source);
     if (!json->quirks_mode) {
-      source = convert_encoding(StringValue(source));
+	source = convert_encoding(source);
     }
     json->current_nesting = 0;
-    StringValue(source);
     json->len = RSTRING_LEN(source);
     json->source = RSTRING_PTR(source);;
     json->Vsource = source;
@@ -754,7 +781,7 @@ static VALUE cParser_parse_strict(VALUE self)
     if (cs >= JSON_first_final && p == pe) {
         return result;
     } else {
-        rb_raise(eParserError, "%u: unexpected token at '%s'", __LINE__, p);
+        rb_enc_raise(EXC_ENCODING eParserError, "%u: unexpected token at '%s'", __LINE__, p);
         return Qnil;
     }
 }
@@ -792,7 +819,7 @@ static VALUE cParser_parse_quirks_mode(VALUE self)
     if (cs >= JSON_quirks_mode_first_final && p == pe) {
         return result;
     } else {
-        rb_raise(eParserError, "%u: unexpected token at '%s'", __LINE__, p);
+        rb_enc_raise(EXC_ENCODING eParserError, "%u: unexpected token at '%s'", __LINE__, p);
         return Qnil;
     }
 }
@@ -812,15 +839,6 @@ static VALUE cParser_parse(VALUE self)
   } else {
     return cParser_parse_strict(self);
   }
-}
-
-
-static JSON_Parser *JSON_allocate(void)
-{
-    JSON_Parser *json = ALLOC(JSON_Parser);
-    MEMZERO(json, JSON_Parser, 1);
-    json->fbuffer = fbuffer_alloc(0);
-    return json;
 }
 
 static void JSON_mark(void *ptr)
@@ -846,17 +864,23 @@ static size_t JSON_memsize(const void *ptr)
     return sizeof(*json) + FBUFFER_CAPA(json->fbuffer);
 }
 
+#ifdef NEW_TYPEDDATA_WRAPPER
 static const rb_data_type_t JSON_Parser_type = {
     "JSON/Parser",
     {JSON_mark, JSON_free, JSON_memsize,},
+#ifdef RUBY_TYPED_FREE_IMMEDIATELY
     0, 0,
     RUBY_TYPED_FREE_IMMEDIATELY,
+#endif
 };
+#endif
 
 static VALUE cJSON_parser_s_allocate(VALUE klass)
 {
-    JSON_Parser *json = JSON_allocate();
-    return TypedData_Wrap_Struct(klass, &JSON_Parser_type, json);
+    JSON_Parser *json;
+    VALUE obj = TypedData_Make_Struct(klass, JSON_Parser, &JSON_Parser_type, json);
+    json->fbuffer = fbuffer_alloc(0);
+    return obj;
 }
 
 /*
@@ -920,14 +944,11 @@ void Init_parser(void)
     i_aref = rb_intern("[]");
     i_leftshift = rb_intern("<<");
 #ifdef HAVE_RUBY_ENCODING_H
-    CEncoding_UTF_8 = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("utf-8"));
-    CEncoding_UTF_16BE = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("utf-16be"));
-    CEncoding_UTF_16LE = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("utf-16le"));
-    CEncoding_UTF_32BE = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("utf-32be"));
-    CEncoding_UTF_32LE = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("utf-32le"));
-    CEncoding_ASCII_8BIT = rb_funcall(rb_path2class("Encoding"), rb_intern("find"), 1, rb_str_new2("ascii-8bit"));
-    i_encoding = rb_intern("encoding");
-    i_encode = rb_intern("encode");
+    UTF_8 = rb_utf8_encoding();
+    UTF_16BE = rb_enc_find("utf-16be");
+    UTF_16LE = rb_enc_find("utf-16le");
+    UTF_32BE = rb_enc_find("utf-32be");
+    UTF_32LE = rb_enc_find("utf-32le");
 #else
     i_iconv = rb_intern("iconv");
 #endif

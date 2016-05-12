@@ -1,4 +1,5 @@
 # coding: us-ascii
+# frozen_string_literal: false
 
 begin
   require 'win32ole'
@@ -311,6 +312,9 @@ if defined?(WIN32OLE)
       shell=WIN32OLE.new('Shell.Application')
       assert_raise(ArgumentError) {
         shell.ole_query_interface
+      }
+      assert_raise(TypeError) {
+        shell.ole_query_interface(0x11223344)
       }
       shell2 = shell.ole_query_interface('{A4C6892C-3BA9-11D2-9DEA-00C04FB16162}')
       assert_instance_of(WIN32OLE, shell2)

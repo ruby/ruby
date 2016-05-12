@@ -18,12 +18,13 @@
  * Following definitions are default values.
  */
 
-#define OPT_TRACE_INSTRUCTION        1
-#define OPT_TAILCALL_OPTIMIZATION    0
-#define OPT_PEEPHOLE_OPTIMIZATION    1
-#define OPT_SPECIALISED_INSTRUCTION  1
-#define OPT_INLINE_CONST_CACHE       1
-
+#define OPT_TRACE_INSTRUCTION           1
+#define OPT_TAILCALL_OPTIMIZATION       0
+#define OPT_PEEPHOLE_OPTIMIZATION       1
+#define OPT_SPECIALISED_INSTRUCTION     1
+#define OPT_INLINE_CONST_CACHE          1
+#define OPT_FROZEN_STRING_LITERAL       0
+#define OPT_DEBUG_FROZEN_STRING_LITERAL 0
 
 /* Build Options.
  * You can't change these options at runtime.

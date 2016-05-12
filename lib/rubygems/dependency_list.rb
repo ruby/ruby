@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -140,6 +141,9 @@ class Gem::DependencyList
 
   def ok_to_remove?(full_name, check_dev=true)
     gem_to_remove = find_name full_name
+
+    # If the state is inconsistent, at least don't crash
+    return true unless gem_to_remove
 
     siblings = @specs.find_all { |s|
       s.name == gem_to_remove.name &&

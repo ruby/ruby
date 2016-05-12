@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'tempfile'
 require_relative 'marshaltestlib'
@@ -250,6 +251,17 @@ class TestMarshal < Test::Unit::TestCase
 
   def test_symlink
     assert_include(Marshal.dump([:a, :a]), ';')
+  end
+
+  def test_symlink_in_ivar
+    bug10991 = '[ruby-core:68587] [Bug #10991]'
+    sym = Marshal.load("\x04\x08" +
+                       "I" ":\x0bKernel" +
+                       ("\x06" +
+                        ("I" ":\x07@a" +
+                         ("\x06" ":\x07@b" "e;\x0""o:\x0bObject""\x0")) +
+                        "0"))
+    assert_equal(:Kernel, sym, bug10991)
   end
 
   ClassUTF8 = eval("class R\u{e9}sum\u{e9}; self; end")
@@ -610,8 +622,7 @@ class TestMarshal < Test::Unit::TestCase
 
   def test_untainted_numeric
     bug8945 = '[ruby-core:57346] [Bug #8945] Numerics never be tainted'
-    b = 1 << 32
-    b *= b until Bignum === b
+    b = Integer::FIXNUM_MAX + 1
     tainted = [0, 1.0, 1.72723e-77, b].select do |x|
       Marshal.load(Marshal.dump(x).taint).tainted?
     end
@@ -635,5 +646,93 @@ class TestMarshal < Test::Unit::TestCase
       Marshal.dump(c)
       c.cc.call
     end
+  end
+
+  def test_undumpable_message
+    c = Module.new {break module_eval("class IO\u{26a1} < IO;self;end")}
+    assert_raise_with_message(TypeError, /IO\u{26a1}/) {
+      Marshal.dump(c.new(0, autoclose: false))
+    }
+  end
+
+  def test_undumpable_data
+    c = Module.new {break module_eval("class T\u{23F0 23F3}<Time;undef _dump;self;end")}
+    assert_raise_with_message(TypeError, /T\u{23F0 23F3}/) {
+      Marshal.dump(c.new)
+    }
+  end
+
+  def test_unloadable_data
+    c = eval("class Unloadable\u{23F0 23F3}<Time;;self;end")
+    c.class_eval {
+      alias _dump_data _dump
+      undef _dump
+    }
+    d = Marshal.dump(c.new)
+    assert_raise_with_message(TypeError, /Unloadable\u{23F0 23F3}/) {
+      Marshal.load(d)
+    }
+  end
+
+  def test_unloadable_userdef
+    c = eval("class Userdef\u{23F0 23F3}<Time;self;end")
+    class << c
+      undef _load
+    end
+    d = Marshal.dump(c.new)
+    assert_raise_with_message(TypeError, /Userdef\u{23F0 23F3}/) {
+      Marshal.load(d)
+    }
+  end
+
+  def test_unloadable_usrmarshal
+    c = eval("class UsrMarshal\u{23F0 23F3}<Time;self;end")
+    c.class_eval {
+      alias marshal_dump _dump
+    }
+    d = Marshal.dump(c.new)
+    assert_raise_with_message(TypeError, /UsrMarshal\u{23F0 23F3}/) {
+      Marshal.load(d)
+    }
+  end
+
+  def test_no_internal_ids
+    opt = %w[--disable=gems]
+    args = [opt, 'Marshal.dump("",STDOUT)', true, true, encoding: Encoding::ASCII_8BIT]
+    out, err, status = EnvUtil.invoke_ruby(*args)
+    assert_empty(err)
+    assert_predicate(status, :success?)
+    expected = out
+
+    opt << "--enable=frozen-string-literal"
+    opt << "--debug=frozen-string-literal"
+    out, err, status = EnvUtil.invoke_ruby(*args)
+    assert_empty(err)
+    assert_predicate(status, :success?)
+    assert_equal(expected, out)
+  end
+
+  def test_marshal_honor_post_proc_value_for_link
+    str = 'x' # for link
+    obj = [str, str]
+    assert_equal(['X', 'X'], Marshal.load(Marshal.dump(obj), ->(v) { v == str ? v.upcase : v }))
+  end
+
+  def test_marshal_load_extended_class_crash
+    crash = "\x04\be:\x0F\x00omparableo:\vObject\x00"
+
+    opt = %w[--disable=gems]
+    assert_ruby_status(opt, "Marshal.load(#{crash.dump})")
+  end
+
+  def test_marshal_load_r_prepare_reference_crash
+    crash = "\x04\bI/\x05\x00\x06:\x06E{\x06@\x05T"
+
+    opt = %w[--disable=gems]
+    assert_separately(opt, <<-RUBY)
+      assert_raise_with_message(ArgumentError, /bad link/) do
+        Marshal.load(#{crash.dump})
+      end
+    RUBY
   end
 end

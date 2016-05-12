@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # entry (no scrollbars) widget demo (called by 'widget')
 #

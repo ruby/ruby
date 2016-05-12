@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'test/unit'
 require 'open-uri'
 require 'webrick'
@@ -11,6 +12,7 @@ class TestOpenURI < Test::Unit::TestCase
 
   NullLog = Object.new
   def NullLog.<<(arg)
+    #puts arg if / INFO / !~ arg
   end
 
   def with_http(log_tester=lambda {|log| assert_equal([], log) })
@@ -41,6 +43,8 @@ class TestOpenURI < Test::Unit::TestCase
       }
       assert_join_threads([client_thread, server_thread2])
     }
+  ensure
+    WEBrick::Utils::TimeoutHandler.terminate
   end
 
   def with_env(h)
@@ -137,7 +141,7 @@ class TestOpenURI < Test::Unit::TestCase
   end
 
   def test_open_timeout
-    assert_raises(Net::OpenTimeout) do
+    assert_raise(Net::OpenTimeout) do
       URI("http://example.com/").read(open_timeout: 0.000001)
     end if false # avoid external resources in tests
 
@@ -242,9 +246,9 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_proxy
     with_http {|srv, dr, url|
-      proxy_log = StringIO.new('')
+      proxy_log = StringIO.new(''.dup)
       proxy_logger = WEBrick::Log.new(proxy_log, WEBrick::BasicLog::WARN)
-      proxy_auth_log = ''
+      proxy_auth_log = ''.dup
       proxy = WEBrick::HTTPProxyServer.new({
         :ServerType => Thread,
         :Logger => proxy_logger,
@@ -296,9 +300,9 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_proxy_http_basic_authentication_failure
     with_http {|srv, dr, url|
-      proxy_log = StringIO.new('')
+      proxy_log = StringIO.new(''.dup)
       proxy_logger = WEBrick::Log.new(proxy_log, WEBrick::BasicLog::WARN)
-      proxy_auth_log = ''
+      proxy_auth_log = ''.dup
       proxy = WEBrick::HTTPProxyServer.new({
         :ServerType => Thread,
         :Logger => proxy_logger,
@@ -329,9 +333,9 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_proxy_http_basic_authentication_success
     with_http {|srv, dr, url|
-      proxy_log = StringIO.new('')
+      proxy_log = StringIO.new(''.dup)
       proxy_logger = WEBrick::Log.new(proxy_log, WEBrick::BasicLog::WARN)
-      proxy_auth_log = ''
+      proxy_auth_log = ''.dup
       proxy = WEBrick::HTTPProxyServer.new({
         :ServerType => Thread,
         :Logger => proxy_logger,
@@ -359,6 +363,42 @@ class TestOpenURI < Test::Unit::TestCase
           open("#{url}/proxy",
               :proxy_http_basic_authentication=>[true, "user", "pass"]) {}
         }
+        assert_equal("", proxy_auth_log); proxy_auth_log.clear
+      ensure
+        proxy.shutdown
+        th.join
+      end
+      assert_equal("", proxy_log.string)
+    }
+  end
+
+  def test_authenticated_proxy_http_basic_authentication_success
+    with_http {|srv, dr, url|
+      proxy_log = StringIO.new(''.dup)
+      proxy_logger = WEBrick::Log.new(proxy_log, WEBrick::BasicLog::WARN)
+      proxy_auth_log = ''.dup
+      proxy = WEBrick::HTTPProxyServer.new({
+        :ServerType => Thread,
+        :Logger => proxy_logger,
+        :AccessLog => [[NullLog, ""]],
+        :ProxyAuthProc => lambda {|req, res|
+          proxy_auth_log << req.request_line
+          if req["Proxy-Authorization"] != "Basic #{['user:pass'].pack('m').chomp}"
+            raise WEBrick::HTTPStatus::ProxyAuthenticationRequired
+          end
+        },
+        :BindAddress => '127.0.0.1',
+        :Port => 0})
+      _, proxy_port, _, proxy_host = proxy.listeners[0].addr
+      proxy_url = "http://user:pass@#{proxy_host}:#{proxy_port}/"
+      begin
+        th = proxy.start
+        srv.mount_proc("/proxy", lambda { |req, res| res.body = "proxy" } )
+        open("#{url}/proxy", :proxy => proxy_url) {|f|
+          assert_equal("200", f.status[0])
+          assert_equal("proxy", f.read)
+        }
+        assert_match(/#{Regexp.quote url}/, proxy_auth_log); proxy_auth_log.clear
         assert_equal("", proxy_auth_log); proxy_auth_log.clear
       ensure
         proxy.shutdown
@@ -551,7 +591,7 @@ class TestOpenURI < Test::Unit::TestCase
   def test_encoding
     with_http {|srv, dr, url|
       content_u8 = "\u3042"
-      content_ej = "\xa2\xa4".force_encoding("euc-jp")
+      content_ej = "\xa2\xa4".dup.force_encoding("euc-jp")
       srv.mount_proc("/u8/") {|req, res| res.body = content_u8; res['content-type'] = 'text/plain; charset=utf-8' }
       srv.mount_proc("/ej/") {|req, res| res.body = content_ej; res['content-type'] = 'TEXT/PLAIN; charset=EUC-JP' }
       srv.mount_proc("/nc/") {|req, res| res.body = "aa"; res['content-type'] = 'Text/Plain' }
@@ -599,7 +639,7 @@ class TestOpenURI < Test::Unit::TestCase
   def test_content_encoding
     with_http {|srv, dr, url|
       content = "abc" * 10000
-      Zlib::GzipWriter.wrap(StringIO.new(content_gz="".force_encoding("ascii-8bit"))) {|z| z.write content }
+      Zlib::GzipWriter.wrap(StringIO.new(content_gz="".b)) {|z| z.write content }
       srv.mount_proc("/data/") {|req, res| res.body = content_gz; res['content-encoding'] = 'gzip' }
       srv.mount_proc("/data2/") {|req, res| res.body = content_gz; res['content-encoding'] = 'gzip'; res.chunked = true }
       srv.mount_proc("/noce/") {|req, res| res.body = content_gz }

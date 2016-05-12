@@ -1,5 +1,6 @@
 # -*- coding: cp932 -*-
-# This test is in a differnt file than TestUnicodeEscapes
+# frozen_string_literal: false
+# This test is in a different file than TestUnicodeEscapes
 # So that we can have a different coding comment above
 
 require 'test/unit'

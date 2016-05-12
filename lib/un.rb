@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # = un.rb
 #
@@ -319,10 +320,8 @@ def httpd
     [:Port, :MaxClients].each do |name|
       opt = options[name] and (options[name] = Integer(opt)) rescue nil
     end
-    unless argv.size == 1
-      raise ArgumentError, "DocumentRoot is mandatory"
-    end
-    options[:DocumentRoot] = argv.shift
+    options[:Port] ||= 8080     # HTTP Alternate
+    options[:DocumentRoot] = argv.shift || '.'
     s = WEBrick::HTTPServer.new(options)
     shut = proc {s.shutdown}
     siglist = %w"TERM QUIT"
@@ -369,7 +368,7 @@ module UN # :nodoc:
       end
     end
     if messages
-      argv.each {|cmd| output << messages[cmd]}
+      argv.each {|arg| output << messages[arg]}
     end
   end
 end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 begin
   require "socket"
 rescue LoadError
@@ -468,6 +470,17 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     assert_equal(ai1.canonname, ai2.canonname)
   end
 
+  def test_marshal_memory_leak
+    bug11051 = '[ruby-dev:48923] [Bug #11051]'
+    assert_no_memory_leak(%w[-rsocket], <<-PREP, <<-CODE, bug11051, rss: true)
+    d = Marshal.dump(Addrinfo.tcp("127.0.0.1", 80))
+    1000.times {Marshal.load(d)}
+    PREP
+    GC.start
+    20_000.times {Marshal.load(d)}
+    CODE
+  end
+
   if Socket.const_defined?("AF_INET6") && Socket::AF_INET6.is_a?(Integer)
 
     def test_addrinfo_new_inet6
@@ -531,7 +544,14 @@ class TestSocketAddrinfo < Test::Unit::TestCase
 	    # MacOS X returns IPv4 address for ::ffff:1.2.3.4 and ::1.2.3.4.
             # Solaris returns IPv4 address for ::ffff:1.2.3.4.
 	    ai = ipv6(addr)
-	    assert(ai.ipv4? || ai.send(meth), "ai=#{addr_exp}; ai.ipv4? || .#{meth}")
+            begin
+	      assert(ai.ipv4? || ai.send(meth), "ai=#{addr_exp}; ai.ipv4? || .#{meth}")
+            rescue Minitest::Assertion
+              if /aix/ =~ RUBY_PLATFORM
+                skip "Known bug in IN6_IS_ADDR_V4COMPAT and IN6_IS_ADDR_V4MAPPED on AIX"
+              end
+              raise $!
+            end
 	  else
 	    assert(ipv6(addr).send(meth), "#{addr_exp}.#{meth}")
             assert_equal(addr, ipv6(addr).ip_address)

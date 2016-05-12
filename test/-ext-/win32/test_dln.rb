@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'tmpdir'
 require 'rbconfig'
@@ -12,7 +13,7 @@ module Bug
 
       def test_nonascii_load
         bug9699 = '[ruby-core:61845] [Bug #9699]'
-        so = "-test-/win32/dln/empty." + RbConfig::CONFIG["DLEXT"]
+        so = "-test-/dln/empty." + RbConfig::CONFIG["DLEXT"]
         so = $:.find {|d| d = ::File.join(d, so); break d if ::File.exist?(d)}
         assert_not_nil(so)
         Dir.mkdir(dir = ::File.join(testdir = Dir.mktmpdir("test"), "\u{30c6 30b9 30c8}"))

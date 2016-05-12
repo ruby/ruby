@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 $DEBUG_RDOC = nil
 
 # :main: README.rdoc
@@ -64,7 +65,7 @@ module RDoc
   ##
   # RDoc version you are using
 
-  VERSION = '4.2.0'
+  VERSION = '4.2.1'
 
   ##
   # Method visibilities
@@ -109,6 +110,8 @@ module RDoc
   def self.load_yaml
     begin
       gem 'psych'
+    rescue NameError => e # --disable-gems
+      raise unless e.name == :gem
     rescue Gem::LoadError
     end
 

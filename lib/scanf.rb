@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # scanf for Ruby
 #
 #--
@@ -471,8 +472,7 @@ module Scanf
     end
 
     def width
-      w = @spec_string[/%\*?(\d+)/, 1]
-      w && w.to_i
+      @spec_string[/%\*?(\d+)/, 1]&.to_i
     end
 
     def mid_match?
@@ -610,7 +610,7 @@ class IO
   #
   # See Scanf for details on creating a format string.
   #
-  # You will need to require 'scanf' to use use IO#scanf.
+  # You will need to require 'scanf' to use IO#scanf.
   def scanf(str,&b) #:yield: current_match
     return block_scanf(str,&b) if b
     return [] unless str.size > 0

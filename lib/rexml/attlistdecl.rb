@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #vim:ts=2 sw=2 noexpandtab:
 require 'rexml/child'
 require 'rexml/source'
@@ -23,7 +24,7 @@ module REXML
     # Create an AttlistDecl, pulling the information from a Source.  Notice
     # that this isn't very convenient; to create an AttlistDecl, you basically
     # have to format it yourself, and then have the initializer parse it.
-    # Sorry, but for the forseeable future, DTD support in REXML is pretty
+    # Sorry, but for the foreseeable future, DTD support in REXML is pretty
     # weak on convenience.  Have I mentioned how much I hate DTDs?
     def initialize(source)
       super()

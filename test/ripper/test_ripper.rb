@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 begin
   require 'ripper'
   require 'test/unit'
@@ -60,4 +61,15 @@ class TestRipper::Ripper < Test::Unit::TestCase
     assert_predicate @ripper, :yydebug
   end
 
+  def test_regexp_with_option
+    bug11932 = '[ruby-core:72638] [Bug #11932]'
+    src = '/[\xC0-\xF0]/u'.force_encoding(Encoding::UTF_8)
+    ripper = Ripper.new(src)
+    ripper.parse
+    assert_predicate(ripper, :error?)
+    src = '/[\xC0-\xF0]/n'.force_encoding(Encoding::UTF_8)
+    ripper = Ripper.new(src)
+    ripper.parse
+    assert_not_predicate(ripper, :error?, bug11932)
+  end
 end if ripper_test

@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # -*- coding:utf-8 -*-
+# frozen_string_literal: false
 
 require 'test/unit'
 require File.join(File.dirname(__FILE__), 'setup_variant')
@@ -112,7 +113,7 @@ class TestJSONAddition < Test::Unit::TestCase
     c = C.new
     assert !C.json_creatable?
     json = generate(c)
-    assert_raises(ArgumentError, NameError) { JSON.parse(json, :create_additions => true) }
+    assert_raise(ArgumentError, NameError) { JSON.parse(json, :create_additions => true) }
   end
 
   def test_raw_strings
@@ -151,7 +152,7 @@ class TestJSONAddition < Test::Unit::TestCase
     assert_equal s, JSON(JSON(s), :create_additions => true)
     struct = Struct.new :foo, :bar
     s = struct.new 4711, 'foot'
-    assert_raises(JSONError) { JSON(s) }
+    assert_raise(JSONError) { JSON(s) }
     begin
       raise TypeError, "test me"
     rescue TypeError => e

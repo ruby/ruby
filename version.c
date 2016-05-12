@@ -18,7 +18,8 @@
 #endif
 
 #define PRINT(type) puts(ruby_##type)
-#define MKSTR(type) rb_obj_freeze(rb_usascii_str_new(ruby_##type, sizeof(ruby_##type)-1))
+#define MKSTR(type) rb_obj_freeze(rb_usascii_str_new_static(ruby_##type, sizeof(ruby_##type)-1))
+#define MKINT(name) INT2FIX(ruby_##name)
 
 const int ruby_api_version[] = {
     RUBY_API_VERSION_MAJOR,
@@ -32,16 +33,19 @@ const int ruby_patchlevel = RUBY_PATCHLEVEL;
 const char ruby_description[] = RUBY_DESCRIPTION;
 const char ruby_copyright[] = RUBY_COPYRIGHT;
 const char ruby_engine[] = "ruby";
-VALUE ruby_engine_name = Qnil;
 
 /*! Defines platform-depended Ruby-level constants */
 void
 Init_version(void)
 {
+    enum {ruby_patchlevel = RUBY_PATCHLEVEL};
+    enum {ruby_revision = RUBY_REVISION};
+    VALUE version;
+    VALUE ruby_engine_name;
     /*
      * The running version of ruby
      */
-    rb_define_global_const("RUBY_VERSION", MKSTR(version));
+    rb_define_global_const("RUBY_VERSION", (version = MKSTR(version)));
     /*
      * The date this ruby was released
      */
@@ -54,11 +58,11 @@ Init_version(void)
      * The patchlevel for this ruby.  If this is a development build of ruby
      * the patchlevel will be -1
      */
-    rb_define_global_const("RUBY_PATCHLEVEL", INT2FIX(RUBY_PATCHLEVEL));
+    rb_define_global_const("RUBY_PATCHLEVEL", MKINT(patchlevel));
     /*
      * The SVN revision for this ruby.
      */
-    rb_define_global_const("RUBY_REVISION", INT2FIX(RUBY_REVISION));
+    rb_define_global_const("RUBY_REVISION", MKINT(revision));
     /*
      * The full ruby version string, like <tt>ruby -v</tt> prints'
      */
@@ -71,6 +75,11 @@ Init_version(void)
      * The engine or interpreter this ruby uses.
      */
     rb_define_global_const("RUBY_ENGINE", ruby_engine_name = MKSTR(engine));
+    ruby_set_script_name(ruby_engine_name);
+    /*
+     * The version of the engine or interpreter this ruby uses.
+     */
+    rb_define_global_const("RUBY_ENGINE_VERSION", (1 ? version : MKSTR(version)));
 }
 
 /*! Prints the version information of the CRuby interpreter to stdout. */
@@ -78,18 +87,19 @@ void
 ruby_show_version(void)
 {
     PRINT(description);
+#ifdef RUBY_LAST_COMMIT_TITLE
+    fputs("last_commit=" RUBY_LAST_COMMIT_TITLE, stdout);
+#endif
 #ifdef HAVE_MALLOC_CONF
     if (malloc_conf) printf("malloc_conf=%s\n", malloc_conf);
 #endif
     fflush(stdout);
 }
 
-/*! Prints the copyright notice of the CRuby interpreter to stdout and \em exits
- *  this process successfully.
- */
+/*! Prints the copyright notice of the CRuby interpreter to stdout. */
 void
 ruby_show_copyright(void)
 {
     PRINT(copyright);
-    exit(EXIT_SUCCESS);
+    fflush(stdout);
 }

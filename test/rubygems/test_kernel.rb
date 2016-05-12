@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 
 class TestKernel < Gem::TestCase
@@ -61,6 +62,13 @@ class TestKernel < Gem::TestCase
     quick_gem 'd', '1.1.a'
     refute gem('d', '>= 1'),   'release requirement must not load prerelease'
     assert gem('d', '>= 1.a'), 'prerelease requirement may load prerelease'
+  end
+
+  def test_gem_env_req
+    ENV["GEM_REQUIREMENT_A"] = '~> 2.0'
+    assert_raises(Gem::MissingSpecVersionError) { gem('a', '= 1') }
+    assert gem('a', '> 1')
+    assert_equal @a2, Gem.loaded_specs['a']
   end
 
   def test_gem_conflicting

@@ -1,0 +1,462 @@
+Thu Dec  8 00:32:21 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* io.c($<.file,$<.filename): きちんと初期化．
+
+	* parse.y(rb_class2name): includeしているクラス名を正常に表示でき
+	  なかった．
+
+Wed Dec  7 15:40:36 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* dln.c: config.hをincludeしていなかった．
+
+	* missing/strdup.c: 忘れていた．
+
+Fri Dec  2 15:21:44 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* 関数の命名ルールを変えた(クラスメソッド: Sxxx_xxx，ユーティリティ
+	  メソッドxxx_xxxなど)．
+
+	* re.c(casefold): 個々の正規表現オブジェクトが大文字小文字を無視す
+	  るかどうかを設定できるようにした．
+
+Thu Dec  1 01:44:51 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* missing.c: システムで提供されないファイルの扱いを変更した．
+
+	* io.c($<): 変数`$<'が指しているものを現在読み込み中のファイル名か
+	  ら仮想ファイル($ARGF)に変更した．また，現在読み込み中のファイル
+	  名とファイルオブジェクトにアクセスするメソッドも用意した．
+
+	* ruby.h(data_new): Dataオブジェクトの割り当て方法を改善した．
+
+Wed Nov 30 15:36:13 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* Makefile: ルールを整理した．
+
+Tue Nov 29 00:09:26 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* array.c(`|'): 引数が配列でなく，かつそのオブジェクトが要素として
+	  含まれていない時，そのオブジェクトを追加する．あればなにもしない．
+
+	* process.c(gid,egid): GIDをアクセスするメソッド．
+
+	* io.c(print): 文字列と配列に対する処理を組み込んで若干の高速化を
+	  図った．出力が多い場合に効いてくるようだ．
+
+	* parse.y(parse_string): ""で囲まれた文字列内では対応するエスケー
+	  プがない`\'を残さないように．つまり，今後は"\k" -> "k"である(以
+	  前は"\k"だった)．
+
+Mon Nov 28 18:02:31 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* re.c(re_regsub): 置換文字列の置換えが不完全だった．
+
+	* 一時オブジェクトの解放をすべてGCに任せた．今のままではまずいタイ
+	  ミングでオブジェクトを解放する可能性があった．昔のGCの時にはこれ
+	  でも良かったのだが．
+
+Tue Nov 22 00:15:24 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* eval.c($"): 既にロードしたファイル名の配列．
+
+Mon Nov 21 01:09:50 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* array.c(&,|): 集合としての積演算と和演算．
+
+	* io.c($<): 文字列を代入した時には自動的にopenするように．IOのサブ
+	  クラスかどうかのチェックも行う．
+
+Sun Nov 19 23:02:27 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* eval.c($:): $LOAD_PATHの別名．
+
+	* io.c($>): デフォルト出力先．IO.defaultは無くなった．
+
+	* io.c($<): $FILENAMEの別名
+
+	* glob.c(each): ワイルドカードにマッチするものがない場合，パターン
+	  そのものを与えるように．
+
+	* file.c(chmod,chown,unlink,utime): `\'でワイルドカードをエスケー
+	  プできるように．
+
+Fri Nov 18 00:20:42 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.55 released
+
+	* file.c(chmod,chown,unlink,utime): 引数として与えられた文字列にワ
+	  イルドカードが含まれている場合にはGlobオブジェクトに変換する.
+
+Wed Nov 16 17:33:48 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* file.c(chmod,chown,unlink,utime): 引数としてワイルドカードも受け
+	  付けるように. その場合はマッチするファイル全体に適用される.
+
+Fri Nov 11 00:07:28 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* string.c(strip): 文字列そのものを変更するように.
+
+	* eval.c(rb_cal): 環境をスタックに積むタイミングが間違っていたので，
+	  不適切なエラーメッセージが出る時があった．
+
+	* eval.c(rb_undefined): メソッドが無い時とメソッドにアクセスできな
+	  い時とでメッセージを替えた．
+
+	* string.c: toupper/tolowerはupcase/downcaseを使って実現．
+
+	* string.c: lcfirst/ucfirstは削除．
+
+Thu Nov 10 16:15:16 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* string.c: sub/gsubは置換後の文字列を返すようにした.
+
+	* string.c: toupper/tolower/lcfirstなどを文字列を変更するものとし
+	  ないものの2 種類を提供するようにした.
+
+Tue Nov  1 17:52:09 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c: 変数展開にバグがあって元の文字列を破壊していた.
+
+Thu Oct 27 09:56:48 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c: rest引数の処理が間違っていた.
+
+	* env.c(rb_yield): ローカル変数の設定が間違っていた.
+
+Wed Oct 26 19:01:43 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c: 引数セットの高速化.
+
+	* process.c: sleepのバグ.
+
+	* parse.y, gnuglob.c: Sunのccでもコンパイルできるように.
+
+Tue Oct 25 00:36:16 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c: 若干の高速化. スタックの処理によってrb_call()が少し遅く
+	  なった分の穴埋めくらいか.
+
+	* eval.c: blockをenvから外すなどしてスタックを軽くした.
+
+Mon Oct 24 11:47:54 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* re.c: 正規表現アクセス用の変数($`, $', $+)を追加.
+
+	* re.c($KANJI): 処理する漢字コードをrubyプログラム内から設定できる
+	  ようにした.
+
+Sat Oct 22 00:42:41 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* eval.c: イテレータ内のredoとretryの処理にバグがあった．
+
+Fri Oct 21 00:53:21 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* string.c(swapcase): 文字列の大文字小文字を置き換える.
+
+	* string.c(ljust,rjust,center): 文字列のレイアウト用メソッド.
+	  sprintf()でも同じようなことはできるが.
+
+	* socket.c(recv,recvfrom): flags引数を省略可能にした. 省略時の値は
+	  0である.
+
+	* socket.c(recvfrom): recvと同様だが, データと相手アドレスのペアを
+	  返す.
+
+	* socket.c(accept): 戻り値をつながったソケットから, ソケットとアド
+	  レスのペアに変更した.
+
+	* eval.c(eval): the_classをセットする時に, last_moduleがincludeさ
+	  れているモジュール(T_ICLASS)であれば, 定義元のモジュールの方をセッ
+	  トするように. この修正がないとICLASSに対してメソッドが呼ばれる可
+	  能性があり, 不審な動作をする(はず).
+
+	* class.c: オブジェクトのcloneの際に特異クラス(特異メソッド用のク
+	  ラス)をきちんとコピーするようにした. 今までは個々のメソッドのコ
+	  ピーを忘れていた.
+
+	* numeric.c: Numericのnewとcloneをundefした.
+
+Thu Oct 20 11:30:00 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.53 released.
+
+	* parse.y: TopLevelのdef文は関数メソッドを定義するようにした.
+
+	* parse.y: def文のprivate指定はなくなった. export/noexportメソッド
+	  を使ってもらうことにした.
+
+	* parse.y: case文にthenを含むことができるようになった.
+
+Wed Oct 19 13:09:58 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* object.c(export,unexport): 関数メソッドの設定用メソッド.
+
+	* eval.c, class.c: 関数的メソッドを復活させ(またか…), `@'による
+	  privateメソッドをなくした. やはり, 関数的なものは関数的に呼びた
+	  い気がしてきた. こう仕様が変動しててはいけないような気もするなあ.
+	   *BACKWARD INCOMPATIBILITY*
+
+	* eval.c: メソッドの構成を変更し, 別名管理と関数メソッドの管理を分
+	  離した.
+
+	* eval.c: the_env->last_funcをCメソッドの時にも更新する. これがな
+	  いとStructのアクセスが動作しない.
+
+Fri Oct 14 13:22:18 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.52 released: ……なんてこったい.
+
+	* eval.c(rb_call): returnの処理が間違っていたので, マシンによって
+	  はreturnで関数を終了するだけでなくtoplevelまでつき抜けていた.
+
+	* dbm.c: Dictと同様にeachが[key,value]を返すように.
+
+	* version 0.51 released
+
+Thu Oct 13 12:13:48 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c(SETUP_ARGS): 付加引数が配列でない時には配列に変換する.
+
+	* parse.y: 括弧なしのメソッド呼び出しでも`*'による付加引数が使える
+	  ようにした. ただし, 通常引数が一つもない場合は乗算演算子と区別が
+	  つかないので, 必ず括弧が必要.
+
+Wed Oct 12 10:09:07 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c(rb_call): キャッシュの計算をinline化. キャッシュミスがあ
+	  れば関数呼び出しでメソッドを検索する. methods.cはなくなった.
+
+	* eval.c(rb_eval): ローカル変数用の領域をalloca()するように変更.
+	  サイズの変更が必要になれば改めてmalloc()するように.
+
+	* parse.y: error recoveryの際にlex_stateを更新しておくように.
+
+Tue Oct 11 17:10:46 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* socket.c(for_fd): ファイル記述子(Fixnum)からソケットインスタンス
+	  を得るメソッド. たとえばinetdから起動されたサーバで標準入出力に
+	  ソケット操作を行なうために使う. つまりSocket.for_fd($stdin)で標
+	  準入力に対応するソケットオブジェクトが得られる.
+
+	* io.c(to_i): IOクラスのインスタンスを整数に変換するとそのファイル
+	  記述子を返すように.
+
+	* numeric.c(num2int): to_iメソッドを使ってできる限り整数に変換する.
+	  以前はnum2fixだけが全てのオブジェクトに対してto_iメソッドを適用
+	  していた.
+
+	* sprintf.c(Fsprintf): 整数表示の際, オブジェクトをできる限り整数
+	  に変換するように(to_iメソッドを使う).
+
+Fri Oct  7 14:06:32 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c(Fcaller): 必要性がよく分からないのでドキュメントから削除.
+	  将来デバッガを作る時に復活させよう.
+
+	* eval.c(rb_call): Cで記述されたメソッド呼び出しでは環境をスタック
+	  にセーブしないことによって高速化.
+
+Wed Oct  5 15:00:58 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* ruby.h: 一時env.hに移動してたQselfの定義を復活. ただし今回は関数
+	  として実現(env.hでは変数として再定義してある).
+
+	* ruby.h: TRUEでsyntax errorにならないよう#undefを追加.
+
+	* eval.c(rb_eval): thread化に挑戦したが, 失敗(速くならなかった).
+	  が, Scopingなどの無駄なコードの削除とメソッド呼び出しの引数セッ
+	  トのinline化で若干の高速化を実現した. 副作用として, argc, argv形
+	  式の関数呼び出しの仕様が変化した(argvにselfを含まなくなった).
+
+	* eval.c(rb_call): メソッド呼び出しの高速化.
+
+Tue Oct  4 11:40:53 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* ruby-mode.el: 修飾子に対応した.
+
+	* parse.y: 多重代入にrestをつけた. この機能を使えばoptional引数の
+	  解析が簡単にできる(はず).
+
+	* pack.c(unpack): uuencode形式のdecodeの際に文字列の長さが間違って
+	  いた.
+
+Mon Oct  3 15:58:41 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* file.c(type): ファイルタイプを文字列で返すメソッド.
+
+Fri Sep 30 11:36:07 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* object.c: デフォルトの真の値である%TRUEの値を1(Fixnum)からtに変
+	  更した. to_sで文字列に変換した時にも`t'と表示される. 更に踏み込
+	  んで`t'を予約語にしてlispのようにしようかとも思ったが, そこまで
+	  は決心できなかった. 一文字のローカル変数はかなり使いそうな気がす
+	  るので….
+
+	* array.c,dict.c: equalを再定義しているクラスで, hashを正しく定義
+	  した.
+
+Wed Sep 28 23:30:28 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* eval.c(Ffail): 今までfailはカーネルクラスのメソッドであったが,
+	  構文に組み込んだ. この変更によって, 1)`fail'は予約語となり, ロー
+	  カル変数に用いることができなくなった. 2)`fail'単体で例外を発生す
+	  るようになった. 3)failはメソッドではなくなったので再定義される可
+	  能性がなくなった.
+
+	* dic.c, dbm.c(indexes): Arrayのindexesと同様の機能を持つメソッド
+	  を追加.
+
+	* array.c(indexes): 引数をインデックスとする要素の配列を返す. 整数
+	  の配列を引数とする時には引数の要素をインデックスとする要素の配列
+	  を返す.
+
+Mon Sep 19 13:42:31 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* array.c(aset): 部分配列に対する代入で配列以外のオブジェクトが指
+	  定された場合に多重代入と同じルールで配列化するようにした.
+
+	* io.c(print): 引数として与えられた各オブジェクトにprint_onメッセー
+	  ジを与えるように. 実行速度は落ちるが柔軟性は増す.
+
+Fri Sep 16 14:59:18 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* glob.c: ワイルドカードの導入. bashに使われているGNUのglobルーチ
+	  ンを流用した.
+
+Mon Sep 12 18:36:58 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y(value_expr): 式がnilの時に対応.
+
+	* class.c: ICLASSのclassが必ずClass/Moduleを指すように.
+
+Tue Sep  6 16:23:28 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* re.c:	正規表現内で「\数字」形式が指定できるように.
+
+	* parse.y:「do expr using var ... end」形式はなくなった. 寂しい気
+	  もする. *BACKWARD INCOMPATIBILITY*
+
+Mon Sep  5 10:59:01 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* numeric.c(next): Numericクラスにもnextを提供.
+
+	* string.c(upto): uptoを提供.
+
+	* range.c(each): nextを使ったインタフェースからuptoを使うように変
+	  更した. この方が一つのメソッドで処理をまとめで行なうことができる.
+
+Fri Sep  2 15:25:39 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* dict.c(each): 戻り値を[key, value]のペアに変更. 今までのeachは
+	  each_valueとして残る. *BACKWARD INCOMPATIBILITY*
+
+Thu Sep  1 10:49:04 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* 成功した(特別な戻り値を持たない)システムコールは`0'を返すように.
+
+Wed Aug 31 00:26:51 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* string.c: チェックサムを得るメソッド`sum'を作った.
+
+	* class.c(include_class_new): ICLASSのclassをもとのクラスにした.
+	  gcの際に元クラスをマークする必要があるのが, フィールドを増やす余
+	  地が無いので, classフィールドを流用した. 私の見積りが間違ってい
+	  て, ICLASSのインスタンスにメッセージを送る事があれば, おかしな動
+	  作をするだろう.
+
+	* eval.c(masign): 式(a,b = nil)の値を[nil]からnilに変更した.
+
+Mon Aug 29 11:56:09 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* class.c: rb_define_mfuncを無くして, メタクラスにモジュールをイン
+	  クルードするようにした.
+
+	* error.c(yyerror): 同じ行で複数のsyntax errorをリポートしないよう
+	  にした.
+
+	* file.c: FileTestモジュールにファイルテストメソッドを分離した.
+
+	* parse.y: 演算子を指定する時のlex_stateを正しく設定した.
+
+Sat Aug 27 01:23:34 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* parse.y: if/whileなどの複合式をprimaryに移動した. これによって例
+	  えば「if cond then a else b end.message()」のような式が書けるよ
+	  うになった.
+
+Fri Aug 26 10:46:30 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* spec: 整理された文法にしたがって書き直した.
+
+	* parse.y: ここ数日で混乱していた文法を整理した. 括弧を省略したメ
+	  ソッド呼び出しができるようになったこと, modifierが付けられるよう
+	  になったこと, returnにリストが渡せるようになったことが主な変更点
+	  である.
+
+	* process周りが怪しいがとにかくSolaris 2.3で動くように.
+
+	* parse.y: 曖昧性がない場合にはメソッド呼び出しの引数の括弧を省略
+	  できるように. 省略できるメソッド呼び出しの条件は, 1)かならず1個
+	  以上の引数を必要とすること, 2)第1引数が`+', `-', `(', `[', `{',
+	  `/'など, 式の始まりに置かれた時と途中に現れた時とで解釈が違う記
+	  号で始まらないこと, である.
+
+Thu Aug 25 13:54:58 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y(cond): 条件式の展開部にbugがあった.
+
+Wed Aug 24 00:01:15 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* parse.y: returnはコンマで区切ったリストも受け取るように. つまり,
+	  return a, b, cはreturn [a, b, c]と同じ意味になる.
+
+	* parse.y: yield以外の大域脱出制御式をexprからexpr0に移した. よっ
+	  てメソッドの引数に制御式を使えなくなる(これで困る人はいないはず).
+
+	* parse.y: `+'の定数展開の際に演算子の優先順位を忘れていた.
+
+	* eval.c: untilの戻り値はnilになった.
+
+	* parse.y: modifierとしてのif/unless/while/untilを追加.
+
+	* parse.y: 文法からendの後ろにつけるキーワードを削除. ほとんど使わ
+	  なかった上に, emacsではruby-modeがあれば対応のチェックが機械的に
+	  出来るため.
+
+Tue Aug 23 18:08:33 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c: スクリプト実行開始前に例外が発生した時にcore dumpした.
+	  組み込み用にコードを変更した時にenbugしてしまった.
+
+Tue Aug 23 00:07:17 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* eval.c: doの戻り値がいつもnilになっていた.
+
+	* parse.y: loop制御変数の多重代入化にbugがあった.
+
+	* parse.y(expand_op): 文字列も畳み込みの対象に.
+
+Mon Aug 22 10:50:01 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y(expand_op): `+'に関しては結合則を使って, より多く定数畳
+	  み込みを行なうように.
+
+	* ruby.c(proc_options): argcが0の時にも対応.
+
+	* parse.y: forなどの制御変数に多重代入も使えるように.
+
+Sat Aug 20 00:59:40 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* parse.y(call_op): 演算子`~'の取り扱いをルール部へ移動.
+
+Fri Aug 19 11:44:13 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* main.c: rubyをほかのプログラムに組み込めるようにmain()を分割した.
+	  それにともない, プログラムの呼び出し構造を修正した.
+
+	* parse.y: 条件式の定義を変更. ifなどの条件式の中でだけ`&&'や`||'
+	  および`!'の引数が条件式になるように. この変更により条件式以外の
+	  場所での `&&', `||', `!'演算子の動作が直観に一致する.
+
+	* parse.y: 実引数の`*'の後に続く引数はexprに制限した. 今までは全て
+	  の文が有効

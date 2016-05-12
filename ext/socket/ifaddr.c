@@ -41,11 +41,6 @@ get_root(const rb_ifaddr_t *ifaddr)
 }
 
 static void
-ifaddr_mark(void *ptr)
-{
-}
-
-static void
 ifaddr_free(void *ptr)
 {
     rb_ifaddr_t *ifaddr = ptr;
@@ -62,8 +57,6 @@ ifaddr_memsize(const void *ptr)
 {
     const rb_ifaddr_t *ifaddr;
     const rb_ifaddr_root_t *root;
-    if (ptr == NULL)
-        return 0;
     ifaddr = ptr;
     root = get_root(ifaddr);
     return sizeof(rb_ifaddr_root_t) + (root->numifaddrs - 1) * sizeof(rb_ifaddr_t);
@@ -71,7 +64,7 @@ ifaddr_memsize(const void *ptr)
 
 static const rb_data_type_t ifaddr_type = {
     "socket/ifaddr",
-    {ifaddr_mark, ifaddr_free, ifaddr_memsize,},
+    {0, ifaddr_free, ifaddr_memsize,},
 };
 
 static inline rb_ifaddr_t *
@@ -98,7 +91,7 @@ rsock_getifaddrs(void)
     int numifaddrs, i;
     struct ifaddrs *ifaddrs, *ifa;
     rb_ifaddr_root_t *root;
-    VALUE result;
+    VALUE result, addr;
 
     ret = getifaddrs(&ifaddrs);
     if (ret == -1)
@@ -112,8 +105,10 @@ rsock_getifaddrs(void)
     for (ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next)
         numifaddrs++;
 
+    addr = TypedData_Wrap_Struct(rb_cSockIfaddr, &ifaddr_type, 0);
     root = xmalloc(sizeof(rb_ifaddr_root_t) + (numifaddrs-1) * sizeof(rb_ifaddr_t));
-    root->refcount = root->numifaddrs = numifaddrs;
+    root->refcount = 0;
+    root->numifaddrs = numifaddrs;
 
     ifa = ifaddrs;
     for (i = 0; i < numifaddrs; i++) {
@@ -122,10 +117,15 @@ rsock_getifaddrs(void)
         root->ary[i].root = root;
         ifa = ifa->ifa_next;
     }
+    RTYPEDDATA_DATA(addr) = &root->ary[0];
+    root->refcount++;
 
     result = rb_ary_new2(numifaddrs);
-    for (i = 0; i < numifaddrs; i++) {
-        rb_ary_push(result, TypedData_Wrap_Struct(rb_cSockIfaddr, &ifaddr_type, &root->ary[i]));
+    rb_ary_push(result, addr);
+    for (i = 1; i < numifaddrs; i++) {
+	addr = TypedData_Wrap_Struct(rb_cSockIfaddr, &ifaddr_type, &root->ary[i]);
+	root->refcount++;
+	rb_ary_push(result, addr);
     }
 
     return result;

@@ -1,17 +1,16 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #include "ossl.h"
 
-#define WrapCipher(obj, klass, ctx) \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_cipher_type, (ctx))
+#define NewCipher(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_cipher_type, 0)
 #define MakeCipher(obj, klass, ctx) \
     (obj) = TypedData_Make_Struct((klass), EVP_CIPHER_CTX, &ossl_cipher_type, (ctx))
 #define AllocCipher(obj, ctx) \
@@ -92,17 +91,13 @@ static size_t
 ossl_cipher_memsize(const void *ptr)
 {
     const EVP_CIPHER_CTX *ctx = ptr;
-    return ctx ? sizeof(*ctx) : 0;
+    return sizeof(*ctx);
 }
 
 static VALUE
 ossl_cipher_alloc(VALUE klass)
 {
-    VALUE obj;
-
-    WrapCipher(obj, klass, 0);
-
-    return obj;
+    return NewCipher(klass);
 }
 
 /*
@@ -1014,4 +1009,3 @@ Init_ossl_cipher(void)
     rb_define_method(cCipher, "block_size", ossl_cipher_block_size, 0);
     rb_define_method(cCipher, "padding=", ossl_cipher_set_padding, 1);
 }
-

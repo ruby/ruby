@@ -24,6 +24,10 @@ LARGEFILE_SUPPORT = 1
 win_srcdir = $(srcdir)/win32
 !endif
 
+!if exist(verconf.mk)
+! include verconf.mk
+!endif
+
 #### Start of system configuration section. ####
 
 !if defined(pathlist)
@@ -122,6 +126,9 @@ PLATFORM = mswin32
 !if !defined(RT)
 !error RT not defined.  Retry from configure pass.
 !endif
+!ifndef NTVER
+NTVER = 0x0600
+!endif
 !ifdef NTVER
 ARCHDEFS = -D_WIN32_WINNT=$(NTVER) $(ARCHDEFS)
 !endif
@@ -132,11 +139,11 @@ PLATFORM_DIR = win32
 arch = $(ARCH)-$(PLATFORM)
 sitearch = $(ARCH)-$(RT)
 !if !defined(ruby_version)
-ruby_version = $(MAJOR).$(MINOR).$(TEENY)
+ruby_version = $(MAJOR).$(MINOR).0
 !endif
 
 !ifndef RUBY_SO_NAME
-RUBY_SO_NAME = $(RT)-$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)$(TEENY)
+RUBY_SO_NAME = $(RT)-$(RUBY_BASE_NAME)$(ruby_version:.=)
 !if "$(ARCH)" != "i386"
 RUBY_SO_NAME = $(ARCH)-$(RUBY_SO_NAME)
 !endif
@@ -151,8 +158,11 @@ prefix = /usr
 !if !defined(exec_prefix)
 exec_prefix = $(prefix)
 !endif
+!if !defined(libdir_basename)
+libdir_basename = lib
+!endif
 !if !defined(libdir)
-libdir = $(exec_prefix)/lib
+libdir = $(exec_prefix)/$(libdir_basename)
 !endif
 !if !defined(datadir)
 datadir = $(prefix)/share
@@ -200,7 +210,9 @@ COMPILERFLAG  = -Zm600
 !endif
 !if !defined(WARNFLAGS)
 !if $(MSC_VER) >= 1400
-WARNFLAGS = -W2 -wd4996 -we4028 -we4142
+WARNFLAGS = -W2 -wd4100 -wd4127 -wd4210 -wd4214 -wd4255 -wd4574 \
+	    -wd4668 -wd4710 -wd4711 -wd4820 -wd4996 \
+	    -we4028 -we4142
 !else
 WARNFLAGS = -W2
 !endif
@@ -239,6 +251,7 @@ MISSING = crypt.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj wi
 !if $(RT_VER) < 120
 MISSING = $(MISSING) acosh.obj cbrt.obj erf.obj tgamma.obj
 !endif
+MISSING = $(MISSING) explicit_bzero.obj
 !endif
 DLNOBJ = dln.obj
 
@@ -288,7 +301,9 @@ MINIRUBY = $(MINIRUBY) $(MINIRUBYOPT)
 RUNRUBY = $(RUNRUBY) "$(srcdir)/tool/runruby.rb" --extout="$(EXTOUT)" $(RUNRUBYOPT) -- $(RUN_OPTS)
 !if "$(CROSS_COMPILING)" == "yes"
 XRUBY = $(MINIRUBY)
+BOOTSTRAPRUBY = $(BASERUBY)
 !else
+BOOTSTRAPRUBY = $(MINIRUBY)
 XRUBY = $(RUNRUBY)
 !endif
 BTESTRUBY = $(MINIRUBY)
@@ -370,7 +385,7 @@ EXTOBJS = dmyext.$(OBJEXT)
 arch_hdrdir = $(EXTOUT)/include/$(arch)
 top_srcdir = $(srcdir)
 hdrdir = $(srcdir)/include
-VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/enc;$(srcdir)/missing;$(win_srcdir)
+VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/missing;$(win_srcdir)
 
 !if exist($(srcdir)/.svn)
 VCS = svn
@@ -398,10 +413,10 @@ ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
 stub: $(STUBPROGRAM)
 
-!if !exist(newline.c) && exist($(srcdir)/newline.c)
-NEWLINE_C = $(srcdir)/newline.c
+!if !exist(enc/trans/newline.c) && exist($(srcdir)/enc/trans/newline.c)
+NEWLINE_C = $(srcdir)/enc/trans/newline.c
 !else
-NEWLINE_C = newline.c
+NEWLINE_C = enc/trans/newline.c
 !endif
 !if !exist(miniprelude.c) && exist($(srcdir)/miniprelude.c)
 MINIPRELUDE_C = $(srcdir)/miniprelude.c
@@ -416,9 +431,6 @@ PRELUDE_C = prelude.c
 RBCONFIG      = ./.rbconfig.time
 
 !include $(srcdir)/common.mk
-!if exist(verconf.mk)
-! include verconf.mk
-!endif
 
 !ifdef SCRIPTPROGRAMS
 !else if [echo>scriptbin.mk SCRIPTPROGRAMS = \]
@@ -445,7 +457,7 @@ scriptbin: $(SCRIPTPROGRAMS)
 
 $(SCRIPTPROGRAMS): $(STUBPROGRAM)
 
-up::
+update-src::
 	@cd "$(srcdir:/=\)" && set LC_TIME=C && $(VCSUP)
 
 update-mspec:
@@ -456,6 +468,7 @@ update-mspec:
 	@echo retrieving mspec ...
 	@cd $(srcdir:/=\) && git clone $(MSPEC_GIT_URL) spec/mspec
 !endif
+	@cd $(srcdir:/=\)\spec\mspec && git --no-pager log -1 --oneline
 
 update-rubyspec: update-mspec
 !if exist($(srcdir)/spec/rubyspec)
@@ -465,6 +478,7 @@ update-rubyspec: update-mspec
 	@echo retrieving rubyspec ...
 	@cd $(srcdir:/=\) && git clone $(RUBYSPEC_GIT_URL) spec/rubyspec
 !endif
+	@cd $(srcdir:/=\)\spec\rubyspec && git --no-pager log -1 --oneline
 
 test-rubyspec-precheck:
 !if !exist($(srcdir)/spec/rubyspec/.)
@@ -579,8 +593,11 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 !if $(MSC_VER) >= 1300
 #define DEPRECATED(x) __declspec(deprecated) x
+#define DEPRECATED_TYPE(mesg, x) __declspec(deprecated mesg) x
 #define NOINLINE(x) __declspec(noinline) x
 !endif
+#define UNREACHABLE __assume(0)
+#define ASSUME(x) __assume(!!(x))
 #define FUNC_STDCALL(x) __stdcall x
 #define FUNC_CDECL(x) __cdecl x
 #define FUNC_FASTCALL(x) __fastcall x
@@ -608,6 +625,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_STRUCT_STAT_ST_RDEV 1
 #define HAVE_ST_RDEV 1
 #define HAVE_STRUCT_TIMEVAL 1
+!if $(MSC_VER) >= 1900
+#define HAVE_STRUCT_TIMESPEC
+!endif
 !if $(MSC_VER) >= 1600
 #define HAVE_STDINT_H 1
 !else
@@ -703,9 +723,13 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_GETCWD 1
 #define HAVE_TRUNCATE 1
 #define HAVE_FTRUNCATE 1
+#define HAVE_LSTAT 1
 #define HAVE_TIMES 1
 #define HAVE_FCNTL 1
 #define HAVE_LINK 1
+#define HAVE_READLINK 1
+#define HAVE_SYMLINK 1
+#define HAVE_LCHOWN 1
 #define HAVE__SETJMP 1
 #define HAVE_TELLDIR 1
 #define HAVE_SEEKDIR 1
@@ -717,6 +741,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_TZNAME 1
 #define HAVE_DAYLIGHT 1
 #define HAVE_GMTIME_R 1
+!if $(RT_VER) > 120
+#define HAVE_QSORT_S
+!endif
 #define HAVE_TYPE_NET_LUID 1
 #define SETPGRP_VOID 1
 #define RSHIFT(x,y) ((x)>>(int)y)
@@ -794,7 +821,7 @@ s,@datadir@,$${prefix}/share,;t t
 s,@sysconfdir@,$${prefix}/etc,;t t
 s,@sharedstatedir@,/etc,;t t
 s,@localstatedir@,/var,;t t
-s,@libdir@,$${exec_prefix}/lib,;t t
+s,@libdir@,$${exec_prefix}/$(libdir_basename),;t t
 s,@includedir@,$${prefix}/include,;t t
 s,@oldincludedir@,/usr/include,;t t
 s,@infodir@,$${datadir}/info,;t t
@@ -908,6 +935,7 @@ s,@sitearchincludedir@,$${includedir}/$${sitearch},;t t
 s,@arch@,$(ARCH)-$(PLATFORM),;t t
 s,@sitearch@,$(ARCH)-$(RT),;t t
 s,@ruby_version@,$(ruby_version),;t t
+s,@RUBY_PROGRAM_VERSION@,$(RUBY_PROGRAM_VERSION),;t t
 s,@rubylibprefix@,$${prefix}/lib/$${RUBY_BASE_NAME},;t t
 s,@rubyarchdir@,$${rubylibdir}/$${arch},;t t
 s,@rubylibdir@,$${rubylibprefix}/$${ruby_version},;t t
@@ -938,7 +966,7 @@ miniruby: miniruby$(EXEEXT)
 miniruby$(EXEEXT):
 		@echo $(LIBS)
 		$(ECHO) linking $(@:\=/)
-		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(INITOBJS) $(LIBS) -Fe$@ -link $(LDFLAGS)
+		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(LIBS) -Fe$@ -link $(LDFLAGS)
 		@$(RM) miniruby.lib miniruby.exp
 		$(Q) miniruby.exe -v
 		$(Q) $(LDSHARED_1)
@@ -969,9 +997,9 @@ $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
 !endif
 
 !if "$(STUBPROGRAM)" != ""
-$(STUBPROGRAM):	stub.$(OBJEXT) $(LIBRUBY) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
+$(STUBPROGRAM):	win32/stub.$(OBJEXT) $(LIBRUBY) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 		$(ECHO) linking $(@:\=/)
-		$(Q) $(PURIFY) $(CC) stub.$(OBJEXT) $(RUBY_INSTALL_NAME).res \
+		$(Q) $(PURIFY) $(CC) win32/stub.$(OBJEXT) $(RUBY_INSTALL_NAME).res \
 			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
 		$(Q) $(LDSHARED_0)
 		$(Q) $(LDSHARED_1)
@@ -991,7 +1019,7 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		@-$(PRE_LIBRUBY_UPDATE)
 		$(ECHO) linking shared-library $(@:\=/)
 		$(Q) $(LDSHARED) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) \
-			$(RUBY_SO_NAME).res $(LIBS) -Fe$@ -link $(LDFLAGS) \
+			$(RUBY_SO_NAME).res $(SOLIBS) $(EXTSOLIBS) $(LIBS) -Fe$@ -link $(LDFLAGS) \
 			$(LIBRUBY_DLDFLAGS)
 		@$(RM) dummy.lib dummy.exp
 		$(Q) $(LDSHARED_0)
@@ -1019,14 +1047,13 @@ distclean-local::
 		-$(Q)$(RMDIRS) $(arch_hdrdir:/=\)\ruby
 
 clean-ext distclean-ext realclean-ext::
-!if "$(EXTS)" != ""
-		@for %I in ($(EXTS)) \
-!else
-		@for /R ext %I in (.) \
-!endif
+		@cd ext && for /R $(EXTS) %I in (.) \
 		do @if exist %I\Makefile ( \
 		    cd %I && ( \
-		    echo $(@:-ext=)ing %~nI & \
+		    call set n=%I && \
+		    call set n=%n:%CD%\ext\=% && \
+		    call set n=%n:\.=% && \
+		    call echo $(@:-ext=)ing %n:\=/% & \
 		    $(MAKE) $(MFLAGS) $(@:-ext=) & \
 		    cd %CD% & \
 		    $(RMDIRS) %I \
@@ -1043,6 +1070,8 @@ clean-enc distclean-enc realclean-enc:
 	@-$(MAKE) -f $(ENC_MK) $(MFLAGS) V=$(V) $(@:-enc=)
 !endif
 
+$(RBCONFIG): $(PREP)
+
 $(RCFILES): $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 		@$(MINIRUBY) $(srcdir)/win32/resource.rb \
 			-ruby_name=$(RUBY_INSTALL_NAME) \
@@ -1050,28 +1079,14 @@ $(RCFILES): $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 			-so_name=$(RUBY_SO_NAME) \
 			. $(icondirs) $(win_srcdir)
 
-$(arch)-fake.rb: $(MKFILES) $(srcdir)/version.h
-	@echo Creating <<$@
-class Object
-  remove_const :CROSS_COMPILING if defined?(CROSS_COMPILING)
-  CROSS_COMPILING = RUBY_PLATFORM
-  remove_const :RUBY_PLATFORM
-  remove_const :RUBY_VERSION
-  remove_const :RUBY_DESCRIPTION if defined?(RUBY_DESCRIPTION)
-  RUBY_PLATFORM = "$(arch)"
-  RUBY_VERSION = $(RUBY_PROGRAM_VERSION)
-  RUBY_DESCRIPTION = "ruby #{RUBY_VERSION} (" $(RUBY_RELEASE_DATE) ") [#{RUBY_PLATFORM}]"
-end
-class File
-  remove_const :ALT_SEPARATOR
-  ALT_SEPARATOR = "\\"
-end
-<<KEEP
-
 $(ruby_pc): $(RBCONFIG)
-	@$(MINIRUBY) -r./rbconfig $(srcdir)/tool/expand-config.rb \
-	$(srcdir)/template/ruby.pc.in > $@
+	@$(BOOTSTRAPRUBY) $(srcdir)/tool/expand-config.rb \
+		-output=$@ -mode=$(INSTALL_DATA_MODE) -config=rbconfig.rb \
+		$(srcdir)/template/ruby.pc.in
 
+{$(srcdir)/enc/trans}.c.obj:
+	$(ECHO) compiling $(<:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
 {$(srcdir)/enc}.c.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
@@ -1134,18 +1149,16 @@ enc/jis/props.h: {$(srcdir)}enc/jis/props.h.blt
 $(OBJS): {$(hdrdir)/ruby}win32.h
 
 dir.$(OBJEXT) win32/win32.$(OBJEXT): {$(srcdir)}win32/dir.h
+file.$(OBJEXT) win32/win32.$(OBJEXT): {$(VPATH)}win32/file.h
 
 ext/extinit.obj: ext/extinit.c $(SETUP)
 	$(ECHO) compiling ext/extinit.c
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c ext/extinit.c
 
 probes.h: {$(VPATH)}probes.dmyh
-	@$(ECHO) copying dummy $(DEST_FILE)
-	@if exist probes.dmyh (\
-	  $(Q) $(CP) probes.dmyh $(OS_DEST_FILE)\
-	) else (\
-	  $(Q) $(CP) $(srcdir:/=\)\probes.dmyh $(OS_DEST_FILE)\
-	)
+	@$(ECHO) making dummy <<$(DEST_FILE)
+#include "$(*F).dmyh"
+<<KEEP
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc

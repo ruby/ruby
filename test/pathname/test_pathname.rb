@@ -1,9 +1,10 @@
+# frozen_string_literal: true
+
 require 'test/unit'
 require 'pathname'
 
 require 'fileutils'
 require 'tmpdir'
-require 'enumerator'
 
 
 class TestPathname < Test::Unit::TestCase
@@ -190,8 +191,8 @@ class TestPathname < Test::Unit::TestCase
 
   if DOSISH
     defassert(:del_trailing_separator, "a", "a\\")
-    defassert(:del_trailing_separator, "\225\\".force_encoding("cp932"), "\225\\\\".force_encoding("cp932"))
-    defassert(:del_trailing_separator, "\225".force_encoding("cp437"), "\225\\\\".force_encoding("cp437"))
+    defassert(:del_trailing_separator, "\225\\".dup.force_encoding("cp932"), "\225\\\\".dup.force_encoding("cp932"))
+    defassert(:del_trailing_separator, "\225".dup.force_encoding("cp437"), "\225\\\\".dup.force_encoding("cp437"))
   end
 
   def test_plus
@@ -340,10 +341,10 @@ class TestPathname < Test::Unit::TestCase
 
   def has_symlink?
     begin
-      File.symlink(nil, nil)
-    rescue NotImplementedError
+      File.symlink("", "")
+    rescue NotImplementedError, Errno::EACCES
       return false
-    rescue TypeError
+    rescue Errno::ENOENT
     end
     return true
   end
@@ -402,6 +403,7 @@ class TestPathname < Test::Unit::TestCase
       File.symlink("f/g", "h")
       assert_equal("#{dir}/f/g", realpath("h"))
       File.chmod(0000, "f")
+      next if File.readable?("f")
       assert_raise(Errno::EACCES) { realpath("h") }
       File.chmod(0755, "f")
     }
@@ -430,7 +432,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def descend(path)
-    Pathname.new(path).enum_for(:descend).map {|v| v.to_s }
+    Pathname.new(path).descend.map(&:to_s)
   end
 
   defassert(:descend, %w[/ /a /a/b /a/b/c], "/a/b/c")
@@ -439,13 +441,21 @@ class TestPathname < Test::Unit::TestCase
   defassert(:descend, %w[a/], "a/")
 
   def ascend(path)
-    Pathname.new(path).enum_for(:ascend).map {|v| v.to_s }
+    Pathname.new(path).ascend.map(&:to_s)
   end
 
   defassert(:ascend, %w[/a/b/c /a/b /a /], "/a/b/c")
   defassert(:ascend, %w[a/b/c a/b a], "a/b/c")
   defassert(:ascend, %w[./a/b/c ./a/b ./a .], "./a/b/c")
   defassert(:ascend, %w[a/], "a/")
+
+  def test_blockless_ascend_is_enumerator
+    assert_kind_of(Enumerator, Pathname.new('a').ascend)
+  end
+
+  def test_blockless_descend_is_enumerator
+    assert_kind_of(Enumerator, Pathname.new('a').descend)
+  end
 
   def test_initialize
     p1 = Pathname.new('a')
@@ -577,16 +587,16 @@ class TestPathname < Test::Unit::TestCase
     obj = Pathname.new("a"); assert_same(obj, obj.taint)
     obj = Pathname.new("a"); assert_same(obj, obj.untaint)
 
-    assert_equal(false, Pathname.new("a"      )           .tainted?)
-    assert_equal(false, Pathname.new("a"      )      .to_s.tainted?)
-    assert_equal(true,  Pathname.new("a"      ).taint     .tainted?)
-    assert_equal(true,  Pathname.new("a"      ).taint.to_s.tainted?)
-    assert_equal(true,  Pathname.new("a".taint)           .tainted?)
-    assert_equal(true,  Pathname.new("a".taint)      .to_s.tainted?)
-    assert_equal(true,  Pathname.new("a".taint).taint     .tainted?)
-    assert_equal(true,  Pathname.new("a".taint).taint.to_s.tainted?)
+    assert_equal(false, Pathname.new("a"          )           .tainted?)
+    assert_equal(false, Pathname.new("a"          )      .to_s.tainted?)
+    assert_equal(true,  Pathname.new("a"          ).taint     .tainted?)
+    assert_equal(true,  Pathname.new("a"          ).taint.to_s.tainted?)
+    assert_equal(true,  Pathname.new("a".dup.taint)           .tainted?)
+    assert_equal(true,  Pathname.new("a".dup.taint)      .to_s.tainted?)
+    assert_equal(true,  Pathname.new("a".dup.taint).taint     .tainted?)
+    assert_equal(true,  Pathname.new("a".dup.taint).taint.to_s.tainted?)
 
-    str = "a"
+    str = "a".dup
     path = Pathname.new(str)
     str.taint
     assert_equal(false, path     .tainted?)
@@ -599,7 +609,7 @@ class TestPathname < Test::Unit::TestCase
     assert_equal(false, Pathname.new("a").taint.untaint     .tainted?)
     assert_equal(false, Pathname.new("a").taint.untaint.to_s.tainted?)
 
-    str = "a".taint
+    str = "a".dup.taint
     path = Pathname.new(str)
     str.untaint
     assert_equal(true, path     .tainted?)

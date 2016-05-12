@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 module Digest
   Foo = nil
 

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # vscale.rb
 #
 # This demonstration script shows an example with a vertical scale.

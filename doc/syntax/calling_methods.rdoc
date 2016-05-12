@@ -27,6 +27,10 @@ This sends the +my_method+ message to +my_object+.  Any object can be a
 receiver but depending on the method's visibility sending a message may raise a
 NoMethodError.
 
+You may use <code>&.</code> to designate a receiver, then +my_method+ is not
+invoked and the result is +nil+ when the receiver is +nil+.  In that case, the
+arguments of +my_method+ are not evaluated.
+
 You may also use <code>::</code> to designate a receiver, but this is rarely
 used due to the potential for confusion with <code>::</code> for namespaces.
 
@@ -62,7 +66,7 @@ The positional arguments for the message follow the method name:
 
   my_method(argument1, argument2)
 
-In many cases parenthesis are not necessary when sending a message:
+In many cases, parenthesis are not necessary when sending a message:
 
   my_method argument1, argument2
 
@@ -84,7 +88,7 @@ hash-type arguments are assigned as a single hash to the last argument:
 
   my_method('a' => 1, b: 2) # prints: {'a'=>1, :b=>2}
 
-If too many positional arguments are given an ArgumentError is raised.
+If too many positional arguments are given, an ArgumentError is raised.
 
 === Default Positional Arguments
 
@@ -246,8 +250,8 @@ Both are equivalent to:
 
   my_method(1, 2, 3)
 
-If the method accepts keyword arguments the splat operator will convert a hash
-at the end of the array into keyword arguments:
+If the method accepts keyword arguments, the splat operator will convert a
+hash at the end of the array into keyword arguments:
 
   def my_method(a, b, c: 3)
   end
@@ -259,7 +263,7 @@ You may also use the <code>**</code> (described next) to convert a Hash into
 keyword arguments.
 
 If the number of objects in the Array do not match the number of arguments for
-the method an ArgumentError will be raised.
+the method, an ArgumentError will be raised.
 
 If the splat operator comes first in the call, parentheses must be used to
 avoid a warning.
@@ -286,7 +290,7 @@ Both are equivalent to:
   my_method(first: 3, second: 4, third: 5)
 
 If the method definition uses <code>**</code> to gather arbitrary keyword
-arguments they will not be gathered by <code>*</code>:
+arguments, they will not be gathered by <code>*</code>:
 
   def my_method(*a, **kw)
     p arguments: a, keywords: kw
@@ -296,9 +300,9 @@ arguments they will not be gathered by <code>*</code>:
 
 Prints:
 
-  {:arguments=>[1, 2], :keywords=>{"3"=>4, :five=>6}}
+  {:arguments=>[1, 2, {"3"=>4}], :keywords=>{:five=>6}}
 
-Unlike the splat operator described above the <code>**</code> operator has no
+Unlike the splat operator described above, the <code>**</code> operator has no
 commonly recognized name.
 
 === Proc to Block Conversion
@@ -319,12 +323,12 @@ operator:
 If the splat operator comes first in the call, parenthesis must be used to
 avoid a warning.
 
-Unlike the splat operator described above the <code>&</code> operator has no
+Unlike the splat operator described above, the <code>&</code> operator has no
 commonly recognized name.
 
 == Method Lookup
 
-When you send a message Ruby looks up the method that matches the name of the
+When you send a message, Ruby looks up the method that matches the name of the
 message for the receiver.  Methods are stored in classes and modules so method
 lookup walks these, not the objects themselves.
 
@@ -343,7 +347,6 @@ If no match is found this repeats from the beginning, but looking for
 +method_missing+.  The default +method_missing+ is BasicObject#method_missing
 which raises a NameError when invoked.
 
-If refinements (an experimental feature) are active the method lookup changes.
+If refinements (an experimental feature) are active, the method lookup changes.
 See the {refinements documentation}[rdoc-ref:syntax/refinements.rdoc] for
 details.
-

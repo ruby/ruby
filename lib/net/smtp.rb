@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # = net/smtp.rb
 #
 # Copyright (c) 1999-2007 Yukihiro Matsumoto.
@@ -787,7 +788,7 @@ module Net
 
     def base64_encode(str)
       # expects "str" may not become too long
-      [str].pack('m').gsub(/\s+/, '')
+      [str].pack('m0')
     end
 
     IMASK = 0x36

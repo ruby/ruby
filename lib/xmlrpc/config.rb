@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # $Id$
 # Configuration file for XML-RPC for Ruby
@@ -12,12 +13,7 @@ module XMLRPC # :nodoc:
 
     # === Available parsers
     #
-    # * XMLParser::NQXMLTreeParser
-    # * XMLParser::NQXMLStreamParser
-    # * XMLParser::XMLTreeParser
-    # * XMLParser::XMLStreamParser (fastest)
     # * XMLParser::REXMLStreamParser
-    # * XMLParser::XMLScanStreamParser
     # * XMLParser::LibXMLStreamParser
     DEFAULT_PARSER = XMLParser::REXMLStreamParser
 

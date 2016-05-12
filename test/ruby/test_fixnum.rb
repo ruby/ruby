@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestFixnum < Test::Unit::TestCase
@@ -36,10 +37,14 @@ class TestFixnum < Test::Unit::TestCase
 
   def test_plus
     assert_equal(0x40000000, 0x3fffffff+1)
+    assert_equal(0x7ffffffe, 0x3fffffff+0x3fffffff)
     assert_equal(0x4000000000000000, 0x3fffffffffffffff+1)
+    assert_equal(0x7ffffffffffffffe, 0x3fffffffffffffff+0x3fffffffffffffff)
     assert_equal(-0x40000001, (-0x40000000)+(-1))
     assert_equal(-0x4000000000000001, (-0x4000000000000000)+(-1))
+    assert_equal(-0x7ffffffe, (-0x3fffffff)+(-0x3fffffff))
     assert_equal(-0x80000000, (-0x40000000)+(-0x40000000))
+    assert_equal(-0x8000000000000000, (-0x4000000000000000)+(-0x4000000000000000))
   end
 
   def test_sub
@@ -48,6 +53,8 @@ class TestFixnum < Test::Unit::TestCase
     assert_equal(-0x40000001, (-0x40000000)-1)
     assert_equal(-0x4000000000000001, (-0x4000000000000000)-1)
     assert_equal(-0x80000000, (-0x40000000)-0x40000000)
+    assert_equal(0x7fffffffffffffff, 0x3fffffffffffffff-(-0x4000000000000000))
+    assert_equal(-0x8000000000000000, -0x4000000000000000-0x4000000000000000)
   end
 
   def test_mult
@@ -207,6 +214,7 @@ class TestFixnum < Test::Unit::TestCase
 
     assert_equal(0, 1 <=> 1)
     assert_equal(-1, 1 <=> 4294967296)
+    assert_equal(-1, 1 <=> 1 << 100)
     assert_equal(0, 1 <=> 1.0)
     assert_nil(1 <=> nil)
 
@@ -298,7 +306,7 @@ class TestFixnum < Test::Unit::TestCase
     big = 1 << 66
     assert_eql  1, 1 ** -big        , bug5715
     assert_eql  1, (-1) ** -big     , bug5715
-    assert_eql -1, (-1) ** -(big+1) , bug5715
+    assert_eql (-1), (-1) ** -(big+1), bug5715
   end
 
   def test_power_of_0
@@ -311,5 +319,22 @@ class TestFixnum < Test::Unit::TestCase
   def test_remainder
     assert_equal(1, 5.remainder(4))
     assert_predicate(4.remainder(Float::NAN), :nan?)
+  end
+
+  def test_zero_p
+    assert_predicate(0, :zero?)
+    assert_not_predicate(1, :zero?)
+  end
+
+  def test_positive_p
+    assert_predicate(1, :positive?)
+    assert_not_predicate(0, :positive?)
+    assert_not_predicate(-1, :positive?)
+  end
+
+  def test_negative_p
+    assert_predicate(-1, :negative?)
+    assert_not_predicate(0, :negative?)
+    assert_not_predicate(1, :negative?)
   end
 end

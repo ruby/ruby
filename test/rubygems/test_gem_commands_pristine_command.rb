@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/commands/pristine_command'
 
@@ -5,6 +6,8 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
   def setup
     super
+    common_installer_setup
+
     @cmd = Gem::Commands::PristineCommand.new
   end
 
@@ -103,10 +106,12 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     assert_path_exists gem_exec
 
+    ruby_exec = sprintf Gem.default_exec_format, 'ruby'
+
     if win_platform?
-      assert_match %r%\A#!\s*ruby%, File.read(gem_exec)
+      assert_match %r%\A#!\s*#{ruby_exec}%, File.read(gem_exec)
     else
-      assert_match %r%\A#!\s*/usr/bin/env ruby%, File.read(gem_exec)
+      assert_match %r%\A#!\s*/usr/bin/env #{ruby_exec}%, File.read(gem_exec)
     end
   end
 
@@ -151,10 +156,11 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     ext_path = File.join @tempdir, 'ext', 'a', 'extconf.rb'
     write_file ext_path do |io|
-      io.write '# extconf.rb'
+      io.write "# extconf.rb\nrequire 'mkmf'; create_makefile 'a'"
     end
 
     util_build_gem a
+    install_gem a
 
     @cmd.options[:args] = %w[a]
     @cmd.options[:extensions] = false
@@ -225,13 +231,35 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_empty out, out.inspect
   end
 
+  def test_skip
+    a = util_spec 'a'
+    b = util_spec 'b'
+
+    install_gem a
+    install_gem b
+
+    @cmd.options[:args] = %w[a b]
+    @cmd.options[:skip] = 'a'
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal "Restoring gems to pristine condition...", out.shift
+    assert_equal "Skipped #{a.full_name}, it was given through options", out.shift
+    assert_equal "Restored #{b.full_name}", out.shift
+    assert_empty out, out.inspect
+  end
+
   def test_execute_many_multi_repo
     a = util_spec 'a'
     install_gem a
 
     Gem.clear_paths
     gemhome2 = File.join @tempdir, 'gemhome2'
-    Gem.paths = { "GEM_PATH" => [gemhome2, @gemhome], "GEM_HOME" => gemhome2 }
+    Gem.use_paths gemhome2, [gemhome2, @gemhome]
 
     b = util_spec 'b'
     install_gem b
@@ -301,7 +329,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     Gem.clear_paths
     gemhome2 = File.join(@tempdir, 'gemhome2')
-    Gem.paths = { "GEM_PATH" => [gemhome2, @gemhome], "GEM_HOME" => gemhome2 }
+    Gem.use_paths gemhome2, [gemhome2, @gemhome]
 
     install_gem specs["b-1"]
     FileUtils.rm File.join(gemhome2, 'cache', 'b-1.gem')
@@ -381,7 +409,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
   def test_execute_unknown_gem_at_remote_source
-    util_spec 'a'
+    install_specs util_spec 'a'
 
     @cmd.options[:args] = %w[a]
 
@@ -420,9 +448,10 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   def test_execute_bundled_gem_on_old_rubies
     util_set_RUBY_VERSION '1.9.3', 551
 
-    util_spec 'bigdecimal', '1.1.0' do |s|
+    spec = util_spec 'bigdecimal', '1.1.0' do |s|
       s.summary = "This bigdecimal is bundled with Ruby"
     end
+    install_specs spec
 
     @cmd.options[:args] = %w[bigdecimal]
 

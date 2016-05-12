@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: false
 #
 # message boxes widget demo (called by 'widget')
 #

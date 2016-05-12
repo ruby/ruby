@@ -12,7 +12,7 @@
 
 #if   defined __GNUC__
 #warning rubysig.h is obsolete
-#elif defined _MSC_VER || defined __BORLANDC__
+#elif defined _MSC_VER
 #pragma message("warning: rubysig.h is obsolete")
 #endif
 

@@ -1,20 +1,19 @@
 #ifndef RUBY_WIN32_DIR_H
 #define RUBY_WIN32_DIR_H
 
-#ifdef __BORLANDC__
-#  ifndef WIN32_DIR_H_
-#    define WIN32_DIR_H_
-#    include <sys/types.h>
-#  endif
-#endif
+#define DT_UNKNOWN 0
+#define DT_DIR (S_IFDIR>>12)
+#define DT_REG (S_IFREG>>12)
+#define DT_LNK 10
 
 struct direct
 {
     long d_namlen;
     ino_t d_ino;
     char *d_name;
-    char d_isdir; /* directory */
-    char d_isrep; /* reparse point */
+    char *d_altname; /* short name */
+    short d_altlen;
+    uint8_t d_type;
 };
 typedef struct {
     WCHAR *start;

@@ -1,8 +1,11 @@
+# frozen_string_literal: true
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
 # See LICENSE.txt for permissions.
 #++
+
+require 'rubygems/util'
 
 begin
   require 'io/console'
@@ -396,10 +399,6 @@ class Gem::StreamUI
   # Return a progress reporter object chosen from the current verbosity.
 
   def progress_reporter(*args)
-    if self.kind_of?(Gem::SilentUI)
-      return SilentProgressReporter.new(@outs, *args)
-    end
-
     case Gem.configuration.verbose
     when nil, false
       SilentProgressReporter.new(@outs, *args)
@@ -533,10 +532,6 @@ class Gem::StreamUI
   # Return a download reporter object chosen from the current verbosity
 
   def download_reporter(*args)
-    if self.kind_of?(Gem::SilentUI)
-      return SilentDownloadReporter.new(@outs, *args)
-    end
-
     case Gem.configuration.verbose
     when nil, false
       SilentDownloadReporter.new(@outs, *args)
@@ -683,13 +678,8 @@ class Gem::SilentUI < Gem::StreamUI
   def initialize
     reader, writer = nil, nil
 
-    begin
-      reader = File.open('/dev/null', 'r')
-      writer = File.open('/dev/null', 'w')
-    rescue Errno::ENOENT
-      reader = File.open('nul', 'r')
-      writer = File.open('nul', 'w')
-    end
+    reader = File.open(Gem::Util::NULL_DEVICE, 'r')
+    writer = File.open(Gem::Util::NULL_DEVICE, 'w')
 
     super reader, writer, writer, false
   end
@@ -708,4 +698,3 @@ class Gem::SilentUI < Gem::StreamUI
     SilentProgressReporter.new(@outs, *args)
   end
 end
-

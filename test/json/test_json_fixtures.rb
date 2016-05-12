@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
+# frozen_string_literal: false
 
 require 'test/unit'
 require File.join(File.dirname(__FILE__), 'setup_variant')
@@ -26,7 +27,7 @@ class TestJSONFixtures < Test::Unit::TestCase
 
   def test_failing
     for name, source in @failed
-      assert_raises(JSON::ParserError, JSON::NestingError,
+      assert_raise(JSON::ParserError, JSON::NestingError,
         "Did not fail for fixture '#{name}': #{source.inspect}") do
         JSON.parse(source)
       end

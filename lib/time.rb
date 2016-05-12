@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'date'
 
 # = time.rb
@@ -37,7 +39,7 @@ require 'date'
 # #parse takes a string representation of a Time and attempts to parse it
 # using a heuristic.
 #
-#   Date.parse("2010-10-31") #=> 2010-10-31 00:00:00 -0500
+#   Time.parse("2010-10-31") #=> 2010-10-31 00:00:00 -0500
 #
 # Any missing pieces of the date are inferred based on the current date.
 #
@@ -426,7 +428,13 @@ class Time
       d = Date._strptime(date, format)
       raise ArgumentError, "invalid strptime format - `#{format}'" unless d
       if seconds = d[:seconds]
-        t = Time.at(seconds)
+        if sec_fraction = d[:sec_fraction]
+          usec = sec_fraction * 1000000
+          usec *= -1 if seconds < 0
+        else
+          usec = 0
+        end
+        t = Time.at(seconds, usec)
         if zone = d[:zone]
           force_zone!(t, zone)
         end
@@ -608,7 +616,7 @@ class Time
     sprintf('%s, %02d %s %0*d %02d:%02d:%02d ',
       RFC2822_DAY_NAME[wday],
       day, RFC2822_MONTH_NAME[mon-1], year < 0 ? 5 : 4, year,
-      hour, min, sec) +
+      hour, min, sec) <<
     if utc?
       '-0000'
     else

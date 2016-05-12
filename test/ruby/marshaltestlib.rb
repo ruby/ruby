@@ -1,4 +1,5 @@
 # coding: utf-8
+# frozen_string_literal: false
 module MarshalTestLib
   # include this module to a Test::Unit::TestCase and define encode(o) and
   # decode(s) methods.  e.g.

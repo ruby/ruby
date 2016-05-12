@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'matrix'
 
@@ -155,6 +156,10 @@ class TestVector < Test::Unit::TestCase
 
   def test_r
     assert_equal(5, Vector[3, 4].r)
+  end
+
+  def test_round
+    assert_equal(Vector[1.234, 2.345, 3.40].round(2), Vector[1.23, 2.35, 3.4])
   end
 
   def test_covector

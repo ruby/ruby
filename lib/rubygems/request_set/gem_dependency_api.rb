@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # A semi-compatible DSL for the Bundler Gemfile and Isolate gem dependencies
 # files.
@@ -174,7 +175,7 @@ class Gem::RequestSet::GemDependencyAPI
   ##
   # A Hash containing gem names and files to require from those gems.
 
-  attr_reader :requires # :nodoc:
+  attr_reader :requires
 
   ##
   # A set of gems that are loaded via the +:path+ option to #gem
@@ -204,6 +205,7 @@ class Gem::RequestSet::GemDependencyAPI
     @installing         = false
     @requires           = Hash.new { |h, name| h[name] = [] }
     @vendor_set         = @set.vendor_set
+    @source_set         = @set.source_set
     @gem_sources        = {}
     @without_groups     = []
 
@@ -362,16 +364,17 @@ class Gem::RequestSet::GemDependencyAPI
     source_set ||= gem_path       name, options
     source_set ||= gem_git        name, options
     source_set ||= gem_git_source name, options
+    source_set ||= gem_source     name, options
 
     duplicate = @dependencies.include? name
 
     @dependencies[name] =
       if requirements.empty? and not source_set then
-        nil
+        Gem::Requirement.default
       elsif source_set then
-        '!'
+        Gem::Requirement.source_set
       else
-        requirements
+        Gem::Requirement.create requirements
       end
 
     return unless gem_platforms options
@@ -396,7 +399,7 @@ Gem dependencies file #{@path} requires #{name} more than once.
   ##
   # Handles the git: option from +options+ for gem +name+.
   #
-  # Returns +true+ if the path option was handled.
+  # Returns +true+ if the gist or git option was handled.
 
   def gem_git name, options # :nodoc:
     if gist = options.delete(:gist) then
@@ -407,17 +410,43 @@ Gem dependencies file #{@path} requires #{name} more than once.
 
     pin_gem_source name, :git, repository
 
-    reference = nil
-    reference ||= options.delete :ref
-    reference ||= options.delete :branch
-    reference ||= options.delete :tag
-    reference ||= 'master'
+    reference = gem_git_reference options
 
     submodules = options.delete :submodules
 
     @git_set.add_git_gem name, repository, reference, submodules
 
     true
+  end
+
+  ##
+  # Handles the git options from +options+ for git gem.
+  #
+  # Returns reference for the git gem.
+
+  def gem_git_reference options # :nodoc:
+    ref    = options.delete :ref
+    branch = options.delete :branch
+    tag    = options.delete :tag
+
+    reference = nil
+    reference ||= ref
+    reference ||= branch
+    reference ||= tag
+    reference ||= 'master'
+
+    if ref && branch
+      warn <<-WARNING
+Gem dependencies file #{@path} includes git reference for both ref and branch but only ref is used.
+      WARNING
+    end
+    if (ref||branch) && tag
+      warn <<-WARNING
+Gem dependencies file #{@path} includes git reference for both ref/branch and tag but only ref/branch is used.
+      WARNING
+    end
+
+    reference
   end
 
   private :gem_git
@@ -481,6 +510,23 @@ Gem dependencies file #{@path} requires #{name} more than once.
   private :gem_path
 
   ##
+  # Handles the source: option from +options+ for gem +name+.
+  #
+  # Returns +true+ if the source option was handled.
+
+  def gem_source name, options # :nodoc:
+    return unless source = options.delete(:source)
+
+    pin_gem_source name, :source, source
+
+    @source_set.add_source_gem name, source
+
+    true
+  end
+
+  private :gem_source
+
+  ##
   # Handles the platforms: option from +options+.  Returns true if the
   # platform matches the current platform.
 
@@ -526,6 +572,7 @@ Gem dependencies file #{@path} requires #{name} more than once.
     else
       @requires[name] << name
     end
+    raise ArgumentError, "Unhandled gem options #{options.inspect}" unless options.empty?
   end
 
   private :gem_requires
@@ -601,7 +648,7 @@ Gem dependencies file #{@path} requires #{name} more than once.
     add_dependencies groups, [self_dep]
     add_dependencies groups, spec.runtime_dependencies
 
-    @dependencies[spec.name] = '!'
+    @dependencies[spec.name] = Gem::Requirement.source_set
 
     spec.dependencies.each do |dep|
       @dependencies[dep.name] = dep.requirement
@@ -611,6 +658,7 @@ Gem dependencies file #{@path} requires #{name} more than once.
 
     add_dependencies groups, spec.development_dependencies
 
+    @vendor_set.add_vendor_gem spec.name, path
     gem_requires spec.name, options
   end
 
@@ -650,6 +698,7 @@ Gem dependencies file #{@path} requires #{name} more than once.
       when :default then '(default)'
       when :path    then "path: #{source}"
       when :git     then "git: #{source}"
+      when :source  then "source: #{source}"
       else               '(unknown)'
       end
 
@@ -798,4 +847,3 @@ Gem dependencies file #{@path} requires #{name} more than once.
   Gem::RequestSet::GemDepedencyAPI = self # :nodoc:
 
 end
-

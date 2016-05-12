@@ -14,7 +14,7 @@
 #endif
 
 #define NDEBUG
-#include <assert.h>
+#include "ruby_assert.h"
 
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
 #define USE_GMP
@@ -395,13 +395,10 @@ f_lcm(VALUE x, VALUE y)
 }
 
 #define get_dat1(x) \
-    struct RRational *dat;\
-    dat = ((struct RRational *)(x))
+    struct RRational *dat = RRATIONAL(x)
 
 #define get_dat2(x,y) \
-    struct RRational *adat, *bdat;\
-    adat = ((struct RRational *)(x));\
-    bdat = ((struct RRational *)(y))
+    struct RRational *adat = RRATIONAL(x), *bdat = RRATIONAL(y)
 
 #define RRATIONAL_SET_NUM(rat, n) RB_OBJ_WRITE((rat), &((struct RRational *)(rat))->num,(n))
 #define RRATIONAL_SET_DEN(rat, d) RB_OBJ_WRITE((rat), &((struct RRational *)(rat))->den,(d))
@@ -744,8 +741,8 @@ f_addsub(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
  *    Rational(9, 8)  + 4                #=> (41/8)
  *    Rational(20, 9) + 9.8              #=> 12.022222222222222
  */
-static VALUE
-nurat_add(VALUE self, VALUE other)
+VALUE
+rb_rational_plus(VALUE self, VALUE other)
 {
     if (RB_TYPE_P(other, T_FIXNUM) || RB_TYPE_P(other, T_BIGNUM)) {
 	{
@@ -2327,9 +2324,8 @@ string_to_r_strict(VALUE self)
 	s = (char *)"";
 
     if (!parse_rat(s, 1, &num)) {
-	VALUE ins = f_inspect(self);
-	rb_raise(rb_eArgError, "invalid value for convert(): %s",
-		 StringValuePtr(ins));
+	rb_raise(rb_eArgError, "invalid value for convert(): %+"PRIsVALUE,
+		 self);
     }
 
     if (RB_TYPE_P(num, T_FLOAT))
@@ -2465,13 +2461,14 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
  * a/b (b>0).  Where a is numerator and b is denominator.  Integer a
  * equals rational a/1 mathematically.
  *
- * In ruby, you can create rational object with Rational, to_r or
- * rationalize method.  The return values will be irreducible.
+ * In ruby, you can create rational object with Rational, to_r,
+ * rationalize method or suffixing r to a literal.  The return values will be irreducible.
  *
  *    Rational(1)      #=> (1/1)
  *    Rational(2, 3)   #=> (2/3)
  *    Rational(4, -6)  #=> (-2/3)
  *    3.to_r           #=> (3/1)
+ *    2/3r             #=> (2/3)
  *
  * You can also create rational object from floating-point numbers or
  * strings.
@@ -2541,7 +2538,7 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "numerator", nurat_numerator, 0);
     rb_define_method(rb_cRational, "denominator", nurat_denominator, 0);
 
-    rb_define_method(rb_cRational, "+", nurat_add, 1);
+    rb_define_method(rb_cRational, "+", rb_rational_plus, 1);
     rb_define_method(rb_cRational, "-", nurat_sub, 1);
     rb_define_method(rb_cRational, "*", nurat_mul, 1);
     rb_define_method(rb_cRational, "/", nurat_div, 1);
@@ -2552,10 +2549,6 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "<=>", nurat_cmp, 1);
     rb_define_method(rb_cRational, "==", nurat_eqeq_p, 1);
     rb_define_method(rb_cRational, "coerce", nurat_coerce, 1);
-
-#if 0 /* NUBY */
-    rb_define_method(rb_cRational, "//", nurat_idiv, 1);
-#endif
 
 #if 0
     rb_define_method(rb_cRational, "quot", nurat_quot, 1);

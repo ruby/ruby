@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "rss/parser"
 
 module RSS

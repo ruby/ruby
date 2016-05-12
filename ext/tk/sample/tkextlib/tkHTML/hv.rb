@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: false
 #
 # This script implements the "hv" application.  Type "hv FILE" to
 # view FILE as HTML.
@@ -301,7 +302,7 @@ show_tbl.trace('w', proc{
 
 show_img.trace('w', refresh)
 
-# If an arguent was specified, read it into the HTML widget.
+# If an argument was specified, read it into the HTML widget.
 #
 Tk.update
 if file && file != ""

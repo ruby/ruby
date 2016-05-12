@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "time"
 
 class Time
@@ -53,7 +54,7 @@ class Time
       if usec.zero?
         fraction_digits = 0
       else
-        fraction_digits = Math.log10(usec.to_s.sub(/0*$/, '').to_i).floor + 1
+        fraction_digits = strftime('%6N').index(/0*\z/)
       end
       xmlschema(fraction_digits)
     end
@@ -1240,7 +1241,7 @@ EOC
         __send__(self.class.xml_getter).to_s
       else
         _content = content
-        _content = [_content].pack("m").delete("\n") if need_base64_encode?
+        _content = [_content].pack("m0") if need_base64_encode?
         h(_content)
       end
     end

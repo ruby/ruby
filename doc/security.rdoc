@@ -66,20 +66,28 @@ method, variable and constant names. The reason for this is that symbols are
 simply integers with names attached to them, so they are faster to look up in
 hashtables.
 
-Once a symbol is created, the memory used by it is never freed. If you convert
-user input to symbols with +to_sym+ or +intern+, it is possible for an attacker
-to mount a denial of service attack against your application by flooding it
-with unique strings. Because each string is kept in memory until the Ruby
-process exits, this will cause memory consumption to grow and grow until Ruby
-runs out of memory and crashes.
+Starting in version 2.2, most symbols can be garbage collected; these are
+called <i>mortal</i> symbols. Most symbols you create (e.g. by calling
++to_sym+) are mortal.
 
-Be careful with passing user input to methods such as +send+,
-+instance_variable_get+ or +_set+, +const_get+ or +_set+, etc. as these methods
-will convert string parameters to symbols internally and pose the same DoS
-potential as direct conversion through +to_sym+/+intern+.
+<i>Immortal</i> symbols on the other hand will never be garbage collected.
+They are created when modifying code:
+* defining a method (e.g. with +define_method+),
+* setting an instance variable (e.g. with +instance_variable_set+),
+* creating a variable or constant (e.g. with +const_set+)
+C extensions that have not been updated and are still calling `SYM2ID`
+will create immortal symbols.
+Bugs in 2.2.0: +send+ and +__send__+ also created immortal symbols,
+and calling methods with keyword arguments could also create some.
 
-The workaround to this is simple - don't convert user input to symbols. You
-should attempt to leave user input in string form instead.
+Don't create immortal symbols from user inputs. Otherwise, this would
+allow a user to mount a denial of service attack against your application by
+flooding it with unique strings, which will cause memory to grow indefinitely
+until the Ruby process is killed or causes the system to slow to a halt.
+
+While it might not be a good idea to call these with user inputs, methods that
+used to be vulnerable such as +to_sym+, +respond_to?+,
++method+, +instance_variable_get+, +const_get+, etc. are no longer a threat.
 
 == Regular expressions
 

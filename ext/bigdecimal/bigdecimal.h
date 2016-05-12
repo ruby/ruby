@@ -4,13 +4,6 @@
  *
  * Copyright(C) 2002 by Shigeo Kobayashi(shigeo@tinyforest.gr.jp)
  *
- * You may distribute under the terms of either the GNU General Public
- * License or the Artistic License, as specified in the README file
- * of this BigDecimal distribution.
- *
- * NOTES:
- *   2003-03-28 V1.0 checked in.
- *
  */
 
 #ifndef  RUBY_BIG_DECIMAL_H
@@ -43,12 +36,34 @@
 # define BDIGIT_DBL uint64_t
 # define BDIGIT_DBL_SIGNED int64_t
 # define SIZEOF_BDIGITS 4
+# define PRI_BDIGIT_PREFIX ""
+# ifdef PRI_LL_PREFIX
+# define PRI_BDIGIT_DBL_PREFIX PRI_LL_PREFIX
+# else
+# define PRI_BDIGIT_DBL_PREFIX "l"
+# endif
 #else
 # define BDIGIT uint16_t
 # define BDIGIT_DBL uint32_t
 # define BDIGIT_DBL_SIGNED int32_t
 # define SIZEOF_BDIGITS 2
+# define PRI_BDIGIT_PREFIX "h"
+# define PRI_BDIGIT_DBL_PREFIX ""
 #endif
+
+#define PRIdBDIGIT PRI_BDIGIT_PREFIX"d"
+#define PRIiBDIGIT PRI_BDIGIT_PREFIX"i"
+#define PRIoBDIGIT PRI_BDIGIT_PREFIX"o"
+#define PRIuBDIGIT PRI_BDIGIT_PREFIX"u"
+#define PRIxBDIGIT PRI_BDIGIT_PREFIX"x"
+#define PRIXBDIGIT PRI_BDIGIT_PREFIX"X"
+
+#define PRIdBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"d"
+#define PRIiBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"i"
+#define PRIoBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"o"
+#define PRIuBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"u"
+#define PRIxBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"x"
+#define PRIXBDIGIT_DBL PRI_BDIGIT_DBL_PREFIX"X"
 
 #if defined(__cplusplus)
 extern "C" {

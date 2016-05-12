@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 begin
   require_relative 'helper'
   require 'fiddle/struct'

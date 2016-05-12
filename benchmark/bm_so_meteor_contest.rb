@@ -260,7 +260,7 @@ end
 
 # support function that create three utility maps:
 #  $converter -- for each row an array that maps a five bit row (via array mapping)
-#                to the a a five bit representation of the bits below it
+#                to the a five bit representation of the bits below it
 #  $bit_count -- maps a five bit row (via array mapping) to the number of 1s in the row
 #  @@new_regions -- maps a five bit row (via array mapping) to an array of "region" arrays
 #                   a region array has three values the first is a mask of bits in the region,
@@ -467,7 +467,7 @@ def find_top( rotation_skip)
 end
 
 # the normail find routine, iterates through the available pieces, checks all rotations at the current location
-# and adds any boards found.  depth is acheived via recursion.  the overall approach is described
+# and adds any boards found.  depth is achieved via recursion.  the overall approach is described
 # here: http://www-128.ibm.com/developerworks/java/library/j-javaopt/
 # parameters:
 #  start_location -- where to start looking for place for the next piece at
@@ -561,4 +561,3 @@ create_collector_support
 @boards_found = 0
 
 find_all ######## DO IT!!!
-

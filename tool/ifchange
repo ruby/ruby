@@ -5,6 +5,7 @@ set -e
 timestamp=
 keepsuffix=
 empty=
+color=auto
 until [ $# -eq 0 ]; do
     case "$1" in
 	--timestamp)
@@ -22,6 +23,12 @@ until [ $# -eq 0 ]; do
 	--empty)
 	    empty=yes
 	    ;;
+	--color)
+	    color=always
+	    ;;
+	--color=*)
+	    color=`expr \( "$1" : '[^=]*=\(.*\)' \)`
+	    ;;
 	*)
 	    break
 	    ;;
@@ -33,15 +40,32 @@ target="$1"
 temp="$2"
 if [ "$temp" = - ]; then
     temp="tmpdata$$.tmp~"
-    cat > "$temp" || exit $?
+    cat > "$temp"
     trap 'rm -f "$temp"' 0
 fi
 
+msg_begin= msg_unchanged= msg_updated= msg_reset=
+if [ "$color" = always -o \( "$color" = auto -a -t 1 \) ]; then
+    msg_begin="["
+    case "`tput smso 2>/dev/null`" in
+	"$msg_begin"*m)
+	    if [ ${TEST_COLORS:+set} ]; then
+		msg_unchanged=`expr ":$TEST_COLORS:" : ".*:pass=\([^:]*\):"` || :
+		msg_updated=`expr ":$TEST_COLORS:" : ".*:fail=\([^:]*\):"` || :
+	    fi
+	    msg_unchanged="${msg_begin}${msg_unchanged:-32;1}m"
+	    msg_updated="${msg_begin}${msg_updated:-31;1}m"
+	    msg_reset="${msg_begin}m"
+	    ;;
+    esac
+    unset msg_begin
+fi
+
 if [ -f "$target" -a ! -${empty:+f}${empty:-s} "$temp" ] || cmp "$target" "$temp" >/dev/null 2>&1; then
-    echo "$target unchanged"
+    echo "$target ${msg_unchanged}unchanged${msg_reset}"
     rm -f "$temp"
 else
-    echo "$target updated"
+    echo "$target ${msg_updated}updated${msg_reset}"
     [ x"${keepsuffix}" = x ] || mv -f "$target" "${target}${keepsuffix}"
     mv -f "$temp" "$target"
 fi

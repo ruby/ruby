@@ -65,12 +65,20 @@ sign_bits(int base, const char *p)
 
 #define PUSH(s, l) do { \
     CHECK(l);\
+    PUSH_(s, l);\
+} while (0)
+
+#define PUSH_(s, l) do { \
     memcpy(&buf[blen], (s), (l));\
     blen += (l);\
 } while (0)
 
 #define FILL(c, l) do { \
     CHECK(l);\
+    FILL_(c, l);\
+} while (0)
+
+#define FILL_(c, l) do { \
     memset(&buf[blen], (c), (l));\
     blen += (l);\
 } while (0)
@@ -608,9 +616,17 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		sym = rb_check_symbol_cstr(start + 1,
 					   len - 2 /* without parenthesis */,
 					   enc);
-		if (sym != Qnil) nextvalue = rb_hash_lookup2(hash, sym, Qundef);
+		if (!NIL_P(sym)) nextvalue = rb_hash_lookup2(hash, sym, Qundef);
 		if (nextvalue == Qundef) {
-		    rb_enc_raise(enc, rb_eKeyError, "key%.*s not found", len, start);
+		    if (NIL_P(sym)) {
+			sym = rb_sym_intern(start + 1,
+					    len - 2 /* without parenthesis */,
+					    enc);
+		    }
+		    nextvalue = rb_hash_default_value(hash, sym);
+		    if (NIL_P(nextvalue)) {
+			rb_enc_raise(enc, rb_eKeyError, "key%.*s not found", len, start);
+		    }
 		}
 		if (term == '}') goto format_s;
 		p++;
@@ -707,8 +723,12 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		VALUE arg = GETARG();
 		long len, slen;
 
-		if (*p == 'p') arg = rb_inspect(arg);
-		str = rb_obj_as_string(arg);
+		if (*p == 'p') {
+		    str = rb_inspect(arg);
+		}
+		else {
+		    str = rb_obj_as_string(arg);
+		}
 		if (OBJ_TAINTED(str)) tainted = 1;
 		len = RSTRING_LEN(str);
 		rb_str_set_len(result, blen);
@@ -1022,15 +1042,20 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    {
 		VALUE val = GETARG(), num, den;
 		int sign = (flags&FPLUS) ? 1 : 0, zero = 0;
-		long len, done = 0;
-		int prefix = 0;
-		if (!RB_TYPE_P(val, T_RATIONAL)) {
+		long len, fill;
+		if (FIXNUM_P(val) || RB_TYPE_P(val, T_BIGNUM)) {
+		    den = INT2FIX(1);
+		    num = val;
+		}
+		else if (RB_TYPE_P(val, T_RATIONAL)) {
+		    den = rb_rational_den(val);
+		    num = rb_rational_num(val);
+		}
+		else {
 		    nextvalue = val;
 		    goto float_value;
 		}
 		if (!(flags&FPREC)) prec = default_float_precision;
-		den = rb_rational_den(val);
-		num = rb_rational_num(val);
 		if (FIXNUM_P(num)) {
 		    if ((SIGNED_VALUE)num < 0) {
 			long n = -FIX2LONG(num);
@@ -1038,73 +1063,57 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			sign = -1;
 		    }
 		}
-		else if (rb_num_negative_p(num)) {
+		else if (BIGNUM_NEGATIVE_P(num)) {
 		    sign = -1;
-		    num = rb_funcallv(num, idUMinus, 0, 0);
+		    num = rb_big_uminus(num);
 		}
-		if (den != INT2FIX(1) || prec > 1) {
-		    const ID idDiv = rb_intern("div");
-		    VALUE p10 = rb_int_positive_pow(10, prec);
-		    VALUE den_2 = rb_funcall(den, idDiv, 1, INT2FIX(2));
-		    num = rb_funcallv(num, '*', 1, &p10);
-		    num = rb_funcallv(num, '+', 1, &den_2);
-		    num = rb_funcallv(num, idDiv, 1, &den);
+		if (den != INT2FIX(1)) {
+		    num = rb_int_mul(num, rb_int_positive_pow(10, prec));
+		    num = rb_int_plus(num, rb_int_idiv(den, INT2FIX(2)));
+		    num = rb_int_idiv(num, den);
 		}
 		else if (prec >= 0) {
 		    zero = prec;
 		}
-		val = rb_obj_as_string(num);
+		val = rb_int2str(num, 10);
 		len = RSTRING_LEN(val) + zero;
-		if (prec >= len) ++len; /* integer part 0 */
+		if (prec >= len) len = prec + 1; /* integer part 0 */
 		if (sign || (flags&FSPACE)) ++len;
 		if (prec > 0) ++len; /* period */
 		CHECK(len > width ? len : width);
+		fill = width > len ? width - len : 0;
+		if (fill && !(flags&FMINUS) && !(flags&FZERO)) {
+		    FILL_(' ', fill);
+		}
 		if (sign || (flags&FSPACE)) {
 		    buf[blen++] = sign > 0 ? '+' : sign < 0 ? '-' : ' ';
-		    prefix++;
-		    done++;
+		}
+		if (fill && !(flags&FMINUS) && (flags&FZERO)) {
+		    FILL_('0', fill);
 		}
 		len = RSTRING_LEN(val) + zero;
 		t = RSTRING_PTR(val);
 		if (len > prec) {
-		    memcpy(&buf[blen], t, len - prec);
-		    blen += len - prec;
-		    done += len - prec;
+		    PUSH_(t, len - prec);
 		}
 		else {
 		    buf[blen++] = '0';
-		    done++;
 		}
 		if (prec > 0) {
 		    buf[blen++] = '.';
-		    done++;
 		}
 		if (zero) {
-		    FILL('0', zero);
-		    done += zero;
+		    FILL_('0', zero);
 		}
 		else if (prec > len) {
-		    FILL('0', prec - len);
-		    memcpy(&buf[blen], t, len);
-		    blen += len;
-		    done += prec;
+		    FILL_('0', prec - len);
+		    PUSH_(t, len);
 		}
 		else if (prec > 0) {
-		    memcpy(&buf[blen], t + len - prec, prec);
-		    blen += prec;
-		    done += prec;
+		    PUSH_(t + len - prec, prec);
 		}
-		if ((flags & FWIDTH) && width > done) {
-		    if (!(flags&FMINUS)) {
-			long i, shifting = (flags&FZERO) ? done - prefix : done;
-			for (i = 1; i <= shifting; i++)
-			    buf[width - i] = buf[done - i];
-			blen -= shifting;
-			FILL((flags&FZERO) ? '0' : ' ', width - done);
-			blen += shifting;
-		    } else {
-			FILL(' ', width - done);
-		    }
+		if (fill && (flags&FMINUS)) {
+		    FILL_(' ', fill);
 		}
 		RB_GC_GUARD(val);
 		break;
@@ -1252,7 +1261,42 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 #ifdef RUBY_PRI_VALUE_MARK
 # define PRI_EXTRA_MARK RUBY_PRI_VALUE_MARK
 #endif
+#define lower_hexdigits (ruby_hexdigits+0)
+#define upper_hexdigits (ruby_hexdigits+16)
 #include "vsnprintf.c"
+
+int
+ruby_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
+{
+    int ret;
+    rb_printf_buffer f;
+
+    if ((int)n < 1)
+	return (EOF);
+    f._flags = __SWR | __SSTR;
+    f._bf._base = f._p = (unsigned char *)str;
+    f._bf._size = f._w = n - 1;
+    f.vwrite = BSD__sfvwrite;
+    f.vextra = 0;
+    ret = (int)BSD_vfprintf(&f, fmt, ap);
+    *f._p = 0;
+    return ret;
+}
+
+int
+ruby_snprintf(char *str, size_t n, char const *fmt, ...)
+{
+    int ret;
+    va_list ap;
+
+    if ((int)n < 1)
+	return (EOF);
+
+    va_start(ap, fmt);
+    ret = ruby_vsnprintf(str, n, fmt, ap);
+    va_end(ap);
+    return ret;
+}
 
 typedef struct {
     rb_printf_buffer base;
@@ -1286,7 +1330,7 @@ ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)
     return 0;
 }
 
-static char *
+static const char *
 ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int sign)
 {
     VALUE value, result = (VALUE)fp->_bf._base;
@@ -1299,6 +1343,26 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
 	rb_raise(rb_eRuntimeError, "rb_vsprintf reentered");
     }
     if (sign == '+') {
+	if (RB_TYPE_P(value, T_CLASS)) {
+# define LITERAL(str) (*sz = rb_strlen_lit(str), str)
+
+	    if (value == rb_cNilClass) {
+		return LITERAL("nil");
+	    }
+	    else if (value == rb_cFixnum) {
+		return LITERAL("Fixnum");
+	    }
+	    else if (value == rb_cSymbol) {
+		return LITERAL("Symbol");
+	    }
+	    else if (value == rb_cTrueClass) {
+		return LITERAL("true");
+	    }
+	    else if (value == rb_cFalseClass) {
+		return LITERAL("false");
+	    }
+# undef LITERAL
+	}
 	value = rb_inspect(value);
     }
     else {

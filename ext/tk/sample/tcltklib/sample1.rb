@@ -1,5 +1,6 @@
 #! /usr/local/bin/ruby -d
 # -*- encoding: utf-8 -*-
+# frozen_string_literal: false
 # -d オプションを付けると, デバッグ情報を表示する.
 
 # tcltk ライブラリのサンプル

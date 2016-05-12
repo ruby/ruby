@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rbconfig'
 
 $LOAD_PATH.unshift "#{File.dirname(__FILE__)}/../../lib"

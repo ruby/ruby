@@ -73,14 +73,15 @@ Prelude.new(output && output[/\w+(?=_prelude.c\b)/] || 'prelude', ARGV, vpath).i
 #include "ruby/ruby.h"
 #include "internal.h"
 #include "vm_core.h"
+#include "iseq.h"
 
 % preludes = @preludes.values.sort
 % preludes.each {|i, prelude, lines, sub|
 
-static const char prelude_name<%=i%>[] = <%=c_esc(prelude_name(*prelude))%>;
-static const char prelude_code<%=i%>[] =
+static const char prelude_name<%=i%><%=%>[] = <%=c_esc(prelude_name(*prelude))%><%=%>;
+static const char prelude_code<%=i%><%=%>[] =
 %   lines.each {|line|
-<%=line%>
+<%=line%><%=%>
 %   }
 ;
 % }
@@ -105,9 +106,25 @@ prelude_prefix_path(VALUE self)
 
 % unless preludes.empty?
 static void
-prelude_eval(VALUE code, VALUE name, VALUE line)
+prelude_eval(VALUE code, VALUE name, int line)
 {
-    rb_iseq_eval(rb_iseq_compile_with_option(code, name, Qnil, line, 0, Qtrue));
+    static const rb_compile_option_t optimization = {
+	TRUE, /* int inline_const_cache; */
+	TRUE, /* int peephole_optimization; */
+	TRUE, /* int tailcall_optimization */
+	TRUE, /* int specialized_instruction; */
+	TRUE, /* int operands_unification; */
+	TRUE, /* int instructions_unification; */
+	TRUE, /* int stack_caching; */
+	FALSE, /* int trace_instruction */
+	TRUE,
+	FALSE,
+    };
+
+    NODE *node = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
+    if (!node) rb_exc_raise(rb_errinfo());
+    rb_iseq_eval(rb_iseq_new_with_opt(node, name, name, Qnil, INT2FIX(line),
+				      NULL, ISEQ_TYPE_TOP, &optimization));
 }
 % end
 
@@ -125,23 +142,23 @@ prelude_require(VALUE self, VALUE nth)
     switch (n) {
 %   @preludes.each_value do |i, prelude, lines, sub|
 %     if sub
-      case <%=i%>:
-	code = rb_usascii_str_new(prelude_code<%=i%>, sizeof(prelude_code<%=i%>) - 1);
-        name = rb_usascii_str_new(prelude_name<%=i%>, sizeof(prelude_name<%=i%>) - 1);
+      case <%=i%><%=%>:
+	code = rb_usascii_str_new(prelude_code<%=i%><%=%>, sizeof(prelude_code<%=i%><%=%>) - 1);
+	name = rb_usascii_str_new(prelude_name<%=i%><%=%>, sizeof(prelude_name<%=i%><%=%>) - 1);
 	break;
 %     end
 %   end
       default:
 	return Qfalse;
     }
-    prelude_eval(code, name, INT2FIX(1));
+    prelude_eval(code, name, 1);
     return Qtrue;
 }
 
 % end
 %end
 void
-Init_<%=@init_name%>(void)
+Init_<%=@init_name%><%=%>(void)
 {
 %unless @preludes.empty?
 % if @have_sublib
@@ -160,8 +177,8 @@ Init_<%=@init_name%>(void)
 % preludes.each do |i, prelude, lines, sub|
 %   next if sub
     prelude_eval(
-      rb_usascii_str_new(prelude_code<%=i%>, sizeof(prelude_code<%=i%>) - 1),
-      rb_usascii_str_new(prelude_name<%=i%>, sizeof(prelude_name<%=i%>) - 1),
+      rb_usascii_str_new(prelude_code<%=i%><%=%>, sizeof(prelude_code<%=i%><%=%>) - 1),
+      rb_usascii_str_new(prelude_name<%=i%><%=%>, sizeof(prelude_name<%=i%><%=%>) - 1),
       INT2FIX(1));
 % end
 % if @have_sublib
@@ -170,7 +187,7 @@ Init_<%=@init_name%>(void)
 
 #if 0
 % preludes.length.times {|i|
-    puts(prelude_code<%=i%>);
+    puts(prelude_code<%=i%><%=%>);
 % }
 #endif
 %end

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 require 'drb/drb'
@@ -488,7 +489,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
   end
 
   def test_take_bug_8215
-    service = DRb.start_service(nil, @ts_base)
+    service = DRb.start_service("druby://localhost:0", @ts_base)
 
     uri = service.uri
 
@@ -496,7 +497,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
 
     take = spawn(*args, <<-'end;', uri)
       uri = ARGV[0]
-      DRb.start_service
+      DRb.start_service("druby://localhost:0")
       ro = DRbObject.new_with_uri(uri)
       ts = Rinda::TupleSpaceProxy.new(ro)
       th = Thread.new do
@@ -512,7 +513,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
 
     write = spawn(*args, <<-'end;', uri)
       uri = ARGV[0]
-      DRb.start_service
+      DRb.start_service("druby://localhost:0")
       ro = DRbObject.new_with_uri(uri)
       ts = Rinda::TupleSpaceProxy.new(ro)
       ts.write([:test_take, 42])
@@ -531,7 +532,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
     Process.wait(take)  if take
   end
 
-  @server = DRb.primary_server || DRb.start_service
+  @server = DRb.primary_server || DRb.start_service("druby://localhost:0")
 end
 
 module RingIPv6
@@ -547,7 +548,7 @@ module RingIPv6
     rescue NotImplementedError
       # ifindex() function may not be implemented on Windows.
       return if
-        Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
+        Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? && !addrinfo.ipv6_loopback? }
     end
     skip 'IPv6 not available'
   end
@@ -624,10 +625,17 @@ class TestRingServer < Test::Unit::TestCase
   def test_make_socket_ipv4_multicast
     v4mc = @rs.make_socket('239.0.0.1')
 
-    if Socket.const_defined?(:SO_REUSEPORT) then
-      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool)
-    else
-      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool)
+    begin
+      if Socket.const_defined?(:SO_REUSEPORT) then
+        assert(v4mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool)
+      else
+        assert(v4mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool)
+      end
+    rescue TypeError
+      if /aix/ =~ RUBY_PLATFORM
+        skip "Known bug in getsockopt(2) on AIX"
+      end
+      raise $!
     end
 
     assert_equal('0.0.0.0', v4mc.local_address.ip_address)
@@ -636,7 +644,7 @@ class TestRingServer < Test::Unit::TestCase
 
   def test_make_socket_ipv6_multicast
     skip 'IPv6 not available' unless
-      Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
+      Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? && !addrinfo.ipv6_loopback? }
 
     begin
       v6mc = @rs.make_socket('ff02::1')
@@ -659,10 +667,17 @@ class TestRingServer < Test::Unit::TestCase
     @rs = Rinda::RingServer.new(@ts, [['239.0.0.1', '0.0.0.0']], @port)
     v4mc = @rs.instance_variable_get('@sockets').first
 
-    if Socket.const_defined?(:SO_REUSEPORT) then
-      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool)
-    else
-      assert(v4mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool)
+    begin
+      if Socket.const_defined?(:SO_REUSEPORT) then
+        assert(v4mc.getsockopt(:SOCKET, :SO_REUSEPORT).bool)
+      else
+        assert(v4mc.getsockopt(:SOCKET, :SO_REUSEADDR).bool)
+      end
+    rescue TypeError
+      if /aix/ =~ RUBY_PLATFORM
+        skip "Known bug in getsockopt(2) on AIX"
+      end
+      raise $!
     end
 
     assert_equal('0.0.0.0', v4mc.local_address.ip_address)
@@ -671,7 +686,7 @@ class TestRingServer < Test::Unit::TestCase
 
   def test_ring_server_ipv6_multicast
     skip 'IPv6 not available' unless
-      Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? }
+      Socket.ip_address_list.any? { |addrinfo| addrinfo.ipv6? && !addrinfo.ipv6_loopback? }
 
     @rs.shutdown
     begin
@@ -754,6 +769,11 @@ class TestRingFinger < Test::Unit::TestCase
     v4 = @rf.make_socket('127.0.0.1')
 
     assert(v4.getsockopt(:SOL_SOCKET, :SO_BROADCAST).bool)
+  rescue TypeError
+    if /aix/ =~ RUBY_PLATFORM
+      skip "Known bug in getsockopt(2) on AIX"
+    end
+    raise $!
   ensure
     v4.close if v4
   end

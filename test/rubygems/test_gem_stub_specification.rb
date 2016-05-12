@@ -1,15 +1,18 @@
+# frozen_string_literal: true
 require "rubygems/test_case"
 require "rubygems/stub_specification"
 
 class TestStubSpecification < Gem::TestCase
   SPECIFICATIONS = File.expand_path(File.join("..", "specifications"), __FILE__)
-  FOO = File.join SPECIFICATIONS, "foo-0.0.1.gemspec"
+  FOO = File.join SPECIFICATIONS, "foo-0.0.1-x86-mswin32.gemspec"
   BAR = File.join SPECIFICATIONS, "bar-0.0.2.gemspec"
 
   def setup
     super
 
-    @foo = Gem::StubSpecification.new FOO
+    @base_dir = File.dirname(SPECIFICATIONS)
+    @gems_dir = File.join File.dirname(SPECIFICATIONS), 'gem'
+    @foo = Gem::StubSpecification.gemspec_stub FOO, @base_dir, @gems_dir
   end
 
   def test_initialize
@@ -31,7 +34,7 @@ class TestStubSpecification < Gem::TestCase
   end
 
   def test_initialize_missing_stubline
-    stub = Gem::StubSpecification.new(BAR)
+    stub = Gem::StubSpecification.gemspec_stub(BAR, @base_dir, @gems_dir)
     assert_equal "bar", stub.name
     assert_equal Gem::Version.new("0.0.2"), stub.version
     assert_equal Gem::Platform.new("ruby"), stub.platform
@@ -65,11 +68,26 @@ class TestStubSpecification < Gem::TestCase
     stub = stub_with_extension
 
     expected = [
-      stub.extension_dir,
       File.join(stub.full_gem_path, 'lib'),
+      stub.extension_dir,
     ]
 
     assert_equal expected, stub.full_require_paths
+  end
+
+  def test_lib_dirs_glob
+    stub = stub_without_extension
+
+    assert_equal File.join(stub.full_gem_path, 'lib'), stub.lib_dirs_glob
+  end
+
+  def test_matches_for_glob
+    stub = stub_without_extension
+    code_rb = File.join stub.gem_dir, 'lib', 'code.rb'
+    FileUtils.mkdir_p File.dirname code_rb
+    FileUtils.touch code_rb
+
+    assert_equal code_rb, stub.matches_for_glob('code*').first
   end
 
   def test_missing_extensions_eh
@@ -103,7 +121,7 @@ class TestStubSpecification < Gem::TestCase
       io.write spec.to_ruby_for_cache
     end
 
-    default_spec = Gem::StubSpecification.new spec.loaded_from
+    default_spec = Gem::StubSpecification.gemspec_stub spec.loaded_from, spec.base_dir, spec.gems_dir
 
     refute default_spec.missing_extensions?
   end
@@ -125,7 +143,7 @@ class TestStubSpecification < Gem::TestCase
   def test_to_spec_with_other_specs_loaded_does_not_warn
     real_foo = util_spec @foo.name, @foo.version
     real_foo.activate
-    bar = Gem::StubSpecification.new BAR
+    bar = Gem::StubSpecification.gemspec_stub BAR, real_foo.base_dir, real_foo.gems_dir
     refute_predicate Gem.loaded_specs, :empty?
     assert bar.to_spec
   end
@@ -133,7 +151,7 @@ class TestStubSpecification < Gem::TestCase
   def test_to_spec_activated
     assert @foo.to_spec.is_a?(Gem::Specification)
     assert_equal "foo", @foo.to_spec.name
-    refute @foo.to_spec.instance_variable_defined? :@ignored
+    refute @foo.to_spec.instance_variable_get :@ignored
   end
 
   def test_to_spec_missing_extensions
@@ -164,7 +182,7 @@ end
 
       io.flush
 
-      stub = Gem::StubSpecification.new io.path
+      stub = Gem::StubSpecification.gemspec_stub io.path, @gemhome, File.join(@gemhome, 'gems')
 
       yield stub if block_given?
 
@@ -187,7 +205,7 @@ end
 
       io.flush
 
-      stub = Gem::StubSpecification.new io.path
+      stub = Gem::StubSpecification.gemspec_stub io.path, @gemhome, File.join(@gemhome, 'gems')
 
       yield stub if block_given?
 

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # filehandler.rb -- FileHandler Module
 #
@@ -150,7 +151,8 @@ module WEBrick
     #
     # Example:
     #
-    #   server.mount '/assets', WEBrick::FileHandler, '/path/to/assets'
+    #   server.mount('/assets', WEBrick::HTTPServlet::FileHandler,
+    #                '/path/to/assets')
 
     class FileHandler < AbstractServlet
       HandlerTable = Hash.new # :nodoc:

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems'
 require 'rubygems/dependency_list'
 require 'rubygems/package'
@@ -218,7 +219,17 @@ class Gem::DependencyInstaller
         tuples, errors = Gem::SpecFetcher.fetcher.search_for_dependency dep
 
         if best_only && !tuples.empty?
-          tuples.sort! { |a,b| b[0].version <=> a[0].version }
+          tuples.sort! do |a,b|
+            if b[0].version == a[0].version
+              if b[0].platform != Gem::Platform::RUBY
+                1
+              else
+                -1
+              end
+            else
+              b[0].version <=> a[0].version
+            end
+          end
           tuples = [tuples.first]
         end
 

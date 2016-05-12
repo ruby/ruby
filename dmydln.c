@@ -1,5 +1,6 @@
 #include "ruby/ruby.h"
 
+NORETURN(void *dln_load(const char *));
 void*
 dln_load(const char *file)
 {

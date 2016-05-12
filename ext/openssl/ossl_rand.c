@@ -1,11 +1,10 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  *
  * All rights reserved.
  *
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #include "ossl.h"
@@ -111,10 +110,16 @@ ossl_rand_bytes(VALUE self, VALUE len)
 {
     VALUE str;
     int n = NUM2INT(len);
+    int ret;
 
     str = rb_str_new(0, n);
-    if (!RAND_bytes((unsigned char *)RSTRING_PTR(str), n)) {
-	ossl_raise(eRandomError, NULL);
+    ret = RAND_bytes((unsigned char *)RSTRING_PTR(str), n);
+    if (ret == 0){
+	char buf[256];
+	ERR_error_string_n(ERR_get_error(), buf, 256);
+	ossl_raise(eRandomError, "RAND_bytes error: %s", buf);
+    } else if (ret == -1) {
+	ossl_raise(eRandomError, "RAND_bytes is not supported");
     }
 
     return str;
@@ -148,6 +153,7 @@ ossl_rand_pseudo_bytes(VALUE self, VALUE len)
     return str;
 }
 
+#ifdef HAVE_RAND_EGD
 /*
  *  call-seq:
  *     egd(filename) -> true
@@ -186,6 +192,7 @@ ossl_rand_egd_bytes(VALUE self, VALUE filename, VALUE len)
     }
     return Qtrue;
 }
+#endif /* HAVE_RAND_EGD */
 
 /*
  *  call-seq:
@@ -219,8 +226,9 @@ Init_ossl_rand(void)
     rb_define_module_function(mRandom, "write_random_file", ossl_rand_write_file, 1);
     rb_define_module_function(mRandom, "random_bytes", ossl_rand_bytes, 1);
     rb_define_module_function(mRandom, "pseudo_bytes", ossl_rand_pseudo_bytes, 1);
+#ifdef HAVE_RAND_EGD
     rb_define_module_function(mRandom, "egd", ossl_rand_egd, 1);
     rb_define_module_function(mRandom, "egd_bytes", ossl_rand_egd_bytes, 2);
+#endif /* HAVE_RAND_EGD */
     rb_define_module_function(mRandom, "status?", ossl_rand_status, 0);
 }
-

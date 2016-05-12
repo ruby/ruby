@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # Used Internally. Wraps a Dependency object to also track which spec
 # contained the Dependency.
@@ -67,6 +68,10 @@ class Gem::Resolver::DependencyRequest
     @dependency.name
   end
 
+  def type
+    @dependency.type
+  end
+
   ##
   # Indicate that the request is for a gem explicitly requested by the user
 
@@ -113,4 +118,3 @@ class Gem::Resolver::DependencyRequest
   end
 
 end
-

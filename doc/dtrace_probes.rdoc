@@ -9,10 +9,10 @@ specified. Probe definitions are in the format of:
 Since module and function cannot be specified, they will be blank. An example
 probe definition for Ruby would then be:
 
-  ruby:::function-entry(class name, method name, file name, line number)
+  ruby:::method-entry(class name, method name, file name, line number)
 
 Where "ruby" is the provider name, module and function names are blank, the
-probe name is "function-entry", and the probe takes four arguments:
+probe name is "method-entry", and the probe takes four arguments:
 
 * class name
 * method name
@@ -59,15 +59,15 @@ with when they are fired and the arguments they take:
 
 [ruby:::method-return(classname, methodname, filename, lineno);]
   This probe is fired just after a method has returned. The arguments are the
-  same as "ruby:::function-entry".
+  same as "ruby:::method-entry".
 
 [ruby:::cmethod-entry(classname, methodname, filename, lineno);]
   This probe is fired just before a C method is entered. The arguments are the
-  same as "ruby:::function-entry".
+  same as "ruby:::method-entry".
 
 [ruby:::cmethod-return(classname, methodname, filename, lineno);]
   This probe is fired just before a C method returns. The arguments are the
-  same as "ruby:::function-entry".
+  same as "ruby:::method-entry".
 
 [ruby:::require-entry(requiredfile, filename, lineno);]
   This probe is fired on calls to rb_require_safe (when a file is required).

@@ -1,4 +1,5 @@
 #!/usr/local/bin/ruby
+# frozen_string_literal: false
 
 #
 # linear.rb

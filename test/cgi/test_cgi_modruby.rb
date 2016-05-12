@@ -1,17 +1,20 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'cgi'
+require_relative 'update_env'
 
 
 class CGIModrubyTest < Test::Unit::TestCase
+  include UpdateEnv
 
 
   def setup
-    @environ = {
+    @environ = {}
+    update_env(
       'SERVER_PROTOCOL' => 'HTTP/1.1',
       'REQUEST_METHOD'  => 'GET',
       #'QUERY_STRING'    => 'a=foo&b=bar',
-    }
-    ENV.update(@environ)
+    )
     CGI.class_eval { const_set(:MOD_RUBY, true) }
     Apache._reset()
     #@cgi = CGI.new
@@ -20,7 +23,7 @@ class CGIModrubyTest < Test::Unit::TestCase
 
 
   def teardown
-    @environ.each do |key, val| ENV.delete(key) end
+    ENV.update(@environ)
     CGI.class_eval { remove_const(:MOD_RUBY) }
   end
 

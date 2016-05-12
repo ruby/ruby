@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/pack.rb : control pack geometry manager
 #

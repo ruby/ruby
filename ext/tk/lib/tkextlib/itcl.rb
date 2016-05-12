@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  [incr Tcl] support
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

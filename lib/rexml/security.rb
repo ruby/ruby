@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 module REXML
   module Security
     @@entity_expansion_limit = 10_000

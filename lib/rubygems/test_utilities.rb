@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'tempfile'
 require 'rubygems'
 require 'rubygems/remote_fetcher'
@@ -186,7 +187,6 @@ end
 #     f.gem  'a', 1
 #     f.spec 'a', 2
 #     f.gem  'b', 1' 'a' => '~> 1.0'
-#     f.clear
 #   end
 #
 # The above declaration creates two gems, a-1 and b-1, with a dependency from
@@ -214,16 +214,9 @@ class Gem::TestCase::SpecFetcherSetup
     @repository = repository
 
     @gems       = {}
+    @downloaded = []
     @installed  = []
     @operations = []
-  end
-
-  ##
-  # Removes any created gems or specifications from Gem.dir (the default
-  # install location).
-
-  def clear
-    @operations << [:clear]
   end
 
   ##
@@ -254,9 +247,6 @@ class Gem::TestCase::SpecFetcherSetup
   def execute_operations # :nodoc:
     @operations.each do |operation, *arguments|
       case operation
-      when :clear then
-        @test.util_clear_gems
-        @installed.clear
       when :gem then
         spec, gem = @test.util_gem(*arguments, &arguments.pop)
 
@@ -264,6 +254,11 @@ class Gem::TestCase::SpecFetcherSetup
 
         @gems[spec] = gem
         @installed << spec
+      when :download then
+        spec, gem = @test.util_gem(*arguments, &arguments.pop)
+
+        @gems[spec] = gem
+        @downloaded << spec
       when :spec then
         spec = @test.util_spec(*arguments, &arguments.pop)
 
@@ -284,6 +279,17 @@ class Gem::TestCase::SpecFetcherSetup
 
   def gem name, version, dependencies = nil, &block
     @operations << [:gem, name, version, dependencies, block]
+  end
+
+  ##
+  # Creates a gem with +name+, +version+ and +deps+.  The created gem is
+  # downloaded in to the cache directory but is not installed
+  #
+  # The specification will be yielded before gem creation for customization,
+  # but only the block or the dependencies may be set, not both.
+
+  def download name, version, dependencies = nil, &block
+    @operations << [:download, name, version, dependencies, block]
   end
 
   ##
@@ -312,16 +318,11 @@ class Gem::TestCase::SpecFetcherSetup
       gem_repo, @test.gem_repo = @test.gem_repo, @repository
       @test.uri = URI @repository
 
-      @test.util_setup_spec_fetcher(*@gems.keys)
+      @test.util_setup_spec_fetcher(*@downloaded)
     ensure
       @test.gem_repo = gem_repo
       @test.uri = URI gem_repo
     end
-
-    # This works around util_setup_spec_fetcher adding all created gems to the
-    # installed set.
-    Gem::Specification.reset
-    Gem::Specification.add_specs(*@installed)
 
     @gems.each do |spec, gem|
       next unless gem

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tkextlib/tcllib/tablelist_core.rb
 #

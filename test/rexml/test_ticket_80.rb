@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #------------------------------------------------------------------------------
 # file: rexml_test.rb
 # desc: test's REXML's XML/XPath implementation

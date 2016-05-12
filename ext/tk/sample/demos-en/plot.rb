@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # plot.rb
 #
 # This demonstration script creates a canvas widget showing a 2-D

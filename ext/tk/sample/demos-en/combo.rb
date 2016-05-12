@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # combo.rb --
 #
 # This demonstration script creates several combobox widgets.
@@ -71,7 +72,7 @@ australianCities = [
 ]
 
 
-secondValue.value = 'unchangable'
+secondValue.value = 'unchangeable'
 ozCity.value = 'Sydney'
 
 Tk.pack(Ttk::Labelframe.new(frame, :text=>'Fully Editable'){|f|

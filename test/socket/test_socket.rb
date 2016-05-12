@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 begin
   require "socket"
   require "tmpdir"
@@ -78,7 +80,7 @@ class TestSocket < Test::Unit::TestCase
       port, = Socket.unpack_sockaddr_in(addr)
 
       Socket.open(Socket::AF_INET, Socket::SOCK_STREAM, 0) {|s|
-        e = assert_raises(Errno::EADDRINUSE) do
+        e = assert_raise(Errno::EADDRINUSE) do
           s.bind(Socket.sockaddr_in(port, "127.0.0.1"))
         end
 
@@ -238,9 +240,12 @@ class TestSocket < Test::Unit::TestCase
           unix_server = Socket.unix_server_socket("#{tmpdir}/sock")
           tcp_servers.each {|s|
             addr = s.connect_address
-            assert_nothing_raised("connect to #{addr.inspect}") {
+            begin
               clients << addr.connect
-            }
+            rescue
+              # allow failure if the address is IPv6
+              raise unless addr.ipv6?
+            end
           }
           addr = unix_server.connect_address
           assert_nothing_raised("connect to #{addr.inspect}") {
@@ -451,7 +456,7 @@ class TestSocket < Test::Unit::TestCase
 
   def test_timestamp
     return if /linux|freebsd|netbsd|openbsd|solaris|darwin/ !~ RUBY_PLATFORM
-    return if !defined?(Socket::AncillaryData)
+    return if !defined?(Socket::AncillaryData) || !defined?(Socket::SO_TIMESTAMP)
     t1 = Time.now.strftime("%Y-%m-%d")
     stamp = nil
     Addrinfo.udp("127.0.0.1", 0).bind {|s1|
@@ -556,7 +561,7 @@ class TestSocket < Test::Unit::TestCase
     # some platforms may not timeout when the listener queue overflows,
     # but we know Linux does with the default listen backlog of SOMAXCONN for
     # TCPServer.
-    assert_raises(Errno::ETIMEDOUT) do
+    assert_raise(Errno::ETIMEDOUT) do
       (Socket::SOMAXCONN*2).times do |i|
         sock = Socket.tcp(host, port, :connect_timeout => 0)
         assert_equal sock, IO.select(nil, [ sock ])[1][0],
@@ -649,6 +654,73 @@ class TestSocket < Test::Unit::TestCase
         s.close if !s.closed?
       }
     end
+  end
+
+  def test_recvmsg_udp_no_arg
+    n = 4097
+    s1 = Addrinfo.udp("127.0.0.1", 0).bind
+    s2 = s1.connect_address.connect
+    s2.send("a" * n, 0)
+    ret = s1.recvmsg
+    assert_equal n, ret[0].bytesize, '[ruby-core:71517] [Bug #11701]'
+
+    s2.send("a" * n, 0)
+    IO.select([s1])
+    ret = s1.recvmsg_nonblock
+    assert_equal n, ret[0].bytesize, 'non-blocking should also grow'
+  ensure
+    s1.close
+    s2.close
+  end
+
+  def test_udp_read_truncation
+    s1 = Addrinfo.udp("127.0.0.1", 0).bind
+    s2 = s1.connect_address.connect
+    s2.send("a" * 100, 0)
+    ret = s1.read(10)
+    assert_equal "a" * 10, ret
+    s2.send("b" * 100, 0)
+    ret = s1.read(10)
+    assert_equal "b" * 10, ret
+  ensure
+    s1.close
+    s2.close
+  end
+
+  def test_udp_recv_truncation
+    s1 = Addrinfo.udp("127.0.0.1", 0).bind
+    s2 = s1.connect_address.connect
+    s2.send("a" * 100, 0)
+    ret = s1.recv(10, Socket::MSG_PEEK)
+    assert_equal "a" * 10, ret
+    ret = s1.recv(10, 0)
+    assert_equal "a" * 10, ret
+    s2.send("b" * 100, 0)
+    ret = s1.recv(10, 0)
+    assert_equal "b" * 10, ret
+  ensure
+    s1.close
+    s2.close
+  end
+
+  def test_udp_recvmsg_truncation
+    s1 = Addrinfo.udp("127.0.0.1", 0).bind
+    s2 = s1.connect_address.connect
+    s2.send("a" * 100, 0)
+    ret, addr, rflags = s1.recvmsg(10, Socket::MSG_PEEK)
+    assert_equal "a" * 10, ret
+    # AIX does not set MSG_TRUNC for a message partially read with MSG_PEEK.
+    assert_equal Socket::MSG_TRUNC, rflags & Socket::MSG_TRUNC if !rflags.nil? && /aix/ !~ RUBY_PLATFORM
+    ret, addr, rflags = s1.recvmsg(10, 0)
+    assert_equal "a" * 10, ret
+    assert_equal Socket::MSG_TRUNC, rflags & Socket::MSG_TRUNC if !rflags.nil?
+    s2.send("b" * 100, 0)
+    ret, addr, rflags = s1.recvmsg(10, 0)
+    assert_equal "b" * 10, ret
+    assert_equal Socket::MSG_TRUNC, rflags & Socket::MSG_TRUNC if !rflags.nil?
+  ensure
+    s1.close
+    s2.close
   end
 
 end if defined?(Socket)

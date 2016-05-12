@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require "rubygems/text"
 
@@ -64,6 +65,8 @@ Without the wrapping, the text might not look good in the RSS feed.
   def test_levenshtein_distance_remove
     assert_equal 3, levenshtein_distance("zentest", "zentestxxx")
     assert_equal 3, levenshtein_distance("zentestxxx", "zentest")
+    assert_equal 13, levenshtein_distance("cat", "thundercatsarego")
+    assert_equal 13, levenshtein_distance("thundercatsarego", "cat")
   end
 
   def test_levenshtein_distance_replace

@@ -1,5 +1,7 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/commands/install_command'
+require 'rubygems/request_set'
 require 'rubygems/rdoc'
 
 class TestGemCommandsInstallCommand < Gem::TestCase
@@ -251,8 +253,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     correctly_spelled = "nonexistent-with_hint"
 
     spec_fetcher do |fetcher|
-      fetcher.spec correctly_spelled, 2
-      fetcher.clear
+      fetcher.download correctly_spelled, 2
     end
 
     @cmd.options[:args] = [misspelled]
@@ -310,9 +311,8 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
   def test_execute_prerelease_wins_over_previous_ver
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 1
-      fetcher.gem 'a', '2.a'
-      fetcher.clear
+      fetcher.download 'a', 1
+      fetcher.download 'a', '2.a'
     end
 
     @cmd.options[:prerelease] = true
@@ -438,6 +438,26 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_match "1 gem installed", @ui.output
   end
 
+  def test_execute_with_invalid_gem_file
+    FileUtils.touch("a.gem")
+
+    spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+    end
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[a-2], @cmd.installed_specs.map { |spec| spec.full_name }
+
+    assert_match "1 gem installed", @ui.output
+  end
+
   def test_execute_remote_ignores_files
     specs = spec_fetcher do |fetcher|
       fetcher.gem 'a', 1
@@ -535,9 +555,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
   def test_execute_conservative
     spec_fetcher do |fetcher|
-      fetcher.gem 'b', 2
-
-      fetcher.clear
+      fetcher.download 'b', 2
 
       fetcher.gem 'a', 2
     end
@@ -665,8 +683,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
   def test_show_source_problems_even_on_success
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2
-      fetcher.clear
+      fetcher.download 'a', 2
     end
 
     Gem.sources << "http://nonexistent.example"
@@ -738,8 +755,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
   def test_execute_installs_from_a_gemdeps_with_conservative
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2
-      fetcher.clear
+      fetcher.download 'a', 2
       fetcher.gem 'a', 1
     end
 
@@ -763,8 +779,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
   def test_execute_installs_from_a_gemdeps
     spec_fetcher do |fetcher|
-      fetcher.gem 'a', 2
-      fetcher.clear
+      fetcher.download 'a', 2
     end
 
     File.open @gemdeps, "w" do |f|
@@ -786,9 +801,8 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
   def test_execute_installs_deps_a_gemdeps
     spec_fetcher do |fetcher|
-      fetcher.gem 'q', '1.0'
-      fetcher.gem 'r', '2.0', 'q' => nil
-      fetcher.clear
+      fetcher.download 'q', '1.0'
+      fetcher.download 'r', '2.0', 'q' => nil
     end
 
     File.open @gemdeps, "w" do |f|
@@ -813,9 +827,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
   def test_execute_uses_deps_a_gemdeps
     spec_fetcher do |fetcher|
-      fetcher.gem 'r', '2.0', 'q' => nil
-
-      fetcher.clear
+      fetcher.download 'r', '2.0', 'q' => nil
 
       fetcher.spec 'q', '1.0'
     end
@@ -842,9 +854,8 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
   def test_execute_installs_deps_a_gemdeps_into_a_path
     spec_fetcher do |fetcher|
-      fetcher.gem 'q', '1.0'
-      fetcher.gem 'r', '2.0', 'q' => nil
-      fetcher.clear
+      fetcher.download 'q', '1.0'
+      fetcher.download 'r', '2.0', 'q' => nil
     end
 
     File.open @gemdeps, "w" do |f|
@@ -873,12 +884,11 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
   def test_execute_with_gemdeps_path_ignores_system
     specs = spec_fetcher do |fetcher|
-      fetcher.gem 'q', '1.0'
-      fetcher.gem 'r', '2.0', 'q' => nil
-      fetcher.clear
+      fetcher.download 'q', '1.0'
+      fetcher.download 'r', '2.0', 'q' => nil
     end
 
-    Gem::Specification.add_specs specs['q-1.0']
+    install_specs specs['q-1.0']
 
     File.open @gemdeps, "w" do |f|
       f << "gem 'r'"
@@ -910,7 +920,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       fetcher.gem 'r', '2.0', 'q' => nil
     end
 
-    i = Gem::Installer.new specs['q-1.0'].cache_file, :install_dir => "gf-path"
+    i = Gem::Installer.at specs['q-1.0'].cache_file, :install_dir => "gf-path"
     i.install
 
     assert File.file?("gf-path/specifications/q-1.0.gemspec"), "not installed"

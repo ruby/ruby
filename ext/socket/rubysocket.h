@@ -27,11 +27,7 @@
 #    undef HAVE_TYPE_STRUCT_SOCKADDR_DL
 #  endif
 #else
-#  if defined(__BEOS__) && !defined(__HAIKU__) && !defined(BONE)
-#    include <net/socket.h>
-#  else
-#    include <sys/socket.h>
-#  endif
+#  include <sys/socket.h>
 #  include <netinet/in.h>
 #  ifdef HAVE_NETINET_IN_SYSTM_H
 #    include <netinet/in_systm.h>
@@ -80,6 +76,9 @@
 #endif
 
 #ifdef HAVE_IFADDRS_H
+#  ifdef __HAIKU__
+#    define _BSD_SOURCE
+#  endif
 #  include <ifaddrs.h>
 #endif
 #ifdef HAVE_SYS_IOCTL_H
@@ -219,11 +218,6 @@ typedef union {
 #  endif
 #endif
 
-#ifdef __BEOS__
-#  undef close
-#  define close closesocket
-#endif
-
 #define INET_CLIENT 0
 #define INET_SERVER 1
 #define INET_SOCKS  2
@@ -231,6 +225,12 @@ typedef union {
 extern int rsock_do_not_reverse_lookup;
 extern int rsock_cmsg_cloexec_state;
 #define FMODE_NOREVLOOKUP 0x100
+
+/* common socket families only */
+#define FMODE_UNIX        0x00200000
+#define FMODE_INET        0x00400000
+#define FMODE_INET6       0x00800000
+#define FMODE_SOCK        (FMODE_UNIX|FMODE_INET|FMODE_INET6)
 
 extern VALUE rb_cBasicSocket;
 extern VALUE rb_cIPSocket;
@@ -279,7 +279,7 @@ int rsock_optname_arg(int family, int level, VALUE optname);
 int rsock_cmsg_type_arg(int family, int level, VALUE type);
 int rsock_shutdown_how_arg(VALUE how);
 
-int rsock_getfamily(int sockfd);
+int rsock_getfamily(rb_io_t *fptr);
 
 struct rb_addrinfo {
   struct addrinfo *ai;
@@ -289,7 +289,8 @@ int rb_getaddrinfo(const char *node, const char *service, const struct addrinfo 
 void rb_freeaddrinfo(struct rb_addrinfo *ai);
 VALUE rsock_freeaddrinfo(VALUE arg);
 int rb_getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host, size_t hostlen, char *serv, size_t servlen, int flags);
-struct rb_addrinfo *rsock_addrinfo(VALUE host, VALUE port, int socktype, int flags);
+int rsock_fd_family(int fd);
+struct rb_addrinfo *rsock_addrinfo(VALUE host, VALUE port, int family, int socktype, int flags);
 struct rb_addrinfo *rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack);
 VALUE rsock_fd_socket_addrinfo(int fd, struct sockaddr *addr, socklen_t len);
 VALUE rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len);
@@ -337,28 +338,34 @@ enum sock_recv_type {
     RECV_SOCKET                 /* Socket#recvfrom */
 };
 
-VALUE rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from);
+VALUE rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
+			        VALUE ex, enum sock_recv_type from);
 VALUE rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from);
 
 int rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks);
 
 VALUE rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len);
-VALUE rsock_s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, socklen_t *len);
+VALUE rsock_s_accept_nonblock(VALUE klass, VALUE ex, rb_io_t *fptr,
+			      struct sockaddr *sockaddr, socklen_t *len);
 VALUE rsock_sock_listen(VALUE sock, VALUE log);
 
 VALUE rsock_sockopt_new(int family, int level, int optname, VALUE data);
 
 #if defined(HAVE_SENDMSG)
-VALUE rsock_bsock_sendmsg(int argc, VALUE *argv, VALUE sock);
-VALUE rsock_bsock_sendmsg_nonblock(int argc, VALUE *argv, VALUE sock);
+VALUE rsock_bsock_sendmsg(VALUE sock, VALUE data, VALUE flags,
+			  VALUE dest_sockaddr, VALUE controls);
+VALUE rsock_bsock_sendmsg_nonblock(VALUE sock, VALUE data, VALUE flags,
+			     VALUE dest_sockaddr, VALUE controls, VALUE ex);
 #else
 #define rsock_bsock_sendmsg rb_f_notimplement
 #define rsock_bsock_sendmsg_nonblock rb_f_notimplement
 #endif
 
 #if defined(HAVE_RECVMSG)
-VALUE rsock_bsock_recvmsg(int argc, VALUE *argv, VALUE sock);
-VALUE rsock_bsock_recvmsg_nonblock(int argc, VALUE *argv, VALUE sock);
+VALUE rsock_bsock_recvmsg(VALUE sock, VALUE dlen, VALUE clen, VALUE flags,
+			  VALUE scm_rights);
+VALUE rsock_bsock_recvmsg_nonblock(VALUE sock, VALUE dlen, VALUE clen,
+				   VALUE flags, VALUE scm_rights, VALUE ex);
 ssize_t rsock_recvmsg(int socket, struct msghdr *message, int flags);
 #else
 #define rsock_bsock_recvmsg rb_f_notimplement
@@ -407,9 +414,20 @@ NORETURN(void rsock_sys_fail_raddrinfo_or_sockaddr(const char *, VALUE addr, VAL
 #if defined(__linux__)
 static inline int rsock_maybe_fd_writable(int fd) { return 1; }
 static inline void rsock_maybe_wait_fd(int fd) { }
+#  ifdef MSG_DONTWAIT
+#    define MSG_DONTWAIT_RELIABLE 1
+#  endif
 #else /* some systems (mswin/mingw) need these.  ref: r36946 */
 #  define rsock_maybe_fd_writable(fd) rb_thread_fd_writable((fd))
 #  define rsock_maybe_wait_fd(fd) rb_thread_wait_fd((fd))
+#endif
+
+/*
+ * some OSes may support MSG_DONTWAIT inconsistently depending on socket
+ * type, we only expect Linux to support it consistently for all socket types.
+ */
+#ifndef MSG_DONTWAIT_RELIABLE
+#  define MSG_DONTWAIT_RELIABLE 0
 #endif
 
 #endif

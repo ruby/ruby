@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # Copyright (C) 2001, 2002, 2003 by Michael Neumann (mneumann@ntecs.de)
 #
 # $Id$
@@ -8,42 +9,6 @@ require "date"
 require "xmlrpc/base64"
 require "xmlrpc/datetime"
 
-
-module NQXML
-  class Node
-
-    def removeChild(node)
-      @children.delete(node)
-    end
-    def childNodes
-      @children
-    end
-    def hasChildNodes
-      not @children.empty?
-    end
-    def [] (index)
-      @children[index]
-    end
-
-    def nodeType
-      if @entity.instance_of? NQXML::Text then :TEXT
-      elsif @entity.instance_of? NQXML::Comment then :COMMENT
-      #elsif @entity.instance_of? NQXML::Element then :ELEMENT
-      elsif @entity.instance_of? NQXML::Tag then :ELEMENT
-      else :ELSE
-      end
-    end
-
-    def nodeValue
-      #TODO: error when wrong Entity-type
-      @entity.text
-    end
-    def nodeName
-      #TODO: error when wrong Entity-type
-      @entity.name
-    end
-  end # class Node
-end # module NQXML
 
 module XMLRPC # :nodoc:
 
@@ -602,124 +567,6 @@ module XMLRPC # :nodoc:
 
     end # module StreamParserMixin
 
-    class XMLStreamParser < AbstractStreamParser
-      def initialize
-        require "xmlparser"
-        @parser_class = Class.new(::XMLParser) {
-          include StreamParserMixin
-        }
-      end
-    end # class XMLStreamParser
-
-    class NQXMLStreamParser < AbstractStreamParser
-      def initialize
-        require "nqxml/streamingparser"
-        @parser_class = XMLRPCParser
-      end
-
-      class XMLRPCParser
-        include StreamParserMixin
-
-        def parse(str)
-          parser = NQXML::StreamingParser.new(str)
-          parser.each do |ele|
-            case ele
-            when NQXML::Text
-              @data = ele.text
-              #character(ele.text)
-            when NQXML::Tag
-              if ele.isTagEnd
-                endElement(ele.name)
-              else
-                startElement(ele.name, ele.attrs)
-              end
-            end
-          end # do
-        end # method parse
-      end # class XMLRPCParser
-
-    end # class NQXMLStreamParser
-
-    class XMLTreeParser < AbstractTreeParser
-
-      def initialize
-        require "xmltreebuilder"
-
-        # The new XMLParser library (0.6.2+) uses a slightly different DOM implementation.
-        # The following code removes the differences between both versions.
-        if defined? XML::DOM::Builder
-          return if defined? XML::DOM::Node::DOCUMENT # code below has been already executed
-          klass = XML::DOM::Node
-          klass.const_set(:DOCUMENT, klass::DOCUMENT_NODE)
-          klass.const_set(:TEXT, klass::TEXT_NODE)
-          klass.const_set(:COMMENT, klass::COMMENT_NODE)
-          klass.const_set(:ELEMENT, klass::ELEMENT_NODE)
-        end
-      end
-
-      private
-
-      def _nodeType(node)
-        tp = node.nodeType
-        if tp == XML::SimpleTree::Node::TEXT then :TEXT
-        elsif tp == XML::SimpleTree::Node::COMMENT then :COMMENT
-        elsif tp == XML::SimpleTree::Node::ELEMENT then :ELEMENT
-        else :ELSE
-        end
-      end
-
-
-      def methodResponse_document(node)
-        assert( node.nodeType == XML::SimpleTree::Node::DOCUMENT )
-        hasOnlyOneChild(node, "methodResponse")
-
-        methodResponse(node.firstChild)
-      end
-
-      def methodCall_document(node)
-        assert( node.nodeType == XML::SimpleTree::Node::DOCUMENT )
-        hasOnlyOneChild(node, "methodCall")
-
-        methodCall(node.firstChild)
-      end
-
-      def createCleanedTree(str)
-        doc = XML::SimpleTreeBuilder.new.parse(str)
-        doc.documentElement.normalize
-        removeWhitespacesAndComments(doc)
-        doc
-      end
-
-    end # class XMLParser
-
-    class NQXMLTreeParser < AbstractTreeParser
-
-      def initialize
-        require "nqxml/treeparser"
-      end
-
-      private
-
-      def _nodeType(node)
-        node.nodeType
-      end
-
-      def methodResponse_document(node)
-        methodResponse(node)
-      end
-
-      def methodCall_document(node)
-        methodCall(node)
-      end
-
-      def createCleanedTree(str)
-        doc = ::NQXML::TreeParser.new(str).document.rootNode
-        removeWhitespacesAndComments(doc)
-        doc
-      end
-
-    end # class NQXMLTreeParser
-
     class REXMLStreamParser < AbstractStreamParser
       def initialize
         require "rexml/document"
@@ -743,75 +590,6 @@ module XMLRPC # :nodoc:
         end
       end
 
-    end
-
-    class XMLScanStreamParser < AbstractStreamParser
-      def initialize
-        require "xmlscan/parser"
-        @parser_class = XMLScanParser
-      end
-
-      class XMLScanParser
-        include StreamParserMixin
-
-        Entities = {
-          "lt"   => "<",
-          "gt"   => ">",
-          "amp"  => "&",
-          "quot" => '"',
-          "apos" => "'"
-        }
-
-        def parse(str)
-          parser  = XMLScan::XMLParser.new(self)
-          parser.parse(str)
-        end
-
-        alias :on_stag :startElement
-        alias :on_etag :endElement
-
-        def on_stag_end(name); end
-
-        def on_stag_end_empty(name)
-          startElement(name)
-          endElement(name)
-        end
-
-        def on_chardata(str)
-          character(str)
-        end
-
-        def on_cdata(str)
-          character(str)
-        end
-
-        def on_entityref(ent)
-          str = Entities[ent]
-          if str
-            character(str)
-          else
-            raise "unknown entity"
-          end
-        end
-
-        def on_charref(code)
-          character(code.chr)
-        end
-
-        def on_charref_hex(code)
-          character(code.chr)
-        end
-
-        def method_missing(*a)
-        end
-
-        # TODO: call/implement?
-        # valid_name?
-        # valid_chardata?
-        # valid_char?
-        # parse_error
-
-      end
     end
 
     class LibXMLStreamParser < AbstractStreamParser
@@ -845,13 +623,7 @@ module XMLRPC # :nodoc:
       end
     end
 
-    XMLParser   = XMLTreeParser
-    NQXMLParser = NQXMLTreeParser
-
-    Classes = [XMLStreamParser, XMLTreeParser,
-               NQXMLStreamParser, NQXMLTreeParser,
-               REXMLStreamParser, XMLScanStreamParser,
-               LibXMLStreamParser]
+    Classes = [REXMLStreamParser, LibXMLStreamParser]
 
     # yields an instance of each installed parser
     def self.each_installed_parser

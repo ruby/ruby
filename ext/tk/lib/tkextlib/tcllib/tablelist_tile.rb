@@ -1,5 +1,6 @@
+# frozen_string_literal: false
 #
-#  tkextlib/tcllib/tablelist_tlie.rb
+#  tkextlib/tcllib/tablelist_tile.rb
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 #   * Part of tcllib extension
@@ -15,7 +16,7 @@ unless defined? Tk::Tcllib::Tablelist_usingTile
   Tk::Tcllib::Tablelist_usingTile = true
 end
 
-requrie 'tkextlib/tcllib/tablelist_core'
+require 'tkextlib/tcllib/tablelist_core'
 
 module Tk
   module Tcllib

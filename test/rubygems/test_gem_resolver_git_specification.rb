@@ -1,4 +1,6 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
+require 'rubygems/installer'
 
 class TestGemResolverGitSpecification < Gem::TestCase
 

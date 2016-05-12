@@ -1,9 +1,15 @@
+# frozen_string_literal: false
 require "test/unit"
 require_relative "utils.rb"
 require "webrick"
 require "stringio"
 
 class WEBrick::TestFileHandler < Test::Unit::TestCase
+  def teardown
+    WEBrick::Utils::TimeoutHandler.terminate
+    super
+  end
+
   def default_file_handler(filename)
     klass = WEBrick::HTTPServlet::DefaultFileHandler
     klass.new(WEBrick::Config::HTTP, filename)
@@ -166,7 +172,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   def test_non_disclosure_name
     config = { :DocumentRoot => File.dirname(__FILE__), }
     log_tester = lambda {|log, access_log|
-      log = log.reject {|s| /ERROR `.*' not found\./ =~ s }
+      log = log.reject {|s| /ERROR `.*\' not found\./ =~ s }
       log = log.reject {|s| /WARN  the request refers nondisclosure name/ =~ s }
       assert_equal([], log)
     }
@@ -193,10 +199,12 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   end
 
   def test_directory_traversal
+    return if File.executable?(__FILE__) # skip on strange file system
+
     config = { :DocumentRoot => File.dirname(__FILE__), }
     log_tester = lambda {|log, access_log|
       log = log.reject {|s| /ERROR bad URI/ =~ s }
-      log = log.reject {|s| /ERROR `.*' not found\./ =~ s }
+      log = log.reject {|s| /ERROR `.*\' not found\./ =~ s }
       assert_equal([], log)
     }
     TestWEBrick.start_httpserver(config, log_tester) do |server, addr, port, log|
@@ -222,22 +230,27 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   end
 
   def test_short_filename
+    return if File.executable?(__FILE__) # skip on strange file system
+
     config = {
       :CGIInterpreter => TestWEBrick::RubyBin,
       :DocumentRoot => File.dirname(__FILE__),
       :CGIPathEnv => ENV['PATH'],
     }
     log_tester = lambda {|log, access_log|
-      log = log.reject {|s| /ERROR `.*' not found\./ =~ s }
+      log = log.reject {|s| /ERROR `.*\' not found\./ =~ s }
       log = log.reject {|s| /WARN  the request refers nondisclosure name/ =~ s }
       assert_equal([], log)
     }
     TestWEBrick.start_httpserver(config, log_tester) do |server, addr, port, log|
       http = Net::HTTP.new(addr, port)
       if windows?
-        fname = nil
-        Dir.chdir(config[:DocumentRoot]) do
-          fname = `dir /x webrick_long_filename.cgi`.match(/\s(w.+?cgi)\s/i)[1].downcase
+        root = config[:DocumentRoot].tr("/", "\\")
+        fname = IO.popen(%W[dir /x #{root}\\webrick_long_filename.cgi], &:read)
+        fname.sub!(/\A.*$^$.*$^$/m, '')
+        if fname
+          fname = fname[/\s(w.+?cgi)\s/i, 1]
+          fname.downcase!
         end
       else
         fname = "webric~1.cgi"
@@ -262,6 +275,8 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   end
 
   def test_script_disclosure
+    return if File.executable?(__FILE__) # skip on strange file system
+
     config = {
       :CGIInterpreter => TestWEBrick::RubyBin,
       :DocumentRoot => File.dirname(__FILE__),
@@ -276,7 +291,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
       },
     }
     log_tester = lambda {|log, access_log|
-      log = log.reject {|s| /ERROR `.*' not found\./ =~ s }
+      log = log.reject {|s| /ERROR `.*\' not found\./ =~ s }
       assert_equal([], log)
     }
     TestWEBrick.start_httpserver(config, log_tester) do |server, addr, port, log|

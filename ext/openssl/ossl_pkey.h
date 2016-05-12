@@ -1,11 +1,10 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #if !defined(_OSSL_PKEY_H_)
@@ -21,11 +20,13 @@ extern const rb_data_type_t ossl_evp_pkey_type;
 #define OSSL_PKEY_SET_PUBLIC(obj)  rb_iv_set((obj), "private", Qfalse)
 #define OSSL_PKEY_IS_PRIVATE(obj)  (rb_iv_get((obj), "private") == Qtrue)
 
-#define WrapPKey(klass, obj, pkey) do { \
+#define NewPKey(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_evp_pkey_type, 0)
+#define SetPKey(obj, pkey) do { \
     if (!(pkey)) { \
 	rb_raise(rb_eRuntimeError, "PKEY wasn't initialized!"); \
     } \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_evp_pkey_type, (pkey)); \
+    RTYPEDDATA_DATA(obj) = (pkey); \
     OSSL_PKEY_SET_PUBLIC(obj); \
 } while (0)
 #define GetPKey(obj, pkey) do {\
@@ -82,8 +83,6 @@ void Init_ossl_dsa(void);
  */
 extern VALUE cDH;
 extern VALUE eDHError;
-extern DH *OSSL_DEFAULT_DH_512;
-extern DH *OSSL_DEFAULT_DH_1024;
 
 VALUE ossl_dh_new(EVP_PKEY *);
 void Init_ossl_dh(void);

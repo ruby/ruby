@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/source_list'
 require 'rubygems/test_case'
 
@@ -24,6 +25,12 @@ class TestGemSourceList < Gem::TestCase
 
   def test_append
     sl = Gem::SourceList.new
+    sl << @uri
+    sl << @uri
+
+    assert_equal sl.to_a.size, 1
+
+    sl.clear
     source = (sl << @uri)
 
     assert_kind_of Gem::Source, source

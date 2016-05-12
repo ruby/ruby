@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/textwindow.rb - treat Tk text window object
 #

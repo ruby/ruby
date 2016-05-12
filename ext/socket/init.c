@@ -29,34 +29,43 @@ VALUE rb_cSOCKSSocket;
 #endif
 
 int rsock_do_not_reverse_lookup = 1;
+static VALUE sym_wait_readable;
 
 void
 rsock_raise_socket_error(const char *reason, int error)
 {
 #ifdef EAI_SYSTEM
-    if (error == EAI_SYSTEM) rb_sys_fail(reason);
+    int e;
+    if (error == EAI_SYSTEM && (e = errno) != 0)
+	rb_syserr_fail(e, reason);
 #endif
     rb_raise(rb_eSocket, "%s: %s", reason, gai_strerror(error));
 }
+
+#ifdef _WIN32
+#define is_socket(fd) rb_w32_is_socket(fd)
+#else
+static int
+is_socket(int fd)
+{
+    struct stat sbuf;
+
+    if (fstat(fd, &sbuf) < 0)
+        rb_sys_fail("fstat(2)");
+    return S_ISSOCK(sbuf.st_mode);
+}
+#endif
 
 VALUE
 rsock_init_sock(VALUE sock, int fd)
 {
     rb_io_t *fp;
-#ifndef _WIN32
-    struct stat sbuf;
 
-    if (fstat(fd, &sbuf) < 0)
-        rb_sys_fail("fstat(2)");
-    rb_update_max_fd(fd);
-    if (!S_ISSOCK(sbuf.st_mode))
-        rb_raise(rb_eArgError, "not a socket file descriptor");
-#else
-    rb_update_max_fd(fd);
-    if (!rb_w32_is_socket(fd))
-        rb_raise(rb_eArgError, "not a socket file descriptor");
-#endif
+    if (!is_socket(fd) || rb_reserved_fd_p(fd)) {
+	rb_syserr_fail(EBADF, "not a socket file descriptor");
+    }
 
+    rb_update_max_fd(fd);
     MakeOpenFile(sock, fp);
     fp->fd = fd;
     fp->mode = FMODE_READWRITE|FMODE_DUPLEX;
@@ -107,21 +116,48 @@ recvfrom_blocking(void *data)
     return (VALUE)ret;
 }
 
+static VALUE
+rsock_strbuf(VALUE str, long buflen)
+{
+    long len;
+
+    if (NIL_P(str)) return rb_tainted_str_new(0, buflen);
+
+    StringValue(str);
+    len = RSTRING_LEN(str);
+    if (len >= buflen) {
+	rb_str_modify(str);
+    } else {
+	rb_str_modify_expand(str, buflen - len);
+    }
+    rb_str_set_len(str, buflen);
+    return str;
+}
+
+static VALUE
+recvfrom_locktmp(VALUE v)
+{
+    struct recvfrom_arg *arg = (struct recvfrom_arg *)v;
+
+    return rb_thread_io_blocking_region(recvfrom_blocking, arg, arg->fd);
+}
+
 VALUE
 rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 {
     rb_io_t *fptr;
-    VALUE str, klass;
+    VALUE str;
     struct recvfrom_arg arg;
     VALUE len, flg;
     long buflen;
     long slen;
 
-    rb_scan_args(argc, argv, "11", &len, &flg);
+    rb_scan_args(argc, argv, "12", &len, &flg, &str);
 
     if (flg == Qnil) arg.flags = 0;
     else             arg.flags = NUM2INT(flg);
     buflen = NUM2INT(len);
+    str = rsock_strbuf(str, buflen);
 
     GetOpenFile(sock, fptr);
     if (rb_io_read_pending(fptr)) {
@@ -129,24 +165,18 @@ rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
     }
     arg.fd = fptr->fd;
     arg.alen = (socklen_t)sizeof(arg.buf);
-
-    arg.str = str = rb_tainted_str_new(0, buflen);
-    klass = RBASIC(str)->klass;
-    rb_obj_hide(str);
+    arg.str = str;
 
     while (rb_io_check_closed(fptr),
 	   rsock_maybe_wait_fd(arg.fd),
-	   (slen = BLOCKING_REGION_FD(recvfrom_blocking, &arg)) < 0) {
+	   (slen = (long)rb_str_locktmp_ensure(str, recvfrom_locktmp,
+	                                       (VALUE)&arg)) < 0) {
         if (!rb_io_wait_readable(fptr->fd)) {
             rb_sys_fail("recvfrom(2)");
         }
-	if (RBASIC(str)->klass || RSTRING_LEN(str) != buflen) {
-	    rb_raise(rb_eRuntimeError, "buffer string modified");
-	}
     }
 
-    rb_obj_reveal(str, klass);
-    if (slen < RSTRING_LEN(str)) {
+    if (slen != RSTRING_LEN(str)) {
 	rb_str_set_len(str, slen);
     }
     rb_obj_taint(str);
@@ -176,24 +206,21 @@ rsock_s_recvfrom(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
 }
 
 VALUE
-rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type from)
+rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
+			  VALUE ex, enum sock_recv_type from)
 {
     rb_io_t *fptr;
-    VALUE str;
     union_sockaddr buf;
     socklen_t alen = (socklen_t)sizeof buf;
-    VALUE len, flg;
     long buflen;
     long slen;
     int fd, flags;
     VALUE addr = Qnil;
     socklen_t len0;
 
-    rb_scan_args(argc, argv, "11", &len, &flg);
-
-    if (flg == Qnil) flags = 0;
-    else             flags = NUM2INT(flg);
+    flags = NUM2INT(flg);
     buflen = NUM2INT(len);
+    str = rsock_strbuf(str, buflen);
 
 #ifdef MSG_DONTWAIT
     /* MSG_DONTWAIT avoids the race condition between fcntl and recvfrom.
@@ -207,26 +234,30 @@ rsock_s_recvfrom_nonblock(VALUE sock, int argc, VALUE *argv, enum sock_recv_type
     }
     fd = fptr->fd;
 
-    str = rb_tainted_str_new(0, buflen);
-
     rb_io_check_closed(fptr);
-    rb_io_set_nonblock(fptr);
+
+    if (!MSG_DONTWAIT_RELIABLE)
+	rb_io_set_nonblock(fptr);
+
     len0 = alen;
     slen = recvfrom(fd, RSTRING_PTR(str), buflen, flags, &buf.addr, &alen);
     if (slen != -1 && len0 < alen)
         alen = len0;
 
     if (slen < 0) {
-	switch (errno) {
+	int e = errno;
+	switch (e) {
 	  case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
-            rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "recvfrom(2) would block");
+            if (ex == Qfalse)
+		return sym_wait_readable;
+            rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE, e, "recvfrom(2) would block");
 	}
-	rb_sys_fail("recvfrom(2)");
+	rb_syserr_fail(e, "recvfrom(2)");
     }
-    if (slen < RSTRING_LEN(str)) {
+    if (slen != RSTRING_LEN(str)) {
 	rb_str_set_len(str, slen);
     }
     rb_obj_taint(str);
@@ -329,8 +360,7 @@ rsock_socket(int domain, int type, int proto)
 
     fd = rsock_socket0(domain, type, proto);
     if (fd < 0) {
-       if (errno == EMFILE || errno == ENFILE) {
-           rb_gc();
+       if (rb_gc_for_fd(errno)) {
            fd = rsock_socket0(domain, type, proto);
        }
     }
@@ -470,7 +500,8 @@ make_fd_nonblock(int fd)
 }
 
 static int
-cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len)
+cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len,
+	       int nonblock)
 {
     int ret;
     socklen_t len0 = 0;
@@ -484,11 +515,21 @@ cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len)
 #ifdef SOCK_CLOEXEC
         flags |= SOCK_CLOEXEC;
 #endif
+#ifdef SOCK_NONBLOCK
+        if (nonblock) {
+            flags |= SOCK_NONBLOCK;
+        }
+#endif
         ret = accept4(socket, address, address_len, flags);
         /* accept4 is available since Linux 2.6.28, glibc 2.10. */
         if (ret != -1) {
             if (ret <= 2)
                 rb_maygvl_fd_fix_cloexec(ret);
+#ifndef SOCK_NONBLOCK
+            if (nonblock) {
+                make_fd_nonblock(ret);
+            }
+#endif
             if (address_len && len0 < *address_len) *address_len = len0;
             return ret;
         }
@@ -502,20 +543,23 @@ cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len)
     if (ret == -1) return -1;
     if (address_len && len0 < *address_len) *address_len = len0;
     rb_maygvl_fd_fix_cloexec(ret);
+    if (nonblock) {
+        make_fd_nonblock(ret);
+    }
     return ret;
 }
 
-
 VALUE
-rsock_s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, socklen_t *len)
+rsock_s_accept_nonblock(VALUE klass, VALUE ex, rb_io_t *fptr,
+			struct sockaddr *sockaddr, socklen_t *len)
 {
     int fd2;
 
-    rb_secure(3);
     rb_io_set_nonblock(fptr);
-    fd2 = cloexec_accept(fptr->fd, (struct sockaddr*)sockaddr, len);
+    fd2 = cloexec_accept(fptr->fd, (struct sockaddr*)sockaddr, len, 1);
     if (fd2 < 0) {
-	switch (errno) {
+	int e = errno;
+	switch (e) {
 	  case EAGAIN:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
@@ -524,12 +568,13 @@ rsock_s_accept_nonblock(VALUE klass, rb_io_t *fptr, struct sockaddr *sockaddr, s
 #if defined EPROTO
 	  case EPROTO:
 #endif
-            rb_readwrite_sys_fail(RB_IO_WAIT_READABLE, "accept(2) would block");
+            if (ex == Qfalse)
+		return sym_wait_readable;
+            rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE, e, "accept(2) would block");
 	}
-        rb_sys_fail("accept(2)");
+        rb_syserr_fail(e, "accept(2)");
     }
     rb_update_max_fd(fd2);
-    make_fd_nonblock(fd2);
     return rsock_init_sock(rb_obj_alloc(klass), fd2);
 }
 
@@ -543,7 +588,7 @@ static VALUE
 accept_blocking(void *data)
 {
     struct accept_arg *arg = data;
-    return (VALUE)cloexec_accept(arg->fd, arg->sockaddr, arg->len);
+    return (VALUE)cloexec_accept(arg->fd, arg->sockaddr, arg->len, 0);
 }
 
 VALUE
@@ -553,7 +598,6 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
     int retry = 0;
     struct accept_arg arg;
 
-    rb_secure(3);
     arg.fd = fd;
     arg.sockaddr = sockaddr;
     arg.len = len;
@@ -561,9 +605,11 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
     rsock_maybe_wait_fd(fd);
     fd2 = (int)BLOCKING_REGION_FD(accept_blocking, &arg);
     if (fd2 < 0) {
-	switch (errno) {
+	int e = errno;
+	switch (e) {
 	  case EMFILE:
 	  case ENFILE:
+	  case ENOMEM:
 	    if (retry) break;
 	    rb_gc();
 	    retry = 1;
@@ -573,7 +619,7 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
 	    retry = 0;
 	    goto retry;
 	}
-	rb_sys_fail("accept(2)");
+	rb_syserr_fail(e, "accept(2)");
     }
     rb_update_max_fd(fd2);
     if (!klass) return INT2NUM(fd2);
@@ -581,14 +627,33 @@ rsock_s_accept(VALUE klass, int fd, struct sockaddr *sockaddr, socklen_t *len)
 }
 
 int
-rsock_getfamily(int sockfd)
+rsock_getfamily(rb_io_t *fptr)
 {
     union_sockaddr ss;
     socklen_t sslen = (socklen_t)sizeof(ss);
+    int cached = fptr->mode & FMODE_SOCK;
+
+    if (cached) {
+        switch (cached) {
+#ifdef AF_UNIX
+	    case FMODE_UNIX: return AF_UNIX;
+#endif
+	    case FMODE_INET: return AF_INET;
+	    case FMODE_INET6: return AF_INET6;
+	}
+    }
 
     ss.addr.sa_family = AF_UNSPEC;
-    if (getsockname(sockfd, &ss.addr, &sslen) < 0)
+    if (getsockname(fptr->fd, &ss.addr, &sslen) < 0)
         return AF_UNSPEC;
+
+    switch (ss.addr.sa_family) {
+#ifdef AF_UNIX
+      case AF_UNIX: fptr->mode |= FMODE_UNIX; break;
+#endif
+      case AF_INET: fptr->mode |= FMODE_INET; break;
+      case AF_INET6: fptr->mode |= FMODE_INET6; break;
+    }
 
     return ss.addr.sa_family;
 }
@@ -612,4 +677,7 @@ rsock_init_socket_init(void)
     rsock_init_addrinfo();
     rsock_init_sockifaddr();
     rsock_init_socket_constants();
+
+#undef rb_intern
+    sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
 }

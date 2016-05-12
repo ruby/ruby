@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require "rubygems/deprecate"
 
 ##
@@ -95,6 +96,7 @@ class Gem::Platform
                         [os, version]
                       when /netbsdelf/ then             [ 'netbsdelf', nil ]
                       when /openbsd(\d+\.\d+)?/ then    [ 'openbsd',   $1  ]
+                      when /bitrig(\d+\.\d+)?/ then     [ 'bitrig',    $1  ]
                       when /solaris(\d+\.\d+)?/ then    [ 'solaris',   $1  ]
                       # test
                       when /^(\w+_platform)(\d+)?/ then [ $1,          $2  ]
@@ -147,8 +149,8 @@ class Gem::Platform
     return nil unless Gem::Platform === other
 
     # cpu
-    (@cpu == 'universal' or other.cpu == 'universal' or @cpu == other.cpu or
-     (@cpu == 'arm' and other.cpu =~ /\Aarm/)) and
+    ([nil,'universal'].include?(@cpu) or [nil, 'universal'].include?(other.cpu) or @cpu == other.cpu or
+    (@cpu == 'arm' and other.cpu =~ /\Aarm/)) and
 
     # os
     @os == other.os and

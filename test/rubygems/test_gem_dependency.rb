@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/dependency'
 
@@ -294,10 +295,11 @@ class TestGemDependency < Gem::TestCase
   end
 
   def test_to_spec
-          util_spec 'a', '1'
+    a_1 = util_spec 'a', '1'
     a_2 = util_spec 'a', '2'
 
     a_dep = dep 'a', '>= 0'
+    install_specs a_1, a_2
 
     assert_equal a_2, a_dep.to_spec
   end
@@ -307,6 +309,7 @@ class TestGemDependency < Gem::TestCase
     a_1_1_a = util_spec 'a', '1.1.a'
 
     a_dep = dep 'a', '>= 0'
+    install_specs a_1, a_1_1_a
 
     assert_equal a_1, a_dep.to_spec
 
@@ -317,7 +320,8 @@ class TestGemDependency < Gem::TestCase
   end
 
   def test_to_specs_suggests_other_versions
-    a = util_spec 'a', '1.0', 'b' => '>= 1.0'
+    a = util_spec 'a', '1.0'
+    install_specs a
 
     a_file = File.join a.gem_dir, 'lib', 'a_file.rb'
 
@@ -327,7 +331,7 @@ class TestGemDependency < Gem::TestCase
 
     dep = Gem::Dependency.new "a", "= 2.0"
 
-    e = assert_raises Gem::LoadError do
+    e = assert_raises Gem::MissingSpecVersionError do
       dep.to_specs
     end
 
@@ -335,7 +339,8 @@ class TestGemDependency < Gem::TestCase
   end
 
   def test_to_specs_indicates_total_gem_set_size
-    a = util_spec 'a', '1.0', 'b' => '>= 1.0'
+    a = util_spec 'a', '1.0'
+    install_specs a
 
     a_file = File.join a.gem_dir, 'lib', 'a_file.rb'
 
@@ -345,7 +350,7 @@ class TestGemDependency < Gem::TestCase
 
     dep = Gem::Dependency.new "b", "= 2.0"
 
-    e = assert_raises Gem::LoadError do
+    e = assert_raises Gem::MissingSpecError do
       dep.to_specs
     end
 

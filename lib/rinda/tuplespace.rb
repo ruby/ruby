@@ -1,8 +1,8 @@
+# frozen_string_literal: false
 require 'monitor'
 require 'thread'
 require 'drb/drb'
 require 'rinda/rinda'
-require 'enumerator'
 require 'forwardable'
 
 module Rinda

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'tempfile'
 
@@ -19,8 +20,8 @@ class TestException < Test::Unit::TestCase
       if bad
         bad = false
         retry
-        assert(false)
       end
+      assert(!bad)
     end
     assert(true)
   end
@@ -302,6 +303,10 @@ class TestException < Test::Unit::TestCase
     assert_raise_with_message(TypeError, /C\u{4032}/) do
       [*o]
     end
+    obj = eval("class C\u{1f5ff}; self; end").new
+    assert_raise_with_message(TypeError, /C\u{1f5ff}/) do
+      Class.new {include obj}
+    end
   end
 
   def test_errat
@@ -337,7 +342,7 @@ class TestException < Test::Unit::TestCase
   end
 
   def test_thread_signal_location
-    _, stderr, _ = EnvUtil.invoke_ruby("--disable-gems -d", <<-RUBY, false, true)
+    _, stderr, _ = EnvUtil.invoke_ruby(%w"--disable-gems -d", <<-RUBY, false, true)
 Thread.start do
   begin
     Process.kill(:INT, $$)
@@ -425,7 +430,7 @@ end.join
     bug3237 = '[ruby-core:29948]'
     str = "\u2600"
     id = :"\u2604"
-    msg = "undefined method `#{id}' for #{str.inspect}:String"
+    msg = "undefined method `#{id}' for \"#{str}\":String"
     assert_raise_with_message(NoMethodError, msg, bug3237) do
       str.__send__(id)
     end
@@ -618,6 +623,46 @@ end.join
     assert_not_same(e, e.cause, "#{msg}: should not be recursive")
   end
 
+  def test_cause_raised_in_rescue
+    a = nil
+    e = assert_raise_with_message(RuntimeError, 'b') {
+      begin
+        raise 'a'
+      rescue => a
+        begin
+          raise 'b'
+        rescue => b
+          assert_same(a, b.cause)
+          begin
+            raise 'c'
+          rescue
+            raise b
+          end
+        end
+      end
+    }
+    assert_same(a, e.cause, 'cause should not be overwritten by reraise')
+  end
+
+  def test_cause_at_raised
+    a = nil
+    e = assert_raise_with_message(RuntimeError, 'b') {
+      begin
+        raise 'a'
+      rescue => a
+        b = RuntimeError.new('b')
+        assert_nil(b.cause)
+        begin
+          raise 'c'
+        rescue
+          raise b
+        end
+      end
+    }
+    assert_equal('c', e.cause.message, 'cause should be the exception at raised')
+    assert_same(a, e.cause.cause)
+  end
+
   def test_raise_with_cause
     msg = "[Feature #8257]"
     cause = ArgumentError.new("foobar")
@@ -630,6 +675,27 @@ end.join
     assert_raise_with_message(ArgumentError, /with no arguments/) do
       raise cause: cause
     end
+  end
+
+  def test_raise_with_cause_in_rescue
+    e = assert_raise_with_message(RuntimeError, 'b') {
+      begin
+        raise 'a'
+      rescue => a
+        begin
+          raise 'b'
+        rescue => b
+          assert_same(a, b.cause)
+          begin
+            raise 'c'
+          rescue
+            raise b, cause: ArgumentError.new('d')
+          end
+        end
+      end
+    }
+    assert_equal('d', e.cause.message, 'cause option should be honored always')
+    assert_nil(e.cause.cause)
   end
 
   def test_unknown_option
@@ -657,21 +723,97 @@ end.join
     assert_in_out_err([], "raise Class.new(RuntimeError), 'foo'", [], /foo\n/)
   end
 
-  def test_name_error_info
-    obj = BasicObject.new
+  PrettyObject =
+    Class.new(BasicObject) do
+      alias object_id __id__
+      def pretty_inspect; "`obj'"; end
+      alias inspect pretty_inspect
+    end
+
+  def test_name_error_info_const
+    obj = PrettyObject.new
+
     e = assert_raise(NameError) {
       obj.instance_eval("Object")
     }
     assert_equal(:Object, e.name)
+
+    e = assert_raise(NameError) {
+      BasicObject::X
+    }
+    assert_same(BasicObject, e.receiver)
+    assert_equal(:X, e.name)
+  end
+
+  def test_name_error_info_method
+    obj = PrettyObject.new
+
     e = assert_raise(NameError) {
       obj.instance_eval {foo}
     }
     assert_equal(:foo, e.name)
+    assert_same(obj, e.receiver)
+
     e = assert_raise(NoMethodError) {
       obj.foo(1, 2)
     }
     assert_equal(:foo, e.name)
     assert_equal([1, 2], e.args)
+    assert_same(obj, e.receiver)
+    assert_not_predicate(e, :private_call?)
+
+    e = assert_raise(NoMethodError) {
+      obj.instance_eval {foo(1, 2)}
+    }
+    assert_equal(:foo, e.name)
+    assert_equal([1, 2], e.args)
+    assert_same(obj, e.receiver)
+    assert_predicate(e, :private_call?)
+  end
+
+  def test_name_error_info_local_variables
+    obj = PrettyObject.new
+    def obj.test(a, b=nil, *c, &d)
+      e = a
+      1.times {|f| g = foo; g}
+      e
+    end
+
+    e = assert_raise(NameError) {
+      obj.test(3)
+    }
+    assert_equal(:foo, e.name)
+    assert_same(obj, e.receiver)
+    assert_equal(%i[a b c d e f g], e.local_variables.sort)
+  end
+
+  def test_name_error_info_method_missing
+    obj = PrettyObject.new
+    def obj.method_missing(*)
+      super
+    end
+
+    e = assert_raise(NoMethodError) {
+      obj.foo(1, 2)
+    }
+    assert_equal(:foo, e.name)
+    assert_equal([1, 2], e.args)
+    assert_same(obj, e.receiver)
+    assert_not_predicate(e, :private_call?)
+
+    e = assert_raise(NoMethodError) {
+      obj.instance_eval {foo(1, 2)}
+    }
+    assert_equal(:foo, e.name)
+    assert_equal([1, 2], e.args)
+    assert_same(obj, e.receiver)
+    assert_predicate(e, :private_call?)
+  end
+
+  def test_name_error_info_parent_iseq_mark
+    assert_separately(['-', File.join(__dir__, 'bug-11928.rb')], <<-'end;')
+      -> {require ARGV[0]}.call
+    end;
   end
 
   def test_output_string_encoding
@@ -683,7 +825,34 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       assert_equal 0, errs.size
       err = outs.first.force_encoding('utf-8')
       assert err.valid_encoding?, 'must be valid encoding'
-      assert_match /\u3042/, err
+      assert_match %r/\u3042/, err
+    end
+  end
+
+  def test_multibyte_and_newline
+    bug10727 = '[ruby-core:67473] [Bug #10727]'
+    assert_in_out_err([], <<-'end;', [], /\u{306b 307b 3093 3054} \(E\)\n\u{6539 884c}/, bug10727, encoding: "UTF-8")
+      class E < StandardError
+        def initialize
+          super("\u{306b 307b 3093 3054}\n\u{6539 884c}")
+        end
+      end
+      raise E
+    end;
+  end
+
+  def test_method_missing_reason_clear
+    bug10969 = '[ruby-core:68515] [Bug #10969]'
+    a = Class.new {def method_missing(*) super end}.new
+    assert_raise(NameError) {a.instance_eval("foo")}
+    assert_raise(NoMethodError, bug10969) {a.public_send("bar", true)}
+  end
+
+  def test_message_of_name_error
+    assert_raise_with_message(NameError, /\Aundefined method `foo' for module `#<Module:.*>'$/) do
+      Module.new do
+        module_function :foo
+      end
     end
   end
 end

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rdoc/test_case'
 
 class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
@@ -629,7 +630,6 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     ]
     invalid_syntax = [
       'def x end',
-      'class C end',
       'class C < end',
       'module M < C end',
       'a=># blah',

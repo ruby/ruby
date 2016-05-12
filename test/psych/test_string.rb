@@ -1,3 +1,5 @@
+# encoding: UTF-8
+# frozen_string_literal: false
 require_relative 'helper'
 
 module Psych
@@ -23,9 +25,68 @@ module Psych
       assert_equal 2, Psych.dump(%Q{<%= ENV["PATH"] %>}).count('"')
     end
 
+    def test_no_quotes_when_start_with_non_ascii_character
+      yaml = Psych.dump 'Český non-ASCII'.encode(Encoding::UTF_8)
+      assert_match(/---\s*[^"'!]+$/, yaml)
+    end
+
     def test_doublequotes_when_there_is_a_single
-      yaml = Psych.dump "@123'abc"
-      assert_match(/---\s*"/, yaml)
+      str = "@123'abc"
+      yaml = Psych.dump str
+      assert_match /---\s*"/, yaml
+      assert_equal str, Psych.load(yaml)
+    end
+
+    def test_plain_when_shorten_than_line_width_and_no_final_line_break
+      str = "Lorem ipsum"
+      yaml = Psych.dump str, line_width: 12
+      assert_match /---\s*[^>|]+\n/, yaml
+      assert_equal str, Psych.load(yaml)
+    end
+
+    def test_plain_when_shorten_than_line_width_and_with_final_line_break
+      str = "Lorem ipsum\n"
+      yaml = Psych.dump str, line_width: 12
+      assert_match /---\s*[^>|]+\n/, yaml
+      assert_equal str, Psych.load(yaml)
+    end
+
+    def test_folded_when_longer_than_line_width_and_with_final_line_break
+      str = "Lorem ipsum dolor sit\n"
+      yaml = Psych.dump str, line_width: 12
+      assert_match /---\s*>\n(.*\n){2}\Z/, yaml
+      assert_equal str, Psych.load(yaml)
+    end
+
+    # http://yaml.org/spec/1.2/2009-07-21/spec.html#id2593651
+    def test_folded_strip_when_longer_than_line_width_and_no_newlines
+      str = "Lorem ipsum dolor sit amet, consectetur"
+      yaml = Psych.dump str, line_width: 12
+      assert_match /---\s*>-\n(.*\n){3}\Z/, yaml
+      assert_equal str, Psych.load(yaml)
+    end
+
+    def test_literal_when_inner_and_final_line_break
+      [
+        "Lorem ipsum\ndolor\n",
+        "Lorem ipsum\nZolor\n",
+      ].each do |str|
+        yaml = Psych.dump str, line_width: 12
+        assert_match /---\s*\|\n(.*\n){2}\Z/, yaml
+        assert_equal str, Psych.load(yaml)
+      end
+    end
+
+    # http://yaml.org/spec/1.2/2009-07-21/spec.html#id2593651
+    def test_literal_strip_when_inner_line_break_and_no_final_line_break
+      [
+        "Lorem ipsum\ndolor",
+        "Lorem ipsum\nZolor",
+      ].each do |str|
+        yaml = Psych.dump str, line_width: 12
+        assert_match /---\s*\|-\n(.*\n){2}\Z/, yaml
+        assert_equal str, Psych.load(yaml)
+      end
     end
 
     def test_cycle_x

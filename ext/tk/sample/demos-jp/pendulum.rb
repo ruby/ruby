@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: false
 #
 # This demonstration illustrates how Tcl/Tk can be used to construct
 # simulations of physical systems.

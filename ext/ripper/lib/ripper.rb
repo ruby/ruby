@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'ripper/core'
 require 'ripper/lexer'
 require 'ripper/filter'

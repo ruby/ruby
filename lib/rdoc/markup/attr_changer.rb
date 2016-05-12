@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 class RDoc::Markup
 
   AttrChanger = Struct.new :turn_on, :turn_off # :nodoc:

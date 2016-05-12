@@ -1,4 +1,5 @@
 # coding: UTF-8
+# frozen_string_literal: true
 
 require 'rubygems/package/tar_test_case'
 require 'rubygems/simple_gem'
@@ -130,6 +131,37 @@ class TestGemPackage < Gem::Package::TarTestCase
     end
 
     assert_equal %w[lib/code.rb], files
+  end
+
+  def test_add_files_symlink
+    skip 'symlink not supported' if Gem.win_platform?
+
+    spec = Gem::Specification.new
+    spec.files = %w[lib/code.rb lib/code_sym.rb]
+
+    FileUtils.mkdir_p 'lib'
+    open 'lib/code.rb',  'w' do |io| io.write '# lib/code.rb'  end
+    File.symlink('lib/code.rb', 'lib/code_sym.rb')
+
+    package = Gem::Package.new 'bogus.gem'
+    package.spec = spec
+
+    tar = util_tar do |tar_io|
+      package.add_files tar_io
+    end
+
+    tar.rewind
+
+    files, symlinks = [], []
+
+    Gem::Package::TarReader.new tar do |tar_io|
+      tar_io.each_entry do |entry|
+        (entry.symlink? ? symlinks : files) << entry.full_name
+      end
+    end
+
+    assert_equal %w[lib/code.rb], files
+    assert_equal %w[lib/code_sym.rb], symlinks
   end
 
   def test_build
@@ -298,7 +330,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_equal %w[lib/code.rb], reader.contents
   end
 
-  def test_build_signed_encryped_key
+  def test_build_signed_encrypted_key
     skip 'openssl is missing' unless defined?(OpenSSL::SSL)
 
     spec = Gem::Specification.new 'build', '1'
@@ -396,6 +428,27 @@ class TestGemPackage < Gem::Package::TarTestCase
                  "#{@destination} is not allowed", e.message)
   end
 
+  def test_extract_tar_gz_symlink_relative_path
+    skip 'symlink not supported' if Gem.win_platform?
+
+    package = Gem::Package.new @gem
+
+    tgz_io = util_tar_gz do |tar|
+      tar.add_file    'relative.rb', 0644 do |io| io.write 'hi' end
+      tar.mkdir       'lib',         0755
+      tar.add_symlink 'lib/foo.rb', '../relative.rb', 0644
+    end
+
+    package.extract_tar_gz tgz_io, @destination
+
+    extracted = File.join @destination, 'lib/foo.rb'
+    assert_path_exists extracted
+    assert_equal '../relative.rb',
+                 File.readlink(extracted)
+    assert_equal 'hi',
+                 File.read(extracted)
+  end
+
   def test_extract_tar_gz_directory
     package = Gem::Package.new @gem
 
@@ -443,7 +496,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   def test_install_location
     package = Gem::Package.new @gem
 
-    file = 'file.rb'
+    file = 'file.rb'.dup
     file.taint
 
     destination = package.install_location file, @destination
@@ -483,7 +536,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     skip 'no File.realpath on 1.8' if RUBY_VERSION < '1.9'
     package = Gem::Package.new @gem
 
-    file = 'foo//file.rb'
+    file = 'foo//file.rb'.dup
     file.taint
 
     destination = @destination.sub '/', '//'
@@ -821,4 +874,3 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
 end
-

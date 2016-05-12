@@ -1,5 +1,4 @@
 /*
- * $Id$
  * Copyright (C) 2007 Technorama Ltd. <oss-ruby@technorama.net>
  */
 #include "ossl.h"

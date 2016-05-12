@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # twind.rb
 #
 # This demonstration script creates a text widget with a bunch of

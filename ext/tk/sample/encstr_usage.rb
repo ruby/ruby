@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'tk'
 
 TkMessage.new(:width=>400, :text=><<EOM).pack

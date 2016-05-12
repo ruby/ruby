@@ -1,111 +1,4399 @@
-Sat Dec 27 13:08:20 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+Thu May 12 01:54:08 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* ext/socket/socket.c: improved document for YARD doc.
-	  [fix GH-795][ci skip] Patch by @tlewin
+	* lib/mkmf.rb (try_func): get rid of conflict of declarations of
+	  main().  checking local symbol reference does not make sense.
 
-Sat Dec 27 10:11:21 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+Thu May 12 00:18:19 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* ext/tk/lib/tkextlib/tcllib/plotchart.rb: fix to invoke correct function
-	  of tcllib. Patch by @zalt50 [fix GH-787]
+	* win32/Makefile.sub (HAVE_QSORT_S): use qsort_s only for Visual Studio
+	  2012 or later, because VS2010 seems to causes a SEGV in
+	  test/ruby/test_enum.rb.
 
-Sat Dec 27 10:03:41 2014  SHIBATA Hiroshi  <shibata.hiroshi@gmail.com>
+Wed May 11 23:59:47 2016  Masaya Tarui  <tarui@ruby-lang.org>
 
-	* tool/make-snapshot: show sha1 digest when making packages.
-	  it's request from https://github.com/ruby/www.ruby-lang.org/issues/921
-	  [fix GH-794]
+	* vm_insnhelper.c (vm_getivar): describe fast-path explicit
+	  (compiler friendly). [Bug #12274].
 
-Fri Dec 26 15:32:16 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed May 11 21:30:07 2016  Masaya Tarui  <tarui@ruby-lang.org>
 
-	* ext/tk/tcltklib.c (ip_invoke_core): remove probably duplicate
-	  dead code.
+	* compile.c (iseq_compile_each): share InlineCache during same
+	  instance variable accesses. Reducing memory consumption,
+	  rising cache hit rate and rising branch prediction hit rate
+	  are expected. A part of [Bug #12274].
 
-Fri Dec 26 15:28:27 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+	* iseq.h (struct iseq_compile_data): introduce instance
+	  variable IC table for sharing.
 
-	* ext/tk/tcltklib.c (ip_ruby_cmd_receiver_const_get): simply use
-	  rb_path2class() to get a class/module from its name.
+	* iseq.c (prepare_iseq_build, compile_data_free):
+	  construct/destruct above table.
 
-Fri Dec 26 15:20:54 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed May 11 17:18:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* marshal.c (w_long): append at once by w_nbyte() instead of
-	  appending byte by byte.
+	* util.c (ruby_qsort): use qsort_s if available, for Microsoft
+	  Visual Studio 2005 (msvcr80.dll) and mingw.
 
-Fri Dec 26 15:13:13 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed May 11 10:33:26 2016  Marcus Stollsteimer  <sto.mar@web.de>
 
-	* ext/json/parser/parser.rl (unescape_unicode): check if valid
-	  before bit-or assignments.
-	  reported by Denis Denisov <denji0k AT gmail.com>.
+	* COPYING: Remove trailing-whitespaces.
+	  [ci skip][fix GH-1348]
 
-	* ext/nkf/nkf-utf8/nkf.c (nkf_iconv_t): fix a missing semicolon.
-	  reported by Denis Denisov <denji0k AT gmail.com>.
+Tue May 10 21:05:45 2016  Benoit Daloze  <eregontp@gmail.com>
 
-	* process.c (rb_spawn_process): get rid of usage of uninitialized
+	* insns.def (defineclass): Also raise an error when redeclaring the
+	  superclass of a class as Object and it has another superclass.
+	  [Bug #12367] [ruby-core:75446]
+
+	* test/ruby/test_class.rb: test for above.
+
+Tue May 10 14:57:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (obj_random_bytes): base on bytes method instead of
+	  rand method, not to call toplevel rand method.
+
+Tue May 10 13:07:28 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (-fexcess-precision=standard): before r54895 -std=c99
+	  is specified and it implied -fexcess-precision=standard.
+	  Now with -std=gnu99, it should be explicitly specified.
+	  https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html
+
+Mon May  9 10:51:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_atfork_internal): move th to an argument.
+
+	* thread.c (rb_thread_atfork): do not repeat GET_THREAD().
+
+Mon May  9 10:46:36 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_atfork, rb_thread_atfork_before_exec): do
+	  nothing unless working fork is available.
+
+	* thread_sync.c (rb_mutex_abandon_all): define only if working
+	  fork is available.
+
+	* thread_sync.c (rb_mutex_abandon_keeping_mutexes): ditto.
+
+	* thread_sync.c (rb_mutex_abandon_locking_mutex): ditto.
+
+	* thread_win32.c (gvl_init): never used.
+
+Mon May  9 07:18:06 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/{defines,ruby}.h: need to define function attributes
+	  alternatives in defines.h instead of ruby.h, because they are used
+	  in oniguruma.h and the header used without including ruby.h at
+	  encoding library sources.
+
+Mon May  9 06:30:12 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/ruby.h (CONSTFUNC, PUREFUNC): fixed build errors on
+	  non-gcc build environments introduced at r54952.
+
+Mon May  9 02:51:51 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* gc.c (rb_gc_unprotect_logging): throw rb_memerror when it cannot
+	  allocate memory. This is pointed out by Facebook's Infer.
+
+	* gc.c (gc_prof_setup_new_record): ditto.
+
+	* regparse.c (parse_regexp): ditto.
+
+	* util.c (MALLOC): use xmalloc and xfree like above.
+
+Mon May  9 02:39:16 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: check function attribute const and pure,
+	  and define CONSTFUNC and PUREFUNC if available.
+	  Note that I don't add those options as default because
+	  it still shows many false-positive (it seems not to consider
+	  longjmp).
+
+	* vm_eval.c (stack_check): get rb_thread_t* as an argument
+	  to avoid duplicate call of GET_THREAD().
+
+Sun May  8 21:01:14 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/extconf.rb: assume it doesn't have SSLv2 related
+	  functions when OPENSSL_NO_SSL2 is defined.
+	  Usually openssl's header and the library (libssl) have the same
+	  set of functions, but on some environment the library has functions
+	  whose headers doesn't declare. (openssl/opensslconf.h and libssl.so
+	  aren't be synchronized)
+	  To detect such case explicitly check feature macro and remove
+	  related functions.
+
+Sun May  8 18:51:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_home_dir_of): return the default home path if the
+	  user name is the current user name, on platforms where struct
+	  pwd is not supported.  a temporary measure against
+	  [Bug #12226].
+
+Sun May  8 08:51:38 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: add -Wsuggest-attribute=format and suppress warnings.
+
+Sun May  8 08:31:03 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: add -Wsuggest-attribute=noreturn and suppress warnings.
+
+Sun May  8 08:19:16 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: add -Werror=implicit-int to avoid missing type of
+	  function declaration.
+
+Sat May  7 22:22:37 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/webrick/ssl.rb: Accept string value for SSLCertName. It is used
+	  to invoke ssl server with command line.
+	  [fix GH-1329] Patch by @kerlin
+	* test/webrick/test_ssl_server.rb: Added test for GH-1329
+
+Sat May  7 21:55:12 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/webrick/test_ssl_server.rb: Added basic test for `webrick/ssl`
+
+Sat May  7 16:22:13 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (int_pair_to_real_inclusive): optimize to multiply
+	  without Bignum.
+
+Sat May  7 07:58:02 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_exec_getargs): honor the expected argument types
+	  over the conversion method.  the basic language functionality
+	  should be robust.  [ruby-core:75388] [Bug #12355]
+
+Fri May  6 08:16:26 2016  David Silva  <david.silva@digital.cabinet-office.gov.uk>
+
+	* enum.c (enum_find): [DOC] add more examples to the documentation
+	  of Enumerable#detect, to show that it equals to Enumerable#find.
+	  [Fix GH-1340]
+
+Thu May  5 18:08:31 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* test/ruby/test_complexrational.rb: Remove duplicated raise.
+
+Thu May  5 14:41:05 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* string.c (rb_str_sub): Fix a special match variable name.
+	  [ci skip]
+
+Thu May  5 12:22:17 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_eval_cmd, rb_catch_obj): use TH_JUMP_TAG with the
+	  same rb_thread_t used for TH_PUSH_TAG, instead of JUMP_TAG with
+	  the current thread global variable.
+
+Thu May  5 10:49:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (fill_random_bytes_syscall): use arc4random_buf if
+	  available.
+
+Wed May  4 23:13:58 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* numeric.c (fix_plus): Remove rb_nucomp_add prototype
+	  declaration.
+
+	* numeric.c (fix_mul): Remove rb_nucomp_mul prototype
+	  declaration.
+
+	* internal.h (rb_nucomp_add, rb_nucomp_mul): add prototype
+	  declarations.
+
+Wed May  4 18:38:00 2016  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* lib/net/http/header.rb (Net::HTTPHeader#{each_header,each_name,
+	  each_capitalized_name,each_value,each_capitalized}): Return
+	  sized enumerators.
+
+	* test/net/http/test_httpheader.rb: add test for above.
+
+Wed May  4 17:53:15 2016  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* lib/set.rb (Set#{delete_if,keep_if,collect!,reject!,select!,classify,divide},
+	  SortedSet#{delete_if,keep_if}): Return sized enumerators.
+
+	* test/test_set.rb: add test for above.
+
+Tue May  3 23:25:48 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* numeric.c: [DOC] Update result of 123456789 ** -2.
+	  [ruby-dev:49606] [Bug #12339]
+
+Tue May  3 23:13:16 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* internal.h (RCOMPLEX_SET_IMAG): undef RCOMPLEX_SET_IMAG
+	  instead of duplicated undef RCOMPLEX_SET_REAL.
+
+Tue May  3 22:55:07 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* complex.c (rb_complex_set_imag): Fix to properly set imag
+	  of complex.
+
+Tue May  3 22:19:55 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (warnflags): use -std=gnu99 instead of
+	  -std=iso9899:1999. [Feature #12336]
+
+Tue May  3 22:10:09 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (count_utf8_lead_bytes_with_word): Use __builtin_popcount
+	  only if it can use SSE 4.2 POPCNT whose latency is 3 cycle.
+
+	* internal.h (rb_popcount64): use __builtin_popcountll because now
+	  it is in fast path.
+
+Tue May  3 14:19:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (new_if_gen): set newline flag to NODE_IF to trace all
+	  if/elsif statements.  [ruby-core:67720] [Bug #10763]
+
+Tue May  3 05:35:54 2016  Eric Wong  <e@80x24.org>
+
+	* process.c (disable_child_handler_fork_child):
+	  initialize handler for SIGPIPE for !POSIX_SIGNAL
+
+Mon May  2 23:03:42 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c, include/ruby/win32.h (rb_w32_utruncate): implements new
+	  truncate alternative which accepts UTF-8 path.
+
+	* file.c (truncate): use above function.
+	  [Bug #12340]
+
+Mon May  2 20:59:21 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (str_coderange): to avoid function call when the string already
+	  has coderange information.
+
+	* re.c (rb_reg_prepare_enc): add shortcut path when the regexp has
+	  the same encoding of given string.
+
+	* re.c (rb_reg_prepare_re): avoid duplicated allocation of
+	  onig_errmsg_buffer.
+
+
+Mon May  2 12:34:52 2016  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_refinement.rb (test_inspect): Use Integer instead of
+	  Fixnum.
+
+Mon May  2 06:58:38 2016  Tanaka Akira  <akr@fsij.org>
+
+	* complex.c: Don't refer rb_cFixnum and rb_cBignum.
+	  (k_fixnum_p): Use FIXNUM_P.
+	  (k_bignum_p): Use RB_TYPE_P.
+
+Mon May  2 01:27:59 2016  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_numeric.rb (test_step): Use Integer::FIXNUM_MAX.
+
+Mon May  2 01:15:01 2016  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_module.rb (test_name): Use Integer instead of Fixnum.
+
+Mon May  2 01:00:04 2016  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/test/unit/assertions.rb (assert_fixnum): Defined.
+	  (assert_bignum): Defined.
+
+	* test/ruby/test_bignum.rb: Use assert_bignum.
+
+	* test/ruby/test_integer_comb.rb: Use assert_fixnum and assert_bignum.
+
+	* test/ruby/test_optimization.rb: Ditto.
+
+Mon May  2 00:41:53 2016  Tanaka Akira  <akr@fsij.org>
+
+	* vm_trace.c (recalc_remove_ruby_vm_event_flags): Add a cast to
+	  avoid signed integer overflow.
+
+Mon May  2 00:06:04 2016  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/envutil.rb: Define Integer::{FIXNUM_MIN,FIXNUM_MAX}.
+
+	* test/ruby/test_bignum.rb: Use Integer::{FIXNUM_MIN,FIXNUM_MAX}.
+
+	* test/ruby/test_bignum.rb: Ditto.
+
+	* test/ruby/test_integer_comb.rb: Ditto.
+
+	* test/ruby/test_marshal.rb: Ditto.
+
+	* test/ruby/test_optimization.rb: Ditto.
+
+Sun May  1 23:59:59 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* array.c (rb_ary_sum): fix for mathn
+
+	* test/ruby/test_array.rb (test_sum): ditto.
+
+Sun May  1 23:51:54 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/lib/test/unit.rb (Options#non_options): fixed wrong regexp.
+	  if both positives and negatives were specified, positives had to
+	  be specified from the beginning.
+
+Sun May  1 21:00:07 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c: drop Win2K support.
+
+Sun May  1 20:39:47 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* cont.c, hash.c, random.c, win32/win32.c: cleanup some Win9x/ME/NT4
+	  support leftovers.
+	  [fix GH-1328] patched by @cremno
+
+Sun May  1 07:30:44 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (search_nonascii): use nlz on big endian environments.
+
+	* internal.h (nlz_intptr): defined.
+
+Sun May  1 00:03:30 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (__builtin_ctz): check.
+
+	* configure.in (__builtin_ctzll): check.
+
+	* internal.h (rb_popcount32): defined for ntz_int32.
+	  it can use __builtin_popcount but this function is not used on
+	  GCC environment because it uses __builtin_ctz.
+	  When another function uses this, using __builtin_popcount
+	  should be re-considered.
+
+	* internal.h (rb_popcount64): ditto.
+
+	* internal.h (ntz_int32): defined for ntz_intptr.
+
+	* internal.h (ntz_int64): defined for ntz_intptr.
+
+	* internal.h (ntz_intptr): defined as ntz for uintptr_t.
+
+	* string.c (search_nonascii): unroll and use ntz.
+
+Sat Apr 30 21:54:13 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (Init_Numeric): Gather Fixnum method definitions.
+
+Sat Apr 30 21:28:14 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_int_div): Define Integer#/.
+
+	* bignum.c (rb_big_div): Don't define Bignum#/.
+
+	* lib/mathn.rb (Integer#/): Replace Integer#/ instead of Bignum#/.
+
+Sat Apr 30 21:11:08 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_int_plus): Define Integer#+.
+
+	* bignum.c (rb_big_plus): Don't define Bignum#+.
+
+Sat Apr 30 21:01:20 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_int_minus): Define Integer#-.
+
+	* bignum.c (rb_big_minus): Don't define Bignum#-.
+
+Sat Apr 30 20:53:33 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_int_mul): Define Integer#*.
+
+	* bignum.c (rb_big_mul): Don't define Bignum#*.
+
+Sat Apr 30 20:30:44 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_int_modulo): Define Integer#%.
+
+	* bignum.c (rb_big_modulo): Don't define Bignum#%.
+
+Sat Apr 30 20:17:08 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_equal): Define Integer#==.
+
+	* bignum.c (rb_big_eq): Don't define Bignum#==.
+
+Sat Apr 30 19:41:15 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_gt): Define Integer#>.
+
+	* bignum.c (rb_big_gt): Don't define Bignum#>.
+	  Renamed from big_gt.
+
+	* internal.h (rb_big_gt): Declared.
+
+Sat Apr 30 19:24:40 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_ge): Define Integer#>=.
+
+	* bignum.c (rb_big_ge): Don't define Bignum#>=.
+	  Renamed from big_ge.
+
+	* internal.h (rb_big_ge): Declared.
+
+Sat Apr 30 19:20:40 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/standard_library.rdoc: Remove obsoleted classes and modules.
+
+Sat Apr 30 19:09:23 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_lt): Define Integer#<.
+
+	* bignum.c (rb_big_lt): Don't define Bignum#<.
+	  Renamed from big_lt.
+
+	* internal.h (rb_big_lt): Declared.
+
+Sat Apr 30 18:44:05 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_le): Define Integer#<=.
+
+	* bignum.c (rb_big_le): Don't define Bignum#<=.
+	  Renamed from big_le.
+
+	* internal.h (rb_big_le): Declared.
+
+Sat Apr 30 18:11:44 2016  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (Init_Bignum): Define Integer::GMP_VERSION.
+
+Sat Apr 30 16:58:18 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_remainder): Define Integer#remainder.
+
+	* bignum.c (rb_big_remainder): Don't define Bignum#remainder.
+
+	* internal.h (rb_big_remainder): Declared.
+
+Sat Apr 30 15:29:24 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_int_uminus): {Fixnum,Bignum}#-@ is unified into
+	  Integer.
+
+	* bignum.c (rb_big_uminus): Don't define Bignum#-@.
+
+Sat Apr 30 14:42:20 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_int_idiv): {Fixnum,Bignum}#div is unified into
+	  Integer.
+
+	* bignum.c (rb_big_idiv): Don't define Bignum#div.
+
+Sat Apr 30 14:25:55 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_int_modulo): {Fixnum,Bignum}#modulo is unified into
+	  Integer.
+
+	* bignum.c (rb_big_modulo): Don't define Bignum#modulo.
+
+Sat Apr 30 14:04:30 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_divmod): {Fixnum,Bignum}#divmod is unified into
+	  Integer.
+
+	* bignum.c (rb_big_divmod): Don't define Bignum#divmod.
+
+Sat Apr 30 13:20:00 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_fdiv): {Fixnum,Bignum}#fdiv is unified into
+	  Integer.
+
+	* bignum.c (rb_big_fdiv): Don't define Bignum#fdiv.
+
+Sat Apr 30 12:25:43 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_int_pow): {Fixnum,Bignum}#** is unified into
+	  Integer.
+
+	* bignum.c (rb_big_pow): Don't define Bignum#**.
+
+Sat Apr 30 12:28:59 2016  Tanaka Akira  <akr@fsij.org>
+
+	* bignum.c (rb_big_comp): Renamed from rb_big_neg.
+
+	* numeric.c (fix_comp): Renamed from fix_rev.
+
+Sat Apr 30 12:25:43 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_comp): {Fixnum,Bignum}#~ is unified into
+	  Integer.
+
+	* bignum.c (rb_big_neg): Don't define Bignum#~.
+
+	* internal.h (rb_big_neg): Declared.
+
+Sat Apr 30 12:07:42 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_and): {Fixnum,Bignum}#& is unified into
+	  Integer.
+
+	* bignum.c (rb_big_and): Don't define Bignum#&.
+
+Sat Apr 30 11:56:15 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/thread: removed dummy extension library.  thread_sync.c
+	  provides "thread.rb" already.
+
+Sat Apr 30 11:53:48 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_or): {Fixnum,Bignum}#| is unified into
+	  Integer.
+
+	* bignum.c (rb_big_or): Don't define Bignum#|.
+
+Sat Apr 30 11:18:47 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* vm_trace.c: Fix typos. [ci skip]
+
+Sat Apr 30 10:09:04 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/pty/pty.c (establishShell): honor USER environment variable
+	  and login name over uid, one uid can be shared by some login
+	  names.
+
+Fri Apr 29 22:40:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* doc/maintainers.rdoc (ext/io/nonblock): still maintained, as
+	  well as ext/io/wait, which is the origin.
+
+Fri Apr 29 21:18:12 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* doc/maintainers.rdoc (ext/win32): of course, it's still maintained.
+
+Fri Apr 29 21:03:10 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* gems/bundled_gems: Update latest gems, test-unit-3.1.8 and rake-11.1.2.
+
+Fri Apr 29 20:43:02 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/maintainers.rdoc: Update latest maintainers list on Ruby 2.4
+
+Fri Apr 29 19:52:45 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/maintainers.rdoc: Removed deprecated entries. These are already deleted.
+
+Fri Apr 29 19:48:45 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/maintainers.rdoc: Removed Ruby 1.8 entries. It's not necessary to
+	  Ruby 2.4 or later.
+
+Thu Apr 28 17:03:17 2016  Nicholas Maccharoli  <nmaccharoli@gmail.com>
+
+	* hash.c (rb_hash_update_{block,func}_callback): dry up hash
+	  update callback code.  [Fix GH-1338]
+
+Thu Apr 28 16:52:05 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (rb_reg_prepare_enc): use rb_enc_asciicompat(enc) instead of
+	  rb_enc_str_asciicompat_p(str) to avoid useless rb_enc_get(str) call.
+
+Thu Apr 28 16:33:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb: [DOC] fix example code.  base on the code by
+	  Semyon Gaivoronskiy in [ruby-core:75224].  [Bug #12323]
+
+Thu Apr 28 09:33:03 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems.rb, lib/rubygems/*, test/rubygems/*: Update rubygems-2.6.4.
+	  Please see entries of 2.6.4 on
+	  https://github.com/rubygems/rubygems/blob/master/History.txt
+
+Thu Apr 28 04:49:07 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* configure.in (rb_cv_lgamma_r_pm0): check if lgamma_r(+0.0)
+	  returns positive infinity, in addition to lgamma_r(-0.0).
+	  AIX returns an incorrect result of negative infinity.
+
+	* math.c (ruby_lgamma_r): handle +0.0, in addition to -0.0.
+
+Thu Apr 28 01:11:14 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* time.c: define _DEFAULT_SOURCE because glibc 2.20 deprecates
+	  _BSD_SOURCE.
+	  https://sourceware.org/glibc/wiki/Release/2.20
+
+Thu Apr 28 00:27:55 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_xor): {Fixnum,Bignum}#^ is unified into
+	  Integer.
+
+	* bignum.c (rb_big_xor): Don't define Bignum#^.
+
+Wed Apr 27 20:53:59 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_aref): {Fixnum,Bignum}#[] is unified into
+	  Integer.
+
+	* bignum.c (rb_big_aref): Don't define Bignum#<<.
+
+	* internal.h (rb_big_aref): Declared.
+
+Wed Apr 27 16:10:35 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/instruction.rb: fix to follow current implementation.
+
+Wed Apr 27 15:47:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_s_new): warn if a block is given,
+	  as well as IO.new.
+
+Wed Apr 27 14:29:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (ruby_only_for_internal_use): raise fatal error when
+	  deprecated function only for internal use is called, not just a
+	  warning.
+
+Tue Apr 26 23:42:30 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/redmine-backporter.rb (rel): should not raise exceptions even if
+	  the user input is wrong.  only reports the error and continue process.
+
+Tue Apr 26 23:35:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): convert -e script to the encoding
+	  given by a command line option on Windows.  assume it is the
+	  expected encoding.  [ruby-dev:49461] [Bug #11900]
+
+Tue Apr 26 21:11:02 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_int_lshift): {Fixnum,Bignum}#<< is unified into
+	  Integer.
+
+	* bignum.c (rb_big_lshift): Don't define Bignum#<<.
+
+Tue Apr 26 20:59:40 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_int_rshift): {Fixnum,Bignum}#>> is unified into
+	  Integer.
+
+	* bignum.c (rb_big_rshift): Don't define Bignum#>>.
+
+Tue Apr 26 20:46:16 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_size): {Fixnum,Bignum}#size is unified into Integer.
+
+	* bignum.c (rb_big_size_m): Don't define Bignum#size.
+
+	* internal.h (rb_big_size_m): Declared.
+
+Tue Apr 26 20:09:08 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (rb_int_bit_length): {Fixnum,Bignum}#bit_length is
+	  unified into Integer.
+
+	* bignum.c (rb_big_bit_length): Don't define Bignum#bit_length.
+
+	* internal.h (rb_big_bit_length): Declared.
+
+Tue Apr 26 19:56:16 2016  Tanaka Akira  <akr@fsij.org>
+
+	* numeric.c (int_abs): Integer#{abs,magnitude} moved from
+	  Fixnum and Bignum.
+
+	* bignum.c (rb_big_abs): Don't define Bignum#{abs,magnitude}.
+
+	* internal.h (rb_big_abs): Declared.
+
+Mon Apr 25 14:39:11 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/rbconfig/sizeof/extconf.rb: just check the existence of each
+	  types, to reduce configuration time, especially cross-compiling.
+
+	* template/sizes.c.tmpl: calculate sizes of checked types at
+	  compilation time.
+
+Mon Apr 25 11:27:27 2016  Marcus Stollsteimer  <sto.mar@web.de>
+
+	* doc/extension.rdoc: Improvements to english grammars.
+	  [Bug #12246][ruby-core:74792][ci skip]
+
+Mon Apr 25 11:17:50 2016  Marcus Stollsteimer  <sto.mar@web.de>
+
+	* encoding.c: Fix return value of `Encoding::ISO8859_1.name`
+	  [Bug #12313][ruby-core:75147][ci skip]
+	* ext/bigdecimal/bigdecimal.c: Fix code sample of `BigDecimal.new`
+
+Sun Apr 24 23:29:16 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* configure.in: add missing -lm for AIX.
+
+Sun Apr 24 18:33:58 2016  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm_insnhelper.c (INLINE): disable r54738 if __NO_INLINE__ is defined.
+	  It caused "undefined reference to `vm_getivar'".
+
+Sun Apr 24 09:32:12 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* test/ruby/test_array.rb: Add test cases for Array#sum with
+	  non-numeric objects.
+
+Sun Apr 24 04:21:27 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_insnhelper.c (INLINE): define as `inline` when it is optimized.
+	  define as `static inline` when it is not optimized to keep
+	  the symbol generated.
+
+	* vm_insnhelper.c (vm_getivar): use `INLINE` to force inline
+	  so that a compiler inlines it into vm_getinstancevariable
+	  and optimizes out is_attr and related branches.
+
+	* vm_insnhelper.c (vm_getivar): use `inline` to recommend inline.
+	  Without this vm1_ivar_set is degraded.
+
+	  benchmark results:
+	  minimum results in each 5 measurements.
+	  Execution time (sec)
+	  name    ruby 2.4.0dev (2016-04-23 trunk 54727) [x86_64-linux]   ruby 2.4.0dev (2016-04-23 trunk 54733) [x86_64-linux]       built-ruby
+	  loop_whileloop 0.641                                                   0.642 0.646
+	  vm1_ivar* 1.002                                                   0.999 0.831
+	  vm1_ivar_set* 0.369                                                   1.106 0.362
+
+	  Speedup ratio: compare with the result of `ruby 2.4.0dev (2016-04-23
+	  trunk 54727) [x86_64-linux]' (greater is better)
+	  name    ruby 2.4.0dev (2016-04-23 trunk 54733) [x86_64-linux]
+	  built-ruby
+	  loop_whileloop
+	  0.998        0.991
+	  vm1_ivar*
+	  1.003        1.205
+	  vm1_ivar_set*
+	  0.334        1.018
+
+Sat Apr 23 18:01:21 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_getivar): specify inline instead of static inline.
+	  vm_getivar is called by vm_call_ivar and vm_getinstancevariable.
+	  At least with GCC 4.8 and 5.3 on Linux, they are inlining it into
+	  vm_call_ivar but not vm_getinstancevariable.
+	  By `inline`, they correctly inline it and gains performance.
+
+	  Speedup ratio: compare with the result of `ruby 2.4.0dev (2016-04-23
+	  trunk 54727) [x86_64-linux]' (greater is better)
+	  name    built-ruby
+	  loop_whileloop       1.001
+	  vm1_ivar*            1.189
+	  vm1_ivar_set*        1.024
+
+	  Note the `inline`'s meaning is different between old GCC
+	  and C99. Old GCC's inline means C99's extern inline.
+	  https://gcc.gnu.org/onlinedocs/gcc/Inline.html
+	  Since Ruby specify -std=iso9899:1999, it works like C99.
+
+Sat Apr 23 16:11:39 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_mul_size_overflow): use UNLIKELY
+	  by user side to improve generality.
+
+Sat Apr 23 16:10:02 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/ruby.h (RB_LIKELY): use prefix in ruby.h.
+
+	* intern.h (LIKELY): define with RB_LIKELY.
+
+Sat Apr 23 13:27:25 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* NEWS: Add descriptions for Time#to_time updates.
+	  [Bug #12271]
+
+Sat Apr 23 13:21:24 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* NEWS: Add descriptions for DateTime#to_time updates.
+	  [Bug #12189]
+
+Sat Apr 23 11:21:27 2016  Marcus Stollsteimer  <sto.mar@web.de>
+
+	* ext/date/date_core.c (Init_date_core): [DOC] Convert DateTime
+	  documentation to RDoc from Markdown.
+	  [ruby-core:75136] [Bug #12311]
+
+Sat Apr 23 09:03:35 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c: cygwin does not use w32_cmdvector, command line can be
+	  other than UTF-8.  [ruby-dev:49519] [Bug #12184]
+
+Sat Apr 23 01:00:03 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* configure.in: don't use the system-provided round(3) on AIX.
+	  In AIX, round(0.49999999999999994) returns 1.0.
+	  Use round() in numeric.c instead.
+
+Fri Apr 22 21:00:44 2016  Tanaka Akira  <akr@fsij.org>
+
+	* test/ruby/test_time_tz.rb: Tests depends on Europe/Moscow removed
+	  to avoid test failures due to the tzdata change.
+	  https://github.com/eggert/tz/commit/8ee11a301cf173afb0c76e0315b9f9ec8ebb9d95
+	  Found by naruse.
+
+Fri Apr 22 20:18:40 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_mul_size_overflow): added to handle
+	  mul overflow efficiently.
+
+	* include/ruby/ruby.h (rb_alloc_tmp_buffer2): use rb_mul_size_overflow
+	  and avoid division where it can define DSIZE_T.
+
+	* gc.c (xmalloc2_size): moved from ruby.h and use rb_mul_size_overflow.
+
+Fri Apr 22 20:34:04 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* time.c (time_asctime): [DOC] add ctime example, not only
+	  asctime.  [ruby-core:75126] [Bug #12310]
+
+Fri Apr 22 18:44:32 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* variable.c: use uint32_t instead of long to avoid confusion about
+	  the type of ivtbl->numiv.
+
+Fri Apr 22 15:09:27 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval_jump.c (exec_end_procs_chain): restore previous error info
+	  for each end procs.  [ruby-core:75038] [Bug #12302]
+
+Fri Apr 22 15:04:56 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/redmine-backporter.rb: the fullpath of merger.rb is too long to
+	  copy&paste on Windows.  show shorter name instead on the platform.
+	  I'm sure that the user of this command on Windows is only me.
+
+Fri Apr 22 14:52:04 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/merger.rb: remove temporary file.
+
+Fri Apr 22 11:27:03 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/net/http.rb: Improve documentation for SSL requests via GET method.
+	  [fix GH-1325][ci skip] Patch by @jsyeo
+
+Fri Apr 22 10:51:13 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/webrick/ssl.rb: Support to add SSLCiphers option.
+	  [fix GH-1321] Patch by @rhadoo
+
+Fri Apr 22 10:43:19 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* file.c, win32/file.c: Removed obsoleted safe level checks.
+	  [fix GH-1327] Patch by @cremno
+
+Fri Apr 22 10:01:48 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* benchmark/bm_so_meteor_contest.rb: fix a typo.
+	  [fix GH-1330][ci skip] Patch by @sachin21
+
+Fri Apr 22 04:57:01 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* gc.c (rb_alloc_tmp_buffer_with_count): added like xmalloc2 to
+	  avoid duplicated check of size.
+
+	* gc.c (ruby_xmalloc2): added to keep separate layers.
+
+	* include/ruby/ruby.h (rb_alloc_tmp_buffer2): added to check
+	  the size more statically.
+
+Fri Apr 22 04:54:40 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/ruby.h (LIKELY): moved from internal.h.
+
+	* include/ruby/ruby.h (UNLIKELY): ditto.
+
+Thu Apr 21 01:44:19 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* gc.c (objspace_malloc_prepare): remove size check because it is
+	  used by objspace_xmalloc and objspace_xcalloc.
+	  objspace_xmalloc introduces its own check in this commit.
+	  objspace_xcalloc checks with xmalloc2_size (ruby_xmalloc2_size).
+
+	* gc.c (objspace_xmalloc0): common xmalloc function.
+
+	* gc.c (objspace_xmalloc): introduce its own size check.
+
+	* gc.c (objspace_xmalloc2): separated from ruby_xmalloc2 to clarify
+	  the layer who has the responsibility to check the size.
+
+	* gc.c (objspace_xrealloc): remove duplicated size check.
+
+	* gc.c (ruby_xmalloc2): use objspace_xmalloc2.
+
+	* include/ruby/ruby.h (ruby_xmalloc2_size): follow the size limit
+	  as SSIZE_MAX. Note that ISO C says size_t is unsigned integer.
+
+Thu Apr 21 12:14:04 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: check if succeeded in creating config.h.
+
+	* tool/ifchange: ignore failures when TEST_COLORS unmatched. just
+	  use the default value if expected name is not contained in it.
+	  [ruby-core:75046] [Bug #12303]
+
+Wed Apr 20 17:33:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/cgi/escape/escape.c (cgiesc_unescape): define unescape
+	  method instead of _unescape, and should pass the optional
+	  argument to the super method.
+
+	* lib/cgi/util.rb (CGI::Util#_unescape): remove intermediate
+	  method.
+
+Wed Apr 20 15:52:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (syntax_error_initialize): move the default message,
+	  "compile error", from parse.y.  the default parameter should
+	  belong to the class definition.
+
+	* parse.y (yycompile0): use the default parameter.
+
+Wed Apr 20 10:25:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (append_compile_error): use rb_syntax_error_append.
+
+	* error.c (rb_syntax_error_append): append messages into a
+	  SyntaxError exception instance.
+
+	* parse.y (yycompile0): make new SyntaxError instance in main
+	  mode, otherwise error_buffer should be a SyntaxError if error
+	  has occurred.
+
+Tue Apr 19 17:42:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (err_vcatf): rename, and separate appending message from
+	  creating a string buffer.
+
+	* error.c (rb_syntax_error_append): merge rb_error_vsprintf and
+	  rb_compile_err_append.
+
+	* parse.y (parser_compile_error): use rb_syntax_error_append.
+
+Tue Apr 19 13:46:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (append_compile_error, compile_bug): pass iseq and get
+	  error info and file from it, not by the thread error info.
+
+	* error.c (rb_report_bug_valist): take va_list instead of variadic
+	  arguments, and just report the bug but not abort.
+
+Tue Apr 19 13:18:12 2016  Naotoshi Seo  <sonots@gmail.com>
+
+	* lib/time.rb: revert r54167 because it would break
+	  backward compatibilities, and it is documented that
+	  Time.parse does not take into account time zone
+	  abbreations other than ones described in RFC 822
+
+Tue Apr 19 13:12:03 2016  Naotoshi Seo  <sonots@gmail.com>
+
+	* ChangeLog: Fix dates of previous commits
+
+Tue Apr 19 12:45:03 2016  Naotoshi Seo  <sonots@gmail.com>
+
+	* ChangeLog: Add descriptions for logger updates
+	* NEWS: Add descriptions for logger updates
+
+Tue Apr 19 12:45:02 2016  Naotoshi Seo  <sonots@gmail.com>
+
+	* lib/logger.rb: Add shift_period_suffix option
+
+Tue Apr 19 12:45:01 2016  Naotoshi Seo  <sonots@gmail.com>
+
+	* lib/logger.rb: Allow specifying logger parameters in constructor
+	  such as level, progname, datetime_format, formatter.
+
+Mon Apr 18 16:07:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_peephole_optimize): should not replace the
+	  current target INSN, not to follow the replaced dangling link in
+	  the caller.  [ruby-core:74993] [Bug #11816]
+
+Mon Apr 18 12:56:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_truncate): add an optional parameter, digits, as
+	  well as Float#round.  [Feature #12245]
+
+	* numeric.c (int_truncate): add an optional parameter, digits, as
+	  well as Integer#round.  [Feature #12245]
+
+Sun Apr 17 04:18:56 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* tool/redmine-backporter.rb: revisions are strings.
+
+Sat Apr 16 14:26:49 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* ext/date/date_core.c : remove not used f_getlocal macro.
+	  After r54553 f_getlocal macro is not used.
+
+Sat Apr 16 14:15:24 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* ext/date/date_core.c : remove not used f_utc6 macro.
+	  After r54169 f_utc6 macro is not used.
+
+Sat Apr 16 10:00:11 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* struct.c (struct_make_members_list, rb_struct_s_def): member
+	  names should be unique. [ruby-core:74971] [Bug #12291]
+
+	* struct.c (struct_make_members_list): extract making member name
+	  list from char* va_list, with creating symbols without
+	  intermediate IDs.
+
+Sat Apr 16 01:33:27 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* tool/redmine-backporter.rb: sort revisions.
+
+Sat Apr 16 01:16:02 2016  Tanaka Akira  <akr@fsij.org>
+
+	* array.c (rb_ary_sum): Don't yield same element twice.
+	  Found by nagachika.
+
+Sat Apr 16 01:03:32 2016  Tanaka Akira  <akr@fsij.org>
+
+	* array.c (rb_ary_sum): Fix SEGV by [1/2r, 1].sum.
+
+Fri Apr 15 23:52:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* rational.c (rb_rational_plus): rename from rb_rational_add
+	  to be aligned with rb_fix_plus.
+
+	* array.c (rb_ary_sum): ditto.
+
+	* internal.h: ditto.
+
+Fri Apr 15 23:42:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* rational.c (rb_rational_add): rename from nurat_add.
+
+	* array.c (rb_ary_sum): use rb_rational_add directly.
+
+	* test/ruby/test_array.rb (test_sum): add assertions for an array of
+	  Rational values.
+
+Fri Apr 15 22:31:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* array.c (rb_ary_sum): apply the precision compensated algorithm
+	  for an array in which Rational and Float values are mixed.
+
+	* test/ruby/test_array.rb (test_sum): add assertions for the above
+	  change.
+
+Fri Apr 15 22:30:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_setname): defer setting native thread name
+	  set in initialize until the native thread is created.
+	  [ruby-core:74963] [Bug #12290]
+
+Fri Apr 15 20:27:16 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/irb/ext/save-history.rb: Fix NoMethodError when method is not defined.
+
+Fri Apr 15 15:38:58 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk (benchmark): order options for built-ruby and compare-ruby.
+
+Fri Apr 15 14:14:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* test/ruby/test_array.rb (test_sum): add assertions for Rational and
+	  Complex numbers.
+
+Fri Apr 15 10:07:11 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (console_key_pressed_p): raise the same
+	  exception, "unknown virtual key code", for names with nul chars.
+	  though console_win32_vk() considers the length and can deal with
+	  nul chars, rb_sprintf() raised at PRIsVALUE previously, so quote
+	  it if it is unprintable.
+
+Fri Apr 15 09:02:58 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/console/console.c (rb_sym2str): fallback definition for
+	  older ruby.  [ruby-core:74953] [Bug #12284]
+
+Thu Apr 14 21:46:36 2016  Tanaka Akira  <akr@fsij.org>
+
+	* array.c (rb_ary_sum): Support the optional argument, init, and
+	  block.
+
+Thu Apr 14 19:02:41 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/irb/ext/save-history.rb: suppress warning: method redefined;
+	  discarding old save_history=.
+
+Thu Apr 14 14:58:14 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/tkutil/tkutil.c (tk_hash_kv): the third argument can be
+	  nil not only an Array.  reported by @windwiny at
+	  https://github.com/ruby/ruby/commit/cdaa94e#commitcomment-17096618
+
+Thu Apr 14 14:28:55 2016  cremno phobia  <cremno@mail.ru>
+
+	* cont.c (fiber_initialize_machine_stack_context): fix wrong
+	  _MSC_VER check, should be decimal but not hexadecimal.
+	  [ruby-core:74936] [Bug #12279]
+
+Wed Apr 13 22:51:38 2016  Tanaka Akira  <akr@fsij.org>
+
+	* array.c (rb_ary_sum): Array#sum is implemented.
+	  Kahan's compensated summation algorithm for precise sum of float
+	  numbers is moved from ary_inject_op in enum.c.
+
+	* enum.c (ary_inject_op): Don't specialize for float numbers.
+
+	  [ruby-core:74569] [Feature #12217] proposed by mrkn.
+
+Wed Apr 13 15:56:35 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_ceil): add an optional parameter, digits, as
+	  well as Float#round.  [Feature #12245]
+
+	* numeric.c (flo_floor): add an optional parameter, digits, as
+	  well as Float#round.  [Feature #12245]
+
+	* numeric.c (int_ceil): add an optional parameter, digits, as
+	  well as Integer#round.  [Feature #12245]
+
+	* numeric.c (int_floor): add an optional parameter, digits, as
+	  well as Integer#round.  [Feature #12245]
+
+Wed Apr 13 14:47:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (Init_File): add alias File.empty? to File.zero?.
+	  [Feature #9969]
+
+Wed Apr 13 14:36:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (assign_in_cond): allow multiple assignment in
+	  conditional expression.  [Feature #10617]
+
+Wed Apr 13 14:11:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_big_size): add wrapper function of BIGSIZE and
+	  rename the method function with _m suffix.
+
+	* numeric.c (int_round_zero_p): extracted from rb_int_round.
+	  optimize for Bignum, and convert VALUE returned by Numeric#size
+	  to long.
+
+Wed Apr 13 12:00:08 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_basicinstructions.rb: add a test to check access
+	  instance variables on special const objects.
+
+	  All of such objects are frozen, so that we can not set instance
+	  variables for them. But we can read instance variables and return
+	  default value (nil).
+
+Tue Apr 12 20:40:35 2016  Kaneko Yuichiro  <spiketeika@gmail.com>
+
+	* ext/date/date_core.c (time_to_time): should preserve timezone
+	  info.  [ruby-core:74889] [Bug #12271]
+
+Tue Apr 12 11:51:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (new_label_body): initialize bit fields, since
+	  compile_data_alloc does not clear the memory.  [Bug #12082]
+
+Mon Apr 11 20:18:43 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_backtrace.c (frame2klass): filter only for imemo_ment.
+	  T_IMEMO/imemo_iseq can be passed here.
+
+Mon Apr 11 17:43:04 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_optimize): disable tail call optimization in
+	  rescued, rescue, and ensure blocks.
+	  [ruby-core:73871] [Bug #12082]
+
+Mon Apr 11 06:54:39 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (apply2files): apply to a VALUE vector instead of a
+	  temporary array.
+
+Sun Apr 10 20:54:16 2016  Joe Swatosh  <joe.swatosh@gmail.com>
+
+	* ext/win32/lib/win32/registry.rb (DeleteValue, DeleteKey): fix
+	  API names.  [ruby-core:74863] [Bug #12264]
+
+Sun Apr 10 17:47:42 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_realpath_internal): no argument conversions since
+	  this internal function does not need to_path and encoding
+	  conversions, not to be affected by the default internal
+	  encoding.
+
+Sat Apr  9 10:03:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_f_load): raise with the original path name before
+	  encoding conversion.
+
+Sat Apr  9 02:05:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bignum.c (rb_cstr_parse_inum): [EXPERIMENTAL] new function to
+	  parse integer in C-string with length.  the name and the
+	  arguments may be changed in the future.
+
+	* bignum.c (rb_str_to_inum): preserve encoding of the argument in
+	  error messages, and no longer needs to copy non-terminated
+	  strings.
+
+	* bignum.c (rb_str2big_{poweroftwo,normal,karatsuba,gmp}): ditto.
+
+Thu Apr  7 19:04:03 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* doc/regexp.rdoc (comments): [DOC] terminators cannot appear in
+	  comments.  [ruby-core:74838] [Bug #12256]
+
+Thu Apr  7 11:24:14 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/tkutil/tkutil.c (cbsubst_initialize): fix out-of-bound
+	  access when no arguments given.  `p Tk::Event.new` crashed.
+
+Fri Apr  1 01:26:00 2016  Benoit Daloze  <eregontp@gmail.com>
+
+	* ext/coverage/coverage.c: Fully reset coverage to not persist global state.
+	  It was returning old file coverages as empty arrays to the user.
+	  [ruby-core:74596] [Bug #12220]
+
+	* ext/coverage/coverage.c (rb_coverages): remove unused static state.
+
+	* thread.c: Moved and renamed coverage_clear_result_i to reset_coverage_i.
+
+	* test/coverage/test_coverage.rb: improve precision of tests.
+
+Wed Apr  6 22:41:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rb_cv_lgamma_r_m0): fix the condition for
+	  lgamma_r(-0.0).  [Bug #12249]
+
+Wed Apr  6 17:38:42 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/downloader.rb (RubyGems.download): follow the change of the
+	  rubygems ssl_certs directory tree introduced by previous commit.
+
+Wed Apr  6 15:00:27 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems.rb, lib/rubygems/*, test/rubygems/*: Update rubygems-2.6.3.
+	  Please see entries of 2.6.3 on
+	  https://github.com/rubygems/rubygems/blob/master/History.txt
+
+Wed Apr  6 14:13:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (rb_cv_lgamma_r_m0): check if lgamma_r(-0.0)
+	  returns negative infinity.  [Bug #12249]
+
+	* math.c (ruby_lgamma_r): define by the configured result.
+
+Wed Apr  6 10:56:15 2016  Anton Davydov  <antondavydov.o@gmail.com>
+
+	* lib/logger.rb (Logger#level=): remove unnecessary local
 	  variable.
-	  reported by Denis Denisov <denji0k AT gmail.com>.
 
-	* regexec.c (match_at): ditto.
+	* lib/logger.rb (Logger#initialize, Logger#reopen): [DOC] mention
+	  the default values.  cherrypicked from [GH-1319].
 
-	* ext/win32ole/win32ole.c (ole_wc2mb_alloc, ole_vstr2wc, ole_mb2wc):
+Wed Apr  6 10:17:53 2016  cremno phobia  <cremno@mail.ru>
+
+	* math.c (ruby_lgamma_r): missing/lgamma_r.c is used on Windows,
+	  since msvcrt does not provide it.
+
+	* missing/lgamma_r.c (lgamma_r): fix lgamma(-0.0).
+	  [ruby-core:74823] [Bug #12249]
+
+Wed Apr  6 01:22:55 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* math.c (ruby_lgamma_r): mswin's lgamma_r also seems to be wrong.
+	  cf. [Bug #12249]
+
+Wed Apr  6 00:53:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* math.c (ruby_lgamma_r): fix lgamma(-0.0) on mingw and OSX.
+
+	* math.c (ruby_tgamma): fix tgamma(-0.0) on mingw.
+	  [ruby-core:74817] [Bug #12249]
+
+Tue Apr  5 14:50:28 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c (mime_putc): fix typo.
+	  [Bug #12202] [ruby-core:74802]
+
+Tue Apr  5 00:06:44 2016  Aeris  <aeris@imirhil.fr>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_tmp_key): Access to ephemeral
+	  TLS session key in case of forward secrecy cipher.  Only
+	  available since OpenSSL 1.0.2.  [Fix GH-1318]
+
+	* ext/openssl/extconf.rb: Check for SSL_get_server_tmp_key.
+
+Mon Apr  4 23:37:05 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (rb_vm_struct): make at_exit a single linked list but
+	  not RArray, not to mark the registered functions by the write
+	  barrier.  based on the patches by Evan Phoenix.
+	  [ruby-core:73908] [Bug #12095]
+
+Mon Apr  4 17:43:45 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: change default value of
+	  RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO 0.3 -> 0.2
+	  RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO 0.8 -> 0.65
+
+	  These values are same as Ruby 2.0.0.
+
+	  This change cause GC counts.
+	  However, generational GC reduced each (minor) GC time and
+	  increase memory locality. So that not so big impact on my
+	  benchmarking results.
+	  (surprisingly, this fix speed up programs on some cases)
+
+	  You can change these values by environment variables
+	  if you feel wrong.
+
+Mon Apr  4 17:36:52 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (get_envparam_double): take an upper_bound.
+
+	  And also take an accept_zero flag which allow to accept zero
+	  even if lower_bound is set.
+
+	* gc.c (ruby_gc_set_params): fix parameters.
+
+	  RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO set 0.9 as *lower_bound*, so that
+	  it should be upper_bound.
+	  Set RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO as lower bound.
+
+	  Also set lower/upper bound of RUBY_GC_HEAP_FREE_SLOTS_GOAL_RATIO to
+	  RUBY_GC_HEAP_FREE_SLOTS_MIN/MAX_RATIO.
+
+Mon Apr  4 16:41:32 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c (Init_VM): should pass tokens.
+
+Sun Apr  3 09:34:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flodivmod): round division if it is a finite number
+	  and module is required.
+
+	* numeric.c (dbl2ival): do not round here.
+
+	* numeric.c (flo_ceil): use dbl2ival.
+
+	* numeric.c (flo_round): round explicitly.
+
+Sat Apr  2 15:24:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/intern.h (rb_check_arity): returns argc.
+
+Fri Apr  1 20:58:33 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb, casefold.h: Data generation to implement
+	  swapcase functionality for titlecase characters. Swapcase isn't defined
+	  by Unicode, because the purpose/usage of swapcase is unclear anyway.
+	  The implementation follows a proposal from Nobu, swapping the case of
+	  each component of a titlecase character individually.
+	  This means that the titlecase characters have to be decomposed.
+
+	* enc/unicode.c: Code using the above data.
+
+	* test/ruby/enc/test_case_mapping.rb: Tests for the above.
+
+Fri Apr  1 14:55:28 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* configure.in (AC_CONFIG_FILES): $srcdir/.git can be a file pointing
+	  the real git_dir, such as when the git working tree is a "linked
+	  working tree" (a working tree created by git-worktree). So use
+	  git-rev-parse --git-dir to check if $srcdir is the top-level of a git
+	  repository, not just checking if the $srcdir/.git directory does exist
+	  or not.  [ruby-core:74759] [Bug #12239]
+
+	* tool/change_maker.rb: use tool/vcs.rb to detect VCS. This used to have
+	  its own VCS detection code, while we have tool/vcs.rb.
+
+	* tool/vcs.rb (detect): remove code duplication
+
+Fri Apr  1 04:50:44 2016  Eric Wong  <e@80x24.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_s_alloc):
+	  enable SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER by default
+	  [Bug #12126]
+
+Fri Apr  1 01:13:55 2016  Benoit Daloze  <eregontp@gmail.com>
+
+	* thread.c (update_coverage): Do not track coverage in loaded files
+	  after Coverage.result. Avoids out-of-bounds access. [Bug #12237]
+
+	* ext/coverage/coverage.c (coverage_clear_result_i): document.
+
+Thu Mar 31 19:16:16 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: need to set initial value of GC_HEAP_FREE_SLOTS_GOAL_RATIO.
+
+Thu Mar 31 17:50:27 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: change additional allocation policy.
+
+	  Introduce new environment variable
+	  RUBY_GC_HEAP_FREE_SLOTS_GOAL_RATIO (goal_ratio) to calculate the
+	  ratio of additional memory.
+
+	  Before this change, we add pages with the following formula
+	  (when free_slots < total_pages * RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO):
+	    next_pages = total_pages * RUBY_GC_HEAP_GROWTH_FACTOR
+
+	  This addition can allocate too much.
+
+	  With this change, we increase pages to satisfy the following formula:
+	    next_free_slots = next_total_slots * goal_ratio
+	  where
+	    next_free_slots = free_slots + adding_slots
+	    next_total_slots = total_slots + adding_slots.
+
+	  If you want to prepare many free slots, increase this ratio.
+
+	  If this variable is 0, then simply multiply
+	  RUBY_GC_HEAP_GROWTH_FACTOR.
+
+	* gc.c (get_envparam_double): enable to accept 0.
+
+Thu Mar 31 17:48:25 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_marks_finish): fix syntax error.
+
+Thu Mar 31 16:49:36 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: simplify allocate/free detecting logic at the end of marking.
+
+	  Before this change, heap_pages_min_slots are calculated at the
+	  beginning sweeping phase. And this value is used at the end of
+	  *next* marking phase.
+
+	  To simplify it, we use this value at the end of this marking phase.
+	  It means that we don't need to store this value as global state.
+
+	  Also heap_pages_max_slots is calculated at the begging of sweeping
+	  phase and used at the end of sweeping phase.
+	  To simplify this logic, we introduced new global value
+	  heap_pages_freeable_pages it means extra pages count we can free.
+	  gc_sweep_step() checks this value and moves empty pages to tomb_heap
+	  not more than this value.
+
+	  Because of this fix, heap_pages_swept_slots is no longer needed.
+
+	* gc.c (rb_objspace_t::heap_pages): restruct the objspace global
+	  status.
+
+	  remove the following fields
+	    * swept_slots (and heap_pages_swept_slots)
+	    * min_free_slots (and heap_pages_min_free_slots)
+	    * max_free_slots (and heap_pages_max_free_slots)
+	  And add the following filed.
+	    * freeable_pages (and heap_pages_freeable_pages)
+
+	* gc.c (heap_pages_free_unused_pages): unlink tomb heap pages
+	  because tomb heap should have only freeable pages.
+
+	* gc.c (heap_extend_pages): add parameters for future extension.
+
+Thu Mar 31 16:43:02 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: add GC parameters to configure the following values:
+	  * RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO:
+	    allocate additional pages when free slots is lower than
+	    the value (total_slots * (this ratio)).
+	  * RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO:
+	    allow to free pages when free slots is greater than
+	    the value (total_slots * (this ratio)).
+
+	  Before this change, these values are hard coded.
+
+	* gc.c (ruby_gc_params_t): ditto.
+
+	* gc.c (ruby_gc_set_params): ditto.
+
+Thu Mar 31 15:59:17 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_verify_heap_page): check the number of zombies.
+
+	* gc.c (gc_verify_heap_pages): check also tomb heap.
+
+Thu Mar 31 15:48:18 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_page_sweep): return free slots count.
+
+	* gc.c (gc_sweep_step): use returned free slots count.
+
+	* gc.c (gc_sweep_step): change variable name `next'
+	  to `next_sweep_page'.
+
+Thu Mar 31 11:33:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_core.c (d_lite_strftime, dt_lite_strftime): [DOC]
+	  fix indent not to be a big sole verbatim.
+
+Thu Mar 31 11:18:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_core.c (Init_date_core): [DOC] fix misplaced doc
+	  of DateTime.  [ruby-core:74729] [Bug #12233]
+
+Thu Mar 31 03:41:02 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c: Merge upstream 69f7e74dde.
+	  fix indent.
+
+Wed Mar 30 16:33:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* extension.rdoc, extension.ja.rdoc: [DOC] Fix some errors.
+	  Renamed files, wrong method names or argument types; the example
+	  GetDBM macro is now updated to the current version of the actual
+	  code.  patch by Marcus Stollsteimer in [ruby-core:74690].
+	  [Bug #12228]
+
+Wed Mar 30 09:46:01 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/open-uri.rb: Use `userinfo` for authenticated proxy.
+	  [fix GH-1148] Patch by @SokichiFujita
+	* test/open-uri/test_open-uri.rb: ditto.
+	  [fix GH-1309] Patch by @jdamick
+
+Wed Mar 30 01:56:06 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf-utf8/nkf.c: Merge upstream 4f3edf80a0.
+	  patched by Anton Sivakov [Bug #12201] [Bug #12202]
+
+Wed Mar 30 01:54:30 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/redmine-backporter.rb: add given revision to current changesets
+	  on associating the revision to the related ticket.
+
+Wed Mar 30 01:53:17 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/merger.rb: update revision.h before merge.
+
+Tue Mar 29 19:33:54 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* addr2line.c: define toupper for its use. fix r54391.
+
+Tue Mar 29 19:23:46 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_isupper, rb_islower, rb_isalpha, rb_isdigit,
+	  rb_isalnum, rb_isxdigit, rb_isblank, rb_isspace, rb_isblank,
+	  rb_iscntrl, rb_isprint, rb_ispunct, rb_isgraph,
+	  rb_tolower, rb_toupper): use inline function to avoid function call.
+
+	* include/ruby/ruby.h (rb_isascii): use inline function to clarify
+	  the logic.
+
+Tue Mar 29 18:56:55 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/redmine-backporter.rb (backport): show merger.rb's path.
+
+	* tool/redmine-backporter.rb (show): show current issue again if no
+	  ticket number is given.
+
+	* tool/redmine-backporter.rb (rel): show error message if current
+	  bugs.ruby-lang.org doesn't support the API.
+
+Tue Mar 29 18:54:34 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/merger.rb: support to backport header as backport identifier.
+	  Now you can specify by 'merge revision(s) 49254: [Backport #10738]'.
+
+Tue Mar 29 16:53:44 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb, casefold.h: Tweaked handling of 6
+	  special cases in CaseUnfold_11_Table.
+
+	* enc/unicode.c: Adjustments for above.
+
+	* test/ruby/enc/test_case_mapping.rb: Tests for the above: Some tests in
+	  test_titlecase activated; test_greek added. A test in test_cherokee fixed.
+
+Tue Mar 29 13:31:00 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Cleaned up some comments.
+
+Tue Mar 29 13:24:56 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb, casefold.h: Removing data for idempotent
+	  titlecasing.
+
+	* enc/unicode.c: Adjust code to data removal.
+
+Tue Mar 29 12:45:18 2016  Laurent Arnoud  <laurent@spkdev.net>
+
+	* lib/webrick/httpresponse.rb: Move error_body to method. It allow to
+	  override the body more easily. [fix GH-1307]
+	* test/webrick/test_httpresponse.rb: ditto.
+
+Tue Mar 29 06:40:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_compile_err_append): rb_thread_t::base_block is no
+	  longer used.
+
+	* iseq.c (rb_iseq_compile_with_option): ditto, no protection is
+	  needed.
+
+Tue Mar 29 06:39:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (struct parser_params): move parse_in_eval flag from
+	  rb_thread_t.
+
+	* parse.y (rb_parser_set_context): set parsing context, not only
+	  mild error flag.
+
+	* iseq.c (rb_iseq_compile_with_option): the parser now refers no
+	  thread local states to be restored.
+
+	* vm_eval.c (eval_string_with_cref): ditto.
+
+Mon Mar 28 21:24:02 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* numeric.c (int_pos_p): fix typos.
+
+Mon Mar 28 14:54:49 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Refactoring in preparation for data reduction for
+	  titlecase.
+
+Mon Mar 28 14:36:36 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Minor refactoring for I WITH DOT ABOVE.
+
+Mon Mar 28 14:26:24 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Removed code now covered by data from table.
+
+Mon Mar 28 11:49:21 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Adding comments. [ci skip]
+
+Mon Mar 28 11:30:23 2016  Shinichi Maeshima  <netwillnet@gmail.com>
+
+	* lib/rubygems.rb: Fix `Gem.find_spec_for_exe` picks oldest gem.
+	  https://github.com/travis-ci/travis-ci/issues/5798
+	  https://github.com/rubygems/rubygems/pull/1566
+	* test/rubygems/test_gem.rb: ditto.
+
+Mon Mar 28 11:26:31 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems.rb, lib/rubygems/*, test/rubygems/*: Update rubygems-2.6.2.
+	  Please see entries of 2.6.2 on
+	  https://github.com/rubygems/rubygems/blob/master/History.txt
+
+Mon Mar 28 11:02:31 2016  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	* lib/rubygems/test_case.rb: Fix test on Windows for inconsistent temp path.
+	  https://github.com/rubygems/rubygems/pull/1554
+	  [Bug #12193][ruby-core:74431]
+
+Mon Mar 28 08:19:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): refactor floating point format of
+	  Rational by using generic Integer functions.
+
+	* sprintf.c (rb_str_format): fix buffer overflow, length must be
+	  greater than precision.  reported by William Bowling <will AT
+	  wbowling.info>.
+
+Sun Mar 27 12:13:37 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): convert Rational to floating point
+	  format by using generic Integer functions, not by methods which
+	  can be overwritten.
+
+Sat Mar 26 10:55:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (rb_int2str): conversion function to String for
+	  generic Integer.
+
+	* numeric.c (rb_int_round): rounding function for generic
+	  Integers.
+
+	* numeric.c (rb_int_{uminus,plus,minus,mul,idiv,modulo}): basic
+	  arithmetic functions for generic Integers.
+
+	* numeric.c (FIXNUM_{POSITIVE,NEGATIVE,ZERO}_P): predict macros
+	  only for Fixnum.
+
+Sat Mar 26 06:34:24 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* localeinit.c (rb_locale_charmap_index): fix prototype.
+	  patched by Andreas Schwab [Bug #12218]
+
+Fri Mar 25 16:40:48 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_mapping.rb: Additional tests title case;
+	  some not yet activated.
+
+Fri Mar 25 13:38:11 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/extconf.rb: check SSL_CTX_set_next_proto_select_cb
+	  function rather than OPENSSL_NPN_NEGOTIATED macro. it exists
+	  even if it is disabled by OpenSSL configuration.
+	  [ruby-core:74384] [Bug #12182]
+
+	* ext/openssl/ossl_ssl.c: update #ifdef(s) as above.
+
+	* test/openssl/test_ssl.rb: skip NPN tests if NPN is disabled.
+
+Fri Mar 25 11:08:37 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/uri/http.rb (URI::HTTP#initialize): [DOC] fix example,
+	  missing mandatory arguments.  [ruby-core:74540] [Bug #12215]
+
+Fri Mar 25 01:50:58 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread_pthread.c (reserve_stack): fix reserving position where
+	  the stack growing bottom to top. [Bug #12118]
+
+Fri Mar 25 01:10:42 2016  Sebastian Schuberth  <sschuberth@gmail.com>
+
+	* lib/mkmf.rb (find_executable0): On Windows, it is actually valid
+	  to surround individual PATH directory entries with double
+	  quotes. Remove these before joining the path as otherwise the
+	  literal quotes would become part of the path, resulting in the
+	  executable not to be found.  [Fix GH-1305]
+
+Thu Mar 24 22:38:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c (FMT, FMTV): remove recursive-assignments to get rid
+	  of undefined behavior.  [ruby-core:74532] [Bug #12213]
+
+Thu Mar 24 17:44:02 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c (FMT_PADDING): extract format for padding.
+
+	* strftime.c (FMT_PRECISION): extract precision formula.
+
+	* strftime.c (FMTV): append formatted string to expand the result.
+
+Thu Mar 24 14:20:21 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c (STRFTIME): deal with case conversion flags for
+	  recursive formats.
+
+Thu Mar 24 12:43:26 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_core.c (dt_lite_iso8601): strftimev() always
+	  returns a String, so append them directly.
+
+	* ext/date/date_core.c (d_lite_jisx0301, iso8601_timediv),
+	  (dt_lite_jisx0301): format by the format string in local buffer
+	  to prevent intermediate strings from GC.
+
+	* ext/date/date_core.c (mk_inspect_raw, mk_inspect): inspect by
+	  "%+"PRIsVALUE, to prevent intermediate strings from GC.
+
+Thu Mar 24 11:43:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c (rb_strftime_with_timespec): remove unnecessary
+	  check, as `s` equals to `endp` when recursed STRFTIME resized
+	  the capacity same as the size.
+
+Wed Mar 23 21:48:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* enum.c (ary_inject_op): put subtract operation out of if-clause.
+
+Wed Mar 23 21:38:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* enum.c (ary_inject_op): Use Kahan's compensated summation algorithm
+	  for summing up float values.
+
+Wed Mar 23 20:56:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* strftime.c (rb_strftime_with_timespec): append formatted results
+	  to the given string with expanding, and also deal with NUL chars.
+
+	* strftime.c (rb_strftime, rb_strftime_timespec): return formatted
+	  string, not the length put in the given buffer.
+
+	* time.c (rb_strftime_alloc): no longer needs to retry with
+	  reallocating buffers.
+
+	* time.c (time_strftime): no longer needs to split by NUL chars.
+
+Wed Mar 23 14:23:54 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/rdoc/ri/driver.rb (interactive): rescue NotFoundError raised in
+	  expand_name. (display_name rescues NotFoundError by itself,
+	  the original logic looks buggy...)
+
+Wed Mar 23 11:44:53 2016  cremno  <cremno@mail.ru>
+
+	* marshal.c (r_long): cast to `signed char`, which is used
+	  already, instead of SIGN_EXTEND_CHAR.
+
+	* parse.y: SIGN_EXTEND_CHAR is no longer used.  [Fix GH-1302]
+
+Wed Mar 23 11:38:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cygwin/GNUmakefile.in (MSYS2_ARG_CONV_EXCL_PARAM):
+	  * add missing parentheses and remove double quotes.
+	  * rename to get rid of recursive references.
+	  * as --excludes-dir option is for a path name, its argument
+	    should be converted.
+	  [ruby-dev:49526] [Bug #12199]
+
+Wed Mar 23 10:39:38 2016  Koichi ITO  <koic.ito@gmail.com>
+
+	* variable.c: Added documentation about order of `Module#constants`
+	  [ci skip][Bug #12121][ruby-dev:49505][fix GH-1301]
+
+Tue Mar 22 21:08:30 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* include/ruby/oniguruma.h: Additional flag for characters that are titlecase.
+
+	* enc/unicode/case-folding.rb, casefold.h: Using above flag in data.
+
+	* enc/unicode.c: Marking capitalized character as unmodified if it is
+	  already titlecase.
+
+	* test/ruby/enc/test_case_mapping.rb: Tests for above functionality.
+
+Tue Mar 22 14:18:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (lambda_body, parser_yylex): warn mismatched indentation
+	  of lambda block.
+
+Tue Mar 22 11:36:49 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* time.c (wmul): wrong condition.
+	  fixed many test failures on 32bit and LLP64 platforms.
+
+Tue Mar 22 10:31:34 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* time.c (wdiv, wmod): wdivmod0() assumes the 3rd and the 4th arguments
+	  are valid pointers.
+	  maybe checking them in wdivmod0() is better manner, but I guess that
+	  passing real dummy pointers may be faster than checking and branching
+	  in wdivmod0().
+	  this commit fixes SEGV on 32bit and LLP64 platforms.
+
+Tue Mar 22 10:24:04 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* time.c (divmodv): void function never returns any value.
+
+Tue Mar 22 10:11:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/lib/test/unit.rb (Test::Unit::StatusLine#failed): print
+	  failed messages only if replacing mode, otherwise defer them
+	  until the end, to get rid of interleaving failures with progress
+	  messages.  refix r54195.
+
+Tue Mar 22 03:45:03 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* time.c (MUL_OVERFLOW_FIXWV_P): defined for FIXWV.
+
+	* time.c (wmul): use MUL_OVERFLOW_FIXWV_P and only switch.
+
+	* time.c (wmul): use mul which has Fixnum optimization.
+
+	* time.c (rb_time_magnify): If WIDEVALUE_IS_WIDER, wmul() has the same
+	  optimized logic, else mul() has also the similar logic for Fixnum.
+
+	* time.c (rb_time_unmagnify): almost ditto.
+
+Tue Mar 22 03:10:09 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* time.c (divmodv): add the case both arguments are Fixnum.
+
+	* time.c (wquo): use quo which has Fixnum optimization.
+
+	* time.c (wdivmod0): added for WIDEVALUE_IS_WIDER.
+
+	* time.c (wdivmod): use wdivmod0 and divmodv.
+	  divmodv has Fixnum optimization.
+
+	* time.c (wdiv): use wdivmod0 and div to avoid the use of divmodv which
+	  calls id_quo whose return value is array.
+
+	* time.c (wmod): use wdivmod0 and mod to avoid the use of divmodv which
+	  calls id_quo whose return value is array.
+
+Mon Mar 21 22:32:50 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* internal.h (rb_fix_divmod_fix): like r54213, use FIX2NUM only if
+	  x == FIXNUM_MIN && y == -1. This must be a rare case and it is
+	  expected compiler to handle well.
+
+Mon Mar 21 22:15:11 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* time.c (mod): Add Fixnum case.
+
+	* time.c (quo): c can be Fixnum except a == FIXNUM_MIN && b == -1.
+	  Such case can be optimized out because quo()'s argument is constant.
+
+Mon Mar 21 22:09:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (rb_fix_mul_fix): multiply converted values, not
+	  object VALUEs.
+
+Mon Mar 21 20:18:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (TEST_EXCLUDES, EXCLUDE_TESTFRAMEWORK): use full spell
+	  long option.
+
+	* cygwin/GNUmakefile.in (MSYS2_ARG_CONV_EXCL): suppress path name
+	  conversions by msys2.  [ruby-dev:49525] [Bug #12199]
+
+Mon Mar 21 19:09:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (enc_succ_alnum_char): try to skip an invalid character
+	  gap between GREEK CAPITAL RHO and SIGMA.
+	  [ruby-core:74478] [Bug #12204]
+
+Mon Mar 21 18:55:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* node.c (rb_gc_mark_node): NODE_MATCH2 can have nd_args, u3,
+	  since r54100.
+
+Sun Mar 20 21:17:13 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* internal.h (rb_int128t2big): declare only when HAVE_INT128_T.
+	  fixed a compile error with VC++ introduced at r54203.
+
+Sun Mar 20 20:10:14 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* internal.h (DLONG): defined if long is 32bit (and LONG_LONG is 64bit;
+	  but LONG_LONG is always defined as 64bit), or there's int128_t.
+
+	* internal.h (DL2NUM): defined if DLONG is defined.
+
+	* internal.h (rb_fix_mul_fix): defined for `Fixnum * Fixnum`.
+
+	* insns.def (opt_mul): use rb_fix_mul_fix().
+
+	* numeric.c (fix_mul): ditto.
+
+	* time.c (mul): ditto.
+
+Sun Mar 20 18:53:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (fix_gt, fix_ge, fix_lt, fix_le): optimize comparisons
+	  Fixnum against Bignum by rb_big_cmp in inversed order without
+	  new Bignum instance.
+
+Sun Mar 20 18:44:52 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* time.c (add): remove FIXABLE() which is in LONG2NUM().
+
+	* time.c (sub): ditto.
+
+	* time.c (mul): ditto.
+
+Sun Mar 20 04:46:02 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* bignum.c (rb_big_cmp): reduce the code.
+
+	* bignum.c (rb_big_eq): If normalized bignum is still bignum,
+	  it must be larger than fixnum.
+
+Sat Mar 20 00:58:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* include/ruby/intern.h (rb_big_odd_p, rb_big_even_p): move to
+	  internal.h so that they are exported only for ruby itself.
+
+	* internal.h (rb_big_odd_p, rb_big_even_p): ditto.
+
+Sat Mar 19 21:56:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/lib/test/unit.rb (Test::Unit::StatusLine#failed): defer
+	  failed messages until the end in verbose mode, to get rid of
+	  interleaving failures with progress messages.
+
+Sat Mar 19 21:53:35 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (fix_cmp): invert the result as the comparison is
+	  inverted.
+
+Sat Mar 19 18:32:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* numeric.c (int_to_f): raise NotImplementedError when a receiver
+	  class is unknown.
+
+	* test/-ext-/integer/test_my_integer.rb (test_my_integer_to_f): modify
+	  a test for the above change.
+
+Sat Mar 19 18:21:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bignum.c (Bignum#<=>): remove it because they are unified with
+	  Integer#<=>.
+
+	* numeric.c (Integer#<=>, Fixnum#<=>): move <=> method from Fixnum to
+	  Integer.
+
+	* numeric.c (int_cmp): add this method for Integer#<=>.
+
+	* test/-ext-/integer/test_my_integer.rb (test_my_integer_cmp): add a
+	  test to examine Integer#<=> for unknown subclasses.
+
+Sat Mar 19 14:46:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (rb_iseq_compile_with_option): make the parser in mild
+	  error.
+
+	* load.c (rb_load_internal0): ditto.
+
+	* parse.y (yycompile0): return the error message within the error
+	  to be raised.  [Feature #11951]
+
+	* parse.y (parser_compile_error): accumulate error messages in the
+	  error_buffer.
+
+Sat Mar 19 03:57:13 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* time.c (LOCALTIME): organize #ifdefs.
+
+	* time.c (GMTIME): define only ifndef HAVE_STRUCT_TM_TM_GMTOFF.
+
+Sat Mar 19 03:53:31 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (rb_cv_member_struct_tm_tm_gmtoff): For Linux (glibc)
+	  define _BSD_SOURCE for time.h to define struct tm.tm_gmtoff.
+
+	* time.c: define _BSD_SOURCE at the top.
+
+Sat Mar 19 03:00:50 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/-ext-/time/test_new.rb (test_timespec_new): change a gmtoff
+	  test to a better one that does not depend on whether the current
+	  time is in summer time or not.
+
+Fri Mar 19 00:00:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bignum.c (rb_big_to_f, Bignum#to_f): removed them because they are
+	  unified with int_to_f and Integer#to_f.
+
+	* numeric.c (int_to_f): treat Bignum values directly.
+
+Fri Mar 18 23:41:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* numeric.c (int_to_f, fix_to_f): rename fix_to_f to int_to_f, and add
+	  treatment for subclasses which don't have definitions of to_f method.
+
+	* numeric.c (Integer#to_f, Fixnum#to_f): move to_f method from Fixnum
+	  to Integer.
+
+	* ext/-test-/integer/my_integer.c: define helper class for testing
+	  to_f method for a subclass of Integer.
+
+	* ext/-test-/integer/extconf.rb: ditto.
+
+	* ext/-test-/integer/init.c: ditto.
+
+	* test/-ext-/integer/test_my_integer.rb: examine to_f method for a
+	  subclass of Integer.
+
+Fri Mar 18 22:32:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* include/ruby/intern.h (rb_big_hash): Move to internal.h.
+
+	* internal.h: ditto.
+
+Fri Mar 18 22:10:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bignum.c (Bignum#eql?): remove its definition because it is unified
+	  with Numeric#eql?.
+
+	* numeric.c (num_eql): treat Bignum values directly.
+
+Fri Mar 18 21:57:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bignum.c (rb_big_to_s, Bignum#to_s): remove its definition because
+	  it is unified with Integer#to_s.
+
+	* numeric.c (int_to_s): treat Bignum values directly.
+
+Fri Mar 18 21:30:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* numeric.c (int_to_s): Move from fix_to_s.
+
+	* numeric.c (Integer#to_s): Move from Fixnum#to_s.
+
+Fri Mar 18 16:22:24 2016  Victor Nawothnig  <Victor.Nawothnig@gmail.com>
+
+	* parse.y (parse_numvar): NTH_REF must be less than a half of
+	  INT_MAX, as it is left-shifted to be ORed with back-ref flag.
+	  [ruby-core:74444] [Bug#12192] [Fix GH-1296]
+
+Fri Mar 18 12:25:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (tick): fix missing close parenthesis.  [Fix GH-1291]
+
+Fri Mar 18 10:24:12 2016  Naotoshi Seo  <sonots@gmail.com>
+
+	* ext/date/date_core.c (datetime_to_time): preserve timezone info
+	  [Bug #12189] [Fix GH-1295]
+
+Fri Mar 18 10:17:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bignum.c (rb_big_hash): make it public function to be available in
+	  other source files, and remove documentation comment for Bignum#hash.
+
+	* bignum.c (Bignum#hash): remove its definition because it is unified
+	  with Object#hash.
+
+	* include/ruby/intern.h (rb_big_hash): add a prototype declaration.
+
+	* hash.c (any_hash): treat Bignum values directly.
+
+Fri Mar 18 02:35:12 2016  Naotoshi Seo  <sonots@gmail.com>
+
+	* lib/time.rb (parse, strptime): Fix Time.parse/strptime does not
+	  have compatibility with DateTime.parse/strptime in terms of parsing
+	  timezone [Bug #12190] [Fix GH-1297]
+
+Fri Mar 18 02:17:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* numeric.c (fix_zero_p, fix_even_p, fix_odd_p): remove needless
+	  functions.
+
+Fri Mar 18 02:15:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* numeric.c (int_even_p): treat Fixnum and Bignum values directly.
+
+Fri Mar 18 02:07:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bignum.c (Bignum#even?, Bignum#odd?): remove definitions
+	  because they are unified with Integer#even? and Integer#odd?.
+
+	* numeric.c (Fixnum#zero?, Fixnum#even?, Fixnum#odd?): remove
+	  definitions because they are unified with Numeric#zero?,
+	  Integer#even?, and Integer#odd?.
+
+	* numeric.c (num_zero_p, int_odd_p): treat Fixnum and
+	  Bignum values directly.
+
+	* test/ruby/test_integer.rb (test_odd_p_even_p): remove meaningless
+	  test case.
+
+Fri Mar 18 01:51:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bignum.c (rb_big_even_p, rb_big_odd_p): make them public functions
+	  to be available in other source files.
+
+	* include/ruby/intern.h (rb_big_even_p, rb_big_odd_p): add prototype
+	  declarations.
+
+Fri Mar 18 00:25:56 2016  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (ary_inject_op): Implement the specialized code for sum of
+	  float numbers.
+
+Fri Mar 18 00:15:05 2016  Yusuke Endoh  <mame@ruby-lang.org>
+
+	* numeric.c (num_step): use rb_equal for zero check. rb_num_coerce_cmp
+	  created an object which caused extra overhead.
+
+Thu Mar 17 22:21:34 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (RB_GC_GUARD_PTR): remove intermediate
+	  macro, and expand for each RB_GC_GUARD.  [Fix GH-1293]
+
+Thu Mar 17 22:08:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_specialized_instruction): move specialization
+	  for opt_newarray_max/min from translation phase.
+
+Thu Mar 17 21:52:09 2016  Yusuke Endoh  <mame@ruby-lang.org>
+
+	* array.c, enum.c: make rdoc format consistent.
+
+Thu Mar 17 21:47:57 2016  Yusuke Endoh  <mame@ruby-lang.org>
+
+	* NEWS: add Array#max, #min, and the optimization.  [Feature #12172]
+
+Thu Mar 17 21:45:02 2016  Yusuke Endoh  <mame@ruby-lang.org>
+
+	* compile.c (NODE_CALL): add optimization shortcut for Array#max/min.
+	  Now `[x, y].max` is optimized so that a temporal array object is not
+	  created in some condition.  [Feature #12172]
+
+	* insns.def (opt_newarray_max, opt_newarray_min): added.
+
+Thu Mar 17 21:35:52 2016  Yusuke Endoh  <mame@ruby-lang.org>
+
+	* array.c (rb_ary_max, rb_ary_min): implement Array#max and min with
+	  arguments.  replace super call with rb_nmin_run.
+
+	* enum.c (nmin_run): exported (as rb_nmin_run).
+
+	* internal.h: added a prototype for rb_nmin_run.
+
+Thu Mar 17 21:24:52 2016  Yusuke Endoh  <mame@ruby-lang.org>
+
+	* array.c (rb_ary_max, rb_ary_min): implement a block by itself instead
+	  of delegating Enumerable#max/min.
+
+Thu Mar 17 21:09:34 2016  Yusuke Endoh  <mame@ruby-lang.org>
+
+	* array.c (rb_ary_max, rb_ary_min): Array#max and Array#min added.
+	  [Feature #12172]
+
+	* internal.h (OPTIMIZED_CMP): moved from enum.c so that array.c can
+	  use it.
+
+	* test/ruby/test_array.rb (test_max, test_min): tests for Array#max
+	  and Array#min.
+
+	* test/ruby/test_enum.rb (test_max, test_min): revised a bit to test
+	  Enumerable#max and #min explicitly.
+
+Thu Mar 17 21:02:42 2016  Yusuke Endoh  <mame@ruby-lang.org>
+
+	* internal.c: struct cmp_opt_data added for refactoring out a data
+	  structure for CMP_OPTIMIZABLE
+
+	* array.c (struct ary_sort_data): use struct cmp_opt_data.
+
+	* enum.c (struct min_t, max_t, min_max_t): use struct cmp_opt_data.
+
+Thu Mar 17 20:55:21 2016  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (ary_inject_op): Extracted from enum_inject.
+
+Thu Mar 17 18:39:04 2016  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (enum_inject): Implement the specialized code for sum of
+	  integers including Bignums.
+
+	* internal.h (rb_fix_plus): Declared to be usable from enum_inject.
+
+	* numeric.c (rb_fix_plus): Defined.
+
+Thu Mar 17 17:20:28 2016  Anton Davydov  <antondavydov.o@gmail.com>
+
+	* thread_sync.c: [DOC] Update documentation for Queue class
+	  description.  [Fix GH-1292]
+
+Thu Mar 17 17:14:51 2016  Dinar Valeev  <dvaleev@suse.com>
+
+	* gc.c (tick): Use __builtin_ppc_get_timebase for POWER arch.
+	  [Fix GH-1291]
+
+Thu Mar 17 11:51:48 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/securerandom.rb (gen_random): to avoid blocking on Windows.
+	  On Windows OpenSSL RAND_bytes (underlying implementation is
+	  RAND_poll in crypto/rand/rand_win.c) may be blocked at
+	  NetStatisticsGet.
+	  https://wiki.openssl.org/index.php/Random_Numbers#Windows_Issues
+	  Instead of this, use Random.raw_seed directly (whose implementation
+	  CryptGenRandom is one of the source of
+	  entropy of RAND_poll on Windows).
+	  https://wiki.openssl.org/index.php/Random_Numbers
+	  Note: CryptGenRandom function is PRNG and doesn't check its entropy,
+	  so it won't block. [Bug #12139]
+	  https://msdn.microsoft.com/ja-jp/library/windows/desktop/aa379942.aspx
+	  https://tools.ietf.org/html/rfc4086#section-7.1.3
+	  https://eprint.iacr.org/2007/419.pdf
+	  http://www.cs.huji.ac.il/~dolev/pubs/thesis/msc-thesis-leo.pdf
+
+Thu Mar 17 12:09:00 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Fixed two macro definitions.
+	* test/ruby/enc/test_case_mapping.rb: Test cases that detected
+	  the above bugs.
+
+Thu Mar 17 11:36:27 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/option.c (inspect_tcpi_msec): more accurate condition
+	  for TCPI msec member inspection function.
+	  [ruby-core:74388] [Bug #12185]
+
+Thu Mar 17 08:13:43 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/-ext-/time/test_new.rb (test_timespec_new): Time#gmtoff values
+	  are the same only when both or neither of the Time objects are in
+	  summer time (daylight-saving time).
+
+Thu Mar 17 07:17:36 2016  Eric Hodel  <drbrain@segment7.net>
+
+	* marshal.c (r_object0):  raise ArgumentError when linking to undefined
+	  object.
+
+Thu Mar 17 00:45:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* test/ruby/test_bignum.rb: Make sure to use Bignum values in the tests.
+
+Wed Mar 16 23:10:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* defs/keywords (alias, undef): symbol literals are allowed.
+
+	* parse.y (parse_percent): should parse symbol literals for alias
+	  and undef.  [ruby-dev:47681] [Bug #8851]
+
+Wed Mar 16 21:39:39 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* enc/trans/JIS: update Unicode's notice. [Bug #11844]
+
+Wed Mar 16 20:03:35 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (proc_binding): proc from symbol can not make a binding.
+	  [ruby-core:74100] [Bug #12137]
+
+Wed Mar 16 18:42:45 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_mapping.rb: Fixed and activated a test for Cherokee.
+
+Wed Mar 16 17:58:56 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_mapping.rb: Fixed a logical error.
+
+Wed Mar 16 17:57:34 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_mapping.rb: Adding tests for Cherokee.
+	  One test not yet working.
+	  (with Kimihito Matsui)
+
+Wed Mar 16 15:44:05 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_mapping.rb: Adding tests for actual Unicode
+	  case mapping. Fixing some aliasing issues.
+	  (with Kimihito Matsui)
+
+Tue Mar 15 21:38:28 2016  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (enum_inject): Consider redefinition of Fixnum#+.
+	  [ruby-dev:49510] [Bug#12178] Reported by usa.
+
+Tue Mar 15 20:32:57 2016  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (enum_inject): Implement the specialized code for :+ operator
+	  for Fixnums.
+
+Tue Mar 15 20:21:01 2016  Tanaka Akira  <akr@fsij.org>
+
+	* enum.c (enum_inject): Implement the specialized code for self is an
+	  array and a symbol operator is given.
+
+Tue Mar 15 16:29:51 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Eliminating common code.
+	  (with Kimihito Matsui)
+
+Tue Mar 15 16:17:09 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Expansion of some code repetition in preparation for
+	  elimination of common code pieces.
+	  (with Kimihito Matsui)
+
+Tue Mar 15 13:49:23 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Additional macros and code to use mapping data in
+	  CaseMappingSpecials array.
+	  (with Kimihito Matsui)
+
+Tue Mar 15 13:41:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (rb_gc_mark_global_tbl): should be private,
+	  but was accidentally exported.
+
+Tue Mar 15 12:51:06 2016  Marcus Stollsteimer  <sto.mar@web.de>
+
+	* doc/extension.ja.rdoc: Fix RDoc markup in doc/extension*.rdoc.
+	  [ci skip][Bug #12143][ruby-core:74143]
+	* doc/extension.rdoc: ditto.
+
+Tue Mar 15 09:56:41 2016  Ian Lunderskov  <ian.lunderskov@gmail.com>
+
+	* time.c: Minor typo in Time#dst? documentation.
+	  [ci skip][fix GH-1290]
+
+Tue Mar 15 04:36:41 2016  Charles Oliver Nutter  <headius@headius.com>
+
+	* test/ruby/test_rubyoptions.rb (test_disable): add tests for
+	  --disable-gems and --disable-did_you_mean.
+
+Tue Mar 15 03:35:04 2016  Eric Hodel  <drbrain@segment7.net>
+
+	* marshal.c (r_object0): Fix Marshal crash for corrupt extended object.
+
+Tue Mar 15 01:22:27 2016  Charles Oliver Nutter  <headius@headius.com>
+
+	* test/ruby/test_rubyoptions.rb: make version matching support
+	  JRuby's version output.
+
+Mon Mar 14 19:05:39 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* bignum.c (big2str_2bdigits): reduce div instruction.
+
+Mon Mar 14 18:39:53 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* include/ruby/oniguruma.h, enc/unicode.c: Adjusting flag assignments
+	  and macros to work with unified CaseMappingSpecials array.
+	  (with Kimihito Matsui)
+
+Mon Mar 14 16:53:37 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (compile_named_capture_assign): optimize named capture
+	  assignments, by replacing repeating global variable accesses
+	  with `dup`, and by returning the matched result instead of
+	  re-getting it from the MatchData.
+
+	* parse.y (reg_named_capture_assign_gen): build just assignment
+	  nodes for the optimization.
+
+Mon Mar 14 16:02:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (ruby_is_fd_loadable): now return -1 if loadable but
+	  may block.
+
+	* ruby.c (open_load_file): wait to read by the result of
+	  ruby_is_fd_loadable, without fstat.
+
+Mon Mar 14 13:38:38 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* numeric.c (fix2str): improve r54092 like rb_int2big().
+
+Mon Mar 14 10:02:23 2016  Eric Wong  <e@80x24.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_setup): document as MT-unsafe
+	  [ruby-core:73803] [Bug #12069]
+
+Sun Mar 13 09:43:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/win32.h (O_SHARE_DELETE): change to fit Fixnum
+	  limit.  [ruby-core:74285] [Bug #12171]
+
+Sun Mar 13 09:15:45 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (rb_fix2str): fix edge case, accidentally generated
+	  wrong Fixnum from LONG_MIN.
+
+Sat Mar 12 09:50:27 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_f_catch): [DOC] fix malformed RDoc syntax, "+...+"
+	  cannot enclose non-identifier characters.
+	  a patch by Sebastian S in [ruby-core:74278].  [Bug#12170]
+
+Sat Mar 12 02:44:48 2016  Tanaka Akira  <akr@fsij.org>
+
+	* test/lib/test/unit.rb: describe !/REGEXP/ in the help message.
+
+Fri Mar 11 17:03:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/lib/test/unit.rb (Options#non_options): make regexp name
+	  options prefixed with "!" negative filters.
+
+	* common.mk (TEST_EXCLUDES): use negative filter to exclude memory
+	  leak tests.  -x option excludes test files, not test methods.
+
+Fri Mar 11 16:11:27 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb, casefold.h: Streamlining approach to
+	  case mapping data not available from case folding by unifying all
+	  three cases (special title, special upper, special lower).
+	* enc/unicode.c: Adjust macro names for above (macros are currently inactive).
+	  (with Kimihito Matsui)
+
+Thu Mar 10 17:34:16 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (prepare_iseq_build): enable coverage by coverage_enabled
+	  option, not by parse_in_eval flag in the thread context.
+
+	* iseq.h (rb_compile_option_struct): add coverage_enabled flag.
+
+	* parse.y (yycompile0): set coverage_enabled flag if coverage
+	  array is made.
+
+Thu Mar 10 15:19:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* node.c (dump_option): nd_compile_option is a hidden hash object,
+	  cannot call inspect on it.
+
+Thu Mar 10 09:49:54 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/socket/test_socket.rb (test_udp_recvmsg_truncation):
+	  AIX does not set the MSG_TRUNC flag for a message partially read
+	  by recvmsg(2) with the MSG_PEEK flag set.
+
+Wed Mar  9 16:48:45 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: fix my last commit (syntax error).
+
+Wed Mar  9 16:41:44 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: fix output messages.
+
+	* benchmark/memory_wrapper.rb: use respond_to? because
+	  member? does not work well.
+
+Wed Mar  9 16:20:25 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: support memory usage benchmark.
+	  use `--measure-target=[target]'.
+	  Now, we can use the following targets:
+	    * real (default): real time which returns process time in sec.
+	    * peak: peak memory usage (physical memory) in bytes.
+	    * size: last memory usage (physical memory) in bytes.
+
+	* benchmark/memory_wrapper.rb: ditto.
+
+Wed Mar  9 15:04:22 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/bm_vm3_gc_old_full.rb: add GC.start benchmark.
+
+	* benchmark/bm_vm3_gc_old_immediate.rb: ditto.
+
+	* benchmark/bm_vm3_gc_old_lazy.rb: ditto.
+
+Wed Mar  9 14:59:11 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* benchmark/driver.rb: exit benchmarking if a benchmark process
+	  receives signals.
+
+Wed Mar  9 13:22:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/lib/memory_status.rb: make Memory::Status independent of
+	  MiniTest::Skip.
+
+	* test/lib/test/unit/assertions.rb (assert_no_memory_leak): skip
+	  if Memory::Status is not available.
+
+Wed Mar  9 09:19:55 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/io/wait/test_io_wait.rb (test_wait_readwrite_timeout):
+	  select(2) in AIX returns "readable" for the write-side fd
+	  of a pipe, so it is not possible to use a pipe to test
+	  the read-write timeout of IO#wait on AIX.
+
+Wed Mar  9 03:35:22 2016  Charles Oliver Nutter  <headius@headius.com>
+
+	* test/ruby/test_require.rb (test_require_with_loaded_features_pop):
+	  Only remove PATH so threads don't accidentally double-pop.
+
+Wed Mar  9 00:29:46 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (rb_alias): the original name should be properly
+	  available method_added method, set the name before calling the
+	  hook.
+
+Wed Mar  9 00:07:03 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/logger.rb (Logger::LogDevice#initialize): define using
+	  keyword arguments.
+
+Tue Mar  8 23:37:07 2016  Charles Oliver Nutter  <headius@headius.com>
+
+	* test/ruby/test_array.rb: split out the test for no stack error
+	  on large input for test_permutation, test_repeated_permutation,
+	  and test_repeated_combination, and make them all timeout:30.
+
+Tue Mar  8 17:20:21 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* intern.h (rb_divmod): assume compilers `/` and `%` comply C99
+	  and reduce branching. If a compiler doesn't comply, add #ifdefs.
+
+	* intern.h (rb_div): added for Ruby's behavior.
+
+	* intern.h (rb_mod): added for Ruby's behavior.
+
+	* insns.def (opt_div): use rb_div.
+
+	* insns.def (opt_mod): use rb_mod.
+
+	* numeric.c (fixdivmod): removed.
+
+	* numeric.c (fix_divide): use rb_div.
+
+	* numeric.c (fix_mod): use rb_mod.
+
+	* numeric.c (fix_divmod): use rb_divmod.
+
+Tue Mar  8 17:53:09 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* insns.def (opt_mod): show its method name on ZeroDivisionError.
+	  [Bug #12158]
+
+Tue Mar  8 17:33:38 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_write_console): now no need to check
+	  ERROR_CALL_NOT_IMPLEMENTED because it is for old Win9X.
+
+Tue Mar  8 16:54:29 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_write_console): stop the VT100 emulation if the
+	  console supports it natively.
+
+Tue Mar  8 08:13:01 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/net/imap/test_imap.rb (test_idle_timeout): Because of the
+	  timeout specified in "imap.idle(0.2)", there is no guarantee that
+	  the server thread has done all the work before the client thread
+	  performs the assertions. It depends on the thread scheduling.
+	  Add checks to avoid false positives (on AIX, particularly).
+
+Tue Mar  8 00:42:22 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ruby.c (warn_cr_in_shebang): meaningless check on DOSISH platforms.
+	  fixed a test failure introduced at r53998.
+
+Tue Mar  8 00:27:53 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/tk/lib/tkextlib/tcllib/tablelist_tile.rb: fix method name typo.
+	  [ruby-core:72513] [Bug #11893] The patch provided by Akira Matsuda.
+
+
+Tue Mar  8 00:25:08 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/tk/lib/tkextlib/tcllib/toolbar.rb: fix method name typo.
+	  [ruby-core:72511] [Bug #11891] The patch provided by Akira Matsuda.
+
+
+Tue Mar  8 00:21:58 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/tk/lib/tkextlib/blt/tree.rb: fix method name typo.
+	  [ruby-core:72510] [Bug #11890] The patch provided by Akira Matsuda.
+
+
+Tue Mar  8 00:11:47 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* ext/tk/lib/tk/menubar.rb: fix a typo in font name. [ruby-core:72505]
+	  [Bug #11886] The patch provided by Akira Matsuda.
+
+	* ext/tk/sample/*.rb: ditto.
+
+Mon Mar  7 13:32:58 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_define_class, rb_define_class_id_under): raise
+	  ArgumentError if super is 0, deprecated behavior which has been
+	  warned long time.
+
+Mon Mar  7 13:28:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h: move function declarations for class internals from
+	  include/ruby/intern.h.
+
+Mon Mar  7 10:58:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32ole/win32ole_event.c (rescue_callback): use
+	  rb_write_error_str instead of rb_write_error, to respect
+	  the encoding and prevent the message from GC.
+
+	* internal.h (rb_write_error_str): export.
+
+Mon Mar  7 01:38:41 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/ruby/test_process.rb (test_execopts_gid): Skip a test
+	  that is known to fail on AIX. AIX allows setgid to
+	  a supplementary group, but Ruby does not allow the "-e"
+	  option when setgid'ed, so the test does not work as intended.
+
+Sun Mar  6 22:43:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_obj_display): [DOC] fix output of Array, as Array#to_s
+	  is same as Array#inspect since 1.9.
+
+Sat Mar  5 09:50:58 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/socket/test_addrinfo.rb (test_ipv6_address_predicates):
+	  IN6_IS_ADDR_V4COMPAT and IN6_IS_ADDR_V4MAPPED are broken
+	  on AIX, so skip related tests.
+
+Sat Mar  5 09:17:54 2016  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* test/rinda/test_rinda.rb (test_make_socket_ipv4_multicast):
+	  The fifth argument to getsockopt(2) should be modified to
+	  indicate the actual size of the value on return,
+	  but not in AIX. This is a know bug. Skip related tests.
+	* test/rinda/test_rinda.rb (test_ring_server_ipv4_multicast):
 	  ditto.
+	* test/rinda/test_rinda.rb (test_make_socket_unicast): ditto.
+	* test/socket/test_basicsocket.rb (test_getsockopt): ditto.
+	* test/socket/test_sockopt.rb (test_bool): ditto.
 
-	* dir.c (ruby_glob0): no need to check never-NULL pointer.
-	  reported by Denis Denisov <denji0k AT gmail.com>.
+Sat Mar  5 07:36:27 2016  Rei Odaira  <Rei.Odaira@gmail.com>
 
-	* win32/file.c (rb_file_expand_path_internal): ditto.
+	* test/-ext-/float/test_nextafter.rb: In AIX,
+	  nextafter(+0.0,-0.0)=+0.0, and nextafter(-0.0,+0.0)=-0.0,
+	  but they should return -0.0 and +0.0, respectively. This is
+	  a known bug in nextafter(3) on AIX, so skip related tests.
 
-	* win32/file.c (code_page_i): handle realloc failure.
-	  reported by Denis Denisov <denji0k AT gmail.com>.
+Sat Mar  5 07:14:10 2016  Rei Odaira  <Rei.Odaira@gmail.com>
 
-	* win32/stub.c (stub_sysinit): ditto.
+	* test/zlib/test_zlib.rb (test_adler32_combine, test_crc32_combine):
+	  Skip two tests on AIX because zconf.h in zlib does not correctly
+	  recognize _LARGE_FILES in AIX. The problem was already reported
+	  to zlib, and skip these tests until it is fixed.
 
-	* fix printf format conversion specifiers.
-	  reported by Denis Denisov <denji0k AT gmail.com>.
+Sat Mar  5 03:07:40 2016  Rei Odaira  <Rei.Odaira@gmail.com>
 
-Fri Dec 26 01:41:40 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+	* thread_pthread.c (getstack): __pi_stacksize returned by
+	  pthread_getthrds_np() is wrong on AIX. Use
+	  __pi_stackend - __pi_stackaddr instead.
 
-	* tool/rbinstall.rb: skip installing bundle gems if zlib is unavailable.
-	  [Bug #10647] [ruby-dev:48787]
+Fri Mar  4 19:19:42 2016  Koichi Sasada  <ko1@atdot.net>
 
-Fri Dec 26 01:24:42 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+	* gc.c: use 2 bits with unsigned int for rb_objspace::flags::mode
+	  because it always returns 0 to 2 (non-negative value).
 
-	* tool/downloader.rb: support old versions of ruby.
+Fri Mar  4 18:42:08 2016  Koichi Sasada  <ko1@atdot.net>
 
-	* tool/downloader.rb: now can download gems by http if openssl is not
-	  available (this may be danger!)
+	* gc.c: rename "enum gc_stat" to "enum gc_mode"
+	  because there is a same name (no related) function gc_stat().
 
-Fri Dec 26 00:13:48 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+	  Also gc_stat_* are renamed to gc_mode_*,
+	  gc_stat_transition() to gc_mode_transition(),
+	  rb_objspace::flags::stat is renamed to rb_objspace::flags::mode.
 
-	* test/ruby/test_extlibs.rb: check existence of extension libraries
-	  which not depend on outer libraries. (experimental)
+	  Change rb_objspace::flags::mode from 2 bits to 3 bits because VC++
+	  returns negative enum value with 2 bits.
 
-Thu Dec 25 21:58:15 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+	* gc.c (gc_mode): add a macro to access rb_objspace::flags::mode
+	  with verification code (verification is enabled only on
+	  RGENGC_CHECK_MODE > 0).
 
-	* ext/fiddle/extconf.rb: make PIC objects if it will be linked as
-	  a shared object eventually.  [ruby-core:67128]
+	* gc.c (gc_mode_set): same macro for setter.
 
-Thu Dec 25 19:01:13 2014  NAKAMURA Usaku  <usa@ruby-lang.org>
+Fri Mar  4 09:28:18 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	* ext/fiddle/win32/libffi-3.2.1-mswin.patch: support mswin32.
+	* lib/rubygems.rb, lib/rubygems/*, test/rubygems/*: Update rubygems-2.6.1.
+	  Please see entries of 2.6.0 and 2.6.1 on
+	  https://github.com/rubygems/rubygems/blob/master/History.txt
+	  [fix GH-1270] Patch by @segiddins
 
-Thu Dec 25 17:30:40 2014  Naohisa Goto  <ngotogenome@gmail.com>
+Thu Mar  3 14:09:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* gc.c (wmap_final_func): fix memory size shortage when realloc wmap.
-	  Fix SEGV during finilize of WeakRef on Solaris (though the SEGV
-	  could occur on all OS/platforms). [ruby-dev:48779] [Bug #10646]
+	* lib/ostruct.rb (modifiable?, new_ostruct_member!, table!):
+	  rename methods for internal use with suffixes and make private,
+	  [ruby-core:71069] [Bug #11587]
 
-Thu Dec 25 17:27:06 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Mar  2 16:28:48 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* configure.in (NET_LUID): include winsock2.h instead of windows.h.
-	  patch by Jon Forums in [ruby-core:67125].  [Bug #10640]
+	* vm_eval.c (method_missing): call by found method entry and get
+	  rid of searching the same method entry twice.
 
-Thu Dec 25 16:14:10 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+	* vm_eval.c (vm_call0_body): calling method_missing method is
+	  method_missing().
 
-	* ext/io/console/console.c (console_dev): send the given arguments
-	  to the opened console.  as a special case, do nothing if :close
-	  is given.
+Wed Mar  2 15:13:33 2016  herwinw  <herwin@quarantainenet.nl>
 
-	* test/lib/leakchecker.rb (LeakChecker#check_fd_leak): close if
-	  console.
+	* lib/xmlrpc.rb: Removed broken parser named XMLScanStreamParser.
+	  It's not works with current Ruby version.
+	  [fix GH-1271][ruby-core:59588][Bug #9369]
+	* lib/xmlrpc/config.rb: ditto.
+	* lib/xmlrpc/parser.rb: ditto.
 
+Wed Mar  2 15:08:33 2016  herwinw  <herwin@quarantainenet.nl>
+
+	* lib/xmlrpc.rb: Removed broken parser named XMLTreeParser.
+	  Required gem of its parser didn't compile on newer Ruby versions.
+	  [fix GH-1271][ruby-core:59590][Bug #9370]
+	* lib/xmlrpc/config.rb: ditto.
+	* lib/xmlrpc/parser.rb: ditto.
+
+Tue Mar  1 11:25:48 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/fileutils.rb: use keyword arguments instead of option
+	  hashes.
+
+Mon Feb 29 16:50:20 2016  hanachin  <hanachin@gmail.com>
+
+	* array.c (rb_ary_push_m): [DOC] Remove trailing comma from
+	  Array#push example, as other Array examples doesn't put trailing
+	  comma.  [Fix GH-1279]
+
+Mon Feb 29 16:31:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk, tool/mkconfig.rb: set cross_compiling option from
+	  Makefile, but not from rbconfig.rb, which is just going to be
+	  created by this command.
+
+Sun Feb 28 23:13:49 2016  C.J. Collier  <cjcollier@linuxfoundation.org>
+
+	* configure.in: Add summary to end of configure output.
+	  [Fix GH-1275]
+
+Sun Feb 28 20:23:36 2016  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb (error_print): Add verbose failure messages and
+	  avoid infamous DRb::DRbConnError. [Feature #12101]
+
+Sun Feb 28 13:40:46 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (nometh_err_initialize): add private_call? parameter.
+
+	* error.c (nometh_err_private_call_p): add private_call? method,
+	  to tell if the exception raised in private form FCALL or VCALL.
+	  [Feature #12043]
+
+	* vm_eval.c (make_no_method_exception): append private_call?
+	  argument.
+
+	* vm_insnhelper.c (ci_missing_reason): copy FCALL flag.
+
+Sun Feb 28 10:19:47 2016  Ryan T. Hosford  <tad.hosford@gmail.com>
+
+	* array.c (rb_ary_and): clarify that set intersection returns the
+	  unique elements common to both arrays.
+
+	* array.c (rb_ary_or): clarify that union preserves the order from
+	  the given arrays.
+
+Sat Feb 27 17:05:29 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb, casefold.h: Reducing size of TitleCase
+	  table by eliminating duplicates.
+	  (with Kimihito Matsui)
+
+Fri Feb 26 14:40:48 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (num_step_scan_args): comparison String with Numeric
+	  should raise TypeError. it is an invalid type, but not a
+	  mismatch the number of arguments.  [ruby-core:62430] [Bug #9810]
+
+Fri Feb 26 14:39:39 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* doc/extension.rdoc, doc/extension.ja.rdoc: add editor local
+	  variables, with commenting out by :enddoc: directives which are
+	  just ignored unless code object mode.  [Bug #12111]
+
+Fri Feb 26 12:25:56 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/extension.ja.rdoc: removed rendering error caused by editor specific
+	  configuration on http://docs.ruby-lang.org/en/trunk/extension_rdoc.html .
+	  [Bug #12111][ruby-core:73990]
+
+Fri Feb 26 11:21:41 2016  herwinw  <herwin@quarantainenet.nl>
+
+	* lib/xmlrpc.rb: Removed references to NQXML. It's obsoleted parser.
+	  [fix GH-1245][ruby-core:59593][Feature #9371]
+	* lib/xmlrpc/config.rb: ditto.
+	* lib/xmlrpc/parser.rb: ditto.
+
+Fri Feb 26 11:10:19 2016  Rick Salevsky  <rsalevsky@suse.com>
+
+	* lib/tmpdir.rb: Unify to coding-style for method definition.
+	  [fix GH-1252]
+
+Fri Feb 26 11:02:04 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* README.md: update markdown syntax for anchor tag.
+	  [fix GH-1265] Patch by @lukBarros
+
+Fri Feb 26 10:52:29 2016  Alex Boyd  <alex@opengroove.org>
+
+	* lib/irb.rb: avoid to needless truncation when using back_trace_limit option.
+	  [fix GH-1205][ruby-core:72773][Bug #11969]
+
+Fri Feb 26 08:11:58 2016  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* gem_prelude.rb: Reduce system calls by activating the `did_you_mean`
+	  gem before requiring the gem.  Activating the gem puts the gem on
+	  the load path, where simply requiring the file will search every gem
+	  that's installed until it can find a gem that contains the
+	  `did_you_mean` file.
+
+Thu Feb 25 19:04:13 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb: Adding possibility for debugging output
+	  for TitleCase table in casefold.h.
+	  (with Kimihito Matsui)
+
+Wed Feb 24 22:31:13 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* include/ruby/oniguruma.h: Rearranging flag assignments and making
+	  space for titlecase indices; adding additional macros to add or
+	  extract titlecase index; adding comments for better documentation.
+	* enc/unicode.c: Moving some macros to include/ruby/oniguruma.h;
+	  activating use of titlecase indices.
+	  (with Kimihito Matsui)
+
+Wed Feb 24 21:03:04 2016  Tanaka Akira  <akr@fsij.org>
+
+	* random.c (limited_rand): Add a specialized path for when the limit fits
+	  in 32 bit.
+
+Tue Feb 23 21:52:24 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb, casefold.h: Outputting actual titlecase
+	  data (new table, with indices from other tables).
+	* enc/unicode.c: Ignoring titlecase data indices for the moment.
+	  (with Kimihito Matsui)
+
+Tue Feb 23 15:21:14 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb, casefold.h: Reading casing data from
+	  SpecialCasing.txt.
+	  (with Kimihito Matsui)
+
+Mon Feb 22 18:33:55 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb, casefold.h: Adding flag for title-case,
+	  not yet operational.
+	  (with Kimihito Matsui)
+
+Mon Feb 22 18:17:03 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb, casefold.h: Fixed bug that avoided inclusion
+	  of compatibility characters in upper-/lower-case mappings.
+	  (with Kimihito Matsui)
+
+Sun Feb 21 13:57:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cgi/escape/escape.c: Optimize CGI.unescape performance by C ext
+	  for ASCII-compatible encodings.  [Fix GH-1250]
+
+Sun Feb 21 13:56:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* cgi/escape/escape.c: Optimize CGI.unescapeHTML performance by C
+	  ext for ASCII-compatible encodings.  [Fix GH-1242]
+
+Sat Feb 20 15:38:16 2016  Eric Wong  <e@80x24.org>
+
+	* doc/extension.rdoc: update paths for defs/ directory
+
+Sat Feb 20 14:44:15 2016  Lucas Buchala  <lucasbuchala@gmail.com>
+
+	* vm_eval.c (rb_mod_module_eval): [DOC] Fix documentation
+	  signature for Module#module_eval.  [Fix GH-1258]
+
+Sat Feb 20 14:40:44 2016  Adam O'Connor  <northband@gmail.com>
+
+	* README.md: a few grammatical changes to the main Ruby README.md.
+	  [Fix GH-1259]
+
+Sat Feb 20 13:04:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (push_pattern, push_glob): deal with read paths as UTF-8
+	  to stat later, on Windows as well as OS X.
+	  [ruby-core:73868] [Bug #12081]
+
+Sat Feb 20 01:53:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_mod_const_get): make error message at uninterned
+	  string consistent with symbols.  [ruby-dev:49498] [Bug #12089]
+
+Fri Feb 19 23:37:52 2016  Masahiro Tomita  <tommy@tmtm.org>
+
+	* lib/find.rb (Find#find): raise with the given path name if it
+	  does not exist.  [ruby-dev:49497] [Bug #12087]
+
+Fri Feb 19 12:44:57 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Activated use of case mapping data in CaseUnfold_11 array.
+	  (with Kimihito Matsui)
+
+Fri Feb 19 11:08:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: add cygwin case, nothing excluded.
+	  [ruby-core:73806] [Bug#12071]
+
+Thu Feb 18 21:32:15 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* man/irb.1: fix output in EXAMPLES.
+
+Thu Feb 18 21:05:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (sym_match_m): delegate to String#match but not
+	  String#=~.  [ruby-core:72864] [Bug #11991]
+
+Thu Feb 18 14:15:38 2016  Shota Fukumori  <her@sorah.jp>
+
+	* re.c: Add MatchData#named_captures
+	  [Feature #11999] [ruby-core:72897]
+
+	* test/ruby/test_regexp.rb(test_match_data_named_captures): Test for above.
+
+	* NEWS: News about MatchData#named_captures.
+
+Wed Feb 17 21:41:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* defs/id.def (predefined): add idLASTLINE and idBACKREF for $_
+	  and $~ respectively.
+
+	* parse.y: use idLASTLINE and idBACKREF instead of rb_intern.
+
+Wed Feb 17 20:23:38 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_init): fix segfault and memory leak, consider
+	  wide char encoding terminator.
+
+Wed Feb 17 12:14:59 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (rb_str_init): introduce String.new(capacity: size)
+	  [Feature #12024]
+
+Tue Feb 16 19:10:08 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb, casefold.h: Used only first element
+	  (rather than all) of target in CaseUnfold_11 array.
+	  (with Kimihito Matsui)
+
+Tue Feb 16 18:24:38 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (compare_with_zero): fix variable name, rb_cmperr
+	  requires VALUEs but not an ID.
+
+Tue Feb 16 17:34:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (rb_dir_s_empty_p): add Dir.empty? method, which tells the
+	  argument is the name of an empty directory.  [Feature #10121]
+
+Tue Feb 16 09:51:20 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (without_destdir): just strip a drive letter
+	  which is prepended by with_destdir.
+	  pointed out by @DavidEGrayson.
+	  https://github.com/ruby/ruby/commit/0e5f9ae#commitcomment-16101763
+
+Tue Feb 16 04:42:13 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* insns.def (opt_plus): simply use LONG2NUM() instead of wrongly
+	  complex overflow case.
+
+	* insns.def (opt_sub): ditto.
+
+Tue Feb 16 02:49:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (without_destdir): compare with the destdir
+	  after stripping a drive letter, on dosish platforms.
+	  pointed out by @DavidEGrayson.
+	  https://github.com/ruby/ruby/commit/d0cf23b#commitcomment-16100407
+
+Mon Feb 15 15:44:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parse_ident): allow keyword arguments just after a
+	  method where the same name local variable is defined.
+	  [ruby-core:73816] [Bug#12073]
+
+Mon Feb 15 14:43:28 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb: Added debugging option
+	  (with Kimihito Matsui)
+
+Sun Feb 14 17:31:50 2016  Lars Kanis  <lars@greiz-reinsdorf.de>
+
+	* lib/mkmf.rb (with_{cpp,c,ld}flags): copy caller strings not to
+	  be modified, in append_{cpp,c,ld}flags respectively.
+	  [Fix GH-1246]
+
+Sun Feb 14 16:18:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (setup_exception): set the cause only if it is explicitly
+	  given or not set yet.  [Bug #12068]
+
+Sat Feb 13 21:44:58 2016  Tanaka Akira  <akr@fsij.org>
+
+	* hash.c (rb_hash_invert): [DOC] more examples.
+
+Sat Feb 13 17:30:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI::Generic#find_proxy): support CIDR in
+	  no_proxy.  [ruby-core:73769] [Feature#12062]
+
+Sat Feb 13 17:11:58 2016  Fabian Wiesel  <fabian.wiesel@sap.com>
+
+	* lib/uri/generic.rb (find_proxy): exclude white-spaces and allow
+	  for a leading dot in the domain name in no_proxy.
+	  [ruby-core:54542] [Feature #8317]
+
+Fri Feb 12 12:20:56 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (name_err_initialize, nometh_err_initialize): [DOC] fix
+	  argument positions.  optional parameters except for the message
+	  are placed at the last.
+
+Fri Feb 12 11:49:49 2016  Anthony Dmitriyev  <antstorm@gmail.com>
+
+	* net/ftp.rb: add NullSocket#closed? to fix closing not opened
+	  connection.  [Fix GH-1232]
+
+Fri Feb 12 11:17:38 2016  Bogdan  <bogdanvlviv@gmail.com>
+
+	* re.c (rb_reg_initialize_m): [DOC] fix missing right bracket.
+	  [Fix GH-1243]
+
+Thu Feb 11 14:57:58 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_CHECK_SIZEOF, RUBY_DEFINT): fix for types
+	  which are conditionally available depending on architectures
+	  when universal binary, e.g., __int128.
+
+Thu Feb 11 06:26:18 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (RUBY_DEFINT): use Parameter Expansion.
+
+Thu Feb 11 05:33:24 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (int128_t): don't check HAVE_XXX (for example
+	  HAVE___INT128) because RUBY_CHECK_SIZEOF() don't define it for
+	  config.h and use of $ac_cv_sizeof___int128 alternates the check.
+	  (and don't need to define because users shouldn't know that)
+
+Wed Feb 10 12:03:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ARFLAGS): check if deterministic mode flag is
+	  effective, which is on by default on Ubuntu.
+
+Tue Feb  9 16:36:23 2016  Naotoshi Seo  <sonots@gmail.com>
+
+	* lib/logger.rb: Remove block from Logger.add as it's not needed
+	  patch provided by Daniel Lobato Garcia [fix GH-1240] [Bug #12054]
+
+Tue Feb  9 14:32:23 2016  Zachary Scott  <zzak@ruby-lang.org>
+
+	* ext/zlib/zlib.c: Document mtime header behavior with patch by @schneems
+	  Fixes [GH-1129]: https://github.com/ruby/ruby/pull/1129
+
+Tue Feb  9 13:52:49 2016  Zachary Scott  <zzak@ruby-lang.org>
+
+	* re.c: Remove deprecated kcode argument from Regexp.new and compile
+	  patch provided by Dylan Pulliam [Bug #11495]
+
+Mon Feb  8 21:26:19 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb, enc/unicode/casefold.h: Flags for
+	  upper/lower conversion added (titlecase and SpecialCasing still missing)
+	  (with Kimihito Matsui)
+
+Mon Feb  8 20:43:57 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c, enc/unicode.c: Disassociating ONIGENC_CASE_FOLD flag from
+	  ONIGENC_CASE_DOWNCASE.
+	  (with Kimihito Matsui)
+
+Mon Feb  8 13:00:17 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Shortened macros for enc/unicode/casefold.h to
+	  single-letter; use flags in casefold.h for logic.
+
+	* enc/unicode/case-folding.rb: Added flag for case folding.
+	  Changed parameter passing.
+
+	* enc/unicode/casefold.h: New flags added.
+	  (with Kimihito Matsui)
+
+Mon Feb  8 10:30:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (feature_option): raise a runtime error if ambiguous
+	  feature name is given, in the future.  [Bug #12050]
+
+Mon Feb  8 09:43:57 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Removed enc/unicode/casefold.h from automatic build because
+	  some CI systems don't have gperf. Creation of enc/unicode/casefold.h
+	  is now possible with make unicode-up. This is intended as a temporary measure.
+
+Sun Feb  7 22:10:08 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Added two more precondition files for enc/unicode/casefold.h
+
+	* enc/unicode.c: Added shortening macros for enc/unicode/casefold.h
+
+	* enc/unicode/case-folding.rb: Fixed file encoding for CaseFolding.txt
+	  to ASCII-8BIT (should fix some ci errors). Clarified usage. Created
+	  class MapItem. Partially implemented class CaseMapping.
+	  (with Kimihito Matsui)
+
+Sun Feb  7 14:12:32 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb: Fixing parameter passing.
+	  (with Kimihito Matsui)
+
+Sun Feb  7 11:44:03 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode/case-folding.rb: New classes CaseMapping/CaseMappingDummy
+	  to pass as parameters; not yet implemented or used.
+	  (with Kimihito Matsui)
+
+Sun Feb  7 11:16:00 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* common.mk: using new option in recipe for enc/unicode/casefold.h
+
+	* enc/unicode/case-folding.rb: Correctly specify argument to new option.
+	  (with Kimihito Matsui)
+
+Sun Feb  7 10:43:27 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	(this commit message applies to the previous commit)
+	* common.mk: explicit recipe for enc/unicode/casefold.h
+
+	* enc/unicode/case-folding.rb: Adding -m option to prepare for using
+	  multiple data files.
+	  (with Kimihito Matsui)
+
+Sat Feb  6 22:30:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/cgi/util.rb (escapeHTML, unescapeHTML): consider
+	  ASCII-incompatible encodings.  [Fix GH-1239]
+
+Sat Feb  6 15:18:28 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_regex_casefold.rb: Added data-based testing for
+	  String#downcase :fold.
+
+	* enc/unicode.c: Fixed a range error (lowest non-ASCII character affected
+	  by case operations is U+00B5, MICRO SIGN)
+
+	* test/ruby/enc/test_case_mapping.rb: Explicit test for case folding of
+	  MICRO SIGN to Greek mu.
+	  (with Kimihito Matsui)
+
+Sat Feb  6 14:51:23 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_regex_casefold.rb: Tests for three case folding
+	  primitives (mbc_case_fold, get_case_fold_codes_by_str,
+	  apply_all_case_fold) in the various encodings. Currently only known
+	  good encodings are tested to avoid test failures. For bug hunting,
+	  start by adding more encodings with
+	  generate_test_casefold encoding
+	  (with Kimihito Matsui)
+
+Sat Feb  6 14:37:16 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c, test/ruby/enc/test_case_mapping.rb: Implemented :fold
+	  option for String#downcase by using case folding data from
+	  regular expression engine, and added a few simple tests.
+	  (with Kimihito Matsui)
+
+Fri Feb  5 20:08:59 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_mapping.rb: added tests for :ascii option.
+	  (with Kimihito Matsui)
+
+Fri Feb  5 12:22:20 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* insns.def (opt_mult): Use int128_t for overflow detection.
+
+	* bignum.c (rb_uint128t2big): added for opt_mult.
+
+	* bignum.c (rb_uint128t2big): added for rb_uint128t2big..
+
+	* configure.in: define int128_t, uint128_t and related MACROs.
+	  Initially introduced by r41379 but reverted by r50749.
+
+Thu Feb  4 21:05:17 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Activated :ascii flag for ASCII-only case conversion
+	  (with Kimihito Matsui)
+
+Thu Feb  4 17:38:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (reg_set_source): make source string frozen without
+	  copying.
+
+	* re.c (rb_reg_initialize_m): refactor initialization with
+	  encoding.
+
+Thu Feb  4 15:35:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_fstring_enc_new, rb_fstring_enc_cstr): functions to
+	  make fstring with encoding.
+
+Thu Feb  4 14:42:29 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Added Unicode data file SpecialCasing.txt to be additionally
+	  downloaded (with Kimihito Matsui)
+
+Thu Feb  4 12:39:08 2016  joker1007  <kakyoin.hierophant@gmail.com>
+
+	* cgi/escape/escape.c: Optimize CGI.escape performance by C ext
+	  for ASCII-compatible encodings.  [Fix GH-1238]
+
+Thu Feb  4 11:53:56 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Introduce two variables (UNICODE_DATA_DIR and
+	  UNICODE_SRC_DATA_DIR) to eliminate repetitions.
+
+Wed Feb  3 12:13:20 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* string.c (str_new_frozen): if the given string is embeddedable
+	  but not embedded, embed a new copied string. [Bug #11946]
+
+Wed Feb  3 08:25:38 2016  boshan  <boshan@subsplash.com>
+
+	* ext/openssl/ossl_pkey.c (Init_ossl_pkey): [DOC] Fix typo
+	  "encrypted" to "decrypted".  [Fix GH-1235]
+
+Wed Feb  3 08:21:32 2016  Seiei Miyagi  <hanachin@gmail.com>
+
+	* ext/ripper/lib/ripper/lexer.rb (on_heredoc_dedent): Fix
+	  Ripper.lex error in dedenting squiggly heredoc.  heredoc tree is
+	  also an array of Elem in the outer tree.  [Fix GH-1234]
+
+Wed Feb  3 02:33:39 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (rb_reg_prepare_enc): use already compiled US-ASCII regexp
+	  if given string is ASCII only.
+	  121.2s to 113.9s on my x86_64-freebsd10.2 Intel Core i5 661
+
+Tue Feb  2 13:02:03 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c: Introduce RREGEXP_PTR.
+	  patch by dbussink.
+	  partially merge https://github.com/ruby/ruby/pull/497
+
+	* include/ruby/ruby.h: ditto.
+
+	* gc.c: ditto.
+
+	* ext/strscan/strscan.c: ditto.
+
+	* parse.y: ditto.
+
+	* string.c: ditto.
+
+Tue Feb  2 09:08:27 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems/specification.rb: `coding` is effective only first
+	  line except shebang.
+
+	* lib/rubygems/package.rb, lib/rubygems/package/*: ditto.
+
+Mon Feb  1 21:41:58 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems.rb, lib/rubygems/*, test/rubygems/*: Update rubygems-2.5.2.
+	  It supports to enable frozen string literal and add `--norc` option for
+	  disable to `.gemrc` configuration.
+	  See 2.5.2 release notes for other fixes and enhancements.
+	  https://github.com/rubygems/rubygems/blob/a8aa3bac723f045c52471c7b9328310a048561e0/History.txt#L3
+
+Sun Jan 31 12:33:13 2016  Dan Kreiger  <dan@dankreiger.com>
+
+	* test/drb/ut_large.rb (multiply, avg, median): add additional
+	  math operations to DRbLarge.  [Fix GH-1086]
+
+Sun Jan 31 12:19:15 2016  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_file_exhaustive.rb (test_lstat): Add lacking test
+	  for File#lstat.  [Fix GH-1231]
+
+Sun Jan 31 12:15:33 2016  Prayag Verma  <prayag.verma@gmail.com>
+
+	* doc/standard_library.rdoc: fix typo  [Fix GH-1230]
+	  Spelling mistakes -
+	  outputing > outputting
+	  publich > publish
+
+Sat Jan 30 15:18:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_eval.c (rb_check_funcall_with_hook): also should call the
+	  given hook before returning Qundef when overridden respond_to?
+	  method returned false.  [ruby-core:73556] [Bug #12030]
+
+Fri Jan 29 17:40:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/file.c (rb_readlink): drop garbage after the substitute
+	  name, as rb_w32_read_reparse_point returns the expected buffer
+	  size but "\??\" prefix is dropped from the result.
+
+	* win32/win32.c (w32_readlink): ditto, including NUL-terminator.
+
+Fri Jan 29 17:07:27 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (fileattr_to_unixmode, rb_w32_reparse_symlink_p): volume
+	  mount point should be treated as directory, not symlink.
+	  [ruby-core:72483] [Bug #11874]
+
+	* win32/win32.c (rb_w32_read_reparse_point): check the reparse point is
+	  a volume mount point or not.
+
+	* win32/file.c (rb_readlink): follow above change (but this pass won't
+	  be used).
+
+Fri Jan 29 16:17:07 2016  Lucas Buchala  <lucasbuchala@gmail.com>
+
+	* enum.c (enum_take_while, enum_drop_while): rename block
+	  parameter to obj, since they are generic objects.  [Fix GH-1226]
+
+Fri Jan 29 14:15:26 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/erb.rb (ERB::Compiler#detect_magic_comment): allow
+	  frozen-string-literal in comment as well as encoding.
+
+	* lib/erb.rb (ERB#def_method): insert def line just before the
+	  first non-comment and non-empty line, not to leave duplicated
+	  and stale magic comments.
+
+Fri Jan 29 11:13:33 2016  Jeremy Evans  <code@jeremyevans.net>
+
+	* lib/erb.rb (ERB#set_eoutvar): explicitly make mutable string as
+	  a buffer to make ERB work with --enable-frozen-string-literal.
+	  [ruby-core:73561] [Bug #12031]
+
+Fri Jan 29 10:44:56 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/net/http/header.rb: Warn nil variable on HTTP Header.
+	  It caused to NoMethodError. [fix GH-952][fix GH-641] Patch by @teosz
+	* test/net/http/test_httpheader.rb: Added test for nil HTTP Header.
+
+Thu Jan 28 17:31:43 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_gethostname): support unlimited size
+	  hostname.
+
+Wed Jan 27 21:03:45 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/-ext-/string/test_capacity.rb: Added missing library.
+
+Wed Jan 27 18:53:40 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Fixed bit mask in macro OnigCodePointCount
+
+Wed Jan 27 17:54:42 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Protect code point count by macro, in order to
+	  be able to use the remaining bits for flags.
+	  (with Kimihito Matsui)
+
+Wed Jan 27 16:34:35 2016  boshan  <boshan@subsplash.com>
+
+	* lib/tempfile.rb (Tempfile#initialize): [DOC] the first parameter
+	  `basename` is optional and defaulted to an empty string since
+	  [GH-523].  [Fix GH-1225]
+
+Wed Jan 27 16:25:54 2016  Koichi ITO  <koic.ito@gmail.com>
+
+	* array.c (rb_ary_dig): [DOC] fix the exception class to be raised
+	  when intermediate object does not have dig method.  TypeError
+	  will be raised now.  [Fix GH-1224]
+
+Tue Jan 26 19:36:15 2016  Aggelos Avgerinos  <evaggelos.avgerinos@gmail.com>
+
+	* array.c (permute0, rpermute0): [DOC] Substitute indexes ->
+	  indices in documentation for consistency.  [Fix GH-1222]
+
+Tue Jan 26 15:21:37 2016  Eric Wong  <e@80x24.org>
+
+	* compile.c (caller_location): use rb_fstring_cstr for "<compiled>"
+	  (it is converted to fstring anyways inside rb_iseq_new_with_opt)
+	* iseq.c (iseqw_s_compile): ditto
+	* iseq.c (rb_iseq_new_main): use rb_fstring_cstr for "<main>"
+	* vm.c (Init_VM): ditto, share with with above
+	* iseq.c (iseqw_s_compile_file): rb_fstring before rb_io_t->pathv
+	  share "<main>" with above
+	* vm.c (rb_binding_add_dynavars): fstring "<temp>" immediately
+
+Tue Jan 26 15:14:01 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* compile.c (iseq_peephole_optimize): don't apply tailcall
+	  optimization to send/invokesuper instructions with blockiseq.
+	  This is a follow-up to the changes in r51903; blockiseq is now
+	  the third operand of send/invokesuper instructions.
+	  [ruby-core:73413] [Bug #12018]
+
+Tue Jan 26 14:26:46 2016  Eric Wong  <e@80x24.org>
+
+	* signal.c (sig_list): use fstring for hash key
+	* test/ruby/test_signal.rb (test_signal_list_dedupe_keys): added
+
+Tue Jan 26 13:08:34 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (rb_f_kill): should immediately deliver reserved
+	  signals SIGILL and SIGFPE, not only SIGSEGV and SIGBUS.
+
+Tue Jan 26 07:57:28 2016  Joseph Tibbertsma  <josephtibbertsma@gmail.com>
+
+	* gc.c (RVALUE_PAGE_WB_UNPROTECTED): fix a typo of argument name.
+	  [Fix GH-1221]
+
+Mon Jan 25 17:26:54 2016  Eric Wong  <e@80x24.org>
+
+	* ruby_assert.h (RUBY_ASSERT_WHEN): fix reference to macro name
+	* vm_core.h: include ruby_assert.h before using
+	  [ruby-core:73371]
+
+Mon Jan 25 15:55:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* symbol.c (sym_check_asciionly): more informative error message
+	  with the encoding name and the inspected content.
+	  [ruby-core:73398] [Feature #12016]
+
+Mon Jan 25 09:38:26 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/ruby/test_string.rb: added testcase for next!, succ and succ!
+	  [fix GH-1213] Patch by @K0mAtoru
+
+Mon Jan 25 09:32:25 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/webrick/httpservlet/filehandler.rb: fix documentation for namespace.
+	  [fix GH-1219][ci skip] Patch by @leafac
+
+Sun Jan 24 19:34:23 2016  Eric Wong  <e@80x24.org>
+
+	* vm_insnhelper.c (vm_check_if_namespace): tiny size reduction
+
+Sun Jan 24 18:12:36 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Simplifying Unicode data file download logic to make
+	  it more reliable (including additional fix not in r53633) [Bug #12007]
+
+Sun Jan 24 16:54:11 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/wait/wait.c (io_wait_readwrite): [EXPERIMENTAL] allow to
+	  wait for multiple modes, readable and writable, at once.  the
+	  arguments may change in the future.  [Feature #12013]
+
+Sat Jan 23 22:30:59 2016  K0mA  <mctj1218@gmail.com>
+
+	* test/ruby/test_array.rb (test_keep_if): Add test for
+	  Array#keep_if separate from Array#select!  [Fix GH-1218]
+
+Sat Jan 23 20:54:26 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* common.mk: revert r53633. It broke rubyci and travis.
+	  https://travis-ci.org/ruby/ruby/builds/104259623
+
+Sat Jan 23 20:10:29 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* range.c (range_eqq): revert r51585 because rb_call_super() is
+	  called in range_include() and thus r51585 doesn't work when the
+	  receiver Range object consists of non linear objects such as Date
+	  objects.
+	  [ruby-core:72908] [Bug #12003]
+
+Sat Jan 23 18:37:37 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* ChangeLog: Fixing wrong time on previous commit, and adding
+	  previous commit message to svn [ci skip]
+
+Sat Jan 23 18:30:30 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Simplifying Unicode data file download logic to make
+	  it more reliable [Bug #12007]
+
+Sat Jan 23 16:29:42 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* tool/downloader.rb: Fixed a logical error, improved documentation
+
+Sat Jan 23 11:42:43 2016  Peter Suschlik  <ps@neopoly.de>
+
+	* README.md: Use SVG Travis badge over PNG for better quality and
+	  device support.  [Fix GH-1214] [Fix GH-1216]
+
+Sat Jan 23 11:29:16 2016  Pascal Betz  <pascal.betz@simplificator.com>
+
+	* lib/csv.rb: Update documentation of CSV header converter for
+	  r45498, [GH-575].  [Fix GH-1215]
+
+Fri Jan 22 17:36:46 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (VM_ASSERT): use RUBY_ASSERT instead of rb_bug.
+
+	* error.c (rb_assert_failure): assertion with stack dump.
+
+	* ruby_assert.h (RUBY_ASSERT): new header for the assertion.
+
+Fri Jan 22 00:25:57 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regparse.c (fetch_name_with_level): allow non word characters
+	  at the first character.  [Feature #11949]
+
+	* regparse.c (fetch_name): ditto.
+
+Thu Jan 21 17:34:01 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* marshal.c (r_object0): honor Marshal.load post proc
+	  value for TYPE_LINK.  by Hiroshi Nakamura <nahi@ruby-lang.org>
+	  https://github.com/ruby/ruby/pull/1204 fix GH-1204
+
+Thu Jan 21 16:37:50 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* Makefile.in (update-rubyspec): fix r53208 like r53451.
+
+Wed Jan 20 20:58:25 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* common.mk, Makefile.in: update-config_files is only for Unix
+	  platforms.
+
+Wed Jan 20 17:13:39 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/extlibs.rb: add --cache option to change cache directory.
+
+Tue Jan 19 17:03:40 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Added Unicode data file CaseFolding.txt to be additionally
+	  downloaded (with Kimihito Matsui)
+
+Tue Jan 19 10:09:58 2016  Sho Hashimoto  <sho-h@ruby-lang.org>
+
+	* lib/shell.rb (Shell.debug_output_exclusive_unlock): remove
+	  because Mutex#exclusive_unlock was already deleted. [fix GH-1185]
+
+Tue Jan 19 09:38:27 2016  Nick Cox  <nick@nickcox.me>
+
+	* vm_method.c: fix grammar in respond_to? warning.
+	  [fix GH-1047]
+
+Mon Jan 18 14:37:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_here_document): an escaped newline is not an
+	  actual newline, and the rest part should not be dedented.
+	  [ruby-core:72855] [Bug #11989]
+
+Mon Jan 18 12:04:34 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/ruby/test_string.rb: Added extra testcase for test_rstrip_bang
+	  and test_lstrip_bang. [fix GH-1178] Patch by @Matrixbirds
+
+Mon Jan 18 11:47:27 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* string.c: fix a typo. [fix GH-1202][ci skip] Patch by @sunboshan
+
+Sun Jan 17 21:15:30 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in: improve ICC (Intel C Compiler) support.
+
+	* configure.in (CXX): The name of icc's c++ compiler is `icpc`.
+
+	* configure.in (warnings): Add `-diag-disable=2259` to suppress
+	  noisy warnings: "non-pointer conversion from "..." to "..." may
+	  lose significant bits".
+
+	* configure.in (optflags): Add `-fp-model precise` like -fno-fast-math.
+
+	* lib/mkmf.rb: icc supports -Werror=division-by-zero
+	  and -Werror=deprecated-declarations, but doesn't support
+	  -Wdivision-by-zero and -Wdeprecated-declarations.
+
+Sun Jan 17 20:40:10 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c: Any kind of option is now taking the new code path for
+	  upcase/downcase/capitalize/swapcase. :lithuanian can be used for
+	  testing if no specific option is desired.
+	* test/ruby/enc/test_case_mapping.rb: Adjusted to above.
+	  (with Kimihito Matsui)
+
+Sun Jan 17 20:10:10 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Fixed a logical error and some comments.
+	* test/ruby/enc/test_case_mapping.rb: Made tests more general.
+	  (with Kimihito Matsui)
+
+Sun Jan 17 17:41:41 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Removed artificial expansion for Turkic,
+	  added hand-coded support for Turkic, fixed logic for swapcase.
+	* string.c: Made use of new case mapping code possible from upcase,
+	  capitalize, and swapcase (with :lithuanian as a guard).
+	* test/ruby/enc/test_case_mapping.rb: Adjusted for above.
+	  (with Kimihito Matsui)
+
+Sun Jan 17 15:30:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/option.c (sockopt_bool): relax boolean size to be one
+	  too not only sizeof(int).  Winsock getsockopt() returns a single
+	  byte as a boolean socket option.  [ruby-core:72730] [Bug #11958]
+
+Sun Jan 17 14:43:01 2016  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_env.rb: [Fix GH-1201]
+	  * Extract test code for ENV#keep_if from ENV#select_bang
+	  * Add a test case for ENV#select_bang,keep_if
+
+Sun Jan 17 14:42:25 2016  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_env.rb: [Fix GH-1201]
+	  * Extract test code for ENV#delete_if from ENV#reject_bang
+	  * Add a test case for ENV#reject_bang,delete_if
+
+Sun Jan 17 14:40:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/option.c (check_size): extract a macro to check
+	  binary data size, with a consistent message.
+
+	* ext/socket/option.c (sockopt_byte): fix error message,
+	  sizeof(int) differs from sizeof(unsigned char) in general.
+
+Sat Jan 16 21:16:21 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (xstring): reset heredoc indent after dedenting,
+	  so that following string literal would not be dedented.
+	  [ruby-core:72857] [Bug #11990]
+
+Sat Jan 16 17:24:24 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Artificial mapping to test buffer expansion code.
+	* string.c: Fixed buffer expansion logic.
+	* test/ruby/enc/test_case_mapping.rb: Tests for above.
+	  (with Kimihito Matsui)
+
+Sat Jan 16 16:47:14 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/openssl/lib/openssl/pkey.rb: Added 2048 bit DH parameter.
+	* test/openssl/test_pkey_dh.rb: ditto.
+
+Sat Jan 16 10:51:19 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* enc/unicode.c: fix implicit conversion error with clang. fixup r53548.
+	* string.c: ditto.
+
+Sat Jan 16 10:31:00 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* common.mk: test-sample was changed to test-basic.
+	  [Feature #11982][ruby-core:72823]
+	* basictest/runner.rb: ditto. rename from tool/rubytest.rb.
+	* basictest/test.rb: ditto. rename from sample/test.rb.
+	* defs/gmake.mk: picked from r53540
+	* sample/test.rb: backward compatibility for chkbuild.
+
+Sat Jan 16 10:23:23 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c, enc/unicode.c: New code path as a preparation for Unicode-wide
+	  case mapping. The code path is currently guarded by the :lithuanian
+	  option to avoid accidental problems in daily use.
+	* test/ruby/enc/test_case_mapping.rb: Test for above.
+	* string.c: function 'check_case_options': fixed logical errors
+	  (with Kimihito Matsui)
+
+Fri Jan 15 20:20:20 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* regint.h (PLATFORM_UNALIGNED_WORD_ACCESS): The value of
+	  UNALIGNED_WORD_ACCESS should be used to determine whether
+	  unaligned word access is allowed or not. After this commit,
+	  ./configure CPPFLAGS="-DUNALIGNED_WORD_ACCESS=0" disables
+	  unaligned word access even on platforms that support the feature.
+
+Fri Jan 15 16:12:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (string1): reset heredoc indent for each string literal
+	  so that concatenated string would not be dedented.
+	  [ruby-core:72857] [Bug #11990]
+
+Thu Jan 14 20:01:00 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI::Generic#to_s): change encoding to
+	  UTF-8 as Ruby 2.2/ by Koichi ITO <koic.ito@gmail.com>
+	  https://github.com/ruby/ruby/pull/1188 fix GH-1188
+
+Thu Jan 14 17:36:16 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_f_global_variables): add matched back references
+	  only, as well as defined? operator.
+
+Thu Jan 14 16:12:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): format exact number more exactly.
+
+Thu Jan 14 15:08:43 2016  Tony Arcieri  <bascule@gmail.com>
+
+	* Remove 512-bit DH group. It's affected by LogJam Attack.
+	  https://weakdh.org/
+	  [fix GH-1196][Bug #11968][ruby-core:72766]
+
+Thu Jan 14 11:44:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_f_global_variables): add $1..$9 only if $~ is
+	  set.  fix the condition removed at r14014.
+
+Wed Jan 13 17:21:45 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* .travis.yml: removed commented-out code.
+
+Wed Jan 13 17:14:54 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* .travis.yml: removed osx code. follow up with r53517
+
+Wed Jan 13 16:56:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (rb_iseq_mark): mark parent iseq to prevent dynamically
+	  generated iseq by eval from GC.  [ruby-core:72620] [Bug #11928]
+
+Wed Jan 13 03:42:58 2016  Eric Wong  <e@80x24.org>
+
+	* class.c (Init_class_hierarchy): resolve name for rb_cObject ASAP
+	* object.c (rb_mod_const_set): move name resolution to rb_const_set
+	* variable.c (rb_const_set): do class resolution here
+	  [ruby-core:72807] [Bug #11977]
+
+Wed Jan 13 00:37:12 2016  Satoshi Ohmori  <sachin21dev@gmail.com>
+
+	* man/ruby.1: fix double word typo.  [Fix GH-1194]
+
+Tue Jan 12 21:01:09 2016  Benoit Daloze  <eregontp@gmail.com>
+
+	* common.mk: update URL and name for the Ruby spec suite.
+
+Tue Jan 12 19:52:19 2016  sorah (Shota Fukumori)  <her@sorah.jp>
+
+	* lib/forwardable.rb: Convert given accessors to String.
+
+	  r53381 changed to accept only Symbol or String for accessors, but
+	  there are several rubygems that pass classes (e.g. Array,
+	  Hash, ...) as accessors. Prior r53381, it was accepted because Class#to_s
+	  returns its class name. After r53381 given accessors are checked
+	  with define_method, but it accepts only Symbol or String, otherwise
+	  raises TypeError.
+
+	      def_delegator Foo, :some_method
+
+	  This change is to revert unexpected incompatibility. But this behavior
+	  may change in the future.
+
+Mon Jan 12 18:41:41 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c: made a variable name more grammatically correct
+
+Mon Jan 12 18:34:34 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c: minor grammar fix [ci skip]
+
+Mon Jan 12 16:09:09 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_casing_options.rb: Tests for option
+	  parsing/checking for upcase/downcase/capitalize/swapcase
+	  (see r53503; with Kimihito Matsui)
+
+Mon Jan 12 16:03:03 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c: Added option parsing/checking for upcase/downcase/
+	  capitalize/swapcase (with Kimihito Matsui)
+
+Mon Jan 11 21:28:28 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* include/ruby/oniguruma.h: Added flags needed for upcase/downcase
+	  Unicode addition (with Kimihito Matsui)
+
+Mon Jan 11 09:50:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: check if the API version number is consistent with
+	  the program version number.
+
+Sun Jan 10 20:57:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (compile_massign_lhs): when index ends with splat,
+	  append rhs value to it like POSTARG, since VM_CALL_ARGS_SPLAT
+	  splats the last argument only.  [ruby-core:72777] [Bug #11970]
+
+Sun Jan 10 15:45:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/missing.h (explicit_bzero_by_memset_s): remove
+	  inline implementation by memset_s, which needs a macro before
+	  including headers and can cause problems in extension libraries
+	  by the order of the macro and headers.
+
+Sun Jan 10 13:41:36 2016  Eric Wong  <e@80x24.org>
+
+	* io.c (rb_deferr): remove long obsolete global
+
+Sun Jan 10 09:14:42 2016  Eric Wong  <e@80x24.org>
+
+	* ext/psych/lib/psych/visitors/yaml_tree.rb (visit_String):
+	  eliminate chomp
+	* lib/net/http.rb (connect): eliminate delete
+	* lib/net/http/header.rb (basic_encode): ditto
+	* lib/net/imap.rb (authenticate): eliminate gsub
+	  (self.encode_utf7): shorten delete arg
+	* lib/net/smtp.rb (base64_encode): eliminate gsub
+	* lib/open-uri.rb (OpenURI.open_http): eliminate delete
+	* lib/rss/rss.rb: ditto
+	* lib/securerandom.rb (base64): ditto
+	  (urlsafe_base64): eliminate delete!
+	* lib/webrick/httpauth/digestauth.rb (split_param_value):
+	  eliminate chop
+	* lib/webrick/httpproxy.rb (do_CONNECT): eliminate delete
+	  (setup_upstream_proxy_authentication): ditto
+	  [ruby-core:72666] [Feature #11938]
+
+Sat Jan  9 23:19:14 2016  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_hash.rb (test_try_convert): Add test for
+	  Hash.try_convert.  [Fix GH-1190]
+
+Sat Jan  9 23:15:25 2016  Jon Moss  <maclover7@users.noreply.github.com>
+
+	* ext/openssl/ossl.c: Add missing variables to documentation
+	  examples.  [Fix GH-1189]
+
+Sat Jan  9 18:25:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* symbol.h (is_attrset_id): ASET is an attrset ID.  fix
+	  unexpected safe call instead of an ordinary ASET.
+
+Sat Jan  9 10:44:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, win32/setup.mak: extract RUBY_PROGRAM_VERSION from
+	  RUBY_VERSION in version.h instead of RUBY_API_VERSION numbers in
+	  include/ruby/version.h, and cut it into version numbers.
+
+Sat Jan  9 07:13:33 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: rename PAGE_* to HEAP_PAGE_* because PAGE_SIZE is used
+	  in Mac OS X.
+
+	* test/ruby/test_gc.rb: catch up this fix.
+
+Sat Jan  9 05:45:40 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: PAGE_BITMAP_PLANES (the number of bitmap) is 4, not 3.
+
+Sat Jan  9 05:42:57 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: rename constant names HEAP_* to PAGE_*.
+
+	  Keys of GC::INTERNAL_CONSTANTS are also renamed.
+
+	* test/ruby/test_gc.rb: catch up this fix.
+
+Fri Jan  8 22:30:06 2016  Akinori MUSHA  <knu@iDaemons.org>
+
+	* doc/regexp.rdoc: [DOC] Elaborate on the \G anchor. [ci skip]
+
+Fri Jan  8 19:49:27 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: remove heap_page::body. Instead of this field,
+	  heap_page::start field works well.
+
+Fri Jan  8 19:31:52 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: rename rb_heap_t::page_length to rb_heap_t::total_pages.
+
+	  `page_length' is not clear (we may understand with length of
+	  a page).
+
+Fri Jan  8 17:07:14 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c: remove heap_page::heap. This field is only used to recognize
+	  whether a page is in a tomb or not. Instead of this field,
+	  heap_page::flags::in_tomb (1 bit field) is added.
+
+	  Also type of heap_page::(total|free|final)_slots are changed from
+	  int to short. 2B is enough for them.
+
+Fri Jan  8 09:33:59 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* iseq.c (rb_iseq_compile_with_option): move variable initialization
+	  code to avoid maybe-uninitialized warnings by gcc 4.8.
+
+Fri Jan  8 00:03:22 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enum.c (enum_min, enum_max): do the same optimization as r53454.
+
+Thu Jan  7 22:32:21 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ruby.h: undef HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P
+	  and HAVE_BUILTIN___BUILTIN_TYPES_COMPATIBLE_P on C++.
+	  [ruby-core:72736] [Bug #11962]
+
+Thu Jan  7 22:02:21 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* enum.c (enum_minmax): optimize object comparison in
+	  Enumerable#minmax.
+
+Thu Jan  7 14:49:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_pending_interrupt_p): no pending interrupt
+	  before initialization.
+
+	* thread.c (thread_raise_m, rb_thread_kill): uninitialized thread
+	  cannot interrupt.  [ruby-core:72732] [Bug #11959]
+
+Thu Jan  7 11:34:14 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/backward.h (ruby_show_copyright_to_die): for source
+	  code backward compatibility.
+
+	* ruby.c (process_options): return Qtrue to exit the process
+	  successfully.
+
+	* version.c (ruby_show_copyright): no longer exit.
+
+Wed Jan  6 17:22:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser#order!): add `into` optional
+	  keyword argument to store the results.  [Feature #11191]
+
+Tue Jan  5 21:44:37 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ChangeLog: fix wrong class name.
+
+Tue Jan  5 21:43:50 2016  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_string.rb(test_chr): added test for String#chr
+	  [fix GH-1179]
+
+Tue Jan  5 21:32:26 2016  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_numeric.rb (test_nonzero_p): added test for Numeric#nonzero?
+	  [fix GH-1187]
+
+Tue Jan  5 11:47:23 2016  Damir Gaynetdinov  <damir.gaynetdinov@gmail.com>
+
+	* doc/marshal.rdoc: Clarify object references example, that the
+	  reference is same object.  [Fix GH-1156]
+
+Tue Jan  5 05:06:51 2016  Eric Wong  <e@80x24.org>
+
+	* ext/stringio/stringio.c (strio_binmode): implement to set encoding
+	* test/stringio/test_stringio.rb (test_binmode): new test
+	  [ruby-core:72699] [Bug #11945]
+
+Mon Jan  4 15:44:37 2016  Sho Hashimoto  <sho-h@ruby-lang.org>
+
+	* variable.c (rb_mod_deprecate_constant): [DOC] added
+	  documentation for Module#deprecate_constant. [ci skip]
+
+Mon Jan  4 15:36:38 2016  Sho Hashimoto  <sho-h@ruby-lang.org>
+
+	* thread_sync.c: [DOC] remove SizedQueue#close argument.
+	  [ci skip]
+
+Mon Jan  4 10:14:24 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/coverage/test_coverage.rb: ignored test when enabled to coverage.
+	  It lead to crash with `make test-all`.
+
+Mon Jan  4 08:10:44 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* insns.def (opt_case_dispatch): Move a comment to the
+	  appropriate position.
+	  [ci skip]
+
+Sun Jan  3 23:55:13 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems/security.rb (DIGEST_ALGORITHM, KEY_ALGORITHM):
+	  should check same name as the used constants.
+	  [ruby-core:72674] [Bug #11940]
+
+Sun Jan  3 19:22:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* aclocal.m4: add fallback file for non-aclocal environments.
+	  [ruby-core:72683] [Bug #11942]
+
+Sun Jan  3 13:56:49 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* eval_error.c (rb_print_undef): Use `rb_method_visibility_t`
+	  instead of `int`.
+	* eval_intern.h (rb_print_undef): ditto
+	* proc.c (mnew_internal): ditto
+	* vm_method.c (rb_export_method): ditto
+	  [Misc #11649] [ruby-core:71311] [fix GH-1078]
+
+Sun Jan  3 12:12:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* acinclude.m4: rename aclocal.m4, which should be generated by
+	  aclocal.  [ruby-core:72675] [Bug #11941]
+
+Sat Jan  2 21:07:55 2016  Eric Wong  <e@80x24.org>
+
+	* thread_sync.c (queue_do_pop): avoid cast with Qfalse
+	  (rb_szqueue_push): ditto, use queue_sleep wrapper
+
+Sat Jan  2 16:16:14 2016  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/erb.rb: Allow ERB subclass to add token easily.
+	  [Feature #11936]
+
+	* test/erb/test_erb.rb: ditto.
+
+Sat Jan  2 14:44:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (regexp): set_yylval_num sets u1, should use nd_tag
+	  instead of nd_state.  [ruby-core:72638] [Bug #11932]
+
+Sat Jan  2 02:27:22 2016  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/ostruct.rb: Fix case of frozen object with initializer.
+	  Bug revealed by RubySpec [ruby-core:72639]
+
+Fri Jan  1 22:01:52 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: mention CSV's liberal_parsing option.
+
+Fri Jan  1 19:38:23 2016  okkez  <okkez000@gmail.com>
+
+	* doc/NEWS-2.3.0: fix double words typo.
+	  [ci skip][fix GH-1183]
+
+Fri Jan  1 15:28:56 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (remove_unreachable_chunk): decrease count of
+	  call_info in removed instructions.  fix up r53402.
+
+Fri Jan  1 12:05:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (remove_unreachable_chunk): remove unreferred label
+	  to optimize away unreachable chunk.
+
+Fri Jan  1 11:42:57 2016  James Edward Gray II  <james@graysoftinc.com>
+
+	* lib/csv.rb (CSV): Add a liberal_parsing option.
+	  Patch by Braden Anderson. [#11839]
+	* test/csv/test_features.rb:  test liberal_parsing
+
+Fri Jan  1 10:27:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/mkconfig.rb (RbConfig): prefix SDKROOT to oldincludedir
+	  not includedir, the latter is outside the ruby installation.
+	  [ruby-core:72496] [Bug #11881]
+
+Fri Jan  1 08:53:02 2016  Yuki Kurihara  <co000ri@gmail.com>
+
+	* test/ruby/test_lazy_enumerator.rb (test_take_bad_arg): Add test
+	  code in case of Enumerator::Lazy#take called with negative number.
+	  [ruby-dev:49467] [Bug #11933]
+
+Fri Jan  1 05:06:20 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_here_document): update indent for each line in
+	  indented here document with single-quotes.
+	  [ruby-core:72479] [Bug #11871]
+
+Fri Jan  1 03:26:44 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/ostruct.rb (freeze): define deferred accessors before
+	  freezing to get rid of an error when just reading frozen
+	  OpenStruct.
+
+Thu Dec 31 14:36:45 2015  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/ostruct.rb: Fix new_ostruct_member to correctly avoid
+	  redefinition [#11901]
+
+Thu Dec 31 02:45:12 2015  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* test/ruby/test_module.rb (test_classpath): r53376 may change
+	  the order of m.constants.
+	  `make TESTS='-v ruby/test_class.rb ruby/test_module.rb' test-all`
+	  may fail after that.
+	  http://rubyci.s3.amazonaws.com/tk2-243-31075/ruby-trunk/log/20151230T164202Z.log.html.gz
+
+Thu Dec 31 02:20:00 2015  Benoit Daloze  <eregontp@gmail.com>
+
+	* common.mk (help): Fix typo.
+
+Wed Dec 30 20:53:09 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/net/http/responses.rb: Added new response class for 451 status code.
+	* lib/net/http.rb: documentation for HTTPUnavailableForLegalReasons
+
+Wed Dec 30 20:45:45 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/webrick/httpstatus.rb: Added HTTP 451 Status Code.
+	  [fix GH-1167] Patch by @MuhammetDilmac
+	  https://tools.ietf.org/html/draft-tbray-http-legally-restricted-status-00
+
+Wed Dec 30 20:25:52 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/syntax/calling_methods.rdoc: fix old operator for safe navigation
+	  operator. [ci skip][fix GH-1182] Patch by @dougo
+
+Wed Dec 30 16:43:23 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_string.rb (test_ord): Add test for String#ord.
+	  [Fix GH-1181]
+
+Wed Dec 30 11:28:57 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/forwardable.rb (def_instance_delegator): adjust backtrace of
+	  method body by tail call optimization.  adjusting the delegated
+	  target is still done by deleting backtrace.
+
+	* lib/forwardable.rb (def_single_delegator): ditto.
+
+Wed Dec 30 11:18:42 2015  Elliot Winkler  <elliot.winkler@gmail.com>
+
+	* lib/forwardable.rb (def_instance_delegator) fix delegating to
+	  'args' and 'block', clashing with local variables in generated
+	  methods.  [ruby-core:72579] [Bug #11916]
+
+	* lib/forwardable.rb (def_single_delegator): ditto.
+
+Wed Dec 30 09:58:56 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_class_inherited_p): search the corresponding
+	  ancestor to prepended module from prepending class itself.
+	  [ruby-core:72493] [Bug #11878]
+
+Wed Dec 30 09:20:00 2015  Yuki Kurihara  <co000ri@gmail.com>
+
+	* test/stringio/test_io.rb (test_flag): add assertion for error when
+	  text and binary mode are mixed.
+	  [ruby-dev:49465] [Feature #11921]
+
+Wed Dec 30 08:43:59 2015  Yuki Kurihara  <co000ri@gmail.com>
+
+	* test/stringio/test_stringio.rb (test_initialize): add test for
+	  StringIO#initialize.  [ruby-core:72585] [Feature #11920]
+
+Wed Dec 30 05:19:24 2015  Eric Wong  <e@80x24.org>
+
+	* class.c (struct clone_const_arg): adjust for id_table
+	  (clone_const): ditto
+	  (clone_const_i): ditto
+	  (rb_mod_init_copy): ditto
+	  (rb_singleton_class_clone_and_attach): ditto
+	  (rb_include_class_new): ditto
+	  (include_modules_at): ditto
+	* constant.h (rb_free_const_table): ditto
+	* gc.c (free_const_entry_i): ditto
+	  (rb_free_const_table): ditto
+	  (obj_memsize_of): ditto
+	  (mark_const_entry_i): ditto
+	  (mark_const_tbl): ditto
+	* internal.h (struct rb_classext_struct): ditto
+	* object.c (rb_mod_const_set): resolve class name on assignment
+	* variable.c (const_update): replace with const_tbl_update
+	  (const_tbl_update): new function
+	  (fc_i): adjust for id_table
+	  (find_class_path): ditto
+	  (autoload_const_set): st_update => const_tbl_update
+	  (rb_const_remove): adjust for id_table
+	  (sv_i): ditto
+	  (rb_local_constants_i): ditto
+	  (rb_local_constants): ditto
+	  (rb_mod_const_at): ditto
+	  (rb_mod_const_set): ditto
+	  (rb_const_lookup): ditto
+	  [ruby-core:72112] [Feature #11614]
+
+Wed Dec 30 04:10:13 2015  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* thread_pthread.c (rb_thread_create_timer_thread): destroy attr even
+	  if pthread_create() failed.
+
+Wed Dec 30 02:55:09 2015  Eric Wong  <e@80x24.org>
+
+	* thread_pthread.c (setup_communication_pipe): delay setting owner
+	  (rb_thread_create_timer_thread): until thread creation succeeds
+	  [ruby-core:72590] [Bug #11922]
+
+Tue Dec 29 19:12:46 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (proc_options): -W command line option should be able to
+	  override -w in RUBYOPT environment variable.
+
+Tue Dec 29 17:54:16 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ignored_block): warn if a block is given to `using`,
+	  which is probably for `Module.new`.
+
+Tue Dec 29 12:48:34 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/ostruct.rb (OpenStruct): make respond_to? working on
+	  just-allocated objects for workaround of Psych.
+	  [ruby-core:72501] [Bug #11884]
+
+Tue Dec 29 10:35:00 2015  Kenta Murata  <mrkn@mrkn.jp>
+
+	* test/mkmf/test_have_func.rb (test_have_func):
+	  Add assertion to examine the existence of HAVE_RUBY_INIT.
+
+	* test/mkmf/test_have_func.rb (test_not_have_func):
+	  Add assertion to examine the absence of HAVE_RUBY_INIT.
+
+Tue Dec 29 06:50:42 2015  Eric Wong  <e@80x24.org>
+
+	* thread_sync.c: static classes
+
+Tue Dec 29 05:30:30 2015  Eric Wong  <e@80x24.org>
+
+	* lib/resolv.rb (Resolv::IPv6.create): avoid modifying frozen
+	* test/resolv/test_dns.rb (test_ipv6_create): test for above
+	  [Bug #11910] [ruby-core:72559]
+
+Mon Dec 28 14:55:57 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_string.rb (TestString#test_rstrip_bang): Add test
+	  for String#rstrip!.  [Fix GH-1176]
+
+Mon Dec 28 09:18:53 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_string.rb (TestString#test_lstrip_bang): Add test
+	  for String#lstrip!.  [Fix GH-1176]
+
+Sun Dec 27 23:32:26 2015  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_variant2val): refactoring.
+
+Sun Dec 27 21:14:42 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* process.c (rb_execarg_parent_start1): need to convert the encoding to
+	  ospath's one.
+
+Sun Dec 27 20:54:22 2015  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* process.c: use rb_w32_uchdir() instead of plain chdir() on Windows.
+	  reported by naruse via twitter.
+
+	* process.c (rb_execarg_addopt): need to convert the encoding to
+	  ospath's one.
+
+Sun Dec 27 20:00:31 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* enc/x_emoji.h: fix dead-link.
+
+Sun Dec 27 19:55:55 2015  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/NEWS-2.3.0: fix a typo.
+
+Sun Dec 27 18:08:15 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* string.c (rb_str_lstrip_bang, rb_str_rstrip_bang): [DOC] Fix
+	  ruby-doc comments for String#rstrip! and lstrip!.  It looks like
+	  dropped bang.  [Fix GH-1175]
+
+Sun Dec 27 15:14:20 2015  Eric Wong  <e@80x24.org>
+
+	* io.c (io_getpartial): remove unused kwarg from template
+	* test/ruby/test_io.rb (test_readpartial_bad_args): new
+	  [Bug #11885]
+
+Sun Dec 27 11:50:53 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_string.rb (test_rstrip, test_lstrip): Add tests
+	  for String#lstrip and rstrip.  The test cases are used from
+	  string.c ruby-doc comments.  [Fix GH-1174]
+
+Sun Dec 27 11:47:46 2015  Kuniaki IGARASHI  <igaiga@gmail.com>
+
+	* test/ruby/test_string.rb (test_insert): Add test for
+	  String#insert.  The test cases are written in string.c
+	  comments as a reference.  [Fix GH-1173]
+
+Sun Dec 27 11:03:33 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (show_bitstack): trace stack_type value if yydebug.
+
+Sun Dec 27 10:03:14 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/depend (enc, trans): fix version dependency, shared object
+	  files depend on the RUBY_SO_NAME value for runtime link.
+
+Sun Dec 27 09:47:20 2015  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_vstr2wc, ole_variant2val): fix blank
+	  string conversion.
+	  [Bug #11880]
+	  Thanks Akio Tajima for the patch!
+
+Sun Dec 27 09:34:53 2015  craft4coder  <yooobuntu@163.com>
+
+	* doc/extension.rdoc: [DOC] `nul` should be uppercase.
+	  change 'nul' => 'NUL'.  [Fix GH-1172]
+
+Sat Dec 26 18:29:01 2015  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/xmlrpc/client.rb: Support SSL options in async methods of
+	  XMLRPC::Client.
+	  [Bug #11489]
+	  Reported by Aleksandar Kostadinov. Thanks!!!
+
+Sat Dec 26 11:26:38 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* miniinit.c (Init_enc): add some common aliases of built-in
+	  encodings.  [ruby-core:72481] [Bug #11872]
+
+Fri Dec 25 22:43:26 2015  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: extract RUBY_RELEASE_DAY at generating Makefile.
+
+	* version.h (RUBY_RELEASE_DATE): construct from RUBY_RELEASE_YEAR,
+	  RUBY_RELEASE_MONTH, and RUBY_RELEASE_DAY.
+
+Fri Dec 25 21:33:06 2015  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* version.h (RUBY_VERSION): 2.4.0 development has started.
+
+Fri Dec 25 14:12:12 2015  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* doc/ChangeLog-2.3.0, ext/tk/lib/tkextlib/SUPPORT_STATUS,
+	  include/ruby/version.h: minor grammar fixes [ci skip]
+
+Fri Dec 25 08:23:22 2015  Tadashi Saito  <tad.a.digger@gmail.com>
+
+	* compile.c, cont.c, doc, man: fix common misspelling.
+	  [ruby-core:72466] [Bug #11870]
+
+
+For the changes before 2.3.0, see doc/ChangeLog-2.3.0
 For the changes before 2.2.0, see doc/ChangeLog-2.2.0
 For the changes before 2.1.0, see doc/ChangeLog-2.1.0
 For the changes before 2.0.0, see doc/ChangeLog-2.0.0

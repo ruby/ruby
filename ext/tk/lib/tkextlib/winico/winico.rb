@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tkextlib/winico/winico.rb
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

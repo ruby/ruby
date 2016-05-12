@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # acltest.rb - ACL unit test
 # Copyright (c) 2000 Masatoshi SEKI
 #

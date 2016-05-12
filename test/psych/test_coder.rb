@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require_relative 'helper'
 
 module Psych
@@ -93,6 +94,28 @@ module Psych
       def encode_with coder
         coder.represent_object self.class.name, 20
       end
+    end
+
+    class Referential
+      attr_reader :a
+
+      def initialize
+        @a = self
+      end
+
+      def encode_with(c)
+        c['a'] = @a
+      end
+
+      def init_with(c)
+        @a = c['a']
+      end
+    end
+
+    def test_self_referential
+      x = Referential.new
+      copy = Psych.load Psych.dump x
+      assert_equal copy, copy.a
     end
 
     def test_represent_with_object

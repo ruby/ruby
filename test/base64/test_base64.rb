@@ -1,4 +1,5 @@
 # coding: US-ASCII
+# frozen_string_literal: false
 require "test/unit"
 require "base64"
 
@@ -87,6 +88,13 @@ class TestBase64 < Test::Unit::TestCase
     assert_equal("_-8=", Base64.urlsafe_encode64("\xff\xef"))
   end
 
+  def test_urlsafe_encode64_unpadded
+    assert_equal("", Base64.urlsafe_encode64("", padding: false))
+    assert_equal("AA", Base64.urlsafe_encode64("\0", padding: false))
+    assert_equal("AAA", Base64.urlsafe_encode64("\0\0", padding: false))
+    assert_equal("AAAA", Base64.urlsafe_encode64("\0\0\0", padding: false))
+  end
+
   def test_urlsafe_decode64
     assert_equal("", Base64.urlsafe_decode64(""))
     assert_equal("\0", Base64.urlsafe_decode64("AA=="))
@@ -96,5 +104,12 @@ class TestBase64 < Test::Unit::TestCase
     assert_equal("\377\377", Base64.urlsafe_decode64("__8="))
     assert_equal("\377\377\377", Base64.urlsafe_decode64("____"))
     assert_equal("\xff\xef", Base64.urlsafe_decode64("_+8="))
+  end
+
+  def test_urlsafe_decode64_unpadded
+    assert_equal("\0", Base64.urlsafe_decode64("AA"))
+    assert_equal("\0\0", Base64.urlsafe_decode64("AAA"))
+    assert_equal("\0\0\0", Base64.urlsafe_decode64("AAAA"))
+    assert_raise(ArgumentError) { Base64.urlsafe_decode64("AA=") }
   end
 end

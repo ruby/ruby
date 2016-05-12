@@ -1,4 +1,5 @@
 # encoding:windows-1251
+# frozen_string_literal: false
 
 require "test/unit"
 

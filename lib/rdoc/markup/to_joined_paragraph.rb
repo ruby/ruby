@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # Joins the parts of an RDoc::Markup::Paragraph into a single String.
 #

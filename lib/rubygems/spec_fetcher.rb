@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/remote_fetcher'
 require 'rubygems/user_interaction'
 require 'rubygems/errors'

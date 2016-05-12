@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tkextlib/tcllib/scrollwin.rb
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/available_set'
 require 'rubygems/security'
@@ -79,7 +80,8 @@ class TestGemAvailableSet < Gem::TestCase
   end
 
   def test_remove_installed_bang
-    a1, _ = util_gem 'a', '1'
+    a1, _ = util_spec 'a', '1'
+    install_specs a1
 
     a1.activate
 

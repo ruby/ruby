@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # = base64.rb: methods for base64-encoding and -decoding strings
 #
@@ -77,15 +78,30 @@ module Base64
   # This method complies with ``Base 64 Encoding with URL and Filename Safe
   # Alphabet'' in RFC 4648.
   # The alphabet uses '-' instead of '+' and '_' instead of '/'.
-  def urlsafe_encode64(bin)
-    strict_encode64(bin).tr("+/", "-_")
+  # Note that the result can still contain '='.
+  # You can remove the padding by setting +padding+ as false.
+  def urlsafe_encode64(bin, padding: true)
+    str = strict_encode64(bin).tr("+/", "-_")
+    str = str.delete("=") unless padding
+    str
   end
 
   # Returns the Base64-decoded version of +str+.
   # This method complies with ``Base 64 Encoding with URL and Filename Safe
   # Alphabet'' in RFC 4648.
   # The alphabet uses '-' instead of '+' and '_' instead of '/'.
+  #
+  # The padding character is optional.
+  # This method accepts both correctly-padded and unpadded input.
+  # Note that it still rejects incorrectly-padded input.
   def urlsafe_decode64(str)
-    strict_decode64(str.tr("-_", "+/"))
+    # NOTE: RFC 4648 does say nothing about unpadded input, but says that
+    # "the excess pad characters MAY also be ignored", so it is inferred that
+    # unpadded input is also acceptable.
+    str = str.tr("-_", "+/")
+    if !str.end_with?("=") && str.length % 4 != 0
+      str = str.ljust((str.length + 3) & ~3, "=")
+    end
+    strict_decode64(str)
   end
 end

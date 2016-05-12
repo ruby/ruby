@@ -446,7 +446,7 @@ path_atime(VALUE self)
  *   pathname.birthtime	-> time
  *
  * Returns the birth time for the file.
- * If the platform doesn't have birthtime, returns <i>ctime</i>.
+ * If the platform doesn't have birthtime, raises NotImplementedError.
  *
  * See File.birthtime.
  */

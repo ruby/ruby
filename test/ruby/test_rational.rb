@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class RationalSub < Rational; end
@@ -110,6 +111,9 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(Rational(1),Rational('3/3','3/3'))
     assert_raise(TypeError){Rational(nil)}
     assert_raise(ArgumentError){Rational('')}
+    assert_raise_with_message(ArgumentError, /\u{221a 2668}/) {
+      Rational("\u{221a 2668}")
+    }
     assert_raise(TypeError){Rational(Object.new)}
     assert_raise(ArgumentError){Rational()}
     assert_raise(ArgumentError){Rational(1,2,3)}
@@ -898,7 +902,8 @@ class Rational_Test < Test::Unit::TestCase
 
   def test_fixed_bug
     n = Float::MAX.to_i * 2
-    assert_equal(1.0, Rational(n + 2, n + 1).to_f, '[ruby-dev:33852]')
+    x = EnvUtil.suppress_warning {Rational(n + 2, n + 1).to_f}
+    assert_equal(1.0, x, '[ruby-dev:33852]')
   end
 
   def test_power_of_1_and_minus_1
@@ -907,7 +912,7 @@ class Rational_Test < Test::Unit::TestCase
     one = Rational( 1, 1)
     assert_eql  one,   one  ** -big     , bug5715
     assert_eql  one, (-one) ** -big     , bug5715
-    assert_eql -one, (-one) ** -(big+1) , bug5715
+    assert_eql (-one), (-one) ** -(big+1) , bug5715
     assert_equal Complex, ((-one) ** Rational(1,3)).class
   end
 
@@ -919,6 +924,16 @@ class Rational_Test < Test::Unit::TestCase
     assert_eql zero, zero ** Rational(2, 3)
     assert_raise(ZeroDivisionError, bug5713) { Rational(0, 1) ** -big }
     assert_raise(ZeroDivisionError, bug5713) { Rational(0, 1) ** Rational(-2,3) }
+  end
+
+  def test_positive_p
+    assert_predicate(1/2r, :positive?)
+    assert_not_predicate(-1/2r, :positive?)
+  end
+
+  def test_negative_p
+    assert_predicate(-1/2r, :negative?)
+    assert_not_predicate(1/2r, :negative?)
   end
 
   def test_known_bug

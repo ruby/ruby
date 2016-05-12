@@ -1,11 +1,10 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #include "ossl.h"
@@ -95,13 +94,11 @@ ossl_digest_new(const EVP_MD *md)
 static VALUE
 ossl_digest_alloc(VALUE klass)
 {
-    EVP_MD_CTX *ctx;
-    VALUE obj;
-
-    ctx = EVP_MD_CTX_create();
+    VALUE obj = TypedData_Wrap_Struct(klass, &ossl_digest_type, 0);
+    EVP_MD_CTX *ctx = EVP_MD_CTX_create();
     if (ctx == NULL)
 	ossl_raise(rb_eRuntimeError, "EVP_MD_CTX_create() failed");
-    obj = TypedData_Wrap_Struct(klass, &ossl_digest_type, ctx);
+    RTYPEDDATA_DATA(obj) = ctx;
 
     return obj;
 }

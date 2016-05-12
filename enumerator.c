@@ -13,7 +13,6 @@
 ************************************************/
 
 #include "internal.h"
-#include "node.h"
 
 /*
  * Document-class: Enumerator
@@ -157,7 +156,7 @@ enumerator_mark(void *p)
 static size_t
 enumerator_memsize(const void *p)
 {
-    return p ? sizeof(struct enumerator) : 0;
+    return sizeof(struct enumerator);
 }
 
 static const rb_data_type_t enumerator_data_type = {
@@ -494,9 +493,9 @@ enumerator_each(int argc, VALUE *argv, VALUE obj)
 static VALUE
 enumerator_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
 {
-    NODE *memo = (NODE *)m;
-    VALUE idx = memo->u1.value;
-    memo->u1.value = rb_int_succ(idx);
+    struct MEMO *memo = (struct MEMO *)m;
+    VALUE idx = memo->v1;
+    MEMO_V1_SET(memo, rb_int_succ(idx));
 
     if (argc <= 1)
 	return rb_yield_values(2, val, idx);
@@ -536,7 +535,7 @@ enumerator_with_index(int argc, VALUE *argv, VALUE obj)
 	memo = INT2FIX(0);
     else
 	memo = rb_to_int(memo);
-    return enumerator_block_call(obj, enumerator_with_index_i, (VALUE)NEW_MEMO(memo, 0, 0));
+    return enumerator_block_call(obj, enumerator_with_index_i, (VALUE)MEMO_NEW(memo, 0, 0));
 }
 
 /*
@@ -1068,7 +1067,7 @@ yielder_mark(void *p)
 static size_t
 yielder_memsize(const void *p)
 {
-    return p ? sizeof(struct yielder) : 0;
+    return sizeof(struct yielder);
 }
 
 static const rb_data_type_t yielder_data_type = {
@@ -1175,7 +1174,7 @@ generator_mark(void *p)
 static size_t
 generator_memsize(const void *p)
 {
-    return p ? sizeof(struct generator) : 0;
+    return sizeof(struct generator);
 }
 
 static const rb_data_type_t generator_data_type = {
@@ -1246,8 +1245,8 @@ generator_initialize(int argc, VALUE *argv, VALUE obj)
 
 	if (!rb_obj_is_proc(proc))
 	    rb_raise(rb_eTypeError,
-		     "wrong argument type %s (expected Proc)",
-		     rb_obj_classname(proc));
+		     "wrong argument type %"PRIsVALUE" (expected Proc)",
+		     rb_obj_class(proc));
 
 	if (rb_block_given_p()) {
 	    rb_warn("given block not used");
@@ -1332,14 +1331,14 @@ lazy_init_iterator(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
     else {
 	VALUE args;
 	int len = rb_long2int((long)argc + 1);
+	VALUE *nargv = ALLOCV_N(VALUE, args, len);
 
-	args = rb_ary_tmp_new(len);
-	rb_ary_push(args, m);
+	nargv[0] = m;
 	if (argc > 0) {
-	    rb_ary_cat(args, argv, argc);
+	    MEMCPY(nargv + 1, argv, VALUE, argc);
 	}
-	result = rb_yield_values2(len, RARRAY_CONST_PTR(args));
-	RB_GC_GUARD(args);
+	result = rb_yield_values2(len, nargv);
+	ALLOCV_END(args);
     }
     if (result == Qundef) rb_iter_break();
     return Qnil;
@@ -1424,7 +1423,7 @@ lazy_set_method(VALUE lazy, VALUE args, rb_enumerator_size_func *size_fn)
  *   e.lazy -> lazy_enumerator
  *
  * Returns a lazy enumerator, whose methods map/collect,
- * flat_map/collect_concat, select/find_all, reject, grep, zip, take,
+ * flat_map/collect_concat, select/find_all, reject, grep, grep_v, zip, take,
  * take_while, drop, and drop_while enumerate values only on an
  * as-needed basis.  However, if a block is given to zip, values
  * are enumerated immediately.
@@ -1692,6 +1691,40 @@ lazy_grep(VALUE obj, VALUE pattern)
 }
 
 static VALUE
+lazy_grep_v_func(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
+{
+    VALUE i = rb_enum_values_pack(argc - 1, argv + 1);
+    VALUE result = rb_funcall(m, id_eqq, 1, i);
+
+    if (!RTEST(result)) {
+	rb_funcall(argv[0], id_yield, 1, i);
+    }
+    return Qnil;
+}
+
+static VALUE
+lazy_grep_v_iter(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
+{
+    VALUE i = rb_enum_values_pack(argc - 1, argv + 1);
+    VALUE result = rb_funcall(m, id_eqq, 1, i);
+
+    if (!RTEST(result)) {
+	rb_funcall(argv[0], id_yield, 1, rb_yield(i));
+    }
+    return Qnil;
+}
+
+static VALUE
+lazy_grep_v(VALUE obj, VALUE pattern)
+{
+    return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
+					 rb_block_given_p() ?
+					 lazy_grep_v_iter : lazy_grep_v_func,
+					 pattern),
+			   rb_ary_new3(1, pattern), 0);
+}
+
+static VALUE
 call_next(VALUE obj)
 {
     return rb_funcall(obj, id_next, 0);
@@ -1772,8 +1805,8 @@ lazy_zip(int argc, VALUE *argv, VALUE obj)
 	if (NIL_P(v)) {
 	    for (; i < argc; i++) {
 		if (!rb_respond_to(argv[i], id_each)) {
-		    rb_raise(rb_eTypeError, "wrong argument type %s (must respond to :each)",
-			rb_obj_classname(argv[i]));
+		    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (must respond to :each)",
+			     rb_obj_class(argv[i]));
 		}
 	    }
 	    ary = rb_ary_new4(argc, argv);
@@ -2030,6 +2063,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "find_all", lazy_select, 0);
     rb_define_method(rb_cLazy, "reject", lazy_reject, 0);
     rb_define_method(rb_cLazy, "grep", lazy_grep, 1);
+    rb_define_method(rb_cLazy, "grep_v", lazy_grep_v, 1);
     rb_define_method(rb_cLazy, "zip", lazy_zip, -1);
     rb_define_method(rb_cLazy, "take", lazy_take, 1);
     rb_define_method(rb_cLazy, "take_while", lazy_take_while, 0);

@@ -1,5 +1,9 @@
+# frozen_string_literal: false
 require 'rdoc/test_case'
-require 'rake'
+begin
+  require 'rake'
+rescue LoadError
+end
 
 class TestRDocTask < RDoc::TestCase
 
@@ -166,5 +170,5 @@ class TestRDocTask < RDoc::TestCase
     assert_equal %w[-o html] << "--title" << "Test Title Option", rdoc_task.option_list
   end
 
-end
+end if defined?(Rake::Task)
 

@@ -1,4 +1,5 @@
 # -*- coding: us-ascii -*-
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestRubyLiteral < Test::Unit::TestCase
@@ -102,6 +103,15 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal('FooBar', b, 'r3842')
   end
 
+  def test_dstring_encoding
+    bug11519 = '[ruby-core:70703] [Bug #11519]'
+    ['"foo#{}"', '"#{}foo"', '"#{}"'].each do |code|
+      a = eval("#-*- coding: utf-8 -*-\n#{code}")
+      assert_equal(Encoding::UTF_8, a.encoding,
+                   proc{"#{bug11519}: #{code}.encoding"})
+    end
+  end
+
   def test_dsymbol
     assert_equal :a3c, :"a#{1+2}c"
   end
@@ -110,6 +120,43 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal "foo\n", `echo foo`
     s = 'foo'
     assert_equal "foo\n", `echo #{s}`
+  end
+
+  def test_frozen_string
+    all_assertions do |a|
+      a.for("false with indicator") do
+        str = eval("# -*- frozen-string-literal: false -*-\n""'foo'")
+        assert_not_predicate(str, :frozen?)
+      end
+      a.for("true with indicator") do
+        str = eval("# -*- frozen-string-literal: true -*-\n""'foo'")
+        assert_predicate(str, :frozen?)
+      end
+      a.for("false without indicator") do
+        str = eval("# frozen-string-literal: false\n""'foo'")
+        assert_not_predicate(str, :frozen?)
+      end
+      a.for("true without indicator") do
+        str = eval("# frozen-string-literal: true\n""'foo'")
+        assert_predicate(str, :frozen?)
+      end
+      a.for("false with preceding garbage") do
+        str = eval("# x frozen-string-literal: false\n""'foo'")
+        assert_not_predicate(str, :frozen?)
+      end
+      a.for("true with preceding garbage") do
+        str = eval("# x frozen-string-literal: true\n""'foo'")
+        assert_not_predicate(str, :frozen?)
+      end
+      a.for("false with succeeding garbage") do
+        str = eval("# frozen-string-literal: false x\n""'foo'")
+        assert_not_predicate(str, :frozen?)
+      end
+      a.for("true with succeeding garbage") do
+        str = eval("# frozen-string-literal: true x\n""'foo'")
+        assert_not_predicate(str, :frozen?)
+      end
+    end
   end
 
   def test_regexp
@@ -192,7 +239,9 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_normal_exit %q{GC.disable=true; x = nil; raise if eval("[#{(1..1_000_000).to_a.join(", ")}]").size != 1_000_000}, "", timeout: 300, child_env: %[--disable-gems]
     assert_normal_exit %q{GC.disable=true; x = nil; raise if eval("{#{(1..1_000_000).map{|n| "#{n} => x"}.join(', ')}}").size != 1_000_000}, "", timeout: 300, child_env: %[--disable-gems]
     assert_normal_exit %q{GC.disable=true; x = nil; raise if eval("{#{(1..1_000_000).map{|n| "#{n} => #{n}"}.join(', ')}}").size != 1_000_000}, "", timeout: 300, child_env: %[--disable-gems]
+  end
 
+  def test_big_hash_literal
     bug7466 = '[ruby-dev:46658]'
     h = {
       0xFE042 => 0xE5CD,
@@ -327,6 +376,19 @@ class TestRubyLiteral < Test::Unit::TestCase
     }
     k = h.keys
     assert_equal([129, 0xFE331], [k.size, k.last], bug7466)
+
+    code = [
+      "h = {",
+      (1..128).map {|i| "#{i} => 0,"},
+      (129..140).map {|i| "#{i} => [],"},
+      "}",
+    ].join
+    assert_separately([], <<-"end;")
+      GC.stress = true
+      #{code}
+      GC.stress = false
+      assert_equal(140, h.size)
+    end;
   end
 
   def test_range

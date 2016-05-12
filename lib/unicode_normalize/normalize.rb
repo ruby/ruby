@@ -1,4 +1,5 @@
 # coding: utf-8
+# frozen_string_literal: false
 
 # Copyright Ayumu Nojima (野島 歩) and Martin J. Dürst (duerst@it.aoyama.ac.jp)
 
@@ -20,10 +21,6 @@ module UnicodeNormalize
   NF_HASH_C = Hash.new do |hash, key|
                          hash.shift if hash.length>MAX_HASH_LENGTH # prevent DoS attack
                          hash[key] = nfc_one(key)
-                       end
-  NF_HASH_K = Hash.new do |hash, key|
-                         hash.shift if hash.length>MAX_HASH_LENGTH # prevent DoS attack
-                         hash[key] = nfkd_one(key)
                        end
 
   ## Constants For Hangul
@@ -88,10 +85,6 @@ module UnicodeNormalize
     canonical_ordering_one(hangul_decomp_one(string))
   end
 
-  def self.nfkd_one(string)
-    string.chars.map! {|c| KOMPATIBLE_TABLE[c] || c}.join('')
-  end
-
   def self.nfc_one(string)
     nfd_string = nfd_one string
     start = nfd_string[0]
@@ -119,9 +112,9 @@ module UnicodeNormalize
       when :nfd then
         string.gsub REGEXP_D, NF_HASH_D
       when :nfkc then
-        string.gsub(REGEXP_K, NF_HASH_K).gsub REGEXP_C, NF_HASH_C
+        string.gsub(REGEXP_K, KOMPATIBLE_TABLE).gsub(REGEXP_C, NF_HASH_C)
       when :nfkd then
-        string.gsub(REGEXP_K, NF_HASH_K).gsub REGEXP_D, NF_HASH_D
+        string.gsub(REGEXP_K, KOMPATIBLE_TABLE).gsub(REGEXP_D, NF_HASH_D)
       else
         raise ArgumentError, "Invalid normalization form #{form}."
       end

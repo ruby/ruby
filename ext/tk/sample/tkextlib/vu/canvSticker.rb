@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: false
 
 require 'tk'
 require 'tkextlib/vu/charts'
@@ -61,7 +62,7 @@ steps << proc{
 }
 
 steps << proc{
-  puts 'Paint the backgound.'
+  puts 'Paint the background.'
   st[:fill] = 'yellow'
 }
 

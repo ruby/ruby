@@ -1,7 +1,9 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'cgi'
 require 'tempfile'
 require 'stringio'
+require_relative 'update_env'
 
 
 ##
@@ -44,8 +46,7 @@ class MultiPart
     buf << "Content-Disposition: form-data: name=\"#{name}\"#{s}\r\n"
     buf << "Content-Type: #{content_type}\r\n" if content_type
     buf << "\r\n"
-    value = value.dup.force_encoding(::Encoding::ASCII_8BIT) if defined?(::Encoding)
-    buf << value
+    buf << value.b
     buf << "\r\n"
     return self
   end
@@ -104,16 +105,21 @@ end
 
 
 class CGIMultipartTest < Test::Unit::TestCase
+  include UpdateEnv
+
 
   def setup
-    ENV['REQUEST_METHOD'] = 'POST'
+    @environ = {}
+    update_env(
+      'REQUEST_METHOD' => 'POST',
+      'CONTENT_TYPE' => nil,
+      'CONTENT_LENGTH' => nil,
+    )
     @tempfiles = []
   end
 
   def teardown
-    %w[ REQUEST_METHOD CONTENT_TYPE CONTENT_LENGTH REQUEST_METHOD ].each do |name|
-      ENV.delete(name)
-    end
+    ENV.update(@environ)
     $stdin.close() if $stdin.is_a?(Tempfile)
     $stdin = STDIN
     @tempfiles.each {|t|

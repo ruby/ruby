@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tkextlib/bwidget/pagesmanager.rb
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

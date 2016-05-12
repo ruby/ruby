@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestLazyEnumerator < Test::Unit::TestCase
@@ -197,6 +198,34 @@ class TestLazyEnumerator < Test::Unit::TestCase
                  e.lazy.grep(proc {|x| x == [2, "2"]}, &:join).force)
   end
 
+  def test_grep_v
+    a = Step.new('a'..'f')
+    assert_equal('b', a.grep_v(/a/).first)
+    assert_equal('f', a.current)
+    assert_equal('a', a.lazy.grep_v(/c/).first)
+    assert_equal('a', a.current)
+    assert_equal(%w[b c d f], a.grep_v(proc {|x| /[aeiou]/ =~ x}))
+    assert_equal(%w[b c d f], a.lazy.grep_v(proc {|x| /[aeiou]/ =~ x}).to_a)
+  end
+
+  def test_grep_v_with_block
+    a = Step.new('a'..'f')
+    assert_equal('B', a.grep_v(/a/) {|i| i.upcase}.first)
+    assert_equal('B', a.lazy.grep_v(/a/) {|i| i.upcase}.first)
+  end
+
+  def test_grep_v_multiple_values
+    e = Enumerator.new { |yielder|
+      3.times { |i|
+        yielder.yield(i, i.to_s)
+      }
+    }
+    assert_equal([[0, "0"], [1, "1"]], e.grep_v(proc {|x| x == [2, "2"]}))
+    assert_equal([[0, "0"], [1, "1"]], e.lazy.grep_v(proc {|x| x == [2, "2"]}).force)
+    assert_equal(["00", "11"],
+                 e.lazy.grep_v(proc {|x| x == [2, "2"]}, &:join).force)
+  end
+
   def test_zip
     a = Step.new(1..3)
     assert_equal([1, "a"], a.zip("a".."c").first)
@@ -244,6 +273,11 @@ class TestLazyEnumerator < Test::Unit::TestCase
     a = Step.new(1..10)
     assert_equal([], a.lazy.take(0).force)
     assert_equal(nil, a.current)
+  end
+
+  def test_take_bad_arg
+    a = Step.new(1..10)
+    assert_raise(ArgumentError) { a.lazy.take(-1) }
   end
 
   def test_take_recycle
@@ -483,6 +517,18 @@ EOS
     assert_equal Enumerator::Lazy, [].lazy.slice_when{}.class, bug7507
   end
 
+  def test_each_cons_limit
+    n = 1 << 120
+    assert_equal([1, 2], (1..n).lazy.each_cons(2).first)
+    assert_equal([[1, 2], [2, 3]], (1..n).lazy.each_cons(2).first(2))
+  end
+
+  def test_each_slice_limit
+    n = 1 << 120
+    assert_equal([1, 2], (1..n).lazy.each_slice(2).first)
+    assert_equal([[1, 2], [3, 4]], (1..n).lazy.each_slice(2).first(2))
+  end
+
   def test_no_warnings
     le = (1..3).lazy
     assert_warning("") {le.zip([4,5,6]).force}
@@ -490,5 +536,12 @@ EOS
     assert_warning("") {le.take(1).force}
     assert_warning("") {le.drop(1).force}
     assert_warning("") {le.drop_while{false}.force}
+  end
+
+  def test_symbol_chain
+    assert_equal(["1", "3"], [1, 2, 3].lazy.reject(&:even?).map(&:to_s).force)
+    assert_raise(NoMethodError) do
+      [1, 2, 3].lazy.map(&:undefined).map(&:to_s).force
+    end
   end
 end

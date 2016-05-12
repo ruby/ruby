@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestEnumerator < Test::Unit::TestCase
@@ -44,6 +45,14 @@ class TestEnumerator < Test::Unit::TestCase
       assert_equal(i, e.next)
       i += 1
     }
+  end
+
+  def test_loop_return_value
+    assert_equal nil, loop { break }
+    assert_equal 42,  loop { break 42 }
+
+    e = Enumerator.new { |y| y << 1; y << 2; :stopped }
+    assert_equal :stopped, loop { e.next while true }
   end
 
   def test_nested_iteration
@@ -94,6 +103,7 @@ class TestEnumerator < Test::Unit::TestCase
       1.times do
         foo = [1,2,3].to_enum
         GC.start
+        foo
       end
       GC.start
     end
@@ -432,6 +442,18 @@ class TestEnumerator < Test::Unit::TestCase
     g.freeze
     assert_raise(RuntimeError) {
       g.__send__ :initialize, proc { |y| y << 4 << 5 }
+    }
+
+    g = Enumerator::Generator.new(proc {|y| y << 4 << 5; :foo })
+    a = []
+    assert_equal(:foo, g.each {|x| a << x })
+    assert_equal([4, 5], a)
+
+    assert_raise(LocalJumpError) {Enumerator::Generator.new}
+    assert_raise(TypeError) {Enumerator::Generator.new(1)}
+    obj = eval("class C\u{1f5ff}; self; end").new
+    assert_raise_with_message(TypeError, /C\u{1f5ff}/) {
+      Enumerator::Generator.new(obj)
     }
   end
 

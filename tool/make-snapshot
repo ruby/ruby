@@ -1,10 +1,10 @@
 #!/usr/bin/ruby -s
 # -*- coding: us-ascii -*-
 require 'uri'
-require 'digest/md5'
 require 'digest/sha1'
 require 'digest/sha2'
 require 'fileutils'
+require 'shellwords'
 require 'tmpdir'
 require File.expand_path("../vcs", __FILE__)
 STDOUT.sync = true
@@ -35,7 +35,7 @@ each versions may be followed by optional @revision.
 USAGE
 end
 
-DIGESTS = %w[MD5 SHA1 SHA256 SHA512]
+DIGESTS = %w[SHA1 SHA256 SHA512]
 PACKAGES = {
   "bzip" => %w".tar.bz2 bzip2 -c",
   "gzip" => %w".tar.gz  gzip -c",
@@ -91,7 +91,7 @@ $digests ||= DIGESTS
 $patch_file &&= File.expand_path($patch_file)
 path = ENV["PATH"].split(File::PATH_SEPARATOR)
 %w[YACC BASERUBY RUBY MV MINIRUBY].each do |var|
-  cmd = ENV[var]
+  cmd, = ENV[var].shellsplit
   unless path.any? {|dir|
       file = File.expand_path(cmd, dir)
       File.file?(file) and File.executable?(file)
@@ -182,12 +182,12 @@ def package(vcs, rev, destdir, tmp = nil)
     v = "ruby"
     puts "Exporting #{rev}@#{revision}"
     exported = tmp ? File.join(tmp, v) : v
-    unless vcs.export(revision, url, exported) {|line| print line}
+    unless vcs.export(revision, url, exported, true) {|line| print line}
       warn("Export failed")
       return
     end
     if $srcdir
-      Dir.glob($srcdir + "/{tool/config.{guess,sub},gems/*.gem,.downloaded-cache/*}") do |file|
+      Dir.glob($srcdir + "/{tool/config.{guess,sub},gems/*.gem,.downloaded-cache/*,enc/unicode/data/**/*.txt}") do |file|
         puts "copying #{file}"
         dest = exported + file[$srcdir.size..-1]
         FileUtils.mkpath(File.dirname(dest))
@@ -208,7 +208,6 @@ def package(vcs, rev, destdir, tmp = nil)
     v = v[0]
   end
   open("#{v}/revision.h", "wb") {|f| f.puts "#define RUBY_REVISION #{revision}"}
-  open("#{v}/.revision.time", "wb") {}
   version ||= (versionhdr = IO.read("#{v}/version.h"))[RUBY_VERSION_PATTERN, 1]
   version or return
   if patchlevel
@@ -244,6 +243,10 @@ def package(vcs, rev, destdir, tmp = nil)
     File.open(clean.add("cross.rb"), "w") do |f|
       f.puts "Object.__send__(:remove_const, :CROSS_COMPILING) if defined?(CROSS_COMPILING)"
       f.puts "CROSS_COMPILING=true"
+      f.puts "Object.__send__(:remove_const, :RUBY_PLATFORM)"
+      f.puts "RUBY_PLATFORM='none'"
+      f.puts "Object.__send__(:remove_const, :RUBY_VERSION)"
+      f.puts "RUBY_VERSION='#{version}'"
     end
     unless File.exist?("configure")
       print "creating configure..."
@@ -254,6 +257,7 @@ def package(vcs, rev, destdir, tmp = nil)
       puts " done"
     end
     clean.add("autom4te.cache")
+    clean.add("enc/unicode/data")
     print "creating prerequisites..."
     if File.file?("common.mk") && /^prereq/ =~ commonmk = IO.read("common.mk")
       puts
@@ -277,34 +281,68 @@ def package(vcs, rev, destdir, tmp = nil)
         f.puts "s,@RM@,|#_!!_#|rm -f,g"
         f.puts "s,@CP@,|#_!!_#|cp,g"
         f.puts "s,@rubyarchdir@,|#_!!_#|,g"
+        f.puts "s,@rubylibprefix@,|#_!!_#|,g"
+        f.puts "s,@ruby_version@,|#_!!_#|#{version},g"
       }
       FileUtils.mkpath(hdrdir = "#{extout}/include/ruby")
       File.open("#{hdrdir}/config.h", "w") {}
-      miniruby = ENV['MINIRUBY'] + " -I. -rcross"
-      mk = IO.read("Makefile.in").gsub(/^@.*\n/, '').gsub(/@([A-Za-z_]\w*)@/) {ENV[$1]}
+      FileUtils.mkpath(defaults = "#{extout}/rubygems/defaults")
+      File.open("#{defaults}/operating_system.rb", "w") {}
+      File.open("#{defaults}/ruby.rb", "w") {}
+      miniruby = ENV['MINIRUBY'] + " -I. -I#{extout} -rcross"
+      baseruby = ENV["BASERUBY"]
+      mk = IO.read("Makefile.in").gsub(/^@.*\n/, '')
+      vars = {
+        "srcdir"=>".",
+        "CHDIR"=>"cd",
+        "NULLCMD"=>":",
+        "PATH_SEPARATOR"=>File::PATH_SEPARATOR,
+        "IFCHANGE"=>"tool/ifchange",
+        "MKDIR_P"=>"mkdir -p",
+        "RMALL"=>"rm -fr",
+        "MINIRUBY"=>miniruby,
+        "RUNRUBY"=>miniruby,
+        "RUBY"=>ENV["RUBY"],
+        "HAVE_BASERUBY"=>"yes",
+        "BASERUBY"=>baseruby,
+        "BOOTSTRAPRUBY"=>baseruby,
+        "PWD"=>Dir.pwd,
+        "CONFIGURE"=>"configure",
+      }
+      args = vars.dup
+      mk.gsub!(/@([A-Za-z_]\w*)@/) {args.delete($1); vars[$1] || ENV[$1]}
       mk << commonmk.gsub(/(?<!#)\{[^{}]*\}/, "")
-      cmd = %W[make -f -
-               srcdir=. CHDIR=cd NULLCMD=:
-               PATH_SEPARATOR=#{File::PATH_SEPARATOR}
-               IFCHANGE=tool/ifchange MAKEDIRS=mkdir\ -p
-               RMALL=rm\ -fr
-               MINIRUBY=#{miniruby}
-               RUNRUBY=#{miniruby}
-               RUBY=#{ENV["RUBY"]}
-               HAVE_BASERUBY=yes
-               BASERUBY=#{ENV["BASERUBY"]}
-               PWD=#{Dir.pwd}
-               prereq]
-      IO.popen(cmd, "w") do |f|
+      mk << <<-'APPEND'
+
+prereq: clean-cache $(CLEAN_CACHE)
+clean-cache $(CLEAN_CACHE): after-update
+update-download:: update-gems
+after-update:: extract-gems
+extract-gems: update-gems
+update-gems:
+      APPEND
+      open(clean.add("Makefile"), "w") do |f|
+        f.puts "prereq: update-download"
         f.puts mk
-        f.puts "after-update::", "clean-cache $(CLEAN_CACHE): after-update", "prereq: clean-cache $(CLEAN_CACHE)"
       end
+      system("make", "prereq", *args.map {|arg| arg.join("=")})
       clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk")
       print "prerequisites"
     else
       system(*%W"#{YACC} -o parse.c parse.y")
     end
-    FileUtils.rm_rf(clean)
+    vcs.after_export(".") if exported
+    FileUtils.rm_rf(clean) unless $keep_temp
+    FileUtils.rm_rf(".downloaded-cache")
+    if File.exist?("gems/bundled_gems")
+      gems = Dir.glob("gems/*.gem")
+      gems -= File.readlines("gems/bundled_gems").map {|line|
+        'gems/'+line.split(' ').join('-')+'.gem'
+      }
+      FileUtils.rm_f(gems)
+    else
+      FileUtils.rm_rf("gems")
+    end
     unless $?.success?
       puts " failed"
       return

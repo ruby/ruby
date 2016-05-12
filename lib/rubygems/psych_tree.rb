@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module Gem
   if defined? ::Psych::Visitors
     class NoAliasYAMLTree < Psych::Visitors::YAMLTree

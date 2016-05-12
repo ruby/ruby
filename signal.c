@@ -45,6 +45,9 @@
 # include "nacl/signal.h"
 #endif
 
+extern ID ruby_static_id_signo;
+#define id_signo ruby_static_id_signo
+
 #ifdef NEED_RUBY_ATOMIC_OPS
 rb_atomic_t
 ruby_atomic_exchange(rb_atomic_t *ptr, rb_atomic_t val)
@@ -64,10 +67,6 @@ ruby_atomic_compare_and_swap(rb_atomic_t *ptr, rb_atomic_t cmp,
     }
     return old;
 }
-#endif
-
-#if defined(__BEOS__) || defined(__HAIKU__)
-#undef SIGBUS
 #endif
 
 #ifndef NSIG
@@ -254,6 +253,7 @@ static VALUE
 sig_signame(VALUE recv, VALUE signo)
 {
     const char *signame = signo2signm(NUM2INT(signo));
+    if (!signame) return Qnil;
     return rb_str_new_cstr(signame);
 }
 
@@ -326,7 +326,7 @@ esignal_init(int argc, VALUE *argv, VALUE self)
 	sig = rb_sprintf("SIG%s", signm);
     }
     rb_call_super(1, &sig);
-    rb_iv_set(self, "signo", INT2NUM(signo));
+    rb_ivar_set(self, id_signo, INT2NUM(signo));
 
     return self;
 }
@@ -341,7 +341,7 @@ esignal_init(int argc, VALUE *argv, VALUE self)
 static VALUE
 esignal_signo(VALUE self)
 {
-    return rb_iv_get(self, "signo");
+    return rb_ivar_get(self, id_signo);
 }
 
 /* :nodoc: */
@@ -414,7 +414,6 @@ rb_f_kill(int argc, const VALUE *argv)
     VALUE str;
     const char *s;
 
-    rb_secure(2);
     rb_check_arity(argc, 2, UNLIMITED_ARGUMENTS);
 
     switch (TYPE(argv[0])) {
@@ -485,6 +484,12 @@ rb_f_kill(int argc, const VALUE *argv)
 #endif
 #ifdef SIGKILL
 		  case SIGKILL:
+#endif
+#ifdef SIGILL
+		  case SIGILL:
+#endif
+#ifdef SIGFPE
+		  case SIGFPE:
 #endif
 #ifdef SIGSTOP
 		  case SIGSTOP:
@@ -688,11 +693,15 @@ signal_enque(int sig)
 static RETSIGTYPE
 sighandler(int sig)
 {
+    int old_errnum = errno;
+
     signal_enque(sig);
     rb_thread_wakeup_timer_thread();
 #if !defined(BSD_SIGNAL) && !defined(POSIX_SIGNAL)
     ruby_signal(sig, sighandler);
 #endif
+
+    errno = old_errnum;
 }
 
 int
@@ -745,14 +754,16 @@ rb_get_next_signal(void)
 
 #if defined SIGSEGV || defined SIGBUS || defined SIGILL || defined SIGFPE
 static const char *received_signal;
-# define clear_received_signal() (void)(received_signal = 0)
+# define clear_received_signal() (void)(ruby_disable_gc = 0, received_signal = 0)
 #else
 # define clear_received_signal() ((void)0)
 #endif
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
 NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
-# if !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__ || defined __amd64__))
+# if defined __HAIKU__
+#   define USE_UCONTEXT_REG 1
+# elif !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__ || defined __amd64__))
 # elif defined __linux__
 #   define USE_UCONTEXT_REG 1
 # elif defined __APPLE__
@@ -782,6 +793,12 @@ check_stack_overflow(const uintptr_t addr, const ucontext_t *ctx)
     const __register_t sp = mctx->mc_rsp;
 #   else
     const __register_t sp = mctx->mc_esp;
+#   endif
+# elif defined __HAIKU__
+#   if defined(__amd64__)
+    const unsigned long sp = mctx->rsp;
+#   else
+    const unsigned long sp = mctx->esp;
 #   endif
 # endif
     enum {pagesize = 4096};
@@ -848,7 +865,8 @@ sigbus(int sig SIGINFO_ARG)
  * and it's delivered as SIGBUS instead of SIGSEGV to userland. It's crazy
  * wrong IMHO. but anyway we have to care it. Sigh.
  */
-#if defined __APPLE__
+    /* Seems Linux also delivers SIGBUS. */
+#if defined __APPLE__ || defined __linux__
     CHECK_STACK_OVERFLOW();
 #endif
     rb_bug_context(SIGINFO_CTX, "Bus Error" MESSAGE_FAULT_ADDRESS);
@@ -927,6 +945,13 @@ check_reserved_signal_(const char *name, size_t name_len)
 }
 #endif
 
+#if defined SIGPIPE || defined SIGSYS
+static RETSIGTYPE
+sig_do_nothing(int sig)
+{
+}
+#endif
+
 static void
 signal_exec(VALUE cmd, int safe, int sig)
 {
@@ -955,7 +980,7 @@ signal_exec(VALUE cmd, int safe, int sig)
 
     if (state) {
 	/* XXX: should be replaced with rb_threadptr_pending_interrupt_enque() */
-	JUMP_TAG(state);
+	TH_JUMP_TAG(cur_th, state);
     }
 }
 
@@ -1051,7 +1076,12 @@ default_handler(int sig)
 #endif
 #ifdef SIGPIPE
       case SIGPIPE:
-        func = SIG_IGN;
+        func = sig_do_nothing;
+        break;
+#endif
+#ifdef SIGSYS
+      case SIGSYS:
+        func = sig_do_nothing;
         break;
 #endif
       default:
@@ -1078,40 +1108,43 @@ trap_handler(VALUE *cmd, int sig)
 	    if (!command) rb_raise(rb_eArgError, "bad handler");
 	}
 	if (!NIL_P(command)) {
+	    const char *cptr;
+	    long len;
 	    SafeStringValue(command);	/* taint check */
 	    *cmd = command;
-	    switch (RSTRING_LEN(command)) {
+	    RSTRING_GETMEM(command, cptr, len);
+	    switch (len) {
 	      case 0:
                 goto sig_ign;
 		break;
               case 14:
-		if (strncmp(RSTRING_PTR(command), "SYSTEM_DEFAULT", 14) == 0) {
+		if (memcmp(cptr, "SYSTEM_DEFAULT", 14) == 0) {
                     func = SIG_DFL;
                     *cmd = 0;
 		}
                 break;
 	      case 7:
-		if (strncmp(RSTRING_PTR(command), "SIG_IGN", 7) == 0) {
+		if (memcmp(cptr, "SIG_IGN", 7) == 0) {
 sig_ign:
                     func = SIG_IGN;
                     *cmd = Qtrue;
 		}
-		else if (strncmp(RSTRING_PTR(command), "SIG_DFL", 7) == 0) {
+		else if (memcmp(cptr, "SIG_DFL", 7) == 0) {
 sig_dfl:
                     func = default_handler(sig);
                     *cmd = 0;
 		}
-		else if (strncmp(RSTRING_PTR(command), "DEFAULT", 7) == 0) {
+		else if (memcmp(cptr, "DEFAULT", 7) == 0) {
                     goto sig_dfl;
 		}
 		break;
 	      case 6:
-		if (strncmp(RSTRING_PTR(command), "IGNORE", 6) == 0) {
+		if (memcmp(cptr, "IGNORE", 6) == 0) {
                     goto sig_ign;
 		}
 		break;
 	      case 4:
-		if (strncmp(RSTRING_PTR(command), "EXIT", 4) == 0) {
+		if (memcmp(cptr, "EXIT", 4) == 0) {
 		    *cmd = Qundef;
 		}
 		break;
@@ -1271,7 +1304,6 @@ sig_trap(int argc, VALUE *argv)
     sighandler_t func;
     VALUE cmd;
 
-    rb_secure(2);
     rb_check_arity(argc, 1, 2);
 
     sig = trap_signm(argv[0]);
@@ -1315,7 +1347,7 @@ sig_list(void)
     const struct signals *sigs;
 
     for (sigs = siglist; sigs->signm; sigs++) {
-	rb_hash_aset(h, rb_str_new2(sigs->signm), INT2FIX(sigs->signo));
+	rb_hash_aset(h, rb_fstring_cstr(sigs->signm), INT2FIX(sigs->signo));
     }
     return h;
 }
@@ -1465,7 +1497,10 @@ Init_signal(void)
 #endif
     }
 #ifdef SIGPIPE
-    install_sighandler(SIGPIPE, SIG_IGN);
+    install_sighandler(SIGPIPE, sig_do_nothing);
+#endif
+#ifdef SIGSYS
+    install_sighandler(SIGSYS, sig_do_nothing);
 #endif
 
 #if defined(SIGCLD)

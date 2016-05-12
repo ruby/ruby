@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'win32ole'
 url = 'http://www.ruby-lang.org/'
 ie = WIN32OLE.new('InternetExplorer.Application')

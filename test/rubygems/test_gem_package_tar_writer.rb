@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/package/tar_test_case'
 require 'rubygems/package/tar_writer'
 require 'minitest/mock'
@@ -28,6 +29,16 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
     end
     assert_equal "aaaaaaaaaa#{"\0" * 502}", @io.string[512, 512]
     assert_equal 1024, @io.pos
+  end
+
+  def test_add_symlink
+    Time.stub :now, Time.at(1458518157) do
+      @tar_writer.add_symlink 'x', 'y', 0644
+
+      assert_headers_equal(tar_symlink_header('x', '', 0644, Time.now, 'y'),
+                         @io.string[0, 512])
+    end
+    assert_equal 512, @io.pos
   end
 
   def test_add_file_digest
@@ -251,4 +262,3 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
   end
 
 end
-

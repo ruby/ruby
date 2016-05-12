@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: false
 #
 #  ttk_wrapper.rb  --  use Ttk widgets as default on old Ruby/Tk scripts
 #
@@ -120,7 +121,7 @@ Tk::Tile.set_theme(OPTS[:theme]) if OPTS[:theme]
 
 
 ##########################################################################
-#  replace $0 and $RPAGRAM_NAME
+#  replace $0 and $PROGRAM_NAME
 ##########################################################################
 #  When the expand_path of the target script is long, ruby sometimes
 #  fails to set the path to $0 (the path string is trimmed).

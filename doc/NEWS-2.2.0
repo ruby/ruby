@@ -105,6 +105,11 @@ with all sufficient information, see the ChangeLog file.
     * Rename GC.stat entries. [Feature #9924]
       See https://docs.google.com/spreadsheets/d/11Ua4uBr6o0k-nORrZLEIIUkHJ9JRzRR0NyZfrhEEnc8/edit?usp=sharing
 
+* Hash
+  * incompatible changes:
+    * Change overriding policy for duplicated key. [Bug #10315]
+      { **hash1, **hash2 } contains values of hash2 for duplicated keys.
+
 * IO
   * incompatible changes:
     * When flushing file IO with IO#flush, you cannot assume that the metadata

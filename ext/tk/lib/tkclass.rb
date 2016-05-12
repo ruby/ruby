@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #               tkclass.rb - Tk classes
 #                       Date: 2000/11/27 09:23:36

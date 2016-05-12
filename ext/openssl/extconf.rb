@@ -1,18 +1,14 @@
 # -*- coding: us-ascii -*-
+# frozen_string_literal: false
 =begin
-= $RCSfile$ -- Generator for Makefile
-
 = Info
   'OpenSSL for Ruby 2' project
   Copyright (C) 2002  Michal Rokos <m.rokos@sh.cvut.cz>
   All rights reserved.
 
 = Licence
-  This program is licenced under the same licence as Ruby.
+  This program is licensed under the same licence as Ruby.
   (See the file 'LICENCE'.)
-
-= Version
-  $Id$
 =end
 
 require "mkmf"
@@ -87,6 +83,7 @@ have_func("HMAC_CTX_init")
 have_func("PEM_def_callback")
 have_func("PKCS5_PBKDF2_HMAC")
 have_func("PKCS5_PBKDF2_HMAC_SHA1")
+have_func("RAND_egd")
 have_func("X509V3_set_nconf")
 have_func("X509V3_EXT_nconf_nid")
 have_func("X509_CRL_add0_revoked")
@@ -100,16 +97,25 @@ have_func("OBJ_NAME_do_all_sorted")
 have_func("SSL_SESSION_get_id")
 have_func("SSL_SESSION_cmp")
 have_func("OPENSSL_cleanse")
-have_func("SSLv2_method")
-have_func("SSLv2_server_method")
-have_func("SSLv2_client_method")
+unless have_macro("OPENSSL_NO_SSL2","openssl/opensslconf.h")
+  have_func("SSLv2_method")
+  have_func("SSLv2_server_method")
+  have_func("SSLv2_client_method")
+end
+unless have_macro("OPENSSL_NO_SSL3_METHOD","openssl/opensslconf.h")
+  have_func("SSLv3_method")
+  have_func("SSLv3_server_method")
+  have_func("SSLv3_client_method")
+end
 have_func("TLSv1_1_method")
 have_func("TLSv1_1_server_method")
 have_func("TLSv1_1_client_method")
 have_func("TLSv1_2_method")
 have_func("TLSv1_2_server_method")
 have_func("TLSv1_2_client_method")
-have_macro("OPENSSL_NPN_NEGOTIATED", ['openssl/ssl.h']) && $defs.push("-DHAVE_OPENSSL_NPN_NEGOTIATED")
+have_func("SSL_CTX_set_alpn_select_cb")
+have_func("SSL_CTX_set_next_proto_select_cb")
+have_macro("SSL_get_server_tmp_key", ['openssl/ssl.h']) && $defs.push("-DHAVE_SSL_GET_SERVER_TMP_KEY")
 unless have_func("SSL_set_tlsext_host_name", ['openssl/ssl.h'])
   have_macro("SSL_set_tlsext_host_name", ['openssl/ssl.h']) && $defs.push("-DHAVE_SSL_SET_TLSEXT_HOST_NAME")
 end

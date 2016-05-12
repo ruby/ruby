@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require_relative "utils"
 
 if defined?(OpenSSL::TestUtils)
@@ -113,7 +114,7 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
     end
 
     def test_create_with_bad_nid
-      assert_raises(ArgumentError) do
+      assert_raise(ArgumentError) do
         OpenSSL::PKCS12.create(
           "omg",
           "hello",
@@ -137,7 +138,7 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
         2048
       )
 
-      assert_raises(TypeError) do
+      assert_raise(TypeError) do
         OpenSSL::PKCS12.create(
           "omg",
           "hello",
@@ -164,7 +165,7 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
         2048
       )
 
-      assert_raises(TypeError) do
+      assert_raise(TypeError) do
         OpenSSL::PKCS12.create(
           "omg",
           "hello",

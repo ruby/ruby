@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: false
 #
 # a dialog box with a local grab (called by 'widget')
 #

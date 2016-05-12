@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: true
 #--
 # Copyright (C) 2004 Mauricio Julio Fernández Pradier
 # See LICENSE.txt for additional licensing information.
@@ -234,6 +235,25 @@ class Gem::Package::TarWriter
   end
 
   ##
+  # Adds symlink +name+ with permissions +mode+, linking to +target+.
+
+  def add_symlink(name, target, mode)
+    check_closed
+
+    name, prefix = split_name name
+
+    header = Gem::Package::TarHeader.new(:name => name, :mode => mode,
+                                         :size => 0, :typeflag => "2",
+                                         :linkname => target,
+                                         :prefix => prefix,
+                                         :mtime => Time.now).to_s
+
+    @io.write header
+
+    self
+  end
+
+  ##
   # Raises IOError if the TarWriter is closed
 
   def check_closed
@@ -323,4 +343,3 @@ class Gem::Package::TarWriter
   end
 
 end
-

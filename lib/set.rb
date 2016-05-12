@@ -1,4 +1,6 @@
 #--
+# frozen_string_literal: true
+#
 # set.rb - defines the Set class
 #++
 # Copyright (c) 2002-2013 Akinori MUSHA <knu@iDaemons.org>
@@ -78,7 +80,7 @@ class Set
   # If a block is given, the elements of enum are preprocessed by the
   # given block.
   def initialize(enum = nil, &block) # :yields: o
-    @hash ||= Hash.new
+    @hash ||= Hash.new(false)
 
     enum.nil? and return
 
@@ -151,7 +153,7 @@ class Set
       @hash.replace(enum.instance_variable_get(:@hash))
       self
     else
-      do_with_enum(enum)
+      do_with_enum(enum)  # make sure enum is enumerable before calling clear
       clear
       merge(enum)
     end
@@ -200,48 +202,69 @@ class Set
   # Equivalent to Set#flatten, but replaces the receiver with the
   # result in place.  Returns nil if no modifications were made.
   def flatten!
-    if detect { |e| e.is_a?(Set) }
-      replace(flatten())
-    else
-      nil
-    end
+    replace(flatten()) if any? { |e| e.is_a?(Set) }
   end
 
   # Returns true if the set contains the given object.
+  #
+  # Note that <code>include?</code> and <code>member?</code> do not test member
+  # equality using <code>==</code> as do other Enumerables.
+  #
+  # See also Enumerable#include?
   def include?(o)
-    @hash.include?(o)
+    @hash[o]
   end
   alias member? include?
 
   # Returns true if the set is a superset of the given set.
   def superset?(set)
-    set.is_a?(Set) or raise ArgumentError, "value must be a set"
-    return false if size < set.size
-    set.all? { |o| include?(o) }
+    case
+    when set.instance_of?(self.class)
+      @hash >= set.instance_variable_get(:@hash)
+    when set.is_a?(Set)
+      size >= set.size && set.all? { |o| include?(o) }
+    else
+      raise ArgumentError, "value must be a set"
+    end
   end
   alias >= superset?
 
   # Returns true if the set is a proper superset of the given set.
   def proper_superset?(set)
-    set.is_a?(Set) or raise ArgumentError, "value must be a set"
-    return false if size <= set.size
-    set.all? { |o| include?(o) }
+    case
+    when set.instance_of?(self.class)
+      @hash > set.instance_variable_get(:@hash)
+    when set.is_a?(Set)
+      size > set.size && set.all? { |o| include?(o) }
+    else
+      raise ArgumentError, "value must be a set"
+    end
   end
   alias > proper_superset?
 
   # Returns true if the set is a subset of the given set.
   def subset?(set)
-    set.is_a?(Set) or raise ArgumentError, "value must be a set"
-    return false if set.size < size
-    all? { |o| set.include?(o) }
+    case
+    when set.instance_of?(self.class)
+      @hash <= set.instance_variable_get(:@hash)
+    when set.is_a?(Set)
+      size <= set.size && all? { |o| set.include?(o) }
+    else
+      raise ArgumentError, "value must be a set"
+    end
   end
   alias <= subset?
 
   # Returns true if the set is a proper subset of the given set.
   def proper_subset?(set)
-    set.is_a?(Set) or raise ArgumentError, "value must be a set"
-    return false if set.size <= size
-    all? { |o| set.include?(o) }
+    case
+    when set.instance_of?(self.class)
+      @hash < set.instance_variable_get(:@hash)
+    when set.is_a?(Set)
+      size < set.size && all? { |o| set.include?(o) }
+    else
+      raise ArgumentError, "value must be a set"
+    end
   end
   alias < proper_subset?
 
@@ -279,7 +302,7 @@ class Set
   # the element as parameter.  Returns an enumerator if no block is
   # given.
   def each(&block)
-    block or return enum_for(__method__)
+    block or return enum_for(__method__) { size }
     @hash.each_key(&block)
     self
   end
@@ -295,11 +318,7 @@ class Set
   # Adds the given object to the set and returns self.  If the
   # object is already in the set, returns nil.
   def add?(o)
-    if include?(o)
-      nil
-    else
-      add(o)
-    end
+    add(o) unless include?(o)
   end
 
   # Deletes the given object from the set and returns self.  Use +subtract+ to
@@ -312,17 +331,14 @@ class Set
   # Deletes the given object from the set and returns self.  If the
   # object is not in the set, returns nil.
   def delete?(o)
-    if include?(o)
-      delete(o)
-    else
-      nil
-    end
+    delete(o) if include?(o)
   end
 
   # Deletes every element of the set for which block evaluates to
-  # true, and returns self.
+  # true, and returns self. Returns an enumerator if no block is
+  # given.
   def delete_if
-    block_given? or return enum_for(__method__)
+    block_given? or return enum_for(__method__) { size }
     # @hash.delete_if should be faster, but using it breaks the order
     # of enumeration in subclasses.
     select { |o| yield o }.each { |o| @hash.delete(o) }
@@ -330,9 +346,10 @@ class Set
   end
 
   # Deletes every element of the set for which block evaluates to
-  # false, and returns self.
+  # false, and returns self. Returns an enumerator if no block is
+  # given.
   def keep_if
-    block_given? or return enum_for(__method__)
+    block_given? or return enum_for(__method__) { size }
     # @hash.keep_if should be faster, but using it breaks the order of
     # enumeration in subclasses.
     reject { |o| yield o }.each { |o| @hash.delete(o) }
@@ -340,30 +357,29 @@ class Set
   end
 
   # Replaces the elements with ones returned by collect().
+  # Returns an enumerator if no block is given.
   def collect!
-    block_given? or return enum_for(__method__)
-    set = self.class.new
-    each { |o| set << yield(o) }
-    replace(set)
+    block_given? or return enum_for(__method__) { size }
+    replace(self.class.new(self) { |o| yield(o) })
   end
   alias map! collect!
 
   # Equivalent to Set#delete_if, but returns nil if no changes were
-  # made.
+  # made. Returns an enumerator if no block is given.
   def reject!(&block)
-    block or return enum_for(__method__)
+    block or return enum_for(__method__) { size }
     n = size
     delete_if(&block)
-    size == n ? nil : self
+    self if size != n
   end
 
   # Equivalent to Set#keep_if, but returns nil if no changes were
-  # made.
+  # made. Returns an enumerator if no block is given.
   def select!(&block)
-    block or return enum_for(__method__)
+    block or return enum_for(__method__) { size }
     n = size
     keep_if(&block)
-    size == n ? nil : self
+    self if size != n
   end
 
   # Merges the elements of the given enumerable object to the set and
@@ -414,7 +430,7 @@ class Set
   # ((set | enum) - (set & enum)).
   def ^(enum)
     n = Set.new(enum)
-    each { |o| if n.include?(o) then n.delete(o) else n.add(o) end }
+    each { |o| n.add(o) unless n.delete?(o) }
     n
   end
 
@@ -454,14 +470,15 @@ class Set
   #   p hash    # => {2000=>#<Set: {"a.rb", "b.rb"}>,
   #             #     2001=>#<Set: {"c.rb", "d.rb", "e.rb"}>,
   #             #     2002=>#<Set: {"f.rb"}>}
+  #
+  # Returns an enumerator if no block is given.
   def classify # :yields: o
-    block_given? or return enum_for(__method__)
+    block_given? or return enum_for(__method__) { size }
 
     h = {}
 
     each { |i|
-      x = yield(i)
-      (h[x] ||= self.class.new).add(i)
+      (h[yield(i)] ||= self.class.new).add(i)
     }
 
     h
@@ -483,8 +500,10 @@ class Set
   #             #            #<Set: {11, 9, 10}>,
   #             #            #<Set: {3, 4}>,
   #             #            #<Set: {6}>}>
+  #
+  # Returns an enumerator if no block is given.
   def divide(&func)
-    func or return enum_for(__method__)
+    func or return enum_for(__method__) { size }
 
     if func.arity == 2
       require 'tsort'
@@ -524,8 +543,8 @@ class Set
       return sprintf('#<%s: {...}>', self.class.name)
     end
 
+    ids << object_id
     begin
-      ids << object_id
       return sprintf('#<%s: {%s}>', self.class, to_a.inspect[1..-2])
     ensure
       ids.pop
@@ -637,7 +656,7 @@ class SortedSet < Set
           end
 
           def delete_if
-            block_given? or return enum_for(__method__)
+            block_given? or return enum_for(__method__) { size }
             n = @hash.size
             super
             @keys = nil if @hash.size != n
@@ -645,7 +664,7 @@ class SortedSet < Set
           end
 
           def keep_if
-            block_given? or return enum_for(__method__)
+            block_given? or return enum_for(__method__) { size }
             n = @hash.size
             super
             @keys = nil if @hash.size != n
@@ -658,7 +677,7 @@ class SortedSet < Set
           end
 
           def each(&block)
-            block or return enum_for(__method__)
+            block or return enum_for(__method__) { size }
             to_a.each(&block)
             self
           end

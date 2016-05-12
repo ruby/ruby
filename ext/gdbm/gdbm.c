@@ -614,7 +614,8 @@ fgdbm_delete_if(VALUE obj)
     GDBM_FILE dbm;
     VALUE keystr, valstr;
     VALUE ret, ary = rb_ary_tmp_new(0);
-    int i, status = 0, n;
+    long i;
+    int status = 0, n;
 
     rb_gdbm_modify(obj);
     GetDBM2(obj, dbmp, dbm);
@@ -633,7 +634,7 @@ fgdbm_delete_if(VALUE obj)
     }
 
     for (i = 0; i < RARRAY_LEN(ary); i++)
-        rb_gdbm_delete(obj, RARRAY_PTR(ary)[i]);
+        rb_gdbm_delete(obj, RARRAY_AREF(ary, i));
     if (status) rb_jump_tag(status);
     if (n > 0) dbmp->di_size = n - (int)RARRAY_LEN(ary);
     rb_ary_clear(ary);
@@ -746,11 +747,13 @@ fgdbm_store(VALUE obj, VALUE keystr, VALUE valstr)
 static VALUE
 update_i(RB_BLOCK_CALL_FUNC_ARGLIST(pair, dbm))
 {
+    const VALUE *ptr;
     Check_Type(pair, T_ARRAY);
     if (RARRAY_LEN(pair) < 2) {
         rb_raise(rb_eArgError, "pair must be [key, value]");
     }
-    fgdbm_store(dbm, RARRAY_PTR(pair)[0], RARRAY_PTR(pair)[1]);
+    ptr = RARRAY_CONST_PTR(pair);
+    fgdbm_store(dbm, ptr[0], ptr[1]);
     return Qnil;
 }
 

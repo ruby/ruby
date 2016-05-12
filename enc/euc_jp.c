@@ -381,8 +381,10 @@ mbc_case_fold(OnigCaseFoldType flag,
     OnigCodePoint code;
     int len;
 
+    len = mbc_enc_len(p, end, enc);
     code = get_lower_case(mbc_to_code(p, end, enc));
     len = code_to_mbc(code, lower, enc);
+    if (len == ONIGERR_INVALID_CODE_POINT_VALUE) len = 1;
     (*pp) += len;
     return len; /* return byte length of converted char to lower */
   }
@@ -501,9 +503,9 @@ static const OnigCodePoint CR_Cyrillic[] = {
 #include "enc/jis/props.h"
 
 static int
-property_name_to_ctype(OnigEncoding enc, UChar* p, UChar* end)
+property_name_to_ctype(OnigEncoding enc, const UChar* p, const UChar* end)
 {
-  UChar *s = p, *e = end;
+  const UChar *s = p, *e = end;
   const struct enc_property *prop =
     onig_jis_property((const char* )s, (unsigned int )(e - s));
 

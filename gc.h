@@ -57,7 +57,10 @@ rb_gc_debug_body(const char *mode, const char *msg, int st, void *ptr)
 #define RUBY_GC_INFO if(0)printf
 #endif
 
-#define RUBY_MARK_UNLESS_NULL(ptr) if(RTEST(ptr)){rb_gc_mark(ptr);}
+#define RUBY_MARK_UNLESS_NULL(ptr) do { \
+    VALUE markobj = (ptr); \
+    if (RTEST(markobj)) {rb_gc_mark(markobj);} \
+} while (0)
 #define RUBY_FREE_UNLESS_NULL(ptr) if(ptr){ruby_xfree(ptr);(ptr)=NULL;}
 
 #if STACK_GROW_DIRECTION > 0
@@ -82,6 +85,10 @@ int ruby_get_stack_grow_direction(volatile VALUE *addr);
 #define STACK_DIR_UPPER(a,b) STACK_UPPER(&stack_grow_dir_detection, (a), (b))
 #endif
 #define IS_STACK_DIR_UPPER() STACK_DIR_UPPER(1,0)
+
+const char *rb_obj_info(VALUE obj);
+const char *rb_raw_obj_info(char *buff, const int buff_size, VALUE obj);
+void rb_obj_info_dump(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 

@@ -1,18 +1,18 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'drb/drb'
 require 'drb/extservm'
 require 'timeout'
-require 'shellwords'
 
 module DRbTests
 
 class DRbService
   @@manager = DRb::ExtServManager.new
-  @@ruby = Shellwords.escape(EnvUtil.rubybin)
-  @@ruby += " -d" if $DEBUG
+  @@ruby = [EnvUtil.rubybin]
+  @@ruby << "-d" if $DEBUG
   def self.add_service_command(nm)
     dir = File.dirname(File.expand_path(__FILE__))
-    DRb::ExtServManager.command[nm] = [@@ruby, "#{dir}/#{nm}"]
+    DRb::ExtServManager.command[nm] = @@ruby + ["#{dir}/#{nm}"]
   end
 
   %w(ut_drb.rb ut_array.rb ut_port.rb ut_large.rb ut_safe1.rb ut_eval.rb ut_eq.rb).each do |nm|
@@ -27,7 +27,7 @@ class DRbService
     @server || @@server
   end
   def self.ext_service(name)
-    timeout(100, RuntimeError) do
+    Timeout.timeout(100, RuntimeError) do
       manager.service(name)
     end
   end
@@ -197,38 +197,33 @@ module DRbCore
     end
   end
 
-  def test_07_public_private_protected_missing
-    assert_nothing_raised() {
-      begin
-	@there.method_missing(:eval, 'nil')
-      rescue NoMethodError
-	assert_match(/^private method \`eval\'/, $!.message)
-      end
+  def test_07_private_missing
+    e = assert_raise(NoMethodError) {
+      @there.method_missing(:eval, 'nil')
     }
-    assert_nothing_raised() {
-      begin
-        @there.call_private_method
-      rescue NoMethodError
-        assert_equal(NoMethodError, $!.class)
-	assert_match(/^private method \`call_private_method\'/, $!.message)
-      end
+    assert_match(/^private method \`eval\'/, e.message)
+
+    e = assert_raise(NoMethodError) {
+      @there.call_private_method
     }
-    assert_nothing_raised() {
-      begin
-        @there.call_protected_method
-      rescue NoMethodError
-        assert_equal(NoMethodError, $!.class)
-	assert_match(/^protected method \`call_protected_method\'/, $!.message)
-      end
+    assert_match(/^private method \`call_private_method\'/, e.message)
+  end
+
+  def test_07_protected_missing
+    e = assert_raise(NoMethodError) {
+      @there.call_protected_method
     }
-    assert_nothing_raised() {
-      begin
-	@there.method_missing(:undefined_method_test)
-      rescue NoMethodError
-        assert_equal(NoMethodError, $!.class)
-	assert_match(/^undefined method \`undefined_method_test\'/, $!.message)
-      end
+    assert_match(/^protected method \`call_protected_method\'/, e.message)
+  end
+
+  def test_07_public_missing
+    e = assert_raise(NoMethodError) {
+      @there.method_missing(:undefined_method_test)
     }
+    assert_match(/^undefined method \`undefined_method_test\'/, e.message)
+  end
+
+  def test_07_send_missing
     assert_raise(DRb::DRbConnError) do
       @there.method_missing(:__send__, :to_s)
     end

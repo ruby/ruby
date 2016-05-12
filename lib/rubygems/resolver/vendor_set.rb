@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # A VendorSet represents gems that have been unpacked into a specific
 # directory that contains a gemspec.

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/doctor'
 
@@ -157,7 +158,7 @@ This directory does not appear to be a RubyGems repository, skipping
 
     refute doctor.gem_repository?, 'no gems installed'
 
-    util_spec 'a'
+    install_specs util_spec 'a'
 
     doctor = Gem::Doctor.new @gemhome
 

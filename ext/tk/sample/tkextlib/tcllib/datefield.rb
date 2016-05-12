@@ -1,4 +1,5 @@
 #!/usr/bin/ruby
+# frozen_string_literal: false
 
 require 'tk'
 require 'tkextlib/tcllib/datefield'
@@ -20,7 +21,7 @@ my_date1.trace('w'){
 
 df = Tk::Tcllib::Datefield.new(:textvariable=>my_date1)
 Tk.grid(TkLabel.new(:text=>'Enter a date:', :anchor=>:e), df, :sticky=>:ew)
-Tk.grid(TkLabel.new(:text=>'That date ia a:', :anchor=>:e),
+Tk.grid(TkLabel.new(:text=>'That date is a:', :anchor=>:e),
         TkLabel.new(:textvariable=>my_date2, :relief=>:sunken, :width=>12),
         :sticky=>:ew)
 

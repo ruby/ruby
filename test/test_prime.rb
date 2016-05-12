@@ -1,6 +1,6 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'prime'
-require 'stringio'
 require 'timeout'
 
 class TestPrime < Test::Unit::TestCase
@@ -37,40 +37,35 @@ class TestPrime < Test::Unit::TestCase
       end
 
       # Prime number theorem
-      assert primes.length >= max/Math.log(max)
+      assert_operator primes.length, :>=, max/Math.log(max)
       delta = 0.05
       li = (2..max).step(delta).inject(0){|sum,x| sum + delta/Math.log(x)}
-      assert primes.length <= li
+      assert_operator primes.length, :<=, li
     end
   end
 
   def test_each_without_block
     enum = Prime.each
-    assert enum.respond_to?(:each)
-    assert enum.kind_of?(Enumerable)
-    assert enum.respond_to?(:with_index)
-    assert enum.respond_to?(:next)
-    assert enum.respond_to?(:succ)
-    assert enum.respond_to?(:rewind)
+    assert_respond_to(enum, :each)
+    assert_kind_of(Enumerable, enum)
+    assert_respond_to(enum, :with_index)
+    assert_respond_to(enum, :next)
+    assert_respond_to(enum, :succ)
+    assert_respond_to(enum, :rewind)
+  end
+
+  def test_instance_without_block
+    enum = Prime.instance.each
+    assert_respond_to(enum, :each)
+    assert_kind_of(Enumerable, enum)
+    assert_respond_to(enum, :with_index)
+    assert_respond_to(enum, :next)
+    assert_respond_to(enum, :succ)
+    assert_respond_to(enum, :rewind)
   end
 
   def test_new
-    orig_stderr, orig_verbose = $stderr, $VERBOSE
-
-    $stderr = buf = StringIO.new('', 'w')
-    $VERBOSE = false
-
-    enum = Prime.new
-    assert_match("obsolete", buf.string)
-
-    assert enum.respond_to?(:each)
-    assert enum.kind_of?(Enumerable)
-    assert enum.respond_to?(:succ)
-
-    assert Prime === enum
-  ensure
-    $stderr = orig_stderr
-    $VERBOSE = orig_verbose
+    exception = assert_raise(NoMethodError) { Prime.new }
   end
 
   def test_enumerator_succ
@@ -92,9 +87,41 @@ class TestPrime < Test::Unit::TestCase
     end
   end
 
+  def test_enumerator_with_index_with_offset
+    enum = Prime.each
+    last = 5-1
+    enum.with_index(5).each do |p,i|
+      break if i >= 100+5
+      assert_equal last+1, i
+      assert_equal PRIMES[i-5], p
+      last = i
+    end
+  end
+
+  def test_enumerator_with_object
+    object = Object.new
+    enum = Prime.each
+    enum.with_object(object).each do |p, o|
+      assert_equal object, o
+      break
+    end
+  end
+
+  def test_enumerator_size
+    enum = Prime.each
+    assert_equal Float::INFINITY, enum.size
+    assert_equal Float::INFINITY, enum.with_object(nil).size
+    assert_equal Float::INFINITY, enum.with_index(42).size
+  end
+
   def test_default_instance_does_not_have_compatibility_methods
-    assert !Prime.instance.respond_to?(:succ)
-    assert !Prime.instance.respond_to?(:next)
+    assert_not_respond_to(Prime.instance, :succ)
+    assert_not_respond_to(Prime.instance, :next)
+  end
+
+  def test_prime_each_basic_argument_checking
+    assert_raise(ArgumentError) { Prime.prime?(1,2) }
+    assert_raise(ArgumentError) { Prime.prime?(1.2) }
   end
 
   class TestInteger < Test::Unit::TestCase
@@ -114,36 +141,36 @@ class TestPrime < Test::Unit::TestCase
 
     def test_prime?
       # zero and unit
-      assert !0.prime?
-      assert !1.prime?
+      assert_not_predicate(0, :prime?)
+      assert_not_predicate(1, :prime?)
 
       # small primes
-      assert 2.prime?
-      assert 3.prime?
+      assert_predicate(2, :prime?)
+      assert_predicate(3, :prime?)
 
       # squared prime
-      assert !4.prime?
-      assert !9.prime?
+      assert_not_predicate(4, :prime?)
+      assert_not_predicate(9, :prime?)
 
       # mersenne numbers
-      assert((2**31-1).prime?)
-      assert !(2**32-1).prime?
+      assert_predicate((2**31-1), :prime?)
+      assert_not_predicate((2**32-1), :prime?)
 
       # fermat numbers
-      assert((2**(2**4)+1).prime?)
-      assert !(2**(2**5)+1).prime? # Euler!
+      assert_predicate((2**(2**4)+1), :prime?)
+      assert_not_predicate((2**(2**5)+1), :prime?) # Euler!
 
       # large composite
-      assert !((2**13-1) * (2**17-1)).prime?
+      assert_not_predicate(((2**13-1) * (2**17-1)), :prime?)
 
       # factorial
-      assert !(2...100).inject(&:*).prime?
+      assert_not_predicate((2...100).inject(&:*), :prime?)
 
       # negative
-      assert !-1.prime?
-      assert !-2.prime?
-      assert !-3.prime?
-      assert !-4.prime?
+      assert_not_predicate(-1, :prime?)
+      assert_not_predicate(-2, :prime?)
+      assert_not_predicate(-3, :prime?)
+      assert_not_predicate(-4, :prime?)
     end
   end
 
@@ -158,10 +185,8 @@ class TestPrime < Test::Unit::TestCase
         return n
       end
 
-      begin
-	Timeout.timeout(0.5) { Prime.each(7*37){} }
-	flunk("timeout expected")
-      rescue Timeout::Error
+      assert_raise(Timeout::Error) do
+        Timeout.timeout(0.5) { Prime.each(7*37){} }
       end
     ensure
       class << sieve

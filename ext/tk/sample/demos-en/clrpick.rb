@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # clrpick.rb
 #
 # This demonstration script prompts the user to select a color.

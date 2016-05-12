@@ -1,4 +1,5 @@
 # -*- coding: us-ascii -*-
+# frozen_string_literal: false
 require 'test/unit'
 require 'thread'
 
@@ -97,21 +98,24 @@ class TestThread < Test::Unit::TestCase
   def test_mutex_synchronize
     m = Mutex.new
     r = 0
-    max = 10
-    (1..max).map{
+    num_threads = 10
+    loop=100
+    (1..num_threads).map{
       Thread.new{
-        i=0
-        while i<max*max
-          i+=1
+        loop.times{
           m.synchronize{
-            r += 1
+            tmp = r
+            # empty and waste loop for making thread preemption
+            100.times {
+            }
+            r = tmp + 1
           }
-        end
+        }
       }
     }.each{|e|
       e.join
     }
-    assert_equal(max * max * max, r)
+    assert_equal(num_threads*loop, r)
   end
 
   def test_mutex_synchronize_yields_no_block_params
@@ -389,14 +393,14 @@ class TestThread < Test::Unit::TestCase
     ok = false
     t = Thread.new do
       EnvUtil.suppress_warning do
-        $SAFE = 3
+        $SAFE = 1
       end
       ok = true
       sleep
     end
     Thread.pass until ok
     assert_equal(0, Thread.current.safe_level)
-    assert_equal(3, t.safe_level)
+    assert_equal(1, t.safe_level)
 
   ensure
     t.kill if t
@@ -430,6 +434,16 @@ class TestThread < Test::Unit::TestCase
         Thread.current[:foo] = :baz
       end.join
     end
+  end
+
+  def test_thread_local_dynamic_symbol
+    bug10667 = '[ruby-core:67185] [Bug #10667]'
+    t = Thread.new {}.join
+    key_str = "foo#{rand}"
+    key_sym = key_str.to_sym
+    t.thread_variable_set(key_str, "bar")
+    assert_equal("bar", t.thread_variable_get(key_str), "#{bug10667}: string key")
+    assert_equal("bar", t.thread_variable_get(key_sym), "#{bug10667}: symbol key")
   end
 
   def test_select_wait
@@ -624,19 +638,19 @@ class TestThread < Test::Unit::TestCase
       th = Thread.start{
         Thread.handle_interrupt(Object => :on_blocking){
           begin
+            Thread.pass until r == :wait
             Thread.current.raise RuntimeError
-            r=:ok
+            r = :ok
             sleep
           ensure
-            th_s.raise e
+            th_s.raise e, "raise from ensure", $@
           end
         }
       }
-      sleep 1
-      r=:ng
-      th.raise RuntimeError
-      th.join
-    rescue e
+      assert_raise(e) {r = :wait; sleep 0.2}
+      assert_raise(RuntimeError) {th.join(0.2)}
+    ensure
+      th.kill
     end
     assert_equal(:ok,r)
   end
@@ -714,7 +728,7 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_thread_timer_and_ensure
-    assert_normal_exit(<<_eom, 'r36492', timeout: 3)
+    assert_normal_exit(<<_eom, 'r36492', timeout: 10)
     flag = false
     t = Thread.new do
       begin
@@ -734,9 +748,24 @@ _eom
   end
 
   def test_uninitialized
-    c = Class.new(Thread)
-    c.class_eval { def initialize; end }
+    c = Class.new(Thread) {def initialize; end}
     assert_raise(ThreadError) { c.new.start }
+
+    bug11959 = '[ruby-core:72732] [Bug #11959]'
+
+    c = Class.new(Thread) {def initialize; exit; end}
+    assert_raise(ThreadError, bug11959) { c.new }
+
+    c = Class.new(Thread) {def initialize; raise; end}
+    assert_raise(ThreadError, bug11959) { c.new }
+
+    c = Class.new(Thread) {
+      def initialize
+        pending = pending_interrupt?
+        super {pending}
+      end
+    }
+    assert_equal(false, c.new.value, bug11959)
   end
 
   def test_backtrace
@@ -903,9 +932,8 @@ q.pop
         sleep
       }
 
-      Thread.pass until th.status == "sleep"
-      # acquired another thread.
-      assert_equal(mutex.locked?, true)
+      # acquired by another thread.
+      Thread.pass until mutex.locked?
       assert_equal(mutex.owned?, false)
     ensure
       th.kill if th
@@ -1023,4 +1051,57 @@ q.pop
     assert_not_predicate(status, :signaled?, FailDesc[status, bug9751, output])
     assert_predicate(status, :success?, bug9751)
   end if Process.respond_to?(:fork)
+
+  def test_subclass_no_initialize
+    t = Module.new do
+      break eval("class C\u{30b9 30ec 30c3 30c9} < Thread; self; end")
+    end
+    t.class_eval do
+      def initialize
+      end
+    end
+    assert_raise_with_message(ThreadError, /C\u{30b9 30ec 30c3 30c9}/) do
+      t.new {}
+    end
+  end
+
+  def test_thread_name
+    t = Thread.start {sleep}
+    sleep 0.001 until t.stop?
+    assert_nil t.name
+    s = t.inspect
+    t.name = 'foo'
+    assert_equal 'foo', t.name
+    t.name = nil
+    assert_nil t.name
+    assert_equal s, t.inspect
+  ensure
+    t.kill
+    t.join
+  end
+
+  def test_thread_invalid_name
+    bug11756 = '[ruby-core:71774] [Bug #11756]'
+    t = Thread.start {}
+    assert_raise(ArgumentError, bug11756) {t.name = "foo\0bar"}
+    assert_raise(ArgumentError, bug11756) {t.name = "foo".encode(Encoding::UTF_32BE)}
+  ensure
+    t.kill
+    t.join
+  end
+
+  def test_thread_invalid_object
+    bug11756 = '[ruby-core:71774] [Bug #11756]'
+    t = Thread.start {}
+    assert_raise(TypeError, bug11756) {t.name = []}
+  ensure
+    t.kill
+    t.join
+  end
+
+  def test_thread_setname_in_initialize
+    bug12290 = '[ruby-core:74963] [Bug #12290]'
+    c = Class.new(Thread) {def initialize() self.name = "foo"; super; end}
+    assert_equal("foo", c.new {Thread.current.name}.value)
+  end
 end

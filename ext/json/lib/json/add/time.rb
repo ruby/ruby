@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
   require 'json'
 end
@@ -10,7 +11,7 @@ class Time
     if usec = object.delete('u') # used to be tv_usec -> tv_nsec
       object['n'] = usec * 1000
     end
-    if instance_methods.include?(:tv_nsec)
+    if method_defined?(:tv_nsec)
       at(object['s'], Rational(object['n'], 1000))
     else
       at(object['s'], object['n'] / 1000)

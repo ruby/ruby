@@ -1,4 +1,5 @@
 #!/usr/bin/ruby
+# frozen_string_literal: false
 require 'fileutils'
 
 basedir = File.dirname(__FILE__)

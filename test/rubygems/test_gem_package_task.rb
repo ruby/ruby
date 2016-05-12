@@ -1,6 +1,10 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems'
-require 'rubygems/package_task'
+begin
+  require 'rubygems/package_task'
+rescue LoadError
+end
 
 class TestGemPackageTask < Gem::TestCase
 
@@ -76,5 +80,5 @@ class TestGemPackageTask < Gem::TestCase
     assert_equal 'pkg/nokogiri-1.5.0-java', pkg.package_dir_path
   end
 
-end
+end if defined?(Rake::PackageTask)
 

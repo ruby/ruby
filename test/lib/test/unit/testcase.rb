@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit/assertions'
 
 module Test
@@ -22,6 +23,7 @@ module Test
       end
 
       def self.method_added(name)
+        super
         return unless name.to_s.start_with?("test_")
         @test_methods ||= {}
         if @test_methods[name]

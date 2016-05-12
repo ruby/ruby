@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'tempfile'
 require 'thread'
@@ -57,6 +58,11 @@ class TestTempfile < Test::Unit::TestCase
     assert_match(/^foo/, File.basename(t.path))
   end
 
+  def test_default_basename
+    t = tempfile
+    assert_file.exist?(t.path)
+  end
+
   def test_basename_with_suffix
     t = tempfile(["foo", ".txt"])
     assert_match(/^foo/, File.basename(t.path))
@@ -68,10 +74,10 @@ class TestTempfile < Test::Unit::TestCase
     path = t.path
 
     t.close
-    assert File.exist?(path)
+    assert_file.exist?(path)
 
     t.unlink
-    assert !File.exist?(path)
+    assert_file.not_exist?(path)
 
     assert_nil t.path
   end
@@ -94,7 +100,7 @@ class TestTempfile < Test::Unit::TestCase
     begin
       path = tempfile.path
       tempfile.unlink
-      assert !File.exist?(path)
+      assert_file.not_exist?(path)
       tempfile.write("hello ")
       tempfile.write("world\n")
       tempfile.rewind
@@ -107,18 +113,18 @@ class TestTempfile < Test::Unit::TestCase
 
   def test_close_and_close_p
     t = tempfile("foo")
-    assert !t.closed?
+    assert_not_predicate(t, :closed?)
     t.close
-    assert t.closed?
+    assert_predicate(t, :closed?)
   end
 
   def test_close_with_unlink_now_true_works
     t = tempfile("foo")
     path = t.path
     t.close(true)
-    assert t.closed?
+    assert_predicate(t, :closed?)
     assert_nil t.path
-    assert !File.exist?(path)
+    assert_file.not_exist?(path)
   end
 
   def test_close_with_unlink_now_true_does_not_unlink_if_already_unlinked
@@ -128,7 +134,7 @@ class TestTempfile < Test::Unit::TestCase
     File.open(path, "w").close
     begin
       t.close(true)
-      assert File.exist?(path)
+      assert_file.exist?(path)
     ensure
       File.unlink(path) rescue nil
     end
@@ -138,9 +144,9 @@ class TestTempfile < Test::Unit::TestCase
     t = tempfile("foo")
     path = t.path
     t.close!
-    assert t.closed?
+    assert_predicate(t, :closed?)
     assert_nil t.path
-    assert !File.exist?(path)
+    assert_file.not_exist?(path)
   end
 
   def test_close_bang_does_not_unlink_if_already_unlinked
@@ -150,7 +156,7 @@ class TestTempfile < Test::Unit::TestCase
     File.open(path, "w").close
     begin
       t.close!
-      assert File.exist?(path)
+      assert_file.exist?(path)
     ensure
       File.unlink(path) rescue nil
     end
@@ -164,7 +170,7 @@ puts path
 file.close!
 File.open(path, "w").close
     EOS
-      assert File.exist?(filename)
+      assert_file.exist?(filename)
       File.unlink(filename)
       assert_nil error
     end
@@ -178,7 +184,7 @@ File.open(path, "w").close
     EOS
       if !filename.empty?
         # POSIX unlink semantics supported, continue with test
-        assert File.exist?(filename)
+        assert_file.exist?(filename)
         File.unlink(filename)
       end
       assert_nil error
@@ -202,7 +208,7 @@ File.open(path, "w").close
     assert_in_out_err('-rtempfile', <<-'EOS') do |(filename), (error)|
 puts Tempfile.new('foo').path
     EOS
-      assert !File.exist?(filename)
+      assert_file.for("tempfile must not be exist after GC.").not_exist?(filename)
       assert_nil(error)
     end
   end
@@ -323,18 +329,18 @@ puts Tempfile.new('foo').path
     path = nil
     Tempfile.create("tempfile-create") {|f|
       path = f.path
-      assert(File.exist?(path))
+      assert_file.exist?(path)
     }
-    assert(!File.exist?(path))
+    assert_file.not_exist?(path)
   end
 
   def test_create_without_block
     path = nil
     f = Tempfile.create("tempfile-create")
     path = f.path
-    assert(File.exist?(path))
+    assert_file.exist?(path)
     f.close
-    assert(File.exist?(path))
+    assert_file.exist?(path)
   ensure
     f.close if f && !f.closed?
     File.unlink path if path

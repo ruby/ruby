@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'ostruct'
 
@@ -7,6 +8,23 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal h, OpenStruct.new(h).to_h
     assert_equal h, OpenStruct.new(OpenStruct.new(h)).to_h
     assert_equal h, OpenStruct.new(Struct.new(*h.keys).new(*h.values)).to_h
+  end
+
+  def test_respond_to
+    o = OpenStruct.new
+    o.a = 1
+    assert_respond_to(o, :a)
+    assert_respond_to(o, :a=)
+  end
+
+  def test_respond_to_with_lazy_getter
+    o = OpenStruct.new a: 1
+    assert_respond_to(o, :a)
+    assert_respond_to(o, :a=)
+  end
+
+  def test_respond_to_allocated
+    assert_not_respond_to(OpenStruct.allocate, :a)
   end
 
   def test_equality
@@ -43,13 +61,14 @@ class TC_OpenStruct < Test::Unit::TestCase
   end
 
   def test_frozen
-    o = OpenStruct.new
+    o = OpenStruct.new(foo: 42)
     o.a = 'a'
     o.freeze
     assert_raise(RuntimeError) {o.b = 'b'}
     assert_not_respond_to(o, :b)
     assert_raise(RuntimeError) {o.a = 'z'}
     assert_equal('a', o.a)
+    assert_equal(42, o.foo)
     o = OpenStruct.new :a => 42
     def o.frozen?; nil end
     o.freeze
@@ -95,6 +114,17 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_equal :bar, os['foo']
   end
 
+  def test_dig
+    os1 = OpenStruct.new
+    os2 = OpenStruct.new
+    os1.child = os2
+    os2.foo = :bar
+    os2.child = [42]
+    assert_equal :bar, os1.dig("child", :foo)
+    assert_nil os1.dig("parent", :foo)
+    assert_raise(TypeError) { os1.dig("child", 0) }
+  end
+
   def test_to_h
     h = {name: "John Smith", age: 70, pension: 300}
     os = OpenStruct.new(h)
@@ -134,5 +164,22 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert_match(/#{__callee__}/, e.backtrace[0])
     e = assert_raise(ArgumentError) { os.send :foo=, true, true }
     assert_match(/#{__callee__}/, e.backtrace[0])
+  end
+
+  def test_accessor_defines_method
+    os = OpenStruct.new(foo: 42)
+    assert os.respond_to? :foo
+    assert_equal([], os.singleton_methods)
+    assert_equal(42, os.foo)
+    assert_equal([:foo, :foo=], os.singleton_methods.sort)
+  end
+
+  def test_does_not_redefine
+    os = OpenStruct.new(foo: 42)
+    def os.foo
+      43
+    end
+    os.foo = 44
+    assert_equal(43, os.foo)
   end
 end

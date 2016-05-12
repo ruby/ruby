@@ -1,20 +1,21 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001 Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #include "ossl.h"
 
-#define WrapX509Attr(klass, obj, attr) do { \
+#define NewX509Attr(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_x509attr_type, 0)
+#define SetX509Attr(obj, attr) do { \
     if (!(attr)) { \
 	ossl_raise(rb_eRuntimeError, "ATTR wasn't initialized!"); \
     } \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509attr_type, (attr)); \
+    RTYPEDDATA_DATA(obj) = (attr); \
 } while (0)
 #define GetX509Attr(obj, attr) do { \
     TypedData_Get_Struct((obj), X509_ATTRIBUTE, &ossl_x509attr_type, (attr)); \
@@ -56,6 +57,7 @@ ossl_x509attr_new(X509_ATTRIBUTE *attr)
     X509_ATTRIBUTE *new;
     VALUE obj;
 
+    obj = NewX509Attr(cX509Attr);
     if (!attr) {
 	new = X509_ATTRIBUTE_new();
     } else {
@@ -64,7 +66,7 @@ ossl_x509attr_new(X509_ATTRIBUTE *attr)
     if (!new) {
 	ossl_raise(eX509AttrError, NULL);
     }
-    WrapX509Attr(cX509Attr, obj, new);
+    SetX509Attr(obj, new);
 
     return obj;
 }
@@ -91,9 +93,10 @@ ossl_x509attr_alloc(VALUE klass)
     X509_ATTRIBUTE *attr;
     VALUE obj;
 
+    obj = NewX509Attr(klass);
     if (!(attr = X509_ATTRIBUTE_new()))
 	ossl_raise(eX509AttrError, NULL);
-    WrapX509Attr(klass, obj, attr);
+    SetX509Attr(obj, attr);
 
     return obj;
 }

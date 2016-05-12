@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -271,7 +272,7 @@ class Gem::Uninstaller
 
     say "Successfully uninstalled #{spec.full_name}"
 
-    Gem::Specification.remove_spec spec
+    Gem::Specification.reset
   end
 
   ##

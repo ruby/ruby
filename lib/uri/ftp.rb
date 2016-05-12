@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # = uri/ftp.rb
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
@@ -85,8 +86,8 @@ module URI
     #     require 'uri'
     #
     #     uri = URI::FTP.build(['user:password', 'ftp.example.com', nil,
-    #       '/path/file.> zip', 'i'])
-    #     puts uri.to_s  ->  ftp://user:password@ftp.example.com/%2Fpath/file.zip;type=a
+    #       '/path/file.zip', 'i'])
+    #     puts uri.to_s  ->  ftp://user:password@ftp.example.com/%2Fpath/file.zip;type=i
     #
     #     uri2 = URI::FTP.build({:host => 'ftp.example.com',
     #       :path => 'ruby/src'})

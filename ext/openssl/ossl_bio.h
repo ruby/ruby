@@ -1,11 +1,10 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' team members
  * Copyright (C) 2003
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #if !defined(_OSSL_BIO_H_)
@@ -18,4 +17,3 @@ VALUE ossl_membio2str(BIO*);
 VALUE ossl_protect_membio2str(BIO*,int*);
 
 #endif
-

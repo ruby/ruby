@@ -1,9 +1,9 @@
+# frozen_string_literal: false
 module Memory
   keys = []
-  vals = []
 
   case
-  when File.exist?(procfile = "/proc/self/status") && (pat = /^Vm(\w+):\s+(\d+)/) =~ File.binread(procfile)
+  when File.exist?(procfile = "/proc/self/status") && (pat = /^Vm(\w+):\s+(\d+)/) =~ (data = File.binread(procfile))
     PROC_FILE = procfile
     VM_PAT = pat
     def self.read_status
@@ -12,7 +12,7 @@ module Memory
       end
     end
 
-    read_status {|k, v| keys << k; vals << v}
+    data.scan(pat) {|k, v| keys << k.downcase.intern}
 
   when /mswin|mingw/ =~ RUBY_PLATFORM
     require 'fiddle/import'
@@ -58,13 +58,12 @@ module Memory
         yield :size, info.PagefileUsage
       end
     end
-  else
-    PAT = /^\s*(\d+)\s+(\d+)$/
-    require_relative '../lib/find_executable'
-    if PSCMD = EnvUtil.find_executable("ps", "-ovsz=", "-orss=", "-p", $$.to_s) {|out| PAT =~ out}
-      PSCMD.pop
-    end
-    raise MiniTest::Skip, "ps command not found" unless PSCMD
+  when (require_relative 'find_executable'
+        pat = /^\s*(\d+)\s+(\d+)$/
+        pscmd = EnvUtil.find_executable("ps", "-ovsz=", "-orss=", "-p", $$.to_s) {|out| pat =~ out})
+    pscmd.pop
+    PAT = pat
+    PSCMD = pscmd
 
     keys << :size << :rss
     def self.read_status
@@ -73,19 +72,25 @@ module Memory
         yield :rss, $2.to_i*1024
       end
     end
+  else
+    def self.read_status
+      raise NotImplementedError, "unsupported platform"
+    end
   end
 
-  Status = Struct.new(*keys)
+  if !keys.empty?
+    Status = Struct.new(*keys)
+  end
+end
 
-  class Status
+if defined?(Memory::Status)
+  class Memory::Status
     def _update
       Memory.read_status do |key, val|
         self[key] = val
       end
     end
-  end
 
-  class Status
     Header = members.map {|k| k.to_s.upcase.rjust(6)}.join('')
     Format = "%6d"
 
@@ -108,4 +113,32 @@ module Memory
       status
     end
   end
+
+  # On some platforms (e.g. Solaris), libc malloc does not return
+  # freed memory to OS because of efficiency, and linking with extra
+  # malloc library is needed to detect memory leaks.
+  #
+  case RUBY_PLATFORM
+  when /solaris2\.(?:9|[1-9][0-9])/i # Solaris 9, 10, 11,...
+    bits = [nil].pack('p').size == 8 ? 64 : 32
+    if ENV['LD_PRELOAD'].to_s.empty? &&
+        ENV["LD_PRELOAD_#{bits}"].to_s.empty? &&
+        (ENV['UMEM_OPTIONS'].to_s.empty? ||
+         ENV['UMEM_OPTIONS'] == 'backend=mmap') then
+      envs = {
+        'LD_PRELOAD' => 'libumem.so',
+        'UMEM_OPTIONS' => 'backend=mmap'
+      }
+      args = [
+              envs,
+              "--disable=gems",
+              "-v", "-",
+             ]
+      _, err, status = EnvUtil.invoke_ruby(args, "exit(0)", true, true)
+      if status.exitstatus == 0 && err.to_s.empty? then
+        Memory::NO_MEMORY_LEAK_ENVS = envs
+      end
+    end
+  end #case RUBY_PLATFORM
+
 end

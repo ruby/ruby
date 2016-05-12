@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 module Kernel
   ###
   # An alias for Psych.dump_stream meant to be used with IRB.

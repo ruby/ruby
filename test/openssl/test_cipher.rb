@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require_relative 'utils'
 
 if defined?(OpenSSL::TestUtils)
@@ -104,7 +105,12 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
     def test_ciphers
       OpenSSL::Cipher.ciphers.each{|name|
         next if /netbsd/ =~ RUBY_PLATFORM && /idea|rc5/i =~ name
-        assert(OpenSSL::Cipher::Cipher.new(name).is_a?(OpenSSL::Cipher::Cipher))
+        begin
+          assert_kind_of(OpenSSL::Cipher::Cipher, OpenSSL::Cipher::Cipher.new(name))
+        rescue OpenSSL::Cipher::CipherError => e
+          next if /wrap/ =~ name and e.message == 'wrap mode not allowed'
+          raise
+        end
       }
     end
 
@@ -137,9 +143,9 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
 
     def test_authenticated
       cipher = OpenSSL::Cipher.new('aes-128-gcm')
-      assert(cipher.authenticated?)
+      assert_predicate(cipher, :authenticated?)
       cipher = OpenSSL::Cipher.new('aes-128-cbc')
-      refute(cipher.authenticated?)
+      assert_not_predicate(cipher, :authenticated?)
     end
 
     def test_aes_gcm

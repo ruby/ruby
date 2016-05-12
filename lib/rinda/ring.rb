@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # Note: Rinda::Ring API is unstable.
 #

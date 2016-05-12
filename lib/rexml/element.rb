@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "rexml/parent"
 require "rexml/namespace"
 require "rexml/attribute"

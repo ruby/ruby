@@ -1,20 +1,21 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #include "ossl.h"
 
-#define WrapSPKI(klass, obj, spki) do { \
+#define NewSPKI(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_netscape_spki_type, 0)
+#define SetSPKI(obj, spki) do { \
     if (!(spki)) { \
 	ossl_raise(rb_eRuntimeError, "SPKI wasn't initialized!"); \
     } \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_netscape_spki_type, (spki)); \
+    RTYPEDDATA_DATA(obj) = (spki); \
 } while (0)
 #define GetSPKI(obj, spki) do { \
     TypedData_Get_Struct((obj), NETSCAPE_SPKI, &ossl_netscape_spki_type, (spki)); \
@@ -58,10 +59,11 @@ ossl_spki_alloc(VALUE klass)
     NETSCAPE_SPKI *spki;
     VALUE obj;
 
+    obj = NewSPKI(klass);
     if (!(spki = NETSCAPE_SPKI_new())) {
 	ossl_raise(eSPKIError, NULL);
     }
-    WrapSPKI(klass, obj, spki);
+    SetSPKI(obj, spki);
 
     return obj;
 }
@@ -401,4 +403,3 @@ Init_ossl_ns_spki(void)
     rb_define_method(cSPKI, "challenge", ossl_spki_get_challenge, 0);
     rb_define_method(cSPKI, "challenge=", ossl_spki_set_challenge, 1);
 }
-

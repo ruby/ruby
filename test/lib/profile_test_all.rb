@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # purpose:
 #  Profile memory usage of each tests.

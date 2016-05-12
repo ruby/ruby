@@ -36,8 +36,10 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     const char *magic, *iseq_name = "-", *selfstr = "-", *biseq_name = "-";
     VALUE tmp;
 
-    if (cfp->block_iseq != 0 && BUILTIN_TYPE(cfp->block_iseq) != T_NODE) {
-	biseq_name = "";	/* RSTRING(cfp->block_iseq->location.label)->ptr; */
+    const rb_callable_method_entry_t *me;
+
+    if (cfp->block_iseq != 0 && !RUBY_VM_IFUNC_P(cfp->block_iseq)) {
+	biseq_name = "";	/* RSTRING(cfp->block_iseq->body->location.label)->ptr; */
     }
 
     if (ep < 0 || (size_t)ep > th->stack_size) {
@@ -96,17 +98,23 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	if (RUBY_VM_IFUNC_P(cfp->iseq)) {
 	    iseq_name = "<ifunc>";
 	}
+	else if (SYMBOL_P(cfp->iseq)) {
+	    tmp = rb_sym2str((VALUE)cfp->iseq);
+	    iseq_name = RSTRING_PTR(tmp);
+	    snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
+	    line = -1;
+	}
 	else {
-	    pc = cfp->pc - cfp->iseq->iseq_encoded;
-	    iseq_name = RSTRING_PTR(cfp->iseq->location.label);
+	    pc = cfp->pc - cfp->iseq->body->iseq_encoded;
+	    iseq_name = RSTRING_PTR(cfp->iseq->body->location.label);
 	    line = rb_vm_get_sourceline(cfp);
 	    if (line) {
-		snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(cfp->iseq->location.path), line);
+		snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(cfp->iseq->body->location.path), line);
 	    }
 	}
     }
-    else if (cfp->me) {
-	iseq_name = rb_id2name(cfp->me->def->original_id);
+    else if ((me = rb_vm_frame_method_entry(cfp)) != NULL) {
+	iseq_name = rb_id2name(me->def->original_id);
 	snprintf(posbuf, MAX_POSBUF, ":%s", iseq_name);
 	line = -1;
     }
@@ -183,20 +191,20 @@ rb_vmdebug_env_dump_raw(rb_env_t *env, VALUE *ep)
     fprintf(stderr, "-- env --------------------\n");
 
     while (env) {
+	VALUE prev_envval;
+
 	fprintf(stderr, "--\n");
 	for (i = 0; i < env->env_size; i++) {
-	    fprintf(stderr, "%04d: %08"PRIxVALUE" (%p)", -env->local_size + i, env->env[i],
-		   (void *)&env->env[i]);
-	    if (&env->env[i] == ep)
-		fprintf(stderr, " <- ep");
+	    fprintf(stderr, "%04d: %08"PRIxVALUE" (%p)", i, env->env[i], (void *)&env->env[i]);
+	    if (&env->env[i] == ep) fprintf(stderr, " <- ep");
 	    fprintf(stderr, "\n");
 	}
 
-	if (env->prev_envval != 0) {
-	    GetEnvPtr(env->prev_envval, env);
+	if ((prev_envval = rb_vm_env_prev_envval(env)) != Qfalse) {
+	    GetEnvPtr(prev_envval, env);
 	}
 	else {
-	    env = 0;
+	    env = NULL;
 	}
     }
     fprintf(stderr, "---------------------------\n");
@@ -212,7 +220,7 @@ rb_vmdebug_proc_dump_raw(rb_proc_t *proc)
 
     fprintf(stderr, "-- proc -------------------\n");
     fprintf(stderr, "self: %s\n", selfstr);
-    GetEnvPtr(proc->envval, env);
+    GetEnvPtr(rb_vm_proc_envval(proc), env);
     rb_vmdebug_env_dump_raw(env, proc->block.ep);
 }
 
@@ -231,9 +239,9 @@ static VALUE *
 vm_base_ptr(rb_control_frame_t *cfp)
 {
     rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-    VALUE *bp = prev_cfp->sp + cfp->iseq->local_size + 1;
+    VALUE *bp = prev_cfp->sp + cfp->iseq->body->local_size + 1;
 
-    if (cfp->iseq->type == ISEQ_TYPE_METHOD) {
+    if (cfp->iseq->body->type == ISEQ_TYPE_METHOD) {
 	bp += 1;
     }
     return bp;
@@ -249,24 +257,11 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
     VALUE *ep = cfp->ep;
 
     int argc = 0, local_size = 0;
-    const char *name;
     rb_iseq_t *iseq = cfp->iseq;
 
-    if (iseq == 0) {
-	if (RUBYVM_CFUNC_FRAME_P(cfp)) {
-	    name = rb_id2name(cfp->me->called_id);
-	}
-	else {
-	    name = "?";
-	}
-    }
-    else if (RUBY_VM_IFUNC_P(iseq)) {
-	name = "<ifunc>";
-    }
-    else {
-	argc = iseq->param.lead_num;
-	local_size = iseq->local_size;
-	name = RSTRING_PTR(iseq->location.label);
+    if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
+	argc = iseq->body->param.lead_num;
+	local_size = iseq->body->local_size;
     }
 
     /* stack trace header */
@@ -281,7 +276,7 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_IFUNC ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_EVAL  ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_RESCUE)
-      {
+    {
 
 	VALUE *ptr = ep - local_size;
 
@@ -333,7 +328,7 @@ rb_vmdebug_debug_print_register(rb_thread_t *th)
     ptrdiff_t cfpi;
 
     if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
-	pc = cfp->pc - cfp->iseq->iseq_encoded;
+	pc = cfp->pc - cfp->iseq->body->iseq_encoded;
     }
 
     if (ep < 0 || (size_t)ep > th->stack_size) {
@@ -356,10 +351,10 @@ rb_vmdebug_thread_dump_regs(VALUE thval)
 void
 rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp,VALUE *_pc)
 {
-    rb_iseq_t *iseq = cfp->iseq;
+    const rb_iseq_t *iseq = cfp->iseq;
 
     if (iseq != 0) {
-	ptrdiff_t pc = _pc - iseq->iseq_encoded;
+	ptrdiff_t pc = _pc - iseq->body->iseq_encoded;
 	int i;
 
 	for (i=0; i<(int)VM_CFP_CNT(th, cfp); i++) {
@@ -370,7 +365,7 @@ rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp,VALUE *_pc)
 
 	/* printf("%3"PRIdPTRDIFF" ", VM_CFP_CNT(th, cfp)); */
 	if (pc >= 0) {
-	    const VALUE *iseq_original = rb_iseq_original_iseq(iseq);
+	    const VALUE *iseq_original = rb_iseq_original_iseq((rb_iseq_t *)iseq);
 
 	    rb_iseq_disasm_insn(0, iseq_original, (size_t)pc, iseq, 0);
 	}
@@ -436,7 +431,7 @@ rb_vmdebug_thread_dump_state(VALUE self)
 # ifdef HAVE_LIBUNWIND
 #  undef backtrace
 #  define backtrace unw_backtrace
-# elif defined(__APPLE__) && defined(__x86_64__)
+# elif defined(__APPLE__) && defined(__x86_64__) && defined(HAVE_LIBUNWIND_H)
 #  define UNW_LOCAL_ONLY
 #  include <libunwind.h>
 #  undef backtrace
@@ -690,8 +685,8 @@ rb_print_backtrace(void)
 #if HAVE_BACKTRACE
 #define MAX_NATIVE_TRACE 1024
     static void *trace[MAX_NATIVE_TRACE];
-    int n = backtrace(trace, MAX_NATIVE_TRACE);
-#if defined(USE_ELF) && defined(HAVE_DLADDR)
+    int n = (int)backtrace(trace, MAX_NATIVE_TRACE);
+#if defined(USE_ELF) && defined(HAVE_DLADDR) && !defined(__sparc)
     rb_dump_backtrace_with_lines(n, trace);
 #else
     char **syms = backtrace_symbols(trace, n);
@@ -711,7 +706,7 @@ rb_print_backtrace(void)
 #endif
 }
 
-#ifdef __FreeBSD__
+#ifdef HAVE_LIBPROCSTAT
 #include <sys/user.h>
 #include <sys/sysctl.h>
 #include <sys/param.h>
@@ -735,7 +730,11 @@ procstat_vm(struct procstat *procstat, struct kinfo_proc *kipp)
 		ptrwidth, "START", ptrwidth, "END", "PRT", "RES",
 		"PRES", "REF", "SHD", "FL", "TP", "PATH");
 
+#ifdef HAVE_PROCSTAT_GETVMMAP
 	freep = procstat_getvmmap(procstat, kipp, &cnt);
+#else
+	freep = kinfo_getvmmap(kipp->ki_pid, &cnt);
+#endif
 	if (freep == NULL)
 		return;
 	for (i = 0; i < cnt; i++) {
@@ -932,6 +931,43 @@ rb_dump_machine_register(const ucontext_t *ctx)
 # define rb_dump_machine_register(ctx) ((void)0)
 #endif /* HAVE_PRINT_MACHINE_REGISTERS */
 
+static void
+preface_dump(void)
+{
+#if defined __APPLE__
+    static const char msg[] = ""
+	"-- Crash Report log information "
+	"--------------------------------------------\n"
+	"   See Crash Report log file under the one of following:\n"
+	"     * ~/Library/Logs/CrashReporter\n"
+	"     * /Library/Logs/CrashReporter\n"
+	"     * ~/Library/Logs/DiagnosticReports\n"
+	"     * /Library/Logs/DiagnosticReports\n"
+	"   for more details.\n"
+	"Don't forget to include the above Crash Report log file in bug reports.\n"
+	"\n";
+    const char *const endmsg = msg + sizeof(msg) - 1;
+    const char *p = msg;
+#define RED "\033[;31;1;7m"
+#define GREEN "\033[;32;7m"
+#define RESET "\033[m"
+
+    if (isatty(fileno(stderr))) {
+	const char *e = strchr(p, '\n');
+	const int w = (int)(e - p);
+	do {
+	    int i = (int)(e - p);
+	    fputs(*p == ' ' ? GREEN : RED, stderr);
+	    fwrite(p, 1, e - p, stderr);
+	    for (; i < w; ++i) fputc(' ', stderr);
+	    fputs(RESET, stderr);
+	    fputc('\n', stderr);
+	} while ((p = e + 1) < endmsg && (e = strchr(p, '\n')) != 0 && e > p + 1);
+    }
+    fwrite(p, 1, endmsg - p, stderr);
+#endif
+}
+
 void
 rb_vm_bugreport(const void *ctx)
 {
@@ -945,18 +981,8 @@ rb_vm_bugreport(const void *ctx)
 #endif
     const rb_vm_t *const vm = GET_VM();
 
-#if defined __APPLE__
-    fputs("-- Crash Report log information "
-	  "--------------------------------------------\n"
-	  "   See Crash Report log file under the one of following:\n"
-	  "     * ~/Library/Logs/CrashReporter\n"
-	  "     * /Library/Logs/CrashReporter\n"
-	  "     * ~/Library/Logs/DiagnosticReports\n"
-	  "     * /Library/Logs/DiagnosticReports\n"
-	  "   for more details.\n"
-	  "\n",
-	  stderr);
-#endif
+    preface_dump();
+
     if (vm) {
 	SDR();
 	rb_backtrace_print_as_bugreport();
@@ -1000,12 +1026,21 @@ rb_vm_bugreport(const void *ctx)
 	    else if (RB_TYPE_P(name, T_CLASS) || RB_TYPE_P(name, T_MODULE)) {
 		const char *const type = RB_TYPE_P(name, T_CLASS) ?
 		    "class" : "module";
-		name = rb_class_name(name);
+		name = rb_search_class_path(rb_class_real(name));
+		if (!RB_TYPE_P(name, T_STRING)) {
+		    fprintf(stderr, " %4d %s:<unnamed>\n", i, type);
+		    continue;
+		}
 		fprintf(stderr, " %4d %s:%.*s\n", i, type,
 			LIMITED_NAME_LENGTH(name), RSTRING_PTR(name));
 	    }
 	    else {
-		VALUE klass = rb_class_name(CLASS_OF(name));
+		VALUE klass = rb_search_class_path(rb_obj_class(name));
+		if (!RB_TYPE_P(klass, T_STRING)) {
+		    fprintf(stderr, " %4d #<%p:%p>\n", i,
+			    (void *)CLASS_OF(name), (void *)name);
+		    continue;
+		}
 		fprintf(stderr, " %4d #<%.*s:%p>\n", i,
 			LIMITED_NAME_LENGTH(klass), RSTRING_PTR(klass),
 			(void *)name);
@@ -1033,7 +1068,7 @@ rb_vm_bugreport(const void *ctx)
 	    }
 	}
 #endif /* __linux__ */
-#ifdef __FreeBSD__
+#ifdef HAVE_LIBPROCSTAT
 # define MIB_KERN_PROC_PID_LEN 4
 	int mib[MIB_KERN_PROC_PID_LEN];
 	struct kinfo_proc kp;

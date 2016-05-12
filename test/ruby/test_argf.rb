@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'timeout'
 require 'tmpdir'
@@ -510,6 +511,17 @@ class TestArgf < Test::Unit::TestCase
     end
   end
 
+  def test_readpartial_eof_twice
+    ruby('-W1', '-e', <<-SRC, @t1.path) do |f|
+      $stderr = $stdout
+      print ARGF.readpartial(256)
+      ARGF.readpartial(256) rescue p($!.class)
+      ARGF.readpartial(256) rescue p($!.class)
+    SRC
+      assert_equal("1\n2\nEOFError\nEOFError\n", f.read)
+    end
+  end
+
   def test_getc
     ruby('-e', <<-SRC, @t1.path, @t2.path, @t3.path) do |f|
       s = ""
@@ -855,5 +867,56 @@ class TestArgf < Test::Unit::TestCase
       assert_match(/deprecated/, f.gets)
       assert_equal([49, 10, 50, 10, 51, 10, 52, 10, 53, 10, 54, 10], Marshal.load(f.read))
     end
+  end
+
+  def test_read_nonblock
+    ruby('-e', <<-SRC) do |f|
+      $stdout.sync = true
+      :wait_readable == ARGF.read_nonblock(1, "", exception: false) or
+        abort "did not return :wait_readable"
+
+      begin
+        ARGF.read_nonblock(1)
+        abort 'fail to raise IO::WaitReadable'
+      rescue IO::WaitReadable
+      end
+      puts 'starting select'
+
+      IO.select([ARGF]) == [[ARGF], [], []] or
+        abort 'did not awaken for readability (before byte)'
+
+      buf = ''
+      buf.object_id == ARGF.read_nonblock(1, buf).object_id or
+        abort "read destination buffer failed"
+      print buf
+
+      IO.select([ARGF]) == [[ARGF], [], []] or
+        abort 'did not awaken for readability (before EOF)'
+
+      ARGF.read_nonblock(1, buf, exception: false) == nil or
+        abort "EOF should return nil if exception: false"
+
+      begin
+        ARGF.read_nonblock(1, buf)
+        abort 'fail to raise IO::WaitReadable'
+      rescue EOFError
+        puts 'done with eof'
+      end
+    SRC
+      f.sync = true
+      assert_equal "starting select\n", f.gets
+      f.write('.') # wake up from IO.select
+      assert_equal '.', f.read(1)
+      f.close_write
+      assert_equal "done with eof\n", f.gets
+    end
+  end
+
+  def test_wrong_type
+    assert_separately([], <<-'end;')
+      bug11610 = '[ruby-core:71140] [Bug #11610]'
+      ARGV[0] = nil
+      assert_raise(TypeError, bug11610) {gets}
+    end;
   end
 end

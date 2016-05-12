@@ -1,0 +1,3 @@
+#define BUILDDIR   "@abs_top_builddir@"
+#define LIBPATHENV "@LIBPATHENV@"
+#define PATH_SEP   '@PATH_SEPARATOR@'

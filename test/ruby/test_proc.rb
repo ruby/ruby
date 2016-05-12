@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestProc < Test::Unit::TestCase
@@ -432,7 +433,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal(:noreason, exc.reason)
   end
 
-  def test_binding2
+  def test_curry_binding
     assert_raise(ArgumentError) { proc {}.curry.binding }
   end
 
@@ -579,7 +580,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal [1, 2, 3], pr.call([1,2,3,4,5,6])
   end
 
-  def test_proc_args_opt_signle
+  def test_proc_args_opt_single
     bug7621 = '[ruby-dev:46801]'
     pr = proc {|a=:a|
       a
@@ -1148,7 +1149,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:req, :c], [:keyrest, :o]], method(:pmk6).to_proc.parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:pmk7).to_proc.parameters)
 
-    assert_equal([], "".method(:upcase).to_proc.parameters)
+    assert_equal([], "".method(:empty?).to_proc.parameters)
     assert_equal([[:rest]], "".method(:gsub).to_proc.parameters)
     assert_equal([[:rest]], proc {}.curry.parameters)
   end
@@ -1263,8 +1264,8 @@ class TestProc < Test::Unit::TestCase
   def test_local_variables
     b = get_binding
     assert_equal(%i'if case when begin end a', b.local_variables)
-    a = tap {|;a, b| break binding.local_variables}
-    assert_equal(%i[a b], a.sort)
+    a = tap {|;x, y| x = y; break binding.local_variables}
+    assert_equal(%i[a b x y], a.sort)
   end
 
   def test_local_variables_nested
@@ -1273,7 +1274,7 @@ class TestProc < Test::Unit::TestCase
   end
 
   def local_variables_of(bind)
-    this_should_not_be_in_bind = 2
+    this_should_not_be_in_bind = this_should_not_be_in_bind = 2
     bind.local_variables
   end
 
@@ -1319,5 +1320,25 @@ class TestProc < Test::Unit::TestCase
     obj = Object.new
     def obj.b; binding; end
     assert_same(obj, obj.b.receiver, feature8779)
+  end
+
+  def test_proc_mark
+    assert_normal_exit(<<-'EOS')
+      def f
+        Enumerator.new{
+          100000.times {|i|
+            yield
+            s = "#{i}"
+          }
+        }
+      end
+
+      def g
+        x = proc{}
+        f(&x)
+      end
+      e = g
+      e.each {}
+    EOS
   end
 end

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: false
 #
 # text (embedded windows) widget demo (called by 'widget')
 #

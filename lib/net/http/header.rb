@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # The HTTPHeader module defines methods for reading and writing
 # HTTP headers.
 #
@@ -14,7 +15,11 @@ module Net::HTTPHeader
     return unless initheader
     initheader.each do |key, value|
       warn "net/http: warning: duplicated HTTP header: #{key}" if key?(key) and $VERBOSE
-      @header[key.downcase] = [value.strip]
+      if value.nil?
+        warn "net/http: warning: nil HTTP header: #{key}" if $VERBOSE
+      else
+        @header[key.downcase] = [value.strip]
+      end
     end
   end
 
@@ -91,12 +96,14 @@ module Net::HTTPHeader
   # Iterates through the header names and values, passing in the name
   # and value to the code block supplied.
   #
+  # Returns an enumerator if no block is given.
+  #
   # Example:
   #
   #     response.header.each_header {|key,value| puts "#{key} = #{value}" }
   #
   def each_header   #:yield: +key+, +value+
-    block_given? or return enum_for(__method__)
+    block_given? or return enum_for(__method__) { @header.size }
     @header.each do |k,va|
       yield k, va.join(', ')
     end
@@ -106,8 +113,10 @@ module Net::HTTPHeader
 
   # Iterates through the header names in the header, passing
   # each header name to the code block.
+  #
+  # Returns an enumerator if no block is given.
   def each_name(&block)   #:yield: +key+
-    block_given? or return enum_for(__method__)
+    block_given? or return enum_for(__method__) { @header.size }
     @header.each_key(&block)
   end
 
@@ -119,8 +128,10 @@ module Net::HTTPHeader
   # Note that header names are capitalized systematically;
   # capitalization may not match that used by the remote HTTP
   # server in its response.
+  #
+  # Returns an enumerator if no block is given.
   def each_capitalized_name  #:yield: +key+
-    block_given? or return enum_for(__method__)
+    block_given? or return enum_for(__method__) { @header.size }
     @header.each_key do |k|
       yield capitalize(k)
     end
@@ -128,8 +139,10 @@ module Net::HTTPHeader
 
   # Iterates through header values, passing each value to the
   # code block.
+  #
+  # Returns an enumerator if no block is given.
   def each_value   #:yield: +value+
-    block_given? or return enum_for(__method__)
+    block_given? or return enum_for(__method__) { @header.size }
     @header.each_value do |va|
       yield va.join(', ')
     end
@@ -159,8 +172,10 @@ module Net::HTTPHeader
   # Note that header names are capitalized systematically;
   # capitalization may not match that used by the remote HTTP
   # server in its response.
+  #
+  # Returns an enumerator if no block is given.
   def each_capitalized
-    block_given? or return enum_for(__method__)
+    block_given? or return enum_for(__method__) { @header.size }
     @header.each do |k,v|
       yield capitalize(k), v.join(', ')
     end
@@ -169,7 +184,7 @@ module Net::HTTPHeader
   alias canonical_each each_capitalized
 
   def capitalize(name)
-    name.split(/-/).map {|s| s.capitalize }.join('-')
+    name.to_s.split(/-/).map {|s| s.capitalize }.join('-')
   end
   private :capitalize
 
@@ -377,7 +392,7 @@ module Net::HTTPHeader
   # +params+ is the form data set; it is an Array of Arrays or a Hash
   # +enctype is the type to encode the form data set.
   # It is application/x-www-form-urlencoded or multipart/form-data.
-  # +formpot+ is an optional hash to specify the detail.
+  # +formopt+ is an optional hash to specify the detail.
   #
   # boundary:: the boundary of the multipart message
   # charset::  the charset of the message. All names and the values of
@@ -426,27 +441,22 @@ module Net::HTTPHeader
   end
 
   def basic_encode(account, password)
-    'Basic ' + ["#{account}:#{password}"].pack('m').delete("\r\n")
+    'Basic ' + ["#{account}:#{password}"].pack('m0')
   end
   private :basic_encode
 
   def connection_close?
-    tokens(@header['connection']).include?('close') or
-    tokens(@header['proxy-connection']).include?('close')
+    token = /(?:\A|,)\s*close\s*(?:\z|,)/i
+    @header['connection']&.grep(token) {return true}
+    @header['proxy-connection']&.grep(token) {return true}
+    false
   end
 
   def connection_keep_alive?
-    tokens(@header['connection']).include?('keep-alive') or
-    tokens(@header['proxy-connection']).include?('keep-alive')
+    token = /(?:\A|,)\s*keep-alive\s*(?:\z|,)/i
+    @header['connection']&.grep(token) {return true}
+    @header['proxy-connection']&.grep(token) {return true}
+    false
   end
-
-  def tokens(vals)
-    return [] unless vals
-    vals.map {|v| v.split(',') }.flatten\
-        .reject {|str| str.strip.empty? }\
-        .map {|tok| tok.strip.downcase }
-  end
-  private :tokens
 
 end
-

@@ -60,12 +60,12 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 #endif
 
 #if defined(__GNUC__) && defined(__i386__)
-    DECL_SC_REG(VALUE *, pc, "di");
+    DECL_SC_REG(const VALUE *, pc, "di");
     DECL_SC_REG(rb_control_frame_t *, cfp, "si");
 #define USE_MACHINE_REGS 1
 
 #elif defined(__GNUC__) && defined(__x86_64__)
-    DECL_SC_REG(VALUE *, pc, "14");
+    DECL_SC_REG(const VALUE *, pc, "14");
 # if defined(__native_client__)
     DECL_SC_REG(rb_control_frame_t *, cfp, "13");
 # else
@@ -74,13 +74,13 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 #define USE_MACHINE_REGS 1
 
 #elif defined(__GNUC__) && defined(__powerpc64__)
-    DECL_SC_REG(VALUE *, pc, "14");
+    DECL_SC_REG(const VALUE *, pc, "14");
     DECL_SC_REG(rb_control_frame_t *, cfp, "15");
 #define USE_MACHINE_REGS 1
 
 #else
     register rb_control_frame_t *reg_cfp;
-    VALUE *reg_pc;
+    const VALUE *reg_pc;
 #endif
 
 #if USE_MACHINE_REGS

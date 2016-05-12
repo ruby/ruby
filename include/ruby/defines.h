@@ -22,6 +22,46 @@ extern "C" {
 #include RUBY_EXTCONF_H
 #endif
 
+/* function attributes */
+#ifndef CONSTFUNC
+# define CONSTFUNC(x) x
+#endif
+#ifndef PUREFUNC
+# define PUREFUNC(x) x
+#endif
+#define NORETURN_STYLE_NEW 1
+#ifndef NORETURN
+# define NORETURN(x) x
+#endif
+#ifndef DEPRECATED
+# define DEPRECATED(x) x
+#endif
+#ifndef DEPRECATED_BY
+# define DEPRECATED_BY(n,x) DEPRECATED(x)
+#endif
+#ifndef DEPRECATED_TYPE
+# define DEPRECATED_TYPE(mesg, decl) decl
+#endif
+#ifndef NOINLINE
+# define NOINLINE(x) x
+#endif
+
+/* likely */
+#if __GNUC__ >= 3
+#define RB_LIKELY(x)   (__builtin_expect(!!(x), 1))
+#define RB_UNLIKELY(x) (__builtin_expect(!!(x), 0))
+#else /* __GNUC__ >= 3 */
+#define RB_LIKELY(x)   (x)
+#define RB_UNLIKELY(x) (x)
+#endif /* __GNUC__ >= 3 */
+
+#ifdef __GNUC__
+#define PRINTF_ARGS(decl, string_index, first_to_check) \
+  decl __attribute__((format(printf, string_index, first_to_check)))
+#else
+#define PRINTF_ARGS(decl, string_index, first_to_check) decl
+#endif
+
 /* AC_INCLUDES_DEFAULT */
 #include <stdio.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -112,7 +152,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #define xrealloc2 ruby_xrealloc2
 #define xfree ruby_xfree
 
-#if defined(__GNUC__) && __GNUC__ >= 4 && __GNUC_MINOR__ >= 3
+#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
 # define RUBY_ATTR_ALLOC_SIZE(params) __attribute__ ((__alloc_size__ params))
 #else
 # define RUBY_ATTR_ALLOC_SIZE(params)
@@ -147,7 +187,12 @@ void xfree(void*);
 #undef _WIN32
 #endif
 
-#if defined(_WIN32) || defined(__EMX__)
+#if defined(_WIN32)
+/*
+  DOSISH mean MS-Windows style filesystem.
+  But you should use more precise macros like DOSISH_DRIVE_LETTER, PATH_SEP,
+  ENV_IGNORECASE or CASEFOLD_FILESYSTEM.
+ */
 #define DOSISH 1
 # define DOSISH_DRIVE_LETTER
 #endif
@@ -161,10 +206,6 @@ void xfree(void*);
 
 #ifdef _WIN32
 #include "ruby/win32.h"
-#endif
-
-#if defined(__BEOS__) && !defined(__HAIKU__) && !defined(BONE)
-#include <net/socket.h> /* intern.h needs fd_set definition */
 #endif
 
 #ifdef RUBY_EXPORT
@@ -220,7 +261,7 @@ void rb_ia64_flushrs(void);
 
 #define PATH_ENV "PATH"
 
-#if defined(DOSISH) && !defined(__EMX__)
+#if defined(DOSISH)
 #define ENV_IGNORECASE
 #endif
 
@@ -243,13 +284,16 @@ void rb_ia64_flushrs(void);
 #ifndef FUNC_MINIMIZED
 #define FUNC_MINIMIZED(x) x
 #endif
+#ifndef FUNC_UNOPTIMIZED
+#define FUNC_UNOPTIMIZED(x) x
+#endif
 #ifndef RUBY_ALIAS_FUNCTION_TYPE
 #define RUBY_ALIAS_FUNCTION_TYPE(type, prot, name, args) \
-    FUNC_MINIMIZED(type prot) {return name args;}
+    FUNC_MINIMIZED(type prot) {return (type)name args;}
 #endif
 #ifndef RUBY_ALIAS_FUNCTION_VOID
 #define RUBY_ALIAS_FUNCTION_VOID(prot, name, args) \
-    void prot {name args;}
+    FUNC_MINIMIZED(void prot) {name args;}
 #endif
 #ifndef RUBY_ALIAS_FUNCTION
 #define RUBY_ALIAS_FUNCTION(prot, name, args) \

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # The primary source of gems is a file on disk, including all usages
 # internal to rubygems.

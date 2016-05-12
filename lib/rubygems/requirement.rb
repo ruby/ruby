@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require "rubygems/version"
 require "rubygems/deprecate"
 
@@ -22,6 +23,8 @@ class Gem::Requirement
     "<=" =>  lambda { |v, r| v <= r },
     "~>" =>  lambda { |v, r| v >= r && v.release < r.bump }
   }
+
+  SOURCE_SET_REQUIREMENT = Struct.new(:for_lockfile).new "!" # :nodoc:
 
   quoted  = OPS.keys.map { |k| Regexp.quote k }.join "|"
   PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Gem::Version::VERSION_PATTERN})\\s*" # :nodoc:
@@ -54,6 +57,8 @@ class Gem::Requirement
       input
     when Gem::Version, Array then
       new input
+    when '!' then
+      source_set
     else
       if input.respond_to? :to_str then
         new [input.to_str]
@@ -70,6 +75,13 @@ class Gem::Requirement
     new '>= 0'
   end
 
+  ###
+  # A source set requirement, used for Gemfiles and lockfiles
+
+  def self.source_set # :nodoc:
+    SOURCE_SET_REQUIREMENT
+  end
+
   ##
   # Parse +obj+, returning an <tt>[op, version]</tt> pair. +obj+ can
   # be a String or a Gem::Version.
@@ -78,9 +90,9 @@ class Gem::Requirement
   # specification, like <tt>">= 1.2"</tt>, or a simple version number,
   # like <tt>"1.2"</tt>.
   #
-  #     parse("> 1.0")                 # => [">", "1.0"]
-  #     parse("1.0")                   # => ["=", "1.0"]
-  #     parse(Gem::Version.new("1.0")) # => ["=,  "1.0"]
+  #     parse("> 1.0")                 # => [">", Gem::Version.new("1.0")]
+  #     parse("1.0")                   # => ["=", Gem::Version.new("1.0")]
+  #     parse(Gem::Version.new("1.0")) # => ["=,  Gem::Version.new("1.0")]
 
   def self.parse obj
     return ["=", obj] if Gem::Version === obj
@@ -171,7 +183,7 @@ class Gem::Requirement
   end
 
   def hash # :nodoc:
-    requirements.hash
+    requirements.sort.hash
   end
 
   def marshal_dump # :nodoc:

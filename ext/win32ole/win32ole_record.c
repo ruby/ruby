@@ -288,7 +288,7 @@ folerecord_initialize(VALUE self, VALUE typename, VALUE oleobj) {
         rb_raise(rb_eArgError, "1st argument should be String or Symbol");
     }
     if (RB_TYPE_P(typename, T_SYMBOL)) {
-        typename = rb_sym_to_s(typename);
+        typename = rb_sym2str(typename);
     }
 
     hr = S_OK;
@@ -452,7 +452,7 @@ folerecord_method_missing(int argc, VALUE *argv, VALUE self)
 {
     VALUE name;
     rb_check_arity(argc, 1, 2);
-    name = rb_sym_to_s(argv[0]);
+    name = rb_sym2str(argv[0]);
 
 #if SIZEOF_SIZE_T > SIZEOF_LONG
     {
@@ -508,7 +508,7 @@ folerecord_ole_instance_variable_get(VALUE self, VALUE name)
     }
     sname = name;
     if (RB_TYPE_P(name, T_SYMBOL)) {
-        sname = rb_sym_to_s(name);
+        sname = rb_sym2str(name);
     }
     return olerecord_ivar_get(self, sname);
 }
@@ -547,7 +547,7 @@ folerecord_ole_instance_variable_set(VALUE self, VALUE name, VALUE val)
     }
     sname = name;
     if (RB_TYPE_P(name, T_SYMBOL)) {
-        sname = rb_sym_to_s(name);
+        sname = rb_sym2str(name);
     }
     return olerecord_ivar_set(self, sname, val);
 }

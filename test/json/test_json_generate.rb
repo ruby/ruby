@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
+# frozen_string_literal: false
 
 require 'test/unit'
 require File.join(File.dirname(__FILE__), 'setup_variant')
@@ -73,6 +74,19 @@ EOT
     assert_equal '666', pretty_generate(666, :quirks_mode => true)
   end
 
+  def test_generate_custom
+    state = State.new(:space_before => " ", :space => "   ", :indent => "<i>", :object_nl => "\n", :array_nl => "<a_nl>")
+    json = generate({1=>{2=>3,4=>[5,6]}}, state)
+    assert_equal(<<'EOT'.chomp, json)
+{
+<i>"1" :   {
+<i><i>"2" :   3,
+<i><i>"4" :   [<a_nl><i><i><i>5,<a_nl><i><i><i>6<a_nl><i><i>]
+<i>}
+}
+EOT
+  end
+
   def test_fast_generate
     json = fast_generate(@hash)
     assert_equal(JSON.parse(@json2), JSON.parse(json))
@@ -110,12 +124,12 @@ EOT
     assert s[:check_circular?]
     h = { 1=>2 }
     h[3] = h
-    assert_raises(JSON::NestingError) {  generate(h) }
-    assert_raises(JSON::NestingError) {  generate(h, s) }
+    assert_raise(JSON::NestingError) {  generate(h) }
+    assert_raise(JSON::NestingError) {  generate(h, s) }
     s = JSON.state.new
     a = [ 1, 2 ]
     a << a
-    assert_raises(JSON::NestingError) {  generate(a, s) }
+    assert_raise(JSON::NestingError) {  generate(a, s) }
     assert s.check_circular?
     assert s[:check_circular?]
   end
@@ -172,34 +186,34 @@ EOT
   end
 
   def test_allow_nan
-    assert_raises(GeneratorError) { generate([JSON::NaN]) }
+    assert_raise(GeneratorError) { generate([JSON::NaN]) }
     assert_equal '[NaN]', generate([JSON::NaN], :allow_nan => true)
-    assert_raises(GeneratorError) { fast_generate([JSON::NaN]) }
-    assert_raises(GeneratorError) { pretty_generate([JSON::NaN]) }
+    assert_raise(GeneratorError) { fast_generate([JSON::NaN]) }
+    assert_raise(GeneratorError) { pretty_generate([JSON::NaN]) }
     assert_equal "[\n  NaN\n]", pretty_generate([JSON::NaN], :allow_nan => true)
-    assert_raises(GeneratorError) { generate([JSON::Infinity]) }
+    assert_raise(GeneratorError) { generate([JSON::Infinity]) }
     assert_equal '[Infinity]', generate([JSON::Infinity], :allow_nan => true)
-    assert_raises(GeneratorError) { fast_generate([JSON::Infinity]) }
-    assert_raises(GeneratorError) { pretty_generate([JSON::Infinity]) }
+    assert_raise(GeneratorError) { fast_generate([JSON::Infinity]) }
+    assert_raise(GeneratorError) { pretty_generate([JSON::Infinity]) }
     assert_equal "[\n  Infinity\n]", pretty_generate([JSON::Infinity], :allow_nan => true)
-    assert_raises(GeneratorError) { generate([JSON::MinusInfinity]) }
+    assert_raise(GeneratorError) { generate([JSON::MinusInfinity]) }
     assert_equal '[-Infinity]', generate([JSON::MinusInfinity], :allow_nan => true)
-    assert_raises(GeneratorError) { fast_generate([JSON::MinusInfinity]) }
-    assert_raises(GeneratorError) { pretty_generate([JSON::MinusInfinity]) }
+    assert_raise(GeneratorError) { fast_generate([JSON::MinusInfinity]) }
+    assert_raise(GeneratorError) { pretty_generate([JSON::MinusInfinity]) }
     assert_equal "[\n  -Infinity\n]", pretty_generate([JSON::MinusInfinity], :allow_nan => true)
   end
 
   def test_depth
     ary = []; ary << ary
     assert_equal 0, JSON::SAFE_STATE_PROTOTYPE.depth
-    assert_raises(JSON::NestingError) { JSON.generate(ary) }
+    assert_raise(JSON::NestingError) { JSON.generate(ary) }
     assert_equal 0, JSON::SAFE_STATE_PROTOTYPE.depth
     assert_equal 0, JSON::PRETTY_STATE_PROTOTYPE.depth
-    assert_raises(JSON::NestingError) { JSON.pretty_generate(ary) }
+    assert_raise(JSON::NestingError) { JSON.pretty_generate(ary) }
     assert_equal 0, JSON::PRETTY_STATE_PROTOTYPE.depth
     s = JSON.state.new
     assert_equal 0, s.depth
-    assert_raises(JSON::NestingError) { ary.to_json(s) }
+    assert_raise(JSON::NestingError) { ary.to_json(s) }
     assert_equal 100, s.depth
   end
 
@@ -215,16 +229,18 @@ EOT
   end
 
   def test_gc
-    assert_in_out_err(%w[-rjson --disable-gems], <<-EOS, [], [])
-      bignum_too_long_to_embed_as_string = 1234567890123456789012345
-      expect = bignum_too_long_to_embed_as_string.to_s
-      GC.stress = true
+    if respond_to?(:assert_in_out_err)
+      assert_in_out_err(%w[-rjson --disable-gems], <<-EOS, [], [])
+        bignum_too_long_to_embed_as_string = 1234567890123456789012345
+        expect = bignum_too_long_to_embed_as_string.to_s
+        GC.stress = true
 
-      10.times do |i|
-        tmp = bignum_too_long_to_embed_as_string.to_json
-        raise "'\#{expect}' is expected, but '\#{tmp}'" unless tmp == expect
-      end
-    EOS
+        10.times do |i|
+          tmp = bignum_too_long_to_embed_as_string.to_json
+          raise "'\#{expect}' is expected, but '\#{tmp}'" unless tmp == expect
+        end
+      EOS
+    end
   end if GC.respond_to?(:stress=)
 
   def test_configure_using_configure_and_merge
@@ -317,6 +333,29 @@ EOT
   def test_json_generate
     assert_raise JSON::GeneratorError do
       assert_equal true, JSON.generate(["\xea"])
+    end
+  end
+
+  def test_string_subclass
+    s = Class.new(String) do
+      def to_s; self; end
+      undef to_json
+    end
+    assert_nothing_raised(SystemStackError) do
+      assert_equal '[""]', JSON.generate([s.new])
+    end
+  end
+
+  if EnvUtil.gc_stress_to_class?
+    def assert_no_memory_leak(code, *rest, **opt)
+      code = "8.times {20_000.times {begin #{code}; rescue NoMemoryError; end}; GC.start}"
+      super(["-rjson/ext/generator"],
+            "GC.add_stress_to_class(JSON::Ext::Generator::State); "\
+            "#{code}", code, *rest, rss: true, limit: 1.1, **opt)
+    end
+
+    def test_no_memory_leak_allocate
+      assert_no_memory_leak("JSON::Ext::Generator::State.allocate")
     end
   end
 end

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestSuper < Test::Unit::TestCase
@@ -228,11 +229,8 @@ class TestSuper < Test::Unit::TestCase
     A.send(:include, Override)
   end
 
-  # [Bug #3351]
   def test_double_include
-    assert_equal([:Base, :Override], DoubleInclude::B.new.foo)
-    # should be changed as follows?
-    # assert_equal([:Base, :Override, :Override], DoubleInclude::B.new.foo)
+    assert_equal([:Base, :Override, :Override], DoubleInclude::B.new.foo, "[Bug #3351]")
   end
 
   module DoubleInclude2
@@ -406,6 +404,13 @@ class TestSuper < Test::Unit::TestCase
     assert_equal([1, 2, 3, false, 5], y.foo(1, 2, 3, false, 5))
   end
 
+  def test_missing_super
+    o = Class.new {def foo; super; end}.new
+    e = assert_raise(NoMethodError) {o.foo}
+    assert_same(o, e.receiver)
+    assert_equal(:foo, e.name)
+  end
+
   def test_missing_super_in_method_module
     bug9315 = '[ruby-core:59358] [Bug #9315]'
     a = Module.new do
@@ -480,8 +485,8 @@ class TestSuper < Test::Unit::TestCase
     bug9740 = '[ruby-core:62017] [Bug #9740]'
 
     b.module_eval do
-      define_method(:foo) do |result|
-        um.bind(self).call(result)
+      define_method(:foo) do |res|
+        um.bind(self).call(res)
       end
     end
 

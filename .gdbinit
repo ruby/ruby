@@ -245,6 +245,12 @@ define rp
     printf "%sT_UNDEF%s: ", $color_type, $color_end
     print (struct RBasic *)($arg0)
   else
+  if ($flags & RUBY_T_MASK) == RUBY_T_IMEMO
+    printf "%sT_IMEMO%s(", $color_type, $color_end
+    output (enum imemo_type)(($flags>>RUBY_FL_USHIFT)&imemo_mask)
+    printf "): "
+    rp_imemo $arg0
+  else
   if ($flags & RUBY_T_MASK) == RUBY_T_NODE
     printf "%sT_NODE%s(", $color_type, $color_end
     output (enum node_type)(($flags&RUBY_NODE_TYPEMASK)>>RUBY_NODE_TYPESHIFT)
@@ -257,6 +263,7 @@ define rp
   else
     printf "%sunknown%s: ", $color_type, $color_end
     print (struct RBasic *)($arg0)
+  end
   end
   end
   end
@@ -448,8 +455,8 @@ end
 
 define rp_class
   printf "(struct RClass *) %p", (void*)$arg0
-  if ((struct RClass *)($arg0))->ptr.origin != $arg0
-    printf " -> %p", ((struct RClass *)($arg0))->ptr.origin
+  if ((struct RClass *)($arg0))->ptr.origin_ != $arg0
+    printf " -> %p", ((struct RClass *)($arg0))->ptr.origin_
   end
   printf "\n"
   rb_classname $arg0
@@ -458,6 +465,50 @@ define rp_class
 end
 document rp_class
   Print the content of a Class/Module.
+end
+
+define rp_imemo
+  set $flags = (enum imemo_type)((((struct RBasic *)($arg0))->flags >> RUBY_FL_USHIFT) & imemo_mask)
+  if $flags == imemo_cref
+    printf "(rb_cref_t *) %p\n", (void*)$arg0
+    print *(rb_cref_t *)$arg0
+  else
+  if $flags == imemo_svar
+    printf "(struct vm_svar *) %p\n", (void*)$arg0
+    print *(struct vm_svar *)$arg0
+  else
+  if $flags == imemo_throw_data
+    printf "(struct vm_throw_data *) %p\n", (void*)$arg0
+    print *(struct vm_throw_data *)$arg0
+  else
+  if $flags == imemo_ifunc
+    printf "(struct vm_ifunc *) %p\n", (void*)$arg0
+    print *(struct vm_ifunc *)$arg0
+  else
+  if $flags == imemo_memo
+    printf "(struct MEMO *) %p\n", (void*)$arg0
+    print *(struct MEMO *)$arg0
+  else
+  if $flags == imemo_ment
+    printf "(rb_method_entry_t *) %p\n", (void*)$arg0
+    print *(rb_method_entry_t *)$arg0
+  else
+  if $flags == imemo_iseq
+    printf "(rb_iseq_t *) %p\n", (void*)$arg0
+    print *(rb_iseq_t *)$arg0
+  else
+    printf "(struct RIMemo *) %p\n", (void*)$arg0
+    print *(struct RIMemo *)$arg0
+  end
+  end
+  end
+  end
+  end
+  end
+  end
+end
+document rp_imemo
+  Print the content of a memo
 end
 
 define nd_type
@@ -869,23 +920,16 @@ end
 
 define rb_ps_vm
   print $ps_vm = (rb_vm_t*)$arg0
-  set $ps_threads = (st_table*)$ps_vm->living_threads
-  if $ps_threads->entries_packed
-    set $ps_threads_i = 0
-    while $ps_threads_i < $ps_threads->num_entries
-      set $ps_threads_key = (st_data_t)$ps_threads->as.packed.entries[$ps_threads_i].key
-      set $ps_threads_val = (st_data_t)$ps_threads->as.packed.entries[$ps_threads_i].val
-      rb_ps_thread $ps_threads_key $ps_threads_val
-      set $ps_threads_i = $ps_threads_i + 1
+  set $ps_thread_ln = $ps_vm->living_threads.n.next
+  set $ps_thread_ln_last = $ps_vm->living_threads.n.prev
+  while 1
+    set $ps_thread_th = (rb_thread_t *)$ps_thread_ln
+    set $ps_thread = (VALUE)($ps_thread_th->self)
+    rb_ps_thread $ps_thread
+    if $ps_thread_ln == $ps_thread_ln_last
+      loop_break
     end
-  else
-    set $ps_threads_ptr = (st_table_entry*)$ps_threads->head
-    while $ps_threads_ptr
-      set $ps_threads_key = (st_data_t)$ps_threads_ptr->key
-      set $ps_threads_val = (st_data_t)$ps_threads_ptr->record
-      rb_ps_thread $ps_threads_key $ps_threads_val
-      set $ps_threads_ptr = (st_table_entry*)$ps_threads_ptr->fore
-    end
+    set $ps_thread_ln = $ps_thread_ln->next
   end
 end
 document rb_ps_vm
@@ -894,8 +938,9 @@ end
 
 define rb_ps_thread
   set $ps_thread = (struct RTypedData*)$arg0
-  set $ps_thread_id = $arg1
-  print $ps_thread_th = (rb_thread_t*)$ps_thread->data
+  set $ps_thread_th = (rb_thread_t*)$ps_thread->data
+  printf "* #<Thread:%p rb_thread_t:%p native_thread:%p>\n", \
+    $ps_thread, $ps_thread_th, $ps_thread_th->thread_id
 end
 
 # Details: https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/MachineInstructionsTraceWithGDB
@@ -914,3 +959,26 @@ define SDR
   call rb_vmdebug_stack_dump_raw_current()
 end
 
+define rbi
+  if ((LINK_ELEMENT*)$arg0)->type == ISEQ_ELEMENT_LABEL
+    p *(LABEL*)$arg0
+  else
+  if ((LINK_ELEMENT*)$arg0)->type == ISEQ_ELEMENT_INSN
+    p *(INSN*)$arg0
+  else
+  if ((LINK_ELEMENT*)$arg0)->type == ISEQ_ELEMENT_ADJUST
+    p *(ADJUST*)$arg0
+  else
+    print *$arg0
+  end
+  end
+  end
+end
+
+define dump_node
+  set $str = rb_parser_dump_tree($arg0, 0)
+  set $flags = ((struct RBasic*)($str))->flags
+  printf "%s", (char *)(($flags & RUBY_FL_USER1) ? \
+                        ((struct RString*)$str)->as.heap.ptr : \
+                        ((struct RString*)$str)->as.ary)
+end

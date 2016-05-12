@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #--
 # tsort.rb - provides a module for topological sorting and strongly connected components.
 #++

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 begin
   require 'io/console'
   require 'test/unit'
@@ -6,6 +7,9 @@ rescue LoadError
 end
 
 class TestIO_Console < Test::Unit::TestCase
+end
+
+defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   Bug6116 = '[ruby-dev:45309]'
 
   def test_raw
@@ -65,6 +69,14 @@ class TestIO_Console < Test::Unit::TestCase
       ensure
         th.join
       end
+    }
+  end
+
+  def test_raw!
+    helper {|m, s|
+      s.raw!
+      s.print "foo\n"
+      assert_equal("foo\n", m.gets)
     }
   end
 
@@ -172,6 +184,17 @@ class TestIO_Console < Test::Unit::TestCase
     }
   end
 
+  def test_getpass
+    skip unless IO.method_defined?("getpass")
+    run_pty("p IO.console.getpass('> ')") do |r, w|
+      assert_equal("> ", r.readpartial(10))
+      w.print "asdf\n"
+      sleep 1
+      assert_equal("\r\n", r.gets)
+      assert_equal("\"asdf\"", r.gets.chomp)
+    end
+  end
+
   def test_iflush
     helper {|m, s|
       m.print "a"
@@ -262,21 +285,21 @@ class TestIO_Console < Test::Unit::TestCase
   rescue RuntimeError
     skip $!
   else
-    result = []
-    n.times {result << r.gets.chomp}
-    Process.wait(pid)
     if block_given?
-      yield result
+      yield r, w, pid
     else
+      result = []
+      n.times {result << r.gets.chomp}
       result
     end
   ensure
     r.close if r
     w.close if w
+    Process.wait(pid) if pid
   end
-end if defined?(PTY) and defined?(IO::console)
+end
 
-class TestIO_Console < Test::Unit::TestCase
+defined?(IO.console) and TestIO_Console.class_eval do
   case
   when Process.respond_to?(:daemon)
     noctty = [EnvUtil.rubybin, "-e", "Process.daemon(true)"]
@@ -289,9 +312,9 @@ class TestIO_Console < Test::Unit::TestCase
     require 'tempfile'
     NOCTTY = noctty
     def test_noctty
-      t = Tempfile.new("console")
+      t = Tempfile.new("noctty_out")
       t.close
-      t2 = Tempfile.new("console")
+      t2 = Tempfile.new("noctty_run")
       t2.close
       cmd = [*NOCTTY[1..-1],
         '-e', 'open(ARGV[0], "w") {|f|',
@@ -315,9 +338,24 @@ class TestIO_Console < Test::Unit::TestCase
       t2.close!
     end
   end
-end if defined?(IO.console)
+end
 
-class TestIO_Console < Test::Unit::TestCase
+defined?(IO.console) and IO.console and IO.console.respond_to?(:pressed?) and
+  TestIO_Console.class_eval do
+  def test_pressed_valid
+    assert_include([true, false], IO.console.pressed?("HOME"))
+    assert_include([true, false], IO.console.pressed?(:"HOME"))
+  end
+
+  def test_pressed_invalid
+    e = assert_raise(ArgumentError) do
+      IO.console.pressed?("HOME\0")
+    end
+    assert_match(/unknown virtual key code/, e.message)
+  end
+end
+
+TestIO_Console.class_eval do
   def test_stringio_getch
     assert_separately %w"--disable=gems -rstringio -rio/console", %q{
       assert_operator(StringIO, :method_defined?, :getch)

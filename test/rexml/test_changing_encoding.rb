@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: false
 
 require 'rexml/encoding'
 
@@ -21,7 +22,7 @@ module REXMLTests
       @f.encoding = 'EUC-JP'
       assert_equal( @u, @f.decode(@e) )
       # This doesn't happen anymore, for some reason
-      #assert_raises( Iconv::IllegalSequence, "Decoding unicode should fail" ) {
+      #assert_raise( Iconv::IllegalSequence, "Decoding unicode should fail" ) {
       #  @f.decode(@u) == @u
       #}
     end
@@ -36,7 +37,7 @@ module REXMLTests
       @f.encoding = 'EUC-JP'
       assert_equal( @u, @f.decode(@e) )
       # This doesn't happen anymore, for some reason
-      #assert_raises( Iconv::IllegalSequence, "Decoding unicode should fail" ) {
+      #assert_raise( Iconv::IllegalSequence, "Decoding unicode should fail" ) {
       #  @f.decode(@u) == @u
       #}
     end

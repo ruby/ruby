@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/clock.rb : methods for clock command
 #

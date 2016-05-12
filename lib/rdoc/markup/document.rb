@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # A Document containing lists, headings, paragraphs, etc.
 

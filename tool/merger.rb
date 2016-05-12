@@ -5,7 +5,7 @@ exec "${RUBY-ruby}" "-x" "$0" "$@" && [ ] if false
 # This needs ruby 1.9 and subversion.
 # run this in a repository to commit.
 
-require 'date'
+require 'fileutils'
 require 'tempfile'
 
 $repos = 'svn+ssh://svn@ci.ruby-lang.org/ruby/'
@@ -13,37 +13,42 @@ ENV['LC_ALL'] = 'C'
 
 def help
   puts <<-end
-simple backport
+\e[1msimple backport\e[0m
   ruby #$0 1234
 
-range backport
+\e[1mrange backport\e[0m
   ruby #$0 1234:5678
 
-backport from other branch
+\e[1mbackport from other branch\e[0m
   ruby #$0 17502 mvm
 
-revision increment
+\e[1mrevision increment\e[0m
   ruby #$0 revisionup
 
-tagging major release
+\e[1mteeny increment\e[0m
+  ruby #$0 teenyup
+
+\e[1mtagging major release\e[0m
   ruby #$0 tag 2.2.0
 
-tagging patch release (about 2.1.0 or later, it means X.Y.Z (Z > 0) release)
+\e[1mtagging patch release\e[0m (about 2.1.0 or later, it means X.Y.Z (Z > 0) release)
   ruby #$0 tag
 
-tagging preview/RC
+\e[1mtagging preview/RC\e[0m
   ruby #$0 tag 2.2.0-preview1
 
-* all operations shall be applied to the working directory.
+\e[33;1m* all operations shall be applied to the working directory.\e[0m
 end
 end
+
+# Prints the version of Ruby found in version.h
 
 def version
   v = p = nil
   open 'version.h', 'rb' do |f|
     f.each_line do |l|
       case l
-      when /^#define RUBY_VERSION "(\d)\.(\d)\.(\d)"$/
+      when /^#define RUBY_VERSION "(\d+)\.(\d+)\.(\d+)"$/
         v = $~.captures
       when /^#define RUBY_PATCHLEVEL (-?\d+)$/
         p = $1
@@ -56,7 +61,7 @@ end
 def interactive str, editfile = nil
   loop do
     yield
-    STDERR.puts "#{str} ([y]es|[a]bort|[r]etry#{'|[e]dit' if editfile})"
+    STDERR.puts "\e[1;33m#{str} ([y]es|[a]bort|[r]etry#{'|[e]dit' if editfile})\e[0m"
     case STDIN.gets
     when /\Aa/i then exit
     when /\Ar/i then redo
@@ -67,21 +72,18 @@ def interactive str, editfile = nil
   end
 end
 
-def version_up
-  d = DateTime.now
-  d = d.new_offset(Rational(9,24)) # we need server locale (i.e. japanese) time
+def version_up(inc=nil)
+  d = Time.now
+  d = d.localtime(9*60*60) # server is Japan Standard Time +09:00
   system(*%w'svn revert version.h')
-  v, p = version
+  v, pl = version
 
-  teeny = v[2]
-  case v
-  when %w/1 9 2/
-    teeny = 1
+  if inc == :teeny
+    v[2].succ!
   end
-
-  p = p.to_i
-  if p != -1
-    p += 1
+  # patchlevel
+  if pl != "-1"
+    pl.succ!
   end
 
   str = open 'version.h', 'rb' do |f| f.read end
@@ -89,10 +91,10 @@ def version_up
    %W[RUBY_VERSION_CODE  #{v.join ''}],
    %W[RUBY_VERSION_MAJOR #{v[0]}],
    %W[RUBY_VERSION_MINOR #{v[1]}],
-   %W[RUBY_VERSION_TEENY #{teeny}],
+   %W[RUBY_VERSION_TEENY #{v[2]}],
    %W[RUBY_RELEASE_DATE "#{d.strftime '%Y-%m-%d'}"],
    %W[RUBY_RELEASE_CODE  #{d.strftime '%Y%m%d'}],
-   %W[RUBY_PATCHLEVEL    #{p}],
+   %W[RUBY_PATCHLEVEL    #{pl}],
    %W[RUBY_RELEASE_YEAR  #{d.year}],
    %W[RUBY_RELEASE_MONTH #{d.month}],
    %W[RUBY_RELEASE_DAY   #{d.day}],
@@ -144,6 +146,8 @@ def tag intv_p = false, relname=nil
     end
   end
   system(*%w'svn cp -m', "add tag #{tagname}", branch_url, tag_url)
+  puts "run following command in git-svn working directory to push the tag into GitHub:"
+  puts "git tag #{tagname}  origin/tags/#{tagname} && git push ruby #{tagname}"
 end
 
 def default_merge_branch
@@ -151,6 +155,9 @@ def default_merge_branch
 end
 
 case ARGV[0]
+when "teenyup"
+  version_up(:teeny)
+  system 'svn diff version.h'
 when "up", /\A(ver|version|rev|revision|lv|level|patch\s*level)\s*up/
   version_up
   system 'svn diff version.h'
@@ -161,12 +168,19 @@ when nil, "-h", "--help"
   exit
 else
   system 'svn up'
+  system 'ruby tool/file2lastrev.rb --revision.h . > revision.tmp'
+  system 'tool/ifchange "--timestamp=.revision.time" "revision.h" "revision.tmp"'
+  FileUtils.rm_f('revision.tmp')
 
-  if /--ticket=(.*)/ =~ ARGV[0]
-    tickets = $1.split(/,/).map{|num| " [Backport ##{num}]"}
+  case ARGV[0]
+  when /--ticket=(.*)/
+    tickets = $1.split(/,/).map{|num| " [Backport ##{num}]"}.join
     ARGV.shift
+  when /merge revision\(s\) ([\d,\-]+):( \[.*)/
+    tickets = $2
+    ARGV[0] = $1
   else
-    tickets = []
+    tickets = ''
   end
 
   q = $repos + (ARGV[1] || default_merge_branch)
@@ -231,7 +245,7 @@ else
 
   version_up
   f = Tempfile.new 'merger.rb'
-  f.printf "merge revision(s) %s:%s\n", revstr, tickets.join
+  f.printf "merge revision(s) %s:%s\n", revstr, tickets
   f.write log_svn
   f.flush
   f.close

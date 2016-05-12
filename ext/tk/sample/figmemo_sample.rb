@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: false
 require 'tk'
 
 begin
@@ -300,7 +301,7 @@ end
 def open_file(canvas, fname)
   if canvas.modified?
     ret = Tk.messageBox(:icon=>'warning',:type=>'okcancel',:default=>'cancel',
-                        :message=>'Canvas may be modified. Realy erase? ')
+                        :message=>'Canvas may be modified. Really erase? ')
     return if ret == 'cancel'
   end
 
@@ -402,7 +403,7 @@ end
 def quit(canvas)
   ret = Tk.messageBox(:icon=>'warning', :type=>'okcancel',
                       :default=>'cancel',
-                      :message=>'Realy quit? ')
+                      :message=>'Really quit? ')
   exit if ret == 'ok'
 end
 

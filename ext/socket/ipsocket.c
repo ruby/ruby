@@ -41,19 +41,23 @@ inetsock_cleanup(struct inetsock_arg *arg)
 static VALUE
 init_inetsock_internal(struct inetsock_arg *arg)
 {
+    int error = 0;
     int type = arg->type;
     struct addrinfo *res, *lres;
     int fd, status = 0, local = 0;
+    int family = AF_UNSPEC;
     const char *syscall = 0;
 
-    arg->remote.res = rsock_addrinfo(arg->remote.host, arg->remote.serv, SOCK_STREAM,
-				    (type == INET_SERVER) ? AI_PASSIVE : 0);
+    arg->remote.res = rsock_addrinfo(arg->remote.host, arg->remote.serv,
+				     family, SOCK_STREAM,
+				     (type == INET_SERVER) ? AI_PASSIVE : 0);
     /*
      * Maybe also accept a local address
      */
 
     if (type != INET_SERVER && (!NIL_P(arg->local.host) || !NIL_P(arg->local.serv))) {
-	arg->local.res = rsock_addrinfo(arg->local.host, arg->local.serv, SOCK_STREAM, 0);
+	arg->local.res = rsock_addrinfo(arg->local.host, arg->local.serv,
+					family, SOCK_STREAM, 0);
     }
 
     arg->fd = fd = -1;
@@ -80,6 +84,7 @@ init_inetsock_internal(struct inetsock_arg *arg)
 	syscall = "socket(2)";
 	fd = status;
 	if (fd < 0) {
+	    error = errno;
 	    continue;
 	}
 	arg->fd = fd;
@@ -107,6 +112,7 @@ init_inetsock_internal(struct inetsock_arg *arg)
 	}
 
 	if (status < 0) {
+	    error = errno;
 	    close(fd);
 	    arg->fd = fd = -1;
 	    continue;
@@ -124,7 +130,7 @@ init_inetsock_internal(struct inetsock_arg *arg)
 	    port = arg->remote.serv;
 	}
 
-	rsock_sys_fail_host_port(syscall, host, port);
+	rsock_syserr_fail_host_port(error, syscall, host, port);
     }
 
     arg->fd = -1;
@@ -132,8 +138,9 @@ init_inetsock_internal(struct inetsock_arg *arg)
     if (type == INET_SERVER) {
 	status = listen(fd, SOMAXCONN);
 	if (status < 0) {
+	    error = errno;
 	    close(fd);
-            rb_sys_fail("listen(2)");
+	    rb_syserr_fail(error, "listen(2)");
 	}
     }
 
@@ -193,7 +200,7 @@ rsock_revlookup_flag(VALUE revlookup, int *norevlookup)
  * hostname is obtained from numeric_address using reverse lookup.
  * Or if it is +false+, or +:numeric+,
  * hostname is same as numeric_address.
- * Or if it is +nil+ or ommitted, obeys to +ipsocket.do_not_reverse_lookup+.
+ * Or if it is +nil+ or omitted, obeys to +ipsocket.do_not_reverse_lookup+.
  * See +Socket.getaddrinfo+ also.
  *
  *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|
@@ -234,7 +241,7 @@ ip_addr(int argc, VALUE *argv, VALUE sock)
  * hostname is obtained from numeric_address using reverse lookup.
  * Or if it is +false+, or +:numeric+,
  * hostname is same as numeric_address.
- * Or if it is +nil+ or ommitted, obeys to +ipsocket.do_not_reverse_lookup+.
+ * Or if it is +nil+ or omitted, obeys to +ipsocket.do_not_reverse_lookup+.
  * See +Socket.getaddrinfo+ also.
  *
  *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|
@@ -304,7 +311,7 @@ static VALUE
 ip_s_getaddress(VALUE obj, VALUE host)
 {
     union_sockaddr addr;
-    struct rb_addrinfo *res = rsock_addrinfo(host, Qnil, SOCK_STREAM, 0);
+    struct rb_addrinfo *res = rsock_addrinfo(host, Qnil, AF_UNSPEC, SOCK_STREAM, 0);
     socklen_t len = res->ai->ai_addrlen;
 
     /* just take the first one */

@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: false
 #
 #  menubutton sample : based on sample menubuttons on the Tcl/Tk demo script
 #

@@ -24,7 +24,7 @@ assert_finish 10, %q{
 assert_normal_exit(<<'End', '[ruby-dev:37934]')
   main = Thread.current
   Thread.new { sleep 0.01 until main.stop?; Thread.kill main }
-  Process.setrlimit(:NPROC, 1)
+  Process.setrlimit(:NPROC, 1) if defined?(Process::RLIMIT_NPROC)
   fork {}
 End
 

@@ -3,7 +3,7 @@
 RUBYDIR=/home/ftp/pub/ruby
 EXTS='.tar.gz .tar.bz2 .tar.xz .zip'
 
-releases=`ls ruby-*|grep -o 'ruby-[0-9]\.[0-9]\.[0-9]\(-\(preview\|rc\|p\)[0-9]\{1,4\}\)\?'|uniq`
+releases=`ls ruby-*|grep -o 'ruby-[0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}\(-\(preview\|rc\|p\)[0-9]\{1,4\}\)\?'|uniq`
 
 # check files
 for r in $releases

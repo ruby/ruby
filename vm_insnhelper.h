@@ -12,28 +12,6 @@
 #ifndef RUBY_INSNHELPER_H
 #define RUBY_INSNHELPER_H
 
-/**
- * VM Debug Level
- *
- * debug level:
- *  0: no debug output
- *  1: show instruction name
- *  2: show stack frame when control stack frame is changed
- *  3: show stack status
- *  4: show register
- *  5:
- * 10: gc check
- */
-
-#ifndef VMDEBUG
-#define VMDEBUG 0
-#endif
-
-#if 0
-#undef  VMDEBUG
-#define VMDEBUG 3
-#endif
-
 extern VALUE ruby_vm_const_missing_count;
 
 #if VM_COLLECT_USAGE_DETAILS
@@ -101,8 +79,6 @@ enum vm_regan_acttype {
 #define GET_CURRENT_INSN() (*GET_PC())
 #define GET_OPERAND(n)     (GET_PC()[(n)])
 #define ADD_PC(n)          (SET_PC(REG_PC + (n)))
-
-#define GET_PC_COUNT()     (REG_PC - GET_ISEQ()->iseq_encoded)
 #define JUMP(dst)          (REG_PC += (dst))
 
 /* frame pointer, environment pointer */
@@ -145,27 +121,8 @@ enum vm_regan_acttype {
 /* deal with control flow 2: method/iterator              */
 /**********************************************************/
 
-#define COPY_CREF_OMOD(c1, c2) do {  \
-  RB_OBJ_WRITE((c1), &(c1)->nd_refinements, (c2)->nd_refinements); \
-  if (!NIL_P((c2)->nd_refinements)) { \
-      (c1)->flags |= NODE_FL_CREF_OMOD_SHARED; \
-      (c2)->flags |= NODE_FL_CREF_OMOD_SHARED; \
-  } \
-} while (0)
-
-#define COPY_CREF(c1, c2) do {  \
-  NODE *__tmp_c2 = (c2); \
-  COPY_CREF_OMOD(c1, __tmp_c2); \
-  RB_OBJ_WRITE((c1), &(c1)->nd_clss, __tmp_c2->nd_clss); \
-  (c1)->nd_visi = __tmp_c2->nd_visi;\
-  RB_OBJ_WRITE((c1), &(c1)->nd_next, __tmp_c2->nd_next); \
-  if (__tmp_c2->flags & NODE_FL_CREF_PUSHED_BY_EVAL) { \
-      (c1)->flags |= NODE_FL_CREF_PUSHED_BY_EVAL; \
-  } \
-} while (0)
-
-#define CALL_METHOD(ci) do { \
-    VALUE v = (*(ci)->call)(th, GET_CFP(), (ci)); \
+#define CALL_METHOD(calling, ci, cc) do { \
+    VALUE v = (*(cc)->call)(th, GET_CFP(), (calling), (ci), (cc)); \
     if (v == Qundef) { \
 	RESTORE_REGS(); \
 	NEXT_INSN(); \
@@ -184,8 +141,8 @@ enum vm_regan_acttype {
 #endif
 
 #if OPT_CALL_FASTPATH
-#define CI_SET_FASTPATH(ci, func, enabled) do { \
-    if (LIKELY(enabled)) ((ci)->call = (func)); \
+#define CI_SET_FASTPATH(cc, func, enabled) do { \
+    if (LIKELY(enabled)) ((cc)->call = (func)); \
 } while (0)
 #else
 #define CI_SET_FASTPATH(ci, func, enabled) /* do nothing */
@@ -215,9 +172,11 @@ enum vm_regan_acttype {
 #endif
 
 #define CALL_SIMPLE_METHOD(recv_) do { \
-    ci->blockptr = 0; ci->argc = ci->orig_argc; \
-    vm_search_method(ci, ci->recv = (recv_)); \
-    CALL_METHOD(ci); \
+    struct rb_calling_info calling; \
+    calling.blockptr = NULL; \
+    calling.argc = ci->orig_argc; \
+    vm_search_method(ci, cc, calling.recv = (recv_)); \
+    CALL_METHOD(&calling, ci, cc); \
 } while (0)
 
 #define NEXT_CLASS_SERIAL() (++ruby_vm_class_serial)
@@ -226,8 +185,43 @@ enum vm_regan_acttype {
 #define GET_GLOBAL_CONSTANT_STATE() (ruby_vm_global_constant_state)
 #define INC_GLOBAL_CONSTANT_STATE() (++ruby_vm_global_constant_state)
 
-static VALUE make_no_method_exception(VALUE exc, const char *format,
-				      VALUE obj, int argc, const VALUE *argv);
+static VALUE make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
+				      int argc, const VALUE *argv, int priv);
 
+static inline struct vm_throw_data *
+THROW_DATA_NEW(VALUE val, rb_control_frame_t *cf, VALUE st)
+{
+    return (struct vm_throw_data *)rb_imemo_new(imemo_throw_data, val, (VALUE)cf, st, 0);
+}
+
+static inline void
+THROW_DATA_CATCH_FRAME_SET(struct vm_throw_data *obj, const rb_control_frame_t *cfp)
+{
+    obj->catch_frame = cfp;
+}
+
+static inline void
+THROW_DATA_STATE_SET(struct vm_throw_data *obj, int st)
+{
+    obj->throw_state = (VALUE)st;
+}
+
+static inline VALUE
+THROW_DATA_VAL(const struct vm_throw_data *obj)
+{
+    return obj->throw_obj;
+}
+
+static inline const rb_control_frame_t *
+THROW_DATA_CATCH_FRAME(const struct vm_throw_data *obj)
+{
+    return obj->catch_frame;
+}
+
+static int
+THROW_DATA_STATE(const struct vm_throw_data *obj)
+{
+    return (int)obj->throw_state;
+}
 
 #endif /* RUBY_INSNHELPER_H */

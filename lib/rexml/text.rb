@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rexml/security'
 require 'rexml/entity'
 require 'rexml/doctype'

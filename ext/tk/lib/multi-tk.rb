@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #               multi-tk.rb - supports multi Tk interpreters
 #                       by Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
@@ -40,7 +41,7 @@ end
 
 
 ################################################
-# exceptiopn to treat the return value from IP
+# exception to treat the return value from IP
 class MultiTkIp_OK < Exception
   def self.send(thread, ret=nil)
     thread.raise self.new(ret)
@@ -1265,14 +1266,6 @@ class MultiTkIp
   ######################################
 
   def initialize(master, safeip=true, keys={})
-    if $SAFE >= 4
-      fail SecurityError, "cannot create a new interpreter at level #{$SAFE}"
-    end
-
-    if safeip == nil && $SAFE >= 2
-      fail SecurityError, "cannot create a master-ip at level #{$SAFE}"
-    end
-
     if master.deleted? && safeip == nil
       fail RuntimeError, "cannot create a slave of a deleted interpreter"
     end
@@ -1307,7 +1300,7 @@ class MultiTkIp
 
     name, safe, safe_opts, tk_opts = _parse_slaveopts(keys)
 
-    safe = 4 if safe && !safe.kind_of?(Fixnum)
+    safe = 1 if safe && !safe.kind_of?(Fixnum)
 
     @safe_base = false
 
@@ -1423,7 +1416,7 @@ class MultiTkIp
           safe = master.safe_level if safe < master.safe_level
           @safe_level = [safe]
         else
-          @safe_level = [4]
+          @safe_level = [1]
         end
       else
         @interp, @ip_name = master.__create_trusted_slave_obj(name, tk_opts)
@@ -1490,17 +1483,17 @@ class MultiTkIp
         begin
           @interp._eval("::safe::disallowTk #{slave}")
         rescue
-          warn("Waring: fail to call '::safe::disallowTk'") if $DEBUG
+          warn("Warning: fail to call '::safe::disallowTk'") if $DEBUG
         end
       else # toplevel path
         begin
           @interp._eval("::safe::tkDelete {} #{top} #{slave}")
         rescue
-          warn("Waring: fail to call '::safe::tkDelete'") if $DEBUG
+          warn("Warning: fail to call '::safe::tkDelete'") if $DEBUG
           begin
             @interp._eval("destroy #{top}")
           rescue
-            warn("Waring: fail to destroy toplevel") if $DEBUG
+            warn("Warning: fail to destroy toplevel") if $DEBUG
           end
         end
       end
@@ -1615,7 +1608,7 @@ class << MultiTkIp
   end
   alias new_trusted_slave new_slave
 
-  def new_safe_slave(safe=4, keys={}, &blk)
+  def new_safe_slave(safe=1, keys={}, &blk)
     if safe.kind_of?(Hash)
       keys = safe
     elsif safe.kind_of?(Integer)
@@ -2475,7 +2468,7 @@ end
 
 
 # event loop
-# all master/slave IPs are controled by only one event-loop
+# all master/slave IPs are controlled by only one event-loop
 class MultiTkIp
   def self.default_master?
     __getip == @@DEFAULT_MASTER
@@ -2754,13 +2747,9 @@ class MultiTkIp
       if @wait_on_mainloop[0]
         begin
           @wait_on_mainloop[1] += 1
-          if $SAFE >= 4
-	    _receiver_mainloop(check_root).join
-          else
-            @cmd_queue.enq([@system, 'call_mainloop',
-                            Thread.current, check_root])
-            Thread.stop
-          end
+          @cmd_queue.enq([@system, 'call_mainloop',
+                          Thread.current, check_root])
+          Thread.stop
         rescue MultiTkIp_OK => ret
           # return value
           if ret.value.kind_of?(Thread)

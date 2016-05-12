@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'test/unit'
 require 'open-uri'
 require 'stringio'
@@ -51,6 +52,8 @@ class TestOpenURISSL
       }
       assert_join_threads(threads)
     }
+  ensure
+    WEBrick::Utils::TimeoutHandler.terminate
   end
 
   def setup

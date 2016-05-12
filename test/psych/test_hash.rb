@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require_relative 'helper'
 
 module Psych
@@ -5,9 +6,54 @@ module Psych
     class X < Hash
     end
 
+    class HashWithCustomInit < Hash
+      attr_reader :obj
+      def initialize(obj)
+        @obj = obj
+      end
+    end
+
+    class HashWithCustomInitNoIvar < Hash
+      def initialize(obj)
+        # *shrug*
+      end
+    end
+
     def setup
       super
       @hash = { :a => 'b' }
+    end
+
+    def test_referenced_hash_with_ivar
+      a = [1,2,3,4,5]
+      t1 = [HashWithCustomInit.new(a)]
+      t1 << t1.first
+      assert_cycle t1
+    end
+
+    def test_custom_initialized
+      a = [1,2,3,4,5]
+      t1 = HashWithCustomInit.new(a)
+      t2 = Psych.load(Psych.dump(t1))
+      assert_equal t1, t2
+      assert_cycle t1
+    end
+
+    def test_custom_initialize_no_ivar
+      t1 = HashWithCustomInitNoIvar.new(nil)
+      t2 = Psych.load(Psych.dump(t1))
+      assert_equal t1, t2
+      assert_cycle t1
+    end
+
+    def test_hash_subclass_with_ivars
+      x = X.new
+      x[:a] = 'b'
+      x.instance_variable_set :@foo, 'bar'
+      dup = Psych.load Psych.dump x
+      assert_cycle x
+      assert_equal 'bar', dup.instance_variable_get(:@foo)
+      assert_equal X, dup.class
     end
 
     def test_load_with_class_syck_compatibility

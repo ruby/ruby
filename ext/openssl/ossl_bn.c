@@ -1,21 +1,22 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Technorama team <oss-ruby@technorama.net>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 /* modified by Michal Rokos <m.rokos@sh.cvut.cz> */
 #include "ossl.h"
 
-#define WrapBN(klass, obj, bn) do { \
+#define NewBN(klass) \
+  TypedData_Wrap_Struct((klass), &ossl_bn_type, 0)
+#define SetBN(obj, bn) do { \
   if (!(bn)) { \
     ossl_raise(rb_eRuntimeError, "BN wasn't initialized!"); \
   } \
-  (obj) = TypedData_Wrap_Struct((klass), &ossl_bn_type, (bn)); \
+  RTYPEDDATA_DATA(obj) = (bn); \
 } while (0)
 
 #define GetBN(obj, bn) do { \
@@ -53,6 +54,13 @@ static const rb_data_type_t ossl_bn_type = {
  * Classes
  */
 VALUE cBN;
+
+/* Document-class: OpenSSL::BNError
+ *
+ * BNError < OpenSSLError
+ *
+ * Generic Error for all of OpenSSL::BN (big num)
+ */
 VALUE eBNError;
 
 /*
@@ -64,11 +72,12 @@ ossl_bn_new(const BIGNUM *bn)
     BIGNUM *newbn;
     VALUE obj;
 
+    obj = NewBN(cBN);
     newbn = bn ? BN_dup(bn) : BN_new();
     if (!newbn) {
 	ossl_raise(eBNError, NULL);
     }
-    WrapBN(cBN, obj, newbn);
+    SetBN(obj, newbn);
 
     return obj;
 }
@@ -77,6 +86,7 @@ BIGNUM *
 GetBNPtr(VALUE obj)
 {
     BIGNUM *bn = NULL;
+    VALUE newobj;
 
     if (RTEST(rb_obj_is_kind_of(obj, cBN))) {
 	GetBN(obj, bn);
@@ -84,10 +94,11 @@ GetBNPtr(VALUE obj)
     case T_FIXNUM:
     case T_BIGNUM:
 	obj = rb_String(obj);
+	newobj = NewBN(cBN);	/* GC bug */
 	if (!BN_dec2bn(&bn, StringValuePtr(obj))) {
 	    ossl_raise(eBNError, NULL);
 	}
-	WrapBN(cBN, obj, bn); /* Handle potencial mem leaks */
+	SetBN(newobj, bn); /* Handle potencial mem leaks */
 	break;
     case T_NIL:
 	break;
@@ -111,23 +122,25 @@ static VALUE
 ossl_bn_alloc(VALUE klass)
 {
     BIGNUM *bn;
-    VALUE obj;
+    VALUE obj = NewBN(klass);
 
     if (!(bn = BN_new())) {
 	ossl_raise(eBNError, NULL);
     }
-    WrapBN(klass, obj, bn);
+    SetBN(obj, bn);
 
     return obj;
 }
 
-/*
- * call-seq:
- *    BN.new => aBN
- *    BN.new(bn) => aBN
- *    BN.new(integer) => aBN
- *    BN.new(string) => aBN
- *    BN.new(string, 0 | 2 | 10 | 16) => aBN
+/* Document-method: OpenSSL::BN.new
+ *
+ *    OpenSSL::BN.new => aBN
+ *    OpenSSL::BN.new(bn) => aBN
+ *    OpenSSL::BN.new(integer) => aBN
+ *    OpenSSL::BN.new(string) => aBN
+ *    OpenSSL::BN.new(string, 0 | 2 | 10 | 16) => aBN
+ *
+ * Construct a new OpenSSL BigNum object.
  */
 static VALUE
 ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
@@ -320,11 +333,6 @@ ossl_bn_coerce(VALUE self, VALUE other)
 }
 
 #define BIGNUM_BOOL1(func)				\
-    /*							\
-     * call-seq:					\
-     *   bn.##func -> true | false			\
-     *							\
-     */							\
     static VALUE					\
     ossl_bn_##func(VALUE self)				\
     {							\
@@ -335,22 +343,33 @@ ossl_bn_coerce(VALUE self, VALUE other)
 	}						\
 	return Qfalse;					\
     }
+
+/*
+ * Document-method: OpenSSL::BN#zero?
+ *   bn.zero? => true | false
+ */
 BIGNUM_BOOL1(is_zero)
+
+/*
+ * Document-method: OpenSSL::BN#one?
+ *   bn.one? => true | false
+ */
 BIGNUM_BOOL1(is_one)
+
+/*
+ * Document-method: OpenSSL::BN#odd?
+ *   bn.odd? => true | false
+ */
 BIGNUM_BOOL1(is_odd)
 
 #define BIGNUM_1c(func)					\
-    /*							\
-     * call-seq:					\
-     *   bn.##func -> aBN				\
-     *							\
-     */							\
     static VALUE					\
     ossl_bn_##func(VALUE self)				\
     {							\
 	BIGNUM *bn, *result;				\
 	VALUE obj;					\
 	GetBN(self, bn);				\
+	obj = NewBN(CLASS_OF(self));			\
 	if (!(result = BN_new())) {			\
 	    ossl_raise(eBNError, NULL);			\
 	}						\
@@ -358,23 +377,24 @@ BIGNUM_BOOL1(is_odd)
 	    BN_free(result);				\
 	    ossl_raise(eBNError, NULL);			\
 	}						\
-	WrapBN(CLASS_OF(self), obj, result);		\
+	SetBN(obj, result);				\
 	return obj;					\
     }
+
+/*
+ * Document-method: OpenSSL::BN#sqr
+ *   bn.sqr => aBN
+ */
 BIGNUM_1c(sqr)
 
 #define BIGNUM_2(func)					\
-    /*							\
-     * call-seq:					\
-     *   bn.##func(bn2) -> aBN				\
-     *							\
-     */							\
     static VALUE					\
     ossl_bn_##func(VALUE self, VALUE other)		\
     {							\
 	BIGNUM *bn1, *bn2 = GetBNPtr(other), *result;	\
 	VALUE obj;					\
 	GetBN(self, bn1);				\
+	obj = NewBN(CLASS_OF(self));			\
 	if (!(result = BN_new())) {			\
 	    ossl_raise(eBNError, NULL);			\
 	}						\
@@ -382,24 +402,30 @@ BIGNUM_1c(sqr)
 	    BN_free(result);				\
 	    ossl_raise(eBNError, NULL);			\
 	}						\
-	WrapBN(CLASS_OF(self), obj, result);		\
+	SetBN(obj, result);				\
 	return obj;					\
     }
+
+/*
+ * Document-method: OpenSSL::BN#+
+ *   bn + bn2 => aBN
+ */
 BIGNUM_2(add)
+
+/*
+ * Document-method: OpenSSL::BN#-
+ *   bn - bn2 => aBN
+ */
 BIGNUM_2(sub)
 
 #define BIGNUM_2c(func)						\
-    /*								\
-     * call-seq:						\
-     *   bn.##func(bn2) -> aBN					\
-     *								\
-     */								\
     static VALUE						\
     ossl_bn_##func(VALUE self, VALUE other)			\
     {								\
 	BIGNUM *bn1, *bn2 = GetBNPtr(other), *result;		\
 	VALUE obj;						\
 	GetBN(self, bn1);					\
+	obj = NewBN(CLASS_OF(self));				\
 	if (!(result = BN_new())) {				\
 	    ossl_raise(eBNError, NULL);				\
 	}							\
@@ -407,19 +433,51 @@ BIGNUM_2(sub)
 	    BN_free(result);					\
 	    ossl_raise(eBNError, NULL);				\
 	}							\
-	WrapBN(CLASS_OF(self), obj, result);			\
+	SetBN(obj, result);					\
 	return obj;						\
     }
+
+/*
+ * Document-method: OpenSSL::BN#*
+ *   bn * bn2 => aBN
+ */
 BIGNUM_2c(mul)
+
+/*
+ * Document-method: OpenSSL::BN#%
+ *   bn % bn2 => aBN
+ */
 BIGNUM_2c(mod)
+
+/*
+ * Document-method: OpenSSL::BN#**
+ *   bn ** bn2 => aBN
+ */
 BIGNUM_2c(exp)
+
+/*
+ * Document-method: OpenSSL::BN#gcd
+ *   bn.gcd(bn2) => aBN
+ */
 BIGNUM_2c(gcd)
+
+/*
+ * Document-method: OpenSSL::BN#mod_sqr
+ *   bn.mod_sqr(bn2) => aBN
+ */
 BIGNUM_2c(mod_sqr)
+
+/*
+ * Document-method: OpenSSL::BN#mod_inverse
+ *   bn.mod_inverse(bn2) => aBN
+ */
 BIGNUM_2c(mod_inverse)
 
 /*
- * call-seq:
+ * Document-method: OpenSSL::BN#/
  *    bn1 / bn2 => [result, remainder]
+ *
+ * Division of OpenSSL::BN instances
  */
 static VALUE
 ossl_bn_div(VALUE self, VALUE other)
@@ -429,6 +487,8 @@ ossl_bn_div(VALUE self, VALUE other)
 
     GetBN(self, bn1);
 
+    obj1 = NewBN(CLASS_OF(self));
+    obj2 = NewBN(CLASS_OF(self));
     if (!(r1 = BN_new())) {
 	ossl_raise(eBNError, NULL);
     }
@@ -441,18 +501,13 @@ ossl_bn_div(VALUE self, VALUE other)
 	BN_free(r2);
 	ossl_raise(eBNError, NULL);
     }
-    WrapBN(CLASS_OF(self), obj1, r1);
-    WrapBN(CLASS_OF(self), obj2, r2);
+    SetBN(obj1, r1);
+    SetBN(obj2, r2);
 
     return rb_ary_new3(2, obj1, obj2);
 }
 
 #define BIGNUM_3c(func)						\
-    /*								\
-     * call-seq:						\
-     *   bn.##func(bn1, bn2) -> aBN				\
-     *								\
-     */								\
     static VALUE						\
     ossl_bn_##func(VALUE self, VALUE other1, VALUE other2)	\
     {								\
@@ -460,6 +515,7 @@ ossl_bn_div(VALUE self, VALUE other)
 	BIGNUM *bn3 = GetBNPtr(other2), *result;		\
 	VALUE obj;						\
 	GetBN(self, bn1);					\
+	obj = NewBN(CLASS_OF(self));				\
 	if (!(result = BN_new())) {				\
 	    ossl_raise(eBNError, NULL);				\
 	}							\
@@ -467,20 +523,35 @@ ossl_bn_div(VALUE self, VALUE other)
 	    BN_free(result);					\
 	    ossl_raise(eBNError, NULL);				\
 	}							\
-	WrapBN(CLASS_OF(self), obj, result);			\
+	SetBN(obj, result);					\
 	return obj;						\
     }
+
+/*
+ * Document-method: OpenSSL::BN#mod_add
+ *   bn.mod_add(bn1, bn2) -> aBN
+ */
 BIGNUM_3c(mod_add)
+
+/*
+ * Document-method: OpenSSL::BN#mod_sub
+ *   bn.mod_sub(bn1, bn2) -> aBN
+ */
 BIGNUM_3c(mod_sub)
+
+/*
+ * Document-method: OpenSSL::BN#mod_mul
+ *   bn.mod_mul(bn1, bn2) -> aBN
+ */
 BIGNUM_3c(mod_mul)
+
+/*
+ * Document-method: OpenSSL::BN#mod_exp
+ *   bn.mod_exp(bn1, bn2) -> aBN
+ */
 BIGNUM_3c(mod_exp)
 
 #define BIGNUM_BIT(func)				\
-    /*							\
-     * call-seq:					\
-     *   bn.##func(bit) -> self				\
-     *							\
-     */							\
     static VALUE					\
     ossl_bn_##func(VALUE self, VALUE bit)		\
     {							\
@@ -491,13 +562,32 @@ BIGNUM_3c(mod_exp)
 	}						\
 	return self;					\
     }
-BIGNUM_BIT(set_bit)
-BIGNUM_BIT(clear_bit)
-BIGNUM_BIT(mask_bits)
 
 /*
- * call-seq:
+ * Document-method: OpenSSL::BN#set_bit!
+ *   bn.set_bit!(bit) -> self
+ */
+BIGNUM_BIT(set_bit)
+
+/*
+ * Document-method: OpenSSL::BN#clear_bit!
+ *   bn.clear_bit!(bit) -> self
+ */
+BIGNUM_BIT(clear_bit)
+
+/*
+ * Document-method: OpenSSL::BN#mask_bit!
+ *   bn.mask_bit!(bit) -> self
+ */
+BIGNUM_BIT(mask_bits)
+
+/* Document-method: OpenSSL::BN#bit_set?
+ *
+ * Returns boolean of whether +bit+ is set.
+ * Bitwise operations for openssl BIGNUMs.
+ *
  *    bn.bit_set?(bit) => true | false
+ *
  */
 static VALUE
 ossl_bn_is_bit_set(VALUE self, VALUE bit)
@@ -514,11 +604,6 @@ ossl_bn_is_bit_set(VALUE self, VALUE bit)
 }
 
 #define BIGNUM_SHIFT(func)				\
-    /*							\
-     * call-seq:					\
-     *   bn.##func(bits) -> aBN				\
-     *							\
-     */							\
     static VALUE					\
     ossl_bn_##func(VALUE self, VALUE bits)		\
     {							\
@@ -527,6 +612,7 @@ ossl_bn_is_bit_set(VALUE self, VALUE bit)
 	VALUE obj;					\
 	b = NUM2INT(bits);				\
 	GetBN(self, bn);				\
+	obj = NewBN(CLASS_OF(self));			\
 	if (!(result = BN_new())) {			\
 		ossl_raise(eBNError, NULL);		\
 	}						\
@@ -534,18 +620,25 @@ ossl_bn_is_bit_set(VALUE self, VALUE bit)
 		BN_free(result);			\
 		ossl_raise(eBNError, NULL);		\
 	}						\
-	WrapBN(CLASS_OF(self), obj, result);		\
+	SetBN(obj, result);				\
 	return obj;					\
     }
+
+/*
+ * Document-method: OpenSSL::BN#<<
+ * call-seq:
+ *   bn << bits -> aBN
+ */
 BIGNUM_SHIFT(lshift)
+
+/*
+ * Document-method: OpenSSL::BN#>>
+ * call-seq:
+ *   bn >> bits -> aBN
+ */
 BIGNUM_SHIFT(rshift)
 
 #define BIGNUM_SELF_SHIFT(func)				\
-    /*							\
-     * call-seq:					\
-     *   bn.##func!(bits) -> self			\
-     *							\
-     */							\
     static VALUE					\
     ossl_bn_self_##func(VALUE self, VALUE bits)		\
     {							\
@@ -557,15 +650,20 @@ BIGNUM_SHIFT(rshift)
 		ossl_raise(eBNError, NULL);		\
 	return self;					\
     }
+
+/*
+ * Document-method: OpenSSL::BN#lshift!
+ *   bn.lshift!(bits) -> self
+ */
 BIGNUM_SELF_SHIFT(lshift)
+
+/*
+ * Document-method: OpenSSL::BN#rshift!
+ *   bn.rshift!(bits) -> self
+ */
 BIGNUM_SELF_SHIFT(rshift)
 
 #define BIGNUM_RAND(func)					\
-    /*								\
-     * call-seq:						\
-     *   BN.##func(bits [, fill [, odd]]) -> aBN		\
-     *								\
-     */								\
     static VALUE						\
     ossl_bn_s_##func(int argc, VALUE *argv, VALUE klass)	\
     {								\
@@ -581,6 +679,7 @@ BIGNUM_SELF_SHIFT(rshift)
 	    top = NUM2INT(fill);				\
 	}							\
 	b = NUM2INT(bits);					\
+	obj = NewBN(klass);					\
 	if (!(result = BN_new())) {				\
 	    ossl_raise(eBNError, NULL);				\
 	}							\
@@ -588,23 +687,28 @@ BIGNUM_SELF_SHIFT(rshift)
 	    BN_free(result);					\
 	    ossl_raise(eBNError, NULL);				\
 	}							\
-	WrapBN(klass, obj, result);				\
+	SetBN(obj, result);					\
 	return obj;						\
     }
+
+/*
+ * Document-method: OpenSSL::BN.rand
+ *   BN.rand(bits [, fill [, odd]]) -> aBN
+ */
 BIGNUM_RAND(rand)
+
+/*
+ * Document-method: OpenSSL::BN.pseudo_rand
+ *   BN.pseudo_rand(bits [, fill [, odd]]) -> aBN
+ */
 BIGNUM_RAND(pseudo_rand)
 
 #define BIGNUM_RAND_RANGE(func)					\
-    /*								\
-     * call-seq:						\
-     *   BN.##func(range) -> aBN				\
-     *								\
-     */								\
     static VALUE						\
     ossl_bn_s_##func##_range(VALUE klass, VALUE range)		\
     {								\
 	BIGNUM *bn = GetBNPtr(range), *result;			\
-	VALUE obj;						\
+	VALUE obj = NewBN(klass);				\
 	if (!(result = BN_new())) {				\
 	    ossl_raise(eBNError, NULL);				\
 	}							\
@@ -612,10 +716,22 @@ BIGNUM_RAND(pseudo_rand)
 	    BN_free(result);					\
 	    ossl_raise(eBNError, NULL);				\
 	}							\
-	WrapBN(klass, obj, result);				\
+	SetBN(obj, result);					\
 	return obj;						\
     }
+
+/*
+ * Document-method: OpenSSL::BN.rand_range
+ *   BN.rand_range(range) -> aBN
+ *
+ */
 BIGNUM_RAND_RANGE(rand)
+
+/*
+ * Document-method: OpenSSL::BN.pseudo_rand_range
+ *   BN.pseudo_rand_range(range) -> aBN
+ *
+ */
 BIGNUM_RAND_RANGE(pseudo_rand)
 
 /*
@@ -646,6 +762,7 @@ ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
 	add = GetBNPtr(vadd);
 	rem = NIL_P(vrem) ? NULL : GetBNPtr(vrem);
     }
+    obj = NewBN(klass);
     if (!(result = BN_new())) {
 	ossl_raise(eBNError, NULL);
     }
@@ -653,17 +770,12 @@ ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
 	BN_free(result);
 	ossl_raise(eBNError, NULL);
     }
-    WrapBN(klass, obj, result);
+    SetBN(obj, result);
 
     return obj;
 }
 
 #define BIGNUM_NUM(func)			\
-    /*							\
-     * call-seq:					\
-     *   bn.##func -> integer				\
-     *							\
-     */							\
     static VALUE 				\
     ossl_bn_##func(VALUE self)			\
     {						\
@@ -671,7 +783,17 @@ ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
 	GetBN(self, bn);			\
 	return INT2FIX(BN_##func(bn));		\
     }
+
+/*
+ * Document-method: OpenSSL::BN#num_bytes
+ *   bn.num_bytes => integer
+ */
 BIGNUM_NUM(num_bytes)
+
+/*
+ * Document-method: OpenSSL::BN#num_bits
+ *   bn.num_bits => integer
+ */
 BIGNUM_NUM(num_bits)
 
 static VALUE
@@ -693,11 +815,6 @@ ossl_bn_copy(VALUE self, VALUE other)
 }
 
 #define BIGNUM_CMP(func)				\
-    /*							\
-     * call-seq:					\
-     *   bn.##func(bn2) -> integer			\
-     *							\
-     */							\
     static VALUE					\
     ossl_bn_##func(VALUE self, VALUE other)		\
     {							\
@@ -705,9 +822,30 @@ ossl_bn_copy(VALUE self, VALUE other)
 	GetBN(self, bn1);				\
 	return INT2FIX(BN_##func(bn1, bn2));		\
     }
+
+/*
+ * Document-method: OpenSSL::BN#cmp
+ *   bn.cmp(bn2) => integer
+ */
+/*
+ * Document-method: OpenSSL::BN#<=>
+ *   bn <=> bn2 => integer
+ */
 BIGNUM_CMP(cmp)
+
+/*
+ * Document-method: OpenSSL::BN#ucmp
+ *   bn.ucmp(bn2) => integer
+ */
 BIGNUM_CMP(ucmp)
 
+/*
+ *  call-seq:
+ *     big.eql?(obj) => true or false
+ *
+ *  Returns <code>true</code> only if <i>obj</i> is a
+ *  <code>Bignum</code> with the same value as <i>big</i>. Contrast this
+ */
 static VALUE
 ossl_bn_eql(VALUE self, VALUE other)
 {
@@ -912,4 +1050,3 @@ Init_ossl_bn(void)
      */
     rb_define_method(cBN, "prime_fasttest?", ossl_bn_is_prime_fasttest, -1);
 }
-

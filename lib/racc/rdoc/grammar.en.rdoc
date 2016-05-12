@@ -20,7 +20,7 @@ The class block is formed like this:
     [token declarations]
     [expected number of S/R conflicts]
     [options]
-    [semantic value convertion]
+    [semantic value conversion]
     [start rule]
   rule
     GRAMMARS
@@ -29,7 +29,7 @@ CLASS_NAME is a name of parser class. This is the name of generating parser
 class.
 
 If CLASS_NAME includes '::', Racc outputs module clause. For example, writing
-"class M::C" causes creating the code bellow:
+"class M::C" causes creating the code below:
 
   module M
     class C
@@ -215,5 +215,5 @@ Format of user code is like this:
        :
        :
 
-If four '-' exist on line head, Racc treat it as beginning of user code block.
-The name of user code block must be one word.
+If four '-' exist on the line head, Racc treats it as the beginning of the
+user code block.  The name of the user code block must be one word.

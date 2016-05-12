@@ -68,6 +68,7 @@ static const char *abbr_months[] = {
 static void
 s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 {
+    VALUE vbuf = 0;
     VALUE c = Qnil;
 
     if (!RB_TYPE_P(m, T_STRING))
@@ -164,10 +165,11 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	{
 	    char *buf;
 
-	    buf = ALLOCA_N(char, ep - bp + 1);
+	    buf = ALLOCV_N(char, vbuf, ep - bp + 1);
 	    memcpy(buf, bp, ep - bp);
 	    buf[ep - bp] = '\0';
 	    iy = cstr2num(buf);
+	    ALLOCV_END(vbuf);
 	}
 	set_hash("year", iy);
     }
@@ -189,10 +191,11 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	{
 	    char *buf;
 
-	    buf = ALLOCA_N(char, ep - bp + 1);
+	    buf = ALLOCV_N(char, vbuf, ep - bp + 1);
 	    memcpy(buf, bp, ep - bp);
 	    buf[ep - bp] = '\0';
 	    im = cstr2num(buf);
+	    ALLOCV_END(vbuf);
 	}
 	set_hash("mon", im);
     }
@@ -211,10 +214,11 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	{
 	    char *buf;
 
-	    buf = ALLOCA_N(char, ep - bp + 1);
+	    buf = ALLOCV_N(char, vbuf, ep - bp + 1);
 	    memcpy(buf, bp, ep - bp);
 	    buf[ep - bp] = '\0';
 	    id = cstr2num(buf);
+	    ALLOCV_END(vbuf);
 	}
 	set_hash("mday", id);
     }
@@ -420,6 +424,7 @@ VALUE
 date_zone_to_diff(VALUE str)
 {
     VALUE offset = Qnil;
+    VALUE vbuf = 0;
 
     long l, i;
     char *s, *dest, *d;
@@ -428,7 +433,7 @@ date_zone_to_diff(VALUE str)
     l = RSTRING_LEN(str);
     s = RSTRING_PTR(str);
 
-    dest = d = ALLOCA_N(char, l + 1);
+    dest = d = ALLOCV_N(char, vbuf, l + 1);
 
     for (i = 0; i < l; i++) {
 	if (isspace((unsigned char)s[i]) || s[i] == '\0') {
@@ -525,13 +530,13 @@ date_zone_to_diff(VALUE str)
 
 		str = rb_str_new2(s);
 
-		if (p = strchr(s, ':')) {
+		if ((p = strchr(s, ':')) != NULL) {
 		    hour = rb_str_new(s, p - s);
 		    s = ++p;
-		    if (p = strchr(s, ':')) {
+		    if ((p = strchr(s, ':')) != NULL) {
 			min = rb_str_new(s, p - s);
 			s = ++p;
-			if (p = strchr(s, ':')) {
+			if ((p = strchr(s, ':')) != NULL) {
 			    sec = rb_str_new(s, p - s);
 			}
 			else
@@ -543,9 +548,10 @@ date_zone_to_diff(VALUE str)
 		    goto num;
 		}
 		if (strpbrk(RSTRING_PTR(str), ",.")) {
+		    VALUE astr = 0;
 		    char *a, *b;
 
-		    a = ALLOCA_N(char, RSTRING_LEN(str) + 1);
+		    a = ALLOCV_N(char, astr, RSTRING_LEN(str) + 1);
 		    strcpy(a, RSTRING_PTR(str));
 		    b = strpbrk(a, ",.");
 		    *b = '\0';
@@ -557,6 +563,7 @@ date_zone_to_diff(VALUE str)
 				 f_expt(INT2FIX(10),
 					LONG2NUM((long)strlen(b)))),
 				INT2FIX(60));
+		    ALLOCV_END(astr);
 		    goto num;
 		}
 		{
@@ -605,6 +612,7 @@ date_zone_to_diff(VALUE str)
     }
     RB_GC_GUARD(str);
   ok:
+    ALLOCV_END(vbuf);
     return offset;
 }
 
@@ -1975,7 +1983,8 @@ parse_ddd_cb(VALUE m, VALUE hash)
 	set_hash("zone", s5);
 
 	if (*cs5 == '[') {
-	    char *buf = ALLOCA_N(char, l5 + 1);
+	    VALUE vbuf = 0;
+	    char *buf = ALLOCV_N(char, vbuf, l5 + 1);
 	    char *s1, *s2, *s3;
 	    VALUE zone;
 
@@ -1997,6 +2006,7 @@ parse_ddd_cb(VALUE m, VALUE hash)
 	    if (isdigit((unsigned char)*s1))
 		*--s1 = '+';
 	    set_hash("offset", date_zone_to_diff(rb_str_new2(s1)));
+	    ALLOCV_END(vbuf);
 	}
 	RB_GC_GUARD(s5);
     }

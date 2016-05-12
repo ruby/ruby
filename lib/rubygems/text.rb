@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems'
 
 ##
@@ -43,11 +44,9 @@ module Gem::Text
     t = str2
     n = s.length
     m = t.length
-    max = n/2
 
     return m if (0 == n)
     return n if (0 == m)
-    return n if (n - m).abs > max
 
     d = (0..m).to_a
     x = nil
@@ -72,4 +71,3 @@ module Gem::Text
     return x
   end
 end
-

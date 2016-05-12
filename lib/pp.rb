@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'prettyprint'
 
 module Kernel
@@ -9,7 +11,7 @@ module Kernel
   #
   # See the PP module for more information.
   def pretty_inspect
-    PP.pp(self, '')
+    PP.pp(self, ''.dup)
   end
 
   private
@@ -347,7 +349,7 @@ class PP < PrettyPrint
       if /\(PP::ObjectMixin\)#/ =~ Object.instance_method(:method).bind(self).call(:pretty_print).inspect
         raise "pretty_print is not overridden for #{self.class}"
       end
-      PP.singleline_pp(self, '')
+      PP.singleline_pp(self, ''.dup)
     end
   end
 end

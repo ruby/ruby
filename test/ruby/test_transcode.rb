@@ -1,4 +1,5 @@
 # encoding: ASCII-8BIT   # make sure this runs in binary mode
+# frozen_string_literal: false
 # some of the comments are in UTF-8
 
 require 'test/unit'
@@ -2019,6 +2020,13 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u4e17", "\x81\x40", 'Big5-UAO') # 丗
   end
 
+  def test_EBCDIC
+    check_both_ways("abcdeABCDE", "\x81\x82\x83\x84\x85\xC1\xC2\xC3\xC4\xC5", 'IBM037')
+    check_both_ways("aijrszAIJRSZ09", "\x81\x89\x91\x99\xA2\xA9\xC1\xC9\xD1\xD9\xE2\xE9\xF0\xF9", 'IBM037')
+    check_both_ways("Matz", "\xD4\x81\xA3\xA9", 'IBM037')
+    check_both_ways("D\u00FCrst", "\xC4\xDC\x99\xA2\xA3", 'IBM037') # Dürst
+  end
+
   def test_nothing_changed
     a = "James".force_encoding("US-ASCII")
     b = a.encode("Shift_JIS")
@@ -2090,5 +2098,32 @@ class TestTranscode < Test::Unit::TestCase
     result = assert_nothing_raised(TypeError, bug) {break "test".encode(Encoding::UTF_32)}
     assert_equal("\x00\x00\xFE\xFF\x00\x00\x00t\x00\x00\x00e\x00\x00\x00s\x00\x00\x00t", result.b, bug)
     end;
+  end
+
+  def test_loading_race
+    assert_separately([], <<-'end;') #do
+      bug11277 = '[ruby-dev:49106] [Bug #11277]'
+      num = 2
+      th = (0...num).map do |i|
+        Thread.new {"\u3042".encode("EUC-JP")}
+      end
+      result = nil
+      assert_warning("", bug11277) do
+        assert_nothing_raised(Encoding::ConverterNotFoundError, bug11277) do
+          result = th.map(&:value)
+        end
+      end
+      expected = "\xa4\xa2".force_encoding(Encoding::EUC_JP)
+      assert_equal([expected]*num, result, bug11277)
+    end;
+  end
+
+  def test_universal_newline
+    bug11324 = '[ruby-core:69841] [Bug #11324]'
+    usascii = Encoding::US_ASCII
+    s = "A\nB\r\nC".force_encoding(usascii)
+    assert_equal("A\nB\nC", s.encode(usascii, universal_newline: true), bug11324)
+    assert_equal("A\nB\nC", s.encode(usascii, universal_newline: true, undef: :replace), bug11324)
+    assert_equal("A\nB\nC", s.encode(usascii, universal_newline: true, undef: :replace, replace: ''), bug11324)
   end
 end

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'rss/image'
 require 'rss/maker/1.0'
 require 'rss/maker/dublincore'

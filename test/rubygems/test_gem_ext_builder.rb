@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/ext'
 require 'rubygems/installer'
@@ -133,6 +134,11 @@ install:
   end
 
   def test_build_extensions_with_gemhome_with_space
+    # Details: https://github.com/rubygems/rubygems/issues/977#issuecomment-171544940
+    if win_platform? && RUBY_VERSION <= '2.0'
+      skip 'gemhome with spaces does not work with Ruby 1.9.x on Windows'
+    end
+
     new_gemhome = File.join @tempdir, 'gem home'
     File.rename(@gemhome, new_gemhome)
     @gemhome = new_gemhome
@@ -146,6 +152,8 @@ install:
   def test_build_extensions_install_ext_only
     class << Gem
       alias orig_install_extension_in_lib install_extension_in_lib
+
+      remove_method :install_extension_in_lib
 
       def Gem.install_extension_in_lib
         false
@@ -331,4 +339,3 @@ install:
   end
 
 end
-

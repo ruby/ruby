@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "net/imap"
 require "test/unit"
 
@@ -26,13 +28,13 @@ class IMAPTest < Test::Unit::TestCase
     assert_equal("foo", Net::IMAP.encode_utf7("foo"))
     assert_equal("&-", Net::IMAP.encode_utf7("&"))
 
-    utf8 = "\357\274\241\357\274\242\357\274\243".force_encoding("UTF-8")
+    utf8 = "\357\274\241\357\274\242\357\274\243".dup.force_encoding("UTF-8")
     s = Net::IMAP.encode_utf7(utf8)
     assert_equal("&,yH,Iv8j-", s)
     s = Net::IMAP.encode_utf7("foo&#{utf8}-bar".encode("EUC-JP"))
     assert_equal("foo&-&,yH,Iv8j--bar", s)
 
-    utf8 = "\343\201\202&".force_encoding("UTF-8")
+    utf8 = "\343\201\202&".dup.force_encoding("UTF-8")
     s = Net::IMAP.encode_utf7(utf8)
     assert_equal("&MEI-&-", s)
     s = Net::IMAP.encode_utf7(utf8.encode("EUC-JP"))
@@ -44,7 +46,7 @@ class IMAPTest < Test::Unit::TestCase
     assert_equal("&-", Net::IMAP.decode_utf7("&--"))
 
     s = Net::IMAP.decode_utf7("&,yH,Iv8j-")
-    utf8 = "\357\274\241\357\274\242\357\274\243".force_encoding("UTF-8")
+    utf8 = "\357\274\241\357\274\242\357\274\243".dup.force_encoding("UTF-8")
     assert_equal(utf8, s)
   end
 
@@ -277,6 +279,63 @@ class IMAPTest < Test::Unit::TestCase
       assert_raise(Net::IMAP::Error) do
         imap.idle_done
       end
+    ensure
+      imap.disconnect if imap
+    end
+  end
+
+  def test_idle_timeout
+    server = create_tcp_server
+    port = server.addr[1]
+    requests = []
+    @threads << Thread.start do
+      sock = server.accept
+      begin
+        sock.print("* OK test server\r\n")
+        requests.push(sock.gets)
+        sock.print("+ idling\r\n")
+        sock.print("* 3 EXISTS\r\n")
+        sock.print("* 2 EXPUNGE\r\n")
+        requests.push(sock.gets)
+        sock.print("RUBY0001 OK IDLE terminated\r\n")
+        sock.gets
+        sock.print("* BYE terminating connection\r\n")
+        sock.print("RUBY0002 OK LOGOUT completed\r\n")
+      ensure
+        sock.close
+        server.close
+      end
+    end
+
+    begin
+      imap = Net::IMAP.new(SERVER_ADDR, :port => port)
+      responses = []
+      Thread.pass
+      imap.idle(0.2) do |res|
+        responses.push(res)
+      end
+      # There is no gurantee that this thread has received all the responses,
+      # so check the response length.
+      if responses.length > 0
+        assert_instance_of(Net::IMAP::ContinuationRequest, responses[0])
+        if responses.length > 1
+          assert_equal("EXISTS", responses[1].name)
+          assert_equal(3, responses[1].data)
+          if responses.length > 2
+            assert_equal("EXPUNGE", responses[2].name)
+            assert_equal(2, responses[2].data)
+          end
+        end
+      end
+      # Also, there is no gurantee that the server thread has stored
+      # all the requests into the array, so check the length.
+      if requests.length > 0
+        assert_equal("RUBY0001 IDLE\r\n", requests[0])
+        if requests.length > 1
+          assert_equal("DONE\r\n", requests[1])
+        end
+      end
+      imap.logout
     ensure
       imap.disconnect if imap
     end

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tkextlib/blt/tree.rb
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
@@ -635,7 +636,7 @@ module Tk::BLT
       }
     end
 
-    def initialzie(name = nil)
+    def initialize(name = nil)
       if name
         @path = @id = name
       else

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # = open3.rb: Popen, but with stderr, too
 #
@@ -190,6 +192,10 @@ module Open3
   module_function :popen2e
 
   def popen_run(cmd, opts, child_io, parent_io) # :nodoc:
+    if last = Hash.try_convert(cmd.last)
+      opts = opts.merge(last)
+      cmd.pop
+    end
     pid = spawn(*cmd, opts)
     wait_thr = Process.detach(pid)
     child_io.each {|io| io.close }

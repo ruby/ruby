@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: false
 require "tkcanvas"
 
 def optionMenu(menubutton, varName, firstValue, *rest)

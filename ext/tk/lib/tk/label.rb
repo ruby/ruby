@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/label.rb : treat label widget
 #

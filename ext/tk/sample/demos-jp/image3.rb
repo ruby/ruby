@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# frozen_string_literal: false
 # image3.rb
 #
 # This demonstration script creates a simple collection of widgets
@@ -32,7 +33,7 @@ end
 
 # selectAndLoadDir3 --
 # This procedure pops up a dialog to ask for a directory to load into
-# the listobx and (if the user presses OK) reloads the directory
+# the listbox and (if the user presses OK) reloads the directory
 # listbox from the directory named in the demo's entry.
 #
 # Arguments:

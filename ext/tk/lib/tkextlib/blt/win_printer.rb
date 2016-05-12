@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tkextlib/blt/win_printer.rb
 #

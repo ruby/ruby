@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby -w
 # encoding: UTF-8
+# frozen_string_literal: false
 
 # tc_table.rb
 #
@@ -66,6 +67,9 @@ class TestCSV::Table < TestCSV
     # by row
     @rows.each_index { |i| assert_equal(@rows[i], @table[i]) }
     assert_equal(nil, @table[100])  # empty row
+
+    # by row with Range
+    assert_equal([@table[1], @table[2]], @table[1..2])
 
     # by col
     @rows.first.headers.each do |header|

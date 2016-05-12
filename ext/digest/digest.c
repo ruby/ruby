@@ -124,6 +124,8 @@ hexencode_str_new(VALUE str_digest)
         p[i + i + 1] = hex[byte & 0x0f];
     }
 
+    RB_GC_GUARD(str_digest);
+
     return str;
 }
 
@@ -565,10 +567,9 @@ rb_digest_base_alloc(VALUE klass)
 
     algo = get_digest_base_metadata(klass);
 
-    pctx = xmalloc(algo->ctx_size);
+    obj = rb_data_typed_object_zalloc(klass, algo->ctx_size, &digest_type);
+    pctx = RTYPEDDATA_DATA(obj);
     algo_init(algo, pctx);
-
-    obj = TypedData_Wrap_Struct(klass, &digest_type, pctx);
 
     return obj;
 }
@@ -624,6 +625,7 @@ rb_digest_base_update(VALUE self, VALUE str)
 
     StringValue(str);
     algo->update_func(pctx, (unsigned char *)RSTRING_PTR(str), RSTRING_LEN(str));
+    RB_GC_GUARD(str);
 
     return self;
 }

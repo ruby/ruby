@@ -48,7 +48,7 @@ extern "C" {
 RUBY_SYMBOL_EXPORT_BEGIN
 
 #define DECIMAL_SIZE_OF_BITS(n) (((n) * 3010 + 9998) / 9999)
-/* an approximation of ceil(n * log10(2)), upto 65536 at least */
+/* an approximation of ceil(n * log10(2)), up to 65536 at least */
 
 #define scan_oct(s,l,e) ((int)ruby_scan_oct((s),(l),(e)))
 unsigned long ruby_scan_oct(const char *, size_t, size_t *);
@@ -79,14 +79,6 @@ char *ruby_getcwd(void);
 double ruby_strtod(const char *, char **);
 #undef strtod
 #define strtod(s,e) ruby_strtod((s),(e))
-
-#if defined _MSC_VER && _MSC_VER >= 1300
-#pragma warning(push)
-#pragma warning(disable:4723)
-#endif
-#if defined _MSC_VER && _MSC_VER >= 1300
-#pragma warning(pop)
-#endif
 
 void ruby_each_words(const char *, void (*)(const char*, int, void*), void *);
 

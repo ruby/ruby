@@ -1,5 +1,7 @@
 # -*- mode: ruby; coding: us-ascii -*-
 firstline, predefined = __LINE__+1, %[\
+  max
+  min
   freeze
   inspect
   intern
@@ -60,6 +62,47 @@ firstline, predefined = __LINE__+1, %[\
   core#hash_merge_ary
   core#hash_merge_ptr
   core#hash_merge_kwd
+
+  -                                                     debug#created_info
+
+  $_                                                    LASTLINE
+  $~                                                    BACKREF
+]
+
+# VM ID         OP      Parser Token
+token_ops = %[\
+  Dot2          ..      DOT2
+  Dot3          ...     DOT3
+  UPlus         +@      UPLUS
+  UMinus        -@      UMINUS
+  Pow           **      POW
+  DSTAR         **
+  Cmp           <=>     CMP
+  PLUS          +
+  MINUS         -
+  MULT          *
+  DIV           /
+  MOD           %
+  LTLT          <<      LSHFT
+  GTGT          >>      RSHFT
+  LT            <
+  LE            <=      LEQ
+  GT            >
+  GE            >=      GEQ
+  Eq            ==      EQ
+  Eqq           ===     EQQ
+  Neq           !=      NEQ
+  Not           !
+  Backquote     `
+  EqTilde       =~      MATCH
+  NeqTilde      !~      NMATCH
+  AREF          []
+  ASET          []=
+  COLON2        ::
+  COLON3        ::
+  ANDOP         &&
+  OROP          ||
+  ANDDOT        &.
 ]
 
 class KeywordError < RuntimeError
@@ -76,6 +119,7 @@ global_ids = []
 const_ids = []
 class_ids = []
 attrset_ids = []
+token_op_ids = []
 names = {}
 predefined.split(/^/).each_with_index do |line, num|
   next if /^#/ =~ line
@@ -92,6 +136,10 @@ predefined.split(/^/).each_with_index do |line, num|
     token.sub!(/\A@/, "_I_")
     token.gsub!(/\W+/, "")
   end
+  if name == '-'
+    preserved_ids << token
+    next
+  end
   if prev = names[name]
     KeywordError.raise("#{name} is already registered at line #{prev+firstline}", firstline+num)
   end
@@ -102,13 +150,21 @@ predefined.split(/^/).each_with_index do |line, num|
   case name
   when /\A[A-Z]\w*\z/; const_ids
   when /\A(?!\d)\w+\z/; local_ids
-  when /\A\$(?:\d+|(?!\d)\w+)\z/; global_ids
+  when /\A\$(?:\d+|(?!\d)\w+|\W)\z/; global_ids
   when /\A@@(?!\d)\w+\z/; class_ids
   when /\A@(?!\d)\w+\z/; instance_ids
   when /\A((?!\d)\w+)=\z/; attrset_ids
   else preserved_ids
   end << token
   predefined_ids[token] = name
+end
+token_ops.split(/^/).each do |line|
+  next if /^#/ =~ line
+  line.sub!(/\s+#.*/, '')
+  id, op, token = line.split
+  next unless id and op
+  token ||= (id unless /\A\W\z/ =~ op)
+  token_op_ids << [id, op, token]
 end
 {
   "LOCAL" => local_ids,
@@ -119,4 +175,5 @@ end
   "ATTRSET" => attrset_ids,
   :preserved => preserved_ids,
   :predefined => predefined_ids,
+  :token_op => token_op_ids,
 }

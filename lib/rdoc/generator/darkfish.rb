@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # -*- mode: ruby; ruby-indent-level: 2; tab-width: 2 -*-
 
 require 'erb'

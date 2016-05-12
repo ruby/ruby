@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # The Resolver::SpecSpecification contains common functionality for
 # Resolver specifications that are backed by a Gem::Specification.

@@ -1,5 +1,6 @@
+# frozen_string_literal: false
 require 'test/unit'
-require "-test-/string/string"
+require "-test-/string"
 
 class Test_StringEncStrBufCat < Test::Unit::TestCase
   Bug6509 = '[ruby-dev:45688]'

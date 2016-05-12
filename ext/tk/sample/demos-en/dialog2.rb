@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # a dialog box with a global grab (called by 'widget')
 #

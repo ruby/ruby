@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "test/unit"
 
 class TestCP949 < Test::Unit::TestCase

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 
 def demoExplorerAux(t, dir_proc, file_proc)
   base_dir = File.dirname(File.dirname(@ScriptDir))

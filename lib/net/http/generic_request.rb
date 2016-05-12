@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # HTTPGenericRequest is the parent of the HTTPRequest class.
 # Do not use this directly; use a subclass of HTTPRequest.
 #
@@ -309,7 +310,7 @@ class Net::HTTPGenericRequest
   def wait_for_continue(sock, ver)
     if ver >= '1.1' and @header['expect'] and
         @header['expect'].include?('100-continue')
-      if IO.select([sock.io], nil, nil, sock.continue_timeout)
+      if sock.io.to_io.wait_readable(sock.continue_timeout)
         res = Net::HTTPResponse.read_new(sock)
         unless res.kind_of?(Net::HTTPContinue)
           res.decode_content = @decode_content

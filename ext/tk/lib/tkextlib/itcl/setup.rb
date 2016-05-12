@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  setup.rb   --   setup script before calling TkPackage.require()
 #

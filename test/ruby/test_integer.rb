@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestInteger < Test::Unit::TestCase
@@ -97,31 +98,13 @@ class TestInteger < Test::Unit::TestCase
     assert_raise(Encoding::CompatibilityError, bug6192) {Integer("0".encode("utf-32be"))}
     assert_raise(Encoding::CompatibilityError, bug6192) {Integer("0".encode("utf-32le"))}
     assert_raise(Encoding::CompatibilityError, bug6192) {Integer("0".encode("iso-2022-jp"))}
+
+    assert_raise_with_message(ArgumentError, /\u{1f4a1}/) {Integer("\u{1f4a1}")}
   end
 
   def test_int_p
     assert_not_predicate(1.0, :integer?)
     assert_predicate(1, :integer?)
-  end
-
-  def test_odd_p_even_p
-    Fixnum.class_eval do
-      alias odd_bak odd?
-      alias even_bak even?
-      remove_method :odd?, :even?
-    end
-
-    assert_predicate(1, :odd?)
-    assert_not_predicate(2, :odd?)
-    assert_not_predicate(1, :even?)
-    assert_predicate(2, :even?)
-
-  ensure
-    Fixnum.class_eval do
-      alias odd? odd_bak
-      alias even? even_bak
-      remove_method :odd_bak, :even_bak
-    end
   end
 
   def test_succ
@@ -184,26 +167,111 @@ class TestInteger < Test::Unit::TestCase
     end
   end
 
+  def assert_int_equal(expected, result, mesg = nil)
+    assert_kind_of(Integer, result, mesg)
+    assert_equal(expected, result, mesg)
+  end
+
+  def assert_float_equal(expected, result, mesg = nil)
+    assert_kind_of(Float, result, mesg)
+    assert_equal(expected, result, mesg)
+  end
+
   def test_round
-    assert_equal(11111, 11111.round)
-    assert_equal(Fixnum, 11111.round.class)
-    assert_equal(11111, 11111.round(0))
-    assert_equal(Fixnum, 11111.round(0).class)
+    assert_int_equal(11111, 11111.round)
+    assert_int_equal(11111, 11111.round(0))
 
-    assert_equal(11111.0, 11111.round(1))
-    assert_equal(Float, 11111.round(1).class)
-    assert_equal(11111.0, 11111.round(2))
-    assert_equal(Float, 11111.round(2).class)
+    assert_float_equal(11111.0, 11111.round(1))
+    assert_float_equal(11111.0, 11111.round(2))
 
-    assert_equal(11110, 11111.round(-1))
-    assert_equal(Fixnum, 11111.round(-1).class)
-    assert_equal(11100, 11111.round(-2))
-    assert_equal(Fixnum, 11111.round(-2).class)
+    assert_int_equal(11110, 11111.round(-1))
+    assert_int_equal(11100, 11111.round(-2))
+    assert_int_equal(+200, +249.round(-2))
+    assert_int_equal(+300, +250.round(-2))
+    assert_int_equal(-200, -249.round(-2))
+    assert_int_equal(-300, -250.round(-2))
+    assert_int_equal(+30 * 10**70, (+25 * 10**70).round(-71))
+    assert_int_equal(-30 * 10**70, (-25 * 10**70).round(-71))
+    assert_int_equal(+20 * 10**70, (+25 * 10**70 - 1).round(-71))
+    assert_int_equal(-20 * 10**70, (-25 * 10**70 + 1).round(-71))
 
-    assert_equal(1111_1111_1111_1111_1111_1111_1111_1110, 1111_1111_1111_1111_1111_1111_1111_1111.round(-1))
-    assert_equal(Bignum, 1111_1111_1111_1111_1111_1111_1111_1111.round(-1).class)
-    assert_equal(-1111_1111_1111_1111_1111_1111_1111_1110, (-1111_1111_1111_1111_1111_1111_1111_1111).round(-1))
-    assert_equal(Bignum, (-1111_1111_1111_1111_1111_1111_1111_1111).round(-1).class)
+    assert_int_equal(1111_1111_1111_1111_1111_1111_1111_1110, 1111_1111_1111_1111_1111_1111_1111_1111.round(-1))
+    assert_int_equal(-1111_1111_1111_1111_1111_1111_1111_1110, (-1111_1111_1111_1111_1111_1111_1111_1111).round(-1))
+  end
+
+  def test_floor
+    assert_int_equal(11111, 11111.floor)
+    assert_int_equal(11111, 11111.floor(0))
+
+    assert_float_equal(11111.0, 11111.floor(1))
+    assert_float_equal(11111.0, 11111.floor(2))
+
+    assert_int_equal(11110, 11110.floor(-1))
+    assert_int_equal(11110, 11119.floor(-1))
+    assert_int_equal(11100, 11100.floor(-2))
+    assert_int_equal(11100, 11199.floor(-2))
+    assert_int_equal(0, 11111.floor(-5))
+    assert_int_equal(+200, +299.floor(-2))
+    assert_int_equal(+300, +300.floor(-2))
+    assert_int_equal(-300, -299.floor(-2))
+    assert_int_equal(-300, -300.floor(-2))
+    assert_int_equal(+20 * 10**70, (+25 * 10**70).floor(-71))
+    assert_int_equal(-30 * 10**70, (-25 * 10**70).floor(-71))
+    assert_int_equal(+20 * 10**70, (+25 * 10**70 - 1).floor(-71))
+    assert_int_equal(-30 * 10**70, (-25 * 10**70 + 1).floor(-71))
+
+    assert_int_equal(1111_1111_1111_1111_1111_1111_1111_1110, 1111_1111_1111_1111_1111_1111_1111_1111.floor(-1))
+    assert_int_equal(-1111_1111_1111_1111_1111_1111_1111_1120, (-1111_1111_1111_1111_1111_1111_1111_1111).floor(-1))
+  end
+
+  def test_ceil
+    assert_int_equal(11111, 11111.ceil)
+    assert_int_equal(11111, 11111.ceil(0))
+
+    assert_float_equal(11111.0, 11111.ceil(1))
+    assert_float_equal(11111.0, 11111.ceil(2))
+
+    assert_int_equal(11110, 11110.ceil(-1))
+    assert_int_equal(11120, 11119.ceil(-1))
+    assert_int_equal(11200, 11101.ceil(-2))
+    assert_int_equal(11200, 11200.ceil(-2))
+    assert_int_equal(100000, 11111.ceil(-5))
+    assert_int_equal(300, 299.ceil(-2))
+    assert_int_equal(300, 300.ceil(-2))
+    assert_int_equal(-200, -299.ceil(-2))
+    assert_int_equal(-300, -300.ceil(-2))
+    assert_int_equal(+30 * 10**70, (+25 * 10**70).ceil(-71))
+    assert_int_equal(-20 * 10**70, (-25 * 10**70).ceil(-71))
+    assert_int_equal(+30 * 10**70, (+25 * 10**70 - 1).ceil(-71))
+    assert_int_equal(-20 * 10**70, (-25 * 10**70 + 1).ceil(-71))
+
+    assert_int_equal(1111_1111_1111_1111_1111_1111_1111_1120, 1111_1111_1111_1111_1111_1111_1111_1111.ceil(-1))
+    assert_int_equal(-1111_1111_1111_1111_1111_1111_1111_1110, (-1111_1111_1111_1111_1111_1111_1111_1111).ceil(-1))
+  end
+
+  def test_truncate
+    assert_int_equal(11111, 11111.truncate)
+    assert_int_equal(11111, 11111.truncate(0))
+
+    assert_float_equal(11111.0, 11111.truncate(1))
+    assert_float_equal(11111.0, 11111.truncate(2))
+
+    assert_int_equal(11110, 11110.truncate(-1))
+    assert_int_equal(11110, 11119.truncate(-1))
+    assert_int_equal(11100, 11100.truncate(-2))
+    assert_int_equal(11100, 11199.truncate(-2))
+    assert_int_equal(0, 11111.truncate(-5))
+    assert_int_equal(+200, +299.truncate(-2))
+    assert_int_equal(+300, +300.truncate(-2))
+    assert_int_equal(-200, -299.truncate(-2))
+    assert_int_equal(-300, -300.truncate(-2))
+    assert_int_equal(+20 * 10**70, (+25 * 10**70).truncate(-71))
+    assert_int_equal(-20 * 10**70, (-25 * 10**70).truncate(-71))
+    assert_int_equal(+20 * 10**70, (+25 * 10**70 - 1).truncate(-71))
+    assert_int_equal(-20 * 10**70, (-25 * 10**70 + 1).truncate(-71))
+
+    assert_int_equal(1111_1111_1111_1111_1111_1111_1111_1110, 1111_1111_1111_1111_1111_1111_1111_1111.truncate(-1))
+    assert_int_equal(-1111_1111_1111_1111_1111_1111_1111_1110, (-1111_1111_1111_1111_1111_1111_1111_1111).truncate(-1))
   end
 
   def test_bitwise_and_with_integer_mimic_object

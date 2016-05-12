@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'net/pop'
 require 'test/unit'
 require 'digest/md5'

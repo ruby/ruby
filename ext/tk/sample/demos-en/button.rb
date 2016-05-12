@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # button.rb
 #
 # This demonstration script creates a toplevel window containing

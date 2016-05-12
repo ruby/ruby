@@ -1,7 +1,8 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: false
 #########################################################
 #
-#  set $KCODE to 'utf' for a utf8 charecter
+#  set $KCODE to 'utf' for a utf8 character
 #
 #########################################################
 unless defined?(::Encoding.default_external)

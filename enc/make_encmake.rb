@@ -9,12 +9,15 @@ if $".grep(/mkmf/).empty?
 end
 require 'erb'
 
+CONFIG['srcdir'] = RbConfig::CONFIG['srcdir']
 CONFIG["MAKEDIRS"] ||= '$(MINIRUBY) -run -e mkdir -- -p'
 
 BUILTIN_ENCS = []
 BUILTIN_TRANSES = []
 ENC_PATTERNS = []
 NOENC_PATTERNS = []
+TRANS_PATTERNS = []
+NOTRANS_PATTERNS = []
 module_type = :dynamic
 
 until ARGV.empty?
@@ -31,6 +34,12 @@ until ARGV.empty?
   when /\A--no-encs=/
     NOENC_PATTERNS.concat $'.split
     ARGV.shift
+  when /\A--transes=/
+    TRANS_PATTERNS.concat $'.split
+    ARGV.shift
+  when /\A--no-transes=/
+    NOTRANS_PATTERNS.concat $'.split
+    ARGV.shift
   when /\A--module$/
     ARGV.shift
   when /\A--modulestatic$/
@@ -43,7 +52,7 @@ end
 
 ALPHANUMERIC_ORDER = proc {|e| e.scan(/(\d+)|(\D+)/).map {|n,a| a||[n.size,n.to_i]}.flatten}
 def target_encodings
-  encs = Dir.open($srcdir) {|d| d.grep(/.+\.c\z/)} - BUILTIN_ENCS - ["mktable.c"]
+  encs = Dir.open($srcdir) {|d| d.grep(/.+\.c\z/)} - BUILTIN_ENCS - ["mktable.c", "encinit.c"]
   encs.each {|e| e.chomp!(".c")}
   encs.reject! {|e| !ENC_PATTERNS.any? {|p| File.fnmatch?(p, e)}} if !ENC_PATTERNS.empty?
   encs.reject! {|e| NOENC_PATTERNS.any? {|p| File.fnmatch?(p, e)}}
@@ -51,7 +60,7 @@ def target_encodings
   deps = Hash.new {[]}
   inc_srcs = Hash.new {[]}
   default_deps = %w[regenc.h oniguruma.h config.h defines.h]
-  db = encs.delete("encdb")
+  encs.delete(db = "encdb")
   encs.each do |e|
     File.foreach("#$srcdir/#{e}.c") do |l|
       if /^\s*#\s*include\s+(?:"([^\"]+)"|<(ruby\/\sw+.h)>)/ =~ l
@@ -91,9 +100,14 @@ def target_transcoders
   trans -= BUILTIN_TRANSES
   atrans -= BUILTIN_TRANSES
   trans.uniq!
+  atrans.reject! {|e| !TRANS_PATTERNS.any? {|p| File.fnmatch?(p, e)}} if !TRANS_PATTERNS.empty?
+  atrans.reject! {|e| NOTRANS_PATTERNS.any? {|p| File.fnmatch?(p, e)}}
+  trans.reject! {|e| !TRANS_PATTERNS.any? {|p| File.fnmatch?(p, e)}} if !TRANS_PATTERNS.empty?
+  trans.reject! {|e| NOTRANS_PATTERNS.any? {|p| File.fnmatch?(p, e)}}
   atrans = atrans.sort_by(&ALPHANUMERIC_ORDER)
   trans = trans.sort_by(&ALPHANUMERIC_ORDER)
-  trans.unshift(trans.delete("transdb"))
+  trans.delete(db = "transdb")
+  trans.unshift(db)
   trans.compact!
   trans |= atrans
   trans.map! {|e| "trans/#{e}"}

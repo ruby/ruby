@@ -8,8 +8,14 @@ class TestISeq < Test::Unit::TestCase
     assert_normal_exit('p RubyVM::InstructionSequence.compile("1", "mac", "", 0).to_a', bug5894)
   end
 
+  def compile(src, line = nil, opt = nil)
+    EnvUtil.suppress_warning do
+      ISeq.new(src, __FILE__, __FILE__, line, opt)
+    end
+  end
+
   def lines src
-    body = RubyVM::InstructionSequence.new(src).to_a[13]
+    body = compile(src).to_a[13]
     body.find_all{|e| e.kind_of? Fixnum}
   end
 
@@ -46,18 +52,38 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_unsupport_type
-    ary = RubyVM::InstructionSequence.compile("p").to_a
+    ary = compile("p").to_a
     ary[9] = :foobar
-    assert_raise_with_message(TypeError, /:foobar/) {RubyVM::InstructionSequence.load(ary)}
+    assert_raise_with_message(TypeError, /:foobar/) {ISeq.load(ary)}
+  end if defined?(RubyVM::InstructionSequence.load)
+
+  def test_loaded_cdhash_mark
+    iseq = compile(<<-'end;', __LINE__+1)
+      def bug(kw)
+        case kw
+        when "false" then false
+        when "true"  then true
+        when "nil"   then nil
+        else raise("unhandled argument: #{kw.inspect}")
+        end
+      end
+    end;
+    assert_separately([], <<-"end;")
+      iseq = #{iseq.to_a.inspect}
+      RubyVM::InstructionSequence.load(iseq).eval
+      assert_equal(false, bug("false"))
+      GC.start
+      assert_equal(false, bug("false"))
+    end;
   end if defined?(RubyVM::InstructionSequence.load)
 
   def test_disasm_encoding
     src = "\u{3042} = 1; \u{3042}; \u{3043}"
-    asm = RubyVM::InstructionSequence.compile(src).disasm
+    asm = compile(src).disasm
     assert_equal(src.encoding, asm.encoding)
     assert_predicate(asm, :valid_encoding?)
     src.encode!(Encoding::Shift_JIS)
-    asm = RubyVM::InstructionSequence.compile(src).disasm
+    asm = compile(src).disasm
     assert_equal(src.encoding, asm.encoding)
     assert_predicate(asm, :valid_encoding?)
   end
@@ -65,14 +91,14 @@ class TestISeq < Test::Unit::TestCase
   LINE_BEFORE_METHOD = __LINE__
   def method_test_line_trace
 
-    a = 1
+    _a = 1
 
-    b = 2
+    _b = 2
 
   end
 
   def test_line_trace
-    iseq = ISeq.compile \
+    iseq = compile \
   %q{ a = 1
       b = 2
       c = 3
@@ -127,11 +153,86 @@ class TestISeq < Test::Unit::TestCase
 
   def test_disable_opt
     src = "a['foo'] = a['bar']; 'a'.freeze"
-    _,_,_,_,_,_,_,_,_,_,_,_,_,body= RubyVM::InstructionSequence.compile(src, __FILE__, __FILE__, __LINE__, false).to_a
+    body= compile(src, __LINE__, false).to_a[13]
     body.each{|insn|
-      next if Integer === insn
+      next unless Array === insn
       op = insn.first
       assert(!op.to_s.match(/^opt_/), "#{op}")
     }
+  end
+
+  def test_invalid_source
+    bug11159 = '[ruby-core:69219] [Bug #11159]'
+    assert_raise(TypeError, bug11159) {compile(nil)}
+    assert_raise(TypeError, bug11159) {compile(:foo)}
+    assert_raise(TypeError, bug11159) {compile(1)}
+  end
+
+  def test_frozen_string_literal_compile_option
+    $f = 'f'
+    line = __LINE__ + 2
+    code = <<-'EOS'
+    ['foo', 'foo', "#{$f}foo", "#{'foo'}"]
+    EOS
+    s1, s2, s3, s4 = compile(code, line, {frozen_string_literal: true}).eval
+    assert_predicate(s1, :frozen?)
+    assert_predicate(s2, :frozen?)
+    assert_predicate(s3, :frozen?)
+    assert_predicate(s4, :frozen?)
+  end
+
+  def test_safe_call_chain
+    src = "a&.a&.a&.a&.a&.a"
+    body = compile(src, __LINE__, {peephole_optimization: true}).to_a[13]
+    labels = body.select {|op, arg| op == :branchnil}.map {|op, arg| arg}
+    assert_equal(1, labels.uniq.size)
+  end
+
+  def test_parent_iseq_mark
+    assert_separately([], <<-'end;', timeout: 20)
+      ->{
+        ->{
+          ->{
+            eval <<-EOS
+              class Segfault
+                define_method :segfault do
+                  x = nil
+                  GC.disable
+                  1000.times do |n|
+                    n.times do
+                      x = (foo rescue $!).local_variables
+                    end
+                    GC.start
+                  end
+                  x
+                end
+              end
+            EOS
+          }.call
+        }.call
+      }.call
+      at_exit { assert_equal([:n, :x], Segfault.new.segfault.sort) }
+    end;
+  end
+
+  def test_syntax_error_message
+    feature11951 = '[Feature #11951]'
+
+    src, line = <<-'end;', __LINE__+1
+      def x@;end
+      def y@;end
+    end;
+    e1 = e2 = nil
+    m1 = EnvUtil.verbose_warning do
+      e1 = assert_raise(SyntaxError) do
+        eval(src, nil, __FILE__, line)
+      end
+    end
+    m2 = EnvUtil.verbose_warning do
+      e2 = assert_raise(SyntaxError) do
+        ISeq.new(src, __FILE__, __FILE__, line)
+      end
+    end
+    assert_equal([m1, e1.message], [m2, e2.message], feature11951)
   end
 end

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestKeywordArguments < Test::Unit::TestCase
@@ -537,6 +538,63 @@ class TestKeywordArguments < Test::Unit::TestCase
     end
     assert_raise_with_message(ArgumentError, /unknown keyword: k1/, bug10413) {
       o.foo {raise "unreachable"}
+    }
+  end
+
+  def test_super_with_anon_restkeywords
+    bug10659 = '[ruby-core:67157] [Bug #10659]'
+
+    foo = Class.new do
+      def foo(**h)
+        h
+      end
+    end
+
+    class << (obj = foo.new)
+      def foo(bar: "bar", **)
+        super
+      end
+    end
+
+    assert_nothing_raised(TypeError, bug10659) {
+      assert_equal({:bar => "bar"}, obj.foo, bug10659)
+    }
+  end
+
+  def m(a) yield a end
+
+  def test_nonsymbol_key
+    result = m(["a" => 10]) { |a = nil, **b| [a, b] }
+    assert_equal([{"a" => 10}, {}], result)
+  end
+
+  def method_for_test_to_hash_call_during_setup_complex_parameters k1:, k2:, **rest_kw
+    [k1, k2, rest_kw]
+  end
+
+  def test_to_hash_call_during_setup_complex_parameters
+    sym = "sym_#{Time.now}".to_sym
+    h = method_for_test_to_hash_call_during_setup_complex_parameters k1: "foo", k2: "bar", sym => "baz"
+    assert_equal ["foo", "bar", {sym => "baz"}], h, '[Bug #11027]'
+  end
+
+  class AttrSetTest
+    attr_accessor :foo
+    alias set_foo :foo=
+  end
+
+  def test_attr_set_method_cache
+    obj = AttrSetTest.new
+    h = {a: 1, b: 2}
+    2.times{
+      obj.foo = 1
+      assert_equal(1, obj.foo)
+      obj.set_foo 2
+      assert_equal(2, obj.foo)
+      obj.set_foo(x: 1, y: 2)
+      assert_equal({x: 1, y: 2}, obj.foo)
+      obj.set_foo(x: 1, y: 2, **h)
+      assert_equal({x: 1, y: 2, **h}, obj.foo)
     }
   end
 end

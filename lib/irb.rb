@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   irb.rb - irb main module
 #       $Release Version: 0.9.6 $
@@ -17,8 +18,6 @@ require "irb/extend-command"
 require "irb/ruby-lex"
 require "irb/input-method"
 require "irb/locale"
-
-STDOUT.sync = true
 
 # IRB stands for "interactive Ruby" and is a tool to interactively execute Ruby
 # expressions read from the standard input.
@@ -158,7 +157,7 @@ STDOUT.sync = true
 #     %M    # inspect of main object (self)
 #     %l    # type of string(", ', /, ]), `]' is inner %w[...]
 #     %NNi  # indent level. NN is digits and means as same as printf("%NNd").
-#           # It can be ommited
+#           # It can be omitted
 #     %NNn  # line number.
 #     %%    # %
 #
@@ -330,7 +329,7 @@ STDOUT.sync = true
 #   irb.3(<Foo:0x4010af3c>):003:0> bar #=> bar => nil
 #   # kill jobs 1, 2, and 3
 #   irb.3(<Foo:0x4010af3c>):004:0> kill 1, 2, 3
-#   # list open sesssions, should only include main session
+#   # list open sessions, should only include main session
 #   irb(main):009:0> jobs
 #     #0->irb on main (#<Thread:0x400fb7e4> : running)
 #   # quit irb
@@ -345,7 +344,7 @@ module IRB
 
   # Displays current configuration.
   #
-  # Modifing the configuration is achieved by sending a message to IRB.conf.
+  # Modifying the configuration is achieved by sending a message to IRB.conf.
   #
   # See IRB@Configuration for more information.
   def IRB.conf
@@ -373,6 +372,7 @@ module IRB
 
   # Initializes IRB and creates a new Irb.irb object at the +TOPLEVEL_BINDING+
   def IRB.start(ap_path = nil)
+    STDOUT.sync = true
     $0 = File::basename(ap_path, ".rb") if ap_path
 
     IRB.setup(ap_path)
@@ -525,7 +525,7 @@ module IRB
             print messages.join("\n"), "\n"
             unless lasts.empty?
               printf "... %d levels...\n", levels if levels > 0
-              print lasts.join("\n")
+              print lasts.join("\n"), "\n"
             end
             print "Maybe IRB bug!\n" if irb_bug
           end

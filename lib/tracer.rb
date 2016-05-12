@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #--
 # $Release Version: 0.3$
 # $Revision: 1.12 $

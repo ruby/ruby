@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # encoding: utf-8
+# frozen_string_literal: false
 
 require 'test/unit'
 require File.join(File.dirname(__FILE__), 'setup_variant')
@@ -65,10 +66,10 @@ class TestJSON < Test::Unit::TestCase
     assert_equal([23], parse('[23]'))
     assert_equal([0.23], parse('[0.23]'))
     assert_equal([0.0], parse('[0e0]'))
-    assert_raises(JSON::ParserError) { parse('[+23.2]') }
-    assert_raises(JSON::ParserError) { parse('[+23]') }
-    assert_raises(JSON::ParserError) { parse('[.23]') }
-    assert_raises(JSON::ParserError) { parse('[023]') }
+    assert_raise(JSON::ParserError) { parse('[+23.2]') }
+    assert_raise(JSON::ParserError) { parse('[+23]') }
+    assert_raise(JSON::ParserError) { parse('[.23]') }
+    assert_raise(JSON::ParserError) { parse('[023]') }
     assert_equal_float [3.141], parse('[3.141]')
     assert_equal_float [-3.141], parse('[-3.141]')
     assert_equal_float [3.141], parse('[3141e-3]')
@@ -77,11 +78,11 @@ class TestJSON < Test::Unit::TestCase
     assert_equal_float [3.141], parse('[3141.0E-3]')
     assert_equal_float [-3.141], parse('[-3141.0e-3]')
     assert_equal_float [-3.141], parse('[-3141e-3]')
-    assert_raises(ParserError) { parse('[NaN]') }
+    assert_raise(ParserError) { parse('[NaN]') }
     assert parse('[NaN]', :allow_nan => true).first.nan?
-    assert_raises(ParserError) { parse('[Infinity]') }
+    assert_raise(ParserError) { parse('[Infinity]') }
     assert_equal [1.0/0], parse('[Infinity]', :allow_nan => true)
-    assert_raises(ParserError) { parse('[-Infinity]') }
+    assert_raise(ParserError) { parse('[-Infinity]') }
     assert_equal [-1.0/0], parse('[-Infinity]', :allow_nan => true)
     assert_equal([""], parse('[""]'))
     assert_equal(["foobar"], parse('["foobar"]'))
@@ -95,7 +96,7 @@ class TestJSON < Test::Unit::TestCase
     assert_equal({ "a" => nil }, parse('{"a":null}'))
     assert_equal({ "a" => false }, parse('{   "a"  :  false  }  '))
     assert_equal({ "a" => false }, parse('{"a":false}'))
-    assert_raises(JSON::ParserError) { parse('{false}') }
+    assert_raise(JSON::ParserError) { parse('{false}') }
     assert_equal({ "a" => true }, parse('{"a":true}'))
     assert_equal({ "a" => true }, parse('  { "a" :  true  }   '))
     assert_equal({ "a" => -23 }, parse('  {  "a"  :  -23  }  '))
@@ -380,7 +381,7 @@ EOT
                     *  comment */
 }
 EOT
-    assert_raises(ParserError) { parse(json) }
+    assert_raise(ParserError) { parse(json) }
     json = <<EOT
 {
   "key1":"value1"  /* multi line
@@ -389,7 +390,7 @@ EOT
                    and again, throw an Error */
 }
 EOT
-    assert_raises(ParserError) { parse(json) }
+    assert_raise(ParserError) { parse(json) }
     json = <<EOT
 {
   "key1":"value1"  /*/*/
@@ -425,32 +426,32 @@ EOT
   end
 
   def test_wrong_inputs
-    assert_raises(ParserError) { JSON.parse('"foo"') }
-    assert_raises(ParserError) { JSON.parse('123') }
-    assert_raises(ParserError) { JSON.parse('[] bla') }
-    assert_raises(ParserError) { JSON.parse('[] 1') }
-    assert_raises(ParserError) { JSON.parse('[] []') }
-    assert_raises(ParserError) { JSON.parse('[] {}') }
-    assert_raises(ParserError) { JSON.parse('{} []') }
-    assert_raises(ParserError) { JSON.parse('{} {}') }
-    assert_raises(ParserError) { JSON.parse('[NULL]') }
-    assert_raises(ParserError) { JSON.parse('[FALSE]') }
-    assert_raises(ParserError) { JSON.parse('[TRUE]') }
-    assert_raises(ParserError) { JSON.parse('[07]    ') }
-    assert_raises(ParserError) { JSON.parse('[0a]') }
-    assert_raises(ParserError) { JSON.parse('[1.]') }
-    assert_raises(ParserError) { JSON.parse('     ') }
+    assert_raise(ParserError) { JSON.parse('"foo"') }
+    assert_raise(ParserError) { JSON.parse('123') }
+    assert_raise(ParserError) { JSON.parse('[] bla') }
+    assert_raise(ParserError) { JSON.parse('[] 1') }
+    assert_raise(ParserError) { JSON.parse('[] []') }
+    assert_raise(ParserError) { JSON.parse('[] {}') }
+    assert_raise(ParserError) { JSON.parse('{} []') }
+    assert_raise(ParserError) { JSON.parse('{} {}') }
+    assert_raise(ParserError) { JSON.parse('[NULL]') }
+    assert_raise(ParserError) { JSON.parse('[FALSE]') }
+    assert_raise(ParserError) { JSON.parse('[TRUE]') }
+    assert_raise(ParserError) { JSON.parse('[07]    ') }
+    assert_raise(ParserError) { JSON.parse('[0a]') }
+    assert_raise(ParserError) { JSON.parse('[1.]') }
+    assert_raise(ParserError) { JSON.parse('     ') }
   end
 
   def test_nesting
-    assert_raises(JSON::NestingError) { JSON.parse '[[]]', :max_nesting => 1 }
-    assert_raises(JSON::NestingError) { JSON.parser.new('[[]]', :max_nesting => 1).parse }
+    assert_raise(JSON::NestingError) { JSON.parse '[[]]', :max_nesting => 1 }
+    assert_raise(JSON::NestingError) { JSON.parser.new('[[]]', :max_nesting => 1).parse }
     assert_equal [[]], JSON.parse('[[]]', :max_nesting => 2)
     too_deep = '[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[["Too deep"]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
     too_deep_ary = eval too_deep
-    assert_raises(JSON::NestingError) { JSON.parse too_deep }
-    assert_raises(JSON::NestingError) { JSON.parser.new(too_deep).parse }
-    assert_raises(JSON::NestingError) { JSON.parse too_deep, :max_nesting => 100 }
+    assert_raise(JSON::NestingError) { JSON.parse too_deep }
+    assert_raise(JSON::NestingError) { JSON.parser.new(too_deep).parse }
+    assert_raise(JSON::NestingError) { JSON.parse too_deep, :max_nesting => 100 }
     ok = JSON.parse too_deep, :max_nesting => 101
     assert_equal too_deep_ary, ok
     ok = JSON.parse too_deep, :max_nesting => nil
@@ -459,10 +460,10 @@ EOT
     assert_equal too_deep_ary, ok
     ok = JSON.parse too_deep, :max_nesting => 0
     assert_equal too_deep_ary, ok
-    assert_raises(JSON::NestingError) { JSON.generate [[]], :max_nesting => 1 }
+    assert_raise(JSON::NestingError) { JSON.generate [[]], :max_nesting => 1 }
     assert_equal '[[]]', JSON.generate([[]], :max_nesting => 2)
-    assert_raises(JSON::NestingError) { JSON.generate too_deep_ary }
-    assert_raises(JSON::NestingError) { JSON.generate too_deep_ary, :max_nesting => 100 }
+    assert_raise(JSON::NestingError) { JSON.generate too_deep_ary }
+    assert_raise(JSON::NestingError) { JSON.generate too_deep_ary, :max_nesting => 100 }
     ok = JSON.generate too_deep_ary, :max_nesting => 101
     assert_equal too_deep, ok
     ok = JSON.generate too_deep_ary, :max_nesting => nil
@@ -505,8 +506,8 @@ EOT
     too_deep = '[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
     assert_equal too_deep, JSON.dump(eval(too_deep))
     assert_kind_of String, Marshal.dump(eval(too_deep))
-    assert_raises(ArgumentError) { JSON.dump(eval(too_deep), 100) }
-    assert_raises(ArgumentError) { Marshal.dump(eval(too_deep), 100) }
+    assert_raise(ArgumentError) { JSON.dump(eval(too_deep), 100) }
+    assert_raise(ArgumentError) { Marshal.dump(eval(too_deep), 100) }
     assert_equal too_deep, JSON.dump(eval(too_deep), 101)
     assert_kind_of String, Marshal.dump(eval(too_deep), 101)
     output = StringIO.new
@@ -515,6 +516,12 @@ EOT
     output = StringIO.new
     JSON.dump(eval(too_deep), output, 101)
     assert_equal too_deep, output.string
+  end
+
+  def test_dump_should_modify_defaults
+    max_nesting = JSON.dump_default_options[:max_nesting]
+    JSON.dump([], StringIO.new, 10)
+    assert_equal max_nesting, JSON.dump_default_options[:max_nesting]
   end
 
   def test_big_integers
@@ -544,4 +551,27 @@ EOT
     JSON::Parser.new(source)
     assert_equal Encoding::ASCII_8BIT, source.encoding
   end if defined?(Encoding::ASCII_8BIT)
+
+  def test_error_message_encoding
+    bug10705 = '[ruby-core:67386] [Bug #10705]'
+    json = "\"\xE2\x88\x9A\"".force_encoding(Encoding::UTF_8)
+    e = assert_raise(JSON::ParserError) {
+      JSON.parse(json)
+    }
+    assert_equal(Encoding::UTF_8, e.message.encoding, bug10705)
+    assert_include(e.message, json, bug10705)
+  end if defined?(Encoding::UTF_8)
+
+  if EnvUtil.gc_stress_to_class?
+    def assert_no_memory_leak(code, *rest, **opt)
+      code = "8.times {20_000.times {begin #{code}; rescue NoMemoryError; end}; GC.start}"
+      super(["-rjson/ext/parser"],
+            "GC.add_stress_to_class(JSON::Ext::Parser); "\
+            "#{code}", code, *rest, rss: true, limit: 1.1, **opt)
+    end
+
+    def test_no_memory_leak_allocate
+      assert_no_memory_leak("JSON::Ext::Parser.allocate")
+    end
+  end
 end

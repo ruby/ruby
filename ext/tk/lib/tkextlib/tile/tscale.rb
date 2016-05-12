@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tscale & tprogress widget
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

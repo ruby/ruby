@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby -w
 # encoding: UTF-8
+# frozen_string_literal: false
 
 # tc_row.rb
 #
@@ -63,6 +64,9 @@ class TestCSV::Row < TestCSV
 
     # by index
     assert_equal(3, @row.field(2))
+
+    # by range
+    assert_equal([2,3], @row.field(1..2))
 
     # missing
     assert_nil(@row.field("Missing"))

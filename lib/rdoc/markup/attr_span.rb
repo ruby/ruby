@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 ##
 # An array of attributes which parallels the characters in a string.
 

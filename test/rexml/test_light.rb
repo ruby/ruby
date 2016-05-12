@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require_relative "rexml_test_utils"
 require "rexml/light/node"
 require "rexml/parsers/lightparser"

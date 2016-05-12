@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #               tk/entry.rb - Tk entry classes
 #                       by Yukihiro Matsumoto <matz@caelum.co.jp>

@@ -1,28 +1,40 @@
-baseruby="@BASERUBY@"
+<%
+arg = {}
+while /\A(\w+)=(.*)/ =~ ARGV[0]
+  arg[$1] = $2
+  arg[$1].tr!(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
+  ARGV.shift
+end
+if inc = arg['i']
+  src = inc == '-' ? STDIN.read : File.read(inc)
+  arg['versions'] = version = {}
+  File.read(File.join(arg['srcdir'], 'version.c')).
+    scan(/rb_define_global_const\("(RUBY_\w+)",[^;]*?\bMK(?:INT|STR)\(([^()]*)\)/m) do |n, v|
+    version[n] =
+        eval(src[/\bruby_#{v}(?:\[\])?\s*=\s*((?:"(?:\\.|[^\"\\])*"\s*)*(?=;)|[^{};]+)/m, 1].gsub(/#/, '\\#'))
+  end
+end
+%>baseruby="<%=arg['BASERUBY']%>"
+_\
+=begin
+_=
 ruby="${RUBY-$baseruby}"
-"eval" "{" \
-"`expr \"$ruby\" : echo > /dev/null || echo exec`" \
-"$ruby" '-r"`expr \"$0\" : / > /dev/null || pwd`/${0#/}" "$@";' \
-"}" || "exit" "$?"
-ruby=ruby
+case "$ruby" in "echo "*) $ruby; exit $?;; esac
+case "$0" in /*) r=-r"$0";; *) r=-r"./$0";; esac
+exec $ruby "$r" "$@"
+=end
+=baseruby
 class Object
   remove_const :CROSS_COMPILING if defined?(CROSS_COMPILING)
   CROSS_COMPILING = RUBY_PLATFORM
-  remove_const :RUBY_PLATFORM
-  remove_const :RUBY_VERSION
-  remove_const :RUBY_RELEASE_DATE
-  remove_const :RUBY_DESCRIPTION if defined?(RUBY_DESCRIPTION)
-  RUBY_PLATFORM = "@arch@"
-  RUBY_VERSION = "@RUBY_PROGRAM_VERSION@"
-  RUBY_RELEASE_DATE = "@RUBY_RELEASE_DATE@"
-  RUBY_DESCRIPTION = "ruby #{RUBY_VERSION} (#{RUBY_RELEASE_DATE}) [#{RUBY_PLATFORM}]"
+  constants.grep(/^RUBY_/) {|n| remove_const n}
+% arg['versions'].each {|n, v|
+  <%=n%> = <%=v.inspect%>
+% }
 end
-builddir = File.dirname(__FILE__)
-top_srcdir = "@abs_top_srcdir@"
-if /mingw/ =~ RUBY_PLATFORM
-  # convert MSYS path to Windows path
-  top_srcdir.sub!(/\A\/([a-z])\//, '\\1:/')
-end
-$:.unshift(File.expand_path(builddir))
+builddir = File.dirname(File.expand_path(__FILE__))
+srcdir = "<%=arg['srcdir']%>"
+top_srcdir = File.realpath(srcdir, builddir)
 fake = File.join(top_srcdir, "tool/fake.rb")
 eval(File.read(fake), nil, fake)
+ENV["RUBYOPT"] = ["-r#{__FILE__}", ENV["RUBYOPT"]].compact.join(" ")

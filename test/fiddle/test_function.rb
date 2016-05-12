@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 begin
   require_relative 'helper'
 rescue LoadError
@@ -23,15 +24,15 @@ module Fiddle
     end
 
     def test_argument_errors
-      assert_raises(TypeError) do
+      assert_raise(TypeError) do
         Function.new(@libm['sin'], TYPE_DOUBLE, TYPE_DOUBLE)
       end
 
-      assert_raises(TypeError) do
+      assert_raise(TypeError) do
         Function.new(@libm['sin'], ['foo'], TYPE_DOUBLE)
       end
 
-      assert_raises(TypeError) do
+      assert_raise(TypeError) do
         Function.new(@libm['sin'], [TYPE_DOUBLE], 'foo')
       end
     end
@@ -49,10 +50,10 @@ module Fiddle
       }.new(TYPE_INT, [TYPE_INT])
       func = Function.new(closure, [TYPE_INT], TYPE_INT)
 
-      assert_raises(ArgumentError) do
+      assert_raise(ArgumentError) do
         func.call(1,2,3)
       end
-      assert_raises(ArgumentError) do
+      assert_raise(ArgumentError) do
         func.call
       end
     end
@@ -71,6 +72,25 @@ module Fiddle
       str = f.call(buff, "123")
       assert_equal("123", buff)
       assert_equal("123", str.to_s)
+    end
+
+    def test_nogvl_poll
+      begin
+        poll = @libc['poll']
+      rescue Fiddle::DLError
+        skip 'poll(2) not available'
+      end
+      f = Function.new(poll, [TYPE_VOIDP, TYPE_INT, TYPE_INT], TYPE_INT)
+
+      msec = 200
+      t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC, :millisecond)
+      th = Thread.new { f.call(nil, 0, msec) }
+      n1 = f.call(nil, 0, msec)
+      n2 = th.value
+      t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC, :millisecond)
+      assert_in_delta(msec, t1 - t0, 100, 'slept correct amount of time')
+      assert_equal(0, n1, 'poll(2) called correctly main-thread')
+      assert_equal(0, n2, 'poll(2) called correctly in sub-thread')
     end
 
     def test_no_memory_leak

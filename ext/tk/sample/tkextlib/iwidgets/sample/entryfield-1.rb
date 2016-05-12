@@ -1,7 +1,8 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: false
 #########################################################
 #
-#  use Tk::UTF8_String() for a utf8 charecter
+#  use Tk::UTF8_String() for a utf8 character
 #
 #########################################################
 require 'tk'

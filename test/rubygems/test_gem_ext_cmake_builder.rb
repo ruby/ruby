@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/ext'
 
@@ -5,6 +6,9 @@ class TestGemExtCmakeBuilder < Gem::TestCase
 
   def setup
     super
+
+    # Details: https://github.com/rubygems/rubygems/issues/1270#issuecomment-177368340
+    skip "CmakeBuilder doesn't work on Windows." if Gem.win_platform?
 
     `cmake #{Gem::Ext::Builder.redirector}`
 
@@ -20,7 +24,7 @@ class TestGemExtCmakeBuilder < Gem::TestCase
   def test_self_build
     File.open File.join(@ext, 'CMakeLists.txt'), 'w' do |cmakelists|
       cmakelists.write <<-eo_cmake
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.6)
 install (FILES test.txt DESTINATION bin)
       eo_cmake
     end
@@ -81,4 +85,3 @@ install (FILES test.txt DESTINATION bin)
   end
 
 end
-

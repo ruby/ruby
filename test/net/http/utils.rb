@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'webrick'
 begin
   require "webrick/https"
@@ -35,6 +36,7 @@ module TestNetHTTPUtils
     if @server
       @server.shutdown
       @server_thread.join
+      WEBrick::Utils::TimeoutHandler.terminate
     end
     @log_tester.call(@log) if @log_tester
     # resume global state

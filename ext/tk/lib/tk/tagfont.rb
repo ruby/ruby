@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/tagfont.rb : control font of tags
 #

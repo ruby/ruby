@@ -1,23 +1,26 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'cgi'
 require 'time'
+require_relative 'update_env'
 
 
 class CGIHeaderTest < Test::Unit::TestCase
+  include UpdateEnv
 
 
   def setup
-    @environ = {
+    @environ = {}
+    update_env(
       'SERVER_PROTOCOL' => 'HTTP/1.1',
       'REQUEST_METHOD'  => 'GET',
       'SERVER_SOFTWARE' => 'Apache 2.2.0',
-    }
-    ENV.update(@environ)
+    )
   end
 
 
   def teardown
-    @environ.each do |key, val| ENV.delete(key) end
+    ENV.update(@environ)
   end
 
 

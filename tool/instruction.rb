@@ -453,9 +453,9 @@ class RubyVM
         pops.concat e_pops
         rets.concat e_rets
         defopes.concat e_defs
-        sp_inc += "#{insn.sp_inc}"
+        sp_inc << "#{insn.sp_inc}"
 
-        body += "{ /* unif: #{i} */\n" +
+        body << "{ /* unif: #{i} */\n" +
                 passed_vars.map{|rpvars|
                   pv = rpvars[0]
                   rv = rpvars[1]
@@ -463,15 +463,22 @@ class RubyVM
                 }.join("\n") +
                 "\n" +
                 redef_vars.map{|v, type|
-                  "#define #{v} #{v}_#{i}"
-                }.join("\n") + "\n" +
-                insn.body +
-                passed_vars.map{|rpvars|
-                  "#undef #{rpvars[0][1]}"
+                  "#{type} #{v} = #{v}_#{i};"
+                }.join("\n") + "\n"
+        if line = insn.body.instance_variable_get(:@line_no)
+          file = insn.body.instance_variable_get(:@file)
+          body << "#line #{line+1} \"#{file}\"\n"
+          body << insn.body
+          body << "\n#line __CURRENT_LINE__ \"__CURRENT_FILE__\"\n"
+        else
+          body << insn.body
+        end
+        body << redef_vars.keys.map{|v|
+                  "#{v}_#{i} = #{v};"
                 }.join("\n") +
                 "\n" +
-                redef_vars.keys.map{|v|
-                  "#undef  #{v}"
+                passed_vars.map{|rpvars|
+                  "#undef #{rpvars[0][1]}"
                 }.join("\n") +
                 "\n}\n"
       }
@@ -715,7 +722,7 @@ class RubyVM
         # skip make operands when body has no reference to this operand
         # TODO: really needed?
         re = /\b#{var}\b/n
-        if re =~ insn.body or re =~ insn.sp_inc or insn.rets.any?{|t, v| re =~ v} or re =~ 'ic' or re =~ 'ci'
+        if re =~ insn.body or re =~ insn.sp_inc or insn.rets.any?{|t, v| re =~ v} or re =~ 'ic' or re =~ 'ci' or re =~ 'cc'
           ops << "  #{type} #{var} = (#{type})GET_OPERAND(#{i+1});"
         end
 
@@ -893,7 +900,7 @@ class RubyVM
           commit insn.body
           commit '#line __CURRENT_LINE__ "__CURRENT_FILE__"'
         else
-          insn.body
+          commit insn.body
         end
         make_footer(insn)
       end
@@ -949,6 +956,8 @@ class RubyVM
         "TS_IC"
       when /^CALL_INFO/
         "TS_CALLINFO"
+      when /^CALL_CACHE/
+        "TS_CALLCACHE"
       when /^\.\.\./
         "TS_VARIABLE"
       when /^CDHASH/
@@ -971,6 +980,7 @@ class RubyVM
       'TS_GENTRY'    => 'G',
       'TS_IC'        => 'K',
       'TS_CALLINFO'  => 'C',
+      'TS_CALLCACHE' => 'E',
       'TS_CDHASH'    => 'H',
       'TS_ISEQ'      => 'S',
       'TS_VARIABLE'  => '.',

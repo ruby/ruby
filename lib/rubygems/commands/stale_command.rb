@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/command'
 
 class Gem::Commands::StaleCommand < Gem::Command

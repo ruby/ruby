@@ -14,6 +14,12 @@
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
+#ifndef RARRAY_CONST_PTR
+# define RARRAY_CONST_PTR(ary) RARRAY_PTR(ary)
+#endif
+#ifndef HAVE_RB_FUNCALLV
+# define rb_funcallv rb_funcall2
+#endif
 
 #if defined HAVE_TERMIOS_H
 # include <termios.h>
@@ -50,11 +56,7 @@ typedef struct sgttyb conmode;
 #include <winioctl.h>
 typedef DWORD conmode;
 
-#ifdef HAVE_RB_W32_MAP_ERRNO
 #define LAST_ERROR rb_w32_map_errno(GetLastError())
-#else
-#define LAST_ERROR EBADF
-#endif
 #define SET_LAST_ERROR (errno = LAST_ERROR, 0)
 
 static int
@@ -77,7 +79,33 @@ getattr(int fd, conmode *t)
 #define SET_LAST_ERROR (0)
 #endif
 
-static ID id_getc, id_console, id_close;
+static ID id_getc, id_console, id_close, id_min, id_time;
+#if ENABLE_IO_GETPASS
+static ID id_gets;
+#endif
+
+#ifndef HAVE_RB_F_SEND
+static ID id___send__;
+
+static VALUE
+rb_f_send(int argc, VALUE *argv, VALUE recv)
+{
+    VALUE sym = argv[0];
+    ID vid = rb_check_id(&sym);
+    if (vid) {
+	--argc;
+	++argv;
+    }
+    else {
+	vid = id___send__;
+    }
+    return rb_funcallv(recv, vid, argc, argv);
+}
+#endif
+
+#ifndef HAVE_RB_SYM2STR
+# define rb_sym2str(sym) rb_id2str(SYM2ID(sym))
+#endif
 
 typedef struct {
     int vmin;
@@ -91,8 +119,8 @@ rawmode_opt(int argc, VALUE *argv, rawmode_arg_t *opts)
     VALUE vopts;
     rb_scan_args(argc, argv, "0:", &vopts);
     if (!NIL_P(vopts)) {
-	VALUE vmin = rb_hash_aref(vopts, ID2SYM(rb_intern("min")));
-	VALUE vtime = rb_hash_aref(vopts, ID2SYM(rb_intern("time")));
+	VALUE vmin = rb_hash_aref(vopts, ID2SYM(id_min));
+	VALUE vtime = rb_hash_aref(vopts, ID2SYM(id_time));
 	/* default values by `stty raw` */
 	opts->vmin = 1;
 	opts->vtime = 0;
@@ -262,8 +290,7 @@ ttymode(VALUE io, VALUE (*func)(VALUE), void (*setter)(conmode *, void *), void 
     }
     if (status) {
 	if (status == -1) {
-	    errno = error;
-	    rb_sys_fail(0);
+	    rb_syserr_fail(error, 0);
 	}
 	rb_jump_tag(status);
     }
@@ -361,7 +388,7 @@ console_set_cooked(VALUE io)
 static VALUE
 getc_call(VALUE io)
 {
-    return rb_funcall2(io, id_getc, 0, 0);
+    return rb_funcallv(io, id_getc, 0, 0);
 }
 
 /*
@@ -506,16 +533,16 @@ console_set_winsize(VALUE io, VALUE size)
     int newrow, newcol;
 #endif
     VALUE row, col, xpixel, ypixel;
-#if defined TIOCSWINSZ
+    const VALUE *sz;
     int fd;
-#endif
 
     GetOpenFile(io, fptr);
     size = rb_Array(size);
-    rb_scan_args((int)RARRAY_LEN(size), RARRAY_PTR(size), "22",
-                &row, &col, &xpixel, &ypixel);
-#if defined TIOCSWINSZ
+    rb_check_arity(RARRAY_LENINT(size), 2, 4);
+    sz = RARRAY_CONST_PTR(size);
+    row = sz[0], col = sz[1], xpixel = sz[2], ypixel = sz[3];
     fd = GetWriteFD(fptr);
+#if defined TIOCSWINSZ
     ws.ws_row = ws.ws_col = ws.ws_xpixel = ws.ws_ypixel = 0;
 #define SET(m) ws.ws_##m = NIL_P(m) ? 0 : (unsigned short)NUM2UINT(m)
     SET(row);
@@ -525,24 +552,28 @@ console_set_winsize(VALUE io, VALUE size)
 #undef SET
     if (!setwinsize(fd, &ws)) rb_sys_fail(0);
 #elif defined _WIN32
-    wh = (HANDLE)rb_w32_get_osfhandle(GetReadFD(fptr));
-    newrow = (SHORT)NUM2UINT(row);
-    newcol = (SHORT)NUM2UINT(col);
-    if (!getwinsize(GetReadFD(fptr), &ws)) {
-	rb_sys_fail("GetConsoleScreenBufferInfo");
+    wh = (HANDLE)rb_w32_get_osfhandle(fd);
+#define SET(m) new##m = NIL_P(m) ? 0 : (unsigned short)NUM2UINT(m)
+    SET(row);
+    SET(col);
+#undef SET
+    if (!NIL_P(xpixel)) (void)NUM2UINT(xpixel);
+    if (!NIL_P(ypixel)) (void)NUM2UINT(ypixel);
+    if (!GetConsoleScreenBufferInfo(wh, &ws)) {
+	rb_syserr_fail(LAST_ERROR, "GetConsoleScreenBufferInfo");
     }
     if ((ws.dwSize.X < newcol && (ws.dwSize.X = newcol, 1)) ||
 	(ws.dwSize.Y < newrow && (ws.dwSize.Y = newrow, 1))) {
-	if (!(SetConsoleScreenBufferSize(wh, ws.dwSize) || SET_LAST_ERROR)) {
-	    rb_sys_fail("SetConsoleScreenBufferInfo");
+	if (!SetConsoleScreenBufferSize(wh, ws.dwSize)) {
+	    rb_syserr_fail(LAST_ERROR, "SetConsoleScreenBufferInfo");
 	}
     }
     ws.srWindow.Left = 0;
     ws.srWindow.Top = 0;
     ws.srWindow.Right = newcol;
     ws.srWindow.Bottom = newrow;
-    if (!(SetConsoleWindowInfo(wh, FALSE, &ws.srWindow) || SET_LAST_ERROR)) {
-	rb_sys_fail("SetConsoleWindowInfo");
+    if (!SetConsoleWindowInfo(wh, FALSE, &ws.srWindow)) {
+	rb_syserr_fail(LAST_ERROR, "SetConsoleWindowInfo");
     }
 #endif
     return io;
@@ -626,6 +657,99 @@ console_ioflush(VALUE io)
     return io;
 }
 
+static VALUE
+console_beep(VALUE io)
+{
+    rb_io_t *fptr;
+    int fd;
+
+    GetOpenFile(io, fptr);
+    fd = GetWriteFD(fptr);
+#ifdef _WIN32
+    (void)fd;
+    MessageBeep(0);
+#else
+    if (write(fd, "\a", 1) < 0)
+	rb_sys_fail(0);
+#endif
+    return io;
+}
+
+#if defined _WIN32
+static VALUE
+console_goto(VALUE io, VALUE x, VALUE y)
+{
+    rb_io_t *fptr;
+    int fd;
+    COORD pos;
+
+    GetOpenFile(io, fptr);
+    fd = GetWriteFD(fptr);
+    pos.X = NUM2UINT(x);
+    pos.Y = NUM2UINT(y);
+    if (!SetConsoleCursorPosition((HANDLE)rb_w32_get_osfhandle(fd), pos)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    return io;
+}
+
+static VALUE
+console_cursor_pos(VALUE io)
+{
+    rb_io_t *fptr;
+    int fd;
+    rb_console_size_t ws;
+
+    GetOpenFile(io, fptr);
+    fd = GetWriteFD(fptr);
+    if (!GetConsoleScreenBufferInfo((HANDLE)rb_w32_get_osfhandle(fd), &ws)) {
+	rb_syserr_fail(LAST_ERROR, 0);
+    }
+    return rb_assoc_new(UINT2NUM(ws.dwCursorPosition.X), UINT2NUM(ws.dwCursorPosition.Y));
+}
+
+static VALUE
+console_cursor_set(VALUE io, VALUE cpos)
+{
+    cpos = rb_convert_type(cpos, T_ARRAY, "Array", "to_ary");
+    if (RARRAY_LEN(cpos) != 2) rb_raise(rb_eArgError, "expected 2D coordinate");
+    return console_goto(io, RARRAY_AREF(cpos, 0), RARRAY_AREF(cpos, 1));
+}
+
+#include "win32_vk.inc"
+
+static VALUE
+console_key_pressed_p(VALUE io, VALUE k)
+{
+    int vk = -1;
+
+    if (FIXNUM_P(k)) {
+	vk = NUM2UINT(k);
+    }
+    else {
+	const struct vktable *t;
+	const char *kn;
+	if (SYMBOL_P(k)) {
+	    k = rb_sym2str(k);
+	    kn = RSTRING_PTR(k);
+	}
+	else {
+	    kn = StringValuePtr(k);
+	}
+	t = console_win32_vk(kn, RSTRING_LEN(k));
+	if (!t || (vk = (short)t->vk) == -1) {
+	    rb_raise(rb_eArgError, "unknown virtual key code: % "PRIsVALUE, k);
+	}
+    }
+    return GetKeyState(vk) & 0x80 ? Qtrue : Qfalse;
+}
+#else
+# define console_goto rb_f_notimplement
+# define console_cursor_pos rb_f_notimplement
+# define console_cursor_set rb_f_notimplement
+# define console_key_pressed_p rb_f_notimplement
+#endif
+
 /*
  * call-seq:
  *   IO.console      -> #<File:/dev/tty>
@@ -646,11 +770,9 @@ console_dev(int argc, VALUE *argv, VALUE klass)
     rb_io_t *fptr;
     VALUE sym = 0;
 
-    rb_check_arity(argc, 0, 1);
+    rb_check_arity(argc, 0, UNLIMITED_ARGUMENTS);
     if (argc) {
 	Check_Type(sym = argv[0], T_SYMBOL);
-	--argc;
-	++argv;
     }
     if (klass == rb_cIO) klass = rb_cFile;
     if (rb_const_defined(klass, id_console)) {
@@ -662,7 +784,7 @@ console_dev(int argc, VALUE *argv, VALUE klass)
 	}
     }
     if (sym) {
-	if (sym == ID2SYM(id_close) && !argc) {
+	if (sym == ID2SYM(id_close) && argc == 1) {
 	    if (con) {
 		rb_io_close(con);
 		rb_const_remove(klass, id_console);
@@ -720,8 +842,7 @@ console_dev(int argc, VALUE *argv, VALUE klass)
 	rb_const_set(klass, id_console, con);
     }
     if (sym) {
-	/* TODO: avoid inadvertent pindown */
-	return rb_funcall(con, SYM2ID(sym), argc, argv);
+	return rb_f_send(argc, argv, con);
     }
     return con;
 }
@@ -735,8 +856,82 @@ console_dev(int argc, VALUE *argv, VALUE klass)
 static VALUE
 io_getch(int argc, VALUE *argv, VALUE io)
 {
-    return rb_funcall2(io, rb_intern("getc"), argc, argv);
+    return rb_funcallv(io, id_getc, argc, argv);
 }
+
+#if ENABLE_IO_GETPASS
+static VALUE
+puts_call(VALUE io)
+{
+    return rb_io_write(io, rb_default_rs);
+}
+
+static VALUE
+getpass_call(VALUE io)
+{
+    return ttymode(io, rb_io_gets, set_noecho, NULL);
+}
+
+static void
+prompt(int argc, VALUE *argv, VALUE io)
+{
+    if (argc > 0 && !NIL_P(argv[0])) {
+	VALUE str = argv[0];
+	StringValueCStr(str);
+	rb_check_safe_obj(str);
+	rb_io_write(io, str);
+    }
+}
+
+static VALUE
+str_chomp(VALUE str)
+{
+    if (!NIL_P(str)) {
+	str = rb_funcallv(str, rb_intern("chomp!"), 0, 0);
+    }
+    return str;
+}
+
+/*
+ * call-seq:
+ *   io.getpass(prompt=nil)       -> string
+ *
+ * Reads and returns a line without echo back.
+ * Prints +prompt+ unless it is +nil+.
+ *
+ * You must require 'io/console' to use this method.
+ */
+static VALUE
+console_getpass(int argc, VALUE *argv, VALUE io)
+{
+    VALUE str, wio;
+
+    rb_check_arity(argc, 0, 1);
+    wio = rb_io_get_write_io(io);
+    if (wio == io && io == rb_stdin) wio = rb_stderr;
+    prompt(argc, argv, wio);
+    str = rb_ensure(getpass_call, io, puts_call, wio);
+    return str_chomp(str);
+}
+
+/*
+ * call-seq:
+ *   io.getpass(prompt=nil)       -> string
+ *
+ * See IO#getpass.
+ */
+static VALUE
+io_getpass(int argc, VALUE *argv, VALUE io)
+{
+    VALUE str;
+
+    rb_check_arity(argc, 0, 1);
+    prompt(argc, argv, io);
+    str = str_chomp(rb_funcallv(io, id_gets, 0, 0));
+    puts_call(io);
+    return str;
+}
+#endif
 
 /*
  * IO console methods
@@ -744,9 +939,18 @@ io_getch(int argc, VALUE *argv, VALUE io)
 void
 Init_console(void)
 {
+#undef rb_intern
     id_getc = rb_intern("getc");
+#if ENABLE_IO_GETPASS
+    id_gets = rb_intern("gets");
+#endif
     id_console = rb_intern("console");
     id_close = rb_intern("close");
+    id_min = rb_intern("min");
+    id_time = rb_intern("time");
+#ifndef HAVE_RB_F_SEND
+    id___send__ = rb_intern("__send__");
+#endif
     InitVM(console);
 }
 
@@ -766,9 +970,20 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "iflush", console_iflush, 0);
     rb_define_method(rb_cIO, "oflush", console_oflush, 0);
     rb_define_method(rb_cIO, "ioflush", console_ioflush, 0);
+    rb_define_method(rb_cIO, "beep", console_beep, 0);
+    rb_define_method(rb_cIO, "goto", console_goto, 2);
+    rb_define_method(rb_cIO, "cursor", console_cursor_pos, 0);
+    rb_define_method(rb_cIO, "cursor=", console_cursor_set, 1);
+    rb_define_method(rb_cIO, "pressed?", console_key_pressed_p, 1);
+#if ENABLE_IO_GETPASS
+    rb_define_method(rb_cIO, "getpass", console_getpass, -1);
+#endif
     rb_define_singleton_method(rb_cIO, "console", console_dev, -1);
     {
 	VALUE mReadable = rb_define_module_under(rb_cIO, "generic_readable");
 	rb_define_method(mReadable, "getch", io_getch, -1);
+#if ENABLE_IO_GETPASS
+	rb_define_method(mReadable, "getpass", io_getpass, -1);
+#endif
     }
 }

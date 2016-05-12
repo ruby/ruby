@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tkmultilistbox.rb : multiple listbox widget
 #                       by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
@@ -20,7 +21,7 @@ class TkMultiListbox < TkListbox
     @width_total = 0
     title_info.each{|title, width| @width_total += width.to_f}
 
-    # virtical scrollbar
+    # vertical scrollbar
     @v_scroll = TkScrollbar.new(@frame, 'orient'=>'vertical')
 
     # init arrays
@@ -41,7 +42,7 @@ class TkMultiListbox < TkListbox
                            'height'=>@v_scroll.cget('width') +
                                      2 * @v_scroll.cget('borderwidth'))
 
-    # dummy label to keep the hight of title space
+    # dummy label to keep the height of title space
     TkLabel.new(@f_title, 'text'=>' ').pack
 
     # create each listbox
@@ -103,7 +104,7 @@ class TkMultiListbox < TkListbox
       tab.bind('B1-Motion', proc{|x, idx| resize(x, idx.to_i)}, "%X #{idx}")
     }
 
-    # set control procedure for virtical scroll
+    # set control procedure for vertical scroll
     @lbox_list.each{|lbox|
       lbox.yscrollcommand proc{|first, last|
         @v_scroll.set first, last

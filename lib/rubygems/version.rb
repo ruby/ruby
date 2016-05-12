@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # The Version class processes string versions into comparable
 # values. A version string should normally be a series of numbers
@@ -107,7 +108,7 @@
 # Client A needs a stack with basic push/pop capability.  They write to the
 # original interface (no <tt>top</tt>), so their version constraint looks like:
 #
-#   gem 'stack', '~> 0.0'
+#   gem 'stack', '>= 0.0'
 #
 # Essentially, any version is OK with Client A.  An incompatible change to
 # the library will cause them grief, but they are willing to take the chance
@@ -217,12 +218,14 @@ class Gem::Version
   # Pre-release (alpha) parts, e.g, 5.3.1.b.2 => 5.4, are ignored.
 
   def bump
-    segments = self.segments.dup
-    segments.pop while segments.any? { |s| String === s }
-    segments.pop if segments.size > 1
+    @bump ||= begin
+                segments = self.segments
+                segments.pop while segments.any? { |s| String === s }
+                segments.pop if segments.size > 1
 
-    segments[-1] = segments[-1].succ
-    self.class.new segments.join(".")
+                segments[-1] = segments[-1].succ
+                self.class.new segments.join(".")
+              end
   end
 
   ##
@@ -230,11 +233,11 @@ class Gem::Version
   # same precision. Version "1.0" is not the same as version "1".
 
   def eql? other
-    self.class === other and @version == other.version
+    self.class === other and @version == other._version
   end
 
   def hash # :nodoc:
-    @hash ||= segments.hash
+    @version.hash
   end
 
   def init_with coder # :nodoc:
@@ -279,7 +282,10 @@ class Gem::Version
   # A version is considered a prerelease if it contains a letter.
 
   def prerelease?
-    @prerelease ||= !!(@version =~ /[a-zA-Z]/)
+    unless instance_variable_defined? :@prerelease
+      @prerelease = !!(@version =~ /[a-zA-Z]/)
+    end
+    @prerelease
   end
 
   def pretty_print q # :nodoc:
@@ -291,28 +297,24 @@ class Gem::Version
   # Non-prerelease versions return themselves.
 
   def release
-    return self unless prerelease?
-
-    segments = self.segments.dup
-    segments.pop while segments.any? { |s| String === s }
-    self.class.new segments.join('.')
+    @release ||= if prerelease?
+                   segments = self.segments
+                   segments.pop while segments.any? { |s| String === s }
+                   self.class.new segments.join('.')
+                 else
+                   self
+                 end
   end
 
   def segments # :nodoc:
-
-    # segments is lazy so it can pick up version values that come from
-    # old marshaled versions, which don't go through marshal_load.
-
-    @segments ||= @version.scan(/[0-9]+|[a-z]+/i).map do |s|
-      /^\d+$/ =~ s ? s.to_i : s
-    end
+    _segments.dup
   end
 
   ##
   # A recommended version for use with a ~> Requirement.
 
   def approximate_recommendation
-    segments = self.segments.dup
+    segments = self.segments
 
     segments.pop    while segments.any? { |s| String === s }
     segments.pop    while segments.size > 2
@@ -329,10 +331,10 @@ class Gem::Version
 
   def <=> other
     return unless Gem::Version === other
-    return 0 if @version == other.version
+    return 0 if @version == other._version
 
-    lhsegments = segments
-    rhsegments = other.segments
+    lhsegments = _segments
+    rhsegments = other._segments
 
     lhsize = lhsegments.size
     rhsize = rhsegments.size
@@ -352,5 +354,21 @@ class Gem::Version
     end
 
     return 0
+  end
+
+  protected
+
+  def _version
+    @version
+  end
+
+  def _segments
+    # segments is lazy so it can pick up version values that come from
+    # old marshaled versions, which don't go through marshal_load.
+    # since this version object is cached in @@all, its @segments should be frozen
+
+    @segments ||= @version.scan(/[0-9]+|[a-z]+/i).map do |s|
+      /^\d+$/ =~ s ? s.to_i : s
+    end.freeze
   end
 end

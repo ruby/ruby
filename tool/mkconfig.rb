@@ -1,11 +1,19 @@
 #!./miniruby -s
 
+# This script, which is run when ruby is built, generates rbconfig.rb by
+# parsing information from config.status.  rbconfig.rb contains build
+# information for ruby (compiler flags, paths, etc.) and is used e.g. by
+# mkmf to build compatible native extensions.
+
 # avoid warnings with -d.
 $install_name ||= nil
 $so_name ||= nil
+$cross_compiling ||= nil
+arch = $arch or raise "missing -arch"
+version = $version or raise "missing -version"
 
 srcdir = File.expand_path('../..', __FILE__)
-$:.replace [srcdir+"/lib"] unless defined?(CROSS_COMPILING)
+$:.replace [srcdir+"/lib"] unless $cross_compiling == "yes"
 $:.unshift(".")
 
 require "fileutils"
@@ -16,7 +24,6 @@ unless File.directory?(dir = File.dirname(rbconfig_rb))
   FileUtils.makedirs(dir, :verbose => true)
 end
 
-version = RUBY_VERSION
 config = ""
 def config.write(arg)
   concat(arg.to_s)
@@ -24,17 +31,7 @@ end
 $stdout = config
 
 fast = {'prefix'=>TRUE, 'ruby_install_name'=>TRUE, 'INSTALL'=>TRUE, 'EXEEXT'=>TRUE}
-print %[
-# This file was created by #{mkconfig} when ruby was built.  Any
-# changes made to this file will be lost the next time ruby is built.
 
-module RbConfig
-  RUBY_VERSION == "#{version}" or
-    raise "ruby lib version (#{version}) doesn't match executable version (\#{RUBY_VERSION})"
-
-]
-
-arch = RUBY_PLATFORM
 win32 = /mswin/ =~ arch
 universal = /universal.*darwin/ =~ arch
 v_fast = []
@@ -74,13 +71,16 @@ File.foreach "config.status" do |line|
   if name
     case name
     when /^(?:ac_.*|configure_input|(?:top_)?srcdir|\w+OBJS)$/; next
-    when /^(?:X|(?:MINI|RUN|BASE)RUBY$)/; next
+    when /^(?:X|(?:MINI|RUN|(?:HAVE_)?BASE|BOOTSTRAP|BTEST)RUBY(?:_COMMAND)?$)/; next
+    when /^INSTALLDOC|TARGET$/; next
+    when /^DTRACE/; next
     when /^(?:MAJOR|MINOR|TEENY)$/; vars[name] = val; next
     when /^LIBRUBY_D?LD/; next
     when /^RUBY_INSTALL_NAME$/; next vars[name] = (install_name = val).dup if $install_name
     when /^RUBY_SO_NAME$/; next vars[name] = (so_name = val).dup if $so_name
     when /^arch$/; if val.empty? then val = arch else arch = val end
     when /^sitearch$/; val = '$(arch)' if val.empty?
+    when /^DESTDIR$/; next
     end
     case val
     when /^\$\(ac_\w+\)$/; next
@@ -132,6 +132,8 @@ File.foreach "config.status" do |line|
       if universal
         val.sub!(/universal/, %q[#{arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || '\&'}])
       end
+    when /^oldincludedir$/
+      val = '"$(SDKROOT)"'+val if /darwin/ =~ arch
     end
     v = "  CONFIG[\"#{name}\"] #{eq} #{val}\n"
     if fast[name]
@@ -140,7 +142,7 @@ File.foreach "config.status" do |line|
       v_others << v
     end
     case name
-    when "ruby_version"
+    when "RUBY_PROGRAM_VERSION"
       version = val[/\A"(.*)"\z/, 1]
     end
   end
@@ -170,6 +172,18 @@ end
 prefix = vars.expand(vars["prefix"] ||= "")
 rubyarchdir = vars.expand(vars["rubyarchdir"] ||= "")
 relative_archdir = rubyarchdir.rindex(prefix, 0) ? rubyarchdir[prefix.size..-1] : rubyarchdir
+puts %[\
+# frozen-string-literal: false
+# This file was created by #{mkconfig} when ruby was built.  It contains
+# build information for ruby which is used e.g. by mkmf to build
+# compatible native extensions.  Any changes made to this file will be
+# lost the next time ruby is built.
+
+module RbConfig
+  RUBY_VERSION.start_with?("#{version[/^[0-9]+\.[0-9]+\./] || version}") or
+    raise "ruby lib version (#{version}) doesn't match executable version (\#{RUBY_VERSION})"
+
+]
 print "  TOPDIR = File.dirname(__FILE__).chomp!(#{relative_archdir.dump})\n"
 print "  DESTDIR = ", (drive ? "TOPDIR && TOPDIR[/\\A[a-z]:/i] || " : ""), "'' unless defined? DESTDIR\n"
 print <<'ARCH' if universal
@@ -185,14 +199,14 @@ IO.foreach(File.join(srcdir, "version.h")) do |l|
   m = /^\s*#\s*define\s+RUBY_(PATCHLEVEL)\s+(-?\d+)/.match(l)
   if m
     versions[m[1]] = m[2]
-    break
-  end
-end
-IO.foreach(File.join(srcdir, "include/ruby/version.h")) do |l|
-  m = /^\s*#\s*define\s+RUBY_API_VERSION_(MAJOR|MINOR|TEENY)\s+(-?\d+)/.match(l)
-  if m
-    versions[m[1]] = m[2]
     break if versions.size == 4
+    next
+  end
+  m = /^\s*#\s*define\s+RUBY_VERSION\s+\W?([.\d]+)/.match(l)
+  if m
+    versions['MAJOR'], versions['MINOR'], versions['TEENY'] = m[1].split('.')
+    break if versions.size == 4
+    next
   end
 end
 %w[MAJOR MINOR TEENY PATCHLEVEL].each do |v|
@@ -232,6 +246,9 @@ end
 
 print(*v_fast)
 print(*v_others)
+print <<EOS if /darwin/ =~ arch
+  CONFIG["SDKROOT"] = ENV["SDKROOT"] || "" # don't run xcrun everytime, usually useless.
+EOS
 print <<EOS
   CONFIG["archdir"] = "$(rubyarchdir)"
   CONFIG["topdir"] = File.dirname(__FILE__)

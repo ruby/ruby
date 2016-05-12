@@ -1,5 +1,7 @@
-% require './rbconfig'
-% C = RbConfig::MAKEFILE_CONFIG.dup
+% config = File.read(conffile = 'rbconfig.rb')
+% config.sub!(/^(\s*)RUBY_VERSION\b.*(\sor\s*)$/, '\1true\2')
+% rbconfig = Module.new {module_eval(config, conffile)}::RbConfig
+% C = rbconfig::MAKEFILE_CONFIG.dup
 % def C.[](name) str = super and (str unless str.empty?); end
 #define RUBY_BASE_NAME			"${RUBY_BASE_NAME}"
 #define RUBY_VERSION_NAME		RUBY_BASE_NAME"-"RUBY_LIB_VERSION
@@ -49,12 +51,12 @@
 % R["rubysitearchprefix"] = '"RUBY_SITEARCH_PREFIX_FOR(arch)"'
 % R["exec_prefix"] = '"RUBY_EXEC_PREFIX"'
 % R["prefix"] = '"RUBY_EXEC_PREFIX"'
-% exec_prefix_pat = /\A"#{Regexp.quote(RbConfig::CONFIG['exec_prefix'])}(?=\/|\z)/
+% exec_prefix_pat = /\A"#{Regexp.quote(rbconfig::CONFIG['exec_prefix'])}(?=\/|\z)/
 % _erbout.gsub!(/^(#define\s+(\S+)\s+)(.*)/) {
 %   pre, name, repl = $1, $2, $3
 %   pat = %["#{name}"]
 %   c = C.merge(R.reject {|key, value| key == name or value.include?(pat)})
-%   RbConfig.expand(repl, c)
+%   rbconfig.expand(repl, c)
 %   repl.gsub!(/^""(?!$)|(.)""$/, '\1')
 %   repl.sub!(exec_prefix_pat, 'RUBY_EXEC_PREFIX"')
 %   pre + repl

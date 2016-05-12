@@ -113,19 +113,14 @@ typedef struct rb_io_t {
 #define FMODE_TEXTMODE              0x00001000
 /* #define FMODE_PREP               0x00010000 */
 #define FMODE_SETENC_BY_BOM         0x00100000
+/* #define FMODE_UNIX                  0x00200000 */
+/* #define FMODE_INET                  0x00400000 */
+/* #define FMODE_INET6                 0x00800000 */
 
 #define GetOpenFile(obj,fp) rb_io_check_closed((fp) = RFILE(rb_io_taint_check(obj))->fptr)
 
-#define RB_IO_BUFFER_INIT(buf) do {\
-    [<"internal macro RB_IO_BUFFER_INIT() is used">];\
-} while (0)
-
 #define MakeOpenFile(obj, fp) do {\
     (fp) = rb_io_make_open_file(obj);\
-} while (0)
-
-#define RB_IO_FPTR_NEW(fp) do {\
-    [<"internal macro RB_IO_FPTR_NEW() is used">];\
 } while (0)
 
 rb_io_t *rb_io_make_open_file(VALUE obj);
@@ -135,7 +130,7 @@ FILE *rb_io_stdio_file(rb_io_t *fptr);
 FILE *rb_fdopen(int, const char*);
 int rb_io_modestr_fmode(const char *modestr);
 int rb_io_modestr_oflags(const char *modestr);
-int rb_io_oflags_fmode(int oflags);
+CONSTFUNC(int rb_io_oflags_fmode(int oflags));
 void rb_io_check_writable(rb_io_t*);
 void rb_io_check_readable(rb_io_t*);
 void rb_io_check_char_readable(rb_io_t *fptr);

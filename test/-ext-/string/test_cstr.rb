@@ -1,5 +1,6 @@
+# frozen_string_literal: false
 require 'test/unit'
-require "-test-/string/string"
+require "-test-/string"
 
 class Test_StringCStr < Test::Unit::TestCase
   Bug4319 = '[ruby-dev:43094]'
@@ -7,12 +8,38 @@ class Test_StringCStr < Test::Unit::TestCase
   def test_embed
     s = Bug::String.new("abcdef")
     s.set_len(3)
+    s.cstr_unterm('x')
     assert_equal(0, s.cstr_term, Bug4319)
   end
 
   def test_long
     s = Bug::String.new("abcdef")*100000
+    s.cstr_unterm('x')
     assert_equal(0, s.cstr_term, Bug4319)
+  end
+
+  def test_frozen
+    s0 = Bug::String.new("abcdefgh"*8)
+
+    [4, 4*3-1, 8*3-1, 64].each do |n|
+      s = s0[0, n]
+      s.cstr_unterm('x')
+      s.freeze
+      assert_equal(0, s.cstr_term)
+      WCHARS.each do |enc|
+        s = s0.encode(enc)
+        s.set_len(n - n % s[0].bytesize)
+        s.cstr_unterm('x')
+        s.freeze
+        assert_equal(0, s.cstr_term)
+      end
+    end
+  end
+
+  def test_rb_str_new_frozen_embed
+    str = Bug::String.cstr_noembed("rbconfig.rb")
+    str = Bug::String.rb_str_new_frozen(str)
+    assert_equal true, Bug::String.cstr_embedded?(str)
   end
 
   WCHARS = [Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE]
@@ -20,9 +47,11 @@ class Test_StringCStr < Test::Unit::TestCase
   def test_wchar_embed
     WCHARS.each do |enc|
       s = Bug::String.new("\u{4022}a".encode(enc))
+      s.cstr_unterm('x')
       assert_nothing_raised(ArgumentError) {s.cstr_term}
       s.set_len(s.bytesize / 2)
       assert_equal(1, s.size)
+      s.cstr_unterm('x')
       assert_equal(0, s.cstr_term)
     end
   end
@@ -33,9 +62,11 @@ class Test_StringCStr < Test::Unit::TestCase
     len = str.size * n
     WCHARS.each do |enc|
       s = Bug::String.new(str.encode(enc))*n
+      s.cstr_unterm('x')
       assert_nothing_raised(ArgumentError, enc.name) {s.cstr_term}
       s.set_len(s.bytesize / 2)
       assert_equal(len / 2, s.size, enc.name)
+      s.cstr_unterm('x')
       assert_equal(0, s.cstr_term, enc.name)
     end
   end
@@ -84,6 +115,34 @@ class Test_StringCStr < Test::Unit::TestCase
       enc = s.encoding
       s.tr_s!("\u{3042}".encode(enc), "c".encode(enc))
     }
+  end
+
+  def test_wchar_replace
+    assert_wchars_term_char("abc") {|s|
+      w = s.dup
+      s.replace("abcdefghijklmnop")
+      s.replace(w)
+    }
+  end
+
+  def test_embedded_from_heap
+    gh821 = "[GH-821]"
+    embedded_string = "abcdefghi"
+    string = embedded_string.gsub("efg", "123")
+    {}[string] = 1
+    non_terminated = "#{string}#{nil}"
+    assert_nil(Bug::String.cstr_term_char(non_terminated), gh821)
+
+    result = {}
+    WCHARS.map do |enc|
+      embedded_string = "ab".encode(enc)
+      string = embedded_string.gsub("b".encode(enc), "1".encode(enc))
+      {}[string] = 1
+      non_terminated = "#{string}#{nil}"
+      c = Bug::String.cstr_term_char(non_terminated)
+      result[enc] = c if c
+    end
+    assert_empty(result, gh821)
   end
 
   def assert_wchars_term_char(str)

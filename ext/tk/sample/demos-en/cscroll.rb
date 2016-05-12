@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # cscroll.rb
 #
 # This demonstration script creates a simple canvas that can be

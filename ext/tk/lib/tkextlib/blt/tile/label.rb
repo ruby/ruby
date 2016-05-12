@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tkextlib/blt/tile/label.rb
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

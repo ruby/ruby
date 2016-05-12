@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tkextlib/bwidget/statusbar.rb
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "test/unit"
 require "etc"
 
@@ -83,23 +84,25 @@ class TestEtc < Test::Unit::TestCase
     groups = Hash.new {[]}
     # on MacOSX, same entries are returned from /etc/group and Open
     # Directory.
-    Etc.group {|s| groups[s.gid] |= [s]}
+    Etc.group {|s| groups[s.gid] |= [[s.name, s.gid]]}
     groups.each_pair do |gid, s|
-      assert_include(s, Etc.getgrgid(gid))
+      g = Etc.getgrgid(gid)
+      assert_include(s, [g.name, g.gid])
     end
     s = groups[Process.egid]
     unless s.empty?
-      assert_include(s, Etc.getgrgid)
+      g = Etc.getgrgid
+      assert_include(s, [g.name, g.gid])
     end
   end
 
   def test_getgrnam
     groups = {}
     Etc.group do |s|
-      groups[s.name] ||= s unless /\A\+/ =~ s.name
+      groups[s.name] ||= s.gid unless /\A\+/ =~ s.name
     end
-    groups.each_value do |s|
-      assert_equal(s, Etc.getgrnam(s.name))
+    groups.each_pair do |n, s|
+      assert_equal(s, Etc.getgrnam(n).gid)
     end
   end
 

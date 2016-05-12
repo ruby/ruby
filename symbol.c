@@ -11,7 +11,6 @@
 
 #include "internal.h"
 #include "ruby/st.h"
-#include "node.h"
 #include "symbol.h"
 #include "gc.h"
 #include "probes.h"
@@ -30,53 +29,6 @@ static ID register_static_symid_str(ID, VALUE);
 #include "id.c"
 
 #define is_identchar(p,e,enc) (rb_enc_isalnum((unsigned char)(*(p)),(enc)) || (*(p)) == '_' || !ISASCII(*(p)))
-
-#define tUPLUS  RUBY_TOKEN(UPLUS)
-#define tUMINUS RUBY_TOKEN(UMINUS)
-#define tPOW    RUBY_TOKEN(POW)
-#define tCMP    RUBY_TOKEN(CMP)
-#define tEQ     RUBY_TOKEN(EQ)
-#define tEQQ    RUBY_TOKEN(EQQ)
-#define tNEQ    RUBY_TOKEN(NEQ)
-#define tGEQ    RUBY_TOKEN(GEQ)
-#define tLEQ    RUBY_TOKEN(LEQ)
-#define tMATCH  RUBY_TOKEN(MATCH)
-#define tNMATCH RUBY_TOKEN(NMATCH)
-#define tDOT2   RUBY_TOKEN(DOT2)
-#define tDOT3   RUBY_TOKEN(DOT3)
-#define tAREF   RUBY_TOKEN(AREF)
-#define tASET   RUBY_TOKEN(ASET)
-#define tLSHFT  RUBY_TOKEN(LSHFT)
-#define tRSHFT  RUBY_TOKEN(RSHFT)
-#define tCOLON2 RUBY_TOKEN(COLON2)
-#define tANDOP  RUBY_TOKEN(ANDOP)
-#define tOROP   RUBY_TOKEN(OROP)
-
-static const struct {
-    unsigned short token;
-    const char name[3], term;
-} op_tbl[] = {
-    {tDOT2,	".."},
-    {tDOT3,	"..."},
-    {tPOW,	"**"},
-    {tUPLUS,	"+@"},
-    {tUMINUS,	"-@"},
-    {tCMP,	"<=>"},
-    {tGEQ,	">="},
-    {tLEQ,	"<="},
-    {tEQ,	"=="},
-    {tEQQ,	"==="},
-    {tNEQ,	"!="},
-    {tMATCH,	"=~"},
-    {tNMATCH,	"!~"},
-    {tAREF,	"[]"},
-    {tASET,	"[]="},
-    {tLSHFT,	"<<"},
-    {tRSHFT,	">>"},
-    {tCOLON2,   "::"},
-    {tANDOP,    "&&"},
-    {tOROP,     "||"},
-};
 
 #define op_tbl_count numberof(op_tbl)
 STATIC_ASSERT(op_tbl_name_size, sizeof(op_tbl[0].name) == 3);
@@ -108,7 +60,7 @@ enum id_entry_type {
 };
 
 static struct symbols {
-    ID last_id;
+    rb_id_serial_t last_id;
     st_table *str_sym;
     VALUE ids;
     VALUE dsymbol_fstr_hash;
@@ -122,7 +74,7 @@ static const struct st_hash_type symhash = {
 void
 Init_sym(void)
 {
-    VALUE dsym_fstrs = rb_hash_new();
+    VALUE dsym_fstrs = rb_ident_hash_new();
     global_symbols.dsymbol_fstr_hash = dsym_fstrs;
     rb_gc_register_mark_object(dsym_fstrs);
     rb_obj_hide(dsym_fstrs);
@@ -143,8 +95,6 @@ WARN_UNUSED_RESULT(static VALUE lookup_id_str(ID id));
 WARN_UNUSED_RESULT(static ID attrsetname_to_attr(VALUE name));
 WARN_UNUSED_RESULT(static ID attrsetname_to_attr_id(VALUE name));
 WARN_UNUSED_RESULT(static ID intern_str(VALUE str, int mutable));
-
-#define id_to_serial(id) (is_notop_id(id) ? id >> ID_SCOPE_SHIFT : id)
 
 ID
 rb_id_attrset(ID id)
@@ -374,7 +324,7 @@ rb_str_symname_type(VALUE name, unsigned int allowed_attrset)
 }
 
 static void
-set_id_entry(ID num, VALUE str, VALUE sym)
+set_id_entry(rb_id_serial_t num, VALUE str, VALUE sym)
 {
     size_t idx = num / ID_ENTRY_UNIT;
     VALUE ary, ids = global_symbols.ids;
@@ -388,7 +338,7 @@ set_id_entry(ID num, VALUE str, VALUE sym)
 }
 
 static VALUE
-get_id_entry(ID num, const enum id_entry_type t)
+get_id_entry(rb_id_serial_t num, const enum id_entry_type t)
 {
     if (num && num <= global_symbols.last_id) {
 	size_t idx = num / ID_ENTRY_UNIT;
@@ -400,6 +350,21 @@ get_id_entry(ID num, const enum id_entry_type t)
 	}
     }
     return 0;
+}
+
+static inline ID
+#ifdef __GNUC__
+__attribute__((unused))
+#endif
+rb_id_serial_to_id(rb_id_serial_t num)
+{
+    if (is_notop_id((ID)num)) {
+	VALUE sym = get_id_entry(num, ID_ENTRY_SYM);
+	return SYM2ID(sym);
+    }
+    else {
+	return (ID)num;
+    }
 }
 
 #if SYMBOL_DEBUG
@@ -445,15 +410,13 @@ register_static_symid(ID id, const char *name, long len, rb_encoding *enc)
 static ID
 register_static_symid_str(ID id, VALUE str)
 {
-    ID num = id_to_serial(id);
+    rb_id_serial_t num = rb_id_to_serial(id);
     VALUE sym = STATIC_ID2SYM(id);
 
     OBJ_FREEZE(str);
     str = rb_fstring(str);
 
-    if (RUBY_DTRACE_SYMBOL_CREATE_ENABLED()) {
-	RUBY_DTRACE_SYMBOL_CREATE(RSTRING_PTR(str), rb_sourcefile(), rb_sourceline());
-    }
+    RUBY_DTRACE_CREATE_HOOK(SYMBOL, RSTRING_PTR(str));
 
     register_sym(str, sym);
     set_id_entry(num, str, sym);
@@ -467,7 +430,8 @@ sym_check_asciionly(VALUE str)
     if (!rb_enc_asciicompat(rb_enc_get(str))) return FALSE;
     switch (rb_enc_str_coderange(str)) {
       case ENC_CODERANGE_BROKEN:
-	rb_raise(rb_eEncodingError, "invalid encoding symbol");
+	rb_raise(rb_eEncodingError, "invalid symbol in encoding %s :%+"PRIsVALUE,
+		 rb_enc_name(rb_enc_get(str)), str);
       case ENC_CODERANGE_7BIT:
 	return TRUE;
     }
@@ -506,18 +470,21 @@ static VALUE
 dsymbol_alloc(const VALUE klass, const VALUE str, rb_encoding * const enc, const ID type)
 {
     const VALUE dsym = rb_newobj_of(klass, T_SYMBOL | FL_WB_PROTECTED);
+    long hashval;
 
     rb_enc_associate(dsym, enc);
     OBJ_FREEZE(dsym);
     RB_OBJ_WRITE(dsym, &RSYMBOL(dsym)->fstr, str);
     RSYMBOL(dsym)->id = type;
 
+    /* we want hashval to be in Fixnum range [ruby-core:15713] r15672 */
+    hashval = (long)rb_str_hash(str);
+    RSYMBOL(dsym)->hashval = RSHIFT((long)hashval, 1);
+
     register_sym(str, dsym);
     rb_hash_aset(global_symbols.dsymbol_fstr_hash, str, Qtrue);
 
-    if (RUBY_DTRACE_SYMBOL_CREATE_ENABLED()) {
-	RUBY_DTRACE_SYMBOL_CREATE(RSTRING_PTR(RSYMBOL(dsym)->fstr), rb_sourcefile(), rb_sourceline());
-    }
+    RUBY_DTRACE_CREATE_HOOK(SYMBOL, RSTRING_PTR(RSYMBOL(dsym)->fstr));
 
     return dsym;
 }
@@ -580,7 +547,7 @@ lookup_str_sym(const VALUE str)
 static VALUE
 lookup_id_str(ID id)
 {
-    return get_id_entry(id_to_serial(id), ID_ENTRY_STR);
+    return get_id_entry(rb_id_to_serial(id), ID_ENTRY_STR);
 }
 
 ID
@@ -600,7 +567,9 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
 static ID
 next_id_base(void)
 {
-    if (global_symbols.last_id >= ~(ID)0 >> (ID_SCOPE_SHIFT+RUBY_SPECIAL_SHIFT)) {
+    rb_id_serial_t next_serial = global_symbols.last_id + 1;
+
+    if (next_serial == 0) {
 	return (ID)-1;
     }
     else {
@@ -664,6 +633,7 @@ rb_gc_free_dsymbol(VALUE sym)
     if (str) {
 	RSYMBOL(sym)->fstr = 0;
 	unregister_sym(str, sym);
+	rb_hash_delete_entry(global_symbols.dsymbol_fstr_hash, str);
     }
 }
 
@@ -705,13 +675,14 @@ rb_str_intern(VALUE str)
 #if USE_SYMBOL_GC
     enc = rb_enc_get(str);
     ascii = rb_usascii_encoding();
-    if (enc != ascii) {
-	if (sym_check_asciionly(str)) {
-	    str = rb_str_dup(str);
-	    rb_enc_associate(str, ascii);
-	    OBJ_FREEZE(str);
-	    enc = ascii;
-	}
+    if (enc != ascii && sym_check_asciionly(str)) {
+	str = rb_str_dup(str);
+	rb_enc_associate(str, ascii);
+	OBJ_FREEZE(str);
+	enc = ascii;
+    }
+    else {
+	str = rb_str_new_frozen(str);
     }
     str = rb_fstring(str);
     type = rb_str_symname_type(str, IDSET_ATTRSET_FOR_INTERN);
@@ -739,7 +710,7 @@ rb_sym2id(VALUE sym)
 
 	    RSYMBOL(sym)->id = id |= num;
 	    /* make it permanent object */
-	    set_id_entry(num >>= ID_SCOPE_SHIFT, fstr, sym);
+	    set_id_entry(rb_id_to_serial(num), fstr, sym);
 	    rb_hash_delete_entry(global_symbols.dsymbol_fstr_hash, fstr);
 	}
     }
@@ -755,7 +726,7 @@ VALUE
 rb_id2sym(ID x)
 {
     if (!DYNAMIC_ID_P(x)) return STATIC_ID2SYM(x);
-    return get_id_entry(id_to_serial(x), ID_ENTRY_SYM);
+    return get_id_entry(rb_id_to_serial(x), ID_ENTRY_SYM);
 }
 
 
@@ -845,6 +816,12 @@ rb_sym_all_symbols(void)
     VALUE ary = rb_ary_new2(global_symbols.str_sym->num_entries);
     st_foreach(global_symbols.str_sym, symbols_i, ary);
     return ary;
+}
+
+size_t
+rb_sym_immortal_count(void)
+{
+    return (size_t)global_symbols.last_id;
 }
 
 int
@@ -963,9 +940,8 @@ rb_check_id(volatile VALUE *namep)
     else if (!RB_TYPE_P(name, T_STRING)) {
 	tmp = rb_check_string_type(name);
 	if (NIL_P(tmp)) {
-	    tmp = rb_inspect(name);
-	    rb_raise(rb_eTypeError, "%s is not a symbol nor a string",
-		     RSTRING_PTR(tmp));
+	    rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol nor a string",
+		     name);
 	}
 	name = tmp;
 	*namep = name;
@@ -996,9 +972,8 @@ rb_check_symbol(volatile VALUE *namep)
     else if (!RB_TYPE_P(name, T_STRING)) {
 	tmp = rb_check_string_type(name);
 	if (NIL_P(tmp)) {
-	    tmp = rb_inspect(name);
-	    rb_raise(rb_eTypeError, "%s is not a symbol nor a string",
-		     RSTRING_PTR(tmp));
+	    rb_raise(rb_eTypeError, "%+"PRIsVALUE" is not a symbol nor a string",
+		     name);
 	}
 	name = tmp;
 	*namep = name;
@@ -1038,6 +1013,43 @@ rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc)
     }
 
     return Qnil;
+}
+
+#undef rb_sym_intern_cstr
+#undef rb_sym_intern_ascii_cstr
+#ifdef __clang__
+NOINLINE(VALUE rb_sym_intern(const char *ptr, long len, rb_encoding *enc));
+#else
+FUNC_MINIMIZED(VALUE rb_sym_intern(const char *ptr, long len, rb_encoding *enc));
+FUNC_MINIMIZED(VALUE rb_sym_intern_cstr(const char *ptr, rb_encoding *enc));
+FUNC_MINIMIZED(VALUE rb_sym_intern_ascii(const char *ptr, long len));
+FUNC_MINIMIZED(VALUE rb_sym_intern_ascii_cstr(const char *ptr));
+#endif
+
+VALUE
+rb_sym_intern(const char *ptr, long len, rb_encoding *enc)
+{
+    struct RString fake_str;
+    const VALUE name = rb_setup_fake_str(&fake_str, ptr, len, enc);
+    return rb_str_intern(name);
+}
+
+VALUE
+rb_sym_intern_cstr(const char *ptr, rb_encoding *enc)
+{
+    return rb_sym_intern(ptr, strlen(ptr), enc);
+}
+
+VALUE
+rb_sym_intern_ascii(const char *ptr, long len)
+{
+    return rb_sym_intern(ptr, len, rb_usascii_encoding());
+}
+
+VALUE
+rb_sym_intern_ascii_cstr(const char *ptr)
+{
+    return rb_sym_intern_ascii(ptr, strlen(ptr));
 }
 
 static ID
@@ -1119,3 +1131,5 @@ rb_is_junk_name(VALUE name)
 {
     return rb_str_symname_type(name, IDSET_ATTRSET_FOR_SYNTAX) == -1;
 }
+
+#include "id_table.c"

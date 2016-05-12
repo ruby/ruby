@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require_relative 'utils'
 
 if defined?(OpenSSL::TestUtils)
@@ -57,7 +58,10 @@ class OpenSSL::TestDigest < Test::Unit::TestCase
   end
 
   def test_digest_constants
-    algs = %w(DSS1 MD4 MD5 RIPEMD160 SHA SHA1)
+    algs = %w(DSS1 MD4 MD5 RIPEMD160 SHA1)
+    if !libressl?  || !version_since([2,3])
+      algs += %w(SHA)
+    end
     if OpenSSL::OPENSSL_VERSION_NUMBER > 0x00908000
       algs += %w(SHA224 SHA256 SHA384 SHA512)
     end
@@ -106,7 +110,7 @@ class OpenSSL::TestDigest < Test::Unit::TestCase
   def test_openssl_digest
     assert_equal OpenSSL::Digest::MD5, OpenSSL::Digest("MD5")
 
-    assert_raises NameError do
+    assert_raise NameError do
       OpenSSL::Digest("no such digest")
     end
   end
@@ -120,6 +124,14 @@ class OpenSSL::TestDigest < Test::Unit::TestCase
     assert_not_nil(d)
     d = OpenSSL::Digest.new(oid.oid)
     assert_not_nil(d)
+  end
+
+  def libressl?
+    OpenSSL::OPENSSL_VERSION.include?('LibreSSL')
+  end
+
+  def version_since(verary)
+    (OpenSSL::OPENSSL_LIBRARY_VERSION.scan(/\d+/).map(&:to_i) <=> verary) != -1
   end
 end
 

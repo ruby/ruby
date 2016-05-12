@@ -47,7 +47,7 @@ abs_archdir = File.expand_path(archdir)
 $:.unshift(abs_archdir)
 
 config = File.read(conffile = File.join(abs_archdir, 'rbconfig.rb'))
-config.sub!(/^(\s*)RUBY_VERSION\s*==.*(\sor\s*)$/, '\1true\2')
+config.sub!(/^(\s*)RUBY_VERSION\b.*(\sor\s*)\n.*\n/, '')
 config = Module.new {module_eval(config, conffile)}::RbConfig::CONFIG
 
 ruby = File.join(archdir, config["RUBY_INSTALL_NAME"]+config['EXEEXT'])
@@ -66,7 +66,9 @@ config["bindir"] = abs_archdir
 
 env = {}
 
-env["RUBY"] = File.expand_path(ruby)
+runner = File.join(abs_archdir, "ruby-runner#{config['EXEEXT']}")
+runner = File.expand_path(ruby) unless File.exist?(runner)
+env["RUBY"] = runner
 env["PATH"] = [abs_archdir, ENV["PATH"]].compact.join(File::PATH_SEPARATOR)
 
 if e = ENV["RUBYLIB"]
@@ -79,8 +81,12 @@ if File.file?(libruby_so)
   if e = config['LIBPATHENV'] and !e.empty?
     env[e] = [abs_archdir, ENV[e]].compact.join(File::PATH_SEPARATOR)
   end
-  if /linux/ =~ RUBY_PLATFORM
-    env["LD_PRELOAD"] = [libruby_so, ENV["LD_PRELOAD"]].compact.join(' ')
+  if e = config['PRELOADENV']
+    e = nil if e.empty?
+    e ||= "LD_PRELOAD" if /linux/ =~ RUBY_PLATFORM
+  end
+  if e
+    env[e] = [libruby_so, ENV[e]].compact.join(File::PATH_SEPARATOR)
   end
 end
 
@@ -89,6 +95,7 @@ ENV.update env
 cmd = [ruby]
 cmd.concat(ARGV)
 cmd.unshift(*precommand) unless precommand.empty?
+cmd.push(:close_others => false)
 
 if show
   require 'shellwords'

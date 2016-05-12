@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #               remote-tk.rb - supports to control remote Tk interpreters
 #                       by Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
@@ -5,6 +6,8 @@
 if defined? MultiTkIp
   fail RuntimeError, "'remote-tk' library must be required before requiring 'multi-tk'"
 end
+
+require 'tkutil'
 
 class MultiTkIp; end
 class RemoteTkIp < MultiTkIp; end
@@ -61,10 +64,6 @@ end
 
 class RemoteTkIp
   def initialize(remote_ip, displayof=nil, timeout=5)
-    if $SAFE >= 4
-      fail SecurityError, "cannot access another interpreter at level #{$SAFE}"
-    end
-
     @interp = MultiTkIp.__getip
     if @interp.safe?
       fail SecurityError, "safe-IP cannot create RemoteTkIp"
@@ -199,9 +198,7 @@ class RemoteTkIp
     raise SecurityError, "no permission to manipulate" unless self.manipulable?
 
     p ['_appsend', [@remote, @displayof], enc_mode, async, cmds] if $DEBUG
-    if $SAFE >= 4
-      fail SecurityError, "cannot send commands at level 4"
-    elsif $SAFE >= 1 && cmds.find{|obj| obj.tainted?}
+    if $SAFE >= 1 && cmds.find{|obj| obj.tainted?}
       fail SecurityError, "cannot send tainted commands at level #{$SAFE}"
     end
 

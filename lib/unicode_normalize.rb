@@ -1,4 +1,5 @@
 # coding: utf-8
+# frozen_string_literal: false
 
 # Copyright Ayumu Nojima (野島 歩) and Martin J. Dürst (duerst@it.aoyama.ac.jp)
 
@@ -39,7 +40,7 @@ class String
   end
 
   # :call-seq:
-  #    str.unicode_normalize(form=:nfc)
+  #    str.unicode_normalize!(form=:nfc)
   #
   # Destructive version of String#unicode_normalize, doing Unicode
   # normalization in place.

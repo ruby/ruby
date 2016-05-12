@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/texttag.rb - methods for treating text tags
 #

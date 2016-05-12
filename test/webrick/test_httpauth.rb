@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "test/unit"
 require "net/http"
 require "tempfile"
@@ -6,6 +7,11 @@ require "webrick/httpauth/basicauth"
 require_relative "utils"
 
 class TestWEBrickHTTPAuth < Test::Unit::TestCase
+  def teardown
+    WEBrick::Utils::TimeoutHandler.terminate
+    super
+  end
+
   def test_basic_auth
     log_tester = lambda {|log, access_log|
       assert_equal(1, log.length)

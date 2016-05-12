@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #   tk/macpkg.rb : methods for Tcl/Tk packages for Macintosh
 #                     2000/11/22 by Hidetoshi Nagai <nagai@ai.kyutech.ac.jp>

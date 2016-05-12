@@ -1,9 +1,14 @@
+#if defined(__MINGW32__)
+/* before stdio.h in ruby/define.h */
+# define MINGW_HAS_SECURE_API 1
+#endif
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
 #include "internal.h"
 #include <winbase.h>
 #include <wchar.h>
 #include <shlwapi.h>
+#include "win32/file.h"
 
 #ifndef INVALID_FILE_ATTRIBUTES
 # define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
@@ -22,7 +27,7 @@ static struct code_page_table {
 #define INVALID_CODE_PAGE 51932
 #define PATH_BUFFER_SIZE MAX_PATH * 2
 
-#define insecure_obj_p(obj, level) ((level) >= 4 || ((level) > 0 && OBJ_TAINTED(obj)))
+#define insecure_obj_p(obj, level) ((level) > 0 && OBJ_TAINTED(obj))
 
 /* defined in win32/win32.c */
 #define system_code_page rb_w32_filecp
@@ -209,7 +214,7 @@ code_page(rb_encoding *enc)
   We try to avoid to call FindFirstFileW() since it takes long time.
 */
 static inline size_t
-replace_to_long_name(wchar_t **wfullpath, size_t size, int heap)
+replace_to_long_name(wchar_t **wfullpath, size_t size, size_t buffer_size)
 {
     WIN32_FIND_DATAW find_data;
     HANDLE find_handle;
@@ -252,24 +257,20 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, int heap)
 
     find_handle = FindFirstFileW(*wfullpath, &find_data);
     if (find_handle != INVALID_HANDLE_VALUE) {
-	size_t trail_pos = wcslen(*wfullpath);
+	size_t trail_pos = pos - *wfullpath + IS_DIR_SEPARATOR_P(*pos);
 	size_t file_len = wcslen(find_data.cFileName);
+	size_t oldsize = size;
 
 	FindClose(find_handle);
-	while (trail_pos > 0) {
-	    if (IS_DIR_SEPARATOR_P((*wfullpath)[trail_pos]))
-		break;
-	    trail_pos--;
-	}
-	size = trail_pos + 1 + file_len;
-	if ((size + 1) > sizeof(*wfullpath) / sizeof((*wfullpath)[0])) {
+	size = trail_pos + file_len;
+	if (size > (buffer_size ? buffer_size-1 : oldsize)) {
 	    wchar_t *buf = (wchar_t *)xmalloc((size + 1) * sizeof(wchar_t));
-	    wcsncpy(buf, *wfullpath, trail_pos + 1);
-	    if (heap)
+	    wcsncpy(buf, *wfullpath, trail_pos);
+	    if (!buffer_size)
 		xfree(*wfullpath);
 	    *wfullpath = buf;
 	}
-	wcsncpy(*wfullpath + trail_pos + 1, find_data.cFileName, file_len + 1);
+	wcsncpy(*wfullpath + trail_pos, find_data.cFileName, file_len + 1);
     }
     return size;
 }
@@ -350,7 +351,14 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
     /* convert char * to wchar_t */
     if (!NIL_P(path)) {
-	wpath = mbstr_to_wstr(cp, RSTRING_PTR(path), (int)RSTRING_LEN(path), &wpath_len);
+	const long path_len = RSTRING_LEN(path);
+#if SIZEOF_INT < SIZEOF_LONG
+	if ((long)(int)path_len != path_len) {
+	    rb_raise(rb_eRangeError, "path (%ld bytes) is too long",
+		     path_len);
+	}
+#endif
+	wpath = mbstr_to_wstr(cp, RSTRING_PTR(path), path_len, &wpath_len);
 	wpath_pos = wpath;
     }
 
@@ -363,13 +371,13 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
 	whome = home_dir();
 	if (whome == NULL) {
-	    xfree(wpath);
+	    free(wpath);
 	    rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
 	}
 	whome_len = wcslen(whome);
 
 	if (PathIsRelativeW(whome) && !(whome_len >= 2 && IS_DIR_UNC_P(whome))) {
-	    xfree(wpath);
+	    free(wpath);
 	    xfree(whome);
 	    rb_raise(rb_eArgError, "non-absolute home");
 	}
@@ -401,6 +409,8 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	else {
 	    /* determine if we ignore dir or not later */
 	    path_drive = wpath_pos[0];
+	    wpath_pos += 2;
+	    wpath_len -= 2;
 	}
     }
     else if (abs_mode == 0 && wpath_len >= 2 && wpath_pos[0] == L'~') {
@@ -409,7 +419,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 			     cp, path_cp, path_encoding);
 
 	if (wpath)
-	    xfree(wpath);
+	    free(wpath);
 
 	rb_exc_raise(rb_exc_new_str(rb_eArgError, result));
     }
@@ -423,7 +433,15 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
 	/* convert char * to wchar_t */
 	if (!NIL_P(dir)) {
-	    wdir = mbstr_to_wstr(cp, RSTRING_PTR(dir), (int)RSTRING_LEN(dir), &wdir_len);
+	    const long dir_len = RSTRING_LEN(dir);
+#if SIZEOF_INT < SIZEOF_LONG
+	    if ((long)(int)dir_len != dir_len) {
+		if (wpath) free(wpath);
+		rb_raise(rb_eRangeError, "base directory (%ld bytes) is too long",
+			 dir_len);
+	    }
+#endif
+	    wdir = mbstr_to_wstr(cp, RSTRING_PTR(dir), dir_len, &wdir_len);
 	    wdir_pos = wdir;
 	}
 
@@ -495,15 +513,11 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
     /* determine if we ignore dir or not */
     if (!ignore_dir && path_drive && dir_drive) {
-	if (towupper(path_drive) == towupper(dir_drive)) {
-	    /* exclude path drive letter to use dir */
-	    wpath_pos += 2;
-	    wpath_len -= 2;
-	}
-	else {
+	if (towupper(path_drive) != towupper(dir_drive)) {
 	    /* ignore dir since path drive is different from dir drive */
 	    ignore_dir = 1;
 	    wdir_len = 0;
+	    dir_drive = 0;
 	}
     }
 
@@ -533,6 +547,10 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     if (whome_len && wcsrchr(L"\\/:", buffer_pos[-1]) == NULL) {
 	buffer_pos[0] = L'\\';
 	buffer_pos++;
+    }
+    else if (!dir_drive && path_drive) {
+	*buffer_pos++ = path_drive;
+	*buffer_pos++ = L':';
     }
 
     if (wdir_len) {
@@ -599,8 +617,10 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     size = remove_invalid_alternative_data(wfullpath, size);
 
     /* Replace the trailing path to long name */
-    if (long_name)
-	size = replace_to_long_name(&wfullpath, size, (wfullpath != wfullpath_buffer));
+    if (long_name) {
+	size_t bufsize = wfullpath == wfullpath_buffer ? PATH_BUFFER_SIZE : 0;
+	size = replace_to_long_name(&wfullpath, size, bufsize);
+    }
 
     /* sanitize backslashes with forwardslashes */
     replace_wchar(wfullpath, L'\\', L'/');
@@ -636,6 +656,51 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     return result;
 }
 
+VALUE
+rb_readlink(VALUE path, rb_encoding *resultenc)
+{
+    DWORD len;
+    VALUE wtmp = 0, wpathbuf, str;
+    rb_w32_reparse_buffer_t rbuf, *rp = &rbuf;
+    WCHAR *wpath, *wbuf;
+    rb_encoding *enc;
+    UINT cp, path_cp;
+    int e;
+
+    FilePathValue(path);
+    enc = rb_enc_get(path);
+    cp = path_cp = code_page(enc);
+    if (cp == INVALID_CODE_PAGE) {
+	path = fix_string_encoding(path, enc);
+	cp = CP_UTF8;
+    }
+    len = MultiByteToWideChar(cp, 0, RSTRING_PTR(path), RSTRING_LEN(path), NULL, 0);
+    wpath = ALLOCV_N(WCHAR, wpathbuf, len+1);
+    MultiByteToWideChar(cp, 0, RSTRING_PTR(path), RSTRING_LEN(path), wpath, len);
+    wpath[len] = L'\0';
+    e = rb_w32_read_reparse_point(wpath, rp, sizeof(rbuf), &wbuf, &len);
+    if (e == ERROR_MORE_DATA) {
+	size_t size = rb_w32_reparse_buffer_size(len + 1);
+	rp = ALLOCV(wtmp, size);
+	e = rb_w32_read_reparse_point(wpath, rp, size, &wbuf, &len);
+    }
+    ALLOCV_END(wpathbuf);
+    if (e) {
+	ALLOCV_END(wtmp);
+	if (e != -1)
+	    rb_syserr_fail_path(rb_w32_map_errno(e), path);
+	else /* not symlink; maybe volume mount point */
+	    rb_syserr_fail_path(EINVAL, path);
+    }
+    enc = resultenc;
+    cp = path_cp = code_page(enc);
+    if (cp == INVALID_CODE_PAGE) cp = CP_UTF8;
+    len = lstrlenW(wbuf);
+    str = append_wstr(rb_enc_str_new(0, 0, enc), wbuf, len, cp, path_cp, enc);
+    ALLOCV_END(wtmp);
+    return str;
+}
+
 int
 rb_file_load_ok(const char *path)
 {
@@ -665,6 +730,35 @@ rb_file_load_ok(const char *path)
     }
     free(wpath);
     return ret;
+}
+
+int
+rb_freopen(VALUE fname, const char *mode, FILE *file)
+{
+    WCHAR *wname, wmode[4];
+    VALUE wtmp;
+    char *name;
+    long len;
+    int e = 0, n = MultiByteToWideChar(CP_ACP, 0, mode, -1, NULL, 0);
+    if (n > numberof(wmode)) return EINVAL;
+    MultiByteToWideChar(CP_ACP, 0, mode, -1, wmode, numberof(wmode));
+    RSTRING_GETMEM(fname, name, len);
+    n = rb_long2int(len);
+    len = MultiByteToWideChar(CP_UTF8, 0, name, n, NULL, 0);
+    wname = ALLOCV_N(WCHAR, wtmp, len + 1);
+    len = MultiByteToWideChar(CP_UTF8, 0, name, n, wname, len);
+    wname[len] = L'\0';
+    RB_GC_GUARD(fname);
+#if RUBY_MSVCRT_VERSION < 80 && !defined(HAVE__WFREOPEN_S)
+    e = _wfreopen(wname, wmode, file) ? 0 : errno;
+#else
+    {
+	FILE *newfp = 0;
+	e = _wfreopen_s(&newfp, wname, wmode, file);
+    }
+#endif
+    ALLOCV_END(wtmp);
+    return e;
 }
 
 void

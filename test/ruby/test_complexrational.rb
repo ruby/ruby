@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class ComplexRational_Test < Test::Unit::TestCase
@@ -272,7 +273,7 @@ class SimpleRat < Numeric
       self.class.new(a, b)
     when Integer
       if o == 0
-	raise raise ZeroDivisionError, "divided by zero"
+        raise ZeroDivisionError, "divided by zero"
       end
       self.quo(self.class.new(o))
     when Float

@@ -1,6 +1,15 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestSyntax < Test::Unit::TestCase
+  using Module.new {
+    refine(Object) do
+      def `(s) #`
+        s
+      end
+    end
+  }
+
   def assert_syntax_files(test)
     srcdir = File.expand_path("../../..", __FILE__)
     srcdir = File.join(srcdir, test)
@@ -102,24 +111,33 @@ class TestSyntax < Test::Unit::TestCase
     assert_nothing_raised(ArgumentError, bug7922) {o.bug7922(foo: 42)}
   end
 
+  class KW2
+    def kw(k1: 1, k2: 2) [k1, k2] end
+  end
+
   def test_keyword_splat
     assert_valid_syntax("foo(**h)", __FILE__)
-    o = Object.new
-    def o.kw(k1: 1, k2: 2) [k1, k2] end
+    o = KW2.new
     h = {k1: 11, k2: 12}
     assert_equal([11, 12], o.kw(**h))
     assert_equal([11, 12], o.kw(k2: 22, **h))
     assert_equal([11, 22], o.kw(**h, **{k2: 22}))
     assert_equal([11, 12], o.kw(**{k2: 22}, **h))
+  end
 
+  def test_keyword_duplicated_splat
     bug10315 = '[ruby-core:65368] [Bug #10315]'
+
+    o = KW2.new
     assert_equal([23, 2], o.kw(**{k1: 22}, **{k1: 23}), bug10315)
 
     h = {k3: 31}
     assert_raise(ArgumentError) {o.kw(**h)}
     h = {"k1"=>11, k2: 12}
     assert_raise(TypeError) {o.kw(**h)}
+  end
 
+  def test_keyword_duplicated
     bug10315 = '[ruby-core:65625] [Bug #10315]'
     a = []
     def a.add(x) push(x); x; end
@@ -134,6 +152,13 @@ class TestSyntax < Test::Unit::TestCase
     assert_warn(/duplicated/) {r = eval("a.f({k: a.add(1), k: a.add(2)})")}
     assert_equal(2, r)
     assert_equal([1, 2], a, bug10315)
+  end
+
+  def test_keyword_empty_splat
+    assert_separately([], <<-'end;')
+      bug10719 = '[ruby-core:67446] [Bug #10719]'
+      assert_valid_syntax("foo(a: 1, **{})", bug10719)
+    end;
   end
 
   def test_keyword_self_reference
@@ -175,6 +200,16 @@ class TestSyntax < Test::Unit::TestCase
     assert_warn("") do
       o.instance_eval("proc {|var: 1| var}")
     end
+  end
+
+  def test_keyword_invalid_name
+    bug11663 = '[ruby-core:71356] [Bug #11663]'
+
+    o = o = Object.new
+    assert_syntax_error('def o.foo(arg1?:) end', /arg1\?/, bug11663)
+    assert_syntax_error('def o.foo(arg1?:, arg2:) end', /arg1\?/, bug11663)
+    assert_syntax_error('proc {|arg1?:|}', /arg1\?/, bug11663)
+    assert_syntax_error('proc {|arg1?:, arg2:|}', /arg1\?/, bug11663)
   end
 
   def test_optional_self_reference
@@ -288,24 +323,68 @@ WARN
     assert_not_label(:foo, 'class Foo < not_label:foo; end', bug6347)
   end
 
+  def test_no_label_with_percent
+    assert_syntax_error('{%"a": 1}', /unexpected ':'/)
+    assert_syntax_error("{%'a': 1}", /unexpected ':'/)
+    assert_syntax_error('{%Q"a": 1}', /unexpected ':'/)
+    assert_syntax_error("{%Q'a': 1}", /unexpected ':'/)
+    assert_syntax_error('{%q"a": 1}', /unexpected ':'/)
+    assert_syntax_error("{%q'a': 1}", /unexpected ':'/)
+  end
+
+  def test_block_after_cond
+    bug10653 = '[ruby-dev:48790] [Bug #10653]'
+    assert_valid_syntax("false ? raise {} : tap {}", bug10653)
+    assert_valid_syntax("false ? raise do end : tap do end", bug10653)
+  end
+
+  def test_paren_after_label
+    bug11456 = '[ruby-dev:49221] [Bug #11456]'
+    assert_valid_syntax("{foo: (1 rescue 0)}", bug11456)
+    assert_valid_syntax("{foo: /=/}", bug11456)
+  end
+
+  def test_percent_string_after_label
+    bug11812 = '[ruby-core:72084]'
+    assert_valid_syntax('{label:%w(*)}', bug11812)
+    assert_valid_syntax('{label: %w(*)}', bug11812)
+  end
+
+  def test_heredoc_after_label
+    bug11849 = '[ruby-core:72396] [Bug #11849]'
+    assert_valid_syntax("{label:<<DOC\n""DOC\n""}", bug11849)
+    assert_valid_syntax("{label:<<-DOC\n""DOC\n""}", bug11849)
+    assert_valid_syntax("{label:<<~DOC\n""DOC\n""}", bug11849)
+    assert_valid_syntax("{label: <<DOC\n""DOC\n""}", bug11849)
+    assert_valid_syntax("{label: <<-DOC\n""DOC\n""}", bug11849)
+    assert_valid_syntax("{label: <<~DOC\n""DOC\n""}", bug11849)
+  end
+
+  def test_cmdarg_kwarg_lvar_clashing_method
+    bug12073 = '[ruby-core:73816] [Bug#12073]'
+    a = a = 1
+    assert_valid_syntax("a b: 1")
+    assert_valid_syntax("a = 1; a b: 1", bug12073)
+  end
+
   def test_duplicated_arg
     assert_syntax_error("def foo(a, a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_, _) end }
+    assert_valid_syntax("def foo(_, _) end")
   end
 
   def test_duplicated_rest
     assert_syntax_error("def foo(a, *a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_, *_) end }
+    assert_valid_syntax("def foo(_, *_) end")
   end
 
   def test_duplicated_opt
     assert_syntax_error("def foo(a, a=1) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_, _=1) end }
+    assert_valid_syntax("def foo(_, _=1) end")
   end
 
   def test_duplicated_opt_rest
     assert_syntax_error("def foo(a=1, *a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_=1, *_) end }
+    assert_valid_syntax("def foo(_=1, *_) end")
   end
 
   def test_duplicated_rest_opt
@@ -318,12 +397,12 @@ WARN
 
   def test_duplicated_opt_post
     assert_syntax_error("def foo(a=1, a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_=1, _) end }
+    assert_valid_syntax("def foo(_=1, _) end")
   end
 
   def test_duplicated_kw
     assert_syntax_error("def foo(a, a: 1) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_, _: 1) end }
+    assert_valid_syntax("def foo(_, _: 1) end")
   end
 
   def test_duplicated_rest_kw
@@ -333,22 +412,22 @@ WARN
 
   def test_duplicated_opt_kw
     assert_syntax_error("def foo(a=1, a: 1) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_=1, _: 1) end }
+    assert_valid_syntax("def foo(_=1, _: 1) end")
   end
 
   def test_duplicated_kw_kwrest
     assert_syntax_error("def foo(a: 1, **a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_: 1, **_) end }
+    assert_valid_syntax("def foo(_: 1, **_) end")
   end
 
   def test_duplicated_rest_kwrest
     assert_syntax_error("def foo(*a, **a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(*_, **_) end }
+    assert_valid_syntax("def foo(*_, **_) end")
   end
 
   def test_duplicated_opt_kwrest
     assert_syntax_error("def foo(a=1, **a) end", /duplicated argument name/)
-    assert_nothing_raised { def foo(_=1, **_) end }
+    assert_valid_syntax("def foo(_=1, **_) end")
   end
 
   def test_duplicated_when
@@ -363,7 +442,7 @@ WARN
       }
     }
     assert_warning(/#{w}/){#/3: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m){
-      a = 1
+      a = a = 1
       eval %q{
         case 1
         when 1, 1
@@ -393,6 +472,16 @@ WARN
     assert_valid_syntax("bar def foo; self.each do end end", bug9308)
   end
 
+  def test_do_block_in_lambda
+    bug11107 = '[ruby-core:69017] [Bug #11107]'
+    assert_valid_syntax('p ->() do a() do end end', bug11107)
+  end
+
+  def test_do_block_after_lambda
+    bug11380 = '[ruby-core:70067] [Bug #11380]'
+    assert_valid_syntax('p -> { :hello }, a: 1 do end', bug11380)
+  end
+
   def test_reserved_method_no_args
     bug6403 = '[ruby-dev:45626]'
     assert_valid_syntax("def self; :foo; end", __FILE__, bug6403)
@@ -416,6 +505,119 @@ c
 d
 e"
     assert_equal(expected, actual, "#{Bug7559}: ")
+  end
+
+  def assert_dedented_heredoc(expect, result, mesg = "")
+    all_assertions(mesg) do |a|
+      %w[eos "eos" 'eos' `eos`].each do |eos|
+        a.for(eos) do
+          assert_equal(eval("<<-#{eos}\n#{expect}eos\n"),
+                       eval("<<~#{eos}\n#{result}eos\n"))
+        end
+      end
+    end
+  end
+
+  def test_dedented_heredoc_without_indentation
+    result = " y\n" \
+             "z\n"
+    expect = result
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_indentation
+    result = "     a\n" \
+             "    b\n"
+    expect = " a\n" \
+             "b\n"
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_blank_less_indented_line
+    # the blank line has two leading spaces
+    result = "    a\n" \
+             "  \n" \
+             "    b\n"
+    expect = "a\n" \
+             "\n" \
+             "b\n"
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_blank_less_indented_line_escaped
+    result = "    a\n" \
+             "\\ \\ \n" \
+             "    b\n"
+    expect = result
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_blank_more_indented_line
+    # the blank line has six leading spaces
+    result = "    a\n" \
+             "      \n" \
+             "    b\n"
+    expect = "a\n" \
+             "  \n" \
+             "b\n"
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_blank_more_indented_line_escaped
+    result = "    a\n" \
+             "\\ \\ \\ \\ \\ \\ \n" \
+             "    b\n"
+    expect = result
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_empty_line
+    result = "      This would contain specially formatted text.\n" \
+             "\n" \
+             "      That might span many lines\n"
+    expect = 'This would contain specially formatted text.'"\n" \
+             ''"\n" \
+             'That might span many lines'"\n"
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_interpolated_expression
+    result = '  #{1}a'"\n" \
+             " zy\n"
+    expect = ' #{1}a'"\n" \
+             "zy\n"
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_interpolated_string
+    w = w = ""
+    result = " \#{mesg} a\n" \
+             "  zy\n"
+    expect = '#{mesg} a'"\n" \
+             ' zy'"\n"
+    assert_dedented_heredoc(expect, result)
+  end
+
+  def test_dedented_heredoc_with_newline
+    bug11989 = '[ruby-core:72855] [Bug #11989] after escaped newline should not be dedented'
+    result = '  x\n'"  y\n" \
+             "  z\n"
+    expect = 'x\n'"  y\n" \
+             "z\n"
+    assert_dedented_heredoc(expect, result, bug11989)
+  end
+
+  def test_dedented_heredoc_with_concatenation
+    bug11990 = '[ruby-core:72857] [Bug #11990] concatenated string should not be dedented'
+    %w[eos "eos" 'eos'].each do |eos|
+      assert_equal("x\n  y",
+                   eval("<<~#{eos} '  y'\n  x\neos\n"),
+                   "#{bug11990} with #{eos}")
+    end
+    %w[eos "eos" 'eos' `eos`].each do |eos|
+      _, expect = eval("[<<~#{eos}, '  x']\n""  y\n""eos\n")
+      assert_equal('  x', expect, bug11990)
+    end
   end
 
   def test_lineno_after_heredoc
@@ -548,6 +750,68 @@ eom
     bug10545 = '[ruby-dev:48742] [Bug #10545]'
     src = 'def foo(A: a) end'
     assert_syntax_error(src, /formal argument/, bug10545)
+  end
+
+  def test_null_range_cmdarg
+    bug10957 = '[ruby-core:68477] [Bug #10957]'
+    assert_ruby_status(['-c', '-e', 'p ()..0'], "", bug10957)
+    assert_ruby_status(['-c', '-e', 'p ()...0'], "", bug10957)
+    assert_syntax_error('0..%w.', /unterminated string/, bug10957)
+    assert_syntax_error('0...%w.', /unterminated string/, bug10957)
+  end
+
+  def test_too_big_nth_ref
+    bug11192 = '[ruby-core:69393] [Bug #11192]'
+    assert_warn(/too big/, bug11192) do
+      eval('$99999999999999999')
+    end
+  end
+
+  def test_invalid_symbol_space
+    assert_syntax_error(": foo", /unexpected ':'/)
+    assert_syntax_error(": #\n foo", /unexpected ':'/)
+    assert_syntax_error(":#\n foo", /unexpected ':'/)
+  end
+
+  def test_fluent_dot
+    assert_valid_syntax("a\n.foo")
+    assert_valid_syntax("a\n&.foo")
+  end
+
+  def test_no_warning_logop_literal
+    assert_warning("") do
+      eval("true||raise;nil")
+    end
+    assert_warning("") do
+      eval("false&&raise;nil")
+    end
+    assert_warning("") do
+      eval("''||raise;nil")
+    end
+  end
+
+  def test_alias_symbol
+    bug8851 = '[ruby-dev:47681] [Bug #8851]'
+    formats = ['%s', ":'%s'", ':"%s"', '%%s(%s)']
+    all_assertions(bug8851) do |all|
+      formats.product(formats) do |form1, form2|
+        all.for(code = "alias #{form1 % 'a'} #{form2 % 'p'}") do
+          assert_valid_syntax(code)
+        end
+      end
+    end
+  end
+
+  def test_undef_symbol
+    bug8851 = '[ruby-dev:47681] [Bug #8851]'
+    formats = ['%s', ":'%s'", ':"%s"', '%%s(%s)']
+    all_assertions(bug8851) do |all|
+      formats.product(formats) do |form1, form2|
+        all.for(code = "undef #{form1 % 'a'}, #{form2 % 'p'}") do
+          assert_valid_syntax(code)
+        end
+      end
+    end
   end
 
   private

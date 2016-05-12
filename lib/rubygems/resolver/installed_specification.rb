@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 ##
 # An InstalledSpecification represents a gem that is already installed
 # locally.

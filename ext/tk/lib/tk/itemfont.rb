@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/itemfont.rb : control font of widget items
 #

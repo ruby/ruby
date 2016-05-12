@@ -1,9 +1,10 @@
+# frozen_string_literal: false
 require 'net/smtp'
-require 'minitest/autorun'
+require 'test/unit'
 
 module Net
   class SMTP
-    class TestResponse < MiniTest::Unit::TestCase
+    class TestResponse < Test::Unit::TestCase
       def test_capabilities
         res = Response.parse("250-ubuntu-desktop\n250-PIPELINING\n250-SIZE 10240000\n250-VRFY\n250-ETRN\n250-STARTTLS\n250-ENHANCEDSTATUSCODES\n250 DSN\n")
 

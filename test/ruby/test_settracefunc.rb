@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestSetTraceFunc < Test::Unit::TestCase
@@ -464,7 +465,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     EOF
     self.class.class_eval{remove_const(:XYZZY)}
     ensure
-      trace.disable if trace && trace.enabled?
+      trace.disable if trace&.enabled?
     end
 
     answer_events = [
@@ -977,6 +978,27 @@ class TestSetTraceFunc < Test::Unit::TestCase
     end
   end
 
+  def test_trace_point_binding_after_break
+    bug10689 = '[ruby-dev:48797]'
+    assert_in_out_err([], <<-INPUT, [], [], bug10689)
+      class Bug
+        include Enumerable
+
+        def each
+          [0].each do
+            yield
+          end
+        end
+      end
+
+      TracePoint.trace(:c_return) do |tp|
+        tp.binding
+      end
+
+      Bug.new.all? { false }
+    INPUT
+  end
+
   def test_tracepoint_b_return_with_next
     n = 0
     TracePoint.new(:b_return){
@@ -1019,7 +1041,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_isolated_raise_in_trace
     bug9088 = '[ruby-dev:47793] [Bug #9088]'
-    assert_ruby_status([], <<-END, bug9088)
+    assert_in_out_err([], <<-END, [], [], bug9088)
     set_trace_func proc {raise rescue nil}
     1.times {break}
     END
@@ -1190,17 +1212,82 @@ class TestSetTraceFunc < Test::Unit::TestCase
     end
   end
 
+  class C11492
+    define_method(:foo_return){
+      return true
+    }
+    define_method(:foo_break){
+      break true
+    }
+  end
+
+  def test_define_method_on_return
+    # return
+    events = []
+    obj = C11492.new
+    TracePoint.new(:call, :return){|tp|
+      next unless target_thread?
+      events << [tp.event, tp.method_id]
+    }.enable{
+      obj.foo_return
+    }
+    assert_equal([[:call, :foo_return], [:return, :foo_return]], events, 'Bug #11492')
+
+    # break
+    events = []
+    obj = C11492.new
+    TracePoint.new(:call, :return){|tp|
+      next unless target_thread?
+      events << [tp.event, tp.method_id]
+    }.enable{
+      obj.foo_break
+    }
+    assert_equal([[:call, :foo_break], [:return, :foo_break]], events, 'Bug #11492')
+
+    # set_trace_func
+    # return
+    events = []
+    begin
+      set_trace_func(lambda{|event, file, lineno, mid, binding, klass|
+        next unless target_thread?
+        case event
+        when 'call', 'return'
+          events << [event, mid]
+        end
+      })
+      obj.foo_return
+      set_trace_func(nil)
+
+      assert_equal([['call', :foo_return], ['return', :foo_return]], events, 'Bug #11492')
+    ensure
+    end
+
+    # break
+    events = []
+    begin
+      set_trace_func(lambda{|event, file, lineno, mid, binding, klass|
+        next unless target_thread?
+        case event
+        when 'call', 'return'
+          events << [event, mid]
+        end
+      })
+      obj.foo_break
+      set_trace_func(nil)
+
+      assert_equal([['call', :foo_break], ['return', :foo_break]], events, 'Bug #11492')
+    ensure
+    end
+  end
+
   def test_recursive
-    assert_ruby_status [], %q{
-      stack = []
+    assert_in_out_err([], %q{\
       TracePoint.new(:c_call){|tp|
-        p 2
-        stack << tp.method_id
+        p tp.method_id
       }.enable{
         p 1
       }
-      raise if stack != [:p, :hash, :inspect]
-    }, '[Bug #9940]'
+    }, %w[:p :inspect 1], [], '[Bug #9940]')
   end
 
   def method_prefix event
@@ -1272,7 +1359,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_consistent_call_return '[Bug #9959]' do
       begin
         method_test_argument_error_on_bmethod(wrong_key: 2)
-      rescue => e
+      rescue
         # ignore
       end
     end
@@ -1282,7 +1369,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_consistent_call_return '[Bug #9961]' do
       begin
         -Numeric.new
-      rescue => e
+      rescue
         # ignore
       end
     end
@@ -1310,5 +1397,95 @@ class TestSetTraceFunc < Test::Unit::TestCase
       dummy << (1) + (2)
     }
     assert_equal [__LINE__ - 3, __LINE__ - 2], lines, 'Bug #10449'
+  end
+
+  def test_elsif_line_event
+    bug10763 = '[ruby-core:67720] [Bug #10763]'
+    lines = []
+    line = nil
+
+    TracePoint.new(:line){|tp|
+      next unless target_thread?
+      lines << tp.lineno if line
+    }.enable{
+      line = __LINE__
+      if !line
+        1
+      elsif line
+        2
+      end
+    }
+    assert_equal [line+1, line+3, line+4], lines, bug10763
+  end
+
+  class Bug10724
+    def initialize
+      loop{return}
+    end
+  end
+
+  def test_throwing_return_with_finish_frame
+    target_th = Thread.current
+    evs = []
+
+    TracePoint.new(:call, :return){|tp|
+      return if Thread.current != target_th
+      evs << tp.event
+    }.enable{
+      Bug10724.new
+    }
+
+    assert_equal([:call, :return], evs)
+  end
+
+  require 'fiber'
+  def test_fiber_switch
+    # test for resume/yield
+    evs = []
+    TracePoint.new(:fiber_switch){|tp|
+      next unless target_thread?
+      evs << tp.event
+    }.enable{
+      f = Fiber.new{
+        Fiber.yield
+        Fiber.yield
+        Fiber.yield
+      }
+      f.resume
+      f.resume
+      f.resume
+      f.resume
+      begin
+        f.resume
+      rescue FiberError
+      end
+    }
+    assert_equal 8, evs.size
+    evs.each{|ev|
+      assert_equal ev, :fiber_switch
+    }
+
+    # test for transfer
+    evs = []
+    TracePoint.new(:fiber_switch){|tp|
+      next unless target_thread?
+      evs << tp.event
+    }.enable{
+      f1 = f2 = nil
+      f1 = Fiber.new{
+        f2.transfer
+        f2.transfer
+        Fiber.yield :ok
+      }
+      f2 = Fiber.new{
+        f1.transfer
+        f1.transfer
+      }
+      assert_equal :ok, f1.resume
+    }
+    assert_equal 6, evs.size
+    evs.each{|ev|
+      assert_equal ev, :fiber_switch
+    }
   end
 end

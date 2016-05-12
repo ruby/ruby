@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require "rexml/document"
 
 require_relative "rss-testcase"
@@ -100,6 +101,12 @@ module RSS
       assert_items20(@item_infos, rss.items)
       assert_image20(@image_info, rss.image)
       assert_textinput20(@textinput_info, rss.textinput)
+    end
+
+    def test_time_w3cdtf
+      assert_equal("2015-09-05T01:25:48.0001Z",
+                   Time.utc(2015, 9, 5, 1, 25, 48, 100).w3cdtf,
+                   '[ruby-core:70667] [Bug #11509]')
     end
 
     private

@@ -1,4 +1,5 @@
 # coding: us-ascii
+# frozen_string_literal: false
 
 begin
   require 'win32ole'
@@ -6,11 +7,11 @@ rescue LoadError
 end
 require 'test/unit'
 
-PROGID_CLR='System.Runtime.Serialization.FormatterConverter'
 PROGID_RBCOMTEST='RbComTest.ComSrvTest'
 
 =begin
 RbComTest.ComSrvTest is following VB.NET COM server(RbComTest solution).
+(You must check COM interoperability.)
 
 Imports System.Runtime.InteropServices
 Public Class ComSrvTest
@@ -189,9 +190,9 @@ if defined?(WIN32OLE_RECORD)
       end
 
       def test_ole_instance_variable_get
-        obj = WIN32OLE_RECORD.new('ComObject', @obj)
-        assert_equal(nil, obj.ole_instance_variable_get(:object_id))
-        assert_equal(nil, obj.ole_instance_variable_get('object_id'))
+        obj = WIN32OLE_RECORD.new('Book', @obj)
+        assert_equal(nil, obj.ole_instance_variable_get(:title))
+        assert_equal(nil, obj.ole_instance_variable_get('title'))
       end
 
       def test_ole_instance_variable_set
@@ -206,107 +207,6 @@ if defined?(WIN32OLE_RECORD)
         book = WIN32OLE_RECORD.new('Book', @obj)
         assert_equal(%q[#<WIN32OLE_RECORD(Book) {"title"=>nil, "cost"=>nil}>], book.inspect)
       end
-    end
-  end
-
-  def clr_exist?
-    exist = false
-    begin
-      obj = WIN32OLE.new(PROGID_CLR)
-      exist = true
-    rescue WIN32OLERuntimeError
-      exist = false
-    end
-    exist
-  end
-
-  class TestWIN32OLE_CLR < Test::Unit::TestCase
-    unless clr_exist?
-      def test_dummy_for_skip_message
-        skip "#{PROGID_CLR}(.Net Framework 3.5) not found."
-      end
-    else
-      def setup
-        @obj = WIN32OLE.new(PROGID_CLR)
-      end
-
-      def test_s_new_from_win32ole
-        rec = WIN32OLE_RECORD.new('Decimal', @obj)
-        assert(rec)
-        assert_instance_of(WIN32OLE_RECORD, rec)
-      end
-
-      def test_s_new_from_win32ole_typelib
-        tlib = @obj.ole_typelib
-        rec = WIN32OLE_RECORD.new('Decimal', tlib)
-        assert(rec)
-        assert_instance_of(WIN32OLE_RECORD, rec)
-      end
-
-      def test_s_new_raise
-        assert_raise(WIN32OLERuntimeError) {
-          rec = WIN32OLE_RECORD.new('NonExistRecordName', @obj)
-        }
-        assert_raise(ArgumentError) {
-          rec = WIN32OLE_RECORD.new
-        }
-        assert_raise(ArgumentError) {
-          rec = WIN32OLE_RECORD.new('NonExistRecordName')
-        }
-      end
-
-      def test_to_h
-        rec = WIN32OLE_RECORD.new('Decimal', @obj)
-        assert_equal({'lo'=>nil, 'mid'=>nil, 'hi'=>nil, 'flags'=>nil}, rec.to_h)
-      end
-
-      def test_typename
-        rec = WIN32OLE_RECORD.new('Decimal', @obj)
-        assert_equal('Decimal', rec.typename)
-      end
-
-      def test_method_missing_getter
-        rec = WIN32OLE_RECORD.new('Decimal', @obj)
-        assert_equal(nil, rec.lo)
-        assert_raise(KeyError) {
-          rec.non_exist_name
-        }
-      end
-
-      def test_method_missing_setter
-        rec = WIN32OLE_RECORD.new('Decimal', @obj)
-        rec.lo = 1
-        assert_equal(1, rec.lo)
-      end
-
-      def test_pass_record_parameter
-        rec = WIN32OLE_RECORD.new('Decimal', @obj)
-        rec.lo = 0
-        rec.mid = 1
-        rec.hi = 0
-        rec.flags = false
-        assert_equal(2**32, @obj.ToInt64(rec))
-      end
-
-      def test_ole_instance_variable_get
-        obj = WIN32OLE_RECORD.new('Decimal', @obj)
-        assert_equal(nil, obj.ole_instance_variable_get(:lo))
-        assert_equal(nil, obj.ole_instance_variable_get('lo'))
-      end
-
-      def test_ole_instance_variable_set
-        rec = WIN32OLE_RECORD.new('Decimal', @obj)
-        rec.ole_instance_variable_set(:lo, 1)
-        assert_equal(1, rec.lo)
-        rec.ole_instance_variable_set('lo', 2)
-        assert_equal(2, rec.lo)
-      end
-
-      def test_inspect
-        rec = WIN32OLE_RECORD.new('Decimal', @obj)
-        assert_equal(%q[#<WIN32OLE_RECORD(Decimal) {"flags"=>nil, "hi"=>nil, "lo"=>nil, "mid"=>nil}>], rec.inspect)
-      end
-
     end
   end
 

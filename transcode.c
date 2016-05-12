@@ -154,7 +154,7 @@ struct rb_econv_t {
 typedef struct {
     const char *sname;
     const char *dname;
-    const char *lib; /* null means means no need to load a library */
+    const char *lib; /* null means no need to load a library */
     const rb_transcoder *transcoder;
 } transcoder_entry_t;
 
@@ -370,15 +370,12 @@ load_transcoder_entry(transcoder_entry_t *entry)
         char *const path = RSTRING_PTR(fn);
 	const int safe = rb_safe_level();
 
-        entry->lib = NULL;
-
         memcpy(path, transcoder_lib_prefix, sizeof(transcoder_lib_prefix) - 1);
         memcpy(path + sizeof(transcoder_lib_prefix) - 1, lib, len);
         rb_str_set_len(fn, total_len);
         FL_UNSET(fn, FL_TAINT);
         OBJ_FREEZE(fn);
-        if (!rb_require_safe(fn, safe > 3 ? 3 : safe))
-            return NULL;
+        rb_require_safe(fn, safe > 3 ? 3 : safe);
     }
 
     if (entry->transcoder)
@@ -996,6 +993,7 @@ rb_econv_open0(const char *sname, const char *dname, int ecflags)
     if (*sname == '\0' && *dname == '\0') {
         num_trans = 0;
         entries = NULL;
+	sname = dname = "";
     }
     else {
         struct trans_open_t toarg;
@@ -1856,6 +1854,7 @@ rb_econv_substr_append(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst,
     src = rb_str_new_frozen(src);
     dst = rb_econv_append(ec, RSTRING_PTR(src) + off, len, dst, flags);
     RB_GC_GUARD(src);
+    OBJ_INFECT_RAW(dst, src);
     return dst;
 }
 
@@ -2202,7 +2201,7 @@ rb_econv_set_replacement(rb_econv_t *ec,
 
     encname2 = rb_econv_encoding_to_insert_output(ec);
 
-    if (encoding_equal(encname, encname2)) {
+    if (!*encname2 || encoding_equal(encname, encname2)) {
         str2 = xmalloc(len);
         MEMCPY(str2, str, unsigned char, len); /* xxx: str may be invalid */
         len2 = len;
@@ -2914,7 +2913,7 @@ econv_free(void *ptr)
 static size_t
 econv_memsize(const void *ptr)
 {
-    return ptr ? sizeof(rb_econv_t) : 0;
+    return sizeof(rb_econv_t);
 }
 
 static const rb_data_type_t econv_data_type = {
@@ -3249,10 +3248,10 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
     }
 
     if (first) {
-      *senc_p = NULL;
-      *denc_p = NULL;
-      *sname_p = "";
-      *dname_p = "";
+	*senc_p = NULL;
+	*denc_p = NULL;
+	*sname_p = "";
+	*dname_p = "";
     }
 
     ec->source_encoding_name = *sname_p;
@@ -3393,7 +3392,10 @@ econv_init(int argc, VALUE *argv, VALUE self)
     }
 
     if (!ec) {
-        rb_exc_raise(rb_econv_open_exc(sname, dname, ecflags));
+	VALUE exc = rb_econv_open_exc(sname, dname, ecflags);
+	RB_GC_GUARD(snamev);
+	RB_GC_GUARD(dnamev);
+	rb_exc_raise(exc);
     }
 
     if (!DECORATOR_P(sname, dname)) {
@@ -3401,6 +3403,8 @@ econv_init(int argc, VALUE *argv, VALUE self)
             senc = make_dummy_encoding(sname);
         if (!denc)
             denc = make_dummy_encoding(dname);
+	RB_GC_GUARD(snamev);
+	RB_GC_GUARD(dnamev);
     }
 
     ec->source_encoding = senc;
@@ -3765,8 +3769,10 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
 
     res = rb_econv_convert(ec, &ip, is, &op, os, flags);
     rb_str_set_len(output, op-(unsigned char *)RSTRING_PTR(output));
-    if (!NIL_P(input))
+    if (!NIL_P(input)) {
+        OBJ_INFECT_RAW(output, input);
         rb_str_drop_bytes(input, ip - (unsigned char *)RSTRING_PTR(input));
+    }
 
     if (NIL_P(output_bytesize_v) && res == econv_destination_buffer_full) {
         if (LONG_MAX / 2 < output_bytesize)

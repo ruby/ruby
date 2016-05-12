@@ -1,5 +1,12 @@
 #include <psych.h>
 
+#if !defined(RARRAY_CONST_PTR)
+#define RARRAY_CONST_PTR(s) (const VALUE *)RARRAY_PTR(s)
+#endif
+#if !defined(RARRAY_AREF)
+#define RARRAY_AREF(a, i) RARRAY_CONST_PTR(a)[i]
+#endif
+
 VALUE cPsychEmitter;
 static ID id_write;
 static ID id_line_width;
@@ -15,7 +22,11 @@ static void emit(yaml_emitter_t * emitter, yaml_event_t * event)
 static int writer(void *ctx, unsigned char *buffer, size_t size)
 {
     VALUE io = (VALUE)ctx;
+#ifdef HAVE_RUBY_ENCODING_H
+    VALUE str = rb_enc_str_new((const char *)buffer, (long)size, rb_utf8_encoding());
+#else
     VALUE str = rb_str_new((const char *)buffer, (long)size);
+#endif
     VALUE wrote = rb_funcall(io, id_write, 1, str);
     return (int)NUM2INT(wrote);
 }
@@ -50,14 +61,13 @@ static const rb_data_type_t psych_emitter_type = {
 static VALUE allocate(VALUE klass)
 {
     yaml_emitter_t * emitter;
-
-    emitter = xmalloc(sizeof(yaml_emitter_t));
+    VALUE obj = TypedData_Make_Struct(klass, yaml_emitter_t, &psych_emitter_type, emitter);
 
     yaml_emitter_initialize(emitter);
     yaml_emitter_set_unicode(emitter, 1);
     yaml_emitter_set_indent(emitter, 2);
 
-    return TypedData_Wrap_Struct(klass, &psych_emitter_type, emitter);
+    return obj;
 }
 
 /* call-seq: Psych::Emitter.new(io, options = Psych::Emitter::OPTIONS)
@@ -156,18 +166,20 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
     }
 
     if(RTEST(tags)) {
-	int i = 0;
+	long i = 0;
+	long len;
 #ifdef HAVE_RUBY_ENCODING_H
 	rb_encoding * encoding = rb_utf8_encoding();
 #endif
 
 	Check_Type(tags, T_ARRAY);
 
-	head  = xcalloc((size_t)RARRAY_LEN(tags), sizeof(yaml_tag_directive_t));
+	len = RARRAY_LEN(tags);
+	head  = xcalloc((size_t)len, sizeof(yaml_tag_directive_t));
 	tail  = head;
 
-	for(i = 0; i < RARRAY_LEN(tags); i++) {
-	    VALUE tuple = RARRAY_PTR(tags)[i];
+	for(i = 0; i < len && i < RARRAY_LEN(tags); i++) {
+	    VALUE tuple = RARRAY_AREF(tags, i);
 	    VALUE name;
 	    VALUE value;
 
@@ -177,15 +189,17 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
 		xfree(head);
 		rb_raise(rb_eRuntimeError, "tag tuple must be of length 2");
 	    }
-	    name  = RARRAY_PTR(tuple)[0];
-	    value = RARRAY_PTR(tuple)[1];
+	    name  = RARRAY_AREF(tuple, 0);
+	    value = RARRAY_AREF(tuple, 1);
+	    StringValue(name);
+	    StringValue(value);
 #ifdef HAVE_RUBY_ENCODING_H
 	    name = rb_str_export_to_enc(name, encoding);
 	    value = rb_str_export_to_enc(value, encoding);
 #endif
 
-	    tail->handle = (yaml_char_t *)StringValuePtr(name);
-	    tail->prefix = (yaml_char_t *)StringValuePtr(value);
+	    tail->handle = (yaml_char_t *)RSTRING_PTR(name);
+	    tail->prefix = (yaml_char_t *)RSTRING_PTR(value);
 
 	    tail++;
 	}

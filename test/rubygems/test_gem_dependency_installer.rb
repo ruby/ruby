@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/dependency_installer'
 require 'rubygems/security'
@@ -14,6 +15,14 @@ class TestGemDependencyInstaller < Gem::TestCase
     FileUtils.mkdir @gems_dir
 
     Gem::RemoteFetcher.fetcher = @fetcher = Gem::FakeFetcher.new
+
+    @original_platforms = Gem.platforms
+    Gem.platforms = []
+  end
+
+  def teardown
+    Gem.platforms = @original_platforms
+    super
   end
 
   def util_setup_gems
@@ -272,7 +281,7 @@ class TestGemDependencyInstaller < Gem::TestCase
   # This asserts that if a gem's dependency is satisfied by an
   # already installed gem, RubyGems doesn't installed a newer
   # version
-  def test_install_doesnt_upgrade_installed_depedencies
+  def test_install_doesnt_upgrade_installed_dependencies
     util_setup_gems
 
     a2, a2_gem = util_gem 'a', '2'
@@ -398,7 +407,7 @@ class TestGemDependencyInstaller < Gem::TestCase
   def test_install_dependency_existing
     util_setup_gems
 
-    Gem::Installer.new(@a1_gem).install
+    Gem::Installer.at(@a1_gem).install
     FileUtils.mv @a1_gem, @tempdir
     FileUtils.mv @b1_gem, @tempdir
     inst = nil
@@ -429,7 +438,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     _, f1_gem = util_gem 'f', '1', 'e' => nil
 
-    Gem::Installer.new(e1_gem).install
+    Gem::Installer.at(e1_gem).install
     FileUtils.rm_r e1.extension_dir
 
     FileUtils.mv e1_gem, @tempdir
@@ -517,7 +526,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      Gem::Installer.new('a-1.gem').install
+      Gem::Installer.at('a-1.gem').install
 
       inst = Gem::DependencyInstaller.new :domain => :local
       inst.install 'b-1.gem'
@@ -661,7 +670,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     FileUtils.mv @a1_gem, @tempdir
     FileUtils.mv @b1_gem, @tempdir
 
-    inst = Gem::Installer.new @a1.file_name
+    inst = Gem::Installer.at @a1.file_name
     inst.install
 
     gemhome2 = File.join @tempdir, 'gemhome2'
@@ -791,7 +800,7 @@ class TestGemDependencyInstaller < Gem::TestCase
   def test_install_reinstall
     util_setup_gems
 
-    Gem::Installer.new(@a1_gem).install
+    Gem::Installer.at(@a1_gem).install
     FileUtils.mv @a1_gem, @tempdir
     inst = nil
 
@@ -1082,6 +1091,24 @@ class TestGemDependencyInstaller < Gem::TestCase
       installer.find_gems_with_sources(dependency).all_specs
 
     assert_equal [@a1_pre, @a1], prereleases
+  end
+
+  def test_find_gems_with_sources_with_best_only_and_platform
+    util_setup_gems
+    a1_x86_mingw32, = util_gem 'a', '1' do |s|
+      s.platform = 'x86-mingw32'
+    end
+    util_setup_spec_fetcher @a1, a1_x86_mingw32
+    Gem.platforms << Gem::Platform.new('x86-mingw32')
+
+    installer = Gem::DependencyInstaller.new
+
+    dependency = Gem::Dependency.new('a', Gem::Requirement.default)
+
+    releases =
+      installer.find_gems_with_sources(dependency, true).all_specs
+
+    assert_equal [a1_x86_mingw32], releases
   end
 
   def test_find_gems_with_sources_with_bad_source

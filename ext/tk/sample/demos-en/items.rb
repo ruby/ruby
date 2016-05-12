@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # items.rb
 #
 # This demonstration script creates a canvas that displays the

@@ -23,7 +23,7 @@
 
 #define option_given_p(opts, key) RTEST(rb_funcall(opts, i_key_p, 1, key))
 
-/* unicode defintions */
+/* unicode definitions */
 
 #define UNI_STRICT_CONVERSION 1
 
@@ -112,7 +112,6 @@ static VALUE mFalseClass_to_json(int argc, VALUE *argv, VALUE self);
 static VALUE mNilClass_to_json(int argc, VALUE *argv, VALUE self);
 static VALUE mObject_to_json(int argc, VALUE *argv, VALUE self);
 static void State_free(void *state);
-static JSON_Generator_State *State_allocate(void);
 static VALUE cState_s_allocate(VALUE klass);
 static VALUE cState_configure(VALUE self, VALUE opts);
 static VALUE cState_to_h(VALUE self);
@@ -147,6 +146,21 @@ static VALUE cState_ascii_only_p(VALUE self);
 static VALUE cState_depth(VALUE self);
 static VALUE cState_depth_set(VALUE self, VALUE depth);
 static FBuffer *cState_prepare_buffer(VALUE self);
+#ifndef ZALLOC
+#define ZALLOC(type) ((type *)ruby_zalloc(sizeof(type)))
+static inline void *ruby_zalloc(size_t n)
+{
+    void *p = ruby_xmalloc(n);
+    memset(p, 0, n);
+    return p;
+}
+#endif
+#ifdef TypedData_Make_Struct
 static const rb_data_type_t JSON_Generator_State_type;
+#define NEW_TYPEDDATA_WRAPPER 1
+#else
+#define TypedData_Make_Struct(klass, type, ignore, json) Data_Make_Struct(klass, type, NULL, State_free, json)
+#define TypedData_Get_Struct(self, JSON_Generator_State, ignore, json) Data_Get_Struct(self, JSON_Generator_State, json)
+#endif
 
 #endif

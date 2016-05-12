@@ -1,5 +1,5 @@
 # -*- ruby -*-
-_VERSION = "0.4.3"
+_VERSION = "0.4.6"
 date = %w$Date::                           $[1]
 
 Gem::Specification.new do |s|
@@ -12,10 +12,10 @@ Gem::Specification.new do |s|
   s.required_ruby_version = ">= 2.0.0"
   s.homepage = "http://www.ruby-lang.org"
   s.authors = ["Nobu Nakada"]
-  s.require_path = %[.]
-  s.files = %w[console.c extconf.rb lib/console/size.rb]
+  s.require_path = %[lib]
+  s.files = %w[console.c depend extconf.rb lib/console/size.rb win32_vk.inc]
   s.extensions = %w[extconf.rb]
-  s.licenses = "ruby"
+  s.license = "BSD-2-Clause"
   s.cert_chain  = %w[certs/nobu.pem]
   s.signing_key = File.expand_path("~/.ssh/gem-private_key.pem") if $0 =~ /gem\z/
 end

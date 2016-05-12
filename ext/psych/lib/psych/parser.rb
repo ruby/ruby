@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 module Psych
   ###
   # YAML event parser class.  This class parses a YAML document and calls

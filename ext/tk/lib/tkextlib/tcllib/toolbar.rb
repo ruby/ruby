@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tkextlib/tcllib/toolbar.rb
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
@@ -56,7 +57,7 @@ class Tk::Tcllib::Widget::ToolbarItem < TkObject
     }
   end
 
-  def initaialize(parent, *args)
+  def initialize(parent, *args)
     @parent = @t = parent
     @tpath = parent.path
 

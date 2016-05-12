@@ -1,20 +1,21 @@
 /*
- * $Id$
  * 'OpenSSL for Ruby' project
  * Copyright (C) 2001-2002  Michal Rokos <m.rokos@sh.cvut.cz>
  * All rights reserved.
  */
 /*
- * This program is licenced under the same licence as Ruby.
+ * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
 #include "ossl.h"
 
-#define WrapX509Rev(klass, obj, rev) do { \
+#define NewX509Rev(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_x509rev_type, 0)
+#define SetX509Rev(obj, rev) do { \
     if (!(rev)) { \
 	ossl_raise(rb_eRuntimeError, "REV wasn't initialized!"); \
     } \
-    (obj) = TypedData_Wrap_Struct((klass), &ossl_x509rev_type, (rev)); \
+    RTYPEDDATA_DATA(obj) = (rev); \
 } while (0)
 #define GetX509Rev(obj, rev) do { \
     TypedData_Get_Struct((obj), X509_REVOKED, &ossl_x509rev_type, (rev)); \
@@ -56,6 +57,7 @@ ossl_x509revoked_new(X509_REVOKED *rev)
     X509_REVOKED *new;
     VALUE obj;
 
+    obj = NewX509Rev(cX509Rev);
     if (!rev) {
 	new = X509_REVOKED_new();
     } else {
@@ -64,7 +66,7 @@ ossl_x509revoked_new(X509_REVOKED *rev)
     if (!new) {
 	ossl_raise(eX509RevError, NULL);
     }
-    WrapX509Rev(cX509Rev, obj, new);
+    SetX509Rev(obj, new);
 
     return obj;
 }
@@ -91,10 +93,11 @@ ossl_x509revoked_alloc(VALUE klass)
     X509_REVOKED *rev;
     VALUE obj;
 
+    obj = NewX509Rev(klass);
     if (!(rev = X509_REVOKED_new())) {
 	ossl_raise(eX509RevError, NULL);
     }
-    WrapX509Rev(klass, obj, rev);
+    SetX509Rev(obj, rev);
 
     return obj;
 }
@@ -185,18 +188,18 @@ ossl_x509revoked_set_extensions(VALUE self, VALUE ary)
 {
     X509_REVOKED *rev;
     X509_EXTENSION *ext;
-    int i;
+    long i;
     VALUE item;
 
     Check_Type(ary, T_ARRAY);
     for (i=0; i<RARRAY_LEN(ary); i++) {
-	OSSL_Check_Kind(RARRAY_PTR(ary)[i], cX509Ext);
+	OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Ext);
     }
     GetX509Rev(self, rev);
     sk_X509_EXTENSION_pop_free(rev->extensions, X509_EXTENSION_free);
     rev->extensions = NULL;
     for (i=0; i<RARRAY_LEN(ary); i++) {
-	item = RARRAY_PTR(ary)[i];
+	item = RARRAY_AREF(ary, i);
 	ext = DupX509ExtPtr(item);
 	if(!X509_REVOKED_add_ext(rev, ext, -1)) {
 	    ossl_raise(eX509RevError, NULL);
@@ -240,4 +243,3 @@ Init_ossl_x509revoked(void)
     rb_define_method(cX509Rev, "extensions=", ossl_x509revoked_set_extensions, 1);
     rb_define_method(cX509Rev, "add_extension", ossl_x509revoked_add_extension, 1);
 }
-

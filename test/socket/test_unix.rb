@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 begin
   require "socket"
 rescue LoadError
@@ -32,6 +34,26 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       w.close
       r1.close
       r2.close if r2 && !r2.closed?
+    end
+  end
+
+  def test_fd_passing_class_mode
+    UNIXSocket.pair do |s1, s2|
+      s1.send_io(s1.fileno)
+      r = s2.recv_io(nil)
+      assert_kind_of Integer, r, 'recv_io with klass=nil returns integer FD'
+      assert_not_equal s1.fileno, r
+      r = IO.for_fd(r)
+      assert_equal s1.stat.ino, r.stat.ino
+      r.close
+
+      s1.send_io(s1)
+      # klass = UNIXSocket FIXME: [ruby-core:71860] [Bug #11778]
+      klass = IO
+      r = s2.recv_io(klass, 'r+')
+      assert_instance_of klass, r, 'recv_io with proper klass'
+      assert_not_equal s1.fileno, r.fileno
+      r.close
     end
   end
 
@@ -385,6 +407,13 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     assert_equal("", s1.recv(10))
     assert_equal("", s1.recv(10))
     assert_raise(IO::EAGAINWaitReadable) { s1.recv_nonblock(10) }
+
+    buf = "".dup
+    s2.send("BBBBBB", 0)
+    IO.select([s1])
+    rv = s1.recv(100, 0, buf)
+    assert_equal buf.object_id, rv.object_id
+    assert_equal "BBBBBB", rv
   ensure
     s1.close if s1
     s2.close if s2
@@ -663,4 +692,11 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     assert(s0.closed?)
   end
 
+  def test_accept_nonblock
+    bound_unix_socket(UNIXServer) {|serv, path|
+      assert_raise(IO::WaitReadable) { serv.accept_nonblock }
+      assert_raise(IO::WaitReadable) { serv.accept_nonblock(exception: true) }
+      assert_equal :wait_readable, serv.accept_nonblock(exception: false)
+    }
+  end
 end if defined?(UNIXSocket) && /cygwin/ !~ RUBY_PLATFORM

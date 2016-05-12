@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # spin.rb --
 #
 # This demonstration script creates several spinbox widgets.

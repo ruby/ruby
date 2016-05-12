@@ -1,4 +1,5 @@
 # coding: US-ASCII
+# frozen_string_literal: false
 
 require 'rdoc/test_case'
 
@@ -137,7 +138,11 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
   end
 
   def test_generate_gzipped
-    require 'zlib'
+    begin
+      require 'zlib'
+    rescue LoadError
+      skip "no zlib"
+    end
     @g.generate
     @g.generate_gzipped
 
@@ -148,7 +153,7 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
     assert_file 'js/search_index.js'
     assert_file 'js/search_index.js.gz'
 
-    json = File.open('js/search_index.js.gz') {|gzip|
+    json = File.open('js/search_index.js.gz', 'rb') {|gzip|
       Zlib::GzipReader.new(gzip).read
     }
 

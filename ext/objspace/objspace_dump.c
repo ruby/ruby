@@ -33,6 +33,7 @@ struct dump_config {
     size_t cur_obj_references;
 };
 
+PRINTF_ARGS(static void dump_append(struct dump_config *, const char *, ...), 2, 3);
 static void
 dump_append(struct dump_config *dc, const char *format, ...)
 {
@@ -51,8 +52,9 @@ dump_append(struct dump_config *dc, const char *format, ...)
 static void
 dump_append_string_value(struct dump_config *dc, VALUE obj)
 {
-    int i;
-    char c, *value;
+    long i;
+    char c;
+    const char *value;
 
     dump_append(dc, "\"");
     for (i = 0, value = RSTRING_PTR(obj); i < RSTRING_LEN(obj); i++) {
@@ -89,6 +91,14 @@ dump_append_string_value(struct dump_config *dc, VALUE obj)
     dump_append(dc, "\"");
 }
 
+static void
+dump_append_symbol_value(struct dump_config *dc, VALUE obj)
+{
+    dump_append(dc, "{\"type\":\"SYMBOL\", \"value\":");
+    dump_append_string_value(dc, rb_sym2str(obj));
+    dump_append(dc, "}");
+}
+
 static inline const char *
 obj_type(VALUE obj)
 {
@@ -116,12 +126,39 @@ obj_type(VALUE obj)
 	CASE_TYPE(SYMBOL);
 	CASE_TYPE(RATIONAL);
 	CASE_TYPE(COMPLEX);
+	CASE_TYPE(IMEMO);
 	CASE_TYPE(UNDEF);
 	CASE_TYPE(NODE);
 	CASE_TYPE(ZOMBIE);
 #undef CASE_TYPE
     }
     return "UNKNOWN";
+}
+
+static void
+dump_append_special_const(struct dump_config *dc, VALUE value)
+{
+    if (value == Qtrue) {
+	dump_append(dc, "true");
+    }
+    else if (value == Qfalse) {
+	dump_append(dc, "false");
+    }
+    else if (value == Qnil) {
+	dump_append(dc, "null");
+    }
+    else if (FIXNUM_P(value)) {
+	dump_append(dc, "%ld", FIX2LONG(value));
+    }
+    else if (FLONUM_P(value)) {
+	dump_append(dc, "%#g", RFLOAT_VALUE(value));
+    }
+    else if (SYMBOL_P(value)) {
+	dump_append_symbol_value(dc, value);
+    }
+    else {
+	dump_append(dc, "{}");
+    }
 }
 
 static void
@@ -141,6 +178,19 @@ reachable_object_i(VALUE ref, void *data)
 }
 
 static void
+dump_append_string_content(struct dump_config *dc, VALUE obj)
+{
+    dump_append(dc, ", \"bytesize\":%ld", RSTRING_LEN(obj));
+    if (!STR_EMBED_P(obj) && !STR_SHARED_P(obj) && (long)rb_str_capacity(obj) != RSTRING_LEN(obj))
+	dump_append(dc, ", \"capacity\":%"PRIdSIZE, rb_str_capacity(obj));
+
+    if (is_ascii_string(obj)) {
+	dump_append(dc, ", \"value\":");
+	dump_append_string_value(dc, obj);
+    }
+}
+
+static void
 dump_object(VALUE obj, struct dump_config *dc)
 {
     size_t memsize;
@@ -148,6 +198,11 @@ dump_object(VALUE obj, struct dump_config *dc)
     rb_io_t *fptr;
     ID flags[RB_OBJ_GC_FLAGS_MAX];
     size_t n, i;
+
+    if (SPECIAL_CONST_P(obj)) {
+	dump_append_special_const(dc, obj);
+	return;
+    }
 
     dc->cur_obj = obj;
     dc->cur_obj_references = 0;
@@ -168,6 +223,10 @@ dump_object(VALUE obj, struct dump_config *dc)
 	dump_append(dc, ", \"node_type\":\"%s\"", ruby_node_name(nd_type(obj)));
 	break;
 
+      case T_SYMBOL:
+	dump_append_string_content(dc, rb_sym2str(obj));
+	break;
+
       case T_STRING:
 	if (STR_EMBED_P(obj))
 	    dump_append(dc, ", \"embedded\":true");
@@ -177,23 +236,15 @@ dump_object(VALUE obj, struct dump_config *dc)
 	    dump_append(dc, ", \"fstring\":true");
 	if (STR_SHARED_P(obj))
 	    dump_append(dc, ", \"shared\":true");
-	else {
-	    dump_append(dc, ", \"bytesize\":%ld", RSTRING_LEN(obj));
-	    if (!STR_EMBED_P(obj) && !STR_SHARED_P(obj) && (long)rb_str_capacity(obj) != RSTRING_LEN(obj))
-		dump_append(dc, ", \"capacity\":%ld", rb_str_capacity(obj));
-
-	    if (is_ascii_string(obj)) {
-		dump_append(dc, ", \"value\":");
-		dump_append_string_value(dc, obj);
-	    }
-	}
+	else
+	    dump_append_string_content(dc, obj);
 
 	if (!ENCODING_IS_ASCII8BIT(obj))
 	    dump_append(dc, ", \"encoding\":\"%s\"", rb_enc_name(rb_enc_from_index(ENCODING_GET(obj))));
 	break;
 
       case T_HASH:
-	dump_append(dc, ", \"size\":%ld", RHASH_SIZE(obj));
+	dump_append(dc, ", \"size\":%"PRIdSIZE, (size_t)RHASH_SIZE(obj));
 	if (FL_TEST(obj, HASH_PROC_DEFAULT))
 	    dump_append(dc, ", \"default\":\"%p\"", (void *)RHASH_IFNONE(obj));
 	break;
@@ -222,7 +273,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 	break;
 
       case T_OBJECT:
-	dump_append(dc, ", \"ivars\":%ld", ROBJECT_NUMIV(obj));
+	dump_append(dc, ", \"ivars\":%u", ROBJECT_NUMIV(obj));
 	break;
 
       case T_FILE:

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #  tseparator widget
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)

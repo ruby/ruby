@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestCase < Test::Unit::TestCase
@@ -120,5 +121,26 @@ class TestCase < Test::Unit::TestCase
       when Class.new(BasicObject) { }.new
       end
     }
+  end
+
+  module NilEqq
+    refine NilClass do
+      def === other
+        false
+      end
+    end
+  end
+
+  class NilEqqClass
+    using NilEqq
+
+    def eqq(a)
+      case a; when nil then nil; else :not_nil; end
+    end
+  end
+
+
+  def test_deoptimize_nil
+    assert_equal :not_nil, NilEqqClass.new.eqq(nil)
   end
 end

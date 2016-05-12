@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # = uri/generic.rb
 #
 # Author:: Akira Yamada <akira@ruby-lang.org>
@@ -543,7 +545,7 @@ module URI
     # if properly formatted as 'user:password'
     def split_userinfo(ui)
       return nil, nil unless ui
-      user, password = ui.split(':'.freeze, 2)
+      user, password = ui.split(':', 2)
 
       return user, password
     end
@@ -762,13 +764,13 @@ module URI
 
       # If scheme is ftp, path may be relative.
       # See RFC 1738 section 3.2.2, and RFC 2396.
-      if @scheme && @scheme != "ftp".freeze
-        if v && v != ''.freeze && parser.regexp[:ABS_PATH] !~ v
+      if @scheme && @scheme != "ftp"
+        if v && v != '' && parser.regexp[:ABS_PATH] !~ v
           raise InvalidComponentError,
             "bad component(expected absolute path component): #{v}"
         end
       else
-        if v && v != ''.freeze && parser.regexp[:ABS_PATH] !~ v &&
+        if v && v != '' && parser.regexp[:ABS_PATH] !~ v &&
            parser.regexp[:REL_PATH] !~ v
           raise InvalidComponentError,
             "bad component(expected relative path component): #{v}"
@@ -844,9 +846,9 @@ module URI
       x = v.to_str
       v = x.dup if x.equal? v
       v.encode!(Encoding::UTF_8) rescue nil
-      v.delete!("\t\r\n".freeze)
+      v.delete!("\t\r\n")
       v.force_encoding(Encoding::ASCII_8BIT)
-      v.gsub!(/(?!%\h\h|[!$-&(-;=?-_a-~])./n.freeze){'%%%02X'.freeze % $&.ord}
+      v.gsub!(/(?!%\h\h|[!$-&(-;=?-_a-~])./n.freeze){'%%%02X' % $&.ord}
       v.force_encoding(Encoding::US_ASCII)
       @query = v
     end
@@ -934,9 +936,9 @@ module URI
       x = v.to_str
       v = x.dup if x.equal? v
       v.encode!(Encoding::UTF_8) rescue nil
-      v.delete!("\t\r\n".freeze)
+      v.delete!("\t\r\n")
       v.force_encoding(Encoding::ASCII_8BIT)
-      v.gsub!(/(?!%\h\h|[!-~])./n){'%%%02X'.freeze % $&.ord}
+      v.gsub!(/(?!%\h\h|[!-~])./n){'%%%02X' % $&.ord}
       v.force_encoding(Encoding::US_ASCII)
       @fragment = v
     end
@@ -1324,7 +1326,7 @@ module URI
     # Destructive version of #normalize
     #
     def normalize!
-      if path && path.empty?
+      if path&.empty?
         set_path('/')
       end
       if scheme && scheme != scheme.downcase
@@ -1339,37 +1341,37 @@ module URI
     # Constructs String from URI
     #
     def to_s
-      str = ''
+      str = ''.dup
       if @scheme
         str << @scheme
-        str << ':'.freeze
+        str << ':'
       end
 
       if @opaque
         str << @opaque
       else
         if @host
-          str << '//'.freeze
+          str << '//'
         end
         if self.userinfo
           str << self.userinfo
-          str << '@'.freeze
+          str << '@'
         end
         if @host
           str << @host
         end
         if @port && @port != self.default_port
-          str << ':'.freeze
+          str << ':'
           str << @port.to_s
         end
         str << @path
         if @query
-          str << '?'.freeze
+          str << '?'
           str << @query
         end
       end
       if @fragment
-        str << '#'.freeze
+        str << '#'
         str << @fragment
       end
       str
@@ -1544,10 +1546,19 @@ module URI
 
       name = 'no_proxy'
       if no_proxy = ENV[name] || ENV[name.upcase]
-        no_proxy.scan(/([^:,]*)(?::(\d+))?/) {|host, port|
-          if /(\A|\.)#{Regexp.quote host}\z/i =~ self.host &&
-            (!port || self.port == port.to_i)
-            return nil
+        no_proxy.scan(/(?!\.)([^:,\s]+)(?::(\d+))?/) {|host, port|
+          if (!port || self.port == port.to_i)
+            if /(\A|\.)#{Regexp.quote host}\z/i =~ self.host
+              return nil
+            else
+              require 'ipaddr'
+              return nil if
+                begin
+                  IPAddr.new(host)
+                rescue IPAddr::InvalidAddressError
+                  next
+                end.include?(self.host)
+            end
           end
         }
       end

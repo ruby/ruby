@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 
 class TestObjectSpace < Test::Unit::TestCase
@@ -85,6 +86,30 @@ End
   end
 
   def test_each_object
+    klass = Class.new
+    new_obj = klass.new
+
+    found = []
+    count = ObjectSpace.each_object(klass) do |obj|
+      found << obj
+    end
+    assert_equal(1, count)
+    assert_equal(1, found.size)
+    assert_same(new_obj, found[0])
+  end
+
+  def test_each_object_enumerator
+    klass = Class.new
+    new_obj = klass.new
+
+    found = []
+    counter = ObjectSpace.each_object(klass)
+    assert_equal(1, counter.each {|obj| found << obj})
+    assert_equal(1, found.size)
+    assert_same(new_obj, found[0])
+  end
+
+  def test_each_object_no_gabage
     assert_separately([], <<-End)
     GC.disable
     eval('begin; 1.times{}; rescue; ensure; end')
@@ -108,5 +133,28 @@ End
       h = {["foo"]=>nil}
       p Thread.current[:__recursive_key__]
     end;
+  end
+
+  def test_each_object_singleton_class
+    assert_separately([], <<-End)
+      class C
+        class << self
+          $c = self
+        end
+      end
+
+      exist = false
+      ObjectSpace.each_object(Class){|o|
+        exist = true if $c == o
+      }
+      assert(exist, 'Bug #11360')
+    End
+
+    klass = Class.new
+    instance = klass.new
+    sclass = instance.singleton_class
+    meta = klass.singleton_class
+    assert_kind_of(meta, sclass)
+    assert_include(ObjectSpace.each_object(meta).to_a, sclass)
   end
 end

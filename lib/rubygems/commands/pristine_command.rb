@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/command'
 require 'rubygems/package'
 require 'rubygems/installer'
@@ -19,6 +20,11 @@ class Gem::Commands::PristineCommand < Gem::Command
                'Restore all installed gems to pristine',
                'condition') do |value, options|
       options[:all] = value
+    end
+
+    add_option('--skip=gem_name',
+               'used on --all, skip if name == gem_name') do |value, options|
+      options[:skip] = value
     end
 
     add_option('--[no-]extensions',
@@ -86,8 +92,8 @@ extensions will be restored.
                 spec.extensions and not spec.extensions.empty?
               end
             else
-              get_all_gem_names.map do |gem_name|
-                Gem::Specification.find_all_by_name gem_name, options[:version]
+              get_all_gem_names.sort.map do |gem_name|
+                Gem::Specification.find_all_by_name(gem_name, options[:version]).reverse
               end.flatten
             end
 
@@ -106,6 +112,11 @@ extensions will be restored.
     specs.each do |spec|
       if spec.default_gem?
         say "Skipped #{spec.full_name}, it is a default gem"
+        next
+      end
+
+      if spec.name == options[:skip]
+        say "Skipped #{spec.full_name}, it was given through options"
         next
       end
 
@@ -146,7 +157,7 @@ extensions will be restored.
           install_defaults.to_s['--env-shebang']
         end
 
-      installer = Gem::Installer.new(gem,
+      installer = Gem::Installer.at(gem,
                                      :wrappers => true,
                                      :force => true,
                                      :install_dir => spec.base_dir,

@@ -1,4 +1,5 @@
 #!/usr/local/bin/ruby
+# frozen_string_literal: false
 #----------------------> pretty simple othello game <-----------------------
 # othello.rb
 #

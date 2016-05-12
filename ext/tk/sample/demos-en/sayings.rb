@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # sayings.rb
 #
 # This demonstration script creates a listbox that can be scrolled

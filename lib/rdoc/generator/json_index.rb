@@ -1,5 +1,9 @@
+# frozen_string_literal: false
 require 'json'
-require 'zlib'
+begin
+  require 'zlib'
+rescue LoadError
+end
 
 ##
 # The JsonIndex generator is designed to complement an HTML generator and
@@ -157,6 +161,8 @@ class RDoc::Generator::JsonIndex
   # Compress the search_index.js file using gzip
 
   def generate_gzipped
+    return unless defined?(Zlib)
+
     debug_msg "Compressing generated JSON index"
     out_dir = @base_dir + @options.op_dir
 
@@ -170,7 +176,7 @@ class RDoc::Generator::JsonIndex
 
     Zlib::GzipWriter.open(outfile) do |gz|
       gz.mtime = File.mtime(search_index_file)
-      gz.orig_name = search_index_file.to_s
+      gz.orig_name = search_index_file.basename.to_s
       gz.write search_index
       gz.close
     end
@@ -188,7 +194,7 @@ class RDoc::Generator::JsonIndex
 
         Zlib::GzipWriter.open(outfile) do |gz|
           gz.mtime = File.mtime(dest)
-          gz.orig_name = dest.to_s
+          gz.orig_name = dest.basename.to_s
           gz.write data
           gz.close
         end

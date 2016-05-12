@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 #               tk/spinbox.rb - Tk spinbox classes
 #                       by Yukihiro Matsumoto <matz@caelum.co.jp>

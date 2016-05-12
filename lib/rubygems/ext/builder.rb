@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -66,9 +67,11 @@ class Gem::Ext::Builder
       # TODO use Process.spawn when ruby 1.8 support is dropped.
       rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], nil
       if verbose
+        puts("current directory: #{Dir.pwd}")
         puts(command)
         system(command)
       else
+        results << "current directory: #{Dir.pwd}"
         results << command
         results << `#{command} #{redirector}`
       end

@@ -1,9 +1,11 @@
+# frozen_string_literal: true
+
 require "net/ftp"
 require "test/unit"
 require "ostruct"
 require "stringio"
 
-class FTPTest < Test::Unit::TestCase
+class BufferedSocketTest < Test::Unit::TestCase
   def test_gets_empty
     sock = create_buffered_socket("")
     assert_equal(nil, sock.gets)

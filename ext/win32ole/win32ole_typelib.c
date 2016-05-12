@@ -399,9 +399,7 @@ foletypelib_initialize(VALUE self, VALUE args)
     HRESULT hr = S_OK;
 
     len = RARRAY_LEN(args);
-    if (len < 1 || len > 3) {
-        rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..3)", len);
-    }
+    rb_check_arity(len, 1, 3);
 
     typelib = rb_ary_entry(args, 0);
 

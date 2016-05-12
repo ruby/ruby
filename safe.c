@@ -12,8 +12,6 @@
 /* safe-level:
    0 - strings from streams/environment/ARGV are tainted (default)
    1 - no dangerous operation by tainted value
-   2 - process/file operations prohibited
-   3 - all generated objects are tainted
 */
 
 #define SAFE_LEVEL_MAX RUBY_SAFE_LEVEL_MAX
@@ -25,12 +23,12 @@
 
 #undef rb_secure
 #undef rb_set_safe_level
-#undef ruby_safe_level_4_warning
+#undef ruby_safe_level_2_warning
 
 int
-ruby_safe_level_4_warning(void)
+ruby_safe_level_2_warning(void)
 {
-    return 4;
+    return 2;
 }
 
 int
@@ -52,7 +50,7 @@ rb_set_safe_level(int level)
 
     if (level > th->safe_level) {
 	if (level > SAFE_LEVEL_MAX) {
-	    rb_raise(rb_eArgError, "$SAFE=4 is obsolete");
+	    rb_raise(rb_eArgError, "$SAFE=2 to 4 are obsolete");
 	}
 	th->safe_level = level;
     }
@@ -75,11 +73,8 @@ safe_setter(VALUE val)
 		 "tried to downgrade safe level from %d to %d",
 		 th->safe_level, level);
     }
-    if (level == 3) {
-	rb_warning("$SAFE=3 does no sandboxing");
-    }
     if (level > SAFE_LEVEL_MAX) {
-	rb_raise(rb_eArgError, "$SAFE=4 is obsolete");
+	rb_raise(rb_eArgError, "$SAFE=2 to 4 are obsolete");
     }
     th->safe_level = level;
 }

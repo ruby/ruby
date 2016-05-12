@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # httpauth/digestauth.rb -- HTTP digest access authentication
 #
@@ -128,8 +129,7 @@ module WEBrick
       end
 
       ##
-      # Returns a challenge response which asks for for authentication
-      # information
+      # Returns a challenge response which asks for authentication information
 
       def challenge(req, res, stale=false)
         nonce = generate_next_nonce(req)
@@ -312,7 +312,7 @@ module WEBrick
       def generate_next_nonce(req)
         now = "%012d" % req.request_time.to_i
         pk  = hexdigest(now, @instance_key)[0,32]
-        nonce = [now + ":" + pk].pack("m*").chop # it has 60 length of chars.
+        nonce = [now + ":" + pk].pack("m0") # it has 60 length of chars.
         nonce
       end
 

@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 begin
   require 'ripper'
   require 'test/unit'
@@ -76,7 +77,7 @@ class TestRipper::Filter < Test::Unit::TestCase
 
   def test_filter_token
     data = {}
-    filter = Filter.new(File.read(filename))
+    filter = Filter.new("begin; puts 1; end")
     filter.parse(data)
     assert_equal("begin", data[:token])
   end

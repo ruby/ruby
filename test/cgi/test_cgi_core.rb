@@ -1,12 +1,15 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'cgi'
 require 'stringio'
+require_relative 'update_env'
 
 
 class CGICoreTest < Test::Unit::TestCase
-
+  include UpdateEnv
 
   def setup
+    @environ = {}
     #@environ = {
     #  'SERVER_PROTOCOL' => 'HTTP/1.1',
     #  'REQUEST_METHOD'  => 'GET',
@@ -15,35 +18,32 @@ class CGICoreTest < Test::Unit::TestCase
     #ENV.update(@environ)
   end
 
-
   def teardown
-    @environ.each do |key, val| ENV.delete(key) end
+    ENV.update(@environ)
     $stdout = STDOUT
   end
 
   def test_cgi_parse_illegal_query
-    @environ = {
+    update_env(
       'REQUEST_METHOD'  => 'GET',
       'QUERY_STRING'    => 'a=111&&b=222&c&d=',
       'HTTP_COOKIE'     => '_session_id=12345; name1=val1&val2;',
       'SERVER_SOFTWARE' => 'Apache 2.2.0',
       'SERVER_PROTOCOL' => 'HTTP/1.1',
-    }
-    ENV.update(@environ)
+    )
     cgi = CGI.new
     assert_equal(["a","b","c","d"],cgi.keys.sort)
     assert_equal("",cgi["d"])
   end
 
   def test_cgi_core_params_GET
-    @environ = {
+    update_env(
       'REQUEST_METHOD'  => 'GET',
       'QUERY_STRING'    => 'id=123&id=456&id=&id&str=%40h+%3D%7E+%2F%5E%24%2F',
       'HTTP_COOKIE'     => '_session_id=12345; name1=val1&val2;',
       'SERVER_SOFTWARE' => 'Apache 2.2.0',
       'SERVER_PROTOCOL' => 'HTTP/1.1',
-    }
-    ENV.update(@environ)
+    )
     cgi = CGI.new
     ## cgi[]
     assert_equal('123', cgi['id'])
@@ -68,14 +68,13 @@ class CGICoreTest < Test::Unit::TestCase
 
   def test_cgi_core_params_POST
     query_str = 'id=123&id=456&id=&str=%40h+%3D%7E+%2F%5E%24%2F'
-    @environ = {
+    update_env(
       'REQUEST_METHOD'  => 'POST',
       'CONTENT_LENGTH'  => query_str.length.to_s,
       'HTTP_COOKIE'     => '_session_id=12345; name1=val1&val2;',
       'SERVER_SOFTWARE' => 'Apache 2.2.0',
       'SERVER_PROTOCOL' => 'HTTP/1.1',
-    }
-    ENV.update(@environ)
+    )
     $stdin = StringIO.new
     $stdin << query_str
     $stdin.rewind
@@ -93,13 +92,12 @@ class CGICoreTest < Test::Unit::TestCase
 
   def test_cgi_core_params_encoding_check
     query_str = 'str=%BE%BE%B9%BE'
-    @environ = {
+    update_env(
         'REQUEST_METHOD'  => 'POST',
         'CONTENT_LENGTH'  => query_str.length.to_s,
         'SERVER_SOFTWARE' => 'Apache 2.2.0',
         'SERVER_PROTOCOL' => 'HTTP/1.1',
-    }
-    ENV.update(@environ)
+    )
     $stdin = StringIO.new
     $stdin << query_str
     $stdin.rewind
@@ -131,14 +129,13 @@ class CGICoreTest < Test::Unit::TestCase
 
 
   def test_cgi_core_cookie
-    @environ = {
+    update_env(
       'REQUEST_METHOD'  => 'GET',
       'QUERY_STRING'    => 'id=123&id=456&id=&str=%40h+%3D%7E+%2F%5E%24%2F',
       'HTTP_COOKIE'     => '_session_id=12345; name1=val1&val2;',
       'SERVER_SOFTWARE' => 'Apache 2.2.0',
       'SERVER_PROTOCOL' => 'HTTP/1.1',
-    }
-    ENV.update(@environ)
+    )
     cgi = CGI.new
     assert_not_equal(nil,cgi.cookies)
     [ ['_session_id', ['12345'],        ],
@@ -156,11 +153,10 @@ class CGICoreTest < Test::Unit::TestCase
 
 
   def test_cgi_core_maxcontentlength
-    @environ = {
+    update_env(
       'REQUEST_METHOD'  => 'POST',
       'CONTENT_LENGTH'  => (64 * 1024 * 1024).to_s
-    }
-    ENV.update(@environ)
+    )
     ex = assert_raise(StandardError) do
       CGI.new
     end
@@ -169,14 +165,13 @@ class CGICoreTest < Test::Unit::TestCase
 
 
   def test_cgi_core_out
-    @environ = {
+    update_env(
       'REQUEST_METHOD'  => 'GET',
       'QUERY_STRING'    => 'id=123&id=456&id=&str=%40h+%3D%7E+%2F%5E%24%2F',
       'HTTP_COOKIE'     => '_session_id=12345; name1=val1&val2;',
       'SERVER_SOFTWARE' => 'Apache 2.2.0',
       'SERVER_PROTOCOL' => 'HTTP/1.1',
-    }
-    ENV.update(@environ)
+    )
     cgi = CGI.new
     ## euc string
     euc_str = "\270\253\244\355\241\242\277\315\244\254\245\264\245\337\244\316\244\350\244\246\244\300"
@@ -201,7 +196,7 @@ class CGICoreTest < Test::Unit::TestCase
     cgi.out(options) { euc_str }
     assert_equal('en', options['language'])
     ## HEAD method
-    ENV['REQUEST_METHOD'] = 'HEAD'
+    update_env('REQUEST_METHOD' => 'HEAD')
     options = { 'charset'=>'utf8' }
     $stdout = StringIO.new
     cgi.out(options) { euc_str }
@@ -214,10 +209,9 @@ class CGICoreTest < Test::Unit::TestCase
 
 
   def test_cgi_core_print
-    @environ = {
+    update_env(
       'REQUEST_METHOD'  => 'GET',
-    }
-    ENV.update(@environ)
+    )
     cgi = CGI.new
     $stdout = StringIO.new
     str = "foobar"
@@ -229,10 +223,9 @@ class CGICoreTest < Test::Unit::TestCase
 
 
   def test_cgi_core_environs
-    @environ = {
+    update_env(
       'REQUEST_METHOD' => 'GET',
-    }
-    ENV.update(@environ)
+    )
     cgi = CGI.new
     ##
     list1 = %w[ AUTH_TYPE CONTENT_TYPE GATEWAY_INTERFACE PATH_INFO
@@ -246,9 +239,8 @@ class CGICoreTest < Test::Unit::TestCase
     # list2 = %w[ CONTENT_LENGTH SERVER_PORT ]
     ## string expected
     list1.each do |name|
-      @environ[name] = "**#{name}**"
+      update_env(name => "**#{name}**")
     end
-    ENV.update(@environ)
     list1.each do |name|
       method = name.sub(/\AHTTP_/, '').downcase
       actual = cgi.__send__ method
@@ -256,23 +248,22 @@ class CGICoreTest < Test::Unit::TestCase
       assert_equal(expected, actual)
     end
     ## integer expected
-    ENV['CONTENT_LENGTH'] = '123'
-    ENV['SERVER_PORT'] = '8080'
+    update_env('CONTENT_LENGTH' => '123')
+    update_env('SERVER_PORT' => '8080')
     assert_equal(123, cgi.content_length)
     assert_equal(8080, cgi.server_port)
     ## raw cookie
-    ENV['HTTP_COOKIE'] = 'name1=val1'
-    ENV['HTTP_COOKIE2'] = 'name2=val2'
+    update_env('HTTP_COOKIE' => 'name1=val1')
+    update_env('HTTP_COOKIE2' => 'name2=val2')
     assert_equal('name1=val1', cgi.raw_cookie)
     assert_equal('name2=val2', cgi.raw_cookie2)
   end
 
 
   def test_cgi_core_htmltype_header
-    @environ = {
+    update_env(
       'REQUEST_METHOD' => 'GET',
-    }
-    ENV.update(@environ)
+    )
     ## no htmltype
     cgi = CGI.new
     assert_raise(NoMethodError) do cgi.doctype end

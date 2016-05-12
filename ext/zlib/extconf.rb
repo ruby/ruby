@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # extconf.rb
 #
@@ -20,8 +21,6 @@ if %w'z libz zlib1 zlib zdll zlibwapi'.find {|z| have_library(z, 'deflateReset')
     case RUBY_PLATFORM.split('-',2)[1]
     when 'amigaos' then
       os_code = 'AMIGA'
-    when /\Aos2[\-_]emx\z/ then
-      os_code = 'OS2'
     when /mswin|mingw|bccwin/ then
       # NOTE: cygwin should be regarded as Unix.
       os_code = 'WIN32'
@@ -36,7 +35,6 @@ if %w'z libz zlib1 zlib zdll zlibwapi'.find {|z| have_library(z, 'deflateReset')
     'OS_VMS'     => 'VMS',
     'OS_UNIX'    => 'Unix',
     'OS_ATARI'   => 'Atari',
-    'OS_OS2'     => 'OS/2',
     'OS_MACOS'   => 'MacOS',
     'OS_TOPS20'  => 'TOPS20',
     'OS_WIN32'   => 'Win32',

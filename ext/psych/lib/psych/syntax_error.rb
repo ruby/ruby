@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'psych/exception'
 
 module Psych

@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #endif
 #include <string.h>
+#include "ccan/list/list.h"
 
 typedef struct st_table_entry st_table_entry;
 
@@ -22,7 +23,7 @@ struct st_table_entry {
     st_data_t key;
     st_data_t record;
     st_table_entry *next;
-    st_table_entry *fore, *back;
+    struct list_node olist;
 };
 
 typedef struct st_packed_entry {
@@ -85,7 +86,7 @@ static void rehash(st_table *);
 #define free(x) xfree(x)
 #endif
 
-#define EQUAL(table,x,y) ((x)==(y) || (*(table)->type->compare)((x),(y)) == 0)
+#define EQUAL(table,x,ent) ((x)==(ent)->key || (*(table)->type->compare)((x),(ent)->key) == 0)
 
 #define do_hash(key,table) (st_index_t)(*(table)->type->hash)((key))
 #define hash_pos(h,n) ((h) & (n - 1))
@@ -107,8 +108,6 @@ st_realloc_bins(st_table_entry **bins, st_index_t newsize, st_index_t oldsize)
 
 /* Shortcut */
 #define bins as.big.bins
-#define head as.big.head
-#define tail as.big.tail
 #define real_entries as.packed.real_entries
 
 /* preparation for possible packing improvements */
@@ -186,13 +185,22 @@ static void
 stat_col(void)
 {
     char fname[10+sizeof(long)*3];
-    FILE *f = fopen((snprintf(fname, sizeof(fname), "/tmp/col%ld", (long)getpid()), fname), "w");
+    FILE *f;
+    if (!collision.total) return;
+    f = fopen((snprintf(fname, sizeof(fname), "/tmp/col%ld", (long)getpid()), fname), "w");
     fprintf(f, "collision: %d / %d (%6.2f)\n", collision.all, collision.total,
 	    ((double)collision.all / (collision.total)) * 100);
     fprintf(f, "num: %d, str: %d, strcase: %d\n", collision.num, collision.str, collision.strcase);
     fclose(f);
 }
 #endif
+
+static struct list_head *
+st_head(const st_table *tbl)
+{
+    uintptr_t addr = (uintptr_t)&tbl->as.big.private_list_head;
+    return (struct list_head *)addr;
+}
 
 st_table*
 st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
@@ -219,14 +227,14 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
     tbl->entries_packed = size <= MAX_PACKED_HASH;
     if (tbl->entries_packed) {
 	size = ST_DEFAULT_PACKED_TABLE_SIZE;
+	tbl->real_entries = 0;
     }
     else {
 	size = new_size(size);	/* round up to power-of-two */
+	list_head_init(st_head(tbl));
     }
     tbl->num_bins = size;
     tbl->bins = st_alloc_bins(size);
-    tbl->head = 0;
-    tbl->tail = 0;
 
     return tbl;
 }
@@ -276,8 +284,7 @@ st_init_strcasetable_with_size(st_index_t size)
 void
 st_clear(st_table *table)
 {
-    register st_table_entry *ptr, *next;
-    st_index_t i;
+    register st_table_entry *ptr = 0, *next;
 
     if (table->entries_packed) {
         table->num_entries = 0;
@@ -285,18 +292,13 @@ st_clear(st_table *table)
         return;
     }
 
-    for (i = 0; i < table->num_bins; i++) {
-	ptr = table->bins[i];
-	table->bins[i] = 0;
-	while (ptr != 0) {
-	    next = ptr->next;
-	    st_free_entry(ptr);
-	    ptr = next;
-	}
+    list_for_each_safe(st_head(table), ptr, next, olist) {
+	/* list_del is not needed */
+	st_free_entry(ptr);
     }
     table->num_entries = 0;
-    table->head = 0;
-    table->tail = 0;
+    MEMZERO(table->bins, st_table_entry*, table->num_bins);
+    list_head_init(st_head(table));
 }
 
 void
@@ -319,7 +321,7 @@ st_memsize(const st_table *table)
 }
 
 #define PTR_NOT_EQUAL(table, ptr, hash_val, key) \
-((ptr) != 0 && ((ptr)->hash != (hash_val) || !EQUAL((table), (key), (ptr)->key)))
+((ptr) != 0 && ((ptr)->hash != (hash_val) || !EQUAL((table), (key), (ptr))))
 
 #ifdef HASH_LOG
 static void
@@ -338,6 +340,7 @@ count_collision(const struct st_hash_type *type)
 }
 #define COLLISION (collision_check ? count_collision(table->type) : (void)0)
 #define FOUND_ENTRY (collision_check ? collision.total++ : (void)0)
+#define collision_check 0
 #else
 #define COLLISION
 #define FOUND_ENTRY
@@ -347,7 +350,8 @@ count_collision(const struct st_hash_type *type)
     ((ptr) = find_entry((table), key, (hash_val), ((bin_pos) = hash_pos(hash_val, (table)->num_bins))))
 
 static st_table_entry *
-find_entry(st_table *table, st_data_t key, st_index_t hash_val, st_index_t bin_pos)
+find_entry(const st_table *table, st_data_t key, st_index_t hash_val,
+           st_index_t bin_pos)
 {
     register st_table_entry *ptr = table->bins[bin_pos];
     FOUND_ENTRY;
@@ -362,22 +366,21 @@ find_entry(st_table *table, st_data_t key, st_index_t hash_val, st_index_t bin_p
 }
 
 static inline st_index_t
-find_packed_index_from(st_table *table, st_index_t hash_val, st_data_t key, st_index_t i)
+find_packed_index_from(const st_table *table, st_index_t hash_val,
+		       st_data_t key, st_index_t i)
 {
     while (i < table->real_entries &&
-	   (PHASH(table, i) != hash_val || !EQUAL(table, key, PKEY(table, i)))) {
+	   (PHASH(table, i) != hash_val || !EQUAL(table, key, &PACKED_ENT(table, i)))) {
 	i++;
     }
     return i;
 }
 
 static inline st_index_t
-find_packed_index(st_table *table, st_index_t hash_val, st_data_t key)
+find_packed_index(const st_table *table, st_index_t hash_val, st_data_t key)
 {
     return find_packed_index_from(table, hash_val, key, 0);
 }
-
-#define collision_check 0
 
 int
 st_lookup(st_table *table, register st_data_t key, st_data_t *value)
@@ -435,9 +438,6 @@ st_get_key(st_table *table, register st_data_t key, st_data_t *result)
     }
 }
 
-#undef collision_check
-#define collision_check 1
-
 static inline st_table_entry *
 new_entry(st_table * table, st_data_t key, st_data_t value,
 	st_index_t hash_val, register st_index_t bin_pos)
@@ -464,16 +464,7 @@ add_direct(st_table *table, st_data_t key, st_data_t value,
     }
 
     entry = new_entry(table, key, value, hash_val, bin_pos);
-
-    if (table->head != 0) {
-	entry->fore = 0;
-	(entry->back = table->tail)->fore = entry;
-	table->tail = entry;
-    }
-    else {
-	table->head = table->tail = entry;
-	entry->fore = entry->back = 0;
-    }
+    list_add_tail(st_head(table), &entry->olist);
     table->num_entries++;
 }
 
@@ -482,7 +473,7 @@ unpack_entries(register st_table *table)
 {
     st_index_t i;
     st_packed_entry packed_bins[MAX_PACKED_HASH];
-    register st_table_entry *entry, *preventry = 0, **chain;
+    register st_table_entry *entry;
     st_table tmp_table = *table;
 
     MEMCPY(packed_bins, PACKED_BINS(table), st_packed_entry, MAX_PACKED_HASH);
@@ -494,22 +485,24 @@ unpack_entries(register st_table *table)
     tmp_table.bins = st_realloc_bins(tmp_table.bins, ST_DEFAULT_INIT_TABLE_SIZE, tmp_table.num_bins);
     tmp_table.num_bins = ST_DEFAULT_INIT_TABLE_SIZE;
 #endif
+
+    /*
+     * order is important here, we need to keep the original table
+     * walkable during GC (GC may be triggered by new_entry call)
+     */
     i = 0;
-    chain = &tmp_table.head;
+    list_head_init(st_head(&tmp_table));
     do {
 	st_data_t key = packed_bins[i].key;
 	st_data_t val = packed_bins[i].val;
 	st_index_t hash = packed_bins[i].hash;
 	entry = new_entry(&tmp_table, key, val, hash,
 			  hash_pos(hash, ST_DEFAULT_INIT_TABLE_SIZE));
-	*chain = entry;
-	entry->back = preventry;
-	preventry = entry;
-	chain = &entry->fore;
+	list_add_tail(st_head(&tmp_table), &entry->olist);
     } while (++i < MAX_PACKED_HASH);
-    *chain = NULL;
-    tmp_table.tail = entry;
     *table = tmp_table;
+    list_head_init(st_head(table));
+    list_append_list(st_head(table), st_head(&tmp_table));
 }
 
 static void
@@ -611,7 +604,7 @@ st_add_direct(st_table *table, st_data_t key, st_data_t value)
 static void
 rehash(register st_table *table)
 {
-    register st_table_entry *ptr, **new_bins;
+    register st_table_entry *ptr = 0, **new_bins;
     st_index_t new_num_bins, hash_val;
 
     new_num_bins = new_size(table->num_bins+1);
@@ -619,12 +612,10 @@ rehash(register st_table *table)
     table->num_bins = new_num_bins;
     table->bins = new_bins;
 
-    if ((ptr = table->head) != 0) {
-	do {
-	    hash_val = hash_pos(ptr->hash, new_num_bins);
-	    ptr->next = new_bins[hash_val];
-	    new_bins[hash_val] = ptr;
-	} while ((ptr = ptr->fore) != 0);
+    list_for_each(st_head(table), ptr, olist) {
+	hash_val = hash_pos(ptr->hash, new_num_bins);
+	ptr->next = new_bins[hash_val];
+	new_bins[hash_val] = ptr;
     }
 }
 
@@ -632,9 +623,8 @@ st_table*
 st_copy(st_table *old_table)
 {
     st_table *new_table;
-    st_table_entry *ptr, *entry, *prev, **tailp;
+    st_table_entry *ptr = 0, *entry;
     st_index_t num_bins = old_table->num_bins;
-    st_index_t hash_val;
 
     new_table = st_alloc_table();
     if (new_table == 0) {
@@ -654,24 +644,12 @@ st_copy(st_table *old_table)
         return new_table;
     }
 
-    if ((ptr = old_table->head) != 0) {
-	prev = 0;
-	tailp = &new_table->head;
-	do {
-	    entry = st_alloc_entry();
-	    if (entry == 0) {
-		st_free_table(new_table);
-		return 0;
-	    }
-	    *entry = *ptr;
-	    hash_val = hash_pos(entry->hash, num_bins);
-	    entry->next = new_table->bins[hash_val];
-	    new_table->bins[hash_val] = entry;
-	    entry->back = prev;
-	    *tailp = prev = entry;
-	    tailp = &entry->fore;
-	} while ((ptr = ptr->fore) != 0);
-	new_table->tail = prev;
+    list_head_init(st_head(new_table));
+
+    list_for_each(st_head(old_table), ptr, olist) {
+	entry = new_entry(new_table, ptr->key, ptr->record, ptr->hash,
+			    hash_pos(ptr->hash, num_bins));
+	list_add_tail(st_head(new_table), &entry->olist);
     }
 
     return new_table;
@@ -680,17 +658,7 @@ st_copy(st_table *old_table)
 static inline void
 remove_entry(st_table *table, st_table_entry *ptr)
 {
-    if (ptr->fore == 0 && ptr->back == 0) {
-	table->head = 0;
-	table->tail = 0;
-    }
-    else {
-	st_table_entry *fore = ptr->fore, *back = ptr->back;
-	if (fore) fore->back = back;
-	if (back) back->fore = fore;
-	if (ptr == table->head) table->head = fore;
-	if (ptr == table->tail) table->tail = back;
-    }
+    list_del(&ptr->olist);
     table->num_entries--;
 }
 
@@ -717,7 +685,7 @@ st_delete(register st_table *table, register st_data_t *key, st_data_t *value)
 
     prev = &table->bins[hash_pos(hash_val, table->num_bins)];
     for (;(ptr = *prev) != 0; prev = &ptr->next) {
-	if (EQUAL(table, *key, ptr->key)) {
+	if (EQUAL(table, *key, ptr)) {
 	    *prev = ptr->next;
 	    remove_entry(table, ptr);
 	    if (value != 0) *value = ptr->record;
@@ -754,7 +722,7 @@ st_delete_safe(register st_table *table, register st_data_t *key, st_data_t *val
     ptr = table->bins[hash_pos(hash_val, table->num_bins)];
 
     for (; ptr != 0; ptr = ptr->next) {
-	if ((ptr->key != never) && EQUAL(table, ptr->key, *key)) {
+	if ((ptr->key != never) && EQUAL(table, *key, ptr)) {
 	    remove_entry(table, ptr);
 	    *key = ptr->key;
 	    if (value != 0) *value = ptr->record;
@@ -770,6 +738,7 @@ st_delete_safe(register st_table *table, register st_data_t *key, st_data_t *val
 int
 st_shift(register st_table *table, register st_data_t *key, st_data_t *value)
 {
+    st_table_entry *old;
     st_table_entry **prev;
     register st_table_entry *ptr;
 
@@ -785,12 +754,13 @@ st_shift(register st_table *table, register st_data_t *key, st_data_t *value)
         return 1;
     }
 
-    prev = &table->bins[hash_pos(table->head->hash, table->num_bins)];
-    while ((ptr = *prev) != table->head) prev = &ptr->next;
+    old = list_pop(st_head(table), st_table_entry, olist);
+    table->num_entries--;
+    prev = &table->bins[hash_pos(old->hash, table->num_bins)];
+    while ((ptr = *prev) != old) prev = &ptr->next;
     *prev = ptr->next;
     if (value != 0) *value = ptr->record;
     *key = ptr->key;
-    remove_entry(table, ptr);
     st_free_entry(ptr);
     return 1;
 }
@@ -917,7 +887,8 @@ st_update(st_table *table, st_data_t key, st_update_callback_func *func, st_data
 int
 st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t never)
 {
-    st_table_entry *ptr, **last, *tmp;
+    st_table_entry *ptr = 0, **last, *tmp, *next;
+    struct list_head *head;
     enum st_retval retval;
     st_index_t i;
 
@@ -934,8 +905,10 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 		FIND_ENTRY(table, ptr, hash, i);
 		if (retval == ST_CHECK) {
 		    if (!ptr) goto deleted;
-		    goto unpacked_continue;
 		}
+		if (table->num_entries == 0) return 0;
+		head = st_head(table);
+		next = list_entry(ptr->olist.next, st_table_entry, olist);
 		goto unpacked;
 	    }
 	    switch (retval) {
@@ -960,14 +933,10 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 	}
 	return 0;
     }
-    else {
-	ptr = table->head;
-    }
 
-    if (ptr != 0) {
-	do {
-	    if (ptr->key == never)
-		goto unpacked_continue;
+    head = st_head(table);
+    list_for_each_safe(head, ptr, next, olist) {
+	if (ptr->key != never) {
 	    i = hash_pos(ptr->hash, table->num_bins);
 	    retval = (*func)(ptr->key, ptr->record, arg, 0);
 	  unpacked:
@@ -983,8 +952,6 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 		}
 		/* fall through */
 	      case ST_CONTINUE:
-	      unpacked_continue:
-		ptr = ptr->fore;
 		break;
 	      case ST_STOP:
 		return 0;
@@ -992,16 +959,15 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 		last = &table->bins[hash_pos(ptr->hash, table->num_bins)];
 		for (; (tmp = *last) != 0; last = &tmp->next) {
 		    if (ptr == tmp) {
-			tmp = ptr->fore;
 			remove_entry(table, ptr);
 			ptr->key = ptr->record = never;
 			ptr->hash = 0;
-			ptr = tmp;
 			break;
 		    }
 		}
+		if (table->num_entries == 0) return 0;
 	    }
-	} while (ptr && table->head);
+	}
     }
     return 0;
 }
@@ -1009,8 +975,9 @@ st_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t
 int
 st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 {
-    st_table_entry *ptr, **last, *tmp;
+    st_table_entry *ptr = 0, **last, *tmp, *next;
     enum st_retval retval;
+    struct list_head *head;
     st_index_t i;
 
     if (table->entries_packed) {
@@ -1024,6 +991,8 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 	    if (!table->entries_packed) {
 		FIND_ENTRY(table, ptr, hash, i);
 		if (!ptr) return 0;
+		head = st_head(table);
+		next = list_entry(ptr->olist.next, st_table_entry, olist);
 		goto unpacked;
 	    }
 	    switch (retval) {
@@ -1040,42 +1009,37 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 	}
 	return 0;
     }
-    else {
-	ptr = table->head;
-    }
 
-    if (ptr != 0) {
-	do {
-	    i = hash_pos(ptr->hash, table->num_bins);
-	    retval = (*func)(ptr->key, ptr->record, arg, 0);
-	  unpacked:
-	    switch (retval) {
-	      case ST_CONTINUE:
-		ptr = ptr->fore;
-		break;
-	      case ST_CHECK:
-	      case ST_STOP:
-		return 0;
-	      case ST_DELETE:
-		last = &table->bins[hash_pos(ptr->hash, table->num_bins)];
-		for (; (tmp = *last) != 0; last = &tmp->next) {
-		    if (ptr == tmp) {
-			tmp = ptr->fore;
-			*last = ptr->next;
-			remove_entry(table, ptr);
-			st_free_entry(ptr);
-			ptr = tmp;
-			break;
-		    }
+    head = st_head(table);
+    list_for_each_safe(head, ptr, next, olist) {
+	i = hash_pos(ptr->hash, table->num_bins);
+	retval = (*func)(ptr->key, ptr->record, arg, 0);
+      unpacked:
+	switch (retval) {
+	  case ST_CONTINUE:
+	    break;
+	  case ST_CHECK:
+	  case ST_STOP:
+	    return 0;
+	  case ST_DELETE:
+	    last = &table->bins[hash_pos(ptr->hash, table->num_bins)];
+	    for (; (tmp = *last) != 0; last = &tmp->next) {
+		if (ptr == tmp) {
+		    *last = ptr->next;
+		    remove_entry(table, ptr);
+		    st_free_entry(ptr);
+		    break;
 		}
 	    }
-	} while (ptr && table->head);
+	    if (table->num_entries == 0) return 0;
+	}
     }
     return 0;
 }
 
 static st_index_t
-get_keys(st_table *table, st_data_t *keys, st_index_t size, int check, st_data_t never)
+get_keys(const st_table *table, st_data_t *keys, st_index_t size,
+         int check, st_data_t never)
 {
     st_data_t key;
     st_data_t *keys_start = keys;
@@ -1091,9 +1055,11 @@ get_keys(st_table *table, st_data_t *keys, st_index_t size, int check, st_data_t
 	}
     }
     else {
-	st_table_entry *ptr = table->head;
+	st_table_entry *ptr = 0;
 	st_data_t *keys_end = keys + size;
-	for (; ptr && keys < keys_end; ptr = ptr->fore) {
+
+	list_for_each(st_head(table), ptr, olist) {
+	    if (keys >= keys_end) break;
 	    key = ptr->key;
 	    if (check && key == never) continue;
 	    *keys++ = key;
@@ -1116,7 +1082,8 @@ st_keys_check(st_table *table, st_data_t *keys, st_index_t size, st_data_t never
 }
 
 static st_index_t
-get_values(st_table *table, st_data_t *values, st_index_t size, int check, st_data_t never)
+get_values(const st_table *table, st_data_t *values, st_index_t size,
+           int check, st_data_t never)
 {
     st_data_t key;
     st_data_t *values_start = values;
@@ -1132,9 +1099,11 @@ get_values(st_table *table, st_data_t *values, st_index_t size, int check, st_da
 	}
     }
     else {
-	st_table_entry *ptr = table->head;
+	st_table_entry *ptr = 0;
 	st_data_t *values_end = values + size;
-	for (; ptr && values < values_end; ptr = ptr->fore) {
+
+	list_for_each(st_head(table), ptr, olist) {
+	    if (values >= values_end) break;
 	    key = ptr->key;
 	    if (check && key == never) continue;
 	    *values++ = ptr->record;
@@ -1160,7 +1129,8 @@ st_values_check(st_table *table, st_data_t *values, st_index_t size, st_data_t n
 int
 st_reverse_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, st_data_t never)
 {
-    st_table_entry *ptr, **last, *tmp;
+    st_table_entry *ptr, **last, *tmp, *next;
+    struct list_head *head;
     enum st_retval retval;
     st_index_t i;
 
@@ -1178,8 +1148,10 @@ st_reverse_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, s
 		FIND_ENTRY(table, ptr, hash, i);
 		if (retval == ST_CHECK) {
 		    if (!ptr) goto deleted;
-		    goto unpacked_continue;
 		}
+		if (table->num_entries == 0) return 0;
+		head = st_head(table);
+		next = list_entry(ptr->olist.next, st_table_entry, olist);
 		goto unpacked;
 	    }
 	    switch (retval) {
@@ -1204,14 +1176,10 @@ st_reverse_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, s
 	}
 	return 0;
     }
-    else {
-	ptr = table->tail;
-    }
 
-    if (ptr != 0) {
-	do {
-	    if (ptr->key == never)
-		goto unpacked_continue;
+    head = st_head(table);
+    list_for_each_rev_safe(head, ptr, next, olist) {
+	if (ptr->key != never) {
 	    i = hash_pos(ptr->hash, table->num_bins);
 	    retval = (*func)(ptr->key, ptr->record, arg, 0);
 	  unpacked:
@@ -1227,8 +1195,6 @@ st_reverse_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, s
 		}
 		/* fall through */
 	      case ST_CONTINUE:
-	      unpacked_continue:
-		ptr = ptr->back;
 		break;
 	      case ST_STOP:
 		return 0;
@@ -1236,16 +1202,15 @@ st_reverse_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, s
 		last = &table->bins[hash_pos(ptr->hash, table->num_bins)];
 		for (; (tmp = *last) != 0; last = &tmp->next) {
 		    if (ptr == tmp) {
-			tmp = ptr->back;
 			remove_entry(table, ptr);
 			ptr->key = ptr->record = never;
 			ptr->hash = 0;
-			ptr = tmp;
 			break;
 		    }
 		}
+		if (table->num_entries == 0) return 0;
 	    }
-	} while (ptr && table->head);
+	}
     }
     return 0;
 }
@@ -1253,8 +1218,9 @@ st_reverse_foreach_check(st_table *table, int (*func)(ANYARGS), st_data_t arg, s
 int
 st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 {
-    st_table_entry *ptr, **last, *tmp;
+    st_table_entry *ptr, **last, *tmp, *next;
     enum st_retval retval;
+    struct list_head *head;
     st_index_t i;
 
     if (table->entries_packed) {
@@ -1269,6 +1235,8 @@ st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 	    if (!table->entries_packed) {
 		FIND_ENTRY(table, ptr, hash, i);
 		if (!ptr) return 0;
+		head = st_head(table);
+		next = list_entry(ptr->olist.next, st_table_entry, olist);
 		goto unpacked;
 	    }
 	    switch (retval) {
@@ -1284,36 +1252,30 @@ st_reverse_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 	}
 	return 0;
     }
-    else {
-	ptr = table->tail;
-    }
 
-    if (ptr != 0) {
-	do {
-	    i = hash_pos(ptr->hash, table->num_bins);
-	    retval = (*func)(ptr->key, ptr->record, arg, 0);
-	  unpacked:
-	    switch (retval) {
-	      case ST_CONTINUE:
-		ptr = ptr->back;
-		break;
-	      case ST_CHECK:
-	      case ST_STOP:
-		return 0;
-	      case ST_DELETE:
-		last = &table->bins[hash_pos(ptr->hash, table->num_bins)];
-		for (; (tmp = *last) != 0; last = &tmp->next) {
-		    if (ptr == tmp) {
-			tmp = ptr->back;
-			*last = ptr->next;
-			remove_entry(table, ptr);
-			st_free_entry(ptr);
-			ptr = tmp;
-			break;
-		    }
+    head = st_head(table);
+    list_for_each_rev_safe(head, ptr, next, olist) {
+	i = hash_pos(ptr->hash, table->num_bins);
+	retval = (*func)(ptr->key, ptr->record, arg, 0);
+      unpacked:
+	switch (retval) {
+	  case ST_CONTINUE:
+	    break;
+	  case ST_CHECK:
+	  case ST_STOP:
+	    return 0;
+	  case ST_DELETE:
+	    last = &table->bins[hash_pos(ptr->hash, table->num_bins)];
+	    for (; (tmp = *last) != 0; last = &tmp->next) {
+		if (ptr == tmp) {
+		    *last = ptr->next;
+		    remove_entry(table, ptr);
+		    st_free_entry(ptr);
+		    break;
 		}
 	    }
-	} while (ptr && table->head);
+	    if (table->num_entries == 0) return 0;
+	}
     }
     return 0;
 }
@@ -1721,6 +1683,7 @@ st_locale_insensitive_strncasecmp(const char *s1, const char *s2, size_t n)
     return 0;
 }
 
+PUREFUNC(static st_index_t strcasehash(st_data_t));
 static st_index_t
 strcasehash(st_data_t arg)
 {
@@ -1750,17 +1713,6 @@ st_numcmp(st_data_t x, st_data_t y)
 st_index_t
 st_numhash(st_data_t n)
 {
-    /*
-     * This hash function is lightly-tuned for Ruby.  Further tuning
-     * should be possible.  Notes:
-     *
-     * - (n >> 3) alone is great for heap objects and OK for fixnum,
-     *   however symbols perform poorly.
-     * - (n >> (RUBY_SPECIAL_SHIFT+3)) was added to make symbols hash well,
-     *   n.b.: +3 to remove ID scope, +1 worked well initially, too
-     * - (n << 3) was finally added to avoid losing bits for fixnums
-     * - avoid expensive modulo instructions, it is currently only
-     *   shifts and bitmask operations.
-     */
-    return (st_index_t)((n>>(RUBY_SPECIAL_SHIFT+3)|(n<<3)) ^ (n>>3));
+    enum {s1 = 11, s2 = 3};
+    return (st_index_t)((n>>s1|(n<<s2)) ^ (n>>s2));
 }

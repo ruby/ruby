@@ -110,7 +110,7 @@ expression as this can be confusing.
 == +unless+ Expression
 
 The +unless+ expression is the opposite of the +if+ expression.  If the value
-is false the "then" expression is executed:
+is false, the "then" expression is executed:
 
   unless true
     puts "the value is a false-value"
@@ -204,10 +204,10 @@ Here is an example of using +case+ to compare a String against a pattern:
 
 Here the string <code>"12345"</code> is compared with <code>/^1/</code> by
 calling <code>/^1/ === "12345"</code> which returns +true+.  Like the +if+
-expression the first +when+ that matches is executed and all other matches are
+expression, the first +when+ that matches is executed and all other matches are
 ignored.
 
-If no matches are found the +else+ is executed.
+If no matches are found, the +else+ is executed.
 
 The +else+ and +then+ are optional, this +case+ expression gives the same
 result as the one above:
@@ -300,9 +300,9 @@ This prints the numbers 0 through 11.  Like a while loop the condition <code>a
 > 10</code> is checked when entering the loop and each time the loop body
 executes.  If the condition is false the loop will continue to execute.
 
-Like a +while+ loop the +do+ is optional.
+Like a +while+ loop, the +do+ is optional.
 
-Like a +while+ loop the result of an +until+ loop is nil unless +break+ is
+Like a +while+ loop, the result of an +until+ loop is nil unless +break+ is
 used.
 
 == +for+ Loop
@@ -356,7 +356,7 @@ before the condition:
 
   p a # prints 10
 
-If you don't use +rescue+ or +ensure+ Ruby optimizes away any exception
+If you don't use +rescue+ or +ensure+, Ruby optimizes away any exception
 handling overhead.
 
 == +break+ Statement
@@ -434,14 +434,14 @@ Use +redo+ to redo the current iteration:
 
 This prints [0, 1, 3, 3, 5, 5, 7, 7, 9, 9, 11]
 
-In Ruby 1.8 you could also use +retry+ where you used +redo+.  This is no
+In Ruby 1.8, you could also use +retry+ where you used +redo+.  This is no
 longer true, now you will receive a SyntaxError when you use +retry+ outside
 of a +rescue+ block.  See {Exceptions}[rdoc-ref:syntax/exceptions.rdoc]
 for proper usage of +retry+.
 
 == Flip-Flop
 
-The flip-flop is rarely seen conditional expression.  It's primary use is
+The flip-flop is a rarely seen conditional expression.  It's primary use is
 for processing text from ruby one-line programs used with <code>ruby -n</code>
 or <code>ruby -p</code>.
 
@@ -461,14 +461,14 @@ Here is an example:
 
   p selected # prints [2, 3, 4, 5, 6, 7, 8]
 
-In the above example the on condition is <code>n==2</code>.  The flip-flop
+In the above example, the on condition is <code>n==2</code>.  The flip-flop
 is initially off (false) for 0 and 1, but becomes on (true) for 2 and remains
 on through 8.  After 8 it turns off and remains off for 9 and 10.
 
 The flip-flop must be used inside a conditional such as +if+, +while+,
 +unless+, +until+ etc. including the modifier forms.
 
-When you use an inclusive range (<code>..</code>) the off condition is
+When you use an inclusive range (<code>..</code>), the off condition is
 evaluated when the on condition changes:
 
   selected = []
@@ -479,11 +479,11 @@ evaluated when the on condition changes:
 
   p selected # prints [2]
 
-Here both sides of the flip-flop are evaluated so the flip-flop turns on and
+Here, both sides of the flip-flop are evaluated so the flip-flop turns on and
 off only when +value+ equals 2.  Since the flip-flop turned on in the
 iteration it returns true.
 
-When you use an exclusive range (<code>...</code>) the off condition is
+When you use an exclusive range (<code>...</code>), the off condition is
 evaluated on the following iteration:
 
   selected = []
@@ -494,7 +494,6 @@ evaluated on the following iteration:
 
   p selected # prints [2, 3, 4, 5]
 
-Here the flip-flop turns on when +value+ equals 2 but doesn't turn off on the
+Here, the flip-flop turns on when +value+ equals 2, but doesn't turn off on the
 same iteration.  The off condition isn't evaluated until the following
 iteration and +value+ will never be two again.
-

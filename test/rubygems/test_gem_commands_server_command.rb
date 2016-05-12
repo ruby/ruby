@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/commands/server_command'
 
@@ -37,8 +38,8 @@ class TestGemCommandsServerCommand < Gem::TestCase
     @cmd.send :handle_options, %w[-p 65535]
     assert_equal 65535, @cmd.options[:port]
 
-    @cmd.send :handle_options, %w[-p http]
-    assert_equal 80, @cmd.options[:port]
+    @cmd.send :handle_options, %w[-p discard]
+    assert_equal 9, @cmd.options[:port]
 
     e = assert_raises OptionParser::InvalidArgument do
       @cmd.send :handle_options, %w[-p nonexistent]

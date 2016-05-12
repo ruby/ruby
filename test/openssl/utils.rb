@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 begin
   require "openssl"
 
@@ -95,13 +96,6 @@ CeBUl+MahZtn9fO1JKdF4qJmS39dXnpENg==
   _end_of_pem_
 
 end
-
-  TEST_KEY_DH512_PUB = OpenSSL::PKey::DH.new <<-_end_of_pem_
------BEGIN DH PARAMETERS-----
-MEYCQQDmWXGPqk76sKw/edIOdhAQD4XzjJ+AR/PTk2qzaGs+u4oND2yU5D2NN4wr
-aPgwHyJBiK1/ebK3tYcrSKrOoRyrAgEC
------END DH PARAMETERS-----
-  _end_of_pem_
 
   TEST_KEY_DH1024 = OpenSSL::PKey::DH.new <<-_end_of_pem_
 -----BEGIN DH PARAMETERS-----
@@ -270,17 +264,20 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
         ctx_proc = args[:ctx_proc]
         server_proc = args[:server_proc]
         ignore_listener_error = args.fetch(:ignore_listener_error, false)
+        use_anon_cipher = args.fetch(:use_anon_cipher, false)
         server_proc ||= method(:readwrite_loop)
 
         store = OpenSSL::X509::Store.new
         store.add_cert(@ca_cert)
         store.purpose = OpenSSL::X509::PURPOSE_SSL_CLIENT
         ctx = OpenSSL::SSL::SSLContext.new
+        ctx.ciphers = "ADH-AES256-GCM-SHA384" if use_anon_cipher
         ctx.cert_store = store
         #ctx.extra_chain_cert = [ ca_cert ]
         ctx.cert = @svr_cert
         ctx.key = @svr_key
         ctx.tmp_dh_callback = proc { OpenSSL::TestUtils::TEST_KEY_DH1024 }
+        ctx.tmp_ecdh_callback = proc { OpenSSL::TestUtils::TEST_KEY_EC_P256V1 }
         ctx.verify_mode = verify_mode
         ctx_proc.call(ctx) if ctx_proc
 

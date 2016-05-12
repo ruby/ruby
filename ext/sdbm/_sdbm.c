@@ -7,8 +7,7 @@
  * core routines
  */
 
-#include "ruby/config.h"
-#include "ruby/defines.h"
+#include "ruby/ruby.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -373,7 +372,7 @@ makroom(register DBM *db, long int hash, int need)
 {
 	long newp;
 	char twin[PBLKSIZ];
-#if defined _WIN32 && !defined __CYGWIN__
+#if defined _WIN32
 	char zer[PBLKSIZ];
 	long oldtail;
 #endif
@@ -400,7 +399,7 @@ makroom(register DBM *db, long int hash, int need)
  * here, as sdbm_store will do so, after it inserts the incoming pair.
  */
 
-#if defined _WIN32 && !defined __CYGWIN__
+#if defined _WIN32
 	/*
 	 * Fill hole with 0 if made it.
 	 * (hole is NOT read as 0)
@@ -803,7 +802,7 @@ delpair(char *pag, datum key)
 		}
 #else
 #ifdef MEMMOVE
-		memmove(dst, src, m);
+		memmove(dst-m, src-m, m);
 #else
 		while (m--)
 			*--dst = *--src;

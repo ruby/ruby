@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # httpproxy.rb -- HTTPProxy Class
 #
@@ -142,7 +143,7 @@ module WEBrick
       if proxy = proxy_uri(req, res)
         proxy_request_line = "CONNECT #{host}:#{port} HTTP/1.0"
         if proxy.userinfo
-          credentials = "Basic " + [proxy.userinfo].pack("m").delete("\n")
+          credentials = "Basic " + [proxy.userinfo].pack("m0")
         end
         host, port = proxy.host, proxy.port
       end
@@ -156,12 +157,12 @@ module WEBrick
           os << proxy_request_line << CRLF
           @logger.debug("CONNECT: > #{proxy_request_line}")
           if credentials
-            @logger.debug("CONNECT: sending a credentials")
+            @logger.debug("CONNECT: sending credentials")
             os << "Proxy-Authorization: " << credentials << CRLF
           end
           os << CRLF
           proxy_status_line = os.gets(LF)
-          @logger.debug("CONNECT: read a Status-Line form the upstream server")
+          @logger.debug("CONNECT: read Status-Line from the upstream server")
           @logger.debug("CONNECT: < #{proxy_status_line}")
           if %r{^HTTP/\d+\.\d+\s+200\s*} =~ proxy_status_line
             while line = os.gets(LF)
@@ -293,7 +294,7 @@ module WEBrick
       if upstream = proxy_uri(req, res)
         if upstream.userinfo
           header['proxy-authorization'] =
-            "Basic " + [upstream.userinfo].pack("m").delete("\n")
+            "Basic " + [upstream.userinfo].pack("m0")
         end
         return upstream
       end

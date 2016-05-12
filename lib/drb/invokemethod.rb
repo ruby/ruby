@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 # for ruby-1.8.0
 
 module DRb # :nodoc: all

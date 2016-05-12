@@ -25,29 +25,45 @@
 
 struct RSymbol {
     struct RBasic basic;
+    st_index_t hashval;
     VALUE fstr;
     ID id;
 };
 
 #define RSYMBOL(obj) (R_CAST(RSymbol)(obj))
 
-static inline int
-id_type(ID id)
-{
-    if (id<=tLAST_OP_ID) {
-	return -1;
-    }
-    return (int)(id&ID_SCOPE_MASK);
-}
-
 #define is_notop_id(id) ((id)>tLAST_OP_ID)
 #define is_local_id(id) (id_type(id)==ID_LOCAL)
 #define is_global_id(id) (id_type(id)==ID_GLOBAL)
 #define is_instance_id(id) (id_type(id)==ID_INSTANCE)
-#define is_attrset_id(id) (id_type(id)==ID_ATTRSET)
+#define is_attrset_id(id) ((id)==idASET||id_type(id)==ID_ATTRSET)
 #define is_const_id(id) (id_type(id)==ID_CONST)
 #define is_class_id(id) (id_type(id)==ID_CLASS)
 #define is_junk_id(id) (id_type(id)==ID_JUNK)
+
+static inline int
+id_type(ID id)
+{
+    if (is_notop_id(id)) {
+	return (int)(id&ID_SCOPE_MASK);
+    }
+    else {
+	return -1;
+    }
+}
+
+typedef uint32_t rb_id_serial_t;
+
+static inline rb_id_serial_t
+rb_id_to_serial(ID id)
+{
+    if (is_notop_id(id)) {
+	return (rb_id_serial_t)(id >> ID_SCOPE_SHIFT);
+    }
+    else {
+	return (rb_id_serial_t)id;
+    }
+}
 
 static inline int
 sym_type(VALUE sym)
@@ -84,4 +100,9 @@ is_global_name_punct(const int c)
 
 ID rb_intern_cstr_without_pindown(const char *, long, rb_encoding *);
 
+RUBY_SYMBOL_EXPORT_BEGIN
+
+size_t rb_sym_immortal_count(void);
+
+RUBY_SYMBOL_EXPORT_END
 #endif

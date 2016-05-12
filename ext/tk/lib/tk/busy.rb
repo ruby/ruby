@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/busy.rb: support 'tk busy' command (Tcl/Tk8.6 or later)
 #

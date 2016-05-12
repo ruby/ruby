@@ -1,6 +1,9 @@
+# frozen_string_literal: true
+
 require 'socket'
 require 'timeout'
 require 'thread'
+require 'io/wait'
 
 begin
   require 'securerandom'
@@ -666,23 +669,27 @@ class Resolv
       end
 
       def request(sender, tout)
-        start = Time.now
+        start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         timelimit = start + tout
         begin
           sender.send
-        rescue Errno::EHOSTUNREACH
-          # multi-homed IPv6 may generate this
+        rescue Errno::EHOSTUNREACH, # multi-homed IPv6 may generate this
+               Errno::ENETUNREACH
           raise ResolvTimeout
         end
         while true
-          before_select = Time.now
+          before_select = Process.clock_gettime(Process::CLOCK_MONOTONIC)
           timeout = timelimit - before_select
           if timeout <= 0
             raise ResolvTimeout
           end
-          select_result = IO.select(@socks, nil, nil, timeout)
+          if @socks.size == 1
+            select_result = @socks[0].wait_readable(timeout) ? [ @socks ] : nil
+          else
+            select_result = IO.select(@socks, nil, nil, timeout)
+          end
           if !select_result
-            after_select = Time.now
+            after_select = Process.clock_gettime(Process::CLOCK_MONOTONIC)
             next if after_select < timelimit
             raise ResolvTimeout
           end
@@ -1170,7 +1177,9 @@ class Resolv
       class Str # :nodoc:
         def initialize(string)
           @string = string
-          @downcase = string.downcase
+          # case insensivity of DNS labels doesn't apply non-ASCII characters. [RFC 4343]
+          # This assumes @string is given in ASCII compatible encoding.
+          @downcase = string.b.downcase
         end
         attr_reader :string, :downcase
 
@@ -1183,7 +1192,7 @@ class Resolv
         end
 
         def ==(other)
-          return @downcase == other.downcase
+          return self.class == other.class && @downcase == other.downcase
         end
 
         def eql?(other)
@@ -1219,6 +1228,14 @@ class Resolv
       end
 
       def initialize(labels, absolute=true) # :nodoc:
+        labels = labels.map {|label|
+          case label
+          when String then Label::Str.new(label)
+          when Label::Str then label
+          else
+            raise ArgumentError, "unexpected label: #{label.inspect}"
+          end
+        }
         @labels = labels
         @absolute = absolute
       end
@@ -1236,7 +1253,8 @@ class Resolv
 
       def ==(other) # :nodoc:
         return false unless Name === other
-        return @labels.join == other.to_a.join && @absolute == other.absolute?
+        return false unless @absolute == other.absolute?
+        return @labels == other.to_a
       end
 
       alias eql? == # :nodoc:
@@ -1410,7 +1428,7 @@ class Resolv
 
       class MessageEncoder # :nodoc:
         def initialize
-          @data = ''
+          @data = ''.dup
           @names = {}
           yield self
         end
@@ -1458,7 +1476,9 @@ class Resolv
               self.put_pack("n", 0xc000 | idx)
               return
             else
-              @names[domain] = @data.length
+              if @data.length < 0x4000
+                @names[domain] = @data.length
+              end
               self.put_label(d[i])
             end
           }
@@ -1665,10 +1685,10 @@ class Resolv
         return false unless self.class == other.class
         s_ivars = self.instance_variables
         s_ivars.sort!
-        s_ivars.delete "@ttl"
+        s_ivars.delete :@ttl
         o_ivars = other.instance_variables
         o_ivars.sort!
-        o_ivars.delete "@ttl"
+        o_ivars.delete :@ttl
         return s_ivars == o_ivars &&
           s_ivars.collect {|name| self.instance_variable_get name} ==
             o_ivars.collect {|name| other.instance_variable_get name}
@@ -1681,7 +1701,7 @@ class Resolv
       def hash # :nodoc:
         h = 0
         vars = self.instance_variables
-        vars.delete "@ttl"
+        vars.delete :@ttl
         vars.each {|name|
           h ^= self.instance_variable_get(name).hash
         }
@@ -2431,14 +2451,14 @@ class Resolv
       when IPv6
         return arg
       when String
-        address = ''
+        address = ''.b
         if Regex_8Hex =~ arg
           arg.scan(/[0-9A-Fa-f]+/) {|hex| address << [hex.hex].pack('n')}
         elsif Regex_CompressedHex =~ arg
           prefix = $1
           suffix = $2
-          a1 = ''
-          a2 = ''
+          a1 = ''.b
+          a2 = ''.b
           prefix.scan(/[0-9A-Fa-f]+/) {|hex| a1 << [hex.hex].pack('n')}
           suffix.scan(/[0-9A-Fa-f]+/) {|hex| a2 << [hex.hex].pack('n')}
           omitlen = 16 - a1.length - a2.length
@@ -2454,8 +2474,8 @@ class Resolv
         elsif Regex_CompressedHex4Dec =~ arg
           prefix, suffix, a, b, c, d = $1, $2, $3.to_i, $4.to_i, $5.to_i, $6.to_i
           if (0..255) === a && (0..255) === b && (0..255) === c && (0..255) === d
-            a1 = ''
-            a2 = ''
+            a1 = ''.b
+            a2 = ''.b
             prefix.scan(/[0-9A-Fa-f]+/) {|hex| a1 << [hex.hex].pack('n')}
             suffix.scan(/[0-9A-Fa-f]+/) {|hex| a2 << [hex.hex].pack('n')}
             omitlen = 12 - a1.length - a2.length

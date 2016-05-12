@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 require 'test/unit'
 require 'stringio'
 
@@ -340,11 +341,12 @@ class TestRubyYieldGen < Test::Unit::TestCase
     t = t.subst('vars') { " [#{vars.join(",")}]" }
     emu_values = emu(t, vars, islambda)
     s = t.to_s
+    o = Object.new
     #print "#{s}\t\t"
     #STDOUT.flush
     eval_values = disable_stderr {
       begin
-        eval(s, nil, 'generated_code_in_check_nofork')
+        o.instance_eval(s, 'generated_code_in_check_nofork')
       rescue ArgumentError
         ArgumentError
       end
@@ -354,23 +356,29 @@ class TestRubyYieldGen < Test::Unit::TestCase
     assert_equal(emu_values, eval_values, s)
   end
 
+  def assert_all_sentences(syntax, *args)
+    syntax = Sentence.expand_syntax(syntax)
+    all_assertions do |a|
+      Sentence.each(syntax, *args) {|t|
+        a.for(t) {yield t}
+      }
+    end
+  end
+
   def test_yield
-    syntax = Sentence.expand_syntax(Syntax)
-    Sentence.each(syntax, :test_proc, 4) {|t|
+    assert_all_sentences(Syntax, :test_proc, 4) {|t|
       check_nofork(t)
     }
   end
 
   def test_yield_lambda
-    syntax = Sentence.expand_syntax(Syntax)
-    Sentence.each(syntax, :test_lambda, 4) {|t|
+    assert_all_sentences(Syntax, :test_lambda, 4) {|t|
       check_nofork(t, true)
     }
   end
 
   def test_yield_enum
-    syntax = Sentence.expand_syntax(Syntax)
-    Sentence.each(syntax, :test_enum, 4) {|t|
+    assert_all_sentences(Syntax, :test_enum, 4) {|t|
       code = t.to_s
       r1, r2 = disable_stderr {
         eval(code, nil, 'generated_code_in_test_yield_enum')
@@ -389,5 +397,29 @@ class TestRubyYieldGen < Test::Unit::TestCase
       super
     end
     assert_equal [m, nil], y.s(m){|a,b|[a,b]}
+  end
+
+  def test_block_cached_argc
+    # [Bug #11451]
+    assert_separately([], <<-"end;")
+      class Yielder
+        def each
+          yield :x, :y, :z
+        end
+      end
+      class Getter1
+        include Enumerable
+        def each(&block)
+          Yielder.new.each(&block)
+        end
+      end
+      class Getter2
+        include Enumerable
+        def each
+          Yielder.new.each { |a, b, c, d| yield(a) }
+        end
+      end
+      Getter1.new.map{Getter2.new.each{|x|}}
+    end;
   end
 end

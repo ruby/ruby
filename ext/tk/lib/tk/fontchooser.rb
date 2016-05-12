@@ -1,3 +1,4 @@
+# frozen_string_literal: false
 #
 # tk/fontchooser.rb -- "tk fontchooser" support (Tcl/Tk8.6 or later)
 #
@@ -51,7 +52,7 @@ class << TkFont::Chooser
       tk_tcl2ruby(val)
     when 'visible'
       bool(val)
-    else # unkown
+    else # unknown
       val
     end
   end

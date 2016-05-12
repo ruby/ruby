@@ -18,6 +18,7 @@
 #include <ruby/re.h>
 #include "node.h"
 #include "gc.h"
+#include "symbol.h"
 
 /*
  *  call-seq:
@@ -56,13 +57,11 @@ total_i(void *vstart, void *vend, size_t stride, void *ptr)
 	if (RBASIC(v)->flags) {
 	    switch (BUILTIN_TYPE(v)) {
 	      case T_NONE:
+	      case T_IMEMO:
 	      case T_ICLASS:
 	      case T_NODE:
 	      case T_ZOMBIE:
 		continue;
-	      case T_CLASS:
-		if (FL_TEST(v, FL_SINGLETON))
-		  continue;
 	      default:
 		if (data->klass == 0 || rb_obj_is_kind_of(v, data->klass)) {
 		    data->total += rb_obj_memsize_of(v);
@@ -124,6 +123,26 @@ set_zero_i(st_data_t key, st_data_t val, st_data_t arg)
     return ST_CONTINUE;
 }
 
+static VALUE
+setup_hash(int argc, VALUE *argv)
+{
+    VALUE hash;
+
+    if (rb_scan_args(argc, argv, "01", &hash) == 1) {
+        if (!RB_TYPE_P(hash, T_HASH))
+            rb_raise(rb_eTypeError, "non-hash given");
+    }
+
+    if (hash == Qnil) {
+        hash = rb_hash_new();
+    }
+    else if (!RHASH_EMPTY_P(hash)) {
+        st_foreach(RHASH_TBL(hash), set_zero_i, hash);
+    }
+
+    return hash;
+}
+
 static int
 cos_i(void *vstart, void *vend, size_t stride, void *data)
 {
@@ -166,6 +185,7 @@ type2sym(enum ruby_value_type i)
 	CASE_TYPE(T_SYMBOL);
 	CASE_TYPE(T_FIXNUM);
 	CASE_TYPE(T_UNDEF);
+	CASE_TYPE(T_IMEMO);
 	CASE_TYPE(T_NODE);
 	CASE_TYPE(T_ICLASS);
 	CASE_TYPE(T_ZOMBIE);
@@ -204,12 +224,7 @@ count_objects_size(int argc, VALUE *argv, VALUE os)
     size_t counts[T_MASK+1];
     size_t total = 0;
     enum ruby_value_type i;
-    VALUE hash;
-
-    if (rb_scan_args(argc, argv, "01", &hash) == 1) {
-        if (!RB_TYPE_P(hash, T_HASH))
-            rb_raise(rb_eTypeError, "non-hash given");
-    }
+    VALUE hash = setup_hash(argc, argv);
 
     for (i = 0; i <= T_MASK; i++) {
 	counts[i] = 0;
@@ -232,6 +247,84 @@ count_objects_size(int argc, VALUE *argv, VALUE os)
 	}
     }
     rb_hash_aset(hash, ID2SYM(rb_intern("TOTAL")), SIZET2NUM(total));
+    return hash;
+}
+
+struct dynamic_symbol_counts {
+    size_t mortal;
+    size_t immortal;
+};
+
+static int
+cs_i(void *vstart, void *vend, size_t stride, void *n)
+{
+    struct dynamic_symbol_counts *counts = (struct dynamic_symbol_counts *)n;
+    VALUE v = (VALUE)vstart;
+
+    for (; v != (VALUE)vend; v += stride) {
+	if (RBASIC(v)->flags && BUILTIN_TYPE(v) == T_SYMBOL) {
+	    ID id = RSYMBOL(v)->id;
+	    if ((id & ~ID_SCOPE_MASK) == 0) {
+		counts->mortal++;
+	    }
+	    else {
+		counts->immortal++;
+	    }
+	}
+    }
+
+    return 0;
+}
+
+size_t rb_sym_immortal_count(void);
+
+/*
+ *  call-seq:
+ *     ObjectSpace.count_symbols([result_hash]) -> hash
+ *
+ *  Counts symbols for each Symbol type.
+ *
+ *  This method is only for MRI developers interested in performance and memory
+ *  usage of Ruby programs.
+ *
+ *  If the optional argument, result_hash, is given, it is overwritten and
+ *  returned. This is intended to avoid probe effect.
+ *
+ *  Note:
+ *  The contents of the returned hash is implementation defined.
+ *  It may be changed in future.
+ *
+ *  This method is only expected to work with C Ruby.
+ *
+ *  On this version of MRI, they have 3 types of Symbols (and 1 total counts).
+ *
+ *   * mortal_dynamic_symbol: GC target symbols (collected by GC)
+ *   * immortal_dynamic_symbol: Immortal symbols promoted from dynamic symbols (do not collected by GC)
+ *   * immortal_static_symbol: Immortal symbols (do not collected by GC)
+ *   * immortal_symbol: total immortal symbols (immortal_dynamic_symbol+immortal_static_symbol)
+ */
+
+static VALUE
+count_symbols(int argc, VALUE *argv, VALUE os)
+{
+    struct dynamic_symbol_counts dynamic_counts = {0, 0};
+    VALUE hash = setup_hash(argc, argv);
+
+    size_t immortal_symbols = rb_sym_immortal_count();
+    rb_objspace_each_objects(cs_i, &dynamic_counts);
+
+    if (hash == Qnil) {
+        hash = rb_hash_new();
+    }
+    else if (!RHASH_EMPTY_P(hash)) {
+        st_foreach(RHASH_TBL(hash), set_zero_i, hash);
+    }
+
+    rb_hash_aset(hash, ID2SYM(rb_intern("mortal_dynamic_symbol")),   SIZET2NUM(dynamic_counts.mortal));
+    rb_hash_aset(hash, ID2SYM(rb_intern("immortal_dynamic_symbol")), SIZET2NUM(dynamic_counts.immortal));
+    rb_hash_aset(hash, ID2SYM(rb_intern("immortal_static_symbol")),  SIZET2NUM(immortal_symbols - dynamic_counts.immortal));
+    rb_hash_aset(hash, ID2SYM(rb_intern("immortal_symbol")),         SIZET2NUM(immortal_symbols));
+
     return hash;
 }
 
@@ -279,12 +372,7 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 {
     size_t nodes[NODE_LAST+1];
     size_t i;
-    VALUE hash;
-
-    if (rb_scan_args(argc, argv, "01", &hash) == 1) {
-        if (!RB_TYPE_P(hash, T_HASH))
-            rb_raise(rb_eTypeError, "non-hash given");
-    }
+    VALUE hash = setup_hash(argc, argv);
 
     for (i = 0; i <= NODE_LAST; i++) {
 	nodes[i] = 0;
@@ -390,7 +478,6 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_SCLASS);
 		COUNT_NODE(NODE_COLON2);
 		COUNT_NODE(NODE_COLON3);
-		COUNT_NODE(NODE_CREF);
 		COUNT_NODE(NODE_DOT2);
 		COUNT_NODE(NODE_DOT3);
 		COUNT_NODE(NODE_FLIP2);
@@ -404,8 +491,6 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_POSTEXE);
 		COUNT_NODE(NODE_ALLOCA);
 		COUNT_NODE(NODE_BMETHOD);
-		COUNT_NODE(NODE_MEMO);
-		COUNT_NODE(NODE_IFUNC);
 		COUNT_NODE(NODE_DSYM);
 		COUNT_NODE(NODE_ATTRASGN);
 		COUNT_NODE(NODE_PRELUDE);
@@ -486,21 +571,85 @@ cto_i(void *vstart, void *vend, size_t stride, void *data)
 static VALUE
 count_tdata_objects(int argc, VALUE *argv, VALUE self)
 {
-    VALUE hash;
-
-    if (rb_scan_args(argc, argv, "01", &hash) == 1) {
-        if (!RB_TYPE_P(hash, T_HASH))
-            rb_raise(rb_eTypeError, "non-hash given");
-    }
-
-    if (hash == Qnil) {
-        hash = rb_hash_new();
-    }
-    else if (!RHASH_EMPTY_P(hash)) {
-        st_foreach(RHASH_TBL(hash), set_zero_i, hash);
-    }
-
+    VALUE hash = setup_hash(argc, argv);
     rb_objspace_each_objects(cto_i, (void *)hash);
+    return hash;
+}
+
+static ID imemo_type_ids[imemo_mask+1];
+
+static int
+count_imemo_objects_i(void *vstart, void *vend, size_t stride, void *data)
+{
+    VALUE hash = (VALUE)data;
+    VALUE v = (VALUE)vstart;
+
+    for (; v != (VALUE)vend; v += stride) {
+	if (RBASIC(v)->flags && BUILTIN_TYPE(v) == T_IMEMO) {
+	    VALUE counter;
+	    VALUE key = ID2SYM(imemo_type_ids[imemo_type(v)]);
+
+	    counter = rb_hash_aref(hash, key);
+
+	    if (NIL_P(counter)) {
+		counter = INT2FIX(1);
+	    }
+	    else {
+		counter = INT2FIX(FIX2INT(counter) + 1);
+	    }
+
+	    rb_hash_aset(hash, key, counter);
+	}
+    }
+
+    return 0;
+}
+
+/*
+ *  call-seq:
+ *     ObjectSpace.count_imemo_objects([result_hash]) -> hash
+ *
+ *  Counts objects for each +T_IMEMO+ type.
+ *
+ *  This method is only for MRI developers interested in performance and memory
+ *  usage of Ruby programs.
+ *
+ *  It returns a hash as:
+ *
+ *       {:imemo_ifunc=>8,
+ *        :imemo_svar=>7,
+ *        :imemo_cref=>509,
+ *        :imemo_memo=>1,
+ *        :imemo_throw_data=>1}
+ *
+ *  If the optional argument, result_hash, is given, it is overwritten and
+ *  returned. This is intended to avoid probe effect.
+ *
+ *  The contents of the returned hash is implementation specific and may change
+ *  in the future.
+ *
+ *  In this version, keys are symbol objects.
+ *
+ *  This method is only expected to work with C Ruby.
+ */
+
+static VALUE
+count_imemo_objects(int argc, VALUE *argv, VALUE self)
+{
+    VALUE hash = setup_hash(argc, argv);
+
+    if (imemo_type_ids[0] == 0) {
+	imemo_type_ids[0] = rb_intern("imemo_none");
+	imemo_type_ids[1] = rb_intern("imemo_cref");
+	imemo_type_ids[2] = rb_intern("imemo_svar");
+	imemo_type_ids[3] = rb_intern("imemo_throw_data");
+	imemo_type_ids[4] = rb_intern("imemo_ifunc");
+	imemo_type_ids[5] = rb_intern("imemo_memo");
+	imemo_type_ids[6] = rb_intern("imemo_ment");
+	imemo_type_ids[7] = rb_intern("imemo_iseq");
+    }
+
+    rb_objspace_each_objects(count_imemo_objects_i, (void *)hash);
 
     return hash;
 }
@@ -529,7 +678,7 @@ static VALUE rb_mInternalObjectWrapper;
 static VALUE
 iow_newobj(VALUE obj)
 {
-    return rb_data_typed_object_alloc(rb_mInternalObjectWrapper, (void *)obj, &iow_data_type);
+    return TypedData_Wrap_Struct(rb_mInternalObjectWrapper, &iow_data_type, (void *)obj);
 }
 
 /* Returns the type of the internal object. */
@@ -674,8 +823,7 @@ reachable_object_from_root_i(const char *category, VALUE obj, void *ptr)
     else {
 	data->last_category = category;
 	category_str = data->last_category_str = rb_str_new2(category);
-	category_objects = data->last_category_objects = rb_hash_new();
-	rb_funcall(category_objects, rb_intern("compare_by_identity"), 0);
+	category_objects = data->last_category_objects = rb_ident_hash_new();
 	if (!NIL_P(rb_hash_lookup(data->categories, category_str))) {
 	    rb_bug("reachable_object_from_root_i: category should insert at once");
 	}
@@ -711,14 +859,80 @@ static VALUE
 reachable_objects_from_root(VALUE self)
 {
     struct rofr_data data;
-    VALUE hash = data.categories = rb_hash_new();
+    VALUE hash = data.categories = rb_ident_hash_new();
     data.last_category = 0;
 
-    rb_funcall(hash, rb_intern("compare_by_identity"), 0);
     rb_objspace_reachable_objects_from_root(reachable_object_from_root_i, &data);
     rb_hash_foreach(hash, collect_values_of_values, hash);
 
     return hash;
+}
+
+static VALUE
+wrap_klass_iow(VALUE klass)
+{
+    if (!RTEST(klass)) {
+	return Qnil;
+    }
+    else if (RB_TYPE_P(klass, T_ICLASS)) {
+	return iow_newobj(klass);
+    }
+    else {
+	return klass;
+    }
+}
+
+/*
+ *  call-seq:
+ *     ObjectSpace.internal_class_of(obj) -> Class or Module
+ *
+ *  [MRI specific feature] Return internal class of obj.
+ *  obj can be an instance of InternalObjectWrapper.
+ *
+ *  Note that you should not use this method in your application.
+ */
+static VALUE
+objspace_internal_class_of(VALUE self, VALUE obj)
+{
+    VALUE klass;
+
+    if (rb_typeddata_is_kind_of(obj, &iow_data_type)) {
+	obj = (VALUE)DATA_PTR(obj);
+    }
+
+    klass = CLASS_OF(obj);
+    return wrap_klass_iow(klass);
+}
+
+/*
+ *  call-seq:
+ *     ObjectSpace.internal_super_of(cls) -> Class or Module
+ *
+ *  [MRI specific feature] Return internal super class of cls (Class or Module).
+ *  obj can be an instance of InternalObjectWrapper.
+ *
+ *  Note that you should not use this method in your application.
+ */
+static VALUE
+objspace_internal_super_of(VALUE self, VALUE obj)
+{
+    VALUE super;
+
+    if (rb_typeddata_is_kind_of(obj, &iow_data_type)) {
+	obj = (VALUE)DATA_PTR(obj);
+    }
+
+    switch (TYPE(obj)) {
+      case T_MODULE:
+      case T_CLASS:
+      case T_ICLASS:
+	super = RCLASS_SUPER(obj);
+	break;
+      default:
+	rb_raise(rb_eArgError, "class or module is expected");
+    }
+
+    return wrap_klass_iow(super);
 }
 
 void Init_object_tracing(VALUE rb_mObjSpace);
@@ -752,11 +966,16 @@ Init_objspace(void)
     rb_define_module_function(rb_mObjSpace, "memsize_of_all", memsize_of_all_m, -1);
 
     rb_define_module_function(rb_mObjSpace, "count_objects_size", count_objects_size, -1);
+    rb_define_module_function(rb_mObjSpace, "count_symbols", count_symbols, -1);
     rb_define_module_function(rb_mObjSpace, "count_nodes", count_nodes, -1);
     rb_define_module_function(rb_mObjSpace, "count_tdata_objects", count_tdata_objects, -1);
+    rb_define_module_function(rb_mObjSpace, "count_imemo_objects", count_imemo_objects, -1);
 
     rb_define_module_function(rb_mObjSpace, "reachable_objects_from", reachable_objects_from, 1);
     rb_define_module_function(rb_mObjSpace, "reachable_objects_from_root", reachable_objects_from_root, 0);
+
+    rb_define_module_function(rb_mObjSpace, "internal_class_of", objspace_internal_class_of, 1);
+    rb_define_module_function(rb_mObjSpace, "internal_super_of", objspace_internal_super_of, 1);
 
     /*
      * This class is used as a return value from
