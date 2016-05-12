@@ -40,7 +40,7 @@ extern "C" {
 
 #if __has_attribute(__warn_unused_result__)
 #define WARN_UNUSED_RESULT(x) x __attribute__((__warn_unused_result__))
-#elif defined(__GNUC__) && (__GNUC__ * 1000 + __GNUC_MINOR__) >= 3004
+#elif GCC_VERSION_SINCE(3,4,0)
 #define WARN_UNUSED_RESULT(x) x __attribute__((__warn_unused_result__))
 #else
 #define WARN_UNUSED_RESULT(x) x
@@ -60,12 +60,6 @@ extern "C" {
 #endif
 
 #define numberof(array) ((int)(sizeof(array) / sizeof((array)[0])))
-
-#define GCC_VERSION_SINCE(major, minor, patchlevel) \
-  (defined(__GNUC__) && !defined(__INTEL_COMPILER) && \
-   ((__GNUC__ > (major)) ||  \
-    (__GNUC__ == (major) && __GNUC_MINOR__ > (minor)) || \
-    (__GNUC__ == (major) && __GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ >= (patchlevel))))
 
 #ifndef __has_feature
 # define __has_feature(x) 0

@@ -947,8 +947,7 @@ tick(void)
     return ((unsigned long long)lo)|( ((unsigned long long)hi)<<32);
 }
 
-#elif defined(__powerpc64__) && \
-    (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8))
+#elif defined(__powerpc64__) && GCC_VERSION_SINCE(4,8,0)
 typedef unsigned long long tick_t;
 #define PRItick "llu"
 

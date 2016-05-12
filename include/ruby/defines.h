@@ -46,6 +46,13 @@ extern "C" {
 # define NOINLINE(x) x
 #endif
 
+#define GCC_VERSION_SINCE(major, minor, patchlevel) \
+  (defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(__clang__) && \
+   ((__GNUC__ > (major)) ||  \
+    ((__GNUC__ == (major) && \
+      (__GNUC_MINOR__ > (minor)) || \
+      (__GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ >= (patchlevel))))))
+
 /* likely */
 #if __GNUC__ >= 3
 #define RB_LIKELY(x)   (__builtin_expect(!!(x), 1))
@@ -152,8 +159,8 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #define xrealloc2 ruby_xrealloc2
 #define xfree ruby_xfree
 
-#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 3))
-# define RUBY_ATTR_ALLOC_SIZE(params) __attribute__ ((__alloc_size__ params))
+#if GCC_VERSION_SINCE(4,3,0)
+# deine RUBY_ATTR_ALLOC_SIZE(params) __attribute__ ((__alloc_size__ params))
 #else
 # define RUBY_ATTR_ALLOC_SIZE(params)
 #endif

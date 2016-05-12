@@ -1,3 +1,7 @@
+Fri May 13 03:12:09 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/defines.h (GCC_VERSION_SINCE): moved from internal.h.
+
 Fri May 13 03:11:20 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in (__builtin_constant_p): check.
