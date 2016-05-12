@@ -175,8 +175,8 @@ random_memsize(const void *ptr)
     return sizeof(rb_random_t);
 }
 
-static const rb_data_type_t random_data_type = {
-    "random",
+static const rb_data_type_t random_mt_type = {
+    "random/MT",
     {
 	random_mark,
 	random_free,
@@ -189,7 +189,7 @@ static rb_random_t *
 get_rnd(VALUE obj)
 {
     rb_random_t *ptr;
-    TypedData_Get_Struct(obj, rb_random_t, &random_data_type, ptr);
+    TypedData_Get_Struct(obj, rb_random_t, &random_mt_type, ptr);
     return rand_start(ptr);
 }
 
@@ -199,7 +199,7 @@ try_get_rnd(VALUE obj)
     if (obj == rb_cRandom) {
 	return rand_start(&default_rand);
     }
-    if (!rb_typeddata_is_kind_of(obj, &random_data_type)) return NULL;
+    if (!rb_typeddata_is_kind_of(obj, &random_mt_type)) return NULL;
     return rand_start(DATA_PTR(obj));
 }
 
@@ -208,7 +208,7 @@ static VALUE
 random_alloc(VALUE klass)
 {
     rb_random_t *rnd;
-    VALUE obj = TypedData_Make_Struct(klass, rb_random_t, &random_data_type, rnd);
+    VALUE obj = TypedData_Make_Struct(klass, rb_random_t, &random_mt_type, rnd);
     rnd->seed = INT2FIX(0);
     return obj;
 }
@@ -1480,11 +1480,11 @@ init_randomseed(struct MT *mt)
 
 /* construct Random::DEFAULT bits */
 static VALUE
-Init_Random_default(void)
+Init_Random_default(VALUE klass)
 {
     rb_random_t *r = &default_rand;
     struct MT *mt = &r->mt;
-    VALUE v = TypedData_Wrap_Struct(rb_cRandom, &random_data_type, r);
+    VALUE v = TypedData_Wrap_Struct(klass, &random_mt_type, r);
 
     rb_gc_register_mark_object(v);
     r->seed = init_randomseed(mt);
@@ -1545,7 +1545,7 @@ InitVM_Random(void)
 
     {
 	/* Direct access to Ruby's Pseudorandom number generator (PRNG). */
-	VALUE rand_default = Init_Random_default();
+	VALUE rand_default = Init_Random_default(rb_cRandom);
 	/* The default Pseudorandom number generator.  Used by class
 	 * methods of Random. */
 	rb_define_const(rb_cRandom, "DEFAULT", rand_default);
