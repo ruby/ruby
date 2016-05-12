@@ -1800,24 +1800,26 @@ AC_DEFUN([RUBY_TYPE_ATTRIBUTE], [dnl
 ])
 ])
 
-RUBY_FUNC_ATTRIBUTE(const, CONSTFUNC)
-RUBY_FUNC_ATTRIBUTE(pure, PUREFUNC)
-RUBY_FUNC_ATTRIBUTE(noreturn, NORETURN)
-RUBY_FUNC_ATTRIBUTE(deprecated, DEPRECATED)
-RUBY_FUNC_ATTRIBUTE(deprecated("by "@%:@n), DEPRECATED_BY(n,x), rb_cv_func_deprecated_by)
-RUBY_TYPE_ATTRIBUTE(deprecated mesg, DEPRECATED_TYPE(mesg,x), rb_cv_type_deprecated)
-RUBY_FUNC_ATTRIBUTE(noinline, NOINLINE)
-RUBY_FUNC_ATTRIBUTE(weak, WEAK, rb_cv_func_weak)
+RUBY_FUNC_ATTRIBUTE(__const__, CONSTFUNC)
+RUBY_FUNC_ATTRIBUTE(__pure__, PUREFUNC)
+RUBY_FUNC_ATTRIBUTE(__noreturn__, NORETURN)
+RUBY_FUNC_ATTRIBUTE(__deprecated__, DEPRECATED)
+RUBY_FUNC_ATTRIBUTE(__deprecated__("by "@%:@n), DEPRECATED_BY(n,x), rb_cv_func_deprecated_by)
+RUBY_TYPE_ATTRIBUTE(__deprecated__ mesg, DEPRECATED_TYPE(mesg,x), rb_cv_type_deprecated)
+RUBY_FUNC_ATTRIBUTE(__noinline__, NOINLINE)
+RUBY_FUNC_ATTRIBUTE(__error__, ERRORFUNC)
+RUBY_FUNC_ATTRIBUTE(__warning__, WARNINGFUNC)
+RUBY_FUNC_ATTRIBUTE(__weak__, WEAK, rb_cv_func_weak)
 if test "$rb_cv_func_weak" != x; then
    AC_DEFINE(HAVE_FUNC_WEAK)
 fi
 
 if_i386=${universal_binary+[defined __i386__]}
-RUBY_FUNC_ATTRIBUTE(stdcall,  [], [], ${if_i386})
-RUBY_FUNC_ATTRIBUTE(cdecl,    [], [], ${if_i386})
-RUBY_FUNC_ATTRIBUTE(fastcall, [], [], ${if_i386})
-RUBY_FUNC_ATTRIBUTE(optimize("O0"), FUNC_UNOPTIMIZED, rb_cv_func_unoptimized)
-RUBY_FUNC_ATTRIBUTE(optimize("-Os","-fomit-frame-pointer"), FUNC_MINIMIZED, rb_cv_func_minimized)
+RUBY_FUNC_ATTRIBUTE(__stdcall__,  [], [], ${if_i386})
+RUBY_FUNC_ATTRIBUTE(__cdecl__,    [], [], ${if_i386})
+RUBY_FUNC_ATTRIBUTE(__fastcall__, [], [], ${if_i386})
+RUBY_FUNC_ATTRIBUTE(__optimize__("O0"), FUNC_UNOPTIMIZED, rb_cv_func_unoptimized)
+RUBY_FUNC_ATTRIBUTE(__optimize__("-Os","-fomit-frame-pointer"), FUNC_MINIMIZED, rb_cv_func_minimized)
 
 if test "$GCC" = yes; then
     AC_CACHE_CHECK([for function alias], [rb_cv_gcc_function_alias],
@@ -1882,7 +1884,7 @@ fi
 AC_CACHE_CHECK(for exported function attribute, rb_cv_func_exported, [
 rb_cv_func_exported=no
 RUBY_WERROR_FLAG([
-for mac in '__attribute__ ((visibility("default")))' '__declspec(dllexport)'; do
+for mac in '__attribute__ ((__visibility__("default")))' '__declspec(dllexport)'; do
   AC_TRY_COMPILE([@%:@define RUBY_FUNC_EXPORTED $mac extern
     RUBY_FUNC_EXPORTED void conftest_attribute_check(void);], [],
     [rb_cv_func_exported="$mac"; break])
