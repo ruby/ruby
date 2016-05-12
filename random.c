@@ -323,8 +323,8 @@ random_memsize(const void *ptr)
     return sizeof(rb_random_t);
 }
 
-static const rb_data_type_t random_data_type = {
-    "random",
+static const rb_data_type_t random_mt_type = {
+    "random/MT",
     {
 	random_mark,
 	random_free,
@@ -337,7 +337,7 @@ static rb_random_t *
 get_rnd(VALUE obj)
 {
     rb_random_t *ptr;
-    TypedData_Get_Struct(obj, rb_random_t, &random_data_type, ptr);
+    TypedData_Get_Struct(obj, rb_random_t, &random_mt_type, ptr);
     return ptr;
 }
 
@@ -347,7 +347,7 @@ try_get_rnd(VALUE obj)
     if (obj == rb_cRandom) {
 	return rand_start(&default_rand);
     }
-    if (!rb_typeddata_is_kind_of(obj, &random_data_type)) return NULL;
+    if (!rb_typeddata_is_kind_of(obj, &random_mt_type)) return NULL;
     return DATA_PTR(obj);
 }
 
@@ -356,7 +356,7 @@ static VALUE
 random_alloc(VALUE klass)
 {
     rb_random_t *rnd;
-    VALUE obj = TypedData_Make_Struct(klass, rb_random_t, &random_data_type, rnd);
+    VALUE obj = TypedData_Make_Struct(klass, rb_random_t, &random_mt_type, rnd);
     rnd->seed = INT2FIX(0);
     return obj;
 }
@@ -1562,11 +1562,11 @@ init_randomseed(struct MT *mt)
 
 /* construct Random::DEFAULT bits */
 static VALUE
-Init_Random_default(void)
+Init_Random_default(VALUE klass)
 {
     rb_random_t *r = &default_rand;
     struct MT *mt = &r->mt;
-    VALUE v = TypedData_Wrap_Struct(rb_cRandom, &random_data_type, r);
+    VALUE v = TypedData_Wrap_Struct(klass, &random_mt_type, r);
 
     rb_gc_register_mark_object(v);
     r->seed = init_randomseed(mt);
@@ -1609,14 +1609,21 @@ rb_reset_random_seed(void)
 void
 InitVM_Random(void)
 {
+    VALUE base;
+    ID id_base = rb_intern_const("Base");
+
     rb_define_global_function("srand", rb_f_srand, -1);
     rb_define_global_function("rand", rb_f_rand, -1);
 
-    rb_cRandom = rb_define_class("Random", rb_cObject);
+    base = rb_define_class_id(id_base, rb_cObject);
+    rb_undef_alloc_func(base);
+    rb_cRandom = rb_define_class("Random", base);
+    rb_const_set(rb_cRandom, id_base, base);
+    rb_set_class_path(base, rb_cRandom, "Base");
     rb_define_alloc_func(rb_cRandom, random_alloc);
-    rb_define_method(rb_cRandom, "initialize", random_init, -1);
-    rb_define_method(rb_cRandom, "rand", random_rand, -1);
-    rb_define_method(rb_cRandom, "bytes", random_bytes, 1);
+    rb_define_method(base, "initialize", random_init, -1);
+    rb_define_method(base, "rand", random_rand, -1);
+    rb_define_method(base, "bytes", random_bytes, 1);
     rb_define_method(rb_cRandom, "seed", random_get_seed, 0);
     rb_define_method(rb_cRandom, "initialize_copy", random_copy, 1);
     rb_define_private_method(rb_cRandom, "marshal_dump", random_dump, 0);
@@ -1627,7 +1634,7 @@ InitVM_Random(void)
 
     {
 	/* Direct access to Ruby's Pseudorandom number generator (PRNG). */
-	VALUE rand_default = Init_Random_default();
+	VALUE rand_default = Init_Random_default(rb_cRandom);
 	rb_define_const(rb_cRandom, "DEFAULT", rand_default);
     }
 
@@ -1640,7 +1647,7 @@ InitVM_Random(void)
 
     {
 	VALUE m = rb_define_module_under(rb_cRandom, "Formatter");
-	rb_include_module(rb_cRandom, m);
+	rb_include_module(base, m);
 	rb_define_method(m, "random_number", rand_random_number, -1);
 	rb_define_method(m, "rand", rand_random_number, -1);
     }
