@@ -252,15 +252,11 @@ def extmake(target)
 
       return true if !error and target.start_with?("-")
 
-      mess = "Failed to configure #{target}. It will not be installed.\n"
-      if error
-        mess = "#{error}\n#{mess}"
+      if Logging.log_opened?
+        Logging::message(error.to_s) if error
+        Logging::message("Failed to configure #{target}. It will not be installed.\n")
       end
-
-      Logging::message(mess) if Logging.log_opened?
-      print(mess)
-      $stdout.flush
-      return true
+      return [target, error]
     end
     args = sysquote($mflags)
     unless $destdir.to_s.empty? or $mflags.defined?("DESTDIR")
@@ -544,11 +540,13 @@ Dir::chdir('ext')
 
 hdrdir = $hdrdir
 $hdrdir = ($top_srcdir = relative_from(srcdir, $topdir = "..")) + "/include"
+fails = []
 exts.each do |d|
   $static = $force_static ? true : $static_ext[d]
 
   if $ignore or !$nodynamic or $static
-    extmake(d) or abort
+    result = extmake(d) or abort
+    fails << result unless result == true
   end
 end
 
@@ -713,6 +711,7 @@ if $configure_only and $command_output
     targets = %w[all install static install-so install-rb clean distclean realclean]
     targets.each do |tgt|
       mf.puts "#{tgt}: $(extensions:/.=/#{tgt})"
+      mf.puts "#{tgt}: note" unless /clean\z/ =~ tgt
     end
     mf.puts
     mf.puts "clean:\n\t-$(Q)$(RM) ext/extinit.#{$OBJEXT}"
@@ -742,6 +741,15 @@ if $configure_only and $command_output
         mf.puts "#{d[0..-2]}#{tgt}:\n\t$(Q)#{submake} $(MFLAGS) V=$(V) $(@F)"
       end
     end
+    mf.puts "\n""note:\n"
+    unless fails.empty?
+      mf.puts %Q<\t@echo "*** Following extensions failed to configure:">
+      fails.each do |d, e|
+        mf.puts %Q<\t@echo "    #{d}#{e && %Q(: #{e})}">
+      end
+      mf.puts %Q<\t@echo "*** Fix the problems, then remove these directories and try again if you want.">
+    end
+
   end
 elsif $command_output
   message = "making #{rubies.join(', ')}"
