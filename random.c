@@ -583,23 +583,48 @@ make_seed_value(uint32_t *ptr, size_t len)
     return seed;
 }
 
+static VALUE
+random_seed_n(uint32_t *buf, size_t size)
+{
+    VALUE v;
+    fill_random_seed(buf, size);
+    v = make_seed_value(buf, size);
+    explicit_bzero(buf, size * sizeof(*buf));
+    return v;
+}
+
 /*
- * call-seq: Random.new_seed -> integer
+ * call-seq:
+ *   Random.new_seed([prec]) -> integer
  *
  * Returns an arbitrary seed value. This is used by Random.new
  * when no seed value is specified as an argument.
  *
  *   Random.new_seed  #=> 115032730400174366788466674494640623225
+ *
+ * If non-nil +prec+ is given, the seed value has +prec+ bits at
+ * least.
  */
+static VALUE
+random_s_seed(int argc, VALUE *argv, VALUE self)
+{
+    size_t size = DEFAULT_SEED_CNT;
+    VALUE v, buf;
+
+    if (rb_check_arity(argc, 0, 1) && !NIL_P(argv[0])) {
+	unsigned int n = NUM2UINT(argv[0]);
+	size = roomof(n, 32);
+    }
+    v = random_seed_n(ALLOCV_N(uint32_t, buf, size+1), size);
+    ALLOCV_END(buf);
+    return v;
+}
+
 static VALUE
 random_seed(void)
 {
-    VALUE v;
     uint32_t buf[DEFAULT_SEED_CNT+1];
-    fill_random_seed(buf, DEFAULT_SEED_CNT);
-    v = make_seed_value(buf, DEFAULT_SEED_CNT);
-    explicit_bzero(buf, DEFAULT_SEED_LEN);
-    return v;
+    return random_seed_n(buf, DEFAULT_SEED_CNT);
 }
 
 /*
@@ -1633,7 +1658,7 @@ InitVM_Random(void)
 
     rb_define_singleton_method(rb_cRandom, "srand", rb_f_srand, -1);
     rb_define_singleton_method(rb_cRandom, "rand", random_s_rand, -1);
-    rb_define_singleton_method(rb_cRandom, "new_seed", random_seed, 0);
+    rb_define_singleton_method(rb_cRandom, "new_seed", random_s_seed, -1);
     rb_define_singleton_method(rb_cRandom, "raw_seed", random_raw_seed, 1);
     rb_define_private_method(CLASS_OF(rb_cRandom), "state", random_s_state, 0);
     rb_define_private_method(CLASS_OF(rb_cRandom), "left", random_s_left, 0);

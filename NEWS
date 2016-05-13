@@ -46,6 +46,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Integer#ceil, Integer#floor, and Integer#truncate now take an optional
     digits, as well as Integer#round.  [Feature #12245]
 
+* Random
+
+  * Random.new_seed now take an optional precision.  [Feature #12378]
+
 * String
 
   * String.new(capacity: size) [Feature #12024]

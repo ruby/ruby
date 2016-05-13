@@ -562,5 +562,10 @@ END
     v = Random.new_seed
     assert_kind_of(Integer, v)
     assert_operator(v.size, :>=, 16)
+    [0, 1, 100].each do |size|
+      v = Random.new_seed(size)
+      assert_kind_of(Integer, v)
+      assert_operator(v.size * 8, :>=, size)
+    end
   end
 end
