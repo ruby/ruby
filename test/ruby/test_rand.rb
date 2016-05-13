@@ -549,4 +549,18 @@ END
       assert_equal(rand1, rand3)
     End
   end
+
+  def test_raw_seed
+    [0, 1, 100].each do |size|
+      v = Random.raw_seed(size)
+      assert_kind_of(String, v)
+      assert_equal(size, v.bytesize)
+    end
+  end
+
+  def test_new_seed
+    v = Random.new_seed
+    assert_kind_of(Integer, v)
+    assert_operator(v.size, :>=, 16)
+  end
 end
