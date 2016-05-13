@@ -600,9 +600,12 @@ make_seed_value(const uint32_t *ptr)
 static VALUE
 random_seed(void)
 {
+    VALUE v;
     uint32_t buf[DEFAULT_SEED_CNT];
     fill_random_seed(buf);
-    return make_seed_value(buf);
+    v = make_seed_value(buf);
+    explicit_bzero(buf, DEFAULT_SEED_LEN);
+    return v;
 }
 
 /*
