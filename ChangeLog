@@ -1,3 +1,8 @@
+Sat May 14 00:16:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (make_seed_value): append leading-zero-guard and get
+	  rid of making a local copy of the seed.
+
 Fri May 13 08:46:42 2016  cremno  <cremno@mail.ru>
 
 	* NEWS: drop FreeBSD < 4 support.

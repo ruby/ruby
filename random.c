@@ -567,21 +567,13 @@ fill_random_seed(uint32_t *seed, size_t cnt)
 }
 
 static VALUE
-make_seed_value(const uint32_t *ptr)
+make_seed_value(uint32_t *ptr, size_t len)
 {
     VALUE seed;
-    size_t len;
-    uint32_t buf[DEFAULT_SEED_CNT+1];
 
-    if (ptr[DEFAULT_SEED_CNT-1] <= 1) {
+    if (ptr[len-1] <= 1) {
         /* set leading-zero-guard */
-        MEMCPY(buf, ptr, uint32_t, DEFAULT_SEED_CNT);
-        buf[DEFAULT_SEED_CNT] = 1;
-        ptr = buf;
-        len = DEFAULT_SEED_CNT+1;
-    }
-    else {
-        len = DEFAULT_SEED_CNT;
+        ptr[len++] = 1;
     }
 
     seed = rb_integer_unpack(ptr, len, sizeof(uint32_t), 0,
@@ -602,9 +594,9 @@ static VALUE
 random_seed(void)
 {
     VALUE v;
-    uint32_t buf[DEFAULT_SEED_CNT];
+    uint32_t buf[DEFAULT_SEED_CNT+1];
     fill_random_seed(buf, DEFAULT_SEED_CNT);
-    v = make_seed_value(buf);
+    v = make_seed_value(buf, DEFAULT_SEED_CNT);
     explicit_bzero(buf, DEFAULT_SEED_LEN);
     return v;
 }
@@ -1553,12 +1545,12 @@ Init_RandomSeedCore(void)
 static VALUE
 init_randomseed(struct MT *mt)
 {
-    uint32_t initial[DEFAULT_SEED_CNT];
+    uint32_t initial[DEFAULT_SEED_CNT+1];
     VALUE seed;
 
     fill_random_seed(initial, DEFAULT_SEED_CNT);
     init_by_array(mt, initial, DEFAULT_SEED_CNT);
-    seed = make_seed_value(initial);
+    seed = make_seed_value(initial, DEFAULT_SEED_CNT);
     explicit_bzero(initial, DEFAULT_SEED_LEN);
     return seed;
 }
