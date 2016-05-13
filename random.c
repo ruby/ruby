@@ -543,14 +543,15 @@ fill_random_bytes(void *seed, size_t size, int need_secure)
 }
 
 static void
-fill_random_seed(uint32_t seed[DEFAULT_SEED_CNT])
+fill_random_seed(uint32_t *seed, size_t cnt)
 {
     static int n = 0;
     struct timeval tv;
+    size_t len = cnt * sizeof(*seed);
 
-    memset(seed, 0, DEFAULT_SEED_LEN);
+    memset(seed, 0, len);
 
-    fill_random_bytes(seed, DEFAULT_SEED_LEN, TRUE);
+    fill_random_bytes(seed, len, TRUE);
 
     gettimeofday(&tv, 0);
     seed[0] ^= tv.tv_usec;
@@ -602,7 +603,7 @@ random_seed(void)
 {
     VALUE v;
     uint32_t buf[DEFAULT_SEED_CNT];
-    fill_random_seed(buf);
+    fill_random_seed(buf, DEFAULT_SEED_CNT);
     v = make_seed_value(buf);
     explicit_bzero(buf, DEFAULT_SEED_LEN);
     return v;
@@ -1540,7 +1541,7 @@ Init_RandomSeedCore(void)
     struct MT mt;
     uint32_t initial_seed[DEFAULT_SEED_CNT];
 
-    fill_random_seed(initial_seed);
+    fill_random_seed(initial_seed, DEFAULT_SEED_CNT);
     init_by_array(&mt, initial_seed, DEFAULT_SEED_CNT);
 
     init_hashseed(&mt);
@@ -1555,7 +1556,7 @@ init_randomseed(struct MT *mt)
     uint32_t initial[DEFAULT_SEED_CNT];
     VALUE seed;
 
-    fill_random_seed(initial);
+    fill_random_seed(initial, DEFAULT_SEED_CNT);
     init_by_array(mt, initial, DEFAULT_SEED_CNT);
     seed = make_seed_value(initial);
     explicit_bzero(initial, DEFAULT_SEED_LEN);
