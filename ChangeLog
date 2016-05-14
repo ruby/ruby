@@ -1,3 +1,9 @@
+Sat May 14 09:04:34 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (pkg_config): use xsystem consistently to set up
+	  library path environment variable as well as latter pkg-config
+	  calls.  [ruby-dev:49619] [Bug #12379]
+
 Sat May 14 00:16:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (make_seed_value): append leading-zero-guard and get
