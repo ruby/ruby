@@ -11,7 +11,7 @@ Sat May 14 00:16:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri May 13 08:46:42 2016  cremno  <cremno@mail.ru>
 
-	* NEWS: drop FreeBSD < 4 support.
+	* NEWS: drop FreeBSD < 4 support.  [Fix GH-1339]
 	  The most recent version affected by this is 3.5 and was released
 	  in 2000.
 	  https://www.freebsd.org/releases/3.5R/announce.html
