@@ -387,6 +387,7 @@ rand_init(struct MT *mt, VALUE seed)
             len--;
         init_by_array(mt, buf, (int)len);
     }
+    explicit_bzero(buf, len * sizeof(*buf));
     if (buf != buf0) xfree(buf);
     return seed;
 }
