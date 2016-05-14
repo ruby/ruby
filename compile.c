@@ -19,6 +19,7 @@
 #include "iseq.h"
 #include "insns.inc"
 #include "insns_info.inc"
+#include "id_table.h"
 #include "gc.h"
 
 #ifdef HAVE_DLADDR
@@ -1547,11 +1548,18 @@ static inline VALUE
 get_ivar_ic_value(rb_iseq_t *iseq,ID id)
 {
     VALUE val;
-    st_table *tbl = ISEQ_COMPILE_DATA(iseq)->ivar_cache_table;
-    if(!st_lookup(tbl,(st_data_t)id,&val)){
-	val = INT2FIX(iseq->body->is_size++);
-	st_insert(tbl,id,val);
+    struct rb_id_table *tbl = ISEQ_COMPILE_DATA(iseq)->ivar_cache_table;
+    if (tbl) {
+	if (rb_id_table_lookup(tbl,id,&val)) {
+	    return val;
+	}
     }
+    else {
+	tbl = rb_id_table_create(1);
+	ISEQ_COMPILE_DATA(iseq)->ivar_cache_table = tbl;
+    }
+    val = INT2FIX(iseq->body->is_size++);
+    rb_id_table_insert(tbl,id,val);
     return val;
 }
 

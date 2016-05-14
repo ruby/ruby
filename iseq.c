@@ -21,6 +21,7 @@
 #include "gc.h"
 #include "vm_core.h"
 #include "iseq.h"
+#include "id_table.h"
 
 #include "insns.inc"
 #include "insns_info.inc"
@@ -58,8 +59,9 @@ compile_data_free(struct iseq_compile_data *compile_data)
 	    ruby_xfree(cur);
 	    cur = next;
 	}
-	st_free_table(compile_data->ivar_cache_table);
-
+	if (compile_data->ivar_cache_table) {
+	    rb_id_table_free(compile_data->ivar_cache_table);
+	}
 	ruby_xfree(compile_data);
     }
 }
@@ -300,7 +302,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
     ISEQ_COMPILE_DATA(iseq)->option = option;
     ISEQ_COMPILE_DATA(iseq)->last_coverable_line = -1;
 
-    ISEQ_COMPILE_DATA(iseq)->ivar_cache_table = st_init_numtable();
+    ISEQ_COMPILE_DATA(iseq)->ivar_cache_table = NULL;
 
     if (option->coverage_enabled) {
 	VALUE coverages = rb_get_coverages();

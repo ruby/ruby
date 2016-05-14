@@ -1,3 +1,17 @@
+Sun May 15 03:13:01 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* iseq.h (struct iseq_compile_data): use struct rb_id_table
+	  instead of st_table.
+
+	* iseq.c (prepare_iseq_build): don't allocate ivar_cache_table
+	  until it has at least one element.
+
+	* iseq.c (compile_data_free): free ivar_cache_table only if it
+	  is allocated.
+
+	* compile.c (get_ivar_ic_value): allocate if the table is not
+	  allocated yet.
+
 Sat May 14 09:04:34 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (pkg_config): use xsystem consistently to set up
