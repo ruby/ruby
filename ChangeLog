@@ -1,3 +1,9 @@
+Sun May 15 02:33:52 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (pkg_config): use xsystem consistently to set up
+	  library path environment variable as well as latter pkg-config
+	  calls.  [ruby-dev:49619] [Bug #12379]
+
 Fri May  6 02:30:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb: [DOC] fix example code.  base on the code by
