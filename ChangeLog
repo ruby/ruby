@@ -1,3 +1,8 @@
+Sun May 15 16:15:25 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* array.c (rb_ary_entry): extract rb_ary_elt to organize if-conditions
+	  and check whether is is embdeded at once.
+
 Sun May 15 10:57:26 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_get_ev_const): warn deprecated constant even

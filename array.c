@@ -1195,10 +1195,17 @@ rb_ary_elt(VALUE ary, long offset)
 VALUE
 rb_ary_entry(VALUE ary, long offset)
 {
+    long len = RARRAY_LEN(ary);
+    const VALUE *ptr = RARRAY_CONST_PTR(ary);
+    if (len == 0) return Qnil;
     if (offset < 0) {
-	offset += RARRAY_LEN(ary);
+        offset += len;
+        if (offset < 0) return Qnil;
     }
-    return rb_ary_elt(ary, offset);
+    else if (len <= offset) {
+        return Qnil;
+    }
+    return ptr[offset];
 }
 
 VALUE
