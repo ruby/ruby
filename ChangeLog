@@ -1,3 +1,8 @@
+Mon May 16 06:06:21 2016  Eric Wong  <e@80x24.org>
+
+	* proc.c: fix RDoc of Proc#===/call/yield/[]
+	  [Bug #12332]
+
 Sun May 15 20:55:31 2016  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/timeridconv.rb: don't use keeper thread. [Bug #12342]

@@ -733,6 +733,10 @@ rb_block_lambda(void)
 /* CHECKME: are the argument checking semantics correct? */
 
 /*
+ *  Document-method: call
+ *  Document-method: []
+ *  Document-method: yield
+ *
  *  call-seq:
  *     prc.call(params,...)   -> obj
  *     prc[params,...]        -> obj
@@ -2918,6 +2922,13 @@ Init_Proc(void)
 		  (void *)OPTIMIZED_METHOD_TYPE_CALL, METHOD_VISI_PUBLIC);
     rb_add_method(rb_cProc, rb_intern("yield"), VM_METHOD_TYPE_OPTIMIZED,
 		  (void *)OPTIMIZED_METHOD_TYPE_CALL, METHOD_VISI_PUBLIC);
+
+#if 0 /* for RDoc */
+    rb_define_method(rb_cProc, "call", proc_call, -1);
+    rb_define_method(rb_cProc, "[]", proc_call, -1);
+    rb_define_method(rb_cProc, "===", proc_call, -1);
+    rb_define_method(rb_cProc, "yield", proc_call, -1);
+#endif
 
     rb_define_method(rb_cProc, "to_proc", proc_to_proc, 0);
     rb_define_method(rb_cProc, "arity", proc_arity, 0);
