@@ -60,13 +60,6 @@
 #if !HAVE_OFF_T && !defined(off_t)
 # define off_t  long
 #endif
-#if SIZEOF_OFF_T > SIZEOF_LONG && defined(HAVE_LONG_LONG)
-# define PRI_OFF_T_PREFIX "ll"
-#elif SIZEOF_OFF_T == SIZEOF_LONG
-# define PRI_OFF_T_PREFIX "l"
-#else
-# define PRI_OFF_T_PREFIX ""
-#endif
 
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
@@ -8621,8 +8614,8 @@ do_io_advise(rb_io_t *fptr, VALUE advice, off_t offset, off_t len)
 	/* posix_fadvise(2) doesn't set errno. On success it returns 0; otherwise
 	   it returns the error code. */
 	VALUE message = rb_sprintf("%"PRIsVALUE" "
-				   "(%"PRI_OFF_T_PREFIX"d, "
-				   "%"PRI_OFF_T_PREFIX"d, "
+				   "(%"PRI_OFFT_PREFIX"d, "
+				   "%"PRI_OFFT_PREFIX"d, "
 				   "%"PRIsVALUE")",
 				   fptr->pathv, offset, len, advice);
 	rb_syserr_fail_str(rv, message);
