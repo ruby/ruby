@@ -664,6 +664,7 @@ vm_get_iclass(rb_control_frame_t *cfp, VALUE klass)
 static inline VALUE
 vm_get_ev_const(rb_thread_t *th, VALUE orig_klass, ID id, int is_defined)
 {
+    void rb_const_warn_if_deprecated(const rb_const_entry_t *ce, VALUE klass, ID id);
     VALUE val;
 
     if (orig_klass == Qnil) {
@@ -690,6 +691,7 @@ vm_get_ev_const(rb_thread_t *th, VALUE orig_klass, ID id, int is_defined)
 		rb_const_entry_t *ce;
 	      search_continue:
 		if ((ce = rb_const_lookup(klass, id))) {
+		    rb_const_warn_if_deprecated(ce, klass, id);
 		    val = ce->value;
 		    if (val == Qundef) {
 			if (am == klass) break;

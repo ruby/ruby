@@ -2221,6 +2221,20 @@ rb_autoload_p(VALUE mod, ID id)
     return (ele = check_autoload_data(load)) ? ele->feature : Qnil;
 }
 
+void
+rb_const_warn_if_deprecated(const rb_const_entry_t *ce, VALUE klass, ID id)
+{
+    if (RB_CONST_DEPRECATED_P(ce)) {
+	if (klass == rb_cObject) {
+	    rb_warn("constant ::%"PRIsVALUE" is deprecated", QUOTE_ID(id));
+	}
+	else {
+	    rb_warn("constant %"PRIsVALUE"::%"PRIsVALUE" is deprecated",
+		    rb_class_name(klass), QUOTE_ID(id));
+	}
+    }
+}
+
 static VALUE
 rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
@@ -2238,15 +2252,7 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 		rb_name_err_raise("private constant %2$s::%1$s referenced",
 				  klass, ID2SYM(id));
 	    }
-	    if (RB_CONST_DEPRECATED_P(ce)) {
-		if (klass == rb_cObject) {
-		    rb_warn("constant ::%"PRIsVALUE" is deprecated", QUOTE_ID(id));
-		}
-		else {
-		    rb_warn("constant %"PRIsVALUE"::%"PRIsVALUE" is deprecated",
-			    rb_class_name(klass), QUOTE_ID(id));
-		}
-	    }
+	    rb_const_warn_if_deprecated(ce, klass, id);
 	    value = ce->value;
 	    if (value == Qundef) {
 		if (am == tmp) break;
