@@ -551,13 +551,43 @@ tbl_assert(struct list_id_table *tbl)
 }
 
 #if ID_TABLE_USE_LIST_SORTED
-#ifdef __SSE2__
+#ifdef __AVX2__
+# include <immintrin.h>
+extern inline int
+list_ids_bsearch(const id_key_t *keys, id_key_t key, int num)
+{
+    __m128i mkey = _mm_set1_epi32(key);
+    __m256i v = _mm256_broadcastd_epi32(mkey);
+    __m256i const *p = (__m256i const *)keys;
+    __m256i const *e = (__m256i const *)(keys+num);
+    __m256i const *p0 = p;
+    if (num == 0) return -1;
+    if (key == keys[0]) return 0;
+    if (key < keys[0]) return -1;
+    //fprintf(stderr,"%d: start[%d] %p %p; ",__LINE__, num,p,e);
+    for (; p < e; p++) {
+        __m256i r = _mm256_cmpgt_epi32(v, *p);
+        int mask = ~_mm256_movemask_epi8(r);
+        //fprintf(stderr,"%d: %ld:%08x; ",__LINE__,p-p0,mask);
+        if (mask) {
+            int i = (p - p0) * 8 + (ntz_int32(mask)>>2);
+            //int j = (p - p0) * 8;
+            //fprintf(stderr,"%d: found?[%d/%d] %08x %x IN [%x %x %x %x %x %x %x %x] %d\n",__LINE__,i,num,mask, key,
+                    //keys[j], keys[j+1],keys[j+2],keys[j+3],keys[j+4],keys[j+5],keys[j+6],keys[j+7],
+                    //(i < num && keys[i] == key) ? i : -i-1);
+            return (i < num && keys[i] == key) ? i : -i-1;
+        }
+    }
+    //fprintf(stderr,"%d:[%d] '%x' not found\n",__LINE__,num,key);
+    return -1-num;
+}
+#elif defined(__SSE2__)
 #include <emmintrin.h>
 
 extern inline int
 list_ids_bsearch(const id_key_t *keys, id_key_t key, int num)
 {
-    __m128i v = _mm_set_epi32(key-1, key-1, key-1, key-1);
+    __m128i v = _mm_set_epi32(key, key, key, key);
     __m128i const *p0 = (__m128i const *)keys;
     __m128i const *p = (__m128i const *)keys;
     __m128i const *e = (__m128i const *)(keys+num);
@@ -566,11 +596,10 @@ list_ids_bsearch(const id_key_t *keys, id_key_t key, int num)
     }
     //fprintf(stderr,"%d: start[%d] %p %p; ",__LINE__, num,p,e);
     for (; p < e; p+=2) {
-	__m128i x = _mm_loadu_si128(p);
-	__m128i y = _mm_loadu_si128(p+1);
-	__m128i a = _mm_cmplt_epi32(v, x);
-	__m128i b = _mm_cmplt_epi32(v, y);
+	__m128i a = _mm_cmpgt_epi32(p[0], v);
+	__m128i b = _mm_cmpgt_epi32(p[1], v);
 	int mask = (_mm_movemask_epi8(b)<<16)|_mm_movemask_epi8(a);
+	mask = ~mask;
 	//fprintf(stderr,"%d: %d:%04x; ",__LINE__,i,mask);
 	if (mask) {
 	    int i = (p - p0) * 4 + (ntz_int32(mask)>>2);
