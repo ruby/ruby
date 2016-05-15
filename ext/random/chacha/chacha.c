@@ -43,14 +43,22 @@ random_chacha_memsize(const void *ptr)
     return sizeof(rand_chacha_t);
 }
 
-static const rb_data_type_t random_chacha_type = {
+static
+#ifndef _MSC_VER
+const
+#endif
+rb_data_type_t random_chacha_type = {
     "random/ChaCha",
     {
 	rb_random_mark,
 	RUBY_TYPED_DEFAULT_FREE,
 	random_chacha_memsize,
     },
+#ifndef _MSC_VER
     &rb_random_data_type,
+#else
+    0,
+#endif
     (void *)&random_chacha_if,
     RUBY_TYPED_FREE_IMMEDIATELY
 };
@@ -163,4 +171,7 @@ Init_chacha(void)
     VALUE base = rb_const_get(random, rb_intern_const("Base"));
     VALUE c = rb_define_class_under(rb_cRandom, "ChaCha", base);
     rb_define_alloc_func(c, rs_alloc);
+#ifdef _MSC_VER
+    random_chacha_type.parent = &rb_random_data_type;
+#endif
 }
