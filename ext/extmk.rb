@@ -236,6 +236,7 @@ def extmake(target)
       rescue SystemExit
 	# ignore
       rescue => error
+        lineno = error.backtrace_locations[0].lineno
         ok = false
       ensure
 	rm_f "conftest*"
@@ -252,11 +253,18 @@ def extmake(target)
 
       return true if !error and target.start_with?("-")
 
+      if parent
+        message = "Failed to configure #{target}. It will not be installed."
+      else
+        message = "Skipped to configure #{target}. Its parent is not configured."
+      end
       if Logging.log_opened?
         Logging::message(error.to_s) if error
-        Logging::message("Failed to configure #{target}. It will not be installed.\n")
+        Logging::message(message)
       end
-      return [conf, error]
+      message = error.message if error
+
+      return parent ? [conf, lineno||0, message] : true
     end
     args = sysquote($mflags)
     unless $destdir.to_s.empty? or $mflags.defined?("DESTDIR")
@@ -744,15 +752,10 @@ if $configure_only and $command_output
     mf.puts "\n""note:\n"
     unless fails.empty?
       mf.puts %Q<\t@echo "*** Following extensions failed to configure:">
-      fails.each do |d, e|
-        if e && e.respond_to?(:backtrace_locations)
-          n = e.backtrace_locations[0].lineno
-        else
-          n = 0
-        end
+      fails.each do |d, n, e|
         d = "#{d}:#{n}:"
         if e
-          d << " " << e.message
+          d << " " << e
         end
         mf.puts %Q<\t@echo "#{d}">
       end
