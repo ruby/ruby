@@ -1,3 +1,8 @@
+Mon May 16 19:29:31 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* gems/bundled_gems: Update xmlrpc-0.1.1. xmlrpc-0.1.0 didn't allow
+	  to install on 2.4.0dev.
+
 Mon May 16 13:28:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (FUNC_STDCALL, FUNC_CDECL, FUNC_FASTCALL): set

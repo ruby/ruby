@@ -4,4 +4,4 @@ minitest 5.8.4
 rake 11.1.2
 net-telnet 0.1.1
 did_you_mean 1.0.0
-xmlrpc 0.1.0
+xmlrpc 0.1.1
