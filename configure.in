@@ -1815,9 +1815,9 @@ if test "$rb_cv_func_weak" != x; then
 fi
 
 if_i386=${universal_binary+[defined __i386__]}
-RUBY_FUNC_ATTRIBUTE(__stdcall__,  [], [], ${if_i386})
-RUBY_FUNC_ATTRIBUTE(__cdecl__,    [], [], ${if_i386})
-RUBY_FUNC_ATTRIBUTE(__fastcall__, [], [], ${if_i386})
+RUBY_FUNC_ATTRIBUTE(__stdcall__,  FUNC_STDCALL,  rb_cv_func_stdcall,  ${if_i386})
+RUBY_FUNC_ATTRIBUTE(__cdecl__,    FUNC_CDECL,    rb_cv_func_cdecl,    ${if_i386})
+RUBY_FUNC_ATTRIBUTE(__fastcall__, FUNC_FASTCALL, rb_cv_func_fastcall, ${if_i386})
 RUBY_FUNC_ATTRIBUTE(__optimize__("O0"), FUNC_UNOPTIMIZED, rb_cv_func_unoptimized)
 RUBY_FUNC_ATTRIBUTE(__optimize__("-Os","-fomit-frame-pointer"), FUNC_MINIMIZED, rb_cv_func_minimized)
 

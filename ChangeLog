@@ -1,3 +1,11 @@
+Mon May 16 13:28:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (FUNC_STDCALL, FUNC_CDECL, FUNC_FASTCALL): set
+	  macro names explicitly to the old names, which are accidentally
+	  changed at r54985, for backward compatibilities.
+	  fiddle also depends on these names to fallback to ANSI names.
+	  [ruby-core:75494] [Bug #12377]
+
 Mon May 16 11:39:02 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/xmlrpc.rb, lib/xmlrpc/*, test/xmlrpc: XMLRPC is bundled gem
