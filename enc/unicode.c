@@ -137,6 +137,7 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
   return 1;
 }
 
+#ifdef ONIG_CASE_MAPPING
 /* macros related to ONIGENC_CASE flags */
 /* defined here because not used in other files */
 #define ONIGENC_CASE_SPECIALS       (ONIGENC_CASE_TITLECASE|ONIGENC_CASE_IS_TITLECASE|ONIGENC_CASE_UP_SPECIAL|ONIGENC_CASE_DOWN_SPECIAL)
@@ -161,9 +162,11 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
 #define IT ONIGENC_CASE_IS_TITLECASE
 #define I(n) OnigSpecialIndexEncode(n)
 #define L(n) SpecialsLengthEncode(n)
+#endif   /* ONIG_CASE_MAPPING */
 
 #include "enc/unicode/casefold.h"
 
+#ifdef ONIG_CASE_MAPPING
 #undef U
 #undef D
 #undef F
@@ -173,6 +176,7 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
 #undef IT
 #undef I
 #undef L
+#endif   /* ONIG_CASE_MAPPING */
 
 #include "enc/unicode/name2ctype.h"
 

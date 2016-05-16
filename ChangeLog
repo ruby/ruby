@@ -1,3 +1,7 @@
+Mon May 16 20:00:30 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.h: Additional uses of ONIG_CASE_MAPPING compilation switch
+
 Mon May 16 19:46:33 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* include/ruby/oniguruma.h: Introducing ONIG_CASE_MAPPING compilation
