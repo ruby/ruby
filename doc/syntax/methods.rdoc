@@ -29,7 +29,7 @@ Ruby programs must be written in a US-ASCII-compatible character set such as
 UTF-8, ISO-8859-1 etc. In such character sets if the eight bit is set it
 indicates an extended character. Ruby allows method names and other identifiers
 to contain such characters. Ruby programs cannot contain some characters like
-ASCII NUL (<code>\x00<code>).
+ASCII NUL (<code>\x00</code>).
 
 The following are the examples of valid ruby methods:
 
