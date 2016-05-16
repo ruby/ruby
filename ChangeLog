@@ -1,3 +1,11 @@
+Mon May 16 19:46:33 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* include/ruby/oniguruma.h: Introducing ONIG_CASE_MAPPING compilation
+	  switch
+
+	* include/ruby/oniguruma.h, enc/unicode.h: Using ONIG_CASE_MAPPING
+	  compilation switch
+
 Mon May 16 19:29:31 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* gems/bundled_gems: Update xmlrpc-0.1.1. xmlrpc-0.1.0 didn't allow

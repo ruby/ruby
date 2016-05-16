@@ -128,14 +128,20 @@ typedef unsigned int OnigCaseFoldType; /* case fold flag */
 
 ONIG_EXTERN OnigCaseFoldType OnigDefaultCaseFoldFlag;
 
+#define ONIG_CASE_MAPPING
+
+#ifdef ONIG_CASE_MAPPING
 /* bits for actual code point count; 3 bits is more than enough, currently only 2 used */
 #define OnigCodePointMaskWidth    3
 #define OnigCodePointMask     ((1<<OnigCodePointMaskWidth)-1)
 #define OnigCodePointCount(n) ((n)&OnigCodePointMask)
 #define OnigCaseFoldFlags(n) ((n)&~OnigCodePointMask)
+#endif   /* ONIG_CASE_MAPPING */
+
 /* #define ONIGENC_CASE_FOLD_HIRAGANA_KATAKANA  (1<<1) */ /* no longer usable with these values! */
 /* #define ONIGENC_CASE_FOLD_KATAKANA_WIDTH     (1<<2) */ /* no longer usable with these values! */
 
+#ifdef ONIG_CASE_MAPPING
 /* bits for index into table with separate titlecase mappings */
 /* 10 bits provide 1024 values */
 #define OnigSpecialIndexShift 3
@@ -149,10 +155,16 @@ ONIG_EXTERN OnigCaseFoldType OnigDefaultCaseFoldFlag;
 #define ONIGENC_CASE_DOWN_SPECIAL               (1<<17) /* has special downcase mapping */
 #define ONIGENC_CASE_MODIFIED                   (1<<18) /* data has been modified */
 #define ONIGENC_CASE_FOLD                       (1<<19) /* has/needs case folding */
+#endif   /* ONIG_CASE_MAPPING */
+
 #define ONIGENC_CASE_FOLD_TURKISH_AZERI         (1<<20) /* needs mapping specific to Turkic languages; better not change original value! */
+
+#ifdef ONIG_CASE_MAPPING
 #define ONIGENC_CASE_FOLD_LITHUANIAN            (1<<21) /* needs Lithuanian-specific mapping */
 #define ONIGENC_CASE_ASCII_ONLY                 (1<<22) /* only modify ASCII range */
 #define ONIGENC_CASE_IS_TITLECASE               (1<<23) /* character itself is already titlecase */
+#endif   /* ONIG_CASE_MAPPING */
+
 #define INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR   (1<<30) /* better not change original value! */
 
 #define ONIGENC_CASE_FOLD_MIN      INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR

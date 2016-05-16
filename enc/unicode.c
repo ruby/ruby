@@ -651,6 +651,8 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
   return n;
 }
 
+#ifdef ONIG_CASE_MAPPING
+
 /* length in bytes for three characters in UTF-32; e.g. needed for ffi (U+FB03) */
 #define CASE_MAPPING_SLACK 12
 #define MODIFIED (flags |= ONIGENC_CASE_MODIFIED)
@@ -779,3 +781,5 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
     *flagP = flags;
     return (int)(to-to_start);
 }
+
+#endif   /* ONIG_CASE_MAPPING */
