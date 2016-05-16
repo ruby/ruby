@@ -186,7 +186,8 @@ module Fiddle
     if /cygwin|mingw|mswin/ =~ RUBY_PLATFORM
       def test_fallback_to_ansi
         k = Fiddle::Handle.new("kernel32.dll")
-        refute_nil(k["GetFileAttributes"])
+        ansi = k["GetFileAttributesA"]
+        assert_equal(ansi, k["GetFileAttributes"], "should fallback to ANSI version")
       end
     end
   end
