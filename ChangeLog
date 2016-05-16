@@ -1,3 +1,10 @@
+Mon May 16 11:39:02 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/xmlrpc.rb, lib/xmlrpc/*, test/xmlrpc: XMLRPC is bundled gem
+	  on Ruby 2.4. It is extracted to https://github.com/ruby/xmlrpc
+	  [Feature #12160][ruby-core:74239]
+	* gems/bundled_gems: ditto.
+
 Mon May 16 06:06:21 2016  Eric Wong  <e@80x24.org>
 
 	* proc.c: fix RDoc of Proc#===/call/yield/[]
