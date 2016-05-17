@@ -905,4 +905,20 @@ class TestEnumerable < Test::Unit::TestCase
       assert_equal(6, [1r, 2, 3r].each.sum)
     EOS
   end
+
+  def test_hash_sum
+    histogram = { 1 => 6, 2 => 4, 3 => 3, 4 => 7, 5 => 5, 6 => 4 }
+    assert_equal(100, histogram.sum {|v, n| v * n })
+  end
+
+  def test_range_sum
+    assert_int_equal(55, (1..10).sum)
+    assert_float_equal(55.0, (1..10).sum(0.0))
+    assert_int_equal(90, (5..10).sum {|v| v * 2 })
+    assert_float_equal(90.0, (5..10).sum(0.0) {|v| v * 2 })
+    assert_int_equal(0, (2..0).sum)
+    assert_int_equal(5, (2..0).sum(5))
+    assert_int_equal(2, (2..2).sum)
+    assert_int_equal(42, (2...2).sum(42))
+  end
 end

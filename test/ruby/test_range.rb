@@ -631,9 +631,4 @@ class TestRange < Test::Unit::TestCase
     end
     (a.."c").each {|x, &b| assert_nil(b)}
   end
-
-  def test_sum
-    assert_equal(55, (1..10).sum)
-    assert_equal(110, (1..10).sum {|v| v * 2 })
-  end
 end

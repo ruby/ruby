@@ -3699,6 +3699,8 @@ static VALUE
 enum_sum(int argc, VALUE* argv, VALUE obj)
 {
     struct enum_sum_memo memo;
+    VALUE beg, end;
+    int excl;
 
     if (rb_scan_args(argc, argv, "01", &memo.v) == 0)
         memo.v = LONG2FIX(0);
@@ -3711,6 +3713,29 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
     if ((memo.float_value = RB_FLOAT_TYPE_P(memo.v))) {
         memo.f = RFLOAT_VALUE(memo.v);
         memo.c = 0.0;
+    }
+
+    if (RTEST(rb_range_values(obj, &beg, &end, &excl))) {
+        if (!memo.block_given && !memo.float_value &&
+                (FIXNUM_P(beg) || RB_TYPE_P(beg, T_BIGNUM)) &&
+                (FIXNUM_P(end) || RB_TYPE_P(end, T_BIGNUM))) {
+            if (excl) {
+                if (FIXNUM_P(end))
+                    end = LONG2FIX(FIX2LONG(end) - 1);
+                else
+                    end = rb_big_minus(end, LONG2FIX(1));
+            }
+            if (rb_int_ge(end, beg)) {
+                VALUE a;
+                a = rb_int_plus(rb_int_minus(end, beg), LONG2FIX(1));
+                a = rb_int_mul(a, rb_int_plus(end, beg));
+                a = rb_int_idiv(a, LONG2FIX(2));
+                return rb_int_plus(memo.v, a);
+            }
+            else {
+                return memo.v;
+            }
+        }
     }
 
     rb_block_call(obj, id_each, 0, 0, enum_sum_iter_i, (VALUE)&memo);

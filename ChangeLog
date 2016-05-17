@@ -1,3 +1,14 @@
+Tue May 18 00:05:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* enum.c (enum_sum): Optimize for a range from int to int.
+
+	* test/ruby/test_enum.rb (test_range_sum): Move from test_range.rb,
+	  and add assertions for some conditions.
+
+	* test/ruby/test_enum.rb (test_hash_sum): Move from test_hash.rb.
+
+	* test/ruby/test_hash.rb, test/ruby/test_range.rb: Remove test_sum.
+
 Tue May 17 23:08:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* enum.c (enum_sum): [DOC] Write documentation.

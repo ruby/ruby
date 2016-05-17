@@ -3908,8 +3908,8 @@ fix_ge(VALUE x, VALUE y)
     }
 }
 
-static VALUE
-int_ge(VALUE x, VALUE y)
+VALUE
+rb_int_ge(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
 	return fix_ge(x, y);
@@ -4950,7 +4950,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "===", int_equal, 1);
     rb_define_method(rb_cInteger, "==", int_equal, 1);
     rb_define_method(rb_cInteger, ">", int_gt, 1);
-    rb_define_method(rb_cInteger, ">=", int_ge, 1);
+    rb_define_method(rb_cInteger, ">=", rb_int_ge, 1);
     rb_define_method(rb_cInteger, "<", int_lt, 1);
     rb_define_method(rb_cInteger, "<=", int_le, 1);
 
