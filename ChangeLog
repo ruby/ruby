@@ -1,3 +1,9 @@
+Tue May 17 11:58:58 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_CHECK_BUILTIN_SETJMP): declare t as NORETURN
+	  to suppress warnings by -Wsuggest-attribute=noreturn.
+	  [ruby-core:75510] [Bug #12383]
+
 Tue May 17 10:40:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_CHECK_SETJMP): needs the header and proper
