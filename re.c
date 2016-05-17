@@ -1829,6 +1829,28 @@ name_to_backref_error(VALUE name)
 	     name);
 }
 
+static int
+namev_to_backref_number(struct re_registers *regs, VALUE re, VALUE name)
+{
+    int num;
+
+    switch (TYPE(name)) {
+      case T_SYMBOL:
+	name = rb_sym2str(name);
+	/* fall through */
+      case T_STRING:
+	if (NIL_P(re) || !rb_enc_compatible(RREGEXP_SRC(re), name) ||
+		(num = name_to_backref_number(regs, re,
+					      RSTRING_PTR(name), RSTRING_END(name))) < 1) {
+	    name_to_backref_error(name);
+	}
+	return num;
+
+      default:
+	return -1;
+    }
+}
+
 /*
  *  call-seq:
  *     mtch[i]               -> str or nil
@@ -1859,7 +1881,7 @@ name_to_backref_error(VALUE name)
 static VALUE
 match_aref(int argc, VALUE *argv, VALUE match)
 {
-    VALUE idx, rest, re;
+    VALUE idx, rest;
 
     match_check(match);
     rb_scan_args(argc, argv, "11", &idx, &rest);
@@ -1871,39 +1893,15 @@ match_aref(int argc, VALUE *argv, VALUE match)
 	    }
 	}
 	else {
-	    const char *p;
-	    int num;
-
-	    switch (TYPE(idx)) {
-	      case T_SYMBOL:
-		idx = rb_sym2str(idx);
-		/* fall through */
-	      case T_STRING:
-		p = StringValuePtr(idx);
-		re = RMATCH(match)->regexp;
-		if (NIL_P(re) || !rb_enc_compatible(RREGEXP_SRC(re), idx) ||
-		    (num = name_to_backref_number(RMATCH_REGS(match), RMATCH(match)->regexp,
-						  p, p + RSTRING_LEN(idx))) < 1) {
-		    name_to_backref_error(idx);
-		}
+	    int num = namev_to_backref_number(RMATCH_REGS(match), RMATCH(match)->regexp, idx);
+	    if (num >= 0) {
 		return rb_reg_nth_match(num, match);
-
-	      default:
-		break;
 	    }
 	}
     }
 
     return rb_ary_aref(argc, argv, match_to_a(match));
 }
-
-static VALUE
-match_entry(VALUE match, long n)
-{
-    /* n should not exceed num_regs */
-    return rb_reg_nth_match((int)n, match);
-}
-
 
 /*
  *  call-seq:
@@ -1916,16 +1914,32 @@ match_entry(VALUE match, long n)
  *     m = /(.)(.)(\d+)(\d)/.match("THX1138: The Movie")
  *     m.to_a               #=> ["HX1138", "H", "X", "113", "8"]
  *     m.values_at(0, 2, -2)   #=> ["HX1138", "X", "113"]
+ *
+ *     m = /(?<a>\d+) *(?<op>[+\-*\/]) *(?<b>\d+)/.match("1 + 2")
+ *     m.to_a               #=> ["1 + 2", "1", "+", "2"]
+ *     m.values_at(:a, :b, :op) #=> ["1", "2", "+"]
  */
 
 static VALUE
 match_values_at(int argc, VALUE *argv, VALUE match)
 {
-    struct re_registers *regs;
+    VALUE result;
+    int i;
 
     match_check(match);
-    regs = RMATCH_REGS(match);
-    return rb_get_values_at(match, regs->num_regs, argc, argv, match_entry);
+    result = rb_ary_new2(argc);
+
+    for (i=0; i<argc; i++) {
+	if (FIXNUM_P(argv[i])) {
+	    rb_ary_push(result, rb_reg_nth_match(FIX2INT(argv[i]), match));
+	}
+	else {
+	    int num = namev_to_backref_number(RMATCH_REGS(match), RMATCH(match)->regexp, argv[i]);
+	    if (num < 0) num = NUM2INT(argv[i]);
+	    rb_ary_push(result, rb_reg_nth_match(num, match));
+	}
+    }
+    return result;
 }
 
 

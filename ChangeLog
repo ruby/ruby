@@ -1,3 +1,10 @@
+Wed May 18 01:57:43 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (match_values_at): MatchData#values_at supports named captures
+	  [Feature #9179]
+
+	* re.c (namev_to_backref_number): separeted.
+
 Tue May 18 00:05:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* enum.c (enum_sum): Optimize for a range from int to int.

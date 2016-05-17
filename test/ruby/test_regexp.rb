@@ -383,6 +383,13 @@ class TestRegexp < Test::Unit::TestCase
   def test_match_values_at
     m = /(...)(...)(...)(...)?/.match("foobarbaz")
     assert_equal(["foo", "bar", "baz"], m.values_at(1, 2, 3))
+
+    m = /(?<a>\d+) *(?<op>[+\-*\/]) *(?<b>\d+)/.match("1 + 2")
+    assert_equal(["1", "2", "+"], m.values_at(:a, 'b', :op))
+    idx = Object.new
+    def idx.to_int; 2; end
+    assert_equal(["+"], m.values_at(idx))
+    assert_raise(TypeError){ m.values_at(nil) }
   end
 
   def test_match_string
