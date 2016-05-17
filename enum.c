@@ -3668,6 +3668,32 @@ enum_sum_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
 
 /*
+ * call-seq:
+ *   enum.sum(init=0)                   -> number
+ *   enum.sum(init=0) {|e| expr }       -> number
+ *
+ * Returns the sum of elements in an Enumerable.
+ *
+ * If a block is given, the block is applied to each element
+ * before addition.
+ *
+ * If <i>enum</i> is empty, it returns <i>init</i>.
+ *
+ * For example:
+ *
+ *   { 1 => 10, 2 => 20 }.sum {|k, v| k * v }  #=> 50
+ *   (1..10).sum                               #=> 55
+ *   (1..10).sum {|v| v * 2 }                  #=> 110
+ *   [Object.new].each.sum                     #=> TypeError
+ *
+ * This method can be used for non-numeric objects by
+ * explicit <i>init</i> argument.
+ *
+ *   { 1 => 10, 2 => 20 }.sum([])                   #=> [1, 10, 2, 20]
+ *   "a\nb\nc".each_line.lazy.map(&:chomp).sum("")  #=> "abc"
+ *
+ * Enumerable#sum method may not respect method redefinition of "+"
+ * methods such as Integer#+.
  */
 static VALUE
 enum_sum(int argc, VALUE* argv, VALUE obj)

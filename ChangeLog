@@ -1,3 +1,7 @@
+Tue May 17 23:08:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* enum.c (enum_sum): [DOC] Write documentation.
+
 Tue May 17 22:53:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* enum.c (enum_sum): Implement Enumerable#sum.
