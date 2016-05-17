@@ -1415,6 +1415,11 @@ class TestHash < Test::Unit::TestCase
     assert_equal([10, 20, 30], [1, 2, 3].map(&h))
   end
 
+  def test_sum
+    histogram = { 1 => 6, 2 => 4, 3 => 3, 4 => 7, 5 => 5, 6 => 4 }
+    assert_equal(100, histogram.sum {|v, n| v * n })
+  end
+
   class TestSubHash < TestHash
     class SubHash < Hash
       def reject(*)

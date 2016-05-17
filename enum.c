@@ -3561,6 +3561,153 @@ enum_chunk_while(VALUE enumerable)
     return enumerator;
 }
 
+struct enum_sum_memo {
+    VALUE v, r;
+    long n;
+    double f, c;
+    int block_given;
+    int float_value;
+};
+
+static VALUE
+enum_sum_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
+{
+    struct enum_sum_memo *memo = (struct enum_sum_memo *)args;
+    long n = memo->n;
+    VALUE v = memo->v;
+    VALUE r = memo->r;
+    double f = memo->f;
+    double c = memo->c;
+
+    ENUM_WANT_SVALUE();
+
+    if (memo->block_given)
+        i = rb_yield(i);
+
+    if (memo->float_value)
+        goto float_value;
+
+    if (FIXNUM_P(v) || RB_TYPE_P(v, T_BIGNUM) || RB_TYPE_P(v, T_RATIONAL)) {
+        if (FIXNUM_P(i)) {
+            n += FIX2LONG(i); /* should not overflow long type */
+            if (!FIXABLE(n)) {
+                v = rb_big_plus(LONG2NUM(n), v);
+                n = 0;
+            }
+        }
+        else if (RB_TYPE_P(i, T_BIGNUM))
+            v = rb_big_plus(i, v);
+        else if (RB_TYPE_P(i, T_RATIONAL)) {
+            if (r == Qundef)
+                r = i;
+            else
+                r = rb_rational_plus(r, i);
+        }
+        else {
+            if (n != 0) {
+                v = rb_fix_plus(LONG2FIX(n), v);
+                n = 0;
+            }
+            if (r != Qundef) {
+                /* r can be a Integer when mathn is loaded */
+                if (FIXNUM_P(r))
+                    v = rb_fix_plus(r, v);
+                else if (RB_TYPE_P(r, T_BIGNUM))
+                    v = rb_big_plus(r, v);
+                else
+                    v = rb_rational_plus(r, v);
+                r = Qundef;
+            }
+            if (RB_FLOAT_TYPE_P(i)) {
+                f = NUM2DBL(v);
+                c = 0.0;
+                memo->float_value = 1;
+                goto float_value;
+            }
+            else
+                goto some_value;
+        }
+    }
+    else if (RB_FLOAT_TYPE_P(v)) {
+        /* Kahan's compensated summation algorithm */
+        double x, y, t;
+
+      float_value:
+        if (RB_FLOAT_TYPE_P(i))
+            x = RFLOAT_VALUE(i);
+        else if (FIXNUM_P(i))
+            x = FIX2LONG(i);
+        else if (RB_TYPE_P(i, T_BIGNUM))
+            x = rb_big2dbl(i);
+        else if (RB_TYPE_P(i, T_RATIONAL))
+            x = rb_num2dbl(i);
+        else {
+            v = DBL2NUM(f);
+            memo->float_value = 0;
+            goto some_value;
+        }
+
+        y = x - c;
+        t = f + y;
+        c = (t - f) - y;
+        f = t;
+    }
+    else {
+      some_value:
+        v = rb_funcall(v, idPLUS, 1, i);
+    }
+
+    memo->v = v;
+    memo->n = n;
+    memo->r = r;
+    memo->f = f;
+    memo->c = c;
+
+    return Qnil;
+}
+
+
+/*
+ */
+static VALUE
+enum_sum(int argc, VALUE* argv, VALUE obj)
+{
+    struct enum_sum_memo memo;
+
+    if (rb_scan_args(argc, argv, "01", &memo.v) == 0)
+        memo.v = LONG2FIX(0);
+
+    memo.block_given = rb_block_given_p();
+
+    memo.n = 0;
+    memo.r = Qundef;
+
+    if ((memo.float_value = RB_FLOAT_TYPE_P(memo.v))) {
+        memo.f = RFLOAT_VALUE(memo.v);
+        memo.c = 0.0;
+    }
+
+    rb_block_call(obj, id_each, 0, 0, enum_sum_iter_i, (VALUE)&memo);
+
+    if (memo.float_value) {
+        return DBL2NUM(memo.f);
+    }
+    else {
+        if (memo.n != 0)
+            memo.v = rb_fix_plus(LONG2FIX(memo.n), memo.v);
+        if (memo.r != Qundef) {
+            /* r can be a Integer when mathn is loaded */
+            if (FIXNUM_P(memo.r))
+                memo.v = rb_fix_plus(memo.r, memo.v);
+            else if (RB_TYPE_P(memo.r, T_BIGNUM))
+                memo.v = rb_big_plus(memo.r, memo.v);
+            else
+                memo.v = rb_rational_plus(memo.r, memo.v);
+        }
+        return memo.v;
+    }
+}
+
 /*
  *  The <code>Enumerable</code> mixin provides collection classes with
  *  several traversal and searching methods, and with the ability to
@@ -3633,6 +3780,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "slice_after", enum_slice_after, -1);
     rb_define_method(rb_mEnumerable, "slice_when", enum_slice_when, 0);
     rb_define_method(rb_mEnumerable, "chunk_while", enum_chunk_while, 0);
+    rb_define_method(rb_mEnumerable, "sum", enum_sum, -1);
 
     id_next = rb_intern("next");
     id_call = rb_intern("call");

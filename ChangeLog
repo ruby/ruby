@@ -1,3 +1,13 @@
+Tue May 17 22:53:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* enum.c (enum_sum): Implement Enumerable#sum.
+
+	* test/ruby/test_enum.rb (test_sum): Test sum for Enumerable.
+
+	* test/ruby/test_hash.rb (test_sum): Test sum for Hash.
+
+	* test/ruby/test_range.rb (test_sum): Test sum for Range.
+
 Tue May 17 22:11:41 2016  Tanaka Akira  <akr@fsij.org>
 
 	* object.c, numeric.c, enum.c, ext/-test-/bignum/mul.c,

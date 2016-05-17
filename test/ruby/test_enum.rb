@@ -815,4 +815,94 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([[1,2],0,[3,4],1],
                  @obj.each_with_index.flat_map(&lambda2))
   end
+
+  def assert_typed_equal(e, v, cls, msg=nil)
+    assert_kind_of(cls, v, msg)
+    assert_equal(e, v, msg)
+  end
+
+  def assert_int_equal(e, v, msg=nil)
+    assert_typed_equal(e, v, Integer, msg)
+  end
+
+  def assert_rational_equal(e, v, msg=nil)
+    assert_typed_equal(e, v, Rational, msg)
+  end
+
+  def assert_float_equal(e, v, msg=nil)
+    assert_typed_equal(e, v, Float, msg)
+  end
+
+  def assert_complex_equal(e, v, msg=nil)
+    assert_typed_equal(e, v, Complex, msg)
+  end
+
+  def test_sum
+    class << (enum = Object.new)
+      include Enumerable
+      def each
+        yield 3
+        yield 5
+        yield 7
+      end
+    end
+    assert_int_equal(15, enum.sum)
+
+    assert_int_equal(0, [].each.sum)
+    assert_int_equal(3, [3].each.sum)
+    assert_int_equal(8, [3, 5].each.sum)
+    assert_int_equal(15, [3, 5, 7].each.sum)
+    assert_rational_equal(8r, [3, 5r].each.sum)
+    assert_float_equal(15.0, [3, 5, 7.0].each.sum)
+    assert_float_equal(15.0, [3, 5r, 7.0].each.sum)
+    assert_complex_equal(8r + 1i, [3, 5r, 1i].each.sum)
+    assert_complex_equal(15.0 + 1i, [3, 5r, 7.0, 1i].each.sum)
+
+    assert_int_equal(2*FIXNUM_MAX, Array.new(2, FIXNUM_MAX).each.sum)
+    assert_int_equal(2*(FIXNUM_MAX+1), Array.new(2, FIXNUM_MAX+1).each.sum)
+    assert_int_equal(10*FIXNUM_MAX, Array.new(10, FIXNUM_MAX).each.sum)
+    assert_int_equal(0, ([FIXNUM_MAX, 1, -FIXNUM_MAX, -1]*10).each.sum)
+    assert_int_equal(FIXNUM_MAX*10, ([FIXNUM_MAX+1, -1]*10).each.sum)
+    assert_int_equal(2*FIXNUM_MIN, Array.new(2, FIXNUM_MIN).each.sum)
+
+    assert_float_equal(0.0, [].each.sum(0.0))
+    assert_float_equal(3.0, [3].each.sum(0.0))
+    assert_float_equal(3.5, [3].each.sum(0.5))
+    assert_float_equal(8.5, [3.5, 5].each.sum)
+    assert_float_equal(10.5, [2, 8.5].each.sum)
+    assert_float_equal((FIXNUM_MAX+1).to_f, [FIXNUM_MAX, 1, 0.0].each.sum)
+    assert_float_equal((FIXNUM_MAX+1).to_f, [0.0, FIXNUM_MAX+1].each.sum)
+
+    assert_rational_equal(3/2r, [1/2r, 1].each.sum)
+    assert_rational_equal(5/6r, [1/2r, 1/3r].each.sum)
+
+    assert_equal(2.0+3.0i, [2.0, 3.0i].each.sum)
+
+    assert_int_equal(13, [1, 2].each.sum(10))
+    assert_int_equal(16, [1, 2].each.sum(10) {|v| v * 2 })
+
+    yielded = []
+    three = SimpleDelegator.new(3)
+    ary = [1, 2.0, three]
+    assert_float_equal(12.0, ary.each.sum {|x| yielded << x; x * 2 })
+    assert_equal(ary, yielded)
+
+    assert_raise(TypeError) { [Object.new].each.sum }
+
+    large_number = 100000000
+    small_number = 1e-9
+    until (large_number + small_number) == large_number
+      small_number /= 10
+    end
+    assert_float_equal(large_number+(small_number*10), [large_number, *[small_number]*10].each.sum)
+    assert_float_equal(large_number+(small_number*10), [large_number/1r, *[small_number]*10].each.sum)
+    assert_float_equal(large_number+(small_number*11), [small_number, large_number/1r, *[small_number]*10].each.sum)
+
+    assert_equal("abc", ["a", "b", "c"].each.sum(""))
+    assert_equal([1, [2], 3], [[1], [[2]], [3]].each.sum([]))
+
+    assert_separately(%w[-rmathn], <<-EOS, ignore_stderr: true)
+      assert_equal(6, [1r, 2, 3r].each.sum)
+    EOS
+  end
 end
