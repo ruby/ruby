@@ -46,6 +46,8 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Integer#ceil, Integer#floor, and Integer#truncate now take an optional
     digits, as well as Integer#round.  [Feature #12245]
 
+  * Fixnum and Bignum are unified into Integer  [Feature #12005]
+
 * String
 
   * String.new(capacity: size) [Feature #12024]
@@ -83,6 +85,17 @@ with all sufficient information, see the ChangeLog file or Redmine
   there are subtle differences.
   Ruby's sum method should be mostly compatible but it is impossible to
   be perfectly compatible with all of them.
+
+* Fixnum and Bignum are unified into Integer  [Feature #12005]
+  Fixnum class and Bignum class is removed.
+  Integer class is changed from abstract class to concrete class.
+  For example, 0 is an instance of Integer: 0.class returns Integer.
+  The constants Fixnum and Bignum is bound to Integer.
+  So obj.kind_of?(Fixnum) works as obj.kind_of?(Integer).
+  At C-level, rb_cFixnum and rb_cBignum is same as rb_cInteger.
+  So, class based dispatch, such as klass == rb_cFixnum and
+  klass == rb_cBignum, should be changed to FIXNUM_P(obj) and
+  RB_TYPE_P(obj, T_BIGNUM).
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
