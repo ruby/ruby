@@ -19,7 +19,7 @@ Tue May 17 15:26:10 2016  Tanaka Akira  <akr@fsij.org>
 	* numeric.c (fix_succ): Removed.
 	  (Init_Numeric): Define Fixnum as Integer.
 
-	* bignum.c (bignew): Use rb_cInteger instead of Rb_cBignum.
+	* bignum.c (bignew): Use rb_cInteger instead of rb_cBignum.
 	  (rb_int_coerce): replaced from rb_big_coerce and return fixnums
 	  as-is.
 	  (Init_Bignum): Define Bignum as Integer.
@@ -93,7 +93,7 @@ Sun May 15 20:55:31 2016  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 Sun May 15 16:15:25 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* array.c (rb_ary_entry): extract rb_ary_elt to organize if-conditions
-	  and check whether is is embdeded at once.
+	  and check whether is embedded at once.
 
 Sun May 15 10:57:26 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
