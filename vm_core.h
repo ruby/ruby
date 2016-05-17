@@ -493,9 +493,9 @@ typedef struct rb_vm_struct {
     size_t living_thread_num;
     VALUE thgroup_default;
 
-    int running;
-    int thread_abort_on_exception;
-    int trace_running;
+    unsigned int running: 1;
+    unsigned int thread_abort_on_exception: 1;
+    unsigned int trace_running: 1;
     volatile int sleeper;
 
     /* object management */
@@ -784,8 +784,8 @@ typedef struct rb_thread_struct {
     rb_ensure_list_t *ensure_list;
 
     /* misc */
-    enum method_missing_reason method_missing_reason;
-    int abort_on_exception;
+    enum method_missing_reason method_missing_reason: 8;
+    unsigned int abort_on_exception: 1;
 #ifdef USE_SIGALTSTACK
     void *altstack;
 #endif
