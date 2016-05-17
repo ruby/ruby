@@ -2275,8 +2275,6 @@ AC_CHECK_FUNCS(__syscall)
 AC_CHECK_FUNCS(_longjmp)		# used for AC_ARG_WITH(setjmp-type)
 # we don't use _setjmp if _longjmp doesn't exist.
 test x$ac_cv_func__longjmp = xno && ac_cv_func__setjmp=no
-AC_CHECK_FUNCS(_setjmp)			# used for AC_ARG_WITH(setjmp-type)
-AC_CHECK_FUNCS(_setjmpex)		# used for AC_ARG_WITH(setjmp-type)
 AC_CHECK_FUNCS(arc4random_buf)
 AC_CHECK_FUNCS(atan2l atan2f)
 AC_CHECK_FUNCS(chroot)
@@ -2579,12 +2577,19 @@ if test "$rb_cv_unsetenv_return_value" = no; then
 fi
 
 # used for AC_ARG_WITH(setjmp-type)
-AC_CACHE_CHECK(for sigsetjmp as a macro or function, ac_cv_func_sigsetjmp,
+AC_DEFUN([RUBY_CHECK_SETJMP], [
+AC_CACHE_CHECK([for ]$1[ as a macro or function], ac_cv_func_$1,
   [AC_TRY_COMPILE([
-#include <setjmp.h>
-], [sigjmp_buf env; sigsetjmp(env,1);],
-	ac_cv_func_sigsetjmp=yes,
-	ac_cv_func_sigsetjmp=no)])
+@%:@include <setjmp.h>
+]AC_INCLUDES_DEFAULT([$3])[
+@%:@define JMPARGS_1 env
+@%:@define JMPARGS_2 env,1
+@%:@define JMPARGS JMPARGS_]m4_ifval($2,2,1)[
+],
+    m4_ifval($2,$2,jmp_buf)[ env; $1(JMPARGS);],
+    ac_cv_func_$1=yes,
+    ac_cv_func_$1=no)]
+)])
 
 AC_DEFUN([RUBY_CHECK_BUILTIN_SETJMP], [
 if test x"${ac_cv_func___builtin_setjmp}" = xyes; then
@@ -2612,6 +2617,9 @@ AC_CACHE_CHECK(for __builtin_setjmp, ac_cv_func___builtin_setjmp,
 
 AC_DEFUN([RUBY_SETJMP_TYPE], [
 RUBY_CHECK_BUILTIN_SETJMP
+RUBY_CHECK_SETJMP(_setjmpex, [], [@%:@include <setjmpex.h>])
+RUBY_CHECK_SETJMP(_setjmp)
+RUBY_CHECK_SETJMP(sigsetjmp, [sigjmp_buf])
 AC_MSG_CHECKING(for setjmp type)
 setjmp_suffix=
 AC_ARG_WITH(setjmp-type,

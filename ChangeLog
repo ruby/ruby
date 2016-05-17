@@ -1,3 +1,8 @@
+Tue May 17 10:40:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_CHECK_SETJMP): needs the header and proper
+	  arguments for builtin setjmp functions.
+
 Mon May 16 20:00:30 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode.h: Additional uses of ONIG_CASE_MAPPING compilation switch
