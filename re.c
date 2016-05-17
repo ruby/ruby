@@ -1921,6 +1921,7 @@ match_aref(int argc, VALUE *argv, VALUE match)
 static VALUE
 match_values_at(int argc, VALUE *argv, VALUE match)
 {
+    struct re_registers *regs = RMATCH_REGS(match);
     VALUE result;
     int i;
 
@@ -1928,14 +1929,31 @@ match_values_at(int argc, VALUE *argv, VALUE match)
     result = rb_ary_new2(argc);
 
     for (i=0; i<argc; i++) {
+	VALUE tmp;
+	int num;
+	long beg, len, olen;
 	if (FIXNUM_P(argv[i])) {
 	    rb_ary_push(result, rb_reg_nth_match(FIX2INT(argv[i]), match));
+	    continue;
 	}
-	else {
-	    int num = namev_to_backref_number(RMATCH_REGS(match), RMATCH(match)->regexp, argv[i]);
-	    if (num < 0) num = NUM2INT(argv[i]);
+	num = namev_to_backref_number(regs, RMATCH(match)->regexp, argv[i]);
+	if (num >= 0) {
 	    rb_ary_push(result, rb_reg_nth_match(num, match));
+	    continue;
 	}
+	/* check if idx is Range */
+	olen = regs->num_regs;
+	if (rb_range_beg_len(argv[i], &beg, &len, olen, 1)) {
+	    long j, end = olen < beg+len ? olen : beg+len;
+	    for (j = beg; j < end; j++) {
+		rb_ary_push(result, rb_reg_nth_match((int)j, match));
+	    }
+	    if (beg + len > j)
+		rb_ary_resize(result, RARRAY_LEN(result) + (beg + len) - j);
+	    continue;
+	}
+	tmp = rb_to_int(argv[i]);
+	rb_ary_push(result, rb_reg_nth_match(NUM2INT(tmp), match));
     }
     return result;
 }

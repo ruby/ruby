@@ -1,3 +1,8 @@
+Wed May 18 03:16:06 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (match_values_at): fix regression at r55036.
+	  MatchData#values_at accepts Range.
+
 Wed May 18 02:02:58 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (match_aref): remove useless condition and call rb_fix2int.
