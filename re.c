@@ -1888,9 +1888,7 @@ match_aref(int argc, VALUE *argv, VALUE match)
 
     if (NIL_P(rest)) {
 	if (FIXNUM_P(idx)) {
-	    if (FIX2INT(idx) >= 0) {
-		return rb_reg_nth_match(FIX2INT(idx), match);
-	    }
+	    return rb_reg_nth_match(FIX2INT(idx), match);
 	}
 	else {
 	    int num = namev_to_backref_number(RMATCH_REGS(match), RMATCH(match)->regexp, idx);

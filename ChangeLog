@@ -1,3 +1,8 @@
+Wed May 18 02:02:58 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (match_aref): remove useless condition and call rb_fix2int.
+	  rb_reg_nth_match handles negative index.
+
 Wed May 18 01:57:43 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (match_values_at): MatchData#values_at supports named captures
