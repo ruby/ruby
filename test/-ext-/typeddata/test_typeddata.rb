@@ -10,7 +10,7 @@ class Test_TypedData < Test::Unit::TestCase
 
     assert_raise_with_message(TypeError, "wrong argument type Symbol (expected typed_data)") {Bug::TypedData.check(:e)}
 
-    assert_raise_with_message(TypeError, "wrong argument type Fixnum (expected typed_data)") {Bug::TypedData.check(0)}
+    assert_raise_with_message(TypeError, "wrong argument type Integer (expected typed_data)") {Bug::TypedData.check(0)}
 
     assert_raise_with_message(TypeError, "wrong argument type String (expected typed_data)") {Bug::TypedData.check("a")}
 

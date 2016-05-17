@@ -1388,12 +1388,11 @@ static st_table *vm_opt_method_table = 0;
 static int
 vm_redefinition_check_flag(VALUE klass)
 {
-    if (klass == rb_cFixnum) return FIXNUM_REDEFINED_OP_FLAG;
+    if (klass == rb_cInteger) return INTEGER_REDEFINED_OP_FLAG;
     if (klass == rb_cFloat)  return FLOAT_REDEFINED_OP_FLAG;
     if (klass == rb_cString) return STRING_REDEFINED_OP_FLAG;
     if (klass == rb_cArray)  return ARRAY_REDEFINED_OP_FLAG;
     if (klass == rb_cHash)   return HASH_REDEFINED_OP_FLAG;
-    if (klass == rb_cBignum) return BIGNUM_REDEFINED_OP_FLAG;
     if (klass == rb_cSymbol) return SYMBOL_REDEFINED_OP_FLAG;
     if (klass == rb_cTime)   return TIME_REDEFINED_OP_FLAG;
     if (klass == rb_cRegexp) return REGEXP_REDEFINED_OP_FLAG;
@@ -1461,25 +1460,25 @@ vm_init_redefined_flag(void)
 
 #define OP(mid_, bop_) (mid = id##mid_, bop = BOP_##bop_, ruby_vm_redefined_flag[bop] = 0)
 #define C(k) add_opt_method(rb_c##k, mid, bop)
-    OP(PLUS, PLUS), (C(Fixnum), C(Float), C(String), C(Array));
-    OP(MINUS, MINUS), (C(Fixnum), C(Float));
-    OP(MULT, MULT), (C(Fixnum), C(Float));
-    OP(DIV, DIV), (C(Fixnum), C(Float));
-    OP(MOD, MOD), (C(Fixnum), C(Float));
-    OP(Eq, EQ), (C(Fixnum), C(Float), C(String));
-    OP(Eqq, EQQ), (C(Fixnum), C(Bignum), C(Float), C(Symbol), C(String),
+    OP(PLUS, PLUS), (C(Integer), C(Float), C(String), C(Array));
+    OP(MINUS, MINUS), (C(Integer), C(Float));
+    OP(MULT, MULT), (C(Integer), C(Float));
+    OP(DIV, DIV), (C(Integer), C(Float));
+    OP(MOD, MOD), (C(Integer), C(Float));
+    OP(Eq, EQ), (C(Integer), C(Float), C(String));
+    OP(Eqq, EQQ), (C(Integer), C(Float), C(Symbol), C(String),
 		   C(NilClass), C(TrueClass), C(FalseClass));
-    OP(LT, LT), (C(Fixnum), C(Float));
-    OP(LE, LE), (C(Fixnum), C(Float));
-    OP(GT, GT), (C(Fixnum), C(Float));
-    OP(GE, GE), (C(Fixnum), C(Float));
+    OP(LT, LT), (C(Integer), C(Float));
+    OP(LE, LE), (C(Integer), C(Float));
+    OP(GT, GT), (C(Integer), C(Float));
+    OP(GE, GE), (C(Integer), C(Float));
     OP(LTLT, LTLT), (C(String), C(Array));
     OP(AREF, AREF), (C(Array), C(Hash));
     OP(ASET, ASET), (C(Array), C(Hash));
     OP(Length, LENGTH), (C(Array), C(String), C(Hash));
     OP(Size, SIZE), (C(Array), C(String), C(Hash));
     OP(EmptyP, EMPTY_P), (C(Array), C(String), C(Hash));
-    OP(Succ, SUCC), (C(Fixnum), C(String), C(Time));
+    OP(Succ, SUCC), (C(Integer), C(String), C(Time));
     OP(EqTilde, MATCH), (C(Regexp), C(String));
     OP(Freeze, FREEZE), (C(String));
     OP(Max, MAX), (C(Array));

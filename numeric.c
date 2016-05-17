@@ -2948,13 +2948,6 @@ int_even_p(VALUE num)
  *     (-1).succ   #=> 0
  */
 
-static VALUE
-fix_succ(VALUE num)
-{
-    long i = FIX2LONG(num) + 1;
-    return LONG2NUM(i);
-}
-
 VALUE
 rb_int_succ(VALUE num)
 {
@@ -4954,6 +4947,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "abs", int_abs, 0);
     rb_define_method(rb_cInteger, "magnitude", int_abs, 0);
 
+    rb_define_method(rb_cInteger, "===", int_equal, 1);
     rb_define_method(rb_cInteger, "==", int_equal, 1);
     rb_define_method(rb_cInteger, ">", int_gt, 1);
     rb_define_method(rb_cInteger, ">=", int_ge, 1);
@@ -4972,22 +4966,8 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "size", int_size, 0);
     rb_define_method(rb_cInteger, "bit_length", rb_int_bit_length, 0);
 
-    rb_cFixnum = rb_define_class("Fixnum", rb_cInteger);
-
-    rb_define_method(rb_cFixnum, "+", fix_plus, 1);
-    rb_define_method(rb_cFixnum, "-", fix_minus, 1);
-    rb_define_method(rb_cFixnum, "*", fix_mul, 1);
-    rb_define_method(rb_cFixnum, "/", fix_div, 1);
-    rb_define_method(rb_cFixnum, "%", fix_mod, 1);
-
-    rb_define_method(rb_cFixnum, "==", fix_equal, 1);
-    rb_define_method(rb_cFixnum, "===", fix_equal, 1);
-    rb_define_method(rb_cFixnum, ">",  fix_gt, 1);
-    rb_define_method(rb_cFixnum, ">=", fix_ge, 1);
-    rb_define_method(rb_cFixnum, "<",  fix_lt, 1);
-    rb_define_method(rb_cFixnum, "<=", fix_le, 1);
-
-    rb_define_method(rb_cFixnum, "succ", fix_succ, 0);
+    rb_cFixnum = rb_cInteger;
+    rb_define_const(rb_cObject, "Fixnum", rb_cInteger);
 
     rb_cFloat  = rb_define_class("Float", rb_cNumeric);
 

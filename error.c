@@ -525,7 +525,7 @@ builtin_class_name(VALUE x)
 	etype = "nil";
     }
     else if (FIXNUM_P(x)) {
-	etype = "Fixnum";
+	etype = "Integer";
     }
     else if (SYMBOL_P(x)) {
 	etype = "Symbol";

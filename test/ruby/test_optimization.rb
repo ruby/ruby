@@ -29,7 +29,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_bignum FIXNUM_MAX + 1
 
     assert_equal 21, 10 + 11
-    assert_redefine_method('Fixnum', '+', 'assert_equal 11, 10 + 11')
+    assert_redefine_method('Integer', '+', 'assert_equal 11, 10 + 11')
   end
 
   def test_fixnum_minus
@@ -38,22 +38,22 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_bignum FIXNUM_MIN - 1
 
     assert_equal 5, 8 - 3
-    assert_redefine_method('Fixnum', '-', 'assert_equal 3, 8 - 3')
+    assert_redefine_method('Integer', '-', 'assert_equal 3, 8 - 3')
   end
 
   def test_fixnum_mul
     assert_equal 15, 3 * 5
-    assert_redefine_method('Fixnum', '*', 'assert_equal 5, 3 * 5')
+    assert_redefine_method('Integer', '*', 'assert_equal 5, 3 * 5')
   end
 
   def test_fixnum_div
     assert_equal 3, 15 / 5
-    assert_redefine_method('Fixnum', '/', 'assert_equal 5, 15 / 5')
+    assert_redefine_method('Integer', '/', 'assert_equal 5, 15 / 5')
   end
 
   def test_fixnum_mod
     assert_equal 1, 8 % 7
-    assert_redefine_method('Fixnum', '%', 'assert_equal 7, 8 % 7')
+    assert_redefine_method('Integer', '%', 'assert_equal 7, 8 % 7')
   end
 
   def test_float_plus

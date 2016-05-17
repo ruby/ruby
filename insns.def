@@ -1344,9 +1344,8 @@ opt_case_dispatch
       case T_STRING:
 	if (BASIC_OP_UNREDEFINED_P(BOP_EQQ,
 				   SYMBOL_REDEFINED_OP_FLAG |
-				   FIXNUM_REDEFINED_OP_FLAG |
+				   INTEGER_REDEFINED_OP_FLAG |
 				   FLOAT_REDEFINED_OP_FLAG |
-				   BIGNUM_REDEFINED_OP_FLAG |
 				   NIL_REDEFINED_OP_FLAG    |
 				   TRUE_REDEFINED_OP_FLAG   |
 				   FALSE_REDEFINED_OP_FLAG  |
@@ -1379,7 +1378,7 @@ opt_plus
 (VALUE val)
 {
     if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_PLUS,FIXNUM_REDEFINED_OP_FLAG)) {
+	BASIC_OP_UNREDEFINED_P(BOP_PLUS,INTEGER_REDEFINED_OP_FLAG)) {
 	/* fixnum + fixnum */
 #ifndef LONG_LONG_VALUE
 	val = (recv + (obj & (~1)));
@@ -1437,7 +1436,7 @@ opt_minus
 (VALUE val)
 {
     if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_MINUS, FIXNUM_REDEFINED_OP_FLAG)) {
+	BASIC_OP_UNREDEFINED_P(BOP_MINUS, INTEGER_REDEFINED_OP_FLAG)) {
 	long a, b, c;
 
 	a = FIX2LONG(recv);
@@ -1479,7 +1478,7 @@ opt_mult
 (VALUE val)
 {
     if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_MULT, FIXNUM_REDEFINED_OP_FLAG)) {
+	BASIC_OP_UNREDEFINED_P(BOP_MULT, INTEGER_REDEFINED_OP_FLAG)) {
 	val = rb_fix_mul_fix(recv, obj);
     }
     else if (FLONUM_2_P(recv, obj) &&
@@ -1515,7 +1514,7 @@ opt_div
 (VALUE val)
 {
     if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_DIV, FIXNUM_REDEFINED_OP_FLAG)) {
+	BASIC_OP_UNREDEFINED_P(BOP_DIV, INTEGER_REDEFINED_OP_FLAG)) {
 	if (FIX2LONG(obj) == 0) goto INSN_LABEL(normal_dispatch);
 	val = rb_fix_div_fix(recv, obj);
     }
@@ -1552,7 +1551,7 @@ opt_mod
 (VALUE val)
 {
     if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_MOD, FIXNUM_REDEFINED_OP_FLAG )) {
+	BASIC_OP_UNREDEFINED_P(BOP_MOD, INTEGER_REDEFINED_OP_FLAG )) {
 	if (FIX2LONG(obj) == 0) goto INSN_LABEL(normal_dispatch);
 	val = rb_fix_mod_fix(recv, obj);
     }
@@ -1642,7 +1641,7 @@ opt_lt
 (VALUE val)
 {
     if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_LT, FIXNUM_REDEFINED_OP_FLAG)) {
+	BASIC_OP_UNREDEFINED_P(BOP_LT, INTEGER_REDEFINED_OP_FLAG)) {
 	SIGNED_VALUE a = recv, b = obj;
 
 	if (a < b) {
@@ -1686,7 +1685,7 @@ opt_le
 (VALUE val)
 {
     if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_LE, FIXNUM_REDEFINED_OP_FLAG)) {
+	BASIC_OP_UNREDEFINED_P(BOP_LE, INTEGER_REDEFINED_OP_FLAG)) {
 	SIGNED_VALUE a = recv, b = obj;
 
 	if (a <= b) {
@@ -1721,7 +1720,7 @@ opt_gt
 (VALUE val)
 {
     if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_GT, FIXNUM_REDEFINED_OP_FLAG)) {
+	BASIC_OP_UNREDEFINED_P(BOP_GT, INTEGER_REDEFINED_OP_FLAG)) {
 	SIGNED_VALUE a = recv, b = obj;
 
 	if (a > b) {
@@ -1765,7 +1764,7 @@ opt_ge
 (VALUE val)
 {
     if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_GE, FIXNUM_REDEFINED_OP_FLAG)) {
+	BASIC_OP_UNREDEFINED_P(BOP_GE, INTEGER_REDEFINED_OP_FLAG)) {
 	SIGNED_VALUE a = recv, b = obj;
 
 	if (a >= b) {
@@ -2046,7 +2045,7 @@ opt_succ
 {
     if (SPECIAL_CONST_P(recv)) {
 	if (FIXNUM_P(recv) &&
-	    BASIC_OP_UNREDEFINED_P(BOP_SUCC, FIXNUM_REDEFINED_OP_FLAG)) {
+	    BASIC_OP_UNREDEFINED_P(BOP_SUCC, INTEGER_REDEFINED_OP_FLAG)) {
 	    const VALUE obj = INT2FIX(1);
 	    /* fixnum + INT2FIX(1) */
 	    val = (recv + (obj & (~1)));

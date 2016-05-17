@@ -7,7 +7,7 @@ static ID i_encoding, i_encode;
 #endif
 
 static VALUE mJSON, mExt, mGenerator, cState, mGeneratorMethods, mObject,
-             mHash, mArray, mFixnum, mBignum, mFloat, mString, mString_Extend,
+             mHash, mArray, mInteger, mFixnum, mBignum, mFloat, mString, mString_Extend,
              mTrueClass, mFalseClass, mNilClass, eGeneratorError,
              eNestingError, CRegexp_MULTILINE, CJSON_SAFE_STATE_PROTOTYPE,
              i_SAFE_STATE_PROTOTYPE;
@@ -340,6 +340,16 @@ static VALUE mHash_to_json(int argc, VALUE *argv, VALUE self)
  */
 static VALUE mArray_to_json(int argc, VALUE *argv, VALUE self) {
     GENERATE_JSON(array);
+}
+
+/*
+ * call-seq: to_json(*)
+ *
+ * Returns a JSON string representation for this Integer number.
+ */
+static VALUE mInteger_to_json(int argc, VALUE *argv, VALUE self)
+{
+    GENERATE_JSON(integer);
 }
 
 /*
@@ -825,6 +835,14 @@ static void generate_json_bignum(FBuffer *buffer, VALUE Vstate, JSON_Generator_S
     fbuffer_append_str(buffer, tmp);
 }
 
+static void generate_json_integer(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
+{
+    if (FIXNUM_P(obj))
+        generate_json_fixnum(buffer, Vstate, state, obj);
+    else
+        generate_json_bignum(buffer, Vstate, state, obj);
+}
+
 static void generate_json_float(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     double value = RFLOAT_VALUE(obj);
@@ -858,9 +876,9 @@ static void generate_json(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *s
         generate_json_false(buffer, Vstate, state, obj);
     } else if (obj == Qtrue) {
         generate_json_true(buffer, Vstate, state, obj);
-    } else if (klass == rb_cFixnum) {
+    } else if (FIXNUM_P(obj)) {
         generate_json_fixnum(buffer, Vstate, state, obj);
-    } else if (klass == rb_cBignum) {
+    } else if (RB_TYPE_P(obj, T_BIGNUM)) {
         generate_json_bignum(buffer, Vstate, state, obj);
     } else if (klass == rb_cFloat) {
         generate_json_float(buffer, Vstate, state, obj);
@@ -1402,10 +1420,16 @@ void Init_generator(void)
     rb_define_method(mHash, "to_json", mHash_to_json, -1);
     mArray = rb_define_module_under(mGeneratorMethods, "Array");
     rb_define_method(mArray, "to_json", mArray_to_json, -1);
-    mFixnum = rb_define_module_under(mGeneratorMethods, "Fixnum");
-    rb_define_method(mFixnum, "to_json", mFixnum_to_json, -1);
-    mBignum = rb_define_module_under(mGeneratorMethods, "Bignum");
-    rb_define_method(mBignum, "to_json", mBignum_to_json, -1);
+    if (rb_cInteger == rb_cFixnum) {
+        mInteger = rb_define_module_under(mGeneratorMethods, "Integer");
+        rb_define_method(mInteger, "to_json", mInteger_to_json, -1);
+    }
+    else {
+        mFixnum = rb_define_module_under(mGeneratorMethods, "Fixnum");
+        rb_define_method(mFixnum, "to_json", mFixnum_to_json, -1);
+        mBignum = rb_define_module_under(mGeneratorMethods, "Bignum");
+        rb_define_method(mBignum, "to_json", mBignum_to_json, -1);
+    }
     mFloat = rb_define_module_under(mGeneratorMethods, "Float");
     rb_define_method(mFloat, "to_json", mFloat_to_json, -1);
     mString = rb_define_module_under(mGeneratorMethods, "String");

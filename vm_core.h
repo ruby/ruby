@@ -569,12 +569,12 @@ typedef struct rb_vm_struct {
 #define RUBY_VM_FIBER_MACHINE_STACK_SIZE_MIN  (  16 * 1024 * sizeof(VALUE)) /*   64 KB or  128 KB */
 
 /* optimize insn */
-#define FIXNUM_REDEFINED_OP_FLAG (1 << 0)
+#define INTEGER_REDEFINED_OP_FLAG (1 << 0)
 #define FLOAT_REDEFINED_OP_FLAG  (1 << 1)
 #define STRING_REDEFINED_OP_FLAG (1 << 2)
 #define ARRAY_REDEFINED_OP_FLAG  (1 << 3)
 #define HASH_REDEFINED_OP_FLAG   (1 << 4)
-#define BIGNUM_REDEFINED_OP_FLAG (1 << 5)
+/* #define BIGNUM_REDEFINED_OP_FLAG (1 << 5) */
 #define SYMBOL_REDEFINED_OP_FLAG (1 << 6)
 #define TIME_REDEFINED_OP_FLAG   (1 << 7)
 #define REGEXP_REDEFINED_OP_FLAG (1 << 8)

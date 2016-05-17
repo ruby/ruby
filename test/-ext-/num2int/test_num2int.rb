@@ -104,7 +104,7 @@ class TestNum2int < Test::Unit::TestCase
   end
 
   def assert_fix2i_success(type, num, result=num)
-    return if !num.kind_of?(Fixnum)
+    return if !num.fixnum?
     func = "FIX2#{type}".upcase
     assert_fix2i_success_internal(result.to_s, func, num)
   end
@@ -116,7 +116,7 @@ class TestNum2int < Test::Unit::TestCase
   end
 
   def assert_fix2i_error(type, num)
-    return if !num.kind_of?(Fixnum)
+    return if !num.fixnum?
     func = "FIX2#{type}".upcase
     assert_num2i_error_internal(func, num)
   end

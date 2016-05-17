@@ -1936,7 +1936,7 @@ static inline VALUE
 rb_class_of(VALUE obj)
 {
     if (RB_IMMEDIATE_P(obj)) {
-	if (RB_FIXNUM_P(obj)) return rb_cFixnum;
+	if (RB_FIXNUM_P(obj)) return rb_cInteger;
 	if (RB_FLONUM_P(obj)) return rb_cFloat;
 	if (obj == RUBY_Qtrue)  return rb_cTrueClass;
 	if (RB_STATIC_SYM_P(obj)) return rb_cSymbol;

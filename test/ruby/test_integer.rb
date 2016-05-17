@@ -109,20 +109,6 @@ class TestInteger < Test::Unit::TestCase
 
   def test_succ
     assert_equal(2, 1.send(:succ))
-
-    Fixnum.class_eval do
-      alias succ_bak succ
-      remove_method :succ
-    end
-
-    assert_equal(2, 1.succ)
-    assert_equal(4294967297, 4294967296.succ)
-
-  ensure
-    Fixnum.class_eval do
-      alias succ succ_bak
-      remove_method :succ_bak
-    end
   end
 
   def test_chr

@@ -110,7 +110,7 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGIT % SIZEOF_LONG == 0);
 #define BIGNUM_SET_NEGATIVE_SIGN(b) BIGNUM_SET_SIGN(b, 0)
 #define BIGNUM_SET_POSITIVE_SIGN(b) BIGNUM_SET_SIGN(b, 1)
 
-#define bignew(len,sign) bignew_1(rb_cBignum,(len),(sign))
+#define bignew(len,sign) bignew_1(rb_cInteger,(len),(sign))
 
 #define BDIGITS_ZERO(ptr, n) do { \
   BDIGIT *bdigitz_zero_ptr = (ptr); \
@@ -6669,16 +6669,16 @@ rb_big_hash(VALUE x)
  */
 
 static VALUE
-rb_big_coerce(VALUE x, VALUE y)
+rb_int_coerce(VALUE x, VALUE y)
 {
-    if (FIXNUM_P(y)) {
-	y = rb_int2big(FIX2LONG(y));
+    if (FIXNUM_P(y) || RB_BIGNUM_TYPE_P(y)) {
+        return rb_assoc_new(y, x);
     }
-    else if (!RB_BIGNUM_TYPE_P(y)) {
-	rb_raise(rb_eTypeError, "can't coerce %"PRIsVALUE" to Bignum",
-		 rb_obj_class(y));
+    else {
+        x = rb_Float(x);
+        y = rb_Float(y);
+        return rb_assoc_new(y, x);
     }
-    return rb_assoc_new(y, x);
 }
 
 VALUE
@@ -6783,15 +6783,13 @@ rb_big_even_p(VALUE num)
 void
 Init_Bignum(void)
 {
-    rb_cBignum = rb_define_class("Bignum", rb_cInteger);
+    rb_cBignum = rb_cInteger;
+    rb_define_const(rb_cObject, "Bignum", rb_cInteger);
 
-    rb_define_method(rb_cBignum, "coerce", rb_big_coerce, 1);
-
-    rb_define_method(rb_cBignum, "===", rb_big_eq, 1);
+    rb_define_method(rb_cInteger, "coerce", rb_int_coerce, 1);
 
 #ifdef USE_GMP
     /* The version of loaded GMP. */
-    rb_define_const(rb_cBignum, "GMP_VERSION", rb_sprintf("GMP %s", gmp_version));
     rb_define_const(rb_cInteger, "GMP_VERSION", rb_sprintf("GMP %s", gmp_version));
 #endif
 

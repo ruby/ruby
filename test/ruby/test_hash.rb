@@ -826,7 +826,7 @@ class TestHash < Test::Unit::TestCase
   def test_create
     assert_equal({1=>2, 3=>4}, @cls[[[1,2],[3,4]]])
     assert_raise(ArgumentError) { Hash[0, 1, 2] }
-    assert_warning(/wrong element type Fixnum at 1 /) {@cls[[[1, 2], 3]]}
+    assert_warning(/wrong element type Integer at 1 /) {@cls[[[1, 2], 3]]}
     bug5406 = '[ruby-core:39945]'
     assert_raise(ArgumentError, bug5406) { @cls[[[1, 2], [3, 4, 5]]] }
     assert_equal({1=>2, 3=>4}, @cls[1,2,3,4])

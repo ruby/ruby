@@ -55,27 +55,12 @@ unless defined?(Math.exp!)
 end
 
 ##
-# When mathn is required, Fixnum's division is enhanced to
+# When mathn is required, Integer's division is enhanced to
 # return more precise values from mathematical expressions.
 #
 #   2/3*3  # => 0
 #   require 'mathn'
 #   2/3*3  # => 2
-
-class Fixnum
-  remove_method :/
-
-  ##
-  # +/+ defines the Rational division for Fixnum.
-  #
-  #   1/3  # => (1/3)
-
-  alias / quo
-end
-
-##
-# When mathn is required Bignum's division is enhanced to
-# return more precise values from mathematical expressions.
 #
 #   (2**72) / ((2**70) * 3)  # => 4/3
 

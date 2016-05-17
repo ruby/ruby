@@ -16,17 +16,17 @@ class TestBignum < Test::Unit::TestCase
   end
   BIGNUM_MIN_BITS = n
 
-  T_ZERO = b.coerce(0).first
-  T_ONE  = b.coerce(1).first
-  T_MONE = b.coerce(-1).first
-  T31  = b.coerce(2**31).first   # 2147483648
-  T31P = b.coerce(T31 - 1).first # 2147483647
-  T32  = b.coerce(2**32).first   # 4294967296
-  T32P = b.coerce(T32 - 1).first # 4294967295
-  T64  = b.coerce(2**64).first   # 18446744073709551616
-  T64P = b.coerce(T64 - 1).first # 18446744073709551615
-  T1024  = b.coerce(2**1024).first
-  T1024P = b.coerce(T1024 - 1).first
+  T_ZERO = 0.to_bignum
+  T_ONE  = 1.to_bignum
+  T_MONE = (-1).to_bignum
+  T31  = (2**31).to_bignum   # 2147483648
+  T31P = (T31 - 1).to_bignum # 2147483647
+  T32  = (2**32).to_bignum   # 4294967296
+  T32P = (T32 - 1).to_bignum # 4294967295
+  T64  = (2**64).to_bignum   # 18446744073709551616
+  T64P = (T64 - 1).to_bignum # 18446744073709551615
+  T1024  = (2**1024).to_bignum
+  T1024P = (T1024 - 1).to_bignum
 
   def setup
     @verbose = $VERBOSE
@@ -656,7 +656,7 @@ class TestBignum < Test::Unit::TestCase
   end
 
   def test_too_big_to_s
-    if (big = 2**31-1).is_a?(Fixnum)
+    if (big = 2**31-1).fixnum?
       return
     end
     assert_raise_with_message(RangeError, /too big to convert/) {(1 << big).to_s}

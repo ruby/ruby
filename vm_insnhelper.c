@@ -1159,7 +1159,7 @@ VALUE
 opt_eq_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
 {
     if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_EQ, FIXNUM_REDEFINED_OP_FLAG)) {
+	BASIC_OP_UNREDEFINED_P(BOP_EQ, INTEGER_REDEFINED_OP_FLAG)) {
 	return (recv == obj) ? Qtrue : Qfalse;
     }
     else if (FLONUM_2_P(recv, obj) &&

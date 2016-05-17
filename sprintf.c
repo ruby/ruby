@@ -1349,8 +1349,8 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
 	    if (value == rb_cNilClass) {
 		return LITERAL("nil");
 	    }
-	    else if (value == rb_cFixnum) {
-		return LITERAL("Fixnum");
+	    else if (value == rb_cInteger) {
+		return LITERAL("Integer");
 	    }
 	    else if (value == rb_cSymbol) {
 		return LITERAL("Symbol");

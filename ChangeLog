@@ -1,3 +1,41 @@
+Tue May 17 15:26:10 2016  Tanaka Akira  <akr@fsij.org>
+
+	* [Feature #12005] Unify Fixnum and Bignum into Integer
+
+	* include/ruby/ruby.h (rb_class_of): Return rb_cInteger for fixnums.
+
+	* insns.def (INTEGER_REDEFINED_OP_FLAG): Unified from
+	  FIXNUM_REDEFINED_OP_FLAG and BIGNUM_REDEFINED_OP_FLAG.
+
+	* vm_core.h: Ditto.
+
+	* vm_insnhelper.c (opt_eq_func): Use INTEGER_REDEFINED_OP_FLAG instead
+	  of FIXNUM_REDEFINED_OP_FLAG.
+
+	* vm.c (vm_redefinition_check_flag): Use rb_cInteger instead of
+	  rb_cFixnum and rb_cBignum.
+	  (C): Use Integer instead of Fixnum and Bignum.
+
+	* numeric.c (fix_succ): Removed.
+	  (Init_Numeric): Define Fixnum as Integer.
+
+	* bignum.c (bignew): Use rb_cInteger instead of Rb_cBignum.
+	  (rb_int_coerce): replaced from rb_big_coerce and return fixnums
+	  as-is.
+	  (Init_Bignum): Define Bignum as Integer.
+	  Don't define ===.
+
+	* error.c (builtin_class_name): Return "Integer" for fixnums.
+
+	* sprintf.c (ruby__sfvextra): Use rb_cInteger instead of rb_cFixnum.
+
+	* ext/-test-/testutil: New directory to test.
+	  Currently it provides utilities for fixnum and bignum.
+
+	* ext/json/generator/generator.c: Define mInteger_to_json.
+
+	* lib/mathn.rb (Fixnum#/): Redefinition removed.
+
 Tue May 17 11:58:58 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_CHECK_BUILTIN_SETJMP): declare t as NORETURN
