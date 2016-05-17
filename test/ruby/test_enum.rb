@@ -220,22 +220,13 @@ class TestEnumerable < Test::Unit::TestCase
 
   def test_inject_array_plus_redefined
     assert_separately([], <<-"end;")
-      class Fixnum
+      class Integer
         undef :+
         def +(x)
           0
         end
       end
       assert_equal(0, [1,2,3].inject(:+), "[ruby-dev:49510] [Bug#12178]")
-    end;
-    assert_separately([], <<-"end;")
-      class Bignum
-        undef :+
-        def +(x)
-          0
-        end
-      end
-      assert_equal(0, [#{FIXNUM_MAX},1,1].inject(:+))
     end;
   end
 

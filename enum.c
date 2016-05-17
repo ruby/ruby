@@ -657,8 +657,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
     id = SYM2ID(op);
     if (id == idPLUS) {
         if ((FIXNUM_P(v) || RB_TYPE_P(v, T_BIGNUM)) &&
-             rb_method_basic_definition_p(rb_cFixnum, idPLUS) &&
-             rb_method_basic_definition_p(rb_cBignum, idPLUS)) {
+             rb_method_basic_definition_p(rb_cInteger, idPLUS)) {
             n = 0;
             for (; i < RARRAY_LEN(ary); i++) {
                 e = RARRAY_AREF(ary, i);

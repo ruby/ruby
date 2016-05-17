@@ -4,7 +4,7 @@ require 'test/unit'
 class TestRubyVM < Test::Unit::TestCase
   def test_stat
     assert_kind_of Hash, RubyVM.stat
-    assert_kind_of Fixnum, RubyVM.stat[:global_method_state]
+    assert_kind_of Integer, RubyVM.stat[:global_method_state]
 
     RubyVM.stat(stat = {})
     assert_not_empty stat

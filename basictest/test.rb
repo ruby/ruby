@@ -2134,7 +2134,7 @@ test.bar = 47
 test_ok(test.bar == 47)
 
 test_check "variable"
-test_ok($$.instance_of?(Fixnum))
+test_ok($$.instance_of?(Integer))
 
 # read-only variable
 begin

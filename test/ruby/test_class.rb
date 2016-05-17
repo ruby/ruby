@@ -46,9 +46,9 @@ class TestClass < Test::Unit::TestCase
     assert_same(Class, c.class)
     assert_same(Object, c.superclass)
 
-    c = Class.new(Fixnum)
+    c = Class.new(Integer)
     assert_same(Class, c.class)
-    assert_same(Fixnum, c.superclass)
+    assert_same(Integer, c.superclass)
   end
 
   def test_00_new_basic

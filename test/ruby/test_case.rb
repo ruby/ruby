@@ -81,7 +81,7 @@ class TestCase < Test::Unit::TestCase
     EOS
 
     assert_in_out_err(['-e', <<-EOS], '', %w[42], [])
-      class Fixnum; undef ===; def ===(o); p 42; true; end; end; case 1; when 1; end
+      class Integer; undef ===; def ===(o); p 42; true; end; end; case 1; when 1; end
     EOS
   end
 

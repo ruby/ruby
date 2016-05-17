@@ -53,8 +53,8 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
   def test_info
     assert_equal("DES-EDE3-CBC", @c1.name, "name")
     assert_equal("DES-EDE3-CBC", @c2.name, "name")
-    assert_kind_of(Fixnum, @c1.key_len, "key_len")
-    assert_kind_of(Fixnum, @c1.iv_len, "iv_len")
+    assert_kind_of(Integer, @c1.key_len, "key_len")
+    assert_kind_of(Integer, @c1.iv_len, "iv_len")
   end
 
   def test_dup

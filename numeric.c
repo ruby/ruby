@@ -213,11 +213,11 @@ positive_int_p(VALUE num)
     const ID mid = '>';
 
     if (FIXNUM_P(num)) {
-	if (method_basic_p(rb_cFixnum))
+	if (method_basic_p(rb_cInteger))
 	    return FIXNUM_POSITIVE_P(num);
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
-	if (method_basic_p(rb_cBignum))
+	if (method_basic_p(rb_cInteger))
 	    return BIGNUM_POSITIVE_P(num);
     }
     return RTEST(compare_with_zero(num, mid));
@@ -229,11 +229,11 @@ negative_int_p(VALUE num)
     const ID mid = '<';
 
     if (FIXNUM_P(num)) {
-	if (method_basic_p(rb_cFixnum))
+	if (method_basic_p(rb_cInteger))
 	    return FIXNUM_NEGATIVE_P(num);
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
-	if (method_basic_p(rb_cBignum))
+	if (method_basic_p(rb_cInteger))
 	    return BIGNUM_NEGATIVE_P(num);
     }
     return RTEST(compare_with_zero(num, mid));
@@ -706,11 +706,11 @@ num_positive_p(VALUE num)
     const ID mid = '>';
 
     if (FIXNUM_P(num)) {
-	if (method_basic_p(rb_cFixnum))
+	if (method_basic_p(rb_cInteger))
 	    return (SIGNED_VALUE)num > (SIGNED_VALUE)INT2FIX(0) ? Qtrue : Qfalse;
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
-	if (method_basic_p(rb_cBignum))
+	if (method_basic_p(rb_cInteger))
 	    return BIGNUM_POSITIVE_P(num) && !rb_bigzero_p(num) ? Qtrue : Qfalse;
     }
     return compare_with_zero(num, mid);
@@ -2317,11 +2317,11 @@ num_step_negative_p(VALUE num)
     VALUE r;
 
     if (FIXNUM_P(num)) {
-	if (method_basic_p(rb_cFixnum))
+	if (method_basic_p(rb_cInteger))
 	    return (SIGNED_VALUE)num < 0;
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
-	if (method_basic_p(rb_cBignum))
+	if (method_basic_p(rb_cInteger))
 	    return BIGNUM_NEGATIVE_P(num);
     }
     r = rb_rescue(num_step_compare_with_zero, num, coerce_rescue_quiet, Qnil);

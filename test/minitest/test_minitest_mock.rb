@@ -132,10 +132,10 @@ class TestMiniTestMock < MiniTest::Unit::TestCase
   end
 
   def test_mock_is_a_blank_slate
-    @mock.expect :kind_of?, true, [Fixnum]
+    @mock.expect :kind_of?, true, [Integer]
     @mock.expect :==, true, [1]
 
-    assert @mock.kind_of?(Fixnum), "didn't mock :kind_of\?"
+    assert @mock.kind_of?(Integer), "didn't mock :kind_of\?"
     assert @mock == 1, "didn't mock :=="
   end
 

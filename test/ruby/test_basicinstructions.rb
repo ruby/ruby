@@ -708,7 +708,7 @@ class TestBasicInstructions < Test::Unit::TestCase
         @ivar
       end
     end
-    class Fixnum; include M; end
+    class Integer; include M; end
     class Float; include M; end
     class Symbol; include M; end
     class FalseClass; include M; end

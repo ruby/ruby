@@ -1,3 +1,26 @@
+Tue May 17 22:11:41 2016  Tanaka Akira  <akr@fsij.org>
+
+	* object.c, numeric.c, enum.c, ext/-test-/bignum/mul.c,
+	  lib/rexml/quickpath.rb, lib/rexml/text.rb, lib/rexml/xpath_parser.rb,
+	  lib/rubygems/specification.rb, lib/uri/generic.rb,
+	  bootstraptest/test_eval.rb, basictest/test.rb,
+	  test/-ext-/bignum/test_big2str.rb, test/-ext-/bignum/test_div.rb,
+	  test/-ext-/bignum/test_mul.rb, test/-ext-/bignum/test_str2big.rb,
+	  test/csv/test_data_converters.rb, test/date/test_date.rb,
+	  test/json/test_json_generate.rb, test/minitest/test_minitest_mock.rb,
+	  test/openssl/test_cipher.rb, test/rexml/test_jaxen.rb,
+	  test/ruby/test_array.rb, test/ruby/test_basicinstructions.rb,
+	  test/ruby/test_bignum.rb, test/ruby/test_case.rb,
+	  test/ruby/test_class.rb, test/ruby/test_complex.rb,
+	  test/ruby/test_enum.rb, test/ruby/test_eval.rb,
+	  test/ruby/test_iseq.rb, test/ruby/test_literal.rb,
+	  test/ruby/test_math.rb, test/ruby/test_module.rb,
+	  test/ruby/test_numeric.rb, test/ruby/test_range.rb,
+	  test/ruby/test_rational.rb, test/ruby/test_refinement.rb,
+	  test/ruby/test_rubyvm.rb, test/ruby/test_struct.rb,
+	  test/ruby/test_variable.rb, test/rubygems/test_gem_specification.rb,
+	  test/thread/test_queue.rb: Use Integer instead of Fixnum and Bignum.
+
 Tue May 17 15:26:10 2016  Tanaka Akira  <akr@fsij.org>
 
 	* [Feature #12005] Unify Fixnum and Bignum into Integer

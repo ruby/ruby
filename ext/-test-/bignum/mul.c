@@ -54,8 +54,8 @@ mul_gmp(VALUE x, VALUE y)
 void
 Init_mul(VALUE klass)
 {
-    rb_define_const(rb_cBignum, "SIZEOF_BDIGIT", INT2NUM(SIZEOF_BDIGIT));
-    rb_define_const(rb_cBignum, "BITSPERDIG", INT2NUM(SIZEOF_BDIGIT * CHAR_BIT));
+    rb_define_const(rb_cInteger, "SIZEOF_BDIGIT", INT2NUM(SIZEOF_BDIGIT));
+    rb_define_const(rb_cInteger, "BITSPERDIG", INT2NUM(SIZEOF_BDIGIT * CHAR_BIT));
     rb_define_method(rb_cInteger, "big_mul_normal", mul_normal, 1);
     rb_define_method(rb_cInteger, "big_sq_fast", sq_fast, 0);
     rb_define_method(rb_cInteger, "big_mul_balance", mul_balance, 1);

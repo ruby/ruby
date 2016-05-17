@@ -5,8 +5,8 @@ require "-test-/bignum"
 class TestBignum < Test::Unit::TestCase
   class TestMul < Test::Unit::TestCase
 
-    SIZEOF_BDIGIT = Bignum::SIZEOF_BDIGIT
-    BITSPERDIG = Bignum::BITSPERDIG
+    SIZEOF_BDIGIT = Integer::SIZEOF_BDIGIT
+    BITSPERDIG = Integer::BITSPERDIG
     BDIGMAX = (1 << BITSPERDIG) - 1
 
     def test_mul_normal
@@ -61,14 +61,14 @@ class TestBignum < Test::Unit::TestCase
     end
 
     def test_mul_balance_2x16
-      x = (1 << Bignum::BITSPERDIG) | 1
-      y = (1 << Bignum::BITSPERDIG*16) | 1
+      x = (1 << Integer::BITSPERDIG) | 1
+      y = (1 << Integer::BITSPERDIG*16) | 1
       assert_equal(x.big_mul_normal(y), x.big_mul_balance(y))
     end
 
     def test_mul_balance_2x17
-      x = (1 << Bignum::BITSPERDIG) | 1
-      y = (1 << Bignum::BITSPERDIG*17) | 1
+      x = (1 << Integer::BITSPERDIG) | 1
+      y = (1 << Integer::BITSPERDIG*17) | 1
       assert_equal(x.big_mul_normal(y), x.big_mul_balance(y))
     end
 

@@ -248,7 +248,7 @@ module TestStruct
   def test_hash
     klass = @Struct.new(:a)
     o = klass.new(1)
-    assert_kind_of(Fixnum, o.hash)
+    assert_fixnum(o.hash)
   end
 
   def test_eql

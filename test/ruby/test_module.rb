@@ -1695,7 +1695,7 @@ class TestModule < Test::Unit::TestCase
           to_f / other
         end
       end
-      Fixnum.send(:prepend, M)
+      Integer.send(:prepend, M)
       assert_equal(0.5, 1 / 2, "#{bug7983}")
     }
     assert_equal(0, 1 / 2)
@@ -1706,7 +1706,7 @@ class TestModule < Test::Unit::TestCase
     assert_separately [], %{
       module M
       end
-      class Fixnum
+      class Integer
         prepend M
         def /(other)
           quo(other)
@@ -1722,7 +1722,7 @@ class TestModule < Test::Unit::TestCase
     assert_separately [], %{
       module M
       end
-      class Fixnum
+      class Integer
         prepend M
       end
       module M

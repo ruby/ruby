@@ -33,7 +33,7 @@ module REXML
       VALID_XML_CHARS = Regexp.new('^['+
         VALID_CHAR.map { |item|
           case item
-          when Fixnum
+          when Integer
             [item].pack('U').force_encoding('utf-8')
           when Range
             [item.first, '-'.ord, item.last].pack('UUU').force_encoding('utf-8')

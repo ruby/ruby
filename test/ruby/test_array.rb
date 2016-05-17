@@ -495,7 +495,7 @@ class TestArray < Test::Unit::TestCase
 
   def test_collect
     a = @cls[ 1, 'cat', 1..1 ]
-    assert_equal([ Fixnum, String, Range], a.collect {|e| e.class} )
+    assert_equal([ Integer, String, Range], a.collect {|e| e.class} )
     assert_equal([ 99, 99, 99], a.collect { 99 } )
 
     assert_equal([], @cls[].collect { 99 })
@@ -509,8 +509,8 @@ class TestArray < Test::Unit::TestCase
   # also update map!
   def test_collect!
     a = @cls[ 1, 'cat', 1..1 ]
-    assert_equal([ Fixnum, String, Range], a.collect! {|e| e.class} )
-    assert_equal([ Fixnum, String, Range], a)
+    assert_equal([ Integer, String, Range], a.collect! {|e| e.class} )
+    assert_equal([ Integer, String, Range], a)
 
     a = @cls[ 1, 'cat', 1..1 ]
     assert_equal([ 99, 99, 99], a.collect! { 99 } )
@@ -588,7 +588,7 @@ class TestArray < Test::Unit::TestCase
 
     assert_in_out_err [], <<-EOS, ["[]", "0"], [], bug8654
       ARY = Array.new(100) { |i| i }
-      class Fixnum
+      class Integer
         alias old_equal ==
         def == other
           ARY.replace([]) if self.equal?(0)
@@ -1074,8 +1074,8 @@ class TestArray < Test::Unit::TestCase
   # also update collect!
   def test_map!
     a = @cls[ 1, 'cat', 1..1 ]
-    assert_equal(@cls[ Fixnum, String, Range], a.map! {|e| e.class} )
-    assert_equal(@cls[ Fixnum, String, Range], a)
+    assert_equal(@cls[ Integer, String, Range], a.map! {|e| e.class} )
+    assert_equal(@cls[ Integer, String, Range], a)
 
     a = @cls[ 1, 'cat', 1..1 ]
     assert_equal(@cls[ 99, 99, 99], a.map! { 99 } )

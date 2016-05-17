@@ -509,7 +509,7 @@ class TestQueue < Test::Unit::TestCase
         count = 0
         while e = q.pop
           i, st = e
-          count += 1 if i.is_a?(Fixnum) && st.is_a?(String)
+          count += 1 if i.is_a?(Integer) && st.is_a?(String)
         end
         count
       end

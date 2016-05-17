@@ -228,20 +228,20 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal("Foo#x", foo.x)
   end
 
-  module FixnumSlashExt
-    refine Fixnum do
+  module IntegerSlashExt
+    refine Integer do
       def /(other) quo(other) end
     end
   end
 
   def test_override_builtin_method
     assert_equal(0, 1 / 2)
-    assert_equal(Rational(1, 2), eval_using(FixnumSlashExt, "1 / 2"))
+    assert_equal(Rational(1, 2), eval_using(IntegerSlashExt, "1 / 2"))
     assert_equal(0, 1 / 2)
   end
 
-  module FixnumPlusExt
-    refine Fixnum do
+  module IntegerPlusExt
+    refine Integer do
       def self.method_added(*args); end
       def +(other) "overridden" end
     end
@@ -249,7 +249,7 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_override_builtin_method_with_method_added
     assert_equal(3, 1 + 2)
-    assert_equal("overridden", eval_using(FixnumPlusExt, "1 + 2"))
+    assert_equal("overridden", eval_using(IntegerPlusExt, "1 + 2"))
     assert_equal(3, 1 + 2)
   end
 
@@ -265,10 +265,10 @@ class TestRefinement < Test::Unit::TestCase
   end
 
   module RefineSameClass
-    REFINEMENT1 = refine(Fixnum) {
+    REFINEMENT1 = refine(Integer) {
       def foo; return "foo" end
     }
-    REFINEMENT2 = refine(Fixnum) {
+    REFINEMENT2 = refine(Integer) {
       def bar; return "bar" end
     }
     REFINEMENT3 = refine(String) {
@@ -283,15 +283,15 @@ class TestRefinement < Test::Unit::TestCase
     assert_not_equal(RefineSameClass::REFINEMENT1, RefineSameClass::REFINEMENT3)
   end
 
-  module FixnumFooExt
-    refine Fixnum do
+  module IntegerFooExt
+    refine Integer do
       def foo; "foo"; end
     end
   end
 
   def test_respond_to_should_not_use_refinements
     assert_equal(false, 1.respond_to?(:foo))
-    assert_equal(false, eval_using(FixnumFooExt, "1.respond_to?(:foo)"))
+    assert_equal(false, eval_using(IntegerFooExt, "1.respond_to?(:foo)"))
   end
 
   module StringCmpExt
@@ -382,7 +382,7 @@ class TestRefinement < Test::Unit::TestCase
   def test_refine_in_class
     assert_raise(NoMethodError) do
       Class.new {
-        refine Fixnum do
+        refine Integer do
           def foo
             "c"
           end

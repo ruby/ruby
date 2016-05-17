@@ -4,8 +4,8 @@ require 'test/unit'
 class TestNumeric < Test::Unit::TestCase
   def test_coerce
     a, b = 1.coerce(2)
-    assert_equal(Fixnum, a.class)
-    assert_equal(Fixnum, b.class)
+    assert_fixnum(a)
+    assert_fixnum(b)
 
     a, b = 1.coerce(2.0)
     assert_equal(Float, a.class)

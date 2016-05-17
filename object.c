@@ -2997,7 +2997,7 @@ rb_num_to_dbl(VALUE val)
 {
     if (SPECIAL_CONST_P(val)) {
 	if (FIXNUM_P(val)) {
-	    if (basic_to_f_p(rb_cFixnum))
+	    if (basic_to_f_p(rb_cInteger))
 		return fix2dbl_without_to_f(val);
 	}
 	else if (FLONUM_P(val)) {
@@ -3012,7 +3012,7 @@ rb_num_to_dbl(VALUE val)
 	  case T_FLOAT:
 	    return rb_float_noflonum_value(val);
 	  case T_BIGNUM:
-	    if (basic_to_f_p(rb_cBignum))
+	    if (basic_to_f_p(rb_cInteger))
 		return big2dbl_without_to_f(val);
 	    break;
 	  case T_RATIONAL:

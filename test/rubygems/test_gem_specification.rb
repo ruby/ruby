@@ -3080,7 +3080,7 @@ Did you mean 'Ruby'?
         end
       end
 
-      err = 'specification_version must be a Fixnum (did you mean version?)'
+      err = 'specification_version must be a Integer (did you mean version?)'
       assert_equal err, e.message
     end
   end

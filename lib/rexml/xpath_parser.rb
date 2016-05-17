@@ -17,7 +17,7 @@ class Symbol
   # to use across multiple Object types
   def dclone ; self ; end
 end
-class Fixnum
+class Integer
   # provides a unified +clone+ operation, for REXML::XPathParser
   # to use across multiple Object types
   def dclone ; self ; end

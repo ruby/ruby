@@ -286,7 +286,7 @@ EOT
   if defined?(JSON::Ext::Generator)
     def test_broken_bignum # [ruby-core:38867]
       pid = fork do
-        Bignum.class_eval do
+        Integer.class_eval do
           def to_s
           end
         end

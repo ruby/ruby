@@ -16,7 +16,7 @@ class TestISeq < Test::Unit::TestCase
 
   def lines src
     body = compile(src).to_a[13]
-    body.find_all{|e| e.kind_of? Fixnum}
+    body.find_all{|e| e.kind_of? Integer}
   end
 
   def test_to_a_lines

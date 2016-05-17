@@ -36,7 +36,7 @@ class TestVariable < Test::Unit::TestCase
   end
 
   def test_variable
-    assert_instance_of(Fixnum, $$)
+    assert_instance_of(Integer, $$)
 
     # read-only variable
     assert_raise(NameError) do
