@@ -13,6 +13,8 @@
 #include "ruby/util.h"
 #include "id.h"
 
+#include <assert.h>
+
 VALUE rb_mEnumerable;
 
 static ID id_next;
@@ -3569,17 +3571,16 @@ struct enum_sum_memo {
     int float_value;
 };
 
-static VALUE
-enum_sum_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
+static void
+sum_iter(VALUE i, struct enum_sum_memo *memo)
 {
-    struct enum_sum_memo *memo = (struct enum_sum_memo *)args;
+    assert(memo != NULL);
+
     long n = memo->n;
     VALUE v = memo->v;
     VALUE r = memo->r;
     double f = memo->f;
     double c = memo->c;
-
-    ENUM_WANT_SVALUE();
 
     if (memo->block_given)
         i = rb_yield(i);
@@ -3662,8 +3663,30 @@ enum_sum_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     memo->r = r;
     memo->f = f;
     memo->c = c;
+}
 
+static VALUE
+enum_sum_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
+{
+    ENUM_WANT_SVALUE();
+    sum_iter(i, (struct enum_sum_memo *) args);
     return Qnil;
+}
+
+static int
+hash_sum_i(VALUE key, VALUE value, VALUE arg)
+{
+    sum_iter(rb_assoc_new(key, value), (struct enum_sum_memo *) arg);
+    return ST_CONTINUE;
+}
+
+static void
+hash_sum(VALUE hash, struct enum_sum_memo *memo)
+{
+    assert(RB_TYPE_P(hash, T_HASH));
+    assert(memo != NULL);
+
+    rb_hash_foreach(hash, hash_sum_i, (VALUE)memo);
 }
 
 static VALUE
@@ -3743,7 +3766,11 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
         }
     }
 
-    rb_block_call(obj, id_each, 0, 0, enum_sum_iter_i, (VALUE)&memo);
+    if (RB_TYPE_P(obj, T_HASH) &&
+            rb_method_basic_definition_p(CLASS_OF(obj), id_each))
+        hash_sum(obj, &memo);
+    else
+        rb_block_call(obj, id_each, 0, 0, enum_sum_i, (VALUE)&memo);
 
     if (memo.float_value) {
         return DBL2NUM(memo.f);

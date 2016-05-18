@@ -1,3 +1,8 @@
+Wed May 18 09:52:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* enum.c (enum_sum, hash_sum, hash_sum_i, enum_sum_i, sum_iter):
+	  Optimize for hashes when each method isn't redefined.
+
 Wed May 18 09:14:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* enum.c (enum_sum, int_range_sum): Extract int_range_sum from
