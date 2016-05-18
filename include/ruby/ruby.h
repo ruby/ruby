@@ -1504,6 +1504,15 @@ rb_obj_write(VALUE a, VALUE *slot, VALUE b, RB_UNUSED_VAR(const char *filename),
     return a;
 }
 
+#define RB_INTEGER_TYPE_P(obj) rb_integer_type_p(obj)
+static inline int
+rb_integer_type_p(VALUE obj)
+{
+    return (RB_FIXNUM_P(obj) ||
+	    (!RB_SPECIAL_CONST_P(obj) &&
+	     RB_BUILTIN_TYPE(obj) == RUBY_T_BIGNUM));
+}
+
 #if SIZEOF_INT < SIZEOF_LONG
 # define RB_INT2NUM(v) INT2FIX((int)(v))
 # define RB_UINT2NUM(v) LONG2FIX((unsigned int)(v))

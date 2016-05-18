@@ -106,7 +106,7 @@ f_mul(VALUE x, VALUE y)
     if (FIXNUM_P(y)) {
 	long iy = FIX2LONG(y);
 	if (iy == 0) {
-	    if (FIXNUM_P(x) || RB_TYPE_P(x, T_BIGNUM))
+	    if (RB_INTEGER_TYPE_P(x))
 		return ZERO;
 	}
 	else if (iy == 1)
@@ -115,7 +115,7 @@ f_mul(VALUE x, VALUE y)
     else if (FIXNUM_P(x)) {
 	long ix = FIX2LONG(x);
 	if (ix == 0) {
-	    if (FIXNUM_P(y) || RB_TYPE_P(y, T_BIGNUM))
+	    if (RB_INTEGER_TYPE_P(y))
 		return ZERO;
 	}
 	else if (ix == 1)

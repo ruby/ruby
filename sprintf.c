@@ -1043,7 +1043,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		VALUE val = GETARG(), num, den;
 		int sign = (flags&FPLUS) ? 1 : 0, zero = 0;
 		long len, fill;
-		if (FIXNUM_P(val) || RB_TYPE_P(val, T_BIGNUM)) {
+		if (RB_INTEGER_TYPE_P(val)) {
 		    den = INT2FIX(1);
 		    num = val;
 		}

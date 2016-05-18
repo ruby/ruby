@@ -1,3 +1,9 @@
+Wed May 18 10:17:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (RB_INTEGER_TYPE_P): new macro and
+	  underlying inline function to check if the object is an
+	  Integer (Fixnum or Bignum).
+
 Wed May 18 09:52:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* enum.c (enum_sum, hash_sum, hash_sum_i, enum_sum_i, sum_iter):

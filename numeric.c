@@ -4037,11 +4037,10 @@ int_comp(VALUE num)
 static int
 bit_coerce(VALUE *x, VALUE *y)
 {
-    if (!FIXNUM_P(*y) && !RB_TYPE_P(*y, T_BIGNUM)) {
+    if (!RB_INTEGER_TYPE_P(*y)) {
 	VALUE orig = *x;
 	do_coerce(x, y, TRUE);
-	if (!FIXNUM_P(*x) && !RB_TYPE_P(*x, T_BIGNUM)
-	    && !FIXNUM_P(*y) && !RB_TYPE_P(*y, T_BIGNUM)) {
+	if (!RB_INTEGER_TYPE_P(*x) && !RB_INTEGER_TYPE_P(*y)) {
 	    coerce_failed(orig, *y);
 	}
     }

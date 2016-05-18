@@ -1360,7 +1360,7 @@ encode_year(VALUE nth, int y, double style,
 static void
 decode_jd(VALUE jd, VALUE *nth, int *rjd)
 {
-    assert(FIXNUM_P(jd) || RB_TYPE_P(jd, T_BIGNUM));
+    assert(RB_INTEGER_TYPE_P(jd));
     *nth = f_idiv(jd, INT2FIX(CM_PERIOD));
     if (f_zero_p(*nth)) {
 	assert(FIXNUM_P(jd));
@@ -3133,7 +3133,7 @@ wholenum_p(VALUE x)
 inline static VALUE
 to_integer(VALUE x)
 {
-    if (FIXNUM_P(x) || RB_TYPE_P(x, T_BIGNUM))
+    if (RB_INTEGER_TYPE_P(x))
 	return x;
     return f_to_i(x);
 }

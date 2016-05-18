@@ -2746,7 +2746,7 @@ rb_str_concat(VALUE str1, VALUE str2)
     rb_encoding *enc = STR_ENC_GET(str1);
     int encidx;
 
-    if (FIXNUM_P(str2) || RB_TYPE_P(str2, T_BIGNUM)) {
+    if (RB_INTEGER_TYPE_P(str2)) {
 	if (rb_num_to_uint(str2, &code) == 0) {
 	}
 	else if (FIXNUM_P(str2)) {
