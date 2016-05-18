@@ -1161,6 +1161,14 @@ NIL_P(value) ::
 
   Is +value+ nil?
 
+RB_INTEGER_TYPE_P(value) ::
+
+  Is +value+ an Integer?
+
+RB_FLOAT_TYPE_P(value) ::
+
+  Is +value+ a Float?
+
 void Check_Type(VALUE value, int type) ::
 
   Ensures +value+ is of the given internal +type+ or raises a TypeError

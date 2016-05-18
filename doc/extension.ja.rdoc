@@ -1227,6 +1227,8 @@ Data_Get_Struct(data, type, sval) ::
   TYPE(value)
   FIXNUM_P(value)
   NIL_P(value)
+  RB_INTEGER_TYPE_P(value)
+  RB_FLOAT_TYPE_P(value)
   void Check_Type(VALUE value, int type)
   SafeStringValue(value)
 
