@@ -1,8 +1,5 @@
 # frozen_string_literal: false
-begin
-  require "openssl"
-rescue LoadError
-end
+require_relative "utils"
 
 class OpenSSL::TestRandom < OpenSSL::TestCase
   def test_random_bytes
