@@ -1543,7 +1543,7 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
 	 * bignums | arg1[0] | arg1[1] | arg1[2] | ...
 	 * points  | self    | arg2[0] | arg2[1] | ...
 	 */
-	int i, num;
+	long i, num;
 	VALUE tmp_p, tmp_b;
 	const EC_POINT **points;
 	const BIGNUM **bignums;
