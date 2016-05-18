@@ -3574,7 +3574,7 @@ struct enum_sum_memo {
 static void
 sum_iter(VALUE i, struct enum_sum_memo *memo)
 {
-    assert(memo != NULL);
+    const int unused = (assert(memo != NULL), 0);
 
     long n = memo->n;
     VALUE v = memo->v;
@@ -3663,6 +3663,7 @@ sum_iter(VALUE i, struct enum_sum_memo *memo)
     memo->r = r;
     memo->f = f;
     memo->c = c;
+    (void)unused;
 }
 
 static VALUE
