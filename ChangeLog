@@ -1,3 +1,7 @@
+Thu May 19 00:17:01 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (reg_names_iter): specify capacify
+
 Wed May 18 21:29:59 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread.c (recursive_list_access): a object id may be a Bignum.  so,
