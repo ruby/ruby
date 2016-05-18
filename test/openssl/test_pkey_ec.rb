@@ -185,28 +185,33 @@ class OpenSSL::TestEC < OpenSSL::TestCase
   end
 
   def test_ec_point_mul
-    # y^2 = x^3 + 2x + 2 over F_17
-    # generator is (5, 1)
-    group = OpenSSL::PKey::EC::Group.new(:GFp, 17, 2, 2)
-    gen = OpenSSL::PKey::EC::Point.new(group, OpenSSL::BN.new("040501", 16))
-    group.set_generator(gen, 0, 0)
+    begin
+      # y^2 = x^3 + 2x + 2 over F_17
+      # generator is (5, 1)
+      group = OpenSSL::PKey::EC::Group.new(:GFp, 17, 2, 2)
+      gen = OpenSSL::PKey::EC::Point.new(group, OpenSSL::BN.new("040501", 16))
+      group.set_generator(gen, 0, 0)
 
-    # 3 * (6, 3) = (16, 13)
-    point_a = OpenSSL::PKey::EC::Point.new(group, OpenSSL::BN.new("040603", 16))
-    result_a1 = point_a.mul(3.to_bn)
-    assert_equal("04100D", result_a1.to_bn.to_s(16))
-    # 3 * (6, 3) + 3 * (5, 1) = (7, 6)
-    result_a2 = point_a.mul(3.to_bn, 3.to_bn)
-    assert_equal("040706", result_a2.to_bn.to_s(16))
-    # 3 * point_a = 3 * (6, 3) = (16, 13)
-    result_b1 = point_a.mul([3.to_bn], [])
-    assert_equal("04100D", result_b1.to_bn.to_s(16))
-    # 3 * point_a + 2 * point_a = 3 * (6, 3) + 2 * (6, 3) = (7, 11)
-    result_b1 = point_a.mul([3.to_bn, 2.to_bn], [point_a])
-    assert_equal("04070B", result_b1.to_bn.to_s(16))
-    # 3 * point_a + 5 * point_a.group.generator = 3 * (6, 3) + 5 * (5, 1) = (13, 10)
-    result_b1 = point_a.mul([3.to_bn], [], 5)
-    assert_equal("040D0A", result_b1.to_bn.to_s(16))
+      # 3 * (6, 3) = (16, 13)
+      point_a = OpenSSL::PKey::EC::Point.new(group, OpenSSL::BN.new("040603", 16))
+      result_a1 = point_a.mul(3.to_bn)
+      assert_equal("04100D", result_a1.to_bn.to_s(16))
+      # 3 * (6, 3) + 3 * (5, 1) = (7, 6)
+      result_a2 = point_a.mul(3.to_bn, 3.to_bn)
+      assert_equal("040706", result_a2.to_bn.to_s(16))
+      # 3 * point_a = 3 * (6, 3) = (16, 13)
+      result_b1 = point_a.mul([3.to_bn], [])
+      assert_equal("04100D", result_b1.to_bn.to_s(16))
+      # 3 * point_a + 2 * point_a = 3 * (6, 3) + 2 * (6, 3) = (7, 11)
+      result_b1 = point_a.mul([3.to_bn, 2.to_bn], [point_a])
+      assert_equal("04070B", result_b1.to_bn.to_s(16))
+      # 3 * point_a + 5 * point_a.group.generator = 3 * (6, 3) + 5 * (5, 1) = (13, 10)
+      result_b1 = point_a.mul([3.to_bn], [], 5)
+      assert_equal("040D0A", result_b1.to_bn.to_s(16))
+    rescue OpenSSL::PKey::EC::Group::Error
+      # CentOS patches OpenSSL to reject curves defined over Fp where p < 256 bits
+      raise if e.message !~ /unsupported field/
+    end
 
     p256_key = OpenSSL::TestUtils::TEST_KEY_EC_P256V1
     p256_g = p256_key.group
