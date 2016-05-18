@@ -27,10 +27,16 @@ with all sufficient information, see the ChangeLog file or Redmine
     now ignored.  You should also redefine Array#max.
 
   * Array#sum  [Feature #12217]
+    This is different from Enumerable#sum in that Array#sum doesn't depend on
+    the definition of each method.
 
 * Dir
 
   * Dir.empty?.  [Feature #10121]
+
+* Enumerable
+
+  * Enumerable#sum  [Feature #12217]
 
 * File
 
@@ -79,7 +85,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Compatibility issues (excluding feature bug fixes)
 
-* Array#sum is implemented.  [Feature #12217]
+* Array#sum and Enumerable#sum are implemented.  [Feature #12217]
   Ruby itself has no compatibility problem because Ruby didn't have sum method
   for arrays before Ruby 2.4.
   However many third party gems, activesupport, facets, simple_stats, etc,
