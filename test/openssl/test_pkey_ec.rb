@@ -210,7 +210,7 @@ class OpenSSL::TestEC < OpenSSL::TestCase
       assert_equal("040D0A", result_b1.to_bn.to_s(16))
     rescue OpenSSL::PKey::EC::Group::Error
       # CentOS patches OpenSSL to reject curves defined over Fp where p < 256 bits
-      raise if e.message !~ /unsupported field/
+      raise if $!.message !~ /unsupported field/
     end
 
     p256_key = OpenSSL::TestUtils::TEST_KEY_EC_P256V1
@@ -218,10 +218,11 @@ class OpenSSL::TestEC < OpenSSL::TestCase
     assert_equal(p256_key.public_key, p256_g.generator.mul(p256_key.private_key))
 
     # invalid argument
-    assert_raise(TypeError) { point_a.mul(nil) }
-    assert_raise(ArgumentError) { point_a.mul([1.to_bn], [point_a]) }
-    assert_raise(TypeError) { point_a.mul([1.to_bn], nil) }
-    assert_raise(TypeError) { point_a.mul([nil], []) }
+    point = p256_key.public_key
+    assert_raise(TypeError) { point.mul(nil) }
+    assert_raise(ArgumentError) { point.mul([1.to_bn], [point]) }
+    assert_raise(TypeError) { point.mul([1.to_bn], nil) }
+    assert_raise(TypeError) { point.mul([nil], []) }
   end
 
 # test Group: asn1_flag, point_conversion
