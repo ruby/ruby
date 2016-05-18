@@ -4333,7 +4333,7 @@ recursive_list_access(VALUE sym)
 	list = rb_hash_aref(hash, sym);
     }
     if (NIL_P(list) || !RB_TYPE_P(list, T_HASH)) {
-	list = rb_ident_hash_new();
+	list = rb_hash_new();
 	rb_hash_aset(hash, sym, list);
     }
     return list;
