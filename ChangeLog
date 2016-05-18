@@ -1,3 +1,17 @@
+Wed May 18 11:19:59 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_bn.c (try_convert_to_bnptr): Extracted from
+	  GetBNPtr(). This doesn't raise exception but returns NULL on error.
+	  (GetBNPtr): Raise TypeError if conversion fails.
+	  (ossl_bn_eq): Implement BN#==.
+	  (ossl_bn_eql): #eql? should not raise TypeError even if the argument
+	  is not compatible with BN.
+	  (ossl_bn_hash): Implement BN#hash.
+
+	* ext/openssl/ossl_bn.c (Init_ossl_bn): Define #== and #hash.
+
+	* test/openssl/test_bn.rb: Test BN#eql?, #== and #hash
+
 Wed May 18 10:17:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (RB_INTEGER_TYPE_P): new macro and
