@@ -1,3 +1,8 @@
+Wed May 18 14:52:38 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_modify_expand): check integer overflow.
+	  [ruby-core:75592] [Bug #12390]
+
 Wed May 18 13:11:44 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (match_ary_subseq): get subseq of match array without creating
