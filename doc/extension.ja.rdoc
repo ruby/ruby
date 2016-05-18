@@ -1223,6 +1223,7 @@ Data_Get_Struct(data, type, sval) ::
 
 == 型チェック
 
+  RB_TYPE_P(value, type)
   TYPE(value)
   FIXNUM_P(value)
   NIL_P(value)

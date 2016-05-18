@@ -1145,6 +1145,10 @@ Data_Get_Struct(data, type, sval) ::
 
 == Checking Data Types
 
+RB_TYPE_P(value, type) ::
+
+  Is +value+ an internal type (T_NIL, T_FIXNUM, etc.)?
+
 TYPE(value) ::
 
   Internal type (T_NIL, T_FIXNUM, etc.)
