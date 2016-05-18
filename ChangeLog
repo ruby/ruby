@@ -1,3 +1,9 @@
+Wed May 18 16:04:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/downloader.rb (Downloader::RubyGems.download): verify gems
+	  only if RubyGems is 2.4 or later.  old RubyGems fails to verify
+	  almost all of bundled gems.
+
 Wed May 18 14:52:38 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_modify_expand): check integer overflow.
