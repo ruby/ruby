@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require_relative 'utils'
 
-class  OpenSSL::TestASN1 < Test::Unit::TestCase
+class  OpenSSL::TestASN1 < OpenSSL::TestCase
   def test_decode
     subj = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=TestCA")
     key = OpenSSL::TestUtils::TEST_KEY_RSA1024

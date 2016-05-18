@@ -3,7 +3,7 @@ require_relative 'utils'
 
 if defined?(OpenSSL::TestUtils)
 
-class OpenSSL::TestPKeyDH < Test::Unit::TestCase
+class OpenSSL::TestPKeyDH < OpenSSL::TestCase
 
   NEW_KEYLEN = 256
 

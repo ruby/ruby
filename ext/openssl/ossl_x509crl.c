@@ -360,17 +360,17 @@ static VALUE
 ossl_x509crl_verify(VALUE self, VALUE key)
 {
     X509_CRL *crl;
-    int ret;
 
     GetX509CRL(self, crl);
-    if ((ret = X509_CRL_verify(crl, GetPKeyPtr(key))) < 0) {
+    switch (X509_CRL_verify(crl, GetPKeyPtr(key))) {
+      case 1:
+	return Qtrue;
+      case 0:
+	ossl_clear_error();
+	return Qfalse;
+      default:
 	ossl_raise(eX509CRLError, NULL);
     }
-    if (ret == 1) {
-	return Qtrue;
-    }
-
-    return Qfalse;
 }
 
 static VALUE

@@ -3,7 +3,7 @@ require_relative 'utils'
 
 if defined?(OpenSSL::TestUtils)
 
-class OpenSSL::TestDigest < Test::Unit::TestCase
+class OpenSSL::TestDigest < OpenSSL::TestCase
   def setup
     @d1 = OpenSSL::Digest.new("MD5")
     @d2 = OpenSSL::Digest::MD5.new
@@ -12,6 +12,7 @@ class OpenSSL::TestDigest < Test::Unit::TestCase
   end
 
   def teardown
+    super
     @d1 = @d2 = @md = nil
   end
 

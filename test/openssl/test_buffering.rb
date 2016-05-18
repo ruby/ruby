@@ -2,7 +2,7 @@
 require_relative 'utils'
 require 'stringio'
 
-class OpenSSL::TestBuffering < Test::Unit::TestCase
+class OpenSSL::TestBuffering < OpenSSL::TestCase
 
   class IO
     include OpenSSL::Buffering

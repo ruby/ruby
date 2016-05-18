@@ -3,7 +3,7 @@ require_relative 'utils'
 
 if defined?(OpenSSL::TestUtils)
 
-class OpenSSL::TestNSSPI < Test::Unit::TestCase
+class OpenSSL::TestNSSPI < OpenSSL::TestCase
   def setup
     # This request data is adopt from the specification of
     # "Netscape Extensions for User Key Generation".

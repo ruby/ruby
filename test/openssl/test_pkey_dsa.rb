@@ -4,7 +4,7 @@ require 'base64'
 
 if defined?(OpenSSL::TestUtils)
 
-class OpenSSL::TestPKeyDSA < Test::Unit::TestCase
+class OpenSSL::TestPKeyDSA < OpenSSL::TestCase
   def test_private
     key = OpenSSL::PKey::DSA.new(256)
     assert(key.private?)
@@ -20,7 +20,6 @@ class OpenSSL::TestPKeyDSA < Test::Unit::TestCase
     key = OpenSSL::PKey::DSA.new 256
     pem  = key.public_key.to_pem
     OpenSSL::PKey::DSA.new pem
-    assert_equal([], OpenSSL.errors)
   end
 
   def test_new_break
@@ -84,7 +83,6 @@ end
     assert_equal(g, key.g)
     assert_equal(y, key.pub_key)
     assert_equal(nil, key.priv_key)
-    assert_equal([], OpenSSL.errors)
   end
 
   def test_read_DSAPublicKey_pem
@@ -109,7 +107,6 @@ fWLOqqkzFeRrYMDzUpl36XktY6Yq8EJYlW9pCMmBVNy/dQ==
     assert_equal(g, key.g)
     assert_equal(y, key.pub_key)
     assert_equal(nil, key.priv_key)
-    assert_equal([], OpenSSL.errors)
   end
 
   def test_read_DSA_PUBKEY_pem
@@ -135,7 +132,6 @@ YNMbNw==
     assert_equal(g, key.g)
     assert_equal(y, key.pub_key)
     assert_equal(nil, key.priv_key)
-    assert_equal([], OpenSSL.errors)
   end
 
   def test_export_format_is_DSA_PUBKEY_pem
@@ -165,7 +161,6 @@ YNMbNw==
     pub_key = OpenSSL::ASN1.decode(seq[1].value)
     assert_equal(OpenSSL::ASN1::INTEGER, pub_key.tag)
     assert_equal(key.pub_key, pub_key.value)
-    assert_equal([], OpenSSL.errors)
   end
 
   def test_read_private_key_der
@@ -174,7 +169,6 @@ YNMbNw==
     key2 = OpenSSL::PKey.read(der)
     assert(key2.private?)
     assert_equal(der, key2.to_der)
-    assert_equal([], OpenSSL.errors)
   end
 
   def test_read_private_key_pem
@@ -183,7 +177,6 @@ YNMbNw==
     key2 = OpenSSL::PKey.read(pem)
     assert(key2.private?)
     assert_equal(pem, key2.to_pem)
-    assert_equal([], OpenSSL.errors)
   end
 
   def test_read_public_key_der
@@ -192,7 +185,6 @@ YNMbNw==
     key2 = OpenSSL::PKey.read(der)
     assert(!key2.private?)
     assert_equal(der, key2.to_der)
-    assert_equal([], OpenSSL.errors)
   end
 
   def test_read_public_key_pem
@@ -201,7 +193,6 @@ YNMbNw==
     key2 = OpenSSL::PKey.read(pem)
     assert(!key2.private?)
     assert_equal(pem, key2.to_pem)
-    assert_equal([], OpenSSL.errors)
   end
 
   def test_read_private_key_pem_pw
@@ -216,7 +207,6 @@ YNMbNw==
     key2 = OpenSSL::PKey.read(pem, 'secret')
     assert(key2.private?)
     #omit pem equality check, will be different due to cipher iv
-    assert_equal([], OpenSSL.errors)
   end
 
   def test_export_password_length

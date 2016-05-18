@@ -464,14 +464,20 @@ static VALUE
 ossl_x509stctx_verify(VALUE self)
 {
     X509_STORE_CTX *ctx;
-    int result;
 
     GetX509StCtx(self, ctx);
     X509_STORE_CTX_set_ex_data(ctx, ossl_verify_cb_idx,
-                               (void*)rb_iv_get(self, "@verify_callback"));
-    result = X509_verify_cert(ctx);
+			       (void *)rb_iv_get(self, "@verify_callback"));
 
-    return result ? Qtrue : Qfalse;
+    switch (X509_verify_cert(ctx)) {
+      case 1:
+	return Qtrue;
+      case 0:
+	ossl_clear_error();
+	return Qfalse;
+      default:
+	ossl_raise(eX509CertError, NULL);
+    }
 }
 
 static VALUE

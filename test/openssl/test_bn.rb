@@ -3,7 +3,7 @@ require_relative 'utils'
 
 if defined?(OpenSSL::TestUtils)
 
-class OpenSSL::TestBN < Test::Unit::TestCase
+class OpenSSL::TestBN < OpenSSL::TestCase
   def test_new_str
     e1 = OpenSSL::BN.new(999.to_s(16), 16) # OpenSSL::BN.new(str, 16) must be most stable
     e2 = OpenSSL::BN.new((2**107-1).to_s(16), 16)

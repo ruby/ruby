@@ -3,7 +3,7 @@ require_relative "utils"
 
 if defined?(OpenSSL::TestUtils)
 
-class OpenSSL::TestOCSP < Test::Unit::TestCase
+class OpenSSL::TestOCSP < OpenSSL::TestCase
   def setup
     ca_subj = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=TestCA")
     ca_key = OpenSSL::TestUtils::TEST_KEY_RSA1024

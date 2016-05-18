@@ -3,7 +3,7 @@ require_relative 'utils'
 
 if defined?(OpenSSL::TestUtils)
 
-class OpenSSL::TestCipher < Test::Unit::TestCase
+class OpenSSL::TestCipher < OpenSSL::TestCase
 
   class << self
 
@@ -34,6 +34,7 @@ class OpenSSL::TestCipher < Test::Unit::TestCase
   end
 
   def teardown
+    super
     @c1 = @c2 = nil
   end
 

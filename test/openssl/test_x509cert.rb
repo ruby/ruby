@@ -3,7 +3,7 @@ require_relative "utils"
 
 if defined?(OpenSSL::TestUtils)
 
-class OpenSSL::TestX509Certificate < Test::Unit::TestCase
+class OpenSSL::TestX509Certificate < OpenSSL::TestCase
   def setup
     @rsa1024 = OpenSSL::TestUtils::TEST_KEY_RSA1024
     @rsa2048 = OpenSSL::TestUtils::TEST_KEY_RSA2048
@@ -12,9 +12,6 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
     @ca = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA")
     @ee1 = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=EE1")
     @ee2 = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=EE2")
-  end
-
-  def teardown
   end
 
   def issue_cert(*args)

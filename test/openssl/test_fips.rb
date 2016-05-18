@@ -3,7 +3,7 @@ require_relative 'utils'
 
 if defined?(OpenSSL::TestUtils)
 
-class OpenSSL::TestFIPS < Test::Unit::TestCase
+class OpenSSL::TestFIPS < OpenSSL::TestCase
 
   def test_fips_mode_is_reentrant
     OpenSSL.fips_mode = false

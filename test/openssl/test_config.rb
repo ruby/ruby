@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require_relative 'utils'
 
-class OpenSSL::TestConfig < Test::Unit::TestCase
+class OpenSSL::TestConfig < OpenSSL::TestCase
   def setup
     file = Tempfile.open("openssl.cnf")
     file << <<__EOD__
@@ -18,6 +18,7 @@ __EOD__
   end
 
   def teardown
+    super
     @tmpfile.close!
   end
 

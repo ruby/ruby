@@ -3,16 +3,13 @@
 
 require_relative 'utils'
 
-class OpenSSL::TestHMAC < Test::Unit::TestCase
+class OpenSSL::TestHMAC < OpenSSL::TestCase
   def setup
     @digest = OpenSSL::Digest::MD5
     @key = "KEY"
     @data = "DATA"
     @h1 = OpenSSL::HMAC.new(@key, @digest.new)
     @h2 = OpenSSL::HMAC.new(@key, "MD5")
-  end
-
-  def teardown
   end
 
   def test_hmac

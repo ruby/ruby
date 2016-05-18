@@ -135,7 +135,14 @@ dsa_generate(int size)
     }
     if (!gen_arg.result) {
 	DSA_free(dsa);
-	if (cb_arg.state) rb_jump_tag(cb_arg.state);
+	if (cb_arg.state) {
+	    /* Clear OpenSSL error queue before re-raising. By the way, the
+	     * documentation of DSA_generate_parameters_ex() says the error code
+	     * can be obtained by ERR_get_error(), but the default
+	     * implementation, dsa_builtin_paramgen() doesn't put any error... */
+	    ossl_clear_error();
+	    rb_jump_tag(cb_arg.state);
+	}
 	return 0;
     }
 #else

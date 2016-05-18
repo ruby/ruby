@@ -4,7 +4,7 @@ begin
 rescue LoadError
 end
 
-class OpenSSL::TestRandom < Test::Unit::TestCase
+class OpenSSL::TestRandom < OpenSSL::TestCase
   def test_random_bytes
     assert_equal("", OpenSSL::Random.random_bytes(0))
     assert_equal(12, OpenSSL::Random.random_bytes(12).bytesize)

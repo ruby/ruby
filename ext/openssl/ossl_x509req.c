@@ -375,18 +375,18 @@ ossl_x509req_verify(VALUE self, VALUE key)
 {
     X509_REQ *req;
     EVP_PKEY *pkey;
-    int i;
 
     GetX509Req(self, req);
     pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
-    if ((i = X509_REQ_verify(req, pkey)) < 0) {
+    switch (X509_REQ_verify(req, pkey)) {
+      case 1:
+	return Qtrue;
+      case 0:
+	ossl_clear_error();
+	return Qfalse;
+      default:
 	ossl_raise(eX509ReqError, NULL);
     }
-    if (i > 0) {
-	return Qtrue;
-    }
-
-    return Qfalse;
 }
 
 static VALUE

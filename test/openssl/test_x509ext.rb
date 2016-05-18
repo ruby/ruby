@@ -3,7 +3,7 @@ require_relative 'utils'
 
 if defined?(OpenSSL::TestUtils)
 
-class OpenSSL::TestX509Extension < Test::Unit::TestCase
+class OpenSSL::TestX509Extension < OpenSSL::TestCase
   def setup
     @basic_constraints_value = OpenSSL::ASN1::Sequence([
       OpenSSL::ASN1::Boolean(true),   # CA
@@ -14,9 +14,6 @@ class OpenSSL::TestX509Extension < Test::Unit::TestCase
       OpenSSL::ASN1::Boolean(true),
       OpenSSL::ASN1::OctetString(@basic_constraints_value.to_der),
     ])
-  end
-
-  def teardown
   end
 
   def test_new

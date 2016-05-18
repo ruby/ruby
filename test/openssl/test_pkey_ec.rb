@@ -3,7 +3,7 @@ require_relative 'utils'
 
 if defined?(OpenSSL::TestUtils) && defined?(OpenSSL::PKey::EC)
 
-class OpenSSL::TestEC < Test::Unit::TestCase
+class OpenSSL::TestEC < OpenSSL::TestCase
   def setup
     @data1 = 'foo'
     @data2 = 'bar' * 1000 # data too long for DSA sig
@@ -131,7 +131,6 @@ class OpenSSL::TestEC < Test::Unit::TestCase
     ec2 = OpenSSL::PKey.read(der)
     assert(ec2.private_key?)
     assert_equal(der, ec2.to_der)
-    assert_equal([], OpenSSL.errors)
   end
 
   def test_read_private_key_pem
@@ -140,7 +139,6 @@ class OpenSSL::TestEC < Test::Unit::TestCase
     ec2 = OpenSSL::PKey.read(pem)
     assert(ec2.private_key?)
     assert_equal(pem, ec2.to_pem)
-    assert_equal([], OpenSSL.errors)
   end
 
   def test_read_public_key_der
@@ -151,7 +149,6 @@ class OpenSSL::TestEC < Test::Unit::TestCase
     ec3 = OpenSSL::PKey.read(der)
     assert(!ec3.private_key?)
     assert_equal(der, ec3.to_der)
-    assert_equal([], OpenSSL.errors)
   end
 
   def test_read_public_key_pem
@@ -162,7 +159,6 @@ class OpenSSL::TestEC < Test::Unit::TestCase
     ec3 = OpenSSL::PKey.read(pem)
     assert(!ec3.private_key?)
     assert_equal(pem, ec3.to_pem)
-    assert_equal([], OpenSSL.errors)
   end
 
   def test_read_private_key_pem_pw
@@ -177,7 +173,6 @@ class OpenSSL::TestEC < Test::Unit::TestCase
     ec2 = OpenSSL::PKey.read(pem, 'secret')
     assert(ec2.private_key?)
     #omit pem equality check, will be different due to cipher iv
-    assert_equal([], OpenSSL.errors)
   end
 
   def test_export_password_length

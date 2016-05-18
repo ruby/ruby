@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require_relative 'utils'
 
-class OpenSSL::TestPKCS5 < Test::Unit::TestCase
+class OpenSSL::TestPKCS5 < OpenSSL::TestCase
 
   def test_pbkdf2_hmac_sha1_rfc6070_c_1_len_20
     p ="password"

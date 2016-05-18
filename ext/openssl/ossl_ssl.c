@@ -1288,8 +1288,11 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
 	ret = func(ssl);
 
         cb_state = rb_ivar_get(self, ID_callback_state);
-        if (!NIL_P(cb_state))
-            rb_jump_tag(NUM2INT(cb_state));
+        if (!NIL_P(cb_state)) {
+	    /* must cleanup OpenSSL error stack before re-raising */
+	    ossl_clear_error();
+	    rb_jump_tag(NUM2INT(cb_state));
+	}
 
 	if (ret > 0)
 	    break;

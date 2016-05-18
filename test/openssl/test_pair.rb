@@ -517,36 +517,36 @@ module OpenSSL::TestPairM
   end
 end
 
-class OpenSSL::TestEOF1 < Test::Unit::TestCase
+class OpenSSL::TestEOF1 < OpenSSL::TestCase
   include TestEOF
   include OpenSSL::SSLPair
   include OpenSSL::TestEOF1M
 end
 
-class OpenSSL::TestEOF1LowlevelSocket < Test::Unit::TestCase
+class OpenSSL::TestEOF1LowlevelSocket < OpenSSL::TestCase
   include TestEOF
   include OpenSSL::SSLPairLowlevelSocket
   include OpenSSL::TestEOF1M
 end
 
-class OpenSSL::TestEOF2 < Test::Unit::TestCase
+class OpenSSL::TestEOF2 < OpenSSL::TestCase
   include TestEOF
   include OpenSSL::SSLPair
   include OpenSSL::TestEOF2M
 end
 
-class OpenSSL::TestEOF2LowlevelSocket < Test::Unit::TestCase
+class OpenSSL::TestEOF2LowlevelSocket < OpenSSL::TestCase
   include TestEOF
   include OpenSSL::SSLPairLowlevelSocket
   include OpenSSL::TestEOF2M
 end
 
-class OpenSSL::TestPair < Test::Unit::TestCase
+class OpenSSL::TestPair < OpenSSL::TestCase
   include OpenSSL::SSLPair
   include OpenSSL::TestPairM
 end
 
-class OpenSSL::TestPairLowlevelSocket < Test::Unit::TestCase
+class OpenSSL::TestPairLowlevelSocket < OpenSSL::TestCase
   include OpenSSL::SSLPairLowlevelSocket
   include OpenSSL::TestPairM
 end

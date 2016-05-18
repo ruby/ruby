@@ -139,7 +139,11 @@ rsa_generate(int size, unsigned long exp)
     if (!gen_arg.result) {
 	BN_free(e);
 	RSA_free(rsa);
-	if (cb_arg.state) rb_jump_tag(cb_arg.state);
+	if (cb_arg.state) {
+	    /* must clear OpenSSL error stack */
+	    ossl_clear_error();
+	    rb_jump_tag(cb_arg.state);
+	}
 	return 0;
     }
 

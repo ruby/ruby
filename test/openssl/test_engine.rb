@@ -1,9 +1,10 @@
 # frozen_string_literal: false
 require_relative 'utils'
 
-class OpenSSL::TestEngine < Test::Unit::TestCase
+class OpenSSL::TestEngine < OpenSSL::TestCase
 
   def teardown
+    super
     OpenSSL::Engine.cleanup # [ruby-core:40669]
     assert_equal(0, OpenSSL::Engine.engines.size)
   end

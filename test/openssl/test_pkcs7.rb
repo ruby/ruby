@@ -3,7 +3,7 @@ require_relative 'utils'
 
 if defined?(OpenSSL::TestUtils)
 
-class OpenSSL::TestPKCS7 < Test::Unit::TestCase
+class OpenSSL::TestPKCS7 < OpenSSL::TestCase
   def setup
     @rsa1024 = OpenSSL::TestUtils::TEST_KEY_RSA1024
     @rsa2048 = OpenSSL::TestUtils::TEST_KEY_RSA2048

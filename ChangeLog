@@ -1,3 +1,29 @@
+Wed May 18 13:03:07 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_x509cert.c (ossl_x509_verify): X509_verify()
+	  family may put errors on 0 return (0 means verification failure).
+	  Clear OpenSSL error queue before return to Ruby. Since the queue is
+	  thread global, remaining errors in the queue can cause an unexpected
+	  error in the next OpenSSL operation.  [ruby-core:48284] [Bug #7215]
+
+	* ext/openssl/ossl_x509crl.c (ossl_x509crl_verify): ditto.
+
+	* ext/openssl/ossl_x509req.c (ossl_x509req_verify): ditto.
+
+	* ext/openssl/ossl_x509store.c (ossl_x509stctx_verify): ditto.
+
+	* ext/openssl/ossl_pkey_dh.c (dh_generate): clear the OpenSSL error
+	  queue before re-raising exception.
+
+	* ext/openssl/ossl_pkey_dsa.c (dsa_generate): ditto.
+
+	* ext/openssl/ossl_pkey_rsa.c (rsa_generate): ditto.
+
+	* ext/openssl/ossl_ssl.c (ossl_start_ssl): ditto.
+
+	* test/openssl: check that OpenSSL.errors is empty every time after
+	  running a test case.
+
 Wed May 18 12:07:42 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl.c (ossl_clear_error): Extracted from

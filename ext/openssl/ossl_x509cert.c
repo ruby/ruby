@@ -591,18 +591,19 @@ ossl_x509_verify(VALUE self, VALUE key)
 {
     X509 *x509;
     EVP_PKEY *pkey;
-    int i;
 
     pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
     GetX509(self, x509);
-    if ((i = X509_verify(x509, pkey)) < 0) {
+
+    switch (X509_verify(x509, pkey)) {
+      case 1:
+	return Qtrue;
+      case 0:
+	ossl_clear_error();
+	return Qfalse;
+      default:
 	ossl_raise(eX509CertError, NULL);
     }
-    if (i > 0) {
-	return Qtrue;
-    }
-
-    return Qfalse;
 }
 
 /*

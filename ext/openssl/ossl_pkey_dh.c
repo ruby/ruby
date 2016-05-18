@@ -129,7 +129,11 @@ dh_generate(int size, int gen)
 
     if (!gen_arg.result) {
 	DH_free(dh);
-	if (cb_arg.state) rb_jump_tag(cb_arg.state);
+	if (cb_arg.state) {
+	    /* Clear OpenSSL error queue before re-raising. */
+	    ossl_clear_error();
+	    rb_jump_tag(cb_arg.state);
+	}
 	return 0;
     }
 #else
