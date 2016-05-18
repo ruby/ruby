@@ -94,7 +94,7 @@ ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
     }
     NETSCAPE_SPKI_free(DATA_PTR(self));
     DATA_PTR(self) = spki;
-    ERR_clear_error();
+    ossl_clear_error();
 
     return self;
 }

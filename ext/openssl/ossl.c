@@ -318,12 +318,7 @@ ossl_make_error(VALUE exc, const char *fmt, va_list args)
 	    rb_str_cat2(str, msg ? msg : "(null)");
 	}
     }
-    if (dOSSL == Qtrue){ /* show all errors on the stack */
-	while ((e = ERR_get_error()) != 0){
-	    rb_warn("error on stack: %s", ERR_error_string(e, NULL));
-	}
-    }
-    ERR_clear_error();
+    ossl_clear_error();
 
     if (NIL_P(str)) str = rb_str_new(0, 0);
     return rb_exc_new3(exc, str);
@@ -349,6 +344,18 @@ ossl_exc_new(VALUE exc, const char *fmt, ...)
     err = ossl_make_error(exc, fmt, args);
     va_end(args);
     return err;
+}
+
+void
+ossl_clear_error(void)
+{
+    if (dOSSL == Qtrue) {
+	long e;
+	while ((e = ERR_get_error())) {
+	    rb_warn("error on stack: %s", ERR_error_string(e, NULL));
+	}
+    }
+    ERR_clear_error();
 }
 
 /*

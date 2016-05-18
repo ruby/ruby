@@ -1161,7 +1161,7 @@ ossl_ssl_shutdown(SSL *ssl)
 		break;
 	}
 	SSL_clear(ssl);
-	ERR_clear_error();
+	ossl_clear_error();
     }
 }
 

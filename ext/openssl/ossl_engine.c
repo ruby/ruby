@@ -224,7 +224,7 @@ ossl_engine_s_by_id(VALUE klass, VALUE id)
 	ossl_raise(eEngineError, NULL);
     ENGINE_ctrl(e, ENGINE_CTRL_SET_PASSWORD_CALLBACK,
 		0, NULL, (void(*)(void))ossl_pem_passwd_cb);
-    ERR_clear_error();
+    ossl_clear_error();
 
     return obj;
 }

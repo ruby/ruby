@@ -1,3 +1,27 @@
+Wed May 18 12:07:42 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl.c (ossl_clear_error): Extracted from
+	  ossl_make_error(). This prints errors in the OpenSSL error queue if
+	  OpenSSL.debug is true, and clears the queue.
+	  (ossl_make_error): use ossl_clear_error().
+
+	* ext/openssl/ossl.h: add prototype declaration of ossl_make_error().
+	  (OSSL_BIO_reset) use ossl_clear_error() to clear the queue. Clearing
+	  silently makes debugging difficult.
+
+	* ext/openssl/ossl_engine.c (ossl_engine_s_by_id): ditto.
+
+	* ext/openssl/ossl_ns_spki.c (ossl_spki_initialize): ditto.
+
+	* ext/openssl/ossl_pkcs7.c (ossl_pkcs7_verify): ditto.
+
+	* ext/openssl/ossl_pkey_dsa.c (ossl_dsa_initialize): ditto.
+
+	* ext/openssl/ossl_pkey_ec.c (ossl_ec_key_initialize): ditto.
+	  (ossl_ec_group_initialize): ditto.
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_shutdown): ditto.
+
 Wed May 18 11:53:49 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_pkey_ec.c (ossl_ec_point_mul): Validate the

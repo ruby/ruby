@@ -244,7 +244,7 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 	}
 	BIO_free(in);
 	if (!dsa) {
-	    ERR_clear_error();
+	    ossl_clear_error();
 	    ossl_raise(eDSAError, "Neither PUB key nor PRIV key");
 	}
     }

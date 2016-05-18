@@ -154,8 +154,10 @@ int ossl_pem_passwd_cb(char *, int, int, void *);
  * Clear BIO* with this in PEM/DER fallback scenarios to avoid decoding
  * errors piling up in OpenSSL::Errors
  */
-#define OSSL_BIO_reset(bio)	(void)BIO_reset((bio)); \
-				ERR_clear_error();
+#define OSSL_BIO_reset(bio) do { \
+    (void)BIO_reset((bio)); \
+    ossl_clear_error(); \
+} while (0)
 
 /*
  * ERRor messages
@@ -163,6 +165,8 @@ int ossl_pem_passwd_cb(char *, int, int, void *);
 #define OSSL_ErrMsg() ERR_reason_error_string(ERR_get_error())
 NORETURN(void ossl_raise(VALUE, const char *, ...));
 VALUE ossl_exc_new(VALUE, const char *, ...);
+/* Clear OpenSSL error queue. If dOSSL is set, rb_warn() them. */
+void ossl_clear_error(void);
 
 /*
  * Verify callback

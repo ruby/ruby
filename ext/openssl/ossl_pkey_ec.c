@@ -213,7 +213,7 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
                 const char *name = StringValueCStr(arg);
                 int nid = OBJ_sn2nid(name);
 
-                (void)ERR_get_error();
+		ossl_clear_error(); /* ignore errors in the previous d2i_EC_PUBKEY_bio() */
                 if (nid == NID_undef)
                     ossl_raise(eECError, "unknown curve name (%s)\n", name);
 
@@ -808,7 +808,7 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
                 const char *name = StringValueCStr(arg1);
                 int nid = OBJ_sn2nid(name);
 
-		(void)ERR_get_error();
+		ossl_clear_error(); /* ignore errors in d2i_ECPKParameters_bio() */
                 if (nid == NID_undef)
                     ossl_raise(eEC_GROUP, "unknown curve name (%s)", name);
 
