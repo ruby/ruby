@@ -3225,7 +3225,8 @@ rb_reg_match_m_p(int argc, VALUE *argv, VALUE re)
     long pos = 0;
     regex_t *reg;
     onig_errmsg_buffer err = "";
-    int result, tmpreg;
+    OnigPosition result;
+    int tmpreg;
 
     rb_scan_args(argc, argv, "11", &str, &initpos);
     if (NIL_P(str)) return Qnil;
