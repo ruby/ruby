@@ -374,23 +374,46 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_match_aref
     m = /(...)(...)(...)(...)?/.match("foobarbaz")
+    assert_equal("foobarbaz", m[0])
     assert_equal("foo", m[1])
+    assert_equal("foo", m[-4])
+    assert_nil(m[-1])
+    assert_nil(m[-11])
+    assert_nil(m[-11, 1])
+    assert_nil(m[-11..1])
+    assert_nil(m[5])
+    assert_nil(m[9])
     assert_equal(["foo", "bar", "baz"], m[1..3])
+    assert_equal(["foo", "bar", "baz"], m[1, 3])
+    assert_equal([], m[3..1])
+    assert_equal([], m[3, 0])
+    assert_equal(nil, m[3, -1])
+    assert_equal(nil, m[9, 1])
+    assert_equal(["baz"], m[3, 1])
+    assert_equal(["baz", nil], m[3, 5])
     assert_nil(m[5])
     assert_raise(IndexError) { m[:foo] }
+    assert_raise(TypeError) { m[nil] }
   end
 
   def test_match_values_at
+    idx = Object.new
+    def idx.to_int; 2; end
     m = /(...)(...)(...)(...)?/.match("foobarbaz")
     assert_equal(["foo", "bar", "baz"], m.values_at(1, 2, 3))
     assert_equal(["foo", "bar", "baz"], m.values_at(1..3))
+    assert_equal(["foo", "bar", "baz", nil, nil], m.values_at(1..5))
+    assert_equal([], m.values_at(3..1))
+    assert_equal([nil, nil, nil, nil, nil], m.values_at(5..9))
+    assert_equal(["bar"], m.values_at(idx))
+    assert_raise(RangeError){ m.values_at(-11..1) }
+    assert_raise(TypeError){ m.values_at(nil) }
 
     m = /(?<a>\d+) *(?<op>[+\-*\/]) *(?<b>\d+)/.match("1 + 2")
     assert_equal(["1", "2", "+"], m.values_at(:a, 'b', :op))
-    idx = Object.new
-    def idx.to_int; 2; end
     assert_equal(["+"], m.values_at(idx))
     assert_raise(TypeError){ m.values_at(nil) }
+    assert_raise(IndexError){ m.values_at(:foo) }
   end
 
   def test_match_string

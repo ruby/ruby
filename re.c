@@ -1851,6 +1851,42 @@ namev_to_backref_number(struct re_registers *regs, VALUE re, VALUE name)
     }
 }
 
+static VALUE
+match_ary_subseq(VALUE match, long beg, long len, VALUE result)
+{
+    long olen = RMATCH_REGS(match)->num_regs;
+    long j, end = olen < beg+len ? olen : beg+len;
+    if (NIL_P(result)) result = rb_ary_new_capa(len);
+    if (len == 0) return result;
+
+    for (j = beg; j < end; j++) {
+	rb_ary_push(result, rb_reg_nth_match((int)j, match));
+    }
+    if (beg + len > j) {
+	rb_ary_resize(result, RARRAY_LEN(result) + (beg + len) - j);
+    }
+    return result;
+}
+
+static VALUE
+match_ary_aref(VALUE match, VALUE idx, VALUE result)
+{
+    long beg, len;
+    int num_regs = RMATCH_REGS(match)->num_regs;
+
+    /* check if idx is Range */
+    switch (rb_range_beg_len(idx, &beg, &len, (long)num_regs, !NIL_P(result))) {
+      case Qfalse:
+	if (NIL_P(result)) return rb_reg_nth_match(NUM2INT(idx), match);
+	rb_ary_push(result, rb_reg_nth_match(NUM2INT(idx), match));
+	return result;
+      case Qnil:
+	return Qnil;
+      default:
+	return match_ary_subseq(match, beg, len, result);
+    }
+}
+
 /*
  *  call-seq:
  *     mtch[i]               -> str or nil
@@ -1881,12 +1917,12 @@ namev_to_backref_number(struct re_registers *regs, VALUE re, VALUE name)
 static VALUE
 match_aref(int argc, VALUE *argv, VALUE match)
 {
-    VALUE idx, rest;
+    VALUE idx, length;
 
     match_check(match);
-    rb_scan_args(argc, argv, "11", &idx, &rest);
+    rb_scan_args(argc, argv, "11", &idx, &length);
 
-    if (NIL_P(rest)) {
+    if (NIL_P(length)) {
 	if (FIXNUM_P(idx)) {
 	    return rb_reg_nth_match(FIX2INT(idx), match);
 	}
@@ -1895,10 +1931,30 @@ match_aref(int argc, VALUE *argv, VALUE match)
 	    if (num >= 0) {
 		return rb_reg_nth_match(num, match);
 	    }
+	    else {
+		return match_ary_aref(match, idx, Qnil);
+	    }
 	}
     }
-
-    return rb_ary_aref(argc, argv, match_to_a(match));
+    else {
+	long beg = NUM2LONG(idx);
+	long len = NUM2LONG(length);
+	long num_regs = RMATCH_REGS(match)->num_regs;
+	if (len < 0) {
+	    return Qnil;
+	}
+	if (beg < 0) {
+	    beg += num_regs;
+	    if (beg < 0) return Qnil;
+	}
+	else if (beg > num_regs) {
+	    return Qnil;
+	}
+	else if (beg+len > num_regs) {
+	    len = num_regs - beg;
+	}
+	return match_ary_subseq(match, beg, len, Qnil);
+    }
 }
 
 /*
@@ -1921,7 +1977,6 @@ match_aref(int argc, VALUE *argv, VALUE match)
 static VALUE
 match_values_at(int argc, VALUE *argv, VALUE match)
 {
-    struct re_registers *regs = RMATCH_REGS(match);
     VALUE result;
     int i;
 
@@ -1929,31 +1984,18 @@ match_values_at(int argc, VALUE *argv, VALUE match)
     result = rb_ary_new2(argc);
 
     for (i=0; i<argc; i++) {
-	VALUE tmp;
-	int num;
-	long beg, len, olen;
 	if (FIXNUM_P(argv[i])) {
 	    rb_ary_push(result, rb_reg_nth_match(FIX2INT(argv[i]), match));
-	    continue;
 	}
-	num = namev_to_backref_number(regs, RMATCH(match)->regexp, argv[i]);
-	if (num >= 0) {
-	    rb_ary_push(result, rb_reg_nth_match(num, match));
-	    continue;
-	}
-	/* check if idx is Range */
-	olen = regs->num_regs;
-	if (rb_range_beg_len(argv[i], &beg, &len, olen, 1)) {
-	    long j, end = olen < beg+len ? olen : beg+len;
-	    for (j = beg; j < end; j++) {
-		rb_ary_push(result, rb_reg_nth_match((int)j, match));
+	else {
+	    int num = namev_to_backref_number(RMATCH_REGS(match), RMATCH(match)->regexp, argv[i]);
+	    if (num >= 0) {
+		rb_ary_push(result, rb_reg_nth_match(num, match));
 	    }
-	    if (beg + len > j)
-		rb_ary_resize(result, RARRAY_LEN(result) + (beg + len) - j);
-	    continue;
+	    else {
+		match_ary_aref(match, argv[i], result);
+	    }
 	}
-	tmp = rb_to_int(argv[i]);
-	rb_ary_push(result, rb_reg_nth_match(NUM2INT(tmp), match));
     }
     return result;
 }
