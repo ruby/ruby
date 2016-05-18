@@ -190,19 +190,38 @@ class OpenSSL::TestEC < Test::Unit::TestCase
   end
 
   def test_ec_point_mul
-    ec = OpenSSL::TestUtils::TEST_KEY_EC_P256V1
-    p1 = ec.public_key
-    bn1 = OpenSSL::BN.new('10')
-    bn2 = OpenSSL::BN.new('20')
+    # y^2 = x^3 + 2x + 2 over F_17
+    # generator is (5, 1)
+    group = OpenSSL::PKey::EC::Group.new(:GFp, 17, 2, 2)
+    gen = OpenSSL::PKey::EC::Point.new(group, OpenSSL::BN.new("040501", 16))
+    group.set_generator(gen, 0, 0)
 
-    p2 = p1.mul(bn1)
-    assert(p1.group == p2.group)
-    p2 = p1.mul(bn1, bn2)
-    assert(p1.group == p2.group)
-    p2 = p1.mul([bn1, bn2], [p1])
-    assert(p1.group == p2.group)
-    p2 = p1.mul([bn1, bn2], [p1], bn2)
-    assert(p1.group == p2.group)
+    # 3 * (6, 3) = (16, 13)
+    point_a = OpenSSL::PKey::EC::Point.new(group, OpenSSL::BN.new("040603", 16))
+    result_a1 = point_a.mul(3.to_bn)
+    assert_equal("04100D", result_a1.to_bn.to_s(16))
+    # 3 * (6, 3) + 3 * (5, 1) = (7, 6)
+    result_a2 = point_a.mul(3.to_bn, 3.to_bn)
+    assert_equal("040706", result_a2.to_bn.to_s(16))
+    # 3 * point_a = 3 * (6, 3) = (16, 13)
+    result_b1 = point_a.mul([3.to_bn], [])
+    assert_equal("04100D", result_b1.to_bn.to_s(16))
+    # 3 * point_a + 2 * point_a = 3 * (6, 3) + 2 * (6, 3) = (7, 11)
+    result_b1 = point_a.mul([3.to_bn, 2.to_bn], [point_a])
+    assert_equal("04070B", result_b1.to_bn.to_s(16))
+    # 3 * point_a + 5 * point_a.group.generator = 3 * (6, 3) + 5 * (5, 1) = (13, 10)
+    result_b1 = point_a.mul([3.to_bn], [], 5)
+    assert_equal("040D0A", result_b1.to_bn.to_s(16))
+
+    p256_key = OpenSSL::TestUtils::TEST_KEY_EC_P256V1
+    p256_g = p256_key.group
+    assert_equal(p256_key.public_key, p256_g.generator.mul(p256_key.private_key))
+
+    # invalid argument
+    assert_raise(TypeError) { point_a.mul(nil) }
+    assert_raise(ArgumentError) { point_a.mul([1.to_bn], [point_a]) }
+    assert_raise(TypeError) { point_a.mul([1.to_bn], nil) }
+    assert_raise(TypeError) { point_a.mul([nil], []) }
   end
 
 # test Group: asn1_flag, point_conversion

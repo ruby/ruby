@@ -1,3 +1,12 @@
+Wed May 18 11:53:49 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_pkey_ec.c (ossl_ec_point_mul): Validate the
+	  arguments before passing to EC_POINT(s)_mul(). Add description of this
+	  method.  [ruby-core:65152] [Bug #10268]
+
+	* test/openssl/test_pkey_ec.rb (test_ec_point_mul): Test that
+	  OpenSSL::PKey::EC::Point#mul works.
+
 Wed May 18 11:19:59 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_bn.c (try_convert_to_bnptr): Extracted from
