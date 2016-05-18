@@ -54,6 +54,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Fixnum and Bignum are unified into Integer  [Feature #12005]
 
+* Regexp
+
+  * Regexp#match? [Feature #8110]
+    This returns bool and doesn't save backref.
+
 * String
 
   * String.new(capacity: size) [Feature #12024]

@@ -3203,6 +3203,80 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 }
 
 /*
+ *  call-seq:
+ *     rxp.match?(str)       -> true or false
+ *     rxp.match?(str,pos)   -> true or false
+ *
+ *  Returns a <code>true</code> or <code>false</code> indicates whether the
+ *  regexp is matched or not without updating $~ and other related variables.
+ *  If the second parameter is present, it specifies the position in the string
+ *  to begin the search.
+ *
+ *     /R.../.match?("Ruby")    #=> true
+ *     /R.../.match?("Ruby", 1) #=> true
+ *     /P.../.match?("Ruby")    #=> false
+ *     $&                       #=> nil
+ */
+
+static VALUE
+rb_reg_match_m_p(int argc, VALUE *argv, VALUE re)
+{
+    VALUE str, initpos;
+    long pos = 0;
+    regex_t *reg;
+    onig_errmsg_buffer err = "";
+    int result, tmpreg;
+
+    rb_scan_args(argc, argv, "11", &str, &initpos);
+    if (NIL_P(str)) return Qnil;
+    str = SYMBOL_P(str) ? rb_sym2str(str) : rb_str_to_str(str);
+    if (argc == 2) {
+	pos = NUM2LONG(initpos);
+	if (pos == 0) goto run;
+	if (pos < 0) {
+	    pos += NUM2LONG(rb_str_length(str));
+	    if (pos == 0) goto run;
+	    if (pos < 0) return Qnil;
+
+	}
+	pos = rb_str_offset(str, pos);
+    }
+run:
+    if (pos >= RSTRING_LEN(str)) {
+	return Qnil;
+    }
+    reg = rb_reg_prepare_re0(re, str, err);
+    tmpreg = reg != RREGEXP_PTR(re);
+    if (!tmpreg) RREGEXP(re)->usecnt++;
+    result = onig_search(reg,
+			 ((UChar*)RSTRING_PTR(str)),
+			 ((UChar*)RSTRING_END(str)),
+			 ((UChar*)(RSTRING_PTR(str)) + pos),
+			 ((UChar*)RSTRING_PTR(str)),
+			 NULL, ONIG_OPTION_NONE);
+    if (!tmpreg) RREGEXP(re)->usecnt--;
+    if (tmpreg) {
+	if (RREGEXP(re)->usecnt) {
+	    onig_free(reg);
+	}
+	else {
+	    onig_free(RREGEXP_PTR(re));
+	    RREGEXP_PTR(re) = reg;
+	}
+    }
+    if (result < 0) {
+	if (result == ONIG_MISMATCH) {
+	    return Qfalse;
+	}
+	else {
+	    onig_error_code_to_str((UChar*)err, (int)result);
+	    rb_reg_raise(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re), err, re);
+	}
+    }
+    return Qtrue;
+}
+
+/*
  * Document-method: compile
  *
  * Alias for <code>Regexp.new</code>
@@ -3865,6 +3939,7 @@ Init_Regexp(void)
     rb_define_method(rb_cRegexp, "===", rb_reg_eqq, 1);
     rb_define_method(rb_cRegexp, "~", rb_reg_match2, 0);
     rb_define_method(rb_cRegexp, "match", rb_reg_match_m, -1);
+    rb_define_method(rb_cRegexp, "match?", rb_reg_match_m_p, -1);
     rb_define_method(rb_cRegexp, "to_s", rb_reg_to_s, 0);
     rb_define_method(rb_cRegexp, "inspect", rb_reg_inspect, 0);
     rb_define_method(rb_cRegexp, "source", rb_reg_source, 0);
