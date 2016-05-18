@@ -1,3 +1,9 @@
+Wed May 18 16:52:03 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_pkcs12.c (ossl_pkcs12_initialize): pop errors
+	  leaked by PKCS12_parse(). This is a bug in OpenSSL, which exists
+	  in the versions before the version 1.0.0t, 1.0.1p, 1.0.2d.
+
 Wed May 18 16:04:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/downloader.rb (Downloader::RubyGems.download): verify gems
