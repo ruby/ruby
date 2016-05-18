@@ -1,3 +1,8 @@
+Wed May 18 09:14:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* enum.c (enum_sum, int_range_sum): Extract int_range_sum from
+	  enum_sum.
+
 Wed May 18 03:16:06 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (match_values_at): fix regression at r55036.
@@ -15,7 +20,7 @@ Wed May 18 01:57:43 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (namev_to_backref_number): separeted.
 
-Tue May 18 00:05:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+Wed May 18 00:05:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* enum.c (enum_sum): Optimize for a range from int to int.
 

@@ -3666,6 +3666,26 @@ enum_sum_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     return Qnil;
 }
 
+static VALUE
+int_range_sum(VALUE beg, VALUE end, int excl, VALUE init)
+{
+    if (excl) {
+        if (FIXNUM_P(end))
+            end = LONG2FIX(FIX2LONG(end) - 1);
+        else
+            end = rb_big_minus(end, LONG2FIX(1));
+    }
+
+    if (rb_int_ge(end, beg)) {
+        VALUE a;
+        a = rb_int_plus(rb_int_minus(end, beg), LONG2FIX(1));
+        a = rb_int_mul(a, rb_int_plus(end, beg));
+        a = rb_int_idiv(a, LONG2FIX(2));
+        return rb_int_plus(init, a);
+    }
+
+    return init;
+}
 
 /*
  * call-seq:
@@ -3719,22 +3739,7 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
         if (!memo.block_given && !memo.float_value &&
                 (FIXNUM_P(beg) || RB_TYPE_P(beg, T_BIGNUM)) &&
                 (FIXNUM_P(end) || RB_TYPE_P(end, T_BIGNUM))) {
-            if (excl) {
-                if (FIXNUM_P(end))
-                    end = LONG2FIX(FIX2LONG(end) - 1);
-                else
-                    end = rb_big_minus(end, LONG2FIX(1));
-            }
-            if (rb_int_ge(end, beg)) {
-                VALUE a;
-                a = rb_int_plus(rb_int_minus(end, beg), LONG2FIX(1));
-                a = rb_int_mul(a, rb_int_plus(end, beg));
-                a = rb_int_idiv(a, LONG2FIX(2));
-                return rb_int_plus(memo.v, a);
-            }
-            else {
-                return memo.v;
-            }
+            return int_range_sum(beg, end, excl, memo.v);
         }
     }
 
