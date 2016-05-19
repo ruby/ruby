@@ -2684,7 +2684,7 @@ class TestArray < Test::Unit::TestCase
     Bug11235 = '[ruby-dev:49043] [Bug #11235]'
 
     def test_push_over_ary_max
-      assert_separately(['-', ARY_MAX.to_s, Bug11235], <<-"end;")
+      assert_separately(['-', ARY_MAX.to_s, Bug11235], <<-"end;", timeout: 20)
         a = Array.new(ARGV[0].to_i)
         assert_raise(IndexError, ARGV[1]) {0x1000.times {a.push(1)}}
       end;
