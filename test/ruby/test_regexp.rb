@@ -528,13 +528,13 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_match_p
     /backref/ =~ 'backref'
-    assert_nil(//.match?(nil))
+    assert_equal(false, //.match?(nil))
     assert_equal(true, /.../.match?(:abc))
     assert_raise(TypeError) { /.../.match?(Object.new) }
     assert_equal(true, /../.match?('abc', 1))
     assert_equal(true, /../.match?('abc', -2))
-    assert_nil(/../.match?("abc", -4))
-    assert_nil(/../.match?("abc", 4))
+    assert_equal(false, /../.match?("abc", -4))
+    assert_equal(false, /../.match?("abc", 4))
     assert_equal(true, /../n.match?("\u3042" + '\x', 1))
     assert_equal('backref', $&)
   end

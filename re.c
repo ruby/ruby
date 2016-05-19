@@ -3230,7 +3230,7 @@ rb_reg_match_m_p(int argc, VALUE *argv, VALUE re)
     int tmpreg;
 
     rb_scan_args(argc, argv, "11", &str, &initpos);
-    if (NIL_P(str)) return Qnil;
+    if (NIL_P(str)) return Qfalse;
     str = SYMBOL_P(str) ? rb_sym2str(str) : rb_str_to_str(str);
     if (argc == 2) {
 	pos = NUM2LONG(initpos);
@@ -3238,14 +3238,14 @@ rb_reg_match_m_p(int argc, VALUE *argv, VALUE re)
 	if (pos < 0) {
 	    pos += NUM2LONG(rb_str_length(str));
 	    if (pos == 0) goto run;
-	    if (pos < 0) return Qnil;
+	    if (pos < 0) return Qfalse;
 
 	}
 	pos = rb_str_offset(str, pos);
     }
 run:
     if (pos >= RSTRING_LEN(str)) {
-	return Qnil;
+	return Qfalse;
     }
     reg = rb_reg_prepare_re0(re, str, err);
     tmpreg = reg != RREGEXP_PTR(re);
