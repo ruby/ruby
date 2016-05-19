@@ -4315,6 +4315,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash,"replace", rb_hash_replace, 1);
     rb_define_method(rb_cHash,"merge!", rb_hash_update, 1);
     rb_define_method(rb_cHash,"merge", rb_hash_merge, 1);
+    rb_define_alias(rb_cHash, "+", "merge");
     rb_define_method(rb_cHash, "assoc", rb_hash_assoc, 1);
     rb_define_method(rb_cHash, "rassoc", rb_hash_rassoc, 1);
     rb_define_method(rb_cHash, "flatten", rb_hash_flatten, -1);
