@@ -308,7 +308,7 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 
     ssl = X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
     cb = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_vcb_idx);
-    X509_STORE_CTX_set_ex_data(ctx, ossl_verify_cb_idx, (void*)cb);
+    X509_STORE_CTX_set_ex_data(ctx, ossl_store_ctx_ex_verify_cb_idx, (void *)cb);
     return ossl_verify_cb(preverify_ok, ctx);
 }
 
