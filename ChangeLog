@@ -1,3 +1,10 @@
+Thu May 19 21:21:57 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* re.c (rb_reg_match_m_p): [DOC] fix return value in rdoc.
+
+	* test/ruby/test_regexp.rb (TestRegexp#test_match_p): add some
+	  tests from document.
+
 Thu May 19 13:22:44 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl.c (Init_openssl): register an ex_data index for

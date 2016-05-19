@@ -543,6 +543,9 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(true, /../n.match?("\u3042" + '\x', 1))
     assert_equal(true, /\z/.match?(""))
     assert_equal(true, /\z/.match?("abc"))
+    assert_equal(true, /R.../.match?("Ruby"))
+    assert_equal(false, /R.../.match?("Ruby", 1))
+    assert_equal(false, /P.../.match?("Ruby"))
     assert_equal('backref', $&)
   end
 

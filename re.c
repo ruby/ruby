@@ -3214,7 +3214,7 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
  *  to begin the search.
  *
  *     /R.../.match?("Ruby")    #=> true
- *     /R.../.match?("Ruby", 1) #=> true
+ *     /R.../.match?("Ruby", 1) #=> false
  *     /P.../.match?("Ruby")    #=> false
  *     $&                       #=> nil
  */
