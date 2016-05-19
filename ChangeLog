@@ -1,6 +1,6 @@
 Thu May 19 11:37:36 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* re.c (rb_reg_match_m_p): should return nil if no match, as the
+	* re.c (rb_reg_match_m_p): should return false if no match, as the
 	  document says.  [Feature #8110]
 
 Thu May 19 00:17:01 2016  NARUSE, Yui  <naruse@ruby-lang.org>
