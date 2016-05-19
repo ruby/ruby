@@ -1,3 +1,11 @@
+Thu May 19 13:11:35 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_x509attr.c (ossl_x509attr_set_value): check that the
+	  argument is an OpenSSL::ASN1::Data before converting to ASN1_TYPE.
+	  This fixes SEGV on OpenSSL::X509::Attribute#value=(non-asn1-value).
+
+	* test/openssl/test_x509attr.rb: add tests for OpenSSL::X509::Attribute.
+
 Thu May 19 12:10:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_reg_match_m_p): fix match against empty string.

@@ -196,6 +196,7 @@ ossl_x509attr_set_value(VALUE self, VALUE value)
     X509_ATTRIBUTE *attr;
     ASN1_TYPE *a1type;
 
+    OSSL_Check_Kind(value, cASN1Data);
     if(!(a1type = ossl_asn1_get_asn1type(value)))
 	ossl_raise(eASN1Error, "could not get ASN1_TYPE");
     if(ASN1_TYPE_get(a1type) == V_ASN1_SEQUENCE){
