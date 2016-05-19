@@ -1,3 +1,10 @@
+Thu May 19 12:10:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* re.c (rb_reg_match_m_p): fix match against empty string.
+	  rb_str_offset returns the end when the position exceeds the
+	  length.  fix the range parameter of onig_search.
+	  [ruby-core:75604] [Bug #12394]
+
 Thu May 19 11:37:36 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* re.c (rb_reg_match_m_p): should return false if no match, as the

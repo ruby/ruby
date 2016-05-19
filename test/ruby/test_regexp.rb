@@ -528,14 +528,21 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_match_p
     /backref/ =~ 'backref'
+    # must match here, but not in a separate method, e.g., assert_send,
+    # to check if $~ is affected or not.
     assert_equal(false, //.match?(nil))
+    assert_equal(true, //.match?(""))
     assert_equal(true, /.../.match?(:abc))
     assert_raise(TypeError) { /.../.match?(Object.new) }
+    assert_equal(true, /b/.match?('abc'))
+    assert_equal(true, /b/.match?('abc', 1))
     assert_equal(true, /../.match?('abc', 1))
     assert_equal(true, /../.match?('abc', -2))
     assert_equal(false, /../.match?("abc", -4))
     assert_equal(false, /../.match?("abc", 4))
     assert_equal(true, /../n.match?("\u3042" + '\x', 1))
+    assert_equal(true, /\z/.match?(""))
+    assert_equal(true, /\z/.match?("abc"))
     assert_equal('backref', $&)
   end
 
