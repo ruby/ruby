@@ -5256,7 +5256,7 @@ d_lite_zone(VALUE self)
  * call-seq:
  *    d.julian?  ->  bool
  *
- * Retruns true if the date is before the day of calendar reform.
+ * Returns true if the date is before the day of calendar reform.
  *
  *     Date.new(1582,10,15).julian?		#=> false
  *     (Date.new(1582,10,15) - 1).julian?	#=> true
@@ -5272,7 +5272,7 @@ d_lite_julian_p(VALUE self)
  * call-seq:
  *    d.gregorian?  ->  bool
  *
- * Retunrs true if the date is on or after the day of calendar reform.
+ * Returns true if the date is on or after the day of calendar reform.
  *
  *     Date.new(1582,10,15).gregorian?		#=> true
  *     (Date.new(1582,10,15) - 1).gregorian?	#=> false
@@ -8503,7 +8503,7 @@ date_to_time(VALUE self)
  * call-seq:
  *    d.to_date  ->  self
  *
- * Returns self;
+ * Returns self.
  */
 static VALUE
 date_to_date(VALUE self)

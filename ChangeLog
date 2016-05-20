@@ -1,3 +1,8 @@
+Fri May 20 22:19:00 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* ext/date/date_core.c: [DOC] fix typos.
+	  [fix GH-1360] patched by @soundasleep
+
 Fri May 20 21:26:58 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* include/ruby/defines.h (RB_GNUC_EXTENSION, RB_GNUC_EXTENSION_BLOCK):
