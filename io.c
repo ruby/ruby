@@ -5886,6 +5886,8 @@ rb_execarg_fixup_v(VALUE execarg_obj)
     rb_execarg_parent_start(execarg_obj);
     return Qnil;
 }
+#else
+char *rb_execarg_commandline(const struct rb_execarg *eargp, VALUE *prog);
 #endif
 
 static VALUE
@@ -5933,10 +5935,6 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
     int write_fd = -1;
 #if !defined(HAVE_WORKING_FORK)
     const char *cmd = 0;
-#if !defined(HAVE_SPAWNV)
-    int argc;
-    VALUE *argv;
-#endif
 
     if (prog)
         cmd = StringValueCStr(prog);
@@ -6065,10 +6063,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
         fd = arg.pair[1];
     }
 #else
-    if (argc) {
-	prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
-	cmd = StringValueCStr(prog);
-    }
+    cmd = rb_execarg_commandline(eargp, &prog);
     if (!NIL_P(execarg_obj)) {
 	rb_execarg_parent_start(execarg_obj);
 	rb_execarg_run_options(eargp, sargp, NULL, 0);

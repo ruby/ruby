@@ -1,3 +1,9 @@
+Sat May 21 00:36:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_execarg_commandline): build command line string
+	  from argument vector in rb_execarg.
+	  [ruby-core:75611] [Bug #12398]
+
 Fri May 20 23:25:42 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl.c (ossl_pem_passwd_value): Added. Convert the
