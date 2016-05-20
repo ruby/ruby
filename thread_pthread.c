@@ -181,12 +181,14 @@ gvl_destroy(rb_vm_t *vm)
     native_mutex_destroy(&vm->gvl.lock);
 }
 
+#if defined(HAVE_WORKING_FORK)
 static void
 gvl_atfork(rb_vm_t *vm)
 {
     gvl_init(vm);
     gvl_acquire(vm, GET_THREAD());
 }
+#endif
 
 #define NATIVE_MUTEX_LOCK_DEBUG 0
 
