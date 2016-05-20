@@ -2141,6 +2141,53 @@ opt_regexpmatch2
 
 /**
   @c optimize
+  @e optimized String#match? with one argument
+  @j 最適化された一引数の String#match?
+ */
+DEFINE_INSN
+opt_re_match_p_1
+(CALL_INFO ci, CALL_CACHE cc, VALUE key)
+(VALUE recv, VALUE str)
+(VALUE val)
+{
+    if (RB_TYPE_P(recv, T_REGEXP) && CLASS_OF(recv) == rb_cRegexp &&
+	BASIC_OP_UNREDEFINED_P(BOP_MATCH_P, REGEXP_REDEFINED_OP_FLAG)) {
+	VALUE rb_reg_match_p(VALUE re, VALUE str, VALUE initpos);
+	val = rb_reg_match_p(recv, str, Qnil);
+    }
+    else {
+	PUSH(recv);
+	PUSH(str);
+	CALL_SIMPLE_METHOD(recv);
+    }
+}
+
+/**
+  @c optimize
+  @e optimized String#match? with two arguments
+  @j 最適化された二引数の String#match?
+ */
+DEFINE_INSN
+opt_re_match_p_2
+(CALL_INFO ci, CALL_CACHE cc, VALUE key)
+(VALUE recv, VALUE str, VALUE initpos)
+(VALUE val)
+{
+    if (RB_TYPE_P(recv, T_REGEXP) && CLASS_OF(recv) == rb_cRegexp &&
+	BASIC_OP_UNREDEFINED_P(BOP_MATCH_P, REGEXP_REDEFINED_OP_FLAG)) {
+	VALUE rb_reg_match_p(VALUE re, VALUE str, VALUE initpos);
+	val = rb_reg_match_p(recv, str, initpos);
+    }
+    else {
+	PUSH(recv);
+	PUSH(str);
+	PUSH(initpos);
+	CALL_SIMPLE_METHOD(recv);
+    }
+}
+
+/**
+  @c optimize
   @e call native compiled method
   @j ネイティブコンパイルしたメソッドを起動。
  */

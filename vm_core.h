@@ -452,6 +452,7 @@ enum ruby_basic_operators {
     BOP_NOT,
     BOP_NEQ,
     BOP_MATCH,
+    BOP_MATCH_P,
     BOP_FREEZE,
     BOP_MAX,
     BOP_MIN,
