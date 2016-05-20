@@ -194,7 +194,7 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd_)
 	 * work because it does not allow NUL characters and truncates to 1024
 	 * bytes silently if the input is over 1024 bytes */
 	if (RB_TYPE_P(pass, T_STRING)) {
-	    len = RSTRING_LEN(pass);
+	    len = RSTRING_LENINT(pass);
 	    if (len >= OSSL_MIN_PWD_LEN && len <= max_len) {
 		memcpy(buf, RSTRING_PTR(pass), len);
 		return len;
