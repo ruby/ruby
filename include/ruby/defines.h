@@ -71,6 +71,14 @@ extern "C" {
 #define PRINTF_ARGS(decl, string_index, first_to_check) decl
 #endif
 
+#ifdef __GNUC__
+#define RB_GNUC_EXTENSION __extension__
+#define RB_GNUC_EXTENSION_BLOCK(x) __extension__ ({ x; })
+#else
+#define RB_GNUC_EXTENSION
+#define RB_GNUC_EXTENSION_BLOCK(x) (x)
+#endif
+
 /* AC_INCLUDES_DEFAULT */
 #include <stdio.h>
 #ifdef HAVE_SYS_TYPES_H

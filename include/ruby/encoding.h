@@ -146,18 +146,16 @@ VALUE rb_str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to);
 VALUE rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ecflags, VALUE ecopts);
 
 #ifdef HAVE_BUILTIN___BUILTIN_CONSTANT_P
-#define rb_enc_str_new(str, len, enc) __extension__ ( \
-{					       \
+#define rb_enc_str_new(str, len, enc) RB_GNUC_EXTENSION_BLOCK( \
     (__builtin_constant_p(str) && __builtin_constant_p(len)) ? \
 	rb_enc_str_new_static((str), (len), (enc)) : \
-	rb_enc_str_new((str), (len), (enc)); \
-})
-#define rb_enc_str_new_cstr(str, enc) __extension__ (	\
-{					       \
+	rb_enc_str_new((str), (len), (enc)) \
+)
+#define rb_enc_str_new_cstr(str, enc) RB_GNUC_EXTENSION_BLOCK(	\
     (__builtin_constant_p(str)) ?	       \
 	rb_enc_str_new_static((str), (long)strlen(str), (enc)) : \
-	rb_enc_str_new_cstr((str), (enc)); \
-})
+	rb_enc_str_new_cstr((str), (enc)) \
+)
 #endif
 
 PRINTF_ARGS(NORETURN(void rb_enc_raise(rb_encoding *, VALUE, const char*, ...)), 3, 4);

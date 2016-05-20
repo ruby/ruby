@@ -4,12 +4,11 @@
  */
 
 #ifdef HAVE_BUILTIN___BUILTIN_CONSTANT_P
-#define warn_print(x) __extension__ (	\
-{						\
+#define warn_print(x) RB_GNUC_EXTENSION_BLOCK(	\
     (__builtin_constant_p(x)) ? 		\
 	rb_write_error2((x), (long)strlen(x)) : \
-	rb_write_error(x);			\
-})
+	rb_write_error(x)			\
+)
 #else
 #define warn_print(x) rb_write_error(x)
 #endif

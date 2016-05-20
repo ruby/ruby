@@ -1325,12 +1325,11 @@ VALUE rb_fstring_new(const char *ptr, long len);
 #define rb_fstring_literal(str) rb_fstring_lit(str)
 VALUE rb_fstring_cstr(const char *str);
 #ifdef HAVE_BUILTIN___BUILTIN_CONSTANT_P
-# define rb_fstring_cstr(str) __extension__ (	\
-{						\
+# define rb_fstring_cstr(str) RB_GNUC_EXTENSION_BLOCK(	\
     (__builtin_constant_p(str)) ?		\
 	rb_fstring_new((str), (long)strlen(str)) : \
-	rb_fstring_cstr(str); \
-})
+	rb_fstring_cstr(str) \
+)
 #endif
 #ifdef RUBY_ENCODING_H
 VALUE rb_fstring_enc_new(const char *ptr, long len, rb_encoding *enc);
@@ -1338,12 +1337,11 @@ VALUE rb_fstring_enc_new(const char *ptr, long len, rb_encoding *enc);
 #define rb_fstring_enc_literal(str, enc) rb_fstring_enc_lit(str, enc)
 VALUE rb_fstring_enc_cstr(const char *ptr, rb_encoding *enc);
 # ifdef HAVE_BUILTIN___BUILTIN_CONSTANT_P
-#  define rb_fstring_enc_cstr(str, enc) __extension__ ( \
-{						\
+#  define rb_fstring_enc_cstr(str, enc) RB_GNUC_EXTENSION_BLOCK( \
     (__builtin_constant_p(str)) ?		\
 	rb_fstring_enc_new((str), (long)strlen(str), (enc)) : \
-	rb_fstring_enc_cstr(str, enc); \
-})
+	rb_fstring_enc_cstr(str, enc) \
+)
 # endif
 #endif
 int rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p);

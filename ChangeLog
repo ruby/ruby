@@ -1,3 +1,19 @@
+Fri May 20 21:26:58 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* include/ruby/defines.h (RB_GNUC_EXTENSION, RB_GNUC_EXTENSION_BLOCK):
+	  macros for skipping __extension__ on non-GCC compilers.
+	* eval_error.c (warn_print): use RB_GNUC_EXTENSION_BLOCK instead of
+	  __extension__ because __extension__ is a GNU extension.
+	  Fix compile error on Solaris 10 with Oracle Solaris Studio 12.x.
+	  [Bug #12397] [ruby-dev:49629].
+	* internal.h (rb_fstring_cstr, rb_fstring_enc_cstr): ditto
+	* include/ruby/encoding.h (rb_enc_str_new, rb_enc_str_new_cstr): ditto
+	* include/ruby/intern.h (rb_str_new, rb_str_new_cstr,
+	  rb_usascii_str_new, rb_utf8_str_new, rb_tainted_str_new_cstr,
+	  rb_usascii_str_new_cstr, rb_utf8_str_new_cstr,
+	  rb_external_str_new_cstr, rb_locale_str_new_cstr,
+	  rb_str_buf_new_cstr, rb_str_cat_cstr, rb_exc_new_cstr): ditto
+
 Fri May 20 21:17:13 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32ole/win32ole.c (fole_missing): make substring or dup to

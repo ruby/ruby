@@ -791,79 +791,67 @@ VALUE rb_str_scrub(VALUE, VALUE);
 VALUE rb_sym_all_symbols(void);
 
 #ifdef HAVE_BUILTIN___BUILTIN_CONSTANT_P
-#define rb_str_new(str, len) __extension__ (	\
-{						\
+#define rb_str_new(str, len) RB_GNUC_EXTENSION_BLOCK(	\
     (__builtin_constant_p(str) && __builtin_constant_p(len)) ? \
 	rb_str_new_static((str), (len)) : \
-	rb_str_new((str), (len));	  \
-})
-#define rb_str_new_cstr(str) __extension__ (	\
-{						\
+	rb_str_new((str), (len))	  \
+)
+#define rb_str_new_cstr(str) RB_GNUC_EXTENSION_BLOCK(	\
     (__builtin_constant_p(str)) ?		\
 	rb_str_new_static((str), (long)strlen(str)) : \
-	rb_str_new_cstr(str);			\
-})
-#define rb_usascii_str_new(str, len) __extension__ ( \
-{						\
+	rb_str_new_cstr(str)			\
+)
+#define rb_usascii_str_new(str, len) RB_GNUC_EXTENSION_BLOCK( \
     (__builtin_constant_p(str) && __builtin_constant_p(len)) ? \
 	rb_usascii_str_new_static((str), (len)) : \
-	rb_usascii_str_new((str), (len));	  \
-})
-#define rb_utf8_str_new(str, len) __extension__ ( \
-{						\
+	rb_usascii_str_new((str), (len))	  \
+)
+#define rb_utf8_str_new(str, len) RB_GNUC_EXTENSION_BLOCK( \
     (__builtin_constant_p(str) && __builtin_constant_p(len)) ? \
 	rb_utf8_str_new_static((str), (len)) : \
-	rb_utf8_str_new((str), (len));	  \
-})
-#define rb_tainted_str_new_cstr(str) __extension__ ( \
-{					       \
+	rb_utf8_str_new((str), (len))	  \
+)
+#define rb_tainted_str_new_cstr(str) RB_GNUC_EXTENSION_BLOCK( \
     (__builtin_constant_p(str)) ?	       \
 	rb_tainted_str_new((str), (long)strlen(str)) : \
-	rb_tainted_str_new_cstr(str);	       \
-})
-#define rb_usascii_str_new_cstr(str) __extension__ ( \
-{					       \
+	rb_tainted_str_new_cstr(str)	       \
+)
+#define rb_usascii_str_new_cstr(str) RB_GNUC_EXTENSION_BLOCK( \
     (__builtin_constant_p(str)) ?	       \
 	rb_usascii_str_new_static((str), (long)strlen(str)) : \
-	rb_usascii_str_new_cstr(str);	       \
-})
-#define rb_utf8_str_new_cstr(str) __extension__ ( \
-{						\
+	rb_usascii_str_new_cstr(str)	       \
+)
+#define rb_utf8_str_new_cstr(str) RB_GNUC_EXTENSION_BLOCK( \
     (__builtin_constant_p(str)) ?		\
 	rb_utf8_str_new_static((str), (long)strlen(str)) : \
-	rb_utf8_str_new_cstr(str);		\
-})
-#define rb_external_str_new_cstr(str) __extension__ ( \
-{						\
+	rb_utf8_str_new_cstr(str)		\
+)
+#define rb_external_str_new_cstr(str) RB_GNUC_EXTENSION_BLOCK( \
     (__builtin_constant_p(str)) ?		\
 	rb_external_str_new((str), (long)strlen(str)) : \
-	rb_external_str_new_cstr(str);		\
-})
-#define rb_locale_str_new_cstr(str) __extension__ ( \
-{					       \
+	rb_external_str_new_cstr(str)		\
+)
+#define rb_locale_str_new_cstr(str) RB_GNUC_EXTENSION_BLOCK( \
     (__builtin_constant_p(str)) ?	       \
 	rb_locale_str_new((str), (long)strlen(str)) :  \
-	rb_locale_str_new_cstr(str);	       \
-})
-#define rb_str_buf_new_cstr(str) __extension__ ( \
-{						\
+	rb_locale_str_new_cstr(str)	       \
+)
+#define rb_str_buf_new_cstr(str) RB_GNUC_EXTENSION_BLOCK( \
     (__builtin_constant_p(str)) ?		\
 	rb_str_buf_cat(rb_str_buf_new((long)strlen(str)), \
 		       (str), (long)strlen(str)) : \
-	rb_str_buf_new_cstr(str);		\
-})
-#define rb_str_cat_cstr(str, ptr) __extension__ ( \
-{						\
+	rb_str_buf_new_cstr(str)		\
+)
+#define rb_str_cat_cstr(str, ptr) RB_GNUC_EXTENSION_BLOCK( \
     (__builtin_constant_p(ptr)) ?	        \
 	rb_str_cat((str), (ptr), (long)strlen(ptr)) : \
-	rb_str_cat_cstr((str), (ptr));		\
-})
-#define rb_exc_new_cstr(klass, ptr) __extension__ ( \
-{						\
+	rb_str_cat_cstr((str), (ptr))		\
+)
+#define rb_exc_new_cstr(klass, ptr) RB_GNUC_EXTENSION_BLOCK( \
     (__builtin_constant_p(ptr)) ?	        \
 	rb_exc_new((klass), (ptr), (long)strlen(ptr)) : \
-	rb_exc_new_cstr((klass), (ptr));		\
-})
+	rb_exc_new_cstr((klass), (ptr))		\
+)
 #endif
 #define rb_str_new2 rb_str_new_cstr
 #define rb_str_new3 rb_str_new_shared
