@@ -3301,11 +3301,6 @@ fole_missing(int argc, VALUE *argv, VALUE self)
         rb_raise(rb_eRuntimeError, "fail: unknown method or property");
     }
     n = RSTRING_LEN(mid);
-#if SIZEOF_SIZE_T > SIZEOF_LONG
-    if (n >= LONG_MAX) {
-	rb_raise(rb_eRuntimeError, "too long method or property name");
-    }
-#endif
     if(mname[n-1] == '=') {
         rb_check_arity(argc, 2, 2);
         argv[0] = rb_enc_str_new(mname, (n-1), cWIN32OLE_enc);
