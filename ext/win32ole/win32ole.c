@@ -3303,12 +3303,12 @@ fole_missing(int argc, VALUE *argv, VALUE self)
     n = RSTRING_LEN(mid);
     if(mname[n-1] == '=') {
         rb_check_arity(argc, 2, 2);
-        argv[0] = rb_enc_str_new(mname, (n-1), cWIN32OLE_enc);
+        argv[0] = rb_enc_associate(rb_str_subseq(mid, 0, n-1), cWIN32OLE_enc);
 
         return ole_propertyput(self, argv[0], argv[1]);
     }
     else {
-        argv[0] = rb_enc_str_new(mname, n, cWIN32OLE_enc);
+        argv[0] = rb_enc_associate(rb_str_dup(mid), cWIN32OLE_enc);
         return ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET, FALSE);
     }
 }

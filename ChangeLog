@@ -1,3 +1,8 @@
+Fri May 20 21:17:13 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32ole/win32ole.c (fole_missing): make substring or dup to
+	  share the content if possible.
+
 Fri May 20 19:48:48 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* internal.h (NEW_PARTIAL_MEMO_FOR): shrink buffer array not to
