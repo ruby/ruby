@@ -210,7 +210,6 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
     EVP_PKEY *pkey;
     RSA *rsa;
     BIO *in;
-    char *passwd = NULL;
     VALUE arg, pass;
 
     GetPKey(self, pkey);
@@ -222,10 +221,10 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
 	if (!rsa) ossl_raise(eRSAError, NULL);
     }
     else {
-	if (!NIL_P(pass)) passwd = StringValuePtr(pass);
+	pass = ossl_pem_passwd_value(pass);
 	arg = ossl_to_der_if_possible(arg);
 	in = ossl_obj2bio(arg);
-	rsa = PEM_read_bio_RSAPrivateKey(in, NULL, ossl_pem_passwd_cb, passwd);
+	rsa = PEM_read_bio_RSAPrivateKey(in, NULL, ossl_pem_passwd_cb, (void *)pass);
 	if (!rsa) {
 	    OSSL_BIO_reset(in);
 	    rsa = PEM_read_bio_RSA_PUBKEY(in, NULL, NULL, NULL);
@@ -310,7 +309,6 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
     EVP_PKEY *pkey;
     BIO *out;
     const EVP_CIPHER *ciph = NULL;
-    char *passwd = NULL;
     VALUE cipher, pass, str;
 
     GetPKeyRSA(self, pkey);
@@ -319,19 +317,14 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
 
     if (!NIL_P(cipher)) {
 	ciph = GetCipherPtr(cipher);
-	if (!NIL_P(pass)) {
-	    StringValue(pass);
-	    if (RSTRING_LENINT(pass) < OSSL_MIN_PWD_LEN)
-		ossl_raise(eOSSLError, "OpenSSL requires passwords to be at least four characters long");
-	    passwd = RSTRING_PTR(pass);
-	}
+	pass = ossl_pem_passwd_value(pass);
     }
     if (!(out = BIO_new(BIO_s_mem()))) {
 	ossl_raise(eRSAError, NULL);
     }
     if (RSA_HAS_PRIVATE(pkey->pkey.rsa)) {
 	if (!PEM_write_bio_RSAPrivateKey(out, pkey->pkey.rsa, ciph,
-					 NULL, 0, ossl_pem_passwd_cb, passwd)) {
+					 NULL, 0, ossl_pem_passwd_cb, (void *)pass)) {
 	    BIO_free(out);
 	    ossl_raise(eRSAError, NULL);
 	}

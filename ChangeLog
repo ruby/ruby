@@ -1,3 +1,30 @@
+Fri May 20 23:25:42 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl.c (ossl_pem_passwd_value): Added. Convert the
+	  argument to String with StringValue() and validate the length is in
+	  4..PEM_BUFSIZE. PEM_BUFSIZE is a macro defined in OpenSSL headers.
+	  (ossl_pem_passwd_cb): When reading/writing encrypted PEM format, we
+	  used to pass the password to PEM_def_callback() directly but it was
+	  problematic. It is not NUL character safe. And surprisingly, it
+	  silently truncates the password to 1024 bytes.  [GH ruby/openssl#51]
+
+	* ext/openssl/ossl.h: Add function prototype declaration of newly
+	  added ossl_pem_passwd_value().
+
+	* ext/openssl/ossl_pkey.c (ossl_pkey_new_from_data): Use
+	  ossl_pem_passwd_value() to validate the password String.
+
+	* ext/openssl/ossl_pkey_dsa.c (ossl_dsa_initialize, ossl_dsa_export):
+	  ditto.
+
+	* ext/openssl/ossl_pkey_ec.c (ossl_ec_key_initialize,
+	  ossl_ec_key_to_string): ditto.
+
+	* ext/openssl/ossl_pkey_rsa.c (ossl_rsa_initialize, ossl_rsa_export):
+	  ditto.
+
+	* test/openssl/test_pkey_{dsa,ec,rsa}.rb: test this.
+
 Fri May 20 23:45:53 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* id_table.c (list_id_table_init): When unaligned word access is

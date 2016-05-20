@@ -276,6 +276,24 @@ AwEAAQ==
     assert(pem)
   end
 
+  def test_export_password_funny
+    key = OpenSSL::TestUtils::TEST_KEY_RSA1024
+    # this assertion may fail in the future because of OpenSSL change.
+    # the current upper limit is 1024
+    assert_raise(OpenSSL::OpenSSLError) do
+      key.export(OpenSSL::Cipher.new('AES-128-CBC'), 'secr' * 1024)
+    end
+    # password containing NUL byte
+    pem = key.export(OpenSSL::Cipher.new('AES-128-CBC'), "pass\0wd")
+    assert_raise(ArgumentError) do
+      OpenSSL::PKey.read(pem, "pass")
+    end
+    key2 = OpenSSL::PKey.read(pem, "pass\0wd")
+    assert(key2.private?)
+    key3 = OpenSSL::PKey::RSA.new(pem, "pass\0wd")
+    assert(key3.private?)
+  end
+
   private
 
   def check_PUBKEY(asn1, key)

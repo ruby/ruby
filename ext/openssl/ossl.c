@@ -147,6 +147,31 @@ ossl_buf2str(char *buf, int len)
 /*
  * our default PEM callback
  */
+
+/*
+ * OpenSSL requires passwords for PEM-encoded files to be at least four
+ * characters long. See crypto/pem/pem_lib.c (as of 1.0.2h)
+ */
+#define OSSL_MIN_PWD_LEN 4
+
+VALUE
+ossl_pem_passwd_value(VALUE pass)
+{
+    if (NIL_P(pass))
+	return Qnil;
+
+    StringValue(pass);
+
+    if (RSTRING_LEN(pass) < OSSL_MIN_PWD_LEN)
+	ossl_raise(eOSSLError, "password must be at least %d bytes", OSSL_MIN_PWD_LEN);
+    /* PEM_BUFSIZE is currently used as the second argument of pem_password_cb,
+     * that is +max_len+ of ossl_pem_passwd_cb() */
+    if (RSTRING_LEN(pass) > PEM_BUFSIZE)
+	ossl_raise(eOSSLError, "password must be shorter than %d bytes", PEM_BUFSIZE);
+
+    return pass;
+}
+
 static VALUE
 ossl_pem_passwd_cb0(VALUE flag)
 {
@@ -159,13 +184,29 @@ ossl_pem_passwd_cb0(VALUE flag)
 }
 
 int
-ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd)
+ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd_)
 {
-    int len, status = 0;
-    VALUE rflag, pass;
+    int len, status;
+    VALUE rflag, pass = (VALUE)pwd_;
 
-    if (pwd || !rb_block_given_p())
-	return PEM_def_callback(buf, max_len, flag, pwd);
+    if (RTEST(pass)) {
+	/* PEM_def_callback(buf, max_len, flag, StringValueCStr(pass)) does not
+	 * work because it does not allow NUL characters and truncates to 1024
+	 * bytes silently if the input is over 1024 bytes */
+	if (RB_TYPE_P(pass, T_STRING)) {
+	    len = RSTRING_LEN(pass);
+	    if (len >= OSSL_MIN_PWD_LEN && len <= max_len) {
+		memcpy(buf, RSTRING_PTR(pass), len);
+		return len;
+	    }
+	}
+	OSSL_Debug("passed data is not valid String???");
+	return -1;
+    }
+
+    if (!rb_block_given_p()) {
+	return PEM_def_callback(buf, max_len, flag, NULL);
+    }
 
     while (1) {
 	/*
@@ -181,12 +222,12 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd)
 	    return -1;
 	}
 	len = RSTRING_LENINT(pass);
-	if (len < 4) { /* 4 is OpenSSL hardcoded limit */
-	    rb_warning("password must be longer than 4 bytes");
+	if (len < OSSL_MIN_PWD_LEN) {
+	    rb_warning("password must be at least %d bytes", OSSL_MIN_PWD_LEN);
 	    continue;
 	}
 	if (len > max_len) {
-	    rb_warning("password must be shorter then %d bytes", max_len-1);
+	    rb_warning("password must be shorter than %d bytes", max_len);
 	    continue;
 	}
 	memcpy(buf, RSTRING_PTR(pass), len);

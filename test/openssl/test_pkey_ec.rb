@@ -184,6 +184,18 @@ class OpenSSL::TestEC < OpenSSL::TestCase
     assert(pem)
   end
 
+  def test_export_password_funny
+    key = OpenSSL::TestUtils::TEST_KEY_EC_P256V1
+    pem = key.export(OpenSSL::Cipher.new('AES-128-CBC'), "pass\0wd")
+    assert_raise(ArgumentError) do
+      OpenSSL::PKey.read(pem, "pass")
+    end
+    key2 = OpenSSL::PKey.read(pem, "pass\0wd")
+    assert(key2.private_key?)
+    key3 = OpenSSL::PKey::EC.new(pem, "pass\0wd")
+    assert(key3.private_key?)
+  end
+
   def test_ec_point_mul
     begin
       # y^2 = x^3 + 2x + 2 over F_17

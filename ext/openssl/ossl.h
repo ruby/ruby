@@ -77,11 +77,6 @@ extern "C" {
 #  include <openssl/ocsp.h>
 #endif
 
-/* OpenSSL requires passwords for PEM-encoded files to be at least four
- * characters long
- */
-#define OSSL_MIN_PWD_LEN 4
-
 /*
  * Common Module
  */
@@ -146,8 +141,14 @@ do{\
 }while(0)
 
 /*
- * our default PEM callback
+ * Our default PEM callback
  */
+/* Convert the argument to String and validate the length. Note this may raise. */
+VALUE ossl_pem_passwd_value(VALUE);
+/* Can be casted to pem_password_cb. If a password (String) is passed as the
+ * "arbitrary data" (typically the last parameter of PEM_{read,write}_
+ * functions), uses the value. If not, but a block is given, yields to it.
+ * If not either, fallbacks to PEM_def_callback() which reads from stdin. */
 int ossl_pem_passwd_cb(char *, int, int, void *);
 
 /*

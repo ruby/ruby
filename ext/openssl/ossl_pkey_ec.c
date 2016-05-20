@@ -168,7 +168,6 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
     EC_KEY *ec = NULL;
     VALUE arg, pass;
     VALUE group = Qnil;
-    char *passwd = NULL;
 
     GetPKey(self, pkey);
     if (pkey->pkey.ec)
@@ -188,15 +187,15 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
         	ec = EC_KEY_new();
         	group = arg;
         } else {
-            BIO *in = ossl_obj2bio(arg);
+            BIO *in;
 
-            if (!NIL_P(pass)) {
-		passwd = StringValuePtr(pass);
-	    }
-	    ec = PEM_read_bio_ECPrivateKey(in, NULL, ossl_pem_passwd_cb, passwd);
+	    pass = ossl_pem_passwd_value(pass);
+	    in = ossl_obj2bio(arg);
+
+	    ec = PEM_read_bio_ECPrivateKey(in, NULL, ossl_pem_passwd_cb, (void *)pass);
             if (!ec) {
 		OSSL_BIO_reset(in);
-		ec = PEM_read_bio_EC_PUBKEY(in, NULL, ossl_pem_passwd_cb, passwd);
+		ec = PEM_read_bio_EC_PUBKEY(in, NULL, ossl_pem_passwd_cb, (void *)pass);
             }
             if (!ec) {
 		OSSL_BIO_reset(in);
@@ -473,7 +472,6 @@ static VALUE ossl_ec_key_to_string(VALUE self, VALUE ciph, VALUE pass, int forma
     BIO *out;
     int i = -1;
     int private = 0;
-    char *password = NULL;
     VALUE str;
 
     Require_EC_KEY(self, ec);
@@ -493,20 +491,12 @@ static VALUE ossl_ec_key_to_string(VALUE self, VALUE ciph, VALUE pass, int forma
     switch(format) {
     case EXPORT_PEM:
     	if (private) {
-	    const EVP_CIPHER *cipher;
+	    const EVP_CIPHER *cipher = NULL;
 	    if (!NIL_P(ciph)) {
 		cipher = GetCipherPtr(ciph);
-		if (!NIL_P(pass)) {
-		    StringValue(pass);
-		    if (RSTRING_LENINT(pass) < OSSL_MIN_PWD_LEN)
-			ossl_raise(eOSSLError, "OpenSSL requires passwords to be at least four characters long");
-		    password = RSTRING_PTR(pass);
-		}
+		pass = ossl_pem_passwd_value(pass);
 	    }
-	    else {
-		cipher = NULL;
-	    }
-            i = PEM_write_bio_ECPrivateKey(out, ec, cipher, NULL, 0, NULL, password);
+            i = PEM_write_bio_ECPrivateKey(out, ec, cipher, NULL, 0, ossl_pem_passwd_cb, (void *)pass);
     	} else {
             i = PEM_write_bio_EC_PUBKEY(out, ec);
         }
