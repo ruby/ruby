@@ -379,6 +379,14 @@ static struct list_id_table *
 list_id_table_init(struct list_id_table *tbl, size_t capa)
 {
     if (capa > 0) {
+#if ID_TABLE_USE_CALC_VALUES && \
+    (UNALIGNED_WORD_ACCESS == 0) && (SIZEOF_VALUE == 8)
+	/* Workaround for 8-byte word alignment on 64-bit SPARC.
+	 * This code assumes that sizeof(ID) == 4, sizeof(VALUE) == 8, and
+	 *  xmalloc() returns 8-byte aligned memory block.
+	 */
+	if (capa & (size_t)1) capa += 1;
+#endif
 	tbl->capa = (int)capa;
 #if ID_TABLE_USE_CALC_VALUES
 	tbl->keys = (id_key_t *)xmalloc(sizeof(id_key_t) * capa + sizeof(VALUE) * capa);

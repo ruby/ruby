@@ -1,3 +1,13 @@
+Fri May 20 23:45:53 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* id_table.c (list_id_table_init): When unaligned word access is
+	  prohibited and sizeof(VALUE) is 8 (64-bit machines),
+	  capa should always be even number for 8-byte word alignment
+	  of the values of a table. This code assumes that sizeof(ID) is 4,
+	  sizeof(VALUE) is 8, and xmalloc() returns 8-byte aligned memory.
+	  This fixes bus error on 64-bit SPARC Solaris 10.
+	  [Bug #12406][ruby-dev:49631]
+
 Fri May 20 22:30:09 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* symbol.h (rb_id2sym): Use HAVE_BUILTIN___BUILTIN_CONSTANT_P
