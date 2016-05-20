@@ -1,3 +1,7 @@
+Fri May 20 22:30:09 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* symbol.h (rb_id2sym): Use HAVE_BUILTIN___BUILTIN_CONSTANT_P
+
 Fri May 20 22:19:00 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* ext/date/date_core.c: [DOC] fix typos.
