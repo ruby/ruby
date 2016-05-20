@@ -55,7 +55,6 @@ tddwpBAEDjcwMzA5NTYzMTU1MzAwpQMCARM=
         session = ssl.session
         assert(session == OpenSSL::SSL::Session.new(session.to_pem))
         assert(session == OpenSSL::SSL::Session.new(ssl))
-        assert_equal(300, session.timeout)
         session.timeout = 5
         assert_equal(5, session.timeout)
         assert_not_nil(session.time)
