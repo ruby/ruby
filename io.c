@@ -5680,6 +5680,7 @@ pipe_del_fptr(rb_io_t *fptr)
     }
 }
 
+#if defined (_WIN32) || defined(__CYGWIN__)
 static void
 pipe_atexit(void)
 {
@@ -5692,6 +5693,7 @@ pipe_atexit(void)
 	list = tmp;
     }
 }
+#endif
 
 static void
 pipe_finalize(rb_io_t *fptr, int noraise)
@@ -5877,12 +5879,14 @@ popen_exec(void *pp, char *errmsg, size_t errmsg_len)
 }
 #endif
 
+#if defined(HAVE_WORKING_FORK) || defined(HAVE_SPAWNV)
 static VALUE
 rb_execarg_fixup_v(VALUE execarg_obj)
 {
     rb_execarg_parent_start(execarg_obj);
     return Qnil;
 }
+#endif
 
 static VALUE
 pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
