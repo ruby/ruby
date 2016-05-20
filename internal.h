@@ -773,6 +773,10 @@ struct MEMO {
 #define MEMO_FOR(type, value) ((type *)RARRAY_PTR(value))
 #define NEW_MEMO_FOR(type, value) \
   ((value) = rb_ary_tmp_new_fill(type_roomof(type, VALUE)), MEMO_FOR(type, value))
+#define NEW_PARTIAL_MEMO_FOR(type, value, member) \
+  ((value) = rb_ary_tmp_new_fill(type_roomof(type, VALUE)), \
+   rb_ary_set_len((value), offsetof(type, member) / sizeof(VALUE)), \
+   MEMO_FOR(type, value))
 
 #define STRING_P(s) (RB_TYPE_P((s), T_STRING) && CLASS_OF(s) == rb_cString)
 
@@ -787,6 +791,8 @@ struct cmp_opt_data {
     int opt_inited;
 };
 
+#define NEW_CMP_OPT_MEMO(type, value) \
+    NEW_PARTIAL_MEMO_FOR(type, value, cmp_opt)
 #define CMP_OPTIMIZABLE_BIT(type) (1U << TOKEN_PASTE(cmp_opt_,type))
 #define CMP_OPTIMIZABLE(data, type) \
     (((data).opt_inited & CMP_OPTIMIZABLE_BIT(type)) ? \

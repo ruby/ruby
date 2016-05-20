@@ -1,3 +1,14 @@
+Fri May 20 19:48:48 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (NEW_PARTIAL_MEMO_FOR): shrink buffer array not to
+	  mark non-VALUE fields.  fix check_rvalue_consistency abort with
+	  RGENGC_CHECK_MODE=2.
+
+	* internal.h (NEW_CMP_OPT_MEMO): exclude struct cmp_opt_data from
+	  the valid array range.
+
+	* enum.c (slicewhen_i): exclude inverted too.
+
 Thu May 19 21:21:57 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* re.c (rb_reg_match_m_p): [DOC] fix return value in rdoc.

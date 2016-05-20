@@ -1563,7 +1563,7 @@ static VALUE
 enum_min(int argc, VALUE *argv, VALUE obj)
 {
     VALUE memo;
-    struct min_t *m = NEW_MEMO_FOR(struct min_t, memo);
+    struct min_t *m = NEW_CMP_OPT_MEMO(struct min_t, memo);
     VALUE result;
     VALUE num;
 
@@ -1656,7 +1656,7 @@ static VALUE
 enum_max(int argc, VALUE *argv, VALUE obj)
 {
     VALUE memo;
-    struct max_t *m = NEW_MEMO_FOR(struct max_t, memo);
+    struct max_t *m = NEW_CMP_OPT_MEMO(struct max_t, memo);
     VALUE result;
     VALUE num;
 
@@ -1809,7 +1809,7 @@ static VALUE
 enum_minmax(VALUE obj)
 {
     VALUE memo;
-    struct minmax_t *m = NEW_MEMO_FOR(struct minmax_t, memo);
+    struct minmax_t *m = NEW_CMP_OPT_MEMO(struct minmax_t, memo);
 
     m->min = Qundef;
     m->last = Qundef;
@@ -3406,7 +3406,8 @@ slicewhen_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
 {
     VALUE enumerable;
     VALUE arg;
-    struct slicewhen_arg *memo = NEW_MEMO_FOR(struct slicewhen_arg, arg);
+    struct slicewhen_arg *memo =
+	NEW_PARTIAL_MEMO_FOR(struct slicewhen_arg, arg, inverted);
 
     enumerable = rb_ivar_get(enumerator, rb_intern("slicewhen_enum"));
     memo->pred = rb_attr_get(enumerator, rb_intern("slicewhen_pred"));
