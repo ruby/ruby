@@ -1756,6 +1756,7 @@ rb_obj_basic_to_s_p(VALUE obj)
 
 #include <stdarg.h>
 
+#undef rb_scan_args
 int
 rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 {
