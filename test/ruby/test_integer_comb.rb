@@ -120,14 +120,6 @@ class TestIntegerComb < Test::Unit::TestCase
     assert_bignum(FIXNUM_MAX+1)
   end
 
-  def check_class(n)
-    if FIXNUM_MIN <= n && n <= FIXNUM_MAX
-      assert_fixnum(n)
-    else
-      assert_bignum(n)
-    end
-  end
-
   def test_aref
     VS.each {|a|
       100.times {|i|
@@ -138,7 +130,7 @@ class TestIntegerComb < Test::Unit::TestCase
       VS.each {|b|
         c = nil
         assert_nothing_raised("(#{a})[#{b}]") { c = a[b] }
-        check_class(c)
+        assert_kind_of(Integer, c)
         if b < 0
           assert_equal(0, c, "(#{a})[#{b}]")
         else
@@ -152,7 +144,7 @@ class TestIntegerComb < Test::Unit::TestCase
     VS.each {|a|
       VS.each {|b|
         c = a + b
-        check_class(c)
+        assert_kind_of(Integer, c)
         assert_equal(b + a, c, "#{a} + #{b}")
         assert_equal(a, c - b, "(#{a} + #{b}) - #{b}")
         assert_equal(a-~b-1, c, "#{a} + #{b}") # Hacker's Delight
@@ -167,7 +159,7 @@ class TestIntegerComb < Test::Unit::TestCase
     VS.each {|a|
       VS.each {|b|
         c = a - b
-        check_class(c)
+        assert_kind_of(Integer, c)
         assert_equal(a, c + b, "(#{a} - #{b}) + #{b}")
         assert_equal(-b, c - a, "(#{a} - #{b}) - #{a}")
         assert_equal(a+~b+1, c, "#{a} - #{b}") # Hacker's Delight
@@ -182,7 +174,7 @@ class TestIntegerComb < Test::Unit::TestCase
     VS.each {|a|
       VS.each {|b|
         c = a * b
-        check_class(c)
+        assert_kind_of(Integer, c)
         assert_equal(b * a, c, "#{a} * #{b}")
         assert_equal(b.send(:*, a), c, "#{a} * #{b}")
         assert_equal(b, c / a, "(#{a} * #{b}) / #{a}") if a != 0
@@ -200,8 +192,8 @@ class TestIntegerComb < Test::Unit::TestCase
           assert_raise(ZeroDivisionError) { a.divmod(b) }
         else
           q, r = a.divmod(b)
-          check_class(q)
-          check_class(r)
+          assert_kind_of(Integer, q)
+          assert_kind_of(Integer, r)
           assert_equal(a, b*q+r)
           assert_operator(r.abs, :<, b.abs)
           if 0 < b
@@ -225,7 +217,7 @@ class TestIntegerComb < Test::Unit::TestCase
     VS.each {|a|
       small_values.each {|b|
         c = a ** b
-        check_class(c)
+        assert_kind_of(Integer, c)
         d = 1
         b.times { d *= a }
         assert_equal(d, c, "(#{a}) ** #{b}")
@@ -241,7 +233,7 @@ class TestIntegerComb < Test::Unit::TestCase
   def test_not
     VS.each {|a|
       b = ~a
-      check_class(b)
+      assert_kind_of(Integer, b)
       assert_equal(-1 ^ a, b, "~#{a}")
       assert_equal(-a-1, b, "~#{a}") # Hacker's Delight
       assert_equal(0, a & b, "#{a} & ~#{a}")
@@ -253,7 +245,7 @@ class TestIntegerComb < Test::Unit::TestCase
     VS.each {|a|
       VS.each {|b|
         c = a | b
-        check_class(c)
+        assert_kind_of(Integer, c)
         assert_equal(b | a, c, "#{a} | #{b}")
         assert_equal(a + b - (a&b), c, "#{a} | #{b}")
         assert_equal((a & ~b) + b, c, "#{a} | #{b}") # Hacker's Delight
@@ -266,7 +258,7 @@ class TestIntegerComb < Test::Unit::TestCase
     VS.each {|a|
       VS.each {|b|
         c = a & b
-        check_class(c)
+        assert_kind_of(Integer, c)
         assert_equal(b & a, c, "#{a} & #{b}")
         assert_equal(a + b - (a|b), c, "#{a} & #{b}")
         assert_equal((~a | b) - ~a, c, "#{a} & #{b}") # Hacker's Delight
@@ -279,7 +271,7 @@ class TestIntegerComb < Test::Unit::TestCase
     VS.each {|a|
       VS.each {|b|
         c = a ^ b
-        check_class(c)
+        assert_kind_of(Integer, c)
         assert_equal(b ^ a, c, "#{a} ^ #{b}")
         assert_equal((a|b)-(a&b), c, "#{a} ^ #{b}") # Hacker's Delight
         assert_equal(b, c ^ a, "(#{a} ^ #{b}) ^ #{a}")
@@ -292,7 +284,7 @@ class TestIntegerComb < Test::Unit::TestCase
     VS.each {|a|
       small_values.each {|b|
         c = a << b
-        check_class(c)
+        assert_kind_of(Integer, c)
         if 0 <= b
           assert_equal(a, c >> b, "(#{a} << #{b}) >> #{b}")
           assert_equal(a * 2**b, c, "#{a} << #{b}")
@@ -309,7 +301,7 @@ class TestIntegerComb < Test::Unit::TestCase
     VS.each {|a|
       small_values.each {|b|
         c = a >> b
-        check_class(c)
+        assert_kind_of(Integer, c)
         if b <= 0
           assert_equal(a, c << b, "(#{a} >> #{b}) << #{b}")
           assert_equal(a * 2**(-b), c, "#{a} >> #{b}")
@@ -324,7 +316,7 @@ class TestIntegerComb < Test::Unit::TestCase
   def test_succ
     VS.each {|a|
       b = a.succ
-      check_class(b)
+      assert_kind_of(Integer, b)
       assert_equal(a+1, b, "(#{a}).succ")
       assert_equal(a, b.pred, "(#{a}).succ.pred")
       assert_equal(a, b-1, "(#{a}).succ - 1")
@@ -334,7 +326,7 @@ class TestIntegerComb < Test::Unit::TestCase
   def test_pred
     VS.each {|a|
       b = a.pred
-      check_class(b)
+      assert_kind_of(Integer, b)
       assert_equal(a-1, b, "(#{a}).pred")
       assert_equal(a, b.succ, "(#{a}).pred.succ")
       assert_equal(a, b + 1, "(#{a}).pred + 1")
@@ -344,7 +336,7 @@ class TestIntegerComb < Test::Unit::TestCase
   def test_unary_plus
     VS.each {|a|
       b = +a
-      check_class(b)
+      assert_kind_of(Integer, b)
       assert_equal(a, b, "+(#{a})")
     }
   end
@@ -352,7 +344,7 @@ class TestIntegerComb < Test::Unit::TestCase
   def test_unary_minus
     VS.each {|a|
       b = -a
-      check_class(b)
+      assert_kind_of(Integer, b)
       assert_equal(0-a, b, "-(#{a})")
       assert_equal(~a+1, b, "-(#{a})")
       assert_equal(0, a+b, "#{a}+(-(#{a}))")
@@ -384,7 +376,7 @@ class TestIntegerComb < Test::Unit::TestCase
   def test_abs
     VS.each {|a|
       b = a.abs
-      check_class(b)
+      assert_kind_of(Integer, b)
       if a < 0
         assert_equal(-a, b, "(#{a}).abs")
       else
@@ -396,7 +388,7 @@ class TestIntegerComb < Test::Unit::TestCase
   def test_ceil
     VS.each {|a|
       b = a.ceil
-      check_class(b)
+      assert_kind_of(Integer, b)
       assert_equal(a, b, "(#{a}).ceil")
     }
   end
@@ -404,7 +396,7 @@ class TestIntegerComb < Test::Unit::TestCase
   def test_floor
     VS.each {|a|
       b = a.floor
-      check_class(b)
+      assert_kind_of(Integer, b)
       assert_equal(a, b, "(#{a}).floor")
     }
   end
@@ -412,7 +404,7 @@ class TestIntegerComb < Test::Unit::TestCase
   def test_round
     VS.each {|a|
       b = a.round
-      check_class(b)
+      assert_kind_of(Integer, b)
       assert_equal(a, b, "(#{a}).round")
     }
   end
@@ -420,7 +412,7 @@ class TestIntegerComb < Test::Unit::TestCase
   def test_truncate
     VS.each {|a|
       b = a.truncate
-      check_class(b)
+      assert_kind_of(Integer, b)
       assert_equal(a, b, "(#{a}).truncate")
     }
   end
@@ -432,7 +424,7 @@ class TestIntegerComb < Test::Unit::TestCase
           assert_raise(ZeroDivisionError) { a.divmod(b) }
         else
           r = a.remainder(b)
-          check_class(r)
+          assert_kind_of(Integer, r)
           if a < 0
             assert_operator(-b.abs, :<, r, "#{a}.remainder(#{b})")
             assert_operator(0, :>=, r, "#{a}.remainder(#{b})")
@@ -457,7 +449,7 @@ class TestIntegerComb < Test::Unit::TestCase
       else
         assert_equal(false, z, "(#{a}).zero?")
         assert_equal(a, n, "(#{a}).nonzero?")
-        check_class(n)
+        assert_kind_of(Integer, n)
       end
       assert(z ^ n, "(#{a}).zero? ^ (#{a}).nonzero?")
     }

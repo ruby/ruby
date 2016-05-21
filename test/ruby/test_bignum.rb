@@ -469,7 +469,7 @@ class TestBignum < Test::Unit::TestCase
     assert_raise(TypeError, ArgumentError) { T32**"foo" }
 
     feature3429 = '[ruby-core:30735]'
-    assert_bignum((2 ** 7830457), feature3429)
+    assert_kind_of(Integer, (2 ** 7830457), feature3429)
   end
 
   def test_and
