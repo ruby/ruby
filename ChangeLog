@@ -1,3 +1,8 @@
+Sat May 21 22:45:50 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_scan_args): don't use ALWAYS_INLINE with
+	  `inline`.  if gcc needs this duplication, do in ALWAYS_INLINE macro.
+
 Sat May 21 21:11:56 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_scan_args): use __VA_ARGS__ instead of

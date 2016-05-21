@@ -2153,7 +2153,7 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 #define RB_NARG(...) RB_NARG0(__VA_ARGS__,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0)
 #define rb_scan_args(argc,argvp,fmt,...) \
     rb_scan_args0(argc,argv,fmt,RB_NARG(__VA_ARGS__),(VALUE*[]){__VA_ARGS__})
-ALWAYS_INLINE(static inline int
+ALWAYS_INLINE(static int
 rb_scan_args0(int argc, const VALUE *argv, const char *fmt, int varc, VALUE *vars[]));
 static inline int
 rb_scan_args0(int argc, const VALUE *argv, const char *fmt, int varc, VALUE *vars[])
