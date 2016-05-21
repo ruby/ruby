@@ -1067,8 +1067,8 @@ static void Init_ossl_locks(void)
  *
  *   require 'socket'
  *
- *   tcp_client = TCPSocket.new 'localhost', 5000
- *   ssl_client = OpenSSL::SSL::SSLSocket.new client_socket, context
+ *   tcp_socket = TCPSocket.new 'localhost', 5000
+ *   ssl_client = OpenSSL::SSL::SSLSocket.new tcp_socket, context
  *   ssl_client.connect
  *
  *   ssl_client.puts "hello server!"
@@ -1087,8 +1087,8 @@ static void Init_ossl_locks(void)
  *
  *   require 'socket'
  *
- *   tcp_client = TCPSocket.new 'localhost', 5000
- *   ssl_client = OpenSSL::SSL::SSLSocket.new client_socket, context
+ *   tcp_socket = TCPSocket.new 'localhost', 5000
+ *   ssl_client = OpenSSL::SSL::SSLSocket.new tcp_socket, context
  *   ssl_client.connect
  *
  *   ssl_client.puts "hello server!"

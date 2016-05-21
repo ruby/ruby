@@ -1,3 +1,9 @@
+Sat May 21 14:41:14 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl.c: [DOC] Fix SSL client example. The variable name
+	  was wrong. Patch by Andreas Tiefenthaler <at@an-ti.eu> (@pxlpnk).
+	  [GH ruby/openssl#32]
+
 Sat May 21 14:25:38 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_pkey_ec.c: rename PKey::EC#private_key? and
