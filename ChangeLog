@@ -1,3 +1,7 @@
+Sat May 21 21:07:18 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (ALWAYS_INLINE): force compilers the function inlined.
+
 Sat May 21 16:16:03 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_stop): Don't free the SSL struct
