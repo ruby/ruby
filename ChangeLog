@@ -1,3 +1,8 @@
+Sat May 21 11:18:42 2016  Evgeni Golov  <evgeni@golov.de>
+
+	* lib/ipaddr.rb: [DOC] fix documentation of IN6MASK to mention
+	  IPv6.  [Fix GH-1349]
+
 Sat May 21 11:12:53 2016  Dan Martinez  <dfm@razorwind.org>
 
 	* io.c (Init_IO): [DOC] define dummy ARGF instead of ARGF.class to

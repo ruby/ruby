@@ -43,7 +43,7 @@ class IPAddr
 
   # 32 bit mask for IPv4
   IN4MASK = 0xffffffff
-  # 128 bit mask for IPv4
+  # 128 bit mask for IPv6
   IN6MASK = 0xffffffffffffffffffffffffffffffff
   # Format string for IPv6
   IN6FORMAT = (["%.4x"] * 8).join(':')
