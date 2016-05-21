@@ -1,3 +1,8 @@
+Sat May 21 11:07:29 2016  0x01f7  <souk.0x01f7@gmail.com>
+
+	* doc/syntax/methods.rdoc (Method Names): add proper closing tag.
+	  [Fix GH-1356]
+
 Sat May 21 09:26:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_CHECK_SETJMP): fix missing macro definition
