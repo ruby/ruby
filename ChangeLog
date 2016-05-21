@@ -1,3 +1,11 @@
+Sun May 22 02:41:52 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/zlib/zlib.c: remove hacky macro introduced at r30437.
+
+	* ext/zlib/zlib.c (gzfile_make_header): cast as long (instead of int).
+
+	* ext/zlib/zlib.c (gzfile_make_footer): ditto.
+
 Sat May 21 21:07:18 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in (ALWAYS_INLINE): force compilers the function inlined.
