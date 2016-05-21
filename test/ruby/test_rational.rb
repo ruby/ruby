@@ -42,7 +42,7 @@ class Rational_Test < Test::Unit::TestCase
   end
 
   def test_hash
-    assert_fixnum(Rational(1,2).hash)
+    assert_kind_of(Integer, Rational(1,2).hash)
 
     h = {}
     h[Rational(0)] = 0

@@ -138,7 +138,7 @@ class TestRange < Test::Unit::TestCase
   end
 
   def test_hash
-    assert_fixnum((0..1).hash)
+    assert_kind_of(Integer, (0..1).hash)
     assert_equal((0..1).hash, (0..1).hash)
     assert_not_equal((0..1).hash, (0...1).hash)
   end
