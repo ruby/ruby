@@ -1,3 +1,19 @@
+Sat May 21 16:16:03 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_stop): Don't free the SSL struct
+	  here. Since some methods such as SSLSocket#connect releases GVL,
+	  there is a chance of use after free if we free the SSL from another
+	  thread. SSLSocket#stop was documented as "prepares it for another
+	  connection" so this is a slightly incompatible change. However when
+	  this sentence was added (r30090, Add toplevel documentation for
+	  OpenSSL, 2010-12-06), it didn't actually. The current behavior is
+	  from r40304 (Correct shutdown behavior w.r.t GC., 2013-04-15).
+	  [ruby-core:74978] [Bug #12292]
+
+	* ext/openssl/lib/openssl/ssl.rb (sysclose): Update doc.
+
+	* test/openssl/test_ssl.rb: Test this.
+
 Sat May 21 14:41:14 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl.c: [DOC] Fix SSL client example. The variable name
