@@ -1,3 +1,8 @@
+Sat May 21 09:26:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_CHECK_SETJMP): fix missing macro definition
+	  for the configured result.  fix up r55021.
+
 Sat May 21 00:36:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_execarg_commandline): build command line string

@@ -2589,7 +2589,9 @@ AC_CACHE_CHECK([for ]$1[ as a macro or function], ac_cv_func_$1,
     m4_ifval($2,$2,jmp_buf)[ env; $1(JMPARGS);],
     ac_cv_func_$1=yes,
     ac_cv_func_$1=no)]
-)])
+)
+AS_IF([test "$ac_cv_func_]$1[" = yes], [AC_DEFINE([HAVE_]AS_TR_CPP($1), 1)])
+])
 
 AC_DEFUN([RUBY_CHECK_BUILTIN_SETJMP], [
 if test x"${ac_cv_func___builtin_setjmp}" = xyes; then
