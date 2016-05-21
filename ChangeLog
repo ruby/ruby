@@ -1,3 +1,12 @@
+Sat May 21 14:25:38 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_pkey_ec.c: rename PKey::EC#private_key? and
+	  #public_key? to #private? and #public? for consistency with other
+	  PKey types. Old names remain as alias.  [ruby-core:45541] [Bug #6567]
+
+	* test/openssl/test_pkey_ec.rb (test_check_key): check private? and
+	  public? works correctly.
+
 Sat May 21 12:40:36 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/lib/openssl/buffering.rb (read_nonblock, readpartial):

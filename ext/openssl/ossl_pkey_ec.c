@@ -438,32 +438,34 @@ static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
 
 /*
  *  call-seq:
- *     key.public_key? => true or false
+ *     key.public? => true or false
  *
- *  Both public_key? and private_key? may return false at the same time unlike other PKey classes.
+ *  Returns whether this EC instance has a public key. The public key
+ *  (EC::Point) can be retrieved with EC#public_key.
  */
-static VALUE ossl_ec_key_is_public_key(VALUE self)
+static VALUE ossl_ec_key_is_public(VALUE self)
 {
     EC_KEY *ec;
 
     Require_EC_KEY(self, ec);
 
-    return (EC_KEY_get0_public_key(ec) ? Qtrue : Qfalse);
+    return EC_KEY_get0_public_key(ec) ? Qtrue : Qfalse;
 }
 
 /*
  *  call-seq:
- *     key.private_key? => true or false
+ *     key.private? => true or false
  *
- *  Both public_key? and private_key? may return false at the same time unlike other PKey classes.
+ *  Returns whether this EC instance has a private key. The private key (BN) can
+ *  be retrieved with EC#private_key.
  */
-static VALUE ossl_ec_key_is_private_key(VALUE self)
+static VALUE ossl_ec_key_is_private(VALUE self)
 {
     EC_KEY *ec;
 
     Require_EC_KEY(self, ec);
 
-    return (EC_KEY_get0_private_key(ec) ? Qtrue : Qfalse);
+    return EC_KEY_get0_private_key(ec) ? Qtrue : Qfalse;
 }
 
 static VALUE ossl_ec_key_to_string(VALUE self, VALUE ciph, VALUE pass, int format)
@@ -1619,8 +1621,10 @@ void Init_ossl_ec(void)
     rb_define_method(cEC, "private_key=", ossl_ec_key_set_private_key, 1);
     rb_define_method(cEC, "public_key", ossl_ec_key_get_public_key, 0);
     rb_define_method(cEC, "public_key=", ossl_ec_key_set_public_key, 1);
-    rb_define_method(cEC, "private_key?", ossl_ec_key_is_private_key, 0);
-    rb_define_method(cEC, "public_key?", ossl_ec_key_is_public_key, 0);
+    rb_define_method(cEC, "private?", ossl_ec_key_is_private, 0);
+    rb_define_method(cEC, "public?", ossl_ec_key_is_public, 0);
+    rb_define_alias(cEC, "private_key?", "private?");
+    rb_define_alias(cEC, "public_key?", "public?");
 /*  rb_define_method(cEC, "", ossl_ec_key_get_, 0);
     rb_define_method(cEC, "=", ossl_ec_key_set_ 1);
     set/get enc_flags

@@ -40,9 +40,21 @@ class OpenSSL::TestEC < OpenSSL::TestCase
 
   def test_check_key
     for key in @keys
-      assert_equal(key.check_key, true)
-      assert_equal(key.private_key?, true)
-      assert_equal(key.public_key?, true)
+      assert_equal(true, key.check_key)
+      assert_equal(true, key.private?)
+      assert_equal(true, key.public?)
+      key2 = OpenSSL::PKey::EC.new(key.group)
+      assert_equal(false, key2.private?)
+      assert_equal(false, key2.public?)
+      key2.public_key = key.public_key
+      assert_equal(false, key2.private?)
+      assert_equal(true, key2.public?)
+      key2.private_key = key.private_key
+      assert_equal(true, key2.private?)
+      assert_equal(true, key2.public?)
+      assert_equal(true, key2.check_key)
+      key2.private_key += 1
+      assert_raise(OpenSSL::PKey::ECError) { key2.check_key }
     end
   end
 
