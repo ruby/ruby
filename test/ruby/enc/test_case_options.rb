@@ -2,7 +2,7 @@
 
 require "test/unit"
 
-class TestCasingOptions < Test::Unit::TestCase
+class TestCaseOptions < Test::Unit::TestCase
   def assert_raise_functional_operations (arg, *options)
     assert_raise(ArgumentError) { arg.upcase(*options) }
     assert_raise(ArgumentError) { arg.downcase(*options) }
