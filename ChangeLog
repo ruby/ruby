@@ -1,3 +1,10 @@
+Sun May 22 16:27:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/-test-/integer/core_ext.c: move testutil/integer.c.
+
+	* test/lib/-test-/integer.rb: extract implementation details from
+	  test/unit/assertions.rb.  [Bug #12408]
+
 Sun May 22 14:57:43 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
         * include/ruby/oniguruma.h: Extend OnigEncodingTypeDefine to define a

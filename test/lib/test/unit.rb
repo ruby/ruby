@@ -8,7 +8,6 @@ require 'test/unit/assertions'
 require_relative '../envutil'
 require 'test/unit/testcase'
 require 'optparse'
-require '-test-/testutil'
 
 # See Test::Unit
 module Test

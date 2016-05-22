@@ -21,7 +21,7 @@ rb_int_to_bignum(VALUE x)
 }
 
 void
-Init_integer(VALUE klass)
+Init_core_ext(VALUE klass)
 {
     rb_define_method(rb_cInteger, "bignum?", int_bignum_p, 0);
     rb_define_method(rb_cInteger, "fixnum?", int_fixnum_p, 0);

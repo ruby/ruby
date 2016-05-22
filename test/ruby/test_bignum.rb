@@ -1,5 +1,9 @@
 # frozen_string_literal: false
 require 'test/unit'
+begin
+  require '-test-/integer'
+rescue LoadError
+else
 
 class TestBignum < Test::Unit::TestCase
   FIXNUM_MIN = Integer::FIXNUM_MIN
@@ -733,4 +737,5 @@ class TestBignum < Test::Unit::TestCase
     end
     assert_equal(T1024 ^ 10, T1024 ^ obj)
   end
+end
 end

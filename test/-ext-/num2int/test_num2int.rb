@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require '-test-/num2int'
+require '-test-/integer'
 
 class TestNum2int < Test::Unit::TestCase
   SHRT_MIN = -32768
