@@ -1,3 +1,8 @@
+Mon May 23 07:41:49 2016  Eric Wong  <e@80x24.org>
+
+	* dir.c (dir_close): update RDoc for 2.3 #close change
+	  [ruby-core:75679] [Bug #12413]
+
 Sun May 22 20:01:21 2016  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/timeridconv.rb: use finalizer trick instead of thread.
