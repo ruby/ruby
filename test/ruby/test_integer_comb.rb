@@ -110,16 +110,6 @@ class TestIntegerComb < Test::Unit::TestCase
   #VS.concat VS.find_all {|v| Fixnum === v }.map {|v| 0x4000000000000000.coerce(v)[0] }
   #VS.sort! {|a, b| a.abs <=> b.abs }
 
-  FIXNUM_MIN = Integer::FIXNUM_MIN
-  FIXNUM_MAX = Integer::FIXNUM_MAX
-
-  def test_fixnum_range
-    assert_bignum(FIXNUM_MIN-1)
-    assert_fixnum(FIXNUM_MIN)
-    assert_fixnum(FIXNUM_MAX)
-    assert_bignum(FIXNUM_MAX+1)
-  end
-
   def test_aref
     VS.each {|a|
       100.times {|i|

@@ -3,9 +3,6 @@ require 'test/unit'
 require 'objspace'
 
 class TestRubyOptimization < Test::Unit::TestCase
-  FIXNUM_MAX = Integer::FIXNUM_MAX
-  FIXNUM_MIN = Integer::FIXNUM_MIN
-
   def assert_redefine_method(klass, method, code, msg = nil)
     assert_separately([], <<-"end;")#    do
       class #{klass}
@@ -23,20 +20,11 @@ class TestRubyOptimization < Test::Unit::TestCase
   end
 
   def test_fixnum_plus
-    a, b = 1, 2
-    assert_equal 3, a + b
-    assert_fixnum FIXNUM_MAX
-    assert_bignum FIXNUM_MAX + 1
-
     assert_equal 21, 10 + 11
     assert_redefine_method('Integer', '+', 'assert_equal 11, 10 + 11')
   end
 
   def test_fixnum_minus
-    assert_equal 5, 8 - 3
-    assert_fixnum FIXNUM_MIN
-    assert_bignum FIXNUM_MIN - 1
-
     assert_equal 5, 8 - 3
     assert_redefine_method('Integer', '-', 'assert_equal 3, 8 - 3')
   end
