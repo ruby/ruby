@@ -62,7 +62,7 @@ module DRb
         return unless Thread.main.alive?
         return if @expires.nil?
         Thread.new { rotate } if @expires < Time.now
-        ObjectSpace.define_finalizer(Object.new) {on_gc}          
+        ObjectSpace.define_finalizer(Object.new) {on_gc}
       end
 
       def rotate
