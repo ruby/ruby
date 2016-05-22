@@ -1,3 +1,16 @@
+Sun May 22 14:57:43 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+        * include/ruby/oniguruma.h: Extend OnigEncodingTypeDefine to define a
+	  new encoding primitive 'case_map' for case mapping
+
+	* enc/utf-8.c, utf_16be/le.c, utf_32be/le.c:
+	  add onigenc_unicode_case_map as case_map primitive
+
+	* enc/ascii.c, big5.c, cp949.c, emacs_mule.c, euc_jp/kr/tw.c, gb18030.c,
+	  gbk.c, iso_8859_1/2/3/4/5/6/7/8/9/10/11/13/14/15/16.c, koi8_r/u.c,
+	  shift_jis.c, us_ascii.c, windows_1250/1251/1252.c:
+	  add onigenc_not_support_case_map as case_map primitive
+
 Sun May 22 14:45:45 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
         * regenc.h/c: Define new function onigenc_not_support_case_map

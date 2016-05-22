@@ -240,5 +240,8 @@ OnigEncodingDefine(iso_8859_16, ISO_8859_16) = {
   onigenc_always_true_is_allowed_reverse_match,
   0,
   ONIGENC_FLAG_NONE,
+#ifdef ONIG_CASE_MAPPING
+  onigenc_not_support_case_map,
+#endif   /* ONIG_CASE_MAPPING */
 };
 ENC_ALIAS("ISO8859-16", "ISO-8859-16")

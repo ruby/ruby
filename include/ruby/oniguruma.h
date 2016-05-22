@@ -216,6 +216,9 @@ typedef struct OnigEncodingTypeST {
   int    (*is_allowed_reverse_match)(const OnigUChar* p, const OnigUChar* end, const struct OnigEncodingTypeST* enc);
   int ruby_encoding_index;
   unsigned int  flags;
+#ifdef ONIG_CASE_MAPPING
+  int    (*case_map)(OnigCaseFoldType* flagP, const OnigUChar** pp, const OnigUChar* end, OnigUChar* to, OnigUChar* to_end, const struct OnigEncodingTypeST* enc);
+#endif   /* ONIG_CASE_MAPPING */
 } OnigEncodingType;
 
 typedef const OnigEncodingType* OnigEncoding;

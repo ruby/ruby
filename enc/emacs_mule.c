@@ -336,6 +336,9 @@ OnigEncodingDefine(emacs_mule, Emacs_Mule) = {
   onigenc_always_true_is_allowed_reverse_match,
   0,
   ONIGENC_FLAG_NONE,
+#ifdef ONIG_CASE_MAPPING
+  onigenc_not_support_case_map,
+#endif   /* ONIG_CASE_MAPPING */
 };
 
 ENC_REPLICATE("stateless-ISO-2022-JP", "Emacs-Mule")

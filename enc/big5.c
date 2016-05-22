@@ -302,6 +302,9 @@ OnigEncodingDefine(big5, BIG5) = {
   big5_is_allowed_reverse_match,
   0,
   ONIGENC_FLAG_NONE,
+#ifdef ONIG_CASE_MAPPING
+  onigenc_not_support_case_map,
+#endif   /* ONIG_CASE_MAPPING */
 };
 
 /*
@@ -336,6 +339,9 @@ OnigEncodingDefine(big5_hkscs, BIG5_HKSCS) = {
   big5_is_allowed_reverse_match,
   0,
   ONIGENC_FLAG_NONE,
+#ifdef ONIG_CASE_MAPPING
+  onigenc_not_support_case_map,
+#endif   /* ONIG_CASE_MAPPING */
 };
 ENC_ALIAS("Big5-HKSCS:2008", "Big5-HKSCS")
 
@@ -370,4 +376,7 @@ OnigEncodingDefine(big5_uao, BIG5_UAO) = {
   big5_is_allowed_reverse_match,
   0,
   ONIGENC_FLAG_NONE,
+#ifdef ONIG_CASE_MAPPING
+  onigenc_not_support_case_map,
+#endif   /* ONIG_CASE_MAPPING */
 };
