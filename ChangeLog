@@ -1,3 +1,9 @@
+Sun May 22 17:06:55 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (enc_arg, str_transcode_enc_args, econv_args):
+	  remove volatile, and add GC guards in callers.
+	  [ruby-core:75664] [Bug #12411]
+
 Sun May 22 16:27:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/-test-/integer/core_ext.c: move testutil/integer.c.
