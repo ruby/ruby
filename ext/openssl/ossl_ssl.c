@@ -1209,7 +1209,7 @@ ossl_ssl_setup(VALUE self)
         DATA_PTR(self) = ssl;
 
 #ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
-        if (!NIL_P(hostname)) {
+        if (!NIL_P(hostname) && (RSTRING_LENINT(hostname) > 0)) {
            if (SSL_set_tlsext_host_name(ssl, StringValuePtr(hostname)) != 1)
                ossl_raise(eSSLError, "SSL_set_tlsext_host_name");
         }
