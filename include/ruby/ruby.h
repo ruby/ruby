@@ -2150,6 +2150,144 @@ unsigned long ruby_strtoul(const char *str, char **endptr, int base);
 PRINTF_ARGS(int ruby_snprintf(char *str, size_t n, char const *fmt, ...), 3, 4);
 int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 
+#if defined(__GNUC__) && defined(__OPTIMIZE__)
+# define rb_scan_args(argc,argvp,fmt,...) \
+    rb_scan_args0(argc,argv,fmt,(sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)),(VALUE*[]){__VA_ARGS__})
+ALWAYS_INLINE(static int
+rb_scan_args0(int argc, const VALUE *argv, const char *fmt, int varc, VALUE *vars[]));
+inline int
+rb_scan_args0(int argc, const VALUE *argv, const char *fmt, int varc, VALUE *vars[])
+{
+    int i;
+    const char *p = fmt;
+    VALUE *var;
+    int f_var = 0, f_hash = 0, f_block = 0;
+    int n_lead = 0, n_opt = 0, n_trail = 0, n_mand;
+    int argi = 0, vari = 0;
+    VALUE hash = Qnil;
+
+    if (ISDIGIT(*p)) {
+	n_lead = *p - '0';
+	p++;
+	if (ISDIGIT(*p)) {
+	    n_opt = *p - '0';
+	    p++;
+	    if (ISDIGIT(*p)) {
+		n_trail = *p - '0';
+		p++;
+		goto block_arg;
+	    }
+	}
+    }
+    if (*p == '*') {
+	f_var = 1;
+	p++;
+	if (ISDIGIT(*p)) {
+	    n_trail = *p - '0';
+	    p++;
+	}
+    }
+  block_arg:
+    if (*p == ':') {
+	f_hash = 1;
+	p++;
+    }
+    if (*p == '&') {
+	f_block = 1;
+	p++;
+    }
+    if (*p != '\0') {
+	rb_fatal("bad scan arg format: %s", fmt);
+    }
+    n_mand = n_lead + n_trail;
+
+    if (argc < n_mand)
+	goto argc_error;
+
+    /* capture an option hash - phase 1: pop */
+    if (f_hash && n_mand < argc) {
+	VALUE last = argv[argc - 1];
+
+	if (NIL_P(last)) {
+	    /* nil is taken as an empty option hash only if it is not
+	       ambiguous; i.e. '*' is not specified and arguments are
+	       given more than sufficient */
+	    if (!f_var && n_mand + n_opt < argc)
+		argc--;
+	}
+	else {
+	    hash = rb_check_hash_type(last);
+	    if (!NIL_P(hash)) {
+		VALUE opts = rb_extract_keywords(&hash);
+		if (!hash) argc--;
+		hash = opts ? opts : Qnil;
+	    }
+	}
+    }
+    /* capture leading mandatory arguments */
+    for (i = n_lead; i-- > 0; ) {
+	var = vars[vari++];
+	if (var) *var = argv[argi];
+	argi++;
+    }
+    /* capture optional arguments */
+    for (i = n_opt; i-- > 0; ) {
+	var = vars[vari++];
+	if (argi < argc - n_trail) {
+	    if (var) *var = argv[argi];
+	    argi++;
+	}
+	else {
+	    if (var) *var = Qnil;
+	}
+    }
+    /* capture variable length arguments */
+    if (f_var) {
+	int n_var = argc - argi - n_trail;
+
+	var = vars[vari++];
+	if (0 < n_var) {
+	    if (var) *var = rb_ary_new4(n_var, &argv[argi]);
+	    argi += n_var;
+	}
+	else {
+	    if (var) *var = rb_ary_new();
+	}
+    }
+    /* capture trailing mandatory arguments */
+    for (i = n_trail; i-- > 0; ) {
+	var = vars[vari++];
+	if (var) *var = argv[argi];
+	argi++;
+    }
+    /* capture an option hash - phase 2: assignment */
+    if (f_hash) {
+	var = vars[vari++];
+	if (var) *var = hash;
+    }
+    /* capture iterator block */
+    if (f_block) {
+	var = vars[vari++];
+	if (rb_block_given_p()) {
+	    *var = rb_block_proc();
+	}
+	else {
+	    *var = Qnil;
+	}
+    }
+
+    if (argi < argc) {
+      argc_error:
+	rb_error_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
+    }
+    if (vari != varc) {
+	rb_raise(rb_eRuntimeError, "variable argument length doesn't match* %d %d", vari, varc);
+    }
+
+    return argc;
+}
+#endif
+
 #ifndef RUBY_DONT_SUBST
 #include "ruby/subst.h"
 #endif
