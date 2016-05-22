@@ -2150,9 +2150,11 @@ unsigned long ruby_strtoul(const char *str, char **endptr, int base);
 PRINTF_ARGS(int ruby_snprintf(char *str, size_t n, char const *fmt, ...), 3, 4);
 int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 
-#if defined(__GNUC__) && defined(__OPTIMIZE__)
+#if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P) && defined(__OPTIMIZE__)
 # define rb_scan_args(argc,argvp,fmt,...) \
-    rb_scan_args0(argc,argv,fmt,(sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)),(VALUE*[]){__VA_ARGS__})
+    __builtin_choose_expr(__builtin_constant_p(fmt), \
+        rb_scan_args0(argc,argv,fmt,(sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)),(VALUE*[]){__VA_ARGS__}), \
+        rb_scan_args(argc,argvp,fmt,__VA_ARGS__))
 ALWAYS_INLINE(static int
 rb_scan_args0(int argc, const VALUE *argv, const char *fmt, int varc, VALUE *vars[]));
 inline int

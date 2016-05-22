@@ -1,3 +1,8 @@
+Sun May 22 12:14:06 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_scan_args): use original rb_scan_args
+	  when fmt is dynamic.
+
 Sun May 22 11:41:12 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* class.c (rb_scan_args): moved to bottom of the file to make the
