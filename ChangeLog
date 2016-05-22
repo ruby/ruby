@@ -1,3 +1,7 @@
+Sun May 22 14:45:45 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+        * regenc.h/c: Define new function onigenc_not_support_case_map
+
 Sun May 22 12:14:06 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_scan_args): use original rb_scan_args

@@ -576,6 +576,15 @@ onigenc_not_support_get_ctype_code_range(OnigCtype ctype ARG_UNUSED,
   return ONIG_NO_SUPPORT_CONFIG;
 }
 
+#ifdef ONIG_CASE_MAPPING
+extern int
+onigenc_not_support_case_map (OnigCaseFoldType* flagP, const OnigUChar** pp, const OnigUChar* end, OnigUChar* to, OnigUChar* to_end, const struct OnigEncodingTypeST* enc)
+{
+    fprintf(stderr, "Unimplemented case mapping functionality: onigenc_not_support_case_map\n");
+    return ONIG_NO_SUPPORT_CONFIG;
+}
+#endif   /* ONIG_CASE_MAPPING */
+
 extern int
 onigenc_is_mbc_newline_0x0a(const UChar* p, const UChar* end, OnigEncoding enc ARG_UNUSED)
 {
