@@ -24,7 +24,7 @@ module DRb
         @gc = {}
         @renew = {}
         @keeping = keeping
-        @expires = Time.now + @keeping
+        @expires = nil
       end
 
       def add(obj)
@@ -32,18 +32,16 @@ module DRb
           rotate
           key = obj.__id__
           @renew[key] = obj
+          invoke_keeper
           return key
         end
       end
 
-      def fetch(key, dv=@sentinel)
+      def fetch(key)
         synchronize do
           rotate
           obj = peek(key)
-          if obj == @sentinel
-            return dv unless dv == @sentinel
-            raise InvalidIndexError
-          end
+          raise InvalidIndexError if obj == @sentinel
           @renew[key] = obj # KeepIt
           return obj
         end
@@ -51,25 +49,28 @@ module DRb
 
       private
       def peek(key)
-        synchronize do
-          return @renew.fetch(key) { @gc.fetch(key, @sentinel) }
-        end
+        return @renew.fetch(key) { @gc.fetch(key, @sentinel) }
+      end
+
+      def invoke_keeper
+        return if @expires
+        @expires = Time.now + @keeping
+        on_gc
+      end
+
+      def on_gc
+        return unless Thread.main.alive?
+        return if @expires.nil?
+        Thread.new { rotate } if @expires < Time.now
+        ObjectSpace.define_finalizer(Object.new) {on_gc}          
       end
 
       def rotate
         synchronize do
-          return if @expires > Time.now
-          @gc = @renew      # GCed
-          @renew = {}
-          @expires = Time.now + @keeping
-        end
-      end
-
-      def keeper
-        Thread.new do
-          loop do
-            rotate
-            sleep(@keeping)
+          if @expires &.< Time.now
+            @gc = @renew      # GCed
+            @renew = {}
+            @expires = @gc.empty? ? nil : Time.now + @keeping
           end
         end
       end

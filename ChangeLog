@@ -1,3 +1,9 @@
+Sun May 22 20:01:21 2016  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/timeridconv.rb: use finalizer trick instead of thread.
+
+	* test/drb/ut_timerholder.rb: ditto.
+
 Sun May 22 17:25:18 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
         * test/ruby/enc/test_case_options.rb: adjust test class name
