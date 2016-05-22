@@ -1,3 +1,8 @@
+Sun May 22 17:24:07 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+        * rename test/ruby/enc/test_casing_options.rb to test_case_options.rb
+	  for consistency
+
 Sun May 22 17:06:55 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (enc_arg, str_transcode_enc_args, econv_args):
