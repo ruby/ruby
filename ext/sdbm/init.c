@@ -179,8 +179,7 @@ fsdbm_alloc(VALUE klass)
 static VALUE
 fsdbm_initialize(int argc, VALUE *argv, VALUE obj)
 {
-    volatile VALUE file;
-    VALUE vmode;
+    VALUE file, vmode;
     DBM *dbm;
     struct dbmdata *dbmp;
     int mode;

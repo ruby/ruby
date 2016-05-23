@@ -187,7 +187,7 @@ tk_eval_cmd(argc, argv, self)
     VALUE argv[];
     VALUE self;
 {
-    volatile VALUE cmd, rest;
+    VALUE cmd, rest;
 
     rb_scan_args(argc, argv, "1*", &cmd, &rest);
     return rb_eval_cmd(cmd, rest, 0);
@@ -952,7 +952,7 @@ tk_get_eval_string(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    volatile VALUE obj, enc_flag;
+    VALUE obj, enc_flag;
 
     if (rb_scan_args(argc, argv, "11", &obj, &enc_flag) == 1) {
         enc_flag = Qnil;
@@ -1563,7 +1563,7 @@ cbsubst_table_setup(argc, argv, self)
      VALUE *argv;
      VALUE self;
 {
-  volatile VALUE cbsubst_obj;
+  VALUE cbsubst_obj;
   VALUE key_inf;
   VALUE longkey_inf;
   VALUE proc_inf;

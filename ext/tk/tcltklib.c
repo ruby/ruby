@@ -3035,7 +3035,7 @@ lib_do_one_event_core(argc, argv, self, is_ip)
     VALUE self;
     int   is_ip;
 {
-    volatile VALUE vflags;
+    VALUE vflags;
     int flags;
     int found_event;
 
