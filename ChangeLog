@@ -1,3 +1,9 @@
+Mon May 23 12:30:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (GetVpValueWithPrec): consider
+	  non-finite float values not to raise FloatDomainError.
+	  [ruby-core:75682] [Bug #12414]
+
 Mon May 23 12:21:18 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* array.c (rb_ary_fill): suppress warnings: 'item' may be used

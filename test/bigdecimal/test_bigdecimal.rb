@@ -459,6 +459,18 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(false, BigDecimal.new("NaN") > n1)
   end
 
+  def test_cmp_float_nan
+    assert_equal(nil, BigDecimal.new("1") <=> Float::NAN)
+  end
+
+  def test_cmp_float_pos_inf
+    assert_equal(-1, BigDecimal.new("1") <=> Float::INFINITY)
+  end
+
+  def test_cmp_float_neg_inf
+    assert_equal(+1, BigDecimal.new("1") <=> -Float::INFINITY)
+  end
+
   def test_cmp_failing_coercion
     n1 = BigDecimal.new("1")
     assert_equal(nil, n1 <=> nil)
