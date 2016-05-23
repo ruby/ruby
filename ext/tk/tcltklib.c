@@ -3049,11 +3049,7 @@ lib_do_one_event_core(argc, argv, self, is_ip)
         flags = TCL_ALL_EVENTS | TCL_DONT_WAIT;
     } else {
         Check_Type(vflags, T_FIXNUM);
-        flags = FIX2INT(vflags);
-    }
-
-    if (rb_safe_level() >=1 && OBJ_TAINTED(vflags)) {
-      flags |= TCL_DONT_WAIT;
+        flags = (int)FIX2LONG(vflags);
     }
 
     if (is_ip) {
