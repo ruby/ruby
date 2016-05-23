@@ -2203,6 +2203,12 @@ rb_scan_args0(int argc, const VALUE *argv, const char *fmt, int varc, VALUE *var
     }
     n_mand = n_lead + n_trail;
 
+    vari = n_mand + n_opt + f_var + f_hash + f_block;
+    if (vari != varc) {
+	rb_fatal("variable argument length doesn't match* %d %d", vari, varc);
+    }
+    vari = 0;
+
     if (argc < n_mand)
 	goto argc_error;
 
@@ -2281,9 +2287,6 @@ rb_scan_args0(int argc, const VALUE *argv, const char *fmt, int varc, VALUE *var
     if (argi < argc) {
       argc_error:
 	rb_error_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
-    }
-    if (vari != varc) {
-	rb_raise(rb_eRuntimeError, "variable argument length doesn't match* %d %d", vari, varc);
     }
 
     return argc;
