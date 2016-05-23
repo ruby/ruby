@@ -1564,9 +1564,9 @@ cbsubst_table_setup(argc, argv, self)
      VALUE self;
 {
   volatile VALUE cbsubst_obj;
-  volatile VALUE key_inf;
-  volatile VALUE longkey_inf;
-  volatile VALUE proc_inf;
+  VALUE key_inf;
+  VALUE longkey_inf;
+  VALUE proc_inf;
   VALUE inf, subst, name, type, ivar, proc;
   const VALUE *infp;
   ID id;
@@ -1616,6 +1616,7 @@ cbsubst_table_setup(argc, argv, self)
 
     rb_attr(self, id, 1, 0, Qtrue);
   }
+  RB_GC_GUARD(key_inf);
 
 
   /*
@@ -1647,6 +1648,7 @@ cbsubst_table_setup(argc, argv, self)
 
     rb_attr(self, id, 1, 0, Qtrue);
   }
+  RB_GC_GUARD(longkey_inf);
 
   /*
    * procs : array of [type, proc]
@@ -1663,6 +1665,7 @@ cbsubst_table_setup(argc, argv, self)
       type = INT2FIX(*(RSTRING_PTR(type)));
     rb_hash_aset(subst_inf->proc, type, proc);
   }
+  RB_GC_GUARD(proc_inf);
 
   rb_const_set(self, ID_SUBST_INFO, cbsubst_obj);
 
