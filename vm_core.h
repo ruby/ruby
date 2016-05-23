@@ -365,6 +365,9 @@ struct rb_iseq_constant_body {
     /* catch table */
     const struct iseq_catch_table *catch_table;
 
+    /* attributes */
+    struct rb_id_table *attributes;
+
     /* for child iseq */
     const struct rb_iseq_struct *parent_iseq;
     struct rb_iseq_struct *local_iseq; /* local_iseq->flip_cnt can be modified */

@@ -89,6 +89,9 @@ rb_iseq_free(const rb_iseq_t *iseq)
 		ruby_xfree(iseq->body->cc_entries);
 	    }
 	    ruby_xfree((void *)iseq->body->catch_table);
+	    if (iseq->body->attributes) {
+                rb_id_table_free(iseq->body->attributes);
+            }
 	    ruby_xfree((void *)iseq->body->param.opt_table);
 
 	    if (iseq->body->param.keyword != NULL) {
@@ -118,6 +121,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	rb_gc_mark(body->location.path);
 	RUBY_MARK_UNLESS_NULL(body->location.absolute_path);
 	RUBY_MARK_UNLESS_NULL((VALUE)body->parent_iseq);
+	rb_id_table_mark(body->attributes);
     }
 
     if (FL_TEST(iseq, ISEQ_NOT_LOADED_YET)) {
@@ -164,6 +168,9 @@ iseq_memsize(const rb_iseq_t *iseq)
 	size += body->local_table_size * sizeof(ID);
 	if (body->catch_table) {
 	    size += iseq_catch_table_bytes(body->catch_table->size);
+	}
+	if (body->attributes) {
+	    size += rb_id_table_memsize(body->attributes);
 	}
 	size += (body->param.opt_num + 1) * sizeof(VALUE);
 	size += param_keyword_size(body->param.keyword);
@@ -2393,6 +2400,65 @@ iseqw_s_load_from_binary_extra_data(VALUE self, VALUE str)
     return  iseq_ibf_load_extra_data(str);
 }
 
+void
+rb_iseq_annotate(rb_iseq_t *iseq, ID k, VALUE v)
+{
+    struct rb_id_table *t;
+
+    if (!iseq) {
+	return;
+    }
+    else if (!iseq->body) {
+	return;
+    }
+    else if (! (t = iseq->body->attributes)) {
+	t = iseq->body->attributes = rb_id_table_create(1);
+    }
+
+    rb_id_table_insert(t, k, v);
+#if USE_RGENGC
+    RB_OBJ_WRITTEN(iseq, iseq->body->attributes, v);
+#endif
+}
+
+VALUE
+rb_iseq_annotated_p(const rb_iseq_t *iseq, ID k)
+{
+    struct rb_id_table *t;
+    VALUE ret;
+
+    if (!iseq) {
+	return Qundef;
+    }
+    else if (!iseq->body) {
+	return Qundef;
+    }
+    else if (! (t = iseq->body->attributes)) {
+	return Qnil;
+    }
+    else if (! rb_id_table_lookup(t, k, &ret)) {
+	return Qnil;
+    }
+    else {
+	return ret;
+    }
+}
+
+/*
+ *  call-seq:
+ *     iseq.annotate -> hash
+ *
+ *  Returns annotated info, in Hash form, if any.
+ *
+ *  There is no way to annotate an iseq for now.  Stay tuned.
+ */
+static VALUE
+iseqw_attributes(VALUE self)
+{
+    const rb_iseq_t *i = iseqw_check(self);
+    return rb_id_table_to_h(i->body->attributes);
+}
+
 /*
  *  Document-class: RubyVM::InstructionSequence
  *
@@ -2423,6 +2489,7 @@ Init_ISeq(void)
     rb_define_method(rb_cISeq, "disassemble", iseqw_disasm, 0);
     rb_define_method(rb_cISeq, "to_a", iseqw_to_a, 0);
     rb_define_method(rb_cISeq, "eval", iseqw_eval, 0);
+    rb_define_method(rb_cISeq, "attributes", iseqw_attributes, 0);
 
     rb_define_method(rb_cISeq, "to_binary", iseqw_to_binary, -1);
     rb_define_singleton_method(rb_cISeq, "load_from_binary", iseqw_s_load_from_binary, 1);

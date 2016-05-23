@@ -118,6 +118,10 @@ VALUE rb_iseq_label(const rb_iseq_t *iseq);
 VALUE rb_iseq_base_label(const rb_iseq_t *iseq);
 VALUE rb_iseq_first_lineno(const rb_iseq_t *iseq);
 VALUE rb_iseq_method_name(const rb_iseq_t *iseq);
+void rb_iseq_annotate(rb_iseq_t *iseq, ID attribute, VALUE argv);
+VALUE rb_iseq_annotated_p(const rb_iseq_t *iseq, ID attribute);
+#define RB_ISEQ_ANNOTATE(iseq, attr, argv) rb_iseq_annotate((iseq), rb_intern(#attr), (argv))
+#define RB_ISEQ_ANNOTATED_P(iseq, attr) rb_iseq_annotated_p((iseq), rb_intern(#attr))
 
 /* proc.c */
 const rb_iseq_t *rb_method_iseq(VALUE body);
