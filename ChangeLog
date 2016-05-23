@@ -1,3 +1,12 @@
+Mon May 23 21:09:06 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl.c (Init_openssl): Avoid reference to unset global
+	  variable. ossl_raise() may be called before dOSSL is set. Since
+	  global variables default to 0 and the default value of dOSSL set in
+	  Init_openssl() is also Qfalse, there is no real issue but confusing.
+	  Patch by Bertram Scharpf <software@bertram-scharpf.de>
+	  [ruby-core:58264] [Bug #9101]
+
 Mon May 23 20:32:16 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_asn1.c, ext/openssl/ossl_bn.c,
