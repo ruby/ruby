@@ -1586,3 +1586,20 @@ show_impl(void)
     fprintf(stderr, "impl: %d\n", ID_TABLE_IMPL);
 }
 #endif
+
+/* impl-agnostic functions */
+
+static enum rb_id_table_iterator_result
+rb_id_table_mark_generic_i(VALUE v, void *ign)
+{
+    rb_gc_mark(v);
+    return ID_TABLE_CONTINUE;
+}
+
+void
+rb_id_table_mark(struct rb_id_table *tbl)
+{
+    if (tbl) {
+	rb_id_table_foreach_values(tbl, rb_id_table_mark_generic_i, NULL);
+    }
+}

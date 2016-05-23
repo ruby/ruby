@@ -12,6 +12,7 @@ enum rb_id_table_iterator_result {
 };
 
 struct rb_id_table *rb_id_table_create(size_t size);
+void rb_id_table_mark(struct rb_id_table *tbl);
 void rb_id_table_free(struct rb_id_table *tbl);
 void rb_id_table_clear(struct rb_id_table *tbl);
 
