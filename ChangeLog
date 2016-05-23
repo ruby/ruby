@@ -1,3 +1,8 @@
+Mon May 23 12:21:18 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* array.c (rb_ary_fill): suppress warnings: 'item' may be used
+	  uninitialized in this function
+
 Mon May 23 07:41:49 2016  Eric Wong  <e@80x24.org>
 
 	* dir.c (dir_close): update RDoc for 2.3 #close change

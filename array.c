@@ -3520,12 +3520,10 @@ rb_ary_clear(VALUE ary)
 static VALUE
 rb_ary_fill(int argc, VALUE *argv, VALUE ary)
 {
-    VALUE item, arg1, arg2;
+    VALUE item = Qundef, arg1, arg2;
     long beg = 0, end = 0, len = 0;
-    int block_p = FALSE;
 
     if (rb_block_given_p()) {
-	block_p = TRUE;
 	rb_scan_args(argc, argv, "02", &arg1, &arg2);
 	argc += 1;		/* hackish */
     }
@@ -3567,7 +3565,7 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
 	ARY_SET_LEN(ary, end);
     }
 
-    if (block_p) {
+    if (item == Qundef) {
 	VALUE v;
 	long i;
 
