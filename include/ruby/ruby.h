@@ -2155,6 +2155,14 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
     __builtin_choose_expr(__builtin_constant_p(fmt), \
         rb_scan_args0(argc,argv,fmt,(sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)),(VALUE*[]){__VA_ARGS__}), \
         rb_scan_args(argc,argvp,fmt,__VA_ARGS__))
+# if GCC_VERSION_SINCE(4, 4, 0)
+void rb_scan_args_bad_format(const char*) __attribute__((error("bad scan arg format")));
+void rb_scan_args_length_mismatch(int, int) __attribute__((error("variable argument length doesn't match")));
+# else
+#   define rb_scan_args_bad_format(fmt) rb_fatal("bad scan arg format: %s", fmt)
+#   define rb_scan_args_length_mismatch(vari, varc) rb_fatal("variable argument length doesn't match: %d %d", vari, varc)
+# endif
+
 ALWAYS_INLINE(static int
 rb_scan_args0(int argc, const VALUE *argv, const char *fmt, int varc, VALUE *vars[]));
 inline int
@@ -2199,13 +2207,13 @@ rb_scan_args0(int argc, const VALUE *argv, const char *fmt, int varc, VALUE *var
 	p++;
     }
     if (*p != '\0') {
-	rb_fatal("bad scan arg format: %s", fmt);
+	rb_scan_args_bad_format(fmt);
     }
     n_mand = n_lead + n_trail;
 
     vari = n_mand + n_opt + f_var + f_hash + f_block;
     if (vari != varc) {
-	rb_fatal("variable argument length doesn't match* %d %d", vari, varc);
+	rb_scan_args_length_mismatch(vari, varc);
     }
     vari = 0;
 
