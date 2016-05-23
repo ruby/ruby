@@ -78,12 +78,12 @@ Sun May 22 20:01:21 2016  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 Sun May 22 17:25:18 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
-        * test/ruby/enc/test_case_options.rb: adjust test class name
+	* test/ruby/enc/test_case_options.rb: adjust test class name
 	  to match file name
 
 Sun May 22 17:24:07 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
-        * rename test/ruby/enc/test_casing_options.rb to test_case_options.rb
+	* rename test/ruby/enc/test_casing_options.rb to test_case_options.rb
 	  for consistency
 
 Sun May 22 17:06:55 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -101,7 +101,7 @@ Sun May 22 16:27:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Sun May 22 14:57:43 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
-        * include/ruby/oniguruma.h: Extend OnigEncodingTypeDefine to define a
+	* include/ruby/oniguruma.h: Extend OnigEncodingTypeDefine to define a
 	  new encoding primitive 'case_map' for case mapping
 
 	* enc/utf-8.c, utf_16be/le.c, utf_32be/le.c:
@@ -114,7 +114,7 @@ Sun May 22 14:57:43 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 Sun May 22 14:45:45 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
-        * regenc.h/c: Define new function onigenc_not_support_case_map
+	* regenc.h/c: Define new function onigenc_not_support_case_map
 
 Sun May 22 12:14:06 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
