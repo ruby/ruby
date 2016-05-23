@@ -174,6 +174,13 @@ RUBY_EXTERN int isnan(double);
 # endif
 #endif
 
+#ifndef isfinite
+# ifndef HAVE_ISFINITE
+#   define HAVE_ISFINITE 1
+#   define isfinite(x) finite(x)
+# endif
+#endif
+
 #ifndef HAVE_NEXTAFTER
 RUBY_EXTERN double nextafter(double x, double y);
 #endif

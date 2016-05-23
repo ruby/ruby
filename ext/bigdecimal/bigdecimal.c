@@ -30,10 +30,6 @@
 #include <ieeefp.h>
 #endif
 
-#if !defined(HAVE_ISFINITE) && defined(HAVE_FINITE) && !defined(isfinite)
-# define isfinite(x) finite(x)
-#endif
-
 /* #define ENABLE_NUMERIC_STRING */
 
 #define MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, min, max) ( \
