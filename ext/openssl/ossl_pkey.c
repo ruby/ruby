@@ -121,8 +121,8 @@ ossl_pkey_new_from_file(VALUE filename)
     FILE *fp;
     EVP_PKEY *pkey;
 
-    SafeStringValue(filename);
-    if (!(fp = fopen(RSTRING_PTR(filename), "r"))) {
+    rb_check_safe_obj(filename);
+    if (!(fp = fopen(StringValueCStr(filename), "r"))) {
 	ossl_raise(ePKeyError, "%s", strerror(errno));
     }
     rb_fd_fix_cloexec(fileno(fp));

@@ -95,7 +95,7 @@ try_convert_to_bnptr(VALUE obj)
     case T_BIGNUM:
 	obj = rb_String(obj);
 	newobj = NewBN(cBN);	/* GC bug */
-	if (!BN_dec2bn(&bn, StringValuePtr(obj))) {
+	if (!BN_dec2bn(&bn, StringValueCStr(obj))) {
 	    ossl_raise(eBNError, NULL);
 	}
 	SetBN(newobj, bn); /* Handle potencial mem leaks */
@@ -209,26 +209,25 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
     }
 
-    StringValue(str);
     GetBN(self, bn);
     switch (base) {
     case 0:
-	if (!BN_mpi2bn((unsigned char *)RSTRING_PTR(str), RSTRING_LENINT(str), bn)) {
+	if (!BN_mpi2bn((unsigned char *)StringValuePtr(str), RSTRING_LENINT(str), bn)) {
 	    ossl_raise(eBNError, NULL);
 	}
 	break;
     case 2:
-	if (!BN_bin2bn((unsigned char *)RSTRING_PTR(str), RSTRING_LENINT(str), bn)) {
+	if (!BN_bin2bn((unsigned char *)StringValuePtr(str), RSTRING_LENINT(str), bn)) {
 	    ossl_raise(eBNError, NULL);
 	}
 	break;
     case 10:
-	if (!BN_dec2bn(&bn, RSTRING_PTR(str))) {
+	if (!BN_dec2bn(&bn, StringValueCStr(str))) {
 	    ossl_raise(eBNError, NULL);
 	}
 	break;
     case 16:
-	if (!BN_hex2bn(&bn, RSTRING_PTR(str))) {
+	if (!BN_hex2bn(&bn, StringValueCStr(str))) {
 	    ossl_raise(eBNError, NULL);
 	}
 	break;

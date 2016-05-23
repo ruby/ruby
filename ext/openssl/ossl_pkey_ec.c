@@ -214,10 +214,10 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
 
 		ossl_clear_error(); /* ignore errors in the previous d2i_EC_PUBKEY_bio() */
                 if (nid == NID_undef)
-                    ossl_raise(eECError, "unknown curve name (%s)\n", name);
+                    ossl_raise(eECError, "unknown curve name (%"PRIsVALUE")", arg);
 
                 if ((ec = EC_KEY_new_by_curve_name(nid)) == NULL)
-                    ossl_raise(eECError, "unable to create curve (%s)\n", name);
+                    ossl_raise(eECError, "unable to create curve (%"PRIsVALUE")\n", arg);
 
                 EC_KEY_set_asn1_flag(ec, OPENSSL_EC_NAMED_CURVE);
                 EC_KEY_set_conv_form(ec, POINT_CONVERSION_UNCOMPRESSED);
@@ -802,11 +802,11 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
 
 		ossl_clear_error(); /* ignore errors in d2i_ECPKParameters_bio() */
                 if (nid == NID_undef)
-                    ossl_raise(eEC_GROUP, "unknown curve name (%s)", name);
+                    ossl_raise(eEC_GROUP, "unknown curve name (%"PRIsVALUE")", arg1);
 
                 group = EC_GROUP_new_by_curve_name(nid);
                 if (group == NULL)
-                    ossl_raise(eEC_GROUP, "unable to create curve (%s)", name);
+                    ossl_raise(eEC_GROUP, "unable to create curve (%"PRIsVALUE")", arg1);
 
                 EC_GROUP_set_asn1_flag(group, OPENSSL_EC_NAMED_CURVE);
                 EC_GROUP_set_point_conversion_form(group, POINT_CONVERSION_UNCOMPRESSED);

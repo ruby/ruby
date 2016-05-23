@@ -563,9 +563,8 @@ ssl_npn_encode_protocol_i(VALUE cur, VALUE encoded)
 static VALUE
 ssl_encode_npn_protocols(VALUE protocols)
 {
-    VALUE encoded = rb_str_new2("");
+    VALUE encoded = rb_str_new(NULL, 0);
     rb_iterate(rb_each, protocols, ssl_npn_encode_protocol_i, encoded);
-    StringValueCStr(encoded);
     return encoded;
 }
 
@@ -775,9 +774,9 @@ ossl_sslctx_setup(VALUE self)
     }
 
     val = ossl_sslctx_get_ca_file(self);
-    ca_file = NIL_P(val) ? NULL : StringValuePtr(val);
+    ca_file = NIL_P(val) ? NULL : StringValueCStr(val);
     val = ossl_sslctx_get_ca_path(self);
-    ca_path = NIL_P(val) ? NULL : StringValuePtr(val);
+    ca_path = NIL_P(val) ? NULL : StringValueCStr(val);
     if(ca_file || ca_path){
 	if (!SSL_CTX_load_verify_locations(ctx, ca_file, ca_path))
 	    rb_warning("can't set verify locations");
@@ -812,7 +811,7 @@ ossl_sslctx_setup(VALUE self)
     val = rb_iv_get(self, "@alpn_protocols");
     if (!NIL_P(val)) {
 	VALUE rprotos = ssl_encode_npn_protocols(val);
-	SSL_CTX_set_alpn_protos(ctx, (const unsigned char *)StringValueCStr(rprotos), RSTRING_LENINT(rprotos));
+	SSL_CTX_set_alpn_protos(ctx, (unsigned char *)RSTRING_PTR(rprotos), RSTRING_LENINT(rprotos));
 	OSSL_Debug("SSL ALPN values added");
     }
     if (RTEST(rb_iv_get(self, "@alpn_select_cb"))) {
@@ -947,7 +946,7 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
         ossl_raise(eSSLError, "SSL_CTX is not initialized.");
         return Qnil;
     }
-    if (!SSL_CTX_set_cipher_list(ctx, RSTRING_PTR(str))) {
+    if (!SSL_CTX_set_cipher_list(ctx, StringValueCStr(str))) {
         ossl_raise(eSSLError, "SSL_CTX_set_cipher_list");
     }
 
@@ -1210,7 +1209,7 @@ ossl_ssl_setup(VALUE self)
 
 #ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
         if (!NIL_P(hostname)) {
-           if (SSL_set_tlsext_host_name(ssl, StringValuePtr(hostname)) != 1)
+           if (SSL_set_tlsext_host_name(ssl, StringValueCStr(hostname)) != 1)
                ossl_raise(eSSLError, "SSL_set_tlsext_host_name");
         }
 #endif

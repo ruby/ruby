@@ -429,12 +429,13 @@ ossl_pkcs7_sym2typeid(VALUE sym)
         { "digest",             NID_pkcs7_digest },
     };
 
-    if (RB_TYPE_P(sym, T_SYMBOL)) sym = rb_sym2str(sym);
+    if (SYMBOL_P(sym)) sym = rb_sym2str(sym);
     else StringValue(sym);
     RSTRING_GETMEM(sym, s, l);
+
     for(i = 0; ; i++){
 	if(i == numberof(p7_type_tab))
-	    ossl_raise(ePKCS7Error, "unknown type \"%s\"", s);
+	    ossl_raise(ePKCS7Error, "unknown type \"%"PRIsVALUE"\"", sym);
 	if(strlen(p7_type_tab[i].name) != l) continue;
 	if(strcmp(p7_type_tab[i].name, s) == 0){
 	    ret = p7_type_tab[i].nid;

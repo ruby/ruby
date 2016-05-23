@@ -78,9 +78,9 @@ ossl_x509_new_from_file(VALUE filename)
     FILE *fp;
     VALUE obj;
 
-    SafeStringValue(filename);
+    rb_check_safe_obj(filename);
     obj = NewX509(cX509Cert);
-    if (!(fp = fopen(RSTRING_PTR(filename), "r"))) {
+    if (!(fp = fopen(StringValueCStr(filename), "r"))) {
 	ossl_raise(eX509CertError, "%s", strerror(errno));
     }
     rb_fd_fix_cloexec(fileno(fp));

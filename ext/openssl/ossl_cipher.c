@@ -116,7 +116,7 @@ ossl_cipher_initialize(VALUE self, VALUE str)
     char *name;
     unsigned char key[EVP_MAX_KEY_LENGTH];
 
-    name = StringValuePtr(str);
+    name = StringValueCStr(str);
     GetCipherInit(self, ctx);
     if (ctx) {
 	ossl_raise(rb_eRuntimeError, "Cipher already inititalized!");
@@ -124,7 +124,7 @@ ossl_cipher_initialize(VALUE self, VALUE str)
     AllocCipher(self, ctx);
     EVP_CIPHER_CTX_init(ctx);
     if (!(cipher = EVP_get_cipherbyname(name))) {
-	ossl_raise(rb_eRuntimeError, "unsupported cipher algorithm (%s)", name);
+	ossl_raise(rb_eRuntimeError, "unsupported cipher algorithm (%"PRIsVALUE")", str);
     }
     /*
      * The EVP which has EVP_CIPH_RAND_KEY flag (such as DES3) allows

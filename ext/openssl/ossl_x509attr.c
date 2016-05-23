@@ -141,7 +141,7 @@ ossl_x509attr_set_oid(VALUE self, VALUE oid)
     ASN1_OBJECT *obj;
     char *s;
 
-    s = StringValuePtr(oid);
+    s = StringValueCStr(oid);
     obj = OBJ_txt2obj(s, 0);
     if(!obj) obj = OBJ_txt2obj(s, 1);
     if(!obj) ossl_raise(eX509AttrError, NULL);
@@ -269,7 +269,7 @@ ossl_x509attr_to_der(VALUE self)
     p = (unsigned char *)RSTRING_PTR(str);
     if(i2d_X509_ATTRIBUTE(attr, &p) <= 0)
 	ossl_raise(eX509AttrError, NULL);
-    rb_str_set_len(str, p - (unsigned char*)RSTRING_PTR(str));
+    ossl_str_adjust(str, p);
 
     return str;
 }

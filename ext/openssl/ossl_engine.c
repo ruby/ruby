@@ -96,7 +96,7 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
         ENGINE_load_builtin_engines();
         return Qtrue;
     }
-    StringValue(name);
+    StringValueCStr(name);
 #ifndef OPENSSL_NO_STATIC_ENGINE
 #if HAVE_ENGINE_LOAD_DYNAMIC
     OSSL_ENGINE_LOAD_IF_MATCH(dynamic);
@@ -148,7 +148,7 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
     OSSL_ENGINE_LOAD_IF_MATCH(openbsd_dev_crypto);
 #endif
     OSSL_ENGINE_LOAD_IF_MATCH(openssl);
-    rb_warning("no such builtin loader for `%s'", RSTRING_PTR(name));
+    rb_warning("no such builtin loader for `%"PRIsVALUE"'", name);
     return Qnil;
 #endif /* HAVE_ENGINE_LOAD_BUILTIN_ENGINES */
 }
@@ -213,7 +213,7 @@ ossl_engine_s_by_id(VALUE klass, VALUE id)
     ENGINE *e;
     VALUE obj;
 
-    StringValue(id);
+    StringValueCStr(id);
     ossl_engine_s_load(1, &id, klass);
     obj = NewEngine(klass);
     if(!(e = ENGINE_by_id(RSTRING_PTR(id))))
@@ -318,12 +318,10 @@ ossl_engine_get_cipher(VALUE self, VALUE name)
 {
     ENGINE *e;
     const EVP_CIPHER *ciph, *tmp;
-    char *s;
     int nid;
 
-    s = StringValuePtr(name);
-    tmp = EVP_get_cipherbyname(s);
-    if(!tmp) ossl_raise(eEngineError, "no such cipher `%s'", s);
+    tmp = EVP_get_cipherbyname(StringValueCStr(name));
+    if(!tmp) ossl_raise(eEngineError, "no such cipher `%"PRIsVALUE"'", name);
     nid = EVP_CIPHER_nid(tmp);
     GetEngine(self, e);
     ciph = ENGINE_get_cipher(e, nid);
@@ -357,12 +355,10 @@ ossl_engine_get_digest(VALUE self, VALUE name)
 {
     ENGINE *e;
     const EVP_MD *md, *tmp;
-    char *s;
     int nid;
 
-    s = StringValuePtr(name);
-    tmp = EVP_get_digestbyname(s);
-    if(!tmp) ossl_raise(eEngineError, "no such digest `%s'", s);
+    tmp = EVP_get_digestbyname(StringValueCStr(name));
+    if(!tmp) ossl_raise(eEngineError, "no such digest `%"PRIsVALUE"'", name);
     nid = EVP_MD_nid(tmp);
     GetEngine(self, e);
     md = ENGINE_get_digest(e, nid);
@@ -393,8 +389,8 @@ ossl_engine_load_privkey(int argc, VALUE *argv, VALUE self)
     char *sid, *sdata;
 
     rb_scan_args(argc, argv, "02", &id, &data);
-    sid = NIL_P(id) ? NULL : StringValuePtr(id);
-    sdata = NIL_P(data) ? NULL : StringValuePtr(data);
+    sid = NIL_P(id) ? NULL : StringValueCStr(id);
+    sdata = NIL_P(data) ? NULL : StringValueCStr(data);
     GetEngine(self, e);
 #if OPENSSL_VERSION_NUMBER < 0x00907000L
     pkey = ENGINE_load_private_key(e, sid, sdata);
@@ -427,8 +423,8 @@ ossl_engine_load_pubkey(int argc, VALUE *argv, VALUE self)
     char *sid, *sdata;
 
     rb_scan_args(argc, argv, "02", &id, &data);
-    sid = NIL_P(id) ? NULL : StringValuePtr(id);
-    sdata = NIL_P(data) ? NULL : StringValuePtr(data);
+    sid = NIL_P(id) ? NULL : StringValueCStr(id);
+    sdata = NIL_P(data) ? NULL : StringValueCStr(data);
     GetEngine(self, e);
 #if OPENSSL_VERSION_NUMBER < 0x00907000L
     pkey = ENGINE_load_public_key(e, sid, sdata);
@@ -487,10 +483,8 @@ ossl_engine_ctrl_cmd(int argc, VALUE *argv, VALUE self)
 
     GetEngine(self, e);
     rb_scan_args(argc, argv, "11", &cmd, &val);
-    StringValue(cmd);
-    if (!NIL_P(val)) StringValue(val);
-    ret = ENGINE_ctrl_cmd_string(e, RSTRING_PTR(cmd),
-				 NIL_P(val) ? NULL : RSTRING_PTR(val), 0);
+    ret = ENGINE_ctrl_cmd_string(e, StringValueCStr(cmd),
+				 NIL_P(val) ? NULL : StringValueCStr(val), 0);
     if (!ret) ossl_raise(eEngineError, NULL);
 
     return self;

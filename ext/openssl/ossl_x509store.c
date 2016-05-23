@@ -240,8 +240,8 @@ ossl_x509store_add_file(VALUE self, VALUE file)
     char *path = NULL;
 
     if(file != Qnil){
-        SafeStringValue(file);
-	path = RSTRING_PTR(file);
+	rb_check_safe_obj(file);
+	path = StringValueCStr(file);
     }
     GetX509Store(self, store);
     lookup = X509_STORE_add_lookup(store, X509_LOOKUP_file());
@@ -261,8 +261,8 @@ ossl_x509store_add_path(VALUE self, VALUE dir)
     char *path = NULL;
 
     if(dir != Qnil){
-        SafeStringValue(dir);
-	path = RSTRING_PTR(dir);
+	rb_check_safe_obj(dir);
+	path = StringValueCStr(dir);
     }
     GetX509Store(self, store);
     lookup = X509_STORE_add_lookup(store, X509_LOOKUP_hash_dir());

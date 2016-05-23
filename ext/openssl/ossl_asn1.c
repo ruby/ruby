@@ -140,7 +140,7 @@ num_to_asn1integer(VALUE obj, ASN1_INTEGER *ai)
 	bn = GetBNPtr(obj);
     } else {
 	obj = rb_String(obj);
-	if (!BN_dec2bn(&bn, StringValuePtr(obj))) {
+	if (!BN_dec2bn(&bn, StringValueCStr(obj))) {
 	    ossl_raise(eOSSLError, NULL);
 	}
     }
@@ -293,10 +293,10 @@ obj_to_asn1obj(VALUE obj)
 {
     ASN1_OBJECT *a1obj;
 
-    StringValue(obj);
+    StringValueCStr(obj);
     a1obj = OBJ_txt2obj(RSTRING_PTR(obj), 0);
     if(!a1obj) a1obj = OBJ_txt2obj(RSTRING_PTR(obj), 1);
-    if(!a1obj) ossl_raise(eASN1Error, "invalid OBJECT ID");
+    if(!a1obj) ossl_raise(eASN1Error, "invalid OBJECT ID %"PRIsVALUE, obj);
 
     return a1obj;
 }
@@ -1374,9 +1374,9 @@ ossl_asn1cons_each(VALUE self)
 static VALUE
 ossl_asn1obj_s_register(VALUE self, VALUE oid, VALUE sn, VALUE ln)
 {
-    StringValue(oid);
-    StringValue(sn);
-    StringValue(ln);
+    StringValueCStr(oid);
+    StringValueCStr(sn);
+    StringValueCStr(ln);
 
     if(!OBJ_create(RSTRING_PTR(oid), RSTRING_PTR(sn), RSTRING_PTR(ln)))
 	ossl_raise(eASN1Error, NULL);
@@ -1399,7 +1399,7 @@ ossl_asn1obj_get_sn(VALUE self)
     int nid;
 
     val = ossl_asn1_get_value(self);
-    if ((nid = OBJ_txt2nid(StringValuePtr(val))) != NID_undef)
+    if ((nid = OBJ_txt2nid(StringValueCStr(val))) != NID_undef)
 	ret = rb_str_new2(OBJ_nid2sn(nid));
 
     return ret;
@@ -1420,7 +1420,7 @@ ossl_asn1obj_get_ln(VALUE self)
     int nid;
 
     val = ossl_asn1_get_value(self);
-    if ((nid = OBJ_txt2nid(StringValuePtr(val))) != NID_undef)
+    if ((nid = OBJ_txt2nid(StringValueCStr(val))) != NID_undef)
 	ret = rb_str_new2(OBJ_nid2ln(nid));
 
     return ret;

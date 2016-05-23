@@ -251,15 +251,18 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
 #endif
 
     rb_scan_args(argc, argv, "21", &oid, &value, &critical);
-    StringValue(oid);
+    StringValueCStr(oid);
     StringValue(value);
     if(NIL_P(critical)) critical = Qfalse;
 
     nid = OBJ_ln2nid(RSTRING_PTR(oid));
     if(!nid) nid = OBJ_sn2nid(RSTRING_PTR(oid));
-    if(!nid) ossl_raise(eX509ExtError, "unknown OID `%s'", RSTRING_PTR(oid));
+    if(!nid) ossl_raise(eX509ExtError, "unknown OID `%"PRIsVALUE"'", oid);
+
     valstr = rb_str_new2(RTEST(critical) ? "critical," : "");
     rb_str_append(valstr, value);
+    StringValueCStr(valstr);
+
     GetX509ExtFactory(self, ctx);
     obj = NewX509Ext(cX509Ext);
 #ifdef HAVE_X509V3_EXT_NCONF_NID
@@ -271,8 +274,7 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
     ext = X509V3_EXT_conf_nid(empty_lhash, ctx, nid, RSTRING_PTR(valstr));
 #endif
     if (!ext){
-	ossl_raise(eX509ExtError, "%s = %s",
-		   RSTRING_PTR(oid), RSTRING_PTR(value));
+	ossl_raise(eX509ExtError, "%"PRIsVALUE" = %"PRIsVALUE, oid, valstr);
     }
     SetX509Ext(obj, ext);
 
@@ -341,7 +343,7 @@ ossl_x509ext_set_oid(VALUE self, VALUE oid)
     ASN1_OBJECT *obj;
     char *s;
 
-    s = StringValuePtr(oid);
+    s = StringValueCStr(oid);
     obj = OBJ_txt2obj(s, 0);
     if(!obj) obj = OBJ_txt2obj(s, 1);
     if(!obj) ossl_raise(eX509ExtError, NULL);
