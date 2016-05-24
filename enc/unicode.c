@@ -670,6 +670,8 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
     OnigUChar *to_start = to;
     OnigCaseFoldType flags = *flagP;
     to_end -= CASE_MAPPING_SLACK;
+    /* copy flags ONIGENC_CASE_UPCASE     and ONIGENC_CASE_DOWNCASE over to
+     *            ONIGENC_CASE_UP_SPECIAL and ONIGENC_CASE_DOWN_SPECIAL */
     flags |= (flags&(ONIGENC_CASE_UPCASE|ONIGENC_CASE_DOWNCASE))<<ONIGENC_CASE_SPECIAL_OFFSET;
 
     while (*pp<end && to<=to_end) {
@@ -780,7 +782,8 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 	to += ONIGENC_CODE_TO_MBC(enc, code, to);
 	/* switch from titlecase to lowercase for capitalize */
 	if (flags & ONIGENC_CASE_TITLECASE)
-	    flags ^= (ONIGENC_CASE_UPCASE|ONIGENC_CASE_TITLECASE|ONIGENC_CASE_DOWNCASE);
+	    flags ^= (ONIGENC_CASE_UPCASE    |ONIGENC_CASE_DOWNCASE|ONIGENC_CASE_TITLECASE|
+		      ONIGENC_CASE_UP_SPECIAL|ONIGENC_CASE_DOWN_SPECIAL);
     }
     *flagP = flags;
     return (int)(to-to_start);

@@ -1,3 +1,9 @@
+Wed May 25 08:01:39 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/unicode.c: Fix flag error for switch from titlecase to lowercase.
+
+	* test/ruby/enc/test_case_mapping.rb: Tests for above error.
+
 Wed May 25 01:13:55 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_pkey_ec.c (ec_key_new_from_group): Create a new

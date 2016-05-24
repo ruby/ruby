@@ -9,7 +9,8 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
   def check_upcase_properties(expected, start, *flags)
     assert_equal expected, start.upcase(*flags)
     temp = start.dup
-    assert_equal expected, temp.upcase!(*flags)
+    assert_equal expected, temp.upcase!(*flags) unless expected==temp
+    assert_equal nil, temp.upcase!(*flags) if expected==temp
     assert_equal expected, expected.upcase(*flags)
     temp = expected.dup
     assert_nil   temp.upcase!(*flags)
@@ -18,7 +19,8 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
   def check_downcase_properties(expected, start, *flags)
     assert_equal expected, start.downcase(*flags)
     temp = start.dup
-    assert_equal expected, temp.downcase!(*flags)
+    assert_equal expected, temp.downcase!(*flags) unless expected==temp
+    assert_equal nil, temp.downcase!(*flags) if expected==temp
     assert_equal expected, expected.downcase(*flags)
     temp = expected.dup
     assert_nil   temp.downcase!(*flags)
@@ -27,7 +29,8 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
   def check_capitalize_properties(expected, start, *flags)
     assert_equal expected, start.capitalize(*flags)
     temp = start.dup
-    assert_equal expected, temp.capitalize!(*flags)
+    assert_equal expected, temp.capitalize!(*flags) unless expected==temp
+    assert_equal nil, temp.capitalize!(*flags) if expected==temp
     assert_equal expected, expected.capitalize(*flags)
     temp = expected.dup
     assert_nil   temp.capitalize!(*flags)
@@ -64,8 +67,26 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     check_swapcase_properties   'résumé DÜRST ĭñŧėřŊÃŢĲŇŐŃæłĩżàťïōņ', 'RÉSUMÉ dürst ĬÑŦĖŘŋãţĳňőńÆŁĨŻÀŤÏŌŅ', :lithuanian
   end
 
+  def test_one_way_upcase
+    check_upcase_properties     'ΜΜΜΜΜ', 'µµµµµ', :lithuanian # MICRO SIGN -> Greek Mu
+    check_downcase_properties   'µµµµµ', 'µµµµµ', :lithuanian # MICRO SIGN -> Greek Mu
+    check_capitalize_properties 'Μµµµµ', 'µµµµµ', :lithuanian # MICRO SIGN -> Greek Mu
+    check_capitalize_properties 'Μµµµµ', 'µµµµµ', :turkic # MICRO SIGN -> Greek Mu
+    check_capitalize_properties 'H̱ẖẖẖẖ', 'ẖẖẖẖẖ', :lithuanian
+    check_capitalize_properties 'Βϐϐϐϐ', 'ϐϐϐϐϐ', :lithuanian
+    check_capitalize_properties 'Θϑϑϑϑ', 'ϑϑϑϑϑ', :lithuanian
+    check_capitalize_properties 'Φϕ', 'ϕϕ', :lithuanian
+    check_capitalize_properties 'Πϖ', 'ϖϖ', :lithuanian
+    check_capitalize_properties 'Κϰ', 'ϰϰ', :lithuanian
+    check_capitalize_properties 'Ρϱϱ', 'ϱϱϱ', :lithuanian
+    check_capitalize_properties 'Εϵ', 'ϵϵ', :lithuanian
+    check_capitalize_properties 'Ιͅͅͅͅ', 'ͅͅͅͅͅ', :lithuanian
+    check_capitalize_properties 'Sſſſſ', 'ſſſſſ', :lithuanian
+  end
+
   def test_various
     check_upcase_properties     'Μ', 'µ', :lithuanian # MICRO SIGN -> Greek Mu
+    check_downcase_properties   'µµµµµ', 'µµµµµ', :lithuanian # MICRO SIGN
     check_capitalize_properties 'Ss', 'ß', :lithuanian
     check_upcase_properties     'SS', 'ß', :lithuanian
   end
