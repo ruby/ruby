@@ -1,3 +1,17 @@
+Tue May 24 21:32:21 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_x509ext.c (ossl_x509ext_set_value): Use
+	  ASN1_OCTET_STRING_set() instead of M_ASN1_OCTET_STRING_set(). Macros
+	  prefixed by "M_" are discouraged to be used from outside OpenSSL
+	  library[1].
+	  (ossl_x509ext_get_value): Likewise, use ASN1_STRING_print() instead
+	  of M_ASN1_OCTET_STRING_print().
+	  [1] https://git.openssl.org/gitweb/?p=openssl.git;a=blob;f=CHANGES;h=bf61913d7b01212b4d8b2f3c13d71d645914f67c;hb=b6079a7835f61daa9fb2cbf9addfa86049523933#l878
+
+	* ext/openssl/ossl.h: Include openssl/asn1.h instead of
+	  openssl/asn1_mac.h. It just includes openssl/asn1.h and defines some
+	  additional "M_" macros.
+
 Tue May 24 18:52:11 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_scan_args_verify): verify the format to

@@ -358,23 +358,16 @@ ossl_x509ext_set_value(VALUE self, VALUE data)
 {
     X509_EXTENSION *ext;
     ASN1_OCTET_STRING *asn1s;
-    char *s;
 
     data = ossl_to_der_if_possible(data);
     StringValue(data);
-    if(!(s = OPENSSL_malloc(RSTRING_LEN(data))))
-	ossl_raise(eX509ExtError, "malloc error");
-    memcpy(s, RSTRING_PTR(data), RSTRING_LEN(data));
     if(!(asn1s = ASN1_OCTET_STRING_new())){
-	OPENSSL_free(s);
 	ossl_raise(eX509ExtError, NULL);
     }
-    if(!M_ASN1_OCTET_STRING_set(asn1s, s, RSTRING_LENINT(data))){
-	OPENSSL_free(s);
+    if(!ASN1_STRING_set((ASN1_STRING *)asn1s, (unsigned char *)RSTRING_PTR(data), RSTRING_LENINT(data))){
 	ASN1_OCTET_STRING_free(asn1s);
 	ossl_raise(eX509ExtError, NULL);
     }
-    OPENSSL_free(s);
     GetX509Ext(self, ext);
     X509_EXTENSION_set_data(ext, asn1s);
 
@@ -426,7 +419,7 @@ ossl_x509ext_get_value(VALUE obj)
     if (!(out = BIO_new(BIO_s_mem())))
 	ossl_raise(eX509ExtError, NULL);
     if (!X509V3_EXT_print(out, ext, 0, 0))
-	M_ASN1_OCTET_STRING_print(out, ext->value);
+	ASN1_STRING_print(out, (ASN1_STRING *)X509_EXTENSION_get_data(ext));
     ret = ossl_membio2str(out);
 
     return ret;
