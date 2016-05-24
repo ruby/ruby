@@ -89,6 +89,7 @@ rb_clear_cache(void)
 void
 rb_clear_constant_cache(void)
 {
+    INC_GLOBAL_TIMESTAMP();
     INC_GLOBAL_CONSTANT_STATE();
 }
 
@@ -99,6 +100,8 @@ rb_clear_method_cache_by_class(VALUE klass)
 	int global = klass == rb_cBasicObject || klass == rb_cObject || klass == rb_mKernel;
 
 	RUBY_DTRACE_HOOK(METHOD_CACHE_CLEAR, (global ? "global" : rb_class2name(klass)));
+
+	INC_GLOBAL_TIMESTAMP();
 
 	if (global) {
 	    INC_GLOBAL_METHOD_STATE();
