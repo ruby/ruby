@@ -56,7 +56,10 @@ COMMONOBJS    = array.$(OBJEXT) \
 		bignum.$(OBJEXT) \
 		class.$(OBJEXT) \
 		compar.$(OBJEXT) \
+		compile.$(OBJEXT) \
 		complex.$(OBJEXT) \
+		cont.$(OBJEXT) \
+		debug.$(OBJEXT) \
 		dir.$(OBJEXT) \
 		dln_find.$(OBJEXT) \
 		encoding.$(OBJEXT) \
@@ -64,13 +67,13 @@ COMMONOBJS    = array.$(OBJEXT) \
 		enumerator.$(OBJEXT) \
 		error.$(OBJEXT) \
 		eval.$(OBJEXT) \
-		load.$(OBJEXT) \
-		proc.$(OBJEXT) \
 		file.$(OBJEXT) \
 		gc.$(OBJEXT) \
 		hash.$(OBJEXT) \
 		inits.$(OBJEXT) \
 		io.$(OBJEXT) \
+		iseq.$(OBJEXT) \
+		load.$(OBJEXT) \
 		marshal.$(OBJEXT) \
 		math.$(OBJEXT) \
 		node.$(OBJEXT) \
@@ -78,6 +81,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		object.$(OBJEXT) \
 		pack.$(OBJEXT) \
 		parse.$(OBJEXT) \
+		proc.$(OBJEXT) \
 		process.$(OBJEXT) \
 		random.$(OBJEXT) \
 		range.$(OBJEXT) \
@@ -98,20 +102,16 @@ COMMONOBJS    = array.$(OBJEXT) \
 		string.$(OBJEXT) \
 		struct.$(OBJEXT) \
 		symbol.$(OBJEXT) \
+		thread.$(OBJEXT) \
 		time.$(OBJEXT) \
 		transcode.$(OBJEXT) \
 		util.$(OBJEXT) \
 		variable.$(OBJEXT) \
 		version.$(OBJEXT) \
-		compile.$(OBJEXT) \
-		debug.$(OBJEXT) \
-		iseq.$(OBJEXT) \
 		vm.$(OBJEXT) \
-		vm_dump.$(OBJEXT) \
 		vm_backtrace.$(OBJEXT) \
+		vm_dump.$(OBJEXT) \
 		vm_trace.$(OBJEXT) \
-		thread.$(OBJEXT) \
-		cont.$(OBJEXT) \
 		$(DTRACE_OBJ) \
 		$(BUILTIN_ENCOBJS) \
 		$(BUILTIN_TRANSOBJS) \
@@ -1229,6 +1229,7 @@ compile.$(OBJEXT): {$(VPATH)}encindex.h
 compile.$(OBJEXT): {$(VPATH)}encoding.h
 compile.$(OBJEXT): {$(VPATH)}gc.h
 compile.$(OBJEXT): {$(VPATH)}id.h
+compile.$(OBJEXT): {$(VPATH)}id_table.h
 compile.$(OBJEXT): {$(VPATH)}insns.inc
 compile.$(OBJEXT): {$(VPATH)}insns_info.inc
 compile.$(OBJEXT): {$(VPATH)}intern.h
@@ -1681,6 +1682,7 @@ iseq.$(OBJEXT): {$(VPATH)}encoding.h
 iseq.$(OBJEXT): {$(VPATH)}eval_intern.h
 iseq.$(OBJEXT): {$(VPATH)}gc.h
 iseq.$(OBJEXT): {$(VPATH)}id.h
+iseq.$(OBJEXT): {$(VPATH)}id_table.h
 iseq.$(OBJEXT): {$(VPATH)}insns.inc
 iseq.$(OBJEXT): {$(VPATH)}insns_info.inc
 iseq.$(OBJEXT): {$(VPATH)}intern.h
@@ -2133,6 +2135,8 @@ regsyntax.$(OBJEXT): {$(VPATH)}regint.h
 regsyntax.$(OBJEXT): {$(VPATH)}regsyntax.c
 regsyntax.$(OBJEXT): {$(VPATH)}st.h
 regsyntax.$(OBJEXT): {$(VPATH)}subst.h
+ruby-runner.$(OBJEXT): {$(VPATH)}ruby-runner.c
+ruby-runner.$(OBJEXT): {$(VPATH)}ruby-runner.h
 ruby.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 ruby.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 ruby.$(OBJEXT): $(CCAN_DIR)/list/list.h

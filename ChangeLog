@@ -1,3 +1,8 @@
+Tue May 24 12:35:56 2016  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* common.mk : sort lines, and add missing dependencies suggested
+	  by tool/update-deps
+
 Mon May 23 21:33:36 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/missing.h (isfinite): move from numeric.c.
