@@ -971,7 +971,7 @@ if test "$GCC" = yes; then
 	RUBY_TRY_CFLAGS($oflag, [RUBY_APPEND_OPTION(optflags, $oflag)])
     done
     for oflag in -fexcess-precision=standard -fp-model\ precise; do
-	RUBY_TRY_CFLAGS($oflag, [RUBY_APPEND_OPTION(ruby_cflags, $oflag)])
+	RUBY_TRY_CFLAGS($oflag, [RUBY_APPEND_OPTION(XCFLAGS, $oflag)])
     done
 fi
 
@@ -4222,8 +4222,7 @@ if test "${ARCH_FLAG}"; then
 fi
 warnflags="$rb_cv_warnflags"
 AC_SUBST(cppflags)dnl
-AC_SUBST(ruby_cflags)dnl
-AC_SUBST(cflags, ["${orig_cflags:+$orig_cflags }${ruby_cflags:+$ruby_cflags }"'${optflags} ${debugflags} ${warnflags}'])dnl
+AC_SUBST(cflags, ["${orig_cflags:+$orig_cflags }"'${optflags} ${debugflags} ${warnflags}'])dnl
 AC_SUBST(cxxflags, ["${orig_cxxflags:+$orig_cxxflags }"'${optflags} ${debugflags} ${warnflags}'])dnl
 AC_SUBST(optflags)dnl
 AC_SUBST(debugflags)dnl
