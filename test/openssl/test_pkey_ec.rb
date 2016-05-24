@@ -16,7 +16,7 @@ class OpenSSL::TestEC < OpenSSL::TestCase
       group = OpenSSL::PKey::EC::Group.new(curve)
 
       key = OpenSSL::PKey::EC.new(group)
-      key.generate_key
+      key.generate_key!
 
       @groups << group
       @keys << key
@@ -127,7 +127,7 @@ class OpenSSL::TestEC < OpenSSL::TestCase
   def test_dh_compute_key
     for key in @keys
       k = OpenSSL::PKey::EC.new(key.group)
-      k.generate_key
+      k.generate_key!
 
       puba = key.public_key
       pubb = k.public_key

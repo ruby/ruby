@@ -1,3 +1,13 @@
+Wed May 25 00:37:16 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_pkey_ec.c (ossl_ec_key_generate_key): Fix up RDoc.
+	  (Init_ossl_ec): Rename EC#generate_key to EC#generate_key!. Make the
+	  old name an alias of #generate_key!. This change is for consistency
+	  with other PKey types.  [ruby-core:45541] [Bug #6567]
+
+	* test/openssl/test_pkey_ec.rb: Use EC#generate_key! instead of
+	  EC#generate_key.
+
 Wed May 25 00:23:05 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_scan_args_set): check the arity after

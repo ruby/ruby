@@ -584,9 +584,17 @@ static VALUE ossl_ec_key_to_text(VALUE self)
 
 /*
  *  call-seq:
- *     key.generate_key   => self
+ *     key.generate_key!   => self
  *
- *  See the OpenSSL documentation for EC_KEY_generate_key()
+ * Generates a new random private and public key.
+ *
+ * See also the OpenSSL documentation for EC_KEY_generate_key()
+ *
+ * === Example
+ *   ec = OpenSSL::PKey::EC.new("prime256v1")
+ *   p ec.private_key # => nil
+ *   ec.generate_key!
+ *   p ec.private_key # => #<OpenSSL::BN XXXXXX>
  */
 static VALUE ossl_ec_key_generate_key(VALUE self)
 {
@@ -1632,7 +1640,8 @@ void Init_ossl_ec(void)
     set/get asn1_flag (can use ruby to call self.group.asn1_flag)
     set/get precompute_mult
 */
-    rb_define_method(cEC, "generate_key", ossl_ec_key_generate_key, 0);
+    rb_define_method(cEC, "generate_key!", ossl_ec_key_generate_key, 0);
+    rb_define_alias(cEC, "generate_key", "generate_key!");
     rb_define_method(cEC, "check_key", ossl_ec_key_check_key, 0);
 
     rb_define_method(cEC, "dh_compute_key", ossl_ec_key_dh_compute_key, 1);
