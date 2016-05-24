@@ -15,6 +15,7 @@
 RUBY_SYMBOL_EXPORT_BEGIN
 
 extern VALUE ruby_vm_const_missing_count;
+extern rb_serial_t ruby_vm_global_timestamp;
 extern rb_serial_t ruby_vm_global_method_state;
 extern rb_serial_t ruby_vm_global_constant_state;
 extern rb_serial_t ruby_vm_class_serial;
@@ -184,6 +185,14 @@ enum vm_regan_acttype {
 #define INC_GLOBAL_METHOD_STATE() (++ruby_vm_global_method_state)
 #define GET_GLOBAL_CONSTANT_STATE() (ruby_vm_global_constant_state)
 #define INC_GLOBAL_CONSTANT_STATE() (++ruby_vm_global_constant_state)
+
+#if RUBY_ATOMIC_GENERIC_MACRO
+# define INC_GLOBAL_TIMESTAMP() ATOMIC_INC(ruby_vm_global_timestamp)
+#elif defined(HAVE_LONG_LONG) && (SIZEOF_SIZE_T == SIZEOF_LONG_LONG)
+# define INC_GLOBAL_TIMESTAMP() ATOMIC_SIZE_INC(ruby_vm_global_timestamp)
+#else
+# define INC_GLOBAL_TIMESTAMP() (++ruby_vm_global_timestamp)
+#endif
 
 static VALUE make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
 				      int argc, const VALUE *argv, int priv);

@@ -311,6 +311,7 @@ static VALUE rb_block_param_proxy;
 rb_serial_t
 rb_next_class_serial(void)
 {
+    INC_GLOBAL_TIMESTAMP();
     return NEXT_CLASS_SERIAL();
 }
 
@@ -324,6 +325,7 @@ rb_vm_t *ruby_current_vm_ptr = NULL;
 rb_execution_context_t *ruby_current_execution_context_ptr = NULL;
 rb_event_flag_t ruby_vm_event_flags;
 rb_event_flag_t ruby_vm_event_enabled_flags;
+rb_serial_t ruby_vm_global_timestamp = 1;
 rb_serial_t ruby_vm_global_method_state = 1;
 rb_serial_t ruby_vm_global_constant_state = 1;
 rb_serial_t ruby_vm_class_serial = 1;
@@ -400,6 +402,7 @@ static VALUE
 vm_stat(int argc, VALUE *argv, VALUE self)
 {
     static VALUE sym_global_method_state, sym_global_constant_state, sym_class_serial;
+    static VALUE sym_global_timestamp;
     VALUE arg = Qnil;
     VALUE hash = Qnil, key = Qnil;
 
@@ -417,6 +420,7 @@ vm_stat(int argc, VALUE *argv, VALUE self)
 
     if (sym_global_method_state == 0) {
 #define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
+	S(global_timestamp);
 	S(global_method_state);
 	S(global_constant_state);
 	S(class_serial);
@@ -429,6 +433,7 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     else if (hash != Qnil) \
 	rb_hash_aset(hash, sym_##name, SERIALT2NUM(attr));
 
+    SET(global_timestamp, ruby_vm_global_timestamp);
     SET(global_method_state, ruby_vm_global_method_state);
     SET(global_constant_state, ruby_vm_global_constant_state);
     SET(class_serial, ruby_vm_class_serial);
