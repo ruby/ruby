@@ -2245,16 +2245,9 @@ rb_scan_args_set(int argc, const VALUE *argv,
 		 int f_var, int f_hash, int f_block,
 		 int varc, VALUE *vars[])
 {
-    int i;
-    int n_mand;
-    VALUE *var;
-    int argi = 0, vari = 0;
-    VALUE hash = Qnil;
-
-    n_mand = n_lead + n_trail;
-
-    if (argc < n_mand)
-	goto argc_error;
+    int i, argi = 0, vari = 0;
+    VALUE *var, hash = Qnil;
+    const int n_mand = n_lead + n_trail;
 
     /* capture an option hash - phase 1: pop */
     if (f_hash && n_mand < argc) {
@@ -2276,6 +2269,9 @@ rb_scan_args_set(int argc, const VALUE *argv,
 	    }
 	}
     }
+
+    rb_check_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
+
     /* capture leading mandatory arguments */
     for (i = n_lead; i-- > 0; ) {
 	var = vars[vari++];
@@ -2326,11 +2322,6 @@ rb_scan_args_set(int argc, const VALUE *argv,
 	else {
 	    *var = Qnil;
 	}
-    }
-
-    if (argi < argc) {
-      argc_error:
-	rb_error_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
     }
 
     return argc;

@@ -1,3 +1,9 @@
+Wed May 25 00:23:05 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_scan_args_set): check the arity after
+	  adjusting argc for an option hash, for optimization in simpler
+	  cases.
+
 Wed May 25 00:21:52 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (XCFLAGS): merge flags only for ruby itself from
