@@ -480,15 +480,17 @@ static VALUE
 ossl_cipher_set_key(VALUE self, VALUE key)
 {
     EVP_CIPHER_CTX *ctx;
+    int key_len;
 
     StringValue(key);
     GetCipher(self, ctx);
 
-    if (RSTRING_LEN(key) < EVP_CIPHER_CTX_key_length(ctx))
-        ossl_raise(eCipherError, "key length too short");
+    key_len = EVP_CIPHER_CTX_key_length(ctx);
+    if (RSTRING_LEN(key) != key_len)
+	ossl_raise(rb_eArgError, "key must be %d bytes", key_len);
 
     if (EVP_CipherInit_ex(ctx, NULL, NULL, (unsigned char *)RSTRING_PTR(key), NULL, -1) != 1)
-        ossl_raise(eCipherError, NULL);
+	ossl_raise(eCipherError, NULL);
 
     return key;
 }
@@ -512,12 +514,14 @@ static VALUE
 ossl_cipher_set_iv(VALUE self, VALUE iv)
 {
     EVP_CIPHER_CTX *ctx;
+    int iv_len;
 
     StringValue(iv);
     GetCipher(self, ctx);
 
-    if (RSTRING_LEN(iv) < EVP_CIPHER_CTX_iv_length(ctx))
-        ossl_raise(eCipherError, "iv length too short");
+    iv_len = EVP_CIPHER_CTX_iv_length(ctx);
+    if (RSTRING_LEN(iv) != iv_len)
+	ossl_raise(rb_eArgError, "iv must be %d bytes", iv_len);
 
     if (EVP_CipherInit_ex(ctx, NULL, NULL, NULL, (unsigned char *)RSTRING_PTR(iv), -1) != 1)
 	ossl_raise(eCipherError, NULL);

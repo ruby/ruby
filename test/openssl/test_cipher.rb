@@ -80,6 +80,18 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     assert_equal(s1, s2, "encrypt reset")
   end
 
+  def test_key_iv_set
+    # default value for DES-EDE3-CBC
+    assert_equal(24, @c1.key_len)
+    assert_equal(8, @c1.iv_len)
+    assert_raise(ArgumentError) { @c1.key = "\x01" * 23 }
+    @c1.key = "\x01" * 24
+    assert_raise(ArgumentError) { @c1.key = "\x01" * 25 }
+    assert_raise(ArgumentError) { @c1.iv = "\x01" * 7 }
+    @c1.iv = "\x01" * 8
+    assert_raise(ArgumentError) { @c1.iv = "\x01" * 9 }
+  end
+
   def test_empty_data
     @c1.encrypt
     assert_raise(ArgumentError){ @c1.update("") }
