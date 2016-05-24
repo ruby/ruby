@@ -22,6 +22,7 @@
 #include "eval_intern.h"
 #include "probes.h"
 #include "probes_helper.h"
+#include "deoptimize.h"
 
 VALUE rb_str_concat_literals(size_t, const VALUE*);
 
@@ -273,6 +274,12 @@ ruby_th_dtrace_setup(rb_thread_t *th, VALUE klass, ID id,
 	}
     }
     return FALSE;
+}
+
+rb_serial_t
+rb_vm_global_timestamp()
+{
+    return ruby_vm_global_timestamp;
 }
 
 /*

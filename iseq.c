@@ -22,6 +22,7 @@
 #include "vm_core.h"
 #include "iseq.h"
 #include "id_table.h"
+#include "deoptimize.h"
 
 #include "insns.inc"
 #include "insns_info.inc"
@@ -74,6 +75,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
     if (iseq) {
 	if (iseq->body) {
 	    ruby_xfree((void *)iseq->body->iseq_encoded);
+	    iseq_to_deoptimize_free(iseq->body->deoptimize);
 	    ruby_xfree((void *)iseq->body->line_info_table);
 	    ruby_xfree((void *)iseq->body->local_table);
 	    ruby_xfree((void *)iseq->body->is_entries);
@@ -164,6 +166,7 @@ iseq_memsize(const rb_iseq_t *iseq)
 
 	size += sizeof(struct rb_iseq_constant_body);
 	size += body->iseq_size * sizeof(VALUE);
+	size += iseq_to_deoptimize_memsize(body->deoptimize);
 	size += body->line_info_size * sizeof(struct iseq_line_info_entry);
 	size += body->local_table_size * sizeof(ID);
 	if (body->catch_table) {
@@ -489,6 +492,7 @@ rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE path, VALUE absolute_path,
 
     rb_iseq_compile_node(iseq, node);
     cleanup_iseq_build(iseq);
+    iseq_prepare_to_deoptimize(iseq, 0); // 0 is a placeholder
 
     return iseq_translate(iseq);
 }

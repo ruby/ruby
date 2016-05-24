@@ -284,6 +284,7 @@ struct rb_iseq_constant_body {
 
     unsigned int iseq_size;
     const VALUE *iseq_encoded; /* encoded iseq (insn addr and operands) */
+    const struct iseq_to_deoptimize *deoptimize;
 
     /**
      * parameter information

@@ -123,6 +123,7 @@ enum vm_regan_acttype {
 
 #define CALL_METHOD(calling, ci, cc) do { \
     VALUE v = (*(cc)->call)(th, GET_CFP(), (calling), (ci), (cc)); \
+    iseq_deoptimize_if_needed(GET_ISEQ(), ruby_vm_global_timestamp); \
     if (v == Qundef) { \
 	RESTORE_REGS(); \
 	NEXT_INSN(); \

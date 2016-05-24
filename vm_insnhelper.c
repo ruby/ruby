@@ -149,6 +149,26 @@ vm_check_frame(VALUE type,
 #define vm_check_frame(a, b, c)
 #endif /* VM_CHECK_MODE > 0 */
 
+static inline void
+vm_check_iseq_freshness(const VALUE type,
+                        const rb_iseq_t *restrict iseq)
+{
+    int magic = (int)(type & VM_FRAME_MAGIC_MASK);
+
+    if (UNLIKELY(! iseq)) {
+	return;                 /* inside Init_BareVM */
+    }
+    else if (magic == VM_FRAME_MAGIC_CFUNC) {
+	return;                 /* no iseq */
+    }
+    else if (magic == VM_FRAME_MAGIC_IFUNC) {
+	return;                 /* no iseq */
+    }
+    else {
+	iseq_deoptimize_if_needed(iseq, ruby_vm_global_timestamp);
+    }
+}
+
 static inline rb_control_frame_t *
 vm_push_frame(rb_thread_t *th,
 	      const rb_iseq_t *iseq,
@@ -173,6 +193,7 @@ vm_push_frame(rb_thread_t *th,
     th->cfp = cfp;
 
     /* setup new frame */
+    vm_check_iseq_freshness(type, iseq);
     cfp->pc = (VALUE *)pc;
     cfp->iseq = (rb_iseq_t *)iseq;
     cfp->flag = type;
