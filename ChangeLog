@@ -1,3 +1,10 @@
+Tue May 24 16:37:43 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* configure.in (ruby_cflags): separate from optflags [Bug #12409]
+	  -fexcess-precision=standard and -fp-model precise are set to this now.
+
+	* configure.in (cflags): use ruby_cflags.
+
 Tue May 24 16:20:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (ERRORFUNC, WARNINGFUNC): __error__ and __warning__
