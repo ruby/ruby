@@ -38,6 +38,15 @@ class OpenSSL::TestEC < OpenSSL::TestCase
     end
   end
 
+  def test_generate
+    assert_raise(OpenSSL::PKey::ECError) { OpenSSL::PKey::EC.generate("non-existent") }
+    g = OpenSSL::PKey::EC::Group.new("prime256v1")
+    ec = OpenSSL::PKey::EC.generate(g)
+    assert_equal(true, ec.private?)
+    ec = OpenSSL::PKey::EC.generate("prime256v1")
+    assert_equal(true, ec.private?)
+  end
+
   def test_check_key
     for key in @keys
       assert_equal(true, key.check_key)

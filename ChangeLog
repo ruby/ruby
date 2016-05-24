@@ -1,3 +1,15 @@
+Wed May 25 01:13:55 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_pkey_ec.c (ec_key_new_from_group): Create a new
+	  EC_KEY on given EC group. Extracted from ossl_ec_key_initialize().
+	  (ossl_ec_key_s_generate): Added. Create a new EC instance and
+	  generate a random private and public key.
+	  (ossl_ec_key_initialize): Use ec_key_new_from_group().
+	  (Init_ossl_ec): Define the new method EC.generate. This change is
+	  for consistency with other PKey types.  [ruby-core:45541] [Bug #6567]
+
+	* test/openssl/test_pkey_ec.rb: Test that EC.generate works.
+
 Wed May 25 00:37:16 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_pkey_ec.c (ossl_ec_key_generate_key): Fix up RDoc.

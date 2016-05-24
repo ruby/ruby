@@ -149,6 +149,69 @@ VALUE ossl_ec_new(EVP_PKEY *pkey)
     return obj;
 }
 
+/*
+ * Creates a new EC_KEY on the EC group obj. arg can be an EC::Group or a String
+ * representing an OID.
+ */
+static EC_KEY *
+ec_key_new_from_group(VALUE arg)
+{
+    EC_KEY *ec;
+
+    if (rb_obj_is_kind_of(arg, cEC_GROUP)) {
+	EC_GROUP *group;
+
+	SafeRequire_EC_GROUP(arg, group);
+
+	if (!(ec = EC_KEY_new()))
+	    ossl_raise(eECError, NULL);
+
+	if (!EC_KEY_set_group(ec, group)) {
+	    EC_KEY_free(ec);
+	    ossl_raise(eECError, NULL);
+	}
+    } else {
+	int nid = OBJ_sn2nid(StringValueCStr(arg));
+
+	if (nid == NID_undef)
+	    ossl_raise(eECError, "invalid curve name");
+
+	if (!(ec = EC_KEY_new_by_curve_name(nid)))
+	    ossl_raise(eECError, NULL);
+
+	EC_KEY_set_asn1_flag(ec, OPENSSL_EC_NAMED_CURVE);
+	EC_KEY_set_conv_form(ec, POINT_CONVERSION_UNCOMPRESSED);
+    }
+
+    return ec;
+}
+
+/*
+ *  call-seq:
+ *     EC.generate(ec_group) -> ec
+ *     EC.generate(string) -> ec
+ *
+ * Creates a new EC instance with a new random private and public key.
+ */
+static VALUE
+ossl_ec_key_s_generate(VALUE klass, VALUE arg)
+{
+    EC_KEY *ec;
+    VALUE obj;
+
+    ec = ec_key_new_from_group(arg);
+
+    obj = ec_instance(klass, ec);
+    if (obj == Qfalse) {
+	EC_KEY_free(ec);
+	ossl_raise(eECError, NULL);
+    }
+
+    if (!EC_KEY_generate_key(ec))
+	ossl_raise(eECError, "EC_KEY_generate_key");
+
+    return obj;
+}
 
 /*  call-seq:
  *     OpenSSL::PKey::EC.new()
@@ -165,9 +228,8 @@ VALUE ossl_ec_new(EVP_PKEY *pkey)
 static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
-    EC_KEY *ec = NULL;
+    EC_KEY *ec;
     VALUE arg, pass;
-    VALUE group = Qnil;
 
     GetPKey(self, pkey);
     if (pkey->pkey.ec)
@@ -176,57 +238,42 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "02", &arg, &pass);
 
     if (NIL_P(arg)) {
-        ec = EC_KEY_new();
+        if (!(ec = EC_KEY_new()))
+	    ossl_raise(eECError, NULL);
+    } else if (rb_obj_is_kind_of(arg, cEC)) {
+	EC_KEY *other_ec = NULL;
+
+	SafeRequire_EC_KEY(arg, other_ec);
+	if (!(ec = EC_KEY_dup(other_ec)))
+	    ossl_raise(eECError, NULL);
+    } else if (rb_obj_is_kind_of(arg, cEC_GROUP)) {
+	ec = ec_key_new_from_group(arg);
     } else {
-        if (rb_obj_is_kind_of(arg, cEC)) {
-            EC_KEY *other_ec = NULL;
+	BIO *in;
 
-            SafeRequire_EC_KEY(arg, other_ec);
-            ec = EC_KEY_dup(other_ec);
-        } else if (rb_obj_is_kind_of(arg, cEC_GROUP)) {
-        	ec = EC_KEY_new();
-        	group = arg;
-        } else {
-            BIO *in;
+	pass = ossl_pem_passwd_value(pass);
+	in = ossl_obj2bio(arg);
 
-	    pass = ossl_pem_passwd_value(pass);
-	    in = ossl_obj2bio(arg);
+	ec = PEM_read_bio_ECPrivateKey(in, NULL, ossl_pem_passwd_cb, (void *)pass);
+	if (!ec) {
+	    OSSL_BIO_reset(in);
+	    ec = PEM_read_bio_EC_PUBKEY(in, NULL, ossl_pem_passwd_cb, (void *)pass);
+	}
+	if (!ec) {
+	    OSSL_BIO_reset(in);
+	    ec = d2i_ECPrivateKey_bio(in, NULL);
+	}
+	if (!ec) {
+	    OSSL_BIO_reset(in);
+	    ec = d2i_EC_PUBKEY_bio(in, NULL);
+	}
+	BIO_free(in);
 
-	    ec = PEM_read_bio_ECPrivateKey(in, NULL, ossl_pem_passwd_cb, (void *)pass);
-            if (!ec) {
-		OSSL_BIO_reset(in);
-		ec = PEM_read_bio_EC_PUBKEY(in, NULL, ossl_pem_passwd_cb, (void *)pass);
-            }
-            if (!ec) {
-		OSSL_BIO_reset(in);
-                ec = d2i_ECPrivateKey_bio(in, NULL);
-            }
-            if (!ec) {
-		OSSL_BIO_reset(in);
-                ec = d2i_EC_PUBKEY_bio(in, NULL);
-            }
-
-            BIO_free(in);
-
-            if (ec == NULL) {
-                const char *name = StringValueCStr(arg);
-                int nid = OBJ_sn2nid(name);
-
-		ossl_clear_error(); /* ignore errors in the previous d2i_EC_PUBKEY_bio() */
-                if (nid == NID_undef)
-                    ossl_raise(eECError, "unknown curve name (%"PRIsVALUE")", arg);
-
-                if ((ec = EC_KEY_new_by_curve_name(nid)) == NULL)
-                    ossl_raise(eECError, "unable to create curve (%"PRIsVALUE")\n", arg);
-
-                EC_KEY_set_asn1_flag(ec, OPENSSL_EC_NAMED_CURVE);
-                EC_KEY_set_conv_form(ec, POINT_CONVERSION_UNCOMPRESSED);
-            }
-        }
+	if (!ec) {
+	    ossl_clear_error();
+	    ec = ec_key_new_from_group(arg);
+	}
     }
-
-    if (ec == NULL)
-        ossl_raise(eECError, NULL);
 
     if (!EVP_PKEY_assign_EC_KEY(pkey, ec)) {
 	EC_KEY_free(ec);
@@ -234,9 +281,6 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
     }
 
     rb_iv_set(self, "@group", Qnil);
-
-    if (!NIL_P(group))
-        rb_funcall(self, rb_intern("group="), 1, arg);
 
     return self;
 }
@@ -1620,6 +1664,7 @@ void Init_ossl_ec(void)
 
     rb_define_singleton_method(cEC, "builtin_curves", ossl_s_builtin_curves, 0);
 
+    rb_define_singleton_method(cEC, "generate", ossl_ec_key_s_generate, 1);
     rb_define_method(cEC, "initialize", ossl_ec_key_initialize, -1);
 /* copy/dup/cmp */
 
