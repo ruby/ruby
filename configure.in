@@ -1770,6 +1770,7 @@ m4_ifval([$4],${rbcv_cond+[@%:@else]}
 ${rbcv_cond+[@%:@define ]attrib[](attrib_params)[ x]}
 ${rbcv_cond+[@%:@endif]})
 $6
+@%:@define mesg ("")
     attrib[](attrib_params)[;], [],
     [rbcv="$mac"; break])
 done
@@ -1796,7 +1797,6 @@ AC_DEFUN([RUBY_TYPE_ATTRIBUTE], [dnl
     RUBY_DECL_ATTRIBUTE([$1], [$2], [$3], [$4],
 	[type], [
 @%:@define x struct conftest_attribute_check {int i;}
-@%:@define mesg ("")
 ])
 ])
 
@@ -1808,8 +1808,8 @@ RUBY_FUNC_ATTRIBUTE(__deprecated__("by "@%:@n), DEPRECATED_BY(n,x), rb_cv_func_d
 RUBY_TYPE_ATTRIBUTE(__deprecated__ mesg, DEPRECATED_TYPE(mesg,x), rb_cv_type_deprecated)
 RUBY_FUNC_ATTRIBUTE(__noinline__, NOINLINE)
 RUBY_FUNC_ATTRIBUTE(__always_inline__, ALWAYS_INLINE)
-RUBY_FUNC_ATTRIBUTE(__error__, ERRORFUNC)
-RUBY_FUNC_ATTRIBUTE(__warning__, WARNINGFUNC)
+RUBY_FUNC_ATTRIBUTE(__error__ mesg, ERRORFUNC(mesg), rb_cv_func___error__)
+RUBY_FUNC_ATTRIBUTE(__warning__ mesg, WARNINGFUNC(mesg), rb_cv_func___warning__)
 RUBY_FUNC_ATTRIBUTE(__weak__, WEAK, rb_cv_func_weak)
 if test "$rb_cv_func_weak" != x; then
    AC_DEFINE(HAVE_FUNC_WEAK)

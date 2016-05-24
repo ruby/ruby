@@ -1,3 +1,8 @@
+Tue May 24 16:20:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ERRORFUNC, WARNINGFUNC): __error__ and __warning__
+	  attributes take a parenthesized string literal.
+
 Tue May 24 12:35:56 2016  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* common.mk : sort lines, and add missing dependencies suggested
