@@ -2153,64 +2153,105 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 #if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P) && defined(__OPTIMIZE__)
 # define rb_scan_args(argc,argvp,fmt,...) \
     __builtin_choose_expr(__builtin_constant_p(fmt), \
-        rb_scan_args0(argc,argv,fmt,(sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)),(VALUE*[]){__VA_ARGS__}), \
+        rb_scan_args0(argc,argv,fmt,(sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)),((VALUE*[]){__VA_ARGS__})), \
         rb_scan_args(argc,argvp,fmt,__VA_ARGS__))
-#   define rb_scan_args_bad_format(fmt) rb_fatal("bad scan arg format: %s", fmt)
-#   define rb_scan_args_length_mismatch(vari, varc) rb_fatal("variable argument length doesn't match: %d %d", vari, varc)
+# if HAVE_ATTRIBUTE_ERRORFUNC
+ERRORFUNC(("bad scan arg format"), int rb_scan_args_bad_format(const char*));
+ERRORFUNC(("variable argument length doesn't match"), int rb_scan_args_length_mismatch(int,int));
+# else
+#   define rb_scan_args_bad_format(fmt) 0
+#   define rb_scan_args_length_mismatch(vari,varc) 0
+#endif
 
+# define rb_scan_args_isdigit(c) ((unsigned char)((c)-'0')<10)
+
+# define rb_scan_args_count_block(fmt, ofs) \
+    ((fmt)[ofs]=='&')
+
+# define rb_scan_args_count_hash(fmt, ofs) \
+    ((fmt)[ofs]!=':' ? \
+     rb_scan_args_count_block(fmt, ofs) : \
+     rb_scan_args_count_block(fmt, (ofs)+1)+1)
+
+# define rb_scan_args_count_trail(fmt, ofs) \
+    (!rb_scan_args_isdigit((fmt)[ofs]) ? \
+     rb_scan_args_count_hash(fmt, ofs) : \
+     ((fmt)[ofs]-'0') + rb_scan_args_count_hash(fmt, (ofs)+1))
+
+# define rb_scan_args_count_var(fmt, ofs) \
+    ((fmt)[ofs]!='*' ? \
+     rb_scan_args_count_trail(fmt, ofs) : \
+     rb_scan_args_count_trail(fmt, (ofs)+1)+1)
+
+# define rb_scan_args_count(fmt) \
+    (!rb_scan_args_isdigit((fmt)[0]) ? rb_scan_args_count_var(fmt, 0) : \
+     !rb_scan_args_isdigit((fmt)[1]) ? rb_scan_args_count_var(fmt, 1)+(fmt)[0]-'0' : \
+     rb_scan_args_count_var(fmt, 2)+(fmt)[0]-'0'+(fmt)[1]-'0')
+
+# define rb_scan_args_lead_p(fmt) rb_scan_args_isdigit((fmt)[0])
+# define rb_scan_args_n_lead(fmt) (rb_scan_args_lead_p(fmt) ? (fmt)[0]-'0' : 0)
+# define rb_scan_args_opt_p(fmt) (rb_scan_args_lead_p(fmt) && rb_scan_args_isdigit((fmt)[1]))
+# define rb_scan_args_n_opt(fmt) (rb_scan_args_opt_p(fmt) ? (fmt)[1]-'0' : 0)
+# define rb_scan_args_var_idx(fmt) \
+    (!rb_scan_args_lead_p(fmt) ? 0 : !rb_scan_args_isdigit((fmt)[1]) ? 1 : 2)
+# define rb_scan_args_f_var(fmt) ((fmt)[rb_scan_args_var_idx(fmt)]=='*')
+# define rb_scan_args_trail_idx(fmt) \
+    (rb_scan_args_lead_p(fmt) ? \
+     (rb_scan_args_isdigit((fmt)[1]) || (fmt)[1]=='*')+1 : \
+     ((fmt)[0]=='*'))
+# define rb_scan_args_trail_p(fmt) \
+    (rb_scan_args_lead_p(fmt) ? \
+     (rb_scan_args_isdigit((fmt)[1]) || (fmt)[1]=='*') && \
+     rb_scan_args_isdigit((fmt)[2]) : \
+     (fmt)[0]=='*' && rb_scan_args_isdigit((fmt)[1]))
+# define rb_scan_args_n_trail(fmt) \
+    (rb_scan_args_lead_p(fmt) ? \
+     ((rb_scan_args_isdigit((fmt)[1]) || (fmt)[1]=='*') && \
+      rb_scan_args_isdigit((fmt)[2]) ? (fmt)[2]-'0' : 0) : \
+     ((fmt)[0]=='*' && rb_scan_args_isdigit((fmt)[1]) ? (fmt)[1]-'0' : 0))
+# define rb_scan_args_hash_idx(fmt) \
+    (rb_scan_args_trail_idx(fmt)+rb_scan_args_trail_p(fmt))
+# define rb_scan_args_f_hash(fmt) ((fmt)[rb_scan_args_hash_idx(fmt)]==':')
+# define rb_scan_args_block_idx(fmt) \
+    (rb_scan_args_hash_idx(fmt)+rb_scan_args_f_hash(fmt))
+# define rb_scan_args_f_block(fmt) ((fmt)[rb_scan_args_block_idx(fmt)]=='&')
+# define rb_scan_args_end_idx(fmt) \
+    (rb_scan_args_block_idx(fmt)+rb_scan_args_f_block(fmt))
+# define rb_scan_args_valid_p(fmt) (!(fmt)[rb_scan_args_end_idx(fmt)])
+
+# define rb_scan_args_verify(fmt, varc) \
+    (((varc)\
+      /(rb_scan_args_valid_p(fmt)||rb_scan_args_bad_format(fmt))) \
+     /(((varc)==rb_scan_args_count(fmt))|| \
+       rb_scan_args_length_mismatch((varc), rb_scan_args_count(fmt))))
+
+# define rb_scan_args0(argc, argv, fmt, varc, vars) \
+    rb_scan_args_set(argc, argv, \
+		     rb_scan_args_n_lead(fmt), \
+		     rb_scan_args_n_opt(fmt), \
+		     rb_scan_args_n_trail(fmt), \
+		     rb_scan_args_f_var(fmt), \
+		     rb_scan_args_f_hash(fmt), \
+		     rb_scan_args_f_block(fmt), \
+		     rb_scan_args_verify(fmt, varc), vars)
 ALWAYS_INLINE(static int
-rb_scan_args0(int argc, const VALUE *argv, const char *fmt, int varc, VALUE *vars[]));
+rb_scan_args_set(int argc, const VALUE *argv,
+		 int n_lead, int n_opt, int n_trail,
+		 int f_var, int f_hash, int f_block,
+		 int varc, VALUE *vars[]));
 inline int
-rb_scan_args0(int argc, const VALUE *argv, const char *fmt, int varc, VALUE *vars[])
+rb_scan_args_set(int argc, const VALUE *argv,
+		 int n_lead, int n_opt, int n_trail,
+		 int f_var, int f_hash, int f_block,
+		 int varc, VALUE *vars[])
 {
     int i;
-    const char *p = fmt;
+    int n_mand;
     VALUE *var;
-    int f_var = 0, f_hash = 0, f_block = 0;
-    int n_lead = 0, n_opt = 0, n_trail = 0, n_mand;
     int argi = 0, vari = 0;
     VALUE hash = Qnil;
 
-    if (ISDIGIT(*p)) {
-	n_lead = *p - '0';
-	p++;
-	if (ISDIGIT(*p)) {
-	    n_opt = *p - '0';
-	    p++;
-	    if (ISDIGIT(*p)) {
-		n_trail = *p - '0';
-		p++;
-		goto block_arg;
-	    }
-	}
-    }
-    if (*p == '*') {
-	f_var = 1;
-	p++;
-	if (ISDIGIT(*p)) {
-	    n_trail = *p - '0';
-	    p++;
-	}
-    }
-  block_arg:
-    if (*p == ':') {
-	f_hash = 1;
-	p++;
-    }
-    if (*p == '&') {
-	f_block = 1;
-	p++;
-    }
-    if (*p != '\0') {
-	rb_scan_args_bad_format(fmt);
-    }
     n_mand = n_lead + n_trail;
-
-    vari = n_mand + n_opt + f_var + f_hash + f_block;
-    if (vari != varc) {
-	rb_scan_args_length_mismatch(vari, varc);
-    }
-    vari = 0;
 
     if (argc < n_mand)
 	goto argc_error;
