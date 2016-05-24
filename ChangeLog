@@ -1,3 +1,8 @@
+Tue May 24 17:18:46 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/defines.h (ERRORFUNC, WARNINGFUNC): add fallback
+	  definitions.
+
 Tue May 24 16:37:43 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in (ruby_cflags): separate from optflags [Bug #12409]

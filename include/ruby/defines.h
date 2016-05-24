@@ -45,6 +45,18 @@ extern "C" {
 #ifndef NOINLINE
 # define NOINLINE(x) x
 #endif
+#ifndef ERRORFUNC
+# define HAVE_ATTRIBUTE_ERRORFUNC 0
+# define ERRORFUNC(mesg, x) x
+#else
+# define HAVE_ATTRIBUTE_ERRORFUNC 1
+#endif
+#ifndef WARNINGFUNC
+# define HAVE_ATTRIBUTE_WARNINGFUNC 0
+# define WARNINGFUNC(mesg, x) x
+#else
+# define HAVE_ATTRIBUTE_WARNINGFUNC 1
+#endif
 
 #ifndef GCC_VERSION_SINCE
 #define GCC_VERSION_SINCE(major, minor, patchlevel) \
