@@ -630,12 +630,12 @@ rb_class_inherited(VALUE super, VALUE klass)
  * Defines a top-level class.
  * \param name   name of the class
  * \param super  a class from which the new class will derive.
- *               NULL means \c Object class.
  * \return the created class
  * \throw TypeError if the constant name \a name is already taken but
  *                  the constant is not a \c Class.
- * \throw NameError if the class is already defined but the class can not
+ * \throw TypeError if the class is already defined but the class can not
  *                  be reopened because its superclass is not \a super.
+ * \throw ArgumentError if the \a super is NULL.
  * \post top-level constant named \a name refers the returned class.
  *
  * \note if a class named \a name is already defined and its superclass is
