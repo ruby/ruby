@@ -1,3 +1,8 @@
+Wed May 25 20:50:12 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (unescape_nonascii): scan hex up to only 3 characters.
+	  [Bug #12420] [Bug #12423]
+
 Wed May 25 19:07:19 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode.c: Handle DOTLESS_i by hand because it isn't involved in folding.
