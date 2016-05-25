@@ -1,3 +1,8 @@
+Wed May 25 13:13:37 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regcomp.c: remove condition for debug output because prelude
+	  doesn't use regexp now.
+
 Wed May 25 13:10:30 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regcomp.c (compile_length_tree): return error code immediately
