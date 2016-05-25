@@ -148,8 +148,6 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     assert_equal(false, store.verify(OpenSSL::X509::Certificate.new(ee1_cert)))
     assert_equal(OpenSSL::X509::V_ERR_CERT_NOT_YET_VALID, store.error)
 
-    return unless defined?(OpenSSL::X509::V_FLAG_CRL_CHECK)
-
     store = OpenSSL::X509::Store.new
     store.purpose = OpenSSL::X509::PURPOSE_ANY
     store.flags = OpenSSL::X509::V_FLAG_CRL_CHECK

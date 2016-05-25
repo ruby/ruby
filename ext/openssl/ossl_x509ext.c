@@ -188,7 +188,6 @@ ossl_x509extfactory_set_crl(VALUE self, VALUE crl)
     return crl;
 }
 
-#ifdef HAVE_X509V3_SET_NCONF
 static VALUE
 ossl_x509extfactory_set_config(VALUE self, VALUE config)
 {
@@ -202,9 +201,6 @@ ossl_x509extfactory_set_config(VALUE self, VALUE config)
 
     return config;
 }
-#else
-#define ossl_x509extfactory_set_config rb_f_notimplement
-#endif
 
 static VALUE
 ossl_x509extfactory_initialize(int argc, VALUE *argv, VALUE self)
@@ -243,12 +239,8 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
     X509_EXTENSION *ext;
     VALUE oid, value, critical, valstr, obj;
     int nid;
-#ifdef HAVE_X509V3_EXT_NCONF_NID
     VALUE rconf;
     CONF *conf;
-#else
-    static LHASH *empty_lhash;
-#endif
 
     rb_scan_args(argc, argv, "21", &oid, &value, &critical);
     StringValueCStr(oid);
@@ -265,14 +257,9 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
 
     GetX509ExtFactory(self, ctx);
     obj = NewX509Ext(cX509Ext);
-#ifdef HAVE_X509V3_EXT_NCONF_NID
     rconf = rb_iv_get(self, "@config");
     conf = NIL_P(rconf) ? NULL : GetConfigPtr(rconf);
     ext = X509V3_EXT_nconf_nid(conf, ctx, nid, RSTRING_PTR(valstr));
-#else
-    if (!empty_lhash) empty_lhash = lh_new(NULL, NULL);
-    ext = X509V3_EXT_conf_nid(empty_lhash, ctx, nid, RSTRING_PTR(valstr));
-#endif
     if (!ext){
 	ossl_raise(eX509ExtError, "%"PRIsVALUE" = %"PRIsVALUE, oid, valstr);
     }

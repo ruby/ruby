@@ -76,7 +76,6 @@ ossl_dsa_new(EVP_PKEY *pkey)
 /*
  * Private
  */
-#if defined(HAVE_DSA_GENERATE_PARAMETERS_EX) && HAVE_BN_GENCB
 struct dsa_blocking_gen_arg {
     DSA *dsa;
     int size;
@@ -95,12 +94,10 @@ dsa_blocking_gen(void *arg)
     gen->result = DSA_generate_parameters_ex(gen->dsa, gen->size, gen->seed, gen->seed_len, gen->counter, gen->h, gen->cb);
     return 0;
 }
-#endif
 
 static DSA *
 dsa_generate(int size)
 {
-#if defined(HAVE_DSA_GENERATE_PARAMETERS_EX) && HAVE_BN_GENCB
     BN_GENCB cb;
     struct ossl_generate_cb_arg cb_arg;
     struct dsa_blocking_gen_arg gen_arg;
@@ -145,19 +142,6 @@ dsa_generate(int size)
 	}
 	return 0;
     }
-#else
-    DSA *dsa;
-    unsigned char seed[20];
-    int seed_len = 20, counter;
-    unsigned long h;
-
-    if (RAND_bytes(seed, seed_len) <= 0) {
-	return 0;
-    }
-    dsa = DSA_generate_parameters(size, seed, seed_len, &counter, &h,
-	    rb_block_given_p() ? ossl_generate_cb : NULL, NULL);
-    if(!dsa) return 0;
-#endif
 
     if (!DSA_generate_key(dsa)) {
 	DSA_free(dsa);
@@ -246,7 +230,10 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 	}
 	if (!dsa) {
 	    OSSL_BIO_reset(in);
+#define PEM_read_bio_DSAPublicKey(bp,x,cb,u) (DSA *)PEM_ASN1_read_bio( \
+	(d2i_of_void *)d2i_DSAPublicKey, PEM_STRING_DSA_PUBLIC, (bp), (void **)(x), (cb), (u))
 	    dsa = PEM_read_bio_DSAPublicKey(in, NULL, NULL, NULL);
+#undef PEM_read_bio_DSAPublicKey
 	}
 	BIO_free(in);
 	if (!dsa) {
@@ -460,7 +447,10 @@ ossl_dsa_to_public_key(VALUE self)
 
     GetPKeyDSA(self, pkey);
     /* err check performed by dsa_instance */
+#define DSAPublicKey_dup(dsa) (DSA *)ASN1_dup( \
+	(i2d_of_void *)i2d_DSAPublicKey, (d2i_of_void *)d2i_DSAPublicKey, (char *)(dsa))
     dsa = DSAPublicKey_dup(pkey->pkey.dsa);
+#undef DSAPublicKey_dup
     obj = dsa_instance(CLASS_OF(self), dsa);
     if (obj == Qfalse) {
 	DSA_free(dsa);

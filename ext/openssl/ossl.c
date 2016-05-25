@@ -339,11 +339,7 @@ ossl_make_error(VALUE exc, const char *fmt, va_list args)
     const char *msg;
     long e;
 
-#ifdef HAVE_ERR_PEEK_LAST_ERROR
     e = ERR_peek_last_error();
-#else
-    e = ERR_peek_error();
-#endif
     if (fmt) {
 	str = rb_vsprintf(fmt, args);
     }

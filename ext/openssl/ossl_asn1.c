@@ -212,19 +212,6 @@ static ID sUNIVERSAL, sAPPLICATION, sCONTEXT_SPECIFIC, sPRIVATE;
 static ID sivVALUE, sivTAG, sivTAG_CLASS, sivTAGGING, sivINFINITE_LENGTH, sivUNUSED_BITS;
 
 /*
- * We need to implement these for backward compatibility
- * reasons, behavior of ASN1_put_object and ASN1_object_size
- * for infinite length values is different in OpenSSL <= 0.9.7
- */
-#if OPENSSL_VERSION_NUMBER < 0x00908000L
-#define ossl_asn1_object_size(cons, len, tag)		(cons) == 2 ? (len) + ASN1_object_size((cons), 0, (tag)) : ASN1_object_size((cons), (len), (tag))
-#define ossl_asn1_put_object(pp, cons, len, tag, xc)	(cons) == 2 ? ASN1_put_object((pp), (cons), 0, (tag), (xc)) : ASN1_put_object((pp), (cons), (len), (tag), (xc))
-#else
-#define ossl_asn1_object_size(cons, len, tag)		ASN1_object_size((cons), (len), (tag))
-#define ossl_asn1_put_object(pp, cons, len, tag, xc)	ASN1_put_object((pp), (cons), (len), (tag), (xc))
-#endif
-
-/*
  * Ruby to ASN1 converters
  */
 static ASN1_BOOLEAN
@@ -233,11 +220,7 @@ obj_to_asn1bool(VALUE obj)
     if (NIL_P(obj))
 	ossl_raise(rb_eTypeError, "Can't convert nil into Boolean");
 
-#if OPENSSL_VERSION_NUMBER < 0x00907000L
-     return RTEST(obj) ? 0xff : 0x100;
-#else
      return RTEST(obj) ? 0xff : 0x0;
-#endif
 }
 
 static ASN1_INTEGER*
@@ -778,11 +761,11 @@ ossl_asn1data_to_der(VALUE self)
     if (inf_length == Qtrue) {
 	is_cons = 2;
     }
-    if((length = ossl_asn1_object_size(is_cons, RSTRING_LENINT(value), tag)) <= 0)
+    if((length = ASN1_object_size(is_cons, RSTRING_LENINT(value), tag)) <= 0)
 	ossl_raise(eASN1Error, NULL);
     der = rb_str_new(0, length);
     p = (unsigned char *)RSTRING_PTR(der);
-    ossl_asn1_put_object(&p, is_cons, RSTRING_LENINT(value), tag, tag_class);
+    ASN1_put_object(&p, is_cons, RSTRING_LENINT(value), tag, tag_class);
     memcpy(p, RSTRING_PTR(value), RSTRING_LEN(value));
     p += RSTRING_LEN(value);
     ossl_str_adjust(der, p);
@@ -1184,30 +1167,6 @@ ossl_asn1eoc_initialize(VALUE self) {
     return self;
 }
 
-static int
-ossl_i2d_ASN1_TYPE(ASN1_TYPE *a, unsigned char **pp)
-{
-#if OPENSSL_VERSION_NUMBER < 0x00907000L
-    if(!a) return 0;
-    if(a->type == V_ASN1_BOOLEAN)
-        return i2d_ASN1_BOOLEAN(a->value.boolean, pp);
-#endif
-    return i2d_ASN1_TYPE(a, pp);
-}
-
-static void
-ossl_ASN1_TYPE_free(ASN1_TYPE *a)
-{
-#if OPENSSL_VERSION_NUMBER < 0x00907000L
-    if(!a) return;
-    if(a->type == V_ASN1_BOOLEAN){
-        OPENSSL_free(a);
-        return;
-    }
-#endif
-    ASN1_TYPE_free(a);
-}
-
 /*
  * call-seq:
  *    asn1.to_der => DER-encoded String
@@ -1228,22 +1187,22 @@ ossl_asn1prim_to_der(VALUE self)
     explicit = ossl_asn1_is_explicit(self);
     asn1 = ossl_asn1_get_asn1type(self);
 
-    len = ossl_asn1_object_size(1, ossl_i2d_ASN1_TYPE(asn1, NULL), tn);
+    len = ASN1_object_size(1, i2d_ASN1_TYPE(asn1, NULL), tn);
     if(!(buf = OPENSSL_malloc(len))){
-	ossl_ASN1_TYPE_free(asn1);
+	ASN1_TYPE_free(asn1);
 	ossl_raise(eASN1Error, "cannot alloc buffer");
     }
     p = buf;
     if (tc == V_ASN1_UNIVERSAL) {
-        ossl_i2d_ASN1_TYPE(asn1, &p);
+        i2d_ASN1_TYPE(asn1, &p);
     } else if (explicit) {
-        ossl_asn1_put_object(&p, 1, ossl_i2d_ASN1_TYPE(asn1, NULL), tn, tc);
-        ossl_i2d_ASN1_TYPE(asn1, &p);
+        ASN1_put_object(&p, 1, i2d_ASN1_TYPE(asn1, NULL), tn, tc);
+        i2d_ASN1_TYPE(asn1, &p);
     } else {
-        ossl_i2d_ASN1_TYPE(asn1, &p);
+        i2d_ASN1_TYPE(asn1, &p);
         *buf = tc | tn | (*buf & V_ASN1_CONSTRUCTED);
     }
-    ossl_ASN1_TYPE_free(asn1);
+    ASN1_TYPE_free(asn1);
     reallen = p - buf;
     assert(reallen <= len);
     str = ossl_buf2str((char *)buf, rb_long2int(reallen)); /* buf will be free in ossl_buf2str */
@@ -1309,19 +1268,19 @@ ossl_asn1cons_to_der(VALUE self)
     explicit = ossl_asn1_is_explicit(self);
     value = join_der(ossl_asn1_get_value(self));
 
-    seq_len = ossl_asn1_object_size(constructed, RSTRING_LENINT(value), tag);
-    length = ossl_asn1_object_size(constructed, seq_len, tn);
+    seq_len = ASN1_object_size(constructed, RSTRING_LENINT(value), tag);
+    length = ASN1_object_size(constructed, seq_len, tn);
     str = rb_str_new(0, length);
     p = (unsigned char *)RSTRING_PTR(str);
     if(tc == V_ASN1_UNIVERSAL)
-	ossl_asn1_put_object(&p, constructed, RSTRING_LENINT(value), tn, tc);
+	ASN1_put_object(&p, constructed, RSTRING_LENINT(value), tn, tc);
     else{
 	if(explicit){
-	    ossl_asn1_put_object(&p, constructed, seq_len, tn, tc);
-	    ossl_asn1_put_object(&p, constructed, RSTRING_LENINT(value), tag, V_ASN1_UNIVERSAL);
+	    ASN1_put_object(&p, constructed, seq_len, tn, tc);
+	    ASN1_put_object(&p, constructed, RSTRING_LENINT(value), tag, V_ASN1_UNIVERSAL);
 	}
 	else{
-	    ossl_asn1_put_object(&p, constructed, RSTRING_LENINT(value), tn, tc);
+	    ASN1_put_object(&p, constructed, RSTRING_LENINT(value), tn, tc);
 	}
     }
     memcpy(p, RSTRING_PTR(value), RSTRING_LEN(value));

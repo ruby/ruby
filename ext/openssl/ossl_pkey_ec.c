@@ -1658,9 +1658,7 @@ void Init_ossl_ec(void)
     ID_compressed = rb_intern("compressed");
     ID_hybrid = rb_intern("hybrid");
 
-#ifdef OPENSSL_EC_NAMED_CURVE
     rb_define_const(cEC, "NAMED_CURVE", ULONG2NUM(OPENSSL_EC_NAMED_CURVE));
-#endif
 
     rb_define_singleton_method(cEC, "builtin_curves", ossl_s_builtin_curves, 0);
 

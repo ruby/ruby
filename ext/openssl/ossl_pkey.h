@@ -40,9 +40,6 @@ extern const rb_data_type_t ossl_evp_pkey_type;
     GetPKey((obj), (pkey)); \
 } while (0)
 
-void ossl_generate_cb(int, int, void *);
-#define HAVE_BN_GENCB defined(HAVE_RSA_GENERATE_KEY_EX) || defined(HAVE_DH_GENERATE_PARAMETERS_EX) || defined(HAVE_DSA_GENERATE_PARAMETERS_EX)
-#if HAVE_BN_GENCB
 struct ossl_generate_cb_arg {
     int yield;
     int stop;
@@ -50,7 +47,6 @@ struct ossl_generate_cb_arg {
 };
 int ossl_generate_cb_2(int p, int n, BN_GENCB *cb);
 void ossl_generate_cb_stop(void *ptr);
-#endif
 
 VALUE ossl_pkey_new(EVP_PKEY *);
 VALUE ossl_pkey_new_from_file(VALUE);

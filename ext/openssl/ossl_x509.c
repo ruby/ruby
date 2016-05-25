@@ -63,12 +63,8 @@ Init_ossl_x509(void)
     DefX509Const(V_ERR_KEYUSAGE_NO_CERTSIGN);
     DefX509Const(V_ERR_APPLICATION_VERIFICATION);
 
-#if defined(X509_V_FLAG_CRL_CHECK)
     DefX509Const(V_FLAG_CRL_CHECK);
-#endif
-#if defined(X509_V_FLAG_CRL_CHECK_ALL)
     DefX509Const(V_FLAG_CRL_CHECK_ALL);
-#endif
 
     DefX509Const(PURPOSE_SSL_CLIENT);
     DefX509Const(PURPOSE_SSL_SERVER);
@@ -77,21 +73,15 @@ Init_ossl_x509(void)
     DefX509Const(PURPOSE_SMIME_ENCRYPT);
     DefX509Const(PURPOSE_CRL_SIGN);
     DefX509Const(PURPOSE_ANY);
-#if defined(X509_PURPOSE_OCSP_HELPER)
     DefX509Const(PURPOSE_OCSP_HELPER);
-#endif
 
     DefX509Const(TRUST_COMPAT);
     DefX509Const(TRUST_SSL_CLIENT);
     DefX509Const(TRUST_SSL_SERVER);
     DefX509Const(TRUST_EMAIL);
     DefX509Const(TRUST_OBJECT_SIGN);
-#if defined(X509_TRUST_OCSP_SIGN)
     DefX509Const(TRUST_OCSP_SIGN);
-#endif
-#if defined(X509_TRUST_OCSP_REQUEST)
     DefX509Const(TRUST_OCSP_REQUEST);
-#endif
 
     DefX509Default(CERT_AREA, cert_area);
     DefX509Default(CERT_DIR, cert_dir);

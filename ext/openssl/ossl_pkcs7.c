@@ -127,6 +127,22 @@ static const rb_data_type_t ossl_pkcs7_recip_info_type = {
  * Public
  * (MADE PRIVATE UNTIL SOMEBODY WILL NEED THEM)
  */
+static PKCS7_SIGNER_INFO *
+ossl_PKCS7_SIGNER_INFO_dup(const PKCS7_SIGNER_INFO *si)
+{
+    return (PKCS7_SIGNER_INFO *)ASN1_dup((i2d_of_void *)i2d_PKCS7_SIGNER_INFO,
+					 (d2i_of_void *)d2i_PKCS7_SIGNER_INFO,
+					 (char *)si);
+}
+
+static PKCS7_RECIP_INFO *
+ossl_PKCS7_RECIP_INFO_dup(const PKCS7_RECIP_INFO *si)
+{
+    return (PKCS7_RECIP_INFO *)ASN1_dup((i2d_of_void *)i2d_PKCS7_RECIP_INFO,
+					(d2i_of_void *)d2i_PKCS7_RECIP_INFO,
+					(char *)si);
+}
+
 static VALUE
 ossl_pkcs7si_new(PKCS7_SIGNER_INFO *p7si)
 {
@@ -134,7 +150,7 @@ ossl_pkcs7si_new(PKCS7_SIGNER_INFO *p7si)
     VALUE obj;
 
     obj = NewPKCS7si(cPKCS7Signer);
-    pkcs7 = p7si ? PKCS7_SIGNER_INFO_dup(p7si) : PKCS7_SIGNER_INFO_new();
+    pkcs7 = p7si ? ossl_PKCS7_SIGNER_INFO_dup(p7si) : PKCS7_SIGNER_INFO_new();
     if (!pkcs7) ossl_raise(ePKCS7Error, NULL);
     SetPKCS7si(obj, pkcs7);
 
@@ -147,7 +163,7 @@ DupPKCS7SignerPtr(VALUE obj)
     PKCS7_SIGNER_INFO *p7si, *pkcs7;
 
     SafeGetPKCS7si(obj, p7si);
-    if (!(pkcs7 = PKCS7_SIGNER_INFO_dup(p7si))) {
+    if (!(pkcs7 = ossl_PKCS7_SIGNER_INFO_dup(p7si))) {
 	ossl_raise(ePKCS7Error, NULL);
     }
 
@@ -161,7 +177,7 @@ ossl_pkcs7ri_new(PKCS7_RECIP_INFO *p7ri)
     VALUE obj;
 
     obj = NewPKCS7ri(cPKCS7Recipient);
-    pkcs7 = p7ri ? PKCS7_RECIP_INFO_dup(p7ri) : PKCS7_RECIP_INFO_new();
+    pkcs7 = p7ri ? ossl_PKCS7_RECIP_INFO_dup(p7ri) : PKCS7_RECIP_INFO_new();
     if (!pkcs7) ossl_raise(ePKCS7Error, NULL);
     SetPKCS7ri(obj, pkcs7);
 
@@ -174,7 +190,7 @@ DupPKCS7RecipientPtr(VALUE obj)
     PKCS7_RECIP_INFO *p7ri, *pkcs7;
 
     SafeGetPKCS7ri(obj, p7ri);
-    if (!(pkcs7 = PKCS7_RECIP_INFO_dup(p7ri))) {
+    if (!(pkcs7 = ossl_PKCS7_RECIP_INFO_dup(p7ri))) {
 	ossl_raise(ePKCS7Error, NULL);
     }
 

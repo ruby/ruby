@@ -869,10 +869,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     start_server(OpenSSL::SSL::VERIFY_NONE, true, :ctx_proc => ctx_proc, :server_proc => server_proc) do |server, port|
       2.times do |i|
         ctx = OpenSSL::SSL::SSLContext.new
-        if defined?(OpenSSL::SSL::OP_NO_TICKET)
-          # disable RFC4507 support
-          ctx.options = OpenSSL::SSL::OP_NO_TICKET
-        end
+        # disable RFC4507 support
+        ctx.options = OpenSSL::SSL::OP_NO_TICKET
         server_connect(port, ctx) { |ssl|
           ssl.hostname = (i & 1 == 0) ? 'foo.example.com' : 'bar.example.com'
           str = "x" * 100 + "\n"

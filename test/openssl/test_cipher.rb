@@ -114,40 +114,38 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     end
   end if has_cipher?('aes-128-ctr')
 
-  if OpenSSL::OPENSSL_VERSION_NUMBER > 0x00907000
-    def test_ciphers
-      OpenSSL::Cipher.ciphers.each{|name|
-        next if /netbsd/ =~ RUBY_PLATFORM && /idea|rc5/i =~ name
-        begin
-          assert_kind_of(OpenSSL::Cipher::Cipher, OpenSSL::Cipher::Cipher.new(name))
-        rescue OpenSSL::Cipher::CipherError => e
-          next if /wrap/ =~ name and e.message == 'wrap mode not allowed'
-          raise
-        end
-      }
-    end
+  def test_ciphers
+    OpenSSL::Cipher.ciphers.each{|name|
+      next if /netbsd/ =~ RUBY_PLATFORM && /idea|rc5/i =~ name
+      begin
+        assert_kind_of(OpenSSL::Cipher::Cipher, OpenSSL::Cipher::Cipher.new(name))
+      rescue OpenSSL::Cipher::CipherError => e
+        next if /wrap/ =~ name and e.message == 'wrap mode not allowed'
+        raise
+      end
+    }
+  end
 
-    def test_AES
-      pt = File.read(__FILE__)
-      %w(ECB CBC CFB OFB).each{|mode|
-        c1 = OpenSSL::Cipher::AES256.new(mode)
-        c1.encrypt
-        c1.pkcs5_keyivgen("passwd")
-        ct = c1.update(pt) + c1.final
+  def test_AES
+    pt = File.read(__FILE__)
+    %w(ECB CBC CFB OFB).each{|mode|
+      c1 = OpenSSL::Cipher::AES256.new(mode)
+      c1.encrypt
+      c1.pkcs5_keyivgen("passwd")
+      ct = c1.update(pt) + c1.final
 
-        c2 = OpenSSL::Cipher::AES256.new(mode)
-        c2.decrypt
-        c2.pkcs5_keyivgen("passwd")
-        assert_equal(pt, c2.update(ct) + c2.final)
-      }
-    end
+      c2 = OpenSSL::Cipher::AES256.new(mode)
+      c2.decrypt
+      c2.pkcs5_keyivgen("passwd")
+      assert_equal(pt, c2.update(ct) + c2.final)
+    }
+  end
 
-    def test_AES_crush
-      500.times do
-        assert_nothing_raised("[Bug #2768]") do
-          # it caused OpenSSL SEGV by uninitialized key
-          OpenSSL::Cipher::AES128.new("ECB").update "." * 17
-        end
+  def test_AES_crush
+    500.times do
+      assert_nothing_raised("[Bug #2768]") do
+        # it caused OpenSSL SEGV by uninitialized key
+        OpenSSL::Cipher::AES128.new("ECB").update "." * 17
       end
     end
   end

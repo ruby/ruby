@@ -61,9 +61,7 @@ tddwpBAEDjcwMzA5NTYzMTU1MzAwpQMCARM=
         # SSL_SESSION_time keeps long value so we can't keep nsec fragment.
         session.time = t1 = Time.now.to_i
         assert_equal(Time.at(t1), session.time)
-        if session.respond_to?(:id)
-          assert_not_nil(session.id)
-        end
+        assert_not_nil(session.id)
         pem = session.to_pem
         assert_match(/\A-----BEGIN SSL SESSION PARAMETERS-----/, pem)
         assert_match(/-----END SSL SESSION PARAMETERS-----\Z/, pem)
@@ -170,10 +168,7 @@ __EOS__
         session = ssl.session
         if last_session
           assert(ssl.session_reused?)
-
-          if session.respond_to?(:id)
-            assert_equal(session.id, last_session.id)
-          end
+          assert_equal(session.id, last_session.id)
           assert_equal(session.to_pem, last_session.to_pem)
           assert_equal(session.to_der, last_session.to_der)
           # Older version of OpenSSL may not be consistent.  Look up which versions later.
@@ -246,10 +241,8 @@ __EOS__
       10.times do |i|
         sock = TCPSocket.new("127.0.0.1", port)
         ctx = OpenSSL::SSL::SSLContext.new
-        if defined?(OpenSSL::SSL::OP_NO_TICKET)
-          # disable RFC4507 support
-          ctx.options = OpenSSL::SSL::OP_NO_TICKET
-        end
+        # disable RFC4507 support
+        ctx.options = OpenSSL::SSL::OP_NO_TICKET
         ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
         ssl.sync_close = true
         ssl.session = first_session if first_session

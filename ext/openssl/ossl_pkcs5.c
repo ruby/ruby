@@ -48,7 +48,6 @@ ossl_pkcs5_pbkdf2_hmac(VALUE self, VALUE pass, VALUE salt, VALUE iter, VALUE key
 #endif
 
 
-#ifdef HAVE_PKCS5_PBKDF2_HMAC_SHA1
 /*
  * call-seq:
  *    PKCS5.pbkdf2_hmac_sha1(pass, salt, iter, keylen) => string
@@ -81,9 +80,6 @@ ossl_pkcs5_pbkdf2_hmac_sha1(VALUE self, VALUE pass, VALUE salt, VALUE iter, VALU
 
     return str;
 }
-#else
-#define ossl_pkcs5_pbkdf2_hmac_sha1 rb_f_notimplement
-#endif
 
 void
 Init_ossl_pkcs5(void)

@@ -20,20 +20,6 @@ ID id_private_q;
 /*
  * callback for generating keys
  */
-void
-ossl_generate_cb(int p, int n, void *arg)
-{
-    VALUE ary;
-
-    ary = rb_ary_new2(2);
-    rb_ary_store(ary, 0, INT2NUM(p));
-    rb_ary_store(ary, 1, INT2NUM(n));
-
-    rb_yield(ary);
-}
-
-#if HAVE_BN_GENCB
-/* OpenSSL 2nd version of GN generation callback */
 int
 ossl_generate_cb_2(int p, int n, BN_GENCB *cb)
 {
@@ -66,7 +52,6 @@ ossl_generate_cb_stop(void *ptr)
     struct ossl_generate_cb_arg *arg = (struct ossl_generate_cb_arg *)ptr;
     arg->stop = 1;
 }
-#endif
 
 static void
 ossl_evp_pkey_free(void *ptr)

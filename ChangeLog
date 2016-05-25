@@ -1,3 +1,7 @@
+Wed May 25 17:45:15 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl, test/openssl: Drop OpenSSL < 0.9.8 support.
+
 Wed May 25 17:43:30 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/openssl_missing.h, ext/openssl/ossl.h: Remove
