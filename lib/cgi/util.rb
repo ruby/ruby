@@ -31,7 +31,7 @@ module CGI::Util
     '>' => '&gt;',
   }
 
-  # Escape special characters in HTML, namely &\"<>
+  # Escape special characters in HTML, namely '&\"<>
   #   CGI::escapeHTML('Usage: foo "bar" <baz>')
   #      # => "Usage: foo &quot;bar&quot; &lt;baz&gt;"
   def escapeHTML(string)
