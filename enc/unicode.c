@@ -701,7 +701,7 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 	    const CodePointList3 *folded;
 
 	    if (code==I_WITH_DOT_ABOVE) {
-		if (flags&ONIGENC_CASE_DOWNCASE) {
+		if (flags&(ONIGENC_CASE_DOWNCASE|ONIGENC_CASE_FOLD)) {
 		    MODIFIED;
 		    code = 'i';
 		    if (!(flags&ONIGENC_CASE_FOLD_TURKISH_AZERI)) { /* make dot above explicit */
@@ -709,6 +709,10 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 			code = DOT_ABOVE;
 		    }
 		}
+	    }
+	    else if (code==DOTLESS_i) { /* handle this manually, because it isn't involved in folding */
+		if (flags&ONIGENC_CASE_UPCASE)
+		    MODIFIED, code = 'I';
 	    }
 	    else if ((folded = onigenc_unicode_fold_lookup(code)) != 0) { /* data about character found in CaseFold_11_Table */
 		if ((flags&ONIGENC_CASE_TITLECASE)                                 /* Titlecase needed, */
