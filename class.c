@@ -1901,22 +1901,16 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 	if (ISDIGIT(*p)) {
 	    n_opt = *p - '0';
 	    p++;
-	    if (ISDIGIT(*p)) {
-		n_trail = *p - '0';
-		p++;
-		goto block_arg;
-	    }
 	}
     }
     if (*p == '*') {
 	f_var = 1;
 	p++;
-	if (ISDIGIT(*p)) {
-	    n_trail = *p - '0';
-	    p++;
-	}
     }
-  block_arg:
+    if (ISDIGIT(*p)) {
+	n_trail = *p - '0';
+	p++;
+    }
     if (*p == ':') {
 	f_hash = 1;
 	p++;
