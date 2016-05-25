@@ -1,3 +1,8 @@
+Wed May 25 13:10:30 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regcomp.c (compile_length_tree): return error code immediately
+	  if compile_length_tree raised error [Bug #12418]
+
 Wed May 25 08:01:39 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/unicode.c: Fix flag error for switch from titlecase to lowercase.

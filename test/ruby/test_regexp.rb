@@ -1078,6 +1078,9 @@ class TestRegexp < Test::Unit::TestCase
     conds = {"xy"=>true, "yx"=>true, "xx"=>false, "yy"=>false}
     assert_match_each(/\A((x)|(y))(?(2)y|x)\z/, conds, bug8583)
     assert_match_each(/\A((?<x>x)|(?<y>y))(?(<x>)y|x)\z/, conds, bug8583)
+
+    bug12418 = '[ruby-core:75694] [Bug #12418]'
+    assert_raise(RegexpError, bug12418){ Regexp.new('(0?0|(?(5)||)|(?(5)||))?') }
   end
 
   def test_options_in_look_behind
