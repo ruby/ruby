@@ -1,3 +1,8 @@
+Wed May 25 17:11:34 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_scan_args_validate): move failed
+	  condition to the terminal.  [ruby-core:75714] [Bug #12426]
+
 Wed May 25 13:13:37 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regcomp.c: remove condition for debug output because prelude
