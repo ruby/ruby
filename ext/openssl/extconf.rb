@@ -154,7 +154,6 @@ have_struct_member("CRYPTO_THREADID", "ptr", "openssl/crypto.h")
 have_struct_member("EVP_CIPHER_CTX", "flags", "openssl/evp.h")
 have_struct_member("EVP_CIPHER_CTX", "engine", "openssl/evp.h")
 have_struct_member("X509_ATTRIBUTE", "single", "openssl/x509.h")
-have_macro("OPENSSL_FIPS", ['openssl/opensslconf.h']) && $defs.push("-DHAVE_OPENSSL_FIPS")
 have_macro("EVP_CTRL_GCM_GET_TAG", ['openssl/evp.h']) && $defs.push("-DHAVE_AUTHENTICATED_ENCRYPTION")
 
 Logging::message "=== Checking done. ===\n"

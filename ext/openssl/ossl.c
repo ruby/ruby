@@ -495,7 +495,7 @@ static VALUE
 ossl_fips_mode_set(VALUE self, VALUE enabled)
 {
 
-#ifdef HAVE_OPENSSL_FIPS
+#ifdef OPENSSL_FIPS
     if (RTEST(enabled)) {
 	int mode = FIPS_mode();
 	if(!mode && !FIPS_mode_set(1)) /* turning on twice leads to an error */
@@ -1162,7 +1162,7 @@ Init_openssl(void)
     /*
      * Boolean indicating whether OpenSSL is FIPS-enabled or not
      */
-#ifdef HAVE_OPENSSL_FIPS
+#ifdef OPENSSL_FIPS
     rb_define_const(mOSSL, "OPENSSL_FIPS", Qtrue);
 #else
     rb_define_const(mOSSL, "OPENSSL_FIPS", Qfalse);
