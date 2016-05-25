@@ -10,10 +10,6 @@
 #if !defined(_OSSL_OPENSSL_MISSING_H_)
 #define _OSSL_OPENSSL_MISSING_H_
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 #ifndef TYPEDEF_D2I_OF
 typedef char *d2i_of_void();
 #endif
@@ -192,10 +188,5 @@ int PEM_def_callback(char *buf, int num, int w, void *key);
 #if !defined(HAVE_ASN1_PUT_EOC)
 int ASN1_put_eoc(unsigned char **pp);
 #endif
-
-#if defined(__cplusplus)
-}
-#endif
-
 
 #endif /* _OSSL_OPENSSL_MISSING_H_ */

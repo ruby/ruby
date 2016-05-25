@@ -1,3 +1,9 @@
+Wed May 25 17:43:30 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/openssl_missing.h, ext/openssl/ossl.h: Remove
+	  unnecessary 'extern "C"' blocks. We don't use C++ and these headers
+	  are local to ext/openssl, so there is no need to enclose with it.
+
 Wed May 25 17:42:58 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/extconf.rb: Remove check of OPENSSL_FIPS macro. This is

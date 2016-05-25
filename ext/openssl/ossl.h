@@ -12,10 +12,6 @@
 
 #include RUBY_EXTCONF_H
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 #if 0
   mOSSL = rb_define_module("OpenSSL");
   mX509 = rb_define_module_under(mOSSL, "X509");
@@ -246,9 +242,5 @@ void ossl_debug(const char *, ...);
 #include "ossl_engine.h"
 
 void Init_openssl(void);
-
-#if defined(__cplusplus)
-}
-#endif
 
 #endif /* _OSSL_H_ */
