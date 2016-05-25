@@ -439,6 +439,8 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(arg_encoding_none, Regexp.new("", nil, "N").options)
 
     assert_raise(RegexpError) { Regexp.new(")(") }
+    assert_raise(RegexpError) { Regexp.new('[\\40000000000') }
+    assert_raise(RegexpError) { Regexp.new('[\\600000000000.') }
   end
 
   def test_unescape
