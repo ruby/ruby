@@ -1624,6 +1624,79 @@ do { \
     } \
 } while (0)
 
+#if defined HAVE_VA_ARGS_MACRO
+#define RB_NARG0(_0,_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,...) _19
+#define RB_NARG(...) RB_NARG0(__VA_ARGS__,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0)
+#define RB_STORE_VA_ARGS(nargs, argc, argv, ...) \
+    TOKEN_PASTE(rb_store_va_args_,nargs)(nargs, argc, argv, ##__VA_ARGS__)
+#define rb_scan_args(argc, argv, fmt, ...)	\
+    ((fmt)[('0'<=(fmt)[1]&&(fmt)[1]<='9')+1] || \
+     ((fmt)[0]-'0'+((fmt)[1] ? (fmt)[1]-'0' : 0)) > 9 ? \
+     rb_scan_args(argc, argv, fmt, ## __VA_ARGS__) : \
+     (rb_check_arity(argc, (fmt)[0]-'0', \
+		     (fmt)[0]-'0'+((fmt)[1] ? (fmt)[1]-'0' : 0)), \
+      RB_STORE_VA_ARGS(RB_NARG(__VA_ARGS__), argc, argv, ## __VA_ARGS__), \
+      (argc)))
+
+#define rb_store_va_args_0(nargs, argc, argv) 0
+#define rb_store_va_args_1(nargs, argc, argv, argp, ...) \
+    (((argp) ? (*(VALUE*)(argp) = (argc) > nargs ? *(argv) : Qnil) : Qnil), \
+     rb_store_va_args_0(nargs, argc, argv, ##__VA_ARGS__))
+#define rb_store_va_args_2(nargs, argc, argv, argp, ...) \
+    (((argp) ? (*(VALUE*)(argp) = (argc) > nargs ? *(argv) : Qnil) : Qnil), \
+     rb_store_va_args_1(nargs, argc, argv, ##__VA_ARGS__))
+#define rb_store_va_args_3(nargs, argc, argv, argp, ...) \
+    (((argp) ? (*(VALUE*)(argp) = (argc) > nargs ? *(argv) : Qnil) : Qnil), \
+     rb_store_va_args_2(nargs, argc, argv, ##__VA_ARGS__))
+#define rb_store_va_args_4(nargs, argc, argv, argp, ...) \
+    (((argp) ? (*(VALUE*)(argp) = (argc) > nargs ? *(argv) : Qnil) : Qnil), \
+     rb_store_va_args_3(nargs, argc, argv, ##__VA_ARGS__))
+#define rb_store_va_args_5(nargs, argc, argv, argp, ...) \
+    (((argp) ? (*(VALUE*)(argp) = (argc) > nargs ? *(argv) : Qnil) : Qnil), \
+     rb_store_va_args_4(nargs, argc, argv, ##__VA_ARGS__))
+#define rb_store_va_args_6(nargs, argc, argv, argp, ...) \
+    (((argp) ? (*(VALUE*)(argp) = (argc) > nargs ? *(argv) : Qnil) : Qnil), \
+     rb_store_va_args_5(nargs, argc, argv, ##__VA_ARGS__))
+#define rb_store_va_args_7(nargs, argc, argv, argp, ...) \
+    (((argp) ? (*(VALUE*)(argp) = (argc) > nargs ? *(argv) : Qnil) : Qnil), \
+     rb_store_va_args_6(nargs, argc, argv, ##__VA_ARGS__))
+#define rb_store_va_args_8(nargs, argc, argv, argp, ...) \
+    (((argp) ? (*(VALUE*)(argp) = (argc) > nargs ? *(argv) : Qnil) : Qnil), \
+     rb_store_va_args_7(nargs, argc, argv, ##__VA_ARGS__))
+#define rb_store_va_args_9(nargs, argc, argv, argp, ...) \
+    (((argp) ? (*(VALUE*)(argp) = (argc) > nargs ? *(argv) : Qnil) : Qnil), \
+     rb_store_va_args_8(nargs, argc, argv, ##__VA_ARGS__))
+#define rb_store_va_args_10(nargs, argc, argv, argp, ...) \
+    (((argp) ? (*(VALUE*)(argp) = (argc) > nargs ? *(argv) : Qnil) : Qnil), \
+     rb_store_va_args_9(nargs, argc, argv, ##__VA_ARGS__))
+#define rb_store_va_args_11(nargs, argc, argv, argp, ...) \
+    (((argp) ? (*(VALUE*)(argp) = (argc) > nargs ? *(argv) : Qnil) : Qnil), \
+     rb_store_va_args_10(nargs, argc, argv, ##__VA_ARGS__))
+#define rb_store_va_args_12(nargs, argc, argv, argp, ...) \
+    (((argp) ? (*(VALUE*)(argp) = (argc) > nargs ? *(argv) : Qnil) : Qnil), \
+     rb_store_va_args_11(nargs, argc, argv, ##__VA_ARGS__))
+#define rb_store_va_args_13(nargs, argc, argv, argp, ...) \
+    (((argp) ? (*(VALUE*)(argp) = (argc) > nargs ? *(argv) : Qnil) : Qnil), \
+     rb_store_va_args_12(nargs, argc, argv, ##__VA_ARGS__))
+#define rb_store_va_args_14(nargs, argc, argv, argp, ...) \
+    (((argp) ? (*(VALUE*)(argp) = (argc) > nargs ? *(argv) : Qnil) : Qnil), \
+     rb_store_va_args_13(nargs, argc, argv, ##__VA_ARGS__))
+#define rb_store_va_args_15(nargs, argc, argv, argp, ...) \
+    (((argp) ? (*(VALUE*)(argp) = (argc) > nargs ? *(argv) : Qnil) : Qnil), \
+     rb_store_va_args_14(nargs, argc, argv, ##__VA_ARGS__))
+#define rb_store_va_args_16(nargs, argc, argv, argp, ...) \
+    (((argp) ? (*(VALUE*)(argp) = (argc) > nargs ? *(argv) : Qnil) : Qnil), \
+     rb_store_va_args_15(nargs, argc, argv, ##__VA_ARGS__))
+#define rb_store_va_args_17(nargs, argc, argv, argp, ...) \
+    (((argp) ? (*(VALUE*)(argp) = (argc) > nargs ? *(argv) : Qnil) : Qnil), \
+     rb_store_va_args_16(nargs, argc, argv, ##__VA_ARGS__))
+#define rb_store_va_args_18(nargs, argc, argv, argp, ...) \
+    (((argp) ? (*(VALUE*)(argp) = (argc) > nargs ? *(argv) : Qnil) : Qnil), \
+     rb_store_va_args_17(nargs, argc, argv, ##__VA_ARGS__))
+#define rb_store_va_args_19(nargs, argc, argv, argp, ...) \
+    (<[rb_scan_args arguments are up to 18 (9+9)]>)
+#endif
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */
