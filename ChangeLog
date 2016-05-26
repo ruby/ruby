@@ -1,3 +1,13 @@
+Fri May 27 01:00:36 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* symbol.c (is_identchar): use ISDIGIT instead of rb_enc_isalnum.
+	  Though rb_enc_isalnum is encoding aware function, its argument here
+	  is *m, which is a single byte. Therefore ISDIGIT is faster.
+
+	* symbol.c (is_special_global_name): ditto.
+
+	* symbol.c (rb_enc_symname_type): ditto.
+
 Fri May 27 00:39:40 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_scan_args): add nul padding here to

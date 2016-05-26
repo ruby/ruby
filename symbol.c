@@ -28,7 +28,7 @@ static ID register_static_symid_str(ID, VALUE);
 #define REGISTER_SYMID(id, name) register_static_symid((id), (name), strlen(name), enc)
 #include "id.c"
 
-#define is_identchar(p,e,enc) (rb_enc_isalnum((unsigned char)(*(p)),(enc)) || (*(p)) == '_' || !ISASCII(*(p)))
+#define is_identchar(p,e,enc) (ISALNUM((unsigned char)*(p)) || (*(p)) == '_' || !ISASCII(*(p)))
 
 #define op_tbl_count numberof(op_tbl)
 STATIC_ASSERT(op_tbl_name_size, sizeof(op_tbl[0].name) == 3);
@@ -177,11 +177,11 @@ is_special_global_name(const char *m, const char *e, rb_encoding *enc)
 	}
     }
     else {
-	if (!rb_enc_isdigit(*m, enc)) return 0;
+	if (!ISDIGIT(*m)) return 0;
 	do {
 	    if (!ISASCII(*m)) mb = 1;
 	    ++m;
-	} while (m < e && rb_enc_isdigit(*m, enc));
+	} while (m < e && ISDIGIT(*m));
     }
     return m == e ? mb + 1 : 0;
 }
@@ -278,9 +278,9 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
 	break;
 
       default:
-	type = rb_enc_isupper(*m, enc) ? ID_CONST : ID_LOCAL;
+	type = ISUPPER(*m) ? ID_CONST : ID_LOCAL;
       id:
-	if (m >= e || (*m != '_' && !rb_enc_isalpha(*m, enc) && ISASCII(*m))) {
+	if (m >= e || (*m != '_' && !ISALPHA(*m) && ISASCII(*m))) {
 	    if (len > 1 && *(e-1) == '=') {
 		type = rb_enc_symname_type(name, len-1, enc, allowed_attrset);
 		if (type != ID_ATTRSET) return ID_ATTRSET;
