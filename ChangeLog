@@ -1,3 +1,8 @@
+Thu May 26 10:30:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_scan_args0): use pointer dereference
+	  forms instead of array forms, to get rid of warnings by clang.
+
 Thu May 26 09:45:41 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_case_comprehensive.rb: Add set of comprehensive
