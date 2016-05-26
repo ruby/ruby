@@ -1,3 +1,9 @@
+Thu May 26 09:45:41 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_comprehensive.rb: Add set of comprehensive
+	  (across most Unicode characters; later across most character encodings)
+	  tests for case mapping.
+
 Thu May 26 05:00:13 2016  Benoit Daloze  <eregontp@gmail.com>
 
 	* class.c (rb_define_class): Fix documentation.
