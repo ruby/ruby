@@ -2196,8 +2196,8 @@ ERRORFUNC(("variable argument length doesn't match"), int rb_scan_args_length_mi
 
 # define rb_scan_args_count(fmt, varc) \
     (!rb_scan_args_isdigit(fmt[0]) ? \
-     rb_scan_args_count_var(fmt, 0, varc, 0) : \
-     rb_scan_args_count_opt(fmt, 1, varc, fmt[0]-'0'))
+     rb_scan_args_count_var(fmt"\0\0\0\0", 0, varc, 0) : \
+     rb_scan_args_count_opt(fmt"\0\0\0\0\0\0", 1, varc, fmt[0]-'0'))
 
 # define rb_scan_args_lead_p(fmt) rb_scan_args_isdigit(fmt[0])
 # define rb_scan_args_n_lead(fmt) (rb_scan_args_lead_p(fmt) ? fmt[0]-'0' : 0)
