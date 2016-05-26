@@ -1,3 +1,17 @@
+Thu May 26 14:21:10 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_pkey_dh.c (ossl_dh_compute_key): Check that the DH
+	  has 'p' (the prime) before calling DH_size(). We can create a DH with
+	  no parameter but DH_size() does not check and dereferences NULL.
+	  [ruby-core:75720] [Bug #12428]
+
+	* ext/openssl/ossl_pkey_dsa.c (ossl_dsa_sign): Ditto. DSA_size() does
+	  not check dsa->q.
+
+	* ext/openssl/ossl_pkey_rsa.c (ossl_rsa_public_encrypt,
+	  ossl_rsa_public_decrypt, ossl_rsa_private_encrypt,
+	  ossl_rsa_private_decrypt): Ditto. RSA_size() does not check rsa->n.
+
 Thu May 26 14:13:52 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_scan_args_count): verify length with
