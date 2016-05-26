@@ -2166,64 +2166,64 @@ ERRORFUNC(("variable argument length doesn't match"), int rb_scan_args_length_mi
 # define rb_scan_args_isdigit(c) ((unsigned char)((c)-'0')<10)
 
 # define rb_scan_args_count_block(fmt, ofs) \
-    (*(""fmt+ofs)=='&')
+    ((fmt)[ofs]=='&')
 
 # define rb_scan_args_count_hash(fmt, ofs) \
-    (*(""fmt+ofs)!=':' ? \
+    ((fmt)[ofs]!=':' ? \
      rb_scan_args_count_block(fmt, ofs) : \
-     rb_scan_args_count_block(fmt, ofs+1)+1)
+     rb_scan_args_count_block(fmt, (ofs)+1)+1)
 
 # define rb_scan_args_count_trail(fmt, ofs) \
-    (!rb_scan_args_isdigit(*(""fmt+ofs)) ? \
+    (!rb_scan_args_isdigit((fmt)[ofs]) ? \
      rb_scan_args_count_hash(fmt, ofs) : \
-     (*(""fmt+ofs)-'0') + rb_scan_args_count_hash(fmt, ofs+1))
+     ((fmt)[ofs]-'0') + rb_scan_args_count_hash(fmt, (ofs)+1))
 
 # define rb_scan_args_count_var(fmt, ofs) \
-    (*(""fmt+ofs)!='*' ? \
+    ((fmt)[ofs]!='*' ? \
      rb_scan_args_count_trail(fmt, ofs) : \
-     rb_scan_args_count_trail(fmt, ofs+1)+1)
+     rb_scan_args_count_trail(fmt, (ofs)+1)+1)
 
 # define rb_scan_args_count(fmt) \
-    (!rb_scan_args_isdigit(*(""fmt+0)) ? rb_scan_args_count_var(fmt, 0) : \
-     !rb_scan_args_isdigit(*(""fmt+1)) ? rb_scan_args_count_var(fmt, 1)+*(""fmt+0)-'0' : \
-     rb_scan_args_count_var(fmt, 2)+*(""fmt+0)-'0'+*(""fmt+1)-'0')
+    (!rb_scan_args_isdigit((fmt)[0]) ? rb_scan_args_count_var(fmt, 0) : \
+     !rb_scan_args_isdigit((fmt)[1]) ? rb_scan_args_count_var(fmt, 1)+(fmt)[0]-'0' : \
+     rb_scan_args_count_var(fmt, 2)+(fmt)[0]-'0'+(fmt)[1]-'0')
 
-# define rb_scan_args_lead_p(fmt) rb_scan_args_isdigit(*(""fmt+0))
-# define rb_scan_args_n_lead(fmt) (rb_scan_args_lead_p(fmt) ? *(""fmt+0)-'0' : 0)
-# define rb_scan_args_opt_p(fmt) (rb_scan_args_lead_p(fmt) && rb_scan_args_isdigit(*(""fmt+1)))
-# define rb_scan_args_n_opt(fmt) (rb_scan_args_opt_p(fmt) ? *(""fmt+1)-'0' : 0)
+# define rb_scan_args_lead_p(fmt) rb_scan_args_isdigit((fmt)[0])
+# define rb_scan_args_n_lead(fmt) (rb_scan_args_lead_p(fmt) ? (fmt)[0]-'0' : 0)
+# define rb_scan_args_opt_p(fmt) (rb_scan_args_lead_p(fmt) && rb_scan_args_isdigit((fmt)[1]))
+# define rb_scan_args_n_opt(fmt) (rb_scan_args_opt_p(fmt) ? (fmt)[1]-'0' : 0)
 # define rb_scan_args_var_idx(fmt) \
-    (!rb_scan_args_lead_p(fmt) ? 0 : !rb_scan_args_isdigit(*(""fmt+1)) ? 1 : 2)
-# define rb_scan_args_f_var(fmt) (*(""fmt+rb_scan_args_var_idx(fmt))=='*')
+    (!rb_scan_args_lead_p(fmt) ? 0 : !rb_scan_args_isdigit((fmt)[1]) ? 1 : 2)
+# define rb_scan_args_f_var(fmt) ((fmt)[rb_scan_args_var_idx(fmt)]=='*')
 # define rb_scan_args_trail_idx(fmt) \
     (rb_scan_args_lead_p(fmt) ? \
-     (rb_scan_args_isdigit(*(""fmt+1)) || *(""fmt+1)=='*')+1 : \
-     (*(""fmt+0)=='*'))
+     (rb_scan_args_isdigit((fmt)[1]) || (fmt)[1]=='*')+1 : \
+     ((fmt)[0]=='*'))
 # define rb_scan_args_trail_p(fmt) \
     (rb_scan_args_lead_p(fmt) ? \
-     (rb_scan_args_isdigit(*(""fmt+1)) || *(""fmt+1)=='*') && \
-     rb_scan_args_isdigit(*(""fmt+2)) : \
-     *(""fmt+0)=='*' && rb_scan_args_isdigit(*(""fmt+1)))
+     (rb_scan_args_isdigit((fmt)[1]) || (fmt)[1]=='*') && \
+     rb_scan_args_isdigit((fmt)[2]) : \
+     (fmt)[0]=='*' && rb_scan_args_isdigit((fmt)[1]))
 # define rb_scan_args_n_trail(fmt) \
     (rb_scan_args_lead_p(fmt) ? \
-     ((rb_scan_args_isdigit(*(""fmt+1)) || *(""fmt+1)=='*') && \
-      rb_scan_args_isdigit(*(""fmt+2)) ? *(""fmt+2)-'0' : 0) : \
-     (*(""fmt+0)=='*' && rb_scan_args_isdigit(*(""fmt+1)) ? *(""fmt+1)-'0' : 0))
+     ((rb_scan_args_isdigit((fmt)[1]) || (fmt)[1]=='*') && \
+      rb_scan_args_isdigit((fmt)[2]) ? (fmt)[2]-'0' : 0) : \
+     ((fmt)[0]=='*' && rb_scan_args_isdigit((fmt)[1]) ? (fmt)[1]-'0' : 0))
 # define rb_scan_args_hash_idx(fmt) \
     (rb_scan_args_trail_idx(fmt)+rb_scan_args_trail_p(fmt))
-# define rb_scan_args_f_hash(fmt) (*(""fmt+rb_scan_args_hash_idx(fmt))==':')
+# define rb_scan_args_f_hash(fmt) ((fmt)[rb_scan_args_hash_idx(fmt)]==':')
 # define rb_scan_args_block_idx(fmt) \
     (rb_scan_args_hash_idx(fmt)+rb_scan_args_f_hash(fmt))
-# define rb_scan_args_f_block(fmt) (*(""fmt+rb_scan_args_block_idx(fmt))=='&')
+# define rb_scan_args_f_block(fmt) ((fmt)[rb_scan_args_block_idx(fmt)]=='&')
 # define rb_scan_args_end_idx(fmt) \
     (rb_scan_args_block_idx(fmt)+rb_scan_args_f_block(fmt))
 
 # define rb_scan_args_validate(fmt, varc) \
-    (!rb_scan_args_isdigit(*(""fmt+0)) ? \
+    (!rb_scan_args_isdigit((fmt)[0]) ? \
      rb_scan_args_validate_var(fmt, 0, varc) : \
-     !rb_scan_args_isdigit(*(""fmt+1)) ? \
-     rb_scan_args_validate_var(fmt, 1, (varc-*(""fmt+0)+'0')) : \
-     rb_scan_args_validate_var(fmt, 2, (varc-*(""fmt+0)+'0'-*(""fmt+1)+'0')))
+     !rb_scan_args_isdigit((fmt)[1]) ? \
+     rb_scan_args_validate_var(fmt, 1, (varc-(fmt)[0]+'0')) : \
+     rb_scan_args_validate_var(fmt, 2, (varc-(fmt)[0]+'0'-(fmt)[1]+'0')))
 # define rb_scan_args_validate_var(fmt, ofs, varc) \
     ((fmt)[ofs]=='*' ? \
      rb_scan_args_validate_trail(fmt, ofs+1, (varc-1)) : \
