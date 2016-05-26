@@ -2153,21 +2153,22 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 #if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P) && defined(__OPTIMIZE__)
 # define rb_scan_args(argc,argvp,fmt,...) \
     __builtin_choose_expr(__builtin_constant_p(fmt), \
-        rb_scan_args0(argc,argv,fmt,(sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)),((VALUE*[]){__VA_ARGS__})), \
+        rb_scan_args0(argc,argv,fmt"\0\0\0\0\0\0",\
+		      (sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)), \
+		      ((VALUE*[]){__VA_ARGS__})), \
         rb_scan_args(argc,argvp,fmt,__VA_ARGS__))
 # if HAVE_ATTRIBUTE_ERRORFUNC
 ERRORFUNC(("bad scan arg format"), int rb_scan_args_bad_format(const char*));
-ERRORFUNC(("variable argument length doesn't match"), int rb_scan_args_length_mismatch(int,int));
+ERRORFUNC(("variable argument length doesn't match"), int rb_scan_args_length_mismatch(const char*,int));
 # else
 #   define rb_scan_args_bad_format(fmt) 0
-#   define rb_scan_args_length_mismatch(vari, varc) 0
+#   define rb_scan_args_length_mismatch(fmt, varc) 0
 # endif
 
 # define rb_scan_args_isdigit(c) ((unsigned char)((c)-'0')<10)
+
 # define rb_scan_args_count_end(fmt, ofs, varc, vari) \
-    (((varc) \
-      /(!fmt[ofs] || rb_scan_args_bad_format(fmt))) \
-     /((varc)==(vari) || rb_scan_args_length_mismatch(vari, varc)))
+    ((vari)/(!fmt[ofs] || rb_scan_args_bad_format(fmt)))
 
 # define rb_scan_args_count_block(fmt, ofs, varc, vari) \
     (fmt[ofs]!='&' ? \
@@ -2194,10 +2195,15 @@ ERRORFUNC(("variable argument length doesn't match"), int rb_scan_args_length_mi
      rb_scan_args_count_var(fmt, ofs, varc, vari) : \
      rb_scan_args_count_var(fmt, ofs+1, varc, vari+fmt[ofs]-'0'))
 
+# define rb_scan_args_verify(fmt, varc) \
+    ((!rb_scan_args_isdigit(fmt[0]) ? \
+      rb_scan_args_count_var(fmt, 0, varc, 0) : \
+      rb_scan_args_count_opt(fmt, 1, varc, fmt[0]-'0')) \
+     == (varc) || \
+     rb_scan_args_length_mismatch(fmt, varc))
+
 # define rb_scan_args_count(fmt, varc) \
-    (!rb_scan_args_isdigit(fmt[0]) ? \
-     rb_scan_args_count_var(fmt"\0\0\0\0", 0, varc, 0) : \
-     rb_scan_args_count_opt(fmt"\0\0\0\0\0\0", 1, varc, fmt[0]-'0'))
+    ((varc)/(rb_scan_args_verify(fmt, varc)))
 
 # define rb_scan_args_lead_p(fmt) rb_scan_args_isdigit(fmt[0])
 # define rb_scan_args_n_lead(fmt) (rb_scan_args_lead_p(fmt) ? fmt[0]-'0' : 0)

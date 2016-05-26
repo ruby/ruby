@@ -1,3 +1,11 @@
+Fri May 27 00:39:40 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_scan_args): add nul padding here to
+	  apply to all references.
+
+	* include/ruby/ruby.h (rb_scan_args_verify): move length mismatch
+	  check outside conditional operators.
+
 Thu May 26 14:21:10 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_pkey_dh.c (ossl_dh_compute_key): Check that the DH
