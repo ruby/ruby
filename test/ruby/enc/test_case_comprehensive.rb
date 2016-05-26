@@ -65,7 +65,7 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
         downcase[code] = hex2utf8 data[1]
         titlecase[code] = hex2utf8 data[2]
       when /^tr\s*/
-        if data[4]!='tr After_I'       
+        if data[4]!='tr After_I'
           turkic_upcase[code] = hex2utf8 data[3]
           turkic_downcase[code] = hex2utf8 data[1]
           turkic_titlecase[code] = hex2utf8 data[2]
