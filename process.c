@@ -3864,7 +3864,7 @@ rb_f_exit(int argc, const VALUE *argv)
  *  call-seq:
  *     abort
  *     Kernel::abort([msg])
- *     Process::abort([msg])
+ *     Process.abort([msg])
  *
  *  Terminate execution immediately, effectively by calling
  *  <code>Kernel.exit(false)</code>. If _msg_ is given, it is written
