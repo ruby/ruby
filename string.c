@@ -8927,8 +8927,13 @@ str_compat_and_valid(VALUE str, rb_encoding *enc)
 VALUE
 rb_str_scrub(VALUE str, VALUE repl)
 {
+    return rb_enc_str_scrub(STR_ENC_GET(str), str, repl);
+}
+
+VALUE
+rb_enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl)
+{
     int cr = ENC_CODERANGE(str);
-    rb_encoding *enc;
     int encidx;
     VALUE buf = Qnil;
     const char *rep;
@@ -8938,7 +8943,6 @@ rb_str_scrub(VALUE str, VALUE repl)
     if (ENC_CODERANGE_CLEAN_P(cr))
 	return Qnil;
 
-    enc = STR_ENC_GET(str);
     if (!NIL_P(repl)) {
 	repl = str_compat_and_valid(repl, enc);
 	tainted = OBJ_TAINTED_RAW(repl);

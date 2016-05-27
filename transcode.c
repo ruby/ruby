@@ -2700,7 +2700,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
 		if (!NIL_P(ecopts)) {
 		    rep = rb_hash_aref(ecopts, sym_replace);
 		}
-		dest = rb_str_scrub(str, rep);
+		dest = rb_enc_str_scrub(senc, str, rep);
 		if (NIL_P(dest)) dest = str;
 		*self = dest;
 		return dencidx;
