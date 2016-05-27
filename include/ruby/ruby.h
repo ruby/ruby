@@ -2153,7 +2153,7 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 #if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P) && defined(__OPTIMIZE__)
 # define rb_scan_args(argc,argvp,fmt,...) \
     __builtin_choose_expr(__builtin_constant_p(fmt), \
-        rb_scan_args0(argc,argv,fmt"\0\0\0\0\0\0",\
+        rb_scan_args0(argc,argvp,fmt"\0\0\0\0\0\0",\
 		      (sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)), \
 		      ((VALUE*[]){__VA_ARGS__})), \
         rb_scan_args(argc,argvp,fmt,__VA_ARGS__))
