@@ -1,3 +1,8 @@
+Fri May 27 17:38:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_local_constants_i): exclude hidden constants.
+	  [ruby-core:75575] [Bug #12389]
+
 Fri May 27 17:09:44 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (str_transcode0): scrub in the given encoding when
