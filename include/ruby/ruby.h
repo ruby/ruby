@@ -2153,7 +2153,7 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
 #if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P) && defined(__OPTIMIZE__)
 # define rb_scan_args(argc,argvp,fmt,...) \
     __builtin_choose_expr(__builtin_constant_p(fmt), \
-        rb_scan_args0(argc,argvp,fmt"\0\0\0\0\0\0",\
+        rb_scan_args0(argc,argvp,fmt,\
 		      (sizeof((VALUE*[]){__VA_ARGS__})/sizeof(VALUE*)), \
 		      ((VALUE*[]){__VA_ARGS__})), \
         rb_scan_args(argc,argvp,fmt,__VA_ARGS__))
@@ -2195,45 +2195,136 @@ ERRORFUNC(("variable argument length doesn't match"), int rb_scan_args_length_mi
      rb_scan_args_count_var(fmt, ofs, varc, vari) : \
      rb_scan_args_count_var(fmt, ofs+1, varc, vari+fmt[ofs]-'0'))
 
-# define rb_scan_args_verify(fmt, varc) \
+# define rb_scan_args_count(fmt, varc) \
     ((!rb_scan_args_isdigit(fmt[0]) ? \
       rb_scan_args_count_var(fmt, 0, varc, 0) : \
       rb_scan_args_count_opt(fmt, 1, varc, fmt[0]-'0')) \
      == (varc) || \
      rb_scan_args_length_mismatch(fmt, varc))
 
-# define rb_scan_args_count(fmt, varc) \
-    ((varc)/(rb_scan_args_verify(fmt, varc)))
+# define rb_scan_args_verify_count(fmt, varc) \
+    ((varc)/(rb_scan_args_count(fmt, varc)))
 
-# define rb_scan_args_lead_p(fmt) rb_scan_args_isdigit(fmt[0])
-# define rb_scan_args_n_lead(fmt) (rb_scan_args_lead_p(fmt) ? fmt[0]-'0' : 0)
-# define rb_scan_args_opt_p(fmt) (rb_scan_args_lead_p(fmt) && rb_scan_args_isdigit(fmt[1]))
-# define rb_scan_args_n_opt(fmt) (rb_scan_args_opt_p(fmt) ? fmt[1]-'0' : 0)
-# define rb_scan_args_var_idx(fmt) \
-    (!rb_scan_args_lead_p(fmt) ? 0 : !rb_scan_args_isdigit(fmt[1]) ? 1 : 2)
-# define rb_scan_args_f_var(fmt) (fmt[rb_scan_args_var_idx(fmt)]=='*')
-# define rb_scan_args_trail_idx(fmt) \
-    (rb_scan_args_lead_p(fmt) ? \
-     (rb_scan_args_isdigit(fmt[1]) || fmt[1]=='*')+1 : \
-     (fmt[0]=='*'))
-# define rb_scan_args_trail_p(fmt) \
-    (rb_scan_args_lead_p(fmt) ? \
-     (rb_scan_args_isdigit(fmt[1]) || fmt[1]=='*') && \
-     rb_scan_args_isdigit(fmt[2]) : \
-     fmt[0]=='*' && rb_scan_args_isdigit(fmt[1]))
-# define rb_scan_args_n_trail(fmt) \
-    (rb_scan_args_lead_p(fmt) ? \
-     ((rb_scan_args_isdigit(fmt[1]) || fmt[1]=='*') && \
-      rb_scan_args_isdigit(fmt[2]) ? fmt[2]-'0' : 0) : \
-     (fmt[0]=='*' && rb_scan_args_isdigit(fmt[1]) ? fmt[1]-'0' : 0))
-# define rb_scan_args_hash_idx(fmt) \
-    (rb_scan_args_trail_idx(fmt)+rb_scan_args_trail_p(fmt))
-# define rb_scan_args_f_hash(fmt) (fmt[rb_scan_args_hash_idx(fmt)]==':')
-# define rb_scan_args_block_idx(fmt) \
-    (rb_scan_args_hash_idx(fmt)+rb_scan_args_f_hash(fmt))
-# define rb_scan_args_f_block(fmt) (fmt[rb_scan_args_block_idx(fmt)]=='&')
-# define rb_scan_args_end_idx(fmt) \
-    (rb_scan_args_block_idx(fmt)+rb_scan_args_f_block(fmt))
+# ifdef __GNUC__
+# define rb_scan_args_verify(fmt, varc) \
+    ({ \
+	int verify; \
+	_Pragma("GCC diagnostic push"); \
+	_Pragma("GCC diagnostic ignored \"-Warray-bounds\""); \
+	verify = rb_scan_args_verify_count(fmt, varc); \
+	_Pragma("GCC diagnostic pop"); \
+	verify; \
+    })
+# else
+# define rb_scan_args_verify(fmt, varc) \
+    rb_scan_args_verify_count(fmt, varc)
+# endif
+
+ALWAYS_INLINE(static int rb_scan_args_lead_p(const char *fmt));
+static inline int
+rb_scan_args_lead_p(const char *fmt)
+{
+    return rb_scan_args_isdigit(fmt[0]);
+}
+
+ALWAYS_INLINE(static int rb_scan_args_n_lead(const char *fmt));
+static inline int
+rb_scan_args_n_lead(const char *fmt)
+{
+    return (rb_scan_args_lead_p(fmt) ? fmt[0]-'0' : 0);
+}
+
+ALWAYS_INLINE(static int rb_scan_args_opt_p(const char *fmt));
+static inline int
+rb_scan_args_opt_p(const char *fmt)
+{
+    return (rb_scan_args_lead_p(fmt) && rb_scan_args_isdigit(fmt[1]));
+}
+
+ALWAYS_INLINE(static int rb_scan_args_n_opt(const char *fmt));
+static inline int
+rb_scan_args_n_opt(const char *fmt)
+{
+    return (rb_scan_args_opt_p(fmt) ? fmt[1]-'0' : 0);
+}
+
+ALWAYS_INLINE(static int rb_scan_args_var_idx(const char *fmt));
+static inline int
+rb_scan_args_var_idx(const char *fmt)
+{
+    return (!rb_scan_args_lead_p(fmt) ? 0 : !rb_scan_args_isdigit(fmt[1]) ? 1 : 2);
+}
+
+ALWAYS_INLINE(static int rb_scan_args_f_var(const char *fmt));
+static inline int
+rb_scan_args_f_var(const char *fmt)
+{
+    return (fmt[rb_scan_args_var_idx(fmt)]=='*');
+}
+
+ALWAYS_INLINE(static int rb_scan_args_trail_idx(const char *fmt));
+static inline int
+rb_scan_args_trail_idx(const char *fmt)
+{
+    return (rb_scan_args_lead_p(fmt) ?
+	    (rb_scan_args_isdigit(fmt[1]) || fmt[1]=='*')+1 :
+	    (fmt[0]=='*'));
+}
+
+ALWAYS_INLINE(static int rb_scan_args_trail_p(const char *fmt));
+static inline int
+rb_scan_args_trail_p(const char *fmt)
+{
+    return (rb_scan_args_lead_p(fmt) ?
+	    (rb_scan_args_isdigit(fmt[1]) || fmt[1]=='*') &&
+	    rb_scan_args_isdigit(fmt[2]) :
+	    fmt[0]=='*' && rb_scan_args_isdigit(fmt[1]));
+}
+
+ALWAYS_INLINE(static int rb_scan_args_n_trail(const char *fmt));
+static inline int
+rb_scan_args_n_trail(const char *fmt)
+{
+    return (rb_scan_args_lead_p(fmt) ?
+	    ((rb_scan_args_isdigit(fmt[1]) || fmt[1]=='*') &&
+	     rb_scan_args_isdigit(fmt[2]) ? fmt[2]-'0' : 0) :
+	    (fmt[0]=='*' && rb_scan_args_isdigit(fmt[1]) ? fmt[1]-'0' : 0));
+}
+
+ALWAYS_INLINE(static int rb_scan_args_hash_idx(const char *fmt));
+static inline int
+rb_scan_args_hash_idx(const char *fmt)
+{
+    return (rb_scan_args_trail_idx(fmt)+rb_scan_args_trail_p(fmt));
+}
+
+ALWAYS_INLINE(static int rb_scan_args_f_hash(const char *fmt));
+static inline int
+rb_scan_args_f_hash(const char *fmt)
+{
+    return (fmt[rb_scan_args_hash_idx(fmt)]==':');
+}
+
+ALWAYS_INLINE(static int rb_scan_args_block_idx(const char *fmt));
+static inline int
+rb_scan_args_block_idx(const char *fmt)
+{
+    return (rb_scan_args_hash_idx(fmt)+rb_scan_args_f_hash(fmt));
+}
+
+ALWAYS_INLINE(static int rb_scan_args_f_block(const char *fmt));
+static inline int
+rb_scan_args_f_block(const char *fmt)
+{
+    return (fmt[rb_scan_args_block_idx(fmt)]=='&');
+}
+
+ALWAYS_INLINE(static int rb_scan_args_end_idx(const char *fmt));
+static inline int
+rb_scan_args_end_idx(const char *fmt)
+{
+    return (rb_scan_args_block_idx(fmt)+rb_scan_args_f_block(fmt));
+}
 
 # define rb_scan_args0(argc, argv, fmt, varc, vars) \
     rb_scan_args_set(argc, argv, \
@@ -2243,7 +2334,7 @@ ERRORFUNC(("variable argument length doesn't match"), int rb_scan_args_length_mi
 		     rb_scan_args_f_var(fmt), \
 		     rb_scan_args_f_hash(fmt), \
 		     rb_scan_args_f_block(fmt), \
-		     rb_scan_args_count(fmt, varc), vars)
+		     rb_scan_args_verify(fmt, varc), vars)
 ALWAYS_INLINE(static int
 rb_scan_args_set(int argc, const VALUE *argv,
 		 int n_lead, int n_opt, int n_trail,

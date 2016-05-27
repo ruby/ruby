@@ -1,3 +1,15 @@
+Fri May 27 15:07:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_scan_args): remove nul padding which
+	  caused syntax error if fmt is not a string literal.
+
+	* include/ruby/ruby.h (rb_scan_args_verify): suppress array-bounds
+	  warnings by old clang.
+
+	* include/ruby/ruby.h (rb_scan_args0): make extractor macros
+	  inline functions, which do not varidate the format and are
+	  unnecessary to be expanded.
+
 Fri May 27 01:00:36 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* symbol.c (is_identchar): use ISDIGIT instead of rb_enc_isalnum.
