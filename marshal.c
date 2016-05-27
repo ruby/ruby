@@ -290,7 +290,7 @@ w_long(long x, struct dump_arg *arg)
     int i;
 
 #if SIZEOF_LONG > 4
-    if (!(RSHIFT(x, 31) == 0 || RSHIFT(x, 31) == -1)) {
+    if (!(RSHIFT(x, 32) == 0 || RSHIFT(x, 32) == -1)) {
 	/* big long does not fit in 4 bytes */
 	rb_raise(rb_eTypeError, "long too big to dump");
     }
@@ -683,7 +683,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	w_byte(TYPE_FIXNUM, arg);
 	w_long(FIX2INT(obj), arg);
 #else
-	if (RSHIFT((long)obj, 31) == 0 || RSHIFT((long)obj, 31) == -1) {
+	if (RSHIFT(FIX2LONG(obj), 32) == 0 || RSHIFT(FIX2LONG(obj), 32) == -1) {
 	    w_byte(TYPE_FIXNUM, arg);
 	    w_long(FIX2LONG(obj), arg);
 	}
