@@ -1,3 +1,8 @@
+Sat May 28 20:40:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-additional.el (ruby-insert-heredoc-code-block): insert
+	  here document code block for assert_separately mainly.
+
 Sat May 28 20:34:19 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/test_unicode_normalize.rb: Add test to check for availability of
