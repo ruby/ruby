@@ -881,14 +881,27 @@ module Net   #:nodoc:
       end
 
       D "opening connection to #{conn_address}:#{conn_port}..."
-      s = Timeout.timeout(@open_timeout, Net::OpenTimeout) {
-        begin
-          TCPSocket.open(conn_address, conn_port, @local_host, @local_port)
-        rescue => e
-          raise e, "Failed to open TCP connection to " +
-            "#{conn_address}:#{conn_port} (#{e.message})"
+      begin
+        if timeout = @open_timeout
+          s = Socket.new(:INET, :STREAM)
+          s.bind(Socket.pack_sockaddr_in(@local_port || 0, @local_host)) if @local_host
+          sockaddr = Socket.sockaddr_in(conn_port, conn_address)
+          while true
+            raise Net::OpenTimeout if timeout <= 0
+            start = Process.clock_gettime Process::CLOCK_MONOTONIC
+            case s.connect_nonblock(sockaddr, exception: false)
+              when :wait_writable; s.wait_writable(timeout)
+              else; break
+            end
+            timeout -= Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
+          end
+        else
+          s = TCPSocket.open(conn_address, conn_port, @local_host, @local_port)
         end
-      }
+      rescue => e
+        raise e, "Failed to open TCP connection to " +
+            "#{conn_address}:#{conn_port} (#{e.message})"
+      end
       s.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
       D "opened"
       if use_ssl?
