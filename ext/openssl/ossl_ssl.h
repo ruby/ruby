@@ -12,6 +12,9 @@
 
 #define GetSSL(obj, ssl) do { \
 	TypedData_Get_Struct((obj), SSL, &ossl_ssl_type, (ssl)); \
+	if (!(ssl)) { \
+		ossl_raise(rb_eRuntimeError, "SSL is not initialized"); \
+	} \
 } while (0)
 
 #define GetSSLSession(obj, sess) do { \

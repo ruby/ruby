@@ -247,42 +247,13 @@ module OpenSSL
       include Buffering
       include SocketForwarder
 
-      if ExtConfig::OPENSSL_NO_SOCK
-        def initialize(io, ctx = nil); raise NotImplementedError; end
-      else
-        if ExtConfig::HAVE_TLSEXT_HOST_NAME
-          attr_accessor :hostname
-        end
-
-        attr_reader :io, :context
-        attr_accessor :sync_close
-        alias :to_io :io
-
-        # call-seq:
-        #    SSLSocket.new(io) => aSSLSocket
-        #    SSLSocket.new(io, ctx) => aSSLSocket
-        #
-        # Creates a new SSL socket from +io+ which must be a real ruby object (not an
-        # IO-like object that responds to read/write).
-        #
-        # If +ctx+ is provided the SSL Sockets initial params will be taken from
-        # the context.
-        #
-        # The OpenSSL::Buffering module provides additional IO methods.
-        #
-        # This method will freeze the SSLContext if one is provided;
-        # however, session management is still allowed in the frozen SSLContext.
-
-        def initialize(io, context = OpenSSL::SSL::SSLContext.new)
-          @io         = io
-          @context    = context
-          @sync_close = false
-          @hostname   = nil
-          @io.nonblock = true if @io.respond_to?(:nonblock=)
-          context.setup
-          super()
-        end
+      if ExtConfig::HAVE_TLSEXT_HOST_NAME
+        attr_reader :hostname
       end
+
+      attr_reader :io, :context
+      attr_accessor :sync_close
+      alias :to_io :io
 
       # call-seq:
       #    ssl.sysclose => nil

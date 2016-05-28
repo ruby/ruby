@@ -46,7 +46,7 @@ static VALUE ossl_ssl_session_initialize(VALUE self, VALUE arg1)
 
 		GetSSL(arg1, ssl);
 
-		if (!ssl || (ctx = SSL_get1_session(ssl)) == NULL)
+		if ((ctx = SSL_get1_session(ssl)) == NULL)
 			ossl_raise(eSSLSession, "no session available");
 	} else {
 		BIO *in = ossl_obj2bio(arg1);

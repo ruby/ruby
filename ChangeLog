@@ -1,3 +1,49 @@
+Sat May 28 14:00:10 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/lib/openssl/ssl.rb (SSLSocket): Move the implementation of
+	  SSLSocket#initialize to C. Initialize the SSL (OpenSSL object) in it.
+	  Currently this is delayed until ossl_ssl_setup(), which is called from
+	  SSLSocket#accept or #connect. Say we call SSLSocket#hostname= with an
+	  illegal value. We expect an exception to be raised in #hostname= but
+	  actually we get it in the later SSLSocket#connect. Because the SSL is
+	  not ready at #hostname=, the actual call of SSL_set_tlsext_host_name()
+	  is also delayed.
+	  This also fixes: [ruby-dev:49376] [Bug #11724]
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_initialize): Added. Almost the same
+	  as the Ruby version but this instantiate the SSL object at the same
+	  time.
+
+	  (ossl_ssl_setup): Adjust to the changes. Just set the underlying IO to
+	  the SSL.
+
+	  (ssl_started): Added. Make use of SSL_get_fd(). This returns -1 if not
+	  yet set by SSL_set_fd().
+
+	  (ossl_ssl_data_get_struct): Removed. Now GetSSL() checks that the SSL
+	  exists.
+
+	  (ossl_ssl_set_session): Don't call ossl_ssl_setup() here as now the
+	  SSL is already instantiated in #initialize.
+
+	  (ossl_ssl_shutdown, ossl_start_ssl, ossl_ssl_read_internal,
+	   ossl_ssl_write_internal, ossl_ssl_stop, ossl_ssl_get_cert,
+	   ossl_ssl_get_peer_cert, ossl_ssl_get_peer_cert_chain,
+	   ossl_ssl_get_version, ossl_ssl_get_cipher, ossl_ssl_get_state,
+	   ossl_ssl_pending, ossl_ssl_session_reused,
+	   ossl_ssl_get_verify_result, ossl_ssl_get_client_ca_list,
+	   ossl_ssl_npn_protocol, ossl_ssl_alpn_protocol, ossl_ssl_tmp_key): Use
+	  GetSSL() instead of ossl_ssl_data_get_struct(). Use ssl_started().
+
+	  (Init_ossl_ssl): Add method declarations of SSLSocket#{initialize,
+	  hostname=}.
+
+	* ext/openssl/ossl_ssl.h (GetSSL): Check that the SSL is not NULL. It
+	  should not be NULL because we now set it in #initialize.
+
+	* ext/openssl/ossl_ssl_session.c (ossl_ssl_session_initialize): No need
+	  to check if the SSL is NULL.
+
 Sat May 28 10:47:40 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* gems/bundled_gems: Update latest releases, power_assert-0.3.0,

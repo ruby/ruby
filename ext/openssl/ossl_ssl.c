@@ -70,6 +70,10 @@ static VALUE eSSLErrorWaitWritable;
 #define ossl_ssl_get_x509(o)         rb_iv_get((o),"@x509")
 #define ossl_ssl_get_key(o)          rb_iv_get((o),"@key")
 
+#define ossl_ssl_set_io(o,v)         rb_iv_set((o),"@io",(v))
+#define ossl_ssl_set_ctx(o,v)        rb_iv_set((o),"@context",(v))
+#define ossl_ssl_set_sync_close(o,v) rb_iv_set((o),"@sync_close",(v))
+#define ossl_ssl_set_hostname_v(o,v) rb_iv_set((o),"@hostname",(v))
 #define ossl_ssl_set_x509(o,v)       rb_iv_set((o),"@x509",(v))
 #define ossl_ssl_set_key(o,v)        rb_iv_set((o),"@key",(v))
 #define ossl_ssl_set_tmp_dh(o,v)     rb_iv_set((o),"@tmp_dh",(v))
@@ -1139,25 +1143,29 @@ ossl_sslctx_flush_sessions(int argc, VALUE *argv, VALUE self)
  * SSLSocket class
  */
 #ifndef OPENSSL_NO_SOCK
+static inline int
+ssl_started(SSL *ssl)
+{
+    /* the FD is set in ossl_ssl_setup(), called by #connect or #accept */
+    return SSL_get_fd(ssl) >= 0;
+}
+
 static void
 ossl_ssl_shutdown(SSL *ssl)
 {
-    int i, rc;
+    int i;
 
-    if (ssl) {
-	/* 4 is from SSL_smart_shutdown() of mod_ssl.c (v2.2.19) */
-	/* It says max 2x pending + 2x data = 4 */
-	for (i = 0; i < 4; ++i) {
-	    /*
-	     * Ignore the case SSL_shutdown returns -1. Empty handshake_func
-	     * must not happen.
-	     */
-	    if ((rc = SSL_shutdown(ssl)) != 0)
-		break;
-	}
-	SSL_clear(ssl);
-	ossl_clear_error();
+    /* 4 is from SSL_smart_shutdown() of mod_ssl.c (v2.2.19) */
+    /* It says max 2x pending + 2x data = 4 */
+    for (i = 0; i < 4; ++i) {
+	/*
+	 * Ignore the case SSL_shutdown returns -1. Empty handshake_func
+	 * must not happen.
+	 */
+	if (SSL_shutdown(ssl) != 0)
+	    break;
     }
+    ossl_clear_error();
 }
 
 static void
@@ -1180,45 +1188,77 @@ ossl_ssl_s_alloc(VALUE klass)
     return TypedData_Wrap_Struct(klass, &ossl_ssl_type, NULL);
 }
 
+/*
+ * call-seq:
+ *    SSLSocket.new(io) => aSSLSocket
+ *    SSLSocket.new(io, ctx) => aSSLSocket
+ *
+ * Creates a new SSL socket from +io+ which must be a real ruby object (not an
+ * IO-like object that responds to read/write).
+ *
+ * If +ctx+ is provided the SSL Sockets initial params will be taken from
+ * the context.
+ *
+ * The OpenSSL::Buffering module provides additional IO methods.
+ *
+ * This method will freeze the SSLContext if one is provided;
+ * however, session management is still allowed in the frozen SSLContext.
+ */
+static VALUE
+ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
+{
+    VALUE io, v_ctx, verify_cb;
+    SSL *ssl;
+    SSL_CTX *ctx;
+
+    TypedData_Get_Struct(self, SSL, &ossl_ssl_type, ssl);
+    if (ssl)
+	ossl_raise(eSSLError, "SSL already initialized");
+
+    if (rb_scan_args(argc, argv, "11", &io, &v_ctx) == 1)
+	v_ctx = rb_funcall(cSSLContext, rb_intern("new"), 0);
+
+    GetSSLCTX(v_ctx, ctx);
+    ossl_ssl_set_ctx(self, v_ctx);
+    ossl_sslctx_setup(v_ctx);
+
+    if (rb_respond_to(io, rb_intern("nonblock=")))
+	rb_funcall(io, rb_intern("nonblock="), 1, Qtrue);
+    ossl_ssl_set_io(self, io);
+
+    ossl_ssl_set_sync_close(self, Qfalse);
+
+    ssl = SSL_new(ctx);
+    if (!ssl)
+	ossl_raise(eSSLError, NULL);
+    RTYPEDDATA_DATA(self) = ssl;
+
+    SSL_set_ex_data(ssl, ossl_ssl_ex_ptr_idx, (void *)self);
+    SSL_set_info_callback(ssl, ssl_info_cb);
+    verify_cb = ossl_sslctx_get_verify_cb(v_ctx);
+    SSL_set_ex_data(ssl, ossl_ssl_ex_vcb_idx, (void *)verify_cb);
+
+    rb_call_super(0, NULL);
+
+    return self;
+}
+
 static VALUE
 ossl_ssl_setup(VALUE self)
 {
-    VALUE io, v_ctx, cb;
-    SSL_CTX *ctx;
+    VALUE io;
     SSL *ssl;
     rb_io_t *fptr;
 
     GetSSL(self, ssl);
-    if(!ssl){
-#ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
-	VALUE hostname = rb_iv_get(self, "@hostname");
-#endif
+    if (ssl_started(ssl))
+	return Qtrue;
 
-        v_ctx = ossl_ssl_get_ctx(self);
-        GetSSLCTX(v_ctx, ctx);
-
-        ssl = SSL_new(ctx);
-        if (!ssl) {
-            ossl_raise(eSSLError, "SSL_new");
-        }
-        DATA_PTR(self) = ssl;
-
-#ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
-        if (!NIL_P(hostname)) {
-           if (SSL_set_tlsext_host_name(ssl, StringValueCStr(hostname)) != 1)
-               ossl_raise(eSSLError, "SSL_set_tlsext_host_name");
-        }
-#endif
-        io = ossl_ssl_get_io(self);
-        GetOpenFile(io, fptr);
-        rb_io_check_readable(fptr);
-        rb_io_check_writable(fptr);
-        SSL_set_fd(ssl, TO_SOCKET(FPTR_TO_FD(fptr)));
-	SSL_set_ex_data(ssl, ossl_ssl_ex_ptr_idx, (void*)self);
-	cb = ossl_sslctx_get_verify_cb(v_ctx);
-	SSL_set_ex_data(ssl, ossl_ssl_ex_vcb_idx, (void*)cb);
-	SSL_set_info_callback(ssl, ssl_info_cb);
-    }
+    io = ossl_ssl_get_io(self);
+    GetOpenFile(io, fptr);
+    rb_io_check_readable(fptr);
+    rb_io_check_writable(fptr);
+    SSL_set_fd(ssl, TO_SOCKET(FPTR_TO_FD(fptr)));
 
     return Qtrue;
 }
@@ -1228,15 +1268,6 @@ ossl_ssl_setup(VALUE self)
 #else
 #define ssl_get_error(ssl, ret) SSL_get_error((ssl), (ret))
 #endif
-
-#define ossl_ssl_data_get_struct(v, ssl)		\
-do {							\
-    GetSSL((v), (ssl)); 				\
-    if (!(ssl)) {					\
-        rb_warning("SSL session is not started yet.");  \
-        return Qnil;					\
-    }							\
-} while (0)
 
 static void
 write_would_block(int nonblock)
@@ -1276,7 +1307,7 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
 
     rb_ivar_set(self, ID_callback_state, Qnil);
 
-    ossl_ssl_data_get_struct(self, ssl);
+    GetSSL(self, ssl);
 
     GetOpenFile(ossl_ssl_get_io(self), fptr);
     for(;;){
@@ -1436,7 +1467,7 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 
     GetSSL(self, ssl);
     GetOpenFile(ossl_ssl_get_io(self), fptr);
-    if (ssl) {
+    if (ssl_started(ssl)) {
 	if(!nonblock && SSL_pending(ssl) <= 0)
 	    rb_thread_wait_fd(FPTR_TO_FD(fptr));
 	for (;;){
@@ -1530,7 +1561,7 @@ ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
     GetSSL(self, ssl);
     GetOpenFile(ossl_ssl_get_io(self), fptr);
 
-    if (ssl) {
+    if (ssl_started(ssl)) {
 	for (;;){
 	    nwrite = SSL_write(ssl, RSTRING_PTR(str), RSTRING_LENINT(str));
 	    switch(ssl_get_error(ssl, nwrite)){
@@ -1604,7 +1635,7 @@ ossl_ssl_stop(VALUE self)
 {
     SSL *ssl;
 
-    ossl_ssl_data_get_struct(self, ssl);
+    GetSSL(self, ssl);
 
     ossl_ssl_shutdown(ssl);
 
@@ -1623,7 +1654,7 @@ ossl_ssl_get_cert(VALUE self)
     SSL *ssl;
     X509 *cert = NULL;
 
-    ossl_ssl_data_get_struct(self, ssl);
+    GetSSL(self, ssl);
 
     /*
      * Is this OpenSSL bug? Should add a ref?
@@ -1650,7 +1681,7 @@ ossl_ssl_get_peer_cert(VALUE self)
     X509 *cert = NULL;
     VALUE obj;
 
-    ossl_ssl_data_get_struct(self, ssl);
+    GetSSL(self, ssl);
 
     cert = SSL_get_peer_certificate(ssl); /* Adds a ref => Safe to FREE. */
 
@@ -1678,7 +1709,7 @@ ossl_ssl_get_peer_cert_chain(VALUE self)
     VALUE ary;
     int i, num;
 
-    ossl_ssl_data_get_struct(self, ssl);
+    GetSSL(self, ssl);
 
     chain = SSL_get_peer_cert_chain(ssl);
     if(!chain) return Qnil;
@@ -1704,7 +1735,7 @@ ossl_ssl_get_version(VALUE self)
 {
     SSL *ssl;
 
-    ossl_ssl_data_get_struct(self, ssl);
+    GetSSL(self, ssl);
 
     return rb_str_new2(SSL_get_version(ssl));
 }
@@ -1721,7 +1752,7 @@ ossl_ssl_get_cipher(VALUE self)
     SSL *ssl;
     SSL_CIPHER *cipher;
 
-    ossl_ssl_data_get_struct(self, ssl);
+    GetSSL(self, ssl);
 
     cipher = (SSL_CIPHER *)SSL_get_current_cipher(ssl);
 
@@ -1740,7 +1771,7 @@ ossl_ssl_get_state(VALUE self)
     SSL *ssl;
     VALUE ret;
 
-    ossl_ssl_data_get_struct(self, ssl);
+    GetSSL(self, ssl);
 
     ret = rb_str_new2(SSL_state_string(ssl));
     if (ruby_verbose) {
@@ -1761,7 +1792,7 @@ ossl_ssl_pending(VALUE self)
 {
     SSL *ssl;
 
-    ossl_ssl_data_get_struct(self, ssl);
+    GetSSL(self, ssl);
 
     return INT2NUM(SSL_pending(ssl));
 }
@@ -1777,15 +1808,9 @@ ossl_ssl_session_reused(VALUE self)
 {
     SSL *ssl;
 
-    ossl_ssl_data_get_struct(self, ssl);
+    GetSSL(self, ssl);
 
-    switch(SSL_session_reused(ssl)) {
-    case 1:	return Qtrue;
-    case 0:	return Qfalse;
-    default:	ossl_raise(eSSLError, "SSL_session_reused");
-    }
-
-    UNREACHABLE;
+    return SSL_session_reused(ssl) ? Qtrue : Qfalse;
 }
 
 /*
@@ -1800,11 +1825,7 @@ ossl_ssl_set_session(VALUE self, VALUE arg1)
     SSL *ssl;
     SSL_SESSION *sess;
 
-/* why is ossl_ssl_setup delayed? */
-    ossl_ssl_setup(self);
-
-    ossl_ssl_data_get_struct(self, ssl);
-
+    GetSSL(self, ssl);
     SafeGetSSLSession(arg1, sess);
 
     if (SSL_set_session(ssl, sess) != 1)
@@ -1812,6 +1833,35 @@ ossl_ssl_set_session(VALUE self, VALUE arg1)
 
     return arg1;
 }
+
+/*
+ * call-seq:
+ *    ssl.hostname = hostname -> hostname
+ *
+ * Sets the server hostname used for SNI. This needs to be set before
+ * SSLSocket#connect.
+ */
+#ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
+static VALUE
+ossl_ssl_set_hostname(VALUE self, VALUE arg)
+{
+    SSL *ssl;
+    char *hostname = NULL;
+
+    GetSSL(self, ssl);
+
+    if (!NIL_P(arg))
+	hostname = StringValueCStr(arg);
+
+    if (!SSL_set_tlsext_host_name(ssl, hostname))
+	ossl_raise(eSSLError, NULL);
+
+    /* for SSLSocket#hostname */
+    ossl_ssl_set_hostname_v(self, arg);
+
+    return arg;
+}
+#endif
 
 /*
  * call-seq:
@@ -1827,7 +1877,7 @@ ossl_ssl_get_verify_result(VALUE self)
 {
     SSL *ssl;
 
-    ossl_ssl_data_get_struct(self, ssl);
+    GetSSL(self, ssl);
 
     return INT2FIX(SSL_get_verify_result(ssl));
 }
@@ -1849,7 +1899,7 @@ ossl_ssl_get_client_ca_list(VALUE self)
     SSL *ssl;
     STACK_OF(X509_NAME) *ca;
 
-    ossl_ssl_data_get_struct(self, ssl);
+    GetSSL(self, ssl);
 
     ca = SSL_get_client_CA_list(ssl);
     return ossl_x509name_sk2ary(ca);
@@ -1870,7 +1920,7 @@ ossl_ssl_npn_protocol(VALUE self)
     const unsigned char *out;
     unsigned int outlen;
 
-    ossl_ssl_data_get_struct(self, ssl);
+    GetSSL(self, ssl);
 
     SSL_get0_next_proto_negotiated(ssl, &out, &outlen);
     if (!outlen)
@@ -1895,7 +1945,7 @@ ossl_ssl_alpn_protocol(VALUE self)
     const unsigned char *out;
     unsigned int outlen;
 
-    ossl_ssl_data_get_struct(self, ssl);
+    GetSSL(self, ssl);
 
     SSL_get0_alpn_selected(ssl, &out, &outlen);
     if (!outlen)
@@ -1915,12 +1965,13 @@ ossl_ssl_alpn_protocol(VALUE self)
 static VALUE
 ossl_ssl_tmp_key(VALUE self)
 {
-   SSL *ssl;
-   EVP_PKEY *key;
-   ossl_ssl_data_get_struct(self, ssl);
-   if (!SSL_get_server_tmp_key(ssl, &key))
-       return Qnil;
-   return ossl_pkey_new(key);
+    SSL *ssl;
+    EVP_PKEY *key;
+
+    GetSSL(self, ssl);
+    if (!SSL_get_server_tmp_key(ssl, &key))
+	return Qnil;
+    return ossl_pkey_new(key);
 }
 # endif /* defined(HAVE_SSL_GET_SERVER_TMP_KEY) */
 #endif /* !defined(OPENSSL_NO_SOCK) */
@@ -2293,9 +2344,11 @@ Init_ossl_ssl(void)
     cSSLSocket = rb_define_class_under(mSSL, "SSLSocket", rb_cObject);
 #ifdef OPENSSL_NO_SOCK
     rb_define_const(mSSLExtConfig, "OPENSSL_NO_SOCK", Qtrue);
+    rb_define_method(cSSLSocket, "initialize", rb_f_notimplement, -1);
 #else
     rb_define_const(mSSLExtConfig, "OPENSSL_NO_SOCK", Qfalse);
     rb_define_alloc_func(cSSLSocket, ossl_ssl_s_alloc);
+    rb_define_method(cSSLSocket, "initialize", ossl_ssl_initialize, -1);
     rb_define_method(cSSLSocket, "connect",    ossl_ssl_connect, 0);
     rb_define_method(cSSLSocket, "connect_nonblock",    ossl_ssl_connect_nonblock, -1);
     rb_define_method(cSSLSocket, "accept",     ossl_ssl_accept, 0);
@@ -2317,6 +2370,10 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLSocket, "session=",    ossl_ssl_set_session, 1);
     rb_define_method(cSSLSocket, "verify_result", ossl_ssl_get_verify_result, 0);
     rb_define_method(cSSLSocket, "client_ca", ossl_ssl_get_client_ca_list, 0);
+#ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
+    /* #hostname is defined in lib/openssl/ssl.rb */
+    rb_define_method(cSSLSocket, "hostname=", ossl_ssl_set_hostname, 1);
+#endif
 # ifdef HAVE_SSL_GET_SERVER_TMP_KEY
     rb_define_method(cSSLSocket, "tmp_key", ossl_ssl_tmp_key, 0);
 # endif
