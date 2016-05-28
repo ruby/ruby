@@ -21,8 +21,12 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
     s.split(' ').map { |c| c.to_i(16) }.pack('U*')
   end
 
+  def self.expand_filename(basename)
+    File.expand_path("#{UNICODE_DATA_PATH}/#{basename}.txt", __dir__)
+  end
+
   def self.read_data_file (filename)
-    IO.readlines(File.expand_path("#{UNICODE_DATA_PATH}/#{filename}.txt", __dir__), encoding: Encoding::ASCII_8BIT)
+    IO.readlines(expand_filename(filename), encoding: Encoding::ASCII_8BIT)
     .tap do |lines|
            raise "File Version Mismatch" unless filename=='UnicodeData' or /#{filename}-#{UNICODE_VERSION}\.txt/ =~ lines[0]
          end
@@ -113,10 +117,13 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
     end
   end
 
-  def test_AAAAA_data_files_available
-    assert File.exist? File.expand_path("#{UNICODE_DATA_PATH}/UnicodeData.txt", __dir__)
-    assert File.exist? File.expand_path("#{UNICODE_DATA_PATH}/CaseFolding.txt", __dir__)
-    assert File.exist? File.expand_path("#{UNICODE_DATA_PATH}/SpecialCasing.txt", __dir__)
+  def check_file_available(filename)
+    expanded = self.class.expand_filename(filename) 
+    assert File.exist?(expanded), "File #{expanded} missing."
+  end
+
+  def test_AAAAA_data_files_available   # AAAAA makes sure this test is run first
+    %w[UnicodeData CaseFolding SpecialCasing].each { |f| check_file_available f }
   end
 
   generate_casefold_tests 'US-ASCII'
