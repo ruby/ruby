@@ -735,4 +735,21 @@ class TestMarshal < Test::Unit::TestCase
       end
     RUBY
   end
+
+  def test_test_marshal_dump_fixnum_value
+    [
+      "\x04\bi\x04\xff\xff\xff\xff", #  4294967295
+      "\x04\bi\x04\x00\x00\x00\x40", #  1073741824
+      "\x04\bi\x04\xff\xff\xff\x3f", #  1073741823
+      "\x04\bi\xfc\x00\x00\x00\xc0", # -1073741824
+      "\x04\bi\xfc\xff\xff\xff\xbf", # -1073741825
+      "\x04\bi\xfc\x00\x00\x00\x00", # -4294967296
+    ].each do |src|
+      assert_equal src.b, Marshal.dump(Marshal.load(src))
+    end
+
+    [4294967296, -4294967297].each do |n|
+      assert_equal n, Marshal.load(Marshal.dump(n))
+    end
+  end
 end
