@@ -1,3 +1,10 @@
+Sat May 28 10:45:40 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* addr2line.c: drop to support ATARI ST platform. It was discontinued
+	  more than two decades ago. [fix GH-1350] Patch by @cremno
+	* include/ruby/ruby.h: ditto.
+	* io.c: ditto.
+
 Sat May 28 10:39:47 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_case_comprehensive.rb: Converted exception for
