@@ -1,3 +1,8 @@
+Sat May 28 10:39:47 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_comprehensive.rb: Converted exception for
+	  unavailable Unicode data files to failed assertion.
+
 Sat May 28 10:26:18 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/cgi/util.rb: added to missing quote.
