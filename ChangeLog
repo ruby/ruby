@@ -51,8 +51,9 @@ Sat May 28 10:47:40 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 Sat May 28 10:45:40 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	* addr2line.c: drop to support ATARI ST platform. It was discontinued
-	  more than two decades ago. [fix GH-1350] Patch by @cremno
+	* addr2line.c: drop support for ATARI ST platform. It was
+	  discontinued more than two decades ago. [fix GH-1350] Patch by
+	  @cremno
 	* include/ruby/ruby.h: ditto.
 	* io.c: ditto.
 
@@ -63,7 +64,7 @@ Sat May 28 10:39:47 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 Sat May 28 10:26:18 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	* lib/cgi/util.rb: added to missing quote.
+	* lib/cgi/util.rb: added missing quote.
 	  [fix GH-1363][ci skip] Patch by @dwaller
 
 Fri May 27 17:38:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
