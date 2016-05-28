@@ -118,7 +118,7 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
   end
 
   def check_file_available(filename)
-    expanded = self.class.expand_filename(filename) 
+    expanded = self.class.expand_filename(filename)
     assert File.exist?(expanded), "File #{expanded} missing."
   end
 
