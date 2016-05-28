@@ -90,6 +90,8 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
 
   def self.all_tests
     @@tests ||= read_data
+  rescue Errno::ENOENT => e
+    @@tests ||= []
   end
 
   def self.generate_casefold_tests (encoding)
@@ -109,6 +111,12 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
         end
       end
     end
+  end
+
+  def test_AAAAA_data_files_available
+    assert File.exist? File.expand_path("#{UNICODE_DATA_PATH}/UnicodeData.txt", __dir__)
+    assert File.exist? File.expand_path("#{UNICODE_DATA_PATH}/CaseFolding.txt", __dir__)
+    assert File.exist? File.expand_path("#{UNICODE_DATA_PATH}/SpecialCasing.txt", __dir__)
   end
 
   generate_casefold_tests 'US-ASCII'
