@@ -9,11 +9,16 @@ require 'unicode_normalize/normalize'
 class TestUnicodeNormalize < Test::Unit::TestCase
 
   UNICODE_VERSION = UnicodeNormalize::UNICODE_VERSION
+  UNICODE_DATA_PATH = "../enc/unicode/data/#{UNICODE_VERSION}"
+
+  def expand_filename(basename)
+    File.expand_path("#{UNICODE_DATA_PATH}/#{basename}.txt", __dir__)
+  end
 
   NormTest = Struct.new :source, :NFC, :NFD, :NFKC, :NFKD, :line
 
   def read_tests
-    IO.readlines(File.expand_path("../enc/unicode/data/#{UNICODE_VERSION}/NormalizationTest.txt", __dir__), encoding: 'utf-8')
+    IO.readlines(expand_filename('NormalizationTest'), encoding: 'utf-8')
     .tap { |lines| assert_include(lines[0], "NormalizationTest-#{UNICODE_VERSION}.txt")}
     .collect.with_index { |linedata, linenumber| [linedata, linenumber]}
     .reject { |line| line[0] =~ /^[\#@]/ }
@@ -32,7 +37,6 @@ class TestUnicodeNormalize < Test::Unit::TestCase
     @@tests ||= read_tests
   rescue Errno::ENOENT => e
     @@tests ||= []
-    skip e.message
   end
 
   def self.generate_test_normalize(target, normalization, source, prechecked)
@@ -133,6 +137,11 @@ class TestUnicodeNormalize < Test::Unit::TestCase
   generate_test_check_false :NFD, :NFKC, :nfkc
   generate_test_check_false :NFKD, :NFKC, :nfkc
 
+  def test_AAAAA_data_file_available   # AAAAA makes sure this test is run first
+    expanded = expand_filename 'NormalizationTest'
+    assert File.exist?(expanded), "File #{expanded} missing."
+  end
+
   def test_non_UTF_8
     assert_equal "\u1E0A".encode('UTF-16BE'), "D\u0307".encode('UTF-16BE').unicode_normalize(:nfc)
     assert_equal true, "\u1E0A".encode('UTF-16BE').unicode_normalized?(:nfc)
@@ -172,10 +181,10 @@ class TestUnicodeNormalize < Test::Unit::TestCase
     assert_equal ascii_string, ascii_string.unicode_normalize(:nfkc)
     assert_equal ascii_string, ascii_string.unicode_normalize(:nfkd)
 
-    assert_equal ascii_string, ascii_string.unicode_normalize!
-    assert_equal ascii_string, ascii_string.unicode_normalize!(:nfd)
-    assert_equal ascii_string, ascii_string.unicode_normalize!(:nfkc)
-    assert_equal ascii_string, ascii_string.unicode_normalize!(:nfkd)
+    assert_equal ascii_string, ascii_string.dup.unicode_normalize!
+    assert_equal ascii_string, ascii_string.dup.unicode_normalize!(:nfd)
+    assert_equal ascii_string, ascii_string.dup.unicode_normalize!(:nfkc)
+    assert_equal ascii_string, ascii_string.dup.unicode_normalize!(:nfkd)
 
     assert_equal true, ascii_string.unicode_normalized?
     assert_equal true, ascii_string.unicode_normalized?(:nfd)
