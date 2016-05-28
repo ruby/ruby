@@ -662,7 +662,8 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_readlink_long_path
     return unless symlinkfile
     bug9157 = '[ruby-core:58592] [Bug #9157]'
-    assert_separately(["-", symlinkfile, bug9157], <<-"end;")
+    assert_separately(["-", symlinkfile, bug9157], "#{<<~begin}#{<<~"end;"}")
+    begin
       symlinkfile, bug9157 = *ARGV
       100.step(1000, 100) do |n|
         File.unlink(symlinkfile)
@@ -1250,12 +1251,55 @@ class TestFileExhaustive < Test::Unit::TestCase
   rescue NotImplementedError
   end
 
-  def test_flock ## xxx
-    f = File.new(regular_file, "r+")
-    f.flock(File::LOCK_EX)
-    f.flock(File::LOCK_SH)
-    f.flock(File::LOCK_UN)
-    f.close
+  def test_flock_exclusive
+    File.open(regular_file, "r+") do |f|
+      f.flock(File::LOCK_EX)
+      assert_separately(["-rtimeout", "-", regular_file], "#{<<~begin}#{<<~"end;"}")
+      begin
+        open(ARGV[0], "r") do |f|
+          Timeout.timeout(0.1) do
+            assert(!f.flock(File::LOCK_SH|File::LOCK_NB))
+          end
+        end
+      end;
+      assert_separately(["-rtimeout", "-", regular_file], "#{<<~begin}#{<<~"end;"}")
+      begin
+        open(ARGV[0], "r") do |f|
+          assert_raise(Timeout::Error) do
+            Timeout.timeout(0.1) do
+              f.flock(File::LOCK_SH)
+            end
+          end
+        end
+      end;
+      f.flock(File::LOCK_UN)
+    end
+  rescue NotImplementedError
+  end
+
+  def test_flock_shared
+    File.open(regular_file, "r+") do |f|
+      f.flock(File::LOCK_SH)
+      assert_separately(["-rtimeout", "-", regular_file], "#{<<~begin}#{<<~"end;"}")
+      begin
+        open(ARGV[0], "r") do |f|
+          Timeout.timeout(0.1) do
+            assert(f.flock(File::LOCK_SH))
+          end
+        end
+      end;
+      assert_separately(["-rtimeout", "-", regular_file], "#{<<~begin}#{<<~"end;"}")
+      begin
+        open(ARGV[0], "r") do |f|
+          assert_raise(Timeout::Error) do
+            Timeout.timeout(0.1) do
+              f.flock(File::LOCK_EX)
+            end
+          end
+        end
+      end;
+      f.flock(File::LOCK_UN)
+    end
   rescue NotImplementedError
   end
 
