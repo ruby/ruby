@@ -1,3 +1,8 @@
+Sun May 29 22:58:19 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regexec.c (ONIGENC_IS_MBC_ASCII_WORD): redefine optimized one.
+	  WORD of Ruby's ascii compatible encoding is always [a-zA-Z0-9_].
+
 Sun May 29 22:44:19 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regexec.c (match_at): make compilers optimize harder.

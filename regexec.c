@@ -40,6 +40,18 @@
 # endif
 #endif
 
+#define ENC_DUMMY_FLAG (1<<24)
+static inline int
+rb_enc_asciicompat(OnigEncoding enc)
+{
+    return ONIGENC_MBC_MINLEN(enc)==1 && !((enc)->ruby_encoding_index & ENC_DUMMY_FLAG);
+}
+#undef ONIGENC_IS_MBC_ASCII_WORD
+#define ONIGENC_IS_MBC_ASCII_WORD(enc,s,end) \
+    (rb_enc_asciicompat(enc) ? (ISALNUM(*s) || *s=='_') : \
+   onigenc_ascii_is_code_ctype( \
+	ONIGENC_MBC_TO_CODE(enc,s,end),ONIGENC_CTYPE_WORD,enc))
+
 #ifdef USE_CRNL_AS_LINE_TERMINATOR
 #define ONIGENC_IS_MBC_CRNL(enc,p,end) \
   (ONIGENC_MBC_TO_CODE(enc,p,end) == 13 && \
