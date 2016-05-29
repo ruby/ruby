@@ -1,3 +1,7 @@
+Sun May 29 22:44:19 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regexec.c (match_at): make compilers optimize harder.
+
 Sun May 29 12:08:42 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/-test-/auto_ext.rb (auto_ext): utitily method to create
