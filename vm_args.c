@@ -691,8 +691,6 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq,
     return opt_pc;
 }
 
-VALUE rb_exc_set_backtrace(VALUE exc, VALUE bt);
-
 static void
 raise_argument_error(rb_thread_t *th, const rb_iseq_t *iseq, const VALUE exc)
 {

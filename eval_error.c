@@ -66,8 +66,6 @@ rb_get_backtrace(VALUE info)
     return get_backtrace(info);
 }
 
-VALUE rb_exc_set_backtrace(VALUE exc, VALUE bt);
-
 static void
 set_backtrace(VALUE info, VALUE bt)
 {
