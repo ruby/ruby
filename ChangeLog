@@ -1,3 +1,8 @@
+Sun May 29 12:08:42 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/-test-/auto_ext.rb (auto_ext): utitily method to create
+	  extension libraries for tests.
+
 Sat May 28 20:40:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-additional.el (ruby-insert-heredoc-code-block): insert
