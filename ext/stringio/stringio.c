@@ -96,6 +96,14 @@ get_strio(VALUE self)
 }
 
 static VALUE
+enc_subseq(VALUE str, long pos, long len, rb_encoding *enc)
+{
+    str = rb_str_subseq(str, pos, len);
+    rb_enc_associate(str, enc);
+    return str;
+}
+
+static VALUE
 strio_substr(struct StringIO *ptr, long pos, long len)
 {
     VALUE str = ptr->string;
@@ -105,7 +113,7 @@ strio_substr(struct StringIO *ptr, long pos, long len)
     if (len > rlen) len = rlen;
     if (len < 0) len = 0;
     if (len == 0) return rb_str_new(0,0);
-    return rb_enc_str_new(RSTRING_PTR(str)+pos, len, enc);
+    return enc_subseq(str, pos, len, enc);
 }
 
 #define StringIO(obj) get_strio(obj)
@@ -690,16 +698,18 @@ strio_getc(VALUE self)
 {
     struct StringIO *ptr = readable(self);
     rb_encoding *enc = get_enc(ptr);
+    VALUE str = ptr->string;
+    long pos = ptr->pos;
     int len;
     char *p;
 
-    if (ptr->pos >= RSTRING_LEN(ptr->string)) {
+    if (pos >= RSTRING_LEN(str)) {
 	return Qnil;
     }
-    p = RSTRING_PTR(ptr->string)+ptr->pos;
-    len = rb_enc_mbclen(p, RSTRING_END(ptr->string), enc);
+    p = RSTRING_PTR(str)+pos;
+    len = rb_enc_mbclen(p, RSTRING_END(str), enc);
     ptr->pos += len;
-    return rb_enc_str_new(p, len, enc);
+    return enc_subseq(str, pos, len, enc);
 }
 
 /*

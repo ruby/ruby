@@ -1,3 +1,8 @@
+Mon May 30 14:54:58 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (enc_subseq): share the return value and
+	  the buffer as possible.
+
 Mon May 30 14:50:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_substr, rb_str_aref): refactor not to create
