@@ -425,7 +425,7 @@ module OpenSSL::TestPairM
 
     ctx1 = OpenSSL::SSL::SSLContext.new
     ctx1.ciphers = "ECDH"
-    ctx1.ecdh_curves = "P-384:P-224"
+    ctx1.ecdh_curves = "P-384:P-521"
     s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
 
     ctx2 = OpenSSL::SSL::SSLContext.new
