@@ -162,6 +162,18 @@ ossl_sslctx_s_alloc(VALUE klass)
     RTYPEDDATA_DATA(obj) = ctx;
     SSL_CTX_set_ex_data(ctx, ossl_ssl_ex_ptr_idx, (void*)obj);
 
+#if defined(HAVE_SSL_CTX_SET_ECDH_AUTO)
+    /* We use SSL_CTX_set1_curves_list() to specify the curve used in ECDH. It
+     * allows to specify multiple curve names and OpenSSL will select
+     * automatically from them. In OpenSSL 1.0.2, the automatic selection has to
+     * be enabled explicitly. But OpenSSL 1.1.0 removed the knob and it is
+     * always enabled. To uniform the behavior, we enable the automatic
+     * selection also in 1.0.2. Users can still disable ECDH by removing ECDH
+     * cipher suites by SSLContext#ciphers=. */
+    if (!SSL_CTX_set_ecdh_auto(ctx, 1))
+	ossl_raise(eSSLError, "SSL_CTX_set_ecdh_auto");
+#endif
+
     return obj;
 }
 
@@ -711,10 +723,24 @@ ossl_sslctx_setup(VALUE self)
 #endif
 
 #if !defined(OPENSSL_NO_EC)
-    if (RTEST(ossl_sslctx_get_tmp_ecdh_cb(self))){
+    /* We added SSLContext#tmp_ecdh_callback= in Ruby 2.3.0,
+     * but SSL_CTX_set_tmp_ecdh_callback() was removed in OpenSSL 1.1.0. */
+    if (RTEST(ossl_sslctx_get_tmp_ecdh_cb(self))) {
+# if defined(HAVE_SSL_CTX_SET_TMP_ECDH_CALLBACK)
+	rb_warn("#tmp_ecdh_callback= is deprecated; use #ecdh_curves= instead");
 	SSL_CTX_set_tmp_ecdh_callback(ctx, ossl_tmp_ecdh_callback);
+#  if defined(HAVE_SSL_CTX_SET_ECDH_AUTO)
+	/* tmp_ecdh_callback and ecdh_auto conflict; OpenSSL ignores
+	 * tmp_ecdh_callback. So disable ecdh_auto. */
+	if (!SSL_CTX_set_ecdh_auto(ctx, 0))
+	    ossl_raise(eSSLError, "SSL_CTX_set_ecdh_auto");
+#  endif
+# else
+	ossl_raise(eSSLError, "OpenSSL does not support tmp_ecdh_callback; "
+		   "use #ecdh_curves= instead");
+# endif
     }
-#endif
+#endif /* OPENSSL_NO_EC */
 
     val = ossl_sslctx_get_cert_store(self);
     if(!NIL_P(val)){
@@ -952,6 +978,87 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
 
     return v;
 }
+
+#if !defined(OPENSSL_NO_EC)
+/*
+ * call-seq:
+ *    ctx.ecdh_curves = curve_list -> curve_list
+ *
+ * Sets the list of "supported elliptic curves" for this context.
+ *
+ * For a TLS client, the list is directly used in the Supported Elliptic Curves
+ * Extension. For a server, the list is used by OpenSSL to determine the set of
+ * shared curves. OpenSSL will pick the most appropriate one from it.
+ *
+ * Note that this works differently with old OpenSSL (<= 1.0.1). Only one curve
+ * can be set, and this has no effect for TLS clients.
+ *
+ * === Example
+ *   ctx1 = OpenSSL::SSL::SSLContext.new
+ *   ctx1.ecdh_curves = "X25519:P-256:P-224"
+ *   svr = OpenSSL::SSL::SSLServer.new(tcp_svr, ctx1)
+ *   Thread.new { svr.accept }
+ *
+ *   ctx2 = OpenSSL::SSL::SSLContext.new
+ *   ctx2.ecdh_curves = "P-256"
+ *   cli = OpenSSL::SSL::SSLSocket.new(tcp_sock, ctx2)
+ *   cli.connect
+ *
+ *   p cli.tmp_key.group.curve_name
+ *   # => "prime256v1" (is an alias for NIST P-256)
+ */
+static VALUE
+ossl_sslctx_set_ecdh_curves(VALUE self, VALUE arg)
+{
+    SSL_CTX *ctx;
+
+    rb_check_frozen(self);
+    GetSSLCTX(self, ctx);
+    StringValueCStr(arg);
+
+#if defined(HAVE_SSL_CTX_SET1_CURVES_LIST)
+    if (!SSL_CTX_set1_curves_list(ctx, RSTRING_PTR(arg)))
+	ossl_raise(eSSLError, NULL);
+#else
+    /* OpenSSL does not have SSL_CTX_set1_curves_list()... Fallback to
+     * SSL_CTX_set_tmp_ecdh(). So only the first curve is used. */
+    {
+	VALUE curve, splitted;
+	EC_KEY *ec;
+	int nid;
+
+	splitted = rb_str_split(arg, ":");
+	if (!RARRAY_LEN(splitted))
+	    ossl_raise(eSSLError, "invalid input format");
+	curve = RARRAY_AREF(splitted, 0);
+	StringValueCStr(curve);
+
+	/* SSL_CTX_set1_curves_list() accepts NIST names */
+	nid = EC_curve_nist2nid(RSTRING_PTR(curve));
+	if (nid == NID_undef)
+	    nid = OBJ_txt2nid(RSTRING_PTR(curve));
+	if (nid == NID_undef)
+	    ossl_raise(eSSLError, "unknown curve name");
+
+	ec = EC_KEY_new_by_curve_name(nid);
+	if (!ec)
+	    ossl_raise(eSSLError, NULL);
+	EC_KEY_set_asn1_flag(ec, OPENSSL_EC_NAMED_CURVE);
+	SSL_CTX_set_tmp_ecdh(ctx, ec);
+# if defined(HAVE_SSL_CTX_SET_ECDH_AUTO)
+	/* tmp_ecdh and ecdh_auto conflict. tmp_ecdh is ignored when ecdh_auto
+	 * is enabled. So disable ecdh_auto. */
+	if (!SSL_CTX_set_ecdh_auto(ctx, 0))
+	    ossl_raise(eSSLError, "SSL_CTX_set_ecdh_auto");
+# endif
+    }
+#endif
+
+    return arg;
+}
+#else
+#define ossl_sslctx_set_ecdh_curves rb_f_notimplement
+#endif
 
 /*
  *  call-seq:
@@ -2119,6 +2226,7 @@ Init_ossl_ssl(void)
      */
     rb_attr(cSSLContext, rb_intern("client_cert_cb"), 1, 1, Qfalse);
 
+#if defined(HAVE_SSL_CTX_SET_TMP_ECDH_CALLBACK)
     /*
      * A callback invoked when ECDH parameters are required.
      *
@@ -2126,10 +2234,11 @@ Init_ossl_ssl(void)
      * flag indicating the use of an export cipher and the keylength
      * required.
      *
-     * The callback must return an OpenSSL::PKey::EC instance of the correct
-     * key length.
+     * The callback is deprecated. This does not work with recent versions of
+     * OpenSSL. Use OpenSSL::SSL::SSLContext#ecdh_curves= instead.
      */
     rb_attr(cSSLContext, rb_intern("tmp_ecdh_callback"), 1, 1, Qfalse);
+#endif
 
     /*
      * Sets the context in which a session can be reused.  This allows
@@ -2265,6 +2374,7 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLContext, "ssl_version=", ossl_sslctx_set_ssl_version, 1);
     rb_define_method(cSSLContext, "ciphers",     ossl_sslctx_get_ciphers, 0);
     rb_define_method(cSSLContext, "ciphers=",    ossl_sslctx_set_ciphers, 1);
+    rb_define_method(cSSLContext, "ecdh_curves=", ossl_sslctx_set_ecdh_curves, 1);
 
     rb_define_method(cSSLContext, "setup", ossl_sslctx_setup, 0);
 

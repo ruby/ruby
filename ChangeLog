@@ -1,3 +1,40 @@
+Mon May 30 18:29:28 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_s_alloc): Enable the automatic
+	  curve selection for ECDH by calling SSL_CTX_set_ecdh_auto(). With
+	  this a TLS server automatically selects a curve which both the client
+	  and the server support to use in ECDH. This changes the default
+	  behavior but users can still disable ECDH by excluding 'ECDH' cipher
+	  suites from the cipher list (with SSLContext#ciphers=). This commit
+	  also deprecate #tmp_ecdh_callback=. It was added in Ruby 2.3.0. It
+	  wraps SSL_CTX_set_tmp_ecdh_callback() which will be removed in OpenSSL
+	  1.1.0. Its callback receives two values 'is_export' and 'keylength'
+	  but both are completely useless for determining a curve to use in
+	  ECDH. The automatic curve selection was introduced to replace this.
+
+	  (ossl_sslctx_setup): Deprecate SSLContext#tmp_ecdh_callback=. Emit a
+	  warning if this is in use.
+
+	  (ossl_sslctx_set_ecdh_curves): Add SSLContext#ecdh_curves=. Wrap
+	  SSL_CTX_set1_curves_list(). If it is not available, this falls back
+	  to SSL_CTX_set_tmp_ecdh().
+
+	  (Init_ossl_ssl): Define SSLContext#ecdh_curves=.
+
+	* ext/openssl/extconf.rb: Check the existence of EC_curve_nist2nid(),
+	  SSL_CTX_set1_curves_list(), SSL_CTX_set_ecdh_auto() and
+	  SSL_CTX_set_tmp_ecdh_callback().
+
+	* ext/openssl/openssl_missing.[ch]: Implement EC_curve_nist2nid() if
+	  missing.
+
+	* test/openssl/test_pair.rb (test_ecdh_callback): Use
+	  EnvUtil.suppress_warning to suppress deprecated warning.
+
+	  (test_ecdh_curves): Test that SSLContext#ecdh_curves= works.
+
+	* test/openssl/utils.rb (start_server): Use SSLContext#ecdh_curves=.
+
 Mon May 30 16:28:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/raddrinfo.c (host_str, port_str): use RSTRING_LEN
