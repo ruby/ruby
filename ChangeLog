@@ -1,3 +1,8 @@
+Mon May 30 21:15:37 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c: Document current behavior for other case mapping methods
+	  on String. [ci skip]
+
 Mon May 30 20:00:25 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* string.c: Document current situation for String#downcase. [ci skip]

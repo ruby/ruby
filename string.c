@@ -5827,11 +5827,13 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 
 /*
  *  call-seq:
- *     str.upcase!   -> str or nil
+ *     str.upcase!              -> str or nil
+ *     str.upcase!([options])   -> str or nil
  *
  *  Upcases the contents of <i>str</i>, returning <code>nil</code> if no changes
  *  were made.
- *  Note: case replacement is effective only in ASCII region.
+ *
+ *  See String#downcase for meaning of +options+ and use with different encodings.
  */
 
 static VALUE
@@ -5895,12 +5897,13 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.upcase   -> new_str
+ *     str.upcase              -> new_str
+ *     str.upcase([options])   -> new_str
  *
  *  Returns a copy of <i>str</i> with all lowercase letters replaced with their
- *  uppercase counterparts. The operation is locale insensitive---only
- *  characters ``a'' to ``z'' are affected.
- *  Note: case replacement is effective only in ASCII region.
+ *  uppercase counterparts.
+ *
+ *  See String#downcase for meaning of +options+ and use with different encodings.
  *
  *     "hEllO".upcase   #=> "HELLO"
  */
@@ -5915,11 +5918,13 @@ rb_str_upcase(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.downcase!   -> str or nil
+ *     str.downcase!             -> str or nil
+ *     str.downcase!([options])  -> str or nil
  *
  *  Downcases the contents of <i>str</i>, returning <code>nil</code> if no
  *  changes were made.
- *  Note: case replacement is effective only in ASCII region.
+ *
+ *  See String#downcase for meaning of +options+ and use with different encodings.
  */
 
 static VALUE
@@ -6037,11 +6042,13 @@ rb_str_downcase(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.capitalize!   -> str or nil
+ *     str.capitalize!              -> str or nil
+ *     str.capitalize!([options])   -> str or nil
  *
  *  Modifies <i>str</i> by converting the first character to uppercase and the
  *  remainder to lowercase. Returns <code>nil</code> if no changes are made.
- *  Note: case conversion is effective only in ASCII region.
+ *
+ *  See String#downcase for meaning of +options+ and use with different encodings.
  *
  *     a = "hello"
  *     a.capitalize!   #=> "Hello"
@@ -6093,11 +6100,13 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.capitalize   -> new_str
+ *     str.capitalize              -> new_str
+ *     str.capitalize([options])   -> new_str
  *
  *  Returns a copy of <i>str</i> with the first character converted to uppercase
  *  and the remainder to lowercase.
- *  Note: case conversion is effective only in ASCII region.
+ *
+ *  See String#downcase for meaning of +options+ and use with different encodings.
  *
  *     "hello".capitalize    #=> "Hello"
  *     "HELLO".capitalize    #=> "Hello"
@@ -6115,11 +6124,13 @@ rb_str_capitalize(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.swapcase!   -> str or nil
+ *     str.swapcase!              -> str or nil
+ *     str.swapcase!([options])   -> str or nil
  *
  *  Equivalent to <code>String#swapcase</code>, but modifies the receiver in
  *  place, returning <i>str</i>, or <code>nil</code> if no changes were made.
- *  Note: case conversion is effective only in ASCII region.
+ *
+ *  See String#downcase for meaning of +options+ and use with different encodings.
  */
 
 static VALUE
@@ -6163,11 +6174,13 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.swapcase   -> new_str
+ *     str.swapcase              -> new_str
+ *     str.swapcase([options])   -> new_str
  *
  *  Returns a copy of <i>str</i> with uppercase alphabetic characters converted
  *  to lowercase and lowercase characters converted to uppercase.
- *  Note: case conversion is effective only in ASCII region.
+ *
+ *  See String#downcase for meaning of +options+ and use with different encodings.
  *
  *     "Hello".swapcase          #=> "hELLO"
  *     "cYbEr_PuNk11".swapcase   #=> "CyBeR_pUnK11"
