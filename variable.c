@@ -2028,7 +2028,7 @@ check_autoload_required(VALUE mod, ID id, const char **loadingpath)
     }
     file = ele->feature;
     Check_Type(file, T_STRING);
-    if (!RSTRING_PTR(file) || !*RSTRING_PTR(file)) {
+    if (!RSTRING_LEN(file) || !*RSTRING_PTR(file)) {
 	rb_raise(rb_eArgError, "empty file name");
     }
     loading = RSTRING_PTR(file);
