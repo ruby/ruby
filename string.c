@@ -4121,7 +4121,11 @@ rb_str_aref_m(int argc, VALUE *argv, VALUE str)
 	if (RB_TYPE_P(argv[0], T_REGEXP)) {
 	    return rb_str_subpat(str, argv[0], argv[1]);
 	}
-	return rb_str_substr(str, NUM2LONG(argv[0]), NUM2LONG(argv[1]));
+	{
+	    long beg = NUM2LONG(argv[0]);
+	    long len = NUM2LONG(argv[1]);
+	    return rb_str_substr(str, beg, len);
+	}
     }
     rb_check_arity(argc, 1, 2);
     return rb_str_aref(str, argv[0]);
@@ -5135,7 +5139,9 @@ static VALUE
 rb_str_byteslice(int argc, VALUE *argv, VALUE str)
 {
     if (argc == 2) {
-	return str_byte_substr(str, NUM2LONG(argv[0]), NUM2LONG(argv[1]));
+	long beg = NUM2LONG(argv[0]);
+	long end = NUM2LONG(argv[1]);
+	return str_byte_substr(str, beg, end);
     }
     rb_check_arity(argc, 1, 2);
     return str_byte_aref(str, argv[0]);
