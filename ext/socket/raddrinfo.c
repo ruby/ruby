@@ -429,6 +429,10 @@ str_is_number(const char *p)
 #define str_equal(ptr, len, name) \
     ((ptr)[0] == name[0] && \
      rb_strlen_lit(name) == (len) && memcmp(ptr, name, len) == 0)
+#define SafeStringValueCStr(v) do {\
+    StringValueCStr(v);\
+    rb_check_safe_obj(v);\
+} while(0)
 
 static char*
 host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr)
@@ -447,7 +451,7 @@ host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr)
         const char *name;
         size_t len;
 
-        SafeStringValue(host);
+        SafeStringValueCStr(host);
         RSTRING_GETMEM(host, name, len);
         if (!len || str_equal(name, len, "<any>")) {
             make_inetaddr(INADDR_ANY, hbuf, hbuflen);
@@ -486,7 +490,7 @@ port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr)
         const char *serv;
         size_t len;
 
-        SafeStringValue(port);
+        SafeStringValueCStr(port);
         RSTRING_GETMEM(port, serv, len);
         if (len >= pbuflen) {
             rb_raise(rb_eArgError, "service name too long (%"PRIdSIZE")",

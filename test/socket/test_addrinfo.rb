@@ -42,6 +42,9 @@ class TestSocketAddrinfo < Test::Unit::TestCase
       Addrinfo.ip(addr)
     end
     assert_equal([0, "127.0.0.1"], Socket.unpack_sockaddr_in(ai))
+    assert_raise(ArgumentError) do
+      Addrinfo.ip("127.0.0.1\000x")
+    end
   end
 
   def test_addrinfo_tcp
@@ -56,6 +59,9 @@ class TestSocketAddrinfo < Test::Unit::TestCase
       Addrinfo.tcp("127.0.0.1", "0000000000000000000000080x".chop)
     end
     assert_equal([80, "127.0.0.1"], Socket.unpack_sockaddr_in(ai))
+    assert_raise(ArgumentError) do
+      Addrinfo.ip("127.0.0.1", "80\000x")
+    end
   end
 
   def test_addrinfo_udp
