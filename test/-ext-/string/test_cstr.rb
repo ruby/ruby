@@ -18,6 +18,12 @@ class Test_StringCStr < Test::Unit::TestCase
     assert_equal(0, s.cstr_term, Bug4319)
   end
 
+  def test_shared
+    s = Bug::String.new("abcdef")*5
+    s = s.unterminated_substring(0, 29)
+    assert_equal(0, s.cstr_term, Bug4319)
+  end
+
   def test_frozen
     s0 = Bug::String.new("abcdefgh"*8)
 

@@ -2012,8 +2012,9 @@ str_fill_term(VALUE str, char *s, long len, int termlen)
     }
     else {
 	TERM_FILL(s + len, termlen);
+	return s;
     }
-    return s;
+    return RSTRING_PTR(str);
 }
 
 char *

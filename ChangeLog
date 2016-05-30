@@ -1,3 +1,8 @@
+Mon May 30 16:20:26 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_fill_term): return new pointer reallocated by
+	  filling terminator.
+
 Mon May 30 14:54:58 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (enc_subseq): share the return value and
