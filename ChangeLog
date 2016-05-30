@@ -1,3 +1,10 @@
+Mon May 30 16:28:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/raddrinfo.c (host_str, port_str): use RSTRING_LEN
+	  instead of strlen, since RSTRING_PTR StringValueCStr may not be
+	  NUL-terminated when SHARABLE_MIDDLE_SUBSTRING=1.  reported by
+	  @tmtms, http://twitter.com/tmtms/status/736910516229005312
+
 Mon May 30 16:20:26 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_fill_term): return new pointer reallocated by

@@ -426,6 +426,10 @@ str_is_number(const char *p)
        return 0;
 }
 
+#define str_equal(ptr, len, name) \
+    ((ptr)[0] == name[0] && \
+     rb_strlen_lit(name) == (len) && memcmp(ptr, name, len) == 0)
+
 static char*
 host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr)
 {
@@ -440,24 +444,26 @@ host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr)
         return hbuf;
     }
     else {
-        char *name;
+        const char *name;
+        size_t len;
 
         SafeStringValue(host);
-        name = RSTRING_PTR(host);
-        if (!name || *name == 0 || (name[0] == '<' && strcmp(name, "<any>") == 0)) {
+        RSTRING_GETMEM(host, name, len);
+        if (!len || str_equal(name, len, "<any>")) {
             make_inetaddr(INADDR_ANY, hbuf, hbuflen);
             if (flags_ptr) *flags_ptr |= AI_NUMERICHOST;
         }
-        else if (name[0] == '<' && strcmp(name, "<broadcast>") == 0) {
+        else if (str_equal(name, len, "<broadcast>")) {
             make_inetaddr(INADDR_BROADCAST, hbuf, hbuflen);
             if (flags_ptr) *flags_ptr |= AI_NUMERICHOST;
         }
-        else if (strlen(name) >= hbuflen) {
-            rb_raise(rb_eArgError, "hostname too long (%"PRIuSIZE")",
-                strlen(name));
+        else if (len >= hbuflen) {
+            rb_raise(rb_eArgError, "hostname too long (%ld)",
+                     len);
         }
         else {
-            strcpy(hbuf, name);
+            memcpy(hbuf, name, len);
+            hbuf[len] = '\0';
         }
         return hbuf;
     }
@@ -477,15 +483,17 @@ port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr)
         return pbuf;
     }
     else {
-        char *serv;
+        const char *serv;
+        size_t len;
 
         SafeStringValue(port);
-        serv = RSTRING_PTR(port);
-        if (strlen(serv) >= pbuflen) {
-            rb_raise(rb_eArgError, "service name too long (%"PRIuSIZE")",
-                strlen(serv));
+        RSTRING_GETMEM(port, serv, len);
+        if (len >= pbuflen) {
+            rb_raise(rb_eArgError, "service name too long (%ld)",
+                     len);
         }
-        strcpy(pbuf, serv);
+        memcpy(pbuf, serv, len);
+        pbuf[len] = '\0';
         return pbuf;
     }
 }

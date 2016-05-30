@@ -35,6 +35,11 @@ class TestSocketAddrinfo < Test::Unit::TestCase
 
     ai = Addrinfo.ip("<broadcast>")
     assert_equal([0, "255.255.255.255"], Socket.unpack_sockaddr_in(ai))
+
+    ai = assert_nothing_raised(SocketError) do
+      Addrinfo.ip("00000000127.000000000.00000000.0000001x".chop)
+    end
+    assert_equal([0, "127.0.0.1"], Socket.unpack_sockaddr_in(ai))
   end
 
   def test_addrinfo_tcp
@@ -44,6 +49,11 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     assert_equal(Socket::PF_INET, ai.pfamily)
     assert_equal(Socket::SOCK_STREAM, ai.socktype)
     assert_include([0, Socket::IPPROTO_TCP], ai.protocol)
+
+    ai = assert_nothing_raised(SocketError) do
+      Addrinfo.tcp("127.0.0.1", "0000000000000000000000080x".chop)
+    end
+    assert_equal([80, "127.0.0.1"], Socket.unpack_sockaddr_in(ai))
   end
 
   def test_addrinfo_udp
