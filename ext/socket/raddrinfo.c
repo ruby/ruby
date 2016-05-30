@@ -458,7 +458,7 @@ host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr)
             if (flags_ptr) *flags_ptr |= AI_NUMERICHOST;
         }
         else if (len >= hbuflen) {
-            rb_raise(rb_eArgError, "hostname too long (%ld)",
+            rb_raise(rb_eArgError, "hostname too long (%"PRIdSIZE")",
                      len);
         }
         else {
@@ -489,7 +489,7 @@ port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr)
         SafeStringValue(port);
         RSTRING_GETMEM(port, serv, len);
         if (len >= pbuflen) {
-            rb_raise(rb_eArgError, "service name too long (%ld)",
+            rb_raise(rb_eArgError, "service name too long (%"PRIdSIZE")",
                      len);
         }
         memcpy(pbuf, serv, len);
