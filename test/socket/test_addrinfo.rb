@@ -37,9 +37,11 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     assert_equal([0, "255.255.255.255"], Socket.unpack_sockaddr_in(ai))
 
     ai = assert_nothing_raised(SocketError) do
-      Addrinfo.ip("00000000001.000000000.00000000.0000001x".chop)
+      base_str = "127.0.0.1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      addr = base_str[0, 9]
+      Addrinfo.ip(addr)
     end
-    assert_equal([0, "1.0.0.1"], Socket.unpack_sockaddr_in(ai))
+    assert_equal([0, "127.0.0.1"], Socket.unpack_sockaddr_in(ai))
   end
 
   def test_addrinfo_tcp
