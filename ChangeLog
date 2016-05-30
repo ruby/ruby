@@ -1,3 +1,10 @@
+Mon May 30 14:50:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (str_substr, rb_str_aref): refactor not to create
+	  unnecessary empty string.
+
+	* string.c (str_byte_substr, str_byte_aref): ditto.
+
 Mon May 30 00:09:37 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/-test-/auto_ext.rb: fixed a heedless bug introduced at r55198.

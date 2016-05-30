@@ -2316,8 +2316,16 @@ rb_str_subpos(VALUE str, long beg, long *lenp)
     return p;
 }
 
+static VALUE str_substr(VALUE str, long beg, long len, int empty);
+
 VALUE
 rb_str_substr(VALUE str, long beg, long len)
+{
+    return str_substr(str, beg, len, TRUE);
+}
+
+static VALUE
+str_substr(VALUE str, long beg, long len, int empty)
 {
     VALUE str2;
     char *p = rb_str_subpos(str, beg, &len);
@@ -2331,6 +2339,7 @@ rb_str_substr(VALUE str, long beg, long len)
 	RSTRING(str2)->as.heap.len = len;
     }
     else {
+	if (!len && !empty) return Qnil;
 	str2 = rb_str_new_with_class(str, p, len);
 	OBJ_INFECT(str2, str);
 	RB_GC_GUARD(str);
@@ -4002,46 +4011,30 @@ rb_str_aref(VALUE str, VALUE indx)
 
     if (FIXNUM_P(indx)) {
 	idx = FIX2LONG(indx);
-
-      num_index:
-	str = rb_str_substr(str, idx, 1);
-	if (!NIL_P(str) && RSTRING_LEN(str) == 0) return Qnil;
-	return str;
     }
-
-    if (SPECIAL_CONST_P(indx)) goto generic;
-    switch (BUILTIN_TYPE(indx)) {
-      case T_REGEXP:
+    else if (RB_TYPE_P(indx, T_REGEXP)) {
 	return rb_str_subpat(str, indx, INT2FIX(0));
-
-      case T_STRING:
+    }
+    else if (RB_TYPE_P(indx, T_STRING)) {
 	if (rb_str_index(str, indx, 0) != -1)
 	    return rb_str_dup(indx);
 	return Qnil;
-
-      generic:
-      default:
+    }
+    else {
 	/* check if indx is Range */
-	{
-	    long beg, len;
-	    VALUE tmp;
-
-	    len = str_strlen(str, NULL);
-	    switch (rb_range_beg_len(indx, &beg, &len, len, 0)) {
-	      case Qfalse:
-		break;
-	      case Qnil:
-		return Qnil;
-	      default:
-		tmp = rb_str_substr(str, beg, len);
-		return tmp;
-	    }
+	long beg, len = str_strlen(str, NULL);
+	switch (rb_range_beg_len(indx, &beg, &len, len, 0)) {
+	  case Qfalse:
+	    break;
+	  case Qnil:
+	    return Qnil;
+	  default:
+	    return rb_str_substr(str, beg, len);
 	}
 	idx = NUM2LONG(indx);
-	goto num_index;
     }
 
-    UNREACHABLE;
+    return str_substr(str, idx, 1, FALSE);
 }
 
 
@@ -4121,7 +4114,7 @@ rb_str_aref_m(int argc, VALUE *argv, VALUE str)
 	if (RB_TYPE_P(argv[0], T_REGEXP)) {
 	    return rb_str_subpat(str, argv[0], argv[1]);
 	}
-	{
+	else {
 	    long beg = NUM2LONG(argv[0]);
 	    long len = NUM2LONG(argv[1]);
 	    return rb_str_substr(str, beg, len);
@@ -5024,7 +5017,7 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
 }
 
 static VALUE
-str_byte_substr(VALUE str, long beg, long len)
+str_byte_substr(VALUE str, long beg, long len, int empty)
 {
     char *p, *s = RSTRING_PTR(str);
     long n = RSTRING_LEN(str);
@@ -5038,6 +5031,7 @@ str_byte_substr(VALUE str, long beg, long len)
     if (beg + len > n)
 	len = n - beg;
     if (len <= 0) {
+	if (!empty) return Qnil;
 	len = 0;
 	p = 0;
     }
@@ -5082,34 +5076,25 @@ static VALUE
 str_byte_aref(VALUE str, VALUE indx)
 {
     long idx;
-    switch (TYPE(indx)) {
-      case T_FIXNUM:
+    if (FIXNUM_P(indx)) {
 	idx = FIX2LONG(indx);
-
-      num_index:
-	str = str_byte_substr(str, idx, 1);
-	if (NIL_P(str) || RSTRING_LEN(str) == 0) return Qnil;
-	return str;
-
-      default:
-	/* check if indx is Range */
-	{
-	    long beg, len = RSTRING_LEN(str);
-
-	    switch (rb_range_beg_len(indx, &beg, &len, len, 0)) {
-	      case Qfalse:
-		break;
-	      case Qnil:
-		return Qnil;
-	      default:
-		return str_byte_substr(str, beg, len);
-	    }
-	}
-	idx = NUM2LONG(indx);
-	goto num_index;
     }
+    else {
+	/* check if indx is Range */
+	long beg, len = RSTRING_LEN(str);
 
-    UNREACHABLE;
+	switch (rb_range_beg_len(indx, &beg, &len, len, 0)) {
+	  case Qfalse:
+	    break;
+	  case Qnil:
+	    return Qnil;
+	  default:
+	    return str_byte_substr(str, beg, len, TRUE);
+	}
+
+	idx = NUM2LONG(indx);
+    }
+    return str_byte_substr(str, idx, 1, FALSE);
 }
 
 /*
@@ -5141,7 +5126,7 @@ rb_str_byteslice(int argc, VALUE *argv, VALUE str)
     if (argc == 2) {
 	long beg = NUM2LONG(argv[0]);
 	long end = NUM2LONG(argv[1]);
-	return str_byte_substr(str, beg, end);
+	return str_byte_substr(str, beg, end, TRUE);
     }
     rb_check_arity(argc, 1, 2);
     return str_byte_aref(str, argv[0]);
