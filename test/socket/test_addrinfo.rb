@@ -29,6 +29,12 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     assert_equal(Socket::PF_INET, ai.pfamily)
     assert_equal(0, ai.socktype)
     assert_equal(0, ai.protocol)
+
+    ai = Addrinfo.ip("<any>")
+    assert_equal([0, "0.0.0.0"], Socket.unpack_sockaddr_in(ai))
+
+    ai = Addrinfo.ip("<broadcast>")
+    assert_equal([0, "255.255.255.255"], Socket.unpack_sockaddr_in(ai))
   end
 
   def test_addrinfo_tcp
