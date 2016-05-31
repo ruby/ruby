@@ -1290,7 +1290,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       end;
       assert_separately(["-rtimeout", "-", regular_file], "#{<<~begin}#{<<~"end;"}")
       begin
-        open(ARGV[0], "r") do |f|
+        open(ARGV[0], "r+") do |f|
           assert_raise(Timeout::Error) do
             Timeout.timeout(0.1) do
               f.flock(File::LOCK_EX)

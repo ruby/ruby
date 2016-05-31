@@ -75,15 +75,10 @@ asn1time_to_time(ASN1_TIME *time)
     return rb_funcall2(rb_cTime, rb_intern("utc"), 6, argv);
 }
 
-/*
- * This function is not exported in Ruby's *.h
- */
-extern struct timeval rb_time_timeval(VALUE);
-
 time_t
 time_to_time_t(VALUE time)
 {
-    return (time_t)NUM2LONG(rb_Integer(time));
+    return (time_t)NUM2TIMET(rb_Integer(time));
 }
 
 /*
