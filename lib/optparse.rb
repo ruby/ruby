@@ -1547,7 +1547,8 @@ XXX
 
         # short option
         when /\A-(.)((=).*|.+)?/m
-          opt, has_arg, eq, val, rest = $1, $3, $3, $2, $2
+          eq, rest, opt = $3, $2, $1
+          has_arg, val = eq, rest
           begin
             sw, = search(:short, opt)
             unless sw
