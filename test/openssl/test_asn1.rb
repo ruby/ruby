@@ -272,6 +272,14 @@ rEzBQ0F9dUyqQ9gyRg8KHhDfv9HzT1d/rnUZMkoombwYBRIUChGCYV0GnJcan2Zm
     assert_equal expected, OpenSSL::ASN1.decode("\x17\r130722232317Z").value
   end
 
+  def test_encode_utctime_2k38
+    encoded = OpenSSL::ASN1::UTCTime(2 ** 31 - 1).to_der
+    assert_equal 2 ** 31 - 1, OpenSSL::ASN1.decode(encoded).value.to_i
+
+    encoded = OpenSSL::ASN1::UTCTime(2 ** 31).to_der
+    assert_equal 2 ** 31, OpenSSL::ASN1.decode(encoded).value.to_i
+  end
+
   def test_create_inf_length_primitive
     expected = %w{ 24 80 04 01 61 00 00 }
     raw = [expected.join('')].pack('H*')
