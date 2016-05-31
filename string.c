@@ -5850,7 +5850,7 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
-    if (enc==rb_utf8_encoding() && argc>0) { /* :lithuanian can temporarily be used for new functionality without options */
+    if (enc==rb_utf8_encoding()) {
 	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 	modify = ONIGENC_CASE_MODIFIED & flags;
     }
@@ -5940,7 +5940,7 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
-    if (enc==rb_utf8_encoding() && argc>0) { /* :lithuanian can temporarily be used for new functionality without options */
+    if (enc==rb_utf8_encoding()) {
 	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 	modify = ONIGENC_CASE_MODIFIED & flags;
     }
@@ -5999,11 +5999,11 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
  *  The meaning of the +options+ is as follows:
  *
  *  No option ::
- *    Currently, old behavior (only the ASCII region, i.e. characters
- *    ``A'' to ``Z'', and/or ``a'' to ``z'', are affected).
- *    This will change very soon to full Unicode case mapping.
+ *    Full Unicode case mapping, suitable for most languages
+ *    (see :turkic and :lithuanian options below for exceptions)
  *  :ascii ::
- *    Only the ASCII region, i.e. the characters ``A'' to ``Z'', are affected.
+ *    Only the ASCII region, i.e. the characters ``A'' to ``Z'' and
+ *    ``a'' to ``z'', are affected.
  *    This option cannot be combined with any other option.
  *  :turkic ::
  *    Full Unicode case mapping, adapted for Turkic languages
@@ -6012,21 +6012,23 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
  *  :lithuanian ::
  *    Currently, just full Unicode case mapping. In the future, full Unicode
  *    case mapping adapted for Lithuanian (keeping the dot on the lower case
- *    i even if there's an accent on top).
+ *    i even if there is an accent on top).
  *  :fold ::
- *    Only available on +downcase+ and +downcase!+. Unicode case folding, which
- *    is more far-reaching than Unicode case mapping. This option currently
- *    cannot be combined with any other option (i.e. we do not currenty
- *    implement a variant for turkic languages).
+ *    Only available on +downcase+ and +downcase!+. Unicode case <b>folding</b>,
+ *    which is more far-reaching than Unicode case mapping.
+ *    This option currently cannot be combined with any other option
+ *    (i.e. we do not currenty implement a variant for turkic languages).
  *
  *  Please note that several assumptions that are valid for ASCII-only case
  *  conversions do not hold for more general case conversions. For example,
  *  the length of the result may not be the same as the length of the input
- *  (neither in characters nor in bytes), and some roundtrip assumptions
- *  (e.g. str.downcase == str.downcase.upcase.downcase) may not apply.
+ *  (neither in characters nor in bytes), some roundtrip assumptions
+ *  (e.g. str.downcase == str.upcase.downcase) may not apply, and Unicode
+ *  normalization (i.e. String#unicode_normalize) is not necessarily maintained
+ *  by case mapping operations.
  *
- *  Non-ASCII case mapping/folding is currently only supported for UTF-8 Strings,
- *  but this support will be extended to other encodings in the future.
+ *  Non-ASCII case mapping/folding is currently only supported for UTF-8
+ *  Strings/Symbols, but this support will be extended to other encodings.
  *
  *     "hEllO".downcase   #=> "hello"
  */
@@ -6071,7 +6073,7 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return Qnil;
-    if (enc==rb_utf8_encoding() && argc>0) { /* :lithuanian can temporarily be used for new functionality without options */
+    if (enc==rb_utf8_encoding()) {
 	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 	modify = ONIGENC_CASE_MODIFIED & flags;
     }
@@ -6147,7 +6149,7 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
-    if (enc==rb_utf8_encoding() && argc>0) { /* :lithuanian can temporarily be used for new functionality without options */
+    if (enc==rb_utf8_encoding()) {
 	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 	modify = ONIGENC_CASE_MODIFIED & flags;
     }
