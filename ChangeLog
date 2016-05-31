@@ -1,3 +1,9 @@
+Wed Jun  1 02:25:38 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/crypt.c: fix size macros to use configured values
+	  for platforms long is larger than 32bit.
+	  [ruby-core:75792] [Bug #12446]
+
 Tue May 31 17:28:46 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser::Completion.candidate): get rid of
