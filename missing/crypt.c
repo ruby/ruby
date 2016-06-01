@@ -413,7 +413,7 @@ crypt_r(const char *key, const char *setting, struct crypt_data *data)
 void
 des_setkey(const char *key)
 {
-    return des_setkey_r(key, &default_crypt_data);
+    des_setkey_r(key, &default_crypt_data);
 }
 
 void
