@@ -313,7 +313,7 @@ static struct crypt_data default_crypt_data;
 char *
 crypt(const char *key, const char *setting)
 {
-    return crypt_r(key, setting, &default_crypt_data);
+	return crypt_r(key, setting, &default_crypt_data);
 }
 
 /*
@@ -413,7 +413,7 @@ crypt_r(const char *key, const char *setting, struct crypt_data *data)
 void
 des_setkey(const char *key)
 {
-    des_setkey_r(key, &default_crypt_data);
+	des_setkey_r(key, &default_crypt_data);
 }
 
 void
@@ -452,7 +452,7 @@ des_setkey_r(const char *key, struct crypt_data *data)
 void
 des_cipher(const char *in, char *out, long salt, int num_iter)
 {
-    des_cipher_r(in, out, salt, num_iter, &default_crypt_data);
+	des_cipher_r(in, out, salt, num_iter, &default_crypt_data);
 }
 
 void
@@ -740,7 +740,7 @@ init_perm(C_block perm[64/CHUNKBITS][1<<CHUNKBITS],
 void
 setkey(const char *key)
 {
-    setkey_r(key, &default_crypt_data);
+	setkey_r(key, &default_crypt_data);
 }
 
 void
@@ -766,7 +766,7 @@ setkey_r(const char *key, struct crypt_data *data)
 void
 encrypt(char *block, int flag)
 {
-    encrypt_r(block, flag, &default_crypt_data);
+	encrypt_r(block, flag, &default_crypt_data);
 }
 
 void
