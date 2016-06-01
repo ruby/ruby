@@ -1,3 +1,8 @@
+Wed Jun  1 09:14:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/crypt.c (crypt_r, setkey_r, encrypt_r): add reentrant
+	  versions.
+
 Wed Jun  1 02:25:38 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing/crypt.c: fix size macros to use configured values

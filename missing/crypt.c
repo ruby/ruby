@@ -43,6 +43,7 @@ static char sccsid[] = "@(#)crypt.c	8.1 (Berkeley) 6/4/93";
 #include <pwd.h>
 #endif
 #include <stdio.h>
+#include <string.h>
 #ifndef _PASSWORD_EFMT1
 #define _PASSWORD_EFMT1 '_'
 #endif
@@ -106,9 +107,6 @@ static char sccsid[] = "@(#)crypt.c	8.1 (Berkeley) 6/4/93";
 #if defined(notdef)
 #define	LARGEDATA
 #endif
-
-void des_setkey(const char *key);
-void des_cipher(const char *in, char *out, long salt, int num_iter);
 
 /* compile with "-DSTATIC=int" when profiling */
 #ifndef STATIC
@@ -315,9 +313,6 @@ permute(unsigned char *cp, C_block *out, register C_block *p, int chars_in)
 }
 #endif /* LARGEDATA */
 
-STATIC void init_des(void);
-STATIC void init_perm(C_block perm[64/CHUNKBITS][1<<CHUNKBITS], unsigned char p[64], int chars_in, int chars_out);
-
 #ifdef DEBUG
 STATIC void prtab(const char *s, const unsigned char *t, int num_rows);
 #endif
@@ -465,30 +460,63 @@ static const unsigned char itoa64[] =	/* 0..63 => ascii-64 */
 
 /* =====  Tables that are initialized at run time  ==================== */
 
+struct crypt_data {
 
-static unsigned char a64toi[128];	/* ascii-64 => 0..63 */
+	unsigned char a64toi[128];	/* ascii-64 => 0..63 */
 
-/* Initial key schedule permutation */
-static C_block	PC1ROT[64/CHUNKBITS][1<<CHUNKBITS];
+	/* Initial key schedule permutation */
+	C_block	PC1ROT[64/CHUNKBITS][1<<CHUNKBITS];
 
-/* Subsequent key schedule rotation permutations */
-static C_block	PC2ROT[2][64/CHUNKBITS][1<<CHUNKBITS];
+	/* Subsequent key schedule rotation permutations */
+	C_block	PC2ROT[2][64/CHUNKBITS][1<<CHUNKBITS];
 
-/* Initial permutation/expansion table */
-static C_block	IE3264[32/CHUNKBITS][1<<CHUNKBITS];
+	/* Initial permutation/expansion table */
+	C_block	IE3264[32/CHUNKBITS][1<<CHUNKBITS];
 
-/* Table that combines the S, P, and E operations.  */
-static long SPE[2][8][64];
+	/* Table that combines the S, P, and E operations.  */
+	long SPE[2][8][64];
 
-/* compressed/interleaved => final permutation table */
-static C_block	CF6464[64/CHUNKBITS][1<<CHUNKBITS];
+	/* compressed/interleaved => final permutation table */
+	C_block	CF6464[64/CHUNKBITS][1<<CHUNKBITS];
 
+	/* The Key Schedule, filled in by des_setkey() or setkey(). */
+#define	KS_SIZE	16
+	C_block	KS[KS_SIZE];
 
-/* ==================================== */
+	/* ==================================== */
 
+	C_block	constdatablock;			/* encryption constant */
+	char	cryptresult[1+4+4+11+1];	/* encrypted result */
+	int	initialized;
+};
 
-static C_block	constdatablock;			/* encryption constant */
-static char	cryptresult[1+4+4+11+1];	/* encrypted result */
+#define a64toi	(data->a64toi)
+#define PC1ROT	(data->PC1ROT)
+#define PC2ROT	(data->PC2ROT)
+#define IE3264	(data->IE3264)
+#define SPE	(data->SPE)
+#define CF6464	(data->CF6464)
+#define KS	(data->KS)
+#define constdatablock (data->constdatablock)
+#define cryptresult (data->cryptresult)
+#define des_ready (data->initialized)
+
+char *crypt(const char *key, const char *setting);
+void des_setkey(const char *key);
+void des_cipher(const char *in, char *out, long salt, int num_iter);
+void setkey(const char *key);
+void encrypt(char *block, int flag);
+
+char *crypt_r(const char *key, const char *setting, struct crypt_data *data);
+void des_setkey_r(const char *key, struct crypt_data *data);
+void des_cipher_r(const char *in, char *out, long salt, int num_iter, struct crypt_data *data);
+void setkey_r(const char *key, struct crypt_data *data);
+void encrypt_r(char *block, int flag, struct crypt_data *data);
+
+STATIC void init_des(struct crypt_data *);
+STATIC void init_perm(C_block perm[64/CHUNKBITS][1<<CHUNKBITS], unsigned char p[64], int chars_in, int chars_out);
+
+static struct crypt_data default_crypt_data;
 
 /*
  * Return a pointer to static data consisting of the "setting"
@@ -496,6 +524,16 @@ static char	cryptresult[1+4+4+11+1];	/* encrypted result */
  */
 char *
 crypt(const char *key, const char *setting)
+{
+    return crypt_r(key, setting, &default_crypt_data);
+}
+
+/*
+ * Return a pointer to data consisting of the "setting" followed by an
+ * encryption produced by the "key" and "setting".
+ */
+char *
+crypt_r(const char *key, const char *setting, struct crypt_data *data)
 {
 	register char *encp;
 	register long i;
@@ -509,7 +547,7 @@ crypt(const char *key, const char *setting)
 			key++;
 		keyblock.b[i] = t;
 	}
-	des_setkey((char *)keyblock.b);	/* also initializes "a64toi" */
+	des_setkey_r((char *)keyblock.b, data);	/* also initializes "a64toi" */
 
 	encp = &cryptresult[0];
 	switch (*setting) {
@@ -518,14 +556,14 @@ crypt(const char *key, const char *setting)
 		 * Involve the rest of the password 8 characters at a time.
 		 */
 		while (*key) {
-			des_cipher((char *)&keyblock,
-				   (char *)&keyblock, 0L, 1);
+			des_cipher_r((char *)&keyblock,
+				     (char *)&keyblock, 0L, 1, data);
 			for (i = 0; i < 8; i++) {
 				if ((t = 2*(unsigned char)(*key)) != 0)
 					key++;
 				keyblock.b[i] ^= t;
 			}
-			des_setkey((char *)keyblock.b);
+			des_setkey_r((char *)keyblock.b, data);
 		}
 
 		*encp++ = *setting++;
@@ -555,8 +593,8 @@ crypt(const char *key, const char *setting)
 		salt = (salt<<6) | a64toi[t];
 	}
 	encp += salt_size;
-	des_cipher((char *)&constdatablock, (char *)&rsltblock,
-		   salt, num_iter);
+	des_cipher_r((char *)&constdatablock, (char *)&rsltblock,
+		     salt, num_iter, data);
 
 	/*
 	 * Encode the 64 cipher bits as 11 ascii characters.
@@ -581,26 +619,25 @@ crypt(const char *key, const char *setting)
 	return (cryptresult);
 }
 
-
-/*
- * The Key Schedule, filled in by des_setkey() or setkey().
- */
-#define	KS_SIZE	16
-static C_block	KS[KS_SIZE];
-
 /*
  * Set up the key schedule from the key.
  */
 void
 des_setkey(const char *key)
 {
+    return des_setkey_r(key, &default_crypt_data);
+}
+
+void
+des_setkey_r(const char *key, struct crypt_data *data)
+{
 	register DCL_BLOCK(K, K0, K1);
 	register C_block *ptabp;
 	register int i;
-	static int des_ready = 0;
 
 	if (!des_ready) {
-		init_des();
+		memset(data, 0, sizeof(*data));
+		init_des(data);
 		des_ready = 1;
 	}
 
@@ -626,6 +663,12 @@ des_setkey(const char *key)
  */
 void
 des_cipher(const char *in, char *out, long salt, int num_iter)
+{
+    des_cipher_r(in, out, salt, num_iter, &default_crypt_data);
+}
+
+void
+des_cipher_r(const char *in, char *out, long salt, int num_iter, struct crypt_data *data)
 {
 	/* variables that we want in registers, most important first */
 #if defined(pdp11)
@@ -741,12 +784,12 @@ des_cipher(const char *in, char *out, long salt, int num_iter)
  * done at compile time, if the compiler were capable of that sort of thing.
  */
 STATIC void
-init_des(void)
+init_des(struct crypt_data *data)
 {
 	register int i, j;
 	register long k;
 	register int tableno;
-	static unsigned char perm[64], tmp32[32];	/* "static" for speed */
+	unsigned char perm[64], tmp32[32];
 
 	/*
 	 * table that converts chars "./0-9A-Za-z"to integers 0-63.
@@ -909,6 +952,12 @@ init_perm(C_block perm[64/CHUNKBITS][1<<CHUNKBITS],
 void
 setkey(const char *key)
 {
+    setkey_r(key, &default_crypt_data);
+}
+
+void
+setkey_r(const char *key, struct crypt_data *data)
+{
 	register int i, j, k;
 	C_block keyblock;
 
@@ -920,7 +969,7 @@ setkey(const char *key)
 		}
 		keyblock.b[i] = k;
 	}
-	des_setkey((char *)keyblock.b);
+	des_setkey_r((char *)keyblock.b, data);
 }
 
 /*
@@ -928,6 +977,12 @@ setkey(const char *key)
  */
 void
 encrypt(char *block, int flag)
+{
+    encrypt_r(block, flag, &default_crypt_data);
+}
+
+void
+encrypt_r(char *block, int flag, struct crypt_data *data)
 {
 	register int i, j, k;
 	C_block cblock;
@@ -940,7 +995,7 @@ encrypt(char *block, int flag)
 		}
 		cblock.b[i] = k;
 	}
-	des_cipher((char *)&cblock, (char *)&cblock, 0L, (flag ? -1: 1));
+	des_cipher_r((char *)&cblock, (char *)&cblock, 0L, (flag ? -1: 1), data);
 	for (i = 7; i >= 0; i--) {
 		k = cblock.b[i];
 		for (j = 7; j >= 0; j--) {
