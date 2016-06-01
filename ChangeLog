@@ -1,3 +1,7 @@
+Wed Jun  1 09:48:06 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_crypt): use reentrant crypt_r.
+
 Wed Jun  1 09:37:26 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* missing/crypt.c (des_setkey): void function never returns any value.

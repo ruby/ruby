@@ -705,7 +705,7 @@ RUBY_H_INCLUDES    = {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}defines.h \
 
 acosh.$(OBJEXT): {$(VPATH)}acosh.c
 alloca.$(OBJEXT): {$(VPATH)}alloca.c {$(VPATH)}config.h
-crypt.$(OBJEXT): {$(VPATH)}crypt.c {$(VPATH)}crypt.h
+crypt_r.$(OBJEXT): {$(VPATH)}crypt_r.c {$(VPATH)}crypt.h
 dup2.$(OBJEXT): {$(VPATH)}dup2.c
 erf.$(OBJEXT): {$(VPATH)}erf.c
 explicit_bzero.$(OBJEXT): {$(VPATH)}explicit_bzero.c

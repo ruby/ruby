@@ -29,6 +29,8 @@
 #include <unistd.h>
 #endif
 
+#include <crypt.h>
+
 #define STRING_ENUMERATORS_WANTARRAY 0 /* next major */
 
 #undef rb_str_new
@@ -8373,13 +8375,10 @@ rb_str_oct(VALUE str)
 static VALUE
 rb_str_crypt(VALUE str, VALUE salt)
 {
-    extern char *crypt(const char *, const char *);
+    struct crypt_data data;
     VALUE result;
     const char *s, *saltp;
     char *res;
-#ifdef BROKEN_CRYPT
-    char salt_8bit_clean[3];
-#endif
 
     StringValue(salt);
     mustnot_wchar(str);
@@ -8392,15 +8391,8 @@ rb_str_crypt(VALUE str, VALUE salt)
     s = StringValueCStr(str);
     saltp = RSTRING_PTR(salt);
     if (!saltp[0] || !saltp[1]) goto short_salt;
-#ifdef BROKEN_CRYPT
-    if (!ISASCII((unsigned char)saltp[0]) || !ISASCII((unsigned char)saltp[1])) {
-	salt_8bit_clean[0] = saltp[0] & 0x7f;
-	salt_8bit_clean[1] = saltp[1] & 0x7f;
-	salt_8bit_clean[2] = '\0';
-	saltp = salt_8bit_clean;
-    }
-#endif
-    res = crypt(s, saltp);
+    data.initialized = 0;
+    res = crypt_r(s, saltp, &data);
     if (!res) {
 	rb_sys_fail("crypt");
     }
