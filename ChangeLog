@@ -1,4 +1,6 @@
-Wed Jun  1 09:14:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jun  1 09:16:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* crypt.h: separate header file from missing/crypt.c.
 
 	* missing/crypt.c (crypt_r, setkey_r, encrypt_r): add reentrant
 	  versions.
