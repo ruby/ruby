@@ -476,13 +476,10 @@ static VALUE
 ossl_x509_set_not_before(VALUE self, VALUE time)
 {
     X509 *x509;
-    time_t sec;
 
-    sec = time_to_time_t(time);
     GetX509(self, x509);
-    if (!X509_time_adj(X509_get_notBefore(x509), 0, &sec)) {
+    if (!ossl_x509_time_adjust(X509_get_notBefore(x509), time))
 	ossl_raise(eX509CertError, NULL);
-    }
 
     return time;
 }
@@ -513,13 +510,10 @@ static VALUE
 ossl_x509_set_not_after(VALUE self, VALUE time)
 {
     X509 *x509;
-    time_t sec;
 
-    sec = time_to_time_t(time);
     GetX509(self, x509);
-    if (!X509_time_adj(X509_get_notAfter(x509), 0, &sec)) {
+    if (!ossl_x509_time_adjust(X509_get_notAfter(x509), time))
 	ossl_raise(eX509CertError, NULL);
-    }
 
     return time;
 }

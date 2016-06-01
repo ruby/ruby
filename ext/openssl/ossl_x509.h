@@ -15,6 +15,13 @@
  */
 extern VALUE mX509;
 
+/*
+ * Converts the VALUE into Integer and set it to the ASN1_TIME. This is a
+ * wrapper for X509_time_adj_ex() so passing NULL creates a new ASN1_TIME.
+ * Note that the caller must check the NULL return.
+ */
+ASN1_TIME *ossl_x509_time_adjust(ASN1_TIME *, VALUE);
+
 void Init_ossl_x509(void);
 
 /*

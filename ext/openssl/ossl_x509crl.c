@@ -235,13 +235,10 @@ static VALUE
 ossl_x509crl_set_last_update(VALUE self, VALUE time)
 {
     X509_CRL *crl;
-    time_t sec;
 
-    sec = time_to_time_t(time);
     GetX509CRL(self, crl);
-    if (!X509_time_adj(crl->crl->lastUpdate, 0, &sec)) {
+    if (!ossl_x509_time_adjust(crl->crl->lastUpdate, time))
 	ossl_raise(eX509CRLError, NULL);
-    }
 
     return time;
 }
@@ -260,14 +257,11 @@ static VALUE
 ossl_x509crl_set_next_update(VALUE self, VALUE time)
 {
     X509_CRL *crl;
-    time_t sec;
 
-    sec = time_to_time_t(time);
     GetX509CRL(self, crl);
-    /* This must be some thinko in OpenSSL */
-    if (!(crl->crl->nextUpdate = X509_time_adj(crl->crl->nextUpdate, 0, &sec))){
+    /* crl->crl->nextUpdate may be NULL at this time */
+    if (!(crl->crl->nextUpdate = ossl_x509_time_adjust(crl->crl->nextUpdate, time)))
 	ossl_raise(eX509CRLError, NULL);
-    }
 
     return time;
 }

@@ -1,3 +1,25 @@
+Wed Jun  1 21:41:05 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/extconf.rb: Check existence of ASN1_TIME_adj(). The old
+	  ASN1_TIME_set() is not Year 2038 ready on sizeof(time_t) == 4
+	  environment. This function was added in OpenSSL 1.0.0.
+	  [ruby-core:45552] [Bug #6571]
+
+	* ext/openssl/ossl_asn1.c (ossl_time_split): Added. Split the argument
+	  (Time) into the number of days elapsed since the epoch and the
+	  remainder seconds to conform to ASN1_TIME_adj().
+	  (obj_to_asn1utime, obj_to_asn1gtime): Use ossl_time_split() and
+	  ASN1_*TIME_adj().
+
+	* ext/openssl/ossl_asn1.h: Add the function prototype for
+	  ossl_time_split().
+
+	* ext/openssl/ossl_x509.[ch]: Add ossl_x509_time_adjust(). Similarly to
+	  obj_to_asn1*time(), use X509_time_adj_ex() instead of X509_time_adj().
+
+	* ext/openssl/ossl_x509cert.c, ext/openssl/ossl_x509crl.c,
+	  ext/openssl/ossl_x509revoked.c: Use ossl_x509_time_adjust().
+
 Wed Jun  1 15:58:20 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: revert r55237.  replace crypt, not crypt_r, and

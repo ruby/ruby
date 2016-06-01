@@ -144,13 +144,10 @@ static VALUE
 ossl_x509revoked_set_time(VALUE self, VALUE time)
 {
     X509_REVOKED *rev;
-    time_t sec;
 
-    sec = time_to_time_t(time);
     GetX509Rev(self, rev);
-    if (!X509_time_adj(rev->revocationDate, 0, &sec)) {
+    if (!ossl_x509_time_adjust(rev->revocationDate, time))
 	ossl_raise(eX509RevError, NULL);
-    }
 
     return time;
 }

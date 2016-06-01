@@ -75,11 +75,28 @@ asn1time_to_time(ASN1_TIME *time)
     return rb_funcall2(rb_cTime, rb_intern("utc"), 6, argv);
 }
 
+#if defined(HAVE_ASN1_TIME_ADJ)
+void
+ossl_time_split(VALUE time, time_t *sec, int *days)
+{
+    VALUE num = rb_Integer(time);
+
+    if (FIXNUM_P(num)) {
+	*days = FIX2LONG(num) / 86400;
+	*sec = FIX2LONG(num) % 86400;
+    }
+    else {
+	*days = NUM2INT(rb_funcall(num, rb_intern("/"), 1, INT2FIX(86400)));
+	*sec = NUM2TIMET(rb_funcall(num, rb_intern("%"), 1, INT2FIX(86400)));
+    }
+}
+#else
 time_t
 time_to_time_t(VALUE time)
 {
     return (time_t)NUM2TIMET(rb_Integer(time));
 }
+#endif
 
 /*
  * STRING conversion
@@ -279,28 +296,42 @@ obj_to_asn1obj(VALUE obj)
     return a1obj;
 }
 
-static ASN1_UTCTIME*
+static ASN1_UTCTIME *
 obj_to_asn1utime(VALUE time)
 {
     time_t sec;
     ASN1_UTCTIME *t;
 
+#if defined(HAVE_ASN1_TIME_ADJ)
+    int off_days;
+
+    ossl_time_split(time, &sec, &off_days);
+    if (!(t = ASN1_UTCTIME_adj(NULL, sec, off_days, 0)))
+#else
     sec = time_to_time_t(time);
-    if(!(t = ASN1_UTCTIME_set(NULL, sec)))
-        ossl_raise(eASN1Error, NULL);
+    if (!(t = ASN1_UTCTIME_set(NULL, sec)))
+#endif
+	ossl_raise(eASN1Error, NULL);
 
     return t;
 }
 
-static ASN1_GENERALIZEDTIME*
+static ASN1_GENERALIZEDTIME *
 obj_to_asn1gtime(VALUE time)
 {
     time_t sec;
     ASN1_GENERALIZEDTIME *t;
 
+#if defined(HAVE_ASN1_TIME_ADJ)
+    int off_days;
+
+    ossl_time_split(time, &sec, &off_days);
+    if (!(t = ASN1_GENERALIZEDTIME_adj(NULL, sec, off_days, 0)))
+#else
     sec = time_to_time_t(time);
-    if(!(t =ASN1_GENERALIZEDTIME_set(NULL, sec)))
-        ossl_raise(eASN1Error, NULL);
+    if (!(t = ASN1_GENERALIZEDTIME_set(NULL, sec)))
+#endif
+	ossl_raise(eASN1Error, NULL);
 
     return t;
 }
