@@ -289,12 +289,25 @@ static const unsigned char CIFP[] = {	/* compressed/interleaved permutation */
 static const unsigned char itoa64[] =	/* 0..63 => ascii-64 */
 	"./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
+/* table that converts chars "./0-9A-Za-z"to integers 0-63. */
+static const unsigned char a64toi[256] = {
+#define A64TOI1(c) \
+	((c) == '.' ? 0 :						\
+	 (c) == '/' ? 1 :						\
+	 ('0' <= (c) && (c) <= '9') ? (c) - '0' + 2 :			\
+	 ('A' <= (c) && (c) <= 'Z') ? (c) - 'A' + 12 :			\
+	 ('a' <= (c) && (c) <= 'z') ? (c) - 'a' + 38 :			\
+	 0)
+#define A64TOI4(base) A64TOI1(base+0), A64TOI1(base+1), A64TOI1(base+2), A64TOI1(base+3)
+#define A64TOI16(base) A64TOI4(base+0), A64TOI4(base+4), A64TOI4(base+8), A64TOI4(base+12)
+#define A64TOI64(base) A64TOI16(base+0x00), A64TOI16(base+0x10), A64TOI16(base+0x20), A64TOI16(base+0x30)
+	A64TOI64(0x00), A64TOI64(0x40),
+	A64TOI64(0x00), A64TOI64(0x40),
+};
+
 /* =====  Tables that are initialized at run time  ==================== */
 
 typedef struct {
-	/* table that converts chars "./0-9A-Za-z"to integers 0-63. */
-	unsigned char a64toi[128];
-
 	/* Initial key schedule permutation */
 	C_block	PC1ROT[64/CHUNKBITS][1<<CHUNKBITS];
 
@@ -317,7 +330,6 @@ static des_tables_t des_tables[1];
 static const C_block	constdatablock;	/* encryption constant */
 
 #define des_tables	((const des_tables_t *)des_tables)
-#define a64toi		(des_tables->a64toi)
 #define PC1ROT		(des_tables->PC1ROT)
 #define PC2ROT		(des_tables->PC2ROT)
 #define IE3264		(des_tables->IE3264)
@@ -601,12 +613,6 @@ init_des(void)
 	unsigned char perm[64], tmp32[32];
 
 	if (des_tables->ready) return;
-
-	/*
-	 * table that converts chars "./0-9A-Za-z"to integers 0-63.
-	 */
-	for (i = 0; i < 64; i++)
-		a64toi[itoa64[i]] = i;
 
 	/*
 	 * PC1ROT - bit reverse, then PC1, then Rotate, then PC2.
