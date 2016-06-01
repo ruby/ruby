@@ -29,8 +29,11 @@
 #include <unistd.h>
 #endif
 
-#ifdef HAVE_CRYPT_R
-#include <crypt.h>
+#if defined HAVE_CRYPT_R
+# include <crypt.h>
+#elif !defined HAVE_CRYPT
+# include "missing/crypt.h"
+# define HAVE_CRYPT_R 1
 #endif
 
 #define STRING_ENUMERATORS_WANTARRAY 0 /* next major */
