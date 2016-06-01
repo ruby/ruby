@@ -149,6 +149,7 @@ permute(const unsigned char *cp, C_block *out, register const C_block *p, int ch
 STATIC void prtab(const char *s, const unsigned char *t, int num_rows);
 #endif
 
+#ifdef DUMP
 /* =====  (mostly) Standard DES Tables ==================== */
 
 static const unsigned char IP[] = {	/* initial permutation */
@@ -186,11 +187,13 @@ static const unsigned char PC1[] = {	/* permuted choice table 1 */
 	14,  6, 61, 53, 45, 37, 29,
 	21, 13,  5, 28, 20, 12,  4,
 };
+#endif
 
 static const unsigned char Rotates[] = { /* PC1 rotation schedule */
 	1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1,
 };
 
+#ifdef DUMP
 /* note: each "row" of PC2 is left-padded with bits that make it invertible */
 static const unsigned char PC2[] = {	/* permuted choice table 2 */
 	 9, 18,    14, 17, 11, 24,  1,  5,
@@ -285,6 +288,7 @@ static const unsigned char CIFP[] = {	/* compressed/interleaved permutation */
 	41, 42, 43, 44,   57, 58, 59, 60,
 	45, 46, 47, 48,   61, 62, 63, 64,
 };
+#endif
 
 static const unsigned char itoa64[] =	/* 0..63 => ascii-64 */
 	"./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -305,6 +309,7 @@ static const unsigned char a64toi[256] = {
 	A64TOI64(0x00), A64TOI64(0x40),
 };
 
+#ifdef DUMP
 /* =====  Tables that are initialized at run time  ==================== */
 
 typedef struct {
@@ -327,8 +332,6 @@ typedef struct {
 } des_tables_t;
 static des_tables_t des_tables[1];
 
-static const C_block	constdatablock;	/* encryption constant */
-
 #define des_tables	((const des_tables_t *)des_tables)
 #define PC1ROT		(des_tables->PC1ROT)
 #define PC2ROT		(des_tables->PC2ROT)
@@ -336,12 +339,19 @@ static const C_block	constdatablock;	/* encryption constant */
 #define SPE		(des_tables->SPE)
 #define CF6464		(des_tables->CF6464)
 
+STATIC void init_des(void);
+STATIC void init_perm(C_block perm[64/CHUNKBITS][1<<CHUNKBITS], unsigned char p[64], int chars_in, int chars_out);
+
+#else
+#include "des_tables.c"
+#define init_des() ((void)0)
+#endif
+
+static const C_block	constdatablock;	/* encryption constant */
+
 #define KS	(data->KS)
 #define cryptresult (data->cryptresult)
 #define des_ready (data->initialized)
-
-STATIC void init_des(void);
-STATIC void init_perm(C_block perm[64/CHUNKBITS][1<<CHUNKBITS], unsigned char p[64], int chars_in, int chars_out);
 
 static void des_setkey_r(const unsigned char *key, struct crypt_data *data);
 static void des_cipher_r(const unsigned char *in, unsigned char *out, long salt, int num_iter, struct crypt_data *data);
@@ -600,6 +610,7 @@ des_cipher_r(const unsigned char *in, unsigned char *out, long salt, int num_ite
 #undef cryptresult
 #undef des_ready
 
+#ifdef DUMP
 /*
  * Initialize various tables.  This need only be done once.  It could even be
  * done at compile time, if the compiler were capable of that sort of thing.
@@ -764,6 +775,7 @@ init_perm(C_block perm[64/CHUNKBITS][1<<CHUNKBITS],
 		}
 	}
 }
+#endif
 
 /*
  * "setkey" routine (for backwards compatibility)
@@ -838,5 +850,99 @@ prtab(const char *s, const unsigned char *t, int num_rows)
 		(void)printf("\n");
 	}
 	(void)printf("\n");
+}
+#endif
+
+#ifdef DUMP
+#ifndef numberof
+#define numberof(array) (int )(sizeof(array) / sizeof((array)[0]))
+#endif
+void
+dump_block(const C_block *block)
+{
+	int i;
+	printf("{{");
+	for (i = 0; i < numberof(block->b); ++i) {
+		printf("%3d,", block->b[i]);
+	}
+	printf("}},\n");
+}
+
+int
+main(void)
+{
+	int i, j, k;
+	init_des();
+	printf("/* Initial key schedule permutation */\n");
+	printf("static const C_block	PC1ROT[64/CHUNKBITS][1<<CHUNKBITS] = {\n");
+	for (i = 0; i < numberof(PC1ROT); ++i) {
+		printf("\t{\n");
+		for (j = 0; j < numberof(PC1ROT[0]); ++j) {
+			printf("\t\t");
+			dump_block(&PC1ROT[i][j]);
+		}
+		printf("\t},\n");
+	}
+	printf("};\n\n");
+
+	printf("/* Subsequent key schedule rotation permutations */\n");
+	printf("static const C_block	PC2ROT[2][64/CHUNKBITS][1<<CHUNKBITS] = {\n");
+	for (i = 0; i < numberof(PC2ROT); ++i) {
+		printf("\t{\n");
+		for (j = 0; j < numberof(PC2ROT[0]); ++j) {
+			printf("\t\t{\n");
+			for (k = 0; k < numberof(PC2ROT[0][0]); ++k) {
+				printf("\t\t\t");
+				dump_block(&PC2ROT[i][j][k]);
+			}
+			printf("\t\t},\n");
+		}
+		printf("\t},\n");
+	}
+	printf("};\n\n");
+
+	printf("/* Initial permutation/expansion table */\n");
+	printf("static const C_block	IE3264[32/CHUNKBITS][1<<CHUNKBITS] = {\n");
+	for (i = 0; i < numberof(IE3264); ++i) {
+		printf("\t{\n");
+		for (j = 0; j < numberof(IE3264[0]); ++j) {
+			printf("\t\t");
+			dump_block(&IE3264[i][j]);
+		}
+		printf("\t},\n");
+	}
+	printf("};\n\n");
+
+	printf("/* Table that combines the S, P, and E operations.  */\n");
+	printf("static const long SPE[2][8][64] = {\n");
+	for (i = 0; i < numberof(SPE); ++i) {
+		printf("\t{\n");
+		for (j = 0; j < numberof(SPE[0]); ++j) {
+			int r = 0;
+			printf("\t\t{");
+			for (k = 0; k < numberof(SPE[0][0]); ++k) {
+				if (r == 0) printf("\n\t\t\t");
+				printf("%10ld,", SPE[i][j][k]);
+				if (++r == 4) r = 0;
+			}
+			printf("\n\t\t},\n");
+		}
+		printf("\t},\n");
+	}
+	printf("};\n\n");
+
+	printf("/* compressed/interleaved => final permutation table */\n");
+	printf("static const C_block CF6464[64/CHUNKBITS][1<<CHUNKBITS] = {\n");
+	for (i = 0; i < numberof(CF6464); ++i) {
+		printf("\t{\n");
+		for (j = 0; j < numberof(CF6464[0]); ++j) {
+			printf("\t\t");
+			dump_block(&CF6464[i][j]);
+		}
+		printf("\t},\n");
+	}
+	printf("};\n\n");
+
+	return 0;
 }
 #endif
