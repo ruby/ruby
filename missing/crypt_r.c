@@ -129,10 +129,10 @@ static char sccsid[] = "@(#)crypt.c	8.1 (Berkeley) 6/4/93";
 	{ C_block tblk; permute((cpp),&tblk,(p),4); LOAD ((d),(d0),(d1),tblk); }
 
 STATIC void
-permute(unsigned char *cp, C_block *out, register C_block *p, int chars_in)
+permute(const unsigned char *cp, C_block *out, register const C_block *p, int chars_in)
 {
 	register DCL_BLOCK(D,D0,D1);
-	register C_block *tp;
+	register const C_block *tp;
 	register int t;
 
 	ZERO(D,D0,D1);
@@ -304,6 +304,9 @@ static const unsigned char itoa64[] =	/* 0..63 => ascii-64 */
 STATIC void init_des(struct crypt_data *);
 STATIC void init_perm(C_block perm[64/CHUNKBITS][1<<CHUNKBITS], unsigned char p[64], int chars_in, int chars_out);
 
+static void des_setkey_r(const unsigned char *key, struct crypt_data *data);
+static void des_cipher_r(const unsigned char *in, unsigned char *out, long salt, int num_iter, struct crypt_data *data);
+
 static struct crypt_data default_crypt_data;
 
 /*
@@ -335,7 +338,7 @@ crypt_r(const char *key, const char *setting, struct crypt_data *data)
 			key++;
 		keyblock.b[i] = t;
 	}
-	des_setkey_r((char *)keyblock.b, data);	/* also initializes "a64toi" */
+	des_setkey_r(keyblock.b, data);	/* also initializes "a64toi" */
 
 	encp = &cryptresult[0];
 	switch (*setting) {
@@ -344,14 +347,13 @@ crypt_r(const char *key, const char *setting, struct crypt_data *data)
 		 * Involve the rest of the password 8 characters at a time.
 		 */
 		while (*key) {
-			des_cipher_r((char *)&keyblock,
-				     (char *)&keyblock, 0L, 1, data);
+			des_cipher_r(keyblock.b, keyblock.b, 0L, 1, data);
 			for (i = 0; i < 8; i++) {
 				if ((t = 2*(unsigned char)(*key)) != 0)
 					key++;
 				keyblock.b[i] ^= t;
 			}
-			des_setkey_r((char *)keyblock.b, data);
+			des_setkey_r(keyblock.b, data);
 		}
 
 		*encp++ = *setting++;
@@ -381,8 +383,7 @@ crypt_r(const char *key, const char *setting, struct crypt_data *data)
 		salt = (salt<<6) | a64toi[t];
 	}
 	encp += salt_size;
-	des_cipher_r((char *)&constdatablock, (char *)&rsltblock,
-		     salt, num_iter, data);
+	des_cipher_r(constdatablock.b, rsltblock.b, salt, num_iter, data);
 
 	/*
 	 * Encode the 64 cipher bits as 11 ascii characters.
@@ -410,18 +411,13 @@ crypt_r(const char *key, const char *setting, struct crypt_data *data)
 /*
  * Set up the key schedule from the key.
  */
-void
-des_setkey(const char *key)
-{
-	des_setkey_r(key, &default_crypt_data);
-}
-
-void
-des_setkey_r(const char *key, struct crypt_data *data)
+static void
+des_setkey_r(const unsigned char *key, struct crypt_data *data)
 {
 	register DCL_BLOCK(K, K0, K1);
-	register C_block *ptabp;
+	register const C_block *ptabp;
 	register int i;
+	C_block *ksp;
 
 	if (!des_ready) {
 		memset(data, 0, sizeof(*data));
@@ -429,15 +425,15 @@ des_setkey_r(const char *key, struct crypt_data *data)
 		des_ready = 1;
 	}
 
-	PERM6464(K,K0,K1,(unsigned char *)key,(C_block *)PC1ROT);
-	key = (char *)&KS[0];
-	STORE(K&~0x03030303L, K0&~0x03030303L, K1, *(C_block *)key);
+	PERM6464(K,K0,K1,key,PC1ROT[0]);
+	ksp = &KS[0];
+	STORE(K&~0x03030303L, K0&~0x03030303L, K1, *ksp);
 	for (i = 1; i < 16; i++) {
-		key += sizeof(C_block);
-		STORE(K,K0,K1,*(C_block *)key);
-		ptabp = (C_block *)PC2ROT[Rotates[i]-1];
-		PERM6464(K,K0,K1,(unsigned char *)key,ptabp);
-		STORE(K&~0x03030303L, K0&~0x03030303L, K1, *(C_block *)key);
+		ksp++;
+		STORE(K,K0,K1,*ksp);
+		ptabp = PC2ROT[Rotates[i]-1][0];
+		PERM6464(K,K0,K1,ksp->b,ptabp);
+		STORE(K&~0x03030303L, K0&~0x03030303L, K1, *ksp);
 	}
 }
 
@@ -450,20 +446,14 @@ des_setkey_r(const char *key, struct crypt_data *data)
  * compiler and machine architecture.
  */
 void
-des_cipher(const char *in, char *out, long salt, int num_iter)
-{
-	des_cipher_r(in, out, salt, num_iter, &default_crypt_data);
-}
-
-void
-des_cipher_r(const char *in, char *out, long salt, int num_iter, struct crypt_data *data)
+des_cipher_r(const unsigned char *in, unsigned char *out, long salt, int num_iter, struct crypt_data *data)
 {
 	/* variables that we want in registers, most important first */
 #if defined(pdp11)
 	register int j;
 #endif
 	register long L0, L1, R0, R1, k;
-	register C_block *kp;
+	register const C_block *kp;
 	register int ks_inc, loop_count;
 	C_block B;
 
@@ -492,26 +482,26 @@ des_cipher_r(const char *in, char *out, long salt, int num_iter, struct crypt_da
 	R1 = (R1 >> 1) & 0x55555555L;
 	L1 = R0 | R1;		/* L1 is the odd-numbered input bits */
 	STORE(L,L0,L1,B);
-	PERM3264(L,L0,L1,B.b,  (C_block *)IE3264);	/* even bits */
-	PERM3264(R,R0,R1,B.b+4,(C_block *)IE3264);	/* odd bits */
+	PERM3264(L,L0,L1,B.b,  IE3264[0]);	/* even bits */
+	PERM3264(R,R0,R1,B.b+4,IE3264[0]);	/* odd bits */
 
 	if (num_iter >= 0)
 	{		/* encryption */
 		kp = &KS[0];
-		ks_inc  = (int)sizeof(*kp);
+		ks_inc  = +1;
 	}
 	else
 	{		/* decryption */
 		num_iter = -num_iter;
 		kp = &KS[KS_SIZE-1];
-		ks_inc  = -(int)sizeof(*kp);
+		ks_inc  = -1;
 	}
 
 	while (--num_iter >= 0) {
 		loop_count = 8;
 		do {
 
-#define	SPTAB(t, i)	(*(long *)((unsigned char *)(t) + (i)*(sizeof(long)/4)))
+#define	SPTAB(t, i)	(*(const long *)((const unsigned char *)(t) + (i)*(sizeof(long)/4)))
 #if defined(gould)
 			/* use this if B.b[i] is evaluated just once ... */
 #define	DOXOR(x,y,i)	(x)^=SPTAB(SPE[0][(i)],B.b[(i)]); (y)^=SPTAB(SPE[1][(i)],B.b[(i)]);
@@ -529,7 +519,7 @@ des_cipher_r(const char *in, char *out, long salt, int num_iter, struct crypt_da
 			k = ((q0) ^ (q1)) & SALT;	\
 			B.b32.i0 = k ^ (q0) ^ kp->b32.i0;		\
 			B.b32.i1 = k ^ (q1) ^ kp->b32.i1;		\
-			kp = (C_block *)((char *)kp+ks_inc);	\
+			kp += ks_inc;			\
 							\
 			DOXOR((p0), (p1), 0);		\
 			DOXOR((p0), (p1), 1);		\
@@ -543,7 +533,7 @@ des_cipher_r(const char *in, char *out, long salt, int num_iter, struct crypt_da
 			CRUNCH(L0, L1, R0, R1);
 			CRUNCH(R0, R1, L0, L1);
 		} while (--loop_count != 0);
-		kp = (C_block *)((char *)kp-(ks_inc*KS_SIZE));
+		kp -= (ks_inc*KS_SIZE);
 
 
 		/* swap L and R */
@@ -556,7 +546,7 @@ des_cipher_r(const char *in, char *out, long salt, int num_iter, struct crypt_da
 	L0 = ((L0 >> 3) & 0x0f0f0f0fL) | ((L1 << 1) & 0xf0f0f0f0L);
 	L1 = ((R0 >> 3) & 0x0f0f0f0fL) | ((R1 << 1) & 0xf0f0f0f0L);
 	STORE(L,L0,L1,B);
-	PERM6464(L,L0,L1,B.b, (C_block *)CF6464);
+	PERM6464(L,L0,L1,B.b, CF6464[0]);
 #if defined(MUST_ALIGN)
 	STORE(L,L0,L1,B);
 	out[0] = B.b[0]; out[1] = B.b[1]; out[2] = B.b[2]; out[3] = B.b[3];
@@ -757,7 +747,7 @@ setkey_r(const char *key, struct crypt_data *data)
 		}
 		keyblock.b[i] = k;
 	}
-	des_setkey_r((char *)keyblock.b, data);
+	des_setkey_r(keyblock.b, data);
 }
 
 /*
@@ -783,7 +773,7 @@ encrypt_r(char *block, int flag, struct crypt_data *data)
 		}
 		cblock.b[i] = k;
 	}
-	des_cipher_r((char *)&cblock, (char *)&cblock, 0L, (flag ? -1: 1), data);
+	des_cipher_r(cblock.b, cblock.b, 0L, (flag ? -1: 1), data);
 	for (i = 7; i >= 0; i--) {
 		k = cblock.b[i];
 		for (j = 7; j >= 0; j--) {

@@ -249,14 +249,10 @@ struct crypt_data {
 };
 
 char *crypt(const char *key, const char *setting);
-void des_setkey(const char *key);
-void des_cipher(const char *in, char *out, long salt, int num_iter);
 void setkey(const char *key);
 void encrypt(char *block, int flag);
 
 char *crypt_r(const char *key, const char *setting, struct crypt_data *data);
-void des_setkey_r(const char *key, struct crypt_data *data);
-void des_cipher_r(const char *in, char *out, long salt, int num_iter, struct crypt_data *data);
 void setkey_r(const char *key, struct crypt_data *data);
 void encrypt_r(char *block, int flag, struct crypt_data *data);
 
