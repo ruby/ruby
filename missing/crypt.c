@@ -347,7 +347,7 @@ STATIC void init_perm(C_block perm[64/CHUNKBITS][1<<CHUNKBITS], unsigned char p[
 #define init_des() ((void)0)
 #endif
 
-static const C_block	constdatablock;	/* encryption constant */
+static const C_block constdatablock = {}; /* encryption constant */
 
 #define KS	(data->KS)
 #define cryptresult (data->cryptresult)
@@ -356,8 +356,11 @@ static const C_block	constdatablock;	/* encryption constant */
 static void des_setkey_r(const unsigned char *key, struct crypt_data *data);
 static void des_cipher_r(const unsigned char *in, unsigned char *out, long salt, int num_iter, struct crypt_data *data);
 
+#ifdef USE_NONREENTRANT_CRYPT
 static struct crypt_data default_crypt_data;
+#endif
 
+#ifdef USE_NONREENTRANT_CRYPT
 /*
  * Return a pointer to static data consisting of the "setting"
  * followed by an encryption produced by the "key" and "setting".
@@ -367,6 +370,7 @@ crypt(const char *key, const char *setting)
 {
 	return crypt_r(key, setting, &default_crypt_data);
 }
+#endif
 
 /*
  * Return a pointer to data consisting of the "setting" followed by an
@@ -780,11 +784,13 @@ init_perm(C_block perm[64/CHUNKBITS][1<<CHUNKBITS],
 /*
  * "setkey" routine (for backwards compatibility)
  */
+#ifdef USE_NONREENTRANT_CRYPT
 void
 setkey(const char *key)
 {
 	setkey_r(key, &default_crypt_data);
 }
+#endif
 
 void
 setkey_r(const char *key, struct crypt_data *data)
@@ -806,11 +812,13 @@ setkey_r(const char *key, struct crypt_data *data)
 /*
  * "encrypt" routine (for backwards compatibility)
  */
+#ifdef USE_NONREENTRANT_CRYPT
 void
 encrypt(char *block, int flag)
 {
 	encrypt_r(block, flag, &default_crypt_data);
 }
+#endif
 
 void
 encrypt_r(char *block, int flag, struct crypt_data *data)
