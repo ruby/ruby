@@ -1,3 +1,12 @@
+Wed Jun  1 15:58:20 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: revert r55237.  replace crypt, not crypt_r, and
+	  check if crypt is broken more.
+
+	* missing/crypt.c: move crypt_r.c
+
+	* string.c (rb_str_crypt): use crypt_r if provided by the system.
+
 Wed Jun  1 14:07:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing/crypt_r.c (a64toi): initialize statically and fix out of

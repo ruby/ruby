@@ -29,7 +29,9 @@
 #include <unistd.h>
 #endif
 
+#ifdef HAVE_CRYPT_R
 #include <crypt.h>
+#endif
 
 #define STRING_ENUMERATORS_WANTARRAY 0 /* next major */
 
@@ -8375,10 +8377,17 @@ rb_str_oct(VALUE str)
 static VALUE
 rb_str_crypt(VALUE str, VALUE salt)
 {
+#ifdef HAVE_CRYPT_R
     struct crypt_data data;
+#else
+    extern char *crypt(const char *, const char *);
+#endif
     VALUE result;
     const char *s, *saltp;
     char *res;
+#ifdef BROKEN_CRYPT
+    char salt_8bit_clean[3];
+#endif
 
     StringValue(salt);
     mustnot_wchar(str);
@@ -8391,8 +8400,20 @@ rb_str_crypt(VALUE str, VALUE salt)
     s = StringValueCStr(str);
     saltp = RSTRING_PTR(salt);
     if (!saltp[0] || !saltp[1]) goto short_salt;
+#ifdef BROKEN_CRYPT
+    if (!ISASCII((unsigned char)saltp[0]) || !ISASCII((unsigned char)saltp[1])) {
+	salt_8bit_clean[0] = saltp[0] & 0x7f;
+	salt_8bit_clean[1] = saltp[1] & 0x7f;
+	salt_8bit_clean[2] = '\0';
+	saltp = salt_8bit_clean;
+    }
+#endif
+#ifdef HAVE_CRYPT_R
     data.initialized = 0;
     res = crypt_r(s, saltp, &data);
+#else
+    res = crypt(s, saltp);
+#endif
     if (!res) {
 	rb_sys_fail("crypt");
     }

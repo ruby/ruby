@@ -1061,11 +1061,56 @@ AS_CASE(["$target_os"],
 		    test -d "$d" && RUBY_APPEND_OPTIONS(LDFLAGS, "-L$d")
 		done
 		ac_cv_type_getgroups=gid_t # getgroups() on Rosetta fills garbage
-		ac_cv_lib_crypt_crypt_r=no
+		ac_cv_lib_crypt_crypt=no
 		ac_cv_func_fdatasync=no # Mac OS X wrongly reports it has fdatasync()
 		ac_cv_func_vfork=no
 		if test $gcc_major -lt 4 -o \( $gcc_major -eq 4 -a $gcc_minor -lt 3 \); then
 		    ac_cv_func___builtin_setjmp=no
+		fi
+		AC_CACHE_CHECK(for broken crypt with 8bit chars, rb_cv_broken_crypt,
+		    [AC_TRY_RUN([
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+
+void
+broken_crypt(const char *salt, const char *buf1, const char *buf2)
+{
+#if 0
+    printf("%.2x%.2x: %s -> %s\n", (unsigned char)salt[0], (unsigned char)salt[1],
+	   buf1+2, buf2+2);
+#endif
+}
+
+int
+main()
+{
+    int i;
+    char salt[2], buf[256], *s;
+    for (i = 0; i < 128*128; i++) {
+	salt[0] = 0x80 | (i & 0x7f);
+	salt[1] = 0x80 | (i >> 7);
+	strcpy(buf, crypt("", salt));
+	if (strcmp(buf, s = crypt("", salt))) {
+	    broken_crypt(salt, buf, s);
+	    return 1;
+	}
+    }
+    salt[0] = salt[1] = ' ';
+    strcpy(buf, crypt("", salt));
+    salt[0] = salt[1] = 0x80 | ' ';
+    if (strcmp(buf, s = crypt("", salt))) {
+	broken_crypt(salt, buf, s);
+	return 1;
+    }
+    return 0;
+}
+],
+		    rb_cv_broken_crypt=no,
+		    rb_cv_broken_crypt=yes,
+		    rb_cv_broken_crypt=yes)])
+		if test "$rb_cv_broken_crypt" = yes; then
+		   AC_DEFINE(BROKEN_CRYPT, 1)
 		fi
 		AC_CHECK_PROGS(codesign, codesign)
 		if test -n "$codesign"; then
@@ -1163,7 +1208,7 @@ AS_CASE(["$target_os"],
 		ac_cv_func_link=yes
 		ac_cv_func_readlink=yes
 		ac_cv_func_symlink=yes
-		ac_cv_lib_crypt_crypt_r=no
+		ac_cv_lib_crypt_crypt=no
 		ac_cv_func_getpgrp_void=no
 		ac_cv_func_memcmp_working=yes
 		ac_cv_lib_dl_dlopen=no
@@ -1218,7 +1263,7 @@ AS_CASE(["$target_os"],
   ],
 [	LIBS="-lm $LIBS"])
 
-AC_CHECK_LIB(crypt, crypt_r)    # glibc (GNU/Linux, GNU/Hurd, GNU/kFreeBSD)
+AC_CHECK_LIB(crypt, crypt)      # glibc (GNU/Linux, GNU/Hurd, GNU/kFreeBSD)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
 AC_CHECK_LIB(socket, shutdown)  # SunOS/Solaris
@@ -2173,7 +2218,7 @@ AS_CASE(["$target_os"],[freebsd*],[
 
 AC_REPLACE_FUNCS(acosh)
 AC_REPLACE_FUNCS(cbrt)
-AC_REPLACE_FUNCS(crypt_r)
+AC_REPLACE_FUNCS(crypt)
 AC_REPLACE_FUNCS(dup2)
 AC_REPLACE_FUNCS(erf)
 AC_REPLACE_FUNCS(explicit_bzero)
@@ -2253,6 +2298,7 @@ AC_CHECK_FUNCS(chroot)
 AC_CHECK_FUNCS(chsize)
 AC_CHECK_FUNCS(clock_gettime)
 AC_CHECK_FUNCS(cosh)
+AC_CHECK_FUNCS(crypt_r)
 AC_CHECK_FUNCS(daemon)
 AC_CHECK_FUNCS(dirfd)
 AC_CHECK_FUNCS(dl_iterate_phdr)
