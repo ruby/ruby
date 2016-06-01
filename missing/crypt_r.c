@@ -289,19 +289,46 @@ static const unsigned char CIFP[] = {	/* compressed/interleaved permutation */
 static const unsigned char itoa64[] =	/* 0..63 => ascii-64 */
 	"./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
+/* =====  Tables that are initialized at run time  ==================== */
 
-#define a64toi	(data->a64toi)
-#define PC1ROT	(data->PC1ROT)
-#define PC2ROT	(data->PC2ROT)
-#define IE3264	(data->IE3264)
-#define SPE	(data->SPE)
-#define CF6464	(data->CF6464)
+typedef struct {
+	/* table that converts chars "./0-9A-Za-z"to integers 0-63. */
+	unsigned char a64toi[128];
+
+	/* Initial key schedule permutation */
+	C_block	PC1ROT[64/CHUNKBITS][1<<CHUNKBITS];
+
+	/* Subsequent key schedule rotation permutations */
+	C_block	PC2ROT[2][64/CHUNKBITS][1<<CHUNKBITS];
+
+	/* Initial permutation/expansion table */
+	C_block	IE3264[32/CHUNKBITS][1<<CHUNKBITS];
+
+	/* Table that combines the S, P, and E operations.  */
+	long SPE[2][8][64];
+
+	/* compressed/interleaved => final permutation table */
+	C_block CF6464[64/CHUNKBITS][1<<CHUNKBITS];
+
+	int ready;
+} des_tables_t;
+static des_tables_t des_tables[1];
+
+static const C_block	constdatablock;	/* encryption constant */
+
+#define des_tables	((const des_tables_t *)des_tables)
+#define a64toi		(des_tables->a64toi)
+#define PC1ROT		(des_tables->PC1ROT)
+#define PC2ROT		(des_tables->PC2ROT)
+#define IE3264		(des_tables->IE3264)
+#define SPE		(des_tables->SPE)
+#define CF6464		(des_tables->CF6464)
+
 #define KS	(data->KS)
-#define constdatablock (data->constdatablock)
 #define cryptresult (data->cryptresult)
 #define des_ready (data->initialized)
 
-STATIC void init_des(struct crypt_data *);
+STATIC void init_des(void);
 STATIC void init_perm(C_block perm[64/CHUNKBITS][1<<CHUNKBITS], unsigned char p[64], int chars_in, int chars_out);
 
 static void des_setkey_r(const unsigned char *key, struct crypt_data *data);
@@ -421,7 +448,7 @@ des_setkey_r(const unsigned char *key, struct crypt_data *data)
 
 	if (!des_ready) {
 		memset(data, 0, sizeof(*data));
-		init_des(data);
+		init_des();
 		des_ready = 1;
 	}
 
@@ -556,18 +583,24 @@ des_cipher_r(const unsigned char *in, unsigned char *out, long salt, int num_ite
 #endif
 }
 
+#undef des_tables
+#undef KS
+#undef cryptresult
+#undef des_ready
 
 /*
  * Initialize various tables.  This need only be done once.  It could even be
  * done at compile time, if the compiler were capable of that sort of thing.
  */
 STATIC void
-init_des(struct crypt_data *data)
+init_des(void)
 {
 	register int i, j;
 	register long k;
 	register int tableno;
 	unsigned char perm[64], tmp32[32];
+
+	if (des_tables->ready) return;
 
 	/*
 	 * table that converts chars "./0-9A-Za-z"to integers 0-63.
@@ -695,6 +728,8 @@ init_des(struct crypt_data *data)
 			TO_SIX_BIT(SPE[1][tableno][j], k);
 		}
 	}
+
+	des_tables->ready = 1;
 }
 
 /*

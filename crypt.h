@@ -216,34 +216,13 @@ typedef union {
 #define	CHUNKBITS	(1<<LGCHUNKBITS)
 #endif
 
-/* =====  Tables that are initialized at run time  ==================== */
-
 struct crypt_data {
-
-	unsigned char a64toi[128];	/* ascii-64 => 0..63 */
-
-	/* Initial key schedule permutation */
-	C_block	PC1ROT[64/CHUNKBITS][1<<CHUNKBITS];
-
-	/* Subsequent key schedule rotation permutations */
-	C_block	PC2ROT[2][64/CHUNKBITS][1<<CHUNKBITS];
-
-	/* Initial permutation/expansion table */
-	C_block	IE3264[32/CHUNKBITS][1<<CHUNKBITS];
-
-	/* Table that combines the S, P, and E operations.  */
-	long SPE[2][8][64];
-
-	/* compressed/interleaved => final permutation table */
-	C_block	CF6464[64/CHUNKBITS][1<<CHUNKBITS];
-
 	/* The Key Schedule, filled in by des_setkey() or setkey(). */
 #define	KS_SIZE	16
 	C_block	KS[KS_SIZE];
 
 	/* ==================================== */
 
-	C_block	constdatablock;			/* encryption constant */
 	char	cryptresult[1+4+4+11+1];	/* encrypted result */
 	int	initialized;
 };
