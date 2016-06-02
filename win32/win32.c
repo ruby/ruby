@@ -1868,7 +1868,8 @@ static HANDLE
 open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
 {
     HANDLE fh;
-    WCHAR fullname[PATH_MAX + rb_strlen_lit("\\*")];
+    WCHAR fullname_buf[PATH_MAX + rb_strlen_lit("\\*")];
+    WCHAR *fullname = fullname_buf;
     WCHAR *p;
     int len = 0;
 
@@ -1879,13 +1880,22 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
     fh = open_special(filename, 0, 0);
     if (fh != INVALID_HANDLE_VALUE) {
 	len = get_final_path(fh, fullname, PATH_MAX, 0);
+	if (len > _MAX_PATH) {
+	    fullname = malloc(len * sizeof(WCHAR));
+	    if (fullname) {
+		len = get_final_path(fh, fullname, len, 0);
+	    }
+	}
 	CloseHandle(fh);
     }
     if (!len) {
 	len = lstrlenW(filename);
 	if (len >= PATH_MAX) {
-	    errno = ENAMETOOLONG;
-	    return INVALID_HANDLE_VALUE;
+	    fullname = malloc((len + 1) * sizeof(WCHAR));
+	    if (!fullname) {
+		errno = ENAMETOOLONG;
+		return INVALID_HANDLE_VALUE;
+	    }
 	}
 	MEMCPY(fullname, filename, WCHAR, len);
     }
@@ -1898,6 +1908,7 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
     // do the FindFirstFile call
     //
     fh = FindFirstFileW(fullname, fd);
+    if (fullname != fullname_buf) free(fullname);
     if (fh == INVALID_HANDLE_VALUE) {
 	errno = map_errno(GetLastError());
     }
@@ -5376,6 +5387,7 @@ check_valid_dir(const WCHAR *path)
     WCHAR full[PATH_MAX];
     WCHAR *dmy;
     WCHAR *p, *q;
+    DWORD len;
 
     /* GetFileAttributes() determines "..." as directory. */
     /* We recheck it by FindFirstFile(). */
@@ -5390,9 +5402,24 @@ check_valid_dir(const WCHAR *path)
 
     /* if the specified path is the root of a drive and the drive is empty, */
     /* FindFirstFile() returns INVALID_HANDLE_VALUE. */
-    if (!GetFullPathNameW(path, sizeof(full) / sizeof(WCHAR), full, &dmy)) {
+    len = GetFullPathNameW(path, numberof(full), full, &dmy);
+    if (!len) {
 	errno = map_errno(GetLastError());
 	return -1;
+    }
+    else if (len > numberof(full)) {
+	WCHAR *tmp = malloc(len * sizeof(WCHAR));
+	if (!tmp) {
+	    errno = ENOMEM;
+	    return -1;
+	}
+	if (!GetFullPathNameW(path, len, tmp, &dmy)) {
+	    errno = map_errno(GetLastError());
+	    free(tmp);
+	    return -1;
+	}
+	MEMCPY(full, tmp, WCHAR, 4);
+	free(tmp);
     }
     if (full[1] == L':' && !full[3] && GetDriveTypeW(full) != DRIVE_NO_ROOT_DIR)
 	return 0;
@@ -5456,7 +5483,18 @@ winnt_stat(const WCHAR *path, struct stati64 *st)
     if (f != INVALID_HANDLE_VALUE) {
 	WCHAR finalname[PATH_MAX];
 	const DWORD attr = stati64_handle(f, st);
-	const DWORD len = get_final_path(f, finalname, numberof(finalname), 0);
+	DWORD len = get_final_path(f, finalname, numberof(finalname), 0);
+	if (len > numberof(finalname)) {
+	    WCHAR *tmp = malloc(len * sizeof(WCHAR));
+	    if (tmp) {
+		len = get_final_path(f, tmp, len, 0);
+		if (len > 0) {
+		    len = numberof(namespace_prefix) + 2;
+		    MEMCPY(finalname, tmp, WCHAR, len);
+		}
+		free(tmp);
+	    }
+	}
 	CloseHandle(f);
 	if (attr & FILE_ATTRIBUTE_DIRECTORY) {
 	    if (check_valid_dir(path)) return -1;
