@@ -664,9 +664,15 @@ etc_systmpdir(void)
     if (len > 0) {
 	tmpstr = path;
 	tmplen = len - 1;
+	if (len > sizeof(path)) tmpstr = 0;
     }
 # endif
     tmpdir = rb_filesystem_str_new(tmpstr, tmplen);
+# if defined _CS_DARWIN_USER_TEMP_DIR
+    if (!tmpstr) {
+	confstr(_CS_DARWIN_USER_TEMP_DIR, RSTRING_PTR(tmpdir), len);
+    }
+# endif
 #endif
     FL_UNSET(tmpdir, FL_TAINT);
     return tmpdir;
