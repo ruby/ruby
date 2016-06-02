@@ -55,9 +55,6 @@
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #endif
-#ifndef MAXPATHLEN
-# define MAXPATHLEN 1024
-#endif
 #include "ruby/st.h"
 
 #include <sys/stat.h>
@@ -1204,6 +1201,7 @@ after_exec(void)
 #define before_fork_ruby() before_exec()
 #define after_fork_ruby() (rb_threadptr_pending_interrupt_clear(GET_THREAD()), after_exec())
 
+#define dln_realloc rb_dln_realloc
 #include "dln.h"
 
 static void
@@ -1288,8 +1286,8 @@ proc_exec_sh(const char *str, VALUE envp_str)
 #else
 #if defined(__CYGWIN32__)
     {
-        char fbuf[MAXPATHLEN];
-        char *shell = dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf));
+        VALUE fbuf = Qnil;
+        char *shell = dln_find_exe_alloc("sh", 0, rb_dln_realloc, &fbuf);
         int status = -1;
         if (shell)
             execl(shell, "sh", "-c", str, (char *) NULL);
@@ -1390,13 +1388,13 @@ export_dup(VALUE str)
 static rb_pid_t
 proc_spawn_cmd_internal(char **argv, char *prog)
 {
-    char fbuf[MAXPATHLEN];
+    VALUE fbuf = Qnil;
     rb_pid_t status;
 
     if (!prog)
 	prog = argv[0];
     security(prog);
-    prog = dln_find_exe_r(prog, 0, fbuf, sizeof(fbuf));
+    prog = dln_find_exe_alloc(prog, 0, rb_dln_realloc, &fbuf);
     if (!prog)
 	return -1;
 
@@ -1438,10 +1436,10 @@ proc_spawn_cmd(char **argv, VALUE prog, struct rb_execarg *eargp)
 static rb_pid_t
 proc_spawn_sh(char *str)
 {
-    char fbuf[MAXPATHLEN];
+    VALUE fbuf = Qnil;
     rb_pid_t status;
 
-    char *shell = dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf));
+    char *shell = dln_find_exe_alloc("sh", 0, rb_dln_realloc, &fbuf);
     before_exec();
     status = spawnl(P_NOWAIT, (shell ? shell : "/bin/sh"), "sh", "-c", str, (char*)NULL);
     after_exec();
@@ -2049,7 +2047,6 @@ static void
 rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VALUE execarg_obj)
 {
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
-    char fbuf[MAXPATHLEN];
 
     MEMZERO(eargp, struct rb_execarg, 1);
 
@@ -2181,11 +2178,13 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
 
     if (!eargp->use_shell) {
 	const char *abspath;
-        abspath = dln_find_exe_r(RSTRING_PTR(eargp->invoke.cmd.command_name), 0, fbuf, sizeof(fbuf));
-	if (abspath)
-	    eargp->invoke.cmd.command_abspath = rb_str_new_cstr(abspath);
-	else
+	eargp->invoke.cmd.command_abspath = Qnil;
+	abspath = dln_find_exe_alloc(RSTRING_PTR(eargp->invoke.cmd.command_name), 0,
+				     rb_dln_realloc, &eargp->invoke.cmd.command_abspath);
+	if (!abspath)
 	    eargp->invoke.cmd.command_abspath = Qnil;
+	else if (NIL_P(eargp->invoke.cmd.command_abspath))
+	    eargp->invoke.cmd.command_abspath = eargp->invoke.cmd.command_name;
     }
 
     if (!eargp->use_shell && !eargp->invoke.cmd.argv_buf) {
