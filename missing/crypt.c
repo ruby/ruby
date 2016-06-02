@@ -323,7 +323,7 @@ typedef struct {
 	C_block	IE3264[32/CHUNKBITS][1<<CHUNKBITS];
 
 	/* Table that combines the S, P, and E operations.  */
-	long SPE[2][8][64];
+	unsigned long SPE[2][8][64];
 
 	/* compressed/interleaved => final permutation table */
 	C_block CF6464[64/CHUNKBITS][1<<CHUNKBITS];
@@ -505,7 +505,7 @@ des_cipher_r(const unsigned char *in, unsigned char *out, long salt, int num_ite
 #if defined(pdp11)
 	register int j;
 #endif
-	register long L0, L1, R0, R1, k;
+	register unsigned long L0, L1, R0, R1, k;
 	register const C_block *kp;
 	register int ks_inc, loop_count;
 	C_block B;
@@ -554,7 +554,7 @@ des_cipher_r(const unsigned char *in, unsigned char *out, long salt, int num_ite
 		loop_count = 8;
 		do {
 
-#define	SPTAB(t, i)	(*(const long *)((const unsigned char *)(t) + (i)*(sizeof(long)/4)))
+#define	SPTAB(t, i)	(*(const unsigned long *)((const unsigned char *)(t) + (i)*(sizeof(long)/4)))
 #if defined(gould)
 			/* use this if B.b[i] is evaluated just once ... */
 #define	DOXOR(x,y,i)	(x)^=SPTAB(SPE[0][(i)],B.b[(i)]); (y)^=SPTAB(SPE[1][(i)],B.b[(i)]);
@@ -922,7 +922,7 @@ main(void)
 	printf("};\n\n");
 
 	printf("/* Table that combines the S, P, and E operations.  */\n");
-	printf("static const long SPE[2][8][64] = {\n");
+	printf("static const unsigned long SPE[2][8][64] = {\n");
 	for (i = 0; i < numberof(SPE); ++i) {
 		printf("\t{\n");
 		for (j = 0; j < numberof(SPE[0]); ++j) {
@@ -930,7 +930,7 @@ main(void)
 			printf("\t\t{");
 			for (k = 0; k < numberof(SPE[0][0]); ++k) {
 				if (r == 0) printf("\n\t\t\t");
-				printf("%10ld,", SPE[i][j][k]);
+				printf("%#10lx,", SPE[i][j][k]);
 				if (++r == 4) r = 0;
 			}
 			printf("\n\t\t},\n");
