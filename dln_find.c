@@ -56,6 +56,13 @@ char *dln_argv0;
 char *getenv();
 #endif
 
+static const char default_path[] =
+    "/usr/local/bin" PATH_SEP
+    "/usr/ucb" PATH_SEP
+    "/usr/bin" PATH_SEP
+    "/bin" PATH_SEP
+    ".";
+
 static char *dln_find_1(const char *fname, const char *path, char *buf, size_t size, int exe_flag
 			DLN_FIND_EXTRA_ARG_DECL);
 
@@ -71,12 +78,7 @@ dln_find_exe_r(const char *fname, const char *path, char *buf, size_t size
     }
 
     if (!path) {
-	path =
-	    "/usr/local/bin" PATH_SEP
-	    "/usr/ucb" PATH_SEP
-	    "/usr/bin" PATH_SEP
-	    "/bin" PATH_SEP
-	    ".";
+	path = default_path;
     }
     buf = dln_find_1(fname, path, buf, size, 1 DLN_FIND_EXTRA_ARG);
     if (envpath) free(envpath);
