@@ -73,14 +73,23 @@ static char *w32_getenv(const char *name, UINT cp);
 #define CharNext(p) CharNextExA(cp, (p), 0)
 #define dln_find_exe_r rb_w32_udln_find_exe_r
 #define dln_find_file_r rb_w32_udln_find_file_r
+#define dln_find_exe_alloc rb_w32_udln_find_exe_alloc
+#define dln_find_file_alloc rb_w32_udln_find_file_alloc
+#define dln_realloc rb_dln_realloc
 #include "dln.h"
+#undef dln_realloc
+#define dln_realloc rb_w32_udln_realloc
 #include "dln_find.c"
 #undef MAXPATHLEN
 #undef rb_w32_stati64
 #undef dln_find_exe_r
 #undef dln_find_file_r
-#define dln_find_exe_r(fname, path, buf, size) rb_w32_udln_find_exe_r(fname, path, buf, size, cp)
-#define dln_find_file_r(fname, path, buf, size) rb_w32_udln_find_file_r(fname, path, buf, size, cp)
+#undef dln_find_exe_alloc
+#undef dln_find_file_alloc
+#define dln_find_exe_alloc(fname, path, alloc, arg) \
+    rb_w32_udln_find_exe_alloc(fname, path, alloc, arg, cp)
+#define dln_find_file_alloc(fname, path, alloc, arg) \
+    rb_w32_udln_find_file_alloc(fname, path, alloc, arg, cp)
 #undef CharNext			/* no default cp version */
 
 #ifndef PATH_MAX
@@ -1217,7 +1226,7 @@ UINT rb_w32_filecp(void);
 static rb_pid_t
 w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 {
-    char fbuf[PATH_MAX];
+    VALUE fbuf = Qnil;
     char *p = NULL;
     const char *shell = NULL;
     WCHAR *wcmd = NULL, *wshell = NULL;
@@ -1231,7 +1240,7 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
     if (check_spawn_mode(mode)) return -1;
 
     if (prog) {
-	if (!(p = dln_find_exe_r(prog, NULL, fbuf, sizeof(fbuf)))) {
+	if (!(p = dln_find_exe_alloc(prog, NULL, rb_dln_realloc, &fbuf))) {
 	    shell = prog;
 	}
 	else {
@@ -1292,7 +1301,7 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 		    break;
 		}
 	    }
-	    shell = dln_find_exe_r(shell, NULL, fbuf, sizeof(fbuf));
+ 	    shell = dln_find_exe_alloc(shell, NULL, rb_dln_realloc, &fbuf);
 	    if (p && slash) translate_char(p, '/', '\\', cp);
 	    if (!shell) {
 		shell = p ? p : cmd;
@@ -1300,8 +1309,8 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 	    else {
 		len = strlen(shell);
 		if (strchr(shell, ' ')) quote = -1;
-		if (shell == fbuf) {
-		    p = fbuf;
+		if (!NIL_P(fbuf)) {
+		    p = RSTRING_PTR(fbuf);
 		}
 		else if (shell != p && strchr(shell, '/')) {
 		    STRNDUPV(p, v2, shell, len);
@@ -1360,11 +1369,11 @@ w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UIN
     size_t len;
     BOOL ntcmd = FALSE, tmpnt;
     const char *shell;
-    char *cmd, fbuf[PATH_MAX];
+    char *cmd;
     WCHAR *wcmd = NULL, *wprog = NULL;
     int e = 0;
     rb_pid_t ret = -1;
-    VALUE v = 0;
+    VALUE v = 0, fbuf = Qnil;
 
     if (check_spawn_mode(mode)) return -1;
 
@@ -1375,17 +1384,17 @@ w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UIN
 	prog = shell;
 	c_switch = 1;
     }
-    else if ((cmd = dln_find_exe_r(prog, NULL, fbuf, sizeof(fbuf)))) {
-	if (cmd == prog) strlcpy(cmd = fbuf, prog, sizeof(fbuf));
+    else if ((cmd = dln_find_exe_alloc(prog, NULL, rb_dln_realloc, &fbuf))) {
+	if (NIL_P(fbuf)) {
+	    len = strlen(prog);
+	    STRNDUPV(cmd, v, prog, len);
+	}
 	translate_char(cmd, '/', '\\', cp);
 	prog = cmd;
     }
     else if (strchr(prog, '/')) {
 	len = strlen(prog);
-	if (len < sizeof(fbuf))
-	    strlcpy(cmd = fbuf, prog, sizeof(fbuf));
-	else
-	    STRNDUPV(cmd, v, prog, len);
+	STRNDUPV(cmd, v, prog, len);
 	translate_char(cmd, '/', '\\', cp);
 	prog = cmd;
     }
