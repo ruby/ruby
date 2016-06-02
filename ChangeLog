@@ -1,3 +1,9 @@
+Thu Jun  2 21:18:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (get_special_folder): use SHGetPathFromIDListEx if
+	  available instead of old SHGetPathFromIDListW, to check the
+	  buffer size.
+
 Thu Jun  2 17:05:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (ruby_init_loadpath_safe): remove MAXPATHLEN restriction

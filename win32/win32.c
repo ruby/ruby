@@ -115,6 +115,7 @@ static int wstati64(const WCHAR *path, struct stati64 *st);
 static int wlstati64(const WCHAR *path, struct stati64 *st);
 VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
 int ruby_brace_glob_with_enc(const char *str, int flags, ruby_glob_func *func, VALUE arg, rb_encoding *enc);
+static FARPROC get_proc_address(const char *module, const char *func, HANDLE *mh);
 
 #define RUBY_CRITICAL if (0) {} else /* just remark */
 
@@ -420,13 +421,26 @@ translate_char(char *p, int from, int to, UINT cp)
 
 /* License: Ruby's */
 static BOOL
-get_special_folder(int n, WCHAR *env)
+get_special_folder(int n, WCHAR *buf, size_t len)
 {
     LPITEMIDLIST pidl;
     LPMALLOC alloc;
     BOOL f = FALSE;
+    typedef BOOL (*get_path_func)(LPITEMIDLIST, WCHAR*, DWORD, int);
+    static get_path_func func = (get_path_func)-1;
+
+    if (func = (get_path_func)-1) {
+	func = (get_path_func)
+	    get_proc_address("shell32", "SHGetPathFromIDListEx", NULL);
+    }
+
     if (SHGetSpecialFolderLocation(NULL, n, &pidl) == 0) {
-	f = SHGetPathFromIDListW(pidl, env);
+	if (func) {
+	    f = func(pidl, buf, len, 0);
+	}
+	else if (len >= 260) {
+	    f = SHGetPathFromIDListW(pidl, buf);
+	}
 	SHGetMalloc(&alloc);
 	alloc->lpVtbl->Free(alloc, pidl);
 	alloc->lpVtbl->Release(alloc);
@@ -475,7 +489,7 @@ rb_w32_special_folder(int type)
 {
     WCHAR path[_MAX_PATH];
 
-    if (!get_special_folder(type, path)) return Qnil;
+    if (!get_special_folder(type, path, numberof(path))) return Qnil;
     regulate_path(path);
     return rb_w32_conv_from_wchar(path, rb_filesystem_encoding());
 }
@@ -487,7 +501,7 @@ rb_w32_system_tmpdir(WCHAR *path, UINT len)
     static const WCHAR temp[] = L"temp";
     WCHAR *p;
 
-    if (!get_special_folder(CSIDL_LOCAL_APPDATA, path)) {
+    if (!get_special_folder(CSIDL_LOCAL_APPDATA, path, len)) {
 	if (GetSystemWindowsDirectoryW(path, len)) return 0;
     }
     p = translate_wchar(path, L'\\', L'/');
@@ -527,10 +541,10 @@ init_env(void)
 	else if (GetEnvironmentVariableW(L"USERPROFILE", env, numberof(env))) {
 	    f = TRUE;
 	}
-	else if (get_special_folder(CSIDL_PROFILE, env)) {
+	else if (get_special_folder(CSIDL_PROFILE, env, numberof(env))) {
 	    f = TRUE;
 	}
-	else if (get_special_folder(CSIDL_PERSONAL, env)) {
+	else if (get_special_folder(CSIDL_PERSONAL, env, numberof(env))) {
 	    f = TRUE;
 	}
 	if (f) {
