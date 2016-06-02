@@ -48,13 +48,6 @@ char *dln_argv0;
 #   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 #endif
 
-#ifdef HAVE_SYS_PARAM_H
-# include <sys/param.h>
-#endif
-#ifndef MAXPATHLEN
-# define MAXPATHLEN 1024
-#endif
-
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
