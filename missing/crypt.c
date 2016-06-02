@@ -347,7 +347,7 @@ STATIC void init_perm(C_block perm[64/CHUNKBITS][1<<CHUNKBITS], unsigned char p[
 #define init_des() ((void)0)
 #endif
 
-static const C_block constdatablock = {}; /* encryption constant */
+static const C_block constdatablock = {{0}}; /* encryption constant */
 
 #define KS	(data->KS)
 #define cryptresult (data->cryptresult)
