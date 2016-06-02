@@ -346,18 +346,20 @@ sym_hash(struct exec *hdrp, struct nlist *syms)
 static int
 dln_init(const char *prog)
 {
-    char *file, fbuf[MAXPATHLEN];
+    char *file, *fbuf = 0;
     int fd;
     struct exec hdr;
     struct nlist *syms;
 
     if (dln_init_p == 1) return 0;
 
-    file = dln_find_exe_r(prog, NULL, fbuf, sizeof(fbuf));
+    file = dln_find_exe_alloc(prog, NULL, dln_realloc, &fbuf);
     if (file == NULL || (fd = open(file, O_RDONLY)) < 0) {
+	if (fbuf) free(fbuf);
 	dln_errno = errno;
 	return -1;
     }
+    free(fbuf);
 
     if (load_header(fd, &hdr, 0) == -1) return -1;
     syms = load_sym(fd, &hdr, 0);
@@ -909,7 +911,7 @@ const char *dln_librrb_ary_path = DLN_DEFAULT_LIB_PATH;
 static int
 load_lib(const char *lib)
 {
-    char *path, *file, fbuf[MAXPATHLEN];
+    char *path, *file, *fbuf = 0;
     char *envpath = 0;
     char armagic[SARMAG];
     int fd, size;
@@ -942,9 +944,10 @@ load_lib(const char *lib)
     if (path == NULL) path = dln_librrb_ary_path;
     else path = envpath = strdup(path);
 
-    file = dln_find_file_r(lib, path, fbuf, sizeof(fbuf));
+    file = dln_find_file_alloc(lib, path, dln_realloc, &fbuf);
     if (envpath) free(envpath);
     fd = open(file, O_RDONLY);
+    if (fbuf) free(fbuf);
     if (fd == -1) goto syserr;
     size = read(fd, armagic, SARMAG);
     if (size == -1) goto syserr;

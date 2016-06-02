@@ -63,8 +63,23 @@ static const char default_path[] =
     "/bin" PATH_SEP
     ".";
 
-static char *dln_find_1(const char *fname, const char *path, char *buf, size_t size, int exe_flag
+static char *dln_find_1(const char *fname, const char *path, char *buf, size_t size, int exe_flag,
+			dln_alloc_func alloc_func, void *alloc_arg
 			DLN_FIND_EXTRA_ARG_DECL);
+
+static char *
+fixed_buf(char *ptr, size_t size, void *arg)
+{
+    return NULL;
+}
+
+char *
+dln_realloc(char *ptr, size_t size, void *arg)
+{
+    ptr = realloc(ptr, size);
+    if (arg) *(char **)arg = ptr;
+    return ptr;
+}
 
 char *
 dln_find_exe_r(const char *fname, const char *path, char *buf, size_t size
@@ -80,7 +95,7 @@ dln_find_exe_r(const char *fname, const char *path, char *buf, size_t size
     if (!path) {
 	path = default_path;
     }
-    buf = dln_find_1(fname, path, buf, size, 1 DLN_FIND_EXTRA_ARG);
+    buf = dln_find_1(fname, path, buf, size, 1, fixed_buf, NULL DLN_FIND_EXTRA_ARG);
     if (envpath) free(envpath);
     return buf;
 }
@@ -90,7 +105,37 @@ dln_find_file_r(const char *fname, const char *path, char *buf, size_t size
 		DLN_FIND_EXTRA_ARG_DECL)
 {
     if (!path) path = ".";
-    return dln_find_1(fname, path, buf, size, 0 DLN_FIND_EXTRA_ARG);
+    return dln_find_1(fname, path, buf, size, 0, fixed_buf, NULL DLN_FIND_EXTRA_ARG);
+}
+
+char *
+dln_find_exe_alloc(const char *fname, const char *path,
+		   dln_alloc_func alloc_func, void *alloc_arg
+		   DLN_FIND_EXTRA_ARG_DECL)
+{
+    char *envpath = 0;
+    char *buf;
+
+    if (!path) {
+	path = getenv(PATH_ENV);
+	if (path) path = envpath = strdup(path);
+    }
+
+    if (!path) {
+	path = default_path;
+    }
+    buf = dln_find_1(fname, path, NULL, 0, 1, alloc_func, alloc_arg DLN_FIND_EXTRA_ARG);
+    if (envpath) free(envpath);
+    return buf;
+}
+
+char *
+dln_find_file_alloc(const char *fname, const char *path,
+		   dln_alloc_func alloc_func, void *alloc_arg
+		    DLN_FIND_EXTRA_ARG_DECL)
+{
+    if (!path) path = ".";
+    return dln_find_1(fname, path, NULL, 0, 0, alloc_func, alloc_arg DLN_FIND_EXTRA_ARG);
 }
 
 static void
@@ -124,7 +169,8 @@ pathname_too_long(const char *dname, size_t dnlen, const char *fname, size_t fnl
 
 static char *
 dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
-	   int exe_flag /* non 0 if looking for executable. */
+	   int exe_flag /* non 0 if looking for executable. */,
+	   dln_alloc_func alloc_func, void *alloc_arg
 	   DLN_FIND_EXTRA_ARG_DECL)
 {
     register const char *dp;
@@ -132,6 +178,8 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
     register char *bp;
     struct stat st;
     size_t i, fnlen, fspace;
+    const size_t size0 = size;
+    size_t newsize;
 #ifdef DOSISH
     static const char extension[][5] = {
 	EXECUTABLE_EXTS,
@@ -139,6 +187,9 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
     size_t j;
     int is_abs = 0, has_path = 0;
     const char *ext = 0;
+    enum {ext_size = sizeof(extension[0])};
+#else
+    enum {ext = 0, ext_size = 0};
 #endif
     const char *p = fname;
 
@@ -147,16 +198,25 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 
 #define INSERT(str, length, extra) do { 		\
 	if (!fbuf || fspace < (length)) {		\
-	    goto toolong;				\
+	    ptrdiff_t pos = bp - fbuf;			\
+	    if (size0) goto toolong;			\
+	    newsize = (length) + pos + extra + 2;	\
+	    if (exe_flag && !ext) newsize += ext_size;	\
+	    bp = alloc_func(fbuf, newsize, alloc_arg);	\
+	    if (!bp) goto toolong;			\
+	    fspace = (size = newsize) - pos - 2;	\
+	    fbuf = bp;					\
+	    bp += pos;					\
 	}						\
 	fspace -= (length);				\
 	memcpy(bp, (str), (length));			\
 	bp += (length);					\
     } while (0)
 
+    if (!size) fbuf = 0;
     RETURN_IF(!fname);
     fnlen = strlen(fname);
-    if (fnlen >= size) {
+    if (size && fnlen >= size) {
 	pathname_too_long(NULL, 0, fname, fnlen);
 	return NULL;
     }
@@ -232,7 +292,7 @@ dln_find_1(const char *fname, const char *path, char *fbuf, size_t size,
 	/* find the length of that component */
 	l = ep - dp;
 	bp = fbuf;
-	fspace = size - 2;
+	fspace = size ? size - 2 : 0;
 	if (l > 0) {
 	    /*
 	    **	If the length of the component is zero length,
