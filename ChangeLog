@@ -1,3 +1,8 @@
+Thu Jun  2 17:05:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (ruby_init_loadpath_safe): remove MAXPATHLEN restriction
+	  for Windows 10.
+
 Thu Jun  2 16:51:35 2016  Koichi ITO  <koic.ito@gmail.com>
 
 	* misc/ruby-mode.el (ruby-here-doc-beg-re),

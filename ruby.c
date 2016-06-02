@@ -405,6 +405,11 @@ translit_char_bin(char *p, int from, int to)
 #ifndef UTF8_PATH
 # define UTF8_PATH 0
 #endif
+#if UTF8_PATH
+# define IF_UTF8_PATH(t, f) t
+#else
+# define IF_UTF8_PATH(t, f) f
+#endif
 
 #if UTF8_PATH
 static VALUE
@@ -473,9 +478,30 @@ ruby_init_loadpath_safe(int safe_level)
     char *p;
 
 #if defined _WIN32 || defined __CYGWIN__
-    sopath = rb_str_new(0, MAXPATHLEN);
-    libpath = RSTRING_PTR(sopath);
-    GetModuleFileName(libruby, libpath, MAXPATHLEN);
+    {
+	DWORD len = RSTRING_EMBED_LEN_MAX, ret, i;
+	VALUE wsopath = rb_str_new(0, len*sizeof(WCHAR));
+	WCHAR *wlibpath;
+	while (wlibpath = (WCHAR *)RSTRING_PTR(wsopath),
+	       ret = GetModuleFileNameW(libruby, wlibpath, len),
+	       (ret == len))
+	{
+	    rb_str_modify_expand(wsopath, len*sizeof(WCHAR));
+	    rb_str_set_len(wsopath, (len += len)*sizeof(WCHAR));
+	}
+	if (!ret || ret > len) rb_fatal("failed to get module file name");
+	for (len = ret, i = 0; i < len; ++i) {
+	    if (wlibpath[i] == L'\\') {
+		wlibpath[i] = L'/';
+		ret = i+1;	/* chop after the last separator */
+	    }
+	}
+	len = WideCharToMultiByte(CP_UTF8, 0, wlibpath, ret, NULL, 0, NULL, NULL);
+	sopath = rb_utf8_str_new(0, len);
+	libpath = RSTRING_PTR(sopath);
+	WideCharToMultiByte(CP_UTF8, 0, wlibpath, ret, libpath, len, NULL, NULL);
+	rb_str_resize(wsopath, 0);
+    }
 #elif defined(HAVE_DLADDR)
     sopath = dladdr_path((void *)(VALUE)expand_include_path);
     libpath = RSTRING_PTR(sopath);
@@ -484,7 +510,7 @@ ruby_init_loadpath_safe(int safe_level)
 #if !VARIABLE_LIBPATH
     libpath[sizeof(libpath) - 1] = '\0';
 #endif
-#if defined DOSISH
+#if defined DOSISH && !defined _WIN32
     translit_char(libpath, '\\', '/');
 #elif defined __CYGWIN__
     {
@@ -1534,14 +1560,18 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     }
     rb_enc_associate(opt->script_name, lenc);
     rb_obj_freeze(opt->script_name);
-    {
+    if (IF_UTF8_PATH((uenc = rb_utf8_encoding()) != lenc, 1)) {
 	long i;
 	VALUE load_path = GET_VM()->load_path;
 	const ID id_initial_load_path_mark = INITIAL_LOAD_PATH_MARK;
 	for (i = 0; i < RARRAY_LEN(load_path); ++i) {
 	    VALUE path = RARRAY_AREF(load_path, i);
 	    int mark = rb_attr_get(path, id_initial_load_path_mark) == path;
+#if UTF8_PATH
+	    path = rb_str_conv_enc(path, uenc, lenc);
+#else
 	    path = rb_enc_associate(rb_str_dup(path), lenc);
+#endif
 	    if (mark) rb_ivar_set(path, id_initial_load_path_mark, path);
 	    RARRAY_ASET(load_path, i, path);
 	}
@@ -1565,7 +1595,6 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 #undef SET_COMPILE_OPTION
     }
 #if UTF8_PATH
-    uenc = rb_utf8_encoding();
     if (uenc != lenc) {
 	opt->script_name = str_conv_enc(opt->script_name, uenc, lenc);
 	opt->script = RSTRING_PTR(opt->script_name);
