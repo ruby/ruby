@@ -2293,7 +2293,8 @@ ALWAYS_INLINE(static int rb_scan_args_hash_idx(const char *fmt));
 static inline int
 rb_scan_args_hash_idx(const char *fmt)
 {
-    return (rb_scan_args_trail_idx(fmt)+rb_scan_args_trail_p(fmt));
+    const int idx = rb_scan_args_trail_idx(fmt);
+    return idx+rb_scan_args_isdigit(fmt[idx]);
 }
 
 ALWAYS_INLINE(static int rb_scan_args_f_hash(const char *fmt));
@@ -2307,7 +2308,8 @@ ALWAYS_INLINE(static int rb_scan_args_block_idx(const char *fmt));
 static inline int
 rb_scan_args_block_idx(const char *fmt)
 {
-    return (rb_scan_args_hash_idx(fmt)+rb_scan_args_f_hash(fmt));
+    const int idx = rb_scan_args_hash_idx(fmt);
+    return idx+(fmt[idx]==':');
 }
 
 ALWAYS_INLINE(static int rb_scan_args_f_block(const char *fmt));
@@ -2317,12 +2319,15 @@ rb_scan_args_f_block(const char *fmt)
     return (fmt[rb_scan_args_block_idx(fmt)]=='&');
 }
 
+# if 0
 ALWAYS_INLINE(static int rb_scan_args_end_idx(const char *fmt));
 static inline int
 rb_scan_args_end_idx(const char *fmt)
 {
-    return (rb_scan_args_block_idx(fmt)+rb_scan_args_f_block(fmt));
+    const int idx = rb_scan_args_block_idx(fmt);
+    return idx+(fmt[idx]=='&');
 }
+# endif
 
 # define rb_scan_args0(argc, argv, fmt, varc, vars) \
     rb_scan_args_set(argc, argv, \
