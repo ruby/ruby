@@ -705,7 +705,7 @@ RUBY_H_INCLUDES    = {$(VPATH)}ruby.h {$(VPATH)}config.h {$(VPATH)}defines.h \
 
 acosh.$(OBJEXT): {$(VPATH)}acosh.c
 alloca.$(OBJEXT): {$(VPATH)}alloca.c {$(VPATH)}config.h
-crypt.$(OBJEXT): {$(VPATH)}crypt.c {$(VPATH)}crypt.h
+crypt.$(OBJEXT): {$(VPATH)}crypt.c {$(VPATH)}crypt.h {$(VPATH)}missing/des_tables.c
 dup2.$(OBJEXT): {$(VPATH)}dup2.c
 erf.$(OBJEXT): {$(VPATH)}erf.c
 explicit_bzero.$(OBJEXT): {$(VPATH)}explicit_bzero.c
@@ -748,6 +748,12 @@ $(NEWLINE_C): $(srcdir)/enc/trans/newline.trans $(srcdir)/tool/transcode-tblgen.
 	$(Q) $(BASERUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo $@ $(srcdir)/enc/trans/newline.trans
 enc/trans/newline.$(OBJEXT): $(NEWLINE_C)
 
+{$(VPATH)}missing/des_tables.c: $(srcdir)/missing/crypt.c
+	$(Q) $(PURIFY) $(CC) $(CPPFLAGS) -DDUMP $(LDFLAGS) $(XLDFLAGS) $(LIBS) $(OUTFLAG)make_des_table $(srcdir)/missing/crypt.c
+	$(Q) $(MAKEDIRS) $(@D)
+	$(Q) ./make_des_table > $@
+	$(Q) $(RMALL) make_des_table*
+
 verconf.h: $(srcdir)/template/verconf.h.tmpl $(srcdir)/tool/generic_erb.rb
 	$(ECHO) creating $@
 	$(Q) $(BOOTSTRAPRUBY) "$(srcdir)/tool/generic_erb.rb" -o $@ $(srcdir)/template/verconf.h.tmpl
@@ -777,7 +783,9 @@ INSNS2VMOPT = --srcdir="$(srcdir)"
 common-srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c {$(VPATH)}enc/trans/newline.c {$(VPATH)}id.c \
 	     srcs-lib srcs-ext
 
-srcs: common-srcs srcs-enc
+missing-srcs: $(srcdir)/missing/des_tables.c
+
+srcs: common-srcs missing-srcs srcs-enc
 
 EXT_SRCS = $(srcdir)/ext/ripper/ripper.c \
 	   $(srcdir)/ext/rbconfig/sizeof/sizes.c \
