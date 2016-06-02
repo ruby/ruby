@@ -1,3 +1,9 @@
+Thu Jun  2 16:51:35 2016  Koichi ITO  <koic.ito@gmail.com>
+
+	* misc/ruby-mode.el (ruby-here-doc-beg-re),
+	  (ruby-here-doc-beg-match, ruby-parse-partial): Support for
+	  `squiggly heredoc' syntax in ruby-mode.  [Fix GH-1372]
+
 Thu Jun  2 10:24:48 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* string.c: Raise ArgumentError when invalid string is detected in
