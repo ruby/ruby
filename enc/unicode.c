@@ -669,14 +669,20 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
     OnigCodePoint code;
     OnigUChar *to_start = to;
     OnigCaseFoldType flags = *flagP;
+    int codepoint_length;
+
     to_end -= CASE_MAPPING_SLACK;
     /* copy flags ONIGENC_CASE_UPCASE     and ONIGENC_CASE_DOWNCASE over to
      *            ONIGENC_CASE_UP_SPECIAL and ONIGENC_CASE_DOWN_SPECIAL */
     flags |= (flags&(ONIGENC_CASE_UPCASE|ONIGENC_CASE_DOWNCASE))<<ONIGENC_CASE_SPECIAL_OFFSET;
 
     while (*pp<end && to<=to_end) {
+	codepoint_length = ONIGENC_PRECISE_MBC_ENC_LEN(enc, *pp, end);
+	if (codepoint_length < 0)
+	    return codepoint_length; /* encoding invalid */
 	code = ONIGENC_MBC_TO_CODE(enc, *pp, end);
-	*pp += enclen(enc, *pp, end);
+	*pp += codepoint_length;
+
 	if (code<='z') { /* ASCII comes first */
 	    if (code>='a' && code<='z') {
 	        if (flags&ONIGENC_CASE_UPCASE) {

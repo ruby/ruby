@@ -1,3 +1,15 @@
+Thu Jun  2 10:24:48 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c: Raise ArgumentError when invalid string is detected in
+	  case mapping methods.
+
+	* enc/unicode.c: Check for invalid string and signal with negative
+	  length value.
+
+	* test/ruby/enc/test_case_mapping.rb: Add tests for above.
+
+	* test/ruby/test_m17n_comb.rb: Add a message to clarify test failure.
+
 Wed Jun  1 21:41:05 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/extconf.rb: Check existence of ASN1_TIME_adj(). The old

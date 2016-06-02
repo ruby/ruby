@@ -5785,6 +5785,7 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     mapping_buffer pre_buffer, /* only next pointer used */
 		  *current_buffer = &pre_buffer;
     int buffer_count = 0;
+    int buffer_length_or_invalid;
 
     if (RSTRING_LEN(source) == 0) return rb_str_dup(source);
 
@@ -5799,12 +5800,23 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 	current_buffer = current_buffer->next;
 	current_buffer->next = NULL;
 	current_buffer->capa = capa;
-	target_length  += current_buffer->used
-			= onigenc_unicode_case_map(flags,
-				(const OnigUChar**)&source_current, source_end,
-				current_buffer->space,
-				current_buffer->space+current_buffer->capa,
-				enc);
+	buffer_length_or_invalid = onigenc_unicode_case_map(flags,
+				   (const OnigUChar**)&source_current, source_end,
+				   current_buffer->space,
+				   current_buffer->space+current_buffer->capa,
+				   enc);
+	if (buffer_length_or_invalid < 0) {
+	    mapping_buffer *previous_buffer;
+
+	    current_buffer = pre_buffer.next;
+	    while (current_buffer) {
+		previous_buffer = current_buffer;
+		current_buffer  = current_buffer->next;
+		xfree(previous_buffer);
+	    }
+	    rb_raise(rb_eArgError, "input string invalid");
+	}
+	target_length  += current_buffer->used = buffer_length_or_invalid;
     }
 /* fprintf(stderr, "Buffer count is %d\n", buffer_count); *//* for tuning */
 
@@ -5819,7 +5831,7 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 	    memcpy(target_current, current_buffer->space, current_buffer->used);
 	    target_current += current_buffer->used;
 	    previous_buffer = current_buffer;
-	    current_buffer=current_buffer->next;
+	    current_buffer  = current_buffer->next;
 	    xfree(previous_buffer);
 	}
     }

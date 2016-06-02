@@ -60,6 +60,13 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     check_swapcase_properties   'yUKIHIRO matsumoto (MAtz)', 'Yukihiro MATSUMOTO (maTZ)', :lithuanian
   end
 
+  def test_invalid
+    assert_raise(ArgumentError, "Should not be possible to upcase invalid string.") { "\xEB".force_encoding('UTF-8').upcase }
+    assert_raise(ArgumentError, "Should not be possible to downcase invalid string.") { "\xEB".force_encoding('UTF-8').downcase }
+    assert_raise(ArgumentError, "Should not be possible to capitalize invalid string.") { "\xEB".force_encoding('UTF-8').capitalize }
+    assert_raise(ArgumentError, "Should not be possible to swapcase invalid string.") { "\xEB".force_encoding('UTF-8').swapcase }
+  end
+
   def test_general
     check_downcase_properties   'résumé dürst ĭñŧėřŋãţĳňőńæłĩżàťïōņ', 'RÉSUMÉ DÜRST ĬÑŦĖŘŊÃŢĲŇŐŃÆŁĨŻÀŤÏŌŅ', :lithuanian
     check_upcase_properties     'RÉSUMÉ DÜRST ĬÑŦĖŘŊÃŢĲŇŐŃÆŁĨŻÀŤÏŌŅ', 'résumé dürst ĭñŧėřŋãţĳňőńæłĩżàťïōņ', :lithuanian

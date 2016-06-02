@@ -808,7 +808,7 @@ class TestM17NComb < Test::Unit::TestCase
   def test_str_downcase
     STRINGS.each {|s|
       if !s.valid_encoding?
-        assert_raise(ArgumentError) { s.downcase }
+        assert_raise(ArgumentError, "Offending string: #{s.inspect}, encoding: #{s.encoding}") { s.downcase }
         next
       end
       t = s.downcase
