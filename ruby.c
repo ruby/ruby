@@ -1568,7 +1568,9 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	    VALUE path = RARRAY_AREF(load_path, i);
 	    int mark = rb_attr_get(path, id_initial_load_path_mark) == path;
 #if UTF8_PATH
-	    path = rb_str_conv_enc(rb_str_dup(path), uenc, lenc);
+	    VALUE newpath = rb_str_conv_enc(path, uenc, lenc);
+	    if (newpath == path) continue;
+	    path = newpath;
 #else
 	    path = rb_enc_associate(rb_str_dup(path), lenc);
 #endif
