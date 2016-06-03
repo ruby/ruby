@@ -429,7 +429,7 @@ get_special_folder(int n, WCHAR *buf, size_t len)
     typedef BOOL (*get_path_func)(LPITEMIDLIST, WCHAR*, DWORD, int);
     static get_path_func func = (get_path_func)-1;
 
-    if (func = (get_path_func)-1) {
+    if (func == (get_path_func)-1) {
 	func = (get_path_func)
 	    get_proc_address("shell32", "SHGetPathFromIDListEx", NULL);
     }
