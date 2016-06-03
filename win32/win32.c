@@ -433,12 +433,13 @@ get_special_folder(int n, WCHAR *buf, size_t len)
 	func = (get_path_func)
 	    get_proc_address("shell32", "SHGetPathFromIDListEx", NULL);
     }
+    if (!func && len < 260) return FALSE;
 
     if (SHGetSpecialFolderLocation(NULL, n, &pidl) == 0) {
 	if (func) {
 	    f = func(pidl, buf, len, 0);
 	}
-	else if (len >= 260) {
+	else {
 	    f = SHGetPathFromIDListW(pidl, buf);
 	}
 	SHGetMalloc(&alloc);
