@@ -1,3 +1,9 @@
+Fri Jun  3 17:44:25 2016  Reiner Herrmann  <reiner@reiner-h.de>
+
+	* lib/mkmf.rb (create_makefile): sort lists of source and object
+	  files in generated Makefile, unless given by extconf.rb.
+	  [Fix GH-1367]
+
 Thu Jun  2 21:18:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (get_special_folder): use SHGetPathFromIDListEx if
