@@ -1,3 +1,9 @@
+Sat Jun  4 10:38:39 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c: unify MAX_PATH, _MAX_PATH, and MAXPATHLEN to
+	  PATH_MAX, except for MAX_PATH in get_special_folder for an API
+	  limit.
+
 Fri Jun  3 21:27:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options): rb_str_conv_enc() never set encoding

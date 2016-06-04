@@ -83,6 +83,16 @@ static char *w32_getenv(const char *name, UINT cp);
 #define dln_find_file_r(fname, path, buf, size) rb_w32_udln_find_file_r(fname, path, buf, size, cp)
 #undef CharNext			/* no default cp version */
 
+#ifndef PATH_MAX
+# if defined MAX_PATH
+#   define PATH_MAX MAX_PATH
+# elif defined HAVE_SYS_PARAM_H
+#   include <sys/param.h>
+#   define PATH_MAX MAXPATHLEN
+# endif
+#endif
+#define ENV_MAX 512
+
 #undef stat
 #undef fclose
 #undef close
@@ -433,7 +443,7 @@ get_special_folder(int n, WCHAR *buf, size_t len)
 	func = (get_path_func)
 	    get_proc_address("shell32", "SHGetPathFromIDListEx", NULL);
     }
-    if (!func && len < 260) return FALSE;
+    if (!func && len < MAX_PATH) return FALSE;
 
     if (SHGetSpecialFolderLocation(NULL, n, &pidl) == 0) {
 	if (func) {
@@ -488,7 +498,7 @@ get_proc_address(const char *module, const char *func, HANDLE *mh)
 VALUE
 rb_w32_special_folder(int type)
 {
-    WCHAR path[_MAX_PATH];
+    WCHAR path[PATH_MAX];
 
     if (!get_special_folder(type, path, numberof(path))) return Qnil;
     regulate_path(path);
@@ -517,7 +527,7 @@ static void
 init_env(void)
 {
     static const WCHAR TMPDIR[] = L"TMPDIR";
-    struct {WCHAR name[6], eq, val[_MAX_PATH];} wk;
+    struct {WCHAR name[6], eq, val[ENV_MAX];} wk;
     DWORD len;
     BOOL f;
 #define env wk.val
@@ -1062,12 +1072,6 @@ join_argv(char *cmd, char *const *argv, BOOL escape, UINT cp, int backslash)
     return len;
 }
 
-#ifdef HAVE_SYS_PARAM_H
-# include <sys/param.h>
-#else
-# define MAXPATHLEN 512
-#endif
-
 /* License: Ruby's */
 #define STRNDUPV(ptr, v, src, len)					\
     (((char *)memcpy(((ptr) = ALLOCV((v), (len) + 1)), (src), (len)))[len] = 0)
@@ -1213,7 +1217,7 @@ UINT rb_w32_filecp(void);
 static rb_pid_t
 w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 {
-    char fbuf[MAXPATHLEN];
+    char fbuf[PATH_MAX];
     char *p = NULL;
     const char *shell = NULL;
     WCHAR *wcmd = NULL, *wshell = NULL;
@@ -1356,7 +1360,7 @@ w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UIN
     size_t len;
     BOOL ntcmd = FALSE, tmpnt;
     const char *shell;
-    char *cmd, fbuf[MAXPATHLEN];
+    char *cmd, fbuf[PATH_MAX];
     WCHAR *wcmd = NULL, *wprog = NULL;
     int e = 0;
     rb_pid_t ret = -1;
@@ -1487,11 +1491,11 @@ insert(const char *path, VALUE vinfo, void *enc)
 static NtCmdLineElement **
 cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail, UINT cp, rb_encoding *enc)
 {
-    char buffer[MAXPATHLEN], *buf = buffer;
+    char buffer[PATH_MAX], *buf = buffer;
     NtCmdLineElement **last = tail;
     int status;
 
-    if (patt->len >= MAXPATHLEN)
+    if (patt->len >= PATH_MAX)
 	if (!(buf = malloc(patt->len + 1))) return 0;
 
     strlcpy(buf, patt->str, patt->len + 1);
@@ -1855,7 +1859,7 @@ static HANDLE
 open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
 {
     HANDLE fh;
-    WCHAR fullname[_MAX_PATH + rb_strlen_lit("\\*")];
+    WCHAR fullname[PATH_MAX + rb_strlen_lit("\\*")];
     WCHAR *p;
     int len = 0;
 
@@ -1865,12 +1869,12 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
 
     fh = open_special(filename, 0, 0);
     if (fh != INVALID_HANDLE_VALUE) {
-	len = get_final_path(fh, fullname, _MAX_PATH, 0);
+	len = get_final_path(fh, fullname, PATH_MAX, 0);
 	CloseHandle(fh);
     }
     if (!len) {
 	len = lstrlenW(filename);
-	if (len >= _MAX_PATH) {
+	if (len >= PATH_MAX) {
 	    errno = ENAMETOOLONG;
 	    return INVALID_HANDLE_VALUE;
 	}
@@ -5360,7 +5364,7 @@ check_valid_dir(const WCHAR *path)
 {
     WIN32_FIND_DATAW fd;
     HANDLE fh;
-    WCHAR full[MAX_PATH];
+    WCHAR full[PATH_MAX];
     WCHAR *dmy;
     WCHAR *p, *q;
 
@@ -5441,7 +5445,7 @@ winnt_stat(const WCHAR *path, struct stati64 *st)
     memset(st, 0, sizeof(*st));
     f = open_special(path, 0, 0);
     if (f != INVALID_HANDLE_VALUE) {
-	WCHAR finalname[MAX_PATH];
+	WCHAR finalname[PATH_MAX];
 	const DWORD attr = stati64_handle(f, st);
 	const DWORD len = get_final_path(f, finalname, numberof(finalname), 0);
 	CloseHandle(f);
