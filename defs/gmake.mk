@@ -79,13 +79,14 @@ yes-test-all no-test-all: install
 endif
 
 $(srcdir)/missing/des_tables.c: $(srcdir)/missing/crypt.c
-ifeq ($(if $(CC),$(CROSS_COMPILING),yes),yes)
+ifeq ($(if $(filter yes,$(CROSS_COMPILING)),,$(CC)),)
 	touch $@
 else
 	@$(ECHO) building make_des_table
-	$(Q) $(PURIFY) $(CC) $(CPPFLAGS) -DDUMP $(LDFLAGS) $(XLDFLAGS) $(LIBS) $(OUTFLAG)make_des_table $(srcdir)/missing/crypt.c
+	$(CC) $(CPPFLAGS) -DDUMP $(LDFLAGS) $(XLDFLAGS) $(LIBS) -omake_des_table $(srcdir)/missing/crypt.c
+	@[ -x ./make_des_table ]
 	@$(ECHO) generating $@
 	$(Q) $(MAKEDIRS) $(@D)
-	$(Q) ./make_des_table > $@
+	$(Q) ./make_des_table | $(srcdir)/tool/ifchange $@ -
 	$(Q) $(RMALL) make_des_table*
 endif
