@@ -93,6 +93,15 @@ static char sccsid[] = "@(#)crypt.c	8.1 (Berkeley) 6/4/93";
 #   define INIT_DES 0
 # endif
 #endif
+#if !INIT_DES
+# include "des_tables.c"
+# ifdef HAVE_DES_TABLES
+#   define init_des() ((void)0)
+# else
+#   undef INIT_DES
+#   define INIT_DES 1
+# endif
+#endif
 
 /*
  * Convert twenty-four-bit long in host-order
@@ -353,10 +362,6 @@ static des_tables_t des_tables[1];
 
 STATIC void init_des(void);
 STATIC void init_perm(C_block perm[64/CHUNKBITS][1<<CHUNKBITS], unsigned char p[64], int chars_in, int chars_out);
-
-#else
-#include "des_tables.c"
-#define init_des() ((void)0)
 #endif
 
 static const C_block constdatablock = {{0}}; /* encryption constant */
@@ -884,6 +889,8 @@ main(void)
 {
 	int i, j, k;
 	init_des();
+
+	printf("#ifndef HAVE_DES_TABLES\n\n");
 	printf("/* Initial key schedule permutation */\n");
 	printf("static const C_block	PC1ROT[64/CHUNKBITS][1<<CHUNKBITS] = {\n");
 	for (i = 0; i < numberof(PC1ROT); ++i) {
@@ -953,6 +960,7 @@ main(void)
 		printf("\t},\n");
 	}
 	printf("};\n\n");
+	printf("#define HAVE_DES_TABLES 1\n""#endif\n");
 
 	return 0;
 }

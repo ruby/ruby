@@ -77,3 +77,15 @@ sudo-precheck: test
 install-prereq: sudo-precheck
 yes-test-all no-test-all: install
 endif
+
+$(srcdir)/missing/des_tables.c: $(srcdir)/missing/crypt.c
+ifeq ($(if $(CC),$(CROSS_COMPILING),yes),yes)
+	touch $@
+else
+	@$(ECHO) building make_des_table
+	$(Q) $(PURIFY) $(CC) $(CPPFLAGS) -DDUMP $(LDFLAGS) $(XLDFLAGS) $(LIBS) $(OUTFLAG)make_des_table $(srcdir)/missing/crypt.c
+	@$(ECHO) generating $@
+	$(Q) $(MAKEDIRS) $(@D)
+	$(Q) ./make_des_table > $@
+	$(Q) $(RMALL) make_des_table*
+endif
