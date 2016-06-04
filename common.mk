@@ -749,7 +749,9 @@ $(NEWLINE_C): $(srcdir)/enc/trans/newline.trans $(srcdir)/tool/transcode-tblgen.
 enc/trans/newline.$(OBJEXT): $(NEWLINE_C)
 
 {$(VPATH)}missing/des_tables.c: $(srcdir)/missing/crypt.c
+	@$(ECHO) building make_des_table
 	$(Q) $(PURIFY) $(CC) $(CPPFLAGS) -DDUMP $(LDFLAGS) $(XLDFLAGS) $(LIBS) $(OUTFLAG)make_des_table $(srcdir)/missing/crypt.c
+	@$(ECHO) generating $@
 	$(Q) $(MAKEDIRS) $(@D)
 	$(Q) ./make_des_table > $@
 	$(Q) $(RMALL) make_des_table*

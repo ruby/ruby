@@ -49,6 +49,10 @@ static char sccsid[] = "@(#)crypt.c	8.1 (Berkeley) 6/4/93";
 #define _PASSWORD_EFMT1 '_'
 #endif
 
+#ifndef numberof
+#define numberof(array) (int)(sizeof(array) / sizeof((array)[0]))
+#endif
+
 /*
  * UNIX password, and DES, encryption.
  * By Tom Truscott, trt@rti.rti.org,
@@ -80,6 +84,14 @@ static char sccsid[] = "@(#)crypt.c	8.1 (Berkeley) 6/4/93";
 #if CHAR_BITS != 8
 	#error C_block structure assumes 8 bit characters
 #endif
+#endif
+
+#ifndef INIT_DES
+# if defined DUMP || defined NO_DES_TABLES
+#   define INIT_DES 1
+# else
+#   define INIT_DES 0
+# endif
 #endif
 
 /*
@@ -149,7 +161,7 @@ permute(const unsigned char *cp, C_block *out, register const C_block *p, int ch
 STATIC void prtab(const char *s, const unsigned char *t, int num_rows);
 #endif
 
-#ifdef DUMP
+#if INIT_DES
 /* =====  (mostly) Standard DES Tables ==================== */
 
 static const unsigned char IP[] = {	/* initial permutation */
@@ -193,7 +205,7 @@ static const unsigned char Rotates[] = { /* PC1 rotation schedule */
 	1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1,
 };
 
-#ifdef DUMP
+#if INIT_DES
 /* note: each "row" of PC2 is left-padded with bits that make it invertible */
 static const unsigned char PC2[] = {	/* permuted choice table 2 */
 	 9, 18,    14, 17, 11, 24,  1,  5,
@@ -309,7 +321,7 @@ static const unsigned char a64toi[256] = {
 	A64TOI64(0x00), A64TOI64(0x40),
 };
 
-#ifdef DUMP
+#if INIT_DES
 /* =====  Tables that are initialized at run time  ==================== */
 
 typedef struct {
@@ -351,7 +363,6 @@ static const C_block constdatablock = {{0}}; /* encryption constant */
 
 #define KS	(data->KS)
 #define cryptresult (data->cryptresult)
-#define des_ready (data->initialized)
 
 static void des_setkey_r(const unsigned char *key, struct crypt_data *data);
 static void des_cipher_r(const unsigned char *in, unsigned char *out, long salt, int num_iter, struct crypt_data *data);
@@ -472,16 +483,12 @@ des_setkey_r(const unsigned char *key, struct crypt_data *data)
 	register int i;
 	C_block *ksp;
 
-	if (!des_ready) {
-		memset(data, 0, sizeof(*data));
-		init_des();
-		des_ready = 1;
-	}
+	init_des();
 
 	PERM6464(K,K0,K1,key,PC1ROT[0]);
 	ksp = &KS[0];
 	STORE(K&~0x03030303L, K0&~0x03030303L, K1, *ksp);
-	for (i = 1; i < 16; i++) {
+	for (i = 1; i < numberof(KS); i++) {
 		ksp++;
 		STORE(K,K0,K1,*ksp);
 		ptabp = PC2ROT[Rotates[i]-1][0];
@@ -612,9 +619,8 @@ des_cipher_r(const unsigned char *in, unsigned char *out, long salt, int num_ite
 #undef des_tables
 #undef KS
 #undef cryptresult
-#undef des_ready
 
-#ifdef DUMP
+#if INIT_DES
 /*
  * Initialize various tables.  This need only be done once.  It could even be
  * done at compile time, if the compiler were capable of that sort of thing.
@@ -862,9 +868,6 @@ prtab(const char *s, const unsigned char *t, int num_rows)
 #endif
 
 #ifdef DUMP
-#ifndef numberof
-#define numberof(array) (int )(sizeof(array) / sizeof((array)[0]))
-#endif
 void
 dump_block(const C_block *block)
 {

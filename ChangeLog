@@ -1,3 +1,15 @@
+Sat Jun  4 10:54:52 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/crypt.h (struct crypt_data): remove unnecessary member
+	  "initialized".
+
+	* missing/crypt.c (des_setkey_r): nothing to be initialized in
+	  crypt_data.
+
+	* configure.in (struct crypt_data): check for "initialized" in
+	  struct crypt_data, which may be only in glibc, and isn't on AIX
+	  at least.
+
 Sat Jun  4 10:38:39 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c: unify MAX_PATH, _MAX_PATH, and MAXPATHLEN to

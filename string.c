@@ -8424,7 +8424,9 @@ rb_str_crypt(VALUE str, VALUE salt)
     }
 #endif
 #ifdef HAVE_CRYPT_R
+# ifdef HAVE_STRUCT_CRYPT_DATA_INITIALIZED
     data.initialized = 0;
+# endif
     res = crypt_r(s, saltp, &data);
 #else
     res = crypt(s, saltp);

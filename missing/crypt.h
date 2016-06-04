@@ -224,7 +224,6 @@ struct crypt_data {
 	/* ==================================== */
 
 	char	cryptresult[1+4+4+11+1];	/* encrypted result */
-	int	initialized;
 };
 
 char *crypt(const char *key, const char *setting);
