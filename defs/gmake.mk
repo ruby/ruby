@@ -87,6 +87,7 @@ else
 	@[ -x ./make_des_table ]
 	@$(ECHO) generating $@
 	$(Q) $(MAKEDIRS) $(@D)
-	$(Q) ./make_des_table | $(srcdir)/tool/ifchange $@ -
+	$(Q) ./make_des_table > $@.new
+	$(Q) mv $@.new $@
 	$(Q) $(RMALL) make_des_table*
 endif
