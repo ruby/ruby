@@ -259,17 +259,7 @@ then
   AC_MSG_ERROR(cached CC is different -- throw away $cache_file
 (it is also a good idea to do 'make clean' before compiling))
 fi
-AS_CASE(["$build_os"],
-  [darwin1*.*], [
-    AS_CASE(["x$CC"],
-      [xgcc-4.2|x/usr/bin/gcc-4.2], [: ${CXX=g++-4.2}],
-      [xgcc|x/usr/bin/gcc],         [: ${CXX=g++}],
-      [xcc|x/usr/bin/cc],           [: ${CXX=c++}],
-      [xicc],                       [: ${CXX=icpc}],
-      [xclang|x/usr/bin/clang],     [: ${CXX=clang++}])
-  ])
 test -z "$CC" || ac_cv_prog_CC="$CC"
-test -z "$CXX" || ac_cv_prog_CXX="$CXX"
 
 if test "$program_prefix" = NONE; then
   program_prefix=
@@ -496,6 +486,19 @@ if test x"${build}" != x"${host}"; then
 fi
 
 AC_PROG_CC
+
+dnl Select the appropriate C++ compiler in OS X
+AS_CASE(["$build_os"],
+  [darwin1*.*], [
+    AS_CASE(["x$CC"],
+      [xgcc-4.2|x/usr/bin/gcc-4.2], [: ${CXX=g++-4.2}],
+      [xgcc|x/usr/bin/gcc],         [: ${CXX=g++}],
+      [xcc|x/usr/bin/cc],           [: ${CXX=c++}],
+      [xicc],                       [: ${CXX=icpc}],
+      [xclang|x/usr/bin/clang],     [: ${CXX=clang++}])
+  ])
+test -z "$CXX" || ac_cv_prog_CXX="$CXX"
+
 AC_PROG_CXX
 RUBY_MINGW32
 AC_PROG_GCC_TRADITIONAL
