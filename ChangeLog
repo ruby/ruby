@@ -1,3 +1,7 @@
+Sun Jun  5 14:46:34 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c: Remove :lithuanian guard for Unicode case mapping.
+
 Sat Jun  4 10:54:52 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing/crypt.h (struct crypt_data): remove unnecessary member
