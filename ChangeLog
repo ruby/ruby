@@ -1,3 +1,15 @@
+Sun Jun  5 21:38:13 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/extconf.rb: Check if RAND_pseudo_bytes() is usable. It is
+	  marked as deprecated in OpenSSL 1.1.0.
+	  [ruby-core:75225] [Feature #12324]
+
+	* ext/openssl/ossl_rand.c: Disable Random.pseudo_bytes if
+	  RAND_pseudo_bytes() is unavailable.
+
+	* test/openssl/test_random.rb: Don't test Random.pseudo_bytes if not
+	  defined.
+
 Sun Jun  5 19:06:40 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* NEWS: Add news about Unicode-wide case mapping for

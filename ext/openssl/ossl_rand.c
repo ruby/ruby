@@ -124,6 +124,7 @@ ossl_rand_bytes(VALUE self, VALUE len)
     return str;
 }
 
+#if defined(HAVE_RAND_PSEUDO_BYTES)
 /*
  *  call-seq:
  *	pseudo_bytes(length) -> string
@@ -151,6 +152,7 @@ ossl_rand_pseudo_bytes(VALUE self, VALUE len)
 
     return str;
 }
+#endif
 
 #ifdef HAVE_RAND_EGD
 /*
@@ -224,7 +226,9 @@ Init_ossl_rand(void)
     rb_define_module_function(mRandom, "load_random_file", ossl_rand_load_file, 1);
     rb_define_module_function(mRandom, "write_random_file", ossl_rand_write_file, 1);
     rb_define_module_function(mRandom, "random_bytes", ossl_rand_bytes, 1);
+#if defined(HAVE_RAND_PSEUDO_BYTES)
     rb_define_module_function(mRandom, "pseudo_bytes", ossl_rand_pseudo_bytes, 1);
+#endif
 #ifdef HAVE_RAND_EGD
     rb_define_module_function(mRandom, "egd", ossl_rand_egd, 1);
     rb_define_module_function(mRandom, "egd_bytes", ossl_rand_egd_bytes, 2);
