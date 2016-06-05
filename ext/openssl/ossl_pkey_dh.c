@@ -7,25 +7,21 @@
  * This program is licensed under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
-#if !defined(OPENSSL_NO_DH)
-
 #include "ossl.h"
+
+#if !defined(OPENSSL_NO_DH)
 
 #define GetPKeyDH(obj, pkey) do { \
     GetPKey((obj), (pkey)); \
-    if (EVP_PKEY_type((pkey)->type) != EVP_PKEY_DH) { /* PARANOIA? */ \
+    if (EVP_PKEY_base_id(pkey) != EVP_PKEY_DH) { /* PARANOIA? */ \
 	ossl_raise(rb_eRuntimeError, "THIS IS NOT A DH!") ; \
     } \
 } while (0)
-
-#define DH_HAS_PRIVATE(dh) ((dh)->priv_key)
-
-#if !defined(OPENSSL_NO_ENGINE)
-#  define DH_PRIVATE(dh) (DH_HAS_PRIVATE(dh) || (dh)->engine)
-#else
-#  define DH_PRIVATE(dh) DH_HAS_PRIVATE(dh)
-#endif
-
+#define GetDH(obj, dh) do { \
+    EVP_PKEY *_pkey; \
+    GetPKeyDH((obj), _pkey); \
+    (dh) = EVP_PKEY_get0_DH(_pkey); \
+} while (0)
 
 /*
  * Classes
@@ -67,7 +63,7 @@ ossl_dh_new(EVP_PKEY *pkey)
 	obj = dh_instance(cDH, DH_new());
     } else {
 	obj = NewPKey(cDH);
-	if (EVP_PKEY_type(pkey->type) != EVP_PKEY_DH) {
+	if (EVP_PKEY_base_id(pkey) != EVP_PKEY_DH) {
 	    ossl_raise(rb_eTypeError, "Not a DH key!");
 	}
 	SetPKey(obj, pkey);
@@ -248,11 +244,13 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_dh_is_public(VALUE self)
 {
-    EVP_PKEY *pkey;
+    DH *dh;
+    BIGNUM *bn;
 
-    GetPKeyDH(self, pkey);
+    GetDH(self, dh);
+    DH_get0_key(dh, &bn, NULL);
 
-    return (pkey->pkey.dh->pub_key) ? Qtrue : Qfalse;
+    return bn ? Qtrue : Qfalse;
 }
 
 /*
@@ -265,11 +263,17 @@ ossl_dh_is_public(VALUE self)
 static VALUE
 ossl_dh_is_private(VALUE self)
 {
-    EVP_PKEY *pkey;
+    DH *dh;
+    BIGNUM *bn;
 
-    GetPKeyDH(self, pkey);
+    GetDH(self, dh);
+    DH_get0_key(dh, NULL, &bn);
 
-    return (DH_PRIVATE(pkey->pkey.dh)) ? Qtrue : Qfalse;
+#if !defined(OPENSSL_NO_ENGINE)
+    return (bn || DH_get0_engine(dh)) ? Qtrue : Qfalse;
+#else
+    return bn ? Qtrue : Qfalse;
+#endif
 }
 
 /*
@@ -285,15 +289,15 @@ ossl_dh_is_private(VALUE self)
 static VALUE
 ossl_dh_export(VALUE self)
 {
-    EVP_PKEY *pkey;
+    DH *dh;
     BIO *out;
     VALUE str;
 
-    GetPKeyDH(self, pkey);
+    GetDH(self, dh);
     if (!(out = BIO_new(BIO_s_mem()))) {
 	ossl_raise(eDHError, NULL);
     }
-    if (!PEM_write_bio_DHparams(out, pkey->pkey.dh)) {
+    if (!PEM_write_bio_DHparams(out, dh)) {
 	BIO_free(out);
 	ossl_raise(eDHError, NULL);
     }
@@ -314,17 +318,17 @@ ossl_dh_export(VALUE self)
 static VALUE
 ossl_dh_to_der(VALUE self)
 {
-    EVP_PKEY *pkey;
+    DH *dh;
     unsigned char *p;
     long len;
     VALUE str;
 
-    GetPKeyDH(self, pkey);
-    if((len = i2d_DHparams(pkey->pkey.dh, NULL)) <= 0)
+    GetDH(self, dh);
+    if((len = i2d_DHparams(dh, NULL)) <= 0)
 	ossl_raise(eDHError, NULL);
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
-    if(i2d_DHparams(pkey->pkey.dh, &p) < 0)
+    if(i2d_DHparams(dh, &p) < 0)
 	ossl_raise(eDHError, NULL);
     ossl_str_adjust(str, p);
 
@@ -342,17 +346,20 @@ ossl_dh_to_der(VALUE self)
 static VALUE
 ossl_dh_get_params(VALUE self)
 {
-    EVP_PKEY *pkey;
+    DH *dh;
     VALUE hash;
+    BIGNUM *p, *q, *g, *pub_key, *priv_key;
 
-    GetPKeyDH(self, pkey);
+    GetDH(self, dh);
+    DH_get0_pqg(dh, &p, &q, &g);
+    DH_get0_key(dh, &pub_key, &priv_key);
 
     hash = rb_hash_new();
-
-    rb_hash_aset(hash, rb_str_new2("p"), ossl_bn_new(pkey->pkey.dh->p));
-    rb_hash_aset(hash, rb_str_new2("g"), ossl_bn_new(pkey->pkey.dh->g));
-    rb_hash_aset(hash, rb_str_new2("pub_key"), ossl_bn_new(pkey->pkey.dh->pub_key));
-    rb_hash_aset(hash, rb_str_new2("priv_key"), ossl_bn_new(pkey->pkey.dh->priv_key));
+    rb_hash_aset(hash, rb_str_new2("p"), ossl_bn_new(p));
+    rb_hash_aset(hash, rb_str_new2("q"), ossl_bn_new(q));
+    rb_hash_aset(hash, rb_str_new2("g"), ossl_bn_new(g));
+    rb_hash_aset(hash, rb_str_new2("pub_key"), ossl_bn_new(pub_key));
+    rb_hash_aset(hash, rb_str_new2("priv_key"), ossl_bn_new(priv_key));
 
     return hash;
 }
@@ -368,15 +375,15 @@ ossl_dh_get_params(VALUE self)
 static VALUE
 ossl_dh_to_text(VALUE self)
 {
-    EVP_PKEY *pkey;
+    DH *dh;
     BIO *out;
     VALUE str;
 
-    GetPKeyDH(self, pkey);
+    GetDH(self, dh);
     if (!(out = BIO_new(BIO_s_mem()))) {
 	ossl_raise(eDHError, NULL);
     }
-    if (!DHparams_print(out, pkey->pkey.dh)) {
+    if (!DHparams_print(out, dh)) {
 	BIO_free(out);
 	ossl_raise(eDHError, NULL);
     }
@@ -409,12 +416,11 @@ ossl_dh_to_text(VALUE self)
 static VALUE
 ossl_dh_to_public_key(VALUE self)
 {
-    EVP_PKEY *pkey;
-    DH *dh;
+    DH *orig_dh, *dh;
     VALUE obj;
 
-    GetPKeyDH(self, pkey);
-    dh = DHparams_dup(pkey->pkey.dh); /* err check perfomed by dh_instance */
+    GetDH(self, orig_dh);
+    dh = DHparams_dup(orig_dh); /* err check perfomed by dh_instance */
     obj = dh_instance(CLASS_OF(self), dh);
     if (obj == Qfalse) {
 	DH_free(dh);
@@ -436,12 +442,9 @@ static VALUE
 ossl_dh_check_params(VALUE self)
 {
     DH *dh;
-    EVP_PKEY *pkey;
     int codes;
 
-    GetPKeyDH(self, pkey);
-    dh = pkey->pkey.dh;
-
+    GetDH(self, dh);
     if (!DH_check(dh, &codes)) {
 	return Qfalse;
     }
@@ -469,11 +472,8 @@ static VALUE
 ossl_dh_generate_key(VALUE self)
 {
     DH *dh;
-    EVP_PKEY *pkey;
 
-    GetPKeyDH(self, pkey);
-    dh = pkey->pkey.dh;
-
+    GetDH(self, dh);
     if (!DH_generate_key(dh))
 	ossl_raise(eDHError, "Failed to generate key");
     return self;
@@ -494,14 +494,13 @@ static VALUE
 ossl_dh_compute_key(VALUE self, VALUE pub)
 {
     DH *dh;
-    EVP_PKEY *pkey;
-    BIGNUM *pub_key;
+    BIGNUM *pub_key, *dh_p;
     VALUE str;
     int len;
 
-    GetPKeyDH(self, pkey);
-    dh = pkey->pkey.dh;
-    if (!dh->p)
+    GetDH(self, dh);
+    DH_get0_pqg(dh, &dh_p, NULL, NULL);
+    if (!dh_p)
 	ossl_raise(eDHError, "incomplete DH");
     pub_key = GetBNPtr(pub);
     len = DH_size(dh);
@@ -514,10 +513,8 @@ ossl_dh_compute_key(VALUE self, VALUE pub)
     return str;
 }
 
-OSSL_PKEY_BN(dh, p)
-OSSL_PKEY_BN(dh, g)
-OSSL_PKEY_BN(dh, pub_key)
-OSSL_PKEY_BN(dh, priv_key)
+OSSL_PKEY_BN_DEF3(dh, DH, pqg, p, q, g)
+OSSL_PKEY_BN_DEF2(dh, DH, key, pub_key, priv_key)
 
 /*
  * INIT
@@ -580,9 +577,13 @@ Init_ossl_dh(void)
     rb_define_method(cDH, "compute_key", ossl_dh_compute_key, 1);
 
     DEF_OSSL_PKEY_BN(cDH, dh, p);
+    DEF_OSSL_PKEY_BN(cDH, dh, q);
     DEF_OSSL_PKEY_BN(cDH, dh, g);
     DEF_OSSL_PKEY_BN(cDH, dh, pub_key);
     DEF_OSSL_PKEY_BN(cDH, dh, priv_key);
+    rb_define_method(cDH, "set_pqg", ossl_dh_set_pqg, 3);
+    rb_define_method(cDH, "set_key", ossl_dh_set_key, 2);
+
     rb_define_method(cDH, "params", ossl_dh_get_params, 0);
 }
 

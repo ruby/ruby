@@ -76,7 +76,7 @@ ossl_pkey_new(EVP_PKEY *pkey)
     if (!pkey) {
 	ossl_raise(ePKeyError, "Cannot make new key from NULL.");
     }
-    switch (EVP_PKEY_type(pkey->type)) {
+    switch (EVP_PKEY_base_id(pkey)) {
 #if !defined(OPENSSL_NO_RSA)
     case EVP_PKEY_RSA:
 	return ossl_rsa_new(pkey);

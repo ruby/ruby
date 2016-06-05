@@ -258,7 +258,7 @@ ossl_call_tmp_dh_callback(VALUE args)
     if (NIL_P(cb)) return Qfalse;
     dh = rb_apply(cb, rb_intern("call"), args);
     pkey = GetPKeyPtr(dh);
-    if (EVP_PKEY_type(pkey->type) != EVP_PKEY_DH) return Qfalse;
+    if (EVP_PKEY_base_id(pkey) != EVP_PKEY_DH) return Qfalse;
 
     return dh;
 }
@@ -276,7 +276,7 @@ ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
     if (!RTEST(dh)) return NULL;
     ossl_ssl_set_tmp_dh(rb_ssl, dh);
 
-    return GetPKeyPtr(dh)->pkey.dh;
+    return EVP_PKEY_get0_DH(GetPKeyPtr(dh));
 }
 #endif /* OPENSSL_NO_DH */
 
@@ -292,7 +292,7 @@ ossl_call_tmp_ecdh_callback(VALUE args)
     if (NIL_P(cb)) return Qfalse;
     ecdh = rb_apply(cb, rb_intern("call"), args);
     pkey = GetPKeyPtr(ecdh);
-    if (EVP_PKEY_type(pkey->type) != EVP_PKEY_EC) return Qfalse;
+    if (EVP_PKEY_base_id(pkey) != EVP_PKEY_EC) return Qfalse;
 
     return ecdh;
 }
@@ -310,7 +310,7 @@ ossl_tmp_ecdh_callback(SSL *ssl, int is_export, int keylength)
     if (!RTEST(ecdh)) return NULL;
     ossl_ssl_set_tmp_ecdh(rb_ssl, ecdh);
 
-    return GetPKeyPtr(ecdh)->pkey.ec;
+    return EVP_PKEY_get0_EC_KEY(GetPKeyPtr(ecdh));
 }
 #endif
 

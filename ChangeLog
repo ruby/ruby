@@ -1,3 +1,27 @@
+Mon Jun  6 00:00:13 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/openssl_missing.[ch]: Implement EVP_PKEY_get0_*() and
+	  {RSA,DSA,EC_KEY,DH}_get0_*() functions.
+	  OpenSSL 1.1.0 makes EVP_PKEY/RSA/DSA/DH opaque. We used to provide
+	  setter methods for each parameter of each PKey type, for example
+	  PKey::RSA#e=, but this is no longer possible because the new API
+	  RSA_set0_key() requires the 'n' at the same time. This commit adds
+	  deprecation warning to them and adds PKey::*#set_* methods as direct
+	  wrapper for those new APIs. For example, 'rsa.e = 3' now needs to be
+	  rewritten as 'rsa.set_key(rsa.n, 3, rsa.d)'.
+	  [ruby-core:75225] [Feature #12324]
+
+	* ext/openssl/ossl_pkey*.[ch]: Use the new accessor functions. Implement
+	  RSA#set_{key,factors,crt_params}, DSA#set_{key,pqg}, DH#set_{key,pqg}.
+	  Emit a warning with rb_warning() when old setter methods are used.
+
+	* test/drb/ut_array_drbssl.rb, test/drb/ut_drb_drbssl.rb,
+	  test/rubygems/test_gem_remote_fetcher.rb: Don't set a priv_key for DH
+	  object that are used in tmp_dh_callback. Generating a new key pair
+	  every time should be fine - actually the private exponent is ignored
+	  in OpenSSL >= 1.0.2f/1.0.1r even if we explicitly set.
+	  https://www.openssl.org/news/secadv/20160128.txt
+
 Sun Jun  5 22:06:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* configure.in: Fix the timing to detect the appropriate C++ compiler

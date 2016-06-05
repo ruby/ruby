@@ -95,53 +95,153 @@ extern VALUE eEC_POINT;
 VALUE ossl_ec_new(EVP_PKEY *);
 void Init_ossl_ec(void);
 
-
-#define OSSL_PKEY_BN(keytype, name)					\
+#define OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, _name, _get)		\
 /*									\
  *  call-seq:								\
- *     key.##name -> aBN						\
+ *     _keytype##.##_name -> aBN					\
  */									\
-static VALUE ossl_##keytype##_get_##name(VALUE self)			\
+static VALUE ossl_##_keytype##_get_##_name(VALUE self)			\
 {									\
-	EVP_PKEY *pkey;							\
+	_type *obj;							\
 	BIGNUM *bn;							\
 									\
-	GetPKey(self, pkey);						\
-	bn = pkey->pkey.keytype->name;					\
+	Get##_type(self, obj);						\
+	_get;								\
 	if (bn == NULL)							\
 		return Qnil;						\
 	return ossl_bn_new(bn);						\
-}									\
+}
+
+#define OSSL_PKEY_BN_DEF_GETTER3(_keytype, _type, _group, a1, a2, a3)	\
+	OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, a1,			\
+		_type##_get0_##_group(obj, &bn, NULL, NULL))		\
+	OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, a2,			\
+		_type##_get0_##_group(obj, NULL, &bn, NULL))		\
+	OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, a3,			\
+		_type##_get0_##_group(obj, NULL, NULL, &bn))
+
+#define OSSL_PKEY_BN_DEF_GETTER2(_keytype, _type, _group, a1, a2)	\
+	OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, a1,			\
+		_type##_get0_##_group(obj, &bn, NULL))			\
+	OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, a2,			\
+		_type##_get0_##_group(obj, NULL, &bn))
+
+#define OSSL_PKEY_BN_DEF_SETTER3(_keytype, _type, _group, a1, a2, a3)	\
 /*									\
  *  call-seq:								\
- *     key.##name = bn -> bn						\
+ *     _keytype##.set_##_group(a1, a2, a3) -> self			\
  */									\
-static VALUE ossl_##keytype##_set_##name(VALUE self, VALUE bignum)	\
+static VALUE ossl_##_keytype##_set_##_group(VALUE self, VALUE v1, VALUE v2, VALUE v3) \
 {									\
-	EVP_PKEY *pkey;							\
+	_type *obj;							\
+	BIGNUM *bn1 = NULL, *orig_bn1 = NIL_P(v1) ? NULL : GetBNPtr(v1);\
+	BIGNUM *bn2 = NULL, *orig_bn2 = NIL_P(v2) ? NULL : GetBNPtr(v2);\
+	BIGNUM *bn3 = NULL, *orig_bn3 = NIL_P(v3) ? NULL : GetBNPtr(v3);\
+									\
+	Get##_type(self, obj);						\
+	if (orig_bn1 && !(bn1 = BN_dup(orig_bn1)) ||			\
+	    orig_bn2 && !(bn2 = BN_dup(orig_bn2)) ||			\
+	    orig_bn3 && !(bn3 = BN_dup(orig_bn3))) {			\
+		BN_clear_free(bn1);					\
+		BN_clear_free(bn2);					\
+		BN_clear_free(bn3);					\
+		ossl_raise(eBNError, NULL);				\
+	}								\
+									\
+	if (!_type##_set0_##_group(obj, bn1, bn2, bn3)) {		\
+		BN_clear_free(bn1);					\
+		BN_clear_free(bn2);					\
+		BN_clear_free(bn3);					\
+		ossl_raise(ePKeyError, #_type"_set0_"#_group);		\
+	}								\
+	return self;							\
+}
+
+#define OSSL_PKEY_BN_DEF_SETTER2(_keytype, _type, _group, a1, a2)	\
+/*									\
+ *  call-seq:								\
+ *     _keytype##.set_##_group(a1, a2) -> self				\
+ */									\
+static VALUE ossl_##_keytype##_set_##_group(VALUE self, VALUE v1, VALUE v2) \
+{									\
+	_type *obj;							\
+	BIGNUM *bn1 = NULL, *orig_bn1 = NIL_P(v1) ? NULL : GetBNPtr(v1);\
+	BIGNUM *bn2 = NULL, *orig_bn2 = NIL_P(v2) ? NULL : GetBNPtr(v2);\
+									\
+	Get##_type(self, obj);						\
+	if (orig_bn1 && !(bn1 = BN_dup(orig_bn1)) ||			\
+	    orig_bn2 && !(bn2 = BN_dup(orig_bn2))) {			\
+		BN_clear_free(bn1);					\
+		BN_clear_free(bn2);					\
+		ossl_raise(eBNError, NULL);				\
+	}								\
+									\
+	if (!_type##_set0_##_group(obj, bn1, bn2)) {			\
+		BN_clear_free(bn1);					\
+		BN_clear_free(bn2);					\
+		ossl_raise(ePKeyError, #_type"_set0_"#_group);		\
+	}								\
+	return self;							\
+}
+
+#define OSSL_PKEY_BN_DEF_SETTER_OLD(_keytype, _type, _group, _name)	\
+/*									\
+ *  call-seq:								\
+ *     _keytype##.##_name = bn -> bn					\
+ */									\
+static VALUE ossl_##_keytype##_set_##_name(VALUE self, VALUE bignum)	\
+{									\
+	_type *obj;							\
 	BIGNUM *bn;							\
 									\
-	GetPKey(self, pkey);						\
+	rb_warning("#"#_name"= is deprecated; use #set_"#_group);	\
+	Get##_type(self, obj);						\
 	if (NIL_P(bignum)) {						\
-		BN_clear_free(pkey->pkey.keytype->name);		\
-		pkey->pkey.keytype->name = NULL;			\
+		BN_clear_free(obj->_name);				\
+		obj->_name = NULL;					\
 		return Qnil;						\
 	}								\
 									\
 	bn = GetBNPtr(bignum);						\
-	if (pkey->pkey.keytype->name == NULL)				\
-		pkey->pkey.keytype->name = BN_new();			\
-	if (pkey->pkey.keytype->name == NULL)				\
+	if (obj->_name == NULL)						\
+		obj->_name = BN_new();					\
+	if (obj->_name == NULL)						\
 		ossl_raise(eBNError, NULL);				\
-	if (BN_copy(pkey->pkey.keytype->name, bn) == NULL)		\
+	if (BN_copy(obj->_name, bn) == NULL)				\
 		ossl_raise(eBNError, NULL);				\
 	return bignum;							\
 }
 
+#if defined(HAVE_OPAQUE_OPENSSL) /* OpenSSL 1.1.0 */
+#define OSSL_PKEY_BN_DEF3(_keytype, _type, _group, a1, a2, a3)		\
+	OSSL_PKEY_BN_DEF_GETTER3(_keytype, _type, _group, a1, a2, a3)	\
+	OSSL_PKEY_BN_DEF_SETTER3(_keytype, _type, _group, a1, a2, a3)
+
+#define OSSL_PKEY_BN_DEF2(_keytype, _type, _group, a1, a2)		\
+	OSSL_PKEY_BN_DEF_GETTER2(_keytype, _type, _group, a1, a2)	\
+	OSSL_PKEY_BN_DEF_SETTER2(_keytype, _type, _group, a1, a2)
+
 #define DEF_OSSL_PKEY_BN(class, keytype, name)				\
-do {									\
-	rb_define_method((class), #name, ossl_##keytype##_get_##name, 0);	\
+	rb_define_method((class), #name, ossl_##keytype##_get_##name, 0)
+
+#else
+#define OSSL_PKEY_BN_DEF3(_keytype, _type, _group, a1, a2, a3)		\
+	OSSL_PKEY_BN_DEF_GETTER3(_keytype, _type, _group, a1, a2, a3)	\
+	OSSL_PKEY_BN_DEF_SETTER3(_keytype, _type, _group, a1, a2, a3)	\
+	OSSL_PKEY_BN_DEF_SETTER_OLD(_keytype, _type, _group, a1)	\
+	OSSL_PKEY_BN_DEF_SETTER_OLD(_keytype, _type, _group, a2)	\
+	OSSL_PKEY_BN_DEF_SETTER_OLD(_keytype, _type, _group, a3)
+
+#define OSSL_PKEY_BN_DEF2(_keytype, _type, _group, a1, a2)		\
+	OSSL_PKEY_BN_DEF_GETTER2(_keytype, _type, _group, a1, a2)	\
+	OSSL_PKEY_BN_DEF_SETTER2(_keytype, _type, _group, a1, a2)	\
+	OSSL_PKEY_BN_DEF_SETTER_OLD(_keytype, _type, _group, a1)	\
+	OSSL_PKEY_BN_DEF_SETTER_OLD(_keytype, _type, _group, a2)
+
+#define DEF_OSSL_PKEY_BN(class, keytype, name) do {			\
+	rb_define_method((class), #name, ossl_##keytype##_get_##name, 0);\
 	rb_define_method((class), #name "=", ossl_##keytype##_set_##name, 1);\
 } while (0)
+#endif /* HAVE_OPAQUE_OPENSSL */
 
 #endif /* _OSSL_PKEY_H_ */
