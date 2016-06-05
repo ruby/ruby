@@ -191,7 +191,7 @@ DupPKeyPtr(VALUE obj)
     EVP_PKEY *pkey;
 
     SafeGetPKey(obj, pkey);
-    CRYPTO_add(&pkey->references, 1, CRYPTO_LOCK_EVP_PKEY);
+    EVP_PKEY_up_ref(pkey);
 
     return pkey;
 }
@@ -205,7 +205,7 @@ DupPrivPKeyPtr(VALUE obj)
 	ossl_raise(rb_eArgError, "Private key is needed.");
     }
     SafeGetPKey(obj, pkey);
-    CRYPTO_add(&pkey->references, 1, CRYPTO_LOCK_EVP_PKEY);
+    EVP_PKEY_up_ref(pkey);
 
     return pkey;
 }

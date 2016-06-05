@@ -107,9 +107,15 @@ OpenSSL.check_func_or_macro("SSL_CTX_set_ecdh_auto", "openssl/ssl.h")
 OpenSSL.check_func_or_macro("SSL_get_server_tmp_key", "openssl/ssl.h")
 
 # added in 1.1.0
+have_func("CRYPTO_lock") || $defs.push("-DHAVE_OPENSSL_110_THREADING_API")
 OpenSSL.check_func("RAND_pseudo_bytes", "openssl/rand.h") # deprecated
 have_func("X509_STORE_get_ex_data")
 have_func("X509_STORE_set_ex_data")
+have_func("X509_up_ref")
+have_func("X509_CRL_up_ref")
+have_func("X509_STORE_up_ref")
+have_func("SSL_SESSION_up_ref")
+have_func("EVP_PKEY_up_ref")
 OpenSSL.check_func_or_macro("SSL_CTX_set_tmp_ecdh_callback", "openssl/ssl.h") # removed
 
 Logging::message "=== Checking done. ===\n"

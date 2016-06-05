@@ -98,7 +98,7 @@ DupX509StorePtr(VALUE obj)
     X509_STORE *store;
 
     SafeGetX509Store(obj, store);
-    CRYPTO_add(&store->references, 1, CRYPTO_LOCK_X509_STORE);
+    X509_STORE_up_ref(store);
 
     return store;
 }

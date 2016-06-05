@@ -128,8 +128,10 @@ static void
 ossl_sslctx_free(void *ptr)
 {
     SSL_CTX *ctx = ptr;
+#if !defined(HAVE_X509_STORE_UP_REF)
     if(ctx && SSL_CTX_get_ex_data(ctx, ossl_ssl_ex_store_p)== (void*)1)
 	ctx->cert_store = NULL;
+#endif
     SSL_CTX_free(ctx);
 }
 
@@ -397,7 +399,7 @@ ossl_sslctx_session_new_cb(SSL *ssl, SSL_SESSION *sess)
     	return 1;
     ssl_obj = (VALUE)ptr;
     sess_obj = rb_obj_alloc(cSSLSession);
-    CRYPTO_add(&sess->references, 1, CRYPTO_LOCK_SSL_SESSION);
+    SSL_SESSION_up_ref(sess);
     DATA_PTR(sess_obj) = sess;
 
     ary = rb_ary_new2(2);
@@ -446,7 +448,7 @@ ossl_sslctx_session_remove_cb(SSL_CTX *ctx, SSL_SESSION *sess)
     	return;
     sslctx_obj = (VALUE)ptr;
     sess_obj = rb_obj_alloc(cSSLSession);
-    CRYPTO_add(&sess->references, 1, CRYPTO_LOCK_SSL_SESSION);
+    SSL_SESSION_up_ref(sess);
     DATA_PTR(sess_obj) = sess;
 
     ary = rb_ary_new2(2);
@@ -708,7 +710,6 @@ ossl_sslctx_setup(VALUE self)
 {
     SSL_CTX *ctx;
     X509 *cert = NULL, *client_ca = NULL;
-    X509_STORE *store;
     EVP_PKEY *key = NULL;
     char *ca_path = NULL, *ca_file = NULL;
     int verify_mode;
@@ -743,16 +744,20 @@ ossl_sslctx_setup(VALUE self)
 #endif /* OPENSSL_NO_EC */
 
     val = ossl_sslctx_get_cert_store(self);
-    if(!NIL_P(val)){
+    if (!NIL_P(val)) {
+	X509_STORE *store = GetX509StorePtr(val); /* NO NEED TO DUP */
+	SSL_CTX_set_cert_store(ctx, store);
+#if !defined(HAVE_X509_STORE_UP_REF)
 	/*
          * WORKAROUND:
 	 *   X509_STORE can count references, but
 	 *   X509_STORE_free() doesn't care it.
 	 *   So we won't increment it but mark it by ex_data.
 	 */
-        store = GetX509StorePtr(val); /* NO NEED TO DUP */
-        SSL_CTX_set_cert_store(ctx, store);
-        SSL_CTX_set_ex_data(ctx, ossl_ssl_ex_store_p, (void*)1);
+        SSL_CTX_set_ex_data(ctx, ossl_ssl_ex_store_p, (void *)1);
+#else /* Fixed in OpenSSL 1.0.2; bff9ce4db38b (master), 5b4b9ce976fc (1.0.2) */
+	X509_STORE_up_ref(store);
+#endif
     }
 
     val = ossl_sslctx_get_extra_cert(self);

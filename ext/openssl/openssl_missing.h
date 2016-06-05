@@ -45,4 +45,29 @@ int EC_curve_nist2nid(const char *);
 				(newf), (dupf), (freef))
 #endif
 
+#if !defined(HAVE_X509_UP_REF)
+#  define X509_up_ref(x) \
+	CRYPTO_add(&(x)->references, 1, CRYPTO_LOCK_X509)
+#endif
+
+#if !defined(HAVE_X509_CRL_UP_REF)
+#  define X509_CRL_up_ref(x) \
+	CRYPTO_add(&(x)->references, 1, CRYPTO_LOCK_X509_CRL);
+#endif
+
+#if !defined(HAVE_X509_STORE_UP_REF)
+#  define X509_STORE_up_ref(x) \
+	CRYPTO_add(&(x)->references, 1, CRYPTO_LOCK_X509_STORE);
+#endif
+
+#if !defined(HAVE_SSL_SESSION_UP_REF)
+#  define SSL_SESSION_up_ref(x) \
+	CRYPTO_add(&(x)->references, 1, CRYPTO_LOCK_SSL_SESSION);
+#endif
+
+#if !defined(HAVE_EVP_PKEY_UP_REF)
+#  define EVP_PKEY_up_ref(x) \
+	CRYPTO_add(&(x)->references, 1, CRYPTO_LOCK_EVP_PKEY);
+#endif
+
 #endif /* _OSSL_OPENSSL_MISSING_H_ */

@@ -1,3 +1,24 @@
+Sun Jun  5 21:42:24 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/extconf.rb: Check absence of CRYPTO_lock() to see if the
+	  OpenSSL has the new threading API. In OpenSSL <= 1.0.2, an application
+	  had to set locking callbacks to use OpenSSL in a multi-threaded
+	  environment. OpenSSL 1.1.0 now finds pthreads or Windows threads so we
+	  don't need to do something special.
+	  [ruby-core:75225] [Feature #12324]
+
+	  Also check existence of *_up_ref(). Some structures in OpenSSL have
+	  a reference counter. We used to increment it with CRYPTO_add() which
+	  is a part of the old API.
+
+	* ext/openssl/openssl_missing.h: Implement *_up_ref() if missing.
+
+	* ext/openssl/ossl.c: Don't set locking callbacks if unneeded.
+
+	* ext/openssl/ossl_pkey.c, ext/openssl/ossl_ssl.c,
+	  ext/openssl/ossl_x509cert.c, ext/openssl/ossl_x509crl.c,
+	  ext/openssl/ossl_x509store.c: Use *_up_ref() instead of CRYPTO_add().
+
 Sun Jun  5 21:38:13 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/extconf.rb: Check if RAND_pseudo_bytes() is usable. It is

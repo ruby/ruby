@@ -67,7 +67,7 @@ DupX509CRLPtr(VALUE obj)
     X509_CRL *crl;
 
     SafeGetX509CRL(obj, crl);
-    CRYPTO_add(&crl->references, 1, CRYPTO_LOCK_X509_CRL);
+    X509_CRL_up_ref(crl);
 
     return crl;
 }
