@@ -1,3 +1,18 @@
+Mon Jun  6 01:36:24 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/extconf.rb: Check existence of SSL_is_server(). This
+	  function was introduced in OpenSSL 1.0.2.
+	  [ruby-core:75225] [Feature #12324]
+
+	* ext/openssl/openssl_missing.h: Implement SSL_is_server() if missing.
+
+	* ext/openssl/ossl_ssl.c (ssl_info_cb): Use SSL_is_server() to see if
+	  the SSL is server. The state machine in OpenSSL was rewritten and
+	  SSL_get_state() no longer returns SSL_ST_ACCEPT.
+
+	  (ossl_ssl_cipher_to_ary, ossl_sslctx_session_get_cb): Add some
+	  `const`s to suppress warning.
+
 Mon Jun  6 01:18:10 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_asn1.c (decode_bool): Do the same thing as

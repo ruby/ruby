@@ -342,7 +342,11 @@ ossl_call_session_get_cb(VALUE ary)
 
 /* this method is currently only called for servers (in OpenSSL <= 0.9.8e) */
 static SSL_SESSION *
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER)
+ossl_sslctx_session_get_cb(SSL *ssl, const unsigned char *buf, int len, int *copy)
+#else
 ossl_sslctx_session_get_cb(SSL *ssl, unsigned char *buf, int len, int *copy)
+#endif
 {
     VALUE ary, ssl_obj, ret_obj;
     SSL_SESSION *sess;
@@ -650,15 +654,13 @@ ssl_alpn_select_cb(SSL *ssl, const unsigned char **out, unsigned char *outlen, c
 #endif
 #endif /* HAVE_SSL_CTX_SET_NEXT_PROTO_SELECT_CB || HAVE_SSL_CTX_SET_ALPN_SELECT_CB */
 
-/* This function may serve as the entry point to support further
- * callbacks. */
+/* This function may serve as the entry point to support further callbacks. */
 static void
 ssl_info_cb(const SSL *ssl, int where, int val)
 {
-    int state = SSL_state(ssl);
+    int is_server = SSL_is_server((SSL *)ssl);
 
-    if ((where & SSL_CB_HANDSHAKE_START) &&
-	(state & SSL_ST_ACCEPT)) {
+    if (is_server && where & SSL_CB_HANDSHAKE_START) {
 	ssl_renegotiation_cb(ssl);
     }
 }
@@ -887,7 +889,7 @@ ossl_sslctx_setup(VALUE self)
 }
 
 static VALUE
-ossl_ssl_cipher_to_ary(SSL_CIPHER *cipher)
+ossl_ssl_cipher_to_ary(const SSL_CIPHER *cipher)
 {
     VALUE ary;
     int bits, alg_bits;
@@ -913,7 +915,7 @@ ossl_sslctx_get_ciphers(VALUE self)
 {
     SSL_CTX *ctx;
     STACK_OF(SSL_CIPHER) *ciphers;
-    SSL_CIPHER *cipher;
+    const SSL_CIPHER *cipher;
     VALUE ary;
     int i, num;
 

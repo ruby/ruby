@@ -114,6 +114,7 @@ have_func("SSL_CTX_set_alpn_select_cb")
 OpenSSL.check_func_or_macro("SSL_CTX_set1_curves_list", "openssl/ssl.h")
 OpenSSL.check_func_or_macro("SSL_CTX_set_ecdh_auto", "openssl/ssl.h")
 OpenSSL.check_func_or_macro("SSL_get_server_tmp_key", "openssl/ssl.h")
+have_func("SSL_is_server")
 
 # added in 1.1.0
 have_func("CRYPTO_lock") || $defs.push("-DHAVE_OPENSSL_110_THREADING_API")

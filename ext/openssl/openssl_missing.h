@@ -61,6 +61,10 @@ int EC_curve_nist2nid(const char *);
 #  define X509_STORE_CTX_get0_store(x) ((x)->ctx)
 #endif
 
+#if !defined(HAVE_SSL_IS_SERVER)
+#  define SSL_is_server(s) ((s)->server)
+#endif
+
 /* added in 1.1.0 */
 #if !defined(HAVE_BN_GENCB_NEW)
 #  define BN_GENCB_new() ((BN_GENCB *)OPENSSL_malloc(sizeof(BN_GENCB)))
