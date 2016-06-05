@@ -11312,8 +11312,20 @@ objspace_malloc_gc_stress(rb_objspace_t *objspace)
     }
 }
 
-static void
-objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type)
+static inline bool
+objspace_malloc_increase_report(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type)
+{
+    if (0) fprintf(stderr, "increase - ptr: %p, type: %s, new_size: %"PRIdSIZE", old_size: %"PRIdSIZE"\n",
+		   mem,
+		   type == MEMOP_TYPE_MALLOC  ? "malloc" :
+		   type == MEMOP_TYPE_FREE    ? "free  " :
+		   type == MEMOP_TYPE_REALLOC ? "realloc": "error",
+		   new_size, old_size);
+    return false;
+}
+
+static bool
+objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type)
 {
     if (new_size > old_size) {
 	ATOMIC_SIZE_ADD(malloc_increase, new_size - old_size);
@@ -11355,13 +11367,6 @@ objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, si
 	atomic_sub_nounderflow(&objspace->malloc_params.allocated_size, dec_size);
     }
 
-    if (0) fprintf(stderr, "increase - ptr: %p, type: %s, new_size: %"PRIdSIZE", old_size: %"PRIdSIZE"\n",
-		   mem,
-		   type == MEMOP_TYPE_MALLOC  ? "malloc" :
-		   type == MEMOP_TYPE_FREE    ? "free  " :
-		   type == MEMOP_TYPE_REALLOC ? "realloc": "error",
-		   new_size, old_size);
-
     switch (type) {
       case MEMOP_TYPE_MALLOC:
 	ATOMIC_SIZE_INC(objspace->malloc_params.allocations);
@@ -11382,7 +11387,13 @@ objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, si
       case MEMOP_TYPE_REALLOC: /* ignore */ break;
     }
 #endif
+    return true;
 }
+
+#define objspace_malloc_increase(...) \
+    for (bool malloc_increase_done = objspace_malloc_increase_report(__VA_ARGS__); \
+	 !malloc_increase_done; \
+	 malloc_increase_done = objspace_malloc_increase_body(__VA_ARGS__))
 
 struct malloc_obj_info { /* 4 words */
     size_t size;
@@ -11695,10 +11706,10 @@ objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
 #endif
     old_size = objspace_malloc_size(objspace, ptr, old_size);
 
-    free(ptr);
-    RB_DEBUG_COUNTER_INC(heap_xfree);
-
-    objspace_malloc_increase(objspace, ptr, 0, old_size, MEMOP_TYPE_FREE);
+    objspace_malloc_increase(objspace, ptr, 0, old_size, MEMOP_TYPE_FREE) {
+	free(ptr);
+	RB_DEBUG_COUNTER_INC(heap_xfree);
+    }
 }
 
 static void *
