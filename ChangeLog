@@ -1,3 +1,8 @@
+Sun Jun  5 15:24:33 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_comprehensive.rb:
+	  Remove :lithuanian guard for Unicode case mapping.
+
 Sun Jun  5 14:46:34 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* string.c: Remove :lithuanian guard for Unicode case mapping.

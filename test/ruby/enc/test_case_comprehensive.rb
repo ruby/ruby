@@ -78,9 +78,9 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
     end
 
     tests = [
-      CaseTest.new(:downcase,   [:lithuanian], downcase),
-      CaseTest.new(:upcase,     [:lithuanian], upcase),
-      CaseTest.new(:capitalize, [:lithuanian], titlecase, downcase),
+      CaseTest.new(:downcase,   [], downcase),
+      CaseTest.new(:upcase,     [], upcase),
+      CaseTest.new(:capitalize, [], titlecase, downcase),
       # swapcase?????!!!!!
       CaseTest.new(:downcase,   [:fold],       casefold),
       CaseTest.new(:upcase,     [:turkic],     turkic_upcase),
