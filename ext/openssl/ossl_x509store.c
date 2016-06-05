@@ -149,8 +149,11 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
 
 /* BUG: This method takes any number of arguments but appears to ignore them. */
     GetX509Store(self, store);
+#if !defined(HAVE_OPAQUE_OPENSSL)
+    /* [Bug #405] [Bug #1678] [Bug #3000]; already fixed? */
     store->ex_data.sk = NULL;
-    X509_STORE_set_verify_cb_func(store, ossl_verify_cb);
+#endif
+    X509_STORE_set_verify_cb(store, ossl_verify_cb);
     ossl_x509store_set_vfy_cb(self, Qnil);
 
     /* last verification status */
@@ -382,10 +385,10 @@ static void
 ossl_x509stctx_free(void *ptr)
 {
     X509_STORE_CTX *ctx = ptr;
-    if(ctx->untrusted)
-	sk_X509_pop_free(ctx->untrusted, X509_free);
-    if(ctx->cert)
-	X509_free(ctx->cert);
+    if (X509_STORE_CTX_get0_untrusted(ctx))
+	sk_X509_pop_free(X509_STORE_CTX_get0_untrusted(ctx), X509_free);
+    if (X509_STORE_CTX_get0_cert(ctx))
+	X509_free(X509_STORE_CTX_get0_cert(ctx));
     X509_STORE_CTX_free(ctx);
 }
 
@@ -465,7 +468,7 @@ ossl_x509stctx_get_chain(VALUE self)
     VALUE ary;
 
     GetX509StCtx(self, ctx);
-    if((chain = X509_STORE_CTX_get_chain(ctx)) == NULL){
+    if((chain = X509_STORE_CTX_get0_chain(ctx)) == NULL){
         return Qnil;
     }
     if((num = sk_X509_num(chain)) < 0){
@@ -538,11 +541,14 @@ static VALUE
 ossl_x509stctx_get_curr_crl(VALUE self)
 {
     X509_STORE_CTX *ctx;
+    X509_CRL *crl;
 
     GetX509StCtx(self, ctx);
-    if(!ctx->current_crl) return Qnil;
+    crl = X509_STORE_CTX_get0_current_crl(ctx);
+    if (!crl)
+	return Qnil;
 
-    return ossl_x509crl_new(ctx->current_crl);
+    return ossl_x509crl_new(crl);
 }
 
 static VALUE

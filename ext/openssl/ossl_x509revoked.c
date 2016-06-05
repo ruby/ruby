@@ -116,16 +116,18 @@ ossl_x509revoked_get_serial(VALUE self)
 
     GetX509Rev(self, rev);
 
-    return asn1integer_to_num(rev->serialNumber);
+    return asn1integer_to_num(X509_REVOKED_get0_serialNumber(rev));
 }
 
 static VALUE
 ossl_x509revoked_set_serial(VALUE self, VALUE num)
 {
     X509_REVOKED *rev;
+    ASN1_INTEGER *ai;
 
     GetX509Rev(self, rev);
-    rev->serialNumber = num_to_asn1integer(num, rev->serialNumber);
+    ai = X509_REVOKED_get0_serialNumber(rev);
+    X509_REVOKED_set_serialNumber(rev, num_to_asn1integer(num, ai));
 
     return num;
 }
@@ -137,7 +139,7 @@ ossl_x509revoked_get_time(VALUE self)
 
     GetX509Rev(self, rev);
 
-    return asn1time_to_time(rev->revocationDate);
+    return asn1time_to_time(X509_REVOKED_get0_revocationDate(rev));
 }
 
 static VALUE
@@ -146,7 +148,7 @@ ossl_x509revoked_set_time(VALUE self, VALUE time)
     X509_REVOKED *rev;
 
     GetX509Rev(self, rev);
-    if (!ossl_x509_time_adjust(rev->revocationDate, time))
+    if (!ossl_x509_time_adjust(X509_REVOKED_get0_revocationDate(rev), time))
 	ossl_raise(eX509RevError, NULL);
 
     return time;
@@ -193,8 +195,8 @@ ossl_x509revoked_set_extensions(VALUE self, VALUE ary)
 	OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Ext);
     }
     GetX509Rev(self, rev);
-    sk_X509_EXTENSION_pop_free(rev->extensions, X509_EXTENSION_free);
-    rev->extensions = NULL;
+    while ((ext = X509_REVOKED_delete_ext(rev, 0)))
+	X509_EXTENSION_free(ext);
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	item = RARRAY_AREF(ary, i);
 	ext = DupX509ExtPtr(item);

@@ -37,17 +37,12 @@ ossl_bn_free(void *ptr)
     BN_clear_free(ptr);
 }
 
-static size_t
-ossl_bn_size(const void *ptr)
-{
-    return sizeof(BIGNUM);
-}
-
 static const rb_data_type_t ossl_bn_type = {
     "OpenSSL/BN",
-    {0, ossl_bn_free, ossl_bn_size,},
-    0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY,
+    {
+	0, ossl_bn_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
 /*

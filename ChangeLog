@@ -1,3 +1,16 @@
+Mon Jun  6 00:34:16 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/extconf.rb: Check existence of accessor functions that
+	  don't exist in OpenSSL 0.9.8. OpenSSL 1.1.0 made most of its
+	  structures opaque and requires use of these accessor functions.
+	  [ruby-core:75225] [Feature #12324]
+
+	* ext/openssl/openssl_missing.[ch]: Implement them if missing.
+
+	* ext/openssl/ossl*.c: Use these accessor functions.
+
+	* test/openssl/test_hmac.rb: Add missing test for HMAC#reset.
+
 Mon Jun  6 00:00:13 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/openssl_missing.[ch]: Implement EVP_PKEY_get0_*() and

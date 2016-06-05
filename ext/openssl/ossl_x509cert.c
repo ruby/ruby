@@ -349,9 +349,7 @@ ossl_x509_set_serial(VALUE self, VALUE num)
     X509 *x509;
 
     GetX509(self, x509);
-
-    x509->cert_info->serialNumber =
-	num_to_asn1integer(num, X509_get_serialNumber(x509));
+    X509_set_serialNumber(x509, num_to_asn1integer(num, X509_get_serialNumber(x509)));
 
     return num;
 }
@@ -371,7 +369,7 @@ ossl_x509_get_signature_algorithm(VALUE self)
     out = BIO_new(BIO_s_mem());
     if (!out) ossl_raise(eX509CertError, NULL);
 
-    if (!i2a_ASN1_OBJECT(out, x509->cert_info->signature->algorithm)) {
+    if (!i2a_ASN1_OBJECT(out, X509_get0_tbs_sigalg(x509)->algorithm)) {
 	BIO_free(out);
 	ossl_raise(eX509CertError, NULL);
     }
@@ -666,8 +664,8 @@ ossl_x509_set_extensions(VALUE self, VALUE ary)
 	OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Ext);
     }
     GetX509(self, x509);
-    sk_X509_EXTENSION_pop_free(x509->cert_info->extensions, X509_EXTENSION_free);
-    x509->cert_info->extensions = NULL;
+    while ((ext = X509_delete_ext(x509, 0)))
+	X509_EXTENSION_free(ext);
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	ext = DupX509ExtPtr(RARRAY_AREF(ary, i));
 

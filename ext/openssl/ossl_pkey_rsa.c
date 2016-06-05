@@ -114,35 +114,36 @@ static RSA *
 rsa_generate(int size, unsigned long exp)
 {
     int i;
-    BN_GENCB cb;
-    struct ossl_generate_cb_arg cb_arg;
+    struct ossl_generate_cb_arg cb_arg = { 0 };
     struct rsa_blocking_gen_arg gen_arg;
     RSA *rsa = RSA_new();
     BIGNUM *e = BN_new();
+    BN_GENCB *cb = BN_GENCB_new();
 
-    if (!rsa || !e) {
-	if (e) BN_free(e);
-	if (rsa) RSA_free(rsa);
-	return 0;
+    if (!rsa || !e || !cb) {
+	RSA_free(rsa);
+	BN_free(e);
+	BN_GENCB_free(cb);
+	return NULL;
     }
     for (i = 0; i < (int)sizeof(exp) * 8; ++i) {
 	if (exp & (1UL << i)) {
 	    if (BN_set_bit(e, i) == 0) {
 		BN_free(e);
 		RSA_free(rsa);
-		return 0;
+		BN_GENCB_free(cb);
+		return NULL;
 	    }
 	}
     }
 
-    memset(&cb_arg, 0, sizeof(struct ossl_generate_cb_arg));
     if (rb_block_given_p())
 	cb_arg.yield = 1;
-    BN_GENCB_set(&cb, ossl_generate_cb_2, &cb_arg);
+    BN_GENCB_set(cb, ossl_generate_cb_2, &cb_arg);
     gen_arg.rsa = rsa;
     gen_arg.e = e;
     gen_arg.size = size;
-    gen_arg.cb = &cb;
+    gen_arg.cb = cb;
     if (cb_arg.yield == 1) {
 	/* we cannot release GVL when callback proc is supplied */
 	rsa_blocking_gen(&gen_arg);
@@ -150,18 +151,19 @@ rsa_generate(int size, unsigned long exp)
 	/* there's a chance to unblock */
 	rb_thread_call_without_gvl(rsa_blocking_gen, &gen_arg, ossl_generate_cb_stop, &cb_arg);
     }
+
+    BN_GENCB_free(cb);
+    BN_free(e);
     if (!gen_arg.result) {
-	BN_free(e);
 	RSA_free(rsa);
 	if (cb_arg.state) {
 	    /* must clear OpenSSL error stack */
 	    ossl_clear_error();
 	    rb_jump_tag(cb_arg.state);
 	}
-	return 0;
+	return NULL;
     }
 
-    BN_free(e);
     return rsa;
 }
 

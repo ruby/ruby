@@ -180,6 +180,7 @@ static VALUE
 ossl_x509crl_get_signature_algorithm(VALUE self)
 {
     X509_CRL *crl;
+    X509_ALGOR *alg;
     BIO *out;
     BUF_MEM *buf;
     VALUE str;
@@ -188,7 +189,8 @@ ossl_x509crl_get_signature_algorithm(VALUE self)
     if (!(out = BIO_new(BIO_s_mem()))) {
 	ossl_raise(eX509CRLError, NULL);
     }
-    if (!i2a_ASN1_OBJECT(out, crl->sig_alg->algorithm)) {
+    X509_CRL_get0_signature(NULL, &alg, crl);
+    if (!i2a_ASN1_OBJECT(out, alg->algorithm)) {
 	BIO_free(out);
 	ossl_raise(eX509CRLError, NULL);
     }
@@ -237,7 +239,7 @@ ossl_x509crl_set_last_update(VALUE self, VALUE time)
     X509_CRL *crl;
 
     GetX509CRL(self, crl);
-    if (!ossl_x509_time_adjust(crl->crl->lastUpdate, time))
+    if (!ossl_x509_time_adjust(X509_CRL_get_lastUpdate(crl), time))
 	ossl_raise(eX509CRLError, NULL);
 
     return time;
@@ -257,11 +259,21 @@ static VALUE
 ossl_x509crl_set_next_update(VALUE self, VALUE time)
 {
     X509_CRL *crl;
+    ASN1_TIME *orig, *new;
 
     GetX509CRL(self, crl);
-    /* crl->crl->nextUpdate may be NULL at this time */
-    if (!(crl->crl->nextUpdate = ossl_x509_time_adjust(crl->crl->nextUpdate, time)))
+    /* orig may be NULL at this time; in this case a new ASN1_TIME is created */
+    orig = X509_CRL_get_nextUpdate(crl);
+    new = ossl_x509_time_adjust(orig, time);
+
+    if (!X509_CRL_set_nextUpdate(crl, new)) {
+	if (!orig)
+		ASN1_TIME_free(new);
 	ossl_raise(eX509CRLError, NULL);
+    }
+    /* X509_CRL_set_nextUpdate() dups when orig != new */
+    if (!orig)
+	ASN1_TIME_free(new);
 
     return time;
 }
@@ -304,8 +316,7 @@ ossl_x509crl_set_revoked(VALUE self, VALUE ary)
 	OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Rev);
     }
     GetX509CRL(self, crl);
-    sk_X509_REVOKED_pop_free(crl->crl->revoked, X509_REVOKED_free);
-    crl->crl->revoked = NULL;
+    sk_X509_REVOKED_pop_free(X509_CRL_get_REVOKED(crl), X509_REVOKED_free);
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	rev = DupX509RevokedPtr(RARRAY_AREF(ary, i));
 	if (!X509_CRL_add0_revoked(crl, rev)) { /* NO DUP - don't free! */
@@ -478,8 +489,8 @@ ossl_x509crl_set_extensions(VALUE self, VALUE ary)
 	OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Ext);
     }
     GetX509CRL(self, crl);
-    sk_X509_EXTENSION_pop_free(crl->crl->extensions, X509_EXTENSION_free);
-    crl->crl->extensions = NULL;
+    while ((ext = X509_CRL_delete_ext(crl, 0)))
+	X509_EXTENSION_free(ext);
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	ext = DupX509ExtPtr(RARRAY_AREF(ary, i));
 	if(!X509_CRL_add_ext(crl, ext, -1)) { /* DUPs ext - FREE it */

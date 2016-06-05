@@ -36,4 +36,11 @@ class OpenSSL::TestHMAC < OpenSSL::TestCase
     result = hmac.update(data).hexdigest
     assert_equal "a13984b929a07912e4e21c5720876a8e150d6f67f854437206e7f86547248396", result
   end
+
+  def test_reset_keep_key
+    first = @h1.update("test").hexdigest
+    @h2.reset
+    second = @h2.update("test").hexdigest
+    assert_equal first, second
+  end
 end if defined?(OpenSSL::TestUtils)

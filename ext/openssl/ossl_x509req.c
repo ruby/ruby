@@ -302,6 +302,7 @@ static VALUE
 ossl_x509req_get_signature_algorithm(VALUE self)
 {
     X509_REQ *req;
+    X509_ALGOR *alg;
     BIO *out;
     BUF_MEM *buf;
     VALUE str;
@@ -311,7 +312,8 @@ ossl_x509req_get_signature_algorithm(VALUE self)
     if (!(out = BIO_new(BIO_s_mem()))) {
 	ossl_raise(eX509ReqError, NULL);
     }
-    if (!i2a_ASN1_OBJECT(out, req->sig_alg->algorithm)) {
+    X509_REQ_get0_signature(NULL, &alg, req);
+    if (!i2a_ASN1_OBJECT(out, alg->algorithm)) {
 	BIO_free(out);
 	ossl_raise(eX509ReqError, NULL);
     }
@@ -426,8 +428,8 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
 	OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Attr);
     }
     GetX509Req(self, req);
-    sk_X509_ATTRIBUTE_pop_free(req->req_info->attributes, X509_ATTRIBUTE_free);
-    req->req_info->attributes = NULL;
+    while ((attr = X509_REQ_delete_attr(req, 0)))
+	X509_ATTRIBUTE_free(attr);
     for (i=0;i<RARRAY_LEN(ary); i++) {
 	item = RARRAY_AREF(ary, i);
 	attr = DupX509AttrPtr(item);

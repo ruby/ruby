@@ -282,6 +282,7 @@ ossl_x509name_to_a(VALUE self)
     char long_name[512];
     const char *short_name;
     VALUE ary, vname, ret;
+    ASN1_STRING *value;
 
     GetX509Name(self, name);
     entries = X509_NAME_entry_count(name);
@@ -294,7 +295,8 @@ ossl_x509name_to_a(VALUE self)
 	if (!(entry = X509_NAME_get_entry(name, i))) {
 	    ossl_raise(eX509NameError, NULL);
 	}
-	if (!i2t_ASN1_OBJECT(long_name, sizeof(long_name), entry->object)) {
+	if (!i2t_ASN1_OBJECT(long_name, sizeof(long_name),
+			     X509_NAME_ENTRY_get_object(entry))) {
 	    ossl_raise(eX509NameError, NULL);
 	}
 	nid = OBJ_ln2nid(long_name);
@@ -304,10 +306,11 @@ ossl_x509name_to_a(VALUE self)
 	    short_name = OBJ_nid2sn(nid);
 	    vname = rb_str_new2(short_name); /*do not free*/
 	}
+	value = X509_NAME_ENTRY_get_data(entry);
 	ary = rb_ary_new3(3,
 			  vname,
-        		  rb_str_new((const char *)entry->value->data, entry->value->length),
-        		  INT2FIX(entry->value->type));
+			  rb_str_new((const char *)value->data, value->length),
+			  INT2FIX(value->type));
 	rb_ary_push(ret, ary);
     }
     return ret;
