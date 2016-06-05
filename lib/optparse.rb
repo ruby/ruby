@@ -1648,7 +1648,7 @@ XXX
   #
   # Wrapper method for getopts.rb.
   #
-  #   params = ARGV.getopts("ab:", "foo", "bar:", "zot:Z;zot option)
+  #   params = ARGV.getopts("ab:", "foo", "bar:", "zot:Z;zot option")
   #   # params[:a] = true   # -a
   #   # params[:b] = "1"    # -b1
   #   # params[:foo] = "1"  # --foo
