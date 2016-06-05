@@ -61,11 +61,20 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * String
 
+  * String#upcase, String#downcase, String#capitalize, String#swapcase and
+    their bang variants work for all of Unicode, and are no longer limited
+    to ASCII. Variations are available with options. See the documentation
+    of String#downcase for details. [Feature #10085]
+
   * String.new(capacity: size) [Feature #12024]
 
 * Symbol
 
   * Symbol#match now returns MatchData.  [Bug #11991]
+
+  * Symbol#upcase, Symbol#downcase, Symbol#capitalize, and Symbol#swapcase now
+    work for all of Unicode. See the documentation of String#downcase
+    for details. [Feature #10085]
 
 * MatchData
 
@@ -109,6 +118,14 @@ with all sufficient information, see the ChangeLog file or Redmine
   So, class based dispatch, such as klass == rb_cFixnum and
   klass == rb_cBignum, should be changed to FIXNUM_P(obj) and
   RB_TYPE_P(obj, T_BIGNUM).
+
+* String/Symbol#upcase/downcase/swapcase/capitalize(!) now work for all of
+  Unicode, not only for ASCII. [Feature #10085]
+  No change is needed if the data is in ASCII anyway or if the limitation
+  to ASCII was only tolerated while waiting for a more extensive implementation.
+  A change (using the :ascii option) is needed in cases where Unicode data
+  is processed, but the operation has to be limited to ASCII only.
+  A good example of this are internationalized domain names.
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 

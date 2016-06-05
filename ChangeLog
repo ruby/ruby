@@ -1,3 +1,8 @@
+Sun Jun  5 19:06:40 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* NEWS: Add news about Unicode-wide case mapping for
+	  String/Symbol#upcase/downcase/swapcase/capitalize(!).
+
 Sun Jun  5 15:24:33 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_case_comprehensive.rb:
