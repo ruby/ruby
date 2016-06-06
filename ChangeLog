@@ -1,3 +1,7 @@
+Mon Jun  6 23:00:00 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* appveyor.yml: Update libressl version to 2.3.5.
+
 Mon Jun  6 18:37:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_throw_start): check if the iseq is symbol
