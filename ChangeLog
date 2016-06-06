@@ -1,3 +1,8 @@
+Mon Jun  6 13:16:46 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_mapping.rb:
+	  Remove :lithuanian guard for Unicode case mapping.
+
 Mon Jun  6 10:39:56 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/openssl_missing.h: Include ruby/config.h. r55285 added

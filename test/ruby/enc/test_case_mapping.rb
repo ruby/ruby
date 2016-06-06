@@ -2,7 +2,7 @@
 
 require "test/unit"
 
-# preliminary tests, using :lithuanian as a guard
+# preliminary tests, using  as a guard
 # to test new implementation strategy
 class TestCaseMappingPreliminary < Test::Unit::TestCase
   # checks, including idempotence and non-modification; not always guaranteed
@@ -39,7 +39,7 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
   def check_capitalize_suffixes(lower, upper)
     while upper.length > 1
       lower = lower[1..-1]
-      check_capitalize_properties upper[0]+lower, upper, :lithuanian
+      check_capitalize_properties upper[0]+lower, upper
       upper = upper[1..-1]
     end
   end
@@ -54,10 +54,10 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
   end
 
   def test_ascii
-    check_downcase_properties   'yukihiro matsumoto (matz)', 'Yukihiro MATSUMOTO (MATZ)', :lithuanian
-    check_upcase_properties     'YUKIHIRO MATSUMOTO (MATZ)', 'yukihiro matsumoto (matz)', :lithuanian
-    check_capitalize_properties 'Yukihiro matsumoto (matz)', 'yukihiro MATSUMOTO (MATZ)', :lithuanian
-    check_swapcase_properties   'yUKIHIRO matsumoto (MAtz)', 'Yukihiro MATSUMOTO (maTZ)', :lithuanian
+    check_downcase_properties   'yukihiro matsumoto (matz)', 'Yukihiro MATSUMOTO (MATZ)'
+    check_upcase_properties     'YUKIHIRO MATSUMOTO (MATZ)', 'yukihiro matsumoto (matz)'
+    check_capitalize_properties 'Yukihiro matsumoto (matz)', 'yukihiro MATSUMOTO (MATZ)'
+    check_swapcase_properties   'yUKIHIRO matsumoto (MAtz)', 'Yukihiro MATSUMOTO (maTZ)'
   end
 
   def test_invalid
@@ -68,70 +68,70 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
   end
 
   def test_general
-    check_downcase_properties   'résumé dürst ĭñŧėřŋãţĳňőńæłĩżàťïōņ', 'RÉSUMÉ DÜRST ĬÑŦĖŘŊÃŢĲŇŐŃÆŁĨŻÀŤÏŌŅ', :lithuanian
-    check_upcase_properties     'RÉSUMÉ DÜRST ĬÑŦĖŘŊÃŢĲŇŐŃÆŁĨŻÀŤÏŌŅ', 'résumé dürst ĭñŧėřŋãţĳňőńæłĩżàťïōņ', :lithuanian
+    check_downcase_properties   'résumé dürst ĭñŧėřŋãţĳňőńæłĩżàťïōņ', 'RÉSUMÉ DÜRST ĬÑŦĖŘŊÃŢĲŇŐŃÆŁĨŻÀŤÏŌŅ'
+    check_upcase_properties     'RÉSUMÉ DÜRST ĬÑŦĖŘŊÃŢĲŇŐŃÆŁĨŻÀŤÏŌŅ', 'résumé dürst ĭñŧėřŋãţĳňőńæłĩżàťïōņ'
     check_capitalize_suffixes   'résumé dürst ĭñŧėřŋãţĳňőńæłĩżàťïōņ', 'RÉSUMÉ DÜRST ĬÑŦĖŘŊÃŢĲŇŐŃÆŁĨŻÀŤÏŌŅ'
-    check_swapcase_properties   'résumé DÜRST ĭñŧėřŊÃŢĲŇŐŃæłĩżàťïōņ', 'RÉSUMÉ dürst ĬÑŦĖŘŋãţĳňőńÆŁĨŻÀŤÏŌŅ', :lithuanian
+    check_swapcase_properties   'résumé DÜRST ĭñŧėřŊÃŢĲŇŐŃæłĩżàťïōņ', 'RÉSUMÉ dürst ĬÑŦĖŘŋãţĳňőńÆŁĨŻÀŤÏŌŅ'
   end
 
   def test_one_way_upcase
-    check_upcase_properties     'ΜΜΜΜΜ', 'µµµµµ', :lithuanian # MICRO SIGN -> Greek Mu
-    check_downcase_properties   'µµµµµ', 'µµµµµ', :lithuanian # MICRO SIGN -> Greek Mu
-    check_capitalize_properties 'Μµµµµ', 'µµµµµ', :lithuanian # MICRO SIGN -> Greek Mu
+    check_upcase_properties     'ΜΜΜΜΜ', 'µµµµµ' # MICRO SIGN -> Greek Mu
+    check_downcase_properties   'µµµµµ', 'µµµµµ' # MICRO SIGN -> Greek Mu
+    check_capitalize_properties 'Μµµµµ', 'µµµµµ' # MICRO SIGN -> Greek Mu
     check_capitalize_properties 'Μµµµµ', 'µµµµµ', :turkic # MICRO SIGN -> Greek Mu
-    check_capitalize_properties 'H̱ẖẖẖẖ', 'ẖẖẖẖẖ', :lithuanian
-    check_capitalize_properties 'Βϐϐϐϐ', 'ϐϐϐϐϐ', :lithuanian
-    check_capitalize_properties 'Θϑϑϑϑ', 'ϑϑϑϑϑ', :lithuanian
-    check_capitalize_properties 'Φϕ', 'ϕϕ', :lithuanian
-    check_capitalize_properties 'Πϖ', 'ϖϖ', :lithuanian
-    check_capitalize_properties 'Κϰ', 'ϰϰ', :lithuanian
-    check_capitalize_properties 'Ρϱϱ', 'ϱϱϱ', :lithuanian
-    check_capitalize_properties 'Εϵ', 'ϵϵ', :lithuanian
-    check_capitalize_properties 'Ιͅͅͅͅ', 'ͅͅͅͅͅ', :lithuanian
-    check_capitalize_properties 'Sſſſſ', 'ſſſſſ', :lithuanian
+    check_capitalize_properties 'H̱ẖẖẖẖ', 'ẖẖẖẖẖ'
+    check_capitalize_properties 'Βϐϐϐϐ', 'ϐϐϐϐϐ'
+    check_capitalize_properties 'Θϑϑϑϑ', 'ϑϑϑϑϑ'
+    check_capitalize_properties 'Φϕ', 'ϕϕ'
+    check_capitalize_properties 'Πϖ', 'ϖϖ'
+    check_capitalize_properties 'Κϰ', 'ϰϰ'
+    check_capitalize_properties 'Ρϱϱ', 'ϱϱϱ'
+    check_capitalize_properties 'Εϵ', 'ϵϵ'
+    check_capitalize_properties 'Ιͅͅͅͅ', 'ͅͅͅͅͅ'
+    check_capitalize_properties 'Sſſſſ', 'ſſſſſ'
   end
 
   def test_various
-    check_upcase_properties     'Μ', 'µ', :lithuanian # MICRO SIGN -> Greek Mu
-    check_downcase_properties   'µµµµµ', 'µµµµµ', :lithuanian # MICRO SIGN
-    check_capitalize_properties 'Ss', 'ß', :lithuanian
-    check_upcase_properties     'SS', 'ß', :lithuanian
+    check_upcase_properties     'Μ', 'µ' # MICRO SIGN -> Greek Mu
+    check_downcase_properties   'µµµµµ', 'µµµµµ' # MICRO SIGN
+    check_capitalize_properties 'Ss', 'ß'
+    check_upcase_properties     'SS', 'ß'
   end
 
   def test_cherokee
-    check_downcase_properties   "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79", 'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', :lithuanian
-    check_upcase_properties     'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79", :lithuanian
+    check_downcase_properties   "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79", 'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ'
+    check_upcase_properties     'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79"
     check_capitalize_suffixes   "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79", 'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ'
     assert_equal                'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', 'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ'.downcase(:fold)
     assert_equal                'ᎠᎡᎢᎣᎤᎥᎦᎧᎨᎩ', "\uab70\uab71\uab72\uab73\uab74\uab75\uab76\uab77\uab78\uab79".downcase(:fold)
   end
 
   def test_titlecase
-    check_downcase_properties   'ǳ ǆ ǉ ǌ', 'ǲ ǅ ǈ ǋ', :lithuanian
-    check_downcase_properties   'ǳ ǆ ǉ ǌ', 'Ǳ Ǆ Ǉ Ǌ', :lithuanian
-    check_upcase_properties     'Ǳ Ǆ Ǉ Ǌ', 'ǲ ǅ ǈ ǋ', :lithuanian
-    check_upcase_properties     'Ǳ Ǆ Ǉ Ǌ', 'ǳ ǆ ǉ ǌ', :lithuanian
-    check_capitalize_properties 'ǲ', 'Ǳ', :lithuanian
-    check_capitalize_properties 'ǅ', 'Ǆ', :lithuanian
-    check_capitalize_properties 'ǈ', 'Ǉ', :lithuanian
-    check_capitalize_properties 'ǋ', 'Ǌ', :lithuanian
-    check_capitalize_properties 'ǲ', 'ǳ', :lithuanian
-    check_capitalize_properties 'ǅ', 'ǆ', :lithuanian
-    check_capitalize_properties 'ǈ', 'ǉ', :lithuanian
-    check_capitalize_properties 'ǋ', 'ǌ', :lithuanian
+    check_downcase_properties   'ǳ ǆ ǉ ǌ', 'ǲ ǅ ǈ ǋ'
+    check_downcase_properties   'ǳ ǆ ǉ ǌ', 'Ǳ Ǆ Ǉ Ǌ'
+    check_upcase_properties     'Ǳ Ǆ Ǉ Ǌ', 'ǲ ǅ ǈ ǋ'
+    check_upcase_properties     'Ǳ Ǆ Ǉ Ǌ', 'ǳ ǆ ǉ ǌ'
+    check_capitalize_properties 'ǲ', 'Ǳ'
+    check_capitalize_properties 'ǅ', 'Ǆ'
+    check_capitalize_properties 'ǈ', 'Ǉ'
+    check_capitalize_properties 'ǋ', 'Ǌ'
+    check_capitalize_properties 'ǲ', 'ǳ'
+    check_capitalize_properties 'ǅ', 'ǆ'
+    check_capitalize_properties 'ǈ', 'ǉ'
+    check_capitalize_properties 'ǋ', 'ǌ'
   end
 
   def test_swapcase
-    assert_equal                'dZ', 'ǲ'.swapcase(:lithuanian)
-    assert_equal                'dŽ', 'ǅ'.swapcase(:lithuanian)
-    assert_equal                'lJ', 'ǈ'.swapcase(:lithuanian)
-    assert_equal                'nJ', 'ǋ'.swapcase(:lithuanian)
-    assert_equal                'ἀΙ', 'ᾈ'.swapcase(:lithuanian)
-    assert_equal                'ἣΙ', 'ᾛ'.swapcase(:lithuanian)
-    assert_equal                'ὧΙ', 'ᾯ'.swapcase(:lithuanian)
-    assert_equal                'αΙ', 'ᾼ'.swapcase(:lithuanian)
-    assert_equal                'ηΙ', 'ῌ'.swapcase(:lithuanian)
-    assert_equal                'ωΙ', 'ῼ'.swapcase(:lithuanian)
+    assert_equal                'dZ', 'ǲ'.swapcase
+    assert_equal                'dŽ', 'ǅ'.swapcase
+    assert_equal                'lJ', 'ǈ'.swapcase
+    assert_equal                'nJ', 'ǋ'.swapcase
+    assert_equal                'ἀΙ', 'ᾈ'.swapcase
+    assert_equal                'ἣΙ', 'ᾛ'.swapcase
+    assert_equal                'ὧΙ', 'ᾯ'.swapcase
+    assert_equal                'αΙ', 'ᾼ'.swapcase
+    assert_equal                'ηΙ', 'ῌ'.swapcase
+    assert_equal                'ωΙ', 'ῼ'.swapcase
   end
 
   def test_ascii_option
@@ -154,20 +154,20 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
   def test_turcic
     check_downcase_properties   'yukihiro matsumoto (matz)', 'Yukihiro MATSUMOTO (MATZ)', :turkic
     check_upcase_properties     'YUKİHİRO MATSUMOTO (MATZ)', 'Yukihiro Matsumoto (matz)', :turkic
-    check_downcase_properties   "yuki\u0307hi\u0307ro matsumoto (matz)", 'YUKİHİRO MATSUMOTO (MATZ)', :lithuanian
+    check_downcase_properties   "yuki\u0307hi\u0307ro matsumoto (matz)", 'YUKİHİRO MATSUMOTO (MATZ)'
   end
 
   def test_greek
-    check_downcase_properties   'αβγδεζηθικλμνξοπρστυφχψω', 'ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ', :lithuanian
-    check_upcase_properties     'ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ', 'αβγδεζηθικλμνξοπρστυφχψω', :lithuanian
+    check_downcase_properties   'αβγδεζηθικλμνξοπρστυφχψω', 'ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ'
+    check_upcase_properties     'ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ', 'αβγδεζηθικλμνξοπρστυφχψω'
   end
 
   def no_longer_a_test_buffer_allocations
-    assert_equal 'TURKISH*ı'*10, ('I'*10).downcase(:turkic, :lithuanian)
-    assert_equal 'TURKISH*ı'*100, ('I'*100).downcase(:turkic, :lithuanian)
-    assert_equal 'TURKISH*ı'*1_000, ('I'*1_000).downcase(:turkic, :lithuanian)
-    assert_equal 'TURKISH*ı'*10_000, ('I'*10_000).downcase(:turkic, :lithuanian)
-    assert_equal 'TURKISH*ı'*100_000, ('I'*100_000).downcase(:turkic, :lithuanian)
-    assert_equal 'TURKISH*ı'*1_000_000, ('I'*1_000_000).downcase(:turkic, :lithuanian)
+    assert_equal 'TURKISH*ı'*10, ('I'*10).downcase(:turkic)
+    assert_equal 'TURKISH*ı'*100, ('I'*100).downcase(:turkic)
+    assert_equal 'TURKISH*ı'*1_000, ('I'*1_000).downcase(:turkic)
+    assert_equal 'TURKISH*ı'*10_000, ('I'*10_000).downcase(:turkic)
+    assert_equal 'TURKISH*ı'*100_000, ('I'*100_000).downcase(:turkic)
+    assert_equal 'TURKISH*ı'*1_000_000, ('I'*1_000_000).downcase(:turkic)
   end
 end
