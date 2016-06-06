@@ -1,3 +1,8 @@
+Mon Jun  6 10:39:56 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/openssl_missing.h: Include ruby/config.h. r55285 added
+	  some inline functions but VC does not recognize 'inline' keyword.
+
 Mon Jun  6 09:25:34 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (thread_start_func_2): report raised exception if

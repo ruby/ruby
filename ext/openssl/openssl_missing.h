@@ -10,6 +10,8 @@
 #if !defined(_OSSL_OPENSSL_MISSING_H_)
 #define _OSSL_OPENSSL_MISSING_H_
 
+#include "ruby/config.h"
+
 /* added in 0.9.8X */
 #if !defined(HAVE_EVP_CIPHER_CTX_NEW)
 EVP_CIPHER_CTX *EVP_CIPHER_CTX_new(void);
