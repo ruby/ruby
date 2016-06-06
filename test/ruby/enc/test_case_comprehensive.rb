@@ -99,11 +99,21 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
   end
 
   def self.generate_casefold_tests (encoding)
+    all_tests
+    # preselect codepoints to speed up testing for small encodings
+    codepoints = @@codepoints.select do |code|
+      begin
+        code.encode(encoding)
+        true
+      rescue Encoding::UndefinedConversionError
+        false
+      end
+    end
     all_tests.each do |test|
       attributes = test.attributes.map(&:to_s).join '-'
       attributes.prepend '_' unless attributes.empty?
       define_method "test_#{encoding}_#{test.method_name}#{attributes}" do
-        @@codepoints.each do |code|
+        codepoints.each do |code|
           begin
             source = code.encode(encoding) * 5
             target = test.first_data[code].encode(encoding) + test.follow_data[code].encode(encoding) * 4
