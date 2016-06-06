@@ -5753,17 +5753,6 @@ check_case_options(int argc, VALUE *argv, OnigCaseFoldType flags)
     return flags;
 }
 
-/* The following declaration should be moved to an include file rather than
-   be duplicated here (and in enc/unicode.c), but we'll wait for this because
-   we want this to become a primitive anyway. */
-extern int
-onigenc_unicode_case_map(OnigCaseFoldType* flag,
-	 const OnigUChar** pp,
-	 const OnigUChar* end,
-	 OnigUChar* to,
-	 OnigUChar* to_end,
-	 const struct OnigEncodingTypeST* enc);
-
 /* 16 should be long enough to absorb any kind of single character length increase */
 #define CASE_MAPPING_ADDITIONAL_LENGTH 20
 
@@ -5800,7 +5789,7 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 	current_buffer = current_buffer->next;
 	current_buffer->next = NULL;
 	current_buffer->capa = capa;
-	buffer_length_or_invalid = onigenc_unicode_case_map(flags,
+	buffer_length_or_invalid = enc->case_map(flags,
 				   (const OnigUChar**)&source_current, source_end,
 				   current_buffer->space,
 				   current_buffer->space+current_buffer->capa,

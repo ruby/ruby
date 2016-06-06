@@ -1,3 +1,8 @@
+Mon Jun  6 13:37:08 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c Change rb_str_casemap to use encoding primitive
+	  case_map instead of directly calling onigenc_unicode_case_map.
+
 Mon Jun  6 13:16:46 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_case_mapping.rb:
