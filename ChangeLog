@@ -1,3 +1,9 @@
+Mon Jun  6 18:37:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_throw_start): check if the iseq is symbol
+	  proc, class definition should not be a symbol proc.
+	  [ruby-core:75856] [Bug #12462]
+
 Mon Jun  6 18:36:34 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* string.c: Added UTF-16BE/LE and UTF-32BE/LE to supported encodings

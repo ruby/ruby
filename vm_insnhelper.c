@@ -995,7 +995,9 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 		target_lep = lep;
 	    }
 
-	    if (lep == target_lep && escape_cfp->iseq->body->type == ISEQ_TYPE_CLASS) {
+	    if (lep == target_lep &&
+		RUBY_VM_NORMAL_ISEQ_P(escape_cfp->iseq) &&
+		escape_cfp->iseq->body->type == ISEQ_TYPE_CLASS) {
 		in_class_frame = 1;
 		target_lep = 0;
 	    }
