@@ -81,11 +81,7 @@ ossl_cipher_new(const EVP_CIPHER *cipher)
 static void
 ossl_cipher_free(void *ptr)
 {
-    EVP_CIPHER_CTX *ctx = ptr;
-    if (ctx) {
-	EVP_CIPHER_CTX_cleanup(ctx);
-	ruby_xfree(ctx);
-    }
+    EVP_CIPHER_CTX_free(ptr);
 }
 
 static VALUE
