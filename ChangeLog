@@ -1,3 +1,11 @@
+Mon Jun  6 18:36:34 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c: Added UTF-16BE/LE and UTF-32BE/LE to supported encodings
+	  for Unicode case mapping.
+
+	* test/ruby/enc/test_case_comprehensive.rb: Tests for above
+	  functionality; fixed an encoding issue in assertion error message.
+
 Mon Jun  6 17:29:35 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_case_comprehensive.rb: Speed up testing for small

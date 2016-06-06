@@ -5858,7 +5858,7 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
-    if (enc==rb_utf8_encoding()) {
+    if (rb_enc_unicode_p(enc)) {
 	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 	modify = ONIGENC_CASE_MODIFIED & flags;
     }
@@ -5948,7 +5948,7 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
-    if (enc==rb_utf8_encoding()) {
+    if (rb_enc_unicode_p(enc)) {
 	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 	modify = ONIGENC_CASE_MODIFIED & flags;
     }
@@ -6037,8 +6037,9 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
  *  normalization (i.e. String#unicode_normalize) is not necessarily maintained
  *  by case mapping operations.
  *
- *  Non-ASCII case mapping/folding is currently only supported for UTF-8
- *  Strings/Symbols, but this support will be extended to other encodings.
+ *  Non-ASCII case mapping/folding is currently supported for UTF-8,
+ *  UTF-16BE/LE, and UTF-32BE/LE Strings/Symbols.
+ *  This support will be extended to other encodings.
  *
  *     "hEllO".downcase   #=> "hello"
  */
@@ -6083,7 +6084,7 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return Qnil;
-    if (enc==rb_utf8_encoding()) {
+    if (rb_enc_unicode_p(enc)) {
 	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 	modify = ONIGENC_CASE_MODIFIED & flags;
     }
@@ -6159,7 +6160,7 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
-    if (enc==rb_utf8_encoding()) {
+    if (rb_enc_unicode_p(enc)) {
 	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 	modify = ONIGENC_CASE_MODIFIED & flags;
     }

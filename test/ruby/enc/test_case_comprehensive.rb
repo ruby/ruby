@@ -119,7 +119,7 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
             target = test.first_data[code].encode(encoding) + test.follow_data[code].encode(encoding) * 4
             result = source.send(test.method_name, *test.attributes)
             assert_equal target, result,
-              "from #{source} (#{source.dump}) expected #{target.dump} but was #{result.dump}"
+              "from #{code*5} (#{source.dump}) expected #{target.dump} but was #{result.dump}"
           rescue Encoding::UndefinedConversionError
           end
         end
@@ -139,4 +139,8 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
   generate_casefold_tests 'US-ASCII'
   generate_casefold_tests 'ASCII-8BIT'
   generate_casefold_tests 'UTF-8'
+  generate_casefold_tests 'UTF-16BE'
+  generate_casefold_tests 'UTF-16LE'
+  generate_casefold_tests 'UTF-32BE'
+  generate_casefold_tests 'UTF-32LE'
 end
