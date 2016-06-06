@@ -81,6 +81,11 @@ with all sufficient information, see the ChangeLog file or Redmine
   * MatchData#named_captures [Feature #11999]
   * MatchData#values_at supports named captures [Feature #9179]
 
+* Thread
+
+  * Thread#report_on_exception and Thread.report_on_exception
+    [Feature #6647]
+
 === Stdlib updates (outstanding ones only)
 
 * CSV

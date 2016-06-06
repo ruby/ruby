@@ -86,8 +86,13 @@ set_backtrace(VALUE info, VALUE bt)
 static void
 error_print(rb_thread_t *th)
 {
+    rb_threadptr_error_print(th, th->errinfo);
+}
+
+void
+rb_threadptr_error_print(rb_thread_t *th, VALUE errinfo)
+{
     volatile VALUE errat = Qundef;
-    VALUE errinfo = th->errinfo;
     int raised_flag = th->raised_flag;
     volatile VALUE eclass = Qundef, e = Qundef;
     const char *volatile einfo;

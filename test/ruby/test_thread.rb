@@ -344,6 +344,62 @@ class TestThread < Test::Unit::TestCase
     INPUT
   end
 
+  def test_report_on_exception
+    assert_separately([], <<~"end;") #do
+      q1 = Queue.new
+      q2 = Queue.new
+
+      assert_equal(false, Thread.report_on_exception,
+                   "global flags is false by default")
+      assert_equal(false, Thread.current.report_on_exception)
+
+      Thread.current.report_on_exception = true
+      assert_equal(false,
+                   Thread.start {Thread.current.report_on_exception}.value,
+                  "should not inherit from the parent thread")
+
+      assert_warn("", "exception should be ignored silently") {
+        th = Thread.start {
+          q1.push(Thread.current.report_on_exception)
+          raise "report 1"
+        }
+        assert_equal(false, q1.pop)
+        Thread.pass while th.alive?
+      }
+
+      assert_warn(/report 2/, "exception should be reported") {
+        th = Thread.start {
+          q1.push(Thread.current.report_on_exception = true)
+          raise "report 2"
+        }
+        assert_equal(true, q1.pop)
+        Thread.pass while th.alive?
+      }
+
+      assert_equal(false, Thread.report_on_exception)
+      assert_warn("", "the global flag should not affect already started threads") {
+        th = Thread.start {
+          q2.pop
+          q1.push(Thread.current.report_on_exception)
+          raise "report 3"
+        }
+        q2.push(Thread.report_on_exception = true)
+        assert_equal(false, q1.pop)
+        Thread.pass while th.alive?
+      }
+
+      assert_equal(true, Thread.report_on_exception)
+      assert_warn(/report 4/, "should defaults to the global flag at the start") {
+        th = Thread.start {
+          q1.push(Thread.current.report_on_exception)
+          raise "report 4"
+        }
+        assert_equal(true, q1.pop)
+        Thread.pass while th.alive?
+      }
+    end;
+  end
+
   def test_status_and_stop_p
     a = ::Thread.new { raise("die now") }
     b = Thread.new { Thread.stop }

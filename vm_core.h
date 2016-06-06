@@ -495,6 +495,7 @@ typedef struct rb_vm_struct {
 
     unsigned int running: 1;
     unsigned int thread_abort_on_exception: 1;
+    unsigned int thread_report_on_exception: 1;
     unsigned int trace_running: 1;
     volatile int sleeper;
 
@@ -786,6 +787,7 @@ typedef struct rb_thread_struct {
     /* misc */
     enum method_missing_reason method_missing_reason: 8;
     unsigned int abort_on_exception: 1;
+    unsigned int report_on_exception: 1;
 #ifdef USE_SIGALTSTACK
     void *altstack;
 #endif
@@ -1149,6 +1151,7 @@ void rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th);
 void rb_threadptr_pending_interrupt_clear(rb_thread_t *th);
 void rb_threadptr_pending_interrupt_enque(rb_thread_t *th, VALUE v);
 int rb_threadptr_pending_interrupt_active_p(rb_thread_t *th);
+void rb_threadptr_error_print(rb_thread_t *th, VALUE errinfo);
 
 #define RUBY_VM_CHECK_INTS(th) ruby_vm_check_ints(th)
 static inline void

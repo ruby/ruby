@@ -541,6 +541,7 @@ thread_cleanup_func(void *th_ptr, int atfork)
 }
 
 static VALUE rb_threadptr_raise(rb_thread_t *, int, VALUE *);
+static VALUE rb_thread_inspect(VALUE thread);
 
 void
 ruby_thread_init_stack(rb_thread_t *th)
@@ -608,6 +609,13 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    else if (th->vm->thread_abort_on_exception ||
 		     th->abort_on_exception || RTEST(ruby_debug)) {
 		/* exit on main_thread */
+	    }
+	    else if (th->report_on_exception) {
+		VALUE mesg = rb_thread_inspect(th->self);
+		rb_str_cat_cstr(mesg, " terminated with exception:\n");
+		rb_write_error_str(mesg);
+		rb_threadptr_error_print(th, errinfo);
+		errinfo = Qnil;
 	    }
 	    else {
 		errinfo = Qnil;
@@ -700,6 +708,7 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
 
     native_mutex_initialize(&th->interrupt_lock);
     native_cond_initialize(&th->interrupt_cond, RB_CONDATTR_CLOCK_MONOTONIC);
+    th->report_on_exception = th->vm->thread_report_on_exception;
 
     /* kick thread */
     err = native_thread_create(th);
@@ -2589,6 +2598,116 @@ rb_thread_abort_exc_set(VALUE thread, VALUE val)
 
     GetThreadPtr(thread, th);
     th->abort_on_exception = RTEST(val);
+    return val;
+}
+
+
+/*
+ *  call-seq:
+ *     Thread.report_on_exception   -> true or false
+ *
+ *  Returns the status of the global ``report on exception'' condition.
+ *
+ *  The default is +false+.
+ *
+ *  When set to +true+, all threads will report the exception if an
+ *  exception is raised in any thread.
+ *
+ *  See also ::report_on_exception=.
+ *
+ *  There is also an instance level method to set this for a specific thread,
+ *  see #report_on_exception.
+ */
+
+static VALUE
+rb_thread_s_report_exc(void)
+{
+    return GET_THREAD()->vm->thread_report_on_exception ? Qtrue : Qfalse;
+}
+
+
+/*
+ *  call-seq:
+ *     Thread.report_on_exception= boolean   -> true or false
+ *
+ *  When set to +true+, all threads will report the exception if an
+ *  exception is raised.  Returns the new state.
+ *
+ *     Thread.report_on_exception = true
+ *     t1 = Thread.new do
+ *       puts  "In new thread"
+ *       raise "Exception from thread"
+ *     end
+ *     sleep(1)
+ *     puts "In the main thread"
+ *
+ *  This will produce:
+ *
+ *     In new thread
+ *     prog.rb:4: Exception from thread (RuntimeError)
+ *     	from prog.rb:2:in `initialize'
+ *     	from prog.rb:2:in `new'
+ *     	from prog.rb:2
+ *     In the main thread
+ *
+ *  See also ::report_on_exception.
+ *
+ *  There is also an instance level method to set this for a specific thread,
+ *  see #report_on_exception=.
+ */
+
+static VALUE
+rb_thread_s_report_exc_set(VALUE self, VALUE val)
+{
+    GET_THREAD()->vm->thread_report_on_exception = RTEST(val);
+    return val;
+}
+
+
+/*
+ *  call-seq:
+ *     thr.report_on_exception   -> true or false
+ *
+ *  Returns the status of the thread-local ``report on exception'' condition for
+ *  this +thr+.
+ *
+ *  The default is +false+.
+ *
+ *  See also #report_on_exception=.
+ *
+ *  There is also a class level method to set this for all threads, see
+ *  ::report_on_exception.
+ */
+
+static VALUE
+rb_thread_report_exc(VALUE thread)
+{
+    rb_thread_t *th;
+    GetThreadPtr(thread, th);
+    return th->report_on_exception ? Qtrue : Qfalse;
+}
+
+
+/*
+ *  call-seq:
+ *     thr.report_on_exception= boolean   -> true or false
+ *
+ *  When set to +true+, all threads (including the main program) will
+ *  report the exception if an exception is raised in this +thr+.
+ *
+ *  See also #report_on_exception.
+ *
+ *  There is also a class level method to set this for all threads, see
+ *  ::report_on_exception=.
+ */
+
+static VALUE
+rb_thread_report_exc_set(VALUE thread, VALUE val)
+{
+    rb_thread_t *th;
+
+    GetThreadPtr(thread, th);
+    th->report_on_exception = RTEST(val);
     return val;
 }
 
@@ -4633,6 +4752,8 @@ Init_Thread(void)
     rb_define_singleton_method(rb_cThread, "list", rb_thread_list, 0);
     rb_define_singleton_method(rb_cThread, "abort_on_exception", rb_thread_s_abort_exc, 0);
     rb_define_singleton_method(rb_cThread, "abort_on_exception=", rb_thread_s_abort_exc_set, 1);
+    rb_define_singleton_method(rb_cThread, "report_on_exception", rb_thread_s_report_exc, 0);
+    rb_define_singleton_method(rb_cThread, "report_on_exception=", rb_thread_s_report_exc_set, 1);
 #if THREAD_DEBUG < 0
     rb_define_singleton_method(rb_cThread, "DEBUG", rb_thread_s_debug, 0);
     rb_define_singleton_method(rb_cThread, "DEBUG=", rb_thread_s_debug_set, 1);
@@ -4665,6 +4786,8 @@ Init_Thread(void)
     rb_define_method(rb_cThread, "stop?", rb_thread_stop_p, 0);
     rb_define_method(rb_cThread, "abort_on_exception", rb_thread_abort_exc, 0);
     rb_define_method(rb_cThread, "abort_on_exception=", rb_thread_abort_exc_set, 1);
+    rb_define_method(rb_cThread, "report_on_exception", rb_thread_report_exc, 0);
+    rb_define_method(rb_cThread, "report_on_exception=", rb_thread_report_exc_set, 1);
     rb_define_method(rb_cThread, "safe_level", rb_thread_safe_level, 0);
     rb_define_method(rb_cThread, "group", rb_thread_group, 0);
     rb_define_method(rb_cThread, "backtrace", rb_thread_backtrace_m, -1);
