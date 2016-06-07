@@ -221,12 +221,12 @@ Certificate:
                     16:47:5e:c8:27:32:70:a8:6b
                 Exponent: 65537 (0x10001)
         X509v3 extensions:
-            X509v3 Subject Key Identifier: 
+            X509v3 Subject Key Identifier:
                 71:DB:DC:BA:F6:7F:75:31:7A:ED:AB:8B:48:93:86:94:1A:FF:30:58
-            X509v3 Authority Key Identifier: 
+            X509v3 Authority Key Identifier:
                 keyid:71:DB:DC:BA:F6:7F:75:31:7A:ED:AB:8B:48:93:86:94:1A:FF:30:58
 
-            X509v3 Basic Constraints: 
+            X509v3 Basic Constraints:
                 CA:TRUE
     Signature Algorithm: sha256WithRSAEncryption
          91:1c:45:a5:c0:4e:fc:54:39:62:33:80:7d:03:c1:b8:51:f7:
@@ -280,13 +280,13 @@ Certificate:
                     f0:86:61:ce:f1:ff:42:c7:23
                 Exponent: 65537 (0x10001)
         X509v3 extensions:
-            X509v3 Basic Constraints: 
+            X509v3 Basic Constraints:
                 CA:FALSE
-            Netscape Comment: 
+            Netscape Comment:
                 OpenSSL Generated Certificate
-            X509v3 Subject Key Identifier: 
+            X509v3 Subject Key Identifier:
                 7F:17:5A:58:88:96:E1:1F:44:EA:FF:AD:C6:2E:90:E2:95:32:DD:F0
-            X509v3 Authority Key Identifier: 
+            X509v3 Authority Key Identifier:
                 keyid:71:DB:DC:BA:F6:7F:75:31:7A:ED:AB:8B:48:93:86:94:1A:FF:30:58
 
     Signature Algorithm: sha256WithRSAEncryption
