@@ -1,3 +1,8 @@
+Tue Jun  7 12:55:34 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* regenc.c (onigenc_not_support_case_map): Move to end of file;
+	  (onigenc_single_byte_ascii_only_case_map): Add new function.
+
 Tue Jun  7 09:26:37 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* regenc.c (onigenc_not_support_case_map): Rewrite to work correctly
