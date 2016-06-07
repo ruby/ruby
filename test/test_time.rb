@@ -311,6 +311,8 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
 
     # Out of range arguments
     assert_raise(ArgumentError) { Time.parse("2014-13-13T18:00:00-0900") }
+    assert_raise(ArgumentError) { Time.parse("2015-02-29T18:00:00+0900") }
+    assert_raise(ArgumentError) { Time.parse("2016-02-30T18:00:00+0900") }
   end
 
   def test_zone_0000
@@ -360,6 +362,11 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(t, Time.parse("Fri Jan  1 01:00:00 +0100 1999"))
     assert_equal(t, Time.parse("Fri Jan  1 00:00:00 +0000 1999"))
     assert_equal(t, Time.parse("Fri Dec 31 23:00:00 -0100 1998"))
+  end
+
+  def test_parse_leap_year
+    t = Time.utc(2016,2,29,0,0,0)
+    assert_equal(t, Time.parse("Mon Feb 29 00:00:00 UTC 2016"))
   end
 
   def test_rfc2822_leap_second

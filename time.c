@@ -2515,7 +2515,9 @@ static void
 validate_vtm(struct vtm *vtm)
 {
     if (   vtm->mon  < 1 || vtm->mon  > 12
-	|| vtm->mday < 1 || vtm->mday > 31
+	|| vtm->mday < 1 || vtm->mday > (leap_year_p(FIX2LONG(vtm->year)) ?
+					 leap_year_days_in_month :
+					 common_year_days_in_month)[vtm->mon-1]
 	|| vtm->hour < 0 || vtm->hour > 24
 	|| (vtm->hour == 24 && (vtm->min > 0 || vtm->sec > 0))
 	|| vtm->min  < 0 || vtm->min  > 59
