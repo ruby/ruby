@@ -12,6 +12,7 @@ module OpenSSL::SSLPairM
     port = 0
     ctx = OpenSSL::SSL::SSLContext.new()
     ctx.ciphers = "ADH"
+    ctx.security_level = 0
     ctx.tmp_dh_callback = proc { OpenSSL::TestUtils::TEST_KEY_DH1024 }
     tcps = create_tcp_server(host, port)
     ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
@@ -22,6 +23,7 @@ module OpenSSL::SSLPairM
     host = "127.0.0.1"
     ctx = OpenSSL::SSL::SSLContext.new()
     ctx.ciphers = "ADH"
+    ctx.security_level = 0
     s = create_tcp_client(host, port)
     ssl = OpenSSL::SSL::SSLSocket.new(s, ctx)
     ssl.connect
@@ -324,6 +326,7 @@ module OpenSSL::TestPairM
   def test_connect_works_when_setting_dh_callback_to_nil
     ctx2 = OpenSSL::SSL::SSLContext.new
     ctx2.ciphers = "DH"
+    ctx2.security_level = 0
     ctx2.tmp_dh_callback = nil
     sock1, sock2 = tcp_pair
     s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
@@ -331,6 +334,7 @@ module OpenSSL::TestPairM
 
     ctx1 = OpenSSL::SSL::SSLContext.new
     ctx1.ciphers = "DH"
+    ctx1.security_level = 0
     ctx1.tmp_dh_callback = nil
     s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
     t = Thread.new { s1.connect }
@@ -350,12 +354,14 @@ module OpenSSL::TestPairM
   def test_connect_without_setting_dh_callback
     ctx2 = OpenSSL::SSL::SSLContext.new
     ctx2.ciphers = "DH"
+    ctx2.security_level = 0
     sock1, sock2 = tcp_pair
     s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
     accepted = s2.accept_nonblock(exception: false)
 
     ctx1 = OpenSSL::SSL::SSLContext.new
     ctx1.ciphers = "DH"
+    ctx1.security_level = 0
     s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
     t = Thread.new { s1.connect }
 
@@ -378,6 +384,8 @@ module OpenSSL::TestPairM
         called = false
         ctx2 = OpenSSL::SSL::SSLContext.new
         ctx2.ciphers = "ECDH"
+        # OpenSSL 1.1.0 doesn't have tmp_ecdh_callback so this shouldn't be required
+        ctx2.security_level = 0
         ctx2.tmp_ecdh_callback = ->(*args) {
           called = true
           OpenSSL::PKey::EC.new "prime256v1"
@@ -388,6 +396,7 @@ module OpenSSL::TestPairM
         s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
         ctx1 = OpenSSL::SSL::SSLContext.new
         ctx1.ciphers = "ECDH"
+        ctx1.security_level = 0
 
         s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
         th = Thread.new do
@@ -426,11 +435,13 @@ module OpenSSL::TestPairM
     ctx1 = OpenSSL::SSL::SSLContext.new
     ctx1.ciphers = "ECDH"
     ctx1.ecdh_curves = "P-384:P-521"
+    ctx1.security_level = 0
     s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
 
     ctx2 = OpenSSL::SSL::SSLContext.new
     ctx2.ciphers = "ECDH"
     ctx2.ecdh_curves = "P-256:P-384"
+    ctx2.security_level = 0
     s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
 
     th = Thread.new { s1.accept }
@@ -451,6 +462,7 @@ module OpenSSL::TestPairM
   def test_connect_accept_nonblock_no_exception
     ctx2 = OpenSSL::SSL::SSLContext.new
     ctx2.ciphers = "ADH"
+    ctx2.security_level = 0
     ctx2.tmp_dh_callback = proc { OpenSSL::TestUtils::TEST_KEY_DH1024 }
 
     sock1, sock2 = tcp_pair
@@ -461,6 +473,7 @@ module OpenSSL::TestPairM
 
     ctx1 = OpenSSL::SSL::SSLContext.new
     ctx1.ciphers = "ADH"
+    ctx1.security_level = 0
     s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
     th = Thread.new do
       rets = []
@@ -499,6 +512,7 @@ module OpenSSL::TestPairM
   def test_connect_accept_nonblock
     ctx = OpenSSL::SSL::SSLContext.new()
     ctx.ciphers = "ADH"
+    ctx.security_level = 0
     ctx.tmp_dh_callback = proc { OpenSSL::TestUtils::TEST_KEY_DH1024 }
 
     sock1, sock2 = tcp_pair
@@ -522,6 +536,7 @@ module OpenSSL::TestPairM
     sleep 0.1
     ctx = OpenSSL::SSL::SSLContext.new()
     ctx.ciphers = "ADH"
+    ctx.security_level = 0
     s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx)
     begin
       sleep 0.2

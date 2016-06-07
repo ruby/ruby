@@ -211,25 +211,25 @@ __EOS__
         assert_equal(stats[:cache_misses], 0)
         assert(ssl.session_reused?)
         ctx.session_remove(session)
-        saved_session = session
+        saved_session = session.to_der
       when 2
         assert_equal(stats[:cache_num], 1)
         assert_equal(stats[:cache_hits], 1)
         assert_equal(stats[:cache_misses], 1)
         assert(!ssl.session_reused?)
-        ctx.session_add(saved_session)
+        ctx.session_add(OpenSSL::SSL::Session.new(saved_session))
       when 3
         assert_equal(stats[:cache_num], 2)
         assert_equal(stats[:cache_hits], 2)
         assert_equal(stats[:cache_misses], 1)
         assert(ssl.session_reused?)
-        ctx.flush_sessions(Time.now + 5000)
+        ctx.flush_sessions(Time.now + 10000)
       when 4
         assert_equal(stats[:cache_num], 1)
         assert_equal(stats[:cache_hits], 2)
         assert_equal(stats[:cache_misses], 2)
         assert(!ssl.session_reused?)
-        ctx.session_add(saved_session)
+        ctx.session_add(OpenSSL::SSL::Session.new(saved_session))
       end
       connections += 1
 

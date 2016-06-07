@@ -5,11 +5,6 @@ require_relative 'utils'
 if defined?(OpenSSL::TestUtils)
 
 class OpenSSL::TestX509Name < OpenSSL::TestCase
-  OpenSSL::ASN1::ObjectId.register(
-    "1.2.840.113549.1.9.1", "emailAddress", "emailAddress")
-  OpenSSL::ASN1::ObjectId.register(
-    "2.5.4.5", "serialNumber", "serialNumber")
-
   def setup
     @obj_type_tmpl = Hash.new(OpenSSL::ASN1::PRINTABLESTRING)
     @obj_type_tmpl.update(OpenSSL::X509::Name::OBJECT_TYPE_TEMPLATE)

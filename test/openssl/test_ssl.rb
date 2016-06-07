@@ -405,7 +405,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       ciphers = ctx.ciphers
       ciphers_versions = ciphers.collect{|_, v, _, _| v }
       ciphers_names = ciphers.collect{|v, _, _, _| v }
-      assert(ciphers_names.all?{|v| /ADH/ !~ v })
+      assert(ciphers_names.all?{|v| /A(EC)?DH/ !~ v })
       assert(ciphers_versions.all?{|v| /SSLv2/ !~ v })
       ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
       ssl.sync_close = true
@@ -424,6 +424,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     start_server(OpenSSL::SSL::VERIFY_NONE, true, {use_anon_cipher: true}){|server, port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.ciphers = "aNULL"
+      ctx.security_level = 0
       server_connect(port, ctx) { |ssl|
         msg = "Peer verification enabled, but no certificate received. Anonymous cipher suite " \
           "ADH-AES256-GCM-SHA384 was negotiated. Anonymous suites must be disabled to use peer verification."
@@ -687,6 +688,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
     ctx3 = OpenSSL::SSL::SSLContext.new
     ctx3.ciphers = "DH"
+    ctx3.security_level = 0
 
     ctx2 = OpenSSL::SSL::SSLContext.new
     ctx2.ciphers = "DH"
@@ -698,6 +700,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
     ctx1 = OpenSSL::SSL::SSLContext.new
     ctx1.ciphers = "DH"
+    ctx1.security_level = 0
 
     s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
     s1.hostname = hostname
@@ -720,6 +723,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
     ctx2 = OpenSSL::SSL::SSLContext.new
     ctx2.ciphers = "DH"
+    ctx2.security_level = 0
     ctx2.servername_cb = lambda { |args| Object.new }
 
     sock1, sock2 = socketpair
@@ -728,6 +732,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
     ctx1 = OpenSSL::SSL::SSLContext.new
     ctx1.ciphers = "DH"
+    ctx1.security_level = 0
 
     s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
     s1.hostname = hostname
@@ -752,6 +757,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
     ctx3 = OpenSSL::SSL::SSLContext.new
     ctx3.ciphers = "DH"
+    ctx3.security_level = 0
     assert_not_predicate ctx3, :frozen?
 
     ctx2 = OpenSSL::SSL::SSLContext.new
@@ -764,6 +770,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
     ctx1 = OpenSSL::SSL::SSLContext.new
     ctx1.ciphers = "DH"
+    ctx1.security_level = 0
 
     s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
     s1.hostname = hostname
@@ -785,6 +792,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
     ctx2 = OpenSSL::SSL::SSLContext.new
     ctx2.ciphers = "DH"
+    ctx2.security_level = 0
     ctx2.servername_cb = lambda { |args| nil }
 
     sock1, sock2 = socketpair
@@ -793,6 +801,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
     ctx1 = OpenSSL::SSL::SSLContext.new
     ctx1.ciphers = "DH"
+    ctx1.security_level = 0
 
     s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
     s1.hostname = hostname
@@ -815,6 +824,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
     ctx2 = OpenSSL::SSL::SSLContext.new
     ctx2.ciphers = "DH"
+    ctx2.security_level = 0
     ctx2.servername_cb = lambda do |args|
       cb_socket     = args[0]
       lambda_called = args[1]
@@ -827,6 +837,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
     ctx1 = OpenSSL::SSL::SSLContext.new
     ctx1.ciphers = "DH"
+    ctx1.security_level = 0
 
     s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
     s1.hostname = hostname
@@ -1171,6 +1182,7 @@ end
     # test it doesn't cause a segmentation fault
     ctx = OpenSSL::SSL::SSLContext.new
     ctx.ciphers = "aNULL"
+    ctx.security_level = 0
 
     sock1, sock2 = socketpair
     ssl1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx)

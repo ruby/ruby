@@ -1,3 +1,43 @@
+Tue Jun  7 21:20:38 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* test/openssl/test_x509name.rb: Don't register OID for 'emailAddress'
+	  and 'serialNumber'. A recent change in OpenSSL made OBJ_create()
+	  reject an already existing OID. They were needed to run tests with
+	  OpenSSL 0.9.6 which is now unsupported.
+	  https://git.openssl.org/gitweb/?p=openssl.git;a=commit;h=52832e470f5fe8c222249ae5b539aeb3c74cdb25
+	  [ruby-core:75225] [Feature #12324]
+
+	* test/openssl/test_ssl_session.rb (test_server_session): Duplicate
+	  SSL::Session before re-adding to the session store. OpenSSL 1.1.0
+	  starts rejecting SSL_SESSION once removed by SSL_CTX_remove_session().
+	  https://git.openssl.org/gitweb/?p=openssl.git;a=commit;h=7c2d4fee2547650102cd16d23f8125b76112ae75
+
+	* test/openssl/test_pkey_ec.rb (setup): Remove X25519 from @keys. X25519
+	  is new in OpenSSL 1.1.0 but this is for key agreement and not for
+	  signing.
+
+	* test/openssl/test_pair.rb, test/openssl/test_ssl.rb,
+	  test/openssl/utils.rb: Set security level to 0 when using aNULL cipher
+	  suites.
+
+	* test/openssl/utils.rb: Use 1024 bits DSA key for client certificates.
+
+	* test/openssl/test_engine.rb: Run each test in separate process.
+	  We can no longer cleanup engines explicitly as ENGINE_cleanup() was
+	  removed.
+	  https://git.openssl.org/gitweb/?p=openssl.git;a=commit;h=6d4fb1d59e61aacefa25edc4fe5acfe1ac93f743
+
+	* ext/openssl/ossl_engine.c (ossl_engine_s_cleanup): Add a note to the
+	  RDoc for Engine.cleanup.
+
+	* ext/openssl/lib/openssl/digest.rb: Don't define constants for DSS,
+	  DSS1 and SHA(-0) when using with OpenSSL 1.1.0. They are removed.
+
+	* test/openssl/test_digest.rb, test/openssl/test_pkey_dsa.rb,
+	  test/openssl/test_pkey_dsa.rb, test/openssl/test_ssl.rb,
+	  test/openssl/test_x509cert.rb, test/openssl/test_x509req.rb: Don't
+	  test unsupported hash functions.
+
 Tue Jun  7 17:49:52 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_case_comprehensive: Change test for encodings

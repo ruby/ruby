@@ -39,7 +39,7 @@ class OpenSSL::TestPKeyDSA < OpenSSL::TestCase
 
   def test_sign_verify
     check_sign_verify(OpenSSL::Digest::DSS1.new)
-  end
+  end if defined?(OpenSSL::Digest::DSS1)
 
 if (OpenSSL::OPENSSL_VERSION_NUMBER > 0x10000000)
   def test_sign_verify_sha1
@@ -53,8 +53,8 @@ end
 
   def test_digest_state_irrelevant_verify
     key = OpenSSL::TestUtils::TEST_KEY_DSA256
-    digest1 = OpenSSL::Digest::DSS1.new
-    digest2 = OpenSSL::Digest::DSS1.new
+    digest1 = OpenSSL::TestUtils::DSA_SIGNATURE_DIGEST.new
+    digest2 = OpenSSL::TestUtils::DSA_SIGNATURE_DIGEST.new
     data = 'Sign me!'
     sig = key.sign(digest1, data)
     digest1.reset

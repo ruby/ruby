@@ -140,7 +140,7 @@ class OpenSSL::TestX509Request < OpenSSL::TestCase
     assert_equal(false, req.verify(@rsa1024))
   rescue OpenSSL::X509::RequestError
     skip
-  end
+  end if defined?(OpenSSL::Digest::DSS1)
 
   def test_sign_and_verify_dsa_md5
     assert_raise(OpenSSL::X509::RequestError){

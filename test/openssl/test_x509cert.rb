@@ -168,7 +168,7 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
     cert.subject = @ee1
     assert_equal(false, cert.verify(@rsa2048))
   rescue OpenSSL::X509::CertificateError
-  end
+  end if defined?(OpenSSL::Digest::DSS1)
 
   def test_sign_and_verify_dsa_md5
     assert_raise(OpenSSL::X509::CertificateError){
