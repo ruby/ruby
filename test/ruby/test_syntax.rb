@@ -93,6 +93,20 @@ class TestSyntax < Test::Unit::TestCase
     assert_valid_syntax("tap (proc do end)", __FILE__, bug9726)
   end
 
+  def test_normal_argument
+    assert_valid_syntax('def foo(x) end')
+    assert_syntax_error('def foo(X) end', /constant/)
+    assert_syntax_error('def foo(@x) end', /instance variable/)
+    assert_syntax_error('def foo(@@x) end', /class variable/)
+  end
+
+  def test_optional_argument
+    assert_valid_syntax('def foo(x=nil) end')
+    assert_syntax_error('def foo(X=nil) end', /constant/)
+    assert_syntax_error('def foo(@x=nil) end', /instance variable/)
+    assert_syntax_error('def foo(@@x=nil) end', /class variable/)
+  end
+
   def test_keyword_rest
     bug5989 = '[ruby-core:42455]'
     assert_valid_syntax("def kwrest_test(**a) a; end", __FILE__, bug5989)
@@ -210,6 +224,11 @@ class TestSyntax < Test::Unit::TestCase
     assert_syntax_error('def o.foo(arg1?:, arg2:) end', /arg1\?/, bug11663)
     assert_syntax_error('proc {|arg1?:|}', /arg1\?/, bug11663)
     assert_syntax_error('proc {|arg1?:, arg2:|}', /arg1\?/, bug11663)
+
+    bug10545 = '[ruby-dev:48742] [Bug #10545]'
+    assert_syntax_error('def o.foo(FOO: a) end', /constant/, bug10545)
+    assert_syntax_error('def o.foo(@foo: a) end', /instance variable/)
+    assert_syntax_error('def o.foo(@@foo: a) end', /class variable/)
   end
 
   def test_optional_self_reference
@@ -744,12 +763,6 @@ eom
     bug10114 = '[ruby-core:64228] [Bug #10114]'
     code = "# -*- coding: utf-8 -*-\n" "def n \"\u{2208}\"; end"
     assert_syntax_error(code, /def n "\u{2208}"; end/, bug10114)
-  end
-
-  def test_bad_kwarg
-    bug10545 = '[ruby-dev:48742] [Bug #10545]'
-    src = 'def foo(A: a) end'
-    assert_syntax_error(src, /formal argument/, bug10545)
   end
 
   def test_null_range_cmdarg
