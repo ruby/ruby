@@ -1,3 +1,9 @@
+Tue Jun  7 17:49:52 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_comprehensive: Change test for encodings
+	  without any non-ASCII case conversions from ASCII-only test
+	  to full test.
+
 Tue Jun  7 17:18:39 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* string.c (rb_str_upcase_bang, rb_str_capitalize_bang,
