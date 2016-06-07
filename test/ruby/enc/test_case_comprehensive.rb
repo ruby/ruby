@@ -98,7 +98,7 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
     @@tests ||= []
   end
 
-  def self.generate_casefold_tests (encoding)
+  def self.generate_case_mapping_tests (encoding)
     all_tests
     # preselect codepoints to speed up testing for small encodings
     codepoints = @@codepoints.select do |code|
@@ -136,11 +136,11 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
     %w[UnicodeData CaseFolding SpecialCasing].each { |f| check_file_available f }
   end
 
-  generate_casefold_tests 'US-ASCII'
-  generate_casefold_tests 'ASCII-8BIT'
-  generate_casefold_tests 'UTF-8'
-  generate_casefold_tests 'UTF-16BE'
-  generate_casefold_tests 'UTF-16LE'
-  generate_casefold_tests 'UTF-32BE'
-  generate_casefold_tests 'UTF-32LE'
+  generate_case_mapping_tests 'US-ASCII'
+  generate_case_mapping_tests 'ASCII-8BIT'
+  generate_case_mapping_tests 'UTF-8'
+  generate_case_mapping_tests 'UTF-16BE'
+  generate_case_mapping_tests 'UTF-16LE'
+  generate_case_mapping_tests 'UTF-32BE'
+  generate_case_mapping_tests 'UTF-32LE'
 end

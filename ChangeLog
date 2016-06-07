@@ -1,3 +1,8 @@
+Tue Jun  7 15:28:38 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_comprehensive: Fix method name
+	  (generate_casefold_tests -> generate_case_mapping_tests).
+
 Tue Jun  7 15:05:13 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* regenc.h/c: Rename onigenc_not_support_case_map to
