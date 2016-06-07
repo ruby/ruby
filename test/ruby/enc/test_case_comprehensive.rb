@@ -127,6 +127,56 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
     end
   end
 
+  # temporary test to avoid regression when switching to primitives
+  def self.generate_ascii_only_case_mapping_tests (encoding)
+    all_tests
+    # preselect codepoints to speed up testing for small encodings
+    codepoints = @@codepoints.select do |code|
+      begin
+        code.encode(encoding)
+        true
+      rescue Encoding::UndefinedConversionError
+        false
+      end
+    end
+    define_method "test_#{encoding}_upcase" do
+      codepoints.each do |code|
+        begin
+          source = code.encode(encoding) * 5
+          target = source.tr 'a-z', 'A-Z'
+          result = source.upcase
+          assert_equal target, result,
+            "from #{code*5} (#{source.dump}) expected #{target.dump} but was #{result.dump}"
+        rescue Encoding::UndefinedConversionError
+        end
+      end
+    end
+    define_method "test_#{encoding}_downcase" do
+      codepoints.each do |code|
+        begin
+          source = code.encode(encoding) * 5
+          target = source.tr 'A-Z', 'a-z'
+          result = source.downcase
+          assert_equal target, result,
+            "from #{code*5} (#{source.dump}) expected #{target.dump} but was #{result.dump}"
+        rescue Encoding::UndefinedConversionError
+        end
+      end
+    end
+    define_method "test_#{encoding}_capitalize" do
+      codepoints.each do |code|
+        begin
+          source = code.encode(encoding) * 5
+          target = source[0].tr('a-z', 'A-Z') + source[1..-1].tr('A-Z', 'a-z')
+          result = source.capitalize
+          assert_equal target, result,
+            "from #{code*5} (#{source.dump}) expected #{target.dump} but was #{result.dump}"
+        rescue Encoding::UndefinedConversionError
+        end
+      end
+    end
+  end
+
   def check_file_available(filename)
     expanded = self.class.expand_filename(filename)
     assert File.exist?(expanded), "File #{expanded} missing."
@@ -136,6 +186,39 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
     %w[UnicodeData CaseFolding SpecialCasing].each { |f| check_file_available f }
   end
 
+  generate_ascii_only_case_mapping_tests 'ISO-8859-1'
+  generate_ascii_only_case_mapping_tests 'ISO-8859-2'
+  generate_ascii_only_case_mapping_tests 'ISO-8859-3'
+  generate_ascii_only_case_mapping_tests 'ISO-8859-4'
+  generate_ascii_only_case_mapping_tests 'ISO-8859-5'
+  generate_ascii_only_case_mapping_tests 'ISO-8859-6'
+  generate_ascii_only_case_mapping_tests 'ISO-8859-7'
+  generate_ascii_only_case_mapping_tests 'ISO-8859-8'
+  generate_ascii_only_case_mapping_tests 'ISO-8859-9'
+  generate_ascii_only_case_mapping_tests 'ISO-8859-10'
+  generate_ascii_only_case_mapping_tests 'ISO-8859-11'
+  generate_ascii_only_case_mapping_tests 'ISO-8859-13'
+  generate_ascii_only_case_mapping_tests 'ISO-8859-14'
+  generate_ascii_only_case_mapping_tests 'ISO-8859-15'
+  generate_ascii_only_case_mapping_tests 'ISO-8859-16'
+  generate_ascii_only_case_mapping_tests 'KOI8-R'
+  generate_ascii_only_case_mapping_tests 'KOI8-U'
+  generate_ascii_only_case_mapping_tests 'Big5'
+  generate_ascii_only_case_mapping_tests 'EUC-JP'
+  generate_ascii_only_case_mapping_tests 'EUC-KR'
+  generate_ascii_only_case_mapping_tests 'GB18030'
+  generate_ascii_only_case_mapping_tests 'GB2312'
+  generate_ascii_only_case_mapping_tests 'GBK'
+  generate_ascii_only_case_mapping_tests 'Shift_JIS'
+  generate_ascii_only_case_mapping_tests 'Windows-31J'
+  generate_ascii_only_case_mapping_tests 'Windows-1250'
+  generate_ascii_only_case_mapping_tests 'Windows-1251'
+  generate_ascii_only_case_mapping_tests 'Windows-1252'
+  generate_ascii_only_case_mapping_tests 'Windows-1253'
+  generate_ascii_only_case_mapping_tests 'Windows-1254'
+  generate_ascii_only_case_mapping_tests 'Windows-1255'
+  generate_ascii_only_case_mapping_tests 'Windows-1256'
+  generate_ascii_only_case_mapping_tests 'Windows-1257'
   generate_case_mapping_tests 'US-ASCII'
   generate_case_mapping_tests 'ASCII-8BIT'
   generate_case_mapping_tests 'UTF-8'

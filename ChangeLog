@@ -1,3 +1,8 @@
+Tue Jun  7 16:13:36 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_comprehensive: Add regression tests for
+	  current ASCII-only case conversion.
+
 Tue Jun  7 15:28:38 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_case_comprehensive: Fix method name
