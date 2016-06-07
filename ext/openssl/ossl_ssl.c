@@ -1073,6 +1073,68 @@ ossl_sslctx_set_ecdh_curves(VALUE self, VALUE arg)
 #endif
 
 /*
+ * call-seq:
+ *    ctx.security_level -> Integer
+ *
+ * Returns the security level for the context.
+ *
+ * See also OpenSSL::SSL::SSLContext#security_level=.
+ */
+static VALUE
+ossl_sslctx_get_security_level(VALUE self)
+{
+    SSL_CTX *ctx;
+
+    GetSSLCTX(self, ctx);
+
+#if defined(HAVE_SSL_CTX_GET_SECURITY_LEVEL)
+    return INT2FIX(SSL_CTX_get_security_level(ctx));
+#else
+    (void)ctx;
+    return INT2FIX(0);
+#endif
+}
+
+/*
+ * call-seq:
+ *    ctx.security_level=(integer) -> Integer
+ *
+ * Sets the security level for the context. OpenSSL limits parameters according
+ * to the level. The "parameters" include: ciphersuites, curves, key sizes,
+ * certificate signature algorithms, protocol version and so on. For example,
+ * level 1 rejects parameters offering below 80 bits of security, such as
+ * ciphersuites using MD5 for the MAC or RSA keys shorter than 1024 bits.
+ *
+ * Note that attempts to set such parameters with insufficient security are
+ * also blocked. You need to lower the level first.
+ *
+ * This feature is not supported in OpenSSL < 1.1.0, and setting the level to
+ * other than 0 will raise NotImplementedError. Level 0 means everything is
+ * permitted, the same behavior as previous versions of OpenSSL.
+ *
+ * See the manpage of SSL_CTX_set_security_level(3) for details.
+ */
+static VALUE
+ossl_sslctx_set_security_level(VALUE self, VALUE value)
+{
+    SSL_CTX *ctx;
+
+    rb_check_frozen(self);
+    GetSSLCTX(self, ctx);
+
+#if defined(HAVE_SSL_CTX_GET_SECURITY_LEVEL)
+    SSL_CTX_set_security_level(ctx, NUM2INT(value));
+#else
+    (void)ctx;
+    if (NUM2INT(value) != 0)
+	ossl_raise(rb_eNotImpError, "setting security level to other than 0 is "
+		   "not supported in this version of OpenSSL");
+#endif
+
+    return value;
+}
+
+/*
  *  call-seq:
  *     ctx.session_add(session) -> true | false
  *
@@ -2387,6 +2449,8 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLContext, "ciphers",     ossl_sslctx_get_ciphers, 0);
     rb_define_method(cSSLContext, "ciphers=",    ossl_sslctx_set_ciphers, 1);
     rb_define_method(cSSLContext, "ecdh_curves=", ossl_sslctx_set_ecdh_curves, 1);
+    rb_define_method(cSSLContext, "security_level", ossl_sslctx_get_security_level, 0);
+    rb_define_method(cSSLContext, "security_level=", ossl_sslctx_set_security_level, 1);
 
     rb_define_method(cSSLContext, "setup", ossl_sslctx_setup, 0);
 

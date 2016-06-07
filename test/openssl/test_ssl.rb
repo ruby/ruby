@@ -1218,6 +1218,22 @@ end
     end
   end
 
+  def test_security_level
+    ctx = OpenSSL::SSL::SSLContext.new
+    begin
+      ctx.security_level = 1
+    rescue NotImplementedError
+      assert_equal(0, ctx.security_level)
+      return
+    end
+    assert_equal(1, ctx.security_level)
+    # assert_raise(OpenSSL::SSL::SSLError) { ctx.key = OpenSSL::TestUtils::TEST_KEY_DSA512 }
+    # ctx.key = OpenSSL::TestUtils::TEST_KEY_RSA1024
+    # ctx.security_level = 2
+    # assert_raise(OpenSSL::SSL::SSLError) { ctx.key = OpenSSL::TestUtils::TEST_KEY_RSA1024 }
+    skip "FIXME: SSLContext#key= currently does not raise because SSL_CTX_use_certificate() is delayed"
+  end
+
   private
 
   def start_server_version(version, ctx_proc=nil, server_proc=nil, &blk)
