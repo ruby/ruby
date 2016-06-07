@@ -242,7 +242,7 @@ OnigEncodingDefine(iso_8859_4, ISO_8859_4) = {
   0,
   ONIGENC_FLAG_NONE,
 #ifdef ONIG_CASE_MAPPING
-  onigenc_not_support_case_map,
+  onigenc_single_byte_ascii_only_case_map,
 #endif   /* ONIG_CASE_MAPPING */
 };
 ENC_ALIAS("ISO8859-4", "ISO-8859-4")

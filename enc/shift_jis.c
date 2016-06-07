@@ -566,7 +566,7 @@ OnigEncodingDefine(shift_jis, Shift_JIS) = {
   0,
   ONIGENC_FLAG_NONE,
 #ifdef ONIG_CASE_MAPPING
-  onigenc_not_support_case_map,
+  onigenc_ascii_only_case_map,
 #endif   /* ONIG_CASE_MAPPING */
 };
 /*

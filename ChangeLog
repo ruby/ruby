@@ -1,3 +1,18 @@
+Tue Jun  7 15:05:13 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* regenc.h/c: Rename onigenc_not_support_case_map to
+	  onigenc_ascii_only_case_map.
+
+	* regenc.h: Add definition of onigenc_single_byte_ascii_only_case_map.
+
+	* enc/iso_8859_X.c, windows_125X.c, ascii.c, us-ascii.c, koi8_x.c:
+	  Replace onigenc_not_support_case_map by
+	  onigenc_single_byte_ascii_only_case_map.
+
+	* enc/big5.c, cp949.c, emacs_mule.c, euc_X.c, gbX.c, shift_jis.c,
+	  windows_31j.c: Replace onigenc_not_support_case_map by
+	  onigenc_ascii_only_case_map.
+
 Tue Jun  7 14:57:09 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/extconf.rb: Check for SSL_CTX_set_min_proto_version()

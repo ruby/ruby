@@ -960,7 +960,7 @@ onigenc_property_list_init(int (*f)(void))
 
 #ifdef ONIG_CASE_MAPPING
 extern int
-onigenc_not_support_case_map (OnigCaseFoldType* flagP, const OnigUChar** pp, const OnigUChar* end,
+onigenc_ascii_only_case_map (OnigCaseFoldType* flagP, const OnigUChar** pp, const OnigUChar* end,
 			      OnigUChar* to, OnigUChar* to_end, const struct OnigEncodingTypeST* enc)
 {
   OnigCodePoint code;
