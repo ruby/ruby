@@ -176,30 +176,31 @@ class TestOpenURISSL
 end if defined?(OpenSSL::TestUtils)
 
 if defined?(OpenSSL::TestUtils)
+# cp /etc/ssl/openssl.cnf . # I copied from OpenSSL 1.0.2h source
+
 # mkdir demoCA demoCA/private demoCA/newcerts
 # touch demoCA/index.txt
 # echo 00 > demoCA/serial
-# openssl req -new -keyout demoCA/private/cakey.pem -out demoCA/careq.pem
-# openssl ca -out demoCA/cacert.pem -startdate 090101000000Z -enddate 491231235959Z -batch -keyfile demoCA/private/cakey.pem -selfsign -infiles demoCA/careq.pem
+# openssl genrsa -des3 -out demoCA/private/cakey.pem 1024
+# openssl req -new -key demoCA/private/cakey.pem -out demoCA/careq.pem -subj "/C=JP/ST=Tokyo/O=RubyTest/CN=Ruby Test CA"
+# # basicConstraints=CA:TRUE is required; the default openssl.cnf has it in [v3_ca]
+# openssl ca -config openssl.cnf -extensions v3_ca -out demoCA/cacert.pem -startdate 090101000000Z -enddate 491231235959Z -batch -keyfile demoCA/private/cakey.pem -selfsign -infiles demoCA/careq.pem
 
-# cp /etc/ssl/openssl.cnf openssl-server.cnf # Debian
-# vi openssl-server.cnf # enable "nsCertType = server"
 # mkdir server
 # openssl genrsa -des3 -out server/server.key 1024
-# openssl rsa -in server/server.key -out server/servernopass.key
-# openssl req -new -days 365 -key server/servernopass.key -out server/csr.pem
-# openssl ca -config openssl-server.cnf -startdate 090101000000Z -enddate 491231235959Z -in server/csr.pem -keyfile demoCA/private/cakey.pem -cert demoCA/cacert.pem -out server/cert.pem
+# openssl req -new -key server/server.key -out server/csr.pem -subj "/C=JP/ST=Tokyo/O=RubyTest/CN=127.0.0.1"
+# openssl ca -config openssl.cnf -startdate 090101000000Z -enddate 491231235959Z -in server/csr.pem -keyfile demoCA/private/cakey.pem -cert demoCA/cacert.pem -out server/cert.pem
 
 # demoCA/cacert.pem => TestOpenURISSL::CA_CERT
 # server/cert.pem => TestOpenURISSL::SERVER_CERT
-# server/servernopass.key => TestOpenURISSL::SERVER_KEY
+# `openssl rsa -in server/server.key -text` => TestOpenURISSL::SERVER_KEY
 
 TestOpenURISSL::CA_CERT = <<'End'
 Certificate:
     Data:
         Version: 3 (0x2)
         Serial Number: 0 (0x0)
-        Signature Algorithm: sha1WithRSAEncryption
+    Signature Algorithm: sha256WithRSAEncryption
         Issuer: C=JP, ST=Tokyo, O=RubyTest, CN=Ruby Test CA
         Validity
             Not Before: Jan  1 00:00:00 2009 GMT
@@ -207,52 +208,49 @@ Certificate:
         Subject: C=JP, ST=Tokyo, O=RubyTest, CN=Ruby Test CA
         Subject Public Key Info:
             Public Key Algorithm: rsaEncryption
-            RSA Public Key: (1024 bit)
-                Modulus (1024 bit):
-                    00:9f:58:19:39:bc:ea:0c:b8:c3:5d:12:a7:d8:20:
-                    6c:53:ac:91:34:c8:b4:db:3f:56:f6:75:b6:6c:23:
-                    80:23:6a:5f:b3:f6:9a:3e:00:b4:16:19:1c:9c:2c:
-                    8d:e8:53:d5:0b:f1:52:3f:7b:60:93:86:ae:89:ab:
-                    20:82:9a:b6:72:14:3c:4d:a9:0b:6c:34:79:9e:d3:
-                    14:82:6d:c9:3b:90:d9:5e:68:6f:8c:b5:d8:09:f4:
-                    6f:3b:22:9f:5e:81:9c:37:df:cf:90:36:65:57:dc:
-                    ad:31:ca:8b:48:92:a7:3c:1e:42:e9:1c:4e:1e:cb:
-                    36:c1:44:4e:ab:9a:b2:73:6d
+                Public-Key: (1024 bit)
+                Modulus:
+                    00:be:74:41:33:c9:1b:e1:12:78:6b:b4:52:2e:ae:
+                    b6:e2:1e:58:65:57:2d:cb:07:3f:91:c9:53:7a:e7:
+                    2e:68:2c:0c:5d:8b:16:a7:42:4a:5c:6f:c7:aa:44:
+                    ff:6d:c6:d7:49:0e:b1:5d:03:5b:51:ce:d5:cc:cd:
+                    ab:69:cc:c2:43:76:b1:b2:30:3b:e7:f6:1f:3e:35:
+                    1d:21:75:41:96:eb:84:a0:34:6f:a4:5d:70:a2:b2:
+                    d5:fe:b9:45:47:a1:e8:ca:e3:b7:bb:4d:37:1c:f3:
+                    96:d4:2d:80:85:cd:8e:31:96:53:92:a0:fe:e4:4c:
+                    16:47:5e:c8:27:32:70:a8:6b
                 Exponent: 65537 (0x10001)
         X509v3 extensions:
-            X509v3 Basic Constraints:
-                CA:FALSE
-            Netscape Comment:
-                OpenSSL Generated Certificate
-            X509v3 Subject Key Identifier:
-                24:6F:03:A3:EE:06:51:75:B2:BA:FC:3A:38:59:BF:ED:87:CD:E8:7F
-            X509v3 Authority Key Identifier:
-                keyid:24:6F:03:A3:EE:06:51:75:B2:BA:FC:3A:38:59:BF:ED:87:CD:E8:7F
+            X509v3 Subject Key Identifier: 
+                71:DB:DC:BA:F6:7F:75:31:7A:ED:AB:8B:48:93:86:94:1A:FF:30:58
+            X509v3 Authority Key Identifier: 
+                keyid:71:DB:DC:BA:F6:7F:75:31:7A:ED:AB:8B:48:93:86:94:1A:FF:30:58
 
-    Signature Algorithm: sha1WithRSAEncryption
-        13:eb:db:ca:cd:90:f2:09:9e:d9:72:70:5e:42:5d:11:84:ce:
-        00:1d:c4:2f:41:d2:3e:16:e5:d4:97:1f:43:a9:a7:9c:fa:60:
-        c4:35:96:f2:f6:0d:13:6d:0f:36:dd:59:03:08:ee:2e:a6:df:
-        9e:d8:6d:ca:72:8f:02:c2:2b:53:7b:12:7f:55:81:6c:9e:7d:
-        e7:40:7e:f8:f5:75:0d:4b:a0:8d:ee:a4:d9:e8:5f:06:c9:86:
-        66:71:70:6c:41:81:6a:dd:a4:4f:a3:c1:ac:70:d4:78:1b:23:
-        30:2f:a5:ef:98:ee:d4:62:80:fd:bf:d4:7a:9b:8e:2d:18:e5:
-        00:46
+            X509v3 Basic Constraints: 
+                CA:TRUE
+    Signature Algorithm: sha256WithRSAEncryption
+         91:1c:45:a5:c0:4e:fc:54:39:62:33:80:7d:03:c1:b8:51:f7:
+         56:83:6c:a3:15:50:cf:92:a0:77:a3:34:16:b5:30:f0:33:5a:
+         be:6a:ac:17:87:70:f8:4e:4d:49:ac:8b:84:fd:e5:0f:15:d7:
+         9a:29:cc:a9:f5:97:f5:13:2a:86:3b:2d:f4:b7:b4:a2:7c:e1:
+         0e:2a:ff:91:64:31:8f:12:cc:99:bf:e1:de:8f:6f:7c:1b:e4:
+         cc:56:c8:bb:85:c9:ba:df:7f:07:7a:cd:03:22:2c:b6:f8:06:
+         35:72:72:b8:52:eb:62:15:85:2b:8f:8c:bc:27:3c:8b:de:32:
+         db:95
 -----BEGIN CERTIFICATE-----
-MIICfzCCAeigAwIBAgIBADANBgkqhkiG9w0BAQUFADBHMQswCQYDVQQGEwJKUDEO
-MAwGA1UECBMFVG9reW8xETAPBgNVBAoTCFJ1YnlUZXN0MRUwEwYDVQQDEwxSdWJ5
+MIICVDCCAb2gAwIBAgIBADANBgkqhkiG9w0BAQsFADBHMQswCQYDVQQGEwJKUDEO
+MAwGA1UECAwFVG9reW8xETAPBgNVBAoMCFJ1YnlUZXN0MRUwEwYDVQQDDAxSdWJ5
 IFRlc3QgQ0EwHhcNMDkwMTAxMDAwMDAwWhcNNDkxMjMxMjM1OTU5WjBHMQswCQYD
-VQQGEwJKUDEOMAwGA1UECBMFVG9reW8xETAPBgNVBAoTCFJ1YnlUZXN0MRUwEwYD
-VQQDEwxSdWJ5IFRlc3QgQ0EwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAJ9Y
-GTm86gy4w10Sp9ggbFOskTTItNs/VvZ1tmwjgCNqX7P2mj4AtBYZHJwsjehT1Qvx
-Uj97YJOGromrIIKatnIUPE2pC2w0eZ7TFIJtyTuQ2V5ob4y12An0bzsin16BnDff
-z5A2ZVfcrTHKi0iSpzweQukcTh7LNsFETquasnNtAgMBAAGjezB5MAkGA1UdEwQC
-MAAwLAYJYIZIAYb4QgENBB8WHU9wZW5TU0wgR2VuZXJhdGVkIENlcnRpZmljYXRl
-MB0GA1UdDgQWBBQkbwOj7gZRdbK6/Do4Wb/th83ofzAfBgNVHSMEGDAWgBQkbwOj
-7gZRdbK6/Do4Wb/th83ofzANBgkqhkiG9w0BAQUFAAOBgQAT69vKzZDyCZ7ZcnBe
-Ql0RhM4AHcQvQdI+FuXUlx9Dqaec+mDENZby9g0TbQ823VkDCO4upt+e2G3Kco8C
-witTexJ/VYFsnn3nQH749XUNS6CN7qTZ6F8GyYZmcXBsQYFq3aRPo8GscNR4GyMw
-L6XvmO7UYoD9v9R6m44tGOUARg==
+VQQGEwJKUDEOMAwGA1UECAwFVG9reW8xETAPBgNVBAoMCFJ1YnlUZXN0MRUwEwYD
+VQQDDAxSdWJ5IFRlc3QgQ0EwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBAL50
+QTPJG+ESeGu0Ui6utuIeWGVXLcsHP5HJU3rnLmgsDF2LFqdCSlxvx6pE/23G10kO
+sV0DW1HO1czNq2nMwkN2sbIwO+f2Hz41HSF1QZbrhKA0b6RdcKKy1f65RUeh6Mrj
+t7tNNxzzltQtgIXNjjGWU5Kg/uRMFkdeyCcycKhrAgMBAAGjUDBOMB0GA1UdDgQW
+BBRx29y69n91MXrtq4tIk4aUGv8wWDAfBgNVHSMEGDAWgBRx29y69n91MXrtq4tI
+k4aUGv8wWDAMBgNVHRMEBTADAQH/MA0GCSqGSIb3DQEBCwUAA4GBAJEcRaXATvxU
+OWIzgH0DwbhR91aDbKMVUM+SoHejNBa1MPAzWr5qrBeHcPhOTUmsi4T95Q8V15op
+zKn1l/UTKoY7LfS3tKJ84Q4q/5FkMY8SzJm/4d6Pb3wb5MxWyLuFybrffwd6zQMi
+LLb4BjVycrhS62IVhSuPjLwnPIveMtuV
 -----END CERTIFICATE-----
 End
 
@@ -261,7 +259,7 @@ Certificate:
     Data:
         Version: 3 (0x2)
         Serial Number: 1 (0x1)
-        Signature Algorithm: sha1WithRSAEncryption
+    Signature Algorithm: sha256WithRSAEncryption
         Issuer: C=JP, ST=Tokyo, O=RubyTest, CN=Ruby Test CA
         Validity
             Not Before: Jan  1 00:00:00 2009 GMT
@@ -269,8 +267,8 @@ Certificate:
         Subject: C=JP, ST=Tokyo, O=RubyTest, CN=127.0.0.1
         Subject Public Key Info:
             Public Key Algorithm: rsaEncryption
-            RSA Public Key: (1024 bit)
-                Modulus (1024 bit):
+                Public-Key: (1024 bit)
+                Modulus:
                     00:bb:bd:74:69:53:58:50:24:79:f2:eb:db:8b:97:
                     e4:69:a4:dd:48:0c:40:35:62:42:b3:35:8c:96:2a:
                     62:76:98:b5:2a:e0:f8:78:33:b6:ff:f8:55:bf:44:
@@ -282,41 +280,39 @@ Certificate:
                     f0:86:61:ce:f1:ff:42:c7:23
                 Exponent: 65537 (0x10001)
         X509v3 extensions:
-            X509v3 Basic Constraints:
+            X509v3 Basic Constraints: 
                 CA:FALSE
-            Netscape Cert Type:
-                SSL Server
-            Netscape Comment:
+            Netscape Comment: 
                 OpenSSL Generated Certificate
-            X509v3 Subject Key Identifier:
+            X509v3 Subject Key Identifier: 
                 7F:17:5A:58:88:96:E1:1F:44:EA:FF:AD:C6:2E:90:E2:95:32:DD:F0
-            X509v3 Authority Key Identifier:
-                keyid:24:6F:03:A3:EE:06:51:75:B2:BA:FC:3A:38:59:BF:ED:87:CD:E8:7F
+            X509v3 Authority Key Identifier: 
+                keyid:71:DB:DC:BA:F6:7F:75:31:7A:ED:AB:8B:48:93:86:94:1A:FF:30:58
 
-    Signature Algorithm: sha1WithRSAEncryption
-        9a:34:99:ea:76:a2:ed:f0:f7:a7:75:3b:81:fb:75:57:93:c1:
-        27:b6:1e:7a:38:67:95:be:58:42:9a:0a:dd:2b:23:fb:85:42:
-        80:34:bf:b9:0e:9c:5e:5a:dc:2d:25:8c:68:02:a2:c7:7f:c0:
-        eb:f3:e0:61:e2:05:e5:7e:c1:e0:33:1c:76:65:23:2c:25:08:
-        f6:5a:11:b9:d4:f7:e3:80:bb:b0:ce:76:1a:56:22:af:e2:4a:
-        e1:7e:a4:60:f3:fd:9c:53:46:51:57:32:6b:05:53:80:5c:a5:
-        61:93:87:ae:06:a8:a2:ba:4d:a1:b7:1b:0f:8f:82:0a:e8:b3:
-        ea:63
+    Signature Algorithm: sha256WithRSAEncryption
+         1c:80:02:67:f0:4e:a8:5a:6a:73:9c:de:75:ad:7d:2e:e9:ce:
+         c3:2e:cd:70:b4:21:d9:42:0d:7c:0e:77:9e:97:91:13:02:77:
+         4a:cd:f6:fc:26:3d:42:2e:08:85:05:10:df:3a:5f:f0:77:85:
+         44:29:41:dd:03:6b:eb:e7:c8:89:8e:d1:57:a8:ac:43:c8:85:
+         c3:95:64:9f:a5:6e:e9:2e:6e:06:45:21:36:ec:d5:79:f5:0e:
+         a8:53:b5:f7:02:b0:59:12:e3:ae:73:25:fd:18:ab:23:b2:fc:
+         a9:f9:60:e5:a7:d8:ba:0f:db:be:17:81:25:90:fd:7a:21:cb:
+         fa:8b
 -----BEGIN CERTIFICATE-----
-MIICkTCCAfqgAwIBAgIBATANBgkqhkiG9w0BAQUFADBHMQswCQYDVQQGEwJKUDEO
-MAwGA1UECBMFVG9reW8xETAPBgNVBAoTCFJ1YnlUZXN0MRUwEwYDVQQDEwxSdWJ5
+MIICfDCCAeWgAwIBAgIBATANBgkqhkiG9w0BAQsFADBHMQswCQYDVQQGEwJKUDEO
+MAwGA1UECAwFVG9reW8xETAPBgNVBAoMCFJ1YnlUZXN0MRUwEwYDVQQDDAxSdWJ5
 IFRlc3QgQ0EwHhcNMDkwMTAxMDAwMDAwWhcNNDkxMjMxMjM1OTU5WjBEMQswCQYD
-VQQGEwJKUDEOMAwGA1UECBMFVG9reW8xETAPBgNVBAoTCFJ1YnlUZXN0MRIwEAYD
-VQQDEwkxMjcuMC4wLjEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBALu9dGlT
+VQQGEwJKUDEOMAwGA1UECAwFVG9reW8xETAPBgNVBAoMCFJ1YnlUZXN0MRIwEAYD
+VQQDDAkxMjcuMC4wLjEwgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJAoGBALu9dGlT
 WFAkefLr24uX5Gmk3UgMQDViQrM1jJYqYnaYtSrg+Hgztv/4Vb9EaSHXtQ69it0x
 G4jVtF56guC6mWwEdun/5vj1Bo5+pNvb60NEEqfKyiuqX4MQ4p41Vejor77IfbvC
-1KrBHFcLwAw6HW4jqQMmfOqM8IZhzvH/QscjAgMBAAGjgY8wgYwwCQYDVR0TBAIw
-ADARBglghkgBhvhCAQEEBAMCBkAwLAYJYIZIAYb4QgENBB8WHU9wZW5TU0wgR2Vu
-ZXJhdGVkIENlcnRpZmljYXRlMB0GA1UdDgQWBBR/F1pYiJbhH0Tq/63GLpDilTLd
-8DAfBgNVHSMEGDAWgBQkbwOj7gZRdbK6/Do4Wb/th83ofzANBgkqhkiG9w0BAQUF
-AAOBgQCaNJnqdqLt8PendTuB+3VXk8Enth56OGeVvlhCmgrdKyP7hUKANL+5Dpxe
-WtwtJYxoAqLHf8Dr8+Bh4gXlfsHgMxx2ZSMsJQj2WhG51PfjgLuwznYaViKv4krh
-fqRg8/2cU0ZRVzJrBVOAXKVhk4euBqiiuk2htxsPj4IK6LPqYw==
+1KrBHFcLwAw6HW4jqQMmfOqM8IZhzvH/QscjAgMBAAGjezB5MAkGA1UdEwQCMAAw
+LAYJYIZIAYb4QgENBB8WHU9wZW5TU0wgR2VuZXJhdGVkIENlcnRpZmljYXRlMB0G
+A1UdDgQWBBR/F1pYiJbhH0Tq/63GLpDilTLd8DAfBgNVHSMEGDAWgBRx29y69n91
+MXrtq4tIk4aUGv8wWDANBgkqhkiG9w0BAQsFAAOBgQAcgAJn8E6oWmpznN51rX0u
+6c7DLs1wtCHZQg18Dneel5ETAndKzfb8Jj1CLgiFBRDfOl/wd4VEKUHdA2vr58iJ
+jtFXqKxDyIXDlWSfpW7pLm4GRSE27NV59Q6oU7X3ArBZEuOucyX9GKsjsvyp+WDl
+p9i6D9u+F4ElkP16Icv6iw==
 -----END CERTIFICATE-----
 End
 

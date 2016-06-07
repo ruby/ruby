@@ -1,3 +1,12 @@
+Tue Jun  7 21:27:17 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* test/open-uri/test_ssl.rb: Regenerate test certificates. The test CA
+	  certificate was incorrectly generated. A CA certificate must have the
+	  basic constraints extension with cA bit set to TRUE. OpenSSL <= 1.0.2
+	  allowed the error when the certificate is in the trusted store but
+	  OpenSSL 1.1.0 no longer does.
+	  [ruby-core:75225] [Feature #12324]
+
 Tue Jun  7 21:20:38 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* test/openssl/test_x509name.rb: Don't register OID for 'emailAddress'
