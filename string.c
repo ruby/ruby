@@ -5848,21 +5848,16 @@ static VALUE
 rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
 {
     rb_encoding *enc;
-    char *s, *send;
     int modify = 0;
-    int n;
     OnigCaseFoldType flags = ONIGENC_CASE_UPCASE;
 
     flags = check_case_options(argc, argv, flags);
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
-    s = RSTRING_PTR(str); send = RSTRING_END(str);
-    if (rb_enc_unicode_p(enc)) {
-	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
-	modify = ONIGENC_CASE_MODIFIED & flags;
-    }
-    else if (single_byte_optimizable(str)) {
+    if (!(flags&ONIGENC_CASE_FOLD_TURKISH_AZERI) && ENC_CODERANGE(str)==ENC_CODERANGE_7BIT) {
+        char *s = RSTRING_PTR(str), *send = RSTRING_END(str);
+
 	while (s < send) {
 	    unsigned int c = *(unsigned char*)s;
 
@@ -5874,28 +5869,8 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
 	}
     }
     else {
-	int ascompat = rb_enc_asciicompat(enc);
-
-	while (s < send) {
-	    unsigned int c;
-
-	    if (ascompat && (c = *(unsigned char*)s) < 0x80) {
-		if (rb_enc_isascii(c, enc) && 'a' <= c && c <= 'z') {
-		    *s = 'A' + (c - 'a');
-		    modify = 1;
-		}
-		s++;
-	    }
-	    else {
-		c = rb_enc_codepoint_len(s, send, &n, enc);
-		if (rb_enc_islower(c, enc)) {
-		    /* assuming toupper returns codepoint with same size */
-		    rb_enc_mbcput(rb_enc_toupper(c, enc), s, enc);
-		    modify = 1;
-		}
-		s += n;
-	    }
-	}
+	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
+	modify = ONIGENC_CASE_MODIFIED & flags;
     }
 
     if (modify) return str;
@@ -5939,7 +5914,6 @@ static VALUE
 rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
 {
     rb_encoding *enc;
-    char *s, *send;
     int modify = 0;
     OnigCaseFoldType flags = ONIGENC_CASE_DOWNCASE;
 
@@ -5947,8 +5921,9 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
-    s = RSTRING_PTR(str); send = RSTRING_END(str);
     if (!(flags&ONIGENC_CASE_FOLD_TURKISH_AZERI) && ENC_CODERANGE(str)==ENC_CODERANGE_7BIT) {
+        char *s = RSTRING_PTR(str), *send = RSTRING_END(str);
+
 	while (s < send) {
 	    unsigned int c = *(unsigned char*)s;
 
@@ -6048,10 +6023,6 @@ static VALUE
 rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
 {
     rb_encoding *enc;
-    char *s, *send;
-    int modify = 0;
-    unsigned int c;
-    int n;
     OnigCaseFoldType flags = ONIGENC_CASE_UPCASE | ONIGENC_CASE_TITLECASE;
 
     flags = check_case_options(argc, argv, flags);
@@ -6059,29 +6030,9 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return Qnil;
-    if (rb_enc_unicode_p(enc)) {
-	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
-	modify = ONIGENC_CASE_MODIFIED & flags;
-    }
-    else {
-	s = RSTRING_PTR(str); send = RSTRING_END(str);
-	c = rb_enc_codepoint_len(s, send, &n, enc);
-	if (rb_enc_islower(c, enc)) {
-	    rb_enc_mbcput(rb_enc_toupper(c, enc), s, enc);
-	    modify = 1;
-	}
-	s += n;
-	while (s < send) {
-	    c = rb_enc_codepoint_len(s, send, &n, enc);
-	    if (rb_enc_isupper(c, enc)) {
-		rb_enc_mbcput(rb_enc_tolower(c, enc), s, enc);
-		modify = 1;
-	    }
-	    s += n;
-	}
-    }
+    str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 
-    if (modify) return str;
+    if (ONIGENC_CASE_MODIFIED&flags) return str;
     return Qnil;
 }
 
@@ -6125,37 +6076,15 @@ static VALUE
 rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
 {
     rb_encoding *enc;
-    char *s, *send;
-    int modify = 0;
-    int n;
     OnigCaseFoldType flags = ONIGENC_CASE_UPCASE | ONIGENC_CASE_DOWNCASE;
 
     flags = check_case_options(argc, argv, flags);
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
-    s = RSTRING_PTR(str); send = RSTRING_END(str);
-    if (rb_enc_unicode_p(enc)) {
-	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
-	modify = ONIGENC_CASE_MODIFIED & flags;
-    }
-    else while (s < send) {
-	unsigned int c = rb_enc_codepoint_len(s, send, &n, enc);
+    str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 
-	if (rb_enc_isupper(c, enc)) {
-	    /* assuming toupper returns codepoint with same size */
-	    rb_enc_mbcput(rb_enc_tolower(c, enc), s, enc);
-	    modify = 1;
-	}
-	else if (rb_enc_islower(c, enc)) {
-	    /* assuming tolower returns codepoint with same size */
-	    rb_enc_mbcput(rb_enc_toupper(c, enc), s, enc);
-	    modify = 1;
-	}
-	s += n;
-    }
-
-    if (modify) return str;
+    if (ONIGENC_CASE_MODIFIED&flags) return str;
     return Qnil;
 }
 

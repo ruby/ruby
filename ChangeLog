@@ -1,3 +1,8 @@
+Tue Jun  7 17:18:39 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c (rb_str_upcase_bang, rb_str_capitalize_bang,
+	  rb_str_swapcase_bang): Switch to use primitive.
+
 Tue Jun  7 16:44:16 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* string.c (rb_str_downcase_bang): Switch to use primitive except if
