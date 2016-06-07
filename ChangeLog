@@ -1,3 +1,8 @@
+Tue Jun  7 09:26:37 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* regenc.c (onigenc_not_support_case_map): Rewrite to work correctly
+	  in ASCII range.
+
 Mon Jun  6 23:00:00 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* appveyor.yml: Update libressl version to 2.3.5.
