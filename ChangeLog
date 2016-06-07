@@ -1,3 +1,10 @@
+Tue Jun  7 21:27:25 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* test/rubygems/*_{cert,cert_32}.pem: Regenerate test certificates for
+	  OpenSSL 1.1.0. This is already in upstream.
+	  https://github.com/rubygems/rubygems/commit/9be5c53939440a61c4bba73cfffbeb5cfadf72be
+	  [ruby-core:75225] [Feature #12324]
+
 Tue Jun  7 21:27:17 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* test/open-uri/test_ssl.rb: Regenerate test certificates. The test CA
