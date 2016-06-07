@@ -88,35 +88,34 @@ static VALUE sym_exception, sym_wait_readable, sym_wait_writable;
  */
 static const struct {
     const char *name;
-    SSL_METHOD *(*func)(void);
+    SSL_METHOD *(*func)(void); /* FIXME: constify when dropping 0.9.8 */
+    int version;
 } ossl_ssl_method_tab[] = {
-#define OSSL_SSL_METHOD_ENTRY(name) { #name, (SSL_METHOD *(*)(void))name##_method }
-    OSSL_SSL_METHOD_ENTRY(TLSv1),
-    OSSL_SSL_METHOD_ENTRY(TLSv1_server),
-    OSSL_SSL_METHOD_ENTRY(TLSv1_client),
-#if defined(HAVE_TLSV1_2_METHOD)
-    OSSL_SSL_METHOD_ENTRY(TLSv1_2),
-    OSSL_SSL_METHOD_ENTRY(TLSv1_2_server),
-    OSSL_SSL_METHOD_ENTRY(TLSv1_2_client),
-#endif
-#if defined(HAVE_TLSV1_1_METHOD)
-    OSSL_SSL_METHOD_ENTRY(TLSv1_1),
-    OSSL_SSL_METHOD_ENTRY(TLSv1_1_server),
-    OSSL_SSL_METHOD_ENTRY(TLSv1_1_client),
+#if defined(HAVE_SSL_CTX_SET_MIN_PROTO_VERSION)
+#define OSSL_SSL_METHOD_ENTRY(name, version) \
+    { #name,          (SSL_METHOD *(*)(void))TLS_method, version }, \
+    { #name"_server", (SSL_METHOD *(*)(void))TLS_server_method, version }, \
+    { #name"_client", (SSL_METHOD *(*)(void))TLS_client_method, version }
+#else
+#define OSSL_SSL_METHOD_ENTRY(name, version) \
+    { #name,          (SSL_METHOD *(*)(void))name##_method, version }, \
+    { #name"_server", (SSL_METHOD *(*)(void))name##_server_method, version }, \
+    { #name"_client", (SSL_METHOD *(*)(void))name##_client_method, version }
 #endif
 #if defined(HAVE_SSLV2_METHOD)
-    OSSL_SSL_METHOD_ENTRY(SSLv2),
-    OSSL_SSL_METHOD_ENTRY(SSLv2_server),
-    OSSL_SSL_METHOD_ENTRY(SSLv2_client),
+    OSSL_SSL_METHOD_ENTRY(SSLv2, SSL2_VERSION),
 #endif
 #if defined(HAVE_SSLV3_METHOD)
-    OSSL_SSL_METHOD_ENTRY(SSLv3),
-    OSSL_SSL_METHOD_ENTRY(SSLv3_server),
-    OSSL_SSL_METHOD_ENTRY(SSLv3_client),
+    OSSL_SSL_METHOD_ENTRY(SSLv3, SSL3_VERSION),
 #endif
-    OSSL_SSL_METHOD_ENTRY(SSLv23),
-    OSSL_SSL_METHOD_ENTRY(SSLv23_server),
-    OSSL_SSL_METHOD_ENTRY(SSLv23_client),
+    OSSL_SSL_METHOD_ENTRY(TLSv1, TLS1_VERSION),
+#if defined(HAVE_TLSV1_1_METHOD)
+    OSSL_SSL_METHOD_ENTRY(TLSv1_1, TLS1_1_VERSION),
+#endif
+#if defined(HAVE_TLSV1_2_METHOD)
+    OSSL_SSL_METHOD_ENTRY(TLSv1_2, TLS1_2_VERSION),
+#endif
+    OSSL_SSL_METHOD_ENTRY(SSLv23, 0),
 #undef OSSL_SSL_METHOD_ENTRY
 };
 
@@ -189,30 +188,36 @@ ossl_sslctx_s_alloc(VALUE klass)
 static VALUE
 ossl_sslctx_set_ssl_version(VALUE self, VALUE ssl_method)
 {
-    SSL_METHOD *method = NULL;
+    SSL_CTX *ctx;
     const char *s;
     VALUE m = ssl_method;
     int i;
 
-    SSL_CTX *ctx;
+    GetSSLCTX(self, ctx);
     if (RB_TYPE_P(ssl_method, T_SYMBOL))
 	m = rb_sym2str(ssl_method);
     s = StringValueCStr(m);
     for (i = 0; i < numberof(ossl_ssl_method_tab); i++) {
         if (strcmp(ossl_ssl_method_tab[i].name, s) == 0) {
-            method = ossl_ssl_method_tab[i].func();
-            break;
+#if defined(HAVE_SSL_CTX_SET_MIN_PROTO_VERSION)
+	    int version = ossl_ssl_method_tab[i].version;
+#endif
+	    SSL_METHOD *method = ossl_ssl_method_tab[i].func();
+
+	    if (SSL_CTX_set_ssl_version(ctx, method) != 1)
+		ossl_raise(eSSLError, "SSL_CTX_set_ssl_version");
+
+#if defined(HAVE_SSL_CTX_SET_MIN_PROTO_VERSION)
+	    if (!SSL_CTX_set_min_proto_version(ctx, version))
+		ossl_raise(eSSLError, "SSL_CTX_set_min_proto_version");
+	    if (!SSL_CTX_set_max_proto_version(ctx, version))
+		ossl_raise(eSSLError, "SSL_CTX_set_max_proto_version");
+#endif
+	    return ssl_method;
         }
     }
-    if (!method) {
-        ossl_raise(rb_eArgError, "unknown SSL method `%"PRIsVALUE"'.", m);
-    }
-    GetSSLCTX(self, ctx);
-    if (SSL_CTX_set_ssl_version(ctx, method) != 1) {
-        ossl_raise(eSSLError, "SSL_CTX_set_ssl_version");
-    }
 
-    return ssl_method;
+    ossl_raise(rb_eArgError, "unknown SSL method `%"PRIsVALUE"'.", m);
 }
 
 static VALUE

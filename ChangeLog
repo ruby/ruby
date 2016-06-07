@@ -1,3 +1,15 @@
+Tue Jun  7 14:57:09 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/extconf.rb: Check for SSL_CTX_set_min_proto_version()
+	  macro added in OpenSSL 1.1.0. Version-specific methods, such as
+	  TLSv1_method(), are deprecated in OpenSSL 1.1.0. We need to use
+	  version-flexible methods (TLS_*method() or SSLv23_*method()) and
+	  disable other protocol versions as necessary.
+	  [ruby-core:75225] [Feature #12324]
+
+	* ext/openssl/ossl_ssl.c: Use SSL_CTX_set_{min,max}_proto_version() to
+	  fix the protocol version.
+
 Tue Jun  7 12:55:34 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* regenc.c (onigenc_not_support_case_map): Move to end of file;
