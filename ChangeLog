@@ -1,3 +1,8 @@
+Tue Jun  7 16:44:16 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c (rb_str_downcase_bang): Switch to use primitive except if
+	  conversion can be done ASCII-only.
+
 Tue Jun  7 16:13:36 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_case_comprehensive: Add regression tests for
