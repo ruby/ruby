@@ -35,7 +35,7 @@ struct zone {
     int name;
     int offset;
 };
-
+static const struct zone *zonetab();
 #line 9 "zonetab.list"
 struct zone;
 /* maximum key range = 434, duplicates = 0 */
