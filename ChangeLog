@@ -2,7 +2,7 @@ Wed Jun  8 16:03:09 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/smtp.rb (getok, get_response): raise an ArgumentError when
 	  CR or LF is included in a line, because they are not allowed in
-	  RFC5321.
+	  RFC5321.  Thanks, Jeremy Daer.
 
 Tue Jun  7 21:27:25 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
