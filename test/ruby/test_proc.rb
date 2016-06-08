@@ -281,13 +281,21 @@ class TestProc < Test::Unit::TestCase
     b = b.call(2) { raise }
     b = b.call(3) {|x| x + 4 }
     assert_equal(9, b)
+  end
 
+  def test_lambda?
     l = proc {}
     assert_equal(false, l.lambda?)
     assert_equal(false, l.curry.lambda?, '[ruby-core:24127]')
+    assert_equal(false, proc(&l).lambda?)
+    assert_equal(false, lambda(&l).lambda?)
+    assert_equal(false, Proc.new(&l).lambda?)
     l = lambda {}
     assert_equal(true, l.lambda?)
     assert_equal(true, l.curry.lambda?, '[ruby-core:24127]')
+    assert_equal(true, proc(&l).lambda?)
+    assert_equal(true, lambda(&l).lambda?)
+    assert_equal(true, Proc.new(&l).lambda?)
   end
 
   def test_curry_ski_fib
