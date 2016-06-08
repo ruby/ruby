@@ -5837,7 +5837,7 @@ static void
 rb_str_ascii_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 {
     OnigUChar *source_current, *source_end;
-    int old_length = RSTRING_LEN(source);
+    long old_length = RSTRING_LEN(source);
     int length_or_invalid;
 
     if (old_length == 0) return;

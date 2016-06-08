@@ -1,3 +1,7 @@
+Wed Jun  8 23:09:51 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* string.c (rb_str_ascii_casemap): fix compile error.
+
 Wed Jun  8 22:22:24 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* string.c: Revert previous commit (possibility of endless loop).
