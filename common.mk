@@ -789,7 +789,7 @@ EXT_SRCS = $(srcdir)/ext/ripper/ripper.c \
 srcs-ext: $(EXT_SRCS)
 
 srcs-extra: $(srcdir)/ext/json/parser/parser.c \
-	    $(srcdir)/ext/date/zonetab.c \
+	    $(srcdir)/ext/date/zonetab.h \
 	    $(empty)
 
 LIB_SRCS = $(srcdir)/lib/unicode_normalize/tables.rb
@@ -891,7 +891,7 @@ $(srcdir)/ext/json/parser/parser.c: $(srcdir)/ext/json/parser/parser.rl
 	$(Q) $(CHDIR) $(@D) && $(exec) $(MAKE) -f prereq.mk $(MFLAGS) \
 		Q=$(Q) ECHO=$(ECHO) top_srcdir=../../.. srcdir=. VPATH=../../.. BASERUBY="$(BASERUBY)"
 
-$(srcdir)/ext/date/zonetab.c: $(srcdir)/ext/date/zonetab.list
+$(srcdir)/ext/date/zonetab.h: $(srcdir)/ext/date/zonetab.list
 	$(ECHO) generating $@
 	$(Q) $(CHDIR) $(@D) && $(exec) $(MAKE) -f prereq.mk $(MFLAGS) \
 		Q=$(Q) ECHO=$(ECHO) top_srcdir=../../.. srcdir=. VPATH=../../.. BASERUBY="$(BASERUBY)"
