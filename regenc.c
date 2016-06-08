@@ -968,9 +968,7 @@ onigenc_ascii_only_case_map (OnigCaseFoldType* flagP, const OnigUChar** pp, cons
   OnigCaseFoldType flags = *flagP;
   int codepoint_length;
 
-  to_end -= 4; /* longest possible length of a single character */
-
-  while (*pp<end && to<=to_end) {
+  while (*pp<end && to<to_end) {
     codepoint_length = ONIGENC_PRECISE_MBC_ENC_LEN(enc, *pp, end);
     if (codepoint_length < 0)
       return codepoint_length; /* encoding invalid */

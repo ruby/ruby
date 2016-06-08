@@ -133,7 +133,6 @@ CONSTFUNC(ONIG_EXTERN int onigenc_not_support_get_ctype_code_range P_((OnigCtype
 PUREFUNC(ONIG_EXTERN int onigenc_is_mbc_newline_0x0a P_((const UChar* p, const UChar* end, OnigEncoding enc)));
 
 #ifdef ONIG_CASE_MAPPING
-  ONIG_EXTERN int    onigenc_ascii_only_case_map P_((OnigCaseFoldType* flagP, const OnigUChar** pp, const OnigUChar* end, OnigUChar* to, OnigUChar* to_end, const struct OnigEncodingTypeST* enc));
   ONIG_EXTERN int    onigenc_single_byte_ascii_only_case_map P_((OnigCaseFoldType* flagP, const OnigUChar** pp, const OnigUChar* end, OnigUChar* to, OnigUChar* to_end, const struct OnigEncodingTypeST* enc));
 #endif   /* ONIG_CASE_MAPPING */
 

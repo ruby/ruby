@@ -5833,6 +5833,29 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     return target;
 }
 
+static void
+rb_str_ascii_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
+{
+    OnigUChar *source_current, *source_end;
+    int old_length = RSTRING_LEN(source);
+    int length_or_invalid;
+
+    if (old_length == 0) return;
+
+    source_current = (OnigUChar*)RSTRING_PTR(source);
+    source_end = (OnigUChar*)RSTRING_END(source);
+
+    length_or_invalid = onigenc_ascii_only_case_map(flags,
+			       (const OnigUChar**)&source_current, source_end,
+			       source_current, source_end, enc);
+    if (length_or_invalid < 0)
+        rb_raise(rb_eArgError, "input string invalid");
+/*    if (length_or_invalid != old_length)
+printf("problem with rb_str_ascii_casemap; old_length=%d, new_length=%d\n", old_length, length_or_invalid),
+        rb_raise(rb_eArgError, "internal problem with rb_str_ascii_casemap");
+*/
+}
+
 /*
  *  call-seq:
  *     str.upcase!              -> str or nil
@@ -5855,7 +5878,8 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
-    if (!(flags&ONIGENC_CASE_FOLD_TURKISH_AZERI) && ENC_CODERANGE(str)==ENC_CODERANGE_7BIT) {
+    if ((flags&ONIGENC_CASE_ASCII_ONLY) && (enc==rb_utf8_encoding() || rb_enc_mbmaxlen(enc)==1)
+	|| (!(flags&ONIGENC_CASE_FOLD_TURKISH_AZERI) && ENC_CODERANGE(str)==ENC_CODERANGE_7BIT)) {
         char *s = RSTRING_PTR(str), *send = RSTRING_END(str);
 
 	while (s < send) {
@@ -5914,14 +5938,14 @@ static VALUE
 rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
 {
     rb_encoding *enc;
-    int modify = 0;
     OnigCaseFoldType flags = ONIGENC_CASE_DOWNCASE;
 
     flags = check_case_options(argc, argv, flags);
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
-    if (!(flags&ONIGENC_CASE_FOLD_TURKISH_AZERI) && ENC_CODERANGE(str)==ENC_CODERANGE_7BIT) {
+    if ((flags&ONIGENC_CASE_ASCII_ONLY) && (enc==rb_utf8_encoding() || rb_enc_mbmaxlen(enc)==1)
+	|| (!(flags&ONIGENC_CASE_FOLD_TURKISH_AZERI) && ENC_CODERANGE(str)==ENC_CODERANGE_7BIT)) {
         char *s = RSTRING_PTR(str), *send = RSTRING_END(str);
 
 	while (s < send) {
@@ -5929,17 +5953,17 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
 
 	    if (rb_enc_isascii(c, enc) && 'A' <= c && c <= 'Z') {
 		*s = 'a' + (c - 'A');
-		modify = 1;
+		flags |= ONIGENC_CASE_MODIFIED;
 	    }
 	    s++;
 	}
     }
-    else {
+    else if (flags&ONIGENC_CASE_ASCII_ONLY)
+        rb_str_ascii_casemap(str, &flags, enc);
+    else
 	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
-	modify = ONIGENC_CASE_MODIFIED & flags;
-    }
 
-    if (modify) return str;
+    if (ONIGENC_CASE_MODIFIED&flags) return str;
     return Qnil;
 }
 

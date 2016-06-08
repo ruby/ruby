@@ -1,3 +1,13 @@
+Wed Jun  8 21:28:36 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c: New static function rb_str_ascii_casemap; special-casing
+	  :ascii option in rb_str_upcase_bang and rb_str_downcase_bang.
+
+	* regenc.c: Fix a bug (wrong use of unnecessary slack at end of string).
+
+	* regenc.h -> include/ruby/oniguruma.h: Move declaration of
+	  onigenc_ascii_only_case_map so that it is visible in string.c.
+
 Wed Jun  8 20:33:44 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* include/ruby/intern.h: Remove excess semicolons in PUREFUNC().

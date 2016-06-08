@@ -229,6 +229,14 @@ ONIG_EXTERN const OnigEncodingType OnigEncodingASCII;
 
 #define ONIG_ENCODING_UNDEF    ((OnigEncoding )0)
 
+#ifdef ONIG_CASE_MAPPING
+  /* this declaration needs to be here because it is used in string.c */
+  ONIG_EXTERN int    onigenc_ascii_only_case_map P_((OnigCaseFoldType* flagP,
+			  const OnigUChar** pp, const OnigUChar* end,
+			  OnigUChar* to, OnigUChar* to_end,
+			  const struct OnigEncodingTypeST* enc));
+#endif   /* ONIG_CASE_MAPPING */
+
 
 /* work size */
 #define ONIGENC_CODE_TO_MBC_MAXLEN       7
