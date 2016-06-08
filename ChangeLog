@@ -1,3 +1,7 @@
+Wed Jun  8 21:57:41 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c: Special-case :ascii option in rb_str_upcase_bang.
+
 Wed Jun  8 21:28:36 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* string.c: New static function rb_str_ascii_casemap; special-casing
