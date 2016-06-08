@@ -1,3 +1,10 @@
+Wed Jun  8 20:33:44 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* include/ruby/intern.h: Remove excess semicolons in PUREFUNC().
+	  Fix failure of TestMkmf::TestConvertible on Solaris with
+	  Oracle Solaris Studio 12. [ruby-dev:49651] [Bug #12470]
+	* internal.h: ditto.
+
 Wed Jun  8 16:03:09 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/smtp.rb (getok, get_response): raise an ArgumentError when

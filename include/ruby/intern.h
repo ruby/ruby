@@ -482,7 +482,7 @@ VALUE rb_str_encode_ospath(VALUE);
 int rb_is_absolute_path(const char *);
 /* gc.c */
 NORETURN(void rb_memerror(void));
-PUREFUNC(int rb_during_gc(void););
+PUREFUNC(int rb_during_gc(void));
 void rb_gc_mark_locations(const VALUE*, const VALUE*);
 void rb_mark_tbl(struct st_table*);
 void rb_mark_set(struct st_table*);
@@ -784,7 +784,7 @@ VALUE rb_sym_to_s(VALUE);
 long rb_str_strlen(VALUE);
 VALUE rb_str_length(VALUE);
 long rb_str_offset(VALUE, long);
-PUREFUNC(size_t rb_str_capacity(VALUE););
+PUREFUNC(size_t rb_str_capacity(VALUE));
 VALUE rb_str_ellipsize(VALUE, long);
 VALUE rb_str_scrub(VALUE, VALUE);
 /* symbol.c */

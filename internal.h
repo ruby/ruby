@@ -1452,7 +1452,7 @@ VALUE rb_obj_is_thread(VALUE obj);
 void rb_vm_mark(void *ptr);
 void Init_BareVM(void);
 void Init_vm_objects(void);
-PUREFUNC(VALUE rb_vm_top_self(void););
+PUREFUNC(VALUE rb_vm_top_self(void));
 void rb_thread_recycle_stack_release(VALUE *);
 void rb_vm_change_state(void);
 void rb_vm_inc_const_missing_count(void);
