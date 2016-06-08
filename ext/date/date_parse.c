@@ -44,12 +44,12 @@
 #define cstr2num(s) rb_cstr_to_inum(s, 10, 0)
 #define str2num(s) rb_str_to_inum(s, 10, 0)
 
-static const char *abbr_days[] = {
+static const char abbr_days[][4] = {
     "sun", "mon", "tue", "wed",
     "thu", "fri", "sat"
 };
 
-static const char *abbr_months[] = {
+static const char abbr_months[][4] = {
     "jan", "feb", "mar", "apr", "may", "jun",
     "jul", "aug", "sep", "oct", "nov", "dec"
 };
@@ -342,7 +342,7 @@ struct zone {
     int offset;
 };
 
-static struct zone zones_source[] = {
+static const struct zone zones_source[] = {
     {"ut",   0*3600}, {"gmt",  0*3600}, {"est", -5*3600}, {"edt", -4*3600},
     {"cst", -6*3600}, {"cdt", -5*3600}, {"mst", -7*3600}, {"mdt", -6*3600},
     {"pst", -8*3600}, {"pdt", -7*3600},

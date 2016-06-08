@@ -6602,7 +6602,7 @@ tmx_m_zone(union DateData *x)
     return RSTRING_PTR(m_zone(x));
 }
 
-static struct tmx_funcs tmx_funcs = {
+static const struct tmx_funcs tmx_funcs = {
     (VALUE (*)(void *))m_real_year,
     (int (*)(void *))m_yday,
     (int (*)(void *))m_mon,
