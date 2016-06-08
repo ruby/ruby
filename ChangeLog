@@ -1,3 +1,7 @@
+Wed Jun  8 22:22:24 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c: Revert previous commit (possibility of endless loop).
+
 Wed Jun  8 21:57:41 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* string.c: Special-case :ascii option in rb_str_upcase_bang.
