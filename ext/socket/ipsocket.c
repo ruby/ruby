@@ -303,6 +303,8 @@ ip_recvfrom(int argc, VALUE *argv, VALUE sock)
  *
  * Lookups the IP address of _host_.
  *
+ *   require 'socket'
+ *
  *   IPSocket.getaddress("localhost")     #=> "127.0.0.1"
  *   IPSocket.getaddress("ip6-localhost") #=> "::1"
  *

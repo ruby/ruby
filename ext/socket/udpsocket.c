@@ -19,6 +19,8 @@
  * _address_family_ should be an integer, a string or a symbol:
  * Socket::AF_INET, "AF_INET", :INET, etc.
  *
+ *   require 'socket'
+ *
  *   UDPSocket.new                   #=> #<UDPSocket:fd 3>
  *   UDPSocket.new(Socket::AF_INET6) #=> #<UDPSocket:fd 4>
  *

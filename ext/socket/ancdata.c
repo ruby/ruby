@@ -360,6 +360,8 @@ ancillary_timestamp(VALUE self)
  *
  * The size and endian is dependent on the host.
  *
+ *   require 'socket'
+ *
  *   p Socket::AncillaryData.int(:UNIX, :SOCKET, :RIGHTS, STDERR.fileno)
  *   #=> #<Socket::AncillaryData: UNIX SOCKET RIGHTS 2>
  */
