@@ -280,6 +280,12 @@ rEzBQ0F9dUyqQ9gyRg8KHhDfv9HzT1d/rnUZMkoombwYBRIUChGCYV0GnJcan2Zm
     assert_equal 2 ** 31, OpenSSL::ASN1.decode(encoded).value.to_i
   end
 
+  def test_decode_enumerated
+    encoded = OpenSSL::ASN1.Enumerated(0).to_der
+    assert_equal "\x0a\x01\x00".b, encoded
+    assert_equal encoded, OpenSSL::ASN1.decode(encoded).to_der
+  end
+
   def test_create_inf_length_primitive
     expected = %w{ 24 80 04 01 61 00 00 }
     raw = [expected.join('')].pack('H*')

@@ -1,3 +1,15 @@
+Thu Jun  9 21:42:00 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_asn1.c (asn1integer_to_num): Use
+	  ASN1_ENUMERATED_to_BN() to convert an ASN1_ENUMERATED to a BN.
+	  Starting from OpenSSL 1.1.0, ASN1_INTEGER_to_BN() rejects
+	  non-ASN1_INTEGER objects. The format of INTEGER and ENUMERATED are
+	  almost identical so they behaved in the same way in OpenSSL <= 1.0.2.
+	  [ruby-core:75225] [Feature #12324]
+
+	* test/openssl/test_asn1.rb (test_decode_enumerated): Test that it
+	  works.
+
 Thu Jun  9 21:10:04 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* tool/ifchange: fix timestamp error when target without

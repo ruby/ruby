@@ -125,9 +125,13 @@ asn1integer_to_num(ASN1_INTEGER *ai)
     if (!ai) {
 	ossl_raise(rb_eTypeError, "ASN1_INTEGER is NULL!");
     }
-    if (!(bn = ASN1_INTEGER_to_BN(ai, NULL))) {
+    if (ai->type == V_ASN1_ENUMERATED)
+	bn = ASN1_ENUMERATED_to_BN(ai, NULL);
+    else
+	bn = ASN1_INTEGER_to_BN(ai, NULL);
+
+    if (!bn)
 	ossl_raise(eOSSLError, NULL);
-    }
 #if DO_IT_VIA_RUBY
     if (!(txt = BN_bn2dec(bn))) {
 	BN_free(bn);
