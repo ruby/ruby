@@ -1,3 +1,8 @@
+Thu Jun  9 21:10:04 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* tool/ifchange: fix timestamp error when target without
+	  directory.
+
 Thu Jun  9 19:46:22 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_ssl.c: Add define guards for OPENSSL_NO_EC.

@@ -75,7 +75,7 @@ fi
 
 if [ -n "${timestamp}" ]; then
     if [ x"${timestamp}" = x. ]; then
-	if [ x"$targetdir" = x. ]; then
+	if [ x"$targetdir" = x ]; then
 	    timestamp=.time."$target"
 	else
 	    timestamp="$targetdir"/.time.`basename "$target"`
