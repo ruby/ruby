@@ -433,7 +433,12 @@ module OpenSSL::TestPairM
     sock1, sock2 = tcp_pair
 
     ctx1 = OpenSSL::SSL::SSLContext.new
-    ctx1.ciphers = "ECDH"
+    begin
+      ctx1.ciphers = "ECDH"
+    rescue OpenSSL::SSL::SSLError
+      skip "ECDH is not enabled in this OpenSSL" if $!.message =~ /no cipher match/
+      raise
+    end
     ctx1.ecdh_curves = "P-384:P-521"
     ctx1.security_level = 0
     s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)

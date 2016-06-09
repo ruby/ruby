@@ -163,7 +163,7 @@ ossl_sslctx_s_alloc(VALUE klass)
     RTYPEDDATA_DATA(obj) = ctx;
     SSL_CTX_set_ex_data(ctx, ossl_ssl_ex_ptr_idx, (void*)obj);
 
-#if defined(HAVE_SSL_CTX_SET_ECDH_AUTO)
+#if !defined(OPENSSL_NO_EC) && defined(HAVE_SSL_CTX_SET_ECDH_AUTO)
     /* We use SSL_CTX_set1_curves_list() to specify the curve used in ECDH. It
      * allows to specify multiple curve names and OpenSSL will select
      * automatically from them. In OpenSSL 1.0.2, the automatic selection has to
@@ -285,7 +285,7 @@ ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
 }
 #endif /* OPENSSL_NO_DH */
 
-#if !defined(OPENSSL_NO_EC)
+#if !defined(OPENSSL_NO_EC) && defined(HAVE_SSL_CTX_SET_TMP_ECDH_CALLBACK)
 static VALUE
 ossl_call_tmp_ecdh_callback(VALUE args)
 {
@@ -2300,7 +2300,7 @@ Init_ossl_ssl(void)
      */
     rb_attr(cSSLContext, rb_intern("client_cert_cb"), 1, 1, Qfalse);
 
-#if defined(HAVE_SSL_CTX_SET_TMP_ECDH_CALLBACK)
+#if !defined(OPENSSL_NO_EC) && defined(HAVE_SSL_CTX_SET_TMP_ECDH_CALLBACK)
     /*
      * A callback invoked when ECDH parameters are required.
      *

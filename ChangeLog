@@ -1,3 +1,15 @@
+Thu Jun  9 19:46:22 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_ssl.c: Add define guards for OPENSSL_NO_EC.
+	  SSL_CTX_set_ecdh_auto() is defined even when ECDH is disabled in
+	  OpenSSL's configuration. This fixes r55214.
+
+	* test/openssl/test_pair.rb (test_ecdh_curves): Skip if the OpenSSL does
+	  not support ECDH.
+
+	* test/openssl/utils.rb (start_server): Ignore error in
+	  SSLContext#ecdh_curves=.
+
 Thu Jun  9 18:12:42 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (un-runnable): fail with proper error message.
