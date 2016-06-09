@@ -629,7 +629,7 @@ $(RBCONFIG): $(srcdir)/tool/mkconfig.rb config.status $(srcdir)/version.h
 		-arch=$(arch) -version=$(RUBY_PROGRAM_VERSION) \
 		-install_name=$(RUBY_INSTALL_NAME) \
 		-so_name=$(RUBY_SO_NAME) | \
-	$(srcdir)/tool/ifchange --timestamp=$@ rbconfig.rb -
+	$(IFCHANGE) --timestamp=$@ rbconfig.rb -
 
 test-rubyspec-precheck:
 
@@ -1020,7 +1020,7 @@ update-bundled_gems: PHONY
 	    -e   'break "#{s.name} #{s.version}" if s.platform=="ruby"&&s.name==$$F[0]' \
 	    -e '}' \
 	     "$(srcdir)/gems/bundled_gems" | \
-	"$(srcdir)/tool/ifchange" "$(srcdir)/gems/bundled_gems" -
+	"$(IFCHANGE)" "$(srcdir)/gems/bundled_gems" -
 
 ### set the following environment variable or uncomment the line if
 ### the Unicode data files should be updated completely on every update ('make up',...).
