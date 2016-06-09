@@ -19,17 +19,6 @@ $:.unshift(".")
 require "fileutils"
 mkconfig = File.basename($0)
 
-rbconfig_rb = ARGV[0] || 'rbconfig.rb'
-unless File.directory?(dir = File.dirname(rbconfig_rb))
-  FileUtils.makedirs(dir, :verbose => true)
-end
-
-config = ""
-def config.write(arg)
-  concat(arg.to_s)
-end
-$stdout = config
-
 fast = {'prefix'=>TRUE, 'ruby_install_name'=>TRUE, 'INSTALL'=>TRUE, 'EXEEXT'=>TRUE}
 
 win32 = /mswin/ =~ arch
@@ -286,22 +275,5 @@ print <<EOS
 end
 CROSS_COMPILING = nil unless defined? CROSS_COMPILING
 EOS
-
-$stdout = STDOUT
-mode = IO::RDWR|IO::CREAT
-mode |= IO::BINARY if defined?(IO::BINARY)
-open(rbconfig_rb, mode) do |f|
-  if $timestamp and f.stat.size == config.size and f.read == config
-    puts "#{rbconfig_rb} unchanged"
-  else
-    puts "#{rbconfig_rb} updated"
-    f.rewind
-    f.truncate(0)
-    f.print(config)
-  end
-end
-if String === $timestamp
-  FileUtils.touch($timestamp)
-end
 
 # vi:set sw=2:
