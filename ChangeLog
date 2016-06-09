@@ -1,4 +1,7 @@
-Thu Jun  9 15:31:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jun  9 15:31:52 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/ifchange: make target directory if it does not exist with
+	  its parent directories.
 
 	* win32/ifchange.bat: drop support for command.com used on old
 	  systems.
