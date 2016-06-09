@@ -1,3 +1,10 @@
+Thu Jun  9 15:03:35 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/extconf.rb: Check for CRYPTO_malloc() and SSL_new().
+	  OpenSSL_add_all_digests() and SSL_library_init() are deprecated and
+	  converted to macros in OpenSSL 1.1.0.
+	  [ruby-core:75225] [Feature #12324]
+
 Wed Jun  8 23:09:51 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* string.c (rb_str_ascii_casemap): fix compile error.
