@@ -563,3 +563,7 @@ loadpath: verconf.h
 	@$(CPP) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/loadpath.c | \
 	sed -e '1,/^const char ruby_initial_load_paths/d;/;/,$$d' \
 	    -e '/^ /!d;s/ *"\\0"$$//;s/" *"//g'
+
+un-runnable:
+	$(ECHO) cannot make runnable, configure with --enable-load-relative.
+	$(Q) exit 1

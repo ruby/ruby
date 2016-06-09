@@ -1,3 +1,8 @@
+Thu Jun  9 18:12:42 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (un-runnable): fail with proper error message.
+	  [ruby-core:75905] [Bug #12472]
+
 Thu Jun  9 15:32:17 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (RBCONFIG): use ifchange tool to see if the content is
