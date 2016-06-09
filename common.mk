@@ -628,8 +628,8 @@ $(RBCONFIG): $(srcdir)/tool/mkconfig.rb config.status $(srcdir)/version.h
 		-cross_compiling=$(CROSS_COMPILING) \
 		-arch=$(arch) -version=$(RUBY_PROGRAM_VERSION) \
 		-install_name=$(RUBY_INSTALL_NAME) \
-		-so_name=$(RUBY_SO_NAME) | \
-	$(IFCHANGE) --timestamp=$@ rbconfig.rb -
+		-so_name=$(RUBY_SO_NAME) > rbconfig.tmp
+	$(IFCHANGE) "--timestamp=$@" rbconfig.rb rbconfig.tmp
 
 test-rubyspec-precheck:
 
