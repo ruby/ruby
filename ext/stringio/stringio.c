@@ -29,7 +29,7 @@ struct StringIO {
     int count;
 };
 
-static void strio_init(int, VALUE *, struct StringIO *, VALUE);
+static VALUE strio_init(int, VALUE *, struct StringIO *, VALUE);
 static VALUE strio_unget_bytes(struct StringIO *, const char *, long);
 
 #define IS_STRIO(obj) (rb_typeddata_is_kind_of((obj), &strio_data_type))
@@ -179,11 +179,10 @@ strio_initialize(int argc, VALUE *argv, VALUE self)
 	DATA_PTR(self) = ptr = strio_alloc();
     }
     rb_call_super(0, 0);
-    strio_init(argc, argv, ptr, self);
-    return self;
+    return strio_init(argc, argv, ptr, self);
 }
 
-static void
+static VALUE
 strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
 {
     VALUE string, mode;
@@ -223,6 +222,7 @@ strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
     ptr->pos = 0;
     ptr->lineno = 0;
     RBASIC(self)->flags |= (ptr->flags & FMODE_READWRITE) * (STRIO_READABLE / FMODE_READABLE);
+    return self;
 }
 
 static VALUE
@@ -548,8 +548,7 @@ strio_reopen(int argc, VALUE *argv, VALUE self)
     if (argc == 1 && !RB_TYPE_P(*argv, T_STRING)) {
 	return strio_copy(self, *argv);
     }
-    strio_init(argc, argv, StringIO(self), self);
-    return self;
+    return strio_init(argc, argv, StringIO(self), self);
 }
 
 /*
