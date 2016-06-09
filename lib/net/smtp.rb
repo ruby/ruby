@@ -12,9 +12,6 @@
 # This program is free software. You can re-distribute and/or
 # modify this program under the same terms as Ruby itself.
 #
-# NOTE: You can find Japanese version of this document at:
-# http://www.ruby-lang.org/ja/man/html/net_smtp.html
-#
 # $Id$
 #
 # See Net::SMTP for documentation.
