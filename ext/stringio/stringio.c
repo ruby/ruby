@@ -190,40 +190,33 @@ strio_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE
 strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
 {
-    VALUE string, mode;
-    int trunc = 0;
+    VALUE string, vmode, opt;
+    int oflags;
+    struct rb_io_enc_t convconfig;
 
-    switch (rb_scan_args(argc, argv, "02", &string, &mode)) {
-      case 2:
-	if (FIXNUM_P(mode)) {
-	    int flags = FIX2INT(mode);
-	    ptr->flags = rb_io_oflags_fmode(flags);
-	    trunc = flags & O_TRUNC;
-	}
-	else {
-	    const char *m = StringValueCStr(mode);
-	    ptr->flags = rb_io_modestr_fmode(m);
-	    trunc = *m == 'w';
-	}
+    argc = rb_scan_args(argc, argv, "02:", &string, &vmode, &opt);
+    rb_io_extract_modeenc(&vmode, 0, opt, &oflags, &ptr->flags, &convconfig);
+    if (argc) {
 	StringValue(string);
-	if ((ptr->flags & FMODE_WRITABLE) && OBJ_FROZEN(string)) {
+    }
+    else {
+	string = rb_enc_str_new("", 0, rb_default_external_encoding());
+    }
+    if (OBJ_FROZEN_RAW(string)) {
+	if (ptr->flags & FMODE_WRITABLE) {
 	    rb_syserr_fail(EACCES, 0);
 	}
-	if (trunc) {
-	    rb_str_resize(string, 0);
+    }
+    else {
+	if (NIL_P(vmode)) {
+	    ptr->flags |= FMODE_WRITABLE;
 	}
-	break;
-      case 1:
-	StringValue(string);
-	ptr->flags = OBJ_FROZEN(string) ? FMODE_READABLE : FMODE_READWRITE;
-	break;
-      case 0:
-	string = rb_enc_str_new("", 0, rb_default_external_encoding());
-	ptr->flags = FMODE_READWRITE;
-	break;
+    }
+    if (ptr->flags & FMODE_TRUNC) {
+	rb_str_resize(string, 0);
     }
     ptr->string = string;
-    ptr->enc = 0;
+    ptr->enc = convconfig.enc;
     ptr->pos = 0;
     ptr->lineno = 0;
     RBASIC(self)->flags |= (ptr->flags & FMODE_READWRITE) * (STRIO_READABLE / FMODE_READABLE);
