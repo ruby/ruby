@@ -2048,12 +2048,12 @@ rb_string_value_cstr(volatile VALUE *ptr)
     return s;
 }
 
-void
+char *
 rb_str_fill_terminator(VALUE str, const int newminlen)
 {
     char *s = RSTRING_PTR(str);
     long len = RSTRING_LEN(str);
-    str_fill_term(str, s, len, newminlen);
+    return str_fill_term(str, s, len, newminlen);
 }
 
 VALUE

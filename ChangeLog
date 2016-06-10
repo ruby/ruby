@@ -1,3 +1,11 @@
+Fri Jun 10 14:48:36 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (get_env_cstr): ensure NUL-terminated.
+	  [ruby-dev:49655] [Bug #12475]
+
+	* string.c (rb_str_fill_terminator): return the pointer to the
+	  NUL-terminated content.
+
 Thu Jun  9 21:42:00 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_asn1.c (asn1integer_to_num): Use

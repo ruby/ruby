@@ -2971,7 +2971,7 @@ get_env_cstr(
     if (memchr(var, '\0', RSTRING_LEN(str))) {
 	rb_raise(rb_eArgError, "bad environment variable %s: contains null byte", name);
     }
-    return var;
+    return rb_str_fill_terminator(str, 1); /* ASCII compatible */
 }
 
 #ifdef _WIN32
