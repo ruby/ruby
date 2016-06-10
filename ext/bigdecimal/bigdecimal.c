@@ -215,6 +215,12 @@ again:
 	if (prec < 0) goto unable_to_coerce_without_prec;
 	if (prec > DBL_DIG+1) goto SomeOneMayDoIt;
 	d = RFLOAT_VALUE(v);
+	if (!isfinite(d)) {
+	    pv = VpCreateRbObject(prec, NULL);
+	    pv->sign = isnan(d) ? VP_SIGN_NaN :
+		d > 0 ? VP_SIGN_POSITIVE_INFINITE : VP_SIGN_NEGATIVE_FINITE;
+	    return pv;
+	}
 	if (d != 0.0) {
 	    v = rb_funcall(v, id_to_r, 0);
 	    goto again;
