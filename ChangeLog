@@ -1,3 +1,8 @@
+Fri Jun 10 16:10:23 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regcomp.c (compile_length_tree): return error code immediately
+	  if compile_length_tree raised error [Bug #12418]
+
 Fri Jun 10 16:06:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/missing.h (isfinite): move from numeric.c.

@@ -1592,13 +1592,15 @@ compile_length_tree(Node* node, regex_t* reg)
 
   case NT_ALT:
     {
-      int n;
-
-      n = r = 0;
+      int n = 0;
+      len = 0;
       do {
-	r += compile_length_tree(NCAR(node), reg);
-	n++;
+        r = compile_length_tree(NCAR(node), reg);
+        if (r < 0) return r;
+        len += r;
+        n++;
       } while (IS_NOT_NULL(node = NCDR(node)));
+      r = len;
       r += (SIZE_OP_PUSH + SIZE_OP_JUMP) * (n - 1);
     }
     break;
