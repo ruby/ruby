@@ -1,3 +1,13 @@
+Fri Jun 10 17:44:59 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* re.c (unescape_nonascii): scan hex up to only 3 characters.
+	  [Bug #12420] [Bug #12423]
+
+Fri Jun 10 17:44:59 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regparse.c (fetch_token_in_cc): raise error if given octal escaped
+	  character is too big. [Bug #12420] [Bug #12423]
+
 Fri Jun 10 17:34:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_exec_getargs): honor the expected argument types

@@ -3222,7 +3222,7 @@ fetch_token_in_cc(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
 	PUNFETCH;
 	prev = p;
 	num = scan_unsigned_octal_number(&p, end, 3, enc);
-	if (num < 0) return ONIGERR_TOO_BIG_NUMBER;
+	if (num < 0 || 0xff < num) return ONIGERR_TOO_BIG_NUMBER;
 	if (p == prev) {  /* can't read nothing. */
 	  num = 0; /* but, it's not error */
 	}
