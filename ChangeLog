@@ -1,3 +1,8 @@
+Fri Jun 10 16:12:58 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_local_constants_i): exclude hidden constants.
+	  [ruby-core:75575] [Bug #12389]
+
 Fri Jun 10 16:10:23 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regcomp.c (compile_length_tree): return error code immediately

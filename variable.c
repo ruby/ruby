@@ -1999,7 +1999,9 @@ sv_i(st_data_t k, st_data_t v, st_data_t a)
 static int
 rb_local_constants_i(st_data_t const_name, st_data_t const_value, st_data_t ary)
 {
-    rb_ary_push((VALUE)ary, ID2SYM((ID)const_name));
+    if (rb_is_const_id(const_name)) {
+	rb_ary_push((VALUE)ary, ID2SYM((ID)const_name));
+    }
     return ST_CONTINUE;
 }
 
