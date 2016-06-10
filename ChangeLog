@@ -1,3 +1,7 @@
+Fri Jun 10 17:12:24 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c: Special-case :ascii option in rb_str_upcase_bang (retry).
+
 Fri Jun 10 14:48:36 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (get_env_cstr): ensure NUL-terminated.

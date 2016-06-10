@@ -5871,7 +5871,6 @@ static VALUE
 rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
 {
     rb_encoding *enc;
-    int modify = 0;
     OnigCaseFoldType flags = ONIGENC_CASE_UPCASE;
 
     flags = check_case_options(argc, argv, flags);
@@ -5887,17 +5886,17 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
 
 	    if (rb_enc_isascii(c, enc) && 'a' <= c && c <= 'z') {
 		*s = 'A' + (c - 'a');
-		modify = 1;
+		flags |= ONIGENC_CASE_MODIFIED;
 	    }
 	    s++;
 	}
     }
-    else {
+    else if (flags&ONIGENC_CASE_ASCII_ONLY)
+        rb_str_ascii_casemap(str, &flags, enc);
+    else
 	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
-	modify = ONIGENC_CASE_MODIFIED & flags;
-    }
 
-    if (modify) return str;
+    if (ONIGENC_CASE_MODIFIED&flags) return str;
     return Qnil;
 }
 
