@@ -6053,7 +6053,10 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str)) return Qnil;
-    str_shared_replace(str, rb_str_casemap(str, &flags, enc));
+    if (flags&ONIGENC_CASE_ASCII_ONLY)
+        rb_str_ascii_casemap(str, &flags, enc);
+    else
+	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 
     if (ONIGENC_CASE_MODIFIED&flags) return str;
     return Qnil;
@@ -6105,7 +6108,10 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
     str_modify_keep_cr(str);
     enc = STR_ENC_GET(str);
     rb_str_check_dummy_enc(enc);
-    str_shared_replace(str, rb_str_casemap(str, &flags, enc));
+    if (flags&ONIGENC_CASE_ASCII_ONLY)
+        rb_str_ascii_casemap(str, &flags, enc);
+    else
+	str_shared_replace(str, rb_str_casemap(str, &flags, enc));
 
     if (ONIGENC_CASE_MODIFIED&flags) return str;
     return Qnil;

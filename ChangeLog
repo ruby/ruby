@@ -1,3 +1,8 @@
+Fri Jun 10 17:35:11 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c: Special-case :ascii option in rb_str_capitalize_bang and
+	  rb_str_swapcase_bang.
+
 Fri Jun 10 17:12:24 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* string.c: Special-case :ascii option in rb_str_upcase_bang (retry).
