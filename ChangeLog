@@ -1,3 +1,9 @@
+Fri Jun 10 17:34:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_exec_getargs): honor the expected argument types
+	  over the conversion method.  the basic language functionality
+	  should be robust.  [ruby-core:75388] [Bug #12355]
+
 Fri Jun 10 16:30:16 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (new_if_gen): set newline flag to NODE_IF to trace all
