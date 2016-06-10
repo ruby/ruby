@@ -1,3 +1,8 @@
+Fri Jun 10 16:19:14 2016  Aaron Patterson <aaron.patterson@gmail.com>
+
+	* lib/rubygems/core_ext/kernel_require.rb: -I should always win over
+	  gems.  [ruby-core:74814] [Backport #12248]
+
 Fri Jun 10 16:12:58 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_local_constants_i): exclude hidden constants.

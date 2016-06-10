@@ -49,6 +49,36 @@ class TestGemRequire < Gem::TestCase
     end
   end
 
+  # Providing -I on the commandline should always beat gems
+  def test_dash_i_beats_gems
+    a1 = new_spec "a", "1", {"b" => "= 1"}, "lib/test_gem_require_a.rb"
+    b1 = new_spec "b", "1", {"c" => "> 0"}, "lib/b/c.rb"
+    c1 = new_spec "c", "1", nil, "lib/c/c.rb"
+    c2 = new_spec "c", "2", nil, "lib/c/c.rb"
+
+    install_specs c1, c2, b1, a1
+
+    dir = Dir.mktmpdir
+    dash_i_arg = File.join Dir.mktmpdir, 'lib'
+
+    c_rb = File.join dash_i_arg, 'b', 'c.rb'
+
+    FileUtils.mkdir_p File.dirname c_rb
+    File.open(c_rb, 'w') { |f| f.write "class Object; HELLO = 'world' end" }
+
+    lp = $LOAD_PATH.dup
+
+    # Pretend to provide a commandline argument that overrides a file in gem b
+    $LOAD_PATH.unshift dash_i_arg
+
+    assert_require 'test_gem_require_a'
+    assert_require 'b/c' # this should be required from -I
+    assert_equal "world", ::Object::HELLO
+  ensure
+    $LOAD_PATH.replace lp
+    Object.send :remove_const, :HELLO if Object.const_defined? :HELLO
+  end
+
   def test_concurrent_require
     Object.const_set :FILE_ENTERED_LATCH, Latch.new(2)
     Object.const_set :FILE_EXIT_LATCH, Latch.new(1)
