@@ -1635,6 +1635,9 @@ rb_str_modify_expand(VALUE str, long expand)
 	long len = RSTRING_LEN(str);
 	long capa = len + expand;
 	int termlen = TERM_LEN(str);
+	if (expand >= LONG_MAX - len - termlen) {
+	    rb_raise(rb_eArgError, "string size too big");
+	}
 	if (!STR_EMBED_P(str)) {
 	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, capa + termlen);
 	    RSTRING(str)->as.heap.aux.capa = capa;

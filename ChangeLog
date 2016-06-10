@@ -1,3 +1,8 @@
+Fri Jun 10 15:56:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_modify_expand): check integer overflow.
+	  [ruby-core:75592] [Bug #12390]
+
 Fri Jun 10 15:54:05 2016  Benoit Daloze  <eregontp@gmail.com>
 
 	* insns.def (defineclass): Also raise an error when redeclaring the
