@@ -22,7 +22,6 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(ArgumentError) { StringIO.new('', 'rx') }
     assert_raise(ArgumentError) { StringIO.new('', 'rbt') }
     assert_raise(TypeError) { StringIO.new(nil) }
-    assert_raise(TypeError) { StringIO.new('str', nil) }
 
     o = Object.new
     def o.to_str
@@ -783,6 +782,17 @@ class TestStringIO < Test::Unit::TestCase
       s.gets("xxx", limit)
       assert_equal(0x100000, s.pos)
     end;
+  end
+
+  def test_encoding_write
+    s = StringIO.new("", "w:utf-32be")
+    s.print "abc"
+    assert_equal("abc".encode("utf-32be"), s.string)
+  end
+
+  def test_encoding_read
+    s = StringIO.new("abc".encode("utf-32be"), "r:utf-8")
+    assert_equal("\0\0\0a\0\0\0b\0\0\0c", s.read)
   end
 
   def assert_string(content, encoding, str, mesg = nil)
