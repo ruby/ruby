@@ -188,6 +188,7 @@ module Forwardable
   alias def_delegators def_instance_delegators
   alias def_delegator def_instance_delegator
 
+  # :nodoc:
   def self._delegator_method(obj, accessor, method, ali)
     accessor = accessor.to_s unless Symbol === accessor
 
