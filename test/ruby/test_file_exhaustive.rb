@@ -459,7 +459,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     [@file, @utf8_file].each do |file|
       assert_equal(1, File.lchmod(0444, file))
       assert_equal(0444, File.stat(file).mode % 01000)
-      File.lchmod(0600, regular_file)
+      File.lchmod(0600, file)
     end
     assert_raise(Errno::ENOENT) { File.lchmod(0600, @nofile) }
   rescue NotImplementedError
