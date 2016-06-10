@@ -1,3 +1,9 @@
+Fri Jun 10 16:00:27 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread.c (recursive_list_access): a object id may be a Bignum.  so,
+	  the list must be a objhash, instead of a identhash.
+	  this fixes many test errors on mswin64 CI.
+
 Fri Jun 10 15:56:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_modify_expand): check integer overflow.
