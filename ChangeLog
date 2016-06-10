@@ -1,3 +1,9 @@
+Sat Jun 11 01:38:31 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* include/ruby/defines.h (GCC_VERSION_SINCE): Fix logic error by
+	  adding parentheses. Fix failures of TestMkmf::TestConvertible
+	  with GCC 3.4.3 on Solaris 10. [Bug #12479] [ruby-dev:49660]
+
 Fri Jun 10 21:54:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/forwardable.rb (Forwardable._delegator_method): extract
