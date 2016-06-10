@@ -5205,19 +5205,39 @@ rb_chsize(HANDLE h, off_t size)
 }
 
 /* License: Ruby's */
-int
-rb_w32_truncate(const char *path, off_t length)
+static int
+w32_truncate(const char *path, off_t length, UINT cp)
 {
     HANDLE h;
     int ret;
-    h = CreateFile(path, GENERIC_WRITE, 0, 0, OPEN_EXISTING, 0, 0);
+    WCHAR *wpath;
+
+    if (!(wpath = mbstr_to_wstr(cp, path, -1, NULL)))
+	return -1;
+    h = CreateFileW(wpath, GENERIC_WRITE, 0, 0, OPEN_EXISTING, 0, 0);
     if (h == INVALID_HANDLE_VALUE) {
 	errno = map_errno(GetLastError());
+	free(wpath);
 	return -1;
     }
+    free(wpath);
     ret = rb_chsize(h, length);
     CloseHandle(h);
     return ret;
+}
+
+/* License: Ruby's */
+int
+rb_w32_utruncate(const char *path, off_t length)
+{
+    return w32_truncate(path, length, CP_UTF8);
+}
+
+/* License: Ruby's */
+int
+rb_w32_truncate(const char *path, off_t length)
+{
+    return w32_truncate(path, length, filecp());
 }
 
 /* License: Ruby's */

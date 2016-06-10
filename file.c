@@ -99,6 +99,8 @@ int flock(int, int);
 #define lstat(p, s)	rb_w32_ustati64((p), (s))
 #undef access
 #define access(p, m)	rb_w32_uaccess((p), (m))
+#undef truncate
+#define truncate(p, n)	rb_w32_utruncate((p), (n))
 #undef chmod
 #define chmod(p, m)	rb_w32_uchmod((p), (m))
 #undef chown

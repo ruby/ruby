@@ -445,8 +445,9 @@ __declspec(dllimport) extern int finite(double);
 
 #define SUFFIX
 
-extern int 	 rb_w32_ftruncate(int fd, off_t length);
-extern int 	 rb_w32_truncate(const char *path, off_t length);
+extern int rb_w32_ftruncate(int fd, off_t length);
+extern int rb_w32_truncate(const char *path, off_t length);
+extern int rb_w32_utruncate(const char *path, off_t length);
 
 #undef HAVE_FTRUNCATE
 #define HAVE_FTRUNCATE 1
