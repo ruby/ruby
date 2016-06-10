@@ -1,3 +1,9 @@
+Fri Jun 10 21:54:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/forwardable.rb (Forwardable._delegator_method): extract
+	  method generator and deal with non-module objects.
+	  [ruby-dev:49656] [Bug #12478]
+
 Fri Jun 10 17:35:11 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* string.c: Special-case :ascii option in rb_str_capitalize_bang and
