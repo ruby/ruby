@@ -268,7 +268,7 @@ class OptionParser
       candidates = []
       block.call do |k, *v|
         (if Regexp === k
-           kn = nil
+           kn = "".freeze
            k === key
          else
            kn = defined?(k.id2name) ? k.id2name : k
@@ -1191,6 +1191,7 @@ XXX
     default_pattern = nil
     klass = nil
     q, a = nil
+    has_arg = false
 
     opts.each do |o|
       # argument class
@@ -1269,6 +1270,8 @@ XXX
         if a
           default_style = default_style.guess(arg = a)
           default_pattern, conv = search(:atype, o) unless default_pattern
+        else
+          has_arg = true
         end
         sdesc << "-#{q}"
         short << Regexp.new(q)
@@ -1291,6 +1294,9 @@ XXX
 
     default_pattern, conv = search(:atype, default_style.pattern) unless default_pattern
     if !(short.empty? and long.empty?)
+      if has_arg and default_style == Switch::NoArgument
+        default_style = Switch::RequiredArgument
+      end
       s = (style || default_style).new(pattern || default_pattern,
                                        conv, sdesc, ldesc, arg, desc, block)
     elsif !block
