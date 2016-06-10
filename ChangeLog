@@ -1,3 +1,11 @@
+Fri Jun 10 15:54:05 2016  Benoit Daloze  <eregontp@gmail.com>
+
+	* insns.def (defineclass): Also raise an error when redeclaring the
+	  superclass of a class as Object and it has another superclass.
+	  [Bug #12367] [ruby-core:75446]
+
+	* test/ruby/test_class.rb: test for above.
+
 Fri Jun 10 15:46:24 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* bignum.c: [DOC] Update result of 123456789 ** -2.
