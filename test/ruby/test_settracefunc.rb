@@ -1401,6 +1401,25 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal [__LINE__ - 3, __LINE__ - 2], lines, 'Bug #10449'
   end
 
+  def test_elsif_line_event
+    bug10763 = '[ruby-core:67720] [Bug #10763]'
+    lines = []
+    line = nil
+
+    TracePoint.new(:line){|tp|
+      next unless target_thread?
+      lines << tp.lineno if line
+    }.enable{
+      line = __LINE__
+      if !line
+        1
+      elsif line
+        2
+      end
+    }
+    assert_equal [line+1, line+3, line+4], lines, bug10763
+  end
+
   class Bug10724
     def initialize
       loop{return}
