@@ -1,3 +1,10 @@
+Sat Jun 11 09:31:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/forwardable.rb (_delegator_method): leave the backtrace
+	  untouched during accessor.  forwardable.rb does not appear in
+	  the backtrace during delegated method because of tail-call
+	  optimization.
+
 Sat Jun 11 01:38:31 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* include/ruby/defines.h (GCC_VERSION_SINCE): Fix logic error by
