@@ -1,3 +1,8 @@
+Sun Jun 12 01:59:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (new_if_gen): set newline flag to NODE_IF to trace all
+	  if/elsif statements.  [ruby-core:67720] [Bug #10763]
+
 Sun May 15 02:33:52 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (pkg_config): use xsystem consistently to set up
