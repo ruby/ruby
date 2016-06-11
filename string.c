@@ -8288,7 +8288,7 @@ rb_str_hex(VALUE str)
  *     "bad".oct       #=> 0
  *     "0377bad".oct   #=> 255
  *
- *  If +str+ starts with <code>0</code>, radix indicators are hornored.
+ *  If +str+ starts with <code>0</code>, radix indicators are honored.
  *  See Kernel#Integer.
  */
 

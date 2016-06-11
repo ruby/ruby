@@ -1,3 +1,8 @@
+Sat Jun 11 15:02:45 2016  Grant Hutchins  <github@nertzy.com>
+
+	* string.c (rb_str_oct): [DOC] fix typo, hornored -> honored.
+	  [Fix GH-1379]
+
 Sat Jun 11 14:04:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/objspace/objspace_dump.c: generate valid JSON for dump_all.
