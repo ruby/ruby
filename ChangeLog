@@ -1,3 +1,7 @@
+Sat Jun 11 09:58:45 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_1.c: Revert to older version of code.
+
 Sat Jun 11 09:46:17 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/iso_8859_1.c: Implement non-ASCII case mapping.

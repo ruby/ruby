@@ -260,7 +260,7 @@ case_map (OnigCaseFoldType* flagP, const OnigUChar** pp,
 					 const OnigUChar* end, OnigUChar* to, OnigUChar* to_end,
 					 const struct OnigEncodingTypeST* enc)
 {
-  OnigCodePoint code, lower;
+  OnigCodePoint code;
   OnigUChar *to_start = to;
   OnigCaseFoldType flags = *flagP;
 
@@ -278,10 +278,11 @@ case_map (OnigCaseFoldType* flagP, const OnigUChar** pp,
 	    code = 's';
 	}
     }
-    else if ((lower=ONIGENC_ISO_8859_1_TO_LOWER_CASE(code)) != code)
-	     && (flags&ONIGENC_CASE_UPCASE)) {
-	flags |= ONIGENC_CASE_MODIFIED;
-	code = lower;
+    else if (code==0xAA || code==0xBA) ;
+    else if ((EncISO_8859_1_CtypeTable[code] & BIT_CTYPE_UPPER)
+	     && (flags & (ONIGENC_CASE_DOWNCASE|ONIGENC_CASE_FOLD))) {
+        flags |= ONIGENC_CASE_MODIFIED;
+	code += 0x20;
     }
     else if ((EncISO_8859_1_CtypeTable[code]&BIT_CTYPE_LOWER)
 	     && (flags&ONIGENC_CASE_UPCASE)) {
