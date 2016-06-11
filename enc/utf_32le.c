@@ -28,6 +28,7 @@
  */
 
 #include "regenc.h"
+#include "iso_8859.h"
 
 static int
 utf32le_mbc_enc_len(const UChar* p ARG_UNUSED, const OnigUChar* e ARG_UNUSED,
@@ -126,7 +127,7 @@ utf32le_is_mbc_ambiguous(OnigCaseFoldType flag, const UChar** pp, const UChar* e
   if (*(p+1) == 0 && *(p+2) == 0 && *(p+3) == 0) {
     int c, v;
 
-    if (*p == 0xdf && (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
+    if (*p == SHARP_s && (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
       return TRUE;
     }
 

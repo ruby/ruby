@@ -28,6 +28,7 @@
  */
 
 #include "regenc.h"
+#include "iso_8859.h"
 
 #define ENC_IS_ISO_8859_1_CTYPE(code,ctype) \
   ((EncISO_8859_1_CtypeTable[code] & CTYPE_TO_BIT(ctype)) != 0)
@@ -125,7 +126,7 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
 	&& (*(p+1) == 0x53 || *(p+1) == 0x73)) { /* SS */
       items[1].byte_len = 2;
       items[1].code_len = 1;
-      items[1].code[0] = (OnigCodePoint )0xdf;
+      items[1].code[0] = (OnigCodePoint )SHARP_s;
       return 2;
     }
     else
@@ -139,7 +140,7 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
 	&& (*(p+1) == 0x73 || *(p+1) == 0x53)) { /* ss */
       items[1].byte_len = 2;
       items[1].code_len = 1;
-      items[1].code[0] = (OnigCodePoint )0xdf;
+      items[1].code[0] = (OnigCodePoint )SHARP_s;
       return 2;
     }
     else
@@ -152,7 +153,7 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
     return 1;
   }
   else if (0xd0 <= *p && *p <= 0xdf) {
-    if (*p == 0xdf) {
+    if (*p == SHARP_s) {
       items[0].byte_len = 1;
       items[0].code_len = 2;
       items[0].code[0] = (OnigCodePoint )'s';
@@ -206,7 +207,7 @@ mbc_case_fold(OnigCaseFoldType flag, const UChar** pp, const UChar* end ARG_UNUS
 {
   const UChar* p = *pp;
 
-  if (*p == 0xdf && (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
+  if (*p == SHARP_s && (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
     *lower++ = 's';
     *lower   = 's';
     (*pp)++;
@@ -226,7 +227,7 @@ is_mbc_ambiguous(OnigCaseFoldType flag,
   int v;
   const UChar* p = *pp;
 
-  if (*p == 0xdf && (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
+  if (*p == SHARP_s && (flag & INTERNAL_ONIGENC_CASE_FOLD_MULTI_CHAR) != 0) {
     (*pp)++;
     return TRUE;
   }
@@ -266,7 +267,7 @@ case_map (OnigCaseFoldType* flagP, const OnigUChar** pp,
 
   while (*pp<end && to<to_end) {
     code = *(*pp)++;
-    if (code==0xdf) {  /* sharp s */
+    if (code==SHARP_s) {
 	if (flags&ONIGENC_CASE_UPCASE) {
 	    flags |= ONIGENC_CASE_MODIFIED;
 	    *to++ = 'S';
