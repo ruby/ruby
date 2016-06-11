@@ -254,6 +254,49 @@ is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc ARG_UNUSE
     return FALSE;
 }
 
+#ifdef ONIG_CASE_MAPPING
+static int
+case_map (OnigCaseFoldType* flagP, const OnigUChar** pp,
+					 const OnigUChar* end, OnigUChar* to, OnigUChar* to_end,
+					 const struct OnigEncodingTypeST* enc)
+{
+  OnigCodePoint code, lower;
+  OnigUChar *to_start = to;
+  OnigCaseFoldType flags = *flagP;
+
+  while (*pp<end && to<to_end) {
+    code = *(*pp)++;
+    if (code==0xdf) {  /* sharp s */
+	if (flags&ONIGENC_CASE_UPCASE) {
+	    flags |= ONIGENC_CASE_MODIFIED;
+	    *to++ = 'S';
+	    code = (flags&ONIGENC_CASE_TITLECASE) ? 's' : 'S';
+	}
+	else if (flags&ONIGENC_CASE_FOLD) {
+	    flags |= ONIGENC_CASE_MODIFIED;
+	    *to++ = 's';
+	    code = 's';
+	}
+    }
+    else if ((lower=ONIGENC_ISO_8859_1_TO_LOWER_CASE(code)) != code)
+	     && (flags&ONIGENC_CASE_UPCASE)) {
+	flags |= ONIGENC_CASE_MODIFIED;
+	code = lower;
+    }
+    else if ((EncISO_8859_1_CtypeTable[code]&BIT_CTYPE_LOWER)
+	     && (flags&ONIGENC_CASE_UPCASE)) {
+	flags |= ONIGENC_CASE_MODIFIED;
+	code -= 0x20;
+    }
+    *to++ = code;
+    if (flags&ONIGENC_CASE_TITLECASE)  /* switch from titlecase to lowercase for capitalize */
+      flags ^= (ONIGENC_CASE_UPCASE|ONIGENC_CASE_DOWNCASE|ONIGENC_CASE_TITLECASE);
+  }
+  *flagP = flags;
+  return (int)(to-to_start);
+}
+#endif   /* ONIG_CASE_MAPPING */
+
 OnigEncodingDefine(iso_8859_1, ISO_8859_1) = {
   onigenc_single_byte_mbc_enc_len,
   "ISO-8859-1",  /* name */
@@ -274,7 +317,7 @@ OnigEncodingDefine(iso_8859_1, ISO_8859_1) = {
   0,
   ONIGENC_FLAG_NONE,
 #ifdef ONIG_CASE_MAPPING
-  onigenc_single_byte_ascii_only_case_map,
+  case_map,
 #endif   /* ONIG_CASE_MAPPING */
 };
 ENC_ALIAS("ISO8859-1", "ISO-8859-1")

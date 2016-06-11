@@ -6011,7 +6011,7 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
  *  by case mapping operations.
  *
  *  Non-ASCII case mapping/folding is currently supported for UTF-8,
- *  UTF-16BE/LE, and UTF-32BE/LE Strings/Symbols.
+ *  UTF-16BE/LE, UTF-32BE/LE, and ISO-8859-1 Strings/Symbols.
  *  This support will be extended to other encodings.
  *
  *     "hEllO".downcase   #=> "hello"

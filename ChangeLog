@@ -1,3 +1,11 @@
+Sat Jun 11 09:46:17 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_1.c: Implement non-ASCII case mapping.
+
+	* test/ruby/enc/test_case_comprehensive.rb: Tests for above.
+
+	* string.c: Add iso-8859-1 to supported encodings.
+
 Sat Jun 11 09:31:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/forwardable.rb (_delegator_method): leave the backtrace
