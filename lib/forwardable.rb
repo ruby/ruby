@@ -195,13 +195,23 @@ module Forwardable
       accessor = "#{accessor}()"
     end
 
+    unless begin
+             iseq = RubyVM::InstructionSequence
+                    .compile("().#{method}", nil, nil, 0, false)
+           rescue SyntaxError
+           else
+             iseq.to_a.dig(-1, 1, 1, :mid) == method.to_sym
+           end
+      method = "__send__ :#{method},"
+    end
+
     line_no = __LINE__+1; str = "#{<<-"begin;"}\n#{<<-"end;"}"
     begin;
       proc do
         def #{ali}(*args, &block)
           begin
             #{accessor}
-          end.__send__ :#{method}, *args, &block
+          end.#{method} *args, &block
         end
       end
     end;

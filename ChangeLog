@@ -1,3 +1,8 @@
+Sat Jun 11 13:52:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/forwardable.rb (_delegator_method): remove __send__ call if
+	  possible, so that more optimizations will be enabled.
+
 Sat Jun 11 11:24:36 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/iso_8859.h (SHARP_s): name frequently used codepoint.
