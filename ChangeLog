@@ -1,3 +1,7 @@
+Sat Jun 11 14:04:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/objspace/objspace_dump.c: generate valid JSON for dump_all.
+
 Sat Jun 11 13:52:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/forwardable.rb (_delegator_method): remove __send__ call if

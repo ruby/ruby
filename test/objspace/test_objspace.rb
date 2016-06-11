@@ -1,6 +1,10 @@
 # frozen_string_literal: false
 require "test/unit"
 require "objspace"
+begin
+  require "json"
+rescue LoadError
+end
 
 class TestObjSpace < Test::Unit::TestCase
   def test_memsize_of
@@ -218,6 +222,7 @@ class TestObjSpace < Test::Unit::TestCase
     info = ObjectSpace.dump("foo".freeze)
     assert_match /"wb_protected":true, "old":true/, info
     assert_match /"fstring":true/, info
+    JSON.parse(info) if defined?(JSON)
   end
 
   def test_dump_to_default
@@ -252,6 +257,7 @@ class TestObjSpace < Test::Unit::TestCase
     assert_match /"embedded":true, "bytesize":11, "value":"hello world", "encoding":"UTF-8"/, info
     assert_match /"file":"#{Regexp.escape __FILE__}", "line":#{line}/, info
     assert_match /"method":"#{loc.base_label}"/, info
+    JSON.parse(info) if defined?(JSON)
   end
 
   def test_dump_special_consts
@@ -299,6 +305,13 @@ class TestObjSpace < Test::Unit::TestCase
       skip error unless output
       assert_match(entry, File.readlines(output).grep(/TEST STRING/).join("\n"))
       File.unlink(output)
+    end
+
+    if defined?(JSON)
+      assert_ruby_status(%w[-rjson -robjspace], "#{<<-"begin;"}\n#{<<-"end;"}")
+      begin;
+        JSON.parse(ObjectSpace.dump_all(output: :string))
+      end;
     end
   end
 
