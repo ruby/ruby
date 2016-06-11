@@ -1,3 +1,8 @@
+Sun Jun 12 02:36:52 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regcomp.c (compile_length_tree): return error code immediately
+	  if compile_length_tree raised error [Bug #12418]
+
 Sun Jun 12 02:27:07 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread.c (recursive_list_access): a object id may be a Bignum.  so,
