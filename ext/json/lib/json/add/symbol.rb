@@ -3,7 +3,6 @@ unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
   require 'json'
 end
 
-# Symbol serialization/deserialization
 class Symbol
   # Returns a hash, that will be turned into a JSON object and represent this
   # object.

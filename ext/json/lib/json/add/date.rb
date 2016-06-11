@@ -4,7 +4,6 @@ unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
 end
 require 'date'
 
-# Date serialization/deserialization
 class Date
 
   # Deserializes JSON string by converting Julian year <tt>y</tt>, month
