@@ -202,7 +202,9 @@ module Forwardable
            else
              iseq.to_a.dig(-1, 1, 1, :mid) == method.to_sym
            end
-      method = "__send__ :#{method},"
+      method_call = "__send__(:#{method}, *args, &block)"
+    else
+      method_call = "#{method}(*args, &block)"
     end
 
     line_no = __LINE__+1; str = "#{<<-"begin;"}\n#{<<-"end;"}"
@@ -211,7 +213,7 @@ module Forwardable
         def #{ali}(*args, &block)
           begin
             #{accessor}
-          end.#{method} *args, &block
+          end.#{method_call}
         end
       end
     end;

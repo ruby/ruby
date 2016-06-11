@@ -1,3 +1,8 @@
+Sat Jun 11 23:07:32 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/forwardable.rb (_delegator_method): get rid of a warning which
+	  causes test failures introduced at r55376.
+
 Sat Jun 11 18:37:58 2016  Marcus Stollsteimer  <sto.mar@web.de>
 
 	* ext/json/lib/*.rb: Removed some comments. Because these are unnecessary
