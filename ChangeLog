@@ -1,3 +1,8 @@
+Sat Jun 11 15:19:38 2016  takiy33  <takiy33@users.noreply.github.com>
+
+	* lib/net/smtp.rb: [DOC] Remove dead link on documentation for
+	  Japanese of SMTP.  [Fix GH-1380]
+
 Sat Jun 11 15:02:45 2016  Grant Hutchins  <github@nertzy.com>
 
 	* string.c (rb_str_oct): [DOC] fix typo, hornored -> honored.
