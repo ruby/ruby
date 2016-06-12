@@ -1,3 +1,13 @@
+Sun Jun 12 13:47:42 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* test/openssl/test_engine.rb (test_openssl_engine_builtin,
+	  test_openssl_engine_by_id_string): Skip test if 'openssl' engine is
+	  already loaded. And test the number increased by Engine.load{_by_id,},
+	  not the total count of loaded engines. Previously, we called
+	  OpenSSL::Engine.cleanup every time running a test case, but we no
+	  longer can do it.
+	  [ruby-core:75225] [Feature #12324]
+
 Sun Jun 12 09:24:34 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (append_fspath): normalize directory name to be appended
