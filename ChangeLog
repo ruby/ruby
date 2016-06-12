@@ -1,3 +1,18 @@
+Sun Jun 12 14:05:45 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_cipher.c (ossl_cipher_get_auth_tag,
+	  ossl_cipher_set_auth_tag): Check if the cipher flags retrieved by
+	  EVP_CIPHER_CTX_flags() includes EVP_CIPH_FLAG_AEAD_CIPHER to see if
+	  the cipher supports AEAD. AES-GCM was the only supported in OpenSSL
+	  1.0.1.
+
+	  (Init_ossl_cipher): Fix doc; OpenSSL::Cipher::AES.new(128, :GCM) can't
+	  work.
+
+	* ext/openssl/openssl_missing.h: Define EVP_CTRL_AEAD_{GET,SET}_TAG if
+	  missing. They are added in OpenSSL 1.1.0, and have the same value as
+	  EVP_CTRL_GCM_{GET,SET}_TAG and EVP_CTRL_CCM_{GET,SET}_TAG.
+
 Sun Jun 12 13:47:42 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* test/openssl/test_engine.rb (test_openssl_engine_builtin,
