@@ -308,9 +308,16 @@ class TestObjSpace < Test::Unit::TestCase
     end
 
     if defined?(JSON)
-      assert_ruby_status(%w[-rjson -robjspace], "#{<<-"begin;"}\n#{<<-"end;"}")
+      args = [
+        "-rjson", "-",
+        EnvUtil.rubybin,
+        "--disable=gems", "-robjspace", "-eObjectSpace.dump_all(output: :stdout)",
+      ]
+      assert_ruby_status(args, "#{<<~"begin;"}\n#{<<~"end;"}")
       begin;
-        JSON.parse(ObjectSpace.dump_all(output: :string))
+        IO.popen(ARGV) do |f|
+          JSON.load(f)
+        end
       end;
     end
   end
