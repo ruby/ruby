@@ -1094,6 +1094,24 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal('z:/bar/foo', File.expand_path('z:foo', '/bar'), bug10858)
   end if DRIVE
 
+  def test_expand_path_compose
+    pp = Object.new.extend(Test::Unit::Assertions)
+    def pp.mu_pp(str) #:nodoc:
+      str.dump
+    end
+
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        orig = %W"d\u{e9}tente x\u{304c 304e 3050 3052 3054}"
+        orig.each do |o|
+          Dir.mkdir(o)
+          n = Dir.chdir(o) {File.expand_path(".")}
+          pp.assert_equal(o, File.basename(n))
+        end
+      end
+    end
+  end
+
   def test_basename
     assert_equal(File.basename(regular_file).sub(/\.test$/, ""), File.basename(regular_file, ".test"))
     assert_equal(File.basename(utf8_file).sub(/\.test$/, ""), File.basename(utf8_file, ".test"))

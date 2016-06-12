@@ -235,6 +235,7 @@ rb_str_encode_ospath(VALUE path)
 }
 
 #ifdef __APPLE__
+# define NORMALIZE_UTF8PATH 1
 static VALUE
 rb_str_append_normalized_ospath(VALUE str, const char *ptr, long len)
 {
@@ -334,6 +335,8 @@ ignored_char_p(const char *p, const char *e, rb_encoding *enc)
     }
     return 0;
 }
+#else
+# define NORMALIZE_UTF8PATH 0
 #endif
 
 #define apply2args(n) (rb_check_arity(argc, n, UNLIMITED_ARGUMENTS), argc-=n)
@@ -3211,6 +3214,18 @@ rb_default_home_dir(VALUE result)
 }
 
 #ifndef _WIN32
+static VALUE
+ospath_new(const char *ptr, long len, rb_encoding *fsenc)
+{
+#if NORMALIZE_UTF8PATH
+    VALUE path = rb_str_normalize_ospath(ptr, len);
+    rb_enc_associate(path, fsenc);
+    return path;
+#else
+    return rb_enc_str_new(ptr, len, fsenc);
+#endif
+}
+
 static char *
 append_fspath(VALUE result, VALUE fname, char *dir, rb_encoding **enc, rb_encoding *fsenc)
 {
@@ -3218,10 +3233,13 @@ append_fspath(VALUE result, VALUE fname, char *dir, rb_encoding **enc, rb_encodi
     VALUE dirname = Qnil;
     size_t dirlen = strlen(dir), buflen = rb_str_capacity(result);
 
-    if (*enc != fsenc) {
-	rb_encoding *direnc = rb_enc_check(fname, dirname = rb_enc_str_new(dir, dirlen, fsenc));
+    if (NORMALIZE_UTF8PATH || *enc != fsenc) {
+	rb_encoding *direnc = rb_enc_check(fname, dirname = ospath_new(dir, dirlen, fsenc));
 	if (direnc != fsenc) {
 	    dirname = rb_str_conv_enc(dirname, fsenc, direnc);
+	    RSTRING_GETMEM(dirname, cwdp, dirlen);
+	}
+	else if (NORMALIZE_UTF8PATH) {
 	    RSTRING_GETMEM(dirname, cwdp, dirlen);
 	}
 	*enc = direnc;
