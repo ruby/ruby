@@ -41,16 +41,17 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
   def self.read_data
     @@codepoints = []
 
-    downcase  = Hash.new { |h, c| c }
-    upcase    = Hash.new { |h, c| c }
-    titlecase = Hash.new { |h, c| c }
-    casefold  = Hash.new { |h, c| c }
-    turkic_upcase    = Hash.new { |h, c| upcase[c] }
-    turkic_downcase  = Hash.new { |h, c| downcase[c] }
-    turkic_titlecase = Hash.new { |h, c| titlecase[c] }
-    ascii_upcase     = Hash.new { |h, c| c =~ /^[a-zA-Z]$/ ? upcase[c] : c }
-    ascii_downcase   = Hash.new { |h, c| c =~ /^[a-zA-Z]$/ ? downcase[c] : c }
-    ascii_titlecase  = Hash.new { |h, c| c =~ /^[a-zA-Z]$/ ? titlecase[c] : c }
+    downcase  = Hash.new { |h, c| h[c] = c }
+    upcase    = Hash.new { |h, c| h[c] = c }
+    titlecase = Hash.new { |h, c| h[c] = c }
+    casefold  = Hash.new { |h, c| h[c] = c }
+    turkic_upcase    = Hash.new { |h, c| h[c] = upcase[c] }
+    turkic_downcase  = Hash.new { |h, c| h[c] = downcase[c] }
+    turkic_titlecase = Hash.new { |h, c| h[c] = titlecase[c] }
+    ascii_upcase     = Hash.new { |h, c| h[c] = c =~ /^[a-zA-Z]$/ ? upcase[c] : c }
+    ascii_downcase   = Hash.new { |h, c| h[c] = c =~ /^[a-zA-Z]$/ ? downcase[c] : c }
+    ascii_titlecase  = Hash.new { |h, c| h[c] = c =~ /^[a-zA-Z]$/ ? titlecase[c] : c }
+    ascii_swapcase   = Hash.new { |h, c| h[c] = c=~/^[a-z]$/ ? upcase[c] : (c=~/^[A-Z]$/ ? downcase[c] : c) }
 
     read_data_file('UnicodeData') do |code, data|
       @@codepoints << code
@@ -89,6 +90,7 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
       CaseTest.new(:upcase,     [:ascii],      ascii_upcase),
       CaseTest.new(:downcase,   [:ascii],      ascii_downcase),
       CaseTest.new(:capitalize, [:ascii],      ascii_titlecase, ascii_downcase),
+      CaseTest.new(:swapcase,   [:ascii],      ascii_swapcase),
     ]
   end
 
@@ -169,6 +171,18 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
           source = code.encode(encoding) * 5
           target = source[0].tr('a-z', 'A-Z') + source[1..-1].tr('A-Z', 'a-z')
           result = source.capitalize
+          assert_equal target, result,
+            "from #{code*5} (#{source.dump}) expected #{target.dump} but was #{result.dump}"
+        rescue Encoding::UndefinedConversionError
+        end
+      end
+    end
+    define_method "test_#{encoding}_swapcase" do
+      codepoints.each do |code|
+        begin
+          source = code.encode(encoding) * 5
+          target = source.tr('a-zA-Z', 'A-Za-z')
+          result = source.swapcase
           assert_equal target, result,
             "from #{code*5} (#{source.dump}) expected #{target.dump} but was #{result.dump}"
         rescue Encoding::UndefinedConversionError

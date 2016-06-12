@@ -1,3 +1,8 @@
+Sun Jun 12 14:48:00 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_comprehensive.rb: Add tests for ASCII-only
+	  swapcase; store calculated values in hashes.
+
 Sun Jun 12 14:05:45 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_cipher.c (ossl_cipher_get_auth_tag,
