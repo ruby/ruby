@@ -1,3 +1,9 @@
+Tue Jun 14 02:58:41 2016  Marcus Stollsteimer  <sto.mar@web.de>
+
+	* ext/date/date_core.c (Init_date_core): [DOC] Convert DateTime
+	  documentation to RDoc from Markdown.
+	  [ruby-core:75136] [Bug #12311]
+
 Sun Jun 12 02:36:52 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regcomp.c (compile_length_tree): return error code immediately
