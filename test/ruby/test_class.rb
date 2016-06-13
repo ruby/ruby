@@ -375,6 +375,25 @@ class TestClass < Test::Unit::TestCase
     }
   end
 
+  define_method :test_invalid_reset_superclass do
+    class A; end
+    class SuperclassCannotBeReset < A
+    end
+    assert_equal A, SuperclassCannotBeReset.superclass
+
+    assert_raise_with_message(TypeError, /superclass mismatch/) {
+      class SuperclassCannotBeReset < String
+      end
+    }
+
+    assert_raise_with_message(TypeError, /superclass mismatch/, "[ruby-core:75446]") {
+      class SuperclassCannotBeReset < Object
+      end
+    }
+
+    assert_equal A, SuperclassCannotBeReset.superclass
+  end
+
   def test_cloned_singleton_method_added
     bug5283 = '[ruby-dev:44477]'
     added = []

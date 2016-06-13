@@ -863,10 +863,6 @@ defineclass
 		     rb_obj_class(super));
 	}
 
-	if (super == Qnil) {
-	    super = rb_cObject;
-	}
-
 	vm_check_if_namespace(cbase);
 
 	/* find klass */
@@ -879,7 +875,7 @@ defineclass
 		rb_raise(rb_eTypeError, "%"PRIsVALUE" is not a class", rb_id2str(id));
 	    }
 
-	    if (super != rb_cObject) {
+	    if (VM_DEFINECLASS_HAS_SUPERCLASS_P(flags)) {
 		VALUE tmp;
 		tmp = rb_class_real(RCLASS_SUPER(klass));
 
@@ -890,6 +886,9 @@ defineclass
 	    }
 	}
 	else {
+	    if (!VM_DEFINECLASS_HAS_SUPERCLASS_P(flags)) {
+		super = rb_cObject;
+	    }
 	    /* new class declaration */
 	    klass = rb_define_class_id(id, super);
 	    rb_set_class_path_string(klass, cbase, rb_id2str(id));

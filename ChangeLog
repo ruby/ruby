@@ -1,3 +1,11 @@
+Tue Jun 14 03:25:14 2016  Benoit Daloze  <eregontp@gmail.com>
+
+	* insns.def (defineclass): Also raise an error when redeclaring the
+	  superclass of a class as Object and it has another superclass.
+	  [Bug #12367] [ruby-core:75446]
+
+	* test/ruby/test_class.rb: test for above.
+
 Tue Jun 14 03:15:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_exec_getargs): honor the expected argument types
