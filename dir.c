@@ -885,8 +885,8 @@ dir_rewind(VALUE dir)
  *  call-seq:
  *     dir.close -> nil
  *
- *  Closes the directory stream. Any further attempts to access
- *  <em>dir</em> will raise an <code>IOError</code>.
+ *  Closes the directory stream.
+ *  Calling this method on closed Dir object is ignored since Ruby 2.3.
  *
  *     d = Dir.new("testdir")
  *     d.close   #=> nil
