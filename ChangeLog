@@ -1,3 +1,9 @@
+Mon Jun 13 20:50:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (reg_named_capture_assign_iter): remove named capture
+	  conflict warnings.  it is just annoying rather than useful.
+	  [ruby-core:75416] [Bug #12359]
+
 Mon Jun 13 20:04:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* numeric.c (rb_int_digits, rb_fix_digits, rb_int_digits_bigbase):

@@ -869,9 +869,9 @@ x = __ENCODING__
 
   def test_named_capture_conflict
     a = 1
-    assert_warning(/named capture conflict/) {eval("a = 1; /(?<a>)/ =~ ''")}
+    assert_warning('') {eval("a = 1; /(?<a>)/ =~ ''")}
     a = "\u{3042}"
-    assert_warning(/#{a}/) {eval("#{a} = 1; /(?<#{a}>)/ =~ ''")}
+    assert_warning('') {eval("#{a} = 1; /(?<#{a}>)/ =~ ''")}
   end
 
 =begin
