@@ -1,3 +1,8 @@
+Tue Jun 14 03:34:27 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_local_constants_i): exclude hidden constants.
+	  [ruby-core:75575] [Bug #12389]
+
 Tue Jun 14 03:25:14 2016  Benoit Daloze  <eregontp@gmail.com>
 
 	* insns.def (defineclass): Also raise an error when redeclaring the

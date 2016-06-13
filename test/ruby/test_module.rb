@@ -603,6 +603,8 @@ class TestModule < Test::Unit::TestCase
       const_set(:X, 123)
     end
     assert_equal(false, klass.class_eval { Module.constants }.include?(:X))
+
+    assert_equal(false, Complex.constants(false).include?(:compatible))
   end
 
   module M1
