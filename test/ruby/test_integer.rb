@@ -331,4 +331,43 @@ class TestInteger < Test::Unit::TestCase
       assert_equal(i+1, (n+1).bit_length, "#{n+1}.bit_length")
     }
   end
+
+  def test_digits
+    assert_equal([0], 0.digits)
+    assert_equal([1], 1.digits)
+    assert_equal([0, 9, 8, 7, 6, 5, 4, 3, 2, 1], 1234567890.digits)
+    assert_equal([90, 78, 56, 34, 12], 1234567890.digits(100))
+    assert_equal([10, 5, 6, 8, 0, 10, 8, 6, 1], 1234567890.digits(13))
+  end
+
+  def test_digits_for_negative_numbers
+    assert_raise(Math::DomainError) { -1.digits }
+    assert_raise(Math::DomainError) { -1234567890.digits }
+    assert_raise(Math::DomainError) { -1234567890.digits(100) }
+    assert_raise(Math::DomainError) { -1234567890.digits(13) }
+  end
+
+  def test_digits_for_invalid_base_numbers
+    assert_raise(ArgumentError) { 10.digits(-1) }
+    assert_raise(ArgumentError) { 10.digits(0) }
+    assert_raise(ArgumentError) { 10.digits(1) }
+  end
+
+  def test_digits_for_non_integral_base_numbers
+    assert_equal([1], 1.digits(10r))
+    assert_equal([1], 1.digits(10.0))
+    assert_raise(RangeError) { 10.digits(10+1i) }
+  end
+
+  def test_digits_for_non_numeric_base_argument
+    assert_raise(TypeError) { 10.digits("10") }
+    assert_raise(TypeError) { 10.digits("a") }
+
+    class << (o = Object.new)
+      def to_int
+        10
+      end
+    end
+    assert_equal([0, 1], 10.digits(o))
+  end
 end

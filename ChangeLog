@@ -1,3 +1,13 @@
+Mon Jun 13 20:04:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* numeric.c (rb_int_digits, rb_fix_digits, rb_int_digits_bigbase):
+	  Add Integer#digits to extract columns in place-value notation
+	  [Feature #12447] [ruby-core:75799]
+
+	* test/ruby/test_integer.rb: Add tests for the above change.
+
+	* test/ruby/test_bignum.rb: ditto.
+
 Mon Jun 13 20:34:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (RUBY_INTEGER_UNIFICATION): macro to tell if

@@ -12,6 +12,7 @@
 #include "internal.h"
 #include "ruby/util.h"
 #include "id.h"
+#include <assert.h>
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
@@ -4478,6 +4479,111 @@ rb_int_bit_length(VALUE num)
 }
 
 /*
+ *  Document-method: Integer#digits(base=10)
+ *  call-seq:
+ *     int.digits       -> [int]
+ *     int.digits(base) -> [int]
+ *
+ *  Returns the array including the digits extracted by place-value notation
+ *  with radix +base+ of +int+.
+ *
+ *  +base+ should be greater than or equal to 2.
+ *
+ *     12345.digits      #=> [5, 4, 3, 2, 1]
+ *     12345.digits(7)   #=> [4, 6, 6, 0, 5]
+ *     -12345.digits(7)  #=> [4, 6, 6, 0, 5]
+ *     12345.digits(100) #=> [45, 23, 1]
+ *
+ */
+
+static VALUE
+rb_fix_digits(VALUE fix, long base)
+{
+    VALUE digits;
+    long x = FIX2LONG(fix);
+
+    assert(x >= 0);
+
+    if (base < 2)
+        rb_raise(rb_eArgError, "invalid radix %ld", base);
+
+    if (x == 0)
+        return rb_ary_new_from_args(1, INT2FIX(0));
+
+    digits = rb_ary_new();
+    while (x > 0) {
+        long q = x % base;
+        rb_ary_push(digits, LONG2NUM(q));
+        x /= base;
+    }
+
+    return digits;
+}
+
+static VALUE
+rb_int_digits_bigbase(VALUE num, VALUE base)
+{
+    VALUE digits;
+
+    assert(!rb_num_negative_p(num));
+
+    if (RB_TYPE_P(base, T_BIGNUM))
+        base = rb_big_norm(base);
+
+    if (FIXNUM_P(base) && FIX2LONG(base) < 2)
+        rb_raise(rb_eArgError, "invalid radix %ld", FIX2LONG(base));
+    else if (RB_TYPE_P(base, T_BIGNUM) && BIGNUM_NEGATIVE_P(base))
+        rb_raise(rb_eArgError, "negative radix");
+
+    if (FIXNUM_P(base) && FIXNUM_P(num))
+        return rb_fix_digits(num, FIX2LONG(base));
+
+    if (FIXNUM_P(num))
+        return rb_ary_new_from_args(1, num);
+
+    digits = rb_ary_new();
+    while (!FIXNUM_P(num) || FIX2LONG(num) > 0) {
+        VALUE qr = int_divmod(num, base);
+        rb_ary_push(digits, RARRAY_AREF(qr, 1));
+        num = RARRAY_AREF(qr, 0);
+    }
+
+    return digits;
+}
+
+static VALUE
+rb_int_digits(int argc, VALUE *argv, VALUE num)
+{
+    VALUE base_value;
+    long base;
+
+    if (rb_num_negative_p(num))
+        rb_raise(rb_eMathDomainError, "out of domain");
+
+    if (rb_check_arity(argc, 0, 1)) {
+        base_value = rb_to_int(argv[0]);
+        if (!RB_INTEGER_TYPE_P(base_value))
+            rb_raise(rb_eTypeError, "wrong argument type %s (expected Integer)",
+                     rb_obj_classname(argv[0]));
+        if (RB_TYPE_P(base_value, T_BIGNUM))
+            return rb_int_digits_bigbase(num, base_value);
+
+        base = FIX2LONG(base_value);
+        if (base < 2)
+            rb_raise(rb_eArgError, "invalid radix %ld", base);
+    }
+    else
+        base = 10;
+
+    if (FIXNUM_P(num))
+        return rb_fix_digits(num, base);
+    else if (RB_TYPE_P(num, T_BIGNUM))
+        return rb_int_digits_bigbase(num, LONG2FIX(base));
+
+    return Qnil;
+}
+
+/*
  *  Document-method: Integer#upto
  *  call-seq:
  *     int.upto(limit) {|i| block }  ->  self
@@ -4958,6 +5064,7 @@ Init_Numeric(void)
 
     rb_define_method(rb_cInteger, "size", int_size, 0);
     rb_define_method(rb_cInteger, "bit_length", rb_int_bit_length, 0);
+    rb_define_method(rb_cInteger, "digits", rb_int_digits, -1);
 
 #ifndef RUBY_INTEGER_UNIFICATION
     rb_cFixnum = rb_cInteger;
