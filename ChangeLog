@@ -1,3 +1,11 @@
+Mon Jun 13 21:09:40 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* thread.c (debug_deadlock_check): show thread lock dependency and
+	  backtrace [Feature #8214] [ruby-dev:47217]
+
+	* thread.c (thread_status_name): show "sleep_forever" instead of
+	  "sleep" if called from inspect.
+
 Mon Jun 13 20:50:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (reg_named_capture_assign_iter): remove named capture

@@ -167,3 +167,5 @@ with all sufficient information, see the ChangeLog file or Redmine
   be <= 0x100, and Array#max and min must not be redefined.  It will work
   in most casual and real-life use case where it is written with intent
   to `Math.max(x, y)`.
+
+* Thread deadlock detection now shows their backtrace and dependency. [Feature #8214]
