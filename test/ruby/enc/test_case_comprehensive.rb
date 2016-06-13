@@ -45,9 +45,11 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
     upcase    = Hash.new { |h, c| h[c] = c }
     titlecase = Hash.new { |h, c| h[c] = c }
     casefold  = Hash.new { |h, c| h[c] = c }
+    swapcase  = Hash.new { |h, c| h[c] = c }
     turkic_upcase    = Hash.new { |h, c| h[c] = upcase[c] }
     turkic_downcase  = Hash.new { |h, c| h[c] = downcase[c] }
     turkic_titlecase = Hash.new { |h, c| h[c] = titlecase[c] }
+    turkic_swapcase  = Hash.new { |h, c| h[c] = swapcase[c] }
     ascii_upcase     = Hash.new { |h, c| h[c] = c =~ /^[a-zA-Z]$/ ? upcase[c] : c }
     ascii_downcase   = Hash.new { |h, c| h[c] = c =~ /^[a-zA-Z]$/ ? downcase[c] : c }
     ascii_titlecase  = Hash.new { |h, c| h[c] = c =~ /^[a-zA-Z]$/ ? titlecase[c] : c }
@@ -78,15 +80,40 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
       end
     end
 
+    @@codepoints.each do |c|
+      if upcase[c] != c
+        if downcase[c] != c
+          swapcase[c] = turkic_swapcase[c] =
+            case c
+            when "\u01C5" then "\u0064\u017D"
+            when "\u01C8" then "\u006C\u004A"
+            when "\u01CB" then "\u006E\u004A"
+            when "\u01F2" then "\u0064\u005A"
+            else # Greek
+              downcase[upcase[c][0]] + "\u0399"
+            end
+        else
+          swapcase[c] = upcase[c]
+          turkic_swapcase[c] = turkic_upcase[c]
+        end
+      else
+        if downcase[c] != c
+          swapcase[c] = downcase[c]
+          turkic_swapcase[c] = turkic_downcase[c]
+        end
+      end
+    end
+
     tests = [
       CaseTest.new(:downcase,   [], downcase),
       CaseTest.new(:upcase,     [], upcase),
       CaseTest.new(:capitalize, [], titlecase, downcase),
-      # swapcase?????!!!!!
+      CaseTest.new(:swapcase,   [], swapcase),
       CaseTest.new(:downcase,   [:fold],       casefold),
       CaseTest.new(:upcase,     [:turkic],     turkic_upcase),
       CaseTest.new(:downcase,   [:turkic],     turkic_downcase),
       CaseTest.new(:capitalize, [:turkic],     turkic_titlecase, turkic_downcase),
+      CaseTest.new(:swapcase,   [:turkic],     turkic_swapcase),
       CaseTest.new(:upcase,     [:ascii],      ascii_upcase),
       CaseTest.new(:downcase,   [:ascii],      ascii_downcase),
       CaseTest.new(:capitalize, [:ascii],      ascii_titlecase, ascii_downcase),

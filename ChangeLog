@@ -1,3 +1,8 @@
+Mon Jun 13 16:58:53 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_comprehensive.rb: Add tests for full Unicode
+	  swapcase.
+
 Sun Jun 12 14:48:00 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_case_comprehensive.rb: Add tests for ASCII-only
