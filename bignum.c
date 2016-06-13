@@ -31,7 +31,9 @@
 
 #define RB_BIGNUM_TYPE_P(x) RB_TYPE_P((x), T_BIGNUM)
 
+#ifndef RUBY_INTEGER_UNIFICATION
 VALUE rb_cBignum;
+#endif
 const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 
 #ifndef SIZEOF_BDIGIT_DBL
@@ -6783,7 +6785,9 @@ rb_big_even_p(VALUE num)
 void
 Init_Bignum(void)
 {
+#ifndef RUBY_INTEGER_UNIFICATION
     rb_cBignum = rb_cInteger;
+#endif
     rb_define_const(rb_cObject, "Bignum", rb_cInteger);
 
     rb_define_method(rb_cInteger, "coerce", rb_int_coerce, 1);

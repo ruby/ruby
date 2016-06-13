@@ -111,7 +111,9 @@ static ID id_coerce, id_div, id_divmod;
 VALUE rb_cNumeric;
 VALUE rb_cFloat;
 VALUE rb_cInteger;
+#ifndef RUBY_INTEGER_UNIFICATION
 VALUE rb_cFixnum;
+#endif
 
 VALUE rb_eZeroDivError;
 VALUE rb_eFloatDomainError;
@@ -4957,7 +4959,9 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "size", int_size, 0);
     rb_define_method(rb_cInteger, "bit_length", rb_int_bit_length, 0);
 
+#ifndef RUBY_INTEGER_UNIFICATION
     rb_cFixnum = rb_cInteger;
+#endif
     rb_define_const(rb_cObject, "Fixnum", rb_cInteger);
 
     rb_cFloat  = rb_define_class("Float", rb_cNumeric);

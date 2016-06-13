@@ -17,4 +17,9 @@ ruby_show_copyright_to_die(int exitcode)
     (exit(ruby_show_copyright_to_die(EXIT_SUCCESS)))
 #endif
 
+#ifdef RUBY_INTEGER_UNIFICATION
+# define  rb_cFixnum rb_cInteger
+# define  rb_cBignum rb_cInteger
+#endif
+
 #endif /* RUBY_RUBY_BACKWARD_H */

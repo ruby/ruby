@@ -1,3 +1,14 @@
+Mon Jun 13 20:34:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (RUBY_INTEGER_UNIFICATION): macro to tell if
+	  Integer is integrated.  [ruby-core:75718][Bug #12427]
+
+	* include/ruby/backward.h, internal.h (rb_cFixnum, rb_cBignum):
+	  fallback to rb_cInteger.
+
+	* bignum.c, numeric.c, ext/json/generator/generator.{c,h}: use the
+	  macro.
+
 Mon Jun 13 16:58:53 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_case_comprehensive.rb: Add tests for full Unicode

@@ -780,6 +780,11 @@ struct MEMO {
 
 #define STRING_P(s) (RB_TYPE_P((s), T_STRING) && CLASS_OF(s) == rb_cString)
 
+#ifdef RUBY_INTEGER_UNIFICATION
+# define rb_cFixnum rb_cInteger
+# define rb_cBignum rb_cInteger
+#endif
+
 enum {
     cmp_opt_Fixnum,
     cmp_opt_String,

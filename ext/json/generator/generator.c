@@ -7,7 +7,13 @@ static ID i_encoding, i_encode;
 #endif
 
 static VALUE mJSON, mExt, mGenerator, cState, mGeneratorMethods, mObject,
-             mHash, mArray, mInteger, mFixnum, mBignum, mFloat, mString, mString_Extend,
+             mHash, mArray,
+#ifdef RUBY_INTEGER_UNIFICATION
+             mInteger,
+#else
+             mFixnum, mBignum,
+#endif
+             mFloat, mString, mString_Extend,
              mTrueClass, mFalseClass, mNilClass, eGeneratorError,
              eNestingError, CRegexp_MULTILINE, CJSON_SAFE_STATE_PROTOTYPE,
              i_SAFE_STATE_PROTOTYPE;
@@ -342,6 +348,7 @@ static VALUE mArray_to_json(int argc, VALUE *argv, VALUE self) {
     GENERATE_JSON(array);
 }
 
+#ifdef RUBY_INTEGER_UNIFICATION
 /*
  * call-seq: to_json(*)
  *
@@ -352,6 +359,7 @@ static VALUE mInteger_to_json(int argc, VALUE *argv, VALUE self)
     GENERATE_JSON(integer);
 }
 
+#else
 /*
  * call-seq: to_json(*)
  *
@@ -371,6 +379,7 @@ static VALUE mBignum_to_json(int argc, VALUE *argv, VALUE self)
 {
     GENERATE_JSON(bignum);
 }
+#endif
 
 /*
  * call-seq: to_json(*)
@@ -835,6 +844,7 @@ static void generate_json_bignum(FBuffer *buffer, VALUE Vstate, JSON_Generator_S
     fbuffer_append_str(buffer, tmp);
 }
 
+#ifdef RUBY_INTEGER_UNIFICATION
 static void generate_json_integer(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     if (FIXNUM_P(obj))
@@ -842,6 +852,7 @@ static void generate_json_integer(FBuffer *buffer, VALUE Vstate, JSON_Generator_
     else
         generate_json_bignum(buffer, Vstate, state, obj);
 }
+#endif
 
 static void generate_json_float(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
@@ -1420,16 +1431,15 @@ void Init_generator(void)
     rb_define_method(mHash, "to_json", mHash_to_json, -1);
     mArray = rb_define_module_under(mGeneratorMethods, "Array");
     rb_define_method(mArray, "to_json", mArray_to_json, -1);
-    if (rb_cInteger == rb_cFixnum) {
-        mInteger = rb_define_module_under(mGeneratorMethods, "Integer");
-        rb_define_method(mInteger, "to_json", mInteger_to_json, -1);
-    }
-    else {
-        mFixnum = rb_define_module_under(mGeneratorMethods, "Fixnum");
-        rb_define_method(mFixnum, "to_json", mFixnum_to_json, -1);
-        mBignum = rb_define_module_under(mGeneratorMethods, "Bignum");
-        rb_define_method(mBignum, "to_json", mBignum_to_json, -1);
-    }
+#ifdef RUBY_INTEGER_UNIFICATION
+    mInteger = rb_define_module_under(mGeneratorMethods, "Integer");
+    rb_define_method(mInteger, "to_json", mInteger_to_json, -1);
+#else
+    mFixnum = rb_define_module_under(mGeneratorMethods, "Fixnum");
+    rb_define_method(mFixnum, "to_json", mFixnum_to_json, -1);
+    mBignum = rb_define_module_under(mGeneratorMethods, "Bignum");
+    rb_define_method(mBignum, "to_json", mBignum_to_json, -1);
+#endif
     mFloat = rb_define_module_under(mGeneratorMethods, "Float");
     rb_define_method(mFloat, "to_json", mFloat_to_json, -1);
     mString = rb_define_module_under(mGeneratorMethods, "String");
