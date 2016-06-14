@@ -4479,7 +4479,7 @@ rb_int_bit_length(VALUE num)
 }
 
 /*
- *  Document-method: Integer#digits(base=10)
+ *  Document-method: Integer#digits
  *  call-seq:
  *     int.digits       -> [int]
  *     int.digits(base) -> [int]
@@ -4491,9 +4491,9 @@ rb_int_bit_length(VALUE num)
  *
  *     12345.digits      #=> [5, 4, 3, 2, 1]
  *     12345.digits(7)   #=> [4, 6, 6, 0, 5]
- *     -12345.digits(7)  #=> [4, 6, 6, 0, 5]
  *     12345.digits(100) #=> [45, 23, 1]
  *
+ *     -12345.digits(7)  #=> Math::DomainError
  */
 
 static VALUE

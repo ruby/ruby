@@ -1,3 +1,8 @@
+Wed Jun 15 01:46:16 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c: [DOC] fix rdoc directive, and an example of negative
+	  value.  [ruby-core:76025] [Bug #12487]
+
 Wed Jun 15 01:44:42 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/mkconfig.rb: provide Unicode Version information as
