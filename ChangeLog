@@ -1,3 +1,7 @@
+Mon Jun 14 10:19:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* NEWS: describe Integer#digits.
+
 Mon Jun 13 21:09:40 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* thread.c (debug_deadlock_check): show thread lock dependency and
