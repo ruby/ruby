@@ -9,6 +9,7 @@
 $install_name ||= nil
 $so_name ||= nil
 $cross_compiling ||= nil
+$unicode_version ||= nil
 arch = $arch or raise "missing -arch"
 version = $version or raise "missing -version"
 
@@ -235,6 +236,9 @@ end
 
 print(*v_fast)
 print(*v_others)
+print <<EOS if $unicode_version
+  CONFIG["UNICODE_VERSION"] = #{$unicode_version.dump}
+EOS
 print <<EOS if /darwin/ =~ arch
   CONFIG["SDKROOT"] = ENV["SDKROOT"] || "" # don't run xcrun everytime, usually useless.
 EOS

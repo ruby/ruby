@@ -1,3 +1,9 @@
+Wed Jun 15 01:44:42 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/mkconfig.rb: provide Unicode Version information as
+	  RbConfig::CONFIG['UNICODE_VERSION'].
+	  [ruby-core:75845] [Feature #12460]
+
 Wed Jun 15 00:01:18 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* test/ruby/enc/test_case_comprehensive.rb
