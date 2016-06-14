@@ -201,7 +201,7 @@ static inline int _type##_set0_##_group(_type *obj, BIGNUM *a1, BIGNUM *a2, BIGN
 
 #if !defined(OPENSSL_NO_RSA)
 IMPL_PKEY_GETTER(RSA, rsa)
-IMPL_KEY_ACCESSOR3(RSA, key, n, e, d, (n == obj->n || e == obj->e || (obj->d && e == obj->d)))
+IMPL_KEY_ACCESSOR3(RSA, key, n, e, d, (n == obj->n || e == obj->e || (obj->d && d == obj->d)))
 IMPL_KEY_ACCESSOR2(RSA, factors, p, q, (p == obj->p || q == obj->q))
 IMPL_KEY_ACCESSOR3(RSA, crt_params, dmp1, dmq1, iqmp, (dmp1 == obj->dmp1 || dmq1 == obj->dmq1 || iqmp == obj->iqmp))
 #endif
@@ -215,7 +215,7 @@ IMPL_KEY_ACCESSOR3(DSA, pqg, p, q, g, (p == obj->p || q == obj->q || g == obj->g
 #if !defined(OPENSSL_NO_DH)
 IMPL_PKEY_GETTER(DH, dh)
 IMPL_KEY_ACCESSOR2(DH, key, pub_key, priv_key, (pub_key == obj->pub_key || (obj->priv_key && priv_key == obj->priv_key)))
-IMPL_KEY_ACCESSOR3(DH, pqg, p, q, g, (p == obj->p || q == obj->q || g == obj->g))
+IMPL_KEY_ACCESSOR3(DH, pqg, p, q, g, (p == obj->p || obj->q && q == obj->q || g == obj->g))
 static inline ENGINE *DH_get0_engine(DH *dh) { return dh->engine; }
 #endif
 

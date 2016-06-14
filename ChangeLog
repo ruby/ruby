@@ -1,3 +1,9 @@
+Tue Jun 14 21:35:00 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/openssl_missing.h (DH_set0_pqg, RSA_set0_key):
+	  DH_set0_pqg() allows 'q' to be NULL. Fix a typo in RSA_set0_key().
+	  Fixes r55285.  [ruby-core:75225] [Feature #12324]
+
 Mon Jun 14 10:19:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* NEWS: describe Integer#digits.
