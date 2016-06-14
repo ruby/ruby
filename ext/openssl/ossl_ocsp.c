@@ -1004,11 +1004,11 @@ ossl_ocspcid_cmp_issuer(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *   certificate_id.get_serial -> Integer
+ *   certificate_id.serial -> Integer
  *
- * Returns the serial number of the issuing certificate.
+ * Returns the serial number of the certificate for which status is being
+ * requested.
  */
-
 static VALUE
 ossl_ocspcid_get_serial(VALUE self)
 {
@@ -1019,6 +1019,79 @@ ossl_ocspcid_get_serial(VALUE self)
     OCSP_id_get0_info(NULL, NULL, NULL, &serial, id);
 
     return asn1integer_to_num(serial);
+}
+
+/*
+ * call-seq:
+ *   certificate_id.issuer_name_hash -> String
+ *
+ * Returns the issuerNameHash of this certificate ID, the hash of the
+ * issuer's distinguished name calculated with the hashAlgorithm.
+ */
+static VALUE
+ossl_ocspcid_get_issuer_name_hash(VALUE self)
+{
+    OCSP_CERTID *id;
+    ASN1_OCTET_STRING *name_hash;
+    char *hexbuf;
+
+    GetOCSPCertId(self, id);
+    OCSP_id_get0_info(&name_hash, NULL, NULL, NULL, id);
+
+    if (string2hex(name_hash->data, name_hash->length, &hexbuf, NULL) < 0)
+	ossl_raise(eOCSPError, "string2hex");
+
+    return ossl_buf2str(hexbuf, name_hash->length * 2);
+}
+
+/*
+ * call-seq:
+ *   certificate_id.issuer_key_hash -> String
+ *
+ * Returns the issuerKeyHash of this certificate ID, the hash of the issuer's
+ * public key.
+ */
+static VALUE
+ossl_ocspcid_get_issuer_key_hash(VALUE self)
+{
+    OCSP_CERTID *id;
+    ASN1_OCTET_STRING *key_hash;
+    char *hexbuf;
+
+    GetOCSPCertId(self, id);
+    OCSP_id_get0_info(NULL, NULL, &key_hash, NULL, id);
+
+    if (string2hex(key_hash->data, key_hash->length, &hexbuf, NULL) < 0)
+	ossl_raise(eOCSPError, "string2hex");
+
+    return ossl_buf2str(hexbuf, key_hash->length * 2);
+}
+
+/*
+ * call-seq:
+ *   certificate_id.hash_algorithm -> String
+ *
+ * Returns the ln (long name) of the hash algorithm used to generate
+ * the issuerNameHash and the issuerKeyHash values.
+ */
+static VALUE
+ossl_ocspcid_get_hash_algorithm(VALUE self)
+{
+    OCSP_CERTID *id;
+    ASN1_OBJECT *oid;
+    BIO *out;
+
+    GetOCSPCertId(self, id);
+    OCSP_id_get0_info(NULL, &oid, NULL, NULL, id);
+
+    if (!(out = BIO_new(BIO_s_mem())))
+	ossl_raise(eOCSPError, "BIO_new");
+
+    if (!i2a_ASN1_OBJECT(out, oid)) {
+	BIO_free(out);
+	ossl_raise(eOCSPError, "i2a_ASN1_OBJECT");
+    }
+    return ossl_membio2str(out);
 }
 
 /*
@@ -1227,6 +1300,9 @@ Init_ossl_ocsp(void)
     rb_define_method(cOCSPCertId, "cmp", ossl_ocspcid_cmp, 1);
     rb_define_method(cOCSPCertId, "cmp_issuer", ossl_ocspcid_cmp_issuer, 1);
     rb_define_method(cOCSPCertId, "serial", ossl_ocspcid_get_serial, 0);
+    rb_define_method(cOCSPCertId, "issuer_name_hash", ossl_ocspcid_get_issuer_name_hash, 0);
+    rb_define_method(cOCSPCertId, "issuer_key_hash", ossl_ocspcid_get_issuer_key_hash, 0);
+    rb_define_method(cOCSPCertId, "hash_algorithm", ossl_ocspcid_get_hash_algorithm, 0);
     rb_define_method(cOCSPCertId, "to_der", ossl_ocspcid_to_der, 0);
 
     /* Internal error in issuer */
@@ -1329,7 +1405,6 @@ Init_ossl_ocsp(void)
     /* The responder ID is based on the public key. */
     rb_define_const(mOCSP, "V_RESPID_KEY", INT2NUM(V_OCSP_RESPID_KEY));
 }
-
 #else
 void
 Init_ossl_ocsp(void)

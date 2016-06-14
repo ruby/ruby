@@ -38,13 +38,29 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert)
     assert_kind_of OpenSSL::OCSP::CertificateId, cid
     assert_equal @cert.serial, cid.serial
-  end
-
-  def test_new_certificate_id_with_digest
     cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA256.new)
     assert_kind_of OpenSSL::OCSP::CertificateId, cid
     assert_equal @cert.serial, cid.serial
-  end if defined?(OpenSSL::Digest::SHA256)
+  end
+
+  def test_certificate_id_issuer_name_hash
+    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert)
+    assert_equal OpenSSL::Digest::SHA1.hexdigest(@cert.issuer.to_der), cid.issuer_name_hash
+    assert_equal "d91f736ac4dc3242f0fb9b77a3149bd83c5c43d0", cid.issuer_name_hash
+  end
+
+  def test_certificate_id_issuer_key_hash
+    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert)
+    assert_equal OpenSSL::Digest::SHA1.hexdigest(OpenSSL::ASN1.decode(@ca_cert.to_der).value[0].value[6].value[1].value), cid.issuer_key_hash
+    assert_equal "d1fef9fbf8ae1bc160cbfa03e2596dd873089213", cid.issuer_key_hash
+  end
+
+  def test_certificate_id_hash_algorithm
+    cid_sha1 = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA1.new)
+    cid_sha256 = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA256.new)
+    assert_equal "sha1", cid_sha1.hash_algorithm
+    assert_equal "sha256", cid_sha256.hash_algorithm
+  end
 
   def test_certificate_id_der
     cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert) # hash algorithm defaults to SHA-1

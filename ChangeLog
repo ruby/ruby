@@ -1,3 +1,14 @@
+Tue Jun 14 22:11:11 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_ocsp.c (ossl_ocspcid_get_issuer_name_hash,
+	  ossl_ocspcid_get_issuer_key_hash, ossl_ocspcid_get_hash_algorithm):
+	  Add accessor methods OCSP::CertificateId#issuer_name_hash,
+	  #issuer_key_hash, #hash_algorithm.
+	  Based on a patch provided by Paul Kehrer <paul.l.kehrer@gmail.com>.
+	  [ruby-core:48062] [Feature #7181]
+
+	* test/openssl/test_ocsp.rb: Test these new methods.
+
 Tue Jun 14 22:07:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/date/date_strftime.c (date_strftime_with_tmx): reject too
