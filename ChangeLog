@@ -2,7 +2,7 @@ Tue Jun 14 23:43:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/backward.h (rb_cFixnum, rb_cBignum): remove the
 	  backward compatibility macros, to fail incompatible extension
-	  libraries earily.  [Bug #12427]
+	  libraries early.  [Bug #12427]
 
 Tue Jun 14 22:22:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
