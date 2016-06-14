@@ -50,10 +50,10 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
     turkic_downcase  = Hash.new { |h, c| h[c] = downcase[c] }
     turkic_titlecase = Hash.new { |h, c| h[c] = titlecase[c] }
     turkic_swapcase  = Hash.new { |h, c| h[c] = swapcase[c] }
-    ascii_upcase     = Hash.new { |h, c| h[c] = c =~ /^[a-zA-Z]$/ ? upcase[c] : c }
-    ascii_downcase   = Hash.new { |h, c| h[c] = c =~ /^[a-zA-Z]$/ ? downcase[c] : c }
-    ascii_titlecase  = Hash.new { |h, c| h[c] = c =~ /^[a-zA-Z]$/ ? titlecase[c] : c }
-    ascii_swapcase   = Hash.new { |h, c| h[c] = c=~/^[a-z]$/ ? upcase[c] : (c=~/^[A-Z]$/ ? downcase[c] : c) }
+    ascii_upcase     = Hash.new { |h, c| h[c] = c =~ /\A[a-zA-Z]\z/ ? upcase[c] : c }
+    ascii_downcase   = Hash.new { |h, c| h[c] = c =~ /\A[a-zA-Z]\z/ ? downcase[c] : c }
+    ascii_titlecase  = Hash.new { |h, c| h[c] = c =~ /\A[a-zA-Z]\z/ ? titlecase[c] : c }
+    ascii_swapcase   = Hash.new { |h, c| h[c] = c=~/\A[a-z]\z/ ? upcase[c] : (c=~/\A[A-Z]\z/ ? downcase[c] : c) }
 
     read_data_file('UnicodeData') do |code, data|
       @@codepoints << code

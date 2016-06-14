@@ -1,3 +1,9 @@
+Wed Jun 15 00:01:18 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/enc/test_case_comprehensive.rb
+	  (TestComprehensiveCaseFold::read_data): use \A and \z instead of
+	  ^ and $ in regexp.
+
 Tue Jun 14 23:43:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/backward.h (rb_cFixnum, rb_cBignum): remove the
