@@ -180,15 +180,13 @@ ossl_ocspreq_initialize(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "01", &arg);
     if(!NIL_P(arg)){
-	OCSP_REQUEST *req = DATA_PTR(self), *x;
+	OCSP_REQUEST *req;
+	GetOCSPReq(self, req);
 	arg = ossl_to_der_if_possible(arg);
 	StringValue(arg);
-	p = (unsigned char*)RSTRING_PTR(arg);
-	x = d2i_OCSP_REQUEST(&req, &p, RSTRING_LEN(arg));
-	DATA_PTR(self) = req;
-	if(!x){
+	p = (unsigned char *)RSTRING_PTR(arg);
+	if (!d2i_OCSP_REQUEST(&req, &p, RSTRING_LEN(arg)))
 	    ossl_raise(eOCSPError, "cannot load DER encoded request");
-	}
     }
 
     return self;
@@ -463,15 +461,13 @@ ossl_ocspres_initialize(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "01", &arg);
     if(!NIL_P(arg)){
-	OCSP_RESPONSE *res = DATA_PTR(self), *x;
+	OCSP_RESPONSE *res;
+	GetOCSPRes(self, res);
 	arg = ossl_to_der_if_possible(arg);
 	StringValue(arg);
 	p = (unsigned char *)RSTRING_PTR(arg);
-	x = d2i_OCSP_RESPONSE(&res, &p, RSTRING_LEN(arg));
-	DATA_PTR(self) = res;
-	if(!x){
+	if (!d2i_OCSP_RESPONSE(&res, &p, RSTRING_LEN(arg)))
 	    ossl_raise(eOCSPError, "cannot load DER encoded response");
-	}
     }
 
     return self;
@@ -584,14 +580,29 @@ ossl_ocspbres_alloc(VALUE klass)
 
 /*
  * call-seq:
- *   OpenSSL::OCSP::BasicResponse.new(*) -> basic_response
+ *   OpenSSL::OCSP::BasicResponse.new(der_string = nil) -> basic_response
  *
- * Creates a new BasicResponse and ignores all arguments.
+ * Creates a new BasicResponse. If +der_string+ is given, decodes +der_string+
+ * as DER.
  */
 
 static VALUE
 ossl_ocspbres_initialize(int argc, VALUE *argv, VALUE self)
 {
+    VALUE arg;
+    const unsigned char *p;
+
+    rb_scan_args(argc, argv, "01", &arg);
+    if (!NIL_P(arg)) {
+	OCSP_BASICRESP *res;
+	GetOCSPBasicRes(self, res);
+	arg = ossl_to_der_if_possible(arg);
+	StringValue(arg);
+	p = (unsigned char *)RSTRING_PTR(arg);
+	if (!d2i_OCSP_BASICRESP(&res, &p, RSTRING_LEN(arg)))
+	    ossl_raise(eOCSPError, "d2i_OCSP_BASICRESP");
+    }
+
     return self;
 }
 
@@ -856,6 +867,32 @@ ossl_ocspbres_verify(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * call-seq:
+ *   basic_response.to_der -> String
+ *
+ * Encodes this basic response into a DER-encoded string.
+ */
+static VALUE
+ossl_ocspbres_to_der(VALUE self)
+{
+    OCSP_BASICRESP *res;
+    VALUE str;
+    long len;
+    unsigned char *p;
+
+    GetOCSPBasicRes(self, res);
+    if ((len = i2d_OCSP_BASICRESP(res, NULL)) <= 0)
+	ossl_raise(eOCSPError, NULL);
+    str = rb_str_new(0, len);
+    p = (unsigned char *)RSTRING_PTR(str);
+    if (i2d_OCSP_BASICRESP(res, &p) <= 0)
+	ossl_raise(eOCSPError, NULL);
+    ossl_str_adjust(str, p);
+
+    return str;
+}
+
+/*
  * OCSP::CertificateId
  */
 static VALUE
@@ -875,10 +912,14 @@ ossl_ocspcid_alloc(VALUE klass)
 /*
  * call-seq:
  *   OpenSSL::OCSP::CertificateId.new(subject, issuer, digest = nil) -> certificate_id
+ *   OpenSSL::OCSP::CertificateId.new(der_string)                    -> certificate_id
  *
  * Creates a new OpenSSL::OCSP::CertificateId for the given +subject+ and
  * +issuer+ X509 certificates.  The +digest+ is used to compute the
  * certificate ID and must be an OpenSSL::Digest instance.
+ *
+ * If only one argument is given, decodes it as DER representation of a
+ * certificate ID.
  */
 
 static VALUE
@@ -889,7 +930,17 @@ ossl_ocspcid_initialize(int argc, VALUE *argv, VALUE self)
     VALUE subject, issuer, digest;
     const EVP_MD *md;
 
-    if (rb_scan_args(argc, argv, "21", &subject, &issuer, &digest) == 0) {
+    GetOCSPCertId(self, id);
+    if (rb_scan_args(argc, argv, "12", &subject, &issuer, &digest) == 1) {
+	VALUE arg;
+	const unsigned char *p;
+
+	arg = ossl_to_der_if_possible(subject);
+	StringValue(arg);
+	p = (unsigned char *)RSTRING_PTR(arg);
+	if (!d2i_OCSP_CERTID(&id, &p, RSTRING_LEN(arg)))
+	    ossl_raise(eOCSPError, "d2i_OCSP_CERTID");
+
 	return self;
     }
 
@@ -904,9 +955,8 @@ ossl_ocspcid_initialize(int argc, VALUE *argv, VALUE self)
     }
     if(!newid)
 	ossl_raise(eOCSPError, NULL);
-    GetOCSPCertId(self, id);
     OCSP_CERTID_free(id);
-    RDATA(self)->data = newid;
+    SetOCSPCertId(self, newid);
 
     return self;
 }
@@ -969,6 +1019,32 @@ ossl_ocspcid_get_serial(VALUE self)
     OCSP_id_get0_info(NULL, NULL, NULL, &serial, id);
 
     return asn1integer_to_num(serial);
+}
+
+/*
+ * call-seq:
+ *   certificate_id.to_der -> String
+ *
+ * Encodes this certificate identifier into a DER-encoded string.
+ */
+static VALUE
+ossl_ocspcid_to_der(VALUE self)
+{
+    OCSP_CERTID *id;
+    VALUE str;
+    long len;
+    unsigned char *p;
+
+    GetOCSPCertId(self, id);
+    if ((len = i2d_OCSP_CERTID(id, NULL)) <= 0)
+	ossl_raise(eOCSPError, NULL);
+    str = rb_str_new(0, len);
+    p = (unsigned char *)RSTRING_PTR(str);
+    if (i2d_OCSP_CERTID(id, &p) <= 0)
+	ossl_raise(eOCSPError, NULL);
+    ossl_str_adjust(str, p);
+
+    return str;
 }
 
 void
@@ -1138,6 +1214,7 @@ Init_ossl_ocsp(void)
     rb_define_method(cOCSPBasicRes, "status", ossl_ocspbres_get_status, 0);
     rb_define_method(cOCSPBasicRes, "sign", ossl_ocspbres_sign, -1);
     rb_define_method(cOCSPBasicRes, "verify", ossl_ocspbres_verify, -1);
+    rb_define_method(cOCSPBasicRes, "to_der", ossl_ocspbres_to_der, 0);
 
     /*
      * An OpenSSL::OCSP::CertificateId identifies a certificate to the CA so
@@ -1150,6 +1227,7 @@ Init_ossl_ocsp(void)
     rb_define_method(cOCSPCertId, "cmp", ossl_ocspcid_cmp, 1);
     rb_define_method(cOCSPCertId, "cmp_issuer", ossl_ocspcid_cmp_issuer, 1);
     rb_define_method(cOCSPCertId, "serial", ossl_ocspcid_get_serial, 0);
+    rb_define_method(cOCSPCertId, "to_der", ossl_ocspcid_to_der, 0);
 
     /* Internal error in issuer */
     rb_define_const(mOCSP, "RESPONSE_STATUS_INTERNALERROR", INT2NUM(OCSP_RESPONSE_STATUS_INTERNALERROR));

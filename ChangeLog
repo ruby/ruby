@@ -1,3 +1,20 @@
+Tue Jun 14 21:40:42 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_ocsp.c (ossl_ocspbres_to_der, ossl_ocspcid_to_der):
+	  Implement #to_der methods for OCSP::BasicResponse and
+	  OCSP::CertificateId.
+
+	  (ossl_ocspreq_initialize, ossl_ocspres_initialize): Use GetOCSP*()
+	  instead of raw DATA_PTR().
+
+	  (ossl_ocspbres_initialize, ossl_ocspcid_initialize): Allow
+	  initializing from DER string.
+
+	  (Init_ossl_ocsp): Define new #to_der methods.
+
+	* test/openssl/test_ocsp.rb: Test these changes. Also add missing tests
+	  for OCSP::{Response,Request}#to_der.
+
 Tue Jun 14 21:35:00 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/openssl_missing.h (DH_set0_pqg, RSA_set0_key):
