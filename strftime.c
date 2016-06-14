@@ -162,16 +162,32 @@ enum {LEFT, CHCASE, LOWER, UPPER};
 
 static char *
 resize_buffer(VALUE ftime, char *s, const char **start, const char **endp,
-	      ptrdiff_t n)
+	      ptrdiff_t n, size_t maxsize)
 {
 	size_t len = s - *start;
 	size_t nlen = len + n * 2;
+
+	if (nlen < len || nlen > maxsize) {
+		return 0;
+	}
 	rb_str_set_len(ftime, len);
 	rb_str_modify_expand(ftime, nlen-len);
 	s = RSTRING_PTR(ftime);
 	*endp = s + nlen;
 	*start = s;
 	return s += len;
+}
+
+static void
+buffer_size_check(const char *s,
+		  const char *format_end, size_t format_len,
+		  rb_encoding *enc)
+{
+	if (!s) {
+		const char *format = format_end-format_len;
+		VALUE fmt = rb_enc_str_new(format, format_len, enc);
+		rb_syserr_fail_str(ERANGE, fmt);
+	}
 }
 
 static char *
@@ -211,7 +227,7 @@ format_value(VALUE val, int base)
 static VALUE
 rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 			  rb_encoding *enc, const struct vtm *vtm, VALUE timev,
-			  struct timespec *ts, int gmt)
+			  struct timespec *ts, int gmt, size_t maxsize)
 {
 	size_t len = RSTRING_LEN(ftime);
 	char *s = RSTRING_PTR(ftime);
@@ -262,8 +278,10 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				goto unknown; \
 		} while (0)
 #define NEEDS(n) do { \
-			if (s >= endp || (n) >= endp - s - 1) \
-				s = resize_buffer(ftime, s, &start, &endp, (n)); \
+			if (s >= endp || (n) >= endp - s - 1) { \
+				s = resize_buffer(ftime, s, &start, &endp, (n), maxsize); \
+				buffer_size_check(s, format_end, format_len, enc); \
+			} \
 		} while (0)
 #define FILL_PADDING(i) do { \
 	if (!(flags & BIT_OF(LEFT)) && precision > (i)) { \
@@ -298,7 +316,8 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 		do { \
 			len = s - start; \
 			rb_str_set_len(ftime, len); \
-			if (!rb_strftime_with_timespec(ftime, (fmt), rb_strlen_lit(fmt), enc, vtm, timev, ts, gmt)) \
+			if (!rb_strftime_with_timespec(ftime, (fmt), rb_strlen_lit(fmt), \
+						       enc, vtm, timev, ts, gmt, maxsize)) \
 				return 0; \
 			s = RSTRING_PTR(ftime); \
 			i = RSTRING_LEN(ftime) - len; \
@@ -881,13 +900,23 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 	return ftime;
 }
 
+static size_t
+strftime_size_limit(size_t format_len)
+{
+	size_t limit = format_len * (1*1024*1024);
+	if (limit < format_len) limit = format_len;
+	else if (limit < 1024) limit = 1024;
+	return limit;
+}
+
 VALUE
 rb_strftime(const char *format, size_t format_len,
 	    rb_encoding *enc, const struct vtm *vtm, VALUE timev, int gmt)
 {
 	VALUE result = rb_enc_str_new(0, 0, enc);
 	return rb_strftime_with_timespec(result, format, format_len, enc,
-					 vtm, timev, NULL, gmt);
+					 vtm, timev, NULL, gmt,
+					 strftime_size_limit(format_len));
 }
 
 VALUE
@@ -896,8 +925,21 @@ rb_strftime_timespec(const char *format, size_t format_len,
 {
 	VALUE result = rb_enc_str_new(0, 0, enc);
 	return rb_strftime_with_timespec(result, format, format_len, enc,
-					 vtm, Qnil, ts, gmt);
+					 vtm, Qnil, ts, gmt,
+					 strftime_size_limit(format_len));
 }
+
+#if 0
+VALUE
+rb_strftime_limit(const char *format, size_t format_len,
+		  rb_encoding *enc, const struct vtm *vtm, struct timespec *ts,
+		  int gmt, size_t maxsize)
+{
+	VALUE result = rb_enc_str_new(0, 0, enc);
+	return rb_strftime_with_timespec(result, format, format_len, enc,
+					 vtm, Qnil, ts, gmt, maxsize);
+}
+#endif
 
 /* isleap --- is a year a leap year? */
 
