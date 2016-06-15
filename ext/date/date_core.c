@@ -1360,10 +1360,8 @@ encode_year(VALUE nth, int y, double style,
 static void
 decode_jd(VALUE jd, VALUE *nth, int *rjd)
 {
-    assert(RB_INTEGER_TYPE_P(jd));
     *nth = f_idiv(jd, INT2FIX(CM_PERIOD));
     if (f_zero_p(*nth)) {
-	assert(FIXNUM_P(jd));
 	*rjd = FIX2INT(jd);
 	return;
     }
