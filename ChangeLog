@@ -1,3 +1,8 @@
+Thu Jun 16 00:42:56 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_modify_expand): check integer overflow.
+	  [ruby-core:75592] [Bug #12390]
+
 Thu Jun 16 00:29:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_get_ev_const): warn deprecated constant even
