@@ -1,3 +1,8 @@
+Thu Jun 16 00:29:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_get_ev_const): warn deprecated constant even
+	  in the class context.  [ruby-core:75505] [Bug #12382]
+
 Tue Jun 14 03:49:28 2016  Eric Wong  <e@80x24.org>
 
 	* dir.c (dir_close): update RDoc for 2.3 #close change
