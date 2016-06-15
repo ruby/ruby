@@ -563,7 +563,13 @@ rb_check_type(VALUE x, int t)
     }
 
     xt = TYPE(x);
-    if (xt != t || (xt == T_DATA && RTYPEDDATA_P(x))) {
+    if (t == T_INTEGER) {
+	if (xt == T_FIXNUM || xt == T_BIGNUM) return;
+    }
+    else if (xt == t) {
+	if (!(xt == T_DATA && RTYPEDDATA_P(x))) return;
+    }
+    {
 	const char *tname = rb_builtin_type_name(t);
 	if (tname) {
 	    const char *cname = builtin_class_name(x);
