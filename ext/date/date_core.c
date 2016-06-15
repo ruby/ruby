@@ -4752,7 +4752,7 @@ d_lite_initialize(int argc, VALUE *argv, VALUE self)
 		rb_raise(rb_eArgError,
 			 "cannot load complex into simple");
 
-	    set_to_complex(&dat->c, nth, rjd, df, sf, of, sg,
+	    set_to_complex(self, &dat->c, nth, rjd, df, sf, of, sg,
 			   0, 0, 0, 0, 0, 0, HAVE_JD | HAVE_DF | COMPLEX_DAT);
 	}
     }
