@@ -86,14 +86,34 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     assert_equal asn1.to_der, OpenSSL::OCSP::Request.new(asn1.to_der).to_der
   end
 
-  def test_new_ocsp_request
+  def test_request_sign_verify
     request = OpenSSL::OCSP::Request.new
     cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA1.new)
     request.add_certid(cid)
-    request.sign(@cert, @key, [@cert])
-    assert_kind_of OpenSSL::OCSP::Request, request
-    # in current implementation not same instance of certificate id, but should contain same data
-    assert_equal cid.serial, request.certid.first.serial
+    request.sign(@cert, @key, nil, 0, "SHA1")
+    assert_equal cid.to_der, request.certid.first.to_der
+    store1 = OpenSSL::X509::Store.new; store1.add_cert(@ca_cert)
+    assert_equal true, request.verify([@cert], store1)
+    assert_equal true, request.verify([], store1)
+    store2 = OpenSSL::X509::Store.new; store1.add_cert(@cert2)
+    assert_equal false, request.verify([], store2)
+    assert_equal true, request.verify([], store2, OpenSSL::OCSP::NOVERIFY)
+  end
+
+  def test_request_nonce
+    req0 = OpenSSL::OCSP::Request.new
+    req1 = OpenSSL::OCSP::Request.new
+    req1.add_nonce("NONCE")
+    req2 = OpenSSL::OCSP::Request.new
+    req2.add_nonce("NONCF")
+    bres = OpenSSL::OCSP::BasicResponse.new
+    assert_equal 2, req0.check_nonce(bres)
+    bres.copy_nonce(req1)
+    assert_equal 1, req1.check_nonce(bres)
+    bres.add_nonce("NONCE")
+    assert_equal 1, req1.check_nonce(bres)
+    assert_equal 0, req2.check_nonce(bres)
+    assert_equal 3, req0.check_nonce(bres)
   end
 
   def test_basic_response_der
@@ -107,6 +127,18 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     assert_equal cid.to_der, asn1.value[0].value.find { |a| a.class == OpenSSL::ASN1::Sequence }.value[0].value[0].to_der
     assert_equal OpenSSL::ASN1.Sequence([@cert2, @ca_cert]).to_der, asn1.value[3].value[0].to_der
     assert_equal der, OpenSSL::OCSP::BasicResponse.new(der).to_der
+  end
+
+  def test_basic_response_sign_verify
+    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA256.new)
+    bres = OpenSSL::OCSP::BasicResponse.new
+    bres.add_status(cid, OpenSSL::OCSP::V_CERTSTATUS_REVOKED, OpenSSL::OCSP::REVOKED_STATUS_UNSPECIFIED, -400, -300, 500, [])
+    bres.sign(@cert2, @key2, [], 0, "SHA256") # how can I check the algorithm?
+    store1 = OpenSSL::X509::Store.new; store1.add_cert(@ca_cert)
+    assert_equal true, bres.verify([], store1)
+    store2 = OpenSSL::X509::Store.new; store2.add_cert(@cert)
+    assert_equal false, bres.verify([], store2)
+    assert_equal true, bres.verify([], store2, OpenSSL::OCSP::NOVERIFY)
   end
 
   def test_response_der

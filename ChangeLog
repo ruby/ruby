@@ -1,3 +1,13 @@
+Wed Jun 15 19:52:23 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_ocsp.c (ossl_ocspreq_sign, ossl_ocspbres_sign): Allow
+	  specifying hash algorithm used in signing. They are hard coded to use
+	  SHA-1.
+	  Based on a patch provided by Tim Shirley <tidoublemy@gmail.com>.
+	  [ruby-core:70915] [Feature #11552] [GH ruby/openssl#28]
+
+	* test/openssl/test_ocsp.rb: Test sign-verify works.
+
 Wed Jun 15 01:46:16 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c: [DOC] fix rdoc directive, and an example of negative

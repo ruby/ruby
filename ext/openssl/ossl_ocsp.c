@@ -312,39 +312,48 @@ ossl_ocspreq_get_certid(VALUE self)
 
 /*
  * call-seq:
- *   request.sign(signer_cert, signer_key)                      -> self
- *   request.sign(signer_cert, signer_key, certificates)        -> self
- *   request.sign(signer_cert, signer_key, certificates, flags) -> self
+ *   request.sign(cert, key, certs = nil, flags = 0, digest = nil) -> self
  *
- * Signs this OCSP request using +signer_cert+ and +signer_key+.
- * +certificates+ is an optional Array of certificates that may be included in
- * the request.
+ * Signs this OCSP request using +cert+, +key+ and optional +digest+. If
+ * +digest+ is not specified, SHA-1 is used. +certs+ is an optional Array of
+ * additional certificates that will be included in the request. If +certs+ is
+ * not specified, flag OpenSSL::OCSP::NOCERTS is set. Pass an empty array to
+ * include only the signer certificate.
+ *
+ * +flags+ can include:
+ * OpenSSL::OCSP::NOCERTS::    don't include certificates
  */
 
 static VALUE
 ossl_ocspreq_sign(int argc, VALUE *argv, VALUE self)
 {
-    VALUE signer_cert, signer_key, certs, flags;
+    VALUE signer_cert, signer_key, certs, flags, digest;
     OCSP_REQUEST *req;
     X509 *signer;
     EVP_PKEY *key;
-    STACK_OF(X509) *x509s;
-    unsigned long flg;
+    STACK_OF(X509) *x509s = NULL;
+    unsigned long flg = 0;
+    const EVP_MD *md;
     int ret;
 
-    rb_scan_args(argc, argv, "22", &signer_cert, &signer_key, &certs, &flags);
+    rb_scan_args(argc, argv, "23", &signer_cert, &signer_key, &certs, &flags, &digest);
+    GetOCSPReq(self, req);
     signer = GetX509CertPtr(signer_cert);
     key = GetPrivPKeyPtr(signer_key);
-    flg = NIL_P(flags) ? 0 : NUM2INT(flags);
-    if(NIL_P(certs)){
-	x509s = sk_X509_new_null();
+    if (!NIL_P(flags))
+	flg = NUM2INT(flags);
+    if (NIL_P(digest))
+	md = EVP_sha1();
+    else
+	md = GetDigestPtr(digest);
+    if (NIL_P(certs))
 	flags |= OCSP_NOCERTS;
-    }
-    else x509s = ossl_x509_ary2sk(certs);
-    GetOCSPReq(self, req);
-    ret = OCSP_request_sign(req, signer, key, EVP_sha1(), x509s, flg);
+    else
+	x509s = ossl_x509_ary2sk(certs);
+
+    ret = OCSP_request_sign(req, signer, key, md, x509s, flg);
     sk_X509_pop_free(x509s, X509_free);
-    if(!ret) ossl_raise(eOCSPError, NULL);
+    if (!ret) ossl_raise(eOCSPError, NULL);
 
     return self;
 }
@@ -799,40 +808,47 @@ ossl_ocspbres_get_status(VALUE self)
 
 /*
  * call-seq:
- *   basic_response.sign(signer_cert, signer_key) -> self
- *   basic_response.sign(signer_cert, signer_key, certificates) -> self
- *   basic_response.sign(signer_cert, signer_key, certificates, flags) -> self
+ *   basic_response.sign(cert, key, certs = nil, flags = 0, digest = nil) -> self
  *
- * Signs this response using the +signer_cert+ and +signer_key+.  Additional
- * +certificates+ may be added to the signature along with a set of +flags+.
+ * Signs this OCSP response using the +cert+, +key+ and optional +digest+. This
+ * behaves in the similar way as OpenSSL::OCSP::Request#sign.
+ *
+ * +flags+ can include:
+ * OpenSSL::OCSP::NOCERTS::    don't include certificates
+ * OpenSSL::OCSP::NOTIME::     don't set producedAt
+ * OpenSSL::OCSP::RESPID_KEY:: use signer's public key hash as responderID
  */
 
 static VALUE
 ossl_ocspbres_sign(int argc, VALUE *argv, VALUE self)
 {
-    VALUE signer_cert, signer_key, certs, flags;
+    VALUE signer_cert, signer_key, certs, flags, digest;
     OCSP_BASICRESP *bs;
     X509 *signer;
     EVP_PKEY *key;
-    STACK_OF(X509) *x509s;
-    unsigned long flg;
+    STACK_OF(X509) *x509s = NULL;
+    unsigned long flg = 0;
+    const EVP_MD *md;
     int ret;
 
-    rb_scan_args(argc, argv, "22", &signer_cert, &signer_key, &certs, &flags);
+    rb_scan_args(argc, argv, "23", &signer_cert, &signer_key, &certs, &flags, &digest);
+    GetOCSPBasicRes(self, bs);
     signer = GetX509CertPtr(signer_cert);
     key = GetPrivPKeyPtr(signer_key);
-    flg = NIL_P(flags) ? 0 : NUM2INT(flags);
-    if(NIL_P(certs)){
-	x509s = sk_X509_new_null();
+    if (!NIL_P(flags))
+	flg = NUM2INT(flags);
+    if (NIL_P(digest))
+	md = EVP_sha1();
+    else
+	md = GetDigestPtr(digest);
+    if (NIL_P(certs))
 	flg |= OCSP_NOCERTS;
-    }
-    else{
+    else
 	x509s = ossl_x509_ary2sk(certs);
-    }
-    GetOCSPBasicRes(self, bs);
-    ret = OCSP_basic_sign(bs, signer, key, EVP_sha1(), x509s, flg);
+
+    ret = OCSP_basic_sign(bs, signer, key, md, x509s, flg);
     sk_X509_pop_free(x509s, X509_free);
-    if(!ret) ossl_raise(eOCSPError, NULL);
+    if (!ret) ossl_raise(eOCSPError, NULL);
 
     return self;
 }
