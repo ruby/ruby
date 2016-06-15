@@ -4861,6 +4861,9 @@ debug_deadlock_check(rb_vm_t *vm, VALUE msg)
     rb_str_catf(msg, "\n%d threads, %d sleeps current:%p main thread:%p\n",
 	    vm_living_thread_num(vm), vm->sleeper, GET_THREAD(), vm->main_thread);
     list_for_each(&vm->living_threads, th, vmlt_node) {
+	rb_str_catf(msg, "* %+"PRIsVALUE"\n   rb_thread_t:%p "
+		    "native:%"PRI_THREAD_ID" int:%u",
+		    th->self, th, thread_id_str(th), th->interrupt_flag);
 	if (th->locking_mutex) {
 	    rb_mutex_t *mutex;
 	    struct rb_thread_struct volatile *mth;
@@ -4871,23 +4874,16 @@ debug_deadlock_check(rb_vm_t *vm, VALUE msg)
 	    mth = mutex->th;
 	    waiting = mutex->cond_waiting;
 	    native_mutex_unlock(&mutex->lock);
-	    rb_str_catf(msg, "* %+"PRIsVALUE"\n   rb_thread_t:%p native:%p int:%u mutex:%p cond:%d\n",
-		    th->self, th, th->thread_id,
-		    th->interrupt_flag, mth, waiting);
-	}
-	else {
-	    rb_str_catf(msg, "* %+"PRIsVALUE"\n   rb_thread_t:%p native:%p int:%u\n",
-		    th->self, th, th->thread_id,
-		    th->interrupt_flag);
+	    rb_str_catf(msg, " mutex:%p cond:%d", mth, waiting);
 	}
 	{
 	    rb_thread_list_t *list = th->join_list;
 	    while (list) {
-		rb_str_catf(msg, "    depended by: tb_thread_id:%p\n", list->th);
+		rb_str_catf(msg, "\n    depended by: tb_thread_id:%p", list->th);
 		list = list->next;
 	    }
 	}
-	rb_str_catf(msg, "   ");
+	rb_str_catf(msg, "\n   ");
 	rb_str_concat(msg, rb_ary_join(rb_vm_backtrace_str_ary(th, 0, 0), sep));
 	rb_str_catf(msg, "\n");
     }
