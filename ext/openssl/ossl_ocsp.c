@@ -360,10 +360,11 @@ ossl_ocspreq_sign(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   request.verify(certificates, store)        -> true or false
- *   request.verify(certificates, store, flags) -> true or false
+ *   request.verify(certificates, store, flags = 0) -> true or false
  *
- * Verifies this request using the given +certificates+ and X509 +store+.
+ * Verifies this request using the given +certificates+ and +store+.
+ * +certificates+ is an array of OpenSSL::X509::Certificate, +store+ is an
+ * OpenSSL::X509::Store.
  */
 
 static VALUE
@@ -376,15 +377,16 @@ ossl_ocspreq_verify(int argc, VALUE *argv, VALUE self)
     int flg, result;
 
     rb_scan_args(argc, argv, "21", &certs, &store, &flags);
+    GetOCSPReq(self, req);
     x509st = GetX509StorePtr(store);
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
     x509s = ossl_x509_ary2sk(certs);
-    GetOCSPReq(self, req);
     result = OCSP_request_verify(req, x509s, x509st, flg);
     sk_X509_pop_free(x509s, X509_free);
-    if(!result) rb_warn("%s", ERR_error_string(ERR_peek_error(), NULL));
+    if (!result)
+	ossl_clear_error();
 
-    return result ? Qtrue : Qfalse;
+    return result > 0 ? Qtrue : Qfalse;
 }
 
 /*
@@ -855,31 +857,31 @@ ossl_ocspbres_sign(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   basic_response.verify(certificates, store) -> true or false
- *   basic_response.verify(certificates, store, flags) -> true or false
+ *   basic_response.verify(certificates, store, flags = 0) -> true or false
  *
- * Verifies the signature of the response using the given +certificates+,
- * +store+ and +flags+.
+ * Verifies the signature of the response using the given +certificates+ and
+ * +store+. This works in the similar way as OpenSSL::OCSP::Request#verify.
  */
 static VALUE
 ossl_ocspbres_verify(int argc, VALUE *argv, VALUE self)
 {
-    VALUE certs, store, flags, result;
+    VALUE certs, store, flags;
     OCSP_BASICRESP *bs;
     STACK_OF(X509) *x509s;
     X509_STORE *x509st;
-    int flg;
+    int flg, result;
 
     rb_scan_args(argc, argv, "21", &certs, &store, &flags);
+    GetOCSPBasicRes(self, bs);
     x509st = GetX509StorePtr(store);
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
     x509s = ossl_x509_ary2sk(certs);
-    GetOCSPBasicRes(self, bs);
-    result = OCSP_basic_verify(bs, x509s, x509st, flg) > 0 ? Qtrue : Qfalse;
+    result = OCSP_basic_verify(bs, x509s, x509st, flg);
     sk_X509_pop_free(x509s, X509_free);
-    if(!result) rb_warn("%s", ERR_error_string(ERR_peek_error(), NULL));
+    if (!result)
+	ossl_clear_error();
 
-    return result;
+    return result > 0 ? Qtrue : Qfalse;
 }
 
 /*

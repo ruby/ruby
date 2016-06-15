@@ -1,3 +1,11 @@
+Thu Jun 16 00:02:32 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_ocsp.c (ossl_ocspreq_verify, ossl_ocspbres_verify):
+	  Use ossl_clear_error() so that they don't print warnings to stderr and
+	  leak errors in the OpenSSL error queue. Also, check the return value
+	  of OCSP_*_verify() correctly. They can return -1 on verification
+	  failure.
+
 Wed Jun 15 19:52:23 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_ocsp.c (ossl_ocspreq_sign, ossl_ocspbres_sign): Allow
