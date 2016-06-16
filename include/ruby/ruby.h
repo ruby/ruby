@@ -735,10 +735,11 @@ VALUE rb_int2big(SIGNED_VALUE);
 
 VALUE rb_newobj(void);
 VALUE rb_newobj_of(VALUE, VALUE);
+VALUE rb_new_oldish_obj_of(VALUE, VALUE);
 VALUE rb_obj_setup(VALUE obj, VALUE klass, VALUE type);
 #define RB_NEWOBJ(obj,type) type *(obj) = (type*)rb_newobj()
-#define RB_NEWOBJ_OF(obj,type,klass,flags) type *(obj) = (type*)rb_new_oldish_obj_of(klass, flags)
-#define RB_NEW_OLDISH_OBJ_OF(obj,type,klass,flags) type *(obj) = (type*)rb_newobj_of(klass, flags)
+#define RB_NEWOBJ_OF(obj,type,klass,flags) type *(obj) = (type*)rb_newobj_of(klass, flags)
+#define RB_NEW_OLDISH_OBJ_OF(obj,type,klass,flags) type *(obj) = (type*)rb_new_oldish_obj_of(klass, flags)
 #define NEWOBJ(obj,type) RB_NEWOBJ(obj,type)
 #define NEWOBJ_OF(obj,type,klass,flags) RB_NEWOBJ_OF(obj,type,klass,flags) /* core has special NEWOBJ_OF() in internal.h */
 #define NEW_OLDISH_OBJ_OF(obj,type,klass,flags) RB_NEW_OLDISH_OBJ_OF(obj,type,klass,flags) /* core has special NEWOBJ_OF() in internal.h */
