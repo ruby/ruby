@@ -1,3 +1,8 @@
+Thu Jun 16 12:17:52 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (tr_trans): adjust buffer size by processed and rest
+	  lengths, instead of doubling repeatedly.
+
 Thu Jun 16 11:15:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (tr_trans): consider terminator length and fix heap

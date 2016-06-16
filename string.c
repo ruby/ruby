@@ -6342,9 +6342,8 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		c = c0;
 		if (enc != e1) may_modify = 1;
 	    }
-	    while (t - buf + tlen >= max) {
-		offset = t - buf;
-		max *= 2;
+	    if ((offset = t - buf) + tlen > max) {
+		max = offset + tlen + (send - s);
 		REALLOC_N(buf, char, max + termlen);
 		t = buf + offset;
 	    }
@@ -6415,9 +6414,8 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		c = c0;
 		if (enc != e1) may_modify = 1;
 	    }
-	    while (t - buf + tlen >= max) {
-		offset = t - buf;
-		max *= 2;
+	    if ((offset = t - buf) + tlen > max) {
+		max = offset + tlen + (long)((send - s) * 1.2);
 		REALLOC_N(buf, char, max + termlen);
 		t = buf + offset;
 	    }
