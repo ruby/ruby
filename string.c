@@ -6217,6 +6217,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     char *s, *send;
     VALUE hash = 0;
     int singlebyte = single_byte_optimizable(str);
+    int termlen;
     int cr;
 
 #define CHECK_IF_ASCII(c) \
@@ -6298,11 +6299,12 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	cr = ENC_CODERANGE_7BIT;
     str_modify_keep_cr(str);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
+    termlen = rb_enc_mbminlen(enc);
     if (sflag) {
 	int clen, tlen;
 	long offset, max = RSTRING_LEN(str);
 	unsigned int save = -1;
-	char *buf = ALLOC_N(char, max), *t = buf;
+	char *buf = ALLOC_N(char, max + termlen), *t = buf;
 
 	while (s < send) {
 	    int may_modify = 0;
@@ -6343,7 +6345,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    while (t - buf + tlen >= max) {
 		offset = t - buf;
 		max *= 2;
-		REALLOC_N(buf, char, max);
+		REALLOC_N(buf, char, max + termlen);
 		t = buf + offset;
 	    }
 	    rb_enc_mbcput(c, t, enc);
@@ -6356,7 +6358,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	if (!STR_EMBED_P(str)) {
 	    ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
 	}
-	TERM_FILL(t, rb_enc_mbminlen(enc));
+	TERM_FILL(t, termlen);
 	RSTRING(str)->as.heap.ptr = buf;
 	RSTRING(str)->as.heap.len = t - buf;
 	STR_SET_NOEMBED(str);
@@ -6381,9 +6383,9 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	}
     }
     else {
-	int clen, tlen, max = (int)(RSTRING_LEN(str) * 1.2);
-	long offset;
-	char *buf = ALLOC_N(char, max), *t = buf;
+	int clen, tlen;
+	long offset, max = (long)((send - s) * 1.2);
+	char *buf = ALLOC_N(char, max + termlen), *t = buf;
 
 	while (s < send) {
 	    int may_modify = 0;
@@ -6416,7 +6418,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    while (t - buf + tlen >= max) {
 		offset = t - buf;
 		max *= 2;
-		REALLOC_N(buf, char, max);
+		REALLOC_N(buf, char, max + termlen);
 		t = buf + offset;
 	    }
 	    if (s != t) {
@@ -6432,7 +6434,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	if (!STR_EMBED_P(str)) {
 	    ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
 	}
-	TERM_FILL(t, rb_enc_mbminlen(enc));
+	TERM_FILL(t, termlen);
 	RSTRING(str)->as.heap.ptr = buf;
 	RSTRING(str)->as.heap.len = t - buf;
 	STR_SET_NOEMBED(str);
