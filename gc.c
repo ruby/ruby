@@ -1852,7 +1852,7 @@ newobj_init(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_prote
 }
 
 static inline VALUE
-newobj_slowpath(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace, int wb_protected)
+newobj_slowpath(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace, int wb_protected, rb_heap_t * eden)
 {
     VALUE obj;
 
@@ -1870,31 +1870,30 @@ newobj_slowpath(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objsp
 	}
     }
 
-    obj = heap_get_freeobj(objspace, heap_eden);
+    obj = heap_get_freeobj(objspace, eden);
     newobj_init(klass, flags, v1, v2, v3, wb_protected, objspace, obj);
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj);
     return obj;
 }
 
-NOINLINE(static VALUE newobj_slowpath_wb_protected(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace));
-NOINLINE(static VALUE newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace));
+NOINLINE(static VALUE newobj_slowpath_wb_protected(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace, rb_heap_t *eden));
+NOINLINE(static VALUE newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace, rb_heap_t *eden));
 
 static VALUE
-newobj_slowpath_wb_protected(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace)
+newobj_slowpath_wb_protected(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace, rb_heap_t *eden)
 {
-    return newobj_slowpath(klass, flags, v1, v2, v3, objspace, TRUE);
+    return newobj_slowpath(klass, flags, v1, v2, v3, objspace, TRUE, eden);
 }
 
 static VALUE
-newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace)
+newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objspace_t *objspace, rb_heap_t *eden)
 {
-    return newobj_slowpath(klass, flags, v1, v2, v3, objspace, FALSE);
+    return newobj_slowpath(klass, flags, v1, v2, v3, objspace, FALSE, eden);
 }
 
 static inline VALUE
-newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected)
+newobj_of_with_eden(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected, rb_objspace_t * objspace, rb_heap_t *eden)
 {
-    rb_objspace_t *objspace = &rb_objspace;
     VALUE obj;
 
 #if GC_DEBUG_STRESS_TO_CLASS
@@ -1909,15 +1908,30 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protect
     if (!(during_gc ||
 	  ruby_gc_stressful ||
 	  gc_event_hook_available_p(objspace)) &&
-	(obj = heap_get_freeobj_head(objspace, heap_eden)) != Qfalse) {
+	(obj = heap_get_freeobj_head(objspace, eden)) != Qfalse) {
 	return newobj_init(klass, flags, v1, v2, v3, wb_protected, objspace, obj);
     }
     else {
 	return wb_protected ?
-	  newobj_slowpath_wb_protected(klass, flags, v1, v2, v3, objspace) :
-	  newobj_slowpath_wb_unprotected(klass, flags, v1, v2, v3, objspace);
+	  newobj_slowpath_wb_protected(klass, flags, v1, v2, v3, objspace, eden) :
+	  newobj_slowpath_wb_unprotected(klass, flags, v1, v2, v3, objspace, eden);
     }
 }
+
+static inline VALUE
+oldishobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    return newobj_of_with_eden(klass, flags, v1, v2, v3, wb_protected, objspace, heap_oldish);
+}
+
+static inline VALUE
+newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    return newobj_of_with_eden(klass, flags, v1, v2, v3, wb_protected, objspace, heap_eden);
+}
+
 
 VALUE
 rb_wb_unprotected_newobj_of(VALUE klass, VALUE flags)
@@ -1944,7 +1958,7 @@ rb_newobj(void)
 VALUE
 rb_new_oldish_obj_of(VALUE klass, VALUE flags)
 {
-    return newobj_of(klass, flags & ~FL_WB_PROTECTED, 0, 0, 0, flags & FL_WB_PROTECTED);
+    return oldishobj_of(klass, flags & ~FL_WB_PROTECTED, 0, 0, 0, flags & FL_WB_PROTECTED);
 }
 
 VALUE
