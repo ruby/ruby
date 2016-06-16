@@ -547,6 +547,7 @@ Init_class_hierarchy(void)
 {
     rb_cBasicObject = boot_defclass("BasicObject", 0);
     rb_cObject = boot_defclass("Object", rb_cBasicObject);
+    rb_gc_register_mark_object(rb_cObject);
 
     /* resolve class name ASAP for order-independence */
     rb_class_name(rb_cObject);

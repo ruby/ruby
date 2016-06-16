@@ -1,3 +1,8 @@
+Thu Jun 16 16:35:35 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (Init_class_hierarchy): prevent rb_cObject which is the
+	  class tree root, from GC.  [ruby-dev:49666] [Bug #12492]
+
 Thu Jun 16 12:17:52 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (tr_trans): adjust buffer size by processed and rest
