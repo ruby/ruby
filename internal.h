@@ -955,6 +955,12 @@ VALUE rb_name_err_new(VALUE mesg, VALUE recv, VALUE method);
     rb_name_err_raise_str(rb_fstring_cstr(mesg), (recv), (name))
 NORETURN(void ruby_only_for_internal_use(const char *));
 #define ONLY_FOR_INTERNAL_USE(func) ruby_only_for_internal_use(func)
+NORETURN(void rb_unexpected_type(VALUE,int,const char*));
+#undef Check_Type
+#define Check_Type(v, t) \
+    (RB_TYPE_P((VALUE)(v), (t)) ? (void)0 : rb_unexpected_type((VALUE)(v), (t), NULL))
+#define Check_Type_Of(v, t) \
+    (RB_TYPE_P((VALUE)(v), (t)) ? (void)0 : rb_unexpected_type((VALUE)(v), (t), #v))
 
 /* eval.c */
 VALUE rb_refinement_module_get_refined_class(VALUE module);
