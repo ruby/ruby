@@ -468,7 +468,6 @@ check_rounding_mode(VALUE const v)
 	break;
     }
 
-    Check_Type(v, T_FIXNUM);
     sw = (unsigned short)FIX2UINT(v);
     if (!VpIsRoundMode(sw)) {
 	rb_raise(rb_eArgError, "invalid rounding mode");
@@ -522,7 +521,6 @@ BigDecimal_mode(int argc, VALUE *argv, VALUE self)
     unsigned long f,fo;
 
     rb_scan_args(argc, argv, "11", &which, &val);
-    Check_Type(which, T_FIXNUM);
     f = (unsigned long)FIX2INT(which);
 
     if (f & VP_EXCEPTION_ALL) {
@@ -593,7 +591,6 @@ static SIGNED_VALUE
 GetPositiveInt(VALUE v)
 {
     SIGNED_VALUE n;
-    Check_Type(v, T_FIXNUM);
     n = FIX2INT(v);
     if (n < 0) {
 	rb_raise(rb_eArgError, "argument must be positive");
@@ -1723,11 +1720,9 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
 	iLoc = 0;
 	break;
       case 1:
-	Check_Type(vLoc, T_FIXNUM);
 	iLoc = FIX2INT(vLoc);
 	break;
       case 2:
-	Check_Type(vLoc, T_FIXNUM);
 	iLoc = FIX2INT(vLoc);
 	sw = check_rounding_mode(vRound);
 	break;
@@ -1779,7 +1774,6 @@ BigDecimal_truncate(int argc, VALUE *argv, VALUE self)
 	iLoc = 0;
     }
     else {
-	Check_Type(vLoc, T_FIXNUM);
 	iLoc = FIX2INT(vLoc);
     }
 
@@ -1840,7 +1834,6 @@ BigDecimal_floor(int argc, VALUE *argv, VALUE self)
 	iLoc = 0;
     }
     else {
-	Check_Type(vLoc, T_FIXNUM);
 	iLoc = FIX2INT(vLoc);
     }
 
@@ -1887,7 +1880,6 @@ BigDecimal_ceil(int argc, VALUE *argv, VALUE self)
     if (rb_scan_args(argc, argv, "01", &vLoc) == 0) {
 	iLoc = 0;
     } else {
-	Check_Type(vLoc, T_FIXNUM);
 	iLoc = FIX2INT(vLoc);
     }
 
@@ -2631,7 +2623,6 @@ BigDecimal_limit(int argc, VALUE *argv, VALUE self)
     if (rb_scan_args(argc, argv, "01", &nFig) == 1) {
 	int nf;
 	if (NIL_P(nFig)) return nCur;
-	Check_Type(nFig, T_FIXNUM);
 	nf = FIX2INT(nFig);
 	if (nf < 0) {
 	    rb_raise(rb_eArgError, "argument must be positive");

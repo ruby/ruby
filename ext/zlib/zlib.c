@@ -1363,7 +1363,6 @@ rb_zstream_set_avail_out(VALUE obj, VALUE size)
 {
     struct zstream *z = get_zstream(obj);
 
-    Check_Type(size, T_FIXNUM);
     zstream_expand_buffer_into(z, FIX2INT(size));
     return size;
 }
@@ -1449,7 +1448,7 @@ rb_zstream_closed_p(VALUE obj)
 
 #define FIXNUMARG(val, ifnil) \
     (NIL_P((val)) ? (ifnil) \
-    : ((void)Check_Type((val), T_FIXNUM), FIX2INT((val))))
+    : (FIX2INT((val))))
 
 #define ARG_LEVEL(val)     FIXNUMARG((val), Z_DEFAULT_COMPRESSION)
 #define ARG_WBITS(val)     FIXNUMARG((val), MAX_WBITS)
