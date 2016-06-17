@@ -680,4 +680,16 @@ class TestStringIO < Test::Unit::TestCase
       StringIO.new {}
     end
   end
+
+  def test_overflow
+    limit = (1 << (RbConfig::SIZEOF["size_t"]*8-1)) - 0x10
+    assert_separately(%w[-rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      limit = #{limit}
+      x = ("a"*0x100000)
+      s = StringIO.new(x)
+      s.gets("xxx", limit)
+      assert_equal(0x100000, s.pos)
+    end;
+  end
 end

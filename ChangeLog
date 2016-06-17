@@ -1,3 +1,8 @@
+Sat Jun 18 08:52:46 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_getline): fix pointer index
+	  overflow.  reported by Guido Vranken <guido AT guidovranken.nl>.
+
 Thu Jun 16 16:35:35 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (Init_class_hierarchy): prevent rb_cObject which is the
