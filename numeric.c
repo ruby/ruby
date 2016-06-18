@@ -28,14 +28,6 @@
 #include <ieeefp.h>
 #endif
 
-#if !defined HAVE_ISFINITE && !defined isfinite
-#if defined HAVE_FINITE && !defined finite && !defined _WIN32
-extern int finite(double);
-# define HAVE_ISFINITE 1
-# define isfinite(x) finite(x)
-#endif
-#endif
-
 /* use IEEE 64bit values if not defined */
 #ifndef FLT_RADIX
 #define FLT_RADIX 2
