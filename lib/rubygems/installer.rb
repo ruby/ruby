@@ -284,6 +284,7 @@ class Gem::Installer
 
     # Completely remove any previous gem files
     FileUtils.rm_rf gem_dir
+    FileUtils.rm_rf spec.extension_dir
 
     FileUtils.mkdir_p gem_dir
 

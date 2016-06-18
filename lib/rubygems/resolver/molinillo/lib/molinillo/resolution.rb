@@ -52,6 +52,7 @@ module Gem::Resolver::Molinillo
         @base = base
         @states = []
         @iteration_counter = 0
+        @parent_of = {}
       end
 
       # Resolves the {#original_requested} dependencies into a full dependency
@@ -67,7 +68,12 @@ module Gem::Resolver::Molinillo
           indicate_progress
           if state.respond_to?(:pop_possibility_state) # DependencyState
             debug(depth) { "Creating possibility state for #{requirement} (#{possibilities.count} remaining)" }
-            state.pop_possibility_state.tap { |s| states.push(s) if s }
+            state.pop_possibility_state.tap do |s|
+              if s
+                states.push(s)
+                activated.tag(s)
+              end
+            end
           end
           process_topmost_state
         end
@@ -118,27 +124,11 @@ module Gem::Resolver::Molinillo
       require 'rubygems/resolver/molinillo/lib/molinillo/state'
       require 'rubygems/resolver/molinillo/lib/molinillo/modules/specification_provider'
 
-      ResolutionState.new.members.each do |member|
-        define_method member do |*args, &block|
-          current_state = state || ResolutionState.empty
-          current_state.send(member, *args, &block)
-        end
-      end
+      require 'rubygems/resolver/molinillo/lib/molinillo/delegates/resolution_state'
+      require 'rubygems/resolver/molinillo/lib/molinillo/delegates/specification_provider'
 
-      SpecificationProvider.instance_methods(false).each do |instance_method|
-        define_method instance_method do |*args, &block|
-          begin
-            specification_provider.send(instance_method, *args, &block)
-          rescue NoSuchDependencyError => error
-            if state
-              vertex = activated.vertex_named(name_for error.dependency)
-              error.required_by += vertex.incoming_edges.map { |e| e.origin.name }
-              error.required_by << name_for_explicit_dependency_source unless vertex.explicit_requirements.empty?
-            end
-            raise
-          end
-        end
-      end
+      include Gem::Resolver::Molinillo::Delegates::ResolutionState
+      include Gem::Resolver::Molinillo::Delegates::SpecificationProvider
 
       # Processes the topmost available {RequirementState} on the stack
       # @return [void]
@@ -169,6 +159,7 @@ module Gem::Resolver::Molinillo
       def initial_state
         graph = DependencyGraph.new.tap do |dg|
           original_requested.each { |r| dg.add_vertex(name_for(r), nil, true).tap { |v| v.explicit_requirements << r } }
+          dg.tag(:initial_state)
         end
 
         requirements = sort_dependencies(original_requested, graph, {})
@@ -189,8 +180,9 @@ module Gem::Resolver::Molinillo
       def unwind_for_conflict
         debug(depth) { "Unwinding for conflict: #{requirement}" }
         conflicts.tap do |c|
-          states.slice!((state_index_for_unwind + 1)..-1)
+          sliced_states = states.slice!((state_index_for_unwind + 1)..-1)
           raise VersionConflict.new(c) unless state
+          activated.rewind_to(sliced_states.first || :initial_state) if sliced_states
           state.conflicts = c
         end
       end
@@ -217,20 +209,14 @@ module Gem::Resolver::Molinillo
       # @return [Object] the requirement that led to `requirement` being added
       #   to the list of requirements.
       def parent_of(requirement)
-        return nil unless requirement
-        seen = false
-        state = states.reverse_each.find do |s|
-          seen ||= s.requirement == requirement || s.requirements.include?(requirement)
-          seen && s.requirement != requirement && !s.requirements.include?(requirement)
-        end
-        state && state.requirement
+        @parent_of[requirement]
       end
 
       # @return [Object] the requirement that led to a version of a possibility
       #   with the given name being activated.
       def requirement_for_existing_name(name)
         return nil unless activated.vertex_named(name).payload
-        states.reverse_each.find { |s| !s.activated.vertex_named(name).payload }.requirement
+        states.find { |s| s.name == name }.requirement
       end
 
       # @return [ResolutionState] the state whose `requirement` is the given
@@ -250,19 +236,25 @@ module Gem::Resolver::Molinillo
       #   the {#possibility} in conjunction with the current {#state}
       def create_conflict
         vertex = activated.vertex_named(name)
-        requirements = {
-          name_for_explicit_dependency_source => vertex.explicit_requirements,
-          name_for_locking_dependency_source => Array(locked_requirement_named(name)),
-        }
+        locked_requirement = locked_requirement_named(name)
+
+        requirements = {}
+        unless vertex.explicit_requirements.empty?
+          requirements[name_for_explicit_dependency_source] = vertex.explicit_requirements
+        end
+        requirements[name_for_locking_dependency_source] = [locked_requirement] if locked_requirement
         vertex.incoming_edges.each { |edge| (requirements[edge.origin.payload] ||= []).unshift(edge.requirement) }
+
+        activated_by_name = {}
+        activated.each { |v| activated_by_name[v.name] = v.payload if v.payload }
         conflicts[name] = Conflict.new(
           requirement,
-          Hash[requirements.select { |_, r| !r.empty? }],
+          requirements,
           vertex.payload,
           possibility,
-          locked_requirement_named(name),
+          locked_requirement,
           requirement_trees,
-          Hash[activated.map { |v| [v.name, v.payload] }.select(&:last)]
+          activated_by_name
         )
       end
 
@@ -341,15 +333,16 @@ module Gem::Resolver::Molinillo
       # spec with the given name
       # @return [Boolean] Whether the possibility was swapped into {#activated}
       def attempt_to_swap_possibility
-        swapped = activated.dup
-        vertex = swapped.vertex_named(name)
-        vertex.payload = possibility
-        return unless vertex.requirements.
-            all? { |r| requirement_satisfied_by?(r, swapped, possibility) }
-        return unless new_spec_satisfied?
-        actual_vertex = activated.vertex_named(name)
-        actual_vertex.payload = possibility
-        fixup_swapped_children(actual_vertex)
+        activated.tag(:swap)
+        vertex = activated.vertex_named(name)
+        activated.set_payload(name, possibility)
+        if !vertex.requirements.
+           all? { |r| requirement_satisfied_by?(r, activated, possibility) } ||
+            !new_spec_satisfied?
+          activated.rewind_to(:swap)
+          return
+        end
+        fixup_swapped_children(vertex)
         activate_spec
       end
 
@@ -363,7 +356,13 @@ module Gem::Resolver::Molinillo
           if !dep_names.include?(succ.name) && !succ.root? && succ.predecessors.to_a == [vertex]
             debug(depth) { "Removing orphaned spec #{succ.name} after swapping #{name}" }
             activated.detach_vertex_named(succ.name)
-            requirements.delete_if { |r| name_for(r) == succ.name }
+
+            all_successor_names = succ.recursive_successors.map(&:name)
+
+            requirements.delete_if do |requirement|
+              requirement_name = name_for(requirement)
+              (requirement_name == succ.name) || all_successor_names.include?(requirement_name)
+            end
           end
         end
       end
@@ -406,8 +405,7 @@ module Gem::Resolver::Molinillo
       def activate_spec
         conflicts.delete(name)
         debug(depth) { 'Activated ' + name + ' at ' + possibility.to_s }
-        vertex = activated.vertex_named(name)
-        vertex.payload = possibility
+        activated.set_payload(name, possibility)
         require_nested_dependencies_for(possibility)
       end
 
@@ -418,19 +416,22 @@ module Gem::Resolver::Molinillo
       def require_nested_dependencies_for(activated_spec)
         nested_dependencies = dependencies_for(activated_spec)
         debug(depth) { "Requiring nested dependencies (#{nested_dependencies.join(', ')})" }
-        nested_dependencies.each { |d| activated.add_child_vertex(name_for(d), nil, [name_for(activated_spec)], d) }
+        nested_dependencies.each do |d|
+          activated.add_child_vertex(name_for(d), nil, [name_for(activated_spec)], d)
+          @parent_of[d] = requirement
+        end
 
-        push_state_for_requirements(requirements + nested_dependencies, nested_dependencies.size > 0)
+        push_state_for_requirements(requirements + nested_dependencies, !nested_dependencies.empty?)
       end
 
       # Pushes a new {DependencyState} that encapsulates both existing and new
       # requirements
       # @param [Array] new_requirements
       # @return [void]
-      def push_state_for_requirements(new_requirements, requires_sort = true, new_activated = activated.dup)
+      def push_state_for_requirements(new_requirements, requires_sort = true, new_activated = activated)
         new_requirements = sort_dependencies(new_requirements.uniq, new_activated, conflicts) if requires_sort
         new_requirement = new_requirements.shift
-        new_name = new_requirement ? name_for(new_requirement) : ''
+        new_name = new_requirement ? name_for(new_requirement) : ''.freeze
         possibilities = new_requirement ? search_for(new_requirement) : []
         handle_missing_or_push_dependency_state DependencyState.new(
           new_name, new_requirements, new_activated,
@@ -451,7 +452,7 @@ module Gem::Resolver::Molinillo
           state.activated.detach_vertex_named(state.name)
           push_state_for_requirements(state.requirements.dup, false, state.activated)
         else
-          states.push state
+          states.push(state).tap { activated.tag(state) }
         end
       end
     end

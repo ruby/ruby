@@ -205,5 +205,13 @@ c7NM7KZZjj7G++SXjYTEI1PHSA7aFQ/i/+qSUvx+Pg==
     end
   end
 
+  def test_sign_no_certs
+    signer = Gem::Security::Signer.new ALTERNATE_KEY, []
+
+    assert_raises Gem::Security::Exception do
+      signer.sign 'hello'
+    end
+  end
+
 end if defined?(OpenSSL::SSL)
 

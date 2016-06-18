@@ -1,3 +1,9 @@
+Sat Jun 18 13:59:54 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems.rb, lib/rubygems/*, test/rubygems/*: Update rubygems
+	  HEAD(2c6d256). It contains to update vendored Molinillo to 0.5.0.
+	  https://github.com/rubygems/rubygems/pull/1638
+
 Sat Jun 18 10:13:37 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (build-ext), ext/extmk.rb: use variable EXTENCS

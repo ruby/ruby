@@ -229,6 +229,22 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
 
     assert_equal ["#{'qwer/' * 19}bla", 'a' * 151],
                  @tar_writer.split_name("#{'a' * 151}/#{'qwer/' * 19}bla")
+    names = [
+      ([''] + ['123456789'] * 9 + ['1234567890']).join('/'),  # 101 bytes (several pieces)
+      (['123456789'] * 9 + ['1234567890'] + ['']).join('/'),  # 101 bytes (several pieces)
+      '/' * 99,
+      '/' * 100,
+      '/' * 101,
+      '/' * 102,
+    ]
+    names.each do |name|
+      newname, prefix = @tar_writer.split_name(name)
+      assert(!(newname.empty?), "split_name() returned empty name")
+      assert(newname.bytesize <= 100, "split_name() returned name longer than 100 bytes: '#{newname}' for '#{name}'")
+      assert(prefix.bytesize <= 155, "split_name() returned prefix longer than 155 bytes: '#{prefix}' for '#{name}'")
+      newname = [prefix, newname].join('/') unless prefix.empty?
+      assert_equal name, newname
+    end
   end
 
   def test_split_name_too_long_name
@@ -236,6 +252,14 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
     assert_equal ['b' * 100, 'a'], @tar_writer.split_name(name)
 
     name = File.join 'a', 'b' * 101
+    exception = assert_raises Gem::Package::TooLongFileName do
+      @tar_writer.split_name name
+    end
+    assert_includes exception.message, name
+
+    # note, GNU tar 1.28 is unable to handle this case too,
+    # tested with "tar --format=ustar -cPf /tmp/foo.tartar -- /aaaaaa....a"
+    name = '/'  + 'a' * 100
     exception = assert_raises Gem::Package::TooLongFileName do
       @tar_writer.split_name name
     end
