@@ -14,11 +14,11 @@ class OpenSSL::TestEC < OpenSSL::TestCase
     OpenSSL::PKey::EC.builtin_curves.each do |curve, comment|
       group = OpenSSL::PKey::EC::Group.new(curve)
 
-      key = OpenSSL::PKey::EC.new(group)
-      key.generate_key!
-
       # Oakley curves and X25519 are not suitable for signing
       next if ["Oakley", "X25519"].any? { |n| curve.start_with?(n) }
+
+      key = OpenSSL::PKey::EC.new(group)
+      key.generate_key!
 
       @groups << group
       @keys << key
