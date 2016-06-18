@@ -1068,7 +1068,7 @@ VALUE
 rb_yield_splat(VALUE values)
 {
     VALUE tmp = rb_check_array_type(values);
-    volatile VALUE v;
+    VALUE v;
     if (NIL_P(tmp)) {
         rb_raise(rb_eArgError, "not an array");
     }
@@ -1298,11 +1298,8 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
     rb_thread_t *th = GET_THREAD();
     rb_env_t *env = NULL;
     rb_block_t block, *base_block;
-    volatile VALUE file;
-    volatile int line;
-
-    file = filename ? filename : rb_source_location(&lineno);
-    line = lineno;
+    VALUE file = filename ? filename : rb_source_location(&lineno);
+    int line = lineno;
 
     {
 	rb_cref_t *cref = cref_arg;
