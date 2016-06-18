@@ -686,7 +686,13 @@ class TestStringIO < Test::Unit::TestCase
     assert_separately(%w[-rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
       limit = #{limit}
-      x = ("a"*0x100000)
+      ary = []
+      while true
+        x = "a"*0x100000
+        break if [x].pack("p").unpack("i!")[0] < 0
+        ary << x
+        skip if ary.size > 1000
+      end
       s = StringIO.new(x)
       s.gets("xxx", limit)
       assert_equal(0x100000, s.pos)
