@@ -1146,9 +1146,16 @@ gem 'other', version
     write_file File.join(@tempdir, "extconf.rb") do |io|
       io.write <<-RUBY
         require "mkmf"
+
+        CONFIG['CC'] = '$(TOUCH) $@ ||'
+        CONFIG['LDSHARED'] = '$(TOUCH) $@ ||'
+        $ruby = '#{Gem.ruby}'
+
         create_makefile("#{@spec.name}")
       RUBY
     end
+
+    write_file File.join(@tempdir, "depend")
 
     write_file File.join(@tempdir, "a.c") do |io|
       io.write <<-C
@@ -1162,7 +1169,7 @@ gem 'other', version
       io.write "# b.rb"
     end
 
-    @spec.files += %w[extconf.rb lib/b.rb a.c]
+    @spec.files += %w[extconf.rb lib/b.rb depend a.c]
 
     use_ui @ui do
       path = Gem::Package.build @spec

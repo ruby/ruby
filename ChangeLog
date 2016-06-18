@@ -1,3 +1,8 @@
+Sat Jun 18 14:01:40 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/rubygems/test_gem_installer.rb: Fixed broken test with extension
+	  build. https://github.com/rubygems/rubygems/pull/1645
+
 Sat Jun 18 13:59:54 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems.rb, lib/rubygems/*, test/rubygems/*: Update rubygems
