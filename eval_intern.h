@@ -139,9 +139,11 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 #if defined __GNUC__ && __GNUC__ == 4 && (__GNUC_MINOR__ >= 6 && __GNUC_MINOR__ <= 8)
 # define VAR_FROM_MEMORY(var) __extension__(*(__typeof__(var) volatile *)&(var))
 # define VAR_INITIALIZED(var) ((var) = VAR_FROM_MEMORY(var))
+# define VAR_NOCLOBBERED(var) volatile var
 #else
 # define VAR_FROM_MEMORY(var) (var)
 # define VAR_INITIALIZED(var) ((void)&(var))
+# define VAR_NOCLOBBERED(var) var
 #endif
 
 /* clear th->state, and return the value */

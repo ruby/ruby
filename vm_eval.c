@@ -1548,32 +1548,23 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
 {
     int state;
     volatile VALUE val = Qnil;		/* OK */
-    volatile int safe = rb_safe_level();
-    rb_thread_t *th = GET_THREAD();
+    const int VAR_NOCLOBBERED(safe) = rb_safe_level();
+    rb_thread_t *const VAR_NOCLOBBERED(th) = GET_THREAD();
 
     if (OBJ_TAINTED(cmd)) {
 	level = RUBY_SAFE_LEVEL_MAX;
     }
 
-    if (!RB_TYPE_P(cmd, T_STRING)) {
-	TH_PUSH_TAG(th);
-	rb_set_safe_level_force(level);
-	if ((state = TH_EXEC_TAG()) == 0) {
+    TH_PUSH_TAG(th);
+    rb_set_safe_level_force(level);
+    if ((state = TH_EXEC_TAG()) == 0) {
+	if (!RB_TYPE_P(cmd, T_STRING)) {
 	    val = rb_funcall2(cmd, idCall, RARRAY_LENINT(arg),
 			      RARRAY_CONST_PTR(arg));
 	}
-	TH_POP_TAG();
-
-	rb_set_safe_level_force(safe);
-
-	if (state)
-	    TH_JUMP_TAG(th, state);
-	return val;
-    }
-
-    TH_PUSH_TAG(th);
-    if ((state = TH_EXEC_TAG()) == 0) {
-	val = eval_string(rb_vm_top_self(), cmd, Qnil, 0, 0);
+	else {
+	    val = eval_string(rb_vm_top_self(), cmd, Qnil, 0, 0);
+	}
     }
     TH_POP_TAG();
 
