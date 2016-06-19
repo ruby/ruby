@@ -1,3 +1,8 @@
+Sun Jun 19 15:01:18 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* localeinit.c: Fix filesystem encoding for cygwin to UTF-8 (see
+	  https://cygwin.com/cygwin-ug-net/using-specialnames.html#pathnames-unusual)
+
 Sun Jun 19 14:31:07 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_pkey.h, ext/openssl/ossl_pkey_dh.c,
