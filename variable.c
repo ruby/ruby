@@ -25,6 +25,7 @@ static ID autoload, classpath, tmp_classpath, classid;
 
 static void check_before_mod_set(VALUE, ID, VALUE, const char *);
 static void setup_const_entry(rb_const_entry_t *, VALUE, VALUE, rb_const_flag_t);
+static VALUE rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility);
 static st_table *generic_iv_tbl;
 static st_table *generic_iv_tbl_compat;
 
@@ -408,12 +409,13 @@ rb_path_to_class(VALUE pathname)
 	    p += 2;
 	    pbeg = p;
 	}
-	if (!id || !rb_const_defined_at(c, id)) {
+	if (!id) {
 	  undefined_class:
 	    rb_raise(rb_eArgError, "undefined class/module % "PRIsVALUE,
 		     rb_str_subseq(pathname, 0, p-path));
 	}
-	c = rb_const_get_at(c, id);
+	c = rb_const_search(c, id, TRUE, FALSE, FALSE);
+	if (c == Qundef) goto undefined_class;
 	if (!RB_TYPE_P(c, T_MODULE) && !RB_TYPE_P(c, T_CLASS)) {
 	    rb_raise(rb_eTypeError, "%"PRIsVALUE" does not refer to class/module",
 		     pathname);
@@ -2238,6 +2240,14 @@ rb_const_warn_if_deprecated(const rb_const_entry_t *ce, VALUE klass, ID id)
 static VALUE
 rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
+    VALUE c = rb_const_search(klass, id, exclude, recurse, visibility);
+    if (c != Qundef) return c;
+    return rb_const_missing(klass, ID2SYM(id));
+}
+
+static VALUE
+rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility)
+{
     VALUE value, tmp, av;
     int mod_retry = 0;
 
@@ -2276,7 +2286,7 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 	goto retry;
     }
 
-    return rb_const_missing(klass, ID2SYM(id));
+    return Qundef;
 }
 
 VALUE

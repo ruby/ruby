@@ -1,3 +1,8 @@
+Sun Jun 19 10:54:40 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_path_to_class): search the constant at once
+	  instead of checking if defined and then getting it.
+
 Sat Jun 18 14:01:40 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* test/rubygems/test_gem_installer.rb: Fixed broken test with extension
