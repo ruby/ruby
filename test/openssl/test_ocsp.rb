@@ -162,6 +162,58 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     assert_equal bres.to_der, bres.dup.to_der
   end
 
+  def test_basic_response_response_operations
+    bres = OpenSSL::OCSP::BasicResponse.new
+    now = Time.at(Time.now.to_i)
+    cid1 = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA1.new)
+    cid2 = OpenSSL::OCSP::CertificateId.new(@cert2, @ca_cert, OpenSSL::Digest::SHA1.new)
+    cid3 = OpenSSL::OCSP::CertificateId.new(@ca_cert, @ca_cert, OpenSSL::Digest::SHA1.new)
+    bres.add_status(cid1, OpenSSL::OCSP::V_CERTSTATUS_REVOKED, OpenSSL::OCSP::REVOKED_STATUS_UNSPECIFIED, now - 400, -300, nil, nil)
+    bres.add_status(cid2, OpenSSL::OCSP::V_CERTSTATUS_GOOD, nil, nil, -300, 500, [])
+
+    assert_equal 2, bres.responses.size
+    single = bres.responses.first
+    assert_equal cid1.to_der, single.certid.to_der
+    assert_equal OpenSSL::OCSP::V_CERTSTATUS_REVOKED, single.cert_status
+    assert_equal OpenSSL::OCSP::REVOKED_STATUS_UNSPECIFIED, single.revocation_reason
+    assert_equal now - 400, single.revocation_time
+    assert_equal now - 300, single.this_update
+    assert_equal nil, single.next_update
+    assert_equal [], single.extensions
+
+    assert_equal cid2.to_der, bres.find_response(cid2).certid.to_der
+    assert_equal nil, bres.find_response(cid3)
+  end
+
+  def test_single_response_der
+    bres = OpenSSL::OCSP::BasicResponse.new
+    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert)
+    bres.add_status(cid, OpenSSL::OCSP::V_CERTSTATUS_GOOD, nil, nil, -300, 500, nil)
+    single = bres.responses[0]
+    der = single.to_der
+    asn1 = OpenSSL::ASN1.decode(der)
+    assert_equal :CONTEXT_SPECIFIC, asn1.value[1].tag_class
+    assert_equal 0, asn1.value[1].tag # good
+    assert_equal der, OpenSSL::OCSP::SingleResponse.new(der).to_der
+  end
+
+  def test_single_response_check_validity
+    bres = OpenSSL::OCSP::BasicResponse.new
+    cid1 = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA1.new)
+    cid2 = OpenSSL::OCSP::CertificateId.new(@cert2, @ca_cert, OpenSSL::Digest::SHA1.new)
+    bres.add_status(cid1, OpenSSL::OCSP::V_CERTSTATUS_REVOKED, OpenSSL::OCSP::REVOKED_STATUS_UNSPECIFIED, -400, -300, -50, [])
+    bres.add_status(cid2, OpenSSL::OCSP::V_CERTSTATUS_REVOKED, OpenSSL::OCSP::REVOKED_STATUS_UNSPECIFIED, -400, -300, nil, [])
+
+    single1 = bres.responses[0]
+    assert_equal false, single1.check_validity
+    assert_equal false, single1.check_validity(30)
+    assert_equal true, single1.check_validity(60)
+    single2 = bres.responses[1]
+    assert_equal true, single2.check_validity
+    assert_equal true, single2.check_validity(0, 500)
+    assert_equal false, single2.check_validity(0, 200)
+  end
+
   def test_response_der
     bres = OpenSSL::OCSP::BasicResponse.new
     cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA1.new)

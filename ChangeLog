@@ -1,3 +1,31 @@
+Sun Jun 19 21:25:43 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_ocsp.c: Add OCSP::SingleResponse that represents an
+	  OCSP SingleResponse structure. Also add two new methods #responses
+	  and #find_response to OCSP::BasicResponse. A BasicResponse has one or
+	  more SingleResponse. We have OCSP::BasicResponse#status that returns
+	  them as an array of arrays, each containing the content of a
+	  SingleResponse, but this is not useful. When validating an OCSP
+	  response, we need to look into the each SingleResponse and check their
+	  validity but it is not simple. For example, when validating for a
+	  certificate 'cert', the code would be like:
+
+	    # certid_target is an OpenSSL::OCSP::CertificateId for cert
+	    basic = res.basic
+	    result = basic.status.any? do |ary|
+	      ary[0].cmp(certid_target) &&
+	        ary[4] <= Time.now && (!ary[5] || Time.now <= ary[5])
+	    end
+
+	  Adding OCSP::SingleResponse at the same time allows exposing
+	  OCSP_check_validity(). With this, the code above can be rewritten as:
+
+	    basic = res.basic
+	    single = basic.find_response(certid_target)
+	    result = single.check_validity
+
+	* test/openssl/test_ocsp.rb: Test this.
+
 Sun Jun 19 18:40:19 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_ocsp.c (ossl_ocspbres_add_status): Allow specifying

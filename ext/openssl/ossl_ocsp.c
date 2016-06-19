@@ -57,6 +57,21 @@
     GetOCSPBasicRes((obj), (res)); \
 } while (0)
 
+#define NewOCSPSingleRes(klass) \
+    TypedData_Wrap_Struct((klass), &ossl_ocsp_singleresp_type, 0)
+#define SetOCSPSingleRes(obj, res) do { \
+    if(!(res)) ossl_raise(rb_eRuntimeError, "SingleResponse wasn't initialized!"); \
+    RTYPEDDATA_DATA(obj) = (res); \
+} while (0)
+#define GetOCSPSingleRes(obj, res) do { \
+    TypedData_Get_Struct((obj), OCSP_SINGLERESP, &ossl_ocsp_singleresp_type, (res)); \
+    if(!(res)) ossl_raise(rb_eRuntimeError, "SingleResponse wasn't initialized!"); \
+} while (0)
+#define SafeGetOCSPSingleRes(obj, res) do { \
+    OSSL_Check_Kind((obj), cOCSPSingleRes); \
+    GetOCSPSingleRes((obj), (res)); \
+} while (0)
+
 #define NewOCSPCertId(klass) \
     TypedData_Wrap_Struct((klass), &ossl_ocsp_certid_type, 0)
 #define SetOCSPCertId(obj, cid) do { \
@@ -77,6 +92,7 @@ VALUE eOCSPError;
 VALUE cOCSPReq;
 VALUE cOCSPRes;
 VALUE cOCSPBasicRes;
+VALUE cOCSPSingleRes;
 VALUE cOCSPCertId;
 
 static void
@@ -117,6 +133,20 @@ static const rb_data_type_t ossl_ocsp_basicresp_type = {
     "OpenSSL/OCSP/BASICRESP",
     {
 	0, ossl_ocsp_basicresp_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
+static void
+ossl_ocsp_singleresp_free(void *ptr)
+{
+    OCSP_SINGLERESP_free(ptr);
+}
+
+static const rb_data_type_t ossl_ocsp_singleresp_type = {
+    "OpenSSL/OCSP/SINGLERESP",
+    {
+	0, ossl_ocsp_singleresp_free,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
 };
@@ -842,11 +872,13 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
  *   basic_response.status -> statuses
  *
  * Returns an Array of statuses for this response.  Each status contains a
- * CertificateId, the status (0 for good, 1 for revoked, 2 for unknown), the reason for
- * the status, the revocation time, the time of this update, the time for the
- * next update and a list of OpenSSL::X509::Extensions.
+ * CertificateId, the status (0 for good, 1 for revoked, 2 for unknown), the
+ * reason for the status, the revocation time, the time of this update, the time
+ * for the next update and a list of OpenSSL::X509::Extensions.
+ *
+ * This should be superseded by BasicResponse#responses and #find_response that
+ * return SingleResponse.
  */
-
 static VALUE
 ossl_ocspbres_get_status(VALUE self)
 {
@@ -890,6 +922,70 @@ ossl_ocspbres_get_status(VALUE self)
     }
 
     return ret;
+}
+
+static VALUE ossl_ocspsres_new(OCSP_SINGLERESP *);
+
+/*
+ * call-seq:
+ *   basic_response.responses -> Array of SingleResponse
+ *
+ * Returns an Array of SingleResponse for this BasicResponse.
+ */
+
+static VALUE
+ossl_ocspbres_get_responses(VALUE self)
+{
+    OCSP_BASICRESP *bs;
+    VALUE ret;
+    int count, i;
+
+    GetOCSPBasicRes(self, bs);
+    count = OCSP_resp_count(bs);
+    ret = rb_ary_new2(count);
+
+    for (i = 0; i < count; i++) {
+	OCSP_SINGLERESP *sres, *sres_new;
+
+	sres = OCSP_resp_get0(bs, i);
+	sres_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_SINGLERESP), sres);
+	if (!sres_new)
+	    ossl_raise(eOCSPError, "ASN1_item_dup");
+
+	rb_ary_push(ret, ossl_ocspsres_new(sres_new));
+    }
+
+    return ret;
+}
+
+
+/*
+ * call-seq:
+ *   basic_response.find_response(certificate_id) -> SingleResponse | nil
+ *
+ * Returns a SingleResponse whose CertId matches with +certificate_id+, or nil
+ * if this BasicResponse does not contain it.
+ */
+static VALUE
+ossl_ocspbres_find_response(VALUE self, VALUE target)
+{
+    OCSP_BASICRESP *bs;
+    OCSP_SINGLERESP *sres, *sres_new;
+    OCSP_CERTID *id;
+    int n;
+
+    SafeGetOCSPCertId(target, id);
+    GetOCSPBasicRes(self, bs);
+
+    if ((n = OCSP_resp_find(bs, id, -1)) == -1)
+	return Qnil;
+
+    sres = OCSP_resp_get0(bs, n);
+    sres_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_SINGLERESP), sres);
+    if (!sres_new)
+	ossl_raise(eOCSPError, "ASN1_item_dup");
+
+    return ossl_ocspsres_new(sres_new);
 }
 
 /*
@@ -993,6 +1089,295 @@ ossl_ocspbres_to_der(VALUE self)
 
     return str;
 }
+
+/*
+ * OCSP::SingleResponse
+ */
+static VALUE
+ossl_ocspsres_new(OCSP_SINGLERESP *sres)
+{
+    VALUE obj;
+
+    obj = NewOCSPSingleRes(cOCSPSingleRes);
+    SetOCSPSingleRes(obj, sres);
+
+    return obj;
+}
+
+static VALUE
+ossl_ocspsres_alloc(VALUE klass)
+{
+    OCSP_SINGLERESP *sres;
+    VALUE obj;
+
+    obj = NewOCSPSingleRes(klass);
+    if (!(sres = OCSP_SINGLERESP_new()))
+	ossl_raise(eOCSPError, NULL);
+    SetOCSPSingleRes(obj, sres);
+
+    return obj;
+}
+
+/*
+ * call-seq:
+ *   OpenSSL::OCSP::SingleResponse.new(der_string) -> SingleResponse
+ *
+ * Creates a new SingleResponse from +der_string+.
+ */
+static VALUE
+ossl_ocspsres_initialize(VALUE self, VALUE arg)
+{
+    OCSP_SINGLERESP *res;
+    const unsigned char *p;
+
+    arg = ossl_to_der_if_possible(arg);
+    StringValue(arg);
+    GetOCSPSingleRes(self, res);
+
+    p = (unsigned char*)RSTRING_PTR(arg);
+    if (!d2i_OCSP_SINGLERESP(&res, &p, RSTRING_LEN(arg)))
+	ossl_raise(eOCSPError, "d2i_OCSP_SINGLERESP");
+
+    return self;
+}
+
+static VALUE
+ossl_ocspsres_initialize_copy(VALUE self, VALUE other)
+{
+    OCSP_SINGLERESP *sres, *sres_old, *sres_new;
+
+    rb_check_frozen(self);
+    GetOCSPSingleRes(self, sres_old);
+    SafeGetOCSPSingleRes(other, sres);
+
+    sres_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_SINGLERESP), sres);
+    if (!sres_new)
+	ossl_raise(eOCSPError, "ASN1_item_dup");
+
+    SetOCSPSingleRes(self, sres_new);
+    OCSP_SINGLERESP_free(sres_old);
+
+    return self;
+}
+
+/*
+ * call-seq:
+ *   single_response.check_validity(nsec = 0, maxsec = -1) -> true | false
+ *
+ * Checks the validity of thisUpdate and nextUpdate fields of this
+ * SingleResponse. This checks the current time is within the range thisUpdate
+ * to nextUpdate.
+ *
+ * It is possible that the OCSP request takes a few seconds or the time is not
+ * accurate. To avoid rejecting a valid response, this method allows the times
+ * to be within +nsec+ of the current time.
+ *
+ * Some responders don't set the nextUpdate field. This may cause a very old
+ * response to be considered valid. The +maxsec+ parameter can be used to limit
+ * the age of responses.
+ */
+static VALUE
+ossl_ocspsres_check_validity(int argc, VALUE *argv, VALUE self)
+{
+    OCSP_SINGLERESP *sres;
+    ASN1_GENERALIZEDTIME *this_update, *next_update;
+    VALUE nsec_v, maxsec_v;
+    int nsec, maxsec, status, ret;
+
+    rb_scan_args(argc, argv, "02", &nsec_v, &maxsec_v);
+    nsec = NIL_P(nsec_v) ? 0 : NUM2INT(nsec_v);
+    maxsec = NIL_P(maxsec_v) ? -1 : NUM2INT(maxsec_v);
+
+    GetOCSPSingleRes(self, sres);
+    status = OCSP_single_get0_status(sres, NULL, NULL, &this_update, &next_update);
+    if (status < 0)
+	ossl_raise(eOCSPError, "OCSP_single_get0_status");
+
+    ret = OCSP_check_validity(this_update, next_update, nsec, maxsec);
+
+    if (ret)
+	return Qtrue;
+    else {
+	ossl_clear_error();
+	return Qfalse;
+    }
+}
+
+/*
+ * call-seq:
+ *   single_response.certid -> CertificateId
+ *
+ * Returns the CertificateId for which this SingleResponse is.
+ */
+static VALUE
+ossl_ocspsres_get_certid(VALUE self)
+{
+    OCSP_SINGLERESP *sres;
+    OCSP_CERTID *id;
+
+    GetOCSPSingleRes(self, sres);
+    id = OCSP_CERTID_dup(OCSP_SINGLERESP_get0_id(sres));
+
+    return ossl_ocspcertid_new(id);
+}
+
+/*
+ * call-seq:
+ *   single_response.cert_status -> Integer
+ *
+ * Returns the status of the certificate identified by the certid.
+ * The return value may be one of these constant:
+ *
+ * - V_CERTSTATUS_GOOD
+ * - V_CERTSTATUS_REVOKED
+ * - V_CERTSTATUS_UNKNOWN
+ *
+ * When the status is V_CERTSTATUS_REVOKED, the time at which the certificate
+ * was revoked can be retrieved by #revocation_time.
+ */
+static VALUE
+ossl_ocspsres_get_cert_status(VALUE self)
+{
+    OCSP_SINGLERESP *sres;
+    int status;
+
+    GetOCSPSingleRes(self, sres);
+    status = OCSP_single_get0_status(sres, NULL, NULL, NULL, NULL);
+    if (status < 0)
+	ossl_raise(eOCSPError, "OCSP_single_get0_status");
+
+    return INT2NUM(status);
+}
+
+/*
+ * call-seq:
+ *   single_response.this_update -> Time
+ */
+static VALUE
+ossl_ocspsres_get_this_update(VALUE self)
+{
+    OCSP_SINGLERESP *sres;
+    int status;
+    ASN1_GENERALIZEDTIME *time;
+
+    GetOCSPSingleRes(self, sres);
+    status = OCSP_single_get0_status(sres, NULL, NULL, &time, NULL);
+    if (status < 0)
+	ossl_raise(eOCSPError, "OCSP_single_get0_status");
+
+    return asn1time_to_time(time); /* will handle NULL */
+}
+
+/*
+ * call-seq:
+ *   single_response.next_update -> Time | nil
+ */
+static VALUE
+ossl_ocspsres_get_next_update(VALUE self)
+{
+    OCSP_SINGLERESP *sres;
+    int status;
+    ASN1_GENERALIZEDTIME *time;
+
+    GetOCSPSingleRes(self, sres);
+    status = OCSP_single_get0_status(sres, NULL, NULL, NULL, &time);
+    if (status < 0)
+	ossl_raise(eOCSPError, "OCSP_single_get0_status");
+
+    return asn1time_to_time(time);
+}
+
+/*
+ * call-seq:
+ *   single_response.revocation_time -> Time | nil
+ */
+static VALUE
+ossl_ocspsres_get_revocation_time(VALUE self)
+{
+    OCSP_SINGLERESP *sres;
+    int status;
+    ASN1_GENERALIZEDTIME *time;
+
+    GetOCSPSingleRes(self, sres);
+    status = OCSP_single_get0_status(sres, NULL, &time, NULL, NULL);
+    if (status < 0)
+	ossl_raise(eOCSPError, "OCSP_single_get0_status");
+    if (status != V_OCSP_CERTSTATUS_REVOKED)
+	ossl_raise(eOCSPError, "certificate is not revoked");
+
+    return asn1time_to_time(time);
+}
+
+/*
+ * call-seq:
+ *   single_response.revocation_reason -> Integer | nil
+ */
+static VALUE
+ossl_ocspsres_get_revocation_reason(VALUE self)
+{
+    OCSP_SINGLERESP *sres;
+    int status, reason;
+
+    GetOCSPSingleRes(self, sres);
+    status = OCSP_single_get0_status(sres, &reason, NULL, NULL, NULL);
+    if (status < 0)
+	ossl_raise(eOCSPError, "OCSP_single_get0_status");
+    if (status != V_OCSP_CERTSTATUS_REVOKED)
+	ossl_raise(eOCSPError, "certificate is not revoked");
+
+    return INT2NUM(reason);
+}
+
+/*
+ * call-seq:
+ *   single_response.extensions -> Array of X509::Extension
+ */
+static VALUE
+ossl_ocspsres_get_extensions(VALUE self)
+{
+    OCSP_SINGLERESP *sres;
+    X509_EXTENSION *ext;
+    int count, i;
+    VALUE ary;
+
+    GetOCSPSingleRes(self, sres);
+
+    count = OCSP_SINGLERESP_get_ext_count(sres);
+    ary = rb_ary_new2(count);
+    for (i = 0; i < count; i++) {
+	ext = OCSP_SINGLERESP_get_ext(sres, i);
+	rb_ary_push(ary, ossl_x509ext_new(ext)); /* will dup */
+    }
+
+    return ary;
+}
+
+/*
+ * call-seq:
+ *   single_response.to_der -> String
+ *
+ * Encodes this SingleResponse into a DER-encoded string.
+ */
+static VALUE
+ossl_ocspsres_to_der(VALUE self)
+{
+    OCSP_SINGLERESP *sres;
+    VALUE str;
+    long len;
+    unsigned char *p;
+
+    GetOCSPSingleRes(self, sres);
+    if ((len = i2d_OCSP_SINGLERESP(sres, NULL)) <= 0)
+	ossl_raise(eOCSPError, NULL);
+    str = rb_str_new(0, len);
+    p = (unsigned char *)RSTRING_PTR(str);
+    if (i2d_OCSP_SINGLERESP(sres, &p) <= 0)
+	ossl_raise(eOCSPError, NULL);
+    ossl_str_adjust(str, p);
+
+    return str;
+}
+
 
 /*
  * OCSP::CertificateId
@@ -1313,7 +1698,7 @@ Init_ossl_ocsp(void)
      *   store = OpenSSL::X509::Store.new
      *   store.set_default_paths
      *
-     *   unless response.verify [], store then
+     *   unless response_basic.verify [], store then
      *     raise 'response is not signed by a trusted certificate'
      *   end
      *
@@ -1329,27 +1714,28 @@ Init_ossl_ocsp(void)
      *
      *   p request.check_nonce basic_response #=> value from -1 to 3
      *
-     * Then extract the status information from the basic response.  (You can
-     * check multiple certificates in a request, but for this example we only
-     * submitted one.)
+     * Then extract the status information for the certificate from the basic
+     * response.
      *
-     *   response_certificate_id, status, reason, revocation_time,
-     *     this_update, next_update, extensions = basic_response.status
+     *   single_response = basic_response.find_response(certificate_id)
      *
-     * Then check the various fields.
-     *
-     *   unless response_certificate_id == certificate_id then
-     *     raise 'certificate id mismatch'
+     *   unless single_response
+     *     raise 'basic_response does not have the status for the certificiate'
      *   end
      *
-     *   now = Time.now
+     * Then check the validity. A status issued in the future must be rejected.
      *
-     *   if this_update > now then
-     *     raise 'update date is in the future'
+     *   unless single_response.check_validity
+     *     raise 'this_update is in the future or next_update time has passed'
      *   end
      *
-     *   if now > next_update then
-     *     raise 'next update time has passed'
+     *   case single_response.cert_status
+     *   when OpenSSL::OCSP::V_CERTSTATUS_GOOD
+     *     puts 'certificate is still valid'
+     *   when OpenSSL::OCSP::V_CERTSTATUS_REVOKED
+     *     puts "certificate has been revoked at #{single_response.revocation_time}"
+     *   when OpenSSL::OCSP::V_CERTSTATUS_UNKNOWN
+     *     puts 'responder doesn't know about the certificate'
      *   end
      */
 
@@ -1409,9 +1795,30 @@ Init_ossl_ocsp(void)
     rb_define_method(cOCSPBasicRes, "add_nonce", ossl_ocspbres_add_nonce, -1);
     rb_define_method(cOCSPBasicRes, "add_status", ossl_ocspbres_add_status, 7);
     rb_define_method(cOCSPBasicRes, "status", ossl_ocspbres_get_status, 0);
+    rb_define_method(cOCSPBasicRes, "responses", ossl_ocspbres_get_responses, 0);
+    rb_define_method(cOCSPBasicRes, "find_response", ossl_ocspbres_find_response, 1);
     rb_define_method(cOCSPBasicRes, "sign", ossl_ocspbres_sign, -1);
     rb_define_method(cOCSPBasicRes, "verify", ossl_ocspbres_verify, -1);
     rb_define_method(cOCSPBasicRes, "to_der", ossl_ocspbres_to_der, 0);
+
+    /*
+     * An OpenSSL::OCSP::SingleResponse represents an OCSP SingleResponse
+     * structure, which contains the basic information of the status of the
+     * certificate.
+     */
+    cOCSPSingleRes = rb_define_class_under(mOCSP, "SingleResponse", rb_cObject);
+    rb_define_alloc_func(cOCSPSingleRes, ossl_ocspsres_alloc);
+    rb_define_copy_func(cOCSPSingleRes, ossl_ocspsres_initialize_copy);
+    rb_define_method(cOCSPSingleRes, "initialize", ossl_ocspsres_initialize, 1);
+    rb_define_method(cOCSPSingleRes, "check_validity", ossl_ocspsres_check_validity, -1);
+    rb_define_method(cOCSPSingleRes, "certid", ossl_ocspsres_get_certid, 0);
+    rb_define_method(cOCSPSingleRes, "cert_status", ossl_ocspsres_get_cert_status, 0);
+    rb_define_method(cOCSPSingleRes, "this_update", ossl_ocspsres_get_this_update, 0);
+    rb_define_method(cOCSPSingleRes, "next_update", ossl_ocspsres_get_next_update, 0);
+    rb_define_method(cOCSPSingleRes, "revocation_time", ossl_ocspsres_get_revocation_time, 0);
+    rb_define_method(cOCSPSingleRes, "revocation_reason", ossl_ocspsres_get_revocation_reason, 0);
+    rb_define_method(cOCSPSingleRes, "extensions", ossl_ocspsres_get_extensions, 0);
+    rb_define_method(cOCSPSingleRes, "to_der", ossl_ocspsres_to_der, 0);
 
     /*
      * An OpenSSL::OCSP::CertificateId identifies a certificate to the CA so
