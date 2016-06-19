@@ -73,6 +73,11 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     assert_equal der, OpenSSL::OCSP::CertificateId.new(der).to_der
   end
 
+  def test_certificate_id_dup
+    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert)
+    assert_equal cid.to_der, cid.dup.to_der
+  end
+
   def test_request_der
     request = OpenSSL::OCSP::Request.new
     cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA1.new)
@@ -116,6 +121,14 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     assert_equal 3, req0.check_nonce(bres)
   end
 
+  def test_request_dup
+    request = OpenSSL::OCSP::Request.new
+    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA1.new)
+    request.add_certid(cid)
+    request.sign(@cert, @key, nil, 0, "SHA1")
+    assert_equal request.to_der, request.dup.to_der
+  end
+
   def test_basic_response_der
     bres = OpenSSL::OCSP::BasicResponse.new
     cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA1.new)
@@ -141,6 +154,14 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     assert_equal true, bres.verify([], store2, OpenSSL::OCSP::NOVERIFY)
   end
 
+  def test_basic_response_dup
+    bres = OpenSSL::OCSP::BasicResponse.new
+    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA1.new)
+    bres.add_status(cid, OpenSSL::OCSP::V_CERTSTATUS_GOOD, 0, nil, -300, 500, [])
+    bres.sign(@cert2, @key2, [@ca_cert], 0)
+    assert_equal bres.to_der, bres.dup.to_der
+  end
+
   def test_response_der
     bres = OpenSSL::OCSP::BasicResponse.new
     cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest::SHA1.new)
@@ -153,6 +174,13 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     assert_equal OpenSSL::ASN1.ObjectId("basicOCSPResponse").to_der, asn1.value[1].value[0].value[0].to_der
     assert_equal bres.to_der, asn1.value[1].value[0].value[1].value
     assert_equal der, OpenSSL::OCSP::Response.new(der).to_der
+  end
+
+  def test_response_dup
+    bres = OpenSSL::OCSP::BasicResponse.new
+    bres.sign(@cert2, @key2, [@ca_cert], 0)
+    res = OpenSSL::OCSP::Response.create(OpenSSL::OCSP::RESPONSE_STATUS_SUCCESSFUL, bres)
+    assert_equal res.to_der, res.dup.to_der
   end
 end
 

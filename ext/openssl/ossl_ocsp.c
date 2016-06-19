@@ -163,6 +163,25 @@ ossl_ocspreq_alloc(VALUE klass)
     return obj;
 }
 
+static VALUE
+ossl_ocspreq_initialize_copy(VALUE self, VALUE other)
+{
+    OCSP_REQUEST *req, *req_old, *req_new;
+
+    rb_check_frozen(self);
+    GetOCSPReq(self, req_old);
+    SafeGetOCSPReq(other, req);
+
+    req_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_REQUEST), req);
+    if (!req_new)
+	ossl_raise(eOCSPError, "ASN1_item_dup");
+
+    SetOCSPReq(self, req_new);
+    OCSP_REQUEST_free(req_old);
+
+    return self;
+}
+
 /*
  * call-seq:
  *   OpenSSL::OCSP::Request.new              -> request
@@ -455,6 +474,25 @@ ossl_ocspres_alloc(VALUE klass)
     return obj;
 }
 
+static VALUE
+ossl_ocspres_initialize_copy(VALUE self, VALUE other)
+{
+    OCSP_RESPONSE *res, *res_old, *res_new;
+
+    rb_check_frozen(self);
+    GetOCSPRes(self, res_old);
+    SafeGetOCSPRes(other, res);
+
+    res_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_RESPONSE), res);
+    if (!res_new)
+	ossl_raise(eOCSPError, "ASN1_item_dup");
+
+    SetOCSPRes(self, res_new);
+    OCSP_RESPONSE_free(res_old);
+
+    return self;
+}
+
 /*
  * call-seq:
  *   OpenSSL::OCSP::Response.new               -> response
@@ -587,6 +625,25 @@ ossl_ocspbres_alloc(VALUE klass)
     SetOCSPBasicRes(obj, bs);
 
     return obj;
+}
+
+static VALUE
+ossl_ocspbres_initialize_copy(VALUE self, VALUE other)
+{
+    OCSP_BASICRESP *bs, *bs_old, *bs_new;
+
+    rb_check_frozen(self);
+    GetOCSPBasicRes(self, bs_old);
+    SafeGetOCSPBasicRes(other, bs);
+
+    bs_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_BASICRESP), bs);
+    if (!bs_new)
+	ossl_raise(eOCSPError, "ASN1_item_dup");
+
+    SetOCSPBasicRes(self, bs_new);
+    OCSP_BASICRESP_free(bs_old);
+
+    return self;
 }
 
 /*
@@ -925,6 +982,25 @@ ossl_ocspcid_alloc(VALUE klass)
     SetOCSPCertId(obj, id);
 
     return obj;
+}
+
+static VALUE
+ossl_ocspcid_initialize_copy(VALUE self, VALUE other)
+{
+    OCSP_CERTID *cid, *cid_old, *cid_new;
+
+    rb_check_frozen(self);
+    GetOCSPCertId(self, cid_old);
+    SafeGetOCSPCertId(other, cid);
+
+    cid_new = OCSP_CERTID_dup(cid);
+    if (!cid_new)
+	ossl_raise(eOCSPError, "OCSP_CERTID_dup");
+
+    SetOCSPCertId(self, cid_new);
+    OCSP_CERTID_free(cid_old);
+
+    return self;
 }
 
 /*
@@ -1267,6 +1343,7 @@ Init_ossl_ocsp(void)
 
     cOCSPReq = rb_define_class_under(mOCSP, "Request", rb_cObject);
     rb_define_alloc_func(cOCSPReq, ossl_ocspreq_alloc);
+    rb_define_copy_func(cOCSPReq, ossl_ocspreq_initialize_copy);
     rb_define_method(cOCSPReq, "initialize", ossl_ocspreq_initialize, -1);
     rb_define_method(cOCSPReq, "add_nonce", ossl_ocspreq_add_nonce, -1);
     rb_define_method(cOCSPReq, "check_nonce", ossl_ocspreq_check_nonce, 1);
@@ -1284,6 +1361,7 @@ Init_ossl_ocsp(void)
     cOCSPRes = rb_define_class_under(mOCSP, "Response", rb_cObject);
     rb_define_singleton_method(cOCSPRes, "create", ossl_ocspres_s_create, 2);
     rb_define_alloc_func(cOCSPRes, ossl_ocspres_alloc);
+    rb_define_copy_func(cOCSPRes, ossl_ocspres_initialize_copy);
     rb_define_method(cOCSPRes, "initialize", ossl_ocspres_initialize, -1);
     rb_define_method(cOCSPRes, "status", ossl_ocspres_status, 0);
     rb_define_method(cOCSPRes, "status_string", ossl_ocspres_status_string, 0);
@@ -1298,6 +1376,7 @@ Init_ossl_ocsp(void)
 
     cOCSPBasicRes = rb_define_class_under(mOCSP, "BasicResponse", rb_cObject);
     rb_define_alloc_func(cOCSPBasicRes, ossl_ocspbres_alloc);
+    rb_define_copy_func(cOCSPBasicRes, ossl_ocspbres_initialize_copy);
     rb_define_method(cOCSPBasicRes, "initialize", ossl_ocspbres_initialize, -1);
     rb_define_method(cOCSPBasicRes, "copy_nonce", ossl_ocspbres_copy_nonce, 1);
     rb_define_method(cOCSPBasicRes, "add_nonce", ossl_ocspbres_add_nonce, -1);
@@ -1314,6 +1393,7 @@ Init_ossl_ocsp(void)
 
     cOCSPCertId = rb_define_class_under(mOCSP, "CertificateId", rb_cObject);
     rb_define_alloc_func(cOCSPCertId, ossl_ocspcid_alloc);
+    rb_define_copy_func(cOCSPCertId, ossl_ocspcid_initialize_copy);
     rb_define_method(cOCSPCertId, "initialize", ossl_ocspcid_initialize, -1);
     rb_define_method(cOCSPCertId, "cmp", ossl_ocspcid_cmp, 1);
     rb_define_method(cOCSPCertId, "cmp_issuer", ossl_ocspcid_cmp_issuer, 1);
