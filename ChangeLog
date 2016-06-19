@@ -1,3 +1,11 @@
+Sun Jun 19 16:55:16 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/test_dir_m17n.rb: Skip tests with non-UTF-8 encodings
+	  on cygwin. Cygwin can use the Unicode PUA (private use area) to store
+	  bytes from non-UTF-8 filenames (see
+	  https://cygwin.com/cygwin-ug-net/using-specialnames.html#pathnames-specialchars),
+	  but we are not supporting this. [Bug #12443]
+
 Sun Jun 19 15:01:18 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* localeinit.c: Fix filesystem encoding for cygwin to UTF-8 (see
