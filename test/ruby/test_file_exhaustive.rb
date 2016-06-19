@@ -1094,8 +1094,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal('z:/bar/foo', File.expand_path('z:foo', '/bar'), bug10858)
   end if DRIVE
 
-  case RUBY_PLATFORM
-  when /darwin/
+  if /darwin/ =~ RUBY_PLATFORM and Encoding.find("filesystem") == Encoding::UTF_8
     def test_expand_path_compose
       pp = Object.new.extend(Test::Unit::Assertions)
       def pp.mu_pp(str) #:nodoc:
