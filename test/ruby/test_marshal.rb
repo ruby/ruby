@@ -719,10 +719,12 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_marshal_load_extended_class_crash
-    crash = "\x04\be:\x0F\x00omparableo:\vObject\x00"
-
-    opt = %w[--disable=gems]
-    assert_ruby_status(opt, "Marshal.load(#{crash.dump})")
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      assert_raise_with_message(ArgumentError, /undefined/) do
+        Marshal.load("\x04\be:\x0F\x00omparableo:\vObject\x00")
+      end
+    end;
   end
 
   def test_marshal_load_r_prepare_reference_crash

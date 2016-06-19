@@ -1,4 +1,7 @@
-Sun Jun 19 10:54:40 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Jun 19 11:19:43 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_path_to_class): consider the string length
+	  instead of a terminator.
 
 	* variable.c (rb_path_to_class): search the constant at once
 	  instead of checking if defined and then getting it.

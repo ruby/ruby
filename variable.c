@@ -389,7 +389,7 @@ VALUE
 rb_path_to_class(VALUE pathname)
 {
     rb_encoding *enc = rb_enc_get(pathname);
-    const char *pbeg, *p, *path = RSTRING_PTR(pathname);
+    const char *pbeg, *pend, *p, *path = RSTRING_PTR(pathname);
     ID id;
     VALUE c = rb_cObject;
 
@@ -397,15 +397,16 @@ rb_path_to_class(VALUE pathname)
 	rb_raise(rb_eArgError, "invalid class path encoding (non ASCII)");
     }
     pbeg = p = path;
-    if (path[0] == '#') {
+    pend = path + RSTRING_LEN(pathname);
+    if (path == pend || path[0] == '#') {
 	rb_raise(rb_eArgError, "can't retrieve anonymous class %"PRIsVALUE,
 		 QUOTE(pathname));
     }
-    while (*p) {
-	while (*p && *p != ':') p++;
+    while (p < pend) {
+	while (p < pend && *p != ':') p++;
 	id = rb_check_id_cstr(pbeg, p-pbeg, enc);
-	if (p[0] == ':') {
-	    if (p[1] != ':') goto undefined_class;
+	if (p < pend && p[0] == ':') {
+	    if ((size_t)(pend - p) < 2 || p[1] != ':') goto undefined_class;
 	    p += 2;
 	    pbeg = p;
 	}
