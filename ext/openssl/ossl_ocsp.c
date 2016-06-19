@@ -726,22 +726,49 @@ ossl_ocspbres_add_nonce(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+static VALUE
+add_status_convert_time(VALUE obj)
+{
+    ASN1_TIME *time;
+
+    if (RB_INTEGER_TYPE_P(obj))
+	time = X509_gmtime_adj(NULL, NUM2INT(obj));
+    else
+	time = ossl_x509_time_adjust(NULL, obj);
+
+    if (!time)
+	ossl_raise(eOCSPError, NULL);
+
+    return (VALUE)time;
+}
+
 /*
  * call-seq:
  *   basic_response.add_status(certificate_id, status, reason, revocation_time, this_update, next_update, extensions) -> basic_response
  *
- * Adds a validation +status+ (0 for good, 1 for revoked, 2 for unknown) to this
- * response for +certificate_id+.  +reason+ describes the reason for the
- * revocation, if any.
+ * Adds a certificate status for +certificate_id+. +status+ is the status, and
+ * must be one of these:
  *
- * The +revocation_time+, +this_update+ and +next_update+ are times for the
- * certificate's revocation time, the time of this status and the next update
- * time for a new status, respectively.
+ * - OpenSSL::OCSP::V_CERTSTATUS_GOOD
+ * - OpenSSL::OCSP::V_CERTSTATUS_REVOKED
+ * - OpenSSL::OCSP::V_CERTSTATUS_UNKNOWN
  *
- * +extensions+ may be an Array of OpenSSL::X509::Extension that will
- * be added to this response or nil.
+ * +reason+ and +revocation_time+ can be given only when +status+ is
+ * OpenSSL::OCSP::V_CERTSTATUS_REVOKED. +reason+ describes the reason for the
+ * revocation, and must be one of OpenSSL::OCSP::REVOKED_STATUS_* constants.
+ * +revocation_time+ is the time when the certificate is revoked.
+ *
+ * +this_update+ and +next_update+ indicate the time at which ths status is
+ * verified to be correct and the time at or before which newer information
+ * will be available, respectively. +next_update+ is optional.
+ *
+ * +extensions+ is an Array of OpenSSL::X509::Extension to be included in the
+ * SingleResponse. This is also optional.
+ *
+ * Note that the times, +revocation_time+, +this_update+ and +next_update+
+ * can be specified in either of Integer or Time object. If they are Integer, it
+ * is treated as the relative seconds from the current time.
  */
-
 static VALUE
 ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
 			 VALUE reason, VALUE revtime,
@@ -750,36 +777,37 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
     OCSP_BASICRESP *bs;
     OCSP_SINGLERESP *single;
     OCSP_CERTID *id;
-    ASN1_TIME *ths, *nxt, *rev;
-    int st, rsn, error, rstatus = 0;
+    ASN1_TIME *ths = NULL, *nxt = NULL, *rev = NULL;
+    int st, rsn = 0, error = 0, rstatus = 0;
     long i;
     VALUE tmp;
 
+    GetOCSPBasicRes(self, bs);
+    SafeGetOCSPCertId(cid, id);
     st = NUM2INT(status);
-    rsn = NIL_P(status) ? 0 : NUM2INT(reason);
-    if(!NIL_P(ext)){
-	/* All ary's members should be X509Extension */
-	Check_Type(ext, T_ARRAY);
+    if (!NIL_P(ext)) { /* All ext's members must be X509::Extension */
+	ext = rb_check_array_type(ext);
 	for (i = 0; i < RARRAY_LEN(ext); i++)
 	    OSSL_Check_Kind(RARRAY_AREF(ext, i), cX509Ext);
     }
 
-    error = 0;
-    ths = nxt = rev = NULL;
-    if(!NIL_P(revtime)){
-	tmp = rb_protect(rb_Integer, revtime, &rstatus);
-	if(rstatus) goto err;
-	rev = X509_gmtime_adj(NULL, NUM2INT(tmp));
+    if (st == V_OCSP_CERTSTATUS_REVOKED) {
+	rsn = NUM2INT(reason);
+	tmp = rb_protect(add_status_convert_time, revtime, &rstatus);
+	if (rstatus) goto err;
+	rev = (ASN1_TIME *)tmp;
     }
-    tmp = rb_protect(rb_Integer, thisupd, &rstatus);
-    if(rstatus) goto err;
-    ths = X509_gmtime_adj(NULL, NUM2INT(tmp));
-    tmp = rb_protect(rb_Integer, nextupd, &rstatus);
-    if(rstatus) goto err;
-    nxt = X509_gmtime_adj(NULL, NUM2INT(tmp));
 
-    GetOCSPBasicRes(self, bs);
-    SafeGetOCSPCertId(cid, id);
+    tmp = rb_protect(add_status_convert_time, thisupd, &rstatus);
+    if (rstatus) goto err;
+    ths = (ASN1_TIME *)tmp;
+
+    if (!NIL_P(nextupd)) {
+	tmp = rb_protect(add_status_convert_time, nextupd, &rstatus);
+	if (rstatus) goto err;
+	nxt = (ASN1_TIME *)tmp;
+    }
+
     if(!(single = OCSP_basic_add1_status(bs, id, st, rsn, rev, ths, nxt))){
 	error = 1;
 	goto err;
@@ -787,8 +815,7 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
 
     if(!NIL_P(ext)){
 	X509_EXTENSION *x509ext;
-	while ((x509ext = OCSP_SINGLERESP_delete_ext(single, 0)))
-	    X509_EXTENSION_free(x509ext);
+
 	for(i = 0; i < RARRAY_LEN(ext); i++){
 	    x509ext = DupX509ExtPtr(RARRAY_AREF(ext, i));
 	    if(!OCSP_SINGLERESP_add_ext(single, x509ext, -1)){

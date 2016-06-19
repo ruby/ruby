@@ -24,4 +24,9 @@
 #define rb_io_t OpenFile
 #endif
 
+#ifndef RB_INTEGER_TYPE_P
+/* for Ruby 2.3 compatibility */
+#define RB_INTEGER_TYPE_P(obj) (RB_FIXNUM_P(obj) || RB_TYPE_P(obj, T_BIGNUM))
+#endif
+
 #endif /* _OSSL_RUBY_MISSING_H_ */

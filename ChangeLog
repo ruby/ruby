@@ -1,3 +1,18 @@
+Sun Jun 19 18:40:19 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_ocsp.c (ossl_ocspbres_add_status): Allow specifying
+	  the times (thisUpdate, nextUpdate and revocationTime) with Time
+	  objects. Currently they accepts only relative seconds from the current
+	  time. This is inconvenience, especially for revocationTime. When
+	  Integer is passed, they are still treated as relative times. Since the
+	  type check is currently done with rb_Integer(), this is a slightly
+	  incompatible change. Hope no one passes a relative time as String or
+	  Time object...
+	  Also, allow passing nil as nextUpdate. It is optional.
+
+	* ext/openssl/ruby_missing.h: Define RB_INTEGER_TYPE_P() if not defined.
+	  openssl gem will be released before Ruby 2.4.0.
+
 Sun Jun 19 18:39:38 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_ocsp.c: Implement OCSP::{CertificateId,Request,
