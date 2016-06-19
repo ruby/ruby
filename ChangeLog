@@ -1,3 +1,11 @@
+Mon Jun 20 02:38:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser::Completion.candidate): get rid of
+	  nil as key names.  [ruby-core:75773] [Bug #12438]
+
+	* lib/optparse.rb (OptionParser#make_switch): char class option
+	  cannot be NoArgument, default to RequiredArgument.
+
 Mon Jun 20 02:25:44 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* re.c (unescape_nonascii): scan hex up to only 3 characters.
