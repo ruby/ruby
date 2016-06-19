@@ -100,7 +100,7 @@ Init_enc_set_filesystem_encoding(void)
     int idx;
 #if defined NO_LOCALE_CHARMAP
 # error NO_LOCALE_CHARMAP defined
-#elif defined _WIN32 
+#elif defined _WIN32
     char cp[SIZEOF_CP_NAME];
     CP_FORMAT(cp, AreFileApisANSI() ? GetACP() : GetOEMCP());
     idx = rb_enc_find_index(cp);
