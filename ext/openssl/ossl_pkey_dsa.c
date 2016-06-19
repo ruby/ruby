@@ -26,7 +26,7 @@
 static inline int
 DSA_HAS_PRIVATE(DSA *dsa)
 {
-    BIGNUM *bn;
+    const BIGNUM *bn;
     DSA_get0_key(dsa, NULL, &bn);
     return !!bn;
 }
@@ -280,7 +280,7 @@ static VALUE
 ossl_dsa_is_public(VALUE self)
 {
     DSA *dsa;
-    BIGNUM *bn;
+    const BIGNUM *bn;
 
     GetDSA(self, dsa);
     DSA_get0_key(dsa, &bn, NULL);
@@ -402,7 +402,7 @@ ossl_dsa_get_params(VALUE self)
 {
     DSA *dsa;
     VALUE hash;
-    BIGNUM *p, *q, *g, *pub_key, *priv_key;
+    const BIGNUM *p, *q, *g, *pub_key, *priv_key;
 
     GetDSA(self, dsa);
     DSA_get0_pqg(dsa, &p, &q, &g);
@@ -509,7 +509,7 @@ static VALUE
 ossl_dsa_sign(VALUE self, VALUE data)
 {
     DSA *dsa;
-    BIGNUM *dsa_q;
+    const BIGNUM *dsa_q;
     unsigned int buf_len;
     VALUE str;
 

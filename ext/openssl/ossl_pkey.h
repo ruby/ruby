@@ -103,7 +103,7 @@ void Init_ossl_ec(void);
 static VALUE ossl_##_keytype##_get_##_name(VALUE self)			\
 {									\
 	_type *obj;							\
-	BIGNUM *bn;							\
+	const BIGNUM *bn;						\
 									\
 	Get##_type(self, obj);						\
 	_get;								\

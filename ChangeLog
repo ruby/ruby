@@ -1,3 +1,11 @@
+Sun Jun 19 14:31:07 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_pkey.h, ext/openssl/ossl_pkey_dh.c,
+	  ext/openssl/ossl_pkey_dsa.c, ext/openssl/ossl_pkey_rsa.c: A few days
+	  ago, OpenSSL changed {DH,DSA,RSA}_get0_*() to take const BIGNUM **.
+	  https://git.openssl.org/gitweb/?p=openssl.git;a=commit;h=fd809cfdbd6e32b6b67b68c59f6d55fbed7a9327
+	  [ruby-core:75225] [Feature #12324]
+
 Sun Jun 19 11:19:43 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_path_to_class): consider the string length

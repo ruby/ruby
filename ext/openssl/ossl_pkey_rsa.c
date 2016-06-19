@@ -26,7 +26,7 @@
 static inline int
 RSA_HAS_PRIVATE(RSA *rsa)
 {
-    BIGNUM *p, *q;
+    const BIGNUM *p, *q;
 
     RSA_get0_factors(rsa, &p, &q);
     return p && q; /* d? why? */
@@ -398,7 +398,7 @@ static VALUE
 ossl_rsa_public_encrypt(int argc, VALUE *argv, VALUE self)
 {
     RSA *rsa;
-    BIGNUM *rsa_n;
+    const BIGNUM *rsa_n;
     int buf_len, pad;
     VALUE str, buffer, padding;
 
@@ -430,7 +430,7 @@ static VALUE
 ossl_rsa_public_decrypt(int argc, VALUE *argv, VALUE self)
 {
     RSA *rsa;
-    BIGNUM *rsa_n;
+    const BIGNUM *rsa_n;
     int buf_len, pad;
     VALUE str, buffer, padding;
 
@@ -462,7 +462,7 @@ static VALUE
 ossl_rsa_private_encrypt(int argc, VALUE *argv, VALUE self)
 {
     RSA *rsa;
-    BIGNUM *rsa_n;
+    const BIGNUM *rsa_n;
     int buf_len, pad;
     VALUE str, buffer, padding;
 
@@ -496,7 +496,7 @@ static VALUE
 ossl_rsa_private_decrypt(int argc, VALUE *argv, VALUE self)
 {
     RSA *rsa;
-    BIGNUM *rsa_n;
+    const BIGNUM *rsa_n;
     int buf_len, pad;
     VALUE str, buffer, padding;
 
@@ -534,7 +534,7 @@ ossl_rsa_get_params(VALUE self)
 {
     RSA *rsa;
     VALUE hash;
-    BIGNUM *n, *e, *d, *p, *q, *dmp1, *dmq1, *iqmp;
+    const BIGNUM *n, *e, *d, *p, *q, *dmp1, *dmq1, *iqmp;
 
     GetRSA(self, rsa);
     RSA_get0_key(rsa, &n, &e, &d);

@@ -249,7 +249,7 @@ static VALUE
 ossl_dh_is_public(VALUE self)
 {
     DH *dh;
-    BIGNUM *bn;
+    const BIGNUM *bn;
 
     GetDH(self, dh);
     DH_get0_key(dh, &bn, NULL);
@@ -268,7 +268,7 @@ static VALUE
 ossl_dh_is_private(VALUE self)
 {
     DH *dh;
-    BIGNUM *bn;
+    const BIGNUM *bn;
 
     GetDH(self, dh);
     DH_get0_key(dh, NULL, &bn);
@@ -352,7 +352,7 @@ ossl_dh_get_params(VALUE self)
 {
     DH *dh;
     VALUE hash;
-    BIGNUM *p, *q, *g, *pub_key, *priv_key;
+    const BIGNUM *p, *q, *g, *pub_key, *priv_key;
 
     GetDH(self, dh);
     DH_get0_pqg(dh, &p, &q, &g);
@@ -498,7 +498,7 @@ static VALUE
 ossl_dh_compute_key(VALUE self, VALUE pub)
 {
     DH *dh;
-    BIGNUM *pub_key, *dh_p;
+    const BIGNUM *pub_key, *dh_p;
     VALUE str;
     int len;
 
