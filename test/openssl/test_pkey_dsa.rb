@@ -230,6 +230,14 @@ YNMbNw==
     assert(key3.private?)
   end
 
+  def test_dup
+    key = OpenSSL::PKey::DSA.new(256)
+    key2 = key.dup
+    assert_equal key.params, key2.params
+    key2.set_pqg(key2.p + 1, key2.q, key2.g)
+    assert_not_equal key.params, key2.params
+  end
+
   private
 
   def check_sign_verify(digest)

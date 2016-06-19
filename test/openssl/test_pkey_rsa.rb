@@ -294,6 +294,14 @@ AwEAAQ==
     assert(key3.private?)
   end
 
+  def test_dup
+    key = OpenSSL::PKey::RSA.generate(256, 17)
+    key2 = key.dup
+    assert_equal key.params, key2.params
+    key2.set_key(key2.n, 3, key2.d)
+    assert_not_equal key.params, key2.params
+  end
+
   private
 
   def check_PUBKEY(asn1, key)

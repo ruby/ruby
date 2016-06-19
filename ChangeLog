@@ -1,3 +1,15 @@
+Sun Jun 19 18:29:50 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_pkey_dh.c, ext/openssl/ossl_pkey_dsa.c,
+	  ext/openssl/ossl_pkey_ec.c, ext/openssl/ossl_pkey_rsa.c: Implement
+	  initialize_copy method for OpenSSL::PKey::*.
+	  [ruby-core:75504] [Bug #12381]
+
+	* test/openssl/test_pkey_dh.rb, test/openssl/test_pkey_dsa.rb,
+	  test/openssl/test_pkey_ec.rb, test/openssl/test_pkey_rsa.rb: Test they
+	  actually copy the OpenSSL objects, and modifications to cloned object
+	  don't affect the original object.
+
 Sun Jun 19 16:55:16 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/test_dir_m17n.rb: Skip tests with non-UTF-8 encodings

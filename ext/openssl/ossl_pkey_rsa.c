@@ -271,6 +271,26 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+static VALUE
+ossl_rsa_initialize_copy(VALUE self, VALUE other)
+{
+    EVP_PKEY *pkey;
+    RSA *rsa, *rsa_new;
+
+    GetPKey(self, pkey);
+    if (EVP_PKEY_base_id(pkey) != EVP_PKEY_NONE)
+	ossl_raise(eRSAError, "RSA already initialized");
+    GetRSA(other, rsa);
+
+    rsa_new = ASN1_dup((i2d_of_void *)i2d_RSAPrivateKey, (d2i_of_void *)d2i_RSAPrivateKey, (char *)rsa);
+    if (!rsa_new)
+	ossl_raise(eRSAError, "ASN1_dup");
+
+    EVP_PKEY_assign_RSA(pkey, rsa_new);
+
+    return self;
+}
+
 /*
  * call-seq:
  *   rsa.public? => true
@@ -675,6 +695,7 @@ Init_ossl_rsa(void)
 
     rb_define_singleton_method(cRSA, "generate", ossl_rsa_s_generate, -1);
     rb_define_method(cRSA, "initialize", ossl_rsa_initialize, -1);
+    rb_define_copy_func(cRSA, ossl_rsa_initialize_copy);
 
     rb_define_method(cRSA, "public?", ossl_rsa_is_public, 0);
     rb_define_method(cRSA, "private?", ossl_rsa_is_private, 0);

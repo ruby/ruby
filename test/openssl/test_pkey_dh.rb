@@ -83,6 +83,16 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
     assert_equal(dh.compute_key(dh2.pub_key), dh2.compute_key(dh.pub_key))
   end
 
+  def test_dup
+    dh = OpenSSL::PKey::DH.new(NEW_KEYLEN)
+    dh2 = dh.dup
+    assert_equal dh.to_der, dh2.to_der # params
+    assert_equal_params dh, dh2 # keys
+    dh2.set_pqg(dh2.p + 1, nil, dh2.g)
+    assert_not_equal dh2.p, dh.p
+    assert_equal dh2.g, dh.g
+  end
+
   private
 
   def assert_equal_params(dh1, dh2)

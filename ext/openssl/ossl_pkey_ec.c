@@ -285,6 +285,29 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+static VALUE
+ossl_ec_key_initialize_copy(VALUE self, VALUE other)
+{
+    EVP_PKEY *pkey;
+    EC_KEY *ec, *ec_new;
+
+    GetPKey(self, pkey);
+    if (EVP_PKEY_base_id(pkey) != EVP_PKEY_NONE)
+	ossl_raise(eECError, "EC already initialized");
+    SafeRequire_EC_KEY(other, ec);
+
+    ec_new = EC_KEY_dup(ec);
+    if (!ec_new)
+	ossl_raise(eECError, "EC_KEY_dup");
+    if (!EVP_PKEY_assign_EC_KEY(pkey, ec_new)) {
+	EC_KEY_free(ec_new);
+	ossl_raise(eECError, "EVP_PKEY_assign_EC_KEY");
+    }
+    rb_iv_set(self, "@group", Qnil); /* EC_KEY_dup() also copies the EC_GROUP */
+
+    return self;
+}
+
 /*
  *  call-seq:
  *     key.group   => group
@@ -903,6 +926,26 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+static VALUE
+ossl_ec_group_initialize_copy(VALUE self, VALUE other)
+{
+    ossl_ec_group *ec_group;
+    EC_GROUP *orig;
+
+    TypedData_Get_Struct(self, ossl_ec_group, &ossl_ec_group_type, ec_group);
+    if (ec_group->group)
+	ossl_raise(eEC_GROUP, "EC::Group already initialized");
+    SafeRequire_EC_GROUP(other, orig);
+
+    ec_group->group = EC_GROUP_dup(orig);
+    if (!ec_group->group)
+	ossl_raise(eEC_GROUP, "EC_GROUP_dup");
+
+    rb_iv_set(self, "@key", Qnil);
+
+    return self;
+}
+
 /*  call-seq:
  *     group1.eql?(group2)   => true | false
  *     group1 == group2   => true | false
@@ -1381,6 +1424,31 @@ static VALUE ossl_ec_point_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+static VALUE
+ossl_ec_point_initialize_copy(VALUE self, VALUE other)
+{
+    ossl_ec_point *ec_point;
+    EC_POINT *orig;
+    EC_GROUP *group;
+    VALUE group_v;
+
+    TypedData_Get_Struct(self, ossl_ec_point, &ossl_ec_point_type, ec_point);
+    if (ec_point->point)
+	ossl_raise(eEC_POINT, "EC::Point already initialized");
+    SafeRequire_EC_POINT(other, orig);
+
+    group_v = rb_obj_dup(rb_iv_get(other, "@group"));
+    SafeRequire_EC_GROUP(group_v, group);
+
+    ec_point->point = EC_POINT_dup(orig, group);
+    if (!ec_point->point)
+	ossl_raise(eEC_POINT, "EC_POINT_dup");
+    rb_iv_set(self, "@key", Qnil);
+    rb_iv_set(self, "@group", group_v);
+
+    return self;
+}
+
 /*
  *  call-seq:
  *     point1.eql?(point2) => true | false
@@ -1624,14 +1692,6 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
     return result;
 }
 
-static void no_copy(VALUE klass)
-{
-    rb_undef_method(klass, "copy");
-    rb_undef_method(klass, "clone");
-    rb_undef_method(klass, "dup");
-    rb_undef_method(klass, "initialize_copy");
-}
-
 void Init_ossl_ec(void)
 {
 #ifdef DONT_NEED_RDOC_WORKAROUND
@@ -1664,6 +1724,7 @@ void Init_ossl_ec(void)
 
     rb_define_singleton_method(cEC, "generate", ossl_ec_key_s_generate, 1);
     rb_define_method(cEC, "initialize", ossl_ec_key_initialize, -1);
+    rb_define_copy_func(cEC, ossl_ec_key_initialize_copy);
 /* copy/dup/cmp */
 
     rb_define_method(cEC, "group", ossl_ec_key_get_group, 0);
@@ -1700,6 +1761,7 @@ void Init_ossl_ec(void)
 
     rb_define_alloc_func(cEC_GROUP, ossl_ec_group_alloc);
     rb_define_method(cEC_GROUP, "initialize", ossl_ec_group_initialize, -1);
+    rb_define_copy_func(cEC_GROUP, ossl_ec_group_initialize_copy);
     rb_define_method(cEC_GROUP, "eql?", ossl_ec_group_eql, 1);
     rb_define_alias(cEC_GROUP, "==", "eql?");
 /* copy/dup/cmp */
@@ -1735,6 +1797,7 @@ void Init_ossl_ec(void)
 
     rb_define_alloc_func(cEC_POINT, ossl_ec_point_alloc);
     rb_define_method(cEC_POINT, "initialize", ossl_ec_point_initialize, -1);
+    rb_define_copy_func(cEC_POINT, ossl_ec_point_initialize_copy);
     rb_attr(cEC_POINT, rb_intern("group"), 1, 0, 0);
     rb_define_method(cEC_POINT, "eql?", ossl_ec_point_eql, 1);
     rb_define_alias(cEC_POINT, "==", "eql?");
@@ -1748,10 +1811,6 @@ void Init_ossl_ec(void)
 
     rb_define_method(cEC_POINT, "to_bn", ossl_ec_point_to_bn, 0);
     rb_define_method(cEC_POINT, "mul", ossl_ec_point_mul, -1);
-
-    no_copy(cEC);
-    no_copy(cEC_GROUP);
-    no_copy(cEC_POINT);
 }
 
 #else /* defined NO_EC */

@@ -238,6 +238,39 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+static VALUE
+ossl_dh_initialize_copy(VALUE self, VALUE other)
+{
+    EVP_PKEY *pkey;
+    DH *dh, *dh_other;
+    const BIGNUM *pub, *priv;
+
+    GetPKey(self, pkey);
+    if (EVP_PKEY_base_id(pkey) != EVP_PKEY_NONE)
+	ossl_raise(eDHError, "DH already initialized");
+    GetDH(other, dh_other);
+
+    dh = DHparams_dup(dh_other);
+    if (!dh)
+	ossl_raise(eDHError, "DHparams_dup");
+    EVP_PKEY_assign_DH(pkey, dh);
+
+    DH_get0_key(dh_other, &pub, &priv);
+    if (pub) {
+	BIGNUM *pub2 = BN_dup(pub);
+	BIGNUM *priv2 = BN_dup(priv);
+
+	if (!pub2 || priv && !priv2) {
+	    BN_clear_free(pub2);
+	    BN_clear_free(priv2);
+	    ossl_raise(eDHError, "BN_dup");
+	}
+	DH_set0_key(dh, pub2, priv2);
+    }
+
+    return self;
+}
+
 /*
  *  call-seq:
  *     dh.public? -> true | false
@@ -568,6 +601,7 @@ Init_ossl_dh(void)
     cDH = rb_define_class_under(mPKey, "DH", cPKey);
     rb_define_singleton_method(cDH, "generate", ossl_dh_s_generate, -1);
     rb_define_method(cDH, "initialize", ossl_dh_initialize, -1);
+    rb_define_copy_func(cDH, ossl_dh_initialize_copy);
     rb_define_method(cDH, "public?", ossl_dh_is_public, 0);
     rb_define_method(cDH, "private?", ossl_dh_is_private, 0);
     rb_define_method(cDH, "to_text", ossl_dh_to_text, 0);
