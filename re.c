@@ -2306,8 +2306,8 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
               case '1': case '2': case '3':
               case '4': case '5': case '6': case '7': /* \O, \OO, \OOO or backref */
                 {
-                    size_t octlen;
-                    if (ruby_scan_oct(p-1, end-(p-1), &octlen) <= 0177) {
+                    size_t len = end-(p-1), octlen;
+                    if (ruby_scan_oct(p-1, len < 3 ? len : 3, &octlen) <= 0177) {
                         /* backref or 7bit octal.
                            no need to unescape anyway.
                            re-escaping may break backref */
