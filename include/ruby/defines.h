@@ -130,7 +130,7 @@ extern "C" {
 # include <sys/select.h>
 #endif
 
-#if defined HAVE_SETJMPEX_H && defined HAVE__SETJMPEX
+#ifdef RUBY_USE_SETJMPEX
 #include <setjmpex.h>
 #endif
 

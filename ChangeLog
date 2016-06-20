@@ -1,3 +1,9 @@
+Tue Jun 21 00:22:02 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, include/ruby/defines.h (RUBY_USE_SETJMPEX):
+	  include setjmpex.h only when using setjmpex() for RUBY_SETJMP.
+	  the header of mingw32 overrides setjmp() by setjmpex().
+
 Mon Jun 20 18:39:16 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/test_in.rb: Skip test_open_fifo_does_not_block_other_threads
