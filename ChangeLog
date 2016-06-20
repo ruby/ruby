@@ -1,3 +1,10 @@
+Mon Jun 20 13:35:06 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm.c (invoke_bmethod, invoke_block_from_c_0): revert r52104
+	  partially to avoid "self has wrong type to call super in this
+	  context" errors.
+	  [ruby-core:72724] [Bug #11954]
+
 Mon Jun 20 12:53:38 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* test/rubygems/test_gem_remote_fetcher.rb: OpenSSL::PKey::DH#priv_key=
