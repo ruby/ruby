@@ -260,6 +260,60 @@ GET /
       GET /foo HTTP/1.1
       Host: localhost:10080
       User-Agent: w3m/0.5.2
+      Forwarded: for=123.123.123.123;host=forward.example.com;server=server.example.com
+      Connection: Keep-Alive
+
+    _end_of_message_
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    assert_equal("server.example.com", req.server_name)
+    assert_equal("http://forward.example.com/foo", req.request_uri.to_s)
+    assert_equal("forward.example.com", req.host)
+    assert_equal(80, req.port)
+    assert_equal("123.123.123.123", req.remote_ip)
+    assert(!req.ssl?)
+
+    msg = <<~_end_of_message_
+      GET /foo HTTP/1.1
+      Host: localhost:10080
+      User-Agent: w3m/0.5.2
+      Forwarded: for=192.168.1.10, for=172.16.1.1, for=123.123.123.123;host=forward.example.com:8080;server=server.example.com
+      Connection: Keep-Alive
+
+    _end_of_message_
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    assert_equal("server.example.com", req.server_name)
+    assert_equal("http://forward.example.com:8080/foo", req.request_uri.to_s)
+    assert_equal("forward.example.com", req.host)
+    assert_equal(8080, req.port)
+    assert_equal("123.123.123.123", req.remote_ip)
+    assert(!req.ssl?)
+
+    msg = <<~_end_of_message_
+      GET /foo HTTP/1.1
+      Host: localhost:10080
+      Client-IP: 234.234.234.234
+      Forwarded: for=192.168.1.10, for=10.0.0.1, for=123.123.123.123;host=forward.example.com;proto=https;server=server.example.com
+      X-Requested-With: XMLHttpRequest
+      Connection: Keep-Alive
+
+    _end_of_message_
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    assert_equal("server.example.com", req.server_name)
+    assert_equal("https://forward.example.com/foo", req.request_uri.to_s)
+    assert_equal("forward.example.com", req.host)
+    assert_equal(443, req.port)
+    assert_equal("234.234.234.234", req.remote_ip)
+    assert(req.ssl?)
+  end
+
+  def test_x_forwarded
+    msg = <<~_end_of_message_
+      GET /foo HTTP/1.1
+      Host: localhost:10080
+      User-Agent: w3m/0.5.2
       X-Forwarded-For: 123.123.123.123
       X-Forwarded-Host: forward.example.com
       X-Forwarded-Server: server.example.com
