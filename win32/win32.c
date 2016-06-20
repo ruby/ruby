@@ -436,7 +436,7 @@ get_special_folder(int n, WCHAR *buf, size_t len)
     LPITEMIDLIST pidl;
     LPMALLOC alloc;
     BOOL f = FALSE;
-    typedef BOOL (*get_path_func)(LPITEMIDLIST, WCHAR*, DWORD, int);
+    typedef BOOL (WINAPI *get_path_func)(LPITEMIDLIST, WCHAR*, DWORD, int);
     static get_path_func func = (get_path_func)-1;
 
     if (func == (get_path_func)-1) {
