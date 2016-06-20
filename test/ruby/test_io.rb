@@ -3253,7 +3253,7 @@ End
         assert_equal("foo", t1_value)
       EOS
     }
-  end if /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
+  end if /mswin|mingw|bccwin|cygwin/ !~ RUBY_PLATFORM
 
   def test_open_flag
     make_tempfile do |t|
