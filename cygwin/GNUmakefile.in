@@ -1,3 +1,4 @@
+override MFLAGS := $(filter-out -j%,$(MFLAGS))
 include Makefile
 
 ENABLE_SHARED=@ENABLE_SHARED@
@@ -31,6 +32,8 @@ endif
 WPROGRAM = $(RUBYW_INSTALL_NAME)$(EXEEXT)
 
 -include uncommon.mk
+
+include $(srcdir)/defs/gmake.mk
 
 SOLIBS := $(DLL_BASE_NAME).res.@OBJEXT@ $(SOLIBS)
 override EXTOBJS += $(if $(filter-out $(RUBYW_INSTALL_NAME),$(@:$(EXEEXT)=)),$(RUBY_INSTALL_NAME),$(@:$(EXEEXT)=)).res.$(OBJEXT)
