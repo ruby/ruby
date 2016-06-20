@@ -26,13 +26,16 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
   end
 
   def self.read_data_file (filename)
-    IO.readlines(expand_filename(filename), encoding: Encoding::ASCII_8BIT)
-    .tap do |lines|
-           raise "File Version Mismatch" unless filename=='UnicodeData' or /#{filename}-#{UNICODE_VERSION}\.txt/ =~ lines[0]
-         end
-    .reject { |line| line =~ /^[\#@]/ or line =~ /^\s*$/ or line =~ /Surrogate/ }
-    .each do |line|
-      data = line.chomp.split('#')[0].split /;\s*/, 15
+    IO.foreach(expand_filename(filename), encoding: Encoding::ASCII_8BIT) do |line|
+      if $. == 1
+        if filename == 'UnicodeData'
+        elsif line.start_with?("# #{filename}-#{UNICODE_VERSION}.txt")
+        else
+          raise "File Version Mismatch"
+        end
+      end
+      next if /\A(?:[\#@]|\s*\z)|Surrogate/.match?(line)
+      data = line.chomp.split('#')[0].split(/;\s*/, 15)
       code = data[0].to_i(16).chr('UTF-8')
       yield code, data
     end
@@ -50,10 +53,10 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
     turkic_downcase  = Hash.new { |h, c| downcase[c] }
     turkic_titlecase = Hash.new { |h, c| titlecase[c] }
     turkic_swapcase  = Hash.new { |h, c| swapcase[c] }
-    ascii_upcase     = Hash.new { |h, c| c =~ /\A[a-zA-Z]\z/ ? upcase[c] : c }
-    ascii_downcase   = Hash.new { |h, c| c =~ /\A[a-zA-Z]\z/ ? downcase[c] : c }
-    ascii_titlecase  = Hash.new { |h, c| c =~ /\A[a-zA-Z]\z/ ? titlecase[c] : c }
-    ascii_swapcase   = Hash.new { |h, c| c=~/\A[a-z]\z/ ? upcase[c] : (c=~/\A[A-Z]\z/ ? downcase[c] : c) }
+    ascii_upcase     = Hash.new { |h, c| /\A[a-zA-Z]\z/.match?(c) ? upcase[c] : c }
+    ascii_downcase   = Hash.new { |h, c| /\A[a-zA-Z]\z/.match?(c) ? downcase[c] : c }
+    ascii_titlecase  = Hash.new { |h, c| /\A[a-zA-Z]\z/.match?(c) ? titlecase[c] : c }
+    ascii_swapcase   = Hash.new { |h, c| /\A[a-z]\z/.match?(c) ? upcase[c] : (/\A[A-Z]\z/.match?(c) ? downcase[c] : c) }
 
     read_data_file('UnicodeData') do |code, data|
       @@codepoints << code
@@ -71,7 +74,7 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
         upcase[code] = hex2utf8 data[3]
         downcase[code] = hex2utf8 data[1]
         titlecase[code] = hex2utf8 data[2]
-      when /^tr\s*/
+      when /\Atr\s*/
         if data[4]!='tr After_I'
           turkic_upcase[code] = hex2utf8 data[3]
           turkic_downcase[code] = hex2utf8 data[1]
@@ -104,7 +107,7 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
       end
     end
 
-    tests = [
+    [
       CaseTest.new(:downcase,   [], downcase),
       CaseTest.new(:upcase,     [], upcase),
       CaseTest.new(:capitalize, [], titlecase, downcase),
@@ -123,7 +126,7 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
 
   def self.all_tests
     @@tests ||= read_data
-  rescue Errno::ENOENT => e
+  rescue Errno::ENOENT
     @@tests ||= []
   end
 
@@ -145,10 +148,10 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
         codepoints.each do |code|
           begin
             source = code.encode(encoding) * 5
-            target = test.first_data[code].encode(encoding) + test.follow_data[code].encode(encoding) * 4
+            target = "#{test.first_data[code]}#{test.follow_data[code]*4}".encode(encoding)
             result = source.send(test.method_name, *test.attributes)
             assert_equal target, result,
-              "from #{code*5} (#{source.dump}) expected #{target.dump} but was #{result.dump}"
+              proc{"from #{code*5} (#{source.dump}) expected #{target.dump} but was #{result.dump}"}
           rescue Encoding::UndefinedConversionError
           end
         end
