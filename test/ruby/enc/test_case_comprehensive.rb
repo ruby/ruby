@@ -41,19 +41,19 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
   def self.read_data
     @@codepoints = []
 
-    downcase  = Hash.new { |h, c| h[c] = c }
-    upcase    = Hash.new { |h, c| h[c] = c }
-    titlecase = Hash.new { |h, c| h[c] = c }
-    casefold  = Hash.new { |h, c| h[c] = c }
-    swapcase  = Hash.new { |h, c| h[c] = c }
-    turkic_upcase    = Hash.new { |h, c| h[c] = upcase[c] }
-    turkic_downcase  = Hash.new { |h, c| h[c] = downcase[c] }
-    turkic_titlecase = Hash.new { |h, c| h[c] = titlecase[c] }
-    turkic_swapcase  = Hash.new { |h, c| h[c] = swapcase[c] }
-    ascii_upcase     = Hash.new { |h, c| h[c] = c =~ /\A[a-zA-Z]\z/ ? upcase[c] : c }
-    ascii_downcase   = Hash.new { |h, c| h[c] = c =~ /\A[a-zA-Z]\z/ ? downcase[c] : c }
-    ascii_titlecase  = Hash.new { |h, c| h[c] = c =~ /\A[a-zA-Z]\z/ ? titlecase[c] : c }
-    ascii_swapcase   = Hash.new { |h, c| h[c] = c=~/\A[a-z]\z/ ? upcase[c] : (c=~/\A[A-Z]\z/ ? downcase[c] : c) }
+    downcase  = Hash.new { |h, c| c }
+    upcase    = Hash.new { |h, c| c }
+    titlecase = Hash.new { |h, c| c }
+    casefold  = Hash.new { |h, c| c }
+    swapcase  = Hash.new { |h, c| c }
+    turkic_upcase    = Hash.new { |h, c| upcase[c] }
+    turkic_downcase  = Hash.new { |h, c| downcase[c] }
+    turkic_titlecase = Hash.new { |h, c| titlecase[c] }
+    turkic_swapcase  = Hash.new { |h, c| swapcase[c] }
+    ascii_upcase     = Hash.new { |h, c| c =~ /\A[a-zA-Z]\z/ ? upcase[c] : c }
+    ascii_downcase   = Hash.new { |h, c| c =~ /\A[a-zA-Z]\z/ ? downcase[c] : c }
+    ascii_titlecase  = Hash.new { |h, c| c =~ /\A[a-zA-Z]\z/ ? titlecase[c] : c }
+    ascii_swapcase   = Hash.new { |h, c| c=~/\A[a-z]\z/ ? upcase[c] : (c=~/\A[A-Z]\z/ ? downcase[c] : c) }
 
     read_data_file('UnicodeData') do |code, data|
       @@codepoints << code
