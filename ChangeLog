@@ -1,3 +1,10 @@
+Mon Jun 20 12:53:38 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* test/rubygems/test_gem_remote_fetcher.rb: OpenSSL::PKey::DH#priv_key=
+	  is not defined when ext/openssl is built with OpenSSL 1.1.0.
+	  https://github.com/rubygems/rubygems/pull/1648
+	  [ruby-core:75225] [Feature #12324]
+
 Sun Jun 19 21:25:43 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_ocsp.c: Add OCSP::SingleResponse that represents an
