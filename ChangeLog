@@ -1,7 +1,7 @@
 Mon Jun 20 18:39:16 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/test_in.rb: Skip test_open_fifo_does_not_block_other_threads
-          on cygwin. Fifos seem to work okay in cygwin, but this test repeatedly
+	  on cygwin. Fifos seem to work okay in cygwin, but this test repeatedly
 	  hangs.
 
 Mon Jun 20 13:35:06 2016  Shugo Maeda  <shugo@ruby-lang.org>
