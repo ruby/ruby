@@ -121,10 +121,12 @@ with all sufficient information, see the ChangeLog file or Redmine
   For example, 0 is an instance of Integer: 0.class returns Integer.
   The constants Fixnum and Bignum is bound to Integer.
   So obj.kind_of?(Fixnum) works as obj.kind_of?(Integer).
-  At C-level, rb_cFixnum and rb_cBignum is same as rb_cInteger.
-  So, class based dispatch, such as klass == rb_cFixnum and
-  klass == rb_cBignum, should be changed to FIXNUM_P(obj) and
-  RB_TYPE_P(obj, T_BIGNUM).
+  At C-level, Fixnum object and Bignum object should be distinguished by
+  FIXNUM_P(obj) and RB_TYPE_P(obj, T_BIGNUM).
+  ruby-2.4.0-preview1 (temporally) removes rb_cFixnum and rb_cBignum
+  to check the effect of incompatibility.
+  (rb_cFixnum and rb_cBignum may be defined as rb_cInteger later if
+  compilation failure of extension library is too big problem.)
 
 * String/Symbol#upcase/downcase/swapcase/capitalize(!) now work for all of
   Unicode, not only for ASCII. [Feature #10085]
