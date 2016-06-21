@@ -1,3 +1,8 @@
+Tue Jun 21 19:44:54 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_regex_casefold.rb: Add Windows-1251, KOI8-R, and
+	  KOI8-U to encodings; definitely removed EUC-JP.
+
 Tue Jun 21 19:32:23 2016  Mark St.Godard  <markstgodard@gmail.com>
 
 	* lib/webrick/httprequest.rb (setup_forwarded_info): Use the first

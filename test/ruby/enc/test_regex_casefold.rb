@@ -112,6 +112,8 @@ class TestCaseFold < Test::Unit::TestCase
   generate_test_casefold 'ISO-8859-15'
   generate_test_casefold 'ISO-8859-16'
   generate_test_casefold 'Windows-1250'
+  # generate_test_casefold 'Windows-1251'
   generate_test_casefold 'Windows-1252'
-  #generate_test_casefold 'EUC-JP'
+  generate_test_casefold 'koi8-r'
+  generate_test_casefold 'koi8-u'
 end
