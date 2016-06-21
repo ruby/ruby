@@ -1,3 +1,9 @@
+Tue Jun 21 16:38:14 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_casemap): do not put code with side effects
+	  inside RSTRING_PTR() macro which evaluates the argument multiple
+	  times.
+
 Tue Jun 21 16:13:45 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* string.c (rb_str_casemap): fix memory leak.

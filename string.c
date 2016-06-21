@@ -5811,12 +5811,14 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 
     if (buffer_count==1) {
 	target = rb_str_new_with_class(source, (const char*)current_buffer->space, target_length);
-	    xfree(current_buffer);
+	xfree(current_buffer);
     }
     else {
-	char *target_current = RSTRING_PTR(target = rb_str_new_with_class(source, 0, target_length));
+	char *target_current;
 	mapping_buffer *previous_buffer;
 
+	target = rb_str_new_with_class(source, 0, target_length);
+	target_current = RSTRING_PTR(target);
 	current_buffer=pre_buffer.next;
 	while (current_buffer) {
 	    memcpy(target_current, current_buffer->space, current_buffer->used);
