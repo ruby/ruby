@@ -1,3 +1,14 @@
+Tue Jun 21 17:17:42 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/test_io.rb: Skip test_readpartial_with_not_empty_buffer,
+	  test_read_buffer_error, test_read_unlocktmp_ensure,
+	  test_readpartial_unlocktmp_ensure, and
+	  test_sysread_unlocktmp_ensure on cygwin,
+	  because these tests repeatedly hang. This makes test_io.rb
+	  complete in finite time on cygwin.
+
+	* ChangeLog: Fix test_in.rb -> test_io.rb (two instances).
+
 Tue Jun 21 16:38:14 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_casemap): do not put code with side effects
@@ -14,7 +25,7 @@ Tue Jun 21 16:12:21 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Tue Jun 21 15:42:22 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
-	* test/ruby/test_in.rb: Skip test_read_buffer_error on cygwin,
+	* test/ruby/test_io.rb: Skip test_read_buffer_error on cygwin,
 	  because this test repeatedly hangs.
 
 Tue Jun 21 15:35:14 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
@@ -36,7 +47,7 @@ Tue Jun 21 00:22:02 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Mon Jun 20 18:39:16 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
-	* test/ruby/test_in.rb: Skip test_open_fifo_does_not_block_other_threads
+	* test/ruby/test_io.rb: Skip test_open_fifo_does_not_block_other_threads
 	  on cygwin. Fifos seem to work okay in cygwin, but this test repeatedly
 	  hangs.
 

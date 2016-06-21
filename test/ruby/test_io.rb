@@ -1227,7 +1227,7 @@ class TestIO < Test::Unit::TestCase
       t.value
       assert_equal("", s)
     end
-  end
+  end if /cygwin/ !~ RUBY_PLATFORM
 
   def test_read
     pipe(proc do |w|
@@ -3173,7 +3173,7 @@ End
       assert_nothing_raised(RuntimeError, bug8669) { str.clear }
       assert_raise(RuntimeError) { t.join }
     }
-  end
+  end if /cygwin/ !~ RUBY_PLATFORM
 
   def test_readpartial_unlocktmp_ensure
     bug8669 = '[ruby-core:56121] [Bug #8669]'
@@ -3187,7 +3187,7 @@ End
       assert_nothing_raised(RuntimeError, bug8669) { str.clear }
       assert_raise(RuntimeError) { t.join }
     }
-  end
+  end if /cygwin/ !~ RUBY_PLATFORM
 
   def test_readpartial_bad_args
     IO.pipe do |r, w|
@@ -3212,7 +3212,7 @@ End
       assert_nothing_raised(RuntimeError, bug8669) { str.clear }
       assert_raise(RuntimeError) { t.join }
     }
-  end
+  end if /cygwin/ !~ RUBY_PLATFORM
 
   def test_exception_at_close
     bug10153 = '[ruby-core:64463] [Bug #10153] exception in close at the end of block'
