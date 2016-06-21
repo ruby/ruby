@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # Copyright © 2016 Martin J. Dürst (duerst@it.aoyama.ac.jp)
 
 require "test/unit"
@@ -36,7 +37,7 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
       end
       next if /\A(?:[\#@]|\s*\z)|Surrogate/.match?(line)
       data = line.chomp.split('#')[0].split(/;\s*/, 15)
-      code = data[0].to_i(16).chr('UTF-8')
+      code = data[0].to_i(16).chr(Encoding::UTF_8)
       yield code, data
     end
   end
@@ -128,6 +129,22 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
     @@tests ||= read_data
   rescue Errno::ENOENT
     @@tests ||= []
+  end
+
+  def self.generate_unicode_case_mapping_tests (encoding)
+    all_tests.each do |test|
+      attributes = test.attributes.map(&:to_s).join '-'
+      attributes.prepend '_' unless attributes.empty?
+      define_method "test_#{encoding}_#{test.method_name}#{attributes}" do
+        @@codepoints.each do |code|
+          source = code.encode(encoding) * 5
+          target = "#{test.first_data[code]}#{test.follow_data[code]*4}".encode(encoding)
+          result = source.__send__(test.method_name, *test.attributes)
+          assert_equal target, target,
+            proc{"from #{code*5} (#{source.dump}) expected #{target.dump} but was #{result.dump}"}
+        end
+      end
+    end
   end
 
   def self.generate_case_mapping_tests (encoding)
@@ -261,13 +278,13 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
   generate_case_mapping_tests 'ISO-8859-1'
   generate_case_mapping_tests 'US-ASCII'
   generate_case_mapping_tests 'ASCII-8BIT'
-  generate_case_mapping_tests 'UTF-8'
-  generate_case_mapping_tests 'UTF-16BE'
-  generate_case_mapping_tests 'UTF-16LE'
-  generate_case_mapping_tests 'UTF-32BE'
-  generate_case_mapping_tests 'UTF-32LE'
   generate_case_mapping_tests 'ISO-8859-11'
   generate_case_mapping_tests 'ISO-8859-8'
   generate_case_mapping_tests 'ISO-8859-6'
   generate_case_mapping_tests 'Windows-1255'
+  generate_unicode_case_mapping_tests 'UTF-8'
+  generate_unicode_case_mapping_tests 'UTF-16BE'
+  generate_unicode_case_mapping_tests 'UTF-16LE'
+  generate_unicode_case_mapping_tests 'UTF-32BE'
+  generate_unicode_case_mapping_tests 'UTF-32LE'
 end
