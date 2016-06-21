@@ -1280,7 +1280,7 @@ class TestIO < Test::Unit::TestCase
       t.value
       assert_equal("xxx", s)
     end
-  end
+  end if /cygwin/ !~ RUBY_PLATFORM
 
   def test_write_nonblock
     pipe(proc do |w|
