@@ -43,12 +43,12 @@ class ERB
       return trim_mode if disable_percent
       case trim_mode
       when 0
-        return '%'
+        return ?%
       when 1
         return '%>'
       when 2
         return '%<>'
-      when '-'
+      when ?-
         return '%-'
       end
     end
@@ -80,7 +80,7 @@ class ERB
             safe_level = arg.to_i
           when '-T'                        # trim mode
             arg = ARGV.req_arg
-            if arg == '-'
+            if arg == ?-
               trim_mode = arg
               next
             end
@@ -98,7 +98,7 @@ class ERB
           when /\A-/
             raise "unknown switch #{switch.dump}"
           else
-            var, val = *switch.split('=', 2)
+            var, val = *switch.split(?=, 2)
             (variables ||= {})[var] = val
           end
         end
