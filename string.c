@@ -5773,7 +5773,7 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     int target_length = 0;
     mapping_buffer pre_buffer, /* only next pointer used */
 		  *current_buffer = &pre_buffer;
-    int buffer_count = 0;
+    size_t buffer_count = 0;
     int buffer_length_or_invalid;
 
     if (RSTRING_LEN(source) == 0) return rb_str_dup(source);
@@ -5783,7 +5783,7 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 
     while (source_current < source_end) {
 	/* increase multiplier using buffer count to converge quickly */
-	int capa = (int)(source_end-source_current)*++buffer_count + CASE_MAPPING_ADDITIONAL_LENGTH;
+	size_t capa = (size_t)(source_end-source_current)*++buffer_count + CASE_MAPPING_ADDITIONAL_LENGTH;
 /* fprintf(stderr, "Buffer allocation, capa is %d\n", capa); *//* for tuning */
 	current_buffer->next = (mapping_buffer*)ALLOC_N(char, sizeof(mapping_buffer)+capa);
 	current_buffer = current_buffer->next;
