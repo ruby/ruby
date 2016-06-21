@@ -13,11 +13,11 @@ class ERB
       return nil if arg == '--'
       case arg
       when /\A-(.)(.*)/
-        if $1 == '-'
-          arg, @maybe_arg = arg.split(/=/, 2)
+        if $1 == ?-
+          arg, @maybe_arg = arg.split( /=/, 2)
           return arg
         end
-        raise 'unknown switch "-"' if $2[0] == ?- and $1 != 'T'
+        raise 'unknown switch "-"' if $2[0] == ?- and $1 != ?T
         if $2.size > 0
           self.unshift "-#{$2}"
           @maybe_arg = $2
