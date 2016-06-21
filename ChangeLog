@@ -1,3 +1,10 @@
+Tue Jun 21 19:32:23 2016  Mark St.Godard  <markstgodard@gmail.com>
+
+	* lib/webrick/httprequest.rb (setup_forwarded_info): Use the first
+	  value in X-Forwarded-Proto, if header contains multiple comma
+	  separated values.  Some middlewares may add these values to the
+	  list, not replacing.  [Fix GH-1386]
+
 Tue Jun 21 17:17:42 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/test_io.rb: Skip test_readpartial_with_not_empty_buffer,

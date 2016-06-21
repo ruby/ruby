@@ -301,7 +301,7 @@ GET /
       GET /foo HTTP/1.1
       Host: localhost:10080
       Client-IP: 234.234.234.234
-      X-Forwarded-Proto: https
+      X-Forwarded-Proto: https, http
       X-Forwarded-For: 192.168.1.10, 10.0.0.1, 123.123.123.123
       X-Forwarded-Host: forward.example.com
       X-Forwarded-Server: server.example.com
