@@ -14,7 +14,7 @@ class ERB
       case arg
       when /\A-(.)(.*)/
         if $1 == ?-
-          arg, @maybe_arg = arg.split( /=/, 2)
+          arg, @maybe_arg = arg.split(/=/, 2)
           return arg
         end
         raise 'unknown switch "-"' if $2[0] == ?- and $1 != ?T
