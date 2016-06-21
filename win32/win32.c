@@ -4252,6 +4252,45 @@ sock_setfl(SOCKET sock, int arg)
 
 /* License: Ruby's */
 static int
+std_getfl(HANDLE h)
+{
+    typedef struct {
+	ULONG Attributes;
+	ULONG GrantedAccess;
+	ULONG HandleCount;
+	ULONG PointerCount;
+	ULONG Reserved[10];
+    } PUBLIC_OBJECT_BASIC_INFORMATION;
+    PUBLIC_OBJECT_BASIC_INFORMATION info;
+    unsigned long size;
+    int ret;
+    typedef long (WINAPI *query_object_func)(HANDLE, int, void*, unsigned long, unsigned long*);
+    static query_object_func func = (query_object_func)-1;
+    if (func == (query_object_func)-1) {
+	func = (query_object_func)
+	    get_proc_address("ntdll.dll", "NtQueryObject", NULL);
+    }
+    if (!func) {
+	errno = ENOSYS;
+	return -1;
+    }
+    ret = (*func)(h, 0, &info, sizeof(info), &size);
+    if (!ret) {
+	switch (info.GrantedAccess & (FILE_READ_DATA|FILE_WRITE_DATA)) {
+	  case FILE_READ_DATA|FILE_WRITE_DATA:
+	    return O_RDWR;
+	  case FILE_READ_DATA:
+	    return O_RDONLY;
+	  case FILE_WRITE_DATA:
+	    return O_WRONLY;
+	}
+    }
+    errno = EINVAL;
+    return -1;
+}
+
+/* License: Ruby's */
+static int
 dupfd(HANDLE hDup, int flags, int minfd)
 {
     int save_errno;
@@ -4296,8 +4335,7 @@ fcntl(int fd, int cmd, ...)
       case F_GETFL: {
 	SOCKET sock = TO_SOCKET(fd);
 	if (!is_socket(sock)) {
-	    errno = EBADF;
-	    return -1;
+	    return std_getfl((HANDLE)sock);
 	}
 	else {
 	    return sock_getfl(sock);
