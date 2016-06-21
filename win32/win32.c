@@ -3654,6 +3654,44 @@ rb_w32_setsockopt(int s, int level, int optname, const char *optval, int optlen)
     return r;
 }
 
+static void
+sock_shutdown_mode(SOCKET sock, int how)
+{
+    const int accmode =
+#if defined O_ACCMODE
+	O_ACCMODE
+#elif defined _O_ACCMODE
+	_O_ACCMODE
+#else
+	(O_RDONLY | O_WRONLY | O_RDWR)
+#endif
+	;
+    int flags;
+    if (socklist_lookup(sock, &flags)) {
+	int acc = flags & accmode;
+	flags &= ~accmode;
+	switch (how) {
+	  case SHUT_RD:
+	    switch (acc) {
+	      case O_RDONLY: acc = 0; break;
+	      case O_RDWR: acc = O_WRONLY; break;
+	    }
+	    break;
+	  case SHUT_WR:
+	    switch (acc) {
+	      case O_WRONLY: acc = 0; break;
+	      case O_RDWR: acc = O_RDONLY; break;
+	    }
+	    break;
+	  case SHUT_RDWR:
+	    acc = 0;
+	    break;
+	}
+	flags |= acc;
+	socklist_insert(sock, flags);
+    }
+}
+
 #undef shutdown
 
 /* License: Artistic or GPL */
@@ -3665,9 +3703,12 @@ rb_w32_shutdown(int s, int how)
 	StartSockets();
     }
     RUBY_CRITICAL {
-	r = shutdown(TO_SOCKET(s), how);
+	SOCKET sock = TO_SOCKET(s);
+	r = shutdown(sock, how);
 	if (r == SOCKET_ERROR)
 	    errno = map_errno(WSAGetLastError());
+	else
+	    sock_shutdown_mode(sock, how);
     }
     return r;
 }
@@ -4168,7 +4209,19 @@ void setservent (int stayopen) {}
 
 /* License: Ruby's */
 static int
-setfl(SOCKET sock, int arg)
+sock_getfl(SOCKET sock)
+{
+    int flags;
+    if (!socklist_lookup(sock, &flags)) {
+	errno = EBADF;
+	return -1;
+    }
+    return GET_FLAGS(flags);
+}
+
+/* License: Ruby's */
+static int
+sock_setfl(SOCKET sock, int arg)
 {
     int ret;
     int af = 0;
@@ -4240,6 +4293,16 @@ fcntl(int fd, int cmd, ...)
     DWORD flag;
 
     switch (cmd) {
+      case F_GETFL: {
+	SOCKET sock = TO_SOCKET(fd);
+	if (!is_socket(sock)) {
+	    errno = EBADF;
+	    return -1;
+	}
+	else {
+	    return sock_getfl(sock);
+	}
+      }
       case F_SETFL: {
 	SOCKET sock = TO_SOCKET(fd);
 	if (!is_socket(sock)) {
@@ -4250,7 +4313,7 @@ fcntl(int fd, int cmd, ...)
 	va_start(va, cmd);
 	arg = va_arg(va, int);
 	va_end(va);
-	return setfl(sock, arg);
+	return sock_setfl(sock, arg);
       }
       case F_DUPFD: case F_DUPFD_CLOEXEC: {
 	int ret;
@@ -4314,7 +4377,7 @@ rb_w32_set_nonblock(int fd)
 {
     SOCKET sock = TO_SOCKET(fd);
     if (is_socket(sock)) {
-	return setfl(sock, O_NONBLOCK);
+	return sock_setfl(sock, O_NONBLOCK);
     }
     else if (is_pipe(sock)) {
 	DWORD state;
