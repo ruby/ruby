@@ -630,6 +630,7 @@ static st_table *socklist = NULL;
 static st_table *conlist = NULL;
 #define conlist_disabled ((st_table *)-1)
 static char *uenvarea;
+#define SOCKET_INITIAL_MODE (O_RDWR|O_BINARY|O_NOINHERIT)
 
 /* License: Ruby's */
 struct constat {
@@ -3740,9 +3741,10 @@ rb_w32_socket(int af, int type, int protocol)
 	    fd = -1;
 	}
 	else {
-	    fd = rb_w32_open_osfhandle(s, O_RDWR|O_BINARY|O_NOINHERIT);
+	    const int flags = SOCKET_INITIAL_MODE;
+	    fd = rb_w32_open_osfhandle(s, flags);
 	    if (fd != -1)
-		socklist_insert(s, MAKE_SOCKDATA(af, 0));
+		socklist_insert(s, MAKE_SOCKDATA(af, flags));
 	    else
 		closesocket(s);
 	}
@@ -3973,23 +3975,24 @@ int
 socketpair(int af, int type, int protocol, int *sv)
 {
     SOCKET pair[2];
+    const int flags = SOCKET_INITIAL_MODE;
 
     if (socketpair_internal(af, type, protocol, pair) < 0)
 	return -1;
-    sv[0] = rb_w32_open_osfhandle(pair[0], O_RDWR|O_BINARY|O_NOINHERIT);
+    sv[0] = rb_w32_open_osfhandle(pair[0], flags);
     if (sv[0] == -1) {
 	closesocket(pair[0]);
 	closesocket(pair[1]);
 	return -1;
     }
-    sv[1] = rb_w32_open_osfhandle(pair[1], O_RDWR|O_BINARY|O_NOINHERIT);
+    sv[1] = rb_w32_open_osfhandle(pair[1], flags);
     if (sv[1] == -1) {
 	rb_w32_close(sv[0]);
 	closesocket(pair[1]);
 	return -1;
     }
-    socklist_insert(pair[0], MAKE_SOCKDATA(af, 0));
-    socklist_insert(pair[1], MAKE_SOCKDATA(af, 0));
+    socklist_insert(pair[0], MAKE_SOCKDATA(af, flags));
+    socklist_insert(pair[1], MAKE_SOCKDATA(af, flags));
 
     return 0;
 }
