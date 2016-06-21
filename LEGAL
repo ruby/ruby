@@ -90,6 +90,35 @@ http://www.freebsd.org/cgi/cvsweb.cgi/ports/devel/oniguruma/
    When this software is partly used or it is distributed with Ruby,
    this of Ruby follows the license of Ruby.
 
+enc/trans/JIS/JISX0201-KANA%UCS.src:
+enc/trans/JIS/JISX0208@1990%UCS.src:
+enc/trans/JIS/JISX0212%UCS.src:
+enc/trans/JIS/UCS%JISX0201-KANA.src:
+enc/trans/JIS/UCS%JISX0208@1990.src:
+enc/trans/JIS/UCS%JISX0212.src:
+
+    © 2015 Unicode®, Inc.
+    For terms of use, see http://www.unicode.org/terms_of_use.html
+
+enc/trans/JIS/JISX0213-1%UCS@BMP.src:
+enc/trans/JIS/JISX0213-1%UCS@SIP.src:
+enc/trans/JIS/JISX0213-2%UCS@BMP.src:
+enc/trans/JIS/JISX0213-2%UCS@SIP.src:
+
+ 	Copyright (C) 2001 earthian@tama.or.jp, All Rights Reserved.
+ 	Copyright (C) 2001 I'O, All Rights Reserved.
+ 	Copyright (C) 2006 Project X0213, All Rights Reserved.
+ 	You can use, modify, distribute this table freely.
+
+enc/trans/JIS/UCS@BMP%JISX0213-1.src:
+enc/trans/JIS/UCS@BMP%JISX0213-2.src:
+enc/trans/JIS/UCS@SIP%JISX0213-1.src:
+enc/trans/JIS/UCS@SIP%JISX0213-2.src:
+
+ 	Copyright (C) 2001 earthian@tama.or.jp, All Rights Reserved.
+ 	Copyright (C) 2001 I'O, All Rights Reserved.
+ 	You can use, modify, distribute this table freely.
+
 configure:
 
   This file is free software.

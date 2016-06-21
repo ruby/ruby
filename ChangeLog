@@ -1,3 +1,8 @@
+Tue Jun 21 15:35:14 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* LEGAL: Added filenames and copyrights for some files in
+	  enc/trans/JIS.
+
 Tue Jun 21 00:56:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (get_special_folder): fix calling convention of
