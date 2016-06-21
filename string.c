@@ -5755,6 +5755,9 @@ check_case_options(int argc, VALUE *argv, OnigCaseFoldType flags)
 
 /* 16 should be long enough to absorb any kind of single character length increase */
 #define CASE_MAPPING_ADDITIONAL_LENGTH 20
+#ifndef CASEMAP_DEBUG
+# define CASEMAP_DEBUG 0
+#endif
 
 struct mapping_buffer;
 typedef struct mapping_buffer {
@@ -5784,7 +5787,9 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
     while (source_current < source_end) {
 	/* increase multiplier using buffer count to converge quickly */
 	size_t capa = (size_t)(source_end-source_current)*++buffer_count + CASE_MAPPING_ADDITIONAL_LENGTH;
-/* fprintf(stderr, "Buffer allocation, capa is %d\n", capa); *//* for tuning */
+	if (CASEMAP_DEBUG) {
+	    fprintf(stderr, "Buffer allocation, capa is %"PRIuSIZE"\n", capa); /* for tuning */
+	}
 	current_buffer->next = (mapping_buffer*)ALLOC_N(char, sizeof(mapping_buffer)+capa);
 	current_buffer = current_buffer->next;
 	current_buffer->next = NULL;
@@ -5807,7 +5812,9 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 	}
 	target_length  += current_buffer->used = buffer_length_or_invalid;
     }
-/* fprintf(stderr, "Buffer count is %d\n", buffer_count); *//* for tuning */
+    if (CASEMAP_DEBUG) {
+	fprintf(stderr, "Buffer count is %"PRIuSIZE"\n", buffer_count); /* for tuning */
+    }
 
     if (buffer_count==1) {
 	target = rb_str_new_with_class(source, (const char*)current_buffer->space, target_length);
@@ -5854,10 +5861,12 @@ rb_str_ascii_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 			       source_current, source_end, enc);
     if (length_or_invalid < 0)
         rb_raise(rb_eArgError, "input string invalid");
-/*    if (length_or_invalid != old_length)
-printf("problem with rb_str_ascii_casemap; old_length=%d, new_length=%d\n", old_length, length_or_invalid),
-        rb_raise(rb_eArgError, "internal problem with rb_str_ascii_casemap");
-*/
+    if (CASEMAP_DEBUG && length_or_invalid != old_length) {
+	fprintf(stderr, "problem with rb_str_ascii_casemap"
+		"; old_length=%ld, new_length=%d\n", old_length, length_or_invalid);
+	rb_raise(rb_eArgError, "internal problem with rb_str_ascii_casemap"
+		 "; old_length=%ld, new_length=%d\n", old_length, length_or_invalid);
+    }
 }
 
 /*
