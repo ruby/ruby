@@ -1,3 +1,9 @@
+Wed Jun 22 17:29:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (lib/unicode_normalize/tables.rb): should not depend
+	  on Unicode data files unless ALWAYS_UPDATE_UNICODE=yes, to get
+	  rid of downloading Unicode data unnecessary.  [ruby-dev:49681]
+
 Tue Jun 21 19:44:54 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_regex_casefold.rb: Add Windows-1251, KOI8-R, and
