@@ -807,6 +807,7 @@ all-incs: incs {$(VPATH)}encdb.h {$(VPATH)}transdb.h
 incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}known_errors.inc \
       {$(VPATH)}vm_call_iseq_optimized.inc $(srcdir)/revision.h \
       $(REVISION_H) enc/unicode/name2ctype.h enc/jis/props.h \
+      $(srcdir)/enc/unicode/casefold.h \
       {$(VPATH)}id.h {$(VPATH)}probes.dmyh
 
 insns: $(INSNS)
@@ -1065,12 +1066,16 @@ $(srcdir)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
 # the next non-comment line was:
 # $(srcdir)/enc/unicode/casefold.h: $(srcdir)/enc/unicode/case-folding.rb \
 # but was changed to make sure CI works on systems that don't have gperf
-unicode-up: $(srcdir)/enc/unicode/case-folding.rb \
+unicode-up: $(srcdir)/enc/unicode/casefold.h
+
+$(srcdir)/$(ALWAYS_UPDATE_UNICODE:yes=enc/unicode/casefold.h): \
 		$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_SRC_DATA_DIR)/SpecialCasing.txt \
 		$(UNICODE_SRC_DATA_DIR)/CaseFolding.txt
+
+$(srcdir)/enc/unicode/casefold.h: $(srcdir)/enc/unicode/case-folding.rb
 	$(Q) $(BASERUBY) $(srcdir)/enc/unicode/case-folding.rb \
-		--output-file=$(srcdir)/enc/unicode/casefold.h \
+		--output-file=$@ \
 		--mapping-data-directory=$(UNICODE_SRC_DATA_DIR)
 
 download-extlibs:

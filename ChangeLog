@@ -1,4 +1,7 @@
-Wed Jun 22 17:29:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jun 22 22:02:26 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (enc/unicode/casefold.h): add dependency and update by
+	  incs.
 
 	* common.mk (lib/unicode_normalize/tables.rb): should not depend
 	  on Unicode data files unless ALWAYS_UPDATE_UNICODE=yes, to get
