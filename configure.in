@@ -1835,6 +1835,7 @@ RUBY_FUNC_ATTRIBUTE(__weak__, WEAK, rb_cv_func_weak)
 if test "$rb_cv_func_weak" != x; then
    AC_DEFINE(HAVE_FUNC_WEAK)
 fi
+RUBY_FUNC_ATTRIBUTE(__unused__, MAYBE_UNUSED)
 
 if_i386=${universal_binary+[defined __i386__]}
 RUBY_FUNC_ATTRIBUTE(__stdcall__,  FUNC_STDCALL,  rb_cv_func_stdcall,  ${if_i386})
