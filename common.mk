@@ -807,7 +807,6 @@ all-incs: incs {$(VPATH)}encdb.h {$(VPATH)}transdb.h
 incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}known_errors.inc \
       {$(VPATH)}vm_call_iseq_optimized.inc $(srcdir)/revision.h \
       $(REVISION_H) enc/unicode/name2ctype.h enc/jis/props.h \
-      $(srcdir)/enc/unicode/casefold.h \
       {$(VPATH)}id.h {$(VPATH)}probes.dmyh
 
 insns: $(INSNS)
@@ -1052,11 +1051,9 @@ $(UNICODE_FILES):
 $(srcdir)/$(HAVE_BASERUBY:yes=lib/unicode_normalize/tables.rb): \
 	$(srcdir)/.unicode-tables.time
 
-$(srcdir)/$(ALWAYS_UPDATE_UNICODE:yes=.unicode-tables.time): $(UNICODE_FILES)
-
 $(srcdir)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
+		$(UNICODE_FILES) \
 		$(srcdir)/template/unicode_norm_gen.tmpl
-	$(Q) $(ALWAYS_UPDATE_UNICODE:yes=exit &&) $(MAKE) $(MFLAGS) Q=$(Q) update-unicode
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb \
 		-c -t$@ -o $(srcdir)/lib/unicode_normalize/tables.rb \
 		-I $(srcdir) \
@@ -1066,17 +1063,12 @@ $(srcdir)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
 # the next non-comment line was:
 # $(srcdir)/enc/unicode/casefold.h: $(srcdir)/enc/unicode/case-folding.rb \
 # but was changed to make sure CI works on systems that don't have gperf
-unicode-up: $(srcdir)/enc/unicode/casefold.h
-
-$(srcdir)/$(ALWAYS_UPDATE_UNICODE:yes=enc/unicode/casefold.h): \
+unicode-up: $(srcdir)/enc/unicode/case-folding.rb \
 		$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_SRC_DATA_DIR)/SpecialCasing.txt \
 		$(UNICODE_SRC_DATA_DIR)/CaseFolding.txt
-
-$(srcdir)/enc/unicode/casefold.h: $(srcdir)/enc/unicode/case-folding.rb
-	$(Q) $(ALWAYS_UPDATE_UNICODE:yes=exit &&) $(MAKE) $(MFLAGS) Q=$(Q) update-unicode
 	$(Q) $(BASERUBY) $(srcdir)/enc/unicode/case-folding.rb \
-		--output-file=$@ \
+		--output-file=$(srcdir)/enc/unicode/casefold.h \
 		--mapping-data-directory=$(UNICODE_SRC_DATA_DIR)
 
 download-extlibs:
