@@ -1074,6 +1074,7 @@ $(srcdir)/$(ALWAYS_UPDATE_UNICODE:yes=enc/unicode/casefold.h): \
 		$(UNICODE_SRC_DATA_DIR)/CaseFolding.txt
 
 $(srcdir)/enc/unicode/casefold.h: $(srcdir)/enc/unicode/case-folding.rb
+	$(Q) $(ALWAYS_UPDATE_UNICODE:yes=exit &&) $(MAKE) $(MFLAGS) Q=$(Q) update-unicode
 	$(Q) $(BASERUBY) $(srcdir)/enc/unicode/case-folding.rb \
 		--output-file=$@ \
 		--mapping-data-directory=$(UNICODE_SRC_DATA_DIR)

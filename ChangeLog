@@ -1,3 +1,8 @@
+Thu Jun 23 14:27:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (enc/unicode/casefold.h): update Unicode files in a
+	  sub-make, not to let the header depend on the files always.
+
 Wed Jun 22 22:02:26 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (enc/unicode/casefold.h): add dependency and update by
