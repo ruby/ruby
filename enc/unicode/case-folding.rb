@@ -370,7 +370,9 @@ if $0 == __FILE__
   rescue Errno::ENOENT => e
     raise unless /gperf/ =~ e.message
     warn e.message
-    exit dest && File.file?(dest) # assume existing file is OK
+    abort unless dest
+    File.utime(nil, nil, dest) # assume existing file is OK
+    exit
   else
     s = f.string
   end
