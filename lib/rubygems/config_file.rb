@@ -54,7 +54,7 @@ class Gem::ConfigFile
   # For Ruby implementers to set configuration defaults.  Set in
   # rubygems/defaults/#{RUBY_ENGINE}.rb
 
-  PLATFORM_DEFAULTS = {}
+  PLATFORM_DEFAULTS = Gem.platform_defaults
 
   # :stopdoc:
 

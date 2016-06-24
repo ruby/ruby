@@ -1695,6 +1695,13 @@ You may need to `gem install -g` to install missing gems
     ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps
   end
 
+  def test_platform_defaults
+    platform_defaults = Gem.platform_defaults
+
+    assert platform_defaults != nil
+    assert platform_defaults.is_a? Hash
+  end
+
   def ruby_install_name name
     orig_RUBY_INSTALL_NAME = RbConfig::CONFIG['ruby_install_name']
     RbConfig::CONFIG['ruby_install_name'] = name

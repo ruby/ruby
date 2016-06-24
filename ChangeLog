@@ -1,3 +1,10 @@
+Fri Jun 24 13:12:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rubygems.rb, lib/rubygems/*, test/rubygems/*:
+	  Update rubygems 2.6.5 and 2.6.6.
+	  Release note of 2.6.5: https://github.com/rubygems/rubygems/commit/656f5d94dc888d78d0d00f3598a4fa37391aac80
+	  Release note of 2.6.6: https://github.com/rubygems/rubygems/commit/ccb9c3300c063f5b5656669972d24a10ef8afbf5
+
 Fri Jun 24 09:17:15 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (lib/unicode_normalize/tables.rb): should not depend
