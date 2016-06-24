@@ -2668,3 +2668,59 @@ vm_defined(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE
 	return Qnil;
     }
 }
+
+static inline void
+vm_eliminate_insn(rb_control_frame_t *restrict cfp,
+		  const VALUE *restrict pc,
+		  int n,
+		  rb_num_t m)
+{
+    struct cfp_last_insn *restrict p = &cfp->last_insn;
+    const rb_iseq_t *restrict i      = cfp->iseq;
+    const VALUE *head                = i->body->iseq_encoded;
+
+    if (p->pc + p->len == (pc - head) - n) {
+	iseq_eliminate_insn(i, p, n, m);
+    }
+}
+
+static bool
+vm_is_hot(CALL_CACHE cc)
+{
+    const rb_iseq_t *i;
+    const rb_method_definition_t *d = cc->me->def;
+
+    switch (d->type) {
+    case VM_METHOD_TYPE_ISEQ:
+	i = d->body.iseq.iseqptr;
+	break;
+
+    case VM_METHOD_TYPE_BMETHOD:
+	i = rb_proc_get_iseq(d->body.proc, 0);
+	break;
+
+    default:
+	goto not_optimizable;
+    }
+
+    if (UNLIKELY(! RUBY_VM_NORMAL_ISEQ_P(i))) {
+	goto not_optimizable;
+    }
+    iseq_analyze((rb_iseq_t *)i);
+
+    switch(iseq_is_pure(i)) {
+    case Qtrue:
+	return true;        /* here! */
+
+    case Qfalse:
+	goto not_optimizable;
+
+    case Qnil:
+	FL_SET(i, ISEQ_NEEDS_ANALYZE);
+	return false;
+    }
+
+not_optimizable:
+    cc->temperature = -1;
+    return false;
+}

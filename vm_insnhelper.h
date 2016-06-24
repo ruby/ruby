@@ -233,4 +233,40 @@ THROW_DATA_STATE(const struct vm_throw_data *obj)
     return (int)obj->throw_state;
 }
 
+#define inc_temperature(var) SATURATION_ADD(var, 1)
+
+/* This must be a macro because REG_CFP is a function-static
+ * variable.  It is also vital that this macro contains no branches
+ * so that your compiler can reorder at will. */
+#define PREPARE_FOR_ELIMINATION do { \
+    const rb_iseq_t *i	    = GET_ISEQ(); \
+    const VALUE *pc	    = GET_PC(); \
+    const VALUE *head	    = i->body->iseq_encoded; \
+    const int len	    = 1 + OPN_OF_CURRENT_INSN; \
+    const int increase	    = STACK_INCREASE_OF_CURRENT_INSN; \
+    rb_control_frame_t *cfp = GET_CFP(); \
+    cfp->last_insn	    = (typeof(cfp->last_insn)) { \
+	.pc		    = (pc - len) - head, \
+	.len		    = len, \
+	.argc		    = -increase, \
+    }; \
+} while (0)
+
+#define PREPARE_ELIMINATE_SENDISH(cc) do { \
+    if(GET_CURRENT_INSN() != (VALUE)LABEL_PTR(adjuststack)) { \
+	/* unable to eliminate */ \
+    } \
+    else if (! (cc)->me) {  \
+	/* method missing */ \
+    } \
+    else if (cc->temperature < 0) { \
+	/* not optimizable */ \
+    } \
+    else if (inc_temperature(cc->temperature) < 32) { \
+	/* temperature too few */ \
+    } \
+    else if (vm_is_hot(cc)) { \
+	PREPARE_FOR_ELIMINATION; \
+    } \
+} while (0)
 #endif /* RUBY_INSNHELPER_H */

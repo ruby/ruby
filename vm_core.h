@@ -248,6 +248,8 @@ struct rb_call_cache {
 	enum method_missing_reason method_missing_reason; /* used by method_missing */
 	int inc_sp; /* used by cfunc */
     } aux;
+
+    signed char temperature;
 };
 
 #if 1
@@ -597,6 +599,13 @@ typedef struct rb_vm_struct {
 #define VM_DEBUG_VERIFY_METHOD_CACHE (VM_DEBUG_MODE != 0)
 #endif
 
+/* used in optimize.c, placed here for dependency */
+struct cfp_last_insn {
+    ptrdiff_t pc;
+    int len;
+    int argc;
+};
+
 typedef struct rb_control_frame_struct {
     const VALUE *pc;		/* cfp[0] */
     VALUE *sp;			/* cfp[1] */
@@ -610,6 +619,8 @@ typedef struct rb_control_frame_struct {
 #if VM_DEBUG_BP_CHECK
     VALUE *bp_check;		/* cfp[8] */
 #endif
+
+    struct cfp_last_insn last_insn;
 } rb_control_frame_t;
 
 typedef struct rb_block_struct {

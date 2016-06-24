@@ -265,6 +265,7 @@ putnil
 (VALUE val)
 {
     val = Qnil;
+    PREPARE_FOR_ELIMINATION;
 }
 
 /**
@@ -279,6 +280,7 @@ putself
 (VALUE val)
 {
     val = GET_SELF();
+    PREPARE_FOR_ELIMINATION;
 }
 
 /**
@@ -295,6 +297,7 @@ putobject
 (VALUE val)
 {
     /* */
+    PREPARE_FOR_ELIMINATION;
 }
 
 /**
@@ -352,6 +355,7 @@ putstring
 (VALUE val)
 {
     val = rb_str_resurrect(str);
+    PREPARE_FOR_ELIMINATION;
 }
 
 /**
@@ -367,6 +371,7 @@ concatstrings
 {
     val = rb_str_concat_literals(num, &TOPN(num-1));
     POPN(num);
+    PREPARE_FOR_ELIMINATION;
 }
 
 /**
@@ -398,6 +403,7 @@ freezestring
 	rb_ivar_set(str, id_debug_created_info, debug_info);
     }
     rb_str_freeze(str);
+    PREPARE_FOR_ELIMINATION;
 }
 
 /**
@@ -422,6 +428,7 @@ toregexp
     POPN(cnt);
     val = rb_reg_new_ary(ary, (int)opt);
     rb_ary_clear(ary);
+    PREPARE_FOR_ELIMINATION;
 }
 
 /**
@@ -437,6 +444,7 @@ newarray
 {
     val = rb_ary_new4((long)num, STACK_ADDR_FROM_TOP(num));
     POPN(num);
+    PREPARE_FOR_ELIMINATION;
 }
 
 /**
@@ -451,6 +459,7 @@ duparray
 (VALUE val)
 {
     val = rb_ary_resurrect(ary);
+    PREPARE_FOR_ELIMINATION;
 }
 
 /**
@@ -555,6 +564,7 @@ newhash
 	rb_hash_aset(val, k, v);
     }
     POPN(num);
+    PREPARE_FOR_ELIMINATION;
 }
 
 /**
@@ -569,6 +579,7 @@ newrange
 (VALUE val)
 {
     val = rb_range_new(low, high, (int)flag);
+    PREPARE_FOR_ELIMINATION;
 }
 
 /**********************************************************/
@@ -711,9 +722,19 @@ DEFINE_INSN
 adjuststack
 (rb_num_t n)
 (...)
-(...) // inc -= n
+(...) // inc += -n
 {
     DEC_SP(n);
+    /* If the immediately precedent instruction was send (or its
+     * variant), and here we are in adjuststack instruction, this
+     * means the return value of the method call is silently
+     * discarded.  Then why not just avoid the whole method calling?
+     * This is possible when the callee method was marked pure. Note
+     * however that even on such case, evaluation of method arguments
+     * cannot be skipped, because they can have their own side
+     * effects.
+     */
+    vm_eliminate_insn(GET_CFP(), GET_PC(), OPN_OF_CURRENT_INSN + 1, n);
 }
 
 
@@ -962,6 +983,7 @@ send
 
     vm_caller_setup_arg_block(th, reg_cfp, &calling, ci, blockiseq, FALSE);
     vm_search_method(ci, cc, calling.recv = TOPN(calling.argc = ci->orig_argc));
+    PREPARE_ELIMINATE_SENDISH(cc);
     CALL_METHOD(&calling, ci, cc);
 }
 
@@ -1061,6 +1083,7 @@ opt_send_without_block
     struct rb_calling_info calling;
     calling.blockptr = NULL;
     vm_search_method(ci, cc, calling.recv = TOPN(calling.argc = ci->orig_argc));
+    PREPARE_ELIMINATE_SENDISH(cc);
     CALL_METHOD(&calling, ci, cc);
 }
 
@@ -1081,6 +1104,7 @@ invokesuper
     vm_caller_setup_arg_block(th, reg_cfp, &calling, ci, blockiseq, TRUE);
     calling.recv = GET_SELF();
     vm_search_super_method(th, GET_CFP(), &calling, ci, cc);
+    PREPARE_ELIMINATE_SENDISH(cc);
     CALL_METHOD(&calling, ci, cc);
 }
 

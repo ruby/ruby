@@ -141,9 +141,17 @@ static inline bool cc_is_neq(const struct rb_call_cache *cc)
  * @param [in] cc call cache in question
  * @return correspoinding ISeq if any, NULL otherwise.
  */
-static inline const struct rb_iseq_struct *iseq_of_me(const struct rb_callable_method_entry_struct *me)
+static inline const rb_iseq_t *iseq_of_me(const struct rb_callable_method_entry_struct *me)
     __attribute__((nonnull))
     __attribute__((pure));
+
+/**
+ * Initializes memory pattern.  Never called explicitly.
+ */
+static void construct_pattern(void)
+    __attribute__((constructor))
+    __attribute__((used))
+    __attribute__((noinline));
 
 bool
 cc_is_neq(const struct rb_call_cache *cc)
@@ -178,7 +186,7 @@ VALUE_of_purity(enum insn_purity p)
     return (VALUE)p;
 }
 
-const struct rb_iseq_struct *
+const rb_iseq_t *
 iseq_of_me(const struct rb_callable_method_entry_struct *me)
 {
     const rb_method_definition_t *d = me->def;
@@ -195,7 +203,7 @@ iseq_of_me(const struct rb_callable_method_entry_struct *me)
 enum insn_purity
 purity_of_cc(const struct rb_call_cache *cc)
 {
-    const struct rb_iseq_struct *i;
+    const rb_iseq_t *i;
 
     if (! cc->me) {
         return insn_is_unpredictable; /* method missing */
@@ -204,7 +212,10 @@ purity_of_cc(const struct rb_call_cache *cc)
         return insn_is_not_pure;
     }
     else if (! i->body->attributes) {
-        return insn_is_unpredictable; /* not yet analyzed */
+        /* Note,  we do  not recursively  analyze.  That  can lead  to infinite
+         * recursion  on mutually  recursive calls  and detecting  that is  too
+         * expensive in this hot path.*/
+        return insn_is_unpredictable;
     }
     else {
         return purity_of_VALUE(RB_ISEQ_ANNOTATED_P(i, core::purity));
@@ -457,6 +468,51 @@ iseq_analyze(rb_iseq_t *iseq)
         RB_ISEQ_ANNOTATE(iseq, core::purity, purep);
         FL_UNSET(iseq, ISEQ_NEEDS_ANALYZE);
     }
+}
+
+static const VALUE wipeout_pattern[8]; /* maybe 5+2==7 should suffice? */
+static VALUE adjuststack;
+
+void
+construct_pattern(void)
+{
+#define LABEL_PTR(insn) addrs[BIN(insn)]
+    const void **addrs = rb_vm_get_insns_address_table();
+    const typeof(wipeout_pattern) p = {
+        (VALUE)LABEL_PTR(nop),
+        (VALUE)LABEL_PTR(nop),
+        (VALUE)LABEL_PTR(nop),
+        (VALUE)LABEL_PTR(nop),
+        (VALUE)LABEL_PTR(nop),
+        (VALUE)LABEL_PTR(nop),
+        (VALUE)LABEL_PTR(nop),
+        (VALUE)LABEL_PTR(nop),
+    };
+
+    memcpy((void *)wipeout_pattern, p, sizeof(p));
+    adjuststack = (VALUE)LABEL_PTR(adjuststack);
+#undef LABEL_PTR
+}
+
+void
+iseq_eliminate_insn(
+    const rb_iseq_t *restrict i,
+    struct cfp_last_insn *restrict p,
+    int n,
+    rb_num_t m)
+{
+    VALUE *buf = (VALUE *)&i->body->iseq_encoded[p->pc];
+    int len    = p->len + n;
+    int argc   = p->argc + m;
+
+    memset(p, 0, sizeof(*p));
+    memcpy(buf, wipeout_pattern, len * sizeof(VALUE));
+    if (argc != 0) {
+        buf[0] = adjuststack;
+        buf[1] = argc;
+    }
+    ISEQ_RESET_ORIGINAL_ISEQ(i);
+    FL_SET(i, ISEQ_NEEDS_ANALYZE);
 }
 
 /* 

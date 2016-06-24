@@ -23,6 +23,8 @@
 #include "probes.h"
 #include "probes_helper.h"
 #include "deoptimize.h"
+#include "optimize.h"
+#include "insns_info.inc"
 
 VALUE rb_str_concat_literals(size_t, const VALUE*);
 

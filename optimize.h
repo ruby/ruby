@@ -16,6 +16,47 @@
 struct rb_iseq_struct; // just forward decl.
 
 /**
+ * Does in-place optimization.  This transforms
+ *
+ *                                           +-- PC
+ *                                           v
+ *      +------+-----+-----+-----+-----+-----+-----+
+ *      | send |  ci |  cc | blk | adj |  m  | ... |
+ *      +------+-----+-----+-----+-----+-----+-----+
+ *      \-----------len---------/ \----n----/
+ *
+ *  into:
+ *
+ *                                          +-- PC
+ *                                          v
+ *      +-----+-----+-----+-----+-----+-----+-----+
+ *      | adj | m+x | nop | nop | nop | nop | ... |
+ *      +-----+-----+-----+-----+-----+-----+-----+
+ *                (x == send's argc)
+ *
+ * or, from:
+ *
+ *     obj.puremethod(arg1, arg2,...)
+ *
+ * to:
+ *
+ *     push obj;
+ *     push arg1;
+ *     push arg2;
+ *     push ...;
+ *     pop $argc;
+ *
+ * @param [out] i target iseq struct to squash.
+ * @param [in]  p pattern to fill in.
+ * @param [in]  n # of words to additionaly wipe out
+ * @param [in]  m # of values to additionaly pop from stack
+ */
+void iseq_eliminate_insn(const struct rb_iseq_struct *restrict i, struct cfp_last_insn *restrict p, int n, rb_num_t m)
+    __attribute__((hot))
+    __attribute__((nonnull))
+    __attribute__((leaf));
+
+/**
  * Analyze an iseq  to add annotations.  This only annotates  an ISeq, does not
  * change the sequence in any form by itself.
  *

@@ -90,6 +90,10 @@ iseq_deoptimize(const rb_iseq_t *restrict i)
     memcpy((void *)b->iseq_encoded, orig, b->iseq_size * sizeof(VALUE));
     memcpy((void *)&d->created_at, &t, sizeof(t));
     ISEQ_RESET_ORIGINAL_ISEQ(i);
+    FL_SET(i, ISEQ_NEEDS_ANALYZE);
+    for (unsigned i = 0; i < b->ci_size; i++) {
+        b->cc_entries[i].temperature = 0;
+    }
 }
 
 /* 
