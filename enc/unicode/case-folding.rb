@@ -55,7 +55,7 @@ class CaseFolding
     @debug = false
     turkic = []
 
-    IO.foreach(filename) do |line|
+    IO.foreach(filename, mode: "rb") do |line|
       next unless res = pattern.match(line)
       ch_from = res[1].to_i(16)
 
