@@ -1,4 +1,5 @@
 #!/usr/bin/ruby
+require 'stringio'
 
 # Usage (for case folding only):
 #   $ wget http://www.unicode.org/Public/UNIDATA/CaseFolding.txt
@@ -96,7 +97,7 @@ class CaseFolding
     hash = "onigenc_unicode_#{key}_hash"
     lookup = "onigenc_unicode_#{key}_lookup"
     arity = Array(data[0][0]).size
-    gperf = %W"gperf -7 -k#{[*1..(arity*3)].join(",")} -F,-1 -c -j1 -i1 -t -T -E -C -H #{hash} -N #{lookup} -n"
+    gperf = %W"gperf -7 -k#{[*1..(arity*3)].join(',')} -F,-1 -c -j1 -i1 -t -T -E -C -H #{hash} -N #{lookup} -n"
     argname = arity > 1 ? "codes" : "code"
     argdecl = "const OnigCodePoint #{arity > 1 ? "*": ""}#{argname}"
     n = 7
@@ -363,11 +364,21 @@ if $0 == __FILE__
     data.debug!
     mapping_data.debug!
   end
+  f = StringIO.new
+  begin
+    data.display(f, mapping_data)
+  rescue Errno::ENOENT => e
+    raise unless /gperf/ =~ e.message
+    warn e.message
+    exit dest && File.file?(dest) # assume existing file is OK
+  else
+    s = f.string
+  end
   if dest
     open(dest, "wb") do |f|
-      data.display(f, mapping_data)
+      f.print(s)
     end
   else
-    data.display(STDOUT, mapping_data)
+    STDOUT.print(s)
   end
 end

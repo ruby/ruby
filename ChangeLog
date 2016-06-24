@@ -1,3 +1,15 @@
+Fri Jun 24 09:17:15 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (lib/unicode_normalize/tables.rb): should not depend
+	  on Unicode data files unless ALWAYS_UPDATE_UNICODE=yes, to get
+	  rid of downloading Unicode data unnecessary.  [ruby-dev:49681]
+
+	* common.mk (enc/unicode/casefold.h): update Unicode files in a
+	  sub-make, not to let the header depend on the files always.
+
+	* enc/unicode/case-folding.rb: if gperf is not usable, assume the
+	  existing file is OK.
+
 Tue Jun 21 19:44:54 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_regex_casefold.rb: Add Windows-1251, KOI8-R, and
