@@ -737,4 +737,24 @@ class TestMarshal < Test::Unit::TestCase
       end
     RUBY
   end
+
+  MethodMissingWithoutRespondTo = Struct.new(:wrapped_object) do
+    undef respond_to?
+    def method_missing(*args, &block)
+      wrapped_object.public_send(*args, &block)
+    end
+    def respond_to_missing?(name, private = false)
+      wrapped_object.respond_to?(name, false)
+    end
+  end
+
+  def test_method_missing_without_respond_to
+    bug12353 = "[ruby-core:75377] [Bug #12353]: try method_missing if" \
+               " respond_to? is undefined"
+    obj = MethodMissingWithoutRespondTo.new("foo")
+    dump = assert_nothing_raised(NoMethodError, bug12353) do
+      Marshal.dump(obj)
+    end
+    assert_equal(obj, Marshal.load(dump))
+  end
 end

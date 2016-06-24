@@ -1,3 +1,9 @@
+Sat Jun 25 02:33:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (vm_respond_to): try method_missing if respond_to?
+	  is undefined, as if it is the default definition.
+	  [ruby-core:75377] [Bug #12353]
+
 Fri Jun 24 17:04:21 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/psych/*, test/psych/*: Upate psych 2.1.0
