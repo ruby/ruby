@@ -11,7 +11,7 @@ Sat Jun 25 02:33:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Jun 24 17:04:21 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	* ext/psych/*, test/psych/*: Upate psych 2.1.0
+	* ext/psych/*, test/psych/*: Update psych 2.1.0
 	  This version fixed [Bug #11988][ruby-core:72850]
 
 Fri Jun 24 13:12:41 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
