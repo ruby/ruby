@@ -183,7 +183,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     assert_equal OpenSSL::OCSP::V_CERTSTATUS_REVOKED, single.cert_status
     assert_equal OpenSSL::OCSP::REVOKED_STATUS_UNSPECIFIED, single.revocation_reason
     assert_equal now - 400, single.revocation_time
-    assert (single.this_update - (now - 300)) < 2
+    assert_in_delta (now - 301), single.this_update, 1
     assert_equal nil, single.next_update
     assert_equal [], single.extensions
 
