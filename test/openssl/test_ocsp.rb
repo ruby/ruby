@@ -140,6 +140,12 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     assert_equal cid.to_der, asn1.value[0].value.find { |a| a.class == OpenSSL::ASN1::Sequence }.value[0].value[0].to_der
     assert_equal OpenSSL::ASN1.Sequence([@cert2, @ca_cert]).to_der, asn1.value[3].value[0].to_der
     assert_equal der, OpenSSL::OCSP::BasicResponse.new(der).to_der
+  rescue TypeError
+    if /GENERALIZEDTIME/ =~ $!.message
+      skip "OCSP_basic_sign() is broken"
+    else
+      raise
+    end
   end
 
   def test_basic_response_sign_verify
@@ -177,7 +183,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     assert_equal OpenSSL::OCSP::V_CERTSTATUS_REVOKED, single.cert_status
     assert_equal OpenSSL::OCSP::REVOKED_STATUS_UNSPECIFIED, single.revocation_reason
     assert_equal now - 400, single.revocation_time
-    assert_equal now - 300, single.this_update
+    assert (single.this_update - (now - 300)) < 2
     assert_equal nil, single.next_update
     assert_equal [], single.extensions
 
@@ -203,6 +209,12 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     cid2 = OpenSSL::OCSP::CertificateId.new(@cert2, @ca_cert, OpenSSL::Digest::SHA1.new)
     bres.add_status(cid1, OpenSSL::OCSP::V_CERTSTATUS_REVOKED, OpenSSL::OCSP::REVOKED_STATUS_UNSPECIFIED, -400, -300, -50, [])
     bres.add_status(cid2, OpenSSL::OCSP::V_CERTSTATUS_REVOKED, OpenSSL::OCSP::REVOKED_STATUS_UNSPECIFIED, -400, -300, nil, [])
+    bres.add_status(cid2, OpenSSL::OCSP::V_CERTSTATUS_GOOD, nil, nil, Time.now + 100, nil, nil)
+
+    if bres.responses[2].check_validity # thisUpdate is in future; must fail
+      # LibreSSL bug; skip for now
+      skip "OCSP_check_validity() is broken"
+    end
 
     single1 = bres.responses[0]
     assert_equal false, single1.check_validity
