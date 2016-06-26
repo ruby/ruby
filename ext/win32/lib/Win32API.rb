@@ -12,7 +12,13 @@ class Win32API
 
   def initialize(dllname, func, import, export = "0", calltype = :stdcall)
     @proto = [import].join.tr("VPpNnLlIi", "0SSI").sub(/^(.)0*$/, '\1')
-    handle = DLL[dllname] ||= Fiddle.dlopen(dllname)
+    handle = DLL[dllname] ||=
+             begin
+               Fiddle.dlopen(dllname)
+             rescue Fiddle::DLError
+               raise unless File.extname(dllname).empty?
+               Fiddle.dlopen(dllname + ".dll")
+             end
 
     @func = Fiddle::Function.new(
       handle[func],

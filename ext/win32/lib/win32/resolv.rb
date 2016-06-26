@@ -38,7 +38,7 @@ module Win32
 nt = Module.new do
   break true if [nil].pack("p").size > 4
   extend Importer
-  dlload "kernel32"
+  dlload "kernel32.dll"
   getv = extern "int GetVersionExA(void *)", :stdcall
   info = [ 148, 0, 0, 0, 0 ].pack('V5') + "\0" * 128
   getv.call(info)

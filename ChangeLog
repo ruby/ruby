@@ -1,3 +1,14 @@
+Sun Jun 26 10:20:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32/lib/Win32API.rb (Win32API#initialize): Cygwin
+	  2.5.2-1 (perhaps) seems to no longer append ".dll" suffix
+	  implicitly.
+
+	* ext/win32/lib/win32/resolv.rb (Win32::Resolv): ditto.  Fix the
+	  error reported by yamataka AT u08.itscom.net in
+	  [ruby-list:50339], and pointed out and patched by cerberus AT
+	  m3.kcn.ne.jp in [ruby-list:50341].
+
 Sat Jun 25 10:07:52 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* test/openssl/test_ocsp.rb: Ignore errors caused by bugs that exist in
