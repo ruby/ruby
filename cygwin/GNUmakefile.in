@@ -1,4 +1,5 @@
 override MFLAGS := $(filter-out -j%,$(MFLAGS))
+override MAKEFLAGS := $(filter-out -j%,$(MAKEFLAGS))
 include Makefile
 
 ENABLE_SHARED=@ENABLE_SHARED@
