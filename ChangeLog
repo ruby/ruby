@@ -1,3 +1,11 @@
+Mon Jun 27 08:56:55 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (ADD_TRACE): ignore trace instruction on non-positive
+	  line.
+
+	* parse.y (coverage): get rid of ArgumentError when the starting
+	  line number is not positive.  [ruby-core:76141] [Bug #12517]
+
 Sun Jun 26 10:20:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32/lib/Win32API.rb (Win32API#initialize): Cygwin
