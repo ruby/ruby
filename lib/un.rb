@@ -189,13 +189,17 @@ end
 #   -p          apply access/modification times of SOURCE files to
 #               corresponding destination files
 #   -m          set permission mode (as in chmod), instead of 0755
+#   -o          set owner user id, instead of the current owner
+#   -g          set owner group id, instead of the current group
 #   -v          verbose
 #
 
 def install
-  setup("pm:") do |argv, options|
+  setup("pm:o:g:") do |argv, options|
     options[:mode] = (mode = options.delete :m) ? mode.oct : 0755
     options[:preserve] = true if options.delete :p
+    (owner = options.delete :o) and options[:owner] = owner
+    (group = options.delete :g) and options[:group] = group
     dest = argv.pop
     argv = argv[0] if argv.size == 1
     FileUtils.install argv, dest, options

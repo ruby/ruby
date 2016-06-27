@@ -754,9 +754,20 @@ module FileUtils
   #   FileUtils.install 'ruby', '/usr/local/bin/ruby', :mode => 0755, :verbose => true
   #   FileUtils.install 'lib.rb', '/usr/local/lib/ruby/site_ruby', :verbose => true
   #
-  def install(src, dest, mode: nil, preserve: nil, noop: nil, verbose: nil)
-    fu_output_message "install -c#{preserve && ' -p'}#{mode ? (' -m 0%o' % mode) : ''} #{[src,dest].flatten.join ' '}" if verbose
+  def install(src, dest, mode: nil, owner: nil, group: nil, preserve: nil,
+              noop: nil, verbose: nil)
+    if verbose
+      msg = +"install -c"
+      msg << ' -p' if preserve
+      msg << ' -m 0%o' % mode if mode
+      msg << " -o #{owner}" if owner
+      msg << " -g #{group}" if group
+      msg << ' ' << [src,dest].flatten.join(' ')
+      fu_output_message msg
+    end
     return if noop
+    uid = fu_get_uid(owner)
+    gid = fu_get_gid(group)
     fu_each_src_dest(src, dest) do |s, d|
       st = File.stat(s)
       unless File.exist?(d) and compare_file(s, d)
@@ -764,6 +775,7 @@ module FileUtils
         copy_file s, d
         File.utime st.atime, st.mtime, d if preserve
         File.chmod mode, d if mode
+        File.chown uid, gid, d if uid or gid
       end
     end
   end

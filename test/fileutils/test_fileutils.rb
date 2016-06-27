@@ -968,6 +968,22 @@ class TestFileUtils < Test::Unit::TestCase
     }
   end
 
+  def test_install_owner_option
+    File.open('tmp/aaa', 'w') {|f| f.puts 'aaa' }
+    File.open('tmp/bbb', 'w') {|f| f.puts 'bbb' }
+    assert_nothing_raised {
+      install 'tmp/aaa', 'tmp/bbb', :owner => "nobody", :noop => true
+    }
+  end
+
+  def test_install_group_option
+    File.open('tmp/aaa', 'w') {|f| f.puts 'aaa' }
+    File.open('tmp/bbb', 'w') {|f| f.puts 'bbb' }
+    assert_nothing_raised {
+      install 'tmp/aaa', 'tmp/bbb', :group => "nobody", :noop => true
+    }
+  end
+
   def test_chmod
     check_singleton :chmod
 

@@ -1,3 +1,8 @@
+Mon Jun 27 16:55:14 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils#install): add owner and group
+	  options.
+
 Mon Jun 27 08:56:55 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (ADD_TRACE): ignore trace instruction on non-positive
