@@ -1381,18 +1381,13 @@ opt_plus
 	BASIC_OP_UNREDEFINED_P(BOP_PLUS,INTEGER_REDEFINED_OP_FLAG)) {
 	/* fixnum + fixnum */
 #ifndef LONG_LONG_VALUE
-	val = (recv + (obj & (~1)));
-	if ((~(recv ^ obj) & (recv ^ val)) &
-	    ((VALUE)0x01 << ((sizeof(VALUE) * CHAR_BIT) - 1))) {
-	    val = rb_big_plus(rb_int2big(FIX2LONG(recv)),
-			      rb_int2big(FIX2LONG(obj)));
-	}
+        VALUE msb = (VALUE)1 << ((sizeof(VALUE) * CHAR_BIT) - 1);
+        val = recv - 1 + obj;
+        if ((~(recv ^ obj) & (recv ^ val)) & msb) {
+            val = rb_int2big((SIGNED_VALUE)((val>>1) | (recv & msb)));
+        }
 #else
-	long a, b, c;
-	a = FIX2LONG(recv);
-	b = FIX2LONG(obj);
-	c = a + b;
-	val = LONG2NUM(c);
+	val = LONG2NUM(FIX2LONG(recv) + FIX2LONG(obj));
 #endif
     }
     else if (FLONUM_2_P(recv, obj) &&

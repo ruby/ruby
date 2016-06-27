@@ -1,3 +1,18 @@
+Tue Jun 28 02:41:32 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* insns.def (opt_plus): use `- 1` instead of `& (~1)` to allow
+	  compilers to use x86 LEA instruction (3 operand).
+	  Even if 3 operand LEA's latency is 3 cycle after SandyBridge,
+	  it reduces code size and can be faster because of super scalar.
+
+	* insns.def (opt_plus): calculate and use rb_int2big.
+	  On positive Fixnum overflow, `recv - 1 + obj` doesn't carry
+	  because recv's msb and obj's msb are 0, and resulted msb is 1.
+	  Therefore simply rshift and cast as signed long works fine.
+	  On negative Fixnum overflow, it will carry because both arguments'
+	  msb are 1, and resulted msb is also 1.
+	  In this case it needs to restore carried sign bit after rshift.
+
 Mon Jun 27 16:58:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils#install): accecpt symbolic mode, as
