@@ -1327,7 +1327,7 @@ static const CaseFold_11_Type CaseFold_11_Table[] = {
   {0x0130, {2|F|D, {0x0069, 0x0307}}},
 };
 
-/* C code produced by gperf version 3.0.4 */
+/* C code produced by gperf version 3.0.3 */
 /* Command-line: gperf -7 -k1,2,3 -F,-1 -c -j1 -i1 -t -T -E -C -H onigenc_unicode_CaseFold_11_hash -N onigenc_unicode_CaseFold_11_lookup -n  */
 
 /* maximum key range = 2294, duplicates = 0 */
@@ -1372,7 +1372,7 @@ onigenc_unicode_CaseFold_11_hash(const OnigCodePoint code)
 
 #ifdef __GNUC__
 __inline
-#if defined __GNUC_STDC_INLINE__ || defined __GNUC_GNU_INLINE__
+#ifdef __GNUC_STDC_INLINE__
 __attribute__ ((__gnu_inline__))
 #endif
 #endif
@@ -4359,7 +4359,7 @@ static const CaseUnfold_11_Type CaseUnfold_11_Table[] = {
   {0x0069, {1|U, {0x0049}}},
 };
 
-/* C code produced by gperf version 3.0.4 */
+/* C code produced by gperf version 3.0.3 */
 /* Command-line: gperf -7 -k1,2,3 -F,-1 -c -j1 -i1 -t -T -E -C -H onigenc_unicode_CaseUnfold_11_hash -N onigenc_unicode_CaseUnfold_11_lookup -n  */
 
 /* maximum key range = 1827, duplicates = 0 */
@@ -4403,7 +4403,7 @@ onigenc_unicode_CaseUnfold_11_hash(const OnigCodePoint code)
 
 #ifdef __GNUC__
 __inline
-#if defined __GNUC_STDC_INLINE__ || defined __GNUC_GNU_INLINE__
+#ifdef __GNUC_STDC_INLINE__
 __attribute__ ((__gnu_inline__))
 #endif
 #endif
@@ -5994,7 +5994,7 @@ static const CaseUnfold_12_Type CaseUnfold_12_Table[] = {
   {{0x0069, 0x0307}, {1, {0x0130}}},
 };
 
-/* C code produced by gperf version 3.0.4 */
+/* C code produced by gperf version 3.0.3 */
 /* Command-line: gperf -7 -k1,2,3,4,5,6 -F,-1 -c -j1 -i1 -t -T -E -C -H onigenc_unicode_CaseUnfold_12_hash -N onigenc_unicode_CaseUnfold_12_lookup -n  */
 
 /* maximum key range = 71, duplicates = 0 */
@@ -6031,7 +6031,7 @@ onigenc_unicode_CaseUnfold_12_hash(const OnigCodePoint *codes)
 
 #ifdef __GNUC__
 __inline
-#if defined __GNUC_STDC_INLINE__ || defined __GNUC_GNU_INLINE__
+#ifdef __GNUC_STDC_INLINE__
 __attribute__ ((__gnu_inline__))
 #endif
 #endif
@@ -6150,7 +6150,7 @@ static const CaseUnfold_13_Type CaseUnfold_13_Table[] = {
   {{0x03c9, 0x0342, 0x03b9}, {1, {0x1ff7}}},
 };
 
-/* C code produced by gperf version 3.0.4 */
+/* C code produced by gperf version 3.0.3 */
 /* Command-line: gperf -7 -k1,2,3,4,5,6,7,8,9 -F,-1 -c -j1 -i1 -t -T -E -C -H onigenc_unicode_CaseUnfold_13_hash -N onigenc_unicode_CaseUnfold_13_lookup -n  */
 
 /* maximum key range = 20, duplicates = 0 */
@@ -6187,7 +6187,7 @@ onigenc_unicode_CaseUnfold_13_hash(const OnigCodePoint *codes)
 
 #ifdef __GNUC__
 __inline
-#if defined __GNUC_STDC_INLINE__ || defined __GNUC_GNU_INLINE__
+#ifdef __GNUC_STDC_INLINE__
 __attribute__ ((__gnu_inline__))
 #endif
 #endif
