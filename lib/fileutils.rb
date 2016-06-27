@@ -1273,6 +1273,7 @@ module FileUtils
       if !st.symlink?
         File.utime st.atime, st.mtime, path
       end
+      mode = st.mode
       begin
         if st.symlink?
           begin
@@ -1284,23 +1285,15 @@ module FileUtils
         end
       rescue Errno::EPERM
         # clear setuid/setgid
-        if st.symlink?
-          begin
-            File.lchmod st.mode & 01777, path
-          rescue NotImplementedError
-          end
-        else
-          File.chmod st.mode & 01777, path
+        mode &= 01777
+      end
+      if st.symlink?
+        begin
+          File.lchmod mode, path
+        rescue NotImplementedError
         end
       else
-        if st.symlink?
-          begin
-            File.lchmod st.mode, path
-          rescue NotImplementedError
-          end
-        else
-          File.chmod st.mode, path
-        end
+        File.chmod mode, path
       end
     end
 
