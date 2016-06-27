@@ -759,7 +759,7 @@ module FileUtils
     if verbose
       msg = +"install -c"
       msg << ' -p' if preserve
-      msg << ' -m 0%o' % mode if mode
+      msg << ' -m ' << mode_to_s(mode) if mode
       msg << " -o #{owner}" if owner
       msg << " -g #{group}" if group
       msg << ' ' << [src,dest].flatten.join(' ')
@@ -774,7 +774,7 @@ module FileUtils
         remove_file d, true
         copy_file s, d
         File.utime st.atime, st.mtime, d if preserve
-        File.chmod mode, d if mode
+        File.chmod fu_mode(mode, st), d if mode
         File.chown uid, gid, d if uid or gid
       end
     end
@@ -812,7 +812,12 @@ module FileUtils
   private_module_function :apply_mask
 
   def symbolic_modes_to_i(mode_sym, path)  #:nodoc:
-    mode_sym.split(/,/).inject(File.stat(path).mode & 07777) do |current_mode, clause|
+    mode = if File::Stat === path
+             path.mode
+           else
+             File.stat(path).mode
+           end
+    mode_sym.split(/,/).inject(mode & 07777) do |current_mode, clause|
       target, *actions = clause.split(/([=+-])/)
       raise ArgumentError, "invalid file mode: #{mode_sym}" if actions.empty?
       target = 'a' if target.empty?

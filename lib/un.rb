@@ -196,7 +196,7 @@ end
 
 def install
   setup("pm:o:g:") do |argv, options|
-    options[:mode] = (mode = options.delete :m) ? mode.oct : 0755
+    (mode = options.delete :m) and options[:mode] = mode
     options[:preserve] = true if options.delete :p
     (owner = options.delete :o) and options[:owner] = owner
     (group = options.delete :g) and options[:group] = group
