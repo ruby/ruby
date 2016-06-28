@@ -1,3 +1,11 @@
+Tue Jun 28 15:56:48 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/enc/test_case_comprehensive.rb: noting to test if
+	  Unicode data files are available.
+	  [ruby-core:76160] [Bug #12433]
+
+	* test/test_unicode_normalize.rb: ditto.
+
 Tue Jun 28 15:20:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTP#proxy_uri): cache the case no proxy

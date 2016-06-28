@@ -25,7 +25,12 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
   def self.expand_filename(basename)
     File.expand_path("#{UNICODE_DATA_PATH}/#{basename}.txt", __dir__)
   end
+end
 
+%w[UnicodeData CaseFolding SpecialCasing].all? {|f|
+  File.exist?(TestComprehensiveCaseFold.expand_filename(f))
+} and
+class TestComprehensiveCaseFold
   def self.read_data_file (filename)
     IO.foreach(expand_filename(filename), encoding: Encoding::ASCII_8BIT) do |line|
       if $. == 1
@@ -236,15 +241,6 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
         end
       end
     end
-  end
-
-  def check_file_available(filename)
-    expanded = self.class.expand_filename(filename)
-    assert File.exist?(expanded), "File #{expanded} missing."
-  end
-
-  def test_AAAAA_data_files_available   # AAAAA makes sure this test is run first
-    %w[UnicodeData CaseFolding SpecialCasing].each { |f| check_file_available f }
   end
 
   generate_ascii_only_case_mapping_tests 'ISO-8859-2'
