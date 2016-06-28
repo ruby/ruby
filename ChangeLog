@@ -1,3 +1,8 @@
+Tue Jun 28 22:55:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/pstore.rb (PStore::CHECKSUM_ALGO): extract the algorithm for
+	  checksum, instead of qualified names for each times.
+
 Tue Jun 28 22:29:36 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bootstraptest/runner.rb: do not use safe navigation operator.

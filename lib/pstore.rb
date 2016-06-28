@@ -352,9 +352,10 @@ class PStore
 
   private
   # Constant for relieving Ruby's garbage collector.
+  CHECKSUM_ALGO = Digest::MD5
   EMPTY_STRING = ""
   EMPTY_MARSHAL_DATA = Marshal.dump({})
-  EMPTY_MARSHAL_CHECKSUM = Digest::MD5.digest(EMPTY_MARSHAL_DATA)
+  EMPTY_MARSHAL_CHECKSUM = CHECKSUM_ALGO.digest(EMPTY_MARSHAL_DATA)
 
   #
   # Open the specified filename (either in read-only mode or in
@@ -409,7 +410,7 @@ class PStore
         size = empty_marshal_data.bytesize
       else
         table = load(data)
-        checksum = Digest::MD5.digest(data)
+        checksum = CHECKSUM_ALGO.digest(data)
         size = data.bytesize
         raise Error, "PStore file seems to be corrupted." unless table.is_a?(Hash)
       end
@@ -429,7 +430,7 @@ class PStore
   def save_data(original_checksum, original_file_size, file)
     new_data = dump(@table)
 
-    if new_data.bytesize != original_file_size || Digest::MD5.digest(new_data) != original_checksum
+    if new_data.bytesize != original_file_size || CHECKSUM_ALGO.digest(new_data) != original_checksum
       if @ultra_safe && !on_windows?
         # Windows doesn't support atomic file renames.
         save_data_with_atomic_file_rename_strategy(new_data, file)
