@@ -1301,7 +1301,7 @@ module FileUtils
         else
           File.chown st.uid, st.gid, path
         end
-      rescue Errno::EPERM
+      rescue Errno::EPERM, Errno::EACCES
         # clear setuid/setgid
         mode &= 01777
       end

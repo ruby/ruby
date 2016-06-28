@@ -1,3 +1,8 @@
+Tue Jun 28 22:09:09 2017  Akio Tajima <artonx@yahoo.co.jp>
+
+	* lib/fileutils.rb: rescue Errno:EACCES for chown.
+	  [Bug #12520]
+
 Tue Jun 28 18:38:09 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* ext/digest/md5/md5ossl.h: Remove excess semicolons.
