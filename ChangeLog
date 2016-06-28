@@ -1,3 +1,17 @@
+Wed Jun 29 03:34:41 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* bignum.c (rb_big2ulong): the old logic seems to try to avoid
+	  calculating `-(long)(num-1)-1` if `num` is not LONG_MIN. (Note that
+	  `-LONG_MIN` may be larger than LONG_MAX) But C compilers can
+	  optimize it into single NEG instruction.
+	  Therefore those two conditions can be single if-body.
+
+	* bignum.c (rb_big2long): ditto.
+
+	* bignum.c (rb_big2ull): ditto.
+
+	* bignum.c (rb_big2ll): ditto.
+
 Tue Jun 28 22:55:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/pstore.rb (PStore::CHECKSUM_ALGO): extract the algorithm for
