@@ -8,7 +8,7 @@
 #
 # See PStore for documentation.
 
-require "digest/md5"
+require "digest"
 
 #
 # PStore implements a file based persistence mechanism based on a Hash.  User
@@ -352,7 +352,12 @@ class PStore
 
   private
   # Constant for relieving Ruby's garbage collector.
-  CHECKSUM_ALGO = Digest::MD5
+  CHECKSUM_ALGO = %w[SHA512 SHA384 SHA256 SHA1 RMD160 MD5].each do |algo|
+    begin
+      break Digest(algo)
+    rescue LoadError
+    end
+  end
   EMPTY_STRING = ""
   EMPTY_MARSHAL_DATA = Marshal.dump({})
   EMPTY_MARSHAL_CHECKSUM = CHECKSUM_ALGO.digest(EMPTY_MARSHAL_DATA)
