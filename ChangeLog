@@ -1,3 +1,16 @@
+Tue Jun 28 18:38:09 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* ext/digest/md5/md5ossl.h: Remove excess semicolons.
+	  Suppress warning on Solaris with Oracle Solaris Studio 12.
+	  [ruby-dev:49692] [Bug #12524]
+
+	* ext/digest/md5/md5cc.h: ditto.
+	* ext/digest/sha1/sha1cc.h: ditto.
+	* ext/digest/sha1/sha1ossl.h: ditto.
+	* ext/digest/sha2/sha2cc.h: ditto.
+	* ext/digest/sha2/sha2ossl.h: ditto.
+	* ext/openssl/ossl_pkey_rsa.c: ditto.
+
 Tue Jun 28 15:56:48 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/enc/test_case_comprehensive.rb: noting to test if

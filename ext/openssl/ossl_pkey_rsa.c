@@ -656,9 +656,9 @@ ossl_rsa_blinding_off(VALUE self)
 }
  */
 
-OSSL_PKEY_BN_DEF3(rsa, RSA, key, n, e, d);
-OSSL_PKEY_BN_DEF2(rsa, RSA, factors, p, q);
-OSSL_PKEY_BN_DEF3(rsa, RSA, crt_params, dmp1, dmq1, iqmp);
+OSSL_PKEY_BN_DEF3(rsa, RSA, key, n, e, d)
+OSSL_PKEY_BN_DEF2(rsa, RSA, factors, p, q)
+OSSL_PKEY_BN_DEF3(rsa, RSA, crt_params, dmp1, dmq1, iqmp)
 
 /*
  * INIT
