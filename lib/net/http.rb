@@ -1039,11 +1039,7 @@ module Net   #:nodoc:
 
     # True if requests for this connection will be proxied
     def proxy?
-      !!if @proxy_from_env then
-        proxy_uri
-      else
-        @proxy_address
-      end
+      !!(@proxy_from_env ? proxy_uri : @proxy_address)
     end
 
     # True if the proxy for this connection is determined from the environment
