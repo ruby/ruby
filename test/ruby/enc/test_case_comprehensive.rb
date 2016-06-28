@@ -4,16 +4,6 @@
 require "test/unit"
 require 'unicode_normalize/normalize'  # only for UNICODE_VERSION
 
-class CaseTest
-  attr_reader :method_name, :attributes, :first_data, :follow_data
-  def initialize(method_name, attributes, first_data, follow_data=first_data)
-    @method_name = method_name
-    @attributes  = attributes
-    @first_data  = first_data
-    @follow_data = follow_data
-  end
-end
-
 class TestComprehensiveCaseFold < Test::Unit::TestCase
   UNICODE_VERSION = UnicodeNormalize::UNICODE_VERSION
   UNICODE_DATA_PATH = "../../../enc/unicode/data/#{UNICODE_VERSION}"
@@ -31,6 +21,12 @@ end
   File.exist?(TestComprehensiveCaseFold.expand_filename(f))
 } and
 class TestComprehensiveCaseFold
+  (CaseTest = Struct.new(:method_name, :attributes, :first_data, :follow_data)).class_eval do
+    def initialize(method_name, attributes, first_data, follow_data=first_data)
+      super
+    end
+  end
+
   def self.read_data_file (filename)
     IO.foreach(expand_filename(filename), encoding: Encoding::ASCII_8BIT) do |line|
       if $. == 1
