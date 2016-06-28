@@ -812,6 +812,7 @@ module FileUtils
   private_module_function :apply_mask
 
   def symbolic_modes_to_i(mode_sym, path)  #:nodoc:
+    return mode_sym.oct if /\A[0-7]+\z/ =~ mode_sym
     mode = if File::Stat === path
              path.mode
            else
