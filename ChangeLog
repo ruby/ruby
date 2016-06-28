@@ -1,3 +1,8 @@
+Tue Jun 28 15:20:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/net/http.rb (Net::HTTP#proxy_uri): cache the case no proxy
+	  is used.
+
 Tue Jun 28 09:56:29 2016  Stefan Schussler  <mail@stefanschuessler.de>
 
 	* object.c (rb_mod_eqq): [DOC] Fix typo in RDoc.  [Fix GH-1393]
