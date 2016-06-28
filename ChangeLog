@@ -1,3 +1,9 @@
+Tue Jun 28 22:29:36 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bootstraptest/runner.rb: do not use safe navigation operator.
+	  this runner may run on older ruby.  partially revert r53110
+	  (GH-1142 patched by @mlarraz).
+
 Tue Jun 28 22:09:09 2017  Akio Tajima <artonx@yahoo.co.jp>
 
 	* lib/fileutils.rb: rescue Errno:EACCES for chown.
