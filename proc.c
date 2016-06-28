@@ -820,6 +820,9 @@ passed_block(VALUE pass_procval)
 {
     if (!NIL_P(pass_procval)) {
 	rb_proc_t *pass_proc;
+	if (SYMBOL_P(pass_procval)) {
+	    pass_procval = sym_proc_new(rb_cProc, pass_procval);
+	}
 	GetProcPtr(pass_procval, pass_proc);
 	return &pass_proc->block;
     }

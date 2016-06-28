@@ -1,3 +1,9 @@
+Wed Jun 29 08:45:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (passed_block): convert passed block symbol to proc.
+	  based on the patch by Daisuke Sato in [ruby-dev:49695].
+	  [Bug #12531]
+
 Wed Jun 29 03:34:41 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* bignum.c (rb_big2ulong): the old logic seems to try to avoid
