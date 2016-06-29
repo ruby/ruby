@@ -505,6 +505,11 @@ rb_w32_special_folder(int type)
     return rb_w32_conv_from_wchar(path, rb_filesystem_encoding());
 }
 
+#if defined _MSC_VER && _MSC_VER <= 1200
+/* License: Ruby's */
+#define GetSystemWindowsDirectoryW GetWindowsDirectoryW
+#endif
+
 /* License: Ruby's */
 UINT
 rb_w32_system_tmpdir(WCHAR *path, UINT len)
