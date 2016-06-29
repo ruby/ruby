@@ -2041,12 +2041,12 @@ opt_succ
     if (SPECIAL_CONST_P(recv)) {
 	if (FIXNUM_P(recv) &&
 	    BASIC_OP_UNREDEFINED_P(BOP_SUCC, INTEGER_REDEFINED_OP_FLAG)) {
-	    const VALUE obj = INT2FIX(1);
 	    /* fixnum + INT2FIX(1) */
-	    val = (recv + (obj & (~1)));
-	    if ((~(recv ^ obj) & (recv ^ val)) & ((unsigned long)LONG_MAX + 1)) {
-		val = rb_big_plus(rb_int2big(FIX2LONG(recv)),
-				  rb_int2big(FIX2LONG(obj)));
+	    if (recv != LONG2FIX(FIXNUM_MAX)) {
+		val = recv - 1 + INT2FIX(1);
+	    }
+	    else {
+		val = LONG2NUM(FIXNUM_MAX + 1);
 	    }
 	}
 	else {

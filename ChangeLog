@@ -1,3 +1,8 @@
+Wed Jun 29 15:18:28 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* insns.def (opt_succ): optimize like r55515. (but this argument is
+	  consntant)
+
 Wed Jun 29 12:41:58 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/ruby/test_refinement.rb: skip
