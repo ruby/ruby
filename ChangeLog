@@ -1,3 +1,7 @@
+Wed Jun 29 22:24:37 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/psych/lib/psych_jars.rb: removed needless file required to JRuby.
+
 Wed Jun 29 22:21:38 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_ocsp.c: The "reuse" behavior of d2i_ functions does
