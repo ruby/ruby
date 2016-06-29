@@ -225,17 +225,20 @@ static VALUE
 ossl_ocspreq_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE arg;
+    OCSP_REQUEST *req, *req_new;
     const unsigned char *p;
 
     rb_scan_args(argc, argv, "01", &arg);
     if(!NIL_P(arg)){
-	OCSP_REQUEST *req;
 	GetOCSPReq(self, req);
 	arg = ossl_to_der_if_possible(arg);
 	StringValue(arg);
 	p = (unsigned char *)RSTRING_PTR(arg);
-	if (!d2i_OCSP_REQUEST(&req, &p, RSTRING_LEN(arg)))
-	    ossl_raise(eOCSPError, "cannot load DER encoded request");
+	req_new = d2i_OCSP_REQUEST(NULL, &p, RSTRING_LEN(arg));
+	if (!req_new)
+	    ossl_raise(eOCSPError, "d2i_OCSP_REQUEST");
+	SetOCSPReq(self, req_new);
+	OCSP_REQUEST_free(req);
     }
 
     return self;
@@ -536,17 +539,20 @@ static VALUE
 ossl_ocspres_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE arg;
+    OCSP_RESPONSE *res, *res_new;
     const unsigned char *p;
 
     rb_scan_args(argc, argv, "01", &arg);
     if(!NIL_P(arg)){
-	OCSP_RESPONSE *res;
 	GetOCSPRes(self, res);
 	arg = ossl_to_der_if_possible(arg);
 	StringValue(arg);
 	p = (unsigned char *)RSTRING_PTR(arg);
-	if (!d2i_OCSP_RESPONSE(&res, &p, RSTRING_LEN(arg)))
-	    ossl_raise(eOCSPError, "cannot load DER encoded response");
+	res_new = d2i_OCSP_RESPONSE(NULL, &p, RSTRING_LEN(arg));
+	if (!res_new)
+	    ossl_raise(eOCSPError, "d2i_OCSP_RESPONSE");
+	SetOCSPRes(self, res_new);
+	OCSP_RESPONSE_free(res);
     }
 
     return self;
@@ -688,17 +694,20 @@ static VALUE
 ossl_ocspbres_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE arg;
+    OCSP_BASICRESP *res, *res_new;
     const unsigned char *p;
 
     rb_scan_args(argc, argv, "01", &arg);
     if (!NIL_P(arg)) {
-	OCSP_BASICRESP *res;
 	GetOCSPBasicRes(self, res);
 	arg = ossl_to_der_if_possible(arg);
 	StringValue(arg);
 	p = (unsigned char *)RSTRING_PTR(arg);
-	if (!d2i_OCSP_BASICRESP(&res, &p, RSTRING_LEN(arg)))
+	res_new = d2i_OCSP_BASICRESP(NULL, &p, RSTRING_LEN(arg));
+	if (!res_new)
 	    ossl_raise(eOCSPError, "d2i_OCSP_BASICRESP");
+	SetOCSPBasicRes(self, res_new);
+	OCSP_BASICRESP_free(res);
     }
 
     return self;
@@ -1127,7 +1136,7 @@ ossl_ocspsres_alloc(VALUE klass)
 static VALUE
 ossl_ocspsres_initialize(VALUE self, VALUE arg)
 {
-    OCSP_SINGLERESP *res;
+    OCSP_SINGLERESP *res, *res_new;
     const unsigned char *p;
 
     arg = ossl_to_der_if_possible(arg);
@@ -1135,8 +1144,11 @@ ossl_ocspsres_initialize(VALUE self, VALUE arg)
     GetOCSPSingleRes(self, res);
 
     p = (unsigned char*)RSTRING_PTR(arg);
-    if (!d2i_OCSP_SINGLERESP(&res, &p, RSTRING_LEN(arg)))
+    res_new = d2i_OCSP_SINGLERESP(NULL, &p, RSTRING_LEN(arg));
+    if (!res_new)
 	ossl_raise(eOCSPError, "d2i_OCSP_SINGLERESP");
+    SetOCSPSingleRes(self, res_new);
+    OCSP_SINGLERESP_free(res);
 
     return self;
 }
@@ -1432,9 +1444,7 @@ static VALUE
 ossl_ocspcid_initialize(int argc, VALUE *argv, VALUE self)
 {
     OCSP_CERTID *id, *newid;
-    X509 *x509s, *x509i;
     VALUE subject, issuer, digest;
-    const EVP_MD *md;
 
     GetOCSPCertId(self, id);
     if (rb_scan_args(argc, argv, "12", &subject, &issuer, &digest) == 1) {
@@ -1444,25 +1454,25 @@ ossl_ocspcid_initialize(int argc, VALUE *argv, VALUE self)
 	arg = ossl_to_der_if_possible(subject);
 	StringValue(arg);
 	p = (unsigned char *)RSTRING_PTR(arg);
-	if (!d2i_OCSP_CERTID(&id, &p, RSTRING_LEN(arg)))
+	newid = d2i_OCSP_CERTID(NULL, &p, RSTRING_LEN(arg));
+	if (!newid)
 	    ossl_raise(eOCSPError, "d2i_OCSP_CERTID");
-
-	return self;
     }
+    else {
+	X509 *x509s, *x509i;
+	const EVP_MD *md;
 
-    x509s = GetX509CertPtr(subject); /* NO NEED TO DUP */
-    x509i = GetX509CertPtr(issuer); /* NO NEED TO DUP */
+	x509s = GetX509CertPtr(subject); /* NO NEED TO DUP */
+	x509i = GetX509CertPtr(issuer); /* NO NEED TO DUP */
+	md = !NIL_P(digest) ? GetDigestPtr(digest) : NULL;
 
-    if (!NIL_P(digest)) {
-	md = GetDigestPtr(digest);
 	newid = OCSP_cert_to_id(md, x509s, x509i);
-    } else {
-	newid = OCSP_cert_to_id(NULL, x509s, x509i);
+	if (!newid)
+	    ossl_raise(eOCSPError, "OCSP_cert_to_id");
     }
-    if(!newid)
-	ossl_raise(eOCSPError, NULL);
-    OCSP_CERTID_free(id);
+
     SetOCSPCertId(self, newid);
+    OCSP_CERTID_free(id);
 
     return self;
 }
