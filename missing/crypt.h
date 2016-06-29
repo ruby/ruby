@@ -41,6 +41,17 @@
 #endif
 #endif
 
+#ifndef LONG_LONG
+# if SIZEOF_LONG_LONG > 0
+#   define LONG_LONG long long
+# elif SIZEOF___INT64 > 0
+#   define HAVE_LONG_LONG 1
+#   define LONG_LONG __int64
+#   undef SIZEOF_LONG_LONG
+#   define SIZEOF_LONG_LONG SIZEOF___INT64
+# endif
+#endif
+
 /*
  * define "LONG_IS_32_BITS" only if sizeof(long)==4.
  * This avoids use of bit fields (your compiler may be sloppy with them).
@@ -56,7 +67,7 @@
 #if SIZEOF_LONG == 8
 #define	B64	long
 #elif SIZEOF_LONG_LONG == 8
-#define	B64	long long
+#define	B64	LONG_LONG
 #endif
 
 /*
