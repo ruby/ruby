@@ -1,3 +1,9 @@
+Wed Jun 29 12:41:58 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/ruby/test_refinement.rb: skip
+	  test_prepend_after_refine_wb_miss on ARM or MIPS.
+	  [ruby-core:76031] [Bug #12491]
+
 Wed Jun 29 08:45:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (passed_block): convert passed block symbol to proc.
