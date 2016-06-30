@@ -45,7 +45,7 @@ class CaseFolding
 
   include Util
 
-  attr_reader :fold, :fold_locale, :unfold, :unfold_locale
+  attr_reader :fold, :fold_locale, :unfold, :unfold_locale, :version
 
   def load(filename)
     pattern = /([0-9A-F]{4,6}); ([CFT]); ([0-9A-F]{4,6})(?: ([0-9A-F]{4,6}))?(?: ([0-9A-F]{4,6}))?;/
@@ -53,9 +53,11 @@ class CaseFolding
     @fold = fold = {}
     @unfold = unfold = [{}, {}, {}]
     @debug = false
+    @version = nil
     turkic = []
 
     IO.foreach(filename, mode: "rb") do |line|
+      @version ||= line[/-([0-9.]+).txt/, 1]
       next unless res = pattern.match(line)
       ch_from = res[1].to_i(16)
 
@@ -202,11 +204,14 @@ class MapItem
 end
 
 class CaseMapping
-  def initialize (mapping_directory)
+  attr_reader :filename, :version
+
+  def initialize(mapping_directory)
     @mappings = {}
     @specials = []
     @specials_length = 0
-    IO.readlines(File.expand_path('UnicodeData.txt', mapping_directory), encoding: Encoding::ASCII_8BIT).each do |line|
+    @version = nil
+    IO.foreach(File.join(mapping_directory, 'UnicodeData.txt'), mode: "rb") do |line|
       next if line =~ /^</
       code, _1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11, upper, lower, title = line.chomp.split ';'
       unless upper and lower and title and (upper+lower+title)==''
@@ -214,7 +219,9 @@ class CaseMapping
       end
     end
 
-    IO.readlines(File.expand_path('SpecialCasing.txt', mapping_directory), encoding: Encoding::ASCII_8BIT).each do |line|
+    @filename = File.join(mapping_directory, 'SpecialCasing.txt')
+    IO.foreach(@filename, mode: "rb") do |line|
+      @version ||= line[/-([0-9.]+).txt/, 1]
       line.chomp!
       line, comment = line.split(/ *#/)
       next if not line or line == ''
@@ -353,13 +360,18 @@ if $0 == __FILE__
       warn "Either specify directory or individual file, but not both."
       exit
     end
-    filename = File.expand_path('CaseFolding.txt', mapping_directory)
+    filename = File.join(mapping_directory, 'CaseFolding.txt')
     mapping_data = CaseMapping.load(mapping_directory)
   end
   filename ||= ARGV[0] || 'CaseFolding.txt'
+  data = CaseFolding.load(filename)
+  if mapping_data and data.version != mapping_data.version
+    abort "Unicode data version mismatch\n" \
+          "  #{filename} = #{data.version}\n" \
+          "  #{mapping_data.filename} = #{mapping_data.version}"
+  end
   mapping_data ||= CaseMappingDummy.new
 
-  data = CaseFolding.load(filename)
   if debug
     data.debug!
     mapping_data.debug!
