@@ -413,6 +413,13 @@ document rp_id
   Print an ID.
 end
 
+define print_string
+  set $flags = ((struct RBasic*)($arg0))->flags
+  printf "%s", (char *)(($flags & RUBY_FL_USER1) ? \
+	    ((struct RString*)($arg0))->as.heap.ptr : \
+	    ((struct RString*)($arg0))->as.ary)
+end
+
 define rp_string
   set $flags = ((struct RBasic*)($arg0))->flags
   set print address off
@@ -936,11 +943,66 @@ document rb_ps_vm
 Dump all threads in a (rb_vm_t*) and their callstacks
 end
 
+define print_lineno
+  set $cfp = $arg0
+  set $iseq = $cfp->iseq
+  set $pos = $cfp->pc - $iseq->body->iseq_encoded
+  if $pos != 0
+    set $pos = $pos - 1
+  end
+
+  set $i = 0
+  set $size = $iseq->body->line_info_size
+  set $table = $iseq->body->line_info_table
+  #printf "size: %d\n", $size
+  if $size == 0
+  else
+    set $i = 1
+    while $i < $size
+      #printf "table[%d]: position: %d, line: %d, pos: %d\n", $i, $table[$i].position, $table[$i].line_no, $pos
+      if $table[$i].position > $pos
+        loop_break
+      end
+      set $i = $i + 1
+      if $table[$i].position == $pos
+        loop_break
+      end
+    end
+    printf "%d", $table[$i-1].line_no
+  end
+end
+
 define rb_ps_thread
   set $ps_thread = (struct RTypedData*)$arg0
   set $ps_thread_th = (rb_thread_t*)$ps_thread->data
   printf "* #<Thread:%p rb_thread_t:%p native_thread:%p>\n", \
     $ps_thread, $ps_thread_th, $ps_thread_th->thread_id
+  set $cfp = $ps_thread_th->cfp
+  set $cfpend = (rb_control_frame_t *)($ps_thread_th->stack + $ps_thread_th->stack_size)-1
+  while $cfp < $cfpend
+    if $cfp->iseq
+      if $cfp->pc
+        set $location = $cfp->iseq->body->location
+        print_string $location.path
+        printf ":"
+        print_lineno $cfp
+        printf ":in `"
+        print_string $location.label
+        printf "'\n"
+      else
+        printf "???.rb:???:in `???'\n"
+      end
+    else
+      # if ($cfp->flag & VM_FRAME_MAGIC_MASK) == VM_FRAME_MAGIC_CFUNC
+      if ($cfp->flag & 255) == 0x61
+        # you can check cfunc by simple `backtrace` command...
+        printf "cfunc:???:in `???'\n"
+      else
+        printf "unknown_frame:???:in `???'\n"
+      end
+    end
+    set $cfp = $cfp + 1
+  end
 end
 
 # Details: https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/MachineInstructionsTraceWithGDB
