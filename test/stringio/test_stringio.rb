@@ -692,7 +692,7 @@ class TestStringIO < Test::Unit::TestCase
         x = "a"*0x100000
         break if [x].pack("p").unpack("i!")[0] < 0
         ary << x
-        skip if ary.size > 1000
+        skip if ary.size > 100
       end
       s = StringIO.new(x)
       s.gets("xxx", limit)
