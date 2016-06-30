@@ -105,40 +105,38 @@ optimized_unescape_html(VALUE str)
 	plen = i - beg;
 	if (++i >= len) break;
 	c = (unsigned char)cstr[i];
+#define MATCH(s) (len - i >= (int)rb_strlen_lit(s) && \
+		  memcmp(&cstr[i], s, rb_strlen_lit(s)) == 0 && \
+		  (i += rb_strlen_lit(s) - 1, 1))
 	switch (c) {
 	  case 'a':
 	    ++i;
-	    if (len - i >= 4 && memcmp(&cstr[i], "pos;", 4) == 0) {
+	    if (MATCH("pos;")) {
 		c = '\'';
-		i += 3;
 	    }
-	    else if (len - i >= 3 && memcmp(&cstr[i], "mp;", 3) == 0) {
+	    else if (MATCH("mp;")) {
 		c = '&';
-		i += 2;
 	    }
 	    else continue;
 	    break;
 	  case 'q':
 	    ++i;
-	    if (len - i >= 4 && memcmp(&cstr[i], "uot;", 4) == 0) {
+	    if (MATCH("uot;")) {
 		c = '"';
-		i += 3;
 	    }
 	    else continue;
 	    break;
 	  case 'g':
 	    ++i;
-	    if (len - i >= 2 && memcmp(&cstr[i], "t;", 2) == 0) {
+	    if (MATCH("t;")) {
 		c = '>';
-		i += 1;
 	    }
 	    else continue;
 	    break;
 	  case 'l':
 	    ++i;
-	    if (len - i >= 2 && memcmp(&cstr[i], "t;", 2) == 0) {
+	    if (MATCH("t;")) {
 		c = '<';
-		i += 1;
 	    }
 	    else continue;
 	    break;
