@@ -1050,11 +1050,11 @@ $(UNICODE_FILES):
 	    $(UNICODE_FILES)
 
 $(srcdir)/$(HAVE_BASERUBY:yes=lib/unicode_normalize/tables.rb): \
-	$(srcdir)/.unicode-tables.time
+	$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time
 
-$(srcdir)/$(ALWAYS_UPDATE_UNICODE:yes=.unicode-tables.time): $(UNICODE_FILES)
+$(UNICODE_SRC_DATA_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=.unicode-tables.time): $(UNICODE_FILES)
 
-$(srcdir)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
+$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
 		$(srcdir)/template/unicode_norm_gen.tmpl
 	$(Q) $(ALWAYS_UPDATE_UNICODE:yes=exit &&) $(MAKE) $(MFLAGS) Q=$(Q) update-unicode
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb \
