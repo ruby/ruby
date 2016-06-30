@@ -1,3 +1,32 @@
+Thu Jun 30 19:15:13 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* string.c: Fix memory corruptions when using UTF-16/32 strings.
+	  [Bug #12536] [ruby-dev:49699]
+
+	* string.c (TERM_LEN_MAX): Macro for the longest TERM_FILL length,
+	  the same as largest value of rb_enc_mbminlen(enc) among encodings.
+
+	* string.c (str_new, rb_str_buf_new, str_shared_replace): Allocate
+	  +TERM_LEN_MAX bytes instead of +1. This change may increase memory
+	  usage.
+
+	* string.c (rb_str_new_with_class): Use TERM_LEN of the "obj".
+
+	* string.c (rb_str_plus, rb_str_justify): Use str_new0 which is aware
+	  of termlen.
+
+	* string.c (str_shared_replace): Copy +termlen bytes instead of +1.
+
+	* string.c (rb_str_times): termlen should not be included in capa.
+
+	* string.c (RESIZE_CAPA_TERM): When using RSTRING_EMBED_LEN_MAX,
+	  termlen should be counted with it because embedded strings are
+	  also processed by TERM_FILL.
+
+	* string.c (rb_str_capacity, str_shared_replace, str_buf_cat): ditto.
+
+	* string.c (rb_str_drop_bytes, rb_str_setbyte, str_byte_substr): ditto.
+
 Wed Jun 29 22:24:37 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/psych/lib/psych_jars.rb: removed needless file required to JRuby.
