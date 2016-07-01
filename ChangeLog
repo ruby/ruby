@@ -1,3 +1,9 @@
+Sat Jul  2 03:09:27 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* string.c: Partially reverts r55547 and r55555.
+	  ChangeLog about the reverted changes are also deleted in this file.
+	  [Bug #12536] [ruby-dev:49699] [ruby-dev:49702]
+
 Sat Jul  2 02:22:22 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* string.c (str_fill_term): When termlen increases, re-allocation
@@ -9,15 +15,6 @@ Fri Jul  1 20:20:20 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
   	* string.c: Specify termlen as far as possible.
 	  Additional fix for [Bug #12536] [ruby-dev:49699].
-
-	* string.c (rb_usascii_str_new, rb_utf8_str_new): Specify termlen
-	  which is apparently 1 for the encodings.
-
-	* string.c (str_new0_cstr): New static function to create a String
-	  object from a C string with specifying termlen.
-
-	* string.c (rb_usascii_str_new_cstr, rb_utf8_str_new_cstr): Specify
-	  termlen by using new str_new0_cstr().
 
 	* string.c (str_new_static): Specify termlen from the given encoding
 	  when creating a new String object is needed.
@@ -66,13 +63,6 @@ Thu Jun 30 19:15:13 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* string.c: Fix memory corruptions when using UTF-16/32 strings.
 	  [Bug #12536] [ruby-dev:49699]
-
-	* string.c (TERM_LEN_MAX): Macro for the longest TERM_FILL length,
-	  the same as largest value of rb_enc_mbminlen(enc) among encodings.
-
-	* string.c (str_new, rb_str_buf_new, str_shared_replace): Allocate
-	  +TERM_LEN_MAX bytes instead of +1. This change may increase memory
-	  usage.
 
 	* string.c (rb_str_new_with_class): Use TERM_LEN of the "obj".
 

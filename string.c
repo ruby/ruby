@@ -120,7 +120,6 @@ VALUE rb_cSymbol;
     if (UNLIKELY(term_fill_len > 1))\
 	memset(term_fill_ptr, 0, term_fill_len);\
 } while (0)
-#define TERM_LEN_MAX 4 /* UTF-32LE, UTF-32BE */
 
 #define RESIZE_CAPA(str,capacity) do {\
     const int termlen = TERM_LEN(str);\
@@ -714,7 +713,7 @@ str_new0(VALUE klass, const char *ptr, long len, int termlen)
 static VALUE
 str_new(VALUE klass, const char *ptr, long len)
 {
-    return str_new0(klass, ptr, len, TERM_LEN_MAX);
+    return str_new0(klass, ptr, len, 1);
 }
 
 VALUE
@@ -726,7 +725,7 @@ rb_str_new(const char *ptr, long len)
 VALUE
 rb_usascii_str_new(const char *ptr, long len)
 {
-    VALUE str = str_new0(rb_cString, ptr, len, 1); /* termlen == 1 */
+    VALUE str = rb_str_new(ptr, len);
     ENCODING_CODERANGE_SET(str, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
     return str;
 }
@@ -734,7 +733,7 @@ rb_usascii_str_new(const char *ptr, long len)
 VALUE
 rb_utf8_str_new(const char *ptr, long len)
 {
-    VALUE str = str_new0(rb_cString, ptr, len, 1); /* termlen == 1 */
+    VALUE str = str_new(rb_cString, ptr, len);
     rb_enc_associate_index(str, rb_utf8_encindex());
     return str;
 }
@@ -758,17 +757,10 @@ rb_str_new_cstr(const char *ptr)
     return rb_str_new(ptr, strlen(ptr));
 }
 
-static VALUE
-str_new0_cstr(const char *ptr, int termlen)
-{
-    must_not_null(ptr);
-    return str_new0(rb_cString, ptr, strlen(ptr), termlen);
-}
-
 VALUE
 rb_usascii_str_new_cstr(const char *ptr)
 {
-    VALUE str = str_new0_cstr(ptr, 1); /* termlen == 1 */
+    VALUE str = rb_str_new_cstr(ptr);
     ENCODING_CODERANGE_SET(str, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
     return str;
 }
@@ -776,7 +768,7 @@ rb_usascii_str_new_cstr(const char *ptr)
 VALUE
 rb_utf8_str_new_cstr(const char *ptr)
 {
-    VALUE str = str_new0_cstr(ptr, 1); /* termlen == 1 */
+    VALUE str = rb_str_new_cstr(ptr);
     rb_enc_associate_index(str, rb_utf8_encindex());
     return str;
 }
@@ -1202,7 +1194,7 @@ rb_str_buf_new(long capa)
     }
     FL_SET(str, STR_NOEMBED);
     RSTRING(str)->as.heap.aux.capa = capa;
-    RSTRING(str)->as.heap.ptr = ALLOC_N(char, capa + TERM_LEN_MAX);
+    RSTRING(str)->as.heap.ptr = ALLOC_N(char, capa+1);
     RSTRING(str)->as.heap.ptr[0] = '\0';
 
     return str;
