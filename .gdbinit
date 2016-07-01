@@ -1005,6 +1005,92 @@ define rb_ps_thread
   end
 end
 
+define rb_count_objects
+  set $objspace = ruby_current_vm->objspace
+  set $counts_00 = 0
+  set $counts_01 = 0
+  set $counts_02 = 0
+  set $counts_03 = 0
+  set $counts_04 = 0
+  set $counts_05 = 0
+  set $counts_06 = 0
+  set $counts_07 = 0
+  set $counts_08 = 0
+  set $counts_09 = 0
+  set $counts_0a = 0
+  set $counts_0b = 0
+  set $counts_0c = 0
+  set $counts_0d = 0
+  set $counts_0e = 0
+  set $counts_0f = 0
+  set $counts_10 = 0
+  set $counts_11 = 0
+  set $counts_12 = 0
+  set $counts_13 = 0
+  set $counts_14 = 0
+  set $counts_15 = 0
+  set $counts_16 = 0
+  set $counts_17 = 0
+  set $counts_18 = 0
+  set $counts_19 = 0
+  set $counts_1a = 0
+  set $counts_1b = 0
+  set $counts_1c = 0
+  set $counts_1d = 0
+  set $counts_1e = 0
+  set $counts_1f = 0
+  set $total = 0
+  set $i = 0
+  while $i < $objspace->heap_pages.allocated_pages
+    printf "\rcounting... %d/%d", $i, $objspace->heap_pages.allocated_pages
+    set $page = $objspace->heap_pages.sorted[$i]
+    set $p = $page->start
+    set $pend = $p + $page->total_slots
+    while $p < $pend
+      set $flags = $p->as.basic.flags & 0x1f
+      eval "set $counts_%02x = $counts_%02x + 1", $flags, $flags
+      set $p = $p + 1
+    end
+    set $total = $total + $page->total_slots
+    set $i = $i + 1
+  end
+  printf "\rTOTAL: %d, FREE: %d\n", $total, $counts_00
+  printf "T_OBJECT: %d\n", $counts_01
+  printf "T_CLASS: %d\n", $counts_02
+  printf "T_MODULE: %d\n", $counts_03
+  printf "T_FLOAT: %d\n", $counts_04
+  printf "T_STRING: %d\n", $counts_05
+  printf "T_REGEXP: %d\n", $counts_06
+  printf "T_ARRAY: %d\n", $counts_07
+  printf "T_HASH: %d\n", $counts_08
+  printf "T_STRUCT: %d\n", $counts_09
+  printf "T_BIGNUM: %d\n", $counts_0a
+  printf "T_FILE: %d\n", $counts_0b
+  printf "T_DATA: %d\n", $counts_0c
+  printf "T_MATCH: %d\n", $counts_0d
+  printf "T_COMPLEX: %d\n", $counts_0e
+  printf "T_RATIONAL: %d\n", $counts_0f
+  #printf "UNKNOWN_10: %d\n", $counts_10
+  printf "T_NIL: %d\n", $counts_11
+  printf "T_TRUE: %d\n", $counts_12
+  printf "T_FALSE: %d\n", $counts_13
+  printf "T_SYMBOL: %d\n", $counts_14
+  printf "T_FIXNUM: %d\n", $counts_15
+  printf "T_UNDEF: %d\n", $counts_16
+  #printf "UNKNOWN_17: %d\n", $counts_17
+  #printf "UNKNOWN_18: %d\n", $counts_18
+  #printf "UNKNOWN_19: %d\n", $counts_19
+  printf "T_IMEMO: %d\n", $counts_1a
+  printf "T_NODE: %d\n", $counts_1b
+  printf "T_ICLASS: %d\n", $counts_1c
+  printf "T_ZOMBIE: %d\n", $counts_1d
+  #printf "UNKNOWN_1E: %d\n", $counts_1e
+  printf "T_MASK: %d\n", $counts_1f
+end
+document rb_count_objects
+  Counts all objects grouped by type.
+end
+
 # Details: https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/MachineInstructionsTraceWithGDB
 define trace_machine_instructions
   set logging on

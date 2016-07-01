@@ -1,3 +1,7 @@
+Fri Jul  1 12:11:01 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* .gdbinit (rb_count_objects): added gdb version of count_objects().
+
 Fri Jul  1 04:32:52 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* .gdbinit (rb_ps_thread): show ruby level backtrace.
