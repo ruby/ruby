@@ -413,7 +413,7 @@ document rp_id
   Print an ID.
 end
 
-define print_string
+define output_string
   set $flags = ((struct RBasic*)($arg0))->flags
   printf "%s", (char *)(($flags & RUBY_FL_USER1) ? \
 	    ((struct RString*)($arg0))->as.heap.ptr : \
@@ -972,6 +972,61 @@ define print_lineno
   end
 end
 
+define check_method_entry
+  # get $immeo and $can_be_svar and return $me
+  set $imemo = (struct RBasic *)$arg0
+  set $can_be_svar = $arg1
+  if $imemo != Qfalse
+    set $type = ($imemo->flags >> 12) & 0x07
+    if $type == imemo_ment
+      set $me = (rb_callable_method_entry_t *)$imemo
+    else
+    if $type == imemo_svar
+      set $imemo == ((struct vm_svar *)$imemo)->cref_or_me
+      check_method_entry $imemo 0
+    end
+    end
+  end
+end
+
+define output_id
+  set $id = $arg0
+  # rb_id_to_serial
+  if $id > tLAST_OP_ID
+    set $serial = (rb_id_serial_t)($id >> ID_SCOPE_SHIFT)
+  else
+    set $serial = (rb_id_serial_t)$id
+  end
+  if $serial && $serial <= global_symbols.last_id
+    set $idx = $serial / ID_ENTRY_UNIT
+    set $ids = (struct RArray *)global_symbols.ids
+    set $flags = $ids->basic.flags
+    if ($flags & RUBY_FL_USER1)
+      set $idsptr = $ids->as.ary
+      set $idslen = (($flags & (RUBY_FL_USER3|RUBY_FL_USER4)) >> (RUBY_FL_USHIFT+3))
+    else
+      set $idsptr = $ids->as.heap.ptr
+      set $idslen = $ids->as.heap.len
+    end
+    if $idx < $idslen
+      set $t = 0
+      set $ary = (struct RArray *)$idsptr[$idx]
+      if $ary != Qnil
+        set $flags = $ary->basic.flags
+        if ($flags & RUBY_FL_USER1)
+          set $aryptr = $ary->as.ary
+          set $arylen = (($flags & (RUBY_FL_USER3|RUBY_FL_USER4)) >> (RUBY_FL_USHIFT+3))
+        else
+          set $aryptr = $ary->as.heap.ptr
+          set $arylen = $ary->as.heap.len
+        end
+        set $result = $aryptr[($serial % ID_ENTRY_UNIT) * ID_ENTRY_SIZE + $t]
+        output_string $result
+      end
+    end
+  end
+end
+
 define rb_ps_thread
   set $ps_thread = (struct RTypedData*)$arg0
   set $ps_thread_th = (rb_thread_t*)$ps_thread->data
@@ -983,11 +1038,11 @@ define rb_ps_thread
     if $cfp->iseq
       if $cfp->pc
         set $location = $cfp->iseq->body->location
-        print_string $location.path
+        output_string $location.path
         printf ":"
         print_lineno $cfp
         printf ":in `"
-        print_string $location.label
+        output_string $location.label
         printf "'\n"
       else
         printf "???.rb:???:in `???'\n"
@@ -995,8 +1050,27 @@ define rb_ps_thread
     else
       # if ($cfp->flag & VM_FRAME_MAGIC_MASK) == VM_FRAME_MAGIC_CFUNC
       if ($cfp->flag & 255) == 0x61
-        # you can check cfunc by simple `backtrace` command...
-        printf "cfunc:???:in `???'\n"
+        #define VM_ENVVAL_BLOCK_PTR_FLAG 0x02
+        #define VM_EP_PREV_EP(ep)   ((VALUE *)GC_GUARDED_PTR_REF((ep)[0]))
+        set $ep = $cfp->ep
+        set $me = NULL
+        while ($ep[0] & 0x02) != 0
+          check_method_entry $ep[-1] 0
+          if $me != NULL
+            loop_break
+          end
+          set $ep = $ep[0]
+        end
+        if $me == NULL
+          check_method_entry $ep[-1] 1
+        end
+        set print symbol-filename on
+        output/a $me->def->body.cfunc.func
+        set print symbol-filename off
+        set $mid = $me->def->original_id
+        printf ":in `"
+        output_id $mid
+        printf "'\n"
       else
         printf "unknown_frame:???:in `???'\n"
       end
