@@ -1,3 +1,10 @@
+Fri Jul  1 13:26:39 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* string.c (rb_str_subseq, str_substr): When RSTRING_EMBED_LEN_MAX
+	  is used, TERM_LEN(str) should be considered with it because
+	  embedded strings are also processed by TERM_FILL.
+	  Additional fix for [Bug #12536] [ruby-dev:49699].
+
 Fri Jul  1 12:11:01 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* .gdbinit (rb_count_objects): added gdb version of count_objects().

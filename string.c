@@ -2226,7 +2226,7 @@ rb_str_subseq(VALUE str, long beg, long len)
 {
     VALUE str2;
 
-    if (RSTRING_EMBED_LEN_MAX < len && SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str))) {
+    if ((RSTRING_EMBED_LEN_MAX + 1 - TERM_LEN(str)) < len && SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str))) {
 	long olen;
 	str2 = rb_str_new_shared(rb_str_new_frozen(str));
 	RSTRING(str2)->as.heap.ptr += beg;
@@ -2344,7 +2344,7 @@ str_substr(VALUE str, long beg, long len, int empty)
     char *p = rb_str_subpos(str, beg, &len);
 
     if (!p) return Qnil;
-    if (len > RSTRING_EMBED_LEN_MAX && SHARABLE_SUBSTRING_P(p, len, RSTRING_END(str))) {
+    if (len > (RSTRING_EMBED_LEN_MAX + 1 - TERM_LEN(str)) && SHARABLE_SUBSTRING_P(p, len, RSTRING_END(str))) {
 	long ofs = p - RSTRING_PTR(str);
 	str2 = rb_str_new_frozen(str);
 	str2 = str_new_shared(rb_obj_class(str2), str2);
