@@ -2029,17 +2029,36 @@ str_null_char(const char *s, long len, const int minlen, rb_encoding *enc)
 static char *
 str_fill_term(VALUE str, char *s, long len, int termlen)
 {
-    long capa = rb_str_capacity(str) + 1;
+    long capa = rb_str_capacity(str);
+    /* This function could be called during the encoding changing procedure.
+     * If so, the termlen may be different from current TERM_LEN(str).
+     */
+    const int oldtermlen = TERM_LEN(str);
 
-    if (capa < len + termlen) {
+    if (capa < len + termlen - 1) { /* assumes oldtermlen is 1 here */
 	rb_check_lockedtmp(str);
 	str_make_independent_expand(str, len, 0L, termlen);
     }
     else if (str_dependent_p(str)) {
-	if (!zero_filled(s + len, termlen))
+	if ((termlen > oldtermlen) || !zero_filled(s + len, termlen))
 	    str_make_independent_expand(str, len, 0L, termlen);
     }
     else {
+	if (termlen > oldtermlen) {
+	    if (!STR_EMBED_P(str)) {
+		const int d = termlen - oldtermlen;
+		if (capa > len + d) {
+		    /* decrease capa for the new termlen */
+		    capa -= d;
+		    assert(capa >= 1);
+		    assert(!FL_TEST((str), STR_SHARED));
+		    RSTRING(str)->as.heap.aux.capa = capa;
+		} else {
+		    assert(capa >= len);
+		    RESIZE_CAPA_TERM(str, capa, termlen);
+		}
+	    }
+	}
 	TERM_FILL(s + len, termlen);
 	return s;
     }

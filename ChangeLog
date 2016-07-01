@@ -1,3 +1,10 @@
+Sat Jul  2 02:22:22 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* string.c (str_fill_term): When termlen increases, re-allocation
+	  of memory for termlen should always be needed.
+	  In this fix, if possible, decrease capa instead of realloc.
+	  [Bug #12536] [ruby-dev:49699]
+
 Fri Jul  1 20:20:20 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
   	* string.c: Specify termlen as far as possible.
