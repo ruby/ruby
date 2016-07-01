@@ -726,7 +726,7 @@ rb_str_new(const char *ptr, long len)
 VALUE
 rb_usascii_str_new(const char *ptr, long len)
 {
-    VALUE str = rb_str_new(ptr, len);
+    VALUE str = str_new0(rb_cString, ptr, len, 1); /* termlen == 1 */
     ENCODING_CODERANGE_SET(str, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
     return str;
 }
@@ -734,7 +734,7 @@ rb_usascii_str_new(const char *ptr, long len)
 VALUE
 rb_utf8_str_new(const char *ptr, long len)
 {
-    VALUE str = str_new(rb_cString, ptr, len);
+    VALUE str = str_new0(rb_cString, ptr, len, 1); /* termlen == 1 */
     rb_enc_associate_index(str, rb_utf8_encindex());
     return str;
 }
@@ -758,10 +758,17 @@ rb_str_new_cstr(const char *ptr)
     return rb_str_new(ptr, strlen(ptr));
 }
 
+static VALUE
+str_new0_cstr(const char *ptr, int termlen)
+{
+    must_not_null(ptr);
+    return str_new0(rb_cString, ptr, strlen(ptr), termlen);
+}
+
 VALUE
 rb_usascii_str_new_cstr(const char *ptr)
 {
-    VALUE str = rb_str_new_cstr(ptr);
+    VALUE str = str_new0_cstr(ptr, 1); /* termlen == 1 */
     ENCODING_CODERANGE_SET(str, rb_usascii_encindex(), ENC_CODERANGE_7BIT);
     return str;
 }
@@ -769,7 +776,7 @@ rb_usascii_str_new_cstr(const char *ptr)
 VALUE
 rb_utf8_str_new_cstr(const char *ptr)
 {
-    VALUE str = rb_str_new_cstr(ptr);
+    VALUE str = str_new0_cstr(ptr, 1); /* termlen == 1 */
     rb_enc_associate_index(str, rb_utf8_encindex());
     return str;
 }
@@ -794,7 +801,8 @@ str_new_static(VALUE klass, const char *ptr, long len, int encindex)
     }
 
     if (!ptr) {
-	str = str_new(klass, ptr, len);
+	rb_encoding *enc = rb_enc_get_from_index(encindex);
+	str = str_new0(klass, ptr, len, rb_enc_mbminlen(enc));
     }
     else {
 	RUBY_DTRACE_CREATE_HOOK(STRING, len);
@@ -837,6 +845,15 @@ VALUE
 rb_tainted_str_new(const char *ptr, long len)
 {
     VALUE str = rb_str_new(ptr, len);
+
+    OBJ_TAINT(str);
+    return str;
+}
+
+static VALUE
+rb_tainted_str_new_with_enc(const char *ptr, long len, rb_encoding *enc)
+{
+    VALUE str = rb_enc_str_new(ptr, len, enc);
 
     OBJ_TAINT(str);
     return str;
@@ -974,7 +991,7 @@ rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *eenc)
 {
     VALUE str;
 
-    str = rb_tainted_str_new(ptr, len);
+    str = rb_tainted_str_new_with_enc(ptr, len, eenc);
     return rb_external_str_with_enc(str, eenc);
 }
 

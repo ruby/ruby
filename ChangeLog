@@ -1,3 +1,29 @@
+Fri Jul  1 20:20:20 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+  	* string.c: Specify termlen as far as possible.
+	  Additional fix for [Bug #12536] [ruby-dev:49699].
+
+	* string.c (rb_usascii_str_new, rb_utf8_str_new): Specify termlen
+	  which is apparently 1 for the encodings.
+
+	* string.c (str_new0_cstr): New static function to create a String
+	  object from a C string with specifying termlen.
+
+	* string.c (rb_usascii_str_new_cstr, rb_utf8_str_new_cstr): Specify
+	  termlen by using new str_new0_cstr().
+
+	* string.c (str_new_static): Specify termlen from the given encoding
+	  when creating a new String object is needed.
+
+	* string.c (rb_tainted_str_new_with_enc): New function to create a
+	  tainted String object with the given encoding. This means that
+	  the termlen is correctly specified. Curretly static function.
+	  The function name might be renamed to rb_tainted_enc_str_new
+	  or rb_enc_tainted_str_new.
+
+	* string.c (rb_external_str_new_with_enc): Use encoding by using the
+	  above rb_tainted_str_new_with_enc().
+
 Fri Jul  1 19:38:57 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/fiddle/test_pointer.rb (test_to_str, test_to_s, test_aref_aset):
