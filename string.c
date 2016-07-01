@@ -128,7 +128,7 @@ VALUE rb_cSymbol;
 } while (0)
 #define RESIZE_CAPA_TERM(str,capacity,termlen) do {\
     if (STR_EMBED_P(str)) {\
-	if ((capacity) > RSTRING_EMBED_LEN_MAX + 1 - (termlen)) {\
+	if ((capacity) > (RSTRING_EMBED_LEN_MAX + 1 - (termlen))) {\
 	    char *const tmp = ALLOC_N(char, (capacity)+termlen);\
 	    const long tlen = RSTRING_LEN(str);\
 	    memcpy(tmp, RSTRING_PTR(str), tlen);\
@@ -651,7 +651,7 @@ size_t
 rb_str_capacity(VALUE str)
 {
     if (STR_EMBED_P(str)) {
-	return RSTRING_EMBED_LEN_MAX + 1 - TERM_LEN(str);
+	return (RSTRING_EMBED_LEN_MAX + 1 - TERM_LEN(str));
     }
     else if (FL_TEST(str, STR_SHARED|STR_NOFREE)) {
 	return RSTRING(str)->as.heap.len;
@@ -695,7 +695,7 @@ str_new0(VALUE klass, const char *ptr, long len, int termlen)
     RUBY_DTRACE_CREATE_HOOK(STRING, len);
 
     str = str_alloc(klass);
-    if (len > RSTRING_EMBED_LEN_MAX + 1 - termlen) {
+    if (len > (RSTRING_EMBED_LEN_MAX + 1 - termlen)) {
 	RSTRING(str)->as.heap.aux.capa = len;
 	RSTRING(str)->as.heap.ptr = ALLOC_N(char, len + termlen);
 	STR_SET_NOEMBED(str);
@@ -1262,7 +1262,7 @@ str_shared_replace(VALUE str, VALUE str2)
     OBJ_INFECT(str, str2);
     termlen = rb_enc_mbminlen(enc);
 
-    if (RSTRING_LEN(str2) <= RSTRING_EMBED_LEN_MAX + 1 - termlen) {
+    if (RSTRING_LEN(str2) <= (RSTRING_EMBED_LEN_MAX + 1 - termlen)) {
 	STR_SET_EMBED(str);
 	memcpy(RSTRING_PTR(str), RSTRING_PTR(str2), RSTRING_LEN(str2)+termlen);
 	STR_SET_EMBED_LEN(str, RSTRING_LEN(str2));
@@ -4146,7 +4146,7 @@ rb_str_drop_bytes(VALUE str, long len)
     str_modifiable(str);
     if (len > olen) len = olen;
     nlen = olen - len;
-    if (nlen <= RSTRING_EMBED_LEN_MAX + 1 - TERM_LEN(str)) {
+    if (nlen <= (RSTRING_EMBED_LEN_MAX + 1 - TERM_LEN(str))) {
 	char *oldptr = ptr;
 	int fl = (int)(RBASIC(str)->flags & (STR_NOEMBED|STR_SHARED|STR_NOFREE));
 	STR_SET_EMBED(str);
@@ -4997,7 +4997,7 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
     enc = STR_ENC_GET(str);
     head = RSTRING_PTR(str);
     ptr = &head[pos];
-    if (len > RSTRING_EMBED_LEN_MAX + 1 - rb_enc_mbminlen(enc)) {
+    if (len > (RSTRING_EMBED_LEN_MAX + 1 - rb_enc_mbminlen(enc))) {
 	cr = ENC_CODERANGE(str);
 	switch (cr) {
 	  case ENC_CODERANGE_7BIT:
@@ -5051,7 +5051,7 @@ str_byte_substr(VALUE str, long beg, long len, int empty)
     else
 	p = s + beg;
 
-    if (len > RSTRING_EMBED_LEN_MAX + 1 - TERM_LEN(str) && SHARABLE_SUBSTRING_P(beg, len, n)) {
+    if (len > (RSTRING_EMBED_LEN_MAX + 1 - TERM_LEN(str)) && SHARABLE_SUBSTRING_P(beg, len, n)) {
 	str2 = rb_str_new_frozen(str);
 	str2 = str_new_shared(rb_obj_class(str2), str2);
 	RSTRING(str2)->as.heap.ptr += beg;
