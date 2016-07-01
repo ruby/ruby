@@ -2684,6 +2684,17 @@ vm_eliminate_insn(rb_control_frame_t *restrict cfp,
     }
 }
 
+static inline void
+vm_move_nop(rb_control_frame_t *restrict cfp,
+            const VALUE *restrict pc)
+{
+    const rb_iseq_t *restrict i      = cfp->iseq;
+    const VALUE *head                = i->body->iseq_encoded;
+    int idx                          = pc - head - 3;
+
+    iseq_move_nop(i, idx);
+}
+
 static bool
 vm_is_hot(CALL_CACHE cc)
 {

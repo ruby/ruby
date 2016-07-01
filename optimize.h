@@ -57,6 +57,17 @@ void iseq_eliminate_insn(const struct rb_iseq_struct *restrict i, struct cfp_las
     __attribute__((leaf));
 
 /**
+ * Swaps nop -> adjuststack sequence into adjuststack -> nop sequence.
+ *
+ * @param [out] i target iseq struct to swap instructions.
+ * @param [in]  j index of nop to swap.
+ */
+void iseq_move_nop(const struct rb_iseq_struct *restrict i, int j)
+    __attribute__((hot))
+    __attribute__((nonnull))
+    __attribute__((leaf));
+
+/**
  * Analyze an iseq  to add annotations.  This only annotates  an ISeq, does not
  * change the sequence in any form by itself.
  *

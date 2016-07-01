@@ -725,6 +725,16 @@ adjuststack
 (...) // inc += -n
 {
     DEC_SP(n);
+    /* If the immediately precedent instruction was nop, we can safely
+     * swap that with current instruction.  This is generaly true with
+     * very few exceptional situations. For adjuststack, it is more
+     * important than others because this potentially enables further
+     * optimizations (see below), and the exceptional situation never
+     * applies.
+     */
+    if (GET_OPERAND(-OPN_OF_CURRENT_INSN - 2) == (VALUE)LABEL_PTR(nop)) {
+        vm_move_nop(GET_CFP(), GET_PC());
+    }
     /* If the immediately precedent instruction was send (or its
      * variant), and here we are in adjuststack instruction, this
      * means the return value of the method call is silently

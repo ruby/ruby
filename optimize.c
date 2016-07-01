@@ -472,6 +472,7 @@ iseq_analyze(rb_iseq_t *iseq)
 
 static const VALUE wipeout_pattern[8]; /* maybe 5+2==7 should suffice? */
 static VALUE adjuststack;
+static VALUE nop;
 
 void
 construct_pattern(void)
@@ -491,7 +492,19 @@ construct_pattern(void)
 
     memcpy((void *)wipeout_pattern, p, sizeof(p));
     adjuststack = (VALUE)LABEL_PTR(adjuststack);
+    nop         = (VALUE)LABEL_PTR(nop);
 #undef LABEL_PTR
+}
+
+void
+iseq_move_nop(const rb_iseq_t *restrict i, int j)
+{
+    VALUE m                 = i->body->iseq_encoded[j + 2];
+    const VALUE template[3] = { adjuststack, m, nop };
+    VALUE *buf              = (VALUE *)&i->body->iseq_encoded[j];
+
+    memcpy(buf, template, sizeof(template));
+    ISEQ_RESET_ORIGINAL_ISEQ(i);
 }
 
 void
