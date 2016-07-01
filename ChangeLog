@@ -1,3 +1,10 @@
+Fri Jul  1 19:38:57 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* test/fiddle/test_pointer.rb (test_to_str, test_to_s, test_aref_aset):
+	  Attempt to use independent strings for destructive tests that
+	  directly modify values on memory by using Fiddle::Pointer.
+	  [Bug #12537] [ruby-dev:49700]
+
 Fri Jul  1 18:20:00 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* .gdbinit (rb_ps_thread): show the detail of cfunc in ruby level
