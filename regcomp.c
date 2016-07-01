@@ -1870,17 +1870,16 @@ noname_disable_map(Node** plink, GroupNumRemap* map, int* counter)
 	  (*counter)++;
 	  map[en->regnum].new_val = *counter;
 	  en->regnum = *counter;
-	  r = noname_disable_map(&(en->target), map, counter);
 	}
-	else {
+	else if (en->regnum != 0) {
 	  *plink = en->target;
 	  en->target = NULL_NODE;
 	  onig_node_free(node);
 	  r = noname_disable_map(plink, map, counter);
+	  break;
 	}
       }
-      else
-	r = noname_disable_map(&(en->target), map, counter);
+      r = noname_disable_map(&(en->target), map, counter);
     }
     break;
 

@@ -441,6 +441,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(RegexpError) { Regexp.new(")(") }
     assert_raise(RegexpError) { Regexp.new('[\\40000000000') }
     assert_raise(RegexpError) { Regexp.new('[\\600000000000.') }
+    assert_raise(RegexpError) { Regexp.new("((?<v>))\\g<0>") }
   end
 
   def test_unescape
