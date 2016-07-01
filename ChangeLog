@@ -50,7 +50,7 @@ Fri Jul  1 12:11:01 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 Fri Jul  1 04:32:52 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* .gdbinit (rb_ps_thread): show ruby level backtrace.
-	  Usually you can call `rb_ps` to show ruby leve backtraces
+	  Usually you can call `rb_ps` to show ruby level backtraces
 	  for all living threads.
 	  Note that it can call with core file like `gcore <pid>`
 	  and `gdb ruby core.<pid>`.
