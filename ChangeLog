@@ -1,3 +1,8 @@
+Sat Jul  2 04:00:50 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (tr_trans): consider terminator length and fix heap
+	  overflow.  reported by Guido Vranken <guido AT guidovranken.nl>.
+
 Sat Jul  2 03:33:28 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm.c (invoke_bmethod, invoke_block_from_c_0): revert r52104
