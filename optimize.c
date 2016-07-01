@@ -153,6 +153,115 @@ static void construct_pattern(void)
     __attribute__((used))
     __attribute__((noinline));
 
+/**
+ * See if two iseqs are in parental relationship.
+ *
+ * @param [in] parent (possible) ascendant.
+ * @param [in] child  (possible) encumbrance.
+ * @return degree  of relationships  between two,  0 if they  are same,  -1 for
+ *     strangers.
+ */
+static inline int relative_p(const rb_iseq_t *parent, const rb_iseq_t *child)
+    __attribute__((nonnull));
+
+/**
+ * getlocal's distance of  EP.  It depends to the instructoin  because they can
+ * (tends to) be operands-unified.
+ *
+ * @param [in] ptr getlocal-ish insn sequence.
+ * @return level, a la vanilla getlocal's.
+ */
+static inline int getlocal_level(const VALUE *ptr)
+    __attribute__((pure))
+    __attribute__((nonnull));
+
+/**
+ * ditto for setlocal.
+ *
+ * @param [in] ptr setlocal-ish insn sequence.
+ * @return level, a la vanilla setlocal's.
+ */
+static inline int setlocal_level(const VALUE *ptr)
+    __attribute__((pure))
+    __attribute__((nonnull));
+
+/**
+ * iseq_analyze() can recur.  This is the recursion part.
+ *
+ * @param [in]  iseq   target iseq.
+ * @param [in]  parent parent iseq.
+ * @param [out] info   recursion pass-over.
+ * @return iseq's purity.
+ */
+static enum insn_purity iseq_analyze_i(const rb_iseq_t *iseq, const rb_iseq_t *parent, VALUE info)
+    __attribute__((nonnull));
+
+int
+relative_p(
+    const rb_iseq_t *parent,
+    const rb_iseq_t *child)
+{
+    const rb_iseq_t *i = child;
+
+    for (int j = 0; /* */; j++) {
+        if (! i) {
+            return -1;
+        }
+        else if (i == parent) {
+            return j;
+        }
+        else {
+            i = i->body->parent_iseq;
+        }
+    }
+}
+
+int
+getlocal_level(const VALUE *ptr)
+{
+    enum ruby_vminsn_type insn = (typeof(insn))ptr[0];
+
+    switch (insn) {
+      case BIN(setlocal):
+      case BIN(setlocal_OP__WC__0):
+      case BIN(setlocal_OP__WC__1):
+      case BIN(checkkeyword):
+        return -1;  /* OK known safe insns */
+
+      case BIN(getlocal):
+        return ptr[2];
+
+      case BIN(getlocal_OP__WC__0):
+        return 0;
+
+      case BIN(getlocal_OP__WC__1):
+        return 1;
+
+      default:
+        rb_bug("unknown instruction %s: blame @shyouhei.", insn_name(insn));
+    }
+}
+
+int
+setlocal_level(const VALUE *ptr)
+{
+    enum ruby_vminsn_type insn = (typeof(insn))ptr[0];
+
+    switch (insn) {
+      case BIN(setlocal):
+        return ptr[2];
+
+      case BIN(setlocal_OP__WC__0):
+        return 0;
+
+      case BIN(setlocal_OP__WC__1):
+        return 1;
+
+      default:
+        return -1;
+    }
+}
+
 bool
 cc_is_neq(const struct rb_call_cache *cc)
 {
@@ -437,7 +546,10 @@ purity_of_insn(
 }
 
 enum insn_purity
-iseq_purity(const rb_iseq_t *iseq)
+iseq_analyze_i(
+    const rb_iseq_t *iseq,
+    const rb_iseq_t *parent,
+    VALUE info)
 {
     enum insn_purity purity = insn_is_pure;
     const VALUE *ptr        = rb_iseq_original_iseq(iseq);
@@ -449,10 +561,44 @@ iseq_purity(const rb_iseq_t *iseq)
     for (int len = 0, i = 0; i < n; i += len) {
         enum insn_purity p;
         enum ruby_vminsn_type insn = (typeof(insn))ptr[i];
-        map->ptr[map->nelems++]    = &ptr[i];
+        const char *ops            = insn_op_types(insn);
+        const VALUE *now           = map->ptr[map->nelems++] = &ptr[i];
         p                          = purity_of_insn(insn, map);
         len                        = insn_len(insn);
         purity                     = purity_merge(purity, p);
+
+        for (int j = 0; j < len - 1; j++) {
+            VALUE op = now[j + 1];
+            int degree;
+            const rb_iseq_t *child;
+            int lv;
+
+            switch (ops[j]) {
+              case TS_LINDEX:
+                if ((lv = getlocal_level(now)) <  0) {
+                    break;
+                }
+                else if (lv != relative_p(parent, iseq)) {
+                    break;
+                }
+                else {
+                    rb_ary_store(info, now[1], Qtrue);
+                }
+                break;
+
+              case TS_VALUE:
+                if (LIKELY(CLASS_OF(op) != rb_cISeq)) {
+                    break;
+                }
+                /* FALLTHROUGH */
+
+              case TS_ISEQ:
+                child = (typeof(child))op;
+                if ((degree = relative_p(parent, child)) >= 0) {
+                    iseq_analyze_i(child, parent, info);
+                }
+            }
+        }
     }
 
     return purity;
@@ -463,8 +609,20 @@ iseq_analyze(rb_iseq_t *iseq)
 {
     if ((! iseq->body->attributes) ||
         FL_TEST(iseq, ISEQ_NEEDS_ANALYZE)) {
-        VALUE purep = VALUE_of_purity(iseq_purity(iseq));
+        int n       = iseq->body->local_size;
+        VALUE rw    = rb_ary_tmp_new(n + 1);
+        VALUE wo    = rb_ary_new_capa(n + 1);
+        VALUE purep = VALUE_of_purity(iseq_analyze_i(iseq, iseq, rw));
 
+        if (purep == Qfalse) {
+            iseq->body->temperature = -1;
+        }
+        for (int i = 0; i < n + 1; i++) {
+            if (rb_ary_entry(rw, i) != Qtrue) {
+                rb_ary_store(wo, i, Qtrue);
+            }
+        }
+        RB_ISEQ_ANNOTATE(iseq, core::writeonly_local_variables, wo);
         RB_ISEQ_ANNOTATE(iseq, core::purity, purep);
         FL_UNSET(iseq, ISEQ_NEEDS_ANALYZE);
     }
@@ -494,6 +652,45 @@ construct_pattern(void)
     adjuststack = (VALUE)LABEL_PTR(adjuststack);
     nop         = (VALUE)LABEL_PTR(nop);
 #undef LABEL_PTR
+}
+
+void
+iseq_eager_optimize(rb_iseq_t *iseq)
+{
+    const VALUE *ptr = rb_iseq_original_iseq(iseq);
+    VALUE *buf       = (VALUE *)iseq->body->iseq_encoded;
+    int n            = iseq->body->iseq_size;
+    bool f           = false;
+
+    for (int len = 0, i = 0; i < n; i += len) {
+        int level                  = setlocal_level(&ptr[i]);
+        enum ruby_vminsn_type insn = (typeof(insn))ptr[i];
+        len                        = insn_len(insn);
+
+        if (level >= 0) {
+            unsigned long lindex = (unsigned long)ptr[i + 1];
+            const rb_iseq_t *p   = iseq;
+
+            for (int j = 0; j < level; j++) {
+                p = p->body->parent_iseq;
+            }
+            if (RTEST(iseq_local_variable_is_writeonly(p, lindex))) {
+                f          = true;
+                buf[i]     = adjuststack;
+                buf[i + 1] = 1;
+                for (int k = 2; k < len; k++) {
+                    /* this loops at most once, as of writing. */
+                    buf[i + k] = nop;
+                }
+            }
+        }
+    }
+
+    FL_SET(iseq, ISEQ_EAGER_OPTIMIZED);
+    if (f) {
+        ISEQ_RESET_ORIGINAL_ISEQ(iseq);
+        FL_SET(iseq, ISEQ_NEEDS_ANALYZE);
+    }
 }
 
 void

@@ -65,6 +65,7 @@ getlocal
 	ep = GET_PREV_EP(ep);
     }
     val = *(ep - idx);
+    PREPARE_FOR_ELIMINATION;
 }
 
 /**
@@ -88,6 +89,23 @@ setlocal
 	ep = GET_PREV_EP(ep);
     }
     *(ep - idx) = val;
+
+    {
+	rb_iseq_t *iseq = (rb_iseq_t *)GET_ISEQ();
+	if (FL_TEST(iseq, ISEQ_EAGER_OPTIMIZED)) {
+	    /* already */
+	}
+	else if (iseq->body->temperature < 0) {
+	    /* not optimizable */
+	}
+	else if (inc_temperature(iseq->body->temperature) < 127) {
+	    /* iseq not in a hot path */
+	}
+	else {
+	    iseq_analyze(iseq);
+	    iseq_eager_optimize(iseq);
+	}
+    }
 }
 
 /**
@@ -613,6 +631,7 @@ dup
 (VALUE val1, VALUE val2)
 {
     val1 = val2 = val;
+    PREPARE_FOR_ELIMINATION;
 }
 
 /**
@@ -1161,6 +1180,19 @@ leave
     }
 
     RUBY_VM_CHECK_INTS(th);
+
+    {
+	rb_iseq_t *iseq = (rb_iseq_t *)GET_ISEQ();
+	if (iseq->body->temperature < 0) {
+	    /* not optimizable */
+	}
+	else if (inc_temperature(iseq->body->temperature) < 127) {
+	    /* iseq not in a hot path */
+	}
+	else {
+	    iseq_analyze(iseq);
+	}
+    }
 
     if (UNLIKELY(VM_FRAME_TYPE_FINISH_P(GET_CFP()))) {
 	vm_pop_frame(th);

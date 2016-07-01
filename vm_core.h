@@ -390,6 +390,8 @@ struct rb_iseq_constant_body {
     unsigned int ci_size;
     unsigned int ci_kw_size;
     unsigned int line_info_size;
+
+    signed char temperature;
 };
 
 /* T_IMEMO/iseq */

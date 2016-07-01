@@ -80,6 +80,16 @@ void iseq_analyze(struct rb_iseq_struct *i)
     __attribute__((leaf));
 
 /**
+ * Sometimes,  iseq_analyze()  can  find  something  that  can  be  immediately
+ * optimized.  This is called on such case.
+ *
+ * @param [out]  iseq   target iseq.
+ */
+void iseq_eager_optimize(rb_iseq_t *iseq)
+    __attribute__((nonnull))
+    __attribute__((leaf));
+
+/**
  * Check if an iseq is pure i.e.   contains no side-effect.  ISeq purity is the
  * core concept of this optimization infrastructure.
  *
@@ -89,10 +99,41 @@ void iseq_analyze(struct rb_iseq_struct *i)
 static inline VALUE iseq_is_pure(const struct rb_iseq_struct *iseq)
     __attribute__((nonnull));
 
+/**
+ * A local variable can be "write only".  On such situation such write to local
+ * variables are no use; subject to elimination.
+ *
+ * Note however,  that a  binding could  be obtained from  this iseq.   If such
+ * thing  happens,  the write-only  constraint  breaks.   This optimization  is
+ * subject to deoptimization on such case.
+ *
+ * @param [in] iseq  target iseq.
+ * @param [in] index local variable index.
+ * @return if it is write-only or not.
+ */
+static inline VALUE iseq_local_variable_is_writeonly(const struct rb_iseq_struct *iseq, unsigned long index)
+    __attribute__((nonnull));
+
 VALUE
 iseq_is_pure(const struct rb_iseq_struct *iseq)
 {
     return RB_ISEQ_ANNOTATED_P(iseq, core::purity);
+}
+
+VALUE
+iseq_local_variable_is_writeonly(
+    const struct rb_iseq_struct *iseq,
+    unsigned long index)
+{
+    VALUE v = iseq_is_pure(iseq);
+
+    if (v == Qtrue) {
+        v = RB_ISEQ_ANNOTATED_P(iseq, core::writeonly_local_variables);
+        if (TYPE(v) == T_ARRAY) {
+            return rb_ary_entry(v, index);
+        }
+    }
+    return v;
 }
 
 /* 

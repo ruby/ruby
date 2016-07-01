@@ -83,7 +83,8 @@ iseq_imemo_alloc(void)
 }
 
 #define ISEQ_NOT_LOADED_YET   IMEMO_FL_USER1
-#define ISEQ_NEEDS_ANALYZE   IMEMO_FL_USER2
+#define ISEQ_NEEDS_ANALYZE    IMEMO_FL_USER2
+#define ISEQ_EAGER_OPTIMIZED  IMEMO_FL_USER3
 
 VALUE iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt);
 void ibf_load_iseq_complete(rb_iseq_t *iseq);
