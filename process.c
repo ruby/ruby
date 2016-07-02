@@ -3497,44 +3497,10 @@ disable_child_handler_fork_child(struct child_handler_disabler_state *old, char 
 {
     int sig;
     int ret;
-#ifdef POSIX_SIGNAL
-    struct sigaction act, oact;
-
-    act.sa_handler = SIG_DFL;
-    act.sa_flags = 0;
-    ret = sigemptyset(&act.sa_mask); /* async-signal-safe */
-    if (ret == -1) {
-        ERRMSG("sigemptyset");
-        return -1;
-    }
-#else
-    sig_t handler;
-#endif
 
     for (sig = 1; sig < NSIG; sig++) {
-        int reset = 0;
-#ifdef SIGPIPE
-        if (sig == SIGPIPE) {
-            reset = 1;
-#ifndef POSIX_SIGNAL
-            handler = SIG_DFL;
-#endif
-	}
-#endif
-        if (!reset) {
-#ifdef POSIX_SIGNAL
-            ret = sigaction(sig, NULL, &oact); /* async-signal-safe */
-            if (ret == -1 && errno == EINVAL) {
-                continue; /* Ignore invalid signal number. */
-            }
-            if (ret == -1) {
-                ERRMSG("sigaction to obtain old action");
-                return -1;
-            }
-            reset = (oact.sa_flags & SA_SIGINFO) ||
-                    (oact.sa_handler != SIG_IGN && oact.sa_handler != SIG_DFL);
-#else
-            handler = signal(sig, SIG_DFL);
+            sig_t handler = signal(sig, SIG_DFL);
+
             if (handler == SIG_ERR && errno == EINVAL) {
                 continue; /* Ignore invalid signal number */
             }
@@ -3542,24 +3508,15 @@ disable_child_handler_fork_child(struct child_handler_disabler_state *old, char 
                 ERRMSG("signal to obtain old action");
                 return -1;
             }
-            reset = (handler != SIG_IGN && handler != SIG_DFL);
-#endif
-        }
-        if (reset) {
-#ifdef POSIX_SIGNAL
-            ret = sigaction(sig, &act, NULL); /* async-signal-safe */
-            if (ret == -1) {
-                ERRMSG("sigaction to set default action");
-                return -1;
+#ifdef SIGPIPE
+            if (sig == SIGPIPE) {
+                continue;
             }
-#else
-           handler = signal(sig, handler);
-           if (handler == SIG_ERR) {
-                ERRMSG("signal to set default action");
-                return -1;
-           }
 #endif
-        }
+            /* it will be reset to SIG_DFL at execve time, instead */
+            if (handler == SIG_IGN) {
+                signal(sig, SIG_IGN);
+            }
     }
 
     ret = sigprocmask(SIG_SETMASK, &old->sigmask, NULL); /* async-signal-safe */
