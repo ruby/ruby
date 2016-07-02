@@ -1,4 +1,8 @@
 #!/usr/bin/ruby
+
+# Used to download, extract and patch extension libraries (extlibs)
+# for Ruby. See common.mk for Ruby's usage.
+
 require 'fileutils'
 require 'digest'
 require_relative 'downloader'

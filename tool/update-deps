@@ -28,7 +28,7 @@ require 'pathname'
 require 'open3'
 require 'pp'
 
-# When out-of-place bulid, files may be built in source directory or
+# When out-of-place build, files may be built in source directory or
 # build directory.
 # Some files are always built in the source directory.
 # Some files are always built in the build directory.

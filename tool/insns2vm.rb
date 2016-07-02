@@ -1,5 +1,8 @@
 #!ruby
 
+# This is used by Makefile.in to generate .inc files.
+# See Makefile.in for details.
+
 require 'optparse'
 
 Version = %w$Revision: 11626 $[1..-1]

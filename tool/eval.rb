@@ -1,3 +1,4 @@
+# VM checking and benchmarking code
 
 require './rbconfig'
 require 'fileutils'

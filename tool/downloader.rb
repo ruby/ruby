@@ -1,3 +1,6 @@
+# Used by configure and make to download or update mirrored Ruby and GCC
+# files. This will use HTTPS if possible, falling back to HTTP.
+
 require 'open-uri'
 begin
   require 'net/https'

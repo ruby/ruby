@@ -1,6 +1,8 @@
 #!/bin/sh
 # usage: ifchange target temporary
 
+# Used in generating revision.h via Makefiles.
+
 set -e
 timestamp=
 keepsuffix=

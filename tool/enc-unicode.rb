@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-# Creates the data structures needed by Onigurma to map Unicode codepoints to
+# Creates the data structures needed by Oniguruma to map Unicode codepoints to
 # property names and POSIX character classes
 #
 # To use this, get UnicodeData.txt, Scripts.txt, PropList.txt,

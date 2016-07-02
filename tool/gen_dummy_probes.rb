@@ -1,6 +1,9 @@
 #!/usr/bin/ruby
 # -*- coding: us-ascii -*-
 
+# Used to create dummy probes (as for systemtap and DTrace) by Makefiles.
+# See common.mk.
+
 text = ARGF.read
 
 # remove comments

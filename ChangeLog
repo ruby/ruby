@@ -1,3 +1,40 @@
+Sun Jul  3 05:25:46 2016  Eric Wong  <e@80x24.org>
+
+	* tool/asm_parse.rb: add description
+	* tool/change_maker.rb: ditto
+	* tool/downloader.rb: ditto
+	* tool/eval.rb: ditto
+	* tool/expand-config.rb: ditto
+	* tool/extlibs.rb: ditto
+	* tool/fake.rb: ditto
+	* tool/file2lastrev.rb: ditto
+	* tool/gem-unpack.rb: ditto
+	* tool/gen_dummy_probes.rb: ditto
+	* tool/gen_ruby_tapset.rb: ditto
+	* tool/generic_erb.rb: ditto
+	* tool/id2token.rb: ditto
+	* tool/ifchange: ditto
+	* tool/insns2vm.rb: ditto
+	* tool/instruction.rb: ditto
+	* tool/jisx0208.rb: ditto
+	* tool/merger.rb: ditto
+	* tool/mkrunnable.rb: ditto
+	* tool/node_name.rb: ditto
+	* tool/parse.rb: ditto
+	* tool/rbinstall.rb: ditto
+	* tool/rbuninstall.rb: ditto
+	* tool/rmdirs: ditto
+	* tool/runruby.rb: ditto
+	* tool/strip-rdoc.rb: ditto
+	* tool/vcs.rb: ditto
+	* tool/vtlh.rb: ditto
+	* tool/ytab.sed: ditto
+	* tool/enc-unicode.rb: fix typo
+	* tool/mk_call_iseq_optimized.rb: ditto
+	* tool/update-deps: ditto
+	  [ruby-core:76215] [Bug #12539]
+	  by Noah Gibbs <the.codefolio.guy@gmail.com>
+
 Sat Jul  2 18:04:24 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/mailto.rb (initialize): RFC3986_Parser#split sets opaque

@@ -1,5 +1,6 @@
 #!/usr/bin/ruby
 # -*- coding: us-ascii -*-
+# Create a tapset for systemtap and DTrace
 # usage: ./ruby gen_ruby_tapset.rb --ruby-path=/path/to/ruby probes.d > output
 
 require "optparse"

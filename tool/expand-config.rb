@@ -1,5 +1,7 @@
 #!./miniruby -s
 
+# Used to expand Ruby config entries for Win32 Makefiles.
+
 config = File.read(conffile = $config)
 config.sub!(/^(\s*)RUBY_VERSION\b.*(\sor\s*)$/, '\1true\2')
 rbconfig = Module.new {module_eval(config, conffile)}::RbConfig

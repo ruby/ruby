@@ -1,3 +1,5 @@
+# YARV tool to parse assembly output.
+
 stat = {}
 
 while line = ARGF.gets
