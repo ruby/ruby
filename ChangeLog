@@ -1,3 +1,10 @@
+Sat Jul  2 18:04:24 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/uri/mailto.rb (initialize): RFC3986_Parser#split sets opaque
+	  only if the URI has path-rootless, not path-empty.
+	  [ruby-core:76055] [Bug #12498]
+	  patched by Chris Heisterkamp <cheister@squareup.com>
+
 Sat Jul  2 04:26:14 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regcomp.c (noname_disable_map): don't optimize out group 0
