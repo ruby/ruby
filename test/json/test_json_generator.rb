@@ -2,10 +2,9 @@
 # encoding: utf-8
 # frozen_string_literal: false
 
-require 'test/unit'
-require File.join(File.dirname(__FILE__), 'setup_variant')
+require 'test_helper'
 
-class TestJSONGenerate < Test::Unit::TestCase
+class TestJSONGenerator < Test::Unit::TestCase
   include JSON
 
   def setup
@@ -43,23 +42,23 @@ EOT
 
   def test_generate
     json = generate(@hash)
-    assert_equal(JSON.parse(@json2), JSON.parse(json))
+    assert_equal(parse(@json2), parse(json))
     json = JSON[@hash]
-    assert_equal(JSON.parse(@json2), JSON.parse(json))
+    assert_equal(parse(@json2), parse(json))
     parsed_json = parse(json)
     assert_equal(@hash, parsed_json)
     json = generate({1=>2})
     assert_equal('{"1":2}', json)
     parsed_json = parse(json)
     assert_equal({"1"=>2}, parsed_json)
-    assert_raise(GeneratorError) { generate(666) }
-    assert_equal '666', generate(666, :quirks_mode => true)
+    assert_equal '666', generate(666)
   end
 
   def test_generate_pretty
     json = pretty_generate(@hash)
-    # hashes aren't (insertion) ordered on every ruby implementation assert_equal(@json3, json)
-    assert_equal(JSON.parse(@json3), JSON.parse(json))
+    # hashes aren't (insertion) ordered on every ruby implementation
+    # assert_equal(@json3, json)
+    assert_equal(parse(@json3), parse(json))
     parsed_json = parse(json)
     assert_equal(@hash, parsed_json)
     json = pretty_generate({1=>2})
@@ -70,8 +69,7 @@ EOT
 EOT
     parsed_json = parse(json)
     assert_equal({"1"=>2}, parsed_json)
-    assert_raise(GeneratorError) { pretty_generate(666) }
-    assert_equal '666', pretty_generate(666, :quirks_mode => true)
+    assert_equal '666', pretty_generate(666)
   end
 
   def test_generate_custom
@@ -89,30 +87,26 @@ EOT
 
   def test_fast_generate
     json = fast_generate(@hash)
-    assert_equal(JSON.parse(@json2), JSON.parse(json))
+    assert_equal(parse(@json2), parse(json))
     parsed_json = parse(json)
     assert_equal(@hash, parsed_json)
     json = fast_generate({1=>2})
     assert_equal('{"1":2}', json)
     parsed_json = parse(json)
     assert_equal({"1"=>2}, parsed_json)
-    assert_raise(GeneratorError) { fast_generate(666) }
-    assert_equal '666', fast_generate(666, :quirks_mode => true)
+    assert_equal '666', fast_generate(666)
   end
 
   def test_own_state
     state = State.new
     json = generate(@hash, state)
-    assert_equal(JSON.parse(@json2), JSON.parse(json))
+    assert_equal(parse(@json2), parse(json))
     parsed_json = parse(json)
     assert_equal(@hash, parsed_json)
     json = generate({1=>2}, state)
     assert_equal('{"1":2}', json)
     parsed_json = parse(json)
     assert_equal({"1"=>2}, parsed_json)
-    assert_raise(GeneratorError) { generate(666, state) }
-    state.quirks_mode = true
-    assert state.quirks_mode?
     assert_equal '666', generate(666, state)
   end
 
@@ -141,7 +135,6 @@ EOT
       :array_nl              => "\n",
       :ascii_only            => false,
       :buffer_initial_length => 1024,
-      :quirks_mode           => false,
       :depth                 => 0,
       :indent                => "  ",
       :max_nesting           => 100,
@@ -158,7 +151,6 @@ EOT
       :array_nl              => "",
       :ascii_only            => false,
       :buffer_initial_length => 1024,
-      :quirks_mode           => false,
       :depth                 => 0,
       :indent                => "",
       :max_nesting           => 100,
@@ -175,7 +167,6 @@ EOT
       :array_nl              => "",
       :ascii_only            => false,
       :buffer_initial_length => 1024,
-      :quirks_mode           => false,
       :depth                 => 0,
       :indent                => "",
       :max_nesting           => 0,
@@ -206,7 +197,7 @@ EOT
   def test_depth
     ary = []; ary << ary
     assert_equal 0, JSON::SAFE_STATE_PROTOTYPE.depth
-    assert_raise(JSON::NestingError) { JSON.generate(ary) }
+    assert_raise(JSON::NestingError) { generate(ary) }
     assert_equal 0, JSON::SAFE_STATE_PROTOTYPE.depth
     assert_equal 0, JSON::PRETTY_STATE_PROTOTYPE.depth
     assert_raise(JSON::NestingError) { JSON.pretty_generate(ary) }
@@ -286,7 +277,7 @@ EOT
   if defined?(JSON::Ext::Generator)
     def test_broken_bignum # [ruby-core:38867]
       pid = fork do
-        Integer.class_eval do
+        Bignum.class_eval do
           def to_s
           end
         end
@@ -332,8 +323,45 @@ EOT
 
   def test_json_generate
     assert_raise JSON::GeneratorError do
-      assert_equal true, JSON.generate(["\xea"])
+      assert_equal true, generate(["\xea"])
     end
+  end
+
+  def test_nesting
+    too_deep = '[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[["Too deep"]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
+    too_deep_ary = eval too_deep
+    assert_raise(JSON::NestingError) { generate too_deep_ary }
+    assert_raise(JSON::NestingError) { generate too_deep_ary, :max_nesting => 100 }
+    ok = generate too_deep_ary, :max_nesting => 101
+    assert_equal too_deep, ok
+    ok = generate too_deep_ary, :max_nesting => nil
+    assert_equal too_deep, ok
+    ok = generate too_deep_ary, :max_nesting => false
+    assert_equal too_deep, ok
+    ok = generate too_deep_ary, :max_nesting => 0
+    assert_equal too_deep, ok
+  end
+
+  def test_backslash
+    data = [ '\\.(?i:gif|jpe?g|png)$' ]
+    json = '["\\\\.(?i:gif|jpe?g|png)$"]'
+    assert_equal json, generate(data)
+    #
+    data = [ '\\"' ]
+    json = '["\\\\\""]'
+    assert_equal json, generate(data)
+    #
+    data = [ '/' ]
+    json = '["/"]'
+    assert_equal json, generate(data)
+    #
+    data = ['"']
+    json = '["\""]'
+    assert_equal json, generate(data)
+    #
+    data = ["'"]
+    json = '["\\\'"]'
+    assert_equal '["\'"]', generate(data)
   end
 
   def test_string_subclass
@@ -342,7 +370,7 @@ EOT
       undef to_json
     end
     assert_nothing_raised(SystemStackError) do
-      assert_equal '[""]', JSON.generate([s.new])
+      assert_equal '["foo"]', JSON.generate([s.new('foo')])
     end
   end
 
