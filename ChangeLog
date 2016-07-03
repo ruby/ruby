@@ -1,3 +1,10 @@
+Sun Jul  3 18:51:42 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_comprehensive.rb, test_regex_casefold.rb,
+	  test/test_unicode_normalize.rb: Replace UNICODE_VERSION from
+	  UnicodeNormalize with RbConfig::CONFIG['UNICODE_VERSION'] from
+	  feature 12460.
+
 Sun Jul  3 06:04:09 2016  Eric Wong  <e@80x24.org>
 
 	* process.c (disable_child_handler_fork_child): simplify

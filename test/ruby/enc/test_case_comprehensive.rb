@@ -2,10 +2,9 @@
 # Copyright © 2016 Martin J. Dürst (duerst@it.aoyama.ac.jp)
 
 require "test/unit"
-require 'unicode_normalize/normalize'  # only for UNICODE_VERSION
 
 class TestComprehensiveCaseFold < Test::Unit::TestCase
-  UNICODE_VERSION = UnicodeNormalize::UNICODE_VERSION
+  UNICODE_VERSION = RbConfig::CONFIG['UNICODE_VERSION']
   UNICODE_DATA_PATH = "../../../enc/unicode/data/#{UNICODE_VERSION}"
 
   def self.hex2utf8(s)

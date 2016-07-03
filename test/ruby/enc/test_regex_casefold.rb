@@ -1,11 +1,10 @@
 # Copyright Kimihito Matsui (松井 仁人) and Martin J. Dürst (duerst@it.aoyama.ac.jp)
 
 require "test/unit"
-require 'unicode_normalize/normalize'  # only for UNICODE_VERSION
 
 class TestCaseFold < Test::Unit::TestCase
 
-  UNICODE_VERSION = UnicodeNormalize::UNICODE_VERSION
+  UNICODE_VERSION = RbConfig::CONFIG['UNICODE_VERSION']
   CaseTest = Struct.new :source, :target, :kind, :line
 
   def check_downcase_properties(expected, start, *flags)

@@ -8,7 +8,7 @@ require 'unicode_normalize/normalize'
 
 class TestUnicodeNormalize < Test::Unit::TestCase
 
-  UNICODE_VERSION = UnicodeNormalize::UNICODE_VERSION
+  UNICODE_VERSION = RbConfig::CONFIG['UNICODE_VERSION']
   UNICODE_DATA_PATH = "../enc/unicode/data/#{UNICODE_VERSION}"
 
   def self.expand_filename(basename)
