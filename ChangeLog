@@ -1,3 +1,8 @@
+Mon Jul  4 13:08:48 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* random.c (random_ulong_limited): avoid left shift count >= width of
+	  type on 32bit environment.
+
 Sun Jul  3 18:51:42 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_case_comprehensive.rb, test_regex_casefold.rb,

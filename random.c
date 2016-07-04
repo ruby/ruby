@@ -992,9 +992,7 @@ random_ulong_limited(VALUE obj, rb_random_t *rnd, unsigned long limit)
 	const int n = w > 32 ? sizeof(unsigned long) : sizeof(uint32_t);
 	const unsigned long mask = ~(~0UL << w);
 	const unsigned long full =
-#if SIZEOF_LONG == 4
 	    (size_t)n >= sizeof(unsigned long) ? ~0UL :
-#endif
 	    ~(~0UL << n * CHAR_BIT);
 	unsigned long val, bits = 0, rest = 0;
 	do {
