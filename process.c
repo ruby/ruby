@@ -253,6 +253,9 @@ typedef unsigned long unsigned_clock_t;
 #elif defined(HAVE_LONG_LONG) && SIZEOF_CLOCK_T == SIZEOF_LONG_LONG
 typedef unsigned LONG_LONG unsigned_clock_t;
 #endif
+#ifdef HAVE_SIG_T
+typedef void (*sig_t) (int);
+#endif
 
 static ID id_in, id_out, id_err, id_pid, id_uid, id_gid;
 static ID id_close, id_child;

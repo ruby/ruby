@@ -2883,6 +2883,8 @@ main()
   fi
 fi
 
+AC_CHECK_TYPES([sig_t],[],[],[@%:@include <signal.h>])
+
 if test "$ac_cv_func_getpgid" = no; then
   # AC_FUNC_GETPGRP fails when cross-compiling with old autoconf.
   # autoconf is changed between 2.52d and 2.52f?
