@@ -253,7 +253,7 @@ typedef unsigned long unsigned_clock_t;
 #elif defined(HAVE_LONG_LONG) && SIZEOF_CLOCK_T == SIZEOF_LONG_LONG
 typedef unsigned LONG_LONG unsigned_clock_t;
 #endif
-#ifdef HAVE_SIG_T
+#ifndef HAVE_SIG_T
 typedef void (*sig_t) (int);
 #endif
 
