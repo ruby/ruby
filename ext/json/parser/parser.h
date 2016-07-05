@@ -34,11 +34,9 @@ typedef struct JSON_ParserStruct {
     char *memo;
     VALUE create_id;
     int max_nesting;
-    int current_nesting;
     int allow_nan;
     int parsing_name;
     int symbolize_names;
-    int quirks_mode;
     VALUE object_class;
     VALUE array_class;
     int create_additions;
@@ -58,11 +56,11 @@ typedef struct JSON_ParserStruct {
 
 static UTF32 unescape_unicode(const unsigned char *p);
 static int convert_UTF32_to_UTF8(char *buf, UTF32 ch);
-static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *result);
-static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *result);
+static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
+static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
 static char *JSON_parse_integer(JSON_Parser *json, char *p, char *pe, VALUE *result);
 static char *JSON_parse_float(JSON_Parser *json, char *p, char *pe, VALUE *result);
-static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *result);
+static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
 static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd);
 static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *result);
 static VALUE convert_encoding(VALUE source);

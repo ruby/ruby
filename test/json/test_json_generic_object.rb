@@ -1,9 +1,6 @@
-#!/usr/bin/env ruby
-# encoding: utf-8
 # frozen_string_literal: false
+require 'test_helper'
 
-require 'test/unit'
-require File.join(File.dirname(__FILE__), 'setup_variant')
 class TestJSONGenericObject < Test::Unit::TestCase
   include JSON
 
@@ -27,11 +24,20 @@ class TestJSONGenericObject < Test::Unit::TestCase
   end
 
   def test_parse_json
-    assert_kind_of Hash, JSON('{ "json_class": "JSON::GenericObject", "a": 1, "b": 2 }', :create_additions => true)
+    assert_kind_of Hash,
+      JSON(
+        '{ "json_class": "JSON::GenericObject", "a": 1, "b": 2 }',
+        :create_additions => true
+      )
     switch_json_creatable do
-      assert_equal @go, l = JSON('{ "json_class": "JSON::GenericObject", "a": 1, "b": 2 }', :create_additions => true)
+      assert_equal @go, l =
+        JSON(
+          '{ "json_class": "JSON::GenericObject", "a": 1, "b": 2 }',
+             :create_additions => true
+        )
       assert_equal 1, l.a
-      assert_equal @go, l = JSON('{ "a": 1, "b": 2 }', :object_class => GenericObject)
+      assert_equal @go,
+        l = JSON('{ "a": 1, "b": 2 }', :object_class => GenericObject)
       assert_equal 1, l.a
       assert_equal GenericObject[:a => GenericObject[:b => 2]],
         l = JSON('{ "a": { "b": 2 } }', :object_class => GenericObject)
