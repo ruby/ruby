@@ -646,11 +646,11 @@ str_mod_check(VALUE s, const char *p, long len)
     }
 }
 
-size_t
-rb_str_capacity(VALUE str)
+static size_t
+str_capacity(VALUE str, const int termlen)
 {
     if (STR_EMBED_P(str)) {
-	return (RSTRING_EMBED_LEN_MAX + 1 - TERM_LEN(str));
+	return (RSTRING_EMBED_LEN_MAX + 1 - termlen);
     }
     else if (FL_TEST(str, STR_SHARED|STR_NOFREE)) {
 	return RSTRING(str)->as.heap.len;
@@ -658,6 +658,12 @@ rb_str_capacity(VALUE str)
     else {
 	return RSTRING(str)->as.heap.aux.capa;
     }
+}
+
+size_t
+rb_str_capacity(VALUE str)
+{
+    return str_capacity(str, TERM_LEN(str));
 }
 
 static inline void
@@ -2021,40 +2027,53 @@ str_null_char(const char *s, long len, const int minlen, rb_encoding *enc)
 static char *
 str_fill_term(VALUE str, char *s, long len, int termlen)
 {
-    long capa = rb_str_capacity(str);
-    /* This function could be called during the encoding changing procedure.
-     * If so, the termlen may be different from current TERM_LEN(str).
-     */
-    const int oldtermlen = TERM_LEN(str);
+    long capa = str_capacity(str, termlen);
 
-    if (capa < len + termlen - 1) { /* assumes oldtermlen is 1 here */
+    /* This function assumes that (capa + termlen) bytes of memory
+     * is allocated, like many other functions in this file.
+     */
+
+    if (capa < len) {
 	rb_check_lockedtmp(str);
 	str_make_independent_expand(str, len, 0L, termlen);
     }
     else if (str_dependent_p(str)) {
-	if ((termlen > oldtermlen) || !zero_filled(s + len, termlen))
+	if (!zero_filled(s + len, termlen))
 	    str_make_independent_expand(str, len, 0L, termlen);
     }
     else {
-	if (termlen > oldtermlen) {
-	    if (!STR_EMBED_P(str)) {
-		const int d = termlen - oldtermlen;
-		if (capa > len + d) {
-		    /* decrease capa for the new termlen */
-		    capa -= d;
-		    assert(capa >= 1);
-		    assert(!FL_TEST((str), STR_SHARED));
-		    RSTRING(str)->as.heap.aux.capa = capa;
-		} else {
-		    assert(capa >= len);
-		    RESIZE_CAPA_TERM(str, capa, termlen);
-		}
-	    }
-	}
 	TERM_FILL(s + len, termlen);
 	return s;
     }
     return RSTRING_PTR(str);
+}
+
+void
+rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int termlen)
+{
+    long capa = str_capacity(str, oldtermlen);
+    long len = RSTRING_LEN(str);
+
+    if (capa < len + termlen - oldtermlen) {
+	rb_check_lockedtmp(str);
+	str_make_independent_expand(str, len, 0L, termlen);
+    }
+    else if (str_dependent_p(str)) {
+	if (termlen > oldtermlen)
+	    str_make_independent_expand(str, len, 0L, termlen);
+    }
+    else {
+	if (!STR_EMBED_P(str)) {
+	    /* modify capa instead of realloc */
+	    assert(!FL_TEST((str), STR_SHARED));
+	    RSTRING(str)->as.heap.aux.capa = capa - (termlen - oldtermlen);
+	}
+	if (termlen > oldtermlen) {
+	    TERM_FILL(RSTRING_PTR(str) + len, termlen);
+	}
+    }
+
+    return;
 }
 
 char *

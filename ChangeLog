@@ -1,3 +1,26 @@
+Tue Jul  5 19:39:49 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* string.c (rb_str_change_terminator_length): New function to change
+	  termlen and resize heap for the terminator. This is split from
+	  rb_str_fill_terminator (str_fill_term) because filling terminator
+	  and changing terminator length are different things. [Bug #12536]
+
+	* internal.h: declaration for rb_str_change_terminator_length.
+
+	* string.c (str_fill_term): Simplify only to zero-fill the terminator.
+	  For non-shared strings, it assumes that (capa + termlen) bytes of
+	  heap is allocated. This partially reverts r55557.
+
+	* encoding.c (rb_enc_associate_index): rb_str_change_terminator_length
+	  is used, and it should be called whenever the termlen is changed.
+
+	* string.c (str_capacity): New static function to return capacity
+	  of a string with the given termlen, because the termlen may
+	  sometimes be different from TERM_LEN(str) especially during
+	  changing termlen or filling terminator with specific termlen.
+
+	* string.c (rb_str_capacity): Use str_capacity.
+
 Tue Jul  5 11:07:14 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* pack.c (pack_pack): use union instead of bare variable to ease
