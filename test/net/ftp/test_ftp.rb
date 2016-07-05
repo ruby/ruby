@@ -1633,6 +1633,16 @@ EOF
     end
   end
 
+  def test_putline_reject_crlf
+    ftp = Net::FTP.new
+    assert_raise(ArgumentError) do
+      ftp.send(:putline, "\r")
+    end
+    assert_raise(ArgumentError) do
+      ftp.send(:putline, "\n")
+    end
+  end
+
   private
 
   def create_ftp_server(sleep_time = nil)

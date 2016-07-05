@@ -1,3 +1,8 @@
+Wed Jul  6 07:11:27 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (putline): raise an ArgumentError when
+	  CR or LF is included in a line.
+
 Tue Jul  5 20:49:30 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/json/*, test/json/*: Update json-2.0.1.
