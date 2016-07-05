@@ -1,3 +1,11 @@
+Tue Jul  5 11:07:14 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* pack.c (pack_pack): use union instead of bare variable to ease
+	  optimizations and avoid assigning x87 floating point number.
+	  [ruby-core:74496] [Bug #12209]
+
+	* pack.c (pack_unpack): ditto.
+
 Mon Jul  4 13:56:34 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* process.c: define sig_t if not exist.
