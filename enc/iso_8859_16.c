@@ -231,7 +231,7 @@ case_map (OnigCaseFoldType* flagP, const OnigUChar** pp,
   OnigCodePoint code;
   OnigUChar *to_start = to;
   OnigCaseFoldType flags = *flagP;
-  
+
   while (*pp<end && to<to_end) {
     code = *(*pp)++;
     if (code==SHARP_s) {
