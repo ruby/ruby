@@ -1,3 +1,14 @@
+Wed Jul  6 14:44:56 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): store $headers in LOCAL_HDRS for
+	  depend files.
+
+	* ext/digest/digest_conf.rb (digest_conf): add implementation
+	  specific headers to $header.
+
+	* ext/digest/{md5,rmd160,sha1,sha2}/depend: add LOCAL_HDRS to the
+	  dependencies.
+
 Wed Jul  6 08:59:35 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/http/generic_rquest.rb (write_header): A Request-Line must

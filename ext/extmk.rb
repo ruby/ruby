@@ -129,6 +129,7 @@ def extract_makefile(makefile, keep = true)
   end
   $objs = (m[/^OBJS[ \t]*=[ \t](.*)/, 1] || "").split
   $srcs = (m[/^SRCS[ \t]*=[ \t](.*)/, 1] || "").split
+  $headers = (m[/^LOCAL_HDRS[ \t]*=[ \t](.*)/, 1] || "").split
   $LOCAL_LIBS = m[/^LOCAL_LIBS[ \t]*=[ \t]*(.*)/, 1] || ""
   $LIBPATH = Shellwords.shellwords(m[/^libpath[ \t]*=[ \t]*(.*)/, 1] || "") - %w[$(libdir) $(topdir)]
   true
