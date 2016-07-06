@@ -583,10 +583,10 @@ while true
     args = cmd
     cmd = "show"
   end
-  if commands[cmd].is_a? String
-    cmd = list[cmd]
-  end
   cmd = list[cmd]
+  if commands[cmd].is_a? String
+    cmd = list[commands[cmd]]
+  end
   begin
     if cmd
       commands[cmd].call(args)
