@@ -320,6 +320,9 @@ module TestNetHTTP_version_1_1_methods
       assert_raise(ArgumentError) do
         http.get("\r")
       end
+      assert_raise(ArgumentError) do
+        http.get("\n")
+      end
     }
   end
 
