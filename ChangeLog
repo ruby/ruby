@@ -1,3 +1,8 @@
+Wed Jul  6 19:24:48 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_1.c, enc/iso_8859_15.c, enc/iso_8859_16.c:
+	  Allign indenting to onigmo convention.
+
 Wed Jul  6 18:59:13 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/iso_8859_15.c, test/ruby/enc/test_case_comprehensive.rb:
