@@ -267,7 +267,7 @@ case_map (OnigCaseFoldType* flagP, const OnigUChar** pp,
       else if(code == 0xA8 || code == 0xAA || code == 0xAC)
 	code += 0x10;
       else
-	code += 0x20;  
+	code += 0x20;
     }
     else if ((EncISO_8859_14_CtypeTable[code]&BIT_CTYPE_LOWER)
 	     && (flags&ONIGENC_CASE_UPCASE)) {
