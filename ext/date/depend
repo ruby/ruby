@@ -30,6 +30,7 @@ date_parse.o: $(hdrdir)/ruby/subst.h
 date_parse.o: $(top_srcdir)/include/ruby.h
 date_parse.o: date_parse.c
 date_parse.o: zonetab.h
+date_parse.o: zonetab.list
 date_strftime.o: $(RUBY_EXTCONF_H)
 date_strftime.o: $(arch_hdrdir)/ruby/config.h
 date_strftime.o: $(hdrdir)/ruby/backward.h
