@@ -397,6 +397,8 @@ def concentrate(dependencies, cwd)
       if %r{\A\.\.(/|\z)} =~ s.to_s
         warn "warning: out of tree source: #{s}"
         true
+      elsif %r{/\.time\z} =~ s.to_s
+        true
       else
         false
       end
