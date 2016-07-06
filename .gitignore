@@ -3,10 +3,12 @@
 *-*-*.lib
 *.a
 *.bak
+*.bc
 *.dSYM
 *.dmyh
 *.dylib
 *.elc
+*.i
 *.inc
 *.log
 *.o
@@ -14,6 +16,7 @@
 *.orig
 *.pdb
 *.rej
+*.s
 *.sav
 *.swp
 *.yarb
