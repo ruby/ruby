@@ -1,3 +1,8 @@
+Wed Jul  6 18:34:21 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_16.c, test/ruby/enc/test_case_comprehensive.rb:
+	  Implement non-ASCII case conversion for ISO-8859-16, by Satoshi Kayama.
+
 Wed Jul  6 14:44:56 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): store $headers in LOCAL_HDRS for
