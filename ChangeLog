@@ -1,3 +1,9 @@
+Thu Jul  7 00:05:00 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* bignum.c (Init_Bignum): revert a part of previous commit (r55598),
+	  because the implementation of Object#hash is a little difference from
+	  trunk.  cf. [Backport #12391]
+
 Wed Jul  6 23:02:03 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* bignum.c (rb_big_hash): make it public function to be available in
