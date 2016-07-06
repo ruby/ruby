@@ -1,3 +1,8 @@
+Wed Jul  6 18:59:13 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_15.c, test/ruby/enc/test_case_comprehensive.rb:
+	  Implement non-ASCII case conversion for ISO-8859-15, by Maho Harada.
+
 Wed Jul  6 18:34:21 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/iso_8859_16.c, test/ruby/enc/test_case_comprehensive.rb:
