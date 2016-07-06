@@ -315,6 +315,14 @@ module TestNetHTTP_version_1_1_methods
     assert_equal $test_net_http_data, res.body
   end
 
+  def test_get__crlf
+    start {|http|
+      assert_raise(ArgumentError) do
+        http.get("\r")
+      end
+    }
+  end
+
   def test_get2
     start {|http|
       http.get2('/') {|res|

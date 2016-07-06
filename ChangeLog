@@ -1,3 +1,8 @@
+Wed Jul  6 08:59:35 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/http/generic_rquest.rb (write_header): A Request-Line must
+	  not contain CR or LF.
+
 Wed Jul  6 07:11:27 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (putline): raise an ArgumentError when
