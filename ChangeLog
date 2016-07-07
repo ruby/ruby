@@ -1,3 +1,8 @@
+Fri Jul  8 08:43:31 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* io.c (rb_io_s_read): add description of pipes to the documentation
+	  of IO.read.
+
 Fri Jul  8 03:54:22 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_args.c (setup_parameters_complex): don't raise ArgumentError

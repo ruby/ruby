@@ -9848,6 +9848,9 @@ seek_before_access(VALUE argp)
  *  +length+ bytes (defaulting to the rest of the file).  <code>read</code>
  *  ensures the file is closed before returning.
  *
+ *  If +name+ starts with a pipe character (<code>"|"</code>), a subprocess is
+ *  created in the same way as Kernel#open, and its output is returned.
+ *
  *  === Options
  *
  *  The options hash accepts the following keys:
