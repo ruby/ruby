@@ -447,6 +447,11 @@ class TestFloat < Test::Unit::TestCase
     assert_raise(TypeError) {1.0.round(nil)}
     def (prec = Object.new).to_int; 2; end
     assert_equal(1.0, 0.998.round(prec))
+
+    assert_equal(+5.02, +5.015.round(2))
+    assert_equal(-5.02, -5.015.round(2))
+    assert_equal(+1.26, +1.255.round(2))
+    assert_equal(-1.26, -1.255.round(2))
   end
 
   def test_floor_with_precision

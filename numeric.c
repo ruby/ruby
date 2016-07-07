@@ -1990,7 +1990,7 @@ rb_int_truncate(VALUE num, int ndigits)
 static VALUE
 flo_round(int argc, VALUE *argv, VALUE num)
 {
-    double number, f;
+    double number, f, x;
     int ndigits = 0;
 
     if (rb_check_arity(argc, 0, 1)) {
@@ -2005,7 +2005,14 @@ flo_round(int argc, VALUE *argv, VALUE num)
     }
     if (float_invariant_round(number, ndigits, &num)) return num;
     f = pow(10, ndigits);
-    return DBL2NUM(round(number * f) / f);
+    x = round(number * f);
+    if (x > 0) {
+	if ((x + 0.5) / f <= number) x += 1;
+    }
+    else {
+	if ((x - 0.5) / f >= number) x -= 1;
+    }
+    return DBL2NUM(x / f);
 }
 
 static int
