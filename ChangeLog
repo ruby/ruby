@@ -1,3 +1,13 @@
+Fri Jul  8 00:47:36 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_eval.c (yield_under): change prototype to get argc/argv.
+
+	* vm_eval.c (specific_eval): change for above.
+
+	* vm_eval.c (rb_obj_instance_exec): avoid object allocation.
+
+	* vm_eval.c (rb_mod_module_exec): ditto.
+
 Thu Jul  7 20:08:37 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_args.c (vm_caller_setup_arg_block): disable symbol block

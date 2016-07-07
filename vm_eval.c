@@ -1576,7 +1576,7 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
 /* block eval under the class/module context */
 
 static VALUE
-yield_under(VALUE under, VALUE self, VALUE values)
+yield_under(VALUE under, VALUE self, int argc, const VALUE *argv)
 {
     rb_thread_t *th = GET_THREAD();
     rb_block_t block, *blockptr;
@@ -1589,12 +1589,7 @@ yield_under(VALUE under, VALUE self, VALUE values)
     }
     cref = vm_cref_push(th, under, blockptr, TRUE);
 
-    if (values == Qundef) {
-	return vm_yield_with_cref(th, 1, &self, cref);
-    }
-    else {
-	return vm_yield_with_cref(th, RARRAY_LENINT(values), RARRAY_CONST_PTR(values), cref);
-    }
+    return vm_yield_with_cref(th, argc, argv, cref);
 }
 
 VALUE
@@ -1629,7 +1624,7 @@ specific_eval(int argc, const VALUE *argv, VALUE klass, VALUE self)
 {
     if (rb_block_given_p()) {
 	rb_check_arity(argc, 0, 0);
-	return yield_under(klass, self, Qundef);
+	return yield_under(klass, self, 1, &self);
     }
     else {
 	VALUE file = Qundef;
@@ -1725,7 +1720,7 @@ VALUE
 rb_obj_instance_exec(int argc, const VALUE *argv, VALUE self)
 {
     VALUE klass = singleton_class_for_eval(self);
-    return yield_under(klass, self, rb_ary_new4(argc, argv));
+    return yield_under(klass, self, argc, argv);
 }
 
 /*
@@ -1786,7 +1781,7 @@ rb_mod_module_eval(int argc, const VALUE *argv, VALUE mod)
 VALUE
 rb_mod_module_exec(int argc, const VALUE *argv, VALUE mod)
 {
-    return yield_under(mod, mod, rb_ary_new4(argc, argv));
+    return yield_under(mod, mod, argc, argv);
 }
 
 /*
