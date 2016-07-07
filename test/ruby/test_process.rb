@@ -2434,4 +2434,39 @@ EOS
     Process.wait spawn(RUBY, "-e", "exit 13")
     assert_same(Process.last_status, $?)
   end
+
+  def test_process_exists_when_exists
+    pid = fork do
+      sleep
+    end
+
+    assert Process.exists?(pid), 'Process should exist'
+    assert Process.exists?(pid.to_f), 'Process should exist (float)'
+
+    # Cleanup
+    Process.kill(:KILL, pid)
+  end
+
+  def test_process_exists_when_exists_no_perms
+    # Process 1 usually exists and belongs to the root user.
+    assert Process.exists?(1), 'Process should exist'
+  end
+
+  def test_process_exists_when_not_exists
+    # Create a PID which is immediately gone.
+    pid = fork do
+      exit 0
+    end
+
+    Process.wait pid
+
+    assert !Process.exists?(pid), 'Process should not exist'
+    assert !Process.exists?(pid.to_f), 'Process should not exist (float)'
+  end
+
+  def test_process_exists_when_invalid_type
+    assert_raise ArgumentError do
+      Process.exists?(:test)
+    end
+  end
 end

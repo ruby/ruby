@@ -8091,6 +8091,7 @@ InitVM_process(void)
     rb_define_singleton_method(rb_mProcess, "last_status", proc_s_last_status, 0);
 
     rb_define_module_function(rb_mProcess, "kill", rb_f_kill, -1); /* in signal.c */
+    rb_define_module_function(rb_mProcess, "exists?", rb_f_exists, 1); /* in signal.c */
     rb_define_module_function(rb_mProcess, "wait", proc_wait, -1);
     rb_define_module_function(rb_mProcess, "wait2", proc_wait2, -1);
     rb_define_module_function(rb_mProcess, "waitpid", proc_wait, -1);

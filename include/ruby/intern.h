@@ -713,6 +713,7 @@ void *rb_load_file(const char*);
 void *rb_load_file_str(VALUE);
 /* signal.c */
 VALUE rb_f_kill(int, const VALUE*);
+VALUE rb_f_exists(VALUE, VALUE);
 #ifdef POSIX_SIGNAL
 #define posix_signal ruby_posix_signal
 RETSIGTYPE (*posix_signal(int, RETSIGTYPE (*)(int)))(int);
