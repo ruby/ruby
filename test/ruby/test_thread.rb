@@ -1158,6 +1158,6 @@ q.pop
   def test_thread_setname_in_initialize
     bug12290 = '[ruby-core:74963] [Bug #12290]'
     c = Class.new(Thread) {def initialize() self.name = "foo"; super; end}
-    assert_equal("foo", c.new {Thread.current.name}.value)
+    assert_equal("foo", c.new {Thread.current.name}.value, bug12290)
   end
 end
