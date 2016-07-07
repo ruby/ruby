@@ -301,6 +301,21 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal("should be rescued", result.message, bug12082)
   end
 
+  def test_tailcall_symbol_block_arg
+    bug12565 = '[ruby-core:46065]'
+    tailcall(<<-EOF)
+      def apply_one_and_two(&block)
+        yield(1, 2)
+      end
+
+      def add_one_and_two
+        apply_one_and_two(&:+)
+      end
+    EOF
+    assert_equal(3, add_one_and_two,
+                 message(bug12565) {disasm(:add_one_and_two)})
+  end
+
   class Bug10557
     def [](_)
       block_given?

@@ -778,7 +778,8 @@ vm_caller_setup_arg_block(const rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	if (NIL_P(proc)) {
 	    calling->blockptr = NULL;
 	}
-	else if (SYMBOL_P(proc) && rb_method_basic_definition_p(rb_cSymbol, idTo_proc)) {
+	else if (LIKELY(!(ci->flag & VM_CALL_TAILCALL)) && SYMBOL_P(proc) &&
+		 rb_method_basic_definition_p(rb_cSymbol, idTo_proc)) {
 	    calling->blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(reg_cfp);
 	    calling->blockptr->iseq = (rb_iseq_t *)proc;
 	    calling->blockptr->proc = proc;

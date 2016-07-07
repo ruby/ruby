@@ -1,3 +1,9 @@
+Thu Jul  7 20:08:37 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_args.c (vm_caller_setup_arg_block): disable symbol block
+	  argument optimization when tail call optimization is enabled,
+	  in order to avoid SEGV.  [ruby-core:76288] [Bug #12565]
+
 Thu Jul  7 16:37:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flo_round): [EXPERIMENTAL] adjust the case that the
