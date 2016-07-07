@@ -1,3 +1,10 @@
+Fri Jul  8 03:54:22 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_args.c (setup_parameters_complex): don't raise ArgumentError
+	  if an array is given for instance_exec with optional argument.
+	  [ruby-core:76300] [Bug #12568]
+	  https://github.com/rails/rails/pull/25699
+
 Fri Jul  8 00:47:36 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_eval.c (yield_under): change prototype to get argc/argv.
