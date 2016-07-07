@@ -3011,11 +3011,16 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc)
     return str;
 }
 
+struct getline_arg {
+    VALUE io;
+    VALUE rs;
+    long limit;
+};
+
 static void
-prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit, VALUE io)
+extract_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit)
 {
     VALUE rs = rb_rs, lim = Qnil;
-    rb_io_t *fptr;
 
     rb_check_arity(argc, 0, 2);
     if (argc == 1) {
@@ -3033,6 +3038,16 @@ prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit, VALUE io)
         if (!NIL_P(rs))
             StringValue(rs);
     }
+    *rsp = rs;
+    *limit = NIL_P(lim) ? -1L : NUM2LONG(lim);
+}
+
+static void
+check_getline_args(VALUE *rsp, long *limit, VALUE io)
+{
+    rb_io_t *fptr;
+    VALUE rs = *rsp;
+
     if (!NIL_P(rs)) {
 	rb_encoding *enc_rs, *enc_io;
 
@@ -3045,6 +3060,7 @@ prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit, VALUE io)
             if (rs == rb_default_rs) {
                 rs = rb_enc_str_new(0, 0, enc_io);
                 rb_str_buf_cat_ascii(rs, "\n");
+		*rsp = rs;
             }
             else {
                 rb_raise(rb_eArgError, "encoding mismatch: %s IO with %s RS",
@@ -3053,8 +3069,13 @@ prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit, VALUE io)
             }
 	}
     }
-    *rsp = rs;
-    *limit = NIL_P(lim) ? -1L : NUM2LONG(lim);
+}
+
+static void
+prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit, VALUE io)
+{
+    extract_getline_args(argc, argv, rsp, limit);
+    check_getline_args(rsp, limit, io);
 }
 
 static VALUE
@@ -3326,6 +3347,8 @@ rb_io_readline(int argc, VALUE *argv, VALUE io)
     return line;
 }
 
+static VALUE io_readlines(VALUE rs, long limit, VALUE io);
+
 /*
  *  call-seq:
  *     ios.readlines(sep=$/)     -> array
@@ -3347,10 +3370,18 @@ rb_io_readline(int argc, VALUE *argv, VALUE io)
 static VALUE
 rb_io_readlines(int argc, VALUE *argv, VALUE io)
 {
-    VALUE line, ary, rs;
+    VALUE rs;
     long limit;
 
     prepare_getline_args(argc, argv, &rs, &limit, io);
+    return io_readlines(rs, limit, io);
+}
+
+static VALUE
+io_readlines(VALUE rs, long limit, VALUE io)
+{
+    VALUE line, ary;
+
     if (limit == 0)
 	rb_raise(rb_eArgError, "invalid limit: 0 for readlines");
     ary = rb_ary_new();
@@ -9695,13 +9726,15 @@ open_key_args(int argc, VALUE *argv, VALUE opt, struct foreach_arg *arg)
 }
 
 static VALUE
-io_s_foreach(struct foreach_arg *arg)
+io_s_foreach(struct getline_arg *arg)
 {
     VALUE str;
 
-    while (!NIL_P(str = rb_io_gets_m(arg->argc, arg->argv, arg->io))) {
+    while (!NIL_P(str = rb_io_getline_1(arg->rs, arg->limit, arg->io))) {
+	rb_lastline_set(str);
 	rb_yield(str);
     }
+    rb_lastline_set(Qnil);
     return Qnil;
 }
 
@@ -9737,18 +9770,21 @@ rb_io_s_foreach(int argc, VALUE *argv, VALUE self)
     VALUE opt;
     int orig_argc = argc;
     struct foreach_arg arg;
+    struct getline_arg garg;
 
     argc = rb_scan_args(argc, argv, "13:", NULL, NULL, NULL, NULL, &opt);
     RETURN_ENUMERATOR(self, orig_argc, argv);
+    extract_getline_args(argc-1, argv+1, &garg.rs, &garg.limit);
     open_key_args(argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
-    return rb_ensure(io_s_foreach, (VALUE)&arg, rb_io_close, arg.io);
+    check_getline_args(&garg.rs, &garg.limit, garg.io = arg.io);
+    return rb_ensure(io_s_foreach, (VALUE)&garg, rb_io_close, arg.io);
 }
 
 static VALUE
-io_s_readlines(struct foreach_arg *arg)
+io_s_readlines(struct getline_arg *arg)
 {
-    return rb_io_readlines(arg->argc, arg->argv, arg->io);
+    return io_readlines(arg->rs, arg->limit, arg->io);
 }
 
 /*
@@ -9774,11 +9810,14 @@ rb_io_s_readlines(int argc, VALUE *argv, VALUE io)
 {
     VALUE opt;
     struct foreach_arg arg;
+    struct getline_arg garg;
 
     argc = rb_scan_args(argc, argv, "13:", NULL, NULL, NULL, NULL, &opt);
+    extract_getline_args(argc-1, argv+1, &garg.rs, &garg.limit);
     open_key_args(argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
-    return rb_ensure(io_s_readlines, (VALUE)&arg, rb_io_close, arg.io);
+    check_getline_args(&garg.rs, &garg.limit, garg.io = arg.io);
+    return rb_ensure(io_s_readlines, (VALUE)&garg, rb_io_close, arg.io);
 }
 
 static VALUE

@@ -3276,4 +3276,72 @@ End
       end
     end
   end if File::BINARY != 0
+
+  if RUBY_ENGINE == "ruby" # implementation details
+    def test_foreach_rs_conversion
+      make_tempfile {|t|
+        a = []
+        rs = Struct.new(:count).new(0)
+        def rs.to_str; self.count += 1; "\n"; end
+        IO.foreach(t.path, rs) {|x| a << x }
+        assert_equal(["foo\n", "bar\n", "baz\n"], a)
+        assert_equal(1, rs.count)
+      }
+    end
+
+    def test_foreach_rs_invalid
+      make_tempfile {|t|
+        rs = Object.new
+        def rs.to_str; raise "invalid rs"; end
+        assert_raise(RuntimeError) do
+          IO.foreach(t.path, rs, mode:"w") {}
+        end
+        assert_equal(["foo\n", "bar\n", "baz\n"], IO.foreach(t.path).to_a)
+      }
+    end
+
+    def test_foreach_limit_conversion
+      make_tempfile {|t|
+        a = []
+        lim = Struct.new(:count).new(0)
+        def lim.to_int; self.count += 1; -1; end
+        IO.foreach(t.path, lim) {|x| a << x }
+        assert_equal(["foo\n", "bar\n", "baz\n"], a)
+        assert_equal(1, lim.count)
+      }
+    end
+
+    def test_foreach_limit_invalid
+      make_tempfile {|t|
+        lim = Object.new
+        def lim.to_int; raise "invalid limit"; end
+        assert_raise(RuntimeError) do
+          IO.foreach(t.path, lim, mode:"w") {}
+        end
+        assert_equal(["foo\n", "bar\n", "baz\n"], IO.foreach(t.path).to_a)
+      }
+    end
+
+    def test_readlines_rs_invalid
+      make_tempfile {|t|
+        rs = Object.new
+        def rs.to_str; raise "invalid rs"; end
+        assert_raise(RuntimeError) do
+          IO.readlines(t.path, rs, mode:"w")
+        end
+        assert_equal(["foo\n", "bar\n", "baz\n"], IO.readlines(t.path))
+      }
+    end
+
+    def test_readlines_limit_invalid
+      make_tempfile {|t|
+        lim = Object.new
+        def lim.to_int; raise "invalid limit"; end
+        assert_raise(RuntimeError) do
+          IO.readlines(t.path, lim, mode:"w")
+        end
+        assert_equal(["foo\n", "bar\n", "baz\n"], IO.readlines(t.path))
+      }
+    end
+  end
 end

@@ -1,3 +1,8 @@
+Thu Jul  7 16:31:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_s_foreach, rb_io_s_readlines): convert arguments
+	  just once before reading, instead of conversions for each lines.
+
 Wed Jul  6 19:54:17 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/iso_8859_14.c, test/ruby/enc/test_case_comprehensive.rb:
