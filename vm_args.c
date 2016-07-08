@@ -766,12 +766,23 @@ vm_caller_setup_arg_kw(rb_control_frame_t *cfp, struct rb_calling_info *calling,
     calling->argc -= kw_len - 1;
 }
 
+static inline void
+vm_caller_setup_proc_as_block(rb_control_frame_t *reg_cfp,
+			      struct rb_calling_info *calling,
+			      VALUE proc)
+{
+    rb_proc_t *po;
+
+    GetProcPtr(proc, po);
+    calling->blockptr = &po->block;
+    RUBY_VM_GET_BLOCK_PTR_IN_CFP(reg_cfp)->proc = proc;
+}
+
 static void
 vm_caller_setup_arg_block(const rb_thread_t *th, rb_control_frame_t *reg_cfp,
 			  struct rb_calling_info *calling, const struct rb_call_info *ci, rb_iseq_t *blockiseq, const int is_super)
 {
     if (ci->flag & VM_CALL_ARGS_BLOCKARG) {
-	rb_proc_t *po;
 	VALUE proc;
 
 	proc = *(--reg_cfp->sp);
@@ -779,11 +790,17 @@ vm_caller_setup_arg_block(const rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	if (NIL_P(proc)) {
 	    calling->blockptr = NULL;
 	}
-	else if (LIKELY(!(ci->flag & VM_CALL_TAILCALL)) && SYMBOL_P(proc) &&
+	else if (SYMBOL_P(proc) &&
 		 rb_method_basic_definition_p(rb_cSymbol, idTo_proc)) {
-	    calling->blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(reg_cfp);
-	    calling->blockptr->iseq = (rb_iseq_t *)proc;
-	    calling->blockptr->proc = proc;
+	    if (LIKELY(!(ci->flag & VM_CALL_TAILCALL))) {
+		calling->blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(reg_cfp);
+		calling->blockptr->iseq = (rb_iseq_t *)proc;
+		calling->blockptr->proc = proc;
+	    }
+	    else {
+		proc = rb_sym_to_proc(proc);
+		vm_caller_setup_proc_as_block(reg_cfp, calling, proc);
+	    }
 	}
 	else {
 	    if (!rb_obj_is_proc(proc)) {
@@ -797,9 +814,7 @@ vm_caller_setup_arg_block(const rb_thread_t *th, rb_control_frame_t *reg_cfp,
 		}
 		proc = b;
 	    }
-	    GetProcPtr(proc, po);
-	    calling->blockptr = &po->block;
-	    RUBY_VM_GET_BLOCK_PTR_IN_CFP(reg_cfp)->proc = proc;
+	    vm_caller_setup_proc_as_block(reg_cfp, calling, proc);
 	}
     }
     else if (blockiseq != 0) { /* likely */
