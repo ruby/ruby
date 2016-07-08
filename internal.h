@@ -2419,6 +2419,7 @@ void rb_execarg_parent_end(VALUE execarg_obj);
 int rb_execarg_run_options(const struct rb_execarg *e, struct rb_execarg *s, char* errmsg, size_t errmsg_buflen);
 VALUE rb_execarg_extract_options(VALUE execarg_obj, VALUE opthash);
 void rb_execarg_setenv(VALUE execarg_obj, VALUE env);
+VALUE rb_proc_exist(VALUE, VALUE);
 
 /* rational.c (export) */
 VALUE rb_gcd(VALUE x, VALUE y);

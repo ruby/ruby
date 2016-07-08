@@ -535,38 +535,6 @@ rb_f_kill(int argc, const VALUE *argv)
     return INT2FIX(i-1);
 }
 
-/*
- *  call-seq:
- *     Process.kill(pid)    -> boolean
- *
- * Checks the given process to see whether it is alive.
- */
-VALUE
-rb_f_exists(VALUE self, VALUE val_pid)
-{
-    int pid;
-    switch (TYPE(val_pid)) {
-        case T_FIXNUM:
-            pid = FIX2INT(val_pid);
-            break;
-        case T_FLOAT:
-            pid = (int) RFLOAT_VALUE(val_pid);
-            break;
-        default:
-            rb_raise(rb_eArgError, "bad pid type %s", rb_obj_classname(val_pid));
-            break;
-    }
-
-    int res = kill(pid, 0);
-    if (res == 0) {
-        return Qtrue;
-    } else if (errno == EPERM) {
-        return Qtrue;
-    } else {
-        return Qfalse;
-    }
-}
-
 static struct {
     rb_atomic_t cnt[RUBY_NSIG];
     rb_atomic_t size;

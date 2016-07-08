@@ -2436,37 +2436,32 @@ EOS
   end
 
   def test_process_exists_when_exists
-    pid = fork do
-      sleep
+    IO.popen([EnvUtil.rubybin, "-egets"], "w") do |f|
+      pid = f.pid
+      assert_send [Process, :exist?, pid], 'Process should exist'
+      assert_send [Process, :exist?, pid.to_f], 'Process should exist (float)'
     end
-
-    assert Process.exists?(pid), 'Process should exist'
-    assert Process.exists?(pid.to_f), 'Process should exist (float)'
-
-    # Cleanup
-    Process.kill(:KILL, pid)
   end
 
   def test_process_exists_when_exists_no_perms
-    # Process 1 usually exists and belongs to the root user.
-    assert Process.exists?(1), 'Process should exist'
+    skip "process 1 doesn't exist in windows" if windows?
+    # Process 1 usually exists in posix systems and belongs to the root user.
+    assert Process.exist?(1), 'Process should exist'
   end
 
   def test_process_exists_when_not_exists
     # Create a PID which is immediately gone.
-    pid = fork do
-      exit 0
-    end
+    pid = Process.spawn(EnvUtil.rubybin, "-eexit")
 
     Process.wait pid
 
-    assert !Process.exists?(pid), 'Process should not exist'
-    assert !Process.exists?(pid.to_f), 'Process should not exist (float)'
+    assert !Process.exist?(pid), 'Process should not exist'
+    assert !Process.exist?(pid.to_f), 'Process should not exist (float)'
   end
 
   def test_process_exists_when_invalid_type
-    assert_raise ArgumentError do
-      Process.exists?(:test)
+    assert_raise TypeError do
+      Process.exist?(:test)
     end
   end
 end
