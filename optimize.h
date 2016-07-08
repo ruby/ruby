@@ -68,6 +68,37 @@ void iseq_move_nop(const struct rb_iseq_struct *restrict i, int j)
     __attribute__((leaf));
 
 /**
+ * Folds a constant to a direct access.  This converts
+ *
+ *                        +--- PC
+ *                        v
+ *      +-----+-----+-----+-----+-----+-----+-----+-----+
+ *      | GIC |  m  |  x  | GET |  y  | SIC |  z  | ... |
+ *      +-----+-----+-----+-----+-----+-----+-----+-----+
+ *       \------ n ------/ \--------- m ---------/
+ *        GIC: getinlinecache
+ *        GET: getconst
+ *        SIC: setinlinecache
+ *
+ *  into:
+ *                        +--- PC
+ *                        v
+ *      +-----+-----+-----+-----+-----+-----+-----+-----+
+ *      | PUT | val | nop | nop | nop | nop | nop | ... |
+ *      +-----+-----+-----+-----+-----+-----+-----+-----+
+ *        PUT: putobject
+ *
+ * @param [out] i target iseq struct to squash.
+ * @param [in]  p PC
+ * @param [in]  n length to wipe before PC
+ * @param [in]  m length to wipe after PC
+ */
+void iseq_const_fold(const struct rb_iseq_struct *restrict i, const VALUE *pc, int n, long m, VALUE konst)
+    __attribute__((hot))
+    __attribute__((nonnull))
+    __attribute__((leaf));
+
+/**
  * Analyze an iseq  to add annotations.  This only annotates  an ISeq, does not
  * change the sequence in any form by itself.
  *

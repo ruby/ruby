@@ -196,6 +196,15 @@ static inline int setlocal_level(const VALUE *ptr)
 static enum insn_purity iseq_analyze_i(const rb_iseq_t *iseq, const rb_iseq_t *parent, VALUE info)
     __attribute__((nonnull));
 
+/**
+ * squash iseq.
+ *
+ * @param [out]  iseq  target iseq.
+ * @param [out]  pc    start pointer to the buffer to squash.
+ * @param [in]   n     length to squash.
+ */
+static inline void iseq_squash(const rb_iseq_t *iseq, VALUE * pc, int n);
+
 int
 relative_p(
     const rb_iseq_t *parent,
@@ -631,6 +640,7 @@ iseq_analyze(rb_iseq_t *iseq)
 static const VALUE wipeout_pattern[8]; /* maybe 5+2==7 should suffice? */
 static VALUE adjuststack;
 static VALUE nop;
+static VALUE putobject;
 
 void
 construct_pattern(void)
@@ -651,7 +661,24 @@ construct_pattern(void)
     memcpy((void *)wipeout_pattern, p, sizeof(p));
     adjuststack = (VALUE)LABEL_PTR(adjuststack);
     nop         = (VALUE)LABEL_PTR(nop);
+    putobject   = (VALUE)LABEL_PTR(putobject);
 #undef LABEL_PTR
+}
+
+void
+iseq_squash(const rb_iseq_t *iseq, VALUE * pc, int n)
+{
+    const size_t s = sizeof(wipeout_pattern);
+    const int    m = s / sizeof(VALUE); /* == 8 */
+
+    while (UNLIKELY(n > m)) {
+        memcpy(pc, wipeout_pattern, s);
+        pc += m;
+        n  -= m;
+    }
+    memcpy(pc, wipeout_pattern, n * sizeof(VALUE));
+    ISEQ_RESET_ORIGINAL_ISEQ(iseq);
+    FL_SET(iseq, ISEQ_NEEDS_ANALYZE);
 }
 
 void
@@ -696,12 +723,12 @@ iseq_eager_optimize(rb_iseq_t *iseq)
 void
 iseq_move_nop(const rb_iseq_t *restrict i, int j)
 {
-    VALUE m                 = i->body->iseq_encoded[j + 2];
-    const VALUE template[3] = { adjuststack, m, nop };
-    VALUE *buf              = (VALUE *)&i->body->iseq_encoded[j];
+    VALUE m    = i->body->iseq_encoded[j + 2];
+    VALUE *buf = (VALUE *)&i->body->iseq_encoded[j];
 
-    memcpy(buf, template, sizeof(template));
-    ISEQ_RESET_ORIGINAL_ISEQ(i);
+    iseq_squash(i, buf, 3);
+    buf[0] = adjuststack;
+    buf[1] = m;
 }
 
 void
@@ -716,13 +743,27 @@ iseq_eliminate_insn(
     int argc   = p->argc + m;
 
     memset(p, 0, sizeof(*p));
-    memcpy(buf, wipeout_pattern, len * sizeof(VALUE));
+    iseq_squash(i, buf, len);
     if (argc != 0) {
         buf[0] = adjuststack;
         buf[1] = argc;
     }
-    ISEQ_RESET_ORIGINAL_ISEQ(i);
-    FL_SET(i, ISEQ_NEEDS_ANALYZE);
+}
+
+void
+iseq_const_fold(
+    const rb_iseq_t *restrict i,
+    const VALUE *pc,
+    int n,
+    long m,
+    VALUE konst)
+{
+    VALUE *buf = (VALUE *)&pc[-n];
+    int len    = n + m;
+
+    iseq_squash(i, buf, len);
+    buf[0] = putobject;
+    buf[1] = konst;
 }
 
 /* 

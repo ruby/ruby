@@ -1319,6 +1319,10 @@ getinlinecache
 {
     if (ic->ic_serial == GET_GLOBAL_CONSTANT_STATE() &&
 	(ic->ic_cref == NULL || ic->ic_cref == rb_vm_get_cref(GET_EP()))) {
+	const rb_iseq_t *i = GET_ISEQ();
+	const VALUE *p = GET_PC();
+
+	iseq_const_fold(i, p, OPN_OF_CURRENT_INSN + 1, dst, ic->ic_value.value);
 	val = ic->ic_value.value;
 	JUMP(dst);
     }
