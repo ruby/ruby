@@ -1,3 +1,8 @@
+Fri Jul  8 21:49:28 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* thread.c (rb_wait_for_single_fd): Clean up fds.revents every time
+	  before calling ppoll(2). [Bug #12575] [ruby-dev:49725]
+
 Fri Jul  8 14:16:48 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_args.c (vm_caller_setup_arg_block): call rb_sym_to_proc()
