@@ -2007,10 +2007,10 @@ flo_round(int argc, VALUE *argv, VALUE num)
     f = pow(10, ndigits);
     x = round(number * f);
     if (x > 0) {
-	if ((x + 0.5) / f <= number) x += 1;
+	if ((double)((x + 0.5) / f) <= number) x += 1;
     }
     else {
-	if ((x - 0.5) / f >= number) x -= 1;
+	if ((double)((x - 0.5) / f) >= number) x -= 1;
     }
     return DBL2NUM(x / f);
 }
