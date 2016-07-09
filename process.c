@@ -8044,7 +8044,7 @@ rb_clock_getres(int argc, VALUE *argv)
  *
  * Checks the given process to see whether it is alive.
  */
-VALUE
+static VALUE
 rb_proc_exist(VALUE self, VALUE val_pid)
 {
     int pid = NUM2PIDT(val_pid);
