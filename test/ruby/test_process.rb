@@ -2439,14 +2439,13 @@ EOS
     IO.popen([EnvUtil.rubybin, "-egets"], "w") do |f|
       pid = f.pid
       assert_send [Process, :exist?, pid], 'Process should exist'
-      assert_send [Process, :exist?, pid.to_f], 'Process should exist (float)'
     end
   end
 
   def test_process_exists_when_exists_no_perms
     skip "process 1 doesn't exist in windows" if windows?
     # Process 1 usually exists in posix systems and belongs to the root user.
-    assert Process.exist?(1), 'Process should exist'
+    assert_send [Process, :exist?, 1], 'Process should exist'
   end
 
   def test_process_exists_when_not_exists
@@ -2455,8 +2454,7 @@ EOS
 
     Process.wait pid
 
-    assert !Process.exist?(pid), 'Process should not exist'
-    assert !Process.exist?(pid.to_f), 'Process should not exist (float)'
+    assert_not_send [Process, :exist?, pid], 'Process should not exist'
   end
 
   def test_process_exists_when_invalid_type
