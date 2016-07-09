@@ -1,7 +1,5 @@
 Sat Jul  9 12:43:09 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
-	* tool/mkconfig.rb: use true instead of TRUE.
-
 	* lib/getoptlong.rb: use false instead of FALSE.
 
 Fri Jul  8 21:49:28 2016  Naohisa Goto  <ngotogenome@gmail.com>
