@@ -20,7 +20,7 @@ $:.unshift(".")
 require "fileutils"
 mkconfig = File.basename($0)
 
-fast = {'prefix'=>TRUE, 'ruby_install_name'=>TRUE, 'INSTALL'=>TRUE, 'EXEEXT'=>TRUE}
+fast = {'prefix'=>true, 'ruby_install_name'=>true, 'INSTALL'=>true, 'EXEEXT'=>true}
 
 win32 = /mswin/ =~ arch
 universal = /universal.*darwin/ =~ arch
