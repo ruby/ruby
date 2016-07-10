@@ -176,7 +176,7 @@ class TestComprehensiveCaseFold
     end
   end
 
-  # temporary test to avoid regression when switching to primitives
+  # test for encodings that don't yet (or will never) deal with non-ASCII characters
   def self.generate_ascii_only_case_mapping_tests (encoding)
     all_tests
     # preselect codepoints to speed up testing for small encodings
