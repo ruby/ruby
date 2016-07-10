@@ -1,3 +1,11 @@
+Sun Jul 10 19:33:47 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_comprehensive.rb: Changed testing logic in to
+	  catch unintended modifications of characters that do not have a case
+	  equivalent in the respective encoding.
+	* enc/iso_8859_1.c, enc/iso_8859_15.c: Fixed unintended modifications of
+	  micro sign and y with diaeresis.
+
 Sun Jul 10 17:05:36 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/iso_8859_4.c, test/ruby/enc/test_case_comprehensive.rb:

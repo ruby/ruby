@@ -244,7 +244,7 @@ case_map (OnigCaseFoldType* flagP, const OnigUChar** pp,
 	code = 's';
       }
     }
-    else if (code==0xAA || code==0xBA) ;
+    else if (code==0xAA || code==0xBA || code==0xB5) ;
     else if ((EncISO_8859_15_CtypeTable[code] & BIT_CTYPE_UPPER)
 	     && (flags & (ONIGENC_CASE_DOWNCASE|ONIGENC_CASE_FOLD))) {
       flags |= ONIGENC_CASE_MODIFIED;

@@ -165,7 +165,12 @@ class TestComprehensiveCaseFold
         codepoints.each do |code|
           begin
             source = code.encode(encoding) * 5
-            target = "#{test.first_data[code]}#{test.follow_data[code]*4}".encode(encoding)
+            begin
+              target = "#{test.first_data[code]}#{test.follow_data[code]*4}".encode(encoding)
+            rescue Encoding::UndefinedConversionError
+              raise if code =~ /i|I/ # special case for Turkic
+              target = source
+            end
             result = source.send(test.method_name, *test.attributes)
             assert_equal target, result,
               proc{"from #{code*5} (#{source.dump}) expected #{target.dump} but was #{result.dump}"}
