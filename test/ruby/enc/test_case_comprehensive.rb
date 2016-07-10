@@ -240,7 +240,7 @@ class TestComprehensiveCaseFold
 
   generate_ascii_only_case_mapping_tests 'ISO-8859-2'
   generate_ascii_only_case_mapping_tests 'ISO-8859-3'
-  generate_ascii_only_case_mapping_tests 'ISO-8859-4'
+  generate_case_mapping_tests 'ISO-8859-4'
   generate_ascii_only_case_mapping_tests 'ISO-8859-5'
   generate_ascii_only_case_mapping_tests 'ISO-8859-7'
   generate_ascii_only_case_mapping_tests 'ISO-8859-9'
