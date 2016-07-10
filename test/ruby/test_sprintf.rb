@@ -282,6 +282,10 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("          0x1.000p+0", sprintf("%20.3a",  1), bug3979)
   end
 
+  def test_float_prec
+    assert_equal("5.03", sprintf("%.2f",5.025))
+  end
+
   BSIZ = 120
 
   def test_skip

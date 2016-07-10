@@ -1,3 +1,9 @@
+Sun Jul 10 14:27:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_dtoa): [EXPERIMENTAL] adjust the case that the
+	  Float value is close to the exact but unrepresentable middle
+	  value of two values in the given precision, as r55604.
+
 Sun Jul 10 08:57:20 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* thread.c: Fixed implicit conversion error with Apple clang-800.0.31
