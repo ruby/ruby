@@ -1,3 +1,8 @@
+Sun Jul 10 16:17:47 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_comprehensive.rb: Fixed a comment
+	  (message belongs to last commit). [ci skip]
+
 Sun Jul 10 14:27:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* util.c (ruby_dtoa): [EXPERIMENTAL] adjust the case that the
