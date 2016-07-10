@@ -1,3 +1,8 @@
+Sun Jul 10 19:53:41 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_10.c, test/ruby/enc/test_case_comprehensive.rb:
+	  Implement non-ASCII case conversion for ISO-8859-10, by Toya Hosokawa.
+
 Sun Jul 10 19:33:47 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* test/ruby/enc/test_case_comprehensive.rb: Changed testing logic in to
