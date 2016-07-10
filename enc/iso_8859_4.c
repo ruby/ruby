@@ -225,9 +225,9 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
 
 #ifdef ONIG_CASE_MAPPING
 static int
-case_map (OnigCaseFoldType* flagP, const OnigUChar** pp,
-					 const OnigUChar* end, OnigUChar* to, OnigUChar* to_end,
-					 const struct OnigEncodingTypeST* enc)
+case_map(OnigCaseFoldType* flagP, const OnigUChar** pp,
+	 const OnigUChar* end, OnigUChar* to, OnigUChar* to_end,
+	 const struct OnigEncodingTypeST* enc)
 {
   OnigCodePoint code;
   OnigUChar *to_start = to;
@@ -238,8 +238,8 @@ case_map (OnigCaseFoldType* flagP, const OnigUChar** pp,
     if (code==SHARP_s) {
       if (flags&ONIGENC_CASE_UPCASE) {
 	flags |= ONIGENC_CASE_MODIFIED;
-	  *to++ = 'S';
-	  code = (flags&ONIGENC_CASE_TITLECASE) ? 's' : 'S';
+	*to++ = 'S';
+	code = (flags&ONIGENC_CASE_TITLECASE) ? 's' : 'S';
       }
       else if (flags&ONIGENC_CASE_FOLD) {
 	flags |= ONIGENC_CASE_MODIFIED;
