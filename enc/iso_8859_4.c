@@ -252,7 +252,7 @@ case_map (OnigCaseFoldType* flagP, const OnigUChar** pp,
       flags |= ONIGENC_CASE_MODIFIED;
       if (code>=0xA0 && code<=0xBF) {
 	if (code==0xBD)
-	  code += 0x02; 
+	  code += 0x02;
 	else
 	  code += 0x10;
       }
