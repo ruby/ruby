@@ -1,3 +1,13 @@
+Tue Jul 12 01:25:09 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* configure.in, lib/mkmf.rb, win32/Makefile.sub (CSRCFLAG): make the
+	  compiler option replacable in Makefile.
+
+	* win32/Makefile.sub (OUTFLAG, COUTFLAG): ditto.
+
+	* win32/Makeile.sub, win32/setup.mak (CC): should not append `-nologo`
+	  option forcely.
+
 Mon Jul 11 18:05:40 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/iso_8859_1.c: Moved test for lowercase characters without

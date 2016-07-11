@@ -65,7 +65,7 @@ iconinc=-I$(icondirs: = -I)
 .SUFFIXES: .def .lib
 
 !if !defined(CC)
-CC = cl
+CC = cl -nologo
 !endif
 !if !defined(CPP) || "$(CPP)" == "cl"
 CPP = $(CC) -E
@@ -200,8 +200,15 @@ DOCTARGETS = nodoc
 ! endif
 !endif
 
+!if !defined(OUTFLAG)
 OUTFLAG       = -Fe
+!endif
+!if !defined(COUTFLAG)
 COUTFLAG      = -Fo
+!endif
+!if !defined(CSRCFLAG)
+CSRCFLAG      = -Tc
+!endif
 !if !defined(RUNTIMEFLAG)
 RUNTIMEFLAG   = -MD
 !endif
@@ -256,7 +263,6 @@ MISSING = $(MISSING) explicit_bzero.obj
 DLNOBJ = dln.obj
 
 ARFLAGS = -machine:$(MACHINE) -out:
-CC = $(CC) -nologo
 LD = $(CC)
 LDSHARED = $(LD) -LD
 XCFLAGS = -DRUBY_EXPORT -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(srcdir)/missing $(XCFLAGS)
@@ -906,6 +912,7 @@ s,@ENABLE_SHARED@,yes,;t t
 s,@BASERUBY@,$(BASERUBY),;t t
 s,@OUTFLAG@,$(OUTFLAG),;t t
 s,@COUTFLAG@,$(COUTFLAG),;t t
+s,@CSRCFLAG@,$(CSRCFLAG),;t t
 s,@CPPOUTFILE@,-P,;t t
 s,@LIBPATHFLAG@, -libpath:%s,;t t
 s,@RPATHFLAG@,,;t t
@@ -916,9 +923,9 @@ s,@LINK_SO@,@if exist $$(@).manifest $$(RUBY) -run -e wait_writable -- -n 10 $$(
 s,@LINK_SO@,@if exist $$(@).manifest $(MANIFESTTOOL) -manifest $$(@).manifest -outputresource:$$(@);2,;t t
 s,@LINK_SO@,@if exist $$(@).manifest $$(RM) $$(@:/=\).manifest,;t t
 !endif
-s,@COMPILE_C@,$$(CC) $$(INCFLAGS) $$(CFLAGS) $$(CPPFLAGS) $$(COUTFLAG)$$(@) -c -Tc$$(<:\=/),;t t
+s,@COMPILE_C@,$$(CC) $$(INCFLAGS) $$(CFLAGS) $$(CPPFLAGS) $$(COUTFLAG)$$(@) -c $$(CSRCFLAG)$$(<:\=/),;t t
 s,@COMPILE_CXX@,$$(CXX) $$(INCFLAGS) $$(CXXFLAGS) $$(CPPFLAGS) $$(COUTFLAG)$$(@) -c -Tp$$(<:\=/),;t t
-s,@ASSEMBLE_C@,$$(CC) $$(CFLAGS) $$(CPPFLAGS) -Fa$$(@) -c -Tc$$(<:\=/),;t t
+s,@ASSEMBLE_C@,$$(CC) $$(CFLAGS) $$(CPPFLAGS) -Fa$$(@) -c $$(CSRCFLAG)$$(<:\=/),;t t
 s,@ASSEMBLE_CXX@,$$(CXX) $$(CXXFLAGS) $$(CPPFLAGS) -Fa$$(@) -c -Tp$$(<:\=/),;t t
 s,@COMPILE_RULES@,{$$(*VPATH*)}.%s.%s: .%s.%s:,;t t
 s,@RULE_SUBST@,{.;$$(VPATH)}%s,;t t
@@ -1087,48 +1094,48 @@ $(ruby_pc): $(RBCONFIG)
 
 {$(srcdir)/enc/trans}.c.obj:
 	$(ECHO) compiling $(<:\=/)
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
 {$(srcdir)/enc}.c.obj:
 	$(ECHO) compiling $(<:\=/)
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
 {$(srcdir)/missing}.c.obj:
 	$(ECHO) compiling $(<:\=/)
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
 {$(win_srcdir)}.c.obj:
 	$(ECHO) compiling $(<:\=/)
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
 {$(srcdir)}.c{}.obj:
 	$(ECHO) compiling $(<:\=/)
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
 .c.obj:
 	$(ECHO) compiling $(<:\=/)
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c -Tc$(<:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
 
 {$(srcdir)/missing}.c.asm:
 	$(ECHO) translating $(<:\=/)
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa$@ -c -Tc$(<:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa$@ -c $(CSRCFLAG)$(<:\=/)
 {$(win_srcdir)}.c.asm:
 	$(ECHO) translating $(<:\=/)
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa$@ -c -Tc$(<:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa$@ -c $(CSRCFLAG)$(<:\=/)
 {$(srcdir)}.c{}.asm:
 	$(ECHO) translating $(<:\=/)
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa$@ -c -Tc$(<:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa$@ -c $(CSRCFLAG)$(<:\=/)
 .c.asm:
 	$(ECHO) translating $(<:\=/)
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa$@ -c -Tc$(<:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -Fa$@ -c $(CSRCFLAG)$(<:\=/)
 
 {$(srcdir)/missing}.c.i:
 	$(ECHO) preprocessing $(<:\=/)
-	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P -Tc$(<:\=/) > $@
+	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P $(CSRCFLAG)$(<:\=/) > $@
 {$(win_srcdir)}.c.i:
 	$(ECHO) preprocessing $(<:\=/)
-	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P -Tc$(<:\=/)
+	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P $(CSRCFLAG)$(<:\=/)
 {$(srcdir)}.c{}.i:
 	$(ECHO) preprocessing $(<:\=/)
-	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P -Tc$(<:\=/)
+	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P $(CSRCFLAG)$(<:\=/)
 .c.i:
 	$(ECHO) preprocessing $(<:\=/)
-	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P -Tc$(<:\=/)
+	$(Q) $(CC) $(XCFLAGS) $(CPPFLAGS) -P $(CSRCFLAG)$(<:\=/)
 
 .rc.res:
 	$(ECHO) compiling $(<:\=/)

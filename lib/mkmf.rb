@@ -250,6 +250,7 @@ module MakeMakefile
 
   OUTFLAG = CONFIG['OUTFLAG']
   COUTFLAG = CONFIG['COUTFLAG']
+  CSRCFLAG = CONFIG['CSRCFLAG']
   CPPOUTFILE = config_string('CPPOUTFILE') {|str| str.sub(/\bconftest\b/, CONFTEST)}
 
   def rm_f(*files)
@@ -1965,6 +1966,7 @@ LIBRUBYARG_STATIC = #$LIBRUBYARG_STATIC
 empty =
 OUTFLAG = #{OUTFLAG}$(empty)
 COUTFLAG = #{COUTFLAG}$(empty)
+CSRCFLAG = #{CSRCFLAG}$(empty)
 
 RUBY_EXTCONF_H = #{$extconf_h}
 cflags   = #{CONFIG['cflags']}
@@ -2656,12 +2658,12 @@ MESSAGE
   ##
   # Command which will compile C files in the generated Makefile
 
-  COMPILE_C = config_string('COMPILE_C') || '$(CC) $(INCFLAGS) $(CPPFLAGS) $(CFLAGS) $(COUTFLAG)$@ -c $<'
+  COMPILE_C = config_string('COMPILE_C') || '$(CC) $(INCFLAGS) $(CPPFLAGS) $(CFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$<'
 
   ##
   # Command which will compile C++ files in the generated Makefile
 
-  COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -c $<'
+  COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(INCFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$<'
 
   ##
   # Command which will translate C files to assembler sources in the generated Makefile

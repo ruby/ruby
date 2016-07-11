@@ -524,8 +524,10 @@ RUBY_CPPOUTFILE
 
 : ${OUTFLAG='-o '}
 : ${COUTFLAG=${OUTFLAG}}
+: ${CSRCFLAG=''}
 AC_SUBST(OUTFLAG)
 AC_SUBST(COUTFLAG)
+AC_SUBST(CSRCFLAG)
 
 cc_version=
 for option in --version -v -V -qversion; do
