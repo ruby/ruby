@@ -1,5 +1,6 @@
 require 'test/unit'
 require "-test-/string/string"
+require "rbconfig/sizeof"
 
 class Test_StringModifyExpand < Test::Unit::TestCase
   def test_modify_expand_memory_leak

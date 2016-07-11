@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'stringio'
+require "rbconfig/sizeof"
 require_relative '../ruby/ut_eof'
 
 class TestStringIO < Test::Unit::TestCase
