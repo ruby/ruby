@@ -252,10 +252,7 @@ case_map (OnigCaseFoldType* flagP, const OnigUChar** pp,
     else if ((EncISO_8859_10_CtypeTable[code] & BIT_CTYPE_UPPER)
 	     && (flags & (ONIGENC_CASE_DOWNCASE|ONIGENC_CASE_FOLD))) {
       flags |= ONIGENC_CASE_MODIFIED;
-      if (code>=0xA0 && code<=0xBF)
-	code += 0x10;
-      else
-	code += 0x20;
+      code = ENC_ISO_8859_10_TO_LOWER_CASE(code);
     }
     else if ((EncISO_8859_10_CtypeTable[code]&BIT_CTYPE_LOWER)
 	     && (flags&ONIGENC_CASE_UPCASE)) {

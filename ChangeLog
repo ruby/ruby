@@ -1,3 +1,9 @@
+Mon Jul 11 17:49:25 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_4.c, enc/iso_8859_10.c, enc/iso_8859_14.c,
+	  enc/iso_8859_15.c, enc/iso_8859_16.c: Replace case-by-case code with
+	  lookup in ENC_ISO_8859_xx_TO_LOWER_CASE table.
+
 Mon Jul 11 16:00:56 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_each, strio_readlines): convert
