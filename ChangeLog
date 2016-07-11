@@ -1,3 +1,8 @@
+Mon Jul 11 18:05:40 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_1.c: Moved test for lowercase characters without
+	  uppercase equivalent.
+
 Mon Jul 11 17:49:25 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/iso_8859_4.c, enc/iso_8859_10.c, enc/iso_8859_14.c,
