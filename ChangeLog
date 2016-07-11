@@ -1,3 +1,9 @@
+Mon Jul 11 16:00:56 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_each, strio_readlines): convert
+	  arguments just once before reading, instead of conversions for
+	  each lines, as r55603.
+
 Sun Jul 10 19:53:41 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/iso_8859_10.c, test/ruby/enc/test_case_comprehensive.rb:

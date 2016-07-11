@@ -982,12 +982,16 @@ bm_search(const char *little, long llen, const char *big, long blen, const long 
     return -1;
 }
 
-static VALUE
-strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
+struct getline_arg {
+    VALUE rs;
+    long limit;
+};
+
+static struct getline_arg *
+prepare_getline_args(struct getline_arg *arg, int argc, VALUE *argv)
 {
-    const char *s, *e, *p;
-    long n, limit = 0;
     VALUE str, lim;
+    long limit = -1;
 
     rb_scan_args(argc, argv, "02", &str, &lim);
     switch (argc) {
@@ -1000,7 +1004,6 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 	    VALUE tmp = rb_check_string_type(str);
 	    if (NIL_P(tmp)) {
 		limit = NUM2LONG(str);
-		if (limit == 0) return rb_str_new(0,0);
 		str = rb_rs;
 	    }
 	    else {
@@ -1014,6 +1017,17 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 	if (!NIL_P(lim)) limit = NUM2LONG(lim);
 	break;
     }
+    arg->rs = str;
+    arg->limit = limit;
+    return arg;
+}
+
+static VALUE
+strio_getline(struct getline_arg *arg, struct StringIO *ptr)
+{
+    const char *s, *e, *p;
+    long n, limit = arg->limit;
+    VALUE str = arg->rs;
 
     if (ptr->pos >= (n = RSTRING_LEN(ptr->string))) {
 	return Qnil;
@@ -1086,8 +1100,14 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 static VALUE
 strio_gets(int argc, VALUE *argv, VALUE self)
 {
-    VALUE str = strio_getline(argc, argv, readable(self));
+    struct getline_arg arg;
+    VALUE str;
 
+    if (prepare_getline_args(&arg, argc, argv)->limit == 0) {
+	return rb_str_new(0, 0);
+    }
+
+    str = strio_getline(&arg, readable(self));
     rb_lastline_set(str);
     return str;
 }
@@ -1126,16 +1146,16 @@ static VALUE
 strio_each(int argc, VALUE *argv, VALUE self)
 {
     VALUE line;
+    struct getline_arg arg;
 
     StringIO(self);
     RETURN_ENUMERATOR(self, argc, argv);
 
-    if (argc > 0 && !NIL_P(argv[argc-1]) && NIL_P(rb_check_string_type(argv[argc-1])) &&
-	NUM2LONG(argv[argc-1]) == 0) {
+    if (prepare_getline_args(&arg, argc, argv)->limit == 0) {
 	rb_raise(rb_eArgError, "invalid limit: 0 for each_line");
     }
 
-    while (!NIL_P(line = strio_getline(argc, argv, readable(self)))) {
+    while (!NIL_P(line = strio_getline(&arg, readable(self)))) {
 	rb_yield(line);
     }
     return self;
@@ -1165,15 +1185,15 @@ static VALUE
 strio_readlines(int argc, VALUE *argv, VALUE self)
 {
     VALUE ary, line;
+    struct getline_arg arg;
 
     StringIO(self);
     ary = rb_ary_new();
-    if (argc > 0 && !NIL_P(argv[argc-1]) && NIL_P(rb_check_string_type(argv[argc-1])) &&
-	NUM2LONG(argv[argc-1]) == 0) {
+    if (prepare_getline_args(&arg, argc, argv)->limit == 0) {
 	rb_raise(rb_eArgError, "invalid limit: 0 for readlines");
     }
 
-    while (!NIL_P(line = strio_getline(argc, argv, readable(self)))) {
+    while (!NIL_P(line = strio_getline(&arg, readable(self)))) {
 	rb_ary_push(ary, line);
     }
     return ary;
