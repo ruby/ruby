@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require "-test-/string"
+require "rbconfig/sizeof"
 
 class Test_StringModifyExpand < Test::Unit::TestCase
   def test_modify_expand_memory_leak
