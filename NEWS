@@ -123,6 +123,7 @@ with all sufficient information, see the ChangeLog file or Redmine
   So obj.kind_of?(Fixnum) works as obj.kind_of?(Integer).
   At C-level, Fixnum object and Bignum object should be distinguished by
   FIXNUM_P(obj) and RB_TYPE_P(obj, T_BIGNUM).
+  RUBY_INTEGER_UNIFICATION can be used to detect this feature.
   ruby-2.4.0-preview1 (temporally) removes rb_cFixnum and rb_cBignum
   to check the effect of incompatibility.
   (rb_cFixnum and rb_cBignum may be defined as rb_cInteger later if
