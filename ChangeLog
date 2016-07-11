@@ -1,3 +1,15 @@
+Mon Jul 11 22:35:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* bignum.c (rb_big_hash): make it public function to be available in
+	  other source files, and remove documentation comment for Bignum#hash.
+
+	* bignum.c (Bignum#hash): remove its definition because it is unified
+	  with Object#hash.
+
+	* include/ruby/intern.h (rb_big_hash): add a prototype declaration.
+
+	* hash.c (any_hash): treat Bignum values directly.
+
 Sat Jul  2 04:00:50 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (tr_trans): consider terminator length and fix heap

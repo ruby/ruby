@@ -131,6 +131,7 @@ VALUE rb_big_or(VALUE, VALUE);
 VALUE rb_big_xor(VALUE, VALUE);
 VALUE rb_big_lshift(VALUE, VALUE);
 VALUE rb_big_rshift(VALUE, VALUE);
+VALUE rb_big_hash(VALUE);
 
 /* For rb_integer_pack and rb_integer_unpack: */
 /* "MS" in MSWORD and MSBYTE means "most significant" */

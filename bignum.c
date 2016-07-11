@@ -6804,7 +6804,7 @@ rb_big_aref(VALUE x, VALUE y)
  * See also Object#hash.
  */
 
-static VALUE
+VALUE
 rb_big_hash(VALUE x)
 {
     st_index_t hash;

@@ -153,6 +153,10 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
     else if (BUILTIN_TYPE(a) == T_SYMBOL) {
 	hnum = RSYMBOL(a)->hashval;
     }
+    else if (BUILTIN_TYPE(a) == T_BIGNUM) {
+	hval = rb_big_hash(a);
+	hnum = FIX2LONG(hval);
+    }
     else if (BUILTIN_TYPE(a) == T_FLOAT) {
       flt:
 	hval = rb_dbl_hash(rb_float_value(a));
