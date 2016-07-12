@@ -1,3 +1,8 @@
+Wed Jul 13 08:40:21 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_iso_8859.rb: Excluded dotless i/I with dot from
+	  case-insensitive matching because they are not a case pair.
+
 Tue Jul 12 23:13:43 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* math.c (rb_math_sqrt): [EXPERIMENTAL] move Complex sqrt support
