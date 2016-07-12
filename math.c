@@ -456,9 +456,8 @@ math_log(int argc, const VALUE *argv, VALUE obj)
 }
 
 static double
-math_log1(VALUE x)
+get_double_rshift(VALUE x, size_t *pnumbits)
 {
-    double d;
     size_t numbits;
 
     if (RB_BIGNUM_TYPE_P(x) && BIGNUM_POSITIVE_P(x) &&
@@ -469,8 +468,16 @@ math_log1(VALUE x)
     else {
 	numbits = 0;
     }
+    *pnumbits = numbits;
+    return Get_Double(x);
+}
 
-    d = Get_Double(x);
+static double
+math_log1(VALUE x)
+{
+    size_t numbits;
+    double d = get_double_rshift(x, &numbits);
+
     /* check for domain error */
     if (d < 0.0) domain_error("log");
     /* check for pole error */
@@ -511,19 +518,9 @@ extern double log2(double);
 static VALUE
 math_log2(VALUE obj, VALUE x)
 {
-    double d;
     size_t numbits;
+    double d = get_double_rshift(x, &numbits);
 
-    if (RB_BIGNUM_TYPE_P(x) && BIGNUM_POSITIVE_P(x) &&
-            DBL_MAX_EXP <= (numbits = rb_absint_numwords(x, 1, NULL))) {
-        numbits -= DBL_MANT_DIG;
-        x = rb_big_rshift(x, SIZET2NUM(numbits));
-    }
-    else {
-	numbits = 0;
-    }
-
-    d = Get_Double(x);
     /* check for domain error */
     if (d < 0.0) domain_error("log2");
     /* check for pole error */
@@ -551,19 +548,9 @@ math_log2(VALUE obj, VALUE x)
 static VALUE
 math_log10(VALUE obj, VALUE x)
 {
-    double d;
     size_t numbits;
+    double d = get_double_rshift(x, &numbits);
 
-    if (RB_BIGNUM_TYPE_P(x) && BIGNUM_POSITIVE_P(x) &&
-            DBL_MAX_EXP <= (numbits = rb_absint_numwords(x, 1, NULL))) {
-        numbits -= DBL_MANT_DIG;
-        x = rb_big_rshift(x, SIZET2NUM(numbits));
-    }
-    else {
-	numbits = 0;
-    }
-
-    d = Get_Double(x);
     /* check for domain error */
     if (d < 0.0) domain_error("log10");
     /* check for pole error */
