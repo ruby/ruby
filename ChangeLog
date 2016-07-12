@@ -1,3 +1,8 @@
+Tue Jul 12 23:13:43 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* math.c (rb_math_sqrt): [EXPERIMENTAL] move Complex sqrt support
+	  from mathn.rb.
+
 Tue Jul 12 21:59:40 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* revert r55642 (previous commit) because of test failure at

@@ -588,8 +588,23 @@ math_log10(VALUE obj, VALUE x)
 static VALUE
 math_sqrt(VALUE obj, VALUE x)
 {
+    return rb_math_sqrt(x);
+}
+
+VALUE
+rb_math_sqrt(VALUE x)
+{
     double d;
 
+    if (RB_TYPE_P(x, T_COMPLEX)) {
+	int neg = signbit(RCOMPLEX(x)->imag);
+	double re = Get_Double(RCOMPLEX(x)->real), im;
+	d = Get_Double(rb_complex_abs(x));
+	im = sqrt((d - re) / 2.0);
+	re = sqrt((d + re) / 2.0);
+	if (neg) im = -im;
+	return rb_complex_new(DBL2NUM(re), DBL2NUM(im));
+    }
     d = Get_Double(x);
     /* check for domain error */
     if (d < 0.0) domain_error("sqrt");

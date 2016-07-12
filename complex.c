@@ -535,6 +535,21 @@ m_sin(VALUE x)
 #if 0
 imp1(sqrt)
 
+VALUE
+rb_complex_sqrt(VALUE x)
+{
+    int pos;
+    VALUE a, re, im;
+    get_dat1(x);
+
+    pos = f_positive_p(dat->imag);
+    a = f_abs(x);
+    re = m_sqrt_bang(f_div(f_add(a, dat->real), TWO));
+    im = m_sqrt_bang(f_div(f_sub(a, dat->real), TWO));
+    if (!pos) im = f_negate(im);
+    return f_complex_new2(rb_cComplex, re, im);
+}
+
 static VALUE
 m_sqrt(VALUE x)
 {
@@ -543,18 +558,7 @@ m_sqrt(VALUE x)
 	    return m_sqrt_bang(x);
 	return f_complex_new2(rb_cComplex, ZERO, m_sqrt_bang(f_negate(x)));
     }
-    else {
-	get_dat1(x);
-
-	if (f_negative_p(dat->imag))
-	    return f_conj(m_sqrt(f_conj(x)));
-	else {
-	    VALUE a = f_abs(x);
-	    return f_complex_new2(rb_cComplex,
-				  m_sqrt_bang(f_div(f_add(a, dat->real), TWO)),
-				  m_sqrt_bang(f_div(f_sub(a, dat->real), TWO)));
-	}
-    }
+    return rb_complex_sqrt(x);
 }
 #endif
 
@@ -1413,6 +1417,12 @@ rb_complex_set_imag(VALUE cmp, VALUE i)
 {
     RCOMPLEX_SET_IMAG(cmp, i);
     return cmp;
+}
+
+VALUE
+rb_complex_abs(VALUE cmp)
+{
+    return nucomp_abs(cmp);
 }
 
 /*

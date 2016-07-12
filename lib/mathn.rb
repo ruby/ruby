@@ -103,14 +103,7 @@ module Math
 
   def sqrt(a)
     if a.kind_of?(Complex)
-      abs = sqrt(a.real*a.real + a.imag*a.imag)
-      x = sqrt((a.real + abs)/Rational(2))
-      y = sqrt((-a.real + abs)/Rational(2))
-      if a.imag >= 0
-        Complex(x, y)
-      else
-        Complex(x, -y)
-      end
+      sqrt!(a)
     elsif a.respond_to?(:nan?) and a.nan?
       a
     elsif a >= 0
