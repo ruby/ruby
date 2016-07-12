@@ -10,6 +10,9 @@
 **********************************************************************/
 
 #include "internal.h"
+#ifdef _MSC_VER
+# define _USE_MATH_DEFINES 1
+#endif
 #include <float.h>
 #include <math.h>
 #include <errno.h>
@@ -408,6 +411,13 @@ math_exp(VALUE obj, VALUE x)
 # define log10(x) ((x) < 0.0 ? nan("") : log10(x))
 #endif
 
+#ifndef M_LN2
+# define M_LN2 0.693147180559945309417232121458176568
+#endif
+#ifndef M_LN10
+# define M_LN10 2.30258509299404568401799145468436421
+#endif
+
 static double math_log1(VALUE x);
 
 /*
@@ -466,7 +476,7 @@ math_log1(VALUE x)
     /* check for pole error */
     if (d == 0.0) return -INFINITY;
 
-    return log(d) + numbits * log(2); /* log(d * 2 ** numbits) */
+    return log(d) + numbits * M_LN2; /* log(d * 2 ** numbits) */
 }
 
 #ifndef log2
@@ -559,7 +569,7 @@ math_log10(VALUE obj, VALUE x)
     /* check for pole error */
     if (d == 0.0) return DBL2NUM(-INFINITY);
 
-    return DBL2NUM(log10(d) + numbits * log10(2)); /* log10(d * 2 ** numbits) */
+    return DBL2NUM(log10(d) + numbits * M_LN2/M_LN10); /* log10(d * 2 ** numbits) */
 }
 
 /*
