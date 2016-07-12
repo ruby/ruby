@@ -1,3 +1,8 @@
+Tue Jul 12 21:59:40 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* revert r55642 (previous commit) because of test failure at
+	  https://travis-ci.org/ruby/ruby/builds/144148780
+
 Tue Jul 12 21:33:10 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/iso_8859_3.c, test/ruby/enc/test_case_comprehensive.rb:

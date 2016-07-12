@@ -168,15 +168,8 @@ class TestComprehensiveCaseFold
             begin
               target = "#{test.first_data[code]}#{test.follow_data[code]*4}".encode(encoding)
             rescue Encoding::UndefinedConversionError
-              if test.first_data[code]=="i\u0307" or test.follow_data[code]=="i\u0307" # explicit dot above
-                first_data = test.first_data[code]=="i\u0307" ? 'i' : test.first_data[code]
-                follow_data = test.follow_data[code]=="i\u0307" ? 'i' : test.follow_data[code]
-                target = "#{first_data}#{follow_data*4}".encode(encoding)
-              elsif code =~ /i|I/ # special case for Turkic
-                raise
-              else
-                target = source
-              end
+              raise if code =~ /i|I/ # special case for Turkic
+              target = source
             end
             result = source.send(test.method_name, *test.attributes)
             assert_equal target, result,
@@ -251,7 +244,7 @@ class TestComprehensiveCaseFold
   end
 
   generate_ascii_only_case_mapping_tests 'ISO-8859-2'
-  generate_case_mapping_tests 'ISO-8859-3'
+  generate_ascii_only_case_mapping_tests 'ISO-8859-3'
   generate_case_mapping_tests 'ISO-8859-4'
   generate_ascii_only_case_mapping_tests 'ISO-8859-5'
   generate_ascii_only_case_mapping_tests 'ISO-8859-7'
