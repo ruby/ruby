@@ -901,8 +901,8 @@ CONSTFUNC(const char * rb_insns_name(int i));
 VALUE rb_insns_name_array(void);
 
 /* complex.c */
-VALUE rb_nucomp_add(VALUE, VALUE);
-VALUE rb_nucomp_mul(VALUE, VALUE);
+VALUE rb_complex_plus(VALUE, VALUE);
+VALUE rb_complex_mul(VALUE, VALUE);
 
 /* cont.c */
 VALUE rb_obj_is_fiber(VALUE);
