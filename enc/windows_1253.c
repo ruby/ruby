@@ -27,13 +27,21 @@
  * SUCH DAMAGE.
  */
 
+/*
+ * Name: windows-1253
+ * MIBenum: 2253
+ * Link: http://www.iana.org/assignments/character-sets
+ * Link: http://www.microsoft.com/globaldev/reference/sbcs/1253.mspx
+ * Link: http://en.wikipedia.org/wiki/Windows-1253
+ */
+
 #include "regenc.h"
 
-#define ENC_ISO_8859_7_TO_LOWER_CASE(c) EncISO_8859_7_ToLowerCaseTable[c]
-#define ENC_IS_ISO_8859_7_CTYPE(code,ctype) \
-  ((EncISO_8859_7_CtypeTable[code] & CTYPE_TO_BIT(ctype)) != 0)
+#define ENC_CP1253_TO_LOWER_CASE(c) EncCP1253_ToLowerCaseTable[c]
+#define ENC_IS_CP1253_CTYPE(code,ctype) \
+  ((EncCP1253_CtypeTable[code] & CTYPE_TO_BIT(ctype)) != 0)
 
-static const UChar EncISO_8859_7_ToLowerCaseTable[256] = {
+static const UChar EncCP1253_ToLowerCaseTable[256] = {
   '\000', '\001', '\002', '\003', '\004', '\005', '\006', '\007',
   '\010', '\011', '\012', '\013', '\014', '\015', '\016', '\017',
   '\020', '\021', '\022', '\023', '\024', '\025', '\026', '\027',
@@ -68,7 +76,7 @@ static const UChar EncISO_8859_7_ToLowerCaseTable[256] = {
   '\370', '\371', '\372', '\373', '\374', '\375', '\376', '\377'
 };
 
-static const unsigned short EncISO_8859_7_CtypeTable[256] = {
+static const unsigned short EncCP1253_CtypeTable[256] = {
   0x4008, 0x4008, 0x4008, 0x4008, 0x4008, 0x4008, 0x4008, 0x4008,
   0x4008, 0x420c, 0x4209, 0x4208, 0x4208, 0x4208, 0x4008, 0x4008,
   0x4008, 0x4008, 0x4008, 0x4008, 0x4008, 0x4008, 0x4008, 0x4008,
@@ -110,7 +118,7 @@ mbc_case_fold(OnigCaseFoldType flag,
 {
   const UChar* p = *pp;
 
-  *lower = ENC_ISO_8859_7_TO_LOWER_CASE(*p);
+  *lower = ENC_CP1253_TO_LOWER_CASE(*p);
   (*pp)++;
   return 1;
 }
@@ -124,7 +132,7 @@ is_mbc_ambiguous(OnigCaseFoldType flag,
   const UChar* p = *pp;
 
   (*pp)++;
-  v = (EncISO_8859_7_CtypeTable[*p] & (BIT_CTYPE_UPPER | BIT_CTYPE_LOWER));
+  v = (EncCP1253_CtypeTable[*p] & (BIT_CTYPE_UPPER | BIT_CTYPE_LOWER));
   if ((v | BIT_CTYPE_LOWER) != 0) {
     if (*p == 0xc0 || *p == 0xe0)
       return FALSE;
@@ -140,7 +148,7 @@ static int
 is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc ARG_UNUSED)
 {
   if (code < 256)
-    return ENC_IS_ISO_8859_7_CTYPE(code, ctype);
+    return ENC_IS_CP1253_CTYPE(code, ctype);
   else
     return FALSE;
 }
@@ -206,9 +214,9 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
 }
 
 
-OnigEncodingDefine(iso_8859_7, ISO_8859_7) = {
+OnigEncodingDefine(windows_1253, Windows_1253) = {
   onigenc_single_byte_mbc_enc_len,
-  "ISO-8859-7",  /* name */
+  "Windows-1253",  /* name */
   1,             /* max enc length */
   1,             /* min enc length */
   onigenc_is_mbc_newline_0x0a,
@@ -229,4 +237,4 @@ OnigEncodingDefine(iso_8859_7, ISO_8859_7) = {
   onigenc_single_byte_ascii_only_case_map,
 #endif   /* ONIG_CASE_MAPPING */
 };
-ENC_ALIAS("ISO8859-7", "ISO-8859-7")
+ENC_ALIAS("CP1253", "Windows-1253")
