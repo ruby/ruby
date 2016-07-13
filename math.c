@@ -9,10 +9,10 @@
 
 **********************************************************************/
 
-#include "internal.h"
 #ifdef _MSC_VER
 # define _USE_MATH_DEFINES 1
 #endif
+#include "internal.h"
 #include <float.h>
 #include <math.h>
 #include <errno.h>
