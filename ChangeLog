@@ -1,3 +1,8 @@
+Wed Jul 13 15:19:03 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_1.c, enc/iso_8859_4.c: Avoid setting modification flag if
+	  there is no modification.
+
 Wed Jul 13 14:40:04 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/iso_8859_5.c, test/ruby/enc/test_case_comprehensive.rb:

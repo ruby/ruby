@@ -252,14 +252,13 @@ case_map(OnigCaseFoldType* flagP, const OnigUChar** pp,
       flags |= ONIGENC_CASE_MODIFIED;
       code = ENC_ISO_8859_4_TO_LOWER_CASE(code);
     }
+    else if (code==0xA2)  ;
     else if ((EncISO_8859_4_CtypeTable[code]&BIT_CTYPE_LOWER)
 	     && (flags&ONIGENC_CASE_UPCASE)) {
       flags |= ONIGENC_CASE_MODIFIED;
       if (code>=0xA0&&code<=0xBF) {
 	if (code==0xBF)
 	  code -= 0x02;
-	else if (code==0xA2)
-	  ;
 	else
 	  code -= 0x10;
       }
