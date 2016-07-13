@@ -209,6 +209,40 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
 	     flag, p, end, items);
 }
 
+#ifdef ONIG_CASE_MAPPING
+static int
+case_map (OnigCaseFoldType* flagP, const OnigUChar** pp,
+					 const OnigUChar* end, OnigUChar* to, OnigUChar* to_end,
+					 const struct OnigEncodingTypeST* enc)
+{
+  OnigCodePoint code;
+  OnigUChar *to_start = to;
+  OnigCaseFoldType flags = *flagP;
+
+  while (*pp<end && to<to_end) {
+    code = *(*pp)++;
+    if ((EncISO_8859_5_CtypeTable[code] & BIT_CTYPE_UPPER)
+	     && (flags & (ONIGENC_CASE_DOWNCASE|ONIGENC_CASE_FOLD))) {
+      flags |= ONIGENC_CASE_MODIFIED;
+      code = ENC_ISO_8859_5_TO_LOWER_CASE(code);
+    }
+    else if ((EncISO_8859_5_CtypeTable[code]&BIT_CTYPE_LOWER)
+	     && (flags&ONIGENC_CASE_UPCASE)) {
+      flags |= ONIGENC_CASE_MODIFIED;
+      if (0xF1<=code && code<=0xFF)
+	code -= 0x50;
+      else
+	code -= 0x20;
+    }
+    *to++ = code;
+    if (flags&ONIGENC_CASE_TITLECASE)  /* switch from titlecase to lowercase for capitalize */
+      flags ^= (ONIGENC_CASE_UPCASE|ONIGENC_CASE_DOWNCASE|ONIGENC_CASE_TITLECASE);
+  }
+  *flagP = flags;
+  return (int)(to-to_start);
+}
+#endif   /* ONIG_CASE_MAPPING */
+
 OnigEncodingDefine(iso_8859_5, ISO_8859_5) = {
   onigenc_single_byte_mbc_enc_len,
   "ISO-8859-5",  /* name */
@@ -229,7 +263,7 @@ OnigEncodingDefine(iso_8859_5, ISO_8859_5) = {
   0,
   ONIGENC_FLAG_NONE,
 #ifdef ONIG_CASE_MAPPING
-  onigenc_single_byte_ascii_only_case_map,
+  case_map,
 #endif   /* ONIG_CASE_MAPPING */
 };
 ENC_ALIAS("ISO8859-5", "ISO-8859-5")
