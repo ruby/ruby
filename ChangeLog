@@ -1,3 +1,8 @@
+Wed Jul 13 22:23:03 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/json/json_common_interface_test.rb: use assert_raise instead of
+	  assert_raises.
+
 Wed Jul 13 22:14:23 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* test/lib/test/unit.rb: added test files with `_test` suffix for json
