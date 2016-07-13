@@ -1,3 +1,8 @@
+Wed Jul 13 10:31:39 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_13.c, enc/windows_1257.c: Split Windows-1257 from
+	  ISO-8859-13 to be able to implement different case conversions.
+
 Wed Jul 13 09:02:30 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/iso_8859_3.c, test/ruby/enc/test_case_comprehensive.rb:

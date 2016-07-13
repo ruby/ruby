@@ -1,5 +1,5 @@
 /**********************************************************************
-  iso8859_13.c -  Oniguruma (regular expression library)
+  windows_1257.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
@@ -30,11 +30,19 @@
 #include "regenc.h"
 #include "iso_8859.h"
 
-#define ENC_ISO_8859_13_TO_LOWER_CASE(c) EncISO_8859_13_ToLowerCaseTable[c]
-#define ENC_IS_ISO_8859_13_CTYPE(code,ctype) \
-  ((EncISO_8859_13_CtypeTable[code] & CTYPE_TO_BIT(ctype)) != 0)
+/*
+ * Name: windows-1257
+ * MIBenum: 2257
+ * Link: http://www.iana.org/assignments/character-sets
+ * Link: http://www.microsoft.com/globaldev/reference/sbcs/1257.mspx
+ * Link: http://en.wikipedia.org/wiki/Windows-1257
+ */
 
-static const UChar EncISO_8859_13_ToLowerCaseTable[256] = {
+#define ENC_CP1252_TO_LOWER_CASE(c) EncCP1252_ToLowerCaseTable[c]
+#define ENC_IS_CP1252_CTYPE(code,ctype) \
+  ((EncCP1252_CtypeTable[code] & CTYPE_TO_BIT(ctype)) != 0)
+
+static const UChar EncCP1252_ToLowerCaseTable[256] = {
   '\000', '\001', '\002', '\003', '\004', '\005', '\006', '\007',
   '\010', '\011', '\012', '\013', '\014', '\015', '\016', '\017',
   '\020', '\021', '\022', '\023', '\024', '\025', '\026', '\027',
@@ -69,7 +77,7 @@ static const UChar EncISO_8859_13_ToLowerCaseTable[256] = {
   '\370', '\371', '\372', '\373', '\374', '\375', '\376', '\377'
 };
 
-static const unsigned short EncISO_8859_13_CtypeTable[256] = {
+static const unsigned short EncCP1252_CtypeTable[256] = {
   0x4008, 0x4008, 0x4008, 0x4008, 0x4008, 0x4008, 0x4008, 0x4008,
   0x4008, 0x420c, 0x4209, 0x4208, 0x4208, 0x4208, 0x4008, 0x4008,
   0x4008, 0x4008, 0x4008, 0x4008, 0x4008, 0x4008, 0x4008, 0x4008,
@@ -118,7 +126,7 @@ mbc_case_fold(OnigCaseFoldType flag,
     return 2;
   }
 
-  *lower = ENC_ISO_8859_13_TO_LOWER_CASE(*p);
+  *lower = ENC_CP1252_TO_LOWER_CASE(*p);
   (*pp)++;
   return 1;
 }
@@ -136,7 +144,7 @@ is_mbc_ambiguous(OnigCaseFoldType flag, const UChar** pp, const UChar* end)
   }
 
   (*pp)++;
-  v = (EncISO_8859_13_CtypeTable[*p] & (BIT_CTYPE_UPPER | BIT_CTYPE_LOWER));
+  v = (EncCP1252_CtypeTable[*p] & (BIT_CTYPE_UPPER | BIT_CTYPE_LOWER));
   if ((v | BIT_CTYPE_LOWER) != 0) {
     /* 0xdf, 0xb5 are lower case letter, but can't convert. */
     if (*p == 0xb5)
@@ -153,7 +161,7 @@ static int
 is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc ARG_UNUSED)
 {
   if (code < 256)
-    return ENC_IS_ISO_8859_13_CTYPE(code, ctype);
+    return ENC_IS_CP1252_CTYPE(code, ctype);
   else
     return FALSE;
 }
@@ -217,9 +225,9 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
 	     flag, p, end, items);
 }
 
-OnigEncodingDefine(iso_8859_13, ISO_8859_13) = {
+OnigEncodingDefine(windows_1257, Windows_1257) = {
   onigenc_single_byte_mbc_enc_len,
-  "ISO-8859-13",  /* name */
+  "Windows-1257",  /* name */
   1,             /* max enc length */
   1,             /* min enc length */
   onigenc_is_mbc_newline_0x0a,
@@ -240,4 +248,5 @@ OnigEncodingDefine(iso_8859_13, ISO_8859_13) = {
   onigenc_single_byte_ascii_only_case_map,
 #endif   /* ONIG_CASE_MAPPING */
 };
-ENC_ALIAS("ISO8859-13", "ISO-8859-13")
+
+ENC_ALIAS("CP1257", "Windows-1257")
