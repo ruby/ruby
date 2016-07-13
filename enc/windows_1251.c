@@ -1,5 +1,5 @@
 /**********************************************************************
-  cp1251.c -  Oniguruma (regular expression library)
+  windows_1251.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
  * Copyright (c) 2006-2007  Byte      <byte AT mail DOT kna DOT ru>

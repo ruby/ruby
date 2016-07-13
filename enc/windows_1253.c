@@ -1,5 +1,5 @@
 /**********************************************************************
-  iso8859_7.c -  Oniguruma (regular expression library)
+  windows_1253.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
