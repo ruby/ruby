@@ -1,3 +1,7 @@
+Wed Jul 13 14:15:22 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/windows_1254.c: Adjust variable/macro names.
+
 Wed Jul 13 13:19:12 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/iso_8859_9.c, enc/windows_1254.c: Split Windows-1254 from
@@ -73,7 +77,7 @@ Sun Jul 10 19:53:41 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 Sun Jul 10 19:33:47 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
-	* test/ruby/enc/test_case_comprehensive.rb: Changed testing logic in to
+	* test/ruby/enc/test_case_comprehensive.rb: Changed testing logic to
 	  catch unintended modifications of characters that do not have a case
 	  equivalent in the respective encoding.
 	* enc/iso_8859_1.c, enc/iso_8859_15.c: Fixed unintended modifications of
