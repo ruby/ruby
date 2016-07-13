@@ -1,3 +1,10 @@
+Wed Jul 13 17:21:24 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/windows_1252.c, test/ruby/enc/test_case_comprehensive.rb:
+	  Implement non-ASCII case conversion for Windows-1252, by Serina Tai.
+
+	* test/ruby/enc/test_case_comprehensive.rb: Fix order of encodings.
+
 Wed Jul 13 16:19:14 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/iso_8859_7.c, test/ruby/enc/test_case_comprehensive.rb:

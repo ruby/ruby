@@ -1,5 +1,5 @@
 /**********************************************************************
-  windows_1252.c -  Oniguruma (regular expression library)
+  cp1252.c -  Oniguruma (regular expression library)
 **********************************************************************/
 /*-
  * Copyright (c) 2006-2007  Byte      <byte AT mail DOT kna DOT ru>
@@ -29,6 +29,7 @@
  */
 
 #include "regenc.h"
+#include "iso_8859.h"
 
 #define ENC_CP1252_TO_LOWER_CASE(c) EncCP1252_ToLowerCaseTable[c]
 #define ENC_IS_CP1252_CTYPE(code,ctype) \
@@ -114,7 +115,6 @@ cp1252_mbc_case_fold(OnigCaseFoldType flag ARG_UNUSED,
   (*pp)++;
   return 1;
 }
-
 static int
 cp1252_is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc ARG_UNUSED)
 {
@@ -180,6 +180,54 @@ cp1252_get_case_fold_codes_by_str(OnigCaseFoldType flag,
 	     sizeof(CaseFoldMap)/sizeof(OnigPairCaseFoldCodes), CaseFoldMap, 1,
 	     flag, p, end, items);
 }
+#ifdef ONIG_CASE_MAPPING
+static int
+case_map(OnigCaseFoldType* flagP, const OnigUChar** pp,
+	 const OnigUChar* end, OnigUChar* to, OnigUChar* to_end,
+	 const struct OnigEncodingTypeST* enc)
+{
+  OnigCodePoint code;
+  OnigUChar *to_start = to;
+  OnigCaseFoldType flags = *flagP;
+
+  while (*pp<end && to<to_end) {
+    code = *(*pp)++;
+    if (code==SHARP_s) {
+      if (flags&ONIGENC_CASE_UPCASE) {
+	flags |= ONIGENC_CASE_MODIFIED;
+	*to++ = 'S';
+	code = (flags&ONIGENC_CASE_TITLECASE) ? 's' : 'S';
+      }
+      else if (flags&ONIGENC_CASE_FOLD) {
+	flags |= ONIGENC_CASE_MODIFIED;
+	*to++ = 's';
+	code = 's';
+      }
+    }
+    else if ((EncCP1252_CtypeTable[code] & BIT_CTYPE_UPPER)
+	     && (flags & (ONIGENC_CASE_DOWNCASE|ONIGENC_CASE_FOLD))) {
+      flags |= ONIGENC_CASE_MODIFIED;
+      code = ENC_CP1252_TO_LOWER_CASE(code);
+    }
+    else if (code==0x83 || code==0xAA || code==0xBA || code==0xB5)  ;
+    else if ((EncCP1252_CtypeTable[code]&BIT_CTYPE_LOWER)
+	     && (flags&ONIGENC_CASE_UPCASE)) {
+      flags |= ONIGENC_CASE_MODIFIED;
+      if (code==0x9A || code==0x9C || code==0x9E)
+	code -= 0x10;
+      else if (code==0xFF)
+	code -= 0x60;
+      else
+	code -= 0x20;
+    }
+    *to++ = code;
+    if (flags&ONIGENC_CASE_TITLECASE)  /* switch from titlecase to lowercase for capitalize */
+      flags ^= (ONIGENC_CASE_UPCASE|ONIGENC_CASE_DOWNCASE|ONIGENC_CASE_TITLECASE);
+  }
+  *flagP = flags;
+  return (int)(to-to_start);
+}
+#endif   /* ONIG_CASE_MAPPING */
 
 OnigEncodingDefine(windows_1252, Windows_1252) = {
   onigenc_single_byte_mbc_enc_len,
@@ -201,7 +249,7 @@ OnigEncodingDefine(windows_1252, Windows_1252) = {
   0,
   ONIGENC_FLAG_NONE,
 #ifdef ONIG_CASE_MAPPING
-  onigenc_single_byte_ascii_only_case_map,
+  case_map,
 #endif   /* ONIG_CASE_MAPPING */
 };
 /*
