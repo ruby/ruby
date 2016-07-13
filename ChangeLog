@@ -1,3 +1,7 @@
+Wed Jul 13 14:28:33 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* math.c (rb_math_sqrt): r55646 must use f_signbit.
+
 Wed Jul 13 14:22:50 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* iseq.c (Init_ISeq): undef ISeq.translate and ISeq.load_iseq
