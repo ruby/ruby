@@ -615,7 +615,7 @@ rb_math_sqrt(VALUE x)
     double d;
 
     if (RB_TYPE_P(x, T_COMPLEX)) {
-	int neg = f_signbit(RCOMPLEX(x)->imag);
+	VALUE neg = f_signbit(RCOMPLEX(x)->imag);
 	double re = Get_Double(RCOMPLEX(x)->real), im;
 	d = Get_Double(rb_complex_abs(x));
 	im = sqrt((d - re) / 2.0);
