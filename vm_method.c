@@ -733,16 +733,18 @@ method_entry_get_without_cache(VALUE klass, ID id,
 	    ent->mid = id;
 
 	    if (UNDEFINED_METHOD_ENTRY_P(me)) {
-		ent->me = 0;
-		me = 0;
+		me = ent->me = NULL;
 	    }
 	    else {
 		ent->me = me;
 	    }
 	}
 	else if (UNDEFINED_METHOD_ENTRY_P(me)) {
-	    me = 0;
+	    me = NULL;
 	}
+    }
+    else if (UNDEFINED_METHOD_ENTRY_P(me)) {
+	me = NULL;
     }
 
     if (defined_class_ptr)
