@@ -1,3 +1,10 @@
+Wed Jul 13 16:19:14 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_7.c, test/ruby/enc/test_case_comprehensive.rb:
+	  Implement non-ASCII case conversion for ISO-8859-7, by Kosuke Kurihara.
+
+	* test/ruby/enc/test_case_comprehensive.rb: Fix order of encodings.
+
 Wed Jul 13 16:08:08 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_mark_roots): should mark the VM object itself to mark
