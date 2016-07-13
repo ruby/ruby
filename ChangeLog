@@ -1,25 +1,23 @@
-Wed Jul 13 08:40:21 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
-
-	* test/ruby/enc/test_iso_8859.rb: Excluded dotless i/I with dot from
-	  case-insensitive matching because they are not a case pair.
-
-Tue Jul 12 23:13:43 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* math.c (rb_math_sqrt): [EXPERIMENTAL] move Complex sqrt support
-	  from mathn.rb.
-
-Tue Jul 12 21:59:40 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
-
-	* revert r55642 (previous commit) because of test failure at
-	  https://travis-ci.org/ruby/ruby/builds/144148780
-
-Tue Jul 12 21:33:10 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+Wed Jul 13 09:02:30 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/iso_8859_3.c, test/ruby/enc/test_case_comprehensive.rb:
 	  Implement non-ASCII case conversion for ISO-8859-3, by Takuya Miyamoto.
 
 	* test/ruby/enc/test_case_comprehensive.rb: Extend special treatment
 	  for Turkic.
+
+	* enc/iso_8859_3.c: Exclude dotless i/I with dot from case-insensitive
+	  matching because they are not a case pair.
+
+Wed Jul 13 08:40:21 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_iso_8859.rb: Exclude dotless i/I with dot from
+	  case-insensitive matching because they are not a case pair.
+
+Tue Jul 12 23:13:43 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* math.c (rb_math_sqrt): [EXPERIMENTAL] move Complex sqrt support
+	  from mathn.rb.
 
 Tue Jul 12 01:25:09 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
 
