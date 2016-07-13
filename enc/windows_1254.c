@@ -27,6 +27,14 @@
  * SUCH DAMAGE.
  */
 
+/*
+ * Name: windows-1254
+ * MIBenum: 2254
+ * Link: http://www.iana.org/assignments/character-sets
+ * Link: http://www.microsoft.com/globaldev/reference/sbcs/1254.mspx
+ * Link: http://en.wikipedia.org/wiki/Windows-1254
+ */
+
 #include "regenc.h"
 #include "iso_8859.h"
 
@@ -213,9 +221,9 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
 	     flag, p, end, items);
 }
 
-OnigEncodingDefine(iso_8859_9, ISO_8859_9) = {
+OnigEncodingDefine(windows_1254, Windown_1254) = {
   onigenc_single_byte_mbc_enc_len,
-  "ISO-8859-9",  /* name */
+  "Windows-1254",  /* name */
   1,             /* max enc length */
   1,             /* min enc length */
   onigenc_is_mbc_newline_0x0a,
@@ -236,4 +244,4 @@ OnigEncodingDefine(iso_8859_9, ISO_8859_9) = {
   onigenc_single_byte_ascii_only_case_map,
 #endif   /* ONIG_CASE_MAPPING */
 };
-ENC_ALIAS("ISO8859-9", "ISO-8859-9")
+ENC_ALIAS("CP1254", "Windows-1254")

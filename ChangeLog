@@ -1,3 +1,8 @@
+Wed Jul 13 13:19:12 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_9.c, enc/windows_1254.c: Split Windows-1254 from
+	  ISO-8859-9 to be able to implement different case conversions.
+
 Wed Jul 13 13:08:30 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/iso_8859_7.c, enc/windows_1253.c: Split Windows-1253 from
