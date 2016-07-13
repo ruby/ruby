@@ -1,4 +1,3 @@
-# frozen_string_literal: false
 case ENV['JSON']
 when 'pure'
   $:.unshift 'lib'

@@ -1,8 +1,8 @@
 # encoding: utf-8
-# frozen_string_literal: false
+#frozen_string_literal: false
 require 'test_helper'
 
-class TestJSONEncoding < Test::Unit::TestCase
+class JSONEncodingTest < Test::Unit::TestCase
   include JSON
 
   def setup

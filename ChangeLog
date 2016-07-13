@@ -1,3 +1,9 @@
+Wed Jul 13 22:14:23 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/lib/test/unit.rb: added test files with `_test` suffix for json
+	  upstream.
+	* test/json: merge original test files from json upstream.
+
 Wed Jul 13 18:09:42 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/iso_8859_9.c, test/ruby/enc/test_case_comprehensive.rb:

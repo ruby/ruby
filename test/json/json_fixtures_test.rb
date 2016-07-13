@@ -1,7 +1,7 @@
-# frozen_string_literal: false
+#frozen_string_literal: false
 require 'test_helper'
 
-class TestJSONFixtures < Test::Unit::TestCase
+class JSONFixturesTest < Test::Unit::TestCase
   def setup
     fixtures = File.join(File.dirname(__FILE__), 'fixtures/{fail,pass}.json')
     passed, failed = Dir[fixtures].partition { |f| f['pass'] }

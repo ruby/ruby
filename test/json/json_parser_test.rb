@@ -5,7 +5,7 @@ require 'stringio'
 require 'tempfile'
 require 'ostruct'
 
-class TestJSONParser < Test::Unit::TestCase
+class JSONParserTest < Test::Unit::TestCase
   include JSON
 
   def test_construction

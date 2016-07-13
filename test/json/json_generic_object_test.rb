@@ -1,7 +1,7 @@
-# frozen_string_literal: false
+#frozen_string_literal: false
 require 'test_helper'
 
-class TestJSONGenericObject < Test::Unit::TestCase
+class JSONGenericObjectTest < Test::Unit::TestCase
   include JSON
 
   def setup

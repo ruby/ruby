@@ -1,8 +1,8 @@
-# frozen_string_literal: false
+#frozen_string_literal: false
 require 'test_helper'
 require 'time'
 
-class TestJSONStringMatching < Test::Unit::TestCase
+class JSONStringMatchingTest < Test::Unit::TestCase
   include JSON
 
   class TestTime < ::Time

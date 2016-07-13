@@ -1,9 +1,9 @@
-# frozen_string_literal: false
+#frozen_string_literal: false
 require 'test_helper'
 require 'stringio'
 require 'tempfile'
 
-class TestJSONCommonInterface < Test::Unit::TestCase
+class JSONCommonInterfaceTest < Test::Unit::TestCase
   include JSON
 
   def setup
@@ -47,7 +47,7 @@ class TestJSONCommonInterface < Test::Unit::TestCase
   end
 
   def test_deep_const_get
-    assert_raise(ArgumentError) { JSON.deep_const_get('Nix::Da') }
+    assert_raises(ArgumentError) { JSON.deep_const_get('Nix::Da') }
     assert_equal File::SEPARATOR, JSON.deep_const_get('File::SEPARATOR')
   end
 
@@ -93,8 +93,8 @@ class TestJSONCommonInterface < Test::Unit::TestCase
 
   def test_load_null
     assert_equal nil, JSON.load(nil, nil, :allow_blank => true)
-    assert_raise(TypeError) { JSON.load(nil, nil, :allow_blank => false) }
-    assert_raise(JSON::ParserError) { JSON.load('', nil, :allow_blank => false) }
+    assert_raises(TypeError) { JSON.load(nil, nil, :allow_blank => false) }
+    assert_raises(JSON::ParserError) { JSON.load('', nil, :allow_blank => false) }
   end
 
   def test_dump

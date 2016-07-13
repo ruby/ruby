@@ -756,6 +756,7 @@ module Test
 
     module GlobOption # :nodoc: all
       @@testfile_prefix = "test"
+      @@testfile_suffix = "test"
 
       def setup_options(parser, options)
         super
@@ -782,7 +783,7 @@ module Test
               next if f.empty?
               path = f
             end
-            if !(match = Dir["#{path}/**/#{@@testfile_prefix}_*.rb"]).empty?
+            if !(match = (Dir["#{path}/**/#{@@testfile_prefix}_*.rb"] + Dir["#{path}/**/*_#{@@testfile_suffix}.rb"]).uniq).empty?
               if reject
                 match.reject! {|n|
                   n[(prefix.length+1)..-1] if prefix
