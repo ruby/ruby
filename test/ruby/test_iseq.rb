@@ -235,4 +235,14 @@ class TestISeq < Test::Unit::TestCase
     end
     assert_equal([m1, e1.message], [m2, e2.message], feature11951)
   end
+
+  def test_translate_by_object
+    assert_separately([], <<-"end;")
+      class Object
+        def translate
+        end
+      end
+      assert_equal(0, eval("0"))
+    end;
+  end
 end

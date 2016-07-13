@@ -2462,4 +2462,7 @@ Init_ISeq(void)
     rb_define_singleton_method(rb_cISeq, "disasm", iseqw_s_disasm, 1);
     rb_define_singleton_method(rb_cISeq, "disassemble", iseqw_s_disasm, 1);
     rb_define_singleton_method(rb_cISeq, "of", iseqw_s_of, 1);
+
+    rb_undef_method(CLASS_OF(rb_cISeq), "translate");
+    rb_undef_method(CLASS_OF(rb_cISeq), "load_iseq");
 }

@@ -1,3 +1,17 @@
+Wed Jul 13 14:22:50 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* iseq.c (Init_ISeq): undef ISeq.translate and ISeq.load_iseq
+	  to prevent calling super classes' methods.
+
+	  Without this patch, you can write workaround like:
+
+	    class << RubyVM::InstructionSequence
+	      def translate; end
+	      undef translate
+	    end
+
+	* test/ruby/test_iseq.rb: add a test.
+
 Wed Jul 13 14:16:03 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_method.c (method_entry_get_without_cache): check
