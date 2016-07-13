@@ -1,3 +1,14 @@
+Wed Jul 13 18:09:42 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_9.c, test/ruby/enc/test_case_comprehensive.rb:
+	  Implement non-ASCII case conversion for ISO-8859-9, by Kazuki Iijima.
+
+	* enc/iso_8859_9.c: Exclude dotless i/I with dot from case-insensitive
+	  matching because they are not a case pair.
+
+	* test/ruby/enc/test_iso_8859.rb: Make test coverage for ISO-8859-9
+	  a bit more complete.
+
 Wed Jul 13 17:21:24 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/windows_1252.c, test/ruby/enc/test_case_comprehensive.rb:

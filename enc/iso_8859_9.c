@@ -62,7 +62,7 @@ static const UChar EncISO_8859_9_ToLowerCaseTable[256] = {
   '\340', '\341', '\342', '\343', '\344', '\345', '\346', '\347',
   '\350', '\351', '\352', '\353', '\354', '\355', '\356', '\357',
   '\360', '\361', '\362', '\363', '\364', '\365', '\366', '\327',
-  '\370', '\371', '\372', '\373', '\374', '\335', '\376', '\337',
+  '\370', '\371', '\372', '\373', '\374', '\151', '\376', '\337',
   '\340', '\341', '\342', '\343', '\344', '\345', '\346', '\347',
   '\350', '\351', '\352', '\353', '\354', '\355', '\356', '\357',
   '\360', '\361', '\362', '\363', '\364', '\365', '\366', '\367',
@@ -188,7 +188,7 @@ static const OnigPairCaseFoldCodes CaseFoldMap[] = {
   { 0xda, 0xfa },
   { 0xdb, 0xfb },
   { 0xdc, 0xfc },
-  { 0xdd, 0xfd },
+  /*{ 0xdd, 0xfd }, exclude dotless i/I with dot; not a case pair */
   { 0xde, 0xfe }
 };
 
@@ -213,6 +213,60 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
 	     flag, p, end, items);
 }
 
+#ifdef ONIG_CASE_MAPPING
+#define DOTLESS_i        (0xFD)
+#define I_WITH_DOT_ABOVE (0xDD)
+static int
+case_map (OnigCaseFoldType* flagP, const OnigUChar** pp,
+					 const OnigUChar* end, OnigUChar* to, OnigUChar* to_end,
+					 const struct OnigEncodingTypeST* enc)
+{
+  OnigCodePoint code;
+  OnigUChar *to_start = to;
+  OnigCaseFoldType flags = *flagP;
+
+  while (*pp<end && to<to_end) {
+    code = *(*pp)++;
+    if (code==SHARP_s) {
+      if (flags&ONIGENC_CASE_UPCASE) {
+	flags |= ONIGENC_CASE_MODIFIED;
+	*to++ = 'S';
+	code = (flags&ONIGENC_CASE_TITLECASE) ? 's' : 'S';
+      }
+      else if (flags&ONIGENC_CASE_FOLD) {
+	flags |= ONIGENC_CASE_MODIFIED;
+	*to++ = 's';
+	code = 's';
+      }
+    }
+    else if (code==0xAA || code==0xB5 || code==0xBA || code==0xFF)  ;
+    else if ((EncISO_8859_9_CtypeTable[code] & BIT_CTYPE_UPPER)
+	     && (flags & (ONIGENC_CASE_DOWNCASE|ONIGENC_CASE_FOLD))) {
+      flags |= ONIGENC_CASE_MODIFIED;
+      if (code=='I')
+	code = flags&ONIGENC_CASE_FOLD_TURKISH_AZERI ? DOTLESS_i : 'i';
+      else
+	code = ENC_ISO_8859_9_TO_LOWER_CASE(code);
+    }
+    else if ((EncISO_8859_9_CtypeTable[code]&BIT_CTYPE_LOWER)
+	     && (flags&ONIGENC_CASE_UPCASE)) {
+      flags |= ONIGENC_CASE_MODIFIED;
+      if (code=='i')
+	code = flags&ONIGENC_CASE_FOLD_TURKISH_AZERI ? I_WITH_DOT_ABOVE : 'I';
+      else if (code==DOTLESS_i)
+	code = 'I';
+      else
+	code -= 0x20;
+    }
+    *to++ = code;
+    if (flags&ONIGENC_CASE_TITLECASE)  /* switch from titlecase to lowercase for capitalize */
+      flags ^= (ONIGENC_CASE_UPCASE|ONIGENC_CASE_DOWNCASE|ONIGENC_CASE_TITLECASE);
+  }
+  *flagP = flags;
+  return (int)(to-to_start);
+}
+#endif   /* ONIG_CASE_MAPPING */
+
 OnigEncodingDefine(iso_8859_9, ISO_8859_9) = {
   onigenc_single_byte_mbc_enc_len,
   "ISO-8859-9",  /* name */
@@ -233,7 +287,7 @@ OnigEncodingDefine(iso_8859_9, ISO_8859_9) = {
   0,
   ONIGENC_FLAG_NONE,
 #ifdef ONIG_CASE_MAPPING
-  onigenc_single_byte_ascii_only_case_map,
+  case_map,
 #endif   /* ONIG_CASE_MAPPING */
 };
 ENC_ALIAS("ISO8859-9", "ISO-8859-9")

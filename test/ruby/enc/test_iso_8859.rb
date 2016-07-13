@@ -123,7 +123,7 @@ class TestISO8859 < Test::Unit::TestCase
       assert_match(/^[\xdfz]+$/i, "sszzsszz")
       assert_match(/^SS$/i, "\xdf")
       assert_match(/^Ss$/i, "\xdf")
-      ([*(0xc0..0xdc)] - [0xd7]).each do |c|
+      ([*(0xc0..0xde)] - [0xd7, 0xdd]).each do |c|
         c1 = c.chr("iso8859-9")
         c2 = (c + 0x20).chr("iso8859-9")
         assert_match(/^(#{ c1 })\1$/i, c2 + c1)
