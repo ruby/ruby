@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+#frozen_string_literal: false
 require 'json/version'
 require 'json/generic_object'
 

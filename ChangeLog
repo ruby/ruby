@@ -1,3 +1,8 @@
+Thu Jul 14 12:48:47 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/json/**/*.rb: merge original files from upstream repository.
+	  It only fixes styles of frozen string literal.
+
 Wed Jul 13 22:23:03 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* test/json/json_common_interface_test.rb: use assert_raise instead of
