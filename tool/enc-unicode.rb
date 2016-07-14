@@ -15,9 +15,10 @@ if ARGV[0] == "--header"
   ARGV.shift
 end
 unless ARGV.size == 1
-  $stderr.puts "Usage: #{$0} data_directory"
-  exit(1)
+  abort "Usage: #{$0} data_directory"
 end
+
+$unicode_version = File.basename(ARGV[0])[/\A[.\d]+\z/]
 
 POSIX_NAMES = %w[NEWLINE Alpha Blank Cntrl Digit Graph Lower Print Punct Space Upper XDigit Word Alnum ASCII]
 
@@ -137,7 +138,7 @@ def parse_scripts(data, categories)
   cps = []
   names = {}
   files.each do |file|
-    IO.foreach(get_file(file[:fn])) do |line|
+    data_foreach(file[:fn]) do |line|
       if /^# Total code points: / =~ line
         data[current] = cps
         categories[current] = file[:title]
@@ -158,12 +159,12 @@ end
 
 def parse_aliases(data)
   kv = {}
-  IO.foreach(get_file('PropertyAliases.txt')) do |line|
+  data_foreach('PropertyAliases.txt') do |line|
     next unless /^(\w+)\s*; (\w+)/ =~ line
     data[$1] = data[$2]
     kv[normalize_propname($1)] = normalize_propname($2)
   end
-  IO.foreach(get_file('PropertyValueAliases.txt')) do |line|
+  data_foreach('PropertyValueAliases.txt') do |line|
     next unless /^(sc|gc)\s*; (\w+)\s*; (\w+)(?:\s*; (\w+))?/ =~ line
     if $1 == 'gc'
       data[$3] = data[$2]
@@ -188,7 +189,7 @@ def parse_age(data)
   last_constname = nil
   cps = []
   ages = []
-  IO.foreach(get_file('DerivedAge.txt')) do |line|
+  data_foreach('DerivedAge.txt') do |line|
     if /^# Total code points: / =~ line
       constname = constantize_agename(current)
       # each version matches all previous versions
@@ -211,7 +212,7 @@ def parse_block(data)
   last_constname = nil
   cps = []
   blocks = []
-  IO.foreach(get_file('Blocks.txt')) do |line|
+  data_foreach('Blocks.txt') do |line|
     if /^([0-9a-fA-F]+)\.\.([0-9a-fA-F]+);\s*(.*)/ =~ line
       cps = ($1.to_i(16)..$2.to_i(16)).to_a
       constname = constantize_blockname($3)
@@ -276,6 +277,23 @@ def get_file(name)
   File.join(ARGV[0], name)
 end
 
+def data_foreach(name, &block)
+  fn = get_file(name)
+  warn "Reading #{name}"
+  pat = /^# #{name.sub(/\./, '-([\\d.]+)\\.')}/
+  File.open(fn) do |f|
+    line = f.gets
+    unless pat =~ line
+      raise ArgumentError, "#{name}: no Unicode version"
+    end
+    if !$unicode_version
+      $unicode_version = $1
+    elsif $unicode_version != $1
+      raise ArgumentError, "#{name}: Unicode version mismatch: #$1"
+    end
+    f.each(&block)
+  end
+end
 
 # Write Data
 class Unifdef
