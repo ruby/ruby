@@ -624,6 +624,11 @@ extconf: $(PREP)
 	$(RUNRUBY) -C "$(EXTCONFDIR)" $(EXTCONF) $(EXTCONFARGS)
 
 $(RBCONFIG): $(srcdir)/tool/mkconfig.rb config.status $(srcdir)/version.h
+	$(Q)$(BOOTSTRAPRUBY) -n \
+	-e 'BEGIN{version=ARGV.shift;ok=false}' \
+	-e 'END{abort "UNICODE version mismatch" unless ok}' \
+	-e '(ARGF.close; ok = true) if /ONIG_UNICODE_VERSION_STRING +"#{Regexp.quote(version)}"/o' \
+	$(UNICODE_VERSION) $(srcdir)/enc/unicode/casefold.h
 	$(Q)$(BOOTSTRAPRUBY) $(srcdir)/tool/mkconfig.rb \
 		-cross_compiling=$(CROSS_COMPILING) \
 		-arch=$(arch) -version=$(RUBY_PROGRAM_VERSION) \
