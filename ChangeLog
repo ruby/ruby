@@ -1,4 +1,11 @@
-Thu Jul 14 13:42:48 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Jul 14 17:26:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in (enc/unicode/name2ctype.h): remove stale recipe,
+	  which did not support Unicode age properties.
+
+	* common.mk (enc/unicode/name2ctype.h): update by --header option
+	  of tool/enc-unicode.rb.  enc/unicode/name2ctype.kwd file has not
+	  been used.
 
 	* common.mk (enc/unicode/name2ctype.kwd): rule to create from
 	  Unicode data files, used only when the target does not exist.

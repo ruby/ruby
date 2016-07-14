@@ -342,28 +342,6 @@ lex.c: defs/keywords
 	  $(CP) $@ $(srcdir)/lex.c.blt; \
 	fi
 
-NAME2CTYPE_OPTIONS = -7 -c -j1 -i1 -t -C -P -T -H uniname2ctype_hash -Q uniname2ctype_pool -N uniname2ctype_p
-
-$(srcdir)/enc/unicode/$(NAME2CTYPE_KWD)name2ctype.kwd:
-	[ -f $@ ] || $(MAKE) NAME2CTYPE_KWD=$(@F) $@
-
-enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
-	$(MAKEDIRS) $(@D)
-	@set +e; \
-	if cmp -s $(?:.kwd=.src) $?; then \
-	  set -x; \
-	  $(CP) $(?:.kwd=.h.blt) $@; \
-	else \
-	  trap '$(RM) $@-1.h $@-2.h' 0 && \
-	  set -x; \
-	  sed '/^#ifdef USE_UNICODE_PROPERTIES/,/^#endif/d' $? | gperf $(NAME2CTYPE_OPTIONS) > $@-1.h && \
-	  sed '/^#ifdef USE_UNICODE_PROPERTIES/d;/^#endif/d' $? | gperf $(NAME2CTYPE_OPTIONS) > $@-2.h && \
-	  diff -DUSE_UNICODE_PROPERTIES $@-1.h $@-2.h > $@.tmp || :; \
-	  $(MV) $@.tmp $@ && \
-	  $(CP) $? $(?:.kwd=.src) && \
-	  $(CP) $@ $(?:.kwd=.h.blt); \
-	fi
-
 JIS_PROPS_OPTIONS = -k1,3 -7 -c -j1 -i1 -t -C -P -t --ignore-case -H onig_jis_property_hash -Q onig_jis_property_pool -N onig_jis_property
 
 enc/jis/props.h: enc/jis/props.kwd

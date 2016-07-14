@@ -1044,6 +1044,7 @@ UNICODE_FILES = $(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(empty)
 
 UNICODE_PROPERTY_FILES =  \
+		$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_SRC_DATA_DIR)/Blocks.txt \
 		$(UNICODE_SRC_DATA_DIR)/DerivedAge.txt \
 		$(UNICODE_SRC_DATA_DIR)/DerivedCoreProperties.txt \
@@ -1061,12 +1062,12 @@ UNICODE_DOWNLOAD = \
 	    -p $(UNICODE_VERSION)/ucd \
 	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode
 
-$(UNICODE_PROPERTY_FILES):
+$(UNICODE_PROPERTY_FILES)::
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) property files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)"
 	$(Q) $(UNICODE_DOWNLOAD) $(UNICODE_PROPERTY_FILES)
 
-$(UNICODE_FILES):
+$(UNICODE_FILES)::
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)"
 	$(Q) $(UNICODE_DOWNLOAD) $(UNICODE_FILES)
@@ -1085,9 +1086,15 @@ $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
 		$(srcdir)/template/unicode_norm_gen.tmpl \
 		$(UNICODE_DATA_DIR) lib/unicode_normalize
 
-$(srcdir)/enc/unicode/$(NAME2CTYPE_KWD): $(UNICODE_SRC_DATA_DIR)/UnicodeData.txt $(UNICODE_PROPERTY_FILES)
+# UPDATE_NAME2CTYPE=    : toplevel
+# UPDATE_NAME2CTYPE=yes : sub-make to update name2ctype.h
+$(srcdir)/enc/unicode/$(UPDATE_NAME2CTYPE:yes=.ignore.)name2ctype.h:
+	$(MAKE) UPDATE_NAME2CTYPE=yes $@
+
+$(srcdir)/enc/unicode/$(UPDATE_NAME2CTYPE:yes=name2ctype.h): \
+		$(UNICODE_PROPERTY_FILES)
 	$(MAKEDIRS) $(@D)
-	$(BOOTSTRAPRUBY) $(srcdir)/tool/enc-unicode.rb $(UNICODE_SRC_DATA_DIR) > $@
+	$(BOOTSTRAPRUBY) $(srcdir)/tool/enc-unicode.rb --header $(UNICODE_SRC_DATA_DIR) > $@
 
 # the next non-comment line was:
 # $(srcdir)/enc/unicode/casefold.h: $(srcdir)/enc/unicode/case-folding.rb \
