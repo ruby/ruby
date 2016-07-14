@@ -1144,11 +1144,6 @@ $(ruby_pc): $(RBCONFIG)
 lex.c: {$(srcdir)}lex.c.blt
 	copy $(?:/=\) $@
 
-enc/unicode/name2ctype.h: {$(srcdir)}enc/unicode/name2ctype.h.blt
-	@if not exist $(@D:/=\) md $(@D:/=\)
-	$(ECHO) copying $@
-	$(Q) copy $(?:/=\) $(@:/=\) > nul
-
 enc/jis/props.h: {$(srcdir)}enc/jis/props.h.blt
 	@if not exist $(@D:/=\) md $(@D:/=\)
 	$(ECHO) copying $@
