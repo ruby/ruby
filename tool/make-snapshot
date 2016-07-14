@@ -311,7 +311,7 @@ def package(vcs, rev, destdir, tmp = nil)
       }
       args = vars.dup
       mk.gsub!(/@([A-Za-z_]\w*)@/) {args.delete($1); vars[$1] || ENV[$1]}
-      mk << commonmk.gsub(/(?<!#)\{[^{}]*\}/, "")
+      mk << commonmk.gsub(/\{\$([^(){}]*)[^{}]*\}/, "")
       mk << <<-'APPEND'
 
 prereq: clean-cache $(CLEAN_CACHE)
