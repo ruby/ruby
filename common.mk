@@ -1045,7 +1045,6 @@ UNICODE_FILES = $(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(empty)
 
 UNICODE_PROPERTY_FILES =  \
-		$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_SRC_DATA_DIR)/Blocks.txt \
 		$(UNICODE_SRC_DATA_DIR)/DerivedAge.txt \
 		$(UNICODE_SRC_DATA_DIR)/DerivedCoreProperties.txt \
@@ -1063,12 +1062,12 @@ UNICODE_DOWNLOAD = \
 	    -p $(UNICODE_VERSION)/ucd \
 	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode
 
-$(UNICODE_PROPERTY_FILES)::
+$(UNICODE_PROPERTY_FILES):
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) property files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)"
 	$(Q) $(UNICODE_DOWNLOAD) $(UNICODE_PROPERTY_FILES)
 
-$(UNICODE_FILES)::
+$(UNICODE_FILES):
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)"
 	$(Q) $(UNICODE_DOWNLOAD) $(UNICODE_FILES)
@@ -1093,6 +1092,7 @@ $(srcdir)/enc/unicode/$(UPDATE_NAME2CTYPE:yes=.ignore.)name2ctype.h:
 	$(MAKE) UPDATE_NAME2CTYPE=yes $@
 
 $(srcdir)/enc/unicode/$(UPDATE_NAME2CTYPE:yes=name2ctype.h): \
+		$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_PROPERTY_FILES)
 	$(MAKEDIRS) $(@D)
 	$(BOOTSTRAPRUBY) $(srcdir)/tool/enc-unicode.rb --header $(UNICODE_SRC_DATA_DIR) > $@
