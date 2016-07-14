@@ -1,3 +1,8 @@
+Thu Jul 14 13:42:48 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (enc/unicode/name2ctype.kwd): rule to create from
+	  Unicode data files, used only when the target does not exist.
+
 Thu Jul 14 13:10:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/json/lib/json/ext: remove stale directory.  bundled

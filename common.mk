@@ -1043,16 +1043,33 @@ UNICODE_FILES = $(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_SRC_DATA_DIR)/SpecialCasing.txt \
 		$(empty)
 
+UNICODE_PROPERTY_FILES =  \
+		$(UNICODE_SRC_DATA_DIR)/Blocks.txt \
+		$(UNICODE_SRC_DATA_DIR)/DerivedAge.txt \
+		$(UNICODE_SRC_DATA_DIR)/DerivedCoreProperties.txt \
+		$(UNICODE_SRC_DATA_DIR)/PropList.txt \
+		$(UNICODE_SRC_DATA_DIR)/PropertyAliases.txt \
+		$(UNICODE_SRC_DATA_DIR)/PropertyValueAliases.txt \
+		$(UNICODE_SRC_DATA_DIR)/Scripts.txt \
+		$(empty)
+
 update-unicode: $(UNICODE_FILES)
+
+UNICODE_DOWNLOAD = \
+	$(BASERUBY) -C "$(srcdir)" tool/downloader.rb \
+	    -d $(UNICODE_DATA_DIR) \
+	    -p $(UNICODE_VERSION)/ucd \
+	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode
+
+$(UNICODE_PROPERTY_FILES):
+	$(ECHO) Downloading Unicode $(UNICODE_VERSION) property files...
+	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)"
+	$(Q) $(UNICODE_DOWNLOAD) $(UNICODE_PROPERTY_FILES)
 
 $(UNICODE_FILES):
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)"
-	$(Q) $(BASERUBY) -C "$(srcdir)" tool/downloader.rb \
-	    -d $(UNICODE_DATA_DIR) \
-	    -p $(UNICODE_VERSION)/ucd \
-	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode \
-	    $(UNICODE_FILES)
+	$(Q) $(UNICODE_DOWNLOAD) $(UNICODE_FILES)
 
 $(srcdir)/$(HAVE_BASERUBY:yes=lib/unicode_normalize/tables.rb): \
 	$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time
@@ -1067,6 +1084,10 @@ $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
 		-I $(srcdir) \
 		$(srcdir)/template/unicode_norm_gen.tmpl \
 		$(UNICODE_DATA_DIR) lib/unicode_normalize
+
+$(srcdir)/enc/unicode/$(NAME2CTYPE_KWD): $(UNICODE_SRC_DATA_DIR)/UnicodeData.txt $(UNICODE_PROPERTY_FILES)
+	$(MAKEDIRS) $(@D)
+	$(BOOTSTRAPRUBY) $(srcdir)/tool/enc-unicode.rb $(UNICODE_SRC_DATA_DIR) > $@
 
 # the next non-comment line was:
 # $(srcdir)/enc/unicode/casefold.h: $(srcdir)/enc/unicode/case-folding.rb \

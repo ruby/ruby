@@ -344,6 +344,9 @@ lex.c: defs/keywords
 
 NAME2CTYPE_OPTIONS = -7 -c -j1 -i1 -t -C -P -T -H uniname2ctype_hash -Q uniname2ctype_pool -N uniname2ctype_p
 
+$(srcdir)/enc/unicode/$(NAME2CTYPE_KWD)name2ctype.kwd:
+	[ -f $@ ] || $(MAKE) NAME2CTYPE_KWD=$(@F) $@
+
 enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
 	$(MAKEDIRS) $(@D)
 	@set +e; \
