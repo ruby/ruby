@@ -1,3 +1,9 @@
+Thu Jul 14 13:10:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/json/lib/json/ext: remove stale directory.  bundled
+	  extension libraries are placed under the directory for each
+	  architectures, but not mixed with plain text script libraries.
+
 Thu Jul 14 12:48:47 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/json/**/*.rb: merge original files from upstream repository.
