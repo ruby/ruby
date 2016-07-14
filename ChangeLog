@@ -1,3 +1,9 @@
+Fri Jul 15 08:25:15 2016  Jeremy Evans <code@jeremyevans.net>
+
+	* string.c (STR_BUF_MIN_SIZE): reduce from 128 to 127
+	  [ruby-core:76371] [Feature #12025]
+	* string.c (rb_str_buf_new): adjust for above reduction
+
 Thu Jul 14 17:26:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in (enc/unicode/name2ctype.h): remove stale recipe,

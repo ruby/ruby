@@ -1188,7 +1188,7 @@ str_new_empty(VALUE str)
     return v;
 }
 
-#define STR_BUF_MIN_SIZE 128
+#define STR_BUF_MIN_SIZE 127
 
 VALUE
 rb_str_buf_new(long capa)
@@ -2590,7 +2590,7 @@ str_buf_cat(VALUE str, const char *ptr, long len)
 		    capa = (total + 4095) / 4096 * 4096;
 		    break;
 		}
-		capa = 2 * capa;
+		capa = 2 * capa + 1;
 	    }
 	}
 	else {
