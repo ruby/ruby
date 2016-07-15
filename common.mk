@@ -35,11 +35,12 @@ DOCLIE_GIT_REF = v1.1.5
 
 STATIC_RUBY   = static-ruby
 
+TIMESTAMPDIR  = $(EXTOUT)/.timestamp
 EXTCONF       = extconf.rb
 LIBRUBY_EXTS  = ./.libruby-with-ext.time
 REVISION_H    = ./.revision.time
-PLATFORM_D    = ./$(PLATFORM_DIR)/.time
-ENC_TRANS_D   = ./enc/trans/.time
+PLATFORM_D    = $(TIMESTAMPDIR)/.$(PLATFORM_DIR).time
+ENC_TRANS_D   = $(TIMESTAMPDIR)/.enc-trans.time
 RDOCOUT       = $(EXTOUT)/rdoc
 HTMLOUT       = $(EXTOUT)/html
 CAPIOUT       = doc/capi

@@ -20,8 +20,9 @@ TRANSSODIR = $(ENCSODIR)/trans
 DLEXT = @DLEXT@
 OBJEXT = @OBJEXT@
 LIBEXT = @LIBEXT@
-ENC_TRANS_D   = ./enc/trans/.time
-ENC_TRANS_SO_D = ./enc/trans/.so.time
+TIMESTAMPDIR  = $(EXTOUT)/.timestamp
+ENC_TRANS_D   = $(TIMESTAMPDIR)/.enc-trans.time
+ENC_TRANS_SO_D = $(TIMESTAMPDIR)/.enc-trans.so.time
 
 BUILTIN_ENCS	= enc/ascii.c enc/us_ascii.c\
 		  enc/unicode.c enc/utf_8.c
