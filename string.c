@@ -2562,6 +2562,7 @@ str_buf_cat(VALUE str, const char *ptr, long len)
     long capa, total, olen, off = -1;
     char *sptr;
     const int termlen = TERM_LEN(str);
+    assert(termlen < RSTRING_EMBED_LEN_MAX + 1); /* < (LONG_MAX/2) */
 
     RSTRING_GETMEM(str, sptr, olen);
     if (ptr >= sptr && ptr <= sptr + olen) {
@@ -2586,11 +2587,11 @@ str_buf_cat(VALUE str, const char *ptr, long len)
     if (capa <= total) {
 	if (LIKELY(capa > 0)) {
 	    while (total > capa) {
-		if (capa > LONG_MAX / 2) {
+		if (capa > LONG_MAX / 2 - termlen) {
 		    capa = (total + 4095) / 4096 * 4096;
 		    break;
 		}
-		capa = 2 * capa + 1;
+		capa = 2 * capa + termlen; /* == 2*(capa+termlen)-termlen */
 	    }
 	}
 	else {
