@@ -910,6 +910,11 @@ class RubyVM
       make_footer_stack_val insn
       make_footer_default_operands insn
       make_footer_undefs insn
+      case insn.name when /putobject/
+        commit "  GET_CFP()->count++;"
+      else
+        commit "  GET_CFP()->count=0;"
+      end
       commit "  END_INSN(#{insn.name});}}}"
     end
 

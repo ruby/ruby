@@ -269,4 +269,15 @@ THROW_DATA_STATE(const struct vm_throw_data *obj)
 	PREPARE_FOR_ELIMINATION; \
     } \
 } while (0)
+
+#define MOVE_NOP \
+    if (GET_OPERAND(-OPN_OF_CURRENT_INSN - 2) == (VALUE)LABEL_PTR(nop)) { \
+	vm_move_nop(GET_CFP(), GET_PC(), OPN_OF_CURRENT_INSN + 1); \
+    }
+
+#define TRY_CONSTFOLD(val) \
+    PUSH(val); \
+    MOVE_NOP; \
+    goto LABEL(opt_constfold)
+
 #endif /* RUBY_INSNHELPER_H */

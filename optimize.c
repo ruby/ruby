@@ -721,14 +721,22 @@ iseq_eager_optimize(rb_iseq_t *iseq)
 }
 
 void
-iseq_move_nop(const rb_iseq_t *restrict i, int j)
+iseq_move_nop(const rb_iseq_t *restrict i, int j, int k)
 {
-    VALUE m    = i->body->iseq_encoded[j + 2];
+    /* FIXME: j and k actually are  compile-time constants.  There must be more
+     * room(s) to optimize, like to unroll the for loop. */
+    int x = 1;
     VALUE *buf = (VALUE *)&i->body->iseq_encoded[j];
 
-    iseq_squash(i, buf, 3);
-    buf[0] = adjuststack;
-    buf[1] = m;
+    while (*buf-- == nop) {
+        x++;
+    }
+    for (int y = 0; y < k; y++) {
+        buf[y] = buf[y + x];
+    }
+    for (int y = 0; y < x; y++) {
+        buf[k + y] = nop;
+    }
 }
 
 void

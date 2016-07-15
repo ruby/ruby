@@ -623,6 +623,7 @@ typedef struct rb_control_frame_struct {
 #endif
 
     struct cfp_last_insn last_insn;
+    unsigned char count;
 } rb_control_frame_t;
 
 typedef struct rb_block_struct {

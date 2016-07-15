@@ -61,8 +61,9 @@ void iseq_eliminate_insn(const struct rb_iseq_struct *restrict i, struct cfp_las
  *
  * @param [out] i target iseq struct to swap instructions.
  * @param [in]  j index of nop to swap.
+ * @param [in]  k length of moving instruction.
  */
-void iseq_move_nop(const struct rb_iseq_struct *restrict i, int j)
+void iseq_move_nop(const struct rb_iseq_struct *restrict i, int j, int k)
     __attribute__((hot))
     __attribute__((nonnull))
     __attribute__((leaf));

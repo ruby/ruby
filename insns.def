@@ -315,6 +315,7 @@ putobject
 (VALUE val)
 {
     /* */
+    MOVE_NOP;
     PREPARE_FOR_ELIMINATION;
 }
 
@@ -751,9 +752,7 @@ adjuststack
      * optimizations (see below), and the exceptional situation never
      * applies.
      */
-    if (GET_OPERAND(-OPN_OF_CURRENT_INSN - 2) == (VALUE)LABEL_PTR(nop)) {
-        vm_move_nop(GET_CFP(), GET_PC());
-    }
+    MOVE_NOP;
     /* If the immediately precedent instruction was send (or its
      * variant), and here we are in adjuststack instruction, this
      * means the return value of the method call is silently
@@ -1459,23 +1458,28 @@ opt_plus
 #else
 	val = LONG2NUM(FIX2LONG(recv) + FIX2LONG(obj));
 #endif
+	TRY_CONSTFOLD(val);
     }
     else if (FLONUM_2_P(recv, obj) &&
 	     BASIC_OP_UNREDEFINED_P(BOP_PLUS, FLOAT_REDEFINED_OP_FLAG)) {
 	val = DBL2NUM(RFLOAT_VALUE(recv) + RFLOAT_VALUE(obj));
+	TRY_CONSTFOLD(val);
     }
     else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
 	if (RBASIC_CLASS(recv) == rb_cFloat && RBASIC_CLASS(obj) == rb_cFloat &&
 	    BASIC_OP_UNREDEFINED_P(BOP_PLUS, FLOAT_REDEFINED_OP_FLAG)) {
 	    val = DBL2NUM(RFLOAT_VALUE(recv) + RFLOAT_VALUE(obj));
+	    TRY_CONSTFOLD(val);
 	}
 	else if (RBASIC_CLASS(recv) == rb_cString && RBASIC_CLASS(obj) == rb_cString &&
 		 BASIC_OP_UNREDEFINED_P(BOP_PLUS, STRING_REDEFINED_OP_FLAG)) {
 	    val = rb_str_plus(recv, obj);
+	    TRY_CONSTFOLD(val);
 	}
 	else if (RBASIC_CLASS(recv) == rb_cArray &&
 		 BASIC_OP_UNREDEFINED_P(BOP_PLUS, ARRAY_REDEFINED_OP_FLAG)) {
 	    val = rb_ary_plus(recv, obj);
+	    TRY_CONSTFOLD(val);
 	}
 	else {
 	    goto INSN_LABEL(normal_dispatch);
@@ -1508,15 +1512,18 @@ opt_minus
 	b = FIX2LONG(obj);
 	c = a - b;
 	val = LONG2NUM(c);
+	TRY_CONSTFOLD(val);
     }
     else if (FLONUM_2_P(recv, obj) &&
 	     BASIC_OP_UNREDEFINED_P(BOP_MINUS, FLOAT_REDEFINED_OP_FLAG)) {
 	val = DBL2NUM(RFLOAT_VALUE(recv) - RFLOAT_VALUE(obj));
+	TRY_CONSTFOLD(val);
     }
     else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
 	if (RBASIC_CLASS(recv) == rb_cFloat && RBASIC_CLASS(obj) == rb_cFloat  &&
 	    BASIC_OP_UNREDEFINED_P(BOP_MINUS, FLOAT_REDEFINED_OP_FLAG)) {
 	    val = DBL2NUM(RFLOAT_VALUE(recv) - RFLOAT_VALUE(obj));
+	    TRY_CONSTFOLD(val);
 	}
 	else {
 	    goto INSN_LABEL(normal_dispatch);
@@ -1545,15 +1552,18 @@ opt_mult
     if (FIXNUM_2_P(recv, obj) &&
 	BASIC_OP_UNREDEFINED_P(BOP_MULT, INTEGER_REDEFINED_OP_FLAG)) {
 	val = rb_fix_mul_fix(recv, obj);
+	TRY_CONSTFOLD(val);
     }
     else if (FLONUM_2_P(recv, obj) &&
 	     BASIC_OP_UNREDEFINED_P(BOP_MULT, FLOAT_REDEFINED_OP_FLAG)) {
 	val = DBL2NUM(RFLOAT_VALUE(recv) * RFLOAT_VALUE(obj));
+	TRY_CONSTFOLD(val);
     }
     else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
 	if (RBASIC_CLASS(recv) == rb_cFloat && RBASIC_CLASS(obj) == rb_cFloat  &&
 	    BASIC_OP_UNREDEFINED_P(BOP_MULT, FLOAT_REDEFINED_OP_FLAG)) {
 	    val = DBL2NUM(RFLOAT_VALUE(recv) * RFLOAT_VALUE(obj));
+	    TRY_CONSTFOLD(val);
 	}
 	else {
 	    goto INSN_LABEL(normal_dispatch);
@@ -1582,15 +1592,18 @@ opt_div
 	BASIC_OP_UNREDEFINED_P(BOP_DIV, INTEGER_REDEFINED_OP_FLAG)) {
 	if (FIX2LONG(obj) == 0) goto INSN_LABEL(normal_dispatch);
 	val = rb_fix_div_fix(recv, obj);
+	TRY_CONSTFOLD(val);
     }
     else if (FLONUM_2_P(recv, obj) &&
 	     BASIC_OP_UNREDEFINED_P(BOP_DIV, FLOAT_REDEFINED_OP_FLAG)) {
 	val = DBL2NUM(RFLOAT_VALUE(recv) / RFLOAT_VALUE(obj));
+	TRY_CONSTFOLD(val);
     }
     else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
 	if (RBASIC_CLASS(recv) == rb_cFloat && RBASIC_CLASS(obj) == rb_cFloat  &&
 	    BASIC_OP_UNREDEFINED_P(BOP_DIV, FLOAT_REDEFINED_OP_FLAG)) {
 	    val = DBL2NUM(RFLOAT_VALUE(recv) / RFLOAT_VALUE(obj));
+	    TRY_CONSTFOLD(val);
 	}
 	else {
 	    goto INSN_LABEL(normal_dispatch);
@@ -1619,15 +1632,18 @@ opt_mod
 	BASIC_OP_UNREDEFINED_P(BOP_MOD, INTEGER_REDEFINED_OP_FLAG )) {
 	if (FIX2LONG(obj) == 0) goto INSN_LABEL(normal_dispatch);
 	val = rb_fix_mod_fix(recv, obj);
+	TRY_CONSTFOLD(val);
     }
     else if (FLONUM_2_P(recv, obj) &&
 	     BASIC_OP_UNREDEFINED_P(BOP_MOD, FLOAT_REDEFINED_OP_FLAG)) {
 	val = DBL2NUM(ruby_float_mod(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj)));
+	TRY_CONSTFOLD(val);
     }
     else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
 	if (RBASIC_CLASS(recv) == rb_cFloat && RBASIC_CLASS(obj) == rb_cFloat &&
 	    BASIC_OP_UNREDEFINED_P(BOP_MOD, FLOAT_REDEFINED_OP_FLAG)) {
 	    val = DBL2NUM(ruby_float_mod(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj)));
+	    TRY_CONSTFOLD(val);
 	}
 	else {
 	    goto INSN_LABEL(normal_dispatch);
@@ -1659,6 +1675,9 @@ opt_eq
 	PUSH(recv);
 	PUSH(obj);
 	CALL_SIMPLE_METHOD(recv);
+    }
+    else {
+	TRY_CONSTFOLD(val);
     }
 }
 
@@ -1692,6 +1711,9 @@ opt_neq
 	PUSH(obj);
 	CALL_SIMPLE_METHOD(recv);
     }
+    else {
+	TRY_CONSTFOLD(val);
+    }
 }
 
 /**
@@ -1715,16 +1737,19 @@ opt_lt
 	else {
 	    val = Qfalse;
 	}
+	TRY_CONSTFOLD(val);
     }
     else if (FLONUM_2_P(recv, obj) &&
 	     BASIC_OP_UNREDEFINED_P(BOP_LT, FLOAT_REDEFINED_OP_FLAG)) {
 	/* flonum is not NaN */
 	val = RFLOAT_VALUE(recv) < RFLOAT_VALUE(obj) ? Qtrue : Qfalse;
+	TRY_CONSTFOLD(val);
     }
     else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
 	if (RBASIC_CLASS(recv) == rb_cFloat && RBASIC_CLASS(obj) == rb_cFloat  &&
 	    BASIC_OP_UNREDEFINED_P(BOP_LT, FLOAT_REDEFINED_OP_FLAG)) {
 	    val = double_cmp_lt(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
+	    TRY_CONSTFOLD(val);
 	}
 	else {
 	    goto INSN_LABEL(normal_dispatch);
@@ -1759,11 +1784,13 @@ opt_le
 	else {
 	    val = Qfalse;
 	}
+	TRY_CONSTFOLD(val);
     }
     else if (FLONUM_2_P(recv, obj) &&
 	     BASIC_OP_UNREDEFINED_P(BOP_LE, FLOAT_REDEFINED_OP_FLAG)) {
 	/* flonum is not NaN */
 	val = RFLOAT_VALUE(recv) <= RFLOAT_VALUE(obj) ? Qtrue : Qfalse;
+	TRY_CONSTFOLD(val);
     }
     else {
 	/* other */
@@ -1794,16 +1821,19 @@ opt_gt
 	else {
 	    val = Qfalse;
 	}
+	TRY_CONSTFOLD(val);
     }
     else if (FLONUM_2_P(recv, obj) &&
 	     BASIC_OP_UNREDEFINED_P(BOP_GT, FLOAT_REDEFINED_OP_FLAG)) {
 	/* flonum is not NaN */
 	val = RFLOAT_VALUE(recv) > RFLOAT_VALUE(obj) ? Qtrue : Qfalse;
+	TRY_CONSTFOLD(val);
     }
     else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
 	if (RBASIC_CLASS(recv) == rb_cFloat && RBASIC_CLASS(obj) == rb_cFloat  &&
 	    BASIC_OP_UNREDEFINED_P(BOP_GT, FLOAT_REDEFINED_OP_FLAG)) {
 	    val = double_cmp_gt(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
+	    TRY_CONSTFOLD(val);
 	}
 	else {
 	    goto INSN_LABEL(normal_dispatch);
@@ -1838,11 +1868,13 @@ opt_ge
 	else {
 	    val = Qfalse;
 	}
+	TRY_CONSTFOLD(val);
     }
     else if (FLONUM_2_P(recv, obj) &&
 	     BASIC_OP_UNREDEFINED_P(BOP_GE, FLOAT_REDEFINED_OP_FLAG)) {
 	/* flonum is not NaN */
 	val = RFLOAT_VALUE(recv) >= RFLOAT_VALUE(obj) ? Qtrue : Qfalse;
+	TRY_CONSTFOLD(val);
     }
     else {
 	PUSH(recv);
@@ -2225,6 +2257,38 @@ opt_call_c_function
 
     RESTORE_REGS();
     NEXT_INSN();
+}
+
+/**
+  @c optimize
+  @e This is not meant to exist in a instruction sequence.  Rather it
+     is called using goto LABEL.  All stack manipulations are done
+     manually.  Use it with care.
+ */
+DEFINE_INSN
+opt_constfold
+()
+()
+()
+{
+    ADD_PC(-1);
+    if (GET_CFP()->count > 1) {
+	const VALUE val = TOPN(0);
+	const VALUE *pc = GET_PC();
+	const VALUE *qc = pc - 1;
+
+	for (int i = 0; i < 2; i++) {
+	    while (true) {
+	        VALUE insn = *qc--;
+	        if ((insn == (VALUE)LABEL_PTR(putobject)) ||
+	            (insn == (VALUE)LABEL_PTR(putobject_OP_INT2FIX_O_0_C_)) ||
+	            (insn == (VALUE)LABEL_PTR(putobject_OP_INT2FIX_O_1_C_))) {
+	            break;
+	        }
+	    }
+	}
+	iseq_const_fold(GET_ISEQ(), pc, pc - qc - 1, 0, val);
+    }
 }
 
 /**
