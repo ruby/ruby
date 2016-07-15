@@ -1,3 +1,8 @@
+Fri Jul 15 09:53:48 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/unicode/case-folding.rb, tool/enc-unicode.rb: check if
+	  Unicode versions are consistent with each other.
+
 Fri Jul 15 08:25:15 2016  Jeremy Evans <code@jeremyevans.net>
 
 	* string.c (STR_BUF_MIN_SIZE): reduce from 128 to 127

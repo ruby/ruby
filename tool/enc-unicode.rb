@@ -454,6 +454,18 @@ uniname2ctype(const UChar *name, unsigned int len)
   return -1;
 }
 __HEREDOC
+versions = $unicode_version.scan(/\d+/)
+print("#if defined ONIG_UNICODE_VERSION_STRING && !( \\\n")
+%w[MAJOR MINOR TEENY].zip(versions) do |n, v|
+  print("      ONIG_UNICODE_VERSION_#{n} == #{v} && \\\n")
+end
+print("      1)\n")
+print("# error ONIG_UNICODE_VERSION_STRING mismatch\n")
+print("#endif\n")
+print("#define ONIG_UNICODE_VERSION_STRING #{$unicode_version.dump}\n")
+%w[MAJOR MINOR TEENY].zip(versions) do |n, v|
+  print("#define ONIG_UNICODE_VERSION_#{n} #{v}\n")
+end
 
 output.restore
 

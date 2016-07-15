@@ -28605,8 +28605,8 @@ static const OnigCodePoint CR_Age_8_0[] = {
 	0xe0100, 0xe01ef,
 	0xefffe, 0x10ffff,
 }; /* CR_Age_8_0 */
-#endif /* USE_UNICODE_AGE_PROPERTIES */
 
+#endif /* USE_UNICODE_AGE_PROPERTIES */
 /* 'In_Basic_Latin': Block */
 #define CR_In_Basic_Latin CR_ASCII
 
@@ -30195,8 +30195,8 @@ static const OnigCodePoint CR_In_No_Block[] = {
 	0xe0080, 0xe00ff,
 	0xe01f0, 0xeffff,
 }; /* CR_In_No_Block */
-#endif /* USE_UNICODE_PROPERTIES */
 
+#endif /* USE_UNICODE_PROPERTIES */
 static const OnigCodePoint* const CodeRanges[] = {
   CR_NEWLINE,
   CR_Alpha,
@@ -30747,12 +30747,10 @@ static const struct uniname2ctype_struct *uniname2ctype_p(const char *, unsigned
 /* maximum key range = 5324, duplicates = 0 */
 #endif /* USE_UNICODE_PROPERTIES */
 
-#ifdef __GNUC__
-__inline
-#else
-#ifdef __cplusplus
+#if (defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L) || defined(__cplusplus) || defined(__GNUC_STDC_INLINE__)
 inline
-#endif
+#elif defined(__GNUC__)
+__inline
 #endif
 static unsigned int
 uniname2ctype_hash (str, len)
@@ -34025,3 +34023,14 @@ uniname2ctype(const UChar *name, unsigned int len)
   if (p) return p->ctype;
   return -1;
 }
+#if defined ONIG_UNICODE_VERSION_STRING && !( \
+      ONIG_UNICODE_VERSION_MAJOR == 8 && \
+      ONIG_UNICODE_VERSION_MINOR == 0 && \
+      ONIG_UNICODE_VERSION_TEENY == 0 && \
+      1)
+# error ONIG_UNICODE_VERSION_STRING mismatch
+#endif
+#define ONIG_UNICODE_VERSION_STRING "8.0.0"
+#define ONIG_UNICODE_VERSION_MAJOR 8
+#define ONIG_UNICODE_VERSION_MINOR 0
+#define ONIG_UNICODE_VERSION_TEENY 0
