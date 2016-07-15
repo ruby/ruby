@@ -35,11 +35,12 @@ DOCLIE_GIT_REF = v1.1.5
 
 STATIC_RUBY   = static-ruby
 
+TIMESTAMPDIR  = $(EXTOUT)/.timestamp
 EXTCONF       = extconf.rb
 LIBRUBY_EXTS  = ./.libruby-with-ext.time
 REVISION_H    = ./.revision.time
-PLATFORM_D    = ./$(PLATFORM_DIR)/.time
-ENC_TRANS_D   = ./enc/trans/.time
+PLATFORM_D    = $(TIMESTAMPDIR)/.$(PLATFORM_DIR).time
+ENC_TRANS_D   = $(TIMESTAMPDIR)/.enc-trans.time
 RDOCOUT       = $(EXTOUT)/rdoc
 HTMLOUT       = $(EXTOUT)/html
 CAPIOUT       = doc/capi
@@ -693,13 +694,13 @@ PHONY:
 	$(Q)$(RM) y.tab.c y.tab.h
 
 $(PLATFORM_D):
-	$(Q) $(MAKEDIRS) $(PLATFORM_DIR)
+	$(Q) $(MAKEDIRS) $(PLATFORM_DIR) $(@D)
 	@exit > $@
 
 $(BUILTIN_ENCOBJS) $(BUILTIN_TRANSOBJS): $(ENC_TRANS_D)
 
 $(ENC_TRANS_D):
-	$(Q) $(MAKEDIRS) enc/trans
+	$(Q) $(MAKEDIRS) enc/trans $(@D)
 	@exit > $@
 
 ###

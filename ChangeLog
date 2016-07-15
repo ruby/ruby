@@ -1,3 +1,9 @@
+Sat Jul 16 06:26:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk, enc/Makefile.in: moved timestamp files for
+	  directories under the specific directory, to get rid of match
+	  with files under the source directory.
+
 Fri Jul 15 22:05:13 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* string.c (str_buf_cat): Fix potential interger overflow of capa.
