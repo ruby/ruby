@@ -2591,7 +2591,6 @@ time_arg(int argc, VALUE *argv, struct vtm *vtm)
     }
 
     validate_vtm(vtm);
-    RB_GC_GUARD(vtm->subsecx);
 }
 
 static int
