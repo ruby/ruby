@@ -493,6 +493,7 @@ class TestRubyLiteral < Test::Unit::TestCase
         }
       }
     }
+    assert_equal(100.0, 0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100e100)
   end
 
   def test_symbol_list
