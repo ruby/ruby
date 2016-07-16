@@ -18,6 +18,8 @@ RUBYLIB       = $(PATH_SEPARATOR)
 RUBYOPT       = -
 RUN_OPTS      = --disable-gems
 
+INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir)
+
 GEM_HOME =
 GEM_PATH =
 GEM_VENDOR =

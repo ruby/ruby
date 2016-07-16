@@ -265,7 +265,7 @@ DLNOBJ = dln.obj
 ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
 LDSHARED = $(LD) -LD
-XCFLAGS = -DRUBY_EXPORT -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(srcdir)/missing $(XCFLAGS)
+XCFLAGS = -DRUBY_EXPORT $(INCFLAGS) $(XCFLAGS)
 !if $(MSC_VER) >= 1400
 # Prevents VC++ 2005 (cl ver 14) warnings
 MANIFESTTOOL = mt -nologo
