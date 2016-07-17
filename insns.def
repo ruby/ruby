@@ -417,7 +417,7 @@ toregexp
     rb_num_t i;
     const VALUE ary = rb_ary_tmp_new(cnt);
     for (i = 0; i < cnt; i++) {
-        rb_ary_store(ary, cnt-i-1, TOPN(i));
+	rb_ary_store(ary, cnt-i-1, TOPN(i));
     }
     POPN(cnt);
     val = rb_reg_new_ary(ary, (int)opt);
@@ -809,24 +809,24 @@ trace
     rb_event_flag_t flag = (rb_event_flag_t)nf;
 
     if (RUBY_DTRACE_METHOD_ENTRY_ENABLED() ||
-        RUBY_DTRACE_METHOD_RETURN_ENABLED() ||
-        RUBY_DTRACE_CMETHOD_ENTRY_ENABLED() ||
-        RUBY_DTRACE_CMETHOD_RETURN_ENABLED()) {
+	RUBY_DTRACE_METHOD_RETURN_ENABLED() ||
+	RUBY_DTRACE_CMETHOD_ENTRY_ENABLED() ||
+	RUBY_DTRACE_CMETHOD_RETURN_ENABLED()) {
 
-        switch (flag) {
-          case RUBY_EVENT_CALL:
-            RUBY_DTRACE_METHOD_ENTRY_HOOK(th, 0, 0);
-            break;
-          case RUBY_EVENT_C_CALL:
-            RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, 0, 0);
-            break;
-          case RUBY_EVENT_RETURN:
-            RUBY_DTRACE_METHOD_RETURN_HOOK(th, 0, 0);
-            break;
-          case RUBY_EVENT_C_RETURN:
-            RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, 0, 0);
-            break;
-        }
+	switch (flag) {
+	  case RUBY_EVENT_CALL:
+	    RUBY_DTRACE_METHOD_ENTRY_HOOK(th, 0, 0);
+	    break;
+	  case RUBY_EVENT_C_CALL:
+	    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, 0, 0);
+	    break;
+	  case RUBY_EVENT_RETURN:
+	    RUBY_DTRACE_METHOD_RETURN_HOOK(th, 0, 0);
+	    break;
+	  case RUBY_EVENT_C_RETURN:
+	    RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, 0, 0);
+	    break;
+	}
     }
 
     EXEC_EVENT_HOOK(th, flag, GET_SELF(), 0, 0 /* id and klass are resolved at callee */,
@@ -1381,11 +1381,11 @@ opt_plus
 	BASIC_OP_UNREDEFINED_P(BOP_PLUS,INTEGER_REDEFINED_OP_FLAG)) {
 	/* fixnum + fixnum */
 #ifndef LONG_LONG_VALUE
-        VALUE msb = (VALUE)1 << ((sizeof(VALUE) * CHAR_BIT) - 1);
-        val = recv - 1 + obj;
-        if ((~(recv ^ obj) & (recv ^ val)) & msb) {
-            val = rb_int2big((SIGNED_VALUE)((val>>1) | (recv & msb)));
-        }
+	VALUE msb = (VALUE)1 << ((sizeof(VALUE) * CHAR_BIT) - 1);
+	val = recv - 1 + obj;
+	if ((~(recv ^ obj) & (recv ^ val)) & msb) {
+	    val = rb_int2big((SIGNED_VALUE)((val>>1) | (recv & msb)));
+	}
 #else
 	val = LONG2NUM(FIX2LONG(recv) + FIX2LONG(obj));
 #endif
