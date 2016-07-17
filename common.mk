@@ -13,12 +13,22 @@ ECHO = @$(ECHO0)
 
 UNICODE_VERSION = 8.0.0
 
+### set the following environment variable or uncomment the line if
+### the Unicode data files should be updated completely on every update ('make up',...).
+# ALWAYS_UPDATE_UNICODE = yes
+UNICODE_DATA_DIR = enc/unicode/data/$(UNICODE_VERSION)
+UNICODE_SRC_DATA_DIR = $(srcdir)/$(UNICODE_DATA_DIR)
+UNICODE_DATA_HEADERS = \
+	$(UNICODE_SRC_DATA_DIR)/casefold.h \
+	$(UNICODE_SRC_DATA_DIR)/name2ctype.h \
+	$(empty)
+
 RUBY_RELEASE_DATE = $(RUBY_RELEASE_YEAR)-$(RUBY_RELEASE_MONTH)-$(RUBY_RELEASE_DAY)
 RUBYLIB       = $(PATH_SEPARATOR)
 RUBYOPT       = -
 RUN_OPTS      = --disable-gems
 
-INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir)
+INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)
 
 GEM_HOME =
 GEM_PATH =
@@ -628,10 +638,10 @@ extconf: $(PREP)
 
 $(RBCONFIG): $(srcdir)/tool/mkconfig.rb config.status $(srcdir)/version.h
 	$(Q)$(BOOTSTRAPRUBY) -n \
-	-e 'BEGIN{version=ARGV.shift;ok=false}' \
-	-e 'END{abort "UNICODE version mismatch" unless ok}' \
-	-e '(ARGF.close; ok = true) if /ONIG_UNICODE_VERSION_STRING +"#{Regexp.quote(version)}"/o' \
-	$(UNICODE_VERSION) $(srcdir)/enc/unicode/casefold.h
+	-e 'BEGIN{version=ARGV.shift;mis=ARGV.dup}' \
+	-e 'END{abort "UNICODE version mismatch: #{mis}" unless mis.empty?}' \
+	-e '(mis.delete(ARGF.path); ARGF.close) if /ONIG_UNICODE_VERSION_STRING +"#{Regexp.quote(version)}"/o' \
+	$(UNICODE_VERSION) $(UNICODE_DATA_HEADERS)
 	$(Q)$(BOOTSTRAPRUBY) $(srcdir)/tool/mkconfig.rb \
 		-cross_compiling=$(CROSS_COMPILING) \
 		-arch=$(arch) -version=$(RUBY_PROGRAM_VERSION) \
@@ -655,7 +665,7 @@ encs: enc trans
 libencs: libenc libtrans
 encs enc trans libencs libenc libtrans: $(SHOWFLAGS) $(ENC_MK) $(LIBRUBY) $(PREP) PHONY
 	$(ECHO) making $@
-	$(Q) $(MAKE) -f $(ENC_MK) V="$(V)" \
+	$(Q) $(MAKE) -f $(ENC_MK) V="$(V)" UNICODE_VERSION=$(UNICODE_VERSION) \
 		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" \
 		$(MFLAGS) $@
 
@@ -809,14 +819,14 @@ srcs-lib: $(LIB_SRCS)
 
 srcs-enc: $(ENC_MK)
 	$(ECHO) making srcs under enc
-	$(Q) $(MAKE) -f $(ENC_MK) RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) srcs
+	$(Q) $(MAKE) -f $(ENC_MK) UNICODE_VERSION=$(UNICODE_VERSION) \
+		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) srcs
 
 all-incs: incs {$(VPATH)}encdb.h {$(VPATH)}transdb.h
 incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}known_errors.inc \
       {$(VPATH)}vm_call_iseq_optimized.inc $(srcdir)/revision.h \
       $(REVISION_H) \
-      $(srcdir)/enc/unicode/name2ctype.h $(srcdir)/enc/jis/props.h \
-      $(srcdir)/enc/unicode/casefold.h \
+      $(UNICODE_DATA_HEADERS) $(srcdir)/enc/jis/props.h \
       {$(VPATH)}id.h {$(VPATH)}probes.dmyh
 
 insns: $(INSNS)
@@ -1034,12 +1044,6 @@ update-bundled_gems: PHONY
 	     "$(srcdir)/gems/bundled_gems" | \
 	"$(IFCHANGE)" "$(srcdir)/gems/bundled_gems" -
 
-### set the following environment variable or uncomment the line if
-### the Unicode data files should be updated completely on every update ('make up',...).
-# ALWAYS_UPDATE_UNICODE = yes
-UNICODE_DATA_DIR = enc/unicode/data/$(UNICODE_VERSION)
-UNICODE_SRC_DATA_DIR = $(srcdir)/$(UNICODE_DATA_DIR)
-
 UNICODE_FILES = $(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_SRC_DATA_DIR)/CompositionExclusions.txt \
 		$(UNICODE_SRC_DATA_DIR)/NormalizationTest.txt \
@@ -1082,7 +1086,7 @@ $(UNICODE_SRC_DATA_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=.unicode-tables.time): $(UNI
 
 $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
 		$(srcdir)/template/unicode_norm_gen.tmpl
-	$(Q) $(ALWAYS_UPDATE_UNICODE:yes=exit &&) $(MAKE) $(MFLAGS) Q=$(Q) update-unicode
+	$(Q) $(ALWAYS_UPDATE_UNICODE:yes=exit &&) $(MAKE) $(MFLAGS) Q=$(Q) UNICODE_VERSION=$(UNICODE_VERSION) update-unicode
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb \
 		-c -t$@ -o $(srcdir)/lib/unicode_normalize/tables.rb \
 		-I $(srcdir) \
@@ -1091,27 +1095,27 @@ $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
 
 # UPDATE_NAME2CTYPE=    : toplevel
 # UPDATE_NAME2CTYPE=yes : sub-make to update name2ctype.h
-$(srcdir)/enc/unicode/$(UPDATE_NAME2CTYPE:yes=.ignore.)name2ctype.h:
-	$(MAKE) UPDATE_NAME2CTYPE=yes $@
+$(UNICODE_SRC_DATA_DIR)/$(UPDATE_NAME2CTYPE:yes=.ignore.)name2ctype.h:
+	$(Q) $(MAKE) $(MFLAGS) Q=$(Q) UPDATE_NAME2CTYPE=yes UNICODE_VERSION=$(UNICODE_VERSION) $@
 
-$(srcdir)/enc/unicode/$(UPDATE_NAME2CTYPE:yes=name2ctype.h): \
+$(UNICODE_SRC_DATA_DIR)/$(UPDATE_NAME2CTYPE:yes=name2ctype.h): \
 		$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_PROPERTY_FILES)
 	$(MAKEDIRS) $(@D)
 	$(BOOTSTRAPRUBY) $(srcdir)/tool/enc-unicode.rb --header $(UNICODE_SRC_DATA_DIR) > $@
 
 # the next non-comment line was:
-# $(srcdir)/enc/unicode/casefold.h: $(srcdir)/enc/unicode/case-folding.rb \
+# $(UNICODE_SRC_DATA_DIR)/casefold.h: $(UNICODE_SRC_DATA_DIR)/case-folding.rb \
 # but was changed to make sure CI works on systems that don't have gperf
-unicode-up: $(srcdir)/enc/unicode/casefold.h
+unicode-up: $(UNICODE_DATA_HEADERS)
 
-$(srcdir)/$(ALWAYS_UPDATE_UNICODE:yes=enc/unicode/casefold.h): \
+$(UNICODE_SRC_DATA_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=casefold.h): \
 		$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_SRC_DATA_DIR)/SpecialCasing.txt \
 		$(UNICODE_SRC_DATA_DIR)/CaseFolding.txt
 
-$(srcdir)/enc/unicode/casefold.h: $(srcdir)/enc/unicode/case-folding.rb
-	$(Q) $(ALWAYS_UPDATE_UNICODE:yes=exit &&) $(MAKE) $(MFLAGS) Q=$(Q) update-unicode
+$(UNICODE_SRC_DATA_DIR)/casefold.h: $(srcdir)/enc/unicode/case-folding.rb
+	$(Q) $(ALWAYS_UPDATE_UNICODE:yes=exit &&) $(MAKE) $(MFLAGS) Q=$(Q) UNICODE_VERSION=$(UNICODE_VERSION) update-unicode
 	$(Q) $(BASERUBY) $(srcdir)/enc/unicode/case-folding.rb \
 		--output-file=$@ \
 		--mapping-data-directory=$(UNICODE_SRC_DATA_DIR)
@@ -1442,11 +1446,11 @@ enc/trans/newline.$(OBJEXT): {$(VPATH)}st.h
 enc/trans/newline.$(OBJEXT): {$(VPATH)}subst.h
 enc/trans/newline.$(OBJEXT): {$(VPATH)}transcode_data.h
 enc/unicode.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/unicode.$(OBJEXT): $(UNICODE_SRC_DATA_DIR)/casefold.h
+enc/unicode.$(OBJEXT): $(UNICODE_SRC_DATA_DIR)/name2ctype.h
 enc/unicode.$(OBJEXT): {$(VPATH)}config.h
 enc/unicode.$(OBJEXT): {$(VPATH)}defines.h
 enc/unicode.$(OBJEXT): {$(VPATH)}enc/unicode.c
-enc/unicode.$(OBJEXT): {$(VPATH)}enc/unicode/casefold.h
-enc/unicode.$(OBJEXT): {$(VPATH)}enc/unicode/name2ctype.h
 enc/unicode.$(OBJEXT): {$(VPATH)}intern.h
 enc/unicode.$(OBJEXT): {$(VPATH)}missing.h
 enc/unicode.$(OBJEXT): {$(VPATH)}oniguruma.h

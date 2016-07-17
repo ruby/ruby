@@ -164,7 +164,7 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
 #define L(n) SpecialsLengthEncode(n)
 #endif   /* ONIG_CASE_MAPPING */
 
-#include "enc/unicode/casefold.h"
+#include "casefold.h"
 
 #ifdef ONIG_CASE_MAPPING
 #undef U
@@ -178,7 +178,7 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
 #undef L
 #endif   /* ONIG_CASE_MAPPING */
 
-#include "enc/unicode/name2ctype.h"
+#include "name2ctype.h"
 
 #define CODE_RANGES_NUM numberof(CodeRanges)
 
@@ -800,3 +800,21 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 }
 
 #endif   /* ONIG_CASE_MAPPING */
+
+#if 0
+const char onigenc_unicode_version_string[] =
+#ifdef ONIG_UNICODE_VERSION_STRING
+    ONIG_UNICODE_VERSION_STRING
+#endif
+    "";
+
+const int onigenc_unicode_version_number[3] = {
+#ifdef ONIG_UNICODE_VERSION_MAJOR
+    ONIG_UNICODE_VERSION_MAJOR,
+    ONIG_UNICODE_VERSION_MINOR,
+    ONIG_UNICODE_VERSION_TEENY,
+#else
+    0
+#endif
+};
+#endif

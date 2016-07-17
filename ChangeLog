@@ -1,3 +1,8 @@
+Sun Jul 17 20:59:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk, enc/depend (casefold.h, name2ctype.h): move to
+	  unicode data directory per version.
+
 Sat Jul 16 06:26:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk, enc/Makefile.in: moved timestamp files for
