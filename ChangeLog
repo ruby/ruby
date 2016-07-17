@@ -1,3 +1,23 @@
+Sun Jul 17 23:42:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* numeric.c (num_finite_p, num_infinite_p): Add Numeric#finite? and
+	  Numeric#infinite?  [Feature #12039] [ruby-core:73618]
+
+	* complex.c (rb_complex_finite_p): Add Complex#finite?
+
+	* complex.c (rb_complex_infinite_p): Add Complex#infinite?
+
+	* test/ruby/test_bignum.rb: Add test for Integer#finite? and
+	  Integer#infinite?
+
+	* test/ruby/test_fixnum.rb: ditto.
+
+	* test/ruby/test_rational.rb: Add test for Rational#finite? and
+	  Rational#infinite?
+
+	* test/ruby/test_complex.rb: Add test for Complex#finite? and
+	  Complex#infinite?
+
 Sun Jul 17 20:59:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk, enc/depend (casefold.h, name2ctype.h): move to

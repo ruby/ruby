@@ -778,5 +778,15 @@ class TestBignum < Test::Unit::TestCase
     assert_raise(TypeError) { T1024P.digits("10") }
     assert_raise(TypeError) { T1024P.digits("a") }
   end
+
+  def test_finite_p
+    assert_predicate(T1024P, :finite?)
+    assert_predicate(-T1024P, :finite?)
+  end
+
+  def test_infinite_p
+    assert_nil(T1024P.infinite?)
+    assert_nil((-T1024P).infinite?)
+  end
 end
 end

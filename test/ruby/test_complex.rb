@@ -826,6 +826,30 @@ class Complex_Test < Test::Unit::TestCase
     end
   end
 
+  def test_finite_p
+    assert_predicate(1+1i, :finite?)
+    assert_predicate(1-1i, :finite?)
+    assert_predicate(-1+1i, :finite?)
+    assert_predicate(-1-1i, :finite?)
+    assert_not_predicate(Float::INFINITY + 1i, :finite?)
+    assert_not_predicate(Complex(1, Float::INFINITY), :finite?)
+  end
+
+  def test_infinite_p
+    assert_nil((1+1i).infinite?)
+    assert_nil((1-1i).infinite?)
+    assert_nil((-1+1i).infinite?)
+    assert_nil((-1-1i).infinite?)
+    assert_equal(1, (Float::INFINITY + 1i).infinite?)
+    assert_equal(1, (Float::INFINITY - 1i).infinite?)
+    assert_equal(1, (-Float::INFINITY + 1i).infinite?)
+    assert_equal(1, (-Float::INFINITY - 1i).infinite?)
+    assert_equal(1, Complex(1, Float::INFINITY).infinite?)
+    assert_equal(1, Complex(-1, Float::INFINITY).infinite?)
+    assert_equal(1, Complex(1, -Float::INFINITY).infinite?)
+    assert_equal(1, Complex(-1, -Float::INFINITY).infinite?)
+  end
+
   def test_supp
     assert_equal(true, 1.real?)
     assert_equal(true, 1.1.real?)

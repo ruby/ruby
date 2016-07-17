@@ -337,4 +337,16 @@ class TestFixnum < Test::Unit::TestCase
     assert_not_predicate(0, :negative?)
     assert_not_predicate(1, :negative?)
   end
+
+  def test_finite_p
+    assert_predicate(1, :finite?)
+    assert_predicate(0, :finite?)
+    assert_predicate(-1, :finite?)
+  end
+
+  def test_infinite_p
+    assert_nil(1.infinite?)
+    assert_nil(0.infinite?)
+    assert_nil(-1.infinite?)
+  end
 end

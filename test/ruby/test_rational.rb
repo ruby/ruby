@@ -939,4 +939,13 @@ class Rational_Test < Test::Unit::TestCase
   def test_known_bug
   end
 
+  def test_finite_p
+    assert_predicate(1/2r, :finite?)
+    assert_predicate(-1/2r, :finite?)
+  end
+
+  def test_infinite_p
+    assert_nil((1/2r).infinite?)
+    assert_nil((-1/2r).infinite?)
+  end
 end

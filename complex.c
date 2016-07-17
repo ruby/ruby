@@ -1331,6 +1331,68 @@ nucomp_inspect(VALUE self)
     return s;
 }
 
+/*
+ * call-seq:
+ *    cmp.finite?  ->  true or false
+ *
+ * Returns +true+ if +cmp+'s magnitude is finite number,
+ * oterwise returns +false+.
+ */
+static VALUE
+rb_complex_finite_p(VALUE self)
+{
+    VALUE magnitude = nucomp_abs(self);
+    double f;
+
+    switch (TYPE(magnitude)) {
+    case T_FIXNUM: case T_BIGNUM: case T_RATIONAL:
+	return Qtrue;
+
+    case T_FLOAT:
+	f = RFLOAT_VALUE(magnitude);
+	return isinf(f) ? Qfalse : Qtrue;
+
+    default:
+	return rb_funcall(magnitude, rb_intern("finite?"), 0);
+    }
+}
+
+/*
+ * call-seq:
+ *    cmp.infinite?  ->  nil or 1 or -1
+ *
+ * Returns values corresponding to the value of +cmp+'s magnitude:
+ *
+ * +finite+::    +nil+
+ * ++Infinity+:: ++1+
+ *
+ *  For example:
+ *
+ *     (1+1i).infinite?                   #=> nil
+ *     (Float::INFINITY + 1i).infinite?   #=> 1
+ */
+static VALUE
+rb_complex_infinite_p(VALUE self)
+{
+    VALUE magnitude = nucomp_abs(self);
+    double f;
+
+    switch (TYPE(magnitude)) {
+    case T_FIXNUM: case T_BIGNUM: case T_RATIONAL:
+	return Qnil;
+
+    case T_FLOAT:
+	f = RFLOAT_VALUE(magnitude);
+	if (isinf(f)) {
+	    return INT2FIX(f < 0 ? -1 : 1);
+	}
+	return Qnil;
+
+    default:
+	return rb_funcall(magnitude, rb_intern("infinite?"), 0);
+    }
+}
+
 /* :nodoc: */
 static VALUE
 nucomp_dumper(VALUE self)
@@ -2232,6 +2294,9 @@ Init_Complex(void)
 
     rb_undef_method(rb_cComplex, "positive?");
     rb_undef_method(rb_cComplex, "negative?");
+
+    rb_define_method(rb_cComplex, "finite?", rb_complex_finite_p, 0);
+    rb_define_method(rb_cComplex, "infinite?", rb_complex_infinite_p, 0);
 
     rb_define_private_method(rb_cComplex, "marshal_dump", nucomp_marshal_dump, 0);
     compat = rb_define_class_under(rb_cComplex, "compatible", rb_cObject); /* :nodoc: */

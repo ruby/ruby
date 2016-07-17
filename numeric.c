@@ -673,6 +673,34 @@ num_nonzero_p(VALUE num)
 
 /*
  *  call-seq:
+ *     num.finite?  ->  true or false
+ *
+ *  Return true if +num+ is finite number, oterwise returns false.
+ */
+static VALUE
+num_finite_p(VALUE num)
+{
+    return Qtrue;
+}
+
+/*
+ *  call-seq:
+ *     num.infinite?  ->  nil or 1 or -1
+ *
+ *  Returns values corresponding to the value of +num+'s magnitude:
+ *
+ *  +finite+::    +nil+
+ *  +-Infinity+:: +-1+
+ *  ++Infinity+:: ++1+
+ */
+static VALUE
+num_infinite_p(VALUE num)
+{
+    return Qnil;
+}
+
+/*
+ *  call-seq:
  *     num.to_int  ->  integer
  *
  *  Invokes the child class's +to_i+ method to convert +num+ to an integer.
@@ -5002,6 +5030,8 @@ Init_Numeric(void)
     rb_define_method(rb_cNumeric, "integer?", num_int_p, 0);
     rb_define_method(rb_cNumeric, "zero?", num_zero_p, 0);
     rb_define_method(rb_cNumeric, "nonzero?", num_nonzero_p, 0);
+    rb_define_method(rb_cNumeric, "finite?", num_finite_p, 0);
+    rb_define_method(rb_cNumeric, "infinite?", num_infinite_p, 0);
 
     rb_define_method(rb_cNumeric, "floor", num_floor, -1);
     rb_define_method(rb_cNumeric, "ceil", num_ceil, -1);
