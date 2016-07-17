@@ -92,6 +92,17 @@ class RubyVM
       end
     end
 
+    def sp_increase_macro_expr
+      if(pops.any?{|t, v| v == '...'} ||
+         rets.any?{|t, v| v == '...'})
+        # user definition
+        raise "no sp increase definition" if @sp_inc.nil?
+        return @sp_inc.sub(/inc \+=/, '').chomp(';').strip
+      else
+        return sprintf("%d", rets.size - pops.size)
+      end
+    end
+
     def inspect
       "#<Instruction:#{@name}>"
     end
@@ -830,6 +841,11 @@ class RubyVM
     end
 
     def make_header_defines insn
+      commit  "  #define NAME_OF_CURRENT_INSN #{insn.name}"
+      commit  "  #define BIN_OF_CURRENT_INSN BIN(#{insn.name})"
+      commit  "  #define OPN_OF_CURRENT_INSN #{@opn}"
+      commit  "  #define POPN_OF_CURRENT_INSN #{@popn}"
+      commit  "  #define STACK_INCREASE_OF_CURRENT_INSN #{insn.sp_increase_macro_expr}"
       commit  "  #define CURRENT_INSN_#{insn.name} 1"
       commit  "  #define INSN_IS_SC()     #{insn.sc ? 0 : 1}"
       commit  "  #define INSN_LABEL(lab)  LABEL_#{insn.name}_##lab"
@@ -861,6 +877,11 @@ class RubyVM
     end
 
     def make_footer_undefs insn
+      commit "#undef NAME_OF_CURRENT_INSN"
+      commit "#undef BIN_OF_CURRENT_INSN"
+      commit "#undef OPN_OF_CURRENT_INSN"
+      commit "#undef POPN_OF_CURRENT_INSN"
+      commit "#undef STACK_INCREASE_OF_CURRENT_INSN"
       commit "#undef CURRENT_INSN_#{insn.name}"
       commit "#undef INSN_IS_SC"
       commit "#undef INSN_LABEL"
