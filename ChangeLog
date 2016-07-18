@@ -31,7 +31,7 @@ Sat Jul 16 06:26:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Jul 15 22:05:13 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
-	* string.c (str_buf_cat): Fix potential interger overflow of capa.
+	* string.c (str_buf_cat): Fix potential integer overflow of capa.
 	  In addition, termlen is used instead of +1.
 
 Fri Jul 15 21:30:38 2016  Naohisa Goto  <ngotogenome@gmail.com>
