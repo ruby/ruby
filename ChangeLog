@@ -1,3 +1,8 @@
+Tue Jul 19 15:38:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_local_constants_i): exclude private constants
+	  when excluding inherited constants too.  [Bug #12345]
+
 Sun Jul 17 23:42:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* numeric.c (num_finite_p, num_infinite_p): Add Numeric#finite? and
