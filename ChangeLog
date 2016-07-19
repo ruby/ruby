@@ -1,3 +1,8 @@
+Tue Jul 19 18:21:17 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* lib/unicode_normalize/tables.rb: Remove
+	  UnicodeNormalize::UNICODE_VERSION (#12546).
+
 Tue Jul 19 15:38:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_local_constants_i): exclude private constants
