@@ -37,6 +37,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Enumerable
 
   * Enumerable#sum  [Feature #12217]
+  * Enumerable#uniq  [Feature #11090]
+
+* Enumerator::Lazy
+
+  * Enumerator::Lazy#uniq  [Feature #11090]
 
 * File
 
