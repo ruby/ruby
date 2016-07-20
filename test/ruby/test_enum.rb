@@ -925,15 +925,15 @@ class TestEnumerable < Test::Unit::TestCase
   def test_uniq
     src = [1, 1, 1, 1, 2, 2, 3, 4, 5, 6]
     assert_equal([1, 2, 3, 4, 5, 6], src.uniq.to_a)
-    olimpics = {
+    olympics = {
       1896 => 'Athens',
       1900 => 'Paris',
-      1904 => 'Chikago',
+      1904 => 'Chicago',
       1906 => 'Athens',
       1908 => 'Rome',
     }
-    assert_equal([[1896, "Athens"], [1900, "Paris"], [1904, "Chikago"], [1908, "Rome"]],
-                 olimpics.uniq{|k,v| v})
+    assert_equal([[1896, "Athens"], [1900, "Paris"], [1904, "Chicago"], [1908, "Rome"]],
+                 olympics.uniq{|k,v| v})
     assert_equal([1, 2, 3, 4, 5, 10], (1..100).uniq{|x| (x**2) % 10 }.first(6))
   end
 end
