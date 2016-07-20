@@ -3811,6 +3811,10 @@ uniq_iter(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
  *  call-seq:
  *     enum.uniq                -> new_ary
  *     enum.uniq { |item| ... } -> new_ary
+ *
+ *  Returns a new array by removing duplicate values in +self+.
+ *
+ *  See also Array#uniq.
  */
 
 static VALUE
