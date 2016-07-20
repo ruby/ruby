@@ -4008,9 +4008,7 @@ ary_add_hash(VALUE hash, VALUE ary)
 
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	VALUE elt = RARRAY_AREF(ary, i);
-	if (rb_hash_lookup2(hash, elt, Qundef) == Qundef) {
-	    rb_hash_aset(hash, elt, elt);
-	}
+	rb_hash_add_new_element(hash, elt, elt);
     }
     return hash;
 }
@@ -4038,9 +4036,7 @@ ary_add_hash_by(VALUE hash, VALUE ary)
 
     for (i = 0; i < RARRAY_LEN(ary); ++i) {
 	VALUE v = rb_ary_elt(ary, i), k = rb_yield(v);
-	if (rb_hash_lookup2(hash, k, Qundef) == Qundef) {
-	    rb_hash_aset(hash, k, v);
-	}
+	rb_hash_add_new_element(hash, k, v);
     }
     return hash;
 }

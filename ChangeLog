@@ -1,3 +1,11 @@
+Wed Jul 20 17:35:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_add_new_element): add new element or do nothing
+	  if it is contained already.
+
+	* array.c (ary_add_hash, ary_add_hash_by): use
+	  rb_hash_add_new_element.
+
 Tue Jul 19 18:21:17 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* lib/unicode_normalize/tables.rb: Remove
