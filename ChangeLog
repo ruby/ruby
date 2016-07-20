@@ -1,3 +1,8 @@
+Wed Jul 20 17:39:11 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (enum_uniq): new method Enumerable#uniq.
+	  [Feature #11090]
+
 Wed Jul 20 17:35:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash_add_new_element): add new element or do nothing

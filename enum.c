@@ -3793,6 +3793,40 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
     }
 }
 
+static VALUE
+uniq_func(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
+{
+    rb_hash_add_new_element(hash, i, i);
+    return Qnil;
+}
+
+static VALUE
+uniq_iter(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
+{
+    rb_hash_add_new_element(hash, rb_yield_values2(argc, argv), i);
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.uniq                -> new_ary
+ *     enum.uniq { |item| ... } -> new_ary
+ */
+
+static VALUE
+enum_uniq(VALUE obj)
+{
+    VALUE hash, ret;
+    rb_block_call_func *const func =
+	rb_block_given_p() ? uniq_iter : uniq_func;
+
+    hash = rb_obj_hide(rb_hash_new());
+    rb_block_call(obj, id_each, 0, 0, func, hash);
+    ret = rb_hash_values(hash);
+    rb_hash_clear(hash);
+    return ret;
+}
+
 /*
  *  The <code>Enumerable</code> mixin provides collection classes with
  *  several traversal and searching methods, and with the ability to
@@ -3866,6 +3900,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "slice_when", enum_slice_when, 0);
     rb_define_method(rb_mEnumerable, "chunk_while", enum_chunk_while, 0);
     rb_define_method(rb_mEnumerable, "sum", enum_sum, -1);
+    rb_define_method(rb_mEnumerable, "uniq", enum_uniq, 0);
 
     id_next = rb_intern("next");
     id_call = rb_intern("call");
