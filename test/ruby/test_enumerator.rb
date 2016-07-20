@@ -646,5 +646,10 @@ class TestEnumerator < Test::Unit::TestCase
     e.next
     assert_raise(StopIteration) { e.peek }
   end
+
+  def test_uniq
+    assert_equal([1, 2, 3, 4, 5, 10],
+                 (1..Float::INFINITY).lazy.uniq{|x| (x**2) % 10 }.first(6))
+  end
 end
 

@@ -1959,6 +1959,41 @@ lazy_drop_while(VALUE obj)
 }
 
 static VALUE
+lazy_uniq_i(VALUE i, VALUE hash, int argc, const VALUE *argv, VALUE yielder)
+{
+    if (rb_hash_add_new_element(hash, i, Qfalse))
+	return Qnil;
+    return rb_funcall2(yielder, id_yield, argc, argv);
+}
+
+static VALUE
+lazy_uniq_func(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
+{
+    VALUE yielder = (--argc, *argv++);
+    i = rb_enum_values_pack(argc, argv);
+    return lazy_uniq_i(i, hash, argc, argv, yielder);
+}
+
+static VALUE
+lazy_uniq_iter(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
+{
+    VALUE yielder = (--argc, *argv++);
+    i = rb_yield_values2(argc, argv);
+    return lazy_uniq_i(i, hash, argc, argv, yielder);
+}
+
+static VALUE
+lazy_uniq(VALUE obj)
+{
+    rb_block_call_func *const func =
+	rb_block_given_p() ? lazy_uniq_iter : lazy_uniq_func;
+    VALUE hash = rb_obj_hide(rb_hash_new());
+    return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
+					 func, hash),
+			   0, 0);
+}
+
+static VALUE
 lazy_super(int argc, VALUE *argv, VALUE lazy)
 {
     return enumerable_lazy(rb_call_super(argc, argv));
@@ -2074,6 +2109,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "slice_before", lazy_super, -1);
     rb_define_method(rb_cLazy, "slice_after", lazy_super, -1);
     rb_define_method(rb_cLazy, "slice_when", lazy_super, -1);
+    rb_define_method(rb_cLazy, "uniq", lazy_uniq, 0);
 
     rb_define_alias(rb_cLazy, "force", "to_a");
 

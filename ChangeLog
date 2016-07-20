@@ -1,4 +1,7 @@
-Wed Jul 20 17:39:11 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Jul 20 17:44:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (lazy_uniq): new method Enumerator::Lazy#uniq.
+	  [Feature #11090]
 
 	* enum.c (enum_uniq): new method Enumerable#uniq.
 	  [Feature #11090]
