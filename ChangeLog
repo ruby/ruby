@@ -1,4 +1,7 @@
-Fri Jul 22 06:12:51 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jul 22 06:28:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (run_finalizer): push and exec tag just once, instead of
+	  protecting for each finalizer.
 
 	* gc.c (gc_start_internal, rb_gc_start): set finalizing flag
 	  whenever calling deferred finalizers not to recurse.

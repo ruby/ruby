@@ -2691,36 +2691,41 @@ rb_gc_copy_finalizer(VALUE dest, VALUE obj)
 }
 
 static VALUE
-run_single_final(VALUE arg)
+run_single_final(VALUE final, VALUE objid)
 {
-    VALUE *args = (VALUE *)arg;
+    const VALUE cmd = RARRAY_AREF(final, 1);
+    const int level = OBJ_TAINTED(cmd) ?
+	RUBY_SAFE_LEVEL_MAX : FIX2INT(RARRAY_AREF(final, 0));
 
-    return rb_check_funcall(args[0], idCall, 1, args+1);
+    rb_set_safe_level_force(level);
+    return rb_check_funcall(cmd, idCall, 1, &objid);
 }
 
 static void
 run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
 {
     long i;
-    VALUE args[2];
+    int status;
     const int safe = rb_safe_level();
     const VALUE errinfo = rb_errinfo();
+    const VALUE objid = nonspecial_obj_id(obj);
+    rb_thread_t *const th = GET_THREAD();
+    volatile long finished = 0;
 
-    args[1] = nonspecial_obj_id(obj);
-
-    for (i=0; i<RARRAY_LEN(table); i++) {
-	const VALUE final = RARRAY_AREF(table, i);
-	const VALUE cmd = RARRAY_AREF(final, 1);
-	const int level = OBJ_TAINTED(cmd) ?
-	    RUBY_SAFE_LEVEL_MAX : FIX2INT(RARRAY_AREF(final, 0));
-	int status = 0;
-
-	args[0] = cmd;
-	rb_set_safe_level_force(level);
-	rb_protect(run_single_final, (VALUE)args, &status);
+    TH_PUSH_TAG(th);
+    status = TH_EXEC_TAG();
+    if (status) {
+	++finished;		/* skip failed finalizer */
 	rb_set_safe_level_force(safe);
 	rb_set_errinfo(errinfo);
     }
+    for (i = finished; i<RARRAY_LEN(table); i++) {
+	finished = i;
+	run_single_final(RARRAY_AREF(table, i), objid);
+	rb_set_safe_level_force(safe);
+	rb_set_errinfo(errinfo);
+    }
+    TH_POP_TAG();
 }
 
 static void
