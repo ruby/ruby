@@ -1,3 +1,8 @@
+Fri Jul 22 06:12:51 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (gc_start_internal, rb_gc_start): set finalizing flag
+	  whenever calling deferred finalizers not to recurse.
+
 Thu Jul 21 22:26:40 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* missing/strl{cat,cpy}.c: Update latest upstream files.

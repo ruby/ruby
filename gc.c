@@ -6580,7 +6580,7 @@ gc_start_internal(int argc, VALUE *argv, VALUE self)
     }
 
     garbage_collect(objspace, full_mark, immediate_mark, immediate_sweep, GPR_FLAG_METHOD);
-    if (!finalizing) finalize_deferred(objspace);
+    gc_finalize_deferred(objspace);
 
     return Qnil;
 }
@@ -6597,7 +6597,7 @@ rb_gc(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
     garbage_collect(objspace, TRUE, TRUE, TRUE, GPR_FLAG_CAPI);
-    if (!finalizing) finalize_deferred(objspace);
+    gc_finalize_deferred(objspace);
 }
 
 int
