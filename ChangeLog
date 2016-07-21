@@ -1,3 +1,8 @@
+Thu Jul 21 21:53:30 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* LEGAL: added file list with CC0 license.
+	  [ruby-core:76254][Bug #12549]
+
 Wed Jul 20 17:44:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (lazy_uniq): new method Enumerator::Lazy#uniq.

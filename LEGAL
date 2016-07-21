@@ -361,7 +361,10 @@ vsnprintf.c:
     From ftp://ftp.cs.berkeley.edu/pub/4bsd/README.Impt.License.Change
     paragraph 3 above is now null and void.
 
-st.[ch]:
+st.c:
+strftime.c:
+include/ruby/st.h:
+missing/acosh.c:
 missing/alloca.c:
 missing/dup2.c:
 missing/erf.c:
@@ -373,10 +376,14 @@ missing/lgamma_r.c:
 missing/memcmp.c:
 missing/memmove.c:
 missing/strchr.c:
+missing/strerror.c:
 missing/strstr.c:
 missing/strtol.c:
 missing/tgamma.c:
+ext/date/date_strftime.c:
 ext/digest/sha1/sha1.[ch]:
+ext/sdbm/_sdbm.c:
+ext/sdbm/sdbm.h:
 
   These files are all under public domain.
 
