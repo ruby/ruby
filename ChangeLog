@@ -1,3 +1,9 @@
+Thu Jul 21 22:26:40 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* missing/strl{cat,cpy}.c: Update latest upstream files.
+	  [Misc #12205][ruby-core:74487]
+	* LEGAL: Update license for missing/strl{cat,cpy}.c.
+
 Thu Jul 21 21:53:30 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* LEGAL: added file list with CC0 license.
