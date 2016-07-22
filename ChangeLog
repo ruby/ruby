@@ -1,3 +1,8 @@
+Fri Jul 22 09:19:57 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* LEGAL: Added entry for `lib/rdoc/generator/template/darkfish/css/fonts.css`
+	  [Misc #12550][ruby-core:76255][ci skip]
+
 Fri Jul 22 06:28:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (run_finalizer): push and exec tag just once, instead of

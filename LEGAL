@@ -617,3 +617,9 @@ ext/win32ole/win32ole.c:
     You may distribute under the terms of either the GNU General Public
     License or the Artistic License, as specified in the README file
     of the Perl distribution.
+
+lib/rdoc/generator/template/darkfish/css/fonts.css:
+
+  This file is licensed under the SIL Open Font License.
+
+    http://scripts.sil.org/OFL
