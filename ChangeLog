@@ -2,7 +2,7 @@ Fri Jul 22 10:35:35 2016  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/attribute.rb (REXML::Attribute#to_string): Fix wrong
 	  entry reference name of double quote.
-	  [Bug#12609][ruby-core:76509]
+	  [Bug #12609][ruby-core:76509]
 	  Patch by Joseph Marrero. Thanks!!!
 
 Fri Jul 22 10:32:13 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
