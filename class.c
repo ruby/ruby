@@ -848,13 +848,26 @@ rb_include_class_new(VALUE module, VALUE super)
 }
 
 static int include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super);
+static void include_module_in_subclass(VALUE klass, VALUE module);
+static void prepend_module_in_subclass(VALUE klass, VALUE module);
+static int include_module_unfrozen(VALUE klass, VALUE module);
+static int prepend_module_unfrozen(VALUE klass, VALUE module);
 
 void
 rb_include_module(VALUE klass, VALUE module)
 {
+    rb_frozen_class_p(klass);
+    if (include_module_unfrozen(klass, module) < 0)
+	rb_raise(rb_eArgError, "cyclic include detected");
+    rb_class_foreach_subclass(klass, include_module_in_subclass, module);
+}
+
+static int
+include_module_unfrozen(VALUE klass, VALUE module)
+{
     int changed = 0;
 
-    rb_frozen_class_p(klass);
+    if (OBJ_FROZEN(klass)) return 0;
 
     if (!RB_TYPE_P(module, T_MODULE)) {
 	Check_Type(module, T_MODULE);
@@ -863,8 +876,13 @@ rb_include_module(VALUE klass, VALUE module)
     OBJ_INFECT(klass, module);
 
     changed = include_modules_at(klass, RCLASS_ORIGIN(klass), module, TRUE);
-    if (changed < 0)
-	rb_raise(rb_eArgError, "cyclic include detected");
+    return changed;
+}
+
+static void
+include_module_in_subclass(VALUE klass, VALUE module)
+{
+    (void)include_module_unfrozen(klass, module);
 }
 
 static enum rb_id_table_iterator_result
@@ -967,10 +985,20 @@ move_refined_method(ID key, VALUE value, void *data)
 void
 rb_prepend_module(VALUE klass, VALUE module)
 {
+    rb_frozen_class_p(klass);
+    if (prepend_module_unfrozen(klass, module))
+	rb_raise(rb_eArgError, "cyclic prepend detected");
+    rb_class_foreach_subclass(klass, prepend_module_in_subclass, module);
+}
+
+static int
+prepend_module_unfrozen(VALUE klass, VALUE module)
+{
+    void rb_vm_check_redefinition_by_prepend(VALUE klass);
     VALUE origin;
     int changed = 0;
 
-    rb_frozen_class_p(klass);
+    if (OBJ_FROZEN(module)) return 0;
 
     Check_Type(module, T_MODULE);
 
@@ -988,11 +1016,16 @@ rb_prepend_module(VALUE klass, VALUE module)
 	rb_id_table_foreach(RCLASS_M_TBL(origin), move_refined_method, (void *)klass);
     }
     changed = include_modules_at(klass, klass, module, FALSE);
-    if (changed < 0)
-	rb_raise(rb_eArgError, "cyclic prepend detected");
-    if (changed) {
+    if (changed > 0) {
 	rb_vm_check_redefinition_by_prepend(klass);
     }
+    return changed;
+}
+
+static void
+prepend_module_in_subclass(VALUE klass, VALUE module)
+{
+    (void)prepend_module_unfrozen(klass, module);
 }
 
 /*
