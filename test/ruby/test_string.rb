@@ -614,6 +614,18 @@ CODE
   def test_dump
     a= S("Test") << 1 << 2 << 3 << 9 << 13 << 10
     assert_equal(S('"Test\\x01\\x02\\x03\\t\\r\\n"'), a.dump)
+    b= S("\u{7F}")
+    assert_equal(S('"\\x7F"'), b.dump)
+    b= S("\u{AB}")
+    assert_equal(S('"\\u00AB"'), b.dump)
+    b= S("\u{ABC}")
+    assert_equal(S('"\\u0ABC"'), b.dump)
+    b= S("\uABCD")
+    assert_equal(S('"\\uABCD"'), b.dump)
+    b= S("\u{ABCDE}")
+    assert_equal(S('"\\u{ABCDE}"'), b.dump)
+    b= S("\u{10ABCD}")
+    assert_equal(S('"\\u{10ABCD}"'), b.dump)
   end
 
   def test_dup

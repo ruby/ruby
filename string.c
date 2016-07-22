@@ -5656,12 +5656,16 @@ rb_str_dump(VALUE str)
 		len++;
 	    }
 	    else {
-		if (u8 && c > 0x7F) {	/* \u{NN} */
+		if (u8 && c > 0x7F) {	/* \u notation */
 		    int n = rb_enc_precise_mbclen(p-1, pend, enc);
 		    if (MBCLEN_CHARFOUND_P(n)) {
 			unsigned int cc = rb_enc_mbc_to_codepoint(p-1, pend, enc);
-			while (cc >>= 4) len++;
-			len += 5;
+			if (cc <= 0xFFFF)
+			    len += 6;  /* \uXXXX */
+			else if (cc <= 0xFFFFF)
+			    len += 9;  /* \u{XXXXX} */
+			else
+			    len += 10; /* \u{XXXXXX} */
 			p += MBCLEN_CHARFOUND_LEN(n)-1;
 			break;
 		    }
@@ -5734,7 +5738,10 @@ rb_str_dump(VALUE str)
 		if (MBCLEN_CHARFOUND_P(n)) {
 		    int cc = rb_enc_mbc_to_codepoint(p-1, pend, enc);
 		    p += n;
-		    snprintf(q, qend-q, "u{%x}", cc);
+		    if (cc <= 0xFFFF)
+			snprintf(q, qend-q, "u%04X", cc);    /* \uXXXX */
+		    else
+			snprintf(q, qend-q, "u{%X}", cc);  /* \u{XXXXX} or \u{XXXXXX} */
 		    q += strlen(q);
 		    continue;
 		}

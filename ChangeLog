@@ -1,3 +1,11 @@
+Fri Jul 22 17:13:37 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c (String#dump): Change escaping of non-ASCII characters in
+	  UTF-8 to use upper-case four-digit hexadecimal escapes without braces
+	  where possible [Feature #12419].
+
+	* test/ruby/test_string.rb (test_dump): Add tests for above.
+
 Fri Jul 22 10:35:35 2016  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/attribute.rb (REXML::Attribute#to_string): Fix wrong
