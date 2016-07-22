@@ -856,9 +856,7 @@ rb_include_module(VALUE klass, VALUE module)
 
     rb_frozen_class_p(klass);
 
-    if (!RB_TYPE_P(module, T_MODULE)) {
-	Check_Type(module, T_MODULE);
-    }
+    Check_Type(module, T_MODULE);
 
     OBJ_INFECT(klass, module);
 
