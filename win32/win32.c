@@ -4947,7 +4947,7 @@ w32_symlink(UINT cp, const char *src, const char *link)
     DWORD flag = 0;
     BOOLEAN ret;
 
-    typedef DWORD (WINAPI *create_symbolic_link_func)(WCHAR*, WCHAR*, DWORD);
+    typedef BOOLEAN (WINAPI *create_symbolic_link_func)(WCHAR*, WCHAR*, DWORD);
     static create_symbolic_link_func create_symbolic_link =
 	(create_symbolic_link_func)-1;
 

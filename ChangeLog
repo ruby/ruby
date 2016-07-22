@@ -1,3 +1,13 @@
+Fri Jul 22 19:55:20 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (vm_set_main_stack): remove unnecessary check.  toplevel
+	  binding must be initialized.  [Bug #12611] (N1)
+
+	* win32/win32.c (w32_symlink): fix return type.  [Bug #12611] (N3)
+
+	* string.c (rb_str_split_m): simplify the condition.
+	  [Bug #12611](N4)
+
 Fri Jul 22 17:13:37 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* string.c (String#dump): Change escaping of non-ASCII characters in

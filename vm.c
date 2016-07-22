@@ -379,7 +379,7 @@ vm_set_main_stack(rb_thread_t *th, const rb_iseq_t *iseq)
     vm_set_eval_stack(th, iseq, 0, &env->block);
 
     /* save binding */
-    if (bind && iseq->body->local_size > 0) {
+    if (iseq->body->local_size > 0) {
 	bind->env = vm_make_env_object(th, th->cfp);
     }
 }

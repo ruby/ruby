@@ -7235,7 +7235,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 		    beg = start;
 		}
 		else {
-                    if (ptr+start == ptr+len)
+                    if (start == len)
                         start++;
                     else
                         start += rb_enc_fast_mbclen(ptr+start,ptr+len,enc);
