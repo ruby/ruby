@@ -54,7 +54,7 @@ Thu Jul 21 22:26:40 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 Thu Jul 21 21:53:30 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	* LEGAL: added file list with CC0 license.
+	* LEGAL: added file list with Public domain license.
 	  [ruby-core:76254][Bug #12549]
 
 Wed Jul 20 17:44:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
