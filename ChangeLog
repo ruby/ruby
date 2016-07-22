@@ -1,3 +1,8 @@
+Fri Jul 22 10:32:13 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* template/unicode_norm_gen.tmpl: Remove
+	  UnicodeNormalize::UNICODE_VERSION at origin [Feature #12546].
+
 Fri Jul 22 09:23:51 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* LEGAL: Added entries for files under the USD license.
