@@ -855,11 +855,7 @@ rb_include_module(VALUE klass, VALUE module)
     int changed = 0;
 
     rb_frozen_class_p(klass);
-
-    if (!RB_TYPE_P(module, T_MODULE)) {
-	Check_Type(module, T_MODULE);
-    }
-
+    Check_Type(module, T_MODULE);
     OBJ_INFECT(klass, module);
 
     changed = include_modules_at(klass, RCLASS_ORIGIN(klass), module, TRUE);
@@ -971,9 +967,7 @@ rb_prepend_module(VALUE klass, VALUE module)
     int changed = 0;
 
     rb_frozen_class_p(klass);
-
     Check_Type(module, T_MODULE);
-
     OBJ_INFECT(klass, module);
 
     origin = RCLASS_ORIGIN(klass);

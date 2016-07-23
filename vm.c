@@ -2583,7 +2583,7 @@ m_core_hash_merge_ptr(int argc, VALUE *argv, VALUE recv)
 static int
 kwmerge_i(VALUE key, VALUE value, VALUE hash)
 {
-    if (!SYMBOL_P(key)) Check_Type(key, T_SYMBOL);
+    Check_Type(key, T_SYMBOL);
     rb_hash_aset(hash, key, value);
     return ST_CONTINUE;
 }
@@ -2591,7 +2591,7 @@ kwmerge_i(VALUE key, VALUE value, VALUE hash)
 static int
 kwcheck_i(VALUE key, VALUE value, VALUE hash)
 {
-    if (!SYMBOL_P(key)) Check_Type(key, T_SYMBOL);
+    Check_Type(key, T_SYMBOL);
     return ST_CONTINUE;
 }
 

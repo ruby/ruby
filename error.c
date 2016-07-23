@@ -553,32 +553,58 @@ rb_builtin_class_name(VALUE x)
     return etype;
 }
 
+NORETURN(static void unexpected_type(VALUE, int, int));
+#define UNDEF_LEAKED "undef leaked to the Ruby space"
+
+static void
+unexpected_type(VALUE x, int xt, int t)
+{
+    const char *tname = rb_builtin_type_name(t);
+    VALUE mesg, exc = rb_eFatal;
+
+    if (tname) {
+	const char *cname = builtin_class_name(x);
+	if (cname)
+	    mesg = rb_sprintf("wrong argument type %s (expected %s)",
+			      cname, tname);
+	else
+	    mesg = rb_sprintf("wrong argument type %"PRIsVALUE" (expected %s)",
+			      rb_obj_class(x), tname);
+	exc = rb_eTypeError;
+    }
+    else if (xt > T_MASK && xt <= 0x3f) {
+	mesg = rb_sprintf("unknown type 0x%x (0x%x given, probably comes"
+			  " from extension library for ruby 1.8)", t, xt);
+    }
+    else {
+	mesg = rb_sprintf("unknown type 0x%x (0x%x given)", t, xt);
+    }
+    rb_exc_raise(rb_exc_new_str(exc, mesg));
+}
+
 void
 rb_check_type(VALUE x, int t)
 {
     int xt;
 
     if (x == Qundef) {
-	rb_bug("undef leaked to the Ruby space");
+	rb_bug(UNDEF_LEAKED);
     }
 
     xt = TYPE(x);
     if (xt != t || (xt == T_DATA && RTYPEDDATA_P(x))) {
-	const char *tname = rb_builtin_type_name(t);
-	if (tname) {
-	    const char *cname = builtin_class_name(x);
-	    if (cname)
-		rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
-			 cname, tname);
-	    else
-		rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected %s)",
-			 rb_obj_class(x), tname);
-	}
-	if (xt > T_MASK && xt <= 0x3f) {
-	    rb_fatal("unknown type 0x%x (0x%x given, probably comes from extension library for ruby 1.8)", t, xt);
-	}
-	rb_bug("unknown type 0x%x (0x%x given)", t, xt);
+	unexpected_type(x, xt, t);
     }
+}
+
+void
+rb_unexpected_type(VALUE x, int t)
+{
+    if (x == Qundef) {
+	rb_bug(UNDEF_LEAKED);
+    }
+
+    unexpected_type(x, TYPE(x), t);
 }
 
 int

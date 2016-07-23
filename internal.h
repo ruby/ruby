@@ -1540,6 +1540,12 @@ VALUE rb_str2big_gmp(VALUE arg, int base, int badcheck);
 
 /* error.c (export) */
 int rb_bug_reporter_add(void (*func)(FILE *, void *), void *data);
+NORETURN(void rb_unexpected_type(VALUE,int));
+#undef Check_Type
+#define Check_Type(v, t) \
+    (!RB_TYPE_P((VALUE)(v), (t)) || \
+     ((t) == RUBY_T_DATA && RTYPEDDATA_P(v)) ? \
+     rb_unexpected_type((VALUE)(v), (t)) : (void)0)
 
 /* file.c (export) */
 #ifdef HAVE_READLINK
