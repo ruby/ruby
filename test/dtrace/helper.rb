@@ -15,6 +15,21 @@ module DTrace
   class TestCase < Test::Unit::TestCase
     INCLUDE = File.expand_path('..', File.dirname(__FILE__))
 
+    case RUBY_PLATFORM
+    when /solaris/i
+      # increase bufsize to 8m (default 4m on Solaris)
+      DTRACE_CMD = %w[dtrace -b 8m]
+    end
+
+    DTRACE_CMD ||= %w[dtrace]
+
+    case rubybin = EnvUtil.rubybin
+    when /\/ruby-runner#{Regexp.quote(RbConfig::CONFIG["EXEEXT"])}\z/
+      RUBYBIN = File.dirname(rubybin)+"/miniruby#{RbConfig::CONFIG["EXEEXT"]}"
+    else
+      RUBYBIN = rubybin
+    end
+
     def trap_probe d_program, ruby_program
       d = Tempfile.new(%w'probe .d')
       d.write d_program
@@ -27,15 +42,7 @@ module DTrace
       d_path  = d.path
       rb_path = rb.path
 
-      case RUBY_PLATFORM
-      when /solaris/i
-        # increase bufsize to 8m (default 4m on Solaris)
-        cmd = [ "dtrace", "-b", "8m" ]
-      else
-        cmd = [ "dtrace" ]
-      end
-
-      cmd.concat [ "-q", "-s", d_path, "-c", "#{EnvUtil.rubybin} -I#{INCLUDE} #{rb_path}"]
+      cmd = [*DTRACE_CMD, "-q", "-s", d_path, "-c", "#{RUBYBIN} -I#{INCLUDE} #{rb_path}"]
       if sudo = @@sudo
         [RbConfig::CONFIG["LIBPATHENV"], "RUBY", "RUBYOPT"].each do |name|
           if name and val = ENV[name]
