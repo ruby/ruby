@@ -10,6 +10,16 @@ elsif (sudo = ENV["SUDO"]) and !sudo.empty? and (`#{sudo} echo ok` rescue false)
 else
   ok = false
 end
+if ok
+  case RUBY_PLATFORM
+  when /darwin/i
+    begin
+      require 'pty'
+    rescue LoadError
+      ok = false
+    end
+  end
+end
 ok &= (`dtrace -V` rescue false)
 module DTrace
   class TestCase < Test::Unit::TestCase
@@ -19,9 +29,19 @@ module DTrace
     when /solaris/i
       # increase bufsize to 8m (default 4m on Solaris)
       DTRACE_CMD = %w[dtrace -b 8m]
+    when /darwin/i
+      READ_PROBES = proc do |cmd|
+        PTY.spawn(*cmd) do |io, _|
+          break io.readlines
+        end
+      end
     end
 
     DTRACE_CMD ||= %w[dtrace]
+
+    READ_PROBES ||= proc do |cmd|
+      IO.popen(cmd, err: [:child, :out], &:readlines)
+    end
 
     case rubybin = EnvUtil.rubybin
     when /\/ruby-runner#{Regexp.quote(RbConfig::CONFIG["EXEEXT"])}\z/
@@ -51,9 +71,7 @@ module DTrace
         end
         cmd.unshift(sudo)
       end
-      probes = IO.popen(cmd, err: [:child, :out]) do |io|
-        io.readlines
-      end
+      probes = READ_PROBES.(cmd)
       d.close(true)
       rb.close(true)
       yield(d_path, rb_path, probes)
