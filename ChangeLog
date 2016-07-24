@@ -1,3 +1,7 @@
+Sun Jul 24 12:07:39 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/maintainers.rdoc: Update OpenSSL maintainer.
+
 Sat Jul 23 22:43:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* internal.h (Check_Type): inline check for the object type.

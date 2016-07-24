@@ -224,7 +224,7 @@ Zachary Scott (zzak)
 [ext/objspace]
   _unmaintained_
 [ext/openssl]
-  Martin Boßlet (emboss)
+  Kazuki Yamaguchi (rhe)
 [ext/pathname]
   Tanaka Akira (akr)
 [ext/psych]
