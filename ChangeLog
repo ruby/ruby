@@ -1,3 +1,12 @@
+Sun Jul 24 16:33:13 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* regenc.h/c, include/ruby/oniguruma.h, enc/ascii.c, big5.c, cp949.c,
+	  emacs_mule.c, euc_jp.c, euc_kr.c, euc_tw.c, gb18030.c, gbk.c,
+	  iso_8859_1|2|3|4|5|6|7|8|9|10|11|13|14|15|16.c, koi8_r.c, koi8_u.c,
+	  shift_jis.c, unicode.c, us_ascii.c, utf_16|32be|le.c, utf_8.c,
+	  windows_1250|51|52|53|54|57.c, windows_31j.c, unicode.c:
+	  Remove conditional compilation macro ONIG_CASE_MAPPING. [Feature #12386].
+
 Sun Jul 24 12:53:42 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* doc/maintainers.rdoc: xmlrpc is bundled gem from Ruby 2.4.

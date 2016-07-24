@@ -180,7 +180,7 @@ cp1252_get_case_fold_codes_by_str(OnigCaseFoldType flag,
 	     sizeof(CaseFoldMap)/sizeof(OnigPairCaseFoldCodes), CaseFoldMap, 1,
 	     flag, p, end, items);
 }
-#ifdef ONIG_CASE_MAPPING
+
 static int
 case_map(OnigCaseFoldType* flagP, const OnigUChar** pp,
 	 const OnigUChar* end, OnigUChar* to, OnigUChar* to_end,
@@ -227,7 +227,6 @@ case_map(OnigCaseFoldType* flagP, const OnigUChar** pp,
   *flagP = flags;
   return (int)(to-to_start);
 }
-#endif   /* ONIG_CASE_MAPPING */
 
 OnigEncodingDefine(windows_1252, Windows_1252) = {
   onigenc_single_byte_mbc_enc_len,
@@ -248,9 +247,7 @@ OnigEncodingDefine(windows_1252, Windows_1252) = {
   onigenc_always_true_is_allowed_reverse_match,
   0,
   ONIGENC_FLAG_NONE,
-#ifdef ONIG_CASE_MAPPING
   case_map,
-#endif   /* ONIG_CASE_MAPPING */
 };
 /*
  * Name: windows-1252

@@ -958,7 +958,6 @@ onigenc_property_list_init(int (*f)(void))
   return r;
 }
 
-#ifdef ONIG_CASE_MAPPING
 extern int
 onigenc_ascii_only_case_map (OnigCaseFoldType* flagP, const OnigUChar** pp, const OnigUChar* end,
 			      OnigUChar* to, OnigUChar* to_end, const struct OnigEncodingTypeST* enc)
@@ -1010,4 +1009,3 @@ onigenc_single_byte_ascii_only_case_map (OnigCaseFoldType* flagP, const OnigUCha
   *flagP = flags;
   return (int)(to-to_start);
 }
-#endif   /* ONIG_CASE_MAPPING */

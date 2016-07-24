@@ -137,7 +137,6 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
   return 1;
 }
 
-#ifdef ONIG_CASE_MAPPING
 /* macros related to ONIGENC_CASE flags */
 /* defined here because not used in other files */
 #define ONIGENC_CASE_SPECIALS       (ONIGENC_CASE_TITLECASE|ONIGENC_CASE_IS_TITLECASE|ONIGENC_CASE_UP_SPECIAL|ONIGENC_CASE_DOWN_SPECIAL)
@@ -162,11 +161,9 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
 #define IT ONIGENC_CASE_IS_TITLECASE
 #define I(n) OnigSpecialIndexEncode(n)
 #define L(n) SpecialsLengthEncode(n)
-#endif   /* ONIG_CASE_MAPPING */
 
 #include "casefold.h"
 
-#ifdef ONIG_CASE_MAPPING
 #undef U
 #undef D
 #undef F
@@ -176,7 +173,6 @@ code3_equal(const OnigCodePoint *x, const OnigCodePoint *y)
 #undef IT
 #undef I
 #undef L
-#endif   /* ONIG_CASE_MAPPING */
 
 #include "name2ctype.h"
 
@@ -655,8 +651,6 @@ onigenc_unicode_get_case_fold_codes_by_str(OnigEncoding enc,
   return n;
 }
 
-#ifdef ONIG_CASE_MAPPING
-
 /* length in bytes for three characters in UTF-32; e.g. needed for ffi (U+FB03) */
 #define CASE_MAPPING_SLACK 12
 #define MODIFIED (flags |= ONIGENC_CASE_MODIFIED)
@@ -798,8 +792,6 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
     *flagP = flags;
     return (int)(to-to_start);
 }
-
-#endif   /* ONIG_CASE_MAPPING */
 
 #if 0
 const char onigenc_unicode_version_string[] =

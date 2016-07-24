@@ -213,7 +213,6 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
 	     flag, p, end, items);
 }
 
-#ifdef ONIG_CASE_MAPPING
 #define DOTLESS_i        (0xFD)
 #define I_WITH_DOT_ABOVE (0xDD)
 static int
@@ -265,7 +264,6 @@ case_map (OnigCaseFoldType* flagP, const OnigUChar** pp,
   *flagP = flags;
   return (int)(to-to_start);
 }
-#endif   /* ONIG_CASE_MAPPING */
 
 OnigEncodingDefine(iso_8859_9, ISO_8859_9) = {
   onigenc_single_byte_mbc_enc_len,
@@ -286,8 +284,6 @@ OnigEncodingDefine(iso_8859_9, ISO_8859_9) = {
   onigenc_always_true_is_allowed_reverse_match,
   0,
   ONIGENC_FLAG_NONE,
-#ifdef ONIG_CASE_MAPPING
   case_map,
-#endif   /* ONIG_CASE_MAPPING */
 };
 ENC_ALIAS("ISO8859-9", "ISO-8859-9")

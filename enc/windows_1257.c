@@ -244,9 +244,7 @@ OnigEncodingDefine(windows_1257, Windows_1257) = {
   onigenc_always_true_is_allowed_reverse_match,
   0,
   ONIGENC_FLAG_NONE,
-#ifdef ONIG_CASE_MAPPING
   onigenc_single_byte_ascii_only_case_map,
-#endif   /* ONIG_CASE_MAPPING */
 };
 
 ENC_ALIAS("CP1257", "Windows-1257")

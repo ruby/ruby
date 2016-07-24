@@ -131,10 +131,7 @@ ONIG_EXTERN int onigenc_apply_all_case_fold_with_map P_((int map_size, const Oni
 ONIG_EXTERN int onigenc_get_case_fold_codes_by_str_with_map P_((int map_size, const OnigPairCaseFoldCodes map[], int ess_tsett_flag, OnigCaseFoldType flag, const OnigUChar* p, const OnigUChar* end, OnigCaseFoldCodeItem items[]));
 CONSTFUNC(ONIG_EXTERN int onigenc_not_support_get_ctype_code_range P_((OnigCtype ctype, OnigCodePoint* sb_out, const OnigCodePoint* ranges[], OnigEncoding enc)));
 PUREFUNC(ONIG_EXTERN int onigenc_is_mbc_newline_0x0a P_((const UChar* p, const UChar* end, OnigEncoding enc)));
-
-#ifdef ONIG_CASE_MAPPING
-  ONIG_EXTERN int    onigenc_single_byte_ascii_only_case_map P_((OnigCaseFoldType* flagP, const OnigUChar** pp, const OnigUChar* end, OnigUChar* to, OnigUChar* to_end, const struct OnigEncodingTypeST* enc));
-#endif   /* ONIG_CASE_MAPPING */
+ONIG_EXTERN int    onigenc_single_byte_ascii_only_case_map P_((OnigCaseFoldType* flagP, const OnigUChar** pp, const OnigUChar* end, OnigUChar* to, OnigUChar* to_end, const struct OnigEncodingTypeST* enc));
 
 
 /* methods for single byte encoding */
@@ -160,9 +157,7 @@ CONSTFUNC(ONIG_EXTERN int onigenc_mb4_code_to_mbclen P_((OnigCodePoint code, Oni
 ONIG_EXTERN int onigenc_mb4_code_to_mbc P_((OnigEncoding enc, OnigCodePoint code, UChar *buf));
 ONIG_EXTERN int onigenc_mb4_is_code_ctype P_((OnigEncoding enc, OnigCodePoint code, unsigned int ctype));
 
-#ifdef ONIG_CASE_MAPPING
-  ONIG_EXTERN int    onigenc_unicode_case_map P_((OnigCaseFoldType* flagP, const OnigUChar** pp, const OnigUChar* end, OnigUChar* to, OnigUChar* to_end, const struct OnigEncodingTypeST* enc));
-#endif   /* ONIG_CASE_MAPPING */
+ONIG_EXTERN int    onigenc_unicode_case_map P_((OnigCaseFoldType* flagP, const OnigUChar** pp, const OnigUChar* end, OnigUChar* to, OnigUChar* to_end, const struct OnigEncodingTypeST* enc));
 
 
 /* in enc/unicode.c */

@@ -199,9 +199,7 @@ OnigEncodingDefine(windows_1251, Windows_1251) = {
   onigenc_always_true_is_allowed_reverse_match,
   0,
   ONIGENC_FLAG_NONE,
-#ifdef ONIG_CASE_MAPPING
   onigenc_single_byte_ascii_only_case_map,
-#endif   /* ONIG_CASE_MAPPING */
 };
 /*
  * Name: windows-1251
