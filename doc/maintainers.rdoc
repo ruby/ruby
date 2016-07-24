@@ -176,8 +176,6 @@ Zachary Scott (zzak)
   _unmaintained_
 [lib/webrick.rb, lib/webrick/*]
   Hiroshi Nakamura (nahi)
-[lib/xmlrpc.rb, lib/xmlrpc/*]
-  Kouhei Sutou (kou)
 [lib/yaml.rb, lib/yaml/*]
   Aaron Patterson (tenderlove)
 

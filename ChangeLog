@@ -1,3 +1,7 @@
+Sun Jul 24 12:53:42 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* doc/maintainers.rdoc: xmlrpc is bundled gem from Ruby 2.4.
+
 Sun Jul 24 12:07:39 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* doc/maintainers.rdoc: Update OpenSSL maintainer.
