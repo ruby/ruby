@@ -43,12 +43,8 @@ module DTrace
       IO.popen(cmd, err: [:child, :out], &:readlines)
     end
 
-    case rubybin = EnvUtil.rubybin
-    when /\/ruby-runner#{Regexp.quote(RbConfig::CONFIG["EXEEXT"])}\z/
-      RUBYBIN = File.dirname(rubybin)+"/miniruby#{RbConfig::CONFIG["EXEEXT"]}"
-    else
-      RUBYBIN = rubybin
-    end
+    exeext = Regexp.quote(RbConfig::CONFIG["EXEEXT"])
+    RUBYBIN = EnvUtil.rubybin.sub(/\/ruby-runner(?=#{exeext}\z)/, '/miniruby')
 
     def trap_probe d_program, ruby_program
       d = Tempfile.new(%w'probe .d')
