@@ -334,21 +334,30 @@ linear_object_p(VALUE obj)
 }
 
 static VALUE
+check_step_domain(VALUE step)
+{
+    VALUE zero = INT2FIX(0);
+    int cmp;
+    if (!rb_obj_is_kind_of(step, rb_cNumeric)) {
+	step = rb_to_int(step);
+    }
+    cmp = rb_cmpint(rb_funcallv(step, idCmp, 1, &zero), step, zero);
+    if (cmp < 0) {
+	rb_raise(rb_eArgError, "step can't be negative");
+    }
+    else if (cmp == 0) {
+	rb_raise(rb_eArgError, "step can't be 0");
+    }
+    return step;
+}
+
+static VALUE
 range_step_size(VALUE range, VALUE args, VALUE eobj)
 {
     VALUE b = RANGE_BEG(range), e = RANGE_END(range);
     VALUE step = INT2FIX(1);
     if (args) {
-	step = RARRAY_AREF(args, 0);
-	if (!rb_obj_is_kind_of(step, rb_cNumeric)) {
-	    step = rb_to_int(step);
-	}
-    }
-    if (rb_funcall(step, '<', 1, INT2FIX(0))) {
-	rb_raise(rb_eArgError, "step can't be negative");
-    }
-    else if (!rb_funcall(step, '>', 1, INT2FIX(0))) {
-	rb_raise(rb_eArgError, "step can't be 0");
+	step = check_step_domain(RARRAY_AREF(args, 0));
     }
 
     if (rb_obj_is_kind_of(b, rb_cNumeric) && rb_obj_is_kind_of(e, rb_cNumeric)) {
@@ -405,15 +414,7 @@ range_step(int argc, VALUE *argv, VALUE range)
     }
     else {
 	rb_scan_args(argc, argv, "01", &step);
-	if (!rb_obj_is_kind_of(step, rb_cNumeric)) {
-	    step = rb_to_int(step);
-	}
-	if (rb_funcall(step, '<', 1, INT2FIX(0))) {
-	    rb_raise(rb_eArgError, "step can't be negative");
-	}
-	else if (!rb_funcall(step, '>', 1, INT2FIX(0))) {
-	    rb_raise(rb_eArgError, "step can't be 0");
-	}
+	step = check_step_domain(step);
     }
 
     if (FIXNUM_P(b) && FIXNUM_P(e) && FIXNUM_P(step)) { /* fixnums are special */

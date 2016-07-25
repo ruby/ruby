@@ -1,3 +1,8 @@
+Mon Jul 25 21:33:13 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* range.c (check_step_domain): check step argument domain by <=>
+	  method, instead of < and >.
+
 Mon Jul 25 21:11:32 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* doc/maintainers.rdoc: fix filenames.
