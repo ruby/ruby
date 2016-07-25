@@ -1,3 +1,9 @@
+Mon Jul 25 16:59:00 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* debug.c (ruby_debug_printf): use rb_raw_obj_info()
+	  instead of rb_inspect() because it is more robust way
+	  to see object internal.
+
 Sun Jul 24 16:33:13 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* regenc.h/c, include/ruby/oniguruma.h, enc/ascii.c, big5.c, cp949.c,
