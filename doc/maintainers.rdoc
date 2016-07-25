@@ -90,7 +90,7 @@ Zachary Scott (zzak)
   Shugo Maeda (shugo)
 [lib/net/imap.rb]
   Shugo Maeda (shugo)
-[lib/net/http.rb, lib/net/https]
+[lib/net/http.rb, lib/net/https.rb]
   NARUSE, Yui (naruse)
 [lib/net/pop.rb]
   _unmaintained_
@@ -168,7 +168,7 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [lib/un.rb]
   WATANABE Hirofumi (eban)
-[lib/unicord_normalize.rb, lib/unicord_normalize/*]
+[lib/unicode_normalize.rb, lib/unicode_normalize/*]
   Martin J. Dürst
 [lib/uri.rb, lib/uri/*]
   YAMADA, Akira (akira)
