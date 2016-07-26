@@ -1,7 +1,12 @@
-Tue Jul 26 15:30:37 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+Tue Jul 26 15:54:17 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/windows_1251.c, test/ruby/enc/test_case_comprehensive.rb:
 	  Implement non-ASCII case conversion for Windows-1251, by Shunsuke Sato.
+
+Tue Jul 26 15:30:37 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/windows_1253.c, test/ruby/enc/test_case_comprehensive.rb:
+	  Implement non-ASCII case conversion for Windows-1253, by Takumi Koyama.
 
 Tue Jul 26 13:04:59 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
