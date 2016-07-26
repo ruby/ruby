@@ -14,12 +14,21 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
   def self.expand_filename(basename)
     File.expand_path("#{UNICODE_DATA_PATH}/#{basename}.txt", __dir__)
   end
+  
+  def self.data_files_available?
+    %w[UnicodeData CaseFolding SpecialCasing].all? do |f|
+      File.exist?(expand_filename(f))
+    end
+  end
+
+  def test_data_files_available
+    unless TestComprehensiveCaseFold.data_files_available?
+      skip "Unicode data files not available in #{UNICODE_DATA_PATH}."
+    end
+  end
 end
 
-%w[UnicodeData CaseFolding SpecialCasing].all? {|f|
-  File.exist?(TestComprehensiveCaseFold.expand_filename(f))
-} and
-class TestComprehensiveCaseFold
+TestComprehensiveCaseFold.data_files_available? and  class TestComprehensiveCaseFold
   (CaseTest = Struct.new(:method_name, :attributes, :first_data, :follow_data)).class_eval do
     def initialize(method_name, attributes, first_data, follow_data=first_data)
       super

@@ -1,3 +1,8 @@
+Tue Jul 26 13:04:59 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* test/ruby/enc/test_case_comprehensive.rb: Add explicit skip test for
+	  availability of Unicode data files.
+
 Mon Jul 25 21:33:13 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* range.c (check_step_domain): check step argument domain by <=>
