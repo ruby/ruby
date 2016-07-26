@@ -1,3 +1,11 @@
+Tue Jul 26 19:26:00 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.c: introduce rb_vm_pop_frame() and use it
+	  instead of setting rb_thread_t::cfp directly.
+
+	* vm_insnhelper.c (vm_pop_frame): return the result of
+	  finish frame or not.
+
 Tue Jul 26 19:06:39 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (rb_raw_obj_info): support to show Proc obj.

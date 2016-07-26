@@ -362,7 +362,7 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 		    if (VM_FRAME_TYPE_FINISH_P(th->cfp)) {
 			th->tag = th->tag->prev;
 		    }
-		    th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
+		    rb_vm_pop_frame(th);
 		}
 		TH_JUMP_TAG(th, state);
 	    }

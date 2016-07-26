@@ -434,11 +434,12 @@ void
 rb_vm_pop_cfunc_frame(void)
 {
     rb_thread_t *th = GET_THREAD();
-    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(th->cfp);
+    rb_control_frame_t *cfp = th->cfp;
+    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, th->cfp->self, me->called_id, me->owner, Qnil);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, cfp->self, me->called_id, me->owner, Qnil);
     RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, me->owner, me->called_id);
-    vm_pop_frame(th);
+    vm_pop_frame(th, cfp, cfp->ep);
 }
 
 void
@@ -450,7 +451,7 @@ rb_vm_rewind_cfp(rb_thread_t *th, rb_control_frame_t *cfp)
 	printf("skipped frame: %s\n", vm_frametype_name(th->cfp));
 #endif
 	if (VM_FRAME_TYPE(th->cfp) != VM_FRAME_MAGIC_CFUNC) {
-	    vm_pop_frame(th);
+	    rb_vm_pop_frame(th);
 	}
 	else { /* unlikely path */
 	    rb_vm_pop_cfunc_frame();
@@ -900,7 +901,7 @@ rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars)
 
     vm_set_eval_stack(th, iseq, 0, base_block);
     bind->env = vm_make_env_object(th, th->cfp);
-    vm_pop_frame(th);
+    rb_vm_pop_frame(th);
     GetEnvPtr(bind->env, env);
 
     return env->env;
@@ -1682,7 +1683,7 @@ vm_exec(rb_thread_t *th)
 					       rb_vm_frame_method_entry(th->cfp)->owner,
 					       rb_vm_frame_method_entry(th->cfp)->called_id);
 	    }
-	    th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
+	    rb_vm_pop_frame(th);
 	}
 
 	cfp = th->cfp;
@@ -1715,7 +1716,7 @@ vm_exec(rb_thread_t *th)
 			    th->errinfo = Qnil;
 			    result = THROW_DATA_VAL(err);
 			    hook_before_rewind(th, th->cfp, TRUE);
-			    vm_pop_frame(th);
+			    rb_vm_pop_frame(th);
 			    goto finish_vme;
 			}
 		    }
@@ -1858,13 +1859,13 @@ vm_exec(rb_thread_t *th)
 	    hook_before_rewind(th, th->cfp, FALSE);
 
 	    if (VM_FRAME_TYPE_FINISH_P(th->cfp)) {
-		vm_pop_frame(th);
+		rb_vm_pop_frame(th);
 		th->errinfo = (VALUE)err;
 		TH_TMPPOP_TAG();
 		TH_JUMP_TAG(th, state);
 	    }
 	    else {
-		th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
+		rb_vm_pop_frame(th);
 		goto exception_handler;
 	    }
 	}
@@ -1964,7 +1965,7 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
 
     val = (*func)(arg);
 
-    vm_pop_frame(th);
+    rb_vm_pop_frame(th);
     return val;
 }
 

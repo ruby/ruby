@@ -95,7 +95,7 @@ vm_call0_cfunc(rb_thread_t* th, struct rb_calling_info *calling, const struct rb
 		rb_bug("vm_call0_cfunc: cfp consistency error");
 	    }
 	    VM_PROFILE_UP(C2C_POPF);
-	    vm_pop_frame(th);
+	    rb_vm_pop_frame(th);
 	}
     }
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, calling->recv, ci->mid, callnig->cc->me->owner, val);
@@ -134,7 +134,7 @@ vm_call0_cfunc_with_frame(rb_thread_t* th, struct rb_calling_info *calling, cons
 		rb_bug("vm_call0_cfunc_with_frame: cfp consistency error");
 	}
 	VM_PROFILE_UP(C2C_POPF);
-	vm_pop_frame(th);
+	rb_vm_pop_frame(th);
     }
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, mid, me->owner, val);
     RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, me->owner, mid);

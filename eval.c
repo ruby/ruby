@@ -737,7 +737,7 @@ rb_raise_jump(VALUE mesg, VALUE cause)
     VALUE self = cfp->self;
     ID mid = me->called_id;
 
-    th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
+    rb_vm_pop_frame(th);
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, self, mid, klass, Qnil);
 
     setup_exception(th, TAG_RAISE, mesg, cause);

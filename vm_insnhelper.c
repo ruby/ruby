@@ -207,14 +207,26 @@ vm_push_frame(rb_thread_t *th,
     return cfp;
 }
 
-static inline void
-vm_pop_frame(rb_thread_t *th)
+static inline int
+vm_pop_frame(rb_thread_t *th, rb_control_frame_t *cfp, const VALUE *ep /* we'll use ep soon */)
 {
-    th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
+    if (VM_CHECK_MODE >= 4) rb_gc_verify_internal_consistency();
+    if (VMDEBUG == 2)       SDR();
 
-    if (VMDEBUG == 2) {
-	SDR();
+    th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+
+    if (UNLIKELY(VM_FRAME_TYPE_FINISH_P(cfp))) {
+	return TRUE;
     }
+    else {
+	return FALSE;
+    }
+}
+
+void
+rb_vm_pop_frame(rb_thread_t *th)
+{
+    vm_pop_frame(th, th->cfp, th->cfp->ep);
 }
 
 /* method dispatch */
@@ -1425,7 +1437,8 @@ vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_
     VALUE *sp_orig, *sp;
     VALUE finish_flag = VM_FRAME_TYPE_FINISH_P(cfp) ? VM_FRAME_FLAG_FINISH : 0;
 
-    cfp = th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp); /* pop cf */
+    vm_pop_frame(th, cfp, cfp->ep);
+    cfp = th->cfp;
 
     RUBY_VM_CHECK_INTS(th);
 
@@ -1644,7 +1657,7 @@ vm_call_cfunc_with_frame(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb
 	rb_bug("vm_call_cfunc - cfp consistency error");
     }
 
-    vm_pop_frame(th);
+    rb_vm_pop_frame(th);
 
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, me->called_id, me->owner, val);
     RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, me->owner, me->called_id);
@@ -1679,7 +1692,7 @@ vm_call_cfunc_latter(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb_cal
 	if (UNLIKELY(reg_cfp != RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp))) {
 	    rb_bug("vm_call_cfunc_latter: cfp consistency error (%p, %p)", reg_cfp, th->cfp+1);
 	}
-	vm_pop_frame(th);
+	vm_pop_frame(th, reg_cfp, reg_cfp->ep);
 	VM_PROFILE_UP(R2C_POPF);
     }
 
@@ -2338,8 +2351,8 @@ vm_yield_with_cfunc(rb_thread_t *th, const rb_block_t *block, VALUE self,
 	data = (VALUE)ifunc->data;
     }
     val = (*func)(arg, data, argc, argv, blockarg);
+    rb_vm_pop_frame(th);
 
-    th->cfp++;
     return val;
 }
 

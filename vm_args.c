@@ -702,7 +702,7 @@ raise_argument_error(rb_thread_t *th, const rb_iseq_t *iseq, const VALUE exc)
 		      VM_ENVVAL_BLOCK_PTR(0) /* specval*/, Qfalse /* me or cref */,
 		      iseq->body->iseq_encoded, th->cfp->sp, 1 /* local_size (cref/me) */, 0 /* stack_max */);
 	at = rb_vm_backtrace_object();
-	vm_pop_frame(th);
+	rb_vm_pop_frame(th);
     }
     else {
 	at = rb_vm_backtrace_object();

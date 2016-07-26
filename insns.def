@@ -1128,9 +1128,7 @@ leave
 
     RUBY_VM_CHECK_INTS(th);
 
-    if (UNLIKELY(VM_FRAME_TYPE_FINISH_P(GET_CFP()))) {
-	vm_pop_frame(th);
-
+    if (vm_pop_frame(th, GET_CFP(), GET_EP())) {
 #if OPT_CALL_THREADED_CODE
 	th->retval = val;
 	return 0;
@@ -1139,7 +1137,6 @@ leave
 #endif
     }
     else {
-	vm_pop_frame(th);
 	RESTORE_REGS();
     }
 }
