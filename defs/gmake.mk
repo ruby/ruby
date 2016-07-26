@@ -76,6 +76,7 @@ showflags: up
 sudo-precheck: test
 install-prereq: sudo-precheck
 yes-test-all no-test-all: install
+yes-test-almost no-test-almost: install
 endif
 
 $(srcdir)/missing/des_tables.c: $(srcdir)/missing/crypt.c
