@@ -73,7 +73,7 @@ endif
 
 ifneq ($(filter love,$(MAKECMDGOALS)),)
 showflags: up
-sudo-precheck: test
+sudo-precheck: test yes-test-testframework no-test-testframework
 install-prereq: sudo-precheck
 yes-test-all no-test-all: install
 yes-test-almost no-test-almost: install
