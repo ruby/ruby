@@ -31,9 +31,12 @@ module DTrace
       DTRACE_CMD = %w[dtrace -b 8m]
     when /darwin/i
       READ_PROBES = proc do |cmd|
-        PTY.spawn(*cmd) do |io, _|
-          break io.readlines.each {|line| line.sub!(/\r$/, "")}
+        lines = nil
+        PTY.spawn(*cmd) do |io, _, pid|
+          lines = io.readlines.each {|line| line.sub!(/\r$/, "")}
+          Process.wait(pid)
         end
+        lines
       end
     end
 
