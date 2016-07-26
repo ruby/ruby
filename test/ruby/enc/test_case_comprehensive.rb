@@ -293,7 +293,7 @@ TestComprehensiveCaseFold.data_files_available? and  class TestComprehensiveCase
   generate_ascii_only_case_mapping_tests 'Windows-1254'
   generate_case_mapping_tests 'Windows-1255'
   generate_ascii_only_case_mapping_tests 'Windows-1256'
-  generate_ascii_only_case_mapping_tests 'Windows-1257'
+  generate_case_mapping_tests 'Windows-1257'
   generate_unicode_case_mapping_tests 'UTF-8'
   generate_unicode_case_mapping_tests 'UTF-16BE'
   generate_unicode_case_mapping_tests 'UTF-16LE'
