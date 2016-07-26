@@ -2706,26 +2706,34 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
 {
     long i;
     int status;
-    const int safe = rb_safe_level();
-    const VALUE errinfo = rb_errinfo();
-    const VALUE objid = nonspecial_obj_id(obj);
+    volatile struct {
+	VALUE errinfo;
+	VALUE objid;
+	long finished;
+	int safe;
+    } saved;
     rb_thread_t *const th = GET_THREAD();
-    volatile long finished = 0;
+#define RESTORE_FINALIZER() (\
+	rb_set_safe_level_force(saved.safe), \
+	rb_set_errinfo(saved.errinfo))
+
+    saved.safe = rb_safe_level();
+    saved.errinfo = rb_errinfo();
+    saved.objid = nonspecial_obj_id(obj);
+    saved.finished = 0;
 
     TH_PUSH_TAG(th);
     status = TH_EXEC_TAG();
     if (status) {
-	++finished;		/* skip failed finalizer */
-	rb_set_safe_level_force(safe);
-	rb_set_errinfo(errinfo);
+	++saved.finished;	/* skip failed finalizer */
     }
-    for (i = finished; i<RARRAY_LEN(table); i++) {
-	finished = i;
-	run_single_final(RARRAY_AREF(table, i), objid);
-	rb_set_safe_level_force(safe);
-	rb_set_errinfo(errinfo);
+    for (i = saved.finished;
+	 RESTORE_FINALIZER(), i<RARRAY_LEN(table);
+	 saved.finished = ++i) {
+	run_single_final(RARRAY_AREF(table, i), saved.objid);
     }
     TH_POP_TAG();
+#undef RESTORE_FINALIZER
 }
 
 static void

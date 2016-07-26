@@ -1,3 +1,8 @@
+Tue Jul 26 22:43:36 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (run_finalizer): make saved running finalizer state
+	  volatile to ensure not to be clobbered by longjmp.
+
 Tue Jul 26 19:26:00 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.c: introduce rb_vm_pop_frame() and use it
