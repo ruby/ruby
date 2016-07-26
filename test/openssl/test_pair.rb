@@ -497,13 +497,13 @@ module OpenSSL::TestPairM
 
     until th.join(0.01)
       accepted = s2.accept_nonblock(exception: false)
-      assert_includes([s2, :wait_readable, :wait_writable ], accepted)
+      assert_include([s2, :wait_readable, :wait_writable ], accepted)
     end
 
     rets = th.value
     assert_instance_of Array, rets
     rets.each do |rv|
-      assert_includes([s1, :wait_readable, :wait_writable ], rv)
+      assert_include([s1, :wait_readable, :wait_writable ], rv)
     end
   ensure
     th.join if th

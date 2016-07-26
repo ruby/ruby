@@ -147,7 +147,7 @@ class CGIHeaderTest < Test::Unit::TestCase
     date = /^Date: ([A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4} \d\d:\d\d:\d\d GMT)\r\n/
     [actual1, actual2, actual3].each do |actual|
       assert_match(date, actual)
-      assert_includes(time_start..time_end, date =~ actual && Time.parse($1).to_i)
+      assert_include(time_start..time_end, date =~ actual && Time.parse($1).to_i)
       actual.sub!(date, "Date: DATE_IS_REMOVED\r\n")
     end
     ## assertion
