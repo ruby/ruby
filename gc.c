@@ -9139,6 +9139,30 @@ method_type_name(rb_method_type_t type)
     (assert(!FL_TEST((ary), ELTS_SHARED) || !FL_TEST((ary), RARRAY_EMBED_FLAG)), \
      FL_TEST((ary), RARRAY_EMBED_FLAG)!=0)
 
+static void
+rb_raw_iseq_info(char *buff, const int buff_size, const rb_iseq_t *iseq)
+{
+    if (iseq->body->location.label) {
+	snprintf(buff, buff_size, "%s %s@%s:%d", buff,
+		 RSTRING_PTR(iseq->body->location.label),
+		 RSTRING_PTR(iseq->body->location.path),
+		 FIX2INT(iseq->body->location.first_lineno));
+    }
+}
+
+static const rb_iseq_t *
+vm_proc_iseq(VALUE procval)
+{
+    rb_proc_t *proc = RTYPEDDATA_DATA(procval);
+
+    if (RUBY_VM_NORMAL_ISEQ_P(proc->block.iseq)) {
+	return proc->block.iseq;
+    }
+    else {
+	return NULL;
+    }
+}
+
 const char *
 rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 {
@@ -9206,9 +9230,15 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	      break;
 	  }
 	  case T_DATA: {
-	      const char * const type_name = rb_objspace_data_type_name(obj);
-	      if (type_name) {
-		  snprintf(buff, buff_size, "%s %s", buff, type_name);
+	      const rb_iseq_t *iseq;
+	      if (rb_obj_is_proc(obj) && (iseq = vm_proc_iseq(obj)) != NULL) {
+		  rb_raw_iseq_info(buff, buff_size, iseq);
+	      }
+	      else {
+		  const char * const type_name = rb_objspace_data_type_name(obj);
+		  if (type_name) {
+		      snprintf(buff, buff_size, "%s %s", buff, type_name);
+		  }
 	      }
 	      break;
 	  }
@@ -9242,13 +9272,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 		}
 		case imemo_iseq: {
 		    const rb_iseq_t *iseq = (const rb_iseq_t *)obj;
-
-		    if (iseq->body->location.label) {
-			snprintf(buff, buff_size, "%s %s@%s:%d", buff,
-				 RSTRING_PTR(iseq->body->location.label),
-				 RSTRING_PTR(iseq->body->location.path),
-				 FIX2INT(iseq->body->location.first_lineno));
-		    }
+		    rb_raw_iseq_info(buff, buff_size, iseq);
 		    break;
 		}
 		default:
