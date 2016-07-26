@@ -14,7 +14,7 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
   def self.expand_filename(basename)
     File.expand_path("#{UNICODE_DATA_PATH}/#{basename}.txt", __dir__)
   end
-  
+
   def self.data_files_available?
     %w[UnicodeData CaseFolding SpecialCasing].all? do |f|
       File.exist?(expand_filename(f))
