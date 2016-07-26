@@ -1,3 +1,10 @@
+Tue Jul 26 18:55:55 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_mark): add `inline' explicitly.
+	  I expected to inline this function implicitly at the loop
+	  (ex: marking T_ARRAY objects) but sometimes it remains as
+	  normal call.
+
 Tue Jul 26 16:33:16 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/windows_1257.c, test/ruby/enc/test_case_comprehensive.rb:

@@ -853,7 +853,7 @@ static void gc_sweep_rest(rb_objspace_t *objspace);
 static void gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *heap);
 #endif
 
-static void gc_mark(rb_objspace_t *objspace, VALUE ptr);
+static inline void gc_mark(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_ptr(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_maybe(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_children(rb_objspace_t *objspace, VALUE ptr);
@@ -4347,7 +4347,7 @@ gc_mark_ptr(rb_objspace_t *objspace, VALUE obj)
     }
 }
 
-static void
+static inline void
 gc_mark(rb_objspace_t *objspace, VALUE obj)
 {
     if (!is_markable_object(objspace, obj)) return;
