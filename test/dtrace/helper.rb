@@ -32,7 +32,7 @@ module DTrace
     when /darwin/i
       READ_PROBES = proc do |cmd|
         PTY.spawn(*cmd) do |io, _|
-          break io.readlines
+          break io.readlines.each {|line| line.sub!(/\r$/, "")}
         end
       end
     end
