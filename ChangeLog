@@ -1,3 +1,7 @@
+Wed Jul 27 10:32:59 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/windows_1253.c: Remove dead code found by Coverity Scan.
+
 Tue Jul 26 22:43:36 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (run_finalizer): make saved running finalizer state
