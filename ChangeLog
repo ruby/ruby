@@ -1,3 +1,9 @@
+Fri Jul 29 04:23:08 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h (VM_ENV_LOCAL_P): return truthy (0 or not) value.
+
+	* vm.c (rb_vm_make_proc_lambda): use VM_ENV_ESCAPED_P() macro.
+
 Fri Jul 29 03:49:04 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c, internal.h: remove RubyVM::Env class and all of env objects

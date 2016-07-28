@@ -865,7 +865,7 @@ rb_vm_make_proc_lambda(rb_thread_t *th, const struct rb_captured_block *captured
 {
     VALUE procval;
 
-    if (!VM_ENV_FLAGS(captured->ep, VM_ENV_FLAG_ESCAPED)) {
+    if (!VM_ENV_ESCAPED_P(captured->ep)) {
 	rb_control_frame_t *cfp = VM_CAPTURED_BLOCK_TO_CFP(captured);
 	vm_make_env_object(th, cfp);
     }

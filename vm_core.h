@@ -1039,7 +1039,7 @@ VM_FRAME_TYPE(const rb_control_frame_t *cfp)
 static inline int
 VM_ENV_LOCAL_P(const VALUE *ep)
 {
-    return VM_ENV_FLAGS(ep, VM_ENV_FLAG_LOCAL) ? 1 : 0;
+    return VM_ENV_FLAGS(ep, VM_ENV_FLAG_LOCAL);
 }
 
 static inline const VALUE *
