@@ -858,7 +858,6 @@ VALUE rb_iseq_coverage(const rb_iseq_t *iseq);
 
 RUBY_EXTERN VALUE rb_cISeq;
 RUBY_EXTERN VALUE rb_cRubyVM;
-RUBY_EXTERN VALUE rb_cEnv;
 RUBY_EXTERN VALUE rb_mRubyVMFrozenCore;
 RUBY_SYMBOL_EXPORT_END
 
@@ -872,14 +871,12 @@ typedef struct {
     int8_t is_lambda;		/* bool */
 } rb_proc_t;
 
-#define GetEnvPtr(obj, ptr) \
-  GetCoreDataFromValue((obj), rb_env_t, (ptr))
-
 typedef struct {
-    int env_size;
-    const VALUE *ep;
+    VALUE flags; /* imemo header */
     const rb_iseq_t *iseq;
-    const VALUE env[1];               /* flexible array */
+    const VALUE *ep;
+    const VALUE *env;
+    unsigned int env_size;
 } rb_env_t;
 
 extern const rb_data_type_t ruby_binding_data_type;
@@ -1070,11 +1067,29 @@ VM_ENV_ESCAPED_P(const VALUE *ep)
     return VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) ? 1 : 0;
 }
 
+#if VM_CHECK_MODE > 0
+static inline int
+vm_assert_env(VALUE obj)
+{
+    VM_ASSERT(RB_TYPE_P(obj, T_IMEMO));
+    VM_ASSERT(imemo_type(obj) == imemo_env);
+    return 1;
+}
+#endif
+
 static inline VALUE
 VM_ENV_ENVVAL(const VALUE *ep)
 {
+    VALUE envval = ep[VM_ENV_DATA_INDEX_ENV];
     VM_ASSERT(VM_ENV_ESCAPED_P(ep));
-    return ep[VM_ENV_DATA_INDEX_ENV];
+    VM_ASSERT(vm_assert_env(envval));
+    return envval;
+}
+
+static inline const rb_env_t *
+VM_ENV_ENVVAL_PTR(const VALUE *ep)
+{
+    return (const rb_env_t *)VM_ENV_ENVVAL(ep);
 }
 
 static inline VALUE
@@ -1085,6 +1100,15 @@ VM_ENV_PROCVAL(const VALUE *ep)
     VM_ASSERT(VM_ENV_BLOCK_HANDLER(ep) != VM_BLOCK_HANDLER_NONE);
 
     return ep[VM_ENV_DATA_INDEX_ENV_PROC];
+}
+
+static inline const rb_env_t *
+vm_env_new(VALUE *env_ep, VALUE *env_body, unsigned int env_size, const rb_iseq_t *iseq)
+{
+    rb_env_t *env = (rb_env_t *)rb_imemo_new(imemo_env, (VALUE)env_ep, (VALUE)env_body, 0, (VALUE)iseq);
+    env->env_size = env_size;
+    env_ep[VM_ENV_DATA_INDEX_ENV] = (VALUE)env;
+    return env;
 }
 
 static inline void
@@ -1106,16 +1130,6 @@ VM_STACK_ENV_WRITE(const VALUE *ep, int index, VALUE v)
     VM_ASSERT(VM_ENV_FLAGS(ep, VM_ENV_FLAG_WB_REQUIRED) == 0);
     VM_FORCE_WRITE(&ep[index], v);
 }
-
-#if VM_CHECK_MODE > 0
-static inline const VALUE *
-vm_env_ep(VALUE envval)
-{
-    rb_env_t *env;
-    GetEnvPtr(envval, env);
-    return env->ep;
-}
-#endif
 
 const VALUE *rb_vm_ep_local_ep(const VALUE *ep);
 VALUE rb_vm_frame_block_handler(const rb_control_frame_t *cfp);
@@ -1381,7 +1395,7 @@ VALUE rb_vm_make_proc_lambda(rb_thread_t *th, const struct rb_captured_block *ca
 VALUE rb_vm_make_proc(rb_thread_t *th, const struct rb_captured_block *captured, VALUE klass);
 VALUE rb_vm_make_binding(rb_thread_t *th, const rb_control_frame_t *src_cfp);
 VALUE rb_vm_env_local_variables(const rb_env_t *env);
-VALUE rb_vm_env_prev_envval(const rb_env_t *env);
+const rb_env_t *rb_vm_env_prev_env(const rb_env_t *env);
 const VALUE *rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars);
 void rb_vm_inc_const_missing_count(void);
 void rb_vm_gvl_destroy(rb_vm_t *vm);

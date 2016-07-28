@@ -421,6 +421,7 @@ typedef struct RVALUE {
 	    struct MEMO memo;
 	    struct rb_method_entry_struct ment;
 	    const rb_iseq_t iseq;
+	    rb_env_t env;
 	} imemo;
 	struct {
 	    struct RBasic basic;
@@ -2272,17 +2273,19 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_IMEMO:
-	{
-	    switch (imemo_type(obj)) {
-	      case imemo_ment:
-		rb_free_method_entry(&RANY(obj)->as.imemo.ment);
-		break;
-	      case imemo_iseq:
-		rb_iseq_free(&RANY(obj)->as.imemo.iseq);
-		break;
-	      default:
-		break;
-	    }
+	switch (imemo_type(obj)) {
+	  case imemo_ment:
+	    rb_free_method_entry(&RANY(obj)->as.imemo.ment);
+	    break;
+	  case imemo_iseq:
+	    rb_iseq_free(&RANY(obj)->as.imemo.iseq);
+	    break;
+	  case imemo_env:
+	    VM_ASSERT(VM_ENV_ESCAPED_P(RANY(obj)->as.imemo.env.ep));
+	    xfree((VALUE *)RANY(obj)->as.imemo.env.env);
+	    break;
+	  default:
+	    break;
 	}
 	return 0;
 
@@ -3988,15 +3991,21 @@ rb_gc_mark_locations(const VALUE *start, const VALUE *end)
     gc_mark_locations(&rb_objspace, start, end);
 }
 
-void
-rb_gc_mark_values(long n, const VALUE *values)
+static void
+gc_mark_values(rb_objspace_t *objspace, long n, const VALUE *values)
 {
-    rb_objspace_t *objspace = &rb_objspace;
     long i;
 
     for (i=0; i<n; i++) {
 	gc_mark(objspace, values[i]);
     }
+}
+
+void
+rb_gc_mark_values(long n, const VALUE *values)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    gc_mark_values(objspace, n, values);
 }
 
 static int
@@ -4392,6 +4401,55 @@ gc_mark_set_parent(rb_objspace_t *objspace, VALUE obj)
 }
 
 static void
+gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
+{
+    switch (imemo_type(obj)) {
+      case imemo_env:
+	{
+	    const rb_env_t *env = (const rb_env_t *)obj;
+	    VM_ASSERT(VM_ENV_ESCAPED_P(env->ep));
+	    gc_mark_values(objspace, (long)env->env_size, env->env);
+	    VM_ENV_FLAGS_SET(env->ep, VM_ENV_FLAG_WB_REQUIRED);
+	    gc_mark(objspace, (VALUE)rb_vm_env_prev_env(env));
+	    gc_mark(objspace, (VALUE)env->iseq);
+	}
+	return;
+      case imemo_cref:
+	gc_mark(objspace, RANY(obj)->as.imemo.cref.klass);
+	gc_mark(objspace, (VALUE)RANY(obj)->as.imemo.cref.next);
+	gc_mark(objspace, RANY(obj)->as.imemo.cref.refinements);
+	return;
+      case imemo_svar:
+	gc_mark(objspace, RANY(obj)->as.imemo.svar.cref_or_me);
+	gc_mark(objspace, RANY(obj)->as.imemo.svar.lastline);
+	gc_mark(objspace, RANY(obj)->as.imemo.svar.backref);
+	gc_mark(objspace, RANY(obj)->as.imemo.svar.others);
+	return;
+      case imemo_throw_data:
+	gc_mark(objspace, RANY(obj)->as.imemo.throw_data.throw_obj);
+	return;
+      case imemo_ifunc:
+	gc_mark_maybe(objspace, (VALUE)RANY(obj)->as.imemo.ifunc.data);
+	return;
+      case imemo_memo:
+	gc_mark(objspace, RANY(obj)->as.imemo.memo.v1);
+	gc_mark(objspace, RANY(obj)->as.imemo.memo.v2);
+	gc_mark_maybe(objspace, RANY(obj)->as.imemo.memo.u3.value);
+	return;
+      case imemo_ment:
+	mark_method_entry(objspace, &RANY(obj)->as.imemo.ment);
+	return;
+      case imemo_iseq:
+	rb_iseq_mark((rb_iseq_t *)obj);
+	return;
+#if VM_CHECK_MODE > 0
+      default:
+	VM_UNREACHABLE(gc_mark_imemo);
+#endif
+    }
+}
+
+static void
 gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 {
     register RVALUE *any = RANY(obj);
@@ -4413,40 +4471,8 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	return;			/* no need to mark class. */
 
       case T_IMEMO:
-	switch (imemo_type(obj)) {
-	  case imemo_none:
-	    rb_bug("unreachable");
-	    return;
-	  case imemo_cref:
-	    gc_mark(objspace, RANY(obj)->as.imemo.cref.klass);
-	    gc_mark(objspace, (VALUE)RANY(obj)->as.imemo.cref.next);
-	    gc_mark(objspace, RANY(obj)->as.imemo.cref.refinements);
-	    return;
-	  case imemo_svar:
-	    gc_mark(objspace, RANY(obj)->as.imemo.svar.cref_or_me);
-	    gc_mark(objspace, RANY(obj)->as.imemo.svar.lastline);
-	    gc_mark(objspace, RANY(obj)->as.imemo.svar.backref);
-	    gc_mark(objspace, RANY(obj)->as.imemo.svar.others);
-	    return;
-	  case imemo_throw_data:
-	    gc_mark(objspace, RANY(obj)->as.imemo.throw_data.throw_obj);
-	    return;
-	  case imemo_ifunc:
-	    gc_mark_maybe(objspace, (VALUE)RANY(obj)->as.imemo.ifunc.data);
-	    return;
-	  case imemo_memo:
-	    gc_mark(objspace, RANY(obj)->as.imemo.memo.v1);
-	    gc_mark(objspace, RANY(obj)->as.imemo.memo.v2);
-	    gc_mark_maybe(objspace, RANY(obj)->as.imemo.memo.u3.value);
-	    return;
-	  case imemo_ment:
-	    mark_method_entry(objspace, &RANY(obj)->as.imemo.ment);
-	    return;
-	  case imemo_iseq:
-	    rb_iseq_mark((rb_iseq_t *)obj);
-	    return;
-	}
-	rb_bug("T_IMEMO: unreachable");
+	gc_mark_imemo(objspace, obj);
+	return;
     }
 
     gc_mark(objspace, any->as.basic.klass);
@@ -9241,7 +9267,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	      const char *imemo_name;
 	      switch (imemo_type(obj)) {
 #define IMEMO_NAME(x) case imemo_##x: imemo_name = #x; break;
-		  IMEMO_NAME(none);
+		  IMEMO_NAME(env);
 		  IMEMO_NAME(cref);
 		  IMEMO_NAME(svar);
 		  IMEMO_NAME(throw_data);
@@ -9249,7 +9275,6 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 		  IMEMO_NAME(memo);
 		  IMEMO_NAME(ment);
 		  IMEMO_NAME(iseq);
-		default: rb_bug("unknown IMEMO");
 #undef IMEMO_NAME
 	      }
 	      snprintf(buff, buff_size, "%s %s", buff, imemo_name);

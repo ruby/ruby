@@ -73,7 +73,7 @@ static void
 vm_check_frame_detail(VALUE type, int req_block, int req_me, int req_cref, VALUE specval, VALUE cref_or_me)
 {
     unsigned int magic = (unsigned int)(type & VM_FRAME_MAGIC_MASK);
-    enum imemo_type cref_or_me_type = imemo_none;
+    enum imemo_type cref_or_me_type = imemo_env; /* impossible value */
 
     if (RB_TYPE_P(cref_or_me, T_IMEMO)) {
 	cref_or_me_type = imemo_type(cref_or_me);

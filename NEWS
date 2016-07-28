@@ -66,6 +66,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Regexp#match? [Feature #8110]
     This returns bool and doesn't save backref.
 
+* RubyVM::Env
+
+  * RubyVM::Env was removed.
+
 * String
 
   * String#upcase, String#downcase, String#capitalize, String#swapcase and

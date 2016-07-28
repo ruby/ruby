@@ -182,14 +182,12 @@ rb_vmdebug_stack_dump_raw_current(void)
 }
 
 void
-rb_vmdebug_env_dump_raw(rb_env_t *env, const VALUE *ep)
+rb_vmdebug_env_dump_raw(const rb_env_t *env, const VALUE *ep)
 {
-    int i;
+    unsigned int i;
     fprintf(stderr, "-- env --------------------\n");
 
     while (env) {
-	VALUE prev_envval;
-
 	fprintf(stderr, "--\n");
 	for (i = 0; i < env->env_size; i++) {
 	    fprintf(stderr, "%04d: %08"PRIxVALUE" (%p)", i, env->env[i], (void *)&env->env[i]);
@@ -197,12 +195,7 @@ rb_vmdebug_env_dump_raw(rb_env_t *env, const VALUE *ep)
 	    fprintf(stderr, "\n");
 	}
 
-	if ((prev_envval = rb_vm_env_prev_envval(env)) != Qfalse) {
-	    GetEnvPtr(prev_envval, env);
-	}
-	else {
-	    env = NULL;
-	}
+	env = rb_vm_env_prev_env(env);
     }
     fprintf(stderr, "---------------------------\n");
 }
@@ -210,14 +203,14 @@ rb_vmdebug_env_dump_raw(rb_env_t *env, const VALUE *ep)
 void
 rb_vmdebug_proc_dump_raw(rb_proc_t *proc)
 {
-    rb_env_t *env;
+    const rb_env_t *env;
     char *selfstr;
     VALUE val = rb_inspect(vm_block_self(&proc->block));
     selfstr = StringValueCStr(val);
 
     fprintf(stderr, "-- proc -------------------\n");
     fprintf(stderr, "self: %s\n", selfstr);
-    GetEnvPtr(VM_ENV_ENVVAL(vm_block_ep(&proc->block)), env);
+    env = VM_ENV_ENVVAL_PTR(vm_block_ep(&proc->block));
     rb_vmdebug_env_dump_raw(env, vm_block_ep(&proc->block));
 }
 

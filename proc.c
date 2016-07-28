@@ -392,15 +392,12 @@ bind_eval(int argc, VALUE *argv, VALUE bindval)
 }
 
 static const VALUE *
-get_local_variable_ptr(VALUE envval, ID lid)
+get_local_variable_ptr(const rb_env_t *env, ID lid)
 {
-    rb_env_t *env;
-
     do {
 	const rb_iseq_t *iseq;
 	unsigned int i;
 
-	GetEnvPtr(envval, env);
 	iseq = env->iseq;
 
 	if (iseq && RUBY_VM_NORMAL_ISEQ_P(iseq)) {
@@ -413,7 +410,7 @@ get_local_variable_ptr(VALUE envval, ID lid)
 	else {
 	    return NULL;
 	}
-    } while ((envval = rb_vm_env_prev_envval(env)) != Qfalse);
+    } while ((env = rb_vm_env_prev_env(env)) != NULL);
 
     return NULL;
 }
@@ -470,8 +467,7 @@ bind_local_variables(VALUE bindval)
     const rb_env_t *env;
 
     GetBindingPtr(bindval, bind);
-    GetEnvPtr(VM_ENV_ENVVAL(vm_block_ep(&bind->block)), env);
-
+    env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
     return rb_vm_env_local_variables(env);
 }
 
@@ -503,7 +499,7 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
 
     GetBindingPtr(bindval, bind);
 
-    if ((ptr = get_local_variable_ptr(VM_ENV_ENVVAL(vm_block_ep(&bind->block)), lid)) == NULL) {
+    if ((ptr = get_local_variable_ptr(VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block)), lid)) == NULL) {
 	sym = ID2SYM(lid);
       undefined:
 	rb_name_err_raise("local variable `%1$s' not defined for %2$s",
@@ -543,19 +539,19 @@ bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
     ID lid = check_local_id(bindval, &sym);
     rb_binding_t *bind;
     const VALUE *ptr;
-    VALUE envval;
+    const rb_env_t *env;
 
     if (!lid) lid = rb_intern_str(sym);
 
     GetBindingPtr(bindval, bind);
-    envval = VM_ENV_ENVVAL(vm_block_ep(&bind->block));
-    if ((ptr = get_local_variable_ptr(envval, lid)) == NULL) {
+    env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
+    if ((ptr = get_local_variable_ptr(env, lid)) == NULL) {
 	/* not found. create new env */
 	ptr = rb_binding_add_dynavars(bind, 1, &lid);
-	envval = VM_ENV_ENVVAL(vm_block_ep(&bind->block));
+	env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
     }
 
-    RB_OBJ_WRITE(envval, ptr, val);
+    RB_OBJ_WRITE(env, ptr, val);
 
     return val;
 }
@@ -586,7 +582,7 @@ bind_local_variable_defined_p(VALUE bindval, VALUE sym)
     if (!lid) return Qfalse;
 
     GetBindingPtr(bindval, bind);
-    return get_local_variable_ptr(VM_ENV_ENVVAL(vm_block_ep(&bind->block)), lid) ? Qtrue : Qfalse;
+    return get_local_variable_ptr(VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block)), lid) ? Qtrue : Qfalse;
 }
 
 /*
@@ -2705,36 +2701,36 @@ localjump_reason(VALUE exc)
 rb_cref_t *rb_vm_cref_new_toplevel(void); /* vm.c */
 
 static inline void
-env_write(VALUE env, const VALUE *ep, int index, VALUE v)
+env_write(VALUE envval, const VALUE *ep, int index, VALUE v)
 {
     VM_ASSERT(VM_ENV_ESCAPED_P(ep));
-    VM_ASSERT(env == VM_ENV_ENVVAL(ep));
-    VM_ASSERT(vm_env_ep(env) == ep);
+    VM_ASSERT(envval == VM_ENV_ENVVAL(ep));
+    VM_ASSERT(vm_assert_env(envval));
 
-    RB_OBJ_WRITE(env, &ep[index], v);
+    RB_OBJ_WRITE(envval, &ep[index], v);
 }
 
-static VALUE
-env_clone(VALUE envval, const rb_cref_t *cref)
+static const rb_env_t *
+env_clone(const rb_env_t *env, const rb_cref_t *cref)
 {
-    VALUE newenvval = TypedData_Wrap_Struct(RBASIC_CLASS(envval), RTYPEDDATA_TYPE(envval), 0);
-    rb_env_t *env, *newenv;
-    int envsize;
+    VALUE *new_ep;
+    VALUE *new_body;
+    const rb_env_t *new_env;
+
+    VM_ASSERT(env->ep > env->env);
+    VM_ASSERT(VM_ENV_ESCAPED_P(env->ep));
 
     if (cref == NULL) {
 	cref = rb_vm_cref_new_toplevel();
     }
 
-    GetEnvPtr(envval, env);
-    envsize = sizeof(rb_env_t) + (env->env_size - 1) * sizeof(VALUE);
-    newenv = xmalloc(envsize);
-    memcpy(newenv, env, envsize);
-    VM_ASSERT(env->ep > env->env);
-    newenv->ep = &newenv->env[env->ep - env->env];
-    VM_FORCE_WRITE(&newenv->ep[VM_ENV_DATA_INDEX_ENV], newenvval);
-    RTYPEDDATA_DATA(newenvval) = newenv;
-    env_write(newenvval, newenv->ep, VM_ENV_DATA_INDEX_ME_CREF, (VALUE)cref);
-    return newenvval;
+    new_body = ALLOC_N(VALUE, env->env_size);
+    MEMCPY(new_body, env->env, VALUE, env->env_size);
+    new_ep = &new_body[env->ep - env->env];
+    new_env = vm_env_new(new_ep, new_body, env->env_size, env->iseq);
+    RB_OBJ_WRITE(new_env, &new_ep[VM_ENV_DATA_INDEX_ME_CREF], (VALUE)cref);
+    VM_ASSERT(VM_ENV_ESCAPED_P(new_ep));
+    return new_env;
 }
 
 /*
@@ -2755,12 +2751,12 @@ env_clone(VALUE envval, const rb_cref_t *cref)
 static VALUE
 proc_binding(VALUE self)
 {
-    VALUE bindval, envval = Qundef, binding_self = Qundef;
+    VALUE bindval, binding_self = Qundef;
     rb_binding_t *bind;
     const rb_proc_t *proc;
     const rb_iseq_t *iseq = NULL;
     const struct rb_block *block;
-    const rb_env_t *env;
+    const rb_env_t *env = NULL;
 
     GetProcPtr(self, proc);
     block = &proc->block;
@@ -2770,7 +2766,7 @@ proc_binding(VALUE self)
       case block_type_iseq:
 	iseq = block->as.captured.code.iseq;
 	binding_self = block->as.captured.self;
-	envval = VM_ENV_ENVVAL(block->as.captured.ep);
+	env = VM_ENV_ENVVAL_PTR(block->as.captured.ep);
 	break;
       case block_type_proc:
 	GetProcPtr(block->as.proc, proc);
@@ -2783,16 +2779,12 @@ proc_binding(VALUE self)
 	    const struct vm_ifunc *ifunc = block->as.captured.code.ifunc;
 	    if (IS_METHOD_PROC_IFUNC(ifunc)) {
 		VALUE method = (VALUE)ifunc->data;
-		rb_env_t *newenv;
-
-		iseq = rb_method_iseq(method);
-		envval = VM_ENV_ENVVAL(block->as.captured.ep);
-		envval = env_clone(envval, method_cref(method));
 		binding_self = method_receiver(method);
-
-		GetEnvPtr(envval, newenv);
+		iseq = rb_method_iseq(method);
+		env = VM_ENV_ENVVAL_PTR(block->as.captured.ep);
+		env = env_clone(env, method_cref(method));
 		/* set empty iseq */
-		newenv->iseq = rb_iseq_new(NULL, rb_str_new2("<empty iseq>"), rb_str_new2("<empty_iseq>"), Qnil, 0, ISEQ_TYPE_TOP);
+		RB_OBJ_WRITE(env, &env->iseq, rb_iseq_new(NULL, rb_str_new2("<empty iseq>"), rb_str_new2("<empty_iseq>"), Qnil, 0, ISEQ_TYPE_TOP));
 		break;
 	    }
 	    else {
@@ -2805,7 +2797,6 @@ proc_binding(VALUE self)
 
     bindval = rb_binding_alloc(rb_cBinding);
     GetBindingPtr(bindval, bind);
-    GetEnvPtr(envval, env);
 
     bind->block.as.captured.self = binding_self;
     bind->block.as.captured.code.iseq = env->iseq;

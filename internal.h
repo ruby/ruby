@@ -685,15 +685,15 @@ struct RIMemo {
 };
 
 enum imemo_type {
-    imemo_none = 0,
-    imemo_cref = 1,
-    imemo_svar = 2,
+    imemo_env        = 0,
+    imemo_cref       = 1,
+    imemo_svar       = 2,
     imemo_throw_data = 3,
-    imemo_ifunc = 4,
-    imemo_memo = 5,
-    imemo_ment = 6,
-    imemo_iseq = 7,
-    imemo_mask = 0x07
+    imemo_ifunc      = 4,
+    imemo_memo       = 5,
+    imemo_ment       = 6,
+    imemo_iseq       = 7,
+    imemo_mask       = 0x07
 };
 
 static inline enum imemo_type

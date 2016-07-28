@@ -1,3 +1,21 @@
+Fri Jul 29 03:49:04 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c, internal.h: remove RubyVM::Env class and all of env objects
+	  are imemo objects (imemo_env).
+
+	* NEWS: describe this change. I believe nobody touch these objects
+	  because there are no method defined.
+
+	* vm_core.h: remove the following definitions.
+	  * rb_cEnv decl.
+	  * GetEnvPtr() because Env is no longer T_DATA object.
+
+	* vm_core.h (rb_env_t): fix layout for imemo values.
+
+	* vm_core.h (vm_assert_env): added.
+
+	* vm_core.h (vm_env_new): added.
+
 Thu Jul 28 19:53:21 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: revisit the structure of frame, block and env.
