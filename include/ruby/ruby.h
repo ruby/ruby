@@ -792,6 +792,9 @@ VALUE rb_obj_setup(VALUE obj, VALUE klass, VALUE type);
 #define RGENGC_WB_PROTECTED_NODE_CREF 1
 #endif
 
+#ifdef __GNUC__
+__extension__
+#endif
 enum ruby_fl_type {
     RUBY_FL_WB_PROTECTED = (1<<5),
     RUBY_FL_PROMOTED0 = (1<<5),
@@ -1603,6 +1606,9 @@ static inline int
 rb_mul_size_overflow(size_t a, size_t b, size_t max, size_t *c)
 {
 #ifdef DSIZE_T
+# ifdef __GNUC__
+    __extension__
+# endif
     DSIZE_T c2 = (DSIZE_T)a * (DSIZE_T)b;
     if (c2 > max) return 1;
     *c = (size_t)c2;

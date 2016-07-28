@@ -1,3 +1,12 @@
+Thu Jul 28 15:05:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (ruby_fl_type): use __extension__ to get rid
+	  of pedantic warning against RUBY_FL_USER19.
+	  https://github.com/skylightio/skylight-ruby/issues/64
+
+	* include/ruby/ruby.h (rb_mul_size_overflow): ditto for use of
+	  int128.
+
 Wed Jul 27 10:32:59 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/windows_1253.c: Remove dead code found by Coverity Scan.
