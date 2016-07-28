@@ -1788,7 +1788,7 @@ hook_before_rewind(rb_thread_t *th, rb_control_frame_t *cfp, int will_finish_vm_
     rb_iseq_t *iseq;                 // ?
     VALUE self;                      //
     VALUE *ep;                       // ep
-    void *code;                      // 
+    void *code;                      //
   };
  */
 

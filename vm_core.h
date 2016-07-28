@@ -1301,7 +1301,7 @@ static inline const VALUE *
 vm_block_ep(const struct rb_block *block)
 {
     switch (vm_block_type(block)) {
-      case block_type_iseq: 
+      case block_type_iseq:
       case block_type_ifunc:  return block->as.captured.ep;
       case block_type_proc:   return vm_proc_ep(block->as.proc);
       case block_type_symbol: return NULL;
