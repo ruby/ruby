@@ -180,6 +180,7 @@ r_value(VALUE value)
 #define debug_compile(msg, v) (v)
 #endif
 
+#define LVAR_ERRINFO (1)
 
 /* create new label */
 #define NEW_LABEL(l) new_label_body(iseq, (l))
@@ -262,6 +263,16 @@ r_value(VALUE value)
       if (ISEQ_COMPILE_DATA(iseq)->option->trace_instruction) { \
 	  ADD_INSN1((seq), (line), trace, INT2FIX(event)); \
       } \
+  } while (0)
+
+#define ADD_GETLOCAL(seq, line, idx, level) \
+  do { \
+      ADD_INSN2((seq), (line), getlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level)); \
+  } while (0)
+
+#define ADD_SETLOCAL(seq, line, idx, level) \
+  do { \
+      ADD_INSN2((seq), (line), setlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level)); \
   } while (0)
 
 /* add label */
@@ -646,7 +657,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, NODE *node)
     }
 
     if (iseq->body->type == ISEQ_TYPE_RESCUE || iseq->body->type == ISEQ_TYPE_ENSURE) {
-	ADD_INSN2(ret, 0, getlocal, INT2FIX(2), INT2FIX(0));
+	ADD_GETLOCAL(ret, 0, LVAR_ERRINFO, 0);
 	ADD_INSN1(ret, 0, throw, INT2FIX(0) /* continue throw */ );
     }
     else {
@@ -1176,7 +1187,6 @@ iseq_set_exception_local_table(rb_iseq_t *iseq)
 
     CONST_ID(id_dollar_bang, "#$!");
     iseq->body->local_table_size = 1;
-    iseq->body->local_size = iseq->body->local_table_size + 1;
     ids[0] = id_dollar_bang;
     iseq->body->local_table = ids;
     return COMPILE_OK;
@@ -1237,7 +1247,7 @@ get_dyna_var_idx(const rb_iseq_t *iseq, ID id, int *level, int *ls)
     }
 
     *level = lv;
-    *ls = iseq->body->local_size;
+    *ls = iseq->body->local_table_size;
     return idx;
 }
 
@@ -1467,10 +1477,10 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *optargs, NODE *node_args)
 static int
 iseq_set_local_table(rb_iseq_t *iseq, const ID *tbl)
 {
-    int size;
+    unsigned int size;
 
     if (tbl) {
-	size = (int)*tbl;
+	size = (unsigned int)*tbl;
 	tbl++;
     }
     else {
@@ -1482,18 +1492,9 @@ iseq_set_local_table(rb_iseq_t *iseq, const ID *tbl)
 	MEMCPY(ids, tbl, ID, size);
 	iseq->body->local_table = ids;
     }
+    iseq->body->local_table_size = size;
 
-    iseq->body->local_size = iseq->body->local_table_size = size;
-    iseq->body->local_size += 1;
-    /*
-      if (lfp == dfp ) { // top, class, method
-	  dfp[-1]: svar
-      else {             // block
-          dfp[-1]: cref
-      }
-     */
-
-    debugs("iseq_set_local_table: %d, %d\n", iseq->body->local_size, iseq->body->local_table_size);
+    debugs("iseq_set_local_table: %u\n", iseq->body->local_table_size);
     return COMPILE_OK;
 }
 
@@ -4470,7 +4471,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		switch (nd_type(narg)) {
 		  case NODE_ARRAY:
 		    while (narg) {
-			ADD_INSN2(ret, line, getlocal, INT2FIX(2), INT2FIX(0));
+			ADD_GETLOCAL(ret, line, LVAR_ERRINFO, 0);
 			COMPILE(ret, "rescue arg", narg->nd_head);
 			ADD_INSN1(ret, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
 			ADD_INSNL(ret, line, branchif, label_hit);
@@ -4480,7 +4481,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		  case NODE_SPLAT:
 		  case NODE_ARGSCAT:
 		  case NODE_ARGSPUSH:
-		    ADD_INSN2(ret, line, getlocal, INT2FIX(2), INT2FIX(0));
+		    ADD_GETLOCAL(ret, line, LVAR_ERRINFO, 0);
 		    COMPILE(ret, "rescue/cond splat", narg);
 		    ADD_INSN1(ret, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE | VM_CHECKMATCH_ARRAY));
 		    ADD_INSNL(ret, line, branchif, label_hit);
@@ -4490,7 +4491,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		}
 	    }
 	    else {
-		ADD_INSN2(ret, line, getlocal, INT2FIX(2), INT2FIX(0));
+		ADD_GETLOCAL(ret, line, LVAR_ERRINFO, 0);
 		ADD_INSN1(ret, line, putobject, rb_eStandardError);
 		ADD_INSN1(ret, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
 		ADD_INSNL(ret, line, branchif, label_hit);
@@ -4577,7 +4578,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
       case NODE_LASGN:{
 	ID id = node->nd_vid;
-	int idx = iseq->body->local_iseq->body->local_size - get_local_var_idx(iseq, id);
+	int idx = iseq->body->local_iseq->body->local_table_size - get_local_var_idx(iseq, id);
 
 	debugs("lvar: %"PRIsVALUE" idx: %d\n", rb_id2str(id), idx);
 	COMPILE(ret, "rvalue", node->nd_value);
@@ -4585,8 +4586,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	if (!poped) {
 	    ADD_INSN(ret, line, dup);
 	}
-	ADD_INSN2(ret, line, setlocal, INT2FIX(idx), INT2FIX(get_lvar_level(iseq)));
-
+	ADD_SETLOCAL(ret, line, idx, get_lvar_level(iseq));
 	break;
       }
       case NODE_DASGN:
@@ -4605,8 +4605,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	    compile_bug(ERROR_ARGS "NODE_DASGN(_CURR): unknown id (%"PRIsVALUE")",
 			rb_id2str(node->nd_vid));
 	}
-
-	ADD_INSN2(ret, line, setlocal, INT2FIX(ls - idx), INT2FIX(lv));
+	ADD_SETLOCAL(ret, line, ls - idx, lv);
 	break;
       }
       case NODE_GASGN:{
@@ -5192,24 +5191,25 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 
 	    /* normal arguments */
 	    for (i = 0; i < liseq->body->param.lead_num; i++) {
-		int idx = liseq->body->local_size - i;
-		ADD_INSN2(args, line, getlocal, INT2FIX(idx), INT2FIX(lvar_level));
+		int idx = liseq->body->local_table_size - i;
+		ADD_GETLOCAL(args, line, idx, lvar_level);
 	    }
 
 	    if (liseq->body->param.flags.has_opt) {
 		/* optional arguments */
 		int j;
 		for (j = 0; j < liseq->body->param.opt_num; j++) {
-		    int idx = liseq->body->local_size - (i + j);
-		    ADD_INSN2(args, line, getlocal, INT2FIX(idx), INT2FIX(lvar_level));
+		    int idx = liseq->body->local_table_size - (i + j);
+		    ADD_GETLOCAL(args, line, idx, lvar_level);
 		}
 		i += j;
 		argc = i;
 	    }
 	    if (liseq->body->param.flags.has_rest) {
 		/* rest argument */
-		int idx = liseq->body->local_size - liseq->body->param.rest_start;
-		ADD_INSN2(args, line, getlocal, INT2FIX(idx), INT2FIX(lvar_level));
+		int idx = liseq->body->local_table_size - liseq->body->param.rest_start;
+		ADD_GETLOCAL(args, line, idx, lvar_level);
+
 		argc = liseq->body->param.rest_start + 1;
 		flag |= VM_CALL_ARGS_SPLAT;
 	    }
@@ -5221,8 +5221,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		if (liseq->body->param.flags.has_rest) {
 		    int j;
 		    for (j=0; j<post_len; j++) {
-			int idx = liseq->body->local_size - (post_start + j);
-			ADD_INSN2(args, line, getlocal, INT2FIX(idx), INT2FIX(lvar_level));
+			int idx = liseq->body->local_table_size - (post_start + j);
+			ADD_GETLOCAL(args, line, idx, lvar_level);
 		    }
 		    ADD_INSN1(args, line, newarray, INT2FIX(j));
 		    ADD_INSN (args, line, concatarray);
@@ -5231,21 +5231,22 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		else {
 		    int j;
 		    for (j=0; j<post_len; j++) {
-			int idx = liseq->body->local_size - (post_start + j);
-			ADD_INSN2(args, line, getlocal, INT2FIX(idx), INT2FIX(lvar_level));
+			int idx = liseq->body->local_table_size - (post_start + j);
+			ADD_GETLOCAL(args, line, idx, lvar_level);
 		    }
 		    argc = post_len + post_start;
 		}
 	    }
 
 	    if (liseq->body->param.flags.has_kw) { /* TODO: support keywords */
-		int local_size = liseq->body->local_size;
+		int local_size = liseq->body->local_table_size;
 		argc++;
 
 		ADD_INSN1(args, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 
 		if (liseq->body->param.flags.has_kwrest) {
-		    ADD_INSN2(args, line, getlocal, INT2FIX(liseq->body->local_size - liseq->body->param.keyword->rest_start), INT2FIX(lvar_level));
+		    int idx = liseq->body->local_table_size - liseq->body->param.keyword->rest_start;
+		    ADD_GETLOCAL(args, line, idx, lvar_level);
 		    ADD_SEND (args, line, rb_intern("dup"), INT2FIX(0));
 		}
 		else {
@@ -5255,7 +5256,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    ID id = liseq->body->param.keyword->table[i];
 		    int idx = local_size - get_local_var_idx(liseq, id);
 		    ADD_INSN1(args, line, putobject, ID2SYM(id));
-		    ADD_INSN2(args, line, getlocal, INT2FIX(idx), INT2FIX(lvar_level));
+		    ADD_GETLOCAL(args, line, idx, lvar_level);
 		}
 		ADD_SEND(args, line, id_core_hash_merge_ptr, INT2FIX(i * 2 + 1));
 		if (liseq->body->param.flags.has_rest) {
@@ -5265,7 +5266,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		}
 	    }
 	    else if (liseq->body->param.flags.has_kwrest) {
-		ADD_INSN2(args, line, getlocal, INT2FIX(liseq->body->local_size - liseq->body->param.keyword->rest_start), INT2FIX(lvar_level));
+		int idx = liseq->body->local_table_size - liseq->body->param.keyword->rest_start;
+		ADD_GETLOCAL(args, line, idx, lvar_level);
+
 		ADD_SEND (args, line, rb_intern("dup"), INT2FIX(0));
 		if (liseq->body->param.flags.has_rest) {
 		    ADD_INSN1(args, line, newarray, INT2FIX(1));
@@ -5406,10 +5409,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_LVAR:{
 	if (!poped) {
 	    ID id = node->nd_vid;
-	    int idx = iseq->body->local_iseq->body->local_size - get_local_var_idx(iseq, id);
+	    int idx = iseq->body->local_iseq->body->local_table_size - get_local_var_idx(iseq, id);
 
 	    debugs("id: %"PRIsVALUE" idx: %d\n", rb_id2str(id), idx);
-	    ADD_INSN2(ret, line, getlocal, INT2FIX(idx), INT2FIX(get_lvar_level(iseq)));
+	    ADD_GETLOCAL(ret, line, idx, get_lvar_level(iseq));
 	}
 	break;
       }
@@ -5422,7 +5425,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		compile_bug(ERROR_ARGS "unknown dvar (%"PRIsVALUE")",
 			    rb_id2str(node->nd_vid));
 	    }
-	    ADD_INSN2(ret, line, getlocal, INT2FIX(ls - idx), INT2FIX(lv));
+	    ADD_GETLOCAL(ret, line, ls - idx, lv);
 	}
 	break;
       }
@@ -5954,7 +5957,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       case NODE_ERRINFO:{
 	if (!poped) {
 	    if (iseq->body->type == ISEQ_TYPE_RESCUE) {
-		ADD_INSN2(ret, line, getlocal, INT2FIX(2), INT2FIX(0));
+		ADD_GETLOCAL(ret, line, LVAR_ERRINFO, 0);
 	    }
 	    else {
 		const rb_iseq_t *ip = iseq;
@@ -5967,7 +5970,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		    level++;
 		}
 		if (ip) {
-		    ADD_INSN2(ret, line, getlocal, INT2FIX(2), INT2FIX(level));
+		    ADD_GETLOCAL(ret, line, LVAR_ERRINFO, level);
 		}
 		else {
 		    ADD_INSN(ret, line, putnil);
@@ -6032,10 +6035,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 		 *   kw = default_value
 		 * end
 		 */
-		int kw_bits_idx = iseq->body->local_size - iseq->body->param.keyword->bits_start;
+		int kw_bits_idx = iseq->body->local_table_size - iseq->body->param.keyword->bits_start;
 		int keyword_idx = iseq->body->param.keyword->num;
 
-		ADD_INSN2(ret, line, checkkeyword, INT2FIX(kw_bits_idx), INT2FIX(keyword_idx));
+		ADD_INSN2(ret, line, checkkeyword, INT2FIX(kw_bits_idx + VM_ENV_DATA_SIZE - 1), INT2FIX(keyword_idx));
 		ADD_INSNL(ret, line, branchif, end_label);
 		COMPILE_POPED(ret, "keyword default argument", node->nd_body);
 		ADD_LABEL(ret, end_label);
@@ -6779,7 +6782,6 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
     len = RARRAY_LENINT(locals);
     iseq->body->local_table_size = len;
     iseq->body->local_table = tbl = len > 0 ? (ID *)ALLOC_N(ID, iseq->body->local_table_size) : NULL;
-    iseq->body->local_size = iseq->body->local_table_size + 1;
 
     for (i = 0; i < len; i++) {
 	VALUE lv = RARRAY_AREF(locals, i);
@@ -6866,11 +6868,11 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 /* for parser */
 
 int
-rb_dvar_defined(ID id, const rb_block_t *base_block)
+rb_dvar_defined(ID id, const struct rb_block *base_block)
 {
     const rb_iseq_t *iseq;
 
-    if (base_block && (iseq = base_block->iseq)) {
+    if (base_block && (iseq = vm_block_iseq(base_block)) != NULL) {
 	while (iseq->body->type == ISEQ_TYPE_BLOCK ||
 	       iseq->body->type == ISEQ_TYPE_RESCUE ||
 	       iseq->body->type == ISEQ_TYPE_ENSURE ||
@@ -6891,13 +6893,13 @@ rb_dvar_defined(ID id, const rb_block_t *base_block)
 }
 
 int
-rb_local_defined(ID id, const rb_block_t *base_block)
+rb_local_defined(ID id, const struct rb_block *base_block)
 {
     const rb_iseq_t *iseq;
 
-    if (base_block && base_block->iseq) {
+    if (base_block && (iseq = vm_block_iseq(base_block)) != NULL) {
 	unsigned int i;
-	iseq = base_block->iseq->body->local_iseq;
+	iseq = iseq->body->local_iseq;
 
 	for (i=0; i<iseq->body->local_table_size; i++) {
 	    if (iseq->body->local_table[i] == id) {
@@ -6975,7 +6977,7 @@ for_self_aset(rb_iseq_t *iseq, LINK_ANCHOR *ret, VALUE a)
     iseq->body->param.lead_num = 1;
     iseq->body->param.size = 1;
 
-    ADD_INSN2(ret, line, getlocal, INT2FIX(numberof(vars)-0), INT2FIX(0));
+    ADD_GETLOCAL(ret, line, numberof(vars)-1, 0);
     ADD_INSN1(ret, line, putobject, args->arg);
     ADD_INSN1(ret, line, opt_call_c_function, (VALUE)args->func);
     ADD_INSN(ret, line, pop);
@@ -7415,7 +7417,7 @@ ibf_load_line_info_table(const struct ibf_load *load, const struct rb_iseq_const
 static ID *
 ibf_dump_local_table(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
-    const int size = iseq->body->local_size - 1;
+    const int size = iseq->body->local_table_size;
     ID *table = ALLOCA_N(ID, size);
     int i;
 
@@ -7429,7 +7431,7 @@ ibf_dump_local_table(struct ibf_dump *dump, const rb_iseq_t *iseq)
 static ID *
 ibf_load_local_table(const struct ibf_load *load, const struct rb_iseq_constant_body *body)
 {
-    const int size = body->local_size - 1;
+    const int size = body->local_table_size;
 
     if (size > 0) {
 	ID *table = IBF_R(body->local_table, ID, size);
@@ -7596,7 +7598,6 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
     /* memcpy(load_body, load->buff + offset, sizeof(*load_body)); */
     load_body->type = body->type;
     load_body->stack_max = body->stack_max;
-    load_body->local_size = body->local_size;
     load_body->iseq_size = body->iseq_size;
     load_body->param = body->param;
     load_body->local_table_size = body->local_table_size;

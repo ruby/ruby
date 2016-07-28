@@ -759,12 +759,11 @@ int
 rb_block_given_p(void)
 {
     rb_thread_t *th = GET_THREAD();
-
-    if (rb_vm_control_frame_block_ptr(th->cfp)) {
-	return TRUE;
+    if (rb_vm_frame_block_handler(th->cfp) == VM_BLOCK_HANDLER_NONE) {
+	return FALSE;
     }
     else {
-	return FALSE;
+	return TRUE;
     }
 }
 
@@ -1236,15 +1235,15 @@ rb_mod_refine(VALUE module, VALUE klass)
        id_refined_class, id_defined_at;
     VALUE refinements, activated_refinements;
     rb_thread_t *th = GET_THREAD();
-    rb_block_t *block = rb_vm_control_frame_block_ptr(th->cfp);
+    VALUE block_handler = rb_vm_frame_block_handler(th->cfp);
 
-    if (!block) {
-        rb_raise(rb_eArgError, "no block given");
+    if (block_handler == VM_BLOCK_HANDLER_NONE) {
+	rb_raise(rb_eArgError, "no block given");
     }
-    if (block->proc) {
-        rb_raise(rb_eArgError,
-		 "can't pass a Proc as a block to Module#refine");
+    if (vm_block_handler_type(block_handler) != block_handler_type_iseq) {
+	rb_raise(rb_eArgError, "can't pass a Proc as a block to Module#refine");
     }
+
     Check_Type(klass, T_CLASS);
     CONST_ID(id_refinements, "__refinements__");
     refinements = rb_attr_get(module, id_refinements);
@@ -1315,7 +1314,7 @@ mod_using(VALUE self, VALUE module)
 void
 rb_obj_call_init(VALUE obj, int argc, const VALUE *argv)
 {
-    PASS_PASSED_BLOCK();
+    PASS_PASSED_BLOCK_HANDLER();
     rb_funcall2(obj, idInitialize, argc, argv);
 }
 
@@ -1448,7 +1447,7 @@ top_using(VALUE self, VALUE module)
     return self;
 }
 
-static VALUE *
+static const VALUE *
 errinfo_place(rb_thread_t *th)
 {
     rb_control_frame_t *cfp = th->cfp;
@@ -1457,12 +1456,12 @@ errinfo_place(rb_thread_t *th)
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
 	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
 	    if (cfp->iseq->body->type == ISEQ_TYPE_RESCUE) {
-		return &cfp->ep[-2];
+		return &cfp->ep[VM_ENV_INDEX_LAST_LVAR];
 	    }
 	    else if (cfp->iseq->body->type == ISEQ_TYPE_ENSURE &&
-		     !THROW_DATA_P(cfp->ep[-2]) &&
-		     !FIXNUM_P(cfp->ep[-2])) {
-		return &cfp->ep[-2];
+		     !THROW_DATA_P(cfp->ep[VM_ENV_INDEX_LAST_LVAR]) &&
+		     !FIXNUM_P(cfp->ep[VM_ENV_INDEX_LAST_LVAR])) {
+		return &cfp->ep[VM_ENV_INDEX_LAST_LVAR];
 	    }
 	}
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
@@ -1473,7 +1472,7 @@ errinfo_place(rb_thread_t *th)
 static VALUE
 get_thread_errinfo(rb_thread_t *th)
 {
-    VALUE *ptr = errinfo_place(th);
+    const VALUE *ptr = errinfo_place(th);
     if (ptr) {
 	return *ptr;
     }
@@ -1502,7 +1501,7 @@ errinfo_setter(VALUE val, ID id, VALUE *var)
 	rb_raise(rb_eTypeError, "assigning non-exception to $!");
     }
     else {
-	VALUE *ptr = errinfo_place(GET_THREAD());
+	const VALUE *ptr = errinfo_place(GET_THREAD());
 	if (ptr) {
 	    *ptr = val;
 	}

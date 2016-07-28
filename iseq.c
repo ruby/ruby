@@ -607,11 +607,11 @@ rb_iseq_load(VALUE data, VALUE parent, VALUE opt)
 }
 
 rb_iseq_t *
-rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE line, rb_block_t *base_block, VALUE opt)
+rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE line, const struct rb_block *base_block, VALUE opt)
 {
     rb_thread_t *th = GET_THREAD();
     rb_iseq_t *iseq = NULL;
-    const rb_iseq_t *const parent = base_block ? base_block->iseq : NULL;
+    const rb_iseq_t *const parent = base_block ? vm_block_iseq(base_block) : NULL;
     rb_compile_option_t option;
     const enum iseq_type type = parent ? ISEQ_TYPE_EVAL : ISEQ_TYPE_TOP;
 #if !defined(__GNUC__) || (__GNUC__ == 4 && __GNUC_MINOR__ == 8)
@@ -661,7 +661,7 @@ rb_iseq_compile(VALUE src, VALUE file, VALUE line)
 }
 
 rb_iseq_t *
-rb_iseq_compile_on_base(VALUE src, VALUE file, VALUE line, rb_block_t *base_block)
+rb_iseq_compile_on_base(VALUE src, VALUE file, VALUE line, const struct rb_block *base_block)
 {
     return rb_iseq_compile_with_option(src, file, Qnil, line, base_block, Qnil);
 }
@@ -1263,11 +1263,14 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	    if (pnop) {
 		const rb_iseq_t *diseq = iseq;
 		VALUE level = *pnop, i;
+		ID lid;
 
 		for (i = 0; i < level; i++) {
 		    diseq = diseq->body->parent_iseq;
 		}
-		ret = id_to_name(diseq->body->local_table[diseq->body->local_size - op], INT2FIX('*'));
+		lid = diseq->body->local_table[diseq->body->local_table_size +
+					       VM_ENV_DATA_SIZE - 1 - op];
+		ret = id_to_name(lid, INT2FIX('*'));
 	    }
 	    else {
 		ret = rb_sprintf("%"PRIuVALUE, op);
@@ -1520,7 +1523,7 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
 	rb_str_catf(str,
 		    "local table (size: %d, argc: %d "
 		    "[opts: %d, rest: %d, post: %d, block: %d, kw: %d@%d, kwrest: %d])\n",
-		    iseq->body->local_size,
+		    iseq->body->local_table_size,
 		    iseq->body->param.lead_num,
 		    iseq->body->param.opt_num,
 		    iseq->body->param.flags.has_rest ? iseq->body->param.rest_start : -1,
@@ -1553,7 +1556,7 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
 		     (iseq->body->param.flags.has_post && iseq->body->param.post_start <= li && li < iseq->body->param.post_start + iseq->body->param.post_num) ? "Post" : "",
 		     (iseq->body->param.flags.has_block && iseq->body->param.block_start == li) ? "Block" : "");
 
-	    rb_str_catf(str, "[%2d] ", iseq->body->local_size - i);
+	    rb_str_catf(str, "[%2d] ", iseq->body->local_table_size - i);
 	    width = RSTRING_LEN(str) + 11;
 	    if (name)
 		rb_str_append(str, name);
@@ -1646,9 +1649,7 @@ iseqw_s_of(VALUE klass, VALUE body)
     rb_secure(1);
 
     if (rb_obj_is_proc(body)) {
-	rb_proc_t *proc;
-	GetProcPtr(body, proc);
-	iseq = proc->block.iseq;
+	iseq = vm_proc_iseq(body);
 
 	if (!RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	    iseq = NULL;
@@ -2052,7 +2053,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     st_free_table(labels_table);
 
     rb_hash_aset(misc, ID2SYM(rb_intern("arg_size")), INT2FIX(iseq->body->param.size));
-    rb_hash_aset(misc, ID2SYM(rb_intern("local_size")), INT2FIX(iseq->body->local_size));
+    rb_hash_aset(misc, ID2SYM(rb_intern("local_size")), INT2FIX(iseq->body->local_table_size));
     rb_hash_aset(misc, ID2SYM(rb_intern("stack_max")), INT2FIX(iseq->body->stack_max));
 
     /* TODO: compatibility issue */

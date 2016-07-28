@@ -1,3 +1,23 @@
+Thu Jul 28 19:53:21 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: revisit the structure of frame, block and env.
+	  [Bug #12628]
+
+	  This patch introduce many changes.
+
+	  * Introduce concept of "Block Handler (BH)" to represent
+	    passed blocks.
+
+	  * move rb_control_frame_t::flag to ep[0] (as a special local
+	    variable). This flags represents not only frame type, but also
+	    env flags such as escaped.
+
+	  * rename `rb_block_t` to `struct rb_block`.
+
+	  * Make Proc, Binding and RubyVM::Env objects wb-protected.
+
+	  Check [Bug #12628] for more details.
+
 Thu Jul 28 15:05:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (ruby_fl_type): use __extension__ to get rid

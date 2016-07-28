@@ -104,7 +104,7 @@ enum vm_regan_acttype {
 /* deal with variables                                    */
 /**********************************************************/
 
-#define GET_PREV_EP(ep)                ((VALUE *)((ep)[0] & ~0x03))
+#define GET_PREV_EP(ep)                ((VALUE *)((ep)[VM_ENV_DATA_INDEX_SPECVAL] & ~0x03))
 
 #define GET_GLOBAL(entry)       rb_gvar_get((struct rb_global_entry*)(entry))
 #define SET_GLOBAL(entry, val)  rb_gvar_set((struct rb_global_entry*)(entry), (val))
@@ -148,7 +148,7 @@ enum vm_regan_acttype {
 #define CI_SET_FASTPATH(ci, func, enabled) /* do nothing */
 #endif
 
-#define GET_BLOCK_PTR() ((rb_block_t *)(GC_GUARDED_PTR_REF(GET_LEP()[0])))
+#define GET_BLOCK_HANDLER() (GET_LEP()[VM_ENV_DATA_INDEX_SPECVAL])
 
 /**********************************************************/
 /* deal with control flow 3: exception                    */
@@ -173,7 +173,7 @@ enum vm_regan_acttype {
 
 #define CALL_SIMPLE_METHOD(recv_) do { \
     struct rb_calling_info calling; \
-    calling.blockptr = NULL; \
+    calling.block_handler = VM_BLOCK_HANDLER_NONE; \
     calling.argc = ci->orig_argc; \
     vm_search_method(ci, cc, calling.recv = (recv_)); \
     CALL_METHOD(&calling, ci, cc); \
@@ -189,7 +189,7 @@ static VALUE make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
 				      int argc, const VALUE *argv, int priv);
 
 static inline struct vm_throw_data *
-THROW_DATA_NEW(VALUE val, rb_control_frame_t *cf, VALUE st)
+THROW_DATA_NEW(VALUE val, const rb_control_frame_t *cf, VALUE st)
 {
     return (struct vm_throw_data *)rb_imemo_new(imemo_throw_data, val, (VALUE)cf, st, 0);
 }

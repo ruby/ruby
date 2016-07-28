@@ -587,10 +587,12 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 		if (!th->first_func) {
 		    GetProcPtr(th->first_proc, proc);
 		    th->errinfo = Qnil;
-		    th->root_lep = rb_vm_ep_local_ep(proc->block.ep);
+		    th->root_lep = rb_vm_ep_local_ep(vm_proc_ep(th->first_proc));
 		    th->root_svar = Qfalse;
 		    EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, Qundef);
-		    th->value = rb_vm_invoke_proc(th, proc, (int)RARRAY_LEN(args), RARRAY_CONST_PTR(args), 0);
+		    th->value = rb_vm_invoke_proc(th, proc,
+						  (int)RARRAY_LEN(args), RARRAY_CONST_PTR(args),
+						  VM_BLOCK_HANDLER_NONE);
 		    EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_END, th->self, 0, 0, Qundef);
 		}
 		else {

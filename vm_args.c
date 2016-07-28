@@ -466,22 +466,22 @@ args_setup_kw_rest_parameter(VALUE keyword_hash, VALUE *locals)
 static inline void
 args_setup_block_parameter(rb_thread_t *th, struct rb_calling_info *calling, VALUE *locals)
 {
+    VALUE block_handler = calling->block_handler;
     VALUE blockval = Qnil;
-    const rb_block_t *blockptr = calling->blockptr;
 
-    if (blockptr) {
-	/* make Proc object */
-	if (blockptr->proc == 0) {
-	    rb_proc_t *proc;
-	    blockval = rb_vm_make_proc(th, blockptr, rb_cProc);
-	    GetProcPtr(blockval, proc);
-	    calling->blockptr = &proc->block;
-	}
-	else if (SYMBOL_P(blockptr->proc)) {
-	    blockval = rb_sym_to_proc(blockptr->proc);
-	}
-	else {
-	    blockval = blockptr->proc;
+    if (block_handler != VM_BLOCK_HANDLER_NONE) {
+
+	switch (vm_block_handler_type(block_handler)) {
+	  case block_handler_type_iseq:
+	  case block_handler_type_ifunc:
+	    blockval = rb_vm_make_proc(th, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc);
+	    break;
+	  case block_handler_type_symbol:
+	    blockval = rb_sym_to_proc(VM_BH_TO_SYMBOL(block_handler));
+	    break;
+	  case block_handler_type_proc:
+	    blockval = VM_BH_TO_PROC(block_handler);
+	    break;
 	}
     }
     *locals = blockval;
@@ -698,9 +698,9 @@ raise_argument_error(rb_thread_t *th, const rb_iseq_t *iseq, const VALUE exc)
     VALUE at;
 
     if (iseq) {
-	vm_push_frame(th, iseq, VM_FRAME_MAGIC_DUMMY, Qnil /* self */,
-		      VM_ENVVAL_BLOCK_PTR(0) /* specval*/, Qfalse /* me or cref */,
-		      iseq->body->iseq_encoded, th->cfp->sp, 1 /* local_size (cref/me) */, 0 /* stack_max */);
+	vm_push_frame(th, iseq, VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL, Qnil /* self */,
+		      VM_BLOCK_HANDLER_NONE /* specval*/, Qfalse /* me or cref */,
+		      iseq->body->iseq_encoded, th->cfp->sp, 0, 0 /* stack_max */);
 	at = rb_vm_backtrace_object();
 	rb_vm_pop_frame(th);
     }
@@ -766,16 +766,23 @@ vm_caller_setup_arg_kw(rb_control_frame_t *cfp, struct rb_calling_info *calling,
     calling->argc -= kw_len - 1;
 }
 
-static inline void
-vm_caller_setup_proc_as_block(rb_control_frame_t *reg_cfp,
-			      struct rb_calling_info *calling,
-			      VALUE proc)
+static VALUE
+vm_to_proc(VALUE proc)
 {
-    rb_proc_t *po;
+    if (UNLIKELY(!rb_obj_is_proc(proc))) {
+	VALUE b;
+	b = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
 
-    GetProcPtr(proc, po);
-    calling->blockptr = &po->block;
-    RUBY_VM_GET_BLOCK_PTR_IN_CFP(reg_cfp)->proc = proc;
+	if (NIL_P(b) || !rb_obj_is_proc(b)) {
+	    rb_raise(rb_eTypeError,
+		     "wrong argument type %s (expected Proc)",
+		     rb_obj_classname(proc));
+	}
+	return b;
+    }
+    else {
+	return proc;
+    }
 }
 
 static void
@@ -783,51 +790,31 @@ vm_caller_setup_arg_block(const rb_thread_t *th, rb_control_frame_t *reg_cfp,
 			  struct rb_calling_info *calling, const struct rb_call_info *ci, rb_iseq_t *blockiseq, const int is_super)
 {
     if (ci->flag & VM_CALL_ARGS_BLOCKARG) {
-	VALUE proc;
+	VALUE block_code = *(--reg_cfp->sp);
 
-	proc = *(--reg_cfp->sp);
-
-	if (NIL_P(proc)) {
-	    calling->blockptr = NULL;
-	}
-	else if (SYMBOL_P(proc) &&
-		 rb_method_basic_definition_p(rb_cSymbol, idTo_proc)) {
-	    if (LIKELY(!(ci->flag & VM_CALL_TAILCALL))) {
-		calling->blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(reg_cfp);
-		calling->blockptr->iseq = (rb_iseq_t *)proc;
-		calling->blockptr->proc = proc;
-	    }
-	    else {
-		proc = rb_sym_to_proc(proc);
-		vm_caller_setup_proc_as_block(reg_cfp, calling, proc);
-	    }
+	if (NIL_P(block_code)) {
+	    calling->block_handler = VM_BLOCK_HANDLER_NONE;
 	}
 	else {
-	    if (!rb_obj_is_proc(proc)) {
-		VALUE b;
-		b = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
-
-		if (NIL_P(b) || !rb_obj_is_proc(b)) {
-		    rb_raise(rb_eTypeError,
-			     "wrong argument type %s (expected Proc)",
-			     rb_obj_classname(proc));
-		}
-		proc = b;
+	    if (SYMBOL_P(block_code) && rb_method_basic_definition_p(rb_cSymbol, idTo_proc)) {
+		calling->block_handler = block_code;
 	    }
-	    vm_caller_setup_proc_as_block(reg_cfp, calling, proc);
+	    else {
+		calling->block_handler = vm_to_proc(block_code);
+	    }
 	}
     }
-    else if (blockiseq != 0) { /* likely */
-	rb_block_t *blockptr = calling->blockptr = RUBY_VM_GET_BLOCK_PTR_IN_CFP(reg_cfp);
-	blockptr->iseq = blockiseq;
-	blockptr->proc = 0;
+    else if (blockiseq != NULL) { /* likely */
+	struct rb_captured_block *captured = VM_CFP_TO_CAPTURED_BLOCK(reg_cfp);
+	captured->code.iseq = blockiseq;
+	calling->block_handler = VM_BH_FROM_ISEQ_BLOCK(captured);
     }
     else {
 	if (is_super) {
-	    calling->blockptr = GET_BLOCK_PTR();
+	    calling->block_handler = GET_BLOCK_HANDLER();
 	}
 	else {
-	    calling->blockptr = NULL;
+	    calling->block_handler = VM_BLOCK_HANDLER_NONE;
 	}
     }
 }

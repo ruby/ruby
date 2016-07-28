@@ -58,7 +58,7 @@ getlocal
 (VALUE val)
 {
     int i, lev = (int)level;
-    VALUE *ep = GET_EP();
+    const VALUE *ep = GET_EP();
 
     /* optimized insns generated for level == (0|1) in defs/opt_operand.def */
     for (i = 0; i < lev; i++) {
@@ -81,13 +81,13 @@ setlocal
 ()
 {
     int i, lev = (int)level;
-    VALUE *ep = GET_EP();
+    const VALUE *ep = GET_EP();
 
     /* optimized insns generated for level == (0|1) in defs/opt_operand.def */
     for (i = 0; i < lev; i++) {
 	ep = GET_PREV_EP(ep);
     }
-    *(ep - idx) = val;
+    vm_env_write(ep, -(int)idx, val);
 }
 
 /**
@@ -790,7 +790,7 @@ checkkeyword
 	ret = (bits & (0x01 << keyword_index)) ? Qfalse : Qtrue;
     }
     else {
-	assert(RB_TYPE_P(kw_bits, T_HASH));
+	VM_ASSERT(RB_TYPE_P(kw_bits, T_HASH));
 	ret = rb_hash_has_key(kw_bits, INT2FIX(keyword_index)) ? Qfalse : Qtrue;
     }
 }
@@ -932,11 +932,11 @@ defineclass
     rb_iseq_check(class_iseq);
 
     /* enter scope */
-    vm_push_frame(th, class_iseq, VM_FRAME_MAGIC_CLASS, klass,
-		  VM_ENVVAL_BLOCK_PTR(GET_BLOCK_PTR()),
+    vm_push_frame(th, class_iseq, VM_FRAME_MAGIC_CLASS | VM_ENV_FLAG_LOCAL, klass,
+		  GET_BLOCK_HANDLER(),
 		  (VALUE)vm_cref_push(th, klass, NULL, FALSE),
 		  class_iseq->body->iseq_encoded, GET_SP(),
-		  class_iseq->body->local_size,
+		  class_iseq->body->local_table_size,
 		  class_iseq->body->stack_max);
     RESTORE_REGS();
     NEXT_INSN();
@@ -1059,7 +1059,7 @@ opt_send_without_block
 (VALUE val) // inc += -ci->orig_argc;
 {
     struct rb_calling_info calling;
-    calling.blockptr = NULL;
+    calling.block_handler = VM_BLOCK_HANDLER_NONE;
     vm_search_method(ci, cc, calling.recv = TOPN(calling.argc = ci->orig_argc));
     CALL_METHOD(&calling, ci, cc);
 }
@@ -1097,7 +1097,7 @@ invokeblock
 {
     struct rb_calling_info calling;
     calling.argc = ci->orig_argc;
-    calling.blockptr = NULL;
+    calling.block_handler = VM_BLOCK_HANDLER_NONE;
     calling.recv = GET_SELF();
 
     val = vm_invoke_block(th, GET_CFP(), &calling, ci);

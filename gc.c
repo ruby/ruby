@@ -9158,19 +9158,6 @@ rb_raw_iseq_info(char *buff, const int buff_size, const rb_iseq_t *iseq)
     }
 }
 
-static const rb_iseq_t *
-vm_proc_iseq(VALUE procval)
-{
-    rb_proc_t *proc = RTYPEDDATA_DATA(procval);
-
-    if (RUBY_VM_NORMAL_ISEQ_P(proc->block.iseq)) {
-	return proc->block.iseq;
-    }
-    else {
-	return NULL;
-    }
-}
-
 const char *
 rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 {

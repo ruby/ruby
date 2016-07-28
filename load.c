@@ -997,7 +997,7 @@ rb_require_internal(VALUE fname, int safe)
 
 		  case 's':
 		    handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
-						    path, 0, path);
+						    path, VM_BLOCK_HANDLER_NONE, path);
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
 		    break;
 		}

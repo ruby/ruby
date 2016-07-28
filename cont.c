@@ -174,6 +174,7 @@ cont_mark(void *ptr)
     if (ptr) {
 	rb_context_t *cont = ptr;
 	rb_gc_mark(cont->value);
+
 	rb_thread_mark(&cont->saved_thread);
 	rb_gc_mark(cont->saved_thread.self);
 
@@ -490,7 +491,7 @@ cont_capture(volatile int *stat)
     cont->vm_stack = ALLOC_N(VALUE, th->stack_size);
     MEMCPY(cont->vm_stack, th->stack, VALUE, th->stack_size);
 #endif
-    cont->saved_thread.stack = 0;
+    cont->saved_thread.stack = NULL;
 
     cont_save_machine_stack(th, cont);
 
@@ -539,7 +540,7 @@ cont_restore_thread(rb_context_t *cont)
 	th->fiber = sth->fiber;
 	fib = th->fiber ? th->fiber : th->root_fiber;
 
-	if (fib) {
+	if (fib && fib->cont.saved_thread.stack) {
 	    th->stack_size = fib->cont.saved_thread.stack_size;
 	    th->stack = fib->cont.saved_thread.stack;
 	}
@@ -554,6 +555,7 @@ cont_restore_thread(rb_context_t *cont)
     else {
 	/* fiber */
 	th->stack = sth->stack;
+	sth->stack = NULL;
 	th->stack_size = sth->stack_size;
 	th->local_storage = sth->local_storage;
 	th->local_storage_recursive_hash = sth->local_storage_recursive_hash;
@@ -573,7 +575,6 @@ cont_restore_thread(rb_context_t *cont)
     th->root_lep = sth->root_lep;
     th->root_svar = sth->root_svar;
     th->ensure_list = sth->ensure_list;
-
 }
 
 #if FIBER_USE_NATIVE
@@ -727,7 +728,6 @@ fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib)
 	rb_bug("non_root_fiber->context.uc_stac.ss_sp should not be NULL");
     }
 #endif
-
     /* swap machine context */
 #ifdef _WIN32
     SwitchToFiber(newfib->fib_handle);
@@ -1084,7 +1084,6 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
 
     /* restore `tracing' context. see [Feature #4347] */
     th->trace_arg = cont->saved_thread.trace_arg;
-
     cont_restore_0(cont, &contval);
     return Qnil; /* unreachable */
 }
@@ -1190,6 +1189,18 @@ fiber_t_alloc(VALUE fibval)
     return fib;
 }
 
+rb_control_frame_t *
+rb_vm_push_frame(rb_thread_t *th,
+		 const rb_iseq_t *iseq,
+		 VALUE type,
+		 VALUE self,
+		 VALUE specval,
+		 VALUE cref_or_me,
+		 const VALUE *pc,
+		 VALUE *sp,
+		 int local_size,
+		 int stack_max);
+
 static VALUE
 fiber_init(VALUE fibval, VALUE proc)
 {
@@ -1201,27 +1212,24 @@ fiber_init(VALUE fibval, VALUE proc)
     /* initialize cont */
     cont->vm_stack = 0;
 
-    th->stack = 0;
+    th->stack = NULL;
     th->stack_size = 0;
 
     th->stack_size = cth->vm->default_params.fiber_vm_stack_size / sizeof(VALUE);
     th->stack = ALLOC_N(VALUE, th->stack_size);
-
     th->cfp = (void *)(th->stack + th->stack_size);
-    th->cfp--;
-    th->cfp->pc = 0;
-    th->cfp->sp = th->stack + 2;
-#if VM_DEBUG_BP_CHECK
-    th->cfp->bp_check = 0;
-#endif
-    th->cfp->ep = th->stack + 1;
-    th->cfp->ep[ 0] = VM_ENVVAL_BLOCK_PTR(0);
-    th->cfp->ep[-1] = 0;
-    th->cfp->self = Qnil;
-    th->cfp->flag = VM_FRAME_MAGIC_DUMMY | VM_FRAME_FLAG_FINISH;
-    th->cfp->iseq = 0;
-    th->cfp->proc = 0;
-    th->cfp->block_iseq = 0;
+
+    rb_vm_push_frame(th,
+		     NULL,
+		     VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH,
+		     Qnil, /* self */
+		     VM_BLOCK_HANDLER_NONE,
+		     0, /* specval */
+		     NULL, /* pc */
+		     th->stack, /* sp */
+		     0, /* local_size */
+		     0);
+
     th->tag = 0;
     th->local_storage = st_init_numtable();
     th->local_storage_recursive_hash = Qnil;
@@ -1268,12 +1276,12 @@ rb_fiber_start(void)
 	argv = (argc = cont->argc) > 1 ? RARRAY_CONST_PTR(args) : &args;
 	cont->value = Qnil;
 	th->errinfo = Qnil;
-	th->root_lep = rb_vm_ep_local_ep(proc->block.ep);
+	th->root_lep = rb_vm_ep_local_ep(vm_block_ep(&proc->block));
 	th->root_svar = Qfalse;
 	fib->status = RUNNING;
 
 	EXEC_EVENT_HOOK(th, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, Qnil);
-	cont->value = rb_vm_invoke_proc(th, proc, argc, argv, 0);
+	cont->value = rb_vm_invoke_proc(th, proc, argc, argv, VM_BLOCK_HANDLER_NONE);
     }
     TH_POP_TAG();
 

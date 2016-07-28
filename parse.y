@@ -228,8 +228,6 @@ vtable_included(const struct vtable * tbl, ID id)
     return 0;
 }
 
-typedef struct rb_block_struct rb_block_t;
-
 typedef struct token_info {
     const char *token;
     int linenum;
@@ -316,7 +314,7 @@ struct parser_params {
     VALUE error_buffer;
     VALUE debug_lines;
     VALUE coverage;
-    const rb_block_t *base_block;
+    const struct rb_block *base_block;
 #else
     /* Ripper only */
 
@@ -10893,7 +10891,7 @@ rb_parser_new(void)
 }
 
 VALUE
-rb_parser_set_context(VALUE vparser, const rb_block_t *base, int main)
+rb_parser_set_context(VALUE vparser, const struct rb_block *base, int main)
 {
     struct parser_params *parser;
 

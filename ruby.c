@@ -639,13 +639,10 @@ require_libraries(VALUE *req_list)
     *req_list = 0;
 }
 
-static rb_block_t*
+static const struct rb_block*
 toplevel_context(rb_binding_t *bind)
 {
-    rb_env_t *env;
-
-    GetEnvPtr(bind->env, env);
-    return &env->block;
+    return &bind->block;
 }
 
 static void
@@ -1447,7 +1444,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
     char fbuf[MAXPATHLEN];
     int i = (int)proc_options(argc, argv, opt, 0);
     rb_binding_t *toplevel_binding;
-    rb_block_t *base_block;
+    const struct rb_block *base_block;
 
     argc -= i;
     argv += i;
@@ -1700,7 +1697,7 @@ process_options(int argc, char **argv, struct cmdline_options *opt)
 	    path = rb_realpath_internal(Qnil, opt->script_name, 1);
 	}
 	base_block = toplevel_context(toplevel_binding);
-	iseq = rb_iseq_new_main(tree, opt->script_name, path, base_block->iseq);
+	iseq = rb_iseq_new_main(tree, opt->script_name, path, vm_block_iseq(base_block));
     }
 
     if (opt->dump & DUMP_BIT(insns)) {

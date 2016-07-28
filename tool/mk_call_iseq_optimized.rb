@@ -10,7 +10,7 @@ puts <<EOS
 EOS
 
 P = (0..3)
-L = (1..6)
+L = (0..5)
 
 def fname param, local
   "vm_call_iseq_setup_normal_0start_#{param}params_#{local}locals"
@@ -48,8 +48,8 @@ vm_call_iseq_setup_func(const struct rb_call_info *ci, const int param_size, con
     else {
 	if (param_size <= #{P.end} &&
 	    local_size <= #{L.end}) {
-	    VM_ASSERT(local_size != 0);
-	    return vm_call_iseq_handlers[param_size][local_size-1];
+	    VM_ASSERT(local_size >= 0);
+	    return vm_call_iseq_handlers[param_size][local_size];
 	}
 	return &vm_call_iseq_setup_normal_0start;
     }
