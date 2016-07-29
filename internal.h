@@ -102,6 +102,16 @@ extern "C" {
 #define MUL_OVERFLOW_LONG_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LONG_MIN, LONG_MAX)
 #define MUL_OVERFLOW_INT_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, INT_MIN, INT_MAX)
 
+#ifdef HAVE_BUILTIN___BUILTIN_ADD_OVERFLOW
+#define SATURATION_ADD(x, y) \
+    (__builtin_add_overflow(x, y, &x) ? \
+     (x = SIGNED_INTEGER_MAX(typeof(x))) : x)
+#else
+#define SATURATION_ADD(x, y) do { \
+    ((x <= SIGNED_INTEGER_MAX(typeof(x)) - y) ? \
+     (x += y, x) : SIGNED_INTEGER_MAX(typeof(x)))
+#endif
+
 #ifndef swap16
 # ifdef HAVE_BUILTIN___BUILTIN_BSWAP16
 #  define swap16(x) __builtin_bswap16(x)
