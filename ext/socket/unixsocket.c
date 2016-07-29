@@ -422,7 +422,7 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
 	ff_argc = mode == Qnil ? 1 : 2;
 	ff_argv[0] = INT2FIX(fd);
 	ff_argv[1] = mode;
-        return rb_funcall2(klass, for_fd, ff_argc, ff_argv);
+        return rb_funcallv(klass, for_fd, ff_argc, ff_argv);
     }
 }
 #else

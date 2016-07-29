@@ -1,3 +1,8 @@
+Fri Jul 29 20:57:12 2016  chuanshuo  <lilijreey@126.com>
+
+	* *.c: rename rb_funcall2 to rb_funcallv, except for extensions
+	  which are/will be/may be gems.  [Fix GH-1406]
+
 Fri Jul 29 10:51:34 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* proc.c (env_write): remove unused function.

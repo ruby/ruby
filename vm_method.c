@@ -610,7 +610,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 	    recv_class = rb_ivar_get((klass), attached);	\
 	    hook_id = singleton_##hook;			\
 	}						\
-	rb_funcall2(recv_class, hook_id, 1, &arg);	\
+	rb_funcallv(recv_class, hook_id, 1, &arg);	\
     } while (0)
 
 static void

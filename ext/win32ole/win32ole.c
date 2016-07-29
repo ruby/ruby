@@ -383,7 +383,7 @@ static /* [local] */ HRESULT ( STDMETHODCALLTYPE Invoke )(
             mid = rb_intern("value");
         }
     }
-    v = rb_funcall2(p->obj, mid, args, parg);
+    v = rb_funcallv(p->obj, mid, args, parg);
     ole_val2variant(v, pVarResult);
     return S_OK;
 }
