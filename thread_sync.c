@@ -1157,7 +1157,7 @@ static VALUE
 do_sleep(VALUE args)
 {
     struct sleep_call *p = (struct sleep_call *)args;
-    return rb_funcall2(p->mutex, id_sleep, 1, &p->timeout);
+    return rb_funcallv(p->mutex, id_sleep, 1, &p->timeout);
 }
 
 static VALUE

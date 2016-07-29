@@ -634,7 +634,7 @@ require_libraries(VALUE *req_list)
 	rb_enc_associate(feature, extenc);
 	RBASIC_SET_CLASS_RAW(feature, rb_cString);
 	OBJ_FREEZE(feature);
-	rb_funcall2(self, require, 1, &feature);
+	rb_funcallv(self, require, 1, &feature);
     }
     *req_list = 0;
 }

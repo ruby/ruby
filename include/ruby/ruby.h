@@ -1768,6 +1768,7 @@ VALUE rb_eval_string_wrap(const char*, int*);
 VALUE rb_funcall(VALUE, ID, int, ...);
 VALUE rb_funcallv(VALUE, ID, int, const VALUE*);
 VALUE rb_funcallv_public(VALUE, ID, int, const VALUE*);
+/* use rb_funcallv replace the rb_funcall2 you need it */
 #define rb_funcall2 rb_funcallv
 #define rb_funcall3 rb_funcallv_public
 VALUE rb_funcall_passing_block(VALUE, ID, int, const VALUE*);

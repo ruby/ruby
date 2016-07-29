@@ -486,7 +486,7 @@ rb_digest_class_s_digest(int argc, VALUE *argv, VALUE klass)
 static VALUE
 rb_digest_class_s_hexdigest(int argc, VALUE *argv, VALUE klass)
 {
-    return hexencode_str_new(rb_funcall2(klass, id_digest, argc, argv));
+    return hexencode_str_new(rb_funcallv(klass, id_digest, argc, argv));
 }
 
 /* :nodoc: */

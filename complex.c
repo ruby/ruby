@@ -468,7 +468,7 @@ f_complex_new2(VALUE klass, VALUE x, VALUE y)
 static VALUE
 nucomp_f_complex(int argc, VALUE *argv, VALUE klass)
 {
-    return rb_funcall2(rb_cComplex, id_convert, argc, argv);
+    return rb_funcallv(rb_cComplex, id_convert, argc, argv);
 }
 
 #define imp1(n) \
@@ -1582,7 +1582,7 @@ nucomp_rationalize(int argc, VALUE *argv, VALUE self)
        rb_raise(rb_eRangeError, "can't convert %"PRIsVALUE" into Rational",
                 self);
     }
-    return rb_funcall2(dat->real, rb_intern("rationalize"), argc, argv);
+    return rb_funcallv(dat->real, rb_intern("rationalize"), argc, argv);
 }
 
 /*

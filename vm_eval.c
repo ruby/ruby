@@ -853,7 +853,7 @@ rb_funcallv(VALUE recv, ID mid, int argc, const VALUE *argv)
 /*!
  * Calls a method.
  *
- * Same as rb_funcall2 but this function can call only public methods.
+ * Same as rb_funcallv but this function can call only public methods.
  * \param recv   receiver of the method
  * \param mid    an ID that represents the name of the method
  * \param argc   the number of arguments
@@ -1543,7 +1543,7 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
     rb_set_safe_level_force(level);
     if ((state = TH_EXEC_TAG()) == 0) {
 	if (!RB_TYPE_P(cmd, T_STRING)) {
-	    val = rb_funcall2(cmd, idCall, RARRAY_LENINT(arg),
+	    val = rb_funcallv(cmd, idCall, RARRAY_LENINT(arg),
 			      RARRAY_CONST_PTR(arg));
 	}
 	else {

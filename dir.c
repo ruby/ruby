@@ -2364,7 +2364,7 @@ dir_s_glob(int argc, VALUE *argv, VALUE obj)
 static VALUE
 dir_open_dir(int argc, VALUE *argv)
 {
-    VALUE dir = rb_funcall2(rb_cDir, rb_intern("open"), argc, argv);
+    VALUE dir = rb_funcallv(rb_cDir, rb_intern("open"), argc, argv);
 
     rb_check_typeddata(dir, &dir_data_type);
     return dir;

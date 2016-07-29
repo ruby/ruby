@@ -101,7 +101,7 @@ rb_digest_s_bubblebabble(VALUE klass, VALUE str)
 static VALUE
 rb_digest_class_s_bubblebabble(int argc, VALUE *argv, VALUE klass)
 {
-    return bubblebabble_str_new(rb_funcall2(klass, id_digest, argc, argv));
+    return bubblebabble_str_new(rb_funcallv(klass, id_digest, argc, argv));
 }
 
 /* Document-method: Digest::Instance#bubblebabble

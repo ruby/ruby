@@ -1528,7 +1528,7 @@ lazy_map(VALUE obj)
 static VALUE
 lazy_flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, yielder))
 {
-    return rb_funcall2(yielder, id_yield, argc, argv);
+    return rb_funcallv(yielder, id_yield, argc, argv);
 }
 
 static VALUE
@@ -1830,7 +1830,7 @@ lazy_take_func(RB_BLOCK_CALL_FUNC_ARGLIST(val, args))
 	memo = args;
     }
 
-    rb_funcall2(argv[0], id_yield, argc - 1, argv + 1);
+    rb_funcallv(argv[0], id_yield, argc - 1, argv + 1);
     if ((remain = NUM2LONG(memo)-1) == 0) {
 	return Qundef;
     }
@@ -1875,7 +1875,7 @@ lazy_take_while_func(RB_BLOCK_CALL_FUNC_ARGLIST(val, args))
 {
     VALUE result = rb_yield_values2(argc - 1, &argv[1]);
     if (!RTEST(result)) return Qundef;
-    rb_funcall2(argv[0], id_yield, argc - 1, argv + 1);
+    rb_funcallv(argv[0], id_yield, argc - 1, argv + 1);
     return Qnil;
 }
 
@@ -1913,7 +1913,7 @@ lazy_drop_func(RB_BLOCK_CALL_FUNC_ARGLIST(val, args))
 	memo = args;
     }
     if ((remain = NUM2LONG(memo)) == 0) {
-	rb_funcall2(argv[0], id_yield, argc - 1, argv + 1);
+	rb_funcallv(argv[0], id_yield, argc - 1, argv + 1);
     }
     else {
 	rb_ivar_set(argv[0], id_memo, LONG2NUM(--remain));
@@ -1942,7 +1942,7 @@ lazy_drop_while_func(RB_BLOCK_CALL_FUNC_ARGLIST(val, args))
 	rb_ivar_set(argv[0], id_memo, memo = Qtrue);
     }
     if (memo == Qtrue) {
-	rb_funcall2(argv[0], id_yield, argc - 1, argv + 1);
+	rb_funcallv(argv[0], id_yield, argc - 1, argv + 1);
     }
     return Qnil;
 }
@@ -1963,7 +1963,7 @@ lazy_uniq_i(VALUE i, VALUE hash, int argc, const VALUE *argv, VALUE yielder)
 {
     if (rb_hash_add_new_element(hash, i, Qfalse))
 	return Qnil;
-    return rb_funcall2(yielder, id_yield, argc, argv);
+    return rb_funcallv(yielder, id_yield, argc, argv);
 }
 
 static VALUE

@@ -2588,10 +2588,10 @@ rb_hash_flatten(int argc, VALUE *argv, VALUE hash)
 	rb_hash_foreach(hash, flatten_i, ary);
 	if (level - 1 > 0) {
 	    *argv = INT2FIX(level - 1);
-	    rb_funcall2(ary, id_flatten_bang, argc, argv);
+	    rb_funcallv(ary, id_flatten_bang, argc, argv);
 	}
 	else if (level < 0) {
-	    rb_funcall2(ary, id_flatten_bang, 0, 0);
+	    rb_funcallv(ary, id_flatten_bang, 0, 0);
 	}
     }
     else {

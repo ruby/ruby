@@ -1303,7 +1303,7 @@ check_match(VALUE pattern, VALUE target, enum vm_check_match_type type)
 	}
 	else {
 	    /* fallback to funcall (e.g. method_missing) */
-	    return rb_funcall2(pattern, idEqq, 1, &target);
+	    return rb_funcallv(pattern, idEqq, 1, &target);
 	}
       }
       default:

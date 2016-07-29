@@ -5,7 +5,7 @@ VALUE rb_funcall_passing_block(VALUE, ID, int, const VALUE*);
 static VALUE
 with_funcall2(int argc, VALUE *argv, VALUE self)
 {
-    return rb_funcall2(self, rb_intern("target"), argc, argv);
+    return rb_funcallv(self, rb_intern("target"), argc, argv);
 }
 
 static VALUE
