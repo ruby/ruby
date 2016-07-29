@@ -2700,16 +2700,6 @@ localjump_reason(VALUE exc)
 
 rb_cref_t *rb_vm_cref_new_toplevel(void); /* vm.c */
 
-static inline void
-env_write(VALUE envval, const VALUE *ep, int index, VALUE v)
-{
-    VM_ASSERT(VM_ENV_ESCAPED_P(ep));
-    VM_ASSERT(envval == VM_ENV_ENVVAL(ep));
-    VM_ASSERT(vm_assert_env(envval));
-
-    RB_OBJ_WRITE(envval, &ep[index], v);
-}
-
 static const rb_env_t *
 env_clone(const rb_env_t *env, const rb_cref_t *cref)
 {
