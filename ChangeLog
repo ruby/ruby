@@ -1,3 +1,9 @@
+Fri Jul 29 10:49:52 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h (VM_LOCAL_P): should return an integer value.
+	  reported at
+	  http://d.hatena.ne.jp/nagachika/20160728/ruby_trunk_changes_55764_55770
+
 Fri Jul 29 04:23:08 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h (VM_ENV_LOCAL_P): return truthy (0 or not) value.
