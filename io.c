@@ -6606,7 +6606,7 @@ rb_f_open(int argc, VALUE *argv)
 	}
     }
     if (redirect) {
-	VALUE io = rb_funcall2(argv[0], to_open, argc-1, argv+1);
+	VALUE io = rb_funcallv(argv[0], to_open, argc-1, argv+1);
 
 	if (rb_block_given_p()) {
 	    return rb_ensure(rb_yield, io, io_close, io);
@@ -7079,7 +7079,7 @@ rb_f_putc(VALUE recv, VALUE ch)
     if (recv == rb_stdout) {
 	return rb_io_putc(recv, ch);
     }
-    return rb_funcall2(rb_stdout, rb_intern("putc"), 1, &ch);
+    return rb_funcallv(rb_stdout, rb_intern("putc"), 1, &ch);
 }
 
 
@@ -7184,7 +7184,7 @@ rb_f_puts(int argc, VALUE *argv, VALUE recv)
     if (recv == rb_stdout) {
 	return rb_io_puts(argc, argv, recv);
     }
-    return rb_funcall2(rb_stdout, rb_intern("puts"), argc, argv);
+    return rb_funcallv(rb_stdout, rb_intern("puts"), argc, argv);
 }
 
 void
@@ -8206,7 +8206,7 @@ rb_f_gets(int argc, VALUE *argv, VALUE recv)
     if (recv == argf) {
 	return argf_gets(argc, argv, argf);
     }
-    return rb_funcall2(argf, idGets, argc, argv);
+    return rb_funcallv(argf, idGets, argc, argv);
 }
 
 /*
@@ -8279,7 +8279,7 @@ rb_f_readline(int argc, VALUE *argv, VALUE recv)
     if (recv == argf) {
 	return argf_readline(argc, argv, argf);
     }
-    return rb_funcall2(argf, rb_intern("readline"), argc, argv);
+    return rb_funcallv(argf, rb_intern("readline"), argc, argv);
 }
 
 
@@ -8332,7 +8332,7 @@ rb_f_readlines(int argc, VALUE *argv, VALUE recv)
     if (recv == argf) {
 	return argf_readlines(argc, argv, argf);
     }
-    return rb_funcall2(argf, rb_intern("readlines"), argc, argv);
+    return rb_funcallv(argf, rb_intern("readlines"), argc, argv);
 }
 
 /*
@@ -10864,7 +10864,7 @@ rb_io_set_encoding(int argc, VALUE *argv, VALUE io)
     VALUE v1, v2, opt;
 
     if (!RB_TYPE_P(io, T_FILE)) {
-        return rb_funcall2(io, id_set_encoding, argc, argv);
+        return rb_funcallv(io, id_set_encoding, argc, argv);
     }
 
     argc = rb_scan_args(argc, argv, "11:", &v1, &v2, &opt);

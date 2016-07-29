@@ -605,7 +605,7 @@ f_rational_new_no_reduce2(VALUE klass, VALUE x, VALUE y)
 static VALUE
 nurat_f_rational(int argc, VALUE *argv, VALUE klass)
 {
-    return rb_funcall2(rb_cRational, id_convert, argc, argv);
+    return rb_funcallv(rb_cRational, id_convert, argc, argv);
 }
 
 /*

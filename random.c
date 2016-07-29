@@ -957,7 +957,7 @@ rb_random_real(VALUE obj)
 {
     rb_random_t *rnd = try_get_rnd(obj);
     if (!rnd) {
-	VALUE v = rb_funcall2(obj, id_rand, 0, 0);
+	VALUE v = rb_funcallv(obj, id_rand, 0, 0);
 	double d = NUM2DBL(v);
 	if (d < 0.0) {
 	    rb_raise(rb_eRangeError, "random number too small %g", d);
@@ -1018,7 +1018,7 @@ rb_random_ulong_limited(VALUE obj, unsigned long limit)
     rb_random_t *rnd = try_get_rnd(obj);
     if (!rnd) {
 	VALUE lim = ulong_to_num_plus_1(limit);
-	VALUE v = rb_to_int(rb_funcall2(obj, id_rand, 1, &lim));
+	VALUE v = rb_to_int(rb_funcallv(obj, id_rand, 1, &lim));
 	unsigned long r = NUM2ULONG(v);
 	if (rb_num_negative_p(v)) {
 	    rb_raise(rb_eRangeError, "random number too small %ld", r);
@@ -1121,7 +1121,7 @@ range_values(VALUE vmax, VALUE *begp, VALUE *endp, int *exclp)
     if (!rb_range_values(vmax, begp, &end, exclp)) return Qfalse;
     if (endp) *endp = end;
     if (!rb_respond_to(end, id_minus)) return Qfalse;
-    r = rb_funcall2(end, id_minus, 1, begp);
+    r = rb_funcallv(end, id_minus, 1, begp);
     if (NIL_P(r)) return Qfalse;
     return r;
 }
@@ -1270,7 +1270,7 @@ rand_range(VALUE obj, rb_random_t* rnd, VALUE range)
 	}
       }
       default:
-	return rb_funcall2(beg, id_plus, 1, &v);
+	return rb_funcallv(beg, id_plus, 1, &v);
     }
 
     return v;

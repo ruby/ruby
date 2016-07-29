@@ -133,7 +133,7 @@ with_gvl_callback(void *ptr)
         }
     }
 
-    ret = rb_funcall2(self, rb_intern("call"), argc, RARRAY_CONST_PTR(params));
+    ret = rb_funcallv(self, rb_intern("call"), argc, RARRAY_CONST_PTR(params));
     RB_GC_GUARD(params);
 
     type = NUM2INT(ctype);

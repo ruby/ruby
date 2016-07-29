@@ -1315,7 +1315,7 @@ void
 rb_obj_call_init(VALUE obj, int argc, const VALUE *argv)
 {
     PASS_PASSED_BLOCK_HANDLER();
-    rb_funcall2(obj, idInitialize, argc, argv);
+    rb_funcallv(obj, idInitialize, argc, argv);
 }
 
 void
