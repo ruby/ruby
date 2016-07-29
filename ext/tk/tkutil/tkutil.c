@@ -206,7 +206,7 @@ tk_do_callback(argc, argv, self)
     rb_scan_args(argc, argv, "1*", &id, &rest);
     return rb_apply(rb_hash_aref(CALLBACK_TABLE, id), ID_call, rest);
 #endif
-    return rb_funcall2(rb_hash_aref(CALLBACK_TABLE, argv[0]),
+    return rb_funcallv(rb_hash_aref(CALLBACK_TABLE, argv[0]),
                        ID_call, argc - 1, argv + 1);
 }
 
@@ -275,7 +275,7 @@ tk_toUTF8(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    return rb_funcall2(cTclTkLib, ID_toUTF8, argc, argv);
+    return rb_funcallv(cTclTkLib, ID_toUTF8, argc, argv);
 }
 
 static VALUE
@@ -284,7 +284,7 @@ tk_fromUTF8(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    return rb_funcall2(cTclTkLib, ID_fromUTF8, argc, argv);
+    return rb_funcallv(cTclTkLib, ID_fromUTF8, argc, argv);
 }
 
 static VALUE

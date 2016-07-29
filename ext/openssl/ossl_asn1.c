@@ -72,7 +72,7 @@ asn1time_to_time(ASN1_TIME *time)
     argv[4] = INT2NUM(tm.tm_min);
     argv[5] = INT2NUM(tm.tm_sec);
 
-    return rb_funcall2(rb_cTime, rb_intern("utc"), 6, argv);
+    return rb_funcallv(rb_cTime, rb_intern("utc"), 6, argv);
 }
 
 #if defined(HAVE_ASN1_TIME_ADJ)
