@@ -229,6 +229,35 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal([false, false], m2.call(self, m2), "#{bug8531} nested without block")
   end
 
+  def test_block_curry_proc
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+    b = proc { true }.curry
+    assert(b.call, "without block")
+    assert(b.call { |o| o.to_s }, "with block")
+    assert(b.call(&:to_s), "with sym block")
+    end;
+  end
+
+  def test_block_curry_lambda
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+    b = lambda { true }.curry
+    assert(b.call, "without block")
+    assert(b.call { |o| o.to_s }, "with block")
+    assert(b.call(&:to_s), "with sym block")
+    end;
+  end
+
+  def test_block_method_to_proc
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+    b = method(:tap).to_proc
+    assert(b.call { |o| o.to_s }, "with block")
+    assert(b.call(&:to_s), "with sym block")
+    end;
+  end
+
   def test_succ
     assert_equal(:fop, :foo.succ)
   end

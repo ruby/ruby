@@ -1,3 +1,9 @@
+Sat Jul 30 12:10:51 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (passed_block): convert passed block symbol to proc.
+	  based on the patch by Daisuke Sato in [ruby-dev:49695].
+	  [Bug #12531]
+
 Sat Jul 30 10:58:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_throw_start): check if the iseq is symbol
