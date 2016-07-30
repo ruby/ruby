@@ -34,6 +34,12 @@ module Win32
       [ search, nameserver ]
     end
   end
+end
+
+begin
+  require 'win32/resolv.so'
+rescue LoadError
+end
 
 nt = Module.new do
   break true if [nil].pack("p").size > 4
@@ -48,6 +54,7 @@ if not nt
   require_relative 'resolv9x'
   # return # does not work yet
 else
+module Win32
 #====================================================================
 # Windows NT
 #====================================================================
@@ -64,7 +71,7 @@ else
 
       def get_info
         search = nil
-        nameserver = []
+        nameserver = get_dns_server_list
         Registry::HKEY_LOCAL_MACHINE.open(TCPIP_NT) do |reg|
           begin
             slist = reg.read_s('SearchList')
@@ -91,20 +98,15 @@ else
           reg.open('Interfaces') do |h|
             h.each_key do |iface, |
               h.open(iface) do |regif|
-                begin
-                  [ 'NameServer', 'DhcpNameServer' ].each do |key|
-                    begin
-                      ns = regif.read_s(key)
-                    rescue
-                    else
-                      unless ns.empty?
-                        nameserver.concat(ns.split(/[,\s]\s*/))
-                        break
-                      end
-                    end
+                next unless ns = %w[NameServer DhcpNameServer].find do |key|
+                  begin
+                    ns = regif.read_s(key)
+                  rescue Registry::Error
+                  else
+                    break ns.split(/[,\s]\s*/) unless ns.empty?
                   end
-                rescue Registry::Error
                 end
+                next if (nameserver & ns).empty?
 
                 if add_search
                   begin
