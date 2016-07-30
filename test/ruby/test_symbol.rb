@@ -157,6 +157,15 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal(1, first, bug11594)
   end
 
+  private def return_from_proc
+    Proc.new { return 1 }.tap(&:call)
+  end
+
+  def test_return_from_symbol_proc
+    bug12462 = '[ruby-core:75856] [Bug #12462]'
+    assert_equal(1, return_from_proc, bug12462)
+  end
+
   def test_to_proc_for_hash_each
     bug11830 = '[ruby-core:72205] [Bug #11830]'
     assert_normal_exit(<<-'end;', bug11830) # do
