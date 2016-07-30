@@ -262,7 +262,7 @@ TestComprehensiveCaseFold.data_files_available? and  class TestComprehensiveCase
   generate_case_mapping_tests 'US-ASCII'
   generate_case_mapping_tests 'ASCII-8BIT'
   generate_case_mapping_tests 'ISO-8859-1'
-  generate_ascii_only_case_mapping_tests 'ISO-8859-2'
+  generate_case_mapping_tests 'ISO-8859-2'
   generate_case_mapping_tests 'ISO-8859-3'
   generate_case_mapping_tests 'ISO-8859-4'
   generate_case_mapping_tests 'ISO-8859-5'

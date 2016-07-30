@@ -1,3 +1,8 @@
+Sat Jul 30 12:00:01 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/iso_8859_2.c, test/ruby/enc/test_case_comprehensive.rb:
+	  Implement non-ASCII case conversion for ISO-8859-2, by Yushiro Ishii.
+
 Fri Jul 29 20:57:12 2016  chuanshuo  <lilijreey@126.com>
 
 	* *.c: rename rb_funcall2 to rb_funcallv, except for extensions
