@@ -74,7 +74,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * String#upcase, String#downcase, String#capitalize, String#swapcase and
     their bang variants work for all of Unicode, and are no longer limited
-    to ASCII. Variations are available with options. See the documentation
+    to ASCII. Supported encodings are UTF-8, UTF-16BE/LE, UTF-32BE/LE, and
+    ISO-8859-1~16. Variations are available with options. See the documentation
     of String#downcase for details. [Feature #10085]
 
   * String.new(capacity: size) [Feature #12024]

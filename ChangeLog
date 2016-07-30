@@ -1,3 +1,8 @@
+Sat Jul 30 12:13:26 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* string.c (String#downcase), NEWS: Mentioned that case mapping for all
+	  of ISO-8859-1~16 is now supported. [ci skip]
+
 Sat Jul 30 12:00:01 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/iso_8859_2.c, test/ruby/enc/test_case_comprehensive.rb:
