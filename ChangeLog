@@ -1,3 +1,9 @@
+Sat Jul 30 12:23:29 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* vm_args.c (vm_caller_setup_arg_block): disable symbol block
+	  argument optimization when tail call optimization is enabled,
+	  in order to avoid SEGV.  [ruby-core:76288] [Bug #12565]
+
 Sat Jul 30 12:10:51 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (passed_block): convert passed block symbol to proc.
