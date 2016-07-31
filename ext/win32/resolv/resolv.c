@@ -67,6 +67,5 @@ InitVM_resolv(void)
 void
 Init_resolv(void)
 {
-    message_free = (rb_w32_osver() >= 10) ? heap_free : local_free;
     InitVM(resolv);
 }
