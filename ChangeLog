@@ -1,3 +1,9 @@
+Sun Jul 31 16:17:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32/resolv/resolv.c (get_dns_server_list): [Win32] get DNS
+	  servers only for connected network devices by GetNetworkParams
+	  API.  [Bug #12604]
+
 Sat Jul 30 12:13:26 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* string.c (String#downcase), NEWS: Mentioned that case mapping for all
