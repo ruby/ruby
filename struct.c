@@ -617,9 +617,6 @@ rb_struct_new(VALUE klass, ...)
 }
 
 static VALUE
-rb_struct_size(VALUE s);
-
-static VALUE
 struct_enum_size(VALUE s, VALUE args, VALUE eobj)
 {
     return rb_struct_size(s);
@@ -1123,10 +1120,16 @@ rb_struct_eql(VALUE s, VALUE s2)
  *     joe.length   #=> 3
  */
 
-static VALUE
+VALUE
 rb_struct_size(VALUE s)
 {
     return LONG2FIX(RSTRUCT_LEN(s));
+}
+
+const VALUE*
+rb_struct_ptr(VALUE s)
+{
+    return RSTRUCT_CONST_PTR(s);
 }
 
 /*

@@ -1,3 +1,13 @@
+Mon Aug  1 16:07:18 2016  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* include/ruby/ruby.h (struct RStruct): no longer.
+
+	* internal.h (struct RStruct): moved here.
+
+	* struct.c (rb_struct_ptr): a compensation function for the lack
+	  of RSTRUCT_PTR.  But now that we have RSTRUCT_GET/SET, that must
+	  not be used anyway.  I mark this deprecated.  Dont use it.
+
 Mon Aug  1 14:50:06 2016  Jeremy Evans <code@jeremyevans.net>
 
 	* object.c (rb_obj_clone2): Allow Object#clone to take freeze:

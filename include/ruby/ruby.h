@@ -1178,38 +1178,10 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
 #define TypedData_Get_Struct(obj,type,data_type,sval) \
     ((sval) = (type*)rb_check_typeddata((obj), (data_type)))
 
-#define RSTRUCT_EMBED_LEN_MAX RSTRUCT_EMBED_LEN_MAX
-#define RSTRUCT_EMBED_LEN_MASK RSTRUCT_EMBED_LEN_MASK
-#define RSTRUCT_EMBED_LEN_SHIFT RSTRUCT_EMBED_LEN_SHIFT
-enum {
-    RSTRUCT_EMBED_LEN_MAX = 3,
-    RSTRUCT_EMBED_LEN_MASK = (RUBY_FL_USER2|RUBY_FL_USER1),
-    RSTRUCT_EMBED_LEN_SHIFT = (RUBY_FL_USHIFT+1),
-
-    RSTRUCT_ENUM_END
-};
-
-struct RStruct {
-    struct RBasic basic;
-    union {
-	struct {
-	    long len;
-	    const VALUE *ptr;
-	} heap;
-	const VALUE ary[RSTRUCT_EMBED_LEN_MAX];
-    } as;
-};
-
-#define RSTRUCT_EMBED_LEN(st) \
-    (long)((RBASIC(st)->flags >> RSTRUCT_EMBED_LEN_SHIFT) & \
-	   (RSTRUCT_EMBED_LEN_MASK >> RSTRUCT_EMBED_LEN_SHIFT))
-#define RSTRUCT_LEN(st) rb_struct_len(st)
-#define RSTRUCT_LENINT(st) rb_long2int(RSTRUCT_LEN(st))
-#define RSTRUCT_CONST_PTR(st) rb_struct_const_ptr(st)
-#define RSTRUCT_PTR(st) ((VALUE *)RSTRUCT_CONST_PTR(RB_OBJ_WB_UNPROTECT_FOR(STRUCT, st)))
-
-#define RSTRUCT_SET(st, idx, v) RB_OBJ_WRITE(st, &RSTRUCT_CONST_PTR(st)[idx], (v))
-#define RSTRUCT_GET(st, idx)    (RSTRUCT_CONST_PTR(st)[idx])
+#define RSTRUCT_LEN(st)         rb_struct_size(st)
+#define RSTRUCT_PTR(st)         rb_struct_const_ptr(st)
+#define RSTRUCT_SET(st, idx, v) rb_struct_aset(st, INT2NUM(idx), (v))
+#define RSTRUCT_GET(st, idx)    rb_struct_aref(st, INT2NUM(idx))
 
 #define RBIGNUM_SIGN(b) (FIX2LONG(rb_big_cmp((b), INT2FIX(0))) >= 0)
 #define RBIGNUM_POSITIVE_P(b) (FIX2LONG(rb_big_cmp((b), INT2FIX(0))) >= 0)
@@ -1225,7 +1197,6 @@ struct RStruct {
 #define RARRAY(obj)  (R_CAST(RArray)(obj))
 #define RDATA(obj)   (R_CAST(RData)(obj))
 #define RTYPEDDATA(obj)   (R_CAST(RTypedData)(obj))
-#define RSTRUCT(obj) (R_CAST(RStruct)(obj))
 #define RFILE(obj)   (R_CAST(RFile)(obj))
 
 #define FL_SINGLETON    RUBY_FL_SINGLETON
@@ -2043,20 +2014,6 @@ rb_array_const_ptr(VALUE a)
 {
     return FIX_CONST_VALUE_PTR((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ?
 	RARRAY(a)->as.ary : RARRAY(a)->as.heap.ptr);
-}
-
-static inline long
-rb_struct_len(VALUE st)
-{
-    return (RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ?
-	RSTRUCT_EMBED_LEN(st) : RSTRUCT(st)->as.heap.len;
-}
-
-static inline const VALUE *
-rb_struct_const_ptr(VALUE st)
-{
-    return FIX_CONST_VALUE_PTR((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ?
-	RSTRUCT(st)->as.ary : RSTRUCT(st)->as.heap.ptr);
 }
 
 #if defined(EXTLIB) && defined(USE_DLN_A_OUT)
