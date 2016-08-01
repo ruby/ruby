@@ -783,6 +783,9 @@ class TestRefinement < Test::Unit::TestCase
   eval PrependAfterRefine_CODE
 
   def test_prepend_after_refine_wb_miss
+    if /\A(arm|mips)/ =~ RUBY_PLATFORM
+      skip "too slow cpu"
+    end
     assert_normal_exit %Q{
       GC.stress = true
       10.times{

@@ -1,3 +1,9 @@
+Tue Aug  2 01:33:11 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/ruby/test_refinement.rb: skip
+	  test_prepend_after_refine_wb_miss on ARM or MIPS.
+	  [ruby-core:76031] [Bug #12491]
+
 Sat Jul 30 12:23:29 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_args.c (vm_caller_setup_arg_block): disable symbol block
