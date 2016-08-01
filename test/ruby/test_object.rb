@@ -31,7 +31,7 @@ class TestObject < Test::Unit::TestCase
   def test_clone
     a = Object.new
     def a.b; 2 end
-    
+
     a.freeze
     c = a.clone
     assert_equal(true, c.frozen?)
