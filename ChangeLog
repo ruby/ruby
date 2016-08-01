@@ -1,3 +1,11 @@
+Mon Aug  1 14:50:06 2016  Jeremy Evans <code@jeremyevans.net>
+
+	* object.c (rb_obj_clone2): Allow Object#clone to take freeze:
+	  false keyword argument to not freeze the clone.
+	  [ruby-core:75017][Feature #12300]
+
+	* test/ruby/test_object.rb (TestObject): test for it.
+
 Mon Aug  1 12:16:19 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/json/*, test/json/json_parser_test.rb: Update json-2.0.2.

@@ -299,11 +299,12 @@ init_copy(VALUE dest, VALUE obj)
 
 /*
  *  call-seq:
- *     obj.clone -> an_object
+ *     obj.clone(freeze: true) -> an_object
  *
  *  Produces a shallow copy of <i>obj</i>---the instance variables of
  *  <i>obj</i> are copied, but not the objects they reference.
- *  <code>clone</code> copies the frozen and tainted state of <i>obj</i>.
+ *  <code>clone</code> copies the frozen (unless :freeze keyword argument
+ *  is given with a false value) and tainted state of <i>obj</i>.
  *  See also the discussion under <code>Object#dup</code>.
  *
  *     class Klass
@@ -321,11 +322,25 @@ init_copy(VALUE dest, VALUE obj)
  *  the class.
  */
 
-VALUE
-rb_obj_clone(VALUE obj)
+static VALUE
+rb_obj_clone2(int argc, VALUE *argv, VALUE obj)
 {
+    static ID keyword_ids[1];
+    VALUE opt;
+    VALUE kwargs[1];
     VALUE clone;
     VALUE singleton;
+    VALUE kwfreeze = Qtrue;
+    int n;
+
+    if (!keyword_ids[0]) {
+	CONST_ID(keyword_ids[0], "freeze");
+    }
+    n = rb_scan_args(argc, argv, "0:", &opt);
+    if (!NIL_P(opt)) {
+	rb_get_kwargs(opt, keyword_ids, 0, 1, kwargs);
+	kwfreeze = kwargs[0];
+    }
 
     if (rb_special_const_p(obj)) {
         rb_raise(rb_eTypeError, "can't clone %s", rb_obj_classname(obj));
@@ -342,9 +357,18 @@ rb_obj_clone(VALUE obj)
 
     init_copy(clone, obj);
     rb_funcall(clone, id_init_clone, 1, obj);
-    RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;
+
+    if (Qfalse != kwfreeze) {
+	RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;
+    }
 
     return clone;
+}
+
+VALUE
+rb_obj_clone(VALUE obj)
+{
+    return rb_obj_clone2(0, NULL, obj);
 }
 
 /*
@@ -3424,7 +3448,7 @@ InitVM_Object(void)
 
     rb_define_method(rb_mKernel, "class", rb_obj_class, 0);
     rb_define_method(rb_mKernel, "singleton_class", rb_obj_singleton_class, 0);
-    rb_define_method(rb_mKernel, "clone", rb_obj_clone, 0);
+    rb_define_method(rb_mKernel, "clone", rb_obj_clone2, -1);
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);
     rb_define_method(rb_mKernel, "itself", rb_obj_itself, 0);
     rb_define_method(rb_mKernel, "initialize_copy", rb_obj_init_copy, 1);

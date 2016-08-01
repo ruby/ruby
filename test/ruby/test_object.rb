@@ -28,6 +28,22 @@ class TestObject < Test::Unit::TestCase
     end
   end
 
+  def test_clone
+    a = Object.new
+    def a.b; 2 end
+    
+    a.freeze
+    c = a.clone
+    assert_equal(true, c.frozen?)
+    assert_equal(2, c.b)
+
+    d = a.clone(freeze: false)
+    def d.e; 3; end
+    assert_equal(false, d.frozen?)
+    assert_equal(2, d.b)
+    assert_equal(3, d.e)
+  end
+
   def test_init_dupclone
     cls = Class.new do
       def initialize_clone(orig); throw :initialize_clone; end
