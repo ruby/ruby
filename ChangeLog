@@ -1,3 +1,8 @@
+Mon Aug  1 21:39:52 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: [EXPERIMENTAL] build extension libraries in
+	  extracted gems.
+
 Mon Aug  1 16:07:18 2016  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* include/ruby/ruby.h (struct RStruct): no longer.
