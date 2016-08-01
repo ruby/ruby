@@ -1,3 +1,10 @@
+Tue Aug  2 01:34:12 2016  Eric Wong  <e@80x24.org>
+
+	* lib/webrick/httpservlet/cgihandler.rb (do_GET): delete HTTP_PROXY
+	* test/webrick/test_cgi.rb (test_cgi_env): new test
+	* test/webrick/webrick.cgi (do_GET): new endpoint to dump env
+	  [ruby-core:76511] [Bug #12610]
+
 Tue Aug  2 01:33:11 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/ruby/test_refinement.rb: skip
