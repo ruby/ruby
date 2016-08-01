@@ -1,3 +1,7 @@
+Mon Aug  1 12:16:19 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/json/*, test/json/json_parser_test.rb: Update json-2.0.2.
+
 Sun Jul 31 16:17:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32/resolv/resolv.c (get_dns_server_list): [Win32] get DNS
