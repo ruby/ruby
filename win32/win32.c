@@ -2312,13 +2312,16 @@ typedef struct {
 
 /* License: Ruby's */
 #if RUBY_MSVCRT_VERSION >= 140
+typedef char lowio_text_mode;
+typedef char lowio_pipe_lookahead[3];
+
 typedef struct {
     CRITICAL_SECTION           lock;
     intptr_t                   osfhnd;          // underlying OS file HANDLE
     __int64                    startpos;        // File position that matches buffer start
     unsigned char              osfile;          // Attributes of file (e.g., open in text mode?)
-    char      textmode;
-    char _pipe_lookahead;
+    lowio_text_mode            textmode;
+    lowio_pipe_lookahead       _pipe_lookahead;
 
     uint8_t unicode          : 1; // Was the file opened as unicode?
     uint8_t utf8translations : 1; // Buffer contains translations other than CRLF
@@ -2356,7 +2359,6 @@ static inline ioinfo* _pioinfo(int);
 #define IOINFO_ARRAY_ELTS	(1 << IOINFO_L2E)
 #define _osfhnd(i)  (_pioinfo(i)->osfhnd)
 #define _osfile(i)  (_pioinfo(i)->osfile)
-#define _pipech(i)  (_pioinfo(i)->pipech)
 #define rb_acrt_lowio_lock_fh(i)   EnterCriticalSection(&_pioinfo(i)->lock)
 #define rb_acrt_lowio_unlock_fh(i) LeaveCriticalSection(&_pioinfo(i)->lock)
 
@@ -2368,35 +2370,65 @@ static void
 set_pioinfo_extra(void)
 {
 #if RUBY_MSVCRT_VERSION >= 140
+# define FUNCTION_RET 0xc3 /* ret */
+# ifdef _DEBUG
+#  define UCRTBASE "ucrtbased.dll"
+# else
+#  define UCRTBASE "ucrtbase.dll"
+# endif
     /* get __pioinfo addr with _isatty */
-    char *p = (char*)get_proc_address("ucrtbase.dll", "_isatty", NULL);
-    char *pend = p + 100;
+    char *p = (char*)get_proc_address(UCRTBASE, "_isatty", NULL);
+    char *pend = p;
     /* _osfile(fh) & FDEV */
-#if _WIN64
+
+# if _WIN64
     int32_t rel;
     char *rip;
+    /* add rsp, _ */
+#  define FUNCTION_BEFORE_RET_MARK "\x48\x83\xc4"
+#  define FUNCTION_SKIP_BYTES 1
+#  ifdef _DEBUG
+    /* lea rcx,[__pioinfo's addr in RIP-relative 32bit addr] */
+#   define PIOINFO_MARK "\x48\x8d\x0d"
+#  else
     /* lea rdx,[__pioinfo's addr in RIP-relative 32bit addr] */
-# define PIOINFO_MARK "\x48\x8d\x15"
-#else
+#   define PIOINFO_MARK "\x48\x8d\x15"
+#  endif
+
+# else /* x86 */
+    /* pop ebp */
+#  define FUNCTION_BEFORE_RET_MARK "\x5d"
+#  define FUNCTION_SKIP_BYTES 0
     /* mov eax,dword ptr [eax*4+100EB430h] */
-# define PIOINFO_MARK "\x8B\x04\x85"
-#endif
-    for (p; p < pend; p++) {
-        if (memcmp(p, PIOINFO_MARK, strlen(PIOINFO_MARK)) == 0) {
-            goto found;
+#  define PIOINFO_MARK "\x8B\x04\x85"
+# endif
+    if (p) {
+        for (pend += 10; pend < p + 300; pend++) {
+            // find end of function
+            if (memcmp(pend, FUNCTION_BEFORE_RET_MARK, sizeof(FUNCTION_BEFORE_RET_MARK) - 1) == 0 &&
+                *(pend + (sizeof(FUNCTION_BEFORE_RET_MARK) - 1) + FUNCTION_SKIP_BYTES) & FUNCTION_RET == FUNCTION_RET) {
+                // search backwards from end of function
+                for (pend -= (sizeof(PIOINFO_MARK) - 1); pend > p; pend--) {
+                    if (memcmp(pend, PIOINFO_MARK, sizeof(PIOINFO_MARK) - 1) == 0) {
+                        p = pend;
+                        goto found;
+                    }
+                }
+                break;
+            }
         }
     }
-    fprintf(stderr, "unexpected ucrtbase.dll\n");
+    fprintf(stderr, "unexpected " UCRTBASE "\n");
     _exit(1);
 
     found:
-    p += strlen(PIOINFO_MARK);
+    p += sizeof(PIOINFO_MARK) - 1;
 #if _WIN64
     rel = *(int32_t*)(p);
     rip = p + sizeof(int32_t);
     __pioinfo = (ioinfo**)(rip + rel);
 #else
-    __pioinfo = (ioinfo**)(p);
+    __pioinfo = *(ioinfo***)(p);
 #endif
 #else
     int fd;
