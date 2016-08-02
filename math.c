@@ -283,8 +283,13 @@ math_sinh(VALUE obj, VALUE x)
 double
 tanh(double x)
 {
+# if defined(HAVE_SINH) && defined(HAVE_COSH)
     const double c = cosh(x);
     if (!isinf(c)) return sinh(x) / c;
+# else
+    const double e = exp(x+x);
+    if (!isinf(e)) return (e - 1) / (e + 1);
+# endif
     return x > 0 ? 1.0 : -1.0;
 }
 #endif

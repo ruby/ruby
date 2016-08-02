@@ -1,3 +1,8 @@
+Tue Aug  2 21:42:40 2016  Chia-sheng Chen  <qitar888@gmail.com>
+
+	* math.c (tanh): make faster by the extract form if three
+	  hyperbolic functions are unavailable.  [Feature #12647]
+
 Tue Aug  2 12:37:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/option.c, ext/socket/rubysocket.h (inet_ntop): share
