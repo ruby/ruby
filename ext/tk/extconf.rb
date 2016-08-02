@@ -2085,10 +2085,6 @@ if (TkLib_Config["tcltk-framework"] ||
   $INSTALLFILES ||= []
   $INSTALLFILES << ["lib/tkextlib/SUPPORT_STATUS", "$(RUBYLIBDIR)", "lib"]
 
-  # create
-  $defs << %[-DRUBY_VERSION=\\"#{RUBY_VERSION}\\"]
-  $defs << %[-DRUBY_RELEASE_DATE=\\"#{RUBY_RELEASE_DATE}\\"]
-
   # remove harmful definitions.
   $defs.delete_if{|x|/^-Du?intptr_t=/ =~ x}
 

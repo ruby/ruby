@@ -12,11 +12,8 @@
 #ifdef HAVE_RUBY_ENCODING_H
 #include "ruby/encoding.h"
 #endif
-#ifndef RUBY_VERSION
-#define RUBY_VERSION "(unknown version)"
-#endif
-#ifndef RUBY_RELEASE_DATE
-#define RUBY_RELEASE_DATE "unknown release-date"
+#ifdef HAVE_RUBY_VERSION_H
+#include "ruby/version.h"
 #endif
 
 #undef RUBY_UNTYPED_DATA_WARNING
@@ -10001,7 +9998,17 @@ tcltklib_compile_info(void)
     VALUE ret;
     static const char info[] =
 	"tcltklib " TCLTKLIB_RELEASE_DATE " "
-	":: Ruby" RUBY_VERSION" ("RUBY_RELEASE_DATE") "
+	":: Ruby"
+#ifdef RUBY_API_VERSION_MAJOR
+	STRINGIZE(RUBY_API_VERSION_MAJOR)"."
+	STRINGIZE(RUBY_API_VERSION_MINOR)"."
+	STRINGIZE(RUBY_API_VERSION_TEENY)" "
+#else
+	RUBY_VERSION" "
+#endif
+#ifdef RUBY_RELEASE_DATE
+	"("RUBY_RELEASE_DATE") "
+#endif
 #ifdef HAVE_NATIVETHREAD
 	"with"
 #else
