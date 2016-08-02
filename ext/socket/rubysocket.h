@@ -430,4 +430,12 @@ static inline void rsock_maybe_wait_fd(int fd) { }
 #  define MSG_DONTWAIT_RELIABLE 0
 #endif
 
+#if !defined HAVE_INET_NTOP && ! defined _WIN32
+const char *inet_ntop(int, const void *, char *, size_t);
+#elif defined __MINGW32__
+# define inet_ntop(f,a,n,l)      rb_w32_inet_ntop(f,a,n,l)
+#elif defined _MSC_VER && RUBY_MSVCRT_VERSION < 90
+const char *WSAAPI inet_ntop(int, const void *, char *, size_t);
+#endif
+
 #endif
