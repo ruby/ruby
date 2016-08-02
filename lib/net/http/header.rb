@@ -388,7 +388,7 @@ module Net::HTTPHeader
 
   alias form_data= set_form_data
 
-  # Set a HTML form data set.
+  # Set an HTML form data set.
   # +params+ is the form data set; it is an Array of Arrays or a Hash
   # +enctype is the type to encode the form data set.
   # It is application/x-www-form-urlencoded or multipart/form-data.
