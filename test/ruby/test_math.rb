@@ -111,6 +111,8 @@ class TestMath < Test::Unit::TestCase
     check(Math.sinh(0) / Math.cosh(0), Math.tanh(0))
     check(Math.sinh(1) / Math.cosh(1), Math.tanh(1))
     check(Math.sinh(2) / Math.cosh(2), Math.tanh(2))
+    check(+1.0, Math.tanh(+1000.0))
+    check(-1.0, Math.tanh(-1000.0))
   end
 
   def test_acosh
