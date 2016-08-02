@@ -1016,7 +1016,7 @@ VM_ENV_FLAGS_UNSET(const VALUE *ep, VALUE flag)
     VM_FORCE_WRITE_SPECIAL_CONST(&ep[VM_ENV_DATA_INDEX_FLAGS], flags & ~flag);
 }
 
-static inline long
+static inline unsigned long
 VM_ENV_FLAGS(const VALUE *ep, long flag)
 {
     VALUE flags = ep[VM_ENV_DATA_INDEX_FLAGS];
@@ -1024,7 +1024,7 @@ VM_ENV_FLAGS(const VALUE *ep, long flag)
     return flags & flag;
 }
 
-static inline long
+static inline unsigned long
 VM_FRAME_TYPE(const rb_control_frame_t *cfp)
 {
     return VM_ENV_FLAGS(cfp->ep, VM_FRAME_MAGIC_MASK);
