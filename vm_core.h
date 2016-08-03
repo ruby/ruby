@@ -986,11 +986,6 @@ enum {
     VM_ENV_FLAG_WB_REQUIRED = 0x0008
 };
 
-static inline void VM_FORCE_WRITE_SPECIAL_CONST(const VALUE *ptr, VALUE special_const_value);
-
-#define VM_FRAME_TYPE_FINISH_P(cfp)  (VM_ENV_FLAGS((cfp)->ep, VM_FRAME_FLAG_FINISH ) != 0)
-#define VM_FRAME_TYPE_BMETHOD_P(cfp) (VM_ENV_FLAGS((cfp)->ep, VM_FRAME_FLAG_BMETHOD) != 0)
-
 #define VM_ENV_DATA_SIZE             ( 3)
 
 #define VM_ENV_DATA_INDEX_ME_CREF    (-2) /* ep[-2] */
@@ -1000,6 +995,8 @@ static inline void VM_FORCE_WRITE_SPECIAL_CONST(const VALUE *ptr, VALUE special_
 #define VM_ENV_DATA_INDEX_ENV_PROC   ( 2) /* ep[ 2] */
 
 #define VM_ENV_INDEX_LAST_LVAR              (-VM_ENV_DATA_SIZE)
+
+static inline void VM_FORCE_WRITE_SPECIAL_CONST(const VALUE *ptr, VALUE special_const_value);
 
 static inline void
 VM_ENV_FLAGS_SET(const VALUE *ep, VALUE flag)
@@ -1029,6 +1026,18 @@ static inline unsigned long
 VM_FRAME_TYPE(const rb_control_frame_t *cfp)
 {
     return VM_ENV_FLAGS(cfp->ep, VM_FRAME_MAGIC_MASK);
+}
+
+static inline int
+VM_FRAME_FINISHED_P(const rb_control_frame_t *cfp)
+{
+    return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_FINISH ) != 0;
+}
+
+static inline int
+VM_FRAME_BMETHOD_P(const rb_control_frame_t *cfp)
+{
+    return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_BMETHOD) != 0;
 }
 
 #define RUBYVM_CFUNC_FRAME_P(cfp) \

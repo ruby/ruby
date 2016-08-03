@@ -1,3 +1,10 @@
+Wed Aug  3 09:25:16 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: rename macros and make them inline functions.
+
+	  * rename VM_FRAME_TYPE_FINISH_P() to VM_FRAME_FINISHED_P().
+	  * rename VM_FRAME_TYPE_BMETHOD_P() to VM_FRAME_BMETHOD_P().
+
 Wed Aug 03 09:15:02 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: introduce VM_FRAME_FLAG_CFRAME to represent cfp->iseq

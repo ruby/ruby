@@ -130,7 +130,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     if (line) {
 	fprintf(stderr, " %s", posbuf);
     }
-    if (VM_FRAME_TYPE_FINISH_P(cfp)) {
+    if (VM_FRAME_FINISHED_P(cfp)) {
 	fprintf(stderr, " [FINISH]");
     }
     if (0) {
@@ -295,7 +295,7 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 		    (ptr - th->stack));
 	}
     }
-    else if (VM_FRAME_TYPE_FINISH_P(cfp)) {
+    else if (VM_FRAME_FINISHED_P(cfp)) {
 	if ((th)->stack + (th)->stack_size > (VALUE *)(cfp + 1)) {
 	    vm_stack_dump_each(th, cfp + 1);
 	}

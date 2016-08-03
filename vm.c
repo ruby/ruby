@@ -1595,7 +1595,7 @@ hook_before_rewind(rb_thread_t *th, rb_control_frame_t *cfp, int will_finish_vm_
 	break;
       case VM_FRAME_MAGIC_BLOCK:
       case VM_FRAME_MAGIC_LAMBDA:
-	if (VM_FRAME_TYPE_BMETHOD_P(th->cfp)) {
+	if (VM_FRAME_BMETHOD_P(th->cfp)) {
 	    EXEC_EVENT_HOOK(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, Qnil);
 
 	    if (!will_finish_vm_exec) {
@@ -1751,7 +1751,7 @@ vm_exec(rb_thread_t *th)
 
 	    if (cfp == escape_cfp) {
 		if (state == TAG_RETURN) {
-		    if (!VM_FRAME_TYPE_FINISH_P(cfp)) {
+		    if (!VM_FRAME_FINISHED_P(cfp)) {
 			THROW_DATA_CATCH_FRAME_SET(err, cfp + 1);
 			THROW_DATA_STATE_SET(err, state = TAG_BREAK);
 		    }
@@ -1916,7 +1916,7 @@ vm_exec(rb_thread_t *th)
 	    /* skip frame */
 	    hook_before_rewind(th, th->cfp, FALSE);
 
-	    if (VM_FRAME_TYPE_FINISH_P(th->cfp)) {
+	    if (VM_FRAME_FINISHED_P(th->cfp)) {
 		rb_vm_pop_frame(th);
 		th->errinfo = (VALUE)err;
 		TH_TMPPOP_TAG();
