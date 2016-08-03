@@ -331,12 +331,11 @@ rb_obj_clone2(int argc, VALUE *argv, VALUE obj)
     VALUE clone;
     VALUE singleton;
     VALUE kwfreeze = Qtrue;
-    int n;
 
     if (!keyword_ids[0]) {
 	CONST_ID(keyword_ids[0], "freeze");
     }
-    n = rb_scan_args(argc, argv, "0:", &opt);
+    rb_scan_args(argc, argv, "0:", &opt);
     if (!NIL_P(opt)) {
 	rb_get_kwargs(opt, keyword_ids, 0, 1, kwargs);
 	kwfreeze = kwargs[0];
