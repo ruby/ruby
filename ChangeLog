@@ -1,3 +1,8 @@
+Wed Aug 03 09:15:02 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: introduce VM_FRAME_FLAG_CFRAME to represent cfp->iseq
+	  type.
+
 Tue Aug  2 21:42:40 2016  Chia-sheng Chen  <qitar888@gmail.com>
 
 	* math.c (tanh): make faster by the extract form if three

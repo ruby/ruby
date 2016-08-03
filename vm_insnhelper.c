@@ -70,7 +70,7 @@ callable_method_entry_p(const rb_callable_method_entry_t *me)
 }
 
 static void
-vm_check_frame_detail(VALUE type, int req_block, int req_me, int req_cref, VALUE specval, VALUE cref_or_me)
+vm_check_frame_detail(VALUE type, int req_block, int req_me, int req_cref, VALUE specval, VALUE cref_or_me, int is_cframe, const rb_iseq_t *iseq)
 {
     unsigned int magic = (unsigned int)(type & VM_FRAME_MAGIC_MASK);
     enum imemo_type cref_or_me_type = imemo_env; /* impossible value */
@@ -117,37 +117,46 @@ vm_check_frame_detail(VALUE type, int req_block, int req_me, int req_cref, VALUE
 	    rb_bug("vm_push_frame: ment (%s) should be callable on %x frame.", rb_obj_info(cref_or_me), magic);
 	}
     }
+
+    if ((type & VM_FRAME_MAGIC_MASK) == VM_FRAME_MAGIC_DUMMY) {
+	VM_ASSERT(iseq == NULL ||
+		  RUBY_VM_NORMAL_ISEQ_P(iseq) /* argument error. it shold be fixed */);
+    }
+    else {
+	VM_ASSERT(is_cframe == !RUBY_VM_NORMAL_ISEQ_P(iseq));
+    }
 }
 
 static void
 vm_check_frame(VALUE type,
 	       VALUE specval,
-	       VALUE cref_or_me)
+	       VALUE cref_or_me,
+	       const rb_iseq_t *iseq)
 {
-    int magic = (int)(type & VM_FRAME_MAGIC_MASK);
+    VALUE given_magic = type & VM_FRAME_MAGIC_MASK;
     VM_ASSERT(FIXNUM_P(type));
 
-#define CHECK(magic, req_block, req_me, req_cref) case magic: vm_check_frame_detail(type, req_block, req_me, req_cref, specval, cref_or_me); break;
-    switch (magic) {
-	/*                           BLK    ME     CREF */
-	CHECK(VM_FRAME_MAGIC_METHOD, TRUE,  TRUE,  FALSE);
-	CHECK(VM_FRAME_MAGIC_CLASS,  TRUE,  FALSE, TRUE);
-	CHECK(VM_FRAME_MAGIC_TOP,    TRUE,  FALSE, TRUE);
-	CHECK(VM_FRAME_MAGIC_CFUNC,  TRUE,  TRUE,  FALSE);
-	CHECK(VM_FRAME_MAGIC_BLOCK,  FALSE, FALSE, FALSE);
-	CHECK(VM_FRAME_MAGIC_PROC,   FALSE, FALSE, FALSE);
-	CHECK(VM_FRAME_MAGIC_IFUNC,  FALSE, FALSE, FALSE);
-	CHECK(VM_FRAME_MAGIC_EVAL,   FALSE, FALSE, FALSE);
-	CHECK(VM_FRAME_MAGIC_LAMBDA, FALSE, FALSE, FALSE);
-	CHECK(VM_FRAME_MAGIC_RESCUE, FALSE, FALSE, FALSE);
-	CHECK(VM_FRAME_MAGIC_DUMMY,  TRUE,  FALSE, FALSE);
+#define CHECK(magic, req_block, req_me, req_cref, is_cframe) case magic: vm_check_frame_detail(type, req_block, req_me, req_cref, specval, cref_or_me, is_cframe, iseq); break;
+    switch (given_magic) {
+	/*                           BLK    ME     CREF   CFRAME */
+	CHECK(VM_FRAME_MAGIC_METHOD, TRUE,  TRUE,  FALSE, FALSE);
+	CHECK(VM_FRAME_MAGIC_CLASS,  TRUE,  FALSE, TRUE,  FALSE);
+	CHECK(VM_FRAME_MAGIC_TOP,    TRUE,  FALSE, TRUE,  FALSE);
+	CHECK(VM_FRAME_MAGIC_CFUNC,  TRUE,  TRUE,  FALSE, TRUE);
+	CHECK(VM_FRAME_MAGIC_BLOCK,  FALSE, FALSE, FALSE, FALSE);
+	CHECK(VM_FRAME_MAGIC_PROC,   FALSE, FALSE, FALSE, FALSE);
+	CHECK(VM_FRAME_MAGIC_IFUNC,  FALSE, FALSE, FALSE, TRUE);
+	CHECK(VM_FRAME_MAGIC_EVAL,   FALSE, FALSE, FALSE, FALSE);
+	CHECK(VM_FRAME_MAGIC_LAMBDA, FALSE, FALSE, FALSE, FALSE);
+	CHECK(VM_FRAME_MAGIC_RESCUE, FALSE, FALSE, FALSE, FALSE);
+	CHECK(VM_FRAME_MAGIC_DUMMY,  TRUE,  FALSE, FALSE, FALSE);
       default:
-	rb_bug("vm_push_frame: unknown type (%x)", magic);
+	rb_bug("vm_push_frame: unknown type (%x)", (unsigned int)given_magic);
     }
 #undef CHECK
 }
 #else
-#define vm_check_frame(a, b, c)
+#define vm_check_frame(a, b, c, d)
 #endif /* VM_CHECK_MODE > 0 */
 
 static inline rb_control_frame_t *
@@ -165,7 +174,7 @@ vm_push_frame(rb_thread_t *th,
     rb_control_frame_t *const cfp = th->cfp - 1;
     int i;
 
-    vm_check_frame(type, specval, cref_or_me);
+    vm_check_frame(type, specval, cref_or_me, iseq);
     VM_ASSERT(local_size >= 0);
 
     /* check stack overflow */
@@ -1718,7 +1727,7 @@ vm_call_cfunc_with_frame(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb
     RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, me->owner, me->called_id);
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, me->called_id, me->owner, Qundef);
 
-    vm_push_frame(th, NULL, VM_FRAME_MAGIC_CFUNC | VM_ENV_FLAG_LOCAL, recv,
+    vm_push_frame(th, NULL, VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL, recv,
 		  block_handler, (VALUE)me,
 		  0, th->cfp->sp, 0, 0);
 
@@ -1808,7 +1817,7 @@ rb_vm_call_cfunc_push_frame(rb_thread_t *th)
     const rb_callable_method_entry_t *me = calling->me;
     th->passed_ci = 0;
 
-    vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC | VM_ENV_FLAG_LOCAL,
+    vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL,
 		  calling->recv, calling->block_handler, (VALUE)me /* cref */,
 		  0, th->cfp->sp + cc->aux.inc_sp, 0, 0);
 
@@ -2425,7 +2434,7 @@ vm_yield_with_cfunc(rb_thread_t *th,
     blockarg = vm_block_handler_to_proc(th, block_handler);
 
     vm_push_frame(th, (const rb_iseq_t *)captured->code.ifunc,
-		  VM_FRAME_MAGIC_IFUNC,
+		  VM_FRAME_MAGIC_IFUNC | VM_FRAME_FLAG_CFRAME,
 		  self,
 		  VM_GUARDED_PREV_EP(captured->ep),
 		  (VALUE)me,

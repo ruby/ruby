@@ -978,6 +978,7 @@ enum {
     VM_FRAME_FLAG_PASSED    = 0x0010,
     VM_FRAME_FLAG_FINISH    = 0x0020,
     VM_FRAME_FLAG_BMETHOD   = 0x0040,
+    VM_FRAME_FLAG_CFRAME    = 0x0080,
 
     /* env flag */
     VM_ENV_FLAG_LOCAL       = 0x0002,

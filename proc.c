@@ -611,7 +611,7 @@ cfunc_proc_new(VALUE klass, VALUE ifunc, int8_t is_lambda)
     vm_block_type_set(&proc->block, block_type_ifunc);
 
     *(VALUE **)&proc->block.as.captured.ep = ep = sproc->env + VM_ENV_DATA_SIZE-1;
-    ep[VM_ENV_DATA_INDEX_FLAGS]   = VM_FRAME_MAGIC_IFUNC | VM_ENV_FLAG_LOCAL | VM_ENV_FLAG_ESCAPED;
+    ep[VM_ENV_DATA_INDEX_FLAGS]   = VM_FRAME_MAGIC_IFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL | VM_ENV_FLAG_ESCAPED;
     ep[VM_ENV_DATA_INDEX_ME_CREF] = Qfalse;
     ep[VM_ENV_DATA_INDEX_SPECVAL] = VM_BLOCK_HANDLER_NONE;
     ep[VM_ENV_DATA_INDEX_ENV]     = Qundef; /* envval */
