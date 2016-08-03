@@ -72,4 +72,30 @@ class TestRipper::Ripper < Test::Unit::TestCase
     ripper.parse
     assert_not_predicate(ripper, :error?, bug11932)
   end
+
+  def test_regexp_enc_error
+    assert_separately(%w[-rripper], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      bug12651 = '[ruby-core:76397] [Bug #12651]'
+      src = <<-END
+<%- @title = '\u{5bff 9650 7121}' -%>
+<%- content_for :foo, render(partial: 'bar', locals: {baz: 2}) -%>
+
+<div class="dead beef">
+  <h2 class="dead beef">\u{5bff 9650 7121}</h2>
+</div>
+<div class="dead beef">\u{5bff 9650 7121 3002}<br class="dead beef">\u{5bff 9650 7121 3002}</div>
+
+<div class="dead beef">
+  <div class="dead beef">
+    <label class="dead beef">\u{5bff 9650 7121}</label>
+    <div class="dead beef">
+      <div class="dead beef"><%= @baz %></div>
+    </div>
+  </div>
+</div>
+      END
+      assert_nil(Ripper.sexp(src), bug12651)
+    end;
+  end
 end if ripper_test

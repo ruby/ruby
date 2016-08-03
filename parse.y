@@ -549,11 +549,15 @@ static VALUE new_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE op
 static VALUE new_attr_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE type, VALUE attr, VALUE op, VALUE rhs);
 #define new_attr_op_assign(lhs, type, attr, op, rhs) new_attr_op_assign_gen(parser, (lhs), (type), (attr), (op), (rhs))
 
+static VALUE parser_reg_compile(struct parser_params*, VALUE, int, VALUE *);
+
 #endif /* !RIPPER */
 
 #define new_op_assign(lhs, op, rhs) new_op_assign_gen(parser, (lhs), (op), (rhs))
 
-RUBY_FUNC_EXPORTED VALUE rb_parser_reg_compile(struct parser_params* parser, VALUE str, int options, VALUE *errmsg);
+RUBY_FUNC_EXPORTED VALUE rb_parser_reg_compile(struct parser_params* parser, VALUE str, int options);
+RUBY_FUNC_EXPORTED int rb_reg_fragment_setenc(struct parser_params*, VALUE, int);
+
 
 static ID formal_argument_gen(struct parser_params*, ID);
 #define formal_argument(id) formal_argument_gen(parser, (id))
@@ -4052,7 +4056,7 @@ regexp		: tREGEXP_BEG regexp_contents tREGEXP_END
 			    $3 = RNODE(opt)->nd_rval;
 			    options = (int)RNODE(opt)->nd_tag;
 			}
-			if (src && NIL_P(rb_parser_reg_compile(parser, src, options, &err))) {
+			if (src && NIL_P(parser_reg_compile(parser, src, options, &err))) {
 			    compile_error(PARSER_ARG "%"PRIsVALUE, err);
 			}
 			$$ = dispatch2(regexp_literal, $2, $3);
@@ -10536,9 +10540,17 @@ dvar_curr_gen(struct parser_params *parser, ID id)
 	    vtable_included(lvtbl->vars, id));
 }
 
-#ifndef RIPPER
 static void
-reg_fragment_setenc_gen(struct parser_params* parser, VALUE str, int options)
+reg_fragment_enc_error(struct parser_params* parser, VALUE str, int c)
+{
+    compile_error(PARSER_ARG
+        "regexp encoding option '%c' differs from source encoding '%s'",
+        c, rb_enc_name(rb_enc_get(str)));
+}
+
+#ifndef RIPPER
+int
+rb_reg_fragment_setenc(struct parser_params* parser, VALUE str, int options)
 {
     int c = RE_OPTION_ENCODING_IDX(options);
 
@@ -10568,12 +10580,17 @@ reg_fragment_setenc_gen(struct parser_params* parser, VALUE str, int options)
 	    rb_enc_associate(str, rb_ascii8bit_encoding());
 	}
     }
-    return;
+    return 0;
 
   error:
-    compile_error(PARSER_ARG
-        "regexp encoding option '%c' differs from source encoding '%s'",
-        c, rb_enc_name(rb_enc_get(str)));
+    return c;
+}
+
+static void
+reg_fragment_setenc_gen(struct parser_params* parser, VALUE str, int options)
+{
+    int c = rb_reg_fragment_setenc(parser, str, options);
+    if (c) reg_fragment_enc_error(parser, str, c);
 }
 
 static int
@@ -10640,6 +10657,12 @@ static VALUE
 parser_reg_compile(struct parser_params* parser, VALUE str, int options)
 {
     reg_fragment_setenc(str, options);
+    return rb_parser_reg_compile(parser, str, options);
+}
+
+VALUE
+rb_parser_reg_compile(struct parser_params* parser, VALUE str, int options)
+{
     return rb_reg_compile(str, options & RE_OPTION_MASK, ruby_sourcefile, ruby_sourceline);
 }
 
@@ -10664,19 +10687,24 @@ reg_compile_gen(struct parser_params* parser, VALUE str, int options)
     }
     return re;
 }
-
-VALUE
-rb_parser_reg_compile(struct parser_params* parser, VALUE str, int options, VALUE *errmsg)
+#else
+static VALUE
+parser_reg_compile(struct parser_params* parser, VALUE str, int options, VALUE *errmsg)
 {
     VALUE err = rb_errinfo();
-    VALUE re = parser_reg_compile(parser, str, options);
+    VALUE re;
+    int c = rb_reg_fragment_setenc(parser, str, options);
+    if (c) reg_fragment_enc_error(parser, str, c);
+    re = rb_parser_reg_compile(parser, str, options);
     if (NIL_P(re)) {
 	*errmsg = rb_attr_get(rb_errinfo(), idMesg);
 	rb_set_errinfo(err);
     }
     return re;
 }
+#endif
 
+#ifndef RIPPER
 NODE*
 rb_parser_append_print(VALUE vparser, NODE *node)
 {

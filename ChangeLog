@@ -1,3 +1,8 @@
+Wed Aug  3 21:31:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (reg_fragment_enc_error): compile_error is different
+	  between parser and ripper.  [ruby-core:76397] [Bug #12651]
+
 Wed Aug  3 17:15:06 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_obj_clone2): restrict freeze option to true other
