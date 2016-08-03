@@ -136,7 +136,11 @@ vm_check_frame(VALUE type,
     VALUE given_magic = type & VM_FRAME_MAGIC_MASK;
     VM_ASSERT(FIXNUM_P(type));
 
-#define CHECK(magic, req_block, req_me, req_cref, is_cframe) case magic: vm_check_frame_detail(type, req_block, req_me, req_cref, specval, cref_or_me, is_cframe, iseq); break;
+#define CHECK(magic, req_block, req_me, req_cref, is_cframe) \
+    case magic: \
+      vm_check_frame_detail(type, req_block, req_me, req_cref, \
+			    specval, cref_or_me, is_cframe, iseq); \
+      break
     switch (given_magic) {
 	/*                           BLK    ME     CREF   CFRAME */
 	CHECK(VM_FRAME_MAGIC_METHOD, TRUE,  TRUE,  FALSE, FALSE);
