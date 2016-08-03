@@ -61,6 +61,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Integer#digits for extracting columns of place-value notation [Feature #12447]
 
+* Kernel
+
+  * Kernel#clone now takes an optional keyword argument, freeze flag.
+    [Feature #12300]
+
 * Regexp
 
   * Regexp#match? [Feature #8110]
