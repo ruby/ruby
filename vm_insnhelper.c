@@ -1076,7 +1076,7 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 	    }
 
 	    if (lep == target_lep &&
-		RUBY_VM_NORMAL_ISEQ_P(escape_cfp->iseq) &&
+		VM_FRAME_RUBYFRAME_P(escape_cfp) &&
 		escape_cfp->iseq->body->type == ISEQ_TYPE_CLASS) {
 		in_class_frame = 1;
 		target_lep = 0;
@@ -1360,7 +1360,7 @@ vm_base_ptr(const rb_control_frame_t *cfp)
 {
     const rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 
-    if (cfp->iseq && RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
+    if (cfp->iseq && VM_FRAME_RUBYFRAME_P(cfp)) {
 	VALUE *bp = prev_cfp->sp + cfp->iseq->body->local_table_size + VM_ENV_DATA_SIZE;
 	if (cfp->iseq->body->type == ISEQ_TYPE_METHOD) {
 	    /* adjust `self' */

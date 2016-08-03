@@ -1040,6 +1040,30 @@ VM_FRAME_BMETHOD_P(const rb_control_frame_t *cfp)
     return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_BMETHOD) != 0;
 }
 
+static inline int
+rb_obj_is_iseq(VALUE iseq)
+{
+    return RB_TYPE_P(iseq, T_IMEMO) && imemo_type(iseq) == imemo_iseq;
+}
+
+#if VM_CHECK_MODE > 0
+#define RUBY_VM_NORMAL_ISEQ_P(iseq)  rb_obj_is_iseq((VALUE)iseq)
+#endif
+
+static inline int
+VM_FRAME_CFRAME_P(const rb_control_frame_t *cfp)
+{
+    int cframe_p = VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_CFRAME) != 0;
+    VM_ASSERT(RUBY_VM_NORMAL_ISEQ_P(cfp->iseq) != cframe_p);
+    return cframe_p;
+}
+
+static inline int
+VM_FRAME_RUBYFRAME_P(const rb_control_frame_t *cfp)
+{
+    return !VM_FRAME_CFRAME_P(cfp);
+}
+
 #define RUBYVM_CFUNC_FRAME_P(cfp) \
   (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_CFUNC)
 
@@ -1152,8 +1176,6 @@ VALUE rb_vm_frame_block_handler(const rb_control_frame_t *cfp);
   ((void *)(ecfp) > (void *)(cfp))
 #define RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp) \
   (!RUBY_VM_VALID_CONTROL_FRAME_P((cfp), RUBY_VM_END_CONTROL_FRAME(th)))
-
-#define RUBY_VM_NORMAL_ISEQ_P(ptr)  (RB_TYPE_P((VALUE)(ptr), T_IMEMO) && imemo_type((VALUE)ptr) == imemo_iseq && rb_iseq_check((rb_iseq_t *)ptr))
 
 static inline int
 VM_BH_ISEQ_BLOCK_P(VALUE block_handler)

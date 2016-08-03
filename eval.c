@@ -1454,7 +1454,7 @@ errinfo_place(rb_thread_t *th)
     rb_control_frame_t *end_cfp = RUBY_VM_END_CONTROL_FRAME(th);
 
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
-	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
+	if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	    if (cfp->iseq->body->type == ISEQ_TYPE_RESCUE) {
 		return &cfp->ep[VM_ENV_INDEX_LAST_LVAR];
 	    }

@@ -1651,7 +1651,7 @@ iseqw_s_of(VALUE klass, VALUE body)
     if (rb_obj_is_proc(body)) {
 	iseq = vm_proc_iseq(body);
 
-	if (!RUBY_VM_NORMAL_ISEQ_P(iseq)) {
+	if (!rb_obj_is_iseq((VALUE)iseq)) {
 	    iseq = NULL;
 	}
     }

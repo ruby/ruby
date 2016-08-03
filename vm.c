@@ -484,7 +484,7 @@ rb_control_frame_t *
 rb_vm_get_ruby_level_next_cfp(const rb_thread_t *th, const rb_control_frame_t *cfp)
 {
     while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {
-	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
+	if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	    return (rb_control_frame_t *)cfp;
 	}
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
@@ -495,14 +495,14 @@ rb_vm_get_ruby_level_next_cfp(const rb_thread_t *th, const rb_control_frame_t *c
 static rb_control_frame_t *
 vm_get_ruby_level_caller_cfp(const rb_thread_t *th, const rb_control_frame_t *cfp)
 {
-    if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
+    if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	return (rb_control_frame_t *)cfp;
     }
 
     cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 
     while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {
-	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
+	if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	    return (rb_control_frame_t *)cfp;
 	}
 
@@ -662,7 +662,7 @@ vm_make_env_each(rb_thread_t *const th, rb_control_frame_t *const cfp)
 	}
     }
 
-    if (!RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
+    if (!VM_FRAME_RUBYFRAME_P(cfp)) {
 	local_size = VM_ENV_DATA_SIZE;
     }
     else {
@@ -689,14 +689,14 @@ vm_make_env_each(rb_thread_t *const th, rb_control_frame_t *const cfp)
 
 #if 0
     for (i = 0; i < local_size; i++) {
-	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
+	if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	    /* clear value stack for GC */
 	    ep[-local_size + i] = 0;
 	}
     }
 #endif
 
-    env_iseq = RUBY_VM_NORMAL_ISEQ_P(cfp->iseq) ? cfp->iseq : NULL;
+    env_iseq = VM_FRAME_RUBYFRAME_P(cfp) ? cfp->iseq : NULL;
     env_ep = &env_body[local_size - 1 /* specval */];
 
     env = vm_env_new(env_ep, env_body, env_size, env_iseq);
@@ -2450,7 +2450,7 @@ th_init(rb_thread_t *th, VALUE self)
 
     th->cfp = (void *)(th->stack + th->stack_size);
 
-    vm_push_frame(th, 0 /* dummy iseq */, VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH /* dummy frame */,
+    vm_push_frame(th, 0 /* dummy iseq */, VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_CFRAME /* dummy frame */,
 		  Qnil /* dummy self */, VM_BLOCK_HANDLER_NONE /* dummy block ptr */,
 		  0 /* dummy cref/me */,
 		  0 /* dummy pc */, th->stack, 0, 0);
@@ -3000,6 +3000,7 @@ Init_VM(void)
 	th->cfp->pc = iseq->body->iseq_encoded;
 	th->cfp->self = th->top_self;
 
+	VM_ENV_FLAGS_UNSET(th->cfp->ep, VM_FRAME_FLAG_CFRAME);
 	VM_STACK_ENV_WRITE(th->cfp->ep, VM_ENV_DATA_INDEX_ME_CREF, (VALUE)vm_cref_new(rb_cObject, METHOD_VISI_PRIVATE, FALSE, NULL, FALSE));
 
 	/*

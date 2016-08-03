@@ -395,12 +395,12 @@ static const VALUE *
 get_local_variable_ptr(const rb_env_t *env, ID lid)
 {
     do {
-	const rb_iseq_t *iseq;
-	unsigned int i;
+	if (!VM_ENV_FLAGS(env->ep, VM_FRAME_FLAG_CFRAME)) {
+	    const rb_iseq_t *iseq = env->iseq;
+	    unsigned int i;
 
-	iseq = env->iseq;
+	    VM_ASSERT(rb_obj_is_iseq((VALUE)iseq));
 
-	if (iseq && RUBY_VM_NORMAL_ISEQ_P(iseq)) {
 	    for (i=0; i<iseq->body->local_table_size; i++) {
 		if (iseq->body->local_table[i] == lid) {
 		    return &env->env[i];

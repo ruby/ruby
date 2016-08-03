@@ -1,3 +1,15 @@
+Wed Aug  3 10:47:07 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_core.h: introduce VM_FRAME_RUBYFRAME_P()
+	  and VM_FRAME_CFRAME_P(). 
+	  Most of case, RUBY_VM_NORMAL_ISEQ_P() is no
+	  longer needed.
+
+	* vm_core.h: introduce rb_obj_is_iseq().
+
+	* cont.c, vm.c: VM_FRAME_MAGIC_DUMMY with
+	  VM_FRAME_FLAG_CFRAME.
+
 Wed Aug  3 09:25:16 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: rename macros and make them inline functions.

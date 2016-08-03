@@ -1221,7 +1221,7 @@ fiber_init(VALUE fibval, VALUE proc)
 
     rb_vm_push_frame(th,
 		     NULL,
-		     VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH,
+		     VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_CFRAME,
 		     Qnil, /* self */
 		     VM_BLOCK_HANDLER_NONE,
 		     0, /* specval */

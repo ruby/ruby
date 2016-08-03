@@ -240,16 +240,13 @@ vm_base_ptr(rb_control_frame_t *cfp)
 static void
 vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 {
-    int i;
-
+    int i, argc = 0, local_size = 0;
     VALUE rstr;
     VALUE *sp = cfp->sp;
     VALUE *ep = cfp->ep;
 
-    int argc = 0, local_size = 0;
-    rb_iseq_t *iseq = cfp->iseq;
-
-    if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
+    if (VM_FRAME_RUBYFRAME_P(cfp)) {
+	rb_iseq_t *iseq = cfp->iseq;
 	argc = iseq->body->param.lead_num;
 	local_size = iseq->body->local_size;
     }
@@ -317,7 +314,7 @@ rb_vmdebug_debug_print_register(rb_thread_t *th)
     ptrdiff_t ep = cfp->ep - th->stack;
     ptrdiff_t cfpi;
 
-    if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
+    if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	pc = cfp->pc - cfp->iseq->body->iseq_encoded;
     }
 

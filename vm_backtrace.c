@@ -37,13 +37,12 @@ calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
 int
 rb_vm_get_sourceline(const rb_control_frame_t *cfp)
 {
-    int lineno = 0;
-    const rb_iseq_t *iseq = cfp->iseq;
-
-    if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
-	lineno = calc_lineno(cfp->iseq, cfp->pc);
+    if (VM_FRAME_RUBYFRAME_P(cfp) && cfp->iseq) {
+	return calc_lineno(cfp->iseq, cfp->pc);
     }
-    return lineno;
+    else {
+	return 0;
+    }
 }
 
 typedef struct rb_backtrace_location_struct {
