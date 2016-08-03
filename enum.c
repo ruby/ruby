@@ -1086,10 +1086,12 @@ enum_sort_by(int argc, VALUE *argv, VALUE obj)
 	for (j = 0; j < argc; ++j) {
 	    VALUE arg = argv[j];
 	    Check_Type(arg, T_SYMBOL);
-	    if (arg == ID2SYM(rb_intern("ascend"))) {
+	    if (arg == ID2SYM(rb_intern("ascend")) ||
+		arg == ID2SYM(rb_intern("asc"))) {
 		cmp = sort_by_cmp;
 	    }
-	    else if (arg == ID2SYM(rb_intern("descend"))) {
+	    else if (arg == ID2SYM(rb_intern("descend")) ||
+		     arg == ID2SYM(rb_intern("desc"))) {
 		cmp = sort_by_cmp_descend;
 	    }
 	    else {
