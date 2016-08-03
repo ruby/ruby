@@ -339,6 +339,10 @@ rb_obj_clone2(int argc, VALUE *argv, VALUE obj)
     if (!NIL_P(opt)) {
 	rb_get_kwargs(opt, keyword_ids, 0, 1, kwargs);
 	kwfreeze = kwargs[0];
+	if (kwfreeze != Qundef && kwfreeze != Qtrue && kwfreeze != Qfalse) {
+	    rb_raise(rb_eArgError, "unexpected value for freeze: %s",
+		     rb_builtin_class_name(kwfreeze));
+	}
     }
 
     if (rb_special_const_p(obj)) {

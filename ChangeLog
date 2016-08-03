@@ -1,3 +1,8 @@
+Wed Aug  3 17:15:06 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_obj_clone2): restrict freeze option to true other
+	  than false which only has the effect.  [Feature #12300]
+
 Wed Aug  3 10:47:07 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: introduce VM_FRAME_RUBYFRAME_P()
