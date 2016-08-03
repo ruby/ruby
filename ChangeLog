@@ -1,7 +1,7 @@
 Wed Aug  3 10:47:07 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_core.h: introduce VM_FRAME_RUBYFRAME_P()
-	  and VM_FRAME_CFRAME_P(). 
+	  and VM_FRAME_CFRAME_P().
 	  Most of case, RUBY_VM_NORMAL_ISEQ_P() is no
 	  longer needed.
 
