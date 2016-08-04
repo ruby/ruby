@@ -252,7 +252,9 @@ class OpenStruct
 
   #
   # Remove the named field from the object. Returns the value that the field
-  # contained if it was defined.
+  # contained if it was defined, else a NameError is raised.
+  # Optionally, provide a value that will be returned in the event the
+  # deleting field does not exist.
   #
   #   require 'ostruct'
   #
@@ -260,11 +262,16 @@ class OpenStruct
   #
   #   person.delete_field('name')  # => 'John Smith'
   #
+  #   person.delete_field('number')  # => NameError
+  #
+  #   person.delete_field('number') { 8675_309 } # => 8675309
+  #
   def delete_field(name)
     sym = name.to_sym
     begin
       singleton_class.__send__(:remove_method, sym, "#{sym}=")
     rescue NameError
+      return yield if block_given?
     end
     @table.delete(sym) do
       raise NameError.new("no field `#{sym}' in #{self}", sym)

@@ -97,6 +97,14 @@ class TC_OpenStruct < Test::Unit::TestCase
     o.delete_field s
     assert_not_respond_to(o, :foo)
     assert_not_respond_to(o, :foo=)
+
+    assert_raise(NameError) { o.delete_field(s) }
+    assert_equal(o.delete_field(s) { :foo }, s.to_sym)
+
+    o[s] = :foobar
+    assert_respond_to(o, :foo)
+    assert_respond_to(o, :foo=)
+    assert_equal(o.delete_field(s) { :baz }, :foobar)
   end
 
   def test_setter
