@@ -319,6 +319,8 @@ class TestEnv < Test::Unit::TestCase
       assert_equal("foo", v)
     end
     assert_invalid_env {|var| ENV.assoc(var)}
+    assert_predicate(v, :tainted?)
+    assert_equal(Encoding.find("locale"), v.encoding)
   end
 
   def test_has_value2

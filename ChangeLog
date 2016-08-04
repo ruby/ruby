@@ -1,3 +1,8 @@
+Thu Aug  4 11:54:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (env_assoc): the encoding of the value should be the
+	  locale, as well as other methods, [], fetch, values, etc.
+
 Wed Aug  3 21:31:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (reg_fragment_enc_error): compile_error is different

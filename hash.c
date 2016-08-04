@@ -3899,7 +3899,7 @@ env_assoc(VALUE env, VALUE key)
 
     s = env_name(key);
     e = getenv(s);
-    if (e) return rb_assoc_new(key, rb_tainted_str_new2(e));
+    if (e) return rb_assoc_new(key, env_str_new2(e));
     return Qnil;
 }
 
