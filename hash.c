@@ -2944,6 +2944,7 @@ env_str_new(const char *ptr, long len)
 {
 #ifdef _WIN32
     VALUE str = env_str_transcode(rb_utf8_str_new(ptr, len), rb_locale_encoding());
+    OBJ_TAINT(str); /* rb_locale_str_new makes tainted string, but rb_utf8_str_new doesn't */
 #else
     VALUE str = rb_locale_str_new(ptr, len);
 #endif
