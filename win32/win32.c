@@ -4034,8 +4034,8 @@ str2guid(const char *str, GUID *guid)
 #endif
 typedef DWORD (WINAPI *cigl_t)(const GUID *, NET_LUID *);
 typedef DWORD (WINAPI *cilnA_t)(const NET_LUID *, char *, size_t);
-static cigl_t pConvertInterfaceGuidToLuid = NULL;
-static cilnA_t pConvertInterfaceLuidToNameA = NULL;
+static cigl_t pConvertInterfaceGuidToLuid = (cigl_t)-1;
+static cilnA_t pConvertInterfaceLuidToNameA = (cilnA_t)-1;
 
 int
 getifaddrs(struct ifaddrs **ifap)
@@ -4058,11 +4058,11 @@ getifaddrs(struct ifaddrs **ifap)
 	return -1;
     }
 
-    if (!pConvertInterfaceGuidToLuid)
+    if (pConvertInterfaceGuidToLuid == (cigl_t)-1)
 	pConvertInterfaceGuidToLuid =
 	    (cigl_t)get_proc_address("iphlpapi.dll",
 				     "ConvertInterfaceGuidToLuid", NULL);
-    if (!pConvertInterfaceLuidToNameA)
+    if (pConvertInterfaceLuidToNameA == (cilnA_t)-1)
 	pConvertInterfaceLuidToNameA =
 	    (cilnA_t)get_proc_address("iphlpapi.dll",
 				      "ConvertInterfaceLuidToNameA", NULL);
@@ -5995,10 +5995,10 @@ rb_pid_t
 rb_w32_getppid(void)
 {
     typedef long (WINAPI query_func)(HANDLE, int, void *, ULONG, ULONG *);
-    static query_func *pNtQueryInformationProcess = NULL;
+    static query_func *pNtQueryInformationProcess = (query_func *)-1;
     rb_pid_t ppid = 0;
 
-    if (!pNtQueryInformationProcess)
+    if (pNtQueryInformationProcess == (query_func *)-1)
 	pNtQueryInformationProcess = (query_func *)get_proc_address("ntdll.dll", "NtQueryInformationProcess", NULL);
     if (pNtQueryInformationProcess) {
 	struct {
