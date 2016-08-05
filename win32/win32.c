@@ -7505,8 +7505,9 @@ const char * WSAAPI
 rb_w32_inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 {
     typedef char *(WSAAPI inet_ntop_t)(int, void *, char *, size_t);
-    inet_ntop_t *pInetNtop;
-    pInetNtop = (inet_ntop_t *)get_proc_address("ws2_32", "inet_ntop", NULL);
+    static inet_ntop_t *pInetNtop = (inet_ntop_t *)-1;
+    if (pInetNtop == (inet_ntop_t *)-1)
+	pInetNtop = (inet_ntop_t *)get_proc_address("ws2_32", "inet_ntop", NULL);
     if (pInetNtop) {
 	return pInetNtop(af, (void *)addr, numaddr, numaddr_len);
     }
@@ -7523,8 +7524,9 @@ int WSAAPI
 rb_w32_inet_pton(int af, const char *src, void *dst)
 {
     typedef int (WSAAPI inet_pton_t)(int, const char*, void *);
-    inet_pton_t *pInetPton;
-    pInetPton = (inet_pton_t *)get_proc_address("ws2_32", "inet_pton", NULL);
+    static inet_pton_t *pInetPton = (inet_pton_t *)-1;
+    if (pInetPton == (inet_pton_t *)-1)
+	pInetPton = (inet_pton_t *)get_proc_address("ws2_32", "inet_pton", NULL);
     if (pInetPton) {
 	return pInetPton(af, src, dst);
     }
