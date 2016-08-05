@@ -1,3 +1,8 @@
+Fri Aug  5 17:04:02 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (w32_getenv): call rb_w32_getenv and rb_w32_ugetenv via
+	  this pointer without further comparisons.
+
 Thu Aug  4 11:54:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (env_assoc): the encoding of the value should be the

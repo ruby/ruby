@@ -2896,17 +2896,21 @@ static char **my_environ;
 #undef environ
 #define environ my_environ
 #undef getenv
-static inline char *
-w32_getenv(const char *name)
+static char *(*w32_getenv)(const char*);
+static char *
+w32_getenv_unknown(const char *name)
 {
-    static int binary = -1;
-    static int locale = -1;
-    if (binary < 0) {
-	binary = rb_ascii8bit_encindex();
-	locale = rb_locale_encindex();
+    char *(*func)(const char*);
+    if (rb_locale_encindex() == rb_ascii8bit_encindex()) {
+	func = rb_w32_getenv;
     }
-    return locale == binary ? rb_w32_getenv(name) : rb_w32_ugetenv(name);
+    else {
+	func = rb_w32_ugetenv;
+    }
+    /* atomic assignment in flat memory model */
+    return (w32_getenv = func)(name);
 }
+static char *(*w32_getenv)(const char*) = w32_getenv_unknown;
 #define getenv(n) w32_getenv(n)
 #elif defined(__APPLE__)
 #undef environ
