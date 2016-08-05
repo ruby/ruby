@@ -2940,30 +2940,29 @@ env_str_transcode(VALUE str, rb_encoding *enc)
 #endif
 
 static VALUE
-env_str_new(const char *ptr, long len)
+env_enc_str_new(const char *ptr, long len, rb_encoding *enc)
 {
 #ifdef _WIN32
-    VALUE str = env_str_transcode(rb_utf8_str_new(ptr, len), rb_locale_encoding());
-    OBJ_TAINT(str); /* rb_locale_str_new makes tainted string, but rb_utf8_str_new doesn't */
+    VALUE str = env_str_transcode(rb_utf8_str_new(ptr, len), enc);
 #else
-    VALUE str = rb_locale_str_new(ptr, len);
+    VALUE str = rb_external_str_new_with_enc(ptr, len, enc);
 #endif
 
+    OBJ_TAINT(str);
     rb_obj_freeze(str);
     return str;
 }
 
 static VALUE
-env_path_str_new(const char *ptr)
+env_enc_str_new_cstr(const char *ptr, rb_encoding *enc)
 {
-#ifdef _WIN32
-    VALUE str = env_str_transcode(rb_utf8_str_new_cstr(ptr), rb_filesystem_encoding());
-#else
-    VALUE str = rb_filesystem_str_new_cstr(ptr);
-#endif
+    return env_enc_str_new(ptr, strlen(ptr), enc);
+}
 
-    rb_obj_freeze(str);
-    return str;
+static VALUE
+env_str_new(const char *ptr, long len)
+{
+    return env_enc_str_new(ptr, len, rb_locale_encoding());
 }
 
 static VALUE
@@ -2971,6 +2970,25 @@ env_str_new2(const char *ptr)
 {
     if (!ptr) return Qnil;
     return env_str_new(ptr, strlen(ptr));
+}
+
+static int env_path_tainted(const char *);
+
+static rb_encoding *
+env_encoding_for(const char *name, const char *ptr)
+{
+    if (ENVMATCH(name, PATH_ENV) && !env_path_tainted(ptr)) {
+	return rb_filesystem_encoding();
+    }
+    else {
+	return rb_locale_encoding();
+    }
+}
+
+static VALUE
+env_name_new(const char *name, const char *ptr)
+{
+    return env_enc_str_new_cstr(ptr, env_encoding_for(name, ptr));
 }
 
 static void *
@@ -3061,8 +3079,6 @@ env_delete_m(VALUE obj, VALUE name)
     return val;
 }
 
-static int env_path_tainted(const char *);
-
 /*
  * call-seq:
  *   ENV[name] -> value
@@ -3078,10 +3094,7 @@ rb_f_getenv(VALUE obj, VALUE name)
     nam = env_name(name);
     env = getenv(nam);
     if (env) {
-	if (ENVMATCH(nam, PATH_ENV) && !env_path_tainted(env)) {
-	    return env_path_str_new(env);
-	}
-	return env_str_new2(env);
+	return env_name_new(nam, env);
     }
     return Qnil;
 }
@@ -3122,9 +3135,7 @@ env_fetch(int argc, VALUE *argv)
 	}
 	return argv[1];
     }
-    if (ENVMATCH(nam, PATH_ENV) && !env_path_tainted(env))
-	return env_path_str_new(env);
-    return env_str_new2(env);
+    return env_name_new(nam, env);
 }
 
 static void
