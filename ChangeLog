@@ -1,3 +1,8 @@
+Sat Aug  6 09:35:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* id_table.h (rb_id_table_iterator_result): add dummy sentinel
+	  member because C standard prohibits a trailing comma.
+
 Sat Aug  6 00:39:44 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (env_enc_str_new): make string for an environment

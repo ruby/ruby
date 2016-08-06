@@ -9,6 +9,7 @@ enum rb_id_table_iterator_result {
     ID_TABLE_CONTINUE = ST_CONTINUE,
     ID_TABLE_STOP     = ST_STOP,
     ID_TABLE_DELETE   = ST_DELETE,
+    ID_TABLE_ITERATOR_RESULT_END
 };
 
 struct rb_id_table *rb_id_table_create(size_t size);

@@ -720,6 +720,7 @@ list_id_table_delete(struct list_id_table *tbl, ID id)
 
 #define FOREACH_LAST() do {   \
     switch (ret) {            \
+      case ID_TABLE_ITERATOR_RESULT_END: \
       case ID_TABLE_CONTINUE: \
       case ID_TABLE_STOP:     \
 	break;                \
