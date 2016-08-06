@@ -1,3 +1,10 @@
+Sun Aug  7 06:48:21 2016  Eric Wong  <e@80x24.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_write_internal):
+	  avoid undefined behavior
+	* test/openssl/test_pair.rb (test_write_zero): new test
+	  [ruby-core:76751] [Bug #12660]
+
 Sat Aug  6 09:35:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* id_table.h (rb_id_table_iterator_result): add dummy sentinel
