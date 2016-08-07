@@ -138,7 +138,7 @@ class VCS
   end
 
   def modified(path)
-    last, changed, modified, *rest = get_revisions(path)
+    _, _, modified, * = get_revisions(path)
     modified
   end
 
