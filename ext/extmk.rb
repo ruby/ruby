@@ -50,10 +50,6 @@ elsif !File.chardev?(@null = "/dev/null")
   @null = "nul"
 end
 
-def sysquote(x)
-  @quote ? x.quote : x
-end
-
 def verbose?
   $mflags.defined?("V") == "1"
 end
@@ -267,9 +263,9 @@ def extmake(target, basedir = 'ext')
 
       return parent ? [conf, lineno||0, message] : true
     end
-    args = sysquote($mflags)
+    args = $mflags
     unless $destdir.to_s.empty? or $mflags.defined?("DESTDIR")
-      args += [sysquote("DESTDIR=" + relative_from($destdir, "../"+prefix))]
+      args += ["DESTDIR=" + relative_from($destdir, "../"+prefix)]
     end
     if $static and ok and !$objs.empty? and !noinstall
       args += ["static"] unless $clean
@@ -812,7 +808,7 @@ elsif !$configure_only
   puts message
   $stdout.flush
   $mflags.concat(rubies)
-  system($make, *sysquote($mflags)) or exit($?.exitstatus)
+  system($make, *$mflags) or exit($?.exitstatus)
 end
 # :startdoc:
 
