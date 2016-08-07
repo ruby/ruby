@@ -773,10 +773,10 @@ if $configure_only and $command_output
     mf.puts "\n""note:\n"
     unless fails.empty?
       mf.puts %Q<\t@echo "*** Following extensions failed to configure:">
-      fails.each do |d, n, e|
+      fails.each do |d, n, err|
         d = "#{d}:#{n}:"
-        if e
-          d << " " << e
+        if err
+          d << " " << err
         end
         mf.puts %Q<\t@echo "#{d}">
       end
