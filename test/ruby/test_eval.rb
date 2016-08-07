@@ -271,11 +271,9 @@ class TestEval < Test::Unit::TestCase
     eval 'while false; bad = true; print "foo\n" end'
     assert(!bad)
 
-    assert(eval('TRUE'))
+    assert(eval('Object'))
     assert(eval('true'))
-    assert(!eval('NIL'))
     assert(!eval('nil'))
-    assert(!eval('FALSE'))
     assert(!eval('false'))
 
     $foo = 'assert(true)'

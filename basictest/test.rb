@@ -1860,11 +1860,9 @@ $bad=false
 eval 'while false; $bad = true; print "foo\n" end'
 test_ok(!$bad)
 
-test_ok(eval('TRUE'))
+test_ok(eval('Object'))
 test_ok(eval('true'))
-test_ok(!eval('NIL'))
 test_ok(!eval('nil'))
-test_ok(!eval('FALSE'))
 test_ok(!eval('false'))
 
 $foo = 'test_ok(true)'

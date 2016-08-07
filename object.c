@@ -3613,6 +3613,14 @@ InitVM_Object(void)
      * An alias of +false+
      */
     rb_define_global_const("FALSE", Qfalse);
+
+    {
+	VALUE names[3];
+	names[0] = ID2SYM(rb_intern_const("TRUE"));
+	names[1] = ID2SYM(rb_intern_const("FALSE"));
+	names[2] = ID2SYM(rb_intern_const("NIL"));
+	rb_mod_deprecate_constant(3, names, rb_cObject);
+    }
 }
 
 void

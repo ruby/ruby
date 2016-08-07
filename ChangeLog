@@ -1,3 +1,8 @@
+Sun Aug  7 18:08:27 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (InitVM_Object): deprecate toplevel constants TRUE,
+	  FALSE, and NIL.  [Feature #12574]
+
 Sun Aug  7 06:48:21 2016  Eric Wong  <e@80x24.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_write_internal):
