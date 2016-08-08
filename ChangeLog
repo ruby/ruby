@@ -1,3 +1,7 @@
+Tue Aug  9 00:12:31 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* doc/maintainers.rdoc: Remove moved file section.
+
 Mon Aug  8 20:56:46 2016  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/sample/excel1.rb, ext/win32ole/sample/excel2.rb,
