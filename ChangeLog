@@ -1,3 +1,9 @@
+Mon Aug  8 12:51:12 2016  Zarko Todorovski <zarko@ca.ibm.com>
+
+	* internal.h (RBASIC_CLEAR_CLASS): Reroute ANSI C's strict
+	  aliasing rule.
+	  [ruby-core:74427][Bug #12191][ruby-core:76747][Bug #12657]
+
 Sun Aug  7 18:08:27 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (InitVM_Object): deprecate toplevel constants TRUE,
