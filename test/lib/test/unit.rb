@@ -177,7 +177,7 @@ module Test
 
       class Worker
         def self.launch(ruby,args=[])
-          io = IO.popen([*ruby,
+          io = IO.popen([*ruby, "-W1",
                         "#{File.dirname(__FILE__)}/unit/parallel.rb",
                         *args], "rb+")
           new(io, io.pid, :waiting)
