@@ -1904,11 +1904,7 @@ set_max_block_time(self, time)
         break;
 
     default:
-        {
-	    VALUE tmp = rb_funcallv(time, ID_inspect, 0, 0);
-	    rb_raise(rb_eArgError, "invalid value for time: '%s'",
-		     StringValuePtr(tmp));
-	}
+	rb_raise(rb_eArgError, "invalid value for time: '%+"PRIsVALUE"'", time);
     }
 
     Tcl_SetMaxBlockTime(&tcl_time);
