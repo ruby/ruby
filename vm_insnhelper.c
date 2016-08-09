@@ -15,15 +15,9 @@
 #include "internal.h"
 #include "probes.h"
 #include "probes_helper.h"
+#include "ruby/config.h"
 
 /* control stack frame */
-
-#undef INLINE
-#if defined __GNUC__ && !defined __NO_INLINE__ && !defined __clang__
-#define INLINE inline
-#else
-#define INLINE static inline
-#endif
 
 static rb_control_frame_t *vm_get_ruby_level_caller_cfp(const rb_thread_t *th, const rb_control_frame_t *cfp);
 
@@ -867,7 +861,7 @@ vm_search_const_defined_class(const VALUE cbase, ID id)
 #define USE_IC_FOR_IVAR 1
 #endif
 
-INLINE VALUE
+ALWAYS_INLINE() inline VALUE
 vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
 {
 #if USE_IC_FOR_IVAR
