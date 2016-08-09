@@ -167,9 +167,6 @@ y.tab.c
 /ext/socket/constdefs.h
 /ext/socket/constdefs.c
 
-# /ext/tk/
-/ext/tk/config_list
-
 # /gems
 /gems/*.gem
 

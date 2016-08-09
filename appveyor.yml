@@ -28,7 +28,7 @@ install:
   - copy zlib.h    \usr\local\include
 build_script:
   - cd %APPVEYOR_BUILD_FOLDER%
-  - win32\configure.bat --without-ext=+,dbm,gdbm,readline,tk* --with-opt-dir=/usr/local
+  - win32\configure.bat --without-ext=+,dbm,gdbm,readline --with-opt-dir=/usr/local
   - nmake -l up
   - nmake -l
   - nmake install-nodoc

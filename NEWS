@@ -168,6 +168,10 @@ with all sufficient information, see the ChangeLog file or Redmine
     "thread.rb", which has precedence over "thread.so", and has been provided
     in $LOADED_FEATURES since 2.1.
 
+* Tk
+  * Tk is removed from stdlib.  [Feature #8539]
+    https://github.com/ruby/tk is the new upstream.
+
 === C API updates
 
 * ruby_show_version() will no longer exits the process, if

@@ -1,3 +1,8 @@
+Tue Aug  9 15:41:24 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/tk: Tk is removed from stdlib.  [Feature #8539]
+	  https://github.com/ruby/tk is the new upstream.
+
 Tue Aug  9 00:12:31 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* doc/maintainers.rdoc: Remove moved file section.

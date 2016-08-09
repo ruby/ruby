@@ -244,8 +244,6 @@ Zachary Scott (zzak)
   _unmaintained_
 [ext/syslog]
   Akinori MUSHA (knu)
-[ext/tk]
-  Hidetoshi NAGAI (nagai)
 [ext/win32]
   NAKAMURA Usaku (usa)
 [ext/win32ole]
