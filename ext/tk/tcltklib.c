@@ -1901,6 +1901,7 @@ set_max_block_time(self, time)
         divmod = rb_funcall(time, rb_intern("divmod"), 1, INT2FIX(1));
         tcl_time.sec  = NUM2LONG(RARRAY_AREF(divmod, 0));
         tcl_time.usec = (long)(NUM2DBL(RARRAY_AREF(divmod, 1)) * 1000000);
+        break;
 
     default:
         {
