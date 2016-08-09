@@ -191,7 +191,7 @@ class Othello
 
       class Square
 
-         attr :oval, TRUE
+         attr_accessor :oval
          attr :row
          attr :col
 
