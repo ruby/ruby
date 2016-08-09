@@ -3303,7 +3303,7 @@ tcl_protect_core(interp, proc, data) /* should not raise exception */
         DUMP1("set backtrace");
         if (!NIL_P(backtrace = rb_funcallv(exc, ID_backtrace, 0, 0))) {
             backtrace = rb_ary_join(backtrace, rb_str_new2("\n"));
-            Tcl_AddErrorInfo(interp, StringValuePtr(backtrace));
+            Tcl_AddErrorInfo(interp, StringValueCStr(backtrace));
         }
 
         rb_thread_critical = thr_crit_bup;
@@ -6208,19 +6208,19 @@ ip_init(argc, argv, self)
             /* without Tk */
             with_tk = 0;
         } else {
-            /* Tcl_SetVar(ptr->ip, "argv", StringValuePtr(opts), 0); */
-            Tcl_SetVar(ptr->ip, "argv", StringValuePtr(opts), TCL_GLOBAL_ONLY);
+            /* Tcl_SetVar(ptr->ip, "argv", StringValueCStr(opts), 0); */
+            Tcl_SetVar(ptr->ip, "argv", StringValueCStr(opts), TCL_GLOBAL_ONLY);
 	    Tcl_Eval(ptr->ip, "set argc [llength $argv]");
         }
     case 1:
         /* argv0 */
         if (!NIL_P(argv0)) {
-            if (strncmp(StringValuePtr(argv0), "-e", 3) == 0
-                || strncmp(StringValuePtr(argv0), "-", 2) == 0) {
+            if (strncmp(StringValueCStr(argv0), "-e", 3) == 0
+                || strncmp(StringValueCStr(argv0), "-", 2) == 0) {
                 Tcl_SetVar(ptr->ip, "argv0", "ruby", TCL_GLOBAL_ONLY);
             } else {
-                /* Tcl_SetVar(ptr->ip, "argv0", StringValuePtr(argv0), 0); */
-                Tcl_SetVar(ptr->ip, "argv0", StringValuePtr(argv0),
+                /* Tcl_SetVar(ptr->ip, "argv0", StringValueCStr(argv0), 0); */
+                Tcl_SetVar(ptr->ip, "argv0", StringValueCStr(argv0),
                            TCL_GLOBAL_ONLY);
             }
         }
@@ -6420,7 +6420,7 @@ ip_create_slave_core(interp, argc, argv)
     slave->allow_ruby_exit = 0;
     slave->return_value = 0;
 
-    slave->ip = Tcl_CreateSlave(master->ip, StringValuePtr(name), safe);
+    slave->ip = Tcl_CreateSlave(master->ip, StringValueCStr(name), safe);
     if (slave->ip == NULL) {
         rb_thread_critical = thr_crit_bup;
         return rb_exc_new2(rb_eRuntimeError,
@@ -6896,7 +6896,7 @@ static Tcl_Obj *
 get_obj_from_str(str)
     VALUE str;
 {
-    const char *s = StringValuePtr(str);
+    const char *s = StringValueCStr(str);
 
 #if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0
     return Tcl_NewStringObj((char*)s, RSTRING_LEN(str));
@@ -7744,7 +7744,7 @@ ip_cancel_eval_core(interp, msg, flag)
     if (NIL_P(msg)) {
       msg_obj = NULL;
     } else {
-      char *s = StringValuePtr(msg);
+      char *s = StringValueCStr(msg);
       msg_obj = Tcl_NewStringObj(s, RSTRING_LENINT(msg));
       Tcl_IncrRefCount(msg_obj);
     }
@@ -8409,7 +8409,7 @@ lib_set_system_encoding(self, enc_name)
 
     enc_name = rb_funcallv(enc_name, ID_to_s, 0, 0);
     if (Tcl_SetSystemEncoding((Tcl_Interp *)NULL,
-                              StringValuePtr(enc_name)) != TCL_OK) {
+                              StringValueCStr(enc_name)) != TCL_OK) {
         rb_raise(rb_eArgError, "unknown encoding name '%s'",
                  RSTRING_PTR(enc_name));
     }
@@ -8850,7 +8850,7 @@ alloc_invoke_arguments(argc, argv)
     Tcl_Preserve((ClientData)av); /* XXXXXXXX */
 #endif
     for (i = 0; i < argc; ++i) {
-        av[i] = strdup(StringValuePtr(argv[i]));
+        av[i] = strdup(StringValueCStr(argv[i]));
     }
     av[argc] = NULL;
 #endif
@@ -9854,7 +9854,7 @@ lib_merge_tklist(argc, argv, obj)
     len = 1;
     for(num = 0; num < argc; num++) {
         if (OBJ_TAINTED(argv[num])) taint_flag = 1;
-        dst = StringValuePtr(argv[num]);
+        dst = StringValueCStr(argv[num]);
 #if TCL_MAJOR_VERSION >= 8
         len += Tcl_ScanCountedElement(dst, RSTRING_LENINT(argv[num]),
                                       &flagPtr[num]) + 1;
