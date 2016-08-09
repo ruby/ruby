@@ -1311,6 +1311,7 @@ rb_objspace_alloc(void)
     rb_objspace_t *objspace = &rb_objspace;
 #endif
     malloc_limit = gc_params.malloc_limit_min;
+    objspace->flags.report_on_exception_in_finalizer = TRUE;
 
     return objspace;
 }
