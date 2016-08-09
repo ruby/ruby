@@ -2,10 +2,10 @@
 
 require "tkclass"
 
-$tkline_init = FALSE
+$tkline_init = false
 def start_random
   return if $tkline_init
-  $tkline_init = TRUE
+  $tkline_init = true
   if defined? Thread
     Thread.start do
       loop do

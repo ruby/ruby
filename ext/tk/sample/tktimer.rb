@@ -14,7 +14,7 @@ TkButton.new {
   text 'Start'
   command proc {
     if $stopped
-      $stopped = FALSE
+      $stopped = false
       tick
     end
   }
@@ -24,14 +24,14 @@ TkButton.new {
   text 'Stop'
   command proc{
     exit if $stopped
-    $stopped = TRUE
+    $stopped = true
   }
   pack('side'=>'right','fill'=>'both','expand'=>'yes')
 }
 
 $seconds=0
 $hundredths=0
-$stopped=TRUE
+$stopped=true
 
 def tick
   if $stopped then return end

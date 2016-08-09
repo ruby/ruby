@@ -381,7 +381,7 @@ class Othello
       $wm.e("iconname", $root, "Othello")
 
       @board.com_disk = WHITE
-      @game_over = FALSE
+      @game_over = false
 
       TclTk.mainloop
    end
@@ -403,11 +403,11 @@ class Othello
       @board_view.clear
       @board.reset
       $wm.e("title", $root, "Othello")
-      @game_over = FALSE
+      @game_over = false
    end
 
    def com_turn
-      @in_com_turn = TRUE
+      @in_com_turn = true
       $update.e()
       sleep(0.5)
       begin
@@ -421,22 +421,22 @@ class Othello
             else
                $wm.e("title", $root, "{Othello - You Loose!}")
             end
-            @game_over = TRUE
+            @game_over = true
             break
          elsif com_disk == 0
             $wm.e("title", $root, "{Othello - You Win!}")
-            @game_over = TRUE
+            @game_over = true
             break
          elsif man_disk == 0
             $wm.e("title", $root, "{Othello - You Loose!}")
-            @game_over = TRUE
+            @game_over = true
             break
          end
          row, col = @board.search(@board.com_disk)
          break if row == nil || col == nil
          @board.put_disk(row, col, @board.com_disk)
       end while @board.search(@board.man_disk) == [nil, nil]
-      @in_com_turn = FALSE
+      @in_com_turn = false
    end
 
    def show_point

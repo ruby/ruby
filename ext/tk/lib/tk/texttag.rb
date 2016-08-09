@@ -175,7 +175,7 @@ class TkTextTag<TkObject
 #    end
 #  end
 #  def configure(key, value)
-#    if value == FALSE
+#    if value == false
 #      value = "0"
 #    elsif value.kind_of?(Proc)
 #      value = install_cmd(value)

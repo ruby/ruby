@@ -9,7 +9,7 @@ end
 
 def stop_msg_loop
   puts "Now Stop IE..."
-  $LOOP = FALSE;
+  $LOOP = false;
 end
 
 def default_handler(event, *args)
