@@ -5,7 +5,7 @@
 #
 require 'tk'
 
-class TkVirtualEvent<TkObject
+class TkVirtualEvent < TkObject
   extend Tk
 
   TkCommandNames = ['event'.freeze].freeze
@@ -22,7 +22,7 @@ class TkVirtualEvent<TkObject
     TkVirtualEventTBL.mutex.synchronize{ TkVirtualEventTBL.clear }
   }
 
-  class PreDefVirtEvent<self
+  class PreDefVirtEvent < self
     def self.new(event, *sequences)
       if event =~ /^<(<.*>)>$/
         event = $1

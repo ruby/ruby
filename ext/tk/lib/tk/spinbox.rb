@@ -6,7 +6,7 @@
 require 'tk'
 require 'tk/entry'
 
-class Tk::Spinbox<Tk::Entry
+class Tk::Spinbox < Tk::Entry
   TkCommandNames = ['spinbox'.freeze].freeze
   WidgetClassName = 'Spinbox'.freeze
   WidgetClassNames[WidgetClassName] ||= self

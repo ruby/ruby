@@ -30,7 +30,7 @@ f.printf "%s\n", Foo
 
 f.quux
 
-class Bar<Foo
+class Bar < Foo
   def quux
     super
     baz()

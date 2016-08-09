@@ -8,7 +8,7 @@ require 'tk/label'
 require 'tk/scrollable'
 require 'tk/validation'
 
-class Tk::Entry<Tk::Label
+class Tk::Entry < Tk::Label
   include X_Scrollable
   include TkValidation
 

@@ -1569,7 +1569,7 @@ rb_mod_eqq(VALUE mod, VALUE arg)
  * is the same as <i>other</i>. Returns
  * <code>nil</code> if there's no relationship between the two.
  * (Think of the relationship in terms of the class definition:
- * "class A<B" implies "A<B".)
+ * "class A < B" implies "A < B".)
  *
  */
 
@@ -1597,7 +1597,7 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
  * Returns true if <i>mod</i> is a subclass of <i>other</i>. Returns
  * <code>nil</code> if there's no relationship between the two.
  * (Think of the relationship in terms of the class definition:
- * "class A<B" implies "A<B".)
+ * "class A < B" implies "A < B".)
  *
  */
 
@@ -1617,7 +1617,7 @@ rb_mod_lt(VALUE mod, VALUE arg)
  * two modules are the same. Returns
  * <code>nil</code> if there's no relationship between the two.
  * (Think of the relationship in terms of the class definition:
- * "class A<B" implies "B>A".)
+ * "class A < B" implies "B > A".)
  *
  */
 
@@ -1638,7 +1638,7 @@ rb_mod_ge(VALUE mod, VALUE arg)
  * Returns true if <i>mod</i> is an ancestor of <i>other</i>. Returns
  * <code>nil</code> if there's no relationship between the two.
  * (Think of the relationship in terms of the class definition:
- * "class A<B" implies "B>A".)
+ * "class A < B" implies "B > A".)
  *
  */
 

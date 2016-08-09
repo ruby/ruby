@@ -14,11 +14,11 @@ require 'tk'
 
 module Tk
   module RbWidget
-    class BalloonHelp<TkLabel
+    class BalloonHelp < TkLabel
     end
   end
 end
-class Tk::RbWidget::BalloonHelp<TkLabel
+class Tk::RbWidget::BalloonHelp < TkLabel
   DEFAULT_FOREGROUND = 'black'
   DEFAULT_BACKGROUND = 'white'
   DEFAULT_INTERVAL   = 750

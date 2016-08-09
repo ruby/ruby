@@ -43,7 +43,7 @@ module TkCanvasItemConfig
   private :__item_pathname
 end
 
-class Tk::Canvas<TkWindow
+class Tk::Canvas < TkWindow
   include TkCanvasItemConfig
   include Tk::Scrollable
 
@@ -641,7 +641,7 @@ end
 Tk.__set_loaded_toplevel_aliases__('tk/canvas.rb', :Tk, Tk::Canvas, :TkCanvas)
 
 
-class TkcItem<TkObject
+class TkcItem < TkObject
   extend Tk
   include TkcTagAccess
   extend TkItemFontOptkeys
@@ -782,42 +782,42 @@ class TkcItem<TkObject
   alias destroy delete
 end
 
-class TkcArc<TkcItem
+class TkcArc < TkcItem
   CItemTypeName = 'arc'.freeze
   CItemTypeToClass[CItemTypeName] = self
 end
 
-class TkcBitmap<TkcItem
+class TkcBitmap < TkcItem
   CItemTypeName = 'bitmap'.freeze
   CItemTypeToClass[CItemTypeName] = self
 end
 
-class TkcImage<TkcItem
+class TkcImage < TkcItem
   CItemTypeName = 'image'.freeze
   CItemTypeToClass[CItemTypeName] = self
 end
 
-class TkcLine<TkcItem
+class TkcLine < TkcItem
   CItemTypeName = 'line'.freeze
   CItemTypeToClass[CItemTypeName] = self
 end
 
-class TkcOval<TkcItem
+class TkcOval < TkcItem
   CItemTypeName = 'oval'.freeze
   CItemTypeToClass[CItemTypeName] = self
 end
 
-class TkcPolygon<TkcItem
+class TkcPolygon < TkcItem
   CItemTypeName = 'polygon'.freeze
   CItemTypeToClass[CItemTypeName] = self
 end
 
-class TkcRectangle<TkcItem
+class TkcRectangle < TkcItem
   CItemTypeName = 'rectangle'.freeze
   CItemTypeToClass[CItemTypeName] = self
 end
 
-class TkcText<TkcItem
+class TkcText < TkcItem
   CItemTypeName = 'text'.freeze
   CItemTypeToClass[CItemTypeName] = self
   def self.create(canvas, *args)
@@ -831,7 +831,7 @@ class TkcText<TkcItem
   end
 end
 
-class TkcWindow<TkcItem
+class TkcWindow < TkcItem
   CItemTypeName = 'window'.freeze
   CItemTypeToClass[CItemTypeName] = self
   def self.create(canvas, *args)

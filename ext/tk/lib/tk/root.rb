@@ -6,7 +6,7 @@ require 'tk'
 require 'tk/wm'
 require 'tk/menuspec'
 
-class Tk::Root<TkWindow
+class Tk::Root < TkWindow
   include Wm
   include TkMenuSpec
 

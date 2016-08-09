@@ -5,7 +5,7 @@
 require 'tk'
 require 'tk/text'
 
-class TkTextMark<TkObject
+class TkTextMark < TkObject
   include Tk::Text::IndexModMethods
 
   TMarkID_TBL = TkCore::INTERP.create_table
@@ -140,7 +140,7 @@ class TkTextMark<TkObject
 end
 TktMark = TkTextMark
 
-class TkTextNamedMark<TkTextMark
+class TkTextNamedMark < TkTextMark
   def self.new(parent, name, index=nil)
     TMarkID_TBL.mutex.synchronize{
       if TMarkID_TBL[parent.path] && TMarkID_TBL[parent.path][name]
@@ -183,21 +183,21 @@ class TkTextNamedMark<TkTextMark
 end
 TktNamedMark = TkTextNamedMark
 
-class TkTextMarkInsert<TkTextNamedMark
+class TkTextMarkInsert < TkTextNamedMark
   def self.new(parent,*args)
     super(parent, 'insert', *args)
   end
 end
 TktMarkInsert = TkTextMarkInsert
 
-class TkTextMarkCurrent<TkTextNamedMark
+class TkTextMarkCurrent < TkTextNamedMark
   def self.new(parent,*args)
     super(parent, 'current', *args)
   end
 end
 TktMarkCurrent = TkTextMarkCurrent
 
-class TkTextMarkAnchor<TkTextNamedMark
+class TkTextMarkAnchor < TkTextNamedMark
   def self.new(parent,*args)
     super(parent, 'anchor', *args)
   end

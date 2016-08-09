@@ -1649,7 +1649,7 @@ end
   alias trace_vdelete_for_element trace_remove_for_element
 end
 
-class TkVarAccess<TkVariable
+class TkVarAccess < TkVariable
   def self.new(name, *args)
     if name.kind_of?(TkVariable)
       name.value = args[0] unless args.empty?

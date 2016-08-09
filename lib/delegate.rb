@@ -305,7 +305,7 @@ end
 #    Non-Nil:  7
 #     Unique:  6
 #
-class SimpleDelegator<Delegator
+class SimpleDelegator < Delegator
   # Returns the current object method calls are being delegated to.
   def __getobj__
     unless defined?(@delegate_sd_obj)

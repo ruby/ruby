@@ -72,7 +72,7 @@ module TkTextTagConfig
   private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 end
 
-class Tk::Text<TkTextWin
+class Tk::Text < TkTextWin
   ItemConfCMD = ['tag'.freeze, 'configure'.freeze].freeze
   #include TkTreatTextTagFont
   include TkTextTagConfig

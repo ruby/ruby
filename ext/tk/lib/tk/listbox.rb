@@ -16,7 +16,7 @@ module TkListItemConfig
   private :__item_listval_optkeys
 end
 
-class Tk::Listbox<TkTextWin
+class Tk::Listbox < TkTextWin
   include TkListItemConfig
   include Scrollable
 

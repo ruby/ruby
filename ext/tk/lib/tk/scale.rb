@@ -4,7 +4,7 @@
 #
 require 'tk'
 
-class Tk::Scale<TkWindow
+class Tk::Scale < TkWindow
   TkCommandNames = ['scale'.freeze].freeze
   WidgetClassName = 'Scale'.freeze
   WidgetClassNames[WidgetClassName] ||= self

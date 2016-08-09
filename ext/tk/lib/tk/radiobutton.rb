@@ -5,7 +5,7 @@
 require 'tk'
 require 'tk/button'
 
-class Tk::RadioButton<Tk::Button
+class Tk::RadioButton < Tk::Button
   TkCommandNames = ['radiobutton'.freeze].freeze
   WidgetClassName = 'Radiobutton'.freeze
   WidgetClassNames[WidgetClassName] ||= self

@@ -13,7 +13,7 @@
 require 'tk'
 require 'tkafter'
 
-class TkSquare<TkWindow
+class TkSquare < TkWindow
   def create_self
     begin
       tk_call 'square', path
