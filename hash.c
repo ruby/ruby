@@ -1788,6 +1788,70 @@ rb_hash_each_pair(VALUE hash)
 }
 
 static int
+map_v_i(VALUE key, VALUE value, VALUE result)
+{
+    VALUE new_value = rb_yield(value);
+    rb_hash_aset(result, key, new_value);
+    return ST_CONTINUE;
+}
+
+/*
+ *  call-seq:
+ *     hsh.map_v {|value| block } -> hsh
+ *     hsh.map_v                  -> an_enumerator
+ *
+ *  Return a new with the results of running block once for every value.
+ *  This method does not change the keys.
+ *
+ *     h = { a: 1, b: 2, c: 3 }
+ *     h.map_v {|v| v * v + 1 }  #=> { a: 2, b: 5, c: 10 }
+ *     h.map_v(&:to_s)           #=> { a: "1", b: "2", c: "3" }
+ *     h.map_v.with_index {|v, i| "#{v}.#{i}" }
+ *                               #=> { a: "1.0", b: "2.1", c: "3.2" }
+ *
+ *  If no block is given, an enumerator is returned instead.
+ */
+static VALUE
+rb_hash_map_v(VALUE hash)
+{
+    VALUE result;
+
+    RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
+    result = rb_hash_new();
+    if (!RHASH_EMPTY_P(hash)) {
+        rb_hash_foreach(hash, map_v_i, result);
+    }
+
+    return result;
+}
+
+/*
+ *  call-seq:
+ *     hsh.map_v! {|value| block } -> hsh
+ *     hsh.map_v!                  -> an_enumerator
+ *
+ *  Return a new with the results of running block once for every value.
+ *  This method does not change the keys.
+ *
+ *     h = { a: 1, b: 2, c: 3 }
+ *     h.map_v! {|v| v * v + 1 }  #=> { a: 2, b: 5, c: 10 }
+ *     h.map_v!(&:to_s)           #=> { a: "1", b: "2", c: "3" }
+ *     h.map_v!.with_index {|v, i| "#{v}.#{i}" }
+ *                                #=> { a: "1.0", b: "2.1", c: "3.2" }
+ *
+ *  If no block is given, an enumerator is returned instead.
+ */
+static VALUE
+rb_hash_map_v_bang(VALUE hash)
+{
+    RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
+    rb_hash_modify_check(hash);
+    if (RHASH(hash)->ntbl)
+        rb_hash_foreach(hash, map_v_i, hash);
+    return hash;
+}
+
+static int
 to_a_i(VALUE key, VALUE value, VALUE ary)
 {
     rb_ary_push(ary, rb_assoc_new(key, value));
@@ -4335,6 +4399,9 @@ Init_Hash(void)
     rb_define_method(rb_cHash,"each_key", rb_hash_each_key, 0);
     rb_define_method(rb_cHash,"each_pair", rb_hash_each_pair, 0);
     rb_define_method(rb_cHash,"each", rb_hash_each_pair, 0);
+
+    rb_define_method(rb_cHash, "map_v", rb_hash_map_v, 0);
+    rb_define_method(rb_cHash, "map_v!", rb_hash_map_v_bang, 0);
 
     rb_define_method(rb_cHash,"keys", rb_hash_keys, 0);
     rb_define_method(rb_cHash,"values", rb_hash_values, 0);
