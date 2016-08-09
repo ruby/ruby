@@ -1737,9 +1737,9 @@ VALUE rb_eval_string(const char*);
 VALUE rb_eval_string_protect(const char*, int*);
 VALUE rb_eval_string_wrap(const char*, int*);
 VALUE rb_funcall(VALUE, ID, int, ...);
+/* use rb_funcallv replace if you need rb_funcall2 */
 VALUE rb_funcallv(VALUE, ID, int, const VALUE*);
 VALUE rb_funcallv_public(VALUE, ID, int, const VALUE*);
-#define rb_funcall2 rb_funcallv
 #define rb_funcall3 rb_funcallv_public
 VALUE rb_funcall_passing_block(VALUE, ID, int, const VALUE*);
 VALUE rb_funcall_with_block(VALUE, ID, int, const VALUE*, VALUE);
