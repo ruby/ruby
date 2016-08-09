@@ -295,6 +295,7 @@ class TclTkWidget < TclTkCommand
       res = @ip._eval_args(command, exp, *args)
 #      fail("can't create Widget") if res != exp
       # for tk_optionMenu, it is legal res != exp
+      return res
     else
       fail("first parameter is not TclTkInterpreter")
     end
