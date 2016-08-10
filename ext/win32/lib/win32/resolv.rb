@@ -9,6 +9,7 @@ require 'win32/registry'
 module Win32
   module Resolv
     API = Registry::API
+    Error = Registry::Error
 
     def self.get_hosts_path
       path = get_hosts_dir
