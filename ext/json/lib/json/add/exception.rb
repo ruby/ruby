@@ -3,7 +3,6 @@ unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
   require 'json'
 end
 
-# Exception serialization/deserialization
 class Exception
 
   # Deserializes JSON string by constructing new Exception object with message
