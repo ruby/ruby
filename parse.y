@@ -862,6 +862,7 @@ static void token_info_pop_gen(struct parser_params*, const char *token, size_t 
 %type <node> args call_args opt_call_args
 %type <node> paren_args opt_paren_args args_tail opt_args_tail block_args_tail opt_block_args_tail
 %type <node> command_args aref_args opt_block_arg block_arg var_ref var_lhs
+%type <node> command_rhs arg_rhs
 %type <node> command_asgn mrhs mrhs_arg superclass block_call block_command
 %type <node> f_block_optarg f_block_opt
 %type <node> f_arglist f_args f_arg f_arg_item f_optarg f_marg f_marg_list f_margs
@@ -1348,28 +1349,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		| expr
 		;
 
-command_asgn	: lhs '=' command_call
-		    {
-		    /*%%%*/
-			value_expr($3);
-			$$ = node_assign($1, $3);
-		    /*%
-			$$ = dispatch2(assign, $1, $3);
-		    %*/
-		    }
-		| lhs '=' command_call modifier_rescue stmt
-		    {
-		    /*%%%*/
-			NODE *resq = NEW_RESBODY(0, remove_begin($5), 0);
-			value_expr($3);
-			resq = NEW_RESCUE($3, resq, 0);
-			$$ = node_assign($1, resq);
-		    /*%
-			$3 = dispatch2(rescue_mod, $3, $5);
-			$$ = dispatch2(assign, $1, $3);
-		    %*/
-		    }
-		| lhs '=' command_asgn
+command_asgn	: lhs '=' command_rhs
 		    {
 		    /*%%%*/
 			value_expr($3);
@@ -1380,6 +1360,25 @@ command_asgn	: lhs '=' command_call
 		    }
 		;
 
+command_rhs	: command_call   %prec tOP_ASGN
+		    {
+		    /*%%%*/
+			value_expr($1);
+			$$ = $1;
+		    /*%
+		    %*/
+		    }
+		| command_call modifier_rescue stmt
+		    {
+		    /*%%%*/
+			value_expr($1);
+			$$ = NEW_RESCUE($1, NEW_RESBODY(0, remove_begin($3), 0), 0);
+		    /*%
+			$$ = dispatch2(rescue_mod, $1, $3);
+		    %*/
+		    }
+		| command_asgn
+		;
 
 expr		: command_call
 		| expr keyword_and expr
@@ -2047,38 +2046,12 @@ reswords	: keyword__LINE__ | keyword__FILE__ | keyword__ENCODING__
 		| keyword_while | keyword_until
 		;
 
-arg		: lhs '=' arg
+arg		: lhs '=' arg_rhs
 		    {
-		    /*%%%*/
-			value_expr($3);
 			$$ = node_assign($1, $3);
-		    /*%
-			$$ = dispatch2(assign, $1, $3);
-		    %*/
 		    }
-		| lhs '=' arg modifier_rescue arg
+		| var_lhs tOP_ASGN arg_rhs
 		    {
-		    /*%%%*/
-			value_expr($3);
-			$3 = NEW_RESCUE($3, NEW_RESBODY(0,$5,0), 0);
-			$$ = node_assign($1, $3);
-		    /*%
-			$$ = dispatch2(assign, $1, dispatch2(rescue_mod, $3, $5));
-		    %*/
-		    }
-		| var_lhs tOP_ASGN arg
-		    {
-			value_expr($3);
-			$$ = new_op_assign($1, $2, $3);
-		    }
-		| var_lhs tOP_ASGN arg modifier_rescue arg
-		    {
-		    /*%%%*/
-			value_expr($3);
-			$3 = NEW_RESCUE($3, NEW_RESBODY(0,$5,0), 0);
-		    /*%
-			$3 = dispatch2(rescue_mod, $3, $5);
-		    %*/
 			$$ = new_op_assign($1, $2, $3);
 		    }
 		| primary_value '[' opt_call_args rbracket tOP_ASGN arg
@@ -2469,6 +2442,25 @@ aref_args	: none
 			$$ = $1 ? NEW_LIST(new_hash($1)) : 0;
 		    /*%
 			$$ = arg_add_assocs(arg_new(), $1);
+		    %*/
+		    }
+		;
+
+arg_rhs 	: arg   %prec tOP_ASGN
+		    {
+		    /*%%%*/
+			value_expr($1);
+			$$ = $1;
+		    /*%
+		    %*/
+		    }
+		| arg modifier_rescue arg
+		    {
+		    /*%%%*/
+			value_expr($1);
+			$$ = NEW_RESCUE($1, NEW_RESBODY(0, remove_begin($3), 0), 0);
+		    /*%
+			$$ = dispatch2(rescue_mod, $1, $3);
 		    %*/
 		    }
 		;
