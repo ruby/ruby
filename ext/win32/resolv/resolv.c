@@ -1,20 +1,16 @@
 #include <ruby.h>
 #include <ruby/encoding.h>
+#include <windows.h>
+#ifndef NTDDI_VERSION
+#define NTDDI_VERSION 0x06000000
+#endif
 #include <iphlpapi.h>
-
-static VALUE
-w32error_init(VALUE self, VALUE code)
-{
-    VALUE str = rb_str_new_cstr(rb_w32_strerror(NUM2INT(code)));
-    rb_ivar_set(self, rb_intern("@code"), code);
-    return rb_call_super(1, &str);
-}
 
 static VALUE
 w32error_make_error(DWORD e)
 {
     VALUE code = ULONG2NUM(e);
-    return rb_class_new_instance(1, &code, rb_path2class("Win32::Error"));
+    return rb_class_new_instance(1, &code, rb_path2class("Win32::Resolv::Error"));
 }
 
 static void
@@ -59,8 +55,6 @@ InitVM_resolv(void)
     VALUE mWin32 = rb_define_module("Win32");
     VALUE resolv = rb_define_module_under(mWin32, "Resolv");
     VALUE singl = rb_singleton_class(resolv);
-    VALUE eclass = rb_define_class_under(mWin32, "Error", rb_eStandardError);
-    rb_define_method(eclass, "initialize", w32error_init, 1);
     rb_define_private_method(singl, "get_dns_server_list", get_dns_server_list, 0);
 }
 
