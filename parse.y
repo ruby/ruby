@@ -1357,6 +1357,18 @@ command_asgn	: lhs '=' command_call
 			$$ = dispatch2(assign, $1, $3);
 		    %*/
 		    }
+		| lhs '=' command_call modifier_rescue stmt
+		    {
+		    /*%%%*/
+			NODE *resq = NEW_RESBODY(0, remove_begin($5), 0);
+			value_expr($3);
+			resq = NEW_RESCUE($3, resq, 0);
+			$$ = node_assign($1, resq);
+		    /*%
+			$3 = dispatch2(rescue_mod, $3, $5);
+			$$ = dispatch2(assign, $1, $3);
+		    %*/
+		    }
 		| lhs '=' command_asgn
 		    {
 		    /*%%%*/

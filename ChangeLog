@@ -1,3 +1,8 @@
+Wed Aug 10 17:26:43 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (command_asgn): rescue modifier in command assignment
+	  should be limited to rhs only.  [ruby-core:75621] [Bug #12402]
+
 Wed Aug 10 15:35:03 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/win32/resolv/resolv.c: needs windows.h for iphlpapi.h on

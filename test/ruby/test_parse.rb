@@ -874,6 +874,16 @@ x = __ENCODING__
     assert_warning('') {eval("#{a} = 1; /(?<#{a}>)/ =~ ''")}
   end
 
+  def test_rescue_in_command_assignment
+    bug = '[ruby-core:75621] [Bug #12402]'
+    v = bug
+    v = raise(v) rescue "ok"
+    assert_equal("ok", v)
+    v = bug
+    v = raise v rescue "ok"
+    assert_equal("ok", v)
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}
