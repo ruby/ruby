@@ -33,11 +33,12 @@ class Integer
   # Returns true if +self+ is a prime number, else returns false.
   def prime?
     return self >= 2 if self <= 3
-    return false if self % 2 == 0 or self % 3 == 0
-    (5..(self**0.5).floor).step(6).each do |i|
-      if self % i == 0 || self % (i + 2) == 0
-        return false
-      end
+    return true if self == 5
+    return false unless 30.gcd(self) == 1
+    (7..Math.sqrt(self).to_i).step(30) do |p|
+      return false if
+        self%(p)    == 0 || self%(p+4)  == 0 || self%(p+6)  == 0 || self%(p+10) == 0 ||
+        self%(p+12) == 0 || self%(p+16) == 0 || self%(p+22) == 0 || self%(p+24) == 0
     end
     true
   end

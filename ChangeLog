@@ -1,3 +1,10 @@
+Thu Aug 11 03:16:59 2016  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* lib/prime.rb: Optimize prime?
+	  Adapted from patch by Jabari Zakiya [#12665]
+
+	* test/test_prime.rb: Improve test
+
 Wed Aug 10 22:37:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (command_rhs, arg_rhs): introduce new rules to reduce
