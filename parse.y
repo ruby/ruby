@@ -492,6 +492,9 @@ static NODE *new_const_op_assign_gen(struct parser_params *parser, NODE *lhs, ID
 	((in_def || in_single) ? yyerror("dynamic constant assignment") : (void)0), \
 	NEW_CDECL(0, 0, (path)))
 
+#define var_field(n) (n)
+#define backref_assign_error(n, a) (rb_backref_error(n), NEW_BEGIN(0))
+
 static NODE *kwd_append(NODE*, NODE*);
 
 static NODE *new_hash_gen(struct parser_params *parser, NODE *hash);
@@ -559,6 +562,10 @@ static VALUE new_attr_op_assign_gen(struct parser_params *parser, VALUE lhs, VAL
 #define top_const_field(n) dispatch1(top_const_field, (n))
 static VALUE const_decl_gen(struct parser_params *parser, VALUE path);
 #define const_decl(path) const_decl_gen(parser, path)
+
+#define var_field(n) dispatch1(var_field, (n))
+static VALUE backref_assign_error_gen(struct parser_params *parser, VALUE a);
+#define backref_assign_error(n, a) backref_assign_error_gen(parser, (a))
 
 static VALUE parser_reg_compile(struct parser_params*, VALUE, int, VALUE *);
 
@@ -1325,14 +1332,8 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    }
 		| backref tOP_ASGN command_call
 		    {
-		    /*%%%*/
-			rb_backref_error($1);
-			$$ = NEW_BEGIN(0);
-		    /*%
-			$$ = dispatch2(assign, dispatch1(var_field, $1), $3);
-			$$ = dispatch1(assign_error, $$);
-			ripper_error();
-		    %*/
+			$1 = var_field($1);
+			$$ = backref_assign_error($1, node_assign($1, $3));
 		    }
 		| lhs '=' mrhs
 		    {
@@ -1795,14 +1796,8 @@ mlhs_node	: user_variable
 		    }
 		| backref
 		    {
-		    /*%%%*/
-			rb_backref_error($1);
-			$$ = NEW_BEGIN(0);
-		    /*%
-			$$ = dispatch1(var_field, $1);
-			$$ = dispatch1(assign_error, $$);
-			ripper_error();
-		    %*/
+			$1 = var_field($1);
+			$$ = backref_assign_error($1, $1);
 		    }
 		;
 
@@ -1866,13 +1861,8 @@ lhs		: user_variable
 		    }
 		| backref
 		    {
-		    /*%%%*/
-			rb_backref_error($1);
-			$$ = NEW_BEGIN(0);
-		    /*%
-			$$ = dispatch1(assign_error, $1);
-			ripper_error();
-		    %*/
+			$1 = var_field($1);
+			$$ = backref_assign_error($1, $1);
 		    }
 		;
 
@@ -2073,15 +2063,8 @@ arg		: lhs '=' arg_rhs
 		    }
 		| backref tOP_ASGN arg
 		    {
-		    /*%%%*/
-			rb_backref_error($1);
-			$$ = NEW_BEGIN(0);
-		    /*%
-			$$ = dispatch1(var_field, $1);
-			$$ = dispatch3(opassign, $$, $2, $3);
-			$$ = dispatch1(assign_error, $$);
-			ripper_error();
-		    %*/
+			$1 = var_field($1);
+			$$ = backref_assign_error($1, new_op_assign($1, $2, $3));
 		    }
 		| arg tDOT2 arg
 		    {
@@ -10278,6 +10261,14 @@ const_decl_gen(struct parser_params *parser, VALUE path)
 	ripper_error();
     }
     return path;
+}
+
+static VALUE
+backref_assign_error_gen(struct parser_params *parser, VALUE a)
+{
+    a = dispatch1(assign_error, a);
+    ripper_error();
+    return a;
 }
 #endif
 
