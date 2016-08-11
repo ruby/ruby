@@ -1,3 +1,9 @@
+Fri Aug 12 04:04:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_execarg_commandline): build command line string
+	  from argument vector in rb_execarg.
+	  [ruby-core:75611] [Bug #12398]
+
 Fri Aug 12 03:50:38 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_method.c (vm_respond_to): try method_missing if respond_to?
