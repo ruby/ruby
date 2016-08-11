@@ -149,6 +149,8 @@ VALUE rb_obj_methods(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_obj_protected_methods(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_obj_private_methods(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_obj_public_methods(int argc, const VALUE *argv, VALUE obj);
+VALUE rb_obj_undefined_methods(int argc, const VALUE *argv, VALUE obj);
+VALUE rb_class_undefined_instance_methods(int argc, const VALUE *argv, VALUE klass);
 VALUE rb_special_singleton_class(VALUE);
 VALUE rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach);
 VALUE rb_singleton_class_get(VALUE obj);

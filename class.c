@@ -1627,6 +1627,15 @@ ins_methods_pub_i(st_data_t name, st_data_t type, st_data_t ary)
     return ins_methods_type_i(name, type, ary, METHOD_VISI_PUBLIC);
 }
 
+static int
+ins_methods_undef_i(st_data_t name, st_data_t type, st_data_t ary)
+{
+    if ((rb_method_visibility_t)type == METHOD_VISI_UNDEF) {
+	ins_methods_push(name, ary);
+    }
+    return ST_CONTINUE;
+}
+
 struct method_entry_arg {
     st_table *list;
     int recur;
@@ -1798,6 +1807,21 @@ rb_class_public_instance_methods(int argc, const VALUE *argv, VALUE mod)
 
 /*
  *  call-seq:
+ *     mod.undefined_instance_methods(include_super=true)   -> array
+ *
+ *  Returns a list of the undefined instance methods defined in <i>mod</i>.
+ *  If the optional parameter is <code>false</code>, the methods of
+ *  any ancestors are not included.
+ */
+
+VALUE
+rb_class_undefined_instance_methods(int argc, const VALUE *argv, VALUE mod)
+{
+    return class_instance_method_list(argc, argv, mod, 0, ins_methods_undef_i);
+}
+
+/*
+ *  call-seq:
  *     obj.methods(regular=true)    -> array
  *
  *  Returns a list of the names of public and protected methods of
@@ -1879,6 +1903,21 @@ VALUE
 rb_obj_public_methods(int argc, const VALUE *argv, VALUE obj)
 {
     return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_pub_i);
+}
+
+/*
+ *  call-seq:
+ *     obj.undefined_methods(all=true)   -> array
+ *
+ *  Returns the list of undefined methods accessible to <i>obj</i>. If
+ *  the <i>all</i> parameter is set to <code>false</code>, only those methods
+ *  in the receiver will be listed.
+ */
+
+VALUE
+rb_obj_undefined_methods(int argc, const VALUE *argv, VALUE obj)
+{
+    return class_instance_method_list(argc, argv, CLASS_OF(obj), 1, ins_methods_undef_i);
 }
 
 /*
