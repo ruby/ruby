@@ -261,6 +261,17 @@ class TestObject < Test::Unit::TestCase
 
     assert_equal([:foo, :foo2], (o2.public_methods - o0.public_methods).sort)
     assert_equal([:foo2], (o2.public_methods(false) - o0.public_methods(false)).sort)
+
+    assert_equal([], (o2.undefined_methods - o0.undefined_methods).sort)
+    c3 = Class.new(c2) do
+      undef foo
+    end
+    assert_equal([:foo], (c3.undefined_instance_methods - c2.undefined_instance_methods).sort)
+    c4 = Class.new(c3) do
+      undef foo2
+    end
+    assert_equal([:foo, :foo2], (c4.undefined_instance_methods - c2.undefined_instance_methods).sort)
+    assert_equal([:foo2], (c4.undefined_instance_methods(false) - c2.undefined_instance_methods).sort)
   end
 
   def test_methods_prepend

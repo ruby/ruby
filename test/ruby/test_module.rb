@@ -974,6 +974,16 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:bClass1], BClass.public_instance_methods(false))
   end
 
+  def test_undefined_instance_methods
+    assert_equal([],  AClass.undefined_instance_methods(false))
+    assert_equal([], BClass.undefined_instance_methods(false))
+    c = Class.new(AClass) {undef aClass}
+    assert_equal([:aClass], c.undefined_instance_methods(false))
+    c = Class.new(c)
+    assert_equal([], c.undefined_instance_methods(false))
+    assert_equal([:aClass], c.undefined_instance_methods(true))
+  end
+
   def test_s_public
     o = (c = Class.new(AClass)).new
     assert_raise(NoMethodError, /private method/) {o.aClass1}
