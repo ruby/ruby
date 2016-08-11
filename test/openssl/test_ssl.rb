@@ -1169,6 +1169,28 @@ end
     }
   end
 
+  def test_close_and_socket_close_while_connecting
+    # test it doesn't cause a segmentation fault
+    ctx = OpenSSL::SSL::SSLContext.new
+    ctx.ciphers = "aNULL"
+
+    sock1, sock2 = socketpair
+    ssl1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx)
+    ssl2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx)
+
+    t = Thread.new { ssl1.connect }
+    ssl2.accept
+
+    ssl1.close
+    sock1.close
+    t.value rescue nil
+  ensure
+    ssl1.close if ssl1
+    ssl2.close if ssl2
+    sock1.close if sock1
+    sock2.close if sock2
+  end
+
   private
 
   def start_server_version(version, ctx_proc=nil, server_proc=nil, &blk)

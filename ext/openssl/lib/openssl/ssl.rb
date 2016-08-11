@@ -290,7 +290,10 @@ module OpenSSL
       # call-seq:
       #    ssl.sysclose => nil
       #
-      # Shuts down the SSL connection and prepares it for another connection.
+      # Sends "close notify" to the peer and tries to shut down the SSL
+      # connection gracefully.
+      #
+      # If sync_close is set to +true+, the underlying IO is also closed.
       def sysclose
         return if closed?
         stop
