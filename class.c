@@ -2159,6 +2159,46 @@ rb_singleton_class(VALUE obj)
 }
 
 /*!
+ * Returns the singleton instance of \a klass, or nil if \a klass is
+ * not a singleton class.
+ *
+ * \param klass a singleton class.
+ * \throw TypeError if \a obj is a Fixnum or a Symbol.
+ * \return the singleton class.
+ *
+ * \post \a obj has its own singleton class.
+ * \post if \a obj is a class,
+ *       the returned singleton class also has its own
+ *       singleton class in order to keep consistency of the
+ *       inheritance structure of metaclasses.
+ * \note a new singleton class will be created
+ *       if \a obj does not have it.
+ * \note the singleton classes for nil, true and false are:
+ *       NilClass, TrueClass and FalseClass.
+ */
+
+/*
+ *  call-seq:
+ *     class.singleton_instance -> object or nil
+ *
+ *  Returns the singleton instance of <i>class</i>, or <code>nil</code>.
+ */
+VALUE
+rb_class_singleton_instance(VALUE klass)
+{
+    VALUE obj;
+
+    Check_Type(klass, T_CLASS);
+    if (klass == rb_cNilClass) return Qnil;
+    if (klass == rb_cFalseClass) return Qfalse;
+    if (klass == rb_cTrueClass) return Qtrue;
+    if (!FL_TEST_RAW(klass, FL_SINGLETON)) return Qnil;
+    obj = rb_attr_get(klass, id_attached);
+    if (SPECIAL_CONST_P(obj) || RBASIC_CLASS(obj) != klass) return Qnil;
+    return obj;
+}
+
+/*!
  * \}
  */
 
