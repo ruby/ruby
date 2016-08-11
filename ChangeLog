@@ -1,3 +1,9 @@
+Fri Aug 12 03:50:38 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_method.c (vm_respond_to): try method_missing if respond_to?
+	  is undefined, as if it is the default definition.
+	  [ruby-core:75377] [Bug #12353]
+
 Fri Aug 12 03:30:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_local_constants_i): exclude private constants

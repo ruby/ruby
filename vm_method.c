@@ -1916,7 +1916,7 @@ vm_respond_to(rb_thread_t *th, VALUE klass, VALUE obj, ID id, int priv)
     const rb_method_entry_t *const me =
 	method_entry_get(klass, resid, &defined_class);
 
-    if (!me) return TRUE;
+    if (!me) return -1;
     if (METHOD_ENTRY_BASIC(me)) {
 	return -1;
     }

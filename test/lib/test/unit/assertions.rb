@@ -186,7 +186,6 @@ module Test
             raise
           end
         end
-        nil
       end
 
       # :call-seq:
