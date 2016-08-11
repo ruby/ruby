@@ -488,6 +488,9 @@ static NODE *new_const_op_assign_gen(struct parser_params *parser, NODE *lhs, ID
 
 #define const_path_field(w, n) NEW_COLON2(w, n)
 #define top_const_field(n) NEW_COLON3(n)
+#define const_decl(path) ( \
+	((in_def || in_single) ? yyerror("dynamic constant assignment") : (void)0), \
+	NEW_CDECL(0, 0, (path)))
 
 static NODE *kwd_append(NODE*, NODE*);
 
@@ -554,6 +557,8 @@ static VALUE new_attr_op_assign_gen(struct parser_params *parser, VALUE lhs, VAL
 #define new_const_op_assign(lhs, op, rhs) new_op_assign(lhs, op, rhs)
 #define const_path_field(w, n) dispatch2(const_path_field, (w), (n))
 #define top_const_field(n) dispatch1(top_const_field, (n))
+static VALUE const_decl_gen(struct parser_params *parser, VALUE path);
+#define const_decl(path) const_decl_gen(parser, path)
 
 static VALUE parser_reg_compile(struct parser_params*, VALUE, int, VALUE *);
 
@@ -1782,31 +1787,11 @@ mlhs_node	: user_variable
 		    }
 		| primary_value tCOLON2 tCONSTANT
 		    {
-		    /*%%%*/
-			if (in_def || in_single)
-			    yyerror("dynamic constant assignment");
-			$$ = NEW_CDECL(0, 0, NEW_COLON2($1, $3));
-		    /*%
-			$$ = dispatch2(const_path_field, $1, $3);
-			if (in_def || in_single) {
-			    $$ = dispatch1(assign_error, $$);
-			    ripper_error();
-			}
-		    %*/
+			$$ = const_decl(const_path_field($1, $3));
 		    }
 		| tCOLON3 tCONSTANT
 		    {
-		    /*%%%*/
-			if (in_def || in_single)
-			    yyerror("dynamic constant assignment");
-			$$ = NEW_CDECL(0, 0, NEW_COLON3($2));
-		    /*%
-			$$ = dispatch1(top_const_field, $2);
-			if (in_def || in_single) {
-			    $$ = dispatch1(assign_error, $$);
-			    ripper_error();
-			}
-		    %*/
+			$$ = const_decl(top_const_field($2));
 		    }
 		| backref
 		    {
@@ -1873,31 +1858,11 @@ lhs		: user_variable
 		    }
 		| primary_value tCOLON2 tCONSTANT
 		    {
-		    /*%%%*/
-			if (in_def || in_single)
-			    yyerror("dynamic constant assignment");
-			$$ = NEW_CDECL(0, 0, NEW_COLON2($1, $3));
-		    /*%
-			$$ = dispatch2(const_path_field, $1, $3);
-			if (in_def || in_single) {
-			    $$ = dispatch1(assign_error, $$);
-			    ripper_error();
-			}
-		    %*/
+			$$ = const_decl(const_path_field($1, $3));
 		    }
 		| tCOLON3 tCONSTANT
 		    {
-		    /*%%%*/
-			if (in_def || in_single)
-			    yyerror("dynamic constant assignment");
-			$$ = NEW_CDECL(0, 0, NEW_COLON3($2));
-		    /*%
-			$$ = dispatch1(top_const_field, $2);
-			if (in_def || in_single) {
-			    $$ = dispatch1(assign_error, $$);
-			    ripper_error();
-			}
-		    %*/
+			$$ = const_decl(top_const_field($2));
 		    }
 		| backref
 		    {
@@ -10303,6 +10268,16 @@ new_attr_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE type, VALU
 {
     VALUE recv = dispatch3(field, lhs, type, attr);
     return dispatch3(opassign, recv, op, rhs);
+}
+
+static VALUE
+const_decl_gen(struct parser_params *parser, VALUE path)
+{
+    if (in_def || in_single) {
+	dispatch1(assign_error, path);
+	ripper_error();
+    }
+    return path;
 }
 #endif
 
