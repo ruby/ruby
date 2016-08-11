@@ -786,6 +786,20 @@ eom
     assert_syntax_error(":#\n foo", /unexpected ':'/)
   end
 
+  def test_multiple_syntax_errors
+    feature11868 = '[Feature #11868]'
+    ex = assert_raise(SyntaxError) do
+      eval("this.is -> not #\n""-> valid $ruby:syntax", nil, feature11868, 2)
+    end
+    assert_equal(feature11868, ex.path)
+    failures = ex.failures
+    assert_equal(2, failures.size)
+    assert_match(/unexpected keyword_not/, failures[0].mesg)
+    assert_equal(2, failures[0].lineno)
+    assert_match(/unexpected tGVAR/, failures[1].mesg)
+    assert_equal(3, failures[1].lineno)
+  end
+
   def test_fluent_dot
     assert_valid_syntax("a\n.foo")
     assert_valid_syntax("a\n&.foo")
