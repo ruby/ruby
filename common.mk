@@ -1272,6 +1272,7 @@ compar.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 compar.$(OBJEXT): {$(VPATH)}compar.c
 compar.$(OBJEXT): {$(VPATH)}config.h
 compar.$(OBJEXT): {$(VPATH)}defines.h
+compar.$(OBJEXT): {$(VPATH)}id.h
 compar.$(OBJEXT): {$(VPATH)}intern.h
 compar.$(OBJEXT): {$(VPATH)}missing.h
 compar.$(OBJEXT): {$(VPATH)}st.h
