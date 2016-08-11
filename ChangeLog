@@ -29,7 +29,7 @@ Wed Aug 10 15:35:03 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Aug  9 17:50:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
-	* hash.c (rb_hash_map_v, rb_hash_map_v_bang): impelement Hash#map_v and
+	* hash.c (rb_hash_map_v, rb_hash_map_v_bang): implement Hash#map_v and
 	  Hash#map_v! [Feature #12512] [ruby-core:76095]
 
 	* test/ruby/test_hash.rb: add tests for above change.
