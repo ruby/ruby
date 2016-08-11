@@ -486,6 +486,9 @@ static NODE *new_attr_op_assign_gen(struct parser_params *parser, NODE *lhs, ID 
 static NODE *new_const_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rhs);
 #define new_const_op_assign(lhs, op, rhs) new_const_op_assign_gen(parser, (lhs), (op), (rhs))
 
+#define const_path_field(w, n) NEW_COLON2(w, n)
+#define top_const_field(n) NEW_COLON3(n)
+
 static NODE *kwd_append(NODE*, NODE*);
 
 static NODE *new_hash_gen(struct parser_params *parser, NODE *hash);
@@ -515,7 +518,7 @@ static void parser_heredoc_dedent(struct parser_params*,NODE*);
 
 #define get_id(id) (id)
 #define get_value(val) (val)
-#else
+#else  /* RIPPER */
 #define NODE_RIPPER NODE_CDECL
 
 static inline VALUE
@@ -548,6 +551,9 @@ static int id_is_var_gen(struct parser_params *parser, ID id);
 static VALUE new_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE op, VALUE rhs);
 static VALUE new_attr_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE type, VALUE attr, VALUE op, VALUE rhs);
 #define new_attr_op_assign(lhs, type, attr, op, rhs) new_attr_op_assign_gen(parser, (lhs), (type), (attr), (op), (rhs))
+#define new_const_op_assign(lhs, op, rhs) new_op_assign(lhs, op, rhs)
+#define const_path_field(w, n) dispatch2(const_path_field, (w), (n))
+#define top_const_field(n) dispatch1(top_const_field, (n))
 
 static VALUE parser_reg_compile(struct parser_params*, VALUE, int, VALUE *);
 
@@ -1304,13 +1310,8 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    }
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN command_call
 		    {
-		    /*%%%*/
-			$$ = NEW_COLON2($1, $3);
+			$$ = const_path_field($1, $3);
 			$$ = new_const_op_assign($$, $4, $5);
-		    /*%
-			$$ = dispatch2(const_path_field, $1, $3);
-			$$ = dispatch3(opassign, $$, $4, $5);
-		    %*/
 		    }
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_call
 		    {
@@ -2097,23 +2098,13 @@ arg		: lhs '=' arg_rhs
 		    }
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN arg
 		    {
-		    /*%%%*/
-			$$ = NEW_COLON2($1, $3);
+			$$ = const_path_field($1, $3);
 			$$ = new_const_op_assign($$, $4, $5);
-		    /*%
-			$$ = dispatch2(const_path_field, $1, $3);
-			$$ = dispatch3(opassign, $$, $4, $5);
-		    %*/
 		    }
 		| tCOLON3 tCONSTANT tOP_ASGN arg
 		    {
-		    /*%%%*/
-			$$ = NEW_COLON3($2);
+			$$ = top_const_field($2);
 			$$ = new_const_op_assign($$, $3, $4);
-		    /*%
-			$$ = dispatch1(top_const_field, $2);
-			$$ = dispatch3(opassign, $$, $3, $4);
-		    %*/
 		    }
 		| backref tOP_ASGN arg
 		    {
