@@ -1,3 +1,10 @@
+Fri Aug 12 04:15:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (build-ext), ext/extmk.rb: use variable EXTENCS
+	  different than ENCOBJS, to get rid of circular dependency.
+	  build libencs when linking encodings statically.
+	  [ruby-core:75618] [Bug #12401]
+
 Fri Aug 12 04:04:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_execarg_commandline): build command line string
