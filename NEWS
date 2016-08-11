@@ -30,6 +30,10 @@ with all sufficient information, see the ChangeLog file or Redmine
     This is different from Enumerable#sum in that Array#sum doesn't depend on
     the definition of each method.
 
+* Comparable
+
+  * Comparable#clamp.  [Feature #10594]
+
 * Dir
 
   * Dir.empty?.  [Feature #10121]
