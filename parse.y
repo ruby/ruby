@@ -564,8 +564,9 @@ static VALUE const_decl_gen(struct parser_params *parser, VALUE path);
 #define const_decl(path) const_decl_gen(parser, path)
 
 #define var_field(n) dispatch1(var_field, (n))
-static VALUE backref_assign_error_gen(struct parser_params *parser, VALUE a);
-#define backref_assign_error(n, a) backref_assign_error_gen(parser, (a))
+static VALUE assign_error_gen(struct parser_params *parser, VALUE a);
+#define assign_error(a) assign_error_gen(parser, (a))
+#define backref_assign_error(n, a) assign_error(a)
 
 static VALUE parser_reg_compile(struct parser_params*, VALUE, int, VALUE *);
 
@@ -9211,7 +9212,7 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
 #ifdef RIPPER
     ID id = get_id(lhs);
 # define assignable_result(x) get_value(lhs)
-# define parser_yyerror(parser, x) (dispatch1(assign_error, lhs), ripper_error())
+# define parser_yyerror(parser, x) assign_error_gen(parser, lhs)
 #else
 # define assignable_result(x) (x)
 #endif
@@ -10249,14 +10250,13 @@ static VALUE
 const_decl_gen(struct parser_params *parser, VALUE path)
 {
     if (in_def || in_single) {
-	dispatch1(assign_error, path);
-	ripper_error();
+	assign_error(path);
     }
     return path;
 }
 
 static VALUE
-backref_assign_error_gen(struct parser_params *parser, VALUE a)
+assign_error_gen(struct parser_params *parser, VALUE a)
 {
     a = dispatch1(assign_error, a);
     ripper_error();
