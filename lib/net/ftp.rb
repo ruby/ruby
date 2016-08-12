@@ -280,6 +280,9 @@ module Net
       if @debug_mode
         print "put: ", sanitize(line), "\n"
       end
+      if /[\r\n]/ =~ line
+        raise ArgumentError, "A line must not contain CR or LF"
+      end
       line = line + CRLF
       @sock.write(line)
     end
