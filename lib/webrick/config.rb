@@ -34,7 +34,7 @@ module WEBrick
       :StartCallback  => nil,
       :StopCallback   => nil,
       :AcceptCallback => nil,
-      :DoNotReverseLookup => nil,
+      :DoNotReverseLookup => true,
       :ShutdownSocketWithoutClose => false,
     }
 

@@ -1,3 +1,11 @@
+Fri Aug 12 21:05:19 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/webrick/config.rb (WEBrick::Config::General):
+	  disable reverse lookup by default. [ruby-core:45514] [Feature #6559]
+	  Socket.do_not_reverse_lookup is true by default but WEBrick
+	  overwrote it.
+	  patch by Eric Hodel [ruby-core:45527]
+
 Fri Aug 12 12:50:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_syntax_error_append): fix newline in syntax error
