@@ -1,3 +1,8 @@
+Sat Aug 13 07:51:40 2016  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_val2variant): fix integer conversion in
+	  cygwin64.
+
 Fri Aug 12 21:05:19 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/webrick/config.rb (WEBrick::Config::General):
