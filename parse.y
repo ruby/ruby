@@ -488,9 +488,8 @@ static NODE *new_const_op_assign_gen(struct parser_params *parser, NODE *lhs, ID
 
 #define const_path_field(w, n) NEW_COLON2(w, n)
 #define top_const_field(n) NEW_COLON3(n)
-#define const_decl(path) ( \
-	((in_def || in_single) ? yyerror("dynamic constant assignment") : (void)0), \
-	NEW_CDECL(0, 0, (path)))
+static NODE *const_decl_gen(struct parser_params *parser, NODE* path);
+#define const_decl(path) const_decl_gen(parser, path)
 
 #define var_field(n) (n)
 #define backref_assign_error(n, a) (rb_backref_error(n), NEW_BEGIN(0))
@@ -10231,6 +10230,15 @@ new_const_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rh
     }
     fixpos(asgn, lhs);
     return asgn;
+}
+
+static NODE *
+const_decl_gen(struct parser_params *parser, NODE *path)
+{
+    if (in_def || in_single) {
+	yyerror("dynamic constant assignment");
+    }
+    return NEW_CDECL(0, 0, (path));
 }
 #else
 static VALUE
