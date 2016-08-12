@@ -827,7 +827,7 @@ Wed Jul  6 14:44:56 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Jul  6 08:59:35 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
-	* lib/net/http/generic_rquest.rb (write_header): A Request-Line must
+	* lib/net/http/generic_request.rb (write_header): A Request-Line must
 	  not contain CR or LF.
 
 Wed Jul  6 07:11:27 2016  Shugo Maeda  <shugo@ruby-lang.org>
