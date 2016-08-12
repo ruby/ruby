@@ -4,7 +4,7 @@ Fri Aug 12 12:50:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  message to the beginning, not after file name and line number.
 	  [Feature #11951]
 
-Thu Aug 11 16:24:23 2016  nerdinand  <nerdinand@nerdinand.com>
+Thu Aug 11 16:24:23 2016  Ferdinand Niedermann  <nerdinand@nerdinand.com>
 
 	* compar.c (cmp_clamp): Introduce Comparable#clamp.  [Feature #10594]
 
