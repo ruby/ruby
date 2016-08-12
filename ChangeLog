@@ -1,3 +1,10 @@
+Fri Aug 12 11:48:27 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_args.c (setup_parameters_complex): don't raise ArgumentError
+	  if an array is given for instance_exec with optional argument.
+	  [ruby-core:76300] [Bug #12568]
+	  https://github.com/rails/rails/pull/25699
+
 Fri Aug 12 11:45:02 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/http/generic_rquest.rb (write_header): A Request-Line must

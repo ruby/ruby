@@ -578,6 +578,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq, r
       case arg_setup_lambda:
 	if (given_argc == 1 &&
 	    given_argc != iseq->param.lead_num &&
+	    !iseq->param.flags.has_opt &&
 	    !iseq->param.flags.has_rest &&
 	    args_check_block_arg0(args, th)) {
 	    given_argc = RARRAY_LENINT(args->rest);
