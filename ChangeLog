@@ -1,3 +1,9 @@
+Fri Aug 12 12:50:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_syntax_error_append): fix newline in syntax error
+	  message to the beginning, not after file name and line number.
+	  [Feature #11951]
+
 Thu Aug 11 16:24:23 2016  nerdinand  <nerdinand@nerdinand.com>
 
 	* compar.c (cmp_clamp): Introduce Comparable#clamp.  [Feature #10594]

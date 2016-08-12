@@ -106,16 +106,16 @@ rb_syntax_error_append(VALUE exc, VALUE file, int line, int column,
     }
     else {
 	VALUE mesg;
-	const char *pre = NULL;
 	if (NIL_P(exc)) {
 	    mesg = rb_enc_str_new(0, 0, enc);
 	    exc = rb_class_new_instance(1, &mesg, rb_eSyntaxError);
 	}
 	else {
 	    mesg = rb_attr_get(exc, idMesg);
-	    pre = "\n";
+	    if (RSTRING_LEN(mesg) > 0 && *(RSTRING_END(mesg)-1) != '\n')
+		rb_str_cat_cstr(mesg, "\n");
 	}
-	err_vcatf(mesg, pre, fn, line, fmt, args);
+	err_vcatf(mesg, NULL, fn, line, fmt, args);
     }
 
     return exc;
