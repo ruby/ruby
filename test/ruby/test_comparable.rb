@@ -80,10 +80,10 @@ class TestComparable < Test::Unit::TestCase
     cmp->(x) do 0 <=> x end
     assert_equal(1, @o.clamp(1, 2))
     assert_equal(-1, @o.clamp(-2, -1))
-    assert_equal(0, @o.clamp(-1, 3))
+    assert_equal(@o, @o.clamp(-1, 3))
 
     assert_equal(1, @o.clamp(1, 1))
-    assert_equal(0, @o.clamp(0, 0))
+    assert_equal(@o, @o.clamp(0, 0))
 
     assert_raise_with_message(ArgumentError, 'min argument must be smaller than max argument') {
       @o.clamp(2, 1)
