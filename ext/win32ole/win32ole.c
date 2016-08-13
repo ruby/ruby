@@ -1275,7 +1275,7 @@ ole_val2variant(VALUE val, VARIANT *var)
             V_I4(var) = (LONG)v;
 #if SIZEOF_LONG > 4
             if (V_I4(var) != v) {
-                V_I8(var) = NUM2LONG(val);
+                V_I8(var) = v;
                 V_VT(var) = VT_I8;
             }
 #endif
