@@ -1269,13 +1269,16 @@ ole_val2variant(VALUE val, VARIANT *var)
         V_BSTR(var) = ole_vstr2wc(val);
         break;
     case T_FIXNUM:
-        V_I4(var) = NUM2LONG(val);
-        if (V_I4(var) == NUM2LONG(val)) {
-            V_VT(var) = VT_I4;
-        }
-        else {
-            V_I8(var) = NUM2LONG(val);
-            V_VT(var) = VT_I8;
+        V_VT(var) = VT_I4;
+        {
+            long v = NUM2LONG(val);
+            V_I4(var) = (LONG)v;
+#if SIZEOF_LONG > 4
+            if (V_I4(var) != v) {
+                V_I8(var) = NUM2LONG(val);
+                V_VT(var) = VT_I8;
+            }
+#endif
         }
         break;
     case T_BIGNUM:
