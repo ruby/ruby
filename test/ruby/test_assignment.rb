@@ -771,4 +771,14 @@ class TestAssignmentGen < Test::Unit::TestCase
     h[*k], = ["ok", "ng"]
     assert_equal("ok", h[:key], bug11970)
   end
+
+  def test_chainged_assign_command
+    all_assertions do |a|
+      asgn = %w'= +='
+      asgn.product(asgn) do |a1, a2|
+        stmt = "a #{a1} b #{a2} raise 'x'"
+        a.for(stmt) {assert_valid_syntax(stmt)}
+      end
+    end
+  end
 end

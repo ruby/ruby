@@ -1284,6 +1284,28 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 			$$ = dispatch2(massign, $1, $3);
 		    %*/
 		    }
+		| lhs '=' mrhs
+		    {
+			value_expr($3);
+			$$ = node_assign($1, $3);
+		    }
+		| mlhs '=' mrhs_arg
+		    {
+		    /*%%%*/
+			$1->nd_value = $3;
+			$$ = $1;
+		    /*%
+			$$ = dispatch2(massign, $1, $3);
+		    %*/
+		    }
+		| expr
+		;
+
+command_asgn	: lhs '=' command_rhs
+		    {
+			value_expr($3);
+			$$ = node_assign($1, $3);
+		    }
 		| var_lhs tOP_ASGN command_rhs
 		    {
 			value_expr($3);
@@ -1334,28 +1356,6 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    {
 			$1 = var_field($1);
 			$$ = backref_assign_error($1, node_assign($1, $3));
-		    }
-		| lhs '=' mrhs
-		    {
-			value_expr($3);
-			$$ = node_assign($1, $3);
-		    }
-		| mlhs '=' mrhs_arg
-		    {
-		    /*%%%*/
-			$1->nd_value = $3;
-			$$ = $1;
-		    /*%
-			$$ = dispatch2(massign, $1, $3);
-		    %*/
-		    }
-		| expr
-		;
-
-command_asgn	: lhs '=' command_rhs
-		    {
-			value_expr($3);
-			$$ = node_assign($1, $3);
 		    }
 		;
 

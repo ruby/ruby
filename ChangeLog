@@ -1,3 +1,8 @@
+Sat Aug 13 11:10:08 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (command_asgn, arg): fix syntax errors with chained
+	  assignment with op assign.  [Bug #12669]
+
 Sat Aug 13 10:52:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (stmt, arg): rescue modifier in command op assignment
