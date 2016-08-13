@@ -793,4 +793,21 @@ class TestFloat < Test::Unit::TestCase
     h = {0.0 => bug10979}
     assert_equal(bug10979, h[-0.0])
   end
+
+  def test_aliased_quo_recursion
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      class Float
+        $VERBOSE = nil
+        alias / quo
+      end
+      assert_raise(NameError) do
+        begin
+          1.0/2.0
+        rescue SystemStackError => e
+          raise SystemStackError, e.message
+        end
+      end
+    end;
+  end
 end

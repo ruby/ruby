@@ -240,6 +240,62 @@ rb_num_negative_p(VALUE num)
     return negative_int_p(num);
 }
 
+static VALUE
+num_funcall_op_0(VALUE x, VALUE arg, int recursive)
+{
+    ID func = (ID)arg;
+    if (recursive) {
+	const char *name = rb_id2name(func);
+	if (ISALNUM(name[0])) {
+	    rb_name_error(func, "%"PRIsVALUE".%"PRIsVALUE,
+			  x, ID2SYM(func));
+	}
+	else if (name[0] && name[1] == '@' && !name[2]) {
+	    rb_name_error(func, "%c%"PRIsVALUE,
+			  name[0], x);
+	}
+	else {
+	    rb_name_error(func, "%"PRIsVALUE"%"PRIsVALUE,
+			  ID2SYM(func), x);
+	}
+    }
+    return rb_funcall(x, func, 0, 0);
+}
+
+static VALUE
+num_funcall0(VALUE x, ID func)
+{
+    return rb_exec_recursive(num_funcall_op_0, x, (VALUE)func);
+}
+
+static VALUE
+num_funcall_op_1(VALUE x, VALUE arg, int recursive)
+{
+    ID func = (ID)((VALUE *)arg)[0];
+    VALUE y = ((VALUE *)arg)[1];
+    if (recursive) {
+	const char *name = rb_id2name(func);
+	if (ISALNUM(name[0])) {
+	    rb_name_error(func, "%"PRIsVALUE".%"PRIsVALUE"(%"PRIsVALUE")",
+			  x, ID2SYM(func), y);
+	}
+	else {
+	    rb_name_error(func, "%"PRIsVALUE"%"PRIsVALUE"%"PRIsVALUE,
+			  x, ID2SYM(func), y);
+	}
+    }
+    return rb_funcall(x, func, 1, y);
+}
+
+static VALUE
+num_funcall1(VALUE x, ID func, VALUE y)
+{
+    VALUE args[2];
+    args[0] = (VALUE)func;
+    args[1] = y;
+    return rb_exec_recursive_paired(num_funcall_op_1, x, y, (VALUE)args);
+}
+
 /*
  *  call-seq:
  *     num.coerce(numeric)  ->  array
@@ -443,7 +499,7 @@ num_uminus(VALUE num)
     zero = INT2FIX(0);
     do_coerce(&zero, &num, TRUE);
 
-    return rb_funcall(zero, '-', 1, num);
+    return num_funcall1(zero, '-', num);
 }
 
 /*
@@ -476,7 +532,7 @@ static VALUE
 num_div(VALUE x, VALUE y)
 {
     if (rb_equal(INT2FIX(0), y)) rb_num_zerodiv();
-    return rb_funcall(rb_funcall(x, '/', 1, y), rb_intern("floor"), 0);
+    return rb_funcall(num_funcall1(x, '/', y), rb_intern("floor"), 0);
 }
 
 
@@ -494,9 +550,9 @@ num_div(VALUE x, VALUE y)
 static VALUE
 num_modulo(VALUE x, VALUE y)
 {
+    VALUE q = num_funcall1(x, id_div, y);
     return rb_funcall(x, '-', 1,
-		      rb_funcall(y, '*', 1,
-				 rb_funcall(x, id_div, 1, y)));
+		      rb_funcall(y, '*', 1, q));
 }
 
 /*
@@ -511,7 +567,7 @@ num_modulo(VALUE x, VALUE y)
 static VALUE
 num_remainder(VALUE x, VALUE y)
 {
-    VALUE z = rb_funcall(x, '%', 1, y);
+    VALUE z = num_funcall1(x, '%', y);
 
     if ((!rb_equal(z, INT2FIX(0))) &&
 	((negative_int_p(x) &&
@@ -618,7 +674,7 @@ static VALUE
 num_abs(VALUE num)
 {
     if (negative_int_p(num)) {
-	return rb_funcall(num, idUMinus, 0);
+	return num_funcall0(num, idUMinus);
     }
     return num;
 }
@@ -665,7 +721,7 @@ num_zero_p(VALUE num)
 static VALUE
 num_nonzero_p(VALUE num)
 {
-    if (RTEST(rb_funcallv(num, rb_intern("zero?"), 0, 0))) {
+    if (RTEST(num_funcall0(num, rb_intern("zero?")))) {
 	return Qnil;
     }
     return num;
@@ -713,7 +769,7 @@ num_infinite_p(VALUE num)
 static VALUE
 num_to_int(VALUE num)
 {
-    return rb_funcallv(num, id_to_i, 0, 0);
+    return num_funcall0(num, id_to_i);
 }
 
 /*
@@ -1002,7 +1058,7 @@ flo_div(VALUE x, VALUE y)
 static VALUE
 flo_quo(VALUE x, VALUE y)
 {
-    return rb_funcall(x, '/', 1, y);
+    return num_funcall1(x, '/', y);
 }
 
 static void
@@ -1157,7 +1213,7 @@ flo_pow(VALUE x, VALUE y)
 	dx = RFLOAT_VALUE(x);
 	dy = RFLOAT_VALUE(y);
 	if (dx < 0 && dy != round(dy))
-	    return rb_funcall(rb_complex_raw1(x), idPow, 1, y);
+	    return num_funcall1(rb_complex_raw1(x), idPow, y);
     }
     else {
 	return rb_num_coerce_bin(x, y, idPow);
@@ -1210,7 +1266,7 @@ static VALUE
 num_equal(VALUE x, VALUE y)
 {
     if (x == y) return Qtrue;
-    return rb_funcall(y, id_eq, 1, x);
+    return num_funcall1(y, id_eq, x);
 }
 
 /*
@@ -2988,7 +3044,7 @@ rb_int_succ(VALUE num)
     if (RB_TYPE_P(num, T_BIGNUM)) {
 	return rb_big_plus(num, INT2FIX(1));
     }
-    return rb_funcall(num, '+', 1, INT2FIX(1));
+    return num_funcall1(num, '+', INT2FIX(1));
 }
 
 #define int_succ rb_int_succ
@@ -3013,7 +3069,7 @@ rb_int_pred(VALUE num)
     if (RB_TYPE_P(num, T_BIGNUM)) {
 	return rb_big_minus(num, INT2FIX(1));
     }
-    return rb_funcall(num, '-', 1, INT2FIX(1));
+    return num_funcall1(num, '-', INT2FIX(1));
 }
 
 #define int_pred rb_int_pred
@@ -3160,7 +3216,7 @@ rb_int_uminus(VALUE num)
     else if (RB_TYPE_P(num, T_BIGNUM)) {
 	return rb_big_uminus(num);
     }
-    return rb_funcall(num, idUMinus, 0, 0);
+    return num_funcall0(num, idUMinus);
 }
 
 /*
@@ -3724,7 +3780,7 @@ fix_pow(VALUE x, VALUE y)
 		return INT2FIX(-1);
 	}
 	if (b < 0)
-	    return rb_funcall(rb_rational_raw1(x), idPow, 1, y);
+	    return num_funcall1(rb_rational_raw1(x), idPow, y);
 
 	if (b == 0) return INT2FIX(1);
 	if (b == 1) return x;
@@ -3741,7 +3797,7 @@ fix_pow(VALUE x, VALUE y)
 	    else return INT2FIX(-1);
 	}
 	if (negative_int_p(y))
-	    return rb_funcall(rb_rational_raw1(x), idPow, 1, y);
+	    return num_funcall1(rb_rational_raw1(x), idPow, y);
 	if (a == 0) return INT2FIX(0);
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_pow(x, y);
@@ -3755,7 +3811,7 @@ fix_pow(VALUE x, VALUE y)
 	{
 	    double dy = RFLOAT_VALUE(y);
 	    if (a < 0 && dy != round(dy))
-		return rb_funcall(rb_complex_raw1(x), idPow, 1, y);
+		return num_funcall1(rb_complex_raw1(x), idPow, y);
 	    return DBL2NUM(pow((double)a, dy));
 	}
     }
@@ -4081,7 +4137,7 @@ VALUE
 rb_num_coerce_bit(VALUE x, VALUE y, ID func)
 {
     bit_coerce(&x, &y);
-    return rb_funcall(x, func, 1, y);
+    return num_funcall1(x, func, y);
 }
 
 /*
@@ -4105,7 +4161,7 @@ fix_and(VALUE x, VALUE y)
     }
 
     bit_coerce(&x, &y);
-    return rb_funcall(x, '&', 1, y);
+    return num_funcall1(x, '&', y);
 }
 
 static VALUE
@@ -4141,7 +4197,7 @@ fix_or(VALUE x, VALUE y)
     }
 
     bit_coerce(&x, &y);
-    return rb_funcall(x, '|', 1, y);
+    return num_funcall1(x, '|', y);
 }
 
 static VALUE
@@ -4177,7 +4233,7 @@ fix_xor(VALUE x, VALUE y)
     }
 
     bit_coerce(&x, &y);
-    return rb_funcall(x, '^', 1, y);
+    return num_funcall1(x, '^', y);
 }
 
 static VALUE

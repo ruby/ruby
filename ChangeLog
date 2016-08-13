@@ -1,3 +1,8 @@
+Sat Aug 13 23:08:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (num_funcall0, num_funcall1): get rid of infinite
+	  recursion in fallback methods of Numeric.
+
 Sat Aug 13 11:10:08 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (command_asgn, arg): fix syntax errors with chained
