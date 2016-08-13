@@ -876,12 +876,84 @@ x = __ENCODING__
 
   def test_rescue_in_command_assignment
     bug = '[ruby-core:75621] [Bug #12402]'
-    v = bug
-    v = raise(v) rescue "ok"
-    assert_equal("ok", v)
-    v = bug
-    v = raise v rescue "ok"
-    assert_equal("ok", v)
+    all_assertions(bug) do |a|
+      a.for("lhs = arg") do
+        v = bug
+        v = raise(bug) rescue "ok"
+        assert_equal("ok", v)
+      end
+      a.for("lhs op_asgn arg") do
+        v = 0
+        v += raise(bug) rescue 1
+        assert_equal(1, v)
+      end
+      a.for("lhs[] op_asgn arg") do
+        v = [0]
+        v[0] += raise(bug) rescue 1
+        assert_equal([1], v)
+      end
+      a.for("lhs.m op_asgn arg") do
+        k = Struct.new(:m)
+        v = k.new(0)
+        v.m += raise(bug) rescue 1
+        assert_equal(k.new(1), v)
+      end
+      a.for("lhs::m op_asgn arg") do
+        k = Struct.new(:m)
+        v = k.new(0)
+        v::m += raise(bug) rescue 1
+        assert_equal(k.new(1), v)
+      end
+      a.for("lhs.C op_asgn arg") do
+        k = Struct.new(:C)
+        v = k.new(0)
+        v.C += raise(bug) rescue 1
+        assert_equal(k.new(1), v)
+      end
+      a.for("lhs::C op_asgn arg") do
+        v = Class.new
+        v::C ||= raise(bug) rescue 1
+        assert_equal(1, v::C)
+      end
+      a.for("lhs = command") do
+        v = bug
+        v = raise bug rescue "ok"
+        assert_equal("ok", v)
+      end
+      a.for("lhs op_asgn command") do
+        v = 0
+        v += raise bug rescue 1
+        assert_equal(1, v)
+      end
+      a.for("lhs[] op_asgn command") do
+        v = [0]
+        v[0] += raise bug rescue 1
+        assert_equal([1], v)
+      end
+      a.for("lhs.m op_asgn command") do
+        k = Struct.new(:m)
+        v = k.new(0)
+        v.m += raise bug rescue 1
+        assert_equal(k.new(1), v)
+      end
+      a.for("lhs::m op_asgn command") do
+        k = Struct.new(:m)
+        v = k.new(0)
+        v::m += raise bug rescue 1
+        assert_equal(k.new(1), v)
+      end
+      a.for("lhs.C op_asgn command") do
+        k = Struct.new(:C)
+        v = k.new(0)
+        v.C += raise bug rescue 1
+        assert_equal(k.new(1), v)
+      end
+      a.for("lhs::C op_asgn command") do
+        v = Class.new
+        v::C ||= raise bug rescue 1
+        assert_equal(1, v::C)
+      end
+    end
   end
 
 =begin

@@ -1,3 +1,8 @@
+Sat Aug 13 10:52:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (stmt, arg): rescue modifier in command op assignment
+	  should be limited to rhs only.  [ruby-core:75621] [Bug #12402]
+
 Sat Aug 13 07:51:40 2016  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_val2variant): fix integer conversion in

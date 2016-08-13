@@ -1284,12 +1284,12 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 			$$ = dispatch2(massign, $1, $3);
 		    %*/
 		    }
-		| var_lhs tOP_ASGN command_call
+		| var_lhs tOP_ASGN command_rhs
 		    {
 			value_expr($3);
 			$$ = new_op_assign($1, $2, $3);
 		    }
-		| primary_value '[' opt_call_args rbracket tOP_ASGN command_call
+		| primary_value '[' opt_call_args rbracket tOP_ASGN command_rhs
 		    {
 		    /*%%%*/
 			NODE *args;
@@ -1310,27 +1310,27 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 			$$ = dispatch3(opassign, $$, $5, $6);
 		    %*/
 		    }
-		| primary_value call_op tIDENTIFIER tOP_ASGN command_call
+		| primary_value call_op tIDENTIFIER tOP_ASGN command_rhs
 		    {
 			value_expr($5);
 			$$ = new_attr_op_assign($1, $2, $3, $4, $5);
 		    }
-		| primary_value call_op tCONSTANT tOP_ASGN command_call
+		| primary_value call_op tCONSTANT tOP_ASGN command_rhs
 		    {
 			value_expr($5);
 			$$ = new_attr_op_assign($1, $2, $3, $4, $5);
 		    }
-		| primary_value tCOLON2 tCONSTANT tOP_ASGN command_call
+		| primary_value tCOLON2 tCONSTANT tOP_ASGN command_rhs
 		    {
 			$$ = const_path_field($1, $3);
 			$$ = new_const_op_assign($$, $4, $5);
 		    }
-		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_call
+		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_rhs
 		    {
 			value_expr($5);
 			$$ = new_attr_op_assign($1, idCOLON2, $3, $4, $5);
 		    }
-		| backref tOP_ASGN command_call
+		| backref tOP_ASGN command_rhs
 		    {
 			$1 = var_field($1);
 			$$ = backref_assign_error($1, node_assign($1, $3));
@@ -2002,7 +2002,7 @@ arg		: lhs '=' arg_rhs
 		    {
 			$$ = new_op_assign($1, $2, $3);
 		    }
-		| primary_value '[' opt_call_args rbracket tOP_ASGN arg
+		| primary_value '[' opt_call_args rbracket tOP_ASGN arg_rhs
 		    {
 		    /*%%%*/
 			NODE *args;
@@ -2028,32 +2028,32 @@ arg		: lhs '=' arg_rhs
 			$$ = dispatch3(opassign, $1, $5, $6);
 		    %*/
 		    }
-		| primary_value call_op tIDENTIFIER tOP_ASGN arg
+		| primary_value call_op tIDENTIFIER tOP_ASGN arg_rhs
 		    {
 			value_expr($5);
 			$$ = new_attr_op_assign($1, $2, $3, $4, $5);
 		    }
-		| primary_value call_op tCONSTANT tOP_ASGN arg
+		| primary_value call_op tCONSTANT tOP_ASGN arg_rhs
 		    {
 			value_expr($5);
 			$$ = new_attr_op_assign($1, $2, $3, $4, $5);
 		    }
-		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN arg
+		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN arg_rhs
 		    {
 			value_expr($5);
 			$$ = new_attr_op_assign($1, idCOLON2, $3, $4, $5);
 		    }
-		| primary_value tCOLON2 tCONSTANT tOP_ASGN arg
+		| primary_value tCOLON2 tCONSTANT tOP_ASGN arg_rhs
 		    {
 			$$ = const_path_field($1, $3);
 			$$ = new_const_op_assign($$, $4, $5);
 		    }
-		| tCOLON3 tCONSTANT tOP_ASGN arg
+		| tCOLON3 tCONSTANT tOP_ASGN arg_rhs
 		    {
 			$$ = top_const_field($2);
 			$$ = new_const_op_assign($$, $3, $4);
 		    }
-		| backref tOP_ASGN arg
+		| backref tOP_ASGN arg_rhs
 		    {
 			$1 = var_field($1);
 			$$ = backref_assign_error($1, new_op_assign($1, $2, $3));
