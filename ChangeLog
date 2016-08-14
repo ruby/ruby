@@ -1,3 +1,7 @@
+Sun Aug 14 14:54:14 2016  Kouhei Sutou  <kou@cozmixng.org>
+
+	* object.c (InitVM_Object): Update referenced document path.
+
 Sat Aug 13 23:08:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (num_funcall0, num_funcall1): get rid of infinite

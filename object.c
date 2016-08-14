@@ -3581,7 +3581,7 @@ InitVM_Object(void)
      * Document-class: Data
      *
      * This is a recommended base class for C extensions using Data_Make_Struct
-     * or Data_Wrap_Struct, see README.EXT for details.
+     * or Data_Wrap_Struct, see doc/extension.rdoc for details.
      */
     rb_cData = rb_define_class("Data", rb_cObject);
     rb_undef_alloc_func(rb_cData);
