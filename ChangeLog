@@ -1,3 +1,8 @@
+Sun Aug 14 18:51:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gems/bundled_gems: add gemified tk 0.1.0.
+	  this needs `extract-gems` to build.
+
 Sun Aug 14 14:54:14 2016  Kouhei Sutou  <kou@cozmixng.org>
 
 	* object.c (InitVM_Object): Update referenced document path.
