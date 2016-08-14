@@ -1,3 +1,8 @@
+Sun Aug 14 22:35:40 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* id_table.c (hash_table_extend): should not shrink the table than
+	  the previous capacity.  [ruby-core:76534] [Bug #12614]
+
 Sun Aug 14 18:51:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gems/bundled_gems: add gemified tk 0.1.0.
