@@ -224,10 +224,12 @@ require 'psych/class_loader'
 
 module Psych
   # The version is Psych you're using
-  VERSION         = '2.0.17'
+  VERSION         = '2.1.0'
 
   # The version of libyaml Psych is using
   LIBYAML_VERSION = Psych.libyaml_version.join '.'
+
+  FALLBACK        = Struct.new :to_ruby # :nodoc:
 
   ###
   # Load +yaml+ in to a Ruby data structure.  If multiple documents are
@@ -248,8 +250,8 @@ module Psych
   #     ex.file    # => 'file.txt'
   #     ex.message # => "(file.txt): found character that cannot start any token"
   #   end
-  def self.load yaml, filename = nil
-    result = parse(yaml, filename)
+  def self.load yaml, filename = nil, fallback = false
+    result = parse(yaml, filename, fallback)
     result ? result.to_ruby : result
   end
 
@@ -321,11 +323,11 @@ module Psych
   #   end
   #
   # See Psych::Nodes for more information about YAML AST.
-  def self.parse yaml, filename = nil
+  def self.parse yaml, filename = nil, fallback = false
     parse_stream(yaml, filename) do |node|
       return node
     end
-    false
+    fallback
   end
 
   ###
@@ -466,9 +468,12 @@ module Psych
 
   ###
   # Load the document contained in +filename+.  Returns the yaml contained in
-  # +filename+ as a Ruby object
-  def self.load_file filename
-    File.open(filename, 'r:bom|utf-8') { |f| self.load f, filename }
+  # +filename+ as a Ruby object, or if the file is empty, it returns
+  # the specified default return value, which defaults to an empty Hash
+  def self.load_file filename, fallback = false
+    File.open(filename, 'r:bom|utf-8') { |f|
+      self.load f, filename, FALLBACK.new(fallback)
+    }
   end
 
   # :stopdoc:

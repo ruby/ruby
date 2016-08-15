@@ -1,3 +1,8 @@
+Tue Aug 16 02:45:52 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/psych/*, test/psych/*: Update psych 2.1.0
+	  This version fixed [Bug #11988][ruby-core:72850]
+
 Fri Aug 12 04:15:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (build-ext), ext/extmk.rb: use variable EXTENCS
