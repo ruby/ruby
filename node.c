@@ -132,11 +132,30 @@ dump_option(VALUE buf, VALUE indent, VALUE opt)
     rb_hash_foreach(opt, add_option_i, (VALUE)&arg);
 }
 
+static void dump_node(VALUE, VALUE, int, NODE *);
+static const char default_indent[] = "|   ";
+
+static void
+dump_array(VALUE buf, VALUE indent, int comment, NODE *node)
+{
+    int field_flag;
+    const char *next_indent = default_indent;
+    D_NODE_HEADER(node);
+    F_LONG(nd_alen, "length");
+    F_NODE(nd_head, "element");
+    while (node->nd_next && nd_type(node->nd_next) == NODE_ARRAY) {
+	node = node->nd_next;
+	F_NODE(nd_head, "element");
+    }
+    LAST_NODE;
+    F_NODE(nd_next, "next element");
+}
+
 static void
 dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 {
     int field_flag;
-    const char *next_indent = "|   ";
+    const char *next_indent = default_indent;
 
     if (!node) {
 	D_NULL_NODE;
@@ -488,10 +507,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("format: [ [nd_head], [nd_next].. ] (length: [nd_alen])");
 	ANN("example: return 1, 2, 3");
       ary:
-	F_LONG(nd_alen, "length");
-	F_NODE(nd_head, "element");
-	LAST_NODE;
-	F_NODE(nd_next, "next element");
+	dump_array(buf, indent, comment, node);
 	break;
 
       case NODE_ZARRAY:
