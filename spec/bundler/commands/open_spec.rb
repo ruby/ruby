@@ -91,4 +91,17 @@ RSpec.describe "bundle open" do
       expect(out).not_to include("BUNDLE_GEMFILE=")
     end
   end
+
+  context "when opening a default gem" do
+    before do
+      install_gemfile <<-G
+        gem "json"
+      G
+    end
+
+    it "throws proper error when trying to open default gem" do
+      bundle "open json", :env => { "EDITOR" => "echo editor", "VISUAL" => "echo visual", "BUNDLER_EDITOR" => "echo bundler_editor" }
+      expect(out).to include("Unable to open json because it's a default gem, so the directory it would normally be installed to does not exist.")
+    end
+  end
 end
