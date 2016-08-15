@@ -1,3 +1,8 @@
+Tue Aug 16 04:54:12 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (putline): raise an ArgumentError when
+	  CR or LF is included in a line.
+
 Tue Aug 16 04:38:48 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/date/date_strftime.c (date_strftime_with_tmx): reject too
