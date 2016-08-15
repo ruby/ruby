@@ -92,6 +92,31 @@ round(double x)
 }
 #endif
 
+static double
+round_to_nearest(double x, double s)
+{
+    double f, xs = x * s;
+
+#ifdef HAVE_ROUND
+    f = round(xs);
+#endif
+    if (x > 0) {
+#ifndef HAVE_ROUND
+	f = floor(xs);
+#endif
+	if ((double)((f + 0.5) / s) <= x) f += 1;
+	x = f;
+    }
+    else {
+#ifndef HAVE_ROUND
+	f = ceil(xs);
+#endif
+	if ((double)((f - 0.5) / s) >= x) f -= 1;
+	x = f;
+    }
+    return x;
+}
+
 static VALUE fix_uminus(VALUE num);
 static VALUE fix_mul(VALUE x, VALUE y);
 static VALUE fix_lshift(long, unsigned long);
@@ -2089,13 +2114,7 @@ flo_round(int argc, VALUE *argv, VALUE num)
     }
     if (float_invariant_round(number, ndigits, &num)) return num;
     f = pow(10, ndigits);
-    x = round(number * f);
-    if (x > 0) {
-	if ((double)((x + 0.5) / f) <= number) x += 1;
-    }
-    else {
-	if ((double)((x - 0.5) / f) >= number) x -= 1;
-    }
+    x = round_to_nearest(number, f);
     return DBL2NUM(x / f);
 }
 
