@@ -1,3 +1,9 @@
+Tue Aug 16 04:38:48 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_strftime.c (date_strftime_with_tmx): reject too
+	  large precision to get rid of buffer overflow.
+	  reported by Guido Vranken <guido AT guidovranken.nl>.
+
 Tue Aug 16 04:28:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (append_fspath): normalize directory name to be appended
