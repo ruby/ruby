@@ -498,10 +498,11 @@ ossl_dsa_sign(VALUE self, VALUE data)
     VALUE str;
 
     GetPKeyDSA(self, pkey);
-    StringValue(data);
-    if (!DSA_PRIVATE(self, pkey->pkey.dsa)) {
+    if (!pkey->pkey.dsa->q)
+	ossl_raise(eDSAError, "incomplete DSA");
+    if (!DSA_PRIVATE(self, pkey->pkey.dsa))
 	ossl_raise(eDSAError, "Private DSA key needed!");
-    }
+    StringValue(data);
     str = rb_str_new(0, ossl_dsa_buf_size(pkey));
     if (!DSA_sign(0, (unsigned char *)RSTRING_PTR(data), RSTRING_LENINT(data),
 		  (unsigned char *)RSTRING_PTR(str),
