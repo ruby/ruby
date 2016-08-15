@@ -1,3 +1,9 @@
+Tue Aug 16 03:10:42 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (enc_arg, str_transcode_enc_args, econv_args):
+	  remove volatile, and add GC guards in callers.
+	  [ruby-core:75664] [Bug #12411]
+
 Tue Aug 16 02:45:52 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/psych/*, test/psych/*: Update psych 2.1.0
