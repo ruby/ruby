@@ -1,3 +1,7 @@
+Mon Aug 15 16:41:32 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* appveyor.yml: Update libressl version to 2.3.7.
+
 Mon Aug 15 11:46:50 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): extension libraries in gems cannot link
