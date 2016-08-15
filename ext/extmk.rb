@@ -131,7 +131,7 @@ def extract_makefile(makefile, keep = true)
   true
 end
 
-def extmake(target, basedir = 'ext')
+def extmake(target, basedir = (maybestatic = 'ext'))
   unless $configure_only || verbose?
     print "#{$message} #{target}\n"
     $stdout.flush
@@ -269,7 +269,7 @@ def extmake(target, basedir = 'ext')
     end
     if $static and ok and !$objs.empty? and !noinstall
       args += ["static"] unless $clean
-      $extlist.push [$static, target, $target, $preload]
+      $extlist.push [(maybestatic ? $static : false), target, $target, $preload]
     end
     FileUtils.rm_f(old_cleanfiles - $distcleanfiles - $cleanfiles)
     FileUtils.rm_f(old_objs - $objs)
@@ -613,7 +613,8 @@ unless $extlist.empty?
   list = $extlist.dup
   built = []
   while e = list.shift
-    _, target, feature, required = e
+    static, target, feature, required = e
+    next unless static
     if required and !(required -= built).empty?
       l = list.size
       if (while l > 0; break true if required.include?(list[l-=1][1]) end)
@@ -737,7 +738,8 @@ if $configure_only and $command_output
     mf.puts
     targets = %w[all install static install-so install-rb clean distclean realclean]
     targets.each do |tgt|
-      mf.puts "#{tgt}: $(extensions:/.=/#{tgt}) $(gems:/.=/#{tgt})"
+      mf.puts "#{tgt}: $(extensions:/.=/#{tgt})"
+      mf.puts "#{tgt}: $(gems:/.=/#{tgt})" unless tgt == 'static'
       mf.puts "#{tgt}: note" unless /clean\z/ =~ tgt
     end
     mf.puts

@@ -1,3 +1,8 @@
+Mon Aug 15 11:46:50 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): extension libraries in gems cannot link
+	  statically.
+
 Sun Aug 14 22:35:40 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* id_table.c (hash_table_extend): should not shrink the table than
