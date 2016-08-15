@@ -1,3 +1,9 @@
+Tue Aug 16 04:28:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (append_fspath): normalize directory name to be appended
+	  on OS X.  [ruby-core:75957] [Ruby trunk Bug#12483]
+	  https://github.com/rails/rails/issues/25303#issuecomment-224834804
+
 Tue Aug 16 04:16:14 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regcomp.c (noname_disable_map): don't optimize out group 0
