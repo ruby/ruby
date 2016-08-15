@@ -1213,6 +1213,9 @@ class TestTranscode < Test::Unit::TestCase
   def test_invalid_replace_string
     assert_equal("a<x>A", "a\x80A".encode("us-ascii", "euc-jp", :invalid=>:replace, :replace=>"<x>"))
     assert_equal("a<x>A", "a\x80A".encode("us-ascii", "euc-jis-2004", :invalid=>:replace, :replace=>"<x>"))
+    s = "abcd\u{c1}"
+    r = s.b.encode("UTF-8", "UTF-8", invalid: :replace, replace: "\u{fffd}")
+    assert_equal(s, r)
   end
 
   def test_undef_replace
