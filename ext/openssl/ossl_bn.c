@@ -82,8 +82,8 @@ ossl_bn_new(const BIGNUM *bn)
     return obj;
 }
 
-BIGNUM *
-GetBNPtr(VALUE obj)
+static BIGNUM *
+try_convert_to_bnptr(VALUE obj)
 {
     BIGNUM *bn = NULL;
     VALUE newobj;
@@ -100,11 +100,17 @@ GetBNPtr(VALUE obj)
 	}
 	SetBN(newobj, bn); /* Handle potencial mem leaks */
 	break;
-    case T_NIL:
-	break;
-    default:
-	ossl_raise(rb_eTypeError, "Cannot convert into OpenSSL::BN");
     }
+    return bn;
+}
+
+BIGNUM *
+GetBNPtr(VALUE obj)
+{
+    BIGNUM *bn = try_convert_to_bnptr(obj);
+    if (!bn)
+	ossl_raise(rb_eTypeError, "Cannot convert into OpenSSL::BN");
+
     return bn;
 }
 
@@ -841,18 +847,75 @@ BIGNUM_CMP(ucmp)
 
 /*
  *  call-seq:
- *     big.eql?(obj) => true or false
+ *     bn == obj => true or false
+ *
+ *  Returns +true+ only if +obj+ has the same value as +bn+. Contrast this
+ *  with OpenSSL::BN#eql?, which requires obj to be OpenSSL::BN.
+ */
+static VALUE
+ossl_bn_eq(VALUE self, VALUE other)
+{
+    BIGNUM *bn1, *bn2;
+
+    GetBN(self, bn1);
+    /* BNPtr may raise, so we can't use here */
+    bn2 = try_convert_to_bnptr(other);
+
+    if (bn2 && !BN_cmp(bn1, bn2)) {
+	return Qtrue;
+    }
+    return Qfalse;
+}
+
+/*
+ *  call-seq:
+ *     bn.eql?(obj) => true or false
  *
  *  Returns <code>true</code> only if <i>obj</i> is a
- *  <code>Bignum</code> with the same value as <i>big</i>. Contrast this
+ *  <code>OpenSSL::BN</code> with the same value as <i>big</i>. Contrast this
+ *  with OpenSSL::BN#==, which performs type conversions.
  */
 static VALUE
 ossl_bn_eql(VALUE self, VALUE other)
 {
-    if (ossl_bn_cmp(self, other) == INT2FIX(0)) {
-	return Qtrue;
+    BIGNUM *bn1, *bn2;
+
+    if (!rb_obj_is_kind_of(other, cBN))
+	return Qfalse;
+    GetBN(self, bn1);
+    GetBN(other, bn2);
+
+    return BN_cmp(bn1, bn2) ? Qfalse : Qtrue;
+}
+
+/*
+ *  call-seq:
+ *     bn.hash => Integer
+ *
+ *  Returns a hash code for this object.
+ *
+ *  See also Object#hash.
+ */
+static VALUE
+ossl_bn_hash(VALUE self)
+{
+    BIGNUM *bn;
+    VALUE hash;
+    unsigned char *buf;
+    int len;
+
+    GetBN(self, bn);
+    len = BN_num_bytes(bn);
+    buf = xmalloc(len);
+    if (BN_bn2bin(bn, buf) != len) {
+	xfree(buf);
+	ossl_raise(eBNError, NULL);
     }
-    return Qfalse;
+
+    hash = INT2FIX(rb_memhash(buf, len));
+    xfree(buf);
+
+    return hash;
 }
 
 /*
@@ -982,8 +1045,9 @@ Init_ossl_bn(void)
     rb_define_alias(cBN, "<=>", "cmp");
     rb_define_method(cBN, "ucmp", ossl_bn_ucmp, 1);
     rb_define_method(cBN, "eql?", ossl_bn_eql, 1);
-    rb_define_alias(cBN, "==", "eql?");
-    rb_define_alias(cBN, "===", "eql?");
+    rb_define_method(cBN, "hash", ossl_bn_hash, 0);
+    rb_define_method(cBN, "==", ossl_bn_eq, 1);
+    rb_define_alias(cBN, "===", "==");
     rb_define_method(cBN, "zero?", ossl_bn_is_zero, 0);
     rb_define_method(cBN, "one?", ossl_bn_is_one, 0);
     /* is_word */

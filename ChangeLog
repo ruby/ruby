@@ -1,3 +1,17 @@
+Tue Aug 16 04:03:25 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_bn.c (try_convert_to_bnptr): Extracted from
+	  GetBNPtr(). This doesn't raise exception but returns NULL on error.
+	  (GetBNPtr): Raise TypeError if conversion fails.
+	  (ossl_bn_eq): Implement BN#==.
+	  (ossl_bn_eql): #eql? should not raise TypeError even if the argument
+	  is not compatible with BN.
+	  (ossl_bn_hash): Implement BN#hash.
+
+	* ext/openssl/ossl_bn.c (Init_ossl_bn): Define #== and #hash.
+
+	* test/openssl/test_bn.rb: Test BN#eql?, #== and #hash
+
 Tue Aug 16 03:51:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* transcode.c (str_transcode0): scrub in the given encoding when
