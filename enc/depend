@@ -55,6 +55,7 @@ TRANSCLEANOBJS = <%=cleanobjs.map {|clean|
   clean.gsub(/\$\*(\.\w+)?/) {"$(TRANSOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
 }.join(" ")%>
 LIBTRANS=enc/libtrans.$(LIBEXT)
+UNICODE_HDR_DIR = --missing-unicode-header-dir--
 
 encs: all
 % if MODULE_TYPE == :static
@@ -602,8 +603,8 @@ enc/unicode.$(OBJEXT): $(top_srcdir)/regint.h
 enc/unicode.$(OBJEXT): config.h
 enc/unicode.$(OBJEXT): defines.h
 enc/unicode.$(OBJEXT): enc/unicode.c
-enc/unicode.$(OBJEXT): enc/unicode/data/$(UNICODE_VERSION)/casefold.h
-enc/unicode.$(OBJEXT): enc/unicode/data/$(UNICODE_VERSION)/name2ctype.h
+enc/unicode.$(OBJEXT): $(UNICODE_HDR_DIR)/casefold.h
+enc/unicode.$(OBJEXT): $(UNICODE_HDR_DIR)/name2ctype.h
 enc/unicode.$(OBJEXT): intern.h
 enc/unicode.$(OBJEXT): missing.h
 enc/unicode.$(OBJEXT): oniguruma.h

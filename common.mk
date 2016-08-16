@@ -18,9 +18,10 @@ UNICODE_VERSION = 8.0.0
 # ALWAYS_UPDATE_UNICODE = yes
 UNICODE_DATA_DIR = enc/unicode/data/$(UNICODE_VERSION)
 UNICODE_SRC_DATA_DIR = $(srcdir)/$(UNICODE_DATA_DIR)
+UNICODE_HDR_DIR = $(UNICODE_SRC_DATA_DIR)
 UNICODE_DATA_HEADERS = \
-	$(UNICODE_SRC_DATA_DIR)/casefold.h \
-	$(UNICODE_SRC_DATA_DIR)/name2ctype.h \
+	$(UNICODE_HDR_DIR)/casefold.h \
+	$(UNICODE_HDR_DIR)/name2ctype.h \
 	$(empty)
 
 RUBY_RELEASE_DATE = $(RUBY_RELEASE_YEAR)-$(RUBY_RELEASE_MONTH)-$(RUBY_RELEASE_DAY)
@@ -28,7 +29,7 @@ RUBYLIB       = $(PATH_SEPARATOR)
 RUBYOPT       = -
 RUN_OPTS      = --disable-gems
 
-INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(srcdir)/enc/unicode/data/$(UNICODE_VERSION)
+INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(UNICODE_HDR_DIR)
 
 GEM_HOME =
 GEM_PATH =
@@ -64,7 +65,7 @@ DLDOBJS	      = $(INITOBJS)
 EXTSOLIBS     =
 MINIOBJS      = $(ARCHMINIOBJS) miniinit.$(OBJEXT) dmyext.$(OBJEXT) miniprelude.$(OBJEXT)
 ENC_MK        = enc.mk
-MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_VERSION=$(UNICODE_VERSION) \
+MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
 		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS)
 
 COMMONOBJS    = array.$(OBJEXT) \
@@ -1094,26 +1095,26 @@ $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
 
 # UPDATE_NAME2CTYPE=    : toplevel
 # UPDATE_NAME2CTYPE=yes : sub-make to update name2ctype.h
-$(UNICODE_SRC_DATA_DIR)/$(UPDATE_NAME2CTYPE:yes=.ignore.)name2ctype.h:
+$(UNICODE_HDR_DIR)/$(UPDATE_NAME2CTYPE:yes=.ignore.)name2ctype.h:
 	$(Q) $(MAKE) $(MFLAGS) Q=$(Q) UPDATE_NAME2CTYPE=yes UNICODE_VERSION=$(UNICODE_VERSION) $@
 
-$(UNICODE_SRC_DATA_DIR)/$(UPDATE_NAME2CTYPE:yes=name2ctype.h): \
+$(UNICODE_HDR_DIR)/$(UPDATE_NAME2CTYPE:yes=name2ctype.h): \
 		$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_PROPERTY_FILES)
 	$(MAKEDIRS) $(@D)
 	$(BOOTSTRAPRUBY) $(srcdir)/tool/enc-unicode.rb --header $(UNICODE_SRC_DATA_DIR) > $@
 
 # the next non-comment line was:
-# $(UNICODE_SRC_DATA_DIR)/casefold.h: $(UNICODE_SRC_DATA_DIR)/case-folding.rb \
+# $(UNICODE_HDR_DIR)/casefold.h: $(srcdir)/enc/unicode/case-folding.rb \
 # but was changed to make sure CI works on systems that don't have gperf
 unicode-up: $(UNICODE_DATA_HEADERS)
 
-$(UNICODE_SRC_DATA_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=casefold.h): \
+$(UNICODE_HDR_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=casefold.h): \
 		$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_SRC_DATA_DIR)/SpecialCasing.txt \
 		$(UNICODE_SRC_DATA_DIR)/CaseFolding.txt
 
-$(UNICODE_SRC_DATA_DIR)/casefold.h: $(srcdir)/enc/unicode/case-folding.rb
+$(UNICODE_HDR_DIR)/casefold.h: $(srcdir)/enc/unicode/case-folding.rb
 	$(Q) $(ALWAYS_UPDATE_UNICODE:yes=exit &&) $(MAKE) $(MFLAGS) Q=$(Q) UNICODE_VERSION=$(UNICODE_VERSION) update-unicode
 	$(Q) $(BASERUBY) $(srcdir)/enc/unicode/case-folding.rb \
 		--output-file=$@ \
@@ -1446,8 +1447,8 @@ enc/trans/newline.$(OBJEXT): {$(VPATH)}st.h
 enc/trans/newline.$(OBJEXT): {$(VPATH)}subst.h
 enc/trans/newline.$(OBJEXT): {$(VPATH)}transcode_data.h
 enc/unicode.$(OBJEXT): $(hdrdir)/ruby/ruby.h
-enc/unicode.$(OBJEXT): $(UNICODE_SRC_DATA_DIR)/casefold.h
-enc/unicode.$(OBJEXT): $(UNICODE_SRC_DATA_DIR)/name2ctype.h
+enc/unicode.$(OBJEXT): $(UNICODE_HDR_DIR)/casefold.h
+enc/unicode.$(OBJEXT): $(UNICODE_HDR_DIR)/name2ctype.h
 enc/unicode.$(OBJEXT): {$(VPATH)}config.h
 enc/unicode.$(OBJEXT): {$(VPATH)}defines.h
 enc/unicode.$(OBJEXT): {$(VPATH)}enc/unicode.c
