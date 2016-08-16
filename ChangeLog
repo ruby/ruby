@@ -1,3 +1,12 @@
+Tue Aug 16 20:58:11 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regcomp.c (noname_disable_map): don't optimize out group 0
+	  Ruby's Regexp doesn't allow normal numbered groups if the regexp
+	  has named groups. On such case it optimizes out related NT_ENCLOSE.
+	  But even on the case it can use \g<0>.
+	  This fix not to remove NT_ENCLOSE whose regnum is 0.
+	  [ruby-core:75828] [Bug #12454]
+
 Tue Aug 16 20:56:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing/crypt.c: fix size macros to use configured values
