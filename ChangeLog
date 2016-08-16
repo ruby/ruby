@@ -1,3 +1,8 @@
+Tue Aug 16 13:59:34 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/option.c, ext/socket/rubysocket.h (inet_ntop): share
+	  the fallback definition.  [ruby-core:76646] [Bug #12645]
+
 Tue Aug 16 13:52:42 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (vm_set_main_stack): remove unnecessary check.  toplevel
