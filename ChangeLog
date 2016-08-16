@@ -1,3 +1,16 @@
+Tue Aug 16 11:51:52 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (ADD_TRACE): ignore trace instruction on non-positive
+	  line.
+
+	* parse.y (coverage): get rid of ArgumentError when the starting
+	  line number is not positive.  [ruby-core:76141] [Bug #12517]
+
+Tue Aug 16 11:51:52 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* test/coverage/test_coverage.rb: ignored test when enabled to coverage.
+	  It lead to crash with `make test-all`.
+
 Tue Aug 16 11:46:07 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/uri/mailto.rb (initialize): RFC3986_Parser#split sets opaque

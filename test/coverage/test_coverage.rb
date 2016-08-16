@@ -111,4 +111,13 @@ class TestCoverage < Test::Unit::TestCase
   ensure
     $".replace loaded_features
   end
-end
+
+  def test_nonpositive_linenumber
+    bug12517 = '[ruby-core:76141] [Bug #12517]'
+    Coverage.start
+    assert_nothing_raised(ArgumentError, bug12517) do
+      RubyVM::InstructionSequence.compile(":ok", nil, "<compiled>", 0)
+    end
+    assert_include Coverage.result, "<compiled>"
+  end
+end unless ENV['COVERAGE']
