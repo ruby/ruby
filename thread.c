@@ -3620,6 +3620,7 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *tv)
     fds.events = (short)events;
 
 retry:
+    fds.revents = 0;
     lerrno = 0;
     BLOCKING_REGION({
 	result = ppoll(&fds, 1, timeout, NULL);

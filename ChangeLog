@@ -1,3 +1,8 @@
+Tue Aug 16 13:42:42 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* thread.c (rb_wait_for_single_fd): Clean up fds.revents every time
+	  before calling ppoll(2). [Bug #12575] [ruby-dev:49725]
+
 Tue Aug 16 13:40:26 2016  Eric Wong  <e@80x24.org>
 
 	* lib/webrick/httpservlet/cgihandler.rb (do_GET): delete HTTP_PROXY
