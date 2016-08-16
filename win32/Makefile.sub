@@ -1075,7 +1075,7 @@ clean-extout:
 clean-enc distclean-enc realclean-enc:
 !if exist($(ENC_MK))
 	@echo $(@:-enc=ing) encodings
-	@-$(MAKE) -f $(ENC_MK) $(MFLAGS) V=$(V) $(@:-enc=)
+	@-$(MAKE) $(MAKE_ENC) $(@:-enc=)
 !endif
 
 $(RBCONFIG): $(PREP)

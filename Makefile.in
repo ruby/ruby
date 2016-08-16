@@ -439,7 +439,7 @@ clean-extout:
 clean-enc distclean-enc realclean-enc:
 	@test -f "$(ENC_MK)" || exit 0; \
 	echo $(@:-enc=ing) encodings; \
-	exec $(MAKE) -f $(ENC_MK) $(MFLAGS) $(@:-enc=)
+	exec $(MAKE) $(MAKE_ENC) $(@:-enc=)
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(ECHO) compiling $@

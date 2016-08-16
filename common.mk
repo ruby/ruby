@@ -64,6 +64,8 @@ DLDOBJS	      = $(INITOBJS)
 EXTSOLIBS     =
 MINIOBJS      = $(ARCHMINIOBJS) miniinit.$(OBJEXT) dmyext.$(OBJEXT) miniprelude.$(OBJEXT)
 ENC_MK        = enc.mk
+MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_VERSION=$(UNICODE_VERSION) \
+		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS)
 
 COMMONOBJS    = array.$(OBJEXT) \
 		bignum.$(OBJEXT) \
@@ -665,9 +667,7 @@ encs: enc trans
 libencs: libenc libtrans
 encs enc trans libencs libenc libtrans: $(SHOWFLAGS) $(ENC_MK) $(LIBRUBY) $(PREP) PHONY
 	$(ECHO) making $@
-	$(Q) $(MAKE) -f $(ENC_MK) V="$(V)" UNICODE_VERSION=$(UNICODE_VERSION) \
-		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" \
-		$(MFLAGS) $@
+	$(Q) $(MAKE) $(MAKE_ENC) $@
 
 
 libenc enc: {$(VPATH)}encdb.h
@@ -819,8 +819,7 @@ srcs-lib: $(LIB_SRCS)
 
 srcs-enc: $(ENC_MK)
 	$(ECHO) making srcs under enc
-	$(Q) $(MAKE) -f $(ENC_MK) UNICODE_VERSION=$(UNICODE_VERSION) \
-		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) srcs
+	$(Q) $(MAKE) $(MAKE_ENC) srcs
 
 all-incs: incs {$(VPATH)}encdb.h {$(VPATH)}transdb.h
 incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}known_errors.inc \
