@@ -1,3 +1,11 @@
+Tue Aug 16 14:06:04 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* pack.c (pack_pack): use union instead of bare variable to ease
+	  optimizations and avoid assigning x87 floating point number.
+	  [ruby-core:74496] [Bug #12209]
+
+	* pack.c (pack_unpack): ditto.
+
 Tue Aug 16 13:59:34 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/option.c, ext/socket/rubysocket.h (inet_ntop): share
