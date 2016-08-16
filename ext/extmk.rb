@@ -696,12 +696,12 @@ if $configure_only and $command_output
     mf.macro "EXTLDFLAGS", $extflags.split
     submakeopts = []
     if enable_config("shared", $enable_shared)
-      submakeopts << 'DLDOBJS="$(EXTOBJS) $(ENCOBJS)"'
+      submakeopts << 'DLDOBJS="$(EXTOBJS) $(EXTENCS)"'
       submakeopts << 'EXTOBJS='
       submakeopts << 'EXTSOLIBS="$(EXTLIBS)"'
       submakeopts << 'LIBRUBY_SO_UPDATE=$(LIBRUBY_EXTS)'
     else
-      submakeopts << 'EXTOBJS="$(EXTOBJS) $(ENCOBJS)"'
+      submakeopts << 'EXTOBJS="$(EXTOBJS) $(EXTENCS)"'
       submakeopts << 'EXTLIBS="$(EXTLIBS)"'
     end
     submakeopts << 'EXTLDFLAGS="$(EXTLDFLAGS)"'
@@ -718,14 +718,15 @@ if $configure_only and $command_output
     mf.puts
     mf.puts "#{rubies.join(' ')}: $(extensions:/.=/#{$force_static ? 'static' : 'all'})"
     submake = "$(Q)$(MAKE) $(MFLAGS) $(SUBMAKEOPTS)"
-    mf.puts "all static: $(EXTOBJS)\n\t#{submake} #{rubies.join(' ')}\n"
+    mf.puts "all static: #{rubies.join(' ')}\n"
     $extobjs.each do |tgt|
       mf.puts "#{tgt}: #{File.dirname(tgt)}/static"
     end
-    mf.puts "#{rubies.join(' ')}: $(EXTOBJS)"
+    mf.puts "#{rubies.join(' ')}: $(EXTOBJS)#{' libencs' if CONFIG['ENCSTATIC'] == 'static'}"
     rubies.each do |tgt|
       mf.puts "#{tgt}:\n\t#{submake} $@"
     end
+    mf.puts "libencs:\n\t$(Q)$(MAKE) -f enc.mk V=$(V) $@"
     mf.puts "ext/extinit.#{$OBJEXT}:\n\t$(Q)$(MAKE) $(MFLAGS) V=$(V) $@" if $static
     mf.puts
     if $gnumake == "yes"
