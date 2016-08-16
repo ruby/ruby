@@ -1,3 +1,8 @@
+Tue Aug 16 11:17:51 2016  Koichi ITO  <koic.ito@gmail.com>
+
+	* lib/net/http/header.rb: Fix typo. [ci skip][fix GH-1407]
+	* transcode.c: ditto.
+
 Tue Aug 16 11:02:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/make-snapshot (package): save generated header files from
