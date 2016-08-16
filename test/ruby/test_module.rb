@@ -1360,6 +1360,8 @@ class TestModule < Test::Unit::TestCase
 
   def test_constants_with_private_constant
     assert_not_include(::TestModule.constants, :PrivateClass)
+    assert_not_include(::TestModule.constants(true), :PrivateClass)
+    assert_not_include(::TestModule.constants(false), :PrivateClass)
   end
 
   def test_toplevel_private_constant
