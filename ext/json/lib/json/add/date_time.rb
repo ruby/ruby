@@ -3,7 +3,6 @@ unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
 end
 require 'date'
 
-# DateTime serialization/deserialization
 class DateTime
 
   # Deserializes JSON string by converting year <tt>y</tt>, month <tt>m</tt>,

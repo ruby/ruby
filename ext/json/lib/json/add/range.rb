@@ -2,7 +2,6 @@ unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
   require 'json'
 end
 
-# Range serialization/deserialization
 class Range
 
   # Deserializes JSON string by constructing new Range object with arguments

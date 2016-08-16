@@ -1,3 +1,8 @@
+Tue Aug 16 14:07:18 2016  Marcus Stollsteimer  <sto.mar@web.de>
+
+	* ext/json/lib/*.rb: Removed some comments. Because these are unnecessary
+	  class description. [ci skip][Bug #12255][ruby-core:74835]
+
 Tue Aug 16 14:06:04 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* pack.c (pack_pack): use union instead of bare variable to ease

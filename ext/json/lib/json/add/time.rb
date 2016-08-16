@@ -2,7 +2,6 @@ unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
   require 'json'
 end
 
-# Time serialization/deserialization
 class Time
 
   # Deserializes JSON string by converting time since epoch to Time
