@@ -1,3 +1,9 @@
+Tue Aug 16 14:43:00 2016  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/timeridconv.rb: don't use keeper thread. [Bug #12342]
+
+	* test/drb/ut_timerholder.rb: ditto.
+
 Tue Aug 16 14:07:18 2016  Marcus Stollsteimer  <sto.mar@web.de>
 
 	* ext/json/lib/*.rb: Removed some comments. Because these are unnecessary

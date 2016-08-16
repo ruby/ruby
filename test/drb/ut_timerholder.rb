@@ -1,53 +1,37 @@
-require 'runit/testcase'
-require 'runit/cui/testrunner'
-require 'timerholder'
+require 'test/unit'
+require 'drb/timeridconv'
 
 module DRbTests
 
-class TimerHolderTest < RUNIT::TestCase
-  def do_test(timeout, keeper_sleep = nil)
-    holder = TimerHolder.new(timeout)
-    holder.keeper_sleep = keeper_sleep if keeper_sleep
-    key = holder.add(self)
-    sleep(timeout * 0.5)
-    assert_equal(holder.peek(key), self)
-    holder.delete(key)
-    assert(!holder.include?(key))
-    key = holder.add(self)
-    sleep(timeout+0.5)
-    assert_equal(holder.fetch(key), nil)
-    key = holder.add(self)
-    assert_equal(holder.fetch(key), self)
-    holder.store(key, true)
-    assert_equal(holder.fetch(key), true)
-    assert_equal(holder.include?(key), true)
-    sleep(timeout+0.5)
-    assert_exception(TimerHolder::InvalidIndexError) do
-      holder.store(key, 1)
+class TimerIdConvTest < Test::Unit::TestCase
+  def test_usecase_01
+    keeping = 0.1
+    idconv = DRb::TimerIdConv.new(keeping)
+
+    key = idconv.to_id(self)
+    assert_equal(key, self.__id__)
+    sleep(keeping)
+
+    assert_equal(idconv.to_id(false), false.__id__)
+    assert_equal(idconv.to_obj(key), self)
+    sleep(keeping)
+
+    assert_equal(idconv.to_obj(key), self)
+    sleep(keeping)
+
+    assert_equal(idconv.to_id(true), true.__id__)
+    sleep(keeping)
+
+    assert_raise do
+      assert_equal(idconv.to_obj(key))
     end
-    assert_equal(holder.include?(key), false)
-    key = holder.add(self)
-    sleep(timeout * 0.5)
-    assert(holder.include?(key))
-    holder.extend(key, timeout)
-    sleep(timeout * 0.5)
-    assert(holder.include?(key))
-    sleep(timeout * 0.6)
-    assert(!holder.include?(key))
-    holder.delete(key)
-  end
 
-  def test_00
-    do_test(0.5)
-  end
-
-  def test_01
-    do_test(1, 0.5)
+    assert_raise do
+      assert_equal(idconv.to_obj(false.__id__))
+    end
   end
 end
 
+
 end
 
-if __FILE__ == $0
-  RUNIT::CUI::TestRunner.run(DRbTests::TimerHolderTest.suite)
-end

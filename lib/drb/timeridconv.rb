@@ -17,26 +17,27 @@ module DRb
 
       class InvalidIndexError < RuntimeError; end
 
-      def initialize(timeout=600)
+      def initialize(keeping=600)
         super()
         @sentinel = Object.new
         @gc = {}
-        @curr = {}
         @renew = {}
-        @timeout = timeout
-        @keeper = keeper
+        @keeping = keeping
+        @expires = Time.now + @keeping
       end
 
       def add(obj)
         synchronize do
+          rotate
           key = obj.__id__
-          @curr[key] = obj
+          @renew[key] = obj
           return key
         end
       end
 
       def fetch(key, dv=@sentinel)
         synchronize do
+          rotate
           obj = peek(key)
           if obj == @sentinel
             return dv unless dv == @sentinel
@@ -47,42 +48,35 @@ module DRb
         end
       end
 
-      def include?(key)
-        synchronize do
-          obj = peek(key)
-          return false if obj == @sentinel
-          true
-        end
-      end
-
+      private
       def peek(key)
         synchronize do
-          return @curr.fetch(key, @renew.fetch(key, @gc.fetch(key, @sentinel)))
+          return @renew.fetch(key) { @gc.fetch(key, @sentinel) }
         end
       end
 
-      private
-      def alternate
+      def rotate
         synchronize do
-          @gc = @curr       # GCed
-          @curr = @renew
+          return if @expires > Time.now
+          @gc = @renew      # GCed
           @renew = {}
+          @expires = Time.now + @keeping
         end
       end
 
       def keeper
         Thread.new do
           loop do
-            alternate
-            sleep(@timeout)
+            rotate
+            sleep(@keeping)
           end
         end
       end
     end
 
-    # Creates a new TimerIdConv which will hold objects for +timeout+ seconds.
-    def initialize(timeout=600)
-      @holder = TimerHolder2.new(timeout)
+    # Creates a new TimerIdConv which will hold objects for +keeping+ seconds.
+    def initialize(keeping=600)
+      @holder = TimerHolder2.new(keeping)
     end
 
     def to_obj(ref) # :nodoc:
