@@ -245,6 +245,7 @@ r_value(VALUE value)
 #define ADD_TRACE(seq, line, event) \
   do { \
       if ((event) == RUBY_EVENT_LINE && iseq->coverage && \
+	  (line) > 0 && \
 	  (line) != iseq->compile_data->last_coverable_line) { \
 	  RARRAY_ASET(iseq->coverage, (line) - 1, INT2FIX(0)); \
 	  iseq->compile_data->last_coverable_line = (line); \
