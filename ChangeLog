@@ -1,3 +1,10 @@
+Tue Aug 16 13:38:36 2016  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/attribute.rb (REXML::Attribute#to_string): Fix wrong
+	  entry reference name of double quote.
+	  [Bug #12609][ruby-core:76509]
+	  Patch by Joseph Marrero. Thanks!!!
+
 Tue Aug 16 13:36:00 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (gc_mark_roots): should mark the VM object itself to mark
