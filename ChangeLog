@@ -1,3 +1,13 @@
+Tue Aug 16 12:27:48 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* gc.c (gc_mark_roots): should mark the VM object itself to mark
+	  singleton class of the VM object.
+	  Before this patch, we only set mark bit for the VM object and
+	  invoke mark function separately.
+	  [Bug #12583]
+
+	* test/ruby/test_gc.rb: add a test.
+
 Tue Aug 16 12:01:35 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* ext/digest/md5/md5ossl.h: Remove excess semicolons.
