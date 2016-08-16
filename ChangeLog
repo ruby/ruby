@@ -1,3 +1,11 @@
+Tue Aug 16 13:52:42 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm.c (vm_set_main_stack): remove unnecessary check.  toplevel
+	  binding must be initialized.  [Bug #12611] (N1)
+
+	* string.c (rb_str_split_m): simplify the condition.
+	  [Bug #12611](N4)
+
 Tue Aug 16 13:42:42 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* thread.c (rb_wait_for_single_fd): Clean up fds.revents every time

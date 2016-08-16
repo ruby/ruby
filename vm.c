@@ -245,7 +245,7 @@ vm_set_main_stack(rb_thread_t *th, VALUE iseqval)
 
     /* save binding */
     GetISeqPtr(iseqval, iseq);
-    if (bind && iseq->local_size > 0) {
+    if (iseq->local_size > 0) {
 	bind->env = rb_vm_make_env_object(th, th->cfp);
     }
 }
