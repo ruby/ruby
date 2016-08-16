@@ -281,7 +281,7 @@ def data_foreach(name, &block)
   fn = get_file(name)
   warn "Reading #{name}"
   pat = /^# #{name.sub(/\./, '-([\\d.]+)\\.')}/
-  File.open(fn) do |f|
+  File.open(fn, 'rb') do |f|
     line = f.gets
     unless pat =~ line
       raise ArgumentError, "#{name}: no Unicode version"
