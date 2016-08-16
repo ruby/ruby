@@ -42,10 +42,18 @@ class OpenSSL::TestBN < Test::Unit::TestCase
     assert_equal(true, OpenSSL::BN.new((2 ** 127 - 1).to_s(16), 16).prime?(1))
   end
 
-  def test_cmp_nil
-    bn = OpenSSL::BN.new('1')
-    assert_equal(false, bn == nil)
-    assert_equal(true,  bn != nil)
+  def test_cmp
+    bn1 = OpenSSL::BN.new('1')
+    bn2 = OpenSSL::BN.new('1')
+    bn3 = OpenSSL::BN.new('2')
+    assert_equal(false, bn1 == nil)
+    assert_equal(true,  bn1 != nil)
+    assert_equal(true, bn1 == bn2)
+    assert_equal(false, bn1 == bn3)
+    assert_equal(true, bn1.eql?(bn2))
+    assert_equal(false, bn1.eql?(bn3))
+    assert_equal(bn1.hash, bn2.hash)
+    assert_not_equal(bn3.hash, bn1.hash)
   end
 end
 
