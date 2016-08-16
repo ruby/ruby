@@ -1,3 +1,9 @@
+Tue Aug 16 20:56:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/crypt.c: fix size macros to use configured values
+	  for platforms long is larger than 32bit.
+	  [ruby-core:75792] [Bug #12446]
+
 Tue Aug 16 20:40:36 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_bn.c (try_convert_to_bnptr): Extracted from
