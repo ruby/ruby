@@ -1,3 +1,8 @@
+Tue Aug 16 11:02:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/make-snapshot (package): save generated header files from
+	  unicode data.  [ruby-core:76879] [Bug #12677]
+
 Mon Aug 15 20:31:34 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* node.c (dump_array): show nd_alen field in NODE_ARRAY only in
