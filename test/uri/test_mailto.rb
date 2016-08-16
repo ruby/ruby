@@ -112,13 +112,15 @@ class TestMailTo < Test::Unit::TestCase
     bad << ["foo@example.jp?subject=1+1=2", []]
 
     ok.each do |x|
-      assert_equal(x[0],
-		   @u.build(x[1]).to_s)
-      assert_equal(x[0],
-		   @u.build(x[2]).to_s)
+      assert_equal(x[0], URI.parse(x[0]).to_s)
+      assert_equal(x[0], @u.build(x[1]).to_s)
+      assert_equal(x[0], @u.build(x[2]).to_s)
     end
 
     bad.each do |x|
+      assert_raise(URI::InvalidURIError) {
+        URI.parse(x)
+      }
       assert_raise(URI::InvalidComponentError) {
 	@u.build(x)
       }

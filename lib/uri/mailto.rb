@@ -136,6 +136,9 @@ module URI
       @to = nil
       @headers = []
 
+      # The RFC3986 parser does not normally populate opaque
+      @opaque = "?#{@query}" if @query && !@opaque
+
       unless @opaque
         raise InvalidComponentError,
           "missing opaque part for mailto URL"
