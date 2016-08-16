@@ -1,3 +1,9 @@
+Tue Aug 16 20:59:35 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/date/date_strftime.c (date_strftime_with_tmx): reject too
+	  large precision to get rid of buffer overflow.
+	  reported by Guido Vranken <guido AT guidovranken.nl>.
+
 Tue Aug 16 20:58:11 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regcomp.c (noname_disable_map): don't optimize out group 0
