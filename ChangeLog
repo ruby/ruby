@@ -1,3 +1,9 @@
+Tue Aug 16 20:28:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* transcode.c (enc_arg, str_transcode_enc_args, econv_args):
+	  remove volatile, and add GC guards in callers.
+	  [ruby-core:75664] [Bug #12411]
+
 Tue Aug 16 14:58:50 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (build-ext), ext/extmk.rb: use variable EXTENCS
