@@ -51,6 +51,7 @@ module WEBrick
           meta = req.meta_vars
           meta["SCRIPT_FILENAME"] = @script_filename
           meta["PATH"] = @config[:CGIPathEnv]
+          meta.delete("HTTP_PROXY")
           if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
             meta["SystemRoot"] = ENV["SystemRoot"]
           end

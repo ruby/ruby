@@ -109,6 +109,20 @@ class TestWEBrickCGI < Test::Unit::TestCase
     }
   end
 
+  def test_cgi_env
+    start_cgi_server do |server, addr, port, log|
+      http = Net::HTTP.new(addr, port)
+      req = Net::HTTP::Get.new("/webrick.cgi/dumpenv")
+      req['proxy'] = 'http://example.com/'
+      req['hello'] = 'world'
+      http.request(req) do |res|
+        env = Marshal.load(res.body)
+        assert_equal 'world', env['HTTP_HELLO']
+        assert_not_operator env, :include?, 'HTTP_PROXY'
+      end
+    end
+  end
+
   CtrlSeq = [0x7f, *(1..31)].pack("C*").gsub(/\s+/, '')
   CtrlPat = /#{Regexp.quote(CtrlSeq)}/o
   DumpPat = /#{Regexp.quote(CtrlSeq.dump[1...-1])}/o
