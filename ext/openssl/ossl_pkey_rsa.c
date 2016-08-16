@@ -390,6 +390,8 @@ ossl_rsa_public_encrypt(int argc, VALUE *argv, VALUE self)
     VALUE str, buffer, padding;
 
     GetPKeyRSA(self, pkey);
+    if (!pkey->pkey.rsa->n)
+	ossl_raise(eRSAError, "incomplete RSA");
     rb_scan_args(argc, argv, "11", &buffer, &padding);
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
@@ -419,6 +421,8 @@ ossl_rsa_public_decrypt(int argc, VALUE *argv, VALUE self)
     VALUE str, buffer, padding;
 
     GetPKeyRSA(self, pkey);
+    if (!pkey->pkey.rsa->n)
+	ossl_raise(eRSAError, "incomplete RSA");
     rb_scan_args(argc, argv, "11", &buffer, &padding);
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
@@ -448,9 +452,10 @@ ossl_rsa_private_encrypt(int argc, VALUE *argv, VALUE self)
     VALUE str, buffer, padding;
 
     GetPKeyRSA(self, pkey);
-    if (!RSA_PRIVATE(self, pkey->pkey.rsa)) {
-	ossl_raise(eRSAError, "private key needed.");
-    }
+    if (!pkey->pkey.rsa->n)
+	ossl_raise(eRSAError, "incomplete RSA");
+    if (!RSA_PRIVATE(self, pkey->pkey.rsa))
+	ossl_raise(eRSAError, "private key needed");
     rb_scan_args(argc, argv, "11", &buffer, &padding);
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
@@ -480,9 +485,10 @@ ossl_rsa_private_decrypt(int argc, VALUE *argv, VALUE self)
     VALUE str, buffer, padding;
 
     GetPKeyRSA(self, pkey);
-    if (!RSA_PRIVATE(self, pkey->pkey.rsa)) {
-	ossl_raise(eRSAError, "private key needed.");
-    }
+    if (!pkey->pkey.rsa->n)
+	ossl_raise(eRSAError, "incomplete RSA");
+    if (!RSA_PRIVATE(self, pkey->pkey.rsa))
+	ossl_raise(eRSAError, "private key needed");
     rb_scan_args(argc, argv, "11", &buffer, &padding);
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);

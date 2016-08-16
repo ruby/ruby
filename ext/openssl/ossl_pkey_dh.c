@@ -505,6 +505,8 @@ ossl_dh_compute_key(VALUE self, VALUE pub)
 
     GetPKeyDH(self, pkey);
     dh = pkey->pkey.dh;
+    if (!dh->p)
+	ossl_raise(eDHError, "incomplete DH");
     pub_key = GetBNPtr(pub);
     len = DH_size(dh);
     str = rb_str_new(0, len);
