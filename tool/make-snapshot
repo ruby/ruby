@@ -44,6 +44,10 @@ PACKAGES = {
   "zip"  => %w".zip     zip -qr",
 }
 
+if gzip = ENV.delete("GZIP")
+  PACKAGES["gzip"].concat(gzip.shellsplit)
+end
+
 ENV["LC_ALL"] = ENV["LANG"] = "C"
 SVNURL = URI.parse("http://svn.ruby-lang.org/repos/ruby/")
 RUBY_VERSION_PATTERN = /^\#define\s+RUBY_VERSION\s+"([\d.]+)"/
