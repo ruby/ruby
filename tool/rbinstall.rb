@@ -678,6 +678,9 @@ module RbInstall
 
     def write_cache_file
     end
+
+    def build_extensions
+    end
   end
 end
 
@@ -750,11 +753,21 @@ install?(:ext, :comm, :gem) do
     :wrappers => true,
     :format_executable => true,
   }
+  gem_ext_dir = "#$extout/gems/#{CONFIG['arch']}"
+  extensions_dir = Gem::StubSpecification.gemspec_stub("", gem_dir, gem_dir).extensions_dir
   Gem::Specification.each_spec([srcdir+'/gems/*']) do |spec|
+    spec.extension_dir = "#{extensions_dir}/#{spec.full_name}"
+    if File.directory?(ext = "#{gem_ext_dir}/#{spec.full_name}")
+      spec.extensions[0] ||= "-"
+    end
     ins = RbInstall::UnpackedInstaller.new(spec, options)
     puts "#{" "*30}#{spec.name} #{spec.version}"
     ins.install
     File.chmod($data_mode, File.join(install_dir, "specifications", "#{spec.full_name}.gemspec"))
+    unless spec.extensions.empty?
+      install_recursive(ext, spec.extension_dir)
+      open_for_install(spec.gem_build_complete_path, $data_mode) {""}
+    end
     installed_gems[spec.full_name] = true
   end
   installed_gems, gems = Dir.glob(srcdir+'/gems/*.gem').partition {|gem| installed_gems.key?(File.basename(gem, '.gem'))}

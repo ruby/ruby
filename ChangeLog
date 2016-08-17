@@ -1,3 +1,10 @@
+Wed Aug 17 23:14:42 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: build gem extensions into separate directories
+
+	* tool/rbinstall.rb: install pre-built gem extension files gem
+	  extension directories.  [ruby-core:76931] [Bug #12681]
+
 Tue Aug 16 21:04:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk (UNICODE_HDR_DIR): separate unicode header files from

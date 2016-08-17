@@ -565,12 +565,24 @@ end
 
 Dir.chdir('..')
 FileUtils::makedirs('gems')
-FileUtils::makedirs('.ext/gems')
+FileUtils::makedirs("#$extout/gems")
 Dir.chdir('gems')
 extout = $extout
 gems.each do |d|
   $extout = extout.dup
   extmake(d, 'gems')
+  open("#{d}/Makefile", "r+b") do |f|
+    mf = f.read
+    f.rewind
+    mf.sub!(/^RUBYARCHDIR *= *(\$\(extout\))\/(\$\(arch\))(.*)/) {
+      "TARGET_SO_DIR = #$1/gems/#$2/#{d[%r{\A[^/]+}]}#$3\n" \
+      "TARGET_SO_TIME = .gems.-.arch.-.#{d[/\A[^\/]+/]}.time"
+    }
+    mf.gsub!(/\bRUBYARCHDIR\b/, 'TARGET_SO_DIR')
+    mf.gsub!(/\.TARGET_SO_DIR\.time/, '$(TARGET_SO_TIME)')
+    f.write(mf)
+    f.truncate(f.pos)
+  end
 end
 $extout = extout
 Dir.chdir('../ext')
