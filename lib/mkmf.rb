@@ -2305,14 +2305,14 @@ TIMESTAMP_DIR = #{$extout ? '$(extout)/.timestamp' : '.'}
     n = ($extout ? '$(RUBYARCHDIR)/' : '') + '$(TARGET)'
     mfile.print "
 TARGET_SO     = #{($extout ? '$(RUBYARCHDIR)/' : '')}$(DLLIB)
-CLEANLIBS     = #{n}.#{CONFIG['DLEXT']} #{config_string('cleanlibs') {|t| t.gsub(/\$\*/) {n}}}
+CLEANLIBS     = $(TARGET_SO) #{config_string('cleanlibs') {|t| t.gsub(/\$\*/) {n}}}
 CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, "$(TARGET)#{deffile ? '-$(arch)': ''}")} if target} *.bak
 
 all:    #{$extout ? "install" : target ? "$(DLLIB)" : "Makefile"}
 static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{!$extmk ? " install-rb" : ""}"}
 .PHONY: all install static install-so install-rb
 .PHONY: clean clean-so clean-static clean-rb
-"
+" #"
     mfile.print CLEANINGS
     fsep = config_string('BUILD_FILE_SEPARATOR') {|s| s unless s == "/"}
     if fsep
@@ -2334,7 +2334,7 @@ static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{!$extmk ? " install-rb" :
     mfile.print("install-so: ")
     if target
       f = "$(DLLIB)"
-      dest = "#{dir}/#{f}"
+      dest = "$(TARGET_SO)"
       stamp = timestamp_file(dir, target_prefix)
       if $extout
         mfile.puts dest
@@ -2446,8 +2446,7 @@ site-install-rb: install-rb
       end
     end
 
-    mfile.print "$(RUBYARCHDIR)/" if $extout
-    mfile.print "$(DLLIB): "
+    mfile.print "$(TARGET_SO): "
     mfile.print "$(DEFFILE) " if makedef
     mfile.print "$(OBJS) Makefile"
     mfile.print " #{timestamp_file('$(RUBYARCHDIR)', target_prefix)}" if $extout
