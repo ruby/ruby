@@ -777,8 +777,15 @@ install?(:ext, :comm, :gem) do
   next if gems.empty?
   if defined?(Zlib)
     Gem.instance_variable_set(:@ruby, with_destdir(File.join(bindir, ruby_install_name)))
+    silent = Gem::SilentUI.new
     gems.each do |gem|
-      Gem.install(gem, Gem::Requirement.default, options)
+      inst = Gem::Installer.new(gem, options)
+      inst.spec.extension_dir = with_destdir(inst.spec.extension_dir)
+      begin
+        Gem::DefaultUserInteraction.use_ui(silent) {inst.install}
+      rescue Gem::InstallError => e
+        next
+      end
       gemname = File.basename(gem)
       puts "#{" "*30}#{gemname}"
     end

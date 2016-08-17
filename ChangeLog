@@ -1,3 +1,8 @@
+Thu Aug 18 02:36:26 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb: skip gems which failed to build extensions.
+	  [ruby-dev:49764] [Bug #12683]
+
 Wed Aug 17 23:35:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gems/bundled_gems (tk): bump up to 0.1.1.
