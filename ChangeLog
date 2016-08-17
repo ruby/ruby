@@ -1,3 +1,7 @@
+Wed Aug 17 23:35:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gems/bundled_gems (tk): bump up to 0.1.1.
+
 Wed Aug 17 23:14:42 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: build gem extensions into separate directories
