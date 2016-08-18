@@ -1,3 +1,7 @@
+Thu Aug 18 09:26:52 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* gems/bundled_gems: bump to test-unit-3.2.1
+
 Thu Aug 18 02:36:26 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/rbinstall.rb: skip gems which failed to build extensions.
