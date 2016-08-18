@@ -72,6 +72,13 @@ class TestLambdaParameters < Test::Unit::TestCase
     assert_raise(ArgumentError, bug9605) {proc(&plus).call [1,2]}
   end
 
+  def test_instance_exec
+    bug12568 = '[ruby-core:76300] [Bug #12568]'
+    assert_nothing_raised(ArgumentError, bug12568) do
+      instance_exec([1,2,3], &->(a=[]){ a })
+    end
+  end
+
   def yield_1(arg)
     yield arg
   end
