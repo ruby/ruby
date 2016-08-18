@@ -1,3 +1,8 @@
+Thu Aug 18 23:04:59 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* thread.c (rb_wait_for_single_fd): Clean up fds.revents every time
+	  before calling ppoll(2). [Bug #12575] [ruby-dev:49725]
+
 Thu Aug 18 22:52:19 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_args.c (setup_parameters_complex): don't raise ArgumentError
