@@ -168,7 +168,6 @@ code_page_i(st_data_t name, st_data_t idx, st_data_t arg)
 		count = (((idx + 4) & ~31) | 28);
 		USHORT *new_table = realloc(table, count * sizeof(*table));
 		if (!new_table) {
-			free(table);
 			return ST_CONTINUE;
 		}
 		table = new_table;
