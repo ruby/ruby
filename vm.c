@@ -460,12 +460,14 @@ vm_set_main_stack(rb_thread_t *th, const rb_iseq_t *iseq)
 
     GetBindingPtr(toplevel_binding, bind);
 
-    vm_set_eval_stack(th, iseq, 0, &bind->block);
+    if (bind) {
+        vm_set_eval_stack(th, iseq, 0, &bind->block);
 
-    /* save binding */
-    if (bind && iseq->body->local_table_size > 0) {
-	vm_bind_update_env(bind, vm_make_env_object(th, th->cfp));
-    }
+        /* save binding */
+         if (iseq->body->local_table_size > 0) {
+             vm_bind_update_env(bind, vm_make_env_object(th, th->cfp));
+         }
+     }
 }
 
 rb_control_frame_t *
