@@ -559,8 +559,14 @@ END
   end
 
   def test_new_seed
-    v = Random.new_seed
-    assert_kind_of(Integer, v)
-    assert_operator(v.size, :>=, 16)
+    size = 0
+    n = 8
+    n.times do
+      v = Random.new_seed
+      assert_kind_of(Integer, v)
+      size += v.size
+    end
+    # probability of failure <= 1/256**8
+    assert_operator(size.fdiv(n), :>, 15)
   end
 end
