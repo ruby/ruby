@@ -645,7 +645,7 @@ inspect_timeval_as_interval(int level, int optname, VALUE data, VALUE ret)
  */
 
 #if !defined HAVE_INET_NTOP && ! defined _WIN32
-static const char *
+const char *
 inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 {
 #ifdef HAVE_INET_NTOA
@@ -660,10 +660,6 @@ inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 #endif
     return numaddr;
 }
-#elif defined __MINGW32__
-# define inet_ntop(f,a,n,l)      rb_w32_inet_ntop(f,a,n,l)
-#elif defined _MSC_VER && RUBY_MSVCRT_VERSION < 90
-const char *WSAAPI inet_ntop(int, const void *, char *, size_t);
 #endif
 
 /* Although the buffer size needed depends on the prefixes, "%u" may generate "4294967295".  */
