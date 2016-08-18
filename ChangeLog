@@ -1,3 +1,10 @@
+Thu Aug 18 23:06:20 2016  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/attribute.rb (REXML::Attribute#to_string): Fix wrong
+	  entry reference name of double quote.
+	  [Bug #12609][ruby-core:76509]
+	  Patch by Joseph Marrero. Thanks!!!
+
 Thu Aug 18 23:04:59 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* thread.c (rb_wait_for_single_fd): Clean up fds.revents every time
