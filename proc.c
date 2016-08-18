@@ -1323,7 +1323,7 @@ respond_to_missing_p(VALUE klass, VALUE obj, VALUE sym, int scope)
 
 
 static VALUE
-mnew_missing(VALUE klass, VALUE obj, ID id, ID rid, VALUE mclass)
+mnew_missing(VALUE klass, VALUE obj, ID id, VALUE mclass)
 {
     struct METHOD *data;
     VALUE method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
@@ -1352,13 +1352,12 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass,
 {
     struct METHOD *data;
     VALUE method;
-    ID rid = id;
     rb_method_visibility_t visi = METHOD_VISI_UNDEF;
 
   again:
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
 	if (respond_to_missing_p(klass, obj, ID2SYM(id), scope)) {
-	    return mnew_missing(klass, obj, id, rid, mclass);
+	    return mnew_missing(klass, obj, id, mclass);
 	}
 	if (!error) return Qnil;
 	rb_print_undef(klass, id, METHOD_VISI_UNDEF);
@@ -1639,7 +1638,7 @@ obj_method(VALUE obj, VALUE vid, int scope)
     if (!id) {
 	if (respond_to_missing_p(klass, obj, vid, scope)) {
 	    id = rb_intern_str(vid);
-	    return mnew_missing(klass, obj, id, id, mclass);
+	    return mnew_missing(klass, obj, id, mclass);
 	}
 	rb_method_name_error(klass, vid);
     }
@@ -1728,7 +1727,7 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
 	if (!NIL_P(klass = rb_singleton_class_get(obj)) &&
 	    respond_to_missing_p(klass, obj, vid, FALSE)) {
 	    id = rb_intern_str(vid);
-	    return mnew_missing(klass, obj, id, id, rb_cMethod);
+	    return mnew_missing(klass, obj, id, rb_cMethod);
 	}
       undef:
 	rb_name_err_raise("undefined singleton method `%1$s' for `%2$s'",

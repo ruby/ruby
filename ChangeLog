@@ -1,3 +1,8 @@
+Fri Aug 19 01:00:53 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* proc.c (mnew_missing): Remove an unused argument.
+	  After r51126 rid is not used.
+
 Thu Aug 18 09:26:52 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* gems/bundled_gems: bump to test-unit-3.2.1
