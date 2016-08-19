@@ -459,11 +459,12 @@ vm_set_main_stack(rb_thread_t *th, const rb_iseq_t *iseq)
     rb_binding_t *bind;
 
     GetBindingPtr(toplevel_binding, bind);
+    RUBY_ASSERT_MESG(bind, "TOPLEVEL_BINDING is not built");
 
     vm_set_eval_stack(th, iseq, 0, &bind->block);
 
     /* save binding */
-    if (bind && iseq->body->local_table_size > 0) {
+    if (iseq->body->local_table_size > 0) {
 	vm_bind_update_env(bind, vm_make_env_object(th, th->cfp));
     }
 }
