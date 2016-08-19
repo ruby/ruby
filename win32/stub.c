@@ -1,4 +1,5 @@
 #include <ruby.h>
+#include <windows.h>
 static void stub_sysinit(int *argc, char ***argv);
 #define ruby_sysinit stub_sysinit
 #include <main.c>
