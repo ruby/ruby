@@ -117,7 +117,9 @@ enum dump_flag_bits {
     dump_flag_count
 };
 
-struct cmdline_options {
+typedef struct ruby_cmdline_options ruby_cmdline_options_t;
+
+struct ruby_cmdline_options {
     int sflag, xflag;
     int do_loop, do_print;
     int do_line, do_split;
@@ -140,7 +142,7 @@ struct cmdline_options {
     unsigned int warning: 1;
 };
 
-static void init_ids(struct cmdline_options *);
+static void init_ids(ruby_cmdline_options_t *);
 
 #define src_encoding_index GET_VM()->src_encoding_index
 
@@ -159,8 +161,8 @@ enum {
 	)
 };
 
-static struct cmdline_options *
-cmdline_options_init(struct cmdline_options *opt)
+static ruby_cmdline_options_t *
+cmdline_options_init(ruby_cmdline_options_t *opt)
 {
     MEMZERO(opt, *opt, 1);
     init_ids(opt);
@@ -171,8 +173,8 @@ cmdline_options_init(struct cmdline_options *opt)
     return opt;
 }
 
-static NODE *load_file(VALUE, VALUE, int, struct cmdline_options *);
-static void forbid_setid(const char *, struct cmdline_options *);
+static NODE *load_file(VALUE, VALUE, int, ruby_cmdline_options_t *);
+static void forbid_setid(const char *, ruby_cmdline_options_t *);
 #define forbid_setid(s) forbid_setid((s), opt)
 
 static struct {
@@ -709,10 +711,10 @@ process_sflag(int *sflag)
     }
 }
 
-static long proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt);
+static long proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt);
 
 static void
-moreswitches(const char *s, struct cmdline_options *opt, int envopt)
+moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
 {
     long argc, i, len;
     char **argv, *p;
@@ -890,7 +892,7 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
     set_option_encoding_once("source", &(opt)->src.enc.name, (e), (elen))
 
 static long
-proc_options(long argc, char **argv, struct cmdline_options *opt, int envopt)
+proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 {
     long n, argc0 = argc;
     const char *s;
@@ -1431,7 +1433,7 @@ rb_f_chomp(int argc, VALUE *argv)
 }
 
 static VALUE
-process_options(int argc, char **argv, struct cmdline_options *opt)
+process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
     NODE *tree = 0;
     VALUE parser;
@@ -1732,7 +1734,7 @@ struct load_file_arg {
     VALUE fname;
     int script;
     int xflag;
-    struct cmdline_options *opt;
+    ruby_cmdline_options_t *opt;
     VALUE f;
 };
 
@@ -1743,7 +1745,7 @@ load_file_internal(VALUE argp_v)
     VALUE parser = argp->parser;
     VALUE orig_fname = argp->fname;
     int script = argp->script;
-    struct cmdline_options *opt = argp->opt;
+    ruby_cmdline_options_t *opt = argp->opt;
     VALUE f = argp->f;
     int line_start = 1;
     NODE *tree = 0;
@@ -1955,7 +1957,7 @@ restore_load_file(VALUE arg)
 }
 
 static NODE *
-load_file(VALUE parser, VALUE fname, int script, struct cmdline_options *opt)
+load_file(VALUE parser, VALUE fname, int script, ruby_cmdline_options_t *opt)
 {
     struct load_file_arg arg;
     arg.parser = parser;
@@ -1978,7 +1980,7 @@ rb_load_file(const char *fname)
 void *
 rb_load_file_str(VALUE fname_v)
 {
-    struct cmdline_options opt;
+    ruby_cmdline_options_t opt;
 
     return load_file(rb_parser_new(), fname_v, 0, cmdline_options_init(&opt));
 }
@@ -1986,7 +1988,7 @@ rb_load_file_str(VALUE fname_v)
 void *
 rb_parser_load_file(VALUE parser, VALUE fname_v)
 {
-    struct cmdline_options opt;
+    ruby_cmdline_options_t opt;
 
     return load_file(parser, fname_v, 0, cmdline_options_init(&opt));
 }
@@ -2081,7 +2083,7 @@ ruby_set_script_name(VALUE name)
 }
 
 static void
-init_ids(struct cmdline_options *opt)
+init_ids(ruby_cmdline_options_t *opt)
 {
     rb_uid_t uid = getuid();
     rb_uid_t euid = geteuid();
@@ -2097,7 +2099,7 @@ init_ids(struct cmdline_options *opt)
 
 #undef forbid_setid
 static void
-forbid_setid(const char *s, struct cmdline_options *opt)
+forbid_setid(const char *s, ruby_cmdline_options_t *opt)
 {
     if (opt->setids & 1)
         rb_raise(rb_eSecurityError, "no %s allowed while running setuid", s);
@@ -2180,7 +2182,7 @@ ruby_set_argv(int argc, char **argv)
 void *
 ruby_process_options(int argc, char **argv)
 {
-    struct cmdline_options opt;
+    ruby_cmdline_options_t opt;
     VALUE iseq;
     const char *script_name = (argc > 0 && argv[0]) ? argv[0] : ruby_engine;
 
