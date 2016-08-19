@@ -1,3 +1,8 @@
+Fri Aug 19 11:39:06 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (primary): allow parenthesised statement as a method
+	  argument.  [Feature #12686]
+
 Fri Aug 19 09:12:45 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm.c (vm_set_main_stack): TOPLEVEL_BINDING must be built.

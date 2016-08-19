@@ -2659,7 +2659,7 @@ primary		: literal
 			$<val>1 = cmdarg_stack;
 			CMDARG_SET(0);
 		    }
-		  expr {SET_LEX_STATE(EXPR_ENDARG);} rparen
+		  stmt {SET_LEX_STATE(EXPR_ENDARG);} rparen
 		    {
 			CMDARG_SET($<val>1);
 		    /*%%%*/

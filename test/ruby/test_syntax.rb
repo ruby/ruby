@@ -827,6 +827,11 @@ eom
     end
   end
 
+  def test_parenthesised_statement_argument
+    assert_syntax_error("foo(bar rescue nil)", /unexpected modifier_rescue/)
+    assert_valid_syntax("foo (bar rescue nil)")
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
