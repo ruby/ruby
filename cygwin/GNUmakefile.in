@@ -5,6 +5,7 @@ include Makefile
 ENABLE_SHARED=@ENABLE_SHARED@
 DLLWRAP = @DLLWRAP@ --target=@target_os@ --driver-name="$(CC)"
 WINDRES = @WINDRES@ --preprocessor="$(CPP) -xc" -DRC_INVOKED
+STRIP = @STRIP@
 
 ifeq (@target_os@,cygwin)
   DLL_BASE_NAME := $(LIBRUBY_SO:.dll=)
@@ -76,6 +77,7 @@ $(STUBPROGRAM): $(RUBY_INSTALL_NAME).res.@OBJEXT@ win32/stub.@OBJEXT@
 	$(ECHO) linking $@
 	$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) \
 	  win32/stub.@OBJEXT@ $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
+	$(if $(STRIP),$(Q) $(STRIP) $@)
 
 $(RUBY_EXP): $(LIBRUBY_A)
 	$(ECHO) creating $@
