@@ -13,6 +13,9 @@ else
   DLL_BASE_NAME := $(RUBY_SO_NAME)
   DLLWRAP += -mno-cygwin
   VPATH := $(VPATH):$(srcdir)/win32
+  STUBPROGRAM = rubystub$(EXEEXT)
+  IGNOREDPATTERNS = %~ .% %.orig %.rej \#%\#
+  SCRIPTPROGRAMS = $(addsuffix $(EXEEXT),$(filter-out $(IGNOREDPATTERNS),$(notdir $(wildcard $(srcdir)/bin/*))))
 endif
 
 ifneq ($(ENABLE_SHARED),yes)
@@ -29,9 +32,6 @@ else
 endif
 
 WPROGRAM = $(RUBYW_INSTALL_NAME)$(EXEEXT)
-STUBPROGRAM = rubystub$(EXEEXT)
-IGNOREDPATTERNS = %~ .% %.orig %.rej \#%\#
-SCRIPTPROGRAMS = $(addsuffix $(EXEEXT),$(filter-out $(IGNOREDPATTERNS),$(notdir $(wildcard $(srcdir)/bin/*))))
 
 -include uncommon.mk
 
@@ -116,17 +116,6 @@ ifeq (@target_os@,cygwin)
 cygwin-$(RUBY_INSTALL_NAME)$(MAJOR)$(MINOR)0.dll: $(LIBRUBY_A) $(RUBYDEF)
 	$(ECHO) generating $@
 	$(Q) @DLLWRAP@ -s --def=$(RUBYDEF) -o $@
-
-win32/stub.@OBJEXT@: $(TIMESTAMPDIR)/.win32.time
-
-$(TIMESTAMPDIR)/.win32.time:
-	$(Q) $(MAKEDIRS) win32 $(@D)
-	@exit > $@
-
-clean-platform: clean-win32
-clean-win32:
-	$(Q) $(RM) $(TIMESTAMPDIR)/.win32.time
-	-$(Q) $(RMDIR) win32 2> $(NULL) || exit 0
 endif
 
 clean-local::
