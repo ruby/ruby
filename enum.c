@@ -938,7 +938,7 @@ enum_first(int argc, VALUE *argv, VALUE obj)
 static VALUE
 enum_sort(VALUE obj)
 {
-    return rb_ary_sort(enum_to_a(0, 0, obj));
+    return rb_ary_sort_bang(enum_to_a(0, 0, obj));
 }
 
 #define SORT_BY_BUFSIZE 16
