@@ -13,9 +13,6 @@ else
   DLL_BASE_NAME := $(RUBY_SO_NAME)
   DLLWRAP += -mno-cygwin
   VPATH := $(VPATH):$(srcdir)/win32
-  STUBPROGRAM = rubystub$(EXEEXT)
-  IGNOREDPATTERNS = %~ .% %.orig %.rej \#%\#
-  SCRIPTPROGRAMS = $(addsuffix $(EXEEXT),$(filter-out $(IGNOREDPATTERNS),$(notdir $(wildcard $(srcdir)/bin/*))))
 endif
 
 ifneq ($(ENABLE_SHARED),yes)
@@ -44,13 +41,6 @@ RUBYDEF = $(DLL_BASE_NAME).def
 
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
-stub: $(STUBPROGRAM)
-scriptbin: $(SCRIPTPROGRAMS)
-
-%$(EXEEXT): bin/% $(STUBPROGRAM)
-	$(ECHO) generating $@
-	$(Q) { cat $(STUBPROGRAM); echo; sed -e '1{' -e '/^#!.*ruby/!i\' -e '#!/bin/ruby' -e '}' $<; } > $@
-	$(Q) chmod +x $@
 
 $(LIBRUBY): $(RUBY_EXP) $(LIBRUBY_SO)
 $(RUBY_EXP) $(LIBRUBY_SO): $(DLL_BASE_NAME).res.@OBJEXT@
@@ -72,12 +62,7 @@ $(WPROGRAM): $(RUBYW_INSTALL_NAME).res.@OBJEXT@
 	$(ECHO) linking $@
 	$(Q) $(PURIFY) $(CC) -mwindows -e $(SYMBOL_PREFIX)mainCRTStartup $(LDFLAGS) $(XLDFLAGS) \
 	  $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
-$(STUBPROGRAM): $(RUBY_INSTALL_NAME).res.@OBJEXT@ win32/stub.@OBJEXT@
-	@rm -f $@
-	$(ECHO) linking $@
-	$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) \
-	  win32/stub.@OBJEXT@ $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
-	$(if $(STRIP),$(Q) $(STRIP) $@)
+$(STUBPROGRAM): $(RUBY_INSTALL_NAME).res.@OBJEXT@
 
 $(RUBY_EXP): $(LIBRUBY_A)
 	$(ECHO) creating $@

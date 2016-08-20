@@ -92,3 +92,36 @@ else
 	$(Q) mv $@.new $@
 	$(Q) $(RMALL) make_des_table*
 endif
+
+STUBPROGRAM = rubystub$(EXEEXT)
+IGNOREDPATTERNS = %~ .% %.orig %.rej \#%\#
+SCRIPTBINDIR := $(if $(EXEEXT),,exec/)
+SCRIPTPROGRAMS = $(addprefix $(SCRIPTBINDIR),$(addsuffix $(EXEEXT),$(filter-out $(IGNOREDPATTERNS),$(notdir $(wildcard $(srcdir)/bin/*)))))
+
+stub: $(STUBPROGRAM)
+scriptbin: $(SCRIPTPROGRAMS)
+ifneq ($(STUBPROGRAM),rubystub)
+rubystub: $(STUBPROGRAM)
+endif
+
+$(SCRIPTPROGRAMS): $(STUBPROGRAM)
+
+$(STUBPROGRAM): rubystub.$(OBJEXT) $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
+
+rubystub$(EXEEXT):
+	@rm -f $@
+	$(ECHO) linking $@
+	$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) rubystub.$(OBJEXT) $(EXTOBJS) $(LIBRUBYARG) $(MAINLIBS) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
+	$(Q) $(POSTLINK)
+	$(if $(STRIP),$(Q) $(STRIP) $@)
+
+$(SCRIPTBINDIR)%$(EXEEXT): bin/% $(STUBPROGRAM) \
+			   $(if $(SCRIPTBINDIR),$(TIMESTAMPDIR)/.exec.time)
+	$(ECHO) generating $@
+	$(Q) { cat $(STUBPROGRAM); echo; sed -e '1{' -e '/^#!.*ruby/!i\' -e '#!/bin/ruby' -e '}' $<; } > $@
+	$(Q) chmod +x $@
+	$(Q) $(POSTLINK)
+
+$(TIMESTAMPDIR)/.exec.time:
+	$(Q) mkdir exec
+	$(Q) exit > $@

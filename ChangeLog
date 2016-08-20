@@ -1,3 +1,7 @@
+Sat Aug 20 11:20:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* rubystub.c: generalize win32/stub.c.
+
 Fri Aug 19 11:39:06 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (primary): allow parenthesised statement as a method
