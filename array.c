@@ -1560,10 +1560,10 @@ rb_ary_to_ary(VALUE obj)
 }
 
 static void
-rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
+rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
 {
-    long rlen;
     long olen;
+    int self_insert;
 
     if (len < 0) rb_raise(rb_eIndexError, "negative length (%ld)", len);
     olen = RARRAY_LEN(ary);
@@ -1578,14 +1578,8 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	len = olen - beg;
     }
 
-    if (rpl == Qundef) {
-	rlen = 0;
-    }
-    else {
-	rpl = rb_ary_to_ary(rpl);
-	rlen = RARRAY_LEN(rpl);
-	olen = RARRAY_LEN(ary);	/* ary may be resized in rpl.to_ary too */
-    }
+    self_insert = rptr == RARRAY_CONST_PTR(ary);
+
     if (beg >= olen) {
 	VALUE target_ary;
 	if (beg > ARY_MAX_SIZE - rlen) {
@@ -1595,7 +1589,8 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	len = beg + rlen;
 	ary_mem_clear(ary, olen, beg - olen);
 	if (rlen > 0) {
-	    ary_memcpy0(ary, beg, rlen, RARRAY_CONST_PTR(rpl), target_ary);
+	    if (self_insert) rptr = RARRAY_CONST_PTR(ary);
+	    ary_memcpy0(ary, beg, rlen, rptr, target_ary);
 	}
 	ARY_SET_LEN(ary, len);
     }
@@ -1618,10 +1613,10 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	    ARY_SET_LEN(ary, alen);
 	}
 	if (rlen > 0) {
-	    MEMMOVE(RARRAY_PTR(ary) + beg, RARRAY_CONST_PTR(rpl), VALUE, rlen);
+	    if (self_insert) rptr = RARRAY_CONST_PTR(ary);
+	    MEMMOVE(RARRAY_PTR(ary) + beg, rptr, VALUE, rlen);
 	}
     }
-    RB_GC_GUARD(rpl);
 }
 
 void
@@ -1724,13 +1719,13 @@ static VALUE
 rb_ary_aset(int argc, VALUE *argv, VALUE ary)
 {
     long offset, beg, len;
+    VALUE rpl;
 
     if (argc == 3) {
 	rb_ary_modify_check(ary);
 	beg = NUM2LONG(argv[0]);
 	len = NUM2LONG(argv[1]);
-	rb_ary_splice(ary, beg, len, argv[2]);
-	return argv[2];
+	goto range;
     }
     rb_check_arity(argc, 2, 2);
     rb_ary_modify_check(ary);
@@ -1740,8 +1735,11 @@ rb_ary_aset(int argc, VALUE *argv, VALUE ary)
     }
     if (rb_range_beg_len(argv[0], &beg, &len, RARRAY_LEN(ary), 1)) {
 	/* check if idx is Range */
-	rb_ary_splice(ary, beg, len, argv[1]);
-	return argv[1];
+      range:
+	rpl = rb_ary_to_ary(argv[argc-1]);
+	rb_ary_splice(ary, beg, len, RARRAY_CONST_PTR(rpl), RARRAY_LEN(rpl));
+	RB_GC_GUARD(rpl);
+	return argv[argc-1];
     }
 
     offset = NUM2LONG(argv[0]);
@@ -1781,7 +1779,7 @@ rb_ary_insert(int argc, VALUE *argv, VALUE ary)
     if (pos < 0) {
 	pos++;
     }
-    rb_ary_splice(ary, pos, 0, rb_ary_new4(argc - 1, argv + 1));
+    rb_ary_splice(ary, pos, 0, argv + 1, argc - 1);
     return ary;
 }
 
@@ -3116,7 +3114,7 @@ rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
 	if (len == 0) return rb_ary_new2(0);
 	arg2 = rb_ary_new4(len, RARRAY_CONST_PTR(ary)+pos);
 	RBASIC_SET_CLASS(arg2, rb_obj_class(ary));
-	rb_ary_splice(ary, pos, len, Qundef);
+	rb_ary_splice(ary, pos, len, 0, 0);
 	return arg2;
     }
 
@@ -3642,7 +3640,7 @@ rb_ary_concat(VALUE x, VALUE y)
     rb_ary_modify_check(x);
     y = to_ary(y);
     if (RARRAY_LEN(y) > 0) {
-	rb_ary_splice(x, RARRAY_LEN(x), 0, y);
+	rb_ary_splice(x, RARRAY_LEN(x), 0, RARRAY_CONST_PTR(y), RARRAY_LEN(y));
     }
     return x;
 }
