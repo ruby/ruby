@@ -1,6 +1,6 @@
 Sat Aug 21 05:47:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
-	* enum.c (enum_sort): prevent wasteful array duplicaion.
+	* enum.c (enum_sort): prevent wasteful array duplication.
 
 Sat Aug 20 11:20:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
