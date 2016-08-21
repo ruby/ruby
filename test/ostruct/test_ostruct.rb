@@ -170,7 +170,7 @@ class TC_OpenStruct < Test::Unit::TestCase
     assert os.respond_to? :foo
     assert_equal([], os.singleton_methods)
     assert_equal(42, os.foo)
-    assert_equal([:foo, :foo=], os.singleton_methods)
+    assert_equal([:foo, :foo=], os.singleton_methods.sort)
   end
 
   def test_does_not_redefine
