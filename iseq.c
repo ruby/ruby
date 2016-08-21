@@ -2419,6 +2419,7 @@ Init_ISeq(void)
 {
     /* declare ::RubyVM::InstructionSequence */
     rb_cISeq = rb_define_class_under(rb_cRubyVM, "InstructionSequence", rb_cObject);
+    rb_define_global_const("ISeq", rb_cISeq);
     rb_define_method(rb_cISeq, "inspect", iseqw_inspect, 0);
     rb_define_method(rb_cISeq, "disasm", iseqw_disasm, 0);
     rb_define_method(rb_cISeq, "disassemble", iseqw_disasm, 0);
@@ -2450,9 +2451,9 @@ Init_ISeq(void)
 #if 0 /* TBD */
     rb_define_private_method(rb_cISeq, "marshal_dump", iseqw_marshal_dump, 0);
     rb_define_private_method(rb_cISeq, "marshal_load", iseqw_marshal_load, 1);
+#endif
     /* disable this feature because there is no verifier. */
     rb_define_singleton_method(rb_cISeq, "load", iseq_s_load, -1);
-#endif
     (void)iseq_s_load;
 
     rb_define_singleton_method(rb_cISeq, "compile", iseqw_s_compile, -1);
