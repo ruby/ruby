@@ -619,7 +619,7 @@ Fri Jul 15 18:13:15 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 Fri Jul 15 17:08:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* util.c (ruby_strtod): do not underflow only by preceeding zeros,
+	* util.c (ruby_strtod): do not underflow only by preceding zeros,
 	  which may be canceled out by the exponent.
 	  http://twitter.com/kazuho/status/753829998767714305
 
