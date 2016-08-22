@@ -1563,7 +1563,7 @@ static void
 rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
 {
     long olen;
-    int self_insert;
+    long rofs;
 
     if (len < 0) rb_raise(rb_eIndexError, "negative length (%ld)", len);
     olen = RARRAY_LEN(ary);
@@ -1578,7 +1578,10 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
 	len = olen - beg;
     }
 
-    self_insert = rptr == RARRAY_CONST_PTR(ary);
+    {
+	const VALUE *optr = RARRAY_CONST_PTR(ary);
+	rofs = (rptr >= optr && rptr < optr + olen) ? rptr - optr : -1;
+    }
 
     if (beg >= olen) {
 	VALUE target_ary;
@@ -1589,7 +1592,7 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
 	len = beg + rlen;
 	ary_mem_clear(ary, olen, beg - olen);
 	if (rlen > 0) {
-	    if (self_insert) rptr = RARRAY_CONST_PTR(ary);
+	    if (rofs != -1) rptr = RARRAY_CONST_PTR(ary) + rofs;
 	    ary_memcpy0(ary, beg, rlen, rptr, target_ary);
 	}
 	ARY_SET_LEN(ary, len);
@@ -1613,7 +1616,7 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
 	    ARY_SET_LEN(ary, alen);
 	}
 	if (rlen > 0) {
-	    if (self_insert) rptr = RARRAY_CONST_PTR(ary);
+	    if (rofs != -1) rptr = RARRAY_CONST_PTR(ary) + rofs;
 	    MEMMOVE(RARRAY_PTR(ary) + beg, rptr, VALUE, rlen);
 	}
     }
