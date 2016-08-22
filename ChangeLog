@@ -1,3 +1,8 @@
+Mon Aug 22 14:35:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* man/irb.1: remove useless -width option.
+	  [ruby-dev:49767] [Bug #12692]
+
 Mon Aug 22 09:02:56 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (Init_ISeq): undefine allocator of InstructionSequence,
