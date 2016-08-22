@@ -119,7 +119,7 @@ VALUE rb_cSymbol;
 } while (0)
 #define RESIZE_CAPA_TERM(str,capacity,termlen) do {\
     if (STR_EMBED_P(str)) {\
-	if ((capacity) > RSTRING_EMBED_LEN_MAX) {\
+	if ((capacity) > (RSTRING_EMBED_LEN_MAX + 1 - (termlen))) {\
 	    char *const tmp = ALLOC_N(char, (capacity)+termlen);\
 	    const long tlen = RSTRING_LEN(str);\
 	    memcpy(tmp, RSTRING_PTR(str), tlen);\
@@ -601,11 +601,11 @@ str_mod_check(VALUE s, const char *p, long len)
     }
 }
 
-size_t
-rb_str_capacity(VALUE str)
+static size_t
+str_capacity(VALUE str, const int termlen)
 {
     if (STR_EMBED_P(str)) {
-	return RSTRING_EMBED_LEN_MAX;
+	return (RSTRING_EMBED_LEN_MAX + 1 - termlen);
     }
     else if (FL_TEST(str, STR_SHARED|STR_NOFREE)) {
 	return RSTRING(str)->as.heap.len;
@@ -613,6 +613,12 @@ rb_str_capacity(VALUE str)
     else {
 	return RSTRING(str)->as.heap.aux.capa;
     }
+}
+
+size_t
+rb_str_capacity(VALUE str)
+{
+    return str_capacity(str, TERM_LEN(str));
 }
 
 static inline void
@@ -649,7 +655,7 @@ str_new0(VALUE klass, const char *ptr, long len, int termlen)
     RUBY_DTRACE_CREATE_HOOK(STRING, len);
 
     str = str_alloc(klass);
-    if (len > RSTRING_EMBED_LEN_MAX) {
+    if (len > (RSTRING_EMBED_LEN_MAX + 1 - termlen)) {
 	RSTRING(str)->as.heap.aux.capa = len;
 	RSTRING(str)->as.heap.ptr = ALLOC_N(char, len + termlen);
 	STR_SET_NOEMBED(str);
@@ -748,7 +754,8 @@ str_new_static(VALUE klass, const char *ptr, long len, int encindex)
     }
 
     if (!ptr) {
-	str = str_new(klass, ptr, len);
+	rb_encoding *enc = rb_enc_get_from_index(encindex);
+	str = str_new0(klass, ptr, len, rb_enc_mbminlen(enc));
     }
     else {
 	RUBY_DTRACE_CREATE_HOOK(STRING, len);
@@ -791,6 +798,15 @@ VALUE
 rb_tainted_str_new(const char *ptr, long len)
 {
     VALUE str = rb_str_new(ptr, len);
+
+    OBJ_TAINT(str);
+    return str;
+}
+
+static VALUE
+rb_tainted_str_new_with_enc(const char *ptr, long len, rb_encoding *enc)
+{
+    VALUE str = rb_enc_str_new(ptr, len, enc);
 
     OBJ_TAINT(str);
     return str;
@@ -928,7 +944,7 @@ rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *eenc)
 {
     VALUE str;
 
-    str = rb_tainted_str_new(ptr, len);
+    str = rb_tainted_str_new_with_enc(ptr, len, eenc);
     return rb_external_str_with_enc(str, eenc);
 }
 
@@ -1114,7 +1130,7 @@ str_new_frozen(VALUE klass, VALUE orig)
 VALUE
 rb_str_new_with_class(VALUE obj, const char *ptr, long len)
 {
-    return str_new(rb_obj_class(obj), ptr, len);
+    return str_new0(rb_obj_class(obj), ptr, len, TERM_LEN(obj));
 }
 
 static VALUE
@@ -1206,16 +1222,18 @@ str_shared_replace(VALUE str, VALUE str2)
 {
     rb_encoding *enc;
     int cr;
+    int termlen;
 
     ASSUME(str2 != str);
     enc = STR_ENC_GET(str2);
     cr = ENC_CODERANGE(str2);
     str_discard(str);
     OBJ_INFECT(str, str2);
+    termlen = rb_enc_mbminlen(enc);
 
-    if (RSTRING_LEN(str2) <= RSTRING_EMBED_LEN_MAX) {
+    if (RSTRING_LEN(str2) <= (RSTRING_EMBED_LEN_MAX + 1 - termlen)) {
 	STR_SET_EMBED(str);
-	memcpy(RSTRING_PTR(str), RSTRING_PTR(str2), RSTRING_LEN(str2)+1);
+	memcpy(RSTRING_PTR(str), RSTRING_PTR(str2), RSTRING_LEN(str2)+termlen);
 	STR_SET_EMBED_LEN(str, RSTRING_LEN(str2));
         rb_enc_associate(str, enc);
         ENC_CODERANGE_SET(str, cr);
@@ -1629,16 +1647,18 @@ rb_str_plus(VALUE str1, VALUE str2)
     rb_encoding *enc;
     char *ptr1, *ptr2, *ptr3;
     long len1, len2;
+    int termlen;
 
     StringValue(str2);
     enc = rb_enc_check_str(str1, str2);
     RSTRING_GETMEM(str1, ptr1, len1);
     RSTRING_GETMEM(str2, ptr2, len2);
-    str3 = rb_str_new(0, len1+len2);
+    termlen = rb_enc_mbminlen(enc);
+    str3 = str_new0(rb_cString, 0, len1+len2, termlen);
     ptr3 = RSTRING_PTR(str3);
     memcpy(ptr3, ptr1, len1);
     memcpy(ptr3+len1, ptr2, len2);
-    TERM_FILL(&ptr3[len1+len2], rb_enc_mbminlen(enc));
+    TERM_FILL(&ptr3[len1+len2], termlen);
 
     FL_SET_RAW(str3, OBJ_TAINTED_RAW(str1) | OBJ_TAINTED_RAW(str2));
     ENCODING_CODERANGE_SET(str3, rb_enc_to_index(enc),
@@ -1686,7 +1706,7 @@ rb_str_times(VALUE str, VALUE times)
 
     len *= RSTRING_LEN(str);
     termlen = TERM_LEN(str);
-    str2 = rb_str_new_with_class(str, 0, (len + termlen - 1));
+    str2 = str_new0(rb_obj_class(str), 0, len, termlen);
     ptr2 = RSTRING_PTR(str2);
     if (len) {
         n = RSTRING_LEN(str);
@@ -1906,9 +1926,13 @@ str_null_char(const char *s, long len, const int minlen, rb_encoding *enc)
 static char *
 str_fill_term(VALUE str, char *s, long len, int termlen)
 {
-    long capa = rb_str_capacity(str) + 1;
+    long capa = str_capacity(str, termlen);
 
-    if (capa < len + termlen) {
+    /* This function assumes that (capa + termlen) bytes of memory
+     * is allocated, like many other functions in this file.
+     */
+
+    if (capa < len) {
 	rb_check_lockedtmp(str);
 	str_make_independent_expand(str, len, 0L, termlen);
     }
@@ -1920,6 +1944,34 @@ str_fill_term(VALUE str, char *s, long len, int termlen)
 	TERM_FILL(s + len, termlen);
     }
     return s;
+}
+
+void
+rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int termlen)
+{
+    long capa = str_capacity(str, oldtermlen);
+    long len = RSTRING_LEN(str);
+
+    if (capa < len + termlen - oldtermlen) {
+	rb_check_lockedtmp(str);
+	str_make_independent_expand(str, len, 0L, termlen);
+    }
+    else if (str_dependent_p(str)) {
+	if (termlen > oldtermlen)
+	    str_make_independent_expand(str, len, 0L, termlen);
+    }
+    else {
+	if (!STR_EMBED_P(str)) {
+	    /* modify capa instead of realloc */
+	    assert(!FL_TEST((str), STR_SHARED));
+	    RSTRING(str)->as.heap.aux.capa = capa - (termlen - oldtermlen);
+	}
+	if (termlen > oldtermlen) {
+	    TERM_FILL(RSTRING_PTR(str) + len, termlen);
+	}
+    }
+
+    return;
 }
 
 char *
@@ -2119,7 +2171,7 @@ rb_str_subseq(VALUE str, long beg, long len)
 {
     VALUE str2;
 
-    if (RSTRING_EMBED_LEN_MAX < len && SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str))) {
+    if ((RSTRING_EMBED_LEN_MAX + 1 - TERM_LEN(str)) < len && SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str))) {
 	long olen;
 	str2 = rb_str_new_shared(rb_str_new_frozen(str));
 	RSTRING(str2)->as.heap.ptr += beg;
@@ -2229,7 +2281,7 @@ rb_str_substr(VALUE str, long beg, long len)
     char *p = rb_str_subpos(str, beg, &len);
 
     if (!p) return Qnil;
-    if (len > RSTRING_EMBED_LEN_MAX && SHARABLE_SUBSTRING_P(p, len, RSTRING_END(str))) {
+    if (len > (RSTRING_EMBED_LEN_MAX + 1 - TERM_LEN(str)) && SHARABLE_SUBSTRING_P(p, len, RSTRING_END(str))) {
 	long ofs = p - RSTRING_PTR(str);
 	str2 = rb_str_new_frozen(str);
 	str2 = str_new_shared(rb_obj_class(str2), str2);
@@ -2407,7 +2459,7 @@ str_buf_cat(VALUE str, const char *ptr, long len)
     rb_str_modify(str);
     if (len == 0) return 0;
     if (STR_EMBED_P(str)) {
-	capa = RSTRING_EMBED_LEN_MAX;
+	capa = RSTRING_EMBED_LEN_MAX + 1 - termlen;
 	sptr = RSTRING(str)->as.ary;
 	olen = RSTRING_EMBED_LEN(str);
     }
@@ -4029,7 +4081,7 @@ rb_str_drop_bytes(VALUE str, long len)
     str_modifiable(str);
     if (len > olen) len = olen;
     nlen = olen - len;
-    if (nlen <= RSTRING_EMBED_LEN_MAX) {
+    if (nlen <= (RSTRING_EMBED_LEN_MAX + 1 - TERM_LEN(str))) {
 	char *oldptr = ptr;
 	int fl = (int)(RBASIC(str)->flags & (STR_NOEMBED|STR_SHARED|STR_NOFREE));
 	STR_SET_EMBED(str);
@@ -4880,7 +4932,7 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
     enc = STR_ENC_GET(str);
     head = RSTRING_PTR(str);
     ptr = &head[pos];
-    if (len > RSTRING_EMBED_LEN_MAX) {
+    if (len > (RSTRING_EMBED_LEN_MAX + 1 - rb_enc_mbminlen(enc))) {
 	cr = ENC_CODERANGE(str);
 	switch (cr) {
 	  case ENC_CODERANGE_7BIT:
@@ -4933,7 +4985,7 @@ str_byte_substr(VALUE str, long beg, long len)
     else
 	p = s + beg;
 
-    if (len > RSTRING_EMBED_LEN_MAX && SHARABLE_SUBSTRING_P(beg, len, n)) {
+    if (len > (RSTRING_EMBED_LEN_MAX + 1 - TERM_LEN(str)) && SHARABLE_SUBSTRING_P(beg, len, n)) {
 	str2 = rb_str_new_frozen(str);
 	str2 = str_new_shared(rb_obj_class(str2), str2);
 	RSTRING(str2)->as.heap.ptr += beg;
@@ -8220,9 +8272,11 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
     long n, size, llen, rlen, llen2 = 0, rlen2 = 0;
     VALUE pad;
     int singlebyte = 1, cr;
+    int termlen;
 
     rb_scan_args(argc, argv, "11", &w, &pad);
     enc = STR_ENC_GET(str);
+    termlen = rb_enc_mbminlen(enc);
     width = NUM2LONG(w);
     if (argc == 2) {
 	StringValue(pad);
@@ -8252,7 +8306,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
        rb_raise(rb_eArgError, "argument too big");
     }
     len += size;
-    res = rb_str_new_with_class(str, 0, len);
+    res = str_new0(rb_obj_class(str), 0, len, termlen);
     p = RSTRING_PTR(res);
     if (flen <= 1) {
        memset(p, *f, llen);
@@ -8286,7 +8340,7 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
            p += rlen2;
 	}
     }
-    TERM_FILL(p, rb_enc_mbminlen(enc));
+    TERM_FILL(p, termlen);
     STR_SET_LEN(res, p-RSTRING_PTR(res));
     OBJ_INFECT_RAW(res, str);
     if (!NIL_P(pad)) OBJ_INFECT_RAW(res, pad);
