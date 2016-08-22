@@ -1856,7 +1856,7 @@ class CSV
           # If we are continuing a previous column
           if part[-1] == @quote_char && part.count(@quote_char) % 2 != 0
             # extended column ends
-            csv.last << part[0..-2]
+            csv[-1] = csv[-1].push(part[0..-2]).join("")
             if csv.last =~ @parsers[:stray_quote]
               raise MalformedCSVError,
                     "Missing or stray quote in line #{lineno + 1}"
@@ -1864,15 +1864,13 @@ class CSV
             csv.last.gsub!(@quote_char * 2, @quote_char)
             in_extended_col = false
           else
-            csv.last << part
-            csv.last << @col_sep
+            csv.last.push(part, @col_sep)
           end
         elsif part[0] == @quote_char
           # If we are starting a new quoted column
           if part.count(@quote_char) % 2 != 0
             # start an extended column
-            csv             << part[1..-1]
-            csv.last        << @col_sep
+            csv << [part[1..-1], @col_sep]
             in_extended_col =  true
           elsif part[-1] == @quote_char
             # regular quoted column

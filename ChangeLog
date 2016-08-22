@@ -1,3 +1,9 @@
+Mon Aug 22 16:29:52 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/csv.rb (CSV#shift): store partial quoted strings in an array
+	  and join at last, to improve performance with very long quoted
+	  lines.  [ruby-core:76987] [Bug #12691]
+
 Mon Aug 22 14:35:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* man/irb.1: remove useless -width option.
