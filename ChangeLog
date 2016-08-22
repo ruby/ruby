@@ -1,3 +1,8 @@
+Tue Aug 23 02:09:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_split_m): show $; name in error message when it
+	  is a wrong object.
+
 Mon Aug 22 16:29:52 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/csv.rb (CSV#shift): store partial quoted strings in an array

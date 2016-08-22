@@ -7003,6 +7003,16 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
     return INT2NUM(i);
 }
 
+static VALUE
+rb_fs_check(VALUE val)
+{
+    if (!NIL_P(val) && !RB_TYPE_P(val, T_STRING) && !RB_TYPE_P(val, T_REGEXP)) {
+	val = rb_check_string_type(val);
+	if (NIL_P(val)) return 0;
+    }
+    return val;
+}
+
 static const char isspacetable[256] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -7094,11 +7104,17 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     }
 
     enc = STR_ENC_GET(str);
-    if (NIL_P(spat) && NIL_P(spat = rb_fs)) {
+    split_type = regexp;
+    if (!NIL_P(spat)) {
+	spat = get_pat_quoted(spat, 0);
+    }
+    else if (NIL_P(spat = rb_fs)) {
 	split_type = awk;
     }
-    else {
-	spat = get_pat_quoted(spat, 0);
+    else if (!(spat = rb_fs_check(spat))) {
+	rb_raise(rb_eTypeError, "value of $; must be String or Regexp");
+    }
+    if (split_type != awk) {
 	if (BUILTIN_TYPE(spat) == T_STRING) {
 	    rb_encoding *enc2 = STR_ENC_GET(spat);
 
@@ -7121,9 +7137,6 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 		    split_type = awk;
 		}
 	    }
-	}
-	else {
-	    split_type = regexp;
 	}
     }
 

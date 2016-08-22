@@ -1365,7 +1365,7 @@ CODE
   end
 
   def test_split
-    assert_nil($;)
+    fs, $; = $;, nil
     assert_equal([S("a"), S("b"), S("c")], S(" a   b\t c ").split)
     assert_equal([S("a"), S("b"), S("c")], S(" a   b\t c ").split(S(" ")))
 
@@ -1389,6 +1389,13 @@ CODE
     assert_equal([], "".split(//, 1))
 
     assert_equal("[2, 3]", [1,2,3].slice!(1,10000).inspect, "moved from btest/knownbug")
+
+    $; = []
+    assert_raise_with_message(TypeError, /\$;/) {
+      "".split
+    }
+  ensure
+    $; = fs
   end
 
   def test_split_encoding
