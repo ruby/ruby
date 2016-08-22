@@ -1,3 +1,8 @@
+Mon Aug 22 09:02:56 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (Init_ISeq): undefine allocator of InstructionSequence,
+	  to get rid of segfaults at method call on uninitialized object.
+
 Sat Aug 21 05:47:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* enum.c (enum_sort): prevent wasteful array duplication.

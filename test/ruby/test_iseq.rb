@@ -19,6 +19,10 @@ class TestISeq < Test::Unit::TestCase
     body.find_all{|e| e.kind_of? Integer}
   end
 
+  def test_allocate
+    assert_raise(TypeError) {ISeq.allocate}
+  end
+
   def test_to_a_lines
     src = <<-EOS
     p __LINE__ # 1

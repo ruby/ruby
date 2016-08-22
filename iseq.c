@@ -2419,6 +2419,7 @@ Init_ISeq(void)
 {
     /* declare ::RubyVM::InstructionSequence */
     rb_cISeq = rb_define_class_under(rb_cRubyVM, "InstructionSequence", rb_cObject);
+    rb_undef_alloc_func(rb_cISeq);
     rb_define_method(rb_cISeq, "inspect", iseqw_inspect, 0);
     rb_define_method(rb_cISeq, "disasm", iseqw_disasm, 0);
     rb_define_method(rb_cISeq, "disassemble", iseqw_disasm, 0);
