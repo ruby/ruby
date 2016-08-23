@@ -1389,13 +1389,14 @@ CODE
     assert_equal([], "".split(//, 1))
 
     assert_equal("[2, 3]", [1,2,3].slice!(1,10000).inspect, "moved from btest/knownbug")
-
-    $; = []
-    assert_raise_with_message(TypeError, /\$;/) {
-      "".split
-    }
   ensure
     $; = fs
+  end
+
+  def test_fs
+    assert_raise_with_message(TypeError, /\$;/) {
+      $; = []
+    }
   end
 
   def test_split_encoding
