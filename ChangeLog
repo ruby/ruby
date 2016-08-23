@@ -1,3 +1,8 @@
+Tue Aug 23 10:34:40 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/psych/test_psych.rb (test_load_file_with_fallback): fix
+	  Tempfile leak.  https://github.com/tenderlove/psych/pull/288
+
 Tue Aug 23 10:15:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_fs_setter): check and convert $; value at
