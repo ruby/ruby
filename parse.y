@@ -6430,6 +6430,11 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
     rb_encoding *enc = current_enc;
 
     if (func == -1) return tSTRING_END;
+    if (func == -2) {
+	set_yylval_num(regx_options());
+	dispatch_scan_event(tREGEXP_END);
+	return tREGEXP_END;
+    }
     c = nextc();
     if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
 	do {c = nextc();} while (ISSPACE(c));
@@ -6501,7 +6506,9 @@ parser_heredoc_identifier(struct parser_params *parser)
       case '"':
 	func |= str_dquote; goto quoted;
       case '`':
-	func |= str_xquote;
+	func |= str_xquote; goto quoted;
+      case '/':
+	func |= str_regexp;
       quoted:
 	newtok();
 	tokadd(func);
@@ -6543,7 +6550,7 @@ parser_heredoc_identifier(struct parser_params *parser)
 				  lex_lastline);		/* nd_orig */
     nd_set_line(lex_strterm, ruby_sourceline);
     ripper_flush(parser);
-    return term == '`' ? tXSTRING_BEG : tSTRING_BEG;
+    return term == '`' ? tXSTRING_BEG : term == '/' ? tREGEXP_BEG : tSTRING_BEG;
 }
 
 static void
@@ -6873,7 +6880,11 @@ parser_here_document(struct parser_params *parser, NODE *here)
 			    yylval.val, str);
 #endif
     heredoc_restore(lex_strterm);
-    lex_strterm = NEW_STRTERM(-1, 0, 0);
+    if (func & STR_FUNC_REGEXP) {
+	lex_strterm = NEW_STRTERM(-2, 0, 0);
+    } else {
+	lex_strterm = NEW_STRTERM(-1, 0, 0);
+    }
     set_yylval_str(str);
     return tSTRING_CONTENT;
 }
