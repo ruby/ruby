@@ -7126,7 +7126,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 		split_type = regexp;
 	    }
 	    else if (rb_enc_asciicompat(enc2) == 1) {
-		if (RSTRING_LEN(spat) == 1 && RSTRING_PTR(spat)[0] == ' '){
+		if (RSTRING_LEN(spat) == 1 && RSTRING_PTR(spat)[0] == ' ') {
 		    split_type = awk;
 		}
 	    }
@@ -8861,6 +8861,18 @@ rb_str_setter(VALUE val, ID id, VALUE *var)
     *var = val;
 }
 
+static void
+rb_fs_setter(VALUE val, ID id, VALUE *var)
+{
+    val = rb_fs_check(val);
+    if (!val) {
+	rb_raise(rb_eTypeError,
+		 "value of %"PRIsVALUE" must be String or Regexp",
+		 rb_id2str(id));
+    }
+    *var = val;
+}
+
 
 /*
  *  call-seq:
@@ -9879,8 +9891,8 @@ Init_String(void)
     rb_define_method(rb_cString, "ascii_only?", rb_str_is_ascii_only_p, 0);
 
     rb_fs = Qnil;
-    rb_define_variable("$;", &rb_fs);
-    rb_define_variable("$-F", &rb_fs);
+    rb_define_hooked_variable("$;", &rb_fs, 0, rb_fs_setter);
+    rb_define_hooked_variable("$-F", &rb_fs, 0, rb_fs_setter);
 
     rb_cSymbol = rb_define_class("Symbol", rb_cObject);
     rb_include_module(rb_cSymbol, rb_mComparable);
