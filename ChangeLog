@@ -1,3 +1,11 @@
+Wed Aug 24 12:57:56 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_mod_initialize, rb_class_initialize): [DOC] these
+	  methods do not invoke module_eval/class_eval, just eval the
+	  given block under the new module/class but sharing the context
+	  with the surrounding scope like those methods.
+	  [ruby-core:77023] [Bug #12696]
+
 Tue Aug 23 10:34:40 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/psych/test_psych.rb (test_load_file_with_fallback): fix

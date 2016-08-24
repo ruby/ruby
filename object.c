@@ -1701,7 +1701,7 @@ rb_class_s_alloc(VALUE klass)
  *
  *  Creates a new anonymous module. If a block is given, it is passed
  *  the module object, and the block is evaluated in the context of this
- *  module using <code>module_eval</code>.
+ *  module like <code>module_eval</code>.
  *
  *     fred = Module.new do
  *       def meth1
@@ -1750,7 +1750,7 @@ rb_mod_initialize_clone(VALUE clone, VALUE orig)
  *  class a name by assigning the class object to a constant.
  *
  *  If a block is given, it is passed the class object, and the block
- *  is evaluated in the context of this class using
+ *  is evaluated in the context of this class like
  *  <code>class_eval</code>.
  *
  *     fred = Class.new do
