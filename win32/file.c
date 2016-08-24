@@ -280,11 +280,12 @@ user_length_in_path(const wchar_t *wuser, size_t len)
 }
 
 static VALUE
-append_wstr(VALUE dst, const wchar_t *ws, size_t len, UINT cp, UINT path_cp, rb_encoding *path_encoding)
+append_wstr(VALUE dst, const WCHAR *ws, ssize_t len, UINT cp, UINT path_cp, rb_encoding *path_encoding)
 {
     long olen, nlen = (long)len;
 
     if (cp == path_cp) {
+	if (len == -1) len = lstrlenW(ws);
 	nlen = WideCharToMultiByte(cp, 0, ws, len, NULL, 0, NULL, NULL);
 	olen = RSTRING_LEN(dst);
 	rb_str_modify_expand(dst, nlen);
