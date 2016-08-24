@@ -1,3 +1,7 @@
+Wed Aug 24 22:41:30 2016  Kouhei Sutou  <kou@cozmixng.org>
+
+	* gc.c (gc_reset_malloc_info): Remove too much ";".
+
 Wed Aug 24 20:07:57 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* include/ruby/defines.h (ALWAYS_INLINE): Add alternative definition.

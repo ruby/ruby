@@ -6259,7 +6259,7 @@ gc_reset_malloc_info(rb_objspace_t *objspace)
 #if RGENGC_ESTIMATE_OLDMALLOC
     if (!is_full_marking(objspace)) {
 	if (objspace->rgengc.oldmalloc_increase > objspace->rgengc.oldmalloc_increase_limit) {
-	    objspace->rgengc.need_major_gc |= GPR_FLAG_MAJOR_BY_OLDMALLOC;;
+	    objspace->rgengc.need_major_gc |= GPR_FLAG_MAJOR_BY_OLDMALLOC;
 	    objspace->rgengc.oldmalloc_increase_limit =
 	      (size_t)(objspace->rgengc.oldmalloc_increase_limit * gc_params.oldmalloc_limit_growth_factor);
 
