@@ -869,9 +869,7 @@ $(MINIPRELUDE_C): $(COMPILE_PRELUDE)
 		$(srcdir)/template/prelude.c.tmpl
 
 $(PRELUDE_C): $(COMPILE_PRELUDE) \
-	   {$(srcdir)}lib/rubygems/defaults.rb \
-	   {$(srcdir)}lib/rubygems/core_ext/kernel_gem.rb \
-	   $(PRELUDE_SCRIPTS) $(LIB_SRCS)
+	   $(PRELUDE_SCRIPTS)
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -c -o $@ \
 		$(srcdir)/template/prelude.c.tmpl $(PRELUDE_SCRIPTS)
