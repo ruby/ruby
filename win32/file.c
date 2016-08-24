@@ -237,6 +237,19 @@ append_wstr(VALUE dst, const WCHAR *ws, ssize_t len, UINT cp, rb_encoding *enc)
 }
 
 VALUE
+rb_default_home_dir(VALUE result)
+{
+    const WCHAR *dir = rb_w32_home_dir();
+    if (!dir) {
+	rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
+    }
+    append_wstr(result, dir, -1,
+		       rb_w32_filecp(), rb_filesystem_encoding());
+    xfree(dir);
+    return result;
+}
+
+VALUE
 rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_name, VALUE result)
 {
     size_t size = 0, whome_len = 0;
