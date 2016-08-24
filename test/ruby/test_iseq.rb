@@ -187,7 +187,7 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_parent_iseq_mark
-    assert_separately([], <<-'end;')
+    assert_separately([], <<-'end;', timeout: 20)
       ->{
         ->{
           ->{

@@ -1,3 +1,9 @@
+Wed Aug 24 23:54:40 2016  Charles Oliver Nutter  <headius@headius.com>
+
+	* test/ruby/test_array.rb: split out the test for no stack error
+	  on large input for test_permutation, test_repeated_permutation,
+	  and test_repeated_combination, and make them all timeout:30.
+
 Tue Aug 23 03:22:34 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/fiddle/test_pointer.rb (test_to_str, test_to_s, test_aref_aset):
