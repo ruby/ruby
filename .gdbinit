@@ -976,7 +976,7 @@ define check_method_entry
   # get $immeo and $can_be_svar and return $me
   set $imemo = (struct RBasic *)$arg0
   set $can_be_svar = $arg1
-  if $imemo != Qfalse
+  if $imemo != RUBY_Qfalse
     set $type = ($imemo->flags >> 12) & 0x07
     if $type == imemo_ment
       set $me = (rb_callable_method_entry_t *)$imemo
@@ -993,7 +993,7 @@ define output_id
   set $id = $arg0
   # rb_id_to_serial
   if $id > tLAST_OP_ID
-    set $serial = (rb_id_serial_t)($id >> ID_SCOPE_SHIFT)
+    set $serial = (rb_id_serial_t)($id >> RUBY_ID_SCOPE_SHIFT)
   else
     set $serial = (rb_id_serial_t)$id
   end
@@ -1011,7 +1011,7 @@ define output_id
     if $idx < $idslen
       set $t = 0
       set $ary = (struct RArray *)$idsptr[$idx]
-      if $ary != Qnil
+      if $ary != RUBY_Qnil
         set $flags = $ary->basic.flags
         if ($flags & RUBY_FL_USER1)
           set $aryptr = $ary->as.ary
@@ -1048,21 +1048,25 @@ define rb_ps_thread
         printf "???.rb:???:in `???'\n"
       end
     else
-      # if ($cfp->flag & VM_FRAME_MAGIC_MASK) == VM_FRAME_MAGIC_CFUNC
-      if ($cfp->flag & 255) == 0x61
-        #define VM_ENVVAL_BLOCK_PTR_FLAG 0x02
-        #define VM_EP_PREV_EP(ep)   ((VALUE *)GC_GUARDED_PTR_REF((ep)[0]))
-        set $ep = $cfp->ep
-        set $me = NULL
-        while ($ep[0] & 0x02) != 0
-          check_method_entry $ep[-1] 0
-          if $me != NULL
+      # if VM_FRAME_TYPE($cfp->flag) == VM_FRAME_MAGIC_CFUNC
+      set $ep = $cfp->ep
+      if ($ep[0] & 0xffff0001) == 0x55550001
+        #define VM_ENV_FLAG_LOCAL 0x02
+        #define VM_ENV_PREV_EP(ep)   GC_GUARDED_PTR_REF(ep[VM_ENV_DATA_INDEX_SPECVAL])
+        set $me = 0
+        set $env_specval = $ep[-1]
+        set $env_me_cref = $ep[-2]
+        while ($env_specval & 0x02) != 0
+          check_method_entry $env_me_cref 0
+          if $me != 0
             loop_break
           end
           set $ep = $ep[0]
+          set $env_specval = $ep[-1]
+          set $env_me_cref = $ep[-2]
         end
-        if $me == NULL
-          check_method_entry $ep[-1] 1
+        if $me == 0
+          check_method_entry $env_me_cref 1
         end
         set print symbol-filename on
         output/a $me->def->body.cfunc.func
