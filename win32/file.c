@@ -280,23 +280,23 @@ user_length_in_path(const wchar_t *wuser, size_t len)
 }
 
 static VALUE
-append_wstr(VALUE dst, const WCHAR *ws, ssize_t len, UINT cp, UINT path_cp, rb_encoding *path_encoding)
+append_wstr(VALUE dst, const WCHAR *ws, ssize_t len, UINT cp, rb_encoding *enc)
 {
     long olen, nlen = (long)len;
 
-    if (cp == path_cp) {
+    if (cp != INVALID_CODE_PAGE) {
 	if (len == -1) len = lstrlenW(ws);
 	nlen = WideCharToMultiByte(cp, 0, ws, len, NULL, 0, NULL, NULL);
 	olen = RSTRING_LEN(dst);
 	rb_str_modify_expand(dst, nlen);
 	WideCharToMultiByte(cp, 0, ws, len, RSTRING_PTR(dst) + olen, nlen, NULL, NULL);
-	rb_enc_associate(dst, path_encoding);
+	rb_enc_associate(dst, enc);
 	rb_str_set_len(dst, olen + nlen);
     }
     else {
 	const int replaceflags = ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE;
 	char *utf8str = wstr_to_mbstr(CP_UTF8, ws, (int)len, &nlen);
-	rb_econv_t *ec = rb_econv_open("UTF-8", rb_enc_name(path_encoding), replaceflags);
+	rb_econv_t *ec = rb_econv_open("UTF-8", rb_enc_name(enc), replaceflags);
 	dst = rb_econv_append(ec, utf8str, nlen, dst, replaceflags);
 	rb_econv_close(ec);
 	free(utf8str);
@@ -410,7 +410,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     else if (abs_mode == 0 && wpath_len >= 2 && wpath_pos[0] == L'~') {
 	result = rb_str_new_cstr("can't find user ");
 	result = append_wstr(result, wpath_pos + 1, user_length_in_path(wpath_pos + 1, wpath_len - 1),
-			     cp, path_cp, path_encoding);
+			     path_cp, path_encoding);
 
 	if (wpath)
 	    free(wpath);
@@ -494,7 +494,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	else if (abs_mode == 0 && wdir_len >= 2 && wdir_pos[0] == L'~') {
 	    result = rb_str_new_cstr("can't find user ");
 	    result = append_wstr(result, wdir_pos + 1, user_length_in_path(wdir_pos + 1, wdir_len - 1),
-				 cp, path_cp, path_encoding);
+				 path_cp, path_encoding);
 	    if (wpath)
 		free(wpath);
 
@@ -621,7 +621,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
     /* convert to VALUE and set the path encoding */
     rb_str_set_len(result, 0);
-    result = append_wstr(result, wfullpath, size, cp, path_cp, path_encoding);
+    result = append_wstr(result, wfullpath, size, path_cp, path_encoding);
 
     /* makes the result object tainted if expanding tainted strings or returning modified path */
     if (tainted)
@@ -687,10 +687,9 @@ rb_readlink(VALUE path, rb_encoding *resultenc)
 	    rb_syserr_fail_path(EINVAL, path);
     }
     enc = resultenc;
-    cp = path_cp = code_page(enc);
-    if (cp == INVALID_CODE_PAGE) cp = CP_UTF8;
+    path_cp = code_page(enc);
     len = lstrlenW(wbuf);
-    str = append_wstr(rb_enc_str_new(0, 0, enc), wbuf, len, cp, path_cp, enc);
+    str = append_wstr(rb_enc_str_new(0, 0, enc), wbuf, len, path_cp, enc);
     ALLOCV_END(wtmp);
     return str;
 }

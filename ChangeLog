@@ -1,4 +1,7 @@
-Thu Aug 25 00:39:50 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Aug 25 00:42:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/file.c (append_wstr): remove a codepage argument, and use
+	  INVALID_CODE_PAGE for conversion by econv.
 
 	* win32/file.c (append_wstr): exclude the terminator from the
 	  result length when input len == -1.
