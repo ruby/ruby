@@ -44,71 +44,6 @@ replace_wchar(wchar_t *s, int find, int replace)
     }
 }
 
-/*
-  Return user's home directory using environment variables combinations.
-  Memory allocated by this function should be manually freed afterwards.
-
-  Try:
-  HOME, HOMEDRIVE + HOMEPATH and USERPROFILE environment variables
-  TODO: Special Folders - Profile and Personal
-*/
-static wchar_t *
-home_dir(void)
-{
-    wchar_t *buffer = NULL;
-    size_t buffer_len = 0, len = 0;
-    enum {
-	HOME_NONE, ENV_HOME, ENV_DRIVEPATH, ENV_USERPROFILE
-    } home_type = HOME_NONE;
-
-    /*
-      GetEnvironmentVariableW when used with NULL will return the required
-      buffer size and its terminating character.
-      http://msdn.microsoft.com/en-us/library/windows/desktop/ms683188(v=vs.85).aspx
-    */
-
-    if ((len = GetEnvironmentVariableW(L"HOME", NULL, 0)) != 0) {
-	buffer_len = len;
-	home_type = ENV_HOME;
-    }
-    else if ((len = GetEnvironmentVariableW(L"HOMEDRIVE", NULL, 0)) != 0) {
-	buffer_len = len;
-	if ((len = GetEnvironmentVariableW(L"HOMEPATH", NULL, 0)) != 0) {
-	    buffer_len += len;
-	    home_type = ENV_DRIVEPATH;
-	}
-    }
-    else if ((len = GetEnvironmentVariableW(L"USERPROFILE", NULL, 0)) != 0) {
-	buffer_len = len;
-	home_type = ENV_USERPROFILE;
-    }
-
-    if (!home_type) return NULL;
-
-    /* allocate buffer */
-    buffer = ALLOC_N(wchar_t, buffer_len);
-
-    switch (home_type) {
-      case ENV_HOME:
-	GetEnvironmentVariableW(L"HOME", buffer, buffer_len);
-	break;
-      case ENV_DRIVEPATH:
-	len = GetEnvironmentVariableW(L"HOMEDRIVE", buffer, buffer_len);
-	GetEnvironmentVariableW(L"HOMEPATH", buffer + len, buffer_len - len);
-	break;
-      case ENV_USERPROFILE:
-	GetEnvironmentVariableW(L"USERPROFILE", buffer, buffer_len);
-	break;
-      default:
-	break;
-    }
-
-    /* sanitize backslashes with forwardslashes */
-    replace_wchar(buffer, L'\\', L'/');
-
-    return buffer;
-}
-
 /* Remove trailing invalid ':$DATA' of the path. */
 static inline size_t
 remove_invalid_alternative_data(wchar_t *wfullpath, size_t size)
@@ -360,7 +295,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	/* tainted if expanding '~' */
 	tainted = 1;
 
-	whome = home_dir();
+	whome = rb_w32_home_dir();
 	if (whome == NULL) {
 	    free(wpath);
 	    rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
@@ -441,7 +376,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    /* tainted if expanding '~' */
 	    tainted = 1;
 
-	    whome = home_dir();
+	    whome = rb_w32_home_dir();
 	    if (whome == NULL) {
 		free(wpath);
 		free(wdir);
