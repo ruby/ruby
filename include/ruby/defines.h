@@ -45,6 +45,9 @@ extern "C" {
 #ifndef NOINLINE
 # define NOINLINE(x) x
 #endif
+#ifndef ALWAYS_INLINE
+# define ALWAYS_INLINE(x) x
+#endif
 #ifndef ERRORFUNC
 # define HAVE_ATTRIBUTE_ERRORFUNC 0
 # define ERRORFUNC(mesg, x) x

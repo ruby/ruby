@@ -1,3 +1,9 @@
+Wed Aug 24 20:07:57 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* include/ruby/defines.h (ALWAYS_INLINE): Add alternative definition.
+	  Fix compile error with compilers that do not have force inline
+	  attribute, including old version of fcc on Solaris 10.
+
 Wed Aug 24 16:56:26 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* .gdbinit: follow r55766's VM change.
