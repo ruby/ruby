@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 #
 # Gem::PathSupport facilitates the GEM_HOME and GEM_PATH environment settings
@@ -59,6 +59,9 @@ class Gem::PathSupport
         gem_path = gpaths.dup
       else
         gem_path = gpaths.split(Gem.path_separator)
+        if gpaths.end_with?(Gem.path_separator)
+          gem_path += default_path
+        end
       end
 
       if File::ALT_SEPARATOR then
@@ -69,13 +72,19 @@ class Gem::PathSupport
 
       gem_path << @home
     else
-      gem_path = Gem.default_path + [@home]
-
-      if defined?(APPLE_GEM_HOME)
-        gem_path << APPLE_GEM_HOME
-      end
+      gem_path = default_path
     end
 
     @path = gem_path.uniq
+  end
+
+  # Return the default Gem path
+  def default_path
+    gem_path = Gem.default_path + [@home]
+
+    if defined?(APPLE_GEM_HOME)
+      gem_path << APPLE_GEM_HOME
+    end
+    gem_path
   end
 end

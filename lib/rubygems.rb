@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 # -*- ruby -*-
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
@@ -10,7 +10,7 @@ require 'rbconfig'
 require 'thread'
 
 module Gem
-  VERSION = '2.5.1'
+  VERSION = '2.5.2'
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -239,7 +239,7 @@ module Gem
     specs = dep.matching_specs(true)
 
     raise Gem::GemNotFoundException,
-          "can't find gem #{name} (#{requirements})" if specs.empty?
+          "can't find gem #{dep}" if specs.empty?
 
     specs = specs.find_all { |spec|
       spec.executables.include? exec_name

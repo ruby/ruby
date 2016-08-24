@@ -1,10 +1,10 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rubygems/resolver/molinillo/lib/molinillo/dependency_graph'
 
 module Gem::Resolver::Molinillo
   # This class encapsulates a dependency resolver.
   # The resolver is responsible for determining which set of dependencies to
-  # activate, with feedback from the the {#specification_provider}
+  # activate, with feedback from the {#specification_provider}
   #
   #
   class Resolver
@@ -18,6 +18,7 @@ module Gem::Resolver::Molinillo
     #   during the resolution process
     attr_reader :resolver_ui
 
+    # Initializes a new resolver.
     # @param  [SpecificationProvider] specification_provider
     #   see {#specification_provider}
     # @param  [UI] resolver_ui

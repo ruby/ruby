@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 class Gem::Resolver::Stats
   def initialize
     @max_depth = 0

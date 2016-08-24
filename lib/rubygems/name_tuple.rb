@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 #
 # Represents a gem of name +name+ at +version+ of +platform+. These
@@ -54,7 +54,7 @@ class Gem::NameTuple
       "#{@name}-#{@version}"
     else
       "#{@name}-#{@version}-#{@platform}"
-    end.untaint
+    end.dup.untaint
   end
 
   ##

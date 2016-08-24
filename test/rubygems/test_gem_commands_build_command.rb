@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/commands/build_command'
 require 'rubygems/package'
@@ -61,6 +61,16 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
     assert_equal '', @ui.output
     assert_equal "ERROR:  Gemspec file not found: some_gem\n", @ui.error
+  end
+
+  def test_can_find_gemspecs_without_dot_gemspec
+    gemspec_file = File.join(@tempdir, @gem.spec_name)
+
+    File.open gemspec_file + ".gemspec", 'w' do |gs|
+      gs.write @gem.to_ruby
+    end
+
+    util_test_build_gem @gem, gemspec_file
   end
 
   def util_test_build_gem(gem, gemspec_file, check_licenses=true)

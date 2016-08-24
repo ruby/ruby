@@ -1,3 +1,17 @@
+Thu Aug 25 00:19:24 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems/specification.rb: `coding` is affect only first line except
+	  shebang.
+	* lib/rubygems/package.rb, lib/rubygems/package/*: ditto.
+
+Thu Aug 25 00:19:24 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems.rb, lib/rubygems/*, test/rubygems/*: Update rubygems-2.5.2.
+	  It supports to enable frozen string literal and add `--norc` option for
+	  disable to `.gemrc` configuration.
+	  See 2.5.2 release notes for other fixes and enhancements.
+	  https://github.com/rubygems/rubygems/blob/a8aa3bac723f045c52471c7b9328310a048561e0/History.txt#L3
+
 Wed Aug 24 23:54:40 2016  Charles Oliver Nutter  <headius@headius.com>
 
 	* test/ruby/test_array.rb: split out the test for no stack error

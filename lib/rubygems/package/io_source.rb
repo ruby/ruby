@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # Supports reading and writing gems from/to a generic IO object.  This is
 # useful for other applications built on top of rubygems, such as

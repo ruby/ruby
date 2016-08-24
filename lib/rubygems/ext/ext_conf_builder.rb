@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -12,9 +12,20 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
   FileEntry = FileUtils::Entry_ # :nodoc:
 
   def self.build(extension, directory, dest_path, results, args=[], lib_dir=nil)
-    # relative path required as some versions of mktmpdir return an absolute
-    # path which breaks make if it includes a space in the name
-    tmp_dest = get_relative_path(Dir.mktmpdir(".gem.", "."))
+    tmp_dest = Dir.mktmpdir(".gem.", ".")
+
+    # Some versions of `mktmpdir` return absolute paths, which will break make
+    # if the paths contain spaces. However, on Ruby 1.9.x on Windows, relative
+    # paths cause all C extension builds to fail.
+    #
+    # As such, we convert to a relative path unless we are using Ruby 1.9.x on
+    # Windows. This means that when using Ruby 1.9.x on Windows, paths with
+    # spaces do not work.
+    #
+    # Details: https://github.com/rubygems/rubygems/issues/977#issuecomment-171544940
+    #
+    # TODO: Make this unconditional when rubygems no longer supports Ruby 1.9.x.
+    tmp_dest = get_relative_path(tmp_dest) unless Gem.win_platform? && RUBY_VERSION <= '2.0'
 
     t = nil
     Tempfile.open %w"siteconf .rb", "." do |siteconf|
@@ -81,4 +92,3 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
   end
 
 end
-

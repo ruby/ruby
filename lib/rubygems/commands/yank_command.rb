@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rubygems/command'
 require 'rubygems/local_remote_options'
 require 'rubygems/version_option'
@@ -32,7 +32,7 @@ as the reason for the removal request.
   end
 
   def usage # :nodoc:
-    "#{program_name} GEM -v VERSION [-p PLATFORM] [--undo] [--key KEY_NAME]"
+    "#{program_name} GEM -v VERSION [-p PLATFORM] [--key KEY_NAME] [--host HOST]"
   end
 
   def initialize
@@ -41,25 +41,25 @@ as the reason for the removal request.
     add_version_option("remove")
     add_platform_option("remove")
 
-    add_option('--undo') do |value, options|
-      options[:undo] = true
+    add_option('--host HOST',
+               'Yank from another gemcutter-compatible host') do |value, options|
+      options[:host] = value
     end
 
     add_key_option
+    @host = nil
   end
 
   def execute
-    sign_in
+    @host = options[:host]
+
+    sign_in @host
 
     version   = get_version_from_requirements(options[:version])
     platform  = get_platform_from_requirements(options)
 
     if version then
-      if options[:undo] then
-        unyank_gem(version, platform)
-      else
-        yank_gem(version, platform)
-      end
+      yank_gem(version, platform)
     else
       say "A version argument is required: #{usage}"
       terminate_interaction
@@ -71,16 +71,11 @@ as the reason for the removal request.
     yank_api_request(:delete, version, platform, "api/v1/gems/yank")
   end
 
-  def unyank_gem(version, platform)
-    say "Unyanking gem from #{host}..."
-    yank_api_request(:put, version, platform, "api/v1/gems/unyank")
-  end
-
   private
 
   def yank_api_request(method, version, platform, api)
     name = get_one_gem_name
-    response = rubygems_api_request(method, api) do |request|
+    response = rubygems_api_request(method, api, host) do |request|
       request.add_field("Authorization", api_key)
 
       data = {

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # The RequirementList is used to hold the requirements being considered
 # while resolving a set of gems.

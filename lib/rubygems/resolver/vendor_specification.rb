@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # A VendorSpecification represents a gem that has been unpacked into a project
 # and is being loaded through a gem dependencies file through the +path:+

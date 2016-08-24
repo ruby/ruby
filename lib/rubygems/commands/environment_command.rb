@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rubygems/command'
 
 class Gem::Commands::EnvironmentCommand < Gem::Command
@@ -72,7 +72,7 @@ lib/rubygems/defaults/operating_system.rb
   end
 
   def execute
-    out = ''
+    out = String.new
     arg = options[:args][0]
     out <<
       case arg
@@ -104,7 +104,7 @@ lib/rubygems/defaults/operating_system.rb
   end
 
   def show_environment # :nodoc:
-    out = "RubyGems Environment:\n"
+    out = "RubyGems Environment:\n".dup
 
     out << "  - RUBYGEMS VERSION: #{Gem::VERSION}\n"
 
@@ -158,4 +158,3 @@ lib/rubygems/defaults/operating_system.rb
   end
 
 end
-

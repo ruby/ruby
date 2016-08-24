@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # This module contains various utility methods as module methods.
 
@@ -25,7 +25,7 @@ module Gem::Util
   def self.gzip(data)
     require 'zlib'
     require 'stringio'
-    zipped = StringIO.new('','w')
+    zipped = StringIO.new(String.new, 'w')
     zipped.set_encoding Encoding::BINARY if Object.const_defined? :Encoding
 
     Zlib::GzipWriter.wrap zipped do |io| io.write data end

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rubygems/package/tar_test_case'
 require 'rubygems/package'
 
@@ -9,7 +9,7 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
 
     @contents = ('a'..'z').to_a.join * 100
 
-    @tar = ''
+    @tar = String.new
     @tar << tar_file_header("lib/foo", "", 0, @contents.size, Time.now)
     @tar << @contents
     @tar << "\0" * (512 - (@tar.size % 512))

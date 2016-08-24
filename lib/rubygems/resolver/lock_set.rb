@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # A set of gems from a gem dependencies lockfile.
 
@@ -28,11 +28,9 @@ class Gem::Resolver::LockSet < Gem::Resolver::Set
 
   def add name, version, platform # :nodoc:
     version = Gem::Version.new version
-
-    specs = @sources.map do |source|
-      Gem::Resolver::LockSpecification.new self, name, version, source,
-                                           platform
-    end
+    specs = [
+      Gem::Resolver::LockSpecification.new(self, name, version, @sources, platform)
+    ]
 
     @specs.concat specs
 

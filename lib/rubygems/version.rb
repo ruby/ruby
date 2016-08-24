@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # The Version class processes string versions into comparable
 # values. A version string should normally be a series of numbers
@@ -282,7 +282,10 @@ class Gem::Version
   # A version is considered a prerelease if it contains a letter.
 
   def prerelease?
-    @prerelease ||= !!(@version =~ /[a-zA-Z]/)
+    unless instance_variable_defined? :@prerelease
+      @prerelease = !!(@version =~ /[a-zA-Z]/)
+    end
+    @prerelease
   end
 
   def pretty_print q # :nodoc:

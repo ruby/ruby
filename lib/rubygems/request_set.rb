@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'tsort'
 
 ##
@@ -78,6 +78,11 @@ class Gem::RequestSet
   attr_reader :vendor_set # :nodoc:
 
   ##
+  # The set of source gems imported via load_gemdeps.
+
+  attr_reader :source_set
+
+  ##
   # Creates a RequestSet for a list of Gem::Dependency objects, +deps+.  You
   # can then #resolve and #install the resolved list of dependencies.
   #
@@ -106,6 +111,7 @@ class Gem::RequestSet
     @sorted              = nil
     @specs               = nil
     @vendor_set          = nil
+    @source_set          = nil
 
     yield self if block_given?
   end
@@ -143,7 +149,6 @@ class Gem::RequestSet
       return requests
     end
 
-    cache_dir = options[:cache_dir] || Gem.dir
     @prerelease = options[:prerelease]
 
     requests = []
@@ -158,13 +163,11 @@ class Gem::RequestSet
         end
       end
 
-      path = req.download cache_dir
+      spec = req.spec.install options do |installer|
+        yield req, installer if block_given?
+      end
 
-      inst = Gem::Installer.at path, options
-
-      yield req, inst if block_given?
-
-      requests << inst.install
+      requests << spec
     end
 
     return requests if options[:gemdeps]
@@ -272,10 +275,11 @@ class Gem::RequestSet
   def load_gemdeps path, without_groups = [], installing = false
     @git_set    = Gem::Resolver::GitSet.new
     @vendor_set = Gem::Resolver::VendorSet.new
+    @source_set = Gem::Resolver::SourceSet.new
 
     @git_set.root_dir = @install_dir
 
-    lock_file = "#{File.expand_path(path)}.lock".untaint
+    lock_file = "#{File.expand_path(path)}.lock".dup.untaint
     begin
       tokenizer = Gem::RequestSet::Lockfile::Tokenizer.from_file lock_file
       parser = tokenizer.make_parser self, []
@@ -339,6 +343,7 @@ class Gem::RequestSet
     @sets << set
     @sets << @git_set
     @sets << @vendor_set
+    @sets << @source_set
 
     set = Gem::Resolver.compose_sets(*@sets)
     set.remote = @remote

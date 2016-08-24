@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rubygems/command'
 require 'rubygems/install_update_options'
 require 'rubygems/dependency_installer'

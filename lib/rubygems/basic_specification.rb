@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # BasicSpecification is an abstract class which implements some common code
 # used by both Specification and StubSpecification.
@@ -125,9 +125,9 @@ class Gem::BasicSpecification
 
   def full_name
     if platform == Gem::Platform::RUBY or platform.nil? then
-      "#{name}-#{version}".untaint
+      "#{name}-#{version}".dup.untaint
     else
-      "#{name}-#{version}-#{platform}".untaint
+      "#{name}-#{version}-#{platform}".dup.untaint
     end
   end
 
@@ -282,7 +282,7 @@ class Gem::BasicSpecification
              self.require_paths.first
            end
 
-    "#{self.full_gem_path}/#{dirs}".untaint
+    "#{self.full_gem_path}/#{dirs}".dup.untaint
   end
 
   ##
@@ -326,4 +326,3 @@ class Gem::BasicSpecification
   end
 
 end
-

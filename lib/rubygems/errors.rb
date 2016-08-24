@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #--
 # This file contains all the various exceptions and other errors that are used
 # inside of RubyGems.

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rubygems/test_case'
 require 'rubygems/commands/yank_command'
 
@@ -7,7 +7,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
     super
 
     @cmd = Gem::Commands::YankCommand.new
-    @cmd.host = 'http://example'
+    @cmd.options[:host] = 'http://example'
 
     @fetcher = Gem::RemoteFetcher.fetcher
 
@@ -16,10 +16,11 @@ class TestGemCommandsYankCommand < Gem::TestCase
   end
 
   def test_handle_options
-    @cmd.handle_options %w[a --version 1.0 --platform x86-darwin -k KEY]
+    @cmd.handle_options %w[a --version 1.0 --platform x86-darwin -k KEY --host HOST]
 
     assert_equal %w[a],        @cmd.options[:args]
     assert_equal :KEY,         @cmd.options[:key]
+    assert_equal "HOST",       @cmd.options[:host]
     assert_nil                 @cmd.options[:platform]
     assert_equal req('= 1.0'), @cmd.options[:version]
   end
@@ -73,25 +74,26 @@ class TestGemCommandsYankCommand < Gem::TestCase
     assert_equal 'other', @fetcher.last_request['Authorization']
   end
 
-  def test_execute_undo
-    unyank_uri = 'http://example/api/v1/gems/unyank'
-    @fetcher.data[unyank_uri] = ['Successfully unyanked', 200, 'OK']
+  def test_execute_host
+    host = 'https://other.example'
+    yank_uri = "#{host}/api/v1/gems/yank"
+    @fetcher.data[yank_uri] = ['Successfully yanked', 200, 'OK']
 
     @cmd.options[:args]    = %w[a]
     @cmd.options[:version] = req('= 1.0')
-    @cmd.options[:undo]    = true
+    @cmd.options[:host]    = host
 
     use_ui @ui do
       @cmd.execute
     end
 
-    assert_match %r%Unyanking gem from http://example%, @ui.output
-    assert_match %r%Successfully unyanked%,      @ui.output
+    assert_match %r%Yanking gem from https://other.example%, @ui.output
+    assert_match %r%Successfully yanked%,      @ui.output
 
     body = @fetcher.last_request.body.split('&').sort
     assert_equal %w[gem_name=a version=1.0], body
-
-    assert_equal [unyank_uri], @fetcher.paths
+    assert_equal 'key', @fetcher.last_request['Authorization']
+    assert_equal [yank_uri], @fetcher.paths
   end
 
 end

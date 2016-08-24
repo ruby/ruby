@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # Represents a possible Specification object returned from IndexSet.  Used to
 # delay needed to download full Specification objects when only the +name+
