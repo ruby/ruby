@@ -832,6 +832,46 @@ eom
     assert_valid_syntax("foo (bar rescue nil)")
   end
 
+  def test_regex_heredoc_x
+    expected = eval("/a\n/x")
+    result = eval("<</eos/x\na\neos")
+    assert_equal(expected, result)
+  end
+
+  def test_regex_heredoc
+    expected = eval("/a\n/")
+    result = eval("<</eos/\na\neos")
+    assert_equal(expected, result)
+  end
+
+  def test_regex_indent_heredoc
+    expected = eval("/  a\n/x")
+    result = eval("  <<-/eos/x\n  a\n  eos")
+    assert_equal(expected, result)
+  end
+
+  def test_regex_deindent_heredoc
+    expected = eval("/a\n b\nc\n/x")
+    result = eval("<<~/eos/x\n  a\n   b\n  c\neos")
+    assert_equal(expected, result)
+  end
+
+  def test_regex_deindent_indented_heredoc
+    expected = eval("/a\n b\nc\n/x")
+    result = eval("  <<~/eos/x\n    a\n     b\n    c\n  eos")
+    assert_equal(expected, result)
+  end
+
+  def test_regex_deindent_indented2_heredoc
+    expected = eval("/  a\n   b\nc\n/x")
+    result = eval("  <<~/eos/x\n      a\n       b\n    c\n  eos")
+    assert_equal(expected, result)
+  end
+
+  def test_regex_heredoc_bad_switch
+    assert_raise(SyntaxError, "bad switch") { eval("<</eos/xz\nbob\neos") }
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end

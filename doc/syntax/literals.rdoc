@@ -221,11 +221,19 @@ quotes:
   p expected_result # prints: "One plus one is \#{1 + 1}\n"
 
 The identifier may also be surrounded with double quotes (which is the same as
-no quotes) or with backticks.  When surrounded by backticks the HEREDOC
-behaves like Kernel#`:
+no quotes), with backticks or with forward slashes.  When surrounded by
+backticks the HEREDOC behaves like the heredoc text was surrounded by backticks
 
   puts <<-`HEREDOC`
   cat #{__FILE__}
+  HEREDOC
+
+When surrounded by forward slashes the HEREDOC creates regular expresion and
+can be followed by switches.
+
+  "0123a bob".match <<-/HEREDOC/x
+[0-9]*[a-z] # search for 0 or more digits followed by one lowercase letter and the word 'bob'
+\sbob
   HEREDOC
 
 To call a method on a heredoc place it after the opening identifier:
