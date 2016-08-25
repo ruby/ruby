@@ -86,7 +86,7 @@ home_dir(void)
     if (!home_type) return NULL;
 
     /* allocate buffer */
-    buffer = (wchar_t *)xmalloc(buffer_len * sizeof(wchar_t));
+    buffer = ALLOC_N(wchar_t, buffer_len);
 
     switch (home_type) {
       case ENV_HOME:
@@ -254,7 +254,7 @@ replace_to_long_name(wchar_t **wfullpath, size_t size, size_t buffer_size)
 	FindClose(find_handle);
 	size = trail_pos + file_len;
 	if (size > (buffer_size ? buffer_size-1 : oldsize)) {
-	    wchar_t *buf = (wchar_t *)xmalloc((size + 1) * sizeof(wchar_t));
+	    wchar_t *buf = ALLOC_N(wchar_t, (size + 1));
 	    wcsncpy(buf, *wfullpath, trail_pos);
 	    if (!buffer_size)
 		xfree(*wfullpath);
@@ -526,7 +526,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
     buffer_len = wpath_len + 1 + wdir_len + 1 + whome_len + 1;
 
-    buffer = buffer_pos = (wchar_t *)xmalloc((buffer_len + 1) * sizeof(wchar_t));
+    buffer = buffer_pos = ALLOC_N(wchar_t, (buffer_len + 1));
 
     /* add home */
     if (whome_len) {
@@ -583,7 +583,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     size = GetFullPathNameW(buffer, PATH_BUFFER_SIZE, wfullpath_buffer, NULL);
     if (size > PATH_BUFFER_SIZE) {
 	/* allocate more memory than alloted originally by PATH_BUFFER_SIZE */
-	wfullpath = (wchar_t *)xmalloc(size * sizeof(wchar_t));
+	wfullpath = ALLOC_N(wchar_t, size);
 	size = GetFullPathNameW(buffer, size, wfullpath, NULL);
     }
     else {
