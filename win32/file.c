@@ -33,9 +33,6 @@ static struct code_page_table {
 #define system_code_page rb_w32_filecp
 #define mbstr_to_wstr rb_w32_mbstr_to_wstr
 #define wstr_to_mbstr rb_w32_wstr_to_mbstr
-UINT rb_w32_filecp(void);
-WCHAR *rb_w32_mbstr_to_wstr(UINT, const char *, int, long *);
-char *rb_w32_wstr_to_mbstr(UINT, const WCHAR *, int, long *);
 
 static inline void
 replace_wchar(wchar_t *s, int find, int replace)
