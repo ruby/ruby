@@ -6331,6 +6331,15 @@ parser_peek_variable_name(struct parser_params *parser)
     return 0;
 }
 
+static inline int
+parser_string_term(struct parser_params *parser, int func)
+{
+    if (!(func & STR_FUNC_REGEXP)) return tSTRING_END;
+    set_yylval_num(regx_options());
+    dispatch_scan_event(tREGEXP_END);
+    return tREGEXP_END;
+}
+
 static int
 parser_parse_string(struct parser_params *parser, NODE *quote)
 {
@@ -6351,10 +6360,7 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
 	    quote->nd_func = -1;
 	    return ' ';
 	}
-	if (!(func & STR_FUNC_REGEXP)) return tSTRING_END;
-        set_yylval_num(regx_options());
-	dispatch_scan_event(tREGEXP_END);
-	return tREGEXP_END;
+	return parser_string_term(parser, func);
     }
     if (space) {
 	pushback(c);
