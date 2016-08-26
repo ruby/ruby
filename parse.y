@@ -506,6 +506,7 @@ static NODE *new_regexp_gen(struct parser_params *, NODE *, int);
 
 static NODE *new_xstring_gen(struct parser_params *, NODE *);
 #define new_xstring(node) new_xstring_gen(parser, node)
+#define new_string1(str) (str)
 
 static NODE *match_op_gen(struct parser_params*,NODE*,NODE*);
 #define match_op(node1,node2) match_op_gen(parser, (node1), (node2))
@@ -569,6 +570,7 @@ static VALUE new_regexp_gen(struct parser_params *, VALUE, VALUE);
 
 static VALUE new_xstring_gen(struct parser_params *, VALUE);
 #define new_xstring(str) new_xstring_gen(parser, str)
+#define new_string1(str) dispatch1(string_literal, str)
 
 #define const_path_field(w, n) dispatch2(const_path_field, (w), (n))
 #define top_const_field(n) dispatch1(top_const_field, (n))
@@ -3894,11 +3896,7 @@ string1		: tSTRING_BEG string_contents tSTRING_END
 		    {
 			heredoc_dedent($2);
 			heredoc_indent = 0;
-		    /*%%%*/
-			$$ = $2;
-		    /*%
-			$$ = dispatch1(string_literal, $2);
-		    %*/
+			$$ = new_string1($2);
 		    }
 		;
 
