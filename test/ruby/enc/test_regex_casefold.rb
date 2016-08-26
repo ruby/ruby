@@ -37,7 +37,7 @@ class TestCaseFold < Test::Unit::TestCase
     @@tests ||= read_tests
   rescue Errno::ENOENT => e
     @@tests ||= []
-    puts e.message
+    skip e.message
   end
 
   def self.generate_test_casefold(encoding)
