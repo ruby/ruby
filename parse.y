@@ -525,7 +525,7 @@ static int reg_fragment_check_gen(struct parser_params*, VALUE, int);
 static NODE *reg_named_capture_assign_gen(struct parser_params* parser, VALUE regexp);
 #define reg_named_capture_assign(regexp) reg_named_capture_assign_gen(parser,(regexp))
 
-static void parser_heredoc_dedent(struct parser_params*,NODE*);
+static NODE *parser_heredoc_dedent(struct parser_params*,NODE*);
 # define heredoc_dedent(str) parser_heredoc_dedent(parser, (str))
 
 #define get_id(id) (id)
@@ -733,7 +733,7 @@ new_args_tail_gen(struct parser_params *parser, VALUE k, VALUE kr, VALUE b)
 
 #define new_defined(expr) dispatch1(defined, (expr))
 
-static void parser_heredoc_dedent(struct parser_params*,VALUE);
+static VALUE parser_heredoc_dedent(struct parser_params*,VALUE);
 # define heredoc_dedent(str) parser_heredoc_dedent(parser, (str))
 
 #define FIXME 0
@@ -3894,17 +3894,13 @@ string		: tCHAR
 
 string1		: tSTRING_BEG string_contents tSTRING_END
 		    {
-			heredoc_dedent($2);
-			heredoc_indent = 0;
-			$$ = new_string1($2);
+			$$ = new_string1(heredoc_dedent($2));
 		    }
 		;
 
 xstring		: tXSTRING_BEG xstring_contents tSTRING_END
 		    {
-			heredoc_dedent($2);
-			heredoc_indent = 0;
-			$$ = new_xstring($2);
+			$$ = new_xstring(heredoc_dedent($2));
 		    }
 		;
 
@@ -6506,18 +6502,18 @@ dedent_string(VALUE string, int width)
 }
 
 #ifndef RIPPER
-static void
+static NODE *
 parser_heredoc_dedent(struct parser_params *parser, NODE *root)
 {
     NODE *node, *str_node;
     int bol = TRUE;
     int indent = heredoc_indent;
 
-    if (indent <= 0) return;
+    if (indent <= 0) return root;
+    heredoc_indent = 0;
+    if (!root) return root;
 
     node = str_node = root;
-
-    if (!root) return;
     if (nd_type(root) == NODE_ARRAY) str_node = root->nd_head;
 
     while (str_node) {
@@ -6535,14 +6531,18 @@ parser_heredoc_dedent(struct parser_params *parser, NODE *root)
 	    }
 	}
     }
+    return root;
 }
 #else /* RIPPER */
-static void
+static VALUE
 parser_heredoc_dedent(struct parser_params *parser, VALUE array)
 {
-    if (heredoc_indent <= 0) return;
+    int indent = heredoc_indent;
 
-    dispatch2(heredoc_dedent, array, INT2NUM(heredoc_indent));
+    if (indent <= 0) return array;
+    heredoc_indent = 0;
+    dispatch2(heredoc_dedent, array, INT2NUM(indent));
+    return array;
 }
 
 static VALUE
