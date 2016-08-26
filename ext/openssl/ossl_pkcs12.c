@@ -104,7 +104,6 @@ ossl_pkcs12_s_create(int argc, VALUE *argv, VALUE self)
     friendlyname = NIL_P(name) ? NULL : StringValuePtr(name);
     key = GetPKeyPtr(pkey);
     x509 = GetX509CertPtr(cert);
-    x509s = NIL_P(ca) ? NULL : ossl_x509_ary2sk(ca);
 /* TODO: make a VALUE to nid function */
     if (!NIL_P(key_nid)) {
         if ((nkey = OBJ_txt2nid(StringValuePtr(key_nid))) == NID_undef)
@@ -122,6 +121,7 @@ ossl_pkcs12_s_create(int argc, VALUE *argv, VALUE self)
         ktype = NUM2INT(keytype);
 
     obj = NewPKCS12(cPKCS12);
+    x509s = NIL_P(ca) ? NULL : ossl_x509_ary2sk(ca);
     p12 = PKCS12_create(passphrase, friendlyname, key, x509, x509s,
                         nkey, ncert, kiter, miter, ktype);
     sk_X509_pop_free(x509s, X509_free);

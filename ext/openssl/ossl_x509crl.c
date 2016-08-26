@@ -315,7 +315,8 @@ ossl_x509crl_set_revoked(VALUE self, VALUE ary)
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	rev = DupX509RevokedPtr(RARRAY_AREF(ary, i));
 	if (!X509_CRL_add0_revoked(crl, rev)) { /* NO DUP - don't free! */
-	    ossl_raise(eX509CRLError, NULL);
+	    X509_REVOKED_free(rev);
+	    ossl_raise(eX509CRLError, "X509_CRL_add0_revoked");
 	}
     }
     X509_CRL_sort(crl);
@@ -332,7 +333,8 @@ ossl_x509crl_add_revoked(VALUE self, VALUE revoked)
     GetX509CRL(self, crl);
     rev = DupX509RevokedPtr(revoked);
     if (!X509_CRL_add0_revoked(crl, rev)) { /* NO DUP - don't free! */
-	ossl_raise(eX509CRLError, NULL);
+	X509_REVOKED_free(rev);
+	ossl_raise(eX509CRLError, "X509_CRL_add0_revoked");
     }
     X509_CRL_sort(crl);
 

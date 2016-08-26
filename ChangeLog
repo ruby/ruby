@@ -1,3 +1,28 @@
+Sat Aug 27 03:37:49 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_config.c: fix memory leak.
+	  [ruby-core:76922] [Bug #12680]
+
+	* ext/openssl/ossl_ocsp.c: ditto.
+
+	* ext/openssl/ossl_pkcs12.c: ditto.
+
+	* ext/openssl/ossl_pkcs7.c: ditto.
+
+	* ext/openssl/ossl_pkey_ec.c: ditto.
+
+	* ext/openssl/ossl_x509.h: ditto.
+
+	* ext/openssl/ossl_x509attr.c: ditto.
+
+	* ext/openssl/ossl_x509crl.c: ditto.
+
+	* ext/openssl/ossl_x509ext.c: ditto.
+
+	* ext/openssl/ossl_x509req.c: ditto.
+
+	* ext/openssl/ossl_x509revoked.c: ditto.
+
 Thu Aug 25 00:19:24 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems/specification.rb: `coding` is affect only first line except

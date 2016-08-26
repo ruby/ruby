@@ -430,7 +430,7 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
     req->req_info->attributes = NULL;
     for (i=0;i<RARRAY_LEN(ary); i++) {
 	item = RARRAY_AREF(ary, i);
-	attr = DupX509AttrPtr(item);
+	attr = GetX509AttrPtr(item);
 	if (!X509_REQ_add1_attr(req, attr)) {
 	    ossl_raise(eX509ReqError, NULL);
 	}
@@ -444,7 +444,7 @@ ossl_x509req_add_attribute(VALUE self, VALUE attr)
     X509_REQ *req;
 
     GetX509Req(self, req);
-    if (!X509_REQ_add1_attr(req, DupX509AttrPtr(attr))) {
+    if (!X509_REQ_add1_attr(req, GetX509AttrPtr(attr))) {
 	ossl_raise(eX509ReqError, NULL);
     }
 
