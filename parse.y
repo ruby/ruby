@@ -6401,6 +6401,7 @@ static int
 parser_heredoc_identifier(struct parser_params *parser)
 {
     int c = nextc(), term, func = 0;
+    int token = tSTRING_BEG;
     long len;
 
     if (c == '-') {
@@ -6419,7 +6420,9 @@ parser_heredoc_identifier(struct parser_params *parser)
       case '"':
 	func |= str_dquote; goto quoted;
       case '`':
-	func |= str_xquote;
+	token = tXSTRING_BEG;
+	func |= str_xquote; goto quoted;
+
       quoted:
 	newtok();
 	tokadd(func);
@@ -6442,7 +6445,6 @@ parser_heredoc_identifier(struct parser_params *parser)
 	    return 0;
 	}
 	newtok();
-	term = '"';
 	tokadd(func |= str_dquote);
 	do {
 	    if (tokadd_mbchar(c) == -1) return 0;
@@ -6461,7 +6463,7 @@ parser_heredoc_identifier(struct parser_params *parser)
 				  lex_lastline);		/* nd_orig */
     nd_set_line(lex_strterm, ruby_sourceline);
     ripper_flush(parser);
-    return term == '`' ? tXSTRING_BEG : tSTRING_BEG;
+    return token;
 }
 
 static void
