@@ -1,3 +1,8 @@
+Sat Aug 27 03:51:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* id_table.c (hash_table_extend): should not shrink the table than
+	  the previous capacity.  [ruby-core:76534] [Bug #12614]
+
 Sat Aug 27 03:37:49 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_config.c: fix memory leak.

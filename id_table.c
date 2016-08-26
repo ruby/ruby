@@ -1302,6 +1302,9 @@ hash_table_extend(struct hash_id_table* tbl)
 	int i;
 	item_t* old;
 	struct hash_id_table tmp_tbl = {0, 0, 0};
+	if (new_cap < tbl->capa) {
+	    new_cap = round_capa(tbl->used + (tbl->used >> 1));
+	}
 	tmp_tbl.capa = new_cap;
 	tmp_tbl.items = ZALLOC_N(item_t, new_cap);
 	for (i = 0; i < tbl->capa; i++) {
