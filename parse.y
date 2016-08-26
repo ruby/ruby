@@ -504,6 +504,9 @@ static NODE *new_hash_gen(struct parser_params *parser, NODE *hash);
 static NODE *new_regexp_gen(struct parser_params *, NODE *, int);
 #define new_regexp(node, opt) new_regexp_gen(parser, node, opt)
 
+static NODE *new_xstring_gen(struct parser_params *, NODE *);
+#define new_xstring(node) new_xstring_gen(parser, node)
+
 static NODE *match_op_gen(struct parser_params*,NODE*,NODE*);
 #define match_op(node1,node2) match_op_gen(parser, (node1), (node2))
 
@@ -563,6 +566,9 @@ static VALUE new_attr_op_assign_gen(struct parser_params *parser, VALUE lhs, VAL
 
 static VALUE new_regexp_gen(struct parser_params *, VALUE, VALUE);
 #define new_regexp(node, opt) new_regexp_gen(parser, node, opt)
+
+static VALUE new_xstring_gen(struct parser_params *, VALUE);
+#define new_xstring(str) new_xstring_gen(parser, str)
 
 #define const_path_field(w, n) dispatch2(const_path_field, (w), (n))
 #define top_const_field(n) dispatch1(top_const_field, (n))
@@ -3898,33 +3904,9 @@ string1		: tSTRING_BEG string_contents tSTRING_END
 
 xstring		: tXSTRING_BEG xstring_contents tSTRING_END
 		    {
-		    /*%%%*/
-			NODE *node = $2;
-		    /*%
-		    %*/
 			heredoc_dedent($2);
 			heredoc_indent = 0;
-		    /*%%%*/
-			if (!node) {
-			    node = NEW_XSTR(STR_NEW0());
-			}
-			else {
-			    switch (nd_type(node)) {
-			      case NODE_STR:
-				nd_set_type(node, NODE_XSTR);
-				break;
-			      case NODE_DSTR:
-				nd_set_type(node, NODE_DXSTR);
-				break;
-			      default:
-				node = NEW_NODE(NODE_DXSTR, Qnil, 1, NEW_LIST(node));
-				break;
-			    }
-			}
-			$$ = node;
-		    /*%
-			$$ = dispatch1(xstring_literal, $2);
-		    %*/
+			$$ = new_xstring($2);
 		    }
 		;
 
@@ -9118,6 +9100,26 @@ new_regexp_gen(struct parser_params *parser, NODE *node, int options)
     }
     return node;
 }
+
+static NODE *
+new_xstring_gen(struct parser_params *parser, NODE *node)
+{
+    if (!node) {
+	return NEW_XSTR(STR_NEW0());
+    }
+    switch (nd_type(node)) {
+      case NODE_STR:
+	nd_set_type(node, NODE_XSTR);
+	break;
+      case NODE_DSTR:
+	nd_set_type(node, NODE_DXSTR);
+	break;
+      default:
+	node = NEW_NODE(NODE_DXSTR, Qnil, 1, NEW_LIST(node));
+	break;
+    }
+    return node;
+}
 #else  /* !RIPPER */
 static int
 id_is_var_gen(struct parser_params *parser, ID id)
@@ -9154,6 +9156,12 @@ new_regexp_gen(struct parser_params *parser, VALUE re, VALUE opt)
 	compile_error(PARSER_ARG "%"PRIsVALUE, err);
     }
     return dispatch2(regexp_literal, re, opt);
+}
+
+static VALUE
+new_xstring_gen(struct parser_params *parser, VALUE str)
+{
+    return dispatch1(xstring_literal, str);
 }
 #endif /* !RIPPER */
 
