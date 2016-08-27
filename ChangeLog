@@ -1,3 +1,10 @@
+Sat Aug 27 10:26:14 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_concat_multi): take multiple arguments.  based
+	  on the patch by Satoru Horie.  [Feature #12333]
+
+	* string.c (rb_str_concat_multi, rb_str_prepend_multi): ditto.
+
 Thu Aug 25 00:42:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/file.c (append_wstr): remove a codepage argument, and use

@@ -2798,19 +2798,42 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
 
 /*
  *  call-seq:
- *     str << integer       -> str
- *     str.concat(integer)  -> str
- *     str << obj           -> str
- *     str.concat(obj)      -> str
+ *     str << integer                      -> str
+ *     str.concat(integer1, integer2,...)  -> str
+ *     str << obj                          -> str
+ *     str.concat(obj1, obj2,...)          -> str
  *
  *  Append---Concatenates the given object to <i>str</i>. If the object is an
  *  <code>Integer</code>, it is considered as a codepoint, and is converted
- *  to a character before concatenation.
+ *  to a character before concatenation. Concat can take multiple arguments.
+ *  All the arguments are concatenated in order.
  *
  *     a = "hello "
  *     a << "world"   #=> "hello world"
  *     a.concat(33)   #=> "hello world!"
+ *     a              #=> "hollo world!"
+ *
+ *     b = "sn"
+ *     b.concat(b, b)    #=> "snsnsn"
  */
+
+static VALUE
+rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
+{
+    str_modifiable(str);
+
+    if (argc > 0) {
+	int i;
+	VALUE arg_str = rb_str_tmp_new(0);
+	rb_enc_copy(arg_str, str);
+	for (i = 0; i < argc; i++) {
+	    rb_str_concat(arg_str, argv[i]);
+	}
+	rb_str_buf_append(str, arg_str);
+    }
+
+    return str;
+}
 
 VALUE
 rb_str_concat(VALUE str1, VALUE str2)
@@ -2878,21 +2901,32 @@ rb_str_concat(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *     str.prepend(other_str)  -> str
+ *     str.prepend(other_str1, other_str2,...)  -> str
  *
- *  Prepend---Prepend the given string to <i>str</i>.
+ *  Prepend---Prepend the given strings to <i>str</i>.
  *
- *     a = "world"
- *     a.prepend("hello ") #=> "hello world"
- *     a                   #=> "hello world"
+ *     a = "!"
+ *     a.prepend("hello ", "world") #=> "hello world!"
+ *     a                            #=> "hello world!"
+ *
+ *  See also String#concat.
  */
 
 static VALUE
-rb_str_prepend(VALUE str, VALUE str2)
+rb_str_prepend_multi(int argc, VALUE *argv, VALUE str)
 {
-    StringValue(str2);
-    StringValue(str);
-    rb_str_update(str, 0L, 0L, str2);
+    str_modifiable(str);
+
+    if (argc > 0) {
+	int i;
+	VALUE arg_str = rb_str_tmp_new(0);
+	rb_enc_copy(arg_str, str);
+	for (i = 0; i < argc; i++) {
+	    rb_str_append(arg_str, argv[i]);
+	}
+	rb_str_update(str, 0L, 0L, arg_str);
+    }
+
     return str;
 }
 
@@ -9826,9 +9860,9 @@ Init_String(void)
     rb_define_method(rb_cString, "codepoints", rb_str_codepoints, 0);
     rb_define_method(rb_cString, "reverse", rb_str_reverse, 0);
     rb_define_method(rb_cString, "reverse!", rb_str_reverse_bang, 0);
-    rb_define_method(rb_cString, "concat", rb_str_concat, 1);
+    rb_define_method(rb_cString, "concat", rb_str_concat_multi, -1);
     rb_define_method(rb_cString, "<<", rb_str_concat, 1);
-    rb_define_method(rb_cString, "prepend", rb_str_prepend, 1);
+    rb_define_method(rb_cString, "prepend", rb_str_prepend_multi, -1);
     rb_define_method(rb_cString, "crypt", rb_str_crypt, 1);
     rb_define_method(rb_cString, "intern", rb_str_intern, 0); /* in symbol.c */
     rb_define_method(rb_cString, "to_sym", rb_str_intern, 0); /* in symbol.c */

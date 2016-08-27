@@ -556,13 +556,19 @@ class TestArray < Test::Unit::TestCase
   def test_concat
     assert_equal(@cls[1, 2, 3, 4],     @cls[1, 2].concat(@cls[3, 4]))
     assert_equal(@cls[1, 2, 3, 4],     @cls[].concat(@cls[1, 2, 3, 4]))
+    assert_equal(@cls[1, 2, 3, 4],     @cls[1].concat(@cls[2, 3], [4]))
     assert_equal(@cls[1, 2, 3, 4],     @cls[1, 2, 3, 4].concat(@cls[]))
+    assert_equal(@cls[1, 2, 3, 4],     @cls[1, 2, 3, 4].concat())
     assert_equal(@cls[],               @cls[].concat(@cls[]))
     assert_equal(@cls[@cls[1, 2], @cls[3, 4]], @cls[@cls[1, 2]].concat(@cls[@cls[3, 4]]))
 
     a = @cls[1, 2, 3]
     a.concat(a)
     assert_equal([1, 2, 3, 1, 2, 3], a)
+
+    b = @cls[4, 5]
+    b.concat(b, b)
+    assert_equal([4, 5, 4, 5, 4, 5], b)
 
     assert_raise(TypeError) { [0].concat(:foo) }
     assert_raise(RuntimeError) { [0].freeze.concat(:foo) }

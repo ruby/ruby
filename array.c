@@ -3623,31 +3623,58 @@ rb_ary_plus(VALUE x, VALUE y)
     return z;
 }
 
-/*
- *  call-seq:
- *     ary.concat(other_ary)   -> ary
- *
- *  Appends the elements of +other_ary+ to +self+.
- *
- *     [ "a", "b" ].concat( ["c", "d"] ) #=> [ "a", "b", "c", "d" ]
- *     a = [ 1, 2, 3 ]
- *     a.concat( [ 4, 5 ] )
- *     a                                 #=> [ 1, 2, 3, 4, 5 ]
- *
- *  See also Array#+.
- */
-
-VALUE
-rb_ary_concat(VALUE x, VALUE y)
+static VALUE
+ary_append(VALUE x, VALUE y)
 {
-    rb_ary_modify_check(x);
-    y = to_ary(y);
-    if (RARRAY_LEN(y) > 0) {
-	rb_ary_splice(x, RARRAY_LEN(x), 0, RARRAY_CONST_PTR(y), RARRAY_LEN(y));
+    long n = RARRAY_LEN(y);
+    if (n > 0) {
+	rb_ary_splice(x, RARRAY_LEN(x), 0, RARRAY_CONST_PTR(y), n);
     }
     return x;
 }
 
+/*
+ *  call-seq:
+ *     ary.concat(other_ary1, other_ary2,...)   -> ary
+ *
+ *  Appends the elements of +other_ary+s to +self+.
+ *
+ *     [ "a", "b" ].concat( ["c", "d"] ) #=> [ "a", "b", "c", "d" ]
+ *     [ "a" ].concat( ["b"], ["c", "d"] ) #=> [ "a", "b", "c", "d" ]
+ *     [ "a" ].concat #=> [ "a" ]
+ *
+ *     a = [ 1, 2, 3 ]
+ *     a.concat( [ 4, 5 ] )
+ *     a                                 #=> [ 1, 2, 3, 4, 5 ]
+ *
+ *     a = [ 1, 2 ]
+ *     a.concat(a, a)                    #=> [1, 2, 1, 2, 1, 2]
+ *
+ *  See also Array#+.
+ */
+
+static VALUE
+rb_ary_concat_multi(int argc, VALUE *argv, VALUE ary)
+{
+    rb_ary_modify_check(ary);
+
+    if (argc > 0) {
+	int i;
+	VALUE args = rb_ary_tmp_new(argc);
+	for (i = 0; i < argc; i++) {
+	    rb_ary_concat(args, argv[i]);
+	}
+	ary_append(ary, args);
+    }
+
+    return ary;
+}
+
+VALUE
+rb_ary_concat(VALUE x, VALUE y)
+{
+    return ary_append(x, to_ary(y));
+}
 
 /*
  *  call-seq:
@@ -6073,7 +6100,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "fetch", rb_ary_fetch, -1);
     rb_define_method(rb_cArray, "first", rb_ary_first, -1);
     rb_define_method(rb_cArray, "last", rb_ary_last, -1);
-    rb_define_method(rb_cArray, "concat", rb_ary_concat, 1);
+    rb_define_method(rb_cArray, "concat", rb_ary_concat_multi, -1);
     rb_define_method(rb_cArray, "<<", rb_ary_push, 1);
     rb_define_method(rb_cArray, "push", rb_ary_push_m, -1);
     rb_define_method(rb_cArray, "pop", rb_ary_pop_m, -1);

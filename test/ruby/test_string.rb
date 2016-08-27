@@ -495,6 +495,8 @@ CODE
   def test_concat
     assert_equal(S("world!"), S("world").concat(33))
     assert_equal(S("world!"), S("world").concat(S('!')))
+    b = S("sn")
+    assert_equal(S("snsnsn"), b.concat(b, b))
 
     bug7090 = '[ruby-core:47751]'
     result = S("").force_encoding(Encoding::UTF_16LE)
@@ -502,6 +504,7 @@ CODE
     expected = S("\u0300".encode(Encoding::UTF_16LE))
     assert_equal(expected, result, bug7090)
     assert_raise(TypeError) { 'foo' << :foo }
+    assert_raise(RuntimeError) { 'foo'.freeze.concat('bar') }
   end
 
   def test_count
@@ -2313,7 +2316,9 @@ CODE
   end
 
   def test_prepend
-    assert_equal(S("hello world!"), "world!".prepend("hello "))
+    assert_equal(S("hello world!"), "!".prepend("hello ", "world"))
+    b = S("ue")
+    assert_equal(S("ueueue"), b.prepend(b, b))
 
     foo = Object.new
     def foo.to_str
