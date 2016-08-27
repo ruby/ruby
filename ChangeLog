@@ -1,3 +1,10 @@
+Sun Aug 28 00:26:58 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* vm_method.c: revert r55869. it breaks Integer#days with
+	  ActiveSupport-4.1.x. [ruby-core:76949] [Bug #12353]
+
+	* test/ruby/test_marshal.rb: ditto.
+
 Sat Aug 27 03:51:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* id_table.c (hash_table_extend): should not shrink the table than
@@ -319,12 +326,6 @@ Fri Aug 12 04:04:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* process.c (rb_execarg_commandline): build command line string
 	  from argument vector in rb_execarg.
 	  [ruby-core:75611] [Bug #12398]
-
-Fri Aug 12 03:50:38 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* vm_method.c (vm_respond_to): try method_missing if respond_to?
-	  is undefined, as if it is the default definition.
-	  [ruby-core:75377] [Bug #12353]
 
 Fri Aug 12 03:30:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
