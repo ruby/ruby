@@ -2489,6 +2489,7 @@ thread.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 thread.$(OBJEXT): $(top_srcdir)/include/ruby.h
 thread.$(OBJEXT): {$(VPATH)}config.h
 thread.$(OBJEXT): {$(VPATH)}defines.h
+thread.$(OBJEXT): {$(VPATH)}deoptimize.h
 thread.$(OBJEXT): {$(VPATH)}encoding.h
 thread.$(OBJEXT): {$(VPATH)}eval_intern.h
 thread.$(OBJEXT): {$(VPATH)}gc.h

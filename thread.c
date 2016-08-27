@@ -64,6 +64,7 @@
 #include "ruby/thread.h"
 #include "ruby/thread_native.h"
 #include "internal.h"
+#include "deoptimize.h"
 
 #ifndef USE_NATIVE_THREAD_PRIORITY
 #define USE_NATIVE_THREAD_PRIORITY 0
@@ -2051,6 +2052,8 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	}
 
 	if (timer_interrupt) {
+            rb_serial_t now = rb_vm_global_timestamp();
+            const rb_iseq_t *iseq = th->cfp->iseq;
 	    unsigned long limits_us = TIME_QUANTUM_USEC;
 
 	    if (th->priority > 0)
@@ -2064,6 +2067,8 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	    EXEC_EVENT_HOOK(th, RUBY_INTERNAL_EVENT_SWITCH, th->cfp->self, 0, 0, Qundef);
 
 	    rb_thread_schedule_limits(limits_us);
+
+            iseq_deoptimize_if_needed(iseq, now);
 	}
     }
 }

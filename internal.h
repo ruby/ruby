@@ -1465,6 +1465,7 @@ extern const char ruby_engine[];
 rb_serial_t rb_next_class_serial(void);
 
 /* vm.c */
+rb_serial_t rb_vm_global_timestamp(void);
 VALUE rb_obj_is_thread(VALUE obj);
 void rb_vm_mark(void *ptr);
 void Init_BareVM(void);
