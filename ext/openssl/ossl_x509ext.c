@@ -247,7 +247,9 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
 #ifdef HAVE_X509V3_EXT_NCONF_NID
     rconf = rb_iv_get(self, "@config");
     conf = NIL_P(rconf) ? NULL : DupConfigPtr(rconf);
+    X509V3_set_nconf(ctx, conf);
     ext = X509V3_EXT_nconf_nid(conf, ctx, nid, RSTRING_PTR(valstr));
+    X509V3_set_ctx_nodb(ctx);
     NCONF_free(conf);
 #else
     if (!empty_lhash) empty_lhash = lh_new(NULL, NULL);
