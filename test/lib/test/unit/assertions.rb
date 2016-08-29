@@ -452,6 +452,9 @@ EOT
         assert(failed.empty?, message(m) {failed.pretty_inspect})
       end
 
+      # compatiblity with test-unit
+      alias pend skip
+
       def assert_valid_syntax(code, fname = caller_locations(1, 1)[0], mesg = fname.to_s, verbose: nil)
         code = code.b
         code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
