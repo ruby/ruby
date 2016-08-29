@@ -15,7 +15,7 @@
 VALUE mPKey;
 VALUE cPKey;
 VALUE ePKeyError;
-ID id_private_q;
+static ID id_private_q;
 
 /*
  * callback for generating keys
@@ -123,16 +123,19 @@ ossl_pkey_new_from_file(VALUE filename)
 
 /*
  *  call-seq:
- *     OpenSSL::PKey.read(string [, pwd ] ) -> PKey
- *     OpenSSL::PKey.read(file [, pwd ]) -> PKey
+ *     OpenSSL::PKey.read(string [, pwd ]) -> PKey
+ *     OpenSSL::PKey.read(io [, pwd ]) -> PKey
+ *
+ * Reads a DER or PEM encoded string from +string+ or +io+ and returns an
+ * instance of the appropriate PKey class.
  *
  * === Parameters
  * * +string+ is a DER- or PEM-encoded string containing an arbitrary private
- * or public key.
- * * +file+ is an instance of +File+ containing a DER- or PEM-encoded
- * arbitrary private or public key.
+ *   or public key.
+ * * +io+ is an instance of +IO+ containing a DER- or PEM-encoded
+ *   arbitrary private or public key.
  * * +pwd+ is an optional password in case +string+ or +file+ is an encrypted
- * PEM resource.
+ *   PEM resource.
  */
 static VALUE
 ossl_pkey_new_from_data(int argc, VALUE *argv, VALUE self)
@@ -158,7 +161,8 @@ ossl_pkey_new_from_data(int argc, VALUE *argv, VALUE self)
 
     BIO_free(bio);
     if (!pkey)
-	ossl_raise(rb_eArgError, "Could not parse PKey");
+	ossl_raise(ePKeyError, "Could not parse PKey");
+
     return ossl_pkey_new(pkey);
 }
 
@@ -190,20 +194,6 @@ DupPKeyPtr(VALUE obj)
 {
     EVP_PKEY *pkey;
 
-    SafeGetPKey(obj, pkey);
-    EVP_PKEY_up_ref(pkey);
-
-    return pkey;
-}
-
-EVP_PKEY *
-DupPrivPKeyPtr(VALUE obj)
-{
-    EVP_PKEY *pkey;
-
-    if (rb_funcallv(obj, id_private_q, 0, NULL) != Qtrue) {
-	ossl_raise(rb_eArgError, "Private key is needed.");
-    }
     SafeGetPKey(obj, pkey);
     EVP_PKEY_up_ref(pkey);
 
@@ -271,9 +261,7 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
     VALUE str;
     int result;
 
-    if (rb_funcallv(self, id_private_q, 0, NULL) != Qtrue)
-	ossl_raise(rb_eArgError, "Private key is needed.");
-    GetPKey(self, pkey);
+    pkey = GetPrivPKeyPtr(self);
     md = GetDigestPtr(digest);
     StringValue(data);
     str = rb_str_new(0, EVP_PKEY_size(pkey)+16);
@@ -336,6 +324,7 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
     EVP_MD_CTX_free(ctx);
     switch (result) {
     case 0:
+	ossl_clear_error();
 	return Qfalse;
     case 1:
 	return Qtrue;
@@ -352,7 +341,8 @@ void
 Init_ossl_pkey(void)
 {
 #if 0
-    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
+    mOSSL = rb_define_module("OpenSSL");
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
 #endif
 
     /* Document-module: OpenSSL::PKey

@@ -4,7 +4,9 @@ require 'base64'
 
 if defined?(OpenSSL::TestUtils)
 
-class OpenSSL::TestPKeyRSA < OpenSSL::TestCase
+class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
+  RSA1024 = OpenSSL::TestUtils::TEST_KEY_RSA1024
+
   def test_padding
     key = OpenSSL::PKey::RSA.new(512, 3)
 
@@ -68,46 +70,8 @@ class OpenSSL::TestPKeyRSA < OpenSSL::TestCase
     end
   end
 
-  def test_sign_verify
-    key = OpenSSL::TestUtils::TEST_KEY_RSA1024
-    digest = OpenSSL::Digest::SHA1.new
-    data = 'Sign me!'
-    sig = key.sign(digest, data)
-    assert(key.verify(digest, sig, data))
-  end
-
-  def test_sign_verify_memory_leak
-    bug9743 = '[ruby-core:62038] [Bug #9743]'
-    assert_no_memory_leak(%w[-ropenssl], <<-PREP, <<-CODE, bug9743, rss: true, timeout: 30)
-    data = 'Sign me!'
-    digest = OpenSSL::Digest::SHA512.new
-    pkey = OpenSSL::PKey::RSA.new(2048)
-    signature = pkey.sign(digest, data)
-    pub_key = pkey.public_key
-    PREP
-    20_000.times {
-      pub_key.verify(digest, signature, data)
-    }
-    CODE
-
-    assert_no_memory_leak(%w[-ropenssl], <<-PREP, <<-CODE, bug9743, rss: true, timeout: 30)
-    data = 'Sign me!'
-    digest = OpenSSL::Digest::SHA512.new
-    pkey = OpenSSL::PKey::RSA.new(2048)
-    signature = pkey.sign(digest, data)
-    pub_key = pkey.public_key
-    PREP
-    20_000.times {
-      begin
-        pub_key.verify(digest, signature, 1)
-      rescue TypeError
-      end
-    }
-    CODE
-  end
-
   def test_digest_state_irrelevant_sign
-    key = OpenSSL::TestUtils::TEST_KEY_RSA1024
+    key = RSA1024
     digest1 = OpenSSL::Digest::SHA1.new
     digest2 = OpenSSL::Digest::SHA1.new
     data = 'Sign me!'
@@ -118,7 +82,7 @@ class OpenSSL::TestPKeyRSA < OpenSSL::TestCase
   end
 
   def test_digest_state_irrelevant_verify
-    key = OpenSSL::TestUtils::TEST_KEY_RSA1024
+    key = RSA1024
     digest1 = OpenSSL::Digest::SHA1.new
     digest2 = OpenSSL::Digest::SHA1.new
     data = 'Sign me!'
@@ -129,169 +93,131 @@ class OpenSSL::TestPKeyRSA < OpenSSL::TestCase
     assert(key.verify(digest2, sig, data))
   end
 
-  def test_read_RSAPublicKey
-    modulus = 10664264882656732240315063514678024569492171560814833397008094754351396057398262071307709191731289492697968568138092052265293364132872019762410446076526351
-    exponent = 65537
-    seq = OpenSSL::ASN1::Sequence.new([OpenSSL::ASN1::Integer.new(modulus), OpenSSL::ASN1::Integer.new(exponent)])
-    key = OpenSSL::PKey::RSA.new(seq.to_der)
-    assert(key.public?)
-    assert(!key.private?)
-    assert_equal(modulus, key.n)
-    assert_equal(exponent, key.e)
-    assert_equal(nil, key.d)
-    assert_equal(nil, key.p)
-    assert_equal(nil, key.q)
-    assert_equal([], OpenSSL.errors)
-  end
+  def test_RSAPrivateKey
+    asn1 = OpenSSL::ASN1::Sequence([
+      OpenSSL::ASN1::Integer(0),
+      OpenSSL::ASN1::Integer(RSA1024.n),
+      OpenSSL::ASN1::Integer(RSA1024.e),
+      OpenSSL::ASN1::Integer(RSA1024.d),
+      OpenSSL::ASN1::Integer(RSA1024.p),
+      OpenSSL::ASN1::Integer(RSA1024.q),
+      OpenSSL::ASN1::Integer(RSA1024.dmp1),
+      OpenSSL::ASN1::Integer(RSA1024.dmq1),
+      OpenSSL::ASN1::Integer(RSA1024.iqmp)
+    ])
+    key = OpenSSL::PKey::RSA.new(asn1.to_der)
+    assert_predicate key, :private?
+    assert_same_rsa RSA1024, key
 
-  def test_read_RSA_PUBKEY
-    modulus = 10664264882656732240315063514678024569492171560814833397008094754351396057398262071307709191731289492697968568138092052265293364132872019762410446076526351
-    exponent = 65537
-    algo = OpenSSL::ASN1::ObjectId.new('rsaEncryption')
-    null_params = OpenSSL::ASN1::Null.new(nil)
-    algo_id = OpenSSL::ASN1::Sequence.new ([algo, null_params])
-    pub_key = OpenSSL::ASN1::Sequence.new([OpenSSL::ASN1::Integer.new(modulus), OpenSSL::ASN1::Integer.new(exponent)])
-    seq = OpenSSL::ASN1::Sequence.new([algo_id, OpenSSL::ASN1::BitString.new(pub_key.to_der)])
-    key = OpenSSL::PKey::RSA.new(seq.to_der)
-    assert(key.public?)
-    assert(!key.private?)
-    assert_equal(modulus, key.n)
-    assert_equal(exponent, key.e)
-    assert_equal(nil, key.d)
-    assert_equal(nil, key.p)
-    assert_equal(nil, key.q)
-    assert_equal([], OpenSSL.errors)
-  end
-
-  def test_read_RSAPublicKey_pem
-    modulus = 9416340886363418692990906464787534854462163316648195510702927337693641649864839352187127240942127674615733815606532506566068276485089353644309497938966061
-    exponent = 65537
-    pem = <<-EOF
------BEGIN RSA PUBLIC KEY-----
-MEgCQQCzyh2RIZK62E2PbTWqUljD+K23XR9AGBKNtXjal6WD2yRGcLqzPJLNCa60
-AudJR1JobbIbDJrQu6AXnWh5k/YtAgMBAAE=
------END RSA PUBLIC KEY-----
+    pem = <<~EOF
+    -----BEGIN RSA PRIVATE KEY-----
+    MIICXgIBAAKBgQDLwsSw1ECnPtT+PkOgHhcGA71nwC2/nL85VBGnRqDxOqjVh7Cx
+    aKPERYHsk4BPCkE3brtThPWc9kjHEQQ7uf9Y1rbCz0layNqHyywQEVLFmp1cpIt/
+    Q3geLv8ZD9pihowKJDyMDiN6ArYUmZczvW4976MU3+l54E6lF/JfFEU5hwIDAQAB
+    AoGBAKSl/MQarye1yOysqX6P8fDFQt68VvtXkNmlSiKOGuzyho0M+UVSFcs6k1L0
+    maDE25AMZUiGzuWHyaU55d7RXDgeskDMakD1v6ZejYtxJkSXbETOTLDwUWTn618T
+    gnb17tU1jktUtU67xK/08i/XodlgnQhs6VoHTuCh3Hu77O6RAkEA7+gxqBuZR572
+    74/akiW/SuXm0SXPEviyO1MuSRwtI87B02D0qgV8D1UHRm4AhMnJ8MCs1809kMQE
+    JiQUCrp9mQJBANlt2ngBO14us6NnhuAseFDTBzCHXwUUu1YKHpMMmxpnGqaldGgX
+    sOZB3lgJsT9VlGf3YGYdkLTNVbogQKlKpB8CQQDiSwkb4vyQfDe8/NpU5Not0fII
+    8jsDUCb+opWUTMmfbxWRR3FBNu8wnym/m19N4fFj8LqYzHX4KY0oVPu6qvJxAkEA
+    wa5snNekFcqONLIE4G5cosrIrb74sqL8GbGb+KuTAprzj5z1K8Bm0UW9lTjVDjDi
+    qRYgZfZSL+x1P/54+xTFSwJAY1FxA/N3QPCXCjPh5YqFxAMQs2VVYTfg+t0MEcJD
+    dPMQD5JX6g5HKnHFg2mZtoXQrWmJSn7p8GJK8yNTopEErA==
+    -----END RSA PRIVATE KEY-----
     EOF
     key = OpenSSL::PKey::RSA.new(pem)
-    assert(key.public?)
-    assert(!key.private?)
-    assert_equal(modulus, key.n)
-    assert_equal(exponent, key.e)
-    assert_equal(nil, key.d)
-    assert_equal(nil, key.p)
-    assert_equal(nil, key.q)
+    assert_same_rsa RSA1024, key
+
+    assert_equal asn1.to_der, RSA1024.to_der
+    assert_equal pem, RSA1024.export
   end
 
-  def test_read_RSA_PUBKEY_pem
-    modulus = 9416340886363418692990906464787534854462163316648195510702927337693641649864839352187127240942127674615733815606532506566068276485089353644309497938966061
-    exponent = 65537
-    pem = <<-EOF
------BEGIN PUBLIC KEY-----
-MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBALPKHZEhkrrYTY9tNapSWMP4rbdd
-H0AYEo21eNqXpYPbJEZwurM8ks0JrrQC50lHUmhtshsMmtC7oBedaHmT9i0C
-AwEAAQ==
------END PUBLIC KEY-----
+  def test_RSAPrivateKey_encrypted
+    # key = abcdef
+    pem = <<~EOF
+    -----BEGIN RSA PRIVATE KEY-----
+    Proc-Type: 4,ENCRYPTED
+    DEK-Info: AES-128-CBC,733F5302505B34701FC41F5C0746E4C0
+
+    zgJniZZQfvv8TFx3LzV6zhAQVayvQVZlAYqFq2yWbbxzF7C+IBhKQle9IhUQ9j/y
+    /jkvol550LS8vZ7TX5WxyDLe12cdqzEvpR6jf3NbxiNysOCxwG4ErhaZGP+krcoB
+    ObuL0nvls/+3myy5reKEyy22+0GvTDjaChfr+FwJjXMG+IBCLscYdgZC1LQL6oAn
+    9xY5DH3W7BW4wR5ttxvtN32TkfVQh8xi3jrLrduUh+hV8DTiAiLIhv0Vykwhep2p
+    WZA+7qbrYaYM8GLLgLrb6LfBoxeNxAEKiTpl1quFkm+Hk1dKq0EhVnxHf92x0zVF
+    jRGZxAMNcrlCoE4f5XK45epVZSZvihdo1k73GPbp84aZ5P/xlO4OwZ3i4uCQXynl
+    jE9c+I+4rRWKyPz9gkkqo0+teJL8ifeKt/3ab6FcdA0aArynqmsKJMktxmNu83We
+    YVGEHZPeOlyOQqPvZqWsLnXQUfg54OkbuV4/4mWSIzxFXdFy/AekSeJugpswMXqn
+    oNck4qySNyfnlyelppXyWWwDfVus9CVAGZmJQaJExHMT/rQFRVchlmY0Ddr5O264
+    gcjv90o1NBOc2fNcqjivuoX7ROqys4K/YdNQ1HhQ7usJghADNOtuLI8ZqMh9akXD
+    Eqp6Ne97wq1NiJj0nt3SJlzTnOyTjzrTe0Y+atPkVKp7SsjkATMI9JdhXwGhWd7a
+    qFVl0owZiDasgEhyG2K5L6r+yaJLYkPVXZYC/wtWC3NEchnDWZGQcXzB4xROCQkD
+    OlWNYDkPiZioeFkA3/fTMvG4moB2Pp9Q4GU5fJ6k43Ccu1up8dX/LumZb4ecg5/x
+    -----END RSA PRIVATE KEY-----
+    EOF
+    key = OpenSSL::PKey::RSA.new(pem, "abcdef")
+    assert_same_rsa RSA1024, key
+    key = OpenSSL::PKey::RSA.new(pem) { "abcdef" }
+    assert_same_rsa RSA1024, key
+
+    cipher = OpenSSL::Cipher.new("aes-128-cbc")
+    exported = RSA1024.to_pem(cipher, "abcdef\0\1")
+    assert_same_rsa RSA1024, OpenSSL::PKey::RSA.new(exported, "abcdef\0\1")
+    assert_raise(OpenSSL::PKey::RSAError) {
+      OpenSSL::PKey::RSA.new(exported, "abcdef")
+    }
+  end
+
+  def test_RSAPublicKey
+    asn1 = OpenSSL::ASN1::Sequence([
+      OpenSSL::ASN1::Integer(RSA1024.n),
+      OpenSSL::ASN1::Integer(RSA1024.e)
+    ])
+    key = OpenSSL::PKey::RSA.new(asn1.to_der)
+    assert_not_predicate key, :private?
+    assert_same_rsa dup_public(RSA1024), key
+
+    pem = <<~EOF
+    -----BEGIN RSA PUBLIC KEY-----
+    MIGJAoGBAMvCxLDUQKc+1P4+Q6AeFwYDvWfALb+cvzlUEadGoPE6qNWHsLFoo8RF
+    geyTgE8KQTduu1OE9Zz2SMcRBDu5/1jWtsLPSVrI2ofLLBARUsWanVyki39DeB4u
+    /xkP2mKGjAokPIwOI3oCthSZlzO9bj3voxTf6XngTqUX8l8URTmHAgMBAAE=
+    -----END RSA PUBLIC KEY-----
     EOF
     key = OpenSSL::PKey::RSA.new(pem)
-    assert(key.public?)
-    assert(!key.private?)
-    assert_equal(modulus, key.n)
-    assert_equal(exponent, key.e)
-    assert_equal(nil, key.d)
-    assert_equal(nil, key.p)
-    assert_equal(nil, key.q)
+    assert_same_rsa dup_public(RSA1024), key
   end
 
-  def test_export_format_is_RSA_PUBKEY
-    key = OpenSSL::PKey::RSA.new(512)
-    asn1 = OpenSSL::ASN1.decode(key.public_key.to_der)
-    check_PUBKEY(asn1, key)
-  end
+  def test_PUBKEY
+    asn1 = OpenSSL::ASN1::Sequence([
+      OpenSSL::ASN1::Sequence([
+        OpenSSL::ASN1::ObjectId("rsaEncryption"),
+        OpenSSL::ASN1::Null(nil)
+      ]),
+      OpenSSL::ASN1::BitString(
+        OpenSSL::ASN1::Sequence([
+          OpenSSL::ASN1::Integer(RSA1024.n),
+          OpenSSL::ASN1::Integer(RSA1024.e)
+        ]).to_der
+      )
+    ])
+    key = OpenSSL::PKey::RSA.new(asn1.to_der)
+    assert_not_predicate key, :private?
+    assert_same_rsa dup_public(RSA1024), key
 
-  def test_export_format_is_RSA_PUBKEY_pem
-    key = OpenSSL::PKey::RSA.new(512)
-    pem = key.public_key.to_pem
-    pem.gsub!(/^-+(\w|\s)+-+$/, "") # eliminate --------BEGIN...-------
-    asn1 = OpenSSL::ASN1.decode(Base64.decode64(pem))
-    check_PUBKEY(asn1, key)
-  end
+    pem = <<~EOF
+    -----BEGIN PUBLIC KEY-----
+    MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDLwsSw1ECnPtT+PkOgHhcGA71n
+    wC2/nL85VBGnRqDxOqjVh7CxaKPERYHsk4BPCkE3brtThPWc9kjHEQQ7uf9Y1rbC
+    z0layNqHyywQEVLFmp1cpIt/Q3geLv8ZD9pihowKJDyMDiN6ArYUmZczvW4976MU
+    3+l54E6lF/JfFEU5hwIDAQAB
+    -----END PUBLIC KEY-----
+    EOF
+    key = OpenSSL::PKey::RSA.new(pem)
+    assert_same_rsa dup_public(RSA1024), key
 
-  def test_read_private_key_der
-    der = OpenSSL::TestUtils::TEST_KEY_RSA1024.to_der
-    key = OpenSSL::PKey.read(der)
-    assert(key.private?)
-    assert_equal(der, key.to_der)
-  end
-
-  def test_read_private_key_pem
-    pem = OpenSSL::TestUtils::TEST_KEY_RSA1024.to_pem
-    key = OpenSSL::PKey.read(pem)
-    assert(key.private?)
-    assert_equal(pem, key.to_pem)
-  end
-
-  def test_read_public_key_der
-    der = OpenSSL::TestUtils::TEST_KEY_RSA1024.public_key.to_der
-    key = OpenSSL::PKey.read(der)
-    assert(!key.private?)
-    assert_equal(der, key.to_der)
-  end
-
-  def test_read_public_key_pem
-    pem = OpenSSL::TestUtils::TEST_KEY_RSA1024.public_key.to_pem
-    key = OpenSSL::PKey.read(pem)
-    assert(!key.private?)
-    assert_equal(pem, key.to_pem)
-  end
-
-  def test_read_private_key_pem_pw
-    pem = OpenSSL::TestUtils::TEST_KEY_RSA1024.to_pem(OpenSSL::Cipher.new('AES-128-CBC'), 'secret')
-    #callback form for password
-    key = OpenSSL::PKey.read(pem) do
-      'secret'
-    end
-    assert(key.private?)
-    # pass password directly
-    key = OpenSSL::PKey.read(pem, 'secret')
-    assert(key.private?)
-    #omit pem equality check, will be different due to cipher iv
-  end
-
-  def test_read_private_key_pem_pw_exception
-    pem = OpenSSL::TestUtils::TEST_KEY_RSA1024.to_pem(OpenSSL::Cipher.new('AES-128-CBC'), 'secret')
-    # it raises an ArgumentError from PEM reading. The exception raised inside are ignored for now.
-    assert_raise(ArgumentError) do
-      OpenSSL::PKey.read(pem) do
-        raise RuntimeError
-      end
-    end
-  end
-
-  def test_export_password_length
-    key = OpenSSL::TestUtils::TEST_KEY_RSA1024
-    assert_raise(OpenSSL::OpenSSLError) do
-      key.export(OpenSSL::Cipher.new('AES-128-CBC'), 'sec')
-    end
-    pem = key.export(OpenSSL::Cipher.new('AES-128-CBC'), 'secr')
-    assert(pem)
-  end
-
-  def test_export_password_funny
-    key = OpenSSL::TestUtils::TEST_KEY_RSA1024
-    # this assertion may fail in the future because of OpenSSL change.
-    # the current upper limit is 1024
-    assert_raise(OpenSSL::OpenSSLError) do
-      key.export(OpenSSL::Cipher.new('AES-128-CBC'), 'secr' * 1024)
-    end
-    # password containing NUL byte
-    pem = key.export(OpenSSL::Cipher.new('AES-128-CBC'), "pass\0wd")
-    assert_raise(ArgumentError) do
-      OpenSSL::PKey.read(pem, "pass")
-    end
-    key2 = OpenSSL::PKey.read(pem, "pass\0wd")
-    assert(key2.private?)
-    key3 = OpenSSL::PKey::RSA.new(pem, "pass\0wd")
-    assert(key3.private?)
+    assert_equal asn1.to_der, dup_public(RSA1024).to_der
+    assert_equal pem, dup_public(RSA1024).export
   end
 
   def test_dup
@@ -303,29 +229,9 @@ AwEAAQ==
   end
 
   private
-
-  def check_PUBKEY(asn1, key)
-    assert_equal(OpenSSL::ASN1::SEQUENCE, asn1.tag)
-    assert_equal(2, asn1.value.size)
-    seq = asn1.value
-    assert_equal(OpenSSL::ASN1::SEQUENCE, seq[0].tag)
-    assert_equal(2, seq[0].value.size)
-    algo_id = seq[0].value
-    assert_equal(OpenSSL::ASN1::OBJECT, algo_id[0].tag)
-    assert_equal('rsaEncryption', algo_id[0].value)
-    assert_equal(OpenSSL::ASN1::NULL, algo_id[1].tag)
-    assert_equal(nil, algo_id[1].value)
-    assert_equal(OpenSSL::ASN1::BIT_STRING, seq[1].tag)
-    assert_equal(0, seq[1].unused_bits)
-    pub_key = OpenSSL::ASN1.decode(seq[1].value)
-    assert_equal(OpenSSL::ASN1::SEQUENCE, pub_key.tag)
-    assert_equal(2, pub_key.value.size)
-    assert_equal(OpenSSL::ASN1::INTEGER, pub_key.value[0].tag)
-    assert_equal(key.n, pub_key.value[0].value)
-    assert_equal(OpenSSL::ASN1::INTEGER, pub_key.value[1].tag)
-    assert_equal(key.e, pub_key.value[1].value)
+  def assert_same_rsa(expected, key)
+    check_component(expected, key, [:n, :e, :d, :p, :q, :dmp1, :dmq1, :iqmp])
   end
-
 end
 
 end

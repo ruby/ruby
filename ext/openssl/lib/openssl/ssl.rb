@@ -16,44 +16,11 @@ require "io/nonblock"
 module OpenSSL
   module SSL
     class SSLContext
+      # :nodoc:
       DEFAULT_PARAMS = {
         :ssl_version => "SSLv23",
         :verify_mode => OpenSSL::SSL::VERIFY_PEER,
-        :ciphers => %w{
-          ECDHE-ECDSA-AES128-GCM-SHA256
-          ECDHE-RSA-AES128-GCM-SHA256
-          ECDHE-ECDSA-AES256-GCM-SHA384
-          ECDHE-RSA-AES256-GCM-SHA384
-          DHE-RSA-AES128-GCM-SHA256
-          DHE-DSS-AES128-GCM-SHA256
-          DHE-RSA-AES256-GCM-SHA384
-          DHE-DSS-AES256-GCM-SHA384
-          ECDHE-ECDSA-AES128-SHA256
-          ECDHE-RSA-AES128-SHA256
-          ECDHE-ECDSA-AES128-SHA
-          ECDHE-RSA-AES128-SHA
-          ECDHE-ECDSA-AES256-SHA384
-          ECDHE-RSA-AES256-SHA384
-          ECDHE-ECDSA-AES256-SHA
-          ECDHE-RSA-AES256-SHA
-          DHE-RSA-AES128-SHA256
-          DHE-RSA-AES256-SHA256
-          DHE-RSA-AES128-SHA
-          DHE-RSA-AES256-SHA
-          DHE-DSS-AES128-SHA256
-          DHE-DSS-AES256-SHA256
-          DHE-DSS-AES128-SHA
-          DHE-DSS-AES256-SHA
-          AES128-GCM-SHA256
-          AES256-GCM-SHA384
-          AES128-SHA256
-          AES256-SHA256
-          AES128-SHA
-          AES256-SHA
-          ECDHE-ECDSA-RC4-SHA
-          ECDHE-RSA-RC4-SHA
-          RC4-SHA
-        }.join(":"),
+        :verify_hostname => true,
         :options => -> {
           opts = OpenSSL::SSL::OP_ALL
           opts &= ~OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS
@@ -63,10 +30,50 @@ module OpenSSL
         }.call
       }
 
+      if !(OpenSSL::OPENSSL_VERSION.start_with?("OpenSSL") &&
+           OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10100000)
+        DEFAULT_PARAMS.merge!(
+          ciphers: %w{
+            ECDHE-ECDSA-AES128-GCM-SHA256
+            ECDHE-RSA-AES128-GCM-SHA256
+            ECDHE-ECDSA-AES256-GCM-SHA384
+            ECDHE-RSA-AES256-GCM-SHA384
+            DHE-RSA-AES128-GCM-SHA256
+            DHE-DSS-AES128-GCM-SHA256
+            DHE-RSA-AES256-GCM-SHA384
+            DHE-DSS-AES256-GCM-SHA384
+            ECDHE-ECDSA-AES128-SHA256
+            ECDHE-RSA-AES128-SHA256
+            ECDHE-ECDSA-AES128-SHA
+            ECDHE-RSA-AES128-SHA
+            ECDHE-ECDSA-AES256-SHA384
+            ECDHE-RSA-AES256-SHA384
+            ECDHE-ECDSA-AES256-SHA
+            ECDHE-RSA-AES256-SHA
+            DHE-RSA-AES128-SHA256
+            DHE-RSA-AES256-SHA256
+            DHE-RSA-AES128-SHA
+            DHE-RSA-AES256-SHA
+            DHE-DSS-AES128-SHA256
+            DHE-DSS-AES256-SHA256
+            DHE-DSS-AES128-SHA
+            DHE-DSS-AES256-SHA
+            AES128-GCM-SHA256
+            AES256-GCM-SHA384
+            AES128-SHA256
+            AES256-SHA256
+            AES128-SHA
+            AES256-SHA
+          }.join(":"),
+        )
+      end
+
+      # :nodoc:
       DEFAULT_CERT_STORE = OpenSSL::X509::Store.new
       DEFAULT_CERT_STORE.set_default_paths
       DEFAULT_CERT_STORE.flags = OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
 
+      # :nodoc:
       INIT_VARS = ["cert", "key", "client_ca", "ca_file", "ca_path",
         "timeout", "verify_mode", "verify_depth", "renegotiation_cb",
         "verify_callback", "cert_store", "extra_chain_cert",
@@ -74,7 +81,7 @@ module OpenSSL
         "session_get_cb", "session_new_cb", "session_remove_cb",
         "tmp_ecdh_callback", "servername_cb", "npn_protocols",
         "alpn_protocols", "alpn_select_cb",
-        "npn_select_cb"].map { |x| "@#{x}" }
+        "npn_select_cb", "verify_hostname"].map { |x| "@#{x}" }
 
       # A callback invoked when DH parameters are required.
       #
@@ -110,13 +117,17 @@ module OpenSSL
       end
 
       ##
-      # Sets the parameters for this SSL context to the values in +params+.
+      # call-seq:
+      #   ctx.set_params(params = {}) -> params
+      #
+      # Sets saner defaults optimized for the use with HTTP-like protocols.
+      #
+      # If a Hash +params+ is given, the parameters are overridden with it.
       # The keys in +params+ must be assignment methods on SSLContext.
       #
       # If the verify_mode is not VERIFY_NONE and ca_file, ca_path and
       # cert_store are not set then the system default certificate store is
       # used.
-
       def set_params(params={})
         params = DEFAULT_PARAMS.merge(params)
         params.each{|name, value| self.__send__("#{name}=", value) }
@@ -251,9 +262,16 @@ module OpenSSL
         attr_reader :hostname
       end
 
-      attr_reader :io, :context
-      attr_accessor :sync_close
+      # The underlying IO object.
+      attr_reader :io
       alias :to_io :io
+
+      # The SSLContext object used in this connection.
+      attr_reader :context
+
+      # Whether to close the underlying socket as well, when the SSL/TLS
+      # connection is shut down. This defaults to +false+.
+      attr_accessor :sync_close
 
       # call-seq:
       #    ssl.sysclose => nil
@@ -268,8 +286,10 @@ module OpenSSL
         io.close if sync_close
       end
 
-      ##
-      # Perform hostname verification after an SSL connection is established
+      # call-seq:
+      #   ssl.post_connection_check(hostname) -> true
+      #
+      # Perform hostname verification following RFC 6125.
       #
       # This method MUST be called after calling #connect to ensure that the
       # hostname of a remote peer has been verified.
@@ -277,7 +297,8 @@ module OpenSSL
         if peer_cert.nil?
           msg = "Peer verification enabled, but no certificate received."
           if using_anon_cipher?
-            msg += " Anonymous cipher suite #{cipher[0]} was negotiated. Anonymous suites must be disabled to use peer verification."
+            msg += " Anonymous cipher suite #{cipher[0]} was negotiated. " \
+                   "Anonymous suites must be disabled to use peer verification."
           end
           raise SSLError, msg
         end
@@ -288,6 +309,11 @@ module OpenSSL
         return true
       end
 
+      # call-seq:
+      #   ssl.session -> aSession
+      #
+      # Returns the SSLSession object currently used, or nil if the session is
+      # not established.
       def session
         SSL::Session.new(self)
       rescue SSL::Session::SessionError

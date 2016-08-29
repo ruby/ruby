@@ -222,6 +222,13 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
       }
     end
   end
+
+  def test_dup
+    store = OpenSSL::X509::Store.new
+    assert_raise(NoMethodError) { store.dup }
+    ctx = OpenSSL::X509::StoreContext.new(store)
+    assert_raise(NoMethodError) { ctx.dup }
+  end
 end
 
 end

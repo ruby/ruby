@@ -180,6 +180,11 @@ Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
       end
     end
 
+    def test_dup
+      p12 = OpenSSL::PKCS12.create("pass", "name", TEST_KEY_RSA1024, @mycert)
+      assert_equal p12.to_der, p12.dup.to_der
+    end
+
     private
     def assert_cert expected, actual
       [

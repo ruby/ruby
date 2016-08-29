@@ -28,7 +28,7 @@ static VALUE ossl_asn1eoc_initialize(VALUE self);
  * DATE conversion
  */
 VALUE
-asn1time_to_time(ASN1_TIME *time)
+asn1time_to_time(const ASN1_TIME *time)
 {
     struct tm tm;
     VALUE argv[6];
@@ -103,7 +103,7 @@ time_to_time_t(VALUE time)
  * STRING conversion
  */
 VALUE
-asn1str_to_str(ASN1_STRING *str)
+asn1str_to_str(const ASN1_STRING *str)
 {
     return rb_str_new((const char *)str->data, str->length);
 }
@@ -114,7 +114,7 @@ asn1str_to_str(ASN1_STRING *str)
  */
 #define DO_IT_VIA_RUBY 0
 VALUE
-asn1integer_to_num(ASN1_INTEGER *ai)
+asn1integer_to_num(const ASN1_INTEGER *ai)
 {
     BIGNUM *bn;
 #if DO_IT_VIA_RUBY
@@ -126,7 +126,8 @@ asn1integer_to_num(ASN1_INTEGER *ai)
 	ossl_raise(rb_eTypeError, "ASN1_INTEGER is NULL!");
     }
     if (ai->type == V_ASN1_ENUMERATED)
-	bn = ASN1_ENUMERATED_to_BN(ai, NULL);
+	/* const_cast: workaround for old OpenSSL */
+	bn = ASN1_ENUMERATED_to_BN((ASN1_ENUMERATED *)ai, NULL);
     else
 	bn = ASN1_INTEGER_to_BN(ai, NULL);
 
@@ -383,7 +384,7 @@ decode_int(unsigned char* der, long length)
     p = der;
     if(!(ai = d2i_ASN1_INTEGER(NULL, &p, length)))
 	ossl_raise(eASN1Error, NULL);
-    ret = rb_protect((VALUE(*)_((VALUE)))asn1integer_to_num,
+    ret = rb_protect((VALUE (*)(VALUE))asn1integer_to_num,
 		     (VALUE)ai, &status);
     ASN1_INTEGER_free(ai);
     if(status) rb_jump_tag(status);
@@ -423,7 +424,7 @@ decode_enum(unsigned char* der, long length)
     p = der;
     if(!(ai = d2i_ASN1_ENUMERATED(NULL, &p, length)))
 	ossl_raise(eASN1Error, NULL);
-    ret = rb_protect((VALUE(*)_((VALUE)))asn1integer_to_num,
+    ret = rb_protect((VALUE (*)(VALUE))asn1integer_to_num,
 		     (VALUE)ai, &status);
     ASN1_ENUMERATED_free(ai);
     if(status) rb_jump_tag(status);
@@ -485,7 +486,7 @@ decode_time(unsigned char* der, long length)
     p = der;
     if(!(time = d2i_ASN1_TIME(NULL, &p, length)))
 	ossl_raise(eASN1Error, NULL);
-    ret = rb_protect((VALUE(*)_((VALUE)))asn1time_to_time,
+    ret = rb_protect((VALUE (*)(VALUE))asn1time_to_time,
 		     (VALUE)time, &status);
     ASN1_TIME_free(time);
     if(status) rb_jump_tag(status);
@@ -1471,7 +1472,8 @@ Init_ossl_asn1(void)
     int i;
 
 #if 0
-    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
+    mOSSL = rb_define_module("OpenSSL");
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
 #endif
 
     sUNIVERSAL = rb_intern("UNIVERSAL");
@@ -1804,10 +1806,6 @@ Init_ossl_asn1(void)
      *
      * NOTE: While OpenSSL::ASN1::ObjectId.new will allocate a new ObjectId,
      * it is not typically allocated this way, but rather that are received from
-     * parsed ASN1 encodings.
-     *
-     * While OpenSSL::ASN1::ObjectId.new will allocate a new ObjectId, it is
-     * not typically allocated this way, but rather that are received from
      * parsed ASN1 encodings.
      *
      * === Additional attributes

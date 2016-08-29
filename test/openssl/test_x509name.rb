@@ -355,6 +355,11 @@ class OpenSSL::TestX509Name < OpenSSL::TestCase
     expected = (d[0].ord & 0xff) | (d[1].ord & 0xff) << 8 | (d[2].ord & 0xff) << 16 | (d[3].ord & 0xff) << 24
     assert_equal(expected, name_hash(name))
   end
+
+  def test_dup
+    name = OpenSSL::X509::Name.parse("/CN=ruby-lang.org")
+    assert_equal(name.to_der, name.dup.to_der)
+  end
 end
 
 end

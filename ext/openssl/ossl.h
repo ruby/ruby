@@ -97,19 +97,14 @@ extern VALUE eOSSLError;
 } while (0)
 
 /*
- * String to HEXString conversion
- */
-int string2hex(const unsigned char *, int, char **, int *);
-
-/*
  * Data Conversion
  */
 STACK_OF(X509) *ossl_x509_ary2sk0(VALUE);
 STACK_OF(X509) *ossl_x509_ary2sk(VALUE);
 STACK_OF(X509) *ossl_protect_x509_ary2sk(VALUE,int*);
-VALUE ossl_x509_sk2ary(STACK_OF(X509) *certs);
-VALUE ossl_x509crl_sk2ary(STACK_OF(X509_CRL) *crl);
-VALUE ossl_x509name_sk2ary(STACK_OF(X509_NAME) *names);
+VALUE ossl_x509_sk2ary(const STACK_OF(X509) *certs);
+VALUE ossl_x509crl_sk2ary(const STACK_OF(X509_CRL) *crl);
+VALUE ossl_x509name_sk2ary(const STACK_OF(X509_NAME) *names);
 VALUE ossl_buf2str(char *buf, int len);
 #define ossl_str_adjust(str, p) \
 do{\
@@ -118,6 +113,11 @@ do{\
     assert(newlen <= len);\
     rb_str_set_len((str), newlen);\
 }while(0)
+/*
+ * Convert binary string to hex string. The caller is responsible for
+ * ensuring out has (2 * len) bytes of capacity.
+ */
+void ossl_bin2hex(unsigned char *in, char *out, size_t len);
 
 /*
  * Our default PEM callback
@@ -154,14 +154,7 @@ void ossl_clear_error(void);
 extern int ossl_store_ctx_ex_verify_cb_idx;
 extern int ossl_store_ex_verify_cb_idx;
 
-struct ossl_verify_cb_args {
-    VALUE proc;
-    VALUE preverify_ok;
-    VALUE store_ctx;
-};
-
-VALUE ossl_call_verify_cb_proc(struct ossl_verify_cb_args *);
-int ossl_verify_cb(int, X509_STORE_CTX *);
+int ossl_verify_cb_call(VALUE, int, X509_STORE_CTX *);
 
 /*
  * String to DER String

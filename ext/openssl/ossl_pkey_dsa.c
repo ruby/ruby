@@ -95,8 +95,6 @@ ossl_dsa_new(EVP_PKEY *pkey)
 struct dsa_blocking_gen_arg {
     DSA *dsa;
     int size;
-    unsigned char* seed;
-    int seed_len;
     int *counter;
     unsigned long *h;
     BN_GENCB *cb;
@@ -107,7 +105,8 @@ static void *
 dsa_blocking_gen(void *arg)
 {
     struct dsa_blocking_gen_arg *gen = (struct dsa_blocking_gen_arg *)arg;
-    gen->result = DSA_generate_parameters_ex(gen->dsa, gen->size, gen->seed, gen->seed_len, gen->counter, gen->h, gen->cb);
+    gen->result = DSA_generate_parameters_ex(gen->dsa, gen->size, NULL, 0,
+					     gen->counter, gen->h, gen->cb);
     return 0;
 }
 
@@ -118,12 +117,8 @@ dsa_generate(int size)
     struct dsa_blocking_gen_arg gen_arg;
     DSA *dsa = DSA_new();
     BN_GENCB *cb = BN_GENCB_new();
-    unsigned char seed[20];
-    int seed_len = 20, counter;
+    int counter;
     unsigned long h;
-
-    if (RAND_bytes(seed, seed_len) <= 0)
-	return NULL;
 
     if (!dsa || !cb) {
 	DSA_free(dsa);
@@ -136,8 +131,6 @@ dsa_generate(int size)
     BN_GENCB_set(cb, ossl_generate_cb_2, &cb_arg);
     gen_arg.dsa = dsa;
     gen_arg.size = size;
-    gen_arg.seed = seed;
-    gen_arg.seed_len = seed_len;
     gen_arg.counter = &counter;
     gen_arg.h = &h;
     gen_arg.cb = cb;
@@ -198,7 +191,9 @@ ossl_dsa_s_generate(VALUE klass, VALUE size)
 
 /*
  *  call-seq:
- *    DSA.new([size | string [, pass]) -> dsa
+ *    DSA.new -> dsa
+ *    DSA.new(size) -> dsa
+ *    DSA.new(string [, pass]) -> dsa
  *
  * Creates a new DSA instance by reading an existing key from +string+.
  *
@@ -226,8 +221,8 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
     if(rb_scan_args(argc, argv, "02", &arg, &pass) == 0) {
         dsa = DSA_new();
     }
-    else if (FIXNUM_P(arg)) {
-	if (!(dsa = dsa_generate(FIX2INT(arg)))) {
+    else if (RB_INTEGER_TYPE_P(arg)) {
+	if (!(dsa = dsa_generate(NUM2INT(arg)))) {
 	    ossl_raise(eDSAError, NULL);
 	}
     }
@@ -387,14 +382,14 @@ static VALUE
 ossl_dsa_to_der(VALUE self)
 {
     DSA *dsa;
-    int (*i2d_func)_((DSA*, unsigned char**));
+    int (*i2d_func)(DSA *, unsigned char **);
     unsigned char *p;
     long len;
     VALUE str;
 
     GetDSA(self, dsa);
     if(DSA_HAS_PRIVATE(dsa))
-	i2d_func = (int(*)_((DSA*,unsigned char**)))i2d_DSAPrivateKey;
+	i2d_func = (int (*)(DSA *,unsigned char **))i2d_DSAPrivateKey;
     else
 	i2d_func = i2d_DSA_PUBKEY;
     if((len = i2d_func(dsa, NULL)) <= 0)
@@ -592,7 +587,21 @@ ossl_dsa_verify(VALUE self, VALUE digest, VALUE sig)
     return Qfalse;
 }
 
+/*
+ * Document-method: OpenSSL::PKey::DSA#set_pqg
+ * call-seq:
+ *   dsa.set_pqg(p, q, g) -> self
+ *
+ * Sets +p+, +q+, +g+ for the DSA instance.
+ */
 OSSL_PKEY_BN_DEF3(dsa, DSA, pqg, p, q, g)
+/*
+ * Document-method: OpenSSL::PKey::DSA#set_key
+ * call-seq:
+ *   dsa.set_key(pub_key, priv_key) -> self
+ *
+ * Sets +pub_key+ and +priv_key+ for the DSA instance. +priv_key+ may be nil.
+ */
 OSSL_PKEY_BN_DEF2(dsa, DSA, key, pub_key, priv_key)
 
 /*
@@ -602,8 +611,9 @@ void
 Init_ossl_dsa(void)
 {
 #if 0
-    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL and mPKey */
     mPKey = rb_define_module_under(mOSSL, "PKey");
+    cPKey = rb_define_class_under(mPKey, "PKey", rb_cObject);
+    ePKeyError = rb_define_class_under(mPKey, "PKeyError", eOSSLError);
 #endif
 
     /* Document-class: OpenSSL::PKey::DSAError

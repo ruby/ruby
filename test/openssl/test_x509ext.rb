@@ -36,15 +36,15 @@ class OpenSSL::TestX509Extension < OpenSSL::TestCase
     bc = ef.create_extension("basicConstraints", "CA:TRUE, pathlen:2", true)
     assert_equal(@basic_constraints.to_der, bc.to_der)
 
-    begin
-      ef.config = OpenSSL::Config.parse(<<-_end_of_cnf_)
-      [crlDistPts]
-      URI.1 = http://www.example.com/crl
-      URI.2 = ldap://ldap.example.com/cn=ca?certificateRevocationList;binary
-      _end_of_cnf_
-    rescue NotImplementedError
-      return
-    end
+    ef.config = OpenSSL::Config.parse(<<-_end_of_cnf_)
+    [crlDistPts]
+    URI.1 = http://www.example.com/crl
+    URI.2 = ldap://ldap.example.com/cn=ca?certificateRevocationList;binary
+
+    [certPolicies]
+    policyIdentifier = 2.23.140.1.2.1
+    CPS.1 = http://cps.example.com
+    _end_of_cnf_
 
     cdp = ef.create_extension("crlDistributionPoints", "@crlDistPts")
     assert_equal(false, cdp.critical?)
@@ -61,6 +61,18 @@ class OpenSSL::TestX509Extension < OpenSSL::TestCase
     assert_match(
       %r{URI:ldap://ldap.example.com/cn=ca\?certificateRevocationList;binary},
       cdp.value)
+
+    cp = ef.create_extension("certificatePolicies", "@certPolicies")
+    assert_equal(false, cp.critical?)
+    assert_equal("certificatePolicies", cp.oid)
+    assert_match(%r{2.23.140.1.2.1}, cp.value)
+    assert_match(%r{http://cps.example.com}, cp.value)
+  end
+
+  def test_dup
+    ext = OpenSSL::X509::Extension.new(@basic_constraints.to_der)
+    assert_equal(@basic_constraints.to_der, ext.to_der)
+    assert_equal(ext.to_der, ext.dup.to_der)
   end
 end
 

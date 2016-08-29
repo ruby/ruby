@@ -175,8 +175,10 @@ ossl_dh_s_generate(int argc, VALUE *argv, VALUE klass)
 }
 
 /*
- *  call-seq:
- *     DH.new([size [, generator] | string]) -> dh
+ * call-seq:
+ *   DH.new -> dh
+ *   DH.new(string) -> dh
+ *   DH.new(size [, generator]) -> dh
  *
  * Either generates a DH instance from scratch or by reading already existing
  * DH parameters from +string+. Note that when reading a DH instance from
@@ -210,11 +212,11 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
     if(rb_scan_args(argc, argv, "02", &arg, &gen) == 0) {
       dh = DH_new();
     }
-    else if (FIXNUM_P(arg)) {
+    else if (RB_INTEGER_TYPE_P(arg)) {
 	if (!NIL_P(gen)) {
 	    g = NUM2INT(gen);
 	}
-	if (!(dh = dh_generate(FIX2INT(arg), g))) {
+	if (!(dh = dh_generate(NUM2INT(arg), g))) {
 	    ossl_raise(eDHError, NULL);
 	}
     }
@@ -525,7 +527,7 @@ ossl_dh_generate_key(VALUE self)
  *
  * === Parameters
  * * +pub_bn+ is a OpenSSL::BN, *not* the DH instance returned by
- * DH#public_key as that contains the DH parameters only.
+ *   DH#public_key as that contains the DH parameters only.
  */
 static VALUE
 ossl_dh_compute_key(VALUE self, VALUE pub)
@@ -550,7 +552,21 @@ ossl_dh_compute_key(VALUE self, VALUE pub)
     return str;
 }
 
+/*
+ * Document-method: OpenSSL::PKey::DH#set_pqg
+ * call-seq:
+ *   dh.set_pqg(p, q, g) -> self
+ *
+ * Sets +p+, +q+, +g+ for the DH instance.
+ */
 OSSL_PKEY_BN_DEF3(dh, DH, pqg, p, q, g)
+/*
+ * Document-method: OpenSSL::PKey::DH#set_key
+ * call-seq:
+ *   dh.set_key(pub_key, priv_key) -> self
+ *
+ * Sets +pub_key+ and +priv_key+ for the DH instance. +priv_key+ may be nil.
+ */
 OSSL_PKEY_BN_DEF2(dh, DH, key, pub_key, priv_key)
 
 /*
@@ -560,8 +576,9 @@ void
 Init_ossl_dh(void)
 {
 #if 0
-    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL and mPKey */
     mPKey = rb_define_module_under(mOSSL, "PKey");
+    cPKey = rb_define_class_under(mPKey, "PKey", rb_cObject);
+    ePKeyError = rb_define_class_under(mPKey, "PKeyError", eOSSLError);
 #endif
 
     /* Document-class: OpenSSL::PKey::DHError
@@ -578,15 +595,15 @@ Init_ossl_dh(void)
      * on.
      *
      * === Accessor methods for the Diffie-Hellman parameters
-     * * DH#p
-     * The prime (an OpenSSL::BN) of the Diffie-Hellman parameters.
-     * * DH#g
-     * The generator (an OpenSSL::BN) g of the Diffie-Hellman parameters.
-     * * DH#pub_key
-     * The per-session public key (an OpenSSL::BN) matching the private key.
-     * This needs to be passed to DH#compute_key.
-     * * DH#priv_key
-     * The per-session private key, an OpenSSL::BN.
+     * DH#p::
+     *   The prime (an OpenSSL::BN) of the Diffie-Hellman parameters.
+     * DH#g::
+     *   The generator (an OpenSSL::BN) g of the Diffie-Hellman parameters.
+     * DH#pub_key::
+     *   The per-session public key (an OpenSSL::BN) matching the private key.
+     *   This needs to be passed to DH#compute_key.
+     * DH#priv_key::
+     *   The per-session private key, an OpenSSL::BN.
      *
      * === Example of a key exchange
      *  dh1 = OpenSSL::PKey::DH.new(2048)

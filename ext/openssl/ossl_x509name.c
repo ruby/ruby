@@ -181,6 +181,25 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+static VALUE
+ossl_x509name_initialize_copy(VALUE self, VALUE other)
+{
+    X509_NAME *name, *name_other, *name_new;
+
+    rb_check_frozen(self);
+    GetX509Name(self, name);
+    SafeGetX509Name(other, name_other);
+
+    name_new = X509_NAME_dup(name_other);
+    if (!name_new)
+	ossl_raise(eX509NameError, "X509_NAME_dup");
+
+    SetX509Name(self, name_new);
+    X509_NAME_free(name);
+
+    return self;
+}
+
 /*
  * call-seq:
  *    name.add_entry(oid, value [, type]) => self
@@ -307,10 +326,7 @@ ossl_x509name_to_a(VALUE self)
 	    vname = rb_str_new2(short_name); /*do not free*/
 	}
 	value = X509_NAME_ENTRY_get_data(entry);
-	ary = rb_ary_new3(3,
-			  vname,
-			  rb_str_new((const char *)value->data, value->length),
-			  INT2FIX(value->type));
+	ary = rb_ary_new3(3, vname, asn1str_to_str(value), INT2NUM(value->type));
 	rb_ary_push(ret, ary);
     }
     return ret;
@@ -450,6 +466,12 @@ Init_ossl_x509name(void)
 {
     VALUE utf8str, ptrstr, ia5str, hash;
 
+#if 0
+    mOSSL = rb_define_module("OpenSSL");
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
+    mX509 = rb_define_module_under(mOSSL, "X509");
+#endif
+
     id_aref = rb_intern("[]");
     eX509NameError = rb_define_class_under(mX509, "NameError", eOSSLError);
     cX509Name = rb_define_class_under(mX509, "Name", rb_cObject);
@@ -458,6 +480,7 @@ Init_ossl_x509name(void)
 
     rb_define_alloc_func(cX509Name, ossl_x509name_alloc);
     rb_define_method(cX509Name, "initialize", ossl_x509name_initialize, -1);
+    rb_define_copy_func(cX509Name, ossl_x509name_initialize_copy);
     rb_define_method(cX509Name, "add_entry", ossl_x509name_add_entry, -1);
     rb_define_method(cX509Name, "to_s", ossl_x509name_to_s, -1);
     rb_define_method(cX509Name, "to_a", ossl_x509name_to_a, 0);
@@ -474,8 +497,7 @@ Init_ossl_x509name(void)
     ptrstr = INT2NUM(V_ASN1_PRINTABLESTRING);
     ia5str = INT2NUM(V_ASN1_IA5STRING);
 
-    /* Document-const: DEFAULT_OBJECT_TYPE
-     *
+    /*
      * The default object type for name entries.
      */
     rb_define_const(cX509Name, "DEFAULT_OBJECT_TYPE", utf8str);
@@ -489,14 +511,12 @@ Init_ossl_x509name(void)
     rb_hash_aset(hash, rb_str_new2("domainComponent"), ia5str);
     rb_hash_aset(hash, rb_str_new2("emailAddress"), ia5str);
 
-    /* Document-const: OBJECT_TYPE_TEMPLATE
-     *
+    /*
      * The default object type template for name entries.
      */
     rb_define_const(cX509Name, "OBJECT_TYPE_TEMPLATE", hash);
 
-    /* Document-const: COMPAT
-     *
+    /*
      * A flag for #to_s.
      *
      * Breaks the name returned into multiple lines if longer than 80
@@ -504,24 +524,21 @@ Init_ossl_x509name(void)
      */
     rb_define_const(cX509Name, "COMPAT", ULONG2NUM(XN_FLAG_COMPAT));
 
-    /* Document-const: RFC2253
-     *
+    /*
      * A flag for #to_s.
      *
      * Returns an RFC2253 format name.
      */
     rb_define_const(cX509Name, "RFC2253", ULONG2NUM(XN_FLAG_RFC2253));
 
-    /* Document-const: ONELINE
-     *
+    /*
      * A flag for #to_s.
      *
      * Returns a more readable format than RFC2253.
      */
     rb_define_const(cX509Name, "ONELINE", ULONG2NUM(XN_FLAG_ONELINE));
 
-    /* Document-const: MULTILINE
-     *
+    /*
      * A flag for #to_s.
      *
      * Returns a multiline format.

@@ -8,11 +8,13 @@ begin
   OpenSSL.fips_mode=false
 rescue LoadError
 end
+
 require "test/unit"
 require "digest/md5"
 require 'tempfile'
 require "rbconfig"
 require "socket"
+require "envutil"
 
 module OpenSSL::TestUtils
   TEST_KEY_RSA1024 = OpenSSL::PKey::RSA.new <<-_end_of_pem_
@@ -260,7 +262,7 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
             return
           end
           ssl = ssls.accept
-        rescue OpenSSL::SSL::SSLError
+        rescue OpenSSL::SSL::SSLError, Errno::ECONNRESET
           if ignore_listener_error
             retry
           else
@@ -345,6 +347,40 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
       sleep 1   # When this line is eliminated, process on Cygwin blocks
                 # forever at ssl.connect. But I don't know why it does.
       ssl.connect
+    end
+  end
+
+  class OpenSSL::PKeyTestCase < OpenSSL::TestCase
+    def check_component(base, test, keys)
+      keys.each { |comp|
+        assert_equal base.send(comp), test.send(comp)
+      }
+    end
+
+    def dup_public(key)
+      case key
+      when OpenSSL::PKey::RSA
+        rsa = OpenSSL::PKey::RSA.new
+        rsa.set_key(key.n, key.e, nil)
+        rsa
+      when OpenSSL::PKey::DSA
+        dsa = OpenSSL::PKey::DSA.new
+        dsa.set_pqg(key.p, key.q, key.g)
+        dsa.set_key(key.pub_key, nil)
+        dsa
+      when OpenSSL::PKey::DH
+        dh = OpenSSL::PKey::DH.new
+        dh.set_pqg(key.p, nil, key.g)
+        dh
+      else
+        if defined?(OpenSSL::PKey::EC) && OpenSSL::PKey::EC === key
+          ec = OpenSSL::PKey::EC.new(key.group)
+          ec.public_key = key.public_key
+          ec
+        else
+          raise "unknown key type"
+        end
+      end
     end
   end
 

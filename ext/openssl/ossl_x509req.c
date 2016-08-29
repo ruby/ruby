@@ -250,7 +250,7 @@ ossl_x509req_get_version(VALUE self)
     GetX509Req(self, req);
     version = X509_REQ_get_version(req);
 
-    return LONG2FIX(version);
+    return LONG2NUM(version);
 }
 
 static VALUE
@@ -259,12 +259,12 @@ ossl_x509req_set_version(VALUE self, VALUE version)
     X509_REQ *req;
     long ver;
 
-    if ((ver = FIX2LONG(version)) < 0) {
+    if ((ver = NUM2LONG(version)) < 0) {
 	ossl_raise(eX509ReqError, "version must be >= 0!");
     }
     GetX509Req(self, req);
     if (!X509_REQ_set_version(req, ver)) {
-	ossl_raise(eX509ReqError, NULL);
+	ossl_raise(eX509ReqError, "X509_REQ_set_version");
     }
 
     return version;
@@ -302,7 +302,7 @@ static VALUE
 ossl_x509req_get_signature_algorithm(VALUE self)
 {
     X509_REQ *req;
-    X509_ALGOR *alg;
+    const X509_ALGOR *alg;
     BIO *out;
     BUF_MEM *buf;
     VALUE str;
@@ -312,7 +312,7 @@ ossl_x509req_get_signature_algorithm(VALUE self)
     if (!(out = BIO_new(BIO_s_mem()))) {
 	ossl_raise(eX509ReqError, NULL);
     }
-    X509_REQ_get0_signature(NULL, &alg, req);
+    X509_REQ_get0_signature(req, NULL, &alg);
     if (!i2a_ASN1_OBJECT(out, alg->algorithm)) {
 	BIO_free(out);
 	ossl_raise(eX509ReqError, NULL);
@@ -432,7 +432,7 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
 	X509_ATTRIBUTE_free(attr);
     for (i=0;i<RARRAY_LEN(ary); i++) {
 	item = RARRAY_AREF(ary, i);
-	attr = DupX509AttrPtr(item);
+	attr = GetX509AttrPtr(item);
 	if (!X509_REQ_add1_attr(req, attr)) {
 	    ossl_raise(eX509ReqError, NULL);
 	}
@@ -446,7 +446,7 @@ ossl_x509req_add_attribute(VALUE self, VALUE attr)
     X509_REQ *req;
 
     GetX509Req(self, req);
-    if (!X509_REQ_add1_attr(req, DupX509AttrPtr(attr))) {
+    if (!X509_REQ_add1_attr(req, GetX509AttrPtr(attr))) {
 	ossl_raise(eX509ReqError, NULL);
     }
 
@@ -459,6 +459,12 @@ ossl_x509req_add_attribute(VALUE self, VALUE attr)
 void
 Init_ossl_x509req(void)
 {
+#if 0
+    mOSSL = rb_define_module("OpenSSL");
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
+    mX509 = rb_define_module_under(mOSSL, "X509");
+#endif
+
     eX509ReqError = rb_define_class_under(mX509, "RequestError", eOSSLError);
 
     cX509Req = rb_define_class_under(mX509, "Request", rb_cObject);

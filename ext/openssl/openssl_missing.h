@@ -110,11 +110,11 @@ void HMAC_CTX_free(HMAC_CTX *ctx);
 #endif
 
 #if !defined(HAVE_X509_CRL_GET0_SIGNATURE)
-void X509_CRL_get0_signature(ASN1_BIT_STRING **psig, X509_ALGOR **palg, X509_CRL *crl);
+void X509_CRL_get0_signature(const X509_CRL *, const ASN1_BIT_STRING **, const X509_ALGOR **);
 #endif
 
 #if !defined(HAVE_X509_REQ_GET0_SIGNATURE)
-void X509_REQ_get0_signature(ASN1_BIT_STRING **psig, X509_ALGOR **palg, X509_REQ *req);
+void X509_REQ_get0_signature(const X509_REQ *, const ASN1_BIT_STRING **, const X509_ALGOR **);
 #endif
 
 #if !defined(HAVE_X509_REVOKED_GET0_SERIALNUMBER)
@@ -231,6 +231,14 @@ IMPL_PKEY_GETTER(EC_KEY, ec)
 #if defined(HAVE_AUTHENTICATED_ENCRYPTION) && !defined(EVP_CTRL_AEAD_GET_TAG)
 #  define EVP_CTRL_AEAD_GET_TAG EVP_CTRL_GCM_GET_TAG
 #  define EVP_CTRL_AEAD_SET_TAG EVP_CTRL_GCM_SET_TAG
+#  define EVP_CTRL_AEAD_SET_IVLEN EVP_CTRL_GCM_SET_IVLEN
+#endif
+
+#if !defined(HAVE_X509_GET0_NOTBEFORE)
+#  define X509_get0_notBefore(x) X509_get_notBefore(x)
+#  define X509_get0_notAfter(x) X509_get_notAfter(x)
+#  define X509_CRL_get0_lastUpdate(x) X509_CRL_get_lastUpdate(x)
+#  define X509_CRL_get0_nextUpdate(x) X509_CRL_get_nextUpdate(x)
 #endif
 
 #endif /* _OSSL_OPENSSL_MISSING_H_ */

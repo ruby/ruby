@@ -369,6 +369,12 @@ __EOS__
     assert(called[:get1])
     assert(called[:get2])
   end
+
+  def test_dup
+    sess_orig = OpenSSL::SSL::Session.new(DUMMY_SESSION)
+    sess_dup = sess_orig.dup
+    assert_equal(sess_orig.to_der, sess_dup.to_der)
+  end
 end
 
 end

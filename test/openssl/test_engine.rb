@@ -14,7 +14,7 @@ class OpenSSL::TestEngine < OpenSSL::TestCase
   def test_openssl_engine_builtin
     with_openssl <<-'end;'
       orig = OpenSSL::Engine.engines
-      skip "'openssl' is already loaded" if orig.any? { |e| e.id == "openssl" }
+      pend "'openssl' is already loaded" if orig.any? { |e| e.id == "openssl" }
       engine = OpenSSL::Engine.load("openssl")
       assert_equal(true, engine)
       assert_equal(1, OpenSSL::Engine.engines.size - orig.size)
@@ -24,7 +24,7 @@ class OpenSSL::TestEngine < OpenSSL::TestCase
   def test_openssl_engine_by_id_string
     with_openssl <<-'end;'
       orig = OpenSSL::Engine.engines
-      skip "'openssl' is already loaded" if orig.any? { |e| e.id == "openssl" }
+      pend "'openssl' is already loaded" if orig.any? { |e| e.id == "openssl" }
       engine = get_engine
       assert_not_nil(engine)
       assert_equal(1, OpenSSL::Engine.engines.size - orig.size)
@@ -72,11 +72,18 @@ class OpenSSL::TestEngine < OpenSSL::TestCase
     end;
   end
 
+  def test_dup
+    with_openssl <<-'end;'
+      engine = get_engine
+      assert_raise(NoMethodError) { engine.dup }
+    end;
+  end
+
   private
 
   # this is required because OpenSSL::Engine methods change global state
   def with_openssl(code)
-    assert_separately(["-ropenssl"], <<~"end;")
+    assert_separately([{ "OSSL_MDEBUG" => nil }, "-ropenssl"], <<~"end;")
       require #{__FILE__.dump}
       include OpenSSL::TestEngine::Utils
       #{code}

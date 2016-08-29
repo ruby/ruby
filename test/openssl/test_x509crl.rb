@@ -112,6 +112,10 @@ class OpenSSL::TestX509CRL < OpenSSL::TestCase
     assert_equal(1000, revoked.size)
     assert_equal(1, revoked[0].serial)
     assert_equal(1000, revoked[999].serial)
+
+    crl.revoked = revoked
+    revoked2 = crl.revoked
+    assert_equal(revoked.map(&:serial), revoked2.map(&:serial))
   end
 
   def test_extension

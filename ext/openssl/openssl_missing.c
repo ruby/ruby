@@ -150,7 +150,8 @@ HMAC_CTX_free(HMAC_CTX *ctx)
 
 #if !defined(HAVE_X509_CRL_GET0_SIGNATURE)
 void
-X509_CRL_get0_signature(ASN1_BIT_STRING **psig, X509_ALGOR **palg, X509_CRL *crl)
+X509_CRL_get0_signature(const X509_CRL *crl, const ASN1_BIT_STRING **psig,
+			const X509_ALGOR **palg)
 {
     if (psig != NULL)
 	*psig = crl->signature;
@@ -161,7 +162,8 @@ X509_CRL_get0_signature(ASN1_BIT_STRING **psig, X509_ALGOR **palg, X509_CRL *crl
 
 #if !defined(HAVE_X509_REQ_GET0_SIGNATURE)
 void
-X509_REQ_get0_signature(ASN1_BIT_STRING **psig, X509_ALGOR **palg, X509_REQ *req)
+X509_REQ_get0_signature(const X509_REQ *req, const ASN1_BIT_STRING **psig,
+			const X509_ALGOR **palg)
 {
     if (psig != NULL)
 	*psig = req->signature;

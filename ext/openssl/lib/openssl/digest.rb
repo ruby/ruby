@@ -53,15 +53,9 @@ module OpenSSL
     # Deprecated.
     #
     # This class is only provided for backwards compatibility.
-    class Digest < Digest # :nodoc:
-      # Deprecated.
-      #
-      # See OpenSSL::Digest.new
-      def initialize(*args)
-        warn('Digest::Digest is deprecated; use Digest')
-        super(*args)
-      end
-    end
+    # Use OpenSSL::Digest instead.
+    class Digest < Digest; end # :nodoc:
+    deprecate_constant :Digest
 
   end # Digest
 
