@@ -951,7 +951,7 @@ ossl_ec_group_initialize_copy(VALUE self, VALUE other)
     return self;
 }
 
-/* 
+/*
  * call-seq:
  *   group1.eql?(group2)   => true | false
  *   group1 == group2   => true | false
@@ -972,7 +972,7 @@ static VALUE ossl_ec_group_eql(VALUE a, VALUE b)
     return Qtrue;
 }
 
-/* 
+/*
  * call-seq:
  *   group.generator   => ec_point
  *
@@ -1128,7 +1128,7 @@ static VALUE ossl_s_builtin_curves(VALUE self)
     return ret;
 }
 
-/* 
+/*
  * call-seq:
  *   group.asn1_flag -> Integer
  *
