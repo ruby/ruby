@@ -396,7 +396,7 @@ vm_stat(int argc, VALUE *argv, VALUE self)
 	else
 	    rb_raise(rb_eTypeError, "non-hash or symbol given");
     }
-    else if (NIL_P(arg)) {
+    else {
 	hash = rb_hash_new();
     }
 
