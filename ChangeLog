@@ -1,3 +1,8 @@
+Wed Aug 31 00:52:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: make the gems target directory under the expanded
+	  name.  [ruby-core:77102] [Bug #12714]
+
 Tue Aug 30 15:27:27 2016  Kouhei Yanagita  <yanagi@shakenbu.org>
 
 	* ext/json/lib/json/add/ostruct.rb (OpenStruct.json_create):

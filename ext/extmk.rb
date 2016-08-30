@@ -535,7 +535,7 @@ end
 if $extout
   extout = RbConfig.expand("#{$extout}", RbConfig::CONFIG.merge("topdir"=>$topdir))
   unless $ignore
-    FileUtils.mkpath(extout)
+    FileUtils.mkpath("#{extout}/gems")
   end
 end
 
@@ -565,7 +565,6 @@ end
 
 Dir.chdir('..')
 FileUtils::makedirs('gems')
-FileUtils::makedirs("#$extout/gems")
 Dir.chdir('gems')
 extout = $extout
 gems.each do |d|
