@@ -7,7 +7,7 @@ require 'ostruct'
 class OpenStruct
 
   # Deserializes JSON string by constructing new Struct object with values
-  # <tt>v</tt> serialized by <tt>to_json</tt>.
+  # <tt>t</tt> serialized by <tt>to_json</tt>.
   def self.json_create(object)
     new(object['t'] || object[:t])
   end
