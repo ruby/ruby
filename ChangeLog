@@ -1,3 +1,10 @@
+Tue Aug 30 14:53:34 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (nogvl_fsync, nogvl_fdatasync): on Windows, just ignore if the
+	  fd is associated to non-disk device.  if call fsync and/or fdatasync
+	  with such fds, it causes Errno::EBADF exception and the behavior is
+	  incomatible with ruby 2.1 and earlier unintendedly introduced.
+
 Tue Aug 30 03:38:35 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_dump.c (backtrace): use rip in the saved context for the case
