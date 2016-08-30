@@ -81,7 +81,7 @@ class Delegator < BasicObject
 
     if r && target.respond_to?(m)
       target.__send__(m, *args, &block)
-    elsif ::Kernel.respond_to?(m, true)
+    elsif ::Kernel.method_defined?(m) || ::Kernel.private_method_defined?(m)
       ::Kernel.instance_method(m).bind(self).(*args, &block)
     else
       super(m, *args, &block)
