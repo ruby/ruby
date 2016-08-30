@@ -258,4 +258,11 @@ class TestDelegateClass < Test::Unit::TestCase
   def test_dir_in_delegator_class
     assert_equal(__dir__, Bug9403::DC.dir_name, Bug9403::Name)
   end
+
+  def test_module_methods_vs_kernel_methods
+    delegate = SimpleDelegator.new(Object.new)
+    assert_raise(NoMethodError) do
+      delegate.constants
+    end
+  end
 end
