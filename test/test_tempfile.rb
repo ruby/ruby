@@ -246,8 +246,8 @@ puts Tempfile.new('foo').path
   def test_concurrency
     threads = []
     tempfiles = []
-    lock = Mutex.new
-    cond = ConditionVariable.new
+    lock = Thread::Mutex.new
+    cond = Thread::ConditionVariable.new
     start = false
 
     4.times do

@@ -98,7 +98,7 @@ module WEBrick
       @config[:Logger] ||= Log::new
       @logger = @config[:Logger]
 
-      @tokens = SizedQueue.new(@config[:MaxClients])
+      @tokens = Thread::SizedQueue.new(@config[:MaxClients])
       @config[:MaxClients].times{ @tokens.push(nil) }
 
       webrickv = WEBrick::VERSION

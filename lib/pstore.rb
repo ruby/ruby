@@ -128,7 +128,7 @@ class PStore
     @abort = false
     @ultra_safe = false
     @thread_safe = thread_safe
-    @lock = Mutex.new
+    @lock = Thread::Mutex.new
   end
 
   # Raises PStore::Error if the calling code is not in a PStore#transaction.

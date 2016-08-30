@@ -1008,7 +1008,7 @@ module MiniTest
       @report = []
       @errors = @failures = @skips = 0
       @verbose = false
-      @mutex = defined?(Mutex) ? Mutex.new : nil
+      @mutex = Thread::Mutex.new
       @info_signal = Signal.list['INFO']
     end
 

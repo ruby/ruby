@@ -5,7 +5,7 @@ require 'thread'
 
 class TestTimeout < Test::Unit::TestCase
   def test_queue
-    q = Queue.new
+    q = Thread::Queue.new
     assert_raise(Timeout::Error, "[ruby-dev:32935]") {
       Timeout.timeout(0.01) { q.pop }
     }

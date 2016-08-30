@@ -4,6 +4,9 @@ require 'thread'
 require 'tmpdir'
 
 class TestConditionVariable < Test::Unit::TestCase
+  ConditionVariable = Thread::ConditionVariable
+  Mutex = Thread::Mutex
+
   def test_initialized
     assert_raise(TypeError) {
       ConditionVariable.allocate.wait(nil)

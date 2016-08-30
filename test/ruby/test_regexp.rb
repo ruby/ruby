@@ -1119,7 +1119,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_once_multithread
-    m = Mutex.new
+    m = Thread::Mutex.new
     pr3 = proc{|i|
       /#{m.unlock; sleep 0.5; i}/o
     }

@@ -18,7 +18,7 @@ module DRb
       def initialize(config, drb)
         @config = config
         @drb = drb
-        @queue = Queue.new
+        @queue = Thread::Queue.new
       end
 
       def do_POST(req, res)
@@ -46,7 +46,7 @@ module DRb
       def initialize(uri, config)
         @uri = uri
         @config = config
-        @queue = Queue.new
+        @queue = Thread::Queue.new
         setup_webrick(uri)
       end
       attr_reader :uri

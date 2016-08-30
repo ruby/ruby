@@ -385,7 +385,7 @@ module Rinda
     # TupleSpaces can be found by calling +to_a+.
 
     def lookup_ring_any(timeout=5)
-      queue = Queue.new
+      queue = Thread::Queue.new
 
       Thread.new do
         self.lookup_ring(timeout) do |ts|

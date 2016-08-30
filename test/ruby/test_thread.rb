@@ -96,7 +96,7 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_mutex_synchronize
-    m = Mutex.new
+    m = Thread::Mutex.new
     r = 0
     num_threads = 10
     loop=100
@@ -120,7 +120,7 @@ class TestThread < Test::Unit::TestCase
 
   def test_mutex_synchronize_yields_no_block_params
     bug8097 = '[ruby-core:53424] [Bug #8097]'
-    assert_empty(Mutex.new.synchronize {|*params| break params}, bug8097)
+    assert_empty(Thread::Mutex.new.synchronize {|*params| break params}, bug8097)
   end
 
   def test_local_barrier
@@ -346,8 +346,8 @@ class TestThread < Test::Unit::TestCase
 
   def test_report_on_exception
     assert_separately([], <<~"end;") #do
-      q1 = Queue.new
-      q2 = Queue.new
+      q1 = Thread::Queue.new
+      q2 = Thread::Queue.new
 
       assert_equal(false, Thread.report_on_exception,
                    "global flags is false by default")
@@ -513,7 +513,7 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_mutex_deadlock
-    m = Mutex.new
+    m = Thread::Mutex.new
     m.synchronize do
       assert_raise(ThreadError) do
         m.synchronize do
@@ -524,7 +524,7 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_mutex_interrupt
-    m = Mutex.new
+    m = Thread::Mutex.new
     m.lock
     t = Thread.new do
       m.lock
@@ -536,7 +536,7 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_mutex_illegal_unlock
-    m = Mutex.new
+    m = Thread::Mutex.new
     m.lock
     assert_raise(ThreadError) do
       Thread.new do
@@ -546,8 +546,8 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_mutex_fifo_like_lock
-    m1 = Mutex.new
-    m2 = Mutex.new
+    m1 = Thread::Mutex.new
+    m2 = Thread::Mutex.new
     m1.lock
     m2.lock
     m1.unlock
@@ -555,7 +555,7 @@ class TestThread < Test::Unit::TestCase
     assert_equal(false, m1.locked?)
     assert_equal(false, m2.locked?)
 
-    m3 = Mutex.new
+    m3 = Thread::Mutex.new
     m1.lock
     m2.lock
     m3.lock
@@ -568,7 +568,7 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_mutex_trylock
-    m = Mutex.new
+    m = Thread::Mutex.new
     assert_equal(true, m.try_lock)
     assert_equal(false, m.try_lock, '[ruby-core:20943]')
 
@@ -753,7 +753,7 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_handle_interrupted?
-    q = Queue.new
+    q = Thread::Queue.new
     Thread.handle_interrupt(RuntimeError => :never){
       done = false
       th = Thread.new{
@@ -902,7 +902,7 @@ _eom
   def test_main_thread_status_at_exit
     assert_in_out_err([], <<-'INPUT', ["false false aborting"], [])
 require 'thread'
-q = Queue.new
+q = Thread::Queue.new
 Thread.new(Thread.current) {|mth|
   begin
     q.push nil
@@ -969,7 +969,7 @@ q.pop
   end
 
   def test_mutex_owned
-    mutex = Mutex.new
+    mutex = Thread::Mutex.new
 
     assert_equal(mutex.owned?, false)
     mutex.synchronize {
@@ -981,7 +981,7 @@ q.pop
 
   def test_mutex_owned2
     begin
-      mutex = Mutex.new
+      mutex = Thread::Mutex.new
       th = Thread.new {
         # lock forever
         mutex.lock
@@ -998,7 +998,7 @@ q.pop
 
   def test_mutex_unlock_on_trap
     assert_in_out_err([], <<-INPUT, %w(locked unlocked false), [])
-      m = Mutex.new
+      m = Thread::Mutex.new
 
       trapped = false
       Signal.trap("INT") { |signo|
@@ -1063,7 +1063,7 @@ q.pop
   def test_blocking_mutex_unlocked_on_fork
     bug8433 = '[ruby-core:55102] [Bug #8433]'
 
-    mutex = Mutex.new
+    mutex = Thread::Mutex.new
     flag = false
     mutex.lock
 

@@ -5,6 +5,9 @@ require 'tmpdir'
 require 'timeout'
 
 class TestQueue < Test::Unit::TestCase
+  Queue = Thread::Queue
+  SizedQueue = Thread::SizedQueue
+
   def test_queue_initialized
     assert_raise(TypeError) {
       Queue.allocate.push(nil)

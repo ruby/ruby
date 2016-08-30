@@ -261,7 +261,7 @@ module Sync_m
     @sync_ex_locker = nil
     @sync_ex_count = 0
 
-    @sync_mutex = Mutex.new
+    @sync_mutex = Thread::Mutex.new
   end
 
   def initialize(*args)

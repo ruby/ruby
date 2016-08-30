@@ -102,7 +102,7 @@ module Mutex_m
   private
 
   def mu_initialize # :nodoc:
-    @_mutex = Mutex.new
+    @_mutex = Thread::Mutex.new
   end
 
   def initialize(*args) # :nodoc:

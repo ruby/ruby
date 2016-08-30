@@ -182,7 +182,7 @@ SCRIPT_LINES__ = {} unless defined? SCRIPT_LINES__ # :nodoc:
 # Debug is not available in safe mode.
 
 class DEBUGGER__
-  MUTEX = Mutex.new # :nodoc:
+  MUTEX = Thread::Mutex.new # :nodoc:
 
   class Context # :nodoc:
     DEBUG_LAST_CMD = []

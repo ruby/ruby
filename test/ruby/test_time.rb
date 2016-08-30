@@ -411,7 +411,7 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_time_interval
-    m = Mutex.new.lock
+    m = Thread::Mutex.new.lock
     assert_nothing_raised {
       Timeout.timeout(10) {
         m.sleep(0)

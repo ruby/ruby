@@ -12,8 +12,6 @@
 
 require "e2mmap"
 
-require "thread" unless defined?(Mutex)
-
 require "forwardable"
 
 require "shell/error"
@@ -100,7 +98,7 @@ class Shell
 
   @debug_display_process_id = false
   @debug_display_thread_id = true
-  @debug_output_mutex = Mutex.new
+  @debug_output_mutex = Thread::Mutex.new
 
   class << Shell
     extend Forwardable
