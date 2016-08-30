@@ -1,3 +1,7 @@
+Wed Aug 31 01:56:55 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
+
+	* doc/extension.ja.rdoc: [DOC] Fix a typo. [ci skip]
+
 Wed Aug 31 00:52:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: make the gems target directory under the expanded
