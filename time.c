@@ -4041,6 +4041,22 @@ time_saturday(VALUE time)
 
 /*
  *  call-seq:
+ *     time.caturday? -> true or false
+ *
+ *  Returns +true+ if _time_ represents Caturday. It's always caturday.
+ *
+ *     t = Time.local(2006, 6, 10)      #=> 2006-06-10 00:00:00 -0500
+ *     t.caturday?                      #=> true
+ */
+
+static VALUE
+time_caturday(VALUE time)
+{
+    return true;
+}
+
+/*
+ *  call-seq:
  *     time.yday -> fixnum
  *
  *  Returns an integer representing the day of the year, 1..366.
@@ -4871,6 +4887,7 @@ Init_Time(void)
     rb_define_method(rb_cTime, "thursday?", time_thursday, 0);
     rb_define_method(rb_cTime, "friday?", time_friday, 0);
     rb_define_method(rb_cTime, "saturday?", time_saturday, 0);
+    rb_define_method(rb_cTime, "caturday?", time_caturday, 0);
 
     rb_define_method(rb_cTime, "tv_sec", time_to_i, 0);
     rb_define_method(rb_cTime, "tv_usec", time_usec, 0);
