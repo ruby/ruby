@@ -2308,7 +2308,7 @@ TIMESTAMP_DIR = #{$extout ? '$(extout)/.timestamp' : '.'}
             '$(RUBYARCHDIR)'
     n = '$(TARGET_SO_DIR)$(TARGET)'
     mfile.print "
-TARGET_SO_DIR =#{(sodir ? " #{sodir}/" : '')}
+TARGET_SO_DIR =#{(sodir && !sodir.empty? ? " #{sodir}/" : '')}
 TARGET_SO     = $(TARGET_SO_DIR)$(DLLIB)
 CLEANLIBS     = $(TARGET_SO) #{config_string('cleanlibs') {|t| t.gsub(/\$\*/) {n}}}
 CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, "$(TARGET)#{deffile ? '-$(arch)': ''}")} if target} *.bak
