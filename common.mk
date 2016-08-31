@@ -210,7 +210,7 @@ showconfig:
 exts: build-ext
 
 EXTS_MK = exts.mk
-$(EXTS_MK): $(MKFILES) all-incs $(PREP) $(RBCONFIG) $(LIBRUBY)
+$(EXTS_MK): $(MKFILES) all-incs $(PREP) $(RBCONFIG) $(LIBRUBY) $(TIMESTAMPDIR)/.$(arch).time
 	$(ECHO) generating makefile $@
 	$(Q)$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --command-output=$(EXTS_MK) $(EXTMK_ARGS) configure
 
@@ -544,8 +544,8 @@ realclean-extout: distclean-extout
 
 clean-ext distclean-ext realclean-ext::
 	$(Q)$(RM) $(EXTS_MK)
-	$(Q)$(RM) $(EXTOUT)/.timestamp/.*.time
-	$(Q)$(RMDIR) $(EXTOUT)/.timestamp 2> $(NULL) || exit 0
+	$(Q)$(RM) $(TIMESTAMPDIR)/.*.time $(TIMESTAMPDIR)/.$(arch).time $(TIMESTAMPDIR)/$(arch)/.time
+	$(Q)$(RMDIR) $(TIMESTAMPDIR)/$(arch) $(TIMESTAMPDIR) 2> $(NULL) || exit 0
 
 clean-enc distclean-enc realclean-enc: PHONY
 
@@ -714,6 +714,10 @@ $(BUILTIN_ENCOBJS) $(BUILTIN_TRANSOBJS): $(ENC_TRANS_D)
 
 $(ENC_TRANS_D):
 	$(Q) $(MAKEDIRS) enc/trans $(@D)
+	@exit > $@
+
+$(TIMESTAMPDIR)/.$(arch).time:
+	$(Q)$(MAKEDIRS) $(@D) $(TIMESTAMPDIR)/$(arch)
 	@exit > $@
 
 ###
