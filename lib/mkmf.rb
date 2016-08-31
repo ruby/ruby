@@ -2348,7 +2348,7 @@ static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{!$extmk ? " install-rb" :
         mfile.print "\t-$(Q)$(RMDIRS) #{fseprepl[dir]}#{$ignore_error}\n"
       else
         mfile.print "#{f} #{stamp}\n"
-        mfile.print "\t$(INSTALL_PROG) #{fseprepl[f]} #{dir}\n"
+        mfile.print "\t$(INSTALL_PROG) #{fseprepl[f]} $(RUBYARCHDIR)\n"
         if defined?($installed_list)
           mfile.print "\t@echo #{dir}/#{File.basename(f)}>>$(INSTALLED_LIST)\n"
         end
