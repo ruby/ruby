@@ -131,7 +131,7 @@ def extract_makefile(makefile, keep = true)
   true
 end
 
-def extmake(target, basedir = (maybestatic = 'ext'), &block)
+def extmake(target, basedir = (maybestatic = 'ext'))
   unless $configure_only || verbose?
     print "#{$message} #{target}\n"
     $stdout.flush
@@ -225,7 +225,7 @@ def extmake(target, basedir = (maybestatic = 'ext'), &block)
               load $0 = conf
             end
 	  else
-	    create_makefile(target, &block)
+	    create_makefile(target)
 	  end
 	  $defs << "-DRUBY_EXPORT" if $static
 	  ok = File.exist?(makefile)
@@ -243,7 +243,6 @@ def extmake(target, basedir = (maybestatic = 'ext'), &block)
     ok &&= File.open(makefile){|f| s = f.gets and !s[DUMMY_SIGNATURE]}
     unless ok
       mf = ["# #{DUMMY_SIGNATURE}\n", *dummy_makefile(CONFIG["srcdir"])].join("")
-      mf = yield mf if block
       atomic_write_open(makefile) do |f|
         f.print(mf)
       end
@@ -571,15 +570,8 @@ Dir.chdir('gems')
 extout = $extout
 gems.each do |d|
   $extout = extout.dup
-  extmake(d, 'gems') do |mf|
-    mf.sub!(/^RUBYARCHDIR *= *(\$\(extout\))\/(\$\(arch\))(.*)/) {
-      "TARGET_SO_DIR = #$1/gems/#$2/#{d[%r{\A[^/]+}]}#$3\n" \
-      "TARGET_SO_TIME = .gems.-.arch.-.#{d[/\A[^\/]+/]}.time"
-    }
-    mf.gsub!(/\bRUBYARCHDIR\b/, 'TARGET_SO_DIR')
-    mf.gsub!(/\.TARGET_SO_DIR\.time/, '$(TARGET_SO_TIME)')
-    mf
-  end
+  $sodir = "$(extout)/gems/$(arch)/#{d[%r{\A[^/]+}]}"
+  extmake(d, 'gems')
 end
 $extout = extout
 Dir.chdir('../ext')

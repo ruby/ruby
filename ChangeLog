@@ -1,3 +1,11 @@
+Wed Aug 31 15:36:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: move TARGET_SO_DIR stuffs to mkmf.rb.
+
+	* lib/mkmf.rb (create_makefile): create target shared object files
+	  under $(TARGET_SO_DIR) which is $sodir if it is defined with
+	  $extout.  [ruby-core:77058] [Bug #12681]
+
 Wed Aug 31 01:56:55 2016  Yuichiro Kaneko  <yui-knk@ruby-lang.org>
 
 	* doc/extension.ja.rdoc: [DOC] Fix a typo. [ci skip]

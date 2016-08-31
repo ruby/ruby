@@ -2303,9 +2303,13 @@ TIMESTAMP_DIR = #{$extout ? '$(extout)/.timestamp' : '.'}
 " #"
     # TODO: fixme
     install_dirs.each {|d| mfile.print("%-14s= %s\n" % d) if /^[[:upper:]]/ =~ d[0]}
-    n = ($extout ? '$(RUBYARCHDIR)/' : '') + '$(TARGET)'
+    sodir = !$extout ? '' :
+            $sodir ? $sodir+target_prefix :
+            '$(RUBYARCHDIR)'
+    n = '$(TARGET_SO_DIR)$(TARGET)'
     mfile.print "
-TARGET_SO     = #{($extout ? '$(RUBYARCHDIR)/' : '')}$(DLLIB)
+TARGET_SO_DIR =#{(sodir ? " #{sodir}/" : '')}
+TARGET_SO     = $(TARGET_SO_DIR)$(DLLIB)
 CLEANLIBS     = $(TARGET_SO) #{config_string('cleanlibs') {|t| t.gsub(/\$\*/) {n}}}
 CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, "$(TARGET)#{deffile ? '-$(arch)': ''}")} if target} *.bak
 
@@ -2331,7 +2335,7 @@ static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{!$extmk ? " install-rb" :
     end
     dirs = []
     mfile.print "install: install-so install-rb\n\n"
-    sodir = (dir = "$(RUBYARCHDIR)").dup
+    dir = sodir.dup
     mfile.print("install-so: ")
     if target
       f = "$(DLLIB)"
@@ -2450,7 +2454,7 @@ site-install-rb: install-rb
     mfile.print "$(TARGET_SO): "
     mfile.print "$(DEFFILE) " if makedef
     mfile.print "$(OBJS) Makefile"
-    mfile.print " #{timestamp_file('$(RUBYARCHDIR)', target_prefix)}" if $extout
+    mfile.print " #{timestamp_file(sodir, target_prefix)}" if $extout
     mfile.print "\n"
     mfile.print "\t$(ECHO) linking shared-object #{target_prefix.sub(/\A\/(.*)/, '\1/')}$(DLLIB)\n"
     mfile.print "\t-$(Q)$(RM) $(@#{sep})\n"
