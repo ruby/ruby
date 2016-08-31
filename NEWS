@@ -107,6 +107,11 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Thread#report_on_exception and Thread.report_on_exception
     [Feature #6647]
 
+* Array
+  * Array#select!, Array#keep_if, Array#reject!, and Array#delete_if
+    no longer changes the receiver array instantly every time the
+    block is called.
+
 === Stdlib updates (outstanding ones only)
 
 * CSV
