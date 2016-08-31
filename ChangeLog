@@ -1,3 +1,9 @@
+Wed Aug 31 17:39:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (create_makefile): make gem.build_complete file
+	  under TARGET_SO_DIR and install it only when the gem build
+	  succeeded.  [ruby-core:77057] [Bug #12681]
+
 Wed Aug 31 15:36:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: move TARGET_SO_DIR stuffs to mkmf.rb.

@@ -766,7 +766,6 @@ install?(:ext, :comm, :gem) do
     File.chmod($data_mode, File.join(install_dir, "specifications", "#{spec.full_name}.gemspec"))
     unless spec.extensions.empty?
       install_recursive(ext, spec.extension_dir)
-      open_for_install(spec.gem_build_complete_path, $data_mode) {""}
     end
     installed_gems[spec.full_name] = true
   end

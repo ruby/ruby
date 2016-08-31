@@ -568,6 +568,24 @@ Dir.chdir('..')
 FileUtils::makedirs('gems')
 Dir.chdir('gems')
 extout = $extout
+unless gems.empty?
+  def self.create_makefile(*args, &block)
+    if super(*args, &block)
+      open("Makefile", "a") do |mf|
+        mf << %{
+
+build_complete = $(TARGET_SO_DIR)gem.build_complete
+install-so: build_complete
+build_complete: $(build_complete)
+$(build_complete): $(TARGET_SO)
+	$(Q) $(TOUCH) $@
+
+}
+      end
+      true
+    end
+  end
+end
 gems.each do |d|
   $extout = extout.dup
   $sodir = "$(extout)/gems/$(arch)/#{d[%r{\A[^/]+}]}"
