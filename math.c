@@ -992,8 +992,10 @@ InitVM_Math(void)
 #ifdef M_PI
     /*  Definition of the mathematical constant PI as a Float number. */
     rb_define_const(rb_mMath, "PI", DBL2NUM(M_PI));
+    rb_define_const(rb_mMath, "TAU", DBL2NUM(M_PI*2.0));
 #else
     rb_define_const(rb_mMath, "PI", DBL2NUM(atan(1.0)*4.0));
+    rb_define_const(rb_mMath, "TAU", DBL2NUM(atan(1.0)*8.0));
 #endif
 
 #ifdef M_E

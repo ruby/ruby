@@ -9,6 +9,7 @@ require 'bigdecimal'
 #   cos (x, prec)
 #   atan(x, prec)  Note: |x|<1, x=0.9999 may not converge.
 #   PI  (prec)
+#   TAU (prec) == PI(prec)*2
 #   E   (prec) == exp(1.0,prec)
 #
 # where:
@@ -214,6 +215,20 @@ module BigMath
       k   = k+two
     end
     pi
+  end
+
+  # call-seq:
+  #   TAU(numeric) -> BigDecimal
+  #
+  # Computes the value of tau (2 * pi) to the specified number of digits of precision,
+  # +numeric+.
+  #
+  #   BigMath.TAU(10).to_s
+  #   #=> "0.6283185307179586476925286777627707573914824E1"
+  #
+  def TAU(prec)
+    raise ArgumentError, "Zero or negative precision for TAU" if prec <= 0
+    PI(prec) * BigDecimal("2")
   end
 
   # call-seq:
