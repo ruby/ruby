@@ -541,10 +541,12 @@ end
 
 FileUtils.makedirs('gems')
 ext_prefix = "#$top_srcdir/gems"
-gems = Dir.glob("#{ext_prefix}/**/extconf.rb").collect {|d|
+gems = Dir.glob(File.join(ext_prefix, ($extension || ''), '**/extconf.rb')).collect {|d|
   d = File.dirname(d)
   d.slice!(0, ext_prefix.length + 1)
   d
+}.find_all {|ext|
+  with_config(ext, &cond)
 }.sort
 
 dir = Dir.pwd
