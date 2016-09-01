@@ -1,3 +1,10 @@
+Thu Sep  1 14:24:16 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (gems): move dirty hacks for bundled gems from
+	  mkmf.rb.
+
+	* lib/mkmf.rb (create_makefile): yield all configuration strings.
+
 Wed Aug 31 17:39:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (create_makefile): make gem.build_complete file

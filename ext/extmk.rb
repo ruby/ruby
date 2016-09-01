@@ -569,10 +569,22 @@ FileUtils::makedirs('gems')
 Dir.chdir('gems')
 extout = $extout
 unless gems.empty?
+  def self.timestamp_file(name, target_prefix = nil)
+    name = @sodir if name == '$(TARGET_SO_DIR)'
+    super
+  end
+
   def self.create_makefile(*args, &block)
-    if super(*args, &block)
-      open("Makefile", "a") do |mf|
-        mf << %{
+    super(*args) do |conf|
+      conf.find do |s|
+        s.sub!(/^(TARGET_SO_DIR *= *)\$\(RUBYARCHDIR\)/) {
+          $1 + @sodir
+        }
+      end
+      conf << %{
+
+# default target
+all:
 
 build_complete = $(TARGET_SO_DIR)gem.build_complete
 install-so: build_complete
@@ -581,14 +593,12 @@ $(build_complete): $(TARGET_SO)
 	$(Q) $(TOUCH) $@
 
 }
-      end
-      true
     end
   end
 end
 gems.each do |d|
   $extout = extout.dup
-  $sodir = "$(extout)/gems/$(arch)/#{d[%r{\A[^/]+}]}"
+  @sodir = "$(extout)/gems/$(arch)/#{d[%r{\A[^/]+}]}"
   extmake(d, 'gems')
 end
 $extout = extout

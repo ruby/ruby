@@ -2260,11 +2260,8 @@ RULES
 
     dllib = target ? "$(TARGET).#{CONFIG['DLEXT']}" : ""
     staticlib = target ? "$(TARGET).#$LIBEXT" : ""
-    mfile = open("Makefile", "wb")
     conf = configuration(srcprefix)
-    conf = yield(conf) if block_given?
-    mfile.puts(conf)
-    mfile.print "
+    conf << "\
 libpath = #{($DEFLIBPATH|$LIBPATH).join(" ")}
 LIBPATH = #{libpath}
 DEFFILE = #{deffile}
@@ -2293,17 +2290,20 @@ STATIC_LIB = #{staticlib unless $static.nil?}
 TIMESTAMP_DIR = #{$extout ? '$(extout)/.timestamp' : '.'}
 " #"
     # TODO: fixme
-    install_dirs.each {|d| mfile.print("%-14s= %s\n" % d) if /^[[:upper:]]/ =~ d[0]}
-    sodir = !$extout ? '' :
-            $sodir ? $sodir+target_prefix :
-            '$(RUBYARCHDIR)'
+    install_dirs.each {|d| conf << ("%-14s= %s\n" % d) if /^[[:upper:]]/ =~ d[0]}
+    sodir = $extout ? '$(TARGET_SO_DIR)' : '$(RUBYARCHDIR)'
     n = '$(TARGET_SO_DIR)$(TARGET)'
-    mfile.print "
-TARGET_SO_DIR =#{(sodir && !sodir.empty? ? " #{sodir}/" : '')}
+    conf << "\
+TARGET_SO_DIR =#{$extout ? " $(RUBYARCHDIR)/" : ''}
 TARGET_SO     = $(TARGET_SO_DIR)$(DLLIB)
 CLEANLIBS     = $(TARGET_SO) #{config_string('cleanlibs') {|t| t.gsub(/\$\*/) {n}}}
 CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, "$(TARGET)#{deffile ? '-$(arch)': ''}")} if target} *.bak
+" #"
 
+    conf = yield(conf) if block_given?
+    mfile = open("Makefile", "wb")
+    mfile.puts(conf)
+    mfile.print "
 all:    #{$extout ? "install" : target ? "$(DLLIB)" : "Makefile"}
 static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{!$extmk ? " install-rb" : ""}"}
 .PHONY: all install static install-so install-rb
@@ -2339,7 +2339,7 @@ static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{!$extmk ? " install-rb" :
         mfile.print "\t-$(Q)$(RMDIRS) #{fseprepl[dir]}#{$ignore_error}\n"
       else
         mfile.print "#{f} #{stamp}\n"
-        mfile.print "\t$(INSTALL_PROG) #{fseprepl[f]} $(RUBYARCHDIR)\n"
+        mfile.print "\t$(INSTALL_PROG) #{fseprepl[f]} #{dir}\n"
         if defined?($installed_list)
           mfile.print "\t@echo #{dir}/#{File.basename(f)}>>$(INSTALLED_LIST)\n"
         end
