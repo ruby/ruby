@@ -418,16 +418,16 @@ install?(:doc, :capi) do
   install_recursive "doc/capi", docdir+"/capi", :mode => $data_mode
 end
 
-if load_relative
+if load_relative or /\s/ =~ bindir
   PROLOG_SCRIPT = <<EOS
 #!/bin/sh\n# -*- ruby -*-
-bindir="${0%/*}"
+bindir="#{load_relative ? '${0%/*}' : bindir.gsub(/\"/, '\\\\"')}"
 EOS
   if CONFIG["LIBRUBY_RELATIVE"] != 'yes' and libpathenv = CONFIG["LIBPATHENV"]
     pathsep = File::PATH_SEPARATOR
     PROLOG_SCRIPT << <<EOS
-prefix="${bindir%/bin}"
-export #{libpathenv}="$prefix/lib${#{libpathenv}:+#{pathsep}$#{libpathenv}}"
+libdir="#{load_relative ? '${bindir%/bin}/lib' : libdir.gsub(/\"/, '\\\\"')}"
+export #{libpathenv}="$libdir${#{libpathenv}:+#{pathsep}$#{libpathenv}}"
 EOS
   end
   PROLOG_SCRIPT << %Q[exec "$bindir/#{ruby_install_name}" -x "$0" "$@"\n]
