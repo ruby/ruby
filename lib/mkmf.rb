@@ -2019,7 +2019,7 @@ preload = #{defined?($preload) && $preload ? $preload.join(' ') : ''}
   end
 
   def timestamp_file(name, target_prefix = nil)
-    pat = {}
+    pat = {'TARGET_SO_DIR'=>'$(RUBYARCHDIR)'}
     install_dirs.each do |n, d|
       pat[n] = $` if /\$\(target_prefix\)\z/ =~ d
     end
