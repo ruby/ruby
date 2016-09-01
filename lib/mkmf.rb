@@ -2019,12 +2019,13 @@ preload = #{defined?($preload) && $preload ? $preload.join(' ') : ''}
   end
 
   def timestamp_file(name, target_prefix = nil)
-    pat = {'TARGET_SO_DIR'=>'$(RUBYARCHDIR)'}
+    pat = {}
+    name = '$(RUBYARCHDIR)' if name == '$(TARGET_SO_DIR)'
     install_dirs.each do |n, d|
       pat[n] = $` if /\$\(target_prefix\)\z/ =~ d
     end
     name = name.gsub(/\$\((#{pat.keys.join("|")})\)/) {pat[$1]+target_prefix}
-    name.sub!(/\A\$\(extout\)\//, '')
+    name.sub!(/\A\$\((?:extout|RUBYCOMMONDIR)\)\/*/, '')
     name.sub!(/(\$\((?:site)?arch\))\/*/, '')
     arch = $1 || ''
     name = name.gsub(/(\$[({]|[})])|(\/+)|[^-.\w]+/) {$1 ? "" : $2 ? ".-." : "_"}
