@@ -694,18 +694,6 @@ unless $destdir.to_s.empty?
 end
 $makeflags.uniq!
 
-if $nmake == ?b
-  unless (vars = $mflags.grep(/\A\w+=/n)).empty?
-    open(mkf = "libruby.mk", "wb") do |tmf|
-      tmf.puts("!include Makefile")
-      tmf.puts
-      tmf.puts(*vars.map {|v| v.sub(/\=/, " = ")})
-      tmf.puts("PRE_LIBRUBY_UPDATE = del #{mkf}")
-    end
-    $mflags.unshift("-f#{mkf}")
-    vars.each {|flag| flag.sub!(/\A/, "-D")}
-  end
-end
 $mflags.unshift("topdir=#$topdir")
 ENV.delete("RUBYOPT")
 if $configure_only and $command_output

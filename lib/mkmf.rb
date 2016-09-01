@@ -2015,15 +2015,6 @@ TOUCH = exit >
 
 preload = #{defined?($preload) && $preload ? $preload.join(' ') : ''}
 }
-    if $nmake == ?b
-      mk.each do |x|
-        x.gsub!(/^(MAKEDIRS|INSTALL_(?:PROG|DATA))+\s*=.*\n/) do
-          "!ifndef " + $1 + "\n" +
-          $& +
-          "!endif\n"
-        end
-      end
-    end
     mk
   end
 
@@ -2425,7 +2416,6 @@ site-install-rb: install-rb
 
     return unless target
 
-    mfile.puts SRC_EXT.collect {|e| ".path.#{e} = $(VPATH)"} if $nmake == ?b
     mfile.print ".SUFFIXES: .#{(SRC_EXT + [$OBJEXT, $ASMEXT]).compact.join(' .')}\n"
     mfile.print "\n"
 
