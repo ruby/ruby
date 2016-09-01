@@ -1,3 +1,9 @@
+Fri Sep  2 00:55:11 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (timestamp_file): move extmk.rb specific tricks
+	  from lib/mkmf.rb.  keep RUBYCOMMONDIR prefix not to conflict
+	  with a timestamp file in the toplevel.
+
 Thu Sep  1 14:24:16 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (gems): move dirty hacks for bundled gems from

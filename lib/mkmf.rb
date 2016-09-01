@@ -2025,9 +2025,9 @@ preload = #{defined?($preload) && $preload ? $preload.join(' ') : ''}
       pat[n] = $` if /\$\(target_prefix\)\z/ =~ d
     end
     name = name.gsub(/\$\((#{pat.keys.join("|")})\)/) {pat[$1]+target_prefix}
-    name.sub!(/\A\$\((?:extout|RUBYCOMMONDIR)\)\/*/, '')
     name.sub!(/(\$\((?:site)?arch\))\/*/, '')
     arch = $1 || ''
+    name.chomp!('/')
     name = name.gsub(/(\$[({]|[})])|(\/+)|[^-.\w]+/) {$1 ? "" : $2 ? ".-." : "_"}
     File.join("$(TIMESTAMP_DIR)", arch, "#{name.sub(/\A(?=.)/, '.')}.time")
   end

@@ -548,6 +548,12 @@ gems = Dir.glob(File.join(ext_prefix, ($extension || ''), '**/extconf.rb')).coll
   with_config(ext, &cond)
 }.sort
 
+extend Module.new {
+  def timestamp_file(name, target_prefix = nil)
+    super.sub(%r[/\.extout\.(?:-\.)?], '/.')
+  end
+}
+
 dir = Dir.pwd
 FileUtils::makedirs('ext')
 Dir::chdir('ext')
@@ -570,7 +576,7 @@ Dir.chdir('gems')
 extout = $extout
 unless gems.empty?
   def self.timestamp_file(name, target_prefix = nil)
-    name = @sodir if name == '$(TARGET_SO_DIR)'
+    name = "$(arch)/gems/#{@gemname}" if name == '$(TARGET_SO_DIR)'
     super
   end
 
@@ -578,7 +584,7 @@ unless gems.empty?
     super(*args) do |conf|
       conf.find do |s|
         s.sub!(/^(TARGET_SO_DIR *= *)\$\(RUBYARCHDIR\)/) {
-          $1 + @sodir
+          "#{$1}$(extout)/gems/$(arch)/#{@gemname}"
         }
       end
       conf << %{
@@ -598,7 +604,7 @@ $(build_complete): $(TARGET_SO)
 end
 gems.each do |d|
   $extout = extout.dup
-  @sodir = "$(extout)/gems/$(arch)/#{d[%r{\A[^/]+}]}"
+  @gemname = d[%r{\A[^/]+}]
   extmake(d, 'gems')
 end
 $extout = extout
