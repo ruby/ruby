@@ -812,8 +812,8 @@ struct MEMO {
     } u3;
 };
 
-#define MEMO_V1_SET(m, v) RB_OBJ_WRITE((memo), &(memo)->v1, (v))
-#define MEMO_V2_SET(m, v) RB_OBJ_WRITE((memo), &(memo)->v2, (v))
+#define MEMO_V1_SET(m, v) RB_OBJ_WRITE((m), &(m)->v1, (v))
+#define MEMO_V2_SET(m, v) RB_OBJ_WRITE((m), &(m)->v2, (v))
 
 #define MEMO_CAST(m) ((struct MEMO *)m)
 

@@ -1,3 +1,8 @@
+Fri Sep  2 16:06:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (MEMO_V1_SET, MEMO_V2_SET): fix typos.  use the macro
+	  parameter, not the local variable.
+
 Fri Sep  2 00:55:11 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (timestamp_file): move extmk.rb specific tricks
