@@ -1,3 +1,8 @@
+Sun Sep  4 00:17:55 2016  Sho Hashimoto  <sho-h@ruby-lang.org>
+
+	* proc.c: [DOC] fix Object#define_singleton_method and
+	  main.define_method return value. [ci skip]
+
 Sat Sep  3 11:28:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_pthread.c (ruby_init_stack): check stack bounds even if
