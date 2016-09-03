@@ -749,7 +749,7 @@ ruby_init_stack(volatile VALUE *addr
 	    native_main_thread.stack_maxsize = size;
 	    native_main_thread.stack_start = stackaddr;
 	    reserve_stack(stackaddr, size);
-	    return;
+	    goto bound_check;
 	}
     }
 #endif
@@ -797,6 +797,9 @@ ruby_init_stack(volatile VALUE *addr
 #endif
     }
 
+#if MAINSTACKADDR_AVAILABLE
+  bound_check:
+#endif
     /* If addr is out of range of main-thread stack range estimation,  */
     /* it should be on co-routine (alternative stack). [Feature #2294] */
     {

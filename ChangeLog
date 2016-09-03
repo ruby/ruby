@@ -1,3 +1,9 @@
+Sat Sep  3 11:28:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_pthread.c (ruby_init_stack): check stack bounds even if
+	  get_main_stack succeeded, on the "co-routine" case.
+	  https://github.com/ruby/ruby/commit/53953ee#commitcomment-18887413
+
 Fri Sep  2 16:06:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* internal.h (MEMO_V1_SET, MEMO_V2_SET): fix typos.  use the macro
