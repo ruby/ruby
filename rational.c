@@ -89,7 +89,9 @@ f_lt_p(VALUE x, VALUE y)
     return rb_funcall(x, '<', 1, y);
 }
 
+#ifndef NDEBUG
 binop(mod, '%')
+#endif
 
 inline static VALUE
 f_mul(VALUE x, VALUE y)
