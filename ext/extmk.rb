@@ -576,7 +576,7 @@ Dir.chdir('gems')
 extout = $extout
 unless gems.empty?
   def self.timestamp_file(name, target_prefix = nil)
-    name = "$(arch)/gems/#{@gemname}$(target_prefix)" if name == '$(TARGET_SO_DIR)'
+    name = "$(arch)/gems/#{@gemname}#{target_prefix}" if name == '$(TARGET_SO_DIR)'
     super
   end
 
