@@ -755,7 +755,11 @@ install?(:ext, :comm, :gem) do
   }
   gem_ext_dir = "#$extout/gems/#{CONFIG['arch']}"
   extensions_dir = Gem::StubSpecification.gemspec_stub("", gem_dir, gem_dir).extensions_dir
-  Gem::Specification.each_spec([srcdir+'/gems/*']) do |spec|
+  Gem::Specification.each_gemspec([srcdir+'/gems/*']) do |path|
+    dir = File.dirname(path)
+    spec = Dir.chdir(dir) {
+      Gem::Specification.load(File.basename(path))
+    }
     spec.extension_dir = "#{extensions_dir}/#{spec.full_name}"
     if File.directory?(ext = "#{gem_ext_dir}/#{spec.full_name}")
       spec.extensions[0] ||= "-"
