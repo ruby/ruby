@@ -576,7 +576,7 @@ Dir.chdir('gems')
 extout = $extout
 unless gems.empty?
   def self.timestamp_file(name, target_prefix = nil)
-    name = "$(arch)/gems/#{@gemname}" if name == '$(TARGET_SO_DIR)'
+    name = "$(arch)/gems/#{@gemname}$(target_prefix)" if name == '$(TARGET_SO_DIR)'
     super
   end
 
@@ -584,7 +584,7 @@ unless gems.empty?
     super(*args) do |conf|
       conf.find do |s|
         s.sub!(/^(TARGET_SO_DIR *= *)\$\(RUBYARCHDIR\)/) {
-          "#{$1}$(extout)/gems/$(arch)/#{@gemname}"
+          "#{$1}$(extout)/gems/$(arch)/#{@gemname}$(target_prefix)"
         }
       end
       conf << %{
