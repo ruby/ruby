@@ -588,7 +588,7 @@ unless gems.empty?
           "#{$1}$(TARGET_GEM_DIR)$(target_prefix)"
         }
       end
-      conf << %{
+      conf.any? {|s| /^TARGET *= *\S/ =~ s} and conf << %{
 
 # default target
 all:
@@ -600,6 +600,7 @@ $(build_complete): $(TARGET_SO)
 	$(Q) $(TOUCH) $@
 
 }
+      conf
     end
   end
 end
