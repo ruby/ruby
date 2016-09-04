@@ -584,7 +584,8 @@ unless gems.empty?
     super(*args) do |conf|
       conf.find do |s|
         s.sub!(/^(TARGET_SO_DIR *= *)\$\(RUBYARCHDIR\)/) {
-          "#{$1}$(extout)/gems/$(arch)/#{@gemname}$(target_prefix)"
+          "TARGET_GEM_DIR = $(extout)/gems/$(arch)/#{@gemname}\n"\
+          "#{$1}$(TARGET_GEM_DIR)$(target_prefix)"
         }
       end
       conf << %{
@@ -592,7 +593,7 @@ unless gems.empty?
 # default target
 all:
 
-build_complete = $(TARGET_SO_DIR)gem.build_complete
+build_complete = $(TARGET_GEM_DIR)/gem.build_complete
 install-so: build_complete
 build_complete: $(build_complete)
 $(build_complete): $(TARGET_SO)
