@@ -1,7 +1,66 @@
+# -*- encoding: utf-8 -*-
+$:.push File.expand_path("../lib", __FILE__)
+require 'rdoc'
+
 Gem::Specification.new do |s|
   s.name = "rdoc"
-  s.version = "4.2.1"
-  s.summary = "This rdoc is bundled with Ruby"
+  s.version = RDoc::VERSION
+
+  s.required_rubygems_version = Gem::Requirement.new(">= 1.3") if
+    s.respond_to? :required_rubygems_version=
+
+  s.require_paths = ["lib"]
+  s.authors = [
+    "Eric Hodel",
+    "Dave Thomas",
+    "Phil Hagelberg",
+    "Tony Strauss",
+    "Zachary Scott"
+  ]
+
+  s.description = <<-DESCRIPTION
+RDoc produces HTML and command-line documentation for Ruby projects.
+RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentation from the command-line.
+  DESCRIPTION
+
+  s.email = ["drbrain@segment7.net", "mail@zzak.io"]
+
   s.executables = ["rdoc", "ri"]
-  s.files = ["rdoc.rb", "rdoc/alias.rb", "rdoc/anon_class.rb", "rdoc/any_method.rb", "rdoc/attr.rb", "rdoc/class_module.rb", "rdoc/code_object.rb", "rdoc/code_objects.rb", "rdoc/comment.rb", "rdoc/constant.rb", "rdoc/context.rb", "rdoc/context/section.rb", "rdoc/cross_reference.rb", "rdoc/encoding.rb", "rdoc/erb_partial.rb", "rdoc/erbio.rb", "rdoc/extend.rb", "rdoc/generator.rb", "rdoc/generator/darkfish.rb", "rdoc/generator/json_index.rb", "rdoc/generator/markup.rb", "rdoc/generator/pot.rb", "rdoc/generator/pot/message_extractor.rb", "rdoc/generator/pot/po.rb", "rdoc/generator/pot/po_entry.rb", "rdoc/generator/ri.rb", "rdoc/ghost_method.rb", "rdoc/i18n.rb", "rdoc/i18n/locale.rb", "rdoc/i18n/text.rb", "rdoc/include.rb", "rdoc/known_classes.rb", "rdoc/markdown.rb", "rdoc/markdown/entities.rb", "rdoc/markdown/literals_1_9.rb", "rdoc/markup.rb", "rdoc/markup/attr_changer.rb", "rdoc/markup/attr_span.rb", "rdoc/markup/attribute_manager.rb", "rdoc/markup/attributes.rb", "rdoc/markup/blank_line.rb", "rdoc/markup/block_quote.rb", "rdoc/markup/document.rb", "rdoc/markup/formatter.rb", "rdoc/markup/formatter_test_case.rb", "rdoc/markup/hard_break.rb", "rdoc/markup/heading.rb", "rdoc/markup/include.rb", "rdoc/markup/indented_paragraph.rb", "rdoc/markup/inline.rb", "rdoc/markup/list.rb", "rdoc/markup/list_item.rb", "rdoc/markup/paragraph.rb", "rdoc/markup/parser.rb", "rdoc/markup/pre_process.rb", "rdoc/markup/raw.rb", "rdoc/markup/rule.rb", "rdoc/markup/special.rb", "rdoc/markup/text_formatter_test_case.rb", "rdoc/markup/to_ansi.rb", "rdoc/markup/to_bs.rb", "rdoc/markup/to_html.rb", "rdoc/markup/to_html_crossref.rb", "rdoc/markup/to_html_snippet.rb", "rdoc/markup/to_joined_paragraph.rb", "rdoc/markup/to_label.rb", "rdoc/markup/to_markdown.rb", "rdoc/markup/to_rdoc.rb", "rdoc/markup/to_table_of_contents.rb", "rdoc/markup/to_test.rb", "rdoc/markup/to_tt_only.rb", "rdoc/markup/verbatim.rb", "rdoc/meta_method.rb", "rdoc/method_attr.rb", "rdoc/mixin.rb", "rdoc/normal_class.rb", "rdoc/normal_module.rb", "rdoc/options.rb", "rdoc/parser.rb", "rdoc/parser/c.rb", "rdoc/parser/changelog.rb", "rdoc/parser/markdown.rb", "rdoc/parser/rd.rb", "rdoc/parser/ruby.rb", "rdoc/parser/ruby_tools.rb", "rdoc/parser/simple.rb", "rdoc/parser/text.rb", "rdoc/rd.rb", "rdoc/rd/block_parser.rb", "rdoc/rd/inline.rb", "rdoc/rd/inline_parser.rb", "rdoc/rdoc.rb", "rdoc/require.rb", "rdoc/ri.rb", "rdoc/ri/driver.rb", "rdoc/ri/formatter.rb", "rdoc/ri/paths.rb", "rdoc/ri/store.rb", "rdoc/ri/task.rb", "rdoc/ruby_lex.rb", "rdoc/ruby_token.rb", "rdoc/rubygems_hook.rb", "rdoc/servlet.rb", "rdoc/single_class.rb", "rdoc/stats.rb", "rdoc/stats/normal.rb", "rdoc/stats/quiet.rb", "rdoc/stats/verbose.rb", "rdoc/store.rb", "rdoc/task.rb", "rdoc/test_case.rb", "rdoc/text.rb", "rdoc/token_stream.rb", "rdoc/tom_doc.rb", "rdoc/top_level.rb"]
+
+  s.extra_rdoc_files += %w[
+    CVE-2013-0256.rdoc
+    CONTRIBUTING.rdoc
+    ExampleMarkdown.md
+    ExampleRDoc.rdoc
+    History.rdoc
+    LEGAL.rdoc
+    LICENSE.rdoc
+    README.rdoc
+    RI.rdoc
+    TODO.rdoc
+  ]
+
+  s.files = File.readlines("Manifest.txt").map { |l| l.gsub("\n",'') }
+
+  s.homepage = "http://docs.seattlerb.org/rdoc"
+  s.licenses = ["Ruby"]
+  s.post_install_message = <<-MESSAGE
+Depending on your version of ruby, you may need to install ruby rdoc/ri data:
+
+<= 1.8.6 : unsupported
+ = 1.8.7 : gem install rdoc-data; rdoc-data --install
+ = 1.9.1 : gem install rdoc-data; rdoc-data --install
+>= 1.9.2 : nothing to do! Yay!
+  MESSAGE
+
+  s.rdoc_options = ["--main", "README.rdoc"]
+  s.required_ruby_version = Gem::Requirement.new(">= 1.8.7")
+  s.rubygems_version = "2.5.2"
+  s.summary = "RDoc produces HTML and command-line documentation for Ruby projects"
+
+  s.add_runtime_dependency("json", "~> 1.4")
+  s.add_development_dependency("rake", "~> 10.5")
+  s.add_development_dependency("racc", "~> 1.4", "> 1.4.10")
+  s.add_development_dependency("kpeg", "~> 0.9")
+  s.add_development_dependency("minitest", "~> 4")
 end

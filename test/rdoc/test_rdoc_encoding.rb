@@ -217,6 +217,45 @@ class TestRDocEncoding < RDoc::TestCase
     end
   end
 
+  def test_skip_frozen_string_literal
+    skip "Encoding not implemented" unless Object.const_defined? :Encoding
+
+    expected = "# frozen_string_literal: false\nhi everybody"
+
+    @tempfile.write expected
+    @tempfile.flush
+
+    contents = RDoc::Encoding.read_file @tempfile.path, Encoding::UTF_8
+    assert_equal "hi everybody", contents
+    assert_equal Encoding::UTF_8, contents.encoding
+  end
+
+  def test_skip_frozen_string_literal_after_coding
+    skip "Encoding not implemented" unless Object.const_defined? :Encoding
+
+    expected = "# coding: utf-8\n# frozen-string-literal: false\nhi everybody"
+
+    @tempfile.write expected
+    @tempfile.flush
+
+    contents = RDoc::Encoding.read_file @tempfile.path, Encoding::UTF_8
+    assert_equal "hi everybody", contents
+    assert_equal Encoding::UTF_8, contents.encoding
+  end
+
+  def test_skip_frozen_string_literal_before_coding
+    skip "Encoding not implemented" unless Object.const_defined? :Encoding
+
+    expected = "# frozen_string_literal: false\n# coding: utf-8\nhi everybody"
+
+    @tempfile.write expected
+    @tempfile.flush
+
+    contents = RDoc::Encoding.read_file @tempfile.path, Encoding::UTF_8
+    assert_equal "hi everybody", contents
+    assert_equal Encoding::UTF_8, contents.encoding
+  end
+
   def test_sanity
     skip "Encoding not implemented" unless Object.const_defined? :Encoding
 

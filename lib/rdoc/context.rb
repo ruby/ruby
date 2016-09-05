@@ -789,7 +789,9 @@ class RDoc::Context < RDoc::CodeObject
   # Finds a constant with +name+ in this context
 
   def find_constant_named(name)
-    @constants.find {|m| m.name == name}
+    @constants.find do |m|
+      m.name == name || m.full_name == name
+    end
   end
 
   ##

@@ -907,22 +907,9 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
   # will be expanded to Zlib::DataError.
 
   def expand_class klass
-    klass.split('::').inject '' do |expanded, klass_part|
-      expanded << '::' unless expanded.empty?
-      short = expanded << klass_part
-
-      subset = classes.keys.select do |klass_name|
-        klass_name =~ /^#{expanded}[^:]*$/
-      end
-
-      abbrevs = Abbrev.abbrev subset
-
-      expanded = abbrevs[short]
-
-      raise NotFoundError, short unless expanded
-
-      expanded.dup
-    end
+    ary = classes.keys.grep(Regexp.new("\\A#{klass.gsub(/(?=::|\z)/, '[^:]*')}\\z"))
+    raise NotFoundError, klass if ary.length != 1
+    ary.first
   end
 
   ##

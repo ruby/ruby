@@ -1,3 +1,9 @@
+Mon Sep  5 19:35:22 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rdoc/*, test/rdoc/*: Update rdoc/rdoc master(f191513)
+	  https://github.com/rdoc/rdoc/blob/master/History.rdoc#423--2016--
+	  https://github.com/rdoc/rdoc/blob/master/History.rdoc#422--2016-02-09
+
 Sun Sep  4 00:17:55 2016  Sho Hashimoto  <sho-h@ruby-lang.org>
 
 	* proc.c: [DOC] fix Object#define_singleton_method and

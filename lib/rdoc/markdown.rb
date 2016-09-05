@@ -1,5 +1,4 @@
 # coding: UTF-8
-# frozen_string_literal: false
 # :markup: markdown
 
 ##
@@ -15,7 +14,7 @@
 #
 #     data = File.read("README.md")
 #     formatter = RDoc::Markup::ToHtml.new(RDoc::Options.new, nil)
-#     html = RDoc::Markdown.parse(data).accept(@formatter)
+#     html = RDoc::Markdown.parse(data).accept(formatter)
 #
 #     # do something with html
 #
@@ -447,8 +446,6 @@ class RDoc::Markdown
         else
           return ans
         end
-
-        return ans
       end
     end
 
@@ -481,8 +478,6 @@ class RDoc::Markdown
         else
           return ans
         end
-
-        return ans
       end
     end
 
@@ -15290,7 +15285,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      @result = begin;
+      @result = begin; 
                ref = [:inline, @note_order.length]
                @footnotes[ref] = paragraph a
 

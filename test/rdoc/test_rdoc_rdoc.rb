@@ -300,6 +300,7 @@ class TestRDocRDoc < RDoc::TestCase
       blah.eps
       blah.erb
       blah.scpt.txt
+      blah.svg
       blah.ttf
       blah.yml
     ]

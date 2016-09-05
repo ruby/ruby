@@ -417,7 +417,7 @@ class TestRDocContext < XrefTestCase
   def bench_add_include
     cm = RDoc::ClassModule.new 'Klass'
 
-    assert_performance_linear 0.9 do |count|
+    assert_performance_linear 0.5 do |count|
       count.times do |i|
         cm.add_include RDoc::Include.new("N::M#{i}", nil)
       end

@@ -74,10 +74,21 @@ module RDoc::Encoding
     nil
   end
 
+  def self.remove_frozen_string_literal string
+    string =~ /\A(?:#!.*\n)?(.*\n)/
+    first_line = $1
+
+    if first_line =~ /\A# +frozen[-_]string[-_]literal[=:].+$/i
+      string.sub! first_line, ''
+    end
+  end
+
   ##
   # Sets the encoding of +string+ based on the magic comment
 
   def self.set_encoding string
+    remove_frozen_string_literal string
+
     string =~ /\A(?:#!.*\n)?(.*\n)/
 
     first_line = $1
@@ -89,6 +100,8 @@ module RDoc::Encoding
            end
 
     string.sub! first_line, ''
+
+    remove_frozen_string_literal string
 
     return unless Object.const_defined? :Encoding
 
