@@ -761,6 +761,7 @@ install?(:ext, :comm, :gem) do
       Gem::Specification.load(File.basename(path))
     }
     next unless spec.platform == Gem::Platform::RUBY
+    next unless spec.full_name == path[srcdir.size..-1][/\A\/gems\/([^\/]+)/, 1]
     spec.extension_dir = "#{extensions_dir}/#{spec.full_name}"
     if File.directory?(ext = "#{gem_ext_dir}/#{spec.full_name}")
       spec.extensions[0] ||= "-"
