@@ -298,6 +298,7 @@ module URI
     # replacing them with codes.
     #
     def escape(str, unsafe = @regexp[:UNSAFE])
+      return "" unless str # str = nil
       unless unsafe.kind_of?(Regexp)
         # perhaps unsafe is String object
         unsafe = Regexp.new("[#{Regexp.quote(unsafe)}]", false)
