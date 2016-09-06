@@ -1,3 +1,8 @@
+Tue Sep  6 09:23:06 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rdoc/rdoc.gemspec: partly reverted for default gem installer.
+	  upstream configuration is not working on ruby core repository.
+
 Mon Sep  5 19:35:22 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rdoc/*, test/rdoc/*: Update rdoc/rdoc master(f191513)
