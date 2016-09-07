@@ -60,7 +60,7 @@ module Timeout
   #         value of 0 or +nil+ will execute the block without any timeout.
   # +klass+:: Exception Class to raise if the block fails to terminate
   #           in +sec+ seconds.  Omitting will use the default, Timeout::Error
-  # +message+:: Error message to rasise with Exception Class.
+  # +message+:: Error message to raise with Exception Class.
   #             Omitting will use the default, "execution expired"
   #
   # Returns the result of the block *if* the block completed before
