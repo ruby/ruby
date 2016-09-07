@@ -1,3 +1,7 @@
+Wed Sep  7 14:50:01 2016  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* gems/bundled_gems: update to power_assert 0.3.1.
+
 Wed Sep  7 12:16:09 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/psych/*, test/psych/*: Update psych-2.1.1
