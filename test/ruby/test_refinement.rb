@@ -1624,6 +1624,55 @@ class TestRefinement < Test::Unit::TestCase
       MethodMissing.call_undefined_method
     end
   end
+  
+  module VisibleRefinements
+    module RefA
+      refine Object do
+        def in_ref_a
+        end
+      end
+    end
+
+    module RefB
+      refine Object do
+        def in_ref_b
+        end
+      end
+    end
+
+    module RefC
+      using RefA
+      
+      refine Object do
+        def in_ref_c
+        end
+      end
+    end
+
+    module Foo
+      using RefB
+      USED_REFS = Module.used_refinements
+    end
+
+    module Bar
+      using RefC
+      USED_REFS = Module.used_refinements
+    end
+    
+    module Combined
+      using RefA
+      using RefB
+      USED_REFS = Module.used_refinements
+    end
+  end
+
+  def test_used_refinements
+    ref = VisibleRefinements
+    assert_equal [], Module.used_refinements
+    assert_equal [ref::RefB], ref::Foo::USED_REFS
+    assert_equal [ref::RefC], ref::Bar::USED_REFS
+    assert_equal [ref::RefB, ref::RefA], ref::Combined::USED_REFS
+  end
 
   private
 

@@ -1311,6 +1311,59 @@ mod_using(VALUE self, VALUE module)
     return self;
 }
 
+static int
+used_refinements_i(VALUE _, VALUE mod, VALUE ary)
+{
+    ID id_defined_at;
+    CONST_ID(id_defined_at, "__defined_at__");
+    while (FL_TEST(rb_class_of(mod), RMODULE_IS_REFINEMENT)) {
+	rb_ary_push(ary, rb_attr_get(rb_class_of(mod), id_defined_at));
+	mod = RCLASS_SUPER(mod);
+    }
+    return ST_CONTINUE;
+}
+
+/*
+ *  call-seq:
+ *     used_refinements -> array
+ *
+ *  Returns an array of all active refinements in the current scope. The
+ *  ordering of modules in the resulting array is not defined.
+ *
+ *     module A
+ *       refine Object do
+ *       end
+ *     end
+ *
+ *     module B
+ *       refine Object do
+ *       end
+ *     end
+ *
+ *     using A
+ *     using B
+ *     p Module.used_refinements
+ *
+ *  <em>produces:</em>
+ *
+ *     [B, A]
+ */
+static VALUE
+rb_mod_s_used_refinements(void)
+{
+    const rb_cref_t *cref = rb_vm_cref();
+    VALUE ary = rb_ary_new();
+
+    while(cref) {
+	if(!NIL_P(CREF_REFINEMENTS(cref))) {
+	    rb_hash_foreach(CREF_REFINEMENTS(cref), used_refinements_i, ary);
+	}
+	cref = CREF_NEXT(cref);
+    }
+
+    return rb_funcall(ary, rb_intern("uniq"), 0);
+}
+
 void
 rb_obj_call_init(VALUE obj, int argc, const VALUE *argv)
 {
@@ -1645,6 +1698,8 @@ Init_eval(void)
     rb_define_private_method(rb_cModule, "prepend_features", rb_mod_prepend_features, 1);
     rb_define_private_method(rb_cModule, "refine", rb_mod_refine, 1);
     rb_define_private_method(rb_cModule, "using", mod_using, 1);
+    rb_define_singleton_method(rb_cModule, "used_refinements",
+			       rb_mod_s_used_refinements, 0);
     rb_undef_method(rb_cClass, "refine");
 
     rb_undef_method(rb_cClass, "module_function");

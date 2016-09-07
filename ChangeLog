@@ -1,3 +1,9 @@
+Thu Sep  8 01:12:47 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_mod_s_used_refinements): new method
+	  Module.used_refinements.  based on the patch by Charlie
+	  Somerville.  [Feature #7418] [ruby-core:49805]
+
 Wed Sep  7 17:50:38 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/util.h (setenv): remove POSIX-noncompliant
