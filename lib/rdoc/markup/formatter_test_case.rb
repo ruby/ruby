@@ -177,9 +177,6 @@ class RDoc::Markup::FormatterTestCase < RDoc::TestCase
       # Calls accept_heading_3 with a level 3 RDoc::Markup::Heading
 
       def test_accept_heading_3
-        # HACK this doesn't belong here
-        skip "No String#chars, upgrade your ruby" unless ''.respond_to? :chars
-
         @to.start_accepting
 
         @to.accept_heading @RM::Heading.new(3, 'Hello')
@@ -765,4 +762,3 @@ class RDoc::Markup::FormatterTestCase < RDoc::TestCase
   end
 
 end
-

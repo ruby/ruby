@@ -450,18 +450,12 @@ class RDoc::Store
   # inherit from Object, we have the above wrong inheritance.
   #
   # We fix BasicObject right away if we are running in a Ruby
-  # version >= 1.9. If not, we may be documenting 1.9 source
-  # while running under 1.8: we search the files of BasicObject
-  # for "object.c", and fix the inheritance if we find it.
+  # version >= 1.9.
 
   def fix_basic_object_inheritance
     basic = classes_hash['BasicObject']
     return unless basic
-    if RUBY_VERSION >= '1.9'
-      basic.superclass = nil
-    elsif basic.in_files.any? { |f| File.basename(f.full_name) == 'object.c' }
-      basic.superclass = nil
-    end
+    basic.superclass = nil
   end
 
   ##
@@ -977,4 +971,3 @@ class RDoc::Store
   end
 
 end
-

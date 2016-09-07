@@ -1,3 +1,9 @@
+Wed Sep  7 11:51:06 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rdoc/*, test/rdoc/*: Update rdoc-5.0.0.beta1
+	  This version is mostly same as r56072. It contains to remove code
+	  for Ruby 1.8
+
 Tue Sep  6 09:23:06 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rdoc/rdoc.gemspec: partly reverted for default gem installer.

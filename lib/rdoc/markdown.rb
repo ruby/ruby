@@ -526,11 +526,7 @@ class RDoc::Markdown
   require 'rdoc/markup/to_joined_paragraph'
   require 'rdoc/markdown/entities'
 
-  if RUBY_VERSION > '1.9' then
-    require 'rdoc/markdown/literals_1_9'
-  else
-    require 'rdoc/markdown/literals_1_8'
-  end
+  require 'rdoc/markdown/literals'
 
   ##
   # Supported extensions
