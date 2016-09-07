@@ -1,3 +1,8 @@
+Wed Sep  7 17:35:37 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* unicode/8.0.0/casefold.h, name2ctype.h, unicode/data/8.0.0:
+	  removing directories/files related to Unicode version 8.0.0
+
 Wed Sep  7 17:21:55 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/timeout.rb (Timeout#timeout): add custom error message
