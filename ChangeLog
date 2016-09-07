@@ -1,3 +1,10 @@
+Wed Sep  7 12:16:09 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/psych/*, test/psych/*: Update psych-2.1.1
+	  This version fixed following pull requests.
+	  https://github.com/tenderlove/psych/pull/284
+	  https://github.com/tenderlove/psych/pull/276
+
 Wed Sep  7 11:51:06 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rdoc/*, test/rdoc/*: Update rdoc-5.0.0.beta1
