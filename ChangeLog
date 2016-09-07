@@ -1,3 +1,10 @@
+Wed Sep  7 17:13:05 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* common.mk: Updated Unicode version to 9.0.0 [Feature #12513]
+
+	* unicode/9.0.0/casefold.h, name2ctype.h, unicode/data/9.0.0:
+	  new directories/files for Unicode version 9.0.0
+
 Wed Sep  7 16:00:45 2016  Tanaka Akira  <akr@fsij.org>
 
 	* lib/open-uri.rb: Allow http to https redirection.
