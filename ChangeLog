@@ -1,3 +1,12 @@
+Wed Sep  7 14:56:59 2016  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* lib/csv.rb (CSV::{Row,Table}#{each,delete_if}): returns an enumerator
+	  if no block is given. [ruby-core:75346] [Feature #11058]
+
+	* test/csv/test_row.rb: add test for above.
+
+	* test/csv/test_table.rb: ditto.
+
 Wed Sep  7 14:50:01 2016  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* gems/bundled_gems: update to power_assert 0.3.1.
