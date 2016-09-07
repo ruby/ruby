@@ -1,3 +1,9 @@
+Wed Sep  7 16:00:45 2016  Tanaka Akira  <akr@fsij.org>
+
+	* lib/open-uri.rb: Allow http to https redirection.
+	  Note that https to http is still forbidden.
+	  [ruby-core:20485] [Feature #859] by Roman Shterenzon.
+
 Wed Sep  7 14:56:59 2016  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* lib/csv.rb (CSV::{Row,Table}#{each,delete_if}): returns an enumerator
