@@ -1624,7 +1624,7 @@ class TestRefinement < Test::Unit::TestCase
       MethodMissing.call_undefined_method
     end
   end
-  
+
   module VisibleRefinements
     module RefA
       refine Object do
@@ -1642,7 +1642,7 @@ class TestRefinement < Test::Unit::TestCase
 
     module RefC
       using RefA
-      
+
       refine Object do
         def in_ref_c
         end
@@ -1658,7 +1658,7 @@ class TestRefinement < Test::Unit::TestCase
       using RefC
       USED_REFS = Module.used_refinements
     end
-    
+
     module Combined
       using RefA
       using RefB
