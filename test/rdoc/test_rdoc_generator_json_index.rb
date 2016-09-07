@@ -198,8 +198,6 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
   end
 
   def test_generate_utf_8
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     text = "5\xB0"
     text.force_encoding Encoding::ISO_8859_1
     @klass.add_comment comment(text), @top_level
@@ -322,4 +320,3 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
   end
 
 end
-

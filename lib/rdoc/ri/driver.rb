@@ -908,7 +908,7 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
 
   def expand_class klass
     ary = classes.keys.grep(Regexp.new("\\A#{klass.gsub(/(?=::|\z)/, '[^:]*')}\\z"))
-    raise NotFoundError, klass if ary.length != 1
+    raise NotFoundError, klass if ary.length != 1 && ary.first != klass
     ary.first
   end
 
@@ -1480,4 +1480,3 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
   end
 
 end
-

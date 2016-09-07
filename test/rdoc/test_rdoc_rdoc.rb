@@ -249,7 +249,6 @@ class TestRDocRDoc < RDoc::TestCase
   end
 
   def test_parse_file_encoding
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
     @rdoc.options.encoding = Encoding::ISO_8859_1
     @rdoc.store = RDoc::Store.new
 
@@ -454,4 +453,3 @@ class TestRDocRDoc < RDoc::TestCase
     end
   end
 end
-

@@ -1,3 +1,9 @@
+Thu Sep  8 07:23:34 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rdoc/*, test/rdoc/*: Update rdoc-5.0.0.beta2
+	  Fixed ri parse defect with left-hand matched classes.
+	  https://github.com/rdoc/rdoc/pull/420
+
 Thu Sep  8 01:12:47 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_mod_s_used_refinements): new method

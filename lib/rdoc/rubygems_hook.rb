@@ -1,5 +1,4 @@
 # frozen_string_literal: false
-require 'rubygems'
 require 'rubygems/user_interaction'
 require 'fileutils'
 require 'rdoc'
@@ -251,4 +250,3 @@ class RDoc::RubygemsHook
   end
 
 end
-
