@@ -1,3 +1,8 @@
+Wed Sep  7 17:50:38 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/util.h (setenv): remove POSIX-noncompliant
+	  definition with 2 arguments.
+
 Wed Sep  7 17:35:37 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* unicode/8.0.0/casefold.h, name2ctype.h, unicode/data/8.0.0:

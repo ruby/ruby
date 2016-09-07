@@ -3350,8 +3350,6 @@ ruby_setenv(const char *name, const char *value)
 	invalid_envname(name);
     }
 #elif defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
-#undef setenv
-#undef unsetenv
     if (value) {
 	if (setenv(name, value, 1))
 	    rb_sys_fail_str(rb_sprintf("setenv(%s)", name));
