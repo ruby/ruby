@@ -66,6 +66,11 @@ class TestTimeout < Test::Unit::TestCase
         sleep 3
       end
     end
+    assert_raise_with_message(err, /connection to rubylang.org expired/) do
+      Timeout.timeout 0.01, err, "connection to rubylang.org expired" do
+        sleep 3
+      end
+    end
   end
 
   def test_exit_exception
