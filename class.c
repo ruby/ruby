@@ -1090,46 +1090,51 @@ rb_mod_ancestors(VALUE mod)
     return ary;
 }
 
-static int
-ins_methods_push(ID name, rb_method_visibility_t visi, VALUE ary, rb_method_visibility_t expected_visi)
+static void
+ins_methods_push(st_data_t name, st_data_t ary)
 {
-    if (visi == METHOD_VISI_UNDEF) return ST_CONTINUE;
+    rb_ary_push((VALUE)ary, ID2SYM((ID)name));
+}
 
-    switch (expected_visi) {
+static int
+ins_methods_i(st_data_t name, st_data_t type, st_data_t ary)
+{
+    switch ((rb_method_visibility_t)type) {
       case METHOD_VISI_UNDEF:
-	if (visi != METHOD_VISI_PRIVATE) rb_ary_push(ary, ID2SYM(name));
-	break;
       case METHOD_VISI_PRIVATE:
-      case METHOD_VISI_PROTECTED:
-      case METHOD_VISI_PUBLIC:
-	if (visi == expected_visi) rb_ary_push(ary, ID2SYM(name));
+	break;
+      default: /* everything but private */
+	ins_methods_push(name, ary);
 	break;
     }
     return ST_CONTINUE;
 }
 
 static int
-ins_methods_i(st_data_t name, st_data_t type, st_data_t ary)
-{
-    return ins_methods_push((ID)name, (rb_method_visibility_t)type, (VALUE)ary, METHOD_VISI_UNDEF); /* everything but private */
-}
-
-static int
 ins_methods_prot_i(st_data_t name, st_data_t type, st_data_t ary)
 {
-    return ins_methods_push((ID)name, (rb_method_visibility_t)type, (VALUE)ary, METHOD_VISI_PROTECTED);
+    if ((rb_method_visibility_t)type == METHOD_VISI_PROTECTED) {
+	ins_methods_push(name, ary);
+    }
+    return ST_CONTINUE;
 }
 
 static int
 ins_methods_priv_i(st_data_t name, st_data_t type, st_data_t ary)
 {
-    return ins_methods_push((ID)name, (rb_method_visibility_t)type, (VALUE)ary, METHOD_VISI_PRIVATE);
+    if ((rb_method_visibility_t)type == METHOD_VISI_PRIVATE) {
+	ins_methods_push(name, ary);
+    }
+    return ST_CONTINUE;
 }
 
 static int
 ins_methods_pub_i(st_data_t name, st_data_t type, st_data_t ary)
 {
-    return ins_methods_push((ID)name, (rb_method_visibility_t)type, (VALUE)ary, METHOD_VISI_PUBLIC);
+    if ((rb_method_visibility_t)type == METHOD_VISI_PUBLIC) {
+	ins_methods_push(name, ary);
+    }
+    return ST_CONTINUE;
 }
 
 struct method_entry_arg {
