@@ -1,3 +1,8 @@
+Thu Sep  8 17:40:15 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* tool/rbinstall.rb (gem): use the bindir of each gemspec instead
+	  of hardcoded 'bin', since rdoc 5.0.0 overrides it.
+
 Thu Sep  8 16:47:03 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_mod_s_used_modules): rename Module.used_refinements to
