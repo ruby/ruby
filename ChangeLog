@@ -1,3 +1,8 @@
+Thu Sep  8 16:47:03 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_mod_s_used_modules): rename Module.used_refinements to
+	  Module.used_modules.  [Feature #7418] [ruby-core:49805]
+
 Thu Sep  8 14:21:48 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/psych/psych.gemspec, lib/rdoc/rdoc.gemspec: Use file list instead of
