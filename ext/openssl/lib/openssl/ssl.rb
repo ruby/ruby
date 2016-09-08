@@ -73,16 +73,6 @@ module OpenSSL
       DEFAULT_CERT_STORE.set_default_paths
       DEFAULT_CERT_STORE.flags = OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
 
-      # :nodoc:
-      INIT_VARS = ["cert", "key", "client_ca", "ca_file", "ca_path",
-        "timeout", "verify_mode", "verify_depth", "renegotiation_cb",
-        "verify_callback", "cert_store", "extra_chain_cert",
-        "client_cert_cb", "session_id_context", "tmp_dh_callback",
-        "session_get_cb", "session_new_cb", "session_remove_cb",
-        "tmp_ecdh_callback", "servername_cb", "npn_protocols",
-        "alpn_protocols", "alpn_select_cb",
-        "npn_select_cb", "verify_hostname"].map { |x| "@#{x}" }
-
       # A callback invoked when DH parameters are required.
       #
       # The callback is invoked with the Session for the key exchange, an
@@ -110,10 +100,8 @@ module OpenSSL
       #
       # You can get a list of valid methods with OpenSSL::SSL::SSLContext::METHODS
       def initialize(version = nil)
-        INIT_VARS.each { |v| instance_variable_set v, nil }
-        self.options = self.options | OpenSSL::SSL::OP_ALL
-        return unless version
-        self.ssl_version = version
+        self.options |= OpenSSL::SSL::OP_ALL
+        self.ssl_version = version if version
       end
 
       ##

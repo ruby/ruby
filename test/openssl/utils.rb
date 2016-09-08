@@ -241,10 +241,6 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
 
     def readwrite_loop(ctx, ssl)
       while line = ssl.gets
-        if line =~ /^STARTTLS$/
-          ssl.accept
-          next
-        end
         ssl.write(line)
       end
     rescue OpenSSL::SSL::SSLError
@@ -281,22 +277,15 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
       end
     end
 
-    def start_server(verify_mode, start_immediately, args = {}, &block)
+    def start_server(verify_mode: OpenSSL::SSL::VERIFY_NONE, start_immediately: true,
+                     ctx_proc: nil, server_proc: method(:readwrite_loop),
+                     ignore_listener_error: false, &block)
       IO.pipe {|stop_pipe_r, stop_pipe_w|
-        ctx_proc = args[:ctx_proc]
-        server_proc = args[:server_proc]
-        ignore_listener_error = args.fetch(:ignore_listener_error, false)
-        use_anon_cipher = args.fetch(:use_anon_cipher, false)
-        server_proc ||= method(:readwrite_loop)
-
         store = OpenSSL::X509::Store.new
         store.add_cert(@ca_cert)
         store.purpose = OpenSSL::X509::PURPOSE_SSL_CLIENT
         ctx = OpenSSL::SSL::SSLContext.new
-        ctx.ciphers = "ADH-AES256-GCM-SHA384" if use_anon_cipher
-        ctx.security_level = 0 if use_anon_cipher
         ctx.cert_store = store
-        #ctx.extra_chain_cert = [ ca_cert ]
         ctx.cert = @svr_cert
         ctx.key = @svr_key
         ctx.tmp_dh_callback = proc { OpenSSL::TestUtils::TEST_KEY_DH1024 }
@@ -340,13 +329,6 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
           assert_join_threads(threads)
         end
       }
-    end
-
-    def starttls(ssl)
-      ssl.puts("STARTTLS")
-      sleep 1   # When this line is eliminated, process on Cygwin blocks
-                # forever at ssl.connect. But I don't know why it does.
-      ssl.connect
     end
   end
 
