@@ -1980,8 +1980,8 @@ rb_io_fdatasync(VALUE io)
 
 /*
  *  call-seq:
- *     ios.fileno    -> fixnum
- *     ios.to_i      -> fixnum
+ *     ios.fileno    -> integer
+ *     ios.to_i      -> integer
  *
  *  Returns an integer representing the numeric file descriptor for
  *  <em>ios</em>.
@@ -2004,7 +2004,7 @@ rb_io_fileno(VALUE io)
 
 /*
  *  call-seq:
- *     ios.pid    -> fixnum
+ *     ios.pid    -> integer
  *
  *  Returns the process ID of a child process associated with
  *  <em>ios</em>. This will be set by <code>IO.popen</code>.
@@ -3842,7 +3842,7 @@ rb_io_readchar(VALUE io)
 
 /*
  *  call-seq:
- *     ios.getbyte   -> fixnum or nil
+ *     ios.getbyte   -> integer or nil
  *
  *  Gets the next 8-bit byte (0..255) from <em>ios</em>. Returns
  *  <code>nil</code> if called at end of file.
@@ -3879,7 +3879,7 @@ rb_io_getbyte(VALUE io)
 
 /*
  *  call-seq:
- *     ios.readbyte   -> fixnum
+ *     ios.readbyte   -> integer
  *
  *  Reads a byte as with <code>IO#getbyte</code>, but raises an
  *  <code>EOFError</code> on end of file.
@@ -6438,7 +6438,7 @@ rb_io_s_open(int argc, VALUE *argv, VALUE klass)
 
 /*
  *  call-seq:
- *     IO.sysopen(path, [mode, [perm]])  -> fixnum
+ *     IO.sysopen(path, [mode, [perm]])  -> integer
  *
  *  Opens the given path, returning the underlying file descriptor as a
  *  <code>Fixnum</code>.
@@ -10021,8 +10021,8 @@ io_s_write(int argc, VALUE *argv, int binary)
 
 /*
  *  call-seq:
- *     IO.write(name, string, [offset] )   => fixnum
- *     IO.write(name, string, [offset], open_args )   => fixnum
+ *     IO.write(name, string, [offset] )   => integer
+ *     IO.write(name, string, [offset], open_args )   => integer
  *
  *  Opens the file, optionally seeks to the given <i>offset</i>, writes
  *  <i>string</i>, then returns the length written.
@@ -10044,7 +10044,7 @@ io_s_write(int argc, VALUE *argv, int binary)
  *    specifies mode argument for open().  it should start with "w" or "a" or "r+"
  *    otherwise it would cause error.
  *
- *   perm: fixnum
+ *   perm: integer
  *
  *    specifies perm argument for open().
  *
@@ -10066,8 +10066,8 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     IO.binwrite(name, string, [offset] )   => fixnum
- *     IO.binwrite(name, string, [offset], open_args )   => fixnum
+ *     IO.binwrite(name, string, [offset] )   => integer
+ *     IO.binwrite(name, string, [offset], open_args )   => integer
  *
  *  Same as <code>IO.write</code> except opening the file in binary mode
  *  and ASCII-8BIT encoding ("wb:ASCII-8BIT").
@@ -11067,8 +11067,8 @@ argf_rewind(VALUE argf)
 
 /*
  *  call-seq:
- *     ARGF.fileno    -> fixnum
- *     ARGF.to_i      -> fixnum
+ *     ARGF.fileno    -> integer
+ *     ARGF.to_i      -> integer
  *
  *  Returns an integer representing the numeric file descriptor for
  *  the current file. Raises an +ArgumentError+ if there isn't a current file.

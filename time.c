@@ -3291,7 +3291,7 @@ time_utc_p(VALUE time)
 
 /*
  * call-seq:
- *   time.hash   -> fixnum
+ *   time.hash   -> integer
  *
  * Returns a hash code for this Time object.
  *
@@ -3767,7 +3767,7 @@ time_round(int argc, VALUE *argv, VALUE time)
 
 /*
  *  call-seq:
- *     time.sec -> fixnum
+ *     time.sec -> integer
  *
  *  Returns the second of the minute (0..60) for _time_.
  *
@@ -3791,7 +3791,7 @@ time_sec(VALUE time)
 
 /*
  *  call-seq:
- *     time.min -> fixnum
+ *     time.min -> integer
  *
  *  Returns the minute of the hour (0..59) for _time_.
  *
@@ -3811,7 +3811,7 @@ time_min(VALUE time)
 
 /*
  *  call-seq:
- *     time.hour -> fixnum
+ *     time.hour -> integer
  *
  *  Returns the hour of the day (0..23) for _time_.
  *
@@ -3831,8 +3831,8 @@ time_hour(VALUE time)
 
 /*
  *  call-seq:
- *     time.day  -> fixnum
- *     time.mday -> fixnum
+ *     time.day  -> integer
+ *     time.mday -> integer
  *
  *  Returns the day of the month (1..n) for _time_.
  *
@@ -3853,8 +3853,8 @@ time_mday(VALUE time)
 
 /*
  *  call-seq:
- *     time.mon   -> fixnum
- *     time.month -> fixnum
+ *     time.mon   -> integer
+ *     time.month -> integer
  *
  *  Returns the month of the year (1..12) for _time_.
  *
@@ -3875,7 +3875,7 @@ time_mon(VALUE time)
 
 /*
  *  call-seq:
- *     time.year -> fixnum
+ *     time.year -> integer
  *
  *  Returns the year for _time_ (including the century).
  *
@@ -3895,7 +3895,7 @@ time_year(VALUE time)
 
 /*
  *  call-seq:
- *     time.wday -> fixnum
+ *     time.wday -> integer
  *
  *  Returns an integer representing the day of the week, 0..6, with
  *  Sunday == 0.
@@ -4042,7 +4042,7 @@ time_saturday(VALUE time)
 
 /*
  *  call-seq:
- *     time.yday -> fixnum
+ *     time.yday -> integer
  *
  *  Returns an integer representing the day of the year, 1..366.
  *
@@ -4140,9 +4140,9 @@ time_zone(VALUE time)
 
 /*
  *  call-seq:
- *     time.gmt_offset -> fixnum
- *     time.gmtoff     -> fixnum
- *     time.utc_offset -> fixnum
+ *     time.gmt_offset -> integer
+ *     time.gmtoff     -> integer
+ *     time.utc_offset -> integer
  *
  *  Returns the offset in seconds between the timezone of _time_
  *  and UTC.

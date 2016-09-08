@@ -3903,7 +3903,7 @@ rb_ary_eql(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary.hash   -> fixnum
+ *     ary.hash   -> integer
  *
  *  Compute a hash-code for this array.
  *

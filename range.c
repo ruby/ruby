@@ -226,7 +226,7 @@ range_eql(VALUE range, VALUE obj)
 
 /*
  * call-seq:
- *   rng.hash    -> fixnum
+ *   rng.hash    -> integer
  *
  * Compute a hash-code for this range. Two ranges with equal
  * begin and end points (using <code>eql?</code>), and the same

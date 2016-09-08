@@ -1639,8 +1639,8 @@ rb_hash_replace(VALUE hash, VALUE hash2)
 
 /*
  *  call-seq:
- *     hsh.length    ->  fixnum
- *     hsh.size      ->  fixnum
+ *     hsh.length    ->  integer
+ *     hsh.size      ->  integer
  *
  *  Returns the number of key-value pairs in the hash.
  *
@@ -2256,7 +2256,7 @@ hash_i(VALUE key, VALUE val, VALUE arg)
 
 /*
  *  call-seq:
- *     hsh.hash   -> fixnum
+ *     hsh.hash   -> integer
  *
  *  Compute a hash-code for this hash. Two hashes with the same content
  *  will have the same hash code (and will compare using <code>eql?</code>).

@@ -1050,7 +1050,7 @@ exit_initialize(int argc, VALUE *argv, VALUE exc)
 
 /*
  * call-seq:
- *   system_exit.status   -> fixnum
+ *   system_exit.status   -> integer
  *
  * Return the status value associated with this system exit.
  */
@@ -1557,7 +1557,7 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   system_call_error.errno   -> fixnum
+ *   system_call_error.errno   -> integer
  *
  * Return this SystemCallError's error number.
  */

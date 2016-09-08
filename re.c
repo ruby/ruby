@@ -724,7 +724,7 @@ rb_reg_casefold_p(VALUE re)
 
 /*
  *  call-seq:
- *     rxp.options   -> fixnum
+ *     rxp.options   -> integer
  *
  *  Returns the set of bits corresponding to the options used when creating this
  *  Regexp (see <code>Regexp::new</code> for details. Note that additional bits
@@ -2877,7 +2877,7 @@ rb_reg_regcomp(VALUE str)
 static st_index_t reg_hash(VALUE re);
 /*
  * call-seq:
- *   rxp.hash   -> fixnum
+ *   rxp.hash   -> integer
  *
  * Produce a hash based on the text and options of this regular expression.
  *

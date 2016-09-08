@@ -1044,7 +1044,7 @@ rb_struct_equal(VALUE s, VALUE s2)
 
 /*
  * call-seq:
- *   struct.hash   -> fixnum
+ *   struct.hash   -> integer
  *
  * Returns a hash value based on this struct's contents (see Object#hash).
  *
@@ -1110,8 +1110,8 @@ rb_struct_eql(VALUE s, VALUE s2)
 
 /*
  *  call-seq:
- *     struct.length    -> fixnum
- *     struct.size      -> fixnum
+ *     struct.length    -> integer
+ *     struct.size      -> integer
  *
  *  Returns the number of struct members.
  *

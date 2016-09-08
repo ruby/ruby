@@ -2954,7 +2954,7 @@ rb_str_hash_cmp(VALUE str1, VALUE str2)
 
 /*
  * call-seq:
- *    str.hash   -> fixnum
+ *    str.hash   -> integer
  *
  * Return a hash based on the string's length, content and encoding.
  *
@@ -3245,8 +3245,8 @@ rb_strseq_index(VALUE str, VALUE sub, long offset, int in_byte)
 
 /*
  *  call-seq:
- *     str.index(substring [, offset])   -> fixnum or nil
- *     str.index(regexp [, offset])      -> fixnum or nil
+ *     str.index(substring [, offset])   -> integer or nil
+ *     str.index(regexp [, offset])      -> integer or nil
  *
  *  Returns the index of the first occurrence of the given <i>substring</i> or
  *  pattern (<i>regexp</i>) in <i>str</i>. Returns <code>nil</code> if not
@@ -3409,8 +3409,8 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
 
 /*
  *  call-seq:
- *     str.rindex(substring [, fixnum])   -> fixnum or nil
- *     str.rindex(regexp [, fixnum])   -> fixnum or nil
+ *     str.rindex(substring [, integer])   -> integer or nil
+ *     str.rindex(regexp [, integer])   -> integer or nil
  *
  *  Returns the index of the last occurrence of the given <i>substring</i> or
  *  pattern (<i>regexp</i>) in <i>str</i>. Returns <code>nil</code> if not
@@ -3486,7 +3486,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str =~ obj   -> fixnum or nil
+ *     str =~ obj   -> integer or nil
  *
  *  Match---If <i>obj</i> is a <code>Regexp</code>, use it as a pattern to match
  *  against <i>str</i>,and returns the position the match starts, or
@@ -4411,11 +4411,11 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 
 /*
  *  call-seq:
- *     str[fixnum] = new_str
- *     str[fixnum, fixnum] = new_str
+ *     str[integer] = new_str
+ *     str[integer, integer] = new_str
  *     str[range] = aString
  *     str[regexp] = new_str
- *     str[regexp, fixnum] = new_str
+ *     str[regexp, integer] = new_str
  *     str[regexp, name] = new_str
  *     str[other_str] = new_str
  *
@@ -4485,8 +4485,8 @@ rb_str_insert(VALUE str, VALUE idx, VALUE str2)
 
 /*
  *  call-seq:
- *     str.slice!(fixnum)           -> new_str or nil
- *     str.slice!(fixnum, fixnum)   -> new_str or nil
+ *     str.slice!(integer)           -> new_str or nil
+ *     str.slice!(integer, integer)   -> new_str or nil
  *     str.slice!(range)            -> new_str or nil
  *     str.slice!(regexp)           -> new_str or nil
  *     str.slice!(other_str)        -> new_str or nil
@@ -5194,8 +5194,8 @@ str_byte_aref(VALUE str, VALUE indx)
 
 /*
  *  call-seq:
- *     str.byteslice(fixnum)           -> new_str or nil
- *     str.byteslice(fixnum, fixnum)   -> new_str or nil
+ *     str.byteslice(integer)           -> new_str or nil
+ *     str.byteslice(integer, integer)   -> new_str or nil
  *     str.byteslice(range)            -> new_str or nil
  *
  *  Byte Reference---If passed a single <code>Fixnum</code>, returns a
@@ -6942,7 +6942,7 @@ rb_str_tr_s(VALUE str, VALUE src, VALUE repl)
 
 /*
  *  call-seq:
- *     str.count([other_str]+)   -> fixnum
+ *     str.count([other_str]+)   -> integer
  *
  *  Each +other_str+ parameter defines a set of characters to count.  The
  *  intersection of these sets defines the characters to count in +str+.  Any
@@ -7552,7 +7552,7 @@ rb_str_enumerate_bytes(VALUE str, int wantarray)
 
 /*
  *  call-seq:
- *     str.each_byte {|fixnum| block }    -> str
+ *     str.each_byte {|integer| block }    -> str
  *     str.each_byte                      -> an_enumerator
  *
  *  Passes each byte in <i>str</i> to the given block, or returns an
@@ -9601,7 +9601,7 @@ sym_casecmp(VALUE sym, VALUE other)
 
 /*
  * call-seq:
- *   sym =~ obj   -> fixnum or nil
+ *   sym =~ obj   -> integer or nil
  *
  * Returns <code>sym.to_s =~ obj</code>.
  */

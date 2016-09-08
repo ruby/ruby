@@ -2512,7 +2512,7 @@ os_obj_of(VALUE of)
 
 /*
  *  call-seq:
- *     ObjectSpace.each_object([module]) {|obj| ... } -> fixnum
+ *     ObjectSpace.each_object([module]) {|obj| ... } -> integer
  *     ObjectSpace.each_object([module])              -> an_enumerator
  *
  *  Calls the block once for each living, nonimmediate object in this
@@ -7207,7 +7207,7 @@ rb_gc_stat(VALUE key)
 
 /*
  *  call-seq:
- *    GC.stress	    -> fixnum, true or false
+ *    GC.stress	    -> integer, true or false
  *
  *  Returns current status of GC stress mode.
  */
@@ -7237,7 +7237,7 @@ gc_stress_set(rb_objspace_t *objspace, VALUE flag)
  *
  *  Enabling stress mode will degrade performance, it is only for debugging.
  *
- *  flag can be true, false, or a fixnum bit-ORed following flags.
+ *  flag can be true, false, or a integer bit-ORed following flags.
  *    0x01:: no major GC
  *    0x02:: no immediate sweep
  *    0x04:: full mark after malloc/calloc/realloc

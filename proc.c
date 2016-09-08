@@ -873,7 +873,7 @@ rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE passed_pr
 
 /*
  *  call-seq:
- *     prc.arity -> fixnum
+ *     prc.arity -> integer
  *
  *  Returns the number of mandatory arguments. If the block
  *  is declared to take no arguments, returns 0. If the block is known
@@ -2300,7 +2300,7 @@ rb_method_entry_arity(const rb_method_entry_t *me)
 
 /*
  *  call-seq:
- *     meth.arity    -> fixnum
+ *     meth.arity    -> integer
  *
  *  Returns an indication of the number of arguments accepted by a
  *  method. Returns a nonnegative integer for methods that take a fixed
