@@ -1,3 +1,8 @@
+Thu Sep  8 13:41:46 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* insns.def (setclassvariable, setconstant): warn when self is a
+	  refinement.  [Bug #10103] [ruby-core:64143]
+
 Thu Sep  8 11:29:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* hash.c (rb_hash_transform_values, rb_hash_transform_values_bang):

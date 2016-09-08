@@ -1674,6 +1674,22 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal [ref::RefB, ref::RefA], ref::Combined::USED_REFS
   end
 
+  def test_warn_setconst_in_refinmenet
+    bug10103 = '[ruby-core:64143] [Bug #10103]'
+    warnings = [
+      "-:3: warning: not defined at the refinement, but at the outer class/module",
+      "-:4: warning: not defined at the refinement, but at the outer class/module"
+    ]
+    assert_in_out_err([], <<-INPUT, [], warnings, bug10103)
+      module M
+        refine String do
+          FOO = 123
+          @@foo = 456
+        end
+      end
+    INPUT
+  end
+
   private
 
   def eval_using(mod, s)

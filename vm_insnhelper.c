@@ -733,6 +733,14 @@ vm_check_if_namespace(VALUE klass)
     }
 }
 
+static inline void
+vm_ensure_not_refinement_module(VALUE self)
+{
+    if (RB_TYPE_P(self, T_MODULE) && FL_TEST(self, RMODULE_IS_REFINEMENT)) {
+	rb_warn("not defined at the refinement, but at the outer class/module");
+    }
+}
+
 static inline VALUE
 vm_get_iclass(rb_control_frame_t *cfp, VALUE klass)
 {
