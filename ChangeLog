@@ -1,3 +1,9 @@
+Thu Sep  8 17:47:18 2016  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* array.c (flatten): use rb_obj_class instead of rb_class_of
+	  because rb_class_of may return a singleton class.
+	  [ruby-dev:49781] [Bug #12738]
+
 Thu Sep  8 17:40:15 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/rbinstall.rb (gem): use the bindir of each gemspec instead
