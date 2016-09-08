@@ -1,3 +1,9 @@
+Thu Sep  8 14:21:48 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/psych/psych.gemspec, lib/rdoc/rdoc.gemspec: Use file list instead of
+	  git output. It shows warning message when invoke `make install`
+	  [Bug #12736][ruby-dev:49778]
+
 Thu Sep  8 13:41:46 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* insns.def (setclassvariable, setconstant): warn when self is a
