@@ -1,3 +1,7 @@
+Fri Sep  9 22:43:29 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* gems/bundled_gems: sort lines.
+
 Fri Sep  9 17:59:46 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_threadptr_raise): set cause from the called thread,
