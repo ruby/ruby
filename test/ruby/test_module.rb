@@ -1420,6 +1420,7 @@ class TestModule < Test::Unit::TestCase
     c.const_set(:FOO, "foo")
     c.deprecate_constant(:FOO)
     assert_warn(/deprecated/) {c::FOO}
+    assert_warn(/#{c}::FOO is deprecated/) {Class.new(c)::FOO}
     bug12382 = '[ruby-core:75505] [Bug #12382]'
     assert_warn(/deprecated/, bug12382) {c.class_eval "FOO"}
   end

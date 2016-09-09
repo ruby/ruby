@@ -2263,7 +2263,7 @@ rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility)
 		rb_name_err_raise("private constant %2$s::%1$s referenced",
 				  tmp, ID2SYM(id));
 	    }
-	    rb_const_warn_if_deprecated(ce, klass, id);
+	    rb_const_warn_if_deprecated(ce, tmp, id);
 	    value = ce->value;
 	    if (value == Qundef) {
 		if (am == tmp) break;
