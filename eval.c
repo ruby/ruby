@@ -567,6 +567,17 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
     }
 }
 
+void
+rb_threadptr_setup_exception(rb_thread_t *th, VALUE mesg, VALUE cause)
+{
+    if (cause == Qundef) {
+	cause = get_thread_errinfo(th);
+    }
+    if (cause != mesg) {
+	rb_ivar_set(mesg, id_cause, cause);
+    }
+}
+
 static void
 rb_longjmp(int tag, volatile VALUE mesg, VALUE cause)
 {

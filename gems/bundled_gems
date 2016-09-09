@@ -1,7 +1,7 @@
-power_assert 0.3.1
-test-unit 3.2.1
-minitest 5.9.0
-rake 11.2.2
-net-telnet 0.1.1
 did_you_mean 1.0.2
+minitest 5.9.0
+net-telnet 0.1.1
+power_assert 0.3.1
+rake 11.2.2
+test-unit 3.2.1
 xmlrpc 0.1.1
