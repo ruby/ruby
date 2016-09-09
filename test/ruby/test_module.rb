@@ -1360,6 +1360,9 @@ class TestModule < Test::Unit::TestCase
     c.const_set(:FOO, "foo")
     $VERBOSE = verbose
     assert_raise(NameError) { c::FOO }
+    assert_raise_with_message(NameError, /#{c}::FOO/) do
+      Class.new(c)::FOO
+    end
   end
 
   def test_private_constant2

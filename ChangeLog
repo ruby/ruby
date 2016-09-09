@@ -1,3 +1,8 @@
+Fri Sep  9 10:07:40 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_const_search): raise with the actual class/module
+	  name which defines the private constant.
+
 Thu Sep  8 17:47:18 2016  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* array.c (flatten): use rb_obj_class instead of rb_class_of
