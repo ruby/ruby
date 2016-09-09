@@ -2084,6 +2084,8 @@ rb_threadptr_ready(rb_thread_t *th)
     rb_threadptr_interrupt(th);
 }
 
+void rb_threadptr_setup_exception(rb_thread_t *th, VALUE mesg, VALUE cause);
+
 static VALUE
 rb_threadptr_raise(rb_thread_t *th, int argc, VALUE *argv)
 {
@@ -2099,6 +2101,7 @@ rb_threadptr_raise(rb_thread_t *th, int argc, VALUE *argv)
     else {
 	exc = rb_make_exception(argc, argv);
     }
+    rb_threadptr_setup_exception(GET_THREAD(), exc, Qundef);
     rb_threadptr_pending_interrupt_enque(th, exc);
     rb_threadptr_interrupt(th);
     return Qnil;
