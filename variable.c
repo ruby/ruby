@@ -2261,9 +2261,9 @@ rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility)
 	while ((ce = rb_const_lookup(tmp, id))) {
 	    if (visibility && RB_CONST_PRIVATE_P(ce)) {
 		rb_name_err_raise("private constant %2$s::%1$s referenced",
-				  klass, ID2SYM(id));
+				  tmp, ID2SYM(id));
 	    }
-	    rb_const_warn_if_deprecated(ce, klass, id);
+	    rb_const_warn_if_deprecated(ce, tmp, id);
 	    value = ce->value;
 	    if (value == Qundef) {
 		if (am == tmp) break;
@@ -2730,6 +2730,22 @@ set_const_visibility(VALUE mod, int argc, const VALUE *argv,
 	}
     }
     rb_clear_constant_cache();
+}
+
+void
+rb_deprecate_constant(VALUE mod, const char *name)
+{
+    rb_const_entry_t *ce;
+    ID id;
+    long len = strlen(name);
+
+    rb_frozen_class_p(mod);
+    if (!(id = rb_check_id_cstr(name, len, NULL)) ||
+	!(ce = rb_const_lookup(mod, id))) {
+	rb_name_err_raise("constant %2$s::%1$s not defined",
+			  mod, rb_fstring_new(name, len));
+    }
+    ce->flag |= CONST_DEPRECATED;
 }
 
 /*
