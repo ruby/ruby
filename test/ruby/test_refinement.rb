@@ -1651,27 +1651,27 @@ class TestRefinement < Test::Unit::TestCase
 
     module Foo
       using RefB
-      USED_REFS = Module.used_refinements
+      USED_MODS = Module.used_modules
     end
 
     module Bar
       using RefC
-      USED_REFS = Module.used_refinements
+      USED_MODS = Module.used_modules
     end
 
     module Combined
       using RefA
       using RefB
-      USED_REFS = Module.used_refinements
+      USED_MODS = Module.used_modules
     end
   end
 
-  def test_used_refinements
+  def test_used_modules
     ref = VisibleRefinements
-    assert_equal [], Module.used_refinements
-    assert_equal [ref::RefB], ref::Foo::USED_REFS
-    assert_equal [ref::RefC], ref::Bar::USED_REFS
-    assert_equal [ref::RefB, ref::RefA], ref::Combined::USED_REFS
+    assert_equal [], Module.used_modules
+    assert_equal [ref::RefB], ref::Foo::USED_MODS
+    assert_equal [ref::RefC], ref::Bar::USED_MODS
+    assert_equal [ref::RefB, ref::RefA], ref::Combined::USED_MODS
   end
 
   def test_warn_setconst_in_refinmenet
