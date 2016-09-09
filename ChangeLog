@@ -1,3 +1,7 @@
+Fri Sep  9 13:14:53 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* News: Announcing update to Unicode version 9.0.0 [ci skip]
+
 Fri Sep  9 10:10:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_const_search): warn with the actual class/module
