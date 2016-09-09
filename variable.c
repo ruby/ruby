@@ -2732,6 +2732,22 @@ set_const_visibility(VALUE mod, int argc, const VALUE *argv,
     rb_clear_constant_cache();
 }
 
+void
+rb_deprecate_constant(VALUE mod, const char *name)
+{
+    rb_const_entry_t *ce;
+    ID id;
+    long len = strlen(name);
+
+    rb_frozen_class_p(mod);
+    if (!(id = rb_check_id_cstr(name, len, NULL)) ||
+	!(ce = rb_const_lookup(mod, id))) {
+	rb_name_err_raise("constant %2$s::%1$s not defined",
+			  mod, rb_fstring_new(name, len));
+    }
+    ce->flag |= CONST_DEPRECATED;
+}
+
 /*
  *  call-seq:
  *     mod.private_constant(symbol, ...)    => mod
