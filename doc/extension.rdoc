@@ -867,6 +867,9 @@ arguments.  The third argument is a string that specifies how to
 capture method arguments and assign them to the following VALUE
 references.
 
+You can just check the argument number with rb_check_arity(), this is
+handy in the case you want to treat the arguments as a list.
+
 The following is an example of a method that takes arguments by Ruby's
 array:
 
@@ -1359,6 +1362,12 @@ rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(), int arg
 rb_define_singleton_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
 
   Defines a singleton method.  Arguments are same as rb_define_method().
+
+rb_check_arity(int argc, int min, int max) ::
+
+  Check the number of arguments, argc is in the range of min..max.  If
+  max is UNLIMITED_ARGUMENTS, upper bound is not checked.  If argc is
+  out of bounds, an ArgumentError will be raised.
 
 rb_scan_args(int argc, VALUE *argv, const char *fmt, ...) ::
 
