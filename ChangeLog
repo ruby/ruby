@@ -1,3 +1,7 @@
+Sun Sep 11 21:30:26 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: News about Module.used_modules.
+
 Sun Sep 11 19:06:49 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_write_console): should set written length as the

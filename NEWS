@@ -79,6 +79,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   * MatchData#named_captures [Feature #11999]
   * MatchData#values_at supports named captures [Feature #9179]
 
+* Module
+
+  * Module.used_modules [Feature #7418]
+
 * Regexp
 
   * Regexp#match? [Feature #8110]
