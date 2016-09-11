@@ -1546,10 +1546,13 @@ module FileUtils
     else
       DIRECTORY_TERM = "(?=/|\\z)"
     end
-    SYSCASE = File::FNM_SYSCASE.nonzero? ? "-i" : ""
 
     def descendant_directory?(descendant, ascendant)
-      /\A(?#{SYSCASE}:#{Regexp.quote(ascendant)})#{DIRECTORY_TERM}/ =~ File.dirname(descendant)
+      if File::FNM_SYSCASE.nonzero?
+        File.expand_path(File.dirname(descendant)).casecmp(File.expand_path(ascendant)) == 0
+      else
+        File.expand_path(File.dirname(descendant)) == File.expand_path(ascendant)
+      end
     end
   end   # class Entry_
 
