@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.date = date
   s.license = 'ruby'
   s.summary = "Arbitrary-precision decimal floating-point number library."
-  s.homepage = "http://www.ruby-lang.org"
+  s.homepage = "https://www.ruby-lang.org"
   s.email = "mrkn@mrkn.jp"
   s.description = "This library provides arbitrary-precision decimal floating-point number class."
   s.authors = ["Kenta Murata", "Zachary Scott", "Shigeo Kobayashi"]
