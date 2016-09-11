@@ -10092,6 +10092,7 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b)
 	struct vtable *required_kw_vars = vtable_alloc(NULL);
 	struct vtable *kw_vars = vtable_alloc(NULL);
 	int i;
+	int keeps = 0;
 
 	while (kwn) {
 	    NODE *val_node = kwn->nd_body->nd_value;
@@ -10103,6 +10104,7 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b)
 	    else {
 		vtable_add(kw_vars, vid);
 	    }
+	    if (kwn->nd_rest) keeps++;
 
 	    kwn = kwn->nd_next;
 	}
@@ -10119,6 +10121,26 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b)
 	arg_var(kw_bits);
 	if (kr) arg_var(kr);
 	if (b) arg_var(b);
+
+	if (keeps) {
+	    enum {bits = CHAR_BIT * sizeof(args->kw_keep.bits)};
+	    int room = roomof(keeps + 1, bits);
+	    VALUE *ptr;
+	    if (room > 1) {
+		ptr = args->kw_keep.ptr = ZALLOC_N(VALUE, room);
+	    }
+	    else {
+		*(ptr = &args->kw_keep.bits) = 1;
+	    }
+	    for (kwn = k; kwn; kwn = kwn->nd_next) {
+		if (kwn->nd_rest) {
+		    int idx = vtable_included(lvtbl->args, kwn->nd_body->nd_vid);
+		    if (idx > 0) {
+			ptr[idx / bits] |= (VALUE)1U << (idx % bits);
+		    }
+		}
+	    }
+	}
 
 	args->kw_rest_arg = NEW_DVAR(kw_bits);
 	args->kw_rest_arg->nd_cflag = kr;

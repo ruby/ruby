@@ -483,6 +483,11 @@ VALUE rb_gc_mark_node(NODE *obj);
 
 const struct kwtable *rb_reserved_word(const char *, unsigned int);
 
+union rb_args_kept_keywords {
+    VALUE bits;
+    VALUE *ptr;
+};
+
 struct rb_args_info {
     NODE *pre_init;
     NODE *post_init;
@@ -499,6 +504,8 @@ struct rb_args_info {
     NODE *kw_rest_arg;
 
     NODE *opt_args;
+
+    union rb_args_kept_keywords kw_keep;
 };
 
 struct parser_params;
