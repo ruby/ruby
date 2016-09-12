@@ -1591,7 +1591,9 @@ singleton_class_of(VALUE obj)
     klass = RBASIC(obj)->klass;
     if (!(FL_TEST(klass, FL_SINGLETON) &&
 	  rb_ivar_get(klass, id_attached) == obj)) {
+	rb_serial_t serial = RCLASS_SERIAL(klass);
 	klass = rb_make_metaclass(obj, klass);
+	RCLASS_SERIAL(klass) = serial;
     }
 
     if (OBJ_TAINTED(obj)) {
