@@ -2453,7 +2453,6 @@ obj2subsecx(VALUE obj, VALUE *subsecx)
     else {
         divmodv(num_exact(obj), INT2FIX(1), &obj, &subsec);
         *subsecx = w2v(rb_time_magnify(v2w(subsec)));
-	RB_GC_GUARD(subsec);
     }
     return obj2ubits(obj, 6); /* vtm->sec */
 }
@@ -2592,6 +2591,7 @@ time_arg(int argc, VALUE *argv, struct vtm *vtm)
     }
 
     validate_vtm(vtm);
+    RB_GC_GUARD(vtm->subsecx);
 }
 
 static int
