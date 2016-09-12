@@ -1,3 +1,7 @@
+Tue Sep 13 06:03:34 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* common.mk (benchmark): fix lib path.
+
 Tue Sep 13 00:39:47 2016  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* class.c (singleton_class_of): Copy superclass serial number to
