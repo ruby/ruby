@@ -1,3 +1,9 @@
+Mon Sep 12 13:46:23 2016  Anton Davydov  <mail@davydovanton.com>
+
+	* lib/uri/mailto.rb: Removed needless `return` and use `.`` instead of `::`
+	  with class method.
+	* test/uri/test_mailto.rb: Added tests for coverage.
+
 Sun Sep 11 21:30:26 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: News about Module.used_modules.
