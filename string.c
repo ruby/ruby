@@ -165,6 +165,9 @@ VALUE rb_cSymbol;
 #define SHARABLE_SUBSTRING_P(beg, len, end) 1
 #endif
 
+#define STR_EMBEDABLE_P(len, termlen) \
+    ((len) <= RSTRING_EMBED_LEN_MAX + 1 - (termlen))
+
 static VALUE str_replace_shared_without_enc(VALUE str2, VALUE str);
 static VALUE str_new_shared(VALUE klass, VALUE str);
 static VALUE str_new_frozen(VALUE klass, VALUE orig);
@@ -1068,7 +1071,7 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
     long len;
 
     RSTRING_GETMEM(str, ptr, len);
-    if (len+termlen <= RSTRING_EMBED_LEN_MAX+1) {
+    if (STR_EMBEDABLE_P(len, termlen)) {
 	char *ptr2 = RSTRING(str2)->as.ary;
 	STR_SET_EMBED(str2);
 	memcpy(ptr2, RSTRING_PTR(str), len);
@@ -2524,14 +2527,14 @@ rb_str_resize(VALUE str, long len)
 	const int termlen = TERM_LEN(str);
 	if (STR_EMBED_P(str)) {
 	    if (len == slen) return str;
-	    if (len + termlen <= RSTRING_EMBED_LEN_MAX + 1) {
+	    if (STR_EMBEDABLE_P(len, termlen)) {
 		STR_SET_EMBED_LEN(str, len);
 		TERM_FILL(RSTRING(str)->as.ary + len, termlen);
 		return str;
 	    }
 	    str_make_independent_expand(str, slen, len - slen, termlen);
 	}
-	else if (len + termlen <= RSTRING_EMBED_LEN_MAX + 1) {
+	else if (STR_EMBEDABLE_P(len, termlen)) {
 	    char *ptr = STR_HEAP_PTR(str);
 	    STR_SET_EMBED(str);
 	    if (slen > len) slen = len;

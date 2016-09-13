@@ -1,3 +1,9 @@
+Tue Sep 13 21:11:56 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (STR_EMBEDABLE_P): extract the predicate macro to tell
+	  if the given length is capable in an embedded string, and fix
+	  possible integer overflow.
+
 Tue Sep 13 18:37:08 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_exception.rb: fix thread issues.
