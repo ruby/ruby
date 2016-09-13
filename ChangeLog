@@ -1,3 +1,7 @@
+Wed Sep 14 07:02:31 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* hash.c (each_pair_i_fast): use rb_yield_values2 to avoid var args.
+
 Tue Sep 13 21:32:54 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* string.c (STR_HEAP_SIZE, RESIZE_CAPA_TERM, str_new0, rb_str_buf_new,

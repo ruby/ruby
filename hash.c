@@ -1750,7 +1750,8 @@ each_pair_i(VALUE key, VALUE value)
 static int
 each_pair_i_fast(VALUE key, VALUE value)
 {
-    rb_yield_values(2, key, value);
+    VALUE argv[2] = {key, value};
+    rb_yield_values2(2, argv);
     return ST_CONTINUE;
 }
 
