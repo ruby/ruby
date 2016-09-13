@@ -19,7 +19,7 @@ extensible.
 *   Garbage Collection
 *   Dynamic Loading of Object Files (on some architectures)
 *   Highly Portable (works on many Unix-like/POSIX compatible platforms as
-    well as Windows, Mac OS X, BeOS, etc.) cf.
+    well as Windows, Mac OS X, Haiku, etc.) cf.
     https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/SupportedPlatforms
 
 
