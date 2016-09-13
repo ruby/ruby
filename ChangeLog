@@ -1,3 +1,24 @@
+Tue Sep 13 21:32:54 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* string.c (STR_HEAP_SIZE, RESIZE_CAPA_TERM, str_new0, rb_str_buf_new,
+	  str_shared_replace, rb_str_init, str_make_independent_expand,
+	  rb_str_resize): Avoid overflow by casting the length to size_t. size_t
+	  should be able to represent LONG_MAX+termlen.
+
+	* string.c (rb_str_modify_expand): Check that the new length is in the
+	  range of long before resizing. Also refactor to use RESIZE_CAPA_TERM
+	  macro.
+
+	* string.c (str_buf_cat): Fix so that it does not create a negative
+	  length String. Also fix the condition for 'string sizes too big', the
+	  total length can be up to LONG_MAX.
+
+	* string.c (rb_str_plus): Check the resulting String length does not
+	  exceed LONG_MAX.
+
+	* string.c (rb_str_dump): Fix integer overflow. The dump result will be
+	  longer then the original String.
+
 Tue Sep 13 21:30:53 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* gc.c (heap_extend_pages, get_envparam_size, ruby_malloc_size_overflow,

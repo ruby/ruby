@@ -139,7 +139,7 @@ VALUE rb_cSymbol;
     }\
     else {\
 	assert(!FL_TEST((str), STR_SHARED)); \
-	REALLOC_N(RSTRING(str)->as.heap.ptr, char, (capacity)+termlen);\
+	REALLOC_N(RSTRING(str)->as.heap.ptr, char, (size_t)(capacity) + (termlen));\
 	RSTRING(str)->as.heap.aux.capa = (capacity);\
     }\
 } while (0)
@@ -152,7 +152,7 @@ VALUE rb_cSymbol;
 } while (0)
 
 #define STR_HEAP_PTR(str)  (RSTRING(str)->as.heap.ptr)
-#define STR_HEAP_SIZE(str) (RSTRING(str)->as.heap.aux.capa + TERM_LEN(str))
+#define STR_HEAP_SIZE(str) ((size_t)RSTRING(str)->as.heap.aux.capa + TERM_LEN(str))
 
 #define STR_ENC_GET(str) get_encoding(str)
 
@@ -705,7 +705,7 @@ str_new0(VALUE klass, const char *ptr, long len, int termlen)
     str = str_alloc(klass);
     if (!STR_EMBEDDABLE_P(len, termlen)) {
 	RSTRING(str)->as.heap.aux.capa = len;
-	RSTRING(str)->as.heap.ptr = ALLOC_N(char, len + termlen);
+	RSTRING(str)->as.heap.ptr = ALLOC_N(char, (size_t)len + termlen);
 	STR_SET_NOEMBED(str);
     }
     else if (len == 0) {
@@ -1203,7 +1203,7 @@ rb_str_buf_new(long capa)
     }
     FL_SET(str, STR_NOEMBED);
     RSTRING(str)->as.heap.aux.capa = capa;
-    RSTRING(str)->as.heap.ptr = ALLOC_N(char, capa+1);
+    RSTRING(str)->as.heap.ptr = ALLOC_N(char, (size_t)capa + 1);
     RSTRING(str)->as.heap.ptr[0] = '\0';
 
     return str;
@@ -1282,7 +1282,7 @@ str_shared_replace(VALUE str, VALUE str2)
 
     if (STR_EMBEDDABLE_P(RSTRING_LEN(str2), termlen)) {
 	STR_SET_EMBED(str);
-	memcpy(RSTRING_PTR(str), RSTRING_PTR(str2), RSTRING_LEN(str2)+termlen);
+	memcpy(RSTRING_PTR(str), RSTRING_PTR(str2), (size_t)RSTRING_LEN(str2) + termlen);
 	STR_SET_EMBED_LEN(str, RSTRING_LEN(str2));
         rb_enc_associate(str, enc);
         ENC_CODERANGE_SET(str, cr);
@@ -1452,10 +1452,10 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
 	    }
 	    str_modifiable(str);
 	    if (STR_EMBED_P(str)) { /* make noembed always */
-		RSTRING(str)->as.heap.ptr = ALLOC_N(char, capa+termlen);
+		RSTRING(str)->as.heap.ptr = ALLOC_N(char, (size_t)capa + termlen);
 	    }
-	    else if (STR_HEAP_SIZE(str) != capa+termlen) {
-		REALLOC_N(RSTRING(str)->as.heap.ptr, char, capa+termlen);
+	    else if (STR_HEAP_SIZE(str) != (size_t)capa + termlen) {
+		REALLOC_N(RSTRING(str)->as.heap.ptr, char, (size_t)capa + termlen);
 	    }
 	    RSTRING(str)->as.heap.len = len;
 	    TERM_FILL(&RSTRING(str)->as.heap.ptr[len], termlen);
@@ -1758,6 +1758,9 @@ rb_str_plus(VALUE str1, VALUE str2)
     RSTRING_GETMEM(str1, ptr1, len1);
     RSTRING_GETMEM(str2, ptr2, len2);
     termlen = rb_enc_mbminlen(enc);
+    if (len1 > LONG_MAX - len2) {
+	rb_raise(rb_eArgError, "string size too big");
+    }
     str3 = str_new0(rb_cString, 0, len1+len2, termlen);
     ptr3 = RSTRING_PTR(str3);
     memcpy(ptr3, ptr1, len1);
@@ -1908,7 +1911,7 @@ str_make_independent_expand(VALUE str, long len, long expand, const int termlen)
 	return;
     }
 
-    ptr = ALLOC_N(char, capa + termlen);
+    ptr = ALLOC_N(char, (size_t)capa + termlen);
     oldptr = RSTRING_PTR(str);
     if (oldptr) {
 	memcpy(ptr, oldptr, len);
@@ -1932,28 +1935,21 @@ rb_str_modify(VALUE str)
 void
 rb_str_modify_expand(VALUE str, long expand)
 {
-    int termlen;
+    int termlen = TERM_LEN(str);
+    long len = RSTRING_LEN(str);
+
     if (expand < 0) {
 	rb_raise(rb_eArgError, "negative expanding string size");
     }
-    termlen = TERM_LEN(str);
+    if (expand > LONG_MAX - len) {
+	rb_raise(rb_eArgError, "string size too big");
+    }
+
     if (!str_independent(str)) {
-	long len = RSTRING_LEN(str);
 	str_make_independent_expand(str, len, expand, termlen);
     }
     else if (expand > 0) {
-	long len = RSTRING_LEN(str);
-	long capa = len + expand;
-	if (expand >= LONG_MAX - len - termlen) {
-	    rb_raise(rb_eArgError, "string size too big");
-	}
-	if (!STR_EMBED_P(str)) {
-	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, capa + termlen);
-	    RSTRING(str)->as.heap.aux.capa = capa;
-	}
-	else if (!STR_EMBEDDABLE_P(capa, termlen)) {
-	    str_make_independent_expand(str, len, expand, termlen);
-	}
+	RESIZE_CAPA_TERM(str, len + expand, termlen);
     }
     ENC_CODERANGE_CLEAR(str);
 }
@@ -2552,7 +2548,7 @@ rb_str_resize(VALUE str, long len)
 	}
 	else if ((capa = RSTRING(str)->as.heap.aux.capa) < len ||
 		 (capa - len) > (len < 1024 ? len : 1024)) {
-	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, len + termlen);
+	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, (size_t)len + termlen);
 	    RSTRING(str)->as.heap.aux.capa = len;
 	}
 	else if (len == slen) return str;
@@ -2586,22 +2582,16 @@ str_buf_cat(VALUE str, const char *ptr, long len)
 	sptr = RSTRING(str)->as.heap.ptr;
 	olen = RSTRING(str)->as.heap.len;
     }
-    if (olen >= LONG_MAX - len) {
+    if (olen > LONG_MAX - len) {
 	rb_raise(rb_eArgError, "string sizes too big");
     }
     total = olen + len;
-    if (capa <= total) {
-	if (LIKELY(capa > 0)) {
-	    while (total > capa) {
-		if (capa > LONG_MAX / 2 - termlen) {
-		    capa = (total + 4095) / 4096 * 4096;
-		    break;
-		}
-		capa = 2 * capa + termlen; /* == 2*(capa+termlen)-termlen */
-	    }
-	}
-	else {
+    if (capa < total) {
+	if (total >= LONG_MAX / 2) {
 	    capa = total;
+	}
+	while (total > capa) {
+	    capa = 2 * capa + termlen; /* == 2*(capa+termlen)-termlen */
 	}
 	RESIZE_CAPA_TERM(str, capa, termlen);
 	sptr = RSTRING_PTR(str);
@@ -5676,24 +5666,31 @@ rb_str_dump(VALUE str)
     static const char nonascii_suffix[] = ".force_encoding(\"%s\")";
 
     len = 2;			/* "" */
+    if (!rb_enc_asciicompat(enc)) {
+	len += strlen(nonascii_suffix) - rb_strlen_lit("%s");
+	len += strlen(enc->name);
+    }
+
     p = RSTRING_PTR(str); pend = p + RSTRING_LEN(str);
     while (p < pend) {
+	int clen;
 	unsigned char c = *p++;
+
 	switch (c) {
 	  case '"':  case '\\':
 	  case '\n': case '\r':
 	  case '\t': case '\f':
 	  case '\013': case '\010': case '\007': case '\033':
-	    len += 2;
+	    clen = 2;
 	    break;
 
 	  case '#':
-	    len += IS_EVSTR(p, pend) ? 2 : 1;
+	    clen = IS_EVSTR(p, pend) ? 2 : 1;
 	    break;
 
 	  default:
 	    if (ISPRINT(c)) {
-		len++;
+		clen = 1;
 	    }
 	    else {
 		if (u8 && c > 0x7F) {	/* \u notation */
@@ -5701,23 +5698,24 @@ rb_str_dump(VALUE str)
 		    if (MBCLEN_CHARFOUND_P(n)) {
 			unsigned int cc = rb_enc_mbc_to_codepoint(p-1, pend, enc);
 			if (cc <= 0xFFFF)
-			    len += 6;  /* \uXXXX */
+			    clen = 6;  /* \uXXXX */
 			else if (cc <= 0xFFFFF)
-			    len += 9;  /* \u{XXXXX} */
+			    clen = 9;  /* \u{XXXXX} */
 			else
-			    len += 10; /* \u{XXXXXX} */
+			    clen = 10; /* \u{XXXXXX} */
 			p += MBCLEN_CHARFOUND_LEN(n)-1;
 			break;
 		    }
 		}
-		len += 4;	/* \xNN */
+		clen = 4;	/* \xNN */
 	    }
 	    break;
 	}
-    }
-    if (!rb_enc_asciicompat(enc)) {
-	len += strlen(nonascii_suffix) - rb_strlen_lit("%s");
-	len += strlen(enc->name);
+
+	if (clen > LONG_MAX - len) {
+	    rb_raise(rb_eRuntimeError, "string size too big");
+	}
+	len += clen;
     }
 
     result = rb_str_new_with_class(str, 0, len);
