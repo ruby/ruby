@@ -2054,7 +2054,8 @@ rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int terml
     long capa = str_capacity(str, oldtermlen);
     long len = RSTRING_LEN(str);
 
-    if (capa < len + termlen - oldtermlen) {
+    assert(capa >= len);
+    if (capa - len < termlen - oldtermlen) {
 	rb_check_lockedtmp(str);
 	str_make_independent_expand(str, len, 0L, termlen);
     }
