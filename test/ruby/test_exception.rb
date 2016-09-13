@@ -723,9 +723,9 @@ end.join
     bug12741 = '[ruby-core:77222] [Bug #12741]'
 
     x = Thread.current
-    a = false
+    q = Queue.new
     y = Thread.start do
-      Thread.pass until a
+      q.pop
       begin
         raise "caller's cause"
       rescue
@@ -737,9 +737,11 @@ end.join
       raise bug12741
     rescue
       e = assert_raise_with_message(RuntimeError, "stop") do
-        a = true
+        q.push(true)
         sleep 1
       end
+    ensure
+      y.join
     end
     assert_equal("caller's cause", e.cause.message)
   end
