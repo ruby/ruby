@@ -1176,8 +1176,8 @@ get_line_info(const rb_iseq_t *iseq, size_t pos)
     const int debug = 0;
 
     if (debug) {
-	printf("size: %"PRIdSIZE"\n", size);
-	printf("table[%"PRIdSIZE"]: position: %d, line: %d, pos: %"PRIdSIZE"\n",
+	printf("size: %"PRIuSIZE"\n", size);
+	printf("table[%"PRIuSIZE"]: position: %d, line: %d, pos: %"PRIuSIZE"\n",
 	       i, table[i].position, table[i].line_no, pos);
     }
 
@@ -1189,7 +1189,7 @@ get_line_info(const rb_iseq_t *iseq, size_t pos)
     }
     else {
 	for (i=1; i<size; i++) {
-	    if (debug) printf("table[%"PRIdSIZE"]: position: %d, line: %d, pos: %"PRIdSIZE"\n",
+	    if (debug) printf("table[%"PRIuSIZE"]: position: %d, line: %d, pos: %"PRIuSIZE"\n",
 			      i, table[i].position, table[i].line_no, pos);
 
 	    if (table[i].position == pos) {
@@ -1397,10 +1397,10 @@ rb_iseq_disasm_insn(VALUE ret, const VALUE *code, size_t pos,
 
     insn_name_buff = insn_name(insn);
     if (1) {
-	rb_str_catf(str, "%04"PRIdSIZE" %-16s ", pos, insn_name_buff);
+	rb_str_catf(str, "%04"PRIuSIZE" %-16s ", pos, insn_name_buff);
     }
     else {
-	rb_str_catf(str, "%04"PRIdSIZE" %-16.*s ", pos,
+	rb_str_catf(str, "%04"PRIuSIZE" %-16.*s ", pos,
 		    (int)strcspn(insn_name_buff, "_"), insn_name_buff);
     }
 

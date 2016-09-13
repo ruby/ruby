@@ -602,7 +602,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    const int message_limit = 20;
 		    len = (int)(rb_enc_right_char_head(start, start + message_limit, p, enc) - start);
 		    rb_enc_raise(enc, rb_eArgError,
-				 "too long name (%"PRIdSIZE" bytes) - %.*s...%c",
+				 "too long name (%"PRIuSIZE" bytes) - %.*s...%c",
 				 (size_t)(p - start - 2), len, start, term);
 		}
 #endif

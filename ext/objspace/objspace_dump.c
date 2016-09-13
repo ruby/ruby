@@ -182,7 +182,7 @@ dump_append_string_content(struct dump_config *dc, VALUE obj)
 {
     dump_append(dc, ", \"bytesize\":%ld", RSTRING_LEN(obj));
     if (!STR_EMBED_P(obj) && !STR_SHARED_P(obj) && (long)rb_str_capacity(obj) != RSTRING_LEN(obj))
-	dump_append(dc, ", \"capacity\":%"PRIdSIZE, rb_str_capacity(obj));
+	dump_append(dc, ", \"capacity\":%"PRIuSIZE, rb_str_capacity(obj));
 
     if (is_ascii_string(obj)) {
 	dump_append(dc, ", \"value\":");
@@ -248,7 +248,7 @@ dump_object(VALUE obj, struct dump_config *dc, int part)
 	break;
 
       case T_HASH:
-	dump_append(dc, ", \"size\":%"PRIdSIZE, (size_t)RHASH_SIZE(obj));
+	dump_append(dc, ", \"size\":%"PRIuSIZE, (size_t)RHASH_SIZE(obj));
 	if (FL_TEST(obj, HASH_PROC_DEFAULT))
 	    dump_append(dc, ", \"default\":\"%p\"", (void *)RHASH_IFNONE(obj));
 	break;

@@ -1,3 +1,22 @@
+Tue Sep 13 21:30:53 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* gc.c (heap_extend_pages, get_envparam_size, ruby_malloc_size_overflow,
+	  gc_profile_dump_on): Use PRIuSIZE instead of PRIdSIZE as the passed
+	  value is size_t, not ssize_t.
+
+	* iseq.c (get_line_info, rb_iseq_disasm_insn): Ditto.
+
+	* sprintf.c (rb_str_format): Ditto.
+
+	* thread_win32.c (native_thread_create): Ditto.
+
+	* vm.c (get_param): Ditto.
+
+	* ext/objspace/objspace_dump.c (dump_append_string_content,
+	  dump_object): Ditto.
+
+	* ext/socket/raddrinfo.c (host_str, port_str): Ditto.
+
 Tue Sep 13 21:27:35 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* string.c (STR_EMBEDDABLE_P): Renamed from STR_EMBEDABLE_P(). And use
