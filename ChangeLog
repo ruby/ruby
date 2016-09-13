@@ -1,3 +1,13 @@
+Tue Sep 13 16:07:26 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* string.c (rb_str_set_len): The buffer overflow check is wrong. The
+	  space for termlen is allocated outside the capacity returned by
+	  rb_str_capacity(). This fixes r41920 ("string.c: multi-byte
+	  terminator", 2013-07-11).  [ruby-core:77257] [Bug #12757]
+
+	* test/-ext-/string/test_set_len.rb (test_capacity_equals_to_new_size):
+	  Test for this change. Applying only the test will trigger [BUG].
+
 Tue Sep 13 06:03:34 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* common.mk (benchmark): fix lib path.
