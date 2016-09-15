@@ -1,3 +1,10 @@
+Fri Sep 16 06:43:25 2016  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* lib/uri/generic.rb (def check_password): don't include bad password
+	  in URI exception output
+
+	* test/uri/test_generic.rb (def test_set_component): test for behavior
+
 Thu Sep 15 21:40:03 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* doc/extension.ja.rdoc: Fix file name.
