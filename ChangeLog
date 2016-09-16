@@ -1,3 +1,12 @@
+Fri Sep 16 21:28:25 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* internal.h (MAYBE_UNUSED): The fallback definition is needed.
+	  Fix compile error with some non-GCC compilers such as
+	  Oracle Solaris Studio 12.3 on Solaris 10.
+	  [Bug #12767] [ruby-dev:49807]
+
+	* internal.h (WARN_UNUSED_RESULT): ditto.
+
 Fri Sep 16 21:19:51 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* hash.c (each_pair_i_fast): Fix compile error with old version of

@@ -26,6 +26,14 @@ extern "C" {
 #define LIKELY(x) RB_LIKELY(x)
 #define UNLIKELY(x) RB_UNLIKELY(x)
 
+#ifndef MAYBE_UNUSED
+# define MAYBE_UNUSED(x) x
+#endif
+
+#ifndef WARN_UNUSED_RESULT
+# define WARN_UNUSED_RESULT(x) x
+#endif
+
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 # include <valgrind/memcheck.h>
 # ifndef VALGRIND_MAKE_MEM_DEFINED
