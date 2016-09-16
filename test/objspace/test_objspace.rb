@@ -316,7 +316,7 @@ class TestObjSpace < Test::Unit::TestCase
       assert_ruby_status(args, "#{<<~"begin;"}\n#{<<~"end;"}")
       begin;
         IO.popen(ARGV) do |f|
-          JSON.load(f)
+          f.each_line.map { |x| JSON.load(x) }
         end
       end;
     end

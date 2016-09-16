@@ -1,3 +1,10 @@
+Sat Sep 17 02:40:52 2016  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* ext/objspace/objspace_dump.c: Fix stream processing support for heap
+	  dumps. Full heap dumps should use JSON lines (http://jsonlines.org)
+	  so that we can process very large heaps without loading the entire
+	  heap dump in to memory at once.
+
 Fri Sep 16 22:10:31 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* ext/openssl/ossl_ssl.c (ssl_npn_select_cb_common): Fix compile error
