@@ -1,3 +1,9 @@
+Fri Sep 16 14:35:55 2016  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* ChangeLog (add-log-time-format): Not exactly sure when but
+	  recently (25.x maybe), emacs changed its API to take optional
+	  two arguments.  We have to follow that.
+
 Fri Sep 16 06:43:25 2016  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* lib/uri/generic.rb (def check_password): don't include bad password
@@ -8166,8 +8172,8 @@ For the changes before 1.8.0, see doc/ChangeLog-1.8.0
 
 Local variables:
 coding: us-ascii
-add-log-time-format: (lambda ()
-  (let* ((time (current-time))
+add-log-time-format: (lambda (&optional x y)
+  (let* ((time (or x (current-time)))
 	 (system-time-locale "C")
 	 (diff (+ (cadr time) 32400))
 	 (lo (% diff 65536))
