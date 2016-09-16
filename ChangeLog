@@ -1,3 +1,9 @@
+Fri Sep 16 22:10:31 2016  Naohisa Goto  <ngotogenome@gmail.com>
+
+	* ext/openssl/ossl_ssl.c (ssl_npn_select_cb_common): Fix compile error
+	  with old version of fcc (Fujitsu C Compiler) on Solaris 10.
+	  [Bug #12769] [ruby-dev:49809]
+
 Fri Sep 16 21:28:25 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* internal.h (MAYBE_UNUSED): The fallback definition is needed.

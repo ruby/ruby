@@ -636,7 +636,11 @@ ssl_npn_select_cb_common(SSL *ssl, VALUE cb, const unsigned char **out,
 {
     VALUE selected;
     int status;
-    struct npn_select_cb_common_args args = { cb, in, inlen };
+    struct npn_select_cb_common_args args;
+
+    args.cb = cb;
+    args.in = in;
+    args.inlen = inlen;
 
     selected = rb_protect(npn_select_cb_common_i, (VALUE)&args, &status);
     if (status) {
