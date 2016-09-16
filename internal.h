@@ -26,26 +26,6 @@ extern "C" {
 #define LIKELY(x) RB_LIKELY(x)
 #define UNLIKELY(x) RB_UNLIKELY(x)
 
-#ifndef __has_attribute
-# define __has_attribute(x) 0
-#endif
-
-#if __has_attribute(__unused__)
-#define UNINITIALIZED_VAR(x) x __attribute__((__unused__))
-#elif defined(__GNUC__) && __GNUC__ >= 3
-#define UNINITIALIZED_VAR(x) x = x
-#else
-#define UNINITIALIZED_VAR(x) x
-#endif
-
-#if __has_attribute(__warn_unused_result__)
-#define WARN_UNUSED_RESULT(x) x __attribute__((__warn_unused_result__))
-#elif GCC_VERSION_SINCE(3,4,0)
-#define WARN_UNUSED_RESULT(x) x __attribute__((__warn_unused_result__))
-#else
-#define WARN_UNUSED_RESULT(x) x
-#endif
-
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 # include <valgrind/memcheck.h>
 # ifndef VALGRIND_MAKE_MEM_DEFINED

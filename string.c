@@ -7348,7 +7348,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
     long pos, len, rslen;
     int paragraph_mode = 0;
 
-    VALUE UNINITIALIZED_VAR(ary);
+    VALUE MAYBE_UNUSED(ary);
 
     if (argc == 0)
 	rs = rb_rs;
@@ -7522,7 +7522,7 @@ static VALUE
 rb_str_enumerate_bytes(VALUE str, int wantarray)
 {
     long i;
-    VALUE UNINITIALIZED_VAR(ary);
+    VALUE MAYBE_UNUSED(ary);
 
     if (rb_block_given_p()) {
 	if (wantarray) {
@@ -7606,7 +7606,7 @@ rb_str_enumerate_chars(VALUE str, int wantarray)
     long i, len, n;
     const char *ptr;
     rb_encoding *enc;
-    VALUE UNINITIALIZED_VAR(ary);
+    VALUE MAYBE_UNUSED(ary);
 
     str = rb_str_new_frozen(str);
     ptr = RSTRING_PTR(str);
@@ -7705,7 +7705,7 @@ rb_str_enumerate_codepoints(VALUE str, int wantarray)
     unsigned int c;
     const char *ptr, *end;
     rb_encoding *enc;
-    VALUE UNINITIALIZED_VAR(ary);
+    VALUE MAYBE_UNUSED(ary);
 
     if (single_byte_optimizable(str))
 	return rb_str_enumerate_bytes(str, wantarray);

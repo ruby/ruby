@@ -1,3 +1,43 @@
+Fri Sep 16 14:54:34 2016  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* internal.h (WARN_UNUSED_RESULT): moved to configure.in, to
+	  actually check its availability rather to check GCC's version.
+
+	* configure.in (WARN_UNUSED_RESULT): moved to here.
+
+	* configure.in (RUBY_FUNC_ATTRIBUTE): change function declaration
+	  to return int rather than void, because it makes no sense for a
+	  warn_unused_result attributed function to return void.
+
+	  Funny thing however is that it also makes no sense for noreturn
+	  attributed function to return int.  So there is a fundamental
+	  conflict between them.  While I tested this, I confirmed both
+	  GCC 6 and Clang 3.8 prefers int over void to correctly detect
+	  necessary attributes under this setup.  Maybe subject to change
+	  in future.
+
+	* internal.h (UNINITIALIZED_VAR): renamed to MAYBE_UNUSED, then
+	  moved to configure.in for the same reason we move
+	  WARN_UNUSED_RESULT.
+
+	* configure.in (MAYBE_UNUSED): moved to here.
+
+	* internal.h (__has_attribute): deleted, because it has no use now.
+
+	* string.c (rb_str_enumerate_lines): refactor macro rename.
+
+	* string.c (rb_str_enumerate_bytes): ditto.
+
+	* string.c (rb_str_enumerate_chars): ditto.
+
+	* string.c (rb_str_enumerate_codepoints): ditto.
+
+	* thread.c (do_select): ditto.
+
+	* vm_backtrace.c (rb_debug_inspector_open): ditto.
+
+	* vsnprintf.c (BSD_vfprintf): ditto.
+
 Fri Sep 16 14:35:55 2016  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* ChangeLog (add-log-time-format): Not exactly sure when but

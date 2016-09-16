@@ -1809,7 +1809,7 @@ AS_VAR_POPDEF([rbcv])dnl
 dnl RUBY_FUNC_ATTRIBUTE(attrib, macroname, cachevar, condition)
 AC_DEFUN([RUBY_FUNC_ATTRIBUTE], [dnl
     RUBY_DECL_ATTRIBUTE([$1], [$2], [$3], [$4],
-	[function], [@%:@define x void conftest_attribute_check(void)]
+	[function], [@%:@define x int conftest_attribute_check(void)]
     )
 ])
 
@@ -1829,6 +1829,8 @@ RUBY_FUNC_ATTRIBUTE(__deprecated__("by "@%:@n), DEPRECATED_BY(n,x), rb_cv_func_d
 RUBY_TYPE_ATTRIBUTE(__deprecated__ mesg, DEPRECATED_TYPE(mesg,x), rb_cv_type_deprecated)
 RUBY_FUNC_ATTRIBUTE(__noinline__, NOINLINE)
 RUBY_FUNC_ATTRIBUTE(__always_inline__, ALWAYS_INLINE)
+RUBY_FUNC_ATTRIBUTE(__warn_unused_result__, WARN_UNUSED_RESULT)
+RUBY_FUNC_ATTRIBUTE(__unused__, MAYBE_UNUSED)
 RUBY_FUNC_ATTRIBUTE(__error__ mesg, ERRORFUNC(mesg,x), rb_cv_func___error__)
 RUBY_FUNC_ATTRIBUTE(__warning__ mesg, WARNINGFUNC(mesg,x), rb_cv_func___warning__)
 RUBY_FUNC_ATTRIBUTE(__weak__, WEAK, rb_cv_func_weak)
