@@ -1,3 +1,8 @@
+Sat Sep 17 22:46:02 2016  Koichi ITO  <koic.ito@gmail.com>
+
+	* vm_insnhelper.c (vm_throw_start): Remove too much ";"
+	  [fix GH-1432]
+
 Sat Sep 17 19:19:06 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* test/openssl/test_ssl.rb (test_ctx_options): Fix test failure on

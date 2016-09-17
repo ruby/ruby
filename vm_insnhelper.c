@@ -1039,7 +1039,7 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 		    int i;
 
 		    for (i=0; i<ct_size; i++) {
-			const struct iseq_catch_table_entry * const entry = &ct->entries[i];;
+			const struct iseq_catch_table_entry * const entry = &ct->entries[i];
 
 			if (entry->type == CATCH_TYPE_BREAK && entry->start < epc && entry->end >= epc) {
 			    if (entry->cont == epc) { /* found! */
