@@ -1,3 +1,9 @@
+Sat Sep 17 19:19:06 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* test/openssl/test_ssl.rb (test_ctx_options): Fix test failure on
+	  Ubuntu 16.04. The fix in r56147 was incomplete. This is a cherry-pick
+	  of the commit b039f3e268c2 at ruby/openssl.
+
 Sat Sep 17 10:49:35 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* doc/extension.ja.rdoc: translate r56130 (rb_check_arity).

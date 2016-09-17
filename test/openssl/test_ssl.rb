@@ -10,13 +10,13 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
     assert (OpenSSL::SSL::OP_ALL & ctx.options) == OpenSSL::SSL::OP_ALL,
            "OP_ALL is set by default"
-    ctx.options = nil
-    assert_equal OpenSSL::SSL::OP_ALL, ctx.options
     ctx.options = 4
     assert_equal 4, ctx.options & 4
     if ctx.options != 4
       pend "SSL_CTX_set_options() seems to be modified by distributor"
     end
+    ctx.options = nil
+    assert_equal OpenSSL::SSL::OP_ALL, ctx.options
 
     assert_equal true, ctx.setup
     assert_predicate ctx, :frozen?
