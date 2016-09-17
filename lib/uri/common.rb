@@ -227,6 +227,12 @@ module URI
     RFC3986_PARSER.parse(uri)
   end
 
+  def self.try_parse(uri)
+    parse(uri)
+  rescue InvalidURIError
+    nil
+  end
+
   #
   # == Synopsis
   #
