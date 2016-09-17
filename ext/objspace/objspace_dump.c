@@ -318,7 +318,6 @@ dump_object(VALUE obj, struct dump_config *dc)
 static int
 heap_i(void *vstart, void *vend, size_t stride, void *data)
 {
-    struct dump_config *dc = (struct dump_config *)data;
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
 	if (RBASIC(v)->flags)
