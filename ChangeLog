@@ -1,3 +1,7 @@
+Sat Sep 17 10:49:35 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* doc/extension.ja.rdoc: translate r56130 (rb_check_arity).
+
 Sat Sep 17 02:40:52 2016  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* ext/objspace/objspace_dump.c: Fix stream processing support for heap

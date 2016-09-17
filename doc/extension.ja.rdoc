@@ -938,6 +938,9 @@ fdbm_delete()はこのようになっています．
 い，第4引数以降に指定したVALUEへの参照に値を代入してくれま
 す．
 
+引数の数をチェックするだけならrb_check_arity()が使えます．
+これは引数をリストとして扱いたいときに便利です．
+
 引数をRubyの配列として受け取るメソッドの例には
 Thread#initializeがあります．実装はこうです．
 
@@ -1346,6 +1349,12 @@ rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(), int arg
 rb_define_singleton_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
 
   特異メソッドを定義する．引数はrb_define_method()と同じ．
+
+rb_check_arity(int argc, int min, int max) ::
+
+  引数の数であるargcがmin..maxの範囲に入っているかをチェックします．
+  もしmaxがUNLIMITED_ARGUMENTSなら，上限はチェックしません．
+  もしargcが範囲外ならArgumentErrorが発生します．
 
 rb_scan_args(int argc, VALUE *argv, const char *fmt, ...) ::
 
