@@ -1,3 +1,9 @@
+Sun Sep 18 22:48:54 2016  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb (RSS::BaseModel): Remove needless codes.
+	  [Bug #12773][ruby-dev:49813]
+	  Reported by Kazuhiro NISHIYAMA. Thanks!!!
+
 Sun Sep 18 19:23:47 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/sync.rb: Fix NameError when error.
