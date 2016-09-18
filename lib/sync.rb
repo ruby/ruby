@@ -68,7 +68,7 @@ module Sync_m
       Message = "Unknown lock mode(%s)"
       def LockModeFailer.Fail(mode)
         if mode.id2name
-          mode = id2name
+          mode = mode.id2name
         end
         super(mode)
       end
@@ -304,7 +304,7 @@ module Sync_m
         ret = false
       end
     else
-      Err::LockModeFailer.Fail mode
+      Err::LockModeFailer.Fail m
     end
     return ret
   end

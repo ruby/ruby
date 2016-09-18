@@ -1,3 +1,7 @@
+Sun Sep 18 19:23:47 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/sync.rb: Fix NameError when error.
+
 Sat Sep 17 22:46:02 2016  Koichi ITO  <koic.ito@gmail.com>
 
 	* vm_insnhelper.c (vm_throw_start): Remove too much ";"
