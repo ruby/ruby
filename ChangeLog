@@ -1,3 +1,11 @@
+Mon Sep 19 10:36:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (lazy_init_yielder): directly call stored functions.
+	  [Feature #6183]
+
+	* enumerator.c (lazy_add_method): create lazy enumerator which
+	  uses lazy_init_yielder().
+
 Sun Sep 18 22:48:54 2016  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb (RSS::BaseModel): Remove needless codes.
