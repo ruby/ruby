@@ -6781,6 +6781,7 @@ Init_Bignum(void)
     rb_cBignum = rb_cInteger;
 #endif
     rb_define_const(rb_cObject, "Bignum", rb_cInteger);
+    rb_deprecate_constant(rb_cObject, "Bignum");
 
     rb_define_method(rb_cInteger, "coerce", rb_int_coerce, 1);
 

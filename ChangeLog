@@ -1,3 +1,9 @@
+Mon Sep 19 17:05:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (Init_Numeric), bignum.c (Init_Bignum): deprecate
+	  Fixnum and Bignum.  this may be reverted after previews.
+	  [Feature #12739]
+
 Mon Sep 19 10:36:53 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (lazy_init_yielder): directly call stored functions.
