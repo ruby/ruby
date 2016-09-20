@@ -6576,7 +6576,8 @@ Init_stack(volatile VALUE *addr)
  *     GC.start                     -> nil
  *     GC.garbage_collect           -> nil
  *     GC.start(full_mark: true, immediate_sweep: true)           -> nil
- *     GC.garbage_collect(full_mark: true, immediate_sweep: true) -> nil
+ *     ObjectSpace.garbage_collect(full_mark: true, immediate_sweep: true) -> nil
+ *     include GC; garbage_collect(full_mark: true, immediate_sweep: true) -> nil
  *
  *  Initiates garbage collection, unless manually disabled.
  *

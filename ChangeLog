@@ -1,3 +1,8 @@
+Tue Sep 20 23:02:50 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (gc_start_internal): [DOC] add ObjectSpace.garbage_collect
+	  and fix GC#garbage_collect.  [Bug #12777]
+
 Tue Sep 20 21:24:01 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* doc/extension.ja.rdoc: translate r56189 (rb_gc_adjust_memory_usage).
