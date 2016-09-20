@@ -1,3 +1,7 @@
+Tue Sep 20 21:24:01 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* doc/extension.ja.rdoc: translate r56189 (rb_gc_adjust_memory_usage).
+
 Tue Sep 20 17:52:28 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* gems/bundled_gems: Update rake-11.3.0
