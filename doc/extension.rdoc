@@ -1652,6 +1652,18 @@ int rb_remove_event_hook(rb_event_hook_func_t func) ::
 
   Removes the specified hook function.
 
+== Memory usage
+
+void rb_gc_adjust_memory_usage(ssize_t diff) ::
+
+  Adjusts the amount of registered external memory.  You can tell GC how
+  much memory is used by an external library by this function.  Calling
+  this function with positive diff means the memory usage is increased;
+  new memory block is allocated or a block is reallocated as larger
+  size.  Calling this function with negative diff means the memory usage
+  is decreased; a memory block is freed or a block is reallocated as
+  smaller size.  This function may trigger the GC.
+
 == Macros for Compatibility
 
 Some macros to check API compatibilities are available by default.

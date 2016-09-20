@@ -8096,6 +8096,18 @@ gc_malloc_allocations(VALUE self)
 }
 #endif
 
+void
+rb_gc_adjust_memory_usage(ssize_t diff)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    if (diff > 0) {
+	objspace_malloc_increase(objspace, 0, diff, 0, MEMOP_TYPE_REALLOC);
+    }
+    else if (diff < 0) {
+	objspace_malloc_increase(objspace, 0, 0, -diff, MEMOP_TYPE_REALLOC);
+    }
+}
+
 /*
   ------------------------------ WeakMap ------------------------------
 */

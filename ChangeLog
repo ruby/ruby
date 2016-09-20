@@ -1,3 +1,8 @@
+Tue Sep 20 16:52:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_gc_adjust_memory_usage): notify memory usage to the GC
+	  engine by extension libraries, to trigger GC.  [Feature #12690]
+
 Mon Sep 19 17:05:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (Init_Numeric), bignum.c (Init_Bignum): deprecate

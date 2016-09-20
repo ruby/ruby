@@ -502,6 +502,7 @@ VALUE rb_undefine_finalizer(VALUE);
 size_t rb_gc_count(void);
 size_t rb_gc_stat(VALUE);
 VALUE rb_gc_latest_gc_info(VALUE);
+void rb_gc_adjust_memory_usage(ssize_t);
 /* hash.c */
 void st_foreach_safe(struct st_table *, int (*)(ANYARGS), st_data_t);
 VALUE rb_check_hash_type(VALUE);
