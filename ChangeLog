@@ -1,3 +1,7 @@
+Tue Sep 20 17:52:28 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* gems/bundled_gems: Update rake-11.3.0
+
 Tue Sep 20 16:52:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (rb_gc_adjust_memory_usage): notify memory usage to the GC
