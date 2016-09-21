@@ -1,3 +1,9 @@
+Wed Sep 21 17:43:53 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* process.c (InitVM_process): Support CLOCK_MONOTONIC_RAW_APPROX,
+	  CLOCK_UPTIME_RAW, and CLOCK_UPTIME_RAW_APPROX which are introduced
+	  by macOS 10.12.
+
 Wed Sep 21 13:47:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (brace_body, do_body): preserve cmdarg_stack so that
