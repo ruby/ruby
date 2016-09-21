@@ -1,9 +1,11 @@
-Wed Sep 21 13:38:44 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Sep 21 13:47:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (brace_body, do_body): preserve cmdarg_stack so that
+	  `do` after cmdarg in a block should be `do_block` and bound to
+	  the outer method.  [ruby-core:72482] [Bug #11873]
 
 	* parse.y: `do` after cmdarg in parentheses should be `do_block`
 	  and bound to the outer method.  [ruby-core:72482] [Bug #11873]
-
-Wed Sep 21 13:32:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (brace_body, do_body): extract block bodies.
 

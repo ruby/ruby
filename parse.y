@@ -3759,13 +3759,23 @@ brace_block	: '{'
 		;
 
 brace_body	: {$<vars>$ = dyna_push();}
+		  {$<val>$ = cmdarg_stack >> 1; CMDARG_SET(0);}
 		  opt_block_param compstmt
-		  {$$ = new_brace_body($2, $3); dyna_pop($<vars>1);}
+		    {
+			$$ = new_brace_body($3, $4);
+			dyna_pop($<vars>1);
+			CMDARG_SET($<num>2);
+		    }
 		;
 
 do_body 	: {$<vars>$ = dyna_push();}
+		  {$<val>$ = cmdarg_stack >> 1; CMDARG_SET(0);}
 		  opt_block_param compstmt
-		  {$$ = new_do_body($2, $3); dyna_pop($<vars>1);}
+		    {
+			$$ = new_do_body($3, $4);
+			dyna_pop($<vars>1);
+			CMDARG_SET($<num>2);
+		    }
 		;
 
 case_body	: keyword_when args then
