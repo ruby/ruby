@@ -1474,7 +1474,7 @@ cmd_brace_block	: tLBRACE_ARG
 		  brace_body '}'
 		    {
 			$$ = $3;
- 		    /*%%%*/
+		    /*%%%*/
 			nd_set_line($$, $<num>2);
 		    /*% %*/
 		    }
@@ -3561,7 +3561,7 @@ do_block	: keyword_do_block
 		  do_body keyword_end
 		    {
 			$$ = $3;
- 		    /*%%%*/
+		    /*%%%*/
 			nd_set_line($$, $<num>2);
 		    /*% %*/
 		    }
