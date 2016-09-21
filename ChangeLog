@@ -1,3 +1,7 @@
+Wed Sep 21 13:32:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (brace_body, do_body): extract block bodies.
+
 Tue Sep 20 23:02:50 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (gc_start_internal): [DOC] add ObjectSpace.garbage_collect
