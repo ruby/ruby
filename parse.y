@@ -7911,7 +7911,7 @@ parse_ident(struct parser_params *parser, int c, int cmd_state)
 		if (COND_P()) return keyword_do_cond;
 		if (CMDARG_P() && !IS_lex_state_for(state, EXPR_CMDARG))
 		    return keyword_do_block;
-		if (IS_lex_state_for(state, (EXPR_BEG | EXPR_ENDARG)))
+		if (IS_lex_state_for(state, (EXPR_BEG | EXPR_END | EXPR_ENDARG)))
 		    return keyword_do_block;
 		return keyword_do;
 	    }

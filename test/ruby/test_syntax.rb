@@ -832,6 +832,14 @@ eom
     assert_valid_syntax("foo (bar rescue nil)")
   end
 
+  def test_cmdarg_in_paren
+    bug11873 = '[ruby-core:72482] [Bug #11873]'
+    assert_valid_syntax %q{a b{c d}, :e do end}, bug11873
+    assert_valid_syntax %q{a b(c d), :e do end}, bug11873
+    assert_valid_syntax %q{a b{c(d)}, :e do end}, bug11873
+    assert_valid_syntax %q{a b(c(d)), :e do end}, bug11873
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
