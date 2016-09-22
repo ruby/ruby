@@ -1,3 +1,8 @@
+Thu Sep 22 13:00:04 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* gc.c (gc_start_internal): [DOC] methods without arguments
+	  like r56194. [Bug #12777]
+
 Wed Sep 21 17:43:53 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* process.c (InitVM_process): Support CLOCK_MONOTONIC_RAW_APPROX,
