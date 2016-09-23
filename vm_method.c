@@ -447,7 +447,8 @@ make_method_entry_refined(VALUE owner, rb_method_entry_t *me)
 
 	refined.orig_me =
 	    rb_method_entry_alloc(me->called_id, me->owner,
-				  me->defined_class || owner,
+				  me->defined_class ?
+				  me->defined_class : owner,
 				  method_definition_addref(me->def));
 	METHOD_ENTRY_FLAGS_COPY(refined.orig_me, me);
 	refined.owner = owner;
