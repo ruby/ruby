@@ -229,7 +229,6 @@ module Forwardable
       end
     end;
 
-    puts str
     vm.compile(str, __FILE__, __FILE__, line_no,
                trace_instruction: false,
                tailcall_optimization: true)
