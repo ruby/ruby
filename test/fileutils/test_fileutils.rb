@@ -9,7 +9,6 @@ require 'tmpdir'
 require 'test/unit'
 
 class TestFileUtils < Test::Unit::TestCase
-  TMPROOT = "#{Dir.tmpdir}/fileutils.rb.#{$$}"
   include Test::Unit::FileAssertions
 
   def assert_output_lines(expected, fu = self, message=nil)
@@ -96,8 +95,7 @@ class TestFileUtils < Test::Unit::TestCase
     end
 
     begin
-      tmproot = TMPROOT
-      Dir.mkdir tmproot unless File.directory?(tmproot)
+      tmproot = Dir.mktmpdir "fileutils"
       Dir.chdir tmproot do
         Dir.mkdir("\n")
         Dir.rmdir("\n")
@@ -145,8 +143,7 @@ class TestFileUtils < Test::Unit::TestCase
   def setup
     @prevdir = Dir.pwd
     @groups = Process.groups if have_file_perm?
-    tmproot = TMPROOT
-    mymkdir tmproot unless File.directory?(tmproot)
+    tmproot = @tmproot = Dir.mktmpdir "fileutils"
     Dir.chdir tmproot
     my_rm_rf 'data'; mymkdir 'data'
     my_rm_rf 'tmp';  mymkdir 'tmp'
@@ -155,7 +152,7 @@ class TestFileUtils < Test::Unit::TestCase
 
   def teardown
     Dir.chdir @prevdir
-    my_rm_rf TMPROOT
+    my_rm_rf @tmproot
   end
 
 
