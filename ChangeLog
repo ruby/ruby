@@ -1,3 +1,9 @@
+Fri Sep 23 20:05:27 2016  Akinori MUSHA  <knu@iDaemons.org>
+
+	* man/ruby.1, man/erb.1, man/irb.1, man/ri.1: Use the `Lk` macro
+	  for hyperlinks, which has been available since mdocml 1.5.1
+	  (released more than seven years ago).
+
 Fri Sep 23 15:47:04 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/forwardable.rb (_delegator_method): allow private methods to
