@@ -85,7 +85,7 @@ if have_zlib
         conf << "\t$(MAKE) -f $(ZSRC)/win32/Makefile.#{$nmake ? 'msc' : 'gcc'} TOP=$(ZSRC) $@\n"
         conf << "install-so: $(topdir)/#{dll}"
         conf << "$(topdir)/#{dll}: $(ZIMPLIB)\n"
-        conf << "\t$(Q) $(COPY) #{dll} $(BINDIR)\n"
+        conf << "\t$(Q) $(COPY) #{dll} $(@D)\n"
       end
     end
     conf
