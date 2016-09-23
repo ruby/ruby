@@ -1,3 +1,8 @@
+Fri Sep 23 20:36:05 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_mod_refine): refine modules as well.
+	  [ruby-core:76199] [Feature #12534]
+
 Fri Sep 23 20:19:09 2016  Akinori MUSHA  <knu@iDaemons.org>
 
 	* man/ruby.1: Update the paragraphs in "Rich Libraries" which

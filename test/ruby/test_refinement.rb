@@ -345,17 +345,64 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal([:c, :m1, :m2], x)
   end
 
-  def test_refine_module
-    m1 = Module.new
-    assert_raise(TypeError) do
-      Module.new {
-        refine m1 do
-        def foo
-          :m2
-        end
-        end
-      }
+  module RefineModule
+    module M
+      def foo
+        "M#foo"
+      end
+
+      def bar
+        "M#bar"
+      end
+
+      def baz
+        "M#baz"
+      end
     end
+
+    class C
+      include M
+
+      def baz
+        "#{super} C#baz"
+      end
+    end
+
+    module M2
+      refine M do
+        def foo
+          "M@M2#foo"
+        end
+
+        def bar
+          "#{super} M@M2#bar"
+        end
+
+        def baz
+          "#{super} M@M2#baz"
+        end
+      end
+    end
+
+    using M2
+
+    def self.call_foo
+      C.new.foo
+    end
+
+    def self.call_bar
+      C.new.bar
+    end
+
+    def self.call_baz
+      C.new.baz
+    end
+  end
+
+  def test_refine_module
+    assert_equal("M@M2#foo", RefineModule.call_foo)
+    assert_equal("M#bar M@M2#bar", RefineModule.call_bar)
+    assert_equal("M#baz C#baz", RefineModule.call_baz)
   end
 
   def test_refine_neither_class_nor_module

@@ -1092,6 +1092,16 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
     return module;
 }
 
+static void
+ensure_class_or_module(VALUE obj)
+{
+    if (!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE)) {
+	rb_raise(rb_eTypeError,
+		 "wrong argument type %"PRIsVALUE" (expected Class or Module)",
+		 rb_obj_class(obj));
+    }
+}
+
 static VALUE
 hidden_identity_hash_new(void)
 {
@@ -1106,7 +1116,7 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
 {
     VALUE iclass, c, superclass = klass;
 
-    Check_Type(klass, T_CLASS);
+    ensure_class_or_module(klass);
     Check_Type(module, T_MODULE);
     if (NIL_P(CREF_REFINEMENTS(cref))) {
 	CREF_REFINEMENTS_SET(cref, hidden_identity_hash_new());
@@ -1231,11 +1241,11 @@ add_activated_refinement(VALUE activated_refinements,
 
 /*
  *  call-seq:
- *     refine(klass) { block }   -> module
+ *     refine(mod) { block }   -> module
  *
- *  Refine <i>klass</i> in the receiver.
+ *  Refine <i>mod</i> in the receiver.
  *
- *  Returns an overlaid module.
+ *  Returns a module, where refined methods are defined.
  */
 
 static VALUE
@@ -1255,7 +1265,7 @@ rb_mod_refine(VALUE module, VALUE klass)
 	rb_raise(rb_eArgError, "can't pass a Proc as a block to Module#refine");
     }
 
-    Check_Type(klass, T_CLASS);
+    ensure_class_or_module(klass);
     CONST_ID(id_refinements, "__refinements__");
     refinements = rb_attr_get(module, id_refinements);
     if (NIL_P(refinements)) {
