@@ -70,9 +70,15 @@ if have_zlib
 
   $defs.concat(defines.collect{|d|' -D'+d})
 
-  have_func('crc32_combine', 'zlib.h')
-  have_func('adler32_combine', 'zlib.h')
-  have_type('z_crc_t', 'zlib.h')
+  if zsrc
+    $defs << "-DHAVE_CRC32_COMBINE"
+    $defs << "-DHAVE_ADLER32_COMBINE"
+    $defs << "-DHAVE_TYPE_Z_CRC_T"
+  else
+    have_func('crc32_combine', 'zlib.h')
+    have_func('adler32_combine', 'zlib.h')
+    have_type('z_crc_t', 'zlib.h')
+  end
 
   create_makefile('zlib') {|conf|
     if zsrc
