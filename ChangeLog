@@ -1,3 +1,11 @@
+Fri Sep 23 21:38:58 2016  Akinori MUSHA  <knu@iDaemons.org>
+
+	* tool/mdoc2man.rb (Mdoc2Man#parse_macro): Add support for the
+	  `Lk` macro.
+
+	* tool/mdoc2man.rb (Mdoc2Man#shift_arg): A new function to extract
+	  a possibly quoted argument.
+
 Fri Sep 23 20:36:05 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_mod_refine): refine modules as well.
