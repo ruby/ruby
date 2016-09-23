@@ -2281,6 +2281,13 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		  /*case BIN(trace):*/
 		    next = next->next;
 		    break;
+		  case BIN(jump):
+		    /* if cond
+		     *   return tailcall
+		     * end
+		     */
+		    next = get_destination_insn((INSN *)next);
+		    break;
 		  case BIN(leave):
 		    piobj = iobj;
 		  default:

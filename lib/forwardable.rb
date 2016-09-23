@@ -195,31 +195,41 @@ module Forwardable
       accessor = "#{accessor}()"
     end
 
-    unless begin
-             iseq = RubyVM::InstructionSequence
-                    .compile("().#{method}", nil, nil, 0, false)
-           rescue SyntaxError
-           else
-             iseq.to_a.dig(-1, 1, 1, :mid) == method.to_sym
-           end
-      method_call = "__send__(:#{method}, *args, &block)"
-    else
-      method_call = "#{method}(*args, &block)"
+    vm = RubyVM::InstructionSequence
+    method_call = ".__send__(:#{method}, *args, &block)"
+    if begin
+         iseq = vm.compile("().#{method}", nil, nil, 0, false)
+       rescue SyntaxError
+       else
+         iseq.to_a.dig(-1, 1, 1, :mid) == method.to_sym
+       end
+      loc, = caller_locations(2,1)
+      pre = "_ ="
+      mesg = "#{Module === obj ? obj : obj.class}\##{ali} at #{loc.path}:#{loc.lineno} forwarding to private method "
+      method_call = "#{<<-"begin;"}\n#{<<-"end;".chomp}"
+        begin;
+          unless ::Kernel.instance_method(:respond_to?).bind(_).call(:"#{method}")
+            ::Kernel.warn "\#{caller_locations(1)[0]}: "#{mesg.dump}"\#{_.class}"'##{method}'
+            _#{method_call}
+          else
+            _.#{method}(*args, &block)
+          end
+        end;
     end
 
     line_no = __LINE__+1; str = "#{<<-"begin;"}\n#{<<-"end;"}"
     begin;
       proc do
         def #{ali}(*args, &block)
+          #{pre}
           begin
             #{accessor}
-          end.#{method_call}
+          end#{method_call}
         end
       end
     end;
 
-    RubyVM::InstructionSequence
-      .compile(str, __FILE__, __FILE__, line_no,
+    vm.compile(str, __FILE__, __FILE__, line_no,
                trace_instruction: false,
                tailcall_optimization: true)
       .eval

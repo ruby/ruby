@@ -431,7 +431,11 @@ class CSV
     #
     # This method returns the row for chaining.
     #
+    # If no block is given, an Enumerator is returned.
+    #
     def delete_if(&block)
+      block or return enum_for(__method__) { size }
+
       @row.delete_if(&block)
 
       self  # for chaining
@@ -500,13 +504,15 @@ class CSV
 
     #
     # Yields each pair of the row as header and field tuples (much like
-    # iterating over a Hash).
+    # iterating over a Hash). This method returns the row for chaining.
+    #
+    # If no block is given, an Enumerator is returned.
     #
     # Support for Enumerable.
     #
-    # This method returns the row for chaining.
-    #
     def each(&block)
+      block or return enum_for(__method__) { size }
+
       @row.each(&block)
 
       self  # for chaining
@@ -822,7 +828,11 @@ class CSV
     #
     # This method returns the table for chaining.
     #
+    # If no block is given, an Enumerator is returned.
+    #
     def delete_if(&block)
+      block or return enum_for(__method__) { @mode == :row or @mode == :col_or_row ? size : headers.size }
+
       if @mode == :row or @mode == :col_or_row  # by index
         @table.delete_if(&block)
       else                                      # by header
@@ -845,7 +855,11 @@ class CSV
     #
     # This method returns the table for chaining.
     #
+    # If no block is given, an Enumerator is returned.
+    #
     def each(&block)
+      block or return enum_for(__method__) { @mode == :col ? headers.size : size }
+
       if @mode == :col
         headers.each { |header| block[[header, self[header]]] }
       else

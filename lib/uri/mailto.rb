@@ -84,7 +84,7 @@ module URI
     #    puts m3.to_s  ->  mailto:listman@example.com?subject=subscribe
     #
     def self.build(args)
-      tmp = Util::make_components_hash(self, args)
+      tmp = Util.make_components_hash(self, args)
 
       case tmp[:to]
       when Array
@@ -118,7 +118,7 @@ module URI
         end
       end
 
-      return super(tmp)
+      super(tmp)
     end
 
     #
@@ -187,7 +187,7 @@ module URI
         end
       end
 
-      return true
+      true
     end
     private :check_to
 
@@ -214,7 +214,7 @@ module URI
           "bad component(expected opaque component): #{v}"
       end
 
-      return true
+      true
     end
     private :check_headers
 
@@ -282,7 +282,7 @@ module URI
         end
       end
 
-      return "To: #{to}
+      "To: #{to}
 #{head}
 #{body}
 "

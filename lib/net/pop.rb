@@ -14,7 +14,7 @@
 # Ruby Distribute License.
 #
 # NOTE: You can find Japanese version of this document at:
-# http://www.ruby-lang.org/ja/man/html/net_pop.html
+# http://docs.ruby-lang.org/ja/latest/library/net=2fpop.html
 #
 #   $Id$
 #

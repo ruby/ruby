@@ -2084,6 +2084,8 @@ rb_threadptr_ready(rb_thread_t *th)
     rb_threadptr_interrupt(th);
 }
 
+void rb_threadptr_setup_exception(rb_thread_t *th, VALUE mesg, VALUE cause);
+
 static VALUE
 rb_threadptr_raise(rb_thread_t *th, int argc, VALUE *argv)
 {
@@ -2099,6 +2101,7 @@ rb_threadptr_raise(rb_thread_t *th, int argc, VALUE *argv)
     else {
 	exc = rb_make_exception(argc, argv);
     }
+    rb_threadptr_setup_exception(GET_THREAD(), exc, Qundef);
     rb_threadptr_pending_interrupt_enque(th, exc);
     rb_threadptr_interrupt(th);
     return Qnil;
@@ -3657,11 +3660,11 @@ static int
 do_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds,
 	  rb_fdset_t *exceptfds, struct timeval *timeout)
 {
-    int UNINITIALIZED_VAR(result);
+    int MAYBE_UNUSED(result);
     int lerrno;
-    rb_fdset_t UNINITIALIZED_VAR(orig_read);
-    rb_fdset_t UNINITIALIZED_VAR(orig_write);
-    rb_fdset_t UNINITIALIZED_VAR(orig_except);
+    rb_fdset_t MAYBE_UNUSED(orig_read);
+    rb_fdset_t MAYBE_UNUSED(orig_write);
+    rb_fdset_t MAYBE_UNUSED(orig_except);
     double limit = 0;
     struct timeval wait_rest;
     rb_thread_t *th = GET_THREAD();

@@ -145,7 +145,7 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
 #if 0
 /*
  * call-seq:
- *    obj.hash    -> fixnum
+ *    obj.hash    -> integer
  *
  * Generates a Fixnum hash value for this object.  This function must have the
  * property that <code>a.eql?(b)</code> implies <code>a.hash == b.hash</code>.
@@ -3512,9 +3512,10 @@ InitVM_Object(void)
     rb_undef_alloc_func(rb_cNilClass);
     rb_undef_method(CLASS_OF(rb_cNilClass), "new");
     /*
-     * An alias of +nil+
+     * An obsolete alias of +nil+
      */
     rb_define_global_const("NIL", Qnil);
+    rb_deprecate_constant(rb_cObject, "NIL");
 
     rb_define_method(rb_cModule, "freeze", rb_mod_freeze, 0);
     rb_define_method(rb_cModule, "===", rb_mod_eqq, 1);
@@ -3596,9 +3597,10 @@ InitVM_Object(void)
     rb_undef_alloc_func(rb_cTrueClass);
     rb_undef_method(CLASS_OF(rb_cTrueClass), "new");
     /*
-     * An alias of +true+
+     * An obsolete alias of +true+
      */
     rb_define_global_const("TRUE", Qtrue);
+    rb_deprecate_constant(rb_cObject, "TRUE");
 
     rb_cFalseClass = rb_define_class("FalseClass", rb_cObject);
     rb_define_method(rb_cFalseClass, "to_s", false_to_s, 0);
@@ -3610,17 +3612,10 @@ InitVM_Object(void)
     rb_undef_alloc_func(rb_cFalseClass);
     rb_undef_method(CLASS_OF(rb_cFalseClass), "new");
     /*
-     * An alias of +false+
+     * An obsolete alias of +false+
      */
     rb_define_global_const("FALSE", Qfalse);
-
-    {
-	VALUE names[3];
-	names[0] = ID2SYM(rb_intern_const("TRUE"));
-	names[1] = ID2SYM(rb_intern_const("FALSE"));
-	names[2] = ID2SYM(rb_intern_const("NIL"));
-	rb_mod_deprecate_constant(3, names, rb_cObject);
-    }
+    rb_deprecate_constant(rb_cObject, "FALSE");
 }
 
 void

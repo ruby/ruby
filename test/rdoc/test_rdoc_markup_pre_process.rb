@@ -55,8 +55,6 @@ contents of a string.
   end
 
   def test_include_file_encoding_incompatible
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     @tempfile.write <<-INCLUDE
 # -*- mode: rdoc; coding: utf-8; fill-column: 74; -*-
 
@@ -471,4 +469,3 @@ contents of a string.
   end
 
 end
-

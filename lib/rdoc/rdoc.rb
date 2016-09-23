@@ -340,10 +340,8 @@ option)
   # Parses +filename+ and returns an RDoc::TopLevel
 
   def parse_file filename
-    if Object.const_defined? :Encoding then
-      encoding = @options.encoding
-      filename = filename.encode encoding
-    end
+    encoding = @options.encoding
+    filename = filename.encode encoding
 
     @stats.add_file filename
 
@@ -553,16 +551,14 @@ end
 begin
   require 'rubygems'
 
-  if Gem.respond_to? :find_files then
-    rdoc_extensions = Gem.find_files 'rdoc/discover'
+  rdoc_extensions = Gem.find_files 'rdoc/discover'
 
-    rdoc_extensions.each do |extension|
-      begin
-        load extension
-      rescue => e
-        warn "error loading #{extension.inspect}: #{e.message} (#{e.class})"
-        warn "\t#{e.backtrace.join "\n\t"}" if $DEBUG
-      end
+  rdoc_extensions.each do |extension|
+    begin
+      load extension
+    rescue => e
+      warn "error loading #{extension.inspect}: #{e.message} (#{e.class})"
+      warn "\t#{e.backtrace.join "\n\t"}" if $DEBUG
     end
   end
 rescue LoadError
@@ -572,4 +568,3 @@ end
 require 'rdoc/generator/darkfish'
 require 'rdoc/generator/ri'
 require 'rdoc/generator/pot'
-

@@ -2185,7 +2185,7 @@ get_param(const char *name, size_t default_value, size_t min_value)
 	}
 	result = (size_t)(((val -1 + RUBY_VM_SIZE_ALIGN) / RUBY_VM_SIZE_ALIGN) * RUBY_VM_SIZE_ALIGN);
     }
-    if (0) fprintf(stderr, "%s: %"PRIdSIZE"\n", name, result); /* debug print */
+    if (0) fprintf(stderr, "%s: %"PRIuSIZE"\n", name, result); /* debug print */
 
     return result;
 }

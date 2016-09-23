@@ -1415,24 +1415,24 @@ class TestHash < Test::Unit::TestCase
     assert_equal([10, 20, 30], [1, 2, 3].map(&h))
   end
 
-  def test_map_v
+  def test_transform_values
     x = @cls[a: 1, b: 2, c: 3]
-    y = x.map_v {|v| v ** 2 }
+    y = x.transform_values {|v| v ** 2 }
     assert_equal([1, 4, 9], y.values_at(:a, :b, :c))
     assert_not_same(x, y)
 
-    y = x.map_v.with_index {|v, i| "#{v}.#{i}" }
+    y = x.transform_values.with_index {|v, i| "#{v}.#{i}" }
     assert_equal(%w(1.0  2.1  3.2), y.values_at(:a, :b, :c))
   end
 
-  def test_map_v_bang
+  def test_transform_values_bang
     x = @cls[a: 1, b: 2, c: 3]
-    y = x.map_v! {|v| v ** 2 }
+    y = x.transform_values! {|v| v ** 2 }
     assert_equal([1, 4, 9], y.values_at(:a, :b, :c))
     assert_same(x, y)
 
     x = @cls[a: 1, b: 2, c: 3]
-    y = x.map_v!.with_index {|v, i| "#{v}.#{i}" }
+    y = x.transform_values!.with_index {|v, i| "#{v}.#{i}" }
     assert_equal(%w(1.0  2.1  3.2), y.values_at(:a, :b, :c))
   end
 

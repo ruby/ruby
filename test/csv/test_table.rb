@@ -220,6 +220,17 @@ class TestCSV::Table < TestCSV
     # verify that we can chain the call
     assert_equal(@table, @table.each { })
 
+    # without block
+    enum = @table.each
+    assert_instance_of(Enumerator, enum)
+    assert_equal(@table.size, enum.size)
+
+    i = 0
+    enum.each do |row|
+      assert_equal(@rows[i], row)
+      i += 1
+    end
+
     ###################
     ### Column Mode ###
     ###################
@@ -227,6 +238,17 @@ class TestCSV::Table < TestCSV
 
     headers = @table.headers
     @table.each do |header, column|
+      assert_equal(headers.shift, header)
+      assert_equal(@table[header], column)
+    end
+
+    # without block
+    enum = @table.each
+    assert_instance_of(Enumerator, enum)
+    assert_equal(@table.headers.size, enum.size)
+
+    headers = @table.headers
+    enum.each do |header, column|
       assert_equal(headers.shift, header)
       assert_equal(@table[header], column)
     end
@@ -363,6 +385,24 @@ class TestCSV::Table < TestCSV
     END_RESULT
   end
 
+  def test_delete_if_row_without_block
+    ######################
+    ### Mixed/Row Mode ###
+    ######################
+    enum = @table.delete_if
+    assert_instance_of(Enumerator, enum)
+    assert_equal(@table.size, enum.size)
+
+    # verify that we can chain the call
+    assert_equal(@table, enum.each { |row| (row["B"] % 2).zero? })
+
+    # verify resulting table
+    assert_equal(<<-END_RESULT.gsub(/^\s+/, ""), @table.to_csv)
+    A,B,C
+    4,5,6
+    END_RESULT
+  end
+
   def test_delete_if_column
     ###################
     ### Column Mode ###
@@ -370,6 +410,25 @@ class TestCSV::Table < TestCSV
     @table.by_col!
 
     assert_equal(@table, @table.delete_if { |h, v| h > "A" })
+    assert_equal(<<-END_RESULT.gsub(/^\s+/, ""), @table.to_csv)
+    A
+    1
+    4
+    7
+    END_RESULT
+  end
+
+  def test_delete_if_column_without_block
+    ###################
+    ### Column Mode ###
+    ###################
+    @table.by_col!
+
+    enum = @table.delete_if
+    assert_instance_of(Enumerator, enum)
+    assert_equal(@table.headers.size, enum.size)
+
+    assert_equal(@table, enum.each { |h, v| h > "A" })
     assert_equal(<<-END_RESULT.gsub(/^\s+/, ""), @table.to_csv)
     A
     1

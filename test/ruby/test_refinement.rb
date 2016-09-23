@@ -345,17 +345,64 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal([:c, :m1, :m2], x)
   end
 
-  def test_refine_module
-    m1 = Module.new
-    assert_raise(TypeError) do
-      Module.new {
-        refine m1 do
-        def foo
-          :m2
-        end
-        end
-      }
+  module RefineModule
+    module M
+      def foo
+        "M#foo"
+      end
+
+      def bar
+        "M#bar"
+      end
+
+      def baz
+        "M#baz"
+      end
     end
+
+    class C
+      include M
+
+      def baz
+        "#{super} C#baz"
+      end
+    end
+
+    module M2
+      refine M do
+        def foo
+          "M@M2#foo"
+        end
+
+        def bar
+          "#{super} M@M2#bar"
+        end
+
+        def baz
+          "#{super} M@M2#baz"
+        end
+      end
+    end
+
+    using M2
+
+    def self.call_foo
+      C.new.foo
+    end
+
+    def self.call_bar
+      C.new.bar
+    end
+
+    def self.call_baz
+      C.new.baz
+    end
+  end
+
+  def test_refine_module
+    assert_equal("M@M2#foo", RefineModule.call_foo)
+    assert_equal("M#bar M@M2#bar", RefineModule.call_bar)
+    assert_equal("M#baz C#baz", RefineModule.call_baz)
   end
 
   def test_refine_neither_class_nor_module
@@ -1623,6 +1670,71 @@ class TestRefinement < Test::Unit::TestCase
     assert_raise(NoMethodError) do
       MethodMissing.call_undefined_method
     end
+  end
+
+  module VisibleRefinements
+    module RefA
+      refine Object do
+        def in_ref_a
+        end
+      end
+    end
+
+    module RefB
+      refine Object do
+        def in_ref_b
+        end
+      end
+    end
+
+    module RefC
+      using RefA
+
+      refine Object do
+        def in_ref_c
+        end
+      end
+    end
+
+    module Foo
+      using RefB
+      USED_MODS = Module.used_modules
+    end
+
+    module Bar
+      using RefC
+      USED_MODS = Module.used_modules
+    end
+
+    module Combined
+      using RefA
+      using RefB
+      USED_MODS = Module.used_modules
+    end
+  end
+
+  def test_used_modules
+    ref = VisibleRefinements
+    assert_equal [], Module.used_modules
+    assert_equal [ref::RefB], ref::Foo::USED_MODS
+    assert_equal [ref::RefC], ref::Bar::USED_MODS
+    assert_equal [ref::RefB, ref::RefA], ref::Combined::USED_MODS
+  end
+
+  def test_warn_setconst_in_refinmenet
+    bug10103 = '[ruby-core:64143] [Bug #10103]'
+    warnings = [
+      "-:3: warning: not defined at the refinement, but at the outer class/module",
+      "-:4: warning: not defined at the refinement, but at the outer class/module"
+    ]
+    assert_in_out_err([], <<-INPUT, [], warnings, bug10103)
+      module M
+        refine String do
+          FOO = 123
+          @@foo = 456
+        end
+      end
+    INPUT
   end
 
   private

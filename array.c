@@ -3903,7 +3903,7 @@ rb_ary_eql(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary.hash   -> fixnum
+ *     ary.hash   -> integer
  *
  *  Compute a hash-code for this array.
  *
@@ -4583,7 +4583,7 @@ flatten(VALUE ary, int level, int *modified)
 
     st_free_table(memo);
 
-    RBASIC_SET_CLASS(result, rb_class_of(ary));
+    RBASIC_SET_CLASS(result, rb_obj_class(ary));
     return result;
 }
 

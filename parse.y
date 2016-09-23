@@ -508,6 +508,9 @@ static NODE *new_xstring_gen(struct parser_params *, NODE *);
 #define new_xstring(node) new_xstring_gen(parser, node)
 #define new_string1(str) (str)
 
+#define new_brace_body(param, stmt) NEW_ITER(param, stmt)
+#define new_do_body(param, stmt) NEW_ITER(param, stmt)
+
 static NODE *match_op_gen(struct parser_params*,NODE*,NODE*);
 #define match_op(node1,node2) match_op_gen(parser, (node1), (node2))
 
@@ -571,6 +574,9 @@ static VALUE new_regexp_gen(struct parser_params *, VALUE, VALUE);
 static VALUE new_xstring_gen(struct parser_params *, VALUE);
 #define new_xstring(str) new_xstring_gen(parser, str)
 #define new_string1(str) dispatch1(string_literal, str)
+
+#define new_brace_body(param, stmt) dispatch2(brace_block, escape_Qundef(param), stmt)
+#define new_do_body(param, stmt) dispatch2(do_block, escape_Qundef(param), stmt)
 
 #define const_path_field(w, n) dispatch2(const_path_field, (w), (n))
 #define top_const_field(n) dispatch1(top_const_field, (n))
@@ -903,7 +909,7 @@ static void token_info_pop_gen(struct parser_params*, const char *token, size_t 
 %type <node> block_param opt_block_param block_param_def f_opt
 %type <node> f_kwarg f_kw f_block_kwarg f_block_kw
 %type <node> bv_decls opt_bv_decl bvar
-%type <node> lambda f_larglist lambda_body
+%type <node> lambda f_larglist lambda_body brace_body do_body
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
 %type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post mlhs_inner
 %type <id>   fsym keyword_variable user_variable sym symbol operation operation2 operation3
@@ -1460,23 +1466,17 @@ block_command	: block_call
 
 cmd_brace_block	: tLBRACE_ARG
 		    {
-			$<vars>1 = dyna_push();
 		    /*%%%*/
 			$<num>$ = ruby_sourceline;
 		    /*%
 		    %*/
 		    }
-		  opt_block_param
-		  compstmt
-		  '}'
+		  brace_body '}'
 		    {
+			$$ = $3;
 		    /*%%%*/
-			$$ = NEW_ITER($3,$4);
 			nd_set_line($$, $<num>2);
-		    /*%
-			$$ = dispatch2(brace_block, escape_Qundef($3), $4);
-		    %*/
-			dyna_pop($<vars>1);
+		    /*% %*/
 		    }
 		;
 
@@ -3554,22 +3554,16 @@ lambda_body	: tLAMBEG compstmt '}'
 
 do_block	: keyword_do_block
 		    {
-			$<vars>1 = dyna_push();
 		    /*%%%*/
 			$<num>$ = ruby_sourceline;
 		    /*% %*/
 		    }
-		  opt_block_param
-		  compstmt
-		  keyword_end
+		  do_body keyword_end
 		    {
+			$$ = $3;
 		    /*%%%*/
-			$$ = NEW_ITER($3,$4);
 			nd_set_line($$, $<num>2);
-		    /*%
-			$$ = dispatch2(do_block, escape_Qundef($3), $4);
-		    %*/
-			dyna_pop($<vars>1);
+		    /*% %*/
 		    }
 		;
 
@@ -3738,41 +3732,49 @@ method_call	: fcall paren_args
 
 brace_block	: '{'
 		    {
-			$<vars>1 = dyna_push();
 		    /*%%%*/
 			$<num>$ = ruby_sourceline;
-		    /*%
-                    %*/
+		    /*% %*/
 		    }
-		  opt_block_param
-		  compstmt '}'
+		  brace_body '}'
 		    {
+			$$ = $3;
 		    /*%%%*/
-			$$ = NEW_ITER($3,$4);
 			nd_set_line($$, $<num>2);
-		    /*%
-			$$ = dispatch2(brace_block, escape_Qundef($3), $4);
-		    %*/
-			dyna_pop($<vars>1);
+		    /*% %*/
 		    }
 		| keyword_do
 		    {
-			$<vars>1 = dyna_push();
 		    /*%%%*/
 			$<num>$ = ruby_sourceline;
-		    /*%
-                    %*/
+		    /*% %*/
 		    }
-		  opt_block_param
-		  compstmt keyword_end
+		  do_body keyword_end
 		    {
+			$$ = $3;
 		    /*%%%*/
-			$$ = NEW_ITER($3,$4);
 			nd_set_line($$, $<num>2);
-		    /*%
-			$$ = dispatch2(do_block, escape_Qundef($3), $4);
-		    %*/
+		    /*% %*/
+		    }
+		;
+
+brace_body	: {$<vars>$ = dyna_push();}
+		  {$<val>$ = cmdarg_stack >> 1; CMDARG_SET(0);}
+		  opt_block_param compstmt
+		    {
+			$$ = new_brace_body($3, $4);
 			dyna_pop($<vars>1);
+			CMDARG_SET($<num>2);
+		    }
+		;
+
+do_body 	: {$<vars>$ = dyna_push();}
+		  {$<val>$ = cmdarg_stack >> 1; CMDARG_SET(0);}
+		  opt_block_param compstmt
+		    {
+			$$ = new_do_body($3, $4);
+			dyna_pop($<vars>1);
+			CMDARG_SET($<num>2);
 		    }
 		;
 
@@ -7919,7 +7921,7 @@ parse_ident(struct parser_params *parser, int c, int cmd_state)
 		if (COND_P()) return keyword_do_cond;
 		if (CMDARG_P() && !IS_lex_state_for(state, EXPR_CMDARG))
 		    return keyword_do_block;
-		if (IS_lex_state_for(state, (EXPR_BEG | EXPR_ENDARG)))
+		if (IS_lex_state_for(state, (EXPR_BEG | EXPR_END | EXPR_ENDARG)))
 		    return keyword_do_block;
 		return keyword_do;
 	    }

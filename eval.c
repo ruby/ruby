@@ -567,6 +567,17 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
     }
 }
 
+void
+rb_threadptr_setup_exception(rb_thread_t *th, VALUE mesg, VALUE cause)
+{
+    if (cause == Qundef) {
+	cause = get_thread_errinfo(th);
+    }
+    if (cause != mesg) {
+	rb_ivar_set(mesg, id_cause, cause);
+    }
+}
+
 static void
 rb_longjmp(int tag, volatile VALUE mesg, VALUE cause)
 {
@@ -1081,6 +1092,16 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
     return module;
 }
 
+static void
+ensure_class_or_module(VALUE obj)
+{
+    if (!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE)) {
+	rb_raise(rb_eTypeError,
+		 "wrong argument type %"PRIsVALUE" (expected Class or Module)",
+		 rb_obj_class(obj));
+    }
+}
+
 static VALUE
 hidden_identity_hash_new(void)
 {
@@ -1095,7 +1116,7 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
 {
     VALUE iclass, c, superclass = klass;
 
-    Check_Type(klass, T_CLASS);
+    ensure_class_or_module(klass);
     Check_Type(module, T_MODULE);
     if (NIL_P(CREF_REFINEMENTS(cref))) {
 	CREF_REFINEMENTS_SET(cref, hidden_identity_hash_new());
@@ -1220,11 +1241,11 @@ add_activated_refinement(VALUE activated_refinements,
 
 /*
  *  call-seq:
- *     refine(klass) { block }   -> module
+ *     refine(mod) { block }   -> module
  *
- *  Refine <i>klass</i> in the receiver.
+ *  Refine <i>mod</i> in the receiver.
  *
- *  Returns an overlaid module.
+ *  Returns a module, where refined methods are defined.
  */
 
 static VALUE
@@ -1244,7 +1265,7 @@ rb_mod_refine(VALUE module, VALUE klass)
 	rb_raise(rb_eArgError, "can't pass a Proc as a block to Module#refine");
     }
 
-    Check_Type(klass, T_CLASS);
+    ensure_class_or_module(klass);
     CONST_ID(id_refinements, "__refinements__");
     refinements = rb_attr_get(module, id_refinements);
     if (NIL_P(refinements)) {
@@ -1309,6 +1330,59 @@ mod_using(VALUE self, VALUE module)
     }
     rb_using_module(rb_vm_cref_replace_with_duplicated_cref(), module);
     return self;
+}
+
+static int
+used_modules_i(VALUE _, VALUE mod, VALUE ary)
+{
+    ID id_defined_at;
+    CONST_ID(id_defined_at, "__defined_at__");
+    while (FL_TEST(rb_class_of(mod), RMODULE_IS_REFINEMENT)) {
+	rb_ary_push(ary, rb_attr_get(rb_class_of(mod), id_defined_at));
+	mod = RCLASS_SUPER(mod);
+    }
+    return ST_CONTINUE;
+}
+
+/*
+ *  call-seq:
+ *     used_modules -> array
+ *
+ *  Returns an array of all modules used in the current scope. The ordering
+ *  of modules in the resulting array is not defined.
+ *
+ *     module A
+ *       refine Object do
+ *       end
+ *     end
+ *
+ *     module B
+ *       refine Object do
+ *       end
+ *     end
+ *
+ *     using A
+ *     using B
+ *     p Module.used_modules
+ *
+ *  <em>produces:</em>
+ *
+ *     [B, A]
+ */
+static VALUE
+rb_mod_s_used_modules(void)
+{
+    const rb_cref_t *cref = rb_vm_cref();
+    VALUE ary = rb_ary_new();
+
+    while(cref) {
+	if(!NIL_P(CREF_REFINEMENTS(cref))) {
+	    rb_hash_foreach(CREF_REFINEMENTS(cref), used_modules_i, ary);
+	}
+	cref = CREF_NEXT(cref);
+    }
+
+    return rb_funcall(ary, rb_intern("uniq"), 0);
 }
 
 void
@@ -1645,6 +1719,8 @@ Init_eval(void)
     rb_define_private_method(rb_cModule, "prepend_features", rb_mod_prepend_features, 1);
     rb_define_private_method(rb_cModule, "refine", rb_mod_refine, 1);
     rb_define_private_method(rb_cModule, "using", mod_using, 1);
+    rb_define_singleton_method(rb_cModule, "used_modules",
+			       rb_mod_s_used_modules, 0);
     rb_undef_method(rb_cClass, "refine");
 
     rb_undef_method(rb_cClass, "module_function");

@@ -471,7 +471,7 @@ rb_stat_cmp(VALUE self, VALUE other)
 
 /*
  *  call-seq:
- *     stat.dev    -> fixnum
+ *     stat.dev    -> integer
  *
  *  Returns an integer representing the device on which <i>stat</i>
  *  resides.
@@ -487,7 +487,7 @@ rb_stat_dev(VALUE self)
 
 /*
  *  call-seq:
- *     stat.dev_major   -> fixnum
+ *     stat.dev_major   -> integer
  *
  *  Returns the major part of <code>File_Stat#dev</code> or
  *  <code>nil</code>.
@@ -508,7 +508,7 @@ rb_stat_dev_major(VALUE self)
 
 /*
  *  call-seq:
- *     stat.dev_minor   -> fixnum
+ *     stat.dev_minor   -> integer
  *
  *  Returns the minor part of <code>File_Stat#dev</code> or
  *  <code>nil</code>.
@@ -529,7 +529,7 @@ rb_stat_dev_minor(VALUE self)
 
 /*
  *  call-seq:
- *     stat.ino   -> fixnum
+ *     stat.ino   -> integer
  *
  *  Returns the inode number for <i>stat</i>.
  *
@@ -560,7 +560,7 @@ rb_stat_ino(VALUE self)
 
 /*
  *  call-seq:
- *     stat.mode   -> fixnum
+ *     stat.mode   -> integer
  *
  *  Returns an integer representing the permission bits of
  *  <i>stat</i>. The meaning of the bits is platform dependent; on
@@ -579,7 +579,7 @@ rb_stat_mode(VALUE self)
 
 /*
  *  call-seq:
- *     stat.nlink   -> fixnum
+ *     stat.nlink   -> integer
  *
  *  Returns the number of hard links to <i>stat</i>.
  *
@@ -597,7 +597,7 @@ rb_stat_nlink(VALUE self)
 
 /*
  *  call-seq:
- *     stat.uid    -> fixnum
+ *     stat.uid    -> integer
  *
  *  Returns the numeric user id of the owner of <i>stat</i>.
  *
@@ -613,7 +613,7 @@ rb_stat_uid(VALUE self)
 
 /*
  *  call-seq:
- *     stat.gid   -> fixnum
+ *     stat.gid   -> integer
  *
  *  Returns the numeric group id of the owner of <i>stat</i>.
  *
@@ -629,7 +629,7 @@ rb_stat_gid(VALUE self)
 
 /*
  *  call-seq:
- *     stat.rdev   ->  fixnum or nil
+ *     stat.rdev   ->  integer or nil
  *
  *  Returns an integer representing the device type on which
  *  <i>stat</i> resides. Returns <code>nil</code> if the operating
@@ -651,7 +651,7 @@ rb_stat_rdev(VALUE self)
 
 /*
  *  call-seq:
- *     stat.rdev_major   -> fixnum
+ *     stat.rdev_major   -> integer
  *
  *  Returns the major part of <code>File_Stat#rdev</code> or
  *  <code>nil</code>.
@@ -672,7 +672,7 @@ rb_stat_rdev_major(VALUE self)
 
 /*
  *  call-seq:
- *     stat.rdev_minor   -> fixnum
+ *     stat.rdev_minor   -> integer
  *
  *  Returns the minor part of <code>File_Stat#rdev</code> or
  *  <code>nil</code>.
@@ -693,7 +693,7 @@ rb_stat_rdev_minor(VALUE self)
 
 /*
  *  call-seq:
- *     stat.size    -> fixnum
+ *     stat.size    -> integer
  *
  *  Returns the size of <i>stat</i> in bytes.
  *
@@ -1579,7 +1579,7 @@ rb_file_readable_real_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.world_readable?(file_name)   -> fixnum or nil
+ *    File.world_readable?(file_name)   -> integer or nil
  *
  * If <i>file_name</i> is readable by others, returns an integer
  * representing the file permission bits of <i>file_name</i>. Returns
@@ -1643,7 +1643,7 @@ rb_file_writable_real_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.world_writable?(file_name)   -> fixnum or nil
+ *    File.world_writable?(file_name)   -> integer or nil
  *
  * If <i>file_name</i> is writable by others, returns an integer
  * representing the file permission bits of <i>file_name</i>. Returns
@@ -5183,7 +5183,7 @@ rb_stat_R(VALUE obj)
 
 /*
  * call-seq:
- *    stat.world_readable? -> fixnum or nil
+ *    stat.world_readable? -> integer or nil
  *
  * If <i>stat</i> is readable by others, returns an integer
  * representing the file permission bits of <i>stat</i>. Returns
@@ -5276,7 +5276,7 @@ rb_stat_W(VALUE obj)
 
 /*
  * call-seq:
- *    stat.world_writable?  ->  fixnum or nil
+ *    stat.world_writable?  ->  integer or nil
  *
  * If <i>stat</i> is writable by others, returns an integer
  * representing the file permission bits of <i>stat</i>. Returns

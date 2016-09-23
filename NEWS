@@ -56,6 +56,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Float#ceil, Float#floor, and Float#truncate now take an optional
     digits, as well as Float#round.  [Feature #12245]
 
+* Hash
+
+  * Hash#transform_values and Hash#transform_values!  [Feature #12512]
+
 * Integer
 
   * Integer#ceil, Integer#floor, and Integer#truncate now take an optional
@@ -75,10 +79,16 @@ with all sufficient information, see the ChangeLog file or Redmine
   * MatchData#named_captures [Feature #11999]
   * MatchData#values_at supports named captures [Feature #9179]
 
+* Module
+
+  * Module.used_modules [Feature #7418]
+
 * Regexp
 
   * Regexp#match? [Feature #8110]
     This returns bool and doesn't save backref.
+
+* Regexp/String: Updated Unicode version from 8.0.0 to 9.0.0 [Feature #12513]
 
 * RubyVM::Env
 
@@ -148,7 +158,8 @@ with all sufficient information, see the ChangeLog file or Redmine
   So obj.kind_of?(Fixnum) works as obj.kind_of?(Integer).
   At C-level, Fixnum object and Bignum object should be distinguished by
   FIXNUM_P(obj) and RB_TYPE_P(obj, T_BIGNUM).
-  RUBY_INTEGER_UNIFICATION can be used to detect this feature.
+  RUBY_INTEGER_UNIFICATION can be used to detect this feature at C-level.
+  0.class == Integer can be used to detect this feature at Ruby-level.
   ruby-2.4.0-preview1 (temporally) removes rb_cFixnum and rb_cBignum
   to check the effect of incompatibility.
   (rb_cFixnum and rb_cBignum may be defined as rb_cInteger later if

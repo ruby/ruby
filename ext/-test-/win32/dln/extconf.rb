@@ -4,7 +4,7 @@ if $mingw or $mswin
   $LOCAL_LIBS << " #{dlntestlib}"
   $srcs = ["dlntest.c"]
   $objs = ["dlntest.o"]
-  testdll = "$(topdir)/dlntest.dll"
+  testdll = "dlntest.dll"
   $cleanfiles << testdll
   $cleanfiles << "dlntest.#{$LIBEXT}"
   config_string('cleanobjs') {|t| $cleanfiles.concat(t.gsub(/\$\*/, 'dlntest').split)}
@@ -13,8 +13,8 @@ if $mingw or $mswin
     m << "\n""DLNTESTLIB = #{dlntestlib}\n"
     if $mingw
       m << "\n"
-      m << "$(topdir)/dlntest.dll: DEFFILE := $(srcdir)/libdlntest.def\n"
-      m << "$(topdir)/dlntest.dll: DLDFLAGS += -Wl,--out-implib,$(DLNTESTLIB)\n"
+      m << "dlntest.dll: DEFFILE := $(srcdir)/libdlntest.def\n"
+      m << "dlntest.dll: DLDFLAGS += -Wl,--out-implib,$(DLNTESTLIB)\n"
     end
     m
   end

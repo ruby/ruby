@@ -152,7 +152,5 @@ have_func("X509_get0_notBefore")
 Logging::message "=== Checking done. ===\n"
 
 create_header
-create_makefile("openssl") {|conf|
-  conf << "THREAD_MODEL = #{CONFIG["THREAD_MODEL"]}\n"
-}
+create_makefile("openssl")
 Logging::message "Done.\n"

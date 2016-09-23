@@ -1639,8 +1639,8 @@ rb_hash_replace(VALUE hash, VALUE hash2)
 
 /*
  *  call-seq:
- *     hsh.length    ->  fixnum
- *     hsh.size      ->  fixnum
+ *     hsh.length    ->  integer
+ *     hsh.size      ->  integer
  *
  *  Returns the number of key-value pairs in the hash.
  *
@@ -1750,7 +1750,10 @@ each_pair_i(VALUE key, VALUE value)
 static int
 each_pair_i_fast(VALUE key, VALUE value)
 {
-    rb_yield_values(2, key, value);
+    VALUE argv[2];
+    argv[0] = key;
+    argv[1] = value;
+    rb_yield_values2(2, argv);
     return ST_CONTINUE;
 }
 
@@ -1788,7 +1791,7 @@ rb_hash_each_pair(VALUE hash)
 }
 
 static int
-map_v_i(VALUE key, VALUE value, VALUE result)
+transform_values_i(VALUE key, VALUE value, VALUE result)
 {
     VALUE new_value = rb_yield(value);
     rb_hash_aset(result, key, new_value);
@@ -1797,29 +1800,29 @@ map_v_i(VALUE key, VALUE value, VALUE result)
 
 /*
  *  call-seq:
- *     hsh.map_v {|value| block } -> hsh
- *     hsh.map_v                  -> an_enumerator
+ *     hsh.transform_values {|value| block } -> hsh
+ *     hsh.transform_values                  -> an_enumerator
  *
  *  Return a new with the results of running block once for every value.
  *  This method does not change the keys.
  *
  *     h = { a: 1, b: 2, c: 3 }
- *     h.map_v {|v| v * v + 1 }  #=> { a: 2, b: 5, c: 10 }
- *     h.map_v(&:to_s)           #=> { a: "1", b: "2", c: "3" }
- *     h.map_v.with_index {|v, i| "#{v}.#{i}" }
- *                               #=> { a: "1.0", b: "2.1", c: "3.2" }
+ *     h.transform_values {|v| v * v + 1 }  #=> { a: 2, b: 5, c: 10 }
+ *     h.transform_values(&:to_s)           #=> { a: "1", b: "2", c: "3" }
+ *     h.transform_values.with_index {|v, i| "#{v}.#{i}" }
+ *                                          #=> { a: "1.0", b: "2.1", c: "3.2" }
  *
  *  If no block is given, an enumerator is returned instead.
  */
 static VALUE
-rb_hash_map_v(VALUE hash)
+rb_hash_transform_values(VALUE hash)
 {
     VALUE result;
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     result = rb_hash_new();
     if (!RHASH_EMPTY_P(hash)) {
-        rb_hash_foreach(hash, map_v_i, result);
+        rb_hash_foreach(hash, transform_values_i, result);
     }
 
     return result;
@@ -1827,27 +1830,27 @@ rb_hash_map_v(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.map_v! {|value| block } -> hsh
- *     hsh.map_v!                  -> an_enumerator
+ *     hsh.transform_values! {|value| block } -> hsh
+ *     hsh.transform_values!                  -> an_enumerator
  *
  *  Return a new with the results of running block once for every value.
  *  This method does not change the keys.
  *
  *     h = { a: 1, b: 2, c: 3 }
- *     h.map_v! {|v| v * v + 1 }  #=> { a: 2, b: 5, c: 10 }
- *     h.map_v!(&:to_s)           #=> { a: "1", b: "2", c: "3" }
- *     h.map_v!.with_index {|v, i| "#{v}.#{i}" }
- *                                #=> { a: "1.0", b: "2.1", c: "3.2" }
+ *     h.transform_values! {|v| v * v + 1 }  #=> { a: 2, b: 5, c: 10 }
+ *     h.transform_values!(&:to_s)           #=> { a: "1", b: "2", c: "3" }
+ *     h.transform_values!.with_index {|v, i| "#{v}.#{i}" }
+ *                                           #=> { a: "1.0", b: "2.1", c: "3.2" }
  *
  *  If no block is given, an enumerator is returned instead.
  */
 static VALUE
-rb_hash_map_v_bang(VALUE hash)
+rb_hash_transform_values_bang(VALUE hash)
 {
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     rb_hash_modify_check(hash);
     if (RHASH(hash)->ntbl)
-        rb_hash_foreach(hash, map_v_i, hash);
+        rb_hash_foreach(hash, transform_values_i, hash);
     return hash;
 }
 
@@ -2256,7 +2259,7 @@ hash_i(VALUE key, VALUE val, VALUE arg)
 
 /*
  *  call-seq:
- *     hsh.hash   -> fixnum
+ *     hsh.hash   -> integer
  *
  *  Compute a hash-code for this hash. Two hashes with the same content
  *  will have the same hash code (and will compare using <code>eql?</code>).
@@ -3350,8 +3353,6 @@ ruby_setenv(const char *name, const char *value)
 	invalid_envname(name);
     }
 #elif defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
-#undef setenv
-#undef unsetenv
     if (value) {
 	if (setenv(name, value, 1))
 	    rb_sys_fail_str(rb_sprintf("setenv(%s)", name));
@@ -4400,8 +4401,8 @@ Init_Hash(void)
     rb_define_method(rb_cHash,"each_pair", rb_hash_each_pair, 0);
     rb_define_method(rb_cHash,"each", rb_hash_each_pair, 0);
 
-    rb_define_method(rb_cHash, "map_v", rb_hash_map_v, 0);
-    rb_define_method(rb_cHash, "map_v!", rb_hash_map_v_bang, 0);
+    rb_define_method(rb_cHash, "transform_values", rb_hash_transform_values, 0);
+    rb_define_method(rb_cHash, "transform_values!", rb_hash_transform_values_bang, 0);
 
     rb_define_method(rb_cHash,"keys", rb_hash_keys, 0);
     rb_define_method(rb_cHash,"values", rb_hash_values, 0);

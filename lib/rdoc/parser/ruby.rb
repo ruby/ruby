@@ -170,9 +170,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     @prev_seek = nil
     @markup = @options.markup
     @track_visibility = :nodoc != @options.visibility
-
-    @encoding = nil
-    @encoding = @options.encoding if Object.const_defined? :Encoding
+    @encoding = @options.encoding
 
     reset
   end
@@ -2158,4 +2156,3 @@ class RDoc::Parser::Ruby < RDoc::Parser
   end
 
 end
-

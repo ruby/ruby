@@ -1360,6 +1360,9 @@ class TestModule < Test::Unit::TestCase
     c.const_set(:FOO, "foo")
     $VERBOSE = verbose
     assert_raise(NameError) { c::FOO }
+    assert_raise_with_message(NameError, /#{c}::FOO/) do
+      Class.new(c)::FOO
+    end
   end
 
   def test_private_constant2
@@ -1417,6 +1420,7 @@ class TestModule < Test::Unit::TestCase
     c.const_set(:FOO, "foo")
     c.deprecate_constant(:FOO)
     assert_warn(/deprecated/) {c::FOO}
+    assert_warn(/#{c}::FOO is deprecated/) {Class.new(c)::FOO}
     bug12382 = '[ruby-core:75505] [Bug #12382]'
     assert_warn(/deprecated/, bug12382) {c.class_eval "FOO"}
   end

@@ -1628,9 +1628,9 @@ heap_extend_pages(rb_objspace_t *objspace, size_t free_slots, size_t total_slots
 
 	if (0) {
 	    fprintf(stderr,
-		    "free_slots(%8"PRIdSIZE")/total_slots(%8"PRIdSIZE")=%1.2f,"
+		    "free_slots(%8"PRIuSIZE")/total_slots(%8"PRIuSIZE")=%1.2f,"
 		    " G(%1.2f), f(%1.2f),"
-		    " used(%8"PRIdSIZE") => next_used(%8"PRIdSIZE")\n",
+		    " used(%8"PRIuSIZE") => next_used(%8"PRIuSIZE")\n",
 		    free_slots, total_slots, free_slots/(double)total_slots,
 		    goal_ratio, f, used, next_used);
 	}
@@ -2512,7 +2512,7 @@ os_obj_of(VALUE of)
 
 /*
  *  call-seq:
- *     ObjectSpace.each_object([module]) {|obj| ... } -> fixnum
+ *     ObjectSpace.each_object([module]) {|obj| ... } -> integer
  *     ObjectSpace.each_object([module])              -> an_enumerator
  *
  *  Calls the block once for each living, nonimmediate object in this
@@ -6574,9 +6574,11 @@ Init_stack(volatile VALUE *addr)
 /*
  *  call-seq:
  *     GC.start                     -> nil
- *     GC.garbage_collect           -> nil
+ *     ObjectSpace.garbage_collect  -> nil
+ *     include GC; garbage_collect  -> nil
  *     GC.start(full_mark: true, immediate_sweep: true)           -> nil
- *     GC.garbage_collect(full_mark: true, immediate_sweep: true) -> nil
+ *     ObjectSpace.garbage_collect(full_mark: true, immediate_sweep: true) -> nil
+ *     include GC; garbage_collect(full_mark: true, immediate_sweep: true) -> nil
  *
  *  Initiates garbage collection, unless manually disabled.
  *
@@ -7207,7 +7209,7 @@ rb_gc_stat(VALUE key)
 
 /*
  *  call-seq:
- *    GC.stress	    -> fixnum, true or false
+ *    GC.stress	    -> integer, true or false
  *
  *  Returns current status of GC stress mode.
  */
@@ -7237,7 +7239,7 @@ gc_stress_set(rb_objspace_t *objspace, VALUE flag)
  *
  *  Enabling stress mode will degrade performance, it is only for debugging.
  *
- *  flag can be true, false, or a fixnum bit-ORed following flags.
+ *  flag can be true, false, or a integer bit-ORed following flags.
  *    0x01:: no major GC
  *    0x02:: no immediate sweep
  *    0x04:: full mark after malloc/calloc/realloc
@@ -7340,14 +7342,14 @@ get_envparam_size(const char *name, size_t *default_value, size_t lower_bound)
 	}
 	if (val > 0 && (size_t)val > lower_bound) {
 	    if (RTEST(ruby_verbose)) {
-		fprintf(stderr, "%s=%"PRIdSIZE" (default value: %"PRIdSIZE")\n", name, val, *default_value);
+		fprintf(stderr, "%s=%"PRIdSIZE" (default value: %"PRIuSIZE")\n", name, val, *default_value);
 	    }
 	    *default_value = (size_t)val;
 	    return 1;
 	}
 	else {
 	    if (RTEST(ruby_verbose)) {
-		fprintf(stderr, "%s=%"PRIdSIZE" (default value: %"PRIdSIZE") is ignored because it must be greater than %"PRIdSIZE".\n",
+		fprintf(stderr, "%s=%"PRIdSIZE" (default value: %"PRIuSIZE") is ignored because it must be greater than %"PRIuSIZE".\n",
 			name, val, *default_value, lower_bound);
 	    }
 	    return 0;
@@ -7916,7 +7918,7 @@ void
 ruby_malloc_size_overflow(size_t count, size_t elsize)
 {
     rb_raise(rb_eArgError,
-	     "malloc: possible integer overflow (%"PRIdSIZE"*%"PRIdSIZE")",
+	     "malloc: possible integer overflow (%"PRIuSIZE"*%"PRIuSIZE")",
 	     count, elsize);
 }
 
@@ -8095,6 +8097,18 @@ gc_malloc_allocations(VALUE self)
     return UINT2NUM(rb_objspace.malloc_params.allocations);
 }
 #endif
+
+void
+rb_gc_adjust_memory_usage(ssize_t diff)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    if (diff > 0) {
+	objspace_malloc_increase(objspace, 0, diff, 0, MEMOP_TYPE_REALLOC);
+    }
+    else if (diff < 0) {
+	objspace_malloc_increase(objspace, 0, 0, -diff, MEMOP_TYPE_REALLOC);
+    }
+}
 
 /*
   ------------------------------ WeakMap ------------------------------
@@ -8901,7 +8915,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 
 	for (i = 0; i < count; i++) {
 	    record = &objspace->profile.records[i];
-	    append(out, rb_sprintf("%5"PRIdSIZE" %19.3f %20"PRIuSIZE" %20"PRIuSIZE" %20"PRIuSIZE" %30.20f\n",
+	    append(out, rb_sprintf("%5"PRIuSIZE" %19.3f %20"PRIuSIZE" %20"PRIuSIZE" %20"PRIuSIZE" %30.20f\n",
 				   i+1, record->gc_invoke_time, record->heap_use_size,
 				   record->heap_total_size, record->heap_total_objects, record->gc_time*1000));
 	}
@@ -8925,7 +8939,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 
 	for (i = 0; i < count; i++) {
 	    record = &objspace->profile.records[i];
-	    append(out, rb_sprintf("%5"PRIdSIZE" %4s/%c/%6s%c %13"PRIuSIZE" %15"PRIuSIZE
+	    append(out, rb_sprintf("%5"PRIuSIZE" %4s/%c/%6s%c %13"PRIuSIZE" %15"PRIuSIZE
 #if CALC_EXACT_MALLOC_SIZE
 				   " %15"PRIuSIZE
 #endif

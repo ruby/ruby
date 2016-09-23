@@ -82,6 +82,24 @@ class Mdoc2Man
     initialize
   end
 
+  def shift_arg(words)
+    case words[0]
+    when nil, RE_PUNCT
+      nil
+    when /\A"(.+)/
+      words.shift
+      word = $1
+      loop {
+        break if word.chomp!('"')
+        token = words.shift or break
+        word << ' ' << token
+      }
+      word
+    else
+      words.shift
+    end
+  end
+
   def parse_macro(line)
     words = line.split
     retval = ''
@@ -320,15 +338,29 @@ class Mdoc2Man
 	next
       end
 
-      if word == 'Pa' && !quote.include?(OPTION)
-	retval << '\\fI'
-	retval << '\\&' if /^\./ =~ words[0]
-	retval << words.shift << '\\fP'
-	while RE_PUNCT =~ words[0]
-	  retval << words.shift
-	end
-	# @nospace = 1 if @nospace == 0 && RE_PUNCT =~ words[0]
-	next
+      case word
+      when 'Pa'
+        if !quote.include?(OPTION)
+	  retval << '\\fI'
+	  retval << '\\&' if /^\./ =~ words[0]
+	  retval << words.shift << '\\fP'
+	  while RE_PUNCT =~ words[0]
+	    retval << words.shift
+	  end
+	  # @nospace = 1 if @nospace == 0 && RE_PUNCT =~ words[0]
+	  next
+        end
+      when 'Lk'
+        if !quote.include?(OPTION)
+          url = words.shift
+          if name = shift_arg(words)
+            retval << '\\fI' << name << ':\\fP '
+          end
+	  retval << '\\fB'
+	  retval << '\\&' if /\A\./ =~ url
+	  retval << url << '\\fP'
+	  next
+        end
       end
 
       case word
@@ -408,7 +440,7 @@ class Mdoc2Man
 	  # tags
 	  retval << ".TP\n"
 	  case words[0]
-	  when 'Pa', 'Ev'
+	  when 'Pa', 'Ev', 'Lk'
 	    words.shift
 	    retval << '.B'
 	  end

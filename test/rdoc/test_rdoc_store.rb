@@ -429,8 +429,6 @@ class TestRDocStore < XrefTestCase
   end
 
   def test_load_cache_encoding_differs
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     cache = {
       :c_class_variables           => {},
       :c_singleton_class_variables => {},
@@ -991,4 +989,3 @@ class TestRDocStore < XrefTestCase
   end
 
 end
-

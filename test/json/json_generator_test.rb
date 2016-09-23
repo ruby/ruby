@@ -277,12 +277,13 @@ EOT
   if defined?(JSON::Ext::Generator)
     def test_broken_bignum # [ruby-core:38867]
       pid = fork do
-        Bignum.class_eval do
+        x = 1 << 64
+        x.class.class_eval do
           def to_s
           end
         end
         begin
-          JSON::Ext::Generator::State.new.generate(1<<64)
+          JSON::Ext::Generator::State.new.generate(x)
           exit 1
         rescue TypeError
           exit 0

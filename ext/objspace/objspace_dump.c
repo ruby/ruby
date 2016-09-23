@@ -182,7 +182,7 @@ dump_append_string_content(struct dump_config *dc, VALUE obj)
 {
     dump_append(dc, ", \"bytesize\":%ld", RSTRING_LEN(obj));
     if (!STR_EMBED_P(obj) && !STR_SHARED_P(obj) && (long)rb_str_capacity(obj) != RSTRING_LEN(obj))
-	dump_append(dc, ", \"capacity\":%"PRIdSIZE, rb_str_capacity(obj));
+	dump_append(dc, ", \"capacity\":%"PRIuSIZE, rb_str_capacity(obj));
 
     if (is_ascii_string(obj)) {
 	dump_append(dc, ", \"value\":");
@@ -191,7 +191,7 @@ dump_append_string_content(struct dump_config *dc, VALUE obj)
 }
 
 static void
-dump_object(VALUE obj, struct dump_config *dc, int part)
+dump_object(VALUE obj, struct dump_config *dc)
 {
     size_t memsize;
     struct allocation_info *ainfo;
@@ -211,11 +211,7 @@ dump_object(VALUE obj, struct dump_config *dc, int part)
     if (dc->cur_obj == dc->string)
 	return;
 
-    if (part)
-	dump_append(dc, "\"%p\":{", (void *)obj);
-    else
-	dump_append(dc, "{\"address\":\"%p\", ", (void *)obj);
-    dump_append(dc, "\"type\":\"%s\"", obj_type(obj));
+    dump_append(dc, "{\"address\":\"%p\", \"type\":\"%s\"", (void *)obj, obj_type(obj));
 
     if (dc->cur_obj_klass)
 	dump_append(dc, ", \"class\":\"%p\"", (void *)dc->cur_obj_klass);
@@ -248,7 +244,7 @@ dump_object(VALUE obj, struct dump_config *dc, int part)
 	break;
 
       case T_HASH:
-	dump_append(dc, ", \"size\":%"PRIdSIZE, (size_t)RHASH_SIZE(obj));
+	dump_append(dc, ", \"size\":%"PRIuSIZE, (size_t)RHASH_SIZE(obj));
 	if (FL_TEST(obj, HASH_PROC_DEFAULT))
 	    dump_append(dc, ", \"default\":\"%p\"", (void *)RHASH_IFNONE(obj));
 	break;
@@ -287,8 +283,7 @@ dump_object(VALUE obj, struct dump_config *dc, int part)
 	break;
 
       case T_ZOMBIE:
-	dump_append(dc, "}");
-	dc->roots++;
+	dump_append(dc, "}\n");
 	return;
     }
 
@@ -317,20 +312,16 @@ dump_object(VALUE obj, struct dump_config *dc, int part)
 	dump_append(dc, "}");
     }
 
-    dump_append(dc, "}");
-    dc->roots++;
+    dump_append(dc, "}\n");
 }
 
 static int
 heap_i(void *vstart, void *vend, size_t stride, void *data)
 {
-    struct dump_config *dc = (struct dump_config *)data;
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
-	if (RBASIC(v)->flags && v != dc->string) {
-	    if (dc->roots++) dump_append(dc, ",\n");
-	    dump_object(v, dc, 1);
-	}
+	if (RBASIC(v)->flags)
+	    dump_object(v, data);
     }
     return 0;
 }
@@ -341,11 +332,9 @@ root_obj_i(const char *category, VALUE obj, void *data)
     struct dump_config *dc = (struct dump_config *)data;
 
     if (dc->root_category != NULL && category != dc->root_category)
-	dump_append(dc, "]},\n");
-    if (dc->root_category == NULL || category != dc->root_category) {
-	dump_append(dc, "\"%p\":", (void *)obj);
+	dump_append(dc, "]}\n");
+    if (dc->root_category == NULL || category != dc->root_category)
 	dump_append(dc, "{\"type\":\"ROOT\", \"root\":\"%s\", \"references\":[\"%p\"", category, (void *)obj);
-    }
     else
 	dump_append(dc, ", \"%p\"", (void *)obj);
 
@@ -429,8 +418,7 @@ objspace_dump(int argc, VALUE *argv, VALUE os)
 
     output = dump_output(&dc, opts, sym_string, filename);
 
-    dump_object(obj, &dc, 0);
-    if (dc.roots) dump_append(&dc, "\n");
+    dump_object(obj, &dc);
 
     return dump_result(&dc, output);
 }
@@ -462,14 +450,12 @@ objspace_dump_all(int argc, VALUE *argv, VALUE os)
 
     output = dump_output(&dc, opts, sym_file, filename);
 
-    dump_append(&dc, "{\n");
     /* dump roots */
     rb_objspace_reachable_objects_from_root(root_obj_i, &dc);
-    if (dc.roots) dump_append(&dc, "]}");
+    if (dc.roots) dump_append(&dc, "]}\n");
 
     /* dump all objects */
     rb_objspace_each_objects(heap_i, &dc);
-    dump_append(&dc, "\n}");
 
     return dump_result(&dc, output);
 }

@@ -7119,8 +7119,7 @@ rb_w32_write_console(uintptr_t strarg, int fd)
     }
     reslen = 0;
     if (dwMode & 4) {	/* ENABLE_VIRTUAL_TERMINAL_PROCESSING */
-	DWORD written;
-	if (!WriteConsoleW(handle, ptr, len, &written, NULL))
+	if (!WriteConsoleW(handle, ptr, len, &reslen, NULL))
 	    reslen = (DWORD)-1L;
     }
     else {

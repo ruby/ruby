@@ -733,6 +733,14 @@ vm_check_if_namespace(VALUE klass)
     }
 }
 
+static inline void
+vm_ensure_not_refinement_module(VALUE self)
+{
+    if (RB_TYPE_P(self, T_MODULE) && FL_TEST(self, RMODULE_IS_REFINEMENT)) {
+	rb_warn("not defined at the refinement, but at the outer class/module");
+    }
+}
+
 static inline VALUE
 vm_get_iclass(rb_control_frame_t *cfp, VALUE klass)
 {
@@ -1031,7 +1039,7 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 		    int i;
 
 		    for (i=0; i<ct_size; i++) {
-			const struct iseq_catch_table_entry * const entry = &ct->entries[i];;
+			const struct iseq_catch_table_entry * const entry = &ct->entries[i];
 
 			if (entry->type == CATCH_TYPE_BREAK && entry->start < epc && entry->end >= epc) {
 			    if (entry->cont == epc) { /* found! */

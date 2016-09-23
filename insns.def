@@ -173,6 +173,7 @@ setclassvariable
 (VALUE val)
 ()
 {
+    vm_ensure_not_refinement_module(GET_SELF());
     rb_cvar_set(vm_get_cvar_base(rb_vm_get_cref(GET_EP()), GET_CFP()), id, val);
 }
 
@@ -217,6 +218,7 @@ setconstant
 ()
 {
     vm_check_if_namespace(cbase);
+    vm_ensure_not_refinement_module(GET_SELF());
     rb_const_set(cbase, id, val);
 }
 

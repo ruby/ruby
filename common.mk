@@ -11,7 +11,7 @@ Q = $(Q1:0=@)
 ECHO0 = $(ECHO1:0=echo)
 ECHO = @$(ECHO0)
 
-UNICODE_VERSION = 8.0.0
+UNICODE_VERSION = 9.0.0
 
 ### set the following environment variable or uncomment the line if
 ### the Unicode data files should be updated completely on every update ('make up',...).
@@ -963,17 +963,17 @@ OPTS =
 # This command compares trunk and built-ruby and 2.2.2
 benchmark: miniruby$(EXEEXT) PHONY
 	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
-	            --executables="$(COMPARE_RUBY) -I../../ruby/lib -I. -I.ext/common --disable-gem; built-ruby::$(MINIRUBY) --disable-gem" \
+	            --executables="$(COMPARE_RUBY) -I$(srcdir)/lib -I. -I$(EXTOUT)/common --disable-gem; built-ruby::$(MINIRUBY) --disable-gem" \
 	            --pattern='bm_' --directory=$(srcdir)/benchmark $(OPTS)
 
 benchmark-each: miniruby$(EXEEXT) PHONY
 	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
-	            --executables="$(COMPARE_RUBY) -I../../ruby/lib -I. -I.ext/common --disable-gem; built-ruby::$(MINIRUBY) --disable-gem" \
+	            --executables="$(COMPARE_RUBY) -I$(srcdir)/lib -I. -I$(EXTOUT)/common --disable-gem; built-ruby::$(MINIRUBY) --disable-gem" \
 	            --pattern=$(ITEM) --directory=$(srcdir)/benchmark $(OPTS)
 
 tbench: miniruby$(EXEEXT) PHONY
 	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
-	            --executables="$(COMPARE_RUBY) -I../../ruby/lib -I. -I.ext/common --disable-gem; built-ruby::$(MINIRUBY) --disable-gem" \
+	            --executables="$(COMPARE_RUBY) -I$(srcdir)/lib -I. -I$(EXTOUT)/common --disable-gem; built-ruby::$(MINIRUBY) --disable-gem" \
 	            --pattern='bmx_' --directory=$(srcdir)/benchmark $(OPTS)
 
 run.gdb:

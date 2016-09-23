@@ -5182,6 +5182,7 @@ Init_Numeric(void)
     rb_cFixnum = rb_cInteger;
 #endif
     rb_define_const(rb_cObject, "Fixnum", rb_cInteger);
+    rb_deprecate_constant(rb_cObject, "Fixnum");
 
     rb_cFloat  = rb_define_class("Float", rb_cNumeric);
 

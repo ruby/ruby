@@ -727,7 +727,7 @@ install?(:ext, :comm, :gem) do
     end
 
     unless gemspec.executables.empty? then
-      bin_dir = File.join(gem_dir, 'gems', full_name, 'bin')
+      bin_dir = File.join(gem_dir, 'gems', full_name, gemspec.bindir)
       makedirs(bin_dir)
 
       execs = gemspec.executables.map {|exec| File.join(srcdir, 'bin', exec)}
