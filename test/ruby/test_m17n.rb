@@ -1155,6 +1155,12 @@ class TestM17N < Test::Unit::TestCase
     assert_not_equal(0, s1.casecmp(s2))
   end
 
+  def test_casecmp?
+    s1 = s("\x81\x41")
+    s2 = s("\x81\x61")
+    assert_not_equal(true, s1.casecmp?(s2))
+  end
+
   def test_reverse
     bug11387 = '[ruby-dev:49189] [Bug #11387]'
     s1 = u("abcdefghij\xf0")

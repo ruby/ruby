@@ -3192,6 +3192,24 @@ rb_str_casecmp(VALUE str1, VALUE str2)
     return INT2FIX(-1);
 }
 
+/*
+ *  call-seq:
+ *     str.casecmp?(other_str)   -> true or false
+ *
+ *  Case-insensitive string comparison.
+ *
+ *     "abcdef".casecmp?("abcde")     #=> false
+ *     "aBcDeF".casecmp?("abcdef")    #=> true
+ *     "abcdef".casecmp?("abcdefg")   #=> false
+ *     "abcdef".casecmp?("ABCDEF")    #=> true
+ */
+
+static VALUE
+rb_str_casecmp_p(VALUE str1, VALUE str2)
+{
+    return rb_str_casecmp(str1, str2) == INT2FIX(0) ? Qtrue : Qfalse;
+}
+
 #define rb_str_index(str, sub, offset) rb_strseq_index(str, sub, offset, 0)
 
 static long
@@ -9604,6 +9622,22 @@ sym_casecmp(VALUE sym, VALUE other)
 }
 
 /*
+ *  call-seq:
+ *     sym.casecmp?(other)  -> true, false, or nil
+ *
+ *  Case-insensitive symbol comparison.
+ */
+
+static VALUE
+sym_casecmp_p(VALUE sym, VALUE other)
+{
+    if (!SYMBOL_P(other)) {
+        return Qnil;
+    }
+    return sym_casecmp(sym, other) == INT2FIX(0) ? Qtrue : Qfalse;
+}
+
+/*
  * call-seq:
  *   sym =~ obj   -> integer or nil
  *
@@ -9802,6 +9836,7 @@ Init_String(void)
     rb_define_method(rb_cString, "eql?", rb_str_eql, 1);
     rb_define_method(rb_cString, "hash", rb_str_hash_m, 0);
     rb_define_method(rb_cString, "casecmp", rb_str_casecmp, 1);
+    rb_define_method(rb_cString, "casecmp?", rb_str_casecmp_p, 1);
     rb_define_method(rb_cString, "+", rb_str_plus, 1);
     rb_define_method(rb_cString, "*", rb_str_times, 1);
     rb_define_method(rb_cString, "%", rb_str_format_m, 1);
@@ -9951,6 +9986,7 @@ Init_String(void)
 
     rb_define_method(rb_cSymbol, "<=>", sym_cmp, 1);
     rb_define_method(rb_cSymbol, "casecmp", sym_casecmp, 1);
+    rb_define_method(rb_cSymbol, "casecmp?", sym_casecmp_p, 1);
     rb_define_method(rb_cSymbol, "=~", sym_match, 1);
 
     rb_define_method(rb_cSymbol, "[]", sym_aref, -1);
