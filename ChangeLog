@@ -1,3 +1,7 @@
+Sat Sep 24 14:24:55 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* spec/README: update URL.
+
 Sat Sep 24 11:28:22 2016  Koichi ITO  <koic.ito@gmail.com>
 
 	* fix typos, "a" before "Integer" to "an".  [Fix GH-1438]
