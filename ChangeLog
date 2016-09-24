@@ -1,3 +1,12 @@
+Sat Sep 24 10:18:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/misc/test_ruby_mode.rb (EXPR_SAVE): use a numeric prefix
+	  argument of 0, not to make the previous version into a backup
+	  file, instead of backup-inhibited.
+
+	* test/misc/test_ruby_mode.rb (run_emacs): always save the buffer
+	  if modified.
+
 Fri Sep 23 23:57:40 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* vm_method.c (make_method_entry_refined): fix wrong use of ||.
