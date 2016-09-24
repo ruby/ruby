@@ -19,8 +19,8 @@ install:
   - copy zlib.lib  \usr\local\lib
   - copy zconf.h   \usr\local\include
   - copy zlib.h    \usr\local\include
-  - dir /s C:\OpenSSL-Win32
   - type %OPENSSL_CONF%
+  - dir /s C:\OpenSSL-Win32
 build_script:
   - cd %APPVEYOR_BUILD_FOLDER%
   - win32\configure.bat --without-ext=+,dbm,gdbm,readline --with-opt-dir=/usr/local
