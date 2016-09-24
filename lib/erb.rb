@@ -399,7 +399,6 @@ class ERB
           @scan_line = self.method(:scan_line)
         end
       end
-      attr_accessor :stag
 
       def scan(&block)
         @stag = nil
