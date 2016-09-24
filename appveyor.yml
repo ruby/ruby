@@ -12,13 +12,7 @@ install:
   - mkdir \usr\local\include
   - mkdir \usr\local\lib
   - appveyor DownloadFile http://zlib.net/zlib128.zip
-  - 7z x zlib128.zip
-  - cd zlib-1.2.8
-  - nmake -f win32/Makefile.msc
-  - copy zlib1.dll \usr\local\bin
-  - copy zlib.lib  \usr\local\lib
-  - copy zconf.h   \usr\local\include
-  - copy zlib.h    \usr\local\include
+  - 7z x -o%APPVEYOR_BUILD_FOLDER%\ext\zlib zlib128.zip
   - for %%I in (c:\OpenSSL-Win64\*.dll) do mklink /h \usr\local\bin\%%~nxI %%I
 build_script:
   - cd %APPVEYOR_BUILD_FOLDER%
