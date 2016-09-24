@@ -11,13 +11,6 @@ install:
   - mkdir \usr\local\bin
   - mkdir \usr\local\include
   - mkdir \usr\local\lib
-  - appveyor DownloadFile http://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-2.3.7-windows.zip
-  - 7z x libressl-2.3.7-windows.zip
-  - copy libressl-2.3.7-windows\x64\libcrypto-37.lib \usr\local\lib\crypto.lib
-  - copy libressl-2.3.7-windows\x64\libssl-38.lib    \usr\local\lib\ssl.lib
-  - copy libressl-2.3.7-windows\x64\libcrypto-37.dll \usr\local\bin
-  - copy libressl-2.3.7-windows\x64\libssl-38.dll    \usr\local\bin
-  - xcopy /e libressl-2.3.7-windows\include          \usr\local\include
   - appveyor DownloadFile http://zlib.net/zlib128.zip
   - 7z x zlib128.zip
   - cd zlib-1.2.8
@@ -26,9 +19,10 @@ install:
   - copy zlib.lib  \usr\local\lib
   - copy zconf.h   \usr\local\include
   - copy zlib.h    \usr\local\include
+  - for %%I in (c:\OpenSSL-Win64\*.dll) do mklink /h \usr\local\bin\%%~nxI %%I
 build_script:
   - cd %APPVEYOR_BUILD_FOLDER%
-  - win32\configure.bat --without-ext=+,dbm,gdbm,readline --with-opt-dir=/usr/local
+  - win32\configure.bat --without-ext=+,dbm,gdbm,readline --with-opt-dir=/usr/local --with-openssl-dir=c:/OpenSSL-Win64
   - nmake -l up
   - nmake -l
   - nmake install-nodoc
