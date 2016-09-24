@@ -1,4 +1,9 @@
-Sat Sep 24 10:18:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Sep 24 10:19:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/misc/test_ruby_mode.rb (assert_indent): since write-region
+	  in Emacs 25.1 no longer displays the "Wrote file" message, shows
+	  the explicit message to check if successfully finished.
+	  [ruby-core:77355] [Bug #12785]
 
 	* test/misc/test_ruby_mode.rb (EXPR_SAVE): use a numeric prefix
 	  argument of 0, not to make the previous version into a backup
