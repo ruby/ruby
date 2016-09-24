@@ -338,7 +338,11 @@ class IPAddr
 
   # Compares the ipaddr with another.
   def <=>(other)
-    other = coerce_other(other)
+    begin
+      other = coerce_other(other)
+    rescue
+      return nil
+    end
 
     return nil if other.family != @family
 

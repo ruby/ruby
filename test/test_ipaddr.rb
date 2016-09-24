@@ -169,6 +169,8 @@ class TC_Operator < Test::Unit::TestCase
     @a = IPAddr.new("3ffe:505:2::/48")
     @b = IPAddr.new("0:0:0:1::")
     @c = IPAddr.new(IN6MASK32)
+    @inconvertible_range = 1..5
+    @inconvertible_string = "sometext"
   end
   alias set_up setup
 
@@ -220,6 +222,13 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(false, @a == IPAddr.new("3ffe:505:3::"))
     assert_equal(true, @a != IPAddr.new("3ffe:505:3::"))
     assert_equal(false, @a != IPAddr.new("3ffe:505:2::"))
+    assert_equal(false, @a == @inconvertible_range)
+    assert_equal(false, @a == @inconvertible_string)
+  end
+
+  def test_compare
+    assert_equal(nil, @a <=> @inconvertible_range)
+    assert_equal(nil, @a <=> @inconvertible_string)
   end
 
   def test_mask
