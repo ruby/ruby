@@ -1372,7 +1372,7 @@ SRC
   # _convertible_ means actually the same type, or typedef'd from the same
   # type.
   #
-  # If the +type+ is a integer type and the _convertible_ type is found,
+  # If the +type+ is an integer type and the _convertible_ type is found,
   # the following macros are passed as preprocessor constants to the compiler
   # using the +type+ name, in uppercase.
   #

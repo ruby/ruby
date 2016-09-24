@@ -1,3 +1,7 @@
+Sat Sep 24 11:28:22 2016  Koichi ITO  <koic.ito@gmail.com>
+
+	* fix typos, "a" before "Integer" to "an".  [Fix GH-1438]
+
 Sat Sep 24 10:19:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/misc/test_ruby_mode.rb (assert_indent): since write-region

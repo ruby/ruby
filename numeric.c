@@ -4112,7 +4112,7 @@ int_le(VALUE x, VALUE y)
  *
  * One's complement: returns a number where each bit is flipped.
  *
- * Inverts the bits in a integer. As Integers are conceptually infinite
+ * Inverts the bits in an integer. As Integers are conceptually infinite
  * length, the result acts as if it had an infinite number of one
  * bits to the left. In hex representations, this is displayed
  * as two periods to the left of the digits.
