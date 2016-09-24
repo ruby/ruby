@@ -3611,7 +3611,7 @@ sum_iter(VALUE i, struct enum_sum_memo *memo)
                 n = 0;
             }
             if (r != Qundef) {
-                /* r can be a Integer when mathn is loaded */
+                /* r can be an Integer when mathn is loaded */
                 if (FIXNUM_P(r))
                     v = rb_fix_plus(r, v);
                 else if (RB_TYPE_P(r, T_BIGNUM))
@@ -3781,7 +3781,7 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
         if (memo.n != 0)
             memo.v = rb_fix_plus(LONG2FIX(memo.n), memo.v);
         if (memo.r != Qundef) {
-            /* r can be a Integer when mathn is loaded */
+            /* r can be an Integer when mathn is loaded */
             if (FIXNUM_P(memo.r))
                 memo.v = rb_fix_plus(memo.r, memo.v);
             else if (RB_TYPE_P(memo.r, T_BIGNUM))

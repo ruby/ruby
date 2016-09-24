@@ -2698,7 +2698,7 @@ class Gem::Specification < Gem::BasicSpecification
 
     unless specification_version.is_a?(Integer)
       raise Gem::InvalidSpecificationException,
-            'specification_version must be a Integer (did you mean version?)'
+            'specification_version must be an Integer (did you mean version?)'
     end
 
     case platform

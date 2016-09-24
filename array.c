@@ -5762,7 +5762,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
     if (n != 0)
         v = rb_fix_plus(LONG2FIX(n), v);
     if (r != Qundef) {
-        /* r can be a Integer when mathn is loaded */
+        /* r can be an Integer when mathn is loaded */
         if (FIXNUM_P(r))
             v = rb_fix_plus(r, v);
         else if (RB_TYPE_P(r, T_BIGNUM))
@@ -5776,7 +5776,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
     if (n != 0)
         v = rb_fix_plus(LONG2FIX(n), v);
     if (r != Qundef) {
-        /* r can be a Integer when mathn is loaded */
+        /* r can be an Integer when mathn is loaded */
         if (FIXNUM_P(r))
             v = rb_fix_plus(r, v);
         else if (RB_TYPE_P(r, T_BIGNUM))

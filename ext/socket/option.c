@@ -404,7 +404,7 @@ sockopt_s_ipv4_multicast_loop(VALUE klass, VALUE value)
  * call-seq:
  *   sockopt.ipv4_multicast_loop => integer
  *
- * Returns the ipv4_multicast_loop data in _sockopt_ as a integer.
+ * Returns the ipv4_multicast_loop data in _sockopt_ as an integer.
  *
  *   sockopt = Socket::Option.ipv4_multicast_loop(10)
  *   p sockopt.ipv4_multicast_loop => 10
@@ -455,7 +455,7 @@ sockopt_s_ipv4_multicast_ttl(VALUE klass, VALUE value)
  * call-seq:
  *   sockopt.ipv4_multicast_ttl => integer
  *
- * Returns the ipv4_multicast_ttl data in _sockopt_ as a integer.
+ * Returns the ipv4_multicast_ttl data in _sockopt_ as an integer.
  *
  *   sockopt = Socket::Option.ipv4_multicast_ttl(10)
  *   p sockopt.ipv4_multicast_ttl => 10
@@ -1473,4 +1473,3 @@ rsock_init_sockopt(void)
 
     rb_define_method(rb_cSockOpt, "to_s", sockopt_data, 0); /* compatibility for ruby before 1.9.2 */
 }
-

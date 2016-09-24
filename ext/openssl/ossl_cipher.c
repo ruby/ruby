@@ -304,7 +304,7 @@ ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
  *
  *  === Parameters
  *  * +salt+ must be an 8 byte string if provided.
- *  * +iterations+ is a integer with a default of 2048.
+ *  * +iterations+ is an integer with a default of 2048.
  *  * +digest+ is a Digest object that defaults to 'MD5'
  *
  *  A minimum of 1000 iterations is recommended.
