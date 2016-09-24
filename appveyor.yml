@@ -33,5 +33,5 @@ build_script:
   - nmake -l
   - nmake install-nodoc
 test_script:
-  - nmake -l "OPTS=-v -q" btest
-  - nmake -l "OPTS=-v -q" test-basic
+  - nmake -l "TESTOPTS=-v -q" btest
+  - nmake -l "TESTOPTS=-v -q" test-basic
