@@ -54,11 +54,8 @@ before_script:
   - "diff -ru config_1st config_2nd"
   - "make after-update BASERUBY=ruby"
   - "make -s $JOBS"
-  - "make update-rubyspec"
 script:
-  - "make test TESTOPTS=--color=never"
-  - "make test-all TESTOPTS='-q -j3 --color=never --job-status=normal'"
-  - "make test-rubyspec MSPECOPT=-fm"
+  - "make test-all TESTOPTS='-q --color=never' TESTS=rubygems"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
