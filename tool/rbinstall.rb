@@ -389,6 +389,15 @@ install?(:ext, :arch, :'ext-arch') do
   install_recursive("#{$extout}/#{CONFIG['arch']}", archlibdir, :no_install => noinst, :mode => $prog_mode, :strip => $strip)
   prepare "extension objects", sitearchlibdir
   prepare "extension objects", vendorarchlibdir
+  if extso = File.read("exts.mk")[/^EXTSO[ \t]*=[ \t]*((?:.*\\\n)*.*)/, 1] and
+    !(extso = extso.gsub(/\\\n/, '').split).empty?
+    libpathenv = CONFIG["LIBPATHENV"]
+    dest = CONFIG[!libpathenv || libpathenv == "PATH" ? "bindir" : "libdir"]
+    prepare "external libraries", dest
+    for file in extso
+      install file, dest, :mode => $prog_mode
+    end
+  end
 end
 install?(:ext, :arch, :hdr, :'arch-hdr') do
   prepare "extension headers", archhdrdir

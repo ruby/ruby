@@ -21,11 +21,27 @@ else
     zsrc = dirs.max_by {|x| x.scan(/\d+/).map(&:to_i)}
   end
   if zsrc
+    addconf = [
+      "ZSRC = $(srcdir)/#{File.basename(zsrc)}\n",
+      "all:\n",
+    ]
     $INCFLAGS << " -I$(ZSRC)"
     if $mswin or $mingw
       $libs = append_library($libs, "zdll")
       dll = "zlib1.dll"
+      $extso << dll
+      addconf.push(
+        "ZIMPLIB = zdll.lib\n",
+        "$(TARGET_SO): $(ZIMPLIB)\n",
+        "$(ZIMPLIB):\n",
+        "\t$(MAKE) -f $(ZSRC)/win32/Makefile.#{$nmake ? 'msc' : 'gcc'} TOP=$(ZSRC) $@\n",
+        "install-so: $(topdir)/#{dll}",
+        "$(topdir)/#{dll}: $(ZIMPLIB)\n",
+        "\t$(Q) $(COPY) #{dll} $(@D)\n",
+      )
     end
+    Logging.message "using zlib in #{zsrc}\n"
+    $defs << "-DHAVE_ZLIB_H"
     have_zlib = true
   end
 end
@@ -82,17 +98,7 @@ if have_zlib
 
   create_makefile('zlib') {|conf|
     if zsrc
-      conf << "ZSRC = $(srcdir)/#{File.basename(zsrc)}\n"
-      conf << "all:\n"
-      if $mingw or $mswin
-        conf << "ZIMPLIB = zdll.lib\n"
-        conf << "$(TARGET_SO): $(ZIMPLIB)\n"
-        conf << "$(ZIMPLIB):\n"
-        conf << "\t$(MAKE) -f $(ZSRC)/win32/Makefile.#{$nmake ? 'msc' : 'gcc'} TOP=$(ZSRC) $@\n"
-        conf << "install-so: $(topdir)/#{dll}"
-        conf << "$(topdir)/#{dll}: $(ZIMPLIB)\n"
-        conf << "\t$(Q) $(COPY) #{dll} $(@D)\n"
-      end
+      conf.concat addconf if addconf
     end
     conf
   }

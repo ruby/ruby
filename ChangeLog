@@ -1,3 +1,12 @@
+Sat Sep 24 22:26:20 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extract_makefile, extmake, configuration): store
+	  extra libraries to be installed.
+
+	* tool/rbinstall.rb (ext-arch): install extra libraries.
+
+	* ext/zlib/extconf.rb: install zlib if built.
+
 Sat Sep 24 14:24:55 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* spec/README: update URL.
