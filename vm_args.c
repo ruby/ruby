@@ -347,19 +347,28 @@ args_setup_rest_parameter(struct args_info *args, VALUE *locals)
 }
 
 static VALUE
-make_unused_kw_hash(const VALUE *passed_keywords, int passed_keyword_len, const VALUE *kw_argv, const int key_only)
+make_unknown_kw_hash(const VALUE *passed_keywords, int passed_keyword_len, const VALUE *kw_argv)
 {
     int i;
-    VALUE obj = key_only ? rb_ary_tmp_new(1) : rb_hash_new();
+    VALUE obj = rb_ary_tmp_new(1);
 
     for (i=0; i<passed_keyword_len; i++) {
 	if (kw_argv[i] != Qundef) {
-	    if (key_only) {
-		rb_ary_push(obj, passed_keywords[i]);
-	    }
-	    else {
-		rb_hash_aset(obj, passed_keywords[i], kw_argv[i]);
-	    }
+	    rb_ary_push(obj, passed_keywords[i]);
+	}
+    }
+    return obj;
+}
+
+static VALUE
+make_rest_kw_hash(const VALUE *passed_keywords, int passed_keyword_len, const VALUE *kw_argv)
+{
+    int i;
+    VALUE obj = rb_hash_new();
+
+    for (i=0; i<passed_keyword_len; i++) {
+	if (kw_argv[i] != Qundef) {
+	    rb_hash_aset(obj, passed_keywords[i], kw_argv[i]);
 	}
     }
     return obj;
@@ -442,11 +451,11 @@ args_setup_kw_parameters(VALUE* const passed_values, const int passed_keyword_le
 
     if (iseq->body->param.flags.has_kwrest) {
 	const int rest_hash_index = key_num + 1;
-	locals[rest_hash_index] = make_unused_kw_hash(passed_keywords, passed_keyword_len, passed_values, FALSE);
+	locals[rest_hash_index] = make_rest_kw_hash(passed_keywords, passed_keyword_len, passed_values);
     }
     else {
 	if (found != passed_keyword_len) {
-	    VALUE keys = make_unused_kw_hash(passed_keywords, passed_keyword_len, passed_values, TRUE);
+	    VALUE keys = make_unknown_kw_hash(passed_keywords, passed_keyword_len, passed_values);
 	    argument_kw_error(GET_THREAD(), iseq, "unknown", keys);
 	}
     }
