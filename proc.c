@@ -963,18 +963,17 @@ static int
 rb_proc_min_max_arity(VALUE self, int *max)
 {
     rb_proc_t *proc;
-    const struct rb_block *block;
     GetProcPtr(self, proc);
-    block = &proc->block;
-    return rb_block_min_max_arity(block, max);
+    return rb_block_min_max_arity(&proc->block, max);
 }
 
 int
 rb_proc_arity(VALUE self)
 {
     rb_proc_t *proc;
-    int max, min = rb_proc_min_max_arity(self, &max);
+    int max, min;
     GetProcPtr(self, proc);
+    min = rb_block_min_max_arity(&proc->block, &max);
     return (proc->is_lambda ? min == max : max != UNLIMITED_ARGUMENTS) ? min : -min-1;
 }
 
