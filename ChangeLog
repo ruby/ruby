@@ -1,3 +1,10 @@
+Mon Sep 26 06:33:16 2016  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* lib/uri/generic.rb (def check_password): don't include bad password
+	  in URI exception output
+
+	* test/uri/test_generic.rb (def test_set_component): test for behavior
+
 Mon Sep 26 06:20:58 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* tool/downloader.rb: comment out gem package verification.

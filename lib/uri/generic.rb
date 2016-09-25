@@ -428,7 +428,7 @@ module URI
 
       if parser.regexp[:USERINFO] !~ v
         raise InvalidComponentError,
-          "bad component(expected user component): #{v}"
+          "bad password component"
       end
 
       return true
