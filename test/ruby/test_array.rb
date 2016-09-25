@@ -805,6 +805,15 @@ class TestArray < Test::Unit::TestCase
     assert_nothing_raised(RuntimeError, bug10748) {a.flatten(1)}
   end
 
+  def test_flattern_singleton_class
+    bug12738 = '[ruby-dev:49781] [Bug #12738]'
+    a = [[0]]
+    class << a
+      def m; end
+    end
+    assert_raise(NoMethodError, bug12738) { a.flatten.m }
+  end
+
   def test_flatten!
     a1 = @cls[ 1, 2, 3]
     a2 = @cls[ 5, 6 ]
@@ -840,6 +849,15 @@ class TestArray < Test::Unit::TestCase
     a = @cls[@cls[o]]
     assert_raise_with_message(RuntimeError, bug10748) {a.flatten!}
     assert_nothing_raised(RuntimeError, bug10748) {a.flatten!(1)}
+  end
+
+  def test_flattern_singleton_class!
+    bug12738 = '[ruby-dev:49781] [Bug #12738]'
+    a = [[0]]
+    class << a
+      def m; end
+    end
+    assert_nothing_raised(NameError, bug12738) { a.flatten!.m }
   end
 
   def test_flatten_with_callcc
