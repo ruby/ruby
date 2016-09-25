@@ -1,3 +1,8 @@
+Mon Sep 26 07:26:44 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* tool/gem-unpack.rb: don't set security policy.
+	  workaround for certificate expiration of minitest-5.8.3.gem.
+
 Mon Sep 26 06:33:16 2016  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* lib/uri/generic.rb (def check_password): don't include bad password

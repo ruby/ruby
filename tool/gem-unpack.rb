@@ -2,10 +2,10 @@ require 'rubygems'
 require 'rubygems/package'
 
 def Gem.unpack(file, dir = nil)
-  policy = Gem::Security::LowSecurity
-  (policy = policy.dup).ui = Gem::SilentUI.new
+  #policy = Gem::Security::LowSecurity
+  #(policy = policy.dup).ui = Gem::SilentUI.new
   pkg = Gem::Package.new(file)
-  pkg.security_policy = policy
+  #pkg.security_policy = policy
   spec = pkg.spec
   target = spec.full_name
   target = File.join(dir, target) if dir
