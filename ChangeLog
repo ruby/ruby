@@ -1,3 +1,9 @@
+Sun Sep 25 22:48:06 2016  namusyaka  <namusyaka@gmail.com>
+
+	* lib/erb.rb (ERB::Compiler::TrimScanner#stag): The :stag accessor
+	  has already been available because it is defined in parent
+	  Scanner class.  [Fix GH-1445]
+
 Sun Sep 25 19:21:26 2016  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* node.c (dump_array): remove duplicate header of NODE_ARRAY/
