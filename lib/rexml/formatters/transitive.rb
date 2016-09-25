@@ -35,9 +35,6 @@ module REXML
           output << "/"
         else
           output << ">"
-          # If compact and all children are text, and if the formatted output
-          # is less than the specified width, then try to print everything on
-          # one line
           @level += @indentation
           node.children.each { |child|
             write( child, output )
