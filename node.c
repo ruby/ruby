@@ -140,7 +140,6 @@ dump_array(VALUE buf, VALUE indent, int comment, NODE *node)
 {
     int field_flag;
     const char *next_indent = default_indent;
-    D_NODE_HEADER(node);
     F_LONG(nd_alen, "length");
     F_NODE(nd_head, "element");
     while (node->nd_next && nd_type(node->nd_next) == NODE_ARRAY) {

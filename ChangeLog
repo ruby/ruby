@@ -1,3 +1,8 @@
+Sun Sep 25 19:21:26 2016  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* node.c (dump_array): remove duplicate header of NODE_ARRAY/
+	  NODE_VALUES.
+
 Sat Sep 24 22:26:20 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extract_makefile, extmake, configuration): store
