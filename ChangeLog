@@ -1,3 +1,8 @@
+Sun Sep 25 15:07:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* man/irb.1: remove useless -width option.
+	  [ruby-dev:49767] [Bug #12692]
+
 Tue Aug 30 05:24:33 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_x509ext.c: additional fix memory leak.
