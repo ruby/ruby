@@ -23,3 +23,4 @@ build_script:
 test_script:
   - nmake -l "TESTOPTS=-v -q" btest
   - nmake -l "TESTOPTS=-v -q" test-basic
+  - nmake -l "TESTOPTS=-v -q" TESTS=zlib test-all
