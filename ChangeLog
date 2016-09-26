@@ -1,3 +1,7 @@
+Mon Sep 26 12:00:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gems/bundled_gems: update to minitest-5.9.1.
+
 Mon Sep 26 11:50:03 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* tool/rbinstall.rb (gem): Don't install gemspec if no files will be
