@@ -345,5 +345,14 @@ puts Tempfile.new('foo').path
     f.close if f && !f.closed?
     File.unlink path if path
   end
+
+  def test_create_default_basename
+    path = nil
+    Tempfile.create {|f|
+      path = f.path
+      assert_file.exist?(path)
+    }
+    assert_file.not_exist?(path)
+  end
 end
 

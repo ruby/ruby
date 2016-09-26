@@ -1,3 +1,9 @@
+Mon Sep 26 14:36:12 2016  Naotoshi Seo  <sonots@gmail.com>
+
+	* lib/tempfile.rb: provide default basename parameter for
+	  Tempfile.create. [Feature #11965] Patch by Yuki Kurihara
+	* test/test_tempfile.rb: ditto.
+
 Mon Sep 26 14:10:54 2016  Ary Borenszweig  <ary@esperanto.org.ar>
 
 	* string.c (lstrip_offset): add a fast path in the case of single
