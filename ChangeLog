@@ -1,3 +1,9 @@
+Mon Sep 26 14:10:54 2016  Ary Borenszweig  <ary@esperanto.org.ar>
+
+	* string.c (lstrip_offset): add a fast path in the case of single
+	  byte optimizable strings, as well as rstrip_offset.
+	  [ruby-core:77392] [Feature #12788]
+
 Mon Sep 26 12:00:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gems/bundled_gems: update to minitest-5.9.1.

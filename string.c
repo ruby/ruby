@@ -8041,13 +8041,19 @@ lstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
     const char *const start = s;
 
     if (!s || s >= e) return 0;
-    /* remove spaces at head */
-    while (s < e) {
-	int n;
-	unsigned int cc = rb_enc_codepoint_len(s, e, &n, enc);
 
-	if (!rb_isspace(cc)) break;
-	s += n;
+    /* remove spaces at head */
+    if (single_byte_optimizable(str)) {
+	while (s < e && ascii_isspace(*s)) s++;
+    }
+    else {
+	while (s < e) {
+	    int n;
+	    unsigned int cc = rb_enc_codepoint_len(s, e, &n, enc);
+
+	    if (!rb_isspace(cc)) break;
+	    s += n;
+	}
     }
     return s - start;
 }
