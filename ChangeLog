@@ -1,3 +1,8 @@
+Mon Sep 26 21:37:21 2016  Akinori MUSHA  <knu@iDaemons.org>
+
+	* man/erb.1, man/irb.1, man/ri.1, man/ruby.1: Remove Ns before
+	  puctuation.
+
 Mon Sep 26 16:23:49 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/stringio/stringio.c (strio_seek): Avoid signed integer overflow.
