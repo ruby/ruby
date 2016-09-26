@@ -648,21 +648,6 @@ module RbInstall
         string.sub(/\A#{Regexp.escape(prefix)}/, "")
       end
     end
-
-    class Reader < Struct.new(:src)
-      def gemspec
-        @gemspec ||= begin
-          spec = Gem::Specification.load(src) || raise("invalid spec in #{src}")
-          file_collector = FileCollector.new(File.dirname(src))
-          spec.files = file_collector.collect
-          spec
-        end
-      end
-
-      def spec_source
-        @gemspec.to_ruby
-      end
-    end
   end
 
   class UnpackedInstaller < Gem::Installer
@@ -718,21 +703,21 @@ install?(:ext, :comm, :gem) do
   default_spec_dir = "#{spec_dir}/default"
   makedirs(default_spec_dir)
 
-  gems = {}
-
-  Dir.glob(srcdir+"/{lib,ext}/**/*.gemspec").each do |src|
-    specgen   = RbInstall::Specs::Reader.new(src)
-    gems[specgen.gemspec.name] ||= specgen
-  end
-
-  gems.sort.each do |name, specgen|
-    gemspec   = specgen.gemspec
+  gems = Dir.glob(srcdir+"/{lib,ext}/**/*.gemspec").map {|src|
+    spec = Gem::Specification.load(src) || raise("invalid spec in #{src}")
+    file_collector = RbInstall::Specs::FileCollector.new(File.dirname(src))
+    files = file_collector.collect
+    next if files.empty?
+    spec.files = files
+    spec
+  }
+  gems.compact.sort_by(&:name).each do |gemspec|
     full_name = "#{gemspec.name}-#{gemspec.version}"
 
     puts "#{" "*30}#{gemspec.name} #{gemspec.version}"
     gemspec_path = File.join(default_spec_dir, "#{full_name}.gemspec")
     open_for_install(gemspec_path, $data_mode) do
-      specgen.spec_source
+      gemspec.to_ruby
     end
 
     unless gemspec.executables.empty? then
