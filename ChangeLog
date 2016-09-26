@@ -1,3 +1,8 @@
+Mon Sep 26 23:51:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_const_search): raise with the actual class/module
+	  name which defines the private constant.
+
 Mon Sep 26 23:34:09 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl_pkcs12.c (ossl_pkcs12_initialize): pop errors
