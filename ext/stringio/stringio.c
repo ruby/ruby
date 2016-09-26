@@ -610,29 +610,30 @@ strio_seek(int argc, VALUE *argv, VALUE self)
 {
     VALUE whence;
     struct StringIO *ptr = StringIO(self);
-    long offset;
+    long amount, offset;
 
     rb_scan_args(argc, argv, "11", NULL, &whence);
-    offset = NUM2LONG(argv[0]);
+    amount = NUM2LONG(argv[0]);
     if (CLOSED(self)) {
 	rb_raise(rb_eIOError, "closed stream");
     }
     switch (NIL_P(whence) ? 0 : NUM2LONG(whence)) {
       case 0:
+	offset = 0;
 	break;
       case 1:
-	offset += ptr->pos;
+	offset = ptr->pos;
 	break;
       case 2:
-	offset += RSTRING_LEN(ptr->string);
+	offset = RSTRING_LEN(ptr->string);
 	break;
       default:
 	error_inval("invalid whence");
     }
-    if (offset < 0) {
+    if (amount > LONG_MAX - offset || amount + offset < 0) {
 	error_inval(0);
     }
-    ptr->pos = offset;
+    ptr->pos = amount + offset;
     return INT2FIX(0);
 }
 
@@ -733,6 +734,9 @@ static void
 strio_extend(struct StringIO *ptr, long pos, long len)
 {
     long olen;
+
+    if (len > LONG_MAX - pos)
+	rb_raise(rb_eArgError, "string size too big");
 
     check_modifiable(ptr);
     olen = RSTRING_LEN(ptr->string);

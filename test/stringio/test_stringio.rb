@@ -160,6 +160,15 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(Encoding::UTF_8, s.encoding, "honor the original encoding over ASCII-8BIT")
   end
 
+  def test_write_integer_overflow
+    long_max = (1 << (RbConfig::SIZEOF["long"] * 8 - 1)) - 1
+    f = StringIO.new
+    f.pos = long_max
+    assert_raise(ArgumentError) {
+      f.write("pos + len overflows")
+    }
+  end
+
   def test_set_encoding
     bug10285 = '[ruby-core:65240] [Bug #10285]'
     f = StringIO.new()
