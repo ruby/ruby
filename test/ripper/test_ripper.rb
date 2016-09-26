@@ -98,4 +98,23 @@ class TestRipper::Ripper < Test::Unit::TestCase
       assert_nil(Ripper.sexp(src), bug12651)
     end;
   end
+
+  # https://bugs.jruby.org/4176
+  def test_dedent_string
+    col = Ripper.dedent_string '  hello', 0
+    assert_equal 0, col
+    col = Ripper.dedent_string '  hello', 2
+    assert_equal 2, col
+    col = Ripper.dedent_string '  hello', 4
+    assert_equal 2, col
+
+    # lexing a squiggly heredoc triggers Ripper#dedent_string use
+    src = <<-END
+puts <<~END
+  hello
+end
+    END
+
+    assert_nothing_raised { Ripper.lex src }
+  end
 end if ripper_test
