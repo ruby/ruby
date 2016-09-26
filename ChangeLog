@@ -1,3 +1,16 @@
+Mon Sep 26 11:06:47 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* string.c (enc_strlen, rb_enc_strlen_cr): Avoid signed integer
+	  overflow. The result type of a pointer subtraction may have the same
+	  size as long. This fixes String#size returning an negative value on
+	  i686-linux environment:
+
+	    str = "\x00" * ((1<<31)-2))
+	    str.slice!(-3, 3)
+	    str.force_encoding("UTF-32BE")
+	    str << 1234
+	    p str.size
+
 Sun Sep 25 22:48:06 2016  namusyaka  <namusyaka@gmail.com>
 
 	* lib/erb.rb (ERB::Compiler::TrimScanner#stag): The :stag accessor
