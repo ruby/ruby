@@ -1,3 +1,9 @@
+Mon Sep 26 23:34:09 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/openssl/ossl_pkcs12.c (ossl_pkcs12_initialize): pop errors
+	  leaked by PKCS12_parse(). This is a bug in OpenSSL, which exists
+	  in the versions before the version 1.0.0t, 1.0.1p, 1.0.2d.
+
 Mon Sep 26 23:10:43 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_dump.c (backtrace): use rip in the saved context for the case

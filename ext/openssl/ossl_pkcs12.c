@@ -165,8 +165,12 @@ ossl_pkcs12_initialize(int argc, VALUE *argv, VALUE self)
     BIO_free(in);
 
     pkey = cert = ca = Qnil;
+    /* OpenSSL's bug; PKCS12_parse() puts errors even if it succeeds.
+     * Fixed in OpenSSL 1.0.0t, 1.0.1p, 1.0.2d */
+    ERR_set_mark();
     if(!PKCS12_parse(pkcs, passphrase, &key, &x509, &x509s))
 	ossl_raise(ePKCS12Error, "PKCS12_parse");
+    ERR_pop_to_mark();
     pkey = rb_protect((VALUE(*)_((VALUE)))ossl_pkey_new, (VALUE)key,
 		      &st); /* NO DUP */
     if(st) goto err;
