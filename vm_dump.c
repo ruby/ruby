@@ -482,10 +482,14 @@ darwin_sigtramp:
 	unw_set_reg(&cursor, UNW_X86_64_R13, uctx->uc_mcontext->__ss.__r13);
 	unw_set_reg(&cursor, UNW_X86_64_R14, uctx->uc_mcontext->__ss.__r14);
 	unw_set_reg(&cursor, UNW_X86_64_R15, uctx->uc_mcontext->__ss.__r15);
-	ip = *(unw_word_t*)uctx->uc_mcontext->__ss.__rsp;
-	unw_set_reg(&cursor, UNW_REG_IP, ip);
-	trace[n++] = (void *)uctx->uc_mcontext->__ss.__rip;
+	ip = uctx->uc_mcontext->__ss.__rip;
+	if (((char*)ip)[-2] == 0x0f && ((char*)ip)[-1] == 5) {
+	    /* signal received in syscall */
+	    trace[n++] = (void *)ip;
+	    ip = *(unw_word_t*)uctx->uc_mcontext->__ss.__rsp;
+	}
 	trace[n++] = (void *)ip;
+	unw_set_reg(&cursor, UNW_REG_IP, ip);
     }
     while (unw_step(&cursor) > 0) {
 	unw_get_reg(&cursor, UNW_REG_IP, &ip);
