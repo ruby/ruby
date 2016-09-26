@@ -1,3 +1,14 @@
+Mon Sep 26 15:43:34 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* eval_intern.h (TH_PUSH_TAG): Initialize struct rb_vm_tag::tag with
+	  Qundef rather than 0 which is equal to Qfalse. Since Kernel#throw(obj)
+	  searches a tag with rb_vm_tag::tag == obj, throw(false) can
+	  accidentally find an unrelated tag which is not created by
+	  Kernel#catch.  [ruby-core:77229] [Bug #12743]
+
+	* test/ruby/test_exception.rb (test_throw_false): Add a test case for
+	  this.
+
 Mon Sep 26 14:36:12 2016  Naotoshi Seo  <sonots@gmail.com>
 
 	* lib/tempfile.rb: provide default basename parameter for
