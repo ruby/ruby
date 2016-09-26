@@ -1,6 +1,6 @@
 power_assert 0.2.6
 test-unit 3.1.5
-minitest 5.8.3
+minitest 5.8.5
 rake 10.4.2
 net-telnet 0.1.1
 did_you_mean 1.0.0
