@@ -913,4 +913,31 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       end
     end
   end
+
+  def test_warning_warn
+    verbose = $VERBOSE
+    warning = nil
+
+    ::Warning.class_eval do
+      alias_method :warn2, :warn
+      remove_method :warn
+
+      define_method(:warn) do |str|
+        warning = str
+      end
+    end
+
+    $VERBOSE = true
+    a = @a
+
+    assert_match(/instance variable @a not initialized/, warning)
+  ensure
+    $VERBOSE = verbose
+
+    ::Warning.class_eval do
+      remove_method :warn
+      alias_method :warn, :warn2
+      remove_method :warn2
+    end
+  end
 end
