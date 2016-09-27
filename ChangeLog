@@ -16,7 +16,7 @@ Tue Sep 27 23:22:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Tue Sep 27 22:59:42 2016  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
-	* NEWS: news about Warning.warning.
+	* NEWS: news about Warning.warn.
 
 Tue Sep 27 18:10:18 2016  Jeremy Evans <code@jeremyevans.net>
 
