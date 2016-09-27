@@ -311,8 +311,14 @@ WARN
      [:/, "regexp literal"],
      [:%, "string literal"],
     ].each do |op, syn|
-      assert_warning(warning % [op, syn]) do
-        assert_valid_syntax("puts 1 #{op}0", "test", verbose: true)
+      all_assertions do |a|
+        ["puts 1 #{op}0", "puts :a #{op}0", "m = 1; puts m #{op}0"].each do |src|
+          a.for(src) do
+            assert_warning(warning % [op, syn], src) do
+              assert_valid_syntax(src, "test", verbose: true)
+            end
+          end
+        end
       end
     end
   end
