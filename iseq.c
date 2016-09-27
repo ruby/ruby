@@ -817,19 +817,17 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
     VALUE parser;
     VALUE f;
     NODE *node;
-    const char *fname;
     rb_compile_option_t option;
 
     rb_secure(1);
     rb_scan_args(argc, argv, "11", &file, &opt);
     FilePathValue(file);
     file = rb_fstring(file); /* rb_io_t->pathv gets frozen anyways */
-    fname = StringValueCStr(file);
 
     f = rb_file_open_str(file, "r");
 
     parser = rb_parser_new();
-    node = rb_parser_compile_file(parser, fname, f, NUM2INT(line));
+    node = rb_parser_compile_file_path(parser, file, f, NUM2INT(line));
 
     rb_io_close(f);
 
