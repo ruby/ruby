@@ -1,3 +1,8 @@
+Wed Sep 28 00:21:00 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_warning_s_warn): the argument must be an
+	  ASCII-compatible string.  [ruby-core:77430] [Bug #12793]
+
 Tue Sep 27 23:22:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (symbol, dsym, parser_set_number_literal): set state to

@@ -152,6 +152,8 @@ ruby_only_for_internal_use(const char *func)
 static VALUE
 rb_warning_s_warn(VALUE mod, VALUE str)
 {
+    Check_Type(str, T_STRING);
+    rb_must_asciicompat(str);
     rb_write_error_str(str);
     return Qnil;
 }

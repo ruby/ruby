@@ -940,4 +940,16 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       remove_method :warn2
     end
   end
+
+  def test_warning_warn_invalid_argument
+    assert_raise(TypeError) do
+      ::Warning.warn nil
+    end
+    assert_raise(TypeError) do
+      ::Warning.warn 1
+    end
+    assert_raise(Encoding::CompatibilityError) do
+      ::Warning.warn "\x00a\x00b\x00c".force_encoding("utf-16be")
+    end
+  end
 end
