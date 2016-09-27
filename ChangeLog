@@ -1,3 +1,7 @@
+Tue Sep 27 22:59:42 2016  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* NEWS: news about Warning.warning.
+
 Tue Sep 27 18:10:18 2016  Jeremy Evans <code@jeremyevans.net>
 
 	* error.c: This makes all warnings raised call Warning.warn, which
