@@ -1,3 +1,8 @@
+Tue Sep 27 17:35:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* iseq.c (iseqw_s_compile_file): deal with syntax error as well as
+	  compile, and should not abort when rescued.
+
 Tue Sep 27 12:07:17 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* lib/cgi/cookie.rb (parse): don't allow , as a separator. [Bug #12791]
