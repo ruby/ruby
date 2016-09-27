@@ -4261,7 +4261,7 @@ string_dvar	: tGVAR
 
 symbol		: tSYMBEG sym
 		    {
-			SET_LEX_STATE(EXPR_END);
+			SET_LEX_STATE(EXPR_ENDARG);
 		    /*%%%*/
 			$$ = $2;
 		    /*%
@@ -4278,7 +4278,7 @@ sym		: fname
 
 dsym		: tSYMBEG xstring_contents tSTRING_END
 		    {
-			SET_LEX_STATE(EXPR_END);
+			SET_LEX_STATE(EXPR_ENDARG);
 		    /*%%%*/
 			$$ = dsym_node($2);
 		    /*%
@@ -6637,6 +6637,7 @@ parser_set_number_literal(struct parser_params *parser, VALUE v, int type, int s
 	type = tIMAGINARY;
     }
     set_yylval_literal(v);
+    SET_LEX_STATE(EXPR_ENDARG);
     return type;
 }
 
@@ -7228,7 +7229,7 @@ parser_prepare(struct parser_params *parser)
 #define ambiguous_operator(op, syn) dispatch2(operator_ambiguous, ripper_intern(op), rb_str_new_cstr(syn))
 #endif
 #define warn_balanced(op, syn) ((void) \
-    (!IS_lex_state_for(last_state, EXPR_CLASS|EXPR_DOT|EXPR_FNAME|EXPR_ENDFN|EXPR_ENDARG) && \
+    (!IS_lex_state_for(last_state, EXPR_CLASS|EXPR_DOT|EXPR_FNAME|EXPR_ENDFN) && \
      space_seen && !ISSPACE(c) && \
      (ambiguous_operator(op, syn), 0)))
 
@@ -7921,7 +7922,7 @@ parse_ident(struct parser_params *parser, int c, int cmd_state)
 		if (COND_P()) return keyword_do_cond;
 		if (CMDARG_P() && !IS_lex_state_for(state, EXPR_CMDARG))
 		    return keyword_do_block;
-		if (IS_lex_state_for(state, (EXPR_BEG | EXPR_END | EXPR_ENDARG)))
+		if (IS_lex_state_for(state, (EXPR_BEG | EXPR_ENDARG)))
 		    return keyword_do_block;
 		return keyword_do;
 	    }

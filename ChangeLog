@@ -1,3 +1,14 @@
+Tue Sep 27 23:22:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (symbol, dsym, parser_set_number_literal): set state to
+	  ENDARG, so that `do` after a literal should be `do_block` and
+	  bound to the outer method.  [ruby-core:72482] [Bug #11873]
+
+	* parse.y (parse_ident): revert r56198.
+
+	* parse.y (warn_balanced): the state of symbol and numeric
+	  literals is now EXPR_ENDARG, do not exclude it.
+
 Tue Sep 27 22:59:42 2016  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* NEWS: news about Warning.warning.
