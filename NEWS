@@ -119,6 +119,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Stdlib updates (outstanding ones only)
 
+* CGI
+
+  * Don't allow , as a separator [Bug #12791]
+
 * CSV
 
   * Add a liberal_parsing option. [Feature #11839]
@@ -138,6 +142,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 * optparse
 
   * Add an into option. [Feature #11191]
+
+* WEBrick
+
+  * Don't allow , as a separator [Bug #12791]
 
 === Compatibility issues (excluding feature bug fixes)
 
