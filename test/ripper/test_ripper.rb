@@ -110,7 +110,7 @@ class TestRipper::Ripper < Test::Unit::TestCase
 
     # lexing a squiggly heredoc triggers Ripper#dedent_string use
     src = <<-END
-puts <<~END
+puts <<~end
   hello
 end
     END
