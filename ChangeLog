@@ -1,3 +1,7 @@
+Wed Sep 28 10:43:27 2016  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* .travis.yml: delete comments. They were outdated.
+
 Wed Sep 28 09:57:48 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rubygems.rb, lib/rubygems/*, test/rubygems/*: Update

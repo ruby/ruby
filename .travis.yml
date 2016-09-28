@@ -16,29 +16,20 @@
 #
 # is also a good place to look at.
 
-# Language specification.
 language: c
+
 sudo: false
 
-# Compilers.  Several  compilers are  provided in Travis,  so we try  them all.
-# The value set here is visible via $CC environment variable.
 compiler:
   - gcc
 
 os:
   - linux
 
-# Dependencies.  Some  header files are missing  in a Travis' worker  VM, so we
-# have  to install  them.  The  "1.9.1" here  is OK.   It is  the  most adopted
-# version string  for Debian/Ubuntu, and  no dependencies have been  changed so
-# far since the 1.9.1 release.
 before_install:
   - "CONFIG_FLAG="
   - "JOBS='-j 4'"
 
-# Script is where the test runs.  Note  we just do "make test", not other tests
-# like  test-all, test-rubyspec.   This is  because  they take  too much  time,
-# enough for Travis to shut down the VM as being stalled.
 before_script:
   - "uname -a"
   - "uname -r"
@@ -55,6 +46,7 @@ before_script:
   - "make after-update BASERUBY=ruby"
   - "make -s $JOBS"
   - "make update-rubyspec"
+
 script:
   - "make test TESTOPTS=--color=never"
   - "make test-all TESTOPTS='-q -j3 --color=never --job-status=normal'"
