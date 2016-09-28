@@ -1,3 +1,8 @@
+Wed Sep 28 13:00:25 2016  ksss  <co000ri@gmail.com>
+
+	* signal.c (sig_signame): [DOC] Add documentation in the case of
+	  return nil.  [Fix GH-1449]
+
 Wed Sep 28 10:43:27 2016  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* .travis.yml: delete comments. They were outdated.
