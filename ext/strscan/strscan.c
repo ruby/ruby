@@ -728,8 +728,8 @@ strscan_getch(VALUE self)
         return Qnil;
 
     len = rb_enc_mbclen(CURPTR(p), S_PEND(p), rb_enc_get(p->str));
-    if (p->curr + len > S_LEN(p)) {
-        len = S_LEN(p) - p->curr;
+    if (len > S_RESTLEN(p)) {
+        len = S_RESTLEN(p);
     }
     p->prev = p->curr;
     p->curr += len;
@@ -807,8 +807,8 @@ strscan_peek(VALUE self, VALUE vlen)
     if (EOS_P(p))
         return infect(str_new(p, "", 0), p);
 
-    if (p->curr + len > S_LEN(p))
-        len = S_LEN(p) - p->curr;
+    if (len > S_RESTLEN(p))
+        len = S_RESTLEN(p);
     return extract_beg_len(p, p->curr, len);
 }
 
@@ -1116,7 +1116,7 @@ strscan_rest_size(VALUE self)
     if (EOS_P(p)) {
         return INT2FIX(0);
     }
-    i = S_LEN(p) - p->curr;
+    i = S_RESTLEN(p);
     return INT2FIX(i);
 }
 
@@ -1202,7 +1202,7 @@ inspect2(struct strscanner *p)
     long len;
 
     if (EOS_P(p)) return rb_str_new2("");
-    len = S_LEN(p) - p->curr;
+    len = S_RESTLEN(p);
     if (len > INSPECT_LENGTH) {
 	str = rb_str_new(CURPTR(p), INSPECT_LENGTH);
 	rb_str_cat2(str, "...");
