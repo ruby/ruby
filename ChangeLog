@@ -1,3 +1,9 @@
+Wed Sep 28 23:14:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/pstore.rb (PStore::CHECKSUM_ALGO): find available hashing
+	  algorithm for checksum.  MD5 is not available in FIPS mode.
+	  [Feature #6943]
+
 Wed Sep 28 13:00:25 2016  ksss  <co000ri@gmail.com>
 
 	* signal.c (sig_signame): [DOC] Add documentation in the case of
