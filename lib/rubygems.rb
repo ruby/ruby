@@ -10,7 +10,7 @@ require 'rbconfig'
 require 'thread'
 
 module Gem
-  VERSION = '2.6.6'
+  VERSION = '2.6.7'
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -296,7 +296,10 @@ module Gem
 
   def self.activate_bin_path name, exec_name, requirement # :nodoc:
     spec = find_spec_for_exe name, exec_name, [requirement]
-    Gem::LOADED_SPECS_MUTEX.synchronize { spec.activate }
+    Gem::LOADED_SPECS_MUTEX.synchronize do
+      spec.activate
+      finish_resolve
+    end
     spec.bin_file exec_name
   end
 
@@ -593,7 +596,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Zlib::GzipReader wrapper that unzips +data+.
 
   def self.gunzip(data)
-    require 'rubygems/util'
     Gem::Util.gunzip data
   end
 
@@ -601,7 +603,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Zlib::GzipWriter wrapper that zips +data+.
 
   def self.gzip(data)
-    require 'rubygems/util'
     Gem::Util.gzip data
   end
 
@@ -609,7 +610,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # A Zlib::Inflate#inflate wrapper
 
   def self.inflate(data)
-    require 'rubygems/util'
     Gem::Util.inflate data
   end
 
@@ -971,7 +971,8 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # default_sources if the sources list is empty.
 
   def self.sources
-    @sources ||= Gem::SourceList.from(default_sources)
+    source_list = configuration.sources || default_sources
+    @sources ||= Gem::SourceList.from(source_list)
   end
 
   ##
@@ -1146,8 +1147,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     path = path.dup
 
     if path == "-" then
-      require 'rubygems/util'
-
       Gem::Util.traverse_parents Dir.pwd do |directory|
         dep_file = GEM_DEP_FILES.find { |f| File.file?(f) }
 
@@ -1166,18 +1165,24 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       raise ArgumentError, "Unable to find gem dependencies file at #{path}"
     end
 
-    rs = Gem::RequestSet.new
-    @gemdeps = rs.load_gemdeps path
-
-    rs.resolve_current.map do |s|
-      sp = s.full_spec
-      sp.activate
-      sp
+    ENV["BUNDLE_GEMFILE"] ||= File.expand_path(path)
+    require 'rubygems/user_interaction'
+    Gem::DefaultUserInteraction.use_ui(ui) do
+      require "bundler/postit_trampoline" unless ENV["BUNDLE_DISABLE_POSTIT"]
+      require "bundler"
+      @gemdeps = Bundler.setup
+      Bundler.ui = nil
+      @gemdeps.requested_specs.map(&:to_spec).sort_by(&:name)
     end
-  rescue Gem::LoadError, Gem::UnsatisfiableDependencyError => e
-    warn e.message
-    warn "You may need to `gem install -g` to install missing gems"
-    warn ""
+  rescue => e
+    case e
+    when Gem::LoadError, Gem::UnsatisfiableDependencyError, (defined?(Bundler::GemNotFound) ? Bundler::GemNotFound : Gem::LoadError)
+      warn e.message
+      warn "You may need to `gem install -g` to install missing gems"
+      warn ""
+    else
+      raise
+    end
   end
 
   class << self
@@ -1223,6 +1228,8 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
         prefix_pattern = /^(#{prefix_group})/
       end
 
+      suffix_pattern = /#{Regexp.union(Gem.suffixes)}\z/
+
       spec.files.each do |file|
         if new_format
           file = file.sub(prefix_pattern, "")
@@ -1230,6 +1237,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
         end
 
         @path_to_default_spec_map[file] = spec
+        @path_to_default_spec_map[file.sub(suffix_pattern, "")] = spec
       end
     end
 
@@ -1237,11 +1245,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     # Find a Gem::Specification of default gem from +path+
 
     def find_unresolved_default_spec(path)
-      Gem.suffixes.each do |suffix|
-        spec = @path_to_default_spec_map["#{path}#{suffix}"]
-        return spec if spec
-      end
-      nil
+      @path_to_default_spec_map[path]
     end
 
     ##
@@ -1327,6 +1331,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   autoload :SourceList,         'rubygems/source_list'
   autoload :SpecFetcher,        'rubygems/spec_fetcher'
   autoload :Specification,      'rubygems/specification'
+  autoload :Util,               'rubygems/util'
   autoload :Version,            'rubygems/version'
 
   require "rubygems/specification"

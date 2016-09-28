@@ -687,6 +687,23 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     assert_equal "too many redirects (#{url})", e.message
   end
 
+  def test_fetch_http_redirects_without_location
+    fetcher = Gem::RemoteFetcher.new nil
+    @fetcher = fetcher
+    url = 'http://gems.example.com/redirect'
+
+    def fetcher.request(uri, request_class, last_modified = nil)
+      res = Net::HTTPMovedPermanently.new nil, 301, nil
+      res
+    end
+
+    e = assert_raises Gem::RemoteFetcher::FetchError do
+      fetcher.fetch_http URI.parse(url)
+    end
+
+    assert_equal "redirecting but no redirect location was given (#{url})", e.message
+  end
+
   def test_fetch_http_with_additional_headers
     ENV["http_proxy"] = @proxy_uri
     ENV["no_proxy"] = URI::parse(@server_uri).host
@@ -1036,4 +1053,3 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
 end
-

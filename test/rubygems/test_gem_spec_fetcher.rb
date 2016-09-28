@@ -169,6 +169,26 @@ class TestGemSpecFetcher < Gem::TestCase
     assert_equal "bad news from the internet (#{@gem_repo})", sfp.error.message
   end
 
+  def test_suggest_gems_from_name_latest
+    spec_fetcher do|fetcher|
+      fetcher.spec 'example', 1
+      fetcher.spec 'other-example', 1
+    end
+
+    suggestions = @sf.suggest_gems_from_name('examplw')
+    assert_equal ['example'], suggestions
+  end
+
+  def test_suggest_gems_from_name_prerelease
+    spec_fetcher do|fetcher|
+      fetcher.spec 'example', '1.a'
+      fetcher.spec 'other-example', 1
+    end
+
+    suggestions = @sf.suggest_gems_from_name('examplw')
+    assert_equal ['example'], suggestions
+  end
+
   def test_available_specs_latest
     spec_fetcher do |fetcher|
       fetcher.spec 'a', 1

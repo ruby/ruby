@@ -42,7 +42,8 @@ as the reason for the removal request.
     add_platform_option("remove")
 
     add_option('--host HOST',
-               'Yank from another gemcutter-compatible host') do |value, options|
+               'Yank from another gemcutter-compatible host',
+               '  (e.g. https://rubygems.org)') do |value, options|
       options[:host] = value
     end
 

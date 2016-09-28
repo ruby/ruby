@@ -282,18 +282,23 @@ class Gem::Installer
 
     run_pre_install_hooks
 
+    # Set loaded_from to ensure extension_dir is correct
+    if @options[:install_as_default] then
+      spec.loaded_from = default_spec_file
+    else
+      spec.loaded_from = spec_file
+    end
+
     # Completely remove any previous gem files
     FileUtils.rm_rf gem_dir
     FileUtils.rm_rf spec.extension_dir
 
     FileUtils.mkdir_p gem_dir
 
-    if @options[:install_as_default]
-      spec.loaded_from = default_spec_file
+    if @options[:install_as_default] then
       extract_bin
       write_default_spec
     else
-      spec.loaded_from = spec_file
       extract_files
 
       build_extensions
@@ -603,7 +608,8 @@ class Gem::Installer
   def ensure_required_ruby_version_met # :nodoc:
     if rrv = spec.required_ruby_version then
       unless rrv.satisfied_by? Gem.ruby_version then
-        raise Gem::InstallError, "#{spec.name} requires Ruby version #{rrv}."
+        raise Gem::RuntimeRequirementNotMetError,
+          "#{spec.name} requires Ruby version #{rrv}."
       end
     end
   end
@@ -611,7 +617,7 @@ class Gem::Installer
   def ensure_required_rubygems_version_met # :nodoc:
     if rrgv = spec.required_rubygems_version then
       unless rrgv.satisfied_by? Gem.rubygems_version then
-        raise Gem::InstallError,
+        raise Gem::RuntimeRequirementNotMetError,
           "#{spec.name} requires RubyGems version #{rrgv}. " +
           "Try 'gem update --system' to update RubyGems itself."
       end

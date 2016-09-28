@@ -33,7 +33,8 @@ command.  For further discussion see the help for the yank command.
     add_key_option
 
     add_option('--host HOST',
-               'Push to another gemcutter-compatible host') do |value, options|
+               'Push to another gemcutter-compatible host',
+               '  (e.g. https://rubygems.org)') do |value, options|
       options[:host] = value
     end
 

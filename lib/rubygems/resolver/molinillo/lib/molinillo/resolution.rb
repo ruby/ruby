@@ -184,6 +184,8 @@ module Gem::Resolver::Molinillo
           raise VersionConflict.new(c) unless state
           activated.rewind_to(sliced_states.first || :initial_state) if sliced_states
           state.conflicts = c
+          index = states.size - 1
+          @parent_of.reject! { |_, i| i >= index }
         end
       end
 
@@ -209,7 +211,10 @@ module Gem::Resolver::Molinillo
       # @return [Object] the requirement that led to `requirement` being added
       #   to the list of requirements.
       def parent_of(requirement)
-        @parent_of[requirement]
+        return unless requirement
+        return unless index = @parent_of[requirement]
+        return unless parent_state = @states[index]
+        parent_state.requirement
       end
 
       # @return [Object] the requirement that led to a version of a possibility
@@ -418,7 +423,8 @@ module Gem::Resolver::Molinillo
         debug(depth) { "Requiring nested dependencies (#{nested_dependencies.join(', ')})" }
         nested_dependencies.each do |d|
           activated.add_child_vertex(name_for(d), nil, [name_for(activated_spec)], d)
-          @parent_of[d] = requirement
+          parent_index = states.size - 1
+          @parent_of[d] ||= parent_index
         end
 
         push_state_for_requirements(requirements + nested_dependencies, !nested_dependencies.empty?)

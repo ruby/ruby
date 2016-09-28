@@ -142,6 +142,8 @@ By default, this RubyGems will install gem as:
 
     remove_old_lib_files lib_dir
 
+    install_default_gemspec
+
     say "RubyGems #{Gem::VERSION} installed"
 
     uninstall_old_gemcutter
@@ -202,59 +204,65 @@ By default, this RubyGems will install gem as:
     end
   end
 
-  def install_executables(bin_dir)
-    say "Installing gem executable" if @verbose
 
+  def install_executables(bin_dir)
     @bin_file_names = []
 
-    Dir.chdir 'bin' do
-      bin_files = Dir['*']
+    {
+      'gem' => 'bin',
+      'bundler' => 'bundler/exe',
+    }.each do |tool, path|
+      say "Installing #{tool} executable" if @verbose
 
-      bin_files.delete 'update_rubygems'
+      Dir.chdir path do
+        bin_files = Dir['*']
 
-      bin_files.each do |bin_file|
-        bin_file_formatted = if options[:format_executable] then
-                               Gem.default_exec_format % bin_file
-                             else
-                               bin_file
-                             end
+        bin_files -= %w[update_rubygems bundler bundle_ruby]
 
-        dest_file = File.join bin_dir, bin_file_formatted
-        bin_tmp_file = File.join Dir.tmpdir, "#{bin_file}.#{$$}"
+        bin_files.each do |bin_file|
+          bin_file_formatted = if options[:format_executable] then
+                                 Gem.default_exec_format % bin_file
+                               else
+                                 bin_file
+                               end
 
-        begin
-          bin = File.readlines bin_file
-          bin[0] = "#!#{Gem.ruby}\n"
+          dest_file = File.join bin_dir, bin_file_formatted
+          bin_tmp_file = File.join Dir.tmpdir, "#{bin_file}.#{$$}"
 
-          File.open bin_tmp_file, 'w' do |fp|
-            fp.puts bin.join
+          begin
+            bin = File.readlines bin_file
+            bin[0] = "#!#{Gem.ruby}\n"
+
+            File.open bin_tmp_file, 'w' do |fp|
+              fp.puts bin.join
+            end
+
+            install bin_tmp_file, dest_file, :mode => 0755
+            @bin_file_names << dest_file
+          ensure
+            rm bin_tmp_file
           end
 
-          install bin_tmp_file, dest_file, :mode => 0755
-          @bin_file_names << dest_file
-        ensure
-          rm bin_tmp_file
-        end
+          next unless Gem.win_platform?
 
-        next unless Gem.win_platform?
+          begin
+            bin_cmd_file = File.join Dir.tmpdir, "#{bin_file}.bat"
 
-        begin
-          bin_cmd_file = File.join Dir.tmpdir, "#{bin_file}.bat"
+            File.open bin_cmd_file, 'w' do |file|
+              file.puts <<-TEXT
+  @ECHO OFF
+  IF NOT "%~f0" == "~f0" GOTO :WinNT
+  @"#{File.basename(Gem.ruby).chomp('"')}" "#{dest_file}" %1 %2 %3 %4 %5 %6 %7 %8 %9
+  GOTO :EOF
+  :WinNT
+  @"#{File.basename(Gem.ruby).chomp('"')}" "%~dpn0" %*
+  TEXT
+            end
 
-          File.open bin_cmd_file, 'w' do |file|
-            file.puts <<-TEXT
-@ECHO OFF
-IF NOT "%~f0" == "~f0" GOTO :WinNT
-@"#{File.basename(Gem.ruby).chomp('"')}" "#{dest_file}" %1 %2 %3 %4 %5 %6 %7 %8 %9
-GOTO :EOF
-:WinNT
-@"#{File.basename(Gem.ruby).chomp('"')}" "%~dpn0" %*
-TEXT
+            install bin_cmd_file, "#{dest_file}.bat", :mode => 0755
+          ensure
+            rm bin_cmd_file
           end
-
-          install bin_cmd_file, "#{dest_file}.bat", :mode => 0755
-        ensure
-          rm bin_cmd_file
         end
       end
     end
@@ -269,18 +277,23 @@ TEXT
   end
 
   def install_lib(lib_dir)
-    say "Installing RubyGems" if @verbose
+    {
+      'RubyGems' => 'lib',
+      'Bundler' => 'bundler/lib'
+    }.each do |tool, path|
+      say "Installing #{tool}" if @verbose
 
-    lib_files = rb_files_in 'lib'
-    pem_files = pem_files_in 'lib'
+      lib_files = rb_files_in path
+      pem_files = pem_files_in path
 
-    Dir.chdir 'lib' do
-      lib_files.each do |lib_file|
-        install_file lib_file, lib_dir
-      end
+      Dir.chdir path do
+        lib_files.each do |lib_file|
+          install_file lib_file, lib_dir
+        end
 
-      pem_files.each do |pem_file|
-        install_file pem_file, lib_dir
+        pem_files.each do |pem_file|
+          install_file pem_file, lib_dir
+        end
       end
     end
   end
@@ -324,6 +337,19 @@ TEXT
     end
 
     return false
+  end
+
+  def install_default_gemspec
+    Dir.chdir("bundler") do
+      bundler_spec = Gem::Specification.load("bundler.gemspec")
+      bundler_spec.files = Dir["{*.md,{lib,exe,man}/**/*}"]
+      bundler_spec.executables -= %w[bundler bundle_ruby]
+      Dir.entries(Gem::Specification.default_specifications_dir).
+        select {|gs| gs.start_with?("bundler-") }.
+        each {|gs| File.delete(File.join(Gem::Specification.default_specifications_dir, gs)) }
+      default_spec_path = File.join(Gem::Specification.default_specifications_dir, "#{bundler_spec.full_name}.gemspec")
+      Gem.write_binary(default_spec_path, bundler_spec.to_ruby)
+    end
   end
 
   def make_destination_dirs(install_destdir)
@@ -416,23 +442,27 @@ abort "#{deprecation_message}"
   end
 
   def remove_old_lib_files lib_dir
-    rubygems_dir = File.join lib_dir, 'rubygems'
-    lib_files = rb_files_in 'lib/rubygems'
+    {
+      File.join(lib_dir, 'rubygems') => 'lib/rubygems',
+      File.join(lib_dir, 'bundler') => 'bundler/lib/bundler',
+    }.each do |old_lib_dir, new_lib_dir|
+      lib_files = rb_files_in(new_lib_dir)
 
-    old_lib_files = rb_files_in rubygems_dir
+      old_lib_files = rb_files_in(old_lib_dir)
 
-    to_remove = old_lib_files - lib_files
+      to_remove = old_lib_files - lib_files
 
-    to_remove.delete_if do |file|
-      file.start_with? 'defaults'
-    end
+      to_remove.delete_if do |file|
+        file.start_with? 'defaults'
+      end
 
-    Dir.chdir rubygems_dir do
-      to_remove.each do |file|
-        FileUtils.rm_f file
+      Dir.chdir old_lib_dir do
+        to_remove.each do |file|
+          FileUtils.rm_f file
 
-        warn "unable to remove old file #{file} please remove it by hand" if
-          File.exist? file
+          warn "unable to remove old file #{file} please remove it by hand" if
+            File.exist? file
+        end
       end
     end
   end
@@ -481,4 +511,3 @@ abort "#{deprecation_message}"
   end
 
 end
-
