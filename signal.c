@@ -238,9 +238,10 @@ signo2signm(int no)
 
 /*
  * call-seq:
- *     Signal.signame(signo)  ->  string
+ *     Signal.signame(signo)  ->  string or nil
  *
- *  convert signal number to signal name
+ *  Convert signal number to signal name.
+ *  Returns +nil+ if the signo is an invalid signal number.
  *
  *     Signal.trap("INT") { |signo| puts Signal.signame(signo) }
  *     Process.kill("INT", 0)
