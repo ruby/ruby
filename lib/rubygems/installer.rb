@@ -608,8 +608,7 @@ class Gem::Installer
   def ensure_required_ruby_version_met # :nodoc:
     if rrv = spec.required_ruby_version then
       unless rrv.satisfied_by? Gem.ruby_version then
-        raise Gem::RuntimeRequirementNotMetError,
-          "#{spec.name} requires Ruby version #{rrv}."
+        raise Gem::InstallError, "#{spec.name} requires Ruby version #{rrv}."
       end
     end
   end
@@ -617,7 +616,7 @@ class Gem::Installer
   def ensure_required_rubygems_version_met # :nodoc:
     if rrgv = spec.required_rubygems_version then
       unless rrgv.satisfied_by? Gem.rubygems_version then
-        raise Gem::RuntimeRequirementNotMetError,
+        raise Gem::InstallError,
           "#{spec.name} requires RubyGems version #{rrgv}. " +
           "Try 'gem update --system' to update RubyGems itself."
       end

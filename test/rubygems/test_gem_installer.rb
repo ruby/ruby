@@ -1416,7 +1416,7 @@ gem 'other', version
   def test_pre_install_checks_ruby_version
     use_ui @ui do
       installer = Gem::Installer.at old_ruby_required
-      e = assert_raises Gem::RuntimeRequirementNotMetError do
+      e = assert_raises Gem::InstallError do
         installer.pre_install_checks
       end
       assert_equal 'old_ruby_required requires Ruby version = 1.4.6.',
@@ -1435,7 +1435,7 @@ gem 'other', version
 
     use_ui @ui do
       @installer = Gem::Installer.at gem
-      e = assert_raises Gem::RuntimeRequirementNotMetError do
+      e = assert_raises Gem::InstallError do
         @installer.pre_install_checks
       end
       assert_equal 'old_rubygems_required requires RubyGems version < 0. ' +

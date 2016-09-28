@@ -41,7 +41,8 @@ module Kernel
 
     path = path.to_path if path.respond_to? :to_path
 
-    if spec = Gem.find_unresolved_default_spec(path)
+    spec = Gem.find_unresolved_default_spec(path)
+    if spec
       Gem.remove_unresolved_default_spec(spec)
       gem(spec.name)
     end
@@ -60,10 +61,12 @@ module Kernel
     #--
     # TODO request access to the C implementation of this to speed up RubyGems
 
-    if Gem::Specification.find_active_stub_by_path(path)
+    spec = Gem::Specification.find_active_stub_by_path path
+
+    begin
       RUBYGEMS_ACTIVATION_MONITOR.exit
       return gem_original_require(path)
-    end
+    end if spec
 
     # Attempt to find +path+ in any unresolved gems...
 
@@ -101,7 +104,7 @@ module Kernel
 
       # Ok, now find a gem that has no conflicts, starting
       # at the highest version.
-      valid = found_specs.find { |s| !s.has_conflicts? }
+      valid = found_specs.reject { |s| s.has_conflicts? }.first
 
       unless valid then
         le = Gem::LoadError.new "unable to find a version of '#{names.first}' to activate"
@@ -135,3 +138,4 @@ module Kernel
   private :require
 
 end
+

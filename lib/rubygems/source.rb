@@ -67,11 +67,7 @@ class Gem::Source
 
       return -1 if !other.uri
 
-      # Returning 1 here ensures that when sorting a list of sources, the
-      # original ordering of sources supplied by the user is preserved.
-      return 1 unless @uri.to_s == other.uri.to_s
-
-      0
+      @uri.to_s <=> other.uri.to_s
     else
       nil
     end

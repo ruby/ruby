@@ -233,29 +233,8 @@ class Gem::Resolver
       exc.errors = @set.errors
       raise exc
     end
-
-    sources = []
-
-    groups = Hash.new { |hash, key| hash[key] = [] }
-
-    possibles.each do |spec|
-      source = spec.source
-
-      sources << source unless sources.include? source
-
-      groups[source] << spec
-    end
-
-    activation_requests = []
-
-    sources.sort.each do |source|
-      groups[source].
-        sort_by { |spec| [spec.version, Gem::Platform.local =~ spec.platform ? 1 : 0] }.
-        map { |spec| ActivationRequest.new spec, dependency, [] }.
-        each { |activation_request| activation_requests << activation_request }
-    end
-
-    activation_requests
+    possibles.sort_by { |s| [s.source, s.version, Gem::Platform.local =~ s.platform ? 1 : 0] }.
+      map { |s| ActivationRequest.new s, dependency, [] }
   end
 
   def dependencies_for(specification)

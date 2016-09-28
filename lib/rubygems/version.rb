@@ -237,7 +237,7 @@ class Gem::Version
   end
 
   def hash # :nodoc:
-    canonical_segments.hash
+    @version.hash
   end
 
   def init_with coder # :nodoc:
@@ -331,7 +331,7 @@ class Gem::Version
 
   def <=> other
     return unless Gem::Version === other
-    return 0 if @version == other._version || canonical_segments == other.canonical_segments
+    return 0 if @version == other._version
 
     lhsegments = _segments
     rhsegments = other._segments
@@ -356,13 +356,6 @@ class Gem::Version
     return 0
   end
 
-  def canonical_segments
-    @canonical_segments ||=
-      _split_segments.map! do |segments|
-        segments.reverse_each.drop_while {|s| s == 0 }.reverse
-      end.reduce(&:concat)
-  end
-
   protected
 
   def _version
@@ -377,12 +370,5 @@ class Gem::Version
     @segments ||= @version.scan(/[0-9]+|[a-z]+/i).map do |s|
       /^\d+$/ =~ s ? s.to_i : s
     end.freeze
-  end
-
-  def _split_segments
-    string_start = _segments.index {|s| s.is_a?(String) }
-    string_segments  = segments
-    numeric_segments = string_segments.slice!(0, string_start || string_segments.size)
-    return numeric_segments, string_segments
   end
 end
