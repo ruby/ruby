@@ -11,7 +11,7 @@ install:
   - mkdir \usr\local\bin
   - mkdir \usr\local\include
   - mkdir \usr\local\lib
-  - appveyor DownloadFile http://zlib.net/zlib128.zip
+  - appveyor DownloadFile http://downloads.sourceforge.net/project/libpng/zlib/1.2.8/zlib128.zip
   - 7z x -o%APPVEYOR_BUILD_FOLDER%\ext\zlib zlib128.zip
   - for %%I in (c:\OpenSSL-Win64\*.dll) do mklink /h \usr\local\bin\%%~nxI %%I
 build_script:
