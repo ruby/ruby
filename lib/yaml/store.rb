@@ -39,6 +39,7 @@ require 'pstore'
 class YAML::Store < PStore
 
   # :call-seq:
+  #   initialize( file_name, yaml_opts = {} )
   #   initialize( file_name, thread_safe = false, yaml_opts = {} )
   #
   # Creates a new YAML::Store object, which will store data in +file_name+.
