@@ -1,3 +1,8 @@
+Thu Sep 29 23:38:04 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/yaml/store.rb (YAML::Store#dump): use table argument instead
+	  of @table directly.
+
 Thu Sep 29 22:22:22 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/yaml/store.rb (YAML::Store#initialize): Fix arguments.

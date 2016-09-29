@@ -61,7 +61,7 @@ class YAML::Store < PStore
   # :stopdoc:
 
   def dump(table)
-    @table.to_yaml(@opt)
+    table.to_yaml(@opt)
   end
 
   def load(content)
