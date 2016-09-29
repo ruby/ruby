@@ -1,3 +1,9 @@
+Thu Sep 29 19:34:23 2016  Pete Higgins  <pete@peterhiggins.org>
+
+	* thread_sync.c (rb_queue_pop, rb_szqueue_push, rb_szqueue_pop):
+	  Document exception types, ThreadError, raised by Queue and
+	  SizedQueue.  [Fix GH-1451]
+
 Thu Sep 29 19:21:02 2016  Pete Higgins  <pete@peterhiggins.org>
 
 	* thread_sync.c (Init_thread_sync): Remove confusing doc comments,

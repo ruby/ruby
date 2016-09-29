@@ -824,8 +824,8 @@ queue_pop_should_block(int argc, const VALUE *argv)
  * Retrieves data from the queue.
  *
  * If the queue is empty, the calling thread is suspended until data is pushed
- * onto the queue. If +non_block+ is true, the thread isn't suspended, and an
- * exception is raised.
+ * onto the queue. If +non_block+ is true, the thread isn't suspended, and
+ * +ThreadError+ is raised.
  */
 
 static VALUE
@@ -1002,7 +1002,7 @@ szqueue_push_should_block(int argc, const VALUE *argv)
  *
  * If there is no space left in the queue, waits until space becomes
  * available, unless +non_block+ is true.  If +non_block+ is true, the
- * thread isn't suspended, and an exception is raised.
+ * thread isn't suspended, and +ThreadError+ is raised.
  */
 
 static VALUE
@@ -1056,8 +1056,8 @@ szqueue_do_pop(VALUE self, int should_block)
  * Retrieves data from the queue.
  *
  * If the queue is empty, the calling thread is suspended until data is pushed
- * onto the queue. If +non_block+ is true, the thread isn't suspended, and an
- * exception is raised.
+ * onto the queue. If +non_block+ is true, the thread isn't suspended, and
+ * +ThreadError+ is raised.
  */
 
 static VALUE
