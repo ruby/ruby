@@ -395,7 +395,7 @@ class PStore
   # Load the given PStore file.
   # If +read_only+ is true, the unmarshalled Hash will be returned.
   # If +read_only+ is false, a 3-tuple will be returned: the unmarshalled
-  # Hash, an MD5 checksum of the data, and the size of the data.
+  # Hash, a checksum of the data, and the size of the data.
   def load_data(file, read_only)
     if read_only
       begin
