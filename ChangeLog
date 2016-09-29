@@ -1,3 +1,18 @@
+Thu Sep 29 22:22:22 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/yaml/store.rb (YAML::Store#initialize): Fix arguments.
+	  [ruby-dev:49821] [Bug #12800]
+
+	* test/yaml/test_store.rb: Add tests from test/test_pstore.rb.
+
+	* test/yaml/test_store.rb (YAMLStoreTest#test_with_options): Add options test.
+
+	* lib/yaml/store.rb (YAML::Store#dump): Revert to to_yaml.
+
+	* lib/yaml/store.rb (YAML::Store#empty_marshal_data): Use to_yaml with options.
+
+	* lib/yaml/store.rb (YAML::Store#empty_marshal_checksum): Use CHECKSUM_ALGO.
+
 Thu Sep 29 19:34:23 2016  Pete Higgins  <pete@peterhiggins.org>
 
 	* thread_sync.c (rb_queue_pop, rb_szqueue_push, rb_szqueue_pop):
