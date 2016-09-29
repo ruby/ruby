@@ -1,3 +1,9 @@
+Thu Sep 29 19:21:02 2016  Pete Higgins  <pete@peterhiggins.org>
+
+	* thread_sync.c (Init_thread_sync): Remove confusing doc comments,
+	  which are picked up by rdoc unexpectedly, from Queue and
+	  SizedQueue.  [Fix GH-1450]
+
 Wed Sep 28 23:14:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/pstore.rb (PStore::CHECKSUM_ALGO): find available hashing
