@@ -517,6 +517,9 @@ static NODE *match_op_gen(struct parser_params*,NODE*,NODE*);
 static ID  *local_tbl_gen(struct parser_params*);
 #define local_tbl() local_tbl_gen(parser)
 
+static NODE *deferred_dots_gen(struct parser_params*,NODE*);
+#define deferred_dots(n) deferred_dots_gen(parser, (n))
+
 static void fixup_nodes(NODE **);
 
 static VALUE reg_compile_gen(struct parser_params*, VALUE, int);
@@ -2079,10 +2082,7 @@ arg		: lhs '=' arg_rhs
 			value_expr($1);
 			value_expr($3);
 			$$ = NEW_DOT2($1, $3);
-			if ($1 && nd_type($1) == NODE_LIT && FIXNUM_P($1->nd_lit) &&
-			    $3 && nd_type($3) == NODE_LIT && FIXNUM_P($3->nd_lit)) {
-			    deferred_nodes = list_append(deferred_nodes, $$);
-			}
+			deferred_dots($$);
 		    /*%
 			$$ = dispatch2(dot2, $1, $3);
 		    %*/
@@ -2093,10 +2093,7 @@ arg		: lhs '=' arg_rhs
 			value_expr($1);
 			value_expr($3);
 			$$ = NEW_DOT3($1, $3);
-			if ($1 && nd_type($1) == NODE_LIT && FIXNUM_P($1->nd_lit) &&
-			    $3 && nd_type($3) == NODE_LIT && FIXNUM_P($3->nd_lit)) {
-			    deferred_nodes = list_append(deferred_nodes, $$);
-			}
+			deferred_dots($$);
 		    /*%
 			$$ = dispatch2(dot3, $1, $3);
 		    %*/
@@ -8970,6 +8967,18 @@ match_op_gen(struct parser_params *parser, NODE *node1, NODE *node2)
     }
 
     return NEW_CALL(node1, tMATCH, NEW_LIST(node2));
+}
+
+static NODE *
+deferred_dots_gen(struct parser_params *parser, NODE *n)
+{
+    NODE *b = n->nd_beg;
+    NODE *e = n->nd_end;
+    if (b && nd_type(b) == NODE_LIT && FIXNUM_P(b->nd_lit) &&
+	e && nd_type(e) == NODE_LIT && FIXNUM_P(e->nd_lit)) {
+	deferred_nodes = list_append(deferred_nodes, n);
+    }
+    return n;
 }
 
 # if WARN_PAST_SCOPE
