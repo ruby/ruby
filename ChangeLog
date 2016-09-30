@@ -1,3 +1,10 @@
+Sat Oct  1 00:57:54 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* vm_dump.c (backtrace): use rip in the saved context for the case
+	  the SIGSEGV is received when the process is in userland.
+	  Note that ip in the stack should be used if the signal is received
+	  when it is in kernel (when it is calling syscall) [Bug #12711]
+
 Sat Oct  1 00:56:19 2016  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* lib/uri/generic.rb (def check_password): don't include bad password
