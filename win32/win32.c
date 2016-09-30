@@ -4345,7 +4345,6 @@ poll_child_status(struct ChildRecord *child, int *stat_loc)
 
     if (!GetExitCodeProcess(child->hProcess, &exitcode)) {
 	/* If an error occurred, return immediately. */
-    error_exit:
 	err = GetLastError();
 	switch (err) {
 	  case ERROR_INVALID_PARAMETER:
@@ -4358,6 +4357,7 @@ poll_child_status(struct ChildRecord *child, int *stat_loc)
 	    errno = map_errno(err);
 	    break;
 	}
+    error_exit:
 	CloseChildHandle(child);
 	return -1;
     }
