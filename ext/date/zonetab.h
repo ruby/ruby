@@ -1,5 +1,5 @@
 /* ANSI-C code produced by gperf version 3.1 */
-/* Command-line: gperf --ignore-case -E -C -c -P -p -j1 -i 1 -g -o -t -N zonetab zonetab.list  */
+/* Command-line: gperf --ignore-case -C -c -P -p -j1 -i 1 -g -o -t -N zonetab zonetab.list  */
 /* Computed positions: -k'1-4,$' */
 
 #if !((' ' == 32) && ('!' == 33) && ('"' == 34) && ('#' == 35) \
@@ -39,6 +39,12 @@ struct zone {
 static const struct zone *zonetab();
 #line 9 "zonetab.list"
 struct zone;
+
+#define TOTAL_KEYWORDS 170
+#define MIN_WORD_LENGTH 1
+#define MAX_WORD_LENGTH 17
+#define MIN_HASH_VALUE 5
+#define MAX_HASH_VALUE 438
 /* maximum key range = 434, duplicates = 0 */
 
 #ifndef GPERF_DOWNCASE
@@ -495,15 +501,6 @@ static const struct stringpool_t stringpool_contents =
 const struct zone *
 zonetab (register const char *str, register size_t len)
 {
-  enum
-    {
-      TOTAL_KEYWORDS = 170,
-      MIN_WORD_LENGTH = 1,
-      MAX_WORD_LENGTH = 17,
-      MIN_HASH_VALUE = 5,
-      MAX_HASH_VALUE = 438
-    };
-
   static const struct zone wordlist[] =
     {
       {-1}, {-1}, {-1}, {-1}, {-1},

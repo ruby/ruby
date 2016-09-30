@@ -438,13 +438,13 @@ date_zone_to_diff(VALUE str)
 	}
 	{
 	    long sl = shrunk_size(s, l);
-	    if (sl) {
+	    if (sl > 0 && sl <= MAX_WORD_LENGTH) {
 		char *d = ALLOCV_N(char, vbuf, sl);
 		l = shrink_space(d, s, l);
 		s = d;
 	    }
 	}
-	{
+	if (l > 0 && l <= MAX_WORD_LENGTH) {
 	    const struct zone *z = zonetab(s, (unsigned int)l);
 	    if (z) {
 		int d = z->offset;
