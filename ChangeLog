@@ -1,3 +1,8 @@
+Sat Oct  1 01:02:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* variable.c (rb_const_search): raise with the actual class/module
+	  name which defines the private constant.
+
 Sat Oct  1 00:57:54 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* vm_dump.c (backtrace): use rip in the saved context for the case

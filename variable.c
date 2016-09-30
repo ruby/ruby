@@ -1852,7 +1852,7 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 	while ((ce = rb_const_lookup(tmp, id))) {
 	    if (visibility && RB_CONST_PRIVATE_P(ce)) {
 		rb_name_error(id, "private constant %"PRIsVALUE"::%"PRIsVALUE" referenced",
-			      rb_class_name(klass), QUOTE_ID(id));
+			      rb_class_name(tmp), QUOTE_ID(id));
 	    }
 	    value = ce->value;
 	    if (value == Qundef) {
