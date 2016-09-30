@@ -1,3 +1,8 @@
+Fri Sep 30 18:43:20 2016  Jason Yeo  <jason@jasonyeo.me>
+
+	* doc/syntax/control_expressions.rdoc: Add missing 'as'
+	  [ci skip][fix GH-1448] Patch by @jsyeo
+
 Thu Sep 29 23:38:04 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/yaml/store.rb (YAML::Store#dump): use table argument instead
