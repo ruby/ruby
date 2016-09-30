@@ -1539,7 +1539,13 @@ ossl_ssl_write_internal(VALUE self, VALUE str, int nonblock, int no_exception)
 
     if (ssl) {
 	for (;;){
-	    nwrite = SSL_write(ssl, RSTRING_PTR(str), RSTRING_LENINT(str));
+	    int num = RSTRING_LENINT(str);
+
+	    /* SSL_write(3ssl) manpage states num == 0 is undefined */
+	    if (num == 0)
+		goto end;
+
+	    nwrite = SSL_write(ssl, RSTRING_PTR(str), num);
 	    switch(ssl_get_error(ssl, nwrite)){
 	    case SSL_ERROR_NONE:
 		goto end;

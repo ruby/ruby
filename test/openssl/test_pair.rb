@@ -271,6 +271,17 @@ module OpenSSL::TestPairM
     }
   end
 
+  def test_write_zero
+    ssl_pair {|s1, s2|
+      assert_equal 0, s2.write_nonblock('', exception: false)
+      assert_kind_of Symbol, s1.read_nonblock(1, exception: false)
+      assert_equal 0, s2.syswrite('')
+      assert_kind_of Symbol, s1.read_nonblock(1, exception: false)
+      assert_equal 0, s2.write('')
+      assert_kind_of Symbol, s1.read_nonblock(1, exception: false)
+    }
+  end
+
   def tcp_pair
     host = "127.0.0.1"
     serv = TCPServer.new(host, 0)
