@@ -2,6 +2,11 @@
 require 'test/unit'
 
 class TestFlip < Test::Unit::TestCase
+  def test_flip_flop
+    assert_equal [2], (1..9).select {|n| true if (n==2)..(n%2).zero?}
+    assert_equal [2,3,4], (1..9).select {|n| true if (n==2)...(n%2).zero?}
+  end
+
   def test_hidden_key
     bug6899 = '[ruby-core:47253]'
     foo = "foor"
