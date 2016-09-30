@@ -26,7 +26,7 @@
 const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 0xC0, 0x4F, 0x8F, 0x5D, 0x9A}};
 #endif
 
-#define WIN32OLE_VERSION "1.8.3"
+#define WIN32OLE_VERSION "1.8.4"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -54,13 +54,13 @@ static HINSTANCE ghhctrl = NULL;
 static HINSTANCE gole32 = NULL;
 static FNCOCREATEINSTANCEEX *gCoCreateInstanceEx = NULL;
 static VALUE com_hash;
+static VALUE enc2cp_hash;
 static IDispatchVtbl com_vtbl;
 static UINT cWIN32OLE_cp = CP_ACP;
 static rb_encoding *cWIN32OLE_enc;
 static UINT g_cp_to_check = CP_ACP;
 static char g_lcid_to_check[8 + 1];
 static VARTYPE g_nil_to = VT_ERROR;
-static st_table *enc2cp_table;
 static IMessageFilterVtbl message_filter;
 static IMessageFilter imessage_filter = { &message_filter };
 static IMessageFilter* previous_filter;
@@ -166,9 +166,6 @@ static VALUE ole_ptrtype2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE ty
 static VALUE fole_method_help(VALUE self, VALUE cmdname);
 static VALUE fole_activex_initialize(VALUE self);
 
-static void init_enc2cp(void);
-static void free_enc2cp(void);
-
 static void com_hash_free(void *ptr);
 static void com_hash_mark(void *ptr);
 static size_t com_hash_size(const void *ptr);
@@ -179,8 +176,8 @@ static const rb_data_type_t ole_datatype = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-static const rb_data_type_t com_hash_datatype = {
-    "com_hash",
+static const rb_data_type_t win32ole_hash_datatype = {
+    "win32ole_hash",
     {com_hash_mark, com_hash_free, com_hash_size,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
@@ -857,10 +854,11 @@ ole_vstr2wc(VALUE vstr)
     UINT size = 0;
     LPWSTR pw;
     st_data_t data;
+    struct st_table *tbl = DATA_PTR(enc2cp_hash);
     enc = rb_enc_get(vstr);
 
-    if (st_lookup(enc2cp_table, (st_data_t)enc, &data)) {
-        cp = (int)data;
+    if (st_lookup(tbl, (VALUE)enc | FIXNUM_FLAG, &data)) {
+        cp = FIX2INT((VALUE)data);
     } else {
         cp = ole_encoding2cp(enc);
         if (code_page_installed(cp) ||
@@ -872,7 +870,7 @@ ole_vstr2wc(VALUE vstr)
             cp == CP_UTF7 ||
             cp == CP_UTF8 ||
             cp == 51932) {
-            st_insert(enc2cp_table, (st_data_t)enc, (st_data_t)cp);
+            st_insert(tbl, (VALUE)enc | FIXNUM_FLAG, INT2FIX(cp));
         } else {
             rb_raise(eWIN32OLERuntimeError, "not installed Windows codepage(%d) according to `%s'", cp, rb_enc_name(enc));
         }
@@ -3868,18 +3866,6 @@ typelib_from_val(VALUE obj, ITypeLib **pTypeLib)
 }
 
 static void
-init_enc2cp(void)
-{
-    enc2cp_table = st_init_numtable();
-}
-
-static void
-free_enc2cp(void)
-{
-    st_free_table(enc2cp_table);
-}
-
-static void
 com_hash_free(void *ptr)
 {
     st_table *tbl = ptr;
@@ -3921,7 +3907,10 @@ Init_win32ole(void)
     message_filter.RetryRejectedCall = mf_RetryRejectedCall;
     message_filter.MessagePending = mf_MessagePending;
 
-    com_hash = TypedData_Wrap_Struct(rb_cData, &com_hash_datatype, st_init_numtable());
+    enc2cp_hash = TypedData_Wrap_Struct(rb_cData, &win32ole_hash_datatype, st_init_numtable());
+    rb_gc_register_mark_object(enc2cp_hash);
+
+    com_hash = TypedData_Wrap_Struct(rb_cData, &win32ole_hash_datatype, st_init_numtable());
     rb_gc_register_mark_object(com_hash);
 
     cWIN32OLE = rb_define_class("WIN32OLE", rb_cObject);
@@ -4067,7 +4056,5 @@ Init_win32ole(void)
     Init_win32ole_record();
     Init_win32ole_error();
 
-    init_enc2cp();
-    atexit((void (*)(void))free_enc2cp);
     ole_init_cp();
 }

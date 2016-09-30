@@ -1,3 +1,8 @@
+Sat Oct  1 00:49:40 2016  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (Init_win32ole): should not use atexit to
+	  free allocated hash table to avoid error on Cygwin.
+
 Sat Oct  1 00:43:11 2016  Naohisa Goto  <ngotogenome@gmail.com>
 
 	* test/fiddle/test_pointer.rb (test_to_str, test_to_s, test_aref_aset):
