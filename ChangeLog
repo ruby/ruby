@@ -1,3 +1,9 @@
+Fri Sep 30 19:06:21 2016  Anton Davydov  <mail@davydovanton.com>
+
+	* lib/uri/http.rb: Documentation and code style imrovements.
+	* test/uri/test_http.rb: Added test for coverage.
+	  [fix GH-1427][ruby-core:77255][Misc #12756]
+
 Fri Sep 30 18:43:20 2016  Jason Yeo  <jason@jasonyeo.me>
 
 	* doc/syntax/control_expressions.rdoc: Add missing 'as'
