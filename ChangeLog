@@ -1,3 +1,8 @@
+Sat Oct  1 00:52:34 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* man/irb.1: remove useless -width option.
+	  [ruby-dev:49767] [Bug #12692]
+
 Sat Oct  1 00:49:40 2016  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (Init_win32ole): should not use atexit to
