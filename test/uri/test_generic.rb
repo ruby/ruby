@@ -741,6 +741,15 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('foo:xyzzy', uri.to_s)
   end
 
+  def test_bad_password_component
+    uri = URI.parse('http://foo:bar@baz')
+    password = 'foo@bar'
+    e = assert_raise(URI::InvalidComponentError) do
+      uri.password = password
+    end
+    refute_match password, e.message
+  end
+
   def test_set_scheme
     uri = URI.parse 'HTTP://example'
 
