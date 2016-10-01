@@ -342,6 +342,13 @@ subx(VALUE str, VALUE rep, VALUE pat, VALUE hash, int (*cb)(VALUE, VALUE))
 
 #include "zonetab.h"
 
+static int
+str_end_with(const char *s, long l, const char *w)
+{
+    int n = (int)strlen(w);
+    return (l >= n && strncmp(s - n, w, n) == 0);
+}
+
 VALUE
 date_zone_to_diff(VALUE str)
 {
@@ -384,14 +391,14 @@ date_zone_to_diff(VALUE str)
 	static const char DST2[] = " dst";
 	int dst = 0;
 
-	if (l >= (int)sizeof(STD) - 1 && strcmp(d - (sizeof(STD) - 1), STD) == 0) {
+	if (str_end_with(d, l, STD)) {
 	    l -= sizeof(STD) - 1;
 	}
-	else if (l >= (int)sizeof(DST1) - 1 && strcmp(d - (sizeof(DST1) - 1), DST1) == 0) {
+	else if (str_end_with(d, l, DST1)) {
 	    l -= sizeof(DST1) - 1;
 	    dst = 1;
 	}
-	else if (l >= (int)sizeof(DST2) - 1 && strcmp(d - (sizeof(DST2) - 1), DST2) == 0) {
+	else if (str_end_with(d, l, DST2)) {
 	    l -= sizeof(DST2) - 1;
 	    dst = 1;
 	}
