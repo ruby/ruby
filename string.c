@@ -2963,7 +2963,13 @@ static VALUE
 rb_str_hash_m(VALUE str)
 {
     st_index_t hval = rb_str_hash(str);
-    return INT2FIX(hval);
+#if SIZEOF_LONG == SIZEOF_VOIDP
+    return ULONG2NUM(hval);
+#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
+    return ULL2NUM(hval);
+#else
+# error unsupported platform
+#endif
 }
 
 #define lesser(a,b) (((a)>(b))?(b):(a))

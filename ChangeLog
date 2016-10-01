@@ -1,3 +1,9 @@
+Sun Oct  2 02:04:12 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* string.c (rb_str_hash_m): st_index_t is not guaranteed as the same
+	  size with int, and of course also not guaranteed the value can be
+	  Fixnum.
+
 Sun Oct  2 02:03:06 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* numeric.c (rb_fix2str): detect unnormalized Fixnum value.
