@@ -274,7 +274,6 @@ struct parser_params {
     int heredoc_indent;
     int heredoc_line_indent;
     char *tokenbuf;
-    NODE *deferred_nodes;
     struct local_vars *lvtbl;
     int line_count;
     int ruby_sourceline;	/* current line no. */
@@ -369,7 +368,6 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define heredoc_indent		(parser->heredoc_indent)
 #define heredoc_line_indent	(parser->heredoc_line_indent)
 #define command_start		(parser->command_start)
-#define deferred_nodes		(parser->deferred_nodes)
 #define lex_gets_ptr		(parser->lex.gets_ptr)
 #define lex_gets		(parser->lex.gets)
 #define lvtbl			(parser->lvtbl)
@@ -516,11 +514,6 @@ static NODE *match_op_gen(struct parser_params*,NODE*,NODE*);
 
 static ID  *local_tbl_gen(struct parser_params*);
 #define local_tbl() local_tbl_gen(parser)
-
-static NODE *deferred_dots_gen(struct parser_params*,NODE*);
-#define deferred_dots(n) deferred_dots_gen(parser, (n))
-
-static void fixup_nodes(NODE **);
 
 static VALUE reg_compile_gen(struct parser_params*, VALUE, int);
 #define reg_compile(str,options) reg_compile_gen(parser, (str), (options))
@@ -1026,7 +1019,6 @@ top_compstmt	: top_stmts opt_terms
 		    {
 		    /*%%%*/
 			void_stmts($1);
-			fixup_nodes(&deferred_nodes);
 		    /*%
 		    %*/
 			$$ = $1;
@@ -1123,7 +1115,6 @@ compstmt	: stmts opt_terms
 		    {
 		    /*%%%*/
 			void_stmts($1);
-			fixup_nodes(&deferred_nodes);
 		    /*%
 		    %*/
 			$$ = $1;
@@ -2082,7 +2073,6 @@ arg		: lhs '=' arg_rhs
 			value_expr($1);
 			value_expr($3);
 			$$ = NEW_DOT2($1, $3);
-			deferred_dots($$);
 		    /*%
 			$$ = dispatch2(dot2, $1, $3);
 		    %*/
@@ -2093,7 +2083,6 @@ arg		: lhs '=' arg_rhs
 			value_expr($1);
 			value_expr($3);
 			$$ = NEW_DOT3($1, $3);
-			deferred_dots($$);
 		    /*%
 			$$ = dispatch2(dot3, $1, $3);
 		    %*/
@@ -7204,7 +7193,6 @@ parser_prepare(struct parser_params *parser)
     }
     pushback(c);
     parser->enc = rb_enc_get(lex_lastline);
-    deferred_nodes = 0;
     parser->token_info_enabled = !compile_for_eval && RTEST(ruby_verbose);
 }
 
@@ -8969,18 +8957,6 @@ match_op_gen(struct parser_params *parser, NODE *node1, NODE *node2)
     return NEW_CALL(node1, tMATCH, NEW_LIST(node2));
 }
 
-static NODE *
-deferred_dots_gen(struct parser_params *parser, NODE *n)
-{
-    NODE *b = n->nd_beg;
-    NODE *e = n->nd_end;
-    if (b && nd_type(b) == NODE_LIT && FIXNUM_P(b->nd_lit) &&
-	e && nd_type(e) == NODE_LIT && FIXNUM_P(e->nd_lit)) {
-	deferred_nodes = list_append(deferred_nodes, n);
-    }
-    return n;
-}
-
 # if WARN_PAST_SCOPE
 static int
 past_dvar_p(struct parser_params *parser, ID id)
@@ -9794,35 +9770,6 @@ static void
 warning_unless_e_option(struct parser_params *parser, NODE *node, const char *str)
 {
     if (!e_option_supplied(parser)) parser_warning(node, str);
-}
-
-static void
-fixup_nodes(NODE **rootnode)
-{
-    NODE *node, *next, *head;
-
-    for (node = *rootnode; node; node = next) {
-	enum node_type type;
-	VALUE val;
-
-	next = node->nd_next;
-	head = node->nd_head;
-	rb_gc_force_recycle((VALUE)node);
-	*rootnode = next;
-	switch (type = nd_type(head)) {
-	  case NODE_DOT2:
-	  case NODE_DOT3:
-	    val = rb_range_new(head->nd_beg->nd_lit, head->nd_end->nd_lit,
-			       type == NODE_DOT3);
-	    rb_gc_force_recycle((VALUE)head->nd_beg);
-	    rb_gc_force_recycle((VALUE)head->nd_end);
-	    nd_set_type(head, NODE_LIT);
-	    head->nd_lit = val;
-	    break;
-	  default:
-	    break;
-	}
-    }
 }
 
 static NODE *cond0(struct parser_params*,NODE*);
@@ -10825,7 +10772,6 @@ parser_mark(void *ptr)
     struct parser_params *parser = (struct parser_params*)ptr;
 
     rb_gc_mark((VALUE)lex_strterm);
-    rb_gc_mark((VALUE)deferred_nodes);
     rb_gc_mark(lex_input);
     rb_gc_mark(lex_lastline);
     rb_gc_mark(lex_nextline);

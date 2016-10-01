@@ -3873,6 +3873,12 @@ compile_named_capture_assign(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE *node)
     ADD_LABEL(ret, end_label);
 }
 
+static int
+number_literal_p(NODE *n)
+{
+    return (n && nd_type(n) == NODE_LIT && RB_INTEGER_TYPE_P(n->nd_lit));
+}
+
 /**
   compile each node
 
@@ -5923,7 +5929,16 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
       }
       case NODE_DOT2:
       case NODE_DOT3:{
-	VALUE flag = type == NODE_DOT2 ? INT2FIX(0) : INT2FIX(1);
+	int excl = type == NODE_DOT3;
+	VALUE flag = INT2FIX(excl);
+	NODE *b = node->nd_beg;
+	NODE *e = node->nd_end;
+	if (number_literal_p(b) && number_literal_p(e)) {
+	    VALUE val = rb_range_new(b->nd_lit, e->nd_lit, excl);
+	    iseq_add_mark_object_compile_time(iseq, val);
+	    ADD_INSN1(ret, line, putobject, val);
+	    break;
+	}
 	COMPILE(ret, "min", (NODE *) node->nd_beg);
 	COMPILE(ret, "max", (NODE *) node->nd_end);
 	if (poped) {
