@@ -1,3 +1,9 @@
+Sat Oct  1 23:08:47 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/date/date_parse.c (date_zone_to_diff): it's nonsence and really
+	  harm that to use unary minus operator with unsigned value.
+	  get rid of test failures introduced at r56312.
+
 Sat Oct  1 22:17:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): move numeric literal range

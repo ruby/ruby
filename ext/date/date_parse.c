@@ -415,7 +415,7 @@ date_zone_to_diff(VALUE str)
 	{
 	    char *p;
 	    int sign = 0;
-	    unsigned long hour = 0, min = 0, sec = 0;
+	    long hour = 0, min = 0, sec = 0;
 
 	    if (l > 3 &&
 		(strncmp(s, "gmt", 3) == 0 ||
