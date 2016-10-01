@@ -386,16 +386,13 @@ date_zone_to_diff(VALUE str)
 
 	if (l >= (int)sizeof(STD) - 1 && strcmp(d - (sizeof(STD) - 1), STD) == 0) {
 	    l -= sizeof(STD) - 1;
-	    s[l] = '\0';
 	}
 	else if (l >= (int)sizeof(DST1) - 1 && strcmp(d - (sizeof(DST1) - 1), DST1) == 0) {
 	    l -= sizeof(DST1) - 1;
-	    s[l] = '\0';
 	    dst = 1;
 	}
 	else if (l >= (int)sizeof(DST2) - 1 && strcmp(d - (sizeof(DST2) - 1), DST2) == 0) {
 	    l -= sizeof(DST2) - 1;
-	    s[l] = '\0';
 	    dst = 1;
 	}
 	{
