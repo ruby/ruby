@@ -3267,6 +3267,17 @@ rb_fix2str(VALUE x, int base)
     if (base < 2 || 36 < base) {
 	rb_raise(rb_eArgError, "invalid radix %d", base);
     }
+#if SIZEOF_LONG < SIZEOF_VOIDP
+# if SIZEOF_VOIDP == SIZEOF_LONG_LONG
+    if ((val >= 0 && (x & 0xFFFFFFFF00000000ull)) ||
+	(val < 0 && (x & 0xFFFFFFFF00000000ull) != 0xFFFFFFFF00000000ull)) {
+	rb_bug("Unnormalized Fixnum value %p", x);
+    }
+# elif
+    /* should do something like above code, but currently ruby does not know */
+    /* such platforms */
+# endif
+#endif
     if (val == 0) {
 	return rb_usascii_str_new2("0");
     }
