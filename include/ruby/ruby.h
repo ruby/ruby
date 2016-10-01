@@ -228,9 +228,11 @@ typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
 #define FIXNUM_MAX RUBY_FIXNUM_MAX
 #define FIXNUM_MIN RUBY_FIXNUM_MIN
 
-#define INT2FIX(i) (((VALUE)(i))<<1 | RUBY_FIXNUM_FLAG)
-#define LONG2FIX(i) INT2FIX(i)
-#define rb_fix_new(v) INT2FIX(v)
+#define RB_INT2FIX(i) (((VALUE)(i))<<1 | RUBY_FIXNUM_FLAG)
+#define INT2FIX(i) RB_INT2FIX(i)
+#define RB_LONG2FIX(i) RB_INT2FIX(i)
+#define LONG2FIX(i) RB_INT2FIX(i)
+#define rb_fix_new(v) RB_INT2FIX(v)
 VALUE rb_int2inum(SIGNED_VALUE);
 
 #define rb_int_new(v) rb_int2inum(v)
@@ -1183,9 +1185,9 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
 #define RSTRUCT_SET(st, idx, v) rb_struct_aset(st, INT2NUM(idx), (v))
 #define RSTRUCT_GET(st, idx)    rb_struct_aref(st, INT2NUM(idx))
 
-#define RBIGNUM_SIGN(b) (FIX2LONG(rb_big_cmp((b), INT2FIX(0))) >= 0)
-#define RBIGNUM_POSITIVE_P(b) (FIX2LONG(rb_big_cmp((b), INT2FIX(0))) >= 0)
-#define RBIGNUM_NEGATIVE_P(b) (FIX2LONG(rb_big_cmp((b), INT2FIX(0))) < 0)
+#define RBIGNUM_SIGN(b) (FIX2LONG(rb_big_cmp((b), RB_INT2FIX(0))) >= 0)
+#define RBIGNUM_POSITIVE_P(b) (FIX2LONG(rb_big_cmp((b), RB_INT2FIX(0))) >= 0)
+#define RBIGNUM_NEGATIVE_P(b) (FIX2LONG(rb_big_cmp((b), RB_INT2FIX(0))) < 0)
 
 #define R_CAST(st)   (struct st*)
 #define RBASIC(obj)  (R_CAST(RBasic)(obj))
@@ -1487,14 +1489,14 @@ rb_integer_type_p(VALUE obj)
 }
 
 #if SIZEOF_INT < SIZEOF_LONG
-# define RB_INT2NUM(v) INT2FIX((int)(v))
-# define RB_UINT2NUM(v) LONG2FIX((unsigned int)(v))
+# define RB_INT2NUM(v) RB_INT2FIX((int)(v))
+# define RB_UINT2NUM(v) RB_LONG2FIX((unsigned int)(v))
 #else
 static inline VALUE
 rb_int2num_inline(int v)
 {
     if (RB_FIXABLE(v))
-	return INT2FIX(v);
+	return RB_INT2FIX(v);
     else
 	return rb_int2big(v);
 }
@@ -1504,7 +1506,7 @@ static inline VALUE
 rb_uint2num_inline(unsigned int v)
 {
     if (RB_POSFIXABLE(v))
-	return LONG2FIX(v);
+	return RB_LONG2FIX(v);
     else
 	return rb_uint2big(v);
 }
@@ -1517,7 +1519,7 @@ static inline VALUE
 rb_long2num_inline(long v)
 {
     if (RB_FIXABLE(v))
-	return LONG2FIX(v);
+	return RB_LONG2FIX(v);
     else
 	return rb_int2big(v);
 }
@@ -1527,7 +1529,7 @@ static inline VALUE
 rb_ulong2num_inline(unsigned long v)
 {
     if (RB_POSFIXABLE(v))
-	return LONG2FIX(v);
+	return RB_LONG2FIX(v);
     else
 	return rb_uint2big(v);
 }
@@ -1543,7 +1545,7 @@ rb_num2char_inline(VALUE x)
 }
 #define RB_NUM2CHR(x) rb_num2char_inline(x)
 
-#define RB_CHR2FIX(x) INT2FIX((long)((x)&0xff))
+#define RB_CHR2FIX(x) RB_INT2FIX((long)((x)&0xff))
 
 #define LONG2NUM(x) RB_LONG2NUM(x)
 #define ULONG2NUM(x) RB_ULONG2NUM(x)

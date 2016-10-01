@@ -1,3 +1,8 @@
+Sun Oct  2 08:22:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (RB_INT2FIX, RB_LONG2FIX): prefix RB to
+	  global symbols to get rid of name conflicts with other headers.
+
 Sun Oct  2 07:51:20 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_hash_m): hash values may be negative.
