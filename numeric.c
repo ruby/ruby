@@ -3271,7 +3271,7 @@ rb_fix2str(VALUE x, int base)
 # if SIZEOF_VOIDP == SIZEOF_LONG_LONG
     if ((val >= 0 && (x & 0xFFFFFFFF00000000ull)) ||
 	(val < 0 && (x & 0xFFFFFFFF00000000ull) != 0xFFFFFFFF00000000ull)) {
-	rb_bug("Unnormalized Fixnum value %p", x);
+	rb_bug("Unnormalized Fixnum value %p", (void *)x);
     }
 # elif
     /* should do something like above code, but currently ruby does not know */
