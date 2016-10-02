@@ -40,7 +40,7 @@ class Delegator < BasicObject
   kernel = ::Kernel.dup
   kernel.class_eval do
     alias __raise__ raise
-    [:to_s,:inspect,:=~,:!~,:===,:<=>,:eql?,:hash].each do |m|
+    [:to_s, :inspect, :=~, :!~, :===, :<=>, :eql?, :hash].each do |m|
       undef_method m
     end
     private_instance_methods.each do |m|
@@ -175,7 +175,7 @@ class Delegator < BasicObject
     ivars = instance_variables.reject {|var| /\A@delegate_/ =~ var}
     [
       :__v2__,
-      ivars, ivars.map{|var| instance_variable_get(var)},
+      ivars, ivars.map {|var| instance_variable_get(var)},
       __getobj__
     ]
   end
@@ -186,7 +186,7 @@ class Delegator < BasicObject
   def marshal_load(data)
     version, vars, values, obj = data
     if version == :__v2__
-      vars.each_with_index{|var, i| instance_variable_set(var, values[i])}
+      vars.each_with_index {|var, i| instance_variable_set(var, values[i])}
       __setobj__(obj)
     else
       __setobj__(data)
@@ -234,7 +234,7 @@ class Delegator < BasicObject
   end
 
   @delegator_api = self.public_instance_methods
-  def self.public_api   # :nodoc:
+  def self.public_api # :nodoc:
     @delegator_api
   end
 end
@@ -305,7 +305,7 @@ end
 #    Non-Nil:  7
 #     Unique:  6
 #
-class SimpleDelegator<Delegator
+class SimpleDelegator < Delegator
   # Returns the current object method calls are being delegated to.
   def __getobj__
     unless defined?(@delegate_sd_obj)
@@ -379,9 +379,9 @@ def DelegateClass(superclass)
   klass = Class.new(Delegator)
   methods = superclass.instance_methods
   methods -= ::Delegator.public_api
-  methods -= [:to_s,:inspect,:=~,:!~,:===]
+  methods -= [:to_s, :inspect, :=~, :!~, :===]
   klass.module_eval do
-    def __getobj__  # :nodoc:
+    def __getobj__ # :nodoc:
       unless defined?(@delegate_dc_obj)
         return yield if block_given?
         __raise__ ::ArgumentError, "not delegated"
