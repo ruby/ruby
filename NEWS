@@ -146,6 +146,10 @@ with all sufficient information, see the ChangeLog file or Redmine
     https://github.com/ruby/openssl. OpenSSL still remains as a default gem.
     Refer to its History.md for the full release note. [Feature #9612]
 
+* Readline
+  * Readline.quoting_detection_proc and Readline.quoting_detection_proc=
+    [Feature #12659]
+
 * optparse
 
   * Add an into option. [Feature #11191]

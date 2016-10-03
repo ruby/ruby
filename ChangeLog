@@ -1,3 +1,7 @@
+Mon Oct  3 21:24:41 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: mention Readline.quoting_detection_proc{,=}.
+
 Mon Oct  3 21:19:46 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* lib/logger.rb: [DOC] Fix default value of shift_age.
