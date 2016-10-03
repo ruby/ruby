@@ -1,3 +1,11 @@
+Mon Oct  3 17:20:05 2016  George Brocklehurst  <ruby@georgebrock.com>
+
+	* ext/readline/readline.c (readline_s_set_quoting_detection_proc):
+	  support rl_char_is_quoted_p.  [Feature #12659]
+
+	* ext/readline/readline.c (readline_s_get_quoting_detection_proc):
+	  ditto.
+
 Sun Oct  2 08:22:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (RB_INT2FIX, RB_LONG2FIX): prefix RB to
