@@ -1,3 +1,8 @@
+Tue Oct  4 06:05:46 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regcomp.c (onig_print_compiled_byte_code): make the shown address
+	  look relative.
+
 Tue Oct  4 05:53:11 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regexec.c (OPCODE_EXEC_HOOK): op is p-1 because p is already
