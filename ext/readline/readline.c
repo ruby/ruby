@@ -58,7 +58,7 @@ static VALUE mReadline;
 
 #define COMPLETION_PROC "completion_proc"
 #define COMPLETION_CASE_FOLD "completion_case_fold"
-static ID completion_proc, completion_case_fold;
+static ID id_call, completion_proc, completion_case_fold;
 #if USE_INSERT_IGNORE_ESCAPE
 static ID id_orig_prompt, id_last_prompt;
 #endif
@@ -131,6 +131,13 @@ static VALUE readline_instream;
 static VALUE readline_outstream;
 static FILE *readline_rl_instream;
 static FILE *readline_rl_outstream;
+
+static void
+mustbe_callable(VALUE proc)
+{
+    if (!NIL_P(proc) && !rb_respond_to(proc, id_call))
+        rb_raise(rb_eArgError, "argument must respond to `call'");
+}
 
 #if defined HAVE_RL_GETC_FUNCTION
 
@@ -618,8 +625,7 @@ readline_s_set_output(VALUE self, VALUE output)
 static VALUE
 readline_s_set_pre_input_hook(VALUE self, VALUE proc)
 {
-    if (!NIL_P(proc) && !rb_respond_to(proc, rb_intern("call")))
-        rb_raise(rb_eArgError, "argument must respond to `call'");
+    mustbe_callable(proc);
     return rb_ivar_set(mReadline, id_pre_input_hook, proc);
 }
 
@@ -646,7 +652,7 @@ readline_pre_input_hook(void)
 
     proc = rb_attr_get(mReadline, id_pre_input_hook);
     if (!NIL_P(proc))
-        rb_funcall(proc, rb_intern("call"), 0);
+        rb_funcall(proc, id_call, 0);
     return 0;
 }
 #else
@@ -815,8 +821,7 @@ readline_s_redisplay(VALUE self)
 static VALUE
 readline_s_set_completion_proc(VALUE self, VALUE proc)
 {
-    if (!NIL_P(proc) && !rb_respond_to(proc, rb_intern("call")))
-        rb_raise(rb_eArgError, "argument must respond to `call'");
+    mustbe_callable(proc);
     return rb_ivar_set(mReadline, completion_proc, proc);
 }
 
@@ -953,7 +958,7 @@ readline_attempted_completion_function(const char *text, int start, int end)
     rl_attempted_completion_over = 1;
 #endif
     case_fold = RTEST(rb_attr_get(mReadline, completion_case_fold));
-    ary = rb_funcall(proc, rb_intern("call"), 1, rb_locale_str_new_cstr(text));
+    ary = rb_funcall(proc, id_call, 1, rb_locale_str_new_cstr(text));
     if (!RB_TYPE_P(ary, T_ARRAY))
         ary = rb_Array(ary);
     matches = RARRAY_LEN(ary);
@@ -1794,6 +1799,7 @@ username_completion_proc_call(VALUE self, VALUE str)
     return result;
 }
 
+#undef rb_intern
 void
 Init_readline(void)
 {
@@ -1813,6 +1819,7 @@ Init_readline(void)
 
     using_history();
 
+    id_call = rb_intern("call");
     completion_proc = rb_intern(COMPLETION_PROC);
     completion_case_fold = rb_intern(COMPLETION_CASE_FOLD);
 #if defined(HAVE_RL_PRE_INPUT_HOOK)
@@ -1979,7 +1986,7 @@ Init_readline(void)
 
     rl_attempted_completion_function = readline_attempted_completion_function;
 #if defined(HAVE_RL_PRE_INPUT_HOOK)
-    rl_pre_input_hook = (rl_hook_func_t *)readline_pre_input_hook;
+    rl_pre_input_hook = readline_pre_input_hook;
 #endif
 #ifdef HAVE_RL_CATCH_SIGNALS
     rl_catch_signals = 0;
