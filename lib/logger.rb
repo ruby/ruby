@@ -340,7 +340,7 @@ class Logger
 
   #
   # :call-seq:
-  #   Logger.new(logdev, shift_age = 7, shift_size = 1048576)
+  #   Logger.new(logdev, shift_age = 0, shift_size = 1048576)
   #   Logger.new(logdev, shift_age = 'weekly')
   #   Logger.new(logdev, level: :info)
   #   Logger.new(logdev, progname: 'progname')

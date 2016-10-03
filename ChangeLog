@@ -1,3 +1,7 @@
+Mon Oct  3 21:19:46 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/logger.rb: [DOC] Fix default value of shift_age.
+
 Mon Oct  3 17:20:05 2016  George Brocklehurst  <ruby@georgebrock.com>
 
 	* ext/readline/readline.c (readline_s_set_quoting_detection_proc):
