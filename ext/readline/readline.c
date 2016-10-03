@@ -1080,7 +1080,7 @@ readline_char_is_quoted(char *text, int byte_index)
                  byte_index, len);
     }
 
-    str = rb_locale_str_new_cstr(text);
+    str = rb_locale_str_new(text, len);
     char_index = rb_str_sublen(str, byte_index);
     result = rb_funcall(proc, id_call, 2, str, LONG2FIX(char_index));
     return RTEST(result);
