@@ -1185,9 +1185,9 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
 #define RSTRUCT_SET(st, idx, v) rb_struct_aset(st, INT2NUM(idx), (v))
 #define RSTRUCT_GET(st, idx)    rb_struct_aref(st, INT2NUM(idx))
 
-#define RBIGNUM_SIGN(b) (FIX2LONG(rb_big_cmp((b), RB_INT2FIX(0))) >= 0)
-#define RBIGNUM_POSITIVE_P(b) (FIX2LONG(rb_big_cmp((b), RB_INT2FIX(0))) >= 0)
-#define RBIGNUM_NEGATIVE_P(b) (FIX2LONG(rb_big_cmp((b), RB_INT2FIX(0))) < 0)
+#define RBIGNUM_SIGN(b) (RB_FIX2LONG(rb_big_cmp((b), RB_INT2FIX(0))) >= 0)
+#define RBIGNUM_POSITIVE_P(b) (RB_FIX2LONG(rb_big_cmp((b), RB_INT2FIX(0))) >= 0)
+#define RBIGNUM_NEGATIVE_P(b) (RB_FIX2LONG(rb_big_cmp((b), RB_INT2FIX(0))) < 0)
 
 #define R_CAST(st)   (struct st*)
 #define RBASIC(obj)  (R_CAST(RBasic)(obj))
