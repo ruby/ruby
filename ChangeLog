@@ -1,3 +1,13 @@
+Tue Oct  4 05:53:11 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* regexec.c (OPCODE_EXEC_HOOK): op is p-1 because p is already
+	  incremented.
+
+	* regexec.c (OPCODE_EXEC_HOOK): use the exact end address.
+
+	* regexec.c (match_at): don't call OPCODE_EXEC_HOOK in CASE()
+	  when it comes from goto fail.
+
 Mon Oct  3 21:24:41 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: mention Readline.quoting_detection_proc{,=}.
