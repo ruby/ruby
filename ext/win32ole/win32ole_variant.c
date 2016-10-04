@@ -659,7 +659,7 @@ folevariant_vartype(VALUE self)
  *  Sets variant value to val. If the val type does not match variant value
  *  type(vartype), then val is changed to match variant value type(vartype)
  *  before setting val.
- *  Thie method is not available when vartype is VT_ARRAY(except VT_UI1|VT_ARRAY).
+ *  This method is not available when vartype is VT_ARRAY(except VT_UI1|VT_ARRAY).
  *  If the vartype is VT_UI1|VT_ARRAY, the val should be String object.
  *
  *     obj = WIN32OLE_VARIANT.new(1) # obj.vartype is WIN32OLE::VARIANT::VT_I4
