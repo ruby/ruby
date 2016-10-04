@@ -807,6 +807,12 @@ class TestBigDecimal < Test::Unit::TestCase
       BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
       assert_equal(0, BigDecimal("0").div(BigDecimal("Infinity")))
     end
+
+    x = BigDecimal.new("1")
+    y = BigDecimal.new("0.22")
+    (2..20).each do |i|
+      assert_equal ("0."+"45"*(i/2)+"5"*(i%2)+"E1"), x.div(y, i).to_s, "#{i}"
+    end
   end
 
   def test_abs_bigdecimal

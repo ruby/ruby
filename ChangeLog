@@ -1,3 +1,8 @@
+Tue Oct  4 09:55:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c (BigDecimal_div2): need more room
+	  for precision to round.  [ruby-core:77475] [Bug #12805]
+
 Tue Oct  4 06:05:46 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* regcomp.c (onig_print_compiled_byte_code): make the shown address
