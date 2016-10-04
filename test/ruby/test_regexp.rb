@@ -556,6 +556,12 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(false, /../ === nil)
   end
 
+  def test_neqq
+    assert_equal(true, /../ !== nil)
+    assert_equal(true, /../ !== "")
+    assert_equal(false, /../ !== "xx")
+  end
+
   def test_quote
     assert_equal("\xff", Regexp.quote([0xff].pack("C")))
     assert_equal("\\ ", Regexp.quote("\ "))

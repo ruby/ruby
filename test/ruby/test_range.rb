@@ -306,6 +306,11 @@ class TestRange < Test::Unit::TestCase
     assert_not_operator(0..10, :===, 11)
   end
 
+  def test_neqq
+    assert_not_operator(0..10, :!==, 5)
+    assert_operator(0..10, :!==, 11)
+  end
+
   def test_eqq_time
     bug11113 = '[ruby-core:69052] [Bug #11113]'
     t = Time.now

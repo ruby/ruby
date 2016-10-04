@@ -35,6 +35,7 @@ VALUE rb_cTrueClass;
 VALUE rb_cFalseClass;
 
 #define id_eq               idEq
+#define id_eqq              idEqq
 #define id_eql              idEqlP
 #define id_match            idEqTilde
 #define id_inspect          idInspect
@@ -200,6 +201,20 @@ VALUE
 rb_obj_not_equal(VALUE obj1, VALUE obj2)
 {
     VALUE result = rb_funcall(obj1, id_eq, 1, obj2);
+    return RTEST(result) ? Qfalse : Qtrue;
+}
+
+/*
+ *  call-seq:
+ *     obj !== other       -> true or false
+ *
+ *  Negates obj === other.
+ */
+
+VALUE
+rb_obj_not_eqq(VALUE obj1, VALUE obj2)
+{
+    VALUE result = rb_funcall(obj1, id_eqq, 1, obj2);
     return RTEST(result) ? Qfalse : Qtrue;
 }
 
@@ -3443,6 +3458,7 @@ InitVM_Object(void)
 
     rb_define_method(rb_mKernel, "nil?", rb_false, 0);
     rb_define_method(rb_mKernel, "===", rb_equal, 1);
+    rb_define_method(rb_mKernel, "!==", rb_obj_not_eqq, 1);
     rb_define_method(rb_mKernel, "=~", rb_obj_match, 1);
     rb_define_method(rb_mKernel, "!~", rb_obj_not_match, 1);
     rb_define_method(rb_mKernel, "eql?", rb_obj_equal, 1);

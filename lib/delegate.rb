@@ -40,7 +40,7 @@ class Delegator < BasicObject
   kernel = ::Kernel.dup
   kernel.class_eval do
     alias __raise__ raise
-    [:to_s,:inspect,:=~,:!~,:===,:<=>,:eql?,:hash].each do |m|
+    [:to_s,:inspect,:=~,:!~,:===,:!==,:<=>,:eql?,:hash].each do |m|
       undef_method m
     end
     private_instance_methods.each do |m|
@@ -379,7 +379,7 @@ def DelegateClass(superclass)
   klass = Class.new(Delegator)
   methods = superclass.instance_methods
   methods -= ::Delegator.public_api
-  methods -= [:to_s,:inspect,:=~,:!~,:===]
+  methods -= [:to_s,:inspect,:=~,:!~,:===,:!==]
   klass.module_eval do
     def __getobj__  # :nodoc:
       unless defined?(@delegate_dc_obj)

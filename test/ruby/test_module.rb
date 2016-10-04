@@ -205,6 +205,13 @@ class TestModule < Test::Unit::TestCase
     assert_not_operator(String, :===, self)
   end
 
+  def test_NOT_VERY_EQUAL # '!=='
+    assert_not_operator(Object, :!==, self)
+    assert_not_operator(Test::Unit::TestCase, :!==, self)
+    assert_not_operator(TestModule, :!==, self)
+    assert_operator(String, :!==, self)
+  end
+
   def test_ancestors
     assert_equal([User, Mixin],      User.ancestors)
     assert_equal([Mixin],            Mixin.ancestors)

@@ -923,6 +923,7 @@ static void token_info_pop_gen(struct parser_params*, const char *token, size_t 
 %token tEQ		RUBY_TOKEN(EQ)     "=="
 %token tEQQ		RUBY_TOKEN(EQQ)    "==="
 %token tNEQ		RUBY_TOKEN(NEQ)    "!="
+%token tNEQQ		RUBY_TOKEN(NEQQ)   "!=="
 %token tGEQ		RUBY_TOKEN(GEQ)    ">="
 %token tLEQ		RUBY_TOKEN(LEQ)    "<="
 %token tANDOP		RUBY_TOKEN(ANDOP)  "&&"
@@ -970,7 +971,7 @@ static void token_info_pop_gen(struct parser_params*, const char *token, size_t 
 %nonassoc tDOT2 tDOT3
 %left  tOROP
 %left  tANDOP
-%nonassoc  tCMP tEQ tEQQ tNEQ tMATCH tNMATCH
+%nonassoc  tCMP tEQ tEQQ tNEQ tNEQQ tMATCH tNMATCH
 %left  '>' tGEQ '<' tLEQ
 %left  '|' '^'
 %left  '&'
@@ -1970,6 +1971,7 @@ op		: '|'		{ ifndef_ripper($$ = '|'); }
 		| '<'		{ ifndef_ripper($$ = '<'); }
 		| tLEQ		{ ifndef_ripper($$ = tLEQ); }
 		| tNEQ		{ ifndef_ripper($$ = tNEQ); }
+		| tNEQQ		{ ifndef_ripper($$ = tNEQQ); }
 		| tLSHFT	{ ifndef_ripper($$ = tLSHFT); }
 		| tRSHFT	{ ifndef_ripper($$ = tRSHFT); }
 		| '+'		{ ifndef_ripper($$ = '+'); }
@@ -2246,6 +2248,14 @@ arg		: lhs '=' arg_rhs
 			$$ = call_bin_op($1, tNEQ, $3);
 		    /*%
 			$$ = dispatch3(binary, $1, ID2SYM(idNeq), $3);
+		    %*/
+		    }
+		| arg tNEQQ arg
+		    {
+		    /*%%%*/
+			$$ = call_uni_op(call_bin_op($1, tEQQ, $3), '!');
+		    /*%
+			$$ = dispatch3(binary, $1, ID2SYM(idNeqq), $3);
 		    %*/
 		    }
 		| arg tMATCH arg
@@ -8127,6 +8137,10 @@ parser_yylex(struct parser_params *parser)
 	    SET_LEX_STATE(EXPR_BEG);
 	}
 	if (c == '=') {
+	    if (peek('=')) {
+		nextc();
+		return tNEQQ;
+	    }
 	    return tNEQ;
 	}
 	if (c == '~') {
@@ -9561,6 +9575,7 @@ void_expr_gen(struct parser_params *parser, NODE *node)
 	  case tLEQ:
 	  case tEQ:
 	  case tNEQ:
+	  case tNEQQ:
 	    useless = rb_id2name(node->nd_mid);
 	    break;
 	}

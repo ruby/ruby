@@ -270,7 +270,11 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
       case '!':
 	if (len == 1) return ID_JUNK;
 	switch (*++m) {
-	  case '=': case '~': ++m; break;
+	  case '~': ++m; break;
+	  case '=':
+	    ++m;
+	    if (len == 3 && *m == '=') ++m;
+	    break;
 	  default:
 	    if (allowed_attrset & (1U << ID_JUNK)) goto id;
 	    return -1;

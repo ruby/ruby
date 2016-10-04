@@ -92,6 +92,7 @@ token_ops = %[\
   Eq            ==      EQ
   Eqq           ===     EQQ
   Neq           !=      NEQ
+  Neqq          !==     NEQQ
   Not           !
   Backquote     `
   EqTilde       =~      MATCH
