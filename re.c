@@ -2888,7 +2888,7 @@ static VALUE
 rb_reg_hash(VALUE re)
 {
     st_index_t hashval = reg_hash(re);
-    return LONG2FIX(hashval);
+    return ST2FIX(hashval);
 }
 
 static st_index_t
@@ -2956,7 +2956,7 @@ match_hash(VALUE match)
     hashval = rb_hash_uint(hashval, rb_memhash(regs->beg, regs->num_regs * sizeof(*regs->beg)));
     hashval = rb_hash_uint(hashval, rb_memhash(regs->end, regs->num_regs * sizeof(*regs->end)));
     hashval = rb_hash_end(hashval);
-    return LONG2FIX(hashval);
+    return ST2FIX(hashval);
 }
 
 /*

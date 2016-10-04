@@ -3927,7 +3927,7 @@ rb_ary_hash(VALUE ary)
 	h = rb_hash_uint(h, NUM2LONG(n));
     }
     h = rb_hash_end(h);
-    return LONG2FIX(h);
+    return ST2FIX(h);
 }
 
 /*

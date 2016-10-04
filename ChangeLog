@@ -1,3 +1,24 @@
+Wed Oct  5 01:19:45 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* internal.h (ST2FIX): new macro to convert st_index_t to Fixnum.
+	  a hash value of Object might be Bignum, but it causes many troubles
+	  expecially the Object is used as a key of a hash.  so I've gave up
+	  to do so.
+
+	* array.c (rb_ary_hash): use above macro.
+
+	* bignum.c (rb_big_hash): ditto.
+
+	* hash.c (rb_obj_hash, rb_hash_hash): ditto.
+
+	* numeric.c (rb_dbl_hash): ditto.
+
+	* proc.c (proc_hash): ditto.
+
+	* re.c (rb_reg_hash, match_hash): ditto.
+
+	* string.c (rb_str_hash_m): ditto.
+
 Tue Oct  4 12:59:44 2016  Koichi ITO  <koic.ito@gmail.com>
 
 	* array.c (rb_ary_dig): [DOC] update an example of error message

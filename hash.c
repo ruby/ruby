@@ -239,7 +239,7 @@ VALUE
 rb_obj_hash(VALUE obj)
 {
     st_index_t hnum = any_hash(obj, objid_hash);
-    return LONG2FIX(hnum);
+    return ST2FIX(hnum);
 }
 
 int
@@ -2277,7 +2277,7 @@ rb_hash_hash(VALUE hash)
 	rb_hash_foreach(hash, hash_i, (VALUE)&hval);
     }
     hval = rb_hash_end(hval);
-    return INT2FIX(hval);
+    return ST2FIX(hval);
 }
 
 static int

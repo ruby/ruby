@@ -6645,7 +6645,7 @@ rb_big_hash(VALUE x)
     st_index_t hash;
 
     hash = rb_memhash(BDIGITS(x), sizeof(BDIGIT)*BIGNUM_LEN(x)) ^ BIGNUM_SIGN(x);
-    return INT2FIX(hash);
+    return ST2FIX(hash);
 }
 
 /*
