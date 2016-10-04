@@ -3423,12 +3423,12 @@ VpFree(Real *pv)
 #ifdef BIGDECIMAL_DEBUG
 	gnAlloc--; /* Decrement allocation count */
 	if (gnAlloc == 0) {
-	    printf(" *************** All memories allocated freed ****************");
-	    getchar();
+	    printf(" *************** All memories allocated freed ****************\n");
+	    /*getchar();*/
 	}
 	if (gnAlloc <  0) {
 	    printf(" ??????????? Too many memory free calls(%d) ?????????????\n", gnAlloc);
-	    getchar();
+	    /*getchar();*/
 	}
 #endif /* BIGDECIMAL_DEBUG */
     }
@@ -3824,11 +3824,11 @@ VpInit(BDIGIT BaseVal)
 #ifdef BIGDECIMAL_DEBUG
     if (gfDebug) {
 	printf("VpInit: BaseVal   = %"PRIuBDIGIT"\n", BaseVal);
-	printf("  BASE   = %"PRIuBDIGIT"\n", BASE);
-	printf("  HALF_BASE = %"PRIuBDIGIT"\n", HALF_BASE);
-	printf("  BASE1  = %"PRIuBDIGIT"\n", BASE1);
-	printf("  BASE_FIG  = %u\n", BASE_FIG);
-	printf("  DBLE_FIG  = %d\n", DBLE_FIG);
+	printf("\tBASE      = %"PRIuBDIGIT"\n", BASE);
+	printf("\tHALF_BASE = %"PRIuBDIGIT"\n", HALF_BASE);
+	printf("\tBASE1     = %"PRIuBDIGIT"\n", BASE1);
+	printf("\tBASE_FIG  = %u\n", BASE_FIG);
+	printf("\tDBLE_FIG  = %d\n", DBLE_FIG);
     }
 #endif /* BIGDECIMAL_DEBUG */
 
@@ -5023,7 +5023,7 @@ Exit:
  *      %  ... VP variable. To print '%', use '%%'.
  *      \n ... new line
  *      \b ... backspace
- *           ... tab
+ *      \t ... tab
  *     Note: % must not appear more than once
  *    a  ... VP variable to be printed
  */
@@ -5034,24 +5034,6 @@ VPrint(FILE *fp, const char *cntl_chr, Real *a)
     size_t i, j, nc, nd, ZeroSup, sep = 10;
     BDIGIT m, e, nn;
 
-    /* Check if NaN & Inf. */
-    if (VpIsNaN(a)) {
-	fprintf(fp, SZ_NaN);
-	return 8;
-    }
-    if (VpIsPosInf(a)) {
-	fprintf(fp, SZ_INF);
-	return 8;
-    }
-    if (VpIsNegInf(a)) {
-	fprintf(fp, SZ_NINF);
-	return 9;
-    }
-    if (VpIsZero(a)) {
-	fprintf(fp, "0.0");
-	return 3;
-    }
-
     j = 0;
     nd = nc = 0;        /*  nd : number of digits in fraction part(every 10 digits, */
     /*    nd<=10). */
@@ -5060,7 +5042,19 @@ VPrint(FILE *fp, const char *cntl_chr, Real *a)
     while (*(cntl_chr + j)) {
 	if (*(cntl_chr + j) == '%' && *(cntl_chr + j + 1) != '%') {
 	    nc = 0;
-	    if (!VpIsZero(a)) {
+	    if (VpIsNaN(a)) {
+		fprintf(fp, SZ_NaN);
+		nc += 8;
+	    }
+	    else if (VpIsPosInf(a)) {
+		fprintf(fp, SZ_INF);
+		nc += 8;
+	    }
+	    else if (VpIsNegInf(a)) {
+		fprintf(fp, SZ_NINF);
+		nc += 9;
+	    }
+	    else if (!VpIsZero(a)) {
 		if (VpGetSign(a) < 0) {
 		    fprintf(fp, "-");
 		    ++nc;
