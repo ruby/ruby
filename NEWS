@@ -42,6 +42,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Enumerable#sum  [Feature #12217]
   * Enumerable#uniq  [Feature #11090]
+  * Enumerable#chunk called without a block now return an Enumerator
+    [Feature #2172]
 
 * Enumerator::Lazy
 

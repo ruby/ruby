@@ -2995,14 +2995,14 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *      }
  *    }
  *
+ *  If no block is given, an enumerator to `chunk` is returned instead.
  */
 static VALUE
 enum_chunk(VALUE enumerable)
 {
     VALUE enumerator;
 
-    if (!rb_block_given_p())
-	rb_raise(rb_eArgError, "no block given");
+    RETURN_SIZED_ENUMERATOR(enumerable, 0, 0, enum_size);
 
     enumerator = rb_obj_alloc(rb_cEnumerator);
     rb_ivar_set(enumerator, rb_intern("chunk_enumerable"), enumerable);

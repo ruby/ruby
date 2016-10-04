@@ -611,6 +611,12 @@ class TestEnumerable < Test::Unit::TestCase
 
     e = @obj.chunk {|elt| :_foo }
     assert_raise(RuntimeError) { e.to_a }
+
+    e = @obj.chunk.with_index {|elt, i| elt - i }
+    assert_equal([[1, [1, 2, 3]],
+                  [-2, [1, 2]]], e.to_a)
+
+    assert_equal(4, (0..3).chunk.size)
   end
 
   def test_slice_before
