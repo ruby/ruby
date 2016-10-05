@@ -7276,6 +7276,7 @@ rb_f_p(int argc, VALUE *argv, VALUE self)
  *
  *     def display(port=$>)
  *       port.write self
+ *       nil
  *     end
  *
  *  For example:

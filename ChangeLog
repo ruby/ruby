@@ -1,3 +1,8 @@
+Wed Oct  5 11:47:19 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* io.c: Fixed equivalent ruby code with core implemention.
+	  [fix GH-1429][ci skip]
+
 Wed Oct  5 11:36:21 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/delegate.rb: Added missing spaces and Removed needless spaces.
