@@ -1,3 +1,7 @@
+Wed Oct  5 15:43:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* node.c (dump_node): flatten statements in NODE_BLOCK.
+
 Wed Oct  5 14:27:36 2016  Byron Bowerman  <me@bm5k.com>
 
 	* range.c: Add docs for max/min behavior with exclusive range.

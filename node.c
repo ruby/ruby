@@ -16,6 +16,8 @@
 #define AR(str) rb_str_concat(buf, (str))
 
 #define A_INDENT add_indent(buf, indent)
+#define D_INDENT rb_str_cat2(indent, next_indent)
+#define D_DEDENT rb_str_resize(indent, RSTRING_LEN(indent) - 4)
 #define A_ID(id) add_id(buf, (id))
 #define A_INT(val) rb_str_catf(buf, "%d", (val))
 #define A_LONG(val) rb_str_catf(buf, "%ld", (val))
@@ -32,9 +34,9 @@
 #define COMPOUND_FIELD(len, name, block) \
     do { \
 	D_FIELD_HEADER((len), (name), "\n");	\
-	rb_str_cat2(indent, next_indent); \
+	D_INDENT; \
 	block; \
-	rb_str_resize(indent, RSTRING_LEN(indent) - 4); \
+	D_DEDENT; \
     } while (0)
 
 #define COMPOUND_FIELD1(name, ann, block) \
@@ -154,6 +156,7 @@ static void
 dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 {
     int field_flag;
+    int i;
     const char *next_indent = default_indent;
 
     if (!node) {
@@ -166,9 +169,21 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
     switch (nd_type(node)) {
       case NODE_BLOCK:
 	ANN("statement sequence");
-	ANN("format: [nd_head]; [nd_next]");
+	ANN("format: [nd_head]; ...; [nd_next]");
 	ANN("example: foo; bar");
-	F_NODE(nd_head, "current statement");
+	i = 0;
+	do {
+	    A_INDENT;
+	    rb_str_catf(buf, "+- nd_head (%s%d):\n",
+			comment ? "statement #" : "", ++i);
+	    if (!node->nd_next) LAST_NODE;
+	    D_INDENT;
+	    dump_node(buf, indent, comment, node->nd_head);
+	    D_DEDENT;
+	} while (node->nd_next &&
+		 nd_type(node->nd_next) == NODE_BLOCK &&
+		 (node = node->nd_next, 1));
+	if (!node->nd_next) break;
 	LAST_NODE;
 	F_NODE(nd_next, "next block");
 	break;
