@@ -565,6 +565,8 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
  *
  * Gets the do_not_reverse_lookup flag of _basicsocket_.
  *
+ *   require 'socket'
+ *
  *   BasicSocket.do_not_reverse_lookup = false
  *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|
  *     p sock.do_not_reverse_lookup      #=> false

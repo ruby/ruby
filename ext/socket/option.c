@@ -272,6 +272,8 @@ sockopt_int(VALUE self)
  * Creates a new Socket::Option object which contains boolean as data.
  * Actually 0 or 1 as int is used.
  *
+ *   require 'socket'
+ *
  *   p Socket::Option.bool(:INET, :SOCKET, :KEEPALIVE, true)
  *   #=> #<Socket::Option: INET SOCKET KEEPALIVE 1>
  *

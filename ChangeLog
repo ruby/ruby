@@ -1,3 +1,8 @@
+Wed Oct  5 12:57:21 2016  Richard Schneeman  <richard.schneeman+foo@gmail.com>
+
+	* ext/socket/*.c: Add proper require for example to work.
+	  [fix GH-1378][ci skip] Patch by @schneems
+
 Wed Oct  5 11:47:19 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* io.c: Fixed equivalent ruby code with core implemention.
