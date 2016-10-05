@@ -1,3 +1,8 @@
+Wed Oct  5 11:36:21 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/delegate.rb: Added missing spaces and Removed needless spaces.
+	  [fix GH-1454][ci skip] Patch by @bogdanvlviv
+
 Wed Oct  5 03:24:55 2016  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* enum.c: Make Enumerable#chunk with no block return
