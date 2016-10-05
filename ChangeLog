@@ -1,3 +1,8 @@
+Wed Oct  5 18:02:44 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/net/http/response.rb: Improve document readability.
+	  [fix GH-1411][ci skip] Patch by @stz-seongheon
+
 Wed Oct  5 15:43:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* node.c (dump_node): flatten statements in NODE_BLOCK.

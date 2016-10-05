@@ -240,10 +240,10 @@ class Net::HTTPResponse
   ##
   # Checks for a supported Content-Encoding header and yields an Inflate
   # wrapper for this response's socket when zlib is present.  If the
-  # Content-Encoding is unsupported or zlib is missing the plain socket is
+  # Content-Encoding is not supported or zlib is missing, the plain socket is
   # yielded.
   #
-  # If a Content-Range header is present a plain socket is yielded as the
+  # If a Content-Range header is present, a plain socket is yielded as the
   # bytes in the range may not be a complete deflate block.
 
   def inflater # :nodoc:
