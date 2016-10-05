@@ -2891,13 +2891,19 @@ End
 
   def test_ioctl_linux2
     return unless STDIN.tty? # stdin is not a terminal
-    File.open('/dev/tty') { |f|
+    begin
+      f = File.open('/dev/tty')
+    rescue Errno::ENOENT, Errno::ENXIO => e
+      skip e.message
+    else
       tiocgwinsz=0x5413
       winsize=""
       assert_nothing_raised {
         f.ioctl(tiocgwinsz, winsize)
       }
-    }
+    ensure
+      f.close if f
+    end
   end if /^(?:i.?86|x86_64)-linux/ =~ RUBY_PLATFORM
 
   def test_setpos
