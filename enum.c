@@ -705,6 +705,9 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  *  operation, specified by a block or a symbol that names a
  *  method or operator.
  *
+ *  The <i>inject</i> and <i>reduce</i> methods are aliases. There
+ *  is no performance benefit to either.
+ *
  *  If you specify a block, then for each element in <i>enum</i>
  *  the block is passed an accumulator value (<i>memo</i>) and the element.
  *  If you specify a symbol instead, then each element in the collection
