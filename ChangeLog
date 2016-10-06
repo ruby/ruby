@@ -1,3 +1,7 @@
+Fri Oct  7 02:48:06 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* lib/rubygems/ssl_certs/GlobalSignRootCA.pem: add for RugyGems.org.
+
 Mon Sep 26 23:51:31 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_const_search): raise with the actual class/module
