@@ -1,3 +1,8 @@
+Thu Oct  6 10:30:27 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (update_coverage): check coverage values, and ignore
+	  non-fixnum values.
+
 Thu Oct  6 09:19:21 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (fptr_finalize): use dedicated macro RB_INTEGER_TYPE_P.
