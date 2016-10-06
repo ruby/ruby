@@ -4292,14 +4292,10 @@ fptr_finalize(rb_io_t *fptr, int noraise)
     }
 
     if (!NIL_P(err) && !noraise) {
-        switch (TYPE(err)) {
-          case T_FIXNUM:
-          case T_BIGNUM:
+	if (RB_INTEGER_TYPE_P(err))
 	    rb_syserr_fail_path(NUM2INT(err), fptr->pathv);
-
-          default:
-            rb_exc_raise(err);
-        }
+	else
+	    rb_exc_raise(err);
     }
     free_io_buffer(&fptr->rbuf);
     free_io_buffer(&fptr->wbuf);

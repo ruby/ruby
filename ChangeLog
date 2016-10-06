@@ -1,3 +1,7 @@
+Thu Oct  6 09:19:21 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (fptr_finalize): use dedicated macro RB_INTEGER_TYPE_P.
+
 Wed Oct  5 18:02:44 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/net/http/response.rb: Improve document readability.
