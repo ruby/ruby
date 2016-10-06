@@ -146,7 +146,19 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_gets_rs
-    # default_rs
+    rs = ":"
+    pipe(proc do |w|
+      w.print "aaa:bbb"
+      w.close
+    end, proc do |r|
+      assert_equal "aaa:", r.gets(rs)
+      assert_equal "bbb", r.gets(rs)
+      assert_nil r.gets(rs)
+      r.close
+    end)
+  end
+
+  def test_gets_default_rs
     pipe(proc do |w|
       w.print "aaa\nbbb\n"
       w.close
@@ -156,8 +168,9 @@ class TestIO < Test::Unit::TestCase
       assert_nil r.gets
       r.close
     end)
+  end
 
-    # nil
+  def test_gets_rs_nil
     pipe(proc do |w|
       w.print "a\n\nb\n\n"
       w.close
@@ -166,8 +179,9 @@ class TestIO < Test::Unit::TestCase
       assert_nil r.gets("")
       r.close
     end)
+  end
 
-    # "\377"
+  def test_gets_rs_377
     pipe(proc do |w|
       w.print "\377xyz"
       w.close
@@ -176,8 +190,9 @@ class TestIO < Test::Unit::TestCase
       assert_equal("\377", r.gets("\377"), "[ruby-dev:24460]")
       r.close
     end)
+  end
 
-    # ""
+  def test_gets_paragraph
     pipe(proc do |w|
       w.print "a\n\nb\n\n"
       w.close
