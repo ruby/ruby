@@ -1,6 +1,7 @@
 Thu Oct  6 11:01:49 2016  Tieg Zaharia  <tieg.zaharia@gmail.com>
 
-
+	* lib/uri/common.rb (WEB_ENCODINGS_): Update URI::WEB_ENCODINGS_
+	  hash, and fix documented command to grab it.  [Fix GH-1430]
 
 Thu Oct  6 10:37:13 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
