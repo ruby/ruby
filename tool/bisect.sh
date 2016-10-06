@@ -38,7 +38,7 @@ case $1 in
     echo foo bar
     ;;
   * )
-    echo unknown command "'$cmd'" 1>&2
+    echo unknown command "'$1'" 1>&2
     exit 1
     ;;
 esac
