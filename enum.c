@@ -414,7 +414,7 @@ reject_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
  *     enum.reject                 -> an_enumerator
  *
  *  Returns an array for all elements of +enum+ for which the given
- *  +block+ returns false.
+ *  +block+ returns <code>false</code>.
  *
  *  If no block is given, an Enumerator is returned instead.
  *
@@ -3091,7 +3091,7 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *    enum.slice_before { |elt| bool }.each { |ary| ... }
  *
  *  Other methods of the Enumerator class and Enumerable module,
- *  such as map, etc., are also usable.
+ *  such as +to_a+, +map+, etc., are also usable.
  *
  *  For example, iteration over ChangeLog entries can be implemented as
  *  follows:
@@ -3122,7 +3122,7 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *  If the block needs to maintain state over multiple elements,
  *  local variables can be used.
  *  For example, three or more consecutive increasing numbers can be squashed
- *  as follows:
+ *  as follows (see +chunk_while+ for a better way):
  *
  *    a = [0, 2, 3, 4, 6, 7, 9]
  *    prev = a[0]
@@ -3437,7 +3437,7 @@ slicewhen_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *  _elt_before_ and _elt_after_,
  *  in the receiver enumerator.
  *  This method split chunks between _elt_before_ and _elt_after_ where
- *  the block returns true.
+ *  the block returns <code>true</code>.
  *
  *  The block is called the length of the receiver enumerator minus one.
  *
@@ -3485,6 +3485,8 @@ slicewhen_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *    p lines.slice_when {|l1, l2| /\A\s*\z/ =~ l1 && /\S/ =~ l2 }.to_a
  *    #=> [["foo\n", "bar\n", "\n"], ["baz\n", "qux\n"]]
  *
+ *  Enumerable#chunk_while does the same, except splitting when the block
+ *  returns <code>false</code> instead of <code>true</code>.
  */
 static VALUE
 enum_slice_when(VALUE enumerable)
@@ -3514,7 +3516,7 @@ enum_slice_when(VALUE enumerable)
  *  _elt_before_ and _elt_after_,
  *  in the receiver enumerator.
  *  This method split chunks between _elt_before_ and _elt_after_ where
- *  the block returns false.
+ *  the block returns <code>false</code>.
  *
  *  The block is called the length of the receiver enumerator minus one.
  *
@@ -3549,6 +3551,8 @@ enum_slice_when(VALUE enumerable)
  *    p a.chunk_while {|i, j| i.even? == j.even? }.to_a
  *    #=> [[7, 5, 9], [2, 0], [7, 9], [4, 2, 0]]
  *
+ *  Enumerable#slice_when does the same, except splitting when the block
+ *  returns <code>true</code> instead of <code>false</code>.
  */
 static VALUE
 enum_chunk_while(VALUE enumerable)

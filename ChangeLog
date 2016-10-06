@@ -1,3 +1,7 @@
+Thu Oct  6 13:35:15 2016  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	* enum.c: [DOC] Improve doc [ci-skip]
+
 Thu Oct  6 11:38:14 2016  Chris Jones  <chris@christopherjones.us>
 
 	* ext/readline/extconf.rb: Update error message with correct words.
