@@ -182,6 +182,26 @@ class TestRequire < Test::Unit::TestCase
     end
   end
 
+  def test_require_syntax_error
+    Dir.mktmpdir do |tmp|
+      req = File.join(tmp, "test.rb")
+      File.write(req, "'\n")
+      assert_raise_with_message(SyntaxError, /unterminated/) {
+        require req
+      }
+    end
+  end
+
+  def test_load_syntax_error
+    Dir.mktmpdir do |tmp|
+      req = File.join(tmp, "test.rb")
+      File.write(req, "'\n")
+      assert_raise_with_message(SyntaxError, /unterminated/) {
+        load req
+      }
+    end
+  end
+
   def test_define_class
     begin
       require "socket"

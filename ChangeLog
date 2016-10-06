@@ -1,3 +1,8 @@
+Thu Oct  6 15:53:20 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_load_internal0): load/require is not the main
+	  script.
+
 Thu Oct  6 13:35:15 2016  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	* enum.c: [DOC] Improve doc [ci-skip]
