@@ -182,24 +182,24 @@ class TestRequire < Test::Unit::TestCase
     end
   end
 
-  def test_require_syntax_error
+  def assert_syntax_error_backtrace
     Dir.mktmpdir do |tmp|
       req = File.join(tmp, "test.rb")
       File.write(req, "'\n")
-      assert_raise_with_message(SyntaxError, /unterminated/) {
-        require req
+      e = assert_raise_with_message(SyntaxError, /unterminated/) {
+        yield req
       }
+      assert_not_nil(bt = e.backtrace)
+      assert_not_empty(bt.find_all {|b| b.start_with? __FILE__})
     end
   end
 
+  def test_require_syntax_error
+    assert_syntax_error_backtrace {|req| require req}
+  end
+
   def test_load_syntax_error
-    Dir.mktmpdir do |tmp|
-      req = File.join(tmp, "test.rb")
-      File.write(req, "'\n")
-      assert_raise_with_message(SyntaxError, /unterminated/) {
-        load req
-      }
-    end
+    assert_syntax_error_backtrace {|req| load req}
   end
 
   def test_define_class

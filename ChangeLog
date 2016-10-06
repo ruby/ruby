@@ -1,4 +1,8 @@
-Thu Oct  6 15:53:20 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Oct  6 17:29:44 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* load.c (rb_require_safe): SyntaxError created by the parser just
+	  has the mesage and needs to set up the backtrace.
+	  [ruby-core:77491] [Bug #12811]
 
 	* load.c (rb_load_internal0): load/require is not the main
 	  script.
