@@ -59,7 +59,7 @@ else
             have_library("edit", "readline"))) ||
             (readline.have_header("editline/readline.h") &&
              have_library("edit", "readline"))
-    raise "readline nor libedit not found"
+    raise "Neither readline nor libedit was found"
   end
 end
 

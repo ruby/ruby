@@ -1,3 +1,8 @@
+Thu Oct  6 11:38:14 2016  Chris Jones  <chris@christopherjones.us>
+
+	* ext/readline/extconf.rb: Update error message with correct words.
+	  [fix GH-1453][ci skip] Patch by @magikid
+
 Thu Oct  6 11:01:49 2016  Tieg Zaharia  <tieg.zaharia@gmail.com>
 
 	* lib/uri/common.rb (WEB_ENCODINGS_): Update URI::WEB_ENCODINGS_
