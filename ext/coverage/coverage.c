@@ -75,6 +75,34 @@ rb_coverage_result(VALUE klass)
     return ncoverages;
 }
 
+static int
+coverage_merge_result_i(VALUE path, VALUE coverage, VALUE coverages)
+{
+    VALUE ary = rb_hash_lookup2(coverages, path, Qnil);
+
+    if (RTEST(ary)) {
+	rb_ary_replace(ary, coverage);
+    }
+
+    return ST_CONTINUE;
+}
+
+static VALUE
+rb_coverage_set_result(VALUE klass, VALUE ncoverages)
+{
+    VALUE coverages = rb_get_coverages();
+
+    Check_Type(ncoverages, T_HASH);
+
+    if (!RTEST(coverages)) {
+	rb_raise(rb_eRuntimeError, "coverage measurement is not enabled");
+    }
+
+    rb_hash_foreach(ncoverages, coverage_merge_result_i, coverages);
+
+    return ncoverages;
+}
+
 /* Coverage provides coverage measurement feature for Ruby.
  * This feature is experimental, so these APIs may be changed in future.
  *
@@ -114,5 +142,6 @@ Init_coverage(void)
     VALUE rb_mCoverage = rb_define_module("Coverage");
     rb_define_module_function(rb_mCoverage, "start", rb_coverage_start, 0);
     rb_define_module_function(rb_mCoverage, "result", rb_coverage_result, 0);
+    rb_define_module_function(rb_mCoverage, "result=", rb_coverage_set_result, 1);
     rb_define_module_function(rb_mCoverage, "peek_result", rb_coverage_peek_result, 0);
 }
