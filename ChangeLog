@@ -1,3 +1,14 @@
+Fri Oct  7 14:18:40 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* basictest/test.rb: Adjust spaces in class declarations
+	  with inheritance. [fix GH-1227] Patch by @adrfer
+	* lib/irb/*: ditto.
+	* lib/prime.rb: ditto.
+	* lib/shell/builtin-command.rb: ditto.
+	* object.c: ditto.
+	* sample/*.rb: ditto.
+	* test/-ext-/method/test_arity.rb: ditto.
+
 Thu Oct  6 17:29:44 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* load.c (rb_require_safe): SyntaxError created by the parser just
