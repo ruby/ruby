@@ -8593,7 +8593,7 @@ gc_prof_setup_new_record(rb_objspace_t *objspace, int reason)
 #if MALLOC_ALLOCATED_SIZE
 	record->allocated_size = malloc_allocated_size;
 #endif
-#if GC_PROFILE_DETAIL_MEMORY
+#if GC_PROFILE_MORE_DETAIL && GC_PROFILE_DETAIL_MEMORY
 #ifdef RUSAGE_SELF
 	{
 	    struct rusage usage;
@@ -8886,8 +8886,6 @@ gc_profile_dump_major_reason(int flags, char *buff)
 	C(NOFREE, N);
 	C(OLDGEN, O);
 	C(SHADY,  S);
-	C(RESCAN, R);
-	C(STRESS, T);
 #if RGENGC_ESTIMATE_OLDMALLOC
 	C(OLDMALLOC, M);
 #endif
@@ -9006,9 +9004,9 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 static VALUE
 gc_profile_result(void)
 {
-	VALUE str = rb_str_buf_new(0);
-	gc_profile_dump_on(str, rb_str_buf_append);
-	return str;
+    VALUE str = rb_str_buf_new(0);
+    gc_profile_dump_on(str, rb_str_buf_append);
+    return str;
 }
 
 /*

@@ -1,3 +1,10 @@
+Fri Oct  7 20:21:39 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (gc_prof_setup_new_record): fix the condition to get
+	  rusage.
+
+	* gc.c (gc_profile_dump_major_reason): remove undefined flags.
+
 Fri Oct  7 19:18:33 2016  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/*.c, ext/win32ole/win32ole.h: use RB_INT2FIX instead of
