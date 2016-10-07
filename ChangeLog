@@ -1,3 +1,8 @@
+Fri Oct  7 19:18:33 2016  Masaki Suketa <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/*.c, ext/win32ole/win32ole.h: use RB_INT2FIX instead of
+	  INT2FIX, and so on.
+
 Fri Oct  7 14:18:40 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* basictest/test.rb: Adjust spaces in class declarations

@@ -319,7 +319,7 @@ ole_variable_varkind(ITypeInfo *pTypeInfo, UINT var_index)
     if (FAILED(hr))
         return kind;
     pTypeInfo->lpVtbl->ReleaseVarDesc(pTypeInfo, pVarDesc);
-    kind = INT2FIX(pVarDesc->varkind);
+    kind = RB_INT2FIX(pVarDesc->varkind);
     return kind;
 }
 

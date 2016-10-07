@@ -421,12 +421,12 @@ rbtime2vtdate(VALUE tmobj)
     double t;
     double nsec;
 
-    st.wYear = FIX2INT(rb_funcall(tmobj, rb_intern("year"), 0));
-    st.wMonth = FIX2INT(rb_funcall(tmobj, rb_intern("month"), 0));
-    st.wDay = FIX2INT(rb_funcall(tmobj, rb_intern("mday"), 0));
-    st.wHour = FIX2INT(rb_funcall(tmobj, rb_intern("hour"), 0));
-    st.wMinute = FIX2INT(rb_funcall(tmobj, rb_intern("min"), 0));
-    st.wSecond = FIX2INT(rb_funcall(tmobj, rb_intern("sec"), 0));
+    st.wYear = RB_FIX2INT(rb_funcall(tmobj, rb_intern("year"), 0));
+    st.wMonth = RB_FIX2INT(rb_funcall(tmobj, rb_intern("month"), 0));
+    st.wDay = RB_FIX2INT(rb_funcall(tmobj, rb_intern("mday"), 0));
+    st.wHour = RB_FIX2INT(rb_funcall(tmobj, rb_intern("hour"), 0));
+    st.wMinute = RB_FIX2INT(rb_funcall(tmobj, rb_intern("min"), 0));
+    st.wSecond = RB_FIX2INT(rb_funcall(tmobj, rb_intern("sec"), 0));
     st.wMilliseconds = 0;
     SystemTimeToVariantTime(&st, &t);
 
@@ -435,7 +435,7 @@ rbtime2vtdate(VALUE tmobj)
      * wMilliseconds of SYSTEMTIME struct.
      * So, we need to calculate milliseconds by ourselves.
      */
-    nsec =  FIX2INT(rb_funcall(tmobj, rb_intern("nsec"), 0));
+    nsec =  RB_FIX2INT(rb_funcall(tmobj, rb_intern("nsec"), 0));
     nsec /= 1000000.0;
     nsec /= (24.0 * 3600.0);
     nsec /= 1000;
@@ -451,18 +451,18 @@ vtdate2rbtime(double date)
     double sec;
     VariantTimeToSystemTime(date, &st);
     v = rb_funcall(rb_cTime, rb_intern("new"), 6,
-		      INT2FIX(st.wYear),
-		      INT2FIX(st.wMonth),
-		      INT2FIX(st.wDay),
-		      INT2FIX(st.wHour),
-		      INT2FIX(st.wMinute),
-		      INT2FIX(st.wSecond));
-    st.wYear = FIX2INT(rb_funcall(v, rb_intern("year"), 0));
-    st.wMonth = FIX2INT(rb_funcall(v, rb_intern("month"), 0));
-    st.wDay = FIX2INT(rb_funcall(v, rb_intern("mday"), 0));
-    st.wHour = FIX2INT(rb_funcall(v, rb_intern("hour"), 0));
-    st.wMinute = FIX2INT(rb_funcall(v, rb_intern("min"), 0));
-    st.wSecond = FIX2INT(rb_funcall(v, rb_intern("sec"), 0));
+		      RB_INT2FIX(st.wYear),
+		      RB_INT2FIX(st.wMonth),
+		      RB_INT2FIX(st.wDay),
+		      RB_INT2FIX(st.wHour),
+		      RB_INT2FIX(st.wMinute),
+		      RB_INT2FIX(st.wSecond));
+    st.wYear = RB_FIX2INT(rb_funcall(v, rb_intern("year"), 0));
+    st.wMonth = RB_FIX2INT(rb_funcall(v, rb_intern("month"), 0));
+    st.wDay = RB_FIX2INT(rb_funcall(v, rb_intern("mday"), 0));
+    st.wHour = RB_FIX2INT(rb_funcall(v, rb_intern("hour"), 0));
+    st.wMinute = RB_FIX2INT(rb_funcall(v, rb_intern("min"), 0));
+    st.wSecond = RB_FIX2INT(rb_funcall(v, rb_intern("sec"), 0));
     st.wMilliseconds = 0;
     SystemTimeToVariantTime(&st, &sec);
     /*
@@ -871,7 +871,7 @@ ole_vstr2wc(VALUE vstr)
     enc = rb_enc_get(vstr);
 
     if (st_lookup(tbl, (VALUE)enc | FIXNUM_FLAG, &data)) {
-        cp = FIX2INT((VALUE)data);
+        cp = RB_FIX2INT((VALUE)data);
     } else {
         cp = ole_encoding2cp(enc);
         if (code_page_installed(cp) ||
@@ -883,7 +883,7 @@ ole_vstr2wc(VALUE vstr)
             cp == CP_UTF7 ||
             cp == CP_UTF8 ||
             cp == 51932) {
-            st_insert(tbl, (VALUE)enc | FIXNUM_FLAG, INT2FIX(cp));
+            st_insert(tbl, (VALUE)enc | FIXNUM_FLAG, RB_INT2FIX(cp));
         } else {
             rb_raise(eWIN32OLERuntimeError, "not installed Windows codepage(%d) according to `%s'", cp, rb_enc_name(enc));
         }
@@ -1271,7 +1271,7 @@ ole_val2variant(VALUE val, VARIANT *var)
     case T_FIXNUM:
         V_VT(var) = VT_I4;
         {
-            long v = NUM2LONG(val);
+            long v = RB_NUM2LONG(val);
             V_I4(var) = (LONG)v;
 #if SIZEOF_LONG > 4
             if (V_I4(var) != v) {
@@ -1486,58 +1486,58 @@ ole_variant2val(VARIANT *pvar)
         break;
     case VT_I1:
         if(V_ISBYREF(pvar))
-            obj = INT2NUM((long)*V_I1REF(pvar));
+            obj = RB_INT2NUM((long)*V_I1REF(pvar));
         else
-            obj = INT2NUM((long)V_I1(pvar));
+            obj = RB_INT2NUM((long)V_I1(pvar));
         break;
 
     case VT_UI1:
         if(V_ISBYREF(pvar))
-            obj = INT2NUM((long)*V_UI1REF(pvar));
+            obj = RB_INT2NUM((long)*V_UI1REF(pvar));
         else
-            obj = INT2NUM((long)V_UI1(pvar));
+            obj = RB_INT2NUM((long)V_UI1(pvar));
         break;
 
     case VT_I2:
         if(V_ISBYREF(pvar))
-            obj = INT2NUM((long)*V_I2REF(pvar));
+            obj = RB_INT2NUM((long)*V_I2REF(pvar));
         else
-            obj = INT2NUM((long)V_I2(pvar));
+            obj = RB_INT2NUM((long)V_I2(pvar));
         break;
 
     case VT_UI2:
         if(V_ISBYREF(pvar))
-            obj = INT2NUM((long)*V_UI2REF(pvar));
+            obj = RB_INT2NUM((long)*V_UI2REF(pvar));
         else
-            obj = INT2NUM((long)V_UI2(pvar));
+            obj = RB_INT2NUM((long)V_UI2(pvar));
         break;
 
     case VT_I4:
         if(V_ISBYREF(pvar))
-            obj = INT2NUM((long)*V_I4REF(pvar));
+            obj = RB_INT2NUM((long)*V_I4REF(pvar));
         else
-            obj = INT2NUM((long)V_I4(pvar));
+            obj = RB_INT2NUM((long)V_I4(pvar));
         break;
 
     case VT_UI4:
         if(V_ISBYREF(pvar))
-            obj = INT2NUM((long)*V_UI4REF(pvar));
+            obj = RB_INT2NUM((long)*V_UI4REF(pvar));
         else
-            obj = INT2NUM((long)V_UI4(pvar));
+            obj = RB_INT2NUM((long)V_UI4(pvar));
         break;
 
     case VT_INT:
         if(V_ISBYREF(pvar))
-            obj = INT2NUM((long)*V_INTREF(pvar));
+            obj = RB_INT2NUM((long)*V_INTREF(pvar));
         else
-            obj = INT2NUM((long)V_INT(pvar));
+            obj = RB_INT2NUM((long)V_INT(pvar));
         break;
 
     case VT_UINT:
         if(V_ISBYREF(pvar))
-            obj = INT2NUM((long)*V_UINTREF(pvar));
+            obj = RB_INT2NUM((long)*V_UINTREF(pvar));
         else
-            obj = INT2NUM((long)V_UINT(pvar));
+            obj = RB_INT2NUM((long)V_UINT(pvar));
         break;
 
 #if (_MSC_VER >= 1300) || defined(__CYGWIN__) || defined(__MINGW32__)
@@ -1596,9 +1596,9 @@ ole_variant2val(VARIANT *pvar)
 
     case VT_ERROR:
         if(V_ISBYREF(pvar))
-            obj = INT2NUM(*V_ERRORREF(pvar));
+            obj = RB_INT2NUM(*V_ERRORREF(pvar));
         else
-            obj = INT2NUM(V_ERROR(pvar));
+            obj = RB_INT2NUM(V_ERROR(pvar));
         break;
 
     case VT_BOOL:
@@ -2127,7 +2127,7 @@ fole_s_reference_count(VALUE self, VALUE obj)
 {
     struct oledata * pole = NULL;
     pole = oledata_get_struct(obj);
-    return INT2NUM(reference_count(pole));
+    return RB_INT2NUM(reference_count(pole));
 }
 
 /*
@@ -2150,7 +2150,7 @@ fole_s_free(VALUE self, VALUE obj)
             n = OLE_RELEASE(pole->pDispatch);
         }
     }
-    return INT2NUM(n);
+    return RB_INT2NUM(n);
 }
 
 static HWND
@@ -2167,10 +2167,10 @@ ole_show_help(VALUE helpfile, VALUE helpcontext)
     if (!pfnHtmlHelp)
         return hwnd;
     hwnd = pfnHtmlHelp(GetDesktopWindow(), StringValuePtr(helpfile),
-                    0x0f, NUM2INT(helpcontext));
+                    0x0f, RB_NUM2INT(helpcontext));
     if (hwnd == 0)
         hwnd = pfnHtmlHelp(GetDesktopWindow(), StringValuePtr(helpfile),
-                 0,  NUM2INT(helpcontext));
+                 0,  RB_NUM2INT(helpcontext));
     return hwnd;
 }
 
@@ -2227,7 +2227,7 @@ fole_s_show_help(int argc, VALUE *argv, VALUE self)
 static VALUE
 fole_s_get_code_page(VALUE self)
 {
-    return INT2FIX(cWIN32OLE_cp);
+    return RB_INT2FIX(cWIN32OLE_cp);
 }
 
 static BOOL CALLBACK
@@ -2264,7 +2264,7 @@ code_page_installed(UINT cp)
 static VALUE
 fole_s_set_code_page(VALUE self, VALUE vcp)
 {
-    UINT cp = FIX2INT(vcp);
+    UINT cp = RB_FIX2INT(vcp);
     set_ole_codepage(cp);
     /*
      * Should this method return old codepage?
@@ -2284,7 +2284,7 @@ fole_s_set_code_page(VALUE self, VALUE vcp)
 static VALUE
 fole_s_get_locale(VALUE self)
 {
-    return INT2FIX(cWIN32OLE_lcid);
+    return RB_INT2FIX(cWIN32OLE_lcid);
 }
 
 static BOOL
@@ -2319,7 +2319,7 @@ lcid_installed(LCID lcid)
 static VALUE
 fole_s_set_locale(VALUE self, VALUE vlcid)
 {
-    LCID lcid = FIX2INT(vlcid);
+    LCID lcid = RB_FIX2INT(vlcid);
     if (lcid_installed(lcid)) {
         cWIN32OLE_lcid = lcid;
     } else {
@@ -2841,7 +2841,7 @@ ole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types, USHORT dispkind)
         VariantInit(&realargs[i]);
         VariantInit(&dispParams.rgvarg[i]);
         tp = rb_ary_entry(types, j);
-        vt = (VARTYPE)FIX2INT(tp);
+        vt = (VARTYPE)RB_FIX2INT(tp);
         V_VT(&dispParams.rgvarg[i]) = vt;
         param = rb_ary_entry(args, j);
         if (param == Qnil)
@@ -2976,7 +2976,7 @@ ole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types, USHORT dispkind)
         dispParams.rgdispidNamedArgs[0] = DISPID_PROPERTYPUT;
     }
 
-    hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, NUM2INT(dispid),
+    hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, RB_NUM2INT(dispid),
                                          &IID_NULL, cWIN32OLE_lcid,
                                          dispkind,
                                          &dispParams, &result,
@@ -2985,7 +2985,7 @@ ole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types, USHORT dispkind)
     if (FAILED(hr)) {
         v = ole_excepinfo2msg(&excepinfo);
         ole_raise(hr, eWIN32OLERuntimeError, "(in OLE method `<dispatch id:%d>': )%s",
-                  NUM2INT(dispid),
+                  RB_NUM2INT(dispid),
                   StringValuePtr(v));
     }
 
@@ -3761,7 +3761,7 @@ ole_typedesc2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails)
         break;
     default:
         typestr = rb_str_new2("Unknown Type ");
-        rb_str_concat(typestr, rb_fix2str(INT2FIX(pTypeDesc->vt), 10));
+        rb_str_concat(typestr, rb_fix2str(RB_INT2FIX(pTypeDesc->vt), 10));
         break;
     }
     if (typedetails != Qnil)
@@ -4007,50 +4007,50 @@ Init_win32ole(void)
     /*
      * 0: ANSI code page. See WIN32OLE.codepage and WIN32OLE.codepage=.
      */
-    rb_define_const(cWIN32OLE, "CP_ACP", INT2FIX(CP_ACP));
+    rb_define_const(cWIN32OLE, "CP_ACP", RB_INT2FIX(CP_ACP));
 
     /*
      * 1: OEM code page. See WIN32OLE.codepage and WIN32OLE.codepage=.
      */
-    rb_define_const(cWIN32OLE, "CP_OEMCP", INT2FIX(CP_OEMCP));
+    rb_define_const(cWIN32OLE, "CP_OEMCP", RB_INT2FIX(CP_OEMCP));
 
     /*
      * 2
      */
-    rb_define_const(cWIN32OLE, "CP_MACCP", INT2FIX(CP_MACCP));
+    rb_define_const(cWIN32OLE, "CP_MACCP", RB_INT2FIX(CP_MACCP));
 
     /*
      * 3: current thread ANSI code page. See WIN32OLE.codepage and
      * WIN32OLE.codepage=.
      */
-    rb_define_const(cWIN32OLE, "CP_THREAD_ACP", INT2FIX(CP_THREAD_ACP));
+    rb_define_const(cWIN32OLE, "CP_THREAD_ACP", RB_INT2FIX(CP_THREAD_ACP));
 
     /*
      * 42: symbol code page. See WIN32OLE.codepage and WIN32OLE.codepage=.
      */
-    rb_define_const(cWIN32OLE, "CP_SYMBOL", INT2FIX(CP_SYMBOL));
+    rb_define_const(cWIN32OLE, "CP_SYMBOL", RB_INT2FIX(CP_SYMBOL));
 
     /*
      * 65000: UTF-7 code page. See WIN32OLE.codepage and WIN32OLE.codepage=.
      */
-    rb_define_const(cWIN32OLE, "CP_UTF7", INT2FIX(CP_UTF7));
+    rb_define_const(cWIN32OLE, "CP_UTF7", RB_INT2FIX(CP_UTF7));
 
     /*
      * 65001: UTF-8 code page. See WIN32OLE.codepage and WIN32OLE.codepage=.
      */
-    rb_define_const(cWIN32OLE, "CP_UTF8", INT2FIX(CP_UTF8));
+    rb_define_const(cWIN32OLE, "CP_UTF8", RB_INT2FIX(CP_UTF8));
 
     /*
      * 0x0800: default locale for the operating system. See WIN32OLE.locale
      * and WIN32OLE.locale=.
      */
-    rb_define_const(cWIN32OLE, "LOCALE_SYSTEM_DEFAULT", INT2FIX(LOCALE_SYSTEM_DEFAULT));
+    rb_define_const(cWIN32OLE, "LOCALE_SYSTEM_DEFAULT", RB_INT2FIX(LOCALE_SYSTEM_DEFAULT));
 
     /*
      * 0x0400: default locale for the user or process. See WIN32OLE.locale
      * and WIN32OLE.locale=.
      */
-    rb_define_const(cWIN32OLE, "LOCALE_USER_DEFAULT", INT2FIX(LOCALE_USER_DEFAULT));
+    rb_define_const(cWIN32OLE, "LOCALE_USER_DEFAULT", RB_INT2FIX(LOCALE_USER_DEFAULT));
 
     Init_win32ole_variant_m();
     Init_win32ole_typelib();
