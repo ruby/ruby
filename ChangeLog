@@ -1,3 +1,8 @@
+Sat Oct  8 10:34:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/-test-/memory_status/memory_status.c: get memory sizes by
+	  mach task_info system call.
+
 Sat Oct  8 09:06:55 2016  Aurelien Jacobs  <aurel@gnuage.org>
 
 	* lib/logger.rb (Logger::Period#next_rotate_time): fix monthly log
