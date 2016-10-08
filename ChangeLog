@@ -1,4 +1,7 @@
-Sat Oct  8 10:34:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Oct  8 10:54:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/-test-/memory_status/memory_status.c (read_status): use
+	  Win32 GetProcessMemoryInfo API.
 
 	* ext/-test-/memory_status/memory_status.c: get memory sizes by
 	  mach task_info system call.

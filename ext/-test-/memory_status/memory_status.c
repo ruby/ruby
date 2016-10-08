@@ -4,6 +4,8 @@
 # include <mach/message.h>
 # include <mach/kern_return.h>
 # include <mach/task_info.h>
+#elif defined _WIN32
+# include <psapi.h>
 #endif
 
 static VALUE cMemoryStatus;
@@ -26,6 +28,15 @@ read_status(VALUE self)
     size = ULL2NUM(taskinfo.virtual_size);
     rss = ULL2NUM(taskinfo.resident_size);
     rb_struct_aset(self, INT2FIX(1), rss);
+#elif defined _WIN32
+    VALUE peak;
+    PROCESS_MEMORY_COUNTERS c;
+    c.cb = sizeof(c);
+    if (!GetProcessMemoryInfo(GetCurrentProcess(), &c, c.cb))
+	return Qnil;
+    size = SIZET2NUM(c.PagefileUsage);
+    peak = SIZET2NUM(c.PeakWorkingSetSize);
+    rb_struct_aset(self, INT2FIX(1), peak);
 #endif
     rb_struct_aset(self, INT2FIX(0), size);
     return self;
@@ -39,6 +50,8 @@ Init_memory_status(void)
 	rb_struct_define_under(mMemory, "Status", "size",
 #if defined __APPLE__
 			       "rss",
+#elif defined _WIN32
+			       "peak",
 #endif
 			       (char *)NULL);
     rb_define_method(cMemoryStatus, "_update", read_status, 0);
