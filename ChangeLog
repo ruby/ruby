@@ -1,3 +1,8 @@
+Sun Oct  9 11:37:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_core.h (VM_ASSERT): stringify expr here before expansion in
+	  RUBY_ASSERT_WHEN.
+
 Sat Oct  8 10:54:22 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/-test-/memory_status/memory_status.c (read_status): use
