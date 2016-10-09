@@ -804,7 +804,7 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
     const rb_callable_method_entry_t *cme;
 
     if (me && me->defined_class == 0) {
-	VM_ASSERT(RB_TYPE_P(defined_class, T_ICLASS));
+	VM_ASSERT(RB_TYPE_P(defined_class, T_ICLASS) || RB_TYPE_P(defined_class, T_MODULE));
 	VM_ASSERT(me->defined_class == 0);
 
 	if ((mtbl = RCLASS_CALLABLE_M_TBL(defined_class)) == NULL) {
