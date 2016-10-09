@@ -1,3 +1,9 @@
+Sun Oct  9 23:05:53 2016  Prathamesh Sonpatki  <csonpatki@gmail.com>
+
+	* array.c, class.c: Fixed documentation where Fixnum was referred
+	  directly to use Integer, as Fixnum and Bignum are now unified
+	  into Integer and direct usage is deprecated.  [Fix GH-1459]
+
 Sun Oct  9 11:37:19 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_core.h (VM_ASSERT): stringify expr here before expansion in

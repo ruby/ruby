@@ -5716,7 +5716,7 @@ rb_ary_dig(int argc, VALUE *argv, VALUE self)
  *
  *
  * Array#sum method may not respect method redefinition of "+" methods
- * such as Fixnum#+.
+ * such as Integer#+.
  *
  */
 

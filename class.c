@@ -1645,7 +1645,7 @@ rb_singleton_class_get(VALUE obj)
  * Returns the singleton class of \a obj. Creates it if necessary.
  *
  * \param obj an arbitrary object.
- * \throw TypeError if \a obj is a Fixnum or a Symbol.
+ * \throw TypeError if \a obj is a Integer or a Symbol.
  * \return the singleton class.
  *
  * \post \a obj has its own singleton class.
