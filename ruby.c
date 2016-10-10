@@ -1865,10 +1865,11 @@ static VALUE
 open_load_file(VALUE fname_v, int *xflag)
 {
     const char *fname = StringValueCStr(fname_v);
+    long flen = RSTRING_LEN(fname_v);
     VALUE f;
     int e;
 
-    if (RSTRING_LEN(fname_v) == 1 && fname[0] == '-') {
+    if (flen == 1 && fname[0] == '-') {
 	f = rb_stdin;
     }
     else {
@@ -1889,9 +1890,12 @@ open_load_file(VALUE fname_v, int *xflag)
 #endif
 	    MODE_TO_LOAD;
 #if defined DOSISH || defined __CYGWIN__
+# define isdirsep(x) ((x) == '/' || (x) == FILE_ALT_SEPARATOR)
 	{
-	    const char *ext = strrchr(fname, '.');
-	    if (ext && STRCASECMP(ext, ".exe") == 0) {
+	    static const char exeext[] = EXEEXT;
+	    enum {extlen = sizeof(exeext)-1};
+	    if (flen > extlen && !isdirsep(fname[flen-extlen-1]) &&
+		STRNCASECMP(fname+flen-extlen, exeext, extlen) == 0) {
 		*xflag = 1;
 	    }
 	}

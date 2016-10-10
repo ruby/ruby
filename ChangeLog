@@ -1,4 +1,7 @@
-Mon Oct 10 12:40:04 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Oct 10 12:40:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (open_load_file): compare with EXEEXT instead of hard
+	  coded name, and do not match with mere EXEEXT.
 
 	* ruby.c (open_load_file): open in binary mode if available, as
 	  parser deals with EOLs.
