@@ -5518,11 +5518,13 @@ rb_fdopen(int fd, const char *modestr)
     return file;
 }
 
-static void
+static int
 io_check_tty(rb_io_t *fptr)
 {
-    if (isatty(fptr->fd))
+    int t = isatty(fptr->fd);
+    if (t)
         fptr->mode |= FMODE_TTY|FMODE_DUPLEX;
+    return t;
 }
 
 static VALUE rb_io_internal_encoding(VALUE);
@@ -7370,14 +7372,13 @@ prep_io(int fd, int fmode, VALUE klass, const char *path)
 
     MakeOpenFile(io, fp);
     fp->fd = fd;
-#ifdef __CYGWIN__
-    if (!isatty(fd)) {
-        fmode |= FMODE_BINMODE;
-	setmode(fd, O_BINARY);
-    }
-#endif
     fp->mode = fmode;
-    io_check_tty(fp);
+    if (!io_check_tty(fp)) {
+#ifdef __CYGWIN__
+	fp->fmode |= FMODE_BINMODE;
+	setmode(fd, O_BINARY);
+#endif
+    }
     if (path) fp->pathv = rb_obj_freeze(rb_str_new_cstr(path));
     rb_update_max_fd(fd);
 
