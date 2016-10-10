@@ -720,14 +720,14 @@ class TestRequire < Test::Unit::TestCase
       f.close
       File.unlink(f.path)
       File.mkfifo(f.path)
-      assert_ruby_status(["-", f.path], <<-END, timeout: 3)
-      th = Thread.current
-      Thread.start {begin sleep(0.001) end until th.stop?; th.raise(IOError)}
-      begin
-        load(ARGV[0])
-      rescue IOError
-      end
-      END
+      assert_separately(["-", f.path], "#{<<-"begin;"}\n#{<<-"end;"}", timeout: 3)
+      begin;
+        th = Thread.current
+        Thread.start {begin sleep(0.001) end until th.stop?; th.raise(IOError)}
+        assert_raise(IOError) do
+          load(ARGV[0])
+        end
+      end;
     }
   end if File.respond_to?(:mkfifo)
 
@@ -737,20 +737,23 @@ class TestRequire < Test::Unit::TestCase
       File.unlink(f.path)
       File.mkfifo(f.path)
 
-      assert_ruby_status(["-", f.path], <<-INPUT, timeout: 3)
-      path = ARGV[0]
-      th = Thread.current
-      Thread.start {
-        begin
-          sleep(0.001)
-        end until th.stop?
-        open(path, File::WRONLY | File::NONBLOCK) {|fifo_w|
-          fifo_w.print "__END__\n" # ensure finishing
+      assert_separately(["-", f.path], "#{<<-"begin;"}\n#{<<-"end;"}", timeout: 3)
+      begin;
+        path = ARGV[0]
+        th = Thread.current
+        $ok = false
+        Thread.start {
+          begin
+            sleep(0.001)
+          end until th.stop?
+          open(path, File::WRONLY | File::NONBLOCK) {|fifo_w|
+            fifo_w.print "$ok = true\n__END__\n" # ensure finishing
+          }
         }
-      }
 
-      load(path)
-    INPUT
+        load(path)
+        assert($ok)
+      end;
     }
   end if File.respond_to?(:mkfifo)
 
