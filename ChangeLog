@@ -1,3 +1,8 @@
+Mon Oct 10 15:22:27 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (open_load_file): bind the open fd to an IO instance
+	  before waiting FIFO, not to leak the fd if interrupted.
+
 Mon Oct 10 12:40:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (open_load_file): compare with EXEEXT instead of hard

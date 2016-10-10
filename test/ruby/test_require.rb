@@ -757,6 +757,26 @@ class TestRequire < Test::Unit::TestCase
     }
   end if File.respond_to?(:mkfifo)
 
+  def test_loading_fifo_fd_leak
+    Tempfile.create(%w'fifo .rb') {|f|
+      f.close
+      File.unlink(f.path)
+      File.mkfifo(f.path)
+      assert_separately(["-", f.path], "#{<<-"begin;"}\n#{<<-"end;"}", timeout: 3)
+      begin;
+        Process.setrlimit(Process::RLIMIT_NOFILE, 50)
+        th = Thread.current
+        100.times do |i|
+          Thread.start {begin sleep(0.001) end until th.stop?; th.raise(IOError)}
+          assert_raise(IOError, "\#{i} time") do
+            tap {tap {tap {load(ARGV[0])}}}
+          end
+          GC.start
+        end
+      end;
+    }
+  end if File.respond_to?(:mkfifo) and defined?(Process::RLIMIT_NOFILE)
+
   def test_throw_while_loading
     Tempfile.create(%w'bug-11404 .rb') do |f|
       f.puts 'sleep'
