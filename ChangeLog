@@ -1,4 +1,7 @@
-Mon Oct 10 12:37:06 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Oct 10 12:40:04 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (open_load_file): open in binary mode if available, as
+	  parser deals with EOLs.
 
 	* io.c (prep_io): reduce isatty call (and its system call) on
 	  Cygwin.

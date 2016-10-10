@@ -1877,18 +1877,21 @@ open_load_file(VALUE fname_v, int *xflag)
 	   use O_NONBLOCK. */
 #if defined O_NONBLOCK && HAVE_FCNTL && !(O_NONBLOCK & O_ACCMODE)
 	/* TODO: fix conflicting O_NONBLOCK in ruby/win32.h */
-# define MODE_TO_LOAD (O_RDONLY | O_NONBLOCK)
+# define MODE_TO_LOAD (O_NONBLOCK)
 #elif defined O_NDELAY && HAVE_FCNTL && !(O_NDELAY & O_ACCMODE)
-# define MODE_TO_LOAD (O_RDONLY | O_NDELAY)
+# define MODE_TO_LOAD (O_NDELAY)
 #else
-# define MODE_TO_LOAD (O_RDONLY)
+# define MODE_TO_LOAD (0)
 #endif
-	int mode = MODE_TO_LOAD;
+	int mode = O_RDONLY |
+#ifdef O_BINARY
+	    O_BINARY |
+#endif
+	    MODE_TO_LOAD;
 #if defined DOSISH || defined __CYGWIN__
 	{
 	    const char *ext = strrchr(fname, '.');
 	    if (ext && STRCASECMP(ext, ".exe") == 0) {
-		mode |= O_BINARY;
 		*xflag = 1;
 	    }
 	}
@@ -1899,7 +1902,7 @@ open_load_file(VALUE fname_v, int *xflag)
 	}
 	rb_update_max_fd(fd);
 
-#if defined HAVE_FCNTL && MODE_TO_LOAD != O_RDONLY
+#if defined HAVE_FCNTL && MODE_TO_LOAD
 	/* disabling O_NONBLOCK */
 	if (fcntl(fd, F_SETFL, 0) < 0) {
 	    e = errno;
