@@ -1,3 +1,9 @@
+Tue Oct 11 16:38:32 2016  Tanaka Akira  <akr@fsij.org>
+
+	* lib/pp.rb (String#pretty_print): Defined to print a string as
+	  multiple lines.
+	  [ruby-core:76800] [Feature#12664] proposed by Petr Chalupa.
+
 Mon Oct 10 15:22:27 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (open_load_file): bind the open fd to an IO instance

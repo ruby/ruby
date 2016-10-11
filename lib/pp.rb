@@ -418,6 +418,21 @@ class Range # :nodoc:
   end
 end
 
+class String
+  def pretty_print(q)
+    lines = self.lines
+    if lines.size > 1
+      q.group(0, '', '') do
+        q.seplist(lines, lambda { q.text ' +'; q.breakable }) do |v|
+          q.pp v
+        end
+      end
+    else
+      q.text inspect
+    end
+  end
+end
+
 class File < IO # :nodoc:
   class Stat # :nodoc:
     def pretty_print(q) # :nodoc:
