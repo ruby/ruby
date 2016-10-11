@@ -1547,7 +1547,7 @@ module URI
       end
 
       name = 'no_proxy'
-      if no_proxy = ENV[name] || ENV[name.upcase]
+      if no_proxy = env[name] || env[name.upcase]
         no_proxy.scan(/(?!\.)([^:,\s]+)(?::(\d+))?/) {|host, port|
           if (!port || self.port == port.to_i)
             if /(\A|\.)#{Regexp.quote host}\z/i =~ self.host
