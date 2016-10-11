@@ -405,7 +405,7 @@ def flunk(message = '')
 end
 
 def pretty(src, desc, result)
-  src = src.sub(/\A.*\n/, '')
+  src = src.sub(/\A[\s\t]*\n/, '')
   (/\n/ =~ src ? "\n#{adjust_indent(src)}" : src) + "  #=> #{desc}"
 end
 
