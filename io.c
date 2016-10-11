@@ -7375,7 +7375,7 @@ prep_io(int fd, int fmode, VALUE klass, const char *path)
     fp->mode = fmode;
     if (!io_check_tty(fp)) {
 #ifdef __CYGWIN__
-	fp->fmode |= FMODE_BINMODE;
+	fp->mode |= FMODE_BINMODE;
 	setmode(fd, O_BINARY);
 #endif
     }

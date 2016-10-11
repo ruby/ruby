@@ -1,3 +1,8 @@
+Tue Oct 11 22:08:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (prep_io): fix typo of struct member name.
+	  [ruby-core:77550] [Bug #12829]
+
 Tue Oct 11 16:45:24 2016  Tanaka Akira  <akr@fsij.org>
 
 	* lib/uri/generic.rb (URI.find_proxy): Add an optional argument, env.
