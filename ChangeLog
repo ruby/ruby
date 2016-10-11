@@ -1,3 +1,7 @@
+Tue Oct 11 16:45:24 2016  Tanaka Akira  <akr@fsij.org>
+
+	* lib/uri/generic.rb (URI.find_proxy): Add an optional argument, env.
+
 Tue Oct 11 16:38:32 2016  Tanaka Akira  <akr@fsij.org>
 
 	* lib/pp.rb (String#pretty_print): Defined to print a string as
