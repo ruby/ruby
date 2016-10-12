@@ -21236,7 +21236,7 @@ Sun Jan  3 01:37:58 1999  Takao KAWAMURA  <kawamura@ike.tottori-u.ac.jp>
 Sat Jan  2 17:09:06 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_jump_tag): new api to invoke JUMP_TAG.  tag values
-	  can obtained from rb_eval_string_protect()/rb_load_protect().
+	  can be obtained from rb_eval_string_protect()/rb_load_protect().
 
 	* eval.c (rb_rescue): now catches all exceptions but SystemExit.
 
