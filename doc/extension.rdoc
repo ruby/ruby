@@ -592,7 +592,7 @@ function below.
 
   void rb_define_readonly_variable(const char *name, VALUE *var)
 
-You can defined hooked variables.  The accessor functions (getter and
+You can define hooked variables.  The accessor functions (getter and
 setter) are called on access to the hooked variables.
 
   void rb_define_hooked_variable(const char *name, VALUE *var,
