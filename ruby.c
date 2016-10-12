@@ -1878,17 +1878,13 @@ open_load_file(VALUE fname_v, int *xflag)
 	   use O_NONBLOCK. */
 #if defined O_NONBLOCK && HAVE_FCNTL && !(O_NONBLOCK & O_ACCMODE)
 	/* TODO: fix conflicting O_NONBLOCK in ruby/win32.h */
-# define MODE_TO_LOAD (O_NONBLOCK)
+# define MODE_TO_LOAD (O_RDONLY | O_NONBLOCK)
 #elif defined O_NDELAY && HAVE_FCNTL && !(O_NDELAY & O_ACCMODE)
-# define MODE_TO_LOAD (O_NDELAY)
+# define MODE_TO_LOAD (O_RDONLY | O_NDELAY)
 #else
-# define MODE_TO_LOAD (0)
+# define MODE_TO_LOAD (O_RDONLY)
 #endif
-	int mode = O_RDONLY |
-#ifdef O_BINARY
-	    O_BINARY |
-#endif
-	    MODE_TO_LOAD;
+	int mode = MODE_TO_LOAD;
 #if defined DOSISH || defined __CYGWIN__
 # define isdirsep(x) ((x) == '/' || (x) == '\\')
 	{
@@ -1896,6 +1892,7 @@ open_load_file(VALUE fname_v, int *xflag)
 	    enum {extlen = sizeof(exeext)-1};
 	    if (flen > extlen && !isdirsep(fname[flen-extlen-1]) &&
 		STRNCASECMP(fname+flen-extlen, exeext, extlen) == 0) {
+		mode |= O_BINARY;
 		*xflag = 1;
 	    }
 	}
@@ -1906,7 +1903,7 @@ open_load_file(VALUE fname_v, int *xflag)
 	}
 	rb_update_max_fd(fd);
 
-#if defined HAVE_FCNTL && MODE_TO_LOAD
+#if defined HAVE_FCNTL && MODE_TO_LOAD != O_RDONLY
 	/* disabling O_NONBLOCK */
 	if (fcntl(fd, F_SETFL, 0) < 0) {
 	    e = errno;
