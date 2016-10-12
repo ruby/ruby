@@ -1,3 +1,9 @@
+Wed Oct 12 22:31:09 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* tool/downloader.rb: Removed verification of gem certification.
+	  Because signed gem is not working on rubygems ecosystem.
+	* tool/gem-unpack.rb: ditto.
+
 Fri Oct  7 02:48:06 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* lib/rubygems/ssl_certs/GlobalSignRootCA.pem: add for RugyGems.org.

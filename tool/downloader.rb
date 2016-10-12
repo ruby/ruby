@@ -51,24 +51,10 @@ class Downloader
   class RubyGems < self
     def self.download(name, dir = nil, ims = true, options = {})
       require 'rubygems'
-      require 'rubygems/package'
       options[:ssl_ca_cert] = Dir.glob(File.expand_path("../lib/rubygems/ssl_certs/*.pem", File.dirname(__FILE__)))
       file = under(dir, name)
       super("#{https}://rubygems.org/downloads/#{name}", file, nil, ims, options) or
         return false
-      policy = Gem::Security::LowSecurity
-      (policy = policy.dup).ui = Gem::SilentUI.new if policy.respond_to?(:'ui=')
-      pkg = Gem::Package.new(file)
-      pkg.security_policy = policy
-      begin
-        pkg.verify
-      rescue Gem::Security::Exception => e
-        $stderr.puts e.message
-        File.unlink(file)
-        false
-      else
-        true
-      end
     end
 
     def self.verify(pkg)
