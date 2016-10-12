@@ -1,3 +1,10 @@
+Thu Oct 13 00:39:08 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_array.rb (test_sort_bang_with_freeze): make a
+	  clone to copy a <=> singleton method, instead of dup.  which
+	  element will be called is not predictable.
+	  [ruby-core:76088] [Bug #12509]
+
 Thu Oct 13 00:21:27 2016  Simon Soriano  <simon0191@gmail.com>
 
 	* doc/extension.rdoc: Replace "You can defined hooked variables"

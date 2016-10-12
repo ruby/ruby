@@ -1488,7 +1488,7 @@ class TestArray < Test::Unit::TestCase
         1
       }
     }
-    o2 = o1.dup
+    o2 = o1.clone
     ary << o1 << o2
     orig = ary.dup
     assert_raise(RuntimeError, "frozen during comparison") {ary.sort!}
