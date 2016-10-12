@@ -1,3 +1,9 @@
+Wed Oct 12 15:24:53 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* tool/downloader.rb: Removed verification of gem certification.
+	  Because signed gem is not working on rubygems ecosystem.
+	* tool/gem-unpack.rb: ditto.
+
 Tue Oct 11 22:08:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (prep_io): fix typo of struct member name.
