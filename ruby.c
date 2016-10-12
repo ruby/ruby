@@ -1890,9 +1890,9 @@ open_load_file(VALUE fname_v, int *xflag)
 #endif
 	    MODE_TO_LOAD;
 #if defined DOSISH || defined __CYGWIN__
-# define isdirsep(x) ((x) == '/' || (x) == FILE_ALT_SEPARATOR)
+# define isdirsep(x) ((x) == '/' || (x) == '\\')
 	{
-	    static const char exeext[] = EXEEXT;
+	    static const char exeext[] = ".exe";
 	    enum {extlen = sizeof(exeext)-1};
 	    if (flen > extlen && !isdirsep(fname[flen-extlen-1]) &&
 		STRNCASECMP(fname+flen-extlen, exeext, extlen) == 0) {
