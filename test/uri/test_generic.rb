@@ -898,7 +898,7 @@ class URI::TestGeneric < Test::Unit::TestCase
 
     def [](k)
       k = k.downcase
-      @h.has_key?(k) ? @h[k.downcase][1] : nil
+      @h.has_key?(k) ? @h[k][1] : nil
     end
 
     def length
