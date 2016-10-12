@@ -911,7 +911,7 @@ class URI::TestGeneric < Test::Unit::TestCase
 
     def shift
       return nil if @h.empty?
-      kd, (k, v) = @h.shift
+      _kd, (k, v) = @h.shift
       [k, v]
     end
 
