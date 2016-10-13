@@ -1854,8 +1854,7 @@ keyword in C.  RB_GC_GUARD has the following advantages:
 
 3. "volatile" implementations may be buggy/inconsistent in some
    compilers and architectures. RB_GC_GUARD is customizable for broken
-   systems/compilers without those without negatively affecting other
-   systems.
+   systems/compilers without negatively affecting other systems.
 
 :enddoc: Local variables:
 :enddoc: fill-column: 70
