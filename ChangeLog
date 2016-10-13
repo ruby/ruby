@@ -1,3 +1,10 @@
+Thu Oct 13 11:31:40 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/rexml/xpath/test_text.rb (test_ancestors): Array#sort may
+	  not be stable.  [ruby-core:76088] [Bug #12509]
+
+	* test/rss/test_maker_{0.9,1.0,2.0}.rb (test_items): ditto.
+
 Thu Oct 13 10:37:31 2016  Eric Wong  <e@80x24.org>
 
 	* doc/extension.rdoc: wording fix
