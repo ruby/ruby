@@ -61,6 +61,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Hash
 
   * Hash#transform_values and Hash#transform_values!  [Feature #12512]
+  * Hash#compact and Hash#compact!  [Feature #11818]
 
 * Integer
 
