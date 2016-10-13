@@ -1,3 +1,9 @@
+Thu Oct 13 17:05:57 2016  Dwain Faithfull  <dwfaithfull@gmail.com>
+
+	* hash.c (rb_hash_compact, rb_hash_compact_bang): Removes nil
+	  values from the original hash, to port Active Support behavior.
+	  [Feature #11818]
+
 Thu Oct 13 11:35:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_sort_bang, rb_ary_sort, rb_ary_sort_by_bang):
