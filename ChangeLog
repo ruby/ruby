@@ -1,3 +1,10 @@
+Thu Oct 13 11:35:33 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (rb_ary_sort_bang, rb_ary_sort, rb_ary_sort_by_bang):
+	  [DOC] describe that sort may not be stable.
+
+	* enum.c (enum_sort, enum_sort_by): ditto.
+
 Thu Oct 13 11:31:40 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/rexml/xpath/test_text.rb (test_ancestors): Array#sort may
