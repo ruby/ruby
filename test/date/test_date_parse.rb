@@ -758,6 +758,9 @@ class TestDateParse < Test::Unit::TestCase
     h = Date._iso8601('2001-023T04:05:06Z')
     assert_equal([2001, 23, 4, 5, 6, 0],
 		 h.values_at(:year, :yday, :hour, :min, :sec, :offset))
+    h = Date._iso8601('2001-23')
+    assert_equal([2001, 23],
+		 h.values_at(:year, :month))
     h = Date._iso8601('-023T04:05:06Z')
     assert_equal([nil, 23, 4, 5, 6, 0],
 		 h.values_at(:year, :yday, :hour, :min, :sec, :offset))

@@ -2265,7 +2265,11 @@ iso8601_ext_datetime_cb(VALUE m, VALUE hash)
 	    set_hash("mon", str2num(s[2]));
     }
     else if (!NIL_P(s[5])) {
-	set_hash("yday", str2num(s[5]));
+      if (RSTRING_LEN(s[5]) > 2) {
+	      set_hash("yday", str2num(s[5]));
+      } else {
+	      set_hash("month", str2num(s[5]));
+      }
 	if (!NIL_P(s[4])) {
 	    y = str2num(s[4]);
 	    if (RSTRING_LEN(s[4]) < 4)
@@ -2308,7 +2312,7 @@ iso8601_ext_datetime(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 	"\\A\\s*(?:([-+]?\\d{2,}|-)-(\\d{2})?-(\\d{2})|"
-		"([-+]?\\d{2,})?-(\\d{3})|"
+		"([-+]?\\d{2,})?-(\\d{2,3})|"
 		"(\\d{4}|\\d{2})?-w(\\d{2})-(\\d)|"
 		"-w-(\\d))"
 	"(?:t"
