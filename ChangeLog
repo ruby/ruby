@@ -1,3 +1,8 @@
+Fri Oct 14 17:20:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (make_switch, parse_in_order): unify underscores
+	  to hyphens.
+
 Fri Oct 14 10:48:37 2016  Eric Wong  <e@80x24.org>
 
 	* lib/webrick/utils.rb (TimeoutHandler): use monotonic clock

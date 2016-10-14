@@ -7,6 +7,8 @@ class TestOptionParser::OptArg < TestOptionParser
     @opt.def_option("-x[VAL]") {|x| @flag = x}
     @opt.def_option("--option[=VAL]") {|x| @flag = x}
     @opt.def_option("--regexp[=REGEXP]", Regexp) {|x| @reopt = x}
+    @opt.def_option "--with_underscore[=VAL]" do |x| @flag = x end
+    @opt.def_option "--with-hyphen[=VAL]" do |x| @flag = x end
     @reopt = nil
   end
 
@@ -43,5 +45,16 @@ class TestOptionParser::OptArg < TestOptionParser
     assert_equal("foo", @flag)
     assert_equal(%w"foo", no_error {@opt.parse!(%w"--opt foo")})
     assert_equal(nil, @flag)
+  end
+
+  def test_hyphenize
+    assert_equal(%w"", no_error {@opt.parse!(%w"--with_underscore=foo1")})
+    assert_equal("foo1", @flag)
+    assert_equal(%w"", no_error {@opt.parse!(%w"--with-underscore=foo2")})
+    assert_equal("foo2", @flag)
+    assert_equal(%w"", no_error {@opt.parse!(%w"--with-hyphen=foo3")})
+    assert_equal("foo3", @flag)
+    assert_equal(%w"", no_error {@opt.parse!(%w"--with_hyphen=foo4")})
+    assert_equal("foo4", @flag)
   end
 end

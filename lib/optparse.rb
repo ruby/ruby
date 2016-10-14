@@ -1386,7 +1386,8 @@ XXX
         default_style = Switch::NoArgument
         default_pattern, conv = search(:atype, FalseClass) unless default_pattern
         ldesc << "--no-#{q}"
-        long << 'no-' + (q = q.downcase)
+        (q = q.downcase).tr!('_', '-')
+        long << "no-#{q}"
         nolong << q
       when /^--\[no-\]([^\[\]=\s]*)(.+)?/
         q, a = $1, $2
@@ -1396,10 +1397,11 @@ XXX
           default_pattern, conv = search(:atype, o) unless default_pattern
         end
         ldesc << "--[no-]#{q}"
-        long << (o = q.downcase)
+        (o = q.downcase).tr!('_', '-')
+        long << o
         not_pattern, not_conv = search(:atype, FalseClass) unless not_style
         not_style = Switch::NoArgument
-        nolong << 'no-' + o
+        nolong << "no-#{o}"
       when /^--([^\[\]=\s]*)(.+)?/
         q, a = $1, $2
         if a
@@ -1408,7 +1410,8 @@ XXX
           default_pattern, conv = search(:atype, o) unless default_pattern
         end
         ldesc << "--#{q}"
-        long << (o = q.downcase)
+        (o = q.downcase).tr!('_', '-')
+        long << o
       when /^-(\[\^?\]?(?:[^\\\]]|\\.)*\])(.+)?/
         q, a = $1, $2
         o = notwice(Object, klass, 'type')
@@ -1538,6 +1541,7 @@ XXX
         # long option
         when /\A--([^=]*)(?:=(.*))?/m
           opt, rest = $1, $2
+          opt.tr!('_', '-')
           begin
             sw, = complete(:long, opt, true)
           rescue ParseError
