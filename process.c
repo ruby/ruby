@@ -1247,7 +1247,9 @@ proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
     UNREACHABLE;
 #else
     char **argv;
+#ifndef _WIN32
     char **envp;
+#endif
 
     argv = ARGVSTR2ARGV(argv_str);
 
@@ -1256,12 +1258,16 @@ proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
 	return -1;
     }
 
+#ifdef _WIN32
+    rb_w32_uaspawn(P_OVERLAY, prog, argv);
+#else
     envp = envp_str ? (char **)RSTRING_PTR(envp_str) : NULL;
     if (envp_str)
         execve(prog, argv, envp); /* async-signal-safe */
     else
         execv(prog, argv); /* async-signal-safe (since SUSv4) */
     preserving_errno(try_with_sh(prog, argv, envp)); /* try_with_sh() is async-signal-safe. */
+#endif
     return -1;
 #endif
 }
