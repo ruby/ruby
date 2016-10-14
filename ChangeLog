@@ -1,3 +1,8 @@
+Fri Oct 14 18:00:20 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/logger.rb: Improve Logger.new option documentation.
+	  [Feature #12803][ruby-core:77467]
+
 Fri Oct 14 17:20:24 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (make_switch, parse_in_order): unify underscores
