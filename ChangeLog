@@ -1,6 +1,6 @@
 Fri Oct 14 18:27:18 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	* object.c: Improve documentation for Integer conversion.
+	* object.c: Improve documentation for Float conversion.
 	  [ruby-core:71661][Bug #11736][ci skip]
 
 Fri Oct 14 18:00:20 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
