@@ -1,3 +1,8 @@
+Fri Oct 14 10:48:37 2016  Eric Wong  <e@80x24.org>
+
+	* lib/webrick/utils.rb (TimeoutHandler): use monotonic clock
+	  (watch): ditto
+
 Thu Oct 13 19:41:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (copy_stream_body): use IO to write to copy to duplex IO.
