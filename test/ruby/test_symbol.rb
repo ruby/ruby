@@ -435,16 +435,4 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal str, str.to_sym.to_s
     assert_not_predicate(str, :frozen?, bug11721)
   end
-
-  module WithRefinements
-    using Module.new {refine(Integer) {alias inc succ}}
-    def mapinc(a)
-      a.map(&:inc)
-    end
-  end
-
-  def test_proc_with_refinements
-    obj = Object.new.extend WithRefinements
-    assert_equal [*1..3], obj.mapinc(0..2)
-  end
 end

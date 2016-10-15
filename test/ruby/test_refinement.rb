@@ -74,6 +74,10 @@ class TestRefinement < Test::Unit::TestCase
     using TestRefinement::FooExt
 
     begin
+      def self.map_x_on(foo)
+        [foo].map(&:x)[0]
+      end
+
       def self.invoke_x_on(foo)
         return foo.x
       end
@@ -1735,6 +1739,10 @@ class TestRefinement < Test::Unit::TestCase
         end
       end
     INPUT
+  end
+
+  def test_symbol_proc
+    assert_equal("FooExt#x", FooExtClient.map_x_on(Foo.new))
   end
 
   private
