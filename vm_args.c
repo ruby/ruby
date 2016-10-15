@@ -828,7 +828,14 @@ vm_caller_setup_arg_block(const rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	    if (SYMBOL_P(block_code) && rb_method_basic_definition_p(rb_cSymbol, idTo_proc)) {
 		const rb_cref_t *cref = vm_env_cref(reg_cfp->ep);
 		if (cref && !NIL_P(cref->refinements)) {
-		    block_code = rb_func_proc_new(refine_sym_proc_call, block_code);
+		    VALUE ref = cref->refinements;
+		    VALUE func = rb_hash_lookup(ref, block_code);
+		    if (NIL_P(func)) {
+			/* TODO: limit cached funcs */
+			func = rb_func_proc_new(refine_sym_proc_call, block_code);
+			rb_hash_aset(ref, block_code, func);
+		    }
+		    block_code = func;
 		}
 		calling->block_handler = block_code;
 	    }
