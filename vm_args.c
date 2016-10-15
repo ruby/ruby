@@ -794,6 +794,26 @@ vm_to_proc(VALUE proc)
     }
 }
 
+static VALUE
+refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
+{
+    VALUE obj;
+    ID mid;
+    const rb_callable_method_entry_t *me;
+
+    if (argc-- < 1) {
+	rb_raise(rb_eArgError, "no receiver given");
+    }
+    obj = *argv++;
+    mid = SYM2ID(callback_arg);
+    me = rb_callable_method_entry_with_refinements(CLASS_OF(obj), mid);
+    if (!me) {
+	/* fallback to funcall (e.g. method_missing) */
+	return rb_funcall_with_block(obj, mid, argc, argv, blockarg);
+    }
+    return vm_call0(GET_THREAD(), obj, mid, argc, argv, me);
+}
+
 static void
 vm_caller_setup_arg_block(const rb_thread_t *th, rb_control_frame_t *reg_cfp,
 			  struct rb_calling_info *calling, const struct rb_call_info *ci, rb_iseq_t *blockiseq, const int is_super)
@@ -806,6 +826,10 @@ vm_caller_setup_arg_block(const rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	}
 	else {
 	    if (SYMBOL_P(block_code) && rb_method_basic_definition_p(rb_cSymbol, idTo_proc)) {
+		const rb_cref_t *cref = vm_env_cref(reg_cfp->ep);
+		if (cref && !NIL_P(cref->refinements)) {
+		    block_code = rb_func_proc_new(refine_sym_proc_call, block_code);
+		}
 		calling->block_handler = block_code;
 	    }
 	    else {

@@ -17,6 +17,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Multiple assignment in conditional expression is now allowed.
   [Feature #10617]
 
+* Refinments is enabled at method by Symbol#to_proc.  [Feature #9451]
+
 === Core classes updates (outstanding ones only)
 
 * Array

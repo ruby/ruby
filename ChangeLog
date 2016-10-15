@@ -1,3 +1,11 @@
+Sat Oct 15 14:17:05 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_args.c (refine_sym_proc_call): search and call method with
+	  refinements.
+
+	* vm_args.c (vm_caller_setup_arg_block): enable refinements when
+	  enabled in the caller.  [Feature #9451]
+
 Sat Oct 15 00:54:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (proc_exec_cmd): use UTF-8 version aspawn.
