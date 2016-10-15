@@ -2469,6 +2469,18 @@ End
     }
   end
 
+  def test_DATA_binmode
+    make_tempfile {|t|
+      open(t.path, "w") {|f|
+        f.puts <<-SRC
+puts DATA.binmode?
+__END__
+        SRC
+      }
+      assert_in_out_err(t.path, [], %w(false))
+    }
+  end
+
   def test_threaded_flush
     bug3585 = '[ruby-core:31348]'
     src = %q{\
