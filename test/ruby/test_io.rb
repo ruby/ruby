@@ -2470,15 +2470,10 @@ End
   end
 
   def test_DATA_binmode
-    make_tempfile {|t|
-      open(t.path, "w") {|f|
-        f.puts <<-SRC
-puts DATA.binmode?
+    assert_separately([], <<-SRC)
+assert_not_predicate(DATA, :binmode?)
 __END__
-        SRC
-      }
-      assert_in_out_err(t.path, [], %w(false))
-    }
+    SRC
   end
 
   def test_threaded_flush
