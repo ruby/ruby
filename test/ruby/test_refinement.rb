@@ -70,10 +70,10 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
-  eval <<-EOF, Sandbox::BINDING
+  class FooExtClient
     using TestRefinement::FooExt
 
-    class TestRefinement::FooExtClient
+    begin
       def self.invoke_x_on(foo)
         return foo.x
       end
@@ -98,13 +98,13 @@ class TestRefinement < Test::Unit::TestCase
         return foo.call_x
       end
     end
-  EOF
+  end
 
-  eval <<-EOF, Sandbox::BINDING
+  class TestRefinement::FooExtClient2
     using TestRefinement::FooExt
     using TestRefinement::FooExt2
 
-    class TestRefinement::FooExtClient2
+    begin
       def self.invoke_y_on(foo)
         return foo.y
       end
@@ -113,7 +113,7 @@ class TestRefinement < Test::Unit::TestCase
         return foo.a
       end
     end
-  EOF
+  end
 
   def test_override
     foo = Foo.new
