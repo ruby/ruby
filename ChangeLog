@@ -1,3 +1,8 @@
+Sun Oct 16 15:09:06 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/windows_1254.c, test/ruby/enc/test_case_comprehensive.rb:
+	  Implement non-ASCII case conversion for Windows-1254.
+
 Sat Oct 15 14:17:05 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_args.c (refine_sym_proc_call): search and call method with

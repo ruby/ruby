@@ -60,9 +60,9 @@ static const UChar EncCP1254_ToLowerCaseTable[256] = {
   '\160', '\161', '\162', '\163', '\164', '\165', '\166', '\167',
   '\170', '\171', '\172', '\173', '\174', '\175', '\176', '\177',
   '\200', '\201', '\202', '\203', '\204', '\205', '\206', '\207',
-  '\210', '\211', '\212', '\213', '\214', '\215', '\216', '\217',
+  '\210', '\211', '\232', '\213', '\234', '\215', '\216', '\217',
   '\220', '\221', '\222', '\223', '\224', '\225', '\226', '\227',
-  '\230', '\231', '\232', '\233', '\234', '\235', '\236', '\237',
+  '\230', '\231', '\232', '\233', '\234', '\235', '\236', '\377',
   '\240', '\241', '\242', '\243', '\244', '\245', '\246', '\247',
   '\250', '\251', '\252', '\253', '\254', '\255', '\256', '\257',
   '\260', '\261', '\262', '\263', '\264', '\265', '\266', '\267',
@@ -70,7 +70,7 @@ static const UChar EncCP1254_ToLowerCaseTable[256] = {
   '\340', '\341', '\342', '\343', '\344', '\345', '\346', '\347',
   '\350', '\351', '\352', '\353', '\354', '\355', '\356', '\357',
   '\360', '\361', '\362', '\363', '\364', '\365', '\366', '\327',
-  '\370', '\371', '\372', '\373', '\374', '\335', '\376', '\337',
+  '\370', '\371', '\372', '\373', '\374', '\151', '\376', '\337',
   '\340', '\341', '\342', '\343', '\344', '\345', '\346', '\347',
   '\350', '\351', '\352', '\353', '\354', '\355', '\356', '\357',
   '\360', '\361', '\362', '\363', '\364', '\365', '\366', '\367',
@@ -95,9 +95,9 @@ static const unsigned short EncCP1254_CtypeTable[256] = {
   0x70e2, 0x70e2, 0x70e2, 0x70e2, 0x70e2, 0x70e2, 0x70e2, 0x70e2,
   0x70e2, 0x70e2, 0x70e2, 0x41a0, 0x41a0, 0x41a0, 0x41a0, 0x4008,
   0x0008, 0x0008, 0x0008, 0x0008, 0x0008, 0x0008, 0x0008, 0x0008,
+  0x0008, 0x0008, 0x34a2, 0x0008, 0x34a2, 0x0008, 0x0008, 0x0008,
   0x0008, 0x0008, 0x0008, 0x0008, 0x0008, 0x0008, 0x0008, 0x0008,
-  0x0008, 0x0008, 0x0008, 0x0008, 0x0008, 0x0008, 0x0008, 0x0008,
-  0x0008, 0x0008, 0x0008, 0x0008, 0x0008, 0x0008, 0x0008, 0x0008,
+  0x0008, 0x0008, 0x30e2, 0x0008, 0x30e2, 0x0008, 0x0008, 0x34a2,
   0x0284, 0x01a0, 0x00a0, 0x00a0, 0x00a0, 0x00a0, 0x00a0, 0x00a0,
   0x00a0, 0x00a0, 0x30e2, 0x01a0, 0x00a0, 0x01a0, 0x00a0, 0x00a0,
   0x00a0, 0x00a0, 0x10a0, 0x10a0, 0x00a0, 0x30e2, 0x00a0, 0x01a0,
@@ -221,6 +221,62 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
 	     flag, p, end, items);
 }
 
+#define DOTLESS_i        (0xFD)
+#define I_WITH_DOT_ABOVE (0xDD)
+static int
+case_map(OnigCaseFoldType* flagP, const OnigUChar** pp,
+	 const OnigUChar* end, OnigUChar* to, OnigUChar* to_end,
+	 const struct OnigEncodingTypeST* enc)
+{
+  OnigCodePoint code;
+  OnigUChar *to_start = to;
+  OnigCaseFoldType flags = *flagP;
+
+  while (*pp<end && to<to_end) {
+    code = *(*pp)++;
+    if (code==SHARP_s) {
+      if (flags&ONIGENC_CASE_UPCASE) {
+	flags |= ONIGENC_CASE_MODIFIED;
+	*to++ = 'S';
+	code = (flags&ONIGENC_CASE_TITLECASE) ? 's' : 'S';
+      }
+      else if (flags&ONIGENC_CASE_FOLD) {
+	flags |= ONIGENC_CASE_MODIFIED;
+	*to++ = 's';
+	code = 's';
+      }
+    }
+    else if ((EncCP1254_CtypeTable[code] & BIT_CTYPE_UPPER)
+	     && (flags & (ONIGENC_CASE_DOWNCASE|ONIGENC_CASE_FOLD))) {
+      flags |= ONIGENC_CASE_MODIFIED;
+      if (code=='I')
+	code = flags&ONIGENC_CASE_FOLD_TURKISH_AZERI ? DOTLESS_i : 'i';
+      else
+        code = ENC_CP1254_TO_LOWER_CASE(code);
+    }
+    else if (code==0x83 || code==0xAA || code==0xBA || code==0xB5)  ;
+    else if ((EncCP1254_CtypeTable[code]&BIT_CTYPE_LOWER)
+	     && (flags&ONIGENC_CASE_UPCASE)) {
+      flags |= ONIGENC_CASE_MODIFIED;
+      if (code=='i')
+	code = flags&ONIGENC_CASE_FOLD_TURKISH_AZERI ? I_WITH_DOT_ABOVE : 'I';
+      else if (code==DOTLESS_i)
+	code = 'I';
+      else if (code==0x9A || code==0x9C || code==0x9E)
+	code -= 0x10;
+      else if (code==0xFF)
+	code -= 0x60;
+      else
+	code -= 0x20;
+    }
+    *to++ = code;
+    if (flags&ONIGENC_CASE_TITLECASE)  /* switch from titlecase to lowercase for capitalize */
+      flags ^= (ONIGENC_CASE_UPCASE|ONIGENC_CASE_DOWNCASE|ONIGENC_CASE_TITLECASE);
+  }
+  *flagP = flags;
+  return (int)(to-to_start);
+}
+
 OnigEncodingDefine(windows_1254, Windown_1254) = {
   onigenc_single_byte_mbc_enc_len,
   "Windows-1254",  /* name */
@@ -240,6 +296,6 @@ OnigEncodingDefine(windows_1254, Windown_1254) = {
   onigenc_always_true_is_allowed_reverse_match,
   0,
   ONIGENC_FLAG_NONE,
-  onigenc_single_byte_ascii_only_case_map,
+  case_map,
 };
 ENC_ALIAS("CP1254", "Windows-1254")

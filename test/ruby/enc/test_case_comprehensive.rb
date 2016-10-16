@@ -290,7 +290,7 @@ TestComprehensiveCaseFold.data_files_available? and  class TestComprehensiveCase
   generate_case_mapping_tests 'Windows-1251'
   generate_case_mapping_tests 'Windows-1252'
   generate_case_mapping_tests 'Windows-1253'
-  generate_ascii_only_case_mapping_tests 'Windows-1254'
+  generate_case_mapping_tests 'Windows-1254'
   generate_case_mapping_tests 'Windows-1255'
   generate_ascii_only_case_mapping_tests 'Windows-1256'
   generate_case_mapping_tests 'Windows-1257'
