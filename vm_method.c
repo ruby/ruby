@@ -90,6 +90,10 @@ void
 rb_clear_constant_cache(void)
 {
     INC_GLOBAL_CONSTANT_STATE();
+
+    if (RUBY_DTRACE_CONSTANT_CACHE_CLEAR_ENABLED()) {
+        RUBY_DTRACE_CONSTANT_CACHE_CLEAR(rb_sourcefile(), rb_sourceline());
+    }
 }
 
 void

@@ -225,6 +225,16 @@ provider ruby {
      * `lineno` the line number where the cache is _being cleared_ (an int)
   */
   probe method__cache__clear(const char *class, const char *filename, int lineno);
+
+  /*
+     ruby:::constant-cache-clear(class, filename, lineno);
+
+     This probe is fired when the constant cache is cleared.
+
+     * `filename` the file name where the cache is _being cleared_ (a string)
+     * `lineno` the line number where the cache is _being cleared_ (an int)
+  */
+  probe constant__cache__clear(const char *filename, int lineno);
 };
 
 #pragma D attributes Stable/Evolving/Common provider ruby provider

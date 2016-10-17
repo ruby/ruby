@@ -176,3 +176,8 @@ with when they are fired and the arguments they take:
     sourcefile the file being parsed (string)
     lineno the line number where the source ended (int)
 
+[ruby:::constant-cache-clear(sourcefile, lineno);]
+  Fired when the constant cache is cleared.
+
+    sourcefile the file being parsed (string)
+    lineno the line number where the source ended (int)

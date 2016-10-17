@@ -1,3 +1,11 @@
+Mon Oct 17 09:56:57 2016  Alessandro Lepore  <a.lepore@freegoweb.it>
+
+	* vm_method.c (rb_clear_constant_cache): fire ruby::constant-cache-clear
+	  probe on constant cache clear
+	* probes.d (provider ruby): new dtrace probe
+	* doc/dtrace_probes.rdoc: docs for new probe
+	* test/dtrace/test_constant_cache.rb: test for new probe
+
 Mon Oct 17 16:20:37 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/configure.bat: add option to enable/disable to install
