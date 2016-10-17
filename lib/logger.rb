@@ -593,8 +593,8 @@ private
       when 'weekly'
         t = Time.mktime(now.year, now.month, now.mday) + SiD * (7 - now.wday)
       when 'monthly'
-        t = Time.mktime(now.year, now.month, 1) + SiD * 31
-        return Time.mktime(t.year, t.month, 1) if t.mday > 1
+        t = Time.mktime(now.year, now.month, 1) + SiD * 32
+        return Time.mktime(t.year, t.month, 1)
       else
         return now
       end

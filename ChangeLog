@@ -1,3 +1,9 @@
+Tue Oct 18 02:24:29 2016  Aurelien Jacobs  <aurel@gnuage.org>
+
+	* lib/logger.rb (Logger::Period#next_rotate_time): fix monthly log
+	  rotate when DST is applied during a month of 31 days.
+	  [Fix GH-1458]
+
 Wed Oct 12 22:31:09 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* tool/downloader.rb: Removed verification of gem certification.

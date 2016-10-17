@@ -483,6 +483,49 @@ class TestLogDevice < Test::Unit::TestCase
     end
   end if env_tz_works
 
+  def test_shifting_monthly
+    Dir.mktmpdir do |tmpdir|
+      assert_in_out_err([{"TZ"=>"UTC"}, *%W"-rlogger -C#{tmpdir} -"], <<-'end;')
+        begin
+          module FakeTime
+            attr_accessor :now
+          end
+
+          class << Time
+            prepend FakeTime
+          end
+
+          log = "log"
+          File.open(log, "w") {}
+
+          Time.now = Time.utc(2015, 12, 14, 0, 1, 1)
+          dev = Logger::LogDevice.new("log", shift_age: 'monthly')
+
+          Time.now = Time.utc(2015, 12, 31, 12, 34, 56)
+          dev.write("#{Time.now} hello-1\n")
+          File.utime(Time.now, Time.now, log)
+
+          Time.now = Time.utc(2016, 1, 1, 0, 1, 1)
+          File.utime(Time.now, Time.now, log)
+          dev.write("#{Time.now} hello-2\n")
+        ensure
+          dev.close if dev
+        end
+      end;
+      log = File.join(tmpdir, "log")
+      cont = File.read(log)
+      assert_match(/hello-2/, cont)
+      assert_not_match(/hello-1/, cont)
+      log = Dir.glob(log+".*")
+      assert_equal(1, log.size)
+      log, = *log
+      cont = File.read(log)
+      assert_match(/hello-1/, cont)
+      assert_equal("2015-12-31", cont[/^[-\d]+/])
+      assert_equal("20151231", log[/\d+\z/])
+    end
+  end if env_tz_works
+
   def test_shifting_dst_change
     Dir.mktmpdir do |tmpdir|
       assert_in_out_err([{"TZ"=>"Europe/London"}, *%W"--disable=gems -rlogger -C#{tmpdir} -"], <<-'end;')
@@ -546,6 +589,53 @@ class TestLogDevice < Test::Unit::TestCase
       log = File.join(tmpdir, "log")
       cont = File.read(log)
       assert_match(/hello-1/, cont)
+    end
+  end if env_tz_works
+
+  def test_shifting_monthly_dst_change
+    Dir.mktmpdir do |tmpdir|
+      assert_separately([{"TZ"=>"Europe/London"}, *%W"-rlogger -C#{tmpdir} -"], <<-'end;')
+        begin
+          module FakeTime
+            attr_accessor :now
+          end
+
+          class << Time
+            prepend FakeTime
+          end
+
+          log = "log"
+          File.open(log, "w") {}
+
+          Time.now = Time.utc(2016, 9, 1, 0, 1, 1)
+          dev = Logger::LogDevice.new("log", shift_age: 'monthly')
+
+          Time.now = Time.utc(2016, 9, 8, 7, 6, 5)
+          dev.write("#{Time.now} hello-1\n")
+          File.utime(Time.now, Time.now, log)
+
+          Time.now = Time.utc(2016, 10, 9, 8, 7, 6)
+          File.utime(Time.now, Time.now, log)
+          dev.write("#{Time.now} hello-2\n")
+
+          Time.now = Time.utc(2016, 10, 9, 8, 7, 7)
+          File.utime(Time.now, Time.now, log)
+          dev.write("#{Time.now} hello-3\n")
+        ensure
+          dev.close if dev
+        end
+      end;
+      log = File.join(tmpdir, "log")
+      cont = File.read(log)
+      assert_match(/hello-2/, cont)
+      assert_not_match(/hello-1/, cont)
+      log = Dir.glob(log+".*")
+      assert_equal(1, log.size)
+      log, = *log
+      cont = File.read(log)
+      assert_match(/hello-1/, cont)
+      assert_equal("2016-09-08", cont[/^[-\d]+/])
+      assert_equal("20160930", log[/\d+\z/])
     end
   end if env_tz_works
 
