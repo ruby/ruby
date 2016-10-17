@@ -359,7 +359,7 @@ install?(:local, :arch, :lib) do
   prepare "base libraries", libdir
 
   install lib, libdir, :mode => $prog_mode, :strip => $strip unless lib == arc
-  install arc, libdir, :mode => $data_mode
+  install arc, libdir, :mode => $data_mode unless CONFIG["INSTALL_STATIC_LIBRARY"] == "no"
   if dll == lib and dll != arc
     for link in CONFIG["LIBRUBY_ALIASES"].split
       ln_sf(dll, File.join(libdir, link))

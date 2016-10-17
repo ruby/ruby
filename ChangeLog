@@ -1,3 +1,11 @@
+Mon Oct 17 16:17:05 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (install-static-library): add option to enable/
+	  disable to install static ruby library.  defaulted to "no" if
+	  enable-shared.  [Feature #12845]
+
+	* tool/rbinstall.rb (local-arch-lib): respect the option.
+
 Sun Oct 16 15:09:06 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/windows_1254.c, test/ruby/enc/test_case_comprehensive.rb:
