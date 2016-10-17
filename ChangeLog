@@ -1,4 +1,7 @@
-Mon Oct 17 16:17:05 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Oct 17 16:20:37 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/configure.bat: add option to enable/disable to install
+	  static ruby library.  defaulted to "no".  [Feature #12845]
 
 	* configure.in (install-static-library): add option to enable/
 	  disable to install static ruby library.  defaulted to "no" if
