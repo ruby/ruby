@@ -721,21 +721,26 @@ iseq_eager_optimize(rb_iseq_t *iseq)
 }
 
 void
-iseq_move_nop(const rb_iseq_t *restrict i, int j, int k)
+iseq_move_nop(
+    const rb_iseq_t *restrict i,
+    const VALUE *restrict pc,
+    int n)
 {
-    /* FIXME: j and k actually are  compile-time constants.  There must be more
-     * room(s) to optimize, like to unroll the for loop. */
-    int x = 1;
-    VALUE *buf = (VALUE *)&i->body->iseq_encoded[j];
+    VALUE *pat = (VALUE *)pc - n;
+    VALUE *buf = pat;
+    const VALUE *head = i->body->iseq_encoded;
 
-    while (*buf-- == nop) {
-        x++;
+    while (buf > head) {
+        if (*--buf != nop) {
+            break;
+        }
     }
-    for (int y = 0; y < k; y++) {
-        buf[y] = buf[y + x];
+    while (pat < pc) {
+        *++buf = *pat;
+        pat++;
     }
-    for (int y = 0; y < x; y++) {
-        buf[k + y] = nop;
+    while (buf < pc - 1) {
+        *++buf = nop;
     }
 }
 

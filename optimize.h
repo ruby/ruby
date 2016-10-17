@@ -58,12 +58,29 @@ void iseq_eliminate_insn(const struct rb_iseq_struct *restrict i, struct cfp_las
 
 /**
  * Swaps nop -> adjuststack sequence into adjuststack -> nop sequence.
+ * Before:
+ *
+ *                                    +--- PC == j
+ *                                    v
+ *      +-----+-----+-----+-----+-----+-----+
+ *      | nop | ... | nop | adj |  x  | ... |
+ *      +-----+-----+-----+-----+-----+-----+
+ *                        \---- k ----/
+ *
+ *  After:
+ *
+ *                                    +--- PC == j
+ *                                    v
+ *      +-----+-----+-----+-----+-----+-----+
+ *      | ajd |  x  | nop | ... | nop | ... |
+ *      +-----+-----+-----+-----+-----+-----+
+ *      \---- k ----/
  *
  * @param [out] i target iseq struct to swap instructions.
- * @param [in]  j index of nop to swap.
+ * @param [in]  j program counter pointing next of adjuststack.
  * @param [in]  k length of moving instruction.
  */
-void iseq_move_nop(const struct rb_iseq_struct *restrict i, int j, int k)
+void iseq_move_nop(const struct rb_iseq_struct *restrict i, const VALUE *restrict j, int k)
     __attribute__((hot))
     __attribute__((nonnull))
     __attribute__((leaf));
