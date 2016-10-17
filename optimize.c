@@ -637,7 +637,7 @@ iseq_analyze(rb_iseq_t *iseq)
     }
 }
 
-static const VALUE wipeout_pattern[8]; /* maybe 5+2==7 should suffice? */
+static VALUE wipeout_pattern[8]; /* maybe 5+2==7 should suffice? */
 static VALUE adjuststack;
 static VALUE nop;
 static VALUE putobject;
