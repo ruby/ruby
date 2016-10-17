@@ -666,17 +666,16 @@ construct_pattern(void)
 }
 
 void
-iseq_squash(const rb_iseq_t *iseq, VALUE * pc, int n)
+iseq_squash(const rb_iseq_t *iseq, VALUE *pc, int n)
 {
-    const size_t s = sizeof(wipeout_pattern);
-    const int    m = s / sizeof(VALUE); /* == 8 */
+    const int m = sizeof(wipeout_pattern) / sizeof(VALUE); /* == 8 */
 
     while (UNLIKELY(n > m)) {
-        memcpy(pc, wipeout_pattern, s);
+        MEMCPY(pc, wipeout_pattern, VALUE, m);
         pc += m;
         n  -= m;
     }
-    memcpy(pc, wipeout_pattern, n * sizeof(VALUE));
+    MEMCPY(pc, wipeout_pattern, VALUE, n);
     ISEQ_RESET_ORIGINAL_ISEQ(iseq);
     FL_SET(iseq, ISEQ_NEEDS_ANALYZE);
 }

@@ -2268,26 +2268,43 @@ opt_call_c_function
 DEFINE_INSN
 opt_constfold
 ()
-()
-()
+(VALUE val, VALUE vpop, VALUE vopn)
+(VALUE val)
 {
-    ADD_PC(-1);
-    if (GET_CFP()->count > 1) {
-	const VALUE val = TOPN(0);
-	const VALUE *pc = GET_PC();
-	const VALUE *qc = pc - 1;
+    ADD_PC(-1);			/* cancel +1 in insn preamble */
+    {
+        int popn        = NUM2INT(vpop);
+        int opn         = NUM2INT(vopn);
+        const VALUE *pc = GET_PC();
+        const VALUE *qc = pc - opn - 1;
+        const VALUE *rc = pc;
 
-	for (int i = 0; i < 2; i++) {
-	    while (true) {
-	        VALUE insn = *qc--;
-	        if ((insn == (VALUE)LABEL_PTR(putobject)) ||
-	            (insn == (VALUE)LABEL_PTR(putobject_OP_INT2FIX_O_0_C_)) ||
-	            (insn == (VALUE)LABEL_PTR(putobject_OP_INT2FIX_O_1_C_))) {
-	            break;
-	        }
-	    }
-	}
-	iseq_const_fold(GET_ISEQ(), pc, pc - qc - 1, 0, val);
+        for (int i = 0; i < popn; i++) {
+            VALUE insn = qc[-1];
+
+            if ((insn == (VALUE)LABEL_PTR(putobject_OP_INT2FIX_O_0_C_)) ||
+                (insn == (VALUE)LABEL_PTR(putobject_OP_INT2FIX_O_1_C_))) {
+                rc = &qc[-1];
+                goto INSN_LABEL(next_insn);
+            }
+            else {
+                insn = qc[-2];
+                if (insn == (VALUE)LABEL_PTR(putobject)) {
+                    rc = &qc[-2];
+                    goto INSN_LABEL(next_insn);
+                }
+                else {
+                    goto INSN_LABEL(not_found);
+                }
+            }
+
+        INSN_LABEL(next_insn):
+            qc = rc;
+        }
+        iseq_const_fold(GET_ISEQ(), pc, pc - rc, 0, val);
+
+    INSN_LABEL(not_found):
+        ;
     }
 }
 

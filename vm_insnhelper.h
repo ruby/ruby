@@ -276,8 +276,14 @@ THROW_DATA_STATE(const struct vm_throw_data *obj)
     }
 
 #define TRY_CONSTFOLD(val) \
-    PUSH(val); \
-    MOVE_NOP; \
-    goto LABEL(opt_constfold)
+    if (GET_CFP()->count >= POPN_OF_CURRENT_INSN) { \
+        PUSH(val); \
+        PUSH(INT2FIX(POPN_OF_CURRENT_INSN)); \
+        PUSH(INT2FIX(OPN_OF_CURRENT_INSN)); \
+        goto LABEL(opt_constfold); \
+    } \
+    else { \
+        MOVE_NOP; \
+    }
 
 #endif /* RUBY_INSNHELPER_H */
