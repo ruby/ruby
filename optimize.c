@@ -19,6 +19,7 @@
 #include <stddef.h>             // size_t
 #include <stdint.h>             // uintptr_t
 #include "vm_core.h"            // rb_iseq_t
+#include "iseq.h"               // ISEQ_MARK_ARY_OPTIMIZED_VALUES
 #include "optimize.h"
 #include "deoptimize.h"
 
@@ -776,6 +777,9 @@ iseq_const_fold(
     iseq_squash(i, buf, len);
     buf[0] = putobject;
     buf[1] = konst;
+    if (! SPECIAL_CONST_P(konst)) {
+        rb_ary_push(ISEQ_OPTIMIZED_VALUES(i), konst);
+    }
 }
 
 /* 

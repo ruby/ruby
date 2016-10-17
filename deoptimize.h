@@ -94,6 +94,16 @@ static inline void iseq_deoptimize_if_needed(const struct rb_iseq_struct *restri
 #define ISEQ_RESET_ORIGINAL_ISEQ(iseq)          \
     RARRAY_ASET(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_ORIGINAL_ISEQ, Qfalse)
 
+/**
+ * Optimizations  can introduce  new VALUEs  in an  iseq, for  instance when  a
+ * constant is folded.  Such VALUEs become stale on deoptimizations, subject to
+ * be reset like the original iseq above.
+ *
+ * @param [out] iseq target struct.
+ */
+#define ISEQ_RESET_OPTIMIZED_VALUES(iseq)          \
+    RARRAY_ASET(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_OPTIMIZED_VALUES, Qnil)
+
 void
 iseq_deoptimize_if_needed(
     const rb_iseq_t *restrict i,

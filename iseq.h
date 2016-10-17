@@ -30,6 +30,7 @@ enum iseq_mark_ary_index {
     ISEQ_MARK_ARY_COVERAGE,
     ISEQ_MARK_ARY_FLIP_CNT,
     ISEQ_MARK_ARY_ORIGINAL_ISEQ,
+    ISEQ_MARK_ARY_OPTIMIZED_VALUES,
     ISEQ_MARK_ARY_INITIAL_SIZE
 };
 
@@ -40,6 +41,7 @@ iseq_mark_ary_create(int flip_cnt)
     rb_ary_push(ary, Qnil);              /* ISEQ_MARK_ARY_COVERAGE */
     rb_ary_push(ary, INT2FIX(flip_cnt)); /* ISEQ_MARK_ARY_FLIP_CNT */
     rb_ary_push(ary, Qnil);              /* ISEQ_MARK_ARY_ORIGINAL_ISEQ */
+    rb_ary_push(ary, Qnil);              /* ISEQ_MARK_ARY_OPTIMIZED_VALUES */
     return ary;
 }
 
@@ -72,6 +74,21 @@ ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
     VALUE str = rb_str_tmp_new(size * sizeof(VALUE));
     RARRAY_ASET(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_ORIGINAL_ISEQ, str);
     return (VALUE *)RSTRING_PTR(str);
+}
+
+static inline VALUE
+ISEQ_OPTIMIZED_VALUES(const rb_iseq_t *iseq)
+{
+    VALUE a = ISEQ_MARK_ARY(iseq);
+    VALUE b = RARRAY_AREF(a, ISEQ_MARK_ARY_OPTIMIZED_VALUES);
+    if (RTEST(b)) {
+        return b;
+    }
+    else {
+        VALUE c = rb_ary_tmp_new(0);
+        RARRAY_ASET(a, ISEQ_MARK_ARY_OPTIMIZED_VALUES, c);
+        return c;
+    }
 }
 
 #define ISEQ_COMPILE_DATA(iseq)       (iseq)->aux.compile_data
