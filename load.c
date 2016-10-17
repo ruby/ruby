@@ -1043,6 +1043,7 @@ rb_require_safe(VALUE fname, int safe)
     int result = rb_require_internal(fname, safe);
 
     if (result > TAG_RETURN) {
+	if (result == TAG_RAISE) rb_exc_raise(rb_errinfo());
 	JUMP_TAG(result);
     }
     if (result < 0) {
