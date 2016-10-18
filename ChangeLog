@@ -1,3 +1,8 @@
+Wed Oct 19 00:09:06 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* addr2line.c (parse_debug_line_cu): boundary checks for
+	  compressed debug sections.  [ruby-dev:49840] [Bug #12850]
+
 Tue Oct 18 16:36:40 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (DLDFLAGS): append --compress-debug-sections=zlib

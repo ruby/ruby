@@ -225,7 +225,7 @@ fill_line(int num_traces, void **traces, uintptr_t addr, int file, int line,
     }
 }
 
-static void
+static int
 parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 		obj_info_t *obj, line_info_t *lines, int offset)
 {
@@ -287,9 +287,13 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 
     include_directories = p;
 
+    /* temporary measure for compress-debug-sections */
+    if (p >= cu_end) return -1;
+
     /* skip include directories */
     while (*p) {
-	while (*p) p++;
+	p = memchr(p, '\0', cu_end - p);
+	if (!p) return -1;
 	p++;
     }
     p++;
@@ -397,21 +401,24 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 	}
     }
     *debug_line = p;
+    return 0;
 }
 
-static void
+static int
 parse_debug_line(int num_traces, void **traces,
 		 char *debug_line, unsigned long size,
 		 obj_info_t *obj, line_info_t *lines, int offset)
 {
     char *debug_line_end = debug_line + size;
     while (debug_line < debug_line_end) {
-	parse_debug_line_cu(num_traces, traces, &debug_line, obj, lines, offset);
+	if (parse_debug_line_cu(num_traces, traces, &debug_line, obj, lines, offset))
+	    return -1;
     }
     if (debug_line != debug_line_end) {
 	kprintf("Unexpected size of .debug_line in %s\n",
 		binary_filename);
     }
+    return 0;
 }
 
 /* read file and fill lines */
@@ -620,10 +627,11 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	goto finish;
     }
 
-    parse_debug_line(num_traces, traces,
-		     file + debug_line_shdr->sh_offset,
-		     debug_line_shdr->sh_size,
-		     obj, lines, offset);
+    if (parse_debug_line(num_traces, traces,
+			 file + debug_line_shdr->sh_offset,
+			 debug_line_shdr->sh_size,
+			 obj, lines, offset))
+	goto fail;
 finish:
     return dladdr_fbase;
 fail:
@@ -719,7 +727,8 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces)
 	    obj->path = path;
 	    lines[i].path = path;
 	    strcpy(binary_filename, path);
-	    fill_lines(num_traces, traces, 1, &obj, lines, i);
+	    if (fill_lines(num_traces, traces, 1, &obj, lines, i) == (uintptr_t)-1)
+		break;
 	}
 next_line:
 	continue;
