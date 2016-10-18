@@ -9,7 +9,7 @@ RUBY_VERSION_SO = $(subst ruby,ruby_version,$(LIBRUBY_SO))
 RUBY_VERSION_DLDFLAGS := $(patsubst @executable_path/%/$(LIBRUBY_SO),@loader_path/$(RUBY_VERSION_SO),$(DLDFLAGS)) -exported_symbol=Init_version
 else ifneq ($(findstring -soname,$(DLDFLAGS)),)
 RUBY_VERSION_SO = $(subst ruby,ruby_version,$(LIBRUBY_SO))
-RUBY_VERSION_DLDFLAGS := $(subst ruby,ruby_version,$(DLDFLAGS))
+RUBY_VERSION_DLDFLAGS := $(subst ruby,ruby_version,$(DLDFLAGS)) -Wl,-rpath-link,'$${ORIGIN}'
 else
 ERROR
 endif
@@ -28,7 +28,7 @@ $(LIBRUBY_SO): $(RUBY_VERSION_SO)
 
 $(RUBY_VERSION_SO): version.$(OBJEXT)
 	$(ECHO) linking shared-library $@
-	$(LDSHARED) $(RUBY_VERSION_DLDFLAGS) -Wl,-rpath-link,'$${ORIGIN}' version.$(OBJEXT) $(OUTFLAG)$@
+	$(LDSHARED) $(RUBY_VERSION_DLDFLAGS) version.$(OBJEXT) $(OUTFLAG)$@
 	-$(Q) $(MINIRUBY) -e 'ARGV.each{|link|' \
 		-e   'File.delete link rescue nil' \
 		-e   'File.symlink "$(RUBY_VERSION_SO)", link' \
