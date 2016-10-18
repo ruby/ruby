@@ -1,3 +1,9 @@
+Tue Oct 18 16:36:40 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (DLDFLAGS): append --compress-debug-sections=zlib
+	  if available, which reduces the size of LIBRUBY_SO by half or
+	  more.
+
 Mon Oct 17 16:20:37 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/configure.bat: add option to enable/disable to install

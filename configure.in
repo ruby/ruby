@@ -912,6 +912,13 @@ if test "$GCC" = yes; then
 	RUBY_APPEND_OPTION(LDFLAGS, -fstack-protector)
     fi
 
+    RUBY_TRY_LDFLAGS(${linker_flag}--compress-debug-sections=zlib,
+		     [compress_debug_sections=yes],
+		     [compress_debug_sections=no])
+    if test "x$compress_debug_sections" = xyes; then
+	RUBY_APPEND_OPTION(DLDFLAGS, ${linker_flag}--compress-debug-sections=zlib)
+    fi
+
     AS_CASE(["$target_os"],[mingw*], [
       # On  Windows  platforms,   system  provided  headers  are  VC++
       # optimized.  That  is, C++  habits are often  contaminated into
@@ -3893,6 +3900,10 @@ AS_CASE("$enable_shared", [yes], [
     [mingw*|cygwin*|mswin*], [
 	LIBRUBY_RELATIVE=yes
 	])
+
+    if test "x$compress_debug_sections" = xyes; then
+	RUBY_APPEND_OPTION(LIBRUBY_DLDFLAGS, ${linker_flag}--compress-debug-sections=zlib)
+    fi
 ], [
   LIBRUBYARG_SHARED=
 
