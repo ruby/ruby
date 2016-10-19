@@ -1,3 +1,8 @@
+Wed Oct 19 14:22:49 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* basictest/runner.rb: do not clobber the option by --run-opt with
+	  RUBYOPT.  reported by Allen Hewes <rallenh AT hotmail.com>.
+
 Wed Oct 19 00:09:06 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* addr2line.c (parse_debug_line_cu): boundary checks for
