@@ -17,9 +17,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Multiple assignment in conditional expression is now allowed.
   [Feature #10617]
 
-* Refinments is enabled at method by Symbol#to_proc.  [Feature #9451]
+* Refinements is enabled at method by Symbol#to_proc.  [Feature #9451]
 
-* Refinments is enabled with Kernel#send and BasicObject#__send__.
+* Refinements is enabled with Kernel#send and BasicObject#__send__.
   [Feature #11476]
 
 === Core classes updates (outstanding ones only)
