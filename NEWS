@@ -19,6 +19,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Refinments is enabled at method by Symbol#to_proc.  [Feature #9451]
 
+* Refinments is enabled with Kernel#send and BasicObject#__send__.
+  [Feature #11476]
+
 === Core classes updates (outstanding ones only)
 
 * Array

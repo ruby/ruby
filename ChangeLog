@@ -1,3 +1,8 @@
+Wed Oct 19 21:48:40 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* NEWS: mention refinements with Kernel#send and
+	  BasicObject#__send__.  [Feature #11476]
+
 Wed Oct 19 17:02:15 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_insnhelper.c (vm_call_opt_send): enable refinements with
