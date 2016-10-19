@@ -171,10 +171,10 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
-  def test_send_should_not_use_refinements
+  def test_send_should_use_refinements
     foo = Foo.new
     assert_raise(NoMethodError) { foo.send(:z) }
-    assert_raise(NoMethodError) { FooExtClient.send_z_on(foo) }
+    assert_equal("FooExt#z", FooExtClient.send_z_on(foo))
     assert_raise(NoMethodError) { foo.send(:z) }
 
     assert_equal(true, RespondTo::Sub.new.respond_to?(:foo))

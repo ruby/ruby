@@ -1956,7 +1956,7 @@ vm_call_opt_send(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb_calling
 	DEC_SP(1);
     }
 
-    cc->me = rb_callable_method_entry_without_refinements(CLASS_OF(calling->recv), ci->mid);
+    cc->me = rb_callable_method_entry_with_refinements(CLASS_OF(calling->recv), ci->mid);
     ci->flag = VM_CALL_FCALL | VM_CALL_OPT_SEND;
     return vm_call_method(th, reg_cfp, calling, ci, cc);
 }
