@@ -509,7 +509,7 @@ rb_digest_class_init(VALUE self)
  *  typedef int (*rb_digest_hash_init_func_t)(void *);
  *  typedef void (*rb_digest_hash_update_func_t)(void *, unsigned char *, size_t);
  *  typedef int (*rb_digest_hash_finish_func_t)(void *, unsigned char *);
- *  
+ *
  *  typedef struct {
  *    int api_version;
  *    size_t digest_len;
@@ -651,7 +651,7 @@ rb_digest_base_reset(VALUE self)
 }
 
 /*
- * call-seq: 
+ * call-seq:
  *   digest_base.update(string) -> digest_base
  *   digest_base << string -> digest_base
  *

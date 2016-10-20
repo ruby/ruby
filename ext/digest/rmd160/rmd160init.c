@@ -29,7 +29,7 @@ static const rb_digest_metadata_t rmd160 = {
  *
  * == Examples
  *  require 'digest'
- *  
+ *
  *  # Compute a complete digest
  *  Digest::RMD160.hexdigest 'abc'      #=> "8eb208f7..."
  *

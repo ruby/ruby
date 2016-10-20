@@ -28,18 +28,18 @@ module Digest
   #
   # ==Examples
   #  require 'digest'
-  #  
+  #
   #  # Compute a complete digest
   #  Digest::SHA2.hexdigest 'abc'          # => "ba7816bf8..."
   #  Digest::SHA2.new(256).hexdigest 'abc' # => "ba7816bf8..."
   #  Digest::SHA256.hexdigest 'abc'        # => "ba7816bf8..."
-  #  
+  #
   #  Digest::SHA2.new(384).hexdigest 'abc' # => "cb00753f4..."
   #  Digest::SHA384.hexdigest 'abc'        # => "cb00753f4..."
-  #  
+  #
   #  Digest::SHA2.new(512).hexdigest 'abc' # => "ddaf35a19..."
   #  Digest::SHA512.hexdigest 'abc'        # => "ddaf35a19..."
-  #  
+  #
   #  # Compute digest by chunks
   #  sha2 = Digest::SHA2.new               # =>#<Digest::SHA2:256>
   #  sha2.update "ab"

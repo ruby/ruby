@@ -33,7 +33,7 @@ static const rb_digest_metadata_t sha1 = {
  *
  * == Examples
  *  require 'digest'
- *  
+ *
  *  # Compute a complete digest
  *  Digest::SHA1.hexdigest 'abc'      #=> "a9993e36..."
  *

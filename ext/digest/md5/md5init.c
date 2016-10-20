@@ -31,7 +31,7 @@ static const rb_digest_metadata_t md5 = {
  *
  * == Examples
  *  require 'digest'
- *  
+ *
  *  # Compute a complete digest
  *  Digest::MD5.hexdigest 'abc'      #=> "90015098..."
  *
