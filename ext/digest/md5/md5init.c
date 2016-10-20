@@ -44,7 +44,7 @@ static const rb_digest_metadata_t md5 = {
  *  # Use the same object to compute another digest
  *  md5.reset
  *  md5 << "message"
- *  md5.hexdigest                        # => "c13557f2..."
+ *  md5.hexdigest                        # => "78e73102..."
  */
 void
 Init_md5(void)
