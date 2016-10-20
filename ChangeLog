@@ -1,3 +1,8 @@
+Thu Oct 20 16:19:51 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/open-uri.rb: Improved documentation grammar for
+	  open-uri#open option. [Misc #11329][ruby-core:69868][ci skip]
+
 Wed Oct 19 21:48:40 2016  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* NEWS: mention refinements with Kernel#send and

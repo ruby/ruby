@@ -638,8 +638,8 @@ module OpenURI
     #  is called before actual transfer is started.
     #  It takes one argument, which is expected content length in bytes.
     #
-    #  If two or more transfer is done by HTTP redirection, the procedure
-    #  is called only one for a last transfer.
+    #  If two or more transfers are performed by HTTP redirection, the
+    #  procedure is called only once for the last transfer.
     #
     #  When expected content length is unknown, the procedure is called with
     #  nil.  This happens when the HTTP response has no Content-Length header.
