@@ -1,3 +1,15 @@
+Thu Oct 20 16:57:23 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/digest/digest.c: Add documentation for Digest.
+	  [Feature #10452][ruby-core:66001][ci skip]
+	  * remove HMAC from list of digest algorithms,
+	  * add MD5 in list of digest algorithms,
+	  * add information about writing a C digest implementation using Digest::Base,
+	  * add documentation for Digest::Base public methods.
+	* ext/digest/md5/md5init.c: add examples for MD5.
+	* ext/digest/rmd160/rmd160init.c: add examples for Digest::RMD160.
+	* ext/digest/sha1/sha1init.c: add examples for Digest::SHA1.
+
 Thu Oct 20 16:19:51 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/open-uri.rb: Improved documentation grammar for
