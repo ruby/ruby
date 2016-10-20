@@ -1,3 +1,8 @@
+Thu Oct 20 17:02:56 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/uri/common.rb: added documentation for deprecated method.
+	  [Misc #11960][ruby-core:72733][ci skip]
+
 Thu Oct 20 16:57:23 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/digest/digest.c: Add documentation for Digest.
