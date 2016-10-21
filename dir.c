@@ -1286,8 +1286,19 @@ do_opendir(const char *path, int flags, rb_encoding *enc)
     }
 #endif
     dirp = opendir(path);
-    if (dirp == NULL && !to_be_ignored(errno))
-	sys_warning(path, enc);
+    if (!dirp) {
+	int e = errno;
+	switch (rb_gc_for_fd(e)) {
+	  default:
+	    dirp = opendir(path);
+	    if (dirp) break;
+	    e = errno;
+	    /* fallback */
+	  case 0:
+	    if (to_be_ignored(e)) break;
+	    sys_warning(path, enc);
+	}
+    }
 #ifdef _WIN32
     if (tmp) rb_str_resize(tmp, 0); /* GC guard */
 #endif

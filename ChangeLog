@@ -1,3 +1,8 @@
+Fri Oct 21 16:44:44 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (do_opendir): retry after GC when the limit for open file
+	  descriptors reached.
+
 Fri Oct 21 16:06:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (open_load_file): retry after GC when the limit for open
