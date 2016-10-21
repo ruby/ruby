@@ -367,5 +367,5 @@ class TestDir < Test::Unit::TestCase
       assert_not_empty(list)
       assert_equal([*"a".."z"], list)
     end;
-  end
+  end if defined?(Process::RLIMIT_NOFILE)
 end
