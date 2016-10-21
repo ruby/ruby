@@ -769,9 +769,13 @@ class TestRequire < Test::Unit::TestCase
         100.times do |i|
           Thread.start {begin sleep(0.001) end until th.stop?; th.raise(IOError)}
           assert_raise(IOError, "\#{i} time") do
-            tap {tap {tap {load(ARGV[0])}}}
+            begin
+              tap {tap {tap {load(ARGV[0])}}}
+            rescue LoadError
+              GC.start
+              retry
+            end
           end
-          GC.start
         end
       end;
     }
