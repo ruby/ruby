@@ -1233,7 +1233,12 @@ sys_enc_warning_in(const char *func, const char *mesg, rb_encoding *enc)
  * ENOTDIR can be returned by stat(2) if a non-leaf element of the path
  * is not a directory.
  */
-#define to_be_ignored(e) ((e) == ENOENT || (e) == ENOTDIR)
+ALWAYS_INLINE(static inline int to_be_ignored(int e));
+static inline int
+to_be_ignored(int e)
+{
+    return e == ENOENT || e == ENOTDIR;
+}
 
 #ifdef _WIN32
 #define STAT(p, s)	rb_w32_ustati64((p), (s))
