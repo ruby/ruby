@@ -526,11 +526,12 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
     path = RSTRING_PTR(dirname);
     dp->dir = opendir(path);
     if (dp->dir == NULL) {
-	if (rb_gc_for_fd(errno)) {
+	int e = errno;
+	if (rb_gc_for_fd(e)) {
 	    dp->dir = opendir(path);
 	}
 #ifdef HAVE_GETATTRLIST
-	else if (errno == EIO) {
+	else if (e == EIO) {
 	    u_int32_t attrbuf[1];
 	    struct attrlist al = {ATTR_BIT_MAP_COUNT, 0};
 	    if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW) == 0) {
@@ -540,7 +541,7 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
 #endif
 	if (dp->dir == NULL) {
 	    RB_GC_GUARD(dirname);
-	    rb_sys_fail_path(orig);
+	    rb_syserr_fail_path(e, orig);
 	}
     }
     dp->path = orig;
@@ -752,7 +753,8 @@ dir_read(VALUE dir)
 	return rb_external_str_new_with_enc(dp->d_name, NAMLEN(dp), dirp->enc);
     }
     else {
-	if (errno != 0) rb_sys_fail(0);
+	int e = errno;
+	if (e != 0) rb_syserr_fail(e, 0);
 	return Qnil;		/* end of stream */
     }
 }
