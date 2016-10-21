@@ -1899,7 +1899,13 @@ open_load_file(VALUE fname_v, int *xflag)
 #endif
 
 	if ((fd = rb_cloexec_open(fname, mode, 0)) < 0) {
-	    rb_load_fail(fname_v, strerror(errno));
+	    int e = errno;
+	    if (!rb_gc_for_fd(e)) {
+		rb_load_fail(fname_v, strerror(e));
+	    }
+	    if ((fd = rb_cloexec_open(fname, mode, 0)) < 0) {
+		rb_load_fail(fname_v, strerror(errno));
+	    }
 	}
 	rb_update_max_fd(fd);
 

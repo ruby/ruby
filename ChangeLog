@@ -1,3 +1,8 @@
+Fri Oct 21 16:06:25 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (open_load_file): retry after GC when the limit for open
+	  file descriptors reached.
+
 Fri Oct 21 11:34:17 2016  Pascal Schmid  <Lechindianer@users.noreply.github.com>
 
 	* string.c (rb_str_sub, rb_str_gsub): [DOC] 'backlash' should read
