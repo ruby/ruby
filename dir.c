@@ -2689,14 +2689,13 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
     dir = opendir(path);
     if (!dir) {
 	int e = errno;
-	switch (e) {
-	  case EMFILE: case ENFILE:
-	    rb_gc();
+	switch (rb_gc_for_fd(e)) {
+	  default:
 	    dir = opendir(path);
 	    if (dir) break;
 	    e = errno;
 	    /* fall through */
-	  default:
+	  case 0:
 	    if (false_on_notdir && e == ENOTDIR) return Qfalse;
 	    rb_syserr_fail_path(e, orig);
 	}
