@@ -1,3 +1,8 @@
+Sat Oct 22 23:33:55 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (reg_compile_gen): always append error message to the
+	  error buffer.
+
 Sat Oct 22 22:33:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (num_funcall1): check recursion by inverse pair, to

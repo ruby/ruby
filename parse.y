@@ -10626,12 +10626,7 @@ reg_compile_gen(struct parser_params* parser, VALUE str, int options)
     if (NIL_P(re)) {
 	VALUE m = rb_attr_get(rb_errinfo(), idMesg);
 	rb_set_errinfo(err);
-	if (!NIL_P(err)) {
-	    rb_str_append(rb_str_cat(rb_attr_get(err, idMesg), "\n", 1), m);
-	}
-	else {
-	    compile_error(PARSER_ARG "%"PRIsVALUE, m);
-	}
+	compile_error(PARSER_ARG "%"PRIsVALUE, m);
 	return Qnil;
     }
     return re;
