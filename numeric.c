@@ -294,10 +294,10 @@ num_funcall0(VALUE x, ID func)
 }
 
 static VALUE
-num_funcall_op_1(VALUE x, VALUE arg, int recursive)
+num_funcall_op_1(VALUE y, VALUE arg, int recursive)
 {
     ID func = (ID)((VALUE *)arg)[0];
-    VALUE y = ((VALUE *)arg)[1];
+    VALUE x = ((VALUE *)arg)[1];
     if (recursive) {
 	const char *name = rb_id2name(func);
 	if (ISALNUM(name[0])) {
@@ -317,8 +317,8 @@ num_funcall1(VALUE x, ID func, VALUE y)
 {
     VALUE args[2];
     args[0] = (VALUE)func;
-    args[1] = y;
-    return rb_exec_recursive_paired(num_funcall_op_1, x, y, (VALUE)args);
+    args[1] = x;
+    return rb_exec_recursive_paired(num_funcall_op_1, y, x, (VALUE)args);
 }
 
 /*

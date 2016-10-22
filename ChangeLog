@@ -1,3 +1,8 @@
+Sat Oct 22 22:33:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (num_funcall1): check recursion by inverse pair, to
+	  fix fake infinite recursion.  [ruby-core:77713] [Bug #12864]
+
 Sat Oct 22 18:52:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* hash.c (rb_hash_compact_bang): should return nil if no elements
