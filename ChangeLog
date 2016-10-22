@@ -1,4 +1,9 @@
-Sat Oct 22 10:27:01 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Oct 22 10:28:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (DLDFLAGS): fallback to LDFLAGS.
+	  [ruby-core:72444] [Bug #11863]
+
+	* configure.in (LIBRUBY_DLDFLAGS): fallback to DLDFLAGS.
 
 	* configure.in (RUBY_APPEND_OPTION, RUBY_PREPEND_OPTION): expand
 	  the option to be appended/prepended when matching, as well as

@@ -804,6 +804,8 @@ AC_DEFUN([RUBY_TRY_LDFLAGS], [
     save_LDFLAGS=
 ])
 
+: ${DLDFLAGS="$LDFLAGS"}
+
 AS_CASE([$RUBY_PATCHLEVEL], [-*],
 	[particular_werror_flags=yes], [particular_werror_flags=no])
 AC_ARG_ENABLE(werror,
@@ -3823,7 +3825,7 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
 	],
     [linux* | gnu* | k*bsd*-gnu | atheos* | kopensolaris*-gnu | haiku*], [
-	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)'" $LDFLAGS_OPTDIR"
+	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)' "$LDFLAGS_OPTDIR"])
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
 	if test "$load_relative" = yes; then
 	    libprefix="'\$\${ORIGIN}/../${libdir_basename}'"
@@ -3842,7 +3844,7 @@ AS_CASE("$enable_shared", [yes], [
     [netbsd*], [
 	SOLIBS='$(LIBS)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR).$(TEENY)'
-	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR)'" $LDFLAGS_OPTDIR"
+	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR)' "$LDFLAGS_OPTDIR"])
 	if test "$rb_cv_binary_elf" = yes; then # ELF platforms
 	   LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR) lib$(RUBY_SO_NAME).so'
 	else	# a.out platforms
@@ -3870,7 +3872,7 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).sl.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).sl'
 	],
     [aix*], [
-	LIBRUBY_DLDFLAGS="${linker_flag}-bnoentry $XLDFLAGS $LDFLAGS_OPTDIR"
+	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ["${linker_flag}-bnoentry" "$XLDFLAGS" "$LDFLAGS_OPTDIR"])
 	LIBRUBYARG_SHARED='-L${libdir} -l${RUBY_SO_NAME}'
 	SOLIBS='-lm -lc'
 	],
@@ -3900,10 +3902,6 @@ AS_CASE("$enable_shared", [yes], [
     [mingw*|cygwin*|mswin*], [
 	LIBRUBY_RELATIVE=yes
 	])
-
-    if test "x$compress_debug_sections" = xyes; then
-	RUBY_APPEND_OPTION(LIBRUBY_DLDFLAGS, ${linker_flag}--compress-debug-sections=zlib)
-    fi
 ], [
   LIBRUBYARG_SHARED=
 
