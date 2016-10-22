@@ -358,8 +358,9 @@ class TestHash < Test::Unit::TestCase
     h = @cls[a: 1, b: nil, c: false, d: true, e: nil]
     assert_equal({a: 1, c: false, d: true}, h.compact)
     assert_equal({a: 1, b: nil, c: false, d: true, e: nil}, h)
-    h.compact!
+    assert_same(h, h.compact!)
     assert_equal({a: 1, c: false, d: true}, h)
+    assert_nil(h.compact!)
   end
 
   def test_dup

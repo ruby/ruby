@@ -1,3 +1,8 @@
+Sat Oct 22 18:52:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c (rb_hash_compact_bang): should return nil if no elements
+	  is deleted.  [ruby-core:77709] [Bug #12863]
+
 Sat Oct 22 10:28:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (DLDFLAGS): fallback to LDFLAGS.

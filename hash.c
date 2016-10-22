@@ -2726,9 +2726,12 @@ rb_hash_compact_bang(VALUE hash)
 {
     rb_hash_modify_check(hash);
     if (RHASH(hash)->ntbl) {
+	st_index_t n = RHASH(hash)->ntbl->num_entries;
 	rb_hash_foreach(hash, delete_if_nil, hash);
+	if (n != RHASH(hash)->ntbl->num_entries)
+	    return hash;
     }
-    return hash;
+    return Qnil;
 }
 
 static VALUE rb_hash_compare_by_id_p(VALUE hash);
