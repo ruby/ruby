@@ -311,7 +311,7 @@ AS_IF([test -z "$target_alias" -a -n "$os_version_style_transform"],
 AC_DEFUN([RUBY_APPEND_OPTION],
 	[# RUBY_APPEND_OPTION($1)
 	AS_CASE([" [$]{$1-} "],
-	[*' $2 '*], [], ['  '], [ $1="$2"], [ $1="[$]$1 $2"])])
+	[*" $2 "*], [], ['  '], [ $1="$2"], [ $1="[$]$1 $2"])])
 AC_DEFUN([RUBY_APPEND_OPTIONS],
 	[# RUBY_APPEND_OPTIONS($1)
 	for rb_opt in $2; do
@@ -321,7 +321,7 @@ AC_DEFUN([RUBY_APPEND_OPTIONS],
 AC_DEFUN([RUBY_PREPEND_OPTION],
 	[# RUBY_PREPEND_OPTION($1)
 	AS_CASE([" [$]{$1-} "],
-	[*' $2 '*], [], ['  '], [ $1="$2"], [ $1="$2 [$]$1"])])
+	[*" $2 "*], [], ['  '], [ $1="$2"], [ $1="$2 [$]$1"])])
 AC_DEFUN([RUBY_PREPEND_OPTIONS],
 	[# RUBY_PREPEND_OPTIONS($1)
 	unset rb_opts; for rb_opt in $2; do
