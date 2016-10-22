@@ -1,3 +1,9 @@
+Sat Oct 22 09:52:57 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (setup_args): duplicate splatting array if more
+	  arguments present to obey left-to-right execution order.
+	  [ruby-core:77701] [Bug# 12860]
+
 Fri Oct 21 16:44:44 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (do_opendir): retry after GC when the limit for open file
