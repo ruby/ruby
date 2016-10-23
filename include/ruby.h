@@ -18,6 +18,7 @@
 #define HAVE_RUBY_IO_H          1
 #define HAVE_RUBY_MISSING_H     1
 #define HAVE_RUBY_ONIGURUMA_H   1
+#define HAVE_RUBY_PROCESS_H     1
 #define HAVE_RUBY_RE_H          1
 #define HAVE_RUBY_REGEX_H       1
 #define HAVE_RUBY_RUBY_H        1
