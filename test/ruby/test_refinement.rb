@@ -101,6 +101,10 @@ class TestRefinement < Test::Unit::TestCase
       def self.invoke_call_x_on(foo)
         return foo.call_x
       end
+
+      def self.return_proc(&block)
+        block
+      end
     end
   end
 
@@ -1743,6 +1747,7 @@ class TestRefinement < Test::Unit::TestCase
 
   def test_symbol_proc
     assert_equal("FooExt#x", FooExtClient.map_x_on(Foo.new))
+    assert_equal("Foo#x", FooExtClient.return_proc(&:x).(Foo.new))
   end
 
   private
