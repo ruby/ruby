@@ -749,13 +749,7 @@ class Complex_Test < Test::Unit::TestCase
   def test_respond
     c = Complex(1,1)
     assert_not_respond_to(c, :%)
-    assert_not_respond_to(c, :<)
-    assert_not_respond_to(c, :<=)
     assert_not_respond_to(c, :<=>)
-    assert_not_respond_to(c, :>)
-    assert_not_respond_to(c, :>=)
-    assert_not_respond_to(c, :between?)
-    assert_not_respond_to(c, :clamp)
     assert_not_respond_to(c, :div)
     assert_not_respond_to(c, :divmod)
     assert_not_respond_to(c, :floor)
@@ -777,6 +771,10 @@ class Complex_Test < Test::Unit::TestCase
     assert_not_respond_to(c, :gcd)
     assert_not_respond_to(c, :lcm)
     assert_not_respond_to(c, :gcdlcm)
+
+    (Comparable.instance_methods(false) - Complex.instance_methods(false)).each do |n|
+      assert_not_respond_to(c, n, "Complex##{n}")
+    end
   end
 
   def test_to_i
