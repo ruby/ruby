@@ -1,3 +1,8 @@
+Mon Oct 24 10:49:50 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (rb_undef_methods_from): undefine methods defined in
+	  super from klass.
+
 Mon Oct 24 10:19:44 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* complex.c (Init_Complex): undefine Complex#clamp, which does not

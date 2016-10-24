@@ -931,6 +931,7 @@ VALUE rb_singleton_class_get(VALUE obj);
 void Init_class_hierarchy(void);
 
 int rb_class_has_methods(VALUE c);
+void rb_undef_methods_from(VALUE klass, VALUE super);
 
 /* compar.c */
 VALUE rb_invcmp(VALUE, VALUE);

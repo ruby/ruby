@@ -1528,6 +1528,23 @@ rb_undef_method(VALUE klass, const char *name)
     rb_add_method(klass, rb_intern(name), VM_METHOD_TYPE_UNDEF, 0, METHOD_VISI_UNDEF);
 }
 
+static enum rb_id_table_iterator_result
+undef_method_i(ID name, VALUE value, void *data)
+{
+    VALUE klass = (VALUE)data;
+    rb_add_method(klass, name, VM_METHOD_TYPE_UNDEF, 0, METHOD_VISI_UNDEF);
+    return ID_TABLE_CONTINUE;
+}
+
+void
+rb_undef_methods_from(VALUE klass, VALUE super)
+{
+    struct rb_id_table *mtbl = RCLASS_M_TBL(super);
+    if (mtbl) {
+	rb_id_table_foreach(mtbl, undef_method_i, (void *)klass);
+    }
+}
+
 /*!
  * \}
  */
