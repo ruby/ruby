@@ -380,6 +380,8 @@ module Test
           result << r[0..1] unless r[0..1] == [nil,nil]
           rep    << {file: worker.real_file, report: r[2], result: r[3], testcase: r[5]}
           $:.push(*r[4]).uniq!
+          worker.file = nil
+          jobs_status(worker) if @options[:job_status] == :replace
           return true
         when /^p (.+?)$/
           del_jobs_status

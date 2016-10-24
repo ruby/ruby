@@ -1,3 +1,8 @@
+Mon Oct 24 10:52:17 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/lib/test/unit.rb (Test::Unit::Parallel#deal): update the
+	  job status after a task finished, to show idling workers.
+
 Mon Oct 24 10:51:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* complex.c (Init_Complex): undefine methods inherited from
