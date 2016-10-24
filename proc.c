@@ -1886,7 +1886,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	}
 	else {
 	    rb_raise(rb_eTypeError,
-		     "wrong argument type %s (expected Proc/Method)",
+		     "wrong argument type %s (expected Proc/Method/UnboundMethod)",
 		     rb_obj_classname(body));
 	}
     }
