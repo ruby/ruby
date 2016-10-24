@@ -531,7 +531,6 @@ module Net   #:nodoc:
     # Example:
     #
     #   require 'net/http'
-    #   require 'uri'
     #
     #   Net::HTTP.post_form URI('http://www.example.com/search.cgi'),
     #                       { "q" => "ruby", "max" => "50" }
