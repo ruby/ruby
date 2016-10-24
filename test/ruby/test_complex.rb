@@ -755,6 +755,7 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(false, c.respond_to?(:>))
     assert_equal(false, c.respond_to?(:>=))
     assert_equal(false, c.respond_to?(:between?))
+    assert_equal(false, c.respond_to?(:clamp))
     assert_equal(false, c.respond_to?(:div))
     assert_equal(false, c.respond_to?(:divmod))
     assert_equal(false, c.respond_to?(:floor))

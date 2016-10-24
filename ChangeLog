@@ -1,3 +1,10 @@
+Mon Oct 24 10:19:44 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* complex.c (Init_Complex): undefine Complex#clamp, which does not
+	  work like other Comparable methods, because Complex does not
+	  have <=> method.  patched by Tim Peters <zomg.tim AT gmail.com>
+	  in [ruby-core:77720].  [Bug #12866]
+
 Sun Oct 23 11:41:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/encoding.h: include "ruby/ruby.h" explicitly for
