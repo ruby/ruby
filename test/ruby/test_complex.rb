@@ -41,10 +41,10 @@ class Complex_Test < Test::Unit::TestCase
     c2 = Complex(0)
     c3 = Complex(1)
 
-    assert_equal(true, c.eql?(c2))
-    assert_equal(false, c.eql?(c3))
+    assert_operator(c, :eql?, c2)
+    assert_not_operator(c, :eql?, c3)
 
-    assert_equal(false, c.eql?(0))
+    assert_not_operator(c, :eql?, 0)
   end
 
   def test_hash
@@ -76,7 +76,7 @@ class Complex_Test < Test::Unit::TestCase
   def test_freeze
     c = Complex(1)
     c.freeze
-    assert_equal(true, c.frozen?)
+    assert_predicate(c, :frozen?)
     assert_instance_of(String, c.to_s)
   end
 
@@ -189,14 +189,14 @@ class Complex_Test < Test::Unit::TestCase
   def test_attr2
     c = Complex(1)
 
-    assert_equal(false, c.integer?)
-    assert_equal(false, c.real?)
+    assert_not_predicate(c, :integer?)
+    assert_not_predicate(c, :real?)
 
-    assert_equal(true, Complex(0).zero?)
-    assert_equal(true, Complex(0,0).zero?)
-    assert_equal(false, Complex(1,0).zero?)
-    assert_equal(false, Complex(0,1).zero?)
-    assert_equal(false, Complex(1,1).zero?)
+    assert_predicate(Complex(0), :zero?)
+    assert_predicate(Complex(0,0), :zero?)
+    assert_not_predicate(Complex(1,0), :zero?)
+    assert_not_predicate(Complex(0,1), :zero?)
+    assert_not_predicate(Complex(1,1), :zero?)
 
     assert_equal(nil, Complex(0).nonzero?)
     assert_equal(nil, Complex(0,0).nonzero?)
@@ -748,35 +748,35 @@ class Complex_Test < Test::Unit::TestCase
 
   def test_respond
     c = Complex(1,1)
-    assert_equal(false, c.respond_to?(:%))
-    assert_equal(false, c.respond_to?(:<))
-    assert_equal(false, c.respond_to?(:<=))
-    assert_equal(false, c.respond_to?(:<=>))
-    assert_equal(false, c.respond_to?(:>))
-    assert_equal(false, c.respond_to?(:>=))
-    assert_equal(false, c.respond_to?(:between?))
-    assert_equal(false, c.respond_to?(:clamp))
-    assert_equal(false, c.respond_to?(:div))
-    assert_equal(false, c.respond_to?(:divmod))
-    assert_equal(false, c.respond_to?(:floor))
-    assert_equal(false, c.respond_to?(:ceil))
-    assert_equal(false, c.respond_to?(:modulo))
-    assert_equal(false, c.respond_to?(:remainder))
-    assert_equal(false, c.respond_to?(:round))
-    assert_equal(false, c.respond_to?(:step))
-    assert_equal(false, c.respond_to?(:tunrcate))
+    assert_not_respond_to(c, :%)
+    assert_not_respond_to(c, :<)
+    assert_not_respond_to(c, :<=)
+    assert_not_respond_to(c, :<=>)
+    assert_not_respond_to(c, :>)
+    assert_not_respond_to(c, :>=)
+    assert_not_respond_to(c, :between?)
+    assert_not_respond_to(c, :clamp)
+    assert_not_respond_to(c, :div)
+    assert_not_respond_to(c, :divmod)
+    assert_not_respond_to(c, :floor)
+    assert_not_respond_to(c, :ceil)
+    assert_not_respond_to(c, :modulo)
+    assert_not_respond_to(c, :remainder)
+    assert_not_respond_to(c, :round)
+    assert_not_respond_to(c, :step)
+    assert_not_respond_to(c, :tunrcate)
 
-    assert_equal(false, c.respond_to?(:positive?))
-    assert_equal(false, c.respond_to?(:negative?))
-    assert_equal(false, c.respond_to?(:sign))
+    assert_not_respond_to(c, :positive?)
+    assert_not_respond_to(c, :negative?)
+    assert_not_respond_to(c, :sign)
 
-    assert_equal(false, c.respond_to?(:quotient))
-    assert_equal(false, c.respond_to?(:quot))
-    assert_equal(false, c.respond_to?(:quotrem))
+    assert_not_respond_to(c, :quotient)
+    assert_not_respond_to(c, :quot)
+    assert_not_respond_to(c, :quotrem)
 
-    assert_equal(false, c.respond_to?(:gcd))
-    assert_equal(false, c.respond_to?(:lcm))
-    assert_equal(false, c.respond_to?(:gcdlcm))
+    assert_not_respond_to(c, :gcd)
+    assert_not_respond_to(c, :lcm)
+    assert_not_respond_to(c, :gcdlcm)
   end
 
   def test_to_i
@@ -852,8 +852,8 @@ class Complex_Test < Test::Unit::TestCase
   end
 
   def test_supp
-    assert_equal(true, 1.real?)
-    assert_equal(true, 1.1.real?)
+    assert_predicate(1, :real?)
+    assert_predicate(1.1, :real?)
 
     assert_equal(1, 1.real)
     assert_equal(0, 1.imag)

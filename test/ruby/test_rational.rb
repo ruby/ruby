@@ -35,10 +35,10 @@ class Rational_Test < Test::Unit::TestCase
     c2 = Rational(0)
     c3 = Rational(1)
 
-    assert_equal(true, c.eql?(c2))
-    assert_equal(false, c.eql?(c3))
+    assert_operator(c, :eql?, c2)
+    assert_not_operator(c, :eql?, c3)
 
-    assert_equal(false, c.eql?(0))
+    assert_not_operator(c, :eql?, 0)
   end
 
   def test_hash
@@ -60,7 +60,7 @@ class Rational_Test < Test::Unit::TestCase
   def test_freeze
     c = Rational(1)
     c.freeze
-    assert_equal(true, c.frozen?)
+    assert_predicate(c, :frozen?)
     assert_instance_of(String, c.to_s)
   end
 
@@ -161,15 +161,15 @@ class Rational_Test < Test::Unit::TestCase
   def test_attr2
     c = Rational(1)
 
-    assert_equal(false, c.integer?)
-    assert_equal(true, c.real?)
+    assert_not_predicate(c, :integer?)
+    assert_predicate(c, :real?)
 
-    assert_equal(true, Rational(0).zero?)
-    assert_equal(true, Rational(0,1).zero?)
-    assert_equal(false, Rational(1,1).zero?)
+    assert_predicate(Rational(0), :zero?)
+    assert_predicate(Rational(0,1), :zero?)
+    assert_not_predicate(Rational(1,1), :zero?)
 
-    assert_equal(nil, Rational(0).nonzero?)
-    assert_equal(nil, Rational(0,1).nonzero?)
+    assert_nil(Rational(0).nonzero?)
+    assert_nil(Rational(0,1).nonzero?)
     assert_equal(Rational(1,1), Rational(1,1).nonzero?)
   end
 
@@ -537,23 +537,23 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(-1, Rational(b-1) <=> Rational(b))
     assert_equal(+1, Rational(b) <=> Rational(b-1))
 
-    assert_equal(false, Rational(0) < Rational(0))
-    assert_equal(true, Rational(0) <= Rational(0))
-    assert_equal(true, Rational(0) >= Rational(0))
-    assert_equal(false, Rational(0) > Rational(0))
+    assert_not_operator(Rational(0), :<, Rational(0))
+    assert_operator(Rational(0), :<=, Rational(0))
+    assert_operator(Rational(0), :>=, Rational(0))
+    assert_not_operator(Rational(0), :>, Rational(0))
 
-    assert_equal(nil, Rational(0) <=> nil)
-    assert_equal(nil, Rational(0) <=> 'foo')
+    assert_nil(Rational(0) <=> nil)
+    assert_nil(Rational(0) <=> 'foo')
   end
 
   def test_eqeq
     assert_equal(Rational(1,1), Rational(1))
     assert_equal(Rational(-1,1), Rational(-1))
 
-    assert_equal(false, Rational(2,1) == Rational(1))
-    assert_equal(true, Rational(2,1) != Rational(1))
-    assert_equal(false, Rational(1) == nil)
-    assert_equal(false, Rational(1) == '')
+    assert_not_operator(Rational(2,1), :==, Rational(1))
+    assert_operator(Rational(2,1), :!=, Rational(1))
+    assert_not_operator(Rational(1), :==, nil)
+    assert_not_operator(Rational(1), :==, '')
   end
 
   def test_coerce
@@ -869,8 +869,8 @@ class Rational_Test < Test::Unit::TestCase
   end
 
   def test_supp
-    assert_equal(true, 1.real?)
-    assert_equal(true, 1.1.real?)
+    assert_predicate(1, :real?)
+    assert_predicate(1.1, :real?)
 
     assert_equal(1, 1.numerator)
     assert_equal(9, 9.numerator)
