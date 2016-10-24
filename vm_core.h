@@ -603,6 +603,7 @@ typedef struct rb_vm_struct {
 
 /* used in optimize.c, placed here for dependency */
 struct cfp_last_insn {
+    const VALUE *head;
     ptrdiff_t pc;
     int len;
     int argc;

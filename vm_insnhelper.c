@@ -2679,6 +2679,9 @@ vm_eliminate_insn(rb_control_frame_t *restrict cfp,
     const rb_iseq_t *restrict i      = cfp->iseq;
     const VALUE *head                = i->body->iseq_encoded;
 
+    if (UNLIKELY(p->head != head)) {
+	return;
+    }
     if (p->pc + p->len == (pc - head) - n) {
 	iseq_eliminate_insn(i, p, n, m);
     }

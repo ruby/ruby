@@ -239,16 +239,17 @@ THROW_DATA_STATE(const struct vm_throw_data *obj)
  * variable.  It is also vital that this macro contains no branches
  * so that your compiler can reorder at will. */
 #define PREPARE_FOR_ELIMINATION do { \
-    const rb_iseq_t *i	    = GET_ISEQ(); \
-    const VALUE *pc	    = GET_PC(); \
-    const VALUE *head	    = i->body->iseq_encoded; \
-    const int len	    = 1 + OPN_OF_CURRENT_INSN; \
-    const int increase	    = STACK_INCREASE_OF_CURRENT_INSN; \
     rb_control_frame_t *cfp = GET_CFP(); \
-    cfp->last_insn	    = (typeof(cfp->last_insn)) { \
-	.pc		    = (pc - len) - head, \
-	.len		    = len, \
-	.argc		    = -increase, \
+    const rb_iseq_t *i      = GET_ISEQ(); \
+    const VALUE *pc         = GET_PC(); \
+    const VALUE *head       = i->body->iseq_encoded; \
+    const int len           = 1 + OPN_OF_CURRENT_INSN; \
+    const int increase      = STACK_INCREASE_OF_CURRENT_INSN; \
+    cfp->last_insn          = (typeof(cfp->last_insn)) { \
+	.head               = head, \
+	.pc                 = (pc - len) - head, \
+	.len                = len, \
+	.argc               = -increase, \
     }; \
 } while (0)
 
@@ -277,13 +278,13 @@ THROW_DATA_STATE(const struct vm_throw_data *obj)
 
 #define TRY_CONSTFOLD(val) \
     if (GET_CFP()->count >= POPN_OF_CURRENT_INSN) { \
-        PUSH(val); \
-        PUSH(INT2FIX(POPN_OF_CURRENT_INSN)); \
-        PUSH(INT2FIX(OPN_OF_CURRENT_INSN)); \
-        goto LABEL(opt_constfold); \
+	PUSH(val); \
+	PUSH(INT2FIX(POPN_OF_CURRENT_INSN)); \
+	PUSH(INT2FIX(OPN_OF_CURRENT_INSN)); \
+	goto LABEL(opt_constfold); \
     } \
     else { \
-        MOVE_NOP; \
+	MOVE_NOP; \
     }
 
 #endif /* RUBY_INSNHELPER_H */
