@@ -92,6 +92,18 @@ module TestStruct
     assert_equal([:utime, :stime, :cutime, :cstime], Process.times.members)
   end
 
+	def test_struct_new_from_kwargs
+		klass = @Struct.new(:a, :b, :c)
+		assert_raise(IndexError) { klass.new_from_kwargs(1, 2, 3, 4) }
+		assert_raise(NameError) { klass.new_from_kwargs(d: 1) }
+
+		instance = klass.new_from_kwargs(1, c: 3)
+		assert_equal(klass.new(1, nil, 3), instance)
+
+		instance = klass.new_from_kwargs(1, 2, 3, b: 4)
+		assert_equal(klass.new(1, 4, 3), instance)
+	end
+
   def test_initialize
     klass = @Struct.new(:a)
     assert_raise(ArgumentError) { klass.new(1, 2) }
