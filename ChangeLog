@@ -1,3 +1,8 @@
+Tue Oct 25 12:54:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* proc.c (mnew_internal): follow the original class, not to loop
+	  the prepended module.  [ruby-core:77591] [Bug #12832]
+
 Mon Oct 24 10:52:17 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/lib/test/unit.rb (Test::Unit::Parallel#deal): update the
