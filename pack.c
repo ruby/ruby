@@ -1066,11 +1066,15 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *      S         | Integer | 16-bit unsigned, native endian (uint16_t)
  *      L         | Integer | 32-bit unsigned, native endian (uint32_t)
  *      Q         | Integer | 64-bit unsigned, native endian (uint64_t)
+ *      J         | Integer | pointer width unsigned, native endian (uintptr_t)
+ *                |         | (J is available since Ruby 2.3.)
  *                |         |
  *      c         | Integer | 8-bit signed (signed char)
  *      s         | Integer | 16-bit signed, native endian (int16_t)
  *      l         | Integer | 32-bit signed, native endian (int32_t)
  *      q         | Integer | 64-bit signed, native endian (int64_t)
+ *      j         | Integer | pointer width signed, native endian (intptr_t)
+ *                |         | (j is available since Ruby 2.3.)
  *                |         |
  *      S_, S!    | Integer | unsigned short, native endian
  *      I, I_, I! | Integer | unsigned int, native endian
@@ -1078,6 +1082,8 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *      Q_, Q!    | Integer | unsigned long long, native endian (ArgumentError
  *                |         | if the platform has no long long type.)
  *                |         | (Q_ and Q! is available since Ruby 2.1.)
+ *      J!        | Integer | uintptr_t, native endian (same with J)
+ *                |         | (J! is available since Ruby 2.3.)
  *                |         |
  *      s_, s!    | Integer | signed short, native endian
  *      i, i_, i! | Integer | signed int, native endian
@@ -1085,6 +1091,8 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *      q_, q!    | Integer | signed long long, native endian (ArgumentError
  *                |         | if the platform has no long long type.)
  *                |         | (q_ and q! is available since Ruby 2.1.)
+ *      j!        | Integer | intptr_t, native endian (same with j)
+ *                |         | (j! is available since Ruby 2.3.)
  *                |         |
  *      S> L> Q>  | Integer | same as the directives without ">" except
  *      s> l> q>  |         | big endian
@@ -1092,6 +1100,7 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *      L!> Q!>   |         | "S>" is same as "n"
  *      s!> i!>   |         | "L>" is same as "N"
  *      l!> q!>   |         |
+ *      J> j> J!> j!>|         |
  *                |         |
  *      S< L< Q<  | Integer | same as the directives without "<" except
  *      s< l< q<  |         | little endian
@@ -1099,6 +1108,7 @@ infected_str_new(const char *ptr, long len, VALUE str)
  *      L!< Q!<   |         | "S<" is same as "v"
  *      s!< i!<   |         | "L<" is same as "V"
  *      l!< q!<   |         |
+ *      J< j< J!< j!<|         |
  *                |         |
  *      n         | Integer | 16-bit unsigned, network (big-endian) byte order
  *      N         | Integer | 32-bit unsigned, network (big-endian) byte order
