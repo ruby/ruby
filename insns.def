@@ -40,6 +40,20 @@ nop
     /* none */
 }
 
+/**
+  @c nop
+  @e "Purposeful" no-op, which are placed for reasons, not expected to
+      be optimized / moved around.
+ */
+DEFINE_INSN
+nopp
+()
+()
+()
+{
+    /* none */
+}
+
 /**********************************************************/
 /* deal with variables                                    */
 /**********************************************************/

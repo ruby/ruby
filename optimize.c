@@ -465,6 +465,7 @@ purity_of_insn(
 #define case_BIN(op, purity)                                    \
       case BIN(op): return insn_is_##purity
       case_BIN(nop, pure);
+      case_BIN(nopp, pure);
       case_BIN(getlocal, pure);
       case_BIN(setlocal, pure);
       case_BIN(getspecial, pure);

@@ -3909,6 +3909,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	ADD_SEQ(ret, else_seq);
 
 	ADD_LABEL(ret, end_label);
+	ADD_INSN(ret, line, nopp);
 
 	break;
       }
