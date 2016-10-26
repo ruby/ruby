@@ -1,3 +1,8 @@
+Wed Oct 26 17:09:59 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_intern): use prefixed version macro
+	  RUBY_CONST_ID_CACHE.
+
 Wed Oct 26 11:28:25 2016  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	* NEWS: added several entries which (if I remember correctly) are
