@@ -1816,7 +1816,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *  Since constant names must start with a capital:
  *
- *     Fixnum.const_set :answer, 42
+ *     Integer.const_set :answer, 42
  *
  *  <em>raises the exception:</em>
  *

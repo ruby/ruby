@@ -683,7 +683,7 @@ math_cbrt(VALUE obj, VALUE x)
  *     Math.frexp(x)    -> [fraction, exponent]
  *
  *  Returns a two-element array containing the normalized fraction (a Float)
- *  and exponent (a Fixnum) of +x+.
+ *  and exponent (an Integer) of +x+.
  *
  *     fraction, exponent = Math.frexp(1234)   #=> [0.6025390625, 11]
  *     fraction * 2**exponent                  #=> 1234.0

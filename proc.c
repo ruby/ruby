@@ -1087,7 +1087,7 @@ iseq_location(const rb_iseq_t *iseq)
 
 /*
  * call-seq:
- *    prc.source_location  -> [String, Fixnum]
+ *    prc.source_location  -> [String, Integer]
  *
  * Returns the Ruby source filename and line number containing this proc
  * or +nil+ if this proc was not defined in Ruby (i.e. native)
@@ -2472,7 +2472,7 @@ rb_obj_method_location(VALUE obj, ID id)
 
 /*
  * call-seq:
- *    meth.source_location  -> [String, Fixnum]
+ *    meth.source_location  -> [String, Integer]
  *
  * Returns the Ruby source filename and line number containing this method
  * or nil if this method was not defined in Ruby (i.e. native)

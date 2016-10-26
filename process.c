@@ -501,7 +501,7 @@ rb_last_status_clear(void)
  *     stat.to_i     -> integer
  *     stat.to_int   -> integer
  *
- *  Returns the bits in _stat_ as a <code>Fixnum</code>. Poking
+ *  Returns the bits in _stat_ as a <code>Integer</code>. Poking
  *  around in these bits is platform dependent.
  *
  *     fork { exit 0xab }         #=> 26566

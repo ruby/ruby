@@ -4423,10 +4423,10 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
  *  the text it is replacing, the string will be adjusted accordingly. If the
  *  regular expression or string is used as the index doesn't match a position
  *  in the string, <code>IndexError</code> is raised. If the regular expression
- *  form is used, the optional second <code>Fixnum</code> allows you to specify
+ *  form is used, the optional second <code>Integer</code> allows you to specify
  *  which portion of the match to replace (effectively using the
- *  <code>MatchData</code> indexing rules. The forms that take a
- *  <code>Fixnum</code> will raise an <code>IndexError</code> if the value is
+ *  <code>MatchData</code> indexing rules. The forms that take an
+ *  <code>Integer</code> will raise an <code>IndexError</code> if the value is
  *  out of range; the <code>Range</code> form will raise a
  *  <code>RangeError</code>, and the <code>Regexp</code> and <code>String</code>
  *  will raise an <code>IndexError</code> on negative match.
@@ -5196,8 +5196,8 @@ str_byte_aref(VALUE str, VALUE indx)
  *     str.byteslice(integer, integer)   -> new_str or nil
  *     str.byteslice(range)            -> new_str or nil
  *
- *  Byte Reference---If passed a single <code>Fixnum</code>, returns a
- *  substring of one byte at that position. If passed two <code>Fixnum</code>
+ *  Byte Reference---If passed a single <code>Integer</code>, returns a
+ *  substring of one byte at that position. If passed two <code>Integer</code>
  *  objects, returns a substring starting at the offset given by the first, and
  *  a length given by the second. If given a <code>Range</code>, a substring containing
  *  bytes at offsets given by the range is returned. In all three cases, if
@@ -8521,7 +8521,7 @@ rb_str_ord(VALUE s)
  *     str.sum(n=16)   -> integer
  *
  *  Returns a basic <em>n</em>-bit checksum of the characters in <i>str</i>,
- *  where <em>n</em> is the optional <code>Fixnum</code> parameter, defaulting
+ *  where <em>n</em> is the optional <code>Integer</code> parameter, defaulting
  *  to 16. The result is simply the sum of the binary value of each byte in
  *  <i>str</i> modulo <code>2**n - 1</code>. This is not a particularly good
  *  checksum.

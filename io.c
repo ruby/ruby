@@ -6441,7 +6441,7 @@ rb_io_s_open(int argc, VALUE *argv, VALUE klass)
  *     IO.sysopen(path, [mode, [perm]])  -> integer
  *
  *  Opens the given path, returning the underlying file descriptor as a
- *  <code>Fixnum</code>.
+ *  <code>Integer</code>.
  *
  *     IO.sysopen("testfile")   #=> 3
  */
@@ -11378,7 +11378,7 @@ argf_getc(VALUE argf)
 
 /*
  *  call-seq:
- *     ARGF.getbyte  -> Fixnum or nil
+ *     ARGF.getbyte  -> Integer or nil
  *
  *  Gets the next 8-bit byte (0..255) from +ARGF+. Returns +nil+ if called at
  *  the end of the stream.
@@ -11458,9 +11458,9 @@ argf_readchar(VALUE argf)
 
 /*
  *  call-seq:
- *     ARGF.readbyte  -> Fixnum
+ *     ARGF.readbyte  -> Integer
  *
- *  Reads the next 8-bit byte from ARGF and returns it as a +Fixnum+. Raises
+ *  Reads the next 8-bit byte from ARGF and returns it as an +Integer+. Raises
  *  an +EOFError+ after the last byte of the last file has been read.
  *
  *  For example:
@@ -11521,7 +11521,7 @@ argf_block_call(ID mid, int argc, VALUE *argv, VALUE argf)
  *  which defaults to your platform's newline character) of each file in
  *  +ARGV+. If a block is supplied, each line in turn will be yielded to the
  *  block, otherwise an enumerator is returned.
- *  The optional _limit_ argument is a +Fixnum+ specifying the maximum
+ *  The optional _limit_ argument is an +Integer+ specifying the maximum
  *  length of each line; longer lines will be split according to this limit.
  *
  *  This method allows you to treat the files supplied on the command line as
@@ -11571,7 +11571,7 @@ argf_lines(int argc, VALUE *argv, VALUE argf)
  *     ARGF.each_byte                  -> an_enumerator
  *
  *  Iterates over each byte of each file in +ARGV+.
- *  A byte is returned as a +Fixnum+ in the range 0..255.
+ *  A byte is returned as an +Integer+ in the range 0..255.
  *
  *  This method allows you to treat the files supplied on the command line as
  *  a single file consisting of the concatenation of each named file. After

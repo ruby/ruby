@@ -680,7 +680,7 @@ BigDecimal_check_num(Real *p)
 
 static VALUE BigDecimal_split(VALUE self);
 
-/* Returns the value as an integer (Fixnum or Bignum).
+/* Returns the value as an Integer.
  *
  * If the BigNumber is infinity or NaN, raises FloatDomainError.
  */
@@ -2483,7 +2483,7 @@ static Real *BigDecimal_new(int argc, VALUE *argv);
  *           If it is a String, spaces are ignored and unrecognized characters
  *           terminate the value.
  *
- * digits:: The number of significant digits, as a Fixnum. If omitted or 0,
+ * digits:: The number of significant digits, as an Integer. If omitted or 0,
  *          the number of significant digits is determined from the initial
  *          value.
  *
@@ -2492,10 +2492,10 @@ static Real *BigDecimal_new(int argc, VALUE *argv);
  *
  * ==== Exceptions
  *
- * TypeError:: If the +initial+ type is neither Fixnum, Bignum, Float,
+ * TypeError:: If the +initial+ type is neither Integer, Float,
  *             Rational, nor BigDecimal, this exception is raised.
  *
- * TypeError:: If the +digits+ is not a Fixnum, this exception is raised.
+ * TypeError:: If the +digits+ is not an Integer, this exception is raised.
  *
  * ArgumentError:: If +initial+ is a Float, and the +digits+ is larger than
  *                 Float::DIG + 1, this exception is raised.

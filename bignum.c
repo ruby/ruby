@@ -5443,8 +5443,8 @@ rb_big_le(VALUE x, VALUE y)
  *     big == obj  -> true or false
  *
  *  Returns <code>true</code> only if <i>obj</i> has the same value
- *  as <i>big</i>. Contrast this with <code>Bignum#eql?</code>, which
- *  requires <i>obj</i> to be a <code>Bignum</code>.
+ *  as <i>big</i>. Contrast this with <code>Integer#eql?</code>, which
+ *  requires <i>obj</i> to be a <code>Integer</code>.
  *
  *     68719476736 == 68719476736.0   #=> true
  */

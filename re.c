@@ -3292,7 +3292,7 @@ rb_reg_match_m_p(int argc, VALUE *argv, VALUE re)
  *  String or a Regexp (in which case that regexp's options are propagated),
  *  and new options may not be specified (a change as of Ruby 1.8).
  *
- *  If +options+ is a Fixnum, it should be one or more of the constants
+ *  If +options+ is an Integer, it should be one or more of the constants
  *  Regexp::EXTENDED, Regexp::IGNORECASE, and Regexp::MULTILINE,
  *  <em>or</em>-ed together.  Otherwise, if +options+ is not
  *  +nil+ or +false+, the regexp will be case insensitive.

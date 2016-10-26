@@ -3218,7 +3218,7 @@ rb_gzfile_set_lineno(VALUE obj, VALUE lineno)
  * Document-method: Zlib::GzipWriter#mtime=
  *
  * Specify the modification time (+mtime+) in the gzip header.
- * Using a Fixnum or Integer.
+ * Using an Integer.
  *
  * Setting the mtime in the gzip header does not effect the
  * mtime of the file generated. Different utilities that

@@ -602,7 +602,7 @@ folevariant_ary_aset(int argc, VALUE *argv, VALUE self)
  *
  *  Returns Ruby object value from OLE variant.
  *     obj = WIN32OLE_VARIANT.new(1, WIN32OLE::VARIANT::VT_BSTR)
- *     obj.value # => "1" (not Fixnum object, but String object "1")
+ *     obj.value # => "1" (not Integer object, but String object "1")
  *
  */
 static VALUE

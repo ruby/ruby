@@ -2863,7 +2863,7 @@ rb_hash_any_p(VALUE hash)
  *
  *   g = { foo: [10, 11, 12] }
  *   g.dig(:foo, 1)                    #=> 11
- *   g.dig(:foo, 1, 0)                 #=> TypeError: Fixnum does not have #dig method
+ *   g.dig(:foo, 1, 0)                 #=> TypeError: Integer does not have #dig method
  *   g.dig(:foo, :bar)                 #=> TypeError: no implicit conversion of Symbol into Integer
  */
 

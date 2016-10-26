@@ -1191,7 +1191,7 @@ static VALUE ossl_ec_group_set_seed(VALUE self, VALUE seed)
 
 /*
  * call-seq:
- *   group.degree   => Fixnum
+ *   group.degree   => integer
  *
  * See the OpenSSL documentation for EC_GROUP_get_degree()
  */

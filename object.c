@@ -147,12 +147,12 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
  * call-seq:
  *    obj.hash    -> integer
  *
- * Generates a Fixnum hash value for this object.  This function must have the
+ * Generates an Integer hash value for this object.  This function must have the
  * property that <code>a.eql?(b)</code> implies <code>a.hash == b.hash</code>.
  *
  * The hash value is used along with #eql? by the Hash class to determine if
  * two objects reference the same hash key.  Any hash value that exceeds the
- * capacity of a Fixnum will be truncated before being used.
+ * capacity of an Integer will be truncated before being used.
  *
  * The hash value for an object may not be identical across invocations or
  * implementations of Ruby.  If you need a stable identifier across Ruby
@@ -221,7 +221,7 @@ rb_class_real(VALUE cl)
  *  called with an explicit receiver, as <code>class</code> is also a
  *  reserved word in Ruby.
  *
- *     1.class      #=> Fixnum
+ *     1.class      #=> Integer
  *     self.class   #=> Object
  */
 
@@ -241,7 +241,7 @@ rb_obj_class(VALUE obj)
  *  If <i>obj</i> is <code>nil</code>, <code>true</code>, or
  *  <code>false</code>, it returns NilClass, TrueClass, or FalseClass,
  *  respectively.
- *  If <i>obj</i> is a Fixnum or a Symbol, it raises a TypeError.
+ *  If <i>obj</i> is an Integer, a Float or a Symbol, it raises a TypeError.
  *
  *     Object.new.singleton_class  #=> #<Class:#<Object:0xb7ce1e24>>
  *     String.singleton_class      #=> #<Class:String>
@@ -1087,8 +1087,8 @@ rb_obj_infect(VALUE obj1, VALUE obj2)
  *     prog.rb:3:in `<<': can't modify frozen Array (RuntimeError)
  *     	from prog.rb:3
  *
- *  Objects of the following classes are always frozen: Fixnum,
- *  Bignum, Float, Symbol.
+ *  Objects of the following classes are always frozen: Integer,
+ *  Float, Symbol.
  */
 
 VALUE
@@ -2734,7 +2734,7 @@ rb_Integer(VALUE val)
  *  call-seq:
  *     Integer(arg, base=0)    -> integer
  *
- *  Converts <i>arg</i> to a <code>Fixnum</code> or <code>Bignum</code>.
+ *  Converts <i>arg</i> to an <code>Integer</code>.
  *  Numeric types are converted directly (with floating point numbers
  *  being truncated).  <i>base</i> (0, or between 2 and 36) is a base for
  *  integer string representation.  If <i>arg</i> is a <code>String</code>,

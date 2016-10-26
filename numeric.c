@@ -669,7 +669,7 @@ num_real_p(VALUE num)
  *  call-seq:
  *     num.integer?  ->  true or false
  *
- *  Returns +true+ if +num+ is an Integer (including Fixnum and Bignum).
+ *  Returns +true+ if +num+ is an Integer.
  *
  *      (1.0).integer? #=> false
  *      (1).integer?   #=> true
@@ -787,8 +787,8 @@ num_infinite_p(VALUE num)
  *  Invokes the child class's +to_i+ method to convert +num+ to an integer.
  *
  *      1.0.class => Float
- *      1.0.to_int.class => Fixnum
- *      1.0.to_i.class => Fixnum
+ *      1.0.to_int.class => Integer
+ *      1.0.to_i.class => Integer
  */
 
 static VALUE
@@ -2952,11 +2952,13 @@ rb_num2ull(VALUE val)
 
 #endif  /* HAVE_LONG_LONG */
 
-/*
+/********************************************************************
+ *
  * Document-class: Integer
  *
- *  This class is the basis for the two concrete classes that hold whole
- *  numbers, Bignum and Fixnum.
+ *  Holds Integer values.  You cannot add a singleton method to an
+ *  Integer. Any attempt to add a singleton method to an Integer object
+ *  will raise a TypeError.
  *
  */
 
@@ -3039,8 +3041,6 @@ int_even_p(VALUE num)
 /*
  *  Document-method: Integer#succ
  *  Document-method: Integer#next
- *  Document-method: Fixnum#succ
- *  Document-method: Fixnum#next
  *  call-seq:
  *     int.next  ->  integer
  *     int.succ  ->  integer
@@ -3192,22 +3192,8 @@ int_ord(VALUE num)
     return num;
 }
 
-/********************************************************************
- *
- * Document-class: Fixnum
- *
- *  Holds Integer values that can be represented in a native machine word
- *  (minus 1 bit).  If any operation on a Fixnum exceeds this range, the value
- *  is automatically converted to a Bignum.
- *
- *  Fixnum objects have immediate value. This means that when they are assigned
- *  or passed as parameters, the actual object is passed, rather than a
- *  reference to that object.
- *
- *  Assignment does not alias Fixnum objects. There is effectively only one
- *  Fixnum object instance for any given integer value, so, for example, you
- *  cannot add a singleton method to a Fixnum. Any attempt to add a singleton
- *  method to a Fixnum object will raise a TypeError.
+/*
+ * Fixnum
  */
 
 
@@ -3325,7 +3311,6 @@ rb_int2str(VALUE x, int base)
 
 /*
  * Document-method: Integer#+
- * Document-method: Fixnum#+
  * call-seq:
  *   int + numeric  ->  numeric_result
  *
@@ -3381,7 +3366,6 @@ rb_int_plus(VALUE x, VALUE y)
 
 /*
  * Document-method: Integer#-
- * Document-method: Fixnum#-
  * call-seq:
  *   int - numeric  ->  numeric_result
  *
@@ -3434,7 +3418,6 @@ rb_int_minus(VALUE x, VALUE y)
 
 /*
  * Document-method: Integer#*
- * Document-method: Fixnum#*
  * call-seq:
  *   int * numeric  ->  numeric_result
  *
@@ -3521,7 +3504,6 @@ int_fdiv(VALUE x, VALUE y)
 
 /*
  * Document-method: Integer#/
- * Document-method: Fixnum#/
  * call-seq:
  *   int / numeric  ->  numeric_result
  *
@@ -3609,7 +3591,6 @@ rb_int_idiv(VALUE x, VALUE y)
 }
 
 /*
- *  Document-method: Fixnum#%
  *  Document-method: Integer#%
  *  Document-method: Integer#modulo
  *  call-seq:
@@ -3741,7 +3722,7 @@ int_divmod(VALUE x, VALUE y)
  *
  *  Raises +integer+ to the power of +numeric+, which may be negative or
  *  fractional.
- *  The result may be a Fixnum, Bignum, or Float
+ *  The result may be an Integer, or a Float
  *
  *    2 ** 3      #=> 8
  *    2 ** -1     #=> (1/2)
@@ -3864,7 +3845,6 @@ rb_int_pow(VALUE x, VALUE y)
 
 /*
  * Document-method: Integer#==
- * Document-method: Fixnum#==
  * call-seq:
  *   int == other  ->  true or false
  *
@@ -3958,7 +3938,6 @@ int_cmp(VALUE x, VALUE y)
 
 /*
  * Document-method: Integer#>
- * Document-method: Fixnum#>
  * call-seq:
  *   int > real  ->  true or false
  *
@@ -3997,7 +3976,6 @@ int_gt(VALUE x, VALUE y)
 
 /*
  * Document-method: Integer#>=
- * Document-method: Fixnum#>=
  * call-seq:
  *   int >= real  ->  true or false
  *
@@ -4038,7 +4016,6 @@ rb_int_ge(VALUE x, VALUE y)
 
 /*
  * Document-method: Integer#<
- * Document-method: Fixnum#<
  * call-seq:
  *   int < real  ->  true or false
  *
@@ -4077,7 +4054,6 @@ int_lt(VALUE x, VALUE y)
 
 /*
  * Document-method: Integer#<=
- * Document-method: Fixnum#<=
  * call-seq:
  *   int <= real  ->  true or false
  *
@@ -5019,7 +4995,7 @@ int_truncate(int argc, VALUE* argv, VALUE num)
  * by preventing instantiation and duplication.
  *
  *   Integer.new(1)   #=> NoMethodError: undefined method `new' for Integer:Class
- *   1.dup            #=> TypeError: can't dup Fixnum
+ *   1.dup            #=> TypeError: can't dup Integer
  *
  * For this reason, Numeric should be used when defining other numeric classes.
  *
