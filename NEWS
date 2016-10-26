@@ -22,6 +22,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Refinements is enabled with Kernel#send and BasicObject#__send__.
   [Feature #11476]
 
+* Resque modifier now applicable to method arguments.
+  [Feature #12686]
+
 === Core classes updates (outstanding ones only)
 
 * Array
@@ -34,6 +37,9 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Array#sum  [Feature #12217]
     This is different from Enumerable#sum in that Array#sum doesn't depend on
     the definition of each method.
+
+  * Array#concat [Feature #12333]
+    Now takes multiple arguments.
 
 * Comparable
 
@@ -91,6 +97,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Module.used_modules [Feature #7418]
 
+* Numeric
+
+  * Numeric#finite?, Numeric#infinite? [Feature #12039]
+
 * Regexp
 
   * Regexp#match? [Feature #8110]
@@ -111,6 +121,9 @@ with all sufficient information, see the ChangeLog file or Redmine
     of String#downcase for details. [Feature #10085]
 
   * String.new(capacity: size) [Feature #12024]
+
+  * String#concat, String#prepend [Feature #12333]
+    Now takes multiple arguments.
 
 * Symbol
 
@@ -198,6 +211,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   is processed, but the operation has to be limited to ASCII only.
   A good example of this are internationalized domain names.
 
+* TRUE / FALSE / NIL
+  These constants are now obsoleted. [Feature #12574]
+  Use true / false / nil resp. instead.
+
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 * DateTime
@@ -223,6 +240,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 * ruby_show_version() will no longer exits the process, if
   RUBY_SHOW_COPYRIGHT_TO_DIE is set to 0.  This will be the default in
   the future.
+
+* rb_gc_adjust_memory_usage() [Feature #12690]
 
 === Supported platform changes
 

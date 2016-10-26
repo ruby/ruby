@@ -1,3 +1,8 @@
+Wed Oct 26 11:28:25 2016  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	* NEWS: added several entries which (if I remember correctly) are
+	  added in a year.
+
 Tue Oct 25 12:54:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (mnew_internal): follow the original class, not to loop
