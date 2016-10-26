@@ -22,7 +22,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Refinements is enabled with Kernel#send and BasicObject#__send__.
   [Feature #11476]
 
-* Resque modifier now applicable to method arguments.
+* Rescue modifier now applicable to method arguments.
   [Feature #12686]
 
 === Core classes updates (outstanding ones only)
