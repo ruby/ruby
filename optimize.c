@@ -137,6 +137,16 @@ static inline bool cc_is_neq(const struct rb_call_cache *cc)
     __attribute__((pure));
 
 /**
+ * A cache entry can  be stale.  That's OK, as far as we  don't touch the stale
+ * cache  contents  because  they  can  already be  GCed.   We  need  to  check
+ * beforehand.
+ *
+ * @param [in] cc call cache in question
+ * @return true if it is dead.
+ */
+static inline bool cc_is_stale(const struct rb_call_cache *cc);
+
+/**
  * Find an ISeq from inside of a method entry
  *
  * @param [in] cc call cache in question
@@ -319,6 +329,25 @@ iseq_of_me(const struct rb_callable_method_entry_struct *me)
     }
 }
 
+bool
+cc_is_stale(const struct rb_call_cache *cc)
+{
+    extern rb_serial_t ruby_vm_global_method_state;
+
+    if (cc->method_state != ruby_vm_global_method_state) {
+        return true;
+    }
+    else if (! cc->me->flags) {
+        return true;           /* me already GCed. */
+    }
+    else if (cc->class_serial != RCLASS_SERIAL(cc->me->defined_class)) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
 enum insn_purity
 purity_of_cc(const struct rb_call_cache *cc)
 {
@@ -326,6 +355,9 @@ purity_of_cc(const struct rb_call_cache *cc)
 
     if (! cc->me) {
         return insn_is_unpredictable; /* method missing */
+    }
+    else if (cc_is_stale(cc)) {
+        return insn_is_unpredictable; /* subject to deopt */
     }
     else if (! (i = iseq_of_me(cc->me))) {
         return insn_is_not_pure;

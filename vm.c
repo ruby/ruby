@@ -200,7 +200,7 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
 	       int argc, const VALUE *argv, const rb_block_t *blockptr);
 
 static rb_serial_t ruby_vm_global_timestamp = 1;
-static rb_serial_t ruby_vm_global_method_state = 1;
+rb_serial_t ruby_vm_global_method_state = 1;
 static rb_serial_t ruby_vm_global_constant_state = 1;
 static rb_serial_t ruby_vm_class_serial = 1;
 
