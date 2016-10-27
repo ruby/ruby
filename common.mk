@@ -613,7 +613,7 @@ yes-test-testframework: prog PHONY
 	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TESTOPTS) testunit minitest
 no-test-testframework: PHONY
 
-test-sample: test-basic # backword compatibility for mswin-build
+test-sample: test-basic # backward compatibility for mswin-build
 test: btest-ruby test-knownbug test-basic
 
 # $ make test-all TESTOPTS="--help" displays more detail
