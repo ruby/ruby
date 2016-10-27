@@ -1,3 +1,9 @@
+Thu Oct 27 16:39:56 2016  Aurelien Jacobs  <aurel@gnuage.org>
+
+	* lib/logger.rb (Logger::Period#next_rotate_time): fix monthly log
+	  rotate when DST is applied during a month of 31 days.
+	  [Fix GH-1458]
+
 Thu Oct 27 16:27:06 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* object.c: Improve documentation for Float conversion.

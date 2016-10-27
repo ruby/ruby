@@ -538,8 +538,8 @@ private
       when /^weekly$/
         t = Time.mktime(now.year, now.month, now.mday) + SiD * (7 - now.wday)
       when /^monthly$/
-        t = Time.mktime(now.year, now.month, 1) + SiD * 31
-        mday = (1 if t.mday > 1)
+        t = Time.mktime(now.year, now.month, 1) + SiD * 32
+        mday = 1
       else
         return now
       end
