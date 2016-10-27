@@ -104,6 +104,16 @@ class TestInteger < Test::Unit::TestCase
     obj = Struct.new(:s).new(%w[42 not-an-integer])
     def obj.to_str; s.shift; end
     assert_equal(42, Integer(obj, 10))
+
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      class Float
+        undef to_int
+        def to_int; raise "conversion failed"; end
+      end
+      assert_equal (1 << 100), Integer((1 << 100).to_f)
+      assert_equal 1, Integer(1.0)
+    end;
   end
 
   def test_int_p

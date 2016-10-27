@@ -1,4 +1,8 @@
-Thu Oct 27 09:12:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Oct 27 09:42:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_convert_to_integer): convert a fixable float to a
+	  fixnum directly without the convesion method, as well as bignum
+	  case.
 
 	* object.c (rb_convert_to_integer): should not drop the converted
 	  string.
