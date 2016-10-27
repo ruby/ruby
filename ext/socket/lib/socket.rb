@@ -1215,7 +1215,6 @@ class UDPSocket < IPSocket
   #
   # Receives up to _maxlen_ bytes from +udpsocket+ using recvfrom(2) after
   # O_NONBLOCK is set for the underlying file descriptor.
-  # If _maxlen_ is omitted, its default value is 65536.
   # _flags_ is zero or more of the +MSG_+ options.
   # The first element of the results, _mesg_, is the data received.
   # The second element, _sender_inet_addr_, is an array to represent the sender address.

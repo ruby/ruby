@@ -1,3 +1,11 @@
+Thu Oct 27 14:57:33 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* ext/socket/lib/socket.rb (UDPSocket#recvfrom_nonblock): [DOC] Remove
+	  a false statement "If _maxlen_ is omitted, its default value is
+	  65536." maxlen, the first parameter, cannot be omitted as the method
+	  signature indicates. This hasn't changed ever since it was first
+	  implemented.
+
 Thu Oct 27 09:42:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_convert_to_integer): convert a fixable float to a
