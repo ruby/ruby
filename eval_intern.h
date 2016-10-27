@@ -122,7 +122,7 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 #define TH_PUSH_TAG(th) do { \
   rb_thread_t * const _th = (th); \
   struct rb_vm_tag _tag; \
-  _tag.tag = 0; \
+  _tag.tag = Qundef; \
   _tag.prev = _th->tag;
 
 #define TH_POP_TAG() \
