@@ -1480,6 +1480,17 @@ rb_obj_write(VALUE a, VALUE *slot, VALUE b, RB_UNUSED_VAR(const char *filename),
 
 #define RUBY_INTEGER_UNIFICATION 1
 #define RB_INTEGER_TYPE_P(obj) rb_integer_type_p(obj)
+#if defined __GNUC__ && !GCC_VERSION_SINCE(4, 3, 0)
+/* clang 3.x (4.2 compatible) can't eliminate CSE of RB_BUILTIN_TYPE
+ * in inline function and caller function */
+#define rb_integer_type_p(obj) \
+    __extension__ ({ \
+	const VALUE integer_type_obj = (obj); \
+	(RB_FIXNUM_P(integer_type_obj) || \
+	 (!RB_SPECIAL_CONST_P(integer_type_obj) && \
+	  RB_BUILTIN_TYPE(integer_type_obj) == RUBY_T_BIGNUM)); \
+    })
+#else
 static inline int
 rb_integer_type_p(VALUE obj)
 {
@@ -1487,6 +1498,7 @@ rb_integer_type_p(VALUE obj)
 	    (!RB_SPECIAL_CONST_P(obj) &&
 	     RB_BUILTIN_TYPE(obj) == RUBY_T_BIGNUM));
 }
+#endif
 
 #if SIZEOF_INT < SIZEOF_LONG
 # define RB_INT2NUM(v) RB_INT2FIX((int)(v))

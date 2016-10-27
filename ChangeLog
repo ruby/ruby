@@ -1,3 +1,8 @@
+Thu Oct 27 23:28:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* include/ruby/ruby.h (rb_integer_type_p): turn into macro to help
+	  clang based on old gcc to eliminate CSE.
+
 Thu Oct 27 16:33:47 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* tool/redmine-backporter.rb (rel): check the exception and show right
