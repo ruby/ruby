@@ -419,7 +419,11 @@ eom
       begin
         res.value
       rescue
-        $stderr.puts "deployed redmine doesn't have https://github.com/ruby/bugs.ruby-lang.org/commit/01fbba60d68cb916ddbccc8a8710e68c5217171d\nask naruse or hsbt"
+        if $!.respond_to?(:response) && $!.response.is_a?(Net::HTTPConflict)
+          $stderr.puts "the revision has already related to the ticket"
+        else
+          $stderr.puts "deployed redmine doesn't have https://github.com/ruby/bugs.ruby-lang.org/commit/01fbba60d68cb916ddbccc8a8710e68c5217171d\nask naruse or hsbt"
+        end
         next
       end
       puts res.body

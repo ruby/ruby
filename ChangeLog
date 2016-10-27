@@ -1,3 +1,8 @@
+Thu Oct 27 16:33:47 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* tool/redmine-backporter.rb (rel): check the exception and show right
+	  message.
+
 Thu Oct 27 14:57:33 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/socket/lib/socket.rb (UDPSocket#recvfrom_nonblock): [DOC] Remove
