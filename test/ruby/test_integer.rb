@@ -100,6 +100,10 @@ class TestInteger < Test::Unit::TestCase
     assert_raise(Encoding::CompatibilityError, bug6192) {Integer("0".encode("iso-2022-jp"))}
 
     assert_raise_with_message(ArgumentError, /\u{1f4a1}/) {Integer("\u{1f4a1}")}
+
+    obj = Struct.new(:s).new(%w[42 not-an-integer])
+    def obj.to_str; s.shift; end
+    assert_equal(42, Integer(obj, 10))
   end
 
   def test_int_p

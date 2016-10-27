@@ -2699,7 +2699,6 @@ rb_convert_to_integer(VALUE val, int base)
 	return val;
 
       case T_STRING:
-      string_conv:
 	return rb_str_to_inum(val, base, TRUE);
 
       case T_NIL:
@@ -2712,7 +2711,7 @@ rb_convert_to_integer(VALUE val, int base)
     }
     if (base != 0) {
 	tmp = rb_check_string_type(val);
-	if (!NIL_P(tmp)) goto string_conv;
+	if (!NIL_P(tmp)) return rb_str_to_inum(tmp, base, TRUE);
       arg_error:
 	rb_raise(rb_eArgError, "base specified for non string value");
     }
