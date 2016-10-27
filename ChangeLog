@@ -1,3 +1,8 @@
+Thu Oct 27 16:27:06 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* object.c: Improve documentation for Float conversion.
+	  [ruby-core:71661][Bug #11736][ci skip]
+
 Fri Oct  7 02:44:57 2016  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/rubygems/ssl_certs/GlobalSignRootCA.pem: add for RubyGems.org.
