@@ -1,3 +1,8 @@
+Sat Oct 29 00:14:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/trans/windows-1255-tbl.rb: update mapping from 0xCA to
+	  U+05BA.  [Feature #12877]
+
 Fri Oct 28 23:22:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enc/depend: extract transcode_tblgen method calls for libraries
