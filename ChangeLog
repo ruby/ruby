@@ -11,7 +11,7 @@ Fri Oct 28 23:22:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Fri Oct 28 16:05:03 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insns.def (opt_case_dispatch): extract float value only if the
-	  Float method is not redefnined.
+	  Float method is not redefined.
 
 Fri Oct 28 15:58:16 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -49,7 +49,7 @@ Thu Oct 27 14:57:33 2016  Kazuki Yamaguchi  <k@rhe.jp>
 Thu Oct 27 09:42:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_convert_to_integer): convert a fixable float to a
-	  fixnum directly without the convesion method, as well as bignum
+	  fixnum directly without the conversion method, as well as bignum
 	  case.
 
 	* object.c (rb_convert_to_integer): should not drop the converted
