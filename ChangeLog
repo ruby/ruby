@@ -1,3 +1,8 @@
+Fri Oct 28 15:58:16 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (RB_OBJ_BUILTIN_TYPE): special-const safe
+	  BUILTIN_TYPE.
+
 Fri Oct 28 15:20:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* complex.c (id_finite_p, id_infinite_p, id_rationalize, id_PI):

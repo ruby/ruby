@@ -1682,6 +1682,24 @@ do { \
     } \
 } while (0)
 
+#define RB_OBJ_BUILTIN_TYPE(obj) rb_obj_builtin_type(obj)
+#define OBJ_BUILTIN_TYPE(obj) RB_OBJ_BUILTIN_TYPE(obj)
+#ifdef __GNUC__
+#define rb_obj_builtin_type(obj) \
+__extension__({ \
+    VALUE arg_obj = (obj); \
+    RB_SPECIAL_CONST_P(arg_obj) ? -1 : \
+	RB_BUILTIN_TYPE(arg_obj); \
+    })
+#else
+static inline int
+rb_obj_builtin_type(VALUE obj)
+{
+    return RB_SPECIAL_CONST_P(obj) ? -1 :
+	RB_BUILTIN_TYPE(obj);
+}
+#endif
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */

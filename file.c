@@ -4346,7 +4346,7 @@ rb_file_join(VALUE ary, VALUE sep)
     OBJ_INFECT(result, ary);
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	tmp = RARRAY_AREF(ary, i);
-	switch (TYPE(tmp)) {
+	switch (OBJ_BUILTIN_TYPE(tmp)) {
 	  case T_STRING:
 	    if (!checked) check_path_encoding(tmp);
 	    StringValueCStr(tmp);

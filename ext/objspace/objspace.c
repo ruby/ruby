@@ -922,7 +922,7 @@ objspace_internal_super_of(VALUE self, VALUE obj)
 	obj = (VALUE)DATA_PTR(obj);
     }
 
-    switch (TYPE(obj)) {
+    switch (OBJ_BUILTIN_TYPE(obj)) {
       case T_MODULE:
       case T_CLASS:
       case T_ICLASS:
