@@ -34,7 +34,9 @@ static ID id_abs, id_arg, id_convert,
     id_denominator, id_eqeq_p, id_expt, id_fdiv,
     id_negate, id_numerator, id_quo,
     id_real_p, id_to_f, id_to_i, id_to_r,
-    id_i_real, id_i_imag;
+    id_i_real, id_i_imag,
+    id_finite_p, id_infinite_p, id_rationalize,
+    id_PI;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
@@ -1353,7 +1355,7 @@ rb_complex_finite_p(VALUE self)
 	return isinf(f) ? Qfalse : Qtrue;
     }
     else {
-	return rb_funcall(magnitude, rb_intern("finite?"), 0);
+	return rb_funcall(magnitude, id_finite_p, 0);
     }
 }
 
@@ -1387,7 +1389,7 @@ rb_complex_infinite_p(VALUE self)
 	return Qnil;
     }
     else {
-	return rb_funcall(magnitude, rb_intern("infinite?"), 0);
+	return rb_funcall(magnitude, id_infinite_p, 0);
     }
 }
 
@@ -1580,7 +1582,7 @@ nucomp_rationalize(int argc, VALUE *argv, VALUE self)
        rb_raise(rb_eRangeError, "can't convert %"PRIsVALUE" into Rational",
                 self);
     }
-    return rb_funcallv(dat->real, rb_intern("rationalize"), argc, argv);
+    return rb_funcallv(dat->real, id_rationalize, argc, argv);
 }
 
 /*
@@ -2074,8 +2076,6 @@ numeric_abs2(VALUE self)
     return f_mul(self, self);
 }
 
-#define id_PI rb_intern("PI")
-
 /*
  * call-seq:
  *    num.arg    ->  0 or float
@@ -2206,6 +2206,10 @@ Init_Complex(void)
     id_to_r = rb_intern("to_r");
     id_i_real = rb_intern("@real");
     id_i_imag = rb_intern("@image"); /* @image, not @imag */
+    id_finite_p = rb_intern("finite?");
+    id_infinite_p = rb_intern("infinite?");
+    id_rationalize = rb_intern("rationalize");
+    id_PI = rb_intern("PI");
 
     rb_cComplex = rb_define_class("Complex", rb_cNumeric);
 

@@ -1,4 +1,7 @@
-Fri Oct 28 15:18:58 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Oct 28 15:20:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* complex.c (id_finite_p, id_infinite_p, id_rationalize, id_PI):
+	  initialize static IDs.
 
 	* complex.c (FINITE_TYPE_P): extract predicate.
 
