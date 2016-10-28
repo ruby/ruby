@@ -1,3 +1,8 @@
+Fri Oct 28 23:22:32 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enc/depend: extract transcode_tblgen method calls for libraries
+	  loaded by dynamically generated names, in single_byte.trans.
+
 Fri Oct 28 16:05:03 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* insns.def (opt_case_dispatch): extract float value only if the
