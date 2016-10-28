@@ -1327,18 +1327,10 @@ opt_case_dispatch
 (..., VALUE key)
 () // inc += -1;
 {
-    switch(TYPE(key)) {
-      case T_FLOAT: {
-	double ival;
-	if (modf(RFLOAT_VALUE(key), &ival) == 0.0 && !isinf(ival)) {
-	    key = FIXABLE(ival) ? LONG2FIX((long)ival) : rb_dbl2big(ival);
-	}
-      }
-      case T_TRUE: /* fall through */
-      case T_FALSE:
-      case T_NIL:
+    switch (OBJ_BUILTIN_TYPE(key)) {
+      case -1:
+      case T_FLOAT:
       case T_SYMBOL:
-      case T_FIXNUM:
       case T_BIGNUM:
       case T_STRING:
 	if (BASIC_OP_UNREDEFINED_P(BOP_EQQ,
@@ -1350,16 +1342,19 @@ opt_case_dispatch
 				   FALSE_REDEFINED_OP_FLAG  |
 				   STRING_REDEFINED_OP_FLAG)) {
 	    st_data_t val;
+	    if (RB_FLOAT_TYPE_P(key)) {
+		double kval = RFLOAT_VALUE(key);
+		if (!isinf(kval) && modf(kval, &kval) == 0.0) {
+		    key = FIXABLE(kval) ? LONG2FIX((long)kval) : rb_dbl2big(kval);
+		}
+	    }
 	    if (st_lookup(RHASH_TBL_RAW(hash), key, &val)) {
 		JUMP(FIX2INT((VALUE)val));
 	    }
 	    else {
 		JUMP(else_offset);
 	    }
-	    break;
 	}
-      default:
-	break;
     }
 }
 

@@ -1,3 +1,8 @@
+Fri Oct 28 16:05:03 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* insns.def (opt_case_dispatch): extract float value only if the
+	  Float method is not redefnined.
+
 Fri Oct 28 15:58:16 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* internal.h (RB_OBJ_BUILTIN_TYPE): special-const safe
