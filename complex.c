@@ -1331,6 +1331,8 @@ nucomp_inspect(VALUE self)
     return s;
 }
 
+#define FINITE_TYPE_P(v) (RB_INTEGER_TYPE_P(v) || RB_TYPE_P(v, T_RATIONAL))
+
 /*
  * call-seq:
  *    cmp.finite?  ->  true or false
@@ -1342,17 +1344,15 @@ static VALUE
 rb_complex_finite_p(VALUE self)
 {
     VALUE magnitude = nucomp_abs(self);
-    double f;
 
-    switch (TYPE(magnitude)) {
-    case T_FIXNUM: case T_BIGNUM: case T_RATIONAL:
+    if (FINITE_TYPE_P(magnitude)) {
 	return Qtrue;
-
-    case T_FLOAT:
-	f = RFLOAT_VALUE(magnitude);
+    }
+    else if (RB_FLOAT_TYPE_P(magnitude)) {
+	const double f = RFLOAT_VALUE(magnitude);
 	return isinf(f) ? Qfalse : Qtrue;
-
-    default:
+    }
+    else {
 	return rb_funcall(magnitude, rb_intern("finite?"), 0);
     }
 }
@@ -1375,20 +1375,18 @@ static VALUE
 rb_complex_infinite_p(VALUE self)
 {
     VALUE magnitude = nucomp_abs(self);
-    double f;
 
-    switch (TYPE(magnitude)) {
-    case T_FIXNUM: case T_BIGNUM: case T_RATIONAL:
+    if (FINITE_TYPE_P(magnitude)) {
 	return Qnil;
-
-    case T_FLOAT:
-	f = RFLOAT_VALUE(magnitude);
+    }
+    if (RB_FLOAT_TYPE_P(magnitude)) {
+	const double f = RFLOAT_VALUE(magnitude);
 	if (isinf(f)) {
 	    return INT2FIX(f < 0 ? -1 : 1);
 	}
 	return Qnil;
-
-    default:
+    }
+    else {
 	return rb_funcall(magnitude, rb_intern("infinite?"), 0);
     }
 }

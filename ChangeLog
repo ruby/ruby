@@ -1,3 +1,10 @@
+Fri Oct 28 15:18:58 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* complex.c (FINITE_TYPE_P): extract predicate.
+
+	* complex.c (rb_complex_finite_p, rb_complex_infinite_p): use
+	  dedicated predicates instead of switch by TYPE.
+
 Thu Oct 27 23:28:12 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* include/ruby/ruby.h (rb_integer_type_p): turn into macro to help
