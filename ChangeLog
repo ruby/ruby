@@ -1,3 +1,8 @@
+Sun Oct 30 06:39:37 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
+
+	* enc/windows_1254.c: Fix typo. Reported by k-takata at
+	  https://github.com/k-takata/Onigmo/commit/ceb59cc. Thanks!
+
 Sat Oct 29 19:59:37 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (cond0): !-operator is a method call, no warning for

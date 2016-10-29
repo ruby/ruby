@@ -277,7 +277,7 @@ case_map(OnigCaseFoldType* flagP, const OnigUChar** pp,
   return (int)(to-to_start);
 }
 
-OnigEncodingDefine(windows_1254, Windown_1254) = {
+OnigEncodingDefine(windows_1254, Windows_1254) = {
   onigenc_single_byte_mbc_enc_len,
   "Windows-1254",  /* name */
   1,             /* max enc length */
