@@ -5950,6 +5950,21 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, NODE * node, int poped)
 	}
 	break;
       }
+      case NODE_FLIP2:
+      case NODE_FLIP3:{
+	LABEL *lend = NEW_LABEL(line);
+	LABEL *ltrue = NEW_LABEL(line);
+	LABEL *lfalse = NEW_LABEL(line);
+	compile_branch_condition(iseq, ret, node, ltrue, lfalse);
+	ADD_INSNL(ret, line, jump, lend);
+	ADD_LABEL(ret, ltrue);
+	ADD_INSN1(ret, line, putobject, Qtrue);
+	ADD_INSNL(ret, line, jump, lend);
+	ADD_LABEL(ret, lfalse);
+	ADD_INSN1(ret, line, putobject, Qfalse);
+	ADD_LABEL(ret, lend);
+	break;
+      }
       case NODE_SELF:{
 	if (!poped) {
 	    ADD_INSN(ret, line, putself);

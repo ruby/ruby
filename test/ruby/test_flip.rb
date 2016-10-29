@@ -8,6 +8,8 @@ class TestFlip < Test::Unit::TestCase
     assert_equal [2], (1..9).select {|n| true if (n==2)..(n%2).zero?}
     assert_equal [2,3,4], (1..9).select {|n| true if (n==2)...(n%2).zero?}
     assert_equal [4,5,7,8], (1..9).select {|n| true if (n==4)...(n==5) or (n==7)...(n==8)}
+    assert_equal [nil, 2, 3, 4, nil], (1..5).map {|x| x if (x==2..x==4)}
+    assert_equal [1, nil, nil, nil, 5], (1..5).map {|x| x if !(x==2..x==4)}
   end
 
   def test_hidden_key

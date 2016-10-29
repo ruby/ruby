@@ -1,3 +1,8 @@
+Sat Oct 29 10:09:38 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): turn flip-flop in a not-operator
+	  into a boolean value.  fix up r56315
+
 Sat Oct 29 09:39:14 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* vm_eval.c (vm_call0_body): follow the original class, not to
