@@ -1,3 +1,8 @@
+Sat Oct 29 19:59:37 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (cond0): !-operator is a method call, no warning for
+	  literal in condition.  [ruby-core:77801] [Bug #12881]
+
 Sat Oct 29 10:09:38 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): turn flip-flop in a not-operator

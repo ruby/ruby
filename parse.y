@@ -400,8 +400,9 @@ static int yylex(YYSTYPE*, struct parser_params*);
 static NODE* node_newnode(struct parser_params *, enum node_type, VALUE, VALUE, VALUE);
 #define rb_node_newnode(type, a1, a2, a3) node_newnode(parser, (type), (a1), (a2), (a3))
 
-static NODE *cond_gen(struct parser_params*,NODE*);
-#define cond(node) cond_gen(parser, (node))
+static NODE *cond_gen(struct parser_params*,NODE*,int);
+#define cond(node) cond_gen(parser, (node), FALSE)
+#define method_cond(node) cond_gen(parser, (node), TRUE)
 static NODE *new_if_gen(struct parser_params*,NODE*,NODE*,NODE*);
 #define new_if(cc,left,right) new_if_gen(parser, (cc), (left), (right))
 #define new_unless(cc,left,right) new_if_gen(parser, (cc), (right), (left))
@@ -1414,7 +1415,7 @@ expr		: command_call
 		| keyword_not opt_nl expr
 		    {
 		    /*%%%*/
-			$$ = call_uni_op(cond($3), '!');
+			$$ = call_uni_op(method_cond($3), '!');
 		    /*%
 			$$ = dispatch2(unary, ripper_intern("not"), $3);
 		    %*/
@@ -1422,7 +1423,7 @@ expr		: command_call
 		| '!' command_call
 		    {
 		    /*%%%*/
-			$$ = call_uni_op(cond($2), '!');
+			$$ = call_uni_op(method_cond($2), '!');
 		    /*%
 			$$ = dispatch2(unary, ripper_id2sym('!'), $2);
 		    %*/
@@ -2273,7 +2274,7 @@ arg		: lhs '=' arg_rhs
 		| '!' arg
 		    {
 		    /*%%%*/
-			$$ = call_uni_op(cond($2), '!');
+			$$ = call_uni_op(method_cond($2), '!');
 		    /*%
 			$$ = dispatch2(unary, ID2SYM('!'), $2);
 		    %*/
@@ -2758,7 +2759,7 @@ primary		: literal
 		| keyword_not '(' expr rparen
 		    {
 		    /*%%%*/
-			$$ = call_uni_op(cond($3), '!');
+			$$ = call_uni_op(method_cond($3), '!');
 		    /*%
 			$$ = dispatch2(unary, ripper_intern("not"), $3);
 		    %*/
@@ -2766,7 +2767,7 @@ primary		: literal
 		| keyword_not '(' rparen
 		    {
 		    /*%%%*/
-			$$ = call_uni_op(cond(NEW_NIL()), '!');
+			$$ = call_uni_op(method_cond(NEW_NIL()), '!');
 		    /*%
 			$$ = dispatch2(unary, ripper_intern("not"), Qnil);
 		    %*/
@@ -9772,7 +9773,7 @@ warning_unless_e_option(struct parser_params *parser, NODE *node, const char *st
     if (!e_option_supplied(parser)) parser_warning(node, str);
 }
 
-static NODE *cond0(struct parser_params*,NODE*);
+static NODE *cond0(struct parser_params*,NODE*,int);
 
 static NODE*
 range_op(struct parser_params *parser, NODE *node)
@@ -9787,7 +9788,7 @@ range_op(struct parser_params *parser, NODE *node)
 	warn_unless_e_option(parser, node, "integer literal in conditional range");
 	return NEW_CALL(node, tEQ, NEW_LIST(NEW_GVAR(rb_intern("$."))));
     }
-    return cond0(parser, node);
+    return cond0(parser, node, FALSE);
 }
 
 static int
@@ -9812,7 +9813,7 @@ literal_node(NODE *node)
 }
 
 static NODE*
-cond0(struct parser_params *parser, NODE *node)
+cond0(struct parser_params *parser, NODE *node, int method_op)
 {
     if (node == 0) return 0;
     assign_in_cond(parser, node);
@@ -9821,18 +9822,19 @@ cond0(struct parser_params *parser, NODE *node)
       case NODE_DSTR:
       case NODE_EVSTR:
       case NODE_STR:
-	rb_warn0("string literal in condition");
+	if (!method_op) rb_warn0("string literal in condition");
 	break;
 
       case NODE_DREGX:
       case NODE_DREGX_ONCE:
-	warning_unless_e_option(parser, node, "regex literal in condition");
+	if (!method_op)
+	    warning_unless_e_option(parser, node, "regex literal in condition");
 	return NEW_MATCH2(node, NEW_GVAR(idLASTLINE));
 
       case NODE_AND:
       case NODE_OR:
-	node->nd_1st = cond0(parser, node->nd_1st);
-	node->nd_2nd = cond0(parser, node->nd_2nd);
+	node->nd_1st = cond0(parser, node->nd_1st, FALSE);
+	node->nd_2nd = cond0(parser, node->nd_2nd, FALSE);
 	break;
 
       case NODE_DOT2:
@@ -9841,7 +9843,7 @@ cond0(struct parser_params *parser, NODE *node)
 	node->nd_end = range_op(parser, node->nd_end);
 	if (nd_type(node) == NODE_DOT2) nd_set_type(node,NODE_FLIP2);
 	else if (nd_type(node) == NODE_DOT3) nd_set_type(node, NODE_FLIP3);
-	if (!e_option_supplied(parser)) {
+	if (!method_op && !e_option_supplied(parser)) {
 	    int b = literal_node(node->nd_beg);
 	    int e = literal_node(node->nd_end);
 	    if ((b == 1 && e == 1) || (b + e >= 2 && RTEST(ruby_verbose))) {
@@ -9851,16 +9853,18 @@ cond0(struct parser_params *parser, NODE *node)
 	break;
 
       case NODE_DSYM:
-	parser_warning(node, "literal in condition");
+	if (!method_op) parser_warning(node, "literal in condition");
 	break;
 
       case NODE_LIT:
 	if (RB_TYPE_P(node->nd_lit, T_REGEXP)) {
-	    warn_unless_e_option(parser, node, "regex literal in condition");
+	    if (!method_op)
+		warn_unless_e_option(parser, node, "regex literal in condition");
 	    nd_set_type(node, NODE_MATCH);
 	}
 	else {
-	    parser_warning(node, "literal in condition");
+	    if (!method_op)
+		parser_warning(node, "literal in condition");
 	}
       default:
 	break;
@@ -9869,17 +9873,17 @@ cond0(struct parser_params *parser, NODE *node)
 }
 
 static NODE*
-cond_gen(struct parser_params *parser, NODE *node)
+cond_gen(struct parser_params *parser, NODE *node, int method_op)
 {
     if (node == 0) return 0;
-    return cond0(parser, node);
+    return cond0(parser, node, method_op);
 }
 
 static NODE*
 new_if_gen(struct parser_params *parser, NODE *cc, NODE *left, NODE *right)
 {
     if (!cc) return right;
-    cc = cond0(parser, cc);
+    cc = cond0(parser, cc, FALSE);
     return newline_node(NEW_IF(cc, left, right));
 }
 

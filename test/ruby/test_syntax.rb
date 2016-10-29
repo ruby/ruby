@@ -809,6 +809,46 @@ eom
     end
   end
 
+  def test_warning_literal_in_condition
+    assert_warn(/literal in condition/) do
+      eval('1 if ""')
+    end
+    assert_warn(/literal in condition/) do
+      eval('1 if //')
+    end
+    assert_warn(/literal in condition/) do
+      eval('1 if true..false')
+    end
+    assert_warning(/literal in condition/) do
+      eval('1 if 1')
+    end
+    assert_warning(/literal in condition/) do
+      eval('1 if :foo')
+    end
+    assert_warning(/literal in condition/) do
+      eval('1 if :"#{"foo".upcase}"')
+    end
+
+    assert_warn('') do
+      eval('1 if !""')
+    end
+    assert_warn('') do
+      eval('1 if !//')
+    end
+    assert_warn('') do
+      eval('1 if !(true..false)')
+    end
+    assert_warning('') do
+      eval('1 if !1')
+    end
+    assert_warning('') do
+      eval('1 if !:foo')
+    end
+    assert_warning('') do
+      eval('1 if !:"#{"foo".upcase}"')
+    end
+  end
+
   def test_alias_symbol
     bug8851 = '[ruby-dev:47681] [Bug #8851]'
     formats = ['%s', ":'%s'", ':"%s"', '%%s(%s)']
