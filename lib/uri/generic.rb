@@ -1104,10 +1104,6 @@ module URI
         return rel
       end
 
-      unless self.absolute?
-        raise BadURIError, "both URI are relative"
-      end
-
       base = self.dup
 
       authority = rel.userinfo || rel.host || rel.port
