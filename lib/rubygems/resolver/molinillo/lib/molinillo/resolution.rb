@@ -356,10 +356,14 @@ module Gem::Resolver::Molinillo
       # @return [void]
       def fixup_swapped_children(vertex)
         payload = vertex.payload
-        dep_names = dependencies_for(payload).map(&method(:name_for))
-        vertex.successors.each do |succ|
-          if !dep_names.include?(succ.name) && !succ.root? && succ.predecessors.to_a == [vertex]
+        deps = dependencies_for(payload).group_by(&method(:name_for))
+        vertex.outgoing_edges.each do |outgoing_edge|
+          @parent_of[outgoing_edge.requirement] = states.size - 1
+          succ = outgoing_edge.destination
+          matching_deps = Array(deps[succ.name])
+          if matching_deps.empty? && !succ.root? && succ.predecessors.to_a == [vertex]
             debug(depth) { "Removing orphaned spec #{succ.name} after swapping #{name}" }
+            succ.requirements.each { |r| @parent_of.delete(r) }
             activated.detach_vertex_named(succ.name)
 
             all_successor_names = succ.recursive_successors.map(&:name)
@@ -368,7 +372,11 @@ module Gem::Resolver::Molinillo
               requirement_name = name_for(requirement)
               (requirement_name == succ.name) || all_successor_names.include?(requirement_name)
             end
+          elsif !matching_deps.include?(outgoing_edge.requirement)
+            activated.delete_edge(outgoing_edge)
+            requirements.delete(outgoing_edge.requirement)
           end
+          matching_deps.delete(outgoing_edge.requirement)
         end
       end
 

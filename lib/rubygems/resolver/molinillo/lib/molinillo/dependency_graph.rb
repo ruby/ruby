@@ -182,6 +182,13 @@ module Gem::Resolver::Molinillo
       add_edge_no_circular(origin, destination, requirement)
     end
 
+    # Deletes an {Edge} from the dependency graph
+    # @param [Edge] edge
+    # @return [Void]
+    def delete_edge(edge)
+      log.delete_edge(self, edge.origin.name, edge.destination.name, edge.requirement)
+    end
+
     # Sets the payload of the vertex with the given name
     # @param [String] name the name of the vertex
     # @param [Object] payload the payload

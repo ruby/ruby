@@ -1,3 +1,9 @@
+Sun Oct 30 15:32:43 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems.rb, lib/rubygems/*, test/rubygems/*: Update
+	  rubygems to 2.6.8.
+	  Release note of 2.6.8: https://github.com/rubygems/rubygems/commit/9fb8880976f5ab998912898b091d88aa10eb1d4a
+
 Sun Oct 30 06:39:37 2016  Martin Duerst  <duerst@it.aoyama.ac.jp>
 
 	* enc/windows_1254.c: Fix typo. Reported by k-takata at

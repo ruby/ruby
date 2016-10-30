@@ -8,7 +8,7 @@ module Gem::Resolver::Molinillo
       # @!group Action
 
       # (see Action#name)
-      def self.name
+      def self.action_name
         :add_vertex
       end
 

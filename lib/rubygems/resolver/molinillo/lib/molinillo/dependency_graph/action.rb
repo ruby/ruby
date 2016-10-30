@@ -7,7 +7,7 @@ module Gem::Resolver::Molinillo
       # rubocop:disable Lint/UnusedMethodArgument
 
       # @return [Symbol] The name of the action.
-      def self.name
+      def self.action_name
         raise 'Abstract'
       end
 

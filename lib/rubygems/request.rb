@@ -6,6 +6,7 @@ require 'rubygems/user_interaction'
 
 class Gem::Request
 
+  extend Gem::UserInteraction
   include Gem::UserInteraction
 
   ###
@@ -69,6 +70,13 @@ class Gem::Request
       end
     end
     connection.cert_store = store
+
+    connection.verify_callback = proc do |preverify_ok, store_context|
+      verify_certificate store_context unless preverify_ok
+
+      preverify_ok
+    end
+
     connection
   rescue LoadError => e
     raise unless (e.respond_to?(:path) && e.path == 'openssl') ||
@@ -76,6 +84,44 @@ class Gem::Request
 
     raise Gem::Exception.new(
             'Unable to require openssl, install OpenSSL and rebuild ruby (preferred) or use non-HTTPS sources')
+  end
+
+  def self.verify_certificate store_context
+    depth  = store_context.error_depth
+    error  = store_context.error_string
+    number = store_context.error
+    cert   = store_context.current_cert
+
+    ui.alert_error "SSL verification error at depth #{depth}: #{error} (#{number})"
+
+    extra_message = verify_certificate_message number, cert
+
+    ui.alert_error extra_message if extra_message
+  end
+
+  def self.verify_certificate_message error_number, cert
+    return unless cert
+    case error_number
+    when OpenSSL::X509::V_ERR_CERT_HAS_EXPIRED then
+      "Certificate #{cert.subject} expired at #{cert.not_after.iso8601}"
+    when OpenSSL::X509::V_ERR_CERT_NOT_YET_VALID then
+      "Certificate #{cert.subject} not valid until #{cert.not_before.iso8601}"
+    when OpenSSL::X509::V_ERR_CERT_REJECTED then
+      "Certificate #{cert.subject} is rejected"
+    when OpenSSL::X509::V_ERR_CERT_UNTRUSTED then
+      "Certificate #{cert.subject} is not trusted"
+    when OpenSSL::X509::V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT then
+      "Certificate #{cert.issuer} is not trusted"
+    when OpenSSL::X509::V_ERR_INVALID_CA then
+      "Certificate #{cert.subject} is an invalid CA certificate"
+    when OpenSSL::X509::V_ERR_INVALID_PURPOSE then
+      "Certificate #{cert.subject} has an invalid purpose"
+    when OpenSSL::X509::V_ERR_SELF_SIGNED_CERT_IN_CHAIN then
+      "Root certificate is not trusted (#{cert.subject})"
+    when OpenSSL::X509::V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY,
+      OpenSSL::X509::V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE then
+      "You must add #{cert.issuer} to your local trusted store"
+    end
   end
 
   ##

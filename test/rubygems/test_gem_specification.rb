@@ -3080,7 +3080,7 @@ Did you mean 'Ruby'?
         end
       end
 
-      err = 'specification_version must be an Integer (did you mean version?)'
+      err = 'specification_version must be a Integer (did you mean version?)'
       assert_equal err, e.message
     end
   end
@@ -3387,6 +3387,13 @@ end
     assert_raises Gem::MissingSpecError do
       Gem::Specification.find_by_name "monkeys"
     end
+  end
+
+  def test_find_by_name_with_only_prereleases
+    q = util_spec "q", "2.a"
+    install_specs q
+
+    assert Gem::Specification.find_by_name "q"
   end
 
   def test_find_by_name_prerelease
