@@ -1,3 +1,8 @@
+Tue Nov  1 01:31:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ac_cv_func_round): round(3) in x86_64-w64-mingw32
+	  is not accurate in an edge case.  [ruby-core:77794] [Bug #12878]
+
 Mon Oct 31 17:36:04 2016  Code Ahss  <aycabta@gmail.com>
 
 	* test/test_forwardable.rb (TestForwardable#test_on_private_method):
