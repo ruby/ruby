@@ -1096,15 +1096,19 @@ module URI
     #   # =>  #<URI::HTTP:0x2021f3b0 URL:http://my.example.com/main.rbx?page=1>
     #
     def merge(oth)
-      begin
-        base, rel = merge0(oth)
-      rescue
-        raise $!.class, $!.message
+      rel = parser.send(:convert_to_uri, oth)
+
+      if rel.absolute?
+        #raise BadURIError, "both URI are absolute" if absolute?
+        # hmm... should return oth for usability?
+        return rel
       end
 
-      if base == rel
-        return base
+      unless self.absolute?
+        raise BadURIError, "both URI are relative"
       end
+
+      base = self.dup
 
       authority = rel.userinfo || rel.host || rel.port
 
@@ -1135,31 +1139,6 @@ module URI
       return base
     end # merge
     alias + merge
-
-    # return base and rel.
-    # you can modify `base', but can not `rel'.
-    def merge0(oth)
-      oth = parser.send(:convert_to_uri, oth)
-
-      if self.relative? && oth.relative?
-        raise BadURIError,
-          "both URI are relative"
-      end
-
-      if self.absolute? && oth.absolute?
-        #raise BadURIError,
-        #  "both URI are absolute"
-        # hmm... should return oth for usability?
-        return oth, oth
-      end
-
-      if self.absolute?
-        return self.dup, oth
-      else
-        return oth, oth
-      end
-    end
-    private :merge0
 
     # :stopdoc:
     def route_from_path(src, dst)

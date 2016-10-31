@@ -1,3 +1,8 @@
+Mon Oct 31 11:08:51 2016  Samuel Williams  <samuel.williams@oriontransfer.co.nz>
+
+	* lib/uri/generic.rb (URI::Generic#merge): merge merge0.
+	  [GH-1469]
+
 Sun Oct 30 15:32:43 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems.rb, lib/rubygems/*, test/rubygems/*: Update
