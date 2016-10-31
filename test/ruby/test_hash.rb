@@ -826,7 +826,7 @@ class TestHash < Test::Unit::TestCase
     assert_equal([], expected - vals)
   end
 
-  def test_intialize_wrong_arguments
+  def test_initialize_wrong_arguments
     assert_raise(ArgumentError) do
       Hash.new(0) { }
     end
