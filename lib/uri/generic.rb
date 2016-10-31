@@ -955,6 +955,13 @@ module URI
     end
 
     #
+    # Checks if a URI is a relative reference, i.e. it doesn't include a scheme.
+    #
+    def relative_reference?
+      @scheme.nil?
+    end
+
+    #
     # Checks if URI is an absolute one
     #
     def absolute?
