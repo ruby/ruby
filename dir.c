@@ -1233,7 +1233,7 @@ sys_enc_warning_in(const char *func, const char *mesg, rb_encoding *enc)
  * ENOTDIR can be returned by stat(2) if a non-leaf element of the path
  * is not a directory.
  */
-ALWAYS_INLINE(static inline int to_be_ignored(int e));
+ALWAYS_INLINE(static int to_be_ignored(int e));
 static inline int
 to_be_ignored(int e)
 {
