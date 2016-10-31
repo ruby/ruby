@@ -1,3 +1,8 @@
+Mon Oct 31 17:36:04 2016  Code Ahss  <aycabta@gmail.com>
+
+	* test/test_forwardable.rb (TestForwardable#test_on_private_method):
+	  add test for [Bug #12782] [Bug #12840]
+
 Mon Oct 31 11:08:51 2016  Samuel Williams  <samuel.williams@oriontransfer.co.nz>
 
 	* lib/uri/generic.rb (URI::Generic#merge): merge merge0.

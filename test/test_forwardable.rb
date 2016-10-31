@@ -285,6 +285,17 @@ class TestForwardable < Test::Unit::TestCase
     assert_equal(42, -obj)
   end
 
+  def test_on_private_method
+    cls = Class.new do
+      private def foo; :foo end
+      extend Forwardable
+      def_delegator :itself, :foo, :bar
+    end
+    assert_warn(/forwarding to private method/) do
+      assert_equal(:foo, cls.new.bar)
+    end
+  end
+
   private
 
   def forwardable_class(
