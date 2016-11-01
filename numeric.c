@@ -2660,7 +2660,7 @@ rb_num2ulong_internal(VALUE val, int *wrap_p)
     }
 
     if (FIXNUM_P(val)) {
-        long l = FIX2LONG(val); /* this is FIX2LONG, inteneded */
+        long l = FIX2LONG(val); /* this is FIX2LONG, intended */
         if (wrap_p)
             *wrap_p = l < 0;
         return (unsigned long)l;
@@ -2923,7 +2923,7 @@ rb_num2ull(VALUE val)
 	rb_raise(rb_eTypeError, "no implicit conversion from nil");
     }
     else if (RB_TYPE_P(val, T_FIXNUM)) {
-	return (LONG_LONG)FIX2LONG(val); /* this is FIX2LONG, inteneded */
+	return (LONG_LONG)FIX2LONG(val); /* this is FIX2LONG, intended */
     }
     else if (RB_TYPE_P(val, T_FLOAT)) {
 	if (RFLOAT_VALUE(val) < ULLONG_MAX_PLUS_ONE
