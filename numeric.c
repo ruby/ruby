@@ -2666,18 +2666,17 @@ rb_num2ulong_internal(VALUE val, int *wrap_p)
         return (unsigned long)l;
     }
     else if (RB_TYPE_P(val, T_FLOAT)) {
-       if (RFLOAT_VALUE(val) < ULONG_MAX_PLUS_ONE
-           && LONG_MIN_MINUS_ONE_IS_LESS_THAN(RFLOAT_VALUE(val))) {
-           double d = RFLOAT_VALUE(val);
-           if (wrap_p)
-               *wrap_p = d <= -1.0; /* NUM2ULONG(v) uses v.to_int conceptually.  */
-           if (0 <= d)
-               return (unsigned long)d;
-           return (unsigned long)(long)d;
-       }
-       else {
-	   FLOAT_OUT_OF_RANGE(val, "integer");
-       }
+	double d = RFLOAT_VALUE(val);
+	if (d < ULONG_MAX_PLUS_ONE && LONG_MIN_MINUS_ONE_IS_LESS_THAN(d)) {
+	    if (wrap_p)
+		*wrap_p = d <= -1.0; /* NUM2ULONG(v) uses v.to_int conceptually.  */
+	    if (0 <= d)
+		return (unsigned long)d;
+	    return (unsigned long)(long)d;
+	}
+	else {
+	    FLOAT_OUT_OF_RANGE(val, "integer");
+	}
     }
     else if (RB_TYPE_P(val, T_BIGNUM)) {
         {
