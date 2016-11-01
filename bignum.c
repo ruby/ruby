@@ -5385,7 +5385,7 @@ big_op(VALUE x, VALUE y, enum big_op_t op)
     VALUE rel;
     int n;
 
-    if (FIXNUM_P(y) || RB_BIGNUM_TYPE_P(y)) {
+    if (RB_INTEGER_TYPE_P(y)) {
 	rel = rb_big_cmp(x, y);
     }
     else if (RB_FLOAT_TYPE_P(y)) {
@@ -6285,7 +6285,7 @@ rb_big_and(VALUE x, VALUE y)
     BDIGIT tmph;
     long tmpn;
 
-    if (!FIXNUM_P(y) && !RB_BIGNUM_TYPE_P(y)) {
+    if (!RB_INTEGER_TYPE_P(y)) {
 	return rb_num_coerce_bit(x, y, '&');
     }
 
@@ -6404,7 +6404,7 @@ rb_big_or(VALUE x, VALUE y)
     BDIGIT tmph;
     long tmpn;
 
-    if (!FIXNUM_P(y) && !RB_BIGNUM_TYPE_P(y)) {
+    if (!RB_INTEGER_TYPE_P(y)) {
 	return rb_num_coerce_bit(x, y, '|');
     }
 
@@ -6498,7 +6498,7 @@ rb_big_xor(VALUE x, VALUE y)
     BDIGIT tmph;
     long tmpn;
 
-    if (!FIXNUM_P(y) && !RB_BIGNUM_TYPE_P(y)) {
+    if (!RB_INTEGER_TYPE_P(y)) {
 	return rb_num_coerce_bit(x, y, '^');
     }
 
@@ -6665,7 +6665,7 @@ rb_big_hash(VALUE x)
 static VALUE
 rb_int_coerce(VALUE x, VALUE y)
 {
-    if (FIXNUM_P(y) || RB_BIGNUM_TYPE_P(y)) {
+    if (RB_INTEGER_TYPE_P(y)) {
         return rb_assoc_new(y, x);
     }
     else {
