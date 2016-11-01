@@ -293,21 +293,27 @@ num_funcall0(VALUE x, ID func)
     return rb_exec_recursive(num_funcall_op_0, x, (VALUE)func);
 }
 
+static void
+num_funcall_op_1_recursion(VALUE x, ID func, VALUE y)
+{
+    const char *name = rb_id2name(func);
+    if (ISALNUM(name[0])) {
+	rb_name_error(func, "%"PRIsVALUE".%"PRIsVALUE"(%"PRIsVALUE")",
+		      x, ID2SYM(func), y);
+    }
+    else {
+	rb_name_error(func, "%"PRIsVALUE"%"PRIsVALUE"%"PRIsVALUE,
+		      x, ID2SYM(func), y);
+    }
+}
+
 static VALUE
 num_funcall_op_1(VALUE y, VALUE arg, int recursive)
 {
     ID func = (ID)((VALUE *)arg)[0];
     VALUE x = ((VALUE *)arg)[1];
     if (recursive) {
-	const char *name = rb_id2name(func);
-	if (ISALNUM(name[0])) {
-	    rb_name_error(func, "%"PRIsVALUE".%"PRIsVALUE"(%"PRIsVALUE")",
-			  x, ID2SYM(func), y);
-	}
-	else {
-	    rb_name_error(func, "%"PRIsVALUE"%"PRIsVALUE"%"PRIsVALUE,
-			  x, ID2SYM(func), y);
-	}
+	num_funcall_op_1_recursion(x, func, y);
     }
     return rb_funcall(x, func, 1, y);
 }
@@ -4128,24 +4134,33 @@ int_comp(VALUE num)
     return Qnil;
 }
 
-static int
-bit_coerce(VALUE *x, VALUE *y)
+static VALUE
+num_funcall_bit_1(VALUE y, VALUE arg, int recursive)
 {
-    if (!RB_INTEGER_TYPE_P(*y)) {
-	VALUE orig = *x;
-	do_coerce(x, y, TRUE);
-	if (!RB_INTEGER_TYPE_P(*x) && !RB_INTEGER_TYPE_P(*y)) {
-	    coerce_failed(orig, *y);
-	}
+    ID func = (ID)((VALUE *)arg)[0];
+    VALUE x = ((VALUE *)arg)[1];
+    if (recursive) {
+	num_funcall_op_1_recursion(x, func, y);
     }
-    return TRUE;
+    return rb_check_funcall(x, func, 1, &y);
 }
 
 VALUE
 rb_num_coerce_bit(VALUE x, VALUE y, ID func)
 {
-    bit_coerce(&x, &y);
-    return num_funcall1(x, func, y);
+    VALUE ret, args[3];
+
+    args[0] = (VALUE)func;
+    args[1] = x;
+    args[2] = y;
+    do_coerce(&args[1], &args[2], TRUE);
+    ret = rb_exec_recursive_paired(num_funcall_bit_1,
+				   args[2], args[1], (VALUE)args);
+    if (ret == Qundef) {
+	/* show the original object, not coerced object */
+	coerce_failed(x, y);
+    }
+    return ret;
 }
 
 /*

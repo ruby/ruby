@@ -302,6 +302,42 @@ class TestInteger < Test::Unit::TestCase
     assert_equal(3 ^ 10, 3 ^ obj)
   end
 
+  module CoercionToSelf
+    def coerce(other)
+     [self.class.new(other), self]
+    end
+  end
+
+  def test_bitwise_and_with_integer_coercion
+    obj = Struct.new(:value) do
+      include(CoercionToSelf)
+      def &(other)
+        self.value & other.value
+      end
+    end.new(10)
+    assert_equal(3 & 10, 3 & obj)
+  end
+
+  def test_bitwise_or_with_integer_coercion
+    obj = Struct.new(:value) do
+      include(CoercionToSelf)
+      def |(other)
+        self.value | other.value
+      end
+    end.new(10)
+    assert_equal(3 | 10, 3 | obj)
+  end
+
+  def test_bitwise_xor_with_integer_coercion
+    obj = Struct.new(:value) do
+      include(CoercionToSelf)
+      def ^(other)
+        self.value ^ other.value
+      end
+    end.new(10)
+    assert_equal(3 ^ 10, 3 ^ obj)
+  end
+
   def test_bit_length
     assert_equal(13, (-2**12-1).bit_length)
     assert_equal(12, (-2**12).bit_length)
