@@ -1,3 +1,10 @@
+Wed Nov  2 08:45:49 2016  Dmitry Gritsay  <unseductable@gmail.com>
+
+	* doc/extension.rdoc: set ANYARGS as arguments for func1 and func2.
+
+	* doc/extension.rdoc: mention the exception object which is passed
+	  to func2 as the second argument.  [Fix GH-1471]
+
 Wed Nov  2 07:34:27 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (rb_num_coerce_bit): enable bit operations with
