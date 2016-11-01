@@ -721,7 +721,10 @@ num_zero_p(VALUE num)
 	}
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
-	return rb_bigzero_p(num);
+	if (rb_bigzero_p(num)) {
+	    /* this should not happen usually */
+	    return Qtrue;
+	}
     }
     else if (rb_equal(num, INT2FIX(0))) {
 	return Qtrue;
