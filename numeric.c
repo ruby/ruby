@@ -4168,8 +4168,7 @@ fix_and(VALUE x, VALUE y)
 	return rb_big_and(y, x);
     }
 
-    bit_coerce(&x, &y);
-    return num_funcall1(x, '&', y);
+    return rb_num_coerce_bit(x, y, '&');
 }
 
 static VALUE
@@ -4204,8 +4203,7 @@ fix_or(VALUE x, VALUE y)
 	return rb_big_or(y, x);
     }
 
-    bit_coerce(&x, &y);
-    return num_funcall1(x, '|', y);
+    return rb_num_coerce_bit(x, y, '|');
 }
 
 static VALUE
@@ -4240,8 +4238,7 @@ fix_xor(VALUE x, VALUE y)
 	return rb_big_xor(y, x);
     }
 
-    bit_coerce(&x, &y);
-    return num_funcall1(x, '^', y);
+    return rb_num_coerce_bit(x, y, '^');
 }
 
 static VALUE
