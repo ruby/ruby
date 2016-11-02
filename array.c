@@ -1382,8 +1382,9 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary)
  *  +default+ value.
  *
  *  Alternatively, if a block is given it will only be executed when an
- *  invalid +index+ is referenced.  Negative values of +index+ count from the
- *  end of the array.
+ *  invalid +index+ is referenced.
+ *
+ *  Negative values of +index+ count from the end of the array.
  *
  *     a = [ 11, 22, 33, 44 ]
  *     a.fetch(1)               #=> 22
