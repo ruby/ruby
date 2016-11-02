@@ -835,12 +835,13 @@ eom
         end
       end
 
-      def all_assertions(msg = nil)
+      def assert_all_assertions(msg = nil)
         all = AllFailures.new
         yield all
       ensure
         assert(all.pass?, message(msg) {all.message.chomp(".")})
       end
+      alias all_assertions assert_all_assertions
 
       def build_message(head, template=nil, *arguments) #:nodoc:
         template &&= template.chomp
