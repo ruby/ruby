@@ -1,3 +1,8 @@
+Thu Nov  3 21:45:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c: Import changes from ruby/bigdecimal
+	  repository.
+
 Thu Nov  3 15:01:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c: include sys/sysmacros.h for ArchLinux which deprecated
