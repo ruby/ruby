@@ -1,3 +1,8 @@
+Thu Nov  3 15:01:29 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c: include sys/sysmacros.h for ArchLinux which deprecated
+	  use of major() and minor() in sys/types.h.
+
 Wed Nov  2 08:45:49 2016  Dmitry Gritsay  <unseductable@gmail.com>
 
 	* doc/extension.rdoc: set ANYARGS as arguments for func1 and func2.

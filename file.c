@@ -63,6 +63,10 @@ int flock(int, int);
 #include <pwd.h>
 #endif
 
+#ifdef HAVE_SYS_SYSMACROS_H
+#include <sys/sysmacros.h>
+#endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
 
