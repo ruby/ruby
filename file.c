@@ -500,7 +500,7 @@ static VALUE
 rb_stat_dev_major(VALUE self)
 {
 #if defined(major)
-    return INT2NUM(major(get_stat(self)->st_dev));
+    return DEVT2NUM(major(get_stat(self)->st_dev));
 #else
     return Qnil;
 #endif
@@ -521,7 +521,7 @@ static VALUE
 rb_stat_dev_minor(VALUE self)
 {
 #if defined(minor)
-    return INT2NUM(minor(get_stat(self)->st_dev));
+    return DEVT2NUM(minor(get_stat(self)->st_dev));
 #else
     return Qnil;
 #endif
