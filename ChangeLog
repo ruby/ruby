@@ -1,3 +1,8 @@
+Fri Nov  4 16:31:45 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* util.c (ruby_dtoa): round to even, instead of rounding to
+	  nearest.  [ruby-core:77864] [Bug #12889]
+
 Fri Nov  4 15:31:00 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: Add compiler version message into rbconfig

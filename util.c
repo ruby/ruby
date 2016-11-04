@@ -3165,7 +3165,7 @@ ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
 
     int bbits, b2, b5, be, dig, i, ieps, ilim, ilim0, ilim1,
         j, j1, k, k0, k_check, leftright, m2, m5, s2, s5,
-        spec_case, try_quick;
+        spec_case, try_quick, half = 0;
     Long L;
 #ifndef Sudden_Underflow
     int denorm;
@@ -3452,16 +3452,16 @@ ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
                     ilim = i;
                 *s++ = '0' + (int)L;
                 if (i == ilim) {
-                    double x;
                     if (dval(d) > 0.5 + dval(eps))
-                        goto bump_up;
-                    else if (!isinf(x = d_ * tens[ilim-1] + 0.5) &&
-                             dval(d) > modf(x, &x))
                         goto bump_up;
                     else if (dval(d) < 0.5 - dval(eps)) {
                         while (*--s == '0') ;
                         s++;
                         goto ret1;
+                    }
+                    half = 1;
+                    if ((*(s-1) - '0') & 1) {
+                        goto bump_up;
                     }
                     break;
                 }
@@ -3770,12 +3770,13 @@ keep_dig:
                 *s++ = '1';
                 goto ret;
             }
-        ++*s++;
+        if (!half || (*s - '0') & 1)
+            ++*s;
     }
     else {
         while (*--s == '0') ;
-        s++;
     }
+    s++;
 ret:
     Bfree(S);
     if (mhi) {
