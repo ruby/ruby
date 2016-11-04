@@ -1,3 +1,8 @@
+Fri Nov  4 10:51:16 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/pathname/pathname.c (path_hash): fix unnormalized Fixnum
+	  value bug on mingw/mswin.
+
 Fri Nov  4 10:35:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/fileutils.rb (FileUtils::Entry_#copy): ensure that the

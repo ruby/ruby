@@ -155,11 +155,15 @@ path_cmp(VALUE self, VALUE other)
     return INT2FIX(0);
 }
 
+#ifndef ST2FIX
+#define ST2FIX(h) LONG2FIX((long)(h))
+#endif
+
 /* :nodoc: */
 static VALUE
 path_hash(VALUE self)
 {
-    return INT2FIX(rb_str_hash(get_strpath(self)));
+    return ST2FIX(rb_str_hash(get_strpath(self)));
 }
 
 /*
