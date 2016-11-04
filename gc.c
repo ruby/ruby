@@ -1550,12 +1550,16 @@ heap_page_allocate(rb_objspace_t *objspace)
 static struct heap_page *
 heap_page_resurrect(rb_objspace_t *objspace)
 {
-    struct heap_page *page;
+    struct heap_page *page = heap_tomb->pages;
 
-    if ((page = heap_tomb->pages) != NULL) {
-	heap_unlink_page(objspace, heap_tomb, page);
-	return page;
+    while (page) {
+	if (page->freelist != NULL) {
+	    heap_unlink_page(objspace, heap_tomb, page);
+	    return page;
+	}
+	page = page->next;
     }
+
     return NULL;
 }
 
