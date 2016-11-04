@@ -4680,7 +4680,9 @@ rb_int_digits(int argc, VALUE *argv, VALUE num)
             return rb_int_digits_bigbase(num, base_value);
 
         base = FIX2LONG(base_value);
-        if (base < 2)
+        if (base < 0)
+            rb_raise(rb_eArgError, "negative radix");
+        else if (base < 2)
             rb_raise(rb_eArgError, "invalid radix %ld", base);
     }
     else

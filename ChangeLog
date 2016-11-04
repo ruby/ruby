@@ -1,3 +1,7 @@
+Fri Nov  4 13:03:00 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* numeric.c (rb_int_digits): Fix exception message
+
 Fri Nov  4 10:51:16 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/pathname/pathname.c (path_hash): fix unnormalized Fixnum
