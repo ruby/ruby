@@ -361,6 +361,11 @@ class TestFileUtils < Test::Unit::TestCase
     assert_raise(ArgumentError, bug3588) do
       cp_r 'tmp2', 'tmp2/new_tmp2'
     end
+
+    bug12892 = '[ruby-core:77885] [Bug #12892]'
+    assert_raise(Errno::ENOENT, bug12892) do
+      cp_r 'non/existent', 'tmp'
+    end
   end
 
   def test_cp_r_symlink

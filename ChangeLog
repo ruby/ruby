@@ -1,3 +1,9 @@
+Fri Nov  4 10:35:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/fileutils.rb (FileUtils::Entry_#copy): ensure that the
+	  source entry exists first, to fix error for non-existent entry.
+	  [ruby-core:77885] [Bug #12892]
+
 Thu Nov  3 21:45:00 2016  Kenta Murata  <mrkn@mrkn.jp>
 
 	* ext/bigdecimal/bigdecimal.c: Import changes from ruby/bigdecimal

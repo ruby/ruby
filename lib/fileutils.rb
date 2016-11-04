@@ -1244,6 +1244,7 @@ module FileUtils
     end
 
     def copy(dest)
+      lstat
       case
       when file?
         copy_file dest
