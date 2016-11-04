@@ -536,8 +536,10 @@ for option in --version -v -V -qversion; do
     AS_CASE($cc_version_status, [0], [:], [continue])
     AS_CASE($cc_version_message, [*Warning*], [continue])
     cc_version='$(CC) '$option
+    break
 done
 AC_SUBST(CC_VERSION, $cc_version)
+AC_SUBST(CC_VERSION_MESSAGE, $cc_version_message)
 
 RUBY_UNIVERSAL_ARCH
 if test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" = no -a "$universal_binary" = no; then
