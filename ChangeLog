@@ -1,3 +1,8 @@
+Sat Nov  5 18:17:54 2016  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/set.rb (Set#compare_by_identity, Set#compare_by_identity?):
+	  New methods. [Feature #12210]
+
 Sat Nov  5 18:17:08 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rdoc/*, test/rdoc/*: Update rdoc-5.0.0

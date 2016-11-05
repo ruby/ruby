@@ -189,6 +189,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 * pathname
   * New method: Pathname#empty? [Feature#12596]
 
+* set
+  * New methods: Set#compare_by_identity and Set#compare_by_identity?.
+    [Feature #12210]
+
 * WEBrick
 
   * Don't allow , as a separator [Bug #12791]
