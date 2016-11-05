@@ -1,3 +1,8 @@
+Sat Nov  5 11:53:17 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (copy_stream_body): use IO to write to copy to duplex IO.
+	  http://twitter.com/knu/status/786505317974585344
+
 Sat Nov  5 11:49:41 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): format exact number more exactly.

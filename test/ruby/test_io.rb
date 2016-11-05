@@ -1090,6 +1090,18 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_copy_stream_to_duplex_io
+    result = IO.pipe {|a,w|
+      Thread.start {w.puts "yes"; w.close}
+      IO.popen([EnvUtil.rubybin, '-pe$_="#$.:#$_"'], "r+") {|b|
+        IO.copy_stream(a, b)
+        b.close_write
+        b.read
+      }
+    }
+    assert_equal("1:yes\n", result)
+  end
+
   def ruby(*args)
     args = ['-e', '$>.write($<.read)'] if args.empty?
     ruby = EnvUtil.rubybin
