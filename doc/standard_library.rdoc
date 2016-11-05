@@ -13,7 +13,7 @@ Base64:: Support for encoding and decoding binary data using a Base64 representa
 Benchmark:: Provides methods to measure and report the time used to execute code
 CGI:: Support for the Common Gateway Interface protocol
 CMath:: Provides Trigonometric and Transcendental functions for complex numbers
-ConditionVariable:: Augments the Mutex class, provided by thread.rb
+ConditionVariable:: Augments the Mutex class
 CSV:: Provides an interface to read and write CSV files and data
 DEBUGGER__:: Debugging functionality for Ruby
 Delegator:: Provides three abilities to delegate method calls to an object
@@ -49,7 +49,7 @@ Prime:: Prime numbers and factorization library
 profile.rb:: Runs the Ruby Profiler__
 Profiler__:: Provides a way to profile your Ruby application
 PStore:: Implements a file based persistence mechanism based on a Hash
-Queue:: Synchronized communication between threads, provided by thread.rb
+Queue:: Synchronized communication between threads
 Racc:: A LALR(1) parser generator written in Ruby.
 RbConfig:: Information of your configure and build of Ruby
 RDoc:: Produces HTML and command-line documentation for Ruby
