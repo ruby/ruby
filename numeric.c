@@ -274,7 +274,7 @@ int_pos_p(VALUE num)
     else if (RB_TYPE_P(num, T_BIGNUM)) {
 	return BIGNUM_POSITIVE_P(num);
     }
-    return Qnil;
+    rb_raise(rb_eTypeError, "not an Integer");
 }
 
 static inline int
@@ -286,7 +286,7 @@ int_neg_p(VALUE num)
     else if (RB_TYPE_P(num, T_BIGNUM)) {
 	return BIGNUM_NEGATIVE_P(num);
     }
-    return Qnil;
+    rb_raise(rb_eTypeError, "not an Integer");
 }
 
 static inline int
