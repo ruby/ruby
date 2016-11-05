@@ -1,3 +1,9 @@
+Sun Nov  6 01:39:36 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* compile.c (tailcallable_p): disable tail call optimization for
+	  toplevel, eval, and load to avoid SEGV when interrupted by SIGINT.
+	  [ruby-core:76327] [Bug #12576]
+
 Sun Nov  6 01:28:41 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* vm_insnhelper.h: rename REG_(CFP|PC|SP|EP) to VM_REG_....

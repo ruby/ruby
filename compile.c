@@ -2423,6 +2423,10 @@ static inline int
 tailcallable_p(rb_iseq_t *iseq)
 {
     switch (iseq->body->type) {
+      case ISEQ_TYPE_TOP:
+      case ISEQ_TYPE_EVAL:
+      case ISEQ_TYPE_MAIN:
+	/* not tail callable because cfp will be over popped */
       case ISEQ_TYPE_RESCUE:
       case ISEQ_TYPE_ENSURE:
 	/* rescue block can't tail call because of errinfo */

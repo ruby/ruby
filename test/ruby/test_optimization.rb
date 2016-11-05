@@ -316,6 +316,33 @@ class TestRubyOptimization < Test::Unit::TestCase
                  message(bug12565) {disasm(:add_one_and_two)})
   end
 
+  def test_tailcall_interrupted_by_sigint
+    bug = 'ruby-core:76327'
+    script = <<EOS
+RubyVM::InstructionSequence.compile_option = {
+  :tailcall_optimization => true,
+  :trace_instruction => false
+}
+
+eval <<EOF
+def foo
+  foo
+end
+foo
+EOF
+EOS
+    err = EnvUtil.invoke_ruby([], "", true, true, {}) {
+      |in_p, out_p, err_p, pid|
+      in_p.write(script)
+      in_p.close
+      sleep(1)
+      Process.kill(:SIGINT, pid)
+      Process.wait(pid)
+      err_p.read
+    }
+    assert_match(/Interrupt/, err, bug)
+  end
+
   class Bug10557
     def [](_)
       block_given?
