@@ -1,3 +1,8 @@
+Sun Nov  6 00:22:51 2016  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm_eval.c (vm_call0_cfunc_with_frame): pass method id to
+	  dtrace hook. follow up r56592.
+
 Sun Nov  6 00:06:38 2016  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::LOC::Coord.create): fixed.
