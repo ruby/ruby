@@ -41,13 +41,13 @@ extern VALUE ruby_vm_const_missing_count;
 /* deal with registers                                    */
 /**********************************************************/
 
-#define REG_CFP (reg_cfp)
-#define REG_PC  (REG_CFP->pc)
-#define REG_SP  (REG_CFP->sp)
-#define REG_EP  (REG_CFP->ep)
+#define VM_REG_CFP (reg_cfp)
+#define VM_REG_PC  (VM_REG_CFP->pc)
+#define VM_REG_SP  (VM_REG_CFP->sp)
+#define VM_REG_EP  (VM_REG_CFP->ep)
 
 #define RESTORE_REGS() do { \
-  REG_CFP = th->cfp; \
+    VM_REG_CFP = th->cfp; \
 } while (0)
 
 #define REG_A   reg_a
@@ -74,28 +74,28 @@ enum vm_regan_acttype {
 #endif
 
 /* PC */
-#define GET_PC()           (COLLECT_USAGE_REGISTER_HELPER(PC, GET, REG_PC))
-#define SET_PC(x)          (REG_PC = (COLLECT_USAGE_REGISTER_HELPER(PC, SET, (x))))
+#define GET_PC()           (COLLECT_USAGE_REGISTER_HELPER(PC, GET, VM_REG_PC))
+#define SET_PC(x)          (VM_REG_PC = (COLLECT_USAGE_REGISTER_HELPER(PC, SET, (x))))
 #define GET_CURRENT_INSN() (*GET_PC())
 #define GET_OPERAND(n)     (GET_PC()[(n)])
-#define ADD_PC(n)          (SET_PC(REG_PC + (n)))
-#define JUMP(dst)          (REG_PC += (dst))
+#define ADD_PC(n)          (SET_PC(VM_REG_PC + (n)))
+#define JUMP(dst)          (VM_REG_PC += (dst))
 
 /* frame pointer, environment pointer */
-#define GET_CFP()  (COLLECT_USAGE_REGISTER_HELPER(CFP, GET, REG_CFP))
-#define GET_EP()   (COLLECT_USAGE_REGISTER_HELPER(EP, GET, REG_EP))
-#define SET_EP(x)  (REG_EP = (COLLECT_USAGE_REGISTER_HELPER(EP, SET, (x))))
+#define GET_CFP()  (COLLECT_USAGE_REGISTER_HELPER(CFP, GET, VM_REG_CFP))
+#define GET_EP()   (COLLECT_USAGE_REGISTER_HELPER(EP, GET, VM_REG_EP))
+#define SET_EP(x)  (VM_REG_EP = (COLLECT_USAGE_REGISTER_HELPER(EP, SET, (x))))
 #define GET_LEP()  (VM_EP_LEP(GET_EP()))
 
 /* SP */
-#define GET_SP()   (COLLECT_USAGE_REGISTER_HELPER(SP, GET, REG_SP))
-#define SET_SP(x)  (REG_SP  = (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
-#define INC_SP(x)  (REG_SP += (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
-#define DEC_SP(x)  (REG_SP -= (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
+#define GET_SP()   (COLLECT_USAGE_REGISTER_HELPER(SP, GET, VM_REG_SP))
+#define SET_SP(x)  (VM_REG_SP  = (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
+#define INC_SP(x)  (VM_REG_SP += (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
+#define DEC_SP(x)  (VM_REG_SP -= (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
 #define SET_SV(x)  (*GET_SP() = (x))
   /* set current stack value as x */
 
-#define GET_SP_COUNT() (REG_SP - th->stack)
+#define GET_SP_COUNT() (VM_REG_SP - th->stack)
 
 /* instruction sequence C struct */
 #define GET_ISEQ() (GET_CFP()->iseq)

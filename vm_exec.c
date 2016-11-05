@@ -88,16 +88,16 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 #undef  RESTORE_REGS
 #define RESTORE_REGS() \
 { \
-  REG_CFP = th->cfp; \
+  VM_REG_CFP = th->cfp; \
   reg_pc  = reg_cfp->pc; \
 }
 
-#undef  REG_PC
-#define REG_PC reg_pc
+#undef  VM_REG_PC
+#define VM_REG_PC reg_pc
 #undef  GET_PC
 #define GET_PC() (reg_pc)
 #undef  SET_PC
-#define SET_PC(x) (reg_cfp->pc = REG_PC = (x))
+#define SET_PC(x) (reg_cfp->pc = VM_REG_PC = (x))
 #endif
 
 #if OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE

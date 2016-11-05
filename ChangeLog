@@ -1,3 +1,10 @@
+Sun Nov  6 01:28:41 2016  Koichi Sasada  <ko1@atdot.net>
+
+	* vm_insnhelper.h: rename REG_(CFP|PC|SP|EP) to VM_REG_....
+	  [Bug #12527]
+
+	* vm_exec.c: ditto.
+
 Sun Nov  6 00:25:11 2016  Sho Hashimoto  <sho.hsmt@gmail.com>
 
 	* enumerator.c (InitVM_Enumerator): Enumerator::Lazy#chunk_while
