@@ -164,6 +164,9 @@ rubyarchdir = vars.expand(vars["rubyarchdir"] ||= "")
 relative_archdir = rubyarchdir.rindex(prefix, 0) ? rubyarchdir[prefix.size..-1] : rubyarchdir
 puts %[\
 # frozen-string-literal: false
+#
+# The module storing Ruby interpreter configurations on building.
+#
 # This file was created by #{mkconfig} when ruby was built.  It contains
 # build information for ruby which is used e.g. by mkmf to build
 # compatible native extensions.  Any changes made to this file will be
@@ -174,13 +177,16 @@ module RbConfig
     raise "ruby lib version (#{version}) doesn't match executable version (\#{RUBY_VERSION})"
 
 ]
+print "  # Ruby installed directory.\n"
 print "  TOPDIR = File.dirname(__FILE__).chomp!(#{relative_archdir.dump})\n"
+print "  # DESTDIR on make install. \n"
 print "  DESTDIR = ", (drive ? "TOPDIR && TOPDIR[/\\A[a-z]:/i] || " : ""), "'' unless defined? DESTDIR\n"
 print <<'ARCH' if universal
   arch_flag = ENV['ARCHFLAGS'] || ((e = ENV['RC_ARCHS']) && e.split.uniq.map {|a| "-arch #{a}"}.join(' '))
   arch = arch_flag && arch_flag[/\A\s*-arch\s+(\S+)\s*\z/, 1]
 ARCH
 print "  universal = #{universal}\n" if universal
+print "  # The hash configurations stored.\n"
 print "  CONFIG = {}\n"
 print "  CONFIG[\"DESTDIR\"] = DESTDIR\n"
 
@@ -245,8 +251,41 @@ EOS
 print <<EOS
   CONFIG["archdir"] = "$(rubyarchdir)"
   CONFIG["topdir"] = File.dirname(__FILE__)
+  # Almost same with CONFIG. MAKEFILE_CONFIG has other variable
+  # reference like below.
+  #
+  #   MAKEFILE_CONFIG["bindir"] = "$(exec_prefix)/bin"
+  #
+  # The values of this constant is used for creating Makefile.
+  #
+  #   require 'rbconfig'
+  #
+  #   print <<-END_OF_MAKEFILE
+  #   prefix = \#{Config::MAKEFILE_CONFIG['prefix']}
+  #   exec_prefix = \#{Config::MAKEFILE_CONFIG['exec_prefix']}
+  #   bindir = \#{Config::MAKEFILE_CONFIG['bindir']}
+  #   END_OF_MAKEFILE
+  #
+  #   => prefix = /usr/local
+  #      exec_prefix = $(prefix)
+  #      bindir = $(exec_prefix)/bin  MAKEFILE_CONFIG = {}
+  #
+  # RbConfig.expand is used for resolving references like above in rbconfig.
+  #
+  #   require 'rbconfig'
+  #   p Config.expand(Config::MAKEFILE_CONFIG["bindir"])
+  #   # => "/usr/local/bin"
   MAKEFILE_CONFIG = {}
   CONFIG.each{|k,v| MAKEFILE_CONFIG[k] = v.dup}
+
+  # call-seq:
+  #
+  #   RbConfig.expand(val)         -> string
+  #   RbConfig.expand(val, config) -> string
+  #
+  # expands variable with given +val+ value.
+  #
+  #   RbConfig.expand("$(bindir)") # => /home/foobar/all-ruby/ruby19x/bin
   def RbConfig::expand(val, config = CONFIG)
     newval = val.gsub(/\\$\\$|\\$\\(([^()]+)\\)|\\$\\{([^{}]+)\\}/) {
       var = $&
@@ -269,6 +308,10 @@ print <<EOS
     RbConfig::expand(val)
   end
 
+  # call-seq:
+  #
+  #   RbConfig.ruby -> path
+  #
   # returns the absolute pathname of the ruby command.
   def RbConfig.ruby
     File.join(

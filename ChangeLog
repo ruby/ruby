@@ -1,3 +1,7 @@
+Sat Nov  5 15:58:24 2016  Sho Hashimoto  <sho-h@netlab.jp>
+
+	* tool/mkconfig.rb: [DOC] add rbconfig documentation.
+
 Sat Nov  5 15:42:52 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/smtp.rb (tlsconnect): support timeout for TLS handshake.
