@@ -2044,29 +2044,18 @@ rb_glob_caller(const char *path, VALUE a, void *enc)
     return status;
 }
 
-static int
-rb_glob2(const char *path, int flags,
-	 void (*func)(const char *, VALUE, void *), VALUE arg,
-	 rb_encoding* enc)
-{
-    struct glob_args args;
-
-    args.func = func;
-    args.value = arg;
-    args.enc = enc;
-
-    if (flags & FNM_SYSCASE) {
-	rb_warning("Dir.glob() ignores File::FNM_CASEFOLD");
-    }
-
-    return ruby_glob0(path, flags | GLOB_VERBOSE, rb_glob_caller, (VALUE)&args,
-		      enc);
-}
-
 void
 rb_glob(const char *path, void (*func)(const char *, VALUE, void *), VALUE arg)
 {
-    int status = rb_glob2(path, 0, func, arg, rb_ascii8bit_encoding());
+    struct glob_args args;
+    int status;
+
+    args.func = func;
+    args.value = arg;
+    args.enc = rb_ascii8bit_encoding();
+
+    status = ruby_glob0(path, GLOB_VERBOSE, rb_glob_caller, (VALUE)&args,
+			args.enc);
     if (status) GLOB_JUMP_TAG(status);
 }
 
