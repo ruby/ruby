@@ -148,7 +148,11 @@ class IPAddr
 
   # Returns true if two ipaddrs are equal.
   def ==(other)
-    other = coerce_other(other)
+    begin
+      other = coerce_other(other)
+    rescue
+      return false
+    end
     return @family == other.family && @addr == other.to_i
   end
 
@@ -334,7 +338,11 @@ class IPAddr
 
   # Compares the ipaddr with another.
   def <=>(other)
-    other = coerce_other(other)
+    begin
+      other = coerce_other(other)
+    rescue
+      return nil
+    end
 
     return nil if other.family != @family
 
