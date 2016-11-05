@@ -1,3 +1,8 @@
+Sat Nov  5 10:07:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_file.rb (TestFile#test_stat): fix noatime case.
+	  [ruby-core:77943] [Bug #12903]
+
 Fri Nov  4 17:52:44 2016  Koichi Sasada  <ko1@atdot.net>
 
 	* gc.c (heap_page_resurrect): do not return tomb_pages when

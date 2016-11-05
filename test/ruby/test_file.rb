@@ -358,6 +358,8 @@ class TestFile < Test::Unit::TestCase
       sleep 2
       File.write(path, "bar")
       sleep 2
+      File.read(path)
+      a0 = File.stat(path).atime
       File.chmod(0644, path)
       sleep 2
       File.read(path)
@@ -369,7 +371,7 @@ class TestFile < Test::Unit::TestCase
       if stat.birthtime != stat.ctime
         assert_in_delta t0+4, stat.ctime.to_f, delta
       end
-      unless /mswin|mingw/ =~ RUBY_PLATFORM
+      if a0 > stat.mtime
         # Windows delays updating atime
         assert_in_delta t0+6, stat.atime.to_f, delta
       end
