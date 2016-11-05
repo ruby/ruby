@@ -330,7 +330,7 @@ ruby_th_dtrace_setup(rb_thread_t *th, VALUE klass, ID id,
     enum ruby_value_type type;
     if (!klass) {
 	if (!th) th = GET_THREAD();
-	if (!rb_thread_method_id_and_class(th, &id, &klass) || !klass)
+	if (!rb_thread_method_id_and_class(th, &id, 0, &klass) || !klass)
 	    return FALSE;
     }
     if (RB_TYPE_P(klass, T_ICLASS)) {
@@ -522,7 +522,7 @@ rb_vm_pop_cfunc_frame(void)
     rb_control_frame_t *cfp = th->cfp;
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, cfp->self, me->def->original_id, me->owner, Qnil);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, cfp->self, me->def->original_id, me->called_id, me->owner, Qnil);
     RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, me->owner, me->def->original_id);
     vm_pop_frame(th, cfp, cfp->ep);
 }
@@ -984,9 +984,9 @@ invoke_bmethod(rb_thread_t *th, const rb_iseq_t *iseq, VALUE self, const struct 
 		  iseq->body->stack_max);
 
     RUBY_DTRACE_METHOD_ENTRY_HOOK(th, me->owner, me->def->original_id);
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_CALL, self, me->def->original_id, me->owner, Qnil);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_CALL, self, me->def->original_id, me->called_id, me->owner, Qnil);
     ret = vm_exec(th);
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_RETURN, self, me->def->original_id, me->owner, ret);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_RETURN, self, me->def->original_id, me->called_id, me->owner, ret);
     RUBY_DTRACE_METHOD_RETURN_HOOK(th, me->owner, me->def->original_id);
     return ret;
 }
@@ -1592,26 +1592,27 @@ hook_before_rewind(rb_thread_t *th, rb_control_frame_t *cfp, int will_finish_vm_
     switch (VM_FRAME_TYPE(th->cfp)) {
       case VM_FRAME_MAGIC_METHOD:
 	RUBY_DTRACE_METHOD_RETURN_HOOK(th, 0, 0);
-	EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_RETURN, th->cfp->self, 0, 0, Qnil);
+	EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_RETURN, th->cfp->self, 0, 0, 0, Qnil);
 	break;
       case VM_FRAME_MAGIC_BLOCK:
       case VM_FRAME_MAGIC_LAMBDA:
 	if (VM_FRAME_BMETHOD_P(th->cfp)) {
-	    EXEC_EVENT_HOOK(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, Qnil);
+	    EXEC_EVENT_HOOK(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, 0, Qnil);
 
 	    if (!will_finish_vm_exec) {
 		/* kick RUBY_EVENT_RETURN at invoke_block_from_c() for bmethod */
 		EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_RETURN, th->cfp->self,
 					      rb_vm_frame_method_entry(th->cfp)->def->original_id,
+					      rb_vm_frame_method_entry(th->cfp)->called_id,
 					      rb_vm_frame_method_entry(th->cfp)->owner, Qnil);
 	    }
 	}
 	else {
-	    EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, Qnil);
+	    EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, 0, Qnil);
 	}
 	break;
       case VM_FRAME_MAGIC_CLASS:
-	EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_END, th->cfp->self, 0, 0, Qnil);
+	EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_END, th->cfp->self, 0, 0, 0, Qnil);
 	break;
     }
 }
@@ -1735,6 +1736,7 @@ vm_exec(rb_thread_t *th)
 	    if (UNLIKELY(VM_FRAME_TYPE(th->cfp) == VM_FRAME_MAGIC_CFUNC)) {
 		EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, th->cfp->self,
 				rb_vm_frame_method_entry(th->cfp)->def->original_id,
+				rb_vm_frame_method_entry(th->cfp)->called_id,
 				rb_vm_frame_method_entry(th->cfp)->owner, Qnil);
 		RUBY_DTRACE_CMETHOD_RETURN_HOOK(th,
 					       rb_vm_frame_method_entry(th->cfp)->owner,
@@ -1958,12 +1960,13 @@ rb_iseq_eval_main(const rb_iseq_t *iseq)
 }
 
 int
-rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, VALUE *klassp)
+rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, ID *called_idp, VALUE *klassp)
 {
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
     if (me) {
 	if (idp) *idp = me->def->original_id;
+	if (called_idp) *called_idp = me->called_id;
 	if (klassp) *klassp = me->owner;
 	return TRUE;
     }
@@ -1973,15 +1976,15 @@ rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, VALUE *
 }
 
 int
-rb_thread_method_id_and_class(rb_thread_t *th, ID *idp, VALUE *klassp)
+rb_thread_method_id_and_class(rb_thread_t *th, ID *idp, ID *called_idp, VALUE *klassp)
 {
-    return rb_vm_control_frame_id_and_class(th->cfp, idp, klassp);
+    return rb_vm_control_frame_id_and_class(th->cfp, idp, called_idp, klassp);
 }
 
 int
-rb_frame_method_id_and_class(ID *idp, VALUE *klassp)
+rb_frame_method_id_and_class(ID *idp, ID *called_idp, VALUE *klassp)
 {
-    return rb_thread_method_id_and_class(GET_THREAD(), idp, klassp);
+    return rb_thread_method_id_and_class(GET_THREAD(), idp, called_idp, klassp);
 }
 
 VALUE

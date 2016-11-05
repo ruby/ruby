@@ -616,7 +616,7 @@ call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
     rb_thread_t *th = GET_THREAD();
 
     if (!klass) {
-	rb_thread_method_id_and_class(th, &id, &klass);
+	rb_thread_method_id_and_class(th, &id, 0, &klass);
     }
 
     if (klass) {
@@ -781,7 +781,7 @@ fill_id_and_klass(rb_trace_arg_t *trace_arg)
 {
     if (!trace_arg->klass_solved) {
 	if (!trace_arg->klass) {
-	    rb_vm_control_frame_id_and_class(trace_arg->cfp, &trace_arg->id, &trace_arg->klass);
+	    rb_vm_control_frame_id_and_class(trace_arg->cfp, &trace_arg->id, &trace_arg->called_id, &trace_arg->klass);
 	}
 
 	if (trace_arg->klass) {
@@ -802,6 +802,13 @@ rb_tracearg_method_id(rb_trace_arg_t *trace_arg)
 {
     fill_id_and_klass(trace_arg);
     return trace_arg->id ? ID2SYM(trace_arg->id) : Qnil;
+}
+
+VALUE
+rb_tracearg_callee_id(rb_trace_arg_t *trace_arg)
+{
+    fill_id_and_klass(trace_arg);
+    return trace_arg->called_id ? ID2SYM(trace_arg->called_id) : Qnil;
 }
 
 VALUE
@@ -906,12 +913,21 @@ tracepoint_attr_path(VALUE tpval)
 }
 
 /*
- * Return the name of the method being called
+ * Return the name at the definition of the method being called
  */
 static VALUE
 tracepoint_attr_method_id(VALUE tpval)
 {
     return rb_tracearg_method_id(get_trace_arg());
+}
+
+/*
+ * Return the called name of the method being called
+ */
+static VALUE
+tracepoint_attr_callee_id(VALUE tpval)
+{
+    return rb_tracearg_callee_id(get_trace_arg());
 }
 
 /*
@@ -1480,6 +1496,7 @@ Init_vm_trace(void)
     rb_define_method(rb_cTracePoint, "lineno", tracepoint_attr_lineno, 0);
     rb_define_method(rb_cTracePoint, "path", tracepoint_attr_path, 0);
     rb_define_method(rb_cTracePoint, "method_id", tracepoint_attr_method_id, 0);
+    rb_define_method(rb_cTracePoint, "callee_id", tracepoint_attr_callee_id, 0);
     rb_define_method(rb_cTracePoint, "defined_class", tracepoint_attr_defined_class, 0);
     rb_define_method(rb_cTracePoint, "binding", tracepoint_attr_binding, 0);
     rb_define_method(rb_cTracePoint, "self", tracepoint_attr_self, 0);

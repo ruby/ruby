@@ -1,3 +1,13 @@
+Sat Nov  5 22:11:33 2016  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* vm_trace.c (tracepoint_attr_callee_id, rb_tracearg_callee_id):
+	  add TracePoint#callee_id. [ruby-core:77241] [Feature #12747]
+
+	* cont.c, eval.c, gc.c, include/ruby/intern.h, insns.def, thread.c,
+	  vm.c, vm_backtrace.c, vm_core.h, vm_eval.c, vm_insnhelper.c, vm_trace.c: ditto.
+
+	* test/ruby/test_settracefunc.rb: tests for above.
+
 Sat Nov  5 22:09:48 2016  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* eval.c, method.h, proc.c, vm.c, vm_eval.c, vm_insnhelper.c, vm_method.c:

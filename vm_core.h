@@ -1420,7 +1420,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_iseq_eval(const rb_iseq_t *iseq);
 VALUE rb_iseq_eval_main(const rb_iseq_t *iseq);
 RUBY_SYMBOL_EXPORT_END
-int rb_thread_method_id_and_class(rb_thread_t *th, ID *idp, VALUE *klassp);
+int rb_thread_method_id_and_class(rb_thread_t *th, ID *idp, ID *called_idp, VALUE *klassp);
 
 VALUE rb_vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, int argc, const VALUE *argv, VALUE block_handler);
 VALUE rb_vm_make_proc_lambda(rb_thread_t *th, const struct rb_captured_block *captured, VALUE klass, int8_t is_lambda);
@@ -1468,7 +1468,7 @@ int rb_vm_get_sourceline(const rb_control_frame_t *);
 VALUE rb_name_err_mesg_new(VALUE mesg, VALUE recv, VALUE method);
 void rb_vm_stack_to_heap(rb_thread_t *th);
 void ruby_thread_init_stack(rb_thread_t *th);
-int rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, VALUE *klassp);
+int rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, ID *called_idp, VALUE *klassp);
 void rb_vm_rewind_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
 
 void rb_vm_register_special_exception(enum ruby_special_exceptions sp, VALUE exception_class, const char *mesg);
@@ -1580,6 +1580,7 @@ struct rb_trace_arg_struct {
     rb_control_frame_t *cfp;
     VALUE self;
     ID id;
+    ID called_id;
     VALUE klass;
     VALUE data;
 
@@ -1593,17 +1594,17 @@ struct rb_trace_arg_struct {
 void rb_threadptr_exec_event_hooks(struct rb_trace_arg_struct *trace_arg);
 void rb_threadptr_exec_event_hooks_and_pop_frame(struct rb_trace_arg_struct *trace_arg);
 
-#define EXEC_EVENT_HOOK_ORIG(th_, flag_, self_, id_, klass_, data_, pop_p_) do { \
+#define EXEC_EVENT_HOOK_ORIG(th_, flag_, self_, id_, called_id_, klass_, data_, pop_p_) do { \
     const rb_event_flag_t flag_arg_ = (flag_); \
     if (UNLIKELY(ruby_vm_event_flags & (flag_arg_))) { \
 	/* defer evaluating the other arguments */ \
-	ruby_exec_event_hook_orig(th_, flag_arg_, self_, id_, klass_, data_, pop_p_); \
+	ruby_exec_event_hook_orig(th_, flag_arg_, self_, id_, called_id_, klass_, data_, pop_p_); \
     } \
 } while (0)
 
 static inline void
 ruby_exec_event_hook_orig(rb_thread_t *const th, const rb_event_flag_t flag,
-			  VALUE self, ID id, VALUE klass, VALUE data, int pop_p)
+			  VALUE self, ID id, ID called_id, VALUE klass, VALUE data, int pop_p)
 {
     if ((th->event_hooks.events | th->vm->event_hooks.events) & flag) {
 	struct rb_trace_arg_struct trace_arg;
@@ -1612,6 +1613,7 @@ ruby_exec_event_hook_orig(rb_thread_t *const th, const rb_event_flag_t flag,
 	trace_arg.cfp = th->cfp;
 	trace_arg.self = self;
 	trace_arg.id = id;
+	trace_arg.called_id = called_id;
 	trace_arg.klass = klass;
 	trace_arg.data = data;
 	trace_arg.path = Qundef;
@@ -1621,11 +1623,11 @@ ruby_exec_event_hook_orig(rb_thread_t *const th, const rb_event_flag_t flag,
     }
 }
 
-#define EXEC_EVENT_HOOK(th_, flag_, self_, id_, klass_, data_) \
-  EXEC_EVENT_HOOK_ORIG(th_, flag_, self_, id_, klass_, data_, 0)
+#define EXEC_EVENT_HOOK(th_, flag_, self_, id_, called_id_, klass_, data_) \
+  EXEC_EVENT_HOOK_ORIG(th_, flag_, self_, id_, called_id_, klass_, data_, 0)
 
-#define EXEC_EVENT_HOOK_AND_POP_FRAME(th_, flag_, self_, id_, klass_, data_) \
-  EXEC_EVENT_HOOK_ORIG(th_, flag_, self_, id_, klass_, data_, 1)
+#define EXEC_EVENT_HOOK_AND_POP_FRAME(th_, flag_, self_, id_, called_id_, klass_, data_) \
+  EXEC_EVENT_HOOK_ORIG(th_, flag_, self_, id_, called_id_, klass_, data_, 1)
 
 RUBY_SYMBOL_EXPORT_BEGIN
 

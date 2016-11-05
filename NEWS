@@ -160,6 +160,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Thread#report_on_exception and Thread.report_on_exception
     [Feature #6647]
 
+* TracePoint
+
+  * TracePoint#callee_id [Feature #12747]
+
 * Warning
 
   * New module named Warning is introduced.  By default it has only

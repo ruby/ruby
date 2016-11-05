@@ -1488,4 +1488,115 @@ class TestSetTraceFunc < Test::Unit::TestCase
       assert_equal ev, :fiber_switch
     }
   end
+
+  def test_tracepoint_callee_id
+    events = []
+    capture_events = Proc.new{|tp|
+      events << [tp.event, tp.method_id, tp.callee_id]
+    }
+
+    o = Class.new{
+      def m
+        raise
+      end
+      alias alias_m m
+    }.new
+    TracePoint.new(:raise, :call, :return, &capture_events).enable{
+      o.alias_m rescue nil
+    }
+    assert_equal [[:call, :m, :alias_m], [:raise, :m, :alias_m], [:return, :m, :alias_m]], events
+    events.clear
+
+    o = Class.new{
+      alias alias_raise raise
+      def m
+        alias_raise
+      end
+    }.new
+    TracePoint.new(:c_return, &capture_events).enable{
+      o.m rescue nil
+    }
+    assert_equal [:c_return, :raise, :alias_raise], events[0]
+    events.clear
+
+    o = Class.new(String){
+      include Enumerable
+      alias each each_char
+    }.new('foo')
+    TracePoint.new(:c_return, &capture_events).enable{
+      o.find{true}
+    }
+    assert_equal [:c_return, :each_char, :each], events[0]
+    events.clear
+
+    o = Class.new{
+      define_method(:m){}
+      alias alias_m m
+    }.new
+    TracePoint.new(:call, :return, &capture_events).enable{
+      o.alias_m
+    }
+    assert_equal [[:call, :m, :alias_m], [:return, :m, :alias_m]], events
+    events.clear
+
+    o = Class.new{
+      def m
+        tap{return}
+      end
+      alias alias_m m
+    }.new
+    TracePoint.new(:return, &capture_events).enable{
+      o.alias_m
+    }
+    assert_equal [[:return, :m, :alias_m]], events
+    events.clear
+
+    o = Class.new{
+      define_method(:m){raise}
+      alias alias_m m
+    }.new
+    TracePoint.new(:b_return, :return, &capture_events).enable{
+      o.alias_m rescue nil
+    }
+    assert_equal [[:b_return, :m, :alias_m], [:return, :m, :alias_m]], events[0..1]
+    events.clear
+
+    o = Class.new{
+      define_method(:m){tap{return}}
+      alias alias_m m
+    }.new
+    TracePoint.new(:b_return, &capture_events).enable{
+      o.alias_m
+    }
+    assert_equal [[:b_return, :m, :alias_m], [:b_return, :m, :alias_m]], events[0..1]
+    events.clear
+
+    o = Class.new{
+      alias alias_tap tap
+      define_method(:m){alias_tap{return}}
+    }.new
+    TracePoint.new(:c_return, &capture_events).enable{
+      o.m
+    }
+    assert_equal [[:c_return, :tap, :alias_tap]], events
+    events.clear
+
+    c = Class.new{
+      alias initialize itself
+    }
+    TracePoint.new(:c_call, &capture_events).enable{
+      c.new
+    }
+    assert_equal [:c_call, :itself, :initialize], events[1]
+    events.clear
+
+    o = Class.new{
+      alias alias_itself itself
+    }.new
+    TracePoint.new(:c_call, :c_return, &capture_events).enable{
+      o.alias_itself
+    }
+    assert_equal [[:c_call, :itself, :alias_itself], [:c_return, :itself, :alias_itself]], events
+    events.clear
+  end
 end

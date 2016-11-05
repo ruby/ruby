@@ -68,7 +68,7 @@ vm_call0_cfunc(rb_thread_t* th, struct rb_calling_info *calling, const struct rb
     VALUE val;
 
     RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, cc->me->owner, ci->mid);
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, calling->recv, ci->mid, cc->me->owner, Qnil);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, calling->recv, ci->mid, ci->mid, cc->me->owner, Qnil);
     {
 	rb_control_frame_t *reg_cfp = th->cfp;
 	const rb_callable_method_entry_t *me = cc->me;
@@ -98,7 +98,7 @@ vm_call0_cfunc(rb_thread_t* th, struct rb_calling_info *calling, const struct rb
 	    rb_vm_pop_frame(th);
 	}
     }
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, calling->recv, ci->mid, callnig->cc->me->owner, val);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, calling->recv, ci->mid, ci->mid, callnig->cc->me->owner, val);
     RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, cc->me->owner, ci->mid);
 
     return val;
@@ -117,7 +117,7 @@ vm_call0_cfunc_with_frame(rb_thread_t* th, struct rb_calling_info *calling, cons
     VALUE block_handler = calling->block_handler;
 
     RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, me->owner, mid);
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, me->def->original_id, me->owner, Qnil);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, me->def->original_id, mid, me->owner, Qnil);
     {
 	rb_control_frame_t *reg_cfp = th->cfp;
 
@@ -136,7 +136,7 @@ vm_call0_cfunc_with_frame(rb_thread_t* th, struct rb_calling_info *calling, cons
 	VM_PROFILE_UP(C2C_POPF);
 	rb_vm_pop_frame(th);
     }
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, me->def->original_id, me->owner, val);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, me->def->original_id, mid, me->owner, val);
     RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, me->owner, mid);
 
     return val;

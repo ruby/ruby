@@ -1088,7 +1088,7 @@ static VALUE
 get_klass(const rb_control_frame_t *cfp)
 {
     VALUE klass;
-    if (rb_vm_control_frame_id_and_class(cfp, 0, &klass)) {
+    if (rb_vm_control_frame_id_and_class(cfp, 0, 0, &klass)) {
 	if (RB_TYPE_P(klass, T_ICLASS)) {
 	    return RBASIC(klass)->klass;
 	}

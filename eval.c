@@ -563,7 +563,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 
     if (tag != TAG_FATAL) {
 	RUBY_DTRACE_HOOK(RAISE, rb_obj_classname(th->errinfo));
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_RAISE, th->cfp->self, 0, 0, mesg);
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_RAISE, th->cfp->self, 0, 0, 0, mesg);
     }
 }
 
@@ -749,7 +749,7 @@ rb_raise_jump(VALUE mesg, VALUE cause)
     ID mid = me->called_id;
 
     rb_vm_pop_frame(th);
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, self, me->def->original_id, klass, Qnil);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, self, me->def->original_id, mid, klass, Qnil);
 
     setup_exception(th, TAG_RAISE, mesg, cause);
 
