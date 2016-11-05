@@ -1,3 +1,8 @@
+Sat Nov  5 17:18:24 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/-test/file/fs.c (get_atime_p): Updating of file access times
+	  is enabled or not.
+
 Sat Nov  5 16:28:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (extract_getline_opts): extract chomp option.
