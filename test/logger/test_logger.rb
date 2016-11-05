@@ -121,6 +121,7 @@ class TestLogger < Test::Unit::TestCase
   end
 
   def test_datetime_format
+    verbose, $VERBOSE = $VERBOSE, false
     dummy = STDERR
     logger = Logger.new(dummy)
     log = log_add(logger, INFO, "foo")
@@ -131,6 +132,8 @@ class TestLogger < Test::Unit::TestCase
     logger.datetime_format = ""
     log = log_add(logger, INFO, "foo")
     assert_match(/^$/, log.datetime)
+  ensure
+    $VERBOSE = verbose
   end
 
   def test_formatter
