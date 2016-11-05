@@ -244,6 +244,13 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Tk is removed from stdlib.  [Feature #8539]
     https://github.com/ruby/tk is the new upstream.
 
+* shellwords
+
+  * Shellwords.shellwords (shellsplit) treats the backslash as escape
+    character only when followed by one of the following characters:
+    $ ` " \ <newline>
+    [Bug #10055]
+
 === C API updates
 
 * ruby_show_version() will no longer exits the process, if
