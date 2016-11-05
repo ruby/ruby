@@ -5717,7 +5717,8 @@ rb_ary_dig(int argc, VALUE *argv, VALUE self)
  *   ["a", "b", "c"].sum("")            #=> "abc"
  *   [[1], [[2]], [3]].sum([])          #=> [1, [2], 3]
  *
- * However, Array#join and Array#flatten is faster than Array#sum.
+ * However, Array#join and Array#flatten is faster than Array#sum for
+ * array of strings and array of arrays.
  *
  *   ["a", "b", "c"].join               #=> "abc"
  *   [[1], [[2]], [3]].flatten(1)       #=> [1, [2], 3]
