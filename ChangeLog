@@ -1,3 +1,8 @@
+Sat Nov  5 11:20:57 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* cont.c (cont_new): disable optimization if clang's version is
+	  3.8.0.  [ruby-core:77894] [Bug #12893]
+
 Sat Nov  5 10:07:18 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_file.rb (TestFile#test_stat): fix noatime case.
