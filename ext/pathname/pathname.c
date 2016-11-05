@@ -990,6 +990,22 @@ path_zero_p(VALUE self)
     return rb_funcall(rb_mFileTest, rb_intern("zero?"), 1, get_strpath(self));
 }
 
+/*
+ * Tests the file is empty.
+ *
+ * See Dir#empty? and FileTest.empty?.
+ */
+static VALUE
+path_empty_p(VALUE self)
+{
+
+    VALUE path = get_strpath(self);
+    if (RTEST(rb_funcall(rb_mFileTest, rb_intern("directory?"), 1, path)))
+        return rb_funcall(rb_cDir, rb_intern("empty?"), 1, path);
+    else
+        return rb_funcall(rb_mFileTest, rb_intern("empty?"), 1, path);
+}
+
 static VALUE
 glob_i(RB_BLOCK_CALL_FUNC_ARGLIST(elt, klass))
 {
@@ -1452,6 +1468,7 @@ Init_pathname(void)
     rb_define_method(rb_cPathname, "world_writable?", path_world_writable_p, 0);
     rb_define_method(rb_cPathname, "writable_real?", path_writable_real_p, 0);
     rb_define_method(rb_cPathname, "zero?", path_zero_p, 0);
+    rb_define_method(rb_cPathname, "empty?", path_empty_p, 0);
     rb_define_singleton_method(rb_cPathname, "glob", path_s_glob, -1);
     rb_define_singleton_method(rb_cPathname, "getwd", path_s_getwd, 0);
     rb_define_singleton_method(rb_cPathname, "pwd", path_s_getwd, 0);

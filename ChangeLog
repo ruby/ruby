@@ -1,3 +1,8 @@
+Sat Nov  5 12:14:31 2016  Tanaka Akira  <akr@fsij.org>
+
+	* ext/pathname/pathname.c (Pathname#empty?): New method.
+	  [ruby-core:76404] [Feature#12596] Proposed by John Backus.
+
 Sat Nov  5 11:53:02 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/ruby/test_refinement.rb (test_refine_alias_in_subclass):

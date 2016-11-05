@@ -180,6 +180,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Add an into option. [Feature #11191]
 
+* pathname
+  * New method: Pathname#empty? [Feature#12596]
+
 * WEBrick
 
   * Don't allow , as a separator [Bug #12791]
