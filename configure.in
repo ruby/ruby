@@ -846,6 +846,7 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
 		 -Wno-packed-bitfield-compat \
 		 -Wsuggest-attribute=noreturn \
 		 -Wsuggest-attribute=format \
+		 -Wimplicit-fallthrough=0 \
 		 $extra_warning \
 		 ; do
 	if test "$particular_werror_flags" != yes; then
