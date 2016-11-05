@@ -3751,7 +3751,7 @@ brace_body	: {$<vars>$ = dyna_push();}
 		    {
 			$$ = new_brace_body($3, $4);
 			dyna_pop($<vars>1);
-			CMDARG_SET($<num>2);
+			CMDARG_SET($<val>2);
 		    }
 		;
 
@@ -3761,7 +3761,7 @@ do_body 	: {$<vars>$ = dyna_push();}
 		    {
 			$$ = new_do_body($3, $4);
 			dyna_pop($<vars>1);
-			CMDARG_SET($<num>2);
+			CMDARG_SET($<val>2);
 		    }
 		;
 

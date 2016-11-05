@@ -1,3 +1,10 @@
+Sat Nov  5 14:17:20 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (brace_body, do_body): since cmdarg_stack is saved in
+	  VALUE val, should restore from the same member.  on big-endian
+	  platforms where VALUE is larger than int, it restored 0 in the
+	  upper word.  [ruby-core:77920] [Bug #12900]
+
 Sat Nov  5 13:52:52 2016  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/shellwords.rb (Shellwords#shellsplit): Fix the handling of
