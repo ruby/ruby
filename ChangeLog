@@ -23,7 +23,7 @@ Sat Nov  5 17:29:06 2016  Tanaka Akira  <akr@fsij.org>
 
 Sat Nov  5 17:18:24 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
-	* ext/-test/file/fs.c (get_atime_p): Updating of file access times
+	* ext/-test-/file/fs.c (get_atime_p): Updating of file access times
 	  is enabled or not.
 
 Sat Nov  5 16:28:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
