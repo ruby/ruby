@@ -3185,13 +3185,27 @@ copy_home_path(VALUE result, const char *dir)
 VALUE
 rb_home_dir_of(VALUE user, VALUE result)
 {
-    const char *dir, *username = RSTRING_PTR(user);
 #ifdef HAVE_PWD_H
-    struct passwd *pwPtr = getpwnam(username);
+    struct passwd *pwPtr;
 #else
     extern char *getlogin(void);
     const char *pwPtr = 0;
     # define endpwent() ((void)0)
+#endif
+    const char *dir, *username = RSTRING_PTR(user);
+    rb_encoding *enc = rb_enc_get(user);
+#if defined _WIN32
+    rb_encoding *fsenc = rb_utf8_encoding();
+#else
+    rb_encoding *fsenc = rb_filesystem_encoding();
+#endif
+    if (enc != fsenc) {
+        dir = username = RSTRING_PTR(rb_str_conv_enc(user, enc, fsenc));
+    }
+
+#ifdef HAVE_PWD_H
+    pwPtr = getpwnam(username);
+#else
     if (strcasecmp(username, getlogin()) == 0)
 	dir = pwPtr = getenv("HOME");
 #endif
