@@ -592,7 +592,7 @@ r53323 | svn | 2015-12-27 09:48:25 +0900 (Sun, 27 Dec 2015) | 1 line
 r53322 | suke | 2015-12-27 09:48:20 +0900 (Sun, 27 Dec 2015) | 6 lines
 
 * ext/win32ole/win32ole.c (ole_vstr2wc, ole_variant2val): fix blank
-  string conversion. 
+  string conversion.
   [Bug #11880]
   Thanks Akio Tajima for the patch!
 
