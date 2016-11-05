@@ -1,3 +1,13 @@
+Sat Nov  5 15:42:52 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/smtp.rb (tlsconnect): support timeout for TLS handshake.
+	  [ruby-core:76893] [Bug #12678]
+
+	* lib/net/protocol.rb (ssl_socket_connect): new method to implement
+	  timeout for TLS handshake.
+
+	* lib/net/http.rb (connect): use Net::Protocol#ssl_socket_connect.
+
 Sat Nov  5 14:17:20 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (brace_body, do_body): since cmdarg_stack is saved in

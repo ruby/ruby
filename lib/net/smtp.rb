@@ -167,7 +167,7 @@ module Net
   #     Net::SMTP.start('your.smtp.server', 25, 'mail.from.domain',
   #                     'Your Account', 'Your Password', :cram_md5)
   #
-  class SMTP
+  class SMTP < Protocol
 
     Revision = %q$Revision$.split[1]
 
@@ -581,7 +581,7 @@ module Net
       s = ssl_socket(s, @ssl_context)
       logging "TLS connection started"
       s.sync_close = true
-      s.connect
+      ssl_socket_connect(s, @open_timeout)
       if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
         s.post_connection_check(@address)
       end

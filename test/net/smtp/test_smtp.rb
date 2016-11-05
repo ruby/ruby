@@ -5,6 +5,10 @@ require 'test/unit'
 
 module Net
   class TestSMTP < Test::Unit::TestCase
+    CA_FILE = File.expand_path("../imap/cacert.pem", __dir__)
+    SERVER_KEY = File.expand_path("../imap/server.key", __dir__)
+    SERVER_CERT = File.expand_path("../imap/server.crt", __dir__)
+
     class FakeSocket
       attr_reader :write_io
 
@@ -96,6 +100,58 @@ module Net
 
       assert_raise(ArgumentError) do
         smtp.rcptto("foo\r\nbar")
+      end
+    end
+
+    def test_tls_connect
+      server = TCPServer.new("127.0.0.1", 0)
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ca_file = CA_FILE
+      ctx.key = File.open(SERVER_KEY) { |f|
+        OpenSSL::PKey::RSA.new(f)
+      }
+      ctx.cert = File.open(SERVER_CERT) { |f|
+        OpenSSL::X509::Certificate.new(f)
+      }
+      ssl_server = OpenSSL::SSL::SSLServer.new(server, ctx)
+      begin
+        sock = nil
+        Thread.start do
+          sock = ssl_server.accept
+          sock.write("220 localhost Service ready\r\n")
+          sock.gets
+          sock.write("250 localhost\r\n")
+          sock.gets
+          sock.write("221 localhost Service closing transmission channel\r\n")
+        end
+        smtp = Net::SMTP.new("localhost", server.addr[1])
+        smtp.enable_tls
+        smtp.open_timeout = 0.1
+        smtp.start do
+        end
+      ensure
+        sock.close if sock
+        ssl_server.close
+      end
+    end
+
+    def test_tls_connect_timeout
+      server = TCPServer.new("127.0.0.1", 0)
+      begin
+        sock = nil
+        Thread.start do
+          sock = server.accept
+        end
+        smtp = Net::SMTP.new("127.0.0.1", server.addr[1])
+        smtp.enable_tls
+        smtp.open_timeout = 0.1
+        assert_raise(Net::OpenTimeout) do
+          smtp.start do
+          end
+        end
+      ensure
+        sock.close if sock
+        server.close
       end
     end
   end

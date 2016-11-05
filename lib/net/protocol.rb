@@ -34,6 +34,24 @@ module Net # :nodoc:
         end
       End
     end
+
+    def ssl_socket_connect(s, timeout)
+      if timeout
+        while true
+          raise Net::OpenTimeout if timeout <= 0
+          start = Process.clock_gettime Process::CLOCK_MONOTONIC
+          # to_io is required because SSLSocket doesn't have wait_readable yet
+          case s.connect_nonblock(exception: false)
+          when :wait_readable; s.to_io.wait_readable(timeout)
+          when :wait_writable; s.to_io.wait_writable(timeout)
+          else; break
+          end
+          timeout -= Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
+        end
+      else
+        s.connect
+      end
+    end
   end
 
 
