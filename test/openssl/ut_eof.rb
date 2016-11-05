@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 
-module TestEOF
+module OpenSSL::TestEOF
   def test_eof_0
     open_file("") {|f|
       assert_equal("", f.read(0))
