@@ -7975,6 +7975,20 @@ chomp_rs(int argc, const VALUE *argv)
     }
 }
 
+VALUE
+rb_str_chomp_string(VALUE str, VALUE rs)
+{
+    long olen = RSTRING_LEN(str);
+    long len = chompped_length(str, rs);
+    if (len >= olen) return Qnil;
+    STR_SET_LEN(str, len);
+    TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
+    if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
+	ENC_CODERANGE_CLEAR(str);
+    }
+    return str;
+}
+
 /*
  *  call-seq:
  *     str.chomp!(separator=$/)   -> str or nil
@@ -7987,21 +8001,11 @@ static VALUE
 rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
 {
     VALUE rs;
-    long olen;
     str_modify_keep_cr(str);
-    if ((olen = RSTRING_LEN(str)) > 0 && !NIL_P(rs = chomp_rs(argc, argv))) {
-	long len;
-	len = chompped_length(str, rs);
-	if (len < olen) {
-	    STR_SET_LEN(str, len);
-	    TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
-	    if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
-		ENC_CODERANGE_CLEAR(str);
-	    }
-	    return str;
-	}
-    }
-    return Qnil;
+    if (RSTRING_LEN(str) == 0) return Qnil;
+    rs = chomp_rs(argc, argv);
+    if (NIL_P(rs)) return Qnil;
+    return rb_str_chomp_string(str, rs);
 }
 
 

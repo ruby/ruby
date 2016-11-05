@@ -204,6 +204,55 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
+  def test_gets_chomp_rs
+    rs = ":"
+    pipe(proc do |w|
+      w.print "aaa:bbb"
+      w.close
+    end, proc do |r|
+      assert_equal "aaa", r.gets(rs, chomp: true)
+      assert_equal "bbb", r.gets(rs, chomp: true)
+      assert_nil r.gets(rs, chomp: true)
+      r.close
+    end)
+  end
+
+  def test_gets_chomp_default_rs
+    pipe(proc do |w|
+      w.print "aaa\r\nbbb\nccc"
+      w.close
+    end, proc do |r|
+      assert_equal "aaa", r.gets(chomp: true)
+      assert_equal "bbb", r.gets(chomp: true)
+      assert_equal "ccc", r.gets(chomp: true)
+      assert_nil r.gets
+      r.close
+    end)
+  end
+
+  def test_gets_chomp_rs_nil
+    pipe(proc do |w|
+      w.print "a\n\nb\n\n"
+      w.close
+    end, proc do |r|
+      assert_equal "a\n\nb\n", r.gets(nil, chomp: true)
+      assert_nil r.gets("")
+      r.close
+    end)
+  end
+
+  def test_gets_chomp_paragraph
+    pipe(proc do |w|
+      w.print "a\n\nb\n\n"
+      w.close
+    end, proc do |r|
+      assert_equal "a", r.gets("", chomp: true)
+      assert_equal "b", r.gets("", chomp: true)
+      assert_nil r.gets("", chomp: true)
+      r.close
+    end)
+  end
+
   def test_gets_limit_extra_arg
     pipe(proc do |w|
       w << "0123456789\n0123456789"

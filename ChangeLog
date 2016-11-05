@@ -1,3 +1,8 @@
+Sat Nov  5 16:28:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (extract_getline_opts): extract chomp option.
+	  [Feature #12553]
+
 Sat Nov  5 15:58:24 2016  Sho Hashimoto  <sho-h@netlab.jp>
 
 	* tool/mkconfig.rb: [DOC] add rbconfig documentation.

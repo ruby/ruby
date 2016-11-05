@@ -83,6 +83,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Integer#digits for extracting columns of place-value notation [Feature #12447]
 
+* IO
+
+  * IO#gets, IO#readline, IO#each_line, IO#readlines, IO#foreach now takes
+    an optional keyword argument, chomp flag.
+
 * Kernel
 
   * Kernel#clone now takes an optional keyword argument, freeze flag.

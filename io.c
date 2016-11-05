@@ -2977,7 +2977,7 @@ swallow(rb_io_t *fptr, int term)
 }
 
 static VALUE
-rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc)
+rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc, int chomp)
 {
     VALUE str = Qnil;
     int len = 0;
@@ -2990,21 +2990,27 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc)
 	if (pending > 0) {
 	    const char *p = READ_DATA_PENDING_PTR(fptr);
 	    const char *e;
+	    int chomplen = 0;
 
 	    e = memchr(p, '\n', pending);
 	    if (e) {
                 pending = (int)(e - p + 1);
+		if (chomp) {
+		    chomplen = (pending > 1 && *(e-1) == '\r') + 1;
+		}
 	    }
 	    if (NIL_P(str)) {
-		str = rb_str_new(p, pending);
+		str = rb_str_new(p, pending - chomplen);
 		fptr->rbuf.off += pending;
 		fptr->rbuf.len -= pending;
 	    }
 	    else {
-		rb_str_resize(str, len + pending);
-		read_buffered_data(RSTRING_PTR(str)+len, pending, fptr);
+		rb_str_resize(str, len + pending - chomplen);
+		read_buffered_data(RSTRING_PTR(str)+len, pending - chomplen, fptr);
+		fptr->rbuf.off += chomplen;
+		fptr->rbuf.len -= chomplen;
 	    }
-	    len += pending;
+	    len += pending - chomplen;
 	    if (cr != ENC_CODERANGE_BROKEN)
 		pos += rb_str_coderange_scan_restartable(RSTRING_PTR(str) + pos, RSTRING_PTR(str) + len, enc, &cr);
 	    if (e) break;
@@ -3024,14 +3030,30 @@ struct getline_arg {
     VALUE io;
     VALUE rs;
     long limit;
+    unsigned int chomp: 1;
 };
 
 static void
-extract_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit)
+extract_getline_opts(VALUE opts, struct getline_arg *args)
+{
+    int chomp = FALSE;
+    if (!NIL_P(opts)) {
+	static ID kwds[1];
+	VALUE vchomp;
+	if (!kwds[0]) {
+	    kwds[0] = rb_intern_const("chomp");
+	}
+	rb_get_kwargs(opts, kwds, 0, -2, &vchomp);
+	chomp = (vchomp != Qundef) && RTEST(vchomp);
+    }
+    args->chomp = chomp;
+}
+
+static void
+extract_getline_args(int argc, VALUE *argv, struct getline_arg *args)
 {
     VALUE rs = rb_rs, lim = Qnil;
 
-    rb_check_arity(argc, 0, 2);
     if (argc == 1) {
         VALUE tmp = Qnil;
 
@@ -3047,8 +3069,8 @@ extract_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit)
         if (!NIL_P(rs))
             StringValue(rs);
     }
-    *rsp = rs;
-    *limit = NIL_P(lim) ? -1L : NUM2LONG(lim);
+    args->rs = rs;
+    args->limit = NIL_P(lim) ? -1L : NUM2LONG(lim);
 }
 
 static void
@@ -3081,14 +3103,17 @@ check_getline_args(VALUE *rsp, long *limit, VALUE io)
 }
 
 static void
-prepare_getline_args(int argc, VALUE *argv, VALUE *rsp, long *limit, VALUE io)
+prepare_getline_args(int argc, VALUE *argv, struct getline_arg *args, VALUE io)
 {
-    extract_getline_args(argc, argv, rsp, limit);
-    check_getline_args(rsp, limit, io);
+    VALUE opts;
+    argc = rb_scan_args(argc, argv, "02:", NULL, NULL, &opts);
+    extract_getline_args(argc, argv, args);
+    extract_getline_opts(opts, args);
+    check_getline_args(&args->rs, &args->limit, io);
 }
 
 static VALUE
-rb_io_getline_0(VALUE rs, long limit, rb_io_t *fptr)
+rb_io_getline_0(VALUE rs, long limit, int chomp, rb_io_t *fptr)
 {
     VALUE str = Qnil;
     int nolimit = 0;
@@ -3098,6 +3123,7 @@ rb_io_getline_0(VALUE rs, long limit, rb_io_t *fptr)
     if (NIL_P(rs) && limit < 0) {
 	str = read_all(fptr, 0, Qnil);
 	if (RSTRING_LEN(str) == 0) return Qnil;
+	if (chomp) rb_str_chomp_string(str, rb_default_rs);
     }
     else if (limit == 0) {
 	return rb_enc_str_new(0, 0, io_read_encoding(fptr));
@@ -3105,7 +3131,7 @@ rb_io_getline_0(VALUE rs, long limit, rb_io_t *fptr)
     else if (rs == rb_default_rs && limit < 0 && !NEED_READCONV(fptr) &&
              rb_enc_asciicompat(enc = io_read_encoding(fptr))) {
 	NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
-	return rb_io_getline_fast(fptr, enc);
+	return rb_io_getline_fast(fptr, enc, chomp);
     }
     else {
 	int c, newline = -1;
@@ -3113,6 +3139,7 @@ rb_io_getline_0(VALUE rs, long limit, rb_io_t *fptr)
 	long rslen = 0;
 	int rspara = 0;
         int extra_limit = 16;
+	int chomp_cr = chomp;
 
 	SET_BINARY_MODE(fptr);
         enc = io_read_encoding(fptr);
@@ -3137,6 +3164,7 @@ rb_io_getline_0(VALUE rs, long limit, rb_io_t *fptr)
 		rsptr = RSTRING_PTR(rs);
 	    }
 	    newline = (unsigned char)rsptr[rslen - 1];
+	    chomp_cr = chomp && rslen == 1 && newline == '\n';
 	}
 
 	/* MS - Optimization */
@@ -3151,7 +3179,13 @@ rb_io_getline_0(VALUE rs, long limit, rb_io_t *fptr)
 		pp = rb_enc_left_char_head(s, p, e, enc);
 		if (pp != p) continue;
 		if (!rspara) rscheck(rsptr, rslen, rs);
-		if (memcmp(p, rsptr, rslen) == 0) break;
+		if (memcmp(p, rsptr, rslen) == 0) {
+		    if (chomp) {
+			if (chomp_cr && p > s && *(p-1) == '\r') --p;
+			rb_str_set_len(str, p - s);
+		    }
+		    break;
+		}
 	    }
 	    if (limit == 0) {
 		s = RSTRING_PTR(str);
@@ -3185,7 +3219,7 @@ rb_io_getline_0(VALUE rs, long limit, rb_io_t *fptr)
 }
 
 static VALUE
-rb_io_getline_1(VALUE rs, long limit, VALUE io)
+rb_io_getline_1(VALUE rs, long limit, int chomp, VALUE io)
 {
     rb_io_t *fptr;
     int old_lineno, new_lineno;
@@ -3193,7 +3227,7 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 
     GetOpenFile(io, fptr);
     old_lineno = fptr->lineno;
-    str = rb_io_getline_0(rs, limit, fptr);
+    str = rb_io_getline_0(rs, limit, chomp, fptr);
     if (!NIL_P(str) && (new_lineno = fptr->lineno) != old_lineno) {
 	if (io == ARGF.current_file) {
 	    ARGF.lineno += new_lineno - old_lineno;
@@ -3210,17 +3244,16 @@ rb_io_getline_1(VALUE rs, long limit, VALUE io)
 static VALUE
 rb_io_getline(int argc, VALUE *argv, VALUE io)
 {
-    VALUE rs;
-    long limit;
+    struct getline_arg args;
 
-    prepare_getline_args(argc, argv, &rs, &limit, io);
-    return rb_io_getline_1(rs, limit, io);
+    prepare_getline_args(argc, argv, &args, io);
+    return rb_io_getline_1(args.rs, args.limit, args.chomp, io);
 }
 
 VALUE
 rb_io_gets(VALUE io)
 {
-    return rb_io_getline_1(rb_default_rs, -1, io);
+    return rb_io_getline_1(rb_default_rs, -1, FALSE, io);
 }
 
 VALUE
@@ -3228,7 +3261,7 @@ rb_io_gets_internal(VALUE io)
 {
     rb_io_t *fptr;
     GetOpenFile(io, fptr);
-    return rb_io_getline_0(rb_default_rs, -1, fptr);
+    return rb_io_getline_0(rb_default_rs, -1, FALSE, fptr);
 }
 
 /*
@@ -3356,7 +3389,7 @@ rb_io_readline(int argc, VALUE *argv, VALUE io)
     return line;
 }
 
-static VALUE io_readlines(VALUE rs, long limit, VALUE io);
+static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
 
 /*
  *  call-seq:
@@ -3379,22 +3412,21 @@ static VALUE io_readlines(VALUE rs, long limit, VALUE io);
 static VALUE
 rb_io_readlines(int argc, VALUE *argv, VALUE io)
 {
-    VALUE rs;
-    long limit;
+    struct getline_arg args;
 
-    prepare_getline_args(argc, argv, &rs, &limit, io);
-    return io_readlines(rs, limit, io);
+    prepare_getline_args(argc, argv, &args, io);
+    return io_readlines(&args, io);
 }
 
 static VALUE
-io_readlines(VALUE rs, long limit, VALUE io)
+io_readlines(const struct getline_arg *arg, VALUE io)
 {
     VALUE line, ary;
 
-    if (limit == 0)
+    if (arg->limit == 0)
 	rb_raise(rb_eArgError, "invalid limit: 0 for readlines");
     ary = rb_ary_new();
-    while (!NIL_P(line = rb_io_getline_1(rs, limit, io))) {
+    while (!NIL_P(line = rb_io_getline_1(arg->rs, arg->limit, arg->chomp, io))) {
 	rb_ary_push(ary, line);
     }
     return ary;
@@ -3432,14 +3464,14 @@ io_readlines(VALUE rs, long limit, VALUE io)
 static VALUE
 rb_io_each_line(int argc, VALUE *argv, VALUE io)
 {
-    VALUE str, rs;
-    long limit;
+    VALUE str;
+    struct getline_arg args;
 
     RETURN_ENUMERATOR(io, argc, argv);
-    prepare_getline_args(argc, argv, &rs, &limit, io);
-    if (limit == 0)
+    prepare_getline_args(argc, argv, &args, io);
+    if (args.limit == 0)
 	rb_raise(rb_eArgError, "invalid limit: 0 for each_line");
-    while (!NIL_P(str = rb_io_getline_1(rs, limit, io))) {
+    while (!NIL_P(str = rb_io_getline_1(args.rs, args.limit, args.chomp, io))) {
 	rb_yield(str);
     }
     return io;
@@ -9738,7 +9770,7 @@ io_s_foreach(struct getline_arg *arg)
 {
     VALUE str;
 
-    while (!NIL_P(str = rb_io_getline_1(arg->rs, arg->limit, arg->io))) {
+    while (!NIL_P(str = rb_io_getline_1(arg->rs, arg->limit, arg->chomp, arg->io))) {
 	rb_lastline_set(str);
 	rb_yield(str);
     }
@@ -9782,9 +9814,10 @@ rb_io_s_foreach(int argc, VALUE *argv, VALUE self)
 
     argc = rb_scan_args(argc, argv, "13:", NULL, NULL, NULL, NULL, &opt);
     RETURN_ENUMERATOR(self, orig_argc, argv);
-    extract_getline_args(argc-1, argv+1, &garg.rs, &garg.limit);
+    extract_getline_args(argc-1, argv+1, &garg);
     open_key_args(argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
+    extract_getline_opts(opt, &garg);
     check_getline_args(&garg.rs, &garg.limit, garg.io = arg.io);
     return rb_ensure(io_s_foreach, (VALUE)&garg, rb_io_close, arg.io);
 }
@@ -9792,7 +9825,7 @@ rb_io_s_foreach(int argc, VALUE *argv, VALUE self)
 static VALUE
 io_s_readlines(struct getline_arg *arg)
 {
-    return io_readlines(arg->rs, arg->limit, arg->io);
+    return io_readlines(arg, arg->io);
 }
 
 /*
@@ -9821,9 +9854,10 @@ rb_io_s_readlines(int argc, VALUE *argv, VALUE io)
     struct getline_arg garg;
 
     argc = rb_scan_args(argc, argv, "13:", NULL, NULL, NULL, NULL, &opt);
-    extract_getline_args(argc-1, argv+1, &garg.rs, &garg.limit);
+    extract_getline_args(argc-1, argv+1, &garg);
     open_key_args(argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
+    extract_getline_opts(opt, &garg);
     check_getline_args(&garg.rs, &garg.limit, garg.io = arg.io);
     return rb_ensure(io_s_readlines, (VALUE)&garg, rb_io_close, arg.io);
 }
