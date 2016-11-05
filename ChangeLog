@@ -1,7 +1,7 @@
 Sat Nov  5 23:30:41 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTP.post): new convenience method to send
-	  a POST request.
+	  a POST request.  [ruby-core:75484] [Feature #12375]
 
 Sat Nov  5 23:03:54 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
