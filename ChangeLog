@@ -1,3 +1,8 @@
+Sat Nov  5 23:46:03 2016  Tanaka Akira  <akr@fsij.org>
+
+	* time.c (vtm_add_offset): Fix yday on last day of year.
+	  [ruby-core:72878] [Bug #11994] Fixed by Andrew White.
+
 Sat Nov  5 23:30:41 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/http.rb (Net::HTTP.post): new convenience method to send
@@ -64,7 +69,7 @@ Sat Nov  5 17:29:06 2016  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS#extract_resources): Use each_resource
 	  instead of each_answer.
-	  [ruby-core:75461] [Bug#12372] reported by Rafael Fernandez Lopez.
+	  [ruby-core:75461] [Bug #12372] reported by Rafael Fernandez Lopez.
 
 Sat Nov  5 17:18:24 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -106,7 +111,7 @@ Sat Nov  5 13:52:52 2016  Akinori MUSHA  <knu@iDaemons.org>
 Sat Nov  5 12:14:31 2016  Tanaka Akira  <akr@fsij.org>
 
 	* ext/pathname/pathname.c (Pathname#empty?): New method.
-	  [ruby-core:76404] [Feature#12596] Proposed by John Backus.
+	  [ruby-core:76404] [Feature #12596] Proposed by John Backus.
 
 Sat Nov  5 11:53:02 2016  Shugo Maeda  <shugo@ruby-lang.org>
 

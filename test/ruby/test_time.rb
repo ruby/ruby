@@ -1072,4 +1072,21 @@ class TestTime < Test::Unit::TestCase
     assert_equal now2, now3
     assert_equal now2.zone, now3.zone
   end
+
+  def test_strftime_yearday_on_last_day_of_year
+    t = Time.utc(2015, 12, 31, 0, 0, 0)
+    assert_equal("365", t.strftime("%j"))
+    t = Time.utc(2016, 12, 31, 0, 0, 0)
+    assert_equal("366", t.strftime("%j"))
+
+    t = Time.utc(2015, 12, 30, 20, 0, 0).getlocal("+05:00")
+    assert_equal("365", t.strftime("%j"))
+    t = Time.utc(2016, 12, 30, 20, 0, 0).getlocal("+05:00")
+    assert_equal("366", t.strftime("%j"))
+
+    t = Time.utc(2016, 1, 1, 1, 0, 0).getlocal("-05:00")
+    assert_equal("365", t.strftime("%j"))
+    t = Time.utc(2017, 1, 1, 1, 0, 0).getlocal("-05:00")
+    assert_equal("366", t.strftime("%j"))
+  end
 end

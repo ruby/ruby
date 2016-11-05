@@ -1889,7 +1889,7 @@ vtm_add_offset(struct vtm *vtm, VALUE off)
                 vtm->mday = 31;
                 vtm->mon = 12; /* December */
                 vtm->year = sub(vtm->year, INT2FIX(1));
-                vtm->yday = leap_year_v_p(vtm->year) ? 365 : 364;
+                vtm->yday = leap_year_v_p(vtm->year) ? 366 : 365;
             }
             else if (vtm->mday == 1) {
                 const int *days_in_month = leap_year_v_p(vtm->year) ?
