@@ -355,8 +355,11 @@ class ERB
 
     class Scanner # :nodoc:
       @scanner_map = {}
-      def self.regist_scanner(klass, trim_mode, percent)
-        @scanner_map[[trim_mode, percent]] = klass
+      class << self
+        def register_scanner(klass, trim_mode, percent)
+          @scanner_map[[trim_mode, percent]] = klass
+        end
+        alias :regist_scanner :register_scanner
       end
 
       def self.default_scanner=(klass)
