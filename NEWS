@@ -96,6 +96,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Module
 
   * Module.used_modules [Feature #7418]
+  * Module#refine accepts a module as the argument now. [Feature #12534]
 
 * Numeric
 
