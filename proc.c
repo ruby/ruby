@@ -2224,7 +2224,7 @@ umethod_bind(VALUE method, VALUE recv)
 	else {
 	    klass = rb_include_class_new(methclass, klass);
 	}
-	RB_OBJ_WRITE(method, &bound->me, rb_method_entry_complement_defined_class(bound->me, klass));
+	RB_OBJ_WRITE(method, &bound->me, rb_method_entry_complement_defined_class(bound->me, bound->me->called_id, klass));
     }
 
     return method;

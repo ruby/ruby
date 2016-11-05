@@ -1153,8 +1153,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
     }
     assert_equal([
       [:call, :size],
-      [:c_call, :original_size],
-      [:c_return, :original_size],
+      [:c_call, :size],
+      [:c_return, :size],
       [:return, :size]
     ], events, "should use alias method name for tracing c methods")
   end
@@ -1287,7 +1287,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
       }.enable{
         p 1
       }
-    }, %w[:p :inspect 1], [], '[Bug #9940]')
+    }, %w[:p :to_s 1], [], '[Bug #9940]')
   end
 
   def method_prefix event

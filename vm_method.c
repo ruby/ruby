@@ -408,9 +408,9 @@ rb_method_entry_clone(const rb_method_entry_t *src_me)
 }
 
 const rb_callable_method_entry_t *
-rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, VALUE defined_class)
+rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID called_id, VALUE defined_class)
 {
-    rb_method_entry_t *me = rb_method_entry_alloc(src_me->called_id, src_me->owner, defined_class,
+    rb_method_entry_t *me = rb_method_entry_alloc(called_id, src_me->owner, defined_class,
 						  method_definition_addref_complement(src_me->def));
     METHOD_ENTRY_FLAGS_COPY(me, src_me);
     METHOD_ENTRY_COMPLEMENTED_SET(me);
@@ -816,7 +816,7 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
 	    VM_ASSERT(callable_method_entry_p(cme));
 	}
 	else {
-	    cme = rb_method_entry_complement_defined_class(me, defined_class);
+	    cme = rb_method_entry_complement_defined_class(me, me->called_id, defined_class);
 	    rb_id_table_insert(mtbl, id, (VALUE)cme);
 	    VM_ASSERT(callable_method_entry_p(cme));
 	}
@@ -949,7 +949,7 @@ rb_resolve_refined_method_callable(VALUE refinements, const rb_callable_method_e
     const rb_method_entry_t *resolved_me = resolve_refined_method(refinements, (const rb_method_entry_t *)me, &defined_class);
 
     if (resolved_me && resolved_me->defined_class == 0) {
-	return rb_method_entry_complement_defined_class(resolved_me, defined_class);
+	return rb_method_entry_complement_defined_class(resolved_me, me->called_id, defined_class);
     }
     else {
 	return (const rb_callable_method_entry_t *)resolved_me;

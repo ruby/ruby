@@ -1,3 +1,11 @@
+Sat Nov  5 22:09:48 2016  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	* eval.c, method.h, proc.c, vm.c, vm_eval.c, vm_insnhelper.c, vm_method.c:
+	  TracePoint#method_id should return method_id, not callee_id.
+	  [ruby-core:77241] [Feature #12747]
+
+	* test/ruby/test_settracefunc.rb: change accordingly.
+
 Sat Nov  5 18:49:37 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flo_round, int_round): support round-to-nearest-even
