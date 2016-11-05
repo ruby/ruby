@@ -1750,6 +1750,31 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal("Foo#x", FooExtClient.return_proc(&:x).(Foo.new))
   end
 
+  module AliasInSubclass
+    class C
+      def foo
+        :original
+      end
+    end
+
+    class D < C
+      alias bar foo
+    end
+
+    module M
+      refine D do
+        def bar
+          :refined
+        end
+      end
+    end
+  end
+
+  def test_refine_alias_in_subclass
+    assert_equal(:refined,
+                 eval_using(AliasInSubclass::M, "AliasInSubclass::D.new.bar"))
+  end
+
   private
 
   def eval_using(mod, s)
