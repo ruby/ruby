@@ -2699,10 +2699,12 @@ class Resolv
           return arg
         when String
           coordinates = ''
-          if Regex =~ arg &&  $1<180
-            hemi = ($4[/([NE])/,1]) || ($4[/([SW])/,1]) ? 1 : -1
-            coordinates = [(($1.to_i*(36e5))+($2.to_i*(6e4))+($3.to_f*(1e3)))*hemi+(2**31)].pack("N")
-            (orientation ||= '') << $4[[/NS/],1] ? 'lat' : 'lon'
+          if Regex =~ arg && $1.to_f < 180
+            m = $~
+            hemi = (m[4][/[NE]/]) || (m[4][/[SW]/]) ? 1 : -1
+            coordinates = [ ((m[1].to_i*(36e5)) + (m[2].to_i*(6e4)) +
+                             (m[3].to_f*(1e3))) * hemi+(2**31) ].pack("N")
+            orientation = m[4][/[NS]/] ? 'lat' : 'lon'
           else
             raise ArgumentError.new("not a properly formed Coord string: " + arg)
           end
