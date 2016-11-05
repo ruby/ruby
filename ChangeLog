@@ -1,3 +1,8 @@
+Sat Nov  5 23:03:54 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb (transport_request): other than HTTPContinue
+	  in 1xx (HTTPInformation) also needs to continue. [Bug #12890]
+
 Sat Nov  5 22:51:06 2016  Tanaka Akira  <akr@fsij.org>
 
 	* lib/time.rb (make_time): "now" argument as nil works again.
