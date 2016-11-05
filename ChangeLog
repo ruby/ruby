@@ -1,3 +1,9 @@
+Sun Nov  6 00:25:11 2016  Sho Hashimoto  <sho.hsmt@gmail.com>
+
+	* enumerator.c (InitVM_Enumerator): Enumerator::Lazy#chunk_while
+	  defined.  [Fix GH-1186]
+	  https://github.com/ruby/ruby/pull/1186
+
 Sun Nov  6 00:22:51 2016  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm_eval.c (vm_call0_cfunc_with_frame): pass method id to

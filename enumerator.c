@@ -2379,6 +2379,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "slice_before", lazy_super, -1);
     rb_define_method(rb_cLazy, "slice_after", lazy_super, -1);
     rb_define_method(rb_cLazy, "slice_when", lazy_super, -1);
+    rb_define_method(rb_cLazy, "chunk_while", lazy_super, -1);
     rb_define_method(rb_cLazy, "uniq", lazy_uniq, 0);
 
     rb_define_alias(rb_cLazy, "force", "to_a");
