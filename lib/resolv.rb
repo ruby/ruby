@@ -572,13 +572,13 @@ class Resolv
     def extract_resources(msg, name, typeclass) # :nodoc:
       if typeclass < Resource::ANY
         n0 = Name.create(name)
-        msg.each_answer {|n, ttl, data|
+        msg.each_resource {|n, ttl, data|
           yield data if n0 == n
         }
       end
       yielded = false
       n0 = Name.create(name)
-      msg.each_answer {|n, ttl, data|
+      msg.each_resource {|n, ttl, data|
         if n0 == n
           case data
           when typeclass
@@ -590,7 +590,7 @@ class Resolv
         end
       }
       return if yielded
-      msg.each_answer {|n, ttl, data|
+      msg.each_resource {|n, ttl, data|
         if n0 == n
           case data
           when typeclass
