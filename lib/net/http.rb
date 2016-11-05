@@ -489,6 +489,24 @@ module Net   #:nodoc:
       end
     end
 
+    # Posts data to the specified URI object.
+    #
+    # Example:
+    #
+    #   require 'net/http'
+    #   require 'uri'
+    #
+    #   Net::HTTP.post URI('http://www.example.com/api/search'),
+    #                  { "q" => "ruby", "max" => "50" }.to_json,
+    #                  "Content-Type" => "application/json"
+    #
+    def HTTP.post(url, data, header = nil)
+      start(url.hostname, url.port,
+            :use_ssl => url.scheme == 'https' ) {|http|
+        http.post(url.path, data, header)
+      }
+    end
+
     # Posts HTML form data to the specified URI object.
     # The form data must be provided as a Hash mapping from String to String.
     # Example:

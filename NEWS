@@ -217,6 +217,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Don't allow , as a separator [Bug #12791]
 
+* Net::HTTP
+  * New method: Net::HTTP.post [Feature #12375]
+
 === Compatibility issues (excluding feature bug fixes)
 
 * Array#sum and Enumerable#sum are implemented.  [Feature #12217]

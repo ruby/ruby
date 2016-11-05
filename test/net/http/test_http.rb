@@ -384,6 +384,22 @@ module TestNetHTTP_version_1_1_methods
     end
   end
 
+  def test_s_post
+    url = "http://#{config('host')}:#{config('port')}/"
+    res = Net::HTTP.post(
+              URI.parse(url),
+              "a=x")
+    assert_equal "application/x-www-form-urlencoded", res["Content-Type"]
+    assert_equal "a=x", res.body
+
+    res = Net::HTTP.post(
+              URI.parse(url),
+              "hello world",
+              "Content-Type" => "text/plain; charset=US-ASCII")
+    assert_equal "text/plain; charset=US-ASCII", res["Content-Type"]
+    assert_equal "hello world", res.body
+  end
+
   def test_s_post_form
     url = "http://#{config('host')}:#{config('port')}/"
     res = Net::HTTP.post_form(
