@@ -101,6 +101,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Numeric#finite?, Numeric#infinite? [Feature #12039]
 
+* Process
+
+  * Support CLOCK_MONOTONIC_RAW_APPROX, CLOCK_UPTIME_RAW, and
+    CLOCK_UPTIME_RAW_APPROX which are introduced by macOS 10.12.
+
 * Regexp
 
   * Regexp#match? [Feature #8110]
