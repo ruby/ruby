@@ -130,7 +130,7 @@ ossl_x509store_set_vfy_cb(VALUE self, VALUE cb)
     X509_STORE *store;
 
     GetX509Store(self, store);
-    X509_STORE_set_ex_data(store, ossl_verify_cb_idx, (void*)cb);
+    X509_STORE_set_ex_data(store, ossl_store_ex_verify_cb_idx, (void *)cb);
     rb_iv_set(self, "@verify_callback", cb);
 
     return cb;
@@ -467,7 +467,7 @@ ossl_x509stctx_verify(VALUE self)
     int result;
 
     GetX509StCtx(self, ctx);
-    X509_STORE_CTX_set_ex_data(ctx, ossl_verify_cb_idx,
+    X509_STORE_CTX_set_ex_data(ctx, ossl_store_ctx_ex_verify_cb_idx,
                                (void*)rb_iv_get(self, "@verify_callback"));
     result = X509_verify_cert(ctx);
 
