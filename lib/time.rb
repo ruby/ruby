@@ -254,14 +254,18 @@ class Time
         raise ArgumentError, "no time information in #{date.inspect}"
       end
 
-      off_year = year || now.year
       off = nil
-      off = zone_offset(zone, off_year) if zone
+      if year || now
+        off_year = year || now.year
+        off = zone_offset(zone, off_year) if zone
+      end
 
-      if off
-        now = now.getlocal(off) if now.utc_offset != off
-      else
-        now = now.getlocal
+      if now
+        if off
+          now = now.getlocal(off) if now.utc_offset != off
+        else
+          now = now.getlocal
+        end
       end
 
       usec = nil
