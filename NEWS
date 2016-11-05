@@ -181,6 +181,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Add a liberal_parsing option. [Feature #11839]
 
+* IPAddr
+
+  * IPAddr#== and IPAddr#<=> no longer raise an exception if coercion fails.
+    [Bug #12799]
+
 * Logger
 
 	* Allow specifying logger parameters in constructor such

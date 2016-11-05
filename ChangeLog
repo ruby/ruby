@@ -1,3 +1,13 @@
+Sat Nov  5 22:50:13 2016  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/ipaddr.rb (IPAddr#==): If coercion fails, return false
+	  instead of passing through the exception. [ruby-core:77451]
+	  [Bug #12799]
+
+	* lib/ipaddr.rb (IPAddr#<=>): If coercion fails, return nil
+	  instead of passing through the exception. [ruby-core:77451]
+	  [Bug #12799]
+
 Sat Nov  5 22:11:33 2016  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* vm_trace.c (tracepoint_attr_callee_id, rb_tracearg_callee_id):
