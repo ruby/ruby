@@ -2075,7 +2075,7 @@ rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode)
 	(FIXNUM_ZERO_P(r) &&
 	 ROUND_TO(mode,
 		  int_pos_p(num),
-		  int_odd_p(rb_int_idiv(n, f))))) {
+		  (SIGNED_VALUE) int_odd_p(rb_int_idiv(n, f))))) {
 	n = rb_int_plus(n, f);
     }
     return n;
