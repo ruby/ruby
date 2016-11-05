@@ -62,16 +62,20 @@ module Exception2MessageMapper
   end
 
   def bind(cl)
-    self.module_eval %[
+    self.module_eval "#{<<-"begin;"}\n#{<<-"end;"}", __FILE__, __LINE__+1
+    begin;
       def Raise(err = nil, *rest)
         Exception2MessageMapper.Raise(self.class, err, *rest)
       end
       alias Fail Raise
 
+      class << self
+        undef included
+      end
       def self.included(mod)
         mod.extend Exception2MessageMapper
       end
-    ]
+    end;
   end
 
   # Fail(err, *rest)
