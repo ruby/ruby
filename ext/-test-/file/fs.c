@@ -79,7 +79,7 @@ get_fsname(VALUE self, VALUE str)
 }
 
 VALUE
-get_atime_p(VALUE self, VALUE str)
+get_noatime_p(VALUE self, VALUE str)
 {
 #ifdef STATFS
     statfs_t st;
@@ -104,5 +104,5 @@ Init_fs(VALUE module)
 {
     VALUE fs = rb_define_module_under(module, "Fs");
     rb_define_module_function(fs, "fsname", get_fsname, 1);
-    rb_define_module_function(fs, "atime?", get_atime_p, 1);
+    rb_define_module_function(fs, "noatime?", get_noatime_p, 1);
 }
