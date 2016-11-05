@@ -36,12 +36,7 @@ class TestRequire < Test::Unit::TestCase
     INPUT
 
     begin
-      assert_in_out_err(["-S", "-w", "foo/" * 1024 + "foo"], "") do |r, e|
-        assert_equal([], r)
-        assert_operator(2, :<=, e.size)
-        assert_match(/warning: openpath: pathname too long \(ignored\)/, e.first)
-        assert_match(/\(LoadError\)/, e.last)
-      end
+      assert_in_out_err(["-S", "-w", "foo/" * 1024 + "foo"], "", [], /\(LoadError\)/)
     rescue Errno::EINVAL
       # too long commandline may be blocked by OS.
     end
@@ -116,11 +111,10 @@ class TestRequire < Test::Unit::TestCase
 
   def test_require_path_home_1
     env_rubypath, env_home = ENV["RUBYPATH"], ENV["HOME"]
-    pathname_too_long = /pathname too long \(ignored\).*\(LoadError\)/m
 
     ENV["RUBYPATH"] = "~"
     ENV["HOME"] = "/foo" * 1024
-    assert_in_out_err(%w(-S -w test_ruby_test_require), "", [], pathname_too_long)
+    assert_in_out_err(%w(-S -w test_ruby_test_require), "", [], /\(LoadError\)/)
 
   ensure
     env_rubypath ? ENV["RUBYPATH"] = env_rubypath : ENV.delete("RUBYPATH")
@@ -129,11 +123,10 @@ class TestRequire < Test::Unit::TestCase
 
   def test_require_path_home_2
     env_rubypath, env_home = ENV["RUBYPATH"], ENV["HOME"]
-    pathname_too_long = /pathname too long \(ignored\).*\(LoadError\)/m
 
     ENV["RUBYPATH"] = "~" + "/foo" * 1024
     ENV["HOME"] = "/foo"
-    assert_in_out_err(%w(-S -w test_ruby_test_require), "", [], pathname_too_long)
+    assert_in_out_err(%w(-S -w test_ruby_test_require), "", [], /\(LoadError\)/)
 
   ensure
     env_rubypath ? ENV["RUBYPATH"] = env_rubypath : ENV.delete("RUBYPATH")

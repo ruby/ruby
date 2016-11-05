@@ -18,6 +18,7 @@
 #include "internal.h"
 #include "ruby/thread.h"
 #include "eval_intern.h"
+#define dln_realloc rb_dln_realloc
 #include "dln.h"
 #include <stdio.h>
 #include <sys/types.h>
@@ -1432,6 +1433,21 @@ rb_f_chomp(int argc, VALUE *argv)
     return str;
 }
 
+char *
+rb_dln_realloc(char *buf, size_t size, void *arg)
+{
+    VALUE *vp = arg, v = *vp;
+
+    --size;
+    if (NIL_P(v)) {
+	*vp = v = rb_str_new(buf, size);
+    }
+    else if (size > (size_t)RSTRING_LEN(v)) {
+	rb_str_modify_expand(v, size - RSTRING_LEN(v));
+    }
+    return RSTRING_PTR(v);
+}
+
 static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
@@ -1443,7 +1459,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     rb_encoding *uenc, *ienc = 0;
 #endif
     const char *s;
-    char fbuf[MAXPATHLEN];
     int i = (int)proc_options(argc, argv, opt, 0);
     rb_binding_t *toplevel_binding;
     const struct rb_block *base_block;
@@ -1484,6 +1499,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	return Qtrue;
     }
 
+    opt->script_name = Qnil;
     if (!opt->e_script) {
 	if (argc == 0) {	/* no more args */
 	    if (opt->verbose)
@@ -1500,21 +1516,27 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
 		opt->script = 0;
 		if (path) {
-		    opt->script = dln_find_file_r(argv[0], path, fbuf, sizeof(fbuf));
+		    opt->script = dln_find_file_alloc(argv[0], path,
+						      rb_dln_realloc, &opt->script_name);
 		}
 		if (!opt->script) {
-		    opt->script = dln_find_file_r(argv[0], getenv(PATH_ENV), fbuf, sizeof(fbuf));
+		    opt->script = dln_find_file_alloc(argv[0], getenv(PATH_ENV),
+						      rb_dln_realloc, &opt->script_name);
 		}
-		if (!opt->script)
+		if (!opt->script) {
+		    opt->script_name = Qnil;
 		    opt->script = argv[0];
+		}
 	    }
 	    argc--;
 	    argv++;
 	}
     }
 
-    opt->script_name = rb_str_new_cstr(opt->script);
-    opt->script = RSTRING_PTR(opt->script_name);
+    if (NIL_P(opt->script_name)) {
+	opt->script_name = rb_str_new_cstr(opt->script);
+	opt->script = RSTRING_PTR(opt->script_name);
+    }
 
 #if _WIN32
     translit_char_bin(RSTRING_PTR(opt->script_name), '\\', '/');

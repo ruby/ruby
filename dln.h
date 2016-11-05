@@ -28,6 +28,8 @@
 # define _(args) ()
 #endif
 
+typedef char *(*dln_alloc_func)(char *, size_t, void *);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 #ifndef DLN_FIND_EXTRA_ARG
@@ -39,6 +41,10 @@ RUBY_SYMBOL_EXPORT_BEGIN
 
 char *dln_find_exe_r(const char*,const char*,char*,size_t DLN_FIND_EXTRA_ARG_DECL);
 char *dln_find_file_r(const char*,const char*,char*,size_t DLN_FIND_EXTRA_ARG_DECL);
+
+char *dln_realloc(char *, size_t, void *);
+char *dln_find_exe_alloc(const char*,const char*,dln_alloc_func,void* DLN_FIND_EXTRA_ARG_DECL);
+char *dln_find_file_alloc(const char*,const char*,dln_alloc_func,void* DLN_FIND_EXTRA_ARG_DECL);
 
 #ifdef USE_DLN_A_OUT
 extern char *dln_argv0;

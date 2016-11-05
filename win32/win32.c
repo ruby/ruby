@@ -73,14 +73,23 @@ static char *w32_getenv(const char *name, UINT cp);
 #define CharNext(p) CharNextExA(cp, (p), 0)
 #define dln_find_exe_r rb_w32_udln_find_exe_r
 #define dln_find_file_r rb_w32_udln_find_file_r
+#define dln_find_exe_alloc rb_w32_udln_find_exe_alloc
+#define dln_find_file_alloc rb_w32_udln_find_file_alloc
+#define dln_realloc rb_dln_realloc
 #include "dln.h"
+#undef dln_realloc
+#define dln_realloc rb_w32_udln_realloc
 #include "dln_find.c"
 #undef MAXPATHLEN
 #undef rb_w32_stati64
 #undef dln_find_exe_r
 #undef dln_find_file_r
-#define dln_find_exe_r(fname, path, buf, size) rb_w32_udln_find_exe_r(fname, path, buf, size, cp)
-#define dln_find_file_r(fname, path, buf, size) rb_w32_udln_find_file_r(fname, path, buf, size, cp)
+#undef dln_find_exe_alloc
+#undef dln_find_file_alloc
+#define dln_find_exe_alloc(fname, path, alloc, arg) \
+    rb_w32_udln_find_exe_alloc(fname, path, alloc, arg, cp)
+#define dln_find_file_alloc(fname, path, alloc, arg) \
+    rb_w32_udln_find_file_alloc(fname, path, alloc, arg, cp)
 #undef CharNext			/* no default cp version */
 
 #ifndef PATH_MAX
@@ -1221,7 +1230,7 @@ is_batch(const char *cmd)
 static rb_pid_t
 w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 {
-    char fbuf[PATH_MAX];
+    VALUE fbuf = Qnil;
     char *p = NULL;
     const char *shell = NULL;
     WCHAR *wcmd = NULL, *wshell = NULL;
@@ -1235,7 +1244,7 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
     if (check_spawn_mode(mode)) return -1;
 
     if (prog) {
-	if (!(p = dln_find_exe_r(prog, NULL, fbuf, sizeof(fbuf)))) {
+	if (!(p = dln_find_exe_alloc(prog, NULL, rb_dln_realloc, &fbuf))) {
 	    shell = prog;
 	}
 	else {
@@ -1296,7 +1305,7 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 		    break;
 		}
 	    }
-	    shell = dln_find_exe_r(shell, NULL, fbuf, sizeof(fbuf));
+ 	    shell = dln_find_exe_alloc(shell, NULL, rb_dln_realloc, &fbuf);
 	    if (p && slash) translate_char(p, '/', '\\', cp);
 	    if (!shell) {
 		shell = p ? p : cmd;
@@ -1304,8 +1313,8 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 	    else {
 		len = strlen(shell);
 		if (strchr(shell, ' ')) quote = -1;
-		if (shell == fbuf) {
-		    p = fbuf;
+		if (!NIL_P(fbuf)) {
+		    p = RSTRING_PTR(fbuf);
 		}
 		else if (shell != p && strchr(shell, '/')) {
 		    STRNDUPV(p, v2, shell, len);
@@ -1364,11 +1373,11 @@ w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UIN
     size_t len;
     BOOL ntcmd = FALSE, tmpnt;
     const char *shell;
-    char *cmd, fbuf[PATH_MAX];
+    char *cmd;
     WCHAR *wcmd = NULL, *wprog = NULL;
     int e = 0;
     rb_pid_t ret = -1;
-    VALUE v = 0;
+    VALUE v = 0, fbuf = Qnil;
 
     if (check_spawn_mode(mode)) return -1;
 
@@ -1379,17 +1388,17 @@ w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UIN
 	prog = shell;
 	c_switch = 1;
     }
-    else if ((cmd = dln_find_exe_r(prog, NULL, fbuf, sizeof(fbuf)))) {
-	if (cmd == prog) strlcpy(cmd = fbuf, prog, sizeof(fbuf));
+    else if ((cmd = dln_find_exe_alloc(prog, NULL, rb_dln_realloc, &fbuf))) {
+	if (NIL_P(fbuf)) {
+	    len = strlen(prog);
+	    STRNDUPV(cmd, v, prog, len);
+	}
 	translate_char(cmd, '/', '\\', cp);
 	prog = cmd;
     }
     else if (strchr(prog, '/')) {
 	len = strlen(prog);
-	if (len < sizeof(fbuf))
-	    strlcpy(cmd = fbuf, prog, sizeof(fbuf));
-	else
-	    STRNDUPV(cmd, v, prog, len);
+	STRNDUPV(cmd, v, prog, len);
 	translate_char(cmd, '/', '\\', cp);
 	prog = cmd;
     }
@@ -1869,7 +1878,8 @@ static HANDLE
 open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
 {
     HANDLE fh;
-    WCHAR fullname[PATH_MAX + rb_strlen_lit("\\*")];
+    WCHAR fullname_buf[PATH_MAX + rb_strlen_lit("\\*")];
+    WCHAR *fullname = fullname_buf;
     WCHAR *p;
     int len = 0;
 
@@ -1880,13 +1890,22 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
     fh = open_special(filename, 0, 0);
     if (fh != INVALID_HANDLE_VALUE) {
 	len = get_final_path(fh, fullname, PATH_MAX, 0);
+	if (len > _MAX_PATH) {
+	    fullname = malloc(len * sizeof(WCHAR));
+	    if (fullname) {
+		len = get_final_path(fh, fullname, len, 0);
+	    }
+	}
 	CloseHandle(fh);
     }
     if (!len) {
 	len = lstrlenW(filename);
 	if (len >= PATH_MAX) {
-	    errno = ENAMETOOLONG;
-	    return INVALID_HANDLE_VALUE;
+	    fullname = malloc((len + 1) * sizeof(WCHAR));
+	    if (!fullname) {
+		errno = ENAMETOOLONG;
+		return INVALID_HANDLE_VALUE;
+	    }
 	}
 	MEMCPY(fullname, filename, WCHAR, len);
     }
@@ -1899,6 +1918,7 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
     // do the FindFirstFile call
     //
     fh = FindFirstFileW(fullname, fd);
+    if (fullname != fullname_buf) free(fullname);
     if (fh == INVALID_HANDLE_VALUE) {
 	errno = map_errno(GetLastError());
     }
@@ -5409,6 +5429,7 @@ check_valid_dir(const WCHAR *path)
     WCHAR full[PATH_MAX];
     WCHAR *dmy;
     WCHAR *p, *q;
+    DWORD len;
 
     /* GetFileAttributes() determines "..." as directory. */
     /* We recheck it by FindFirstFile(). */
@@ -5423,9 +5444,24 @@ check_valid_dir(const WCHAR *path)
 
     /* if the specified path is the root of a drive and the drive is empty, */
     /* FindFirstFile() returns INVALID_HANDLE_VALUE. */
-    if (!GetFullPathNameW(path, sizeof(full) / sizeof(WCHAR), full, &dmy)) {
+    len = GetFullPathNameW(path, numberof(full), full, &dmy);
+    if (!len) {
 	errno = map_errno(GetLastError());
 	return -1;
+    }
+    else if (len > numberof(full)) {
+	WCHAR *tmp = malloc(len * sizeof(WCHAR));
+	if (!tmp) {
+	    errno = ENOMEM;
+	    return -1;
+	}
+	if (!GetFullPathNameW(path, len, tmp, &dmy)) {
+	    errno = map_errno(GetLastError());
+	    free(tmp);
+	    return -1;
+	}
+	MEMCPY(full, tmp, WCHAR, 4);
+	free(tmp);
     }
     if (full[1] == L':' && !full[3] && GetDriveTypeW(full) != DRIVE_NO_ROOT_DIR)
 	return 0;
@@ -5489,7 +5525,18 @@ winnt_stat(const WCHAR *path, struct stati64 *st)
     if (f != INVALID_HANDLE_VALUE) {
 	WCHAR finalname[PATH_MAX];
 	const DWORD attr = stati64_handle(f, st);
-	const DWORD len = get_final_path(f, finalname, numberof(finalname), 0);
+	DWORD len = get_final_path(f, finalname, numberof(finalname), 0);
+	if (len > numberof(finalname)) {
+	    WCHAR *tmp = malloc(len * sizeof(WCHAR));
+	    if (tmp) {
+		len = get_final_path(f, tmp, len, 0);
+		if (len > 0) {
+		    len = numberof(namespace_prefix) + 2;
+		    MEMCPY(finalname, tmp, WCHAR, len);
+		}
+		free(tmp);
+	    }
+	}
 	CloseHandle(f);
 	if (attr & FILE_ATTRIBUTE_DIRECTORY) {
 	    if (check_valid_dir(path)) return -1;
