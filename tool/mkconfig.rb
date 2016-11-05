@@ -179,7 +179,7 @@ module RbConfig
 ]
 print "  # Ruby installed directory.\n"
 print "  TOPDIR = File.dirname(__FILE__).chomp!(#{relative_archdir.dump})\n"
-print "  # DESTDIR on make install. \n"
+print "  # DESTDIR on make install.\n"
 print "  DESTDIR = ", (drive ? "TOPDIR && TOPDIR[/\\A[a-z]:/i] || " : ""), "'' unless defined? DESTDIR\n"
 print <<'ARCH' if universal
   arch_flag = ENV['ARCHFLAGS'] || ((e = ENV['RC_ARCHS']) && e.split.uniq.map {|a| "-arch #{a}"}.join(' '))
