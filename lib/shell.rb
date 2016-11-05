@@ -99,11 +99,14 @@ class Shell
   @debug_display_process_id = false
   @debug_display_thread_id = true
   @debug_output_mutex = Thread::Mutex.new
+  @default_system_path = nil
+  @default_record_separator = nil
 
   class << Shell
     extend Forwardable
 
-    attr_accessor :cascade, :debug, :verbose
+    attr_accessor :cascade, :verbose
+    attr_reader :debug
 
     alias debug? debug
     alias verbose? verbose
@@ -208,7 +211,8 @@ class Shell
   # Returns the umask
   attr_accessor :umask
   attr_accessor :record_separator
-  attr_accessor :verbose, :debug
+  attr_accessor :verbose
+  attr_reader :debug
 
   def debug=(val)
     @debug = val
