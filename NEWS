@@ -69,6 +69,9 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Float#ceil, Float#floor, and Float#truncate now take an optional
     digits, as well as Float#round.  [Feature #12245]
 
+  * Float#round now takes an optional keyword argument, half option, and
+    the default behavior is round-to-nearest-even now.  [Bug #12548]
+
 * Hash
 
   * Hash#transform_values and Hash#transform_values!  [Feature #12512]
@@ -82,6 +85,9 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Fixnum and Bignum are unified into Integer  [Feature #12005]
 
   * Integer#digits for extracting columns of place-value notation [Feature #12447]
+
+  * Int#round now takes an optional keyword argument, half option, and the
+    default behavior is round-to-nearest-even now.  [Bug #12548]
 
 * IO
 
@@ -111,6 +117,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Support CLOCK_MONOTONIC_RAW_APPROX, CLOCK_UPTIME_RAW, and
     CLOCK_UPTIME_RAW_APPROX which are introduced by macOS 10.12.
+
+* Rational
+
+  * Rational#round now takes an optional keyword argument, half option, and
+    the default behavior is round-to-nearest-even now.  [Bug #12548]
 
 * Regexp
 
