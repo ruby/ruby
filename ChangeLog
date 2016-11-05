@@ -1,3 +1,8 @@
+Sat Nov  5 11:16:58 2016  Kenta Murata  <mrkn@mrkn.jp>
+
+	* ext/bigdecimal/bigdecimal.c: Import changes from ruby/bigdecimal
+	  repository.
+
 Tue Oct 18 02:58:22 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* eval_intern.h (TH_PUSH_TAG): Initialize struct rb_vm_tag::tag with
