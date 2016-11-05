@@ -679,12 +679,7 @@ class RDoc::Store
     method_name =~ /#(.*)/
     method_type = $1 ? 'i' : 'c'
     method_name = $1 if $1
-
-    method_name = if ''.respond_to? :ord then
-                    method_name.gsub(/\W/) { "%%%02x" % $&[0].ord }
-                  else
-                    method_name.gsub(/\W/) { "%%%02x" % $&[0] }
-                  end
+    method_name = method_name.gsub(/\W/) { "%%%02x" % $&[0].ord }
 
     File.join class_path(klass_name), "#{method_name}-#{method_type}.ri"
   end

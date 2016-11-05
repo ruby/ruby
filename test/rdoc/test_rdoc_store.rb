@@ -3,7 +3,7 @@ require File.expand_path '../xref_test_case', __FILE__
 
 class TestRDocStore < XrefTestCase
 
-  OBJECT_ANCESTORS = defined?(::BasicObject) ? %w[BasicObject] : []
+  OBJECT_ANCESTORS = %w[BasicObject]
 
   def setup
     super
@@ -631,7 +631,7 @@ class TestRDocStore < XrefTestCase
       :title => nil,
     }
 
-    expected[:ancestors]['Object'] = %w[BasicObject] if defined?(::BasicObject)
+    expected[:ancestors]['Object'] = %w[BasicObject]
 
     open File.join(@tmpdir, 'cache.ri'), 'rb' do |io|
       cache = Marshal.load io.read
@@ -699,7 +699,7 @@ class TestRDocStore < XrefTestCase
       :title => 'title',
     }
 
-    expected[:ancestors]['Object'] = %w[BasicObject] if defined?(::BasicObject)
+    expected[:ancestors]['Object'] = %w[BasicObject]
 
     open File.join(@tmpdir, 'cache.ri'), 'rb' do |io|
       cache = Marshal.load io.read

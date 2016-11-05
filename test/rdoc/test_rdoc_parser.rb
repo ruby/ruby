@@ -119,7 +119,7 @@ class TestRDocParser < RDoc::TestCase
       end
       io
     end
-    tf.close! if tf.respond_to? :close!
+    tf.close!
   end
 
   def test_class_for_modeline

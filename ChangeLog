@@ -1,3 +1,8 @@
+Sat Nov  5 18:17:08 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rdoc/*, test/rdoc/*: Update rdoc-5.0.0
+	  Release note: https://github.com/rdoc/rdoc/blob/b825775647f62c5b525e9780a28ff2fbb1d5bf6f/History.rdoc#500--2016-11-05
+
 Sat Nov  5 17:29:06 2016  Tanaka Akira  <akr@fsij.org>
 
 	* lib/resolv.rb (Resolv::DNS#extract_resources): Use each_resource

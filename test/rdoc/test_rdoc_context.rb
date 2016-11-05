@@ -8,9 +8,6 @@ class TestRDocContext < XrefTestCase
 
     @context = RDoc::Context.new
     @context.store = @store
-
-    @enumerator = # 1.8 vs 1.9
-      Object.const_defined?(:Enumerator) ? Enumerator : Enumerable::Enumerator
   end
 
   def test_initialize
@@ -118,8 +115,6 @@ class TestRDocContext < XrefTestCase
   end
 
   def test_add_class_basic_object
-    skip 'BasicObject is 1.9 only' unless defined?(BasicObject)
-
     @xref_data.add_class RDoc::NormalClass, 'BasicObject'
 
     basic = @xref_data.find_module_named 'BasicObject'
@@ -134,13 +129,11 @@ class TestRDocContext < XrefTestCase
   end
 
   def test_add_class_object
-    root_class = defined?(BasicObject) ? 'BasicObject' : nil
-
     @xref_data.add_class RDoc::NormalClass, 'Object'
 
     object = @xref_data.find_module_named 'Object'
 
-    assert_equal root_class, object.superclass
+    assert_equal 'BasicObject', object.superclass
 
     @c1.add_class RDoc::NormalClass, 'Object'
 
@@ -457,7 +450,7 @@ class TestRDocContext < XrefTestCase
   end
 
   def test_each_method_enumerator
-    assert_kind_of @enumerator, @c1.each_method
+    assert_kind_of Enumerator, @c1.each_method
   end
 
   def test_each_section
@@ -489,7 +482,7 @@ class TestRDocContext < XrefTestCase
   end
 
   def test_each_section_enumerator
-    assert_kind_of @enumerator, @c1.each_section
+    assert_kind_of Enumerator, @c1.each_section
   end
 
   def test_find_attribute_named
@@ -899,4 +892,3 @@ class TestRDocContext < XrefTestCase
   end
 
 end
-

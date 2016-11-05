@@ -141,7 +141,7 @@ class RDoc::TestCase < MiniTest::Unit::TestCase
   def mu_pp obj # :nodoc:
     s = ''
     s = PP.pp obj, s
-    s = s.force_encoding Encoding.default_external if defined? Encoding
+    s = s.force_encoding Encoding.default_external
     s.chomp
   end
 

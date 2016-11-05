@@ -7,9 +7,6 @@ class TestRDocRubygemsHook < Gem::TestCase
   def setup
     super
 
-    skip 'requires RubyGems 1.9+' unless
-      Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.9')
-
     @a = util_spec 'a', 2 do |s|
       s.rdoc_options = %w[--main MyTitle]
       s.extra_rdoc_files = %w[README]
@@ -134,7 +131,6 @@ class TestRDocRubygemsHook < Gem::TestCase
   end
 
   def test_generate_default_gem
-    skip 'RubyGems 2 required' unless @a.respond_to? :default_gem?
     @a.loaded_from =
       File.join Gem::Specification.default_specifications_dir, 'a.gemspec'
 

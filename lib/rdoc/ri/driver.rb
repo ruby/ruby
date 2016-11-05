@@ -1428,7 +1428,7 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
   def setup_pager
     return if @use_stdout
 
-    jruby = Object.const_defined?(:RUBY_ENGINE) && RUBY_ENGINE == 'jruby'
+    jruby = RUBY_ENGINE == 'jruby'
 
     pagers = [ENV['RI_PAGER'], ENV['PAGER'], 'pager', 'less', 'more']
 

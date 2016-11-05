@@ -521,7 +521,6 @@ class RDoc::Markdown
 
 
 
-  require 'rubygems'
   require 'rdoc'
   require 'rdoc/markup/to_joined_paragraph'
   require 'rdoc/markdown/entities'
@@ -15281,7 +15280,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      @result = begin;
+      @result = begin; 
                ref = [:inline, @note_order.length]
                @footnotes[ref] = paragraph a
 

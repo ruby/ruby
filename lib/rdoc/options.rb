@@ -1187,19 +1187,6 @@ Usage: #{opt.program_name} [options] [names...]
     end
   end
 
-  ##
-  # This is compatibility code for syck
-
-  def to_yaml opts = {} # :nodoc:
-    return super if YAML.const_defined?(:ENGINE) and not YAML::ENGINE.syck?
-
-    YAML.quick_emit self, opts do |out|
-      out.map taguri, to_yaml_style do |map|
-        encode_with map
-      end
-    end
-  end
-
   # Sets the minimum visibility of a documented method.
   #
   # Accepts +:public+, +:protected+, +:private+, +:nodoc+, or +:all+.

@@ -161,15 +161,9 @@ class RDoc::RDoc
 
     RDoc.load_yaml
 
-    parse_error = if Object.const_defined? :Psych then
-                    Psych::SyntaxError
-                  else
-                    ArgumentError
-                  end
-
     begin
       options = YAML.load_file '.rdoc_options'
-    rescue *parse_error
+    rescue Psych::SyntaxError
     end
 
     raise RDoc::Error, "#{options_file} is not a valid rdoc options file" unless
@@ -417,6 +411,7 @@ The internal error was:
 
     return [] if file_list.empty?
 
+    original_options = @options.dup
     @stats.begin_adding
 
     file_info = file_list.map do |filename|
@@ -425,6 +420,7 @@ The internal error was:
     end.compact
 
     @stats.done_adding
+    @options = original_options
 
     file_info
   end
@@ -479,7 +475,7 @@ The internal error was:
       @last_modified = setup_output_dir @options.op_dir, @options.force_update
     end
 
-    @store.encoding = @options.encoding if @options.respond_to? :encoding
+    @store.encoding = @options.encoding
     @store.dry_run  = @options.dry_run
     @store.main     = @options.main_page
     @store.title    = @options.title

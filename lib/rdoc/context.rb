@@ -327,7 +327,7 @@ class RDoc::Context < RDoc::CodeObject
     if full_name == 'BasicObject' then
       superclass = nil
     elsif full_name == 'Object' then
-      superclass = defined?(::BasicObject) ? '::BasicObject' : nil
+      superclass = '::BasicObject'
     end
 
     # find the superclass full name
@@ -1211,4 +1211,3 @@ class RDoc::Context < RDoc::CodeObject
   autoload :Section, 'rdoc/context/section'
 
 end
-

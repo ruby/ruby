@@ -133,7 +133,7 @@ class TestRDocRDoc < RDoc::TestCase
   end
 
   def test_normalized_file_list_non_file_directory
-    dev = defined?(File::NULL) ? File::NULL : '/dev/stdin'
+    dev = File::NULL
     skip "#{dev} is not a character special" unless
       File.chardev? dev
 
@@ -261,7 +261,7 @@ class TestRDocRDoc < RDoc::TestCase
       assert_equal Encoding::ISO_8859_1, top_level.absolute_name.encoding
       io
     end
-    tf.close! if tf.respond_to? :close!
+    tf.close!
   end
 
   def test_parse_file_forbidden
@@ -290,7 +290,7 @@ class TestRDocRDoc < RDoc::TestCase
       end
       io
     end
-    tf.close! if tf.respond_to? :close!
+    tf.close!
   end
 
   def test_remove_unparseable
@@ -398,7 +398,7 @@ class TestRDocRDoc < RDoc::TestCase
                    e.message)
       tempfile
     end
-    tf.close! if tf.respond_to? :close!
+    tf.close!
   end
 
   def test_setup_output_dir_exists_not_rdoc

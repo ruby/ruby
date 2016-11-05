@@ -853,11 +853,7 @@ class RDoc::RubyLex
     end
   end
 
-  IDENT_RE = if defined? Encoding then
-               eval '/[\w\u{0080}-\u{FFFFF}]/u' # 1.8 can't parse \u{}
-             else
-               /[\w\x80-\xFF]/
-             end
+  IDENT_RE = eval '/[\w\u{0080}-\u{FFFFF}]/u'
 
   def identify_identifier
     token = ""
