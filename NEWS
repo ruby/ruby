@@ -270,6 +270,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * DateTime#to_time now preserves timezone.  [Bug #12189]
 
+* RDoc
+
+  * Update RDoc 5.0.0
+
 * shellwords
 
   * Shellwords.shellwords (shellsplit) treats the backslash as escape
