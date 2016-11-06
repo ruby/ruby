@@ -104,7 +104,7 @@ module Net
     end
 
     def test_tls_connect
-      server = TCPServer.new("127.0.0.1", 0)
+      servers = Socket.tcp_server_sockets("localhost", 0)
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.ca_file = CA_FILE
       ctx.key = File.open(SERVER_KEY) { |f|
@@ -113,36 +113,38 @@ module Net
       ctx.cert = File.open(SERVER_CERT) { |f|
         OpenSSL::X509::Certificate.new(f)
       }
-      ssl_server = OpenSSL::SSL::SSLServer.new(server, ctx)
       begin
         sock = nil
         Thread.start do
-          sock = ssl_server.accept
+          s = accept(servers)
+          sock = OpenSSL::SSL::SSLSocket.new(s, ctx)
+          sock.sync_close = true
+          sock.accept
           sock.write("220 localhost Service ready\r\n")
           sock.gets
           sock.write("250 localhost\r\n")
           sock.gets
           sock.write("221 localhost Service closing transmission channel\r\n")
         end
-        smtp = Net::SMTP.new("localhost", server.addr[1])
+        smtp = Net::SMTP.new("localhost", servers[0].local_address.ip_port)
         smtp.enable_tls
         smtp.open_timeout = 0.1
         smtp.start do
         end
       ensure
         sock.close if sock
-        ssl_server.close
+        servers.each(&:close)
       end
     end
 
     def test_tls_connect_timeout
-      server = TCPServer.new("127.0.0.1", 0)
+      servers = Socket.tcp_server_sockets("localhost", 0)
       begin
         sock = nil
         Thread.start do
-          sock = server.accept
+          sock = accept(servers)
         end
-        smtp = Net::SMTP.new("127.0.0.1", server.addr[1])
+        smtp = Net::SMTP.new("localhost", servers[0].local_address.ip_port)
         smtp.enable_tls
         smtp.open_timeout = 0.1
         assert_raise(Net::OpenTimeout) do
@@ -151,7 +153,20 @@ module Net
         end
       ensure
         sock.close if sock
-        server.close
+        servers.each(&:close)
+      end
+    end
+
+    private
+
+    def accept(servers)
+      loop do
+        readable, = IO.select(servers.map(&:to_io))
+        readable.each do |r|
+          sock, addr = r.accept_nonblock(exception: false)
+          next if sock == :wait_readable
+          return sock
+        end
       end
     end
   end
