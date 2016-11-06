@@ -1,3 +1,9 @@
+Sun Nov  6 14:42:50 2016  takkanm  <takkanm@gmail.com>
+
+	* eval.c (rb_mod_include, rb_mod_prepend): check if arguments are
+	  given, as well as Kernel#extend.  [ruby-dev:49854] [Bug #12887]
+	  [Fix GH-1470]
+
 Sun Nov  6 11:59:05 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/rinda/test_rinda.rb (test_make_socket_ipv6_multicast,
