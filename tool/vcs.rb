@@ -280,6 +280,16 @@ class VCS
     def after_export(dir)
       FileUtils.rm_rf(dir+"/.svn")
     end
+
+    def export_changelog(srcdir, url, from, to, path)
+      IO.popen({'TZ' => 'JST-9'}, "svn log -r#{to}:#{from} #{url}") do |r|
+        open(path, 'w') do |w|
+          IO.copy_stream(r, w)
+        end
+      end
+      sleep 10
+      exit
+    end
   end
 
   class GIT < self
@@ -354,6 +364,16 @@ class VCS
 
     def after_export(dir)
       FileUtils.rm_rf("#{dir}/.git")
+    end
+
+    def export_changelog(srcdir, url, from, to, path)
+      from = `git -C #{srcdir} log -n1 --format=format:%H --grep='^ *git-svn-id: .*@#{from} '`
+      to = `git -C #{srcdir} log -n1 --format=format:%H --grep='^ *git-svn-id: .*@#{to} '`
+      IO.popen({'TZ' => 'JST-9'}, "git -C #{srcdir} log --date=iso-local --topo-order #{from}..#{to}") do |r|
+        open(path, 'w') do |w|
+          IO.copy_stream(r, w)
+        end
+      end
     end
   end
 end

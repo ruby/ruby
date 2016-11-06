@@ -1,3 +1,11 @@
+Sun Nov  6 21:54:28 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* tool/vcs.rb (export_changelog): generate ChangeLog file from
+	  vcs's log. [Feature #12283]
+
+	* tool/make-snapshot (package): overwrite ChangeLog by generated
+	  ChangeLog.
+
 Sun Nov  6 21:36:33 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* NEWS: Added entry for RDoc 5.
