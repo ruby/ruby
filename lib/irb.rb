@@ -382,21 +382,7 @@ module IRB
     else
       irb = Irb.new
     end
-
-    @CONF[:IRB_RC].call(irb.context) if @CONF[:IRB_RC]
-    @CONF[:MAIN_CONTEXT] = irb.context
-
-    trap("SIGINT") do
-      irb.signal_handle
-    end
-
-    begin
-      catch(:IRB_EXIT) do
-        irb.eval_input
-      end
-    ensure
-      irb_at_exit
-    end
+    irb.run(@CONF)
   end
 
   # Calls each event hook of IRB.conf[:AT_EXIT] when the current session quits.
@@ -430,6 +416,24 @@ module IRB
       @scanner = RubyLex.new
       @scanner.exception_on_syntax_error = false
     end
+
+    def run(conf = IRB.conf)
+      conf[:IRB_RC].call(context) if conf[:IRB_RC]
+      conf[:MAIN_CONTEXT] = context
+
+      trap("SIGINT") do
+        signal_handle
+      end
+
+      begin
+        catch(:IRB_EXIT) do
+          eval_input
+        end
+      ensure
+        conf[:AT_EXIT].each{|hook| hook.call}
+      end
+    end
+
     # Returns the current context of this irb session
     attr_reader :context
     # The lexer used by this irb session
