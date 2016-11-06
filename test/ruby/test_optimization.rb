@@ -317,7 +317,7 @@ class TestRubyOptimization < Test::Unit::TestCase
   end
 
   def test_tailcall_interrupted_by_sigint
-    bug = 'ruby-core:76327'
+    bug12576 = 'ruby-core:76327'
     script = <<EOS
 RubyVM::InstructionSequence.compile_option = {
   :tailcall_optimization => true,
@@ -354,8 +354,9 @@ EOS
         end
       end
     }
-    assert_equal("INT", Signal.signame(status.termsig))
-    assert_match(/Interrupt/, err, bug)
+    assert_not_equal(nil, status.termsig, bug12576)
+    assert_equal("INT", Signal.signame(status.termsig), bug12576)
+    assert_match(/Interrupt/, err, bug12576)
   end
 
   class Bug10557
