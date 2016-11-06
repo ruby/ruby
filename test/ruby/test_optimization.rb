@@ -328,18 +328,21 @@ eval <<EOF
 def foo
   foo
 end
+puts("start")
+STDOUT.flush
 foo
 EOF
 EOS
-    err = EnvUtil.invoke_ruby([], "", true, true, {}) {
+    status, err = EnvUtil.invoke_ruby([], "", true, true, {}) {
       |in_p, out_p, err_p, pid|
       in_p.write(script)
       in_p.close
-      sleep(1)
+      out_p.gets
       Process.kill(:SIGINT, pid)
-      Process.wait(pid)
-      err_p.read
+      *, stat = Process.wait2(pid)
+      [stat, err_p.read]
     }
+    assert_equal(Signal.list["INT"], status.termsig)
     assert_match(/Interrupt/, err, bug)
   end
 

@@ -1,3 +1,8 @@
+Sun Nov  6 10:03:00 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/ruby/test_optimization.rb (test_tailcall_interrupted_by_sigint):
+	  don't use sleep to run faster.
+
 Sun Nov  6 09:58:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (rb_exec_fillarg): honor the given path environment
