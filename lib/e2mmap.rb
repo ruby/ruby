@@ -134,6 +134,7 @@ module Exception2MessageMapper
   def E2MM.def_exception(k, n, m, s = StandardError)
     e = Class.new(s)
     E2MM.instance_eval{@MessageMap[[k, e]] = m}
+    k.module_eval {remove_const(n)} if k.const_defined?(n, false)
     k.const_set(n, e)
   end
 

@@ -1,3 +1,8 @@
+Sun Nov  6 11:45:11 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/e2mmap.rb (E2MM.def_exception): remove old definition if
+	  exists so that works multiple times.
+
 Sun Nov  6 10:03:00 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/ruby/test_optimization.rb (test_tailcall_interrupted_by_sigint):
