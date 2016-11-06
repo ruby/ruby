@@ -81,7 +81,7 @@ Sat Nov  5 23:48:27 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* file.c (rb_home_dir_of): convert given username into filesystem
 	  encoding. [ruby-core:76682] [Bug #12652]
-	  patched by Dāvis Mosāns
+	  patched by Davis Mosans
 
 Sat Nov  5 23:46:03 2016  Tanaka Akira  <akr@fsij.org>
 
