@@ -1,3 +1,7 @@
+Sun Nov  6 18:23:31 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* NEWS: Added entry for [Feature #12160][ruby-core:74239]
+
 Sun Nov  6 18:18:25 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* NEWS: Added entry for r56624.

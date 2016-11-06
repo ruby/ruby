@@ -287,6 +287,11 @@ with all sufficient information, see the ChangeLog file or Redmine
     $ ` " \ <newline>
     [Bug #10055]
 
+* XMLRPC
+
+  * XMLRPC is removed from stdlib. [Feature #12160][ruby-core:74239]
+    https://github.com/ruby/xmlrpc is the new upstream.
+
 === C API updates
 
 * ruby_show_version() will no longer exits the process, if
