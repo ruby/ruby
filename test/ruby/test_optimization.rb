@@ -342,7 +342,7 @@ EOS
       *, stat = Process.wait2(pid)
       [stat, err_p.read]
     }
-    assert_equal(Signal.list["INT"], status.termsig)
+    assert_equal("INT", Signal.signame(status.termsig))
     assert_match(/Interrupt/, err, bug)
   end
 
