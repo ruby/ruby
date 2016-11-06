@@ -1,3 +1,9 @@
+Sun Nov  6 11:59:05 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/rinda/test_rinda.rb (test_make_socket_ipv6_multicast,
+	  test_make_socket_ipv6_multicast_hops): skip if IPv6 multicast 
+	  address is not available.
+
 Sun Nov  6 11:53:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/irb.rb (Binding#irb): new method like Binding#pry.
