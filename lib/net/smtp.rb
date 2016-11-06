@@ -167,6 +167,12 @@ module Net
   #     Net::SMTP.start('your.smtp.server', 25, 'mail.from.domain',
   #                     'Your Account', 'Your Password', :cram_md5)
   #
+  # If you want to use authentication auto detected based on smtp server
+  # capabilities use nil.
+  #
+  #     Net::SMTP.start('your.smtp.server', 25, 'mail.from.domain',
+  #                     'Your Account', 'Your Password', nil)
+  #
   class SMTP < Protocol
 
     Revision = %q$Revision$.split[1]
@@ -561,6 +567,18 @@ module Net
         @socket = new_internet_message_io(tlsconnect(s))
         # helo response may be different after STARTTLS
         do_helo helo_domain
+        # set detected authtype based on smtp server capabilities
+        if !authtype
+          if auth_capable?(DEFAULT_AUTH_TYPE)
+            authtype = DEFAULT_AUTH_TYPE
+          elsif capable_plain_auth?
+            authtype = 'PLAIN'
+          elsif capable_login_auth?
+            authtype = 'LOGIN'
+          elsif capable_cram_md5_auth?
+            authtype = 'CRAM-MD5'
+          end
+        end
       end
       authenticate user, secret, (authtype || DEFAULT_AUTH_TYPE) if user
       @started = true
