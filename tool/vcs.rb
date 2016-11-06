@@ -287,8 +287,6 @@ class VCS
           IO.copy_stream(r, w)
         end
       end
-      sleep 10
-      exit
     end
   end
 

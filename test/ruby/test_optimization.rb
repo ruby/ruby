@@ -317,7 +317,7 @@ class TestRubyOptimization < Test::Unit::TestCase
   end
 
   def test_tailcall_interrupted_by_sigint
-    bug = 'ruby-core:76327'
+    bug12576 = 'ruby-core:76327'
     script = <<EOS
 RubyVM::InstructionSequence.compile_option = {
   :tailcall_optimization => true,
@@ -338,13 +338,26 @@ EOS
       in_p.write(script)
       in_p.close
       out_p.gets
-      Process.kill(:SIGINT, pid)
-      *, stat = Process.wait2(pid)
-      [stat, err_p.read]
+      sig = :INT
+      begin
+        Process.kill(sig, pid)
+        Timeout.timeout(1) do
+          *, stat = Process.wait2(pid)
+          [stat, err_p.read]
+        end
+      rescue Timeout::Error
+        if sig == :INT
+          sig = :KILL
+          retry
+        else
+          raise
+        end
+      end
     }
-    assert_equal("INT", Signal.signame(status.termsig))
-    assert_match(/Interrupt/, err, bug)
-  end
+    assert_not_equal(nil, status.termsig, bug12576)
+    assert_equal("INT", Signal.signame(status.termsig), bug12576)
+    assert_match(/Interrupt/, err, bug12576)
+  end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
   class Bug10557
     def [](_)
