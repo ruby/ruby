@@ -186,6 +186,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   * IPAddr#== and IPAddr#<=> no longer raise an exception if coercion fails.
     [Bug #12799]
 
+* IRB
+
+  * Binding#irb: Start a REPL session like `binding.pry` at r56624.
+
 * Logger
 
 	* Allow specifying logger parameters in constructor such

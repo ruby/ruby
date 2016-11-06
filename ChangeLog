@@ -1,3 +1,7 @@
+Sun Nov  6 18:18:25 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* NEWS: Added entry for r56624.
+
 Sun Nov  6 15:53:03 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* configure.in (-Wno-maybe-uninitialized): gcc 6 also shows the same
