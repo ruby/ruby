@@ -196,33 +196,37 @@ with all sufficient information, see the ChangeLog file or Redmine
 	  as level, progname, datetime_format, formatter. [Feature #12224]
 	* Add shift_period_suffix option. [Feature #10772]
 
+* Net::HTTP
+
+  * New method: Net::HTTP.post [Feature #12375]
+
 * OpenSSL
 
   * OpenSSL is extracted as a gem and the upstream has been migrated to
     https://github.com/ruby/openssl. OpenSSL still remains as a default gem.
     Refer to its History.md for the full release note. [Feature #9612]
 
-* Readline
-  * Readline.quoting_detection_proc and Readline.quoting_detection_proc=
-    [Feature #12659]
-
 * optparse
 
   * Add an into option. [Feature #11191]
 
 * pathname
+
   * New method: Pathname#empty? [Feature#12596]
 
+* Readline
+
+  * Readline.quoting_detection_proc and Readline.quoting_detection_proc=
+    [Feature #12659]
+
 * set
+
   * New methods: Set#compare_by_identity and Set#compare_by_identity?.
     [Feature #12210]
 
 * WEBrick
 
   * Don't allow , as a separator [Bug #12791]
-
-* Net::HTTP
-  * New method: Net::HTTP.post [Feature #12375]
 
 === Compatibility issues (excluding feature bug fixes)
 
@@ -266,6 +270,13 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * DateTime#to_time now preserves timezone.  [Bug #12189]
 
+* shellwords
+
+  * Shellwords.shellwords (shellsplit) treats the backslash as escape
+    character only when followed by one of the following characters:
+    $ ` " \ <newline>
+    [Bug #10055]
+
 * Time
 
   * Time#to_time now preserves timezone.  [Bug #12271]
@@ -277,15 +288,9 @@ with all sufficient information, see the ChangeLog file or Redmine
     in $LOADED_FEATURES since 2.1.
 
 * Tk
+
   * Tk is removed from stdlib.  [Feature #8539]
     https://github.com/ruby/tk is the new upstream.
-
-* shellwords
-
-  * Shellwords.shellwords (shellsplit) treats the backslash as escape
-    character only when followed by one of the following characters:
-    $ ` " \ <newline>
-    [Bug #10055]
 
 * XMLRPC
 

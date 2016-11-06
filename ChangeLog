@@ -1,3 +1,7 @@
+Sun Nov  6 21:35:37 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* NEWS: ordered entries and adjust styles.
+
 Sun Nov  6 18:23:31 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* NEWS: Added entry for [Feature #12160][ruby-core:74239]
