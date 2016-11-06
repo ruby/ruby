@@ -1,3 +1,8 @@
+Sun Nov  6 23:36:07 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/ruby/test_optimization.rb (test_tailcall_interrupted_by_sigint):
+	  send SIGKILL if the child process doesn't die within 1 second.
+
 Sun Nov  6 21:54:28 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* tool/vcs.rb (export_changelog): generate ChangeLog file from

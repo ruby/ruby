@@ -338,9 +338,21 @@ EOS
       in_p.write(script)
       in_p.close
       out_p.gets
-      Process.kill(:SIGINT, pid)
-      *, stat = Process.wait2(pid)
-      [stat, err_p.read]
+      sig = :INT
+      begin
+        Process.kill(sig, pid)
+        Timeout.timeout(1) do
+          *, stat = Process.wait2(pid)
+          [stat, err_p.read]
+        end
+      rescue Timeout::Error
+        if sig == :INT
+          sig = :KILL
+          retry
+        else
+          raise
+        end
+      end
     }
     assert_equal("INT", Signal.signame(status.termsig))
     assert_match(/Interrupt/, err, bug)
