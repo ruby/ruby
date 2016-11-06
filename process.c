@@ -1350,6 +1350,7 @@ mark_exec_arg(void *ptr)
     rb_gc_mark(eargp->fd_open);
     rb_gc_mark(eargp->fd_dup2_child);
     rb_gc_mark(eargp->env_modification);
+    rb_gc_mark(eargp->path_env);
     rb_gc_mark(eargp->chdir_dir);
 }
 
@@ -1929,12 +1930,19 @@ rb_execarg_extract_options(VALUE execarg_obj, VALUE opthash)
     return args[1];
 }
 
+#ifdef ENV_IGNORECASE
+#define ENVMATCH(s1, s2) (STRCASECMP((s1), (s2)) == 0)
+#else
+#define ENVMATCH(n1, n2) (strcmp((n1), (n2)) == 0)
+#endif
+
 static int
 check_exec_env_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
 {
     VALUE key = (VALUE)st_key;
     VALUE val = (VALUE)st_val;
-    VALUE env = (VALUE)arg;
+    VALUE env = ((VALUE *)arg)[0];
+    VALUE *path = &((VALUE *)arg)[1];
     char *k;
 
     k = StringValueCStr(key);
@@ -1947,20 +1955,25 @@ check_exec_env_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
     key = EXPORT_STR(key);
     if (!NIL_P(val)) val = EXPORT_STR(val);
 
+    if (ENVMATCH(k, PATH_ENV)) {
+	*path = val;
+    }
     rb_ary_push(env, hide_obj(rb_assoc_new(key, val)));
 
     return ST_CONTINUE;
 }
 
 static VALUE
-rb_check_exec_env(VALUE hash)
+rb_check_exec_env(VALUE hash, VALUE *path)
 {
-    VALUE env;
+    VALUE env[2];
 
-    env = hide_obj(rb_ary_new());
+    env[0] = hide_obj(rb_ary_new());
+    env[1] = Qfalse;
     st_foreach(rb_hash_tbl_raw(hash), check_exec_env_i, (st_data_t)env);
+    *path = env[1];
 
-    return env;
+    return env[0];
 }
 
 static VALUE
@@ -2066,7 +2079,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
         rb_check_exec_options(opthash, execarg_obj);
     }
     if (!NIL_P(env)) {
-        env = rb_check_exec_env(env);
+        env = rb_check_exec_env(env, &eargp->path_env);
         eargp->env_modification = env;
     }
 
@@ -2190,7 +2203,10 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
 
     if (!eargp->use_shell) {
 	const char *abspath;
-        abspath = dln_find_exe_r(RSTRING_PTR(eargp->invoke.cmd.command_name), 0, fbuf, sizeof(fbuf));
+	const char *path_env = 0;
+	if (RTEST(eargp->path_env)) path_env = RSTRING_PTR(eargp->path_env);
+	abspath = dln_find_exe_r(RSTRING_PTR(eargp->invoke.cmd.command_name),
+				 path_env, fbuf, sizeof(fbuf));
 	if (abspath)
 	    eargp->invoke.cmd.command_abspath = rb_str_new_cstr(abspath);
 	else
@@ -2271,7 +2287,7 @@ void
 rb_execarg_setenv(VALUE execarg_obj, VALUE env)
 {
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
-    env = !NIL_P(env) ? rb_check_exec_env(env) : Qfalse;
+    env = !NIL_P(env) ? rb_check_exec_env(env, &eargp->path_env) : Qfalse;
     eargp->env_modification = env;
 }
 

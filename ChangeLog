@@ -1,3 +1,8 @@
+Sun Nov  6 09:58:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_exec_fillarg): honor the given path environment
+	  variable.  [ruby-core:53103] [Bug #8004]
+
 Sun Nov  6 01:52:31 2016  Akira Matsuda  <ronnie@dio.jp>
 
 	* lib/erb.rb: Alias regist_scanner to register_scanner

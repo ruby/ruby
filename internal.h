@@ -1338,6 +1338,7 @@ struct rb_execarg {
     VALUE fd_open;
     VALUE fd_dup2_child;
     VALUE env_modification; /* Qfalse or [[k1,v1], ...] */
+    VALUE path_env;
     VALUE chdir_dir;
 };
 

@@ -316,6 +316,16 @@ class TestProcess < Test::Unit::TestCase
     end
   end
 
+  def test_execopt_env_path
+    bug8004 = '[ruby-core:53103] [Bug #8004]'
+    Dir.mktmpdir do |d|
+      open("#{d}/tmp_script.cmd", "w") {|f| f.puts ": ;"; f.chmod(0755)}
+      assert_not_nil(pid = Process.spawn({"PATH" => d}, "tmp_script.cmd"), bug8004)
+      wpid, st = Process.waitpid2(pid)
+      assert_equal([pid, true], [wpid, st.success?], bug8004)
+    end
+  end
+
   def _test_execopts_env_popen(cmd)
     message = cmd.inspect
     IO.popen({"FOO"=>"BAR"}, cmd) {|io|
