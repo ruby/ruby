@@ -1,3 +1,7 @@
+Sun Nov  6 11:53:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/irb.rb (Binding#irb): new method like Binding#pry.
+
 Sun Nov  6 11:48:55 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/net/smtp/test_smtp.rb (test_tls_connect, test_tls_connect):

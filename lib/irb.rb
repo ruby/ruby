@@ -705,3 +705,11 @@ module IRB
     array.join("\n")
   end
 end
+
+class Binding
+  # :nodoc:
+  def irb
+    IRB.setup(eval("__FILE__"))
+    IRB::Irb.new(IRB::WorkSpace.new(self)).run(IRB.conf)
+  end
+end
