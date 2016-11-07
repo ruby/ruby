@@ -1421,12 +1421,7 @@ flo_hash(VALUE num)
 VALUE
 rb_dbl_hash(double d)
 {
-    st_index_t hash;
-
-    /* normalize -0.0 to 0.0 */
-    if (d == 0.0) d = 0.0;
-    hash = rb_memhash(&d, sizeof(d));
-    return ST2FIX(hash);
+    return LONG2FIX(rb_dbl_long_hash (d));
 }
 
 VALUE

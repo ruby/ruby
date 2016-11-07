@@ -24,6 +24,10 @@ if RUBY_VERSION < "2.0"
 
     if defined?(fork)
       def self.popen(command, *rest, &block)
+        if command.kind_of?(Hash)
+          env = command
+          command = rest.shift
+        end
         opts = rest.last
         if opts.kind_of?(Hash)
           dir = opts.delete(:chdir)
@@ -36,6 +40,7 @@ if RUBY_VERSION < "2.0"
               yield(f)
             else
               Dir.chdir(dir) if dir
+              ENV.replace(env) if env
               exec(*command)
             end
           end
@@ -43,6 +48,7 @@ if RUBY_VERSION < "2.0"
           f = @orig_popen.call("-", *rest)
           unless f
             Dir.chdir(dir) if dir
+            ENV.replace(env) if env
             exec(*command)
           end
           f
@@ -51,6 +57,11 @@ if RUBY_VERSION < "2.0"
     else
       require 'shellwords'
       def self.popen(command, *rest, &block)
+        if command.kind_of?(Hash)
+          env = command
+          oldenv = ENV.to_hash
+          command = rest.shift
+        end
         opts = rest.last
         if opts.kind_of?(Hash)
           dir = opts.delete(:chdir)
@@ -59,11 +70,26 @@ if RUBY_VERSION < "2.0"
 
         command = command.shelljoin if Array === command
         Dir.chdir(dir || ".") do
+          ENV.replace(env) if env
           @orig_popen.call(command, *rest, &block)
+          ENV.replace(oldenv) if oldenv
         end
       end
     end
   end
+else
+  module DebugPOpen
+    verbose, $VERBOSE = $VERBOSE, nil if RUBY_VERSION < "2.1"
+    refine IO.singleton_class do
+      def popen(*args)
+        STDERR.puts args.inspect if $DEBUG
+        super
+      end
+    end
+  ensure
+    $VERBOSE = verbose unless verbose.nil?
+  end
+  using DebugPOpen
 end
 
 class VCS
@@ -94,6 +120,7 @@ class VCS
 
   def initialize(path)
     @srcdir = path
+    @abs_srcdir = File.realpath(path)
     super()
   end
 
@@ -281,8 +308,10 @@ class VCS
       FileUtils.rm_rf(dir+"/.svn")
     end
 
-    def export_changelog(srcdir, url, from, to, path)
-      IO.popen({'TZ' => 'JST-9'}, "svn log -r#{to}:#{from} #{url}") do |r|
+    def export_changelog(from, to, path)
+      range = [to, (from+1 if from)].compact.join(':')
+      IO.popen({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
+               %W"svn log -r#{range} #{url}") do |r|
         open(path, 'w') do |w|
           IO.copy_stream(r, w)
         end
@@ -364,10 +393,18 @@ class VCS
       FileUtils.rm_rf("#{dir}/.git")
     end
 
-    def export_changelog(srcdir, url, from, to, path)
-      from = `git -C #{srcdir} log -n1 --format=format:%H --grep='^ *git-svn-id: .*@#{from} '`
-      to = `git -C #{srcdir} log -n1 --format=format:%H --grep='^ *git-svn-id: .*@#{to} '`
-      IO.popen({'TZ' => 'JST-9'}, "git -C #{srcdir} log --date=iso-local --topo-order #{from}..#{to}") do |r|
+    def export_changelog(from, to, path)
+      range = [from, to].map do |rev|
+        rev or next
+        rev = IO.pread({'LANG' => 'C', 'LC_ALL' => 'C'},
+                       %W"git log -n1 --format=format:%H" <<
+                       "--grep=^ *git-svn-id: .*@#{rev} ",
+                       :chdir => @abs_srcdir)
+        rev unless rev.empty?
+      end.join('..')
+      IO.popen({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
+               %W"git svn log --date=iso-local --topo-order #{range}",
+               :chdir => @abs_srcdir) do |r|
         open(path, 'w') do |w|
           IO.copy_stream(r, w)
         end

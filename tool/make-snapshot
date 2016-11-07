@@ -205,7 +205,6 @@ def package(vcs, rev, destdir, tmp = nil)
     end
   end
 
-  srcdir = File.realpath($srcdir)
   Dir.chdir(tmp) if tmp
 
   if !File.directory?(v)
@@ -215,13 +214,13 @@ def package(vcs, rev, destdir, tmp = nil)
   end
 
   # get last revision from previous ChangeLog archive
-  last_ChangeLog = Dir["#{v}/doc/ChangeLog-*"].grep(/-\d+\z/).last
+  last_ChangeLog = Dir["#{v}/doc/ChangeLog-*"].grep(/-(\d+)\z/) {|n| [$1.to_i, n]}.max[1]
   open(last_ChangeLog) do |f|
     f.readline
     unless /\Ar(\d+) / =~ f.readline
       abort "Cannot find revision from '#{last_ChangeLog}'"
     end
-    vcs.export_changelog(srcdir, url, $1.to_i+1, revision.to_i, "#{v}/ChangeLog")
+    vcs.export_changelog($1.to_i, revision.to_i, "#{v}/ChangeLog")
   end
 
   open("#{v}/revision.h", "wb") {|f| f.puts "#define RUBY_REVISION #{revision}"}
