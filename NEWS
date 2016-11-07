@@ -58,6 +58,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Enumerator::Lazy
 
+  * Enumerator::Lazy#chunk_while  [GH-1186]
   * Enumerator::Lazy#uniq  [Feature #11090]
 
 * File
