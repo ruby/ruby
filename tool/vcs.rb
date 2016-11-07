@@ -24,6 +24,10 @@ if RUBY_VERSION < "2.0"
 
     if defined?(fork)
       def self.popen(command, *rest, &block)
+        if command.kind_of?(Hash)
+          env = command
+          command = rest.shift
+        end
         opts = rest.last
         if opts.kind_of?(Hash)
           dir = opts.delete(:chdir)
@@ -36,6 +40,7 @@ if RUBY_VERSION < "2.0"
               yield(f)
             else
               Dir.chdir(dir) if dir
+              ENV.replace(env) if env
               exec(*command)
             end
           end
@@ -43,6 +48,7 @@ if RUBY_VERSION < "2.0"
           f = @orig_popen.call("-", *rest)
           unless f
             Dir.chdir(dir) if dir
+            ENV.replace(env) if env
             exec(*command)
           end
           f
@@ -51,6 +57,11 @@ if RUBY_VERSION < "2.0"
     else
       require 'shellwords'
       def self.popen(command, *rest, &block)
+        if command.kind_of?(Hash)
+          env = command
+          oldenv = ENV.to_hash
+          command = rest.shift
+        end
         opts = rest.last
         if opts.kind_of?(Hash)
           dir = opts.delete(:chdir)
@@ -59,7 +70,9 @@ if RUBY_VERSION < "2.0"
 
         command = command.shelljoin if Array === command
         Dir.chdir(dir || ".") do
+          ENV.replace(env) if env
           @orig_popen.call(command, *rest, &block)
+          ENV.replace(oldenv) if oldenv
         end
       end
     end
