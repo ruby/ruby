@@ -306,8 +306,9 @@ class VCS
     end
 
     def export_changelog(from, to, path)
+      range = [to, (from+1 if from)].compact.join(':')
       IO.popen({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
-               %W"svn log -r#{to}:#{from} #{url}") do |r|
+               %W"svn log -r#{range} #{url}") do |r|
         open(path, 'w') do |w|
           IO.copy_stream(r, w)
         end
@@ -390,14 +391,16 @@ class VCS
     end
 
     def export_changelog(from, to, path)
-      from = IO.pread(%W"git log -n1 --format=format:%H" +
-                      ["--grep=^ *git-svn-id: .*@#{from} "],
-                      :chdir => @abs_srcdir)
-      to &&= IO.pread(%W"git log -n1 --format=format:%H" +
-                      ["--grep=^ *git-svn-id: .*@#{to} "],
-                      :chdir => @abs_srcdir)
+      range = [from, to].map do |rev|
+        rev or next
+        rev = IO.pread({'LANG' => 'C', 'LC_ALL' => 'C'},
+                       %W"git log -n1 --format=format:%H" <<
+                       "--grep=^ *git-svn-id: .*@#{rev} ",
+                       :chdir => @abs_srcdir)
+        rev unless rev.empty?
+      end.join('..')
       IO.popen({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
-               %W"git log --date=iso-local --topo-order #{from}..#{to}",
+               %W"git svn log --date=iso-local --topo-order #{range}",
                :chdir => @abs_srcdir) do |r|
         open(path, 'w') do |w|
           IO.copy_stream(r, w)
