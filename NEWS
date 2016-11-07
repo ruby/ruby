@@ -326,3 +326,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Thread deadlock detection now shows their backtrace and dependency. [Feature #8214]
 
 * st_table (st.c) internal data structure is improved. [Feature #12142]
+
+=== Miscellaneous changes
+
+* ChangeLog is removed from the repository.
+  It is generated from commit messages in Subversion by `make dist`.
+  Also note that now people should follow Git style commit message.
+  The template is written at
+  [Short (50 chars or less) summary of changes](https://git-scm.com/book/ch5-2.html).
