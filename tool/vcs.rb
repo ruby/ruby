@@ -77,6 +77,16 @@ if RUBY_VERSION < "2.0"
       end
     end
   end
+else
+  module DebugPOpen
+    refine IO.singleton_class do
+      def popen(*args)
+        STDERR.puts args.inspect if $DEBUG
+        super
+      end
+    end
+  end
+  using DebugPOpen
 end
 
 class VCS
@@ -295,7 +305,8 @@ class VCS
     end
 
     def export_changelog(srcdir, url, from, to, path)
-      IO.popen({'TZ' => 'JST-9'}, "svn log -r#{to}:#{from} #{url}") do |r|
+      IO.popen({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
+               %W"svn log -r#{to}:#{from} #{url}") do |r|
         open(path, 'w') do |w|
           IO.copy_stream(r, w)
         end
@@ -378,9 +389,15 @@ class VCS
     end
 
     def export_changelog(srcdir, url, from, to, path)
-      from = `git -C #{srcdir} log -n1 --format=format:%H --grep='^ *git-svn-id: .*@#{from} '`
-      to = `git -C #{srcdir} log -n1 --format=format:%H --grep='^ *git-svn-id: .*@#{to} '`
-      IO.popen({'TZ' => 'JST-9'}, "git -C #{srcdir} log --date=iso-local --topo-order #{from}..#{to}") do |r|
+      from = IO.pread(%W"git log -n1 --format=format:%H" +
+                      ["--grep=^ *git-svn-id: .*@#{from} "],
+                      :chdir => srcdir)
+      to &&= IO.pread(%W"git log -n1 --format=format:%H" +
+                      ["--grep=^ *git-svn-id: .*@#{to} "],
+                      :chdir => srcdir)
+      IO.popen({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
+               %W"git log --date=iso-local --topo-order #{from}..#{to}",
+               :chdir => srcdir) do |r|
         open(path, 'w') do |w|
           IO.copy_stream(r, w)
         end
