@@ -79,12 +79,15 @@ if RUBY_VERSION < "2.0"
   end
 else
   module DebugPOpen
+    verbose, $VERBOSE = $VERBOSE, nil if RUBY_VERSION < "2.1"
     refine IO.singleton_class do
       def popen(*args)
         STDERR.puts args.inspect if $DEBUG
         super
       end
     end
+  ensure
+    $VERBOSE = verbose unless verbose.nil?
   end
   using DebugPOpen
 end
