@@ -274,6 +274,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Update RDoc 5.0.0
 
+* RubyGems
+
+  * Update RubyGems 2.6.8
+
 * shellwords
 
   * Shellwords.shellwords (shellsplit) treats the backslash as escape
