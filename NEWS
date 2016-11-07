@@ -324,3 +324,5 @@ with all sufficient information, see the ChangeLog file or Redmine
   to `Math.max(x, y)`.
 
 * Thread deadlock detection now shows their backtrace and dependency. [Feature #8214]
+
+* Table (st.c) internal data structure is improved. [Feature #12142]

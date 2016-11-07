@@ -14,13 +14,13 @@ force_unpack_check(struct checker *c, st_data_t key, st_data_t val)
     if (c->nr == 0) {
 	st_data_t i;
 
-	if (!c->tbl->entries_packed) rb_bug("should be packed\n");
+	if (c->tbl->bins != NULL) rb_bug("should be packed\n");
 
 	/* force unpacking during iteration: */
 	for (i = 1; i < expect_size; i++)
 	    st_add_direct(c->tbl, i, i);
 
-	if (c->tbl->entries_packed) rb_bug("should be unpacked\n");
+	if (c->tbl->bins == NULL) rb_bug("should be unpacked\n");
     }
 
     if (key != c->nr) {
@@ -84,7 +84,7 @@ unp_fec(VALUE self, VALUE test)
 
     st_add_direct(tbl, 0, 0);
 
-    if (!tbl->entries_packed) rb_bug("should still be packed\n");
+    if (tbl->bins != NULL) rb_bug("should still be packed\n");
 
     st_foreach_check(tbl, unp_fec_i, (st_data_t)&c, -1);
 
@@ -98,7 +98,7 @@ unp_fec(VALUE self, VALUE test)
 		(VALUE)c.nr, (VALUE)expect_size);
     }
 
-    if (tbl->entries_packed) rb_bug("should be unpacked\n");
+    if (tbl->bins == NULL) rb_bug("should be unpacked\n");
 
     st_free_table(tbl);
 
@@ -145,7 +145,7 @@ unp_fe(VALUE self, VALUE test)
 
     st_add_direct(tbl, 0, 0);
 
-    if (!tbl->entries_packed) rb_bug("should still be packed\n");
+    if (tbl->bins != NULL) rb_bug("should still be packed\n");
 
     st_foreach(tbl, unp_fe_i, (st_data_t)&c);
 
@@ -159,7 +159,7 @@ unp_fe(VALUE self, VALUE test)
 		(VALUE)c.nr, (VALUE)expect_size);
     }
 
-    if (tbl->entries_packed) rb_bug("should be unpacked\n");
+    if (tbl->bins == NULL) rb_bug("should be unpacked\n");
 
     st_free_table(tbl);
 
