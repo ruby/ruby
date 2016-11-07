@@ -117,6 +117,7 @@ class VCS
 
   def initialize(path)
     @srcdir = path
+    @abs_srcdir = File.realpath(path)
     super()
   end
 
@@ -304,7 +305,7 @@ class VCS
       FileUtils.rm_rf(dir+"/.svn")
     end
 
-    def export_changelog(srcdir, url, from, to, path)
+    def export_changelog(from, to, path)
       IO.popen({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
                %W"svn log -r#{to}:#{from} #{url}") do |r|
         open(path, 'w') do |w|
@@ -388,16 +389,16 @@ class VCS
       FileUtils.rm_rf("#{dir}/.git")
     end
 
-    def export_changelog(srcdir, url, from, to, path)
+    def export_changelog(from, to, path)
       from = IO.pread(%W"git log -n1 --format=format:%H" +
                       ["--grep=^ *git-svn-id: .*@#{from} "],
-                      :chdir => srcdir)
+                      :chdir => @abs_srcdir)
       to &&= IO.pread(%W"git log -n1 --format=format:%H" +
                       ["--grep=^ *git-svn-id: .*@#{to} "],
-                      :chdir => srcdir)
+                      :chdir => @abs_srcdir)
       IO.popen({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
                %W"git log --date=iso-local --topo-order #{from}..#{to}",
-               :chdir => srcdir) do |r|
+               :chdir => @abs_srcdir) do |r|
         open(path, 'w') do |w|
           IO.copy_stream(r, w)
         end

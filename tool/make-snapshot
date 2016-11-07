@@ -205,7 +205,6 @@ def package(vcs, rev, destdir, tmp = nil)
     end
   end
 
-  srcdir = File.realpath($srcdir)
   Dir.chdir(tmp) if tmp
 
   if !File.directory?(v)
@@ -221,7 +220,7 @@ def package(vcs, rev, destdir, tmp = nil)
     unless /\Ar(\d+) / =~ f.readline
       abort "Cannot find revision from '#{last_ChangeLog}'"
     end
-    vcs.export_changelog(srcdir, url, $1.to_i+1, revision.to_i, "#{v}/ChangeLog")
+    vcs.export_changelog($1.to_i+1, revision.to_i, "#{v}/ChangeLog")
   end
 
   open("#{v}/revision.h", "wb") {|f| f.puts "#define RUBY_REVISION #{revision}"}
