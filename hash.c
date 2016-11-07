@@ -271,7 +271,7 @@ key64_hash (uint64_t key, uint32_t seed)
 long
 rb_objid_hash(st_index_t index)
 {
-    return key64_hash(index, (uint32_t) prime2);
+    return (long)key64_hash(index, (uint32_t)prime2);
 }
 
 static st_index_t
