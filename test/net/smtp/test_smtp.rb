@@ -128,7 +128,7 @@ module Net
         end
         smtp = Net::SMTP.new("localhost", servers[0].local_address.ip_port)
         smtp.enable_tls
-        smtp.open_timeout = 0.1
+        smtp.open_timeout = 1
         smtp.start do
         end
       ensure
