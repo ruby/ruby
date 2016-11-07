@@ -215,7 +215,7 @@ def package(vcs, rev, destdir, tmp = nil)
   end
 
   # get last revision from previous ChangeLog archive
-  last_ChangeLog = Dir["#{v}/doc/ChangeLog-*"].grep(/-\d+\z/).last
+  last_ChangeLog = Dir["#{v}/doc/ChangeLog-*"].grep(/-(\d+)\z/) {|n| [$1.to_i, n]}.max[1]
   open(last_ChangeLog) do |f|
     f.readline
     unless /\Ar(\d+) / =~ f.readline
