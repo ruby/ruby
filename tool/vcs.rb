@@ -343,20 +343,20 @@ class VCS
       logcmd = gitcmd + %W[log -n1 --date=iso]
       logcmd << "--grep=^ *git-svn-id: .*@[0-9][0-9]*"
       idpat = /git-svn-id: .*?@(\d+) \S+\Z/
-      log = IO.pread(logcmd)
+      log = cmd_read_at(srcdir, [logcmd])
       commit = log[/\Acommit (\w+)/, 1]
       last = log[idpat, 1]
       if path
         cmd = logcmd
         cmd += [path] unless path == '.'
-        log = IO.pread(cmd)
+        log = cmd_read_at(srcdir, [cmd])
         changed = log[idpat, 1]
       else
         changed = last
       end
       modified = log[/^Date:\s+(.*)/, 1]
-      branch = IO.pread(gitcmd + %W[symbolic-ref HEAD])[%r'\A(?:refs/heads/)?(.+)', 1]
-      title = IO.pread(gitcmd + %W[log --format=%s -n1 #{commit}..HEAD])
+      branch = cmd_read_at(srcdir, [gitcmd + %W[symbolic-ref HEAD]])[%r'\A(?:refs/heads/)?(.+)', 1]
+      title = cmd_read_at(srcdir, [gitcmd + %W[log --format=%s -n1 #{commit}..HEAD]])
       title = nil if title.empty?
       [last, changed, modified, branch, title]
     end
