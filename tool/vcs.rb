@@ -1,5 +1,6 @@
 # vcs
 require 'fileutils'
+require 'time'
 
 # This library is used by several other tools/ scripts to detect the current
 # VCS in use (e.g. SVN, Git) or to interact with that VCS.
@@ -433,9 +434,22 @@ class VCS
         rev unless rev.empty?
       end.join('..')
       cmd_pipe({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
-               %W"git svn log --date=iso-local --topo-order #{range}") do |r|
+               %W"git log --date=iso-local --topo-order #{range}") do |r|
         open(path, 'w') do |w|
-          IO.copy_stream(r, w)
+          sep = "-"*72
+          w.puts sep
+          while s = r.gets('')
+            author = s[/^Author:\s*(\S+)/, 1]
+            time = s[/^Date:\s*(.+)/, 1]
+            s = r.gets('')
+            s.gsub!(/^ {4}/, '')
+            s.sub!(/^git-svn-id: .*@(\d+) .*\n+\z/, '')
+            rev = $1
+            s.gsub!(/^ {8}/, '') if /^(?! {8}|$)/ !~ s
+            date = Time.strptime(time, "%Y-%m-%d %T %z").strftime("%a, %d %b %y")
+            w.puts "r#{rev} | #{author} | #{time} (#{date}) | #{s.count("\n")} lines\n\n"
+            w.puts s, sep
+          end
         end
       end
     end
