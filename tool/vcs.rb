@@ -360,6 +360,14 @@ class VCS
       [last, changed, modified, branch, title]
     end
 
+    def initialize(*)
+      super
+      if srcdir = @srcdir and self.class.local_path?(srcdir)
+        @srcdir = File.realpath(srcdir)
+      end
+      self
+    end
+
     def cmd_pipe(*cmds, &block)
       self.class.cmd_pipe_at(@srcdir, cmds, &block)
     end
