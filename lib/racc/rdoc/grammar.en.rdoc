@@ -4,12 +4,12 @@
 
 == Class Block and User Code Block
 
-There are two blocks on toplevel. One is 'class' block, another is 'user code'
-block. 'user code' block MUST be placed after 'class' block.
+There are two blocks on the toplevel. One is the 'class' block, the other is the 'user code'
+block. The 'user code' block MUST be placed after the 'class' block.
 
 == Comments
 
-You can insert comments about all places. Two style comments can be used, Ruby style '#.....' and C style '/\*......*\/'.
+You can insert comments about all places. Two styles of comments can be used, Ruby style '#.....' and C style '/\*......*\/'.
 
 == Class Block
 
@@ -25,11 +25,11 @@ The class block is formed like this:
   rule
     GRAMMARS
 
-CLASS_NAME is a name of parser class. This is the name of generating parser
+CLASS_NAME is a name of the parser class. This is the name of the generating parser
 class.
 
-If CLASS_NAME includes '::', Racc outputs module clause. For example, writing
-"class M::C" causes creating the code below:
+If CLASS_NAME includes '::', Racc outputs the module clause. For example, writing
+"class M::C" causes the code below to be created:
 
   module M
     class C
@@ -40,7 +40,7 @@ If CLASS_NAME includes '::', Racc outputs module clause. For example, writing
 
 == Grammar Block
 
-The grammar block describes grammar which is able to be understood by parser.
+The grammar block describes grammar which is able to be understood by the parser.
 Syntax is:
 
   (token): (token) (token) (token).... (action)
@@ -59,10 +59,10 @@ Note that you cannot use '%' string, here document, '%r' regexp in action.
 
 Actions can be omitted. When it is omitted, '' (empty string) is used.
 
-A return value of action is a value of left side value ($$). It is value of
-result, or returned value by `return` statement.
+A return value of action is a value of the left side value ($$). It is the value of the
+result, or the returned value by `return` statement.
 
-Here is an example of whole grammar block.
+Here is an example of the whole grammar block.
 
   rule
     goal: definition rules source { result = val }
@@ -81,11 +81,11 @@ You can use the following special local variables in action:
 
 * result ($$)
 
-The value of left-hand side (lhs). A default value is val[0].
+The value of the left-hand side (lhs). A default value is val[0].
 
 * val ($1,$2,$3...)
 
-An array of value of right-hand side (rhs).
+An array of value of the right-hand side (rhs).
 
 * _values (...$-2,$-1,$0)
 
