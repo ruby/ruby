@@ -4270,8 +4270,8 @@ fix_and(VALUE x, VALUE y)
     return rb_num_coerce_bit(x, y, '&');
 }
 
-static VALUE
-int_and(VALUE x, VALUE y)
+VALUE
+rb_int_and(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
 	return fix_and(x, y);
@@ -5256,7 +5256,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "<=", int_le, 1);
 
     rb_define_method(rb_cInteger, "~", int_comp, 0);
-    rb_define_method(rb_cInteger, "&", int_and, 1);
+    rb_define_method(rb_cInteger, "&", rb_int_and, 1);
     rb_define_method(rb_cInteger, "|", int_or,  1);
     rb_define_method(rb_cInteger, "^", int_xor, 1);
     rb_define_method(rb_cInteger, "[]", int_aref, 1);
