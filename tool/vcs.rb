@@ -120,7 +120,6 @@ class VCS
 
   def initialize(path)
     @srcdir = path
-    @abs_srcdir = File.realpath(path)
     super()
   end
 
@@ -322,27 +321,51 @@ class VCS
   class GIT < self
     register(".git") {|path, dir| File.exist?(File.join(path, dir))}
 
+    def self.cmd_args(cmds, srcdir = nil)
+      if srcdir and local_path?(srcdir)
+        (opts = cmds.last).kind_of?(Hash) or cmds << (opts = {})
+        opts[:chdir] ||= srcdir
+      end
+      cmds
+    end
+
+    def self.cmd_pipe_at(srcdir, cmds, &block)
+      IO.popen(*cmd_args(cmds, srcdir), &block)
+    end
+
+    def self.cmd_read_at(srcdir, cmds)
+      IO.pread(*cmd_args(cmds, srcdir))
+    end
+
     def self.get_revisions(path, srcdir = nil)
       gitcmd = %W[git]
       logcmd = gitcmd + %W[log -n1 --date=iso]
       logcmd << "--grep=^ *git-svn-id: .*@[0-9][0-9]*"
       idpat = /git-svn-id: .*?@(\d+) \S+\Z/
-      log = IO.pread(logcmd, :chdir => srcdir)
+      log = IO.pread(logcmd)
       commit = log[/\Acommit (\w+)/, 1]
       last = log[idpat, 1]
       if path
         cmd = logcmd
         cmd += [path] unless path == '.'
-        log = IO.pread(cmd, :chdir => srcdir)
+        log = IO.pread(cmd)
         changed = log[idpat, 1]
       else
         changed = last
       end
       modified = log[/^Date:\s+(.*)/, 1]
-      branch = IO.pread(gitcmd + %W[symbolic-ref HEAD], :chdir => srcdir)[%r'\A(?:refs/heads/)?(.+)', 1]
-      title = IO.pread(gitcmd + %W[log --format=%s -n1 #{commit}..HEAD], :chdir => srcdir)
+      branch = IO.pread(gitcmd + %W[symbolic-ref HEAD])[%r'\A(?:refs/heads/)?(.+)', 1]
+      title = IO.pread(gitcmd + %W[log --format=%s -n1 #{commit}..HEAD])
       title = nil if title.empty?
       [last, changed, modified, branch, title]
+    end
+
+    def cmd_pipe(*cmds, &block)
+      self.class.cmd_pipe_at(@srcdir, cmds, &block)
+    end
+
+    def cmd_read(*cmds)
+      self.class.cmd_read_at(@srcdir, cmds)
     end
 
     Branch = Struct.new(:to_str)
@@ -359,12 +382,12 @@ class VCS
 
     def stable
       cmd = %W"git for-each-ref --format=\%(refname:short) refs/heads/ruby_[0-9]*"
-      branch(IO.pread(cmd, :chdir => srcdir)[/.*^(ruby_\d+_\d+)$/m, 1])
+      branch(cmd_read(cmd)[/.*^(ruby_\d+_\d+)$/m, 1])
     end
 
     def branch_list(pat)
       cmd = %W"git for-each-ref --format=\%(refname:short) refs/heads/#{pat}"
-      IO.popen(cmd, :chdir => srcdir) {|f|
+      cmd_pipe(cmd) {|f|
         f.each {|line|
           line.chomp!
           yield line
@@ -375,7 +398,7 @@ class VCS
     def grep(pat, tag, *files, &block)
       cmd = %W[git grep -h --perl-regexp #{tag} --]
       set = block.binding.eval("proc {|match| $~ = match}")
-      IO.popen([cmd, *files], :chdir => srcdir) do |f|
+      cmd_pipe(cmd+files) do |f|
         f.grep(pat) do |s|
           set[$~]
           yield s
@@ -384,7 +407,7 @@ class VCS
     end
 
     def export(revision, url, dir, keep_temp = false)
-      ret = system("git", "clone", "-s", (@srcdir || '.'), "-b", url, dir)
+      ret = system("git", "clone", "-s", (@srcdir || '.').to_s, "-b", url, dir)
       FileUtils.rm_rf("#{dir}/.git") if ret and !keep_temp
       ret
     end
@@ -396,15 +419,13 @@ class VCS
     def export_changelog(from, to, path)
       range = [from, to].map do |rev|
         rev or next
-        rev = IO.pread({'LANG' => 'C', 'LC_ALL' => 'C'},
+        rev = cmd_read({'LANG' => 'C', 'LC_ALL' => 'C'},
                        %W"git log -n1 --format=format:%H" <<
-                       "--grep=^ *git-svn-id: .*@#{rev} ",
-                       :chdir => @abs_srcdir)
+                       "--grep=^ *git-svn-id: .*@#{rev} ")
         rev unless rev.empty?
       end.join('..')
-      IO.popen({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
-               %W"git svn log --date=iso-local --topo-order #{range}",
-               :chdir => @abs_srcdir) do |r|
+      cmd_pipe({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
+               %W"git svn log --date=iso-local --topo-order #{range}") do |r|
         open(path, 'w') do |w|
           IO.copy_stream(r, w)
         end
