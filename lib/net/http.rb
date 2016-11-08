@@ -899,14 +899,30 @@ module Net   #:nodoc:
       end
 
       D "opening connection to #{conn_address}:#{conn_port}..."
-      s = Timeout.timeout(@open_timeout, Net::OpenTimeout) {
-        begin
-          TCPSocket.open(conn_address, conn_port, @local_host, @local_port)
-        rescue => e
-          raise e, "Failed to open TCP connection to " +
-            "#{conn_address}:#{conn_port} (#{e.message})"
+      s = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM)
+      if @local_host && @local_port
+        local_addr = Socket.pack_sockaddr_in(@local_port, @local_host)
+        s.bind(local_addr)
+      end
+      conn_addr = Socket.pack_sockaddr_in(conn_port, conn_address)
+
+      begin
+        s.connect_nonblock(conn_addr)
+      rescue Errno::EINPROGRESS
+        _, rs, _ = IO.select(nil, [s], nil, @open_timeout)
+        if rs
+          retry
+        else
+          raise Net::OpenTimeout, "Timeout to open " +
+              "#{conn_address}:#{conn_port} (exceeds #{@open_timeout} seconds)"
         end
-      }
+      rescue Errno::EINCONN
+        # It is connected.
+      rescue => e
+        raise e, "Failed to open TCP connection to" +
+            "#{conn_address}:#{conn_port} (#{e.message})"
+      end
+
       s.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
       D "opened"
       if use_ssl?
