@@ -3795,8 +3795,8 @@ fix_divmod(VALUE x, VALUE y)
     }
 }
 
-static VALUE
-int_divmod(VALUE x, VALUE y)
+VALUE
+rb_int_divmod(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
 	return fix_divmod(x, y);
@@ -4738,7 +4738,7 @@ rb_int_digits_bigbase(VALUE num, VALUE base)
 
     digits = rb_ary_new();
     while (!FIXNUM_P(num) || FIX2LONG(num) > 0) {
-        VALUE qr = int_divmod(num, base);
+        VALUE qr = rb_int_divmod(num, base);
         rb_ary_push(digits, RARRAY_AREF(qr, 1));
         num = RARRAY_AREF(qr, 0);
     }
@@ -5241,7 +5241,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "%", rb_int_modulo, 1);
     rb_define_method(rb_cInteger, "modulo", rb_int_modulo, 1);
     rb_define_method(rb_cInteger, "remainder", int_remainder, 1);
-    rb_define_method(rb_cInteger, "divmod", int_divmod, 1);
+    rb_define_method(rb_cInteger, "divmod", rb_int_divmod, 1);
     rb_define_method(rb_cInteger, "fdiv", rb_int_fdiv, 1);
     rb_define_method(rb_cInteger, "**", rb_int_pow, 1);
 
