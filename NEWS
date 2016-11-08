@@ -213,7 +213,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * pathname
 
-  * New method: Pathname#empty? [Feature#12596]
+  * New method: Pathname#empty? [Feature #12596]
 
 * Readline
 
