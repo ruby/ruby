@@ -235,7 +235,7 @@ proc_clone(VALUE self)
  *   C.new.e(1,2)       #=> ArgumentError
  *   C.new.method(:e).to_proc.lambda?   #=> true
  *
- * This exception insures that methods never have tricks
+ * This exception ensures that methods never have tricks
  * and makes it easy to have wrappers to define methods that behave as usual.
  *
  *   class C
