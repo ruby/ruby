@@ -74,7 +74,7 @@ module URI
     #   String to replaces in.
     # +unsafe+::
     #   Regexp that matches all symbols that must be replaced with codes.
-    #   By default uses <tt>REGEXP::UNSAFE</tt>.
+    #   By default uses <tt>UNSAFE</tt>.
     #   When this argument is a String, it represents a character set.
     #
     # == Description
