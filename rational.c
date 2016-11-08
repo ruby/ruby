@@ -160,14 +160,6 @@ fun2(idiv)
 #define f_expt10(x) rb_int_pow(INT2FIX(10), x)
 
 inline static VALUE
-f_negative_p(VALUE x)
-{
-    if (FIXNUM_P(x))
-	return f_boolcast(FIX2LONG(x) < 0);
-    return rb_funcall(x, '<', 1, ZERO);
-}
-
-inline static VALUE
 f_zero_p(VALUE x)
 {
     if (RB_TYPE_P(x, T_FIXNUM)) {
@@ -1320,20 +1312,20 @@ nurat_round_half_even(VALUE self)
 
     num = dat->num;
     den = dat->den;
-    neg = f_negative_p(num);
+    neg = INT_NEGATIVE_P(num);
 
     if (neg)
-	num = f_negate(num);
+	num = rb_int_uminus(num);
 
-    num = f_add(f_mul(num, TWO), den);
-    den = f_mul(den, TWO);
-    qr = rb_funcall(num, rb_intern("divmod"), 1, den);
+    num = rb_int_plus(rb_int_mul(num, TWO), den);
+    den = rb_int_mul(den, TWO);
+    qr = rb_int_divmod(num, den);
     num = RARRAY_AREF(qr, 0);
-    if (f_zero_p(RARRAY_AREF(qr, 1)))
-	num = rb_funcall(num, '&', 1, LONG2FIX(((int)~1)));
+    if (INT_ZERO_P(RARRAY_AREF(qr, 1)))
+	num = rb_int_and(num, LONG2FIX(((int)~1)));
 
     if (neg)
-	num = f_negate(num);
+	num = rb_int_uminus(num);
 
     return num;
 }
