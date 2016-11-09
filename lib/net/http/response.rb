@@ -117,7 +117,9 @@ class Net::HTTPResponse
   end
 
   def error!   #:nodoc:
-    raise error_type().new(@code + ' ' + @message.dump, self)
+    message = @code
+    message += ' ' + @message.dump if @message
+    raise error_type().new(message, self)
   end
 
   def error_type   #:nodoc:
