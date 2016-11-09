@@ -976,7 +976,7 @@ module Net   #:nodoc:
           raise Net::OpenTimeout, "Timeout to open " +
               "#{conn_address}:#{conn_port} (exceeds #{open_timeout} seconds)"
         end
-      rescue Errno::EINCONN
+      rescue Errno::EISCONN
         # It is connected.
       rescue => e
         raise e, "Failed to open TCP connection to" +
