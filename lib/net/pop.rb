@@ -541,7 +541,7 @@ module Net
 
     # internal method for Net::POP3.start
     def do_start(account, password) # :nodoc:
-      s = open_socket(@address, port)
+      s = open_socket(@address, port, @open_timeout)
 
       if use_ssl?
         raise 'openssl library not installed' unless defined?(OpenSSL)
