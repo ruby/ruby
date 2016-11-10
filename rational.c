@@ -1455,7 +1455,7 @@ static VALUE
 nurat_to_f(VALUE self)
 {
     get_dat1(self);
-    return f_fdiv(dat->num, dat->den);
+    return rb_int_fdiv(dat->num, dat->den);
 }
 
 /*
