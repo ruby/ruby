@@ -1775,6 +1775,20 @@ class TestRefinement < Test::Unit::TestCase
                  eval_using(AliasInSubclass::M, "AliasInSubclass::D.new.bar"))
   end
 
+  def test_refine_with_prepend
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      bug = '[ruby-core:78073] [Bug #12920]'
+      Integer.prepend(Module.new)
+      Module.new do
+        refine Integer do
+          define_method(:+) {}
+        end
+      end
+      assert_kind_of(Time, Time.now, bug)
+    end;
+  end
+
   private
 
   def eval_using(mod, s)
