@@ -35,7 +35,9 @@ class TestRipper::Generic < Test::Unit::TestCase
       end
       dir = ARGV.shift
       scripts = Dir.chdir(dir) {Dir[pattern]}
-      scripts = scripts.sample(scripts.size * TEST_RATIO) if TEST_RATIO < 1.0
+      if (1...scripts.size).include?(num = scripts.size * TEST_RATIO)
+        scripts = scripts.sample(num)
+      end
       scripts.sort!
       for script in scripts
         assert_nothing_raised {
