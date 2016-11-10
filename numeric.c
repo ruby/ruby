@@ -3583,8 +3583,8 @@ fix_fdiv(VALUE x, VALUE y)
     }
 }
 
-static VALUE
-int_fdiv(VALUE x, VALUE y)
+VALUE
+rb_int_fdiv(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
 	return fix_fdiv(x, y);
@@ -5243,7 +5243,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "modulo", rb_int_modulo, 1);
     rb_define_method(rb_cInteger, "remainder", int_remainder, 1);
     rb_define_method(rb_cInteger, "divmod", int_divmod, 1);
-    rb_define_method(rb_cInteger, "fdiv", int_fdiv, 1);
+    rb_define_method(rb_cInteger, "fdiv", rb_int_fdiv, 1);
     rb_define_method(rb_cInteger, "**", rb_int_pow, 1);
 
     rb_define_method(rb_cInteger, "abs", int_abs, 0);
