@@ -80,6 +80,7 @@ rb_range_new(VALUE beg, VALUE end, int exclude_end)
 static void
 range_modify(VALUE range)
 {
+    rb_check_frozen(range);
     /* Ranges are immutable, so that they should be initialized only once. */
     if (RANGE_EXCL(range) != Qnil) {
 	rb_name_err_raise("`initialize' called twice", range, ID2SYM(idInitialize));

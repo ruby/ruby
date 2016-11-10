@@ -11,6 +11,12 @@ class TestRange < Test::Unit::TestCase
     assert_equal((0...2), Range.new(0, 2, true))
   end
 
+  def test_frozen_initialize
+    r = Range.allocate
+    r.freeze
+    assert_raise(RuntimeError){r.__send__(:initialize, 1, 2)}
+  end
+
   def test_range_string
     # XXX: Is this really the test of Range?
     assert_equal([], ("a" ... "a").to_a)
