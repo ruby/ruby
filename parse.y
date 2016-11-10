@@ -741,6 +741,8 @@ static VALUE parser_heredoc_dedent(struct parser_params*,VALUE);
 
 #define FIXME 0
 
+#else
+#define ripper_id2sym(id) id
 #endif /* RIPPER */
 
 #ifndef RIPPER
@@ -1366,7 +1368,7 @@ command_asgn	: lhs '=' command_rhs
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_rhs
 		    {
 			value_expr($5);
-			$$ = new_attr_op_assign($1, idCOLON2, $3, $4, $5);
+			$$ = new_attr_op_assign($1, ripper_id2sym(idCOLON2), $3, $4, $5);
 		    }
 		| backref tOP_ASGN command_rhs
 		    {
@@ -2051,7 +2053,7 @@ arg		: lhs '=' arg_rhs
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN arg_rhs
 		    {
 			value_expr($5);
-			$$ = new_attr_op_assign($1, idCOLON2, $3, $4, $5);
+			$$ = new_attr_op_assign($1, ripper_id2sym(idCOLON2), $3, $4, $5);
 		    }
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN arg_rhs
 		    {
