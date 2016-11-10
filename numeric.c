@@ -152,7 +152,6 @@ static VALUE fix_mul(VALUE x, VALUE y);
 static VALUE fix_lshift(long, unsigned long);
 static VALUE fix_rshift(long, unsigned long);
 static VALUE int_pow(long x, unsigned long y);
-static VALUE int_cmp(VALUE x, VALUE y);
 static VALUE int_odd_p(VALUE x);
 static VALUE int_even_p(VALUE x);
 static int int_round_zero_p(VALUE num, int ndigits);
@@ -1293,8 +1292,8 @@ flo_divmod(VALUE x, VALUE y)
  *    2.0**3      #=> 8.0
  */
 
-static VALUE
-flo_pow(VALUE x, VALUE y)
+VALUE
+rb_float_pow(VALUE x, VALUE y)
 {
     double dx, dy;
     if (RB_TYPE_P(y, T_FIXNUM)) {
@@ -2065,7 +2064,7 @@ rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode)
     h = rb_int_idiv(f, INT2FIX(2));
     r = rb_int_modulo(num, f);
     n = rb_int_minus(num, r);
-    r = int_cmp(r, h);
+    r = rb_int_cmp(r, h);
     if (FIXNUM_POSITIVE_P(r) ||
 	(FIXNUM_ZERO_P(r) &&
 	 ROUND_TO(mode,
@@ -3583,8 +3582,8 @@ fix_fdiv(VALUE x, VALUE y)
     }
 }
 
-static VALUE
-int_fdiv(VALUE x, VALUE y)
+VALUE
+rb_int_fdiv(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
 	return fix_fdiv(x, y);
@@ -3796,8 +3795,8 @@ fix_divmod(VALUE x, VALUE y)
     }
 }
 
-static VALUE
-int_divmod(VALUE x, VALUE y)
+VALUE
+rb_int_divmod(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
 	return fix_divmod(x, y);
@@ -3924,7 +3923,7 @@ fix_pow(VALUE x, VALUE y)
     }
 }
 
-static VALUE
+VALUE
 rb_int_pow(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
@@ -3965,8 +3964,8 @@ fix_equal(VALUE x, VALUE y)
     }
 }
 
-static VALUE
-int_equal(VALUE x, VALUE y)
+VALUE
+rb_int_equal(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
 	return fix_equal(x, y);
@@ -4015,8 +4014,8 @@ fix_cmp(VALUE x, VALUE y)
     return rb_num_coerce_cmp(x, y, id_cmp);
 }
 
-static VALUE
-int_cmp(VALUE x, VALUE y)
+VALUE
+rb_int_cmp(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
 	return fix_cmp(x, y);
@@ -4271,8 +4270,8 @@ fix_and(VALUE x, VALUE y)
     return rb_num_coerce_bit(x, y, '&');
 }
 
-static VALUE
-int_and(VALUE x, VALUE y)
+VALUE
+rb_int_and(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
 	return fix_and(x, y);
@@ -4386,7 +4385,7 @@ fix_lshift(long val, unsigned long width)
     return LONG2NUM(val);
 }
 
-static VALUE
+VALUE
 rb_int_lshift(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
@@ -4557,8 +4556,8 @@ fix_abs(VALUE fix)
     return LONG2NUM(i);
 }
 
-static VALUE
-int_abs(VALUE num)
+VALUE
+rb_int_abs(VALUE num)
 {
     if (FIXNUM_P(num)) {
 	return fix_abs(num);
@@ -4739,7 +4738,7 @@ rb_int_digits_bigbase(VALUE num, VALUE base)
 
     digits = rb_ary_new();
     while (!FIXNUM_P(num) || FIX2LONG(num) > 0) {
-        VALUE qr = int_divmod(num, base);
+        VALUE qr = rb_int_divmod(num, base);
         rb_ary_push(digits, RARRAY_AREF(qr, 1));
         num = RARRAY_AREF(qr, 0);
     }
@@ -5231,7 +5230,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "ceil", int_ceil, -1);
     rb_define_method(rb_cInteger, "truncate", int_truncate, -1);
     rb_define_method(rb_cInteger, "round", int_round, -1);
-    rb_define_method(rb_cInteger, "<=>", int_cmp, 1);
+    rb_define_method(rb_cInteger, "<=>", rb_int_cmp, 1);
 
     rb_define_method(rb_cInteger, "-@", rb_int_uminus, 0);
     rb_define_method(rb_cInteger, "+", rb_int_plus, 1);
@@ -5242,22 +5241,22 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "%", rb_int_modulo, 1);
     rb_define_method(rb_cInteger, "modulo", rb_int_modulo, 1);
     rb_define_method(rb_cInteger, "remainder", int_remainder, 1);
-    rb_define_method(rb_cInteger, "divmod", int_divmod, 1);
-    rb_define_method(rb_cInteger, "fdiv", int_fdiv, 1);
+    rb_define_method(rb_cInteger, "divmod", rb_int_divmod, 1);
+    rb_define_method(rb_cInteger, "fdiv", rb_int_fdiv, 1);
     rb_define_method(rb_cInteger, "**", rb_int_pow, 1);
 
-    rb_define_method(rb_cInteger, "abs", int_abs, 0);
-    rb_define_method(rb_cInteger, "magnitude", int_abs, 0);
+    rb_define_method(rb_cInteger, "abs", rb_int_abs, 0);
+    rb_define_method(rb_cInteger, "magnitude", rb_int_abs, 0);
 
-    rb_define_method(rb_cInteger, "===", int_equal, 1);
-    rb_define_method(rb_cInteger, "==", int_equal, 1);
+    rb_define_method(rb_cInteger, "===", rb_int_equal, 1);
+    rb_define_method(rb_cInteger, "==", rb_int_equal, 1);
     rb_define_method(rb_cInteger, ">", int_gt, 1);
     rb_define_method(rb_cInteger, ">=", rb_int_ge, 1);
     rb_define_method(rb_cInteger, "<", int_lt, 1);
     rb_define_method(rb_cInteger, "<=", int_le, 1);
 
     rb_define_method(rb_cInteger, "~", int_comp, 0);
-    rb_define_method(rb_cInteger, "&", int_and, 1);
+    rb_define_method(rb_cInteger, "&", rb_int_and, 1);
     rb_define_method(rb_cInteger, "|", int_or,  1);
     rb_define_method(rb_cInteger, "^", int_xor, 1);
     rb_define_method(rb_cInteger, "[]", int_aref, 1);
@@ -5388,7 +5387,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "%", flo_mod, 1);
     rb_define_method(rb_cFloat, "modulo", flo_mod, 1);
     rb_define_method(rb_cFloat, "divmod", flo_divmod, 1);
-    rb_define_method(rb_cFloat, "**", flo_pow, 1);
+    rb_define_method(rb_cFloat, "**", rb_float_pow, 1);
     rb_define_method(rb_cFloat, "==", flo_eq, 1);
     rb_define_method(rb_cFloat, "===", flo_eq, 1);
     rb_define_method(rb_cFloat, "<=>", flo_cmp, 1);

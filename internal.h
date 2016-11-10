@@ -1166,6 +1166,16 @@ VALUE rb_dbl_hash(double d);
 VALUE rb_fix_plus(VALUE x, VALUE y);
 VALUE rb_int_ge(VALUE x, VALUE y);
 enum ruby_num_rounding_mode rb_num_get_rounding_option(VALUE opts);
+VALUE rb_int_pow(VALUE x, VALUE y);
+VALUE rb_float_pow(VALUE x, VALUE y);
+VALUE rb_int_cmp(VALUE x, VALUE y);
+VALUE rb_int_equal(VALUE x, VALUE y);
+VALUE rb_int_fdiv(VALUE x, VALUE y);
+VALUE rb_int_lshift(VALUE x, VALUE y);
+VALUE rb_int_div(VALUE x, VALUE y);
+VALUE rb_int_abs(VALUE num);
+VALUE rb_int_divmod(VALUE x, VALUE y);
+VALUE rb_int_and(VALUE x, VALUE y);
 
 #if USE_FLONUM
 #define RUBY_BIT_ROTL(v, n) (((v) << (n)) | ((v) >> ((sizeof(v) * 8) - n)))
