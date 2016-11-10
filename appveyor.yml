@@ -6,7 +6,7 @@ environment:
 install:
   - SET
   - '"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" amd64'
-  - SET PATH=\usr\local\bin;C:\Ruby%ruby_version%\bin;C:\Ruby%ruby_version%\Devkit\mingw\bin;C:\msys64\usr\bin;%PATH%
+  - SET PATH=\usr\local\bin;C:\Ruby%ruby_version%\bin;C:\Ruby%ruby_version%\Devkit\mingw\bin;%PATH%
   - ruby --version
   - 'cl'
   - SET
