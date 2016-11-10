@@ -1244,8 +1244,8 @@ range_loader(VALUE range, VALUE obj)
 static VALUE
 range_alloc(VALUE klass)
 {
-  /* rb_struct_alloc_noinit itself should not be used because
-   * rb_marshal_define_compat uses equality of allocation function */
+    /* rb_struct_alloc_noinit itself should not be used because
+     * rb_marshal_define_compat uses equality of allocation function */
     return rb_struct_alloc_noinit(klass);
 }
 
