@@ -209,7 +209,7 @@ def package(vcs, rev, destdir, tmp = nil)
 
   if !File.directory?(v)
     v = Dir.glob("ruby-*").select(&File.method(:directory?))
-    v.size == 1 or abort "not exported"
+    v.size == 1 or abort "#{File.basename $0}: not exported"
     v = v[0]
   end
 
@@ -218,7 +218,7 @@ def package(vcs, rev, destdir, tmp = nil)
   open(last_ChangeLog) do |f|
     f.readline
     unless /\Ar(\d+) / =~ f.readline
-      abort "Cannot find revision from '#{last_ChangeLog}'"
+      abort "#{File.basename $0}: Cannot find revision from '#{last_ChangeLog}'"
     end
     vcs.export_changelog($1.to_i, revision.to_i, "#{v}/ChangeLog")
   end
