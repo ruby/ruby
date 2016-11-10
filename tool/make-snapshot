@@ -50,6 +50,7 @@ end
 
 ENV["LC_ALL"] = ENV["LANG"] = "C"
 SVNURL = URI.parse("http://svn.ruby-lang.org/repos/ruby/")
+GITURL = URI.parse("git://github.com/ruby/ruby.git")
 RUBY_VERSION_PATTERN = /^\#define\s+RUBY_VERSION\s+"([\d.]+)"/
 
 ENV["VPATH"] ||= "include/ruby"
@@ -413,7 +414,18 @@ ensure
   FileUtils.rm_rf(v) if v and !$exported and !$keep_temp
 end
 
-vcs = (VCS.detect($srcdir) rescue nil if $srcdir) || VCS::SVN.new(SVNURL)
+if [$srcdir, ($svn||=nil), ($git||=nil)].compact.size > 1
+  abort "#{File.basename $0}: -srcdir, -svn, and -git are exclusive"
+end
+if $srcdir
+  vcs = VCS.detect($srcdir)
+elsif $svn
+  vcs = VCS::SVN.new($svn == true ? SVNURL : URI.parse($svn))
+elsif $git
+  vcs = VCS::GIT.new($git == true ? GITURL : URI.parse($git))
+else
+  vcs = VCS::SVN.new(SVNURL)
+end
 
 success = true
 revisions.collect {|rev| package(vcs, rev, destdir, tmp)}.flatten.each do |name|
