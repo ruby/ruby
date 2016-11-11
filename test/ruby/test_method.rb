@@ -889,6 +889,22 @@ class TestMethod < Test::Unit::TestCase
     assert_nil(m, Feature9781)
   end
 
+  def test_prepended_public_zsuper
+    mod = EnvUtil.labeled_module("Mod") {private def foo; :ok end}
+    mods = [mod]
+    obj = Object.new.extend(mod)
+    class << obj
+      public :foo
+    end
+    2.times do |i|
+      mods.unshift(mod = EnvUtil.labeled_module("Mod#{i}") {def foo; end})
+      obj.singleton_class.prepend(mod)
+    end
+    m = obj.method(:foo)
+    assert_equal(mods, mods.map {m.owner.tap {m = m.super_method}})
+    assert_nil(m)
+  end
+
   def rest_parameter(*rest)
     rest
   end
