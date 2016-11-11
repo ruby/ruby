@@ -17,5 +17,6 @@ class MSpecScript
     -I#{File.expand_path srcdir}/#{config['EXTOUT']}/common
     -I#{File.expand_path srcdir}/-
     #{File.expand_path srcdir}/tool/runruby.rb --archdir=#{Dir.pwd} --extout=#{config['EXTOUT']}
+    --
   ]
 end
