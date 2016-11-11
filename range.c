@@ -1231,14 +1231,19 @@ range_dumper(VALUE range)
 static VALUE
 range_loader(VALUE range, VALUE obj)
 {
+    VALUE beg, end, excl;
+
     if (!RB_TYPE_P(obj, T_OBJECT) || RBASIC(obj)->klass != rb_cObject) {
         rb_raise(rb_eTypeError, "not a dumped range object");
     }
 
     range_modify(range);
-    RANGE_SET_BEG(range, rb_ivar_get(obj, id_beg));
-    RANGE_SET_END(range, rb_ivar_get(obj, id_end));
-    RANGE_SET_EXCL(range, rb_ivar_get(obj, id_excl));
+    beg = rb_ivar_get(obj, id_beg);
+    end = rb_ivar_get(obj, id_end);
+    excl = rb_ivar_get(obj, id_excl);
+    if (!NIL_P(excl)) {
+	range_init(range, beg, end, RBOOL(RTEST(excl)));
+    }
     return range;
 }
 

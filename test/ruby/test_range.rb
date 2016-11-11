@@ -110,6 +110,16 @@ class TestRange < Test::Unit::TestCase
     assert_nothing_raised { r.instance_eval { initialize 5, 6} }
   end
 
+  def test_marshal
+    r = 1..2
+    assert_equal(r, Marshal.load(Marshal.dump(r)))
+    r = 1...2
+    assert_equal(r, Marshal.load(Marshal.dump(r)))
+    s = Marshal.dump(r)
+    s.sub!(/endi./n, 'end0')
+    assert_raise(ArgumentError) {Marshal.load(s)}
+  end
+
   def test_bad_value
     assert_raise(ArgumentError) { (1 .. :a) }
   end
