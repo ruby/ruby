@@ -1,3 +1,8 @@
+Sat Nov 12 01:05:45 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* object.c: Improve documentation for Float conversion.
+	  [ruby-core:71661][Bug #11736][ci skip]
+
 Sat Nov 12 00:50:35 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (mnew_internal): follow the original class, not to loop
