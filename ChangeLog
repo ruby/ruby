@@ -1,3 +1,11 @@
+Sat Nov 12 07:32:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_pending_interrupt_p): no pending interrupt
+	  before initialization.
+
+	* thread.c (thread_raise_m, rb_thread_kill): uninitialized thread
+	  cannot interrupt.  [ruby-core:72732] [Bug #11959]
+
 Thu Oct 27 16:47:57 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* eval_intern.h (TH_PUSH_TAG): Initialize struct rb_vm_tag::tag with
