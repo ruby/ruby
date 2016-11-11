@@ -691,32 +691,32 @@ f_addsub(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 	VALUE c;
 
 	if (k == '+')
-	    c = f_add(a, b);
+	    c = rb_int_plus(a, b);
 	else
 	    c = f_sub(a, b);
 
-	b = f_idiv(aden, g);
+	b = rb_int_idiv(aden, g);
 	g = f_gcd(c, g);
-	num = f_idiv(c, g);
-	a = f_idiv(bden, g);
-	den = f_mul(a, b);
+	num = rb_int_idiv(c, g);
+	a = rb_int_idiv(bden, g);
+	den = rb_int_mul(a, b);
     }
     else {
 	VALUE g = f_gcd(aden, bden);
-	VALUE a = f_mul(anum, f_idiv(bden, g));
-	VALUE b = f_mul(bnum, f_idiv(aden, g));
+	VALUE a = rb_int_mul(anum, rb_int_idiv(bden, g));
+	VALUE b = rb_int_mul(bnum, rb_int_idiv(aden, g));
 	VALUE c;
 
 	if (k == '+')
-	    c = f_add(a, b);
+	    c = rb_int_plus(a, b);
 	else
 	    c = f_sub(a, b);
 
-	b = f_idiv(aden, g);
+	b = rb_int_idiv(aden, g);
 	g = f_gcd(c, g);
-	num = f_idiv(c, g);
-	a = f_idiv(bden, g);
-	den = f_mul(a, b);
+	num = rb_int_idiv(c, g);
+	a = rb_int_idiv(bden, g);
+	den = rb_int_mul(a, b);
     }
     return f_rational_new_no_reduce2(CLASS_OF(self), num, den);
 }
