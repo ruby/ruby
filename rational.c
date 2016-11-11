@@ -90,12 +90,12 @@ f_div(VALUE x, VALUE y)
     return rb_funcall(x, '/', 1, y);
 }
 
-inline static VALUE
+inline static int
 f_lt_p(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y))
-	return f_boolcast(FIX2LONG(x) < FIX2LONG(y));
-    return rb_funcall(x, '<', 1, y);
+	return (SIGNED_VALUE)x < (SIGNED_VALUE)y;
+    return RTEST(rb_funcall(x, '<', 1, y));
 }
 
 binop(mod, '%')
@@ -155,8 +155,8 @@ inline static VALUE
 f_eqeq_p(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y))
-	return f_boolcast(FIX2LONG(x) == FIX2LONG(y));
-    return rb_funcall(x, id_eqeq_p, 1, y);
+	return x == y;
+    return RTEST(rb_funcall(x, id_eqeq_p, 1, y));
 }
 
 fun2(expt)
@@ -165,59 +165,50 @@ fun2(idiv)
 
 #define f_expt10(x) f_expt(INT2FIX(10), x)
 
-inline static VALUE
+inline static int
 f_negative_p(VALUE x)
 {
-    if (FIXNUM_P(x))
-	return f_boolcast(FIX2LONG(x) < 0);
-    return rb_funcall(x, '<', 1, ZERO);
+    return rb_num_negative_p(x);
 }
 
 #define f_positive_p(x) (!f_negative_p(x))
 
-inline static VALUE
+inline static int
 f_zero_p(VALUE x)
 {
-    if (RB_TYPE_P(x, T_FIXNUM)) {
-	return f_boolcast(FIX2LONG(x) == 0);
-    }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
-	return Qfalse;
+    if (RB_INTEGER_TYPE_P(x)) {
+	return x == LONG2FIX(0);
     }
     else if (RB_TYPE_P(x, T_RATIONAL)) {
 	VALUE num = RRATIONAL(x)->num;
 
-	return f_boolcast(FIXNUM_P(num) && FIX2LONG(num) == 0);
+	return num == LONG2FIX(0);
     }
-    return rb_funcall(x, id_eqeq_p, 1, ZERO);
+    return RTEST(rb_funcall(x, id_eqeq_p, 1, ZERO));
 }
 
 #define f_nonzero_p(x) (!f_zero_p(x))
 
-inline static VALUE
+inline static int
 f_one_p(VALUE x)
 {
-    if (RB_TYPE_P(x, T_FIXNUM)) {
-	return f_boolcast(FIX2LONG(x) == 1);
-    }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
-	return Qfalse;
+    if (RB_INTEGER_TYPE_P(x)) {
+	return x == LONG2FIX(1);
     }
     else if (RB_TYPE_P(x, T_RATIONAL)) {
 	VALUE num = RRATIONAL(x)->num;
 	VALUE den = RRATIONAL(x)->den;
 
-	return f_boolcast(FIXNUM_P(num) && FIX2LONG(num) == 1 &&
-			  FIXNUM_P(den) && FIX2LONG(den) == 1);
+	return num == LONG2FIX(1) && den == LONG2FIX(1);
     }
-    return rb_funcall(x, id_eqeq_p, 1, ONE);
+    return RTEST(rb_funcall(x, id_eqeq_p, 1, ONE));
 }
 
-inline static VALUE
+inline static int
 f_minus_one_p(VALUE x)
 {
-    if (RB_TYPE_P(x, T_FIXNUM)) {
-	return f_boolcast(FIX2LONG(x) == -1);
+    if (RB_INTEGER_TYPE_P(x)) {
+	return x == LONG2FIX(-1);
     }
     else if (RB_TYPE_P(x, T_BIGNUM)) {
 	return Qfalse;
@@ -226,40 +217,40 @@ f_minus_one_p(VALUE x)
 	VALUE num = RRATIONAL(x)->num;
 	VALUE den = RRATIONAL(x)->den;
 
-	return f_boolcast(FIXNUM_P(num) && FIX2LONG(num) == -1 &&
-			  FIXNUM_P(den) && FIX2LONG(den) == 1);
+	return num == LONG2FIX(-1) && den == LONG2FIX(1);
     }
-    return rb_funcall(x, id_eqeq_p, 1, INT2FIX(-1));
+    return RTEST(rb_funcall(x, id_eqeq_p, 1, INT2FIX(-1)));
 }
 
-inline static VALUE
+inline static int
 f_kind_of_p(VALUE x, VALUE c)
 {
-    return rb_obj_is_kind_of(x, c);
+    VALUE ret = rb_obj_is_kind_of(x, c);
+    return RTEST(ret);
 }
 
-inline static VALUE
+inline static int
 k_numeric_p(VALUE x)
 {
     return f_kind_of_p(x, rb_cNumeric);
 }
 
-inline static VALUE
+inline static int
 k_integer_p(VALUE x)
 {
-    return f_kind_of_p(x, rb_cInteger);
+    return RB_INTEGER_TYPE_P(x);
 }
 
-inline static VALUE
+inline static int
 k_float_p(VALUE x)
 {
-    return f_kind_of_p(x, rb_cFloat);
+    return RB_FLOAT_TYPE_P(x);
 }
 
-inline static VALUE
+inline static int
 k_rational_p(VALUE x)
 {
-    return f_kind_of_p(x, rb_cRational);
+    return RB_TYPE_P(x, T_RATIONAL);
 }
 
 #define k_exact_p(x) (!k_float_p(x))
@@ -1134,7 +1125,7 @@ nurat_eqeq_p(VALUE self, VALUE other)
 	}
     }
     else if (RB_TYPE_P(other, T_FLOAT)) {
-	return f_eqeq_p(f_to_f(self), other);
+	return f_boolcast(f_eqeq_p(f_to_f(self), other));
     }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	{
@@ -1148,7 +1139,7 @@ nurat_eqeq_p(VALUE self, VALUE other)
 	}
     }
     else {
-	return f_eqeq_p(other, self);
+	return rb_funcall(other, id_eqeq_p, 1, self);
     }
 }
 
