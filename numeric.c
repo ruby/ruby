@@ -262,8 +262,6 @@ compare_with_zero(VALUE num, ID mid)
 }
 
 #define FIXNUM_POSITIVE_P(num) ((SIGNED_VALUE)(num) > (SIGNED_VALUE)INT2FIX(0))
-#define FIXNUM_NEGATIVE_P(num) ((SIGNED_VALUE)(num) < 0)
-#define FIXNUM_ZERO_P(num) ((num) == INT2FIX(0))
 
 static inline int
 int_pos_p(VALUE num)
@@ -784,7 +782,7 @@ static VALUE
 num_zero_p(VALUE num)
 {
     if (FIXNUM_P(num)) {
-	if (FIX2LONG(num) == 0) {
+	if (FIXNUM_ZERO_P(num)) {
 	    return Qtrue;
 	}
     }
@@ -3608,7 +3606,7 @@ static VALUE
 fix_divide(VALUE x, VALUE y, ID op)
 {
     if (FIXNUM_P(y)) {
-	if (FIX2LONG(y) == 0) rb_num_zerodiv();
+	if (FIXNUM_ZERO_P(y)) rb_num_zerodiv();
 	return rb_fix_div_fix(x, y);
     }
     else if (RB_TYPE_P(y, T_BIGNUM)) {
@@ -3699,7 +3697,7 @@ static VALUE
 fix_mod(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-	if (FIX2LONG(y) == 0) rb_num_zerodiv();
+	if (FIXNUM_ZERO_P(y)) rb_num_zerodiv();
 	return rb_fix_mod_fix(x, y);
     }
     else if (RB_TYPE_P(y, T_BIGNUM)) {
@@ -3772,7 +3770,7 @@ fix_divmod(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
 	VALUE div, mod;
-	if (FIX2LONG(y) == 0) rb_num_zerodiv();
+	if (FIXNUM_ZERO_P(y)) rb_num_zerodiv();
 	rb_fix_divmod_fix(x, y, &div, &mod);
 	return rb_assoc_new(div, mod);
     }

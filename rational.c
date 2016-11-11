@@ -27,8 +27,8 @@
 
 #define GMP_GCD_DIGITS 1
 
-#define INT_NEGATIVE_P(x) (FIXNUM_P(x) ? ((SIGNED_VALUE)(x) < 0) : BIGNUM_NEGATIVE_P(x))
-#define INT_ZERO_P(x) (FIXNUM_P(x) ? (FIX2LONG(x) == 0) : rb_bigzero_p(x))
+#define INT_NEGATIVE_P(x) (FIXNUM_P(x) ? FIXNUM_NEGATIVE_P(x) : BIGNUM_NEGATIVE_P(x))
+#define INT_ZERO_P(x) (FIXNUM_P(x) ? FIXNUM_ZERO_P(x) : rb_bigzero_p(x))
 
 VALUE rb_cRational;
 

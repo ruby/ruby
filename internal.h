@@ -1136,6 +1136,10 @@ VALUE rb_math_sqrt(VALUE);
 void Init_newline(void);
 
 /* numeric.c */
+
+#define FIXNUM_NEGATIVE_P(num) ((SIGNED_VALUE)(num) < 0)
+#define FIXNUM_ZERO_P(num) ((num) == INT2FIX(0))
+
 #ifndef ROUND_DEFAULT
 # define ROUND_DEFAULT RUBY_NUM_ROUND_HALF_EVEN
 #endif
