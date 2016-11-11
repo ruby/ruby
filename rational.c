@@ -27,6 +27,9 @@
 
 #define GMP_GCD_DIGITS 1
 
+#define INT_NEGATIVE_P(x) (FIXNUM_P(x) ? ((SIGNED_VALUE)(x) < 0) : BIGNUM_NEGATIVE_P(x))
+#define INT_ZERO_P(x) (FIXNUM_P(x) ? (FIX2LONG(x) == 0) : rb_bigzero_p(x))
+
 VALUE rb_cRational;
 
 static ID id_abs, id_cmp, id_convert, id_eqeq_p, id_expt, id_fdiv,
@@ -318,14 +321,14 @@ f_gcd_normal(VALUE x, VALUE y)
     if (FIXNUM_P(x) && FIXNUM_P(y))
 	return LONG2NUM(i_gcd(FIX2LONG(x), FIX2LONG(y)));
 
-    if (f_negative_p(x))
-	x = f_negate(x);
-    if (f_negative_p(y))
-	y = f_negate(y);
+    if (INT_NEGATIVE_P(x))
+	x = rb_int_uminus(x);
+    if (INT_NEGATIVE_P(y))
+	y = rb_int_uminus(y);
 
-    if (f_zero_p(x))
+    if (INT_ZERO_P(x))
 	return y;
-    if (f_zero_p(y))
+    if (INT_ZERO_P(y))
 	return x;
 
     for (;;) {
@@ -336,7 +339,7 @@ f_gcd_normal(VALUE x, VALUE y)
 		return LONG2NUM(i_gcd(FIX2LONG(x), FIX2LONG(y)));
 	}
 	z = x;
-	x = f_mod(y, x);
+	x = rb_int_modulo(y, x);
 	y = z;
     }
     /* NOTREACHED */
