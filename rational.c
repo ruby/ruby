@@ -485,21 +485,24 @@ nurat_int_value(VALUE num)
     return num;
 }
 
+static void
+nurat_canonicalize(VALUE *num, VALUE *den)
+{
+    if (f_negative_p(*den)) {
+	*num = f_negate(*num);
+	*den = f_negate(*den);
+    }
+    else if (f_zero_p(*den)) {
+	rb_raise_zerodiv();
+    }
+}
+
 inline static VALUE
 nurat_s_canonicalize_internal(VALUE klass, VALUE num, VALUE den)
 {
     VALUE gcd;
 
-    switch (FIX2INT(f_cmp(den, ZERO))) {
-      case -1:
-	num = f_negate(num);
-	den = f_negate(den);
-	break;
-      case 0:
-	rb_raise_zerodiv();
-	break;
-    }
-
+    nurat_canonicalize(&num, &den);
     gcd = f_gcd(num, den);
     num = f_idiv(num, gcd);
     den = f_idiv(den, gcd);
@@ -514,15 +517,7 @@ nurat_s_canonicalize_internal(VALUE klass, VALUE num, VALUE den)
 inline static VALUE
 nurat_s_canonicalize_internal_no_reduce(VALUE klass, VALUE num, VALUE den)
 {
-    switch (FIX2INT(f_cmp(den, ZERO))) {
-      case -1:
-	num = f_negate(num);
-	den = f_negate(den);
-	break;
-      case 0:
-	rb_raise_zerodiv();
-	break;
-    }
+    nurat_canonicalize(&num, &den);
 
 #ifdef CANON
     if (f_one_p(den) && canonicalization)
@@ -1675,10 +1670,16 @@ nurat_dumper(VALUE self)
 static VALUE
 nurat_loader(VALUE self, VALUE a)
 {
-    get_dat1(self);
+    VALUE num, den;
 
-    RRATIONAL_SET_NUM(dat, rb_ivar_get(a, id_i_num));
-    RRATIONAL_SET_DEN(dat, rb_ivar_get(a, id_i_den));
+    get_dat1(self);
+    num = rb_ivar_get(a, id_i_num);
+    den = rb_ivar_get(a, id_i_den);
+    nurat_int_check(num);
+    nurat_int_check(den);
+    nurat_canonicalize(&num, &den);
+    RRATIONAL_SET_NUM(dat, num);
+    RRATIONAL_SET_DEN(dat, den);
 
     return self;
 }
@@ -1699,17 +1700,22 @@ nurat_marshal_dump(VALUE self)
 static VALUE
 nurat_marshal_load(VALUE self, VALUE a)
 {
+    VALUE num, den;
+
     rb_check_frozen(self);
     rb_check_trusted(self);
 
     Check_Type(a, T_ARRAY);
     if (RARRAY_LEN(a) != 2)
 	rb_raise(rb_eArgError, "marshaled rational must have an array whose length is 2 but %ld", RARRAY_LEN(a));
-    if (f_zero_p(RARRAY_AREF(a, 1)))
-	rb_raise_zerodiv();
 
-    rb_ivar_set(self, id_i_num, RARRAY_AREF(a, 0));
-    rb_ivar_set(self, id_i_den, RARRAY_AREF(a, 1));
+    num = RARRAY_AREF(a, 0);
+    den = RARRAY_AREF(a, 1);
+    nurat_int_check(num);
+    nurat_int_check(den);
+    nurat_canonicalize(&num, &den);
+    rb_ivar_set(self, id_i_num, num);
+    rb_ivar_set(self, id_i_den, den);
 
     return self;
 }

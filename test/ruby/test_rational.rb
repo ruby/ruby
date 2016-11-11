@@ -646,6 +646,10 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(9, c2.instance_variable_get(:@ivar))
     assert_instance_of(Rational, c2)
 
+    assert_raise(TypeError){
+      Marshal.load("\x04\bU:\rRational[\ai\x060")
+    }
+
     assert_raise(ZeroDivisionError){
       Marshal.load("\x04\bU:\rRational[\ai\x06i\x05")
     }
@@ -663,6 +667,10 @@ class Rational_Test < Test::Unit::TestCase
     dump = "\x04\x08o:\x0dRational\x07:\x11@denominatori\x07:\x0f@numeratori\x06"
     assert_nothing_raised(bug6625) do
       assert_equal(Rational(1, 2), Marshal.load(dump), bug6625)
+    end
+    dump = "\x04\x08o:\x0dRational\x07:\x11@denominatori\x07:\x0f@numerator0"
+    assert_raise(TypeError) do
+      Marshal.load(dump)
     end
   end
 
