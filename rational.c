@@ -693,7 +693,7 @@ f_addsub(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 	if (k == '+')
 	    c = rb_int_plus(a, b);
 	else
-	    c = f_sub(a, b);
+	    c = rb_int_minus(a, b);
 
 	b = rb_int_idiv(aden, g);
 	g = f_gcd(c, g);
@@ -710,7 +710,7 @@ f_addsub(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 	if (k == '+')
 	    c = rb_int_plus(a, b);
 	else
-	    c = f_sub(a, b);
+	    c = rb_int_minus(a, b);
 
 	b = rb_int_idiv(aden, g);
 	g = f_gcd(c, g);
@@ -787,8 +787,8 @@ nurat_sub(VALUE self, VALUE other)
 					     dat->den);
 	}
     }
-    else if (RB_TYPE_P(other, T_FLOAT)) {
-	return f_sub(f_to_f(self), other);
+    else if (RB_FLOAT_TYPE_P(other)) {
+	return DBL2NUM(RFLOAT_VALUE(nurat_to_f(self)) - RFLOAT_VALUE(other));
     }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	{
