@@ -809,6 +809,12 @@ f_muldiv(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 {
     VALUE num, den;
 
+    assert(RB_TYPE_P(self, T_RATIONAL));
+    assert(RB_INTEGER_TYPE_P(anum));
+    assert(RB_INTEGER_TYPE_P(aden));
+    assert(RB_INTEGER_TYPE_P(bnum));
+    assert(RB_INTEGER_TYPE_P(bden));
+
     if (k == '/') {
 	VALUE t;
 
