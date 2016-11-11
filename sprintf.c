@@ -1024,13 +1024,19 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		int sign = (flags&FPLUS) ? 1 : 0, zero = 0;
 		long len, done = 0;
 		int prefix = 0;
-		if (!RB_TYPE_P(val, T_RATIONAL)) {
+		if (FIXNUM_P(val) || RB_TYPE_P(val, T_BIGNUM)) {
+		    den = INT2FIX(1);
+		    num = val;
+		}
+		else if (RB_TYPE_P(val, T_RATIONAL)) {
+		    den = rb_rational_den(val);
+		    num = rb_rational_num(val);
+		}
+		else {
 		    nextvalue = val;
 		    goto float_value;
 		}
 		if (!(flags&FPREC)) prec = default_float_precision;
-		den = rb_rational_den(val);
-		num = rb_rational_num(val);
 		if (FIXNUM_P(num)) {
 		    if ((SIGNED_VALUE)num < 0) {
 			long n = -FIX2LONG(num);

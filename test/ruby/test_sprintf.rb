@@ -148,6 +148,11 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal(" Inf", sprintf("% e", inf), '[ruby-dev:34002]')
   end
 
+  def test_bignum
+    assert_match(/\A10{120}\.0+\z/, sprintf("%f", 100**60))
+    assert_match(/\A10{180}\.0+\z/, sprintf("%f", 1000**60))
+  end
+
   def test_rational
     assert_match(/\A0\.10+\z/, sprintf("%.60f", 0.1r))
     assert_match(/\A0\.010+\z/, sprintf("%.60f", 0.01r))

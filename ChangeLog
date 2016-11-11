@@ -1,3 +1,7 @@
+Sat Nov 12 07:37:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): format exact number more exactly.
+
 Sat Nov 12 07:34:03 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* ext/openssl/ossl.c (Init_openssl): register an ex_data index for
