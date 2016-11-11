@@ -812,9 +812,9 @@ f_muldiv(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
     if (k == '/') {
 	VALUE t;
 
-	if (f_negative_p(bnum)) {
-	    anum = f_negate(anum);
-	    bnum = f_negate(bnum);
+	if (INT_NEGATIVE_P(bnum)) {
+	    anum = rb_int_uminus(anum);
+	    bnum = rb_int_uminus(bnum);
 	}
 	t = bnum;
 	bnum = bden;
@@ -911,8 +911,8 @@ nurat_div(VALUE self, VALUE other)
 			    other, ONE, '/');
 	}
     }
-    else if (RB_TYPE_P(other, T_FLOAT))
-	return rb_funcall(f_to_f(self), '/', 1, other);
+    else if (RB_FLOAT_TYPE_P(other))
+	return DBL2NUM(nurat_to_double(self) / RFLOAT_VALUE(other));
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	if (f_zero_p(other))
 	    rb_raise_zerodiv();
