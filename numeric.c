@@ -1291,8 +1291,8 @@ flo_divmod(VALUE x, VALUE y)
  *    2.0**3      #=> 8.0
  */
 
-static VALUE
-flo_pow(VALUE x, VALUE y)
+VALUE
+rb_float_pow(VALUE x, VALUE y)
 {
     double dx, dy;
     if (RB_TYPE_P(y, T_FIXNUM)) {
@@ -3931,7 +3931,7 @@ fix_pow(VALUE x, VALUE y)
     }
 }
 
-static VALUE
+VALUE
 rb_int_pow(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
@@ -5395,7 +5395,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "%", flo_mod, 1);
     rb_define_method(rb_cFloat, "modulo", flo_mod, 1);
     rb_define_method(rb_cFloat, "divmod", flo_divmod, 1);
-    rb_define_method(rb_cFloat, "**", flo_pow, 1);
+    rb_define_method(rb_cFloat, "**", rb_float_pow, 1);
     rb_define_method(rb_cFloat, "==", flo_eq, 1);
     rb_define_method(rb_cFloat, "===", flo_eq, 1);
     rb_define_method(rb_cFloat, "<=>", flo_cmp, 1);

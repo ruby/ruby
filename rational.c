@@ -966,6 +966,8 @@ f_odd_p(VALUE integer)
     return Qfalse;
 }
 
+static VALUE nurat_to_f(VALUE self);
+
 /*
  * call-seq:
  *    rat ** numeric  ->  numeric
@@ -1022,12 +1024,12 @@ nurat_expt(VALUE self, VALUE other)
 
 	    switch (FIX2INT(f_cmp(other, ZERO))) {
 	      case 1:
-		num = f_expt(dat->num, other);
-		den = f_expt(dat->den, other);
+		num = rb_int_pow(dat->num, other);
+		den = rb_int_pow(dat->den, other);
 		break;
 	      case -1:
-		num = f_expt(dat->den, f_negate(other));
-		den = f_expt(dat->num, f_negate(other));
+		num = rb_int_pow(dat->den, rb_int_uminus(other));
+		den = rb_int_pow(dat->num, rb_int_uminus(other));
 		break;
 	      default:
 		num = ONE;
@@ -1039,10 +1041,10 @@ nurat_expt(VALUE self, VALUE other)
     }
     else if (RB_TYPE_P(other, T_BIGNUM)) {
 	rb_warn("in a**b, b may be too big");
-	return f_expt(f_to_f(self), other);
+	return rb_float_pow(nurat_to_f(self), other);
     }
     else if (RB_TYPE_P(other, T_FLOAT) || RB_TYPE_P(other, T_RATIONAL)) {
-	return f_expt(f_to_f(self), other);
+	return rb_float_pow(nurat_to_f(self), other);
     }
     else {
 	return rb_num_coerce_bin(self, other, id_expt);
