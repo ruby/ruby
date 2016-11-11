@@ -891,7 +891,7 @@ size_t rb_ary_memsize(VALUE);
 
 /* bignum.c */
 extern const char ruby_digitmap[];
-VALUE rb_big_fdiv(VALUE x, VALUE y);
+double rb_big_fdiv_double(VALUE x, VALUE y);
 VALUE rb_big_uminus(VALUE x);
 VALUE rb_big_hash(VALUE);
 VALUE rb_big_odd_p(VALUE);
@@ -1170,7 +1170,7 @@ VALUE rb_dbl_hash(double d);
 VALUE rb_fix_plus(VALUE x, VALUE y);
 VALUE rb_int_ge(VALUE x, VALUE y);
 enum ruby_num_rounding_mode rb_num_get_rounding_option(VALUE opts);
-VALUE rb_int_fdiv(VALUE x, VALUE y);
+double rb_int_fdiv_double(VALUE x, VALUE y);
 
 #if USE_FLONUM
 #define RUBY_BIT_ROTL(v, n) (((v) << (n)) | ((v) >> ((sizeof(v) * 8) - n)))

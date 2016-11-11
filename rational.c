@@ -721,7 +721,7 @@ f_addsub(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
     return f_rational_new_no_reduce2(CLASS_OF(self), num, den);
 }
 
-static VALUE nurat_to_f(VALUE self);
+static double nurat_to_double(VALUE self);
 /*
  * call-seq:
  *    rat + numeric  ->  numeric
@@ -747,7 +747,7 @@ rb_rational_plus(VALUE self, VALUE other)
 	}
     }
     else if (RB_TYPE_P(other, T_FLOAT)) {
-	return DBL2NUM(RFLOAT_VALUE(nurat_to_f(self)) + RFLOAT_VALUE(other));
+	return DBL2NUM(nurat_to_double(self) + RFLOAT_VALUE(other));
     }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	{
@@ -788,7 +788,7 @@ nurat_sub(VALUE self, VALUE other)
 	}
     }
     else if (RB_FLOAT_TYPE_P(other)) {
-	return DBL2NUM(RFLOAT_VALUE(nurat_to_f(self)) - RFLOAT_VALUE(other));
+	return DBL2NUM(nurat_to_double(self) - RFLOAT_VALUE(other));
     }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	{
@@ -868,7 +868,7 @@ nurat_mul(VALUE self, VALUE other)
 	}
     }
     else if (RB_FLOAT_TYPE_P(other)) {
-	return DBL2NUM(RFLOAT_VALUE(nurat_to_f(self)) * RFLOAT_VALUE(other));
+	return DBL2NUM(nurat_to_double(self) * RFLOAT_VALUE(other));
     }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	{
@@ -1433,6 +1433,13 @@ nurat_round_n(int argc, VALUE *argv, VALUE self)
     return f_round_common(argc, argv, self, round_func);
 }
 
+static double
+nurat_to_double(VALUE self)
+{
+    get_dat1(self);
+    return rb_int_fdiv_double(dat->num, dat->den);
+}
+
 /*
  * call-seq:
  *    rat.to_f  ->  float
@@ -1447,8 +1454,7 @@ nurat_round_n(int argc, VALUE *argv, VALUE self)
 static VALUE
 nurat_to_f(VALUE self)
 {
-    get_dat1(self);
-    return rb_int_fdiv(dat->num, dat->den);
+    return DBL2NUM(nurat_to_double(self));
 }
 
 /*

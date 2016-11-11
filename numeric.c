@@ -3549,6 +3549,35 @@ rb_int_mul(VALUE x, VALUE y)
     return rb_num_coerce_bin(x, y, '*');
 }
 
+static double
+fix_fdiv_double(VALUE x, VALUE y)
+{
+    if (FIXNUM_P(y)) {
+        return (double)FIX2LONG(x) / (double)FIX2LONG(y);
+    }
+    else if (RB_TYPE_P(y, T_BIGNUM)) {
+        return rb_big_fdiv_double(rb_int2big(FIX2LONG(x)), y);
+    }
+    else if (RB_TYPE_P(y, T_FLOAT)) {
+        return (double)FIX2LONG(x) / RFLOAT_VALUE(y);
+    }
+    else {
+        return RFLOAT_VALUE(rb_num_coerce_bin(x, y, rb_intern("fdiv")));
+    }
+}
+
+double
+rb_int_fdiv_double(VALUE x, VALUE y)
+{
+    if (FIXNUM_P(x)) {
+        return fix_fdiv_double(x, y);
+    }
+    else if (RB_TYPE_P(x, T_BIGNUM)) {
+        return rb_big_fdiv_double(x, y);
+    }
+    return NAN;
+}
+
 /*
  *  Document-method: Integer#fdiv
  *  call-seq:
@@ -3564,31 +3593,11 @@ rb_int_mul(VALUE x, VALUE y)
  *
  */
 
-static VALUE
-fix_fdiv(VALUE x, VALUE y)
-{
-    if (FIXNUM_P(y)) {
-	return DBL2NUM((double)FIX2LONG(x) / (double)FIX2LONG(y));
-    }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
-	return rb_big_fdiv(rb_int2big(FIX2LONG(x)), y);
-    }
-    else if (RB_TYPE_P(y, T_FLOAT)) {
-	return DBL2NUM((double)FIX2LONG(x) / RFLOAT_VALUE(y));
-    }
-    else {
-	return rb_num_coerce_bin(x, y, rb_intern("fdiv"));
-    }
-}
-
 VALUE
 rb_int_fdiv(VALUE x, VALUE y)
 {
-    if (FIXNUM_P(x)) {
-	return fix_fdiv(x, y);
-    }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
-	return rb_big_fdiv(x, y);
+    if (RB_INTEGER_TYPE_P(x)) {
+        return DBL2NUM(rb_int_fdiv_double(x, y));
     }
     return Qnil;
 }

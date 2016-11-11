@@ -6090,7 +6090,7 @@ big_shift(VALUE x, long n)
     return x;
 }
 
-static VALUE
+static double
 big_fdiv(VALUE x, VALUE y, long ey)
 {
 #define DBL_BIGDIG ((DBL_MANT_DIG + BITSPERDIG) / BITSPERDIG)
@@ -6108,14 +6108,14 @@ big_fdiv(VALUE x, VALUE y, long ey)
 #if SIZEOF_LONG > SIZEOF_INT
     {
 	/* Visual C++ can't be here */
-	if (l > INT_MAX) return DBL2NUM(INFINITY);
-	if (l < INT_MIN) return DBL2NUM(0.0);
+	if (l > INT_MAX) return INFINITY;
+	if (l < INT_MIN) return 0.0;
     }
 #endif
-    return DBL2NUM(ldexp(big2dbl(z), (int)l));
+    return ldexp(big2dbl(z), (int)l);
 }
 
-static VALUE
+static double
 big_fdiv_int(VALUE x, VALUE y)
 {
     long l, ey;
@@ -6127,7 +6127,7 @@ big_fdiv_int(VALUE x, VALUE y)
     return big_fdiv(x, y, ey);
 }
 
-static VALUE
+static double
 big_fdiv_float(VALUE x, VALUE y)
 {
     int i;
@@ -6135,8 +6135,8 @@ big_fdiv_float(VALUE x, VALUE y)
     return big_fdiv(x, y, i - DBL_MANT_DIG);
 }
 
-VALUE
-rb_big_fdiv(VALUE x, VALUE y)
+double
+rb_big_fdiv_double(VALUE x, VALUE y)
 {
     double dx, dy;
 
@@ -6154,14 +6154,20 @@ rb_big_fdiv(VALUE x, VALUE y)
     else if (RB_FLOAT_TYPE_P(y)) {
 	dy = RFLOAT_VALUE(y);
 	if (isnan(dy))
-	    return y;
+	    return dy;
 	if (isinf(dx))
 	    return big_fdiv_float(x, y);
     }
     else {
-	return rb_num_coerce_bin(x, y, rb_intern("fdiv"));
+	return RFLOAT_VALUE(rb_num_coerce_bin(x, y, rb_intern("fdiv")));
     }
-    return DBL2NUM(dx / dy);
+    return dx / dy;
+}
+
+VALUE
+rb_big_fdiv(VALUE x, VALUE y)
+{
+    return DBL2NUM(rb_big_fdiv_double(x, y));
 }
 
 VALUE
