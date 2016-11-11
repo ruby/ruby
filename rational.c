@@ -101,7 +101,10 @@ f_lt_p(VALUE x, VALUE y)
     return RTEST(rb_funcall(x, '<', 1, y));
 }
 
+#ifndef NDEBUG
+/* f_mod is used only in f_gcd defined when NDEBUG is not defined */
 binop(mod, '%')
+#endif
 
 inline static VALUE
 f_mul(VALUE x, VALUE y)
