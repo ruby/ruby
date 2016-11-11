@@ -230,7 +230,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal true, MyObj.new == nil
   end
 
-  def self.tailcall(klass, src, file = nil, path = nil, line = nil)
+  def self.tailcall(klass, src, file = nil, path = nil, line = nil, tailcall: true)
     unless file
       loc, = caller_locations(1, 1)
       file = loc.path
@@ -238,7 +238,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     end
     RubyVM::InstructionSequence.new("proc {|_|_.class_eval {#{src}}}",
                                     file, (path || file), line,
-                                    tailcall_optimization: true,
+                                    tailcall_optimization: tailcall,
                                     trace_instruction: false)
       .eval[klass]
   end
@@ -332,6 +332,35 @@ class TestRubyOptimization < Test::Unit::TestCase
     EOF
     assert_equal(3, add_one_and_two,
                  message(bug12565) {disasm(:add_one_and_two)})
+  end
+
+  def test_tailcall_condition_block
+    bug = '[ruby-core:78015] [Bug #12905]'
+
+    src = "#{<<-"begin;"}\n#{<<-"end;"}"
+    begin;
+      def run(current, final)
+        if current < final
+          run(current+1, final)
+        else
+          nil
+        end
+      end
+    end;
+
+    obj = Object.new
+    self.class.tailcall(obj.singleton_class, src, tailcall: false)
+    e = assert_raise(SystemStackError) {
+      obj.run(1, Float::INFINITY)
+    }
+    level = e.backtrace_locations.size
+    obj = Object.new
+    self.class.tailcall(obj.singleton_class, src, tailcall: true)
+    level *= 2
+    mesg = message {"#{bug}: #{$!.backtrace_locations.size} / #{level} stack levels"}
+    assert_nothing_raised(SystemStackError, mesg) {
+      obj.run(1, level)
+    }
   end
 
   class Bug10557
