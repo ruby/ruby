@@ -492,7 +492,6 @@ rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE path, VALUE absolute_path,
 
     rb_iseq_compile_node(iseq, node);
     cleanup_iseq_build(iseq);
-    iseq_prepare_to_deoptimize(iseq, 0); // 0 is a placeholder
 
     return iseq_translate(iseq);
 }

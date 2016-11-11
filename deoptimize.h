@@ -109,6 +109,9 @@ iseq_deoptimize_if_needed(
     const rb_iseq_t *restrict i,
     rb_serial_t t)
 {
+    if (! i->body->deoptimize) {
+        return; /* not yet */
+    }
     if (t != i->body->deoptimize->created_at) {
         iseq_deoptimize(i);
     }

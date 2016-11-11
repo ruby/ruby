@@ -699,11 +699,14 @@ construct_pattern(void)
 #undef LABEL_PTR
 }
 
+extern rb_serial_t rb_vm_global_timestamp();
+
 void
 iseq_squash(const rb_iseq_t *iseq, VALUE *pc, int n)
 {
     const int m = sizeof(wipeout_pattern) / sizeof(VALUE); /* == 8 */
 
+    iseq_prepare_to_deoptimize(iseq, rb_vm_global_timestamp());
     while (UNLIKELY(n > m)) {
         MEMCPY(pc, wipeout_pattern, VALUE, m);
         pc += m;
@@ -722,6 +725,7 @@ iseq_eager_optimize(rb_iseq_t *iseq)
     int n            = iseq->body->iseq_size;
     bool f           = false;
 
+    iseq_prepare_to_deoptimize(iseq, rb_vm_global_timestamp());
     for (int len = 0, i = 0; i < n; i += len) {
         int level                  = setlocal_level(&ptr[i]);
         enum ruby_vminsn_type insn = (typeof(insn))ptr[i];
