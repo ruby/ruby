@@ -782,9 +782,9 @@ nurat_sub(VALUE self, VALUE other)
 	{
 	    get_dat1(self);
 
-	    return f_addsub(self,
-			    dat->num, dat->den,
-			    other, ONE, '-');
+	    return f_rational_new_no_reduce2(CLASS_OF(self),
+					     rb_int_minus(dat->num, rb_int_mul(other, dat->den)),
+					     dat->den);
 	}
     }
     else if (RB_TYPE_P(other, T_FLOAT)) {
