@@ -14,17 +14,16 @@ module Kernel
     PP.pp(self, ''.dup)
   end
 
-  private
   # prints arguments in pretty form.
   #
   # pp returns argument(s).
-  def pp(*objs) # :nodoc:
+  def pp(*objs)
     objs.each {|obj|
       PP.pp(obj)
     }
     objs.size <= 1 ? objs.first : objs
   end
-  module_function :pp # :nodoc:
+  module_function :pp
 end
 
 ##
