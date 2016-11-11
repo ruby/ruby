@@ -1,3 +1,8 @@
+Sat Nov 12 07:47:19 2016  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* cont.c (cont_new): disable optimization if clang's version is
+	  3.8.0.  [ruby-core:77894] [Bug #12893]
+
 Sat Nov 12 07:37:30 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): format exact number more exactly.
