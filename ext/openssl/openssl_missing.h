@@ -134,11 +134,16 @@ int EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *out, EVP_CIPHER_CTX *in);
 #endif
 
 #if !defined(HAVE_X509_STORE_GET_EX_DATA)
-void *X509_STORE_get_ex_data(X509_STORE *str, int idx);
+#  define X509_STORE_get_ex_data(x, idx) \
+	CRYPTO_get_ex_data(&(x)->ex_data, (idx))
 #endif
 
 #if !defined(HAVE_X509_STORE_SET_EX_DATA)
-int X509_STORE_set_ex_data(X509_STORE *str, int idx, void *data);
+#  define X509_STORE_set_ex_data(x, idx, data) \
+	CRYPTO_set_ex_data(&(x)->ex_data, (idx), (data))
+#  define X509_STORE_get_ex_new_index(l, p, newf, dupf, freef) \
+	CRYPTO_get_ex_new_index(CRYPTO_EX_INDEX_X509_STORE, (l), (p), \
+				(newf), (dupf), (freef))
 #endif
 
 #if !defined(HAVE_X509_CRL_SET_VERSION)

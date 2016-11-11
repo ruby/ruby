@@ -35,20 +35,6 @@ HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in)
 #endif /* HAVE_HMAC_CTX_COPY */
 #endif /* NO_HMAC */
 
-#if !defined(HAVE_X509_STORE_SET_EX_DATA)
-int X509_STORE_set_ex_data(X509_STORE *str, int idx, void *data)
-{
-    return CRYPTO_set_ex_data(&str->ex_data, idx, data);
-}
-#endif
-
-#if !defined(HAVE_X509_STORE_GET_EX_DATA)
-void *X509_STORE_get_ex_data(X509_STORE *str, int idx)
-{
-    return CRYPTO_get_ex_data(&str->ex_data, idx);
-}
-#endif
-
 #if !defined(HAVE_EVP_MD_CTX_CREATE)
 EVP_MD_CTX *
 EVP_MD_CTX_create(void)
