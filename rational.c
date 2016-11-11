@@ -479,7 +479,7 @@ nurat_canonicalization(int f)
 inline static void
 nurat_int_check(VALUE num)
 {
-    if (!(RB_TYPE_P(num, T_FIXNUM) || RB_TYPE_P(num, T_BIGNUM))) {
+    if (!RB_INTEGER_TYPE_P(num)) {
 	if (!k_numeric_p(num) || !f_integer_p(num))
 	    rb_raise(rb_eTypeError, "not an integer");
     }
@@ -744,7 +744,7 @@ f_addsub(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 VALUE
 rb_rational_plus(VALUE self, VALUE other)
 {
-    if (RB_TYPE_P(other, T_FIXNUM) || RB_TYPE_P(other, T_BIGNUM)) {
+    if (RB_INTEGER_TYPE_P(other)) {
 	{
 	    get_dat1(self);
 
@@ -785,7 +785,7 @@ rb_rational_plus(VALUE self, VALUE other)
 static VALUE
 nurat_sub(VALUE self, VALUE other)
 {
-    if (RB_TYPE_P(other, T_FIXNUM) || RB_TYPE_P(other, T_BIGNUM)) {
+    if (RB_INTEGER_TYPE_P(other)) {
 	{
 	    get_dat1(self);
 
@@ -865,7 +865,7 @@ f_muldiv(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 static VALUE
 nurat_mul(VALUE self, VALUE other)
 {
-    if (RB_TYPE_P(other, T_FIXNUM) || RB_TYPE_P(other, T_BIGNUM)) {
+    if (RB_INTEGER_TYPE_P(other)) {
 	{
 	    get_dat1(self);
 
@@ -907,7 +907,7 @@ nurat_mul(VALUE self, VALUE other)
 static VALUE
 nurat_div(VALUE self, VALUE other)
 {
-    if (RB_TYPE_P(other, T_FIXNUM) || RB_TYPE_P(other, T_BIGNUM)) {
+    if (RB_INTEGER_TYPE_P(other)) {
 	if (f_zero_p(other))
 	    rb_raise_zerodiv();
 	{
@@ -1067,7 +1067,7 @@ nurat_expt(VALUE self, VALUE other)
 static VALUE
 nurat_cmp(VALUE self, VALUE other)
 {
-    if (RB_TYPE_P(other, T_FIXNUM) || RB_TYPE_P(other, T_BIGNUM)) {
+    if (RB_INTEGER_TYPE_P(other)) {
 	{
 	    get_dat1(self);
 
@@ -1117,7 +1117,7 @@ nurat_cmp(VALUE self, VALUE other)
 static VALUE
 nurat_eqeq_p(VALUE self, VALUE other)
 {
-    if (RB_TYPE_P(other, T_FIXNUM) || RB_TYPE_P(other, T_BIGNUM)) {
+    if (RB_INTEGER_TYPE_P(other)) {
 	{
 	    get_dat1(self);
 
@@ -1156,7 +1156,7 @@ nurat_eqeq_p(VALUE self, VALUE other)
 static VALUE
 nurat_coerce(VALUE self, VALUE other)
 {
-    if (RB_TYPE_P(other, T_FIXNUM) || RB_TYPE_P(other, T_BIGNUM)) {
+    if (RB_INTEGER_TYPE_P(other)) {
 	return rb_assoc_new(f_rational_new_bang1(CLASS_OF(self), other), self);
     }
     else if (RB_TYPE_P(other, T_FLOAT)) {
