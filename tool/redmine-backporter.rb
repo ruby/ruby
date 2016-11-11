@@ -436,7 +436,7 @@ eom
 
   "backport" => proc{|args|
     # this feature implies backport command which wraps tool/merger.rb
-    raise CommandSyntexError unless args.empty?
+    raise CommandSyntaxError unless args.empty?
     unless @issue
       puts "ticket not selected"
       next
