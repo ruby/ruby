@@ -837,8 +837,8 @@ f_muldiv(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 	VALUE g1 = f_gcd(anum, bden);
 	VALUE g2 = f_gcd(aden, bnum);
 
-	num = f_mul(f_idiv(anum, g1), f_idiv(bnum, g2));
-	den = f_mul(f_idiv(aden, g2), f_idiv(bden, g1));
+	num = rb_int_mul(rb_int_idiv(anum, g1), rb_int_idiv(bnum, g2));
+	den = rb_int_mul(rb_int_idiv(aden, g2), rb_int_idiv(bden, g1));
     }
     return f_rational_new_no_reduce2(CLASS_OF(self), num, den);
 }
@@ -867,8 +867,8 @@ nurat_mul(VALUE self, VALUE other)
 			    other, ONE, '*');
 	}
     }
-    else if (RB_TYPE_P(other, T_FLOAT)) {
-	return f_mul(f_to_f(self), other);
+    else if (RB_FLOAT_TYPE_P(other)) {
+	return DBL2NUM(RFLOAT_VALUE(nurat_to_f(self)) * RFLOAT_VALUE(other));
     }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	{
