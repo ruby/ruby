@@ -2071,14 +2071,17 @@ float_to_r(VALUE self)
 	long ln = FIX2LONG(n);
 
 	if (ln == 0)
-	    return f_to_r(f);
+	    return rb_rational_new1(f);
 	if (ln > 0)
-	    return f_to_r(f_lshift(f, n));
+	    return rb_rational_new1(rb_int_lshift(f, n));
 	ln = -ln;
-	return rb_rational_new2(f, f_lshift(ONE, INT2FIX(ln)));
+	return rb_rational_new2(f, rb_int_lshift(ONE, INT2FIX(ln)));
     }
 #else
-    return f_to_r(f_mul(f, f_expt(INT2FIX(FLT_RADIX), n)));
+    f = rb_int_mul(f, rb_int_pow(INT2FIX(FLT_RADIX), n));
+    if (RB_TYPE_P(f, T_RATIONAL))
+	return f;
+    return rb_rational_new1(f);
 #endif
 }
 

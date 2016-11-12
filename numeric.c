@@ -4390,7 +4390,7 @@ fix_lshift(long val, unsigned long width)
     return LONG2NUM(val);
 }
 
-static VALUE
+VALUE
 rb_int_lshift(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
