@@ -33,7 +33,7 @@
 
 VALUE rb_cRational;
 
-static ID id_abs, id_cmp, id_convert, id_eqeq_p, id_expt, id_fdiv,
+static ID id_abs, id_cmp, id_eqeq_p, id_expt, id_fdiv,
     id_idiv, id_integer_p, id_negate, id_to_f,
     id_to_i, id_truncate, id_i_num, id_i_den;
 
@@ -479,11 +479,11 @@ nurat_int_value(VALUE num)
 static void
 nurat_canonicalize(VALUE *num, VALUE *den)
 {
-    if (f_negative_p(*den)) {
+    if (INT_NEGATIVE_P(*den)) {
 	*num = f_negate(*num);
 	*den = f_negate(*den);
     }
-    else if (f_zero_p(*den)) {
+    else if (INT_ZERO_P(*den)) {
 	rb_raise_zerodiv();
     }
 }
@@ -552,6 +552,7 @@ f_rational_new_no_reduce2(VALUE klass, VALUE x, VALUE y)
     return nurat_s_canonicalize_internal_no_reduce(klass, x, y);
 }
 
+static VALUE nurat_s_convert(int argc, VALUE *argv, VALUE klass);
 /*
  * call-seq:
  *    Rational(x[, y])  ->  numeric
@@ -582,7 +583,7 @@ f_rational_new_no_reduce2(VALUE klass, VALUE x, VALUE y)
 static VALUE
 nurat_f_rational(int argc, VALUE *argv, VALUE klass)
 {
-    return rb_funcallv(rb_cRational, id_convert, argc, argv);
+    return nurat_s_convert(argc, argv, rb_cRational);
 }
 
 /*
@@ -1812,8 +1813,6 @@ rb_rational_new(VALUE x, VALUE y)
     return nurat_s_canonicalize_internal(rb_cRational, x, y);
 }
 
-static VALUE nurat_s_convert(int argc, VALUE *argv, VALUE klass);
-
 VALUE
 rb_Rational(VALUE x, VALUE y)
 {
@@ -2263,9 +2262,19 @@ read_num(const char **s, int numsign, int strict,
 	    return 0;
 	{
 	    VALUE l = f_expt10(INT2NUM(count));
-	    *num = f_mul(*num, l);
-	    *num = f_add(*num, fp);
-	    *num = f_div(*num, l);
+#ifdef CANON
+	    if (canonicalization) {
+		*num = rb_int_mul(*num, l);
+		*num = rb_int_plus(*num, fp);
+		*num = rb_rational_new2(*num, l);
+	    }
+	    else
+#endif
+	    {
+		*num = nurat_mul(*num, l);
+		*num = rb_rational_plus(*num, fp);
+		*num = nurat_div(*num, l);
+	    }
 	}
     }
 
@@ -2277,14 +2286,14 @@ read_num(const char **s, int numsign, int strict,
 	if (!read_digits(s, strict, &exp, NULL))
 	    return 0;
 	if (expsign == '-')
-	    exp = f_negate(exp);
+	    exp = rb_int_uminus(exp);
     }
 
     if (numsign == '-')
-	*num = f_negate(*num);
+	*num = nurat_negate(*num);
     if (!NIL_P(exp)) {
 	VALUE l = f_expt10(exp);
-	*num = f_mul(*num, l);
+	*num = nurat_mul(*num, l);
     }
     return 1;
 }
@@ -2311,7 +2320,7 @@ read_rat_nos(const char **s, int sign, int strict,
 	if (!read_den(s, strict, &den))
 	    return 0;
 	if (!(FIXNUM_P(den) && FIX2LONG(den) == 1))
-	    *num = f_div(*num, den);
+	    *num = nurat_div(*num, den);
     }
     return 1;
 }
@@ -2467,14 +2476,14 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
     rb_match_busy(backref);
 
     if (RB_TYPE_P(a1, T_FLOAT)) {
-	a1 = f_to_r(a1);
+	a1 = float_to_r(a1);
     }
     else if (RB_TYPE_P(a1, T_STRING)) {
 	a1 = string_to_r_strict(a1);
     }
 
     if (RB_TYPE_P(a2, T_FLOAT)) {
-	a2 = f_to_r(a2);
+	a2 = float_to_r(a2);
     }
     else if (RB_TYPE_P(a2, T_STRING)) {
 	a2 = string_to_r_strict(a2);
@@ -2557,7 +2566,6 @@ Init_Rational(void)
 
     id_abs = rb_intern("abs");
     id_cmp = rb_intern("<=>");
-    id_convert = rb_intern("convert");
     id_eqeq_p = rb_intern("==");
     id_expt = rb_intern("**");
     id_fdiv = rb_intern("fdiv");
