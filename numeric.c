@@ -260,8 +260,6 @@ compare_with_zero(VALUE num, ID mid)
     return r;
 }
 
-#define FIXNUM_POSITIVE_P(num) ((SIGNED_VALUE)(num) > (SIGNED_VALUE)INT2FIX(0))
-
 static inline int
 int_pos_p(VALUE num)
 {

@@ -1137,6 +1137,7 @@ void Init_newline(void);
 
 /* numeric.c */
 
+#define FIXNUM_POSITIVE_P(num) ((SIGNED_VALUE)(num) > (SIGNED_VALUE)INT2FIX(0))
 #define FIXNUM_NEGATIVE_P(num) ((SIGNED_VALUE)(num) < 0)
 #define FIXNUM_ZERO_P(num) ((num) == INT2FIX(0))
 

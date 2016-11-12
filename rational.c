@@ -27,6 +27,7 @@
 
 #define GMP_GCD_DIGITS 1
 
+#define INT_POSITIVE_P(x) (FIXNUM_P(x) ? FIXNUM_POSITIVE_P(x) : BIGNUM_POSITIVE_P(x))
 #define INT_NEGATIVE_P(x) (FIXNUM_P(x) ? FIXNUM_NEGATIVE_P(x) : BIGNUM_NEGATIVE_P(x))
 #define INT_ZERO_P(x) (FIXNUM_P(x) ? FIXNUM_ZERO_P(x) : rb_bigzero_p(x))
 
@@ -69,20 +70,6 @@ f_add(VALUE x, VALUE y)
     else if (FIXNUM_P(x) && FIX2LONG(x) == 0)
 	return y;
     return rb_funcall(x, '+', 1, y);
-}
-
-inline static VALUE
-f_cmp(VALUE x, VALUE y)
-{
-    if (FIXNUM_P(x) && FIXNUM_P(y)) {
-	long c = FIX2LONG(x) - FIX2LONG(y);
-	if (c > 0)
-	    c = 1;
-	else if (c < 0)
-	    c = -1;
-	return INT2FIX(c);
-    }
-    return rb_funcall(x, id_cmp, 1, y);
 }
 
 inline static VALUE
@@ -437,15 +424,13 @@ nurat_s_new_bang(int argc, VALUE *argv, VALUE klass)
 	if (!k_integer_p(den))
 	    den = f_to_i(den);
 
-	switch (FIX2INT(f_cmp(den, ZERO))) {
-	  case -1:
+        if (INT_NEGATIVE_P(den)) {
 	    num = f_negate(num);
 	    den = f_negate(den);
-	    break;
-	  case 0:
+        }
+        else if (INT_ZERO_P(den)) {
 	    rb_raise_zerodiv();
-	    break;
-	}
+        }
 	break;
     }
 
@@ -1014,11 +999,11 @@ nurat_expt(VALUE self, VALUE other)
 	    if (f_one_p(dat->num)) {
 		return f_rational_new_bang1(CLASS_OF(self), ONE);
 	    }
-	    else if (f_minus_one_p(dat->num) && k_integer_p(other)) {
+	    else if (f_minus_one_p(dat->num) && RB_INTEGER_TYPE_P(other)) {
 		return f_rational_new_bang1(CLASS_OF(self), INT2FIX(f_odd_p(other) ? -1 : 1));
 	    }
-	    else if (f_zero_p(dat->num)) {
-		if (FIX2INT(f_cmp(other, ZERO)) == -1) {
+	    else if (INT_ZERO_P(dat->num)) {
+		if (f_negative_p(other)) {
 		    rb_raise_zerodiv();
 		}
 		else {
@@ -1029,25 +1014,23 @@ nurat_expt(VALUE self, VALUE other)
     }
 
     /* General case */
-    if (RB_TYPE_P(other, T_FIXNUM)) {
+    if (FIXNUM_P(other)) {
 	{
 	    VALUE num, den;
 
 	    get_dat1(self);
 
-	    switch (FIX2INT(f_cmp(other, ZERO))) {
-	      case 1:
+            if (INT_POSITIVE_P(other)) {
 		num = rb_int_pow(dat->num, other);
 		den = rb_int_pow(dat->den, other);
-		break;
-	      case -1:
+            }
+            else if (INT_NEGATIVE_P(other)) {
 		num = rb_int_pow(dat->den, rb_int_uminus(other));
 		den = rb_int_pow(dat->num, rb_int_uminus(other));
-		break;
-	      default:
+            }
+            else {
 		num = ONE;
 		den = ONE;
-		break;
 	    }
 	    return f_rational_new2(CLASS_OF(self), num, den);
 	}
