@@ -161,12 +161,6 @@ fun2(idiv)
 #define f_expt10(x) rb_int_pow(INT2FIX(10), x)
 
 inline static int
-f_negative_p(VALUE x)
-{
-    return rb_num_negative_p(x);
-}
-
-inline static int
 f_zero_p(VALUE x)
 {
     if (RB_INTEGER_TYPE_P(x)) {
@@ -1010,7 +1004,7 @@ nurat_expt(VALUE self, VALUE other)
 		return f_rational_new_bang1(CLASS_OF(self), INT2FIX(f_odd_p(other) ? -1 : 1));
 	    }
 	    else if (INT_ZERO_P(dat->num)) {
-		if (f_negative_p(other)) {
+		if (rb_num_negative_p(other)) {
                     rb_num_zerodiv();
 		}
 		else {
