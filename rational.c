@@ -1896,7 +1896,7 @@ numeric_quo(VALUE x, VALUE y)
     {
         x = rb_convert_type(x, T_RATIONAL, "Rational", "to_r");
     }
-    return rb_funcall(x, '/', 1, y);
+    return nurat_div(x, y);
 }
 
 
