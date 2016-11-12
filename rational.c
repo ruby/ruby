@@ -2093,7 +2093,7 @@ rb_flt_rationalize_with_prec(VALUE flt, VALUE prec)
     b = f_add(flt, e);
 
     if (f_eqeq_p(a, b))
-        return f_to_r(flt);
+        return float_to_r(flt);
 
     nurat_rationalize_internal(a, b, &p, &q);
     return rb_rational_new2(p, q);
@@ -2105,33 +2105,33 @@ rb_flt_rationalize(VALUE flt)
     VALUE a, b, f, n, p, q;
 
     float_decode_internal(flt, &f, &n);
-    if (f_zero_p(f) || f_positive_p(n))
-        return rb_rational_new1(f_lshift(f, n));
+    if (INT_ZERO_P(f) || FIX2INT(n) >= 0)
+        return rb_rational_new1(rb_int_lshift(f, n));
 
 #if FLT_RADIX == 2
     {
         VALUE two_times_f, den;
 
-        two_times_f = f_mul(TWO, f);
-        den = f_lshift(ONE, f_sub(ONE, n));
+        two_times_f = rb_int_mul(TWO, f);
+        den = rb_int_lshift(ONE, rb_int_minus(ONE, n));
 
-        a = rb_rational_new2(f_sub(two_times_f, ONE), den);
-        b = rb_rational_new2(f_add(two_times_f, ONE), den);
+        a = rb_rational_new2(rb_int_minus(two_times_f, ONE), den);
+        b = rb_rational_new2(rb_int_plus(two_times_f, ONE), den);
     }
 #else
     {
         VALUE radix_times_f, den;
 
-        radix_times_f = f_mul(INT2FIX(FLT_RADIX), f);
-        den = f_expt(INT2FIX(FLT_RADIX), f_sub(ONE, n));
+        radix_times_f = rb_int_mul(INT2FIX(FLT_RADIX), f);
+        den = rb_int_pow(INT2FIX(FLT_RADIX), rb_int_minus(ONE, n));
 
-        a = rb_rational_new2(f_sub(radix_times_f, INT2FIX(FLT_RADIX - 1)), den);
-        b = rb_rational_new2(f_add(radix_times_f, INT2FIX(FLT_RADIX - 1)), den);
+        a = rb_rational_new2(rb_int_minus(radix_times_f, INT2FIX(FLT_RADIX - 1)), den);
+        b = rb_rational_new2(rb_int_plus(radix_times_f, INT2FIX(FLT_RADIX - 1)), den);
     }
 #endif
 
-    if (f_eqeq_p(a, b))
-        return f_to_r(flt);
+    if (nurat_eqeq_p(a, b))
+        return float_to_r(flt);
 
     nurat_rationalize_internal(a, b, &p, &q);
     return rb_rational_new2(p, q);
@@ -2155,9 +2155,10 @@ static VALUE
 float_rationalize(int argc, VALUE *argv, VALUE self)
 {
     VALUE e;
+    double d = RFLOAT_VALUE(self);
 
-    if (f_negative_p(self))
-        return f_negate(float_rationalize(argc, argv, f_abs(self)));
+    if (d < 0.0)
+        return nurat_negate(float_rationalize(argc, argv, DBL2NUM(-d)));
 
     rb_scan_args(argc, argv, "01", &e);
 
