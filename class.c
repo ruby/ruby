@@ -1602,6 +1602,9 @@ singleton_class_of(VALUE obj)
 	switch (BUILTIN_TYPE(obj)) {
 	  case T_FLOAT: case T_BIGNUM: case T_SYMBOL:
 	    goto no_singleton;
+	  case T_STRING:
+	    if (FL_TEST_RAW(obj, RSTRING_FSTR)) goto no_singleton;
+	    break;
 	}
     }
 
