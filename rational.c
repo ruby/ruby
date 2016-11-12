@@ -1158,8 +1158,8 @@ nurat_coerce(VALUE self, VALUE other)
     if (RB_INTEGER_TYPE_P(other)) {
 	return rb_assoc_new(f_rational_new_bang1(CLASS_OF(self), other), self);
     }
-    else if (RB_TYPE_P(other, T_FLOAT)) {
-	return rb_assoc_new(other, f_to_f(self));
+    else if (RB_FLOAT_TYPE_P(other)) {
+        return rb_assoc_new(other, nurat_to_f(self));
     }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	return rb_assoc_new(other, self);
