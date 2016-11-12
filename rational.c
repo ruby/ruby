@@ -400,8 +400,6 @@ nurat_s_alloc(VALUE klass)
     return nurat_s_new_internal(klass, ZERO, ONE);
 }
 
-#define rb_raise_zerodiv() rb_raise(rb_eZeroDivError, "divided by 0")
-
 #if 0
 static VALUE
 nurat_s_new_bang(int argc, VALUE *argv, VALUE klass)
@@ -425,7 +423,7 @@ nurat_s_new_bang(int argc, VALUE *argv, VALUE klass)
 	    den = f_negate(den);
         }
         else if (INT_ZERO_P(den)) {
-	    rb_raise_zerodiv();
+            rb_num_zerodiv();
         }
 	break;
     }
@@ -480,7 +478,7 @@ nurat_canonicalize(VALUE *num, VALUE *den)
 	*den = f_negate(*den);
     }
     else if (INT_ZERO_P(*den)) {
-	rb_raise_zerodiv();
+        rb_num_zerodiv();
     }
 }
 
@@ -903,7 +901,7 @@ nurat_div(VALUE self, VALUE other)
 {
     if (RB_INTEGER_TYPE_P(other)) {
 	if (f_zero_p(other))
-	    rb_raise_zerodiv();
+            rb_num_zerodiv();
 	{
 	    get_dat1(self);
 
@@ -916,7 +914,7 @@ nurat_div(VALUE self, VALUE other)
 	return DBL2NUM(nurat_to_double(self) / RFLOAT_VALUE(other));
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	if (f_zero_p(other))
-	    rb_raise_zerodiv();
+            rb_num_zerodiv();
 	{
 	    get_dat2(self, other);
 
@@ -1009,7 +1007,7 @@ nurat_expt(VALUE self, VALUE other)
 	    }
 	    else if (INT_ZERO_P(dat->num)) {
 		if (f_negative_p(other)) {
-		    rb_raise_zerodiv();
+                    rb_num_zerodiv();
 		}
 		else {
 		    return f_rational_new_bang1(CLASS_OF(self), ZERO);
