@@ -81,9 +81,9 @@ inline static VALUE
 f_add(VALUE x, VALUE y)
 {
 #ifndef PRESERVE_SIGNEDZERO
-    if (FIXNUM_P(y) && FIX2LONG(y) == 0)
+    if (FIXNUM_P(y) && FIXNUM_ZERO_P(y))
 	return x;
-    else if (FIXNUM_P(x) && FIX2LONG(x) == 0)
+    else if (FIXNUM_P(x) && FIXNUM_ZERO_P(x))
 	return y;
 #endif
     return rb_funcall(x, '+', 1, y);
@@ -135,7 +135,7 @@ inline static VALUE
 f_sub(VALUE x, VALUE y)
 {
 #ifndef PRESERVE_SIGNEDZERO
-    if (FIXNUM_P(y) && FIX2LONG(y) == 0)
+    if (FIXNUM_P(y) && FIXNUM_ZERO_P(y))
 	return x;
 #endif
     return rb_funcall(x, '-', 1, y);
@@ -169,7 +169,7 @@ inline static VALUE
 f_eqeq_p(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y))
-	return f_boolcast(FIX2LONG(x) == FIX2LONG(y));
+	return f_boolcast(x == y);
     return rb_funcall(x, id_eqeq_p, 1, y);
 }
 
@@ -181,7 +181,7 @@ inline static VALUE
 f_negative_p(VALUE x)
 {
     if (FIXNUM_P(x))
-	return f_boolcast(FIX2LONG(x) < 0);
+	return f_boolcast(FIXNUM_NEGATIVE_P(x));
     return rb_funcall(x, '<', 1, ZERO);
 }
 
@@ -190,8 +190,8 @@ f_negative_p(VALUE x)
 inline static VALUE
 f_zero_p(VALUE x)
 {
-    if (RB_TYPE_P(x, T_FIXNUM)) {
-	return f_boolcast(FIX2LONG(x) == 0);
+    if (FIXNUM_P(x)) {
+	return f_boolcast(FIXNUM_ZERO_P(x));
     }
     else if (RB_TYPE_P(x, T_BIGNUM)) {
 	return Qfalse;
@@ -199,7 +199,7 @@ f_zero_p(VALUE x)
     else if (RB_TYPE_P(x, T_RATIONAL)) {
 	VALUE num = RRATIONAL(x)->num;
 
-	return f_boolcast(FIXNUM_P(num) && FIX2LONG(num) == 0);
+	return f_boolcast(FIXNUM_P(num) && FIXNUM_ZERO_P(num));
     }
     return rb_funcall(x, id_eqeq_p, 1, ZERO);
 }
@@ -209,7 +209,7 @@ f_zero_p(VALUE x)
 inline static VALUE
 f_one_p(VALUE x)
 {
-    if (RB_TYPE_P(x, T_FIXNUM)) {
+    if (FIXNUM_P(x)) {
 	return f_boolcast(FIX2LONG(x) == 1);
     }
     else if (RB_TYPE_P(x, T_BIGNUM)) {
@@ -235,18 +235,6 @@ inline static VALUE
 k_numeric_p(VALUE x)
 {
     return f_kind_of_p(x, rb_cNumeric);
-}
-
-inline static VALUE
-k_fixnum_p(VALUE x)
-{
-    return FIXNUM_P(x);
-}
-
-inline static VALUE
-k_bignum_p(VALUE x)
-{
-    return RB_TYPE_P(x, T_BIGNUM);
 }
 
 inline static VALUE
@@ -352,9 +340,8 @@ nucomp_canonicalization(int f)
 inline static void
 nucomp_real_check(VALUE num)
 {
-    if (!RB_TYPE_P(num, T_FIXNUM) &&
-	!RB_TYPE_P(num, T_BIGNUM) &&
-	!RB_TYPE_P(num, T_FLOAT) &&
+    if (!RB_INTEGER_TYPE_P(num) &&
+	!RB_FLOAT_TYPE_P(num) &&
 	!RB_TYPE_P(num, T_RATIONAL)) {
 	if (!k_numeric_p(num) || !f_real_p(num))
 	    rb_raise(rb_eTypeError, "not a real");
@@ -936,7 +923,7 @@ nucomp_expt(VALUE self, VALUE other)
 		       f_mul(dat->imag, m_log_bang(r)));
 	return f_complex_polar(CLASS_OF(self), nr, ntheta);
     }
-    if (k_fixnum_p(other)) {
+    if (FIXNUM_P(other)) {
 	if (f_gt_p(other, ZERO)) {
 	    VALUE x, z;
 	    long n;
@@ -973,7 +960,7 @@ nucomp_expt(VALUE self, VALUE other)
     if (k_numeric_p(other) && f_real_p(other)) {
 	VALUE r, theta;
 
-	if (k_bignum_p(other))
+	if (RB_TYPE_P(other, T_BIGNUM))
 	    rb_warn("in a**b, b may be too big");
 
 	r = f_abs(self);
@@ -1258,7 +1245,7 @@ nucomp_eql_p(VALUE self, VALUE other)
 inline static VALUE
 f_signbit(VALUE x)
 {
-    if (RB_TYPE_P(x, T_FLOAT)) {
+    if (RB_FLOAT_TYPE_P(x)) {
 	double f = RFLOAT_VALUE(x);
 	return f_boolcast(!isnan(f) && signbit(f));
     }
