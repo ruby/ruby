@@ -1176,6 +1176,8 @@ VALUE rb_int_pow(VALUE x, VALUE y);
 VALUE rb_float_pow(VALUE x, VALUE y);
 VALUE rb_int_cmp(VALUE x, VALUE y);
 VALUE rb_int_equal(VALUE x, VALUE y);
+VALUE rb_int_divmod(VALUE x, VALUE y);
+VALUE rb_int_and(VALUE x, VALUE y);
 
 #if USE_FLONUM
 #define RUBY_BIT_ROTL(v, n) (((v) << (n)) | ((v) >> ((sizeof(v) * 8) - n)))

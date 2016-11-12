@@ -156,7 +156,7 @@ fun2(expt)
 fun2(fdiv)
 fun2(idiv)
 
-#define f_expt10(x) f_expt(INT2FIX(10), x)
+#define f_expt10(x) rb_int_pow(INT2FIX(10), x)
 
 inline static int
 f_negative_p(VALUE x)
@@ -1214,14 +1214,14 @@ static VALUE
 nurat_floor(VALUE self)
 {
     get_dat1(self);
-    return f_idiv(dat->num, dat->den);
+    return rb_int_idiv(dat->num, dat->den);
 }
 
 static VALUE
 nurat_ceil(VALUE self)
 {
     get_dat1(self);
-    return f_negate(f_idiv(f_negate(dat->num), dat->den));
+    return rb_int_uminus(rb_int_idiv(rb_int_uminus(dat->num), dat->den));
 }
 
 /*
@@ -1257,17 +1257,17 @@ nurat_round_half_up(VALUE self)
 
     num = dat->num;
     den = dat->den;
-    neg = f_negative_p(num);
+    neg = INT_NEGATIVE_P(num);
 
     if (neg)
-	num = f_negate(num);
+	num = rb_int_uminus(num);
 
-    num = f_add(f_mul(num, TWO), den);
-    den = f_mul(den, TWO);
-    num = f_idiv(num, den);
+    num = rb_int_plus(rb_int_mul(num, TWO), den);
+    den = rb_int_mul(den, TWO);
+    num = rb_int_idiv(num, den);
 
     if (neg)
-	num = f_negate(num);
+	num = rb_int_uminus(num);
 
     return num;
 }
@@ -1281,20 +1281,20 @@ nurat_round_half_even(VALUE self)
 
     num = dat->num;
     den = dat->den;
-    neg = f_negative_p(num);
+    neg = INT_NEGATIVE_P(num);
 
     if (neg)
-	num = f_negate(num);
+	num = rb_int_uminus(num);
 
-    num = f_add(f_mul(num, TWO), den);
-    den = f_mul(den, TWO);
-    qr = rb_funcall(num, rb_intern("divmod"), 1, den);
+    num = rb_int_plus(rb_int_mul(num, TWO), den);
+    den = rb_int_mul(den, TWO);
+    qr = rb_int_divmod(num, den);
     num = RARRAY_AREF(qr, 0);
-    if (f_zero_p(RARRAY_AREF(qr, 1)))
-	num = rb_funcall(num, '&', 1, LONG2FIX(((int)~1)));
+    if (INT_ZERO_P(RARRAY_AREF(qr, 1)))
+	num = rb_int_and(num, LONG2FIX(((int)~1)));
 
     if (neg)
-	num = f_negate(num);
+	num = rb_int_uminus(num);
 
     return num;
 }
@@ -1313,10 +1313,10 @@ f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
 	rb_raise(rb_eTypeError, "not an integer");
 
     b = f_expt10(n);
-    s = f_mul(self, b);
+    s = nurat_mul(self, b);
 
     if (k_float_p(s)) {
-	if (f_lt_p(n, ZERO))
+	if (INT_NEGATIVE_P(n))
 	    return ZERO;
 	return self;
     }
@@ -1327,10 +1327,10 @@ f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
 
     s = (*func)(s);
 
-    s = f_div(f_rational_new_bang1(CLASS_OF(self), s), b);
+    s = nurat_div(f_rational_new_bang1(CLASS_OF(self), s), b);
 
-    if (f_lt_p(n, ONE))
-	s = f_to_i(s);
+    if (RB_TYPE_P(s, T_RATIONAL) && FIX2INT(rb_int_cmp(n, ONE)) < 0)
+	s = nurat_truncate(s);
 
     return s;
 }
