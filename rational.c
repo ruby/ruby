@@ -33,9 +33,8 @@
 
 VALUE rb_cRational;
 
-static ID id_abs, id_eqeq_p, id_expt, id_fdiv,
-    id_idiv, id_integer_p, id_negate,
-    id_to_i, id_i_num, id_i_den;
+static ID id_abs, id_eqeq_p, id_idiv, id_integer_p, id_negate, id_to_i,
+    id_i_num, id_i_den;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 #define f_inspect rb_inspect
@@ -145,11 +144,6 @@ f_eqeq_p(VALUE x, VALUE y)
     return RTEST(rb_funcall(x, id_eqeq_p, 1, y));
 }
 
-#if FLT_RADIX != 2
-fun2(expt)
-#endif
-
-fun2(fdiv)
 fun2(idiv)
 
 #define f_expt10(x) rb_int_pow(INT2FIX(10), x)
@@ -159,8 +153,6 @@ f_negative_p(VALUE x)
 {
     return rb_num_negative_p(x);
 }
-
-#define f_positive_p(x) (!f_negative_p(x))
 
 inline static int
 f_zero_p(VALUE x)
@@ -1046,7 +1038,7 @@ nurat_expt(VALUE self, VALUE other)
 	return rb_float_pow(nurat_to_f(self), other);
     }
     else {
-	return rb_num_coerce_bin(self, other, id_expt);
+	return rb_num_coerce_bin(self, other, rb_intern("**"));
     }
 }
 
@@ -1882,7 +1874,7 @@ static VALUE
 numeric_quo(VALUE x, VALUE y)
 {
     if (RB_TYPE_P(y, T_FLOAT)) {
-        return f_fdiv(x, y);
+        return rb_funcall(x, rb_intern("fdiv"), 1, y);
     }
 
 #ifdef CANON
@@ -2570,8 +2562,6 @@ Init_Rational(void)
 
     id_abs = rb_intern("abs");
     id_eqeq_p = rb_intern("==");
-    id_expt = rb_intern("**");
-    id_fdiv = rb_intern("fdiv");
     id_idiv = rb_intern("div");
     id_integer_p = rb_intern("integer?");
     id_negate = rb_intern("-@");
