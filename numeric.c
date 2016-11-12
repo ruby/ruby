@@ -4561,8 +4561,8 @@ fix_abs(VALUE fix)
     return LONG2NUM(i);
 }
 
-static VALUE
-int_abs(VALUE num)
+VALUE
+rb_int_abs(VALUE num)
 {
     if (FIXNUM_P(num)) {
 	return fix_abs(num);
@@ -5250,8 +5250,8 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "fdiv", rb_int_fdiv, 1);
     rb_define_method(rb_cInteger, "**", rb_int_pow, 1);
 
-    rb_define_method(rb_cInteger, "abs", int_abs, 0);
-    rb_define_method(rb_cInteger, "magnitude", int_abs, 0);
+    rb_define_method(rb_cInteger, "abs", rb_int_abs, 0);
+    rb_define_method(rb_cInteger, "magnitude", rb_int_abs, 0);
 
     rb_define_method(rb_cInteger, "===", rb_int_equal, 1);
     rb_define_method(rb_cInteger, "==", rb_int_equal, 1);
