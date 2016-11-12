@@ -116,24 +116,14 @@ static ID id_associated;
 static void
 str_associate(VALUE str, VALUE add)
 {
-    VALUE assoc;
-
-    assoc = rb_attr_get(str, id_associated);
-    if (RB_TYPE_P(assoc, T_ARRAY)) {
-	/* already associated */
-	rb_ary_concat(assoc, add);
-    }
-    else {
-	rb_ivar_set(str, id_associated, add);
-    }
+    /* assert(NIL_P(rb_attr_get(str, id_associated))); */
+    rb_ivar_set(str, id_associated, add);
 }
 
 static VALUE
 str_associated(VALUE str)
 {
-    VALUE assoc = rb_attr_get(str, id_associated);
-    if (NIL_P(assoc)) assoc = Qfalse;
-    return assoc;
+    return rb_ivar_lookup(str, id_associated, Qfalse);
 }
 
 void
