@@ -2039,9 +2039,6 @@ float_decode(VALUE self)
 }
 #endif
 
-#define id_lshift rb_intern("<<")
-#define f_lshift(x,n) rb_funcall((x), id_lshift, 1, (n))
-
 /*
  * call-seq:
  *    flt.to_r  ->  rational
