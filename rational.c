@@ -1072,15 +1072,17 @@ nurat_cmp(VALUE self, VALUE other)
 	{
 	    get_dat1(self);
 
-	    if (FIXNUM_P(dat->den) && FIX2LONG(dat->den) == 1)
-		return f_cmp(dat->num, other); /* c14n */
-	    return f_cmp(self, f_rational_new_bang1(CLASS_OF(self), other));
+	    if (dat->den == LONG2FIX(1))
+		return rb_int_cmp(dat->num, other); /* c14n */
+	    other = f_rational_new_bang1(CLASS_OF(self), other);
+	    goto other_is_rational;
 	}
     }
-    else if (RB_TYPE_P(other, T_FLOAT)) {
-	return f_cmp(f_to_f(self), other);
+    else if (RB_FLOAT_TYPE_P(other)) {
+	return rb_dbl_cmp(nurat_to_double(self), RFLOAT_VALUE(other));
     }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
+	other_is_rational:
 	{
 	    VALUE num1, num2;
 
@@ -1092,10 +1094,10 @@ nurat_cmp(VALUE self, VALUE other)
 		num2 = f_imul(FIX2LONG(bdat->num), FIX2LONG(adat->den));
 	    }
 	    else {
-		num1 = f_mul(adat->num, bdat->den);
-		num2 = f_mul(bdat->num, adat->den);
+		num1 = rb_int_mul(adat->num, bdat->den);
+		num2 = rb_int_mul(bdat->num, adat->den);
 	    }
-	    return f_cmp(f_sub(num1, num2), ZERO);
+	    return rb_int_cmp(rb_int_minus(num1, num2), ZERO);
 	}
     }
     else {

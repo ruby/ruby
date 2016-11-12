@@ -152,7 +152,6 @@ static VALUE fix_mul(VALUE x, VALUE y);
 static VALUE fix_lshift(long, unsigned long);
 static VALUE fix_rshift(long, unsigned long);
 static VALUE int_pow(long x, unsigned long y);
-static VALUE int_cmp(VALUE x, VALUE y);
 static VALUE int_odd_p(VALUE x);
 static VALUE int_even_p(VALUE x);
 static int int_round_zero_p(VALUE num, int ndigits);
@@ -2063,7 +2062,7 @@ rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode)
     h = rb_int_idiv(f, INT2FIX(2));
     r = rb_int_modulo(num, f);
     n = rb_int_minus(num, r);
-    r = int_cmp(r, h);
+    r = rb_int_cmp(r, h);
     if (FIXNUM_POSITIVE_P(r) ||
 	(FIXNUM_ZERO_P(r) &&
 	 ROUND_TO(mode,
@@ -4022,8 +4021,8 @@ fix_cmp(VALUE x, VALUE y)
     return rb_num_coerce_cmp(x, y, id_cmp);
 }
 
-static VALUE
-int_cmp(VALUE x, VALUE y)
+VALUE
+rb_int_cmp(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
 	return fix_cmp(x, y);
@@ -5238,7 +5237,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "ceil", int_ceil, -1);
     rb_define_method(rb_cInteger, "truncate", int_truncate, -1);
     rb_define_method(rb_cInteger, "round", int_round, -1);
-    rb_define_method(rb_cInteger, "<=>", int_cmp, 1);
+    rb_define_method(rb_cInteger, "<=>", rb_int_cmp, 1);
 
     rb_define_method(rb_cInteger, "-@", rb_int_uminus, 0);
     rb_define_method(rb_cInteger, "+", rb_int_plus, 1);
