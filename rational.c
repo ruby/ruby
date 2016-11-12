@@ -1243,9 +1243,9 @@ static VALUE
 nurat_truncate(VALUE self)
 {
     get_dat1(self);
-    if (f_negative_p(dat->num))
-	return f_negate(f_idiv(f_negate(dat->num), dat->den));
-    return f_idiv(dat->num, dat->den);
+    if (INT_NEGATIVE_P(dat->num))
+	return rb_int_uminus(rb_int_idiv(rb_int_uminus(dat->num), dat->den));
+    return rb_int_idiv(dat->num, dat->den);
 }
 
 static VALUE
