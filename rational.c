@@ -33,9 +33,9 @@
 
 VALUE rb_cRational;
 
-static ID id_abs, id_cmp, id_eqeq_p, id_expt, id_fdiv,
+static ID id_abs, id_eqeq_p, id_expt, id_fdiv,
     id_idiv, id_integer_p, id_negate,
-    id_to_i, id_truncate, id_i_num, id_i_den;
+    id_to_i, id_i_num, id_i_den;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 #define f_inspect rb_inspect
@@ -1102,7 +1102,7 @@ nurat_cmp(VALUE self, VALUE other)
 	}
     }
     else {
-	return rb_num_coerce_cmp(self, other, id_cmp);
+	return rb_num_coerce_cmp(self, other, rb_intern("<=>"));
     }
 }
 
@@ -2569,7 +2569,6 @@ Init_Rational(void)
     assert(fprintf(stderr, "assert() is now active\n"));
 
     id_abs = rb_intern("abs");
-    id_cmp = rb_intern("<=>");
     id_eqeq_p = rb_intern("==");
     id_expt = rb_intern("**");
     id_fdiv = rb_intern("fdiv");
@@ -2577,7 +2576,6 @@ Init_Rational(void)
     id_integer_p = rb_intern("integer?");
     id_negate = rb_intern("-@");
     id_to_i = rb_intern("to_i");
-    id_truncate = rb_intern("truncate");
     id_i_num = rb_intern("@numerator");
     id_i_den = rb_intern("@denominator");
 
