@@ -1124,30 +1124,29 @@ nurat_eqeq_p(VALUE self, VALUE other)
 	{
 	    get_dat1(self);
 
-	    if (f_zero_p(dat->num) && f_zero_p(other))
+	    if (INT_ZERO_P(dat->num) && INT_ZERO_P(other))
 		return Qtrue;
 
 	    if (!FIXNUM_P(dat->den))
 		return Qfalse;
 	    if (FIX2LONG(dat->den) != 1)
 		return Qfalse;
-	    if (f_eqeq_p(dat->num, other))
-		return Qtrue;
-	    return Qfalse;
+	    return rb_int_equal(dat->num, other);
 	}
     }
-    else if (RB_TYPE_P(other, T_FLOAT)) {
-	return f_boolcast(f_eqeq_p(f_to_f(self), other));
+    else if (RB_FLOAT_TYPE_P(other)) {
+	return f_boolcast(rb_dbl_cmp(nurat_to_double(self), RFLOAT_VALUE(other))
+			  == INT2FIX(0));
     }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	{
 	    get_dat2(self, other);
 
-	    if (f_zero_p(adat->num) && f_zero_p(bdat->num))
+	    if (INT_ZERO_P(adat->num) && INT_ZERO_P(bdat->num))
 		return Qtrue;
 
-	    return f_boolcast(f_eqeq_p(adat->num, bdat->num) &&
-			      f_eqeq_p(adat->den, bdat->den));
+	    return f_boolcast(rb_int_equal(adat->num, bdat->num) &&
+			      rb_int_equal(adat->den, bdat->den));
 	}
     }
     else {

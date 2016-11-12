@@ -3971,8 +3971,8 @@ fix_equal(VALUE x, VALUE y)
     }
 }
 
-static VALUE
-int_equal(VALUE x, VALUE y)
+VALUE
+rb_int_equal(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
 	return fix_equal(x, y);
@@ -5255,8 +5255,8 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "abs", int_abs, 0);
     rb_define_method(rb_cInteger, "magnitude", int_abs, 0);
 
-    rb_define_method(rb_cInteger, "===", int_equal, 1);
-    rb_define_method(rb_cInteger, "==", int_equal, 1);
+    rb_define_method(rb_cInteger, "===", rb_int_equal, 1);
+    rb_define_method(rb_cInteger, "==", rb_int_equal, 1);
     rb_define_method(rb_cInteger, ">", int_gt, 1);
     rb_define_method(rb_cInteger, ">=", rb_int_ge, 1);
     rb_define_method(rb_cInteger, "<", int_lt, 1);
