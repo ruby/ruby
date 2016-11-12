@@ -34,7 +34,7 @@
 VALUE rb_cRational;
 
 static ID id_abs, id_cmp, id_eqeq_p, id_expt, id_fdiv,
-    id_idiv, id_integer_p, id_negate, id_to_f,
+    id_idiv, id_integer_p, id_negate,
     id_to_i, id_truncate, id_i_num, id_i_den;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
@@ -136,13 +136,6 @@ f_to_i(VALUE x)
 	return rb_str_to_inum(x, 10, 0);
     return rb_funcall(x, id_to_i, 0);
 }
-inline static VALUE
-f_to_f(VALUE x)
-{
-    if (RB_TYPE_P(x, T_STRING))
-	return DBL2NUM(rb_str_to_dbl(x, 0));
-    return rb_funcall(x, id_to_f, 0);
-}
 
 inline static VALUE
 f_eqeq_p(VALUE x, VALUE y)
@@ -152,7 +145,10 @@ f_eqeq_p(VALUE x, VALUE y)
     return RTEST(rb_funcall(x, id_eqeq_p, 1, y));
 }
 
+#if FLT_RADIX != 2
 fun2(expt)
+#endif
+
 fun2(fdiv)
 fun2(idiv)
 
@@ -938,6 +934,8 @@ nurat_div(VALUE self, VALUE other)
     }
 }
 
+static VALUE nurat_to_f(VALUE self);
+
 /*
  * call-seq:
  *    rat.fdiv(numeric)  ->  float
@@ -951,9 +949,17 @@ nurat_div(VALUE self, VALUE other)
 static VALUE
 nurat_fdiv(VALUE self, VALUE other)
 {
+    VALUE div;
     if (f_zero_p(other))
-	return f_div(self, f_to_f(other));
-    return f_to_f(f_div(self, other));
+	return DBL2NUM(nurat_to_double(self) / 0.0);
+    if (FIXNUM_P(other) && other == LONG2FIX(1))
+	return nurat_to_f(self);
+    div = nurat_div(self, other);
+    if (RB_TYPE_P(div, T_RATIONAL))
+	return nurat_to_f(div);
+    if (RB_FLOAT_TYPE_P(div))
+	return div;
+    return rb_funcall(div, rb_intern("to_f"), 0);
 }
 
 inline static VALUE
@@ -964,8 +970,6 @@ f_odd_p(VALUE integer)
     }
     return Qfalse;
 }
-
-static VALUE nurat_to_f(VALUE self);
 
 /*
  * call-seq:
@@ -2572,7 +2576,6 @@ Init_Rational(void)
     id_idiv = rb_intern("div");
     id_integer_p = rb_intern("integer?");
     id_negate = rb_intern("-@");
-    id_to_f = rb_intern("to_f");
     id_to_i = rb_intern("to_i");
     id_truncate = rb_intern("truncate");
     id_i_num = rb_intern("@numerator");
