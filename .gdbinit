@@ -63,7 +63,13 @@ define rp
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_OBJECT
     printf "%sT_OBJECT%s: ", $color_type, $color_end
-    print (struct RObject *)($arg0)
+    print ((struct RObject *)($arg0))->basic
+    if ($flags & ROBJECT_EMBED)
+      print/x *((VALUE*)((struct RObject*)($arg0))->as.ary) @ (ROBJECT_EMBED_LEN_MAX+0)
+    else
+      print (((struct RObject *)($arg0))->as.heap)
+      print/x *(((struct RObject*)($arg0))->as.heap.ivptr) @ (((struct RObject*)($arg0))->as.heap.numiv)
+    end
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_CLASS
     printf "%sT_CLASS%s%s: ", $color_type, ($flags & RUBY_FL_SINGLETON) ? "*" : "", $color_end
@@ -467,7 +473,7 @@ define rp_class
   end
   printf "\n"
   rb_classname $arg0
-  print *(struct RClass *)($arg0)
+  print/x *(struct RClass *)($arg0)
   print *((struct RClass *)($arg0))->ptr
 end
 document rp_class
