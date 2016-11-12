@@ -1619,7 +1619,7 @@ singleton_class_of(VALUE obj)
     else {
 	FL_UNSET(klass, FL_TAINT);
     }
-    if (OBJ_FROZEN(obj)) OBJ_FREEZE_RAW(klass);
+    RB_FL_SET_RAW(klass, RB_OBJ_FROZEN_RAW(obj));
 
     return klass;
 }
