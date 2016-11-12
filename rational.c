@@ -637,6 +637,19 @@ nurat_denominator(VALUE self)
     return dat->den;
 }
 
+/*
+ * call-seq:
+ *    -rat  ->  rational
+ *
+ * Negates +rat+.
+ */
+static VALUE
+nurat_negate(VALUE self)
+{
+    get_dat1(self);
+    return f_rational_new2(CLASS_OF(self), rb_int_uminus(dat->num), dat->den);
+}
+
 #ifndef NDEBUG
 #define f_imul f_imul_orig
 #endif
@@ -2591,6 +2604,7 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "numerator", nurat_numerator, 0);
     rb_define_method(rb_cRational, "denominator", nurat_denominator, 0);
 
+    rb_define_method(rb_cRational, "-@", nurat_negate, 0);
     rb_define_method(rb_cRational, "+", rb_rational_plus, 1);
     rb_define_method(rb_cRational, "-", nurat_sub, 1);
     rb_define_method(rb_cRational, "*", nurat_mul, 1);
