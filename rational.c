@@ -64,9 +64,9 @@ f_##n(VALUE x, VALUE y)\
 inline static VALUE
 f_add(VALUE x, VALUE y)
 {
-    if (FIXNUM_P(y) && FIX2LONG(y) == 0)
+    if (FIXNUM_P(y) && FIXNUM_ZERO_P(y))
 	return x;
-    else if (FIXNUM_P(x) && FIX2LONG(x) == 0)
+    else if (FIXNUM_P(x) && FIXNUM_ZERO_P(x))
 	return y;
     return rb_funcall(x, '+', 1, y);
 }
@@ -76,7 +76,7 @@ f_div(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y) && FIX2LONG(y) == 1)
 	return x;
-    if (FIXNUM_P(x) || RB_TYPE_P(x, T_BIGNUM))
+    if (RB_INTEGER_TYPE_P(x))
 	return rb_int_div(x, y);
     return rb_funcall(x, '/', 1, y);
 }
@@ -124,7 +124,7 @@ f_mul(VALUE x, VALUE y)
 inline static VALUE
 f_sub(VALUE x, VALUE y)
 {
-    if (FIXNUM_P(y) && FIX2LONG(y) == 0)
+    if (FIXNUM_P(y) && FIXNUM_ZERO_P(y))
 	return x;
     return rb_funcall(x, '-', 1, y);
 }
@@ -132,7 +132,7 @@ f_sub(VALUE x, VALUE y)
 inline static VALUE
 f_abs(VALUE x)
 {
-    if (FIXNUM_P(x) || RB_TYPE_P(x, T_BIGNUM))
+    if (RB_INTEGER_TYPE_P(x))
 	return rb_int_abs(x);
     return rb_funcall(x, id_abs, 0);
 }
@@ -164,12 +164,12 @@ inline static int
 f_zero_p(VALUE x)
 {
     if (RB_INTEGER_TYPE_P(x)) {
-	return x == LONG2FIX(0);
+	return FIXNUM_ZERO_P(x);
     }
     else if (RB_TYPE_P(x, T_RATIONAL)) {
 	VALUE num = RRATIONAL(x)->num;
 
-	return num == LONG2FIX(0);
+	return FIXNUM_ZERO_P(num);
     }
     return RTEST(rb_funcall(x, id_eqeq_p, 1, ZERO));
 }
@@ -317,7 +317,7 @@ f_gcd_normal(VALUE x, VALUE y)
 
     for (;;) {
 	if (FIXNUM_P(x)) {
-	    if (FIX2LONG(x) == 0)
+	    if (FIXNUM_ZERO_P(x))
 		return y;
 	    if (FIXNUM_P(y))
 		return LONG2NUM(i_gcd(FIX2LONG(x), FIX2LONG(y)));
@@ -737,7 +737,7 @@ rb_rational_plus(VALUE self, VALUE other)
 					     dat->den);
 	}
     }
-    else if (RB_TYPE_P(other, T_FLOAT)) {
+    else if (RB_FLOAT_TYPE_P(other)) {
 	return DBL2NUM(nurat_to_double(self) + RFLOAT_VALUE(other));
     }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
@@ -1040,7 +1040,7 @@ nurat_expt(VALUE self, VALUE other)
 	rb_warn("in a**b, b may be too big");
 	return rb_float_pow(nurat_to_f(self), other);
     }
-    else if (RB_TYPE_P(other, T_FLOAT) || RB_TYPE_P(other, T_RATIONAL)) {
+    else if (RB_FLOAT_TYPE_P(other) || RB_TYPE_P(other, T_RATIONAL)) {
 	return rb_float_pow(nurat_to_f(self), other);
     }
     else {
@@ -1132,8 +1132,8 @@ nurat_eqeq_p(VALUE self, VALUE other)
 	}
     }
     else if (RB_FLOAT_TYPE_P(other)) {
-	return f_boolcast(rb_dbl_cmp(nurat_to_double(self), RFLOAT_VALUE(other))
-			  == INT2FIX(0));
+	const double d = nurat_to_double(self);
+	return f_boolcast(FIXNUM_ZERO_P(rb_dbl_cmp(d, RFLOAT_VALUE(other))));
     }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	{
@@ -1905,7 +1905,7 @@ numeric_denominator(VALUE self)
 static VALUE
 numeric_quo(VALUE x, VALUE y)
 {
-    if (RB_TYPE_P(y, T_FLOAT)) {
+    if (RB_FLOAT_TYPE_P(y)) {
         return rb_funcall(x, rb_intern("fdiv"), 1, y);
     }
 
@@ -2414,7 +2414,7 @@ string_to_r_strict(VALUE self)
 		 self);
     }
 
-    if (RB_TYPE_P(num, T_FLOAT))
+    if (RB_FLOAT_TYPE_P(num))
 	rb_raise(rb_eFloatDomainError, "Infinity");
     return num;
 }
@@ -2463,7 +2463,7 @@ string_to_r(VALUE self)
 
     (void)parse_rat(s, 0, &num);
 
-    if (RB_TYPE_P(num, T_FLOAT))
+    if (RB_FLOAT_TYPE_P(num))
 	rb_raise(rb_eFloatDomainError, "Infinity");
     return num;
 }
@@ -2475,7 +2475,7 @@ rb_cstr_to_rat(const char *s, int strict) /* for complex's internal */
 
     (void)parse_rat(s, strict, &num);
 
-    if (RB_TYPE_P(num, T_FLOAT))
+    if (RB_FLOAT_TYPE_P(num))
 	rb_raise(rb_eFloatDomainError, "Infinity");
     return num;
 }
@@ -2503,14 +2503,14 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
     backref = rb_backref_get();
     rb_match_busy(backref);
 
-    if (RB_TYPE_P(a1, T_FLOAT)) {
+    if (RB_FLOAT_TYPE_P(a1)) {
 	a1 = float_to_r(a1);
     }
     else if (RB_TYPE_P(a1, T_STRING)) {
 	a1 = string_to_r_strict(a1);
     }
 
-    if (RB_TYPE_P(a2, T_FLOAT)) {
+    if (RB_FLOAT_TYPE_P(a2)) {
 	a2 = float_to_r(a2);
     }
     else if (RB_TYPE_P(a2, T_STRING)) {
