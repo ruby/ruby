@@ -33,7 +33,6 @@
 #include <editline/readline.h>
 #endif
 
-#include "internal.h"
 #include "ruby/io.h"
 #include "ruby/thread.h"
 
@@ -706,8 +705,7 @@ readline_s_delete_text(int argc, VALUE *argv, VALUE self)
     if (rl_line_buffer) {
         char *p, *ptr = rl_line_buffer;
         long beg = 0, len = strlen(rl_line_buffer);
-        struct RString fakestr;
-        VALUE str = rb_setup_fake_str(&fakestr, ptr, len, rb_locale_encoding());
+        VALUE str = rb_enc_str_new_static(ptr, len, rb_locale_encoding());
         OBJ_FREEZE(str);
         if (argc == 2) {
             beg = NUM2LONG(argv[0]);
