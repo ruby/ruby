@@ -207,25 +207,6 @@ f_zero_p(VALUE x)
 #define f_nonzero_p(x) (!f_zero_p(x))
 
 inline static VALUE
-f_one_p(VALUE x)
-{
-    if (FIXNUM_P(x)) {
-	return f_boolcast(FIX2LONG(x) == 1);
-    }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
-	return Qfalse;
-    }
-    else if (RB_TYPE_P(x, T_RATIONAL)) {
-	VALUE num = RRATIONAL(x)->num;
-	VALUE den = RRATIONAL(x)->den;
-
-	return f_boolcast(FIXNUM_P(num) && FIX2LONG(num) == 1 &&
-			  FIXNUM_P(den) && FIX2LONG(den) == 1);
-    }
-    return rb_funcall(x, id_eqeq_p, 1, ONE);
-}
-
-inline static VALUE
 f_kind_of_p(VALUE x, VALUE c)
 {
     return rb_obj_is_kind_of(x, c);
