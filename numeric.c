@@ -1356,8 +1356,11 @@ num_cmp(VALUE x, VALUE y)
 static VALUE
 num_equal(VALUE x, VALUE y)
 {
+    VALUE result;
     if (x == y) return Qtrue;
-    return num_funcall1(y, id_eq, x);
+    result = num_funcall1(y, id_eq, x);
+    if (RTEST(result)) return Qtrue;
+    return Qfalse;
 }
 
 /*
