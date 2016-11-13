@@ -33,7 +33,7 @@
 
 VALUE rb_cRational;
 
-static ID id_abs, id_eqeq_p, id_idiv, id_integer_p, id_negate, id_to_i,
+static ID id_abs, id_idiv, id_integer_p, id_negate, id_to_i,
     id_i_num, id_i_den;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
@@ -153,7 +153,7 @@ f_eqeq_p(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y))
 	return x == y;
-    return RTEST(rb_funcall(x, id_eqeq_p, 1, y));
+    return (int)rb_equal(x, y);
 }
 
 fun2(idiv)
@@ -171,7 +171,7 @@ f_zero_p(VALUE x)
 
 	return FIXNUM_ZERO_P(num);
     }
-    return RTEST(rb_funcall(x, id_eqeq_p, 1, ZERO));
+    return (int)rb_equal(x, ZERO);
 }
 
 #define f_nonzero_p(x) (!f_zero_p(x))
@@ -188,7 +188,7 @@ f_one_p(VALUE x)
 
 	return num == LONG2FIX(1) && den == LONG2FIX(1);
     }
-    return RTEST(rb_funcall(x, id_eqeq_p, 1, ONE));
+    return (int)rb_equal(x, ONE);
 }
 
 inline static int
@@ -206,7 +206,7 @@ f_minus_one_p(VALUE x)
 
 	return num == LONG2FIX(-1) && den == LONG2FIX(1);
     }
-    return RTEST(rb_funcall(x, id_eqeq_p, 1, INT2FIX(-1)));
+    return (int)rb_equal(x, INT2FIX(-1));
 }
 
 inline static int
@@ -1147,7 +1147,7 @@ nurat_eqeq_p(VALUE self, VALUE other)
 	}
     }
     else {
-	return rb_funcall(other, id_eqeq_p, 1, self);
+	return rb_equal(other, self);
     }
 }
 
@@ -2593,7 +2593,6 @@ Init_Rational(void)
     assert(fprintf(stderr, "assert() is now active\n"));
 
     id_abs = rb_intern("abs");
-    id_eqeq_p = rb_intern("==");
     id_idiv = rb_intern("div");
     id_integer_p = rb_intern("integer?");
     id_negate = rb_intern("-@");
