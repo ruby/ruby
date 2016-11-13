@@ -417,8 +417,8 @@ class Range # :nodoc:
   end
 end
 
-class String
-  def pretty_print(q)
+class String # :nodoc:
+  def pretty_print(q) # :nodoc:
     lines = self.lines
     if lines.size > 1
       q.group(0, '', '') do
