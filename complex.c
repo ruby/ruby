@@ -237,12 +237,6 @@ k_numeric_p(VALUE x)
     return f_kind_of_p(x, rb_cNumeric);
 }
 
-
-inline static VALUE
-k_rational_p(VALUE x)
-{
-    return f_kind_of_p(x, rb_cRational);
-}
 #define k_exact_p(x) (!RB_FLOAT_TYPE_P(x))
 
 #define k_exact_zero_p(x) (k_exact_p(x) && f_zero_p(x))
@@ -895,8 +889,8 @@ nucomp_expt(VALUE self, VALUE other)
     if (k_numeric_p(other) && k_exact_zero_p(other))
 	return f_complex_new_bang1(CLASS_OF(self), ONE);
 
-    if (k_rational_p(other) && f_one_p(f_denominator(other)))
-	other = f_numerator(other); /* c14n */
+    if (RB_TYPE_P(other, T_RATIONAL) && RRATIONAL(other)->den == LONG2FIX(1))
+	other = RRATIONAL(other)->num; /* c14n */
 
     if (RB_TYPE_P(other, T_COMPLEX)) {
 	get_dat1(other);
