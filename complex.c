@@ -237,25 +237,13 @@ k_numeric_p(VALUE x)
     return f_kind_of_p(x, rb_cNumeric);
 }
 
-inline static VALUE
-k_float_p(VALUE x)
-{
-    return f_kind_of_p(x, rb_cFloat);
-}
 
 inline static VALUE
 k_rational_p(VALUE x)
 {
     return f_kind_of_p(x, rb_cRational);
 }
-
-inline static VALUE
-k_complex_p(VALUE x)
-{
-    return f_kind_of_p(x, rb_cComplex);
-}
-
-#define k_exact_p(x) (!k_float_p(x))
+#define k_exact_p(x) (!RB_FLOAT_TYPE_P(x))
 
 #define k_exact_zero_p(x) (k_exact_p(x) && f_zero_p(x))
 
@@ -309,15 +297,15 @@ nucomp_s_new_bang(int argc, VALUE *argv, VALUE klass)
 inline static VALUE
 f_complex_new_bang1(VALUE klass, VALUE x)
 {
-    assert(!k_complex_p(x));
+    assert(!RB_TYPE_P(x, T_COMPLEX));
     return nucomp_s_new_internal(klass, x, ZERO);
 }
 
 inline static VALUE
 f_complex_new_bang2(VALUE klass, VALUE x, VALUE y)
 {
-    assert(!k_complex_p(x));
-    assert(!k_complex_p(y));
+    assert(!RB_TYPE_P(x, T_COMPLEX));
+    assert(!RB_TYPE_P(y, T_COMPLEX));
     return nucomp_s_new_internal(klass, x, y);
 }
 
@@ -417,7 +405,7 @@ nucomp_s_new(int argc, VALUE *argv, VALUE klass)
 inline static VALUE
 f_complex_new2(VALUE klass, VALUE x, VALUE y)
 {
-    assert(!k_complex_p(x));
+    assert(!RB_TYPE_P(x, T_COMPLEX));
     return nucomp_s_canonicalize_internal(klass, x, y);
 }
 
@@ -554,8 +542,8 @@ m_sqrt(VALUE x)
 static VALUE
 f_complex_polar(VALUE klass, VALUE x, VALUE y)
 {
-    assert(!k_complex_p(x));
-    assert(!k_complex_p(y));
+    assert(!RB_TYPE_P(x, T_COMPLEX));
+    assert(!RB_TYPE_P(y, T_COMPLEX));
     if (f_zero_p(x) || f_zero_p(y)) {
 	if (canonicalization) return x;
 	return nucomp_s_new_internal(klass, x, RFLOAT_0);
@@ -672,29 +660,6 @@ nucomp_negate(VALUE self)
 			f_negate(dat->real), f_negate(dat->imag));
 }
 
-inline static VALUE
-f_addsub(VALUE self, VALUE other,
-	 VALUE (*func)(VALUE, VALUE), ID id)
-{
-    if (k_complex_p(other)) {
-	VALUE real, imag;
-
-	get_dat2(self, other);
-
-	real = (*func)(adat->real, bdat->real);
-	imag = (*func)(adat->imag, bdat->imag);
-
-	return f_complex_new2(CLASS_OF(self), real, imag);
-    }
-    if (k_numeric_p(other) && f_real_p(other)) {
-	get_dat1(self);
-
-	return f_complex_new2(CLASS_OF(self),
-			      (*func)(dat->real, other), dat->imag);
-    }
-    return rb_num_coerce_bin(self, other, id);
-}
-
 /*
  * call-seq:
  *    cmp + numeric  ->  complex
@@ -710,9 +675,24 @@ f_addsub(VALUE self, VALUE other,
 VALUE
 rb_complex_plus(VALUE self, VALUE other)
 {
-    return f_addsub(self, other, f_add, '+');
+    if (RB_TYPE_P(other, T_COMPLEX)) {
+	VALUE real, imag;
+
+	get_dat2(self, other);
+
+	real = f_add(adat->real, bdat->real);
+	imag = f_add(adat->imag, bdat->imag);
+
+	return f_complex_new2(CLASS_OF(self), real, imag);
+    }
+    if (k_numeric_p(other) && f_real_p(other)) {
+	get_dat1(self);
+
+	return f_complex_new2(CLASS_OF(self),
+			      f_add(dat->real, other), dat->imag);
+    }
+    return rb_num_coerce_bin(self, other, '+');
 }
-#define nucomp_add rb_complex_plus
 
 /*
  * call-seq:
@@ -729,7 +709,23 @@ rb_complex_plus(VALUE self, VALUE other)
 static VALUE
 nucomp_sub(VALUE self, VALUE other)
 {
-    return f_addsub(self, other, f_sub, '-');
+    if (RB_TYPE_P(other, T_COMPLEX)) {
+	VALUE real, imag;
+
+	get_dat2(self, other);
+
+	real = f_sub(adat->real, bdat->real);
+	imag = f_sub(adat->imag, bdat->imag);
+
+	return f_complex_new2(CLASS_OF(self), real, imag);
+    }
+    if (k_numeric_p(other) && f_real_p(other)) {
+	get_dat1(self);
+
+	return f_complex_new2(CLASS_OF(self),
+			      f_sub(dat->real, other), dat->imag);
+    }
+    return rb_num_coerce_bin(self, other, '-');
 }
 
 static VALUE
@@ -760,7 +756,7 @@ safe_mul(VALUE a, VALUE b, int az, int bz)
 VALUE
 rb_complex_mul(VALUE self, VALUE other)
 {
-    if (k_complex_p(other)) {
+    if (RB_TYPE_P(other, T_COMPLEX)) {
 	VALUE real, imag;
 	VALUE areal, aimag, breal, bimag;
 	int arzero, aizero, brzero, bizero;
@@ -793,12 +789,12 @@ inline static VALUE
 f_divide(VALUE self, VALUE other,
 	 VALUE (*func)(VALUE, VALUE), ID id)
 {
-    if (k_complex_p(other)) {
+    if (RB_TYPE_P(other, T_COMPLEX)) {
 	int flo;
 	get_dat2(self, other);
 
-	flo = (k_float_p(adat->real) || k_float_p(adat->imag) ||
-	       k_float_p(bdat->real) || k_float_p(bdat->imag));
+	flo = (RB_FLOAT_TYPE_P(adat->real) || RB_FLOAT_TYPE_P(adat->imag) ||
+	       RB_FLOAT_TYPE_P(bdat->real) || RB_FLOAT_TYPE_P(bdat->imag));
 
 	if (f_gt_p(f_abs(bdat->real), f_abs(bdat->imag))) {
 	    VALUE r, n;
@@ -902,14 +898,14 @@ nucomp_expt(VALUE self, VALUE other)
     if (k_rational_p(other) && f_one_p(f_denominator(other)))
 	other = f_numerator(other); /* c14n */
 
-    if (k_complex_p(other)) {
+    if (RB_TYPE_P(other, T_COMPLEX)) {
 	get_dat1(other);
 
 	if (k_exact_zero_p(dat->imag))
 	    other = dat->real; /* c14n */
     }
 
-    if (k_complex_p(other)) {
+    if (RB_TYPE_P(other, T_COMPLEX)) {
 	VALUE r, theta, nr, ntheta;
 
 	get_dat1(other);
@@ -987,7 +983,7 @@ nucomp_expt(VALUE self, VALUE other)
 static VALUE
 nucomp_eqeq_p(VALUE self, VALUE other)
 {
-    if (k_complex_p(other)) {
+    if (RB_TYPE_P(other, T_COMPLEX)) {
 	get_dat2(self, other);
 
 	return f_boolcast(f_eqeq_p(adat->real, bdat->real) &&
@@ -1032,13 +1028,13 @@ nucomp_abs(VALUE self)
 
     if (f_zero_p(dat->real)) {
 	VALUE a = f_abs(dat->imag);
-	if (k_float_p(dat->real) && !k_float_p(dat->imag))
+	if (RB_FLOAT_TYPE_P(dat->real) && !RB_FLOAT_TYPE_P(dat->imag))
 	    a = f_to_f(a);
 	return a;
     }
     if (f_zero_p(dat->imag)) {
 	VALUE a = f_abs(dat->real);
-	if (!k_float_p(dat->real) && k_float_p(dat->imag))
+	if (!RB_FLOAT_TYPE_P(dat->real) && RB_FLOAT_TYPE_P(dat->imag))
 	    a = f_to_f(a);
 	return a;
     }
@@ -1231,7 +1227,7 @@ nucomp_hash(VALUE self)
 static VALUE
 nucomp_eql_p(VALUE self, VALUE other)
 {
-    if (k_complex_p(other)) {
+    if (RB_TYPE_P(other, T_COMPLEX)) {
 	get_dat2(self, other);
 
 	return f_boolcast((CLASS_OF(adat->real) == CLASS_OF(bdat->real)) &&
@@ -2235,7 +2231,7 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "imag", nucomp_imag, 0);
 
     rb_define_method(rb_cComplex, "-@", nucomp_negate, 0);
-    rb_define_method(rb_cComplex, "+", nucomp_add, 1);
+    rb_define_method(rb_cComplex, "+", rb_complex_plus, 1);
     rb_define_method(rb_cComplex, "-", nucomp_sub, 1);
     rb_define_method(rb_cComplex, "*", nucomp_mul, 1);
     rb_define_method(rb_cComplex, "/", nucomp_div, 1);
