@@ -507,7 +507,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 		rb_ivar_set(mesg, idBt_locations, at);
 	    }
 	}
-	else if (NIL_P(get_backtrace(mesg))) {
+	else if (NIL_P(rb_get_backtrace(mesg))) {
 	    at = rb_vm_backtrace_object();
 	    if (OBJ_FROZEN(mesg)) {
 		mesg = rb_obj_dup(mesg);
@@ -1616,7 +1616,7 @@ errat_getter(ID id)
 {
     VALUE err = get_errinfo();
     if (!NIL_P(err)) {
-	return get_backtrace(err);
+	return rb_get_backtrace(err);
     }
     else {
 	return Qnil;

@@ -882,6 +882,22 @@ exc_backtrace(VALUE exc)
     return obj;
 }
 
+VALUE
+rb_get_backtrace(VALUE exc)
+{
+    VALUE info, klass = rb_eException;
+    ID mid = id_backtrace;
+    rb_thread_t *th = GET_THREAD();
+    if (NIL_P(exc))
+	return Qnil;
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, exc, mid, mid, klass, Qundef);
+    info = exc_backtrace(exc);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, exc, mid, mid, klass, info);
+    if (NIL_P(info))
+	return Qnil;
+    return rb_check_backtrace(info);
+}
+
 /*
  *  call-seq:
  *     exception.backtrace_locations    -> array
