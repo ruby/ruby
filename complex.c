@@ -187,21 +187,17 @@ f_negative_p(VALUE x)
 
 #define f_positive_p(x) (!f_negative_p(x))
 
-inline static VALUE
+inline static int
 f_zero_p(VALUE x)
 {
-    if (FIXNUM_P(x)) {
-	return f_boolcast(FIXNUM_ZERO_P(x));
-    }
-    else if (RB_TYPE_P(x, T_BIGNUM)) {
-	return Qfalse;
+    if (RB_INTEGER_TYPE_P(x)) {
+        return FIXNUM_ZERO_P(x);
     }
     else if (RB_TYPE_P(x, T_RATIONAL)) {
-	VALUE num = RRATIONAL(x)->num;
-
-	return f_boolcast(FIXNUM_P(num) && FIXNUM_ZERO_P(num));
+        const VALUE num = RRATIONAL(x)->num;
+        return FIXNUM_ZERO_P(num);
     }
-    return rb_funcall(x, id_eqeq_p, 1, ZERO);
+    return (int)rb_equal(x, ZERO);
 }
 
 #define f_nonzero_p(x) (!f_zero_p(x))
@@ -738,10 +734,10 @@ rb_complex_mul(VALUE self, VALUE other)
 
 	get_dat2(self, other);
 
-	arzero = !!f_zero_p(areal = adat->real);
-	aizero = !!f_zero_p(aimag = adat->imag);
-	brzero = !!f_zero_p(breal = bdat->real);
-	bizero = !!f_zero_p(bimag = bdat->imag);
+	arzero = f_zero_p(areal = adat->real);
+	aizero = f_zero_p(aimag = adat->imag);
+	brzero = f_zero_p(breal = bdat->real);
+	bizero = f_zero_p(bimag = bdat->imag);
 	real = f_sub(safe_mul(areal, breal, arzero, brzero),
 		     safe_mul(aimag, bimag, aizero, bizero));
 	imag = f_add(safe_mul(areal, bimag, arzero, bizero),
