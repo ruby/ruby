@@ -1669,6 +1669,8 @@ singleton_class_for_eval(VALUE self)
     switch (BUILTIN_TYPE(self)) {
       case T_FLOAT: case T_BIGNUM: case T_SYMBOL:
 	return Qnil;
+      case T_STRING:
+	if (FL_TEST_RAW(self, RSTRING_FSTR)) return Qnil;
       default:
 	return rb_singleton_class(self);
     }
