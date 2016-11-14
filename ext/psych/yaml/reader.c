@@ -52,7 +52,7 @@ yaml_parser_determine_encoding(yaml_parser_t *parser)
 {
     /* Ensure that we had enough bytes in the raw buffer. */
 
-    while (!parser->eof 
+    while (!parser->eof
             && parser->raw_buffer.last - parser->raw_buffer.pointer < 3) {
         if (!yaml_parser_update_raw_buffer(parser)) {
             return 0;
@@ -295,7 +295,7 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
                                 parser->offset, value);
 
                     break;
-                
+
                 case YAML_UTF16LE_ENCODING:
                 case YAML_UTF16BE_ENCODING:
 
@@ -318,7 +318,7 @@ yaml_parser_update_buffer(yaml_parser_t *parser, size_t length)
                      *
                      * The following formulas are used for decoding
                      * and encoding characters using surrogate pairs:
-                     * 
+                     *
                      *  U  = U' + 0x10000   (0x01 00 00 <= U <= 0x10 FF FF)
                      *  U' = yyyyyyyyyyxxxxxxxxxx   (0 <= U' <= 0x0F FF FF)
                      *  W1 = 110110yyyyyyyyyy
