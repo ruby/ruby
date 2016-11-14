@@ -446,8 +446,7 @@ module Net
           if !resp.start_with?("1")
             raise FTPReplyError, resp
           end
-          conn = BufferedSocket.new(sock.accept)
-          conn.read_timeout = @read_timeout
+          conn = BufferedSocket.new(sock.accept, read_timeout: @read_timeout)
           sock.shutdown(Socket::SHUT_WR) rescue nil
           sock.read rescue nil
         ensure

@@ -592,10 +592,8 @@ module Net
     end
 
     def new_internet_message_io(s)
-      io = InternetMessageIO.new(s)
-      io.read_timeout = @read_timeout
-      io.debug_output = @debug_output
-      io
+      InternetMessageIO.new(s, read_timeout: @read_timeout,
+                            debug_output: @debug_output)
     end
 
     def do_helo(helo_domain)

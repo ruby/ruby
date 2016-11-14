@@ -555,10 +555,10 @@ module Net
           s.post_connection_check(@address)
         end
       end
-      @socket = InternetMessageIO.new(s)
+      @socket = InternetMessageIO.new(s,
+                                      read_timeout: @read_timeout,
+                                      debug_output: @debug_output)
       logging "POP session started: #{@address}:#{@port} (#{@apop ? 'APOP' : 'POP'})"
-      @socket.read_timeout = @read_timeout
-      @socket.debug_output = @debug_output
       on_connect
       @command = POP3Command.new(@socket)
       if apop?

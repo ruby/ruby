@@ -79,11 +79,11 @@ module Net # :nodoc:
 
 
   class BufferedIO   #:nodoc: internal use only
-    def initialize(io)
+    def initialize(io, read_timeout: 60, continue_timeout: nil, debug_output: nil)
       @io = io
-      @read_timeout = 60
-      @continue_timeout = nil
-      @debug_output = nil
+      @read_timeout = read_timeout
+      @continue_timeout = continue_timeout
+      @debug_output = debug_output
       @rbuf = ''
     end
 
@@ -254,7 +254,7 @@ module Net # :nodoc:
 
 
   class InternetMessageIO < BufferedIO   #:nodoc: internal use only
-    def initialize(io)
+    def initialize(*)
       super
       @wbuf = nil
     end

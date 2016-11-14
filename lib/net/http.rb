@@ -925,10 +925,9 @@ module Net   #:nodoc:
         s.sync_close = true
         D "SSL established"
       end
-      @socket = BufferedIO.new(s)
-      @socket.read_timeout = @read_timeout
-      @socket.continue_timeout = @continue_timeout
-      @socket.debug_output = @debug_output
+      @socket = BufferedIO.new(s, read_timeout: @read_timeout,
+                               continue_timeout: @continue_timeout,
+                               debug_output: @debug_output)
       if use_ssl?
         begin
           if proxy?
