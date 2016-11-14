@@ -235,15 +235,25 @@ module Net
     # SOCKS_SERVER, then a SOCKSSocket is returned, else a TCPSocket is
     # returned.
     def open_socket(host, port) # :nodoc:
-      return Timeout.timeout(@open_timeout, Net::OpenTimeout) {
-        if defined? SOCKSSocket and ENV["SOCKS_SERVER"]
-          @passive = true
+      if defined? SOCKSSocket and ENV["SOCKS_SERVER"]
+        @passive = true
+        # Socket.tcp can't create SOCKSSocket instance.
+        # So use Timeout.timeout to calculate timeout.
+        Timeout.timeout(@open_timeout, Net::OpenTimeout) {
           sock = SOCKSSocket.open(host, port)
-        else
-          sock = TCPSocket.open(host, port)
+        }
+      else
+        begin
+          _sock = Socket.tcp(host, port, connect_timeout: @open_timeout)
+          _sock.autoclose = false
+          sock = TCPSocket.for_fd(_sock.fileno)
+          _sock.close
+        rescue Errno::ETIMEDOUT
+          raise Net::OpenTimeout, "Timeout to open TCP connection to " +
+            "#{host}:#{port} (exceeds #{@open_timeout} seconds)"
         end
-        BufferedSocket.new(sock, read_timeout: @read_timeout)
-      }
+      end
+      BufferedSocket.new(sock, read_timeout: @read_timeout)
     end
     private :open_socket
 
