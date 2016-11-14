@@ -1,6 +1,7 @@
 require 'test/unit'
 require 'tempfile'
 require "thread"
+require "-test-/file"
 require_relative 'ut_eof'
 
 class TestFile < Test::Unit::TestCase
@@ -323,6 +324,7 @@ class TestFile < Test::Unit::TestCase
       sleep 2
       File.write(path, "bar")
       sleep 2
+      File.read(path)
       File.chmod(0644, path)
       sleep 2
       File.read(path)
@@ -334,7 +336,7 @@ class TestFile < Test::Unit::TestCase
       if stat.birthtime != stat.ctime
         assert_in_delta t0+4, stat.ctime.to_f, delta
       end
-      unless /mswin|mingw/ =~ RUBY_PLATFORM
+      if /mswin|mingw/ !~ RUBY_PLATFORM && !Bug::File::Fs.noatime?(path)
         # Windows delays updating atime
         assert_in_delta t0+6, stat.atime.to_f, delta
       end
