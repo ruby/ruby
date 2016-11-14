@@ -212,8 +212,7 @@ f_minus_one_p(VALUE x)
 inline static int
 f_kind_of_p(VALUE x, VALUE c)
 {
-    VALUE ret = rb_obj_is_kind_of(x, c);
-    return RTEST(ret);
+    return (int)rb_obj_is_kind_of(x, c);
 }
 
 inline static int
