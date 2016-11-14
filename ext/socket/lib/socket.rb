@@ -110,10 +110,8 @@ class Addrinfo
   #     puts s.read
   #   }
   #
-  def connect_from(*args, &block)
-    opts = Hash === args.last ? args.pop : {}
-    local_addr_args = args
-    connect_internal(family_addrinfo(*local_addr_args), opts[:timeout], &block)
+  def connect_from(*args, timeout: nil, &block)
+    connect_internal(family_addrinfo(*args), timeout, &block)
   end
 
   # :call-seq:
@@ -135,8 +133,8 @@ class Addrinfo
   #     puts s.read
   #   }
   #
-  def connect(opts={}, &block)
-    connect_internal(nil, opts[:timeout], &block)
+  def connect(timeout: nil, &block)
+    connect_internal(nil, timeout, &block)
   end
 
   # :call-seq:
@@ -158,11 +156,9 @@ class Addrinfo
   #     puts s.read
   #   }
   #
-  def connect_to(*args, &block)
-    opts = Hash === args.last ? args.pop : {}
-    remote_addr_args = args
-    remote_addrinfo = family_addrinfo(*remote_addr_args)
-    remote_addrinfo.send(:connect_internal, self, opts[:timeout], &block)
+  def connect_to(*args, timeout: nil, &block)
+    remote_addrinfo = family_addrinfo(*args)
+    remote_addrinfo.send(:connect_internal, self, timeout, &block)
   end
 
   # creates a socket bound to self.
@@ -609,14 +605,9 @@ class Socket < BasicSocket
   #     puts sock.read
   #   }
   #
-  def self.tcp(host, port, *rest) # :yield: socket
-    opts = Hash === rest.last ? rest.pop : {}
-    raise ArgumentError, "wrong number of arguments (#{rest.length} for 2)" if 2 < rest.length
-    local_host, local_port = rest
+  def self.tcp(host, port, local_host = nil, local_port = nil, connect_timeout: nil) # :yield: socket
     last_error = nil
     ret = nil
-
-    connect_timeout = opts[:connect_timeout]
 
     local_addr_list = nil
     if local_host != nil || local_port != nil
@@ -632,8 +623,8 @@ class Socket < BasicSocket
       end
       begin
         sock = local_addr ?
-          ai.connect_from(local_addr, :timeout => connect_timeout) :
-          ai.connect(:timeout => connect_timeout)
+          ai.connect_from(local_addr, timeout: connect_timeout) :
+          ai.connect(timeout: connect_timeout)
       rescue SystemCallError
         last_error = $!
         next
