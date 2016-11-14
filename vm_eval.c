@@ -207,7 +207,7 @@ vm_call0_body(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_
 		goto again;
 	    }
 
-	    super_class = RCLASS_SUPER(cc->me->defined_class);
+	    super_class = RCLASS_SUPER(RCLASS_ORIGIN(cc->me->defined_class));
 
 	    if (!super_class || !(cc->me = rb_callable_method_entry(super_class, ci->mid))) {
 		enum method_missing_reason ex = (type == VM_METHOD_TYPE_ZSUPER) ? MISSING_SUPER : 0;
