@@ -519,13 +519,25 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 		rb_ivar_set(mesg, idBt_locations, at);
 	    }
 	}
-	else if (NIL_P(get_backtrace(mesg))) {
-	    at = rb_vm_backtrace_object();
-	    if (OBJ_FROZEN(mesg)) {
-		mesg = rb_obj_dup(mesg);
+	else {
+	    int status;
+
+	    TH_PUSH_TAG(th);
+	    if ((status = EXEC_TAG()) == 0) {
+		VALUE bt;
+		if (rb_threadptr_set_raised(th)) goto fatal;
+		bt = rb_get_backtrace(mesg);
+		if (NIL_P(bt)) {
+		    at = rb_vm_backtrace_object();
+		    if (OBJ_FROZEN(mesg)) {
+			mesg = rb_obj_dup(mesg);
+		    }
+		    rb_ivar_set(mesg, idBt_locations, at);
+		    set_backtrace(mesg, at);
+		}
+		rb_threadptr_reset_raised(th);
 	    }
-	    rb_ivar_set(mesg, idBt_locations, at);
-	    set_backtrace(mesg, at);
+	    TH_POP_TAG();
 	}
     }
 
@@ -567,6 +579,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
     }
 
     if (rb_threadptr_set_raised(th)) {
+      fatal:
 	th->errinfo = exception_error;
 	rb_threadptr_reset_raised(th);
 	JUMP_TAG(TAG_FATAL);
@@ -1587,7 +1600,7 @@ errat_getter(ID id)
 {
     VALUE err = get_errinfo();
     if (!NIL_P(err)) {
-	return get_backtrace(err);
+	return rb_get_backtrace(err);
     }
     else {
 	return Qnil;
