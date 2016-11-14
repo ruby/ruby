@@ -1,3 +1,13 @@
+Tue Nov 15 03:14:02 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/-test/file/fs.c (get_atime_p): Updating of file access times
+	  is enabled or not.
+
+Tue Nov 15 03:14:02 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_file.rb (TestFile#test_stat): fix noatime case.
+	  [ruby-core:77943] [Bug #12903]
+
 Tue Nov 15 03:09:39 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/rinda/test_rinda.rb (test_make_socket_ipv6_multicast,
