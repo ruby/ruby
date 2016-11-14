@@ -40,23 +40,6 @@ error_pos(void)
     }
 }
 
-static VALUE
-get_backtrace(VALUE info)
-{
-    if (NIL_P(info))
-	return Qnil;
-    info = rb_funcall(info, rb_intern("backtrace"), 0);
-    if (NIL_P(info))
-	return Qnil;
-    return rb_check_backtrace(info);
-}
-
-VALUE
-rb_get_backtrace(VALUE info)
-{
-    return get_backtrace(info);
-}
-
 VALUE rb_exc_set_backtrace(VALUE exc, VALUE bt);
 
 static void
@@ -73,7 +56,7 @@ set_backtrace(VALUE info, VALUE bt)
 	    bt = rb_backtrace_to_str_ary(bt);
 	}
     }
-    rb_funcall(info, rb_intern("set_backtrace"), 1, bt);
+    rb_check_funcall(info, set_backtrace, 1, &bt);
 }
 
 static void
@@ -93,7 +76,7 @@ error_print(void)
 
     TH_PUSH_TAG(th);
     if (TH_EXEC_TAG() == 0) {
-	errat = get_backtrace(errinfo);
+	errat = rb_get_backtrace(errinfo);
     }
     else if (errat == Qundef) {
 	errat = Qnil;
