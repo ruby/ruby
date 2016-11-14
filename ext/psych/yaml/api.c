@@ -395,7 +395,7 @@ yaml_emitter_delete(yaml_emitter_t *emitter)
     }
     QUEUE_DEL(emitter, emitter->events);
     STACK_DEL(emitter, emitter->indents);
-    while (!STACK_EMPTY(emitter, emitter->tag_directives)) {
+    while (!STACK_EMPTY(empty, emitter->tag_directives)) {
         yaml_tag_directive_t tag_directive = POP(emitter, emitter->tag_directives);
         yaml_free(tag_directive.handle);
         yaml_free(tag_directive.prefix);
@@ -415,7 +415,7 @@ yaml_string_write_handler(void *data, unsigned char *buffer, size_t size)
 {
     yaml_emitter_t *emitter = data;
 
-    if (emitter->output.string.size + *emitter->output.string.size_written
+    if (emitter->output.string.size - *emitter->output.string.size_written
             < size) {
         memcpy(emitter->output.string.buffer
                 + *emitter->output.string.size_written,
@@ -822,7 +822,6 @@ yaml_scalar_event_initialize(yaml_event_t *event,
     yaml_char_t *anchor_copy = NULL;
     yaml_char_t *tag_copy = NULL;
     yaml_char_t *value_copy = NULL;
-    size_t value_length;
 
     assert(event);      /* Non-NULL event object is expected. */
     assert(value);      /* Non-NULL anchor is expected. */
@@ -840,19 +839,16 @@ yaml_scalar_event_initialize(yaml_event_t *event,
     }
 
     if (length < 0) {
-        value_length = strlen((char *)value);
-    }
-    else {
-        value_length = (size_t)length;
+        length = strlen((char *)value);
     }
 
-    if (!yaml_check_utf8(value, value_length)) goto error;
-    value_copy = yaml_malloc(value_length+1);
+    if (!yaml_check_utf8(value, length)) goto error;
+    value_copy = yaml_malloc(length+1);
     if (!value_copy) goto error;
-    memcpy(value_copy, value, value_length);
-    value_copy[value_length] = '\0';
+    memcpy(value_copy, value, length);
+    value_copy[length] = '\0';
 
-    SCALAR_EVENT_INIT(*event, anchor_copy, tag_copy, value_copy, value_length,
+    SCALAR_EVENT_INIT(*event, anchor_copy, tag_copy, value_copy, length,
             plain_implicit, quoted_implicit, style, mark, mark);
 
     return 1;
@@ -1206,8 +1202,6 @@ yaml_document_add_scalar(yaml_document_t *document,
     yaml_char_t *tag_copy = NULL;
     yaml_char_t *value_copy = NULL;
     yaml_node_t node;
-    size_t value_length;
-    ptrdiff_t ret;
 
     assert(document);   /* Non-NULL document object is expected. */
     assert(value);      /* Non-NULL value is expected. */
@@ -1221,26 +1215,19 @@ yaml_document_add_scalar(yaml_document_t *document,
     if (!tag_copy) goto error;
 
     if (length < 0) {
-        value_length = strlen((char *)value);
-    }
-    else {
-        value_length = (size_t)length;
+        length = strlen((char *)value);
     }
 
-    if (!yaml_check_utf8(value, value_length)) goto error;
-    value_copy = yaml_malloc(value_length+1);
+    if (!yaml_check_utf8(value, length)) goto error;
+    value_copy = yaml_malloc(length+1);
     if (!value_copy) goto error;
-    memcpy(value_copy, value, value_length);
-    value_copy[value_length] = '\0';
+    memcpy(value_copy, value, length);
+    value_copy[length] = '\0';
 
-    SCALAR_NODE_INIT(node, tag_copy, value_copy, value_length, style, mark, mark);
+    SCALAR_NODE_INIT(node, tag_copy, value_copy, length, style, mark, mark);
     if (!PUSH(&context, document->nodes, node)) goto error;
 
-    ret = document->nodes.top - document->nodes.start;
-#if PTRDIFF_MAX > INT_MAX
-    if (ret > INT_MAX) goto error;
-#endif
-    return (int)ret;
+    return document->nodes.top - document->nodes.start;
 
 error:
     yaml_free(tag_copy);
@@ -1268,7 +1255,6 @@ yaml_document_add_sequence(yaml_document_t *document,
         yaml_node_item_t *top;
     } items = { NULL, NULL, NULL };
     yaml_node_t node;
-    ptrdiff_t ret;
 
     assert(document);   /* Non-NULL document object is expected. */
 
@@ -1286,11 +1272,7 @@ yaml_document_add_sequence(yaml_document_t *document,
             style, mark, mark);
     if (!PUSH(&context, document->nodes, node)) goto error;
 
-    ret = document->nodes.top - document->nodes.start;
-#if PTRDIFF_MAX > INT_MAX
-    if (ret > INT_MAX) goto error;
-#endif
-    return (int)ret;
+    return document->nodes.top - document->nodes.start;
 
 error:
     STACK_DEL(&context, items);
@@ -1318,7 +1300,6 @@ yaml_document_add_mapping(yaml_document_t *document,
         yaml_node_pair_t *top;
     } pairs = { NULL, NULL, NULL };
     yaml_node_t node;
-    ptrdiff_t ret;
 
     assert(document);   /* Non-NULL document object is expected. */
 
@@ -1336,11 +1317,7 @@ yaml_document_add_mapping(yaml_document_t *document,
             style, mark, mark);
     if (!PUSH(&context, document->nodes, node)) goto error;
 
-    ret = document->nodes.top - document->nodes.start;
-#if PTRDIFF_MAX > INT_MAX
-    if (ret > INT_MAX) goto error;
-#endif
-    return (int)ret;
+    return document->nodes.top - document->nodes.start;
 
 error:
     STACK_DEL(&context, pairs);

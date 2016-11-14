@@ -70,7 +70,7 @@
  *      %TAG    !yaml!  tag:yaml.org,2002:
  *      ---
  *
- * The corresponding sequence of tokens:
+ * The correspoding sequence of tokens:
  *
  *      STREAM-START(utf-8)
  *      VERSION-DIRECTIVE(1,1)
@@ -762,7 +762,7 @@ yaml_parser_scan(yaml_parser_t *parser, yaml_token_t *token)
     }
 
     /* Fetch the next token from the queue. */
-
+    
     *token = DEQUEUE(parser, parser->tokens);
     parser->token_available = 0;
     parser->tokens_parsed ++;
@@ -1114,7 +1114,7 @@ yaml_parser_save_simple_key(yaml_parser_t *parser)
         yaml_simple_key_t simple_key;
         simple_key.possible = 1;
         simple_key.required = required;
-        simple_key.token_number =
+        simple_key.token_number = 
             parser->tokens_parsed + (parser->tokens.tail - parser->tokens.head);
         simple_key.mark = parser->mark;
 
@@ -1186,9 +1186,11 @@ yaml_parser_increase_flow_level(yaml_parser_t *parser)
 static int
 yaml_parser_decrease_flow_level(yaml_parser_t *parser)
 {
+    yaml_simple_key_t dummy_key;    /* Used to eliminate a compiler warning. */
+
     if (parser->flow_level) {
         parser->flow_level --;
-        (void)POP(parser, parser->simple_keys);
+        dummy_key = POP(parser, parser->simple_keys);
     }
 
     return 1;
@@ -1198,7 +1200,7 @@ yaml_parser_decrease_flow_level(yaml_parser_t *parser)
  * Push the current indentation level to the stack and set the new level
  * the current column is greater than the indentation level.  In this case,
  * append or insert the specified token into the token queue.
- *
+ * 
  */
 
 static int
@@ -1222,14 +1224,12 @@ yaml_parser_roll_indent(yaml_parser_t *parser, ptrdiff_t column,
         if (!PUSH(parser, parser->indents, parser->indent))
             return 0;
 
-#if PTRDIFF_MAX > INT_MAX
         if (column > INT_MAX) {
             parser->error = YAML_MEMORY_ERROR;
             return 0;
         }
-#endif
 
-        parser->indent = (int)column;
+        parser->indent = column;
 
         /* Create a token and insert it into the queue. */
 
@@ -1251,7 +1251,7 @@ yaml_parser_roll_indent(yaml_parser_t *parser, ptrdiff_t column,
 
 /*
  * Pop indentation levels from the indents stack until the current level
- * becomes less or equal to the column.  For each indentation level, append
+ * becomes less or equal to the column.  For each intendation level, append
  * the BLOCK-END token.
  */
 
@@ -1266,7 +1266,7 @@ yaml_parser_unroll_indent(yaml_parser_t *parser, ptrdiff_t column)
     if (parser->flow_level)
         return 1;
 
-    /* Loop through the indentation levels in the stack. */
+    /* Loop through the intendation levels in the stack. */
 
     while (parser->indent > column)
     {
@@ -1938,7 +1938,7 @@ yaml_parser_scan_to_next_token(yaml_parser_t *parser)
          *
          *  - in the flow context;
          *  - in the block context, but not at the beginning of the line or
-         *  after '-', '?', or ':' (complex value).
+         *  after '-', '?', or ':' (complex value).  
          */
 
         if (!CACHE(parser, 1)) return 0;
@@ -2053,7 +2053,7 @@ yaml_parser_scan_directive(yaml_parser_t *parser, yaml_token_t *token)
     else
     {
         yaml_parser_set_scanner_error(parser, "while scanning a directive",
-                start_mark, "found unknown directive name");
+                start_mark, "found uknown directive name");
         goto error;
     }
 
@@ -2775,15 +2775,15 @@ yaml_parser_scan_block_scalar(yaml_parser_t *parser, yaml_token_t *token,
 
         if (IS_DIGIT(parser->buffer))
         {
-            /* Check that the indentation is greater than 0. */
+            /* Check that the intendation is greater than 0. */
 
             if (CHECK(parser->buffer, '0')) {
                 yaml_parser_set_scanner_error(parser, "while scanning a block scalar",
-                        start_mark, "found an indentation indicator equal to 0");
+                        start_mark, "found an intendation indicator equal to 0");
                 goto error;
             }
 
-            /* Get the indentation level and eat the indicator. */
+            /* Get the intendation level and eat the indicator. */
 
             increment = AS_DIGIT(parser->buffer);
 
@@ -2797,7 +2797,7 @@ yaml_parser_scan_block_scalar(yaml_parser_t *parser, yaml_token_t *token,
     {
         if (CHECK(parser->buffer, '0')) {
             yaml_parser_set_scanner_error(parser, "while scanning a block scalar",
-                    start_mark, "found an indentation indicator equal to 0");
+                    start_mark, "found an intendation indicator equal to 0");
             goto error;
         }
 
@@ -2847,7 +2847,7 @@ yaml_parser_scan_block_scalar(yaml_parser_t *parser, yaml_token_t *token,
 
     end_mark = parser->mark;
 
-    /* Set the indentation level if it was specified. */
+    /* Set the intendation level if it was specified. */
 
     if (increment) {
         indent = parser->indent >= 0 ? parser->indent+increment : increment;
@@ -2913,7 +2913,7 @@ yaml_parser_scan_block_scalar(yaml_parser_t *parser, yaml_token_t *token,
 
         if (!READ_LINE(parser, leading_break)) goto error;
 
-        /* Eat the following indentation spaces and line breaks. */
+        /* Eat the following intendation spaces and line breaks. */
 
         if (!yaml_parser_scan_block_scalar_breaks(parser,
                     &indent, &trailing_breaks, start_mark, &end_mark)) goto error;
@@ -2948,8 +2948,8 @@ error:
 }
 
 /*
- * Scan indentation spaces and line breaks for a block scalar.  Determine the
- * indentation level if needed.
+ * Scan intendation spaces and line breaks for a block scalar.  Determine the
+ * intendation level if needed.
  */
 
 static int
@@ -2961,11 +2961,11 @@ yaml_parser_scan_block_scalar_breaks(yaml_parser_t *parser,
 
     *end_mark = parser->mark;
 
-    /* Eat the indentation spaces and line breaks. */
+    /* Eat the intendation spaces and line breaks. */
 
     while (1)
     {
-        /* Eat the indentation spaces. */
+        /* Eat the intendation spaces. */
 
         if (!CACHE(parser, 1)) return 0;
 
@@ -2978,12 +2978,12 @@ yaml_parser_scan_block_scalar_breaks(yaml_parser_t *parser,
         if ((int)parser->mark.column > max_indent)
             max_indent = (int)parser->mark.column;
 
-        /* Check for a tab character messing the indentation. */
+        /* Check for a tab character messing the intendation. */
 
         if ((!*indent || (int)parser->mark.column < *indent)
                 && IS_TAB(parser->buffer)) {
             return yaml_parser_set_scanner_error(parser, "while scanning a block scalar",
-                    start_mark, "found a tab character where an indentation space is expected");
+                    start_mark, "found a tab character where an intendation space is expected");
         }
 
         /* Have we found a non-empty line? */
@@ -3007,7 +3007,7 @@ yaml_parser_scan_block_scalar_breaks(yaml_parser_t *parser,
             *indent = 1;
     }
 
-   return 1;
+   return 1; 
 }
 
 /*
@@ -3504,12 +3504,12 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser, yaml_token_t *token)
         {
             if (IS_BLANK(parser->buffer))
             {
-                /* Check for tab character that abuse indentation. */
+                /* Check for tab character that abuse intendation. */
 
                 if (leading_blanks && (int)parser->mark.column < indent
                         && IS_TAB(parser->buffer)) {
                     yaml_parser_set_scanner_error(parser, "while scanning a plain scalar",
-                            start_mark, "found a tab character that violate indentation");
+                            start_mark, "found a tab character that violate intendation");
                     goto error;
                 }
 
@@ -3542,7 +3542,7 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser, yaml_token_t *token)
             if (!CACHE(parser, 1)) goto error;
         }
 
-        /* Check indentation level. */
+        /* Check intendation level. */
 
         if (!parser->flow_level && (int)parser->mark.column < indent)
             break;

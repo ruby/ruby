@@ -53,7 +53,7 @@
 #define WRITE_BREAK(emitter,string)                                             \
     (FLUSH(emitter)                                                             \
      && (CHECK(string,'\n') ?                                                   \
-         ((void)PUT_BREAK(emitter),                                             \
+         (PUT_BREAK(emitter),                                                   \
           string.pointer ++,                                                    \
           1) :                                                                  \
          (COPY(emitter->buffer,string),                                         \
@@ -221,7 +221,7 @@ yaml_emitter_write_indent(yaml_emitter_t *emitter);
 
 static int
 yaml_emitter_write_indicator(yaml_emitter_t *emitter,
-        const char *indicator, int need_whitespace,
+        char *indicator, int need_whitespace,
         int is_whitespace, int is_indention);
 
 static int
@@ -517,7 +517,7 @@ yaml_emitter_emit_stream_start(yaml_emitter_t *emitter,
         if (emitter->best_width < 0) {
             emitter->best_width = INT_MAX;
         }
-
+        
         if (!emitter->line_break) {
             emitter->line_break = YAML_LN_BREAK;
         }
@@ -607,7 +607,7 @@ yaml_emitter_emit_document_start(yaml_emitter_t *emitter,
             if (!yaml_emitter_write_indent(emitter))
                 return 0;
         }
-
+        
         if (event->data.document_start.tag_directives.start
                 != event->data.document_start.tag_directives.end) {
             implicit = 0;
@@ -721,7 +721,7 @@ yaml_emitter_emit_document_end(yaml_emitter_t *emitter,
 }
 
 /*
- *
+ * 
  * Expect a flow item node.
  */
 
@@ -1402,7 +1402,7 @@ yaml_emitter_analyze_anchor(yaml_emitter_t *emitter,
 {
     size_t anchor_length;
     yaml_string_t string;
-
+    
     anchor_length = strlen((char *)anchor);
     STRING_ASSIGN(string, anchor, anchor_length);
 
@@ -1784,7 +1784,7 @@ yaml_emitter_write_indent(yaml_emitter_t *emitter)
 
 static int
 yaml_emitter_write_indicator(yaml_emitter_t *emitter,
-        const char *indicator, int need_whitespace,
+        char *indicator, int need_whitespace,
         int is_whitespace, int is_indention)
 {
     size_t indicator_length;
@@ -2178,7 +2178,7 @@ yaml_emitter_write_block_scalar_hints(yaml_emitter_t *emitter,
         yaml_string_t string)
 {
     char indent_hint[2];
-    const char *chomp_hint = NULL;
+    char *chomp_hint = NULL;
 
     if (IS_SPACE(string) || IS_BREAK(string))
     {
