@@ -1413,7 +1413,7 @@ module Net   #:nodoc:
           begin
             res = HTTPResponse.read_new(@socket)
             res.decode_content = req.decode_content
-          end while res.kind_of?(HTTPContinue)
+          end while res.kind_of?(HTTPInformation)
 
           res.uri = req.uri
 

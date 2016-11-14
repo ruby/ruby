@@ -1,3 +1,8 @@
+Tue Nov 15 03:39:07 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb (transport_request): other than HTTPContinue
+	  in 1xx (HTTPInformation) also needs to continue. [Bug #12890]
+
 Sat Nov 12 07:48:07 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (mnew_internal): follow the original class, not to loop
