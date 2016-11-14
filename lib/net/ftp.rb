@@ -242,9 +242,7 @@ module Net
         else
           sock = TCPSocket.open(host, port)
         end
-        io = BufferedSocket.new(sock)
-        io.read_timeout = @read_timeout
-        io
+        BufferedSocket.new(sock, read_timeout: @read_timeout)
       }
     end
     private :open_socket
