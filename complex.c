@@ -177,12 +177,12 @@ fun2(expt)
 fun2(fdiv)
 fun2(quo)
 
-inline static VALUE
+inline static int
 f_negative_p(VALUE x)
 {
     if (FIXNUM_P(x))
-	return f_boolcast(FIXNUM_NEGATIVE_P(x));
-    return rb_funcall(x, '<', 1, ZERO);
+	return FIXNUM_NEGATIVE_P(x);
+    return rb_num_negative_p(x);
 }
 
 #define f_positive_p(x) (!f_negative_p(x))
@@ -202,13 +202,13 @@ f_zero_p(VALUE x)
 
 #define f_nonzero_p(x) (!f_zero_p(x))
 
-inline static VALUE
+inline static int
 f_kind_of_p(VALUE x, VALUE c)
 {
-    return rb_obj_is_kind_of(x, c);
+    return (int)rb_obj_is_kind_of(x, c);
 }
 
-inline static VALUE
+inline static int
 k_numeric_p(VALUE x)
 {
     return f_kind_of_p(x, rb_cNumeric);
@@ -1209,26 +1209,27 @@ nucomp_eql_p(VALUE self, VALUE other)
     return Qfalse;
 }
 
-inline static VALUE
+inline static int
 f_signbit(VALUE x)
 {
     if (RB_FLOAT_TYPE_P(x)) {
 	double f = RFLOAT_VALUE(x);
-	return f_boolcast(!isnan(f) && signbit(f));
+	return !isnan(f) && signbit(f);
     }
     return f_negative_p(x);
 }
 
-inline static VALUE
+inline static int
 f_tpositive_p(VALUE x)
 {
-    return f_boolcast(!f_signbit(x));
+    return !f_signbit(x);
 }
 
 static VALUE
 f_format(VALUE self, VALUE (*func)(VALUE))
 {
-    VALUE s, impos;
+    VALUE s;
+    int impos;
 
     get_dat1(self);
 
