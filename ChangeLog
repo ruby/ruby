@@ -1,3 +1,8 @@
+Tue Nov 15 02:45:44 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* lib/net/http.rb (transport_request): other than HTTPContinue
+	  in 1xx (HTTPInformation) also needs to continue. [Bug #12890]
+
 Sat Nov 12 01:05:45 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* object.c: Improve documentation for Float conversion.
