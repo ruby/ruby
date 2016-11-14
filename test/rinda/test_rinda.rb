@@ -793,6 +793,8 @@ class TestRingFinger < Test::Unit::TestCase
     rescue Errno::EINVAL
       # somehow Debian 6.0.7 needs ifname
       v6mc = @rf.make_socket("ff02::1%#{ifaddr.name}")
+    rescue Errno::EADDRNOTAVAIL
+      return # IPv6 address for multicast not available
     end
 
     assert_equal(1, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_LOOP).int)
@@ -817,6 +819,8 @@ class TestRingFinger < Test::Unit::TestCase
     rescue Errno::EINVAL
       # somehow Debian 6.0.7 needs ifname
       v6mc = @rf.make_socket("ff02::1%#{ifaddr.name}")
+    rescue Errno::EADDRNOTAVAIL
+      return # IPv6 address for multicast not available
     end
     assert_equal(2, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS).int)
   ensure
