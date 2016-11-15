@@ -417,7 +417,7 @@ get_size_ind(const st_table *tab) {
 /* Return the number of allocated bins of table TAB.  */
 static inline st_index_t
 get_bins_num(const st_table *tab) {
-    return 1<<tab->bin_power;
+    return ((st_index_t) 1)<<tab->bin_power;
 }
 
 /* Return mask for a bin index in table TAB.  */
@@ -436,7 +436,7 @@ hash_bin(st_hash_t hash_value, st_table *tab) {
 /* Return the number of allocated entries of table TAB.  */
 static inline st_index_t
 get_allocated_entries(const st_table *tab) {
-    return 1<<tab->entry_power;
+    return ((st_index_t) 1)<<tab->entry_power;
 }
 
 /* Return size of the allocated bins of table TAB.  */
