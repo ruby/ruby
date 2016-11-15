@@ -1,3 +1,10 @@
+Tue Nov 15 15:29:36 2016  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/openssl/ossl_ssl.c (ssl_npn_select_cb_common): fix parsing
+	  protocol list.
+	  The protocol list from OpenSSL is not null-terminated.
+	  patched by Kazuki Yamaguchi [Bug #11810] [ruby-core:72082]
+
 Tue Nov 15 03:55:45 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/-test/file/fs.c (get_atime_p): Updating of file access times
