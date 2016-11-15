@@ -71,7 +71,7 @@ class Addrinfo
       begin
         yield sock
       ensure
-        sock.close if !sock.closed?
+        sock.close
       end
     else
       sock
@@ -185,7 +185,7 @@ class Addrinfo
       begin
         yield sock
       ensure
-        sock.close if !sock.closed?
+        sock.close
       end
     else
       sock
@@ -208,7 +208,7 @@ class Addrinfo
       begin
         yield sock
       ensure
-        sock.close if !sock.closed?
+        sock.close
       end
     else
       sock
@@ -617,7 +617,7 @@ class Socket < BasicSocket
     Addrinfo.foreach(host, port, nil, :STREAM) {|ai|
       if local_addr_list
         local_addr = local_addr_list.find {|local_ai| local_ai.afamily == ai.afamily }
-        next if !local_addr
+        next unless local_addr
       else
         local_addr = nil
       end
@@ -632,7 +632,7 @@ class Socket < BasicSocket
       ret = sock
       break
     }
-    if !ret
+    unless ret
       if last_error
         raise last_error
       else
@@ -643,7 +643,7 @@ class Socket < BasicSocket
       begin
         yield ret
       ensure
-        ret.close if !ret.closed?
+        ret.close
       end
     else
       ret
@@ -667,7 +667,7 @@ class Socket < BasicSocket
         if reuseaddr
           s.setsockopt(:SOCKET, :REUSEADDR, 1)
         end
-        if !port
+        unless port
           s.bind(ai)
           port = s.local_address.ip_port
         else
@@ -766,7 +766,7 @@ class Socket < BasicSocket
       begin
         yield sockets
       ensure
-        sockets.each {|s| s.close if !s.closed? }
+        sockets.each {|s| s.close }
       end
     else
       sockets
@@ -885,12 +885,12 @@ class Socket < BasicSocket
     Addrinfo.foreach(host, port, nil, :DGRAM, nil, Socket::AI_PASSIVE) {|ai|
       if ai.ipv4? && ai.ip_address == "0.0.0.0"
         local_addrs.each {|a|
-          next if !a.ipv4?
+          next unless a.ipv4?
           ip_list << Addrinfo.new(a.to_sockaddr, :INET, :DGRAM, 0);
         }
       elsif ai.ipv6? && ai.ip_address == "::" && !ipv6_recvpktinfo
         local_addrs.each {|a|
-          next if !a.ipv6?
+          next unless a.ipv6?
           ip_list << Addrinfo.new(a.to_sockaddr, :INET6, :DGRAM, 0);
         }
       else
@@ -927,7 +927,7 @@ class Socket < BasicSocket
       begin
         yield sockets
       ensure
-        sockets.each {|s| s.close if !s.closed? } if sockets
+        sockets.each {|s| s.close } if sockets
       end
     else
       sockets
@@ -1064,7 +1064,7 @@ class Socket < BasicSocket
       begin
         yield sock
       ensure
-        sock.close if !sock.closed?
+        sock.close
       end
     else
       sock
@@ -1088,7 +1088,7 @@ class Socket < BasicSocket
   #   }
   #
   def self.unix_server_socket(path)
-    if !unix_socket_abstract_name?(path)
+    unless unix_socket_abstract_name?(path)
       begin
         st = File.lstat(path)
       rescue Errno::ENOENT
@@ -1102,8 +1102,8 @@ class Socket < BasicSocket
       begin
         yield s
       ensure
-        s.close if !s.closed?
-        if !unix_socket_abstract_name?(path)
+        s.close
+        unless unix_socket_abstract_name?(path)
           File.unlink path
         end
       end
