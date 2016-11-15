@@ -520,9 +520,9 @@ class TestQueue < Test::Unit::TestCase
 
     # No dead or finished threads, give up to 10 seconds to start running
     t = Time.now
-    Thread.pass until Time.now - t > 10 || (consumers + producers).all?{|thr| thr.status =~ /\Arun|sleep\Z/}
+    Thread.pass until Time.now - t > 10 || (consumers + producers).all?{|thr| thr.status =~ /\A(?:run|sleep)\z/}
 
-    assert (consumers + producers).all?{|thr| thr.status =~ /\Arun|sleep\Z/}, 'no threads runnning'
+    assert (consumers + producers).all?{|thr| thr.status =~ /\A(?:run|sleep)\z/}, 'no threads running'
 
     # just exercising the concurrency of the support methods.
     counter = Thread.new do
