@@ -901,11 +901,8 @@ module Net   #:nodoc:
       D "opening connection to #{conn_address}:#{conn_port}..."
 
       begin
-        _s = Socket.tcp(conn_address, conn_port, @local_host, @local_port,
+        s = Socket.tcp(conn_address, conn_port, @local_host, @local_port,
               connect_timeout: @open_timeout)
-        _s.autoclose = false
-        s = TCPSocket.for_fd(_s.fileno)
-        _s.close
       rescue Errno::ETIMEDOUT
         raise Net::OpenTimeout, "Timeout to open TCP connection to " +
           "#{conn_address}:#{conn_port} (exceeds #{@open_timeout} seconds)"

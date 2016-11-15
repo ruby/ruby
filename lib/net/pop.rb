@@ -542,10 +542,7 @@ module Net
     # internal method for Net::POP3.start
     def do_start(account, password) # :nodoc:
       begin
-        _s = Socket.tcp(@address, port, connect_timeout: @open_timeout)
-        _s.autoclose = false
-        s = TCPSocket.for_fd(_s.fileno)
-        _s.close
+        s = Socket.tcp(@address, port, connect_timeout: @open_timeout)
       rescue Errno::ETIMEDOUT
         raise Net::OpenTimeout, "Timeout to open TCP connection to " +
           "#{@address}:#{port} (exceeds #{@open_timeout} seconds)"
