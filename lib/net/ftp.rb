@@ -381,10 +381,10 @@ module Net
 
     # Constructs and send the appropriate PORT (or EPRT) command
     def sendport(host, port) # :nodoc:
-      af = (@sock.peeraddr)[0]
-      if af == "AF_INET"
+      remote_address = @sock.remote_address
+      if remote_address.ipv4?
         cmd = "PORT " + (host.split(".") + port.divmod(256)).join(",")
-      elsif af == "AF_INET6"
+      elsif remote_address.ipv6?
         cmd = sprintf("EPRT |2|%s|%d|", host, port)
       else
         raise FTPProtoError, host
@@ -395,13 +395,13 @@ module Net
 
     # Constructs a TCPServer socket
     def makeport # :nodoc:
-      TCPServer.open(@sock.addr[3], 0)
+      TCPServer.open(@sock.local_address.ip_address, 0)
     end
     private :makeport
 
     # sends the appropriate command to enable a passive connection
     def makepasv # :nodoc:
-      if @sock.peeraddr[0] == "AF_INET"
+      if @sock.remote_address.ipv4?
         host, port = parse227(sendcmd("PASV"))
       else
         host, port = parse229(sendcmd("EPSV"))
@@ -1283,7 +1283,7 @@ module Net
     end
 
     class BufferedSocket < BufferedIO
-      [:addr, :peeraddr, :send, :shutdown].each do |method|
+      [:local_address, :remote_address, :addr, :peeraddr, :send, :shutdown].each do |method|
         define_method(method) { |*args|
           @io.__send__(method, *args)
         }
