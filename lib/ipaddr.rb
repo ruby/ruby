@@ -107,11 +107,11 @@ class IPAddr
       case family
       when Socket::AF_INET
         if netmask < 0 or netmask > IN4MASK
-          raise InvalidPrefixError, "Invalid prefix length"
+          raise InvalidPrefixError, "invalid prefix length"
         end
       when Socket::AF_INET6
         if netmask < 0 or netmask > IN6MASK
-          raise InvalidPrefixError, "Invalid prefix length"
+          raise InvalidPrefixError, "invalid prefix length"
         end
       else
         raise AddressFamilyError, "unsupported address family: #{family}"
@@ -203,7 +203,7 @@ class IPAddr
 
   # Returns true if two ipaddrs are equal, including their
   # mask_addrs
-  def equal_with_mask(other)
+  def equal_with_mask?(other)
     other = coerce_other(other)
     return self == other && self.mask_addr == other.mask_addr
   end
