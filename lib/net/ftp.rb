@@ -431,7 +431,8 @@ module Net
       else
         sock = makeport
         begin
-          sendport(sock.addr[3], sock.addr[1])
+          addr = sock.local_address
+          sendport(addr.ip_address, addr.ip_port)
           if @resume and rest_offset
             resp = sendcmd("REST " + rest_offset.to_s)
             if !resp.start_with?("3")
@@ -1246,7 +1247,7 @@ module Net
         raise FTPReplyError, resp
       end
       if m = /\((?<d>[!-~])\k<d>\k<d>(?<port>\d+)\k<d>\)/.match(resp)
-        return @sock.peeraddr[3], m["port"].to_i
+        return @sock.remote_address.ip_address, m["port"].to_i
       else
         raise FTPProtoError, resp
       end
