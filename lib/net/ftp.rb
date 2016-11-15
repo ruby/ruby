@@ -244,10 +244,7 @@ module Net
         }
       else
         begin
-          _sock = Socket.tcp(host, port, connect_timeout: @open_timeout)
-          _sock.autoclose = false
-          sock = TCPSocket.for_fd(_sock.fileno)
-          _sock.close
+          sock = Socket.tcp(host, port, connect_timeout: @open_timeout)
         rescue Errno::ETIMEDOUT
           raise Net::OpenTimeout, "Timeout to open TCP connection to " +
             "#{host}:#{port} (exceeds #{@open_timeout} seconds)"
