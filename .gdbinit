@@ -875,8 +875,7 @@ end
 
 define rb_classname
   # up to 128bit int
-  set $rb_classname_permanent = "0123456789ABCDEF"
-  set $rb_classname = classname($arg0, $rb_classname_permanent)
+  set $rb_classname = rb_mod_name($arg0)
   if $rb_classname != RUBY_Qnil
     rp $rb_classname
   else

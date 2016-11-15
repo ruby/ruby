@@ -31,7 +31,7 @@ static VALUE nucomp_abs(VALUE self);
 static VALUE nucomp_arg(VALUE self);
 
 static ID id_abs, id_arg, id_convert,
-    id_denominator, id_eqeq_p, id_expt, id_fdiv,
+    id_denominator, id_expt, id_fdiv,
     id_negate, id_numerator, id_quo,
     id_real_p, id_to_f, id_to_i, id_to_r,
     id_i_real, id_i_imag,
@@ -165,12 +165,14 @@ f_to_f(VALUE x)
 
 fun1(to_r)
 
-inline static VALUE
+inline static int
 f_eqeq_p(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y))
-	return f_boolcast(x == y);
-    return rb_funcall(x, id_eqeq_p, 1, y);
+	return x == y;
+    else if (RB_FLOAT_TYPE_P(x) || RB_FLOAT_TYPE_P(y))
+	return NUM2DBL(x) == NUM2DBL(y);
+    return (int)rb_equal(x, y);
 }
 
 fun2(expt)
@@ -965,7 +967,7 @@ nucomp_eqeq_p(VALUE self, VALUE other)
 
 	return f_boolcast(f_eqeq_p(dat->real, other) && f_zero_p(dat->imag));
     }
-    return f_eqeq_p(other, self);
+    return f_boolcast(f_eqeq_p(other, self));
 }
 
 /* :nodoc: */
@@ -2149,7 +2151,6 @@ Init_Complex(void)
     id_arg = rb_intern("arg");
     id_convert = rb_intern("convert");
     id_denominator = rb_intern("denominator");
-    id_eqeq_p = rb_intern("==");
     id_expt = rb_intern("**");
     id_fdiv = rb_intern("fdiv");
     id_negate = rb_intern("-@");

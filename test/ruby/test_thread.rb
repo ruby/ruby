@@ -476,7 +476,7 @@ class TestThread < Test::Unit::TestCase
     assert_equal(false, t.key?(:qux))
     assert_equal(false, t.key?("qux"))
 
-    assert_equal([:foo, :bar, :baz], t.keys)
+    assert_equal([:foo, :bar, :baz].sort, t.keys.sort)
 
   ensure
     t.kill if t
