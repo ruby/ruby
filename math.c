@@ -989,12 +989,8 @@ InitVM_Math(void)
     rb_mMath = rb_define_module("Math");
     rb_eMathDomainError = rb_define_class_under(rb_mMath, "DomainError", rb_eStandardError);
 
-#ifdef M_PI
     /*  Definition of the mathematical constant PI as a Float number. */
     rb_define_const(rb_mMath, "PI", DBL2NUM(M_PI));
-#else
-    rb_define_const(rb_mMath, "PI", DBL2NUM(atan(1.0)*4.0));
-#endif
 
 #ifdef M_E
     /*  Definition of the mathematical constant E (e) as a Float number. */
