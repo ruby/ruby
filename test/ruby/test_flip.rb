@@ -50,4 +50,25 @@ class TestFlip < Test::Unit::TestCase
     assert_equal(expected, v1, mesg)
     assert_equal(expected, v2, mesg)
   end
+
+  def test_input_line_number_range
+    bug12947 = '[ruby-core:78162] [Bug #12947]'
+    ary = b1 = b2 = nil
+    EnvUtil.suppress_warning do
+      b1 = eval("proc {|i| i if 2..4}")
+      b2 = eval("proc {|i| if 2..4; i; end}")
+    end
+    IO.pipe {|r, w|
+      th = Thread.start {(1..5).each {|i| w.puts i};w.close}
+      ary = r.map {|i| b1.call(i.chomp)}
+      th.join
+    }
+    assert_equal([nil, "2", "3", "4", nil], ary, bug12947)
+    IO.pipe {|r, w|
+      th = Thread.start {(1..5).each {|i| w.puts i};w.close}
+      ary = r.map {|i| b2.call(i.chomp)}
+      th.join
+    }
+    assert_equal([nil, "2", "3", "4", nil], ary, bug12947)
+  end
 end
