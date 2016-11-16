@@ -1,3 +1,8 @@
+Wed Nov 16 23:40:29 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* vm_eval.c (vm_call0_body): refined module should not be skipped as
+	  prepended. [Bug #12920]
+
 Tue Nov 15 03:14:02 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/-test/file/fs.c (get_atime_p): Updating of file access times

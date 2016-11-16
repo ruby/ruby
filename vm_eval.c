@@ -200,14 +200,17 @@ vm_call0_body(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_
       case VM_METHOD_TYPE_REFINED:
 	{
 	    const rb_method_type_t type = cc->me->def->type;
-	    VALUE super_class;
+	    VALUE super_class = cc->me->defined_class;
 
-	    if (type == VM_METHOD_TYPE_REFINED && cc->me->def->body.refined.orig_me) {
+	    if (type == VM_METHOD_TYPE_ZSUPER) {
+		super_class = RCLASS_ORIGIN(super_class);
+	    }
+	    else if (cc->me->def->body.refined.orig_me) {
 		cc->me = refined_method_callable_without_refinement(cc->me);
 		goto again;
 	    }
 
-	    super_class = RCLASS_SUPER(RCLASS_ORIGIN(cc->me->defined_class));
+	    super_class = RCLASS_SUPER(super_class);
 
 	    if (!super_class || !(cc->me = rb_callable_method_entry(super_class, ci->mid))) {
 		enum method_missing_reason ex = (type == VM_METHOD_TYPE_ZSUPER) ? MISSING_SUPER : 0;
