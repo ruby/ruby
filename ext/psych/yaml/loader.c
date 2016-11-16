@@ -239,8 +239,8 @@ yaml_parser_register_anchor(yaml_parser_t *parser,
         if (strcmp((char *)alias_data->anchor, (char *)anchor) == 0) {
             yaml_free(anchor);
             return yaml_parser_set_composer_error_context(parser,
-                    "found duplicate anchor; first occurence",
-                    alias_data->mark, "second occurence", data.mark);
+                    "found duplicate anchor; first occurrence",
+                    alias_data->mark, "second occurrence", data.mark);
         }
     }
 
