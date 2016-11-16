@@ -334,12 +334,13 @@ class TestLogDevice < Test::Unit::TestCase
     File.unlink(logfile1) if File.exist?(logfile1)
     File.unlink(logfile2) if File.exist?(logfile2)
     begin
-      stderr = run_children(2, [logfile], <<-'END')
+      stderr = run_children(2, [logfile], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
         logger = Logger.new(ARGV[0], 4, 10)
         10.times do
           logger.info '0' * 15
         end
-      END
+      end;
       assert_no_match(/log shifting failed/, stderr)
       assert_no_match(/log writing failed/, stderr)
       assert_no_match(/log rotation inter-process lock failed/, stderr)
@@ -354,12 +355,13 @@ class TestLogDevice < Test::Unit::TestCase
   def test_shifting_age_in_multiprocess
     yyyymmdd = Time.now.strftime("%Y%m%d")
     begin
-      stderr = run_children(2, [@filename], <<-'END')
+      stderr = run_children(2, [@filename], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
         logger = Logger.new(ARGV[0], 'now')
         10.times do
           logger.info '0' * 15
         end
-      END
+      end;
       assert_no_match(/log shifting failed/, stderr)
       assert_no_match(/log writing failed/, stderr)
       assert_no_match(/log rotation inter-process lock failed/, stderr)
@@ -376,11 +378,12 @@ class TestLogDevice < Test::Unit::TestCase
     tmpfile.close(true)
     begin
       20.times do
-        run_children(2, [logfile], <<-'END')
+        run_children(2, [logfile], "#{<<-"begin;"}\n#{<<-'end;'}")
+        begin;
           logfile = ARGV[0]
           logdev = Logger::LogDevice.new(logfile)
           logdev.send(:open_logfile, logfile)
-        END
+        end;
         assert_equal(1, File.readlines(logfile).grep(/# Logfile created on/).size)
         File.unlink(logfile)
       end
@@ -432,7 +435,8 @@ class TestLogDevice < Test::Unit::TestCase
 
   def test_shifting_midnight
     Dir.mktmpdir do |tmpdir|
-      assert_in_out_err([*%W"--disable=gems -rlogger -C#{tmpdir} -"], <<-'end;')
+      assert_in_out_err([*%W"--disable=gems -rlogger -C#{tmpdir} -"], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
         begin
           module FakeTime
             attr_accessor :now
@@ -471,7 +475,8 @@ class TestLogDevice < Test::Unit::TestCase
 
   def test_shifting_weekly
     Dir.mktmpdir do |tmpdir|
-      assert_in_out_err([{"TZ"=>"UTC"}, *%W"-rlogger -C#{tmpdir} -"], <<-'end;')
+      assert_in_out_err([{"TZ"=>"UTC"}, *%W"-rlogger -C#{tmpdir} -"], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
         begin
           module FakeTime
             attr_accessor :now
@@ -514,7 +519,8 @@ class TestLogDevice < Test::Unit::TestCase
 
   def test_shifting_monthly
     Dir.mktmpdir do |tmpdir|
-      assert_in_out_err([{"TZ"=>"UTC"}, *%W"-rlogger -C#{tmpdir} -"], <<-'end;')
+      assert_in_out_err([{"TZ"=>"UTC"}, *%W"-rlogger -C#{tmpdir} -"], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
         begin
           module FakeTime
             attr_accessor :now
@@ -557,7 +563,8 @@ class TestLogDevice < Test::Unit::TestCase
 
   def test_shifting_dst_change
     Dir.mktmpdir do |tmpdir|
-      assert_in_out_err([{"TZ"=>"Europe/London"}, *%W"--disable=gems -rlogger -C#{tmpdir} -"], <<-'end;')
+      assert_in_out_err([{"TZ"=>"Europe/London"}, *%W"--disable=gems -rlogger -C#{tmpdir} -"], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
         begin
           module FakeTime
             attr_accessor :now
@@ -595,7 +602,8 @@ class TestLogDevice < Test::Unit::TestCase
 
   def test_shifting_weekly_dst_change
     Dir.mktmpdir do |tmpdir|
-      assert_separately([{"TZ"=>"Europe/London"}, *%W"-rlogger -C#{tmpdir} -"], <<-'end;')
+      assert_separately([{"TZ"=>"Europe/London"}, *%W"-rlogger -C#{tmpdir} -"], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
         begin
           module FakeTime
             attr_accessor :now
@@ -623,7 +631,8 @@ class TestLogDevice < Test::Unit::TestCase
 
   def test_shifting_monthly_dst_change
     Dir.mktmpdir do |tmpdir|
-      assert_separately([{"TZ"=>"Europe/London"}, *%W"-rlogger -C#{tmpdir} -"], <<-'end;')
+      assert_separately([{"TZ"=>"Europe/London"}, *%W"-rlogger -C#{tmpdir} -"], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
         begin
           module FakeTime
             attr_accessor :now
