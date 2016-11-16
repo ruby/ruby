@@ -673,7 +673,11 @@ private
         @shift_age = shift_age || 7
         @shift_size = shift_size || 1048576
         @shift_period_suffix = shift_period_suffix || '%Y%m%d'
-        @next_rotate_time = next_rotate_time(Time.now, @shift_age) unless @shift_age.is_a?(Integer)
+
+        unless @shift_age.is_a?(Integer)
+          base_time = @dev.respond_to?(:stat) ? @dev.stat.mtime : Time.now
+          @next_rotate_time = next_rotate_time(base_time, @shift_age)
+        end
       end
     end
 
