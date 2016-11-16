@@ -888,6 +888,11 @@ for n in infinity nan; do
     fi
 done
 
+AC_ARG_WITH(compress-debug-sections,
+	AS_HELP_STRING([--with-compress-debug-sections=type],
+	    [enable debug section compression]),
+	[compress_debug_sections=$withval], [compress_debug_sections=])
+
 if test "$GCC" = yes; then
     # NaCl's glibc build generates undefined references to __memset_chk.
     # TODO(sbc): Remove this once NaCl's glibc is fixed.
@@ -917,11 +922,14 @@ if test "$GCC" = yes; then
 	RUBY_APPEND_OPTION(LDFLAGS, -fstack-protector)
     fi
 
-    RUBY_TRY_LDFLAGS(${linker_flag}--compress-debug-sections=zlib,
-		     [compress_debug_sections=yes],
+    AS_CASE("${compress_debug_sections:-zlib}",
+    [none|no], [], [
+    RUBY_TRY_LDFLAGS(${linker_flag}--compress-debug-sections=${compress_debug_sections:-zlib},
+		     [compress_debug_sections=${compress_debug_sections:-zlib}],
 		     [compress_debug_sections=no])
-    if test "x$compress_debug_sections" = xyes; then
-	RUBY_APPEND_OPTION(DLDFLAGS, ${linker_flag}--compress-debug-sections=zlib)
+    ])
+    if test "x$compress_debug_sections" != xno; then
+	RUBY_APPEND_OPTION(DLDFLAGS, ${linker_flag}--compress-debug-sections=$compress_debug_sections)
     fi
 
     AS_CASE(["$target_os"],[mingw*], [
