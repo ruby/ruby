@@ -182,8 +182,12 @@ fun2(quo)
 inline static int
 f_negative_p(VALUE x)
 {
-    if (FIXNUM_P(x))
-	return FIXNUM_NEGATIVE_P(x);
+    if (RB_INTEGER_TYPE_P(x))
+        return INT_NEGATIVE_P(x);
+    else if (RB_FLOAT_TYPE_P(x))
+        return RFLOAT_VALUE(x) < 0.0;
+    else if (RB_TYPE_P(x, T_RATIONAL))
+        return INT_NEGATIVE_P(RRATIONAL(x)->num);
     return rb_num_negative_p(x);
 }
 
@@ -2045,8 +2049,8 @@ static VALUE
 numeric_arg(VALUE self)
 {
     if (f_positive_p(self))
-	return INT2FIX(0);
-    return rb_const_get(rb_mMath, id_PI);
+        return INT2FIX(0);
+    return DBL2NUM(M_PI);
 }
 
 /*
@@ -2062,6 +2066,8 @@ numeric_rect(VALUE self)
     return rb_assoc_new(self, INT2FIX(0));
 }
 
+static VALUE float_arg(VALUE self);
+
 /*
  * call-seq:
  *    num.polar  ->  array
@@ -2071,7 +2077,25 @@ numeric_rect(VALUE self)
 static VALUE
 numeric_polar(VALUE self)
 {
-    return rb_assoc_new(f_abs(self), f_arg(self));
+    VALUE abs, arg;
+
+    if (RB_INTEGER_TYPE_P(self)) {
+        abs = rb_int_abs(self);
+        arg = numeric_arg(self);
+    }
+    else if (RB_FLOAT_TYPE_P(self)) {
+        abs = rb_float_abs(self);
+        arg = float_arg(self);
+    }
+    else if (RB_TYPE_P(self, T_RATIONAL)) {
+        abs = rb_rational_abs(self);
+        arg = numeric_arg(self);
+    }
+    else {
+        abs = f_abs(self);
+        arg = f_arg(self);
+    }
+    return rb_assoc_new(abs, arg);
 }
 
 /*

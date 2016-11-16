@@ -1678,8 +1678,8 @@ flo_to_f(VALUE num)
  *
  */
 
-static VALUE
-flo_abs(VALUE flt)
+VALUE
+rb_float_abs(VALUE flt)
 {
     double val = fabs(RFLOAT_VALUE(flt));
     return DBL2NUM(val);
@@ -5406,8 +5406,8 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "eql?", flo_eql, 1);
     rb_define_method(rb_cFloat, "hash", flo_hash, 0);
     rb_define_method(rb_cFloat, "to_f", flo_to_f, 0);
-    rb_define_method(rb_cFloat, "abs", flo_abs, 0);
-    rb_define_method(rb_cFloat, "magnitude", flo_abs, 0);
+    rb_define_method(rb_cFloat, "abs", rb_float_abs, 0);
+    rb_define_method(rb_cFloat, "magnitude", rb_float_abs, 0);
     rb_define_method(rb_cFloat, "zero?", flo_zero_p, 0);
 
     rb_define_method(rb_cFloat, "to_i", flo_to_i, 0);

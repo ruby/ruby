@@ -1141,6 +1141,8 @@ void Init_newline(void);
 #define FIXNUM_NEGATIVE_P(num) ((SIGNED_VALUE)(num) < 0)
 #define FIXNUM_ZERO_P(num) ((num) == INT2FIX(0))
 
+#define INT_NEGATIVE_P(x) (FIXNUM_P(x) ? FIXNUM_NEGATIVE_P(x) : BIGNUM_NEGATIVE_P(x))
+
 #ifndef ROUND_DEFAULT
 # define ROUND_DEFAULT RUBY_NUM_ROUND_HALF_EVEN
 #endif
@@ -1181,6 +1183,7 @@ VALUE rb_int_and(VALUE x, VALUE y);
 VALUE rb_int_lshift(VALUE x, VALUE y);
 VALUE rb_int_div(VALUE x, VALUE y);
 VALUE rb_int_abs(VALUE num);
+VALUE rb_float_abs(VALUE flt);
 
 #if USE_FLONUM
 #define RUBY_BIT_ROTL(v, n) (((v) << (n)) | ((v) >> ((sizeof(v) * 8) - n)))
@@ -1373,6 +1376,7 @@ VALUE rb_rational_plus(VALUE self, VALUE other);
 VALUE rb_lcm(VALUE x, VALUE y);
 VALUE rb_rational_reciprocal(VALUE x);
 VALUE rb_cstr_to_rat(const char *, int);
+VALUE rb_rational_abs(VALUE self);
 
 /* re.c */
 VALUE rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline);
