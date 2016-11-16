@@ -162,7 +162,7 @@ Emacs to Ruby."
        "Insert indented here document code block"
        (interactive "P")
        (let ((c (if arg "~" "-")))
-	 (insert "\"#{<<" c "\"begin\;\"}\\n#{<<" c "\"end;\"}\""))
+	 (insert "\"#{<<" c "\"begin\;\"}\\n#{<<" c "'end;'}\""))
        (end-of-line)
        (if (eobp) (insert "\n") (forward-char))
        (indent-region (point)
