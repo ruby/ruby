@@ -1235,6 +1235,30 @@ nurat_negative_p(VALUE self)
     return f_boolcast(INT_NEGATIVE_P(dat->num));
 }
 
+/*
+ *  call-seq:
+ *     rat.abs       -> rat
+ *     rat.magnitude -> rat
+ *
+ *  Returns the absolute value of +rat+.
+ *
+ *  (1/2r).abs    #=> 1/2r
+ *  (-1/2r).abs   #=> 1/2r
+ *
+ *  Rational#magnitude is an alias of Rational#abs.
+ */
+
+VALUE
+rb_rational_abs(VALUE self)
+{
+    get_dat1(self);
+    if (INT_NEGATIVE_P(dat->num)) {
+        VALUE num = rb_int_abs(dat->num);
+        return nurat_s_canonicalize_internal_no_reduce(CLASS_OF(self), num, dat->den);
+    }
+    return self;
+}
+
 static VALUE
 nurat_floor(VALUE self)
 {
@@ -2640,6 +2664,8 @@ Init_Rational(void)
 #endif
     rb_define_method(rb_cRational, "positive?", nurat_positive_p, 0);
     rb_define_method(rb_cRational, "negative?", nurat_negative_p, 0);
+    rb_define_method(rb_cRational, "abs", rb_rational_abs, 0);
+    rb_define_method(rb_cRational, "magnitude", rb_rational_abs, 0);
 
     rb_define_method(rb_cRational, "floor", nurat_floor_n, -1);
     rb_define_method(rb_cRational, "ceil", nurat_ceil_n, -1);
