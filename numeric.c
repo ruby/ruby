@@ -3350,7 +3350,7 @@ rb_fix2str(VALUE x, int base)
 	(val < 0 && (x & 0xFFFFFFFF00000000ull) != 0xFFFFFFFF00000000ull)) {
 	rb_bug("Unnormalized Fixnum value %p", (void *)x);
     }
-# elif
+# else
     /* should do something like above code, but currently ruby does not know */
     /* such platforms */
 # endif
