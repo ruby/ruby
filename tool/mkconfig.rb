@@ -163,6 +163,7 @@ prefix = vars.expand(vars["prefix"] ||= "")
 rubyarchdir = vars.expand(vars["rubyarchdir"] ||= "")
 relative_archdir = rubyarchdir.rindex(prefix, 0) ? rubyarchdir[prefix.size..-1] : rubyarchdir
 puts %[\
+# encoding: ascii-8bit
 # frozen-string-literal: false
 #
 # The module storing Ruby interpreter configurations on building.
