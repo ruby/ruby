@@ -686,6 +686,16 @@ readline_s_insert_text(VALUE self, VALUE str)
 #endif
 
 #if defined(HAVE_RL_DELETE_TEXT)
+static const char *
+str_subpos(const char *ptr, const char *end, long beg, long *sublen, rb_encoding *enc)
+{
+    VALUE str = rb_enc_str_new_static(ptr, end-ptr, enc);
+    OBJ_FREEZE(str);
+    ptr = rb_str_subpos(str, beg, sublen);
+    rb_gc_force_recycle(str);
+    return ptr;
+}
+
 /*
  * call-seq:
  *   Readline.delete_text([start[, length]]) -> self
@@ -703,20 +713,20 @@ readline_s_delete_text(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 0, 2);
     if (rl_line_buffer) {
-        char *p, *ptr = rl_line_buffer;
-        long beg = 0, len = strlen(rl_line_buffer);
-        VALUE str = rb_enc_str_new_static(ptr, len, rb_locale_encoding());
-        OBJ_FREEZE(str);
+        const char *p, *ptr = rl_line_buffer;
+        long beg = 0, len = strlen(ptr);
+        const char *end = ptr + len;
+        rb_encoding *enc = rb_locale_encoding();
         if (argc == 2) {
             beg = NUM2LONG(argv[0]);
             len = NUM2LONG(argv[1]);
           num_pos:
-            p = rb_str_subpos(str, beg, &len);
+            p = str_subpos(ptr, end, beg, &len, enc);
             if (!p) rb_raise(rb_eArgError, "invalid index");
             beg = p - ptr;
         }
         else if (argc == 1) {
-            len = rb_str_strlen(str);
+            len = rb_enc_strlen(ptr, ptr + len, enc);
             if (!rb_range_beg_len(argv[0], &beg, &len, len, 1)) {
                 beg = NUM2LONG(argv[0]);
                 goto num_pos;
@@ -2081,3 +2091,9 @@ Init_readline(void)
     rb_gc_register_address(&readline_instream);
     rb_gc_register_address(&readline_outstream);
 }
+
+/*
+ * Local variables:
+ * indent-tabs-mode: nil
+ * end:
+ */
