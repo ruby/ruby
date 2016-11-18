@@ -432,20 +432,9 @@ m_##n##_bang(VALUE x)\
     return rb_math_##n(x);\
 }
 
-#define imp2(n) \
-inline static VALUE \
-m_##n##_bang(VALUE x, VALUE y)\
-{\
-    return rb_math_##n(x, y);\
-}
-
-imp2(atan2)
 imp1(cos)
 imp1(cosh)
 imp1(exp)
-imp2(hypot)
-
-#define m_hypot(x,y) m_hypot_bang((x),(y))
 
 static VALUE
 m_log_bang(VALUE x)
@@ -1015,7 +1004,7 @@ nucomp_abs(VALUE self)
 	    a = f_to_f(a);
 	return a;
     }
-    return m_hypot(dat->real, dat->imag);
+    return rb_math_hypot(dat->real, dat->imag);
 }
 
 /*
@@ -1049,7 +1038,7 @@ static VALUE
 nucomp_arg(VALUE self)
 {
     get_dat1(self);
-    return m_atan2_bang(dat->imag, dat->real);
+    return rb_math_atan2(dat->imag, dat->real);
 }
 
 /*
