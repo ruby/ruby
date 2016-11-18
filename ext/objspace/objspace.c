@@ -33,7 +33,7 @@
  *  This method is only expected to work with C Ruby.
  *
  *  From Ruby 2.2, memsize_of(obj) returns a memory size includes
-  * sizeof(RVALUE).
+ *  sizeof(RVALUE).
  */
 
 static VALUE
