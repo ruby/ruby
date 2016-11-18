@@ -1151,8 +1151,14 @@ enum ruby_num_rounding_mode {
     RUBY_NUM_ROUND_HALF_EVEN,
     RUBY_NUM_ROUND_DEFAULT = ROUND_DEFAULT
 };
-#define ROUND_TO(mode, up, even) \
-    ((mode) == RUBY_NUM_ROUND_HALF_EVEN ? even : up)
+#define ROUND_TO(mode, even, up) \
+    ((mode) == RUBY_NUM_ROUND_HALF_EVEN ? even : \
+     up)
+#define ROUND_FUNC(mode, name) \
+    ROUND_TO(mode, name##_half_even, name##_half_up)
+#define ROUND_CALL(mode, name, args) \
+    ROUND_TO(mode, name##_half_even args, \
+	     name##_half_up args)
 
 int rb_num_to_uint(VALUE val, unsigned int *ret);
 VALUE ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl);

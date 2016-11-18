@@ -1481,9 +1481,7 @@ nurat_round_n(int argc, VALUE *argv, VALUE self)
     enum ruby_num_rounding_mode mode = (
 	argc = rb_scan_args(argc, argv, "*:", NULL, &opt),
 	rb_num_get_rounding_option(opt));
-    VALUE (*round_func)(VALUE) =
-	ROUND_TO(mode,
-		 nurat_round_half_up, nurat_round_half_even);
+    VALUE (*round_func)(VALUE) = ROUND_FUNC(mode, nurat_round);
     return f_round_common(argc, argv, self, round_func);
 }
 

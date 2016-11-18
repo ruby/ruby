@@ -99,6 +99,7 @@ round_half_up(double x, double s)
 
 #ifdef HAVE_ROUND
     f = round(xs);
+    if (s == 1.0) return f;
 #endif
     if (x > 0) {
 #ifndef HAVE_ROUND
@@ -2033,6 +2034,18 @@ int_round_half_up(SIGNED_VALUE x, SIGNED_VALUE y)
     return (x + y / 2) / y * y;
 }
 
+static int
+int_half_p_half_even(VALUE num, VALUE n, VALUE f)
+{
+    return (int)int_odd_p(rb_int_idiv(n, f));
+}
+
+static int
+int_half_p_half_up(VALUE num, VALUE n, VALUE f)
+{
+    return int_pos_p(num);
+}
+
 /*
  * Assumes num is an Integer, ndigits <= 0
  */
@@ -2050,9 +2063,7 @@ rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode)
 	SIGNED_VALUE x = FIX2LONG(num), y = FIX2LONG(f);
 	int neg = x < 0;
 	if (neg) x = -x;
-	x = ROUND_TO(mode,
-		     int_round_half_up(x, y),
-		     int_round_half_even(x, y));
+	x = ROUND_CALL(mode, int_round, (x, y));
 	if (neg) x = -x;
 	return LONG2NUM(x);
     }
@@ -2065,10 +2076,7 @@ rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode)
     n = rb_int_minus(num, r);
     r = rb_int_cmp(r, h);
     if (FIXNUM_POSITIVE_P(r) ||
-	(FIXNUM_ZERO_P(r) &&
-	 ROUND_TO(mode,
-		  int_pos_p(num),
-		  (SIGNED_VALUE) int_odd_p(rb_int_idiv(n, f))))) {
+	(FIXNUM_ZERO_P(r) && ROUND_CALL(mode, int_half_p, (num, n, f)))) {
 	n = rb_int_plus(n, f);
     }
     return n;
@@ -2199,14 +2207,12 @@ flo_round(int argc, VALUE *argv, VALUE num)
     }
     number  = RFLOAT_VALUE(num);
     if (ndigits == 0) {
-	x = ROUND_TO(mode,
-		     round(number), round_half_even(number, 1.0));
+	x = ROUND_CALL(mode, round, (number, 1.0));
 	return dbl2ival(x);
     }
     if (float_invariant_round(number, ndigits, &num)) return num;
     f = pow(10, ndigits);
-    x = ROUND_TO(mode,
-		 round_half_up(number, f), round_half_even(number, f));
+    x = ROUND_CALL(mode, round, (number, f));
     return DBL2NUM(x / f);
 }
 
