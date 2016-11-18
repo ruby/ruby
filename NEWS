@@ -87,7 +87,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Integer#digits for extracting columns of place-value notation [Feature #12447]
 
-  * Int#round now takes an optional keyword argument, half option, and the
+  * Integer#round now takes an optional keyword argument, half option, and the
     default behavior is round-to-nearest-even now.  [Bug #12548]
 
 * IO
