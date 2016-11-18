@@ -620,10 +620,12 @@ nurat_denominator(VALUE self)
  *
  * Negates +rat+.
  */
-static VALUE
-nurat_negate(VALUE self)
+VALUE
+rb_rational_uminus(VALUE self)
 {
+    const int unused = (assert(RB_TYPE_P(self, T_RATIONAL)), 0);
     get_dat1(self);
+    (void)unused;
     return f_rational_new2(CLASS_OF(self), rb_int_uminus(dat->num), dat->den);
 }
 
@@ -1644,7 +1646,7 @@ nurat_rationalize(int argc, VALUE *argv, VALUE self)
 	return self;
 
     if (nurat_negative_p(self))
-	return nurat_negate(nurat_rationalize(argc, argv, nurat_negate(self)));
+	return rb_rational_uminus(nurat_rationalize(argc, argv, rb_rational_uminus(self)));
 
     rb_scan_args(argc, argv, "01", &e);
     e = f_abs(e);
@@ -2200,7 +2202,7 @@ float_rationalize(int argc, VALUE *argv, VALUE self)
     double d = RFLOAT_VALUE(self);
 
     if (d < 0.0)
-        return nurat_negate(float_rationalize(argc, argv, DBL2NUM(-d)));
+        return rb_rational_uminus(float_rationalize(argc, argv, DBL2NUM(-d)));
 
     rb_scan_args(argc, argv, "01", &e);
 
@@ -2339,7 +2341,7 @@ read_num(const char **s, int numsign, int strict,
     }
 
     if (numsign == '-')
-	*num = nurat_negate(*num);
+	*num = rb_rational_uminus(*num);
     if (!NIL_P(exp)) {
 	VALUE l = f_expt10(exp);
 	*num = nurat_mul(*num, l);
@@ -2637,7 +2639,7 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "numerator", nurat_numerator, 0);
     rb_define_method(rb_cRational, "denominator", nurat_denominator, 0);
 
-    rb_define_method(rb_cRational, "-@", nurat_negate, 0);
+    rb_define_method(rb_cRational, "-@", rb_rational_uminus, 0);
     rb_define_method(rb_cRational, "+", rb_rational_plus, 1);
     rb_define_method(rb_cRational, "-", nurat_sub, 1);
     rb_define_method(rb_cRational, "*", nurat_mul, 1);

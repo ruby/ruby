@@ -144,7 +144,27 @@ f_sub(VALUE x, VALUE y)
 fun1(abs)
 fun1(arg)
 fun1(denominator)
-fun1(negate)
+
+static VALUE nucomp_negate(VALUE self);
+
+inline static VALUE
+f_negate(VALUE x)
+{
+    if (RB_INTEGER_TYPE_P(x)) {
+        return rb_int_uminus(x);
+    }
+    else if (RB_FLOAT_TYPE_P(x)) {
+        return rb_float_uminus(x);
+    }
+    else if (RB_TYPE_P(x, T_RATIONAL)) {
+        return rb_rational_uminus(x);
+    }
+    else if (RB_TYPE_P(x, T_COMPLEX)) {
+        return nucomp_negate(x);
+    }
+    return rb_funcall(x, id_negate, 0);
+}
+
 fun1(numerator)
 fun1(real_p)
 
@@ -917,7 +937,7 @@ nucomp_expt(VALUE self, VALUE other)
 	    }
 	    return z;
 	}
-	return f_expt(f_reciprocal(self), f_negate(other));
+	return f_expt(f_reciprocal(self), rb_int_uminus(other));
     }
     if (k_numeric_p(other) && f_real_p(other)) {
 	VALUE r, theta;
