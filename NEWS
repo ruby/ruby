@@ -332,6 +332,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * st_table (st.c) internal data structure is improved. [Feature #12142]
 
+* Rational is extensively optimized. [Feature #12484]
+
 === Miscellaneous changes
 
 * ChangeLog is removed from the repository.
