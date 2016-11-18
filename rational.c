@@ -32,7 +32,7 @@
 
 VALUE rb_cRational;
 
-static ID id_abs, id_idiv, id_integer_p, id_negate, id_to_i,
+static ID id_abs, id_idiv, id_integer_p, id_to_i,
     id_i_num, id_i_den;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
@@ -137,7 +137,6 @@ f_abs(VALUE x)
 }
 
 fun1(integer_p)
-fun1(negate)
 
 inline static VALUE
 f_to_i(VALUE x)
@@ -415,8 +414,8 @@ nurat_s_new_bang(int argc, VALUE *argv, VALUE klass)
 	    den = f_to_i(den);
 
         if (INT_NEGATIVE_P(den)) {
-	    num = f_negate(num);
-	    den = f_negate(den);
+	    num = rb_int_uminus(num);
+	    den = rb_int_uminus(den);
         }
         else if (INT_ZERO_P(den)) {
             rb_num_zerodiv();
@@ -469,9 +468,11 @@ nurat_int_value(VALUE num)
 static void
 nurat_canonicalize(VALUE *num, VALUE *den)
 {
+    assert(num != NULL && RB_INTEGER_TYPE_P(*num));
+    assert(den != NULL && RB_INTEGER_TYPE_P(*den));
     if (INT_NEGATIVE_P(*den)) {
-	*num = f_negate(*num);
-	*den = f_negate(*den);
+        *num = rb_int_uminus(*num);
+        *den = rb_int_uminus(*den);
     }
     else if (INT_ZERO_P(*den)) {
         rb_num_zerodiv();
@@ -2615,7 +2616,6 @@ Init_Rational(void)
     id_abs = rb_intern("abs");
     id_idiv = rb_intern("div");
     id_integer_p = rb_intern("integer?");
-    id_negate = rb_intern("-@");
     id_to_i = rb_intern("to_i");
     id_i_num = rb_intern("@numerator");
     id_i_den = rb_intern("@denominator");
