@@ -311,7 +311,7 @@ module Net
     # Constructs a socket with +host+ and +port+.
     #
     # If SOCKSSocket is defined and the environment (ENV) defines
-    # SOCKS_SERVER, then a SOCKSSocket is returned, else a TCPSocket is
+    # SOCKS_SERVER, then a SOCKSSocket is returned, else a Socket is
     # returned.
     def open_socket(host, port) # :nodoc:
       return Timeout.timeout(@open_timeout, Net::OpenTimeout) {
@@ -319,7 +319,7 @@ module Net
           @passive = true
           sock = SOCKSSocket.open(host, port)
         else
-          sock = TCPSocket.open(host, port)
+          sock = Socket.tcp(host, port)
         end
       }
     end
@@ -507,7 +507,7 @@ module Net
 
     # Constructs a TCPServer socket
     def makeport # :nodoc:
-      TCPServer.open(@bare_sock.local_address.ip_address, 0)
+      Addrinfo.tcp(@bare_sock.local_address.ip_address, 0).listen
     end
     private :makeport
 
@@ -557,7 +557,7 @@ module Net
           if !resp.start_with?("1")
             raise FTPReplyError, resp
           end
-          conn = sock.accept
+          conn, peeraddr = sock.accept
           sock.shutdown(Socket::SHUT_WR) rescue nil
           sock.read rescue nil
         ensure
