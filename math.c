@@ -63,7 +63,7 @@ VALUE rb_eMathDomainError;
  */
 
 static VALUE
-math_atan2(VALUE obj, VALUE y, VALUE x)
+math_atan2(VALUE unused_obj, VALUE y, VALUE x)
 {
     double dx, dy;
     dx = Get_Double(x);
@@ -108,7 +108,7 @@ math_atan2(VALUE obj, VALUE y, VALUE x)
  */
 
 static VALUE
-math_cos(VALUE obj, VALUE x)
+math_cos(VALUE unused_obj, VALUE x)
 {
     return DBL2NUM(cos(Get_Double(x)));
 }
@@ -129,7 +129,7 @@ math_cos(VALUE obj, VALUE x)
  */
 
 static VALUE
-math_sin(VALUE obj, VALUE x)
+math_sin(VALUE unused_obj, VALUE x)
 {
     return DBL2NUM(sin(Get_Double(x)));
 }
@@ -150,7 +150,7 @@ math_sin(VALUE obj, VALUE x)
  */
 
 static VALUE
-math_tan(VALUE obj, VALUE x)
+math_tan(VALUE unused_obj, VALUE x)
 {
     return DBL2NUM(tan(Get_Double(x)));
 }
@@ -170,7 +170,7 @@ math_tan(VALUE obj, VALUE x)
  */
 
 static VALUE
-math_acos(VALUE obj, VALUE x)
+math_acos(VALUE unused_obj, VALUE x)
 {
     double d;
 
@@ -194,7 +194,7 @@ math_acos(VALUE obj, VALUE x)
  */
 
 static VALUE
-math_asin(VALUE obj, VALUE x)
+math_asin(VALUE unused_obj, VALUE x)
 {
     double d;
 
@@ -218,7 +218,7 @@ math_asin(VALUE obj, VALUE x)
  */
 
 static VALUE
-math_atan(VALUE obj, VALUE x)
+math_atan(VALUE unused_obj, VALUE x)
 {
     return DBL2NUM(atan(Get_Double(x)));
 }
@@ -246,7 +246,7 @@ cosh(double x)
  */
 
 static VALUE
-math_cosh(VALUE obj, VALUE x)
+math_cosh(VALUE unused_obj, VALUE x)
 {
     return DBL2NUM(cosh(Get_Double(x)));
 }
@@ -274,7 +274,7 @@ sinh(double x)
  */
 
 static VALUE
-math_sinh(VALUE obj, VALUE x)
+math_sinh(VALUE unused_obj, VALUE x)
 {
     return DBL2NUM(sinh(Get_Double(x)));
 }
@@ -309,7 +309,7 @@ tanh(double x)
  */
 
 static VALUE
-math_tanh(VALUE obj, VALUE x)
+math_tanh(VALUE unused_obj, VALUE x)
 {
     return DBL2NUM(tanh(Get_Double(x)));
 }
@@ -329,7 +329,7 @@ math_tanh(VALUE obj, VALUE x)
  */
 
 static VALUE
-math_acosh(VALUE obj, VALUE x)
+math_acosh(VALUE unused_obj, VALUE x)
 {
     double d;
 
@@ -354,7 +354,7 @@ math_acosh(VALUE obj, VALUE x)
  */
 
 static VALUE
-math_asinh(VALUE obj, VALUE x)
+math_asinh(VALUE unused_obj, VALUE x)
 {
     return DBL2NUM(asinh(Get_Double(x)));
 }
@@ -374,7 +374,7 @@ math_asinh(VALUE obj, VALUE x)
  */
 
 static VALUE
-math_atanh(VALUE obj, VALUE x)
+math_atanh(VALUE unused_obj, VALUE x)
 {
     double d;
 
@@ -404,7 +404,7 @@ math_atanh(VALUE obj, VALUE x)
  */
 
 static VALUE
-math_exp(VALUE obj, VALUE x)
+math_exp(VALUE unused_obj, VALUE x)
 {
     return DBL2NUM(exp(Get_Double(x)));
 }
@@ -449,7 +449,7 @@ static double math_log1(VALUE x);
  */
 
 static VALUE
-math_log(int argc, const VALUE *argv, VALUE obj)
+math_log(int argc, const VALUE *argv, VALUE unused_obj)
 {
     VALUE x, base;
     double d;
@@ -523,7 +523,7 @@ extern double log2(double);
  */
 
 static VALUE
-math_log2(VALUE obj, VALUE x)
+math_log2(VALUE unused_obj, VALUE x)
 {
     size_t numbits;
     double d = get_double_rshift(x, &numbits);
@@ -553,7 +553,7 @@ math_log2(VALUE obj, VALUE x)
  */
 
 static VALUE
-math_log10(VALUE obj, VALUE x)
+math_log10(VALUE unused_obj, VALUE x)
 {
     size_t numbits;
     double d = get_double_rshift(x, &numbits);
@@ -593,7 +593,7 @@ math_log10(VALUE obj, VALUE x)
  */
 
 static VALUE
-math_sqrt(VALUE obj, VALUE x)
+math_sqrt(VALUE unused_obj, VALUE x)
 {
     return rb_math_sqrt(x);
 }
@@ -673,7 +673,7 @@ rb_math_sqrt(VALUE x)
  */
 
 static VALUE
-math_cbrt(VALUE obj, VALUE x)
+math_cbrt(VALUE unused_obj, VALUE x)
 {
     return DBL2NUM(cbrt(Get_Double(x)));
 }
@@ -690,7 +690,7 @@ math_cbrt(VALUE obj, VALUE x)
  */
 
 static VALUE
-math_frexp(VALUE obj, VALUE x)
+math_frexp(VALUE unused_obj, VALUE x)
 {
     double d;
     int exp;
@@ -710,7 +710,7 @@ math_frexp(VALUE obj, VALUE x)
  */
 
 static VALUE
-math_ldexp(VALUE obj, VALUE x, VALUE n)
+math_ldexp(VALUE unused_obj, VALUE x, VALUE n)
 {
     return DBL2NUM(ldexp(Get_Double(x), NUM2INT(n)));
 }
@@ -726,7 +726,7 @@ math_ldexp(VALUE obj, VALUE x, VALUE n)
  */
 
 static VALUE
-math_hypot(VALUE obj, VALUE x, VALUE y)
+math_hypot(VALUE unused_obj, VALUE x, VALUE y)
 {
     return DBL2NUM(hypot(Get_Double(x), Get_Double(y)));
 }
@@ -746,7 +746,7 @@ math_hypot(VALUE obj, VALUE x, VALUE y)
  */
 
 static VALUE
-math_erf(VALUE obj, VALUE x)
+math_erf(VALUE unused_obj, VALUE x)
 {
     return DBL2NUM(erf(Get_Double(x)));
 }
@@ -766,7 +766,7 @@ math_erf(VALUE obj, VALUE x)
  */
 
 static VALUE
-math_erfc(VALUE obj, VALUE x)
+math_erfc(VALUE unused_obj, VALUE x)
 {
     return DBL2NUM(erfc(Get_Double(x)));
 }
@@ -847,7 +847,7 @@ ruby_lgamma_r(const double d, int *sign)
  */
 
 static VALUE
-math_gamma(VALUE obj, VALUE x)
+math_gamma(VALUE unused_obj, VALUE x)
 {
     static const double fact_table[] = {
         /* fact(0) */ 1.0,
@@ -906,7 +906,7 @@ math_gamma(VALUE obj, VALUE x)
  */
 
 static VALUE
-math_lgamma(VALUE obj, VALUE x)
+math_lgamma(VALUE unused_obj, VALUE x)
 {
     double d;
     int sign=1;
@@ -926,14 +926,14 @@ math_lgamma(VALUE obj, VALUE x)
 VALUE \
 rb_math_##n(VALUE x)\
 {\
-    return math_##n(rb_mMath, x);\
+    return math_##n(0, x);\
 }
 
 #define exp2(n) \
 VALUE \
 rb_math_##n(VALUE x, VALUE y)\
 {\
-    return math_##n(rb_mMath, x, y);\
+    return math_##n(0, x, y);\
 }
 
 exp2(atan2)
@@ -945,7 +945,7 @@ exp2(hypot)
 VALUE
 rb_math_log(int argc, const VALUE *argv)
 {
-    return math_log(argc, argv, rb_mMath);
+    return math_log(argc, argv, 0);
 }
 
 exp1(sin)
