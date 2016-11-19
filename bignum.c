@@ -6691,6 +6691,12 @@ rb_big_abs(VALUE x)
     return x;
 }
 
+int
+rb_big_sign(VALUE x)
+{
+    return BIGNUM_SIGN(x);
+}
+
 size_t
 rb_big_size(VALUE big)
 {
