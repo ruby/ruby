@@ -4554,6 +4554,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "dig", rb_hash_dig, -1);
 
     rb_define_method(rb_cHash, "+", rb_hash_merge, 1);
+
     rb_define_method(rb_cHash, "<=", rb_hash_le, 1);
     rb_define_method(rb_cHash, "<", rb_hash_lt, 1);
     rb_define_method(rb_cHash, ">=", rb_hash_ge, 1);
