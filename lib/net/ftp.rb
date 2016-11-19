@@ -174,20 +174,22 @@ module Net
     #
     # The available options are:
     #
-    # port::    Port number (default value is 21)
-    # ssl::     If options[:ssl] is true, then an attempt will be made
-    #           to use SSL (now TLS) to connect to the server.  For this to
-    #           work OpenSSL [OSSL] and the Ruby OpenSSL [RSSL] extensions
-    #           need to be installed.  If options[:ssl] is a hash, it's
-    #           passed to OpenSSL::SSL::SSLContext#set_params as parameters.
+    # port::      Port number (default value is 21)
+    # ssl::       If options[:ssl] is true, then an attempt will be made
+    #             to use SSL (now TLS) to connect to the server.  For this
+    #             to work OpenSSL [OSSL] and the Ruby OpenSSL [RSSL]
+    #             extensions need to be installed.  If options[:ssl] is a
+    #             hash, it's passed to OpenSSL::SSL::SSLContext#set_params
+    #             as parameters.
     # private_data_connection::  If true, TLS is used for data connections.
     #                            Default: +true+ when options[:ssl] is true.
-    # user::    Username for login.  If options[:user] is the string
-    #           "anonymous" and the options[:password] is +nil+,
-    #           "anonymous@" is used as a password.
-    # passwd::  Password for login.
-    # acct::    Account information for ACCT.
-    # passive:: When +true+, the connection is in passive mode. Default: +true+.
+    # username::  Username for login.  If options[:user] is the string
+    #             "anonymous" and the options[:password] is +nil+,
+    #             "anonymous@" is used as a password.
+    # password::  Password for login.
+    # account::   Account information for ACCT.
+    # passive::   When +true+, the connection is in passive mode. Default:
+    #             +true+.
     # debug_mode::  When +true+, all traffic to and from the server is
     #               written to +$stdout+.  Default: +false+.
     #
@@ -198,9 +200,9 @@ module Net
       rescue NoMethodError
         # for backward compatibility
         options = {}
-        options[:user] = user_or_options
-        options[:passwd] = passwd
-        options[:acct] = acct
+        options[:username] = user_or_options
+        options[:password] = passwd
+        options[:account] = acct
       end
       @host = nil
       if options[:ssl]
@@ -250,8 +252,8 @@ module Net
           # the number of arguments passed to connect....
           connect(host)
         end
-        if options[:user]
-          login(options[:user], options[:passwd], options[:acct])
+        if options[:username]
+          login(options[:username], options[:password], options[:account])
         end
       end
     end

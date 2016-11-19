@@ -239,9 +239,9 @@ class FTPTest < Test::Unit::TestCase
       begin
         ftp = Net::FTP.new(SERVER_ADDR,
                            port: server.port,
-                           user: "foo",
-                           passwd: "bar",
-                           acct: "baz")
+                           username: "foo",
+                           password: "bar",
+                           account: "baz")
         assert_equal("USER foo\r\n", commands.shift)
         assert_equal("PASS bar\r\n", commands.shift)
         assert_equal("ACCT baz\r\n", commands.shift)
@@ -267,7 +267,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("200 Switching to Binary mode.\r\n")
     }
     begin
-      Net::FTP.open(SERVER_ADDR, port: server.port, user: "anonymous") do
+      Net::FTP.open(SERVER_ADDR, port: server.port, username: "anonymous") do
       end
       assert_equal("USER anonymous\r\n", commands.shift)
       assert_equal("PASS anonymous@\r\n", commands.shift)
