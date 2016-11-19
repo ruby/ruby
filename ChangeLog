@@ -1,3 +1,9 @@
+Sat Nov 19 14:06:07 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* iseq.c (proc_dup): don't duplicate sym_procs.  [Fix GH-1479]
+	  [ruby-core:78100] [Bug #12927]
+	  Based on the patch provided by Emiliano Ritiro.
+
 Sat Nov 19 11:48:47 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* iseq.c (iseqw_s_compile_file): deal with syntax error as well as

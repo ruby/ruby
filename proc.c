@@ -65,11 +65,13 @@ typedef struct {
     VALUE env[3]; /* me, specval, envval */
 } cfunc_proc_t;
 
+#define IS_SYM_PROC(proc) (proc->block.ep == ((const cfunc_proc_t *)proc)->env+1)
+
 static size_t
 proc_memsize(const void *ptr)
 {
     const rb_proc_t *proc = ptr;
-    if (proc->block.ep == ((const cfunc_proc_t *)ptr)->env+1)
+    if (IS_SYM_PROC(proc))
 	return sizeof(cfunc_proc_t);
     return sizeof(rb_proc_t);
 }
@@ -111,6 +113,8 @@ proc_dup(VALUE self)
     rb_proc_t *dst;
 
     GetProcPtr(self, src);
+    if (IS_SYM_PROC(src))
+	return self;
     procval = rb_proc_alloc(rb_cProc);
     GetProcPtr(procval, dst);
     *dst = *src;
