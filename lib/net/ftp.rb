@@ -185,7 +185,7 @@ module Net
     # user::    Username for login.  If options[:user] is the string
     #           "anonymous" and the options[:password] is +nil+,
     #           "anonymous@" is used as a password.  If options[:user] is
-    #           +nil+, 
+    #           +nil+,
     # passwd::  Password for login.
     # acct::    Account information for ACCT.
     # passive:: When +true+, the connection is in passive mode. Default: +true+.
