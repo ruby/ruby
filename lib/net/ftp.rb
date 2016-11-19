@@ -1281,7 +1281,7 @@ module Net
     def close
       if @sock and not @sock.closed?
         begin
-          @bare_sock.shutdown(Socket::SHUT_WR) rescue nil
+          @sock.shutdown(Socket::SHUT_WR) rescue nil
           orig, self.read_timeout = self.read_timeout, 3
           @sock.read rescue nil
         ensure
@@ -1404,6 +1404,10 @@ module Net
       end
 
       def shutdown(*args)
+        if @io.respond_to?(:stop)
+          # shut down the TLS connection gracefully.
+          @io.stop
+        end
         @io.to_io.shutdown(*args)
       end
 
