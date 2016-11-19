@@ -5,9 +5,9 @@ require 'test/unit'
 
 module Net
   class TestSMTP < Test::Unit::TestCase
-    CA_FILE = File.expand_path("../imap/cacert.pem", __dir__)
-    SERVER_KEY = File.expand_path("../imap/server.key", __dir__)
-    SERVER_CERT = File.expand_path("../imap/server.crt", __dir__)
+    CA_FILE = File.expand_path("../fixtures/cacert.pem", __dir__)
+    SERVER_KEY = File.expand_path("../fixtures/server.key", __dir__)
+    SERVER_CERT = File.expand_path("../fixtures/server.crt", __dir__)
 
     class FakeSocket
       attr_reader :write_io
