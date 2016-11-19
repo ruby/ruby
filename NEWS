@@ -201,6 +201,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * New method: Net::HTTP.post [Feature #12375]
 
+* Net::FTP
+
+  * Support TLS (RFC 4217).
+  * Support hash style options for Net::FTP.new.
+
 * OpenSSL
 
   * OpenSSL is extracted as a gem and the upstream has been migrated to
