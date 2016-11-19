@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'tempfile'
 
 class TestISeq < Test::Unit::TestCase
   ISeq = RubyVM::InstructionSequence
@@ -211,5 +212,22 @@ class TestISeq < Test::Unit::TestCase
       }.call
       at_exit { assert_equal([:n, :x], Segfault.new.segfault.sort) }
     end;
+  end
+
+  def test_compile_file_error
+    Tempfile.create(%w"test_iseq .rb") do |f|
+      f.puts "end"
+      f.close
+      path = f.path
+      assert_in_out_err(%W[- #{path}], "#{<<-"begin;"}\n#{<<-"end;"}", /compile error/, /keyword_end/, success: true)
+      begin;
+        path = ARGV[0]
+        begin
+          RubyVM::InstructionSequence.compile_file(path)
+        rescue SyntaxError => e
+          puts e.message
+        end
+      end;
+    end
   end
 end

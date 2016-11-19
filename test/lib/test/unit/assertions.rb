@@ -539,7 +539,8 @@ EOT
         faildesc
       end
 
-      def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil, **opt)
+      def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil,
+                            success: nil, **opt)
         stdout, stderr, status = EnvUtil.invoke_ruby(args, test_stdin, true, true, **opt)
         if signo = status.termsig
           EnvUtil.diagnostic_reports(Signal.signame(signo), EnvUtil.rubybin, status.pid, Time.now)
@@ -558,6 +559,15 @@ EOT
                   assert_equal(exp, act.lines.map {|l| l.chomp })
                 else
                   assert_pattern_list(exp, act)
+                end
+              end
+            end
+            unless success.nil?
+              a.for("success?") do
+                if success
+                  assert_predicate(status, :success?)
+                else
+                  assert_not_predicate(status, :success?)
                 end
               end
             end

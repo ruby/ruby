@@ -812,8 +812,7 @@ static VALUE
 iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
 {
     VALUE file, line = INT2FIX(1), opt = Qnil;
-    VALUE parser;
-    VALUE f;
+    VALUE parser, f, exc = Qnil;
     NODE *node;
     const char *fname;
     rb_compile_option_t option;
@@ -827,8 +826,10 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
 
     parser = rb_parser_new();
     node = rb_parser_compile_file(parser, fname, f, NUM2INT(line));
+    if (!node) exc = GET_THREAD()->errinfo;
 
     rb_io_close(f);
+    if (!node) rb_exc_raise(exc);
 
     make_compile_option(&option, opt);
 
