@@ -557,7 +557,7 @@ module Net
           if !resp.start_with?("1")
             raise FTPReplyError, resp
           end
-          conn, peeraddr = sock.accept
+          conn, = sock.accept
           sock.shutdown(Socket::SHUT_WR) rescue nil
           sock.read rescue nil
         ensure
