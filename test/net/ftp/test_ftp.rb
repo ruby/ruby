@@ -114,7 +114,7 @@ class FTPTest < Test::Unit::TestCase
     sock = OpenStruct.new
     sock.remote_address = OpenStruct.new
     sock.remote_address.ip_address = "1080:0000:0000:0000:0008:0800:200c:417a"
-    ftp.instance_variable_set(:@sock, sock)
+    ftp.instance_variable_set(:@bare_sock, sock)
     host, port = ftp.send(:parse229, "229 Entering Passive Mode (|||3106|)")
     assert_equal("1080:0000:0000:0000:0008:0800:200c:417a", host)
     assert_equal(3106, port)

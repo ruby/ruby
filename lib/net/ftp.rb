@@ -1362,7 +1362,7 @@ module Net
         raise FTPReplyError, resp
       end
       if m = /\((?<d>[!-~])\k<d>\k<d>(?<port>\d+)\k<d>\)/.match(resp)
-        return @sock.remote_address.ip_address, m["port"].to_i
+        return @bare_sock.remote_address.ip_address, m["port"].to_i
       else
         raise FTPProtoError, resp
       end
