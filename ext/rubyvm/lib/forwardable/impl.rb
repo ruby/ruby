@@ -4,7 +4,7 @@ module Forwardable
 
   def self._valid_method?(method)
     iseq = RubyVM::InstructionSequence.compile("().#{method}", nil, nil, 0, false)
-  rescue SyntaxError => e
+  rescue SyntaxError
     false
   else
     iseq.to_a.dig(-1, 1, 1, :mid) == method.to_sym
