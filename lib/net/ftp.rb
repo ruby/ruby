@@ -1406,11 +1406,13 @@ module Net
       end
 
       def shutdown(*args)
-        if @io.respond_to?(:stop)
-          # shut down the TLS connection gracefully.
-          @io.stop
+        if defined?(OpenSSL::SSL::SSLSocket) &&
+            @io.is_a?(OpenSSL::SSL::SSLSocket)
+          # If @io is an SSLSocket, SSL_shutdown() will be called from
+          # SSLSocket#close, so shutdown(2) should not be called.
+        else
+          @io.shutdown(*args)
         end
-        @io.to_io.shutdown(*args)
       end
 
       def read(len = nil)
