@@ -18,7 +18,7 @@
  * versions */
 #define PROC_NEW_REQUIRES_BLOCK 0
 
-#if !defined(__GNUC__) || __GNUC__ < 5
+#if !defined(__GNUC__) || __GNUC__ < 5 || defined(__MINGW32__)
 # define NO_CLOBBERED(v) (*(volatile VALUE *)&(v))
 #else
 # define NO_CLOBBERED(v) (v)
