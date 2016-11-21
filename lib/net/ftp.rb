@@ -362,7 +362,7 @@ module Net
           begin
             voidcmd("AUTH TLS")
             ssl_sock = start_tls_session(@bare_sock)
-            @sock = BufferedSocket.new(ssl_sock, read_timeout: @read_timeout)
+            @sock = BufferedSSLSocket.new(ssl_sock, read_timeout: @read_timeout)
             if @private_data_connection
               voidcmd("PBSZ 0")
               voidcmd("PROT P")
@@ -565,9 +565,11 @@ module Net
         end
       end
       if @private_data_connection
-        conn = start_tls_session(conn)
+        return BufferedSSLSocket.new(start_tls_session(conn),
+                                     read_timeout: @read_timeout)
+      else
+        return BufferedSocket.new(conn, read_timeout: @read_timeout)
       end
-      return BufferedSocket.new(conn, read_timeout: @read_timeout)
     end
     private :transfercmd
 
@@ -1399,20 +1401,10 @@ module Net
     end
 
     class BufferedSocket < BufferedIO
-      [:local_address, :remote_address, :addr, :peeraddr, :send].each do |method|
+      [:local_address, :remote_address, :addr, :peeraddr, :send, :shutdown].each do |method|
         define_method(method) { |*args|
           @io.__send__(method, *args)
         }
-      end
-
-      def shutdown(*args)
-        if defined?(OpenSSL::SSL::SSLSocket) &&
-            @io.is_a?(OpenSSL::SSL::SSLSocket)
-          # If @io is an SSLSocket, SSL_shutdown() will be called from
-          # SSLSocket#close, so shutdown(2) should not be called.
-        else
-          @io.shutdown(*args)
-        end
       end
 
       def read(len = nil)
@@ -1440,6 +1432,16 @@ module Net
           raise EOFError, "end of file reached"
         end
         return line
+      end
+    end
+
+    if defined?(OpenSSL::SSL::SSLSocket)
+      class BufferedSSLSocket <  BufferedSocket
+        def shutdown(*args)
+          # SSL_shutdown() will be called from SSLSocket#close, and
+          # SSL_shutdonw() will send the "close notify" alert to the peer,
+          # so shutdown(2) should not be called.
+        end
       end
     end
     # :startdoc:
