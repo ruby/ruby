@@ -183,7 +183,7 @@ module Net
     #             as parameters.
     # private_data_connection::  If true, TLS is used for data connections.
     #                            Default: +true+ when options[:ssl] is true.
-    # username::  Username for login.  If options[:user] is the string
+    # username::  Username for login.  If options[:username] is the string
     #             "anonymous" and the options[:password] is +nil+,
     #             "anonymous@" is used as a password.
     # password::  Password for login.
