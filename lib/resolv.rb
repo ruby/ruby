@@ -25,7 +25,7 @@ end
 #
 #   Resolv::DNS.open do |dns|
 #     ress = dns.getresources "www.ruby-lang.org", Resolv::DNS::Resource::IN::A
-#     p ress.map { |r| r.address }
+#     p ress.map(&:address)
 #     ress = dns.getresources "ruby-lang.org", Resolv::DNS::Resource::IN::MX
 #     p ress.map { |r| [r.exchange.to_s, r.preference] }
 #   end
@@ -722,9 +722,7 @@ class Resolv
       def close
         socks = @socks
         @socks = nil
-        if socks
-          socks.each {|sock| sock.close }
-        end
+        socks.each(&:close) if socks
       end
 
       class Sender # :nodoc:
@@ -937,9 +935,7 @@ class Resolv
           f.each {|line|
             line.sub!(/[#;].*/, '')
             keyword, *args = line.split(/\s+/)
-            args.each { |arg|
-              arg.untaint
-            }
+            args.each(&:untaint)
             next unless keyword
             case keyword
             when 'nameserver'
