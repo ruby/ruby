@@ -675,10 +675,10 @@ class Socket < BasicSocket
         end
       }
     rescue Errno::EADDRINUSE
-      sockets.each {|s| s.close }
+      sockets.each(&:close)
       retry
     rescue Exception
-      sockets.each {|s| s.close }
+      sockets.each(&:close)
       raise
     end
     sockets
@@ -695,7 +695,7 @@ class Socket < BasicSocket
         s.listen(Socket::SOMAXCONN)
       }
     rescue Exception
-      sockets.each {|s| s.close }
+      sockets.each(&:close)
       raise
     end
     sockets
@@ -758,7 +758,7 @@ class Socket < BasicSocket
           raise last_error
         end
       rescue Exception
-        sockets.each {|s| s.close }
+        sockets.each(&:close)
         raise
       end
     end
@@ -766,7 +766,7 @@ class Socket < BasicSocket
       begin
         yield sockets
       ensure
-        sockets.each {|s| s.close }
+        sockets.each(&:close)
       end
     else
       sockets
@@ -927,7 +927,7 @@ class Socket < BasicSocket
       begin
         yield sockets
       ensure
-        sockets.each {|s| s.close } if sockets
+        sockets.each(&:close) if sockets
       end
     else
       sockets
