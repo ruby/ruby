@@ -978,7 +978,7 @@ module Net   #:nodoc:
 
     def do_finish
       @started = false
-      @socket.close if @socket and not @socket.closed?
+      @socket.close if @socket
       @socket = nil
     end
     private :do_finish
@@ -1463,12 +1463,12 @@ module Net   #:nodoc:
              Timeout::Error => exception
         if count == 0 && IDEMPOTENT_METHODS_.include?(req.method)
           count += 1
-          @socket.close if @socket and not @socket.closed?
+          @socket.close if @socket
           D "Conn close because of error #{exception}, and retry"
           retry
         end
         D "Conn close because of error #{exception}"
-        @socket.close if @socket and not @socket.closed?
+        @socket.close if @socket
         raise
       end
 
@@ -1476,7 +1476,7 @@ module Net   #:nodoc:
       res
     rescue => exception
       D "Conn close because of error #{exception}"
-      @socket.close if @socket and not @socket.closed?
+      @socket.close if @socket
       raise exception
     end
 

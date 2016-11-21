@@ -309,7 +309,7 @@ module WEBrick
           else
             @logger.debug "close: <address unknown>"
           end
-          sock.close unless sock.closed?
+          sock.close
         end
       }
     end
@@ -334,11 +334,9 @@ module WEBrick
       @shutdown_pipe = nil
       return if !shutdown_pipe
       shutdown_pipe.each {|io|
-        if !io.closed?
-          begin
-            io.close
-          rescue IOError # another thread closed io.
-          end
+        begin
+          io.close
+        rescue IOError # another thread closed io.
         end
       }
     end

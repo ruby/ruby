@@ -260,7 +260,7 @@ class Shell
 
             ObjectSpace.each_object(IO) do |io|
               if ![STDIN, STDOUT, STDERR].include?(io)
-                io.close unless io.closed?
+                io.close
               end
             end
 

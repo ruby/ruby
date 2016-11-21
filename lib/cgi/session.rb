@@ -426,7 +426,7 @@ class CGI
           f.close
           File.rename @path+".new", @path
         ensure
-          f.close if f and !f.closed?
+          f.close if f
           lockf.close if lockf
         end
       end

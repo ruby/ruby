@@ -570,7 +570,7 @@ module Net
     ensure
       # Authentication failed, clean up connection.
       unless @started
-        s.close if s and not s.closed?
+        s.close if s
         @socket = nil
         @command = nil
       end
@@ -601,7 +601,7 @@ module Net
     ensure
       @started = false
       @command = nil
-      @socket.close if @socket and not @socket.closed?
+      @socket.close if @socket
       @socket = nil
     end
     private :do_finish

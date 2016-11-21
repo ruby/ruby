@@ -335,7 +335,7 @@ class PStore
             save_data(checksum, original_data_size, file)
           end
         ensure
-          file.close if !file.closed?
+          file.close
         end
       else
         # This can only occur if read_only == true.

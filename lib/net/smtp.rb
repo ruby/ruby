@@ -567,7 +567,7 @@ module Net
     ensure
       unless @started
         # authentication failed, cancel connection.
-        s.close if s and not s.closed?
+        s.close if s
         @socket = nil
       end
     end
@@ -613,7 +613,7 @@ module Net
     ensure
       @started = false
       @error_occurred = false
-      @socket.close if @socket and not @socket.closed?
+      @socket.close if @socket
       @socket = nil
     end
 
