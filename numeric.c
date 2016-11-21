@@ -189,28 +189,34 @@ rb_num_get_rounding_option(VALUE opts)
 {
     static ID round_kwds[1];
     VALUE rounding;
+    VALUE str;
     const char *s;
-    long l;
 
     if (!NIL_P(opts)) {
 	if (!round_kwds[0]) {
 	    round_kwds[0] = rb_intern_const("half");
 	}
 	if (!rb_get_kwargs(opts, round_kwds, 0, 1, &rounding)) goto noopt;
-	if (SYMBOL_P(rounding)) rounding = rb_sym2str(rounding);
-	s = StringValueCStr(rounding);
-	l = RSTRING_LEN(rounding);
-	switch (l) {
+	if (SYMBOL_P(rounding)) {
+	    str = rb_sym2str(rounding);
+	}
+	else if (!RB_TYPE_P(str = rounding, T_STRING)) {
+	    str = rb_check_string_type(rounding);
+	    if (NIL_P(str)) goto invalid;
+	}
+	s = RSTRING_PTR(str);
+	switch (RSTRING_LEN(str)) {
 	  case 2:
-	    if (strncasecmp(s, "up", 2) == 0)
+	    if (rb_memcicmp(s, "up", 2) == 0)
 		return RUBY_NUM_ROUND_HALF_UP;
 	    break;
 	  case 4:
-	    if (strncasecmp(s, "even", 4) == 0)
+	    if (rb_memcicmp(s, "even", 4) == 0)
 		return RUBY_NUM_ROUND_HALF_EVEN;
 	    break;
 	}
-	rb_raise(rb_eArgError, "unknown rounding mode: %"PRIsVALUE, rounding);
+      invalid:
+	rb_raise(rb_eArgError, "invalid rounding mode: % "PRIsVALUE, rounding);
     }
   noopt:
     return RUBY_NUM_ROUND_DEFAULT;

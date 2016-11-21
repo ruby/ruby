@@ -701,6 +701,12 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(-7.1364, -7.1364499.round(4, half: :up))
   end
 
+  def test_round_half_invalid
+    assert_raise_with_message(ArgumentError, /xxx/) {
+      1.0.round(half: "\0xxx")
+    }
+  end
+
   def test_Float
     assert_in_delta(0.125, Float("0.1_2_5"), 0.00001)
     assert_in_delta(0.125, "0.1_2_5__".to_f, 0.00001)
