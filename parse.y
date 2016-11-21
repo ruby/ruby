@@ -3869,10 +3869,10 @@ strings		: string
 			$$ = $1;
 		    %*/
 		    }
-		| tCHAR
 		;
 
-string		: string1
+string		: tCHAR
+		| string1
 		| string string1
 		    {
 		    /*%%%*/
