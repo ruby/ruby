@@ -910,6 +910,22 @@ module Net   #:nodoc:
       s.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
       D "opened"
       if use_ssl?
+        if proxy?
+          plain_sock = BufferedIO.new(s, read_timeout: @read_timeout,
+                                      continue_timeout: @continue_timeout,
+                                      debug_output: @debug_output)
+          buf = "CONNECT #{@address}:#{@port} HTTP/#{HTTPVersion}\r\n"
+          buf << "Host: #{@address}:#{@port}\r\n"
+          if proxy_user
+            credential = ["#{proxy_user}:#{proxy_pass}"].pack('m0')
+            buf << "Proxy-Authorization: Basic #{credential}\r\n"
+          end
+          buf << "\r\n"
+          plain_sock.write(buf)
+          HTTPResponse.read_new(plain_sock).value
+          # assuming nothing left in buffers after successful CONNECT response
+        end
+
         ssl_parameters = Hash.new
         iv_list = instance_variables
         SSL_IVNAMES.each_with_index do |ivname, i|
@@ -923,42 +939,29 @@ module Net   #:nodoc:
         D "starting SSL for #{conn_address}:#{conn_port}..."
         s = OpenSSL::SSL::SSLSocket.new(s, @ssl_context)
         s.sync_close = true
+        # Server Name Indication (SNI) RFC 3546
+        s.hostname = @address if s.respond_to? :hostname=
+        if @ssl_session and
+           Process.clock_gettime(Process::CLOCK_REALTIME) < @ssl_session.time.to_f + @ssl_session.timeout
+          s.session = @ssl_session if @ssl_session
+        end
+        ssl_socket_connect(s, @open_timeout)
+        if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
+          s.post_connection_check(@address)
+        end
+        @ssl_session = s.session
         D "SSL established"
       end
       @socket = BufferedIO.new(s, read_timeout: @read_timeout,
                                continue_timeout: @continue_timeout,
                                debug_output: @debug_output)
-      if use_ssl?
-        begin
-          if proxy?
-            buf = "CONNECT #{@address}:#{@port} HTTP/#{HTTPVersion}\r\n"
-            buf << "Host: #{@address}:#{@port}\r\n"
-            if proxy_user
-              credential = ["#{proxy_user}:#{proxy_pass}"].pack('m0')
-              buf << "Proxy-Authorization: Basic #{credential}\r\n"
-            end
-            buf << "\r\n"
-            @socket.write(buf)
-            HTTPResponse.read_new(@socket).value
-          end
-          # Server Name Indication (SNI) RFC 3546
-          s.hostname = @address if s.respond_to? :hostname=
-          if @ssl_session and
-             Process.clock_gettime(Process::CLOCK_REALTIME) < @ssl_session.time.to_f + @ssl_session.timeout
-            s.session = @ssl_session if @ssl_session
-          end
-          ssl_socket_connect(s, @open_timeout)
-          if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
-            s.post_connection_check(@address)
-          end
-          @ssl_session = s.session
-        rescue => exception
-          D "Conn close because of connect error #{exception}"
-          @socket.close if @socket and not @socket.closed?
-          raise exception
-        end
-      end
       on_connect
+    rescue => exception
+      if s
+        D "Conn close because of connect error #{exception}"
+        s.close
+      end
+      raise
     end
     private :connect
 
