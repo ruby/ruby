@@ -190,6 +190,10 @@ module Net
     # account::   Account information for ACCT.
     # passive::   When +true+, the connection is in passive mode. Default:
     #             +true+.
+    # open_timeout::  Number of seconds to wait for the connection to open.
+    #                 See Net::FTP#open_timeout for details.  Default: +nil+.
+    # read_timeout::  Number of seconds to wait for one block to be read.
+    #                 See Net::FTP#read_timeout for details.  Default: +60+.
     # debug_mode::  When +true+, all traffic to and from the server is
     #               written to +$stdout+.  Default: +false+.
     #
@@ -242,8 +246,8 @@ module Net
       @resume = false
       @bare_sock = @sock = NullSocket.new
       @logged_in = false
-      @open_timeout = nil
-      @read_timeout = 60
+      @open_timeout = options[:open_timeout]
+      @read_timeout = options[:read_timeout] || 60
       if host
         if options[:port]
           connect(host, options[:port] || FTP_PORT)

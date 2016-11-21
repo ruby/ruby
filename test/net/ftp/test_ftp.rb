@@ -278,6 +278,16 @@ class FTPTest < Test::Unit::TestCase
     end
   end
 
+  def test_s_new_timeout_options
+    ftp = Net::FTP.new
+    assert_equal(nil, ftp.open_timeout)
+    assert_equal(60, ftp.read_timeout)
+
+    ftp = Net::FTP.new(nil, open_timeout: 123, read_timeout: 234)
+    assert_equal(123, ftp.open_timeout)
+    assert_equal(234, ftp.read_timeout)
+  end
+
   # TODO: How can we test open_timeout?  sleep before accept cannot delay
   # connections.
   def _test_open_timeout_exceeded
