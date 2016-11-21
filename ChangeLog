@@ -1,3 +1,9 @@
+Mon Nov 21 16:55:15 2016  boshan  <boshan@subsplash.com>
+
+	* lib/tempfile.rb (Tempfile#initialize): [DOC] the first parameter
+	  `basename` is optional and defaulted to an empty string since
+	  [GH-523].  [Fix GH-1225]
+
 Sat Nov 19 14:06:07 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* iseq.c (proc_dup): don't duplicate sym_procs.  [Fix GH-1479]
