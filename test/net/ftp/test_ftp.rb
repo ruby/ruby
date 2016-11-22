@@ -2069,6 +2069,59 @@ EOF
     end
   end
 
+  def test_abort_tls
+    commands = []
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      commands.push(sock.gets)
+      sock.print("234 AUTH success.\r\n")
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ca_file = CA_FILE
+      ctx.key = File.open(SERVER_KEY) { |f|
+        OpenSSL::PKey::RSA.new(f)
+      }
+      ctx.cert = File.open(SERVER_CERT) { |f|
+        OpenSSL::X509::Certificate.new(f)
+      }
+      sock = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+      sock.sync_close = true
+      sock.accept
+      commands.push(sock.gets)
+      sock.print("200 PSBZ success.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 PROT success.\r\n")
+      commands.push(sock.gets)
+      sock.print("331 Please specify the password.\r\n")
+      commands.push(sock.gets)
+      sock.print("230 Login successful.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to Binary mode.\r\n")
+      commands.push(sock.gets)
+      sock.print("225 No transfer to ABOR.\r\n")
+    }
+    begin
+      begin
+        ftp = Net::FTP.new("localhost",
+                           port: server.port,
+                           ssl: { ca_file: CA_FILE })
+        assert_equal("AUTH TLS\r\n", commands.shift)
+        assert_equal("PBSZ 0\r\n", commands.shift)
+        assert_equal("PROT P\r\n", commands.shift)
+        ftp.login
+        assert_match(/\AUSER /, commands.shift)
+        assert_match(/\APASS /, commands.shift)
+        assert_equal("TYPE I\r\n", commands.shift)
+        ftp.abort
+        assert_equal("ABOR\r\n", commands.shift)
+        assert_equal(nil, commands.shift)
+      ensure
+        ftp.close if ftp
+      end
+    ensure
+      server.close
+    end
+  end
+
   private
 
   def create_ftp_server(sleep_time = nil)

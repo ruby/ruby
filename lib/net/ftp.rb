@@ -1446,6 +1446,11 @@ module Net
           # SSL_shutdonw() will send the "close notify" alert to the peer,
           # so shutdown(2) should not be called.
         end
+
+        def send(mesg, flags, dest = nil)
+          # Ignore flags and dest.
+          @io.write(mesg)
+        end
       end
     end
     # :startdoc:
