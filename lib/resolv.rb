@@ -722,7 +722,7 @@ class Resolv
       def close
         socks = @socks
         @socks = nil
-        socks.each(&:close) if socks
+        socks&.each(&:close)
       end
 
       class Sender # :nodoc:
