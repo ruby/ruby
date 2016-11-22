@@ -312,22 +312,16 @@ module WEBrick
     # Calls the callback +callback_name+ from the configuration with +args+
 
     def call_callback(callback_name, *args)
-      if cb = @config[callback_name]
-        cb.call(*args)
-      end
+      @config[callback_name]&.call(*args)
     end
 
     def setup_shutdown_pipe
-      if !@shutdown_pipe
-        @shutdown_pipe = IO.pipe
-      end
-      @shutdown_pipe
+      return @shutdown_pipe ||= IO.pipe
     end
 
     def cleanup_shutdown_pipe(shutdown_pipe)
       @shutdown_pipe = nil
-      return if !shutdown_pipe
-      shutdown_pipe.each(&:close)
+      shutdown_pipe&.each(&:close)
     end
 
     def alarm_shutdown_pipe
