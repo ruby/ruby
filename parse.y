@@ -775,6 +775,7 @@ static VALUE parser_heredoc_dedent(struct parser_params*,VALUE);
 # define rb_warning4L(l,fmt,a,b,c,d) WARNING_CALL(WARNING_ARGS_L(l, fmt, 5), (a), (b), (c), (d))
 #ifdef RIPPER
 static ID id_warn, id_warning;
+# define WARN_S_L(s,l) STR_NEW(s,l)
 # define WARN_S(s) STR_NEW2(s)
 # define WARN_I(i) INT2NUM(i)
 # define PRIsWARN "s"
@@ -788,6 +789,7 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 # define compile_error ripper_compile_error
 # define PARSER_ARG parser,
 #else
+# define WARN_S_L(s,l) s
 # define WARN_S(s) s
 # define WARN_I(i) i
 # define PRIsWARN PRIsVALUE
@@ -7468,7 +7470,7 @@ parse_numeric(struct parser_params *parser, int c)
 }
 
 static int
-parse_qmark(struct parser_params *parser)
+parse_qmark(struct parser_params *parser, int space_seen)
 {
     rb_encoding *enc;
     register int c;
@@ -7521,6 +7523,16 @@ parse_qmark(struct parser_params *parser)
     }
     else if ((rb_enc_isalnum(c, current_enc) || c == '_') &&
 	     lex_p < lex_pend && is_identchar(lex_p, lex_pend, current_enc)) {
+	if (space_seen) {
+	    const char *start = lex_p - 1, *p = start;
+	    do {
+		int n = rb_enc_precise_mbclen(p, lex_pend, current_enc);
+		p += n;
+	    } while (p < lex_pend && is_identchar(p, lex_pend, current_enc));
+	    rb_warn2("`?' just followed by `%.*s' is interpreted as" \
+		     " a conditional operator, put a space after `?'",
+		     WARN_I((int)(p - start)), WARN_S_L(start, (p - start)));
+	}
 	goto ternary;
     }
     else if (c == '\\') {
@@ -8267,7 +8279,7 @@ parser_yylex(struct parser_params *parser)
 	return tSTRING_BEG;
 
       case '?':
-	return parse_qmark(parser);
+	return parse_qmark(parser, space_seen);
 
       case '&':
 	if ((c = nextc()) == '&') {
