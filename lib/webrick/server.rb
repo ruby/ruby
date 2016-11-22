@@ -44,14 +44,8 @@ module WEBrick
     # block, if given.
 
     def Daemon.start
-      exit!(0) if fork
-      Process::setsid
-      exit!(0) if fork
-      Dir::chdir("/")
-      File::umask(0)
-      STDIN.reopen(IO::NULL)
-      STDOUT.reopen(IO::NULL, "w")
-      STDERR.reopen(IO::NULL, "w")
+      Process.daemon
+      File.umask(0)
       yield if block_given?
     end
   end
