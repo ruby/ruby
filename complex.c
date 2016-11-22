@@ -30,7 +30,7 @@ VALUE rb_cComplex;
 static VALUE nucomp_abs(VALUE self);
 static VALUE nucomp_arg(VALUE self);
 
-static ID id_abs, id_arg, id_convert,
+static ID id_abs, id_arg,
     id_denominator, id_expt, id_fdiv,
     id_negate, id_numerator, id_quo,
     id_real_p, id_to_f, id_to_i, id_to_r,
@@ -406,6 +406,8 @@ f_complex_new2(VALUE klass, VALUE x, VALUE y)
     return nucomp_s_canonicalize_internal(klass, x, y);
 }
 
+static VALUE nucomp_s_convert(int argc, VALUE *argv, VALUE klass);
+
 /*
  * call-seq:
  *    Complex(x[, y])  ->  numeric
@@ -442,7 +444,7 @@ f_complex_new2(VALUE klass, VALUE x, VALUE y)
 static VALUE
 nucomp_f_complex(int argc, VALUE *argv, VALUE klass)
 {
-    return rb_funcallv(rb_cComplex, id_convert, argc, argv);
+    return nucomp_s_convert(argc, argv, rb_cComplex);
 }
 
 #define imp1(n) \
@@ -1426,8 +1428,6 @@ rb_complex_polar(VALUE x, VALUE y)
     return f_complex_polar(rb_cComplex, x, y);
 }
 
-static VALUE nucomp_s_convert(int argc, VALUE *argv, VALUE klass);
-
 VALUE
 rb_Complex(VALUE x, VALUE y)
 {
@@ -2182,7 +2182,6 @@ Init_Complex(void)
 
     id_abs = rb_intern("abs");
     id_arg = rb_intern("arg");
-    id_convert = rb_intern("convert");
     id_denominator = rb_intern("denominator");
     id_expt = rb_intern("**");
     id_fdiv = rb_intern("fdiv");
