@@ -207,7 +207,7 @@ module URI
           "the scheme #{@scheme} does not accept registry part: #{registry} (or bad hostname?)"
       end
 
-      @scheme.freeze if @scheme
+      @scheme&.freeze
       self.set_path('') if !@path && !@opaque # (see RFC2396 Section 5.2)
       self.set_port(self.default_port) if self.default_port && !@port
     end
@@ -330,7 +330,7 @@ module URI
     # see also URI::Generic.scheme=
     #
     def set_scheme(v)
-      @scheme = v ? v.downcase : v
+      @scheme = v&.downcase
     end
     protected :set_scheme
 
