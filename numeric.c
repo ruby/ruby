@@ -1494,8 +1494,8 @@ flo_cmp(VALUE x, VALUE y)
  * implementation-dependent value is returned.
  */
 
-static VALUE
-flo_gt(VALUE x, VALUE y)
+VALUE
+rb_float_gt(VALUE x, VALUE y)
 {
     double a, b;
 
@@ -4074,8 +4074,8 @@ fix_gt(VALUE x, VALUE y)
     }
 }
 
-static VALUE
-int_gt(VALUE x, VALUE y)
+VALUE
+rb_int_gt(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
 	return fix_gt(x, y);
@@ -5270,7 +5270,7 @@ Init_Numeric(void)
 
     rb_define_method(rb_cInteger, "===", rb_int_equal, 1);
     rb_define_method(rb_cInteger, "==", rb_int_equal, 1);
-    rb_define_method(rb_cInteger, ">", int_gt, 1);
+    rb_define_method(rb_cInteger, ">", rb_int_gt, 1);
     rb_define_method(rb_cInteger, ">=", rb_int_ge, 1);
     rb_define_method(rb_cInteger, "<", int_lt, 1);
     rb_define_method(rb_cInteger, "<=", int_le, 1);
@@ -5411,7 +5411,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "==", flo_eq, 1);
     rb_define_method(rb_cFloat, "===", flo_eq, 1);
     rb_define_method(rb_cFloat, "<=>", flo_cmp, 1);
-    rb_define_method(rb_cFloat, ">",  flo_gt, 1);
+    rb_define_method(rb_cFloat, ">",  rb_float_gt, 1);
     rb_define_method(rb_cFloat, ">=", flo_ge, 1);
     rb_define_method(rb_cFloat, "<",  flo_lt, 1);
     rb_define_method(rb_cFloat, "<=", flo_le, 1);

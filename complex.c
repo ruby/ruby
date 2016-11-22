@@ -97,12 +97,21 @@ f_div(VALUE x, VALUE y)
     return rb_funcall(x, '/', 1, y);
 }
 
-inline static VALUE
+inline static int
 f_gt_p(VALUE x, VALUE y)
 {
-    if (FIXNUM_P(x) && FIXNUM_P(y))
-	return f_boolcast(FIX2LONG(x) > FIX2LONG(y));
-    return rb_funcall(x, '>', 1, y);
+    if (RB_INTEGER_TYPE_P(x)) {
+        if (FIXNUM_P(x) && FIXNUM_P(y))
+            return (SIGNED_VALUE)x > (SIGNED_VALUE)y;
+        return RTEST(rb_int_gt(x, y));
+    }
+    else if (RB_FLOAT_TYPE_P(x))
+        return RTEST(rb_float_gt(x, y));
+    else if (RB_TYPE_P(x, T_RATIONAL)) {
+        int const cmp = rb_cmpint(rb_rational_cmp(x, y), x, y);
+        return cmp > 0;
+    }
+    return RTEST(rb_funcall(x, '>', 1, y));
 }
 
 inline static VALUE

@@ -1063,8 +1063,8 @@ nurat_expt(VALUE self, VALUE other)
  *    Rational(1,3)   <=> 1               #=> -1
  *    Rational(1,3)   <=> 0.3             #=> 1
  */
-static VALUE
-nurat_cmp(VALUE self, VALUE other)
+VALUE
+rb_rational_cmp(VALUE self, VALUE other)
 {
     if (RB_INTEGER_TYPE_P(other)) {
 	{
@@ -2648,7 +2648,7 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "fdiv", nurat_fdiv, 1);
     rb_define_method(rb_cRational, "**", nurat_expt, 1);
 
-    rb_define_method(rb_cRational, "<=>", nurat_cmp, 1);
+    rb_define_method(rb_cRational, "<=>", rb_rational_cmp, 1);
     rb_define_method(rb_cRational, "==", nurat_eqeq_p, 1);
     rb_define_method(rb_cRational, "coerce", nurat_coerce, 1);
 
