@@ -636,10 +636,12 @@ module Open3
       if i != cmds.length - 1
         r2, w2 = IO.pipe
         cmd_opts[:out] = w2
+        cmd_opts[:err] = w2 if pipeline_opts[:err] == :out
       else
         if !cmd_opts.include?(:out)
           if pipeline_opts.include?(:out)
             cmd_opts[:out] = pipeline_opts[:out]
+            cmd_opts[:err] = pipeline_opts[:out] if pipeline_opts[:err] == :out
           end
         end
       end

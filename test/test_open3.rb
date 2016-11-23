@@ -284,4 +284,15 @@ class TestOpen3 < Test::Unit::TestCase
     }
   end
 
+  def test_pipeline_err_to_out
+    cmd = [RUBY, '-e', 'STDERR.print "err"; STDOUT.print "out"']
+    cmd_expect_only_out = [RUBY, '-e', 's = STDIN.read; exit s == "out"']
+    cmd_expect_out_and_err = [RUBY, '-e', 's = STDIN.read; exit s == "errout"']
+    result_only_out = Open3.pipeline cmd, cmd_expect_only_out
+    result_out_and_err = Open3.pipeline cmd, cmd_expect_out_and_err, {:err => :out}
+    (result_only_out + result_out_and_err).each do |status|
+      assert status.success?
+    end
+  end
+
 end
