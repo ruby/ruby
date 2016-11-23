@@ -1226,11 +1226,13 @@ module Net
 
     #
     # Returns the status (STAT command).
+    # pathname - when stat is invoked with pathname as a parameter it acts like
+    #            list but alot faster and over the same tcp session.
     #
-    def status
-      line = "STAT" + CRLF
-      print "put: STAT\n" if @debug_mode
-      @sock.send(line, Socket::MSG_OOB)
+    def status(pathname = nil)
+      line = pathname ? "STAT #{pathname}" : "STAT"
+      print "put: #{line}\n" if @debug_mode
+      @sock.send(line + CRLF, Socket::MSG_OOB)
       return getresp
     end
 

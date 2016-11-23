@@ -205,6 +205,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Support TLS (RFC 4217).
   * Support hash style options for Net::FTP.new.
+  * Add a new optional argument pathname to Net::FTP#status.
 
 * OpenSSL
 
