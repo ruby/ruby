@@ -232,7 +232,7 @@ module WEBrick
     def shutdown
       stop
 
-      alarm_shutdown_pipe {|f| f.close}
+      alarm_shutdown_pipe(&:close)
     end
 
     ##
