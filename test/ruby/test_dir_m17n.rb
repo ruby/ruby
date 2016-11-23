@@ -376,7 +376,9 @@ class TestDir_M17N < Test::Unit::TestCase
       bug12081 = '[ruby-core:73868] [Bug #12081]'
       a = "*".force_encoding("us-ascii")
       result = Dir[a].map {|n|
-        if n.encoding == Encoding::ASCII_8BIT
+        if n.encoding == Encoding::ASCII_8BIT ||
+            n.encoding == Encoding::ISO_8859_1 ||
+            !n.valid_encoding?
           n.force_encoding(Encoding::UTF_8)
         else
           n.encode(Encoding::UTF_8)

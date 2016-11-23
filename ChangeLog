@@ -1,3 +1,9 @@
+Thu Nov 24 05:44:04 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* test/ruby/test_dir_m17n.rb: Don't encode to UTF-8 if it's unnecessary.
+	  If the file system encoding is ISO-8851-1 or if the encoding of the
+	  target string is invalid, don't encode to UTF-8. [Bug#12972]
+
 Mon Nov 21 16:55:15 2016  boshan  <boshan@subsplash.com>
 
 	* lib/tempfile.rb (Tempfile#initialize): [DOC] the first parameter
