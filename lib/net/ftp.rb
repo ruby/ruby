@@ -1231,6 +1231,9 @@ module Net
     #
     def status(pathname = nil)
       line = pathname ? "STAT #{pathname}" : "STAT"
+      if /[\r\n]/ =~ line
+        raise ArgumentError, "A line must not contain CR or LF"
+      end
       print "put: #{line}\n" if @debug_mode
       @sock.send(line + CRLF, Socket::MSG_OOB)
       return getresp
