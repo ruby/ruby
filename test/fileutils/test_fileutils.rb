@@ -142,7 +142,7 @@ class TestFileUtils < Test::Unit::TestCase
 
   def setup
     @prevdir = Dir.pwd
-    @groups = Process.groups if have_file_perm?
+    @groups = [Process.gid] | Process.groups if have_file_perm?
     tmproot = @tmproot = Dir.mktmpdir "fileutils"
     Dir.chdir tmproot
     my_rm_rf 'data'; mymkdir 'data'
