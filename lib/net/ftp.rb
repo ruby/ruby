@@ -1450,7 +1450,7 @@ module Net
 
         def shutdown(*args)
           # SSL_shutdown() will be called from SSLSocket#close, and
-          # SSL_shutdonw() will send the "close notify" alert to the peer,
+          # SSL_shutdown() will send the "close notify" alert to the peer,
           # so shutdown(2) should not be called.
           @is_shutdown = true
         end
