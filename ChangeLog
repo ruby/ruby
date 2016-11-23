@@ -1,3 +1,9 @@
+Thu Nov 24 05:47:18 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* test/fileutils/test_fileutils.rb (TestFileUtils#setup): Use primary
+	  group as well as supplementary groups.
+	  based on the patch by Vit Ondruch at [Bug #12910]
+
 Thu Nov 24 05:44:04 2016  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* test/ruby/test_dir_m17n.rb: Don't encode to UTF-8 if it's unnecessary.
