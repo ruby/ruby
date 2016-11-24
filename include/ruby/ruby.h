@@ -1181,7 +1181,7 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
     ((sval) = (type*)rb_check_typeddata((obj), (data_type)))
 
 #define RSTRUCT_LEN(st)         rb_struct_size(st)
-#define RSTRUCT_PTR(st)         rb_struct_const_ptr(st)
+#define RSTRUCT_PTR(st)         rb_struct_ptr(st)
 #define RSTRUCT_SET(st, idx, v) rb_struct_aset(st, INT2NUM(idx), (v))
 #define RSTRUCT_GET(st, idx)    rb_struct_aref(st, INT2NUM(idx))
 
