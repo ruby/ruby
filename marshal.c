@@ -591,16 +591,18 @@ encoding_name(VALUE obj, struct dump_arg *arg)
 static void
 w_encoding(VALUE encname, struct dump_call_arg *arg)
 {
+    int limit = arg->limit;
+    if (limit >= 0) ++limit;
     switch (encname) {
       case Qfalse:
       case Qtrue:
 	w_symbol(ID2SYM(rb_intern("E")), arg->arg);
-	w_object(encname, arg->arg, arg->limit + 1);
+	w_object(encname, arg->arg, limit);
       case Qnil:
 	return;
     }
     w_symbol(ID2SYM(rb_id_encoding()), arg->arg);
-    w_object(encname, arg->arg, arg->limit + 1);
+    w_object(encname, arg->arg, limit);
 }
 
 static st_index_t
@@ -659,7 +661,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	rb_raise(rb_eArgError, "exceed depth limit");
     }
 
-    limit--;
+    if (limit > 0) limit--;
     c_arg.limit = limit;
     c_arg.arg = arg;
 
