@@ -119,6 +119,31 @@ round_half_up(double x, double s)
 }
 
 static double
+round_half_down(double x, double s)
+{
+    double f, xs = x * s;
+
+#ifdef HAVE_ROUND
+    f = round(xs);
+#endif
+    if (x > 0) {
+#ifndef HAVE_ROUND
+	f = ceil(xs);
+#endif
+	if ((double)((f - 0.5) / s) >= x) f -= 1;
+	x = f;
+    }
+    else {
+#ifndef HAVE_ROUND
+	f = floor(xs);
+#endif
+	if ((double)((f + 0.5) / s) <= x) f += 1;
+	x = f;
+    }
+    return x;
+}
+
+static double
 round_half_even(double x, double s)
 {
     double f, d, xs = x * s;
@@ -213,6 +238,8 @@ rb_num_get_rounding_option(VALUE opts)
 	  case 4:
 	    if (rb_memcicmp(s, "even", 4) == 0)
 		return RUBY_NUM_ROUND_HALF_EVEN;
+	    if (strncasecmp(s, "down", 4) == 0)
+		return RUBY_NUM_ROUND_HALF_DOWN;
 	    break;
 	}
       invalid:
@@ -2040,6 +2067,12 @@ int_round_half_up(SIGNED_VALUE x, SIGNED_VALUE y)
     return (x + y / 2) / y * y;
 }
 
+static SIGNED_VALUE
+int_round_half_down(SIGNED_VALUE x, SIGNED_VALUE y)
+{
+    return (x + y / 2 - 1) / y * y;
+}
+
 static int
 int_half_p_half_even(VALUE num, VALUE n, VALUE f)
 {
@@ -2050,6 +2083,12 @@ static int
 int_half_p_half_up(VALUE num, VALUE n, VALUE f)
 {
     return int_pos_p(num);
+}
+
+static int
+int_half_p_half_down(VALUE num, VALUE n, VALUE f)
+{
+    return int_neg_p(num);
 }
 
 /*

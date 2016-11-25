@@ -597,12 +597,12 @@ class Rational_Test < Test::Unit::TestCase
   end
 
   def test_trunc
-    [[Rational(13, 5),  [ 2,  3,  2,  3,  3,  3]], #  2.6
-     [Rational(5, 2),   [ 2,  3,  2,  2,  2,  3]], #  2.5
-     [Rational(12, 5),  [ 2,  3,  2,  2,  2,  2]], #  2.4
-     [Rational(-12,5),  [-3, -2, -2, -2, -2, -2]], # -2.4
-     [Rational(-5, 2),  [-3, -2, -2, -2, -2, -3]], # -2.5
-     [Rational(-13, 5), [-3, -2, -2, -3, -3, -3]], # -2.6
+    [[Rational(13, 5),  [ 2,  3,  2,  3,  3,  3,  3]], #  2.6
+     [Rational(5, 2),   [ 2,  3,  2,  2,  2,  3,  2]], #  2.5
+     [Rational(12, 5),  [ 2,  3,  2,  2,  2,  2,  2]], #  2.4
+     [Rational(-12,5),  [-3, -2, -2, -2, -2, -2, -2]], # -2.4
+     [Rational(-5, 2),  [-3, -2, -2, -2, -2, -3, -2]], # -2.5
+     [Rational(-13, 5), [-3, -2, -2, -3, -3, -3, -3]], # -2.6
     ].each do |i, a|
       s = proc {i.inspect}
       assert_equal(a[0], i.floor, s)
@@ -611,6 +611,7 @@ class Rational_Test < Test::Unit::TestCase
       assert_equal(a[3], i.round, s)
       assert_equal(a[4], i.round(half: :even), s)
       assert_equal(a[5], i.round(half: :up), s)
+      assert_equal(a[6], i.round(half: :down), s)
     end
   end
 

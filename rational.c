@@ -1324,6 +1324,31 @@ nurat_round_half_up(VALUE self)
 }
 
 static VALUE
+nurat_round_half_down(VALUE self)
+{
+    VALUE num, den, neg;
+
+    get_dat1(self);
+
+    num = dat->num;
+    den = dat->den;
+    neg = INT_NEGATIVE_P(num);
+
+    if (neg)
+	num = rb_int_uminus(num);
+
+    num = rb_int_plus(rb_int_mul(num, TWO), den);
+    num = rb_int_minus(num, ONE);
+    den = rb_int_mul(den, TWO);
+    num = rb_int_idiv(num, den);
+
+    if (neg)
+	num = rb_int_uminus(num);
+
+    return num;
+}
+
+static VALUE
 nurat_round_half_even(VALUE self)
 {
     VALUE num, den, neg, qr;
