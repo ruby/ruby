@@ -2100,6 +2100,30 @@ EOF
         ftp.close
       end
     end
+
+    def test_tls_connect_timeout
+      server = TCPServer.new(SERVER_ADDR, 0)
+      port = server.addr[1]
+      commands = []
+      sock = nil
+      @thread = Thread.start do
+        sock = server.accept
+        sock.print("220 (test_ftp).\r\n")
+        commands.push(sock.gets)
+        sock.print("234 AUTH success.\r\n")
+      end
+      begin
+        assert_raise(Net::OpenTimeout) do
+          Net::FTP.new("localhost",
+                       port: port,
+                       ssl: { ca_file: CA_FILE },
+                       open_timeout: 0.1)
+        end
+      ensure
+        sock.close if sock
+        server.close
+      end
+    end
   end
 
   def test_abort_tls

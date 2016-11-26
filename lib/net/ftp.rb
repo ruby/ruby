@@ -77,7 +77,7 @@ module Net
   # - #rename
   # - #delete
   #
-  class FTP
+  class FTP < Protocol
     include MonitorMixin
     if defined?(OpenSSL::SSL)
       include OpenSSL
@@ -338,7 +338,7 @@ module Net
         # ProFTPD returns 425 for data connections if session is not reused.
         ssl_sock.session = @ssl_session
       end
-      ssl_sock.connect
+      ssl_socket_connect(ssl_sock, @open_timeout)
       if @ssl_context.verify_mode != VERIFY_NONE
         ssl_sock.post_connection_check(@host)
       end
