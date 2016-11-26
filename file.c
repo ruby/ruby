@@ -3221,17 +3221,37 @@ rb_home_dir_of(VALUE user, VALUE result)
     return result;
 }
 
+#ifndef _WIN32
 VALUE
 rb_default_home_dir(VALUE result)
 {
     const char *dir = getenv("HOME");
+
+#if defined HAVE_PWD_H
+    if (!dir) {
+	const char *login = getlogin();
+	if (login) {
+	    struct passwd *pw = getpwnam(login);
+	    if (pw) {
+		copy_home_path(result, pw->pw_dir);
+		endpwent();
+		return result;
+	    }
+	    endpwent();
+	    rb_raise(rb_eArgError, "couldn't find HOME for login `%s' -- expanding `~'",
+		     login);
+	}
+	else {
+	    rb_raise(rb_eArgError, "couldn't find login name -- expanding `~'");
+	}
+    }
+#endif
     if (!dir) {
 	rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
     }
     return copy_home_path(result, dir);
 }
 
-#ifndef _WIN32
 static VALUE
 ospath_new(const char *ptr, long len, rb_encoding *fsenc)
 {

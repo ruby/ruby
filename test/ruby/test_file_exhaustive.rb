@@ -827,7 +827,6 @@ class TestFileExhaustive < Test::Unit::TestCase
       ENV["HOMEDRIVE"] = nil
       ENV["HOMEPATH"] = nil
       ENV["USERPROFILE"] = nil
-      assert_raise(ArgumentError) { File.expand_path("~") }
       ENV["HOME"] = "~"
       assert_raise(ArgumentError, bug3630) { File.expand_path("~") }
       ENV["HOME"] = "."
