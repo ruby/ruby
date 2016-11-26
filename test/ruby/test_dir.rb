@@ -289,8 +289,8 @@ class TestDir < Test::Unit::TestCase
     ENV.delete("HOME")
     ENV.delete("LOGDIR")
 
-    assert_raise(ArgumentError) { Dir.home }
-    assert_raise(ArgumentError) { Dir.home("") }
+    assert_nothing_raised(ArgumentError) { Dir.home }
+    assert_nothing_raised(ArgumentError) { Dir.home("") }
     ENV["HOME"] = @nodir
     assert_nothing_raised(ArgumentError) {
       assert_equal(@nodir, Dir.home)

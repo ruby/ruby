@@ -527,6 +527,70 @@ rb_w32_system_tmpdir(WCHAR *path, UINT len)
     return (UINT)(p - path + numberof(temp) - 1);
 }
 
+/*
+  Return user's home directory using environment variables combinations.
+  Memory allocated by this function should be manually freed
+  afterwards with xfree.
+
+  Try:
+  HOME, HOMEDRIVE + HOMEPATH and USERPROFILE environment variables
+  Special Folders - Profile and Personal
+*/
+WCHAR *
+rb_w32_home_dir(void)
+{
+    WCHAR *buffer = NULL;
+    size_t buffer_len = MAX_PATH, len = 0;
+    enum {
+	HOME_NONE, ENV_HOME, ENV_DRIVEPATH, ENV_USERPROFILE
+    } home_type = HOME_NONE;
+
+    if ((len = GetEnvironmentVariableW(L"HOME", NULL, 0)) != 0) {
+	buffer_len = len;
+	home_type = ENV_HOME;
+    }
+    else if ((len = GetEnvironmentVariableW(L"HOMEDRIVE", NULL, 0)) != 0) {
+	buffer_len = len;
+	if ((len = GetEnvironmentVariableW(L"HOMEPATH", NULL, 0)) != 0) {
+	    buffer_len += len;
+	    home_type = ENV_DRIVEPATH;
+	}
+    }
+    else if ((len = GetEnvironmentVariableW(L"USERPROFILE", NULL, 0)) != 0) {
+	buffer_len = len;
+	home_type = ENV_USERPROFILE;
+    }
+
+    /* allocate buffer */
+    buffer = ALLOC_N(WCHAR, buffer_len);
+
+    switch (home_type) {
+      case ENV_HOME:
+	GetEnvironmentVariableW(L"HOME", buffer, buffer_len);
+	break;
+      case ENV_DRIVEPATH:
+	len = GetEnvironmentVariableW(L"HOMEDRIVE", buffer, buffer_len);
+	GetEnvironmentVariableW(L"HOMEPATH", buffer + len, buffer_len - len);
+	break;
+      case ENV_USERPROFILE:
+	GetEnvironmentVariableW(L"USERPROFILE", buffer, buffer_len);
+	break;
+      default:
+	if (!get_special_folder(CSIDL_PROFILE, buffer, buffer_len) &&
+	    !get_special_folder(CSIDL_PERSONAL, buffer, buffer_len)) {
+	    xfree(buffer);
+	    return NULL;
+	}
+	buffer = REALLOC_N(buffer, WCHAR, lstrlenW(buffer) + 1);
+	break;
+    }
+
+    /* sanitize backslashes with forwardslashes */
+    regulate_path(buffer);
+
+    return buffer;
+}
+
 /* License: Ruby's */
 static void
 init_env(void)
