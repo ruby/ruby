@@ -72,6 +72,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Float#round now takes an optional keyword argument, half option, and
     the default behavior is round-to-nearest-even now.  [Bug #12548]
+    half option can be one of :even, :up, and :down.  [Feature #12953]
 
 * Hash
 
@@ -89,6 +90,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Integer#round now takes an optional keyword argument, half option, and the
     default behavior is round-to-nearest-even now.  [Bug #12548]
+    half option can be one of :even, :up, and :down.  [Feature #12953]
 
 * IO
 
@@ -123,6 +125,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Rational#round now takes an optional keyword argument, half option, and
     the default behavior is round-to-nearest-even now.  [Bug #12548]
+    half option can be one of :even, :up, and :down.  [Feature #12953]
 
 * Regexp
 
