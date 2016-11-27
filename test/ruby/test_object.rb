@@ -19,9 +19,9 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_dup
-    assert_raise(TypeError) { 1.dup }
-    assert_raise(TypeError) { true.dup }
-    assert_raise(TypeError) { nil.dup }
+    assert_equal 1, 1.dup
+    assert_equal true, true.dup
+    assert_equal nil, nil.dup
 
     assert_raise(TypeError) do
       Object.new.instance_eval { initialize_copy(1) }

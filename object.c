@@ -423,7 +423,7 @@ rb_obj_dup(VALUE obj)
     VALUE dup;
 
     if (rb_special_const_p(obj)) {
-        rb_raise(rb_eTypeError, "can't dup %s", rb_obj_classname(obj));
+	return obj;
     }
     dup = rb_obj_alloc(rb_obj_class(obj));
     init_copy(dup, obj);
