@@ -48,6 +48,11 @@ class IPAddr
   # Format string for IPv6
   IN6FORMAT = (["%.4x"] * 8).join(':')
 
+  # Address Type
+  LOOPBACK = :LOOPBACK
+  LINK_LOCAL = :LINK_LOCAL
+  MULTICAST = :MULTICAST
+
   # Regexp _internally_ used for parsing IPv4 address.
   RE_IPV4ADDRLIKE = %r{
     \A
@@ -289,6 +294,21 @@ class IPAddr
       raise InvalidAddressError, "not an IPv4 address"
     end
     return self.clone.set(@addr, Socket::AF_INET6)
+  end
+
+  # Returns true if the address is reserved for loopback.
+  def loopback?
+    addr_type(@addr) == LOOPBACK
+  end
+
+  # Returns true if the address is reserved for link-local.
+  def link_local?
+    addr_type(@addr) == LINK_LOCAL
+  end
+
+  # Returns true if the address is reserved for multicast.
+  def multicast?
+    addr_type(@addr) == MULTICAST
   end
 
   # Returns a new ipaddr built by converting the IPv6 address into a
@@ -579,6 +599,42 @@ class IPAddr
       return addr & IN4MASK
     when Socket::AF_INET6
       return addr & IN6MASK
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+  end
+
+  def define_addr_type
+    # The loopback address as defined in RFC 5735.
+    @@_ipv4_loopback_network ||= self.class.new('127.0.0.0/8')
+    # The loopback address as defined in RFC 4291 2.5.3.
+    @@_ipv6_loopback_network ||= self.class.new('::1')
+    # The address is link-local address as defined in RFC 3927.
+    @@_ipv4_linklocal_network ||= self.class.new('169.254.0.0/16')
+    # The address is link-local address as defined in RFC 4291 2.5.6.
+    @@_ipv6_linklocal_network ||= self.class.new('fe80::/10')
+    # The address is multicast address as defined in RFC 5771
+    @@_ipv4_multicast_network ||= self.class.new('224.0.0.0/4')
+    # The address is multicast address as defined in RFC 4291 2.7
+    @@_ipv6_multicast_network ||= self.class.new('ff00::/8')
+  end
+
+  # Return the address type (e.g. loopback, link-local, etc.)
+  def addr_type(addr)
+    define_addr_type
+    case @family
+    when Socket::AF_INET
+      case addr
+      when @@_ipv4_loopback_network then LOOPBACK
+      when @@_ipv4_linklocal_network then LINK_LOCAL
+      when @@_ipv4_multicast_network then MULTICAST
+      end
+    when Socket::AF_INET6
+      case addr
+      when @@_ipv6_loopback_network then LOOPBACK
+      when @@_ipv6_linklocal_network then LINK_LOCAL
+      when @@_ipv6_multicast_network then MULTICAST
+      end
     else
       raise AddressFamilyError, "unsupported address family"
     end

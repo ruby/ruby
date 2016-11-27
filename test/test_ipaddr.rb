@@ -33,6 +33,9 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal(Socket::AF_INET6, a.family)
     assert_equal(false, a.ipv4?)
     assert_equal(true, a.ipv6?)
+    assert_equal(false, a.loopback?)
+    assert_equal(false, a.link_local?)
+    assert_equal(false, a.multicast?)
     assert_equal("#<IPAddr: IPv6:3ffe:0505:0002:0000:0000:0000:0000:0000/ffff:ffff:ffff:0000:0000:0000:0000:0000>", a.inspect)
 
     a = IPAddr.new("3ffe:505:2::/ffff:ffff:ffff::")
@@ -51,6 +54,39 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal(Socket::AF_INET, a.family)
     assert_equal(true, a.ipv4?)
     assert_equal(false, a.ipv6?)
+    assert_equal(false, a.loopback?)
+    assert_equal(false, a.link_local?)
+    assert_equal(false, a.multicast?)
+
+    a = IPAddr.new("127.0.0.1/8")
+    assert_equal(true, a.loopback?)
+    assert_equal(false, a.link_local?)
+    assert_equal(false, a.multicast?)
+
+    a = IPAddr.new("169.254.0.1")
+    assert_equal(false, a.loopback?)
+    assert_equal(true, a.link_local?)
+    assert_equal(false, a.multicast?)
+
+    a = IPAddr.new("224.0.0.1/4")
+    assert_equal(false, a.loopback?)
+    assert_equal(false, a.link_local?)
+    assert_equal(true, a.multicast?)
+
+    a = IPAddr.new("::1")
+    assert_equal(true, a.loopback?)
+    assert_equal(false, a.link_local?)
+    assert_equal(false, a.multicast?)
+
+    a = IPAddr.new("fe80::1/10")
+    assert_equal(false, a.loopback?)
+    assert_equal(true, a.link_local?)
+    assert_equal(false, a.multicast?)
+
+    a = IPAddr.new("ff00::1/8")
+    assert_equal(false, a.loopback?)
+    assert_equal(false, a.link_local?)
+    assert_equal(true, a.multicast?)
 
     a = IPAddr.new("192.168.1.2/24")
     assert_equal("192.168.1.0", a.to_s)
