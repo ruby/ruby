@@ -2107,10 +2107,14 @@ EOF
       commands = []
       sock = nil
       @thread = Thread.start do
-        sock = server.accept
-        sock.print("220 (test_ftp).\r\n")
-        commands.push(sock.gets)
-        sock.print("234 AUTH success.\r\n")
+        begin
+          sock = server.accept
+          sock.print("220 (test_ftp).\r\n")
+          commands.push(sock.gets)
+          sock.print("234 AUTH success.\r\n")
+        rescue SystemCallError, IOError
+          # may be raised by broken connection
+        end
       end
       begin
         assert_raise(Net::OpenTimeout) do
@@ -2120,7 +2124,6 @@ EOF
                        open_timeout: 0.1)
         end
       ensure
-        sleep 0.1 # give a chance to complete server.accept
         sock.close if sock
         server.close
       end
