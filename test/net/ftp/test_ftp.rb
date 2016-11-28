@@ -2120,6 +2120,7 @@ EOF
                        open_timeout: 0.1)
         end
       ensure
+        sleep 0.1 # give a chance to complete server.accept
         sock.close if sock
         server.close
       end
