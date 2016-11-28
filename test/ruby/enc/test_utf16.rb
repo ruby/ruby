@@ -138,6 +138,12 @@ EOT
     assert_not_equal(0, s1.casecmp(s2), "#{encdump s1}.casecmp(#{encdump s2})")
   end
 
+  def test_casecmp?
+    s1 = "aa".force_encoding("utf-16be")
+    s2 = "AA"
+    assert_not_equal(true, s1.casecmp?(s2), "#{encdump s1}.casecmp?(#{encdump s2})")
+  end
+
   def test_end_with
     s1 = "ab".force_encoding("utf-16be")
     s2 = "b".force_encoding("utf-16be")
@@ -381,5 +387,12 @@ EOT
     e = ary.sort {|x,y| x <=> y }
     a = ary.sort {|x,y| x.casecmp(y) }
     assert_equal(e, a)
+  end
+
+  def test_casecmp2?
+    assert_equal(true, "\0A".force_encoding("UTF-16BE").casecmp?("\0a".force_encoding("UTF-16BE")))
+    assert_not_equal(true, "\0A".force_encoding("UTF-16LE").casecmp?("\0a".force_encoding("UTF-16LE")))
+    assert_not_equal(true, "A\0".force_encoding("UTF-16BE").casecmp?("a\0".force_encoding("UTF-16BE")))
+    assert_equal(true, "A\0".force_encoding("UTF-16LE").casecmp?("a\0".force_encoding("UTF-16LE")))
   end
 end

@@ -593,6 +593,14 @@ class TestM17NComb < Test::Unit::TestCase
     }
   end
 
+  def test_str_casecmp?
+    combination(STRINGS, STRINGS) {|s1, s2|
+      next unless s1.valid_encoding? && s2.valid_encoding? && Encoding.compatible?(s1, s2)
+      r = s1.casecmp?(s2)
+      assert_equal(s1.casecmp(s2) == 0, r)
+    }
+  end
+
   def test_str_center
     combination(STRINGS, [0,1,2,3,10]) {|s1, width|
       t = s1.center(width)

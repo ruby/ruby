@@ -2210,6 +2210,10 @@ CODE
     assert_equal(1, "\u3042B".casecmp("\u3042a"))
   end
 
+  def test_casecmp?
+    assert_equal(false, "\u3042B".casecmp?("\u3042a"))
+  end
+
   def test_upcase2
     assert_equal("\u3042AB", "\u3042aB".upcase)
   end
