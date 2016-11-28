@@ -758,7 +758,7 @@ checkmatch
     result = Qfalse;
 
     if (flag & VM_CHECKMATCH_ARRAY) {
-	int i;
+	long i;
 	for (i = 0; i < RARRAY_LEN(pattern); i++) {
 	    if (RTEST(check_match(RARRAY_AREF(pattern, i), target, checkmatch_type))) {
 		result = Qtrue;
