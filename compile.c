@@ -2256,6 +2256,26 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	}
     }
 
+    if (IS_INSN_ID(iobj, newarray) ||
+	IS_INSN_ID(iobj, duparray) ||
+	IS_INSN_ID(iobj, expandarray) ||
+	IS_INSN_ID(iobj, concatarray) ||
+	IS_INSN_ID(iobj, splatarray) ||
+	0) {
+	/*
+	 *  newarray N
+	 *  splatarray
+	 * =>
+	 *  newarray N
+	 * newarray always puts an array
+	 */
+	LINK_ELEMENT *next = iobj->link.next;
+	if (IS_INSN(next) && IS_INSN_ID(next, splatarray)) {
+	    /* remove splatarray following always-array insn */
+	    REMOVE_ELEM(next);
+	}
+    }
+
     if (do_tailcallopt &&
 	(IS_INSN_ID(iobj, send) ||
 	 IS_INSN_ID(iobj, opt_aref_with) ||
