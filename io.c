@@ -10312,6 +10312,12 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
     rb_io_synchronized(fptr2);
 
     extract_binmode(opt, &fmode);
+
+    if (fmode & FMODE_BINMODE) {
+	rb_io_ascii8bit_binmode(r);
+	rb_io_ascii8bit_binmode(w);
+    }
+
 #if DEFAULT_TEXTMODE
     if ((fptr->mode & FMODE_TEXTMODE) && (fmode & FMODE_BINMODE)) {
 	fptr->mode &= ~FMODE_TEXTMODE;
