@@ -113,6 +113,38 @@ class TestIO < Test::Unit::TestCase
     ].each{|thr| thr.join}
   end
 
+  def test_binmode_writer
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      reader, writer = IO.pipe
+      reader.binmode
+      writer.binmode
+
+      reader2, writer2 = IO.pipe(binmode: true)
+
+      assert writer.binmode?
+      assert writer2.binmode?
+      assert_equal writer.binmode?, writer2.binmode?
+      assert_equal writer.external_encoding, writer2.external_encoding
+      assert_equal writer.internal_encoding, writer2.internal_encoding
+    end
+  end
+
+  def test_binmode_reader
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      reader, writer = IO.pipe
+      reader.binmode
+      writer.binmode
+
+      reader2, writer2 = IO.pipe(binmode: true)
+
+      assert reader.binmode?
+      assert reader2.binmode?
+      assert_equal reader.binmode?, reader2.binmode?
+      assert_equal reader.external_encoding, reader2.external_encoding
+      assert_equal reader.internal_encoding, reader2.internal_encoding
+    end
+  end
+
   def test_pipe_block
     x = nil
     ret = IO.pipe {|r, w|
