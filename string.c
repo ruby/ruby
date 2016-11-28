@@ -174,6 +174,7 @@ static VALUE str_new_frozen(VALUE klass, VALUE orig);
 static VALUE str_new_static(VALUE klass, const char *ptr, long len, int encindex);
 static void str_make_independent_expand(VALUE str, long len, long expand, const int termlen);
 static inline void str_modifiable(VALUE str);
+static VALUE rb_str_downcase(int argc, VALUE *argv, VALUE str);
 
 static inline void
 str_make_independent(VALUE str)
@@ -3207,8 +3208,6 @@ rb_str_casecmp(VALUE str1, VALUE str2)
  *     "abcdef".casecmp("ABCDEF")    #=> true
  */
 
-
-static VALUE rb_str_downcase(int argc, VALUE *argv, VALUE str);  /* forward declaration */
 static VALUE
 rb_str_casecmp_p(VALUE str1, VALUE str2)
 {
