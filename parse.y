@@ -8520,6 +8520,10 @@ parser_yylex(struct parser_params *parser)
 	else if (IS_SPCARG(-1)) {
 	    c = tLPAREN_ARG;
 	}
+	else if (IS_lex_state(EXPR_ENDFN) && space_seen) {
+	    rb_warning0("parentheses after method name is interpreted as");
+	    rb_warning0("an argument list, not a decomposed argument");
+	}
 	paren_nest++;
 	COND_PUSH(0);
 	CMDARG_PUSH(0);
