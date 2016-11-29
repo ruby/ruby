@@ -6,7 +6,6 @@ require "webrick/httpproxy"
 begin
   require "webrick/ssl"
   require "net/https"
-  require File.expand_path("../openssl/utils.rb", File.dirname(__FILE__))
 rescue LoadError
   # test_connect will be skipped
 end
@@ -124,12 +123,19 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     exts = [
       ["keyUsage", "keyEncipherment,digitalSignature", true],
     ]
-    cert = OpenSSL::TestUtils.issue_cert(
-      subject, key, 1, Time.now, Time.now + 3600, exts,
-      nil, nil, OpenSSL::Digest::SHA1.new
-    )
+    cert = OpenSSL::X509::Certificate.new
+    cert.version = 2
+    cert.serial = 1
+    cert.subject = subject
+    cert.issuer = subject
+    cert.public_key = key
+    cert.not_before = Time.now - 3600
+    cert.not_after = Time.now + 3600
+    ef = OpenSSL::X509::ExtensionFactory.new(cert, cert)
+    exts.each {|args| cert.add_extension(ef.create_extension(*args)) }
+    cert.sign(key, "sha1")
     return cert
-  end if defined?(OpenSSL::TestUtils)
+  end if defined?(OpenSSL::SSL)
 
   def test_connect
     # Testing CONNECT to proxy server
@@ -139,7 +145,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     #    2.   ---- establish SSL session --->
     #    3.   ------- GET or POST ---------->
     #
-    key = OpenSSL::TestUtils::TEST_KEY_RSA1024
+    key = TEST_KEY_RSA2048
     cert = make_certificate(key, "127.0.0.1")
     s_config = {
       :SSLEnable =>true,
@@ -178,7 +184,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
         }
       }
     }
-  end if defined?(OpenSSL::TestUtils)
+  end if defined?(OpenSSL::SSL)
 
   def test_upstream_proxy
     # Testing GET or POST through the upstream proxy server
@@ -246,7 +252,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
         assert_equal(3, proxy_handler_called, up_log.call + log.call)
         assert_equal(3, request_handler_called, up_log.call + log.call)
 
-        if defined?(OpenSSL::TestUtils)
+        if defined?(OpenSSL::SSL)
           # Testing CONNECT to the upstream proxy server
           #
           #  client -------> proxy -------> proxy -------> https
@@ -254,7 +260,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
           #    2.   -------- establish SSL session ------>
           #    3.   ---------- GET or POST -------------->
           #
-          key = OpenSSL::TestUtils::TEST_KEY_RSA1024
+          key = TEST_KEY_RSA2048
           cert = make_certificate(key, "127.0.0.1")
           s_config = {
             :SSLEnable =>true,
@@ -286,5 +292,37 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
         end
       }
     }
+  end
+
+  if defined?(OpenSSL::SSL)
+    TEST_KEY_RSA2048 = OpenSSL::PKey.read <<-_end_of_pem_
+-----BEGIN RSA PRIVATE KEY-----
+MIIEpAIBAAKCAQEAuV9ht9J7k4NBs38jOXvvTKY9gW8nLICSno5EETR1cuF7i4pN
+s9I1QJGAFAX0BEO4KbzXmuOvfCpD3CU+Slp1enenfzq/t/e/1IRW0wkJUJUFQign
+4CtrkJL+P07yx18UjyPlBXb81ApEmAB5mrJVSrWmqbjs07JbuS4QQGGXLc+Su96D
+kYKmSNVjBiLxVVSpyZfAY3hD37d60uG+X8xdW5v68JkRFIhdGlb6JL8fllf/A/bl
+NwdJOhVr9mESHhwGjwfSeTDPfd8ZLE027E5lyAVX9KZYcU00mOX+fdxOSnGqS/8J
+DRh0EPHDL15RcJjV2J6vZjPb0rOYGDoMcH+94wIDAQABAoIBAAzsamqfYQAqwXTb
+I0CJtGg6msUgU7HVkOM+9d3hM2L791oGHV6xBAdpXW2H8LgvZHJ8eOeSghR8+dgq
+PIqAffo4x1Oma+FOg3A0fb0evyiACyrOk+EcBdbBeLo/LcvahBtqnDfiUMQTpy6V
+seSoFCwuN91TSCeGIsDpRjbG1vxZgtx+uI+oH5+ytqJOmfCksRDCkMglGkzyfcl0
+Xc5CUhIJ0my53xijEUQl19rtWdMnNnnkdbG8PT3LZlOta5Do86BElzUYka0C6dUc
+VsBDQ0Nup0P6rEQgy7tephHoRlUGTYamsajGJaAo1F3IQVIrRSuagi7+YpSpCqsW
+wORqorkCgYEA7RdX6MDVrbw7LePnhyuaqTiMK+055/R1TqhB1JvvxJ1CXk2rDL6G
+0TLHQ7oGofd5LYiemg4ZVtWdJe43BPZlVgT6lvL/iGo8JnrncB9Da6L7nrq/+Rvj
+XGjf1qODCK+LmreZWEsaLPURIoR/Ewwxb9J2zd0CaMjeTwafJo1CZvcCgYEAyCgb
+aqoWvUecX8VvARfuA593Lsi50t4MEArnOXXcd1RnXoZWhbx5rgO8/ATKfXr0BK/n
+h2GF9PfKzHFm/4V6e82OL7gu/kLy2u9bXN74vOvWFL5NOrOKPM7Kg+9I131kNYOw
+Ivnr/VtHE5s0dY7JChYWE1F3vArrOw3T00a4CXUCgYEA0SqY+dS2LvIzW4cHCe9k
+IQqsT0yYm5TFsUEr4sA3xcPfe4cV8sZb9k/QEGYb1+SWWZ+AHPV3UW5fl8kTbSNb
+v4ng8i8rVVQ0ANbJO9e5CUrepein2MPL0AkOATR8M7t7dGGpvYV0cFk8ZrFx0oId
+U0PgYDotF/iueBWlbsOM430CgYEAqYI95dFyPI5/AiSkY5queeb8+mQH62sdcCCr
+vd/w/CZA/K5sbAo4SoTj8dLk4evU6HtIa0DOP63y071eaxvRpTNqLUOgmLh+D6gS
+Cc7TfLuFrD+WDBatBd5jZ+SoHccVrLR/4L8jeodo5FPW05A+9gnKXEXsTxY4LOUC
+9bS4e1kCgYAqVXZh63JsMwoaxCYmQ66eJojKa47VNrOeIZDZvd2BPVf30glBOT41
+gBoDG3WMPZoQj9pb7uMcrnvs4APj2FIhMU8U15LcPAj59cD6S6rWnAxO8NFK7HQG
+4Jxg3JNNf8ErQoCHb1B3oVdXJkmbJkARoDpBKmTCgKtP8ADYLmVPQw==
+-----END RSA PRIVATE KEY-----
+    _end_of_pem_
   end
 end
