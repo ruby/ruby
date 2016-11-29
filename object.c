@@ -346,7 +346,9 @@ rb_obj_clone2(int argc, VALUE *argv, VALUE obj)
     }
 
     if (rb_special_const_p(obj)) {
-        rb_raise(rb_eTypeError, "can't clone %s", rb_obj_classname(obj));
+	if (kwfreeze == Qfalse)
+	    rb_raise(rb_eArgError, "can't unfreeze %s", rb_obj_classname(obj));
+	return obj;
     }
     clone = rb_obj_alloc(rb_obj_class(obj));
     RBASIC(clone)->flags &= (FL_TAINT|FL_PROMOTED0|FL_PROMOTED1);
