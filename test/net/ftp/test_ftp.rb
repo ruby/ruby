@@ -2230,7 +2230,7 @@ EOF
           sock.print("200 PSBZ success.\r\n")
           commands.push(sock.gets)
           sock.print("200 PROT success.\r\n")
-        rescue OpenSSL::SSL::SSLError
+        rescue OpenSSL::SSL::SSLError, SystemCallError
         end
       ensure
         sock.close
