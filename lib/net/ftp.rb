@@ -111,6 +111,13 @@ module Net
     # Net::OpenTimeout exception. The default value is +nil+.
     attr_accessor :open_timeout
 
+    # Number of seconds to wait for the TLS handshake. Any number
+    # may be used, including Floats for fractional seconds. If the FTP
+    # object cannot complete the TLS handshake in this many seconds, it
+    # raises a Net::OpenTimeout exception. The default value is +nil+.
+    # If +ssl_handshake_timeout+ is +nil+, +open_timeout+ is used instead.
+    attr_accessor :ssl_handshake_timeout
+
     # Number of seconds to wait for one block to be read (via one read(2)
     # call). Any number may be used, including Floats for fractional
     # seconds. If the FTP object cannot read data in this many seconds,
@@ -194,6 +201,10 @@ module Net
     #                 See Net::FTP#open_timeout for details.  Default: +nil+.
     # read_timeout::  Number of seconds to wait for one block to be read.
     #                 See Net::FTP#read_timeout for details.  Default: +60+.
+    # ssl_handshake_timeout::  Number of seconds to wait for the TLS
+    #                          handshake.
+    #                          See Net::FTP#ssl_handshake_timeout for
+    #                          details.  Default: +nil+.
     # debug_mode::  When +true+, all traffic to and from the server is
     #               written to +$stdout+.  Default: +false+.
     #
@@ -247,6 +258,7 @@ module Net
       @bare_sock = @sock = NullSocket.new
       @logged_in = false
       @open_timeout = options[:open_timeout]
+      @ssl_handshake_timeout = options[:ssl_handshake_timeout]
       @read_timeout = options[:read_timeout] || 60
       if host
         if options[:port]
@@ -318,7 +330,7 @@ module Net
     # SOCKS_SERVER, then a SOCKSSocket is returned, else a Socket is
     # returned.
     def open_socket(host, port) # :nodoc:
-      return Timeout.timeout(@open_timeout, Net::OpenTimeout) {
+      return Timeout.timeout(@open_timeout, OpenTimeout) {
         if defined? SOCKSSocket and ENV["SOCKS_SERVER"]
           @passive = true
           sock = SOCKSSocket.open(host, port)
@@ -338,7 +350,7 @@ module Net
         # ProFTPD returns 425 for data connections if session is not reused.
         ssl_sock.session = @ssl_session
       end
-      ssl_socket_connect(ssl_sock, @open_timeout)
+      ssl_socket_connect(ssl_sock, @ssl_handshake_timeout || @open_timeout)
       if @ssl_context.verify_mode != VERIFY_NONE
         ssl_sock.post_connection_check(@host)
       end

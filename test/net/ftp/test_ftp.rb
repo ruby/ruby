@@ -2107,22 +2107,19 @@ EOF
       commands = []
       sock = nil
       @thread = Thread.start do
-        begin
-          sock = server.accept
-          sock.print("220 (test_ftp).\r\n")
-          commands.push(sock.gets)
-          sock.print("234 AUTH success.\r\n")
-        rescue SystemCallError, IOError
-          # may be raised by broken connection
-        end
+        sock = server.accept
+        sock.print("220 (test_ftp).\r\n")
+        commands.push(sock.gets)
+        sock.print("234 AUTH success.\r\n")
       end
       begin
         assert_raise(Net::OpenTimeout) do
           Net::FTP.new("localhost",
                        port: port,
                        ssl: { ca_file: CA_FILE },
-                       open_timeout: 0.1)
+                       ssl_handshake_timeout: 0.1)
         end
+        @thread.join
       ensure
         sock.close if sock
         server.close
