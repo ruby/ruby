@@ -2501,8 +2501,8 @@ rb_thread_s_main(VALUE klass)
  *
  *  The default is +false+.
  *
- *  When set to +true+, all threads will abort (the process will
- *  <code>exit(0)</code>) if an exception is raised in any thread.
+ *  When set to +true+, if any thread is aborted by an exception, the
+ *  raised exception will be re-raised in the main thread.
  *
  *  Can also be specified by the global $DEBUG flag or command line option
  *  +-d+.
@@ -2524,7 +2524,8 @@ rb_thread_s_abort_exc(void)
  *  call-seq:
  *     Thread.abort_on_exception= boolean   -> true or false
  *
- *  When set to +true+, all threads will abort if an exception is raised.
+ *  When set to +true+, if any thread is aborted by an exception, the
+ *  raised exception will be re-raised in the main thread.
  *  Returns the new state.
  *
  *     Thread.abort_on_exception = true
@@ -2585,10 +2586,8 @@ rb_thread_abort_exc(VALUE thread)
  *  call-seq:
  *     thr.abort_on_exception= boolean   -> true or false
  *
- *  When set to +true+, all threads (including the main program) will abort if
- *  an exception is raised in this +thr+.
- *
- *  The process will effectively <code>exit(0)</code>.
+ *  When set to +true+, if this +thr+ is aborted by an exception, the
+ *  raised exception will be re-raised in the main thread.
  *
  *  See also #abort_on_exception.
  *
