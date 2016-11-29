@@ -242,6 +242,7 @@ module Net
           raise ArgumentError,
             "private_data_connection can be set to true only when ssl is enabled"
         end
+        @private_data_connection = false
       end
       @binary = true
       if options[:passive].nil?

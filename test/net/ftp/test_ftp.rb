@@ -1009,8 +1009,8 @@ EOF
       commands.push(sock.gets)
       sock.print("150 Opening TEXT mode data connection for foo (#{text_data.size} bytes)\r\n")
       conn = TCPSocket.new(host, port)
-      text_data.each_line do |line|
-        conn.print(line)
+      text_data.each_line do |l|
+        conn.print(l)
       end
       conn.shutdown(Socket::SHUT_WR)
       conn.read
@@ -1072,8 +1072,8 @@ EOF
       commands.push(sock.gets)
       sock.print("150 Opening TEXT mode data connection for foo (#{text_data.size} bytes)\r\n")
       conn = TCPSocket.new(host, port)
-      text_data.each_line do |line|
-        conn.print(line)
+      text_data.each_line do |l|
+        conn.print(l)
       end
       conn.shutdown(Socket::SHUT_WR)
       conn.read
@@ -1132,8 +1132,8 @@ EOF
       commands.push(sock.gets)
       sock.print("150 Opening TEXT mode data connection for foo (#{text_data.size} bytes)\r\n")
       conn = TCPSocket.new(host, port)
-      text_data.each_line do |line|
-        conn.print(line)
+      text_data.each_line do |l|
+        conn.print(l)
       end
       conn.shutdown(Socket::SHUT_WR)
       conn.read
@@ -1666,8 +1666,8 @@ EOF
       sock.print("150 Here comes the directory listing.\r\n")
       begin
         conn = TCPSocket.new(host, port)
-        entry_lines.each do |line|
-          conn.print(line, "\r\n")
+        entry_lines.each do |l|
+          conn.print(l, "\r\n")
         end
       rescue Errno::EPIPE
       ensure
