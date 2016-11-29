@@ -35,7 +35,7 @@ TestComprehensiveCaseFold.data_files_available? and  class TestComprehensiveCase
     end
   end
 
-  def self.read_data_file (filename)
+  def self.read_data_file(filename)
     IO.foreach(expand_filename(filename), encoding: Encoding::ASCII_8BIT) do |line|
       if $. == 1
         if filename == 'UnicodeData'
@@ -140,7 +140,7 @@ TestComprehensiveCaseFold.data_files_available? and  class TestComprehensiveCase
     @@tests ||= []
   end
 
-  def self.generate_unicode_case_mapping_tests (encoding)
+  def self.generate_unicode_case_mapping_tests(encoding)
     all_tests.each do |test|
       attributes = test.attributes.map(&:to_s).join '-'
       attributes.prepend '_' unless attributes.empty?
@@ -158,7 +158,7 @@ TestComprehensiveCaseFold.data_files_available? and  class TestComprehensiveCase
     end
   end
 
-  def self.generate_case_mapping_tests (encoding)
+  def self.generate_case_mapping_tests(encoding)
     all_tests
     # preselect codepoints to speed up testing for small encodings
     codepoints = @@codepoints.select do |code|
@@ -200,7 +200,7 @@ TestComprehensiveCaseFold.data_files_available? and  class TestComprehensiveCase
   end
 
   # test for encodings that don't yet (or will never) deal with non-ASCII characters
-  def self.generate_ascii_only_case_mapping_tests (encoding)
+  def self.generate_ascii_only_case_mapping_tests(encoding)
     all_tests
     # preselect codepoints to speed up testing for small encodings
     codepoints = @@codepoints.select do |code|

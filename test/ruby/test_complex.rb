@@ -434,7 +434,7 @@ class Complex_Test < Test::Unit::TestCase
   end
 
   class ObjectX
-    def + (x) Rational(1) end
+    def +(x) Rational(1) end
     alias - +
     alias * +
     alias / +

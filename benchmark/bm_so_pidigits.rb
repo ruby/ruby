@@ -38,7 +38,7 @@ end
 
 class Transformation
     attr_reader :q, :r, :s, :t
-    def initialize (q, r, s, t)
+    def initialize(q, r, s, t)
         @q,@r,@s,@t,@k = q,r,s,t,0
     end
 

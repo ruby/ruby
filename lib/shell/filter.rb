@@ -47,7 +47,7 @@ class Shell #:nodoc:
     #
     # Inputs from +source+, which is either a string of a file name or an IO
     # object.
-    def < (src)
+    def <(src)
       case src
       when String
         cat = Cat.new(@shell, src)
@@ -65,7 +65,7 @@ class Shell #:nodoc:
     #
     # Outputs from +source+, which is either a string of a file name or an IO
     # object.
-    def > (to)
+    def >(to)
       case to
       when String
         dst = @shell.open(to, "w")
@@ -87,7 +87,7 @@ class Shell #:nodoc:
     #
     # Appends the output to +source+, which is either a string of a file name
     # or an IO object.
-    def >> (to)
+    def >>(to)
       begin
         Shell.cd(@shell.pwd).append(to, self)
       rescue CantApplyMethod
@@ -99,7 +99,7 @@ class Shell #:nodoc:
     #   | filter
     #
     # Processes a pipeline.
-    def | (filter)
+    def |(filter)
       filter.input = self
       if active?
         @shell.process_controller.start_job filter
@@ -111,7 +111,7 @@ class Shell #:nodoc:
     #   filter1 + filter2
     #
     # Outputs +filter1+, and then +filter2+ using Join.new
-    def + (filter)
+    def +(filter)
       Join.new(@shell, self, filter)
     end
 

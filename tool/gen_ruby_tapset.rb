@@ -5,7 +5,7 @@
 
 require "optparse"
 
-def set_argument (argname, nth)
+def set_argument(argname, nth)
   # remove C style type info
   argname.gsub!(/.+ (.+)/, '\1') # e.g. char *hoge -> *hoge
   argname.gsub!(/^\*/, '')       # e.g. *filename -> filename
