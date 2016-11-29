@@ -371,12 +371,8 @@ class TestKeywordArguments < Test::Unit::TestCase
       break eval("proc {|a:| a}", nil, 'xyzzy', __LINE__)
     end
     assert_raise_with_message(ArgumentError, /missing keyword/, feature7701) {b.call}
-    assert_raise_with_message(ArgumentError, /unknown keyword/, feature7701) {b.call(a:0, b:1)}
-    begin
-      b.call(a: 0, b: 1)
-    rescue => e
-      assert_equal('xyzzy', e.backtrace_locations[0].path)
-    end
+    e = assert_raise_with_message(ArgumentError, /unknown keyword/, feature7701) {b.call(a:0, b:1)}
+    assert_equal('xyzzy', e.backtrace_locations[0].path)
 
     assert_equal(42, b.call(a: 42), feature7701)
     assert_equal([[:keyreq, :a]], b.parameters, feature7701)
