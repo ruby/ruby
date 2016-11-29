@@ -372,7 +372,7 @@ module Net
               voidcmd("PROT P")
             end
           rescue OpenSSL::SSL::SSLError, OpenTimeout
-            close
+            @sock.close
             raise
           end
         end
