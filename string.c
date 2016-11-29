@@ -3130,6 +3130,8 @@ rb_str_cmp_m(VALUE str1, VALUE str2)
  *     str.casecmp(other_str)   -> -1, 0, +1 or nil
  *
  *  Case-insensitive version of <code>String#<=></code>.
+ *  Currently, case-insensitivity only works on characters A-Z/a-z,
+ *  not all of Unicode. This is different from <code>casecmp?</code>.
  *
  *     "abcdef".casecmp("abcde")     #=> 1
  *     "aBcDeF".casecmp("abcdef")    #=> 0
@@ -3202,10 +3204,11 @@ rb_str_casecmp(VALUE str1, VALUE str2)
  *  Returns true if str and other_other_str are equal after Unicode case folding,
  *  false if they are not equal, and nil if other_str is not a string.
  *
- *     "abcdef".casecmp("abcde")     #=> false
- *     "aBcDeF".casecmp("abcdef")    #=> true
- *     "abcdef".casecmp("abcdefg")   #=> false
- *     "abcdef".casecmp("ABCDEF")    #=> true
+ *     "abcdef".casecmp?("abcde")     #=> false
+ *     "aBcDeF".casecmp?("abcdef")    #=> true
+ *     "abcdef".casecmp?("abcdefg")   #=> false
+ *     "abcdef".casecmp?("ABCDEF")    #=> true
+ *     "äöü".casecmp?("ÄÖÜ")          #=> true
  */
 
 static VALUE
@@ -9637,6 +9640,8 @@ sym_cmp(VALUE sym, VALUE other)
  *   sym.casecmp(other)  -> -1, 0, +1 or nil
  *
  * Case-insensitive version of <code>Symbol#<=></code>.
+ * Currently, case-insensitivity only works on characters A-Z/a-z,
+ * not all of Unicode. This is different from <code>casecmp?</code>.
  */
 
 static VALUE
