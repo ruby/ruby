@@ -1118,7 +1118,7 @@ class Matrix
   #     => 67 96
   #        48 99
   #
-  def ** (other)
+  def **(other)
     case other
     when Integer
       x = self
@@ -1644,7 +1644,7 @@ class Matrix
       end
     end
 
-    def / (other)
+    def /(other)
       case other
       when Numeric
         Scalar.new(@value / other)
@@ -1657,7 +1657,7 @@ class Matrix
       end
     end
 
-    def ** (other)
+    def **(other)
       case other
       when Numeric
         Scalar.new(@value ** other)
