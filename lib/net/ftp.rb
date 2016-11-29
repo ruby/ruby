@@ -371,7 +371,7 @@ module Net
               voidcmd("PBSZ 0")
               voidcmd("PROT P")
             end
-          rescue OpenSSL::SSL::SSLError
+          rescue OpenSSL::SSL::SSLError, OpenTimeout
             close
             raise
           end
