@@ -140,6 +140,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * String
 
+  * String#casecmp? [Feature #12786]
+
   * String#upcase, String#downcase, String#capitalize, String#swapcase and
     their bang variants work for all of Unicode, and are no longer limited
     to ASCII. Supported encodings are UTF-8, UTF-16BE/LE, UTF-32BE/LE, and
@@ -152,6 +154,8 @@ with all sufficient information, see the ChangeLog file or Redmine
     Now takes multiple arguments.
 
 * Symbol
+
+  * Symbol#casecmp? [Feature #12786]
 
   * Symbol#match now returns MatchData.  [Bug #11991]
 
