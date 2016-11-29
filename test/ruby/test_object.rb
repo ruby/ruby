@@ -23,6 +23,8 @@ class TestObject < Test::Unit::TestCase
     assert_equal true, true.dup
     assert_equal nil, nil.dup
     assert_equal false, false.dup
+    x = 1 << 64; assert_equal x, x.dup
+    x = 1.72723e-77; assert_equal x, x.dup
 
     assert_raise(TypeError) do
       Object.new.instance_eval { initialize_copy(1) }
@@ -49,6 +51,8 @@ class TestObject < Test::Unit::TestCase
     assert_equal true, true.clone
     assert_equal nil, nil.clone
     assert_equal false, false.clone
+    x = 1 << 64; assert_equal x, x.clone
+    x = 1.72723e-77; assert_equal x, x.clone
     assert_raise(ArgumentError) {1.clone(freeze: false)}
     assert_raise(ArgumentError) {true.clone(freeze: false)}
     assert_raise(ArgumentError) {nil.clone(freeze: false)}
