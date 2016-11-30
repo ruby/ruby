@@ -146,8 +146,6 @@ TestComprehensiveCaseFold.data_files_available? and  class TestComprehensiveCase
       attributes.prepend '_' unless attributes.empty?
       define_method "test_#{encoding}_#{test.method_name}#{attributes}" do
         @@codepoints.each do |code|
-          next if code=="\uA64B" # temporarily exclude this character from testing,
-                                 # see https://bugs.ruby-lang.org/issues/12990
           source = code.encode(encoding) * 5
           target = "#{test.first_data[code]}#{test.follow_data[code]*4}".encode(encoding)
           result = source.__send__(test.method_name, *test.attributes)

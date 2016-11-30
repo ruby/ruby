@@ -777,8 +777,8 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 			code = folded->code[0];
 		}
 		else if ((flags&(ONIGENC_CASE_UPCASE))
-			 && (code==0x03B9||code==0x03BC)) { /* GREEK SMALL LETTERs IOTA/MU */
-		    MODIFIED;
+			 && (code==0x03B9||code==0x03BC||code==0xA64B)) { /* GREEK SMALL LETTERs IOTA/MU, */
+		    MODIFIED;                                             /* CYRILLIC SMALL LETTER MONOGRAPH UK */
 		    code = folded->code[1];
 		}
 	    }

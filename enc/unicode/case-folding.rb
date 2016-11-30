@@ -296,17 +296,19 @@ class CaseMapping
         when item.upper  then  flags += '|U'
         when item.lower  then  flags += '|D'
         else
-          unless from=='03B9' or from=='03BC'
-            warn 'Unpredicted case 0; check data or adjust program (enc/unicode/case_folding.rb).'
+          unless from=='03B9' or from=='03BC' or from=='A64B'
+            # cf. code==0x03B9||code==0x03BC||code==0xA64B in enc/unicode.c,
+            # towards the end of function onigenc_unicode_case_map
+            raise "Unpredicted case 0 in enc/unicode/case_folding.rb. Please contact https://bugs.ruby-lang.org/."
           end
         end
         unless item.upper == item.title
           if item.code == item.title
-            warn 'Unpredicted case 1; check data or adjust program (enc/unicode/case_folding.rb).'
+            raise "Unpredicted case 1 in enc/unicode/case_folding.rb. Please contact https://bugs.ruby-lang.org/."
           elsif item.title==to[1]
             flags += '|ST'
           else
-            warn 'Unpredicted case 2; check data or adjust program (enc/unicode/case_folding.rb).'
+            raise "Unpredicted case 2 in enc/unicode/case_folding.rb. Please contact https://bugs.ruby-lang.org/."
           end
         end
       end
