@@ -5757,6 +5757,24 @@ parser_tok_hex(struct parser_params *parser, size_t *numlen)
 
 #define tokcopy(n) memcpy(tokspace(n), lex_p - (n), (n))
 
+static void
+parser_tokadd_codepoint(struct parser_params *parser, rb_encoding **encp,
+			int string_literal, int regexp_literal,
+			int codepoint, int numlen)
+{
+    lex_p += numlen;
+    if (regexp_literal) {
+	tokcopy(numlen);
+    }
+    else if (codepoint >= 0x80) {
+	*encp = rb_utf8_encoding();
+	if (string_literal) tokaddmbc(codepoint, *encp);
+    }
+    else if (string_literal) {
+	tokadd(codepoint);
+    }
+}
+
 /* return value is for ?\u3042 */
 static int
 parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
@@ -5788,17 +5806,8 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
 		yyerror("invalid Unicode codepoint (too large)");
 		return 0;
 	    }
-	    lex_p += numlen;
-            if (regexp_literal) {
-                tokcopy((int)numlen);
-            }
-            else if (codepoint >= 0x80) {
-		*encp = rb_utf8_encoding();
-		if (string_literal) tokaddmbc(codepoint, *encp);
-	    }
-	    else if (string_literal) {
-		tokadd(codepoint);
-	    }
+	    parser_tokadd_codepoint(parser, encp,string_literal, regexp_literal,
+				    codepoint, (int)numlen);
 	} while (string_literal && (peek(' ') || peek('\t')));
 
 	if (!peek(close_brace)) {
@@ -5815,17 +5824,8 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
 	    yyerror("invalid Unicode escape");
 	    return 0;
 	}
-	lex_p += 4;
-        if (regexp_literal) {
-            tokcopy(4);
-        }
-	else if (codepoint >= 0x80) {
-	    *encp = rb_utf8_encoding();
-	    if (string_literal) tokaddmbc(codepoint, *encp);
-	}
-	else if (string_literal) {
-	    tokadd(codepoint);
-	}
+	parser_tokadd_codepoint(parser, encp, string_literal, regexp_literal,
+				codepoint, 4);
     }
 
     return codepoint;
