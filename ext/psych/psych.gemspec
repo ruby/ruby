@@ -1,6 +1,5 @@
 # -*- encoding: utf-8 -*-
-$LOAD_PATH.unshift './lib'
-load 'psych/versions.rb'
+require 'psych'
 
 Gem::Specification.new do |s|
   s.name = "psych"
