@@ -392,6 +392,8 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define NODE_CALL_Q(q) (CALL_Q_P(q) ? NODE_QCALL : NODE_CALL)
 #define NEW_QCALL(q,r,m,a) NEW_NODE(NODE_CALL_Q(q),r,m,a)
 
+#define lambda_beginning_p() (lpar_beg && lpar_beg == paren_nest)
+
 static int yylex(YYSTYPE*, struct parser_params*);
 
 #ifndef RIPPER
@@ -7914,7 +7916,7 @@ parse_ident(struct parser_params *parser, int c, int cmd_state)
 		command_start = TRUE;
 	    }
 	    if (kw->id[0] == keyword_do) {
-		if (lpar_beg && lpar_beg == paren_nest) {
+		if (lambda_beginning_p()) {
 		    lpar_beg = 0;
 		    --paren_nest;
 		    return keyword_do_LAMBDA;
@@ -8520,7 +8522,7 @@ parser_yylex(struct parser_params *parser)
 	else if (IS_SPCARG(-1)) {
 	    c = tLPAREN_ARG;
 	}
-	else if (IS_lex_state(EXPR_ENDFN) && space_seen) {
+	else if (IS_lex_state(EXPR_ENDFN) && space_seen && !lambda_beginning_p()) {
 	    rb_warning0("parentheses after method name is interpreted as");
 	    rb_warning0("an argument list, not a decomposed argument");
 	}
@@ -8558,7 +8560,7 @@ parser_yylex(struct parser_params *parser)
 
       case '{':
 	++brace_nest;
-	if (lpar_beg && lpar_beg == paren_nest) {
+	if (lambda_beginning_p()) {
 	    SET_LEX_STATE(EXPR_BEG);
 	    lpar_beg = 0;
 	    --paren_nest;
