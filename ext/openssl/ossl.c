@@ -180,7 +180,7 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd_)
 	    len = RSTRING_LEN(pass);
 	    if (len >= OSSL_MIN_PWD_LEN && len <= max_len) {
 		memcpy(buf, RSTRING_PTR(pass), len);
-		return len;
+		return (int)len;
 	    }
 	}
 	OSSL_Debug("passed data is not valid String???");
