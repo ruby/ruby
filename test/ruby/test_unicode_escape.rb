@@ -256,6 +256,10 @@ EOS
      assert_raise(SyntaxError) { eval %q("\ughij") }       # bad hex digits
      assert_raise(SyntaxError) { eval %q("\u{ghij}") }     # bad hex digits
 
+     assert_raise_with_message(SyntaxError, /invalid/) {
+       eval %q("\u{123.}")  # bad char
+     }
+
      assert_raise(SyntaxError) { eval %q("\u{123 456 }")}  # extra space
      assert_raise(SyntaxError) { eval %q("\u{ 123 456}")}  # extra space
      assert_raise(SyntaxError) { eval %q("\u{123  456}")}  # extra space

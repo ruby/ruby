@@ -5794,9 +5794,9 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
     if (regexp_literal) { tokadd('\\'); tokadd('u'); }
 
     if (peek(open_brace)) {  /* handle \u{...} form */
+	int c, last = nextc();
 	do {
-            if (regexp_literal) { tokadd(*lex_p); }
-	    nextc();
+	    if (regexp_literal) tokadd(last);
 	    codepoint = scan_hex(lex_p, 6, &numlen);
 	    if (numlen == 0)  {
 		yyerror("invalid Unicode escape");
@@ -5808,15 +5808,15 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
 	    }
 	    parser_tokadd_codepoint(parser, encp,string_literal, regexp_literal,
 				    codepoint, (int)numlen);
-	} while (string_literal && (peek(' ') || peek('\t')));
+	    if (ISSPACE(c = nextc())) last = c;
+	} while (string_literal && c != close_brace);
 
-	if (!peek(close_brace)) {
+	if (c != close_brace) {
 	    yyerror("unterminated Unicode escape");
 	    return 0;
 	}
 
 	if (regexp_literal) tokadd(close_brace);
-	nextc();
     }
     else {			/* handle \uxxxx form */
 	codepoint = scan_hex(lex_p, 4, &numlen);
