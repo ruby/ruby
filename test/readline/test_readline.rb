@@ -486,13 +486,13 @@ class TestReadline < Test::Unit::TestCase
 
     with_temp_stdio do |stdin, stdout|
       replace_stdio(stdin.path, stdout.path) do
-        Readline.completion_proc = -> (text) do
+        Readline.completion_proc = ->(text) do
           passed_text = text
           ['completion']
         end
         Readline.completer_quote_characters = '\'"'
         Readline.completer_word_break_characters = ' '
-        Readline.quoting_detection_proc = -> (text, index) do
+        Readline.quoting_detection_proc = ->(text, index) do
           index > 0 && text[index-1] == '\\'
         end
 
@@ -524,13 +524,13 @@ class TestReadline < Test::Unit::TestCase
 
     with_temp_stdio do |stdin, stdout|
       replace_stdio(stdin.path, stdout.path) do
-        Readline.completion_proc = -> (text) do
+        Readline.completion_proc = ->(text) do
           passed_text = text
           ['completion']
         end
         Readline.completer_quote_characters = '\'"'
         Readline.completer_word_break_characters = ' '
-        Readline.quoting_detection_proc = -> (text, index) do
+        Readline.quoting_detection_proc = ->(text, index) do
           escaped = index > 0 && text[index-1] == '\\'
           escaped_char_indexes << index if escaped
           escaped
