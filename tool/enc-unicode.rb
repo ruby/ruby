@@ -144,7 +144,7 @@ def parse_scripts(data, categories)
         categories[current] = file[:title]
         (names[file[:title]] ||= []) << current
         cps = []
-      elsif /^([0-9a-fA-F]+)(?:..([0-9a-fA-F]+))?\s*;\s*(\w+)/ =~ line
+      elsif /^([0-9a-fA-F]+)(?:\.\.([0-9a-fA-F]+))?\s*;\s*(\w+)/ =~ line
         current = $3
         $2 ? cps.concat(($1.to_i(16)..$2.to_i(16)).to_a) : cps.push($1.to_i(16))
       end
@@ -199,7 +199,26 @@ def parse_age(data)
       ages << current
       last_constname = constname
       cps = []
-    elsif /^([0-9a-fA-F]+)(?:..([0-9a-fA-F]+))?\s*;\s*(\d+\.\d+)/ =~ line
+    elsif /^([0-9a-fA-F]+)(?:\.\.([0-9a-fA-F]+))?\s*;\s*(\d+\.\d+)/ =~ line
+      current = $3
+      $2 ? cps.concat(($1.to_i(16)..$2.to_i(16)).to_a) : cps.push($1.to_i(16))
+    end
+  end
+  ages
+end
+
+def parse_GraphemeBreakProperty(data)
+  current = nil
+  cps = []
+  ages = []
+  data_foreach('GraphemeBreakProperty.txt') do |line|
+    if /^# Total code points: / =~ line
+      constname = constantize_Grapheme_Cluster_Break(current)
+      data[constname] = cps
+      make_const(constname, cps, "Grapheme_Cluster_Break=#{current}")
+      ages << current
+      cps = []
+    elsif /^([0-9a-fA-F]+)(?:\.\.([0-9a-fA-F]+))?\s*;\s*(\w+)/ =~ line
       current = $3
       $2 ? cps.concat(($1.to_i(16)..$2.to_i(16)).to_a) : cps.push($1.to_i(16))
     end
@@ -209,7 +228,6 @@ end
 
 def parse_block(data)
   current = nil
-  last_constname = nil
   cps = []
   blocks = []
   data_foreach('Blocks.txt') do |line|
@@ -267,6 +285,10 @@ end
 
 def constantize_agename(name)
   "Age_#{name.sub(/\./, '_')}"
+end
+
+def constantize_Grapheme_Cluster_Break(name)
+  "Grapheme_Cluster_Break_#{name}"
 end
 
 def constantize_blockname(name)
@@ -381,6 +403,7 @@ end
 output.ifdef :USE_UNICODE_AGE_PROPERTIES
 ages = parse_age(data)
 output.endif :USE_UNICODE_AGE_PROPERTIES
+graphemeBreaks = parse_GraphemeBreakProperty(data)
 blocks = parse_block(data)
 output.endif :USE_UNICODE_PROPERTIES
 puts(<<'__HEREDOC')
@@ -393,6 +416,7 @@ props.each{|name| puts"  CR_#{name},"}
 output.ifdef :USE_UNICODE_AGE_PROPERTIES
 ages.each{|name|  puts"  CR_#{constantize_agename(name)},"}
 output.endif :USE_UNICODE_AGE_PROPERTIES
+graphemeBreaks.each{|name|  puts"  CR_#{constantize_Grapheme_Cluster_Break(name)},"}
 blocks.each{|name|puts"  CR_#{name},"}
 output.endif :USE_UNICODE_PROPERTIES
 
@@ -437,6 +461,12 @@ ages.each do |name|
   puts "%-40s %3d" % [name + ',', i]
 end
 output.endif :USE_UNICODE_AGE_PROPERTIES
+graphemeBreaks.each do |name|
+  i += 1
+  name = "graphemeclusterbreak=#{name.delete('_').downcase}"
+  name_to_index[name] = i
+  puts "%-40s %3d" % [name + ',', i]
+end
 blocks.each do |name|
   i += 1
   name = normalize_propname(name)

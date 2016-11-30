@@ -6572,7 +6572,7 @@ print_compiled_byte_code_list(FILE* f, regex_t* reg)
 #endif /* ONIG_DEBUG_COMPILE */
 
 #ifdef ONIG_DEBUG_PARSE_TREE
-static void
+void
 print_indent_tree(FILE* f, Node* node, int indent)
 {
   int i, type, container_p = 0;
@@ -6618,12 +6618,15 @@ print_indent_tree(FILE* f, Node* node, int indent)
 
   case NT_CCLASS:
     fprintf(f, "<cclass:%"PRIxPTR">", (intptr_t )node);
-    if (IS_NCCLASS_NOT(NCCLASS(node))) fputs(" not", f);
+    if (IS_NCCLASS_NOT(NCCLASS(node))) fputs("not ", f);
     if (NCCLASS(node)->mbuf) {
       BBuf* bbuf = NCCLASS(node)->mbuf;
-      for (i = 0; i < (int )bbuf->used; i++) {
-	if (i > 0) fprintf(f, ",");
-	fprintf(f, "%0x", bbuf->p[i]);
+      OnigCodePoint* data = (OnigCodePoint*)bbuf->p;
+      OnigCodePoint* end = (OnigCodePoint*)(bbuf->p + bbuf->used);
+      fprintf(f, "%d", *data++);
+      for (; data < end; data+=2) {
+	fprintf(f, ",");
+	fprintf(f, "%04x-%04x", data[0], data[1]);
       }
     }
     break;

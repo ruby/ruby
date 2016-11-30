@@ -132,6 +132,9 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Regexp#match? [Feature #8110]
     This returns bool and doesn't save backref.
 
+  * meta character \X matches Unicode 9.0 characters with some workarounds
+    for UTR #51 Unicode Emoji, Version 4.0 emoji zwj sequences.
+
 * Regexp/String: Updated Unicode version from 8.0.0 to 9.0.0 [Feature #12513]
 
 * RubyVM::Env

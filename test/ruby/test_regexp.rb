@@ -900,6 +900,27 @@ class TestRegexp < Test::Unit::TestCase
     assert_no_match(/[[:ascii:]]/, "\x80\xFF")
   end
 
+  def test_cclass_R
+    assert_match /\A\R\z/, "\r"
+    assert_match /\A\R\z/, "\n"
+    assert_match /\A\R\z/, "\r\n"
+  end
+
+  def test_cclass_X
+    assert_match /\A\X\z/, "\u{20 200d}"
+    assert_match /\A\X\z/, "\u{600 600}"
+    assert_match /\A\X\z/, "\u{600 20}"
+    assert_match /\A\X\z/, "\u{261d 1F3FB}"
+    assert_match /\A\X\z/, "\u{1f600}"
+    assert_match /\A\X\z/, "\u{20 308}"
+    assert_match /\A\X\X\z/, "\u{a 308}"
+    assert_match /\A\X\X\z/, "\u{d 308}"
+    assert_match /\A\X\z/, "\u{1F477 1F3FF 200D 2640 FE0F}"
+    assert_match /\A\X\z/, "\u{1F468 200D 1F393}"
+    assert_match /\A\X\z/, "\u{1F46F 200D 2642 FE0F}"
+    assert_match /\A\X\z/, "\u{1f469 200d 2764 fe0f 200d 1f469}"
+  end
+
   def test_backward
     assert_equal(3, "foobar".rindex(/b.r/i))
     assert_equal(nil, "foovar".rindex(/b.r/i))
