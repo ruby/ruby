@@ -72,13 +72,6 @@ class OpenSSL::TestEngine < OpenSSL::TestCase
     end;
   end
 
-  def test_dup
-    with_openssl <<-'end;'
-      engine = get_engine
-      assert_raise(NoMethodError) { engine.dup }
-    end;
-  end
-
   private
 
   # this is required because OpenSSL::Engine methods change global state

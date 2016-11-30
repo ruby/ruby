@@ -394,14 +394,12 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       }
     }
 
-    now = Time.now
     exts = [
       ["keyUsage","keyEncipherment,digitalSignature",true],
       ["subjectAltName","DNS:localhost.localdomain",false],
       ["subjectAltName","IP:127.0.0.1",false],
     ]
-    @svr_cert = issue_cert(@svr, @svr_key, 4, now, now+1800, exts,
-                           @ca_cert, @ca_key, OpenSSL::Digest::SHA1.new)
+    @svr_cert = issue_cert(@svr, @svr_key, 4, exts, @ca_cert, @ca_key)
     start_server { |server, port|
       server_connect(port) { |ssl|
         assert(ssl.post_connection_check("localhost.localdomain"))
@@ -417,13 +415,11 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       }
     }
 
-    now = Time.now
     exts = [
       ["keyUsage","keyEncipherment,digitalSignature",true],
       ["subjectAltName","DNS:*.localdomain",false],
     ]
-    @svr_cert = issue_cert(@svr, @svr_key, 5, now, now+1800, exts,
-                           @ca_cert, @ca_key, OpenSSL::Digest::SHA1.new)
+    @svr_cert = issue_cert(@svr, @svr_key, 5, exts, @ca_cert, @ca_key)
     start_server { |server, port|
       server_connect(port) { |ssl|
         assert(ssl.post_connection_check("localhost.localdomain"))
@@ -656,7 +652,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
         ssl.hostname = "foo.example.com"
         ssl.connect
-        assert_match /^ADH-/, ssl.cipher[0], "the context returned by servername_cb is used"
+        assert_match (/^ADH-/), ssl.cipher[0], "the context returned by servername_cb is used"
         assert_predicate ctx3, :frozen?
       ensure
         sock.close
@@ -667,7 +663,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
         ssl.hostname = "bar.example.com"
         ssl.connect
-        assert_not_match /^A(EC)?DH-/, ssl.cipher[0], "the original context is used"
+        assert_not_match (/^A(EC)?DH-/), ssl.cipher[0], "the original context is used"
       ensure
         sock.close
       end
@@ -711,14 +707,12 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
   def test_verify_hostname_on_connect
     ctx_proc = proc { |ctx|
-      now = Time.now
       exts = [
         ["keyUsage", "keyEncipherment,digitalSignature", true],
         ["subjectAltName", "DNS:a.example.com,DNS:*.b.example.com," \
                            "DNS:c*.example.com,DNS:d.*.example.com"],
       ]
-      ctx.cert = issue_cert(@svr, @svr_key, 4, now, now+1800, exts,
-                            @ca_cert, @ca_key, OpenSSL::Digest::SHA1.new)
+      ctx.cert = issue_cert(@svr, @svr_key, 4, exts, @ca_cert, @ca_key)
       ctx.key = @svr_key
     }
 
@@ -1250,6 +1244,18 @@ end
     ssl.close if ssl
     sock1.close
     sock2.close
+  end
+
+  def test_freeze_calls_setup
+    bug = "[ruby/openssl#85]"
+    start_server(ignore_listener_error: true) { |server, port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
+      ctx.freeze
+      assert_raise(OpenSSL::SSL::SSLError, bug) {
+        server_connect(port, ctx)
+      }
+    }
   end
 
   private

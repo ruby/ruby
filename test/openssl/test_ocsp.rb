@@ -5,9 +5,6 @@ if defined?(OpenSSL::TestUtils)
 
 class OpenSSL::TestOCSP < OpenSSL::TestCase
   def setup
-    now = Time.at(Time.now.to_i) # suppress usec
-    dgst = OpenSSL::Digest::SHA1.new
-
     # @ca_cert
     #   |
     # @cert
@@ -21,7 +18,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
       ["keyUsage", "cRLSign,keyCertSign", true],
     ]
     @ca_cert = OpenSSL::TestUtils.issue_cert(
-       ca_subj, @ca_key, 1, now, now+3600, ca_exts, nil, nil, dgst)
+      ca_subj, @ca_key, 1, ca_exts, nil, nil)
 
     cert_subj = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=TestCA2")
     @cert_key = OpenSSL::TestUtils::TEST_KEY_RSA1024
@@ -30,14 +27,14 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
       ["keyUsage", "cRLSign,keyCertSign", true],
     ]
     @cert = OpenSSL::TestUtils.issue_cert(
-       cert_subj, @cert_key, 5, now, now+3600, cert_exts, @ca_cert, @ca_key, dgst)
+      cert_subj, @cert_key, 5, cert_exts, @ca_cert, @ca_key)
 
     cert2_subj = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=TestCert")
     @cert2_key = OpenSSL::TestUtils::TEST_KEY_RSA1024
     cert2_exts = [
     ]
     @cert2 = OpenSSL::TestUtils.issue_cert(
-       cert2_subj, @cert2_key, 10, now, now+3600, cert2_exts, @cert, @cert_key, dgst)
+      cert2_subj, @cert2_key, 10, cert2_exts, @cert, @cert_key)
 
     ocsp_subj = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=TestCAOCSP")
     @ocsp_key = OpenSSL::TestUtils::TEST_KEY_RSA2048
@@ -45,7 +42,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
       ["extendedKeyUsage", "OCSPSigning", true],
     ]
     @ocsp_cert = OpenSSL::TestUtils.issue_cert(
-       ocsp_subj, @ocsp_key, 100, now, now+3600, ocsp_exts, @cert, @cert_key, "SHA256")
+       ocsp_subj, @ocsp_key, 100, ocsp_exts, @cert, @cert_key)
   end
 
   def test_new_certificate_id

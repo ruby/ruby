@@ -70,6 +70,21 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     end
   end
 
+  def test_sign_verify
+    data = "Sign me!"
+    signature = RSA1024.sign("SHA1", data)
+    assert_equal true, RSA1024.verify("SHA1", signature, data)
+
+    signature0 = (<<~'end;').unpack("m")[0]
+      oLCgbprPvfhM4pjFQiDTFeWI9Sk+Og7Nh9TmIZ/xSxf2CGXQrptlwo7NQ28+
+      WA6YQo8jPH4hSuyWIM4Gz4qRYiYRkl5TDMUYob94zm8Si1HxEiS9354tzvqS
+      zS8MLW2BtNPuTubMxTItHGTnOzo9sUg0LAHVFt8kHG2NfKAw/gQ=
+    end;
+    assert_equal true, RSA1024.verify("SHA256", signature0, data)
+    signature1 = signature0.succ
+    assert_equal false, RSA1024.verify("SHA256", signature1, data)
+  end
+
   def test_digest_state_irrelevant_sign
     key = RSA1024
     digest1 = OpenSSL::Digest::SHA1.new
@@ -91,6 +106,13 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     digest1 << 'Change state of digest1'
     assert(key.verify(digest1, sig, data))
     assert(key.verify(digest2, sig, data))
+  end
+
+  def test_verify_empty_rsa
+    rsa = OpenSSL::PKey::RSA.new
+    assert_raise(OpenSSL::PKey::PKeyError, "[Bug #12783]") {
+      rsa.verify("SHA1", "a", "b")
+    }
   end
 
   def test_RSAPrivateKey

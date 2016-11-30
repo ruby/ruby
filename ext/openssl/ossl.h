@@ -12,37 +12,12 @@
 
 #include RUBY_EXTCONF_H
 
-#if 0
-  mOSSL = rb_define_module("OpenSSL");
-  mX509 = rb_define_module_under(mOSSL, "X509");
-#endif
-
-/*
-* OpenSSL has defined RFILE and Ruby has defined RFILE - so undef it!
-*/
-#if defined(RFILE) /*&& !defined(OSSL_DEBUG)*/
-#  undef RFILE
-#endif
+#include <assert.h>
+#include <errno.h>
 #include <ruby.h>
 #include <ruby/io.h>
 #include <ruby/thread.h>
-
 #include <openssl/opensslv.h>
-
-#ifdef HAVE_ASSERT_H
-#  include <assert.h>
-#else
-#  define assert(condition)
-#endif
-
-#if defined(_WIN32) && !defined(LIBRESSL_VERSION_NUMBER)
-#  include <openssl/e_os2.h>
-#  if !defined(OPENSSL_SYS_WIN32)
-#    define OPENSSL_SYS_WIN32 1
-#  endif
-#  include <winsock2.h>
-#endif
-#include <errno.h>
 #include <openssl/err.h>
 #include <openssl/asn1.h>
 #include <openssl/x509v3.h>
@@ -53,9 +28,7 @@
 #include <openssl/rand.h>
 #include <openssl/conf.h>
 #include <openssl/conf_api.h>
-#if !defined(_WIN32)
-#  include <openssl/crypto.h>
-#endif
+#include <openssl/crypto.h>
 #if !defined(OPENSSL_NO_ENGINE)
 #  include <openssl/engine.h>
 #endif
@@ -144,17 +117,8 @@ int ossl_pem_passwd_cb(char *, int, int, void *);
  */
 #define OSSL_ErrMsg() ERR_reason_error_string(ERR_get_error())
 NORETURN(void ossl_raise(VALUE, const char *, ...));
-VALUE ossl_exc_new(VALUE, const char *, ...);
 /* Clear OpenSSL error queue. If dOSSL is set, rb_warn() them. */
 void ossl_clear_error(void);
-
-/*
- * Verify callback
- */
-extern int ossl_store_ctx_ex_verify_cb_idx;
-extern int ossl_store_ex_verify_cb_idx;
-
-int ossl_verify_cb_call(VALUE, int, X509_STORE_CTX *);
 
 /*
  * String to DER String

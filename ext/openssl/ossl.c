@@ -149,7 +149,7 @@ ossl_pem_passwd_value(VALUE pass)
     /* PEM_BUFSIZE is currently used as the second argument of pem_password_cb,
      * that is +max_len+ of ossl_pem_passwd_cb() */
     if (RSTRING_LEN(pass) > PEM_BUFSIZE)
-	ossl_raise(eOSSLError, "password must be shorter than %d bytes", PEM_BUFSIZE);
+	ossl_raise(eOSSLError, "password must not be longer than %d bytes", PEM_BUFSIZE);
 
     return pass;
 }
@@ -168,7 +168,8 @@ ossl_pem_passwd_cb0(VALUE flag)
 int
 ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd_)
 {
-    int len, status;
+    long len;
+    int status;
     VALUE rflag, pass = (VALUE)pwd_;
 
     if (RTEST(pass)) {
@@ -176,7 +177,7 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd_)
 	 * work because it does not allow NUL characters and truncates to 1024
 	 * bytes silently if the input is over 1024 bytes */
 	if (RB_TYPE_P(pass, T_STRING)) {
-	    len = RSTRING_LENINT(pass);
+	    len = RSTRING_LEN(pass);
 	    if (len >= OSSL_MIN_PWD_LEN && len <= max_len) {
 		memcpy(buf, RSTRING_PTR(pass), len);
 		return len;
@@ -203,78 +204,19 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd_)
 	    rb_set_errinfo(Qnil);
 	    return -1;
 	}
-	len = RSTRING_LENINT(pass);
+	len = RSTRING_LEN(pass);
 	if (len < OSSL_MIN_PWD_LEN) {
 	    rb_warning("password must be at least %d bytes", OSSL_MIN_PWD_LEN);
 	    continue;
 	}
 	if (len > max_len) {
-	    rb_warning("password must be shorter than %d bytes", max_len);
+	    rb_warning("password must not be longer than %d bytes", max_len);
 	    continue;
 	}
 	memcpy(buf, RSTRING_PTR(pass), len);
 	break;
     }
-    return len;
-}
-
-/*
- * Verify callback
- */
-int ossl_store_ctx_ex_verify_cb_idx;
-int ossl_store_ex_verify_cb_idx;
-
-struct ossl_verify_cb_args {
-    VALUE proc;
-    VALUE preverify_ok;
-    VALUE store_ctx;
-};
-
-static VALUE
-ossl_call_verify_cb_proc(struct ossl_verify_cb_args *args)
-{
-    return rb_funcall(args->proc, rb_intern("call"), 2,
-		      args->preverify_ok, args->store_ctx);
-}
-
-int
-ossl_verify_cb_call(VALUE proc, int ok, X509_STORE_CTX *ctx)
-{
-    VALUE rctx, ret;
-    struct ossl_verify_cb_args args;
-    int state;
-
-    if (NIL_P(proc))
-	return ok;
-
-    ret = Qfalse;
-    rctx = rb_protect((VALUE(*)(VALUE))ossl_x509stctx_new, (VALUE)ctx, &state);
-    if (state) {
-	rb_set_errinfo(Qnil);
-	rb_warn("StoreContext initialization failure");
-    }
-    else {
-	args.proc = proc;
-	args.preverify_ok = ok ? Qtrue : Qfalse;
-	args.store_ctx = rctx;
-	ret = rb_protect((VALUE(*)(VALUE))ossl_call_verify_cb_proc, (VALUE)&args, &state);
-	if (state) {
-	    rb_set_errinfo(Qnil);
-	    rb_warn("exception in verify_callback is ignored");
-	}
-	ossl_x509stctx_clear_ptr(rctx);
-    }
-    if (ret == Qtrue) {
-	X509_STORE_CTX_set_error(ctx, X509_V_OK);
-	ok = 1;
-    }
-    else {
-	if (X509_STORE_CTX_get_error(ctx) == X509_V_OK)
-	    X509_STORE_CTX_set_error(ctx, X509_V_ERR_CERT_REJECTED);
-	ok = 0;
-    }
-
-    return ok;
+    return (int)len;
 }
 
 /*
@@ -355,27 +297,32 @@ ossl_raise(VALUE exc, const char *fmt, ...)
     rb_exc_raise(err);
 }
 
-VALUE
-ossl_exc_new(VALUE exc, const char *fmt, ...)
-{
-    va_list args;
-    VALUE err;
-    va_start(args, fmt);
-    err = ossl_make_error(exc, fmt, args);
-    va_end(args);
-    return err;
-}
-
 void
 ossl_clear_error(void)
 {
     if (dOSSL == Qtrue) {
-	long e;
-	while ((e = ERR_get_error())) {
-	    rb_warn("error on stack: %s", ERR_error_string(e, NULL));
+	unsigned long e;
+	const char *file, *data, *errstr;
+	int line, flags;
+
+	while ((e = ERR_get_error_line_data(&file, &line, &data, &flags))) {
+	    errstr = ERR_error_string(e, NULL);
+	    if (!errstr)
+		errstr = "(null)";
+
+	    if (flags & ERR_TXT_STRING) {
+		if (!data)
+		    data = "(null)";
+		rb_warn("error on stack: %s (%s)", errstr, data);
+	    }
+	    else {
+		rb_warn("error on stack: %s", errstr);
+	    }
 	}
     }
-    ERR_clear_error();
+    else {
+	ERR_clear_error();
+    }
 }
 
 /*
@@ -1150,14 +1097,6 @@ Init_openssl(void)
     rb_define_module_function(mOSSL, "debug", ossl_debug_get, 0);
     rb_define_module_function(mOSSL, "debug=", ossl_debug_set, 1);
     rb_define_module_function(mOSSL, "errors", ossl_get_errors, 0);
-
-    /*
-     * Verify callback Proc index for ext-data
-     */
-    if ((ossl_store_ctx_ex_verify_cb_idx = X509_STORE_CTX_get_ex_new_index(0, (void *)"ossl_store_ctx_ex_verify_cb_idx", 0, 0, 0)) < 0)
-        ossl_raise(eOSSLError, "X509_STORE_CTX_get_ex_new_index");
-    if ((ossl_store_ex_verify_cb_idx = X509_STORE_get_ex_new_index(0, (void *)"ossl_store_ex_verify_cb_idx", 0, 0, 0)) < 0)
-        ossl_raise(eOSSLError, "X509_STORE_get_ex_new_index");
 
     /*
      * Get ID of to_der

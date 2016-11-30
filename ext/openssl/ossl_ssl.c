@@ -11,10 +11,6 @@
  */
 #include "ossl.h"
 
-#if defined(HAVE_UNISTD_H)
-#  include <unistd.h> /* for read(), and write() */
-#endif
-
 #define numberof(ary) (int)(sizeof(ary)/sizeof((ary)[0]))
 
 #ifdef _WIN32
@@ -36,7 +32,7 @@ VALUE cSSLSocket;
 static VALUE eSSLErrorWaitReadable;
 static VALUE eSSLErrorWaitWritable;
 
-static ID ID_callback_state;
+static ID ID_callback_state, id_tmp_dh_callback, id_tmp_ecdh_callback;
 static VALUE sym_exception, sym_wait_readable, sym_wait_writable;
 
 static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
@@ -223,69 +219,90 @@ ossl_client_cert_cb(SSL *ssl, X509 **x509, EVP_PKEY **pkey)
     return 1;
 }
 
-#if !defined(OPENSSL_NO_DH)
-static VALUE
-ossl_call_tmp_dh_callback(VALUE args)
+#if !defined(OPENSSL_NO_DH) || \
+    !defined(OPENSSL_NO_EC) && defined(HAVE_SSL_CTX_SET_TMP_ECDH_CALLBACK)
+struct tmp_dh_callback_args {
+    VALUE ssl_obj;
+    ID id;
+    int type;
+    int is_export;
+    int keylength;
+};
+
+static EVP_PKEY *
+ossl_call_tmp_dh_callback(struct tmp_dh_callback_args *args)
 {
     VALUE cb, dh;
     EVP_PKEY *pkey;
 
-    cb = rb_funcall(rb_ary_entry(args, 0), rb_intern("tmp_dh_callback"), 0);
-
-    if (NIL_P(cb)) return Qfalse;
-    dh = rb_apply(cb, rb_intern("call"), args);
+    cb = rb_funcall(args->ssl_obj, args->id, 0);
+    if (NIL_P(cb))
+	return NULL;
+    dh = rb_funcall(cb, rb_intern("call"), 3,
+		    args->ssl_obj, INT2NUM(args->is_export), INT2NUM(args->keylength));
     pkey = GetPKeyPtr(dh);
-    if (EVP_PKEY_base_id(pkey) != EVP_PKEY_DH) return Qfalse;
+    if (EVP_PKEY_base_id(pkey) != args->type)
+	return NULL;
 
-    return dh;
+    return pkey;
 }
+#endif
 
-static DH*
+#if !defined(OPENSSL_NO_DH)
+static DH *
 ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
 {
-    VALUE args, dh, rb_ssl;
+    VALUE rb_ssl;
+    EVP_PKEY *pkey;
+    struct tmp_dh_callback_args args;
+    int state;
 
     rb_ssl = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
+    args.ssl_obj = rb_ssl;
+    args.id = id_tmp_dh_callback;
+    args.is_export = is_export;
+    args.keylength = keylength;
+    args.type = EVP_PKEY_DH;
 
-    args = rb_ary_new_from_args(3, rb_ssl, INT2NUM(is_export), INT2NUM(keylength));
+    pkey = (EVP_PKEY *)rb_protect((VALUE (*)(VALUE))ossl_call_tmp_dh_callback,
+				  (VALUE)&args, &state);
+    if (state) {
+	rb_ivar_set(rb_ssl, ID_callback_state, INT2NUM(state));
+	return NULL;
+    }
+    if (!pkey)
+	return NULL;
 
-    dh = rb_protect(ossl_call_tmp_dh_callback, args, NULL);
-    if (!RTEST(dh)) return NULL;
-
-    return EVP_PKEY_get0_DH(GetPKeyPtr(dh));
+    return EVP_PKEY_get0_DH(pkey);
 }
 #endif /* OPENSSL_NO_DH */
 
 #if !defined(OPENSSL_NO_EC) && defined(HAVE_SSL_CTX_SET_TMP_ECDH_CALLBACK)
-static VALUE
-ossl_call_tmp_ecdh_callback(VALUE args)
-{
-    VALUE cb, ecdh;
-    EVP_PKEY *pkey;
-
-    cb = rb_funcall(rb_ary_entry(args, 0), rb_intern("tmp_ecdh_callback"), 0);
-
-    if (NIL_P(cb)) return Qfalse;
-    ecdh = rb_apply(cb, rb_intern("call"), args);
-    pkey = GetPKeyPtr(ecdh);
-    if (EVP_PKEY_base_id(pkey) != EVP_PKEY_EC) return Qfalse;
-
-    return ecdh;
-}
-
-static EC_KEY*
+static EC_KEY *
 ossl_tmp_ecdh_callback(SSL *ssl, int is_export, int keylength)
 {
-    VALUE args, ecdh, rb_ssl;
+    VALUE rb_ssl;
+    EVP_PKEY *pkey;
+    struct tmp_dh_callback_args args;
+    int state;
 
     rb_ssl = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
+    args.ssl_obj = rb_ssl;
+    args.id = id_tmp_ecdh_callback;
+    args.is_export = is_export;
+    args.keylength = keylength;
+    args.type = EVP_PKEY_EC;
 
-    args = rb_ary_new_from_args(3, rb_ssl, INT2NUM(is_export), INT2NUM(keylength));
+    pkey = (EVP_PKEY *)rb_protect((VALUE (*)(VALUE))ossl_call_tmp_dh_callback,
+				  (VALUE)&args, &state);
+    if (state) {
+	rb_ivar_set(rb_ssl, ID_callback_state, INT2NUM(state));
+	return NULL;
+    }
+    if (!pkey)
+	return NULL;
 
-    ecdh = rb_protect(ossl_call_tmp_ecdh_callback, args, NULL);
-    if (!RTEST(ecdh)) return NULL;
-
-    return EVP_PKEY_get0_EC_KEY(GetPKeyPtr(ecdh));
+    return EVP_PKEY_get0_EC_KEY(pkey);
 }
 #endif
 
@@ -1377,24 +1394,6 @@ ssl_started(SSL *ssl)
 }
 
 static void
-ossl_ssl_shutdown(SSL *ssl)
-{
-    int i;
-
-    /* 4 is from SSL_smart_shutdown() of mod_ssl.c (v2.2.19) */
-    /* It says max 2x pending + 2x data = 4 */
-    for (i = 0; i < 4; ++i) {
-	/*
-	 * Ignore the case SSL_shutdown returns -1. Empty handshake_func
-	 * must not happen.
-	 */
-	if (SSL_shutdown(ssl) != 0)
-	    break;
-    }
-    ossl_clear_error();
-}
-
-static void
 ossl_ssl_free(void *ssl)
 {
     SSL_free(ssl);
@@ -1496,19 +1495,15 @@ ossl_ssl_setup(VALUE self)
 static void
 write_would_block(int nonblock)
 {
-    if (nonblock) {
-        VALUE exc = ossl_exc_new(eSSLErrorWaitWritable, "write would block");
-        rb_exc_raise(exc);
-    }
+    if (nonblock)
+	ossl_raise(eSSLErrorWaitWritable, "write would block");
 }
 
 static void
 read_would_block(int nonblock)
 {
-    if (nonblock) {
-        VALUE exc = ossl_exc_new(eSSLErrorWaitReadable, "read would block");
-        rb_exc_raise(exc);
-    }
+    if (nonblock)
+	ossl_raise(eSSLErrorWaitReadable, "read would block");
 }
 
 static int
@@ -1714,11 +1709,21 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
                 rb_io_wait_readable(FPTR_TO_FD(fptr));
 		continue;
 	    case SSL_ERROR_SYSCALL:
-		if(ERR_peek_error() == 0 && nread == 0) {
-		    if (no_exception_p(opts)) { return Qnil; }
-		    rb_eof_error();
+		if (!ERR_peek_error()) {
+		    if (errno)
+			rb_sys_fail(0);
+		    else {
+			/*
+			 * The underlying BIO returned 0. This is actually a
+			 * protocol error. But unfortunately, not all
+			 * implementations cleanly shutdown the TLS connection
+			 * but just shutdown/close the TCP connection. So report
+			 * EOF for now...
+			 */
+			if (no_exception_p(opts)) { return Qnil; }
+			rb_eof_error();
+		    }
 		}
-		rb_sys_fail(0);
 	    default:
 		ossl_raise(eSSLError, "SSL_read");
 	    }
@@ -1871,11 +1876,24 @@ static VALUE
 ossl_ssl_stop(VALUE self)
 {
     SSL *ssl;
+    int ret;
 
     GetSSL(self, ssl);
+    if (!ssl_started(ssl))
+	return Qnil;
+    ret = SSL_shutdown(ssl);
+    if (ret == 1) /* Have already received close_notify */
+	return Qnil;
+    if (ret == 0) /* Sent close_notify, but we don't wait for reply */
+	return Qnil;
 
-    ossl_ssl_shutdown(ssl);
-
+    /*
+     * XXX: Something happened. Possibly it failed because the underlying socket
+     * is not writable/readable, since it is in non-blocking mode. We should do
+     * some proper error handling using SSL_get_error() and maybe retry, but we
+     * can't block here. Give up for now.
+     */
+    ossl_clear_error();
     return Qnil;
 }
 
@@ -2525,6 +2543,7 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLContext, "security_level=", ossl_sslctx_set_security_level, 1);
 
     rb_define_method(cSSLContext, "setup", ossl_sslctx_setup, 0);
+    rb_define_alias(cSSLContext, "freeze", "setup");
 
     /*
      * No session caching for client or server
@@ -2690,6 +2709,9 @@ Init_ossl_ssl(void)
     sym_exception = ID2SYM(rb_intern("exception"));
     sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
     sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
+
+    id_tmp_dh_callback = rb_intern("tmp_dh_callback");
+    id_tmp_ecdh_callback = rb_intern("tmp_ecdh_callback");
 
 #define DefIVarID(name) do \
     id_i_##name = rb_intern("@"#name); while (0)

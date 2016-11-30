@@ -372,12 +372,10 @@ ossl_x509name_cmp(VALUE self, VALUE other)
 static VALUE
 ossl_x509name_eql(VALUE self, VALUE other)
 {
-    int result;
+    if (!rb_obj_is_kind_of(other, cX509Name))
+	return Qfalse;
 
-    if(CLASS_OF(other) != cX509Name) return Qfalse;
-    result = ossl_x509name_cmp0(self, other);
-
-    return (result == 0) ? Qtrue : Qfalse;
+    return ossl_x509name_cmp0(self, other) ? Qtrue : Qfalse;
 }
 
 /*

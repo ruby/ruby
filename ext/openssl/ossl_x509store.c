@@ -48,6 +48,65 @@
 } while (0)
 
 /*
+ * Verify callback stuff
+ */
+static int stctx_ex_verify_cb_idx, store_ex_verify_cb_idx;
+static VALUE ossl_x509stctx_new(X509_STORE_CTX *);
+
+struct ossl_verify_cb_args {
+    VALUE proc;
+    VALUE preverify_ok;
+    VALUE store_ctx;
+};
+
+static VALUE
+call_verify_cb_proc(struct ossl_verify_cb_args *args)
+{
+    return rb_funcall(args->proc, rb_intern("call"), 2,
+		      args->preverify_ok, args->store_ctx);
+}
+
+int
+ossl_verify_cb_call(VALUE proc, int ok, X509_STORE_CTX *ctx)
+{
+    VALUE rctx, ret;
+    struct ossl_verify_cb_args args;
+    int state;
+
+    if (NIL_P(proc))
+	return ok;
+
+    ret = Qfalse;
+    rctx = rb_protect((VALUE(*)(VALUE))ossl_x509stctx_new, (VALUE)ctx, &state);
+    if (state) {
+	rb_set_errinfo(Qnil);
+	rb_warn("StoreContext initialization failure");
+    }
+    else {
+	args.proc = proc;
+	args.preverify_ok = ok ? Qtrue : Qfalse;
+	args.store_ctx = rctx;
+	ret = rb_protect((VALUE(*)(VALUE))call_verify_cb_proc, (VALUE)&args, &state);
+	if (state) {
+	    rb_set_errinfo(Qnil);
+	    rb_warn("exception in verify_callback is ignored");
+	}
+	RTYPEDDATA_DATA(rctx) = NULL;
+    }
+    if (ret == Qtrue) {
+	X509_STORE_CTX_set_error(ctx, X509_V_OK);
+	ok = 1;
+    }
+    else {
+	if (X509_STORE_CTX_get_error(ctx) == X509_V_OK)
+	    X509_STORE_CTX_set_error(ctx, X509_V_ERR_CERT_REJECTED);
+	ok = 0;
+    }
+
+    return ok;
+}
+
+/*
  * Classes
  */
 VALUE cX509Store;
@@ -111,9 +170,10 @@ x509store_verify_cb(int ok, X509_STORE_CTX *ctx)
 {
     VALUE proc;
 
-    proc = (VALUE)X509_STORE_CTX_get_ex_data(ctx, ossl_store_ctx_ex_verify_cb_idx);
+    proc = (VALUE)X509_STORE_CTX_get_ex_data(ctx, stctx_ex_verify_cb_idx);
     if (!proc)
-	proc = (VALUE)X509_STORE_get_ex_data(X509_STORE_CTX_get0_store(ctx), ossl_store_ex_verify_cb_idx);
+	proc = (VALUE)X509_STORE_get_ex_data(X509_STORE_CTX_get0_store(ctx),
+					     store_ex_verify_cb_idx);
     if (!proc)
 	return ok;
 
@@ -144,7 +204,7 @@ ossl_x509store_set_vfy_cb(VALUE self, VALUE cb)
     X509_STORE *store;
 
     GetX509Store(self, store);
-    X509_STORE_set_ex_data(store, ossl_store_ex_verify_cb_idx, (void *)cb);
+    X509_STORE_set_ex_data(store, store_ex_verify_cb_idx, (void *)cb);
     rb_iv_set(self, "@verify_callback", cb);
 
     return cb;
@@ -432,27 +492,6 @@ static const rb_data_type_t ossl_x509stctx_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
-
-VALUE
-ossl_x509stctx_new(X509_STORE_CTX *ctx)
-{
-    VALUE obj;
-
-    obj = NewX509StCtx(cX509StoreContext);
-    SetX509StCtx(obj, ctx);
-
-    return obj;
-}
-
-VALUE
-ossl_x509stctx_clear_ptr(VALUE obj)
-{
-    OSSL_Check_Kind(obj, cX509StoreContext);
-    RDATA(obj)->data = NULL;
-
-    return obj;
-}
-
 /*
  * Private functions
  */
@@ -477,6 +516,17 @@ ossl_x509stctx_alloc(VALUE klass)
     if((ctx = X509_STORE_CTX_new()) == NULL){
         ossl_raise(eX509StoreError, NULL);
     }
+    SetX509StCtx(obj, ctx);
+
+    return obj;
+}
+
+static VALUE
+ossl_x509stctx_new(X509_STORE_CTX *ctx)
+{
+    VALUE obj;
+
+    obj = NewX509StCtx(cX509StoreContext);
     SetX509StCtx(obj, ctx);
 
     return obj;
@@ -527,7 +577,7 @@ ossl_x509stctx_verify(VALUE self)
     X509_STORE_CTX *ctx;
 
     GetX509StCtx(self, ctx);
-    X509_STORE_CTX_set_ex_data(ctx, ossl_store_ctx_ex_verify_cb_idx,
+    X509_STORE_CTX_set_ex_data(ctx, stctx_ex_verify_cb_idx,
 			       (void *)rb_iv_get(self, "@verify_callback"));
 
     switch (X509_verify_cert(ctx)) {
@@ -746,6 +796,14 @@ Init_ossl_x509store(void)
     eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
     mX509 = rb_define_module_under(mOSSL, "X509");
 #endif
+
+    /* Register ext_data slot for verify callback Proc */
+    stctx_ex_verify_cb_idx = X509_STORE_CTX_get_ex_new_index(0, (void *)"stctx_ex_verify_cb_idx", 0, 0, 0);
+    if (stctx_ex_verify_cb_idx < 0)
+	ossl_raise(eOSSLError, "X509_STORE_CTX_get_ex_new_index");
+    store_ex_verify_cb_idx = X509_STORE_get_ex_new_index(0, (void *)"store_ex_verify_cb_idx", 0, 0, 0);
+    if (store_ex_verify_cb_idx < 0)
+	ossl_raise(eOSSLError, "X509_STORE_get_ex_new_index");
 
     eX509StoreError = rb_define_class_under(mX509, "StoreError", eOSSLError);
 

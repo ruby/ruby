@@ -404,8 +404,6 @@ ossl_rsa_to_der(VALUE self)
     return str;
 }
 
-#define ossl_rsa_buf_size(rsa) (RSA_size(rsa)+16)
-
 /*
  * call-seq:
  *   rsa.public_encrypt(string)          => String
@@ -429,7 +427,7 @@ ossl_rsa_public_encrypt(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11", &buffer, &padding);
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
-    str = rb_str_new(0, ossl_rsa_buf_size(rsa));
+    str = rb_str_new(0, RSA_size(rsa));
     buf_len = RSA_public_encrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
 				 (unsigned char *)RSTRING_PTR(str), rsa, pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);
@@ -461,7 +459,7 @@ ossl_rsa_public_decrypt(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11", &buffer, &padding);
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
-    str = rb_str_new(0, ossl_rsa_buf_size(rsa));
+    str = rb_str_new(0, RSA_size(rsa));
     buf_len = RSA_public_decrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
 				 (unsigned char *)RSTRING_PTR(str), rsa, pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);
@@ -495,7 +493,7 @@ ossl_rsa_private_encrypt(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11", &buffer, &padding);
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
-    str = rb_str_new(0, ossl_rsa_buf_size(rsa));
+    str = rb_str_new(0, RSA_size(rsa));
     buf_len = RSA_private_encrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
 				  (unsigned char *)RSTRING_PTR(str), rsa, pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);
@@ -529,7 +527,7 @@ ossl_rsa_private_decrypt(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11", &buffer, &padding);
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
-    str = rb_str_new(0, ossl_rsa_buf_size(rsa));
+    str = rb_str_new(0, RSA_size(rsa));
     buf_len = RSA_private_decrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
 				  (unsigned char *)RSTRING_PTR(str), rsa, pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);
@@ -620,7 +618,7 @@ ossl_rsa_to_public_key(VALUE self)
     GetPKeyRSA(self, pkey);
     /* err check performed by rsa_instance */
     rsa = RSAPublicKey_dup(EVP_PKEY_get0_RSA(pkey));
-    obj = rsa_instance(CLASS_OF(self), rsa);
+    obj = rsa_instance(rb_obj_class(self), rsa);
     if (obj == Qfalse) {
 	RSA_free(rsa);
 	ossl_raise(eRSAError, NULL);

@@ -34,7 +34,9 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
   end
 
   def test_verify
-    now = Time.at(Time.now.to_i)
+    # OpenSSL uses time(2) while Time.now uses clock_gettime(CLOCK_REALTIME),
+    # and there may be difference.
+    now = Time.now - 3
     ca_exts = [
       ["basicConstraints","CA:TRUE",true],
       ["keyUsage","cRLSign,keyCertSign",true],
@@ -42,18 +44,15 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     ee_exts = [
       ["keyUsage","keyEncipherment,digitalSignature",true],
     ]
-    ca1_cert = issue_cert(@ca1, @rsa2048, 1, now, now+3600, ca_exts,
-                          nil, nil, OpenSSL::Digest::SHA1.new)
-    ca2_cert = issue_cert(@ca2, @rsa1024, 2, now, now+1800, ca_exts,
-                          ca1_cert, @rsa2048, OpenSSL::Digest::SHA1.new)
-    ee1_cert = issue_cert(@ee1, @dsa256, 10, now, now+1800, ee_exts,
-                          ca2_cert, @rsa1024, OpenSSL::Digest::SHA1.new)
-    ee2_cert = issue_cert(@ee2, @dsa512, 20, now, now+1800, ee_exts,
-                          ca2_cert, @rsa1024, OpenSSL::Digest::SHA1.new)
-    ee3_cert = issue_cert(@ee2, @dsa512, 30, now-100, now-1, ee_exts,
-                          ca2_cert, @rsa1024, OpenSSL::Digest::SHA1.new)
-    ee4_cert = issue_cert(@ee2, @dsa512, 40, now+1000, now+2000, ee_exts,
-                          ca2_cert, @rsa1024, OpenSSL::Digest::SHA1.new)
+    ca1_cert = issue_cert(@ca1, @rsa2048, 1, ca_exts, nil, nil)
+    ca2_cert = issue_cert(@ca2, @rsa1024, 2, ca_exts, ca1_cert, @rsa2048,
+                          not_after: now+1800)
+    ee1_cert = issue_cert(@ee1, @dsa256, 10, ee_exts, ca2_cert, @rsa1024)
+    ee2_cert = issue_cert(@ee2, @dsa512, 20, ee_exts, ca2_cert, @rsa1024)
+    ee3_cert = issue_cert(@ee2, @dsa512, 30,  ee_exts, ca2_cert, @rsa1024,
+                          not_before: now-100, not_after: now-1)
+    ee4_cert = issue_cert(@ee2, @dsa512, 40, ee_exts, ca2_cert, @rsa1024,
+                          not_before: now+1000, not_after: now+2000,)
 
     revoke_info = []
     crl1   = issue_crl(revoke_info, 1, now, now+1800, [],
@@ -195,8 +194,7 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
 
   def test_set_errors
     now = Time.now
-    ca1_cert = issue_cert(@ca1, @rsa2048, 1, now, now+3600, [],
-                          nil, nil, OpenSSL::Digest::SHA1.new)
+    ca1_cert = issue_cert(@ca1, @rsa2048, 1, [], nil, nil)
     store = OpenSSL::X509::Store.new
     store.add_cert(ca1_cert)
     assert_raise(OpenSSL::X509::StoreError){

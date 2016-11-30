@@ -36,6 +36,26 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     end
   end
 
+  def test_sign_verify
+    data = "Sign me!"
+    if defined?(OpenSSL::Digest::DSS1)
+      signature = DSA512.sign(OpenSSL::Digest::DSS1.new, data)
+      assert_equal true, DSA512.verify(OpenSSL::Digest::DSS1.new, signature, data)
+    end
+
+    return if OpenSSL::OPENSSL_VERSION_NUMBER <= 0x010000000
+    signature = DSA512.sign("SHA1", data)
+    assert_equal true, DSA512.verify("SHA1", signature, data)
+
+    signature0 = (<<~'end;').unpack("m")[0]
+      MCwCFH5h40plgU5Fh0Z4wvEEpz0eE9SnAhRPbkRB8ggsN/vsSEYMXvJwjGg/
+      6g==
+    end;
+    assert_equal true, DSA512.verify("SHA256", signature0, data)
+    signature1 = signature0.succ
+    assert_equal false, DSA512.verify("SHA256", signature1, data)
+  end
+
   def test_sys_sign_verify
     key = OpenSSL::TestUtils::TEST_KEY_DSA256
     data = 'Sign me!'

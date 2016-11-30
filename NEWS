@@ -217,9 +217,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * OpenSSL
 
-  * OpenSSL is extracted as a gem and the upstream has been migrated to
-    https://github.com/ruby/openssl. OpenSSL still remains as a default gem.
-    Refer to its History.md for the full release note. [Feature #9612]
+  * Includes Ruby/OpenSSL 2.0. OpenSSL has been extracted as a Gem and is
+    maintained at a separate repository now: https://github.com/ruby/openssl.
+    It still remains as a 'default gem'.  [Feature #9612]
+    Refer to ext/openssl/History.md for the full release note.
 
 * optparse
 

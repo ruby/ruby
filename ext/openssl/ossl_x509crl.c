@@ -182,8 +182,6 @@ ossl_x509crl_get_signature_algorithm(VALUE self)
     X509_CRL *crl;
     const X509_ALGOR *alg;
     BIO *out;
-    BUF_MEM *buf;
-    VALUE str;
 
     GetX509CRL(self, crl);
     if (!(out = BIO_new(BIO_s_mem()))) {
@@ -194,10 +192,8 @@ ossl_x509crl_get_signature_algorithm(VALUE self)
 	BIO_free(out);
 	ossl_raise(eX509CRLError, NULL);
     }
-    BIO_get_mem_ptr(out, &buf);
-    str = rb_str_new(buf->data, buf->length);
-    BIO_free(out);
-    return str;
+
+    return ossl_membio2str(out);
 }
 
 static VALUE
@@ -388,8 +384,6 @@ ossl_x509crl_to_der(VALUE self)
 {
     X509_CRL *crl;
     BIO *out;
-    BUF_MEM *buf;
-    VALUE str;
 
     GetX509CRL(self, crl);
     if (!(out = BIO_new(BIO_s_mem()))) {
@@ -399,11 +393,8 @@ ossl_x509crl_to_der(VALUE self)
 	BIO_free(out);
 	ossl_raise(eX509CRLError, NULL);
     }
-    BIO_get_mem_ptr(out, &buf);
-    str = rb_str_new(buf->data, buf->length);
-    BIO_free(out);
 
-    return str;
+    return ossl_membio2str(out);
 }
 
 static VALUE
@@ -411,8 +402,6 @@ ossl_x509crl_to_pem(VALUE self)
 {
     X509_CRL *crl;
     BIO *out;
-    BUF_MEM *buf;
-    VALUE str;
 
     GetX509CRL(self, crl);
     if (!(out = BIO_new(BIO_s_mem()))) {
@@ -422,11 +411,8 @@ ossl_x509crl_to_pem(VALUE self)
 	BIO_free(out);
 	ossl_raise(eX509CRLError, NULL);
     }
-    BIO_get_mem_ptr(out, &buf);
-    str = rb_str_new(buf->data, buf->length);
-    BIO_free(out);
 
-    return str;
+    return ossl_membio2str(out);
 }
 
 static VALUE
@@ -434,8 +420,6 @@ ossl_x509crl_to_text(VALUE self)
 {
     X509_CRL *crl;
     BIO *out;
-    BUF_MEM *buf;
-    VALUE str;
 
     GetX509CRL(self, crl);
     if (!(out = BIO_new(BIO_s_mem()))) {
@@ -445,11 +429,8 @@ ossl_x509crl_to_text(VALUE self)
 	BIO_free(out);
 	ossl_raise(eX509CRLError, NULL);
     }
-    BIO_get_mem_ptr(out, &buf);
-    str = rb_str_new(buf->data, buf->length);
-    BIO_free(out);
 
-    return str;
+    return ossl_membio2str(out);
 }
 
 /*

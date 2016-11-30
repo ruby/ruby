@@ -8,9 +8,6 @@
  * (See the file 'LICENCE'.)
  */
 #include "ossl.h"
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 
 BIO *
 ossl_obj2bio(VALUE obj)

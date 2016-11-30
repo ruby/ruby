@@ -460,7 +460,7 @@ ossl_dh_to_public_key(VALUE self)
 
     GetDH(self, orig_dh);
     dh = DHparams_dup(orig_dh); /* err check perfomed by dh_instance */
-    obj = dh_instance(CLASS_OF(self), dh);
+    obj = dh_instance(rb_obj_class(self), dh);
     if (obj == Qfalse) {
 	DH_free(dh);
 	ossl_raise(eDHError, NULL);

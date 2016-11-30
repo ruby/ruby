@@ -1,15 +1,15 @@
 # -*- encoding: utf-8 -*-
-# stub: openssl 2.0.0.beta.2 ruby lib
+# stub: openssl 2.0.0 ruby lib
 # stub: ext/openssl/extconf.rb
 
 Gem::Specification.new do |s|
   s.name = "openssl".freeze
-  s.version = "2.0.0.beta.2"
+  s.version = "2.0.0"
 
-  s.required_rubygems_version = Gem::Requirement.new("> 1.3.1".freeze) if s.respond_to? :required_rubygems_version=
+  s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib".freeze]
   s.authors = ["Martin Bosslet".freeze, "SHIBATA Hiroshi".freeze, "Zachary Scott".freeze, "Kazuki Yamaguchi".freeze]
-  s.date = "2016-09-08"
+  s.date = "2016-11-30"
   s.description = "It wraps the OpenSSL library.".freeze
   s.email = ["ruby-core@ruby-lang.org".freeze]
   s.extensions = ["ext/openssl/extconf.rb".freeze]
@@ -19,27 +19,27 @@ Gem::Specification.new do |s|
   s.licenses = ["Ruby".freeze]
   s.rdoc_options = ["--main".freeze, "README.md".freeze]
   s.required_ruby_version = Gem::Requirement.new(">= 2.3.0".freeze)
-  s.rubygems_version = "2.6.6".freeze
+  s.rubygems_version = "2.6.8".freeze
   s.summary = "OpenSSL provides SSL, TLS and general purpose cryptography.".freeze
 
   if s.respond_to? :specification_version then
     s.specification_version = 4
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-      s.add_development_dependency(%q<rake>.freeze, ["~> 10.3"])
-      s.add_development_dependency(%q<rake-compiler>.freeze, ["~> 0.9"])
+      s.add_development_dependency(%q<rake>.freeze, [">= 0"])
+      s.add_development_dependency(%q<rake-compiler>.freeze, [">= 0"])
       s.add_development_dependency(%q<test-unit>.freeze, ["~> 3.0"])
-      s.add_development_dependency(%q<rdoc>.freeze, ["~> 4.2"])
+      s.add_development_dependency(%q<rdoc>.freeze, [">= 0"])
     else
-      s.add_dependency(%q<rake>.freeze, ["~> 10.3"])
-      s.add_dependency(%q<rake-compiler>.freeze, ["~> 0.9"])
+      s.add_dependency(%q<rake>.freeze, [">= 0"])
+      s.add_dependency(%q<rake-compiler>.freeze, [">= 0"])
       s.add_dependency(%q<test-unit>.freeze, ["~> 3.0"])
-      s.add_dependency(%q<rdoc>.freeze, ["~> 4.2"])
+      s.add_dependency(%q<rdoc>.freeze, [">= 0"])
     end
   else
-    s.add_dependency(%q<rake>.freeze, ["~> 10.3"])
-    s.add_dependency(%q<rake-compiler>.freeze, ["~> 0.9"])
+    s.add_dependency(%q<rake>.freeze, [">= 0"])
+    s.add_dependency(%q<rake-compiler>.freeze, [">= 0"])
     s.add_dependency(%q<test-unit>.freeze, ["~> 3.0"])
-    s.add_dependency(%q<rdoc>.freeze, ["~> 4.2"])
+    s.add_dependency(%q<rdoc>.freeze, [">= 0"])
   end
 end

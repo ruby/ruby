@@ -795,7 +795,7 @@ ossl_pkcs7_verify(int argc, VALUE *argv, VALUE self)
     BIO_free(in);
     sk_X509_pop_free(x509s, X509_free);
     if (ok < 0) ossl_raise(ePKCS7Error, "PKCS7_verify");
-    msg = ERR_reason_error_string(ERR_get_error());
+    msg = ERR_reason_error_string(ERR_peek_error());
     ossl_pkcs7_set_err_string(self, msg ? rb_str_new2(msg) : Qnil);
     ossl_clear_error();
     data = ossl_membio2str(out);

@@ -491,15 +491,13 @@ ossl_dsa_to_public_key(VALUE self)
 	(i2d_of_void *)i2d_DSAPublicKey, (d2i_of_void *)d2i_DSAPublicKey, (char *)(dsa))
     dsa = DSAPublicKey_dup(EVP_PKEY_get0_DSA(pkey));
 #undef DSAPublicKey_dup
-    obj = dsa_instance(CLASS_OF(self), dsa);
+    obj = dsa_instance(rb_obj_class(self), dsa);
     if (obj == Qfalse) {
 	DSA_free(dsa);
 	ossl_raise(eDSAError, NULL);
     }
     return obj;
 }
-
-#define ossl_dsa_buf_size(dsa) (DSA_size(dsa) + 16)
 
 /*
  *  call-seq:
@@ -535,7 +533,7 @@ ossl_dsa_sign(VALUE self, VALUE data)
     if (!DSA_PRIVATE(self, dsa))
 	ossl_raise(eDSAError, "Private DSA key needed!");
     StringValue(data);
-    str = rb_str_new(0, ossl_dsa_buf_size(dsa));
+    str = rb_str_new(0, DSA_size(dsa));
     if (!DSA_sign(0, (unsigned char *)RSTRING_PTR(data), RSTRING_LENINT(data),
 		  (unsigned char *)RSTRING_PTR(str),
 		  &buf_len, dsa)) { /* type is ignored (0) */

@@ -16,8 +16,7 @@ require "io/nonblock"
 module OpenSSL
   module SSL
     class SSLContext
-      # :nodoc:
-      DEFAULT_PARAMS = {
+      DEFAULT_PARAMS = { # :nodoc:
         :ssl_version => "SSLv23",
         :verify_mode => OpenSSL::SSL::VERIFY_PEER,
         :verify_hostname => true,
@@ -68,8 +67,7 @@ module OpenSSL
         )
       end
 
-      # :nodoc:
-      DEFAULT_CERT_STORE = OpenSSL::X509::Store.new
+      DEFAULT_CERT_STORE = OpenSSL::X509::Store.new # :nodoc:
       DEFAULT_CERT_STORE.set_default_paths
       DEFAULT_CERT_STORE.flags = OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
 
@@ -84,14 +82,12 @@ module OpenSSL
 
       attr_accessor :tmp_dh_callback
 
-      if ExtConfig::HAVE_TLSEXT_HOST_NAME
-        # A callback invoked at connect time to distinguish between multiple
-        # server names.
-        #
-        # The callback is invoked with an SSLSocket and a server name.  The
-        # callback must return an SSLContext for the server name or nil.
-        attr_accessor :servername_cb
-      end
+      # A callback invoked at connect time to distinguish between multiple
+      # server names.
+      #
+      # The callback is invoked with an SSLSocket and a server name.  The
+      # callback must return an SSLContext for the server name or nil.
+      attr_accessor :servername_cb if ExtConfig::HAVE_TLSEXT_HOST_NAME
 
       # call-seq:
       #    SSLContext.new => ctx

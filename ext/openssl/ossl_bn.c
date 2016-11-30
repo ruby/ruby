@@ -380,7 +380,7 @@ BIGNUM_BOOL1(is_odd)
 	BIGNUM *bn, *result;				\
 	VALUE obj;					\
 	GetBN(self, bn);				\
-	obj = NewBN(CLASS_OF(self));			\
+	obj = NewBN(rb_obj_class(self));		\
 	if (!(result = BN_new())) {			\
 	    ossl_raise(eBNError, NULL);			\
 	}						\
@@ -406,7 +406,7 @@ BIGNUM_1c(sqr)
 	BIGNUM *bn1, *bn2 = GetBNPtr(other), *result;	\
 	VALUE obj;					\
 	GetBN(self, bn1);				\
-	obj = NewBN(CLASS_OF(self));			\
+	obj = NewBN(rb_obj_class(self));		\
 	if (!(result = BN_new())) {			\
 	    ossl_raise(eBNError, NULL);			\
 	}						\
@@ -439,7 +439,7 @@ BIGNUM_2(sub)
 	BIGNUM *bn1, *bn2 = GetBNPtr(other), *result;		\
 	VALUE obj;						\
 	GetBN(self, bn1);					\
-	obj = NewBN(CLASS_OF(self));				\
+	obj = NewBN(rb_obj_class(self));			\
 	if (!(result = BN_new())) {				\
 	    ossl_raise(eBNError, NULL);				\
 	}							\
@@ -504,12 +504,13 @@ static VALUE
 ossl_bn_div(VALUE self, VALUE other)
 {
     BIGNUM *bn1, *bn2 = GetBNPtr(other), *r1, *r2;
-    VALUE obj1, obj2;
+    VALUE klass, obj1, obj2;
 
     GetBN(self, bn1);
 
-    obj1 = NewBN(CLASS_OF(self));
-    obj2 = NewBN(CLASS_OF(self));
+    klass = rb_obj_class(self);
+    obj1 = NewBN(klass);
+    obj2 = NewBN(klass);
     if (!(r1 = BN_new())) {
 	ossl_raise(eBNError, NULL);
     }
@@ -536,7 +537,7 @@ ossl_bn_div(VALUE self, VALUE other)
 	BIGNUM *bn3 = GetBNPtr(other2), *result;		\
 	VALUE obj;						\
 	GetBN(self, bn1);					\
-	obj = NewBN(CLASS_OF(self));				\
+	obj = NewBN(rb_obj_class(self));			\
 	if (!(result = BN_new())) {				\
 	    ossl_raise(eBNError, NULL);				\
 	}							\
@@ -639,7 +640,7 @@ ossl_bn_is_bit_set(VALUE self, VALUE bit)
 	VALUE obj;					\
 	b = NUM2INT(bits);				\
 	GetBN(self, bn);				\
-	obj = NewBN(CLASS_OF(self));			\
+	obj = NewBN(rb_obj_class(self));		\
 	if (!(result = BN_new())) {			\
 		ossl_raise(eBNError, NULL);		\
 	}						\

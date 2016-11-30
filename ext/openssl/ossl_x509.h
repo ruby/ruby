@@ -110,10 +110,13 @@ VALUE ossl_x509store_new(X509_STORE *);
 X509_STORE *GetX509StorePtr(VALUE);
 X509_STORE *DupX509StorePtr(VALUE);
 
-VALUE ossl_x509stctx_new(X509_STORE_CTX *);
-VALUE ossl_x509stctx_clear_ptr(VALUE);
 X509_STORE_CTX *GetX509StCtxtPtr(VALUE);
-
 void Init_ossl_x509store(void);
+
+/*
+ * Calls the verify callback Proc (the first parameter) with given pre-verify
+ * result and the X509_STORE_CTX.
+ */
+int ossl_verify_cb_call(VALUE, int, X509_STORE_CTX *);
 
 #endif /* _OSSL_X509_H_ */

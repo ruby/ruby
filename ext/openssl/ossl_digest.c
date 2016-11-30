@@ -80,10 +80,13 @@ ossl_digest_new(const EVP_MD *md)
     EVP_MD_CTX *ctx;
 
     ret = ossl_digest_alloc(cDigest);
-    GetDigest(ret, ctx);
-    if (EVP_DigestInit_ex(ctx, md, NULL) != 1) {
-	ossl_raise(eDigestError, "Digest initialization failed.");
-    }
+    ctx = EVP_MD_CTX_new();
+    if (!ctx)
+	ossl_raise(eDigestError, "EVP_MD_CTX_new");
+    RTYPEDDATA_DATA(ret) = ctx;
+
+    if (!EVP_DigestInit_ex(ctx, md, NULL))
+	ossl_raise(eDigestError, "Digest initialization failed");
 
     return ret;
 }
@@ -94,13 +97,7 @@ ossl_digest_new(const EVP_MD *md)
 static VALUE
 ossl_digest_alloc(VALUE klass)
 {
-    VALUE obj = TypedData_Wrap_Struct(klass, &ossl_digest_type, 0);
-    EVP_MD_CTX *ctx = EVP_MD_CTX_create();
-    if (ctx == NULL)
-	ossl_raise(rb_eRuntimeError, "EVP_MD_CTX_create() failed");
-    RTYPEDDATA_DATA(obj) = ctx;
-
-    return obj;
+    return TypedData_Wrap_Struct(klass, &ossl_digest_type, 0);
 }
 
 VALUE ossl_digest_update(VALUE, VALUE);
@@ -133,10 +130,15 @@ ossl_digest_initialize(int argc, VALUE *argv, VALUE self)
     md = GetDigestPtr(type);
     if (!NIL_P(data)) StringValue(data);
 
-    GetDigest(self, ctx);
-    if (EVP_DigestInit_ex(ctx, md, NULL) != 1) {
-	ossl_raise(eDigestError, "Digest initialization failed.");
+    TypedData_Get_Struct(self, EVP_MD_CTX, &ossl_digest_type, ctx);
+    if (!ctx) {
+	RTYPEDDATA_DATA(self) = ctx = EVP_MD_CTX_new();
+	if (!ctx)
+	    ossl_raise(eDigestError, "EVP_MD_CTX_new");
     }
+
+    if (!EVP_DigestInit_ex(ctx, md, NULL))
+	ossl_raise(eDigestError, "Digest initialization failed");
 
     if (!NIL_P(data)) return ossl_digest_update(self, data);
     return self;
@@ -150,7 +152,12 @@ ossl_digest_copy(VALUE self, VALUE other)
     rb_check_frozen(self);
     if (self == other) return self;
 
-    GetDigest(self, ctx1);
+    TypedData_Get_Struct(self, EVP_MD_CTX, &ossl_digest_type, ctx1);
+    if (!ctx1) {
+	RTYPEDDATA_DATA(self) = ctx1 = EVP_MD_CTX_new();
+	if (!ctx1)
+	    ossl_raise(eDigestError, "EVP_MD_CTX_new");
+    }
     SafeGetDigest(other, ctx2);
 
     if (!EVP_MD_CTX_copy(ctx1, ctx2)) {

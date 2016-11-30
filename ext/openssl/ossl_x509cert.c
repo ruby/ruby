@@ -624,7 +624,7 @@ ossl_x509_check_private_key(VALUE self, VALUE key)
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
     GetX509(self, x509);
     if (!X509_check_private_key(x509, pkey)) {
-	OSSL_Warning("Check private key:%s", OSSL_ErrMsg());
+	ossl_clear_error();
 	return Qfalse;
     }
 

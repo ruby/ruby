@@ -9,17 +9,13 @@ module OpenSSL
 
     def setup
       ca = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA")
-
-      now = Time.now
       ca_exts = [
         ["basicConstraints","CA:TRUE",true],
         ["keyUsage","keyCertSign, cRLSign",true],
         ["subjectKeyIdentifier","hash",false],
         ["authorityKeyIdentifier","keyid:always",false],
       ]
-
-      @cacert = issue_cert(ca, TEST_KEY_RSA2048, 1, now, now+3600, ca_exts,
-                            nil, nil, OpenSSL::Digest::SHA1.new)
+      @cacert = issue_cert(ca, TEST_KEY_RSA2048, 1, ca_exts, nil, nil)
 
       inter_ca = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=Intermediate CA")
       inter_ca_key = OpenSSL::PKey.read <<-_EOS_
@@ -39,17 +35,14 @@ FJx7d3f29gkzynCLJDkCQGQZlEZJC4vWmWJGRKJ24P6MyQn3VsPfErSKOg4lvyM3
 Li8JsX5yIiuVYaBg/6ha3tOg4TCa5K/3r3tVliRZ2Es=
 -----END RSA PRIVATE KEY-----
       _EOS_
-
-      @inter_cacert = issue_cert(inter_ca, inter_ca_key, 2, now, now+3600, ca_exts,
-                                 @cacert, TEST_KEY_RSA2048, OpenSSL::Digest::SHA1.new)
+      @inter_cacert = issue_cert(inter_ca, inter_ca_key, 2, ca_exts, @cacert, TEST_KEY_RSA2048)
 
       exts = [
         ["keyUsage","digitalSignature",true],
         ["subjectKeyIdentifier","hash",false],
       ]
       ee = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=Ruby PKCS12 Test Certificate")
-      @mycert = issue_cert(ee, TEST_KEY_RSA1024, 3, now, now+3600, exts,
-                           @inter_cacert, inter_ca_key, OpenSSL::Digest::SHA1.new)
+      @mycert = issue_cert(ee, TEST_KEY_RSA1024, 3, exts, @inter_cacert, inter_ca_key)
     end
 
     def test_create

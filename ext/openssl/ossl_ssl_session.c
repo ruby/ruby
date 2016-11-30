@@ -108,11 +108,7 @@ int SSL_SESSION_cmp(const SSL_SESSION *a,const SSL_SESSION *b)
     if (a_len != b_len)
 	return 1;
 
-#if defined(_WIN32)
-    return memcmp(a_sid, b_sid, a_len);
-#else
     return CRYPTO_memcmp(a_sid, b_sid, a_len);
-#endif
 }
 #endif
 
@@ -141,19 +137,18 @@ static VALUE ossl_ssl_session_eq(VALUE val1, VALUE val2)
  *
  * Returns the time at which the session was established.
  */
-static VALUE ossl_ssl_session_get_time(VALUE self)
+static VALUE
+ossl_ssl_session_get_time(VALUE self)
 {
-	SSL_SESSION *ctx;
-	time_t t;
+    SSL_SESSION *ctx;
+    long t;
 
-	GetSSLSession(self, ctx);
+    GetSSLSession(self, ctx);
+    t = SSL_SESSION_get_time(ctx);
+    if (t == 0)
+	return Qnil;
 
-	t = SSL_SESSION_get_time(ctx);
-
-	if (t == 0)
-		return Qnil;
-
-	return rb_funcall(rb_cTime, rb_intern("at"), 1, TIMET2NUM(t));
+    return rb_funcall(rb_cTime, rb_intern("at"), 1, LONG2NUM(t));
 }
 
 /*
@@ -164,16 +159,16 @@ static VALUE ossl_ssl_session_get_time(VALUE self)
  * established time.
  *
  */
-static VALUE ossl_ssl_session_get_timeout(VALUE self)
+static VALUE
+ossl_ssl_session_get_timeout(VALUE self)
 {
-	SSL_SESSION *ctx;
-	time_t t;
+    SSL_SESSION *ctx;
+    long t;
 
-	GetSSLSession(self, ctx);
+    GetSSLSession(self, ctx);
+    t = SSL_SESSION_get_timeout(ctx);
 
-	t = SSL_SESSION_get_timeout(ctx);
-
-	return TIMET2NUM(t);
+    return LONG2NUM(t);
 }
 
 /*
@@ -270,9 +265,6 @@ static VALUE ossl_ssl_session_to_pem(VALUE self)
 {
 	SSL_SESSION *ctx;
 	BIO *out;
-	BUF_MEM *buf;
-	VALUE str;
-	int i;
 
 	GetSSLSession(self, ctx);
 
@@ -280,16 +272,13 @@ static VALUE ossl_ssl_session_to_pem(VALUE self)
 		ossl_raise(eSSLSession, "BIO_s_mem()");
 	}
 
-	if (!(i=PEM_write_bio_SSL_SESSION(out, ctx))) {
+	if (!PEM_write_bio_SSL_SESSION(out, ctx)) {
 		BIO_free(out);
 		ossl_raise(eSSLSession, "SSL_SESSION_print()");
 	}
 
-	BIO_get_mem_ptr(out, &buf);
-	str = rb_str_new(buf->data, buf->length);
-	BIO_free(out);
 
-	return str;
+	return ossl_membio2str(out);
 }
 
 
@@ -303,8 +292,6 @@ static VALUE ossl_ssl_session_to_text(VALUE self)
 {
 	SSL_SESSION *ctx;
 	BIO *out;
-	BUF_MEM *buf;
-	VALUE str;
 
 	GetSSLSession(self, ctx);
 
@@ -317,11 +304,7 @@ static VALUE ossl_ssl_session_to_text(VALUE self)
 		ossl_raise(eSSLSession, "SSL_SESSION_print()");
 	}
 
-	BIO_get_mem_ptr(out, &buf);
-	str = rb_str_new(buf->data, buf->length);
-	BIO_free(out);
-
-	return str;
+	return ossl_membio2str(out);
 }
 
 

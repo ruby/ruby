@@ -10,7 +10,6 @@ rescue LoadError
 end
 
 require "test/unit"
-require "digest/md5"
 require 'tempfile'
 require "rbconfig"
 require "socket"
@@ -131,8 +130,8 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
 
   module_function
 
-  def issue_cert(dn, key, serial, not_before, not_after, extensions,
-                 issuer, issuer_key, digest)
+  def issue_cert(dn, key, serial, extensions, issuer, issuer_key,
+                 not_before: nil, not_after: nil, digest: nil)
     cert = OpenSSL::X509::Certificate.new
     issuer = cert unless issuer
     issuer_key = key unless issuer_key
@@ -141,14 +140,16 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
     cert.subject = dn
     cert.issuer = issuer.subject
     cert.public_key = key.public_key
-    cert.not_before = not_before
-    cert.not_after = not_after
+    now = Time.now
+    cert.not_before = not_before || now - 3600
+    cert.not_after = not_after || now + 3600
     ef = OpenSSL::X509::ExtensionFactory.new
     ef.subject_certificate = cert
     ef.issuer_certificate = issuer
     extensions.each{|oid, value, critical|
       cert.add_extension(ef.create_extension(oid, value, critical))
     }
+    digest ||= OpenSSL::PKey::DSA === issuer_key ? DSA_SIGNATURE_DIGEST.new : "sha256"
     cert.sign(issuer_key, digest)
     cert
   end
@@ -217,7 +218,6 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
       @ca  = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA")
       @svr = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
       @cli = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
-      now = Time.at(Time.now.to_i)
       ca_exts = [
         ["basicConstraints","CA:TRUE",true],
         ["keyUsage","cRLSign,keyCertSign",true],
@@ -225,9 +225,9 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
       ee_exts = [
         ["keyUsage","keyEncipherment,digitalSignature",true],
       ]
-      @ca_cert  = issue_cert(@ca, @ca_key, 1, now, now+3600, ca_exts, nil, nil, OpenSSL::Digest::SHA1.new)
-      @svr_cert = issue_cert(@svr, @svr_key, 2, now, now+1800, ee_exts, @ca_cert, @ca_key, OpenSSL::Digest::SHA1.new)
-      @cli_cert = issue_cert(@cli, @cli_key, 3, now, now+1800, ee_exts, @ca_cert, @ca_key, OpenSSL::Digest::SHA1.new)
+      @ca_cert  = issue_cert(@ca, @ca_key, 1, ca_exts, nil, nil)
+      @svr_cert = issue_cert(@svr, @svr_key, 2, ee_exts, @ca_cert, @ca_key)
+      @cli_cert = issue_cert(@cli, @cli_key, 3, ee_exts, @ca_cert, @ca_key)
       @server = nil
     end
 

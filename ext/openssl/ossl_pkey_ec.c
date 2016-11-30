@@ -643,11 +643,10 @@ static VALUE ossl_ec_key_dsa_sign_asn1(VALUE self, VALUE data)
     if (EC_KEY_get0_private_key(ec) == NULL)
 	ossl_raise(eECError, "Private EC key needed!");
 
-    str = rb_str_new(0, ECDSA_size(ec) + 16);
+    str = rb_str_new(0, ECDSA_size(ec));
     if (ECDSA_sign(0, (unsigned char *) RSTRING_PTR(data), RSTRING_LENINT(data), (unsigned char *) RSTRING_PTR(str), &buf_len, ec) != 1)
-         ossl_raise(eECError, "ECDSA_sign");
-
-    rb_str_resize(str, buf_len);
+	ossl_raise(eECError, "ECDSA_sign");
+    rb_str_set_len(str, buf_len);
 
     return str;
 }
@@ -1106,6 +1105,22 @@ static VALUE ossl_ec_group_get_point_conversion_form(VALUE self)
    return ID2SYM(ret);
 }
 
+static point_conversion_form_t
+parse_point_conversion_form_symbol(VALUE sym)
+{
+    ID id = SYM2ID(sym);
+
+    if (id == ID_uncompressed)
+	return POINT_CONVERSION_UNCOMPRESSED;
+    else if (id == ID_compressed)
+	return POINT_CONVERSION_COMPRESSED;
+    else if (id == ID_hybrid)
+	return POINT_CONVERSION_HYBRID;
+    else
+	ossl_raise(rb_eArgError, "unsupported point conversion form %+"PRIsVALUE
+		   " (expected :compressed, :uncompressed, or :hybrid)", sym);
+}
+
 /*
  * call-seq:
  *   group.point_conversion_form = form
@@ -1125,23 +1140,14 @@ static VALUE ossl_ec_group_get_point_conversion_form(VALUE self)
  *
  * See the OpenSSL documentation for EC_GROUP_set_point_conversion_form()
  */
-static VALUE ossl_ec_group_set_point_conversion_form(VALUE self, VALUE form_v)
+static VALUE
+ossl_ec_group_set_point_conversion_form(VALUE self, VALUE form_v)
 {
-    EC_GROUP *group = NULL;
+    EC_GROUP *group;
     point_conversion_form_t form;
-    ID form_id = SYM2ID(form_v);
 
     GetECGroup(self, group);
-
-    if (form_id == ID_uncompressed) {
-        form = POINT_CONVERSION_UNCOMPRESSED;
-    } else if (form_id == ID_compressed) {
-        form = POINT_CONVERSION_COMPRESSED;
-    } else if (form_id == ID_hybrid) {
-        form = POINT_CONVERSION_HYBRID;
-    } else {
-        ossl_raise(rb_eArgError, "form must be :compressed, :uncompressed, or :hybrid");
-    }
+    form = parse_point_conversion_form_symbol(form_v);
 
     EC_GROUP_set_point_conversion_form(group, form);
 
@@ -1549,22 +1555,30 @@ static VALUE ossl_ec_point_set_to_infinity(VALUE self)
 
 /*
  * call-seq:
- *   point.to_bn   => OpenSSL::BN
+ *   point.to_bn(conversion_form = nil) => OpenSSL::BN
  *
- *  See the OpenSSL documentation for EC_POINT_point2bn()
+ * Convert the EC point into an octet string and store in an OpenSSL::BN. If
+ * +conversion_form+ is given, the point data is converted using the specified
+ * form. If not given, the default form set in the EC::Group object is used.
+ *
+ * See also EC::Point#point_conversion_form=.
  */
-static VALUE ossl_ec_point_to_bn(VALUE self)
+static VALUE
+ossl_ec_point_to_bn(int argc, VALUE *argv, VALUE self)
 {
     EC_POINT *point;
-    VALUE bn_obj;
+    VALUE form_obj, bn_obj;
     const EC_GROUP *group;
     point_conversion_form_t form;
     BIGNUM *bn;
 
     GetECPoint(self, point);
     GetECPointGroup(self, group);
-
-    form = EC_GROUP_get_point_conversion_form(group);
+    rb_scan_args(argc, argv, "01", &form_obj);
+    if (NIL_P(form_obj))
+	form = EC_GROUP_get_point_conversion_form(group);
+    else
+	form = parse_point_conversion_form_symbol(form_obj);
 
     bn_obj = rb_obj_alloc(cBN);
     bn = GetBNPtr(bn_obj);
@@ -1793,7 +1807,7 @@ void Init_ossl_ec(void)
     rb_define_method(cEC_POINT, "set_to_infinity!", ossl_ec_point_set_to_infinity, 0);
 /* all the other methods */
 
-    rb_define_method(cEC_POINT, "to_bn", ossl_ec_point_to_bn, 0);
+    rb_define_method(cEC_POINT, "to_bn", ossl_ec_point_to_bn, -1);
     rb_define_method(cEC_POINT, "mul", ossl_ec_point_mul, -1);
 
     id_i_group = rb_intern("@group");

@@ -36,7 +36,7 @@
  */
 VALUE cCipher;
 VALUE eCipherError;
-static ID id_auth_tag_len;
+static ID id_auth_tag_len, id_key_set;
 
 static VALUE ossl_cipher_alloc(VALUE klass);
 static void ossl_cipher_free(void *ptr);
@@ -118,7 +118,6 @@ ossl_cipher_initialize(VALUE self, VALUE str)
     EVP_CIPHER_CTX *ctx;
     const EVP_CIPHER *cipher;
     char *name;
-    unsigned char dummy_key[EVP_MAX_KEY_LENGTH] = { 0 };
 
     name = StringValueCStr(str);
     GetCipherInit(self, ctx);
@@ -129,16 +128,7 @@ ossl_cipher_initialize(VALUE self, VALUE str)
     if (!(cipher = EVP_get_cipherbyname(name))) {
 	ossl_raise(rb_eRuntimeError, "unsupported cipher algorithm (%"PRIsVALUE")", str);
     }
-    /*
-     * EVP_CipherInit_ex() allows to specify NULL to key and IV, however some
-     * ciphers don't handle well (OpenSSL's bug). [Bug #2768]
-     *
-     * The EVP which has EVP_CIPH_RAND_KEY flag (such as DES3) allows
-     * uninitialized key, but other EVPs (such as AES) does not allow it.
-     * Calling EVP_CipherUpdate() without initializing key causes SEGV so we
-     * set the data filled with "\0" as the key by default.
-     */
-    if (EVP_CipherInit_ex(ctx, cipher, NULL, dummy_key, NULL, -1) != 1)
+    if (EVP_CipherInit_ex(ctx, cipher, NULL, NULL, NULL, -1) != 1)
 	ossl_raise(eCipherError, NULL);
 
     return self;
@@ -251,6 +241,9 @@ ossl_cipher_init(int argc, VALUE *argv, VALUE self, int mode)
 	ossl_raise(eCipherError, NULL);
     }
 
+    if (p_key)
+	rb_ivar_set(self, id_key_set, Qtrue);
+
     return self;
 }
 
@@ -337,6 +330,8 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
     OPENSSL_cleanse(key, sizeof key);
     OPENSSL_cleanse(iv, sizeof iv);
 
+    rb_ivar_set(self, id_key_set, Qtrue);
+
     return Qnil;
 }
 
@@ -386,6 +381,9 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
     VALUE data, str;
 
     rb_scan_args(argc, argv, "11", &data, &str);
+
+    if (!RTEST(rb_attr_get(self, id_key_set)))
+	ossl_raise(eCipherError, "key not set");
 
     StringValue(data);
     in = (unsigned char *)RSTRING_PTR(data);
@@ -488,6 +486,8 @@ ossl_cipher_set_key(VALUE self, VALUE key)
     if (EVP_CipherInit_ex(ctx, NULL, NULL, (unsigned char *)RSTRING_PTR(key), NULL, -1) != 1)
 	ossl_raise(eCipherError, NULL);
 
+    rb_ivar_set(self, id_key_set, Qtrue);
+
     return key;
 }
 
@@ -502,9 +502,6 @@ ossl_cipher_set_key(VALUE self, VALUE key)
  *  Cipher#random_iv to create a secure random IV.
  *
  *  Only call this method after calling Cipher#encrypt or Cipher#decrypt.
- *
- *  If not explicitly set, the OpenSSL default of an all-zeroes ("\\0") IV is
- *  used.
  */
 static VALUE
 ossl_cipher_set_iv(VALUE self, VALUE iv)
@@ -528,6 +525,27 @@ ossl_cipher_set_iv(VALUE self, VALUE iv)
 	ossl_raise(eCipherError, NULL);
 
     return iv;
+}
+
+/*
+ *  call-seq:
+ *     cipher.authenticated? -> true | false
+ *
+ *  Indicated whether this Cipher instance uses an Authenticated Encryption
+ *  mode.
+ */
+static VALUE
+ossl_cipher_is_authenticated(VALUE self)
+{
+    EVP_CIPHER_CTX *ctx;
+
+    GetCipher(self, ctx);
+
+#if defined(HAVE_AUTHENTICATED_ENCRYPTION)
+    return (EVP_CIPHER_CTX_flags(ctx) & EVP_CIPH_FLAG_AEAD_CIPHER) ? Qtrue : Qfalse;
+#else
+    return Qfalse;
+#endif
 }
 
 #ifdef HAVE_AUTHENTICATED_ENCRYPTION
@@ -676,23 +694,6 @@ ossl_cipher_set_auth_tag_len(VALUE self, VALUE vlen)
 }
 
 /*
- *  call-seq:
- *     cipher.authenticated? -> boolean
- *
- *  Indicated whether this Cipher instance uses an Authenticated Encryption
- *  mode.
- */
-static VALUE
-ossl_cipher_is_authenticated(VALUE self)
-{
-    EVP_CIPHER_CTX *ctx;
-
-    GetCipher(self, ctx);
-
-    return (EVP_CIPHER_CTX_flags(ctx) & EVP_CIPH_FLAG_AEAD_CIPHER) ? Qtrue : Qfalse;
-}
-
-/*
  * call-seq:
  *   cipher.iv_len = integer -> integer
  *
@@ -726,7 +727,6 @@ ossl_cipher_set_iv_length(VALUE self, VALUE iv_length)
 #define ossl_cipher_get_auth_tag rb_f_notimplement
 #define ossl_cipher_set_auth_tag rb_f_notimplement
 #define ossl_cipher_set_auth_tag_len rb_f_notimplement
-#define ossl_cipher_is_authenticated rb_f_notimplement
 #define ossl_cipher_set_iv_length rb_f_notimplement
 #endif
 
@@ -939,12 +939,10 @@ Init_ossl_cipher(void)
      * you absolutely need it</b>
      *
      * Because of this, you will end up with a mode that explicitly requires
-     * an IV in any case. Note that for backwards compatibility reasons,
-     * setting an IV is not explicitly mandated by the Cipher API. If not
-     * set, OpenSSL itself defaults to an all-zeroes IV ("\\0", not the
-     * character). Although the IV can be seen as public information, i.e.
-     * it may be transmitted in public once generated, it should still stay
-     * unpredictable to prevent certain kinds of attacks. Therefore, ideally
+     * an IV in any case. Although the IV can be seen as public information,
+     * i.e. it may be transmitted in public once generated, it should still
+     * stay unpredictable to prevent certain kinds of attacks. Therefore,
+     * ideally
      *
      * <b>Always create a secure random IV for every encryption of your
      * Cipher</b>
@@ -1082,4 +1080,5 @@ Init_ossl_cipher(void)
     rb_define_method(cCipher, "padding=", ossl_cipher_set_padding, 1);
 
     id_auth_tag_len = rb_intern_const("auth_tag_len");
+    id_key_set = rb_intern_const("key_set");
 }

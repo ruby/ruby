@@ -70,12 +70,12 @@ const rb_data_type_t ossl_evp_pkey_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
-VALUE
-ossl_pkey_new(EVP_PKEY *pkey)
+static VALUE
+pkey_new0(EVP_PKEY *pkey)
 {
-    if (!pkey) {
-	ossl_raise(ePKeyError, "Cannot make new key from NULL.");
-    }
+    if (!pkey)
+	ossl_raise(ePKeyError, "cannot make new key from NULL");
+
     switch (EVP_PKEY_base_id(pkey)) {
 #if !defined(OPENSSL_NO_RSA)
     case EVP_PKEY_RSA:
@@ -96,29 +96,21 @@ ossl_pkey_new(EVP_PKEY *pkey)
     default:
 	ossl_raise(ePKeyError, "unsupported key type");
     }
-
-    UNREACHABLE;
 }
 
 VALUE
-ossl_pkey_new_from_file(VALUE filename)
+ossl_pkey_new(EVP_PKEY *pkey)
 {
-    FILE *fp;
-    EVP_PKEY *pkey;
+    VALUE obj;
+    int status;
 
-    rb_check_safe_obj(filename);
-    if (!(fp = fopen(StringValueCStr(filename), "r"))) {
-	ossl_raise(ePKeyError, "%s", strerror(errno));
-    }
-    rb_fd_fix_cloexec(fileno(fp));
-
-    pkey = PEM_read_PrivateKey(fp, NULL, ossl_pem_passwd_cb, NULL);
-    fclose(fp);
-    if (!pkey) {
-	ossl_raise(ePKeyError, NULL);
+    obj = rb_protect((VALUE (*)(VALUE))pkey_new0, (VALUE)pkey, &status);
+    if (status) {
+	EVP_PKEY_free(pkey);
+	rb_jump_tag(status);
     }
 
-    return ossl_pkey_new(pkey);
+    return obj;
 }
 
 /*
@@ -164,6 +156,45 @@ ossl_pkey_new_from_data(int argc, VALUE *argv, VALUE self)
 	ossl_raise(ePKeyError, "Could not parse PKey");
 
     return ossl_pkey_new(pkey);
+}
+
+static void
+pkey_check_public_key(EVP_PKEY *pkey)
+{
+    void *ptr;
+    const BIGNUM *n, *e, *pubkey;
+
+    if (EVP_PKEY_missing_parameters(pkey))
+	ossl_raise(ePKeyError, "parameters missing");
+
+    ptr = EVP_PKEY_get0(pkey);
+    switch (EVP_PKEY_base_id(pkey)) {
+      case EVP_PKEY_RSA:
+	RSA_get0_key(ptr, &n, &e, NULL);
+	if (n && e)
+	    return;
+	break;
+      case EVP_PKEY_DSA:
+	DSA_get0_key(ptr, &pubkey, NULL);
+	if (pubkey)
+	    return;
+	break;
+      case EVP_PKEY_DH:
+	DH_get0_key(ptr, &pubkey, NULL);
+	if (pubkey)
+	    return;
+	break;
+#if !defined(OPENSSL_NO_EC)
+      case EVP_PKEY_EC:
+	if (EC_KEY_get0_public_key(ptr))
+	    return;
+	break;
+#endif
+      default:
+	/* unsupported type; assuming ok */
+	return;
+    }
+    ossl_raise(ePKeyError, "public key missing");
 }
 
 EVP_PKEY *
@@ -264,18 +295,23 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
     pkey = GetPrivPKeyPtr(self);
     md = GetDigestPtr(digest);
     StringValue(data);
-    str = rb_str_new(0, EVP_PKEY_size(pkey)+16);
+    str = rb_str_new(0, EVP_PKEY_size(pkey));
 
     ctx = EVP_MD_CTX_new();
     if (!ctx)
 	ossl_raise(ePKeyError, "EVP_MD_CTX_new");
-    EVP_SignInit(ctx, md);
-    EVP_SignUpdate(ctx, RSTRING_PTR(data), RSTRING_LEN(data));
+    if (!EVP_SignInit_ex(ctx, md, NULL)) {
+	EVP_MD_CTX_free(ctx);
+	ossl_raise(ePKeyError, "EVP_SignInit_ex");
+    }
+    if (!EVP_SignUpdate(ctx, RSTRING_PTR(data), RSTRING_LEN(data))) {
+	EVP_MD_CTX_free(ctx);
+	ossl_raise(ePKeyError, "EVP_SignUpdate");
+    }
     result = EVP_SignFinal(ctx, (unsigned char *)RSTRING_PTR(str), &buf_len, pkey);
     EVP_MD_CTX_free(ctx);
     if (!result)
-	ossl_raise(ePKeyError, NULL);
-    assert((long)buf_len <= RSTRING_LEN(str));
+	ossl_raise(ePKeyError, "EVP_SignFinal");
     rb_str_set_len(str, buf_len);
 
     return str;
@@ -308,19 +344,27 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
     EVP_PKEY *pkey;
     const EVP_MD *md;
     EVP_MD_CTX *ctx;
-    int result;
+    int siglen, result;
 
     GetPKey(self, pkey);
+    pkey_check_public_key(pkey);
     md = GetDigestPtr(digest);
     StringValue(sig);
+    siglen = RSTRING_LENINT(sig);
     StringValue(data);
 
     ctx = EVP_MD_CTX_new();
     if (!ctx)
 	ossl_raise(ePKeyError, "EVP_MD_CTX_new");
-    EVP_VerifyInit(ctx, md);
-    EVP_VerifyUpdate(ctx, RSTRING_PTR(data), RSTRING_LEN(data));
-    result = EVP_VerifyFinal(ctx, (unsigned char *)RSTRING_PTR(sig), RSTRING_LENINT(sig), pkey);
+    if (!EVP_VerifyInit_ex(ctx, md, NULL)) {
+	EVP_MD_CTX_free(ctx);
+	ossl_raise(ePKeyError, "EVP_VerifyInit_ex");
+    }
+    if (!EVP_VerifyUpdate(ctx, RSTRING_PTR(data), RSTRING_LEN(data))) {
+	EVP_MD_CTX_free(ctx);
+	ossl_raise(ePKeyError, "EVP_VerifyUpdate");
+    }
+    result = EVP_VerifyFinal(ctx, (unsigned char *)RSTRING_PTR(sig), siglen, pkey);
     EVP_MD_CTX_free(ctx);
     switch (result) {
     case 0:
@@ -329,9 +373,8 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
     case 1:
 	return Qtrue;
     default:
-	ossl_raise(ePKeyError, NULL);
+	ossl_raise(ePKeyError, "EVP_VerifyFinal");
     }
-    return Qnil; /* dummy */
 }
 
 /*

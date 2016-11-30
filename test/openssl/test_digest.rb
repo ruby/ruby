@@ -7,27 +7,21 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
   def setup
     @d1 = OpenSSL::Digest.new("MD5")
     @d2 = OpenSSL::Digest::MD5.new
-    @md = Digest::MD5.new
-    @data = "DATA"
-  end
-
-  def teardown
-    super
-    @d1 = @d2 = @md = nil
   end
 
   def test_digest
-    assert_equal(@md.digest, @d1.digest)
-    assert_equal(@md.hexdigest, @d1.hexdigest)
-    @d1 << @data
-    @d2 << @data
-    @md << @data
-    assert_equal(@md.digest, @d1.digest)
-    assert_equal(@md.hexdigest, @d1.hexdigest)
-    assert_equal(@d1.digest, @d2.digest)
-    assert_equal(@d1.hexdigest, @d2.hexdigest)
-    assert_equal(@md.digest, OpenSSL::Digest::MD5.digest(@data))
-    assert_equal(@md.hexdigest, OpenSSL::Digest::MD5.hexdigest(@data))
+    null_hex = "d41d8cd98f00b204e9800998ecf8427e"
+    null_bin = [null_hex].pack("H*")
+    data = "DATA"
+    hex = "e44f9e348e41cb272efa87387728571b"
+    bin = [hex].pack("H*")
+    assert_equal(null_bin, @d1.digest)
+    assert_equal(null_hex, @d1.hexdigest)
+    @d1 << data
+    assert_equal(bin, @d1.digest)
+    assert_equal(hex, @d1.hexdigest)
+    assert_equal(bin, OpenSSL::Digest::MD5.digest(data))
+    assert_equal(hex, OpenSSL::Digest::MD5.hexdigest(data))
   end
 
   def test_eql
@@ -43,17 +37,17 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
   end
 
   def test_dup
-    @d1.update(@data)
+    @d1.update("DATA")
     assert_equal(@d1.name, @d1.dup.name, "dup")
     assert_equal(@d1.name, @d1.clone.name, "clone")
     assert_equal(@d1.digest, @d1.clone.digest, "clone .digest")
   end
 
   def test_reset
-    @d1.update(@data)
+    @d1.update("DATA")
     dig1 = @d1.digest
     @d1.reset
-    @d1.update(@data)
+    @d1.update("DATA")
     dig2 = @d1.digest
     assert_equal(dig1, dig2, "reset")
   end
