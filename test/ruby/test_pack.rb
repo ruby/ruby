@@ -837,4 +837,11 @@ EXPECTED
 
     assert_equal addr, [buf].pack('p')
   end
+
+  def test_unpack1
+    assert_equal 65, "A".unpack1("C")
+    assert_equal 68, "ABCD".unpack1("x3C")
+    assert_equal 0x3042, "\u{3042 3044 3046}".unpack1("U*")
+    assert_equal "hogefuga", "aG9nZWZ1Z2E=".unpack1("m")
+  end
 end
