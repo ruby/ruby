@@ -99,7 +99,7 @@ class IO
   #
   #   # write_nonblock writes only 65536 bytes and return 65536.
   #   # (The pipe size is 65536 bytes on this environment.)
-  #   s = "a"  #100000
+  #   s = "a" * 100000
   #   p w.write_nonblock(s)     #=> 65536
   #
   #   # write_nonblock cannot write a byte and raise EWOULDBLOCK (EAGAIN).
