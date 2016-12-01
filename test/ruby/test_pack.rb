@@ -816,17 +816,8 @@ EXPECTED
   def test_pack_with_buffer
     buf = String.new(capacity: 100)
 
-    assert_raise_with_message(ArgumentError, /without buffer/) {
-      [0xDEAD_BEEF].pack('N', offset: 10)
-    }
-    assert_raise_with_message(ArgumentError, /too small/) {
-      [0xDEAD_BEEF].pack('N', buffer: buf, offset: 200)
-    }
     assert_raise_with_message(RuntimeError, /frozen/) {
       [0xDEAD_BEEF].pack('N', buffer: 'foo'.freeze)
-    }
-    assert_raise_with_message(TypeError, /into Integer/) {
-      [0xDEAD_BEEF].pack('N', buffer: buf, offset: '10')
     }
     assert_raise_with_message(TypeError, /must be String/) {
       [0xDEAD_BEEF].pack('N', buffer: Object.new)
@@ -837,11 +828,11 @@ EXPECTED
     [0xDEAD_BEEF].pack('N', buffer: buf)
     assert_equal "\xDE\xAD\xBE\xEF", buf
 
-    [0xBABE_F00D].pack('N', buffer: buf, offset: 4)
+    [0xBABE_F00D].pack('@4N', buffer: buf)
     assert_equal "\xDE\xAD\xBE\xEF\xBA\xBE\xF0\x0D", buf
     assert_equal addr, [buf].pack('p')
 
-    [0xBAAD_FACE].pack('N', buffer: buf, offset: 10)
+    [0xBAAD_FACE].pack('@10N', buffer: buf)
     assert_equal "\xDE\xAD\xBE\xEF\xBA\xBE\xF0\x0D\0\0\xBA\xAD\xFA\xCE", buf
 
     assert_equal addr, [buf].pack('p')

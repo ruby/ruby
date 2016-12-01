@@ -42,8 +42,7 @@ with all sufficient information, see the ChangeLog file or Redmine
     Now takes multiple arguments.
 
   * Array#pack [Feature #12754]
-    Now takes optional arguments `buffer' and `offset' to reuse already
-    allocated buffer.
+    Now takes optional argument `buffer:' to reuse already allocated buffer.
 
 * Comparable
 

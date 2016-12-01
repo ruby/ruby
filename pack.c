@@ -142,7 +142,6 @@ rb_str_associated(VALUE str)
  *  call-seq:
  *     arr.pack( aTemplateString ) -> aBinaryString
  *     arr.pack( aTemplateString, buffer: aBufferString ) -> aBufferString
- *     arr.pack( aTemplateString, buffer: aBufferString, offset: offsetOfBuffer ) -> aBufferString
  *
  *  Packs the contents of <i>arr</i> into a binary sequence according to
  *  the directives in <i>aTemplateString</i> (see the table below)
@@ -166,10 +165,10 @@ rb_str_associated(VALUE str)
  *
  *  If <i>aBufferString</i> is specified and its capacity is enough,
  *  +pack+ uses it as the buffer and returns it.
- *  User can also specify <i>offsetOfBuffer</i>, then the result of +pack+
- *  is filled after <i>offsetOfBuffer</i> bytes.
+ *  When the offset is specified by the beginning of <i>aTemplateString</i>,
+ *  the result is filled after the offset.
  *  If original contents of <i>aBufferString</i> exists and it's longer than
- *  <i>offsetOfBuffer</i>, the rest of <i>offsetOfBuffer</i> are cut.
+ *  the offset, the rest of <i>offsetOfBuffer</i> are overwritten by the result.
  *  If it's shorter, the gap is filled with ``<code>\0</code>''.
  *
  *  Note that ``buffer:'' option does not guarantee not to allocate memory
@@ -290,36 +289,16 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
     p = RSTRING_PTR(fmt);
     pend = p + RSTRING_LEN(fmt);
     if (!NIL_P(opt)) {
-	static ID keyword_ids[2];
-	VALUE kwargs[2];
-	VALUE voff;
+	static ID keyword_ids[1];
 	long offset;
 
-	if (!keyword_ids[0]) {
+	if (!keyword_ids[0])
 	    CONST_ID(keyword_ids[0], "buffer");
-	    CONST_ID(keyword_ids[1], "offset");
-	}
 
-	rb_get_kwargs(opt, keyword_ids, 0, 2, kwargs);
-	buffer = kwargs[0];
-	voff = kwargs[1];
+	rb_get_kwargs(opt, keyword_ids, 0, 1, &buffer);
 
-	if (buffer == Qundef && !NIL_P(voff))
-	    rb_raise(rb_eArgError, "offset is specified without buffer");
-	if (buffer != Qundef) {
-	    long len;
-	    if (!RB_TYPE_P(buffer, T_STRING))
-		rb_raise(rb_eTypeError, "buffer must be String, not %s", rb_obj_classname(buffer));
-	    if (voff != Qundef) {
-		offset = NUM2LONG(voff);
-		if (rb_str_capacity(buffer) < offset)
-		    rb_raise(rb_eArgError, "buffer is too small for offset");
-		len = RSTRING_LEN(buffer);
-		rb_str_set_len(buffer, offset);
-		if (len < offset)
-		    memset(RSTRING_PTR(buffer) + len, '\0', offset - len);
-	    }
-	}
+	if (buffer != Qundef && !RB_TYPE_P(buffer, T_STRING))
+	    rb_raise(rb_eTypeError, "buffer must be String, not %s", rb_obj_classname(buffer));
     }
     if (buffer)
 	res = buffer;
