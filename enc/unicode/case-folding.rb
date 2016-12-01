@@ -326,7 +326,7 @@ class CaseMapping
   end
 
   def specials_output
-    "OnigCodePoint CaseMappingSpecials[] = {\n" +
+    "static const OnigCodePoint CaseMappingSpecials[] = {\n" +
     @specials.map do |sps|
       '   ' + sps.map do |sp|
         chars = sp.split(/ /)

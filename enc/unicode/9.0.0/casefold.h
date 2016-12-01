@@ -6931,7 +6931,7 @@ onigenc_unicode_CaseUnfold_13_lookup(const OnigCodePoint *codes)
   return 0;
 }
 
-OnigCodePoint CaseMappingSpecials[] = {
+static const OnigCodePoint CaseMappingSpecials[] = {
     L(1)|0x039C,
     L(2)|0x0053, 0x0073, L(2)|0x0053, 0x0053,
     L(2)|0x02BC, 0x004E,

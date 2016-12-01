@@ -725,7 +725,7 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 
 		    MODIFIED;
 		    if (flags&OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_SPECIALS) { /* special */
-			OnigCodePoint *SpecialsStart = CaseMappingSpecials + OnigSpecialIndexDecode(folded->n);
+			const OnigCodePoint *SpecialsStart = CaseMappingSpecials + OnigSpecialIndexDecode(folded->n);
 
 			if (OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_IS_TITLECASE) { /* swapCASE available */
 			    if ((flags&(ONIGENC_CASE_UPCASE|ONIGENC_CASE_DOWNCASE))
