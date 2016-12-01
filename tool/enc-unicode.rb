@@ -381,7 +381,6 @@ output = Unifdef.new($stdout)
 output.kwdonly = !header
 
 puts '%{'
-puts '#define long size_t'
 props, data = parse_unicode_data(get_file('UnicodeData.txt'))
 categories = {}
 props.concat parse_scripts(data, categories)
@@ -423,7 +422,8 @@ output.endif :USE_UNICODE_PROPERTIES
 puts(<<'__HEREDOC')
 };
 struct uniname2ctype_struct {
-  int name, ctype;
+  short name;
+  unsigned short ctype;
 };
 
 static const struct uniname2ctype_struct *uniname2ctype_p(const char *, unsigned int);
@@ -512,6 +512,12 @@ if header
   end while syms.pop
   fds.each(&:close)
   IO.popen(%W[diff -DUSE_UNICODE_AGE_PROPERTIES #{fds[1].path} #{fds[0].path}], "r") {|age|
-    system(* %W[diff -DUSE_UNICODE_PROPERTIES #{fds[2].path} -], in: age)
+    IO.popen(%W[diff -DUSE_UNICODE_PROPERTIES #{fds[2].path} -], "r", in: age) {|f|
+      f.each {|line|
+        line.gsub!(/\(int\)\(long\)&\(\((struct uniname2ctype_pool_t) \*\)0\)->(uniname2ctype_pool_str\d+),\s+/,
+                   'offsetof(\1, \2), ')
+        puts line
+      }
+    }
   }
 end
