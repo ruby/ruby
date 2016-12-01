@@ -192,32 +192,32 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     cipher = new_encryptor("aes-128-gcm", key: key, iv: iv, auth_data: aad)
     assert_equal ct, cipher.update(pt) << cipher.final
     assert_equal tag, cipher.auth_tag
-    cipher = new_decryptor("aes-128-gcm", key: key, iv: iv, auth_data: aad, auth_tag: tag)
+    cipher = new_decryptor("aes-128-gcm", key: key, iv: iv, auth_tag: tag, auth_data: aad)
     assert_equal pt, cipher.update(ct) << cipher.final
 
     # truncated tag is accepted
     cipher = new_encryptor("aes-128-gcm", key: key, iv: iv, auth_data: aad)
     assert_equal ct, cipher.update(pt) << cipher.final
     assert_equal tag[0, 8], cipher.auth_tag(8)
-    cipher = new_decryptor("aes-128-gcm", key: key, iv: iv, auth_data: aad, auth_tag: tag[0, 8])
+    cipher = new_decryptor("aes-128-gcm", key: key, iv: iv, auth_tag: tag[0, 8], auth_data: aad)
     assert_equal pt, cipher.update(ct) << cipher.final
 
     # wrong tag is rejected
     tag2 = tag.dup
     tag2.setbyte(-1, (tag2.getbyte(-1) + 1) & 0xff)
-    cipher = new_decryptor("aes-128-gcm", key: key, iv: iv, auth_data: aad, auth_tag: tag2)
+    cipher = new_decryptor("aes-128-gcm", key: key, iv: iv, auth_tag: tag2, auth_data: aad)
     cipher.update(ct)
     assert_raise(OpenSSL::Cipher::CipherError) { cipher.final }
 
     # wrong aad is rejected
     aad2 = aad[0..-2] << aad[-1].succ
-    cipher = new_decryptor("aes-128-gcm", key: key, iv: iv, auth_data: aad2, auth_tag: tag)
+    cipher = new_decryptor("aes-128-gcm", key: key, iv: iv, auth_tag: tag, auth_data: aad2)
     cipher.update(ct)
     assert_raise(OpenSSL::Cipher::CipherError) { cipher.final }
 
     # wrong ciphertext is rejected
     ct2 = ct[0..-2] << ct[-1].succ
-    cipher = new_decryptor("aes-128-gcm", key: key, iv: iv, auth_data: aad, auth_tag: tag)
+    cipher = new_decryptor("aes-128-gcm", key: key, iv: iv, auth_tag: tag, auth_data: aad)
     cipher.update(ct2)
     assert_raise(OpenSSL::Cipher::CipherError) { cipher.final }
   end if has_cipher?("aes-128-gcm")
@@ -241,7 +241,7 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     cipher = new_encryptor("aes-128-gcm", key: key, iv_len: 8, iv: iv, auth_data: aad)
     assert_equal ct, cipher.update(pt) << cipher.final
     assert_equal tag, cipher.auth_tag
-    cipher = new_decryptor("aes-128-gcm", key: key, iv_len: 8, iv: iv, auth_data: aad, auth_tag: tag)
+    cipher = new_decryptor("aes-128-gcm", key: key, iv_len: 8, iv: iv, auth_tag: tag, auth_data: aad)
     assert_equal pt, cipher.update(ct) << cipher.final
   end if has_cipher?("aes-128-gcm")
 
@@ -257,7 +257,7 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     cipher = new_encryptor("aes-128-ocb", key: key, iv: iv, auth_data: aad)
     assert_equal ct, cipher.update(pt) << cipher.final
     assert_equal tag, cipher.auth_tag
-    cipher = new_decryptor("aes-128-ocb", key: key, iv: iv, auth_data: aad, auth_tag: tag)
+    cipher = new_decryptor("aes-128-ocb", key: key, iv: iv, auth_tag: tag, auth_data: aad)
     assert_equal pt, cipher.update(ct) << cipher.final
 
     # RFC 7253 Appendix A; with 96 bits tag length
@@ -274,7 +274,7 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     cipher = new_encryptor("aes-128-ocb", auth_tag_len: 12, key: key, iv: iv, auth_data: aad)
     assert_equal ct, cipher.update(pt) << cipher.final
     assert_equal tag, cipher.auth_tag
-    cipher = new_decryptor("aes-128-ocb", auth_tag_len: 12, key: key, iv: iv, auth_data: aad, auth_tag: tag)
+    cipher = new_decryptor("aes-128-ocb", auth_tag_len: 12, key: key, iv: iv, auth_tag: tag, auth_data: aad)
     assert_equal pt, cipher.update(ct) << cipher.final
 
   end if has_cipher?("aes-128-ocb")

@@ -47,6 +47,10 @@ int HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in);
 		i2d_ASN1_TYPE, V_ASN1_SET, V_ASN1_UNIVERSAL, 0)
 #endif
 
+#if !defined(HAVE_EVP_PKEY_GET0)
+#  define EVP_PKEY_get0(pk) (pk->pkey.ptr)
+#endif
+
 /* added in 1.0.2 */
 #if !defined(OPENSSL_NO_EC)
 #if !defined(HAVE_EC_CURVE_NIST2NID)

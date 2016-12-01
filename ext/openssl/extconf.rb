@@ -95,6 +95,7 @@ have_func("i2d_ASN1_SET_ANY")
 have_func("SSL_SESSION_cmp") # removed
 OpenSSL.check_func_or_macro("SSL_set_tlsext_host_name", "openssl/ssl.h")
 have_struct_member("CRYPTO_THREADID", "ptr", "openssl/crypto.h")
+have_func("EVP_PKEY_get0")
 
 # added in 1.0.1
 have_func("SSL_CTX_set_next_proto_select_cb")
