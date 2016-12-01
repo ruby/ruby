@@ -290,8 +290,6 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
     pend = p + RSTRING_LEN(fmt);
     if (!NIL_P(opt)) {
 	static ID keyword_ids[1];
-	long offset;
-
 	if (!keyword_ids[0])
 	    CONST_ID(keyword_ids[0], "buffer");
 
