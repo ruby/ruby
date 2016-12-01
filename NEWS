@@ -41,6 +41,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Array#concat [Feature #12333]
     Now takes multiple arguments.
 
+  * Array#pack [Feature #12754]
+    Now takes optional arguments `buffer' and `offset' to reuse already
+    allocated buffer.
+
 * Comparable
 
   * Comparable#clamp.  [Feature #10594]

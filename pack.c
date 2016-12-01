@@ -140,7 +140,9 @@ rb_str_associated(VALUE str)
 
 /*
  *  call-seq:
- *     arr.pack ( aTemplateString ) -> aBinaryString
+ *     arr.pack( aTemplateString ) -> aBinaryString
+ *     arr.pack( aTemplateString, buffer: aBufferString ) -> aBufferString
+ *     arr.pack( aTemplateString, buffer: aBufferString, offset: offsetOfBuffer ) -> aBufferString
  *
  *  Packs the contents of <i>arr</i> into a binary sequence according to
  *  the directives in <i>aTemplateString</i> (see the table below)
@@ -161,6 +163,18 @@ rb_str_associated(VALUE str)
  *     a.pack("A3A3A3")   #=> "a  b  c  "
  *     a.pack("a3a3a3")   #=> "a\000\000b\000\000c\000\000"
  *     n.pack("ccc")      #=> "ABC"
+ *
+ *  If <i>aBufferString</i> is specified and its capacity is enough,
+ *  +pack+ uses it as the buffer and returns it.
+ *  User can also specify <i>offsetOfBuffer</i>, then the result of +pack+
+ *  is filled after <i>offsetOfBuffer</i> bytes.
+ *  If original contents of <i>aBufferString</i> exists and it's longer than
+ *  <i>offsetOfBuffer</i>, the rest of <i>offsetOfBuffer</i> are cut.
+ *  If it's shorter, the gap is filled with ``<code>\0</code>''.
+ *
+ *  Note that ``buffer:'' option does not guarantee not to allocate memory
+ *  in +pack+.  If the capacity of <i>aBufferString</i> is not enough,
+ *  +pack+ allocates memory.
  *
  *  Directives for +pack+.
  *
@@ -255,12 +269,12 @@ rb_str_associated(VALUE str)
  */
 
 static VALUE
-pack_pack(VALUE ary, VALUE fmt)
+pack_pack(int argc, VALUE *argv, VALUE ary)
 {
     static const char nul10[] = "\0\0\0\0\0\0\0\0\0\0";
     static const char spc10[] = "          ";
     const char *p, *pend;
-    VALUE res, from, associates = 0;
+    VALUE fmt, opt = Qnil, res, from, associates = 0, buffer = 0;
     char type;
     long len, idx, plen;
     const char *ptr;
@@ -270,10 +284,47 @@ pack_pack(VALUE ary, VALUE fmt)
 #endif
     int integer_size, bigendian_p;
 
+    rb_scan_args(argc, argv, "10:", &fmt, &opt);
+
     StringValue(fmt);
     p = RSTRING_PTR(fmt);
     pend = p + RSTRING_LEN(fmt);
-    res = rb_str_buf_new(0);
+    if (!NIL_P(opt)) {
+	static ID keyword_ids[2];
+	VALUE kwargs[2];
+	VALUE voff;
+	long offset;
+
+	if (!keyword_ids[0]) {
+	    CONST_ID(keyword_ids[0], "buffer");
+	    CONST_ID(keyword_ids[1], "offset");
+	}
+
+	rb_get_kwargs(opt, keyword_ids, 0, 2, kwargs);
+	buffer = kwargs[0];
+	voff = kwargs[1];
+
+	if (buffer == Qundef && !NIL_P(voff))
+	    rb_raise(rb_eArgError, "offset is specified without buffer");
+	if (buffer != Qundef) {
+	    long len;
+	    if (!RB_TYPE_P(buffer, T_STRING))
+		rb_raise(rb_eTypeError, "buffer must be String, not %s", rb_obj_classname(buffer));
+	    if (voff != Qundef) {
+		offset = NUM2LONG(voff);
+		if (rb_str_capacity(buffer) < offset)
+		    rb_raise(rb_eArgError, "buffer is too small for offset");
+		len = RSTRING_LEN(buffer);
+		rb_str_set_len(buffer, offset);
+		if (len < offset)
+		    memset(RSTRING_PTR(buffer) + len, '\0', offset - len);
+	    }
+	}
+    }
+    if (buffer)
+	res = buffer;
+    else
+	res = rb_str_buf_new(0);
 
     idx = 0;
 
@@ -1948,7 +1999,7 @@ utf8_to_uv(const char *p, long *lenp)
 void
 Init_pack(void)
 {
-    rb_define_method(rb_cArray, "pack", pack_pack, 1);
+    rb_define_method(rb_cArray, "pack", pack_pack, -1);
     rb_define_method(rb_cString, "unpack", pack_unpack, 1);
 
     id_associated = rb_make_internal_id();
