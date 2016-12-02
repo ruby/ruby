@@ -381,6 +381,8 @@ CODE
     $/ = save
 
     assert_equal(S("a").hash, S("a\u0101").chomp(S("\u0101")).hash, '[ruby-core:22414]')
+  ensure
+    $/ = save
   end
 
   def test_chomp!
@@ -437,6 +439,8 @@ CODE
     assert_equal("foo\r", s)
 
     assert_equal(S("a").hash, S("a\u0101").chomp!(S("\u0101")).hash, '[ruby-core:22414]')
+  ensure
+    $/ = save
   end
 
   def test_chop
@@ -665,6 +669,7 @@ CODE
     S("hello!world").lines.each {|x| res << x}
     assert_equal(S("hello!"), res[0])
     assert_equal(S("world"),  res[1])
+  ensure
     $/ = save
   end
 
@@ -807,6 +812,8 @@ CODE
     assert_nothing_raised(bug7646) do
       "\n\u0100".each_line("\n") {}
     end
+  ensure
+    $/ = save
   end
 
   def test_lines
