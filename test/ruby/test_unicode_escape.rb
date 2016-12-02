@@ -260,9 +260,9 @@ EOS
        eval %q("\u{123.}")  # bad char
      }
 
-     assert_raise(SyntaxError) { eval %q("\u{123 456 }")}  # extra space
-     assert_raise(SyntaxError) { eval %q("\u{ 123 456}")}  # extra space
-     assert_raise(SyntaxError) { eval %q("\u{123  456}")}  # extra space
+     # assert_raise(SyntaxError) { eval %q("\u{123 456 }")}  # extra space
+     # assert_raise(SyntaxError) { eval %q("\u{ 123 456}")}  # extra space
+     # assert_raise(SyntaxError) { eval %q("\u{123  456}")}  # extra space
 
      assert_raise(SyntaxError) { eval %q("\uD800") }       # surrogate block
      assert_raise(SyntaxError) { eval %q("\uDCBA") }       # surrogate block

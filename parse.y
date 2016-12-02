@@ -5800,6 +5800,8 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
 
     if (peek(open_brace)) {  /* handle \u{...} form */
 	int c, last = nextc();
+	do c = nextc(); while (ISSPACE(c));
+	pushback(c);
 	do {
 	    if (regexp_literal) tokadd(last);
 	    codepoint = scan_hex(lex_p, 6, &numlen);
@@ -5816,7 +5818,8 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
 					 codepoint, (int)numlen)) {
 		return 0;
 	    }
-	    if (ISSPACE(c = nextc())) last = c;
+	    while (ISSPACE(c = nextc())) last = c;
+	    pushback(c);
 	} while (string_literal && c != close_brace);
 
 	if (c != close_brace) {
@@ -5825,6 +5828,7 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
 	}
 
 	if (regexp_literal) tokadd(close_brace);
+	nextc();
     }
     else {			/* handle \uxxxx form */
 	codepoint = scan_hex(lex_p, 4, &numlen);
