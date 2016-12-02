@@ -5759,22 +5759,31 @@ parser_tok_hex(struct parser_params *parser, size_t *numlen)
 
 static int
 parser_tokadd_codepoint(struct parser_params *parser, rb_encoding **encp,
-			int string_literal, int regexp_literal,
-			int codepoint, int numlen)
+			int regexp_literal, int wide)
 {
+    size_t numlen;
+    int codepoint = scan_hex(lex_p, wide ? 6 : 4, &numlen);
+    if (wide ? (numlen == 0) : (numlen < 4))  {
+	yyerror("invalid Unicode escape");
+	return FALSE;
+    }
+    if (codepoint > 0x10ffff) {
+	yyerror("invalid Unicode codepoint (too large)");
+	return FALSE;
+    }
     if ((codepoint & 0xfffff800) == 0xd800) {
 	yyerror("invalid Unicode codepoint");
 	return FALSE;
     }
     lex_p += numlen;
     if (regexp_literal) {
-	tokcopy(numlen);
+	tokcopy((int)numlen);
     }
     else if (codepoint >= 0x80) {
 	*encp = rb_utf8_encoding();
-	if (string_literal) tokaddmbc(codepoint, *encp);
+	tokaddmbc(codepoint, *encp);
     }
-    else if (string_literal) {
+    else {
 	tokadd(codepoint);
     }
     return TRUE;
@@ -5783,7 +5792,7 @@ parser_tokadd_codepoint(struct parser_params *parser, rb_encoding **encp,
 /* return value is for ?\u3042 */
 static int
 parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
-                   int string_literal, int symbol_literal, int regexp_literal)
+		   int string_literal, int symbol_literal, int regexp_literal)
 {
     /*
      * If string_literal is true, then we allow multiple codepoints
@@ -5792,8 +5801,6 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
      * codepoint without adding it
      */
 
-    int codepoint;
-    size_t numlen;
     const int open_brace = '{', close_brace = '}';
 
     if (regexp_literal) { tokadd('\\'); tokadd('u'); }
@@ -5804,18 +5811,7 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
 	pushback(c);
 	do {
 	    if (regexp_literal) tokadd(last);
-	    codepoint = scan_hex(lex_p, 6, &numlen);
-	    if (numlen == 0)  {
-		yyerror("invalid Unicode escape");
-		return 0;
-	    }
-	    if (codepoint > 0x10ffff) {
-		yyerror("invalid Unicode codepoint (too large)");
-		return 0;
-	    }
-	    if (!parser_tokadd_codepoint(parser, encp,
-					 string_literal, regexp_literal,
-					 codepoint, (int)numlen)) {
+	    if (!parser_tokadd_codepoint(parser, encp, regexp_literal, TRUE)) {
 		return 0;
 	    }
 	    while (ISSPACE(c = nextc())) last = c;
@@ -5831,19 +5827,12 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
 	nextc();
     }
     else {			/* handle \uxxxx form */
-	codepoint = scan_hex(lex_p, 4, &numlen);
-	if (numlen < 4) {
-	    yyerror("invalid Unicode escape");
-	    return 0;
-	}
-	if (!parser_tokadd_codepoint(parser, encp,
-				     string_literal, regexp_literal,
-				     codepoint, 4)) {
+	if (!parser_tokadd_codepoint(parser, encp, regexp_literal, FALSE)) {
 	    return 0;
 	}
     }
 
-    return codepoint;
+    return TRUE;
 }
 
 #define ESCAPE_CONTROL 1
@@ -6189,7 +6178,7 @@ parser_tokadd_string(struct parser_params *parser,
 		}
 		parser_tokadd_utf8(parser, &enc, 1,
 				   func & STR_FUNC_SYMBOL,
-                                   func & STR_FUNC_REGEXP);
+				   func & STR_FUNC_REGEXP);
 		if (has_nonascii && enc != *encp) {
 		    mixed_escape(beg, enc, *encp);
 		}
@@ -7556,13 +7545,8 @@ parse_qmark(struct parser_params *parser, int space_seen)
     else if (c == '\\') {
 	if (peek('u')) {
 	    nextc();
-	    c = parser_tokadd_utf8(parser, &enc, 0, 0, 0);
-	    if (0x80 <= c) {
-		tokaddmbc(c, enc);
-	    }
-	    else {
-		tokadd(c);
-	    }
+	    if (!parser_tokadd_utf8(parser, &enc, 0, 0, 0))
+		return 0;
 	}
 	else if (!lex_eol_p() && !(c = *lex_p, ISASCII(c))) {
 	    nextc();
