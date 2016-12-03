@@ -74,6 +74,9 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("abc\n", StringIO.new("abc\n\ndef\n").gets)
     assert_equal("abc\n\ndef\n", StringIO.new("abc\n\ndef\n").gets(nil))
     assert_equal("abc\n\n", StringIO.new("abc\n\ndef\n").gets(""))
+    stringio = StringIO.new("abc\n\ndef\n")
+    assert_equal("abc\n\n", stringio.gets(""))
+    assert_equal("def\n", stringio.gets(""))
     assert_raise(TypeError){StringIO.new("").gets(1, 1)}
     assert_nothing_raised {StringIO.new("").gets(nil, nil)}
   end
@@ -473,6 +476,8 @@ class TestStringIO < Test::Unit::TestCase
   def test_each
     f = StringIO.new("foo\nbar\nbaz\n")
     assert_equal(["foo\n", "bar\n", "baz\n"], f.each.to_a)
+    f = StringIO.new("foo\nbar\n\nbaz\n")
+    assert_equal(["foo\nbar\n\n", "baz\n"], f.each("").to_a)
   end
 
   def test_putc
