@@ -816,6 +816,35 @@ CODE
     $/ = save
   end
 
+  def test_each_line_chomp
+    res = []
+    S("hello\nworld").each_line("\n", chomp: true) {|x| res << x}
+    assert_equal(S("hello"), res[0])
+    assert_equal(S("world"), res[1])
+
+    res = []
+    S("hello\n\n\nworld").each_line(S(''), chomp: true) {|x| res << x}
+    assert_equal(S("hello\n\n"), res[0])
+    assert_equal(S("world"),     res[1])
+
+    res = []
+    S("hello!world").each_line(S('!'), chomp: true) {|x| res << x}
+    assert_equal(S("hello"), res[0])
+    assert_equal(S("world"), res[1])
+
+    res = []
+    S("a").each_line(S('ab'), chomp: true).each {|x| res << x}
+    assert_equal(1, res.size)
+    assert_equal(S("a"), res[0])
+
+    s = nil
+    "foo\nbar".each_line(nil, chomp: true) {|s2| s = s2 }
+    assert_equal("foo\nbar", s)
+
+    assert_equal "hello", S("hello\nworld").each_line(chomp: true).next
+    assert_equal "hello\nworld", S("hello\nworld").each_line(nil, chomp: true).next
+  end
+
   def test_lines
     s = S("hello\nworld")
     assert_equal ["hello\n", "world"], s.lines

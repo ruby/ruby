@@ -7376,22 +7376,41 @@ rb_str_split(VALUE str, const char *sep0)
     return rb_str_split_m(1, &sep, str);
 }
 
+static const char *
+chomp_newline(const char *p, const char *e, rb_encoding *enc)
+{
+    const char *prev = rb_enc_prev_char(p, e, e, enc);
+    if (rb_enc_is_newline(prev, e, enc)) {
+	e = prev;
+	prev = rb_enc_prev_char(p, e, e, enc);
+	if (rb_enc_ascget(prev, e, NULL, enc) == '\r')
+	    e = prev;
+    }
+    return e;
+}
 
 static VALUE
 rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 {
     rb_encoding *enc;
-    VALUE line, rs, orig = str;
+    VALUE line, rs, orig = str, opts = Qnil, chomp = Qfalse;
     const char *ptr, *pend, *subptr, *subend, *rsptr, *hit, *adjusted;
     long pos, len, rslen;
     int paragraph_mode = 0;
+    int rsnewline = 0;
 
     VALUE MAYBE_UNUSED(ary);
 
-    if (argc == 0)
+    if (rb_scan_args(argc, argv, "01:", &rs, &opts) == 0)
 	rs = rb_rs;
-    else
-	rb_scan_args(argc, argv, "01", &rs);
+    if (!NIL_P(opts)) {
+	static ID keywords[1];
+	if (!keywords[0]) {
+	    keywords[0] = rb_intern_const("chomp");
+	}
+	rb_get_kwargs(opts, keywords, 0, 1, &chomp);
+	chomp = (chomp != Qundef && RTEST(chomp));
+    }
 
     if (rb_block_given_p()) {
 	if (wantarray) {
@@ -7438,9 +7457,14 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	rsptr = "\n\n";
 	rslen = 2;
 	paragraph_mode = 1;
+	rsnewline = 1;
     }
     else {
 	rsptr = RSTRING_PTR(rs);
+	if (RSTRING_LEN(rs) == rb_enc_mbminlen(enc) &&
+	    rb_enc_is_newline(rsptr, rsptr + RSTRING_LEN(rs), enc)) {
+	    rsnewline = 1;
+	}
     }
 
     if ((rs == rb_default_rs || paragraph_mode) && !rb_enc_asciicompat(enc)) {
@@ -7461,8 +7485,22 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	}
 	subend = hit + rslen;
 	if (paragraph_mode) {
-	    while (subend < pend && rb_enc_is_newline(subend, pend, enc)) {
+	    while (subend < pend) {
+		int n;
+		if (rb_enc_ascget(subend, pend, &n, enc) != '\r')
+		    n = 0;
+		if (!rb_enc_is_newline(subend + n, pend, enc)) break;
+		subend += n;
 		subend += rb_enc_mbclen(subend, pend, enc);
+	    }
+	}
+	hit = subend;
+	if (chomp) {
+	    if (rsnewline) {
+		subend = chomp_newline(subptr, subend, enc);
+	    }
+	    else {
+		subend -= rslen;
 	    }
 	}
 	line = rb_str_subseq(str, subptr - ptr, subend - subptr);
@@ -7473,10 +7511,13 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	    rb_yield(line);
 	    str_mod_check(str, ptr, len);
 	}
-	subptr = subend;
+	subptr = hit;
     }
 
     if (subptr != pend) {
+	if (chomp && paragraph_mode) {
+	    pend = chomp_newline(subptr, pend, enc);
+	}
 	line = rb_str_subseq(str, subptr - ptr, pend - subptr);
 	if (wantarray)
 	    rb_ary_push(ary, line);
