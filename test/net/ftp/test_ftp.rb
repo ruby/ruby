@@ -7,7 +7,8 @@ require "stringio"
 require "tempfile"
 
 class FTPTest < Test::Unit::TestCase
-  SERVER_ADDR = "127.0.0.1"
+  SERVER_NAME = "localhost"
+  SERVER_ADDR = Addrinfo.getaddrinfo(SERVER_NAME, 0)[0].ip_address
   CA_FILE = File.expand_path("../fixtures/cacert.pem", __dir__)
   SERVER_KEY = File.expand_path("../fixtures/server.key", __dir__)
   SERVER_CERT = File.expand_path("../fixtures/server.crt", __dir__)
@@ -405,10 +406,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("200 Switching to ASCII mode.\r\n")
       line = sock.gets
       commands.push(line)
-      port_args = line.slice(/\APORT (.*)/, 1).split(/,/)
-      host = port_args[0, 4].join(".")
-      port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
-      sock.print("200 PORT command successful.\r\n")
+      host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("150 Here comes the directory listing.\r\n")
       begin
@@ -441,7 +439,7 @@ class FTPTest < Test::Unit::TestCase
           ftp.list
         end
         assert_equal("TYPE A\r\n", commands.shift)
-        assert_match(/\APORT /, commands.shift)
+        assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_equal("LIST\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
@@ -471,10 +469,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("200 Switching to ASCII mode.\r\n")
       line = sock.gets
       commands.push(line)
-      port_args = line.slice(/\APORT (.*)/, 1).split(/,/)
-      host = port_args[0, 4].join(".")
-      port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
-      sock.print("200 PORT command successful.\r\n")
+      host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("150 Here comes the directory listing.\r\n")
       conn = TCPSocket.new(host, port)
@@ -498,7 +493,7 @@ class FTPTest < Test::Unit::TestCase
         assert_equal("TYPE I\r\n", commands.shift)
         assert_equal(list_lines, ftp.list)
         assert_equal("TYPE A\r\n", commands.shift)
-        assert_match(/\APORT /, commands.shift)
+        assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_equal("LIST\r\n", commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
         assert_equal(nil, commands.shift)
@@ -524,7 +519,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("200 Switching to ASCII mode.\r\n")
       line = sock.gets
       commands.push(line)
-      sock.print("200 PORT command successful.\r\n")
+      host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("553 Requested action not taken.\r\n")
       commands.push(sock.gets)
@@ -541,7 +536,7 @@ class FTPTest < Test::Unit::TestCase
         assert_equal("TYPE I\r\n", commands.shift)
         assert_raise(Net::FTPPermError){ ftp.list }
         assert_equal("TYPE A\r\n", commands.shift)
-        assert_match(/\APORT /, commands.shift)
+        assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_equal("LIST\r\n", commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
         assert_equal(nil, commands.shift)
@@ -582,7 +577,7 @@ class FTPTest < Test::Unit::TestCase
         assert_equal("TYPE I\r\n", commands.shift)
         assert_raise(Net::FTPTempError){ ftp.list }
         assert_equal("TYPE A\r\n", commands.shift)
-        assert_match(/\APORT /, commands.shift)
+        assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
@@ -606,10 +601,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("200 Switching to Binary mode.\r\n")
       line = sock.gets
       commands.push(line)
-      port_args = line.slice(/\APORT (.*)/, 1).split(/,/)
-      host = port_args[0, 4].join(".")
-      port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
-      sock.print("200 PORT command successful.\r\n")
+      host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("150 Opening BINARY mode data connection for foo (#{binary_data.size} bytes)\r\n")
       conn = TCPSocket.new(host, port)
@@ -637,7 +629,7 @@ class FTPTest < Test::Unit::TestCase
         end
         assert_equal(1024, buf.bytesize)
         assert_equal(binary_data[0, 1024], buf)
-        assert_match(/\APORT /, commands.shift)
+        assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_equal("RETR foo\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
@@ -661,10 +653,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("200 Switching to Binary mode.\r\n")
       line = sock.gets
       commands.push(line)
-      port_args = line.slice(/\APORT (.*)/, 1).split(/,/)
-      host = port_args[0, 4].join(".")
-      port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
-      sock.print("200 PORT command successful.\r\n")
+      host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("150 Opening BINARY mode data connection for foo (#{binary_data.size} bytes)\r\n")
       conn = TCPSocket.new(host, port)
@@ -692,7 +681,7 @@ class FTPTest < Test::Unit::TestCase
         end
         assert_equal(binary_data.bytesize, buf.bytesize)
         assert_equal(binary_data, buf)
-        assert_match(/\APORT /, commands.shift)
+        assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_equal("RETR foo\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
@@ -715,7 +704,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("200 Switching to Binary mode.\r\n")
       line = sock.gets
       commands.push(line)
-      sock.print("200 PORT command successful.\r\n")
+      host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("550 Requested action not taken.\r\n")
     }
@@ -729,7 +718,7 @@ class FTPTest < Test::Unit::TestCase
         assert_match(/\APASS /, commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
         assert_raise(Net::FTPPermError){ ftp.retrbinary("RETR foo", 1024) }
-        assert_match(/\APORT /, commands.shift)
+        assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_equal("RETR foo\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
@@ -753,10 +742,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("200 Switching to Binary mode.\r\n")
       line = sock.gets
       commands.push(line)
-      port_args = line.slice(/\APORT (.*)/, 1).split(/,/)
-      host = port_args[0, 4].join(".")
-      port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
-      sock.print("200 PORT command successful.\r\n")
+      host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("150 Opening BINARY mode data connection for foo (#{binary_data.size} bytes)\r\n")
       conn = TCPSocket.new(host, port)
@@ -780,7 +766,7 @@ class FTPTest < Test::Unit::TestCase
         buf = ftp.getbinaryfile("foo", nil)
         assert_equal(binary_data, buf)
         assert_equal(Encoding::ASCII_8BIT, buf.encoding)
-        assert_match(/\APORT /, commands.shift)
+        assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_equal("RETR foo\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
@@ -804,10 +790,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("200 Switching to Binary mode.\r\n")
       line = sock.gets
       commands.push(line)
-      port_args = line.slice(/\APORT (.*)/, 1).split(/,/)
-      host = port_args[0, 4].join(".")
-      port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
-      sock.print("200 PORT command successful.\r\n")
+      host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("150 Opening BINARY mode data connection for foo (#{binary_data.size} bytes)\r\n")
       conn = TCPSocket.new(host, port)
@@ -828,7 +811,7 @@ class FTPTest < Test::Unit::TestCase
         buf = ftp.getbinaryfile("foo", nil)
         assert_equal(binary_data, buf)
         assert_equal(Encoding::ASCII_8BIT, buf.encoding)
-        assert_match(/\APORT /, commands.shift)
+        assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_equal("RETR foo\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
@@ -852,10 +835,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("200 Switching to Binary mode.\r\n")
       line = sock.gets
       commands.push(line)
-      port_args = line.slice(/\APORT (.*)/, 1).split(/,/)
-      host = port_args[0, 4].join(".")
-      port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
-      sock.print("200 PORT command successful.\r\n")
+      host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("150 Opening BINARY mode data connection for foo (#{binary_data.size} bytes)\r\n")
       conn = TCPSocket.new(host, port)
@@ -887,7 +867,7 @@ class FTPTest < Test::Unit::TestCase
           assert_equal(Encoding::ASCII_8BIT, buf.encoding)
           assert_equal(binary_data, f.read)
         end
-        assert_match(/\APORT /, commands.shift)
+        assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_equal("RETR foo\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
@@ -912,10 +892,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("200 Switching to Binary mode.\r\n")
       line = sock.gets
       commands.push(line)
-      port_args = line.slice(/\APORT (.*)/, 1).split(/,/)
-      host = port_args[0, 4].join(".")
-      port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
-      sock.print("200 PORT command successful.\r\n")
+      host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("150 Opening BINARY mode data connection for foo\r\n")
       conn = TCPSocket.new(host, port)
@@ -934,7 +911,7 @@ class FTPTest < Test::Unit::TestCase
         assert_equal("TYPE I\r\n", commands.shift)
         ftp.storbinary("STOR foo", StringIO.new(binary_data), 1024)
         assert_equal(binary_data, stored_data)
-        assert_match(/\APORT /, commands.shift)
+        assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_equal("STOR foo\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
@@ -958,7 +935,7 @@ class FTPTest < Test::Unit::TestCase
       sock.print("200 Switching to Binary mode.\r\n")
       line = sock.gets
       commands.push(line)
-      sock.print("200 PORT command successful.\r\n")
+      host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("452 Requested file action aborted.\r\n")
     }
@@ -972,7 +949,7 @@ class FTPTest < Test::Unit::TestCase
         assert_match(/\APASS /, commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
         assert_raise(Net::FTPTempError){ ftp.storbinary("STOR foo", StringIO.new(binary_data), 1024) }
-        assert_match(/\APORT /, commands.shift)
+        assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_equal("STOR foo\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
@@ -1002,10 +979,7 @@ EOF
       sock.print("200 Switching to ASCII mode.\r\n")
       line = sock.gets
       commands.push(line)
-      port_args = line.slice(/\APORT (.*)/, 1).split(/,/)
-      host = port_args[0, 4].join(".")
-      port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
-      sock.print("200 PORT command successful.\r\n")
+      host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("150 Opening TEXT mode data connection for foo (#{text_data.size} bytes)\r\n")
       conn = TCPSocket.new(host, port)
@@ -1034,7 +1008,7 @@ EOF
         assert_equal(text_data.bytesize, buf.bytesize)
         assert_equal(text_data, buf)
         assert_equal("TYPE A\r\n", commands.shift)
-        assert_match(/\APORT /, commands.shift)
+        assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_equal("RETR foo\r\n", commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
         assert_equal(nil, commands.shift)
@@ -1065,10 +1039,7 @@ EOF
       sock.print("200 Switching to ASCII mode.\r\n")
       line = sock.gets
       commands.push(line)
-      port_args = line.slice(/\APORT (.*)/, 1).split(/,/)
-      host = port_args[0, 4].join(".")
-      port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
-      sock.print("200 PORT command successful.\r\n")
+      host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("150 Opening TEXT mode data connection for foo (#{text_data.size} bytes)\r\n")
       conn = TCPSocket.new(host, port)
@@ -1094,7 +1065,7 @@ EOF
         assert_equal(text_data.gsub(/\r\n/, "\n"), buf)
         assert_equal(Encoding::ASCII_8BIT, buf.encoding)
         assert_equal("TYPE A\r\n", commands.shift)
-        assert_match(/\APORT /, commands.shift)
+        assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_equal("RETR foo\r\n", commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
         assert_equal(nil, commands.shift)
@@ -1125,10 +1096,7 @@ EOF
       sock.print("200 Switching to ASCII mode.\r\n")
       line = sock.gets
       commands.push(line)
-      port_args = line.slice(/\APORT (.*)/, 1).split(/,/)
-      host = port_args[0, 4].join(".")
-      port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
-      sock.print("200 PORT command successful.\r\n")
+      host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("150 Opening TEXT mode data connection for foo (#{text_data.size} bytes)\r\n")
       conn = TCPSocket.new(host, port)
@@ -1161,7 +1129,7 @@ EOF
           assert_equal(buf, f.read)
         end
         assert_equal("TYPE A\r\n", commands.shift)
-        assert_match(/\APORT /, commands.shift)
+        assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_equal("RETR foo\r\n", commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
         assert_equal(nil, commands.shift)
@@ -1193,10 +1161,7 @@ EOF
       sock.print("200 Switching to ASCII mode.\r\n")
       line = sock.gets
       commands.push(line)
-      port_args = line.slice(/\APORT (.*)/, 1).split(/,/)
-      host = port_args[0, 4].join(".")
-      port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
-      sock.print("200 PORT command successful.\r\n")
+      host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("150 Here comes the directory listing.\r\n")
       conn = TCPSocket.new(host, port)
@@ -1209,10 +1174,7 @@ EOF
       sock.print("200 Switching to Binary mode.\r\n")
       line = sock.gets
       commands.push(line)
-      port_args = line.slice(/\APORT (.*)/, 1).split(/,/)
-      host = port_args[0, 4].join(".")
-      port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
-      sock.print("200 PORT command successful.\r\n")
+      host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("150 Opening BINARY mode data connection for foo (#{binary_data.size} bytes)\r\n")
       conn = TCPSocket.new(host, port)
@@ -1236,10 +1198,10 @@ EOF
           end
         end
         assert_equal("TYPE A\r\n", commands.shift)
-        assert_match(/\APORT /, commands.shift)
+        assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_equal("LIST\r\n", commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
-        assert_match(/\APORT /, commands.shift)
+        assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_equal("RETR baz.bin\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
@@ -1658,10 +1620,7 @@ EOF
       sock.print("200 Switching to ASCII mode.\r\n")
       line = sock.gets
       commands.push(line)
-      port_args = line.slice(/\APORT (.*)/, 1).split(/,/)
-      host = port_args[0, 4].join(".")
-      port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
-      sock.print("200 PORT command successful.\r\n")
+      host, port = process_port_or_eprt(sock, line)
       commands.push(sock.gets)
       sock.print("150 Here comes the directory listing.\r\n")
       begin
@@ -1705,7 +1664,7 @@ EOF
         assert_equal(123456, modify.usec)
         assert_equal(true, modify.utc?)
         assert_equal("TYPE A\r\n", commands.shift)
-        assert_match(/\APORT /, commands.shift)
+        assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_match("MLSD /\r\n", commands.shift)
         assert_equal("TYPE I\r\n", commands.shift)
         assert_equal(nil, commands.shift)
@@ -1751,7 +1710,7 @@ EOF
       assert_raise(OpenSSL::SSL::SSLError) do
         tls_test do |port|
           begin
-            Net::FTP.new("localhost",
+            Net::FTP.new(SERVER_NAME,
                          :port => port,
                          :ssl => true)
           rescue SystemCallError
@@ -1765,7 +1724,7 @@ EOF
       assert_nothing_raised do
         tls_test do |port|
           begin
-            Net::FTP.new("localhost",
+            Net::FTP.new(SERVER_NAME,
                          :port => port,
                          :ssl => { :ca_file => CA_FILE })
           rescue SystemCallError
@@ -1832,10 +1791,7 @@ EOF
             sock.print("200 Switching to Binary mode.\r\n")
             line = sock.gets
             commands.push(line)
-            port_args = line.slice(/\APORT (.*)/, 1).split(/,/)
-            host = port_args[0, 4].join(".")
-            port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
-            sock.print("200 PORT command successful.\r\n")
+            host, port = process_port_or_eprt(sock, line)
             commands.push(sock.gets)
             sock.print("150 Opening BINARY mode data connection for foo (#{binary_data.size} bytes)\r\n")
             conn = TCPSocket.new(host, port)
@@ -1854,7 +1810,7 @@ EOF
           server.close
         end
       end
-      ftp = Net::FTP.new("localhost",
+      ftp = Net::FTP.new(SERVER_NAME,
                          port: port,
                          ssl: { ca_file: CA_FILE },
                          passive: false)
@@ -1869,7 +1825,7 @@ EOF
         buf = ftp.getbinaryfile("foo", nil)
         assert_equal(binary_data, buf)
         assert_equal(Encoding::ASCII_8BIT, buf.encoding)
-        assert_match(/\APORT /, commands.shift)
+        assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_equal("RETR foo\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
@@ -1911,10 +1867,7 @@ EOF
             commands.push(sock.gets)
             sock.print("200 Switching to Binary mode.\r\n")
             commands.push(sock.gets)
-            data_server = TCPServer.new(SERVER_ADDR, 0)
-            port = data_server.local_address.ip_port
-            sock.printf("227 Entering Passive Mode (127,0,0,1,%s).\r\n",
-                        port.divmod(256).join(","))
+            data_server = create_data_connection_server(sock)
             commands.push(sock.gets)
             sock.print("150 Opening BINARY mode data connection for foo (#{binary_data.size} bytes)\r\n")
             conn = data_server.accept
@@ -1934,7 +1887,7 @@ EOF
           server.close
         end
       end
-      ftp = Net::FTP.new("localhost",
+      ftp = Net::FTP.new(SERVER_NAME,
                          port: port,
                          ssl: { ca_file: CA_FILE },
                          passive: true)
@@ -1949,7 +1902,7 @@ EOF
         buf = ftp.getbinaryfile("foo", nil)
         assert_equal(binary_data, buf)
         assert_equal(Encoding::ASCII_8BIT, buf.encoding)
-        assert_equal("PASV\r\n", commands.shift)
+        assert_match(/\A(PASV|EPSV)\r\n/, commands.shift)
         assert_equal("RETR foo\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
@@ -1988,10 +1941,7 @@ EOF
             sock.print("200 Switching to Binary mode.\r\n")
             line = sock.gets
             commands.push(line)
-            port_args = line.slice(/\APORT (.*)/, 1).split(/,/)
-            host = port_args[0, 4].join(".")
-            port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
-            sock.print("200 PORT command successful.\r\n")
+            host, port = process_port_or_eprt(sock, line)
             commands.push(sock.gets)
             sock.print("150 Opening BINARY mode data connection for foo (#{binary_data.size} bytes)\r\n")
             conn = TCPSocket.new(host, port)
@@ -2007,7 +1957,7 @@ EOF
           server.close
         end
       end
-      ftp = Net::FTP.new("localhost",
+      ftp = Net::FTP.new(SERVER_NAME,
                          port: port,
                          ssl: { ca_file: CA_FILE },
                          private_data_connection: false,
@@ -2021,7 +1971,7 @@ EOF
         buf = ftp.getbinaryfile("foo", nil)
         assert_equal(binary_data, buf)
         assert_equal(Encoding::ASCII_8BIT, buf.encoding)
-        assert_match(/\APORT /, commands.shift)
+        assert_match(/\A(PORT|EPRT) /, commands.shift)
         assert_equal("RETR foo\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
@@ -2059,10 +2009,7 @@ EOF
             commands.push(sock.gets)
             sock.print("200 Switching to Binary mode.\r\n")
             commands.push(sock.gets)
-            data_server = TCPServer.new(SERVER_ADDR, 0)
-            port = data_server.local_address.ip_port
-            sock.printf("227 Entering Passive Mode (127,0,0,1,%s).\r\n",
-                        port.divmod(256).join(","))
+            data_server = create_data_connection_server(sock)
             commands.push(sock.gets)
             sock.print("150 Opening BINARY mode data connection for foo (#{binary_data.size} bytes)\r\n")
             conn = data_server.accept
@@ -2079,7 +2026,7 @@ EOF
           server.close
         end
       end
-      ftp = Net::FTP.new("localhost",
+      ftp = Net::FTP.new(SERVER_NAME,
                          port: port,
                          ssl: { ca_file: CA_FILE },
                          private_data_connection: false,
@@ -2093,7 +2040,7 @@ EOF
         buf = ftp.getbinaryfile("foo", nil)
         assert_equal(binary_data, buf)
         assert_equal(Encoding::ASCII_8BIT, buf.encoding)
-        assert_equal("PASV\r\n", commands.shift)
+        assert_match(/\A(PASV|EPSV)\r\n/, commands.shift)
         assert_equal("RETR foo\r\n", commands.shift)
         assert_equal(nil, commands.shift)
       ensure
@@ -2114,7 +2061,7 @@ EOF
       end
       begin
         assert_raise(Net::OpenTimeout) do
-          Net::FTP.new("localhost",
+          Net::FTP.new(SERVER_NAME,
                        port: port,
                        ssl: { ca_file: CA_FILE },
                        ssl_handshake_timeout: 0.1)
@@ -2159,7 +2106,7 @@ EOF
     }
     begin
       begin
-        ftp = Net::FTP.new("localhost",
+        ftp = Net::FTP.new(SERVER_NAME,
                            port: server.port,
                            ssl: { ca_file: CA_FILE })
         assert_equal("AUTH TLS\r\n", commands.shift)
@@ -2243,5 +2190,37 @@ EOF
     assert_equal("AUTH TLS\r\n", commands.shift)
     assert_equal("PBSZ 0\r\n", commands.shift)
     assert_equal("PROT P\r\n", commands.shift)
+  end
+
+  def process_port_or_eprt(sock, line)
+    case line
+    when /\APORT (.*)/
+      port_args = $1.split(/,/)
+      host = port_args[0, 4].join(".")
+      port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
+      sock.print("200 PORT command successful.\r\n")
+      return host, port
+    when /\AEPRT \|2\|(.*?)\|(.*?)\|/
+      host = $1
+      port = $2.to_i
+      sock.print("200 EPRT command successful.\r\n")
+      return host, port
+    else
+      flunk "PORT or EPRT expected"
+    end
+  end
+
+  def create_data_connection_server(sock)
+    data_server = TCPServer.new(SERVER_ADDR, 0)
+    port = data_server.local_address.ip_port
+    if data_server.local_address.ipv4?
+      sock.printf("227 Entering Passive Mode (127,0,0,1,%s).\r\n",
+                  port.divmod(256).join(","))
+    elsif data_server.local_address.ipv6?
+      sock.printf("229 Entering Extended Passive Mode (|||%d|)\r\n", port)
+    else
+      flunk "Invalid local address"
+    end
+    return data_server
   end
 end
