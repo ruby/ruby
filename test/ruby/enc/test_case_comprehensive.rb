@@ -3,7 +3,7 @@
 
 require "test/unit"
 
-class TestComprehensiveCaseFold < Test::Unit::TestCase
+class TestComprehensiveCaseMapping < Test::Unit::TestCase
   UNICODE_VERSION = RbConfig::CONFIG['UNICODE_VERSION']
   UNICODE_DATA_PATH = "../../../enc/unicode/data/#{UNICODE_VERSION}"
 
@@ -22,13 +22,13 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
   end
 
   def test_data_files_available
-    unless TestComprehensiveCaseFold.data_files_available?
+    unless TestComprehensiveCaseMapping.data_files_available?
       skip "Unicode data files not available in #{UNICODE_DATA_PATH}."
     end
   end
 end
 
-TestComprehensiveCaseFold.data_files_available? and  class TestComprehensiveCaseFold
+TestComprehensiveCaseMapping.data_files_available? and  class TestComprehensiveCaseMapping
   (CaseTest = Struct.new(:method_name, :attributes, :first_data, :follow_data)).class_eval do
     def initialize(method_name, attributes, first_data, follow_data=first_data)
       super
