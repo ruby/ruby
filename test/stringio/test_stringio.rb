@@ -81,6 +81,21 @@ class TestStringIO < Test::Unit::TestCase
     assert_nothing_raised {StringIO.new("").gets(nil, nil)}
   end
 
+  def test_gets_chomp
+    assert_equal(nil, StringIO.new("").gets(chomp: true))
+    assert_equal("", StringIO.new("\n").gets(chomp: true))
+    assert_equal("a", StringIO.new("a\n").gets(chomp: true))
+    assert_equal("a", StringIO.new("a\nb\n").gets(chomp: true))
+    assert_equal("a", StringIO.new("a").gets(chomp: true))
+    assert_equal("a", StringIO.new("a\nb").gets(chomp: true))
+    assert_equal("abc", StringIO.new("abc\n\ndef\n").gets(chomp: true))
+    assert_equal("abc\n\ndef", StringIO.new("abc\n\ndef\n").gets(nil, chomp: true))
+    assert_equal("abc\n", StringIO.new("abc\n\ndef\n").gets("", chomp: true))
+    stringio = StringIO.new("abc\n\ndef\n")
+    assert_equal("abc\n", stringio.gets("", chomp: true))
+    assert_equal("def", stringio.gets("", chomp: true))
+  end
+
   def test_readlines
     assert_equal([], StringIO.new("").readlines)
     assert_equal(["\n"], StringIO.new("\n").readlines)
@@ -476,8 +491,12 @@ class TestStringIO < Test::Unit::TestCase
   def test_each
     f = StringIO.new("foo\nbar\nbaz\n")
     assert_equal(["foo\n", "bar\n", "baz\n"], f.each.to_a)
+    f.rewind
+    assert_equal(["foo", "bar", "baz"], f.each(chomp: true).to_a)
     f = StringIO.new("foo\nbar\n\nbaz\n")
     assert_equal(["foo\nbar\n\n", "baz\n"], f.each("").to_a)
+    f.rewind
+    assert_equal(["foo\nbar\n", "baz"], f.each("", chomp: true).to_a)
   end
 
   def test_putc
