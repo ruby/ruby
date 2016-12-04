@@ -9,7 +9,11 @@ require "tempfile"
 class FTPTest < Test::Unit::TestCase
   SERVER_NAME = "localhost"
   SERVER_ADDR =
-    Addrinfo.getaddrinfo(SERVER_NAME, 0)[0].ip_address rescue "127.0.0.1"
+    begin
+      Addrinfo.getaddrinfo(SERVER_NAME, 0, nil, :STREAM)[0].ip_address
+    rescue SocketError
+      "127.0.0.1"
+    end
   CA_FILE = File.expand_path("../fixtures/cacert.pem", __dir__)
   SERVER_KEY = File.expand_path("../fixtures/server.key", __dir__)
   SERVER_CERT = File.expand_path("../fixtures/server.crt", __dir__)
