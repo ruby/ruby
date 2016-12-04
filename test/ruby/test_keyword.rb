@@ -546,6 +546,13 @@ class TestKeywordArguments < Test::Unit::TestCase
     }
   end
 
+  def test_unknown_keyword
+    bug13004 = '[ruby-dev:49893] [Bug #13004]'
+    assert_raise_with_message(ArgumentError, /unknown keyword: invalid-argument/, bug13004) {
+      [].sample(random: nil, "invalid-argument": nil)
+    }
+  end
+
   def test_super_with_anon_restkeywords
     bug10659 = '[ruby-core:67157] [Bug #10659]'
 

@@ -1896,7 +1896,7 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
 	}
     }
     if (!rest && keyword_hash) {
-	if (RHASH_SIZE(keyword_hash) > (unsigned int)j) {
+	if (RHASH_SIZE(keyword_hash) > (unsigned int)(values ? 0 : j)) {
 	    unknown_keyword_error(keyword_hash, table, required+optional);
 	}
     }
