@@ -697,7 +697,7 @@ class TestRequire < Test::Unit::TestCase
     bug7530 = '[ruby-core:50645]'
     Tempfile.create(%w'bug-7530- .rb') {|script|
       script.close
-      assert_in_out_err([{"RUBYOPT" => nil}, "-", script.path], <<-INPUT, %w(:ok), [], bug7530)
+      assert_in_out_err([{"RUBYOPT" => nil}, "-", script.path], <<-INPUT, %w(:ok), [], bug7530, timeout: 20)
         PATH = ARGV.shift
         THREADS = 2
         ITERATIONS_PER_THREAD = 1000
