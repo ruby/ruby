@@ -768,19 +768,10 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 		    }
 		}
 	    }
-	    else if ((folded = onigenc_unicode_unfold1_lookup(code)) != 0) {  /* data about character found in CaseUnfold_11_Table */
-		if (flags&OnigCaseFoldFlags(folded->n)) { /* needs and data availability match */
-		    MODIFIED;
-		    if (flags&OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_TITLECASE)
-		        code = folded->code[1];
-		    else
-			code = folded->code[0];
-		}
-		else if ((flags&(ONIGENC_CASE_UPCASE))
-			 && (code==0x03B9||code==0x03BC||code==0xA64B)) { /* GREEK SMALL LETTERs IOTA/MU, */
-		    MODIFIED;                                             /* CYRILLIC SMALL LETTER MONOGRAPH UK */
-		    code = folded->code[1];
-		}
+	    else if ((folded = onigenc_unicode_unfold1_lookup(code)) != 0  /* data about character found in CaseUnfold_11_Table */
+		     && flags&OnigCaseFoldFlags(folded->n)) { /* needs and data availability match */
+		MODIFIED;
+		code = folded->code[(flags&OnigCaseFoldFlags(folded->n)&ONIGENC_CASE_TITLECASE) ? 1 : 0];
 	    }
 	}
 	to += ONIGENC_CODE_TO_MBC(enc, code, to);
