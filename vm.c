@@ -1982,9 +1982,9 @@ rb_thread_method_id_and_class(rb_thread_t *th, ID *idp, ID *called_idp, VALUE *k
 }
 
 int
-rb_frame_method_id_and_class(ID *idp, ID *called_idp, VALUE *klassp)
+rb_frame_method_id_and_class(ID *idp, VALUE *klassp)
 {
-    return rb_thread_method_id_and_class(GET_THREAD(), idp, called_idp, klassp);
+    return rb_thread_method_id_and_class(GET_THREAD(), idp, 0, klassp);
 }
 
 VALUE
