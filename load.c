@@ -758,6 +758,8 @@ release_thread_shield(st_data_t *key, st_data_t *value, st_data_t done, int exis
     if (!existing) return ST_STOP;
     if (done) {
 	rb_thread_shield_destroy(thread_shield);
+	/* Delete the entry even if there are waiting threads, because they
+	 * won't load the file and won't delete the entry. */
     }
     else if (rb_thread_shield_release(thread_shield)) {
 	/* still in-use */
