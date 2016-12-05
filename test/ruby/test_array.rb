@@ -2337,6 +2337,13 @@ class TestArray < Test::Unit::TestCase
     end
     ary = (0...10000).to_a
     assert_equal(ary.rotate, ary.shuffle(random: gen_to_int))
+
+    assert_raise(NoMethodError) {
+      ary.shuffle(random: Object.new)
+    }
+    assert_raise(NoMethodError) {
+      ary.shuffle!(random: Object.new)
+    }
   end
 
   def test_sample
@@ -2437,6 +2444,10 @@ class TestArray < Test::Unit::TestCase
     end
     ary = (0...10000).to_a
     assert_equal(5000, ary.sample(random: gen_to_int))
+
+    assert_raise(NoMethodError) {
+      ary.sample(random: Object.new)
+    }
   end
 
   def test_cycle
