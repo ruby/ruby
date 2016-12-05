@@ -127,7 +127,7 @@ module EnvUtil
       th.kill if th
     end
     [in_c, in_p, out_c, out_p, err_c, err_p].each do |io|
-      io.close if io && !io.closed?
+      io&.close
     end
     [th_stdout, th_stderr].each do |th|
       th.join if th
