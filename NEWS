@@ -159,7 +159,15 @@ with all sufficient information, see the ChangeLog file or Redmine
   * String#concat, String#prepend [Feature #12333]
     Now takes multiple arguments.
 
+  * String#each_line, String#lines now takes an optional keyword argument,
+    chomp flag.  [Feature #12553]
+
   * String#unpack1 [Feature #12752]
+
+* StringIO
+
+  * StringIO#gets, StringIO#readline, StringIO#each_line, StringIO#readlines now takes
+    an optional keyword argument, chomp flag.  [Feature #12553]
 
 * Symbol
 
