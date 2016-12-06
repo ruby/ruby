@@ -118,7 +118,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     @symlinkfile = make_tmp_filename("symlinkfile")
     begin
       File.symlink(regular_file, @symlinkfile)
-    rescue NotImplementedError, Errno::EACCES
+    rescue NotImplementedError, Errno::EACCES, Errno::EPERM
       @symlinkfile = nil
     end
     @symlinkfile
