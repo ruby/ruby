@@ -243,7 +243,10 @@ rb_num_get_rounding_option(VALUE opts)
 	    break;
 	}
       invalid:
-	rb_raise(rb_eArgError, "invalid rounding mode: % "PRIsVALUE, rounding);
+	if (NIL_P(rounding))
+	    rb_raise(rb_eArgError, "invalid rounding mode: nil");
+	else
+	    rb_raise(rb_eArgError, "invalid rounding mode: % "PRIsVALUE, rounding);
     }
   noopt:
     return RUBY_NUM_ROUND_DEFAULT;
