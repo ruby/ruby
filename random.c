@@ -1473,50 +1473,35 @@ random_s_rand(int argc, VALUE *argv, VALUE obj)
 #endif
 #include "siphash.c"
 
-static st_index_t hashseed;
-typedef uint8_t sipseed_keys_t[16];
+typedef struct {
+    st_index_t hash;
+    uint8_t sip[16];
+} seed_keys_t;
+
 static union {
-    sipseed_keys_t key;
-    uint32_t u32[type_roomof(sipseed_keys_t, uint32_t)];
-} sipseed;
+    seed_keys_t key;
+    uint32_t u32[type_roomof(seed_keys_t, uint32_t)];
+} seed;
 
 static void
-init_hashseed(struct MT *mt)
-{
-    hashseed = genrand_int32(mt);
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 4*8
-    hashseed <<= 32;
-    hashseed |= genrand_int32(mt);
-#endif
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 8*8
-    hashseed <<= 32;
-    hashseed |= genrand_int32(mt);
-#endif
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 12*8
-    hashseed <<= 32;
-    hashseed |= genrand_int32(mt);
-#endif
-}
-
-static void
-init_siphash(struct MT *mt)
+init_seed(struct MT *mt)
 {
     int i;
 
-    for (i = 0; i < numberof(sipseed.u32); ++i)
-	sipseed.u32[i] = genrand_int32(mt);
+    for (i = 0; i < numberof(seed.u32); ++i)
+	seed.u32[i] = genrand_int32(mt);
 }
 
 st_index_t
 rb_hash_start(st_index_t h)
 {
-    return st_hash_start(hashseed + h);
+    return st_hash_start(seed.key.hash + h);
 }
 
 st_index_t
 rb_memhash(const void *ptr, long len)
 {
-    sip_uint64_t h = sip_hash24(sipseed.key, ptr, len);
+    sip_uint64_t h = sip_hash24(seed.key.sip, ptr, len);
 #ifdef HAVE_UINT64_T
     return (st_index_t)h;
 #else
@@ -1539,8 +1524,7 @@ Init_RandomSeedCore(void)
     fill_random_seed(initial_seed, DEFAULT_SEED_CNT);
     init_by_array(&mt, initial_seed, DEFAULT_SEED_CNT);
 
-    init_hashseed(&mt);
-    init_siphash(&mt);
+    init_seed(&mt);
 
     explicit_bzero(initial_seed, DEFAULT_SEED_LEN);
 }
