@@ -251,6 +251,12 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Readline.quoting_detection_proc and Readline.quoting_detection_proc=
     [Feature #12659]
 
+* REXML
+
+  * REXML::Element#[]: If String or Symbol is specified, attribute
+    value is returned. Otherwise, Nth child is returned. This is
+    backward compatible change.
+
 * set
 
   * New methods: Set#compare_by_identity and Set#compare_by_identity?.
