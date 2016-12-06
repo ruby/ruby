@@ -423,9 +423,9 @@ argcが-1の時は引数を配列に入れて渡されます．argcが-2の時�
 private/protectedなメソッドを定義するふたつの関数があります.
 
   void rb_define_private_method(VALUE klass, const char *name,
-				VALUE (*func)(), int argc)
+                                VALUE (*func)(), int argc)
   void rb_define_protected_method(VALUE klass, const char *name,
-			          VALUE (*func)(), int argc)
+                                  VALUE (*func)(), int argc)
 
 privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
 ドです．
@@ -446,7 +446,7 @@ privateメソッドでもあるものです．例をあげるとMathモジュー
 通りです．
 
   void rb_define_module_function(VALUE module, const char *name,
-		                 VALUE (*func)(), int argc)
+                                 VALUE (*func)(), int argc)
 
 関数的メソッド(Kernelモジュールのprivate method)を定義するた
 めの関数は以下の通りです．
@@ -642,7 +642,7 @@ CとRubyで大域変数を使って情報を共有できます．共有できる
 値の参照や設定はhookで行う必要があります．
 
   void rb_define_hooked_variable(const char *name, VALUE *var,
-				 VALUE (*getter)(), void (*setter)())
+                                 VALUE (*getter)(), void (*setter)())
 
 この関数はCの関数によってhookのつけられた大域変数を定義しま
 す．変数が参照された時には関数getterが，変数に値がセットされ
@@ -662,7 +662,7 @@ getterとsetterの仕様は次の通りです．
 されます.
 
   void rb_define_virtual_variable(const char *name,
-				  VALUE (*getter)(), void (*setter)())
+                                  VALUE (*getter)(), void (*setter)())
 
 この関数によって定義されたRubyの大域変数が参照された時には
 getterが，変数に値がセットされた時にはsetterが呼ばれます．
@@ -923,7 +923,7 @@ fdbm_delete()はこのようになっています．
       /* ... */
 
       if (rb_scan_args(argc, argv, "11", &file, &vmode) == 1) {
-          mode = 0666;		/* default value */
+          mode = 0666;          /* default value */
       }
 
       /* ... */

@@ -361,10 +361,10 @@ To define nested classes or modules, use the functions below:
 To define methods or singleton methods, use these functions:
 
   void rb_define_method(VALUE klass, const char *name,
-		        VALUE (*func)(), int argc)
+                        VALUE (*func)(), int argc)
 
   void rb_define_singleton_method(VALUE object, const char *name,
-			          VALUE (*func)(), int argc)
+                                  VALUE (*func)(), int argc)
 
 The `argc' represents the number of the arguments to the C function,
 which must be less than 17.  But I doubt you'll need that many.
@@ -396,9 +396,9 @@ as the name of method to be defined. See also ID or Symbol below.
 There are two functions to define private/protected methods:
 
   void rb_define_private_method(VALUE klass, const char *name,
-			        VALUE (*func)(), int argc)
+                                VALUE (*func)(), int argc)
   void rb_define_protected_method(VALUE klass, const char *name,
-			          VALUE (*func)(), int argc)
+                                  VALUE (*func)(), int argc)
 
 At last, rb_define_module_function defines a module function,
 which are private AND singleton methods of the module.
@@ -415,7 +415,7 @@ or
 To define module functions, use:
 
   void rb_define_module_function(VALUE module, const char *name,
-				 VALUE (*func)(), int argc)
+                                 VALUE (*func)(), int argc)
 
 In addition, function-like methods, which are private methods defined
 in the Kernel module, can be defined using:
@@ -596,7 +596,7 @@ You can define hooked variables.  The accessor functions (getter and
 setter) are called on access to the hooked variables.
 
   void rb_define_hooked_variable(const char *name, VALUE *var,
-				 VALUE (*getter)(), void (*setter)())
+                                 VALUE (*getter)(), void (*setter)())
 
 If you need to supply either setter or getter, just supply 0 for the
 hook you don't need.  If both hooks are 0, rb_define_hooked_variable()
@@ -611,7 +611,7 @@ Also you can define a Ruby global variable without a corresponding C
 variable.  The value of the variable will be set/get only by hooks.
 
   void rb_define_virtual_variable(const char *name,
-				  VALUE (*getter)(), void (*setter)())
+                                  VALUE (*getter)(), void (*setter)())
 
 The prototypes of the getter and setter functions are as follows:
 
@@ -853,7 +853,7 @@ arguments like this:
   {
       /* ... */
       if (rb_scan_args(argc, argv, "11", &file, &vmode) == 1) {
-          mode = 0666;		/* default value */
+          mode = 0666;          /* default value */
       }
       /* ... */
   }
