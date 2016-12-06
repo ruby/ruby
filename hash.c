@@ -217,22 +217,26 @@ obj_any_hash(VALUE obj)
 }
 
 static inline st_index_t
-any_hash_weak(VALUE a, st_index_t (*other_func)(VALUE)) {
+any_hash_weak(VALUE a, st_index_t (*other_func)(VALUE))
+{
     return any_hash_general(a, FALSE, other_func);
 }
 
 static st_index_t
-rb_any_hash_weak(VALUE a) {
+rb_any_hash_weak(VALUE a)
+{
     return any_hash_weak(a, obj_any_hash);
 }
 
 static inline st_index_t
-any_hash(VALUE a, st_index_t (*other_func)(VALUE)) {
+any_hash(VALUE a, st_index_t (*other_func)(VALUE))
+{
     return any_hash_general(a, TRUE, other_func);
 }
 
 static st_index_t
-rb_any_hash(VALUE a) {
+rb_any_hash(VALUE a)
+{
     return any_hash(a, obj_any_hash);
 }
 
@@ -246,7 +250,7 @@ static const uint64_t prime2 = 0xcdb32970830fcaa1ULL;
 
 
 static inline uint64_t
-mult_and_mix (uint64_t m1, uint64_t m2)
+mult_and_mix(uint64_t m1, uint64_t m2)
 {
 #if defined(__GNUC__) && UINT_MAX != ULONG_MAX
     __uint128_t r = (__uint128_t) m1 * (__uint128_t) m2;
@@ -263,7 +267,7 @@ mult_and_mix (uint64_t m1, uint64_t m2)
 }
 
 static inline uint64_t
-key64_hash (uint64_t key, uint32_t seed)
+key64_hash(uint64_t key, uint32_t seed)
 {
     return mult_and_mix(key + seed, prime1);
 }
