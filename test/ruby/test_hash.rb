@@ -1183,7 +1183,7 @@ class TestHash < Test::Unit::TestCase
     assert_equal({o=>1}.hash, @cls[o=>1].hash)
   end
 
-  def test_hash_poped
+  def test_hash_popped
     assert_nothing_raised { eval("a = 1; @cls[a => a]; a") }
   end
 

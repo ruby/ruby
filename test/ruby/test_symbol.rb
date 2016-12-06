@@ -325,7 +325,7 @@ class TestSymbol < Test::Unit::TestCase
     assert_raise(ArgumentError) { :"foo".match }
   end
 
-  def test_symbol_poped
+  def test_symbol_popped
     assert_nothing_raised { eval('a = 1; :"#{ a }"; 1') }
   end
 

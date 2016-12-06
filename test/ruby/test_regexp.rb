@@ -1041,7 +1041,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("hoge fuga", h["body"])
   end
 
-  def test_regexp_poped
+  def test_regexp_popped
     assert_nothing_raised { eval("a = 1; /\#{ a }/; a") }
     assert_nothing_raised { eval("a = 1; /\#{ a }/o; a") }
   end
