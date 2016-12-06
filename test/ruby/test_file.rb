@@ -271,7 +271,7 @@ class TestFile < Test::Unit::TestCase
       a = File.join(tmpdir, "x")
       begin
         File.symlink(tst, a)
-      rescue Errno::EACCES
+      rescue Errno::EACCES, Errno::EPERM
         skip "need privilege"
       end
       assert_equal(File.join(realdir, tst), File.realpath(a))
