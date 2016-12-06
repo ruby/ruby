@@ -3644,8 +3644,11 @@ sum_iter(VALUE i, struct enum_sum_memo *memo)
         }
     }
     else if (RB_FLOAT_TYPE_P(v)) {
-        /* Kahan's compensated summation algorithm */
-        double x, y, t;
+        /*
+         * Kahan-Babuska balancing compensated summation algorithm
+         * See http://link.springer.com/article/10.1007/s00607-005-0139-x
+         */
+        double x, t;
 
       float_value:
         if (RB_FLOAT_TYPE_P(i))
@@ -3662,9 +3665,11 @@ sum_iter(VALUE i, struct enum_sum_memo *memo)
             goto some_value;
         }
 
-        y = x - c;
-        t = f + y;
-        c = (t - f) - y;
+        t = f + x;
+        if (fabs(f) >= fabs(x))
+            c += ((f - t) + x);
+        else
+            c += ((x - t) + f);
         f = t;
     }
     else {
@@ -3788,7 +3793,7 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
         rb_block_call(obj, id_each, 0, 0, enum_sum_i, (VALUE)&memo);
 
     if (memo.float_value) {
-        return DBL2NUM(memo.f);
+        return DBL2NUM(memo.f + memo.c);
     }
     else {
         if (memo.n != 0)

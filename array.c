@@ -5796,14 +5796,17 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
     }
 
     if (RB_FLOAT_TYPE_P(e)) {
-        /* Kahan's compensated summation algorithm */
+        /*
+         * Kahan-Babuska balancing compensated summation algorithm
+         * See http://link.springer.com/article/10.1007/s00607-005-0139-x
+         */
         double f, c;
 
         f = NUM2DBL(v);
         c = 0.0;
         goto has_float_value;
         for (; i < RARRAY_LEN(ary); i++) {
-            double x, y, t;
+            double x, t;
             e = RARRAY_AREF(ary, i);
             if (block_given)
                 e = rb_yield(e);
@@ -5819,11 +5822,14 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
             else
                 goto not_float;
 
-            y = x - c;
-            t = f + y;
-            c = (t - f) - y;
+            t = f + x;
+            if (fabs(f) >= fabs(x))
+                c += ((f - t) + x);
+            else
+                c += ((x - t) + f);
             f = t;
         }
+        f += c;
         return DBL2NUM(f);
 
       not_float:
