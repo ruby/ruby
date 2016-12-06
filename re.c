@@ -2948,8 +2948,10 @@ static VALUE
 match_hash(VALUE match)
 {
     const struct re_registers *regs;
-    st_index_t hashval = rb_hash_start(rb_str_hash(RMATCH(match)->str));
+    st_index_t hashval;
 
+    match_check(match);
+    hashval = rb_hash_start(rb_str_hash(RMATCH(match)->str));
     hashval = rb_hash_uint(hashval, reg_hash(RMATCH(match)->regexp));
     regs = RMATCH_REGS(match);
     hashval = rb_hash_uint(hashval, regs->num_regs);
@@ -2974,6 +2976,7 @@ match_equal(VALUE match1, VALUE match2)
     const struct re_registers *regs1, *regs2;
     if (match1 == match2) return Qtrue;
     if (!RB_TYPE_P(match2, T_MATCH)) return Qfalse;
+    if (!RMATCH(match1)->regexp || !RMATCH(match2)->regexp) return Qfalse;
     if (!rb_str_equal(RMATCH(match1)->str, RMATCH(match2)->str)) return Qfalse;
     if (!rb_reg_equal(RMATCH(match1)->regexp, RMATCH(match2)->regexp)) return Qfalse;
     regs1 = RMATCH_REGS(match1);
