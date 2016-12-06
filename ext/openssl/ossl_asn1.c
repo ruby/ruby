@@ -54,7 +54,8 @@ asn1time_to_time(const ASN1_TIME *time)
 		tm.tm_sec = 0;
 	}
 	else if (count != 6) {
-	    ossl_raise(rb_eTypeError, "bad GENERALIZEDTIME format" );
+		ossl_raise(rb_eTypeError, "bad GENERALIZEDTIME format: \"%s\"",
+			time->data);
 	}
 	break;
     default:
