@@ -461,7 +461,6 @@ initialize_bins(st_table *tab)
 static void
 make_tab_empty(st_table *tab)
 {
-    tab->curr_hash = tab->type->hash;
     tab->num_entries = 0;
     tab->entries_start = tab->entries_bound = 0;
     if (tab->bins != NULL)
@@ -575,7 +574,6 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
     tab->entry_power = n;
     tab->bin_power = features[n].bin_power;
     tab->size_ind = features[n].size_ind;
-    tab->inside_rebuild_p = FALSE;
     if (n <= MAX_POWER2_FOR_TABLES_WITHOUT_BINS)
         tab->bins = NULL;
     else
@@ -744,7 +742,6 @@ rebuild_table(st_table *tab)
     st_assert(tab != NULL);
     bound = tab->entries_bound;
     entries = tab->entries;
-    tab->inside_rebuild_p = TRUE;
     if ((2 * tab->num_entries <= get_allocated_entries(tab)
 	 && REBUILD_THRESHOLD * tab->num_entries > get_allocated_entries(tab))
 	|| tab->num_entries < (1 << MINIMAL_POWER2)) {
@@ -758,8 +755,6 @@ rebuild_table(st_table *tab)
     else {
         new_tab = st_init_table_with_size(tab->type,
 					  2 * tab->num_entries - 1);
-	st_assert(new_tab->curr_hash == new_tab->type->hash);
-	new_tab->curr_hash = tab->curr_hash;
 	new_entries = new_tab->entries;
     }
     ni = 0;
@@ -798,7 +793,6 @@ rebuild_table(st_table *tab)
     tab->entries_start = 0;
     tab->entries_bound = tab->num_entries;
     tab->rebuilds_num++;
-    tab->inside_rebuild_p = FALSE;
 #ifdef ST_DEBUG
     st_check(tab);
 #endif
@@ -966,28 +960,6 @@ find_table_bin_ind_direct(st_table *tab, st_hash_t hash_value, st_data_t key)
     }
 }
 
-/* Recalculate hashes of entries in table TAB.  */
-static void
-reset_entry_hashes (st_table *tab)
-{
-    st_index_t i, bound;
-    st_table_entry *entries, *curr_entry_ptr;
-
-    bound = tab->entries_bound;
-    entries = tab->entries;
-    for (i = tab->entries_start; i < bound; i++) {
-	curr_entry_ptr = &entries[i];
-	if (! DELETED_ENTRY_P(curr_entry_ptr))
-	    curr_entry_ptr->hash = do_hash(curr_entry_ptr->key, tab);
-    }
-}
-
-/* If we have the following number of collisions with different keys
-   but with the same hash during finding a bin for new entry
-   inclusions, possibly a denial attack is going on.  Start to use a
-   stronger hash.  */
-#define HIT_THRESHOULD_FOR_STRONG_HASH 10
-
 /* Return index of table TAB bin for HASH_VALUE and KEY through
    BIN_IND and the pointed value as the function result.  Reserve the
    bin for inclusion of the corresponding entry into the table if it
@@ -1009,12 +981,10 @@ find_table_bin_ptr_and_reserve(st_table *tab, st_hash_t *hash_value,
     st_index_t entry_index;
     st_index_t first_deleted_bin_ind;
     st_table_entry *entries;
-    int hit;
 
     st_assert(tab != NULL && tab->bins != NULL
 	      && tab->entries_bound <= get_allocated_entries(tab)
 	      && tab->entries_start <= tab->entries_bound);
-  repeat:
     ind = hash_bin(curr_hash_value, tab);
 #ifdef QUADRATIC_PROBE
     d = 1;
@@ -1024,7 +994,6 @@ find_table_bin_ptr_and_reserve(st_table *tab, st_hash_t *hash_value,
     FOUND_BIN;
     first_deleted_bin_ind = UNDEFINED_BIN_IND;
     entries = tab->entries;
-    hit = 0;
     for (;;) {
         entry_index = get_bin(tab->bins, get_size_ind(tab), ind);
         if (EMPTY_BIN_P(entry_index)) {
@@ -1039,19 +1008,6 @@ find_table_bin_ptr_and_reserve(st_table *tab, st_hash_t *hash_value,
         } else if (! DELETED_BIN_P(entry_index)) {
             if (PTR_EQUAL(tab, &entries[entry_index - ENTRY_BASE], curr_hash_value, key))
                 break;
-	    if (curr_hash_value == entries[entry_index - ENTRY_BASE].hash) {
-	        hit++;
-		if (hit > HIT_THRESHOULD_FOR_STRONG_HASH
-		    && tab->curr_hash != tab->type->strong_hash
-		    && tab->type->strong_hash != NULL
-		    && ! tab->inside_rebuild_p) {
-		    tab->curr_hash = tab->type->strong_hash;
-		    *hash_value = curr_hash_value = do_hash(key, tab);
-		    reset_entry_hashes(tab);
-		    rebuild_table(tab);
-		    goto repeat;
-		}
-	    }
         } else if (first_deleted_bin_ind == UNDEFINED_BIN_IND)
             first_deleted_bin_ind = ind;
 #ifdef QUADRATIC_PROBE

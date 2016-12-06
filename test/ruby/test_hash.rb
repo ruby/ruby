@@ -1302,7 +1302,7 @@ class TestHash < Test::Unit::TestCase
     assert_no_memory_leak([], prepare, code, bug9187)
   end
 
-  def test_wrapper_of_special_const
+  def test_wrapper
     bug9381 = '[ruby-core:59638] [Bug #9381]'
 
     wrapper = Class.new do
@@ -1323,11 +1323,50 @@ class TestHash < Test::Unit::TestCase
       5, true, false, nil,
       0.0, 1.72723e-77,
       :foo, "dsym_#{self.object_id.to_s(16)}_#{Time.now.to_i.to_s(16)}".to_sym,
+      "str",
     ].select do |x|
       hash = {x => bug9381}
       hash[wrapper.new(x)] != bug9381
     end
     assert_empty(bad, bug9381)
+  end
+
+  def assert_hash_random(obj, dump = obj.inspect)
+    a = [obj.hash.to_s]
+    3.times {
+      assert_in_out_err(["-e", "print #{dump}.hash"], "") do |r, e|
+        a += r
+        assert_equal([], e)
+      end
+    }
+    assert_not_equal([obj.hash.to_s], a.uniq)
+    assert_operator(a.uniq.size, :>, 2, proc {a.inspect})
+  end
+
+  def test_string_hash_random
+    assert_hash_random('abc')
+  end
+
+  def test_symbol_hash_random
+    assert_hash_random(:-)
+    assert_hash_random(:foo)
+    assert_hash_random("dsym_#{self.object_id.to_s(16)}_#{Time.now.to_i.to_s(16)}".to_sym)
+  end
+
+  def test_integer_hash_random
+    assert_hash_random(0)
+    assert_hash_random(+1)
+    assert_hash_random(-1)
+    assert_hash_random(+(1<<100))
+    assert_hash_random(-(1<<100))
+  end
+
+  def test_float_hash_random
+    assert_hash_random(0.0)
+    assert_hash_random(+1.0)
+    assert_hash_random(-1.0)
+    assert_hash_random(1.72723e-77)
+    assert_hash_random(Float::INFINITY, "Float::INFINITY")
   end
 
   def test_label_syntax

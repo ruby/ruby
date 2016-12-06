@@ -979,18 +979,6 @@ CODE
     assert_not_equal(S("sub-setter").hash, S("discover").hash, bug9172)
   end
 
-  def test_hash_random
-    str = 'abc'
-    a = [str.hash.to_s]
-    3.times {
-      assert_in_out_err(["-e", "print #{str.dump}.hash"], "") do |r, e|
-        a += r
-        assert_equal([], e)
-      end
-    }
-    assert_not_equal([str.hash.to_s], a.uniq)
-  end
-
   def test_hex
     assert_equal(255,  S("0xff").hex)
     assert_equal(-255, S("-0xff").hex)

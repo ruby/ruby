@@ -61,11 +61,6 @@ typedef char st_check_for_sizeof_st_index_t[SIZEOF_VOIDP == (int)sizeof(st_index
 struct st_hash_type {
     int (*compare)(ANYARGS /*st_data_t, st_data_t*/); /* st_compare_func* */
     st_index_t (*hash)(ANYARGS /*st_data_t*/);        /* st_hash_func* */
-    /* The following is an optional func for stronger hash.  When we
-       have many different keys with the same hash we can switch to
-       use it to prevent a denial attack with usage of hash table
-       collisions. */
-    st_index_t (*strong_hash)(ANYARGS /*st_data_t*/);
 };
 
 #if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR) && defined(HAVE_BUILTIN___BUILTIN_TYPES_COMPATIBLE_P)
@@ -82,12 +77,8 @@ struct st_table_entry; /* defined in st.c */
 struct st_table {
     /* Cached features of the table -- see st.c for more details.  */
     unsigned char entry_power, bin_power, size_ind;
-    /* True when we are rebuilding the table.  */
-    unsigned char inside_rebuild_p;
     /* How many times the table was rebuilt.  */
     unsigned int rebuilds_num;
-    /* Currently used hash function.  */
-    st_index_t (*curr_hash)(ANYARGS /*st_data_t*/);
     const struct st_hash_type *type;
     /* Number of entries currently in the table.  */
     st_index_t num_entries;

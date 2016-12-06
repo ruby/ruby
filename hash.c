@@ -157,19 +157,13 @@ rb_dbl_long_hash(double d)
 	union {double d; uint64_t i;} u;
 
 	u.d = d;
-	return rb_objid_hash(u.i);
+	return rb_objid_hash(rb_hash_start(u.i));
     }
 #endif
 }
 
-#if SIZEOF_INT == SIZEOF_VOIDP
-static const st_index_t str_seed = 0xfa835867;
-#else
-static const st_index_t str_seed = 0xc42b5e2e6480b23bULL;
-#endif
-
 static inline st_index_t
-any_hash_general(VALUE a, int strong_p, st_index_t (*other_func)(VALUE))
+any_hash(VALUE a, st_index_t (*other_func)(VALUE))
 {
     VALUE hval;
     st_index_t hnum;
@@ -177,6 +171,7 @@ any_hash_general(VALUE a, int strong_p, st_index_t (*other_func)(VALUE))
     if (SPECIAL_CONST_P(a)) {
 	if (STATIC_SYM_P(a)) {
 	    hnum = a >> (RUBY_SPECIAL_SHIFT + ID_SCOPE_SHIFT);
+	    hnum = rb_hash_start(hnum);
 	    goto out;
 	}
 	else if (FLONUM_P(a)) {
@@ -186,9 +181,7 @@ any_hash_general(VALUE a, int strong_p, st_index_t (*other_func)(VALUE))
 	hnum = rb_objid_hash((st_index_t)a);
     }
     else if (BUILTIN_TYPE(a) == T_STRING) {
-	hnum = (strong_p
-		? rb_str_hash(a)
-		: st_hash(RSTRING_PTR(a), RSTRING_LEN(a), str_seed));
+	hnum = rb_str_hash(a);
     }
     else if (BUILTIN_TYPE(a) == T_SYMBOL) {
 	hnum = RSYMBOL(a)->hashval;
@@ -214,24 +207,6 @@ obj_any_hash(VALUE obj)
 {
     obj = rb_hash(obj);
     return FIX2LONG(obj);
-}
-
-static inline st_index_t
-any_hash_weak(VALUE a, st_index_t (*other_func)(VALUE))
-{
-    return any_hash_general(a, FALSE, other_func);
-}
-
-static st_index_t
-rb_any_hash_weak(VALUE a)
-{
-    return any_hash_weak(a, obj_any_hash);
-}
-
-static inline st_index_t
-any_hash(VALUE a, st_index_t (*other_func)(VALUE))
-{
-    return any_hash_general(a, TRUE, other_func);
 }
 
 static st_index_t
@@ -275,7 +250,7 @@ key64_hash(uint64_t key, uint32_t seed)
 long
 rb_objid_hash(st_index_t index)
 {
-    return (long)key64_hash(index, (uint32_t)prime2);
+    return (long)key64_hash(rb_hash_start(index), (uint32_t)prime2);
 }
 
 static st_index_t
@@ -299,7 +274,6 @@ rb_hash_iter_lev(VALUE h)
 
 static const struct st_hash_type objhash = {
     rb_any_cmp,
-    rb_any_hash_weak,
     rb_any_hash,
 };
 
@@ -319,7 +293,7 @@ rb_ident_hash(st_data_t n)
     }
 #endif
 
-    return (st_index_t) key64_hash((st_index_t)n, (uint32_t) prime2);
+    return (st_index_t)key64_hash(rb_hash_start((st_index_t)n), (uint32_t)prime2);
 }
 
 static const struct st_hash_type identhash = {
