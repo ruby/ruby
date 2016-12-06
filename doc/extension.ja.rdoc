@@ -182,7 +182,7 @@ FIXNUMに関しては変換マクロを経由する必要があります．Cの�
 て使い分けてください．
 
 INT2FIX() :: もとの整数が31bitまたは63bit以内に収まる自信
-      	     がある時
+             がある時
 INT2NUM() :: 任意の整数からVALUEへ
 
 INT2NUM()は整数がFIXNUMの範囲に収まらない場合，Bignumに変換
@@ -923,7 +923,7 @@ fdbm_delete()はこのようになっています．
       /* ... */
 
       if (rb_scan_args(argc, argv, "11", &file, &vmode) == 1) {
-  	mode = 0666;		/* default value */
+          mode = 0666;		/* default value */
       }
 
       /* ... */
