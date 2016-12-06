@@ -497,7 +497,7 @@ typedef struct rb_vm_struct {
     unsigned int running: 1;
     unsigned int thread_abort_on_exception: 1;
     unsigned int thread_report_on_exception: 1;
-    unsigned int trace_running: 1;
+    int trace_running;
     volatile int sleeper;
 
     /* object management */
