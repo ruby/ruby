@@ -581,7 +581,7 @@ rb_w32_home_dir(void)
 	    xfree(buffer);
 	    return NULL;
 	}
-	buffer = REALLOC_N(buffer, WCHAR, lstrlenW(buffer) + 1);
+	REALLOC_N(buffer, WCHAR, lstrlenW(buffer) + 1);
 	break;
     }
 
