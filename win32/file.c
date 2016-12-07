@@ -239,7 +239,7 @@ append_wstr(VALUE dst, const WCHAR *ws, ssize_t len, UINT cp, rb_encoding *enc)
 VALUE
 rb_default_home_dir(VALUE result)
 {
-    const WCHAR *dir = rb_w32_home_dir();
+    WCHAR *dir = rb_w32_home_dir();
     if (!dir) {
 	rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
     }
