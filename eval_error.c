@@ -73,10 +73,10 @@ error_print(rb_thread_t *th)
 }
 
 void
-rb_threadptr_error_print(rb_thread_t *th, VALUE errinfo)
+rb_threadptr_error_print(rb_thread_t *volatile th, volatile VALUE errinfo)
 {
     volatile VALUE errat = Qundef;
-    int raised_flag = th->raised_flag;
+    volatile int raised_flag = th->raised_flag;
     volatile VALUE eclass = Qundef, e = Qundef;
     const char *volatile einfo;
     volatile long elen;

@@ -1280,7 +1280,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 {
     int state;
     VALUE result = Qundef;
-    rb_thread_t *th = GET_THREAD();
+    rb_thread_t *volatile th = GET_THREAD();
     struct rb_block block;
     const struct rb_block *base_block;
     volatile VALUE file;
@@ -1997,7 +1997,7 @@ rb_catch(const char *tag, VALUE (*func)(), VALUE data)
     return rb_catch_obj(vtag, func, data);
 }
 
-static VALUE vm_catch_protect(VALUE, rb_block_call_func *, VALUE, int *, rb_thread_t *);
+static VALUE vm_catch_protect(VALUE, rb_block_call_func *, VALUE, int *, rb_thread_t *volatile);
 
 VALUE
 rb_catch_obj(VALUE t, VALUE (*func)(), VALUE data)
@@ -2018,11 +2018,11 @@ rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
 
 static VALUE
 vm_catch_protect(VALUE tag, rb_block_call_func *func, VALUE data,
-		 int *stateptr, rb_thread_t *th)
+		 int *stateptr, rb_thread_t *volatile th)
 {
     int state;
     VALUE val = Qnil;		/* OK */
-    rb_control_frame_t *saved_cfp = th->cfp;
+    rb_control_frame_t *volatile saved_cfp = th->cfp;
 
     TH_PUSH_TAG(th);
 

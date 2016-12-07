@@ -1562,7 +1562,7 @@ void rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th);
 void rb_threadptr_pending_interrupt_clear(rb_thread_t *th);
 void rb_threadptr_pending_interrupt_enque(rb_thread_t *th, VALUE v);
 int rb_threadptr_pending_interrupt_active_p(rb_thread_t *th);
-void rb_threadptr_error_print(rb_thread_t *th, VALUE errinfo);
+void rb_threadptr_error_print(rb_thread_t *volatile th, volatile VALUE errinfo);
 
 #define RUBY_VM_CHECK_INTS(th) ruby_vm_check_ints(th)
 static inline void
