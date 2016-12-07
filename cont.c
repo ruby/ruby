@@ -161,7 +161,7 @@ static VALUE rb_eFiberError;
     if (!(ptr)) rb_raise(rb_eFiberError, "uninitialized fiber"); \
 } while (0)
 
-NOINLINE(static VALUE cont_capture(int *volatile stat));
+NOINLINE(static VALUE cont_capture(volatile int *volatile stat));
 
 #define THREAD_MUST_BE_RUNNING(th) do { \
 	if (!(th)->tag) rb_raise(rb_eThreadError, "not running thread");	\
@@ -470,7 +470,7 @@ cont_new(VALUE klass)
 }
 
 static VALUE
-cont_capture(int *volatile stat)
+cont_capture(volatile int *volatile stat)
 {
     rb_context_t *volatile cont;
     rb_thread_t *th = GET_THREAD();
