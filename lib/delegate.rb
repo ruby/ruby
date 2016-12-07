@@ -136,6 +136,7 @@ class Delegator < BasicObject
     return true if obj.equal?(self)
     self.__getobj__ == obj
   end
+  alias_method :eql?, :==
 
   #
   # Returns true if two objects are not considered of equal value.
