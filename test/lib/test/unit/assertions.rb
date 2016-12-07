@@ -530,6 +530,7 @@ EOT
             sigdesc << " (core dumped)"
           end
           full_message = ''
+          message = message.call if Proc === message
           if message and !message.empty?
             full_message << message << "\n"
           end
