@@ -114,7 +114,9 @@ enum feature_flag_bits {
 enum dump_flag_bits {
     dump_version_v,
     EACH_DUMPS(DEFINE_DUMP, COMMA),
-    dump_flag_count
+    dump_exit_bits = (DUMP_BIT(yydebug) | DUMP_BIT(syntax) |
+		      DUMP_BIT(parsetree) | DUMP_BIT(parsetree_with_comment) |
+		      DUMP_BIT(insns))
 };
 
 typedef struct ruby_cmdline_options ruby_cmdline_options_t;
@@ -1447,6 +1449,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     int i = (int)proc_options(argc, argv, opt, 0);
     rb_binding_t *toplevel_binding;
     const struct rb_block *base_block;
+    unsigned int dump = opt->dump & dump_exit_bits;
 
     argc -= i;
     argv += i;
@@ -1647,7 +1650,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	tree = load_file(parser, opt->script_name, 1, opt);
     }
     ruby_set_script_name(opt->script_name);
-    if (opt->dump & DUMP_BIT(yydebug)) return Qtrue;
+    if (dump & DUMP_BIT(yydebug)) {
+	dump &= ~DUMP_BIT(yydebug);
+	if (!dump) return Qtrue;
+    }
 
     if (opt->ext.enc.index >= 0) {
 	enc = rb_enc_from_index(opt->ext.enc.index);
@@ -1671,9 +1677,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     process_sflag(&opt->sflag);
     opt->xflag = 0;
 
-    if (opt->dump & DUMP_BIT(syntax)) {
+    if (dump & DUMP_BIT(syntax)) {
 	printf("Syntax OK\n");
-	return Qtrue;
+	dump &= ~DUMP_BIT(syntax);
+	if (!dump) return Qtrue;
     }
 
     if (opt->do_print) {
@@ -1687,10 +1694,11 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	rb_define_global_function("chomp", rb_f_chomp, -1);
     }
 
-    if (opt->dump & DUMP_BIT(parsetree) || opt->dump & DUMP_BIT(parsetree_with_comment)) {
-	rb_io_write(rb_stdout, rb_parser_dump_tree(tree, opt->dump & DUMP_BIT(parsetree_with_comment)));
+    if (dump & (DUMP_BIT(parsetree)|DUMP_BIT(parsetree_with_comment))) {
+	rb_io_write(rb_stdout, rb_parser_dump_tree(tree, dump & DUMP_BIT(parsetree_with_comment)));
 	rb_io_flush(rb_stdout);
-	return Qtrue;
+	dump &= ~DUMP_BIT(parsetree)&~DUMP_BIT(parsetree_with_comment);
+	if (!dump) return Qtrue;
     }
 
     {
@@ -1702,11 +1710,13 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	iseq = rb_iseq_new_main(tree, opt->script_name, path, vm_block_iseq(base_block));
     }
 
-    if (opt->dump & DUMP_BIT(insns)) {
+    if (dump & DUMP_BIT(insns)) {
 	rb_io_write(rb_stdout, rb_iseq_disasm((const rb_iseq_t *)iseq));
 	rb_io_flush(rb_stdout);
-	return Qtrue;
+	dump &= ~DUMP_BIT(insns);
+	if (!dump) return Qtrue;
     }
+    if (opt->dump & dump_exit_bits) return Qtrue;
 
     rb_define_readonly_boolean("$-p", opt->do_print);
     rb_define_readonly_boolean("$-l", opt->do_line);
