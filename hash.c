@@ -162,7 +162,7 @@ rb_dbl_long_hash(double d)
 #endif
 }
 
-static inline st_index_t
+static inline long
 any_hash(VALUE a, st_index_t (*other_func)(VALUE))
 {
     VALUE hval;
@@ -199,7 +199,7 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
     }
   out:
     hnum <<= 1;
-    return (st_index_t)RSHIFT(hnum, 1);
+    return (long)RSHIFT(hnum, 1);
 }
 
 static st_index_t
@@ -262,7 +262,7 @@ objid_hash(VALUE obj)
 VALUE
 rb_obj_hash(VALUE obj)
 {
-    st_index_t hnum = any_hash(obj, objid_hash);
+    long hnum = any_hash(obj, objid_hash);
     return ST2FIX(hnum);
 }
 
