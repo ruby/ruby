@@ -7,7 +7,7 @@ require "socket"
 class TestFileExhaustive < Test::Unit::TestCase
   DRIVE = Dir.pwd[%r'\A(?:[a-z]:|//[^/]+/[^/]+)'i]
   POSIX = /cygwin|mswin|bccwin|mingw|emx/ !~ RUBY_PLATFORM
-  NTFS = !(/cygwin|mingw|mswin|bccwin/ !~ RUBY_PLATFORM)
+  NTFS = !(/mingw|mswin|bccwin/ !~ RUBY_PLATFORM)
 
   def assert_incompatible_encoding
     d = "\u{3042}\u{3044}".encode("utf-16le")
@@ -782,6 +782,8 @@ class TestFileExhaustive < Test::Unit::TestCase
     a = "#{drive}/\225\\\\"
     if File::ALT_SEPARATOR == '\\'
       [%W"cp437 #{drive}/\225", %W"cp932 #{drive}/\225\\"]
+    elsif File.directory?("#{@dir}/\\")
+      [%W"cp437 /\225", %W"cp932 /\225\\"]
     else
       [["cp437", a], ["cp932", a]]
     end.each do |cp, expected|
@@ -1135,6 +1137,20 @@ class TestFileExhaustive < Test::Unit::TestCase
         assert_equal(basename, File.basename(file + "::$DATA", ".test"))
         assert_equal(basename, File.basename(file + " ", ".*"))
         assert_equal(basename, File.basename(file + ".", ".*"))
+        assert_equal(basename, File.basename(file + "::$DATA", ".*"))
+      end
+    else
+      [regular_file, utf8_file].each do |file|
+        basename = File.basename(file)
+        assert_equal(basename + " ", File.basename(file + " "))
+        assert_equal(basename + ".", File.basename(file + "."))
+        assert_equal(basename + "::$DATA", File.basename(file + "::$DATA"))
+        assert_equal(basename + " ", File.basename(file + " ", ".test"))
+        assert_equal(basename + ".", File.basename(file + ".", ".test"))
+        assert_equal(basename + "::$DATA", File.basename(file + "::$DATA", ".test"))
+        assert_equal(basename, File.basename(file + ".", ".*"))
+        basename.chomp!(".test")
+        assert_equal(basename, File.basename(file + " ", ".*"))
         assert_equal(basename, File.basename(file + "::$DATA", ".*"))
       end
     end

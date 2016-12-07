@@ -2916,7 +2916,7 @@ static const char file_alt_separator[] = {FILE_ALT_SEPARATOR, '\0'};
 #endif
 
 #ifndef USE_NTFS
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
 #define USE_NTFS 1
 #else
 #define USE_NTFS 0
