@@ -117,4 +117,22 @@ end
 
     assert_nothing_raised { Ripper.lex src }
   end
+
+  class TestInput < self
+    Input = Struct.new(:lines) do
+      def gets
+        lines.shift
+      end
+    end
+
+    def setup
+      @ripper = Ripper.new(Input.new(["1 + 1"]))
+    end
+
+    def test_invalid_gets
+      ripper = assert_nothing_raised {Ripper.new(Input.new([0]))}
+      assert_raise(TypeError) {ripper.parse}
+    end
+  end
+
 end if ripper_test
