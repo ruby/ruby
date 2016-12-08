@@ -2961,27 +2961,35 @@ enum compile_array_type_t {
     COMPILE_ARRAY_TYPE_ARGS
 };
 
-static int
-static_literal_node_p(NODE *node, VALUE *val)
+static inline int
+static_literal_node_p(NODE *node)
 {
     node = node->nd_head;
     switch (nd_type(node)) {
       case NODE_LIT:
-	*val = node->nd_lit;
-	break;
       case NODE_NIL:
-	*val = Qnil;
-	break;
       case NODE_TRUE:
-	*val = Qtrue;
-	break;
       case NODE_FALSE:
-	*val = Qfalse;
-	break;
+	return TRUE;
       default:
 	return FALSE;
     }
-    return TRUE;
+}
+
+static inline VALUE
+static_literal_value(NODE *node)
+{
+    node = node->nd_head;
+    switch (nd_type(node)) {
+      case NODE_NIL:
+	return Qnil;
+      case NODE_TRUE:
+	return Qtrue;
+      case NODE_FALSE:
+	return Qfalse;
+      default:
+	return node->nd_lit;
+    }
 }
 
 static int
@@ -3008,7 +3016,6 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE* node_root,
 	while (node) {
 	    NODE *start_node = node, *end_node;
 	    NODE *kw = 0;
-	    VALUE elem[2];
 	    const int max = 0x100;
 	    DECL_ANCHOR(anchor);
 	    INIT_ANCHOR(anchor);
@@ -3028,7 +3035,7 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE* node_root,
 		    }
 		    break;
 		}
-		if (opt_p && !static_literal_node_p(node, elem)) {
+		if (opt_p && !static_literal_node_p(node)) {
 		    opt_p = 0;
 		}
 
@@ -3048,13 +3055,15 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE* node_root,
 		    node = start_node;
 
 		    while (node != end_node) {
-			static_literal_node_p(node, elem);
-			rb_ary_push(ary, elem[0]);
+			rb_ary_push(ary, static_literal_value(node));
 			node = node->nd_next;
 		    }
 		    while (node && node->nd_next &&
-			   static_literal_node_p(node, &elem[0]) &&
-			   static_literal_node_p(node->nd_next, &elem[1])) {
+			   static_literal_node_p(node) &&
+			   static_literal_node_p(node->nd_next)) {
+			VALUE elem[2];
+			elem[0] = static_literal_value(node);
+			elem[1] = static_literal_value(node->nd_next);
 			rb_ary_cat(ary, elem, 2);
 			node = node->nd_next->nd_next;
 			len++;
