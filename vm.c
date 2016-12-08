@@ -2600,6 +2600,7 @@ core_hash_merge(VALUE hash, long argc, const VALUE *argv)
 {
     long i;
 
+    Check_Type(hash, T_HASH);
     VM_ASSERT(argc % 2 == 0);
     for (i=0; i<argc; i+=2) {
 	rb_hash_aset(hash, argv[i], argv[i+1]);
@@ -2620,7 +2621,7 @@ core_hash_from_ary(VALUE ary)
 {
     VALUE hash = rb_hash_new();
 
-    RUBY_DTRACE_CREATE_HOOK(HASH, RARRAY_LEN(ary));
+    RUBY_DTRACE_CREATE_HOOK(HASH, (Check_Type(ary, T_ARRAY), RARRAY_LEN(ary)));
     return core_hash_merge_ary(hash, ary);
 }
 
@@ -2634,6 +2635,7 @@ m_core_hash_merge_ary(VALUE self, VALUE hash, VALUE ary)
 static VALUE
 core_hash_merge_ary(VALUE hash, VALUE ary)
 {
+    Check_Type(ary, T_ARRAY);
     core_hash_merge(hash, RARRAY_LEN(ary), RARRAY_CONST_PTR(ary));
     return hash;
 }
