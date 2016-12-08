@@ -361,10 +361,10 @@ To define nested classes or modules, use the functions below:
 To define methods or singleton methods, use these functions:
 
   void rb_define_method(VALUE klass, const char *name,
-                        VALUE (*func)(), int argc)
+                        VALUE (*func)(ANYARGS), int argc)
 
   void rb_define_singleton_method(VALUE object, const char *name,
-                                  VALUE (*func)(), int argc)
+                                  VALUE (*func)(ANYARGS), int argc)
 
 The `argc' represents the number of the arguments to the C function,
 which must be less than 17.  But I doubt you'll need that many.
@@ -396,9 +396,9 @@ as the name of method to be defined. See also ID or Symbol below.
 There are two functions to define private/protected methods:
 
   void rb_define_private_method(VALUE klass, const char *name,
-                                VALUE (*func)(), int argc)
+                                VALUE (*func)(ANYARGS), int argc)
   void rb_define_protected_method(VALUE klass, const char *name,
-                                  VALUE (*func)(), int argc)
+                                  VALUE (*func)(ANYARGS), int argc)
 
 At last, rb_define_module_function defines a module function,
 which are private AND singleton methods of the module.
@@ -415,12 +415,12 @@ or
 To define module functions, use:
 
   void rb_define_module_function(VALUE module, const char *name,
-                                 VALUE (*func)(), int argc)
+                                 VALUE (*func)(ANYARGS), int argc)
 
 In addition, function-like methods, which are private methods defined
 in the Kernel module, can be defined using:
 
-  void rb_define_global_function(const char *name, VALUE (*func)(), int argc)
+  void rb_define_global_function(const char *name, VALUE (*func)(ANYARGS), int argc)
 
 To define an alias for the method,
 
@@ -1346,7 +1346,7 @@ void rb_define_global_const(const char *name, VALUE val) ::
 
 == Method Definition
 
-rb_define_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
+rb_define_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc) ::
 
   Defines a method for the class.  func is the function pointer.  argc
   is the number of arguments.  if argc is -1, the function will receive
@@ -1354,12 +1354,12 @@ rb_define_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
   receive 2 arguments, self and args, where args is a Ruby array of
   the method arguments.
 
-rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
+rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc) ::
 
   Defines a private method for the class.  Arguments are same as
   rb_define_method().
 
-rb_define_singleton_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
+rb_define_singleton_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc) ::
 
   Defines a singleton method.  Arguments are same as rb_define_method().
 

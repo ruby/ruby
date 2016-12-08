@@ -394,10 +394,10 @@ Rubyで提供されている関数を使えばRubyインタプリタに新しい
 メソッドや特異メソッドを定義するには以下の関数を使います．
 
   void rb_define_method(VALUE klass, const char *name,
-                        VALUE (*func)(), int argc)
+                        VALUE (*func)(ANYARGS), int argc)
 
   void rb_define_singleton_method(VALUE object, const char *name,
-                                  VALUE (*func)(), int argc)
+                                  VALUE (*func)(ANYARGS), int argc)
 
 念のため説明すると「特異メソッド」とは，その特定のオブジェク
 トに対してだけ有効なメソッドです．RubyではよくSmalltalkにお
@@ -423,9 +423,9 @@ argcが-1の時は引数を配列に入れて渡されます．argcが-2の時�
 private/protectedなメソッドを定義するふたつの関数があります.
 
   void rb_define_private_method(VALUE klass, const char *name,
-                                VALUE (*func)(), int argc)
+                                VALUE (*func)(ANYARGS), int argc)
   void rb_define_protected_method(VALUE klass, const char *name,
-                                  VALUE (*func)(), int argc)
+                                  VALUE (*func)(ANYARGS), int argc)
 
 privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
 ドです．
@@ -446,12 +446,12 @@ privateメソッドでもあるものです．例をあげるとMathモジュー
 通りです．
 
   void rb_define_module_function(VALUE module, const char *name,
-                                 VALUE (*func)(), int argc)
+                                 VALUE (*func)(ANYARGS), int argc)
 
 関数的メソッド(Kernelモジュールのprivate method)を定義するた
 めの関数は以下の通りです．
 
-  void rb_define_global_function(const char *name, VALUE (*func)(), int argc)
+  void rb_define_global_function(const char *name, VALUE (*func)(ANYARGS), int argc)
 
 メソッドの別名を定義するための関数は以下の通りです．
 
@@ -1334,7 +1334,7 @@ void rb_define_global_const(const char *name, VALUE val) ::
 
 == メソッド定義
 
-rb_define_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
+rb_define_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc) ::
 
   メソッドを定義する．argcはselfを除く引数の数．argcが-1の時,
   関数には引数の数(selfを含まない)を第1引数, 引数の配列を第2
@@ -1342,11 +1342,11 @@ rb_define_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
   第1引数がself, 第2引数がargs(argsは引数を含むRubyの配列)と
   いう形式で与えられる．
 
-rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
+rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc) ::
 
   privateメソッドを定義する．引数はrb_define_method()と同じ．
 
-rb_define_singleton_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
+rb_define_singleton_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc) ::
 
   特異メソッドを定義する．引数はrb_define_method()と同じ．
 
