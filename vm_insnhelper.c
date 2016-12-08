@@ -2016,18 +2016,20 @@ vm_call_method_missing(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb_c
     return vm_call_method(th, reg_cfp, calling, ci, cc);
 }
 
+static const rb_callable_method_entry_t *refined_method_callable_without_refinement(const rb_callable_method_entry_t *me);
 static VALUE
 vm_call_zsuper(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, VALUE klass)
 {
     klass = RCLASS_SUPER(klass);
     cc->me = klass ? rb_callable_method_entry(klass, ci->mid) : NULL;
 
-    if (cc->me != NULL) {
-	return vm_call_method_each_type(th, cfp, calling, ci, cc);
-    }
-    else {
+    if (!cc->me) {
 	return vm_call_method_nome(th, cfp, calling, ci, cc);
     }
+    if (cc->me->def->type == VM_METHOD_TYPE_REFINED) {
+	cc->me = refined_method_callable_without_refinement(cc->me);
+    }
+    return vm_call_method_each_type(th, cfp, calling, ci, cc);
 }
 
 static inline VALUE
@@ -2121,6 +2123,11 @@ refined_method_callable_without_refinement(const rb_callable_method_entry_t *me)
     }
 
     VM_ASSERT(callable_method_entry_p(cme));
+
+    if (UNDEFINED_METHOD_ENTRY_P(cme)) {
+	cme = NULL;
+    }
+
     return cme;
 }
 
@@ -2218,10 +2225,6 @@ vm_call_method_each_type(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_cal
 	no_refinement_dispatch:
 	  if (cc->me->def->body.refined.orig_me) {
 	      cc->me = refined_method_callable_without_refinement(cc->me);
-
-	      if (UNDEFINED_METHOD_ENTRY_P(cc->me)) {
-		  cc->me = NULL;
-	      }
 	      return vm_call_method(th, cfp, calling, ci, cc);
 	  }
 	  else {

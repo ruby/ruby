@@ -1789,6 +1789,27 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_public_in_refine
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      bug12729 = '[ruby-core:77161] [Bug #12729]'
+
+      class Cow
+        private
+        def moo() "Moo"; end
+      end
+
+      module PublicCows
+        refine(Cow) {
+          public :moo
+        }
+      end
+
+      using PublicCows
+      assert_equal("Moo", Cow.new.moo, bug12729)
+    end;
+  end
+
   private
 
   def eval_using(mod, s)
