@@ -441,8 +441,10 @@ enum ruby_special_consts {
 #endif
 #define SYMBOL_FLAG RUBY_SYMBOL_FLAG
 
-#define RTEST(v) !(((VALUE)(v) & ~RUBY_Qnil) == 0)
-#define NIL_P(v) !((VALUE)(v) != RUBY_Qnil)
+#define RB_TEST(v) !(((VALUE)(v) & ~RUBY_Qnil) == 0)
+#define RB_NIL_P(v) !((VALUE)(v) != RUBY_Qnil)
+#define RTEST(v) RB_TEST(v)
+#define NIL_P(v) RB_NIL_P(v)
 
 #define CLASS_OF(v) rb_class_of((VALUE)(v))
 
@@ -1235,7 +1237,7 @@ int rb_big_sign(VALUE);
 #define FL_USER18 	RUBY_FL_USER18
 #define FL_USER19 	RUBY_FL_USER19
 
-#define RB_SPECIAL_CONST_P(x) (RB_IMMEDIATE_P(x) || !RTEST(x))
+#define RB_SPECIAL_CONST_P(x) (RB_IMMEDIATE_P(x) || !RB_TEST(x))
 #define SPECIAL_CONST_P(x) RB_SPECIAL_CONST_P(x)
 
 #define RB_FL_ABLE(x) (!RB_SPECIAL_CONST_P(x) && RB_BUILTIN_TYPE(x) != RUBY_T_NODE)
@@ -1474,7 +1476,7 @@ rb_obj_write(VALUE a, VALUE *slot, VALUE b, RB_UNUSED_VAR(const char *filename),
     *slot = b;
 
 #if USE_RGENGC
-    rb_obj_written(a, Qundef /* ignore `oldv' now */, b, filename, line);
+    rb_obj_written(a, RUBY_Qundef /* ignore `oldv' now */, b, filename, line);
 #endif
     return a;
 }
@@ -1945,7 +1947,7 @@ rb_class_of(VALUE obj)
 	if (obj == RUBY_Qtrue)  return rb_cTrueClass;
 	if (RB_STATIC_SYM_P(obj)) return rb_cSymbol;
     }
-    else if (!RTEST(obj)) {
+    else if (!RB_TEST(obj)) {
 	if (obj == RUBY_Qnil)   return rb_cNilClass;
 	if (obj == RUBY_Qfalse) return rb_cFalseClass;
     }
@@ -1962,7 +1964,7 @@ rb_type(VALUE obj)
 	if (RB_STATIC_SYM_P(obj)) return RUBY_T_SYMBOL;
 	if (obj == RUBY_Qundef) return RUBY_T_UNDEF;
     }
-    else if (!RTEST(obj)) {
+    else if (!RB_TEST(obj)) {
 	if (obj == RUBY_Qnil)   return RUBY_T_NIL;
 	if (obj == RUBY_Qfalse) return RUBY_T_FALSE;
     }
@@ -2340,7 +2342,7 @@ rb_scan_args_set(int argc, const VALUE *argv,
     if (f_hash && n_mand < argc) {
 	VALUE last = argv[argc - 1];
 
-	if (NIL_P(last)) {
+	if (RB_NIL_P(last)) {
 	    /* nil is taken as an empty option hash only if it is not
 	       ambiguous; i.e. '*' is not specified and arguments are
 	       given more than sufficient */
@@ -2349,7 +2351,7 @@ rb_scan_args_set(int argc, const VALUE *argv,
 	}
 	else {
 	    hash = rb_check_hash_type(last);
-	    if (!NIL_P(hash)) {
+	    if (!RB_NIL_P(hash)) {
 		VALUE opts = rb_extract_keywords(&hash);
 		if (!hash) argc--;
 		hash = opts ? opts : Qnil;
