@@ -287,7 +287,7 @@ ossl_engine_finish(VALUE self)
  * This returns an OpenSSL::Cipher by +name+, if it is available in this
  * engine.
  *
- * A EngineError will be raised if the cipher is unavailable.
+ * An EngineError will be raised if the cipher is unavailable.
  *
  *    e = OpenSSL::Engine.by_id("openssl")
  *     => #<OpenSSL::Engine id="openssl" name="Software engine support">
