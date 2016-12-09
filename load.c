@@ -230,10 +230,10 @@ features_index_add(VALUE feature, VALUE offset)
     feature_end = feature_str + RSTRING_LEN(feature);
 
     for (ext = feature_end; ext > feature_str; ext--)
-      if (*ext == '.' || *ext == '/')
-	break;
+	if (*ext == '.' || *ext == '/')
+	    break;
     if (*ext != '.')
-      ext = NULL;
+	ext = NULL;
     /* Now `ext` points to the only string matching %r{^\.[^./]*$} that is
        at the end of `feature`, or is NULL if there is no such string. */
 
