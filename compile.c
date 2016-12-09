@@ -3090,9 +3090,14 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE* node_root,
 			    ADD_INSN(ret, line, concatarray);
 			}
 			else {
+#if 0
 			    ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 			    ADD_INSN1(ret, line, putobject, ary);
 			    ADD_SEND(ret, line, id_core_hash_merge_ary, INT2FIX(1));
+			    /* wrong number of arguments -----------------------^ */
+#else
+			    compile_bug(ERROR_ARGS "core#hash_merge_ary");
+#endif
 			}
 		    }
 		}

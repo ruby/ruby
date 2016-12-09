@@ -2625,12 +2625,14 @@ core_hash_from_ary(VALUE ary)
     return core_hash_merge_ary(hash, ary);
 }
 
+#if 0
 static VALUE
 m_core_hash_merge_ary(VALUE self, VALUE hash, VALUE ary)
 {
     REWIND_CFP(core_hash_merge_ary(hash, ary));
     return hash;
 }
+#endif
 
 static VALUE
 core_hash_merge_ary(VALUE hash, VALUE ary)
@@ -2757,7 +2759,9 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_define_singleton_method, m_core_define_singleton_method, 3);
     rb_define_method_id(klass, id_core_set_postexe, m_core_set_postexe, 0);
     rb_define_method_id(klass, id_core_hash_from_ary, m_core_hash_from_ary, 1);
+#if 0
     rb_define_method_id(klass, id_core_hash_merge_ary, m_core_hash_merge_ary, 2);
+#endif
     rb_define_method_id(klass, id_core_hash_merge_ptr, m_core_hash_merge_ptr, -1);
     rb_define_method_id(klass, id_core_hash_merge_kwd, m_core_hash_merge_kwd, -1);
     rb_define_method_id(klass, idProc, rb_block_proc, 0);
