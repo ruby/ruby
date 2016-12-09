@@ -2285,16 +2285,9 @@ static const rb_data_type_t gzfile_data_type = {
      0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-static VALUE
-gzfile_new(klass, funcs, endfunc)
-    VALUE klass;
-    const struct zstream_funcs *funcs;
-    void (*endfunc)(struct gzfile *);
+static void
+gzfile_init(struct gzfile *gz, const struct zstream_funcs *funcs, void (*endfunc)(struct gzfile *))
 {
-    VALUE obj;
-    struct gzfile *gz;
-
-    obj = TypedData_Make_Struct(klass, struct gzfile, &gzfile_data_type, gz);
     zstream_init(&gz->z, funcs);
     gz->z.flags |= ZSTREAM_FLAG_GZFILE;
     gz->io = Qnil;
@@ -2314,7 +2307,16 @@ gzfile_new(klass, funcs, endfunc)
     gz->ecopts = Qnil;
     gz->cbuf = 0;
     gz->path = Qnil;
+}
 
+static VALUE
+gzfile_new(VALUE klass, const struct zstream_funcs *funcs, void (*endfunc)(struct gzfile *))
+{
+    VALUE obj;
+    struct gzfile *gz;
+
+    obj = TypedData_Make_Struct(klass, struct gzfile, &gzfile_data_type, gz);
+    gzfile_init(gz, funcs, endfunc);
     return obj;
 }
 
@@ -2403,6 +2405,12 @@ gzfile_read_raw_ensure(struct gzfile *gz, long size)
 {
     VALUE str;
 
+    if (gz->io == Qundef) { /* Zlib.gunzip */
+	if (NIL_P(gz->z.input))
+	    rb_bug("unexpected condition: both gz->io and gz->z.input are nil");
+	if (RSTRING_LEN(gz->z.input) < size)
+	    rb_raise(cGzError, "unexpected end of string");
+    }
     while (NIL_P(gz->z.input) || RSTRING_LEN(gz->z.input) < size) {
 	str = gzfile_read_raw(gz);
 	if (NIL_P(str)) return 0;
@@ -4262,6 +4270,119 @@ rb_gzreader_external_encoding(VALUE self)
     return rb_enc_from_encoding(get_gzfile(self)->enc);
 }
 
+static void
+zlib_gzip_end(struct gzfile *gz)
+{
+    gz->z.flags |= ZSTREAM_FLAG_CLOSING;
+    zstream_run(&gz->z, (Bytef*)"", 0, Z_FINISH);
+    gzfile_make_footer(gz);
+    zstream_end(&gz->z);
+}
+
+/*
+ * call-seq:
+ *   Zlib.gunzip(src) -> String
+ *
+ * Decode the given gzipped +string+.
+ *
+ * This method is almost equivalent to the following code:
+ *
+ *   def gunzip(string)
+ *     sio = StringIO.new(string)
+ *     Zlib::GzipReadr.new(sio){|f| f.read}
+ *   end
+ *
+ * See also Zlib.gzip
+ */
+static VALUE
+zlib_s_gzip(int argc, VALUE *argv, VALUE klass)
+{
+    struct gzfile gz0;
+    struct gzfile *gz = &gz0;
+    long len;
+    int err;
+    VALUE src, level, strategy;
+
+    rb_scan_args(argc, argv, "12", &src, &level, &strategy);
+    StringValue(src);
+    gzfile_init(gz, &deflate_funcs, zlib_gzip_end);
+    gz->level = ARG_LEVEL(level);
+    err = deflateInit2(&gz->z.stream, gz->level, Z_DEFLATED,
+		       -MAX_WBITS, DEF_MEM_LEVEL, ARG_STRATEGY(strategy));
+    if (err != Z_OK) {
+	raise_zlib_error(err, gz->z.stream.msg);
+    }
+    ZSTREAM_READY(&gz->z);
+    gzfile_make_header(gz);
+    len = RSTRING_LEN(src);
+    if (len > 0) {
+	Bytef *ptr = (Bytef *)RSTRING_PTR(src);
+	gz->crc = checksum_long(crc32, gz->crc, ptr, len);
+	zstream_run(&gz->z, ptr, len, Z_NO_FLUSH);
+    }
+    gzfile_close(gz, 0);
+    return zstream_detach_buffer(&gz->z);
+}
+
+static void
+zlib_gunzip_end(struct gzfile *gz)
+{
+    gz->z.flags |= ZSTREAM_FLAG_CLOSING;
+    gzfile_check_footer(gz);
+    zstream_end(&gz->z);
+}
+
+/*
+ * call-seq:
+ *   Zlib.gunzip(src, level=nil, strategy=nil) -> String
+ *
+ * Gzip the given +string+. Valid values of level are
+ * Zlib::NO_COMPRESSION, Zlib::BEST_SPEED, Zlib::BEST_COMPRESSION,
+ * Zlib::DEFAULT_COMPRESSION (default), or an integer from 0 to 9.
+ *
+ * This method is almost equivalent to the following code:
+ *
+ *   def gzip(string, level=nil, strategy=nil)
+ *     sio = StringIO.new
+ *     gz = Zlib::GzipWriter.new(sio, level, strategy)
+ *     gz.write(string)
+ *     gz.close
+ *     sio.string
+ *   end
+ *
+ * See also Zlib.gunzip
+ *
+ */
+static VALUE
+zlib_gunzip(VALUE klass, VALUE src)
+{
+    struct gzfile gz0;
+    struct gzfile *gz = &gz0;
+    int err;
+    VALUE dst;
+
+    StringValue(src);
+
+    gzfile_init(gz, &inflate_funcs, zlib_gunzip_end);
+    err = inflateInit2(&gz->z.stream, -MAX_WBITS);
+    if (err != Z_OK) {
+	raise_zlib_error(err, gz->z.stream.msg);
+    }
+    gz->io = Qundef;
+    gz->z.input = src;
+    ZSTREAM_READY(&gz->z);
+    gzfile_read_header(gz);
+    dst = zstream_detach_buffer(&gz->z);
+    gzfile_calc_crc(gz, dst);
+	    if (!ZSTREAM_IS_FINISHED(&gz->z)) {
+		rb_raise(cGzError, "unexpected end of file");
+	    }
+    if (NIL_P(gz->z.input))
+	rb_raise(cNoFooter, "footer is not found");
+    gzfile_check_footer(gz);
+    return dst;
+}
+
 #endif /* GZIP_SUPPORT */
 
 void
@@ -4531,6 +4652,9 @@ Init_zlib(void)
     rb_define_method(cGzipReader, "lines", rb_gzreader_lines, -1);
     rb_define_method(cGzipReader, "readlines", rb_gzreader_readlines, -1);
     rb_define_method(cGzipReader, "external_encoding", rb_gzreader_external_encoding, 0);
+
+    rb_define_singleton_method(mZlib, "gzip", zlib_s_gzip, -1);
+    rb_define_singleton_method(mZlib, "gunzip", zlib_gunzip, 1);
 
     /* The OS code of current host */
     rb_define_const(mZlib, "OS_CODE", INT2FIX(OS_CODE));

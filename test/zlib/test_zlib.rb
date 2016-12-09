@@ -1,3 +1,4 @@
+# coding: us-ascii
 # frozen_string_literal: false
 require 'test/unit'
 require 'stringio'
@@ -1126,5 +1127,50 @@ if defined? Zlib
       assert_equal 20016, deflated.length
     end
 
+    def test_gzip
+      actual = Zlib.gzip("foo")
+      actual[4, 4] = "\x00\x00\x00\x00" # replace mtime
+      actual[9] = "\xff" # replace OS
+      expected = %w[1f8b08000000000000ff4bcbcf07002165738c03000000].pack("H*")
+      assert_equal expected, actual
+
+      actual = Zlib.gzip("foo", 0)
+      actual[4, 4] = "\x00\x00\x00\x00" # replace mtime
+      actual[9] = "\xff" # replace OS
+      expected = %w[1f8b08000000000000ff010300fcff666f6f2165738c03000000].pack("H*")
+      assert_equal expected, actual
+
+      actual = Zlib.gzip("foo", 9)
+      actual[4, 4] = "\x00\x00\x00\x00" # replace mtime
+      actual[9] = "\xff" # replace OS
+      expected = %w[1f8b08000000000002ff4bcbcf07002165738c03000000].pack("H*")
+      assert_equal expected, actual
+
+      actual = Zlib.gzip("foo", 9, Zlib::FILTERED)
+      actual[4, 4] = "\x00\x00\x00\x00" # replace mtime
+      actual[9] = "\xff" # replace OS
+      expected = %w[1f8b08000000000002ff4bcbcf07002165738c03000000].pack("H*")
+      assert_equal expected, actual
+    end
+
+    def test_gunzip
+      src = %w[1f8b08000000000000034bcbcf07002165738c03000000].pack("H*")
+      assert_equal 'foo', Zlib.gunzip(src)
+
+      src = %w[1f8b08000000000000034bcbcf07002165738c03000001].pack("H*")
+      assert_raise(Zlib::GzipFile::LengthError){ Zlib.gunzip(src) }
+
+      src = %w[1f8b08000000000000034bcbcf07002165738d03000000].pack("H*")
+      assert_raise(Zlib::GzipFile::CRCError){ Zlib.gunzip(src) }
+
+      src = %w[1f8b08000000000000034bcbcf07002165738d030000].pack("H*")
+      assert_raise(Zlib::GzipFile::Error){ Zlib.gunzip(src) }
+
+      src = %w[1f8b08000000000000034bcbcf0700].pack("H*")
+      assert_raise(Zlib::GzipFile::NoFooter){ Zlib.gunzip(src) }
+
+      src = %w[1f8b080000000000000].pack("H*")
+      assert_raise(Zlib::GzipFile::Error){ Zlib.gunzip(src) }
+    end
   end
 end
