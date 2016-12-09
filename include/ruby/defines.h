@@ -62,12 +62,15 @@ extern "C" {
 #endif
 
 #ifndef GCC_VERSION_SINCE
-#define GCC_VERSION_SINCE(major, minor, patchlevel) \
-  (defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(__clang__) && \
-   ((__GNUC__ > (major)) ||  \
-    ((__GNUC__ == (major) && \
-      ((__GNUC_MINOR__ > (minor)) ||					\
-       (__GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ >= (patchlevel)))))))
+# if defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(__clang__)
+#  define GCC_VERSION_SINCE(major, minor, patchlevel) \
+    ((__GNUC__ > (major)) ||  \
+     ((__GNUC__ == (major) && \
+       ((__GNUC_MINOR__ > (minor)) || \
+        (__GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ >= (patchlevel))))))
+# else
+#  define GCC_VERSION_SINCE(major, minor, patchlevel) 0
+# endif
 #endif
 
 /* likely */
