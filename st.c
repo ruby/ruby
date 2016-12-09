@@ -1609,101 +1609,13 @@ st_values_check(st_table *tab, st_data_t *values, st_index_t size,
 		st_data_t never ATTRIBUTE_UNUSED) {
     return st_general_values(tab, values, size);
 }
-/*
- * hash_32 - 32 bit Fowler/Noll/Vo FNV-1a hash code
- *
- * @(#) $Hash32: Revision: 1.1 $
- * @(#) $Hash32: Id: hash_32a.c,v 1.1 2003/10/03 20:38:53 chongo Exp $
- * @(#) $Hash32: Source: /usr/local/src/cmd/fnv/RCS/hash_32a.c,v $
- *
- ***
- *
- * Fowler/Noll/Vo hash
- *
- * The basis of this hash algorithm was taken from an idea sent
- * as reviewer comments to the IEEE POSIX P1003.2 committee by:
- *
- *      Phong Vo (http://www.research.att.com/info/kpv/)
- *      Glenn Fowler (http://www.research.att.com/~gsf/)
- *
- * In a subsequent ballot round:
- *
- *      Landon Curt Noll (http://www.isthe.com/chongo/)
- *
- * improved on their algorithm.  Some people tried this hash
- * and found that it worked rather well.  In an EMail message
- * to Landon, they named it the ``Fowler/Noll/Vo'' or FNV hash.
- *
- * FNV hashes are designed to be fast while maintaining a low
- * collision rate. The FNV speed allows one to quickly hash lots
- * of data while maintaining a reasonable collision rate.  See:
- *
- *      http://www.isthe.com/chongo/tech/comp/fnv/index.html
- *
- * for more details as well as other forms of the FNV hash.
- ***
- *
- * To use the recommended 32 bit FNV-1a hash, pass FNV1_32A_INIT as the
- * Fnv32_t hashval argument to fnv_32a_buf() or fnv_32a_str().
- *
- ***
- *
- * Please do not copyright this code.  This code is in the public domain.
- *
- * LANDON CURT NOLL DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO
- * EVENT SHALL LANDON CURT NOLL BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF
- * USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
- * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- *
- * By:
- *	chongo <Landon Curt Noll> /\oo/\
- *      http://www.isthe.com/chongo/
- *
- * Share and Enjoy!	:-)
- */
 
-/*
- * 32 bit FNV-1 and FNV-1a non-zero initial basis
- *
- * The FNV-1 initial basis is the FNV-0 hash of the following 32 octets:
- *
- *              chongo <Landon Curt Noll> /\../\
- *
- * NOTE: The \'s above are not back-slashing escape characters.
- * They are literal ASCII  backslash 0x5c characters.
- *
- * NOTE: The FNV-1a initial basis is the same value as FNV-1 by definition.
- */
 #define FNV1_32A_INIT 0x811c9dc5
 
 /*
  * 32 bit magic FNV-1a prime
  */
 #define FNV_32_PRIME 0x01000193
-
-#ifdef ST_USE_FNV1
-static st_index_t
-strhash(st_data_t arg)
-{
-    register const char *string = (const char *)arg;
-    register st_index_t hval = FNV1_32A_INIT;
-
-    /*
-     * FNV-1a hash each octet in the buffer
-     */
-    while (*string) {
-	/* xor the bottom with the current octet */
-	hval ^= (unsigned int)*string++;
-
-	/* multiply by the 32 bit FNV magic prime mod 2^32 */
-	hval *= FNV_32_PRIME;
-    }
-    return hval;
-}
-#else
 
 #ifndef UNALIGNED_WORD_ACCESS
 # if defined(__i386) || defined(__i386__) || defined(_M_IX86) || \
@@ -1717,71 +1629,77 @@ strhash(st_data_t arg)
 # define UNALIGNED_WORD_ACCESS 0
 #endif
 
-/* MurmurHash described in http://murmurhash.googlepages.com/ */
-#ifndef MURMUR
-#define MURMUR 2
-#endif
+/* This hash function is quite simplified MurmurHash3
+ * Simplification is legal, cause most of magic still happens in finalizator.
+ * And finalizator is almost the same as in MurmurHash3 */
+#define BIG_CONSTANT(x,y) ((st_index_t)(x)<<32|(st_index_t)(y))
+#define ROTL(x,n) ((x)<<(n)|(x)>>(SIZEOF_ST_INDEX_T*CHAR_BIT-(n)))
 
-#define MurmurMagic_1 (st_index_t)0xc6a4a793
-#define MurmurMagic_2 (st_index_t)0x5bd1e995
-#if MURMUR == 1
-#define MurmurMagic MurmurMagic_1
-#elif MURMUR == 2
-#if SIZEOF_ST_INDEX_T > 4
-#define MurmurMagic ((MurmurMagic_1 << 32) | MurmurMagic_2)
+#if ST_INDEX_BITS <= 32
+#define C1 (st_index_t)0xcc9e2d51
+#define C2 (st_index_t)0x1b873593
 #else
-#define MurmurMagic MurmurMagic_2
+#define C1 BIG_CONSTANT(0x87c37b91,0x114253d5);
+#define C2 BIG_CONSTANT(0x4cf5ad43,0x2745937f);
 #endif
-#endif
-
 static inline st_index_t
-murmur(st_index_t h, st_index_t k, int r)
+murmur_step(st_index_t h, st_index_t k)
 {
-    const st_index_t m = MurmurMagic;
-#if MURMUR == 1
-    h += k;
-    h *= m;
-    h ^= h >> r;
-#elif MURMUR == 2
-    k *= m;
-    k ^= k >> r;
-    k *= m;
-
-    h *= m;
-    h ^= k;
+#if ST_INDEX_BITS <= 32
+#define r1 (17)
+#define r2 (11)
+#else
+#define r1 (33)
+#define r2 (24)
 #endif
+    k *= C1;
+    h ^= ROTL(k, r1);
+    h *= C2;
+    h = ROTL(h, r2);
     return h;
 }
+#undef r1
+#undef r2
 
 static inline st_index_t
 murmur_finish(st_index_t h)
 {
-#if MURMUR == 1
-    h = murmur(h, 0, 10);
-    h = murmur(h, 0, 17);
-#elif MURMUR == 2
-    h ^= h >> 13;
-    h *= MurmurMagic;
-    h ^= h >> 15;
+#if ST_INDEX_BITS <= 32
+#define r1 (16)
+#define r2 (13)
+#define r3 (16)
+    const st_index_t c1 = 0x85ebca6b;
+    const st_index_t c2 = 0xc2b2ae35;
+#else
+/* values are taken from Mix13 on http://zimbry.blogspot.ru/2011/09/better-bit-mixing-improving-on.html */
+#define r1 (30)
+#define r2 (27)
+#define r3 (31)
+    const st_index_t c1 = BIG_CONSTANT(0xbf58476d,0x1ce4e5b9);
+    const st_index_t c2 = BIG_CONSTANT(0x94d049bb,0x133111eb);
 #endif
+#if ST_INDEX_BITS > 64
+    h ^= h >> 64;
+    h *= c2;
+    h ^= h >> 65;
+#endif
+    h ^= h >> r1;
+    h *= c1;
+    h ^= h >> r2;
+    h *= c2;
+    h ^= h >> r3;
     return h;
 }
-
-#define murmur_step(h, k) murmur((h), (k), 16)
-
-#if MURMUR == 1
-#define murmur1(h) murmur_step((h), 16)
-#else
-#define murmur1(h) murmur_step((h), 24)
-#endif
+#undef r1
+#undef r2
+#undef r3
 
 st_index_t
 st_hash(const void *ptr, size_t len, st_index_t h)
 {
     const char *data = ptr;
     st_index_t t = 0;
-
-    h += 0xdeadbeef;
+    size_t l = len;
 
 #define data_at(n) (st_index_t)((unsigned char)data[(n)])
 #define UNALIGNED_ADD_4 UNALIGNED_ADD(2); UNALIGNED_ADD(1); UNALIGNED_ADD(0)
@@ -1859,9 +1777,7 @@ st_hash(const void *ptr, size_t len, st_index_t h)
 	    t = (t >> sr) | (d << sl);
 #endif
 
-#if MURMUR == 2
 	    if (len < (size_t)align) goto skip_tail;
-#endif
 	    h = murmur_step(h, t);
 	    data += pack;
 	    len -= pack;
@@ -1879,6 +1795,20 @@ st_hash(const void *ptr, size_t len, st_index_t h)
 
     t = 0;
     switch (len) {
+#if UNALIGNED_WORD_ACCESS && SIZEOF_ST_INDEX_T <= 8 && CHAR_BIT == 8
+    /* in this case byteorder doesn't really matter */
+#if SIZEOF_ST_INDEX_T > 4
+	case 7: t |= data_at(6) << 48;
+	case 6: t |= data_at(5) << 40;
+	case 5: t |= data_at(4) << 32;
+	case 4:
+	    t |= (st_index_t)*(uint32_t*)data;
+	    goto skip_tail;
+#endif
+	case 3: t |= data_at(2) << 16;
+	case 2: t |= data_at(1) << 8;
+	case 1: t |= data_at(0);
+#else
 #ifdef WORDS_BIGENDIAN
 # define UNALIGNED_ADD(n) case (n) + 1: \
 	t |= data_at(n) << CHAR_BIT*(SIZEOF_ST_INDEX_T - (n) - 1)
@@ -1888,16 +1818,14 @@ st_hash(const void *ptr, size_t len, st_index_t h)
 #endif
 	UNALIGNED_ADD_ALL;
 #undef UNALIGNED_ADD
-#if MURMUR == 1
-	h = murmur_step(h, t);
-#elif MURMUR == 2
-# if !UNALIGNED_WORD_ACCESS
-      skip_tail:
-# endif
-	h ^= t;
-	h *= MurmurMagic;
 #endif
+#if !UNALIGNED_WORD_ACCESS || (SIZEOF_ST_INDEX_T <= 8 && CHAR_BIT == 8)
+      skip_tail:
+#endif
+	h ^= t; h -= ROTL(t, 7);
+	h *= C2;
     }
+    h ^= l;
 
     return murmur_finish(h);
 }
@@ -1905,45 +1833,26 @@ st_hash(const void *ptr, size_t len, st_index_t h)
 st_index_t
 st_hash_uint32(st_index_t h, uint32_t i)
 {
-    return murmur_step(h + i, 16);
+    return murmur_step(h, i);
 }
 
 st_index_t
 st_hash_uint(st_index_t h, st_index_t i)
 {
-    st_index_t v = 0;
-    h += i;
-#ifdef WORDS_BIGENDIAN
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 12*8
-    v = murmur1(v + (h >> 12*8));
-#endif
+    i += h;
+/* no matter if it is BigEndian or LittleEndian,
+ * we hash just integers */
 #if SIZEOF_ST_INDEX_T*CHAR_BIT > 8*8
-    v = murmur1(v + (h >> 8*8));
+    h = murmur_step(h, i >> 8*8);
 #endif
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 4*8
-    v = murmur1(v + (h >> 4*8));
-#endif
-#endif
-    v = murmur1(v + h);
-#ifndef WORDS_BIGENDIAN
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 4*8
-    v = murmur1(v + (h >> 4*8));
-#endif
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 8*8
-    v = murmur1(v + (h >> 8*8));
-#endif
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 12*8
-    v = murmur1(v + (h >> 12*8));
-#endif
-#endif
-    return v;
+    h = murmur_step(h, i);
+    return h;
 }
 
 st_index_t
 st_hash_end(st_index_t h)
 {
-    h = murmur_step(h, 10);
-    h = murmur_step(h, 17);
+    h = murmur_finish(h);
     return h;
 }
 
@@ -1960,7 +1869,6 @@ strhash(st_data_t arg)
     register const char *string = (const char *)arg;
     return st_hash(string, strlen(string), FNV1_32A_INIT);
 }
-#endif
 
 int
 st_locale_insensitive_strcasecmp(const char *s1, const char *s2)
