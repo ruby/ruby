@@ -201,7 +201,16 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
   end
 
   class OpenSSL::TestCase < Test::Unit::TestCase
+    def setup
+      if ENV["OSSL_GC_STRESS"] == "1"
+        GC.stress = true
+      end
+    end
+
     def teardown
+      if ENV["OSSL_GC_STRESS"] == "1"
+        GC.stress = false
+      end
       # OpenSSL error stack must be empty
       assert_equal([], OpenSSL.errors)
     end
@@ -212,6 +221,7 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
     ITERATIONS = ($0 == __FILE__) ? 100 : 10
 
     def setup
+      super
       @ca_key  = OpenSSL::TestUtils::TEST_KEY_RSA2048
       @svr_key = OpenSSL::TestUtils::TEST_KEY_RSA1024
       @cli_key = OpenSSL::TestUtils::TEST_KEY_DSA1024

@@ -5,6 +5,7 @@ if defined?(OpenSSL::TestUtils)
 
 class OpenSSL::TestX509Request < OpenSSL::TestCase
   def setup
+    super
     @rsa1024 = OpenSSL::TestUtils::TEST_KEY_RSA1024
     @rsa2048 = OpenSSL::TestUtils::TEST_KEY_RSA2048
     @dsa256  = OpenSSL::TestUtils::TEST_KEY_DSA256

@@ -32,7 +32,8 @@ VALUE cSSLSocket;
 static VALUE eSSLErrorWaitReadable;
 static VALUE eSSLErrorWaitWritable;
 
-static ID ID_callback_state, id_tmp_dh_callback, id_tmp_ecdh_callback;
+static ID ID_callback_state, id_tmp_dh_callback, id_tmp_ecdh_callback,
+	  id_npn_protocols_encoded;
 static VALUE sym_exception, sym_wait_readable, sym_wait_writable;
 
 static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
@@ -892,6 +893,7 @@ ossl_sslctx_setup(VALUE self)
     val = rb_attr_get(self, id_i_npn_protocols);
     if (!NIL_P(val)) {
 	VALUE encoded = ssl_encode_npn_protocols(val);
+	rb_ivar_set(self, id_npn_protocols_encoded, encoded);
 	SSL_CTX_set_next_protos_advertised_cb(ctx, ssl_npn_advertise_cb, (void *)encoded);
 	OSSL_Debug("SSL NPN advertise callback added");
     }
@@ -2712,6 +2714,7 @@ Init_ossl_ssl(void)
 
     id_tmp_dh_callback = rb_intern("tmp_dh_callback");
     id_tmp_ecdh_callback = rb_intern("tmp_ecdh_callback");
+    id_npn_protocols_encoded = rb_intern("npn_protocols_encoded");
 
 #define DefIVarID(name) do \
     id_i_##name = rb_intern("@"#name); while (0)

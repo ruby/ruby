@@ -5,6 +5,7 @@ if defined?(OpenSSL::TestUtils)
 
 class OpenSSL::TestPKCS7 < OpenSSL::TestCase
   def setup
+    super
     @rsa1024 = OpenSSL::TestUtils::TEST_KEY_RSA1024
     @rsa2048 = OpenSSL::TestUtils::TEST_KEY_RSA2048
     ca = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA")

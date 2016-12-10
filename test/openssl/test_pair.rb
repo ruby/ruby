@@ -295,7 +295,7 @@ module OpenSSL::TestPairM
       # fill up a socket so we hit EAGAIN
       written = String.new
       n = 0
-      buf = 'a' * 11
+      buf = 'a' * 4099
       case ret = s1.write_nonblock(buf, exception: false)
       when :wait_readable then break
       when :wait_writable then break

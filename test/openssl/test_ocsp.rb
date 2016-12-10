@@ -5,6 +5,7 @@ if defined?(OpenSSL::TestUtils)
 
 class OpenSSL::TestOCSP < OpenSSL::TestCase
   def setup
+    super
     # @ca_cert
     #   |
     # @cert

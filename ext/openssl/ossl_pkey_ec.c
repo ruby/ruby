@@ -1635,7 +1635,7 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
 	 * points  | self    | arg2[0] | arg2[1] | ...
 	 */
 	long i, num;
-	VALUE tmp_p, tmp_b;
+	VALUE bns_tmp, tmp_p, tmp_b;
 	const EC_POINT **points;
 	const BIGNUM **bignums;
 
@@ -1645,9 +1645,13 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
 	    ossl_raise(rb_eArgError, "bns must be 1 longer than points; see the documentation");
 
 	num = RARRAY_LEN(arg1);
+	bns_tmp = rb_ary_tmp_new(num);
 	bignums = ALLOCV_N(const BIGNUM *, tmp_b, num);
-	for (i = 0; i < num; i++)
-	    bignums[i] = GetBNPtr(RARRAY_AREF(arg1, i));
+	for (i = 0; i < num; i++) {
+	    VALUE item = RARRAY_AREF(arg1, i);
+	    bignums[i] = GetBNPtr(item);
+	    rb_ary_push(bns_tmp, item);
+	}
 
 	points = ALLOCV_N(const EC_POINT *, tmp_p, num);
 	points[0] = point_self; /* self */

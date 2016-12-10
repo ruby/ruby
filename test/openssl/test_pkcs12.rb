@@ -8,6 +8,7 @@ module OpenSSL
     include OpenSSL::TestUtils
 
     def setup
+      super
       ca = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA")
       ca_exts = [
         ["basicConstraints","CA:TRUE",true],

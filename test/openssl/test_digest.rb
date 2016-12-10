@@ -5,6 +5,7 @@ if defined?(OpenSSL::TestUtils)
 
 class OpenSSL::TestDigest < OpenSSL::TestCase
   def setup
+    super
     @d1 = OpenSSL::Digest.new("MD5")
     @d2 = OpenSSL::Digest::MD5.new
   end

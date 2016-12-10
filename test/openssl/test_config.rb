@@ -3,6 +3,7 @@ require_relative 'utils'
 
 class OpenSSL::TestConfig < OpenSSL::TestCase
   def setup
+    super
     file = Tempfile.open("openssl.cnf")
     file << <<__EOD__
 HOME = .

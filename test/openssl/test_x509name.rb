@@ -6,6 +6,7 @@ if defined?(OpenSSL::TestUtils)
 
 class OpenSSL::TestX509Name < OpenSSL::TestCase
   def setup
+    super
     @obj_type_tmpl = Hash.new(OpenSSL::ASN1::PRINTABLESTRING)
     @obj_type_tmpl.update(OpenSSL::X509::Name::OBJECT_TYPE_TEMPLATE)
   end

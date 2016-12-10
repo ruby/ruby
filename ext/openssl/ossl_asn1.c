@@ -47,9 +47,15 @@ asn1time_to_time(const ASN1_TIME *time)
 	}
 	break;
     case V_ASN1_GENERALIZEDTIME:
-	if (sscanf((const char *)time->data, "%4d%2d%2d%2d%2d%2dZ", &tm.tm_year, &tm.tm_mon,
-    		&tm.tm_mday, &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
-	    ossl_raise(rb_eTypeError, "bad GENERALIZEDTIME format" );
+	count = sscanf((const char *)time->data, "%4d%2d%2d%2d%2d%2dZ",
+		&tm.tm_year, &tm.tm_mon, &tm.tm_mday, &tm.tm_hour, &tm.tm_min,
+		&tm.tm_sec);
+	if (count == 5) {
+		tm.tm_sec = 0;
+	}
+	else if (count != 6) {
+		ossl_raise(rb_eTypeError, "bad GENERALIZEDTIME format: \"%s\"",
+			time->data);
 	}
 	break;
     default:

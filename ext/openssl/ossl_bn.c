@@ -120,30 +120,34 @@ integer_to_bnptr(VALUE obj, BIGNUM *orig)
     return bn;
 }
 
-static BIGNUM *
-try_convert_to_bnptr(VALUE obj)
+static VALUE
+try_convert_to_bn(VALUE obj)
 {
-    BIGNUM *bn = NULL;
-    VALUE newobj;
+    BIGNUM *bn;
+    VALUE newobj = Qnil;
 
-    if (rb_obj_is_kind_of(obj, cBN)) {
-	GetBN(obj, bn);
-    }
-    else if (RB_INTEGER_TYPE_P(obj)) {
+    if (rb_obj_is_kind_of(obj, cBN))
+	return obj;
+    if (RB_INTEGER_TYPE_P(obj)) {
 	newobj = NewBN(cBN); /* Handle potencial mem leaks */
 	bn = integer_to_bnptr(obj, NULL);
 	SetBN(newobj, bn);
     }
 
-    return bn;
+    return newobj;
 }
 
 BIGNUM *
-GetBNPtr(VALUE obj)
+ossl_bn_value_ptr(volatile VALUE *ptr)
 {
-    BIGNUM *bn = try_convert_to_bnptr(obj);
-    if (!bn)
+    VALUE tmp;
+    BIGNUM *bn;
+
+    tmp = try_convert_to_bn(*ptr);
+    if (NIL_P(tmp))
 	ossl_raise(rb_eTypeError, "Cannot convert into OpenSSL::BN");
+    GetBN(tmp, bn);
+    *ptr = tmp;
 
     return bn;
 }
@@ -893,10 +897,12 @@ ossl_bn_eq(VALUE self, VALUE other)
     BIGNUM *bn1, *bn2;
 
     GetBN(self, bn1);
-    /* BNPtr may raise, so we can't use here */
-    bn2 = try_convert_to_bnptr(other);
+    other = try_convert_to_bn(other);
+    if (NIL_P(other))
+	return Qfalse;
+    GetBN(other, bn2);
 
-    if (bn2 && !BN_cmp(bn1, bn2)) {
+    if (!BN_cmp(bn1, bn2)) {
 	return Qtrue;
     }
     return Qfalse;

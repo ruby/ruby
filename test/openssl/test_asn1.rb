@@ -275,6 +275,14 @@ rEzBQ0F9dUyqQ9gyRg8KHhDfv9HzT1d/rnUZMkoombwYBRIUChGCYV0GnJcan2Zm
     assert_equal 2 ** 31, OpenSSL::ASN1.decode(encoded).value.to_i
   end
 
+  def test_decode_generalisedtime
+    expected = Time.at 1481225640
+    assert_equal expected, OpenSSL::ASN1.decode("\x18\x0D201612081934Z").value
+
+    expected += 29
+    assert_equal expected, OpenSSL::ASN1.decode("\x18\x0F20161208193429Z").value
+  end
+
   def test_decode_enumerated
     encoded = OpenSSL::ASN1.Enumerated(0).to_der
     assert_equal "\x0a\x01\x00".b, encoded
