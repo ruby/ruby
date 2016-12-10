@@ -96,17 +96,17 @@ class TestMathn < Test::Unit::TestCase
   def test_round
     assert_separately(%w[-rmathn], <<-EOS, ignore_stderr: true)
       assert_equal( 3, ( 13/5).round)
-      assert_equal( 2, (  5/2).round)
+      assert_equal( 3, (  5/2).round)
       assert_equal( 2, ( 12/5).round)
       assert_equal(-2, (-12/5).round)
-      assert_equal(-2, ( -5/2).round)
+      assert_equal(-3, ( -5/2).round)
       assert_equal(-3, (-13/5).round)
 
       assert_equal( 3, ( 13/5).round(0))
-      assert_equal( 2, (  5/2).round(0))
+      assert_equal( 3, (  5/2).round(0))
       assert_equal( 2, ( 12/5).round(0))
       assert_equal(-2, (-12/5).round(0))
-      assert_equal(-2, ( -5/2).round(0))
+      assert_equal(-3, ( -5/2).round(0))
       assert_equal(-3, (-13/5).round(0))
 
       assert_equal(( 13/5), ( 13/5).round(2))

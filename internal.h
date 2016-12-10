@@ -1144,7 +1144,7 @@ void Init_newline(void);
 #define INT_NEGATIVE_P(x) (FIXNUM_P(x) ? FIXNUM_NEGATIVE_P(x) : BIGNUM_NEGATIVE_P(x))
 
 #ifndef ROUND_DEFAULT
-# define ROUND_DEFAULT RUBY_NUM_ROUND_HALF_EVEN
+# define ROUND_DEFAULT RUBY_NUM_ROUND_HALF_UP
 #endif
 enum ruby_num_rounding_mode {
     RUBY_NUM_ROUND_HALF_UP,
