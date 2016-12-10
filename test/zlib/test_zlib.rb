@@ -1128,25 +1128,25 @@ if defined? Zlib
     end
 
     def test_gzip
-      actual = Zlib.gzip("foo")
+      actual = Zlib.gzip("foo".freeze)
       actual[4, 4] = "\x00\x00\x00\x00" # replace mtime
       actual[9] = "\xff" # replace OS
       expected = %w[1f8b08000000000000ff4bcbcf07002165738c03000000].pack("H*")
       assert_equal expected, actual
 
-      actual = Zlib.gzip("foo", 0)
+      actual = Zlib.gzip("foo".freeze, 0)
       actual[4, 4] = "\x00\x00\x00\x00" # replace mtime
       actual[9] = "\xff" # replace OS
       expected = %w[1f8b08000000000000ff010300fcff666f6f2165738c03000000].pack("H*")
       assert_equal expected, actual
 
-      actual = Zlib.gzip("foo", 9)
+      actual = Zlib.gzip("foo".freeze, 9)
       actual[4, 4] = "\x00\x00\x00\x00" # replace mtime
       actual[9] = "\xff" # replace OS
       expected = %w[1f8b08000000000002ff4bcbcf07002165738c03000000].pack("H*")
       assert_equal expected, actual
 
-      actual = Zlib.gzip("foo", 9, Zlib::FILTERED)
+      actual = Zlib.gzip("foo".freeze, 9, Zlib::FILTERED)
       actual[4, 4] = "\x00\x00\x00\x00" # replace mtime
       actual[9] = "\xff" # replace OS
       expected = %w[1f8b08000000000002ff4bcbcf07002165738c03000000].pack("H*")
@@ -1155,7 +1155,7 @@ if defined? Zlib
 
     def test_gunzip
       src = %w[1f8b08000000000000034bcbcf07002165738c03000000].pack("H*")
-      assert_equal 'foo', Zlib.gunzip(src)
+      assert_equal 'foo', Zlib.gunzip(src.freeze)
 
       src = %w[1f8b08000000000000034bcbcf07002165738c03000001].pack("H*")
       assert_raise(Zlib::GzipFile::LengthError){ Zlib.gunzip(src) }

@@ -879,9 +879,8 @@ zstream_discard_input(struct zstream *z, long len)
 	z->input = Qnil;
     }
     else {
-	memmove(RSTRING_PTR(z->input), RSTRING_PTR(z->input) + len,
-		RSTRING_LEN(z->input) - len);
-	rb_str_resize(z->input, RSTRING_LEN(z->input) - len);
+	z->input = rb_str_substr(z->input, len,
+				 RSTRING_LEN(z->input) - len);
     }
 }
 
@@ -2406,9 +2405,7 @@ gzfile_read_raw_ensure(struct gzfile *gz, long size)
     VALUE str;
 
     if (gz->io == Qundef) { /* Zlib.gunzip */
-	if (NIL_P(gz->z.input))
-	    rb_bug("unexpected condition: both gz->io and gz->z.input are nil");
-	if (RSTRING_LEN(gz->z.input) < size)
+	if (NIL_P(gz->z.input) || RSTRING_LEN(gz->z.input) < size)
 	    rb_raise(cGzError, "unexpected end of string");
     }
     while (NIL_P(gz->z.input) || RSTRING_LEN(gz->z.input) < size) {
