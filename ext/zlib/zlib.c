@@ -4289,7 +4289,10 @@ zlib_gzip_end(struct gzfile *gz)
  *
  *   def gunzip(string)
  *     sio = StringIO.new(string)
- *     Zlib::GzipReadr.new(sio){|f| f.read}
+ *     gz = Zlib::GzipReader.new(sio, encoding: Encoding::ASCII_8BIT)
+ *     gz.read
+ *   ensure
+ *     gz&.close
  *   end
  *
  * See also Zlib.gzip
@@ -4344,6 +4347,7 @@ zlib_gunzip_end(struct gzfile *gz)
  *
  *   def gzip(string, level=nil, strategy=nil)
  *     sio = StringIO.new
+ *     sio.binmode
  *     gz = Zlib::GzipWriter.new(sio, level, strategy)
  *     gz.write(string)
  *     gz.close
