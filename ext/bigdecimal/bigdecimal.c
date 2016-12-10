@@ -4003,26 +4003,6 @@ VpAlloc(size_t mx, const char *szVal)
         return vp;
     }
 
-    /* Check on Inf & NaN */
-    if (StrCmp(szVal, SZ_PINF) == 0 || StrCmp(szVal, SZ_INF) == 0 ) {
-        vp = VpAllocReal(1);
-        vp->MaxPrec = 1;    /* set max precision */
-        VpSetPosInf(vp);
-        return vp;
-    }
-    if (StrCmp(szVal, SZ_NINF) == 0) {
-        vp = VpAllocReal(1);
-        vp->MaxPrec = 1;    /* set max precision */
-        VpSetNegInf(vp);
-        return vp;
-    }
-    if (StrCmp(szVal, SZ_NaN) == 0) {
-        vp = VpAllocReal(1);
-        vp->MaxPrec = 1;    /* set max precision */
-        VpSetNaN(vp);
-        return vp;
-    }
-
     /* Skip all '_' after digit: 2006-6-30 */
     ni = 0;
     buf = rb_str_tmp_new(strlen(szVal) + 1);
@@ -4047,6 +4027,26 @@ VpAlloc(size_t mx, const char *szVal)
         ++ipn;
     }
     szVal = psz;
+
+    /* Check on Inf & NaN */
+    if (StrCmp(szVal, SZ_PINF) == 0 || StrCmp(szVal, SZ_INF) == 0 ) {
+        vp = VpAllocReal(1);
+        vp->MaxPrec = 1;    /* set max precision */
+        VpSetPosInf(vp);
+        return vp;
+    }
+    if (StrCmp(szVal, SZ_NINF) == 0) {
+        vp = VpAllocReal(1);
+        vp->MaxPrec = 1;    /* set max precision */
+        VpSetNegInf(vp);
+        return vp;
+    }
+    if (StrCmp(szVal, SZ_NaN) == 0) {
+        vp = VpAllocReal(1);
+        vp->MaxPrec = 1;    /* set max precision */
+        VpSetNaN(vp);
+        return vp;
+    }
 
     /* check on number szVal[] */
     ipn = i = 0;

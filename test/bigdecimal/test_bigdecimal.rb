@@ -53,6 +53,15 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(1, BigDecimal("1"))
     assert_equal(1, BigDecimal("1", 1))
     assert_raise(ArgumentError) { BigDecimal("1", -1) }
+
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
+      BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+      assert_equal(1234, BigDecimal(" \t\n\r \r1234 \t\n\r \r"))
+      assert_positive_infinite(BigDecimal(" \t\n\r \rInfinity \t\n\r \r"))
+      assert_negative_infinite(BigDecimal(" \t\n\r \r-Infinity \t\n\r \r"))
+      assert_nan(BigDecimal(" \t\n\r \rNaN \t\n\r \r"))
+    end
   end
 
   def test_global_new_with_invalid_string
