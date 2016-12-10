@@ -287,7 +287,7 @@ with all sufficient information, see the ChangeLog file or Redmine
   FIXNUM_P(obj) and RB_TYPE_P(obj, T_BIGNUM).
   RUBY_INTEGER_UNIFICATION can be used to detect this feature at C-level.
   0.class == Integer can be used to detect this feature at Ruby-level.
-  The C-level constants, rb_cFixnum and rb_cBignum, is removed.
+  The C-level constants, rb_cFixnum and rb_cBignum, are removed.
   They can cause compilation failure.
 
 * String/Symbol#upcase/downcase/swapcase/capitalize(!) now work for all of
