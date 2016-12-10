@@ -138,6 +138,8 @@ with all sufficient information, see the ChangeLog file or Redmine
   * meta character \X matches Unicode 9.0 characters with some workarounds
     for UTR #51 Unicode Emoji, Version 4.0 emoji zwj sequences.
 
+  * Update Onigmo 6.0.0.
+
 * Regexp/String: Updated Unicode version from 8.0.0 to 9.0.0 [Feature #12513]
 
 * RubyVM::Env

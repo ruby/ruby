@@ -3,7 +3,7 @@
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2007  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2014  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2011-2016  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,13 +31,7 @@
 #include "regint.h"
 #include <stdio.h> /* for vsnprintf() */
 
-#ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
-#define va_init_list(a,b) va_start(a,b)
-#else
-#include <varargs.h>
-#define va_init_list(a,b) va_start(a)
-#endif
 
 extern UChar*
 onig_error_code_to_format(OnigPosition code)
@@ -65,6 +59,8 @@ onig_error_code_to_format(OnigPosition code)
     p = "unexpected bytecode (bug)"; break;
   case ONIGERR_MATCH_STACK_LIMIT_OVER:
     p = "match-stack limit over"; break;
+  case ONIGERR_PARSE_DEPTH_LIMIT_OVER:
+    p = "parse depth limit over"; break;
   case ONIGERR_DEFAULT_ENCODING_IS_NOT_SET:
     p = "default multibyte-encoding is not set"; break;
   case ONIGERR_SPECIFIED_ENCODING_CANT_CONVERT_TO_WIDE_CHAR:
@@ -179,8 +175,6 @@ onig_error_code_to_format(OnigPosition code)
     p = "not supported encoding combination"; break;
   case ONIGERR_INVALID_COMBINATION_OF_OPTIONS:
     p = "invalid combination of options"; break;
-  case ONIGERR_OVER_THREAD_PASS_LIMIT_COUNT:
-    p = "over thread pass limit count"; break;
 
   default:
     p = "undefined error code"; break;
@@ -191,12 +185,12 @@ onig_error_code_to_format(OnigPosition code)
 
 static void sprint_byte(char* s, unsigned int v)
 {
-  sprintf(s, "%02x", (v & 0377));
+  xsnprintf(s, 3, "%02x", (v & 0377));
 }
 
 static void sprint_byte_with_x(char* s, unsigned int v)
 {
-  sprintf(s, "\\x%02x", (v & 0377));
+  xsnprintf(s, 5, "\\x%02x", (v & 0377));
 }
 
 static int to_ascii(OnigEncoding enc, UChar *s, UChar *end,
@@ -252,14 +246,7 @@ static int to_ascii(OnigEncoding enc, UChar *s, UChar *end,
 #define MAX_ERROR_PAR_LEN   30
 
 extern int
-#ifdef HAVE_STDARG_PROTOTYPES
 onig_error_code_to_str(UChar* s, OnigPosition code, ...)
-#else
-onig_error_code_to_str(s, code, va_alist)
-  UChar* s;
-  OnigPosition code;
-  va_dcl
-#endif
 {
   UChar *p, *q;
   OnigErrorInfo* einfo;
@@ -268,7 +255,7 @@ onig_error_code_to_str(s, code, va_alist)
   UChar parbuf[MAX_ERROR_PAR_LEN];
   va_list vargs;
 
-  va_init_list(vargs, code);
+  va_start(vargs, code);
 
   switch (code) {
   case ONIGERR_UNDEFINED_NAME_REFERENCE:
@@ -337,26 +324,17 @@ onig_vsnprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc,
   need = (pat_end - pat) * 4 + 4;
 
   if (n + need < (size_t )bufsize) {
-    strcat((char* )buf, ": /");
+    xstrcat((char* )buf, ": /", bufsize);
     s = buf + onigenc_str_bytelen_null(ONIG_ENCODING_ASCII, buf);
 
     p = pat;
     while (p < pat_end) {
-      if (*p == '\\') {
-	*s++ = *p++;
-	len = enclen(enc, p, pat_end);
-	while (len-- > 0) *s++ = *p++;
-      }
-      else if (*p == '/') {
-	*s++ = (unsigned char )'\\';
-	*s++ = *p++;
-      }
-      else if (ONIGENC_IS_MBC_HEAD(enc, p, pat_end)) {
+      if (ONIGENC_IS_MBC_HEAD(enc, p, pat_end)) {
         len = enclen(enc, p, pat_end);
         if (ONIGENC_MBC_MINLEN(enc) == 1) {
           while (len-- > 0) *s++ = *p++;
         }
-        else { /* for UTF16 */
+        else { /* for UTF16/32 */
           int blen;
 
           while (len-- > 0) {
@@ -366,6 +344,15 @@ onig_vsnprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc,
             while (blen-- > 0) *s++ = *bp++;
           }
         }
+      }
+      else if (*p == '\\') {
+	*s++ = *p++;
+	len = enclen(enc, p, pat_end);
+	while (len-- > 0) *s++ = *p++;
+      }
+      else if (*p == '/') {
+	*s++ = (unsigned char )'\\';
+	*s++ = *p++;
       }
       else if (!ONIGENC_IS_CODE_PRINT(enc, *p) &&
 	       !ONIGENC_IS_CODE_SPACE(enc, *p)) {
@@ -384,25 +371,15 @@ onig_vsnprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc,
   }
 }
 
+#if 0 /* unused */
 void
-#ifdef HAVE_STDARG_PROTOTYPES
 onig_snprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc,
                            UChar* pat, UChar* pat_end, const UChar *fmt, ...)
-#else
-onig_snprintf_with_pattern(buf, bufsize, enc, pat, pat_end, fmt, va_alist)
-    UChar buf[];
-    int bufsize;
-    OnigEncoding enc;
-    UChar* pat;
-    UChar* pat_end;
-    const UChar *fmt;
-    va_dcl
-#endif
 {
   va_list args;
-  va_init_list(args, fmt);
+  va_start(args, fmt);
   onig_vsnprintf_with_pattern(buf, bufsize, enc,
 	  pat, pat_end, fmt, args);
   va_end(args);
 }
-
+#endif

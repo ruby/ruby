@@ -27,7 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#include "regint.h"
+#include "regenc.h"
 
 
 #define emacsmule_islead(c)    ((UChar )(c) < 0x9e)
@@ -334,9 +334,9 @@ OnigEncodingDefine(emacs_mule, Emacs_Mule) = {
   onigenc_not_support_get_ctype_code_range,
   left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match,
+  onigenc_ascii_only_case_map,
   0,
   ONIGENC_FLAG_NONE,
-  onigenc_ascii_only_case_map,
 };
 
 ENC_REPLICATE("stateless-ISO-2022-JP", "Emacs-Mule")

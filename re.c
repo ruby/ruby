@@ -847,7 +847,7 @@ onig_new_with_source(regex_t** reg, const UChar* pattern, const UChar* pattern_e
     r = onig_reg_init(*reg, option, ONIGENC_CASE_FOLD_DEFAULT, enc, syntax);
     if (r) goto err;
 
-    r = onig_compile(*reg, pattern, pattern_end, einfo, sourcefile, sourceline);
+    r = onig_compile_ruby(*reg, pattern, pattern_end, einfo, sourcefile, sourceline);
     if (r) {
       err:
 	onig_free(*reg);
@@ -3908,7 +3908,6 @@ Init_Regexp(void)
 {
     rb_eRegexpError = rb_define_class("RegexpError", rb_eStandardError);
 
-    onigenc_set_default_caseconv_table((UChar*)casetable);
     onigenc_set_default_encoding(ONIG_ENCODING_ASCII);
     onig_set_warn_func(re_warn);
     onig_set_verb_warn_func(re_warn);

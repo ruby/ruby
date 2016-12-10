@@ -20,7 +20,7 @@ end
 
 $unicode_version = File.basename(ARGV[0])[/\A[.\d]+\z/]
 
-POSIX_NAMES = %w[NEWLINE Alpha Blank Cntrl Digit Graph Lower Print Punct Space Upper XDigit Word Alnum ASCII]
+POSIX_NAMES = %w[NEWLINE Alpha Blank Cntrl Digit Graph Lower Print XPosixPunct Space Upper XDigit Word Alnum ASCII Punct]
 
 def pair_codepoints(codepoints)
 
@@ -115,6 +115,7 @@ def define_posix_props(data)
   data['Upper'] = data['Uppercase']
   data['Lower'] = data['Lowercase']
   data['Punct'] = data['Punctuation']
+  data['XPosixPunct'] = data['Punctuation'] + [0x24, 0x2b, 0x3c, 0x3d, 0x3e, 0x5e, 0x60, 0x7c, 0x7e]
   data['Digit'] = data['Decimal_Number']
   data['XDigit'] = (0x0030..0x0039).to_a + (0x0041..0x0046).to_a +
                    (0x0061..0x0066).to_a
@@ -260,7 +261,11 @@ $const_cache = {}
 # given property, group of paired codepoints, and a human-friendly name for
 # the group
 def make_const(prop, data, name)
-  puts "\n/* '#{prop}': #{name} */"
+  if name.empty?
+    puts "\n/* '#{prop}' */"
+  else
+    puts "\n/* '#{prop}': #{name} */"
+  end
   if origprop = $const_cache.key(data)
     puts "#define CR_#{prop} CR_#{origprop}"
   else
@@ -387,7 +392,13 @@ props.concat parse_scripts(data, categories)
 aliases = parse_aliases(data)
 define_posix_props(data)
 POSIX_NAMES.each do |name|
-  make_const(name, data[name], "[[:#{name}:]]")
+  if name == 'XPosixPunct'
+    make_const(name, data[name], "[[:Punct:]]")
+  elsif name == 'Punct'
+    make_const(name, data[name], "")
+  else
+    make_const(name, data[name], "[[:#{name}:]]")
+  end
 end
 output.ifdef :USE_UNICODE_PROPERTIES
 props.each do |name|

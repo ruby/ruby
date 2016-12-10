@@ -249,8 +249,8 @@ OnigEncodingDefine(utf_16be, UTF_16BE) = {
   onigenc_utf16_32_get_ctype_code_range,
   utf16be_left_adjust_char_head,
   onigenc_always_false_is_allowed_reverse_match,
+  onigenc_unicode_case_map,
   0,
   ONIGENC_FLAG_UNICODE,
-  onigenc_unicode_case_map,
 };
 ENC_ALIAS("UCS-2BE", "UTF-16BE")
