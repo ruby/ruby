@@ -2133,8 +2133,8 @@ rb_hash_search_value(VALUE key, VALUE value, VALUE arg)
  *  in <i>hsh</i>.
  *
  *     h = { "a" => 100, "b" => 200 }
- *     h.has_value?(100)   #=> true
- *     h.has_value?(999)   #=> false
+ *     h.value?(100)   #=> true
+ *     h.value?(999)   #=> false
  */
 
 static VALUE
