@@ -3206,6 +3206,7 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
     return result;
 }
 
+VALUE rb_reg_match_p(VALUE re, VALUE str, VALUE initpos);
 /*
  *  call-seq:
  *     rxp.match?(str)       -> true or false
@@ -3225,7 +3226,13 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 static VALUE
 rb_reg_match_m_p(int argc, VALUE *argv, VALUE re)
 {
-    VALUE str, initpos;
+    VALUE initpos = (rb_check_arity(argc, 1, 2) > 1) ? argv[1] : Qnil;
+    return rb_reg_match_p(re, argv[0], initpos);
+}
+
+VALUE
+rb_reg_match_p(VALUE re, VALUE str, VALUE initpos)
+{
     long pos = 0;
     regex_t *reg;
     onig_errmsg_buffer err = "";
@@ -3233,10 +3240,9 @@ rb_reg_match_m_p(int argc, VALUE *argv, VALUE re)
     const UChar *start, *end;
     int tmpreg;
 
-    rb_scan_args(argc, argv, "11", &str, &initpos);
     if (NIL_P(str)) return Qfalse;
     str = SYMBOL_P(str) ? rb_sym2str(str) : rb_str_to_str(str);
-    if (argc == 2) {
+    if (!NIL_P(initpos)) {
 	pos = NUM2LONG(initpos);
 	if (pos < 0) {
 	    pos += NUM2LONG(rb_str_length(str));

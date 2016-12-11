@@ -47,6 +47,7 @@ firstline, predefined = __LINE__+1, %[\
   _                                                     UScore
   "/*NULL*/"                                            NULL
   empty?
+  match?
   eql?
   respond_to?                                           Respond_to
   respond_to_missing?                                   Respond_to_missing
