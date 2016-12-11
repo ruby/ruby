@@ -535,9 +535,6 @@ class TestParse < Test::Unit::TestCase
     assert_nothing_raised(SyntaxError, bug) do
       assert_equal(sym, eval(':"foo\u{0}bar"'))
     end
-    assert_raise(SyntaxError) do
-      eval ':"foo\u{}bar"'
-    end
   end
 
   def test_parse_string

@@ -5809,14 +5809,15 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
 	int c, last = nextc();
 	do c = nextc(); while (ISSPACE(c));
 	pushback(c);
-	do {
+	while (!string_literal || c != close_brace) {
 	    if (regexp_literal) tokadd(last);
 	    if (!parser_tokadd_codepoint(parser, encp, regexp_literal, TRUE)) {
 		return 0;
 	    }
 	    while (ISSPACE(c = nextc())) last = c;
 	    pushback(c);
-	} while (string_literal && c != close_brace);
+	    if (!string_literal) break;
+	}
 
 	if (c != close_brace) {
 	    yyerror("unterminated Unicode escape");
