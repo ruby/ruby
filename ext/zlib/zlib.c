@@ -4278,21 +4278,25 @@ zlib_gzip_end(struct gzfile *gz)
 
 /*
  * call-seq:
- *   Zlib.gunzip(src) -> String
+ *   Zlib.gzip(src, level=nil, strategy=nil) -> String
  *
- * Decode the given gzipped +string+.
+ * Gzip the given +string+. Valid values of level are
+ * Zlib::NO_COMPRESSION, Zlib::BEST_SPEED, Zlib::BEST_COMPRESSION,
+ * Zlib::DEFAULT_COMPRESSION (default), or an integer from 0 to 9.
  *
  * This method is almost equivalent to the following code:
  *
- *   def gunzip(string)
- *     sio = StringIO.new(string)
- *     gz = Zlib::GzipReader.new(sio, encoding: Encoding::ASCII_8BIT)
- *     gz.read
- *   ensure
- *     gz&.close
+ *   def gzip(string, level=nil, strategy=nil)
+ *     sio = StringIO.new
+ *     sio.binmode
+ *     gz = Zlib::GzipWriter.new(sio, level, strategy)
+ *     gz.write(string)
+ *     gz.close
+ *     sio.string
  *   end
  *
- * See also Zlib.gzip
+ * See also Zlib.gunzip
+ *
  */
 static VALUE
 zlib_s_gzip(int argc, VALUE *argv, VALUE klass)
@@ -4334,25 +4338,21 @@ zlib_gunzip_end(struct gzfile *gz)
 
 /*
  * call-seq:
- *   Zlib.gunzip(src, level=nil, strategy=nil) -> String
+ *   Zlib.gunzip(src) -> String
  *
- * Gzip the given +string+. Valid values of level are
- * Zlib::NO_COMPRESSION, Zlib::BEST_SPEED, Zlib::BEST_COMPRESSION,
- * Zlib::DEFAULT_COMPRESSION (default), or an integer from 0 to 9.
+ * Decode the given gzipped +string+.
  *
  * This method is almost equivalent to the following code:
  *
- *   def gzip(string, level=nil, strategy=nil)
- *     sio = StringIO.new
- *     sio.binmode
- *     gz = Zlib::GzipWriter.new(sio, level, strategy)
- *     gz.write(string)
- *     gz.close
- *     sio.string
+ *   def gunzip(string)
+ *     sio = StringIO.new(string)
+ *     gz = Zlib::GzipReader.new(sio, encoding: Encoding::ASCII_8BIT)
+ *     gz.read
+ *   ensure
+ *     gz&.close
  *   end
  *
- * See also Zlib.gunzip
- *
+ * See also Zlib.gzip
  */
 static VALUE
 zlib_gunzip(VALUE klass, VALUE src)
