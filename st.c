@@ -192,7 +192,7 @@ struct st_features {
 /* Features of all possible size tables.  */
 #if SIZEOF_ST_INDEX_T == 8
 #define MAX_POWER2 62
-struct st_features features[] = {
+static const struct st_features features[] = {
     {0, 1, 0, 0x0},
     {1, 2, 0, 0x1},
     {2, 3, 0, 0x1},
@@ -261,7 +261,7 @@ struct st_features features[] = {
 #else
 #define MAX_POWER2 30
 
-struct st_features features[] = {
+static const struct st_features features[] = {
     {0, 1, 0, 0x1},
     {1, 2, 0, 0x1},
     {2, 3, 0, 0x2},
