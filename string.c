@@ -3601,6 +3601,32 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
     return result;
 }
 
+/*
+ *  call-seq:
+ *     str.match?(pattern)        -> true or false
+ *     str.match?(pattern, pos)   -> true or false
+ *
+ *  Converts _pattern_ to a +Regexp+ (if it isn't already one), then
+ *  returns a +true+ or +false+ indicates whether the regexp is
+ *  matched _str_ or not without updating <code>$~</code> and other
+ *  related variables.  If the second parameter is present, it
+ *  specifies the position in the string to begin the search.
+ *
+ *     "Ruby".match?(/R.../)    #=> true
+ *     "Ruby".match?(/R.../, 1) #=> false
+ *     "Ruby".match?(/P.../)    #=> false
+ *     $&                       #=> nil
+ */
+
+static VALUE
+rb_str_match_m_p(int argc, VALUE *argv, VALUE str)
+{
+    VALUE re;
+    rb_check_arity(argc, 1, 2);
+    re = get_pat(argv[0]);
+    return rb_reg_match_p(re, str, argc > 1 ? NUM2LONG(argv[1]) : 0);
+}
+
 enum neighbor_char {
     NEIGHBOR_NOT_CHAR,
     NEIGHBOR_FOUND,
@@ -9740,6 +9766,19 @@ sym_match_m(int argc, VALUE *argv, VALUE sym)
 
 /*
  * call-seq:
+ *   sym.match?(obj)   -> true or false
+ *
+ * Returns <code>sym.to_s.match?(obj)</code>.
+ */
+
+static VALUE
+sym_match_m_p(int argc, VALUE *argv, VALUE sym)
+{
+    return rb_str_match_m_p(argc, argv, sym);
+}
+
+/*
+ * call-seq:
  *   sym[idx]      -> char
  *   sym[b, n]     -> string
  *   sym.slice(idx)      -> char
@@ -9924,6 +9963,7 @@ Init_String(void)
     rb_define_method(rb_cString, "empty?", rb_str_empty, 0);
     rb_define_method(rb_cString, "=~", rb_str_match, 1);
     rb_define_method(rb_cString, "match", rb_str_match_m, -1);
+    rb_define_method(rb_cString, "match?", rb_str_match_m_p, -1);
     rb_define_method(rb_cString, "succ", rb_str_succ, 0);
     rb_define_method(rb_cString, "succ!", rb_str_succ_bang, 0);
     rb_define_method(rb_cString, "next", rb_str_succ, 0);
@@ -10070,6 +10110,7 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "size", sym_length, 0);
     rb_define_method(rb_cSymbol, "empty?", sym_empty, 0);
     rb_define_method(rb_cSymbol, "match", sym_match_m, -1);
+    rb_define_method(rb_cSymbol, "match?", sym_match_m_p, -1);
 
     rb_define_method(rb_cSymbol, "upcase", sym_upcase, -1);
     rb_define_method(rb_cSymbol, "downcase", sym_downcase, -1);

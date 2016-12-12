@@ -2111,6 +2111,50 @@ CODE
     assert_raise(ArgumentError) { "foo".match }
   end
 
+  def test_match_p_regexp
+    /backref/ =~ 'backref'
+    # must match here, but not in a separate method, e.g., assert_send,
+    # to check if $~ is affected or not.
+    assert_equal(true, "".match?(//))
+    assert_equal(true, :abc.match?(/.../))
+    assert_equal(true, 'abc'.match?(/b/))
+    assert_equal(true, 'abc'.match?(/b/, 1))
+    assert_equal(true, 'abc'.match?(/../, 1))
+    assert_equal(true, 'abc'.match?(/../, -2))
+    assert_equal(false, 'abc'.match?(/../, -4))
+    assert_equal(false, 'abc'.match?(/../, 4))
+    assert_equal(true, "\u3042xx".match?(/../, 1))
+    assert_equal(false, "\u3042x".match?(/../, 1))
+    assert_equal(true, ''.match?(/\z/))
+    assert_equal(true, 'abc'.match?(/\z/))
+    assert_equal(true, 'Ruby'.match?(/R.../))
+    assert_equal(false, 'Ruby'.match?(/R.../, 1))
+    assert_equal(false, 'Ruby'.match?(/P.../))
+    assert_equal('backref', $&)
+  end
+
+  def test_match_p_string
+    /backref/ =~ 'backref'
+    # must match here, but not in a separate method, e.g., assert_send,
+    # to check if $~ is affected or not.
+    assert_equal(true, "".match?(''))
+    assert_equal(true, :abc.match?('...'))
+    assert_equal(true, 'abc'.match?('b'))
+    assert_equal(true, 'abc'.match?('b', 1))
+    assert_equal(true, 'abc'.match?('..', 1))
+    assert_equal(true, 'abc'.match?('..', -2))
+    assert_equal(false, 'abc'.match?('..', -4))
+    assert_equal(false, 'abc'.match?('..', 4))
+    assert_equal(true, "\u3042xx".match?('..', 1))
+    assert_equal(false, "\u3042x".match?('..', 1))
+    assert_equal(true, ''.match?('\z'))
+    assert_equal(true, 'abc'.match?('\z'))
+    assert_equal(true, 'Ruby'.match?('R...'))
+    assert_equal(false, 'Ruby'.match?('R...', 1))
+    assert_equal(false, 'Ruby'.match?('P...'))
+    assert_equal('backref', $&)
+  end
+
   def test_clear
     s = "foo" * 100
     s.clear

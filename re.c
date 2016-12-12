@@ -3225,19 +3225,22 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 static VALUE
 rb_reg_match_m_p(int argc, VALUE *argv, VALUE re)
 {
-    VALUE str, initpos;
-    long pos = 0;
+    long pos = rb_check_arity(argc, 1, 2) > 1 ? NUM2LONG(argv[1]) : 0;
+    return rb_reg_match_p(re, argv[0], pos);
+}
+
+VALUE
+rb_reg_match_p(VALUE re, VALUE str, long pos)
+{
     regex_t *reg;
     onig_errmsg_buffer err = "";
     OnigPosition result;
     const UChar *start, *end;
     int tmpreg;
 
-    rb_scan_args(argc, argv, "11", &str, &initpos);
     if (NIL_P(str)) return Qfalse;
-    str = SYMBOL_P(str) ? rb_sym2str(str) : rb_str_to_str(str);
-    if (argc == 2) {
-	pos = NUM2LONG(initpos);
+    str = SYMBOL_P(str) ? rb_sym2str(str) : StringValue(str);
+    if (pos) {
 	if (pos < 0) {
 	    pos += NUM2LONG(rb_str_length(str));
 	    if (pos < 0) return Qfalse;

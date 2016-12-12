@@ -1394,6 +1394,7 @@ VALUE rb_rational_cmp(VALUE self, VALUE other);
 VALUE rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline);
 VALUE rb_reg_check_preprocess(VALUE);
 long rb_reg_search0(VALUE, VALUE, long, int, int);
+VALUE rb_reg_match_p(VALUE re, VALUE str, long pos);
 void rb_backref_set_string(VALUE string, long pos, long len);
 int rb_match_count(VALUE match);
 int rb_match_nth_defined(int nth, VALUE match);
