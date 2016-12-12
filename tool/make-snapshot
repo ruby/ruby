@@ -45,7 +45,7 @@ PACKAGES = {
 }
 
 if system("7z", out: IO::NULL)
-  PACKAGES["gzip"] = %w".tar.gz 7z a -tgzip -mx"
+  PACKAGES["gzip"] = %w".tar.gz 7z a dummy -tgzip -mx -so"
   PACKAGES["zip"]  = %w".zip    7z a -tzip  -mx"
 end
 if gzip = ENV.delete("GZIP")
