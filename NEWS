@@ -156,6 +156,8 @@ with all sufficient information, see the ChangeLog file or Redmine
   * String#each_line, String#lines now takes an optional keyword argument,
     chomp flag.  [Feature #12553]
 
+  * String#match? [Feature #12898]
+
   * String#unpack1 [Feature #12752]
 
   * String#upcase, String#downcase, String#capitalize, String#swapcase and
@@ -176,6 +178,8 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Symbol#casecmp? [Feature #12786]
 
   * Symbol#match now returns MatchData.  [Bug #11991]
+
+  * Symbol#match? [Feature #12898]
 
   * Symbol#upcase, Symbol#downcase, Symbol#capitalize, and Symbol#swapcase now
     work for all of Unicode. See the documentation of String#downcase
