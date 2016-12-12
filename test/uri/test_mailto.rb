@@ -187,6 +187,12 @@ class TestMailTo < Test::Unit::TestCase
       u.select(:scheme, :host, :not_exist, :port)
     end
   end
+
+  def test_to_mailtext
+    u = URI.parse('mailto:ruby-list@ruby-lang.org?Subject=subscribe&cc=myaddr')
+    assert_equal "To: ruby-list@ruby-lang.org\nSubject: subscribe\nCc: myaddr\n\n\n",
+      u.to_mailtext
+  end
 end
 
 
