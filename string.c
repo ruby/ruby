@@ -3046,7 +3046,7 @@ str_eql(const VALUE str1, const VALUE str2)
  *  Returns whether +str+ == +obj+, similar to Object#==.
  *
  *  If +obj+ is not an instance of String but responds to +to_str+, then the
- *  two strings are compared using case equality Object#===.
+ *  two strings are compared using <code>obj.==</code>.
  *
  *  Otherwise, returns similarly to String#eql?, comparing length and content.
  */
