@@ -97,21 +97,13 @@ round_half_up(double x, double s)
 {
     double f, xs = x * s;
 
-#ifdef HAVE_ROUND
     f = round(xs);
     if (s == 1.0) return f;
-#endif
     if (x > 0) {
-#ifndef HAVE_ROUND
-	f = floor(xs);
-#endif
 	if ((double)((f + 0.5) / s) <= x) f += 1;
 	x = f;
     }
     else {
-#ifndef HAVE_ROUND
-	f = ceil(xs);
-#endif
 	if ((double)((f - 0.5) / s) >= x) f -= 1;
 	x = f;
     }
@@ -123,20 +115,12 @@ round_half_down(double x, double s)
 {
     double f, xs = x * s;
 
-#ifdef HAVE_ROUND
     f = round(xs);
-#endif
     if (x > 0) {
-#ifndef HAVE_ROUND
-	f = ceil(xs);
-#endif
 	if ((double)((f - 0.5) / s) >= x) f -= 1;
 	x = f;
     }
     else {
-#ifndef HAVE_ROUND
-	f = floor(xs);
-#endif
 	if ((double)((f + 0.5) / s) <= x) f += 1;
 	x = f;
     }
