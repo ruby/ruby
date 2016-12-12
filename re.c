@@ -3243,8 +3243,8 @@ rb_reg_match_m_p(int argc, VALUE *argv, VALUE re)
 	    if (pos < 0) return Qfalse;
 	}
 	if (pos > 0) {
-	    long len = 0;
-	    char *beg = rb_str_subpos(str, pos, &len);
+	    long len = 1;
+	    const char *beg = rb_str_subpos(str, pos, &len);
 	    if (!beg) return Qfalse;
 	    pos = beg - RSTRING_PTR(str);
 	}
