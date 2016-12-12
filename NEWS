@@ -29,20 +29,20 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Array
 
+  * Array#concat [Feature #12333]
+    Now takes multiple arguments.
+
   * Array#max and Array#min.  [Feature #12172]
     This may cause a tiny incompatibility: if you redefine
     Enumerable#max and call max to an Array, your redefinition will be
     now ignored.  You should also redefine Array#max.
 
+  * Array#pack [Feature #12754]
+    Now takes optional argument `buffer:' to reuse already allocated buffer.
+
   * Array#sum  [Feature #12217]
     This is different from Enumerable#sum in that Array#sum doesn't depend on
     the definition of each method.
-
-  * Array#concat [Feature #12333]
-    Now takes multiple arguments.
-
-  * Array#pack [Feature #12754]
-    Now takes optional argument `buffer:' to reuse already allocated buffer.
 
 * Comparable
 
@@ -54,10 +54,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Enumerable
 
-  * Enumerable#sum  [Feature #12217]
-  * Enumerable#uniq  [Feature #11090]
   * Enumerable#chunk called without a block now return an Enumerator
     [Feature #2172]
+  * Enumerable#sum  [Feature #12217]
+  * Enumerable#uniq  [Feature #11090]
 
 * Enumerator::Lazy
 
@@ -79,15 +79,15 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Hash
 
-  * Hash#transform_values and Hash#transform_values!  [Feature #12512]
   * Hash#compact and Hash#compact!  [Feature #11818]
+  * Hash#transform_values and Hash#transform_values!  [Feature #12512]
 
 * Integer
 
+  * Fixnum and Bignum are unified into Integer  [Feature #12005]
+
   * Integer#ceil, Integer#floor, and Integer#truncate now take an optional
     digits, as well as Integer#round.  [Feature #12245]
-
-  * Fixnum and Bignum are unified into Integer  [Feature #12005]
 
   * Integer#digits for extracting columns of place-value notation [Feature #12447]
 
@@ -112,8 +112,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Module
 
-  * Module.used_modules [Feature #7418]
   * Module#refine accepts a module as the argument now. [Feature #12534]
+  * Module.used_modules [Feature #7418]
 
 * Numeric
 
@@ -132,11 +132,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Regexp
 
-  * Regexp#match? [Feature #8110]
-    This returns bool and doesn't save backref.
-
   * meta character \X matches Unicode 9.0 characters with some workarounds
     for UTR #51 Unicode Emoji, Version 4.0 emoji zwj sequences.
+
+  * Regexp#match? [Feature #8110]
+    This returns bool and doesn't save backref.
 
   * Update Onigmo 6.0.0.
 
@@ -150,14 +150,6 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * String#casecmp? [Feature #12786]
 
-  * String#upcase, String#downcase, String#capitalize, String#swapcase and
-    their bang variants work for all of Unicode, and are no longer limited
-    to ASCII. Supported encodings are UTF-8, UTF-16BE/LE, UTF-32BE/LE, and
-    ISO-8859-1~16. Variations are available with options. See the documentation
-    of String#downcase for details. [Feature #10085]
-
-  * String.new(capacity: size) [Feature #12024]
-
   * String#concat, String#prepend [Feature #12333]
     Now takes multiple arguments.
 
@@ -165,6 +157,14 @@ with all sufficient information, see the ChangeLog file or Redmine
     chomp flag.  [Feature #12553]
 
   * String#unpack1 [Feature #12752]
+
+  * String#upcase, String#downcase, String#capitalize, String#swapcase and
+    their bang variants work for all of Unicode, and are no longer limited
+    to ASCII. Supported encodings are UTF-8, UTF-16BE/LE, UTF-32BE/LE, and
+    ISO-8859-1~16. Variations are available with options. See the documentation
+    of String#downcase for details. [Feature #10085]
+
+  * String.new(capacity: size) [Feature #12024]
 
 * StringIO
 
