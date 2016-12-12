@@ -44,6 +44,10 @@ PACKAGES = {
   "zip"  => %w".zip     zip -qr",
 }
 
+if system("7z", out: IO::NULL)
+  PACKAGES["gzip"] = %w".tar.gz 7z a -tgzip -mx"
+  PACKAGES["zip"]  = %w".zip    7z a -tzip  -mx"
+end
 if gzip = ENV.delete("GZIP")
   PACKAGES["gzip"].concat(gzip.shellsplit)
 end
