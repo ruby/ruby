@@ -2256,7 +2256,6 @@ void
 ruby_sysinit(int *argc, char ***argv)
 {
 #if defined(_WIN32)
-    void rb_w32_sysinit(int *argc, char ***argv);
     rb_w32_sysinit(argc, argv);
 #endif
     origarg.argc = *argc;
