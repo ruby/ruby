@@ -329,6 +329,7 @@ def package(vcs, rev, destdir, tmp = nil)
         "BOOTSTRAPRUBY"=>baseruby,
         "PWD"=>Dir.pwd,
         "CONFIGURE"=>"configure",
+        "arch"=>"noarch",
       }
       vars["UNICODE_VERSION"] = $unicode_version if $unicode_version
       args = vars.dup
