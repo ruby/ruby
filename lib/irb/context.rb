@@ -11,6 +11,7 @@
 #
 require "irb/workspace"
 require "irb/inspector"
+require "irb/output-method"
 
 module IRB
   # A class that wraps the current state of the irb session, including the
