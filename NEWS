@@ -346,7 +346,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * XMLRPC
 
-  * XMLRPC is removed from stdlib. [Feature #12160][ruby-core:74239]
+  * XMLRPC is removed from stdlib, and bundled as gem. [Feature #12160][ruby-core:74239]
     https://github.com/ruby/xmlrpc is the new upstream.
 
 * Zlib
