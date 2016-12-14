@@ -953,6 +953,11 @@ x = __ENCODING__
     end
   end
 
+  def test_yyerror_at_eol
+    assert_syntax_error("    0b", /\^/)
+    assert_syntax_error("    0b\n", /\^/)
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}

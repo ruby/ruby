@@ -5260,11 +5260,10 @@ parser_yyerror(struct parser_params *parser, const char *msg)
     int i;
 
     p = lex_p;
-    while (lex_pbeg <= p) {
-	if (*p == '\n') break;
+    while (lex_pbeg < p) {
+	if (*(p-1) == '\n') break;
 	p--;
     }
-    p++;
 
     pe = lex_p;
     while (pe < lex_pend) {
