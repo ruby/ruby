@@ -5255,18 +5255,21 @@ parser_yyerror(struct parser_params *parser, const char *msg)
     const char *p, *pe;
     const char *pre = "", *post = "";
     const char *code = "", *caret = "", *newline = "";
+    const char *lim;
     char *buf;
     long len;
     int i;
 
     p = lex_p;
-    while (lex_pbeg < p) {
+    lim = p - lex_pbeg > max_line_margin ? p - max_line_margin : lex_pbeg;
+    while (lim < p) {
 	if (*(p-1) == '\n') break;
 	p--;
     }
 
     pe = lex_p;
-    while (pe < lex_pend) {
+    lim = lex_pend - pe > max_line_margin ? pe + max_line_margin : lex_pend;
+    while (pe < lim) {
 	if (*pe == '\n') break;
 	pe++;
     }
