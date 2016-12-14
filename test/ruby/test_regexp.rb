@@ -567,6 +567,10 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("\\v", Regexp.quote("\v"))
     assert_equal("\u3042\\t", Regexp.quote("\u3042\t"))
     assert_equal("\\t\xff", Regexp.quote("\t" + [0xff].pack("C")))
+
+    bug13034 = '[ruby-core:78646] [Bug #13034]'
+    str = "\x00".force_encoding("UTF-16BE")
+    assert_equal(str, Regexp.quote(str), bug13034)
   end
 
   def test_try_convert
