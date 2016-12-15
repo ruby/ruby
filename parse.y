@@ -6406,6 +6406,7 @@ parser_heredoc_identifier(struct parser_params *parser)
     int c = nextc(), term, func = 0;
     int token = tSTRING_BEG;
     long len;
+    int newline = 0;
 
     if (c == '-') {
 	c = nextc();
@@ -6432,10 +6433,14 @@ parser_heredoc_identifier(struct parser_params *parser)
 	term = c;
 	while ((c = nextc()) != -1 && c != term) {
 	    if (tokadd_mbchar(c) == -1) return 0;
+	    if (c == '\n') newline = 1;
 	}
 	if (c == -1) {
 	    compile_error(PARSER_ARG "unterminated here document identifier");
 	    return 0;
+	}
+	if (newline) {
+	    rb_warn0("here document identifier contains newline");
 	}
 	break;
 
