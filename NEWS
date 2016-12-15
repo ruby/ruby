@@ -74,7 +74,7 @@ with all sufficient information, see the ChangeLog file or Redmine
     digits, as well as Float#round.  [Feature #12245]
 
   * Float#round now takes an optional keyword argument, half option, and
-    the default behavior is round-to-nearest-even now.  [Bug #12548]
+    the default behavior is round-up.  [Bug #12548] [Bug #12958]
     half option can be one of :even, :up, and :down.  [Feature #12953]
 
 * Hash
@@ -92,7 +92,7 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Integer#digits for extracting columns of place-value notation [Feature #12447]
 
   * Integer#round now takes an optional keyword argument, half option, and the
-    default behavior is round-to-nearest-even now.  [Bug #12548]
+    default behavior is round-up now.  [Bug #12548] [Bug #12958]
     half option can be one of :even, :up, and :down.  [Feature #12953]
 
 * IO
@@ -127,7 +127,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Rational
 
   * Rational#round now takes an optional keyword argument, half option, and
-    the default behavior is round-to-nearest-even now.  [Bug #12548]
+    the default behavior is round-up now.  [Bug #12548] [Bug #12958]
     half option can be one of :even, :up, and :down.  [Feature #12953]
 
 * Regexp
