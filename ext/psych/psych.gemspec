@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+$:.unshift File.expand_path("../lib", __FILE__)
 require 'psych'
 
 Gem::Specification.new do |s|
@@ -33,7 +34,7 @@ DESCRIPTION
   if RUBY_ENGINE == 'jruby'
     s.platform = 'java'
     s.files.concat ["ext/java/PsychEmitter.java", "ext/java/PsychLibrary.java", "ext/java/PsychParser.java", "ext/java/PsychToRuby.java", "ext/java/PsychYamlTree.java", "lib/psych_jars.rb", "lib/psych.jar"]
-    s.requirements = "jar org.yaml:snakeyaml, #{Psych::DEFAULT_SNAKEYAML_VERSION}"
+    s.requirements = "jar org.yaml:snakeyaml, 1.17"
     s.add_dependency 'jar-dependencies', '>= 0.1.7'
     s.add_development_dependency 'ruby-maven'
   else
