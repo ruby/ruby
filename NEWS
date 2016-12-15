@@ -314,6 +314,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * DateTime#to_time now preserves timezone.  [Bug #12189]
 
+* PSych
+
+  * Update Psych 2.2.2
+
 * RDoc
 
   * Update RDoc 5.0.0
