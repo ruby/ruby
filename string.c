@@ -30,7 +30,9 @@
 #endif
 
 #if defined HAVE_CRYPT_R
+# if defined HAVE_CRYPT_H
 # include <crypt.h>
+# endif
 #elif !defined HAVE_CRYPT
 # include "missing/crypt.h"
 # define HAVE_CRYPT_R 1
