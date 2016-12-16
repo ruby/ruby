@@ -7409,7 +7409,7 @@ chomp_newline(const char *p, const char *e, rb_encoding *enc)
     if (rb_enc_is_newline(prev, e, enc)) {
 	e = prev;
 	prev = rb_enc_prev_char(p, e, e, enc);
-	if (rb_enc_ascget(prev, e, NULL, enc) == '\r')
+	if (prev && rb_enc_ascget(prev, e, NULL, enc) == '\r')
 	    e = prev;
     }
     return e;
