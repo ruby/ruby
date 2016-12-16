@@ -6433,7 +6433,7 @@ parser_heredoc_identifier(struct parser_params *parser)
 	term = c;
 	while ((c = nextc()) != -1 && c != term) {
 	    if (tokadd_mbchar(c) == -1) return 0;
-	    if (c == '\n') newline = 1;
+	    if (!newline && c == '\n') newline = 1;
 	    else if (newline) newline = 2;
 	}
 	if (c == -1) {
