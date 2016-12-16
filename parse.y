@@ -6434,13 +6434,20 @@ parser_heredoc_identifier(struct parser_params *parser)
 	while ((c = nextc()) != -1 && c != term) {
 	    if (tokadd_mbchar(c) == -1) return 0;
 	    if (c == '\n') newline = 1;
+	    else if (newline) newline = 2;
 	}
 	if (c == -1) {
 	    compile_error(PARSER_ARG "unterminated here document identifier");
 	    return 0;
 	}
-	if (newline) {
-	    rb_warn0("here document identifier contains newline");
+	switch (newline) {
+	  case 1:
+	    rb_warn0("here document identifier ends with a newline");
+	    if (--tokidx > 0 && tokenbuf[tokidx] == '\r') --tokidx;
+	    break;
+	  case 2:
+	    compile_error(PARSER_ARG "here document identifier across newlines, never match");
+	    return -1;
 	}
 	break;
 

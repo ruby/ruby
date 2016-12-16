@@ -746,7 +746,7 @@ eom
   end
 
   def test_heredoc_newline
-    assert_warn(/contains newline/) do
+    assert_warn(/ends with a newline/) do
       eval("<<\"EOS\n\"\nEOS\n")
     end
   end
