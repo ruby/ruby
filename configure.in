@@ -2474,6 +2474,8 @@ main(int argc, char **argv)
 ])
 
 AS_IF([test "$ac_cv_func_crypt_r" = yes],
+    [AC_CHECK_HEADERS(crypt.h)])
+AS_IF([test "$ac_cv_func_crypt_r:$ac_cv_header_crypt_h" = yes:yes],
     [AC_CHECK_MEMBERS([struct crypt_data.initialized], [], [],
 		      [AC_INCLUDES_DEFAULT([@%:@include <crypt.h>])])])
 
