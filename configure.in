@@ -643,7 +643,7 @@ AC_DEFUN([RUBY_DTRACE_AVAILABLE],
     rb_cv_dtrace_available=no
     AS_FOR(opt, rb_dtrace_opt, ["" "-xnolibs"], [dnl
 	AS_IF([$DTRACE opt -h -o conftest_provider.h -s conftest_provider.d >/dev/null 2>/dev/null],
- 	    [], [continue])
+	    [], [continue])
 	AC_TRY_COMPILE([@%:@include "conftest_provider.h"], [CONFTEST_FIRE();],
 	    [], [continue])
 	# DTrace is available on the system
