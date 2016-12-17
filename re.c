@@ -3731,7 +3731,8 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
                 if (name_end < e) {
 		    VALUE n = rb_str_subseq(str, (long)(name - RSTRING_PTR(str)),
 					    (long)(name_end - name));
-		    if (!rb_enc_compatible(RREGEXP_SRC(regexp), n) ||
+		    if (NIL_P(regexp) ||
+			!rb_enc_compatible(RREGEXP_SRC(regexp), n) ||
 			(no = name_to_backref_number(regs, regexp, name, name_end)) < 1) {
 			name_to_backref_error(n);
 		    }
