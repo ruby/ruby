@@ -640,18 +640,20 @@ AC_DEFUN([RUBY_DTRACE_AVAILABLE],
 [AC_CACHE_CHECK(whether dtrace USDT is available, rb_cv_dtrace_available,
 [
     echo "provider conftest{ probe fire(); };" > conftest_provider.d
-    if $DTRACE -h -o conftest_provider.h -s conftest_provider.d >/dev/null 2>/dev/null; then
-      AC_TRY_COMPILE([@%:@include "conftest_provider.h"], [CONFTEST_FIRE();], [
+    rb_cv_dtrace_available=no
+    AS_FOR(opt, rb_dtrace_opt, ["-xnolibs" ""], [dnl
+	AS_IF([$DTRACE opt -h -o conftest_provider.h -s conftest_provider.d >/dev/null 2>/dev/null],
+	    [], [continue])
+	AC_TRY_COMPILE([@%:@include "conftest_provider.h"], [CONFTEST_FIRE();],
+	    [], [continue])
 	# DTrace is available on the system
-	rb_cv_dtrace_available=yes
-      ], [rb_cv_dtrace_available=no])
-    else
-      # DTrace is not available while dtrace command exists
-      # for example FreeBSD 8 or FreeBSD 9 without DTrace build option
-      rb_cv_dtrace_available=no
-    fi
+	rb_cv_dtrace_available=yes${rb_dtrace_opt:+"(opt)"}
+	break
+    ])
     rm -f conftest.[co] conftest_provider.[dho]
 ])
+AS_CASE(["$rb_cv_dtrace_available"], ["yes("*")"],
+    [DTRACE_OPT=`expr "$rb_cv_dtrace_available" : "yes(\(.*\))"`])
 ])
 
 AC_DEFUN([RUBY_DTRACE_POSTPROCESS],
@@ -664,13 +666,13 @@ AC_DEFUN([RUBY_DTRACE_POSTPROCESS],
       probe fire();
     };
 _PROBES
-    $DTRACE -h -o conftest_provider.h -s conftest_provider.d >/dev/null 2>/dev/null &&
+    $DTRACE ${DTRACE_OPT} -h -o conftest_provider.h -s conftest_provider.d >/dev/null 2>/dev/null &&
     :
   }; then
     AC_TRY_COMPILE([@%:@include "conftest_provider.h"], [CONFTEST_FIRE();], [
 	if {
 	    cp -p conftest.${ac_objext} conftest.${ac_objext}.save &&
-	    $DTRACE -G -s conftest_provider.d conftest.${ac_objext} 2>/dev/null &&
+	    $DTRACE ${DTRACE_OPT} -G -s conftest_provider.d conftest.${ac_objext} 2>/dev/null &&
 	    :
 	}; then
 	    if cmp -s conftest.o conftest.${ac_objext}.save; then
@@ -4029,6 +4031,7 @@ AS_CASE([$rb_cv_dtrace_available],
 AC_SUBST(DTRACE_EXT)
 AC_SUBST(DTRACE_OBJ)
 AC_SUBST(DTRACE_REBUILD)
+AC_SUBST(DTRACE_OPT)
 AC_SUBST(LIBRUBY_A_OBJS)
 
 RUBY_SETJMP_TYPE
