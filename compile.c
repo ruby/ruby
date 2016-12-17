@@ -6001,9 +6001,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	NODE *b = node->nd_beg;
 	NODE *e = node->nd_end;
 	if (number_literal_p(b) && number_literal_p(e)) {
-	    VALUE val = rb_range_new(b->nd_lit, e->nd_lit, excl);
-	    iseq_add_mark_object_compile_time(iseq, val);
-	    ADD_INSN1(ret, line, putobject, val);
+	    if (!popped) {
+		VALUE val = rb_range_new(b->nd_lit, e->nd_lit, excl);
+		iseq_add_mark_object_compile_time(iseq, val);
+		ADD_INSN1(ret, line, putobject, val);
+	    }
 	    break;
 	}
 	COMPILE(ret, "min", (NODE *) node->nd_beg);
