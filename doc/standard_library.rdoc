@@ -107,6 +107,5 @@ Socket:: Access underlying OS socket implementations
 StringIO:: Pseudo I/O on String objects
 StringScanner:: Provides lexical scanning operations on a String
 Syslog:: Ruby interface for the POSIX system logging facility
-Tk:: Provides a framework for building a Graphical User Interface (GUI)
 WIN32OLE:: Provides an interface for OLE Automation in Ruby
 Zlib:: Ruby interface for the zlib compression/decompression library
