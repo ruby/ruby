@@ -1111,6 +1111,8 @@ match_size(VALUE match)
     return INT2FIX(RMATCH_REGS(match)->num_regs);
 }
 
+static int name_to_backref_number(struct re_registers *, VALUE, const char*, const char*);
+
 static int
 match_backref_number(VALUE match, VALUE backref)
 {
@@ -1134,10 +1136,7 @@ match_backref_number(VALUE match, VALUE backref)
         break;
     }
 
-    num = onig_name_to_backref_number(RREGEXP_PTR(regexp),
-              (const unsigned char*)name,
-              (const unsigned char*)name + strlen(name),
-              regs);
+    num = name_to_backref_number(regs, regexp, name, name + strlen(name));
 
     if (num < 1) {
         rb_raise(rb_eIndexError, "undefined group name reference: %s", name);
@@ -1819,7 +1818,7 @@ static int
 name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name, const char* name_end)
 {
     return onig_name_to_backref_number(RREGEXP_PTR(regexp),
-	(const unsigned char* )name, (const unsigned char* )name_end, regs);
+	(const unsigned char *)name, (const unsigned char *)name_end, regs);
 }
 
 NORETURN(static void name_to_backref_error(VALUE name));
