@@ -174,7 +174,7 @@ class TestSymbol < Test::Unit::TestCase
   end
 
   def test_to_proc_iseq
-    assert_separately([], <<~"end;", timeout: 1) # do
+    assert_separately([], <<~"end;", timeout: 5) # do
       bug11845 = '[ruby-core:72381] [Bug #11845]'
       assert_nil(:class.to_proc.source_location, bug11845)
       assert_equal([[:rest]], :class.to_proc.parameters, bug11845)
@@ -186,7 +186,7 @@ class TestSymbol < Test::Unit::TestCase
   end
 
   def test_to_proc_binding
-    assert_separately([], <<~"end;", timeout: 1) # do
+    assert_separately([], <<~"end;", timeout: 5) # do
       bug12137 = '[ruby-core:74100] [Bug #12137]'
       assert_raise(ArgumentError, bug12137) {
         :succ.to_proc.binding
@@ -454,7 +454,7 @@ class TestSymbol < Test::Unit::TestCase
   def test_symbol_fstr_leak
     bug10686 = '[ruby-core:67268] [Bug #10686]'
     x = x = 0
-    assert_no_memory_leak([], '200_000.times { |i| i.to_s.to_sym }; GC.start', <<-"end;", bug10686, limit: 1.71, rss: true)
+    assert_no_memory_leak([], '200_000.times { |i| i.to_s.to_sym }; GC.start', <<-"end;", bug10686, limit: 1.71, rss: true, timeout: 20)
       200_000.times { |i| (i + 200_000).to_s.to_sym }
     end;
   end
