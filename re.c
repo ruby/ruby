@@ -1123,18 +1123,13 @@ match_backref_number(VALUE match, VALUE backref)
     VALUE regexp = RMATCH(match)->regexp;
 
     match_check(match);
-    switch (TYPE(backref)) {
-      default:
-        return NUM2INT(backref);
-
-      case T_SYMBOL:
+    if (SYMBOL_P(backref)) {
 	backref = rb_sym2str(backref);
-	/* fall through */
-
-      case T_STRING:
-        name = StringValueCStr(backref);
-        break;
     }
+    else if (!RB_TYPE_P(backref, T_STRING)) {
+	return NUM2INT(backref);
+    }
+    name = StringValueCStr(backref);
 
     num = name_to_backref_number(regs, regexp, name, name + strlen(name));
 
@@ -1839,21 +1834,18 @@ namev_to_backref_number(struct re_registers *regs, VALUE re, VALUE name)
 {
     int num;
 
-    switch (TYPE(name)) {
-      case T_SYMBOL:
+    if (SYMBOL_P(name)) {
 	name = rb_sym2str(name);
-	/* fall through */
-      case T_STRING:
-	num = NAME_TO_NUMBER(regs, re, name,
-			     RSTRING_PTR(name), RSTRING_END(name));
-	if (num < 1) {
-	    name_to_backref_error(name);
-	}
-	return num;
-
-      default:
+    }
+    else if (!RB_TYPE_P(name, T_STRING)) {
 	return -1;
     }
+    num = NAME_TO_NUMBER(regs, re, name,
+			 RSTRING_PTR(name), RSTRING_END(name));
+    if (num < 1) {
+	name_to_backref_error(name);
+    }
+    return num;
 }
 
 static VALUE
