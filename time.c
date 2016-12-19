@@ -2514,15 +2514,18 @@ validate_zone_name(VALUE zone_name)
 static void
 validate_vtm(struct vtm *vtm)
 {
-    if (   vtm->mon  < 1 || vtm->mon  > 12
-	|| vtm->mday < 1 || vtm->mday > 31
-	|| vtm->hour < 0 || vtm->hour > 24
-	|| (vtm->hour == 24 && (vtm->min > 0 || vtm->sec > 0))
-	|| vtm->min  < 0 || vtm->min  > 59
-	|| vtm->sec  < 0 || vtm->sec  > 60
-        || lt(vtm->subsecx, INT2FIX(0)) || ge(vtm->subsecx, INT2FIX(TIME_SCALE))
-        || (!NIL_P(vtm->utc_offset) && (validate_utc_offset(vtm->utc_offset), 0)))
-	rb_raise(rb_eArgError, "argument out of range");
+#define validate_vtm_range(mem, b, e) \
+    ((vtm->mem < b || vtm->mem > e) ? \
+     rb_raise(rb_eArgError, #mem" out of range") : (void)0)
+    validate_vtm_range(mon, 1, 12);
+    validate_vtm_range(mday, 1, 31);
+    validate_vtm_range(hour, 0, 24);
+    validate_vtm_range(min, 0, (vtm->hour == 24 ? 0 : 59));
+    validate_vtm_range(sec, 0, (vtm->hour == 24 ? 0 : 60));
+    if (lt(vtm->subsecx, INT2FIX(0)) || ge(vtm->subsecx, INT2FIX(TIME_SCALE)))
+	rb_raise(rb_eArgError, "subsecx out of range");
+    if (!NIL_P(vtm->utc_offset)) validate_utc_offset(vtm->utc_offset);
+#undef validate_vtm_range
 }
 
 static void
