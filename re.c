@@ -1829,6 +1829,11 @@ name_to_backref_error(VALUE name)
 	     name);
 }
 
+#define NAME_TO_NUMBER(regs, re, name, name_ptr, name_end)	\
+    (NIL_P(re) ? 0 : \
+     !rb_enc_compatible(RREGEXP_SRC(re), (name)) ? 0 : \
+     name_to_backref_number((regs), (re), (name_ptr), (name_end)))
+
 static int
 namev_to_backref_number(struct re_registers *regs, VALUE re, VALUE name)
 {
@@ -1839,9 +1844,9 @@ namev_to_backref_number(struct re_registers *regs, VALUE re, VALUE name)
 	name = rb_sym2str(name);
 	/* fall through */
       case T_STRING:
-	if (NIL_P(re) || !rb_enc_compatible(RREGEXP_SRC(re), name) ||
-		(num = name_to_backref_number(regs, re,
-					      RSTRING_PTR(name), RSTRING_END(name))) < 1) {
+	num = NAME_TO_NUMBER(regs, re, name,
+			     RSTRING_PTR(name), RSTRING_END(name));
+	if (num < 1) {
 	    name_to_backref_error(name);
 	}
 	return num;
@@ -3730,9 +3735,7 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
                 if (name_end < e) {
 		    VALUE n = rb_str_subseq(str, (long)(name - RSTRING_PTR(str)),
 					    (long)(name_end - name));
-		    if (NIL_P(regexp) ||
-			!rb_enc_compatible(RREGEXP_SRC(regexp), n) ||
-			(no = name_to_backref_number(regs, regexp, name, name_end)) < 1) {
+		    if ((no = NAME_TO_NUMBER(regs, regexp, n, name, name_end)) < 1) {
 			name_to_backref_error(n);
 		    }
                     p = s = name_end + clen;
