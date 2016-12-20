@@ -130,7 +130,7 @@ VALUE rb_cSymbol;
 #define RESIZE_CAPA_TERM(str,capacity,termlen) do {\
     if (STR_EMBED_P(str)) {\
 	if (!STR_EMBEDDABLE_P(capacity, termlen)) {\
-	    char *const tmp = ALLOC_N(char, (capacity)+termlen);\
+	    char *const tmp = ALLOC_N(char, (size_t)(capacity) + (termlen));\
 	    const long tlen = RSTRING_LEN(str);\
 	    memcpy(tmp, RSTRING_PTR(str), tlen);\
 	    RSTRING(str)->as.heap.ptr = tmp;\
