@@ -1134,19 +1134,19 @@ if defined? Zlib
       expected = %w[1f8b08000000000000ff4bcbcf07002165738c03000000].pack("H*")
       assert_equal expected, actual
 
-      actual = Zlib.gzip("foo".freeze, 0)
+      actual = Zlib.gzip("foo".freeze, level: 0)
       actual[4, 4] = "\x00\x00\x00\x00" # replace mtime
       actual[9] = "\xff" # replace OS
       expected = %w[1f8b08000000000000ff010300fcff666f6f2165738c03000000].pack("H*")
       assert_equal expected, actual
 
-      actual = Zlib.gzip("foo".freeze, 9)
+      actual = Zlib.gzip("foo".freeze, level: 9)
       actual[4, 4] = "\x00\x00\x00\x00" # replace mtime
       actual[9] = "\xff" # replace OS
       expected = %w[1f8b08000000000002ff4bcbcf07002165738c03000000].pack("H*")
       assert_equal expected, actual
 
-      actual = Zlib.gzip("foo".freeze, 9, Zlib::FILTERED)
+      actual = Zlib.gzip("foo".freeze, level: 9, strategy: Zlib::FILTERED)
       actual[4, 4] = "\x00\x00\x00\x00" # replace mtime
       actual[9] = "\xff" # replace OS
       expected = %w[1f8b08000000000002ff4bcbcf07002165738c03000000].pack("H*")

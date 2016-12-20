@@ -4276,6 +4276,10 @@ zlib_gzip_end(struct gzfile *gz)
     zstream_end(&gz->z);
 }
 
+#define OPTHASH_GIVEN_P(opts) \
+    (argc > 0 && !NIL_P((opts) = rb_check_hash_type(argv[argc-1])) && (--argc, 1))
+static ID id_level, id_strategy;
+
 /*
  * call-seq:
  *   Zlib.gzip(src, level=nil, strategy=nil) -> String
@@ -4305,9 +4309,22 @@ zlib_s_gzip(int argc, VALUE *argv, VALUE klass)
     struct gzfile *gz = &gz0;
     long len;
     int err;
-    VALUE src, level, strategy;
+    VALUE src, opts, level=Qnil, strategy=Qnil;
 
-    rb_scan_args(argc, argv, "12", &src, &level, &strategy);
+    if (OPTHASH_GIVEN_P(opts)) {
+	ID keyword_ids[2];
+	VALUE kwargs[2];
+	keyword_ids[0] = id_level;
+	keyword_ids[1] = id_strategy;
+	rb_get_kwargs(opts, keyword_ids, 0, 2, kwargs);
+	if (kwargs[0] != Qundef) {
+	    level = kwargs[0];
+	}
+	if (kwargs[1] != Qundef) {
+	    strategy = kwargs[1];
+	}
+    }
+    rb_scan_args(argc, argv, "10", &src);
     StringValue(src);
     gzfile_init(gz, &deflate_funcs, zlib_gzip_end);
     gz->level = ARG_LEVEL(level);
@@ -4690,6 +4707,8 @@ Init_zlib(void)
     /* OS code for unknown hosts */
     rb_define_const(mZlib, "OS_UNKNOWN", INT2FIX(OS_UNKNOWN));
 
+    id_level = rb_intern("level");
+    id_strategy = rb_intern("strategy");
 #endif /* GZIP_SUPPORT */
 }
 
