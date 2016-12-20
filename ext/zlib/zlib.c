@@ -4282,7 +4282,7 @@ static ID id_level, id_strategy;
 
 /*
  * call-seq:
- *   Zlib.gzip(src, level=nil, strategy=nil) -> String
+ *   Zlib.gzip(src, level: nil, strategy: nil) -> String
  *
  * Gzip the given +string+. Valid values of level are
  * Zlib::NO_COMPRESSION, Zlib::BEST_SPEED, Zlib::BEST_COMPRESSION,
@@ -4290,7 +4290,7 @@ static ID id_level, id_strategy;
  *
  * This method is almost equivalent to the following code:
  *
- *   def gzip(string, level=nil, strategy=nil)
+ *   def gzip(string, level: nil, strategy: nil)
  *     sio = StringIO.new
  *     sio.binmode
  *     gz = Zlib::GzipWriter.new(sio, level, strategy)
