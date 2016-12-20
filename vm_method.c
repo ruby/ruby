@@ -563,9 +563,9 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 	      default:
 		break;
 	    }
-	    if (iseq && !NIL_P(iseq->body->location.path)) {
-		int line = iseq->body->line_info_table ? FIX2INT(rb_iseq_first_lineno(iseq)) : 0;
-		rb_compile_warning(RSTRING_PTR(iseq->body->location.path), line,
+	    if (iseq) {
+		rb_compile_warning(RSTRING_PTR(iseq->body->location.path),
+				   FIX2INT(iseq->body->location.first_lineno),
 				   "previous definition of %"PRIsVALUE" was here",
 				   rb_id2str(old_def->original_id));
 	    }

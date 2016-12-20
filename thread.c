@@ -788,19 +788,13 @@ thread_initialize(VALUE thread, VALUE args)
     }
     GetThreadPtr(thread, th);
     if (th->first_args) {
-	VALUE proc = th->first_proc, line, loc;
-	VALUE file;
+	VALUE proc = th->first_proc, loc;
         if (!proc || !RTEST(loc = rb_proc_location(proc))) {
             rb_raise(rb_eThreadError, "already initialized thread");
         }
-	file = RARRAY_AREF(loc, 0);
-	if (NIL_P(line = RARRAY_AREF(loc, 1))) {
-	    rb_raise(rb_eThreadError,
-		     "already initialized thread - %"PRIsVALUE, file);
-	}
         rb_raise(rb_eThreadError,
 		 "already initialized thread - %"PRIsVALUE":%"PRIsVALUE,
-                 file, line);
+                 RARRAY_AREF(loc, 0), RARRAY_AREF(loc, 1));
     }
     return thread_create_core(thread, args, 0);
 }

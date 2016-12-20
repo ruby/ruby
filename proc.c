@@ -1076,12 +1076,8 @@ iseq_location(const rb_iseq_t *iseq)
     if (!iseq) return Qnil;
     rb_iseq_check(iseq);
     loc[0] = iseq->body->location.path;
-    if (iseq->body->line_info_table) {
-	loc[1] = rb_iseq_first_lineno(iseq);
-    }
-    else {
-	loc[1] = Qnil;
-    }
+    loc[1] = iseq->body->location.first_lineno;
+
     return rb_ary_new4(2, loc);
 }
 
@@ -1234,12 +1230,9 @@ proc_to_s_(VALUE self, const rb_proc_t *proc)
       case block_type_iseq:
 	{
 	    const rb_iseq_t *iseq = rb_iseq_check(block->as.captured.code.iseq);
-	    int first_lineno = 0;
-	    if (iseq->body->line_info_table) {
-		first_lineno = FIX2INT(rb_iseq_first_lineno(iseq));
-	    }
 	    str = rb_sprintf("#<%s:%p@%"PRIsVALUE":%d%s>", cname, (void *)self,
-			     iseq->body->location.path, first_lineno, is_lambda);
+			     iseq->body->location.path,
+			     FIX2INT(iseq->body->location.first_lineno), is_lambda);
 	}
 	break;
       case block_type_symbol:
