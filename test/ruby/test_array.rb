@@ -2163,6 +2163,11 @@ class TestArray < Test::Unit::TestCase
     }
     assert_equal(9, r)
     assert_equal(@cls[7, 8, 9, 10], a, bug10722)
+
+    bug13053 = '[ruby-core:78739] [Bug #13053] Array#select! can resize to negative size'
+    a = @cls[ 1, 2, 3, 4, 5 ]
+    a.select! {|i| a.clear if i == 5; false }
+    assert_equal(0, a.size, bug13053)
   end
 
   # also select!
