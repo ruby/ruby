@@ -902,6 +902,7 @@ module Test
           excludes = excludes.split(File::PATH_SEPARATOR)
         end
         options[:excludes] = excludes || []
+        parser.separator "excludes options:"
         parser.on '-X', '--excludes-dir DIRECTORY', "Directory name of exclude files" do |d|
           options[:excludes].concat d.split(File::PATH_SEPARATOR)
         end
