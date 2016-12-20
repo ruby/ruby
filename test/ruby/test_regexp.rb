@@ -644,14 +644,30 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_match_without_regexp
+    # create a MatchData for each assertion because the internal state may change
+    test = proc {|&blk| "abc".sub("a", ""); blk.call($~) }
+
     bug10877 = '[ruby-core:68209] [Bug #10877]'
-    "abc".sub("a", "")
-    assert_raise_with_message(IndexError, /foo/, bug10877) {$~["foo"]}
+    test.call {|m| assert_raise_with_message(IndexError, /foo/, bug10877) {m["foo"]} }
     key = "\u{3042}"
     [Encoding::UTF_8, Encoding::Shift_JIS, Encoding::EUC_JP].each do |enc|
       idx = key.encode(enc)
-      assert_raise_with_message(IndexError, /#{idx}/, bug10877) {$~[idx]}
+      test.call {|m| assert_raise_with_message(IndexError, /#{idx}/, bug10877) {m[idx]} }
     end
+    test.call {|m| assert_equal(/a/, m.regexp) }
+    test.call {|m| assert_equal("abc", m.string) }
+    test.call {|m| assert_equal(1, m.size) }
+    test.call {|m| assert_equal(0, m.begin(0)) }
+    test.call {|m| assert_equal(1, m.end(0)) }
+    test.call {|m| assert_equal([0, 1], m.offset(0)) }
+    test.call {|m| assert_equal([], m.captures) }
+    test.call {|m| assert_equal([], m.names) }
+    test.call {|m| assert_equal({}, m.named_captures) }
+    test.call {|m| assert_equal(/a/.match("abc"), m) }
+    test.call {|m| assert_equal(/a/.match("abc").hash, m.hash) }
+    test.call {|m| assert_equal("bc", m.post_match) }
+    test.call {|m| assert_equal("", m.pre_match) }
+    test.call {|m| assert_equal(["a", nil], m.values_at(0, 1)) }
   end
 
   def test_last_match
