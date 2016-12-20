@@ -213,7 +213,9 @@ if defined? Zlib
       z = Zlib::Deflate.new
       z << "foo"
       assert_raise(Zlib::StreamError) { z.set_dictionary("foo") }
-      z.close # without this, outputs `zlib(finalizer): the stream was freed prematurely.'
+      EnvUtil.suppress_warning do
+        z.close # without this, outputs `zlib(finalizer): the stream was freed prematurely.'
+      end
     end
 
     def test_reset
