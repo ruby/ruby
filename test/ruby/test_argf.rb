@@ -137,6 +137,18 @@ class TestArgf < Test::Unit::TestCase
     INPUT
   end
 
+  def test_new_lineno
+    f = ARGF.class.new(@t1.path, @t2.path, @t3.path)
+    result = []
+    f.each {|line| result << [f.lineno, line]; break if result.size == 3}
+    assert_equal(3, f.lineno)
+    assert_equal((1..3).map {|i| [i, "#{i}\n"]}, result)
+
+    f = ARGF.class.new(@t1.path, @t2.path, @t3.path)
+    f.each_char.to_a
+    assert_equal(0, f.lineno)
+  end
+
   def test_inplace
     assert_in_out_err(["-", @t1.path, @t2.path, @t3.path], <<-INPUT, [], [])
       ARGF.inplace_mode = '.bak'

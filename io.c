@@ -10925,6 +10925,12 @@ rb_stdio_set_default_encoding(void)
     rb_io_set_encoding(1, &val, rb_stderr);
 }
 
+static inline int
+global_argf_p(VALUE arg)
+{
+    return arg == argf;
+}
+
 /*
  *  call-seq:
  *     ARGF.external_encoding   -> encoding
@@ -11541,6 +11547,22 @@ argf_block_call(ID mid, int argc, VALUE *argv, VALUE argf)
     if (ret != Qundef) ARGF.next_p = 1;
 }
 
+static VALUE
+argf_block_call_line_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, argf))
+{
+    if (!global_argf_p(argf)) {
+	ARGF.last_lineno = ++ARGF.lineno;
+    }
+    return argf_block_call_i(i, argf, argc, argv, blockarg);
+}
+
+static void
+argf_block_call_line(ID mid, int argc, VALUE *argv, VALUE argf)
+{
+    VALUE ret = rb_block_call(ARGF.current_file, mid, argc, argv, argf_block_call_line_i, argf);
+    if (ret != Qundef) ARGF.next_p = 1;
+}
+
 /*
  *  call-seq:
  *     ARGF.each(sep=$/)            {|line| block }  -> ARGF
@@ -11578,7 +11600,7 @@ argf_each_line(int argc, VALUE *argv, VALUE argf)
 {
     RETURN_ENUMERATOR(argf, argc, argv);
     FOREACH_ARGF() {
-	argf_block_call(rb_intern("each_line"), argc, argv, argf);
+	argf_block_call_line(rb_intern("each_line"), argc, argv, argf);
     }
     return argf;
 }
