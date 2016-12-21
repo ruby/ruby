@@ -335,15 +335,18 @@ BigDecimal_double_fig(VALUE self)
     return INT2FIX(VpDblFig());
 }
 
-/* call-seq:
- * precs
+/*  call-seq:
+ *     big_decimal.precs  ->  array
  *
- * Returns an Array of two Integer values.
+ *  Returns an Array of two Integer values.
  *
- * The first value is the current number of significant digits in the
- * BigDecimal. The second value is the maximum number of significant digits
- * for the BigDecimal.
+ *  The first value is the current number of significant digits in the
+ *  BigDecimal. The second value is the maximum number of significant digits
+ *  for the BigDecimal.
+ *
+ *     BigDecimal('5').precs #=> [9, 18]
  */
+
 static VALUE
 BigDecimal_prec(VALUE self)
 {
@@ -456,7 +459,7 @@ check_rounding_mode_option(VALUE const opts)
         goto noopt;
 
     mode = rb_hash_lookup2(opts, ID2SYM(id_half), Qundef);
-    if (mode == Qundef)
+    if (mode == Qundef || NIL_P(mode))
         goto noopt;
 
     if (SYMBOL_P(mode))
@@ -478,6 +481,7 @@ check_rounding_mode_option(VALUE const opts)
             return VP_ROUND_HALF_EVEN;
         else if (strncasecmp(s, "down", 4) == 0)
             return VP_ROUND_HALF_DOWN;
+        break;
       default:
         break;
     }
@@ -901,13 +905,14 @@ BigDecimal_coerce(VALUE self, VALUE other)
 }
 
 /*
- * call-seq: +@
+ * call-seq:
+ *    +big_decimal  ->  big_decimal
  *
  * Return self.
  *
- * e.g.
- *   b = +a  # b == a
+ *     +BigDecimal('5')  #=> 0.5e1
  */
+
 static VALUE
 BigDecimal_uplus(VALUE self)
 {
@@ -1218,14 +1223,14 @@ BigDecimal_ge(VALUE self, VALUE r)
 }
 
 /*
- * call-seq: -@
+ *  call-seq:
+ *     -big_decimal  ->  big_decimal
  *
- * Return the negation of self.
+ *  Return the negation of self.
  *
- * e.g.
- *   b = -a
- *   b == a * -1
+ *    -BigDecimal('5')  #=> -0.5e1
  */
+
 static VALUE
 BigDecimal_neg(VALUE self)
 {
@@ -1672,11 +1677,16 @@ BigDecimal_mult2(VALUE self, VALUE b, VALUE n)
     }
 }
 
-/* Returns the absolute value, as a BigDecimal.
+/*
+ *  call-seq:
+ *     big_decimal.abs  ->  big_decimal
  *
- *   BigDecimal('5').abs #=> 5
- *   BigDecimal('-3').abs #=> 3
+ *  Returns the absolute value, as a BigDecimal.
+ *
+ *     BigDecimal('5').abs  #=> 0.5e1
+ *     BigDecimal('-3').abs #=> 0.3e1
  */
+
 static VALUE
 BigDecimal_abs(VALUE self)
 {

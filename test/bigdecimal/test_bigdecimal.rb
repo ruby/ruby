@@ -1082,10 +1082,48 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(BigDecimal('-7.1364'), BigDecimal('-7.1364499').round(4, half: :down))
   end
 
+  def test_round_half_nil
+    x = BigDecimal.new("2.5")
+
+    BigDecimal.save_rounding_mode do
+      BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_UP)
+      assert_equal(3, x.round(0, half: nil))
+    end
+
+    BigDecimal.save_rounding_mode do
+      BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_DOWN)
+      assert_equal(2, x.round(0, half: nil))
+    end
+
+    BigDecimal.save_rounding_mode do
+      BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_HALF_UP)
+      assert_equal(3, x.round(0, half: nil))
+    end
+
+    BigDecimal.save_rounding_mode do
+      BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_HALF_DOWN)
+      assert_equal(2, x.round(0, half: nil))
+    end
+
+    BigDecimal.save_rounding_mode do
+      BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_HALF_EVEN)
+      assert_equal(2, x.round(0, half: nil))
+    end
+
+    BigDecimal.save_rounding_mode do
+      BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_CEILING)
+      assert_equal(3, x.round(0, half: nil))
+    end
+
+    BigDecimal.save_rounding_mode do
+      BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_FLOOR)
+      assert_equal(2, x.round(0, half: nil))
+    end
+  end
+
   def test_round_half_invalid_option
     assert_raise_with_message(ArgumentError, "invalid rounding mode: invalid") { BigDecimal('12.5').round(half: :invalid) }
     assert_raise_with_message(ArgumentError, "invalid rounding mode: invalid") { BigDecimal('2.15').round(1, half: :invalid) }
-    assert_raise_with_message(ArgumentError, "invalid rounding mode: nil") { BigDecimal('12.5').round(half: nil) }
   end
 
   def test_truncate
