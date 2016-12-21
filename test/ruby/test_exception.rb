@@ -777,6 +777,26 @@ end.join
     assert_equal({}, e.arg, bug)
   end
 
+  def test_circular_cause
+    bug13043 = '[ruby-core:78688] [Bug #13043]'
+    begin
+      begin
+        raise "error 1"
+      ensure
+        orig_error = $!
+        begin
+          raise "error 2"
+        rescue => err
+          raise orig_error
+        end
+      end
+    rescue => x
+    end
+    assert_equal(orig_error, x)
+    assert_equal(orig_error, err.cause)
+    assert_nil(orig_error.cause, bug13043)
+  end
+
   def test_anonymous_message
     assert_in_out_err([], "raise Class.new(RuntimeError), 'foo'", [], /foo\n/)
   end
