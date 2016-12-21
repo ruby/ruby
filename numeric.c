@@ -209,6 +209,9 @@ rb_num_get_rounding_option(VALUE opts)
 	if (SYMBOL_P(rounding)) {
 	    str = rb_sym2str(rounding);
 	}
+	else if (NIL_P(rounding)) {
+	    goto noopt;
+	}
 	else if (!RB_TYPE_P(str = rounding, T_STRING)) {
 	    str = rb_check_string_type(rounding);
 	    if (NIL_P(str)) goto invalid;

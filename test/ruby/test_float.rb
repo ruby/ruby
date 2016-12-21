@@ -723,8 +723,8 @@ class TestFloat < Test::Unit::TestCase
   end
 
   def test_round_half_invalid
-    assert_raise_with_message(ArgumentError, /nil/) {
-      1.0.round(half: nil)
+    assert_raise_with_message(ArgumentError, /Object/) {
+      1.0.round(half: Object)
     }
     assert_raise_with_message(ArgumentError, /xxx/) {
       1.0.round(half: "\0xxx")
