@@ -2233,7 +2233,7 @@ get_min_match_length(Node* node, OnigDistance *min, ScanEnv* env)
           *min = en->min_len;
         else {
 	  if (IS_ENCLOSE_MARK1(NENCLOSE(node)))
-	    *min = 0;  // recursive
+	    *min = 0;  /* recursive */
 	  else {
 	    SET_ENCLOSE_STATUS(node, NST_MARK1);
 	    r = get_min_match_length(en->target, min, env);
