@@ -5560,7 +5560,7 @@ winnt_stat(const WCHAR *path, struct stati64 *st)
 	}
 	st->st_mode = fileattr_to_unixmode(attr, path);
 	if (len) {
-	    finalname[min(len, PATH_MAX-1)] = L'\0';
+	    finalname[min(len, numberof(finalname)-1)] = L'\0';
 	    path = finalname;
 	    if (wcsncmp(path, namespace_prefix, numberof(namespace_prefix)) == 0)
 		path += numberof(namespace_prefix);
