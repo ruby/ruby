@@ -2220,15 +2220,13 @@ time_timespec(VALUE num, int interval)
     interval = 1;
 #endif
 
-    switch (TYPE(num)) {
-      case T_FIXNUM:
+    if (FIXNUM_P(num)) {
 	t.tv_sec = NUM2TIMET(num);
 	if (interval && t.tv_sec < 0)
 	    rb_raise(rb_eArgError, "%s must be positive", tstr);
 	t.tv_nsec = 0;
-	break;
-
-      case T_FLOAT:
+    }
+    else if (RB_FLOAT_TYPE_P(num)) {
 	if (interval && RFLOAT_VALUE(num) < 0.0)
 	    rb_raise(rb_eArgError, "%s must be positive", tstr);
 	else {
@@ -2251,16 +2249,14 @@ time_timespec(VALUE num, int interval)
 		rb_raise(rb_eRangeError, "%f out of Time range", RFLOAT_VALUE(num));
 	    }
 	}
-	break;
-
-      case T_BIGNUM:
+    }
+    else if (RB_TYPE_P(num, T_BIGNUM)) {
 	t.tv_sec = NUM2TIMET(num);
 	if (interval && t.tv_sec < 0)
 	    rb_raise(rb_eArgError, "%s must be positive", tstr);
 	t.tv_nsec = 0;
-	break;
-
-      default:
+    }
+    else {
 	i = INT2FIX(1);
 	ary = rb_check_funcall(num, id_divmod, 1, &i);
 	if (ary != Qundef && !NIL_P(ary = rb_check_array_type(ary))) {
@@ -2276,7 +2272,6 @@ time_timespec(VALUE num, int interval)
 	    rb_raise(rb_eTypeError, "can't convert %"PRIsVALUE" into %s",
 		     rb_obj_class(num), tstr);
         }
-	break;
     }
     return t;
 }
