@@ -1714,6 +1714,7 @@ st_hash(const void *ptr, size_t len, st_index_t h)
 #else
 #define UNALIGNED_ADD_ALL UNALIGNED_ADD_4
 #endif
+#undef SKIP_TAIL
     if (len >= sizeof(st_index_t)) {
 #if !UNALIGNED_WORD_ACCESS
 	int align = (int)((st_data_t)data % sizeof(st_index_t));
@@ -1778,6 +1779,7 @@ st_hash(const void *ptr, size_t len, st_index_t h)
 #endif
 
 	    if (len < (size_t)align) goto skip_tail;
+# define SKIP_TAIL 1
 	    h = murmur_step(h, t);
 	    data += pack;
 	    len -= pack;
@@ -1804,6 +1806,7 @@ st_hash(const void *ptr, size_t len, st_index_t h)
 	case 4:
 	    t |= (st_index_t)*(uint32_t*)data;
 	    goto skip_tail;
+# define SKIP_TAIL 1
 #endif
 	case 3: t |= data_at(2) << 16;
 	case 2: t |= data_at(1) << 8;
@@ -1819,7 +1822,7 @@ st_hash(const void *ptr, size_t len, st_index_t h)
 	UNALIGNED_ADD_ALL;
 #undef UNALIGNED_ADD
 #endif
-#if !UNALIGNED_WORD_ACCESS || (SIZEOF_ST_INDEX_T <= 8 && CHAR_BIT == 8)
+#ifdef SKIP_TAIL
       skip_tail:
 #endif
 	h ^= t; h -= ROTL(t, 7);
