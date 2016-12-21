@@ -25,6 +25,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Rescue modifier now applicable to method arguments.
   [Feature #12686]
 
+* Toplevel return is now allowed.  [Feature #4840]
+
 === Core classes updates (outstanding ones only)
 
 * Array

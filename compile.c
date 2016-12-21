@@ -4635,12 +4635,18 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	LABEL *lstart = NEW_LABEL(line);
 	LABEL *lend = NEW_LABEL(line);
 	LABEL *lcont = NEW_LABEL(line);
+	LINK_ELEMENT *last;
+	int last_leave = 0;
 	struct ensure_range er;
 	struct iseq_compile_data_ensure_node_stack enl;
 	struct ensure_range *erange;
 
 	INIT_ANCHOR(ensr);
 	COMPILE_POPPED(ensr, "ensure ensr", node->nd_ensr);
+	last = ensr->last;
+	last_leave = last && IS_INSN(last) && IS_INSN_ID(last, leave);
+	if (!popped && last_leave)
+	    popped = 1;
 
 	er.begin = lstart;
 	er.end = lend;
@@ -4657,12 +4663,15 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	    ADD_SEQ(ret, ensr);
 	}
 	ADD_LABEL(ret, lcont);
+	if (last_leave) ADD_INSN(ret, line, pop);
 
 	erange = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->erange;
-	while (erange) {
-	    ADD_CATCH_ENTRY(CATCH_TYPE_ENSURE, erange->begin, erange->end,
-			    ensure, lcont);
-	    erange = erange->next;
+	if (lstart->link.next != &lend->link) {
+	    while (erange) {
+		ADD_CATCH_ENTRY(CATCH_TYPE_ENSURE, erange->begin, erange->end,
+				ensure, lcont);
+		erange = erange->next;
+	    }
 	}
 
 	ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = enl.prev;
@@ -5463,13 +5472,20 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	rb_iseq_t *is = iseq;
 
 	if (is) {
-	    if (is->body->type == ISEQ_TYPE_TOP) {
-		COMPILE_ERROR(ERROR_ARGS "Invalid return");
+	    enum iseq_type type = is->body->type;
+	    const rb_iseq_t *parent_iseq = is->body->parent_iseq;
+	    enum iseq_type parent_type = parent_iseq ? parent_iseq->body->type : type;
+
+	    if (type == ISEQ_TYPE_TOP || type == ISEQ_TYPE_MAIN ||
+		((type == ISEQ_TYPE_RESCUE || type == ISEQ_TYPE_ENSURE) &&
+		 (parent_type == ISEQ_TYPE_TOP || parent_type == ISEQ_TYPE_MAIN))) {
+		ADD_INSN(ret, line, putnil);
+		ADD_INSN(ret, line, leave);
 	    }
 	    else {
 		LABEL *splabel = 0;
 
-		if (is->body->type == ISEQ_TYPE_METHOD) {
+		if (type == ISEQ_TYPE_METHOD) {
 		    splabel = NEW_LABEL(0);
 		    ADD_LABEL(ret, splabel);
 		    ADD_ADJUST(ret, line, 0);
@@ -5477,7 +5493,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 
 		COMPILE(ret, "return nd_stts (return val)", node->nd_stts);
 
-		if (is->body->type == ISEQ_TYPE_METHOD) {
+		if (type == ISEQ_TYPE_METHOD) {
 		    add_ensure_iseq(ret, iseq, 1);
 		    ADD_TRACE(ret, line, RUBY_EVENT_RETURN);
 		    ADD_INSN(ret, line, leave);
