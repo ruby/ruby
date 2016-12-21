@@ -63,6 +63,11 @@ cmp(VALUE x, VALUE y)
             return 1;
         return 0;
     }
+#ifdef _WIN32
+    if (rb_objspace_garbage_object_p(x)) {
+	rb_fatal("cmp(%p, %p)", (void *)x, (void *)y);
+    }
+#endif
     return rb_cmpint(rb_funcall(x, id_cmp, 1, y), x, y);
 }
 
