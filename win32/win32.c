@@ -5547,11 +5547,11 @@ static int
 winnt_stat(const WCHAR *path, struct stati64 *st)
 {
     HANDLE f;
+    WCHAR finalname[PATH_MAX];
 
     memset(st, 0, sizeof(*st));
     f = open_special(path, 0, 0);
     if (f != INVALID_HANDLE_VALUE) {
-	WCHAR finalname[PATH_MAX];
 	const DWORD attr = stati64_handle(f, st);
 	const DWORD len = get_final_path(f, finalname, numberof(finalname), 0);
 	CloseHandle(f);
@@ -5560,7 +5560,7 @@ winnt_stat(const WCHAR *path, struct stati64 *st)
 	}
 	st->st_mode = fileattr_to_unixmode(attr, path);
 	if (len) {
-	    finalname[len] = L'\0';
+	    finalname[min(len, PATH_MAX-1)] = L'\0';
 	    path = finalname;
 	    if (wcsncmp(path, namespace_prefix, numberof(namespace_prefix)) == 0)
 		path += numberof(namespace_prefix);
