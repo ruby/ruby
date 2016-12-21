@@ -2223,6 +2223,12 @@ rb_int_truncate(VALUE num, int ndigits)
  *     34567.89.round(2)  #=> 34567.89
  *     34567.89.round(3)  #=> 34567.89
  *
+ *  If <code>half:</code> optional keyword is given, just-half number
+ *  will be rounded according to that value.  If it is
+ *  <code>:up</code> or +nil+, the result will be rounded up, or it is
+ *  <code>:even</code>, the result will be rounded to nearest even
+ *  number, or it is <code>:down</code>, the result will be rounded
+ *  down.
  */
 
 static VALUE
