@@ -482,51 +482,44 @@ static VALUE
 num_exact(VALUE v)
 {
     VALUE tmp;
-    int t;
 
-    t = TYPE(v);
-    switch (t) {
-      case T_FIXNUM:
-      case T_BIGNUM:
+    if (NIL_P(v)) {
+	rb_raise(rb_eTypeError, "can't convert nil into an exact number");
+    }
+    else if (RB_INTEGER_TYPE_P(v)) {
         return v;
-
-      case T_RATIONAL:
-        break;
-
-      case T_STRING:
-      case T_NIL:
+    }
+    else if (RB_TYPE_P(v, T_RATIONAL)) {
+	goto rational;
+    }
+    else if (RB_TYPE_P(v, T_STRING)) {
         goto typeerror;
-
-      default:
+    }
+    else {
         if ((tmp = rb_check_funcall(v, rb_intern("to_r"), 0, NULL)) != Qundef) {
             /* test to_int method availability to reject non-Numeric
              * objects such as String, Time, etc which have to_r method. */
             if (!rb_respond_to(v, rb_intern("to_int"))) goto typeerror;
-            v = tmp;
-            break;
         }
-        if (!NIL_P(tmp = rb_check_to_integer(v, "to_int"))) {
-            v = tmp;
-            break;
+        else if (!NIL_P(tmp = rb_check_to_int(v))) {
+            return tmp;
         }
-        goto typeerror;
+        else {
+            goto typeerror;
+        }
     }
 
-    t = TYPE(v);
-    switch (t) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-        return v;
-
-      case T_RATIONAL:
+    if (RB_INTEGER_TYPE_P(tmp)) {
+        v = tmp;
+    }
+    else if (RB_TYPE_P(tmp, T_RATIONAL)) {
+        v = tmp;
+      rational:
         if (RRATIONAL(v)->den == INT2FIX(1))
             v = RRATIONAL(v)->num;
-        break;
-
-      default:
+    }
+    else {
       typeerror:
-	if (NIL_P(v))
-	    rb_raise(rb_eTypeError, "can't convert nil into an exact number");
 	rb_raise(rb_eTypeError, "can't convert %"PRIsVALUE" into an exact number",
 		 rb_obj_class(v));
     }

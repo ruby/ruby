@@ -1089,4 +1089,14 @@ class TestTime < Test::Unit::TestCase
     t = Time.utc(2017, 1, 1, 1, 0, 0).getlocal("-05:00")
     assert_equal("366", t.strftime("%j"))
   end
+
+  def test_num_exact_error
+    bad = EnvUtil.labeled_class("BadValue").new
+    x = EnvUtil.labeled_class("Inexact") do
+      def to_s; "Inexact"; end
+      define_method(:to_int) {bad}
+      define_method(:to_r) {bad}
+    end.new
+    assert_raise_with_message(TypeError, /Inexact/) {Time.at(x)}
+  end
 end
