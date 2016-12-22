@@ -133,20 +133,20 @@ extern "C" {
 # endif
 #endif
 
-static inline int
+static inline unsigned int
 nlz_int(unsigned int x)
 {
 #if defined(HAVE_BUILTIN___BUILTIN_CLZ)
     if (x == 0) return SIZEOF_INT * CHAR_BIT;
-    return __builtin_clz(x);
+    return (unsigned int)__builtin_clz(x);
 #else
     unsigned int y;
 # if 64 < SIZEOF_INT * CHAR_BIT
-    int n = 128;
+    unsigned int n = 128;
 # elif 32 < SIZEOF_INT * CHAR_BIT
-    int n = 64;
+    unsigned int n = 64;
 # else
-    int n = 32;
+    unsigned int n = 32;
 # endif
 # if 64 < SIZEOF_INT * CHAR_BIT
     y = x >> 64; if (y) {n -= 64; x = y;}
@@ -159,24 +159,24 @@ nlz_int(unsigned int x)
     y = x >>  4; if (y) {n -=  4; x = y;}
     y = x >>  2; if (y) {n -=  2; x = y;}
     y = x >>  1; if (y) {return n - 2;}
-    return (int)(n - x);
+    return (unsigned int)(n - x);
 #endif
 }
 
-static inline int
+static inline unsigned int
 nlz_long(unsigned long x)
 {
 #if defined(HAVE_BUILTIN___BUILTIN_CLZL)
     if (x == 0) return SIZEOF_LONG * CHAR_BIT;
-    return __builtin_clzl(x);
+    return (unsigned int)__builtin_clzl(x);
 #else
     unsigned long y;
 # if 64 < SIZEOF_LONG * CHAR_BIT
-    int n = 128;
+    unsigned int n = 128;
 # elif 32 < SIZEOF_LONG * CHAR_BIT
-    int n = 64;
+    unsigned int n = 64;
 # else
-    int n = 32;
+    unsigned int n = 32;
 # endif
 # if 64 < SIZEOF_LONG * CHAR_BIT
     y = x >> 64; if (y) {n -= 64; x = y;}
@@ -189,25 +189,25 @@ nlz_long(unsigned long x)
     y = x >>  4; if (y) {n -=  4; x = y;}
     y = x >>  2; if (y) {n -=  2; x = y;}
     y = x >>  1; if (y) {return n - 2;}
-    return (int)(n - x);
+    return (unsigned int)(n - x);
 #endif
 }
 
 #ifdef HAVE_LONG_LONG
-static inline int
+static inline unsigned int
 nlz_long_long(unsigned LONG_LONG x)
 {
 #if defined(HAVE_BUILTIN___BUILTIN_CLZLL)
     if (x == 0) return SIZEOF_LONG_LONG * CHAR_BIT;
-    return __builtin_clzll(x);
+    return (unsigned int)__builtin_clzll(x);
 #else
     unsigned LONG_LONG y;
 # if 64 < SIZEOF_LONG_LONG * CHAR_BIT
-    int n = 128;
+    unsigned int n = 128;
 # elif 32 < SIZEOF_LONG_LONG * CHAR_BIT
-    int n = 64;
+    unsigned int n = 64;
 # else
-    int n = 32;
+    unsigned int n = 32;
 # endif
 # if 64 < SIZEOF_LONG_LONG * CHAR_BIT
     y = x >> 64; if (y) {n -= 64; x = y;}
@@ -220,17 +220,17 @@ nlz_long_long(unsigned LONG_LONG x)
     y = x >>  4; if (y) {n -=  4; x = y;}
     y = x >>  2; if (y) {n -=  2; x = y;}
     y = x >>  1; if (y) {return n - 2;}
-    return (int)(n - x);
+    return (unsigned int)(n - x);
 #endif
 }
 #endif
 
 #ifdef HAVE_UINT128_T
-static inline int
+static inline unsigned int
 nlz_int128(uint128_t x)
 {
     uint128_t y;
-    int n = 128;
+    unsigned int n = 128;
     y = x >> 64; if (y) {n -= 64; x = y;}
     y = x >> 32; if (y) {n -= 32; x = y;}
     y = x >> 16; if (y) {n -= 16; x = y;}
@@ -238,12 +238,13 @@ nlz_int128(uint128_t x)
     y = x >>  4; if (y) {n -=  4; x = y;}
     y = x >>  2; if (y) {n -=  2; x = y;}
     y = x >>  1; if (y) {return n - 2;}
-    return (int)(n - x);
+    return (unsigned int)(n - x);
 }
 #endif
 
-static inline int
-nlz_intptr(uintptr_t x) {
+static inline unsigned int
+nlz_intptr(uintptr_t x)
+{
 #if SIZEOF_VOIDP == 8
     return nlz_long_long(x);
 #elif SIZEOF_VOIDP == 4
@@ -251,10 +252,11 @@ nlz_intptr(uintptr_t x) {
 #endif
 }
 
-static inline int
-rb_popcount32(uint32_t x) {
+static inline unsigned int
+rb_popcount32(uint32_t x)
+{
 #ifdef HAVE_BUILTIN___BUILTIN_POPCOUNT
-    return __builtin_popcount(x);
+    return (unsigned int)__builtin_popcount(x);
 #else
     x = (x & 0x55555555) + (x >> 1 & 0x55555555);
     x = (x & 0x33333333) + (x >> 2 & 0x33333333);
@@ -265,7 +267,8 @@ rb_popcount32(uint32_t x) {
 }
 
 static inline int
-rb_popcount64(uint64_t x) {
+rb_popcount64(uint64_t x)
+{
 #ifdef HAVE_BUILTIN___BUILTIN_POPCOUNT
     return __builtin_popcountll(x);
 #else
@@ -279,7 +282,8 @@ rb_popcount64(uint64_t x) {
 }
 
 static inline int
-rb_popcount_intptr(uintptr_t x) {
+rb_popcount_intptr(uintptr_t x)
+{
 #if SIZEOF_VOIDP == 8
     return rb_popcount64(x);
 #elif SIZEOF_VOIDP == 4
@@ -288,7 +292,8 @@ rb_popcount_intptr(uintptr_t x) {
 }
 
 static inline int
-ntz_int32(uint32_t x) {
+ntz_int32(uint32_t x)
+{
 #ifdef HAVE_BUILTIN___BUILTIN_CTZ
     return __builtin_ctz(x);
 #else
@@ -297,7 +302,8 @@ ntz_int32(uint32_t x) {
 }
 
 static inline int
-ntz_int64(uint64_t x) {
+ntz_int64(uint64_t x)
+{
 #ifdef HAVE_BUILTIN___BUILTIN_CTZLL
     return __builtin_ctzll(x);
 #else
@@ -306,7 +312,8 @@ ntz_int64(uint64_t x) {
 }
 
 static inline int
-ntz_intptr(uintptr_t x) {
+ntz_intptr(uintptr_t x)
+{
 #if SIZEOF_VOIDP == 8
     return ntz_int64(x);
 #elif SIZEOF_VOIDP == 4
@@ -397,17 +404,20 @@ rb_fix_mod_fix(VALUE x, VALUE y)
 
 #if defined(HAVE_UINT128_T)
 #   define bit_length(x) \
+    (unsigned int) \
     (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int((unsigned int)(x)) : \
      sizeof(x) <= SIZEOF_LONG ? SIZEOF_LONG * CHAR_BIT - nlz_long((unsigned long)(x)) : \
      sizeof(x) <= SIZEOF_LONG_LONG ? SIZEOF_LONG_LONG * CHAR_BIT - nlz_long_long((unsigned LONG_LONG)(x)) : \
      SIZEOF_INT128_T * CHAR_BIT - nlz_int128((uint128_t)(x)))
 #elif defined(HAVE_LONG_LONG)
 #   define bit_length(x) \
+    (unsigned int) \
     (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int((unsigned int)(x)) : \
      sizeof(x) <= SIZEOF_LONG ? SIZEOF_LONG * CHAR_BIT - nlz_long((unsigned long)(x)) : \
      SIZEOF_LONG_LONG * CHAR_BIT - nlz_long_long((unsigned LONG_LONG)(x)))
 #else
 #   define bit_length(x) \
+    (unsigned int) \
     (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int((unsigned int)(x)) : \
      SIZEOF_LONG * CHAR_BIT - nlz_long((unsigned long)(x)))
 #endif
@@ -485,7 +495,7 @@ struct RBignum {
         BDIGIT ary[BIGNUM_EMBED_LEN_MAX];
     } as;
 };
-#define BIGNUM_SIGN_BIT FL_USER1
+#define BIGNUM_SIGN_BIT ((VALUE)FL_USER1)
 /* sign: positive:1, negative:0 */
 #define BIGNUM_SIGN(b) ((RBASIC(b)->flags & BIGNUM_SIGN_BIT) != 0)
 #define BIGNUM_SET_SIGN(b,sign) \
@@ -495,13 +505,13 @@ struct RBignum {
 #define BIGNUM_NEGATIVE_P(b) (!BIGNUM_SIGN(b))
 #define BIGNUM_NEGATE(b) (RBASIC(b)->flags ^= BIGNUM_SIGN_BIT)
 
-#define BIGNUM_EMBED_FLAG FL_USER2
-#define BIGNUM_EMBED_LEN_MASK (FL_USER5|FL_USER4|FL_USER3)
+#define BIGNUM_EMBED_FLAG ((VALUE)FL_USER2)
+#define BIGNUM_EMBED_LEN_MASK ((VALUE)(FL_USER5|FL_USER4|FL_USER3))
 #define BIGNUM_EMBED_LEN_SHIFT (FL_USHIFT+BIGNUM_EMBED_LEN_NUMBITS)
 #define BIGNUM_LEN(b) \
     ((RBASIC(b)->flags & BIGNUM_EMBED_FLAG) ? \
-     (long)((RBASIC(b)->flags >> BIGNUM_EMBED_LEN_SHIFT) & \
-            (BIGNUM_EMBED_LEN_MASK >> BIGNUM_EMBED_LEN_SHIFT)) : \
+     (size_t)((RBASIC(b)->flags >> BIGNUM_EMBED_LEN_SHIFT) & \
+	      (BIGNUM_EMBED_LEN_MASK >> BIGNUM_EMBED_LEN_SHIFT)) : \
      RBIGNUM(b)->as.heap.len)
 /* LSB:BIGNUM_DIGITS(b)[0], MSB:BIGNUM_DIGITS(b)[BIGNUM_LEN(b)-1] */
 #define BIGNUM_DIGITS(b) \
@@ -559,7 +569,7 @@ struct RHash {
 #undef RHASH_SIZE
 #define RHASH_ITER_LEV(h) (RHASH(h)->iter_lev)
 #define RHASH_IFNONE(h) (RHASH(h)->ifnone)
-#define RHASH_SIZE(h) (RHASH(h)->ntbl ? (st_index_t)RHASH(h)->ntbl->num_entries : 0)
+#define RHASH_SIZE(h) (RHASH(h)->ntbl ? RHASH(h)->ntbl->num_entries : (st_index_t)0)
 #endif
 
 /* missing/setproctitle.c */
@@ -834,8 +844,8 @@ enum {
 };
 
 struct cmp_opt_data {
-    int opt_methods;
-    int opt_inited;
+    unsigned int opt_methods;
+    unsigned int opt_inited;
 };
 
 #define NEW_CMP_OPT_MEMO(type, value) \
@@ -1214,7 +1224,7 @@ rb_float_flonum_value(VALUE v)
 	/* e: xx1... -> 011... */
 	/*    xx0... -> 100... */
 	/*      ^b63           */
-	t.v = RUBY_BIT_ROTR((2 - b63) | (v & ~0x03), 3);
+	t.v = RUBY_BIT_ROTR((2 - b63) | (v & ~(VALUE)0x03), 3);
 	return t.d;
     }
 #endif
