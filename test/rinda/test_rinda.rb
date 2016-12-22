@@ -552,6 +552,26 @@ module RingIPv6
     end
     skip 'IPv6 not available'
   end
+
+  def ipv6_mc(rf, hops = nil)
+    ifaddr = prepare_ipv6(rf)
+    rf.multicast_hops = hops if hops
+    begin
+      v6mc = rf.make_socket("ff02::1")
+    rescue Errno::EINVAL
+      # somehow Debian 6.0.7 needs ifname
+      v6mc = rf.make_socket("ff02::1%#{ifaddr.name}")
+    rescue Errno::EADDRNOTAVAIL
+      return # IPv6 address for multicast not available
+    rescue Errno::ENETDOWN
+      return # Network is down
+    end
+    begin
+      yield v6mc
+    ensure
+      v6mc.close
+    end
+  end
 end
 
 class TestRingServer < Test::Unit::TestCase
@@ -788,20 +808,10 @@ class TestRingFinger < Test::Unit::TestCase
   end
 
   def test_make_socket_ipv6_multicast
-    ifaddr = prepare_ipv6(@rf)
-    begin
-      v6mc = @rf.make_socket("ff02::1")
-    rescue Errno::EINVAL
-      # somehow Debian 6.0.7 needs ifname
-      v6mc = @rf.make_socket("ff02::1%#{ifaddr.name}")
-    rescue Errno::EADDRNOTAVAIL
-      return # IPv6 address for multicast not available
+    ipv6_mc(@rf) do |v6mc|
+      assert_equal(1, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_LOOP).int)
+      assert_equal(1, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS).int)
     end
-
-    assert_equal(1, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_LOOP).int)
-    assert_equal(1, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS).int)
-  ensure
-    v6mc.close if v6mc
   end
 
   def test_make_socket_ipv4_multicast_hops
@@ -813,19 +823,9 @@ class TestRingFinger < Test::Unit::TestCase
   end
 
   def test_make_socket_ipv6_multicast_hops
-    ifaddr = prepare_ipv6(@rf)
-    @rf.multicast_hops = 2
-    begin
-      v6mc = @rf.make_socket("ff02::1")
-    rescue Errno::EINVAL
-      # somehow Debian 6.0.7 needs ifname
-      v6mc = @rf.make_socket("ff02::1%#{ifaddr.name}")
-    rescue Errno::EADDRNOTAVAIL
-      return # IPv6 address for multicast not available
+    ipv6_mc(@rf, 2) do |v6mc|
+      assert_equal(2, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS).int)
     end
-    assert_equal(2, v6mc.getsockopt(:IPPROTO_IPV6, :IPV6_MULTICAST_HOPS).int)
-  ensure
-    v6mc.close if v6mc
   end
 
 end
