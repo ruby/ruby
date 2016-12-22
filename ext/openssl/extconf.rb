@@ -81,6 +81,7 @@ engines.each { |name|
 # added in 0.9.8X
 have_func("EVP_CIPHER_CTX_new")
 have_func("EVP_CIPHER_CTX_free")
+OpenSSL.check_func_or_macro("SSL_CTX_clear_options", "openssl/ssl.h")
 
 # added in 1.0.0
 have_func("ASN1_TIME_adj")
@@ -143,6 +144,7 @@ OpenSSL.check_func_or_macro("SSL_CTX_set_tmp_ecdh_callback", "openssl/ssl.h") # 
 OpenSSL.check_func_or_macro("SSL_CTX_set_min_proto_version", "openssl/ssl.h")
 have_func("SSL_CTX_get_security_level")
 have_func("X509_get0_notBefore")
+have_func("SSL_SESSION_get_protocol_version")
 
 Logging::message "=== Checking done. ===\n"
 

@@ -93,23 +93,22 @@ ossl_ssl_session_initialize_copy(VALUE self, VALUE other)
     return self;
 }
 
-#if HAVE_SSL_SESSION_CMP == 0
-int SSL_SESSION_cmp(const SSL_SESSION *a,const SSL_SESSION *b)
+#if !defined(HAVE_SSL_SESSION_CMP)
+int ossl_SSL_SESSION_cmp(const SSL_SESSION *a, const SSL_SESSION *b)
 {
     unsigned int a_len;
     const unsigned char *a_sid = SSL_SESSION_get_id(a, &a_len);
     unsigned int b_len;
     const unsigned char *b_sid = SSL_SESSION_get_id(b, &b_len);
 
-#if !defined(HAVE_OPAQUE_OPENSSL) /* missing SSL_SESSION_get_ssl_version() ? */
-    if (a->ssl_version != b->ssl_version)
+    if (SSL_SESSION_get_protocol_version(a) != SSL_SESSION_get_protocol_version(b))
 	return 1;
-#endif
     if (a_len != b_len)
 	return 1;
 
     return CRYPTO_memcmp(a_sid, b_sid, a_len);
 }
+#define SSL_SESSION_cmp(a, b) ossl_SSL_SESSION_cmp(a, b)
 #endif
 
 /*

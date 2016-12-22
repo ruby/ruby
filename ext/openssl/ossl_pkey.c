@@ -73,10 +73,13 @@ const rb_data_type_t ossl_evp_pkey_type = {
 static VALUE
 pkey_new0(EVP_PKEY *pkey)
 {
-    if (!pkey)
-	ossl_raise(ePKeyError, "cannot make new key from NULL");
+    VALUE obj;
+    int type;
 
-    switch (EVP_PKEY_base_id(pkey)) {
+    if (!pkey || (type = EVP_PKEY_base_id(pkey)) == EVP_PKEY_NONE)
+	ossl_raise(rb_eRuntimeError, "pkey is empty");
+
+    switch (type) {
 #if !defined(OPENSSL_NO_RSA)
     case EVP_PKEY_RSA:
 	return ossl_rsa_new(pkey);
@@ -94,7 +97,9 @@ pkey_new0(EVP_PKEY *pkey)
 	return ossl_ec_new(pkey);
 #endif
     default:
-	ossl_raise(ePKeyError, "unsupported key type");
+	obj = NewPKey(cPKey);
+	SetPKey(obj, pkey);
+	return obj;
     }
 }
 
@@ -260,7 +265,7 @@ static VALUE
 ossl_pkey_initialize(VALUE self)
 {
     if (rb_obj_is_instance_of(self, cPKey)) {
-	ossl_raise(rb_eNotImpError, "OpenSSL::PKey::PKey is an abstract class.");
+	ossl_raise(rb_eTypeError, "OpenSSL::PKey::PKey can't be instantiated directly");
     }
     return self;
 }
