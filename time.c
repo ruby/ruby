@@ -53,6 +53,30 @@ eq(VALUE x, VALUE y)
     return RTEST(rb_funcall(x, id_eq, 1, y));
 }
 
+#ifdef _MSC_VER
+static VALUE
+inquire_value(VALUE x, const char *mesg)
+{
+    VALUE klass;
+    LPEXCEPTION_POINTERS info;
+    if (SPECIAL_CONST_P(x)) return Qnil;
+    __try {
+	klass = CLASS_OF(x);
+    }
+    __except (GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ?
+	      (info = GetExceptionInformation(), EXCEPTION_EXECUTE_HANDLER) :
+	      EXCEPTION_CONTINUE_SEARCH) {
+	PEXCEPTION_RECORD rec = info->ExceptionRecord;
+	rb_fatal("Access violation at %p: class of %p: %s",
+		 (void *)rec->ExceptionInformation[1],
+		 (void *)x, mesg);
+    }
+    return klass;
+}
+#else
+# define inquire_value(x, mesg) (void)(x)
+#endif
+
 static int
 cmp(VALUE x, VALUE y)
 {
@@ -63,11 +87,8 @@ cmp(VALUE x, VALUE y)
             return 1;
         return 0;
     }
-#ifdef _WIN32
-    if (rb_objspace_garbage_object_p(x)) {
-	rb_fatal("cmp(%p, %p)", (void *)x, (void *)y);
-    }
-#endif
+    inquire_value(x, "cmp(x)");
+    inquire_value(y, "cmp(y)");
     return rb_cmpint(rb_funcall(x, id_cmp, 1, y), x, y);
 }
 
