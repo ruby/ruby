@@ -2816,8 +2816,12 @@ unlink_internal(const char *path, VALUE pathv, void *arg)
  *
  *  Deletes the named files, returning the number of names
  *  passed as arguments. Raises an exception on any error.
- *  If the file doesn't exist the exception raised is
- *  <code>Errno::ENOENT</code>.
+ *  Since the underlying implementation relies on the
+ *  <code>unlink(2)</code> system call, the type of
+ *  exception raised depends on its error type (see
+ *  https://linux.die.net/man/2/unlink) and has the form of
+ *  e.g. <code>Errno::ENOENT</code>.
+ *
  *  See also <code>Dir::rmdir</code>.
  */
 
