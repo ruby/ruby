@@ -3210,7 +3210,7 @@ rb_str_casecmp(VALUE str1, VALUE str2)
  *     "aBcDeF".casecmp?("abcdef")    #=> true
  *     "abcdef".casecmp?("abcdefg")   #=> false
  *     "abcdef".casecmp?("ABCDEF")    #=> true
- *     "äöü".casecmp?("ÄÖÜ")          #=> true
+ *     "\u{e4 f6 fc}".casecmp?("\u{c4 d6 dc}") #=> true
  */
 
 static VALUE
