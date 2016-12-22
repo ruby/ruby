@@ -441,7 +441,7 @@ enum ruby_special_consts {
 #endif
 #define SYMBOL_FLAG RUBY_SYMBOL_FLAG
 
-#define RB_TEST(v) !(((VALUE)(v) & ~RUBY_Qnil) == 0)
+#define RB_TEST(v) !(((VALUE)(v) & (VALUE)~RUBY_Qnil) == 0)
 #define RB_NIL_P(v) !((VALUE)(v) != RUBY_Qnil)
 #define RTEST(v) RB_TEST(v)
 #define NIL_P(v) RB_NIL_P(v)
@@ -1617,7 +1617,7 @@ rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
     }
     else {
 	size_t size, max = LONG_MAX - sizeof(VALUE) + 1;
-	if (RB_UNLIKELY(rb_mul_size_overflow(count, elsize, max, &size))) {
+	if (RB_UNLIKELY(rb_mul_size_overflow(cnt, elsize, max, &size))) {
 	    ruby_malloc_size_overflow(cnt, elsize);
 	}
 	cnt = (size + sizeof(VALUE) - 1) / sizeof(VALUE);
