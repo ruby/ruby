@@ -11879,9 +11879,9 @@ argf_skip(VALUE argf)
  *  call-seq:
  *     ARGF.close  -> ARGF
  *
- *  Closes the current file and skips to the next in the stream. Trying to
- *  close a file that has already been closed causes an +IOError+ to be
- *  raised.
+ *  Closes the current file and skips to the next file in ARGV. If there are
+ *  no more files to open, just closes the current file. +STDIN+ will not be
+ *  closed.
  *
  * For example:
  *
@@ -11891,7 +11891,6 @@ argf_skip(VALUE argf)
  *     ARGF.close
  *     ARGF.filename  #=> "bar"
  *     ARGF.close
- *     ARGF.close     #=> closed stream (IOError)
  */
 static VALUE
 argf_close_m(VALUE argf)
