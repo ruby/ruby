@@ -456,11 +456,7 @@ EOT
       alias pend skip
 
       def assert_valid_syntax(code, fname = caller_locations(1, 1)[0], mesg = fname.to_s, verbose: nil)
-        code = code.b
-        code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
-          "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ok}\n"
-        }
-        code.force_encoding(Encoding::UTF_8)
+        code = code.dup.force_encoding(Encoding::UTF_8)
         verbose, $VERBOSE = $VERBOSE, verbose
         yield if defined?(yield)
         case
@@ -469,21 +465,17 @@ EOT
         when defined?(fname.path) && defined?(fname.lineno)
           fname, line = fname.path, fname.lineno
         else
-          line = 0
+          line = 1
         end
         assert_nothing_raised(SyntaxError, mesg) do
-          assert_equal(:ok, catch {|tag| eval(code, binding, fname, line)}, mesg)
+          RubyVM::InstructionSequence.compile(code, fname, fname, line)
         end
       ensure
         $VERBOSE = verbose
       end
 
       def assert_syntax_error(code, error, fname = caller_locations(1, 1)[0], mesg = fname.to_s)
-        code = code.b
-        code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
-          "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ng}\n"
-        }
-        code.force_encoding(Encoding::US_ASCII)
+        code = code.dup.force_encoding(Encoding::US_ASCII)
         verbose, $VERBOSE = $VERBOSE, nil
         yield if defined?(yield)
         case
@@ -492,10 +484,10 @@ EOT
         when defined?(fname.path) && defined?(fname.lineno)
           fname, line = fname.path, fname.lineno
         else
-          line = 0
+          line = 1
         end
         e = assert_raise(SyntaxError, mesg) do
-          catch {|tag| eval(code, binding, fname, line)}
+          RubyVM::InstructionSequence.compile(code, fname, fname, line)
         end
         assert_match(error, e.message, mesg)
         e
