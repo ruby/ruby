@@ -54,27 +54,38 @@ eq(VALUE x, VALUE y)
 }
 
 #ifdef _MSC_VER
-static VALUE
-inquire_value(VALUE x, const char *mesg)
+static void *
+value_insane_p(VALUE x)
 {
     VALUE klass;
     LPEXCEPTION_POINTERS info;
-    if (SPECIAL_CONST_P(x)) return Qnil;
+    void *failed_address = 0;
+    if (SPECIAL_CONST_P(x)) return 0;
+    if (!RBASIC_CLASS(x)) return (void *)x;
     __try {
-	klass = CLASS_OF(x);
+	RB_GC_GUARD(klass) = RBASIC_CLASS(x);
     }
     __except (GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ?
 	      (info = GetExceptionInformation(), EXCEPTION_EXECUTE_HANDLER) :
 	      EXCEPTION_CONTINUE_SEARCH) {
 	PEXCEPTION_RECORD rec = info->ExceptionRecord;
-	rb_fatal("Access violation at %p: class of %p: %s",
-		 (void *)rec->ExceptionInformation[1],
-		 (void *)x, mesg);
+	failed_address = (void *)rec->ExceptionInformation[1];
     }
-    return klass;
+    return failed_address;
+}
+
+static void
+inquire_value(VALUE x, const char *mesg)
+{
+    void *failed_address = value_insane_p(x);
+    if (failed_address) {
+	rb_fatal("Access violation at %p: class of %p: %s",
+		 failed_address, (void *)x, mesg);
+    }
 }
 #else
-# define inquire_value(x, mesg) (void)(x)
+# define value_insane_p(x) ((void)(x), 0)
+# define inquire_value(x, mesg) (void)value_insane_p(x)
 #endif
 
 static int
@@ -2605,6 +2616,12 @@ time_arg(int argc, VALUE *argv, struct vtm *vtm)
     else {
 	/* when argc == 8, v[6] is timezone, but ignored */
         vtm->sec  = NIL_P(v[5])?0:obj2subsecx(v[5], &vtm->subsecx);
+    }
+
+    if (value_insane_p(vtm->subsecx)) {
+	rb_fatal("argc=%d, sec=%"PRIsVALUE", subsec=%"PRIsVALUE", subsecx=%p",
+		 argc, v[5], argc == 7 ? v[6] : Qnil,
+		 &RBASIC_CLASS(vtm->subsecx));
     }
 
     validate_vtm(vtm);
