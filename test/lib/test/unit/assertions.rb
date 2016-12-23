@@ -455,10 +455,9 @@ EOT
       # compatiblity with test-unit
       alias pend skip
 
-      def assert_valid_syntax(code, fname = caller_locations(1, 1)[0], mesg = fname.to_s, verbose: nil)
+      def prepare_syntax_check(code, fname = caller_locations(2, 1)[0], mesg = fname.to_s, verbose: nil)
         code = code.dup.force_encoding(Encoding::UTF_8)
         verbose, $VERBOSE = $VERBOSE, verbose
-        yield if defined?(yield)
         case
         when Array === fname
           fname, line = *fname
@@ -467,32 +466,28 @@ EOT
         else
           line = 1
         end
-        assert_nothing_raised(SyntaxError, mesg) do
-          RubyVM::InstructionSequence.compile(code, fname, fname, line)
-        end
+        yield(code, fname, line, mesg)
       ensure
         $VERBOSE = verbose
       end
 
-      def assert_syntax_error(code, error, fname = caller_locations(1, 1)[0], mesg = fname.to_s)
-        code = code.dup.force_encoding(Encoding::US_ASCII)
-        verbose, $VERBOSE = $VERBOSE, nil
-        yield if defined?(yield)
-        case
-        when Array === fname
-          fname, line = *fname
-        when defined?(fname.path) && defined?(fname.lineno)
-          fname, line = fname.path, fname.lineno
-        else
-          line = 1
+      def assert_valid_syntax(code, *args)
+        prepare_syntax_check(code, *args) do |src, fname, line, mesg|
+          yield if defined?(yield)
+          assert_nothing_raised(SyntaxError, mesg) do
+            RubyVM::InstructionSequence.compile(src, fname, fname, line)
+          end
         end
-        e = assert_raise(SyntaxError, mesg) do
-          RubyVM::InstructionSequence.compile(code, fname, fname, line)
+      end
+
+      def assert_syntax_error(code, error, *args)
+        prepare_syntax_check(code, *args) do |src, fname, line, mesg|
+          yield if defined?(yield)
+          e = assert_raise(SyntaxError, mesg) do
+            RubyVM::InstructionSequence.compile(src, fname, fname, line)
+          end
+          assert_match(error, e.message, mesg)
         end
-        assert_match(error, e.message, mesg)
-        e
-      ensure
-        $VERBOSE = verbose
       end
 
       def assert_normal_exit(testsrc, message = '', child_env: nil, **opt)
