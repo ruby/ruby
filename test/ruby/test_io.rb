@@ -3192,7 +3192,7 @@ __END__
       }
 
       IO.select(tempfiles)
-    }, bug8080, timeout: 30
+    }, bug8080, timeout: 50
   end if defined?(Process::RLIMIT_NOFILE)
 
   def test_read_32bit_boundary
