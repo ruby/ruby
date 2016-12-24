@@ -445,6 +445,7 @@ module Test
           quit_workers
 
           unless @interrupt || !@options[:retry] || @need_quit
+            parallel = @options[:parallel]
             @options[:parallel] = false
             suites, rep = rep.partition {|r| r[:testcase] && r[:file] && r[:report].any? {|e| !e[2].is_a?(MiniTest::Skip)}}
             suites.map {|r| r[:file]}.uniq.each {|file| require file}
@@ -454,6 +455,7 @@ module Test
               puts "\n""Retrying..."
               _run_suites(suites, type)
             end
+            @options[:parallel] = parallel
           end
           unless @options[:retry]
             del_status_line or puts
