@@ -61,7 +61,7 @@ value_insane_p(VALUE x)
     LPEXCEPTION_POINTERS info;
     void *failed_address = 0;
     if (SPECIAL_CONST_P(x)) return 0;
-    if (!RBASIC_CLASS(x)) return (void *)x;
+    if (!&RBASIC_CLASS(x)) return (void *)x;
     __try {
 	RB_GC_GUARD(klass) = RBASIC_CLASS(x);
     }
