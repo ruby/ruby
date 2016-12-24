@@ -853,6 +853,22 @@ module Test
       end
     end
 
+    module RepeatOption # :nodoc: all
+      def setup_options(parser, options)
+        super
+        options[:repeat_count] = nil
+        parser.separator "repeat options:"
+        parser.on '--repeat-count=NUM', "Number of times to repeat", Integer do |n|
+          options[:repeat_count] = n
+        end
+      end
+
+      def _run_anything(type)
+        @repeat_count = @options[:repeat_count]
+        super
+      end
+    end
+
     module ExcludesOption # :nodoc: all
       class ExcludedMethods < Struct.new(:excludes)
         def exclude(name, reason)
@@ -922,6 +938,7 @@ module Test
       include Test::Unit::Parallel
       include Test::Unit::Skipping
       include Test::Unit::GlobOption
+      include Test::Unit::RepeatOption
       include Test::Unit::LoadPathOption
       include Test::Unit::GCStressOption
       include Test::Unit::ExcludesOption
