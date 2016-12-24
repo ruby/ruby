@@ -7058,7 +7058,7 @@ typedef struct {
 
 static const rb_iseq_t *
 method_for_self(VALUE name, VALUE arg, rb_insn_func_t func,
-		VALUE (*build)(rb_iseq_t *, LINK_ANCHOR *, VALUE))
+		VALUE (*build)(rb_iseq_t *, LINK_ANCHOR *const, VALUE))
 {
     VALUE path, absolute_path;
     accessor_args acc;
