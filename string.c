@@ -7424,7 +7424,6 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
     VALUE line, rs, orig = str, opts = Qnil, chomp = Qfalse;
     const char *ptr, *pend, *subptr, *subend, *rsptr, *hit, *adjusted;
     long pos, len, rslen;
-    int paragraph_mode = 0;
     int rsnewline = 0;
 
     VALUE MAYBE_UNUSED(ary);
@@ -7469,6 +7468,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	}
     }
 
+    if (!RSTRING_LEN(str)) goto end;
     str = rb_str_new_frozen(str);
     ptr = subptr = RSTRING_PTR(str);
     pend = RSTRING_END(str);
@@ -7482,10 +7482,39 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	enc = rb_enc_check(str, rs);
 
     if (rslen == 0) {
-	rsptr = "\n\n";
-	rslen = 2;
-	paragraph_mode = 1;
-	rsnewline = 1;
+	/* paragraph mode */
+	int n;
+	const char *eol = NULL;
+	subend = subptr;
+	while (subend < pend) {
+	    do {
+		if (rb_enc_ascget(subend, pend, &n, enc) != '\r')
+		    n = 0;
+		rslen = n + rb_enc_mbclen(subend + n, pend, enc);
+		if (rb_enc_is_newline(subend + n, pend, enc)) {
+		    if (eol == subend) break;
+		    subend += rslen;
+		    if (subptr) eol = subend;
+		}
+		else {
+		    if (!subptr) subptr = subend;
+		    subend += rslen;
+		}
+		rslen = 0;
+	    } while (subend < pend);
+	    if (!subptr) break;
+	    line = rb_str_subseq(str, subptr - ptr,
+				 subend - subptr + (chomp ? 0 : rslen));
+	    if (wantarray) {
+		rb_ary_push(ary, line);
+	    }
+	    else {
+		rb_yield(line);
+		str_mod_check(str, ptr, len);
+	    }
+	    subptr = eol = NULL;
+	}
+	goto end;
     }
     else {
 	rsptr = RSTRING_PTR(rs);
@@ -7495,7 +7524,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	}
     }
 
-    if ((rs == rb_default_rs || paragraph_mode) && !rb_enc_asciicompat(enc)) {
+    if ((rs == rb_default_rs) && !rb_enc_asciicompat(enc)) {
 	rs = rb_str_new(rsptr, rslen);
 	rs = rb_str_encode(rs, rb_enc_from_encoding(enc), 0, Qnil);
 	rsptr = RSTRING_PTR(rs);
@@ -7512,16 +7541,6 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	    continue;
 	}
 	subend = hit += rslen;
-	if (paragraph_mode) {
-	    while (hit < pend) {
-		int n;
-		if (rb_enc_ascget(hit, pend, &n, enc) != '\r')
-		    n = 0;
-		if (!rb_enc_is_newline(hit + n, pend, enc)) break;
-		hit += n;
-		hit += rb_enc_mbclen(hit, pend, enc);
-	    }
-	}
 	if (chomp) {
 	    if (rsnewline) {
 		subend = chomp_newline(subptr, subend, enc);
@@ -7542,7 +7561,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
     }
 
     if (subptr != pend) {
-	if (chomp && paragraph_mode) {
+	if (chomp) {
 	    pend = chomp_newline(subptr, pend, enc);
 	}
 	line = rb_str_subseq(str, subptr - ptr, pend - subptr);
@@ -7553,6 +7572,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	RB_GC_GUARD(str);
     }
 
+  end:
     if (wantarray)
 	return ary;
     else

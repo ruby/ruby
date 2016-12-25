@@ -785,6 +785,11 @@ CODE
     assert_equal(S("hello\n\n"), res[0])
     assert_equal(S("world"),     res[1])
 
+    res=[]
+    S("hello\r\n\r\nworld").each_line(S('')) {|x| res << x}
+    assert_equal(S("hello\r\n\r\n"), res[0])
+    assert_equal(S("world"),         res[1])
+
     $/ = "!"
 
     res=[]
@@ -826,6 +831,11 @@ CODE
     S("hello\n\n\nworld").each_line(S(''), chomp: true) {|x| res << x}
     assert_equal(S("hello\n"), res[0])
     assert_equal(S("world"),   res[1])
+
+    res = []
+    S("hello\r\n\r\nworld").each_line(S(''), chomp: true) {|x| res << x}
+    assert_equal(S("hello\r\n"), res[0])
+    assert_equal(S("world"),     res[1])
 
     res = []
     S("hello!world").each_line(S('!'), chomp: true) {|x| res << x}
