@@ -7511,18 +7511,17 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	    subptr = adjusted;
 	    continue;
 	}
-	subend = hit + rslen;
+	subend = hit += rslen;
 	if (paragraph_mode) {
-	    while (subend < pend) {
+	    while (hit < pend) {
 		int n;
-		if (rb_enc_ascget(subend, pend, &n, enc) != '\r')
+		if (rb_enc_ascget(hit, pend, &n, enc) != '\r')
 		    n = 0;
-		if (!rb_enc_is_newline(subend + n, pend, enc)) break;
-		subend += n;
-		subend += rb_enc_mbclen(subend, pend, enc);
+		if (!rb_enc_is_newline(hit + n, pend, enc)) break;
+		hit += n;
+		hit += rb_enc_mbclen(hit, pend, enc);
 	    }
 	}
-	hit = subend;
 	if (chomp) {
 	    if (rsnewline) {
 		subend = chomp_newline(subptr, subend, enc);
@@ -7591,7 +7590,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
  *     "o\nworl"
  *     "d"
  *     Example three
- *     "hello\n\n\n"
+ *     "hello\n\n"
  *     "world"
  */
 
