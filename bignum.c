@@ -6090,10 +6090,11 @@ big_shift(VALUE x, long n)
     return x;
 }
 
+enum {DBL_BIGDIG = ((DBL_MANT_DIG + BITSPERDIG) / BITSPERDIG)};
+
 static double
 big_fdiv(VALUE x, VALUE y, long ey)
 {
-#define DBL_BIGDIG ((DBL_MANT_DIG + BITSPERDIG) / BITSPERDIG)
     VALUE z;
     long l, ex;
 
