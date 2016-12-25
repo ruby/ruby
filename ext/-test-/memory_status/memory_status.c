@@ -17,12 +17,19 @@ read_status(VALUE self)
 #if defined __APPLE__
     VALUE rss;
     kern_return_t error;
-    mach_msg_type_number_t out_count;
+# if defined MACH_TASK_BASIC_INFO
+    const task_flavor_t flavor = MACH_TASK_BASIC_INFO;
+    mach_msg_type_number_t out_count = MACH_TASK_BASIC_INFO_COUNT;
     mach_task_basic_info_data_t taskinfo;
+# else
+    const task_flavor_t flavor = TASK_BASIC_INFO;
+    mach_msg_type_number_t out_count = TASK_BASIC_INFO_COUNT;
+    task_basic_info_data_t taskinfo;
+# endif
 
     taskinfo.virtual_size = 0;
-    out_count = MACH_TASK_BASIC_INFO_COUNT;
-    error = task_info(mach_task_self(), MACH_TASK_BASIC_INFO,
+    taskinfo.resident_size = 0;
+    error = task_info(mach_task_self(), flavor,
 		      (task_info_t)&taskinfo, &out_count);
     if (error != KERN_SUCCESS) return Qnil;
     size = ULL2NUM(taskinfo.virtual_size);
