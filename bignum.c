@@ -6102,6 +6102,8 @@ big_fdiv(VALUE x, VALUE y, long ey)
     l = BIGNUM_LEN(x);
     ex = l * BITSPERDIG - nlz(BDIGITS(x)[l-1]);
     ex -= 2 * DBL_BIGDIG * BITSPERDIG;
+    if (ex > BITSPERDIG) ex -= BITSPERDIG;
+    else if (ex > 0) ex = 0;
     if (ex) x = big_shift(x, ex);
 
     bigdivrem(x, y, &z, 0);
