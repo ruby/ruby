@@ -157,28 +157,29 @@ define rp
     print (struct RHash *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_STRUCT
-    printf "%sT_STRUCT%s: len=%ld ", $color_type, $color_end, \
-      (($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) ? \
+    set $len = (($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) ? \
        ($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) >> (RUBY_FL_USHIFT+1) : \
        ((struct RStruct *)($arg0))->as.heap.len)
+    printf "%sT_STRUCT%s: len=%ld ", $color_type, $color_end, $len
     print (struct RStruct *)($arg0)
-    x/xw (($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) ? \
-          ((struct RStruct *)($arg0))->as.ary : \
-          ((struct RStruct *)($arg0))->as.heap.ptr)
+    output/x *(($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) ? \
+              ((struct RStruct *)($arg0))->as.ary : \
+              ((struct RStruct *)($arg0))->as.heap.ptr) @ $len
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_BIGNUM
-    printf "%sT_BIGNUM%s: sign=%d len=%ld ", $color_type, $color_end, \
-      (($flags & RUBY_FL_USER1) != 0), \
-      (($flags & RUBY_FL_USER2) ? \
+    set $len = (($flags & RUBY_FL_USER2) ? \
        ($flags & (RUBY_FL_USER5|RUBY_FL_USER4|RUBY_FL_USER3)) >> (RUBY_FL_USHIFT+3) : \
        ((struct RBignum*)($arg0))->as.heap.len)
+    printf "%sT_BIGNUM%s: sign=%d len=%ld ", $color_type, $color_end, \
+      (($flags & RUBY_FL_USER1) != 0), $len
     if $flags & RUBY_FL_USER2
       printf "(embed) "
     end
     print (struct RBignum *)($arg0)
-    x/xw (($flags & RUBY_FL_USER2) ? \
-          ((struct RBignum*)($arg0))->as.ary : \
-          ((struct RBignum*)($arg0))->as.heap.digits)
+    output/x *(($flags & RUBY_FL_USER2) ? \
+              ((struct RBignum*)($arg0))->as.ary : \
+              ((struct RBignum*)($arg0))->as.heap.digits) @ $len
+    printf "\n"
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_RATIONAL
     printf "%sT_RATIONAL%s: ", $color_type, $color_end
