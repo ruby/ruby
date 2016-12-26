@@ -510,8 +510,15 @@ config.status: $(CONFIG_H)
 
 BANG = !
 
-!if exist($(RUBY_CONFIG_H))
-!include $(RUBY_CONFIG_H)
+!if !exist(config.status)
+!else if [for /f "skip=1 delims=, tokens=2-3" %I in (config.status) do @ \
+    if "%I" == "@RUBY_SO_NAME@" ( \
+	if not "%J" == "$(RUBY_SO_NAME)" exit 1 \
+    ) else if "%I" == "@target_alias@" ( \
+	if not "%J" == "$(ARCH)-$(PLATFORM)" exit 1 \
+    ) \
+]
+config.status: nul
 !endif
 
 guard = INCLUDE_RUBY_CONFIG_H
@@ -778,14 +785,8 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 #define EXECUTABLE_EXTS $(EXECUTABLE_EXTS)
 #define RUBY_COREDLL "$(RT)"
-#define LIBRUBY_SO "$(LIBRUBY_SO)"
 #define RUBY_PLATFORM "$(arch)"
 #define RUBY_SITEARCH "$(sitearch)"
-#if 0
-$(BANG)if "$(RUBY_SO_NAME)"!="$$(RUBY_SO_NAME)" || "$(ARCH)-$(PLATFORM)"!="$$(ARCH)-$$(PLATFORM)"
-config.h: nul
-$(BANG)endif
-#endif
 #endif /* $(guard) */
 <<
 
