@@ -324,7 +324,8 @@ onig_vsnprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc,
   need = (pat_end - pat) * 4 + 4;
 
   if (n + need < (size_t )bufsize) {
-    xstrcat((char* )buf, ": /", bufsize);
+    static const char sep[] = ": /";
+    memcpy((char* )buf + n, sep, sizeof(sep));
     s = buf + onigenc_str_bytelen_null(ONIG_ENCODING_ASCII, buf);
 
     p = pat;
