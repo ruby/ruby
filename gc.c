@@ -6003,9 +6003,8 @@ rb_gc_unprotect_logging(void *objptr, const char *filename, int line)
 	    cnt++;
 	}
 	else {
-	    ptr = (char *)malloc(strlen(buff) + 1);
+	    ptr = (strdup)(buff);
 	    if (!ptr) rb_memerror();
-	    strcpy(ptr, buff);
 	}
 	st_insert(rgengc_unprotect_logging_table, (st_data_t)ptr, cnt);
     }

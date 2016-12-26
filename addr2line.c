@@ -427,22 +427,25 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	   obj_info_t **objp, line_info_t *lines, int offset);
 
 static void
-append_obj(obj_info_t **objp) {
+append_obj(obj_info_t **objp)
+{
     obj_info_t *newobj = calloc(1, sizeof(obj_info_t));
     if (*objp) (*objp)->next = newobj;
     *objp = newobj;
 }
 
 static void
-follow_debuglink(char *debuglink, int num_traces, void **traces,
+follow_debuglink(const char *debuglink, int num_traces, void **traces,
 		 obj_info_t **objp, line_info_t *lines, int offset)
 {
     /* Ideally we should check 4 paths to follow gnu_debuglink,
        but we handle only one case for now as this format is used
        by some linux distributions. See GDB's info for detail. */
     static const char global_debug_dir[] = "/usr/lib/debug";
-    char *p, *subdir;
+    const size_t global_debug_dir_len = sizeof(global_debug_dir) - 1;
+    char *p;
     obj_info_t *o1 = *objp, *o2;
+    size_t len;
 
     p = strrchr(binary_filename, '/');
     if (!p) {
@@ -450,11 +453,13 @@ follow_debuglink(char *debuglink, int num_traces, void **traces,
     }
     p[1] = '\0';
 
-    subdir = (char *)alloca(strlen(binary_filename) + 1);
-    strcpy(subdir, binary_filename);
-    strcpy(binary_filename, global_debug_dir);
-    strlcat(binary_filename, subdir, PATH_MAX);
-    strlcat(binary_filename, debuglink, PATH_MAX);
+    len = strlen(binary_filename);
+    if (len >= PATH_MAX - global_debug_dir_len)
+	len = PATH_MAX - global_debug_dir_len - 1;
+    memmove(binary_filename + global_debug_dir_len, binary_filename, len);
+    memcpy(binary_filename, global_debug_dir, global_debug_dir_len);
+    len += global_debug_dir_len;
+    strlcpy(binary_filename + len, debuglink, PATH_MAX - len);
 
     append_obj(objp);
     o2 = *objp;
@@ -726,7 +731,7 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces)
 	    path = info.dli_fname;
 	    obj->path = path;
 	    lines[i].path = path;
-	    strcpy(binary_filename, path);
+	    strlcpy(binary_filename, path, PATH_MAX);
 	    if (fill_lines(num_traces, traces, 1, &obj, lines, i) == (uintptr_t)-1)
 		break;
 	}
