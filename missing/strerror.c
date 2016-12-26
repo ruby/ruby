@@ -13,6 +13,6 @@ strerror(int error)
     if (error <= sys_nerr && error > 0) {
 	return sys_errlist[error];
     }
-    sprintf(msg, "Unknown error (%d)", error);
+    snprintf(msg, sizeof(msg), "Unknown error (%d)", error);
     return msg;
 }
