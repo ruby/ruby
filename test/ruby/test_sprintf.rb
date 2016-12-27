@@ -421,4 +421,9 @@ class TestSprintf < Test::Unit::TestCase
       assert_equal(enc, e.message.encoding)
     end
   end
+
+  def test_width_underflow
+    bug = 'https://github.com/mruby/mruby/issues/3347'
+    assert_equal("!", sprintf("%*c", 0, ?!.ord), bug)
+  end
 end

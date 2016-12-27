@@ -689,10 +689,10 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    CHECK(n);
 		    rb_enc_mbcput(c, &buf[blen], enc);
 		    blen += n;
-		    FILL(' ', width-1);
+		    if (width > 1) FILL(' ', width-1);
 		}
 		else {
-		    FILL(' ', width-1);
+		    if (width > 1) FILL(' ', width-1);
 		    CHECK(n);
 		    rb_enc_mbcput(c, &buf[blen], enc);
 		    blen += n;

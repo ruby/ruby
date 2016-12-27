@@ -1,3 +1,8 @@
+Tue Dec 27 19:57:51 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): fix memory corruption by width underflow.
+	  https://github.com/mruby/mruby/issues/3347
+
 Tue Dec 27 19:55:10 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	 * re.c (rb_reg_regsub): other than regexp has no name references.
