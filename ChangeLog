@@ -1,3 +1,12 @@
+Tue Dec 27 20:13:12 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* re.c (match_{names,hash,equal}): consider the case of RMatch::regexp
+	  is nil.
+
+	  Don't assume RMatch::regexp always contains a valid Regexp instance;
+	  it will be Qnil if the MatchData is created by
+	  rb_backref_set_string(). [Bug #13054]
+
 Tue Dec 27 20:02:43 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* array.c (rb_ary_{repeated_,}combination): check array length every
