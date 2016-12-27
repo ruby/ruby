@@ -1,3 +1,16 @@
+Tue Dec 27 18:28:20 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dln.c (dln_load): raise LoadError instead of fatal error on
+	  recent OSX, dlclose seems fixed in El Capitan or later.
+	  [ruby-core:78200] [Bug #12956]
+
+Tue Dec 27 18:17:23 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/misc/test_ruby_mode.rb (assert_indent): since write-region
+	  in Emacs 25.1 no longer displays the "Wrote file" message, shows
+	  the explicit message to check if successfully finished.
+	  [ruby-core:77355] [Bug #12785]
+
 Tue Nov 15 15:29:36 2016  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ssl_npn_select_cb_common): fix parsing
