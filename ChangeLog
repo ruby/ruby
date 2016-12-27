@@ -1,3 +1,16 @@
+Tue Dec 27 19:51:43 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* encoding.c (rb_enc_ascget): handle needmore error from
+	  rb_enc_precise_mbclen().
+
+	  rb_enc_ascget() erroneously reports success even if the given byte
+	  sequence is incomplete, for non-ASCII compatible encoding strings.
+
+	  rb_enc_precise_mbclen() may return a negative value on error, and thus
+	  rb_enc_ascget() must not store the return value in 'unsigned int';
+	  otherwise the subsequent MBCLEN_CHARFOUND_P() check won't catch the
+	  error. [Bug #13034]
+
 Tue Dec 27 19:49:01 2016  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* cont.c, eval.c, eval_error.c, thread.c, vm_eval.c, vm_trace.c: add
