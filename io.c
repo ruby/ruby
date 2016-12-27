@@ -1775,7 +1775,6 @@ io_fillbuf(rb_io_t *fptr)
 		rb_syserr_fail_path(e, path);
 	    }
         }
-	if (r > 0) READ_CHECK(fptr);
         fptr->rbuf.off = 0;
         fptr->rbuf.len = (int)r; /* r should be <= rbuf_capa */
         if (r == 0)
