@@ -169,6 +169,7 @@ y.tab.c
 
 # /gems
 /gems/*.gem
+/gems/*-*
 
 # /spec/
 /spec/mspec
