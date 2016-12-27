@@ -18,6 +18,9 @@ end
 class TestRubyMode
   EVAL_OPT = "--eval"
   EXPR_SAVE = "(save-buffer)"
+  finish_mark = "ok-#{$$}"
+  FINISH_MARK = /^#{finish_mark}$/
+  EXPR_FINISH = "(print \'#{finish_mark})"
   EXPR_RUBYMODE = "(ruby-mode)"
   EXPR_NOBACKUP = "(progn" \
   " (set (make-local-variable \'backup-inhibited) t)" \
@@ -31,6 +34,7 @@ class TestRubyMode
     exprs = exprs.map {|expr| [EVAL_OPT, expr]}.flatten
     exprs.unshift(EVAL_OPT, EXPR_RUBYMODE)
     exprs.unshift(EVAL_OPT, EXPR_NOBACKUP)
+    exprs.push(EVAL_OPT, EXPR_FINISH)
     output = IO.popen([*EMACS, tmp.path, *exprs, err:[:child, :out]], "r") {|e| e.read}
     tmp.open
     result = tmp.read
@@ -49,7 +53,7 @@ class TestRubyMode
         source.gsub!(space, '')
       end
       result, output = run_emacs(source, EXPR_INDENT, EXPR_SAVE)
-      assert_match(/^Wrote /, output)
+      assert_match(FINISH_MARK, output)
       assert_equal(expected, result, message(*message) {diff expected, result})
     end
 
