@@ -1315,10 +1315,10 @@ int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optiona
   optional (optionalが負の場合は-optional-1) 個のIDは省略可能
   キーワードです．必須キーワードがkeyword_hash中にない場合，
   "missing keyword"ArgumentErrorが発生します．省略可能キーワー
-  ドがない場合は，values中の対応する要素は変更されません．
-  keyword_hashに使用されない要素がある場合は，optionalが負なら
-  新しいHashとして省略可能引数の次に保存されますが，そうでなけ
-  れば"unknown keyword"ArgumentErrorが発生します．
+  ドがない場合は，values中の対応する要素にはQundefがセットされ
+  ます．keyword_hashに使用されない要素がある場合は，optionalが
+  負なら無視されますが，そうでなければ"unknown keyword"
+  ArgumentErrorが発生します．
 
 VALUE rb_extract_keywords(VALUE *original_hash)
 

@@ -1,3 +1,13 @@
+Tue Dec 27 19:40:09 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* README.EXT{.ja,}: [DOC] optional keyword arguments are defaulted to
+	  Qundef. ignored keys are kept in the hash but a new Hash is not
+	  created. [Bug #13004]
+
+	* class.c (rb_get_kwargs): when values are stored, corresponding keys
+	  have been remove from the keyword hash, and the hash should be empty
+	  in that case. [Bug #13004]
+
 Tue Dec 27 19:34:47 2016  Aaron Patterson <tenderlove@ruby-lang.org>
 
 	* variable.c (rb_ivar_count): stop reading past the end of ivptr array.
