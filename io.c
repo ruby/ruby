@@ -7986,7 +7986,7 @@ argf_close(VALUE argf)
     if (RB_TYPE_P(file, T_FILE)) {
 	rb_io_set_write_io(file, Qnil);
     }
-    rb_funcall3(file, rb_intern("close"), 0, 0);
+    io_close(file);
     ARGF.init_p = -1;
 }
 
