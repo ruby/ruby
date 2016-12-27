@@ -1,3 +1,8 @@
+Tue Dec 27 19:34:47 2016  Aaron Patterson <tenderlove@ruby-lang.org>
+
+	* variable.c (rb_ivar_count): stop reading past the end of ivptr array.
+	  [Bug #12988]
+
 Tue Dec 27 19:32:03 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread.c (rb_thread_s_abort_exc, rb_thread_s_abort_exc_set):
