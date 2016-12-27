@@ -1,3 +1,12 @@
+Tue Dec 27 19:32:03 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_thread_s_abort_exc, rb_thread_s_abort_exc_set):
+	  [DOC] the raised exception will be re-raised in the main thread,
+	  and then follows the ordinary exception sequence, exit status is
+	  not 0. [Bug #12991]
+
+	* thread.c (rb_thread_abort_exc_set): ditto.
+
 Tue Dec 27 19:29:54 2016  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in: reverse compatibility_version and current_version for
