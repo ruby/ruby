@@ -2562,7 +2562,7 @@ obj2subsecx(VALUE obj, VALUE *subsecx)
     return obj2ubits(obj, 6); /* vtm->sec */
 }
 
-static long
+static VALUE
 usec2subsecx(VALUE obj)
 {
     if (RB_TYPE_P(obj, T_STRING)) {
