@@ -167,7 +167,7 @@ static VALUE rb_eFiberError;
     if (!(ptr)) rb_raise(rb_eFiberError, "uninitialized fiber"); \
 } while (0)
 
-NOINLINE(static VALUE cont_capture(volatile int *stat));
+NOINLINE(static VALUE cont_capture(volatile int *volatile stat));
 
 #define THREAD_MUST_BE_RUNNING(th) do { \
 	if (!(th)->tag) rb_raise(rb_eThreadError, "not running thread");	\
@@ -478,13 +478,9 @@ cont_new(VALUE klass)
 }
 
 static VALUE
-cont_capture(volatile int *stat)
-#if defined(__clang__) && \
-    __clang_major__ == 3 && __clang_minor__ == 8 && __clang_patch__ == 0
-__attribute__ ((optnone))
-#endif
+cont_capture(volatile int *volatile stat)
 {
-    rb_context_t *cont;
+    rb_context_t *volatile cont;
     rb_thread_t *th = GET_THREAD();
     volatile VALUE contval;
 
