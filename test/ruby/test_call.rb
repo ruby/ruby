@@ -31,4 +31,12 @@ class TestCall < Test::Unit::TestCase
     assert_nothing_raised(ArgumentError) {o.foo}
     assert_raise_with_message(ArgumentError, e.message, bug9622) {o.foo(100)}
   end
+
+  def test_call_splat_order
+    bug12860 = '[ruby-core:77701] [Bug# 12860]'
+    ary = [1, 2]
+    assert_equal([1, 2, 1], aaa(*ary, ary.shift), bug12860)
+    ary = [1, 2]
+    assert_equal([0, 1, 2, 1], aaa(0, *ary, ary.shift), bug12860)
+  end
 end

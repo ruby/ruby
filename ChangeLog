@@ -1,3 +1,9 @@
+Tue Dec 27 18:34:04 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (setup_args): duplicate splatting array if more
+	  arguments present to obey left-to-right execution order.
+	  [ruby-core:77701] [Bug# 12860]
+
 Tue Dec 27 18:28:20 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dln.c (dln_load): raise LoadError instead of fatal error on
