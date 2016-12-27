@@ -1,3 +1,15 @@
+Tue Dec 27 20:02:43 2016  Kazuki Yamaguchi  <k@rhe.jp>
+
+	* array.c (rb_ary_{repeated_,}combination): check array length every
+	  time after yielding.
+
+	  Since the Array may be modified during rb_yield(), the length before
+	  invoking the block can't be trusted. Fix possible out-of-bounds read
+	  in Array#combination and Array#repeated_combination.
+
+	  It may better to make a defensive copy of the Array, but for now let's
+	  follow what Array#permutation does. [Bug #13052]
+
 Tue Dec 27 19:57:51 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): fix memory corruption by width underflow.
