@@ -3,11 +3,6 @@ Tue Dec 27 20:43:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* time.c (usec2subsecx): fix return type, which is a numeric object but
 	  not a long int. [Bug #13066]
 
-Tue Dec 27 20:39:28 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* eval.c (exc_setup_cause): always set cause of cause to get rid of
-	  circular references. [Bug #13043]
-
 Tue Dec 27 20:13:12 2016  Kazuki Yamaguchi  <k@rhe.jp>
 
 	* re.c (match_{names,hash,equal}): consider the case of RMatch::regexp
