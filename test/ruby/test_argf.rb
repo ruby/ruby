@@ -137,7 +137,7 @@ class TestArgf < Test::Unit::TestCase
     INPUT
   end
 
-  def test_new_lineno
+  def test_new_lineno_each
     f = ARGF.class.new(@t1.path, @t2.path, @t3.path)
     result = []
     f.each {|line| result << [f.lineno, line]; break if result.size == 3}
@@ -146,10 +146,16 @@ class TestArgf < Test::Unit::TestCase
 
     f.rewind
     assert_equal(2, f.lineno)
+  ensure
+    f.close
+  end
 
+  def test_new_lineno_each_char
     f = ARGF.class.new(@t1.path, @t2.path, @t3.path)
     f.each_char.to_a
     assert_equal(0, f.lineno)
+  ensure
+    f.close
   end
 
   def test_inplace
