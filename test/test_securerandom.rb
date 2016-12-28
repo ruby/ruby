@@ -198,4 +198,17 @@ end
   def assert_in_range(range, result, mesg = nil)
     assert(range.cover?(result), message(mesg) {"Expected #{result} to be in #{range}"})
   end
+
+  begin
+    Random.random_bytes
+  rescue NotImplementedError
+  else
+    class TestSysRandom < self
+      def setup
+        @it = Random
+      end
+
+      undef test_s_random_number_not_default
+    end
+  end
 end
