@@ -466,8 +466,11 @@ exc_setup_cause(VALUE exc, VALUE cause)
 	}
     }
 #endif
-    if (!NIL_P(cause) && cause != exc) {
+    if (!NIL_P(cause) && cause != exc && BUILTIN_TYPE(cause) != T_NODE) {
 	rb_ivar_set(exc, id_cause, cause);
+	if (!rb_ivar_defined(cause, id_cause)) {
+	    rb_ivar_set(cause, id_cause, Qnil);
+	}
     }
     return exc;
 }
