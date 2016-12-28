@@ -3614,6 +3614,13 @@ fix_fdiv_double(VALUE x, VALUE y)
 double
 rb_int_fdiv_double(VALUE x, VALUE y)
 {
+    if (RB_INTEGER_TYPE_P(y) && !FIXNUM_ZERO_P(y)) {
+	VALUE gcd = rb_gcd(x, y);
+	if (!FIXNUM_ZERO_P(gcd)) {
+	    x = rb_int_idiv(x, gcd);
+	    y = rb_int_idiv(y, gcd);
+	}
+    }
     if (FIXNUM_P(x)) {
         return fix_fdiv_double(x, y);
     }
