@@ -3822,6 +3822,7 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
     if (argc < 1)
 	rb_check_arity(argc, 1, 2);
     re = argv[0];
+    if (NIL_P(re)) return Qnil;
     argv[0] = str;
     result = rb_funcallv(get_pat(re), rb_intern("match"), argc, argv);
     if (!NIL_P(result) && rb_block_given_p()) {
@@ -3852,8 +3853,9 @@ rb_str_match_m_p(int argc, VALUE *argv, VALUE str)
 {
     VALUE re;
     rb_check_arity(argc, 1, 2);
-    re = get_pat(argv[0]);
-    return rb_reg_match_p(re, str, argc > 1 ? NUM2LONG(argv[1]) : 0);
+    re = argv[0];
+    if (NIL_P(re)) return Qfalse;
+    return rb_reg_match_p(get_pat(re), str, argc > 1 ? NUM2LONG(argv[1]) : 0);
 }
 
 enum neighbor_char {

@@ -2469,6 +2469,7 @@ CODE
 
   def test_match_method
     assert_equal("bar", "foobarbaz".match(/bar/).to_s)
+    assert_nil("".match(nil))
 
     o = Regexp.new('foo')
     def o.match(x, y, z); x + y + z; end
@@ -2521,6 +2522,14 @@ CODE
     assert_equal(true, 'Ruby'.match?('R...'))
     assert_equal(false, 'Ruby'.match?('R...', 1))
     assert_equal(false, 'Ruby'.match?('P...'))
+    assert_equal('backref', $&)
+  end
+
+  def test_match_p_nil
+    /backref/ =~ 'backref'
+    # must match here, but not in a separate method, e.g., assert_send,
+    # to check if $~ is affected or not.
+    assert_equal(false, ''.match?(nil))
     assert_equal('backref', $&)
   end
 
