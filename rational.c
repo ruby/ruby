@@ -445,6 +445,8 @@ nurat_canonicalization(int f)
 {
     canonicalization = f;
 }
+#else
+# define canonicalization 0
 #endif
 
 inline static void
@@ -489,10 +491,8 @@ nurat_s_canonicalize_internal(VALUE klass, VALUE num, VALUE den)
     num = f_idiv(num, gcd);
     den = f_idiv(den, gcd);
 
-#ifdef CANON
-    if (f_one_p(den) && canonicalization)
+    if (canonicalization && f_one_p(den))
 	return num;
-#endif
     return nurat_s_new_internal(klass, num, den);
 }
 
@@ -501,10 +501,8 @@ nurat_s_canonicalize_internal_no_reduce(VALUE klass, VALUE num, VALUE den)
 {
     nurat_canonicalize(&num, &den);
 
-#ifdef CANON
-    if (f_one_p(den) && canonicalization)
+    if (canonicalization && f_one_p(den))
 	return num;
-#endif
     return nurat_s_new_internal(klass, num, den);
 }
 
@@ -1957,13 +1955,10 @@ numeric_quo(VALUE x, VALUE y)
         return rb_funcall(x, rb_intern("fdiv"), 1, y);
     }
 
-#ifdef CANON
     if (canonicalization) {
         x = rb_rational_raw1(x);
     }
-    else
-#endif
-    {
+    else {
         x = rb_convert_type(x, T_RATIONAL, "Rational", "to_r");
     }
     return nurat_div(x, y);
@@ -2338,14 +2333,12 @@ read_num(const char **s, int numsign, int strict,
 	    return 0;
 	{
 	    VALUE l = f_expt10(INT2NUM(count));
-#ifdef CANON
 	    if (canonicalization) {
 		*num = rb_int_mul(*num, l);
 		*num = rb_int_plus(*num, fp);
 		*num = rb_rational_new2(*num, l);
 	    }
 	    else
-#endif
 	    {
 		*num = nurat_mul(*num, l);
 		*num = rb_rational_plus(*num, fp);
