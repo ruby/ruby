@@ -2358,11 +2358,22 @@ read_num(const char **s, int numsign, int strict,
 	    exp = rb_int_uminus(exp);
     }
 
-    if (numsign == '-')
-	*num = rb_rational_uminus(*num);
+    if (numsign == '-') {
+	if (RB_TYPE_P(*num, T_RATIONAL)) {
+	    *num = rb_rational_uminus(*num);
+	}
+	else {
+	    *num = rb_int_uminus(*num);
+	}
+    }
     if (!NIL_P(exp)) {
 	VALUE l = f_expt10(exp);
-	*num = nurat_mul(*num, l);
+	if (RB_TYPE_P(*num, T_RATIONAL)) {
+	    *num = nurat_mul(*num, l);
+	}
+	else {
+	    *num = rb_int_mul(*num, l);
+	}
     }
     return 1;
 }
@@ -2388,8 +2399,14 @@ read_rat_nos(const char **s, int sign, int strict,
 	(*s)++;
 	if (!read_den(s, strict, &den))
 	    return 0;
-	if (!(FIXNUM_P(den) && FIX2LONG(den) == 1))
-	    *num = nurat_div(*num, den);
+	if (!(FIXNUM_P(den) && FIX2LONG(den) == 1)) {
+	    if (RB_TYPE_P(*num, T_RATIONAL)) {
+		*num = nurat_div(*num, den);
+	    }
+	    else {
+		*num = rb_int_div(*num, den);
+	    }
+	}
     }
     return 1;
 }

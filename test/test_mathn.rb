@@ -180,4 +180,13 @@ class TestMathn < Test::Unit::TestCase
       assert_equal((-13/5), (-13/5).round(2, half: :down))
     EOS
   end
+
+  def test_rational
+    assert_separately(%w[-rmathn], "#{<<-"begin;"}\n#{<<-"end;"}", ignore_stderr: true)
+    begin;
+      assert_equal(-5, "-5".to_r)
+      assert_equal(1, "5/5".to_r)
+      assert_equal(5, "5e0".to_r)
+    end;
+  end
 end
