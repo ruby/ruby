@@ -1135,7 +1135,6 @@ range_shift(VALUE range, VALUE val)
 {
   VALUE beg = RANGE_BEG(range);
   VALUE end = RANGE_END(range);
-  int exclude_end = EXCL(range);
 
   beg = FIX2INT(beg);
   end = FIX2INT(end);
