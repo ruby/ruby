@@ -481,15 +481,19 @@ nurat_canonicalize(VALUE *num, VALUE *den)
     }
 }
 
+static void
+nurat_reduce(VALUE *x, VALUE *y)
+{
+    VALUE gcd = f_gcd(*x, *y);
+    *x = f_idiv(*x, gcd);
+    *y = f_idiv(*y, gcd);
+}
+
 inline static VALUE
 nurat_s_canonicalize_internal(VALUE klass, VALUE num, VALUE den)
 {
-    VALUE gcd;
-
     nurat_canonicalize(&num, &den);
-    gcd = f_gcd(num, den);
-    num = f_idiv(num, gcd);
-    den = f_idiv(den, gcd);
+    nurat_reduce(&num, &den);
 
     if (canonicalization && f_one_p(den))
 	return num;
@@ -2311,18 +2315,16 @@ islettere(int c)
 }
 
 static int
-read_num(const char **s, int numsign, int strict,
-	 VALUE *num)
+read_num(const char **s, int strict, VALUE *num, VALUE *div)
 {
-    VALUE ip, fp, exp;
+    VALUE fp = ONE, exp, fn = ZERO;
+    int expsign = 0;
 
-    *num = rb_rational_new2(ZERO, ONE);
-    exp = Qnil;
-
+    *div = ONE;
+    *num = ZERO;
     if (**s != '.') {
-	if (!read_digits(s, strict, &ip, NULL))
+	if (!read_digits(s, strict, num, NULL))
 	    return 0;
-	*num = rb_rational_new2(ip, ONE);
     }
 
     if (**s == '.') {
@@ -2333,81 +2335,70 @@ read_num(const char **s, int numsign, int strict,
 	    return 0;
 	{
 	    VALUE l = f_expt10(INT2NUM(count));
-	    if (canonicalization) {
-		*num = rb_int_mul(*num, l);
-		*num = rb_int_plus(*num, fp);
-		*num = rb_rational_new2(*num, l);
-	    }
-	    else
-	    {
-		*num = nurat_mul(*num, l);
-		*num = rb_rational_plus(*num, fp);
-		*num = nurat_div(*num, l);
-	    }
+	    *num = *num == ZERO ? fp : rb_int_plus(rb_int_mul(*num, l), fp);
+	    *div = l;
+	    fn = INT2NUM(count);
 	}
     }
 
     if (islettere(**s)) {
-	int expsign;
-
 	(*s)++;
 	expsign = read_sign(s);
 	if (!read_digits(s, strict, &exp, NULL))
 	    return 0;
-	if (expsign == '-')
-	    exp = rb_int_uminus(exp);
+	if (exp != ZERO) {
+	    if (expsign == '-') {
+		if (fn != ZERO) exp = rb_int_plus(exp, fn);
+		*div = f_expt10(exp);
+	    }
+	    else {
+		if (fn != ZERO) exp = rb_int_minus(exp, fn);
+		if (INT_NEGATIVE_P(exp)) {
+		    *div = f_expt10(exp);
+		}
+		else {
+		    *num = rb_int_mul(*num, f_expt10(exp));
+		    *div = ONE;
+		}
+	    }
+	}
     }
 
-    if (numsign == '-') {
-	if (RB_TYPE_P(*num, T_RATIONAL)) {
-	    *num = rb_rational_uminus(*num);
-	}
-	else {
-	    *num = rb_int_uminus(*num);
-	}
-    }
-    if (!NIL_P(exp)) {
-	VALUE l = f_expt10(exp);
-	if (RB_TYPE_P(*num, T_RATIONAL)) {
-	    *num = nurat_mul(*num, l);
-	}
-	else {
-	    *num = rb_int_mul(*num, l);
-	}
-    }
-    return 1;
-}
-
-inline static int
-read_den(const char **s, int strict,
-	 VALUE *num)
-{
-    if (!read_digits(s, strict, num, NULL))
-	return 0;
     return 1;
 }
 
 static int
-read_rat_nos(const char **s, int sign, int strict,
-	     VALUE *num)
+read_rat_nos(const char **s, int sign, int strict, VALUE *num)
 {
-    VALUE den;
+    VALUE den = ONE, div;
 
-    if (!read_num(s, sign, strict, num))
+    if (!read_num(s, strict, num, &div)) {
+      failed:
+	if (!canonicalization && !strict)
+	    *num = rb_rational_raw(*num, div);
 	return 0;
+    }
+    if (div != ONE) nurat_reduce(num, &div);
+    den = div;
     if (**s == '/') {
 	(*s)++;
-	if (!read_den(s, strict, &den))
-	    return 0;
-	if (!(FIXNUM_P(den) && FIX2LONG(den) == 1)) {
-	    if (RB_TYPE_P(*num, T_RATIONAL)) {
-		*num = nurat_div(*num, den);
-	    }
-	    else {
-		*num = rb_int_div(*num, den);
-	    }
+	if (!read_digits(s, strict, &den, NULL)) goto failed;
+	nurat_reduce(num, &den);
+	if (div != ONE && den != ONE)
+	    den = rb_int_mul(den, div);
+    }
+
+    if (sign == '-') {
+	if (FIXNUM_P(*num)) {
+	    *num = rb_int_uminus(*num);
+	}
+	else {
+	    BIGNUM_NEGATE(*num);
+	    *num = rb_big_norm(*num);
 	}
     }
+    if (!canonicalization || den != ONE)
+	*num = rb_rational_raw(*num, den);
     return 1;
 }
 
