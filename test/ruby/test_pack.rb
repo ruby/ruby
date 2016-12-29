@@ -841,7 +841,7 @@ EXPECTED
   def test_unpack_with_block
     ret = []; "ABCD".unpack("CCCC") {|v| ret << v }
     assert_equal [65, 66, 67, 68], ret
-    ret = []; "A".unpack("B*") {|v| ret << v }
+    ret = []; "A".unpack("B*") {|v| ret << v.dup }
     assert_equal ["01000001"], ret
   end
 
