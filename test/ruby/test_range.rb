@@ -324,7 +324,7 @@ class TestRange < Test::Unit::TestCase
     assert_equal((11...20).shift(-10), 1...10)
 
     assert_raise(TypeError) do
-      "a"..."c".shift(10)
+      ("a"..."c").shift(10)
     end
   end
 
