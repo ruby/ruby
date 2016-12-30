@@ -6172,11 +6172,11 @@ big_fdiv_int(VALUE x, VALUE y)
 {
     if (RTEST(rb_funcall(y, rb_intern("zero?"), 0))) {
 	if (BIGZEROP(x)) {
-	    return 0.0 / 0.0;
+	    return NAN;
 	} else if (BIGNUM_SIGN(x)) {
-	    return 1.0 / 0.0;
+	    return INFINITY;
 	} else {
-	    return -1.0 / 0.0;
+	    return -INFINITY;
 	}
     }
     if (FIXNUM_P(y)) {
