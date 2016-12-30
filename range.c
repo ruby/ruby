@@ -1123,11 +1123,11 @@ range_inspect(VALUE range)
  * Set a number to shift the range as a whole,
  * either positive or negative.
  * Passing ranges made with strings will raise a TypeError
- *    rng = (10..20)
- *    rng.shift(10)  #=> 20..30
- *    rng.shift(5)   #=> 15..25
+ *    rng = (11..20)
+ *    rng.shift(10)  #=> 21..30
+ *    rng.shift(5)   #=> 16..25
  *    rng.shift(-10) #=> 1..10
- *    rng.shift(-5)  #=> 5..15
+ *    rng.shift(-5)  #=> 6..15
  */
 
 static VALUE
