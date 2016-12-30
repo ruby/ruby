@@ -6080,6 +6080,7 @@ rb_big_divmod(VALUE x, VALUE y)
     return rb_assoc_new(bignorm(div), bignorm(mod));
 }
 
+#if 0
 static VALUE
 big_shift(VALUE x, long n)
 {
@@ -6089,82 +6090,144 @@ big_shift(VALUE x, long n)
 	return big_rshift(x, (unsigned long)n);
     return x;
 }
-
-enum {DBL_BIGDIG = ((DBL_MANT_DIG + BITSPERDIG) / BITSPERDIG)};
+#endif
 
 static double
-big_fdiv(VALUE x, VALUE y, long ey)
+big_fdiv(VALUE x, VALUE y, long ey0)
 {
-    VALUE z;
-    long l, ex;
+    long lx, ex;
+    long ly, ey;
+    long s;
 
     bigtrunc(x);
-    l = BIGNUM_LEN(x);
-    ex = l * BITSPERDIG - nlz(BDIGITS(x)[l-1]);
-    ex -= 2 * DBL_BIGDIG * BITSPERDIG;
-    if (ex > BITSPERDIG) ex -= BITSPERDIG;
-    else if (ex > 0) ex = 0;
-    if (ex) x = big_shift(x, ex);
+    lx = BIGNUM_LEN(x);
+    ex = lx * BITSPERDIG - nlz(BDIGITS(x)[lx-1]);
 
-    bigdivrem(x, y, &z, 0);
-    l = ex - ey;
-#if SIZEOF_LONG > SIZEOF_INT
-    {
-	/* Visual C++ can't be here */
-	if (l > INT_MAX) return INFINITY;
-	if (l < INT_MIN) return 0.0;
+    bigtrunc(y);
+    ly = BIGNUM_LEN(y);
+    ey = ly * BITSPERDIG - nlz(BDIGITS(y)[ly-1]);
+    s = ex-ey;
+    if (s > DBL_MANT_DIG) {
+	long t;
+	y = big_lshift(y, s);
+	t = ( (bary_cmp(BDIGITS(x), BIGNUM_LEN(x), BDIGITS(y), BIGNUM_LEN(y)) < 0)
+	    ? (DBL_MANT_DIG+1)
+	    : DBL_MANT_DIG ) ;
+	y = big_rshift(y, t);
+	s -= t;
+    } else if (s >= 0) {
+	long t;
+	VALUE y2 = y;
+	if (s) {
+	    y2 = big_lshift(y, s);
+	}
+	t = ( (bary_cmp(BDIGITS(x), BIGNUM_LEN(x), BDIGITS(y2), BIGNUM_LEN(y2)) < 0)
+	    ? (DBL_MANT_DIG-s+1)
+	    : DBL_MANT_DIG-s ) ;
+	if (t) {
+	    x = big_lshift(x, t);
+	}
+	s = -t;
+    } else if (s < 0) {
+	long t;
+	x = big_lshift(x, -s);
+	t = ( (bary_cmp(BDIGITS(x), BIGNUM_LEN(x), BDIGITS(y), BIGNUM_LEN(y)) < 0)
+	    ? (DBL_MANT_DIG+1)
+	    : DBL_MANT_DIG ) ;
+	x = big_lshift(x, t);
+	s -= t;
+    } else {
+	assert(0);
     }
+    {
+	VALUE z, r;
+	long l = s+1-ey0;
+#if SIZEOF_LONG > SIZEOF_INT
+	{
+	    /* Visual C++ can't be here */
+	    if (l > INT_MAX) return INFINITY;
+	    if (l < INT_MIN) return 0.0;
+	}
 #endif
-    return ldexp(big2dbl(z), (int)l);
+	bigdivrem(x, y, &z, &r);
+	{
+	    int const flg = RTEST(rb_big_odd_p(z));
+	    z = big_rshift(z, 1);
+	    if (flg) {
+		int const sgn_z = BIGNUM_SIGN(z);
+		if ( ! sgn_z) {
+		    z = bigadd(z, rb_int2big(-1), sgn_z);
+		}
+		if (RTEST(rb_big_odd_p(z)) || ( ! BIGZEROP(r)) ) {
+		    z = bigadd(z, rb_int2big(1), sgn_z);
+		}
+	    }
+	}
+	return ldexp(big2dbl(z), (int)l);
+    }
 }
 
 static double
 big_fdiv_int(VALUE x, VALUE y)
 {
-    long l, ey;
-    bigtrunc(y);
-    l = BIGNUM_LEN(y);
-    ey = l * BITSPERDIG - nlz(BDIGITS(y)[l-1]);
-    ey -= DBL_BIGDIG * BITSPERDIG;
-    if (ey) y = big_shift(y, ey);
-    return big_fdiv(x, y, ey);
+    if (RTEST(rb_funcall(y, rb_intern("zero?"), 0))) {
+	if (BIGZEROP(x)) {
+	    return 0.0 / 0.0;
+	} else if (BIGNUM_SIGN(x)) {
+	    return 1.0 / 0.0;
+	} else {
+	    return -1.0 / 0.0;
+	}
+    }
+    if (FIXNUM_P(y)) {
+	y = rb_int2big(FIX2LONG(y));
+    } else if (RB_BIGNUM_TYPE_P(y)) {
+	/*NOP*/
+    } else {
+	assert(0);
+    }
+    return big_fdiv(x, y, 0);
 }
 
 static double
 big_fdiv_float(VALUE x, VALUE y)
 {
-    int i;
-    y = dbl2big(ldexp(frexp(RFLOAT_VALUE(y), &i), DBL_MANT_DIG));
-    return big_fdiv(x, y, i - DBL_MANT_DIG);
+    double dx, dy;
+
+    dy = RFLOAT_VALUE(y);
+
+    if (isnan(dy))
+	return dy;
+
+    dx = big2dbl(x);
+
+    if (isinf(dy) || isinf(dx) || (dy == 0.0)) {
+	return dx / dy;
+    }
+    {
+	VALUE x2 = dbl2big(dx);
+	/* round trip ok? */
+	if (RTEST(rb_big_eql(x, x2))) {
+	    return dx / dy;
+	}
+    }
+    {
+	int i;
+	y = dbl2big(ldexp(frexp(RFLOAT_VALUE(y), &i), DBL_MANT_DIG));
+	return big_fdiv(x, y, i - DBL_MANT_DIG);
+    }
 }
 
 double
 rb_big_fdiv_double(VALUE x, VALUE y)
 {
-    double dx, dy;
-
-    dx = big2dbl(x);
-    if (FIXNUM_P(y)) {
-	dy = (double)FIX2LONG(y);
-	if (isinf(dx))
-	    return big_fdiv_int(x, rb_int2big(FIX2LONG(y)));
+    if (RB_INTEGER_TYPE_P(y)) {
+	return big_fdiv_int(x, y);
     }
-    else if (RB_BIGNUM_TYPE_P(y)) {
-	dy = rb_big2dbl(y);
-	if (isinf(dx) || isinf(dy))
-	    return big_fdiv_int(x, y);
+    if (RB_FLOAT_TYPE_P(y)) {
+	return big_fdiv_float(x, y);
     }
-    else if (RB_FLOAT_TYPE_P(y)) {
-	dy = RFLOAT_VALUE(y);
-	if (isnan(dy))
-	    return dy;
-	if (isinf(dx))
-	    return big_fdiv_float(x, y);
-    }
-    else {
-	return RFLOAT_VALUE(rb_num_coerce_bin(x, y, rb_intern("fdiv")));
-    }
-    return dx / dy;
+    return RFLOAT_VALUE(rb_num_coerce_bin(x, y, rb_intern("fdiv")));
 }
 
 VALUE

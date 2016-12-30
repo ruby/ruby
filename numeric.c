@@ -3594,17 +3594,201 @@ rb_int_mul(VALUE x, VALUE y)
     return rb_num_coerce_bin(x, y, '*');
 }
 
+#if SIZEOF_LONG == 8
+static void
+u128_division(unsigned long x, unsigned long y, unsigned long *pq, unsigned long *pr)
+{
+#if defined(__GNUC__) && defined(__x86_64__)
+    __asm__ (
+        "divq %4"
+        : "=a"(*pq), "=d"(*pr)
+        : "0"(x<<54), "1"(x>>10), "r"(y)
+    );
+#elif defined HAVE_UINT128_T
+    uint128_t x128 = (uint128_t)x << 54;
+    *pq = (unsigned long)(x128 / (uint128_t)y);
+    *pr = (unsigned long)(x128 % (uint128_t)y);
+#else
+    /* based on Hacker's Delight 9-2 fig. 9-1 */
+    /* u/v = q ... r */
+    uint32_t u[5], v[2];
+    uint32_t q[4] = {0, 0, 0, 0};
+    uint32_t r[2] = {0, 0};
+    int m, n;
+    unsigned long const b = 0x100000000UL;
+    unsigned long const bmask = (b-1UL);
+    unsigned const hw = 32U;  /* bitwidth of halfward (uint32_t) */
+    unsigned long qhat;
+    unsigned long rhat;
+    unsigned long p;
+    int i, j;
+    long t, k;
+
+    assert( !! (y & 0x8000000000000000UL));
+    assert((y > x) && (x >= (y>>1)));
+
+    /* load to half-width working arrs */
+    u[0] = 0U;
+    u[1] = (uint32_t)(x << (54-hw));
+    u[2] = (uint32_t)(x >> (hw*2-54));
+    u[3] = (uint32_t)(x >> (hw*3-54));
+    u[4] = 0U;
+
+    v[0] = (uint32_t)y;
+    v[1] = (uint32_t)(y >> 32);
+
+    n = 2;
+    m = 4;
+
+    for (j = m - n; j >= 0; --j) {
+        qhat = (u[j+n]*b + u[j+n-1])/v[n-1];
+        rhat = (u[j+n]*b + u[j+n-1]) - qhat*v[n-1];
+again:
+        if ((qhat >= b) || (qhat*v[n-2] > b*rhat + u[j+n-2])) {
+            --qhat;
+            rhat += v[n-1];
+            if (rhat < b) {
+                goto again;
+            }
+        }
+
+        k = 0L;
+        for (i = 0; i < n; ++i) {
+            p = qhat*v[i];
+            t = u[i+j] - k - (p & bmask);
+            u[i+j] = (uint32_t)t;
+            k = (p >> hw) - (t >> hw);
+        }
+        t = u[j+n] - k;
+        u[j+n] = (uint32_t)t;
+
+        q[j] = (uint32_t)qhat;
+        if (t < 0L) {
+            --q[j];
+            k = 0L;
+            for (i = 0; i < n; i++) {
+                t = u[i+j] + v[i] + k;
+                u[i+j] = (uint32_t)t;
+                k = t >> hw;
+            }
+            u[j+n] += k;
+        }
+    }
+    for (i = 0; i < n; ++i) {
+        r[i] = u[i];
+    }
+    *pq = ((unsigned long)q[1] << hw) | q[0];
+    *pr = ((unsigned long)r[1] << hw) | r[0];
+#endif
+}
+
+static double
+fix64_fdiv64_double(long x, long y)
+{
+    unsigned long ux, uy;
+    int s;
+
+    /* convert to unsigned value */
+    int sgn = 0;
+
+    assert(!!x);  /* isNotZero */
+    assert(!!y);
+
+    if (x < 0) {
+        ux = -x;
+        sgn = !sgn;
+    } else {
+        ux = x;
+    }
+    if (y < 0) {
+        uy = -y;
+        sgn = !sgn;
+    } else {
+        uy = y;
+    }
+
+    /* normalize */
+    s = nlz_long(ux);
+    ux <<= s;
+    {
+        int s2 = nlz_long(uy);
+        uy <<= s2;
+        s -= s2;
+    }
+    if ( !(ux & 0x7ff) && !(uy & 0x7ff) ) {
+        return (double)x / (double)y;
+    }
+    if (ux >= uy) {
+        assert( ! (ux & 1));  /* this should be always pass */
+        ux >>= 1;          /* because converted from Fixnum */
+        s -= 1;
+    }
+    {
+        unsigned long q, r;
+
+        /* u_divmod ux<<54, uy */
+        u128_division(ux, uy, &q, &r);
+
+        {
+            int const flg = (int)q & 1;  /* 0.5 */
+            q >>= 1;
+            if (flg && (((int)q & 1) || r)) {
+                q += 1;
+            }
+        }
+        {
+            double result = ldexp((double)q, -53-s);
+            return ( sgn ? (-result) : result ) ;
+        }
+    }
+}
+
+static double
+fix64_fdiv_double(VALUE x, VALUE y)
+{
+    long lx = FIX2LONG(x);
+    long ly = FIX2LONG(y);
+    double dx = (double)lx, dy = (double)ly;
+
+    if ((lx == (long)dx) && (ly == (long)dy)) {
+        /* round trip ok */
+        return dx / dy;
+    } else {
+        /* round trip ng */
+        return fix64_fdiv64_double(lx, ly);
+    }
+    assert(0);  /* not reached */
+}
+#endif /* SIZEOF_LONG == 8 */
+
 static double
 fix_fdiv_double(VALUE x, VALUE y)
 {
+#if SIZEOF_LONG == 4
     if (FIXNUM_P(y)) {
         return (double)FIX2LONG(x) / (double)FIX2LONG(y);
     }
-    else if (RB_TYPE_P(y, T_BIGNUM)) {
-        return rb_big_fdiv_double(rb_int2big(FIX2LONG(x)), y);
-    }
     else if (RB_TYPE_P(y, T_FLOAT)) {
         return (double)FIX2LONG(x) / RFLOAT_VALUE(y);
+    }
+#elif SIZEOF_LONG == 8
+    if (FIXNUM_P(y)) {
+        return fix64_fdiv_double(x, y);
+    }
+    else if (RB_TYPE_P(y, T_FLOAT)) {
+        long lx = FIX2LONG(x);
+        double dx = (double)lx;
+        if (lx == (long)dx) {  /* round trip ok */
+            return dx / RFLOAT_VALUE(y);
+        } else {
+            return rb_big_fdiv_double(rb_int2big(FIX2LONG(x)), y);
+        }
+    }
+#else
+# error
+#endif
+    else if (RB_TYPE_P(y, T_BIGNUM)) {
+        return rb_big_fdiv_double(rb_int2big(FIX2LONG(x)), y);
     }
     else {
         return RFLOAT_VALUE(rb_num_coerce_bin(x, y, rb_intern("fdiv")));
