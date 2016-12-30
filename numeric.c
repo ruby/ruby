@@ -4013,6 +4013,152 @@ rb_int_pow(VALUE x, VALUE y)
 }
 
 /*
+ * Integer#pow
+ */
+
+static VALUE
+int_pow_tmp1(VALUE x, VALUE y, long mm, int nega_flg)
+{
+    long xx = FIX2LONG(x);
+    long tmp = 1L;
+    long yy;
+
+    for (/*NOP*/; ! FIXNUM_P(y); y = rb_funcall(y, idGTGT, 1, LONG2FIX(1L))) {
+        if (RTEST(int_odd_p(y))) {
+            tmp = (tmp * xx) % mm;
+        }
+        xx = (xx * xx) % mm;
+    }
+    for (yy = FIX2LONG(y); yy; yy >>= 1L) {
+        if (yy & 1L) {
+            tmp = (tmp * xx) % mm;
+        }
+        xx = (xx * xx) % mm;
+    }
+
+    if (nega_flg && tmp) {
+        tmp -= mm;
+    }
+    return LONG2FIX(tmp);
+}
+
+static VALUE
+int_pow_tmp2(VALUE x, VALUE y, long mm, int nega_flg)
+{
+    long tmp = 1L;
+    long yy;
+#ifdef DLONG
+    DLONG const mmm = mm;
+    long xx = FIX2LONG(x);
+
+    for (/*NOP*/; ! FIXNUM_P(y); y = rb_funcall(y, idGTGT, 1, LONG2FIX(1L))) {
+        if (RTEST(int_odd_p(y))) {
+            tmp = ((DLONG)tmp * (DLONG)xx) % mmm;
+        }
+        xx = ((DLONG)xx * (DLONG)xx) % mmm;
+    }
+    for (yy = FIX2LONG(y); yy; yy >>= 1L) {
+        if (yy & 1L) {
+            tmp = ((DLONG)tmp * (DLONG)xx) % mmm;
+        }
+        xx = ((DLONG)xx * (DLONG)xx) % mmm;
+    }
+#else
+    VALUE const m = LONG2FIX(mm);
+    VALUE tmp2 = LONG2FIX(tmp);
+
+    for (/*NOP*/; ! FIXNUM_P(y); y = rb_funcall(y, idGTGT, 1, LONG2FIX(1L))) {
+        if (RTEST(int_odd_p(y))) {
+            tmp2 = rb_fix_mul_fix(tmp2, x);
+            tmp2 = rb_int_modulo(tmp2, m);
+        }
+        x = rb_fix_mul_fix(x, x);
+        x = rb_int_modulo(x, m);
+    }
+    for (yy = FIX2LONG(y); yy; yy >>= 1L) {
+        if (yy & 1L) {
+            tmp2 = rb_fix_mul_fix(tmp2, x);
+            tmp2 = rb_int_modulo(tmp2, m);
+        }
+        x = rb_fix_mul_fix(x, x);
+        x = rb_int_modulo(x, m);
+    }
+
+    tmp = FIX2LONG(tmp2);
+#endif
+    if (nega_flg && tmp) {
+        tmp -= mm;
+    }
+    return LONG2FIX(tmp);
+}
+
+/*
+ * Document-method: Integer#pow
+ * call-seq:
+ *    integer.pow(integer)           ->  integer
+ *    integer.pow(integer, integer)  ->  integer
+ *
+ * Returns (modular) exponentiation as:
+ *
+ *   a.pow(b)     #=>  same as a**b
+ *   a.pow(b, m)  #=>  same as (a**b) % m, but doesn't make huge values as temporary
+ */
+static VALUE
+int_powm(int const argc, VALUE * const argv, VALUE const num)
+{
+    VALUE int_pow_tmp3(VALUE/*a*/, VALUE/*b*/, VALUE/*m*/, int/*nega flg*/); /* in bignum.c */
+
+    rb_check_arity(argc, 1, 2);
+
+    if (argc == 1) {
+        return rb_funcall(num, rb_intern("**"), 1, argv[0]);
+    }
+    else {
+        VALUE const a = num;
+        VALUE const b = argv[0];
+        VALUE m = argv[1];
+        int nega_flg = 0;
+        if ( ! RB_INTEGER_TYPE_P(b)) {
+            rb_raise(rb_eTypeError, "Integer#pow() 2nd argument not allowed unless a 1st argument is integer");
+        }
+        if (negative_int_p(b)) {
+            rb_raise(rb_eRangeError, "Integer#pow() 1st argument cannot be negative when 2nd argument specified");
+        }
+
+        if (negative_int_p(m)) {
+            m = rb_funcall(m, idUMinus, 0);
+            nega_flg = 1;
+        }
+
+        if ( ! positive_int_p(m)) {
+            rb_num_zerodiv();
+        }
+        if (FIXNUM_P(m)) {
+#if SIZEOF_LONG == 8
+            long const half_val = 0x80000000L;
+#elif SIZEOF_LONG == 4
+            long const half_val = 0x8000L;
+#else
+# error
+#endif
+            long const mm = FIX2LONG(m);
+            if (mm <= half_val) {
+                return int_pow_tmp1(rb_int_modulo(a, m), b, mm, nega_flg);
+            } else {
+                return int_pow_tmp2(rb_int_modulo(a, m), b, mm, nega_flg);
+            }
+        } else {
+            return int_pow_tmp3(rb_int_modulo(a, m), b, m, nega_flg);
+        }
+
+        /* not reached */
+        assert(0);
+    }
+    /* not reached */
+    assert(0);
+}
+
+/*
  * Document-method: Integer#==
  * Document-method: Integer#===
  * call-seq:
@@ -5425,6 +5571,8 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "divmod", rb_int_divmod, 1);
     rb_define_method(rb_cInteger, "fdiv", rb_int_fdiv, 1);
     rb_define_method(rb_cInteger, "**", rb_int_pow, 1);
+
+    rb_define_method(rb_cInteger, "pow", int_powm, -1);
 
     rb_define_method(rb_cInteger, "abs", rb_int_abs, 0);
     rb_define_method(rb_cInteger, "magnitude", rb_int_abs, 0);
