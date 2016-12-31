@@ -3715,9 +3715,6 @@ fix64_fdiv64_double(long x, long y)
         uy <<= s2;
         s -= s2;
     }
-    if ( !(ux & 0x7ff) && !(uy & 0x7ff) ) {
-        return (double)x / (double)y;
-    }
     if (ux >= uy) {
         assert( ! (ux & 1));  /* this should be always pass */
         ux >>= 1;          /* because converted from Fixnum */
