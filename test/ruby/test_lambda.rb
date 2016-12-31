@@ -79,6 +79,26 @@ class TestLambdaParameters < Test::Unit::TestCase
     end
   end
 
+  def test_instance_eval_return
+    bug13090 = '[ruby-core:78917] [Bug #13090] cannot return in lambdas'
+    x = :ng
+    assert_nothing_raised(LocalJumpError) do
+      x = instance_eval(&->(_){return :ok})
+    end
+  ensure
+    assert_equal(:ok, x, bug13090)
+  end
+
+  def test_instance_exec_return
+    bug13090 = '[ruby-core:78917] [Bug #13090] cannot return in lambdas'
+    x = :ng
+    assert_nothing_raised(LocalJumpError) do
+      x = instance_exec(&->(){return :ok})
+    end
+  ensure
+    assert_equal(:ok, x, bug13090)
+  end
+
   def yield_1(arg)
     yield arg
   end
