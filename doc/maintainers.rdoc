@@ -123,7 +123,7 @@ Zachary Scott (zzak)
 [lib/rbconfig/*]
   _unmaintained_
 [lib/rdoc.rb, lib/rdoc/*]
-  Eric Hodel (drbrain)
+  Eric Hodel (drbrain), Hiroshi SHIBATA(hsbt)
 [lib/resolv-replace.rb]
   Tanaka Akira (akr)
 [lib/resolv.rb]
@@ -135,7 +135,7 @@ Zachary Scott (zzak)
 [lib/rss.rb, lib/rss/*]
   Kouhei Sutou (kou)
 [lib/rubygems.rb, lib/ubygems.rb, lib/rubygems/*]
-  Eric Hodel (drbrain)
+  Eric Hodel (drbrain), Hiroshi SHIBATA(hsbt)
 [lib/scanf.rb]
   David A. Black (dblack)
 [lib/set.rb]
@@ -175,7 +175,7 @@ Zachary Scott (zzak)
 [lib/webrick.rb, lib/webrick/*]
   Hiroshi Nakamura (nahi)
 [lib/yaml.rb, lib/yaml/*]
-  Aaron Patterson (tenderlove)
+  Aaron Patterson (tenderlove), Hiroshi SHIBATA(hsbt)
 
 == Extension Maintainers
 
@@ -210,7 +210,7 @@ Zachary Scott (zzak)
 [ext/io/wait]
   Nobuyuki Nakada (nobu)
 [ext/json]
-  NARUSE, Yui (naruse)
+  NARUSE, Yui (naruse), Hiroshi SHIBATA(hsbt)
 [ext/mathn/complex]
   Keiju ISHITSUKA (keiju)
 [ext/mathn/rational]
@@ -224,7 +224,7 @@ Zachary Scott (zzak)
 [ext/pathname]
   Tanaka Akira (akr)
 [ext/psych]
-  Aaron Patterson (tenderlove)
+  Aaron Patterson (tenderlove), Hiroshi SHIBATA(hsbt)
 [ext/pty]
   _unmaintained_
 [ext/racc]
