@@ -2311,7 +2311,7 @@ enum_each_slice_size(VALUE obj, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    enum.each_slice(n) { ... }  ->  nil
+ *    enum.each_slice(n) { ... }  ->  self
  *    enum.each_slice(n)          ->  an_enumerator
  *
  *  Iterates the given block for each slice of <n> elements.  If no
@@ -2343,7 +2343,7 @@ enum_each_slice(VALUE obj, VALUE n)
     ary = memo->v1;
     if (RARRAY_LEN(ary) > 0) rb_yield(ary);
 
-    return Qnil;
+    return obj;
 }
 
 static VALUE
@@ -2384,7 +2384,7 @@ enum_each_cons_size(VALUE obj, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    enum.each_cons(n) { ... } ->  nil
+ *    enum.each_cons(n) { ... } ->  self
  *    enum.each_cons(n)         ->  an_enumerator
  *
  *  Iterates the given block for each array of consecutive <n>
@@ -2417,7 +2417,7 @@ enum_each_cons(VALUE obj, VALUE n)
     memo = MEMO_NEW(rb_ary_new2(size), dont_recycle_block_arg(arity), size);
     rb_block_call(obj, id_each, 0, 0, each_cons_i, (VALUE)memo);
 
-    return Qnil;
+    return obj;
 }
 
 static VALUE
