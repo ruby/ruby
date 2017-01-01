@@ -4124,6 +4124,9 @@ int_powm(int const argc, VALUE * const argv, VALUE const num)
         if (negative_int_p(b)) {
             rb_raise(rb_eRangeError, "Integer#pow() 1st argument cannot be negative when 2nd argument specified");
         }
+        if ( ! RB_INTEGER_TYPE_P(m)) {
+            rb_raise(rb_eTypeError, "Integer#pow() 2nd argument not allowed unless all arguments are integers");
+        }
 
         if (negative_int_p(m)) {
             m = rb_funcall(m, idUMinus, 0);
