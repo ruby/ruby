@@ -4147,8 +4147,10 @@ int_powm(int const argc, VALUE * const argv, VALUE const num)
             } else {
                 return int_pow_tmp2(rb_int_modulo(a, m), b, mm, nega_flg);
             }
-        } else {
+        } else if (RB_TYPE_P(m, T_BIGNUM)) {
             return int_pow_tmp3(rb_int_modulo(a, m), b, m, nega_flg);
+        } else {
+            assert(0);
         }
 
         /* not reached */
