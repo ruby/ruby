@@ -14,6 +14,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Language changes
 
+* Top-level constant look-up is removed.  [Feature #11547]
+
 === Core classes updates (outstanding ones only)
 
 === Stdlib updates (outstanding ones only)

@@ -2273,8 +2273,12 @@ rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility)
 		continue;
 	    }
 	    if (exclude && tmp == rb_cObject && klass != rb_cObject) {
+#if 0
 		rb_warn("toplevel constant %"PRIsVALUE" referenced by %"PRIsVALUE"::%"PRIsVALUE"",
 			QUOTE_ID(id), rb_class_name(klass), QUOTE_ID(id));
+#else
+		return Qundef;
+#endif
 	    }
 	    return value;
 	}
