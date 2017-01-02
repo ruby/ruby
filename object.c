@@ -1886,8 +1886,8 @@ rb_class_allocate_instance(VALUE klass)
  *
  */
 
-VALUE
-rb_class_new_instance(int argc, const VALUE *argv, VALUE klass)
+static VALUE
+rb_class_s_new(int argc, const VALUE *argv, VALUE klass)
 {
     VALUE obj;
 
@@ -1895,6 +1895,13 @@ rb_class_new_instance(int argc, const VALUE *argv, VALUE klass)
     rb_obj_call_init(obj, argc, argv);
 
     return obj;
+}
+
+VALUE
+rb_class_new_instance(int argc, const VALUE *argv, VALUE klass)
+{
+    Check_Type(klass, T_CLASS);
+    return rb_class_s_new(argc, argv, klass);
 }
 
 /*
@@ -3580,7 +3587,7 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "singleton_class?", rb_mod_singleton_p, 0);
 
     rb_define_method(rb_cClass, "allocate", rb_obj_alloc, 0);
-    rb_define_method(rb_cClass, "new", rb_class_new_instance, -1);
+    rb_define_method(rb_cClass, "new", rb_class_s_new, -1);
     rb_define_method(rb_cClass, "initialize", rb_class_initialize, -1);
     rb_define_method(rb_cClass, "superclass", rb_class_superclass, 0);
     rb_define_alloc_func(rb_cClass, rb_class_s_alloc);
