@@ -1840,8 +1840,8 @@ rb_undefined_alloc(VALUE klass)
  *
  */
 
-VALUE
-rb_obj_alloc(VALUE klass)
+static VALUE
+rb_class_alloc(VALUE klass)
 {
     VALUE obj;
     rb_alloc_func_t allocator;
@@ -1865,6 +1865,13 @@ rb_obj_alloc(VALUE klass)
 	rb_raise(rb_eTypeError, "wrong instance allocation");
     }
     return obj;
+}
+
+VALUE
+rb_obj_alloc(VALUE klass)
+{
+    Check_Type(klass, T_CLASS);
+    return rb_class_alloc(klass);
 }
 
 static VALUE
@@ -1891,7 +1898,7 @@ rb_class_s_new(int argc, const VALUE *argv, VALUE klass)
 {
     VALUE obj;
 
-    obj = rb_obj_alloc(klass);
+    obj = rb_class_alloc(klass);
     rb_obj_call_init(obj, argc, argv);
 
     return obj;
@@ -3586,7 +3593,7 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "deprecate_constant", rb_mod_deprecate_constant, -1); /* in variable.c */
     rb_define_method(rb_cModule, "singleton_class?", rb_mod_singleton_p, 0);
 
-    rb_define_method(rb_cClass, "allocate", rb_obj_alloc, 0);
+    rb_define_method(rb_cClass, "allocate", rb_class_alloc, 0);
     rb_define_method(rb_cClass, "new", rb_class_s_new, -1);
     rb_define_method(rb_cClass, "initialize", rb_class_initialize, -1);
     rb_define_method(rb_cClass, "superclass", rb_class_superclass, 0);
