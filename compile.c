@@ -3601,7 +3601,7 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	    (type == NODE_CALL ||
 	     (type == NODE_ATTRASGN && !private_recv_p(node)));
 
-	if (!lfinish[1]) {
+	if (!lfinish[1] && (node->nd_args || explicit_receiver)) {
 	    lfinish[1] = NEW_LABEL(nd_line(node));
 	}
 	if (node->nd_args) {
