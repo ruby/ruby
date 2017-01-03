@@ -275,6 +275,19 @@ class TestObjSpace < Test::Unit::TestCase
     assert_match /"value":"foobar\h+"/, dump
   end
 
+  def test_dump_all_full
+    assert_in_out_err(%w[-robjspace], <<-'end;') do |output, error|
+      def dump_my_heap_please
+        ObjectSpace.dump_all(output: :stdout, full: true)
+      end
+
+      dump_my_heap_please
+    end;
+    heap = output.find_all { |l| JSON.parse(l)['type'] == "NONE" }
+    assert_operator heap.length, :>, 0
+    end
+  end
+
   def test_dump_all
     entry = /"bytesize":11, "value":"TEST STRING", "encoding":"UTF-8", "file":"-", "line":4, "method":"dump_my_heap_please", "generation":/
 
