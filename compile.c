@@ -6107,13 +6107,14 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	}
 	else {
 	    LABEL *lfinish[2];
+	    LINK_ELEMENT *last = ret->last;
 	    lfinish[0] = NEW_LABEL(line);
 	    lfinish[1] = 0;
-	    ADD_INSN(ret, line, putnil);
 	    defined_expr(iseq, ret, node->nd_head, lfinish, Qtrue);
-	    ADD_INSN(ret, line, swap);
-	    ADD_INSN(ret, line, pop);
 	    if (lfinish[1]) {
+		INSERT_ELEM_NEXT(last, &new_insn_body(iseq, line, BIN(putnil), 0)->link);
+		ADD_INSN(ret, line, swap);
+		ADD_INSN(ret, line, pop);
 		ADD_LABEL(ret, lfinish[1]);
 	    }
 	    ADD_LABEL(ret, lfinish[0]);
