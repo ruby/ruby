@@ -131,7 +131,7 @@ module Forwardable
   #
   def instance_delegate(hash)
     hash.each do |methods, accessor|
-      if defined?(methods.each)
+      unless defined?(methods.each)
         def_instance_delegator(accessor, methods)
       else
         methods.each {|method| def_instance_delegator(accessor, method)}
@@ -263,7 +263,7 @@ module SingleForwardable
   #
   def single_delegate(hash)
     hash.each do |methods, accessor|
-      if defined?(methods.each)
+      unless defined?(methods.each)
         def_single_delegator(accessor, methods)
       else
         methods.each {|method| def_single_delegator(accessor, method)}
