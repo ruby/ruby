@@ -100,29 +100,30 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_reachable_objects_from
-    assert_separately %w[--disable-gem -robjspace], __FILE__, __LINE__, <<-'eom'
-    assert_equal(nil, ObjectSpace.reachable_objects_from(nil))
-    assert_equal([Array, 'a', 'b', 'c'], ObjectSpace.reachable_objects_from(['a', 'b', 'c']))
+    assert_separately %w[--disable-gem -robjspace], "#{<<-"begin;"}\n#{<<-'end;'}"
+    begin;
+      assert_equal(nil, ObjectSpace.reachable_objects_from(nil))
+      assert_equal([Array, 'a', 'b', 'c'], ObjectSpace.reachable_objects_from(['a', 'b', 'c']))
 
-    assert_equal([Array, 'a', 'a', 'a'], ObjectSpace.reachable_objects_from(['a', 'a', 'a']))
-    assert_equal([Array, 'a', 'a'], ObjectSpace.reachable_objects_from(['a', v = 'a', v]))
-    assert_equal([Array, 'a'], ObjectSpace.reachable_objects_from([v = 'a', v, v]))
+      assert_equal([Array, 'a', 'a', 'a'], ObjectSpace.reachable_objects_from(['a', 'a', 'a']))
+      assert_equal([Array, 'a', 'a'], ObjectSpace.reachable_objects_from(['a', v = 'a', v]))
+      assert_equal([Array, 'a'], ObjectSpace.reachable_objects_from([v = 'a', v, v]))
 
-    long_ary = Array.new(1_000){''}
-    max = 0
+      long_ary = Array.new(1_000){''}
+      max = 0
 
-    ObjectSpace.each_object{|o|
-      refs = ObjectSpace.reachable_objects_from(o)
-      max = [refs.size, max].max
+      ObjectSpace.each_object{|o|
+        refs = ObjectSpace.reachable_objects_from(o)
+        max = [refs.size, max].max
 
-      unless refs.nil?
-        refs.each_with_index {|ro, i|
-          assert_not_nil(ro, "#{i}: this referenced object is internal object")
-        }
-      end
-    }
-    assert_operator(max, :>=, long_ary.size+1, "1000 elems + Array class")
-    eom
+        unless refs.nil?
+          refs.each_with_index {|ro, i|
+            assert_not_nil(ro, "#{i}: this referenced object is internal object")
+          }
+        end
+      }
+      assert_operator(max, :>=, long_ary.size+1, "1000 elems + Array class")
+    end;
   end
 
   def test_reachable_objects_from_root
@@ -138,15 +139,16 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_reachable_objects_size
-    assert_separately %w[--disable-gem -robjspace], __FILE__, __LINE__, <<-'eom'
-    ObjectSpace.each_object{|o|
-      ObjectSpace.reachable_objects_from(o).each{|reached_obj|
-        size = ObjectSpace.memsize_of(reached_obj)
-        assert_kind_of(Integer, size)
-        assert_operator(size, :>=, 0)
+    assert_separately %w[--disable-gem -robjspace], "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
+      ObjectSpace.each_object{|o|
+        ObjectSpace.reachable_objects_from(o).each{|reached_obj|
+          size = ObjectSpace.memsize_of(reached_obj)
+          assert_kind_of(Integer, size)
+          assert_operator(size, :>=, 0)
+        }
       }
-    }
-    eom
+    end;
   end
 
   def test_trace_object_allocations
@@ -276,44 +278,47 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_dump_all_full
-    assert_in_out_err(%w[-robjspace], <<-'end;') do |output, error|
-      def dump_my_heap_please
-        ObjectSpace.dump_all(output: :stdout, full: true)
-      end
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        def dump_my_heap_please
+          ObjectSpace.dump_all(output: :stdout, full: true)
+        end
 
-      dump_my_heap_please
-    end;
-    heap = output.find_all { |l| JSON.parse(l)['type'] == "NONE" }
-    assert_operator heap.length, :>, 0
+        dump_my_heap_please
+      end;
+      heap = output.find_all { |l| JSON.parse(l)['type'] == "NONE" }
+      assert_operator heap.length, :>, 0
     end
   end
 
   def test_dump_all
     entry = /"bytesize":11, "value":"TEST STRING", "encoding":"UTF-8", "file":"-", "line":4, "method":"dump_my_heap_please", "generation":/
 
-    assert_in_out_err(%w[-robjspace], <<-'end;') do |output, error|
-      def dump_my_heap_please
-        ObjectSpace.trace_object_allocations_start
-        GC.start
-        str = "TEST STRING".force_encoding("UTF-8")
-        ObjectSpace.dump_all(output: :stdout)
-      end
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}#{<<-'end;'}") do |output, error|
+      begin;
+        def dump_my_heap_please
+          ObjectSpace.trace_object_allocations_start
+          GC.start
+          str = "TEST STRING".force_encoding("UTF-8")
+          ObjectSpace.dump_all(output: :stdout)
+        end
 
-      dump_my_heap_please
-    end;
+        dump_my_heap_please
+      end;
       assert_match(entry, output.grep(/TEST STRING/).join("\n"))
     end
 
-    assert_in_out_err(%w[-robjspace], <<-'end;') do |(output), (error)|
-      def dump_my_heap_please
-        ObjectSpace.trace_object_allocations_start
-        GC.start
-        str = "TEST STRING".force_encoding("UTF-8")
-        ObjectSpace.dump_all().path
-      end
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}#{<<-'end;'}") do |(output), (error)|
+      begin;
+        def dump_my_heap_please
+          ObjectSpace.trace_object_allocations_start
+          GC.start
+          str = "TEST STRING".force_encoding("UTF-8")
+          ObjectSpace.dump_all().path
+        end
 
-      puts dump_my_heap_please
-    end;
+        puts dump_my_heap_please
+      end;
       skip if /is not supported/ =~ error
       skip error unless output
       assert_match(entry, File.readlines(output).grep(/TEST STRING/).join("\n"))
