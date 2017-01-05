@@ -3892,6 +3892,7 @@ int_pow(long x, unsigned long y)
     int neg = x < 0;
     long z = 1;
 
+    if (y == 0) return INT2FIX(1);
     if (neg) x = -x;
     if (y & 1)
 	z = x;
