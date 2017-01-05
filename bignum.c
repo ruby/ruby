@@ -4172,6 +4172,7 @@ rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base)
     digits_start = str;
     if (!str2big_scan_digits(s, str, base, badcheck, &num_digits, &len))
 	goto bad;
+    if (endp) *endp = (char *)(str + len);
     digits_end = digits_start + len;
 
     if (POW2_P(base)) {
