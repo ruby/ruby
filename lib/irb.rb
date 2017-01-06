@@ -708,6 +708,7 @@ end
 
 class Binding
   # :nodoc:
+  undef irb if method_defined?(:irb)
   def irb
     IRB.setup(eval("__FILE__"))
     IRB::Irb.new(IRB::WorkSpace.new(self)).run(IRB.conf)

@@ -133,3 +133,10 @@ class IO
     __write_nonblock(buf, exception)
   end
 end
+
+class Binding
+  def irb
+    require 'irb'
+    irb
+  end
+end
