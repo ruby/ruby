@@ -2527,11 +2527,12 @@ __END__
 
   def test_threaded_flush
     bug3585 = '[ruby-core:31348]'
-    src = %q{\
+    src = "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
       t = Thread.new { sleep 3 }
       Thread.new {sleep 1; t.kill; p 'hi!'}
       t.join
-    }.gsub(/^\s+/, '')
+    end;
     10.times.map do
       Thread.start do
         assert_in_out_err([], src) {|stdout, stderr|
