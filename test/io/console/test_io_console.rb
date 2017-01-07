@@ -257,6 +257,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
         else
           assert(false, "winsize on #{path} succeed: #{s.inspect}")
         end
+        assert_raise(ArgumentError) {io.winsize = [0, 0, 0]}
       end
     end
   end
