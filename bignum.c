@@ -4057,9 +4057,6 @@ rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base)
 	    sign = 0;
 	}
 	ASSERT_LEN();
-	if (str[0] == '+' || str[0] == '-') {
-	    goto bad;
-	}
     }
     if (base <= 0) {
 	if (str[0] == '0' && len > 1) {
