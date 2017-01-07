@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # = fileutils.rb
 #
@@ -735,8 +735,8 @@ module FileUtils
   #
   def compare_stream(a, b)
     bsize = fu_stream_blksize(a, b)
-    sa = ""
-    sb = ""
+    sa = String.new(capacity: bsize)
+    sb = String.new(capacity: bsize)
     begin
       a.read(bsize, sa)
       b.read(bsize, sb)
@@ -1432,9 +1432,9 @@ module FileUtils
     end
 
     if File::ALT_SEPARATOR
-      DIRECTORY_TERM = "(?=[/#{Regexp.quote(File::ALT_SEPARATOR)}]|\\z)".freeze
+      DIRECTORY_TERM = "(?=[/#{Regexp.quote(File::ALT_SEPARATOR)}]|\\z)"
     else
-      DIRECTORY_TERM = "(?=/|\\z)".freeze
+      DIRECTORY_TERM = "(?=/|\\z)"
     end
     SYSCASE = File::FNM_SYSCASE.nonzero? ? "-i" : ""
 
