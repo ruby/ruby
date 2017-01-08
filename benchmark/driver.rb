@@ -153,7 +153,9 @@ class BenchmarkDriver
       numformat = " %1$*2$.3f"
     end
 
-    name_width ||= @results.map {|v,*| v.size}.max
+    name_width ||= @results.map {|v, result|
+      v.size + (case v; when /^vm1_/; @loop_wl1; when /^vm2_/; @loop_wl2; end ? 1 : 0)
+    }.max
     minwidth ||= 7
     width = @execs.map{|(_, v)| [v.size, minwidth].max}
 
