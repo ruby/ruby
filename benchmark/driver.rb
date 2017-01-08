@@ -41,10 +41,15 @@ class BenchmarkDriver
     else
       h = eval(input.read)
     end
+    results = h[:results] || h["results"]
     obj = allocate
     obj.instance_variable_set("@execs", h[:executables] || h["executables"])
-    obj.instance_variable_set("@results", h[:results] || h["results"])
+    obj.instance_variable_set("@results", results)
     obj.instance_variable_set("@opt", opt)
+    [1, 2].each do |i|
+      loop = results.assoc((n = "loop_whileloop#{i}").intern) || results.assoc(n)
+      obj.instance_variable_set("@loop_wl#{i}", loop ? loop[1].map {|t,*|t} : nil)
+    end
     obj
   end
 
