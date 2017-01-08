@@ -420,7 +420,6 @@ if __FILE__ == $0
   }
 
   parser.parse!(ARGV)
-  opt[:output] ||= "bmlog-#{Time.now.strftime('%Y%m%d-%H%M%S')}.#{$$}#{formats[opt[:format]]}"
 
   if input = opt[:rawdata_input]
     b = open(input) {|f|
@@ -428,6 +427,7 @@ if __FILE__ == $0
     }
     b.show_results
   else
+    opt[:output] ||= "bmlog-#{Time.now.strftime('%Y%m%d-%H%M%S')}.#{$$}#{formats[opt[:format]]}"
     BenchmarkDriver.benchmark(opt)
   end
 end
