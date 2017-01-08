@@ -2612,7 +2612,12 @@ rb_const_set(VALUE klass, ID id, VALUE val)
      * and avoid order-dependency on const_tbl
      */
     if (rb_cObject && (RB_TYPE_P(val, T_MODULE) || RB_TYPE_P(val, T_CLASS))) {
-	rb_class_name(val);
+	if (!NIL_P(rb_class_path_cached(val))) {
+	    rb_name_class(val, id);
+	    if (rb_class_path_cached(klass)) {
+		rb_class_name(val);
+	    }
+	}
     }
 }
 
@@ -2660,7 +2665,8 @@ const_tbl_update(struct autoload_const_set_args *args)
 	}
 	rb_clear_constant_cache();
 	setup_const_entry(ce, klass, val, visibility);
-    } else {
+    }
+    else {
 	rb_clear_constant_cache();
 
 	ce = ZALLOC(rb_const_entry_t);
