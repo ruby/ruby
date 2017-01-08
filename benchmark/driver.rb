@@ -50,6 +50,7 @@ class BenchmarkDriver
       loop = results.assoc((n = "loop_whileloop#{i}").intern) || results.assoc(n)
       obj.instance_variable_set("@loop_wl#{i}", loop ? loop[1].map {|t,*|t} : nil)
     end
+    obj.instance_variable_set("@measure_target", opt[:measure_target] || opt["measure_target"])
     obj
   end
 
