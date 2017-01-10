@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 # = net/pop.rb
 #
 # Copyright (c) 1999-2007 Yukihiro Matsumoto.
