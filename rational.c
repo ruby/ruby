@@ -488,7 +488,9 @@ nurat_canonicalize(VALUE *num, VALUE *den)
 static void
 nurat_reduce(VALUE *x, VALUE *y)
 {
-    VALUE gcd = f_gcd(*x, *y);
+    VALUE gcd;
+    if (*x == ONE || *y == ONE) return;
+    gcd = f_gcd(*x, *y);
     *x = f_idiv(*x, gcd);
     *y = f_idiv(*y, gcd);
 }
