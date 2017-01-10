@@ -53,13 +53,6 @@ f_##n(VALUE x)\
     return rb_funcall(x, id_##n, 0);\
 }
 
-#define fun2(n) \
-inline static VALUE \
-f_##n(VALUE x, VALUE y)\
-{\
-    return rb_funcall(x, id_##n, 1, y);\
-}
-
 inline static VALUE
 f_add(VALUE x, VALUE y)
 {
@@ -154,7 +147,13 @@ f_eqeq_p(VALUE x, VALUE y)
     return (int)rb_equal(x, y);
 }
 
-fun2(idiv)
+inline static VALUE
+f_idiv(VALUE x, VALUE y)
+{
+    if (RB_INTEGER_TYPE_P(x))
+	return rb_int_idiv(x, y);
+    return rb_funcall(x, id_idiv, 1, y);
+}
 
 #define f_expt10(x) rb_int_pow(INT2FIX(10), x)
 
