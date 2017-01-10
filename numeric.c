@@ -3569,6 +3569,10 @@ fix_mul(VALUE x, VALUE y)
 	return rb_fix_mul_fix(x, y);
     }
     else if (RB_TYPE_P(y, T_BIGNUM)) {
+	switch (x) {
+	  case INT2FIX(0): return x;
+	  case INT2FIX(1): return y;
+	}
 	return rb_big_mul(y, x);
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
