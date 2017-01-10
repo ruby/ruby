@@ -1587,19 +1587,23 @@ rb_threadptr_pending_interrupt_check_mask(rb_thread_t *th, VALUE err)
     VALUE mask;
     long mask_stack_len = RARRAY_LEN(th->pending_interrupt_mask_stack);
     const VALUE *mask_stack = RARRAY_CONST_PTR(th->pending_interrupt_mask_stack);
-    VALUE ancestors = rb_mod_ancestors(err); /* TODO: GC guard */
-    long ancestors_len = RARRAY_LEN(ancestors);
-    const VALUE *ancestors_ptr = RARRAY_CONST_PTR(ancestors);
-    int i, j;
+    VALUE mod;
+    long i;
 
     for (i=0; i<mask_stack_len; i++) {
 	mask = mask_stack[mask_stack_len-(i+1)];
 
-	for (j=0; j<ancestors_len; j++) {
-	    VALUE klass = ancestors_ptr[j];
+	for (mod = err; mod; mod = RCLASS_SUPER(mod)) {
+	    VALUE klass = mod;
 	    VALUE sym;
 
-	    /* TODO: remove rb_intern() */
+	    if (BUILTIN_TYPE(mod) == T_ICLASS) {
+		klass = RBASIC(mod)->klass;
+	    }
+	    else if (mod != RCLASS_ORIGIN(mod)) {
+		continue;
+	    }
+
 	    if ((sym = rb_hash_aref(mask, klass)) != Qnil) {
 		if (sym == sym_immediate) {
 		    return INTERRUPT_IMMEDIATE;
