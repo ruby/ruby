@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # = net/protocol.rb
 #
@@ -84,7 +84,7 @@ module Net # :nodoc:
       @read_timeout = read_timeout
       @continue_timeout = continue_timeout
       @debug_output = debug_output
-      @rbuf = ''
+      @rbuf = ''.dup
     end
 
     attr_reader :io
@@ -114,7 +114,7 @@ module Net # :nodoc:
 
     public
 
-    def read(len, dest = '', ignore_eof = false)
+    def read(len, dest = ''.dup, ignore_eof = false)
       LOG "reading #{len} bytes..."
       read_bytes = 0
       begin
@@ -132,7 +132,7 @@ module Net # :nodoc:
       dest
     end
 
-    def read_all(dest = '')
+    def read_all(dest = ''.dup)
       LOG 'reading all...'
       read_bytes = 0
       begin
@@ -331,7 +331,7 @@ module Net # :nodoc:
     end
 
     def using_each_crlf_line
-      @wbuf = ''
+      @wbuf = ''.dup
       yield
       if not @wbuf.empty?   # unterminated last line
         write0 dot_stuff(@wbuf.chomp) + "\r\n"
