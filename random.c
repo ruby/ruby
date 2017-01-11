@@ -505,7 +505,7 @@ fill_random_bytes_syscall(void *seed, size_t size, int unused)
     CryptGenRandom(prov, size, seed);
     return 0;
 }
-#elif defined __linux__ && defined SYS_getrandom
+#elif defined __linux__ && defined __NR_getrandom
 #include <linux/random.h>
 
 # ifndef GRND_NONBLOCK
@@ -522,7 +522,7 @@ fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
 	if (!need_secure)
 	    flags = GRND_NONBLOCK;
 	errno = 0;
-	ret = syscall(SYS_getrandom, seed, size, flags);
+	ret = syscall(__NR_getrandom, seed, size, flags);
 	if (errno == ENOSYS) {
 	    ATOMIC_SET(try_syscall, 0);
 	    return -1;
