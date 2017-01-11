@@ -1,5 +1,8 @@
 #!./miniruby
 
+# Used by "make runruby", configure, and by hand to run a locally-built Ruby
+# with correct environment variables and arguments.
+
 show = false
 precommand = []
 while arg = ARGV[0]

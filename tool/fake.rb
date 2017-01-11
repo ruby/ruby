@@ -1,3 +1,6 @@
+# Used by Makefile and configure for building Ruby.
+# See common.mk and Makefile.in for details.
+
 class File
   sep = ("\\" if RUBY_PLATFORM =~ /mswin|bccwin|mingw/)
   if sep != ALT_SEPARATOR

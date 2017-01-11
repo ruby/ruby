@@ -20,6 +20,30 @@
 
 #include "openssl_missing.h"
 
+/* added in 0.9.8X */
+#if !defined(HAVE_EVP_CIPHER_CTX_NEW)
+EVP_CIPHER_CTX *
+ossl_EVP_CIPHER_CTX_new(void)
+{
+    EVP_CIPHER_CTX *ctx = OPENSSL_malloc(sizeof(EVP_CIPHER_CTX));
+    if (!ctx)
+	return NULL;
+    EVP_CIPHER_CTX_init(ctx);
+    return ctx;
+}
+#endif
+
+#if !defined(HAVE_EVP_CIPHER_CTX_FREE)
+void
+ossl_EVP_CIPHER_CTX_free(EVP_CIPHER_CTX *ctx)
+{
+    if (ctx) {
+	EVP_CIPHER_CTX_cleanup(ctx);
+	OPENSSL_free(ctx);
+    }
+}
+#endif
+
 /* added in 1.0.0 */
 #if !defined(HAVE_EVP_CIPHER_CTX_COPY)
 /*
@@ -28,7 +52,7 @@
  * tested on 0.9.7d.
  */
 int
-EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *out, const EVP_CIPHER_CTX *in)
+ossl_EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *out, const EVP_CIPHER_CTX *in)
 {
     memcpy(out, in, sizeof(EVP_CIPHER_CTX));
 
@@ -46,15 +70,19 @@ EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *out, const EVP_CIPHER_CTX *in)
 
 #if !defined(OPENSSL_NO_HMAC)
 #if !defined(HAVE_HMAC_CTX_COPY)
-void
-HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in)
+int
+ossl_HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in)
 {
-    if (!out || !in) return;
+    if (!out || !in)
+	return 0;
+
     memcpy(out, in, sizeof(HMAC_CTX));
 
     EVP_MD_CTX_copy(&out->md_ctx, &in->md_ctx);
     EVP_MD_CTX_copy(&out->i_ctx, &in->i_ctx);
     EVP_MD_CTX_copy(&out->o_ctx, &in->o_ctx);
+
+    return 1;
 }
 #endif /* HAVE_HMAC_CTX_COPY */
 #endif /* NO_HMAC */
@@ -84,7 +112,7 @@ static struct {
 };
 
 int
-EC_curve_nist2nid(const char *name)
+ossl_EC_curve_nist2nid(const char *name)
 {
     size_t i;
     for (i = 0; i < (sizeof(nist_curves) / sizeof(nist_curves[0])); i++) {
@@ -94,4 +122,52 @@ EC_curve_nist2nid(const char *name)
     return NID_undef;
 }
 #endif
+#endif
+
+/*** added in 1.1.0 ***/
+#if !defined(HAVE_HMAC_CTX_NEW)
+HMAC_CTX *
+ossl_HMAC_CTX_new(void)
+{
+    HMAC_CTX *ctx = OPENSSL_malloc(sizeof(HMAC_CTX));
+    if (!ctx)
+	return NULL;
+    HMAC_CTX_init(ctx);
+    return ctx;
+}
+#endif
+
+#if !defined(HAVE_HMAC_CTX_FREE)
+void
+ossl_HMAC_CTX_free(HMAC_CTX *ctx)
+{
+    if (ctx) {
+	HMAC_CTX_cleanup(ctx);
+	OPENSSL_free(ctx);
+    }
+}
+#endif
+
+#if !defined(HAVE_X509_CRL_GET0_SIGNATURE)
+void
+ossl_X509_CRL_get0_signature(const X509_CRL *crl, const ASN1_BIT_STRING **psig,
+			     const X509_ALGOR **palg)
+{
+    if (psig != NULL)
+	*psig = crl->signature;
+    if (palg != NULL)
+	*palg = crl->sig_alg;
+}
+#endif
+
+#if !defined(HAVE_X509_REQ_GET0_SIGNATURE)
+void
+ossl_X509_REQ_get0_signature(const X509_REQ *req, const ASN1_BIT_STRING **psig,
+			     const X509_ALGOR **palg)
+{
+    if (psig != NULL)
+	*psig = req->signature;
+    if (palg != NULL)
+	*palg = req->sig_alg;
+}
 #endif

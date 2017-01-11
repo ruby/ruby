@@ -28,7 +28,7 @@
  * SUCH DAMAGE.
  */
 
-#include "regint.h"
+#include "regenc.h"
 
 static const int EncLen_SJIS[] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -563,11 +563,9 @@ OnigEncodingDefine(shift_jis, Shift_JIS) = {
   get_ctype_code_range,
   left_adjust_char_head,
   is_allowed_reverse_match,
+  onigenc_ascii_only_case_map,
   0,
   ONIGENC_FLAG_NONE,
-#ifdef ONIG_CASE_MAPPING
-  onigenc_not_support_case_map,
-#endif   /* ONIG_CASE_MAPPING */
 };
 /*
  * Name: Shift_JIS

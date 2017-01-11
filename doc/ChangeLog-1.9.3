@@ -12814,7 +12814,7 @@ Thu Aug  5 22:09:30 2010  Tanaka Akira  <akr@fsij.org>
 Thu Aug  5 21:20:31 2010  Yusuke Endoh  <mame@tsg.ne.jp>
 
 	* compile.c (NODE_ARGSCAT, NODE_ARGSPUSH): drop unused ARGSCAT
-	  results when poped is true.  [ruby-dev:41933], [Bug #3658]
+	  results when popped is true.  [ruby-dev:41933], [Bug #3658]
 	  This is retry of r28870 and r28873 which were reverted.
 
 Thu Aug  5 20:13:49 2010  Nobuyoshi Nakada  <nobu@ruby-lang.org>
@@ -77162,7 +77162,7 @@ Sun May 22 21:54:06 2005  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 Sun May 22 19:11:35 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLServer#intialize):
+	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLServer#initialize):
 	  should initialize session id context. [ruby-core:4663]
 
 	* ext/openssl/ossl_ssl.c (ossl_sslctx_setup): add session id support.

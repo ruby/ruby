@@ -14,17 +14,16 @@ module Kernel
     PP.pp(self, ''.dup)
   end
 
-  private
   # prints arguments in pretty form.
   #
   # pp returns argument(s).
-  def pp(*objs) # :nodoc:
+  def pp(*objs)
     objs.each {|obj|
       PP.pp(obj)
     }
     objs.size <= 1 ? objs.first : objs
   end
-  module_function :pp # :nodoc:
+  module_function :pp
 end
 
 ##
@@ -415,6 +414,21 @@ class Range # :nodoc:
     q.text(self.exclude_end? ? '...' : '..')
     q.breakable ''
     q.pp self.end
+  end
+end
+
+class String # :nodoc:
+  def pretty_print(q) # :nodoc:
+    lines = self.lines
+    if lines.size > 1
+      q.group(0, '', '') do
+        q.seplist(lines, lambda { q.text ' +'; q.breakable }) do |v|
+          q.pp v
+        end
+      end
+    else
+      q.text inspect
+    end
   end
 end
 

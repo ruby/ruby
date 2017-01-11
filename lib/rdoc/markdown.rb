@@ -1,5 +1,4 @@
 # coding: UTF-8
-# frozen_string_literal: false
 # :markup: markdown
 
 ##
@@ -15,7 +14,7 @@
 #
 #     data = File.read("README.md")
 #     formatter = RDoc::Markup::ToHtml.new(RDoc::Options.new, nil)
-#     html = RDoc::Markdown.parse(data).accept(@formatter)
+#     html = RDoc::Markdown.parse(data).accept(formatter)
 #
 #     # do something with html
 #
@@ -447,8 +446,6 @@ class RDoc::Markdown
         else
           return ans
         end
-
-        return ans
       end
     end
 
@@ -481,8 +478,6 @@ class RDoc::Markdown
         else
           return ans
         end
-
-        return ans
       end
     end
 
@@ -526,16 +521,11 @@ class RDoc::Markdown
 
 
 
-  require 'rubygems'
   require 'rdoc'
   require 'rdoc/markup/to_joined_paragraph'
   require 'rdoc/markdown/entities'
 
-  if RUBY_VERSION > '1.9' then
-    require 'rdoc/markdown/literals_1_9'
-  else
-    require 'rdoc/markdown/literals_1_8'
-  end
+  require 'rdoc/markdown/literals'
 
   ##
   # Supported extensions

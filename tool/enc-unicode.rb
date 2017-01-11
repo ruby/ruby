@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-# Creates the data structures needed by Onigurma to map Unicode codepoints to
+# Creates the data structures needed by Oniguruma to map Unicode codepoints to
 # property names and POSIX character classes
 #
 # To use this, get UnicodeData.txt, Scripts.txt, PropList.txt,
@@ -15,11 +15,12 @@ if ARGV[0] == "--header"
   ARGV.shift
 end
 unless ARGV.size == 1
-  $stderr.puts "Usage: #{$0} data_directory"
-  exit(1)
+  abort "Usage: #{$0} data_directory"
 end
 
-POSIX_NAMES = %w[NEWLINE Alpha Blank Cntrl Digit Graph Lower Print Punct Space Upper XDigit Word Alnum ASCII]
+$unicode_version = File.basename(ARGV[0])[/\A[.\d]+\z/]
+
+POSIX_NAMES = %w[NEWLINE Alpha Blank Cntrl Digit Graph Lower Print XPosixPunct Space Upper XDigit Word Alnum ASCII Punct]
 
 def pair_codepoints(codepoints)
 
@@ -114,6 +115,7 @@ def define_posix_props(data)
   data['Upper'] = data['Uppercase']
   data['Lower'] = data['Lowercase']
   data['Punct'] = data['Punctuation']
+  data['XPosixPunct'] = data['Punctuation'] + [0x24, 0x2b, 0x3c, 0x3d, 0x3e, 0x5e, 0x60, 0x7c, 0x7e]
   data['Digit'] = data['Decimal_Number']
   data['XDigit'] = (0x0030..0x0039).to_a + (0x0041..0x0046).to_a +
                    (0x0061..0x0066).to_a
@@ -137,13 +139,13 @@ def parse_scripts(data, categories)
   cps = []
   names = {}
   files.each do |file|
-    IO.foreach(get_file(file[:fn])) do |line|
+    data_foreach(file[:fn]) do |line|
       if /^# Total code points: / =~ line
         data[current] = cps
         categories[current] = file[:title]
         (names[file[:title]] ||= []) << current
         cps = []
-      elsif /^([0-9a-fA-F]+)(?:..([0-9a-fA-F]+))?\s*;\s*(\w+)/ =~ line
+      elsif /^([0-9a-fA-F]+)(?:\.\.([0-9a-fA-F]+))?\s*;\s*(\w+)/ =~ line
         current = $3
         $2 ? cps.concat(($1.to_i(16)..$2.to_i(16)).to_a) : cps.push($1.to_i(16))
       end
@@ -158,12 +160,12 @@ end
 
 def parse_aliases(data)
   kv = {}
-  IO.foreach(get_file('PropertyAliases.txt')) do |line|
+  data_foreach('PropertyAliases.txt') do |line|
     next unless /^(\w+)\s*; (\w+)/ =~ line
     data[$1] = data[$2]
     kv[normalize_propname($1)] = normalize_propname($2)
   end
-  IO.foreach(get_file('PropertyValueAliases.txt')) do |line|
+  data_foreach('PropertyValueAliases.txt') do |line|
     next unless /^(sc|gc)\s*; (\w+)\s*; (\w+)(?:\s*; (\w+))?/ =~ line
     if $1 == 'gc'
       data[$3] = data[$2]
@@ -188,7 +190,7 @@ def parse_age(data)
   last_constname = nil
   cps = []
   ages = []
-  IO.foreach(get_file('DerivedAge.txt')) do |line|
+  data_foreach('DerivedAge.txt') do |line|
     if /^# Total code points: / =~ line
       constname = constantize_agename(current)
       # each version matches all previous versions
@@ -198,7 +200,26 @@ def parse_age(data)
       ages << current
       last_constname = constname
       cps = []
-    elsif /^([0-9a-fA-F]+)(?:..([0-9a-fA-F]+))?\s*;\s*(\d+\.\d+)/ =~ line
+    elsif /^([0-9a-fA-F]+)(?:\.\.([0-9a-fA-F]+))?\s*;\s*(\d+\.\d+)/ =~ line
+      current = $3
+      $2 ? cps.concat(($1.to_i(16)..$2.to_i(16)).to_a) : cps.push($1.to_i(16))
+    end
+  end
+  ages
+end
+
+def parse_GraphemeBreakProperty(data)
+  current = nil
+  cps = []
+  ages = []
+  data_foreach('GraphemeBreakProperty.txt') do |line|
+    if /^# Total code points: / =~ line
+      constname = constantize_Grapheme_Cluster_Break(current)
+      data[constname] = cps
+      make_const(constname, cps, "Grapheme_Cluster_Break=#{current}")
+      ages << current
+      cps = []
+    elsif /^([0-9a-fA-F]+)(?:\.\.([0-9a-fA-F]+))?\s*;\s*(\w+)/ =~ line
       current = $3
       $2 ? cps.concat(($1.to_i(16)..$2.to_i(16)).to_a) : cps.push($1.to_i(16))
     end
@@ -208,10 +229,9 @@ end
 
 def parse_block(data)
   current = nil
-  last_constname = nil
   cps = []
   blocks = []
-  IO.foreach(get_file('Blocks.txt')) do |line|
+  data_foreach('Blocks.txt') do |line|
     if /^([0-9a-fA-F]+)\.\.([0-9a-fA-F]+);\s*(.*)/ =~ line
       cps = ($1.to_i(16)..$2.to_i(16)).to_a
       constname = constantize_blockname($3)
@@ -241,7 +261,11 @@ $const_cache = {}
 # given property, group of paired codepoints, and a human-friendly name for
 # the group
 def make_const(prop, data, name)
-  puts "\n/* '#{prop}': #{name} */"
+  if name.empty?
+    puts "\n/* '#{prop}' */"
+  else
+    puts "\n/* '#{prop}': #{name} */"
+  end
   if origprop = $const_cache.key(data)
     puts "#define CR_#{prop} CR_#{origprop}"
   else
@@ -268,6 +292,10 @@ def constantize_agename(name)
   "Age_#{name.sub(/\./, '_')}"
 end
 
+def constantize_Grapheme_Cluster_Break(name)
+  "Grapheme_Cluster_Break_#{name}"
+end
+
 def constantize_blockname(name)
   "In_#{name.gsub(/\W/, '_')}"
 end
@@ -276,6 +304,23 @@ def get_file(name)
   File.join(ARGV[0], name)
 end
 
+def data_foreach(name, &block)
+  fn = get_file(name)
+  warn "Reading #{name}"
+  pat = /^# #{name.sub(/\./, '-([\\d.]+)\\.')}/
+  File.open(fn, 'rb') do |f|
+    line = f.gets
+    unless pat =~ line
+      raise ArgumentError, "#{name}: no Unicode version"
+    end
+    if !$unicode_version
+      $unicode_version = $1
+    elsif $unicode_version != $1
+      raise ArgumentError, "#{name}: Unicode version mismatch: #$1"
+    end
+    f.each(&block)
+  end
+end
 
 # Write Data
 class Unifdef
@@ -341,14 +386,19 @@ output = Unifdef.new($stdout)
 output.kwdonly = !header
 
 puts '%{'
-puts '#define long size_t'
 props, data = parse_unicode_data(get_file('UnicodeData.txt'))
 categories = {}
 props.concat parse_scripts(data, categories)
 aliases = parse_aliases(data)
 define_posix_props(data)
 POSIX_NAMES.each do |name|
-  make_const(name, data[name], "[[:#{name}:]]")
+  if name == 'XPosixPunct'
+    make_const(name, data[name], "[[:Punct:]]")
+  elsif name == 'Punct'
+    make_const(name, data[name], "")
+  else
+    make_const(name, data[name], "[[:#{name}:]]")
+  end
 end
 output.ifdef :USE_UNICODE_PROPERTIES
 props.each do |name|
@@ -363,6 +413,7 @@ end
 output.ifdef :USE_UNICODE_AGE_PROPERTIES
 ages = parse_age(data)
 output.endif :USE_UNICODE_AGE_PROPERTIES
+graphemeBreaks = parse_GraphemeBreakProperty(data)
 blocks = parse_block(data)
 output.endif :USE_UNICODE_PROPERTIES
 puts(<<'__HEREDOC')
@@ -375,13 +426,15 @@ props.each{|name| puts"  CR_#{name},"}
 output.ifdef :USE_UNICODE_AGE_PROPERTIES
 ages.each{|name|  puts"  CR_#{constantize_agename(name)},"}
 output.endif :USE_UNICODE_AGE_PROPERTIES
+graphemeBreaks.each{|name|  puts"  CR_#{constantize_Grapheme_Cluster_Break(name)},"}
 blocks.each{|name|puts"  CR_#{name},"}
 output.endif :USE_UNICODE_PROPERTIES
 
 puts(<<'__HEREDOC')
 };
 struct uniname2ctype_struct {
-  int name, ctype;
+  short name;
+  unsigned short ctype;
 };
 
 static const struct uniname2ctype_struct *uniname2ctype_p(const char *, unsigned int);
@@ -419,6 +472,12 @@ ages.each do |name|
   puts "%-40s %3d" % [name + ',', i]
 end
 output.endif :USE_UNICODE_AGE_PROPERTIES
+graphemeBreaks.each do |name|
+  i += 1
+  name = "graphemeclusterbreak=#{name.delete('_').downcase}"
+  name_to_index[name] = i
+  puts "%-40s %3d" % [name + ',', i]
+end
 blocks.each do |name|
   i += 1
   name = normalize_propname(name)
@@ -436,6 +495,18 @@ uniname2ctype(const UChar *name, unsigned int len)
   return -1;
 }
 __HEREDOC
+versions = $unicode_version.scan(/\d+/)
+print("#if defined ONIG_UNICODE_VERSION_STRING && !( \\\n")
+%w[MAJOR MINOR TEENY].zip(versions) do |n, v|
+  print("      ONIG_UNICODE_VERSION_#{n} == #{v} && \\\n")
+end
+print("      1)\n")
+print("# error ONIG_UNICODE_VERSION_STRING mismatch\n")
+print("#endif\n")
+print("#define ONIG_UNICODE_VERSION_STRING #{$unicode_version.dump}\n")
+%w[MAJOR MINOR TEENY].zip(versions) do |n, v|
+  print("#define ONIG_UNICODE_VERSION_#{n} #{v}\n")
+end
 
 output.restore
 
@@ -452,6 +523,12 @@ if header
   end while syms.pop
   fds.each(&:close)
   IO.popen(%W[diff -DUSE_UNICODE_AGE_PROPERTIES #{fds[1].path} #{fds[0].path}], "r") {|age|
-    system(* %W[diff -DUSE_UNICODE_PROPERTIES #{fds[2].path} -], in: age)
+    IO.popen(%W[diff -DUSE_UNICODE_PROPERTIES #{fds[2].path} -], "r", in: age) {|f|
+      f.each {|line|
+        line.gsub!(/\(int\)\(long\)&\(\((struct uniname2ctype_pool_t) \*\)0\)->(uniname2ctype_pool_str\d+),\s+/,
+                   'offsetof(\1, \2), ')
+        puts line
+      }
+    }
   }
 end

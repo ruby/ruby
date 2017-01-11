@@ -161,15 +161,9 @@ class RDoc::RDoc
 
     RDoc.load_yaml
 
-    parse_error = if Object.const_defined? :Psych then
-                    Psych::SyntaxError
-                  else
-                    ArgumentError
-                  end
-
     begin
       options = YAML.load_file '.rdoc_options'
-    rescue *parse_error
+    rescue Psych::SyntaxError
     end
 
     raise RDoc::Error, "#{options_file} is not a valid rdoc options file" unless
@@ -340,10 +334,8 @@ option)
   # Parses +filename+ and returns an RDoc::TopLevel
 
   def parse_file filename
-    if Object.const_defined? :Encoding then
-      encoding = @options.encoding
-      filename = filename.encode encoding
-    end
+    encoding = @options.encoding
+    filename = filename.encode encoding
 
     @stats.add_file filename
 
@@ -419,6 +411,7 @@ The internal error was:
 
     return [] if file_list.empty?
 
+    original_options = @options.dup
     @stats.begin_adding
 
     file_info = file_list.map do |filename|
@@ -427,6 +420,7 @@ The internal error was:
     end.compact
 
     @stats.done_adding
+    @options = original_options
 
     file_info
   end
@@ -437,7 +431,7 @@ The internal error was:
 
   def remove_unparseable files
     files.reject do |file|
-      file =~ /\.(?:class|eps|erb|scpt\.txt|ttf|yml)$/i or
+      file =~ /\.(?:class|eps|erb|scpt\.txt|svg|ttf|yml)$/i or
         (file =~ /tags$/i and
          open(file, 'rb') { |io|
            io.read(100) =~ /\A(\f\n[^,]+,\d+$|!_TAG_)/
@@ -481,7 +475,7 @@ The internal error was:
       @last_modified = setup_output_dir @options.op_dir, @options.force_update
     end
 
-    @store.encoding = @options.encoding if @options.respond_to? :encoding
+    @store.encoding = @options.encoding
     @store.dry_run  = @options.dry_run
     @store.main     = @options.main_page
     @store.title    = @options.title
@@ -553,16 +547,14 @@ end
 begin
   require 'rubygems'
 
-  if Gem.respond_to? :find_files then
-    rdoc_extensions = Gem.find_files 'rdoc/discover'
+  rdoc_extensions = Gem.find_files 'rdoc/discover'
 
-    rdoc_extensions.each do |extension|
-      begin
-        load extension
-      rescue => e
-        warn "error loading #{extension.inspect}: #{e.message} (#{e.class})"
-        warn "\t#{e.backtrace.join "\n\t"}" if $DEBUG
-      end
+  rdoc_extensions.each do |extension|
+    begin
+      load extension
+    rescue => e
+      warn "error loading #{extension.inspect}: #{e.message} (#{e.class})"
+      warn "\t#{e.backtrace.join "\n\t"}" if $DEBUG
     end
   end
 rescue LoadError
@@ -572,4 +564,3 @@ end
 require 'rdoc/generator/darkfish'
 require 'rdoc/generator/ri'
 require 'rdoc/generator/pot'
-

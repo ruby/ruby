@@ -1,3 +1,5 @@
+#ifndef HAVE_DES_TABLES
+
 /* Initial key schedule permutation */
 static const C_block	PC1ROT[64/CHUNKBITS][1<<CHUNKBITS] = {
 	{
@@ -1610,3 +1612,5 @@ static const C_block CF6464[64/CHUNKBITS][1<<CHUNKBITS] = {
 	},
 };
 
+#define HAVE_DES_TABLES 1
+#endif

@@ -834,6 +834,38 @@ Foo::Bar#bother
     end
   end
 
+  def test_expand_class_2
+    @store1 = RDoc::RI::Store.new @home_ri, :home
+
+    @top_level = @store1.add_file 'file.rb'
+
+    @cFoo = @top_level.add_class RDoc::NormalClass, 'Foo'
+    @mFox = @top_level.add_module RDoc::NormalModule, 'Fox'
+    @cFoo_Bar = @cFoo.add_class RDoc::NormalClass, 'Bar'
+    @store1.save
+
+    @driver.stores = [@store1]
+    assert_raises RDoc::RI::Driver::NotFoundError do
+      @driver.expand_class 'F'
+    end
+    assert_equal 'Foo::Bar',  @driver.expand_class('F::Bar')
+    assert_equal 'Foo::Bar',  @driver.expand_class('F::B')
+  end
+
+  def test_expand_class_3
+    @store1 = RDoc::RI::Store.new @home_ri, :home
+
+    @top_level = @store1.add_file 'file.rb'
+
+    @cFoo = @top_level.add_class RDoc::NormalClass, 'Foo'
+    @mFox = @top_level.add_module RDoc::NormalModule, 'FooBar'
+    @store1.save
+
+    @driver.stores = [@store1]
+
+    assert_equal 'Foo',  @driver.expand_class('Foo')
+  end
+
   def test_expand_name
     util_store
 
@@ -1434,4 +1466,3 @@ Foo::Bar#bother
   end
 
 end
-

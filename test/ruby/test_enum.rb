@@ -611,6 +611,12 @@ class TestEnumerable < Test::Unit::TestCase
 
     e = @obj.chunk {|elt| :_foo }
     assert_raise(RuntimeError) { e.to_a }
+
+    e = @obj.chunk.with_index {|elt, i| elt - i }
+    assert_equal([[1, [1, 2, 3]],
+                  [-2, [1, 2]]], e.to_a)
+
+    assert_equal(4, (0..3).chunk.size)
   end
 
   def test_slice_before
@@ -897,6 +903,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_float_equal(large_number+(small_number*10), [large_number, *[small_number]*10].each.sum)
     assert_float_equal(large_number+(small_number*10), [large_number/1r, *[small_number]*10].each.sum)
     assert_float_equal(large_number+(small_number*11), [small_number, large_number/1r, *[small_number]*10].each.sum)
+    assert_float_equal(small_number, [large_number, small_number, -large_number].each.sum)
 
     assert_equal("abc", ["a", "b", "c"].each.sum(""))
     assert_equal([1, [2], 3], [[1], [[2]], [3]].each.sum([]))
@@ -920,5 +927,20 @@ class TestEnumerable < Test::Unit::TestCase
     assert_int_equal(5, (2..0).sum(5))
     assert_int_equal(2, (2..2).sum)
     assert_int_equal(42, (2...2).sum(42))
+  end
+
+  def test_uniq
+    src = [1, 1, 1, 1, 2, 2, 3, 4, 5, 6]
+    assert_equal([1, 2, 3, 4, 5, 6], src.uniq.to_a)
+    olympics = {
+      1896 => 'Athens',
+      1900 => 'Paris',
+      1904 => 'Chicago',
+      1906 => 'Athens',
+      1908 => 'Rome',
+    }
+    assert_equal([[1896, "Athens"], [1900, "Paris"], [1904, "Chicago"], [1908, "Rome"]],
+                 olympics.uniq{|k,v| v})
+    assert_equal([1, 2, 3, 4, 5, 10], (1..100).uniq{|x| (x**2) % 10 }.first(6))
   end
 end

@@ -41,7 +41,8 @@ encdirs.each do |encdir|
     open(File.join(encdir,fn)) do |f|
       name = nil
       f.each_line do |line|
-        if (/^OnigEncodingDefine/ =~ line)..(/"(.*?)"/ =~ line)
+        if (/^#ifndef RUBY/ =~ line)..(/^#endif/ =~ line)
+        elsif (/^OnigEncodingDefine/ =~ line)..(/"(.*?)"/ =~ line)
           if $1
             if name
               lines << %[ENC_SET_BASE("#$1", "#{name}");]

@@ -2,6 +2,12 @@
 require_relative 'test_optparse'
 
 module TestOptionParser::NoArg
+  def setup
+    super
+    @opt.def_option "--with_underscore" do |x| @flag = x end
+    @opt.def_option "--with-hyphen" do |x| @flag = x end
+  end
+
   class Def1 < TestOptionParser
     include NoArg
     def setup
@@ -53,6 +59,21 @@ module TestOptionParser::NoArg
     assert_raise(OptionParser::AmbiguousOption) {@opt.parse!(%w"--op")}
     assert_raise(OptionParser::AmbiguousOption) {@opt.parse!(%w"-o")}
     assert_equal(%w"", no_error {@opt.parse!(%w"--opt")})
+    assert_equal(true, @flag)
+  end
+
+  def test_hyphenize
+    @flag = nil
+    assert_equal(%w"", no_error {@opt.parse!(%w"--with_underscore")})
+    assert_equal(true, @flag)
+    @flag = nil
+    assert_equal(%w"", no_error {@opt.parse!(%w"--with-underscore")})
+    assert_equal(true, @flag)
+    @flag = nil
+    assert_equal(%w"", no_error {@opt.parse!(%w"--with-hyphen")})
+    assert_equal(true, @flag)
+    @flag = nil
+    assert_equal(%w"", no_error {@opt.parse!(%w"--with_hyphen")})
     assert_equal(true, @flag)
   end
 end

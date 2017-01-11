@@ -126,7 +126,7 @@ module WEBrick
 
       ##
       # Mutex used to synchronize access across threads
-      TimeoutMutex = Mutex.new # :nodoc:
+      TimeoutMutex = Thread::Mutex.new # :nodoc:
 
       ##
       # Registers a new timeout handler
@@ -134,7 +134,8 @@ module WEBrick
       # +time+:: Timeout in seconds
       # +exception+:: Exception to raise when timeout elapsed
       def TimeoutHandler.register(seconds, exception)
-        instance.register(Thread.current, Time.now + seconds, exception)
+        at = Process.clock_gettime(Process::CLOCK_MONOTONIC) + seconds
+        instance.register(Thread.current, at, exception)
       end
 
       ##
@@ -154,7 +155,7 @@ module WEBrick
         TimeoutMutex.synchronize{
           @timeout_info = Hash.new
         }
-        @queue = Queue.new
+        @queue = Thread::Queue.new
         @watcher = nil
       end
 
@@ -163,7 +164,7 @@ module WEBrick
         def watch
           to_interrupt = []
           while true
-            now = Time.now
+            now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
             wakeup = nil
             to_interrupt.clear
             TimeoutMutex.synchronize{

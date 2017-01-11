@@ -8,11 +8,12 @@ begin
   OpenSSL.fips_mode=false
 rescue LoadError
 end
+
 require "test/unit"
-require "digest/md5"
 require 'tempfile'
 require "rbconfig"
 require "socket"
+require "envutil"
 
 module OpenSSL::TestUtils
   TEST_KEY_RSA1024 = OpenSSL::PKey::RSA.new <<-_end_of_pem_
@@ -85,6 +86,21 @@ Q1VB8qkJN7rA7/2HrCR3gTsWNb1YhAsnFsoeRscC+LxXoXi9OAIUBG98h4tilg6S
 -----END DSA PRIVATE KEY-----
   _end_of_pem_
 
+  TEST_KEY_DSA1024 = OpenSSL::PKey::DSA.new <<-_end_of_pem_
+-----BEGIN DSA PRIVATE KEY-----
+MIIBugIBAAKBgQCH9aAoXvWWThIjkA6D+nI1F9ksF9iDq594rkiGNOT9sPDOdB+n
+D+qeeeeloRlj19ymCSADPI0ZLRgkchkAEnY2RnqnhHOjVf/roGgRbW+iQDMbQ9wa
+/pvc6/fAbsu1goE1hBYjm98/sZEeXavj8tR56IXnjF1b6Nx0+sgeUKFKEQIVAMiz
+4BJUFeTtddyM4uadBM7HKLPRAoGAZdLBSYNGiij7vAjesF5mGUKTIgPd+JKuBEDx
+OaBclsgfdoyoF/TMOkIty+PVlYD+//Vl2xnoUEIRaMXHwHfm0r2xUX++oeRaSScg
+YizJdUxe5jvBuBszGPRc/mGpb9YvP0sB+FL1KmuxYmdODfCe51zl8uM/CVhouJ3w
+DjmRGscCgYAuFlfC7p+e8huCKydfcv/beftqjewiOPpQ3u5uI6KPCtCJPpDhs3+4
+IihH2cPsAlqwGF4tlibW1+/z/OZ1AZinPK3y7b2jSJASEaPeEltVzB92hcd1khk2
+jTYcmSsV4VddplOPK9czytR/GbbibxsrhhgZUbd8LPbvIgaiadJ1PgIUBnJ/5vN2
+CVArsEzlPUCbohPvZnE=
+-----END DSA PRIVATE KEY-----
+  _end_of_pem_
+
 if defined?(OpenSSL::PKey::EC)
 
   TEST_KEY_EC_P256V1 = OpenSSL::PKey::EC.new <<-_end_of_pem_
@@ -105,7 +121,8 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
 -----END DH PARAMETERS-----
   _end_of_pem_
 
-  TEST_KEY_DH1024.priv_key = OpenSSL::BN.new("48561834C67E65FFD2A9B47F41E5E78FDC95C387428FDB1E4B0188B64D1643C3A8D3455B945B7E8C4D166010C7C2CE23BFB9BEF43D0348FE7FA5284B0225E7FE1537546D114E3D8A4411B9B9351AB451E1A358F50ED61B1F00DA29336EEBBD649980AC86D76AF8BBB065298C2052672EEF3EF13AB47A15275FC2836F3AC74CEA", 16)
+  TEST_KEY_DH1024.set_key(OpenSSL::BN.new("556AF1598AE69899867CEBA9F29CE4862B884C2B43C9019EA0231908F6EFA785E3C462A6ECB16DF676866E997FFB72B487DC7967C58C3CA38CE974473BF19B2AA5DCBF102735572EBA6F353F6F0BBE7FF1DE1B07FE1381A355C275C33405004317F9491B5955F191F6615A63B30E55A027FB88A1A4B25608E09EEE68A7DF32D", 16),
+                          OpenSSL::BN.new("48561834C67E65FFD2A9B47F41E5E78FDC95C387428FDB1E4B0188B64D1643C3A8D3455B945B7E8C4D166010C7C2CE23BFB9BEF43D0348FE7FA5284B0225E7FE1537546D114E3D8A4411B9B9351AB451E1A358F50ED61B1F00DA29336EEBBD649980AC86D76AF8BBB065298C2052672EEF3EF13AB47A15275FC2836F3AC74CEA", 16))
 
   DSA_SIGNATURE_DIGEST = OpenSSL::OPENSSL_VERSION_NUMBER > 0x10000000 ?
                          OpenSSL::Digest::SHA1 :
@@ -113,8 +130,8 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
 
   module_function
 
-  def issue_cert(dn, key, serial, not_before, not_after, extensions,
-                 issuer, issuer_key, digest)
+  def issue_cert(dn, key, serial, extensions, issuer, issuer_key,
+                 not_before: nil, not_after: nil, digest: nil)
     cert = OpenSSL::X509::Certificate.new
     issuer = cert unless issuer
     issuer_key = key unless issuer_key
@@ -123,14 +140,16 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
     cert.subject = dn
     cert.issuer = issuer.subject
     cert.public_key = key.public_key
-    cert.not_before = not_before
-    cert.not_after = not_after
+    now = Time.now
+    cert.not_before = not_before || now - 3600
+    cert.not_after = not_after || now + 3600
     ef = OpenSSL::X509::ExtensionFactory.new
     ef.subject_certificate = cert
     ef.issuer_certificate = issuer
     extensions.each{|oid, value, critical|
       cert.add_extension(ef.create_extension(oid, value, critical))
     }
+    digest ||= OpenSSL::PKey::DSA === issuer_key ? DSA_SIGNATURE_DIGEST.new : "sha256"
     cert.sign(issuer_key, digest)
     cert
   end
@@ -182,7 +201,16 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
   end
 
   class OpenSSL::TestCase < Test::Unit::TestCase
+    def setup
+      if ENV["OSSL_GC_STRESS"] == "1"
+        GC.stress = true
+      end
+    end
+
     def teardown
+      if ENV["OSSL_GC_STRESS"] == "1"
+        GC.stress = false
+      end
       # OpenSSL error stack must be empty
       assert_equal([], OpenSSL.errors)
     end
@@ -193,13 +221,13 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
     ITERATIONS = ($0 == __FILE__) ? 100 : 10
 
     def setup
+      super
       @ca_key  = OpenSSL::TestUtils::TEST_KEY_RSA2048
       @svr_key = OpenSSL::TestUtils::TEST_KEY_RSA1024
-      @cli_key = OpenSSL::TestUtils::TEST_KEY_DSA256
+      @cli_key = OpenSSL::TestUtils::TEST_KEY_DSA1024
       @ca  = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA")
       @svr = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
       @cli = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
-      now = Time.at(Time.now.to_i)
       ca_exts = [
         ["basicConstraints","CA:TRUE",true],
         ["keyUsage","cRLSign,keyCertSign",true],
@@ -207,9 +235,9 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
       ee_exts = [
         ["keyUsage","keyEncipherment,digitalSignature",true],
       ]
-      @ca_cert  = issue_cert(@ca, @ca_key, 1, now, now+3600, ca_exts, nil, nil, OpenSSL::Digest::SHA1.new)
-      @svr_cert = issue_cert(@svr, @svr_key, 2, now, now+1800, ee_exts, @ca_cert, @ca_key, OpenSSL::Digest::SHA1.new)
-      @cli_cert = issue_cert(@cli, @cli_key, 3, now, now+1800, ee_exts, @ca_cert, @ca_key, OpenSSL::Digest::SHA1.new)
+      @ca_cert  = issue_cert(@ca, @ca_key, 1, ca_exts, nil, nil)
+      @svr_cert = issue_cert(@svr, @svr_key, 2, ee_exts, @ca_cert, @ca_key)
+      @cli_cert = issue_cert(@cli, @cli_key, 3, ee_exts, @ca_cert, @ca_key)
       @server = nil
     end
 
@@ -223,10 +251,6 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
 
     def readwrite_loop(ctx, ssl)
       while line = ssl.gets
-        if line =~ /^STARTTLS$/
-          ssl.accept
-          next
-        end
         ssl.write(line)
       end
     rescue OpenSSL::SSL::SSLError
@@ -244,7 +268,7 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
             return
           end
           ssl = ssls.accept
-        rescue OpenSSL::SSL::SSLError
+        rescue OpenSSL::SSL::SSLError, Errno::ECONNRESET
           if ignore_listener_error
             retry
           else
@@ -263,25 +287,22 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
       end
     end
 
-    def start_server(verify_mode, start_immediately, args = {}, &block)
+    def start_server(verify_mode: OpenSSL::SSL::VERIFY_NONE, start_immediately: true,
+                     ctx_proc: nil, server_proc: method(:readwrite_loop),
+                     ignore_listener_error: false, &block)
       IO.pipe {|stop_pipe_r, stop_pipe_w|
-        ctx_proc = args[:ctx_proc]
-        server_proc = args[:server_proc]
-        ignore_listener_error = args.fetch(:ignore_listener_error, false)
-        use_anon_cipher = args.fetch(:use_anon_cipher, false)
-        server_proc ||= method(:readwrite_loop)
-
         store = OpenSSL::X509::Store.new
         store.add_cert(@ca_cert)
         store.purpose = OpenSSL::X509::PURPOSE_SSL_CLIENT
         ctx = OpenSSL::SSL::SSLContext.new
-        ctx.ciphers = "ADH-AES256-GCM-SHA384" if use_anon_cipher
         ctx.cert_store = store
-        #ctx.extra_chain_cert = [ ca_cert ]
         ctx.cert = @svr_cert
         ctx.key = @svr_key
         ctx.tmp_dh_callback = proc { OpenSSL::TestUtils::TEST_KEY_DH1024 }
-        ctx.ecdh_curves = "P-256"
+        begin
+          ctx.ecdh_curves = "P-256"
+        rescue NotImplementedError
+        end
         ctx.verify_mode = verify_mode
         ctx_proc.call(ctx) if ctx_proc
 
@@ -319,12 +340,39 @@ AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
         end
       }
     end
+  end
 
-    def starttls(ssl)
-      ssl.puts("STARTTLS")
-      sleep 1   # When this line is eliminated, process on Cygwin blocks
-                # forever at ssl.connect. But I don't know why it does.
-      ssl.connect
+  class OpenSSL::PKeyTestCase < OpenSSL::TestCase
+    def check_component(base, test, keys)
+      keys.each { |comp|
+        assert_equal base.send(comp), test.send(comp)
+      }
+    end
+
+    def dup_public(key)
+      case key
+      when OpenSSL::PKey::RSA
+        rsa = OpenSSL::PKey::RSA.new
+        rsa.set_key(key.n, key.e, nil)
+        rsa
+      when OpenSSL::PKey::DSA
+        dsa = OpenSSL::PKey::DSA.new
+        dsa.set_pqg(key.p, key.q, key.g)
+        dsa.set_key(key.pub_key, nil)
+        dsa
+      when OpenSSL::PKey::DH
+        dh = OpenSSL::PKey::DH.new
+        dh.set_pqg(key.p, nil, key.g)
+        dh
+      else
+        if defined?(OpenSSL::PKey::EC) && OpenSSL::PKey::EC === key
+          ec = OpenSSL::PKey::EC.new(key.group)
+          ec.public_key = key.public_key
+          ec
+        else
+          raise "unknown key type"
+        end
+      end
     end
   end
 

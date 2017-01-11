@@ -66,14 +66,15 @@ class TestRDocServlet < RDoc::TestCase
 
   def test_asset
     temp_dir do
-      now = Time.now
+      FileUtils.mkdir 'css'
 
-      open 'rdoc.css', 'w' do |io| io.write 'h1 { color: red }' end
-      File.utime now, now, 'rdoc.css'
+      now = Time.now
+      open 'css/rdoc.css', 'w' do |io| io.write 'h1 { color: red }' end
+      File.utime now, now, 'css/rdoc.css'
 
       @s.asset_dirs[:darkfish] = '.'
 
-      @req.path = 'rdoc.css'
+      @req.path = '/css/rdoc.css'
 
       @s.asset :darkfish, @req, @res
 
@@ -95,11 +96,12 @@ class TestRDocServlet < RDoc::TestCase
 
   def test_do_GET_asset_darkfish
     temp_dir do
-      FileUtils.touch 'rdoc.css'
+      FileUtils.mkdir 'css'
+      FileUtils.touch 'css/rdoc.css'
 
       @s.asset_dirs[:darkfish] = '.'
 
-      @req.path = '/rdoc.css'
+      @req.path = '/css/rdoc.css'
 
       @s.do_GET @req, @res
 
@@ -136,11 +138,12 @@ class TestRDocServlet < RDoc::TestCase
     @s = RDoc::Servlet.new @server, @stores, @cache, '/mount/path'
 
     temp_dir do
-      FileUtils.touch 'rdoc.css'
+      FileUtils.mkdir 'css'
+      FileUtils.touch 'css/rdoc.css'
 
       @s.asset_dirs[:darkfish] = '.'
 
-      @req.path = '/mount/path/rdoc.css'
+      @req.path = '/mount/path/css/rdoc.css'
 
       @s.do_GET @req, @res
 

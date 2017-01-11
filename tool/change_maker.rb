@@ -1,5 +1,8 @@
 #! ./miniruby
 
+# Used by "make change" to generate a list of files for a Changelog entry.
+# Run it via "make change" in the Ruby root directory.
+
 $:.unshift(File.expand_path("../../lib", __FILE__))
 require File.expand_path("../vcs", __FILE__)
 

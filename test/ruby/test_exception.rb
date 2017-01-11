@@ -181,6 +181,16 @@ class TestException < Test::Unit::TestCase
     }
   end
 
+  def test_throw_false
+    bug12743 = '[ruby-core:77229] [Bug #12743]'
+    e = assert_raise_with_message(UncaughtThrowError, /false/, bug12743) {
+      Thread.start {
+        throw false
+      }.join
+    }
+    assert_same(false, e.tag, bug12743)
+  end
+
   def test_else_no_exception
     begin
       assert(true)
@@ -698,6 +708,54 @@ end.join
     assert_nil(e.cause.cause)
   end
 
+  def test_cause_thread_no_cause
+    bug12741 = '[ruby-core:77222] [Bug #12741]'
+
+    x = Thread.current
+    a = false
+    y = Thread.start do
+      Thread.pass until a
+      x.raise "stop"
+    end
+
+    begin
+      raise bug12741
+    rescue
+      e = assert_raise_with_message(RuntimeError, "stop") do
+        a = true
+        sleep 1
+      end
+    end
+    assert_nil(e.cause)
+  end
+
+  def test_cause_thread_with_cause
+    bug12741 = '[ruby-core:77222] [Bug #12741]'
+
+    x = Thread.current
+    q = Queue.new
+    y = Thread.start do
+      q.pop
+      begin
+        raise "caller's cause"
+      rescue
+        x.raise "stop"
+      end
+    end
+
+    begin
+      raise bug12741
+    rescue
+      e = assert_raise_with_message(RuntimeError, "stop") do
+        q.push(true)
+        sleep 1
+      end
+    ensure
+      y.join
+    end
+    assert_equal("caller's cause", e.cause.message)
+  end
+
   def test_unknown_option
     bug = '[ruby-core:63203] [Feature #8257] should pass unknown options'
 
@@ -717,6 +775,26 @@ end.join
 
     e = assert_raise(exc, bug) {raise exc, {}}
     assert_equal({}, e.arg, bug)
+  end
+
+  def test_circular_cause
+    bug13043 = '[ruby-core:78688] [Bug #13043]'
+    begin
+      begin
+        raise "error 1"
+      ensure
+        orig_error = $!
+        begin
+          raise "error 2"
+        rescue => err
+          raise orig_error
+        end
+      end
+    rescue => x
+    end
+    assert_equal(orig_error, x)
+    assert_equal(orig_error, err.cause)
+    assert_nil(orig_error.cause, bug13043)
   end
 
   def test_anonymous_message
@@ -854,5 +932,91 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
         module_function :foo
       end
     end
+  end
+
+  def test_warning_warn
+    verbose = $VERBOSE
+    warning = nil
+
+    ::Warning.class_eval do
+      alias_method :warn2, :warn
+      remove_method :warn
+
+      define_method(:warn) do |str|
+        warning = str
+      end
+    end
+
+    $VERBOSE = true
+    a = @a
+
+    assert_match(/instance variable @a not initialized/, warning)
+  ensure
+    $VERBOSE = verbose
+
+    ::Warning.class_eval do
+      remove_method :warn
+      alias_method :warn, :warn2
+      remove_method :warn2
+    end
+  end
+
+  def test_warning_warn_invalid_argument
+    assert_raise(TypeError) do
+      ::Warning.warn nil
+    end
+    assert_raise(TypeError) do
+      ::Warning.warn 1
+    end
+    assert_raise(Encoding::CompatibilityError) do
+      ::Warning.warn "\x00a\x00b\x00c".force_encoding("utf-16be")
+    end
+  end
+
+  def test_undefined_backtrace
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      class Exception
+        undef backtrace
+      end
+
+      assert_raise(RuntimeError) {
+        raise RuntimeError, "hello"
+      }
+    end;
+  end
+
+  def test_redefined_backtrace
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      $exc = nil
+
+      class Exception
+        undef backtrace
+        def backtrace
+          $exc = self
+        end
+      end
+
+      e = assert_raise(RuntimeError) {
+        raise RuntimeError, "hello"
+      }
+      assert_same(e, $exc)
+    end;
+  end
+
+  def test_wrong_backtrace
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      class Exception
+        undef backtrace
+        def backtrace(a)
+        end
+      end
+
+      assert_raise(RuntimeError) {
+        raise RuntimeError, "hello"
+      }
+    end;
   end
 end

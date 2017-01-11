@@ -536,6 +536,9 @@ static int exponent(char *, int, int);
 static ssize_t
 BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 {
+#ifdef PRI_EXTRA_MARK
+	const int PRI_EXTRA_MARK_LEN = rb_strlen_lit(PRI_EXTRA_MARK);
+#endif
 	register const char *fmt; /* format string */
 	register int ch;	/* character from fmt */
 	register int n;		/* handy integer (short term usage) */
@@ -555,9 +558,9 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 	int fprec = 0;		/* floating point precision */
 	char expstr[7];		/* buffer for exponent string */
 #endif
-	u_long UNINITIALIZED_VAR(ulval); /* integer arguments %[diouxX] */
+	u_long MAYBE_UNUSED(ulval); /* integer arguments %[diouxX] */
 #ifdef _HAVE_SANE_QUAD_
-	u_quad_t UNINITIALIZED_VAR(uqval); /* %q integers */
+	u_quad_t MAYBE_UNUSED(uqval); /* %q integers */
 #endif /* _HAVE_SANE_QUAD_ */
 	int base;		/* base for [diouxX] conversion */
 	int dprec;		/* a copy of prec if [diouxX], 0 otherwise */
@@ -813,7 +816,6 @@ reswitch:	switch (ch) {
 # define INTPTR_FLAG 0
 #endif
 #ifdef PRI_EXTRA_MARK
-# define PRI_EXTRA_MARK_LEN (sizeof(PRI_EXTRA_MARK)-1)
 # define IS_PRI_EXTRA_MARK(s) \
 	(PRI_EXTRA_MARK_LEN < 1 || \
 	 (*(s) == PRI_EXTRA_MARK[0] && \

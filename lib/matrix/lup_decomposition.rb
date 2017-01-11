@@ -64,7 +64,7 @@ class Matrix
 
     # Returns +true+ if +U+, and hence +A+, is singular.
 
-    def singular? ()
+    def singular?
       @column_count.times do |j|
         if (@lu[j][j] == 0)
           return true

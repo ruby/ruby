@@ -36,12 +36,14 @@ module Gem::Resolver::Molinillo
       PossibilityState.new(
         name,
         requirements.dup,
-        activated.dup,
+        activated,
         requirement,
         [possibilities.pop],
         depth + 1,
         conflicts.dup
-      )
+      ).tap do |state|
+        state.activated.tag(state)
+      end
     end
   end
 

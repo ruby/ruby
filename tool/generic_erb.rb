@@ -1,4 +1,8 @@
 # -*- coding: us-ascii -*-
+
+# Used to expand Ruby template files by common.mk, uncommon.mk and
+# some Ruby extension libraries.
+
 require 'erb'
 require 'optparse'
 require 'fileutils'

@@ -11,12 +11,25 @@ Q = $(Q1:0=@)
 ECHO0 = $(ECHO1:0=echo)
 ECHO = @$(ECHO0)
 
-UNICODE_VERSION = 8.0.0
+UNICODE_VERSION = 9.0.0
+
+### set the following environment variable or uncomment the line if
+### the Unicode data files should be updated completely on every update ('make up',...).
+# ALWAYS_UPDATE_UNICODE = yes
+UNICODE_DATA_DIR = enc/unicode/data/$(UNICODE_VERSION)
+UNICODE_SRC_DATA_DIR = $(srcdir)/$(UNICODE_DATA_DIR)
+UNICODE_HDR_DIR = $(srcdir)/enc/unicode/$(UNICODE_VERSION)
+UNICODE_DATA_HEADERS = \
+	$(UNICODE_HDR_DIR)/casefold.h \
+	$(UNICODE_HDR_DIR)/name2ctype.h \
+	$(empty)
 
 RUBY_RELEASE_DATE = $(RUBY_RELEASE_YEAR)-$(RUBY_RELEASE_MONTH)-$(RUBY_RELEASE_DAY)
 RUBYLIB       = $(PATH_SEPARATOR)
 RUBYOPT       = -
 RUN_OPTS      = --disable-gems
+
+INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(UNICODE_HDR_DIR)
 
 GEM_HOME =
 GEM_PATH =
@@ -35,11 +48,12 @@ DOCLIE_GIT_REF = v1.1.5
 
 STATIC_RUBY   = static-ruby
 
+TIMESTAMPDIR  = $(EXTOUT)/.timestamp
 EXTCONF       = extconf.rb
 LIBRUBY_EXTS  = ./.libruby-with-ext.time
 REVISION_H    = ./.revision.time
-PLATFORM_D    = ./$(PLATFORM_DIR)/.time
-ENC_TRANS_D   = ./enc/trans/.time
+PLATFORM_D    = $(TIMESTAMPDIR)/.$(PLATFORM_DIR).time
+ENC_TRANS_D   = $(TIMESTAMPDIR)/.enc-trans.time
 RDOCOUT       = $(EXTOUT)/rdoc
 HTMLOUT       = $(EXTOUT)/html
 CAPIOUT       = doc/capi
@@ -51,6 +65,8 @@ DLDOBJS	      = $(INITOBJS)
 EXTSOLIBS     =
 MINIOBJS      = $(ARCHMINIOBJS) miniinit.$(OBJEXT) dmyext.$(OBJEXT) miniprelude.$(OBJEXT)
 ENC_MK        = enc.mk
+MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
+		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS)
 
 COMMONOBJS    = array.$(OBJEXT) \
 		bignum.$(OBJEXT) \
@@ -194,7 +210,7 @@ showconfig:
 exts: build-ext
 
 EXTS_MK = exts.mk
-$(EXTS_MK): $(MKFILES) all-incs $(PREP) $(RBCONFIG) $(LIBRUBY)
+$(EXTS_MK): $(MKFILES) all-incs $(PREP) $(RBCONFIG) $(LIBRUBY) $(TIMESTAMPDIR)/.$(arch).time
 	$(ECHO) generating makefile $@
 	$(Q)$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --command-output=$(EXTS_MK) $(EXTMK_ARGS) configure
 
@@ -202,7 +218,7 @@ configure-ext: $(EXTS_MK)
 
 build-ext: $(EXTS_MK)
 	$(Q)$(MAKE) -f $(EXTS_MK) $(MFLAGS) libdir="$(libdir)" LIBRUBY_EXTS=$(LIBRUBY_EXTS) \
-	    ENCOBJS="$(ENCOBJS)" UPDATE_LIBRARIES=no $(EXTSTATIC)
+	    EXTENCS="$(ENCOBJS)" UPDATE_LIBRARIES=no $(EXTSTATIC)
 
 prog: program wprogram
 
@@ -528,8 +544,8 @@ realclean-extout: distclean-extout
 
 clean-ext distclean-ext realclean-ext::
 	$(Q)$(RM) $(EXTS_MK)
-	$(Q)$(RM) $(EXTOUT)/.timestamp/.*.time
-	$(Q)$(RMDIR) $(EXTOUT)/.timestamp 2> $(NULL) || exit 0
+	$(Q)$(RM) $(TIMESTAMPDIR)/.*.time $(TIMESTAMPDIR)/.$(arch).time $(TIMESTAMPDIR)/$(arch)/.time
+	$(Q)$(RMDIR) $(TIMESTAMPDIR)/$(arch) $(TIMESTAMPDIR) 2> $(NULL) || exit 0
 
 clean-enc distclean-enc realclean-enc: PHONY
 
@@ -597,7 +613,7 @@ yes-test-testframework: prog PHONY
 	$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TESTOPTS) testunit minitest
 no-test-testframework: PHONY
 
-test-sample: test-basic # backword compatibility for mswin-build
+test-sample: test-basic # backward compatibility for mswin-build
 test: btest-ruby test-knownbug test-basic
 
 # $ make test-all TESTOPTS="--help" displays more detail
@@ -624,11 +640,19 @@ extconf: $(PREP)
 	$(RUNRUBY) -C "$(EXTCONFDIR)" $(EXTCONF) $(EXTCONFARGS)
 
 $(RBCONFIG): $(srcdir)/tool/mkconfig.rb config.status $(srcdir)/version.h
-	$(Q)$(BOOTSTRAPRUBY) $(srcdir)/tool/mkconfig.rb -timestamp=$@ \
+	$(Q)$(BOOTSTRAPRUBY) -n \
+	-e 'BEGIN{version=ARGV.shift;mis=ARGV.dup}' \
+	-e 'END{abort "UNICODE version mismatch: #{mis}" unless mis.empty?}' \
+	-e '(mis.delete(ARGF.path); ARGF.close) if /ONIG_UNICODE_VERSION_STRING +"#{Regexp.quote(version)}"/o' \
+	$(UNICODE_VERSION) $(UNICODE_DATA_HEADERS)
+	$(Q)$(BOOTSTRAPRUBY) $(srcdir)/tool/mkconfig.rb \
 		-cross_compiling=$(CROSS_COMPILING) \
 		-arch=$(arch) -version=$(RUBY_PROGRAM_VERSION) \
 		-install_name=$(RUBY_INSTALL_NAME) \
-		-so_name=$(RUBY_SO_NAME) rbconfig.rb
+		-so_name=$(RUBY_SO_NAME) \
+		-unicode_version=$(UNICODE_VERSION) \
+	> rbconfig.tmp
+	$(IFCHANGE) "--timestamp=$@" rbconfig.rb rbconfig.tmp
 
 test-rubyspec-precheck:
 
@@ -644,9 +668,7 @@ encs: enc trans
 libencs: libenc libtrans
 encs enc trans libencs libenc libtrans: $(SHOWFLAGS) $(ENC_MK) $(LIBRUBY) $(PREP) PHONY
 	$(ECHO) making $@
-	$(Q) $(MAKE) -f $(ENC_MK) V="$(V)" \
-		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" \
-		$(MFLAGS) $@
+	$(Q) $(MAKE) $(MAKE_ENC) $@
 
 
 libenc enc: {$(VPATH)}encdb.h
@@ -685,13 +707,17 @@ PHONY:
 	$(Q)$(RM) y.tab.c y.tab.h
 
 $(PLATFORM_D):
-	$(Q) $(MAKEDIRS) $(PLATFORM_DIR)
+	$(Q) $(MAKEDIRS) $(PLATFORM_DIR) $(@D)
 	@exit > $@
 
 $(BUILTIN_ENCOBJS) $(BUILTIN_TRANSOBJS): $(ENC_TRANS_D)
 
 $(ENC_TRANS_D):
-	$(Q) $(MAKEDIRS) enc/trans
+	$(Q) $(MAKEDIRS) enc/trans $(@D)
+	@exit > $@
+
+$(TIMESTAMPDIR)/.$(arch).time:
+	$(Q)$(MAKEDIRS) $(@D) $(TIMESTAMPDIR)/$(arch)
 	@exit > $@
 
 ###
@@ -748,12 +774,6 @@ $(NEWLINE_C): $(srcdir)/enc/trans/newline.trans $(srcdir)/tool/transcode-tblgen.
 	$(Q) $(BASERUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo $@ $(srcdir)/enc/trans/newline.trans
 enc/trans/newline.$(OBJEXT): $(NEWLINE_C)
 
-{$(VPATH)}missing/des_tables.c: $(srcdir)/missing/crypt.c
-	$(Q) $(PURIFY) $(CC) $(CPPFLAGS) -DDUMP $(LDFLAGS) $(XLDFLAGS) $(LIBS) $(OUTFLAG)make_des_table $(srcdir)/missing/crypt.c
-	$(Q) $(MAKEDIRS) $(@D)
-	$(Q) ./make_des_table > $@
-	$(Q) $(RMALL) make_des_table*
-
 verconf.h: $(srcdir)/template/verconf.h.tmpl $(srcdir)/tool/generic_erb.rb
 	$(ECHO) creating $@
 	$(Q) $(BOOTSTRAPRUBY) "$(srcdir)/tool/generic_erb.rb" -o $@ $(srcdir)/template/verconf.h.tmpl
@@ -794,7 +814,9 @@ EXT_SRCS = $(srcdir)/ext/ripper/ripper.c \
 
 srcs-ext: $(EXT_SRCS)
 
-srcs-extra: $(srcdir)/ext/json/parser/parser.c
+srcs-extra: $(srcdir)/ext/json/parser/parser.c \
+	    $(srcdir)/ext/date/zonetab.h \
+	    $(empty)
 
 LIB_SRCS = $(srcdir)/lib/unicode_normalize/tables.rb
 
@@ -802,12 +824,13 @@ srcs-lib: $(LIB_SRCS)
 
 srcs-enc: $(ENC_MK)
 	$(ECHO) making srcs under enc
-	$(Q) $(MAKE) -f $(ENC_MK) RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) srcs
+	$(Q) $(MAKE) $(MAKE_ENC) srcs
 
 all-incs: incs {$(VPATH)}encdb.h {$(VPATH)}transdb.h
 incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}known_errors.inc \
       {$(VPATH)}vm_call_iseq_optimized.inc $(srcdir)/revision.h \
-      $(REVISION_H) enc/unicode/name2ctype.h enc/jis/props.h \
+      $(REVISION_H) \
+      $(UNICODE_DATA_HEADERS) $(srcdir)/enc/jis/props.h \
       {$(VPATH)}id.h {$(VPATH)}probes.dmyh
 
 insns: $(INSNS)
@@ -850,9 +873,7 @@ $(MINIPRELUDE_C): $(COMPILE_PRELUDE)
 		$(srcdir)/template/prelude.c.tmpl
 
 $(PRELUDE_C): $(COMPILE_PRELUDE) \
-	   {$(srcdir)}lib/rubygems/defaults.rb \
-	   {$(srcdir)}lib/rubygems/core_ext/kernel_gem.rb \
-	   $(PRELUDE_SCRIPTS) $(LIB_SRCS)
+	   $(PRELUDE_SCRIPTS)
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -c -o $@ \
 		$(srcdir)/template/prelude.c.tmpl $(PRELUDE_SCRIPTS)
@@ -878,7 +899,7 @@ preludes: {$(srcdir)}golf_prelude.c
 $(srcdir)/revision.h:
 	@exit > $@
 
-$(REVISION_H): $(srcdir)/version.h $(srcdir)/ChangeLog $(srcdir)/tool/file2lastrev.rb $(REVISION_FORCE)
+$(REVISION_H): $(srcdir)/version.h $(srcdir)/tool/file2lastrev.rb $(REVISION_FORCE)
 	-$(Q) $(BASERUBY) $(srcdir)/tool/file2lastrev.rb --revision.h "$(srcdir)" > revision.tmp
 	$(Q)$(IFCHANGE) "--timestamp=$@" "$(srcdir)/revision.h" revision.tmp
 
@@ -895,19 +916,24 @@ $(srcdir)/ext/json/parser/parser.c: $(srcdir)/ext/json/parser/parser.rl
 	$(Q) $(CHDIR) $(@D) && $(exec) $(MAKE) -f prereq.mk $(MFLAGS) \
 		Q=$(Q) ECHO=$(ECHO) top_srcdir=../../.. srcdir=. VPATH=../../.. BASERUBY="$(BASERUBY)"
 
+$(srcdir)/ext/date/zonetab.h: $(srcdir)/ext/date/zonetab.list
+	$(ECHO) generating $@
+	$(Q) $(CHDIR) $(@D) && $(exec) $(MAKE) -f prereq.mk $(MFLAGS) \
+		Q=$(Q) ECHO=$(ECHO) top_srcdir=../.. srcdir=. VPATH=../.. BASERUBY="$(BASERUBY)"
+
 $(srcdir)/ext/rbconfig/sizeof/sizes.c: $(srcdir)/ext/rbconfig/sizeof/depend \
 		$(srcdir)/tool/generic_erb.rb $(srcdir)/template/sizes.c.tmpl $(srcdir)/configure.in
 	$(ECHO) generating $@
 	$(Q) $(CHDIR) $(@D) && \
-	sed '/AUTOGENERATED/q;s#{.*}##' depend | \
+	sed '/AUTOGENERATED/q' depend | \
 	$(exec) $(MAKE) -f - $(MFLAGS) \
 		Q=$(Q) ECHO=$(ECHO) top_srcdir=../../.. srcdir=. VPATH=../../.. RUBY="$(BASERUBY)"
 
 $(srcdir)/ext/socket/constdefs.c: $(srcdir)/ext/socket/depend
 	$(Q) $(CHDIR) $(@D) && \
-	sed -n "/^constdefs/,/^$$/p" depend | \
-	$(exec) $(MAKE) -f - $(MFLAGS) constdefs.h constdefs.c \
-		Q=$(Q) ECHO=$(ECHO) top_srcdir=../../.. srcdir=. VPATH=../../.. RUBY="$(BASERUBY)"
+	sed '/AUTOGENERATED/q' depend | \
+	$(exec) $(MAKE) -f - $(MFLAGS) \
+		Q=$(Q) ECHO=$(ECHO) top_srcdir=../.. srcdir=. VPATH=../.. RUBY="$(BASERUBY)"
 
 ##
 
@@ -937,17 +963,17 @@ OPTS =
 # This command compares trunk and built-ruby and 2.2.2
 benchmark: miniruby$(EXEEXT) PHONY
 	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
-	            --executables="$(COMPARE_RUBY) -I../../ruby/lib -I. -I.ext/common --disable-gem; built-ruby::$(MINIRUBY) --disable-gem" \
+	            --executables="$(COMPARE_RUBY) -I$(srcdir)/lib -I. -I$(EXTOUT)/common --disable-gem; built-ruby::$(MINIRUBY) --disable-gem" \
 	            --pattern='bm_' --directory=$(srcdir)/benchmark $(OPTS)
 
 benchmark-each: miniruby$(EXEEXT) PHONY
 	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
-	            --executables="$(COMPARE_RUBY) -I../../ruby/lib -I. -I.ext/common --disable-gem; built-ruby::$(MINIRUBY) --disable-gem" \
+	            --executables="$(COMPARE_RUBY) -I$(srcdir)/lib -I. -I$(EXTOUT)/common --disable-gem; built-ruby::$(MINIRUBY) --disable-gem" \
 	            --pattern=$(ITEM) --directory=$(srcdir)/benchmark $(OPTS)
 
 tbench: miniruby$(EXEEXT) PHONY
 	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
-	            --executables="$(COMPARE_RUBY) -I../../ruby/lib -I. -I.ext/common --disable-gem; built-ruby::$(MINIRUBY) --disable-gem" \
+	            --executables="$(COMPARE_RUBY) -I$(srcdir)/lib -I. -I$(EXTOUT)/common --disable-gem; built-ruby::$(MINIRUBY) --disable-gem" \
 	            --pattern='bmx_' --directory=$(srcdir)/benchmark $(OPTS)
 
 run.gdb:
@@ -972,7 +998,10 @@ gdb-ruby: $(PROGRAM) run.gdb PHONY
 	$(Q) $(RUNRUBY_COMMAND) $(RUNRUBY_DEBUGGER) -- $(TESTRUN_SCRIPT)
 
 dist:
-	$(BASERUBY) $(srcdir)/tool/make-snapshot -srcdir=$(srcdir) tmp $(RELNAME)
+	$(BASERUBY) $(srcdir)/tool/make-snapshot \
+	-srcdir=$(srcdir) \
+	-unicode-version=$(UNICODE_VERSION) \
+	tmp $(RELNAME)
 
 up:: update-remote
 
@@ -1018,13 +1047,7 @@ update-bundled_gems: PHONY
 	    -e   'break "#{s.name} #{s.version}" if s.platform=="ruby"&&s.name==$$F[0]' \
 	    -e '}' \
 	     "$(srcdir)/gems/bundled_gems" | \
-	"$(srcdir)/tool/ifchange" "$(srcdir)/gems/bundled_gems" -
-
-### set the following environment variable or uncomment the line if
-### the Unicode data files should be updated completely on every update ('make up',...).
-# ALWAYS_UPDATE_UNICODE = yes
-UNICODE_DATA_DIR = enc/unicode/data/$(UNICODE_VERSION)
-UNICODE_SRC_DATA_DIR = $(srcdir)/$(UNICODE_DATA_DIR)
+	"$(IFCHANGE)" "$(srcdir)/gems/bundled_gems" -
 
 UNICODE_FILES = $(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_SRC_DATA_DIR)/CompositionExclusions.txt \
@@ -1033,38 +1056,75 @@ UNICODE_FILES = $(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_SRC_DATA_DIR)/SpecialCasing.txt \
 		$(empty)
 
+UNICODE_PROPERTY_FILES =  \
+		$(UNICODE_SRC_DATA_DIR)/Blocks.txt \
+		$(UNICODE_SRC_DATA_DIR)/DerivedAge.txt \
+		$(UNICODE_SRC_DATA_DIR)/DerivedCoreProperties.txt \
+		$(UNICODE_SRC_DATA_DIR)/PropList.txt \
+		$(UNICODE_SRC_DATA_DIR)/PropertyAliases.txt \
+		$(UNICODE_SRC_DATA_DIR)/PropertyValueAliases.txt \
+		$(UNICODE_SRC_DATA_DIR)/Scripts.txt \
+		$(UNICODE_SRC_DATA_DIR)/auxiliary/GraphemeBreakProperty.txt \
+		$(empty)
+
 update-unicode: $(UNICODE_FILES)
+
+UNICODE_DOWNLOAD = \
+	$(BASERUBY) -C "$(srcdir)" tool/downloader.rb \
+	    -d $(UNICODE_DATA_DIR) \
+	    -p $(UNICODE_VERSION)/ucd \
+	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode
+
+$(UNICODE_PROPERTY_FILES):
+	$(ECHO) Downloading Unicode $(UNICODE_VERSION) property files...
+	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)/auxiliary"
+	$(Q) $(UNICODE_DOWNLOAD) $(UNICODE_PROPERTY_FILES)
 
 $(UNICODE_FILES):
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)"
-	$(Q) $(BASERUBY) -C "$(srcdir)" tool/downloader.rb \
-	    -d $(UNICODE_DATA_DIR) \
-	    -p $(UNICODE_VERSION)/ucd \
-	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode \
-	    $(UNICODE_FILES)
+	$(Q) $(UNICODE_DOWNLOAD) $(UNICODE_FILES)
 
 $(srcdir)/$(HAVE_BASERUBY:yes=lib/unicode_normalize/tables.rb): \
-	$(srcdir)/.unicode-tables.time
+	$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time
 
-$(srcdir)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
-		$(UNICODE_FILES) \
+$(UNICODE_SRC_DATA_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=.unicode-tables.time): $(UNICODE_FILES)
+
+$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
 		$(srcdir)/template/unicode_norm_gen.tmpl
+	$(Q) $(ALWAYS_UPDATE_UNICODE:yes=exit &&) $(MAKE) $(MFLAGS) Q=$(Q) UNICODE_VERSION=$(UNICODE_VERSION) update-unicode
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb \
 		-c -t$@ -o $(srcdir)/lib/unicode_normalize/tables.rb \
 		-I $(srcdir) \
 		$(srcdir)/template/unicode_norm_gen.tmpl \
 		$(UNICODE_DATA_DIR) lib/unicode_normalize
 
+# UPDATE_NAME2CTYPE=    : toplevel
+# UPDATE_NAME2CTYPE=yes : sub-make to update name2ctype.h
+$(UNICODE_HDR_DIR)/$(UPDATE_NAME2CTYPE:yes=.ignore.)name2ctype.h:
+	$(Q) $(MAKE) $(MFLAGS) Q=$(Q) UPDATE_NAME2CTYPE=yes UNICODE_VERSION=$(UNICODE_VERSION) $@
+
+$(UNICODE_HDR_DIR)/$(UPDATE_NAME2CTYPE:yes=name2ctype.h): \
+		$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
+		$(UNICODE_PROPERTY_FILES)
+	$(MAKEDIRS) $(@D)
+	$(BOOTSTRAPRUBY) $(srcdir)/tool/enc-unicode.rb --header $(UNICODE_SRC_DATA_DIR) > $@
+
 # the next non-comment line was:
-# $(srcdir)/enc/unicode/casefold.h: $(srcdir)/enc/unicode/case-folding.rb \
+# $(UNICODE_HDR_DIR)/casefold.h: $(srcdir)/enc/unicode/case-folding.rb \
 # but was changed to make sure CI works on systems that don't have gperf
-unicode-up: $(srcdir)/enc/unicode/case-folding.rb \
+unicode-up: $(UNICODE_DATA_HEADERS)
+
+$(UNICODE_HDR_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=casefold.h): \
 		$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_SRC_DATA_DIR)/SpecialCasing.txt \
 		$(UNICODE_SRC_DATA_DIR)/CaseFolding.txt
+
+$(UNICODE_HDR_DIR)/casefold.h: $(srcdir)/enc/unicode/case-folding.rb
+	$(Q) $(ALWAYS_UPDATE_UNICODE:yes=exit &&) $(MAKE) $(MFLAGS) Q=$(Q) UNICODE_VERSION=$(UNICODE_VERSION) update-unicode
+	$(MAKEDIRS) $(@D)
 	$(Q) $(BASERUBY) $(srcdir)/enc/unicode/case-folding.rb \
-		--output-file=$(srcdir)/enc/unicode/casefold.h \
+		--output-file=$@ \
 		--mapping-data-directory=$(UNICODE_SRC_DATA_DIR)
 
 download-extlibs:
@@ -1170,7 +1230,6 @@ array.$(OBJEXT): {$(VPATH)}ruby_assert.h
 array.$(OBJEXT): {$(VPATH)}st.h
 array.$(OBJEXT): {$(VPATH)}subst.h
 array.$(OBJEXT): {$(VPATH)}util.h
-array.$(OBJEXT): {$(VPATH)}vm_opts.h
 bignum.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 bignum.$(OBJEXT): $(top_srcdir)/include/ruby.h
 bignum.$(OBJEXT): {$(VPATH)}bignum.c
@@ -1220,6 +1279,7 @@ compar.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 compar.$(OBJEXT): {$(VPATH)}compar.c
 compar.$(OBJEXT): {$(VPATH)}config.h
 compar.$(OBJEXT): {$(VPATH)}defines.h
+compar.$(OBJEXT): {$(VPATH)}id.h
 compar.$(OBJEXT): {$(VPATH)}intern.h
 compar.$(OBJEXT): {$(VPATH)}missing.h
 compar.$(OBJEXT): {$(VPATH)}st.h
@@ -1248,7 +1308,9 @@ compile.$(OBJEXT): {$(VPATH)}method.h
 compile.$(OBJEXT): {$(VPATH)}missing.h
 compile.$(OBJEXT): {$(VPATH)}node.h
 compile.$(OBJEXT): {$(VPATH)}oniguruma.h
+compile.$(OBJEXT): {$(VPATH)}opt_sc.inc
 compile.$(OBJEXT): {$(VPATH)}optinsn.inc
+compile.$(OBJEXT): {$(VPATH)}optunifs.inc
 compile.$(OBJEXT): {$(VPATH)}re.h
 compile.$(OBJEXT): {$(VPATH)}regex.h
 compile.$(OBJEXT): {$(VPATH)}ruby_assert.h
@@ -1392,11 +1454,11 @@ enc/trans/newline.$(OBJEXT): {$(VPATH)}st.h
 enc/trans/newline.$(OBJEXT): {$(VPATH)}subst.h
 enc/trans/newline.$(OBJEXT): {$(VPATH)}transcode_data.h
 enc/unicode.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/unicode.$(OBJEXT): $(UNICODE_HDR_DIR)/casefold.h
+enc/unicode.$(OBJEXT): $(UNICODE_HDR_DIR)/name2ctype.h
 enc/unicode.$(OBJEXT): {$(VPATH)}config.h
 enc/unicode.$(OBJEXT): {$(VPATH)}defines.h
 enc/unicode.$(OBJEXT): {$(VPATH)}enc/unicode.c
-enc/unicode.$(OBJEXT): {$(VPATH)}enc/unicode/casefold.h
-enc/unicode.$(OBJEXT): {$(VPATH)}enc/unicode/name2ctype.h
 enc/unicode.$(OBJEXT): {$(VPATH)}intern.h
 enc/unicode.$(OBJEXT): {$(VPATH)}missing.h
 enc/unicode.$(OBJEXT): {$(VPATH)}oniguruma.h
@@ -1645,7 +1707,6 @@ hash.$(OBJEXT): {$(VPATH)}st.h
 hash.$(OBJEXT): {$(VPATH)}subst.h
 hash.$(OBJEXT): {$(VPATH)}symbol.h
 hash.$(OBJEXT): {$(VPATH)}util.h
-hash.$(OBJEXT): {$(VPATH)}vm_opts.h
 inits.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 inits.$(OBJEXT): $(top_srcdir)/include/ruby.h
 inits.$(OBJEXT): {$(VPATH)}config.h
@@ -1753,7 +1814,6 @@ loadpath.$(OBJEXT): {$(VPATH)}defines.h
 loadpath.$(OBJEXT): {$(VPATH)}intern.h
 loadpath.$(OBJEXT): {$(VPATH)}loadpath.c
 loadpath.$(OBJEXT): {$(VPATH)}missing.h
-loadpath.$(OBJEXT): {$(VPATH)}ruby_assert.h
 loadpath.$(OBJEXT): {$(VPATH)}st.h
 loadpath.$(OBJEXT): {$(VPATH)}subst.h
 loadpath.$(OBJEXT): {$(VPATH)}verconf.h
@@ -1884,7 +1944,6 @@ object.$(OBJEXT): {$(VPATH)}probes.h
 object.$(OBJEXT): {$(VPATH)}st.h
 object.$(OBJEXT): {$(VPATH)}subst.h
 object.$(OBJEXT): {$(VPATH)}util.h
-object.$(OBJEXT): {$(VPATH)}vm_opts.h
 pack.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 pack.$(OBJEXT): $(top_srcdir)/include/ruby.h
 pack.$(OBJEXT): {$(VPATH)}config.h
@@ -1923,7 +1982,6 @@ parse.$(OBJEXT): {$(VPATH)}st.h
 parse.$(OBJEXT): {$(VPATH)}subst.h
 parse.$(OBJEXT): {$(VPATH)}symbol.h
 parse.$(OBJEXT): {$(VPATH)}util.h
-parse.$(OBJEXT): {$(VPATH)}vm_opts.h
 prelude.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 prelude.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 prelude.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -2311,7 +2369,6 @@ string.$(OBJEXT): {$(VPATH)}ruby_assert.h
 string.$(OBJEXT): {$(VPATH)}st.h
 string.$(OBJEXT): {$(VPATH)}string.c
 string.$(OBJEXT): {$(VPATH)}subst.h
-string.$(OBJEXT): {$(VPATH)}vm_opts.h
 strlcat.$(OBJEXT): {$(VPATH)}config.h
 strlcat.$(OBJEXT): {$(VPATH)}missing.h
 strlcat.$(OBJEXT): {$(VPATH)}strlcat.c
@@ -2367,7 +2424,6 @@ symbol.$(OBJEXT): {$(VPATH)}st.h
 symbol.$(OBJEXT): {$(VPATH)}subst.h
 symbol.$(OBJEXT): {$(VPATH)}symbol.c
 symbol.$(OBJEXT): {$(VPATH)}symbol.h
-symbol.$(OBJEXT): {$(VPATH)}vm_opts.h
 thread.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 thread.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 thread.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -2553,9 +2609,6 @@ vm_backtrace.$(OBJEXT): {$(VPATH)}vm_backtrace.c
 vm_backtrace.$(OBJEXT): {$(VPATH)}vm_core.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}vm_debug.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}vm_opts.h
-vm_call.$(OBJEXT): $(top_srcdir)/include/ruby.h
-vm_call.$(OBJEXT): {$(VPATH)}vm_call_iseq_optimized.inc
-vm_call.$(OBJEXT): {$(VPATH)}vm_core.h
 vm_dump.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 vm_dump.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 vm_dump.$(OBJEXT): $(CCAN_DIR)/list/list.h

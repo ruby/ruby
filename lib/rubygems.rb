@@ -10,7 +10,7 @@ require 'rbconfig'
 require 'thread'
 
 module Gem
-  VERSION = '2.6.4'
+  VERSION = '2.6.8'
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -153,6 +153,26 @@ module Gem
     gems
     specifications/default
   ]
+
+  ##
+  # Exception classes used in a Gem.read_binary +rescue+ statement. Not all of
+  # these are defined in Ruby 1.8.7, hence the need for this convoluted setup.
+
+  READ_BINARY_ERRORS = begin
+    read_binary_errors = [Errno::EACCES]
+    read_binary_errors << Errno::ENOTSUP if Errno.const_defined?(:ENOTSUP)
+    read_binary_errors
+  end.freeze
+
+  ##
+  # Exception classes used in Gem.write_binary +rescue+ statement. Not all of
+  # these are defined in Ruby 1.8.7.
+
+  WRITE_BINARY_ERRORS = begin
+    write_binary_errors = []
+    write_binary_errors << Errno::ENOTSUP if Errno.const_defined?(:ENOTSUP)
+    write_binary_errors
+  end.freeze
 
   @@win_platform = nil
 
@@ -829,7 +849,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       f.flock(File::LOCK_EX)
       f.read
     end
-  rescue Errno::EACCES
+  rescue *READ_BINARY_ERRORS
     open path, 'rb' do |f|
       f.read
     end
@@ -839,6 +859,26 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     else
       open path, 'rb' do |f|
         f.read
+      end
+    end
+  end
+
+  ##
+  # Safely write a file in binary mode on all platforms.
+  def self.write_binary(path, data)
+    open(path, 'wb') do |io|
+      begin
+        io.flock(File::LOCK_EX)
+      rescue *WRITE_BINARY_ERRORS
+      end
+      io.write data
+    end
+  rescue Errno::ENOLCK # NFS
+    if Thread.main != Thread.current
+      raise
+    else
+      open(path, 'wb') do |io|
+        io.write data
       end
     end
   end
@@ -931,7 +971,8 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # default_sources if the sources list is empty.
 
   def self.sources
-    @sources ||= Gem::SourceList.from(default_sources)
+    source_list = configuration.sources || default_sources
+    @sources ||= Gem::SourceList.from(source_list)
   end
 
   ##

@@ -246,8 +246,8 @@ puts Tempfile.new('foo').path
   def test_concurrency
     threads = []
     tempfiles = []
-    lock = Mutex.new
-    cond = ConditionVariable.new
+    lock = Thread::Mutex.new
+    cond = Thread::ConditionVariable.new
     start = false
 
     4.times do
@@ -344,6 +344,15 @@ puts Tempfile.new('foo').path
   ensure
     f.close if f && !f.closed?
     File.unlink path if path
+  end
+
+  def test_create_default_basename
+    path = nil
+    Tempfile.create {|f|
+      path = f.path
+      assert_file.exist?(path)
+    }
+    assert_file.not_exist?(path)
   end
 end
 

@@ -120,11 +120,21 @@ On most
 systems, you can load object files into the Ruby interpreter
 on-the-fly.
 .It Sy "Rich libraries"
-Libraries called "builtin libraries" and "standard libraries" are bundled with Ruby.
-And you can obtain more libraries via the package management system called `RubyGems'.
-.Pp
-Moreover there are thousands of Ruby projects on GitHub
-.Aq Pa https://github.com/languages/Ruby .
+In addition to the
+.Dq builtin libraries
+and
+.Dq standard libraries
+that are bundled with Ruby, a vast amount of third-party libraries
+.Pq Dq gems
+are available via the package management system called
+.Sq RubyGems ,
+namely the
+.Xr gem 1
+command.  Visit RubyGems.org
+.Pq Lk https://rubygems.org/
+to find the gems you need, and explore GitHub
+.Pq Lk https://github.com/
+to see how they are being developed and used.
 .El
 .Pp
 .Sh OPTIONS
@@ -386,8 +396,7 @@ debug the Ruby interpreter.
 .It Fl -disable- Ns Ar FEATURE
 .It Fl -enable- Ns Ar FEATURE
 Disables (or enables) the specified
-.Ar FEATURE Ns
-\&.
+.Ar FEATURE .
 .Bl -tag -width "--disable-rubyopt" -compact
 .It Fl -disable-gems
 .It Fl -enable-gems
@@ -623,22 +632,22 @@ default: 262144 or 524288
 .Pp
 .El
 .Sh SEE ALSO
-.Bl -hang -compact -width "http://www.ruby-lang.org/123"
-.It https://www.ruby-lang.org/
+.Bl -hang -compact -width "https://www.ruby-toolbox.com/"
+.It Lk https://www.ruby-lang.org/
 The official web site.
-.It https://www.ruby-toolbox.com/
+.It Lk https://www.ruby-toolbox.com/
 Comprehensive catalog of Ruby libraries.
 .El
 .Pp
 .Sh REPORTING BUGS
 .Bl -bullet
 .Li Security vulnerabilities should be reported via an email to
-.Aq security@ruby-lang.org Ns
-.Li .
+.Aq security@ruby-lang.org .
 Reported problems will be published after they've been fixed.
 .Pp
 .Li And you can report other bugs and feature requests via the
-Ruby Issue Tracking System (https://bugs.ruby-lang.org/).
+Ruby Issue Tracking System
+.Pq Lk https://bugs.ruby-lang.org/ .
 Do not report security vulnerabilities
 via the system because it publishes the vulnerabilities immediately.
 .El
@@ -647,5 +656,5 @@ Ruby is designed and implemented by
 .An Yukihiro Matsumoto Aq matz@netlab.jp .
 .Pp
 See
-.Aq Pa https://bugs.ruby-lang.org/projects/ruby/wiki/Contributors
+.Aq Lk https://bugs.ruby-lang.org/projects/ruby/wiki/Contributors
 for contributors to Ruby.

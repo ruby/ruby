@@ -1360,10 +1360,8 @@ encode_year(VALUE nth, int y, double style,
 static void
 decode_jd(VALUE jd, VALUE *nth, int *rjd)
 {
-    assert(RB_INTEGER_TYPE_P(jd));
     *nth = f_idiv(jd, INT2FIX(CM_PERIOD));
     if (f_zero_p(*nth)) {
-	assert(FIXNUM_P(jd));
 	*rjd = FIX2INT(jd);
 	return;
     }
@@ -4752,7 +4750,7 @@ d_lite_initialize(int argc, VALUE *argv, VALUE self)
 		rb_raise(rb_eArgError,
 			 "cannot load complex into simple");
 
-	    set_to_complex(&dat->c, nth, rjd, df, sf, of, sg,
+	    set_to_complex(self, &dat->c, nth, rjd, df, sf, of, sg,
 			   0, 0, 0, 0, 0, 0, HAVE_JD | HAVE_DF | COMPLEX_DAT);
 	}
     }
@@ -6602,7 +6600,7 @@ tmx_m_zone(union DateData *x)
     return RSTRING_PTR(m_zone(x));
 }
 
-static struct tmx_funcs tmx_funcs = {
+static const struct tmx_funcs tmx_funcs = {
     (VALUE (*)(void *))m_real_year,
     (int (*)(void *))m_yday,
     (int (*)(void *))m_mon,

@@ -1955,6 +1955,8 @@ Init_socket(void)
      *
      * Let's create an internet socket using the IPv4 protocol in a C-like manner:
      *
+     *   require 'socket'
+     *
      *   s = Socket.new Socket::AF_INET, Socket::SOCK_STREAM
      *   s.connect Socket.pack_sockaddr_in(80, 'example.com')
      *

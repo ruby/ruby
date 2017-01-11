@@ -1,8 +1,11 @@
 # frozen_string_literal: false
 require 'test/unit'
 require '-test-/string'
+require_relative '../symbol/noninterned_name'
 
 class Test_String_Fstring < Test::Unit::TestCase
+  include Test_Symbol::NonInterned
+
   def assert_fstring(str)
     fstr = Bug::String.fstring(str)
     yield str
@@ -52,6 +55,12 @@ class Test_String_Fstring < Test::Unit::TestCase
     end
     str.freeze
     assert_fstring(str) {|s| assert_send([s, :respond_to?, :foo])}
+  end
+
+  def test_singleton_class
+    str = noninterned_name.force_encoding("us-ascii")
+    fstr = Bug::String.fstring(str)
+    assert_raise(TypeError) {fstr.singleton_class}
   end
 
   class S < String

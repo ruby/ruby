@@ -1,4 +1,5 @@
 #!/bin/sed -f
+# This file is used when generating code for the Ruby parser.
 /^int yydebug;/{
 i\
 #ifndef yydebug

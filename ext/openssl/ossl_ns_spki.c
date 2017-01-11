@@ -159,8 +159,6 @@ ossl_spki_print(VALUE self)
 {
     NETSCAPE_SPKI *spki;
     BIO *out;
-    BUF_MEM *buf;
-    VALUE str;
 
     GetSPKI(self, spki);
     if (!(out = BIO_new(BIO_s_mem()))) {
@@ -170,11 +168,8 @@ ossl_spki_print(VALUE self)
 	BIO_free(out);
 	ossl_raise(eSPKIError, NULL);
     }
-    BIO_get_mem_ptr(out, &buf);
-    str = rb_str_new(buf->data, buf->length);
-    BIO_free(out);
 
-    return str;
+    return ossl_membio2str(out);
 }
 
 /*
@@ -380,7 +375,8 @@ void
 Init_ossl_ns_spki(void)
 {
 #if 0
-    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
+    mOSSL = rb_define_module("OpenSSL");
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
 #endif
 
     mNetscape = rb_define_module_under(mOSSL, "Netscape");

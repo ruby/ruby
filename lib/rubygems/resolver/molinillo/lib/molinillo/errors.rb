@@ -26,7 +26,7 @@ module Gem::Resolver::Molinillo
     def message
       sources = required_by.map { |r| "`#{r}`" }.join(' and ')
       message = "Unable to find a specification for `#{dependency}`"
-      message << " depended upon by #{sources}" unless sources.empty?
+      message += " depended upon by #{sources}" unless sources.empty?
       message
     end
   end

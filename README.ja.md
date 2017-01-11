@@ -17,8 +17,8 @@ Rubyはテキスト処理関係の能力などに優れ，Perlと同じくらい
 *   ガーベージコレクタ
 *   ダイナミックローディング (アーキテクチャによる)
 *   移植性が高い．多くのUnix-like/POSIX互換プラットフォーム上で動くだけでなく，Windows， Mac OS
-    X，BeOSなどの上でも動く cf.
-    http://bugs.ruby-lang.org/projects/ruby-trunk/wiki/SupportedPlatformsJa
+    X，Haikuなどの上でも動く cf.
+    https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/SupportedPlatformsJa
 
 
 ## 入手法
@@ -33,11 +33,11 @@ ftp://ftp.ruby-lang.org/pub/ruby/
 
 開発先端のソースコードは次のコマンドで取得できます．
 
-    $ svn co http://svn.ruby-lang.org/repos/ruby/trunk/ ruby
+    $ svn co https://svn.ruby-lang.org/repos/ruby/trunk/ ruby
 
 他に開発中のブランチの一覧は次のコマンドで見られます．
 
-    $ svn ls http://svn.ruby-lang.org/repos/ruby/branches/
+    $ svn ls https://svn.ruby-lang.org/repos/ruby/branches/
 
 ### Gitで
 
@@ -49,7 +49,7 @@ SubversionのミラーをGitHubに公開しています． 以下のコマンド
 
 RubyのホームページのURLは
 
-http://www.ruby-lang.org/
+https://www.ruby-lang.org/
 
 です．
 
@@ -156,9 +156,9 @@ UNIXであれば `configure` がほとんどの差異を吸収してくれるは
 ## フィードバック
 
 Rubyに関する質問は Ruby-Talk（英語）や Ruby-List（日本語） (https://www.ruby-lang.org/ja/community/mailing-lists) や，
-stackoverflow (http://ja.stackoverflow.com/) などのWebサイトに投稿してください．
+stackoverflow (https://ja.stackoverflow.com/) などのWebサイトに投稿してください．
 
-バグ報告は http://bugs.ruby-lang.org で受け付けています．
+バグ報告は https://bugs.ruby-lang.org で受け付けています．
 
 
 ## 著者

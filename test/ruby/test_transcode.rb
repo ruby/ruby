@@ -363,7 +363,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u00BF", "\xBF", 'windows-1255') # ¿
     check_both_ways("\u05B0", "\xC0", 'windows-1255') # ְ
     check_both_ways("\u05B9", "\xC9", 'windows-1255') # ֹ
-    assert_raise(Encoding::UndefinedConversionError) { "\xCA".encode("utf-8", 'windows-1255') }
+    check_both_ways("\u05BA", "\xCA", 'windows-1255') # ֺ
     check_both_ways("\u05BB", "\xCB", 'windows-1255') # ֻ
     check_both_ways("\u05BF", "\xCF", 'windows-1255') # ֿ
     check_both_ways("\u05C0", "\xD0", 'windows-1255') # ׀

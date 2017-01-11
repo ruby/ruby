@@ -236,11 +236,42 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       begin
         assert_equal([0, 0], s.winsize)
       rescue Errno::EINVAL # OpenSolaris 2009.06 TIOCGWINSZ causes Errno::EINVAL before TIOCSWINSZ.
+      else
+        assert_equal([80, 25], s.winsize = [80, 25])
+        assert_equal([80, 25], s.winsize)
+        #assert_equal([80, 25], m.winsize)
+        assert_equal([100, 40], m.winsize = [100, 40])
+        #assert_equal([100, 40], s.winsize)
+        assert_equal([100, 40], m.winsize)
       end
     }
   end
 
+  def test_set_winsize_invalid_dev
+    [IO::NULL, __FILE__].each do |path|
+      open(path) do |io|
+        begin
+          s = io.winsize
+        rescue SystemCallError => e
+          assert_raise(e.class) {io.winsize = [0, 0]}
+        else
+          assert(false, "winsize on #{path} succeed: #{s.inspect}")
+        end
+        assert_raise(ArgumentError) {io.winsize = [0, 0, 0]}
+      end
+    end
+  end
+
   if IO.console
+    def test_set_winsize_console
+      s = IO.console.winsize
+      assert_kind_of(Array, s)
+      assert_equal(2, s.size)
+      assert_kind_of(Integer, s[0])
+      assert_kind_of(Integer, s[1])
+      assert_nothing_raised(TypeError) {IO.console.winsize = s}
+    end
+
     def test_close
       IO.console.close
       assert_kind_of(IO, IO.console)

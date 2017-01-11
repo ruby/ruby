@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 # BigDecimal extends the native Integer class to provide the #to_d method.
 #
-# When you require the BigDecimal library in your application, this methodwill
+# When you require the BigDecimal library in your application, this method will
 # be available on Integer objects.
 class Integer < Numeric
   # call-seq:
@@ -13,7 +13,7 @@ class Integer < Numeric
   #     require 'bigdecimal/util'
   #
   #     42.to_d
-  #     # => #<BigDecimal:1008ef070,'0.42E2',9(36)>
+  #     # => 0.42e2
   #
   def to_d
     BigDecimal(self)
@@ -34,7 +34,7 @@ class Float < Numeric
   #     require 'bigdecimal/util'
   #
   #     0.5.to_d
-  #     # => #<BigDecimal:1dc69e0,'0.5E0',9(18)>
+  #     # => 0.5e0
   #
   def to_d(precision=nil)
     BigDecimal(self, precision || Float::DIG)
@@ -55,7 +55,7 @@ class String
   #     require 'bigdecimal/util'
   #
   #     "0.5".to_d
-  #     # => #<BigDecimal:1dc69e0,'0.5E0',9(18)>
+  #     # => 0.5e0
   #
   def to_d
     BigDecimal(self)
@@ -117,7 +117,7 @@ class Rational < Numeric
   #   r = (22/7.0).to_r
   #   # => (7077085128725065/2251799813685248)
   #   r.to_d(3)
-  #   # => #<BigDecimal:1a44d08,'0.314E1',18(36)>
+  #   # => 0.314e1
   def to_d(precision)
     if precision <= 0
       raise ArgumentError, "negative precision"

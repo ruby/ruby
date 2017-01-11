@@ -106,10 +106,10 @@ module Test
           elsif negative.empty? and positive.size == 1 and pos_pat !~ positive[0]
             filter = positive[0]
           else
-            filter = Regexp.union(*positive.map! {|s| s[pos_pat, 1] || "\\A#{Regexp.quote(s)}\\z"})
+            filter = Regexp.union(*positive.map! {|s| Regexp.new(s[pos_pat, 1] || "\\A#{Regexp.quote(s)}\\z")})
           end
           unless negative.empty?
-            negative = Regexp.union(*negative.map! {|s| s[neg_pat, 1]})
+            negative = Regexp.union(*negative.map! {|s| Regexp.new(s[neg_pat, 1])})
             filter = /\A(?=.*#{filter})(?!.*#{negative})/
           end
           if Regexp === filter
@@ -177,7 +177,7 @@ module Test
 
       class Worker
         def self.launch(ruby,args=[])
-          io = IO.popen([*ruby,
+          io = IO.popen([*ruby, "-W1",
                         "#{File.dirname(__FILE__)}/unit/parallel.rb",
                         *args], "rb+")
           new(io, io.pid, :waiting)
@@ -257,7 +257,7 @@ module Test
         end
 
         def to_s
-          if @file
+          if @file and @status != :ready
             "#{@pid}=#{@file}"
           else
             "#{@pid}:#{@status.to_s.ljust(7)}"
@@ -380,6 +380,7 @@ module Test
           result << r[0..1] unless r[0..1] == [nil,nil]
           rep    << {file: worker.real_file, report: r[2], result: r[3], testcase: r[5]}
           $:.push(*r[4]).uniq!
+          jobs_status(worker) if @options[:job_status] == :replace
           return true
         when /^p (.+?)$/
           del_jobs_status
@@ -444,6 +445,7 @@ module Test
           quit_workers
 
           unless @interrupt || !@options[:retry] || @need_quit
+            parallel = @options[:parallel]
             @options[:parallel] = false
             suites, rep = rep.partition {|r| r[:testcase] && r[:file] && r[:report].any? {|e| !e[2].is_a?(MiniTest::Skip)}}
             suites.map {|r| r[:file]}.uniq.each {|file| require file}
@@ -453,6 +455,7 @@ module Test
               puts "\n""Retrying..."
               _run_suites(suites, type)
             end
+            @options[:parallel] = parallel
           end
           unless @options[:retry]
             del_status_line or puts
@@ -756,6 +759,7 @@ module Test
 
     module GlobOption # :nodoc: all
       @@testfile_prefix = "test"
+      @@testfile_suffix = "test"
 
       def setup_options(parser, options)
         super
@@ -782,7 +786,7 @@ module Test
               next if f.empty?
               path = f
             end
-            if !(match = Dir["#{path}/**/#{@@testfile_prefix}_*.rb"]).empty?
+            if !(match = (Dir["#{path}/**/#{@@testfile_prefix}_*.rb"] + Dir["#{path}/**/*_#{@@testfile_suffix}.rb"]).uniq).empty?
               if reject
                 match.reject! {|n|
                   n[(prefix.length+1)..-1] if prefix
@@ -851,6 +855,22 @@ module Test
       end
     end
 
+    module RepeatOption # :nodoc: all
+      def setup_options(parser, options)
+        super
+        options[:repeat_count] = nil
+        parser.separator "repeat options:"
+        parser.on '--repeat-count=NUM', "Number of times to repeat", Integer do |n|
+          options[:repeat_count] = n
+        end
+      end
+
+      def _run_anything(type)
+        @repeat_count = @options[:repeat_count]
+        super
+      end
+    end
+
     module ExcludesOption # :nodoc: all
       class ExcludedMethods < Struct.new(:excludes)
         def exclude(name, reason)
@@ -900,6 +920,7 @@ module Test
           excludes = excludes.split(File::PATH_SEPARATOR)
         end
         options[:excludes] = excludes || []
+        parser.separator "excludes options:"
         parser.on '-X', '--excludes-dir DIRECTORY', "Directory name of exclude files" do |d|
           options[:excludes].concat d.split(File::PATH_SEPARATOR)
         end
@@ -913,15 +934,32 @@ module Test
       end
     end
 
+    module SubprocessOption
+      def setup_options(parser, options)
+        super
+        parser.separator "subprocess options:"
+        parser.on '--subprocess-timeout-scale NUM', "Scale subprocess timeout", Float do |scale|
+          raise OptionParser::InvalidArgument, "timeout scale must be positive" unless scale > 0
+          options[:timeout_scale] = scale
+        end
+        if scale = options[:timeout_scale] or
+          (scale = ENV["RUBY_TEST_SUBPROCESS_TIMEOUT_SCALE"] and (scale = scale.to_f) > 0)
+          EnvUtil.subprocess_timeout_scale = scale
+        end
+      end
+    end
+
     class Runner < MiniTest::Unit # :nodoc: all
       include Test::Unit::Options
       include Test::Unit::StatusLine
       include Test::Unit::Parallel
       include Test::Unit::Skipping
       include Test::Unit::GlobOption
+      include Test::Unit::RepeatOption
       include Test::Unit::LoadPathOption
       include Test::Unit::GCStressOption
       include Test::Unit::ExcludesOption
+      include Test::Unit::SubprocessOption
       include Test::Unit::RunCount
 
       class << self; undef autorun; end

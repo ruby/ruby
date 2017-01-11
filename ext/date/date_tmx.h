@@ -23,7 +23,7 @@ struct tmx_funcs {
 };
 struct tmx {
     void *dat;
-    struct tmx_funcs *funcs;
+    const struct tmx_funcs *funcs;
 };
 
 #define tmx_attr(x) (tmx->funcs->x)(tmx->dat)

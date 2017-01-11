@@ -83,6 +83,16 @@ static char *w32_getenv(const char *name, UINT cp);
 #define dln_find_file_r(fname, path, buf, size) rb_w32_udln_find_file_r(fname, path, buf, size, cp)
 #undef CharNext			/* no default cp version */
 
+#ifndef PATH_MAX
+# if defined MAX_PATH
+#   define PATH_MAX MAX_PATH
+# elif defined HAVE_SYS_PARAM_H
+#   include <sys/param.h>
+#   define PATH_MAX MAXPATHLEN
+# endif
+#endif
+#define ENV_MAX 512
+
 #undef stat
 #undef fclose
 #undef close
@@ -426,14 +436,14 @@ get_special_folder(int n, WCHAR *buf, size_t len)
     LPITEMIDLIST pidl;
     LPMALLOC alloc;
     BOOL f = FALSE;
-    typedef BOOL (*get_path_func)(LPITEMIDLIST, WCHAR*, DWORD, int);
+    typedef BOOL (WINAPI *get_path_func)(LPITEMIDLIST, WCHAR*, DWORD, int);
     static get_path_func func = (get_path_func)-1;
 
     if (func == (get_path_func)-1) {
 	func = (get_path_func)
 	    get_proc_address("shell32", "SHGetPathFromIDListEx", NULL);
     }
-    if (!func && len < 260) return FALSE;
+    if (!func && len < MAX_PATH) return FALSE;
 
     if (SHGetSpecialFolderLocation(NULL, n, &pidl) == 0) {
 	if (func) {
@@ -488,12 +498,17 @@ get_proc_address(const char *module, const char *func, HANDLE *mh)
 VALUE
 rb_w32_special_folder(int type)
 {
-    WCHAR path[_MAX_PATH];
+    WCHAR path[PATH_MAX];
 
     if (!get_special_folder(type, path, numberof(path))) return Qnil;
     regulate_path(path);
     return rb_w32_conv_from_wchar(path, rb_filesystem_encoding());
 }
+
+#if defined _MSC_VER && _MSC_VER <= 1200
+/* License: Ruby's */
+#define GetSystemWindowsDirectoryW GetWindowsDirectoryW
+#endif
 
 /* License: Ruby's */
 UINT
@@ -512,12 +527,76 @@ rb_w32_system_tmpdir(WCHAR *path, UINT len)
     return (UINT)(p - path + numberof(temp) - 1);
 }
 
+/*
+  Return user's home directory using environment variables combinations.
+  Memory allocated by this function should be manually freed
+  afterwards with xfree.
+
+  Try:
+  HOME, HOMEDRIVE + HOMEPATH and USERPROFILE environment variables
+  Special Folders - Profile and Personal
+*/
+WCHAR *
+rb_w32_home_dir(void)
+{
+    WCHAR *buffer = NULL;
+    size_t buffer_len = MAX_PATH, len = 0;
+    enum {
+	HOME_NONE, ENV_HOME, ENV_DRIVEPATH, ENV_USERPROFILE
+    } home_type = HOME_NONE;
+
+    if ((len = GetEnvironmentVariableW(L"HOME", NULL, 0)) != 0) {
+	buffer_len = len;
+	home_type = ENV_HOME;
+    }
+    else if ((len = GetEnvironmentVariableW(L"HOMEDRIVE", NULL, 0)) != 0) {
+	buffer_len = len;
+	if ((len = GetEnvironmentVariableW(L"HOMEPATH", NULL, 0)) != 0) {
+	    buffer_len += len;
+	    home_type = ENV_DRIVEPATH;
+	}
+    }
+    else if ((len = GetEnvironmentVariableW(L"USERPROFILE", NULL, 0)) != 0) {
+	buffer_len = len;
+	home_type = ENV_USERPROFILE;
+    }
+
+    /* allocate buffer */
+    buffer = ALLOC_N(WCHAR, buffer_len);
+
+    switch (home_type) {
+      case ENV_HOME:
+	GetEnvironmentVariableW(L"HOME", buffer, buffer_len);
+	break;
+      case ENV_DRIVEPATH:
+	len = GetEnvironmentVariableW(L"HOMEDRIVE", buffer, buffer_len);
+	GetEnvironmentVariableW(L"HOMEPATH", buffer + len, buffer_len - len);
+	break;
+      case ENV_USERPROFILE:
+	GetEnvironmentVariableW(L"USERPROFILE", buffer, buffer_len);
+	break;
+      default:
+	if (!get_special_folder(CSIDL_PROFILE, buffer, buffer_len) &&
+	    !get_special_folder(CSIDL_PERSONAL, buffer, buffer_len)) {
+	    xfree(buffer);
+	    return NULL;
+	}
+	REALLOC_N(buffer, WCHAR, lstrlenW(buffer) + 1);
+	break;
+    }
+
+    /* sanitize backslashes with forwardslashes */
+    regulate_path(buffer);
+
+    return buffer;
+}
+
 /* License: Ruby's */
 static void
 init_env(void)
 {
     static const WCHAR TMPDIR[] = L"TMPDIR";
-    struct {WCHAR name[6], eq, val[_MAX_PATH];} wk;
+    struct {WCHAR name[6], eq, val[ENV_MAX];} wk;
     DWORD len;
     BOOL f;
 #define env wk.val
@@ -682,9 +761,9 @@ StartSockets(void)
     //
     version = MAKEWORD(2, 0);
     if (WSAStartup(version, &retdata))
-	rb_fatal ("Unable to locate winsock library!\n");
+	rb_fatal("Unable to locate winsock library!");
     if (LOBYTE(retdata.wVersion) != 2)
-	rb_fatal("could not find version 2 of winsock dll\n");
+	rb_fatal("could not find version 2 of winsock dll");
 
     InitializeCriticalSection(&select_mutex);
 
@@ -1062,12 +1141,6 @@ join_argv(char *cmd, char *const *argv, BOOL escape, UINT cp, int backslash)
     return len;
 }
 
-#ifdef HAVE_SYS_PARAM_H
-# include <sys/param.h>
-#else
-# define MAXPATHLEN 512
-#endif
-
 /* License: Ruby's */
 #define STRNDUPV(ptr, v, src, len)					\
     (((char *)memcpy(((ptr) = ALLOCV((v), (len) + 1)), (src), (len)))[len] = 0)
@@ -1198,7 +1271,6 @@ is_batch(const char *cmd)
     return 0;
 }
 
-UINT rb_w32_filecp(void);
 #define filecp rb_w32_filecp
 #define mbstr_to_wstr rb_w32_mbstr_to_wstr
 #define wstr_to_mbstr rb_w32_wstr_to_mbstr
@@ -1213,7 +1285,7 @@ UINT rb_w32_filecp(void);
 static rb_pid_t
 w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
 {
-    char fbuf[MAXPATHLEN];
+    char fbuf[PATH_MAX];
     char *p = NULL;
     const char *shell = NULL;
     WCHAR *wcmd = NULL, *wshell = NULL;
@@ -1356,7 +1428,7 @@ w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UIN
     size_t len;
     BOOL ntcmd = FALSE, tmpnt;
     const char *shell;
-    char *cmd, fbuf[MAXPATHLEN];
+    char *cmd, fbuf[PATH_MAX];
     WCHAR *wcmd = NULL, *wprog = NULL;
     int e = 0;
     rb_pid_t ret = -1;
@@ -1487,11 +1559,11 @@ insert(const char *path, VALUE vinfo, void *enc)
 static NtCmdLineElement **
 cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail, UINT cp, rb_encoding *enc)
 {
-    char buffer[MAXPATHLEN], *buf = buffer;
+    char buffer[PATH_MAX], *buf = buffer;
     NtCmdLineElement **last = tail;
     int status;
 
-    if (patt->len >= MAXPATHLEN)
+    if (patt->len >= PATH_MAX)
 	if (!(buf = malloc(patt->len + 1))) return 0;
 
     strlcpy(buf, patt->str, patt->len + 1);
@@ -1810,20 +1882,26 @@ w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp, rb_encoding *enc)
 // UNIX compatible directory access functions for NT
 //
 
-static DWORD
-get_final_path(HANDLE f, WCHAR *buf, DWORD len, DWORD flag)
+typedef DWORD (WINAPI *get_final_path_func)(HANDLE, WCHAR*, DWORD, DWORD);
+static get_final_path_func get_final_path;
+
+static DWORD WINAPI
+get_final_path_fail(HANDLE f, WCHAR *buf, DWORD len, DWORD flag)
 {
-    typedef DWORD (WINAPI *get_final_path_func)(HANDLE, WCHAR*, DWORD, DWORD);
-    static get_final_path_func func = (get_final_path_func)-1;
+    return 0;
+}
 
-    if (func == (get_final_path_func)-1) {
-	func = (get_final_path_func)
-	    get_proc_address("kernel32", "GetFinalPathNameByHandleW", NULL);
-    }
-
-    if (!func) return 0;
+static DWORD WINAPI
+get_final_path_unknown(HANDLE f, WCHAR *buf, DWORD len, DWORD flag)
+{
+    get_final_path_func func = (get_final_path_func)
+	get_proc_address("kernel32", "GetFinalPathNameByHandleW", NULL);
+    if (!func) func = get_final_path_fail;
+    get_final_path = func;
     return func(f, buf, len, flag);
 }
+
+static get_final_path_func get_final_path = get_final_path_unknown;
 
 /* License: Ruby's */
 /* TODO: better name */
@@ -1855,7 +1933,7 @@ static HANDLE
 open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
 {
     HANDLE fh;
-    WCHAR fullname[_MAX_PATH + rb_strlen_lit("\\*")];
+    WCHAR fullname[PATH_MAX + rb_strlen_lit("\\*")];
     WCHAR *p;
     int len = 0;
 
@@ -1865,12 +1943,12 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
 
     fh = open_special(filename, 0, 0);
     if (fh != INVALID_HANDLE_VALUE) {
-	len = get_final_path(fh, fullname, _MAX_PATH, 0);
+	len = get_final_path(fh, fullname, PATH_MAX, 0);
 	CloseHandle(fh);
     }
     if (!len) {
 	len = lstrlenW(filename);
-	if (len >= _MAX_PATH) {
+	if (len >= PATH_MAX) {
 	    errno = ENAMETOOLONG;
 	    return INVALID_HANDLE_VALUE;
 	}
@@ -2303,13 +2381,16 @@ typedef struct {
 
 /* License: Ruby's */
 #if RUBY_MSVCRT_VERSION >= 140
+typedef char lowio_text_mode;
+typedef char lowio_pipe_lookahead[3];
+
 typedef struct {
     CRITICAL_SECTION           lock;
     intptr_t                   osfhnd;          // underlying OS file HANDLE
     __int64                    startpos;        // File position that matches buffer start
     unsigned char              osfile;          // Attributes of file (e.g., open in text mode?)
-    char      textmode;
-    char _pipe_lookahead;
+    lowio_text_mode            textmode;
+    lowio_pipe_lookahead       _pipe_lookahead;
 
     uint8_t unicode          : 1; // Was the file opened as unicode?
     uint8_t utf8translations : 1; // Buffer contains translations other than CRLF
@@ -2347,7 +2428,6 @@ static inline ioinfo* _pioinfo(int);
 #define IOINFO_ARRAY_ELTS	(1 << IOINFO_L2E)
 #define _osfhnd(i)  (_pioinfo(i)->osfhnd)
 #define _osfile(i)  (_pioinfo(i)->osfile)
-#define _pipech(i)  (_pioinfo(i)->pipech)
 #define rb_acrt_lowio_lock_fh(i)   EnterCriticalSection(&_pioinfo(i)->lock)
 #define rb_acrt_lowio_unlock_fh(i) LeaveCriticalSection(&_pioinfo(i)->lock)
 
@@ -2359,35 +2439,65 @@ static void
 set_pioinfo_extra(void)
 {
 #if RUBY_MSVCRT_VERSION >= 140
+# define FUNCTION_RET 0xc3 /* ret */
+# ifdef _DEBUG
+#  define UCRTBASE "ucrtbased.dll"
+# else
+#  define UCRTBASE "ucrtbase.dll"
+# endif
     /* get __pioinfo addr with _isatty */
-    char *p = (char*)get_proc_address("ucrtbase.dll", "_isatty", NULL);
-    char *pend = p + 100;
+    char *p = (char*)get_proc_address(UCRTBASE, "_isatty", NULL);
+    char *pend = p;
     /* _osfile(fh) & FDEV */
-#if _WIN64
+
+# if _WIN64
     int32_t rel;
     char *rip;
+    /* add rsp, _ */
+#  define FUNCTION_BEFORE_RET_MARK "\x48\x83\xc4"
+#  define FUNCTION_SKIP_BYTES 1
+#  ifdef _DEBUG
+    /* lea rcx,[__pioinfo's addr in RIP-relative 32bit addr] */
+#   define PIOINFO_MARK "\x48\x8d\x0d"
+#  else
     /* lea rdx,[__pioinfo's addr in RIP-relative 32bit addr] */
-# define PIOINFO_MARK "\x48\x8d\x15"
-#else
+#   define PIOINFO_MARK "\x48\x8d\x15"
+#  endif
+
+# else /* x86 */
+    /* pop ebp */
+#  define FUNCTION_BEFORE_RET_MARK "\x5d"
+#  define FUNCTION_SKIP_BYTES 0
     /* mov eax,dword ptr [eax*4+100EB430h] */
-# define PIOINFO_MARK "\x8B\x04\x85"
-#endif
-    for (p; p < pend; p++) {
-        if (memcmp(p, PIOINFO_MARK, strlen(PIOINFO_MARK)) == 0) {
-            goto found;
+#  define PIOINFO_MARK "\x8B\x04\x85"
+# endif
+    if (p) {
+        for (pend += 10; pend < p + 300; pend++) {
+            // find end of function
+            if (memcmp(pend, FUNCTION_BEFORE_RET_MARK, sizeof(FUNCTION_BEFORE_RET_MARK) - 1) == 0 &&
+                *(pend + (sizeof(FUNCTION_BEFORE_RET_MARK) - 1) + FUNCTION_SKIP_BYTES) & FUNCTION_RET == FUNCTION_RET) {
+                // search backwards from end of function
+                for (pend -= (sizeof(PIOINFO_MARK) - 1); pend > p; pend--) {
+                    if (memcmp(pend, PIOINFO_MARK, sizeof(PIOINFO_MARK) - 1) == 0) {
+                        p = pend;
+                        goto found;
+                    }
+                }
+                break;
+            }
         }
     }
-    fprintf(stderr, "unexpected ucrtbase.dll\n");
+    fprintf(stderr, "unexpected " UCRTBASE "\n");
     _exit(1);
 
     found:
-    p += strlen(PIOINFO_MARK);
+    p += sizeof(PIOINFO_MARK) - 1;
 #if _WIN64
     rel = *(int32_t*)(p);
     rip = p + sizeof(int32_t);
     __pioinfo = (ioinfo**)(rip + rel);
 #else
-    __pioinfo = (ioinfo**)(p);
+    __pioinfo = *(ioinfo***)(p);
 #endif
 #else
     int fd;
@@ -3987,8 +4097,8 @@ str2guid(const char *str, GUID *guid)
 #endif
 typedef DWORD (WINAPI *cigl_t)(const GUID *, NET_LUID *);
 typedef DWORD (WINAPI *cilnA_t)(const NET_LUID *, char *, size_t);
-static cigl_t pConvertInterfaceGuidToLuid = NULL;
-static cilnA_t pConvertInterfaceLuidToNameA = NULL;
+static cigl_t pConvertInterfaceGuidToLuid = (cigl_t)-1;
+static cilnA_t pConvertInterfaceLuidToNameA = (cilnA_t)-1;
 
 int
 getifaddrs(struct ifaddrs **ifap)
@@ -4011,11 +4121,11 @@ getifaddrs(struct ifaddrs **ifap)
 	return -1;
     }
 
-    if (!pConvertInterfaceGuidToLuid)
+    if (pConvertInterfaceGuidToLuid == (cigl_t)-1)
 	pConvertInterfaceGuidToLuid =
 	    (cigl_t)get_proc_address("iphlpapi.dll",
 				     "ConvertInterfaceGuidToLuid", NULL);
-    if (!pConvertInterfaceLuidToNameA)
+    if (pConvertInterfaceLuidToNameA == (cilnA_t)-1)
 	pConvertInterfaceLuidToNameA =
 	    (cilnA_t)get_proc_address("iphlpapi.dll",
 				      "ConvertInterfaceLuidToNameA", NULL);
@@ -4299,7 +4409,6 @@ poll_child_status(struct ChildRecord *child, int *stat_loc)
 
     if (!GetExitCodeProcess(child->hProcess, &exitcode)) {
 	/* If an error occurred, return immediately. */
-    error_exit:
 	err = GetLastError();
 	switch (err) {
 	  case ERROR_INVALID_PARAMETER:
@@ -4312,6 +4421,7 @@ poll_child_status(struct ChildRecord *child, int *stat_loc)
 	    errno = map_errno(err);
 	    break;
 	}
+    error_exit:
 	CloseChildHandle(child);
 	return -1;
     }
@@ -4938,7 +5048,7 @@ w32_symlink(UINT cp, const char *src, const char *link)
     DWORD flag = 0;
     BOOLEAN ret;
 
-    typedef DWORD (WINAPI *create_symbolic_link_func)(WCHAR*, WCHAR*, DWORD);
+    typedef BOOLEAN (WINAPI *create_symbolic_link_func)(WCHAR*, WCHAR*, DWORD);
     static create_symbolic_link_func create_symbolic_link =
 	(create_symbolic_link_func)-1;
 
@@ -5360,7 +5470,7 @@ check_valid_dir(const WCHAR *path)
 {
     WIN32_FIND_DATAW fd;
     HANDLE fh;
-    WCHAR full[MAX_PATH];
+    WCHAR full[PATH_MAX];
     WCHAR *dmy;
     WCHAR *p, *q;
 
@@ -5437,11 +5547,11 @@ static int
 winnt_stat(const WCHAR *path, struct stati64 *st)
 {
     HANDLE f;
+    WCHAR finalname[PATH_MAX];
 
     memset(st, 0, sizeof(*st));
     f = open_special(path, 0, 0);
     if (f != INVALID_HANDLE_VALUE) {
-	WCHAR finalname[MAX_PATH];
 	const DWORD attr = stati64_handle(f, st);
 	const DWORD len = get_final_path(f, finalname, numberof(finalname), 0);
 	CloseHandle(f);
@@ -5450,7 +5560,7 @@ winnt_stat(const WCHAR *path, struct stati64 *st)
 	}
 	st->st_mode = fileattr_to_unixmode(attr, path);
 	if (len) {
-	    finalname[len] = L'\0';
+	    finalname[min(len, numberof(finalname)-1)] = L'\0';
 	    path = finalname;
 	    if (wcsncmp(path, namespace_prefix, numberof(namespace_prefix)) == 0)
 		path += numberof(namespace_prefix);
@@ -5948,10 +6058,10 @@ rb_pid_t
 rb_w32_getppid(void)
 {
     typedef long (WINAPI query_func)(HANDLE, int, void *, ULONG, ULONG *);
-    static query_func *pNtQueryInformationProcess = NULL;
+    static query_func *pNtQueryInformationProcess = (query_func *)-1;
     rb_pid_t ppid = 0;
 
-    if (!pNtQueryInformationProcess)
+    if (pNtQueryInformationProcess == (query_func *)-1)
 	pNtQueryInformationProcess = (query_func *)get_proc_address("ntdll.dll", "NtQueryInformationProcess", NULL);
     if (pNtQueryInformationProcess) {
 	struct {
@@ -7073,8 +7183,7 @@ rb_w32_write_console(uintptr_t strarg, int fd)
     }
     reslen = 0;
     if (dwMode & 4) {	/* ENABLE_VIRTUAL_TERMINAL_PROCESSING */
-	DWORD written;
-	if (!WriteConsoleW(handle, ptr, len, &written, NULL))
+	if (!WriteConsoleW(handle, ptr, len, &reslen, NULL))
 	    reslen = (DWORD)-1L;
     }
     else {
@@ -7458,8 +7567,9 @@ const char * WSAAPI
 rb_w32_inet_ntop(int af, const void *addr, char *numaddr, size_t numaddr_len)
 {
     typedef char *(WSAAPI inet_ntop_t)(int, void *, char *, size_t);
-    inet_ntop_t *pInetNtop;
-    pInetNtop = (inet_ntop_t *)get_proc_address("ws2_32", "inet_ntop", NULL);
+    static inet_ntop_t *pInetNtop = (inet_ntop_t *)-1;
+    if (pInetNtop == (inet_ntop_t *)-1)
+	pInetNtop = (inet_ntop_t *)get_proc_address("ws2_32", "inet_ntop", NULL);
     if (pInetNtop) {
 	return pInetNtop(af, (void *)addr, numaddr, numaddr_len);
     }
@@ -7476,8 +7586,9 @@ int WSAAPI
 rb_w32_inet_pton(int af, const char *src, void *dst)
 {
     typedef int (WSAAPI inet_pton_t)(int, const char*, void *);
-    inet_pton_t *pInetPton;
-    pInetPton = (inet_pton_t *)get_proc_address("ws2_32", "inet_pton", NULL);
+    static inet_pton_t *pInetPton = (inet_pton_t *)-1;
+    if (pInetPton == (inet_pton_t *)-1)
+	pInetPton = (inet_pton_t *)get_proc_address("ws2_32", "inet_pton", NULL);
     if (pInetPton) {
 	return pInetPton(af, src, dst);
     }

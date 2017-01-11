@@ -535,12 +535,18 @@ console_set_winsize(VALUE io, VALUE size)
     VALUE row, col, xpixel, ypixel;
     const VALUE *sz;
     int fd;
+    long sizelen;
 
     GetOpenFile(io, fptr);
     size = rb_Array(size);
-    rb_check_arity(RARRAY_LENINT(size), 2, 4);
+    if ((sizelen = RARRAY_LEN(size)) != 2 && sizelen != 4) {
+	rb_raise(rb_eArgError,
+		 "wrong number of arguments (given %ld, expected 2 or 4)",
+		 sizelen);
+    }
     sz = RARRAY_CONST_PTR(size);
-    row = sz[0], col = sz[1], xpixel = sz[2], ypixel = sz[3];
+    row = sz[0], col = sz[1], xpixel = ypixel = Qnil;
+    if (sizelen == 4) xpixel = sz[2], ypixel = sz[3];
     fd = GetWriteFD(fptr);
 #if defined TIOCSWINSZ
     ws.ws_row = ws.ws_col = ws.ws_xpixel = ws.ws_ypixel = 0;

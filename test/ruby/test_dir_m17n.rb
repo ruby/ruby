@@ -21,6 +21,7 @@ class TestDir_M17N < Test::Unit::TestCase
         assert_include(ents, filename)
       EOS
 
+      return if /cygwin/ =~ RUBY_PLATFORM
       assert_separately(%w[-EASCII-8BIT], <<-EOS, :chdir=>dir)
         filename = #{code}.chr('UTF-8').force_encoding("ASCII-8BIT")
         opts = {:encoding => Encoding.default_external} if /mswin|mingw/ =~ RUBY_PLATFORM
@@ -57,6 +58,7 @@ class TestDir_M17N < Test::Unit::TestCase
   end
 
   def test_filename_extutf8_invalid
+    return if /cygwin/ =~ RUBY_PLATFORM
     with_tmpdir {|d|
       assert_separately(%w[-EASCII-8BIT], <<-'EOS', :chdir=>d)
         filename = "\xff".force_encoding("ASCII-8BIT") # invalid byte sequence as UTF-8
@@ -172,6 +174,7 @@ class TestDir_M17N < Test::Unit::TestCase
   ## others
 
   def test_filename_bytes_euc_jp
+    return if /cygwin/ =~ RUBY_PLATFORM
     with_tmpdir {|d|
       assert_separately(%w[-EEUC-JP], <<-'EOS', :chdir=>d)
         filename = "\xA4\xA2".force_encoding("euc-jp")
@@ -188,6 +191,7 @@ class TestDir_M17N < Test::Unit::TestCase
   end
 
   def test_filename_euc_jp
+    return if /cygwin/ =~ RUBY_PLATFORM
     with_tmpdir {|d|
       assert_separately(%w[-EEUC-JP], <<-'EOS', :chdir=>d)
         filename = "\xA4\xA2".force_encoding("euc-jp")
@@ -233,6 +237,7 @@ class TestDir_M17N < Test::Unit::TestCase
   end
 
   def test_filename_ext_euc_jp_and_int_utf_8
+    return if /cygwin/ =~ RUBY_PLATFORM
     with_tmpdir {|d|
       assert_separately(%w[-EEUC-JP], <<-'EOS', :chdir=>d)
         filename = "\xA4\xA2".force_encoding("euc-jp")
@@ -376,7 +381,9 @@ class TestDir_M17N < Test::Unit::TestCase
       bug12081 = '[ruby-core:73868] [Bug #12081]'
       a = "*".force_encoding("us-ascii")
       result = Dir[a].map {|n|
-        if n.encoding == Encoding::ASCII_8BIT
+        if n.encoding == Encoding::ASCII_8BIT ||
+            n.encoding == Encoding::ISO_8859_1 ||
+            !n.valid_encoding?
           n.force_encoding(Encoding::UTF_8)
         else
           n.encode(Encoding::UTF_8)

@@ -1,10 +1,11 @@
 #!/usr/bin/ruby
 # -*- coding: us-ascii -*-
+# Create a tapset for systemtap and DTrace
 # usage: ./ruby gen_ruby_tapset.rb --ruby-path=/path/to/ruby probes.d > output
 
 require "optparse"
 
-def set_argument (argname, nth)
+def set_argument(argname, nth)
   # remove C style type info
   argname.gsub!(/.+ (.+)/, '\1') # e.g. char *hoge -> *hoge
   argname.gsub!(/^\*/, '')       # e.g. *filename -> filename

@@ -843,8 +843,8 @@ rb_enc_associate_index(VALUE obj, int idx)
     }
     termlen = rb_enc_mbminlen(enc);
     oldtermlen = rb_enc_mbminlen(rb_enc_from_index(oldidx));
-    if (oldtermlen < termlen && RB_TYPE_P(obj, T_STRING)) {
-	rb_str_fill_terminator(obj, termlen);
+    if (oldtermlen != termlen && RB_TYPE_P(obj, T_STRING)) {
+	rb_str_change_terminator_length(obj, oldtermlen, termlen);
     }
     enc_set_index(obj, idx);
     return obj;
@@ -1031,7 +1031,8 @@ rb_enc_precise_mbclen(const char *p, const char *e, rb_encoding *enc)
 int
 rb_enc_ascget(const char *p, const char *e, int *len, rb_encoding *enc)
 {
-    unsigned int c, l;
+    unsigned int c;
+    int l;
     if (e <= p)
         return -1;
     if (rb_enc_asciicompat(enc)) {

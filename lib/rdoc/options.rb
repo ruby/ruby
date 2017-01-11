@@ -379,23 +379,15 @@ class RDoc::Options
     @visibility = :protected
     @webcvs = nil
     @write_options = false
-
-    if Object.const_defined? :Encoding then
-      @encoding = Encoding::UTF_8
-      @charset = @encoding.name
-    else
-      @encoding = nil
-      @charset = 'UTF-8'
-    end
+    @encoding = Encoding::UTF_8
+    @charset = @encoding.name
   end
 
   def init_with map # :nodoc:
     init_ivars
 
     encoding = map['encoding']
-    @encoding = if Object.const_defined? :Encoding then
-                  encoding ? Encoding.find(encoding) : encoding
-                end
+    @encoding = encoding ? Encoding.find(encoding) : encoding
 
     @charset        = map['charset']
     @exclude        = map['exclude']
@@ -689,19 +681,16 @@ Usage: #{opt.program_name} [options] [names...]
       opt.separator "Parsing options:"
       opt.separator nil
 
-      if Object.const_defined? :Encoding then
-        opt.on("--encoding=ENCODING", "-e", Encoding.list.map { |e| e.name },
-               "Specifies the output encoding.  All files",
-               "read will be converted to this encoding.",
-               "The default encoding is UTF-8.",
-               "--encoding is preferred over --charset") do |value|
-                 @encoding = Encoding.find value
-                 @charset = @encoding.name # may not be valid value
-               end
+      opt.on("--encoding=ENCODING", "-e", Encoding.list.map { |e| e.name },
+             "Specifies the output encoding.  All files",
+             "read will be converted to this encoding.",
+             "The default encoding is UTF-8.",
+             "--encoding is preferred over --charset") do |value|
+               @encoding = Encoding.find value
+               @charset = @encoding.name # may not be valid value
+             end
 
-        opt.separator nil
-      end
-
+      opt.separator nil
 
       opt.on("--locale=NAME",
              "Specifies the output locale.") do |value|
@@ -1198,19 +1187,6 @@ Usage: #{opt.program_name} [options] [names...]
     end
   end
 
-  ##
-  # This is compatibility code for syck
-
-  def to_yaml opts = {} # :nodoc:
-    return super if YAML.const_defined?(:ENGINE) and not YAML::ENGINE.syck?
-
-    YAML.quick_emit self, opts do |out|
-      out.map taguri, to_yaml_style do |map|
-        encode_with map
-      end
-    end
-  end
-
   # Sets the minimum visibility of a documented method.
   #
   # Accepts +:public+, +:protected+, +:private+, +:nodoc+, or +:all+.
@@ -1242,11 +1218,10 @@ Usage: #{opt.program_name} [options] [names...]
     RDoc.load_yaml
 
     open '.rdoc_options', 'w' do |io|
-      io.set_encoding Encoding::UTF_8 if Object.const_defined? :Encoding
+      io.set_encoding Encoding::UTF_8
 
       YAML.dump self, io
     end
   end
 
 end
-

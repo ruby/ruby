@@ -1,4 +1,4 @@
-# README.EXT -  -*- RDoc -*- created at: Mon Aug  7 16:45:54 JST 1995
+# extension.rdoc -  -*- RDoc -*- created at: Mon Aug  7 16:45:54 JST 1995
 
 This document explains how to make extension libraries for Ruby.
 
@@ -361,10 +361,10 @@ To define nested classes or modules, use the functions below:
 To define methods or singleton methods, use these functions:
 
   void rb_define_method(VALUE klass, const char *name,
-		        VALUE (*func)(), int argc)
+                        VALUE (*func)(ANYARGS), int argc)
 
   void rb_define_singleton_method(VALUE object, const char *name,
-			          VALUE (*func)(), int argc)
+                                  VALUE (*func)(ANYARGS), int argc)
 
 The `argc' represents the number of the arguments to the C function,
 which must be less than 17.  But I doubt you'll need that many.
@@ -396,9 +396,9 @@ as the name of method to be defined. See also ID or Symbol below.
 There are two functions to define private/protected methods:
 
   void rb_define_private_method(VALUE klass, const char *name,
-			        VALUE (*func)(), int argc)
+                                VALUE (*func)(ANYARGS), int argc)
   void rb_define_protected_method(VALUE klass, const char *name,
-			          VALUE (*func)(), int argc)
+                                  VALUE (*func)(ANYARGS), int argc)
 
 At last, rb_define_module_function defines a module function,
 which are private AND singleton methods of the module.
@@ -415,12 +415,12 @@ or
 To define module functions, use:
 
   void rb_define_module_function(VALUE module, const char *name,
-				 VALUE (*func)(), int argc)
+                                 VALUE (*func)(ANYARGS), int argc)
 
 In addition, function-like methods, which are private methods defined
 in the Kernel module, can be defined using:
 
-  void rb_define_global_function(const char *name, VALUE (*func)(), int argc)
+  void rb_define_global_function(const char *name, VALUE (*func)(ANYARGS), int argc)
 
 To define an alias for the method,
 
@@ -592,11 +592,11 @@ function below.
 
   void rb_define_readonly_variable(const char *name, VALUE *var)
 
-You can defined hooked variables.  The accessor functions (getter and
+You can define hooked variables.  The accessor functions (getter and
 setter) are called on access to the hooked variables.
 
   void rb_define_hooked_variable(const char *name, VALUE *var,
-				 VALUE (*getter)(), void (*setter)())
+                                 VALUE (*getter)(), void (*setter)())
 
 If you need to supply either setter or getter, just supply 0 for the
 hook you don't need.  If both hooks are 0, rb_define_hooked_variable()
@@ -611,7 +611,7 @@ Also you can define a Ruby global variable without a corresponding C
 variable.  The value of the variable will be set/get only by hooks.
 
   void rb_define_virtual_variable(const char *name,
-				  VALUE (*getter)(), void (*setter)())
+                                  VALUE (*getter)(), void (*setter)())
 
 The prototypes of the getter and setter functions are as follows:
 
@@ -853,7 +853,7 @@ arguments like this:
   {
       /* ... */
       if (rb_scan_args(argc, argv, "11", &file, &vmode) == 1) {
-          mode = 0666;		/* default value */
+          mode = 0666;          /* default value */
       }
       /* ... */
   }
@@ -866,6 +866,9 @@ You can use the function rb_scan_args() to check and retrieve the
 arguments.  The third argument is a string that specifies how to
 capture method arguments and assign them to the following VALUE
 references.
+
+You can just check the argument number with rb_check_arity(), this is
+handy in the case you want to treat the arguments as a list.
 
 The following is an example of a method that takes arguments by Ruby's
 array:
@@ -1343,7 +1346,7 @@ void rb_define_global_const(const char *name, VALUE val) ::
 
 == Method Definition
 
-rb_define_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
+rb_define_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc) ::
 
   Defines a method for the class.  func is the function pointer.  argc
   is the number of arguments.  if argc is -1, the function will receive
@@ -1351,14 +1354,20 @@ rb_define_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
   receive 2 arguments, self and args, where args is a Ruby array of
   the method arguments.
 
-rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
+rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc) ::
 
   Defines a private method for the class.  Arguments are same as
   rb_define_method().
 
-rb_define_singleton_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
+rb_define_singleton_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc) ::
 
   Defines a singleton method.  Arguments are same as rb_define_method().
+
+rb_check_arity(int argc, int min, int max) ::
+
+  Check the number of arguments, argc is in the range of min..max.  If
+  max is UNLIMITED_ARGUMENTS, upper bound is not checked.  If argc is
+  out of bounds, an ArgumentError will be raised.
 
 rb_scan_args(int argc, VALUE *argv, const char *fmt, ...) ::
 
@@ -1422,10 +1431,9 @@ int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optiona
   +optional+ is negative) number of IDs are optional.  If a
   mandatory key is not contained in +keyword_hash+, raises "missing
   keyword" +ArgumentError+.  If an optional key is not present in
-  +keyword_hash+, the corresponding element in +values+ is not changed.
-  If +optional+ is negative, rest of +keyword_hash+ are stored in the
-  next to optional +values+ as a new Hash, otherwise raises "unknown
-  keyword" +ArgumentError+.
+  +keyword_hash+, the corresponding element in +values+ is set to +Qundef+.
+  If +optional+ is negative, rest of +keyword_hash+ are ignored, otherwise
+  raises "unknown keyword" +ArgumentError+.
 
   Be warned, handling keyword arguments in the C API is less efficient
   than handling them in Ruby.  Consider using a Ruby wrapper method
@@ -1514,14 +1522,15 @@ VALUE rb_yield(VALUE val) ::
 
   Evaluates the block with value val.
 
-VALUE rb_rescue(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2) ::
+VALUE rb_rescue(VALUE (*func1)(ANYARGS), VALUE arg1, VALUE (*func2)(ANYARGS), VALUE arg2) ::
 
   Calls the function func1, with arg1 as the argument.  If an exception
-  occurs during func1, it calls func2 with arg2 as the argument.  The
-  return value of rb_rescue() is the return value from func1 if no
-  exception occurs, from func2 otherwise.
+  occurs during func1, it calls func2 with arg2 as the first argument
+  and the exception object as the second argument.  The return value
+  of rb_rescue() is the return value from func1 if no exception occurs,
+  from func2 otherwise.
 
-VALUE rb_ensure(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2) ::
+VALUE rb_ensure(VALUE (*func1)(ANYARGS), VALUE arg1, VALUE (*func2)(ANYARGS), VALUE arg2) ::
 
   Calls the function func1 with arg1 as the argument, then calls func2
   with arg2 if execution terminated.  The return value from
@@ -1642,6 +1651,18 @@ void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE 
 int rb_remove_event_hook(rb_event_hook_func_t func) ::
 
   Removes the specified hook function.
+
+== Memory usage
+
+void rb_gc_adjust_memory_usage(ssize_t diff) ::
+
+  Adjusts the amount of registered external memory.  You can tell GC how
+  much memory is used by an external library by this function.  Calling
+  this function with positive diff means the memory usage is increased;
+  new memory block is allocated or a block is reallocated as larger
+  size.  Calling this function with negative diff means the memory usage
+  is decreased; a memory block is freed or a block is reallocated as
+  smaller size.  This function may trigger the GC.
 
 == Macros for Compatibility
 
@@ -1833,8 +1854,7 @@ keyword in C.  RB_GC_GUARD has the following advantages:
 
 3. "volatile" implementations may be buggy/inconsistent in some
    compilers and architectures. RB_GC_GUARD is customizable for broken
-   systems/compilers without those without negatively affecting other
-   systems.
+   systems/compilers without negatively affecting other systems.
 
 :enddoc: Local variables:
 :enddoc: fill-column: 70

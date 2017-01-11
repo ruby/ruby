@@ -1,11 +1,10 @@
 # Copyright Kimihito Matsui (松井 仁人) and Martin J. Dürst (duerst@it.aoyama.ac.jp)
 
 require "test/unit"
-require 'unicode_normalize/normalize'  # only for UNICODE_VERSION
 
 class TestCaseFold < Test::Unit::TestCase
 
-  UNICODE_VERSION = UnicodeNormalize::UNICODE_VERSION
+  UNICODE_VERSION = RbConfig::CONFIG['UNICODE_VERSION']
   CaseTest = Struct.new :source, :target, :kind, :line
 
   def check_downcase_properties(expected, start, *flags)
@@ -38,7 +37,7 @@ class TestCaseFold < Test::Unit::TestCase
     @@tests ||= read_tests
   rescue Errno::ENOENT => e
     @@tests ||= []
-    puts e.message
+    skip e.message
   end
 
   def self.generate_test_casefold(encoding)
@@ -112,6 +111,8 @@ class TestCaseFold < Test::Unit::TestCase
   generate_test_casefold 'ISO-8859-15'
   generate_test_casefold 'ISO-8859-16'
   generate_test_casefold 'Windows-1250'
+  # generate_test_casefold 'Windows-1251'
   generate_test_casefold 'Windows-1252'
-  #generate_test_casefold 'EUC-JP'
+  generate_test_casefold 'koi8-r'
+  generate_test_casefold 'koi8-u'
 end

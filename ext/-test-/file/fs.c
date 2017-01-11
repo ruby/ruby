@@ -36,6 +36,12 @@ typedef struct statvfs statfs_t;
 # if defined HAVE_STRUCT_STATVFS_F_TYPE
 #   define HAVE_STRUCT_STATFS_T_F_TYPE 1
 # endif
+#elif defined(HAVE_STRUCT_STATFS_F_TYPE) /* Linux */
+typedef struct statfs statfs_t;
+# define STATFS(f, s) statfs((f), (s))
+# if defined HAVE_STRUCT_STATFS_F_TYPE
+#   define HAVE_STRUCT_STATFS_T_F_TYPE 1
+# endif
 #endif
 
 VALUE
@@ -72,9 +78,31 @@ get_fsname(VALUE self, VALUE str)
     return Qnil;
 }
 
+VALUE
+get_noatime_p(VALUE self, VALUE str)
+{
+#ifdef STATFS
+    statfs_t st;
+    FilePathValue(str);
+    str = rb_str_encode_ospath(str);
+    if (STATFS(StringValueCStr(str), &st) == -1) {
+       rb_sys_fail_str(str);
+    }
+# ifdef HAVE_STRUCT_STATFS_F_FLAGS
+#  ifdef MNT_NOATIME
+    return st.f_flags & MNT_NOATIME ? Qtrue : Qfalse;
+#  elif defined(ST_NOATIME)
+    return st.f_flags & ST_NOATIME ? Qtrue : Qfalse;
+#  endif
+# endif
+#endif
+    return Qnil;
+}
+
 void
 Init_fs(VALUE module)
 {
     VALUE fs = rb_define_module_under(module, "Fs");
     rb_define_module_function(fs, "fsname", get_fsname, 1);
+    rb_define_module_function(fs, "noatime?", get_noatime_p, 1);
 }

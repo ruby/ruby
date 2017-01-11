@@ -5,13 +5,23 @@
 #include "vm_core.h"
 
 static inline void
-pass_passed_block(rb_thread_t *th)
+vm_passed_block_handler_set(rb_thread_t *th, VALUE block_handler)
 {
-    th->passed_block = rb_vm_control_frame_block_ptr(th->cfp);
-    th->cfp->flag |= VM_FRAME_FLAG_PASSED;
+    VM_ASSERT(vm_block_handler_verify(block_handler));
+    th->passed_block_handler = block_handler;
 }
-#define PASS_PASSED_BLOCK_TH(th) pass_passed_block(th)
-#define PASS_PASSED_BLOCK() pass_passed_block(GET_THREAD())
+
+static inline void
+pass_passed_block_handler(rb_thread_t *th)
+{
+    VALUE block_handler = rb_vm_frame_block_handler(th->cfp);
+    VM_ASSERT(vm_block_handler_verify(block_handler));
+    vm_passed_block_handler_set(th, block_handler);
+    VM_ENV_FLAGS_SET(th->cfp->ep, VM_FRAME_FLAG_PASSED);
+}
+
+#define PASS_PASSED_BLOCK_HANDLER_TH(th) pass_passed_block_handler(th)
+#define PASS_PASSED_BLOCK_HANDLER() pass_passed_block_handler(GET_THREAD())
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
@@ -121,7 +131,7 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 #define TH_PUSH_TAG(th) do { \
   rb_thread_t * const _th = (th); \
   struct rb_vm_tag _tag; \
-  _tag.tag = 0; \
+  _tag.tag = Qundef; \
   _tag.prev = _th->tag;
 
 #define TH_POP_TAG() \
@@ -139,9 +149,11 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 #if defined __GNUC__ && __GNUC__ == 4 && (__GNUC_MINOR__ >= 6 && __GNUC_MINOR__ <= 8)
 # define VAR_FROM_MEMORY(var) __extension__(*(__typeof__(var) volatile *)&(var))
 # define VAR_INITIALIZED(var) ((var) = VAR_FROM_MEMORY(var))
+# define VAR_NOCLOBBERED(var) volatile var
 #else
 # define VAR_FROM_MEMORY(var) (var)
 # define VAR_INITIALIZED(var) ((void)&(var))
+# define VAR_NOCLOBBERED(var) var
 #endif
 
 /* clear th->state, and return the value */
@@ -275,7 +287,7 @@ NORETURN(void rb_raise_method_missing(rb_thread_t *th, int argc, const VALUE *ar
 VALUE rb_vm_make_jump_tag_but_local_jump(int state, VALUE val);
 rb_cref_t *rb_vm_cref(void);
 rb_cref_t *rb_vm_cref_replace_with_duplicated_cref(void);
-VALUE rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, const rb_block_t *blockptr, VALUE filename);
+VALUE rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, VALUE block_handler, VALUE filename);
 void rb_vm_set_progname(VALUE filename);
 void rb_thread_terminate_all(void);
 VALUE rb_vm_cbase(void);

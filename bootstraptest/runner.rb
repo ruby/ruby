@@ -60,6 +60,7 @@ end
 def main
   @ruby = File.expand_path('miniruby')
   @verbose = false
+  $VERBOSE = false
   $stress = false
   @color = nil
   @tty = nil
@@ -347,7 +348,7 @@ def assert_normal_exit(testsrc, *rest)
       $stderr.reopen(old_stderr)
       old_stderr.close
     end
-    if status&.signaled?
+    if status && status.signaled?
       signo = status.termsig
       signame = Signal.list.invert[signo]
       unless ignore_signals and ignore_signals.include?(signame)
@@ -404,7 +405,7 @@ def flunk(message = '')
 end
 
 def pretty(src, desc, result)
-  src = src.sub(/\A.*\n/, '')
+  src = src.sub(/\A\s*\n/, '')
   (/\n/ =~ src ? "\n#{adjust_indent(src)}" : src) + "  #=> #{desc}"
 end
 

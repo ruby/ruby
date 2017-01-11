@@ -436,8 +436,7 @@ yaml_queue_extend(void **start, void **head, void **tail, void **end);
      (stack).start = (stack).top = (stack).end = 0)
 
 #define STACK_EMPTY(context,stack)                                              \
-    ((void)(context),                                                           \
-     ((stack).start == (stack).top))
+    ((stack).start == (stack).top)
 
 #define STACK_LIMIT(context,stack,size)                                         \
     ((stack).top - (stack).start < (size) ?                                     \
@@ -661,4 +660,3 @@ yaml_queue_extend(void **start, void **head, void **tail, void **end);
      (node).data.mapping.pairs.end = (node_pairs_end),                          \
      (node).data.mapping.pairs.top = (node_pairs_start),                        \
      (node).data.mapping.style = (node_style))
-

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # = fileutils.rb
 #
@@ -735,8 +735,8 @@ module FileUtils
   #
   def compare_stream(a, b)
     bsize = fu_stream_blksize(a, b)
-    sa = ""
-    sb = ""
+    sa = String.new(capacity: bsize)
+    sb = String.new(capacity: bsize)
     begin
       a.read(bsize, sa)
       b.read(bsize, sb)
@@ -754,16 +754,28 @@ module FileUtils
   #   FileUtils.install 'ruby', '/usr/local/bin/ruby', :mode => 0755, :verbose => true
   #   FileUtils.install 'lib.rb', '/usr/local/lib/ruby/site_ruby', :verbose => true
   #
-  def install(src, dest, mode: nil, preserve: nil, noop: nil, verbose: nil)
-    fu_output_message "install -c#{preserve && ' -p'}#{mode ? (' -m 0%o' % mode) : ''} #{[src,dest].flatten.join ' '}" if verbose
+  def install(src, dest, mode: nil, owner: nil, group: nil, preserve: nil,
+              noop: nil, verbose: nil)
+    if verbose
+      msg = +"install -c"
+      msg << ' -p' if preserve
+      msg << ' -m ' << mode_to_s(mode) if mode
+      msg << " -o #{owner}" if owner
+      msg << " -g #{group}" if group
+      msg << ' ' << [src,dest].flatten.join(' ')
+      fu_output_message msg
+    end
     return if noop
+    uid = fu_get_uid(owner)
+    gid = fu_get_gid(group)
     fu_each_src_dest(src, dest) do |s, d|
       st = File.stat(s)
       unless File.exist?(d) and compare_file(s, d)
         remove_file d, true
         copy_file s, d
         File.utime st.atime, st.mtime, d if preserve
-        File.chmod mode, d if mode
+        File.chmod fu_mode(mode, st), d if mode
+        File.chown uid, gid, d if uid or gid
       end
     end
   end
@@ -800,7 +812,12 @@ module FileUtils
   private_module_function :apply_mask
 
   def symbolic_modes_to_i(mode_sym, path)  #:nodoc:
-    mode_sym.split(/,/).inject(File.stat(path).mode & 07777) do |current_mode, clause|
+    mode = if File::Stat === path
+             path.mode
+           else
+             File.stat(path).mode
+           end
+    mode_sym.split(/,/).inject(mode & 07777) do |current_mode, clause|
       target, *actions = clause.split(/([=+-])/)
       raise ArgumentError, "invalid file mode: #{mode_sym}" if actions.empty?
       target = 'a' if target.empty?
@@ -1227,6 +1244,7 @@ module FileUtils
     end
 
     def copy(dest)
+      lstat
       case
       when file?
         copy_file dest
@@ -1273,6 +1291,7 @@ module FileUtils
       if !st.symlink?
         File.utime st.atime, st.mtime, path
       end
+      mode = st.mode
       begin
         if st.symlink?
           begin
@@ -1282,25 +1301,17 @@ module FileUtils
         else
           File.chown st.uid, st.gid, path
         end
-      rescue Errno::EPERM
+      rescue Errno::EPERM, Errno::EACCES
         # clear setuid/setgid
-        if st.symlink?
-          begin
-            File.lchmod st.mode & 01777, path
-          rescue NotImplementedError
-          end
-        else
-          File.chmod st.mode & 01777, path
+        mode &= 01777
+      end
+      if st.symlink?
+        begin
+          File.lchmod mode, path
+        rescue NotImplementedError
         end
       else
-        if st.symlink?
-          begin
-            File.lchmod st.mode, path
-          rescue NotImplementedError
-          end
-        else
-          File.chmod st.mode, path
-        end
+        File.chmod mode, path
       end
     end
 
@@ -1421,9 +1432,9 @@ module FileUtils
     end
 
     if File::ALT_SEPARATOR
-      DIRECTORY_TERM = "(?=[/#{Regexp.quote(File::ALT_SEPARATOR)}]|\\z)".freeze
+      DIRECTORY_TERM = "(?=[/#{Regexp.quote(File::ALT_SEPARATOR)}]|\\z)"
     else
-      DIRECTORY_TERM = "(?=/|\\z)".freeze
+      DIRECTORY_TERM = "(?=/|\\z)"
     end
     SYSCASE = File::FNM_SYSCASE.nonzero? ? "-i" : ""
 

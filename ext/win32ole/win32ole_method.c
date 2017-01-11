@@ -344,7 +344,7 @@ ole_method_return_vtype(ITypeInfo *pTypeInfo, UINT method_index)
     if (FAILED(hr))
         ole_raise(hr, eWIN32OLERuntimeError, "failed to GetFuncDesc");
 
-    vvt = INT2FIX(pFuncDesc->elemdescFunc.tdesc.vt);
+    vvt = RB_INT2FIX(pFuncDesc->elemdescFunc.tdesc.vt);
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
     return vvt;
 }
@@ -410,7 +410,7 @@ ole_method_invkind(ITypeInfo *pTypeInfo, UINT method_index)
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
     if(FAILED(hr))
         ole_raise(hr, eWIN32OLERuntimeError, "failed to GetFuncDesc");
-    invkind = INT2FIX(pFuncDesc->invkind);
+    invkind = RB_INT2FIX(pFuncDesc->invkind);
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
     return invkind;
 }
@@ -420,16 +420,16 @@ ole_method_invoke_kind(ITypeInfo *pTypeInfo, UINT method_index)
 {
     VALUE type = rb_str_new2("UNKNOWN");
     VALUE invkind = ole_method_invkind(pTypeInfo, method_index);
-    if((FIX2INT(invkind) & INVOKE_PROPERTYGET) &&
-       (FIX2INT(invkind) & INVOKE_PROPERTYPUT) ) {
+    if((RB_FIX2INT(invkind) & INVOKE_PROPERTYGET) &&
+       (RB_FIX2INT(invkind) & INVOKE_PROPERTYPUT) ) {
         type = rb_str_new2("PROPERTY");
-    } else if(FIX2INT(invkind) & INVOKE_PROPERTYGET) {
+    } else if(RB_FIX2INT(invkind) & INVOKE_PROPERTYGET) {
         type =  rb_str_new2("PROPERTYGET");
-    } else if(FIX2INT(invkind) & INVOKE_PROPERTYPUT) {
+    } else if(RB_FIX2INT(invkind) & INVOKE_PROPERTYPUT) {
         type = rb_str_new2("PROPERTYPUT");
-    } else if(FIX2INT(invkind) & INVOKE_PROPERTYPUTREF) {
+    } else if(RB_FIX2INT(invkind) & INVOKE_PROPERTYPUTREF) {
         type = rb_str_new2("PROPERTYPUTREF");
-    } else if(FIX2INT(invkind) & INVOKE_FUNC) {
+    } else if(RB_FIX2INT(invkind) & INVOKE_FUNC) {
         type = rb_str_new2("FUNC");
     }
     return type;
@@ -712,7 +712,7 @@ ole_method_helpcontext(ITypeInfo *pTypeInfo, UINT method_index)
                                       &helpcontext, NULL);
     if (FAILED(hr))
         return Qnil;
-    return INT2FIX(helpcontext);
+    return RB_INT2FIX(helpcontext);
 }
 
 /*
@@ -741,7 +741,7 @@ ole_method_dispid(ITypeInfo *pTypeInfo, UINT method_index)
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
     if (FAILED(hr))
         return dispid;
-    dispid = INT2NUM(pFuncDesc->memid);
+    dispid = RB_INT2NUM(pFuncDesc->memid);
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
     return dispid;
 }
@@ -772,7 +772,7 @@ ole_method_offset_vtbl(ITypeInfo *pTypeInfo, UINT method_index)
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
     if (FAILED(hr))
         return offset_vtbl;
-    offset_vtbl = INT2FIX(pFuncDesc->oVft);
+    offset_vtbl = RB_INT2FIX(pFuncDesc->oVft);
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
     return offset_vtbl;
 }
@@ -803,7 +803,7 @@ ole_method_size_params(ITypeInfo *pTypeInfo, UINT method_index)
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
     if (FAILED(hr))
         return size_params;
-    size_params = INT2FIX(pFuncDesc->cParams);
+    size_params = RB_INT2FIX(pFuncDesc->cParams);
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
     return size_params;
 }
@@ -835,7 +835,7 @@ ole_method_size_opt_params(ITypeInfo *pTypeInfo, UINT method_index)
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
     if (FAILED(hr))
         return size_opt_params;
-    size_opt_params = INT2FIX(pFuncDesc->cParamsOpt);
+    size_opt_params = RB_INT2FIX(pFuncDesc->cParamsOpt);
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
     return size_opt_params;
 }

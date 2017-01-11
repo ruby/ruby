@@ -44,14 +44,8 @@ module WEBrick
     # block, if given.
 
     def Daemon.start
-      exit!(0) if fork
-      Process::setsid
-      exit!(0) if fork
-      Dir::chdir("/")
-      File::umask(0)
-      STDIN.reopen(IO::NULL)
-      STDOUT.reopen(IO::NULL, "w")
-      STDERR.reopen(IO::NULL, "w")
+      Process.daemon
+      File.umask(0)
       yield if block_given?
     end
   end
@@ -98,7 +92,7 @@ module WEBrick
       @config[:Logger] ||= Log::new
       @logger = @config[:Logger]
 
-      @tokens = SizedQueue.new(@config[:MaxClients])
+      @tokens = Thread::SizedQueue.new(@config[:MaxClients])
       @config[:MaxClients].times{ @tokens.push(nil) }
 
       webrickv = WEBrick::VERSION
@@ -238,7 +232,7 @@ module WEBrick
     def shutdown
       stop
 
-      alarm_shutdown_pipe {|f| f.close}
+      alarm_shutdown_pipe(&:close)
     end
 
     ##
@@ -309,7 +303,7 @@ module WEBrick
           else
             @logger.debug "close: <address unknown>"
           end
-          sock.close unless sock.closed?
+          sock.close
         end
       }
     end
@@ -318,29 +312,16 @@ module WEBrick
     # Calls the callback +callback_name+ from the configuration with +args+
 
     def call_callback(callback_name, *args)
-      if cb = @config[callback_name]
-        cb.call(*args)
-      end
+      @config[callback_name]&.call(*args)
     end
 
     def setup_shutdown_pipe
-      if !@shutdown_pipe
-        @shutdown_pipe = IO.pipe
-      end
-      @shutdown_pipe
+      return @shutdown_pipe ||= IO.pipe
     end
 
     def cleanup_shutdown_pipe(shutdown_pipe)
       @shutdown_pipe = nil
-      return if !shutdown_pipe
-      shutdown_pipe.each {|io|
-        if !io.closed?
-          begin
-            io.close
-          rescue IOError # another thread closed io.
-          end
-        end
-      }
+      shutdown_pipe&.each(&:close)
     end
 
     def alarm_shutdown_pipe

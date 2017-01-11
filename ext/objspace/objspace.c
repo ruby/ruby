@@ -33,7 +33,7 @@
  *  This method is only expected to work with C Ruby.
  *
  *  From Ruby 2.2, memsize_of(obj) returns a memory size includes
-  * sizeof(RVALUE).
+ *  sizeof(RVALUE).
  */
 
 static VALUE
@@ -922,7 +922,7 @@ objspace_internal_super_of(VALUE self, VALUE obj)
 	obj = (VALUE)DATA_PTR(obj);
     }
 
-    switch (TYPE(obj)) {
+    switch (OBJ_BUILTIN_TYPE(obj)) {
       case T_MODULE:
       case T_CLASS:
       case T_ICLASS:

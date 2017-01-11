@@ -315,6 +315,17 @@ module TestNetHTTP_version_1_1_methods
     assert_equal $test_net_http_data, res.body
   end
 
+  def test_get__crlf
+    start {|http|
+      assert_raise(ArgumentError) do
+        http.get("\r")
+      end
+      assert_raise(ArgumentError) do
+        http.get("\n")
+      end
+    }
+  end
+
   def test_get2
     start {|http|
       http.get2('/') {|res|
@@ -371,6 +382,22 @@ module TestNetHTTP_version_1_1_methods
         assert_not_equal '411', res.code
       end
     end
+  end
+
+  def test_s_post
+    url = "http://#{config('host')}:#{config('port')}/"
+    res = Net::HTTP.post(
+              URI.parse(url),
+              "a=x")
+    assert_equal "application/x-www-form-urlencoded", res["Content-Type"]
+    assert_equal "a=x", res.body
+
+    res = Net::HTTP.post(
+              URI.parse(url),
+              "hello world",
+              "Content-Type" => "text/plain; charset=US-ASCII")
+    assert_equal "text/plain; charset=US-ASCII", res["Content-Type"]
+    assert_equal "hello world", res.body
   end
 
   def test_s_post_form
@@ -880,6 +907,39 @@ class TestNetHTTPContinue < Test::Unit::TestCase
     }
     assert_match(/Expect: 100-continue/, @debug.string)
     assert_not_match(/HTTP\/1.1 100 continue/, @debug.string)
+  end
+end
+
+class TestNetHTTPSwitchingProtocols < Test::Unit::TestCase
+  CONFIG = {
+    'host' => '127.0.0.1',
+    'proxy_host' => nil,
+    'proxy_port' => nil,
+    'chunked' => true,
+  }
+
+  include TestNetHTTPUtils
+
+  def logfile
+    @debug = StringIO.new('')
+  end
+
+  def mount_proc(&block)
+    @server.mount('/continue', WEBrick::HTTPServlet::ProcHandler.new(block.to_proc))
+  end
+
+  def test_info
+    mount_proc {|req, res|
+      req.instance_variable_get(:@socket) << "HTTP/1.1 101 Switching Protocols\r\n\r\n"
+      res.body = req.query['body']
+    }
+    start {|http|
+      http.continue_timeout = 0.2
+      http.request_post('/continue', 'body=BODY') {|res|
+        assert_equal('BODY', res.read_body)
+      }
+    }
+    assert_match(/HTTP\/1.1 101 Switching Protocols/, @debug.string)
   end
 end
 

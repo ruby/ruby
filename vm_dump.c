@@ -38,10 +38,6 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 
     const rb_callable_method_entry_t *me;
 
-    if (cfp->block_iseq != 0 && !RUBY_VM_IFUNC_P(cfp->block_iseq)) {
-	biseq_name = "";	/* RSTRING(cfp->block_iseq->body->location.label)->ptr; */
-    }
-
     if (ep < 0 || (size_t)ep > th->stack_size) {
 	ep = (ptrdiff_t)cfp->ep;
 	ep_in_heap = 'p';
@@ -95,6 +91,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     }
 
     if (cfp->iseq != 0) {
+#define RUBY_VM_IFUNC_P(ptr)        (RB_TYPE_P((VALUE)(ptr), T_IMEMO) && imemo_type((VALUE)ptr) == imemo_ifunc)
 	if (RUBY_VM_IFUNC_P(cfp->iseq)) {
 	    iseq_name = "<ifunc>";
 	}
@@ -133,7 +130,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     if (line) {
 	fprintf(stderr, " %s", posbuf);
     }
-    if (VM_FRAME_TYPE_FINISH_P(cfp)) {
+    if (VM_FRAME_FINISHED_P(cfp)) {
 	fprintf(stderr, " [FINISH]");
     }
     if (0) {
@@ -185,14 +182,12 @@ rb_vmdebug_stack_dump_raw_current(void)
 }
 
 void
-rb_vmdebug_env_dump_raw(rb_env_t *env, VALUE *ep)
+rb_vmdebug_env_dump_raw(const rb_env_t *env, const VALUE *ep)
 {
-    int i;
+    unsigned int i;
     fprintf(stderr, "-- env --------------------\n");
 
     while (env) {
-	VALUE prev_envval;
-
 	fprintf(stderr, "--\n");
 	for (i = 0; i < env->env_size; i++) {
 	    fprintf(stderr, "%04d: %08"PRIxVALUE" (%p)", i, env->env[i], (void *)&env->env[i]);
@@ -200,12 +195,7 @@ rb_vmdebug_env_dump_raw(rb_env_t *env, VALUE *ep)
 	    fprintf(stderr, "\n");
 	}
 
-	if ((prev_envval = rb_vm_env_prev_envval(env)) != Qfalse) {
-	    GetEnvPtr(prev_envval, env);
-	}
-	else {
-	    env = NULL;
-	}
+	env = rb_vm_env_prev_env(env);
     }
     fprintf(stderr, "---------------------------\n");
 }
@@ -213,15 +203,15 @@ rb_vmdebug_env_dump_raw(rb_env_t *env, VALUE *ep)
 void
 rb_vmdebug_proc_dump_raw(rb_proc_t *proc)
 {
-    rb_env_t *env;
+    const rb_env_t *env;
     char *selfstr;
-    VALUE val = rb_inspect(proc->block.self);
+    VALUE val = rb_inspect(vm_block_self(&proc->block));
     selfstr = StringValueCStr(val);
 
     fprintf(stderr, "-- proc -------------------\n");
     fprintf(stderr, "self: %s\n", selfstr);
-    GetEnvPtr(rb_vm_proc_envval(proc), env);
-    rb_vmdebug_env_dump_raw(env, proc->block.ep);
+    env = VM_ENV_ENVVAL_PTR(vm_block_ep(&proc->block));
+    rb_vmdebug_env_dump_raw(env, vm_block_ep(&proc->block));
 }
 
 void
@@ -239,7 +229,7 @@ static VALUE *
 vm_base_ptr(rb_control_frame_t *cfp)
 {
     rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-    VALUE *bp = prev_cfp->sp + cfp->iseq->body->local_size + 1;
+    VALUE *bp = prev_cfp->sp + iseq->body->local_table_size + VM_ENV_DATA_SIZE;
 
     if (cfp->iseq->body->type == ISEQ_TYPE_METHOD) {
 	bp += 1;
@@ -250,16 +240,13 @@ vm_base_ptr(rb_control_frame_t *cfp)
 static void
 vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 {
-    int i;
-
+    int i, argc = 0, local_size = 0;
     VALUE rstr;
     VALUE *sp = cfp->sp;
     VALUE *ep = cfp->ep;
 
-    int argc = 0, local_size = 0;
-    rb_iseq_t *iseq = cfp->iseq;
-
-    if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
+    if (VM_FRAME_RUBYFRAME_P(cfp)) {
+	rb_iseq_t *iseq = cfp->iseq;
 	argc = iseq->body->param.lead_num;
 	local_size = iseq->body->local_size;
     }
@@ -305,7 +292,7 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 		    (ptr - th->stack));
 	}
     }
-    else if (VM_FRAME_TYPE_FINISH_P(cfp)) {
+    else if (VM_FRAME_FINISHED_P(cfp)) {
 	if ((th)->stack + (th)->stack_size > (VALUE *)(cfp + 1)) {
 	    vm_stack_dump_each(th, cfp + 1);
 	}
@@ -327,7 +314,7 @@ rb_vmdebug_debug_print_register(rb_thread_t *th)
     ptrdiff_t ep = cfp->ep - th->stack;
     ptrdiff_t cfpi;
 
-    if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
+    if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	pc = cfp->pc - cfp->iseq->body->iseq_encoded;
     }
 
@@ -349,7 +336,7 @@ rb_vmdebug_thread_dump_regs(VALUE thval)
 }
 
 void
-rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp,VALUE *_pc)
+rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp, const VALUE *_pc)
 {
     const rb_iseq_t *iseq = cfp->iseq;
 
@@ -482,10 +469,14 @@ darwin_sigtramp:
 	unw_set_reg(&cursor, UNW_X86_64_R13, uctx->uc_mcontext->__ss.__r13);
 	unw_set_reg(&cursor, UNW_X86_64_R14, uctx->uc_mcontext->__ss.__r14);
 	unw_set_reg(&cursor, UNW_X86_64_R15, uctx->uc_mcontext->__ss.__r15);
-	ip = *(unw_word_t*)uctx->uc_mcontext->__ss.__rsp;
-	unw_set_reg(&cursor, UNW_REG_IP, ip);
-	trace[n++] = (void *)uctx->uc_mcontext->__ss.__rip;
+	ip = uctx->uc_mcontext->__ss.__rip;
+	if (((char*)ip)[-2] == 0x0f && ((char*)ip)[-1] == 5) {
+	    /* signal received in syscall */
+	    trace[n++] = (void *)ip;
+	    ip = *(unw_word_t*)uctx->uc_mcontext->__ss.__rsp;
+	}
 	trace[n++] = (void *)ip;
+	unw_set_reg(&cursor, UNW_REG_IP, ip);
     }
     while (unw_step(&cursor) > 0) {
 	unw_get_reg(&cursor, UNW_REG_IP, &ip);

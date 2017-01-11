@@ -28,7 +28,7 @@
  * SUCH DAMAGE.
  */
 
-#include "regint.h"
+#include "regenc.h"
 
 #define eucjp_islead(c)    ((UChar )((c) - 0xa1) > 0xfe - 0xa1)
 
@@ -576,11 +576,9 @@ OnigEncodingDefine(euc_jp, EUC_JP) = {
   get_ctype_code_range,
   left_adjust_char_head,
   is_allowed_reverse_match,
+  onigenc_ascii_only_case_map,
   0,
   ONIGENC_FLAG_NONE,
-#ifdef ONIG_CASE_MAPPING
-  onigenc_not_support_case_map,
-#endif   /* ONIG_CASE_MAPPING */
 };
 /*
  * Name: EUC-JP

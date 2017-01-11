@@ -93,7 +93,6 @@ static VALUE make_exception(yaml_parser_t * parser, VALUE path)
 	    parser->context ? rb_usascii_str_new2(parser->context) : Qnil);
 }
 
-#ifdef HAVE_RUBY_ENCODING_H
 static VALUE transcode_string(VALUE src, int * parser_encoding)
 {
     int utf8    = rb_utf8_encindex();
@@ -170,8 +169,6 @@ static VALUE transcode_io(VALUE src, int * parser_encoding)
 
     return src;
 }
-
-#endif
 
 static VALUE protected_start_stream(VALUE pointer)
 {
@@ -253,10 +250,8 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
     int tainted = 0;
     int state = 0;
     int parser_encoding = YAML_ANY_ENCODING;
-#ifdef HAVE_RUBY_ENCODING_H
     int encoding = rb_utf8_encindex();
     rb_encoding * internal_enc = rb_default_internal_encoding();
-#endif
     VALUE handler = rb_iv_get(self, "@handler");
 
     if (rb_scan_args(argc, argv, "11", &yaml, &path) == 1) {
@@ -274,18 +269,14 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
     if (OBJ_TAINTED(yaml)) tainted = 1;
 
     if (rb_respond_to(yaml, id_read)) {
-#ifdef HAVE_RUBY_ENCODING_H
 	yaml = transcode_io(yaml, &parser_encoding);
 	yaml_parser_set_encoding(parser, parser_encoding);
-#endif
 	yaml_parser_set_input(parser, io_reader, (void *)yaml);
 	if (RTEST(rb_obj_is_kind_of(yaml, rb_cIO))) tainted = 1;
     } else {
 	StringValue(yaml);
-#ifdef HAVE_RUBY_ENCODING_H
 	yaml = transcode_string(yaml, &parser_encoding);
 	yaml_parser_set_encoding(parser, parser_encoding);
-#endif
 	yaml_parser_set_input_string(
 		parser,
 		(const unsigned char *)RSTRING_PTR(yaml),
@@ -338,17 +329,13 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 			if(start->handle) {
 			    handle = rb_str_new2((const char *)start->handle);
 			    if (tainted) OBJ_TAINT(handle);
-#ifdef HAVE_RUBY_ENCODING_H
 			    PSYCH_TRANSCODE(handle, encoding, internal_enc);
-#endif
 			}
 
 			if(start->prefix) {
 			    prefix = rb_str_new2((const char *)start->prefix);
 			    if (tainted) OBJ_TAINT(prefix);
-#ifdef HAVE_RUBY_ENCODING_H
 			    PSYCH_TRANSCODE(prefix, encoding, internal_enc);
-#endif
 			}
 
 			rb_ary_push(tag_directives, rb_ary_new3((long)2, handle, prefix));
@@ -377,9 +364,7 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 		if(event.data.alias.anchor) {
 		    alias = rb_str_new2((const char *)event.data.alias.anchor);
 		    if (tainted) OBJ_TAINT(alias);
-#ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(alias, encoding, internal_enc);
-#endif
 		}
 
 		args[0] = handler;
@@ -399,24 +384,18 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 		    );
 		if (tainted) OBJ_TAINT(val);
 
-#ifdef HAVE_RUBY_ENCODING_H
 		PSYCH_TRANSCODE(val, encoding, internal_enc);
-#endif
 
 		if(event.data.scalar.anchor) {
 		    anchor = rb_str_new2((const char *)event.data.scalar.anchor);
 		    if (tainted) OBJ_TAINT(anchor);
-#ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
-#endif
 		}
 
 		if(event.data.scalar.tag) {
 		    tag = rb_str_new2((const char *)event.data.scalar.tag);
 		    if (tainted) OBJ_TAINT(tag);
-#ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(tag, encoding, internal_enc);
-#endif
 		}
 
 		plain_implicit =
@@ -446,18 +425,14 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 		if(event.data.sequence_start.anchor) {
 		    anchor = rb_str_new2((const char *)event.data.sequence_start.anchor);
 		    if (tainted) OBJ_TAINT(anchor);
-#ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
-#endif
 		}
 
 		tag = Qnil;
 		if(event.data.sequence_start.tag) {
 		    tag = rb_str_new2((const char *)event.data.sequence_start.tag);
 		    if (tainted) OBJ_TAINT(tag);
-#ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(tag, encoding, internal_enc);
-#endif
 		}
 
 		implicit =
@@ -486,17 +461,13 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 		if(event.data.mapping_start.anchor) {
 		    anchor = rb_str_new2((const char *)event.data.mapping_start.anchor);
 		    if (tainted) OBJ_TAINT(anchor);
-#ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(anchor, encoding, internal_enc);
-#endif
 		}
 
 		if(event.data.mapping_start.tag) {
 		    tag = rb_str_new2((const char *)event.data.mapping_start.tag);
 		    if (tainted) OBJ_TAINT(tag);
-#ifdef HAVE_RUBY_ENCODING_H
 		    PSYCH_TRANSCODE(tag, encoding, internal_enc);
-#endif
 		}
 
 		implicit =

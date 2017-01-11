@@ -90,6 +90,9 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal "\u201c", eval(%[?\\\u{201c}]), bug6069
     assert_equal "\u201c".encode("euc-jp"), eval(%[?\\\u{201c}].encode("euc-jp")), bug6069
     assert_equal "\u201c".encode("iso-8859-13"), eval(%[?\\\u{201c}].encode("iso-8859-13")), bug6069
+
+    assert_equal "ab", eval("?a 'b'")
+    assert_equal "a\nb", eval("<<A 'b'\na\nA")
   end
 
   def test_dstring
@@ -493,6 +496,7 @@ class TestRubyLiteral < Test::Unit::TestCase
         }
       }
     }
+    assert_equal(100.0, 0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100e100)
   end
 
   def test_symbol_list

@@ -338,6 +338,11 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(t1.utc?, t2.utc?)
   end
 
+  def test_parse_now_nil
+    assert_equal(Time.new(2000,1,1,0,0,0,"+11:00"),
+                 Time.parse("2000-01-01T00:00:00+11:00", nil))
+  end
+
   def test_parse_leap_second
     t = Time.utc(1998,12,31,23,59,59)
     assert_equal(t, Time.parse("Thu Dec 31 23:59:59 UTC 1998"))

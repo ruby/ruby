@@ -2145,7 +2145,7 @@ break2:
         for (; c >= '0' && c <= '9'; c = *++s) {
 have_dig:
             nz++;
-            if (nf > DBL_DIG * 4) continue;
+            if (nd > DBL_DIG * 4) continue;
             if (c -= '0') {
                 nf += nz;
                 for (i = 1; i < nz; i++)
@@ -3165,7 +3165,7 @@ ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
 
     int bbits, b2, b5, be, dig, i, ieps, ilim, ilim0, ilim1,
         j, j1, k, k0, k_check, leftright, m2, m5, s2, s5,
-        spec_case, try_quick;
+        spec_case, try_quick, half = 0;
     Long L;
 #ifndef Sudden_Underflow
     int denorm;
@@ -3458,6 +3458,10 @@ ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
                         while (*--s == '0') ;
                         s++;
                         goto ret1;
+                    }
+                    half = 1;
+                    if ((*(s-1) - '0') & 1) {
+                        goto bump_up;
                     }
                     break;
                 }
@@ -3766,12 +3770,13 @@ keep_dig:
                 *s++ = '1';
                 goto ret;
             }
-        ++*s++;
+        if (!half || (*s - '0') & 1)
+            ++*s;
     }
     else {
         while (*--s == '0') ;
-        s++;
     }
+    s++;
 ret:
     Bfree(S);
     if (mhi) {

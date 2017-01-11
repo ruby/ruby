@@ -145,14 +145,14 @@ rb_obj_equal(VALUE obj1, VALUE obj2)
 #if 0
 /*
  * call-seq:
- *    obj.hash    -> fixnum
+ *    obj.hash    -> integer
  *
- * Generates a Fixnum hash value for this object.  This function must have the
+ * Generates an Integer hash value for this object.  This function must have the
  * property that <code>a.eql?(b)</code> implies <code>a.hash == b.hash</code>.
  *
  * The hash value is used along with #eql? by the Hash class to determine if
  * two objects reference the same hash key.  Any hash value that exceeds the
- * capacity of a Fixnum will be truncated before being used.
+ * capacity of an Integer will be truncated before being used.
  *
  * The hash value for an object may not be identical across invocations or
  * implementations of Ruby.  If you need a stable identifier across Ruby
@@ -221,7 +221,7 @@ rb_class_real(VALUE cl)
  *  called with an explicit receiver, as <code>class</code> is also a
  *  reserved word in Ruby.
  *
- *     1.class      #=> Fixnum
+ *     1.class      #=> Integer
  *     self.class   #=> Object
  */
 
@@ -241,7 +241,7 @@ rb_obj_class(VALUE obj)
  *  If <i>obj</i> is <code>nil</code>, <code>true</code>, or
  *  <code>false</code>, it returns NilClass, TrueClass, or FalseClass,
  *  respectively.
- *  If <i>obj</i> is a Fixnum or a Symbol, it raises a TypeError.
+ *  If <i>obj</i> is an Integer, a Float or a Symbol, it raises a TypeError.
  *
  *     Object.new.singleton_class  #=> #<Class:#<Object:0xb7ce1e24>>
  *     String.singleton_class      #=> #<Class:String>
@@ -297,13 +297,27 @@ init_copy(VALUE dest, VALUE obj)
     }
 }
 
+static inline int
+special_object_p(VALUE obj)
+{
+    if (SPECIAL_CONST_P(obj)) return TRUE;
+    switch (BUILTIN_TYPE(obj)) {
+      case T_BIGNUM:
+      case T_FLOAT:
+	return TRUE;
+      default:
+	return FALSE;
+    }
+}
+
 /*
  *  call-seq:
- *     obj.clone -> an_object
+ *     obj.clone(freeze: true) -> an_object
  *
  *  Produces a shallow copy of <i>obj</i>---the instance variables of
  *  <i>obj</i> are copied, but not the objects they reference.
- *  <code>clone</code> copies the frozen and tainted state of <i>obj</i>.
+ *  <code>clone</code> copies the frozen (unless :freeze keyword argument
+ *  is given with a false value) and tainted state of <i>obj</i>.
  *  See also the discussion under <code>Object#dup</code>.
  *
  *     class Klass
@@ -321,14 +335,33 @@ init_copy(VALUE dest, VALUE obj)
  *  the class.
  */
 
-VALUE
-rb_obj_clone(VALUE obj)
+static VALUE
+rb_obj_clone2(int argc, VALUE *argv, VALUE obj)
 {
+    static ID keyword_ids[1];
+    VALUE opt;
+    VALUE kwargs[1];
     VALUE clone;
     VALUE singleton;
+    VALUE kwfreeze = Qtrue;
 
-    if (rb_special_const_p(obj)) {
-        rb_raise(rb_eTypeError, "can't clone %s", rb_obj_classname(obj));
+    if (!keyword_ids[0]) {
+	CONST_ID(keyword_ids[0], "freeze");
+    }
+    rb_scan_args(argc, argv, "0:", &opt);
+    if (!NIL_P(opt)) {
+	rb_get_kwargs(opt, keyword_ids, 0, 1, kwargs);
+	kwfreeze = kwargs[0];
+	if (kwfreeze != Qundef && kwfreeze != Qtrue && kwfreeze != Qfalse) {
+	    rb_raise(rb_eArgError, "unexpected value for freeze: %s",
+		     rb_builtin_class_name(kwfreeze));
+	}
+    }
+
+    if (special_object_p(obj)) {
+	if (kwfreeze == Qfalse)
+	    rb_raise(rb_eArgError, "can't unfreeze %s", rb_obj_classname(obj));
+	return obj;
     }
     clone = rb_obj_alloc(rb_obj_class(obj));
     RBASIC(clone)->flags &= (FL_TAINT|FL_PROMOTED0|FL_PROMOTED1);
@@ -342,9 +375,18 @@ rb_obj_clone(VALUE obj)
 
     init_copy(clone, obj);
     rb_funcall(clone, id_init_clone, 1, obj);
-    RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;
+
+    if (Qfalse != kwfreeze) {
+	RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;
+    }
 
     return clone;
+}
+
+VALUE
+rb_obj_clone(VALUE obj)
+{
+    return rb_obj_clone2(0, NULL, obj);
 }
 
 /*
@@ -395,8 +437,8 @@ rb_obj_dup(VALUE obj)
 {
     VALUE dup;
 
-    if (rb_special_const_p(obj)) {
-        rb_raise(rb_eTypeError, "can't dup %s", rb_obj_classname(obj));
+    if (special_object_p(obj)) {
+	return obj;
     }
     dup = rb_obj_alloc(rb_obj_class(obj));
     init_copy(dup, obj);
@@ -1060,8 +1102,8 @@ rb_obj_infect(VALUE obj1, VALUE obj2)
  *     prog.rb:3:in `<<': can't modify frozen Array (RuntimeError)
  *     	from prog.rb:3
  *
- *  Objects of the following classes are always frozen: Fixnum,
- *  Bignum, Float, Symbol.
+ *  Objects of the following classes are always frozen: Integer,
+ *  Float, Symbol.
  */
 
 VALUE
@@ -1523,7 +1565,7 @@ rb_mod_freeze(VALUE mod)
  *     mod === obj    -> true or false
  *
  *  Case Equality---Returns <code>true</code> if <i>obj</i> is an
- *  instance of <i>mod</i> or and instance of one of <i>mod</i>'s descendants.
+ *  instance of <i>mod</i> or an instance of one of <i>mod</i>'s descendants.
  *  Of limited use for modules, but can be used in <code>case</code> statements
  *  to classify objects by class.
  */
@@ -1542,7 +1584,7 @@ rb_mod_eqq(VALUE mod, VALUE arg)
  * is the same as <i>other</i>. Returns
  * <code>nil</code> if there's no relationship between the two.
  * (Think of the relationship in terms of the class definition:
- * "class A<B" implies "A<B".)
+ * "class A < B" implies "A < B".)
  *
  */
 
@@ -1570,7 +1612,7 @@ rb_class_inherited_p(VALUE mod, VALUE arg)
  * Returns true if <i>mod</i> is a subclass of <i>other</i>. Returns
  * <code>nil</code> if there's no relationship between the two.
  * (Think of the relationship in terms of the class definition:
- * "class A<B" implies "A<B".)
+ * "class A < B" implies "A < B".)
  *
  */
 
@@ -1590,7 +1632,7 @@ rb_mod_lt(VALUE mod, VALUE arg)
  * two modules are the same. Returns
  * <code>nil</code> if there's no relationship between the two.
  * (Think of the relationship in terms of the class definition:
- * "class A<B" implies "B>A".)
+ * "class A < B" implies "B > A".)
  *
  */
 
@@ -1611,7 +1653,7 @@ rb_mod_ge(VALUE mod, VALUE arg)
  * Returns true if <i>mod</i> is an ancestor of <i>other</i>. Returns
  * <code>nil</code> if there's no relationship between the two.
  * (Think of the relationship in terms of the class definition:
- * "class A<B" implies "B>A".)
+ * "class A < B" implies "B > A".)
  *
  */
 
@@ -1674,7 +1716,7 @@ rb_class_s_alloc(VALUE klass)
  *
  *  Creates a new anonymous module. If a block is given, it is passed
  *  the module object, and the block is evaluated in the context of this
- *  module using <code>module_eval</code>.
+ *  module like <code>module_eval</code>.
  *
  *     fred = Module.new do
  *       def meth1
@@ -1723,7 +1765,7 @@ rb_mod_initialize_clone(VALUE clone, VALUE orig)
  *  class a name by assigning the class object to a constant.
  *
  *  If a block is given, it is passed the class object, and the block
- *  is evaluated in the context of this class using
+ *  is evaluated in the context of this class like
  *  <code>class_eval</code>.
  *
  *     fred = Class.new do
@@ -1798,8 +1840,8 @@ rb_undefined_alloc(VALUE klass)
  *
  */
 
-VALUE
-rb_obj_alloc(VALUE klass)
+static VALUE
+rb_class_alloc(VALUE klass)
 {
     VALUE obj;
     rb_alloc_func_t allocator;
@@ -1825,6 +1867,13 @@ rb_obj_alloc(VALUE klass)
     return obj;
 }
 
+VALUE
+rb_obj_alloc(VALUE klass)
+{
+    Check_Type(klass, T_CLASS);
+    return rb_class_alloc(klass);
+}
+
 static VALUE
 rb_class_allocate_instance(VALUE klass)
 {
@@ -1844,15 +1893,22 @@ rb_class_allocate_instance(VALUE klass)
  *
  */
 
-VALUE
-rb_class_new_instance(int argc, const VALUE *argv, VALUE klass)
+static VALUE
+rb_class_s_new(int argc, const VALUE *argv, VALUE klass)
 {
     VALUE obj;
 
-    obj = rb_obj_alloc(klass);
+    obj = rb_class_alloc(klass);
     rb_obj_call_init(obj, argc, argv);
 
     return obj;
+}
+
+VALUE
+rb_class_new_instance(int argc, const VALUE *argv, VALUE klass)
+{
+    Check_Type(klass, T_CLASS);
+    return rb_class_s_new(argc, argv, klass);
 }
 
 /*
@@ -2657,35 +2713,27 @@ rb_convert_to_integer(VALUE val, int base)
 {
     VALUE tmp;
 
-    switch (TYPE(val)) {
-      case T_FLOAT:
+    if (RB_FLOAT_TYPE_P(val)) {
+	double f;
 	if (base != 0) goto arg_error;
-	if (RFLOAT_VALUE(val) <= (double)FIXNUM_MAX
-	    && RFLOAT_VALUE(val) >= (double)FIXNUM_MIN) {
-	    break;
-	}
-	return rb_dbl2big(RFLOAT_VALUE(val));
-
-      case T_FIXNUM:
-      case T_BIGNUM:
+	f = RFLOAT_VALUE(val);
+	if (FIXABLE(f)) return LONG2FIX((long)f);
+	return rb_dbl2big(f);
+    }
+    else if (RB_INTEGER_TYPE_P(val)) {
 	if (base != 0) goto arg_error;
 	return val;
-
-      case T_STRING:
-      string_conv:
+    }
+    else if (RB_TYPE_P(val, T_STRING)) {
 	return rb_str_to_inum(val, base, TRUE);
-
-      case T_NIL:
+    }
+    else if (NIL_P(val)) {
 	if (base != 0) goto arg_error;
 	rb_raise(rb_eTypeError, "can't convert nil into Integer");
-	break;
-
-      default:
-	break;
     }
     if (base != 0) {
 	tmp = rb_check_string_type(val);
-	if (!NIL_P(tmp)) goto string_conv;
+	if (!NIL_P(tmp)) return rb_str_to_inum(tmp, base, TRUE);
       arg_error:
 	rb_raise(rb_eArgError, "base specified for non string value");
     }
@@ -2707,7 +2755,7 @@ rb_Integer(VALUE val)
  *  call-seq:
  *     Integer(arg, base=0)    -> integer
  *
- *  Converts <i>arg</i> to a <code>Fixnum</code> or <code>Bignum</code>.
+ *  Converts <i>arg</i> to an <code>Integer</code>.
  *  Numeric types are converted directly (with floating point numbers
  *  being truncated).  <i>base</i> (0, or between 2 and 36) is a base for
  *  integer string representation.  If <i>arg</i> is a <code>String</code>,
@@ -2941,11 +2989,14 @@ FUNC_MINIMIZED(static VALUE rb_f_float(VALUE obj, VALUE arg));
  *     Float(arg)    -> float
  *
  *  Returns <i>arg</i> converted to a float. Numeric types are converted
- *  directly, the rest are converted using <i>arg</i>.to_f.
+ *  directly, and with exception to string and nil the rest are converted using <i>arg</i>.to_f.
+ *  Converting a <code>string</code> with invalid characters will result in a <code>ArgumentError</code>.
  *  Converting <code>nil</code> generates a <code>TypeError</code>.
  *
- *     Float(1)           #=> 1.0
- *     Float("123.456")   #=> 123.456
+ *     Float(1)                 #=> 1.0
+ *     Float("123.456")         #=> 123.456
+ *     Float("123.0_badstring") #=> ArgumentError: invalid value for Float(): "123.0_badstring"
+ *     Float(nil)               #=> TypeError: can't convert nil into Float
  */
 
 static VALUE
@@ -3424,7 +3475,7 @@ InitVM_Object(void)
 
     rb_define_method(rb_mKernel, "class", rb_obj_class, 0);
     rb_define_method(rb_mKernel, "singleton_class", rb_obj_singleton_class, 0);
-    rb_define_method(rb_mKernel, "clone", rb_obj_clone, 0);
+    rb_define_method(rb_mKernel, "clone", rb_obj_clone2, -1);
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);
     rb_define_method(rb_mKernel, "itself", rb_obj_itself, 0);
     rb_define_method(rb_mKernel, "initialize_copy", rb_obj_init_copy, 1);
@@ -3485,9 +3536,10 @@ InitVM_Object(void)
     rb_undef_alloc_func(rb_cNilClass);
     rb_undef_method(CLASS_OF(rb_cNilClass), "new");
     /*
-     * An alias of +nil+
+     * An obsolete alias of +nil+
      */
     rb_define_global_const("NIL", Qnil);
+    rb_deprecate_constant(rb_cObject, "NIL");
 
     rb_define_method(rb_cModule, "freeze", rb_mod_freeze, 0);
     rb_define_method(rb_cModule, "===", rb_mod_eqq, 1);
@@ -3541,8 +3593,8 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "deprecate_constant", rb_mod_deprecate_constant, -1); /* in variable.c */
     rb_define_method(rb_cModule, "singleton_class?", rb_mod_singleton_p, 0);
 
-    rb_define_method(rb_cClass, "allocate", rb_obj_alloc, 0);
-    rb_define_method(rb_cClass, "new", rb_class_new_instance, -1);
+    rb_define_method(rb_cClass, "allocate", rb_class_alloc, 0);
+    rb_define_method(rb_cClass, "new", rb_class_s_new, -1);
     rb_define_method(rb_cClass, "initialize", rb_class_initialize, -1);
     rb_define_method(rb_cClass, "superclass", rb_class_superclass, 0);
     rb_define_alloc_func(rb_cClass, rb_class_s_alloc);
@@ -3554,7 +3606,7 @@ InitVM_Object(void)
      * Document-class: Data
      *
      * This is a recommended base class for C extensions using Data_Make_Struct
-     * or Data_Wrap_Struct, see README.EXT for details.
+     * or Data_Wrap_Struct, see doc/extension.rdoc for details.
      */
     rb_cData = rb_define_class("Data", rb_cObject);
     rb_undef_alloc_func(rb_cData);
@@ -3569,9 +3621,10 @@ InitVM_Object(void)
     rb_undef_alloc_func(rb_cTrueClass);
     rb_undef_method(CLASS_OF(rb_cTrueClass), "new");
     /*
-     * An alias of +true+
+     * An obsolete alias of +true+
      */
     rb_define_global_const("TRUE", Qtrue);
+    rb_deprecate_constant(rb_cObject, "TRUE");
 
     rb_cFalseClass = rb_define_class("FalseClass", rb_cObject);
     rb_define_method(rb_cFalseClass, "to_s", false_to_s, 0);
@@ -3583,9 +3636,10 @@ InitVM_Object(void)
     rb_undef_alloc_func(rb_cFalseClass);
     rb_undef_method(CLASS_OF(rb_cFalseClass), "new");
     /*
-     * An alias of +false+
+     * An obsolete alias of +false+
      */
     rb_define_global_const("FALSE", Qfalse);
+    rb_deprecate_constant(rb_cObject, "FALSE");
 }
 
 void

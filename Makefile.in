@@ -67,7 +67,6 @@ optflags = @optflags@
 debugflags = @debugflags@
 warnflags = @warnflags@ @strict_warnflags@
 cppflags = @cppflags@
-INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir)
 XCFLAGS = @XCFLAGS@
 CPPFLAGS = @CPPFLAGS@ $(INCFLAGS)
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
@@ -175,7 +174,7 @@ OBJDUMP       = @OBJDUMP@
 OBJCOPY       = @OBJCOPY@
 VCS           = @VCS@
 VCSUP         = @VCSUP@
-DTRACE        = @DTRACE@
+DTRACE        = @DTRACE@ @DTRACE_OPT@
 DTRACE_EXT    = @DTRACE_EXT@
 DTRACE_OBJ    = @DTRACE_OBJ@
 DTRACE_REBUILD= @DTRACE_REBUILD@
@@ -342,25 +341,6 @@ lex.c: defs/keywords
 	  $(CP) $@ $(srcdir)/lex.c.blt; \
 	fi
 
-NAME2CTYPE_OPTIONS = -7 -c -j1 -i1 -t -C -P -T -H uniname2ctype_hash -Q uniname2ctype_pool -N uniname2ctype_p
-
-enc/unicode/name2ctype.h: enc/unicode/name2ctype.kwd
-	$(MAKEDIRS) $(@D)
-	@set +e; \
-	if cmp -s $(?:.kwd=.src) $?; then \
-	  set -x; \
-	  $(CP) $(?:.kwd=.h.blt) $@; \
-	else \
-	  trap '$(RM) $@-1.h $@-2.h' 0 && \
-	  set -x; \
-	  sed '/^#ifdef USE_UNICODE_PROPERTIES/,/^#endif/d' $? | gperf $(NAME2CTYPE_OPTIONS) > $@-1.h && \
-	  sed '/^#ifdef USE_UNICODE_PROPERTIES/d;/^#endif/d' $? | gperf $(NAME2CTYPE_OPTIONS) > $@-2.h && \
-	  diff -DUSE_UNICODE_PROPERTIES $@-1.h $@-2.h > $@.tmp || :; \
-	  $(MV) $@.tmp $@ && \
-	  $(CP) $? $(?:.kwd=.src) && \
-	  $(CP) $@ $(?:.kwd=.h.blt); \
-	fi
-
 JIS_PROPS_OPTIONS = -k1,3 -7 -c -j1 -i1 -t -C -P -t --ignore-case -H onig_jis_property_hash -Q onig_jis_property_pool -N onig_jis_property
 
 enc/jis/props.h: enc/jis/props.kwd
@@ -459,7 +439,7 @@ clean-extout:
 clean-enc distclean-enc realclean-enc:
 	@test -f "$(ENC_MK)" || exit 0; \
 	echo $(@:-enc=ing) encodings; \
-	exec $(MAKE) -f $(ENC_MK) $(MFLAGS) $(@:-enc=)
+	exec $(MAKE) $(MAKE_ENC) $(@:-enc=)
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(ECHO) compiling $@
@@ -563,3 +543,7 @@ loadpath: verconf.h
 	@$(CPP) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/loadpath.c | \
 	sed -e '1,/^const char ruby_initial_load_paths/d;/;/,$$d' \
 	    -e '/^ /!d;s/ *"\\0"$$//;s/" *"//g'
+
+un-runnable:
+	$(ECHO) cannot make runnable, configure with --enable-load-relative.
+	$(Q) exit 1

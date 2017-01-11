@@ -1,5 +1,6 @@
-# frozen_string_literal: false
 # -*- ruby -*-
+# frozen_string_literal: true
+
 # for backward compatibility
 warn "Warning:#{caller[0].sub(/:in `.*'\z/, '')}: Win32API is deprecated after Ruby 1.9.1; use fiddle directly instead" if $VERBOSE
 
@@ -10,16 +11,24 @@ class Win32API
   TYPEMAP = {"0" => Fiddle::TYPE_VOID, "S" => Fiddle::TYPE_VOIDP, "I" => Fiddle::TYPE_LONG}
   POINTER_TYPE = Fiddle::SIZEOF_VOIDP == Fiddle::SIZEOF_LONG_LONG ? 'q*' : 'l!*'
 
-  def initialize(dllname, func, import, export = "0", calltype = :stdcall)
-    @proto = [import].join.tr("VPpNnLlIi", "0SSI").sub(/^(.)0*$/, '\1')
-    handle = DLL[dllname] ||= Fiddle.dlopen(dllname)
+  WIN32_TYPES = "VPpNnLlIi"
+  DL_TYPES = "0SSI"
 
-    @func = Fiddle::Function.new(
-      handle[func],
-      @proto.chars.map { |win_type| TYPEMAP[win_type.tr("VPpNnLlIi", "0SSI")] },
-      TYPEMAP[export.tr("VPpNnLlIi", "0SSI")],
-      Fiddle::Importer.const_get(:CALL_TYPE_TO_ABI)[calltype]
-    )
+  def initialize(dllname, func, import, export = "0", calltype = :stdcall)
+    @proto = [import].join.tr(WIN32_TYPES, DL_TYPES).sub(/^(.)0*$/, '\1')
+    import = @proto.chars.map {|win_type| TYPEMAP[win_type.tr(WIN32_TYPES, DL_TYPES)]}
+    export = TYPEMAP[export.tr(WIN32_TYPES, DL_TYPES)]
+    calltype = Fiddle::Importer.const_get(:CALL_TYPE_TO_ABI)[calltype]
+
+    handle = DLL[dllname] ||=
+             begin
+               Fiddle.dlopen(dllname)
+             rescue Fiddle::DLError
+               raise unless File.extname(dllname).empty?
+               Fiddle.dlopen(dllname + ".dll")
+             end
+
+    @func = Fiddle::Function.new(handle[func], import, export, calltype)
   rescue Fiddle::DLError => e
     raise LoadError, e.message, e.backtrace
   end

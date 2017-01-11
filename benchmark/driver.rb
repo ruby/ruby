@@ -41,10 +41,16 @@ class BenchmarkDriver
     else
       h = eval(input.read)
     end
+    results = h[:results] || h["results"]
     obj = allocate
     obj.instance_variable_set("@execs", h[:executables] || h["executables"])
-    obj.instance_variable_set("@results", h[:results] || h["results"])
+    obj.instance_variable_set("@results", results)
     obj.instance_variable_set("@opt", opt)
+    [1, 2].each do |i|
+      loop = results.assoc((n = "loop_whileloop#{i}").intern) || results.assoc(n)
+      obj.instance_variable_set("@loop_wl#{i}", loop ? loop[1].map {|t,*|t} : nil)
+    end
+    obj.instance_variable_set("@measure_target", opt[:measure_target] || opt["measure_target"])
     obj
   end
 
@@ -153,7 +159,9 @@ class BenchmarkDriver
       numformat = " %1$*2$.3f"
     end
 
-    name_width ||= @results.map {|v,*| v.size}.max
+    name_width ||= @results.map {|v, result|
+      v.size + (case v; when /^vm1_/; @loop_wl1; when /^vm2_/; @loop_wl2; end ? 1 : 0)
+    }.max
     minwidth ||= 7
     width = @execs.map{|(_, v)| [v.size, minwidth].max}
 
@@ -413,7 +421,6 @@ if __FILE__ == $0
   }
 
   parser.parse!(ARGV)
-  opt[:output] ||= "bmlog-#{Time.now.strftime('%Y%m%d-%H%M%S')}.#{$$}#{formats[opt[:format]]}"
 
   if input = opt[:rawdata_input]
     b = open(input) {|f|
@@ -421,6 +428,7 @@ if __FILE__ == $0
     }
     b.show_results
   else
+    opt[:output] ||= "bmlog-#{Time.now.strftime('%Y%m%d-%H%M%S')}.#{$$}#{formats[opt[:format]]}"
     BenchmarkDriver.benchmark(opt)
   end
 end

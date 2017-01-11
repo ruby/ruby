@@ -1250,7 +1250,6 @@ dln_load(const char *file)
 #endif
 #if !defined(_AIX) && !defined(NeXT)
     const char *error = 0;
-#define DLN_ERROR() (error = dln_strerror(), strcpy(ALLOCA_N(char, strlen(error) + 1), error))
 #endif
 
 #if defined _WIN32
@@ -1333,7 +1332,9 @@ dln_load(const char *file)
 	    void *ex = dlsym(handle, EXTERNAL_PREFIX"ruby_xmalloc");
 	    if (ex && ex != ruby_xmalloc) {
 
-#   if defined __APPLE__
+#   if defined __APPLE__ && \
+    defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
+    (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_11)
 		/* dlclose() segfaults */
 		rb_fatal("%s - %s", incompatible, file);
 #   else
@@ -1347,7 +1348,8 @@ dln_load(const char *file)
 
 	init_fct = (void(*)())(VALUE)dlsym(handle, buf);
 	if (init_fct == NULL) {
-	    error = DLN_ERROR();
+	    const size_t errlen = strlen(error = dln_strerror()) + 1;
+	    error = memcpy(ALLOCA_N(char, errlen), error, errlen);
 	    dlclose(handle);
 	    goto failed;
 	}

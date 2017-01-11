@@ -1,6 +1,9 @@
 #!./miniruby
 # -*- coding: us-ascii -*-
 
+# Used by "make runnable" target, to make symbolic links from a build
+# directory.
+
 require './rbconfig'
 require 'fileutils'
 

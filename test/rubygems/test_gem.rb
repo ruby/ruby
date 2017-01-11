@@ -961,6 +961,9 @@ class TestGem < Gem::TestCase
 
   def test_self_sources
     assert_equal %w[http://gems.example.com/], Gem.sources
+    Gem.sources = nil
+    Gem.configuration.sources = %w[http://test.example.com/]
+    assert_equal %w[http://test.example.com/], Gem.sources
   end
 
   def test_try_activate_returns_true_for_activated_specs
@@ -1693,6 +1696,13 @@ You may need to `gem install -g` to install missing gems
     assert spec.activated?
   ensure
     ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps
+  end
+
+  def test_platform_defaults
+    platform_defaults = Gem.platform_defaults
+
+    assert platform_defaults != nil
+    assert platform_defaults.is_a? Hash
   end
 
   def ruby_install_name name

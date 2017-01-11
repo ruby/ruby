@@ -31,7 +31,7 @@ extern VALUE cX509Attr;
 extern VALUE eX509AttrError;
 
 VALUE ossl_x509attr_new(X509_ATTRIBUTE *);
-X509_ATTRIBUTE *DupX509AttrPtr(VALUE);
+X509_ATTRIBUTE *GetX509AttrPtr(VALUE);
 void Init_ossl_x509attr(void);
 
 /*
@@ -66,7 +66,6 @@ extern VALUE eX509ExtError;
 
 VALUE ossl_x509ext_new(X509_EXTENSION *);
 X509_EXTENSION *GetX509ExtPtr(VALUE);
-X509_EXTENSION *DupX509ExtPtr(VALUE);
 void Init_ossl_x509ext(void);
 
 /*
@@ -111,10 +110,13 @@ VALUE ossl_x509store_new(X509_STORE *);
 X509_STORE *GetX509StorePtr(VALUE);
 X509_STORE *DupX509StorePtr(VALUE);
 
-VALUE ossl_x509stctx_new(X509_STORE_CTX *);
-VALUE ossl_x509stctx_clear_ptr(VALUE);
 X509_STORE_CTX *GetX509StCtxtPtr(VALUE);
-
 void Init_ossl_x509store(void);
+
+/*
+ * Calls the verify callback Proc (the first parameter) with given pre-verify
+ * result and the X509_STORE_CTX.
+ */
+int ossl_verify_cb_call(VALUE, int, X509_STORE_CTX *);
 
 #endif /* _OSSL_X509_H_ */

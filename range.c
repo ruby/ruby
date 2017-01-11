@@ -80,6 +80,7 @@ rb_range_new(VALUE beg, VALUE end, int exclude_end)
 static void
 range_modify(VALUE range)
 {
+    rb_check_frozen(range);
     /* Ranges are immutable, so that they should be initialized only once. */
     if (RANGE_EXCL(range) != Qnil) {
 	rb_name_err_raise("`initialize' called twice", range, ID2SYM(idInitialize));
@@ -226,7 +227,7 @@ range_eql(VALUE range, VALUE obj)
 
 /*
  * call-seq:
- *   rng.hash    -> fixnum
+ *   rng.hash    -> integer
  *
  * Compute a hash-code for this range. Two ranges with equal
  * begin and end points (using <code>eql?</code>), and the same
@@ -334,21 +335,30 @@ linear_object_p(VALUE obj)
 }
 
 static VALUE
+check_step_domain(VALUE step)
+{
+    VALUE zero = INT2FIX(0);
+    int cmp;
+    if (!rb_obj_is_kind_of(step, rb_cNumeric)) {
+	step = rb_to_int(step);
+    }
+    cmp = rb_cmpint(rb_funcallv(step, idCmp, 1, &zero), step, zero);
+    if (cmp < 0) {
+	rb_raise(rb_eArgError, "step can't be negative");
+    }
+    else if (cmp == 0) {
+	rb_raise(rb_eArgError, "step can't be 0");
+    }
+    return step;
+}
+
+static VALUE
 range_step_size(VALUE range, VALUE args, VALUE eobj)
 {
     VALUE b = RANGE_BEG(range), e = RANGE_END(range);
     VALUE step = INT2FIX(1);
     if (args) {
-	step = RARRAY_AREF(args, 0);
-	if (!rb_obj_is_kind_of(step, rb_cNumeric)) {
-	    step = rb_to_int(step);
-	}
-    }
-    if (rb_funcall(step, '<', 1, INT2FIX(0))) {
-	rb_raise(rb_eArgError, "step can't be negative");
-    }
-    else if (!rb_funcall(step, '>', 1, INT2FIX(0))) {
-	rb_raise(rb_eArgError, "step can't be 0");
+	step = check_step_domain(RARRAY_AREF(args, 0));
     }
 
     if (rb_obj_is_kind_of(b, rb_cNumeric) && rb_obj_is_kind_of(e, rb_cNumeric)) {
@@ -405,15 +415,7 @@ range_step(int argc, VALUE *argv, VALUE range)
     }
     else {
 	rb_scan_args(argc, argv, "01", &step);
-	if (!rb_obj_is_kind_of(step, rb_cNumeric)) {
-	    step = rb_to_int(step);
-	}
-	if (rb_funcall(step, '<', 1, INT2FIX(0))) {
-	    rb_raise(rb_eArgError, "step can't be negative");
-	}
-	else if (!rb_funcall(step, '>', 1, INT2FIX(0))) {
-	    rb_raise(rb_eArgError, "step can't be 0");
-	}
+	step = check_step_domain(step);
     }
 
     if (FIXNUM_P(b) && FIXNUM_P(e) && FIXNUM_P(step)) { /* fixnums are special */
@@ -910,7 +912,8 @@ range_last(int argc, VALUE *argv, VALUE range)
  *     rng.min(n) {| a,b | block }   -> array
  *
  *  Returns the minimum value in the range. Returns +nil+ if the begin
- *  value of the range is larger than the end value.
+ *  value of the range is larger than the end value. Returns +nil+ if
+ *  the begin value of an exclusive range is equal to the end value.
  *
  *  Can be given an optional block to override the default comparison
  *  method <code>a <=> b</code>.
@@ -947,7 +950,8 @@ range_min(int argc, VALUE *argv, VALUE range)
  *     rng.max(n) {| a,b | block }   -> obj
  *
  *  Returns the maximum value in the range. Returns +nil+ if the begin
- *  value of the range larger than the end value.
+ *  value of the range larger than the end value. Returns +nil+ if
+ *  the begin value of an exclusive range is equal to the end value.
  *
  *  Can be given an optional block to override the default comparison
  *  method <code>a <=> b</code>.
@@ -1227,22 +1231,27 @@ range_dumper(VALUE range)
 static VALUE
 range_loader(VALUE range, VALUE obj)
 {
+    VALUE beg, end, excl;
+
     if (!RB_TYPE_P(obj, T_OBJECT) || RBASIC(obj)->klass != rb_cObject) {
         rb_raise(rb_eTypeError, "not a dumped range object");
     }
 
     range_modify(range);
-    RANGE_SET_BEG(range, rb_ivar_get(obj, id_beg));
-    RANGE_SET_END(range, rb_ivar_get(obj, id_end));
-    RANGE_SET_EXCL(range, rb_ivar_get(obj, id_excl));
+    beg = rb_ivar_get(obj, id_beg);
+    end = rb_ivar_get(obj, id_end);
+    excl = rb_ivar_get(obj, id_excl);
+    if (!NIL_P(excl)) {
+	range_init(range, beg, end, RBOOL(RTEST(excl)));
+    }
     return range;
 }
 
 static VALUE
 range_alloc(VALUE klass)
 {
-  /* rb_struct_alloc_noinit itself should not be used because
-   * rb_marshal_define_compat uses equality of allocation function */
+    /* rb_struct_alloc_noinit itself should not be used because
+     * rb_marshal_define_compat uses equality of allocation function */
     return rb_struct_alloc_noinit(klass);
 }
 

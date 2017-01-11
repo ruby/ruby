@@ -62,16 +62,20 @@ module Exception2MessageMapper
   end
 
   def bind(cl)
-    self.module_eval %[
+    self.module_eval "#{<<-"begin;"}\n#{<<-"end;"}", __FILE__, __LINE__+1
+    begin;
       def Raise(err = nil, *rest)
         Exception2MessageMapper.Raise(self.class, err, *rest)
       end
       alias Fail Raise
 
+      class << self
+        undef included
+      end
       def self.included(mod)
         mod.extend Exception2MessageMapper
       end
-    ]
+    end;
   end
 
   # Fail(err, *rest)
@@ -128,9 +132,9 @@ module Exception2MessageMapper
   #     define exception named ``c'' with message m.
   #
   def E2MM.def_exception(k, n, m, s = StandardError)
-    n = n.id2name if n.kind_of?(Fixnum)
     e = Class.new(s)
     E2MM.instance_eval{@MessageMap[[k, e]] = m}
+    k.module_eval {remove_const(n)} if k.const_defined?(n, false)
     k.const_set(n, e)
   end
 

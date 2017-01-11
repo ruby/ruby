@@ -63,7 +63,7 @@ with all sufficient information, see the ChangeLog file.
 
 * IO
   * Improvements
-    * IO#nonblock_read and IO#nonblock_write for pipes on Windows are supported.
+    * IO#read_nonblock and IO#write_nonblock for pipes on Windows are supported.
 
 * Kernel
   * New methods:

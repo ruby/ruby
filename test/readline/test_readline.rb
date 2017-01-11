@@ -464,6 +464,92 @@ class TestReadline < Test::Unit::TestCase
     end
   end if Readline.respond_to?(:refresh_line)
 
+  def test_setting_quoting_detection_proc
+    return unless Readline.respond_to?(:quoting_detection_proc=)
+
+    expected = proc { |text, index| false }
+    Readline.quoting_detection_proc = expected
+    assert_equal(expected, Readline.quoting_detection_proc)
+
+    assert_raise(ArgumentError) do
+      Readline.quoting_detection_proc = "This does not have call method."
+    end
+  end
+
+  def test_using_quoting_detection_proc
+    saved_completer_quote_characters = Readline.completer_quote_characters
+    saved_completer_word_break_characters = Readline.completer_word_break_characters
+    return unless Readline.respond_to?(:quoting_detection_proc=)
+
+    passed_text = nil
+    line = nil
+
+    with_temp_stdio do |stdin, stdout|
+      replace_stdio(stdin.path, stdout.path) do
+        Readline.completion_proc = ->(text) do
+          passed_text = text
+          ['completion']
+        end
+        Readline.completer_quote_characters = '\'"'
+        Readline.completer_word_break_characters = ' '
+        Readline.quoting_detection_proc = ->(text, index) do
+          index > 0 && text[index-1] == '\\'
+        end
+
+        stdin.write("first second\\ third\t")
+        stdin.flush
+        line = Readline.readline('> ', false)
+      end
+    end
+
+    assert_equal('second\\ third', passed_text)
+    assert_equal('first completion', line)
+  ensure
+    Readline.completer_quote_characters = saved_completer_quote_characters
+    Readline.completer_word_break_characters = saved_completer_word_break_characters
+  end
+
+  def test_using_quoting_detection_proc_with_multibyte_input
+    saved_completer_quote_characters = Readline.completer_quote_characters
+    saved_completer_word_break_characters = Readline.completer_word_break_characters
+    return unless Readline.respond_to?(:quoting_detection_proc=)
+    unless Encoding.find("locale") == Encoding::UTF_8
+      return if assert_under_utf8
+      skip 'this test needs UTF-8 locale'
+    end
+
+    passed_text = nil
+    escaped_char_indexes = []
+    line = nil
+
+    with_temp_stdio do |stdin, stdout|
+      replace_stdio(stdin.path, stdout.path) do
+        Readline.completion_proc = ->(text) do
+          passed_text = text
+          ['completion']
+        end
+        Readline.completer_quote_characters = '\'"'
+        Readline.completer_word_break_characters = ' '
+        Readline.quoting_detection_proc = ->(text, index) do
+          escaped = index > 0 && text[index-1] == '\\'
+          escaped_char_indexes << index if escaped
+          escaped
+        end
+
+        stdin.write("\u3042\u3093 second\\ third\t")
+        stdin.flush
+        line = Readline.readline('> ', false)
+      end
+    end
+
+    assert_equal([10], escaped_char_indexes)
+    assert_equal('second\\ third', passed_text)
+    assert_equal("\u3042\u3093 completion", line)
+  ensure
+    Readline.completer_quote_characters = saved_completer_quote_characters
+    Readline.completer_word_break_characters = saved_completer_word_break_characters
+  end
+
   private
 
   def replace_stdio(stdin_path, stdout_path)

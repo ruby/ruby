@@ -29,13 +29,15 @@ class TestISO8859 < Test::Unit::TestCase
   end
 
   def test_iso_8859_3
+    # todo: decide on behavior, test, and fix implementation re. İ and ı (0xA9/0xB9)
+    # treating them as case equivalents is definitely an error
     eval(%q(# encoding: iso8859-3
       assert_match(/^(\xdf)\1$/i, "\xdf\xdf")
       assert_match(/^(\xdf)\1$/i, "ssss")
       assert_match(/^[\xdfz]+$/i, "sszzsszz")
       assert_match(/^SS$/i, "\xdf")
       assert_match(/^Ss$/i, "\xdf")
-      [0xa1, 0xa6, *(0xa9..0xac), 0xaf].each do |c|
+      [0xa1, 0xa6, *(0xaa..0xac), 0xaf].each do |c|
         c1 = c.chr("iso8859-3")
         c2 = (c + 0x10).chr("iso8859-3")
         assert_match(/^(#{ c1 })\1$/i, c2 + c1)
@@ -121,7 +123,7 @@ class TestISO8859 < Test::Unit::TestCase
       assert_match(/^[\xdfz]+$/i, "sszzsszz")
       assert_match(/^SS$/i, "\xdf")
       assert_match(/^Ss$/i, "\xdf")
-      ([*(0xc0..0xdc)] - [0xd7]).each do |c|
+      ([*(0xc0..0xde)] - [0xd7, 0xdd]).each do |c|
         c1 = c.chr("iso8859-9")
         c2 = (c + 0x20).chr("iso8859-9")
         assert_match(/^(#{ c1 })\1$/i, c2 + c1)

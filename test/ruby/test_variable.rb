@@ -116,7 +116,7 @@ class TestVariable < Test::Unit::TestCase
     assert_in_out_err(["-e", "$0='t'*1000;print $0"], "", /\At+\z/, [])
   end
 
-  def test_global_variable_poped
+  def test_global_variable_popped
     assert_nothing_raised {
       EnvUtil.suppress_warning {
         eval("$foo; 1")
@@ -124,7 +124,7 @@ class TestVariable < Test::Unit::TestCase
     }
   end
 
-  def test_constant_poped
+  def test_constant_popped
     assert_nothing_raised {
       EnvUtil.suppress_warning {
         eval("TestVariable::Gods; 1")

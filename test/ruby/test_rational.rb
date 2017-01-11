@@ -35,10 +35,10 @@ class Rational_Test < Test::Unit::TestCase
     c2 = Rational(0)
     c3 = Rational(1)
 
-    assert_equal(true, c.eql?(c2))
-    assert_equal(false, c.eql?(c3))
+    assert_operator(c, :eql?, c2)
+    assert_not_operator(c, :eql?, c3)
 
-    assert_equal(false, c.eql?(0))
+    assert_not_operator(c, :eql?, 0)
   end
 
   def test_hash
@@ -60,7 +60,7 @@ class Rational_Test < Test::Unit::TestCase
   def test_freeze
     c = Rational(1)
     c.freeze
-    assert_equal(true, c.frozen?)
+    assert_predicate(c, :frozen?)
     assert_instance_of(String, c.to_s)
   end
 
@@ -161,15 +161,15 @@ class Rational_Test < Test::Unit::TestCase
   def test_attr2
     c = Rational(1)
 
-    assert_equal(false, c.integer?)
-    assert_equal(true, c.real?)
+    assert_not_predicate(c, :integer?)
+    assert_predicate(c, :real?)
 
-    assert_equal(true, Rational(0).zero?)
-    assert_equal(true, Rational(0,1).zero?)
-    assert_equal(false, Rational(1,1).zero?)
+    assert_predicate(Rational(0), :zero?)
+    assert_predicate(Rational(0,1), :zero?)
+    assert_not_predicate(Rational(1,1), :zero?)
 
-    assert_equal(nil, Rational(0).nonzero?)
-    assert_equal(nil, Rational(0,1).nonzero?)
+    assert_nil(Rational(0).nonzero?)
+    assert_nil(Rational(0,1).nonzero?)
     assert_equal(Rational(1,1), Rational(1,1).nonzero?)
   end
 
@@ -537,23 +537,23 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(-1, Rational(b-1) <=> Rational(b))
     assert_equal(+1, Rational(b) <=> Rational(b-1))
 
-    assert_equal(false, Rational(0) < Rational(0))
-    assert_equal(true, Rational(0) <= Rational(0))
-    assert_equal(true, Rational(0) >= Rational(0))
-    assert_equal(false, Rational(0) > Rational(0))
+    assert_not_operator(Rational(0), :<, Rational(0))
+    assert_operator(Rational(0), :<=, Rational(0))
+    assert_operator(Rational(0), :>=, Rational(0))
+    assert_not_operator(Rational(0), :>, Rational(0))
 
-    assert_equal(nil, Rational(0) <=> nil)
-    assert_equal(nil, Rational(0) <=> 'foo')
+    assert_nil(Rational(0) <=> nil)
+    assert_nil(Rational(0) <=> 'foo')
   end
 
   def test_eqeq
     assert_equal(Rational(1,1), Rational(1))
     assert_equal(Rational(-1,1), Rational(-1))
 
-    assert_equal(false, Rational(2,1) == Rational(1))
-    assert_equal(true, Rational(2,1) != Rational(1))
-    assert_equal(false, Rational(1) == nil)
-    assert_equal(false, Rational(1) == '')
+    assert_not_operator(Rational(2,1), :==, Rational(1))
+    assert_operator(Rational(2,1), :!=, Rational(1))
+    assert_not_operator(Rational(1), :==, nil)
+    assert_not_operator(Rational(1), :==, '')
   end
 
   def test_coerce
@@ -567,7 +567,7 @@ class Rational_Test < Test::Unit::TestCase
   end
 
   class ObjectX
-    def + (x) Rational(1) end
+    def +(x) Rational(1) end
     alias - +
     alias * +
     alias / +
@@ -597,17 +597,21 @@ class Rational_Test < Test::Unit::TestCase
   end
 
   def test_trunc
-    [[Rational(13, 5),  [ 2,  3,  2,  3]], #  2.6
-     [Rational(5, 2),   [ 2,  3,  2,  3]], #  2.5
-     [Rational(12, 5),  [ 2,  3,  2,  2]], #  2.4
-     [Rational(-12,5),  [-3, -2, -2, -2]], # -2.4
-     [Rational(-5, 2),  [-3, -2, -2, -3]], # -2.5
-     [Rational(-13, 5), [-3, -2, -2, -3]], # -2.6
+    [[Rational(13, 5),  [ 2,  3,  2,  3,  3,  3,  3]], #  2.6
+     [Rational(5, 2),   [ 2,  3,  2,  3,  2,  3,  2]], #  2.5
+     [Rational(12, 5),  [ 2,  3,  2,  2,  2,  2,  2]], #  2.4
+     [Rational(-12,5),  [-3, -2, -2, -2, -2, -2, -2]], # -2.4
+     [Rational(-5, 2),  [-3, -2, -2, -3, -2, -3, -2]], # -2.5
+     [Rational(-13, 5), [-3, -2, -2, -3, -3, -3, -3]], # -2.6
     ].each do |i, a|
-      assert_equal(a[0], i.floor)
-      assert_equal(a[1], i.ceil)
-      assert_equal(a[2], i.truncate)
-      assert_equal(a[3], i.round)
+      s = proc {i.inspect}
+      assert_equal(a[0], i.floor, s)
+      assert_equal(a[1], i.ceil, s)
+      assert_equal(a[2], i.truncate, s)
+      assert_equal(a[3], i.round, s)
+      assert_equal(a[4], i.round(half: :even), s)
+      assert_equal(a[5], i.round(half: :up), s)
+      assert_equal(a[6], i.round(half: :down), s)
     end
   end
 
@@ -643,6 +647,10 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(9, c2.instance_variable_get(:@ivar))
     assert_instance_of(Rational, c2)
 
+    assert_raise(TypeError){
+      Marshal.load("\x04\bU:\rRational[\ai\x060")
+    }
+
     assert_raise(ZeroDivisionError){
       Marshal.load("\x04\bU:\rRational[\ai\x06i\x05")
     }
@@ -660,6 +668,10 @@ class Rational_Test < Test::Unit::TestCase
     dump = "\x04\x08o:\x0dRational\x07:\x11@denominatori\x07:\x0f@numeratori\x06"
     assert_nothing_raised(bug6625) do
       assert_equal(Rational(1, 2), Marshal.load(dump), bug6625)
+    end
+    dump = "\x04\x08o:\x0dRational\x07:\x11@denominatori\x07:\x0f@numerator0"
+    assert_raise(TypeError) do
+      Marshal.load(dump)
     end
   end
 
@@ -868,9 +880,19 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(1152921470247108503, 1073741789.lcm(1073741827))
   end
 
+  def test_gcd_no_memory_leak
+    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-"end;"}", limit: 1.2, rss: true)
+    x = (1<<121) + 1
+    y = (1<<99) + 1
+    1000.times{x.gcd(y)}
+    begin;
+      100.times {1000.times{x.gcd(y)}}
+    end;
+  end
+
   def test_supp
-    assert_equal(true, 1.real?)
-    assert_equal(true, 1.1.real?)
+    assert_predicate(1, :real?)
+    assert_predicate(1.1, :real?)
 
     assert_equal(1, 1.numerator)
     assert_equal(9, 9.numerator)
@@ -893,6 +915,13 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(5000000000.0, 10000000000.fdiv(2))
     assert_equal(0.5, 1.0.fdiv(2))
     assert_equal(0.25, Rational(1,2).fdiv(2))
+
+    a = 0xa42fcabf_c51ce400_00001000_00000000_00000000_00000000_00000000_00000000
+    b = 1<<1074
+    assert_equal(Rational(a, b).to_f, a.fdiv(b))
+    a = 3
+    b = 0x20_0000_0000_0001
+    assert_equal(Rational(a, b).to_f, a.fdiv(b))
   end
 
   def test_ruby19
@@ -939,4 +968,13 @@ class Rational_Test < Test::Unit::TestCase
   def test_known_bug
   end
 
+  def test_finite_p
+    assert_predicate(1/2r, :finite?)
+    assert_predicate(-1/2r, :finite?)
+  end
+
+  def test_infinite_p
+    assert_nil((1/2r).infinite?)
+    assert_nil((-1/2r).infinite?)
+  end
 end

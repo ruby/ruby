@@ -77,8 +77,8 @@ RUBY_EXTERN void Init_digest_base(void);
  *
  * Different digest algorithms (or hash functions) are available:
  *
- * HMAC::
- *   See FIPS PUB 198 The Keyed-Hash Message Authentication Code (HMAC).
+ * MD5::
+ *  See RFC 1321 The MD5 Message-Digest Algorithm
  * RIPEMD-160::
  *   As Digest::RMD160.
  *   See http://homes.esat.kuleuven.be/~bosselae/ripemd160.html.
@@ -486,7 +486,7 @@ rb_digest_class_s_digest(int argc, VALUE *argv, VALUE klass)
 static VALUE
 rb_digest_class_s_hexdigest(int argc, VALUE *argv, VALUE klass)
 {
-    return hexencode_str_new(rb_funcall2(klass, id_digest, argc, argv));
+    return hexencode_str_new(rb_funcallv(klass, id_digest, argc, argv));
 }
 
 /* :nodoc: */
@@ -501,6 +501,40 @@ rb_digest_class_init(VALUE self)
  *
  * This abstract class provides a common interface to message digest
  * implementation classes written in C.
+ *
+ * ==Write a Digest subclass in C
+ * Digest::Base provides a common interface to message digest
+ * classes written in C. These classes must provide a struct
+ * of type rb_digest_metadata_t:
+ *  typedef int (*rb_digest_hash_init_func_t)(void *);
+ *  typedef void (*rb_digest_hash_update_func_t)(void *, unsigned char *, size_t);
+ *  typedef int (*rb_digest_hash_finish_func_t)(void *, unsigned char *);
+ *
+ *  typedef struct {
+ *    int api_version;
+ *    size_t digest_len;
+ *    size_t block_len;
+ *    size_t ctx_size;
+ *    rb_digest_hash_init_func_t init_func;
+ *    rb_digest_hash_update_func_t update_func;
+ *    rb_digest_hash_finish_func_t finish_func;
+ *  } rb_digest_metadata_t;
+ *
+ * This structure must be set as an instance variable named +metadata+
+ * (without the +@+ in front of the name). By example:
+ *   static const rb_digest_metadata_t sha1 = {
+ *      RUBY_DIGEST_API_VERSION,
+ *      SHA1_DIGEST_LENGTH,
+ *      SHA1_BLOCK_LENGTH,
+ *      sizeof(SHA1_CTX),
+ *      (rb_digest_hash_init_func_t)SHA1_Init,
+ *      (rb_digest_hash_update_func_t)SHA1_Update,
+ *      (rb_digest_hash_finish_func_t)SHA1_Finish,
+ *  };
+ *
+ *
+ *  rb_ivar_set(cDigest_SHA1, rb_intern("metadata"),
+ *		Data_Wrap_Struct(0, 0, 0, (void *)&sha1));
  */
 
 static rb_digest_metadata_t *
@@ -596,7 +630,11 @@ rb_digest_base_copy(VALUE copy, VALUE obj)
     return copy;
 }
 
-/* :nodoc: */
+/*
+ * call-seq: digest_base.reset -> digest_base
+ *
+ * Reset the digest to its initial state and return +self+.
+ */
 static VALUE
 rb_digest_base_reset(VALUE self)
 {
@@ -612,7 +650,13 @@ rb_digest_base_reset(VALUE self)
     return self;
 }
 
-/* :nodoc: */
+/*
+ * call-seq:
+ *   digest_base.update(string) -> digest_base
+ *   digest_base << string -> digest_base
+ *
+ * Update the digest using given _string_ and return +self+.
+ */
 static VALUE
 rb_digest_base_update(VALUE self, VALUE str)
 {
@@ -651,7 +695,11 @@ rb_digest_base_finish(VALUE self)
     return str;
 }
 
-/* :nodoc: */
+/*
+ * call-seq: digest_base.digest_length -> Integer
+ *
+ * Return the length of the hash value in bytes.
+ */
 static VALUE
 rb_digest_base_digest_length(VALUE self)
 {
@@ -662,7 +710,11 @@ rb_digest_base_digest_length(VALUE self)
     return INT2NUM(algo->digest_len);
 }
 
-/* :nodoc: */
+/*
+ * call-seq: digest_base.block_length -> Integer
+ *
+ * Return the block length of the digest in bytes.
+ */
 static VALUE
 rb_digest_base_block_length(VALUE self)
 {

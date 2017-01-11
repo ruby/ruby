@@ -110,15 +110,14 @@
 # +delegate.rb+.
 #
 module Forwardable
-  # Version of +forwardable.rb+
-  FORWARDABLE_VERSION = "1.1.0"
+  require 'forwardable/impl'
 
-  FILE_REGEXP = %r"#{Regexp.quote(__FILE__)}"
+  # Version of +forwardable.rb+
+  FORWARDABLE_VERSION = "1.2.0"
 
   @debug = nil
   class << self
-    # If true, <tt>__FILE__</tt> will remain in the backtrace in the event an
-    # Exception is raised.
+    # ignored
     attr_accessor :debug
   end
 
@@ -131,12 +130,13 @@ module Forwardable
   #    delegate [method, method, ...] => accessor
   #
   def instance_delegate(hash)
-    hash.each{ |methods, accessor|
-      methods = [methods] unless methods.respond_to?(:each)
-      methods.each{ |method|
-        def_instance_delegator(accessor, method)
-      }
-    }
+    hash.each do |methods, accessor|
+      unless defined?(methods.each)
+        def_instance_delegator(accessor, methods)
+      else
+        methods.each {|method| def_instance_delegator(accessor, method)}
+      end
+    end
   end
 
   #
@@ -178,38 +178,54 @@ module Forwardable
   #   q.push 23  #=> NoMethodError
   #
   def def_instance_delegator(accessor, method, ali = method)
-    accessor = accessor.to_s
-    if method_defined?(accessor) || private_method_defined?(accessor)
-      accessor = "#{accessor}()"
-    end
-
-    line_no = __LINE__; str = %{proc do
-      def #{ali}(*args, &block)
-        begin
-          #{accessor}
-        ensure
-          $@.delete_if {|s| ::Forwardable::FILE_REGEXP =~ s} if $@ and !::Forwardable::debug
-        end.__send__(:#{method}, *args, &block)
-      end
-    end}
-
-    gen = RubyVM::InstructionSequence
-          .compile(str, __FILE__, __FILE__, line_no,
-                   trace_instruction: false,
-                   tailcall_optimization: true)
-          .eval
+    gen = Forwardable._delegator_method(self, accessor, method, ali)
 
     # If it's not a class or module, it's an instance
-    begin
-      module_eval(&gen)
-    rescue
-      instance_eval(&gen)
-    end
+    (Module === self ? self : singleton_class).module_eval(&gen)
   end
 
   alias delegate instance_delegate
   alias def_delegators def_instance_delegators
   alias def_delegator def_instance_delegator
+
+  # :nodoc:
+  def self._delegator_method(obj, accessor, method, ali)
+    accessor = accessor.to_s unless Symbol === accessor
+
+    if Module === obj ?
+         obj.method_defined?(accessor) || obj.private_method_defined?(accessor) :
+         obj.respond_to?(accessor, true)
+      accessor = "#{accessor}()"
+    end
+
+    method_call = ".__send__(:#{method}, *args, &block)"
+    if _valid_method?(method)
+      loc, = caller_locations(2,1)
+      pre = "_ ="
+      mesg = "#{Module === obj ? obj : obj.class}\##{ali} at #{loc.path}:#{loc.lineno} forwarding to private method "
+      method_call = "#{<<-"begin;"}\n#{<<-"end;".chomp}"
+        begin;
+          unless defined? _.#{method}
+            ::Kernel.warn "\#{caller_locations(1)[0]}: "#{mesg.dump}"\#{_.class}"'##{method}'
+            _#{method_call}
+          else
+            _.#{method}(*args, &block)
+          end
+        end;
+    end
+
+    _compile_method("#{<<-"begin;"}\n#{<<-"end;"}", __FILE__, __LINE__+1)
+    begin;
+      proc do
+        def #{ali}(*args, &block)
+          #{pre}
+          begin
+            #{accessor}
+          end#{method_call}#{FILTER_EXCEPTION}
+        end
+      end
+    end;
+  end
 end
 
 # SingleForwardable can be used to setup delegation at the object level as well.
@@ -246,12 +262,13 @@ module SingleForwardable
   #    delegate [method, method, ...] => accessor
   #
   def single_delegate(hash)
-    hash.each{ |methods, accessor|
-      methods = [methods] unless methods.respond_to?(:each)
-      methods.each{ |method|
-        def_single_delegator(accessor, method)
-      }
-    }
+    hash.each do |methods, accessor|
+      unless defined?(methods.each)
+        def_single_delegator(accessor, methods)
+      else
+        methods.each {|method| def_single_delegator(accessor, method)}
+      end
+    end
   end
 
   #
@@ -280,26 +297,7 @@ module SingleForwardable
   # the method of the same name in _accessor_).  If _new_name_ is
   # provided, it is used as the name for the delegate method.
   def def_single_delegator(accessor, method, ali = method)
-    accessor = accessor.to_s
-    if method_defined?(accessor) || private_method_defined?(accessor)
-      accessor = "#{accessor}()"
-    end
-
-    line_no = __LINE__; str = %{proc do
-      def #{ali}(*args, &block)
-        begin
-          #{accessor}
-        ensure
-          $@.delete_if {|s| ::Forwardable::FILE_REGEXP =~ s} if $@ and !::Forwardable::debug
-        end.__send__(:#{method}, *args, &block)
-      end
-    end}
-
-    gen = RubyVM::InstructionSequence
-          .compile(str, __FILE__, __FILE__, line_no,
-                   trace_instruction: false,
-                   tailcall_optimization: true)
-          .eval
+    gen = Forwardable._delegator_method(self, accessor, method, ali)
 
     instance_eval(&gen)
   end

@@ -1,4 +1,9 @@
 # frozen_string_literal: false
+begin
+  require '-test-/memory_status.so'
+rescue LoadError
+end
+
 module Memory
   keys = []
 
@@ -81,7 +86,7 @@ module Memory
   if !keys.empty?
     Status = Struct.new(*keys)
   end
-end
+end unless defined?(Memory::Status)
 
 if defined?(Memory::Status)
   class Memory::Status
@@ -89,7 +94,7 @@ if defined?(Memory::Status)
       Memory.read_status do |key, val|
         self[key] = val
       end
-    end
+    end unless method_defined?(:_update)
 
     Header = members.map {|k| k.to_s.upcase.rjust(6)}.join('')
     Format = "%6d"

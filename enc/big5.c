@@ -300,11 +300,9 @@ OnigEncodingDefine(big5, BIG5) = {
   onigenc_not_support_get_ctype_code_range,
   big5_left_adjust_char_head,
   big5_is_allowed_reverse_match,
+  onigenc_ascii_only_case_map,
   0,
   ONIGENC_FLAG_NONE,
-#ifdef ONIG_CASE_MAPPING
-  onigenc_not_support_case_map,
-#endif   /* ONIG_CASE_MAPPING */
 };
 
 /*
@@ -337,11 +335,9 @@ OnigEncodingDefine(big5_hkscs, BIG5_HKSCS) = {
   onigenc_not_support_get_ctype_code_range,
   big5_left_adjust_char_head,
   big5_is_allowed_reverse_match,
+  onigenc_ascii_only_case_map,
   0,
   ONIGENC_FLAG_NONE,
-#ifdef ONIG_CASE_MAPPING
-  onigenc_not_support_case_map,
-#endif   /* ONIG_CASE_MAPPING */
 };
 ENC_ALIAS("Big5-HKSCS:2008", "Big5-HKSCS")
 
@@ -374,9 +370,7 @@ OnigEncodingDefine(big5_uao, BIG5_UAO) = {
   onigenc_not_support_get_ctype_code_range,
   big5_left_adjust_char_head,
   big5_is_allowed_reverse_match,
+  onigenc_ascii_only_case_map,
   0,
   ONIGENC_FLAG_NONE,
-#ifdef ONIG_CASE_MAPPING
-  onigenc_not_support_case_map,
-#endif   /* ONIG_CASE_MAPPING */
 };

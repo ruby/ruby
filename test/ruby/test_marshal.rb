@@ -719,10 +719,12 @@ class TestMarshal < Test::Unit::TestCase
   end
 
   def test_marshal_load_extended_class_crash
-    crash = "\x04\be:\x0F\x00omparableo:\vObject\x00"
-
-    opt = %w[--disable=gems]
-    assert_ruby_status(opt, "Marshal.load(#{crash.dump})")
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      assert_raise_with_message(ArgumentError, /undefined/) do
+        Marshal.load("\x04\be:\x0F\x00omparableo:\vObject\x00")
+      end
+    end;
   end
 
   def test_marshal_load_r_prepare_reference_crash
@@ -734,5 +736,37 @@ class TestMarshal < Test::Unit::TestCase
         Marshal.load(#{crash.dump})
       end
     RUBY
+  end
+
+  MethodMissingWithoutRespondTo = Struct.new(:wrapped_object) do
+    undef respond_to?
+    def method_missing(*args, &block)
+      wrapped_object.public_send(*args, &block)
+    end
+    def respond_to_missing?(name, private = false)
+      wrapped_object.respond_to?(name, false)
+    end
+  end
+
+  def test_method_missing_without_respond_to
+    bug12353 = "[ruby-core:75377] [Bug #12353]: try method_missing if" \
+               " respond_to? is undefined"
+    obj = MethodMissingWithoutRespondTo.new("foo")
+    dump = assert_nothing_raised(NoMethodError, bug12353) do
+      Marshal.dump(obj)
+    end
+    assert_equal(obj, Marshal.load(dump))
+  end
+
+  class Bug12974
+    def marshal_dump
+      dup
+    end
+  end
+
+  def test_marshal_dump_recursion
+    assert_raise_with_message(RuntimeError, /same class instance/) do
+      Marshal.dump(Bug12974.new)
+    end
   end
 end

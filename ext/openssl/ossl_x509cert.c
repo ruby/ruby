@@ -122,7 +122,7 @@ DupX509CertPtr(VALUE obj)
 
     SafeGetX509(obj, x509);
 
-    CRYPTO_add(&x509->references, 1, CRYPTO_LOCK_X509);
+    X509_up_ref(x509);
 
     return x509;
 }
@@ -349,9 +349,7 @@ ossl_x509_set_serial(VALUE self, VALUE num)
     X509 *x509;
 
     GetX509(self, x509);
-
-    x509->cert_info->serialNumber =
-	num_to_asn1integer(num, X509_get_serialNumber(x509));
+    X509_set_serialNumber(x509, num_to_asn1integer(num, X509_get_serialNumber(x509)));
 
     return num;
 }
@@ -371,7 +369,7 @@ ossl_x509_get_signature_algorithm(VALUE self)
     out = BIO_new(BIO_s_mem());
     if (!out) ossl_raise(eX509CertError, NULL);
 
-    if (!i2a_ASN1_OBJECT(out, x509->cert_info->signature->algorithm)) {
+    if (!i2a_ASN1_OBJECT(out, X509_get0_tbs_sigalg(x509)->algorithm)) {
 	BIO_free(out);
 	ossl_raise(eX509CertError, NULL);
     }
@@ -458,10 +456,10 @@ static VALUE
 ossl_x509_get_not_before(VALUE self)
 {
     X509 *x509;
-    ASN1_UTCTIME *asn1time;
+    const ASN1_TIME *asn1time;
 
     GetX509(self, x509);
-    if (!(asn1time = X509_get_notBefore(x509))) { /* NO DUP - don't free! */
+    if (!(asn1time = X509_get0_notBefore(x509))) {
 	ossl_raise(eX509CertError, NULL);
     }
 
@@ -476,10 +474,15 @@ static VALUE
 ossl_x509_set_not_before(VALUE self, VALUE time)
 {
     X509 *x509;
+    ASN1_TIME *asn1time;
 
     GetX509(self, x509);
-    if (!ossl_x509_time_adjust(X509_get_notBefore(x509), time))
-	ossl_raise(eX509CertError, NULL);
+    asn1time = ossl_x509_time_adjust(NULL, time);
+    if (!X509_set_notBefore(x509, asn1time)) {
+	ASN1_TIME_free(asn1time);
+	ossl_raise(eX509CertError, "X509_set_notBefore");
+    }
+    ASN1_TIME_free(asn1time);
 
     return time;
 }
@@ -492,10 +495,10 @@ static VALUE
 ossl_x509_get_not_after(VALUE self)
 {
     X509 *x509;
-    ASN1_TIME *asn1time;
+    const ASN1_TIME *asn1time;
 
     GetX509(self, x509);
-    if (!(asn1time = X509_get_notAfter(x509))) { /* NO DUP - don't free! */
+    if (!(asn1time = X509_get0_notAfter(x509))) {
 	ossl_raise(eX509CertError, NULL);
     }
 
@@ -510,10 +513,15 @@ static VALUE
 ossl_x509_set_not_after(VALUE self, VALUE time)
 {
     X509 *x509;
+    ASN1_TIME *asn1time;
 
     GetX509(self, x509);
-    if (!ossl_x509_time_adjust(X509_get_notAfter(x509), time))
-	ossl_raise(eX509CertError, NULL);
+    asn1time = ossl_x509_time_adjust(NULL, time);
+    if (!X509_set_notAfter(x509, asn1time)) {
+	ASN1_TIME_free(asn1time);
+	ossl_raise(eX509CertError, "X509_set_notAfter");
+    }
+    ASN1_TIME_free(asn1time);
 
     return time;
 }
@@ -616,7 +624,7 @@ ossl_x509_check_private_key(VALUE self, VALUE key)
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
     GetX509(self, x509);
     if (!X509_check_private_key(x509, pkey)) {
-	OSSL_Warning("Check private key:%s", OSSL_ErrMsg());
+	ossl_clear_error();
 	return Qfalse;
     }
 
@@ -666,16 +674,13 @@ ossl_x509_set_extensions(VALUE self, VALUE ary)
 	OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Ext);
     }
     GetX509(self, x509);
-    sk_X509_EXTENSION_pop_free(x509->cert_info->extensions, X509_EXTENSION_free);
-    x509->cert_info->extensions = NULL;
+    while ((ext = X509_delete_ext(x509, 0)))
+	X509_EXTENSION_free(ext);
     for (i=0; i<RARRAY_LEN(ary); i++) {
-	ext = DupX509ExtPtr(RARRAY_AREF(ary, i));
-
-	if (!X509_add_ext(x509, ext, -1)) { /* DUPs ext - FREE it */
-	    X509_EXTENSION_free(ext);
+	ext = GetX509ExtPtr(RARRAY_AREF(ary, i));
+	if (!X509_add_ext(x509, ext, -1)) { /* DUPs ext */
 	    ossl_raise(eX509CertError, NULL);
 	}
-	X509_EXTENSION_free(ext);
     }
 
     return ary;
@@ -692,12 +697,10 @@ ossl_x509_add_extension(VALUE self, VALUE extension)
     X509_EXTENSION *ext;
 
     GetX509(self, x509);
-    ext = DupX509ExtPtr(extension);
+    ext = GetX509ExtPtr(extension);
     if (!X509_add_ext(x509, ext, -1)) { /* DUPs ext - FREE it */
-	X509_EXTENSION_free(ext);
 	ossl_raise(eX509CertError, NULL);
     }
-    X509_EXTENSION_free(ext);
 
     return extension;
 }
@@ -722,9 +725,9 @@ ossl_x509_inspect(VALUE self)
 void
 Init_ossl_x509cert(void)
 {
-
 #if 0
-    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
+    mOSSL = rb_define_module("OpenSSL");
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
     mX509 = rb_define_module_under(mOSSL, "X509");
 #endif
 

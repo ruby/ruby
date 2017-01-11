@@ -246,7 +246,7 @@ module Rinda
     def initialize(place, event, tuple, expires=nil)
       ary = [event, Rinda::Template.new(tuple)]
       super(ary, expires)
-      @queue = Queue.new
+      @queue = Thread::Queue.new
       @done = false
     end
 

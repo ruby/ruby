@@ -20,8 +20,14 @@ module WEBrick
     LIBDIR = File::dirname(__FILE__) # :nodoc:
 
     # for GenericServer
-    General = {
-      :ServerName     => Utils::getservername,
+    General = Hash.new { |hash, key|
+      case key
+      when :ServerName
+        hash[key] = Utils.getservername
+      else
+        nil
+      end
+    }.update(
       :BindAddress    => nil,   # "0.0.0.0" or "::" or nil
       :Port           => nil,   # users MUST specify this!!
       :MaxClients     => 100,   # maximum number of the concurrent connections
@@ -34,9 +40,9 @@ module WEBrick
       :StartCallback  => nil,
       :StopCallback   => nil,
       :AcceptCallback => nil,
-      :DoNotReverseLookup => nil,
+      :DoNotReverseLookup => true,
       :ShutdownSocketWithoutClose => false,
-    }
+    )
 
     # for HTTPServer, HTTPRequest, HTTPResponse ...
     HTTP = General.dup.update(

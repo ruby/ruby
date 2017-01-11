@@ -482,7 +482,7 @@ VALUE rb_str_encode_ospath(VALUE);
 int rb_is_absolute_path(const char *);
 /* gc.c */
 NORETURN(void rb_memerror(void));
-PUREFUNC(int rb_during_gc(void););
+PUREFUNC(int rb_during_gc(void));
 void rb_gc_mark_locations(const VALUE*, const VALUE*);
 void rb_mark_tbl(struct st_table*);
 void rb_mark_set(struct st_table*);
@@ -502,6 +502,7 @@ VALUE rb_undefine_finalizer(VALUE);
 size_t rb_gc_count(void);
 size_t rb_gc_stat(VALUE);
 VALUE rb_gc_latest_gc_info(VALUE);
+void rb_gc_adjust_memory_usage(ssize_t);
 /* hash.c */
 void st_foreach_safe(struct st_table *, int (*)(ANYARGS), st_data_t);
 VALUE rb_check_hash_type(VALUE);
@@ -784,7 +785,7 @@ VALUE rb_sym_to_s(VALUE);
 long rb_str_strlen(VALUE);
 VALUE rb_str_length(VALUE);
 long rb_str_offset(VALUE, long);
-PUREFUNC(size_t rb_str_capacity(VALUE););
+PUREFUNC(size_t rb_str_capacity(VALUE));
 VALUE rb_str_ellipsize(VALUE, long);
 VALUE rb_str_scrub(VALUE, VALUE);
 /* symbol.c */
@@ -884,6 +885,8 @@ VALUE rb_struct_aset(VALUE, VALUE, VALUE);
 VALUE rb_struct_getmember(VALUE, ID);
 VALUE rb_struct_s_members(VALUE);
 VALUE rb_struct_members(VALUE);
+VALUE rb_struct_size(VALUE s);
+DEPRECATED(const VALUE *rb_struct_ptr(VALUE s));
 VALUE rb_struct_alloc_noinit(VALUE);
 VALUE rb_struct_define_without_accessor(const char *, VALUE, rb_alloc_func_t, ...);
 VALUE rb_struct_define_without_accessor_under(VALUE outer, const char *class_name, VALUE super, rb_alloc_func_t alloc, ...);

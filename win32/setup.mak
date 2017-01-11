@@ -212,13 +212,14 @@ MACHINE = x86
 
 # RUBY_INSTALL_NAME = ruby
 # RUBY_SO_NAME = $$(RT)-$$(RUBY_INSTALL_NAME)$$(MAJOR)$$(MINOR)
-# CFLAGS = -nologo -MD $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG)
-# CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)/missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\"
+# CFLAGS = $$(RUNTIMEFLAG) $$(DEBUGFLAGS) $$(WARNFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG) $$(COMPILERFLAG)
+# CPPFLAGS =
 # STACK = 0x2000000
 # LDFLAGS = $$(CFLAGS) -Fm
 # XLDFLAGS =
 # RFLAGS = -r
 # EXTLIBS =
+CC = cl -nologo
 
 $(BANG)include $$(srcdir)/win32/Makefile.sub
 <<

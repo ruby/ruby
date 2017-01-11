@@ -282,6 +282,19 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("          0x1.000p+0", sprintf("%20.3a",  1), bug3979)
   end
 
+  def test_float_prec
+    assert_equal("5.00", sprintf("%.2f",5.005))
+    assert_equal("5.02", sprintf("%.2f",5.015))
+    assert_equal("5.02", sprintf("%.2f",5.025))
+    assert_equal("5.04", sprintf("%.2f",5.035))
+    bug12889 = '[ruby-core:77864] [Bug #12889]'
+    assert_equal("1234567892", sprintf("%.0f", 1234567891.99999))
+    assert_equal("1234567892", sprintf("%.0f", 1234567892.49999))
+    assert_equal("1234567892", sprintf("%.0f", 1234567892.50000))
+    assert_equal("1234567894", sprintf("%.0f", 1234567893.50000))
+    assert_equal("1234567892", sprintf("%.0f", 1234567892.00000), bug12889)
+  end
+
   BSIZ = 120
 
   def test_skip
@@ -432,5 +445,10 @@ class TestSprintf < Test::Unit::TestCase
   def test_named_with_nil
     h = { key: nil, key2: "key2_val" }
     assert_equal("key is , key2 is key2_val", "key is %{key}, key2 is %{key2}" % h)
+  end
+
+  def test_width_underflow
+    bug = 'https://github.com/mruby/mruby/issues/3347'
+    assert_equal("!", sprintf("%*c", 0, ?!.ord), bug)
   end
 end

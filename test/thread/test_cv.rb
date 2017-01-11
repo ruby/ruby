@@ -4,6 +4,9 @@ require 'thread'
 require 'tmpdir'
 
 class TestConditionVariable < Test::Unit::TestCase
+  ConditionVariable = Thread::ConditionVariable
+  Mutex = Thread::Mutex
+
   def test_initialized
     assert_raise(TypeError) {
       ConditionVariable.allocate.wait(nil)
@@ -90,7 +93,7 @@ class TestConditionVariable < Test::Unit::TestCase
   end
 
   def test_condvar_wait_deadlock
-    assert_in_out_err([], <<-INPUT, ["fatal", "No live threads left. Deadlock?"], [])
+    assert_in_out_err([], <<-INPUT, /\Afatal\nNo live threads left\. Deadlock/, [])
       require "thread"
 
       mutex = Mutex.new

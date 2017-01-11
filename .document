@@ -9,6 +9,8 @@
 # prelude
 prelude.rb
 
+rbconfig.rb
+
 # the lib/ directory (which has its own .document file)
 lib
 

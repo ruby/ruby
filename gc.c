@@ -421,6 +421,7 @@ typedef struct RVALUE {
 	    struct MEMO memo;
 	    struct rb_method_entry_struct ment;
 	    const rb_iseq_t iseq;
+	    rb_env_t env;
 	} imemo;
 	struct {
 	    struct RBasic basic;
@@ -853,7 +854,7 @@ static void gc_sweep_rest(rb_objspace_t *objspace);
 static void gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *heap);
 #endif
 
-static void gc_mark(rb_objspace_t *objspace, VALUE ptr);
+static inline void gc_mark(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_ptr(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_maybe(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_children(rb_objspace_t *objspace, VALUE ptr);
@@ -1549,12 +1550,16 @@ heap_page_allocate(rb_objspace_t *objspace)
 static struct heap_page *
 heap_page_resurrect(rb_objspace_t *objspace)
 {
-    struct heap_page *page;
+    struct heap_page *page = heap_tomb->pages;
 
-    if ((page = heap_tomb->pages) != NULL) {
-	heap_unlink_page(objspace, heap_tomb, page);
-	return page;
+    while (page) {
+	if (page->freelist != NULL) {
+	    heap_unlink_page(objspace, heap_tomb, page);
+	    return page;
+	}
+	page = page->next;
     }
+
     return NULL;
 }
 
@@ -1627,9 +1632,9 @@ heap_extend_pages(rb_objspace_t *objspace, size_t free_slots, size_t total_slots
 
 	if (0) {
 	    fprintf(stderr,
-		    "free_slots(%8"PRIdSIZE")/total_slots(%8"PRIdSIZE")=%1.2f,"
+		    "free_slots(%8"PRIuSIZE")/total_slots(%8"PRIuSIZE")=%1.2f,"
 		    " G(%1.2f), f(%1.2f),"
-		    " used(%8"PRIdSIZE") => next_used(%8"PRIdSIZE")\n",
+		    " used(%8"PRIuSIZE") => next_used(%8"PRIuSIZE")\n",
 		    free_slots, total_slots, free_slots/(double)total_slots,
 		    goal_ratio, f, used, next_used);
 	}
@@ -1750,7 +1755,7 @@ rb_objspace_set_event_hook(const rb_event_flag_t event)
 static void
 gc_event_hook_body(rb_thread_t *th, rb_objspace_t *objspace, const rb_event_flag_t event, VALUE data)
 {
-    EXEC_EVENT_HOOK(th, event, th->cfp->self, 0, 0, data);
+    EXEC_EVENT_HOOK(th, event, th->cfp->self, 0, 0, 0, data);
 }
 
 #define gc_event_hook_available_p(objspace) ((objspace)->flags.has_hook)
@@ -2272,17 +2277,19 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_IMEMO:
-	{
-	    switch (imemo_type(obj)) {
-	      case imemo_ment:
-		rb_free_method_entry(&RANY(obj)->as.imemo.ment);
-		break;
-	      case imemo_iseq:
-		rb_iseq_free(&RANY(obj)->as.imemo.iseq);
-		break;
-	      default:
-		break;
-	    }
+	switch (imemo_type(obj)) {
+	  case imemo_ment:
+	    rb_free_method_entry(&RANY(obj)->as.imemo.ment);
+	    break;
+	  case imemo_iseq:
+	    rb_iseq_free(&RANY(obj)->as.imemo.iseq);
+	    break;
+	  case imemo_env:
+	    VM_ASSERT(VM_ENV_ESCAPED_P(RANY(obj)->as.imemo.env.ep));
+	    xfree((VALUE *)RANY(obj)->as.imemo.env.env);
+	    break;
+	  default:
+	    break;
 	}
 	return 0;
 
@@ -2509,7 +2516,7 @@ os_obj_of(VALUE of)
 
 /*
  *  call-seq:
- *     ObjectSpace.each_object([module]) {|obj| ... } -> fixnum
+ *     ObjectSpace.each_object([module]) {|obj| ... } -> integer
  *     ObjectSpace.each_object([module])              -> an_enumerator
  *
  *  Calls the block once for each living, nonimmediate object in this
@@ -2691,36 +2698,49 @@ rb_gc_copy_finalizer(VALUE dest, VALUE obj)
 }
 
 static VALUE
-run_single_final(VALUE arg)
+run_single_final(VALUE final, VALUE objid)
 {
-    VALUE *args = (VALUE *)arg;
+    const VALUE cmd = RARRAY_AREF(final, 1);
+    const int level = OBJ_TAINTED(cmd) ?
+	RUBY_SAFE_LEVEL_MAX : FIX2INT(RARRAY_AREF(final, 0));
 
-    return rb_check_funcall(args[0], idCall, 1, args+1);
+    rb_set_safe_level_force(level);
+    return rb_check_funcall(cmd, idCall, 1, &objid);
 }
 
 static void
 run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
 {
     long i;
-    VALUE args[2];
-    const int safe = rb_safe_level();
-    const VALUE errinfo = rb_errinfo();
+    int status;
+    volatile struct {
+	VALUE errinfo;
+	VALUE objid;
+	long finished;
+	int safe;
+    } saved;
+    rb_thread_t *const th = GET_THREAD();
+#define RESTORE_FINALIZER() (\
+	rb_set_safe_level_force(saved.safe), \
+	rb_set_errinfo(saved.errinfo))
 
-    args[1] = nonspecial_obj_id(obj);
+    saved.safe = rb_safe_level();
+    saved.errinfo = rb_errinfo();
+    saved.objid = nonspecial_obj_id(obj);
+    saved.finished = 0;
 
-    for (i=0; i<RARRAY_LEN(table); i++) {
-	const VALUE final = RARRAY_AREF(table, i);
-	const VALUE cmd = RARRAY_AREF(final, 1);
-	const int level = OBJ_TAINTED(cmd) ?
-	    RUBY_SAFE_LEVEL_MAX : FIX2INT(RARRAY_AREF(final, 0));
-	int status = 0;
-
-	args[0] = cmd;
-	rb_set_safe_level_force(level);
-	rb_protect(run_single_final, (VALUE)args, &status);
-	rb_set_safe_level_force(safe);
-	rb_set_errinfo(errinfo);
+    TH_PUSH_TAG(th);
+    status = TH_EXEC_TAG();
+    if (status) {
+	++saved.finished;	/* skip failed finalizer */
     }
+    for (i = saved.finished;
+	 RESTORE_FINALIZER(), i<RARRAY_LEN(table);
+	 saved.finished = ++i) {
+	run_single_final(RARRAY_AREF(table, i), saved.objid);
+    }
+    TH_POP_TAG();
+#undef RESTORE_FINALIZER
 }
 
 static void
@@ -3975,15 +3995,21 @@ rb_gc_mark_locations(const VALUE *start, const VALUE *end)
     gc_mark_locations(&rb_objspace, start, end);
 }
 
-void
-rb_gc_mark_values(long n, const VALUE *values)
+static void
+gc_mark_values(rb_objspace_t *objspace, long n, const VALUE *values)
 {
-    rb_objspace_t *objspace = &rb_objspace;
     long i;
 
     for (i=0; i<n; i++) {
 	gc_mark(objspace, values[i]);
     }
+}
+
+void
+rb_gc_mark_values(long n, const VALUE *values)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    gc_mark_values(objspace, n, values);
 }
 
 static int
@@ -4342,7 +4368,7 @@ gc_mark_ptr(rb_objspace_t *objspace, VALUE obj)
     }
 }
 
-static void
+static inline void
 gc_mark(rb_objspace_t *objspace, VALUE obj)
 {
     if (!is_markable_object(objspace, obj)) return;
@@ -4379,6 +4405,55 @@ gc_mark_set_parent(rb_objspace_t *objspace, VALUE obj)
 }
 
 static void
+gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
+{
+    switch (imemo_type(obj)) {
+      case imemo_env:
+	{
+	    const rb_env_t *env = (const rb_env_t *)obj;
+	    VM_ASSERT(VM_ENV_ESCAPED_P(env->ep));
+	    gc_mark_values(objspace, (long)env->env_size, env->env);
+	    VM_ENV_FLAGS_SET(env->ep, VM_ENV_FLAG_WB_REQUIRED);
+	    gc_mark(objspace, (VALUE)rb_vm_env_prev_env(env));
+	    gc_mark(objspace, (VALUE)env->iseq);
+	}
+	return;
+      case imemo_cref:
+	gc_mark(objspace, RANY(obj)->as.imemo.cref.klass);
+	gc_mark(objspace, (VALUE)RANY(obj)->as.imemo.cref.next);
+	gc_mark(objspace, RANY(obj)->as.imemo.cref.refinements);
+	return;
+      case imemo_svar:
+	gc_mark(objspace, RANY(obj)->as.imemo.svar.cref_or_me);
+	gc_mark(objspace, RANY(obj)->as.imemo.svar.lastline);
+	gc_mark(objspace, RANY(obj)->as.imemo.svar.backref);
+	gc_mark(objspace, RANY(obj)->as.imemo.svar.others);
+	return;
+      case imemo_throw_data:
+	gc_mark(objspace, RANY(obj)->as.imemo.throw_data.throw_obj);
+	return;
+      case imemo_ifunc:
+	gc_mark_maybe(objspace, (VALUE)RANY(obj)->as.imemo.ifunc.data);
+	return;
+      case imemo_memo:
+	gc_mark(objspace, RANY(obj)->as.imemo.memo.v1);
+	gc_mark(objspace, RANY(obj)->as.imemo.memo.v2);
+	gc_mark_maybe(objspace, RANY(obj)->as.imemo.memo.u3.value);
+	return;
+      case imemo_ment:
+	mark_method_entry(objspace, &RANY(obj)->as.imemo.ment);
+	return;
+      case imemo_iseq:
+	rb_iseq_mark((rb_iseq_t *)obj);
+	return;
+#if VM_CHECK_MODE > 0
+      default:
+	VM_UNREACHABLE(gc_mark_imemo);
+#endif
+    }
+}
+
+static void
 gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 {
     register RVALUE *any = RANY(obj);
@@ -4400,40 +4475,8 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	return;			/* no need to mark class. */
 
       case T_IMEMO:
-	switch (imemo_type(obj)) {
-	  case imemo_none:
-	    rb_bug("unreachable");
-	    return;
-	  case imemo_cref:
-	    gc_mark(objspace, RANY(obj)->as.imemo.cref.klass);
-	    gc_mark(objspace, (VALUE)RANY(obj)->as.imemo.cref.next);
-	    gc_mark(objspace, RANY(obj)->as.imemo.cref.refinements);
-	    return;
-	  case imemo_svar:
-	    gc_mark(objspace, RANY(obj)->as.imemo.svar.cref_or_me);
-	    gc_mark(objspace, RANY(obj)->as.imemo.svar.lastline);
-	    gc_mark(objspace, RANY(obj)->as.imemo.svar.backref);
-	    gc_mark(objspace, RANY(obj)->as.imemo.svar.others);
-	    return;
-	  case imemo_throw_data:
-	    gc_mark(objspace, RANY(obj)->as.imemo.throw_data.throw_obj);
-	    return;
-	  case imemo_ifunc:
-	    gc_mark_maybe(objspace, (VALUE)RANY(obj)->as.imemo.ifunc.data);
-	    return;
-	  case imemo_memo:
-	    gc_mark(objspace, RANY(obj)->as.imemo.memo.v1);
-	    gc_mark(objspace, RANY(obj)->as.imemo.memo.v2);
-	    gc_mark_maybe(objspace, RANY(obj)->as.imemo.memo.u3.value);
-	    return;
-	  case imemo_ment:
-	    mark_method_entry(objspace, &RANY(obj)->as.imemo.ment);
-	    return;
-	  case imemo_iseq:
-	    rb_iseq_mark((rb_iseq_t *)obj);
-	    return;
-	}
-	rb_bug("T_IMEMO: unreachable");
+	gc_mark_imemo(objspace, obj);
+	return;
     }
 
     gc_mark(objspace, any->as.basic.klass);
@@ -4694,7 +4737,7 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
     MARK_CHECKPOINT("vm");
     SET_STACK_END;
     rb_vm_mark(th->vm);
-    if (th->vm->self) gc_mark_set(objspace, th->vm->self);
+    if (th->vm->self) gc_mark(objspace, th->vm->self);
 
     MARK_CHECKPOINT("finalizers");
     mark_tbl(objspace, finalizer_table);
@@ -5960,9 +6003,8 @@ rb_gc_unprotect_logging(void *objptr, const char *filename, int line)
 	    cnt++;
 	}
 	else {
-	    ptr = (char *)malloc(strlen(buff) + 1);
+	    ptr = (strdup)(buff);
 	    if (!ptr) rb_memerror();
-	    strcpy(ptr, buff);
 	}
 	st_insert(rgengc_unprotect_logging_table, (st_data_t)ptr, cnt);
     }
@@ -6220,7 +6262,7 @@ gc_reset_malloc_info(rb_objspace_t *objspace)
 #if RGENGC_ESTIMATE_OLDMALLOC
     if (!is_full_marking(objspace)) {
 	if (objspace->rgengc.oldmalloc_increase > objspace->rgengc.oldmalloc_increase_limit) {
-	    objspace->rgengc.need_major_gc |= GPR_FLAG_MAJOR_BY_OLDMALLOC;;
+	    objspace->rgengc.need_major_gc |= GPR_FLAG_MAJOR_BY_OLDMALLOC;
 	    objspace->rgengc.oldmalloc_increase_limit =
 	      (size_t)(objspace->rgengc.oldmalloc_increase_limit * gc_params.oldmalloc_limit_growth_factor);
 
@@ -6535,9 +6577,11 @@ Init_stack(volatile VALUE *addr)
 /*
  *  call-seq:
  *     GC.start                     -> nil
- *     GC.garbage_collect           -> nil
+ *     ObjectSpace.garbage_collect  -> nil
+ *     include GC; garbage_collect  -> nil
  *     GC.start(full_mark: true, immediate_sweep: true)           -> nil
- *     GC.garbage_collect(full_mark: true, immediate_sweep: true) -> nil
+ *     ObjectSpace.garbage_collect(full_mark: true, immediate_sweep: true) -> nil
+ *     include GC; garbage_collect(full_mark: true, immediate_sweep: true) -> nil
  *
  *  Initiates garbage collection, unless manually disabled.
  *
@@ -6580,7 +6624,7 @@ gc_start_internal(int argc, VALUE *argv, VALUE self)
     }
 
     garbage_collect(objspace, full_mark, immediate_mark, immediate_sweep, GPR_FLAG_METHOD);
-    if (!finalizing) finalize_deferred(objspace);
+    gc_finalize_deferred(objspace);
 
     return Qnil;
 }
@@ -6597,7 +6641,7 @@ rb_gc(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
     garbage_collect(objspace, TRUE, TRUE, TRUE, GPR_FLAG_CAPI);
-    if (!finalizing) finalize_deferred(objspace);
+    gc_finalize_deferred(objspace);
 }
 
 int
@@ -7168,7 +7212,7 @@ rb_gc_stat(VALUE key)
 
 /*
  *  call-seq:
- *    GC.stress	    -> fixnum, true or false
+ *    GC.stress	    -> integer, true or false
  *
  *  Returns current status of GC stress mode.
  */
@@ -7198,7 +7242,7 @@ gc_stress_set(rb_objspace_t *objspace, VALUE flag)
  *
  *  Enabling stress mode will degrade performance, it is only for debugging.
  *
- *  flag can be true, false, or a fixnum bit-ORed following flags.
+ *  flag can be true, false, or an integer bit-ORed following flags.
  *    0x01:: no major GC
  *    0x02:: no immediate sweep
  *    0x04:: full mark after malloc/calloc/realloc
@@ -7301,14 +7345,14 @@ get_envparam_size(const char *name, size_t *default_value, size_t lower_bound)
 	}
 	if (val > 0 && (size_t)val > lower_bound) {
 	    if (RTEST(ruby_verbose)) {
-		fprintf(stderr, "%s=%"PRIdSIZE" (default value: %"PRIdSIZE")\n", name, val, *default_value);
+		fprintf(stderr, "%s=%"PRIdSIZE" (default value: %"PRIuSIZE")\n", name, val, *default_value);
 	    }
 	    *default_value = (size_t)val;
 	    return 1;
 	}
 	else {
 	    if (RTEST(ruby_verbose)) {
-		fprintf(stderr, "%s=%"PRIdSIZE" (default value: %"PRIdSIZE") is ignored because it must be greater than %"PRIdSIZE".\n",
+		fprintf(stderr, "%s=%"PRIdSIZE" (default value: %"PRIuSIZE") is ignored because it must be greater than %"PRIuSIZE".\n",
 			name, val, *default_value, lower_bound);
 	    }
 	    return 0;
@@ -7876,7 +7920,7 @@ void
 ruby_malloc_size_overflow(size_t count, size_t elsize)
 {
     rb_raise(rb_eArgError,
-	     "malloc: possible integer overflow (%"PRIdSIZE"*%"PRIdSIZE")",
+	     "malloc: possible integer overflow (%"PRIuSIZE"*%"PRIuSIZE")",
 	     count, elsize);
 }
 
@@ -8055,6 +8099,18 @@ gc_malloc_allocations(VALUE self)
     return UINT2NUM(rb_objspace.malloc_params.allocations);
 }
 #endif
+
+void
+rb_gc_adjust_memory_usage(ssize_t diff)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    if (diff > 0) {
+	objspace_malloc_increase(objspace, 0, diff, 0, MEMOP_TYPE_REALLOC);
+    }
+    else if (diff < 0) {
+	objspace_malloc_increase(objspace, 0, 0, -diff, MEMOP_TYPE_REALLOC);
+    }
+}
 
 /*
   ------------------------------ WeakMap ------------------------------
@@ -8539,7 +8595,7 @@ gc_prof_setup_new_record(rb_objspace_t *objspace, int reason)
 #if MALLOC_ALLOCATED_SIZE
 	record->allocated_size = malloc_allocated_size;
 #endif
-#if GC_PROFILE_DETAIL_MEMORY
+#if GC_PROFILE_MORE_DETAIL && GC_PROFILE_DETAIL_MEMORY
 #ifdef RUSAGE_SELF
 	{
 	    struct rusage usage;
@@ -8832,8 +8888,6 @@ gc_profile_dump_major_reason(int flags, char *buff)
 	C(NOFREE, N);
 	C(OLDGEN, O);
 	C(SHADY,  S);
-	C(RESCAN, R);
-	C(STRESS, T);
 #if RGENGC_ESTIMATE_OLDMALLOC
 	C(OLDMALLOC, M);
 #endif
@@ -8861,7 +8915,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 
 	for (i = 0; i < count; i++) {
 	    record = &objspace->profile.records[i];
-	    append(out, rb_sprintf("%5"PRIdSIZE" %19.3f %20"PRIuSIZE" %20"PRIuSIZE" %20"PRIuSIZE" %30.20f\n",
+	    append(out, rb_sprintf("%5"PRIuSIZE" %19.3f %20"PRIuSIZE" %20"PRIuSIZE" %20"PRIuSIZE" %30.20f\n",
 				   i+1, record->gc_invoke_time, record->heap_use_size,
 				   record->heap_total_size, record->heap_total_objects, record->gc_time*1000));
 	}
@@ -8885,7 +8939,7 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 
 	for (i = 0; i < count; i++) {
 	    record = &objspace->profile.records[i];
-	    append(out, rb_sprintf("%5"PRIdSIZE" %4s/%c/%6s%c %13"PRIuSIZE" %15"PRIuSIZE
+	    append(out, rb_sprintf("%5"PRIuSIZE" %4s/%c/%6s%c %13"PRIuSIZE" %15"PRIuSIZE
 #if CALC_EXACT_MALLOC_SIZE
 				   " %15"PRIuSIZE
 #endif
@@ -8952,9 +9006,9 @@ gc_profile_dump_on(VALUE out, VALUE (*append)(VALUE, VALUE))
 static VALUE
 gc_profile_result(void)
 {
-	VALUE str = rb_str_buf_new(0);
-	gc_profile_dump_on(str, rb_str_buf_append);
-	return str;
+    VALUE str = rb_str_buf_new(0);
+    gc_profile_dump_on(str, rb_str_buf_append);
+    return str;
 }
 
 /*
@@ -9133,6 +9187,17 @@ method_type_name(rb_method_type_t type)
     (assert(!FL_TEST((ary), ELTS_SHARED) || !FL_TEST((ary), RARRAY_EMBED_FLAG)), \
      FL_TEST((ary), RARRAY_EMBED_FLAG)!=0)
 
+static void
+rb_raw_iseq_info(char *buff, const int buff_size, const rb_iseq_t *iseq)
+{
+    if (iseq->body->location.label) {
+	snprintf(buff, buff_size, "%s %s@%s:%d", buff,
+		 RSTRING_PTR(iseq->body->location.label),
+		 RSTRING_PTR(iseq->body->location.path),
+		 FIX2INT(iseq->body->location.first_lineno));
+    }
+}
+
 const char *
 rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 {
@@ -9200,9 +9265,15 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	      break;
 	  }
 	  case T_DATA: {
-	      const char * const type_name = rb_objspace_data_type_name(obj);
-	      if (type_name) {
-		  snprintf(buff, buff_size, "%s %s", buff, type_name);
+	      const rb_iseq_t *iseq;
+	      if (rb_obj_is_proc(obj) && (iseq = vm_proc_iseq(obj)) != NULL) {
+		  rb_raw_iseq_info(buff, buff_size, iseq);
+	      }
+	      else {
+		  const char * const type_name = rb_objspace_data_type_name(obj);
+		  if (type_name) {
+		      snprintf(buff, buff_size, "%s %s", buff, type_name);
+		  }
 	      }
 	      break;
 	  }
@@ -9210,7 +9281,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	      const char *imemo_name;
 	      switch (imemo_type(obj)) {
 #define IMEMO_NAME(x) case imemo_##x: imemo_name = #x; break;
-		  IMEMO_NAME(none);
+		  IMEMO_NAME(env);
 		  IMEMO_NAME(cref);
 		  IMEMO_NAME(svar);
 		  IMEMO_NAME(throw_data);
@@ -9218,7 +9289,6 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 		  IMEMO_NAME(memo);
 		  IMEMO_NAME(ment);
 		  IMEMO_NAME(iseq);
-		default: rb_bug("unknown IMEMO");
 #undef IMEMO_NAME
 	      }
 	      snprintf(buff, buff_size, "%s %s", buff, imemo_name);
@@ -9236,13 +9306,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 		}
 		case imemo_iseq: {
 		    const rb_iseq_t *iseq = (const rb_iseq_t *)obj;
-
-		    if (iseq->body->location.label) {
-			snprintf(buff, buff_size, "%s %s@%s:%d", buff,
-				 RSTRING_PTR(iseq->body->location.label),
-				 RSTRING_PTR(iseq->body->location.path),
-				 FIX2INT(iseq->body->location.first_lineno));
-		    }
+		    rb_raw_iseq_info(buff, buff_size, iseq);
 		    break;
 		}
 		default:

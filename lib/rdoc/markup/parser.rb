@@ -79,8 +79,6 @@ class RDoc::Markup::Parser
     @binary_input   = nil
     @current_token  = nil
     @debug          = false
-    @have_encoding  = Object.const_defined? :Encoding
-    @have_byteslice = ''.respond_to? :byteslice
     @input          = nil
     @input_encoding = nil
     @line           = 0
@@ -324,15 +322,7 @@ class RDoc::Markup::Parser
   # The character offset for the input string at the given +byte_offset+
 
   def char_pos byte_offset
-    if @have_byteslice then
-      @input.byteslice(0, byte_offset).length
-    elsif @have_encoding then
-      matched = @binary_input[0, byte_offset]
-      matched.force_encoding @input_encoding
-      matched.length
-    else
-      byte_offset
-    end
+    @input.byteslice(0, byte_offset).length
   end
 
   ##
@@ -429,11 +419,6 @@ class RDoc::Markup::Parser
     @line     = 0
     @line_pos = 0
     @input    = input.dup
-
-    if @have_encoding and not @have_byteslice then
-      @input_encoding = @input.encoding
-      @binary_input   = @input.force_encoding Encoding::BINARY
-    end
 
     @s = StringScanner.new input
   end
@@ -556,4 +541,3 @@ class RDoc::Markup::Parser
   end
 
 end
-

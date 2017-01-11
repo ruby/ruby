@@ -420,4 +420,12 @@ class TestDateStrftime < Test::Unit::TestCase
 
   end
 
+  def test_overflow
+    assert_raise(ArgumentError, Errno::ERANGE) {
+      Date.new(2000,1,1).strftime("%2147483647c")
+    }
+    assert_raise(ArgumentError, Errno::ERANGE) {
+      DateTime.new(2000,1,1).strftime("%2147483647c")
+    }
+  end
 end

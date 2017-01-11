@@ -23,7 +23,7 @@ class Dhasen
   include DRbUndumped
 
   def initialize
-    @mutex = Mutex.new
+    @mutex = Thread::Mutex.new
   end
 
   def sparse(str, *arg)

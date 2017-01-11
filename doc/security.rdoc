@@ -7,12 +7,12 @@ This document aims to discuss many of these pitfalls and provide more secure
 alternatives where applicable.
 
 Please check the full list of publicly known CVEs and how to correctly report a
-security vulnerability, at: http://www.ruby-lang.org/en/security/
-Japanese version is here: http://www.ruby-lang.org/ja/security/
+security vulnerability, at: https://www.ruby-lang.org/en/security/
+Japanese version is here: https://www.ruby-lang.org/ja/security/
 
 Security vulnerabilities should be reported via an email to
 mailto:security@ruby-lang.org ({the PGP public
-key}[http://www.ruby-lang.org/security.asc]), which is a private mailing list.
+key}[https://www.ruby-lang.org/security.asc]), which is a private mailing list.
 Reported problems will be published after fixes.
 
 == <code>$SAFE</code>

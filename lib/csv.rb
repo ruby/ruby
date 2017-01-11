@@ -431,7 +431,11 @@ class CSV
     #
     # This method returns the row for chaining.
     #
+    # If no block is given, an Enumerator is returned.
+    #
     def delete_if(&block)
+      block or return enum_for(__method__) { size }
+
       @row.delete_if(&block)
 
       self  # for chaining
@@ -500,13 +504,15 @@ class CSV
 
     #
     # Yields each pair of the row as header and field tuples (much like
-    # iterating over a Hash).
+    # iterating over a Hash). This method returns the row for chaining.
+    #
+    # If no block is given, an Enumerator is returned.
     #
     # Support for Enumerable.
     #
-    # This method returns the row for chaining.
-    #
     def each(&block)
+      block or return enum_for(__method__) { size }
+
       @row.each(&block)
 
       self  # for chaining
@@ -822,7 +828,11 @@ class CSV
     #
     # This method returns the table for chaining.
     #
+    # If no block is given, an Enumerator is returned.
+    #
     def delete_if(&block)
+      block or return enum_for(__method__) { @mode == :row or @mode == :col_or_row ? size : headers.size }
+
       if @mode == :row or @mode == :col_or_row  # by index
         @table.delete_if(&block)
       else                                      # by header
@@ -845,7 +855,11 @@ class CSV
     #
     # This method returns the table for chaining.
     #
+    # If no block is given, an Enumerator is returned.
+    #
     def each(&block)
+      block or return enum_for(__method__) { @mode == :col ? headers.size : size }
+
       if @mode == :col
         headers.each { |header| block[[header, self[header]]] }
       else
@@ -1856,7 +1870,7 @@ class CSV
           # If we are continuing a previous column
           if part[-1] == @quote_char && part.count(@quote_char) % 2 != 0
             # extended column ends
-            csv.last << part[0..-2]
+            csv[-1] = csv[-1].push(part[0..-2]).join("")
             if csv.last =~ @parsers[:stray_quote]
               raise MalformedCSVError,
                     "Missing or stray quote in line #{lineno + 1}"
@@ -1864,15 +1878,13 @@ class CSV
             csv.last.gsub!(@quote_char * 2, @quote_char)
             in_extended_col = false
           else
-            csv.last << part
-            csv.last << @col_sep
+            csv.last.push(part, @col_sep)
           end
         elsif part[0] == @quote_char
           # If we are starting a new quoted column
           if part.count(@quote_char) % 2 != 0
             # start an extended column
-            csv             << part[1..-1]
-            csv.last        << @col_sep
+            csv << [part[1..-1], @col_sep]
             in_extended_col =  true
           elsif part[-1] == @quote_char
             # regular quoted column

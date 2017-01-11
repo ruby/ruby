@@ -144,7 +144,7 @@ class TestForwardable < Test::Unit::TestCase
     end
   end
 
-  def test_def_single_delegator
+  def test_class_single_delegator
     %i[def_delegator def_single_delegator].each do |m|
       cls = single_forwardable_class do
         __send__ m, :@receiver, :delegated1
@@ -154,7 +154,7 @@ class TestForwardable < Test::Unit::TestCase
     end
   end
 
-  def test_def_single_delegators
+  def test_class_single_delegators
     %i[def_delegators def_single_delegators].each do |m|
       cls = single_forwardable_class do
         __send__ m, :@receiver, :delegated1, :delegated2
@@ -165,7 +165,7 @@ class TestForwardable < Test::Unit::TestCase
     end
   end
 
-  def test_single_delegate
+  def test_class_single_delegate
     %i[delegate single_delegate].each do |m|
       cls = single_forwardable_class do
         __send__ m, delegated1: :@receiver, delegated2: :@receiver
@@ -183,21 +183,63 @@ class TestForwardable < Test::Unit::TestCase
     end
   end
 
-  class Foo
-    extend Forwardable
+  def test_obj_single_delegator
+    %i[def_delegator def_single_delegator].each do |m|
+      obj = single_forwardable_object do
+        __send__ m, :@receiver, :delegated1
+      end
 
-    def_delegator :bar, :baz
-    def_delegator :caller, :itself, :c
-
-    class Exception
+      assert_same RETURNED1, obj.delegated1
     end
   end
 
+  def test_obj_single_delegators
+    %i[def_delegators def_single_delegators].each do |m|
+      obj = single_forwardable_object do
+        __send__ m, :@receiver, :delegated1, :delegated2
+      end
+
+      assert_same RETURNED1, obj.delegated1
+      assert_same RETURNED2, obj.delegated2
+    end
+  end
+
+  def test_obj_single_delegate
+    %i[delegate single_delegate].each do |m|
+      obj = single_forwardable_object do
+        __send__ m, delegated1: :@receiver, delegated2: :@receiver
+      end
+
+      assert_same RETURNED1, obj.delegated1
+      assert_same RETURNED2, obj.delegated2
+
+      obj = single_forwardable_object do
+        __send__ m, %i[delegated1 delegated2] => :@receiver
+      end
+
+      assert_same RETURNED1, obj.delegated1
+      assert_same RETURNED2, obj.delegated2
+    end
+  end
+
+  class Foo
+    extend Forwardable
+
+    attr_accessor :bar
+    def_delegator :bar, :baz
+    def_delegator :caller, :itself, :c
+  end
+
   def test_backtrace_adjustment
+    obj = Foo.new
+    def (obj.bar = Object.new).baz
+      foo
+    end
     e = assert_raise(NameError) {
-      Foo.new.baz
+      obj.baz
     }
-    assert_not_match(/\/forwardable\.rb/, e.backtrace[0])
+    assert_not_match(/\/forwardable\.rb/, e.backtrace[0],
+                     proc {RubyVM::InstructionSequence.of(obj.method(:baz)).disassemble})
     assert_equal(caller(0, 1)[0], Foo.new.c[0])
   end
 
@@ -212,6 +254,46 @@ class TestForwardable < Test::Unit::TestCase
     assert_raise_with_message(NameError, /`bar'/, bug11616) {
       Foo2.new.baz
     }
+  end
+
+  def test_aref
+    obj = Object.new.extend SingleForwardable
+    obj.instance_variable_set("@h", {foo: 42})
+    obj.def_delegator("@h", :[])
+    assert_equal(42, obj[:foo])
+  end
+
+  def test_aset
+    obj = Object.new.extend SingleForwardable
+    obj.instance_variable_set("@h", h = {foo: 0})
+    obj.def_delegator("@h", :[]=)
+    obj[:foo] = 42
+    assert_equal(42, h[:foo])
+  end
+
+  def test_binop
+    obj = Object.new.extend SingleForwardable
+    obj.instance_variable_set("@h", 40)
+    obj.def_delegator("@h", :+)
+    assert_equal(42, obj+2)
+  end
+
+  def test_uniop
+    obj = Object.new.extend SingleForwardable
+    obj.instance_variable_set("@h", -42)
+    obj.def_delegator("@h", :-@)
+    assert_equal(42, -obj)
+  end
+
+  def test_on_private_method
+    cls = Class.new do
+      private def foo; :foo end
+      extend Forwardable
+      def_delegator :itself, :foo, :bar
+    end
+    assert_warn(/forwarding to private method/) do
+      assert_equal(:foo, cls.new.bar)
+    end
   end
 
   private
@@ -246,5 +328,12 @@ class TestForwardable < Test::Unit::TestCase
 
       class_exec(&block)
     end
+  end
+
+  def single_forwardable_object(&block)
+    obj = Object.new.extend SingleForwardable
+    obj.instance_variable_set(:@receiver, RECEIVER)
+    obj.instance_eval(&block)
+    obj
   end
 end

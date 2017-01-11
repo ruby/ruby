@@ -530,7 +530,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 2006-08-17(Thu) 12:23:52 +0900  Koichi Sasada  <ko1@atdot.net>
 
-	* eval.c : change initilize routine order ([yarv-dev:1067])
+	* eval.c : change initialize routine order ([yarv-dev:1067])
 
 	* yarvcore.c (Init_yarv) : init th->machine_stack_start
 
@@ -2115,7 +2115,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 2006-02-14(Tue) 18:15:03 +0900  Koichi Sasada  <ko1@atdot.net>
 
-	* configure.in : enable pthread by deafult
+	* configure.in : enable pthread by default
 
 	* ascii.c : import ruby 1.9 HEAD
 
@@ -3650,10 +3650,10 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 	* thread.c (yarv_thread_execute_interrupts) : added
 
 	* thread_pthread.h (thread_timer) : set interrupt_flag of
-	current runnning threads
+	current running threads
 
 	* vm.c (th_invoke_proc) : jump with JUMP_TAG() if some exception
-	occurres
+	occurs
 
 	* yarv.h : add yarv_set_current_running_thread_raw() for bootstrap
 
@@ -5617,7 +5617,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* rb/insns2vm.rb : fix category (comment)
 
-	* depend : remove space betweeen target name and colon
+	* depend : remove space between target name and colon
 
 
 2005-03-04(Fri) 15:55:51 +0900  Koichi Sasada  <ko1@atdot.net>
@@ -5783,7 +5783,7 @@ Sun Dec 31 17:42:05 2006  Koichi Sasada  <ko1@atdot.net>
 
 	* disasm.c : fix ID to String method
 
-	* compile.c : NODE_SUPER, NODE_ZSUPER check 'poped'
+	* compile.c : NODE_SUPER, NODE_ZSUPER check 'popped'
 	and NODE_RETURN check outer type
 	and NODE_DREGX_ONCE supported (temporarily)
 

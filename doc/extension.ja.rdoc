@@ -1,4 +1,4 @@
-# README.EXT.ja -  -*- RDoc -*- created at: Mon Aug  7 16:45:54 JST 1995
+# extension.ja.rdoc -  -*- RDoc -*- created at: Mon Aug  7 16:45:54 JST 1995
 
 Rubyの拡張ライブラリの作り方を説明します．
 
@@ -182,7 +182,7 @@ FIXNUMに関しては変換マクロを経由する必要があります．Cの�
 て使い分けてください．
 
 INT2FIX() :: もとの整数が31bitまたは63bit以内に収まる自信
-      	     がある時
+             がある時
 INT2NUM() :: 任意の整数からVALUEへ
 
 INT2NUM()は整数がFIXNUMの範囲に収まらない場合，Bignumに変換
@@ -394,10 +394,10 @@ Rubyで提供されている関数を使えばRubyインタプリタに新しい
 メソッドや特異メソッドを定義するには以下の関数を使います．
 
   void rb_define_method(VALUE klass, const char *name,
-                        VALUE (*func)(), int argc)
+                        VALUE (*func)(ANYARGS), int argc)
 
   void rb_define_singleton_method(VALUE object, const char *name,
-                                  VALUE (*func)(), int argc)
+                                  VALUE (*func)(ANYARGS), int argc)
 
 念のため説明すると「特異メソッド」とは，その特定のオブジェク
 トに対してだけ有効なメソッドです．RubyではよくSmalltalkにお
@@ -423,9 +423,9 @@ argcが-1の時は引数を配列に入れて渡されます．argcが-2の時�
 private/protectedなメソッドを定義するふたつの関数があります.
 
   void rb_define_private_method(VALUE klass, const char *name,
-				VALUE (*func)(), int argc)
+                                VALUE (*func)(ANYARGS), int argc)
   void rb_define_protected_method(VALUE klass, const char *name,
-			          VALUE (*func)(), int argc)
+                                  VALUE (*func)(ANYARGS), int argc)
 
 privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
 ドです．
@@ -446,12 +446,12 @@ privateメソッドでもあるものです．例をあげるとMathモジュー
 通りです．
 
   void rb_define_module_function(VALUE module, const char *name,
-		                 VALUE (*func)(), int argc)
+                                 VALUE (*func)(ANYARGS), int argc)
 
 関数的メソッド(Kernelモジュールのprivate method)を定義するた
 めの関数は以下の通りです．
 
-  void rb_define_global_function(const char *name, VALUE (*func)(), int argc)
+  void rb_define_global_function(const char *name, VALUE (*func)(ANYARGS), int argc)
 
 メソッドの別名を定義するための関数は以下の通りです．
 
@@ -642,7 +642,7 @@ CとRubyで大域変数を使って情報を共有できます．共有できる
 値の参照や設定はhookで行う必要があります．
 
   void rb_define_hooked_variable(const char *name, VALUE *var,
-				 VALUE (*getter)(), void (*setter)())
+                                 VALUE (*getter)(), void (*setter)())
 
 この関数はCの関数によってhookのつけられた大域変数を定義しま
 す．変数が参照された時には関数getterが，変数に値がセットされ
@@ -662,7 +662,7 @@ getterとsetterの仕様は次の通りです．
 されます.
 
   void rb_define_virtual_variable(const char *name,
-				  VALUE (*getter)(), void (*setter)())
+                                  VALUE (*getter)(), void (*setter)())
 
 この関数によって定義されたRubyの大域変数が参照された時には
 getterが，変数に値がセットされた時にはsetterが呼ばれます．
@@ -923,7 +923,7 @@ fdbm_delete()はこのようになっています．
       /* ... */
 
       if (rb_scan_args(argc, argv, "11", &file, &vmode) == 1) {
-  	mode = 0666;		/* default value */
+          mode = 0666;          /* default value */
       }
 
       /* ... */
@@ -935,8 +935,11 @@ fdbm_delete()はこのようになっています．
 
 この配列で与えられた引数を解析するための関数がopen()でも使わ
 れているrb_scan_args()です．第3引数に指定したフォーマットに従
-い，第4変数以降に指定したVALUEへの参照に値を代入してくれま
+い，第4引数以降に指定したVALUEへの参照に値を代入してくれま
 す．
+
+引数の数をチェックするだけならrb_check_arity()が使えます．
+これは引数をリストとして扱いたいときに便利です．
 
 引数をRubyの配列として受け取るメソッドの例には
 Thread#initializeがあります．実装はこうです．
@@ -1331,7 +1334,7 @@ void rb_define_global_const(const char *name, VALUE val) ::
 
 == メソッド定義
 
-rb_define_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
+rb_define_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc) ::
 
   メソッドを定義する．argcはselfを除く引数の数．argcが-1の時,
   関数には引数の数(selfを含まない)を第1引数, 引数の配列を第2
@@ -1339,13 +1342,19 @@ rb_define_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
   第1引数がself, 第2引数がargs(argsは引数を含むRubyの配列)と
   いう形式で与えられる．
 
-rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
+rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc) ::
 
   privateメソッドを定義する．引数はrb_define_method()と同じ．
 
-rb_define_singleton_method(VALUE klass, const char *name, VALUE (*func)(), int argc) ::
+rb_define_singleton_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc) ::
 
   特異メソッドを定義する．引数はrb_define_method()と同じ．
+
+rb_check_arity(int argc, int min, int max) ::
+
+  引数の数であるargcがmin..maxの範囲に入っているかをチェックします．
+  もしmaxがUNLIMITED_ARGUMENTSなら，上限はチェックしません．
+  もしargcが範囲外ならArgumentErrorが発生します．
 
 rb_scan_args(int argc, VALUE *argv, const char *fmt, ...) ::
 
@@ -1400,10 +1409,10 @@ int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optiona
   optional (optionalが負の場合は-optional-1) 個のIDは省略可能
   キーワードです．必須キーワードがkeyword_hash中にない場合，
   "missing keyword"ArgumentErrorが発生します．省略可能キーワー
-  ドがない場合は，values中の対応する要素は変更されません．
-  keyword_hashに使用されない要素がある場合は，optionalが負なら
-  新しいHashとして省略可能引数の次に保存されますが，そうでなけ
-  れば"unknown keyword"ArgumentErrorが発生します．
+  ドがない場合は，values中の対応する要素にはQundefがセットされ
+  ます．keyword_hashに使用されない要素がある場合は，optionalが
+  負なら無視されますが，そうでなければ"unknown keyword"
+  ArgumentErrorが発生します．
 
 VALUE rb_extract_keywords(VALUE *original_hash) ::
 
@@ -1490,14 +1499,14 @@ VALUE rb_yield(VALUE val) ::
 
   valを値としてイテレータブロックを呼び出す．
 
-VALUE rb_rescue(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2) ::
+VALUE rb_rescue(VALUE (*func1)(ANYARGS), VALUE arg1, VALUE (*func2)(ANYARGS), VALUE arg2) ::
 
   関数func1をarg1を引数に呼び出す．func1の実行中に例外が発生
-  した時には func2をarg2を引数として呼ぶ．戻り値は例外が発生
-  しなかった時はfunc1の戻り値, 例外が発生した時にはfunc2の戻
-  り値である．
+  した時には func2をarg2を第一引数, 発生した例外オブジェクト
+  を第二引数として呼ぶ．戻り値は例外が発生しなかった時はfunc1
+  の戻り値, 例外が発生した時にはfunc2の戻り値である．
 
-VALUE rb_ensure(VALUE (*func1)(), VALUE arg1, VALUE (*func2)(), VALUE arg2) ::
+VALUE rb_ensure(VALUE (*func1)(ANYARGS), VALUE arg1, VALUE (*func2)(ANYARGS), VALUE arg2) ::
 
   関数func1をarg1を引数として実行し, 実行終了後(たとえ例外が
   発生しても) func2をarg2を引数として実行する．戻り値はfunc1
@@ -1612,6 +1621,18 @@ void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE 
 int rb_remove_event_hook(rb_event_hook_func_t func) ::
 
   指定されたフック関数を削除します．
+
+== メモリ使用量
+
+void rb_gc_adjust_memory_usage(ssize_t diff) ::
+
+  登録された外部のメモリ使用量を調整します．この関数で外部のライブラリが
+  どのくらいメモリを使っているのかをGCに伝えることができます．正のdiffで
+  この関数を呼び出すとメモリ使用量の増加を意味します．新しいメモリブロッ
+  クが確保されたり，ブロックがより大きなサイズで再割り当てされたりした場
+  合などです．負のdiffでこの関数を呼び出すとメモリ使用量の減少を意味しま
+  す．メモリブロックが解放されたり，メモリブロックがより小さいサイズで再
+  確保されたりした場合などです．この関数はGCを引き起こすかもしれません．
 
 == 互換性のためのマクロ
 
@@ -1794,7 +1815,7 @@ RGenGCは，過去の拡張ライブラリに（ほぼ）互換性を保つよ�
 スするようなコードは書かないようにして下さい．代わりに，rb_ary_aref(),
 rb_ary_store() などの，適切な API 関数を利用するようにして下さい．
 
-そのほか，対応についての詳細は README.EXT の「Appendix D. Generational
+そのほか，対応についての詳細は extension.rdoc の「Appendix D. Generational
 GC」を参照して下さい．
 
 :enddoc: Local variables:

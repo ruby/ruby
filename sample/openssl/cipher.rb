@@ -10,7 +10,7 @@ def crypt_by_password(alg, pass, salt, text)
   puts
 
   puts "--Encrypting--"
-  enc = OpenSSL::Cipher::Cipher.new(alg)
+  enc = OpenSSL::Cipher.new(alg)
   enc.encrypt
   enc.pkcs5_keyivgen(pass, salt)
   cipher =  enc.update(text)
@@ -19,7 +19,7 @@ def crypt_by_password(alg, pass, salt, text)
   puts
 
   puts "--Decrypting--"
-  dec = OpenSSL::Cipher::Cipher.new(alg)
+  dec = OpenSSL::Cipher.new(alg)
   dec.decrypt
   dec.pkcs5_keyivgen(pass, salt)
   plain =  dec.update(cipher)

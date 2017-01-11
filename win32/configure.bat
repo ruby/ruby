@@ -30,6 +30,8 @@ if "%1" == "--install-name" goto :installname
 if "%1" == "--so-name" goto :soname
 if "%1" == "--enable-install-doc" goto :enable-rdoc
 if "%1" == "--disable-install-doc" goto :disable-rdoc
+if "%1" == "--enable-install-static-library" goto :enable-lib
+if "%1" == "--disable-install-static-library" goto :disable-lib
 if "%1" == "--enable-debug-env" goto :enable-debug-env
 if "%1" == "--disable-debug-env" goto :disable-debug-env
 if "%1" == "--enable-rubygems" goto :enable-rubygems
@@ -114,6 +116,16 @@ goto :loop ;
 goto :loop ;
 :disable-rdoc
   echo>> ~tmp~.mak 	"RDOCTARGET=nodoc" \
+  echo>>confargs.tmp %1 \
+  shift
+goto :loop ;
+:enable-lib
+  echo>> ~tmp~.mak 	"INSTALL_STATIC_LIBRARY=yes" \
+  echo>>confargs.tmp %1 \
+  shift
+goto :loop ;
+:disable-lib
+  echo>> ~tmp~.mak 	"INSTALL_STATIC_LIBRARY=no" \
   echo>>confargs.tmp %1 \
   shift
 goto :loop ;

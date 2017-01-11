@@ -29,6 +29,8 @@ class TestBignum < Test::Unit::TestCase
   T32P = (T32 - 1).to_bignum # 4294967295
   T64  = (2**64).to_bignum   # 18446744073709551616
   T64P = (T64 - 1).to_bignum # 18446744073709551615
+  T128  = (2**128).to_bignum
+  T128P = (T128 - 1).to_bignum
   T1024  = (2**1024).to_bignum
   T1024P = (T1024 - 1).to_bignum
 
@@ -736,6 +738,55 @@ class TestBignum < Test::Unit::TestCase
       [other, 10]
     end
     assert_equal(T1024 ^ 10, T1024 ^ obj)
+  end
+
+  def test_digits
+    assert_equal([90, 78, 56, 34, 12], 1234567890.to_bignum.digits(100))
+    assert_equal([7215, 2413, 6242], T1024P.digits(10_000).first(3))
+    assert_equal([11], 11.digits(T1024P))
+    assert_equal([T1024P - 1, 1], (T1024P + T1024P - 1).digits(T1024P))
+  end
+
+  def test_digits_for_negative_numbers
+    assert_raise(Math::DomainError) { -11.digits(T1024P) }
+    assert_raise(Math::DomainError) { (-T1024P).digits }
+    assert_raise(Math::DomainError) { (-T1024P).digits(T1024P) }
+  end
+
+  def test_digits_for_invalid_base_numbers
+    assert_raise(ArgumentError) { T1024P.to_bignum.digits(0) }
+    assert_raise(ArgumentError) { T1024P.to_bignum.digits(-1) }
+    assert_raise(ArgumentError) { T1024P.to_bignum.digits(0.to_bignum) }
+    assert_raise(ArgumentError) { T1024P.to_bignum.digits(1.to_bignum) }
+    assert_raise(ArgumentError) { T1024P.to_bignum.digits(-T1024P) }
+    assert_raise(ArgumentError) { 10.digits(0.to_bignum) }
+    assert_raise(ArgumentError) { 10.digits(1.to_bignum) }
+  end
+
+  def test_digits_for_non_integral_base_numbers
+    assert_equal([11], 11.digits(T128P.to_r))
+    assert_equal([11], 11.digits(T128P.to_f))
+
+    t1024p_digits_in_t32 = [T32P]*32
+    assert_equal(t1024p_digits_in_t32, T1024P.digits(T32.to_r))
+    assert_equal(t1024p_digits_in_t32, T1024P.digits(T32.to_f))
+
+    assert_raise(RangeError) { T128P.digits(10+1i) }
+  end
+
+  def test_digits_for_non_numeric_base_argument
+    assert_raise(TypeError) { T1024P.digits("10") }
+    assert_raise(TypeError) { T1024P.digits("a") }
+  end
+
+  def test_finite_p
+    assert_predicate(T1024P, :finite?)
+    assert_predicate(-T1024P, :finite?)
+  end
+
+  def test_infinite_p
+    assert_nil(T1024P.infinite?)
+    assert_nil((-T1024P).infinite?)
   end
 end
 end

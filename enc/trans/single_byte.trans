@@ -18,15 +18,12 @@
   #   file name: lower case, hyphens, -tbl.rb suffix (e.g. iso-8859-3-tbl.rb)
   #   variable name: UPPER case, underscores, _TO_UCS_TBL suffix (e.g. ISO_8859_3_TO_UCS_TBL)
   # If the name starts with "ISO-8859", the C1 control code area is added automatically.
-  def transcode_tblgen_singlebyte (name)
+  def transcode_tblgen_singlebyte(name)
     require(name.downcase + "-tbl")
     control1_if_needed = (name =~ /^ISO-8859/) ? CONTROL1_TO_UCS_TBL : []
     tbl_to_ucs = control1_if_needed + eval(name.gsub(/-/, '_') + "_TO_UCS_TBL")
-    code = ''
-    code << transcode_tblgen(name, "UTF-8", [["{00-7f}", :nomap], *tbl_to_ucs.reject {|a, b| a.length != 2 }], '{00-ff}')
-    code << "\n"
-    code << transcode_tblgen("UTF-8", name, [["{00-7f}", :nomap], *tbl_to_ucs.map {|a,b| [b,a] }])
-    code
+    transcode_tblgen(name, "UTF-8", [["{00-7f}", :nomap], *tbl_to_ucs.reject {|a, b| a.length != 2 }], '{00-ff}')
+    transcode_tblgen("UTF-8", name, [["{00-7f}", :nomap], *tbl_to_ucs.map {|a,b| [b,a] }])
   end
 
   transcode_tblgen_singlebyte "ISO-8859-1"

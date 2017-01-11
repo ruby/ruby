@@ -88,9 +88,12 @@ class CGICookieTest < Test::Unit::TestCase
       assert_equal(name, cookie.name)
       assert_equal(value, cookie.value)
     end
-    ## ',' separator
-    cookie_str = 'name1=val1&val2, name2=val2&%26%3C%3E%22&%E3%82%86%E3%82%93%E3%82%86%E3%82%93,_session_id=12345'
+    ## don't allow ',' separator
+    cookie_str = 'name1=val1&val2, name2=val2'
     cookies = CGI::Cookie.parse(cookie_str)
+    list = [
+      ['name1', ['val1', 'val2, name2=val2']],
+    ]
     list.each do |name, value|
       cookie = cookies[name]
       assert_equal(name, cookie.name)

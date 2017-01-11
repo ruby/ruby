@@ -1,7 +1,10 @@
 #include "regenc.h"
-#include "encindex.h"
+#ifdef RUBY
+# include "encindex.h"
+#endif
+
 #ifndef ENCINDEX_US_ASCII
-#define ENCINDEX_US_ASCII 0
+# define ENCINDEX_US_ASCII 0
 #endif
 
 static int
@@ -29,11 +32,9 @@ OnigEncodingDefine(us_ascii, US_ASCII) = {
   onigenc_not_support_get_ctype_code_range,
   onigenc_single_byte_left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match,
+  onigenc_single_byte_ascii_only_case_map,
   ENCINDEX_US_ASCII,
   ONIGENC_FLAG_NONE,
-#ifdef ONIG_CASE_MAPPING
-  onigenc_not_support_case_map,
-#endif   /* ONIG_CASE_MAPPING */
 };
 ENC_ALIAS("ASCII", "US-ASCII")
 ENC_ALIAS("ANSI_X3.4-1968", "US-ASCII")

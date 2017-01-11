@@ -13,15 +13,11 @@
 #define rb_define_copy_func(klass, func) \
 	rb_define_method((klass), "initialize_copy", (func), 1)
 
-
-#ifndef GetReadFile
 #define FPTR_TO_FD(fptr) ((fptr)->fd)
-#else
-#define FPTR_TO_FD(fptr) (fileno(GetReadFile(fptr)))
-#endif
 
-#ifndef HAVE_RB_IO_T
-#define rb_io_t OpenFile
+#ifndef RB_INTEGER_TYPE_P
+/* for Ruby 2.3 compatibility */
+#define RB_INTEGER_TYPE_P(obj) (RB_FIXNUM_P(obj) || RB_TYPE_P(obj, T_BIGNUM))
 #endif
 
 #endif /* _OSSL_RUBY_MISSING_H_ */

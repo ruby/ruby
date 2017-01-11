@@ -20,6 +20,7 @@ extern "C" {
 #endif
 
 #include <stdarg.h>
+#include "ruby/ruby.h"
 #include "ruby/oniguruma.h"
 
 RUBY_SYMBOL_EXPORT_BEGIN

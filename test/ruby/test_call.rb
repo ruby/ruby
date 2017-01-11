@@ -90,4 +90,12 @@ class TestCall < Test::Unit::TestCase
       h[:foo] = nil
     }
   end
+
+  def test_call_splat_order
+    bug12860 = '[ruby-core:77701] [Bug# 12860]'
+    ary = [1, 2]
+    assert_equal([1, 2, 1], aaa(*ary, ary.shift), bug12860)
+    ary = [1, 2]
+    assert_equal([0, 1, 2, 1], aaa(0, *ary, ary.shift), bug12860)
+  end
 end

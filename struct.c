@@ -617,9 +617,6 @@ rb_struct_new(VALUE klass, ...)
 }
 
 static VALUE
-rb_struct_size(VALUE s);
-
-static VALUE
 struct_enum_size(VALUE s, VALUE args, VALUE eobj)
 {
     return rb_struct_size(s);
@@ -1047,7 +1044,7 @@ rb_struct_equal(VALUE s, VALUE s2)
 
 /*
  * call-seq:
- *   struct.hash   -> fixnum
+ *   struct.hash   -> integer
  *
  * Returns a hash value based on this struct's contents (see Object#hash).
  *
@@ -1113,8 +1110,8 @@ rb_struct_eql(VALUE s, VALUE s2)
 
 /*
  *  call-seq:
- *     struct.length    -> fixnum
- *     struct.size      -> fixnum
+ *     struct.length    -> integer
+ *     struct.size      -> integer
  *
  *  Returns the number of struct members.
  *
@@ -1123,10 +1120,16 @@ rb_struct_eql(VALUE s, VALUE s2)
  *     joe.length   #=> 3
  */
 
-static VALUE
+VALUE
 rb_struct_size(VALUE s)
 {
     return LONG2FIX(RSTRUCT_LEN(s));
+}
+
+const VALUE*
+rb_struct_ptr(VALUE s)
+{
+    return RSTRUCT_CONST_PTR(s);
 }
 
 /*

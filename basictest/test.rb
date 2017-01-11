@@ -1860,11 +1860,9 @@ $bad=false
 eval 'while false; $bad = true; print "foo\n" end'
 test_ok(!$bad)
 
-test_ok(eval('TRUE'))
+test_ok(eval('Object'))
 test_ok(eval('true'))
-test_ok(!eval('NIL'))
 test_ok(!eval('nil'))
-test_ok(!eval('FALSE'))
 test_ok(!eval('false'))
 
 $foo = 'test_ok(true)'
@@ -2244,11 +2242,11 @@ test_check "alias"
 class Alias0
   def foo; "foo" end
 end
-class Alias1<Alias0
+class Alias1 < Alias0
   alias bar foo
   def foo; "foo+" + super end
 end
-class Alias2<Alias1
+class Alias2 < Alias1
   alias baz foo
   undef foo
 end
@@ -2260,7 +2258,7 @@ test_ok(x.baz == "foo+foo")
 # test_check for cache
 test_ok(x.baz == "foo+foo")
 
-class Alias3<Alias2
+class Alias3 < Alias2
   def foo
     defined? super
   end

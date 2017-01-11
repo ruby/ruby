@@ -46,6 +46,7 @@ class TestEnv < Test::Unit::TestCase
     end
     ENV['TEST'] = 'bar'
     assert_equal('bar', ENV['TEST'])
+    assert_predicate(ENV['TEST'], :tainted?)
     if IGNORE_CASE
       assert_equal('bar', ENV['test'])
     else
@@ -112,6 +113,7 @@ class TestEnv < Test::Unit::TestCase
     assert_invalid_env {|v| ENV[v]}
     ENV[PATH_ENV] = ""
     assert_equal("", ENV[PATH_ENV])
+    assert_predicate(ENV[PATH_ENV], :tainted?)
     assert_nil(ENV[""])
   end
 
@@ -130,6 +132,7 @@ class TestEnv < Test::Unit::TestCase
     assert_nothing_raised { ENV.fetch(PATH_ENV, "foo") }
     ENV[PATH_ENV] = ""
     assert_equal("", ENV.fetch(PATH_ENV))
+    assert_predicate(ENV.fetch(PATH_ENV), :tainted?)
   end
 
   def test_aset
@@ -319,6 +322,8 @@ class TestEnv < Test::Unit::TestCase
       assert_equal("foo", v)
     end
     assert_invalid_env {|var| ENV.assoc(var)}
+    assert_predicate(v, :tainted?)
+    assert_equal(Encoding.find("locale"), v.encoding)
   end
 
   def test_has_value2
@@ -453,6 +458,20 @@ class TestEnv < Test::Unit::TestCase
       assert_predicate(ENV[k], :frozen?, "[#{k.dump}]")
       assert_predicate(ENV.fetch(k), :frozen?, "fetch(#{k.dump})")
     end
+  end
+
+  def test_shared_substring
+    bug12475 = '[ruby-dev:49655] [Bug #12475]'
+    n = [*"0".."9"].join("")*3
+    e0 = ENV[n0 = "E#{n}"]
+    e1 = ENV[n1 = "E#{n}."]
+    ENV[n0] = nil
+    ENV[n1] = nil
+    ENV[n1.chop] = "T#{n}.".chop
+    ENV[n0], e0 = e0, ENV[n0]
+    ENV[n1], e1 = e1, ENV[n1]
+    assert_equal("T#{n}", e0, bug12475)
+    assert_nil(e1, bug12475)
   end
 
   if RUBY_PLATFORM =~ /bccwin|mswin|mingw/

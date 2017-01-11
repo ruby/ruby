@@ -11,24 +11,26 @@ fi
 
 case $1 in
   miniruby | ruby ) # (miniruby|ruby) <srcdir>
-    srcdir=$2
+    srcdir="$2"
     builddir=`pwd` # assume pwd is builddir
-    path=$builddir/_bisect.sh
+    path="$builddir/_bisect.sh"
     echo "path: $path"
-    cp $0 $path
-    cd $srcdir
-    echo "git bisect run $path run-$1"
-    git bisect run $path run-$1
+    cp "$0" "$path"
+    cd "$srcdir"
+    set -x
+    exec git bisect run "$path" "run-$1"
     ;;
   run-miniruby )
-    cd ${0%/*} # assume a copy of this script is in builddir
-    $MAKE Makefile
+    $MAKE srcs || exit 125
+    cd "${0%/*}" || exit 125 # assume a copy of this script is in builddir
+    $MAKE Makefile || exit 125
     $MAKE mini || exit 125
     $MAKE run || exit 1
     ;;
   run-ruby )
-    cd ${0%/*} # assume a copy of this script is in builddir
-    $MAKE Makefile
+    $MAKE srcs || exit 125
+    cd "${0%/*}" || exit 125 # assume a copy of this script is in builddir
+    $MAKE Makefile || exit 125
     $MAKE program || exit 125
     $MAKE runruby || exit 1
     ;;
@@ -36,7 +38,8 @@ case $1 in
     echo foo bar
     ;;
   * )
-    echo unknown command "'$cmd'"
+    echo unknown command "'$1'" 1>&2
+    exit 1
     ;;
 esac
 exit 0

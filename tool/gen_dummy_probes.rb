@@ -1,13 +1,16 @@
 #!/usr/bin/ruby
 # -*- coding: us-ascii -*-
 
+# Used to create dummy probes (as for systemtap and DTrace) by Makefiles.
+# See common.mk.
+
 text = ARGF.read
 
 # remove comments
 text.gsub!(%r'(?:^ *)?/\*.*?\*/\n?'m, '')
 
-# remove the pragma declarations
-text.gsub!(/^#pragma.*\n/, '')
+# remove the pragma declarations and ifdefs
+text.gsub!(/^#(?:pragma|include|if|endif).*\n/, '')
 
 # replace the provider section with the start of the header file
 text.gsub!(/provider ruby \{/, "#ifndef\t_PROBES_H\n#define\t_PROBES_H\n#define DTRACE_PROBES_DISABLED 1\n")

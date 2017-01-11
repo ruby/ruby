@@ -160,7 +160,7 @@ ole_val2variant_err(VALUE val, VARIANT *var)
     }
     V_VT(var) = VT_ERROR;
     if (v != Qnil) {
-        V_ERROR(var) = NUM2LONG(val);
+        V_ERROR(var) = RB_NUM2LONG(val);
     } else {
         V_ERROR(var) = 0;
     }
@@ -294,7 +294,7 @@ folevariant_s_array(VALUE klass, VALUE elems, VALUE vvt)
 
     ole_initialize();
 
-    vt = NUM2UINT(vvt);
+    vt = RB_NUM2UINT(vvt);
     vt = (vt | VT_ARRAY);
     Check_Type(elems, T_ARRAY);
     obj = folevariant_s_allocate(klass);
@@ -309,7 +309,7 @@ folevariant_s_array(VALUE klass, VALUE elems, VALUE vvt)
     }
 
     for (i = 0; i < dim; i++) {
-        psab[i].cElements = FIX2INT(rb_ary_entry(elems, i));
+        psab[i].cElements = RB_FIX2INT(rb_ary_entry(elems, i));
         psab[i].lLbound = 0;
     }
 
@@ -420,7 +420,7 @@ folevariant_initialize(VALUE self, VALUE args)
         ole_val2variant(val, &(pvar->var));
     } else {
         vvt = rb_ary_entry(args, 1);
-        vt = NUM2INT(vvt);
+        vt = RB_NUM2INT(vvt);
         if ((vt & VT_TYPEMASK) == VT_RECORD) {
             rb_raise(rb_eArgError, "not supported VT_RECORD WIN32OLE_VARIANT object");
         }
@@ -465,7 +465,7 @@ ary2safe_array_index(int ary_size, VALUE *ary, SAFEARRAY *psa)
         rb_raise(rb_eRuntimeError, "failed to allocate memory for indices");
     }
     for (i = 0; i < dim; i++) {
-        pid[i] = NUM2INT(ary[i]);
+        pid[i] = RB_NUM2INT(ary[i]);
     }
     return pid;
 }
@@ -602,7 +602,7 @@ folevariant_ary_aset(int argc, VALUE *argv, VALUE self)
  *
  *  Returns Ruby object value from OLE variant.
  *     obj = WIN32OLE_VARIANT.new(1, WIN32OLE::VARIANT::VT_BSTR)
- *     obj.value # => "1" (not Fixnum object, but String object "1")
+ *     obj.value # => "1" (not Integer object, but String object "1")
  *
  */
 static VALUE
@@ -649,7 +649,7 @@ folevariant_vartype(VALUE self)
 {
     struct olevariantdata *pvar;
     TypedData_Get_Struct(self, struct olevariantdata, &olevariant_datatype, pvar);
-    return INT2FIX(V_VT(&pvar->var));
+    return RB_INT2FIX(V_VT(&pvar->var));
 }
 
 /*
@@ -659,7 +659,7 @@ folevariant_vartype(VALUE self)
  *  Sets variant value to val. If the val type does not match variant value
  *  type(vartype), then val is changed to match variant value type(vartype)
  *  before setting val.
- *  Thie method is not available when vartype is VT_ARRAY(except VT_UI1|VT_ARRAY).
+ *  This method is not available when vartype is VT_ARRAY(except VT_UI1|VT_ARRAY).
  *  If the vartype is VT_UI1|VT_ARRAY, the val should be String object.
  *
  *     obj = WIN32OLE_VARIANT.new(1) # obj.vartype is WIN32OLE::VARIANT::VT_I4
@@ -706,19 +706,19 @@ Init_win32ole_variant(void)
      * represents VT_EMPTY OLE object.
      */
     rb_define_const(cWIN32OLE_VARIANT, "Empty",
-            rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_EMPTY)));
+            rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, RB_INT2FIX(VT_EMPTY)));
 
     /*
      * represents VT_NULL OLE object.
      */
     rb_define_const(cWIN32OLE_VARIANT, "Null",
-            rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_NULL)));
+            rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, RB_INT2FIX(VT_NULL)));
 
     /*
      * represents Nothing of VB.NET or VB.
      */
     rb_define_const(cWIN32OLE_VARIANT, "Nothing",
-            rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, INT2FIX(VT_DISPATCH)));
+            rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, RB_INT2FIX(VT_DISPATCH)));
 
     /*
      * represents VT_ERROR variant with DISP_E_PARAMNOTFOUND.
@@ -728,5 +728,5 @@ Init_win32ole_variant(void)
      *  fso.openTextFile(filename, WIN32OLE_VARIANT::NoParam, false)
      */
     rb_define_const(cWIN32OLE_VARIANT, "NoParam",
-            rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, INT2NUM(DISP_E_PARAMNOTFOUND), INT2FIX(VT_ERROR)));
+            rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, INT2NUM(DISP_E_PARAMNOTFOUND), RB_INT2FIX(VT_ERROR)));
 }

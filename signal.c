@@ -238,9 +238,10 @@ signo2signm(int no)
 
 /*
  * call-seq:
- *     Signal.signame(signo)  ->  string
+ *     Signal.signame(signo)  ->  string or nil
  *
- *  convert signal number to signal name
+ *  Convert signal number to signal name.
+ *  Returns +nil+ if the signo is an invalid signal number.
  *
  *     Signal.trap("INT") { |signo| puts Signal.signame(signo) }
  *     Process.kill("INT", 0)
@@ -368,7 +369,7 @@ static void signal_enque(int sig);
 
 /*
  *  call-seq:
- *     Process.kill(signal, pid, ...)    -> fixnum
+ *     Process.kill(signal, pid, ...)    -> integer
  *
  *  Sends the given signal to the specified process id(s) if _pid_ is positive.
  *  If _pid_ is zero _signal_ is sent to all processes whose group ID is equal
@@ -779,35 +780,45 @@ check_stack_overflow(const uintptr_t addr, const ucontext_t *ctx)
 # if defined __linux__
 #   if defined REG_RSP
     const greg_t sp = mctx->gregs[REG_RSP];
+    const greg_t bp = mctx->gregs[REG_RBP];
 #   else
     const greg_t sp = mctx->gregs[REG_ESP];
+    const greg_t bp = mctx->gregs[REG_EBP];
 #   endif
 # elif defined __APPLE__
 #   if defined(__LP64__)
     const uintptr_t sp = mctx->__ss.__rsp;
+    const uintptr_t bp = mctx->__ss.__rbp;
 #   else
     const uintptr_t sp = mctx->__ss.__esp;
+    const uintptr_t bp = mctx->__ss.__ebp;
 #   endif
 # elif defined __FreeBSD__
 #   if defined(__amd64__)
     const __register_t sp = mctx->mc_rsp;
+    const __register_t bp = mctx->mc_rbp;
 #   else
     const __register_t sp = mctx->mc_esp;
+    const __register_t bp = mctx->mc_ebp;
 #   endif
 # elif defined __HAIKU__
 #   if defined(__amd64__)
     const unsigned long sp = mctx->rsp;
+    const unsigned long bp = mctx->rbp;
 #   else
     const unsigned long sp = mctx->esp;
+    const unsigned long bp = mctx->ebp;
 #   endif
 # endif
     enum {pagesize = 4096};
     const uintptr_t sp_page = (uintptr_t)sp / pagesize;
+    const uintptr_t bp_page = (uintptr_t)bp / pagesize;
     const uintptr_t fault_page = addr / pagesize;
 
     /* SP in ucontext is not decremented yet when `push` failed, so
      * the fault page can be the next. */
-    if (sp_page == fault_page || sp_page == fault_page + 1) {
+    if (sp_page == fault_page || sp_page == fault_page + 1 ||
+	sp_page <= fault_page && fault_page <= bp_page) {
 	rb_thread_t *th = ruby_current_thread;
 	if ((uintptr_t)th->tag->buf / pagesize == sp_page) {
 	    /* drop the last tag if it is close to the fault,

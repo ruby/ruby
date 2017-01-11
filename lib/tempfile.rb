@@ -147,7 +147,7 @@ class Tempfile < DelegateClass(File)
   end
 
   def _close    # :nodoc:
-    @tmpfile.close unless @tmpfile.closed?
+    @tmpfile.close
   end
   protected :_close
 
@@ -252,7 +252,7 @@ class Tempfile < DelegateClass(File)
 
       warn "removing #{@tmpfile.path}..." if $DEBUG
 
-      @tmpfile.close unless @tmpfile.closed?
+      @tmpfile.close
       begin
         File.unlink(@tmpfile.path)
       rescue Errno::ENOENT
@@ -323,7 +323,7 @@ end
 #      ... do something with f ...
 #   end
 #
-def Tempfile.create(basename, tmpdir=nil, mode: 0, **options)
+def Tempfile.create(basename="", tmpdir=nil, mode: 0, **options)
   tmpfile = nil
   Dir::Tmpname.create(basename, tmpdir, options) do |tmpname, n, opts|
     mode |= File::RDWR|File::CREAT|File::EXCL
@@ -334,7 +334,7 @@ def Tempfile.create(basename, tmpdir=nil, mode: 0, **options)
     begin
       yield tmpfile
     ensure
-      tmpfile.close if !tmpfile.closed?
+      tmpfile.close
       File.unlink tmpfile
     end
   else

@@ -5,7 +5,13 @@ require 'test/unit'
 
 module Net
   class TestSMTP < Test::Unit::TestCase
+    CA_FILE = File.expand_path("../fixtures/cacert.pem", __dir__)
+    SERVER_KEY = File.expand_path("../fixtures/server.key", __dir__)
+    SERVER_CERT = File.expand_path("../fixtures/server.crt", __dir__)
+
     class FakeSocket
+      attr_reader :write_io
+
       def initialize out = "250 OK\n"
         @write_io = StringIO.new
         @read_io  = StringIO.new out
@@ -50,6 +56,118 @@ module Net
       smtp.instance_variable_set :@socket, FakeSocket.new
 
       assert smtp.rset
+    end
+
+    def test_mailfrom
+      sock = FakeSocket.new
+      smtp = Net::SMTP.new 'localhost', 25
+      smtp.instance_variable_set :@socket, sock
+      assert smtp.mailfrom("foo@example.com").success?
+      assert_equal "MAIL FROM:<foo@example.com>\r\n", sock.write_io.string
+    end
+
+    def test_rcptto
+      sock = FakeSocket.new
+      smtp = Net::SMTP.new 'localhost', 25
+      smtp.instance_variable_set :@socket, sock
+      assert smtp.rcptto("foo@example.com").success?
+      assert_equal "RCPT TO:<foo@example.com>\r\n", sock.write_io.string
+    end
+
+    def test_auth_plain
+      sock = FakeSocket.new
+      smtp = Net::SMTP.new 'localhost', 25
+      smtp.instance_variable_set :@socket, sock
+      assert smtp.auth_plain("foo", "bar").success?
+      assert_equal "AUTH PLAIN AGZvbwBiYXI=\r\n", sock.write_io.string
+    end
+
+    def test_crlf_injection
+      smtp = Net::SMTP.new 'localhost', 25
+      smtp.instance_variable_set :@socket, FakeSocket.new
+
+      assert_raise(ArgumentError) do
+        smtp.mailfrom("foo\r\nbar")
+      end
+
+      assert_raise(ArgumentError) do
+        smtp.mailfrom("foo\rbar")
+      end
+
+      assert_raise(ArgumentError) do
+        smtp.mailfrom("foo\nbar")
+      end
+
+      assert_raise(ArgumentError) do
+        smtp.rcptto("foo\r\nbar")
+      end
+    end
+
+    def test_tls_connect
+      servers = Socket.tcp_server_sockets("localhost", 0)
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ca_file = CA_FILE
+      ctx.key = File.open(SERVER_KEY) { |f|
+        OpenSSL::PKey::RSA.new(f)
+      }
+      ctx.cert = File.open(SERVER_CERT) { |f|
+        OpenSSL::X509::Certificate.new(f)
+      }
+      begin
+        sock = nil
+        Thread.start do
+          s = accept(servers)
+          sock = OpenSSL::SSL::SSLSocket.new(s, ctx)
+          sock.sync_close = true
+          sock.accept
+          sock.write("220 localhost Service ready\r\n")
+          sock.gets
+          sock.write("250 localhost\r\n")
+          sock.gets
+          sock.write("221 localhost Service closing transmission channel\r\n")
+        end
+        smtp = Net::SMTP.new("localhost", servers[0].local_address.ip_port)
+        smtp.enable_tls
+        smtp.open_timeout = 1
+        smtp.start do
+        end
+      ensure
+        sock.close if sock
+        servers.each(&:close)
+      end
+    end
+
+    def test_tls_connect_timeout
+      servers = Socket.tcp_server_sockets("localhost", 0)
+      begin
+        sock = nil
+        Thread.start do
+          sock = accept(servers)
+        end
+        smtp = Net::SMTP.new("localhost", servers[0].local_address.ip_port)
+        smtp.enable_tls
+        smtp.open_timeout = 0.1
+        assert_raise(Net::OpenTimeout) do
+          smtp.start do
+          end
+        end
+      ensure
+        sock.close if sock
+        servers.each(&:close)
+      end
+    end
+
+    private
+
+    def accept(servers)
+      loop do
+        readable, = IO.select(servers.map(&:to_io))
+        readable.each do |r|
+          sock, addr = r.accept_nonblock(exception: false)
+          next if sock == :wait_readable
+          return sock
+        end
+      end
     end
   end
 end

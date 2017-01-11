@@ -211,11 +211,9 @@ OnigEncodingDefine(gbk, GBK) = {
   onigenc_not_support_get_ctype_code_range,
   gbk_left_adjust_char_head,
   gbk_is_allowed_reverse_match,
+  onigenc_ascii_only_case_map,
   0,
   ONIGENC_FLAG_NONE,
-#ifdef ONIG_CASE_MAPPING
-  onigenc_not_support_case_map,
-#endif   /* ONIG_CASE_MAPPING */
 };
 /*
  * Name: GBK

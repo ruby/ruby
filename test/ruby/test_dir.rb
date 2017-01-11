@@ -289,8 +289,6 @@ class TestDir < Test::Unit::TestCase
     ENV.delete("HOME")
     ENV.delete("LOGDIR")
 
-    assert_raise(ArgumentError) { Dir.home }
-    assert_raise(ArgumentError) { Dir.home("") }
     ENV["HOME"] = @nodir
     assert_nothing_raised(ArgumentError) {
       assert_equal(@nodir, Dir.home)
@@ -354,4 +352,18 @@ class TestDir < Test::Unit::TestCase
     assert_raise(Errno::ENOENT) {Dir.empty?(@nodir)}
     assert_not_send([Dir, :empty?, File.join(@root, "b")])
   end
+
+  def test_glob_gc_for_fd
+    assert_separately(["-C", @root], "#{<<-"begin;"}\n#{<<-"end;"}", timeout: 3)
+    begin;
+      Process.setrlimit(Process::RLIMIT_NOFILE, 50)
+      begin
+        tap {tap {tap {(0..100).map {open(IO::NULL)}}}}
+      rescue Errno::EMFILE
+      end
+      list = Dir.glob("*").sort
+      assert_not_empty(list)
+      assert_equal([*"a".."z"], list)
+    end;
+  end if defined?(Process::RLIMIT_NOFILE)
 end

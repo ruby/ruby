@@ -1,7 +1,8 @@
 #!./miniruby
 # -*- coding: us-ascii -*-
 #
-#
+# This library is used by insns2vm.rb as part of autogenerating
+# instruction files with .inc extensions like insns.inc and vm.inc.
 
 require 'erb'
 $:.unshift(File.dirname(__FILE__))

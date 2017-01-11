@@ -42,6 +42,9 @@ VALUE rb_iseqw_new(const rb_iseq_t *);
 VALUE rb_eEAGAIN;
 VALUE rb_eEWOULDBLOCK;
 VALUE rb_eEINPROGRESS;
+VALUE rb_mWarning;
+
+static ID id_warn;
 
 extern const char ruby_description[];
 
@@ -106,16 +109,16 @@ rb_syntax_error_append(VALUE exc, VALUE file, int line, int column,
     }
     else {
 	VALUE mesg;
-	const char *pre = NULL;
 	if (NIL_P(exc)) {
 	    mesg = rb_enc_str_new(0, 0, enc);
 	    exc = rb_class_new_instance(1, &mesg, rb_eSyntaxError);
 	}
 	else {
 	    mesg = rb_attr_get(exc, idMesg);
-	    pre = "\n";
+	    if (RSTRING_LEN(mesg) > 0 && *(RSTRING_END(mesg)-1) != '\n')
+		rb_str_cat_cstr(mesg, "\n");
 	}
-	err_vcatf(mesg, pre, fn, line, fmt, args);
+	err_vcatf(mesg, NULL, fn, line, fmt, args);
     }
 
     return exc;
@@ -147,6 +150,21 @@ ruby_only_for_internal_use(const char *func)
 }
 
 static VALUE
+rb_warning_s_warn(VALUE mod, VALUE str)
+{
+    Check_Type(str, T_STRING);
+    rb_must_asciicompat(str);
+    rb_write_error_str(str);
+    return Qnil;
+}
+
+static void
+rb_write_warning_str(VALUE str)
+{
+    rb_funcall(rb_mWarning, id_warn, 1, str);
+}
+
+static VALUE
 warn_vsprintf(rb_encoding *enc, const char *file, int line, const char *fmt, va_list args)
 {
     VALUE str = rb_enc_str_new(0, 0, enc);
@@ -166,7 +184,7 @@ rb_compile_warn(const char *file, int line, const char *fmt, ...)
     va_start(args, fmt);
     str = warn_vsprintf(NULL, file, line, fmt, args);
     va_end(args);
-    rb_write_error_str(str);
+    rb_write_warning_str(str);
 }
 
 /* rb_compile_warning() reports only in verbose mode */
@@ -181,7 +199,7 @@ rb_compile_warning(const char *file, int line, const char *fmt, ...)
     va_start(args, fmt);
     str = warn_vsprintf(NULL, file, line, fmt, args);
     va_end(args);
-    rb_write_error_str(str);
+    rb_write_warning_str(str);
 }
 
 static VALUE
@@ -206,7 +224,7 @@ rb_warn(const char *fmt, ...)
     va_start(args, fmt);
     mesg = warning_string(0, fmt, args);
     va_end(args);
-    rb_write_error_str(mesg);
+    rb_write_warning_str(mesg);
 }
 
 void
@@ -220,7 +238,7 @@ rb_enc_warn(rb_encoding *enc, const char *fmt, ...)
     va_start(args, fmt);
     mesg = warning_string(enc, fmt, args);
     va_end(args);
-    rb_write_error_str(mesg);
+    rb_write_warning_str(mesg);
 }
 
 /* rb_warning() reports only in verbose mode */
@@ -235,7 +253,7 @@ rb_warning(const char *fmt, ...)
     va_start(args, fmt);
     mesg = warning_string(0, fmt, args);
     va_end(args);
-    rb_write_error_str(mesg);
+    rb_write_warning_str(mesg);
 }
 
 #if 0
@@ -250,7 +268,7 @@ rb_enc_warning(rb_encoding *enc, const char *fmt, ...)
     va_start(args, fmt);
     mesg = warning_string(enc, fmt, args);
     va_end(args);
-    rb_write_error_str(mesg);
+    rb_write_warning_str(mesg);
 }
 #endif
 
@@ -553,32 +571,58 @@ rb_builtin_class_name(VALUE x)
     return etype;
 }
 
+NORETURN(static void unexpected_type(VALUE, int, int));
+#define UNDEF_LEAKED "undef leaked to the Ruby space"
+
+static void
+unexpected_type(VALUE x, int xt, int t)
+{
+    const char *tname = rb_builtin_type_name(t);
+    VALUE mesg, exc = rb_eFatal;
+
+    if (tname) {
+	const char *cname = builtin_class_name(x);
+	if (cname)
+	    mesg = rb_sprintf("wrong argument type %s (expected %s)",
+			      cname, tname);
+	else
+	    mesg = rb_sprintf("wrong argument type %"PRIsVALUE" (expected %s)",
+			      rb_obj_class(x), tname);
+	exc = rb_eTypeError;
+    }
+    else if (xt > T_MASK && xt <= 0x3f) {
+	mesg = rb_sprintf("unknown type 0x%x (0x%x given, probably comes"
+			  " from extension library for ruby 1.8)", t, xt);
+    }
+    else {
+	mesg = rb_sprintf("unknown type 0x%x (0x%x given)", t, xt);
+    }
+    rb_exc_raise(rb_exc_new_str(exc, mesg));
+}
+
 void
 rb_check_type(VALUE x, int t)
 {
     int xt;
 
     if (x == Qundef) {
-	rb_bug("undef leaked to the Ruby space");
+	rb_bug(UNDEF_LEAKED);
     }
 
     xt = TYPE(x);
     if (xt != t || (xt == T_DATA && RTYPEDDATA_P(x))) {
-	const char *tname = rb_builtin_type_name(t);
-	if (tname) {
-	    const char *cname = builtin_class_name(x);
-	    if (cname)
-		rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
-			 cname, tname);
-	    else
-		rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected %s)",
-			 rb_obj_class(x), tname);
-	}
-	if (xt > T_MASK && xt <= 0x3f) {
-	    rb_fatal("unknown type 0x%x (0x%x given, probably comes from extension library for ruby 1.8)", t, xt);
-	}
-	rb_bug("unknown type 0x%x (0x%x given)", t, xt);
+	unexpected_type(x, xt, t);
     }
+}
+
+void
+rb_unexpected_type(VALUE x, int t)
+{
+    if (x == Qundef) {
+	rb_bug(UNDEF_LEAKED);
+    }
+
+    unexpected_type(x, TYPE(x), t);
 }
 
 int
@@ -838,6 +882,25 @@ exc_backtrace(VALUE exc)
     return obj;
 }
 
+VALUE
+rb_get_backtrace(VALUE exc)
+{
+    ID mid = id_backtrace;
+    if (rb_method_basic_definition_p(CLASS_OF(exc), id_backtrace)) {
+	VALUE info, klass = rb_eException;
+	rb_thread_t *th = GET_THREAD();
+	if (NIL_P(exc))
+	    return Qnil;
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, exc, mid, mid, klass, Qundef);
+	info = exc_backtrace(exc);
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, exc, mid, mid, klass, info);
+	if (NIL_P(info))
+	    return Qnil;
+	return rb_check_backtrace(info);
+    }
+    return rb_funcall(exc, mid, 0, 0);
+}
+
 /*
  *  call-seq:
  *     exception.backtrace_locations    -> array
@@ -1024,7 +1087,7 @@ exit_initialize(int argc, VALUE *argv, VALUE exc)
 
 /*
  * call-seq:
- *   system_exit.status   -> fixnum
+ *   system_exit.status   -> integer
  *
  * Return the status value associated with this system exit.
  */
@@ -1531,7 +1594,7 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   system_call_error.errno   -> fixnum
+ *   system_call_error.errno   -> integer
  *
  * Return this SystemCallError's error number.
  */
@@ -1772,7 +1835,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *  Since constant names must start with a capital:
  *
- *     Fixnum.const_set :answer, 42
+ *     Integer.const_set :answer, 42
  *
  *  <em>raises the exception:</em>
  *
@@ -2026,6 +2089,10 @@ Init_Exception(void)
 
     rb_mErrno = rb_define_module("Errno");
 
+    rb_mWarning = rb_define_module("Warning");
+    rb_define_method(rb_mWarning, "warn", rb_warning_s_warn, 1);
+    rb_extend_object(rb_mWarning, rb_mWarning);
+
     rb_define_global_function("warn", rb_warn_m, -1);
 
     id_new = rb_intern_const("new");
@@ -2040,6 +2107,7 @@ Init_Exception(void)
     id_Errno = rb_intern_const("Errno");
     id_errno = rb_intern_const("errno");
     id_i_path = rb_intern_const("@path");
+    id_warn = rb_intern_const("warn");
     id_iseq = rb_make_internal_id();
 }
 
@@ -2263,7 +2331,7 @@ rb_sys_warning(const char *fmt, ...)
     va_end(args);
     rb_str_set_len(mesg, RSTRING_LEN(mesg)-1);
     rb_str_catf(mesg, ": %s\n", strerror(errno_save));
-    rb_write_error_str(mesg);
+    rb_write_warning_str(mesg);
     errno = errno_save;
 }
 
@@ -2283,7 +2351,7 @@ rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...)
     va_end(args);
     rb_str_set_len(mesg, RSTRING_LEN(mesg)-1);
     rb_str_catf(mesg, ": %s\n", strerror(errno_save));
-    rb_write_error_str(mesg);
+    rb_write_warning_str(mesg);
     errno = errno_save;
 }
 

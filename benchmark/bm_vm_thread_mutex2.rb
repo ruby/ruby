@@ -1,7 +1,7 @@
 # two threads, one mutex
 
 require 'thread'
-m = Mutex.new
+m = Thread::Mutex.new
 r = 0
 max = 2000
 lmax = (max * max)/2

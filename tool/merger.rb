@@ -3,7 +3,8 @@
 exec "${RUBY-ruby}" "-x" "$0" "$@" && [ ] if false
 #!ruby
 # This needs ruby 1.9 and subversion.
-# run this in a repository to commit.
+# As a Ruby committer, run this in an SVN repository
+# to commit a change.
 
 require 'fileutils'
 require 'tempfile'

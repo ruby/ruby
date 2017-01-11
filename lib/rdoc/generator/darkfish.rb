@@ -698,7 +698,7 @@ class RDoc::Generator::Darkfish
 
       out_file.dirname.mkpath
       out_file.open 'w', 0644 do |io|
-        io.set_encoding @options.encoding if Object.const_defined? :Encoding
+        io.set_encoding @options.encoding
 
         @context = yield io
 
@@ -744,8 +744,7 @@ class RDoc::Generator::Darkfish
       erbout = 'io'
     else
       template = file.read
-      template = template.encode @options.encoding if
-        Object.const_defined? :Encoding
+      template = template.encode @options.encoding
 
       file_var = File.basename(file).sub(/\..*/, '')
 
@@ -758,4 +757,3 @@ class RDoc::Generator::Darkfish
   end
 
 end
-

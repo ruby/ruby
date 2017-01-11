@@ -38,7 +38,7 @@ module WEBrick
         @path = path
         @mtime = Time.at(0)
         @digest = Hash.new
-        @mutex = Mutex::new
+        @mutex = Thread::Mutex::new
         @auth_type = DigestAuth
         open(@path,"a").close unless File::exist?(@path)
         reload
@@ -79,7 +79,7 @@ module WEBrick
           File::rename(tmp.path, output)
           renamed = true
         ensure
-          tmp.close if !tmp.closed?
+          tmp.close
           File.unlink(tmp.path) if !renamed
         end
       end

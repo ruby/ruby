@@ -7,7 +7,7 @@ require "socket"
 class TestFileExhaustive < Test::Unit::TestCase
   DRIVE = Dir.pwd[%r'\A(?:[a-z]:|//[^/]+/[^/]+)'i]
   POSIX = /cygwin|mswin|bccwin|mingw|emx/ !~ RUBY_PLATFORM
-  NTFS = !(/cygwin|mingw|mswin|bccwin/ !~ RUBY_PLATFORM)
+  NTFS = !(/mingw|mswin|bccwin/ !~ RUBY_PLATFORM)
 
   def assert_incompatible_encoding
     d = "\u{3042}\u{3044}".encode("utf-16le")
@@ -118,7 +118,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     @symlinkfile = make_tmp_filename("symlinkfile")
     begin
       File.symlink(regular_file, @symlinkfile)
-    rescue NotImplementedError, Errno::EACCES
+    rescue NotImplementedError, Errno::EACCES, Errno::EPERM
       @symlinkfile = nil
     end
     @symlinkfile
@@ -782,6 +782,8 @@ class TestFileExhaustive < Test::Unit::TestCase
     a = "#{drive}/\225\\\\"
     if File::ALT_SEPARATOR == '\\'
       [%W"cp437 #{drive}/\225", %W"cp932 #{drive}/\225\\"]
+    elsif File.directory?("#{@dir}/\\")
+      [%W"cp437 /\225", %W"cp932 /\225\\"]
     else
       [["cp437", a], ["cp932", a]]
     end.each do |cp, expected|
@@ -827,7 +829,6 @@ class TestFileExhaustive < Test::Unit::TestCase
       ENV["HOMEDRIVE"] = nil
       ENV["HOMEPATH"] = nil
       ENV["USERPROFILE"] = nil
-      assert_raise(ArgumentError) { File.expand_path("~") }
       ENV["HOME"] = "~"
       assert_raise(ArgumentError, bug3630) { File.expand_path("~") }
       ENV["HOME"] = "."
@@ -1094,6 +1095,26 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal('z:/bar/foo', File.expand_path('z:foo', '/bar'), bug10858)
   end if DRIVE
 
+  if /darwin/ =~ RUBY_PLATFORM and Encoding.find("filesystem") == Encoding::UTF_8
+    def test_expand_path_compose
+      pp = Object.new.extend(Test::Unit::Assertions)
+      def pp.mu_pp(str) #:nodoc:
+        str.dump
+      end
+
+      Dir.mktmpdir do |dir|
+        Dir.chdir(dir) do
+          orig = %W"d\u{e9}tente x\u{304c 304e 3050 3052 3054}"
+          orig.each do |o|
+            Dir.mkdir(o)
+            n = Dir.chdir(o) {File.expand_path(".")}
+            pp.assert_equal(o, File.basename(n))
+          end
+        end
+      end
+    end
+  end
+
   def test_basename
     assert_equal(File.basename(regular_file).sub(/\.test$/, ""), File.basename(regular_file, ".test"))
     assert_equal(File.basename(utf8_file).sub(/\.test$/, ""), File.basename(utf8_file, ".test"))
@@ -1116,6 +1137,20 @@ class TestFileExhaustive < Test::Unit::TestCase
         assert_equal(basename, File.basename(file + "::$DATA", ".test"))
         assert_equal(basename, File.basename(file + " ", ".*"))
         assert_equal(basename, File.basename(file + ".", ".*"))
+        assert_equal(basename, File.basename(file + "::$DATA", ".*"))
+      end
+    else
+      [regular_file, utf8_file].each do |file|
+        basename = File.basename(file)
+        assert_equal(basename + " ", File.basename(file + " "))
+        assert_equal(basename + ".", File.basename(file + "."))
+        assert_equal(basename + "::$DATA", File.basename(file + "::$DATA"))
+        assert_equal(basename + " ", File.basename(file + " ", ".test"))
+        assert_equal(basename + ".", File.basename(file + ".", ".test"))
+        assert_equal(basename + "::$DATA", File.basename(file + "::$DATA", ".test"))
+        assert_equal(basename, File.basename(file + ".", ".*"))
+        basename.chomp!(".test")
+        assert_equal(basename, File.basename(file + " ", ".*"))
         assert_equal(basename, File.basename(file + "::$DATA", ".*"))
       end
     end

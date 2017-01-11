@@ -37,13 +37,12 @@ calc_lineno(const rb_iseq_t *iseq, const VALUE *pc)
 int
 rb_vm_get_sourceline(const rb_control_frame_t *cfp)
 {
-    int lineno = 0;
-    const rb_iseq_t *iseq = cfp->iseq;
-
-    if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
-	lineno = calc_lineno(cfp->iseq, cfp->pc);
+    if (VM_FRAME_RUBYFRAME_P(cfp) && cfp->iseq) {
+	return calc_lineno(cfp->iseq, cfp->pc);
     }
-    return lineno;
+    else {
+	return 0;
+    }
 }
 
 typedef struct rb_backtrace_location_struct {
@@ -1089,7 +1088,7 @@ static VALUE
 get_klass(const rb_control_frame_t *cfp)
 {
     VALUE klass;
-    if (rb_vm_control_frame_id_and_class(cfp, 0, &klass)) {
+    if (rb_vm_control_frame_id_and_class(cfp, 0, 0, &klass)) {
 	if (RB_TYPE_P(klass, T_ICLASS)) {
 	    return RBASIC(klass)->klass;
 	}
@@ -1174,7 +1173,7 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
     rb_debug_inspector_t dbg_context;
     rb_thread_t *th = GET_THREAD();
     int state;
-    volatile VALUE UNINITIALIZED_VAR(result);
+    volatile VALUE MAYBE_UNUSED(result);
 
     dbg_context.th = th;
     dbg_context.cfp = dbg_context.th->cfp;

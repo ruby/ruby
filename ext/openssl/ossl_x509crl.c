@@ -67,7 +67,7 @@ DupX509CRLPtr(VALUE obj)
     X509_CRL *crl;
 
     SafeGetX509CRL(obj, crl);
-    CRYPTO_add(&crl->references, 1, CRYPTO_LOCK_X509_CRL);
+    X509_CRL_up_ref(crl);
 
     return crl;
 }
@@ -180,22 +180,20 @@ static VALUE
 ossl_x509crl_get_signature_algorithm(VALUE self)
 {
     X509_CRL *crl;
+    const X509_ALGOR *alg;
     BIO *out;
-    BUF_MEM *buf;
-    VALUE str;
 
     GetX509CRL(self, crl);
     if (!(out = BIO_new(BIO_s_mem()))) {
 	ossl_raise(eX509CRLError, NULL);
     }
-    if (!i2a_ASN1_OBJECT(out, crl->sig_alg->algorithm)) {
+    X509_CRL_get0_signature(crl, NULL, &alg);
+    if (!i2a_ASN1_OBJECT(out, alg->algorithm)) {
 	BIO_free(out);
 	ossl_raise(eX509CRLError, NULL);
     }
-    BIO_get_mem_ptr(out, &buf);
-    str = rb_str_new(buf->data, buf->length);
-    BIO_free(out);
-    return str;
+
+    return ossl_membio2str(out);
 }
 
 static VALUE
@@ -228,17 +226,22 @@ ossl_x509crl_get_last_update(VALUE self)
 
     GetX509CRL(self, crl);
 
-    return asn1time_to_time(X509_CRL_get_lastUpdate(crl));
+    return asn1time_to_time(X509_CRL_get0_lastUpdate(crl));
 }
 
 static VALUE
 ossl_x509crl_set_last_update(VALUE self, VALUE time)
 {
     X509_CRL *crl;
+    ASN1_TIME *asn1time;
 
     GetX509CRL(self, crl);
-    if (!ossl_x509_time_adjust(crl->crl->lastUpdate, time))
-	ossl_raise(eX509CRLError, NULL);
+    asn1time = ossl_x509_time_adjust(NULL, time);
+    if (!X509_CRL_set_lastUpdate(crl, asn1time)) {
+	ASN1_TIME_free(asn1time);
+	ossl_raise(eX509CRLError, "X509_CRL_set_lastUpdate");
+    }
+    ASN1_TIME_free(asn1time);
 
     return time;
 }
@@ -250,18 +253,22 @@ ossl_x509crl_get_next_update(VALUE self)
 
     GetX509CRL(self, crl);
 
-    return asn1time_to_time(X509_CRL_get_nextUpdate(crl));
+    return asn1time_to_time(X509_CRL_get0_nextUpdate(crl));
 }
 
 static VALUE
 ossl_x509crl_set_next_update(VALUE self, VALUE time)
 {
     X509_CRL *crl;
+    ASN1_TIME *asn1time;
 
     GetX509CRL(self, crl);
-    /* crl->crl->nextUpdate may be NULL at this time */
-    if (!(crl->crl->nextUpdate = ossl_x509_time_adjust(crl->crl->nextUpdate, time)))
-	ossl_raise(eX509CRLError, NULL);
+    asn1time = ossl_x509_time_adjust(NULL, time);
+    if (!X509_CRL_set_nextUpdate(crl, asn1time)) {
+	ASN1_TIME_free(asn1time);
+	ossl_raise(eX509CRLError, "X509_CRL_set_nextUpdate");
+    }
+    ASN1_TIME_free(asn1time);
 
     return time;
 }
@@ -296,6 +303,7 @@ ossl_x509crl_set_revoked(VALUE self, VALUE ary)
 {
     X509_CRL *crl;
     X509_REVOKED *rev;
+    STACK_OF(X509_REVOKED) *sk;
     long i;
 
     Check_Type(ary, T_ARRAY);
@@ -304,12 +312,15 @@ ossl_x509crl_set_revoked(VALUE self, VALUE ary)
 	OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Rev);
     }
     GetX509CRL(self, crl);
-    sk_X509_REVOKED_pop_free(crl->crl->revoked, X509_REVOKED_free);
-    crl->crl->revoked = NULL;
+    if ((sk = X509_CRL_get_REVOKED(crl))) {
+	while ((rev = sk_X509_REVOKED_pop(sk)))
+	    X509_REVOKED_free(rev);
+    }
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	rev = DupX509RevokedPtr(RARRAY_AREF(ary, i));
 	if (!X509_CRL_add0_revoked(crl, rev)) { /* NO DUP - don't free! */
-	    ossl_raise(eX509CRLError, NULL);
+	    X509_REVOKED_free(rev);
+	    ossl_raise(eX509CRLError, "X509_CRL_add0_revoked");
 	}
     }
     X509_CRL_sort(crl);
@@ -326,7 +337,8 @@ ossl_x509crl_add_revoked(VALUE self, VALUE revoked)
     GetX509CRL(self, crl);
     rev = DupX509RevokedPtr(revoked);
     if (!X509_CRL_add0_revoked(crl, rev)) { /* NO DUP - don't free! */
-	ossl_raise(eX509CRLError, NULL);
+	X509_REVOKED_free(rev);
+	ossl_raise(eX509CRLError, "X509_CRL_add0_revoked");
     }
     X509_CRL_sort(crl);
 
@@ -372,8 +384,6 @@ ossl_x509crl_to_der(VALUE self)
 {
     X509_CRL *crl;
     BIO *out;
-    BUF_MEM *buf;
-    VALUE str;
 
     GetX509CRL(self, crl);
     if (!(out = BIO_new(BIO_s_mem()))) {
@@ -383,11 +393,8 @@ ossl_x509crl_to_der(VALUE self)
 	BIO_free(out);
 	ossl_raise(eX509CRLError, NULL);
     }
-    BIO_get_mem_ptr(out, &buf);
-    str = rb_str_new(buf->data, buf->length);
-    BIO_free(out);
 
-    return str;
+    return ossl_membio2str(out);
 }
 
 static VALUE
@@ -395,8 +402,6 @@ ossl_x509crl_to_pem(VALUE self)
 {
     X509_CRL *crl;
     BIO *out;
-    BUF_MEM *buf;
-    VALUE str;
 
     GetX509CRL(self, crl);
     if (!(out = BIO_new(BIO_s_mem()))) {
@@ -406,11 +411,8 @@ ossl_x509crl_to_pem(VALUE self)
 	BIO_free(out);
 	ossl_raise(eX509CRLError, NULL);
     }
-    BIO_get_mem_ptr(out, &buf);
-    str = rb_str_new(buf->data, buf->length);
-    BIO_free(out);
 
-    return str;
+    return ossl_membio2str(out);
 }
 
 static VALUE
@@ -418,8 +420,6 @@ ossl_x509crl_to_text(VALUE self)
 {
     X509_CRL *crl;
     BIO *out;
-    BUF_MEM *buf;
-    VALUE str;
 
     GetX509CRL(self, crl);
     if (!(out = BIO_new(BIO_s_mem()))) {
@@ -429,11 +429,8 @@ ossl_x509crl_to_text(VALUE self)
 	BIO_free(out);
 	ossl_raise(eX509CRLError, NULL);
     }
-    BIO_get_mem_ptr(out, &buf);
-    str = rb_str_new(buf->data, buf->length);
-    BIO_free(out);
 
-    return str;
+    return ossl_membio2str(out);
 }
 
 /*
@@ -478,15 +475,13 @@ ossl_x509crl_set_extensions(VALUE self, VALUE ary)
 	OSSL_Check_Kind(RARRAY_AREF(ary, i), cX509Ext);
     }
     GetX509CRL(self, crl);
-    sk_X509_EXTENSION_pop_free(crl->crl->extensions, X509_EXTENSION_free);
-    crl->crl->extensions = NULL;
+    while ((ext = X509_CRL_delete_ext(crl, 0)))
+	X509_EXTENSION_free(ext);
     for (i=0; i<RARRAY_LEN(ary); i++) {
-	ext = DupX509ExtPtr(RARRAY_AREF(ary, i));
-	if(!X509_CRL_add_ext(crl, ext, -1)) { /* DUPs ext - FREE it */
-	    X509_EXTENSION_free(ext);
+	ext = GetX509ExtPtr(RARRAY_AREF(ary, i)); /* NO NEED TO DUP */
+	if (!X509_CRL_add_ext(crl, ext, -1)) {
 	    ossl_raise(eX509CRLError, NULL);
 	}
-	X509_EXTENSION_free(ext);
     }
 
     return ary;
@@ -499,12 +494,10 @@ ossl_x509crl_add_extension(VALUE self, VALUE extension)
     X509_EXTENSION *ext;
 
     GetX509CRL(self, crl);
-    ext = DupX509ExtPtr(extension);
-    if (!X509_CRL_add_ext(crl, ext, -1)) { /* DUPs ext - FREE it */
-	X509_EXTENSION_free(ext);
+    ext = GetX509ExtPtr(extension);
+    if (!X509_CRL_add_ext(crl, ext, -1)) {
 	ossl_raise(eX509CRLError, NULL);
     }
-    X509_EXTENSION_free(ext);
 
     return extension;
 }
@@ -515,6 +508,12 @@ ossl_x509crl_add_extension(VALUE self, VALUE extension)
 void
 Init_ossl_x509crl(void)
 {
+#if 0
+    mOSSL = rb_define_module("OpenSSL");
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
+    mX509 = rb_define_module_under(mOSSL, "X509");
+#endif
+
     eX509CRLError = rb_define_class_under(mX509, "CRLError", eOSSLError);
 
     cX509CRL = rb_define_class_under(mX509, "CRL", rb_cObject);

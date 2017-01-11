@@ -28,7 +28,7 @@ require 'pathname'
 require 'open3'
 require 'pp'
 
-# When out-of-place bulid, files may be built in source directory or
+# When out-of-place build, files may be built in source directory or
 # build directory.
 # Some files are always built in the source directory.
 # Some files are always built in the build directory.
@@ -327,21 +327,23 @@ end
 
 def read_single_cc_deps(path_i, cwd)
   files = {}
-  path_i.each_line.with_index {|line, lineindex|
+  compiler_wd = nil
+  path_i.each_line {|line|
     next if /\A\# \d+ "(.*)"/ !~ line
-    files[$1] = lineindex
+    dep = $1
+    next if %r{\A<.*>\z} =~ dep # omit <command-line>, etc.
+    compiler_wd ||= dep
+    files[dep] = true
   }
   # gcc emits {# 1 "/absolute/directory/of/the/source/file//"} at 2nd line.
-  compiler_wd = files.keys.find {|f| %r{\A/.*//\z} =~ f }
-  if compiler_wd
+  if %r{\A/.*//\z} =~ compiler_wd
     files.delete compiler_wd
     compiler_wd = Pathname(compiler_wd.sub(%r{//\z}, ''))
-  else
+  elsif !(compiler_wd = yield)
     raise "compiler working directory not found: #{path_i}"
   end
   deps = []
   files.each_key {|dep|
-    next if %r{\A<.*>\z} =~ dep # omit <command-line>, etc.
     dep = Pathname(dep)
     if dep.relative?
       dep = compiler_wd + dep
@@ -367,7 +369,13 @@ def read_cc_deps(cwd)
     end
     path_o = cwd + fn_o
     path_i = cwd + fn_i
-    deps[path_o] = read_single_cc_deps(path_i, cwd)
+    deps[path_o] = read_single_cc_deps(path_i, cwd) do
+      if fn_o.to_s.start_with?("enc/")
+        cwd
+      else
+        path_i.parent
+      end
+    end
   }
   deps
 end
@@ -388,6 +396,8 @@ def concentrate(dependencies, cwd)
     sources = sources.reject {|s|
       if %r{\A\.\.(/|\z)} =~ s.to_s
         warn "warning: out of tree source: #{s}"
+        true
+      elsif %r{/\.time\z} =~ s.to_s
         true
       else
         false

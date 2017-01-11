@@ -20,9 +20,29 @@ static const rb_digest_metadata_t rmd160 = {
 };
 
 /*
+ * Document-class: Digest::RMD160 < Digest::Base
  * A class for calculating message digests using RIPEMD-160
  * cryptographic hash function, designed by Hans Dobbertin, Antoon
  * Bosselaers, and Bart Preneel.
+ *
+ * RMD160 calculates a digest of 160 bits (20 bytes).
+ *
+ * == Examples
+ *  require 'digest'
+ *
+ *  # Compute a complete digest
+ *  Digest::RMD160.hexdigest 'abc'      #=> "8eb208f7..."
+ *
+ *  # Compute digest by chunks
+ *  rmd160 = Digest::RMD160.new               # =>#<Digest::RMD160>
+ *  rmd160.update "ab"
+ *  rmd160 << "c"                           # alias for #update
+ *  rmd160.hexdigest                        # => "8eb208f7..."
+ *
+ *  # Use the same object to compute another digest
+ *  rmd160.reset
+ *  rmd160 << "message"
+ *  rmd160.hexdigest                        # => "1dddbe1b..."
  */
 void
 Init_rmd160(void)

@@ -48,8 +48,6 @@ class C; end
   end
 
   def test_collect_first_comment_encoding
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     @options.encoding = Encoding::CP852
 
     p = util_parser <<-CONTENT
@@ -1928,8 +1926,7 @@ end
 
     method = "def ω() end"
 
-    assert_equal Encoding::UTF_8, method.encoding if
-      Object.const_defined? :Encoding
+    assert_equal Encoding::UTF_8, method.encoding
 
     util_parser method
 
@@ -2023,7 +2020,6 @@ end
   end
 
   def test_parse_statements_encoding
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
     @options.encoding = Encoding::CP852
 
     content = <<-EOF
@@ -3320,4 +3316,3 @@ end
   end
 
 end
-

@@ -22,7 +22,6 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #++
 
-require 'rubygems'
 begin
   gem 'rdoc'
 rescue Gem::LoadError
@@ -328,4 +327,3 @@ module Rake
 
 end
 # :startdoc:
-

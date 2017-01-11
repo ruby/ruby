@@ -452,52 +452,42 @@ EOT
         assert(failed.empty?, message(m) {failed.pretty_inspect})
       end
 
-      def assert_valid_syntax(code, fname = caller_locations(1, 1)[0], mesg = fname.to_s, verbose: nil)
-        code = code.b
-        code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
-          "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ok}\n"
-        }
-        code.force_encoding(Encoding::UTF_8)
+      # compatiblity with test-unit
+      alias pend skip
+
+      def prepare_syntax_check(code, fname = caller_locations(2, 1)[0], mesg = fname.to_s, verbose: nil)
+        code = code.dup.force_encoding(Encoding::UTF_8)
         verbose, $VERBOSE = $VERBOSE, verbose
-        yield if defined?(yield)
         case
         when Array === fname
           fname, line = *fname
         when defined?(fname.path) && defined?(fname.lineno)
           fname, line = fname.path, fname.lineno
         else
-          line = 0
+          line = 1
         end
-        assert_nothing_raised(SyntaxError, mesg) do
-          assert_equal(:ok, catch {|tag| eval(code, binding, fname, line)}, mesg)
-        end
+        yield(code, fname, line, mesg)
       ensure
         $VERBOSE = verbose
       end
 
-      def assert_syntax_error(code, error, fname = caller_locations(1, 1)[0], mesg = fname.to_s)
-        code = code.b
-        code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
-          "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ng}\n"
-        }
-        code.force_encoding(Encoding::US_ASCII)
-        verbose, $VERBOSE = $VERBOSE, nil
-        yield if defined?(yield)
-        case
-        when Array === fname
-          fname, line = *fname
-        when defined?(fname.path) && defined?(fname.lineno)
-          fname, line = fname.path, fname.lineno
-        else
-          line = 0
+      def assert_valid_syntax(code, *args)
+        prepare_syntax_check(code, *args) do |src, fname, line, mesg|
+          yield if defined?(yield)
+          assert_nothing_raised(SyntaxError, mesg) do
+            RubyVM::InstructionSequence.compile(src, fname, fname, line)
+          end
         end
-        e = assert_raise(SyntaxError, mesg) do
-          catch {|tag| eval(code, binding, fname, line)}
+      end
+
+      def assert_syntax_error(code, error, *args)
+        prepare_syntax_check(code, *args) do |src, fname, line, mesg|
+          yield if defined?(yield)
+          e = assert_raise(SyntaxError, mesg) do
+            RubyVM::InstructionSequence.compile(src, fname, fname, line)
+          end
+          assert_match(error, e.message, mesg)
         end
-        assert_match(error, e.message, mesg)
-        e
-      ensure
-        $VERBOSE = verbose
       end
 
       def assert_normal_exit(testsrc, message = '', child_env: nil, **opt)
@@ -527,6 +517,7 @@ EOT
             sigdesc << " (core dumped)"
           end
           full_message = ''
+          message = message.call if Proc === message
           if message and !message.empty?
             full_message << message << "\n"
           end
@@ -545,7 +536,8 @@ EOT
         faildesc
       end
 
-      def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil, **opt)
+      def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil,
+                            success: nil, **opt)
         stdout, stderr, status = EnvUtil.invoke_ruby(args, test_stdin, true, true, **opt)
         if signo = status.termsig
           EnvUtil.diagnostic_reports(Signal.signame(signo), EnvUtil.rubybin, status.pid, Time.now)
@@ -564,6 +556,15 @@ EOT
                   assert_equal(exp, act.lines.map {|l| l.chomp })
                 else
                   assert_pattern_list(exp, act)
+                end
+              end
+            end
+            unless success.nil?
+              a.for("success?") do
+                if success
+                  assert_predicate(status, :success?)
+                else
+                  assert_not_predicate(status, :success?)
                 end
               end
             end
@@ -822,12 +823,13 @@ eom
         end
       end
 
-      def all_assertions(msg = nil)
+      def assert_all_assertions(msg = nil)
         all = AllFailures.new
         yield all
       ensure
         assert(all.pass?, message(msg) {all.message.chomp(".")})
       end
+      alias all_assertions assert_all_assertions
 
       def build_message(head, template=nil, *arguments) #:nodoc:
         template &&= template.chomp

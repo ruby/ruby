@@ -100,11 +100,13 @@ Init_enc_set_filesystem_encoding(void)
     int idx;
 #if defined NO_LOCALE_CHARMAP
 # error NO_LOCALE_CHARMAP defined
-#elif defined _WIN32 || defined __CYGWIN__
+#elif defined _WIN32
     char cp[SIZEOF_CP_NAME];
     CP_FORMAT(cp, AreFileApisANSI() ? GetACP() : GetOEMCP());
     idx = rb_enc_find_index(cp);
     if (idx < 0) idx = ENCINDEX_ASCII;
+#elif defined __CYGWIN__
+    idx = ENCINDEX_UTF_8;
 #else
     idx = rb_enc_to_index(rb_default_external_encoding());
 #endif

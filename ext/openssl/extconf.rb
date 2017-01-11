@@ -33,19 +33,13 @@ end
 Logging::message "=== Checking for system dependent stuff... ===\n"
 have_library("nsl", "t_open")
 have_library("socket", "socket")
-have_header("assert.h")
 
 Logging::message "=== Checking for required stuff... ===\n"
-if $mingw
-  have_library("wsock32")
-  have_library("gdi32")
-end
-
 result = pkg_config("openssl") && have_header("openssl/ssl.h")
 unless result
   result = have_header("openssl/ssl.h")
-  result &&= %w[crypto libeay32].any? {|lib| have_library(lib, "OpenSSL_add_all_digests")}
-  result &&= %w[ssl ssleay32].any? {|lib| have_library(lib, "SSL_library_init")}
+  result &&= %w[crypto libeay32].any? {|lib| have_library(lib, "CRYPTO_malloc")}
+  result &&= %w[ssl ssleay32].any? {|lib| have_library(lib, "SSL_new")}
   unless result
     Logging::message "=== Checking for required stuff failed. ===\n"
     Logging::message "Makefile wasn't created. Fix the errors above.\n"
@@ -84,15 +78,25 @@ engines.each { |name|
   OpenSSL.check_func_or_macro("ENGINE_load_#{name}", "openssl/engine.h")
 }
 
+# added in 0.9.8X
+have_func("EVP_CIPHER_CTX_new")
+have_func("EVP_CIPHER_CTX_free")
+OpenSSL.check_func_or_macro("SSL_CTX_clear_options", "openssl/ssl.h")
+
 # added in 1.0.0
 have_func("ASN1_TIME_adj")
 have_func("EVP_CIPHER_CTX_copy")
+have_func("EVP_PKEY_base_id")
 have_func("HMAC_CTX_copy")
 have_func("PKCS5_PBKDF2_HMAC")
 have_func("X509_NAME_hash_old")
+have_func("X509_STORE_CTX_get0_current_crl")
+have_func("X509_STORE_set_verify_cb")
+have_func("i2d_ASN1_SET_ANY")
 have_func("SSL_SESSION_cmp") # removed
 OpenSSL.check_func_or_macro("SSL_set_tlsext_host_name", "openssl/ssl.h")
 have_struct_member("CRYPTO_THREADID", "ptr", "openssl/crypto.h")
+have_func("EVP_PKEY_get0")
 
 # added in 1.0.1
 have_func("SSL_CTX_set_next_proto_select_cb")
@@ -101,20 +105,49 @@ have_macro("EVP_CTRL_GCM_GET_TAG", ['openssl/evp.h']) && $defs.push("-DHAVE_AUTH
 # added in 1.0.2
 have_func("EC_curve_nist2nid")
 have_func("X509_REVOKED_dup")
+have_func("X509_STORE_CTX_get0_store")
 have_func("SSL_CTX_set_alpn_select_cb")
 OpenSSL.check_func_or_macro("SSL_CTX_set1_curves_list", "openssl/ssl.h")
 OpenSSL.check_func_or_macro("SSL_CTX_set_ecdh_auto", "openssl/ssl.h")
 OpenSSL.check_func_or_macro("SSL_get_server_tmp_key", "openssl/ssl.h")
+have_func("SSL_is_server")
 
 # added in 1.1.0
+have_func("CRYPTO_lock") || $defs.push("-DHAVE_OPENSSL_110_THREADING_API")
+have_struct_member("SSL", "ctx", "openssl/ssl.h") || $defs.push("-DHAVE_OPAQUE_OPENSSL")
+have_func("BN_GENCB_new")
+have_func("BN_GENCB_free")
+have_func("BN_GENCB_get_arg")
+have_func("EVP_MD_CTX_new")
+have_func("EVP_MD_CTX_free")
+have_func("HMAC_CTX_new")
+have_func("HMAC_CTX_free")
+OpenSSL.check_func("RAND_pseudo_bytes", "openssl/rand.h") # deprecated
 have_func("X509_STORE_get_ex_data")
 have_func("X509_STORE_set_ex_data")
+have_func("X509_CRL_get0_signature")
+have_func("X509_REQ_get0_signature")
+have_func("X509_REVOKED_get0_serialNumber")
+have_func("X509_REVOKED_get0_revocationDate")
+have_func("X509_get0_tbs_sigalg")
+have_func("X509_STORE_CTX_get0_untrusted")
+have_func("X509_STORE_CTX_get0_cert")
+have_func("X509_STORE_CTX_get0_chain")
+have_func("OCSP_SINGLERESP_get0_id")
+have_func("SSL_CTX_get_ciphers")
+have_func("X509_up_ref")
+have_func("X509_CRL_up_ref")
+have_func("X509_STORE_up_ref")
+have_func("SSL_SESSION_up_ref")
+have_func("EVP_PKEY_up_ref")
 OpenSSL.check_func_or_macro("SSL_CTX_set_tmp_ecdh_callback", "openssl/ssl.h") # removed
+OpenSSL.check_func_or_macro("SSL_CTX_set_min_proto_version", "openssl/ssl.h")
+have_func("SSL_CTX_get_security_level")
+have_func("X509_get0_notBefore")
+have_func("SSL_SESSION_get_protocol_version")
 
 Logging::message "=== Checking done. ===\n"
 
 create_header
-create_makefile("openssl") {|conf|
-  conf << "THREAD_MODEL = #{CONFIG["THREAD_MODEL"]}\n"
-}
+create_makefile("openssl")
 Logging::message "Done.\n"

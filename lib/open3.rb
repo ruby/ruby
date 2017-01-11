@@ -198,13 +198,13 @@ module Open3
     end
     pid = spawn(*cmd, opts)
     wait_thr = Process.detach(pid)
-    child_io.each {|io| io.close }
+    child_io.each(&:close)
     result = [*parent_io, wait_thr]
     if defined? yield
       begin
         return yield(*result)
       ensure
-        parent_io.each{|io| io.close unless io.closed?}
+        parent_io.each(&:close)
         wait_thr.join
       end
     end
@@ -601,7 +601,7 @@ module Open3
   #
   def pipeline(*cmds, **opts)
     pipeline_run(cmds, opts, [], []) {|ts|
-      ts.map {|t| t.value }
+      ts.map(&:value)
     }
   end
   module_function :pipeline
@@ -650,13 +650,13 @@ module Open3
       r = r2
     }
     result = parent_io + [wait_thrs]
-    child_io.each {|io| io.close }
+    child_io.each(&:close)
     if defined? yield
       begin
         return yield(*result)
       ensure
-        parent_io.each{|io| io.close unless io.closed?}
-        wait_thrs.each {|t| t.join }
+        parent_io.each(&:close)
+        wait_thrs.each(&:join)
       end
     end
     result

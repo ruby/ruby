@@ -158,10 +158,10 @@ bsock_close_write(VALUE sock)
  * * +optval+ is the value of the option, it is passed to the underlying
  *   setsockopt() as a pointer to a certain number of bytes. How this is
  *   done depends on the type:
- *   - Fixnum: value is assigned to an int, and a pointer to the int is
+ *   - Integer: value is assigned to an int, and a pointer to the int is
  *     passed, with length of sizeof(int).
  *   - true or false: 1 or 0 (respectively) is assigned to an int, and the
- *     int is passed as for a Fixnum. Note that +false+ must be passed,
+ *     int is passed as for an Integer. Note that +false+ must be passed,
  *     not +nil+.
  *   - String: the string's data and length is passed to the socket.
  * * +socketoption+ is an instance of Socket::Option
@@ -564,6 +564,8 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
  *   basicsocket.do_not_reverse_lookup => true or false
  *
  * Gets the do_not_reverse_lookup flag of _basicsocket_.
+ *
+ *   require 'socket'
  *
  *   BasicSocket.do_not_reverse_lookup = false
  *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|

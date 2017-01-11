@@ -155,11 +155,15 @@ path_cmp(VALUE self, VALUE other)
     return INT2FIX(0);
 }
 
+#ifndef ST2FIX
+#define ST2FIX(h) LONG2FIX((long)(h))
+#endif
+
 /* :nodoc: */
 static VALUE
 path_hash(VALUE self)
 {
-    return INT2FIX(rb_str_hash(get_strpath(self)));
+    return ST2FIX(rb_str_hash(get_strpath(self)));
 }
 
 /*
@@ -202,7 +206,7 @@ path_sub(int argc, VALUE *argv, VALUE self)
         str = rb_block_call(str, rb_intern("sub"), argc, argv, 0, 0);
     }
     else {
-        str = rb_funcall2(str, rb_intern("sub"), argc, argv);
+        str = rb_funcallv(str, rb_intern("sub"), argc, argv);
     }
     return rb_class_new_instance(1, &str, rb_obj_class(self));
 }
@@ -299,7 +303,7 @@ path_each_line(int argc, VALUE *argv, VALUE self)
         return rb_block_call(rb_cIO, rb_intern("foreach"), 1+n, args, 0, 0);
     }
     else {
-        return rb_funcall2(rb_cIO, rb_intern("foreach"), 1+n, args);
+        return rb_funcallv(rb_cIO, rb_intern("foreach"), 1+n, args);
     }
 }
 
@@ -321,7 +325,7 @@ path_read(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcall2(rb_cIO, rb_intern("read"), 1+n, args);
+    return rb_funcallv(rb_cIO, rb_intern("read"), 1+n, args);
 }
 
 /*
@@ -341,7 +345,7 @@ path_binread(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "02", &args[1], &args[2]);
-    return rb_funcall2(rb_cIO, rb_intern("binread"), 1+n, args);
+    return rb_funcallv(rb_cIO, rb_intern("binread"), 1+n, args);
 }
 
 /*
@@ -362,7 +366,7 @@ path_write(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcall2(rb_cIO, rb_intern("write"), 1+n, args);
+    return rb_funcallv(rb_cIO, rb_intern("write"), 1+n, args);
 }
 
 /*
@@ -383,7 +387,7 @@ path_binwrite(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcall2(rb_cIO, rb_intern("binwrite"), 1+n, args);
+    return rb_funcallv(rb_cIO, rb_intern("binwrite"), 1+n, args);
 }
 
 /*
@@ -405,7 +409,7 @@ path_readlines(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcall2(rb_cIO, rb_intern("readlines"), 1+n, args);
+    return rb_funcallv(rb_cIO, rb_intern("readlines"), 1+n, args);
 }
 
 /*
@@ -423,7 +427,7 @@ path_sysopen(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "02", &args[1], &args[2]);
-    return rb_funcall2(rb_cIO, rb_intern("sysopen"), 1+n, args);
+    return rb_funcallv(rb_cIO, rb_intern("sysopen"), 1+n, args);
 }
 
 /*
@@ -608,7 +612,7 @@ path_open(int argc, VALUE *argv, VALUE self)
         return rb_block_call(rb_cFile, rb_intern("open"), 1+n, args, 0, 0);
     }
     else {
-        return rb_funcall2(rb_cFile, rb_intern("open"), 1+n, args);
+        return rb_funcallv(rb_cFile, rb_intern("open"), 1+n, args);
     }
 }
 
@@ -986,6 +990,22 @@ path_zero_p(VALUE self)
     return rb_funcall(rb_mFileTest, rb_intern("zero?"), 1, get_strpath(self));
 }
 
+/*
+ * Tests the file is empty.
+ *
+ * See Dir#empty? and FileTest.empty?.
+ */
+static VALUE
+path_empty_p(VALUE self)
+{
+
+    VALUE path = get_strpath(self);
+    if (RTEST(rb_funcall(rb_mFileTest, rb_intern("directory?"), 1, path)))
+        return rb_funcall(rb_cDir, rb_intern("empty?"), 1, path);
+    else
+        return rb_funcall(rb_mFileTest, rb_intern("empty?"), 1, path);
+}
+
 static VALUE
 glob_i(RB_BLOCK_CALL_FUNC_ARGLIST(elt, klass))
 {
@@ -1013,7 +1033,7 @@ path_s_glob(int argc, VALUE *argv, VALUE klass)
     else {
         VALUE ary;
         long i;
-        ary = rb_funcall2(rb_cDir, rb_intern("glob"), n, args);
+        ary = rb_funcallv(rb_cDir, rb_intern("glob"), n, args);
         ary = rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
         for (i = 0; i < RARRAY_LEN(ary); i++) {
             VALUE elt = RARRAY_AREF(ary, i);
@@ -1448,6 +1468,7 @@ Init_pathname(void)
     rb_define_method(rb_cPathname, "world_writable?", path_world_writable_p, 0);
     rb_define_method(rb_cPathname, "writable_real?", path_writable_real_p, 0);
     rb_define_method(rb_cPathname, "zero?", path_zero_p, 0);
+    rb_define_method(rb_cPathname, "empty?", path_empty_p, 0);
     rb_define_singleton_method(rb_cPathname, "glob", path_s_glob, -1);
     rb_define_singleton_method(rb_cPathname, "getwd", path_s_getwd, 0);
     rb_define_singleton_method(rb_cPathname, "pwd", path_s_getwd, 0);

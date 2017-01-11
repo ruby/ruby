@@ -457,6 +457,9 @@ exc_setup_cause(VALUE exc, VALUE cause)
 #endif
     if (!NIL_P(cause) && cause != exc) {
 	rb_ivar_set(exc, id_cause, cause);
+	if (!rb_ivar_defined(cause, id_cause)) {
+	    rb_ivar_set(cause, id_cause, Qnil);
+	}
     }
     return exc;
 }
@@ -507,13 +510,25 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 		rb_ivar_set(mesg, idBt_locations, at);
 	    }
 	}
-	else if (NIL_P(get_backtrace(mesg))) {
-	    at = rb_vm_backtrace_object();
-	    if (OBJ_FROZEN(mesg)) {
-		mesg = rb_obj_dup(mesg);
+	else {
+	    int status;
+
+	    TH_PUSH_TAG(th);
+	    if ((status = EXEC_TAG()) == 0) {
+		VALUE bt;
+		if (rb_threadptr_set_raised(th)) goto fatal;
+		bt = rb_get_backtrace(mesg);
+		if (NIL_P(bt)) {
+		    at = rb_vm_backtrace_object();
+		    if (OBJ_FROZEN(mesg)) {
+			mesg = rb_obj_dup(mesg);
+		    }
+		    rb_ivar_set(mesg, idBt_locations, at);
+		    set_backtrace(mesg, at);
+		}
+		rb_threadptr_reset_raised(th);
 	    }
-	    rb_ivar_set(mesg, idBt_locations, at);
-	    set_backtrace(mesg, at);
+	    TH_POP_TAG();
 	}
     }
 
@@ -556,6 +571,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
     }
 
     if (rb_threadptr_set_raised(th)) {
+      fatal:
 	th->errinfo = exception_error;
 	rb_threadptr_reset_raised(th);
 	TH_JUMP_TAG(th, TAG_FATAL);
@@ -563,7 +579,18 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 
     if (tag != TAG_FATAL) {
 	RUBY_DTRACE_HOOK(RAISE, rb_obj_classname(th->errinfo));
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_RAISE, th->cfp->self, 0, 0, mesg);
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_RAISE, th->cfp->self, 0, 0, 0, mesg);
+    }
+}
+
+void
+rb_threadptr_setup_exception(rb_thread_t *th, VALUE mesg, VALUE cause)
+{
+    if (cause == Qundef) {
+	cause = get_thread_errinfo(th);
+    }
+    if (cause != mesg) {
+	rb_ivar_set(mesg, id_cause, cause);
     }
 }
 
@@ -737,8 +764,8 @@ rb_raise_jump(VALUE mesg, VALUE cause)
     VALUE self = cfp->self;
     ID mid = me->called_id;
 
-    th->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, self, mid, klass, Qnil);
+    rb_vm_pop_frame(th);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, self, me->def->original_id, mid, klass, Qnil);
 
     setup_exception(th, TAG_RAISE, mesg, cause);
 
@@ -759,12 +786,11 @@ int
 rb_block_given_p(void)
 {
     rb_thread_t *th = GET_THREAD();
-
-    if (rb_vm_control_frame_block_ptr(th->cfp)) {
-	return TRUE;
+    if (rb_vm_frame_block_handler(th->cfp) == VM_BLOCK_HANDLER_NONE) {
+	return FALSE;
     }
     else {
-	return FALSE;
+	return TRUE;
     }
 }
 
@@ -790,7 +816,7 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 {
     int state;
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->cfp;
+    rb_control_frame_t *volatile cfp = th->cfp;
     volatile VALUE result = Qfalse;
     volatile VALUE e_info = th->errinfo;
     va_list args;
@@ -856,7 +882,7 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int * state)
     volatile VALUE result = Qnil;
     volatile int status;
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->cfp;
+    rb_control_frame_t *volatile cfp = th->cfp;
     struct rb_vm_protect_tag protect_tag;
     rb_jmpbuf_t org_jmpbuf;
 
@@ -1026,6 +1052,7 @@ rb_mod_include(int argc, VALUE *argv, VALUE module)
     CONST_ID(id_append_features, "append_features");
     CONST_ID(id_included, "included");
 
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     for (i = 0; i < argc; i++)
 	Check_Type(argv[i], T_MODULE);
     while (argc--) {
@@ -1073,6 +1100,8 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
 
     CONST_ID(id_prepend_features, "prepend_features");
     CONST_ID(id_prepended, "prepended");
+
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     for (i = 0; i < argc; i++)
 	Check_Type(argv[i], T_MODULE);
     while (argc--) {
@@ -1080,6 +1109,16 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
 	rb_funcall(argv[argc], id_prepended, 1, module);
     }
     return module;
+}
+
+static void
+ensure_class_or_module(VALUE obj)
+{
+    if (!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE)) {
+	rb_raise(rb_eTypeError,
+		 "wrong argument type %"PRIsVALUE" (expected Class or Module)",
+		 rb_obj_class(obj));
+    }
 }
 
 static VALUE
@@ -1096,7 +1135,7 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
 {
     VALUE iclass, c, superclass = klass;
 
-    Check_Type(klass, T_CLASS);
+    ensure_class_or_module(klass);
     Check_Type(module, T_MODULE);
     if (NIL_P(CREF_REFINEMENTS(cref))) {
 	CREF_REFINEMENTS_SET(cref, hidden_identity_hash_new());
@@ -1221,11 +1260,11 @@ add_activated_refinement(VALUE activated_refinements,
 
 /*
  *  call-seq:
- *     refine(klass) { block }   -> module
+ *     refine(mod) { block }   -> module
  *
- *  Refine <i>klass</i> in the receiver.
+ *  Refine <i>mod</i> in the receiver.
  *
- *  Returns an overlaid module.
+ *  Returns a module, where refined methods are defined.
  */
 
 static VALUE
@@ -1236,16 +1275,16 @@ rb_mod_refine(VALUE module, VALUE klass)
        id_refined_class, id_defined_at;
     VALUE refinements, activated_refinements;
     rb_thread_t *th = GET_THREAD();
-    rb_block_t *block = rb_vm_control_frame_block_ptr(th->cfp);
+    VALUE block_handler = rb_vm_frame_block_handler(th->cfp);
 
-    if (!block) {
-        rb_raise(rb_eArgError, "no block given");
+    if (block_handler == VM_BLOCK_HANDLER_NONE) {
+	rb_raise(rb_eArgError, "no block given");
     }
-    if (block->proc) {
-        rb_raise(rb_eArgError,
-		 "can't pass a Proc as a block to Module#refine");
+    if (vm_block_handler_type(block_handler) != block_handler_type_iseq) {
+	rb_raise(rb_eArgError, "can't pass a Proc as a block to Module#refine");
     }
-    Check_Type(klass, T_CLASS);
+
+    ensure_class_or_module(klass);
     CONST_ID(id_refinements, "__refinements__");
     refinements = rb_attr_get(module, id_refinements);
     if (NIL_P(refinements)) {
@@ -1312,11 +1351,64 @@ mod_using(VALUE self, VALUE module)
     return self;
 }
 
+static int
+used_modules_i(VALUE _, VALUE mod, VALUE ary)
+{
+    ID id_defined_at;
+    CONST_ID(id_defined_at, "__defined_at__");
+    while (FL_TEST(rb_class_of(mod), RMODULE_IS_REFINEMENT)) {
+	rb_ary_push(ary, rb_attr_get(rb_class_of(mod), id_defined_at));
+	mod = RCLASS_SUPER(mod);
+    }
+    return ST_CONTINUE;
+}
+
+/*
+ *  call-seq:
+ *     used_modules -> array
+ *
+ *  Returns an array of all modules used in the current scope. The ordering
+ *  of modules in the resulting array is not defined.
+ *
+ *     module A
+ *       refine Object do
+ *       end
+ *     end
+ *
+ *     module B
+ *       refine Object do
+ *       end
+ *     end
+ *
+ *     using A
+ *     using B
+ *     p Module.used_modules
+ *
+ *  <em>produces:</em>
+ *
+ *     [B, A]
+ */
+static VALUE
+rb_mod_s_used_modules(void)
+{
+    const rb_cref_t *cref = rb_vm_cref();
+    VALUE ary = rb_ary_new();
+
+    while(cref) {
+	if(!NIL_P(CREF_REFINEMENTS(cref))) {
+	    rb_hash_foreach(CREF_REFINEMENTS(cref), used_modules_i, ary);
+	}
+	cref = CREF_NEXT(cref);
+    }
+
+    return rb_funcall(ary, rb_intern("uniq"), 0);
+}
+
 void
 rb_obj_call_init(VALUE obj, int argc, const VALUE *argv)
 {
-    PASS_PASSED_BLOCK();
-    rb_funcall2(obj, idInitialize, argc, argv);
+    PASS_PASSED_BLOCK_HANDLER();
+    rb_funcallv(obj, idInitialize, argc, argv);
 }
 
 void
@@ -1448,21 +1540,21 @@ top_using(VALUE self, VALUE module)
     return self;
 }
 
-static VALUE *
+static const VALUE *
 errinfo_place(rb_thread_t *th)
 {
     rb_control_frame_t *cfp = th->cfp;
     rb_control_frame_t *end_cfp = RUBY_VM_END_CONTROL_FRAME(th);
 
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
-	if (RUBY_VM_NORMAL_ISEQ_P(cfp->iseq)) {
+	if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	    if (cfp->iseq->body->type == ISEQ_TYPE_RESCUE) {
-		return &cfp->ep[-2];
+		return &cfp->ep[VM_ENV_INDEX_LAST_LVAR];
 	    }
 	    else if (cfp->iseq->body->type == ISEQ_TYPE_ENSURE &&
-		     !THROW_DATA_P(cfp->ep[-2]) &&
-		     !FIXNUM_P(cfp->ep[-2])) {
-		return &cfp->ep[-2];
+		     !THROW_DATA_P(cfp->ep[VM_ENV_INDEX_LAST_LVAR]) &&
+		     !FIXNUM_P(cfp->ep[VM_ENV_INDEX_LAST_LVAR])) {
+		return &cfp->ep[VM_ENV_INDEX_LAST_LVAR];
 	    }
 	}
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
@@ -1473,7 +1565,7 @@ errinfo_place(rb_thread_t *th)
 static VALUE
 get_thread_errinfo(rb_thread_t *th)
 {
-    VALUE *ptr = errinfo_place(th);
+    const VALUE *ptr = errinfo_place(th);
     if (ptr) {
 	return *ptr;
     }
@@ -1502,7 +1594,7 @@ errinfo_setter(VALUE val, ID id, VALUE *var)
 	rb_raise(rb_eTypeError, "assigning non-exception to $!");
     }
     else {
-	VALUE *ptr = errinfo_place(GET_THREAD());
+	const VALUE *ptr = errinfo_place(GET_THREAD());
 	if (ptr) {
 	    *ptr = val;
 	}
@@ -1540,7 +1632,7 @@ errat_getter(ID id)
 {
     VALUE err = get_errinfo();
     if (!NIL_P(err)) {
-	return get_backtrace(err);
+	return rb_get_backtrace(err);
     }
     else {
 	return Qnil;
@@ -1646,6 +1738,8 @@ Init_eval(void)
     rb_define_private_method(rb_cModule, "prepend_features", rb_mod_prepend_features, 1);
     rb_define_private_method(rb_cModule, "refine", rb_mod_refine, 1);
     rb_define_private_method(rb_cModule, "using", mod_using, 1);
+    rb_define_singleton_method(rb_cModule, "used_modules",
+			       rb_mod_s_used_modules, 0);
     rb_undef_method(rb_cClass, "refine");
 
     rb_undef_method(rb_cClass, "module_function");

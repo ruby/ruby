@@ -8,18 +8,27 @@ require 'unicode_normalize/normalize'
 
 class TestUnicodeNormalize < Test::Unit::TestCase
 
-  UNICODE_VERSION = UnicodeNormalize::UNICODE_VERSION
+  UNICODE_VERSION = RbConfig::CONFIG['UNICODE_VERSION']
   UNICODE_DATA_PATH = "../enc/unicode/data/#{UNICODE_VERSION}"
 
-  def expand_filename(basename)
+  def self.expand_filename(basename)
     File.expand_path("#{UNICODE_DATA_PATH}/#{basename}.txt", __dir__)
   end
+end
 
+%w[NormalizationTest].all? {|f|
+  File.exist?(TestUnicodeNormalize.expand_filename(f))
+} and
+class TestUnicodeNormalize
   NormTest = Struct.new :source, :NFC, :NFD, :NFKC, :NFKD, :line
 
-  def read_tests
-    IO.readlines(expand_filename('NormalizationTest'), encoding: 'utf-8')
-    .tap { |lines| assert_include(lines[0], "NormalizationTest-#{UNICODE_VERSION}.txt")}
+  def self.read_tests
+    lines = IO.readlines(expand_filename('NormalizationTest'), encoding: 'utf-8')
+    firstline = lines.shift
+    define_method "test_0_normalizationtest_firstline" do
+      assert_include(firstline, "NormalizationTest-#{UNICODE_VERSION}.txt")
+    end
+    lines
     .collect.with_index { |linedata, linenumber| [linedata, linenumber]}
     .reject { |line| line[0] =~ /^[\#@]/ }
     .collect do |line|
@@ -33,7 +42,7 @@ class TestUnicodeNormalize < Test::Unit::TestCase
     string.codepoints.collect { |cp| cp.to_s(16).upcase.rjust(4, '0') }
   end
 
-  def setup
+  begin
     @@tests ||= read_tests
   rescue Errno::ENOENT => e
     @@tests ||= []
@@ -136,11 +145,6 @@ class TestUnicodeNormalize < Test::Unit::TestCase
   generate_test_check_false :NFC, :NFKC, :nfkc
   generate_test_check_false :NFD, :NFKC, :nfkc
   generate_test_check_false :NFKD, :NFKC, :nfkc
-
-  def test_AAAAA_data_file_available   # AAAAA makes sure this test is run first
-    expanded = expand_filename 'NormalizationTest'
-    assert File.exist?(expanded), "File #{expanded} missing."
-  end
 
   def test_non_UTF_8
     assert_equal "\u1E0A".encode('UTF-16BE'), "D\u0307".encode('UTF-16BE').unicode_normalize(:nfc)

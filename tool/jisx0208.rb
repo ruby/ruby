@@ -1,3 +1,5 @@
+# Library used by tools/enc-emoji-citrus-gen.rb
+
 module JISX0208
   class Char
     class << self

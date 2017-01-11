@@ -111,7 +111,7 @@ module WEBrick
         @instance_key = hexdigest(self.__id__, Time.now.to_i, Process.pid)
         @opaques = {}
         @last_nonce_expire = Time.now
-        @mutex = Mutex.new
+        @mutex = Thread::Mutex.new
       end
 
       ##

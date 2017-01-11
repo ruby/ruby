@@ -69,7 +69,9 @@ module REXMLTests
       assert_equal(1, nodes.size, "<b> has one element ancestor")
       nodes = @doc.get_elements('//b/ancestor::node()')
       assert_equal(2, nodes.size, "<b> has two node ancestors")
-      assert nodes[1].kind_of?(REXML::Document)
+      nodes.sort_by!(&:name)
+      assert_kind_of REXML::Document, nodes[0]
+      assert_kind_of REXML::Element, nodes[1]
     end
   end
 end

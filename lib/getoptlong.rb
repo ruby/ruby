@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # GetoptLong for Ruby
 #
@@ -153,7 +153,7 @@ class GetoptLong
     #
     # Whether error messages are output to $stderr.
     #
-    @quiet = FALSE
+    @quiet = false
 
     #
     # Status code.

@@ -146,7 +146,19 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_gets_rs
-    # default_rs
+    rs = ":"
+    pipe(proc do |w|
+      w.print "aaa:bbb"
+      w.close
+    end, proc do |r|
+      assert_equal "aaa:", r.gets(rs)
+      assert_equal "bbb", r.gets(rs)
+      assert_nil r.gets(rs)
+      r.close
+    end)
+  end
+
+  def test_gets_default_rs
     pipe(proc do |w|
       w.print "aaa\nbbb\n"
       w.close
@@ -156,8 +168,9 @@ class TestIO < Test::Unit::TestCase
       assert_nil r.gets
       r.close
     end)
+  end
 
-    # nil
+  def test_gets_rs_nil
     pipe(proc do |w|
       w.print "a\n\nb\n\n"
       w.close
@@ -166,8 +179,9 @@ class TestIO < Test::Unit::TestCase
       assert_nil r.gets("")
       r.close
     end)
+  end
 
-    # "\377"
+  def test_gets_rs_377
     pipe(proc do |w|
       w.print "\377xyz"
       w.close
@@ -176,8 +190,9 @@ class TestIO < Test::Unit::TestCase
       assert_equal("\377", r.gets("\377"), "[ruby-dev:24460]")
       r.close
     end)
+  end
 
-    # ""
+  def test_gets_paragraph
     pipe(proc do |w|
       w.print "a\n\nb\n\n"
       w.close
@@ -185,6 +200,55 @@ class TestIO < Test::Unit::TestCase
       assert_equal "a\n\n", r.gets(""), "[ruby-core:03771]"
       assert_equal "b\n\n", r.gets("")
       assert_nil r.gets("")
+      r.close
+    end)
+  end
+
+  def test_gets_chomp_rs
+    rs = ":"
+    pipe(proc do |w|
+      w.print "aaa:bbb"
+      w.close
+    end, proc do |r|
+      assert_equal "aaa", r.gets(rs, chomp: true)
+      assert_equal "bbb", r.gets(rs, chomp: true)
+      assert_nil r.gets(rs, chomp: true)
+      r.close
+    end)
+  end
+
+  def test_gets_chomp_default_rs
+    pipe(proc do |w|
+      w.print "aaa\r\nbbb\nccc"
+      w.close
+    end, proc do |r|
+      assert_equal "aaa", r.gets(chomp: true)
+      assert_equal "bbb", r.gets(chomp: true)
+      assert_equal "ccc", r.gets(chomp: true)
+      assert_nil r.gets
+      r.close
+    end)
+  end
+
+  def test_gets_chomp_rs_nil
+    pipe(proc do |w|
+      w.print "a\n\nb\n\n"
+      w.close
+    end, proc do |r|
+      assert_equal "a\n\nb\n", r.gets(nil, chomp: true)
+      assert_nil r.gets("")
+      r.close
+    end)
+  end
+
+  def test_gets_chomp_paragraph
+    pipe(proc do |w|
+      w.print "a\n\nb\n\n"
+      w.close
+    end, proc do |r|
+      assert_equal "a", r.gets("", chomp: true)
+      assert_equal "b", r.gets("", chomp: true)
+      assert_nil r.gets("", chomp: true)
       r.close
     end)
   end
@@ -1090,6 +1154,18 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_copy_stream_to_duplex_io
+    result = IO.pipe {|a,w|
+      Thread.start {w.puts "yes"; w.close}
+      IO.popen([EnvUtil.rubybin, '-pe$_="#$.:#$_"'], "r+") {|b|
+        IO.copy_stream(a, b)
+        b.close_write
+        b.read
+      }
+    }
+    assert_equal("1:yes\n", result)
+  end
+
   def ruby(*args)
     args = ['-e', '$>.write($<.read)'] if args.empty?
     ruby = EnvUtil.rubybin
@@ -1227,7 +1303,7 @@ class TestIO < Test::Unit::TestCase
       t.value
       assert_equal("", s)
     end
-  end
+  end if /cygwin/ !~ RUBY_PLATFORM
 
   def test_read
     pipe(proc do |w|
@@ -1280,7 +1356,7 @@ class TestIO < Test::Unit::TestCase
       t.value
       assert_equal("xxx", s)
     end
-  end
+  end if /cygwin/ !~ RUBY_PLATFORM
 
   def test_write_nonblock
     pipe(proc do |w|
@@ -2442,13 +2518,21 @@ End
     }
   end
 
+  def test_DATA_binmode
+    assert_separately([], <<-SRC)
+assert_not_predicate(DATA, :binmode?)
+__END__
+    SRC
+  end
+
   def test_threaded_flush
     bug3585 = '[ruby-core:31348]'
-    src = %q{\
+    src = "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
       t = Thread.new { sleep 3 }
       Thread.new {sleep 1; t.kill; p 'hi!'}
       t.join
-    }.gsub(/^\s+/, '')
+    end;
     10.times.map do
       Thread.start do
         assert_in_out_err([], src) {|stdout, stderr|
@@ -2891,13 +2975,19 @@ End
 
   def test_ioctl_linux2
     return unless STDIN.tty? # stdin is not a terminal
-    File.open('/dev/tty') { |f|
+    begin
+      f = File.open('/dev/tty')
+    rescue Errno::ENOENT, Errno::ENXIO => e
+      skip e.message
+    else
       tiocgwinsz=0x5413
       winsize=""
       assert_nothing_raised {
         f.ioctl(tiocgwinsz, winsize)
       }
-    }
+    ensure
+      f.close if f
+    end
   end if /^(?:i.?86|x86_64)-linux/ =~ RUBY_PLATFORM
 
   def test_setpos
@@ -3103,7 +3193,7 @@ End
       }
 
       IO.select(tempfiles)
-    }, bug8080, timeout: 30
+    }, bug8080, timeout: 50
   end if defined?(Process::RLIMIT_NOFILE)
 
   def test_read_32bit_boundary
@@ -3173,7 +3263,7 @@ End
       assert_nothing_raised(RuntimeError, bug8669) { str.clear }
       assert_raise(RuntimeError) { t.join }
     }
-  end
+  end if /cygwin/ !~ RUBY_PLATFORM
 
   def test_readpartial_unlocktmp_ensure
     bug8669 = '[ruby-core:56121] [Bug #8669]'
@@ -3187,7 +3277,7 @@ End
       assert_nothing_raised(RuntimeError, bug8669) { str.clear }
       assert_raise(RuntimeError) { t.join }
     }
-  end
+  end if /cygwin/ !~ RUBY_PLATFORM
 
   def test_readpartial_bad_args
     IO.pipe do |r, w|
@@ -3212,7 +3302,7 @@ End
       assert_nothing_raised(RuntimeError, bug8669) { str.clear }
       assert_raise(RuntimeError) { t.join }
     }
-  end
+  end if /cygwin/ !~ RUBY_PLATFORM
 
   def test_exception_at_close
     bug10153 = '[ruby-core:64463] [Bug #10153] exception in close at the end of block'
@@ -3253,7 +3343,7 @@ End
         assert_equal("foo", t1_value)
       EOS
     }
-  end if /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
+  end if /mswin|mingw|bccwin|cygwin/ !~ RUBY_PLATFORM
 
   def test_open_flag
     make_tempfile do |t|
@@ -3276,4 +3366,102 @@ End
       end
     end
   end if File::BINARY != 0
+
+  def test_race_gets_and_close
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    bug13076 = '[ruby-core:78845] [Bug #13076]'
+    begin;
+      100.times do |i|
+        a = []
+        t = []
+        10.times do
+          r,w = IO.pipe
+          a << [r,w]
+          t << Thread.new do
+            begin
+              while r.gets
+              end
+            rescue IOError
+            end
+          end
+        end
+        a.each do |r,w|
+          w.puts "hoge"
+          w.close
+          r.close
+        end
+        assert_nothing_raised(IOError, bug13076) {
+          t.each(&:join)
+        }
+      end
+    end;
+  end
+
+  if RUBY_ENGINE == "ruby" # implementation details
+    def test_foreach_rs_conversion
+      make_tempfile {|t|
+        a = []
+        rs = Struct.new(:count).new(0)
+        def rs.to_str; self.count += 1; "\n"; end
+        IO.foreach(t.path, rs) {|x| a << x }
+        assert_equal(["foo\n", "bar\n", "baz\n"], a)
+        assert_equal(1, rs.count)
+      }
+    end
+
+    def test_foreach_rs_invalid
+      make_tempfile {|t|
+        rs = Object.new
+        def rs.to_str; raise "invalid rs"; end
+        assert_raise(RuntimeError) do
+          IO.foreach(t.path, rs, mode:"w") {}
+        end
+        assert_equal(["foo\n", "bar\n", "baz\n"], IO.foreach(t.path).to_a)
+      }
+    end
+
+    def test_foreach_limit_conversion
+      make_tempfile {|t|
+        a = []
+        lim = Struct.new(:count).new(0)
+        def lim.to_int; self.count += 1; -1; end
+        IO.foreach(t.path, lim) {|x| a << x }
+        assert_equal(["foo\n", "bar\n", "baz\n"], a)
+        assert_equal(1, lim.count)
+      }
+    end
+
+    def test_foreach_limit_invalid
+      make_tempfile {|t|
+        lim = Object.new
+        def lim.to_int; raise "invalid limit"; end
+        assert_raise(RuntimeError) do
+          IO.foreach(t.path, lim, mode:"w") {}
+        end
+        assert_equal(["foo\n", "bar\n", "baz\n"], IO.foreach(t.path).to_a)
+      }
+    end
+
+    def test_readlines_rs_invalid
+      make_tempfile {|t|
+        rs = Object.new
+        def rs.to_str; raise "invalid rs"; end
+        assert_raise(RuntimeError) do
+          IO.readlines(t.path, rs, mode:"w")
+        end
+        assert_equal(["foo\n", "bar\n", "baz\n"], IO.readlines(t.path))
+      }
+    end
+
+    def test_readlines_limit_invalid
+      make_tempfile {|t|
+        lim = Object.new
+        def lim.to_int; raise "invalid limit"; end
+        assert_raise(RuntimeError) do
+          IO.readlines(t.path, lim, mode:"w")
+        end
+        assert_equal(["foo\n", "bar\n", "baz\n"], IO.readlines(t.path))
+      }
+    end
+  end
 end

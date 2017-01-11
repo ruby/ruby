@@ -441,6 +441,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(RegexpError) { Regexp.new(")(") }
     assert_raise(RegexpError) { Regexp.new('[\\40000000000') }
     assert_raise(RegexpError) { Regexp.new('[\\600000000000.') }
+    assert_raise(RegexpError) { Regexp.new("((?<v>))\\g<0>") }
   end
 
   def test_unescape
@@ -542,7 +543,8 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(true, /../.match?('abc', -2))
     assert_equal(false, /../.match?("abc", -4))
     assert_equal(false, /../.match?("abc", 4))
-    assert_equal(true, /../n.match?("\u3042" + '\x', 1))
+    assert_equal(true, /../.match?("\u3042xx", 1))
+    assert_equal(false, /../.match?("\u3042x", 1))
     assert_equal(true, /\z/.match?(""))
     assert_equal(true, /\z/.match?("abc"))
     assert_equal(true, /R.../.match?("Ruby"))
@@ -565,6 +567,10 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("\\v", Regexp.quote("\v"))
     assert_equal("\u3042\\t", Regexp.quote("\u3042\t"))
     assert_equal("\\t\xff", Regexp.quote("\t" + [0xff].pack("C")))
+
+    bug13034 = '[ruby-core:78646] [Bug #13034]'
+    str = "\x00".force_encoding("UTF-16BE")
+    assert_equal(str, Regexp.quote(str), bug13034)
   end
 
   def test_try_convert
@@ -638,14 +644,30 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_match_without_regexp
+    # create a MatchData for each assertion because the internal state may change
+    test = proc {|&blk| "abc".sub("a", ""); blk.call($~) }
+
     bug10877 = '[ruby-core:68209] [Bug #10877]'
-    "abc".sub("a", "")
-    assert_raise_with_message(IndexError, /foo/, bug10877) {$~["foo"]}
+    test.call {|m| assert_raise_with_message(IndexError, /foo/, bug10877) {m["foo"]} }
     key = "\u{3042}"
     [Encoding::UTF_8, Encoding::Shift_JIS, Encoding::EUC_JP].each do |enc|
       idx = key.encode(enc)
-      assert_raise_with_message(IndexError, /#{idx}/, bug10877) {$~[idx]}
+      test.call {|m| assert_raise_with_message(IndexError, /#{idx}/, bug10877) {m[idx]} }
     end
+    test.call {|m| assert_equal(/a/, m.regexp) }
+    test.call {|m| assert_equal("abc", m.string) }
+    test.call {|m| assert_equal(1, m.size) }
+    test.call {|m| assert_equal(0, m.begin(0)) }
+    test.call {|m| assert_equal(1, m.end(0)) }
+    test.call {|m| assert_equal([0, 1], m.offset(0)) }
+    test.call {|m| assert_equal([], m.captures) }
+    test.call {|m| assert_equal([], m.names) }
+    test.call {|m| assert_equal({}, m.named_captures) }
+    test.call {|m| assert_equal(/a/.match("abc"), m) }
+    test.call {|m| assert_equal(/a/.match("abc").hash, m.hash) }
+    test.call {|m| assert_equal("bc", m.post_match) }
+    test.call {|m| assert_equal("", m.pre_match) }
+    test.call {|m| assert_equal(["a", nil], m.values_at(0, 1)) }
   end
 
   def test_last_match
@@ -899,6 +921,27 @@ class TestRegexp < Test::Unit::TestCase
     assert_no_match(/[[:ascii:]]/, "\x80\xFF")
   end
 
+  def test_cclass_R
+    assert_match /\A\R\z/, "\r"
+    assert_match /\A\R\z/, "\n"
+    assert_match /\A\R\z/, "\r\n"
+  end
+
+  def test_cclass_X
+    assert_match /\A\X\z/, "\u{20 200d}"
+    assert_match /\A\X\z/, "\u{600 600}"
+    assert_match /\A\X\z/, "\u{600 20}"
+    assert_match /\A\X\z/, "\u{261d 1F3FB}"
+    assert_match /\A\X\z/, "\u{1f600}"
+    assert_match /\A\X\z/, "\u{20 308}"
+    assert_match /\A\X\X\z/, "\u{a 308}"
+    assert_match /\A\X\X\z/, "\u{d 308}"
+    assert_match /\A\X\z/, "\u{1F477 1F3FF 200D 2640 FE0F}"
+    assert_match /\A\X\z/, "\u{1F468 200D 1F393}"
+    assert_match /\A\X\z/, "\u{1F46F 200D 2642 FE0F}"
+    assert_match /\A\X\z/, "\u{1f469 200d 2764 fe0f 200d 1f469}"
+  end
+
   def test_backward
     assert_equal(3, "foobar".rindex(/b.r/i))
     assert_equal(nil, "foovar".rindex(/b.r/i))
@@ -924,6 +967,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(TypeError) { Regexp.allocate.names }
     assert_raise(TypeError) { Regexp.allocate.named_captures }
 
+    assert_raise(TypeError) { MatchData.allocate.hash }
     assert_raise(TypeError) { MatchData.allocate.regexp }
     assert_raise(TypeError) { MatchData.allocate.names }
     assert_raise(TypeError) { MatchData.allocate.size }
@@ -1018,7 +1062,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("hoge fuga", h["body"])
   end
 
-  def test_regexp_poped
+  def test_regexp_popped
     assert_nothing_raised { eval("a = 1; /\#{ a }/; a") }
     assert_nothing_raised { eval("a = 1; /\#{ a }/o; a") }
   end
@@ -1118,7 +1162,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_once_multithread
-    m = Mutex.new
+    m = Thread::Mutex.new
     pr3 = proc{|i|
       /#{m.unlock; sleep 0.5; i}/o
     }

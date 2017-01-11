@@ -3,7 +3,7 @@
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2006  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2012  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2011-2016  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -229,7 +229,7 @@ const OnigSyntaxType OnigSyntaxPerl = {
   (( SYN_GNU_REGEX_OP | ONIG_SYN_OP_QMARK_NON_GREEDY |
      ONIG_SYN_OP_ESC_OCTAL3 | ONIG_SYN_OP_ESC_X_HEX2 |
      ONIG_SYN_OP_ESC_X_BRACE_HEX8 | ONIG_SYN_OP_ESC_CONTROL_CHARS |
-     ONIG_SYN_OP_ESC_C_CONTROL )
+     ONIG_SYN_OP_ESC_O_BRACE_OCTAL | ONIG_SYN_OP_ESC_C_CONTROL )
    & ~ONIG_SYN_OP_ESC_LTGT_WORD_BEGIN_END )
   , ( ONIG_SYN_OP2_ESC_CAPITAL_Q_QUOTE |
       ONIG_SYN_OP2_QMARK_GROUP_EFFECT | ONIG_SYN_OP2_OPTION_PERL |
@@ -248,7 +248,8 @@ const OnigSyntaxType OnigSyntaxPerl = {
       ONIG_SYN_OP2_ESC_K_NAMED_BACKREF )
   , ( SYN_GNU_REGEX_BV |
       ONIG_SYN_ALLOW_MULTIPLEX_DEFINITION_NAME |
-      ONIG_SYN_ALLOW_MULTIPLEX_DEFINITION_NAME_CALL )
+      ONIG_SYN_ALLOW_MULTIPLEX_DEFINITION_NAME_CALL |
+      ONIG_SYN_USE_LEFT_MOST_NAMED_GROUP )
   , ( ONIG_OPTION_SINGLELINE | ONIG_OPTION_CAPTURE_GROUP )
   ,
   {
@@ -332,25 +333,25 @@ onig_set_syntax_options(OnigSyntaxType* syntax, OnigOptionType options)
 }
 
 extern unsigned int
-onig_get_syntax_op(OnigSyntaxType* syntax)
+onig_get_syntax_op(const OnigSyntaxType* syntax)
 {
   return syntax->op;
 }
 
 extern unsigned int
-onig_get_syntax_op2(OnigSyntaxType* syntax)
+onig_get_syntax_op2(const OnigSyntaxType* syntax)
 {
   return syntax->op2;
 }
 
 extern unsigned int
-onig_get_syntax_behavior(OnigSyntaxType* syntax)
+onig_get_syntax_behavior(const OnigSyntaxType* syntax)
 {
   return syntax->behavior;
 }
 
 extern OnigOptionType
-onig_get_syntax_options(OnigSyntaxType* syntax)
+onig_get_syntax_options(const OnigSyntaxType* syntax)
 {
   return syntax->options;
 }

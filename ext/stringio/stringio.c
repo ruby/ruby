@@ -29,7 +29,7 @@ struct StringIO {
     int count;
 };
 
-static void strio_init(int, VALUE *, struct StringIO *, VALUE);
+static VALUE strio_init(int, VALUE *, struct StringIO *, VALUE);
 static VALUE strio_unget_bytes(struct StringIO *, const char *, long);
 
 #define IS_STRIO(obj) (rb_typeddata_is_kind_of((obj), &strio_data_type))
@@ -179,11 +179,10 @@ strio_initialize(int argc, VALUE *argv, VALUE self)
 	DATA_PTR(self) = ptr = strio_alloc();
     }
     rb_call_super(0, 0);
-    strio_init(argc, argv, ptr, self);
-    return self;
+    return strio_init(argc, argv, ptr, self);
 }
 
-static void
+static VALUE
 strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
 {
     VALUE string, mode;
@@ -223,6 +222,7 @@ strio_init(int argc, VALUE *argv, struct StringIO *ptr, VALUE self)
     ptr->pos = 0;
     ptr->lineno = 0;
     RBASIC(self)->flags |= (ptr->flags & FMODE_READWRITE) * (STRIO_READABLE / FMODE_READABLE);
+    return self;
 }
 
 static VALUE
@@ -548,8 +548,7 @@ strio_reopen(int argc, VALUE *argv, VALUE self)
     if (argc == 1 && !RB_TYPE_P(*argv, T_STRING)) {
 	return strio_copy(self, *argv);
     }
-    strio_init(argc, argv, StringIO(self), self);
-    return self;
+    return strio_init(argc, argv, StringIO(self), self);
 }
 
 /*
@@ -611,29 +610,30 @@ strio_seek(int argc, VALUE *argv, VALUE self)
 {
     VALUE whence;
     struct StringIO *ptr = StringIO(self);
-    long offset;
+    long amount, offset;
 
     rb_scan_args(argc, argv, "11", NULL, &whence);
-    offset = NUM2LONG(argv[0]);
+    amount = NUM2LONG(argv[0]);
     if (CLOSED(self)) {
 	rb_raise(rb_eIOError, "closed stream");
     }
     switch (NIL_P(whence) ? 0 : NUM2LONG(whence)) {
       case 0:
+	offset = 0;
 	break;
       case 1:
-	offset += ptr->pos;
+	offset = ptr->pos;
 	break;
       case 2:
-	offset += RSTRING_LEN(ptr->string);
+	offset = RSTRING_LEN(ptr->string);
 	break;
       default:
 	error_inval("invalid whence");
     }
-    if (offset < 0) {
+    if (amount > LONG_MAX - offset || amount + offset < 0) {
 	error_inval(0);
     }
-    ptr->pos = offset;
+    ptr->pos = amount + offset;
     return INT2FIX(0);
 }
 
@@ -734,6 +734,9 @@ static void
 strio_extend(struct StringIO *ptr, long pos, long len)
 {
     long olen;
+
+    if (len > LONG_MAX - pos)
+	rb_raise(rb_eArgError, "string size too big");
 
     check_modifiable(ptr);
     olen = RSTRING_LEN(ptr->string);
@@ -983,14 +986,19 @@ bm_search(const char *little, long llen, const char *big, long blen, const long 
     return -1;
 }
 
-static VALUE
-strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
-{
-    const char *s, *e, *p;
-    long n, limit = 0;
-    VALUE str, lim;
+struct getline_arg {
+    VALUE rs;
+    long limit;
+    unsigned int chomp: 1;
+};
 
-    rb_scan_args(argc, argv, "02", &str, &lim);
+static struct getline_arg *
+prepare_getline_args(struct getline_arg *arg, int argc, VALUE *argv)
+{
+    VALUE str, lim, opts;
+    long limit = -1;
+
+    argc = rb_scan_args(argc, argv, "02:", &str, &lim, &opts);
     switch (argc) {
       case 0:
 	str = rb_rs;
@@ -1001,7 +1009,6 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 	    VALUE tmp = rb_check_string_type(str);
 	    if (NIL_P(tmp)) {
 		limit = NUM2LONG(str);
-		if (limit == 0) return rb_str_new(0,0);
 		str = rb_rs;
 	    }
 	    else {
@@ -1015,6 +1022,38 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 	if (!NIL_P(lim)) limit = NUM2LONG(lim);
 	break;
     }
+    arg->rs = str;
+    arg->limit = limit;
+    arg->chomp = 0;
+    if (!NIL_P(opts)) {
+	static ID keywords[1];
+	VALUE vchomp;
+	if (!keywords[0]) {
+	    keywords[0] = rb_intern_const("chomp");
+	}
+	rb_get_kwargs(opts, keywords, 0, 1, &vchomp);
+	arg->chomp = (vchomp != Qundef) && RTEST(vchomp);
+    }
+    return arg;
+}
+
+static inline int
+chomp_newline_width(const char *s, const char *e)
+{
+    if (e > s && *--e == '\n') {
+	if (e > s && *--e == '\r') return 2;
+	return 1;
+    }
+    return 0;
+}
+
+static VALUE
+strio_getline(struct getline_arg *arg, struct StringIO *ptr)
+{
+    const char *s, *e, *p;
+    long n, limit = arg->limit;
+    VALUE str = arg->rs;
+    int w = 0;
 
     if (ptr->pos >= (n = RSTRING_LEN(ptr->string))) {
 	return Qnil;
@@ -1022,15 +1061,19 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
     s = RSTRING_PTR(ptr->string);
     e = s + RSTRING_LEN(ptr->string);
     s += ptr->pos;
-    if (limit > 0 && s + limit < e) {
+    if (limit > 0 && (size_t)limit < (size_t)(e - s)) {
 	e = rb_enc_right_char_head(s, s + limit, e, get_enc(ptr));
     }
     if (NIL_P(str)) {
-	str = strio_substr(ptr, ptr->pos, e - s);
+	if (arg->chomp) {
+	    w = chomp_newline_width(s, e);
+	}
+	str = strio_substr(ptr, ptr->pos, e - s - w);
     }
     else if ((n = RSTRING_LEN(str)) == 0) {
 	p = s;
-	while (*p == '\n') {
+	while (p[(p + 1 < e) && (*p == '\r') && 0] == '\n') {
+	    p += *p == '\r';
 	    if (++p == e) {
 		return Qnil;
 	    }
@@ -1039,23 +1082,33 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 	while ((p = memchr(p, '\n', e - p)) && (p != e)) {
 	    if (*++p == '\n') {
 		e = p + 1;
+		w = (arg->chomp ? 1 : 0);
+		break;
+	    }
+	    else if (*p == '\r' && p < e && p[1] == '\n') {
+		e = p + 2;
+		w = (arg->chomp ? 2 : 0);
 		break;
 	    }
 	}
-	str = strio_substr(ptr, s - RSTRING_PTR(ptr->string), e - s);
+	if (!w && arg->chomp) {
+	    w = chomp_newline_width(s, e);
+	}
+	str = strio_substr(ptr, s - RSTRING_PTR(ptr->string), e - s - w);
     }
     else if (n == 1) {
 	if ((p = memchr(s, RSTRING_PTR(str)[0], e - s)) != 0) {
 	    e = p + 1;
+	    w = (arg->chomp ? (p > s && *(p-1) == '\r') + 1 : 0);
 	}
-	str = strio_substr(ptr, ptr->pos, e - s);
+	str = strio_substr(ptr, ptr->pos, e - s - w);
     }
     else {
 	if (n < e - s) {
 	    if (e - s < 1024) {
 		for (p = s; p + n <= e; ++p) {
 		    if (MEMCMP(p, RSTRING_PTR(str), char, n) == 0) {
-			e = p + n;
+			e = p + (arg->chomp ? 0 : n);
 			break;
 		    }
 		}
@@ -1065,11 +1118,11 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 		p = RSTRING_PTR(str);
 		bm_init_skip(skip, p, n);
 		if ((pos = bm_search(p, n, s, e - s, skip)) >= 0) {
-		    e = s + pos + n;
+		    e = s + pos + (arg->chomp ? 0 : n);
 		}
 	    }
 	}
-	str = strio_substr(ptr, ptr->pos, e - s);
+	str = strio_substr(ptr, ptr->pos, e - s - w);
     }
     ptr->pos = e - RSTRING_PTR(ptr->string);
     ptr->lineno++;
@@ -1087,8 +1140,14 @@ strio_getline(int argc, VALUE *argv, struct StringIO *ptr)
 static VALUE
 strio_gets(int argc, VALUE *argv, VALUE self)
 {
-    VALUE str = strio_getline(argc, argv, readable(self));
+    struct getline_arg arg;
+    VALUE str;
 
+    if (prepare_getline_args(&arg, argc, argv)->limit == 0) {
+	return rb_str_new(0, 0);
+    }
+
+    str = strio_getline(&arg, readable(self));
     rb_lastline_set(str);
     return str;
 }
@@ -1127,16 +1186,16 @@ static VALUE
 strio_each(int argc, VALUE *argv, VALUE self)
 {
     VALUE line;
+    struct getline_arg arg;
 
     StringIO(self);
     RETURN_ENUMERATOR(self, argc, argv);
 
-    if (argc > 0 && !NIL_P(argv[argc-1]) && NIL_P(rb_check_string_type(argv[argc-1])) &&
-	NUM2LONG(argv[argc-1]) == 0) {
+    if (prepare_getline_args(&arg, argc, argv)->limit == 0) {
 	rb_raise(rb_eArgError, "invalid limit: 0 for each_line");
     }
 
-    while (!NIL_P(line = strio_getline(argc, argv, readable(self)))) {
+    while (!NIL_P(line = strio_getline(&arg, readable(self)))) {
 	rb_yield(line);
     }
     return self;
@@ -1166,15 +1225,15 @@ static VALUE
 strio_readlines(int argc, VALUE *argv, VALUE self)
 {
     VALUE ary, line;
+    struct getline_arg arg;
 
     StringIO(self);
     ary = rb_ary_new();
-    if (argc > 0 && !NIL_P(argv[argc-1]) && NIL_P(rb_check_string_type(argv[argc-1])) &&
-	NUM2LONG(argv[argc-1]) == 0) {
+    if (prepare_getline_args(&arg, argc, argv)->limit == 0) {
 	rb_raise(rb_eArgError, "invalid limit: 0 for readlines");
     }
 
-    while (!NIL_P(line = strio_getline(argc, argv, readable(self)))) {
+    while (!NIL_P(line = strio_getline(&arg, readable(self)))) {
 	rb_ary_push(ary, line);
     }
     return ary;

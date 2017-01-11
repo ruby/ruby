@@ -724,7 +724,7 @@ rb_reg_casefold_p(VALUE re)
 
 /*
  *  call-seq:
- *     rxp.options   -> fixnum
+ *     rxp.options   -> integer
  *
  *  Returns the set of bits corresponding to the options used when creating this
  *  Regexp (see <code>Regexp::new</code> for details. Note that additional bits
@@ -847,7 +847,7 @@ onig_new_with_source(regex_t** reg, const UChar* pattern, const UChar* pattern_e
     r = onig_reg_init(*reg, option, ONIGENC_CASE_FOLD_DEFAULT, enc, syntax);
     if (r) goto err;
 
-    r = onig_compile(*reg, pattern, pattern_end, einfo, sourcefile, sourceline);
+    r = onig_compile_ruby(*reg, pattern, pattern_end, einfo, sourcefile, sourceline);
     if (r) {
       err:
 	onig_free(*reg);
@@ -1089,6 +1089,8 @@ static VALUE
 match_names(VALUE match)
 {
     match_check(match);
+    if (NIL_P(RMATCH(match)->regexp))
+	return rb_ary_new_capa(0);
     return rb_reg_names(RMATCH(match)->regexp);
 }
 
@@ -1111,6 +1113,8 @@ match_size(VALUE match)
     return INT2FIX(RMATCH_REGS(match)->num_regs);
 }
 
+static int name_to_backref_number(struct re_registers *, VALUE, const char*, const char*);
+
 static int
 match_backref_number(VALUE match, VALUE backref)
 {
@@ -1121,23 +1125,15 @@ match_backref_number(VALUE match, VALUE backref)
     VALUE regexp = RMATCH(match)->regexp;
 
     match_check(match);
-    switch (TYPE(backref)) {
-      default:
-        return NUM2INT(backref);
-
-      case T_SYMBOL:
+    if (SYMBOL_P(backref)) {
 	backref = rb_sym2str(backref);
-	/* fall through */
-
-      case T_STRING:
-        name = StringValueCStr(backref);
-        break;
     }
+    else if (!RB_TYPE_P(backref, T_STRING)) {
+	return NUM2INT(backref);
+    }
+    name = StringValueCStr(backref);
 
-    num = onig_name_to_backref_number(RREGEXP_PTR(regexp),
-              (const unsigned char*)name,
-              (const unsigned char*)name + strlen(name),
-              regs);
+    num = name_to_backref_number(regs, regexp, name, name + strlen(name));
 
     if (num < 1) {
         rb_raise(rb_eIndexError, "undefined group name reference: %s", name);
@@ -1819,7 +1815,7 @@ static int
 name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name, const char* name_end)
 {
     return onig_name_to_backref_number(RREGEXP_PTR(regexp),
-	(const unsigned char* )name, (const unsigned char* )name_end, regs);
+	(const unsigned char *)name, (const unsigned char *)name_end, regs);
 }
 
 NORETURN(static void name_to_backref_error(VALUE name));
@@ -1830,26 +1826,28 @@ name_to_backref_error(VALUE name)
 	     name);
 }
 
+#define NAME_TO_NUMBER(regs, re, name, name_ptr, name_end)	\
+    (NIL_P(re) ? 0 : \
+     !rb_enc_compatible(RREGEXP_SRC(re), (name)) ? 0 : \
+     name_to_backref_number((regs), (re), (name_ptr), (name_end)))
+
 static int
 namev_to_backref_number(struct re_registers *regs, VALUE re, VALUE name)
 {
     int num;
 
-    switch (TYPE(name)) {
-      case T_SYMBOL:
+    if (SYMBOL_P(name)) {
 	name = rb_sym2str(name);
-	/* fall through */
-      case T_STRING:
-	if (NIL_P(re) || !rb_enc_compatible(RREGEXP_SRC(re), name) ||
-		(num = name_to_backref_number(regs, re,
-					      RSTRING_PTR(name), RSTRING_END(name))) < 1) {
-	    name_to_backref_error(name);
-	}
-	return num;
-
-      default:
+    }
+    else if (!RB_TYPE_P(name, T_STRING)) {
 	return -1;
     }
+    num = NAME_TO_NUMBER(regs, re, name,
+			 RSTRING_PTR(name), RSTRING_END(name));
+    if (num < 1) {
+	name_to_backref_error(name);
+    }
+    return num;
 }
 
 static VALUE
@@ -2082,6 +2080,8 @@ match_named_captures(VALUE match)
     struct MEMO *memo;
 
     match_check(match);
+    if (NIL_P(RMATCH(match)->regexp))
+	return rb_hash_new();
 
     hash = rb_hash_new();
     memo = MEMO_NEW(hash, match, 0);
@@ -2877,7 +2877,7 @@ rb_reg_regcomp(VALUE str)
 static st_index_t reg_hash(VALUE re);
 /*
  * call-seq:
- *   rxp.hash   -> fixnum
+ *   rxp.hash   -> integer
  *
  * Produce a hash based on the text and options of this regular expression.
  *
@@ -2888,7 +2888,7 @@ static VALUE
 rb_reg_hash(VALUE re)
 {
     st_index_t hashval = reg_hash(re);
-    return LONG2FIX(hashval);
+    return ST2FIX(hashval);
 }
 
 static st_index_t
@@ -2948,15 +2948,17 @@ static VALUE
 match_hash(VALUE match)
 {
     const struct re_registers *regs;
-    st_index_t hashval = rb_hash_start(rb_str_hash(RMATCH(match)->str));
+    st_index_t hashval;
 
-    rb_hash_uint(hashval, reg_hash(RMATCH(match)->regexp));
+    match_check(match);
+    hashval = rb_hash_start(rb_str_hash(RMATCH(match)->str));
+    hashval = rb_hash_uint(hashval, reg_hash(match_regexp(match)));
     regs = RMATCH_REGS(match);
     hashval = rb_hash_uint(hashval, regs->num_regs);
     hashval = rb_hash_uint(hashval, rb_memhash(regs->beg, regs->num_regs * sizeof(*regs->beg)));
     hashval = rb_hash_uint(hashval, rb_memhash(regs->end, regs->num_regs * sizeof(*regs->end)));
     hashval = rb_hash_end(hashval);
-    return LONG2FIX(hashval);
+    return ST2FIX(hashval);
 }
 
 /*
@@ -2972,10 +2974,12 @@ static VALUE
 match_equal(VALUE match1, VALUE match2)
 {
     const struct re_registers *regs1, *regs2;
+
     if (match1 == match2) return Qtrue;
     if (!RB_TYPE_P(match2, T_MATCH)) return Qfalse;
+    if (!RMATCH(match1)->regexp || !RMATCH(match2)->regexp) return Qfalse;
     if (!rb_str_equal(RMATCH(match1)->str, RMATCH(match2)->str)) return Qfalse;
-    if (!rb_reg_equal(RMATCH(match1)->regexp, RMATCH(match2)->regexp)) return Qfalse;
+    if (!rb_reg_equal(match_regexp(match1), match_regexp(match2))) return Qfalse;
     regs1 = RMATCH_REGS(match1);
     regs2 = RMATCH_REGS(match2);
     if (regs1->num_regs != regs2->num_regs) return Qfalse;
@@ -3222,26 +3226,29 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
 static VALUE
 rb_reg_match_m_p(int argc, VALUE *argv, VALUE re)
 {
-    VALUE str, initpos;
-    long pos = 0;
+    long pos = rb_check_arity(argc, 1, 2) > 1 ? NUM2LONG(argv[1]) : 0;
+    return rb_reg_match_p(re, argv[0], pos);
+}
+
+VALUE
+rb_reg_match_p(VALUE re, VALUE str, long pos)
+{
     regex_t *reg;
     onig_errmsg_buffer err = "";
     OnigPosition result;
     const UChar *start, *end;
     int tmpreg;
 
-    rb_scan_args(argc, argv, "11", &str, &initpos);
     if (NIL_P(str)) return Qfalse;
-    str = SYMBOL_P(str) ? rb_sym2str(str) : rb_str_to_str(str);
-    if (argc == 2) {
-	pos = NUM2LONG(initpos);
+    str = SYMBOL_P(str) ? rb_sym2str(str) : StringValue(str);
+    if (pos) {
 	if (pos < 0) {
 	    pos += NUM2LONG(rb_str_length(str));
 	    if (pos < 0) return Qfalse;
 	}
 	if (pos > 0) {
-	    long len = 0;
-	    char *beg = rb_str_subpos(str, pos, &len);
+	    long len = 1;
+	    const char *beg = rb_str_subpos(str, pos, &len);
 	    if (!beg) return Qfalse;
 	    pos = beg - RSTRING_PTR(str);
 	}
@@ -3292,7 +3299,7 @@ rb_reg_match_m_p(int argc, VALUE *argv, VALUE re)
  *  String or a Regexp (in which case that regexp's options are propagated),
  *  and new options may not be specified (a change as of Ruby 1.8).
  *
- *  If +options+ is a Fixnum, it should be one or more of the constants
+ *  If +options+ is an Integer, it should be one or more of the constants
  *  Regexp::EXTENDED, Regexp::IGNORECASE, and Regexp::MULTILINE,
  *  <em>or</em>-ed together.  Otherwise, if +options+ is not
  *  +nil+ or +false+, the regexp will be case insensitive.
@@ -3725,8 +3732,7 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
                 if (name_end < e) {
 		    VALUE n = rb_str_subseq(str, (long)(name - RSTRING_PTR(str)),
 					    (long)(name_end - name));
-		    if (!rb_enc_compatible(RREGEXP_SRC(regexp), n) ||
-			(no = name_to_backref_number(regs, regexp, name, name_end)) < 1) {
+		    if ((no = NAME_TO_NUMBER(regs, regexp, n, name, name_end)) < 1) {
 			name_to_backref_error(n);
 		    }
                     p = s = name_end + clen;
@@ -3905,7 +3911,6 @@ Init_Regexp(void)
 {
     rb_eRegexpError = rb_define_class("RegexpError", rb_eStandardError);
 
-    onigenc_set_default_caseconv_table((UChar*)casetable);
     onigenc_set_default_encoding(ONIG_ENCODING_ASCII);
     onig_set_warn_func(re_warn);
     onig_set_verb_warn_func(re_warn);

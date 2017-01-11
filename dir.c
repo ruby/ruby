@@ -83,14 +83,19 @@ char *strchr(char*,char);
 #include <sys/attr.h>
 #endif
 
+#define USE_NAME_ON_FS_REAL_BASENAME 1	/* platform dependent APIs to
+					 * get real basenames */
+#define USE_NAME_ON_FS_BY_FNMATCH 2	/* select the matching
+					 * basename by fnmatch */
+
 #ifdef HAVE_GETATTRLIST
-# define USE_NAME_ON_FS 1
+# define USE_NAME_ON_FS USE_NAME_ON_FS_REAL_BASENAME
 # define RUP32(size) ((size)+3/4)
 # define SIZEUP32(type) RUP32(sizeof(type))
 #elif defined _WIN32
-# define USE_NAME_ON_FS 1
+# define USE_NAME_ON_FS USE_NAME_ON_FS_REAL_BASENAME
 #elif defined DOSISH
-# define USE_NAME_ON_FS 2	/* by fnmatch */
+# define USE_NAME_ON_FS USE_NAME_ON_FS_BY_FNMATCH
 #else
 # define USE_NAME_ON_FS 0
 #endif
@@ -521,11 +526,12 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
     path = RSTRING_PTR(dirname);
     dp->dir = opendir(path);
     if (dp->dir == NULL) {
-	if (rb_gc_for_fd(errno)) {
+	int e = errno;
+	if (rb_gc_for_fd(e)) {
 	    dp->dir = opendir(path);
 	}
 #ifdef HAVE_GETATTRLIST
-	else if (errno == EIO) {
+	else if (e == EIO) {
 	    u_int32_t attrbuf[1];
 	    struct attrlist al = {ATTR_BIT_MAP_COUNT, 0};
 	    if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW) == 0) {
@@ -535,7 +541,7 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
 #endif
 	if (dp->dir == NULL) {
 	    RB_GC_GUARD(dirname);
-	    rb_sys_fail_path(orig);
+	    rb_syserr_fail_path(e, orig);
 	}
     }
     dp->path = orig;
@@ -747,7 +753,8 @@ dir_read(VALUE dir)
 	return rb_external_str_new_with_enc(dp->d_name, NAMLEN(dp), dirp->enc);
     }
     else {
-	if (errno != 0) rb_sys_fail(0);
+	int e = errno;
+	if (e != 0) rb_syserr_fail(e, 0);
 	return Qnil;		/* end of stream */
     }
 }
@@ -1226,7 +1233,12 @@ sys_enc_warning_in(const char *func, const char *mesg, rb_encoding *enc)
  * ENOTDIR can be returned by stat(2) if a non-leaf element of the path
  * is not a directory.
  */
-#define to_be_ignored(e) ((e) == ENOENT || (e) == ENOTDIR)
+ALWAYS_INLINE(static int to_be_ignored(int e));
+static inline int
+to_be_ignored(int e)
+{
+    return e == ENOENT || e == ENOTDIR;
+}
 
 #ifdef _WIN32
 #define STAT(p, s)	rb_w32_ustati64((p), (s))
@@ -1274,8 +1286,19 @@ do_opendir(const char *path, int flags, rb_encoding *enc)
     }
 #endif
     dirp = opendir(path);
-    if (dirp == NULL && !to_be_ignored(errno))
-	sys_warning(path, enc);
+    if (!dirp) {
+	int e = errno;
+	switch (rb_gc_for_fd(e)) {
+	  default:
+	    dirp = opendir(path);
+	    if (dirp) break;
+	    e = errno;
+	    /* fallback */
+	  case 0:
+	    if (to_be_ignored(e)) break;
+	    sys_warning(path, enc);
+	}
+    }
 #ifdef _WIN32
     if (tmp) rb_str_resize(tmp, 0); /* GC guard */
 #endif
@@ -1493,8 +1516,13 @@ join_path(const char *path, long len, int dirsep, const char *name, size_t namle
 }
 
 #ifdef HAVE_GETATTRLIST
+# if defined HAVE_FGETATTRLIST
+#   define is_case_sensitive(dirp, path) is_case_sensitive(dirp)
+# else
+#   define is_case_sensitive(dirp, path) is_case_sensitive(path)
+# endif
 static int
-is_case_sensitive(DIR *dirp)
+is_case_sensitive(DIR *dirp, const char *path)
 {
     struct {
 	u_int32_t length;
@@ -1505,8 +1533,13 @@ is_case_sensitive(DIR *dirp)
     const int idx = VOL_CAPABILITIES_FORMAT;
     const uint32_t mask = VOL_CAP_FMT_CASE_SENSITIVE;
 
+#   if defined HAVE_FGETATTRLIST
     if (fgetattrlist(dirfd(dirp), &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW))
 	return -1;
+#   else
+    if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW))
+	return -1;
+#   endif
     if (!(cap->valid[idx] & mask))
 	return -1;
     return (cap->capabilities[idx] & mask) != 0;
@@ -1638,7 +1671,7 @@ replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p, int f
     }
     return path;
 }
-#elif USE_NAME_ON_FS == 1
+#elif USE_NAME_ON_FS == USE_NAME_ON_FS_REAL_BASENAME
 # error not implemented
 #endif
 
@@ -1714,7 +1747,7 @@ glob_helper(
 	    plain = 1;
 	    break;
 	  case ALPHA:
-#if USE_NAME_ON_FS == 1
+#if USE_NAME_ON_FS == USE_NAME_ON_FS_REAL_BASENAME
 	    plain = 1;
 #else
 	    magical = 1;
@@ -1769,11 +1802,11 @@ glob_helper(
     if (magical || recursive) {
 	struct dirent *dp;
 	DIR *dirp;
-# if USE_NAME_ON_FS == 2
+# if USE_NAME_ON_FS == USE_NAME_ON_FS_BY_FNMATCH
 	char *plainname = 0;
 # endif
 	IF_NORMALIZE_UTF8PATH(int norm_p);
-# if USE_NAME_ON_FS == 2
+# if USE_NAME_ON_FS == USE_NAME_ON_FS_BY_FNMATCH
 	if (cur + 1 == end && (*cur)->type <= ALPHA) {
 	    plainname = join_path(path, pathlen, dirsep, (*cur)->str, strlen((*cur)->str));
 	    if (!plainname) return -1;
@@ -1801,7 +1834,7 @@ glob_helper(
 	}
 # endif
 # ifdef HAVE_GETATTRLIST
-	if (is_case_sensitive(dirp) == 0)
+	if (is_case_sensitive(dirp, path) == 0)
 	    flags |= FNM_CASEFOLD;
 # endif
 	while ((dp = READDIR(dirp, enc)) != NULL) {
@@ -1873,7 +1906,7 @@ glob_helper(
 		}
 		switch (p->type) {
 		  case ALPHA:
-# if USE_NAME_ON_FS == 2
+# if USE_NAME_ON_FS == USE_NAME_ON_FS_BY_FNMATCH
 		    if (plainname) {
 			*new_end++ = p->next;
 			break;
@@ -1945,7 +1978,7 @@ glob_helper(
 		    status = -1;
 		    break;
 		}
-#if USE_NAME_ON_FS == 1
+#if USE_NAME_ON_FS == USE_NAME_ON_FS_REAL_BASENAME
 		if ((*cur)->type == ALPHA) {
 		    long base = pathlen + (dirsep != 0);
 		    buf = replace_real_basename(buf, base, enc, IF_NORMALIZE_UTF8PATH(1)+0,
@@ -2021,29 +2054,18 @@ rb_glob_caller(const char *path, VALUE a, void *enc)
     return status;
 }
 
-static int
-rb_glob2(const char *path, int flags,
-	 void (*func)(const char *, VALUE, void *), VALUE arg,
-	 rb_encoding* enc)
-{
-    struct glob_args args;
-
-    args.func = func;
-    args.value = arg;
-    args.enc = enc;
-
-    if (flags & FNM_SYSCASE) {
-	rb_warning("Dir.glob() ignores File::FNM_CASEFOLD");
-    }
-
-    return ruby_glob0(path, flags | GLOB_VERBOSE, rb_glob_caller, (VALUE)&args,
-		      enc);
-}
-
 void
 rb_glob(const char *path, void (*func)(const char *, VALUE, void *), VALUE arg)
 {
-    int status = rb_glob2(path, 0, func, arg, rb_ascii8bit_encoding());
+    struct glob_args args;
+    int status;
+
+    args.func = func;
+    args.value = arg;
+    args.enc = rb_ascii8bit_encoding();
+
+    status = ruby_glob0(path, GLOB_VERBOSE, rb_glob_caller, (VALUE)&args,
+			args.enc);
     if (status) GLOB_JUMP_TAG(status);
 }
 
@@ -2359,7 +2381,7 @@ dir_s_glob(int argc, VALUE *argv, VALUE obj)
 static VALUE
 dir_open_dir(int argc, VALUE *argv)
 {
-    VALUE dir = rb_funcall2(rb_cDir, rb_intern("open"), argc, argv);
+    VALUE dir = rb_funcallv(rb_cDir, rb_intern("open"), argc, argv);
 
     rb_check_typeddata(dir, &dir_data_type);
     return dir;
@@ -2677,14 +2699,13 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
     dir = opendir(path);
     if (!dir) {
 	int e = errno;
-	switch (e) {
-	  case EMFILE: case ENFILE:
-	    rb_gc();
+	switch (rb_gc_for_fd(e)) {
+	  default:
 	    dir = opendir(path);
 	    if (dir) break;
 	    e = errno;
 	    /* fall through */
-	  default:
+	  case 0:
 	    if (false_on_notdir && e == ENOTDIR) return Qfalse;
 	    rb_syserr_fail_path(e, orig);
 	}

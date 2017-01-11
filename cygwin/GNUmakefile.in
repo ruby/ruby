@@ -1,8 +1,11 @@
+override MFLAGS := $(filter-out -j%,$(MFLAGS))
+override MAKEFLAGS := $(filter-out -j%,$(MAKEFLAGS))
 include Makefile
 
 ENABLE_SHARED=@ENABLE_SHARED@
 DLLWRAP = @DLLWRAP@ --target=@target_os@ --driver-name="$(CC)"
 WINDRES = @WINDRES@ --preprocessor="$(CPP) -xc" -DRC_INVOKED
+STRIP = @STRIP@
 
 ifeq (@target_os@,cygwin)
   DLL_BASE_NAME := $(LIBRUBY_SO:.dll=)
@@ -10,9 +13,6 @@ else
   DLL_BASE_NAME := $(RUBY_SO_NAME)
   DLLWRAP += -mno-cygwin
   VPATH := $(VPATH):$(srcdir)/win32
-  STUBPROGRAM = rubystub$(EXEEXT)
-  IGNOREDPATTERNS = %~ .% %.orig %.rej \#%\#
-  SCRIPTPROGRAMS = $(addsuffix $(EXEEXT),$(filter-out $(IGNOREDPATTERNS),$(notdir $(wildcard $(srcdir)/bin/*))))
 endif
 
 ifneq ($(ENABLE_SHARED),yes)
@@ -32,6 +32,8 @@ WPROGRAM = $(RUBYW_INSTALL_NAME)$(EXEEXT)
 
 -include uncommon.mk
 
+include $(srcdir)/defs/gmake.mk
+
 SOLIBS := $(DLL_BASE_NAME).res.@OBJEXT@ $(SOLIBS)
 override EXTOBJS += $(if $(filter-out $(RUBYW_INSTALL_NAME),$(@:$(EXEEXT)=)),$(RUBY_INSTALL_NAME),$(@:$(EXEEXT)=)).res.$(OBJEXT)
 RCFILES = $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(DLL_BASE_NAME).rc
@@ -39,13 +41,6 @@ RUBYDEF = $(DLL_BASE_NAME).def
 
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
-stub: $(STUBPROGRAM)
-scriptbin: $(SCRIPTPROGRAMS)
-
-%$(EXEEXT): bin/% $(STUBPROGRAM)
-	$(ECHO) generating $@
-	$(Q) { cat $(STUBPROGRAM); echo; sed -e '1{' -e '/^#!.*ruby/!i\' -e '#!/bin/ruby' -e '}' $<; } > $@
-	$(Q) chmod +x $@
 
 $(LIBRUBY): $(RUBY_EXP) $(LIBRUBY_SO)
 $(RUBY_EXP) $(LIBRUBY_SO): $(DLL_BASE_NAME).res.@OBJEXT@
@@ -67,11 +62,7 @@ $(WPROGRAM): $(RUBYW_INSTALL_NAME).res.@OBJEXT@
 	$(ECHO) linking $@
 	$(Q) $(PURIFY) $(CC) -mwindows -e $(SYMBOL_PREFIX)mainCRTStartup $(LDFLAGS) $(XLDFLAGS) \
 	  $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
-$(STUBPROGRAM): $(RUBY_INSTALL_NAME).res.@OBJEXT@ win32/stub.@OBJEXT@
-	@rm -f $@
-	$(ECHO) linking $@
-	$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) \
-	  win32/stub.@OBJEXT@ $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
+$(STUBPROGRAM): $(RUBY_INSTALL_NAME).res.@OBJEXT@
 
 $(RUBY_EXP): $(LIBRUBY_A)
 	$(ECHO) creating $@

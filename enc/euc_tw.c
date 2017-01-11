@@ -221,10 +221,8 @@ OnigEncodingDefine(euc_tw, EUC_TW) = {
   onigenc_not_support_get_ctype_code_range,
   euctw_left_adjust_char_head,
   euctw_is_allowed_reverse_match,
+  onigenc_ascii_only_case_map,
   0,
   ONIGENC_FLAG_NONE,
-#ifdef ONIG_CASE_MAPPING
-  onigenc_not_support_case_map,
-#endif   /* ONIG_CASE_MAPPING */
 };
 ENC_ALIAS("eucTW", "EUC-TW")
