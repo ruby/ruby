@@ -9400,7 +9400,7 @@ rb_enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl)
 		    rb_str_buf_cat(buf, rep, replen);
 		}
 		else {
-		    repl = rb_yield(rb_enc_str_new(p, e-p, enc));
+		    repl = rb_yield(rb_enc_str_new(p, clen, enc));
 		    repl = str_compat_and_valid(repl, enc);
 		    tainted |= OBJ_TAINTED_RAW(repl);
 		    rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));

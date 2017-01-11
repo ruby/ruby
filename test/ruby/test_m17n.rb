@@ -1623,7 +1623,7 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(ArgumentError){ u("\xE3\x81\x82\xE3\x81\x82\xE3\x81").scrub{u("\x81")} }
     assert_equal(e("\xA4\xA2\xA2\xAE"), e("\xA4\xA2\xA4").scrub{e("\xA2\xAE")})
 
-    assert_equal(u("\x81"), u("a\x81").scrub {|c| break c})
+    assert_equal(u("\x81"), u("a\x81c").scrub {|c| break c})
     assert_raise(ArgumentError) {u("a\x81").scrub {|c| c}}
   end
 
@@ -1641,8 +1641,8 @@ class TestM17N < Test::Unit::TestCase
                  "\xff".force_encoding(Encoding::UTF_32LE).
                  scrub)
     c = nil
-    assert_equal("?".encode(Encoding::UTF_16LE),
-                 "\x00\xD8".force_encoding(Encoding::UTF_16LE).
+    assert_equal("?\u3042".encode(Encoding::UTF_16LE),
+                 "\x00\xD8\x42\x30".force_encoding(Encoding::UTF_16LE).
                    scrub {|e| c = e; "?".encode(Encoding::UTF_16LE)})
     assert_equal("\x00\xD8".force_encoding(Encoding::UTF_16LE), c)
   end
