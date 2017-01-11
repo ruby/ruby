@@ -1625,6 +1625,7 @@ class TestM17N < Test::Unit::TestCase
 
     assert_equal(u("\x81"), u("a\x81c").scrub {|c| break c})
     assert_raise(ArgumentError) {u("a\x81").scrub {|c| c}}
+    assert_raise(ArgumentError) {u("a").scrub("?") {|c| c}}
   end
 
   def test_scrub_widechar
@@ -1645,6 +1646,7 @@ class TestM17N < Test::Unit::TestCase
                  "\x00\xD8\x42\x30".force_encoding(Encoding::UTF_16LE).
                    scrub {|e| c = e; "?".encode(Encoding::UTF_16LE)})
     assert_equal("\x00\xD8".force_encoding(Encoding::UTF_16LE), c)
+    assert_raise(ArgumentError) {"\uFFFD\u3042".encode("UTF-16BE").scrub("") {}}
   end
 
   def test_scrub_dummy_encoding
