@@ -10,9 +10,6 @@ case RUBY_PLATFORM
 when /cygwin/
   libc_so = "cygwin1.dll"
   libm_so = "cygwin1.dll"
-when /x86_64-linux/
-  libc_so = "/lib64/libc.so.6"
-  libm_so = "/lib64/libm.so.6"
 when /linux/
   libdir = '/lib'
   case [0].pack('L!').size
