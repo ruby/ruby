@@ -9345,7 +9345,11 @@ rb_enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl)
 	const char *e = RSTRING_END(str);
 	const char *p1 = p;
 	long mbminlen = rb_enc_mbminlen(enc);
-	if (!NIL_P(repl)) {
+	if (rb_block_given_p()) {
+	    rep = NULL;
+	    replen = 0;
+	}
+	else if (!NIL_P(repl)) {
 	    rep = RSTRING_PTR(repl);
 	    replen = RSTRING_LEN(repl);
 	}

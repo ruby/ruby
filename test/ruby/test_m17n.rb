@@ -1640,6 +1640,11 @@ class TestM17N < Test::Unit::TestCase
     assert_equal("\uFFFD".encode("UTF-32LE"),
                  "\xff".force_encoding(Encoding::UTF_32LE).
                  scrub)
+    c = nil
+    assert_equal("?".encode(Encoding::UTF_16LE),
+                 "\x00\xD8".force_encoding(Encoding::UTF_16LE).
+                   scrub {|e| c = e; "?".encode(Encoding::UTF_16LE)})
+    assert_equal("\x00\xD8".force_encoding(Encoding::UTF_16LE), c)
   end
 
   def test_scrub_dummy_encoding
