@@ -181,8 +181,7 @@ module Net # :nodoc:
         @io.to_io.wait_writable(@read_timeout) or raise Net::ReadTimeout
         # continue looping
       when nil
-        # callers do not care about backtrace, so avoid allocating for it
-        raise EOFError, 'end of file reached', []
+        raise EOFError, 'end of file reached'
       end while true
     end
 

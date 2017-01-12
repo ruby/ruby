@@ -157,6 +157,28 @@ module Net
       end
     end
 
+    def test_eof_error_backtrace
+      bug13018 = '[ruby-core:78550] [Bug #13018]'
+      servers = Socket.tcp_server_sockets("localhost", 0)
+      begin
+        sock = nil
+        Thread.start do
+          sock = accept(servers)
+          sock.close
+        end
+        smtp = Net::SMTP.new("localhost", servers[0].local_address.ip_port)
+        e = assert_raise(EOFError, bug13018) do
+          smtp.start do
+          end
+        end
+        assert_equal(EOFError, e.class, bug13018)
+        assert(e.backtrace.grep(%r"\bnet/smtp\.rb:").size > 0, bug13018)
+      ensure
+        sock.close if sock
+        servers.each(&:close)
+      end
+    end
+
     private
 
     def accept(servers)
