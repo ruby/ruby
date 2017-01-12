@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 # = net/smtp.rb
 #
 # Copyright (c) 1999-2007 Yukihiro Matsumoto.
@@ -945,7 +945,7 @@ module Net
     end
 
     def recv_response
-      buf = ''
+      buf = ''.dup
       while true
         line = @socket.readline
         buf << line << "\n"
