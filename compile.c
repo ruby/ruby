@@ -5530,7 +5530,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	struct rb_call_info_kw_arg *keywords = NULL;
 
 	INIT_ANCHOR(args);
-	if (iseq->body->type == ISEQ_TYPE_TOP) {
+	if (iseq->body->type == ISEQ_TYPE_TOP ||
+	    iseq->body->type == ISEQ_TYPE_MAIN) {
 	    COMPILE_ERROR(ERROR_ARGS "Invalid yield");
 	    goto ng;
 	}
