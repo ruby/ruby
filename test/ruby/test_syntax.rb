@@ -975,6 +975,10 @@ eom
     end;
   end
 
+  def test_invalid_jump
+    assert_in_out_err(%w[-e redo], "", [], /^-e:1: /)
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end

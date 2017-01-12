@@ -337,7 +337,7 @@ append_compile_error(rb_iseq_t *iseq, int line, const char *fmt, ...)
 {
     VALUE err_info = ISEQ_COMPILE_DATA(iseq)->err_info;
     VALUE file = iseq->body->location.path;
-    VALUE err = err_info;
+    VALUE err = err_info == Qtrue ? Qfalse : err_info;
     va_list args;
 
     va_start(args, fmt);
@@ -346,6 +346,9 @@ append_compile_error(rb_iseq_t *iseq, int line, const char *fmt, ...)
     if (NIL_P(err_info)) {
 	RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->err_info, err);
 	rb_set_errinfo(err);
+    }
+    else if (!err_info) {
+	RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->err_info, Qtrue);
     }
 }
 

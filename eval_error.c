@@ -294,7 +294,7 @@ error_handle(int ex)
 	    /* no message when exiting by signal */
 	}
 	else {
-	    error_print(th);
+	    rb_threadptr_error_print(th, errinfo);
 	}
 	break;
       }

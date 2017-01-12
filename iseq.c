@@ -272,6 +272,10 @@ prepare_iseq_build(rb_iseq_t *iseq,
 		   const rb_compile_option_t *option)
 {
     VALUE coverage = Qfalse;
+    VALUE err_info = Qnil;
+
+    if (parent && (type == ISEQ_TYPE_MAIN || type == ISEQ_TYPE_TOP))
+	err_info = Qfalse;
 
     iseq->body->type = type;
     set_relation(iseq, parent);
@@ -286,7 +290,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
     RB_OBJ_WRITE(iseq, &iseq->body->mark_ary, iseq_mark_ary_create(0));
 
     ISEQ_COMPILE_DATA(iseq) = ZALLOC(struct iseq_compile_data);
-    RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->err_info, Qnil);
+    RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->err_info, err_info);
     RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->mark_ary, rb_ary_tmp_new(3));
 
     ISEQ_COMPILE_DATA(iseq)->storage_head = ISEQ_COMPILE_DATA(iseq)->storage_current =
@@ -325,6 +329,7 @@ cleanup_iseq_build(rb_iseq_t *iseq)
     compile_data_free(data);
 
     if (RTEST(err)) {
+	if (err == Qtrue) err = rb_exc_new_cstr(rb_eSyntaxError, "compile error");
 	rb_funcallv(err, rb_intern("set_backtrace"), 1, &iseq->body->location.path);
 	rb_exc_raise(err);
     }
