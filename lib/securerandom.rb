@@ -1,9 +1,8 @@
 # -*- coding: us-ascii -*-
 # frozen_string_literal: true
-begin
-  require 'openssl'
-rescue LoadError
-end
+
+require 'securerandom.so'
+#require 'random/chacha'
 
 # == Secure random number generator interface.
 #
@@ -16,7 +15,6 @@ end
 #
 # It supports the following secure random number generators:
 #
-# * openssl
 # * /dev/urandom
 # * Win32
 #
@@ -48,32 +46,16 @@ end
 #
 
 module SecureRandom
-  if defined?(OpenSSL::Random) && /mswin|mingw/ !~ RUBY_PLATFORM
-    def self.gen_random(n)
-      @pid = 0 unless defined?(@pid)
-      pid = $$
-      unless @pid == pid
-        now = Process.clock_gettime(Process::CLOCK_REALTIME, :nanosecond)
-        OpenSSL::Random.random_add([now, @pid, pid].join(""), 0.0)
-        seed = Random.raw_seed(16)
-        if (seed)
-          OpenSSL::Random.random_add(seed, 16)
-        end
-        @pid = pid
-      end
-      return OpenSSL::Random.random_bytes(n)
+  class RNG < ForkDetector
+    def prepare
+      Random.new
     end
-  else
-    def self.gen_random(n)
-      ret = Random.raw_seed(n)
-      unless ret
-        raise NotImplementedError, "No random device"
-      end
-      unless ret.length == n
-        raise NotImplementedError, "Unexpected partial read from random device: only #{ret.length} for #{n} bytes"
-      end
-      ret
-    end
+  end
+
+  @@rng = RNG.new
+
+  def self.gen_random(n)
+    @@rng.get.bytes(n)
   end
 
   class << self
