@@ -337,8 +337,7 @@ enable_shared = CONFIG["ENABLE_SHARED"] == 'yes'
 dll = CONFIG["LIBRUBY_SO", enable_shared]
 lib = CONFIG["LIBRUBY", true]
 arc = CONFIG["LIBRUBY_A", true]
-config_h = File.read(CONFIG["EXTOUT"]+"/include/"+CONFIG["arch"]+"/ruby/config.h")
-load_relative = config_h[/^\s*#\s*define\s+LOAD_RELATIVE\s+(\d+)/, 1].to_i.nonzero?
+load_relative = CONFIG["LIBRUBY_RELATIVE"] == 'yes'
 
 install?(:local, :arch, :bin, :'bin-arch') do
   prepare "binary commands", bindir
