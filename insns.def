@@ -1645,17 +1645,11 @@ opt_lt
 	/* flonum is not NaN */
 	val = RFLOAT_VALUE(recv) < RFLOAT_VALUE(obj) ? Qtrue : Qfalse;
     }
-    else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
-	if (RBASIC_CLASS(recv) == rb_cFloat && RBASIC_CLASS(obj) == rb_cFloat  &&
-	    BASIC_OP_UNREDEFINED_P(BOP_LT, FLOAT_REDEFINED_OP_FLAG)) {
-	    val = double_cmp_lt(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
-	}
-	else {
-	    goto INSN_LABEL(normal_dispatch);
-	}
+    else if (FLOAT_INSTANCE_P(recv) && FLOAT_INSTANCE_P(obj) &&
+	     BASIC_OP_UNREDEFINED_P(BOP_LT, FLOAT_REDEFINED_OP_FLAG)) {
+	val = double_cmp_lt(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
     }
     else {
-      INSN_LABEL(normal_dispatch):
 	PUSH(recv);
 	PUSH(obj);
 	CALL_SIMPLE_METHOD(recv);
@@ -1688,6 +1682,10 @@ opt_le
 	     BASIC_OP_UNREDEFINED_P(BOP_LE, FLOAT_REDEFINED_OP_FLAG)) {
 	/* flonum is not NaN */
 	val = RFLOAT_VALUE(recv) <= RFLOAT_VALUE(obj) ? Qtrue : Qfalse;
+    }
+    else if (FLOAT_INSTANCE_P(recv) && FLOAT_INSTANCE_P(obj) &&
+	     BASIC_OP_UNREDEFINED_P(BOP_LT, FLOAT_REDEFINED_OP_FLAG)) {
+	val = double_cmp_le(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
     }
     else {
 	/* other */
@@ -1724,17 +1722,11 @@ opt_gt
 	/* flonum is not NaN */
 	val = RFLOAT_VALUE(recv) > RFLOAT_VALUE(obj) ? Qtrue : Qfalse;
     }
-    else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
-	if (RBASIC_CLASS(recv) == rb_cFloat && RBASIC_CLASS(obj) == rb_cFloat  &&
-	    BASIC_OP_UNREDEFINED_P(BOP_GT, FLOAT_REDEFINED_OP_FLAG)) {
-	    val = double_cmp_gt(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
-	}
-	else {
-	    goto INSN_LABEL(normal_dispatch);
-	}
+    else if (FLOAT_INSTANCE_P(recv) && FLOAT_INSTANCE_P(obj) &&
+	     BASIC_OP_UNREDEFINED_P(BOP_LT, FLOAT_REDEFINED_OP_FLAG)) {
+	val = double_cmp_gt(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
     }
     else {
-      INSN_LABEL(normal_dispatch):
 	PUSH(recv);
 	PUSH(obj);
 	CALL_SIMPLE_METHOD(recv);
@@ -1767,6 +1759,10 @@ opt_ge
 	     BASIC_OP_UNREDEFINED_P(BOP_GE, FLOAT_REDEFINED_OP_FLAG)) {
 	/* flonum is not NaN */
 	val = RFLOAT_VALUE(recv) >= RFLOAT_VALUE(obj) ? Qtrue : Qfalse;
+    }
+    else if (FLOAT_INSTANCE_P(recv) && FLOAT_INSTANCE_P(obj) &&
+	     BASIC_OP_UNREDEFINED_P(BOP_LT, FLOAT_REDEFINED_OP_FLAG)) {
+	val = double_cmp_ge(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
     }
     else {
 	PUSH(recv);
