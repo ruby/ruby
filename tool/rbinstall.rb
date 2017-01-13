@@ -443,9 +443,7 @@ else
   PROLOG_SCRIPT = nil
 end
 
-install?(:local, :comm, :bin, :'bin-comm') do
-  prepare "command scripts", bindir
-
+$script_installer = Struct.new(:ruby_shebang, :ruby_bin, :stub, :trans, :prebatch, :postbatch) do
   ruby_shebang = File.join(bindir, ruby_install_name)
   if File::ALT_SEPARATOR
     ruby_bin = ruby_shebang.tr(File::SEPARATOR, File::ALT_SEPARATOR)
@@ -481,19 +479,25 @@ install?(:local, :comm, :bin, :'bin-comm') do
   postbatch = PROLOG_SCRIPT ? "};{\n#{PROLOG_SCRIPT.sub(/\A(?:#.*\n)*/, '')}" : ''
   postbatch << ">,\n}\n"
   postbatch.gsub!(/(?=\n)/, ' #')
-  install_recursive(File.join(srcdir, "bin"), bindir, :maxdepth => 1) do |src, cmd|
-    cmd = cmd.sub(/[^\/]*\z/m) {|n| RbConfig.expand(trans[n])}
 
-    shebang, body = open(src, "rb") do |f|
-      next f.gets, f.read
-    end
-    shebang or raise "empty file - #{src}"
+  def prolog(shebang)
     if PROLOG_SCRIPT and !$cmdtype
       shebang.sub!(/\A(\#!.*?ruby\b)?/) {PROLOG_SCRIPT + ($1 || "#!ruby\n")}
     else
       shebang.sub!(/\A(\#!.*?ruby\b)?/) {"#!" + ruby_shebang + ($1 ? "" : "\n")}
     end
     shebang.sub!(/\r$/, '')
+    shebang
+  end
+
+  def install(src, cmd)
+    cmd = cmd.sub(/[^\/]*\z/m) {|n| RbConfig.expand(trans[n])}
+
+    shebang, body = open(src, "rb") do |f|
+      next f.gets, f.read
+    end
+    shebang or raise "empty file - #{src}"
+    shebang = prolog(shebang)
     body.gsub!(/\r$/, '')
 
     cmd << ".#{$cmdtype}" if $cmdtype
@@ -510,6 +514,16 @@ install?(:local, :comm, :bin, :'bin-comm') do
         shebang + body
       end
     end
+  end
+
+  break new(ruby_shebang, ruby_bin, stub, trans, prebatch, postbatch)
+end
+
+install?(:local, :comm, :bin, :'bin-comm') do
+  prepare "command scripts", bindir
+
+  install_recursive(File.join(srcdir, "bin"), bindir, :maxdepth => 1) do |src, cmd|
+    $script_installer.install(src, cmd)
   end
 end
 
@@ -674,6 +688,12 @@ module RbInstall
 
     def build_extensions
     end
+
+    def shebang(bin_file_name)
+      path = File.join(gem_dir, spec.bindir, bin_file_name)
+      first_line = File.open(path, "rb") {|file| file.gets}
+      $script_installer.prolog(first_line)
+    end
   end
 end
 
@@ -723,8 +743,10 @@ install?(:ext, :comm, :gem) do
       bin_dir = File.join(gem_dir, 'gems', full_name, gemspec.bindir)
       makedirs(bin_dir)
 
-      execs = gemspec.executables.map {|exec| File.join(srcdir, 'bin', exec)}
-      install(execs, bin_dir, :mode => $script_mode)
+      gemspec.executables.map {|exec|
+        $script_installer.install(File.join(srcdir, 'bin', exec),
+                                  File.join(bin_dir, exec))
+      }
     end
   end
 end
