@@ -922,72 +922,6 @@ rb_dump_machine_register(const ucontext_t *ctx)
 # define rb_dump_machine_register(ctx) ((void)0)
 #endif /* HAVE_PRINT_MACHINE_REGISTERS */
 
-FUNC_MINIMIZED(static void bug_important_message(FILE *out, const char *const msg, size_t len));
-
-static void
-bug_important_message(FILE *out, const char *const msg, size_t len)
-{
-    const char *const endmsg = msg + len;
-    const char *p = msg;
-
-    if (!len) return;
-    if (isatty(fileno(out))) {
-	static const char red[] = "\033[;31;1;7m";
-	static const char green[] = "\033[;32;7m";
-	static const char reset[] = "\033[m";
-	const char *e = strchr(p, '\n');
-	const int w = (int)(e - p);
-	do {
-	    int i = (int)(e - p);
-	    fputs(*p == ' ' ? green : red, out);
-	    fwrite(p, 1, e - p, out);
-	    for (; i < w; ++i) fputc(' ', out);
-	    fputs(reset, out);
-	    fputc('\n', out);
-	} while ((p = e + 1) < endmsg && (e = strchr(p, '\n')) != 0 && e > p + 1);
-    }
-    fwrite(p, 1, endmsg - p, out);
-}
-
-static void
-preface_dump(void)
-{
-#if defined __APPLE__
-    static const char msg[] = ""
-	"-- Crash Report log information "
-	"--------------------------------------------\n"
-	"   See Crash Report log file under the one of following:\n"
-	"     * ~/Library/Logs/CrashReporter\n"
-	"     * /Library/Logs/CrashReporter\n"
-	"     * ~/Library/Logs/DiagnosticReports\n"
-	"     * /Library/Logs/DiagnosticReports\n"
-	"   for more details.\n"
-	"Don't forget to include the above Crash Report log file in bug reports.\n"
-	"\n";
-    const size_t msglen = sizeof(msg) - 1;
-#else
-    const char *msg = NULL;
-    const size_t msglen = 0;
-#endif
-    bug_important_message(stderr, msg, msglen);
-}
-
-static void
-postscript_dump(void)
-{
-#if defined __APPLE__
-    static const char msg[] = ""
-	"[IMPORTANT]\n"
-	"Don't forget to include the Crash Report log file in bug reports.\n"
-	"\n";
-    const size_t msglen = sizeof(msg) - 1;
-#else
-    const char *msg = NULL;
-    const size_t msglen = 0;
-#endif
-    bug_important_message(stderr, msg, msglen);
-}
-
 void
 rb_vm_bugreport(const void *ctx)
 {
@@ -1000,8 +934,6 @@ rb_vm_bugreport(const void *ctx)
     enum {other_runtime_info = 0};
 #endif
     const rb_vm_t *const vm = GET_VM();
-
-    preface_dump();
 
     if (vm) {
 	SDR();
@@ -1109,6 +1041,4 @@ rb_vm_bugreport(const void *ctx)
 	}
 #endif /* __FreeBSD__ */
     }
-
-    postscript_dump();
 }
