@@ -24,6 +24,10 @@
 #include <unistd.h>
 #endif
 
+#if defined __APPLE__
+# include <AvailabilityMacros.h>
+#endif
+
 #ifndef EXIT_SUCCESS
 #define EXIT_SUCCESS 0
 #endif
@@ -371,8 +375,10 @@ preface_dump(FILE *out)
 	"-- Crash Report log information "
 	"--------------------------------------------\n"
 	"   See Crash Report log file under the one of following:\n"
+# if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6
 	"     * ~/Library/Logs/CrashReporter\n"
 	"     * /Library/Logs/CrashReporter\n"
+# endif
 	"     * ~/Library/Logs/DiagnosticReports\n"
 	"     * /Library/Logs/DiagnosticReports\n"
 	"   for more details.\n"
@@ -391,8 +397,14 @@ postscript_dump(FILE *out)
 {
 #if defined __APPLE__
     static const char msg[] = ""
-	"[IMPORTANT]\n"
-	"Don't forget to include the Crash Report log file in bug reports.\n"
+	"[IMPORTANT]"
+	/*" ------------------------------------------------"*/
+	"\n""Don't forget to include the Crash Report log file under\n"
+# if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6
+	"CrashReporter or "
+# endif
+	"DiagnosticReports directory in bug reports.\n"
+	/*"------------------------------------------------------------\n"*/
 	"\n";
     const size_t msglen = sizeof(msg) - 1;
 #else

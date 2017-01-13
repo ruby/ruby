@@ -589,7 +589,7 @@ class TestRubyOptions < Test::Unit::TestCase
         \n
         (?:
           \[IMPORTANT\]\n
-          .*\n
+          (?:.+\n)+
           \n
         )?
       )x,
