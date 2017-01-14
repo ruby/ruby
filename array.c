@@ -2075,11 +2075,16 @@ rb_ary_join(VALUE ary, VALUE sep)
  *
  *  Returns a string created by converting each element of the array to
  *  a string, separated by the given +separator+.
- *  If the +separator+ is +nil+, it uses current $,.
- *  If both the +separator+ and $, are nil, it uses empty string.
+ *  If the +separator+ is +nil+, it uses current <code>$,</code>.
+ *  If both the +separator+ and <code>$,</code> are +nil+,
+ *  it uses an empty string.
  *
  *     [ "a", "b", "c" ].join        #=> "abc"
  *     [ "a", "b", "c" ].join("-")   #=> "a-b-c"
+ *
+ *  For nested arrays, join is applied recursively:
+ *
+ *     [ "a", [1, 2, [:x, :y]], "b" ].join("-")   #=> "a-1-2-x-y-b"
  */
 
 static VALUE
