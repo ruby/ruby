@@ -1,5 +1,5 @@
 # coding: us-ascii
-# frozen_string_literal: true
+# frozen_string_literal: false
 require 'test/unit'
 require 'stringio'
 require 'tempfile'
@@ -42,7 +42,7 @@ if defined? Zlib
     end
 
     def test_deflate_chunked
-      original = String.new
+      original = ''
       chunks = []
       r = Random.new 0
 
@@ -315,7 +315,7 @@ if defined? Zlib
 
       z = Zlib::Inflate.new
 
-      inflated = String.new
+      inflated = ""
 
       deflated.each_char do |byte|
         inflated << z.inflate(byte)
@@ -603,13 +603,14 @@ if defined? Zlib
           assert_equal(t.path, f.path)
         end
 
-        sio = StringIO.new
+        s = ""
+        sio = StringIO.new(s)
         gz = Zlib::GzipWriter.new(sio)
         gz.print("foo")
         assert_raise(NoMethodError) { gz.path }
         gz.close
 
-        sio = StringIO.new(sio.string)
+        sio = StringIO.new(s)
         Zlib::GzipReader.new(sio) do |f|
           assert_raise(NoMethodError) { f.path }
         end
@@ -624,11 +625,11 @@ if defined? Zlib
     end
 
     def test_ungetc
-      sio = StringIO.new
-      w = Zlib::GzipWriter.new(sio)
+      s = ""
+      w = Zlib::GzipWriter.new(StringIO.new(s))
       w << (1...1000).to_a.inspect
       w.close
-      r = Zlib::GzipReader.new(StringIO.new(sio.string))
+      r = Zlib::GzipReader.new(StringIO.new(s))
       r.read(100)
       r.ungetc ?a
       assert_nothing_raised("[ruby-dev:24060]") {
@@ -639,11 +640,11 @@ if defined? Zlib
     end
 
     def test_ungetc_paragraph
-      sio = StringIO.new
-      w = Zlib::GzipWriter.new(sio)
+      s = ""
+      w = Zlib::GzipWriter.new(StringIO.new(s))
       w << "abc"
       w.close
-      r = Zlib::GzipReader.new(StringIO.new(sio.string))
+      r = Zlib::GzipReader.new(StringIO.new(s))
       r.ungetc ?\n
       assert_equal("abc", r.gets(""))
       assert_nothing_raised("[ruby-dev:24065]") {
@@ -777,7 +778,7 @@ if defined? Zlib
         end
 
         Zlib::GzipReader.open(t.path) do |f|
-          s = String.new
+          s = ""
           f.readpartial(3, s)
           assert("foo".start_with?(s))
 
@@ -937,9 +938,7 @@ if defined? Zlib
     end
 
     def test_corrupted_header
-      sio = StringIO.new
-      s = sio.string
-      gz = Zlib::GzipWriter.new(sio)
+      gz = Zlib::GzipWriter.new(StringIO.new(s = ""))
       gz.orig_name = "X"
       gz.comment = "Y"
       gz.print("foo")
@@ -1121,7 +1120,7 @@ if defined? Zlib
     def test_deflate_stream
       r = Random.new 0
 
-      deflated = String.new
+      deflated = ''
 
       Zlib.deflate(r.bytes(20000)) do |chunk|
         deflated << chunk

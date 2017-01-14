@@ -246,7 +246,7 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_proxy
     with_http {|srv, dr, url|
-      proxy_log = StringIO.new
+      proxy_log = StringIO.new(''.dup)
       proxy_logger = WEBrick::Log.new(proxy_log, WEBrick::BasicLog::WARN)
       proxy_auth_log = ''.dup
       proxy = WEBrick::HTTPProxyServer.new({
@@ -300,7 +300,7 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_proxy_http_basic_authentication_failure
     with_http {|srv, dr, url|
-      proxy_log = StringIO.new
+      proxy_log = StringIO.new(''.dup)
       proxy_logger = WEBrick::Log.new(proxy_log, WEBrick::BasicLog::WARN)
       proxy_auth_log = ''.dup
       proxy = WEBrick::HTTPProxyServer.new({
@@ -333,7 +333,7 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_proxy_http_basic_authentication_success
     with_http {|srv, dr, url|
-      proxy_log = StringIO.new
+      proxy_log = StringIO.new(''.dup)
       proxy_logger = WEBrick::Log.new(proxy_log, WEBrick::BasicLog::WARN)
       proxy_auth_log = ''.dup
       proxy = WEBrick::HTTPProxyServer.new({
@@ -374,7 +374,7 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_authenticated_proxy_http_basic_authentication_success
     with_http {|srv, dr, url|
-      proxy_log = StringIO.new
+      proxy_log = StringIO.new(''.dup)
       proxy_logger = WEBrick::Log.new(proxy_log, WEBrick::BasicLog::WARN)
       proxy_auth_log = ''.dup
       proxy = WEBrick::HTTPProxyServer.new({
