@@ -1635,7 +1635,13 @@ class Resolv
           name = self.get_name
           type, klass, ttl = self.get_unpack('nnN')
           typeclass = Resource.get_class(type, klass)
-          res = self.get_length16 { typeclass.decode_rdata self }
+          res = self.get_length16 do
+            begin
+              typeclass.decode_rdata self
+            rescue => e
+              raise DecodeError, e.message, e.backtrace
+            end
+          end
           res.instance_variable_set :@ttl, ttl
           return name, ttl, res
         end
