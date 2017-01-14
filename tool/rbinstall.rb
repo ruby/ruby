@@ -443,7 +443,8 @@ else
   PROLOG_SCRIPT = nil
 end
 
-$script_installer = Struct.new(:ruby_shebang, :ruby_bin, :stub, :trans, :prebatch, :postbatch) do
+$script_installer = Struct.new(:ruby_shebang, :ruby_bin, :ruby_install_name,
+                               :stub, :trans, :prebatch, :postbatch) do
   ruby_shebang = File.join(bindir, ruby_install_name)
   if File::ALT_SEPARATOR
     ruby_bin = ruby_shebang.tr(File::SEPARATOR, File::ALT_SEPARATOR)
@@ -516,7 +517,7 @@ $script_installer = Struct.new(:ruby_shebang, :ruby_bin, :stub, :trans, :prebatc
     end
   end
 
-  break new(ruby_shebang, ruby_bin, stub, trans, prebatch, postbatch)
+  break new(ruby_shebang, ruby_bin, ruby_install_name, stub, trans, prebatch, postbatch)
 end
 
 install?(:local, :comm, :bin, :'bin-comm') do
