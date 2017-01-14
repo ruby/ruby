@@ -1521,12 +1521,12 @@ class Resolv
         def initialize(data)
           @data = data
           @index = 0
-          @limit = data.length
+          @limit = data.bytesize
           yield self
         end
 
         def inspect
-          "\#<#{self.class}: #{@data[0, @index].inspect} #{@data[@index..-1].inspect}>"
+          "\#<#{self.class}: #{@data.byteslice(0, @index).inspect} #{@data.byteslice(@index..-1).inspect}>"
         end
 
         def get_length16
@@ -1545,7 +1545,7 @@ class Resolv
 
         def get_bytes(len = @limit - @index)
           raise DecodeError.new("limit exceeded") if @limit < @index + len
-          d = @data[@index, len]
+          d = @data.byteslice(@index, len)
           @index += len
           return d
         end
@@ -1573,9 +1573,9 @@ class Resolv
 
         def get_string
           raise DecodeError.new("limit exceeded") if @limit <= @index
-          len = @data[@index].ord
+          len = @data.getbyte(@index)
           raise DecodeError.new("limit exceeded") if @limit < @index + 1 + len
-          d = @data[@index + 1, len]
+          d = @data.byteslice(@index + 1, len)
           @index += 1 + len
           return d
         end
@@ -1598,7 +1598,7 @@ class Resolv
           d = []
           while true
             raise DecodeError.new("limit exceeded") if @limit <= @index
-            case @data[@index].ord
+            case @data.getbyte(@index)
             when 0
               @index += 1
               if save_index
