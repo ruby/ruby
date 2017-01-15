@@ -695,6 +695,25 @@ module RbInstall
       first_line = File.open(path, "rb") {|file| file.gets}
       $script_installer.prolog(first_line)
     end
+
+    def check_executable_overwrite(filename)
+      return if @wrappers and same_bin_script?(filename, @bin_dir)
+      super
+    end
+
+    def generate_bin_script(filename, bindir)
+      return if same_bin_script?(filename, bindir)
+      super
+    end
+
+    def same_bin_script?(filename, bindir)
+      path = File.join(bindir, formatted_program_filename(filename))
+      begin
+        return true if File.binread(path) == app_script_text(filename)
+      rescue
+      end
+      false
+    end
   end
 end
 
