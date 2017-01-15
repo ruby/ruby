@@ -95,14 +95,15 @@ define rp
     set $regsrc = ((struct RRegexp*)($arg0))->src
     set $rsflags = ((struct RBasic*)$regsrc)->flags
     printf "%sT_REGEXP%s: ", $color_type, $color_end
-    set print address off
-    output (char *)(($rsflags & RUBY_FL_USER1) ? \
-	    ((struct RString*)$regsrc)->as.heap.ptr : \
-	    ((struct RString*)$regsrc)->as.ary)
-    set print address on
-    printf " len:%ld ", ($rsflags & RUBY_FL_USER1) ? \
+    set $len = ($rsflags & RUBY_FL_USER1) ? \
             ((struct RString*)$regsrc)->as.heap.len : \
             (($rsflags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
+    set print address off
+    output *(char *)(($rsflags & RUBY_FL_USER1) ? \
+	    ((struct RString*)$regsrc)->as.heap.ptr : \
+	    ((struct RString*)$regsrc)->as.ary) @ $len
+    set print address on
+    printf " len:%ld ", $len
     if $flags & RUBY_FL_USER6
       printf "(none) "
     end
@@ -422,21 +423,17 @@ end
 
 define output_string
   set $flags = ((struct RBasic*)($arg0))->flags
-  printf "%s", (char *)(($flags & RUBY_FL_USER1) ? \
+  set $len = ($flags & RUBY_FL_USER1) ? \
+          ((struct RString*)($arg0))->as.heap.len : \
+          (($flags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
+  output *(char *)(($flags & RUBY_FL_USER1) ? \
 	    ((struct RString*)($arg0))->as.heap.ptr : \
-	    ((struct RString*)($arg0))->as.ary)
+	    ((struct RString*)($arg0))->as.ary) @ $len
 end
 
 define rp_string
-  set $flags = ((struct RBasic*)($arg0))->flags
-  set print address off
-  output (char *)(($flags & RUBY_FL_USER1) ? \
-	    ((struct RString*)($arg0))->as.heap.ptr : \
-	    ((struct RString*)($arg0))->as.ary)
-  set print address on
-  printf " bytesize:%ld ", ($flags & RUBY_FL_USER1) ? \
-          ((struct RString*)($arg0))->as.heap.len : \
-          (($flags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
+  output_string $arg0
+  printf " bytesize:%ld ", $len
   if !($flags & RUBY_FL_USER1)
     printf "(embed) "
   else
