@@ -1176,7 +1176,7 @@ void Check_Type(VALUE value, int type) ::
 
   Ensures +value+ is of the given internal +type+ or raises a TypeError
 
-SaveStringValue(value) ::
+SafeStringValue(value) ::
 
   Checks that +value+ is a String and is not tainted
 
