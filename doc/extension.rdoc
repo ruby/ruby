@@ -1410,10 +1410,9 @@ int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optiona
   +optional+ is negative) number of IDs are optional.  If a
   mandatory key is not contained in +keyword_hash+, raises "missing
   keyword" +ArgumentError+.  If an optional key is not present in
-  +keyword_hash+, the corresponding element in +values+ is not changed.
-  If +optional+ is negative, rest of +keyword_hash+ are stored in the
-  next to optional +values+ as a new Hash, otherwise raises "unknown
-  keyword" +ArgumentError+.
+  +keyword_hash+, the corresponding element in +values+ is set to +Qundef+.
+  If +optional+ is negative, rest of +keyword_hash+ are ignored, otherwise
+  raises "unknown keyword" +ArgumentError+.
 
   Be warned, handling keyword arguments in the C API is less efficient
   than handling them in Ruby.  Consider using a Ruby wrapper method
