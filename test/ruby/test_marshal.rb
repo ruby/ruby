@@ -736,4 +736,16 @@ class TestMarshal < Test::Unit::TestCase
       end
     RUBY
   end
+
+  class Bug12974
+    def marshal_dump
+      dup
+    end
+  end
+
+  def test_marshal_dump_recursion
+    assert_raise_with_message(RuntimeError, /same class instance/) do
+      Marshal.dump(Bug12974.new)
+    end
+  end
 end
