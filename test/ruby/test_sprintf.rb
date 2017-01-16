@@ -433,4 +433,9 @@ class TestSprintf < Test::Unit::TestCase
     h = { key: nil, key2: "key2_val" }
     assert_equal("key is , key2 is key2_val", "key is %{key}, key2 is %{key2}" % h)
   end
+
+  def test_width_underflow
+    bug = 'https://github.com/mruby/mruby/issues/3347'
+    assert_equal("!", sprintf("%*c", 0, ?!.ord), bug)
+  end
 end
