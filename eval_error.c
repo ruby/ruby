@@ -65,7 +65,7 @@ error_print(void)
     volatile VALUE errat = Qundef;
     rb_thread_t *th = GET_THREAD();
     VALUE errinfo = th->errinfo;
-    int raised_flag = th->raised_flag;
+    volatile int raised_flag = th->raised_flag;
     volatile VALUE eclass = Qundef, e = Qundef;
     const char *volatile einfo;
     volatile long elen;
