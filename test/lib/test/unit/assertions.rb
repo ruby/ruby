@@ -452,7 +452,7 @@ EOT
         assert(failed.empty?, message(m) {failed.pretty_inspect})
       end
 
-      # compatiblity with test-unit
+      # compatibility with test-unit
       alias pend skip
 
       def prepare_syntax_check(code, fname = caller_locations(2, 1)[0], mesg = fname.to_s, verbose: nil)
