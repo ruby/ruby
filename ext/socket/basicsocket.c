@@ -530,7 +530,7 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
     struct rsock_send_arg arg;
     VALUE flags, to;
     rb_io_t *fptr;
-    int n;
+    ssize_t n;
     rb_blocking_function_t *func;
 
     rb_scan_args(argc, argv, "21", &arg.mesg, &flags, &to);
@@ -550,13 +550,13 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
     arg.fd = fptr->fd;
     arg.flags = NUM2INT(flags);
     while (rsock_maybe_fd_writable(arg.fd),
-	   (n = (int)BLOCKING_REGION_FD(func, &arg)) < 0) {
+	   (n = (ssize_t)BLOCKING_REGION_FD(func, &arg)) < 0) {
 	if (rb_io_wait_writable(arg.fd)) {
 	    continue;
 	}
 	rb_sys_fail("send(2)");
     }
-    return INT2FIX(n);
+    return SSIZET2NUM(n);
 }
 
 /*
