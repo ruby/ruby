@@ -676,99 +676,99 @@ class Rational_Test < Test::Unit::TestCase
   end
 
   def test_parse
-    assert_equal(Rational(5), '5'.to_r)
-    assert_equal(Rational(-5), '-5'.to_r)
-    assert_equal(Rational(5,3), '5/3'.to_r)
-    assert_equal(Rational(-5,3), '-5/3'.to_r)
+    assert_equal(Rational(5), '5'.to_r, "'5'.to_r")
+    assert_equal(Rational(-5), '-5'.to_r, "'-5'.to_r")
+    assert_equal(Rational(5,3), '5/3'.to_r, "'5/3'.to_r")
+    assert_equal(Rational(-5,3), '-5/3'.to_r, "'-5/3'.to_r")
 
-    assert_equal(Rational(5), '5.0'.to_r)
-    assert_equal(Rational(-5), '-5.0'.to_r)
-    assert_equal(Rational(5,3), '5.0/3'.to_r)
-    assert_equal(Rational(-5,3), '-5.0/3'.to_r)
+    assert_equal(Rational(5), '5.0'.to_r, "'5.0'.to_r")
+    assert_equal(Rational(-5), '-5.0'.to_r, "'-5.0'.to_r")
+    assert_equal(Rational(5,3), '5.0/3'.to_r, "'5.0/3'.to_r")
+    assert_equal(Rational(-5,3), '-5.0/3'.to_r, "'-5.0/3'.to_r")
 
-    assert_equal(Rational(5), '5e0'.to_r)
-    assert_equal(Rational(-5), '-5e0'.to_r)
-    assert_equal(Rational(5,3), '5e0/3'.to_r)
-    assert_equal(Rational(-5,3), '-5e0/3'.to_r)
+    assert_equal(Rational(5), '5e0'.to_r, "'5e0'.to_r")
+    assert_equal(Rational(-5), '-5e0'.to_r, "'-5e0'.to_r")
+    assert_equal(Rational(5,3), '5e0/3'.to_r, "'5e0/3'.to_r")
+    assert_equal(Rational(-5,3), '-5e0/3'.to_r, "'-5e0/3'.to_r")
 
-    assert_equal(Rational(5e1), '5e1'.to_r)
-    assert_equal(Rational(-5e2), '-5e2'.to_r)
-    assert_equal(Rational(5e3,3), '5e003/3'.to_r)
-    assert_equal(Rational(-5e4,3), '-5e004/3'.to_r)
+    assert_equal(Rational(5e1), '5e1'.to_r, "'5e1'.to_r")
+    assert_equal(Rational(-5e2), '-5e2'.to_r, "'-5e2'.to_r")
+    assert_equal(Rational(5e3,3), '5e003/3'.to_r, "'5e003/3'.to_r")
+    assert_equal(Rational(-5e4,3), '-5e004/3'.to_r, "'-5e004/3'.to_r")
 
-    assert_equal(Rational(33,100), '.33'.to_r)
-    assert_equal(Rational(33,100), '0.33'.to_r)
-    assert_equal(Rational(-33,100), '-.33'.to_r)
-    assert_equal(Rational(-33,100), '-0.33'.to_r)
-    assert_equal(Rational(-33,100), '-0.3_3'.to_r)
+    assert_equal(Rational(33,100), '.33'.to_r, "'.33'.to_r")
+    assert_equal(Rational(33,100), '0.33'.to_r, "'0.33'.to_r")
+    assert_equal(Rational(-33,100), '-.33'.to_r, "'-.33'.to_r")
+    assert_equal(Rational(-33,100), '-0.33'.to_r, "'-0.33'.to_r")
+    assert_equal(Rational(-33,100), '-0.3_3'.to_r, "'-0.3_3'.to_r")
 
-    assert_equal(Rational(1,2), '5e-1'.to_r)
-    assert_equal(Rational(50), '5e+1'.to_r)
-    assert_equal(Rational(1,2), '5.0e-1'.to_r)
-    assert_equal(Rational(50), '5.0e+1'.to_r)
-    assert_equal(Rational(50), '5e1'.to_r)
-    assert_equal(Rational(50), '5E1'.to_r)
-    assert_equal(Rational(500), '5e2'.to_r)
-    assert_equal(Rational(5000), '5e3'.to_r)
-    assert_equal(Rational(500000000000), '5e1_1'.to_r)
+    assert_equal(Rational(1,2), '5e-1'.to_r, "'5e-1'.to_r")
+    assert_equal(Rational(50), '5e+1'.to_r, "'5e+1'.to_r")
+    assert_equal(Rational(1,2), '5.0e-1'.to_r, "'5.0e-1'.to_r")
+    assert_equal(Rational(50), '5.0e+1'.to_r, "'5.0e+1'.to_r")
+    assert_equal(Rational(50), '5e1'.to_r, "'5e1'.to_r")
+    assert_equal(Rational(50), '5E1'.to_r, "'5E1'.to_r")
+    assert_equal(Rational(500), '5e2'.to_r, "'5e2'.to_r")
+    assert_equal(Rational(5000), '5e3'.to_r, "'5e3'.to_r")
+    assert_equal(Rational(500000000000), '5e1_1'.to_r, "'5e1_1'.to_r")
 
-    assert_equal(Rational(5), Rational('5'))
-    assert_equal(Rational(-5), Rational('-5'))
-    assert_equal(Rational(5,3), Rational('5/3'))
-    assert_equal(Rational(-5,3), Rational('-5/3'))
+    assert_equal(Rational(5), Rational('5'), "Rational('5')")
+    assert_equal(Rational(-5), Rational('-5'), "Rational('-5')")
+    assert_equal(Rational(5,3), Rational('5/3'), "Rational('5/3')")
+    assert_equal(Rational(-5,3), Rational('-5/3'), "Rational('-5/3')")
 
-    assert_equal(Rational(5), Rational('5.0'))
-    assert_equal(Rational(-5), Rational('-5.0'))
-    assert_equal(Rational(5,3), Rational('5.0/3'))
-    assert_equal(Rational(-5,3), Rational('-5.0/3'))
+    assert_equal(Rational(5), Rational('5.0'), "Rational('5.0')")
+    assert_equal(Rational(-5), Rational('-5.0'), "Rational('-5.0')")
+    assert_equal(Rational(5,3), Rational('5.0/3'), "Rational('5.0/3')")
+    assert_equal(Rational(-5,3), Rational('-5.0/3'), "Rational('-5.0/3')")
 
-    assert_equal(Rational(5), Rational('5e0'))
-    assert_equal(Rational(-5), Rational('-5e0'))
-    assert_equal(Rational(5,3), Rational('5e0/3'))
-    assert_equal(Rational(-5,3), Rational('-5e0/3'))
+    assert_equal(Rational(5), Rational('5e0'), "Rational('5e0')")
+    assert_equal(Rational(-5), Rational('-5e0'), "Rational('-5e0')")
+    assert_equal(Rational(5,3), Rational('5e0/3'), "Rational('5e0/3')")
+    assert_equal(Rational(-5,3), Rational('-5e0/3'), "Rational('-5e0/3')")
 
-    assert_equal(Rational(5e1), Rational('5e1'))
-    assert_equal(Rational(-5e2), Rational('-5e2'))
-    assert_equal(Rational(5e3,3), Rational('5e003/3'))
-    assert_equal(Rational(-5e4,3), Rational('-5e004/3'))
+    assert_equal(Rational(5e1), Rational('5e1'), "Rational('5e1')")
+    assert_equal(Rational(-5e2), Rational('-5e2'), "Rational('-5e2')")
+    assert_equal(Rational(5e3,3), Rational('5e003/3'), "Rational('5e003/3')")
+    assert_equal(Rational(-5e4,3), Rational('-5e004/3'), "Rational('-5e004/3')")
 
-    assert_equal(Rational(33,100), Rational('.33'))
-    assert_equal(Rational(33,100), Rational('0.33'))
-    assert_equal(Rational(-33,100), Rational('-.33'))
-    assert_equal(Rational(-33,100), Rational('-0.33'))
-    assert_equal(Rational(-33,100), Rational('-0.3_3'))
+    assert_equal(Rational(33,100), Rational('.33'), "Rational('.33')")
+    assert_equal(Rational(33,100), Rational('0.33'), "Rational('0.33')")
+    assert_equal(Rational(-33,100), Rational('-.33'), "Rational('-.33')")
+    assert_equal(Rational(-33,100), Rational('-0.33'), "Rational('-0.33')")
+    assert_equal(Rational(-33,100), Rational('-0.3_3'), "Rational('-0.3_3')")
 
-    assert_equal(Rational(1,2), Rational('5e-1'))
-    assert_equal(Rational(50), Rational('5e+1'))
-    assert_equal(Rational(1,2), Rational('5.0e-1'))
-    assert_equal(Rational(50), Rational('5.0e+1'))
-    assert_equal(Rational(50), Rational('5e1'))
-    assert_equal(Rational(50), Rational('5E1'))
-    assert_equal(Rational(500), Rational('5e2'))
-    assert_equal(Rational(5000), Rational('5e3'))
-    assert_equal(Rational(500000000000), Rational('5e1_1'))
+    assert_equal(Rational(1,2), Rational('5e-1'), "Rational('5e-1')")
+    assert_equal(Rational(50), Rational('5e+1'), "Rational('5e+1')")
+    assert_equal(Rational(1,2), Rational('5.0e-1'), "Rational('5.0e-1')")
+    assert_equal(Rational(50), Rational('5.0e+1'), "Rational('5.0e+1')")
+    assert_equal(Rational(50), Rational('5e1'), "Rational('5e1')")
+    assert_equal(Rational(50), Rational('5E1'), "Rational('5E1')")
+    assert_equal(Rational(500), Rational('5e2'), "Rational('5e2')")
+    assert_equal(Rational(5000), Rational('5e3'), "Rational('5e3')")
+    assert_equal(Rational(500000000000), Rational('5e1_1'), "Rational('5e1_1')")
 
-    assert_equal(Rational(0), ''.to_r)
-    assert_equal(Rational(0), ' '.to_r)
-    assert_equal(Rational(5), "\f\n\r\t\v5\0".to_r)
-    assert_equal(Rational(0), '_'.to_r)
-    assert_equal(Rational(0), '_5'.to_r)
-    assert_equal(Rational(5), '5_'.to_r)
-    assert_equal(Rational(5), '5x'.to_r)
-    assert_equal(Rational(5), '5/_3'.to_r)
-    assert_equal(Rational(5,3), '5/3_'.to_r)
-    assert_equal(Rational(5,3), '5/3.3'.to_r)
-    assert_equal(Rational(5,3), '5/3x'.to_r)
-    assert_raise(ArgumentError){ Rational('')}
-    assert_raise(ArgumentError){ Rational('_')}
-    assert_raise(ArgumentError){ Rational("\f\n\r\t\v5\0")}
-    assert_raise(ArgumentError){ Rational('_5')}
-    assert_raise(ArgumentError){ Rational('5_')}
-    assert_raise(ArgumentError){ Rational('5x')}
-    assert_raise(ArgumentError){ Rational('5/_3')}
-    assert_raise(ArgumentError){ Rational('5/3_')}
-    assert_raise(ArgumentError){ Rational('5/3.3')}
-    assert_raise(ArgumentError){ Rational('5/3x')}
+    assert_equal(Rational(0), ''.to_r, "''.to_r")
+    assert_equal(Rational(0), ' '.to_r, "' '.to_r")
+    assert_equal(Rational(5), "\f\n\r\t\v5\0".to_r, '"\f\n\r\t\v5\0".to_r')
+    assert_equal(Rational(0), '_'.to_r, "'_'.to_r")
+    assert_equal(Rational(0), '_5'.to_r, "'_5'.to_r")
+    assert_equal(Rational(5), '5_'.to_r, "'5_'.to_r")
+    assert_equal(Rational(5), '5x'.to_r, "'5x'.to_r")
+    assert_equal(Rational(5), '5/_3'.to_r, "'5/_3'.to_r")
+    assert_equal(Rational(5,3), '5/3_'.to_r, "'5/3_'.to_r")
+    assert_equal(Rational(5,3), '5/3.3'.to_r, "'5/3.3'.to_r")
+    assert_equal(Rational(5,3), '5/3x'.to_r, "'5/3x'.to_r")
+    assert_raise(ArgumentError, "Rational('')") {Rational('')}
+    assert_raise(ArgumentError, "Rational('_')") {Rational('_')}
+    assert_raise(ArgumentError, 'Rational("\f\n\r\t\v5\0")') {Rational("\f\n\r\t\v5\0")}
+    assert_raise(ArgumentError, "Rational('_5')") {Rational('_5')}
+    assert_raise(ArgumentError, "Rational('5_')") {Rational('5_')}
+    assert_raise(ArgumentError, "Rational('5x')") {Rational('5x')}
+    assert_raise(ArgumentError, "Rational('5/_3')") {Rational('5/_3')}
+    assert_raise(ArgumentError, "Rational('5/3_')") {Rational('5/3_')}
+    assert_raise(ArgumentError, "Rational('5/3.3')") {Rational('5/3.3')}
+    assert_raise(ArgumentError, "Rational('5/3x')") {Rational('5/3x')}
   end
 
   def test_to_i
