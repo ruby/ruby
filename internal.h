@@ -1475,6 +1475,7 @@ VALUE rb_enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl);
 size_t rb_str_memsize(VALUE);
 VALUE rb_sym_proc_call(ID mid, int argc, const VALUE *argv, VALUE passed_proc);
 VALUE rb_sym_to_proc(VALUE sym);
+char *rb_str_to_cstr(VALUE str);
 
 /* symbol.c */
 #ifdef RUBY_ENCODING_H

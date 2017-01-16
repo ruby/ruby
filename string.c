@@ -2081,26 +2081,49 @@ rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int terml
     return;
 }
 
-char *
-rb_string_value_cstr(volatile VALUE *ptr)
+static char *
+str_null_check(VALUE str, int *w)
 {
-    VALUE str = rb_string_value(ptr);
     char *s = RSTRING_PTR(str);
     long len = RSTRING_LEN(str);
     rb_encoding *enc = rb_enc_get(str);
     const int minlen = rb_enc_mbminlen(enc);
 
     if (minlen > 1) {
+	*w = 1;
 	if (str_null_char(s, len, minlen, enc)) {
-	    rb_raise(rb_eArgError, "string contains null char");
+	    return NULL;
 	}
 	return str_fill_term(str, s, len, minlen);
     }
+    *w = 0;
     if (!s || memchr(s, 0, len)) {
-	rb_raise(rb_eArgError, "string contains null byte");
+	return NULL;
     }
     if (s[len]) {
 	s = str_fill_term(str, s, len, minlen);
+    }
+    return s;
+}
+
+char *
+rb_str_to_cstr(VALUE str)
+{
+    int w;
+    return str_null_check(str, &w);
+}
+
+char *
+rb_string_value_cstr(volatile VALUE *ptr)
+{
+    VALUE str = rb_string_value(ptr);
+    int w;
+    char *s = str_null_check(str, &w);
+    if (!s) {
+	if (w) {
+	    rb_raise(rb_eArgError, "string contains null char");
+	}
+	rb_raise(rb_eArgError, "string contains null byte");
     }
     return s;
 }
