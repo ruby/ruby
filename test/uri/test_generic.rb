@@ -838,6 +838,7 @@ class URI::TestGeneric < Test::Unit::TestCase
   def test_find_proxy_no_proxy
     with_proxy_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'192.0.2.2') {|env|
       assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy(env))
+      assert_equal(URI('http://127.0.0.1:8080'), URI("http://example.org/").find_proxy(env))
       assert_nil(URI("http://192.0.2.2/").find_proxy(env))
     }
     with_proxy_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'example.org') {|env|
