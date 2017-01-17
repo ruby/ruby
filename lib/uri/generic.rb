@@ -1535,10 +1535,10 @@ module URI
               require 'ipaddr'
               return nil if
                 begin
-                  IPAddr.new(host)
+                  IPAddr.new(host).include?(self.host)
                 rescue IPAddr::InvalidAddressError
                   next
-                end.include?(self.host)
+                end
             end
           end
         }
