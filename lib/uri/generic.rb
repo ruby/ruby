@@ -1531,14 +1531,14 @@ module URI
           if (!port || self.port == port.to_i)
             if /(\A|\.)#{Regexp.quote host}\z/i =~ self.host
               return nil
-            else
+            elsif addr
               require 'ipaddr'
               return nil if
                 begin
                   IPAddr.new(host)
                 rescue IPAddr::InvalidAddressError
                   next
-                end.include?(self.host)
+                end.include?(addr)
             end
           end
         }
