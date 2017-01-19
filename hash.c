@@ -3263,7 +3263,7 @@ rb_f_getenv(VALUE obj, VALUE name)
  * Retrieves the environment variable +name+.
  *
  * If the given name does not exist and neither +default+ nor a block a
- * provided an IndexError is raised.  If a block is given it is called with
+ * provided an KeyError is raised.  If a block is given it is called with
  * the missing name to provide a value.  If a default value is given it will
  * be returned when no block is given.
  */
