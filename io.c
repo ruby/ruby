@@ -7124,8 +7124,8 @@ rb_f_putc(VALUE recv, VALUE ch)
 }
 
 
-static int
-str_end_with_asciichar(VALUE str, int c)
+int
+rb_str_end_with_asciichar(VALUE str, int c)
 {
     long len = RSTRING_LEN(str);
     const char *ptr = RSTRING_PTR(str);
@@ -7202,7 +7202,7 @@ rb_io_puts(int argc, const VALUE *argv, VALUE out)
       string:
 	rb_io_write(out, line);
 	if (RSTRING_LEN(line) == 0 ||
-            !str_end_with_asciichar(line, '\n')) {
+            !rb_str_end_with_asciichar(line, '\n')) {
 	    rb_io_write(out, rb_default_rs);
 	}
     }

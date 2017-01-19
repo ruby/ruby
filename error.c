@@ -42,6 +42,7 @@
 
 VALUE rb_iseqw_local_variables(VALUE iseqval);
 VALUE rb_iseqw_new(const rb_iseq_t *);
+int rb_str_end_with_asciichar(VALUE str, int c);
 
 VALUE rb_eEAGAIN;
 VALUE rb_eEWOULDBLOCK;
@@ -280,9 +281,11 @@ rb_enc_warning(rb_encoding *enc, const char *fmt, ...)
  * call-seq:
  *    warn(msg, ...)   -> nil
  *
- * Displays each of the given messages followed by a record separator on
- * STDERR unless warnings have been disabled (for example with the
- * <code>-W0</code> flag).
+ * If warnings have been disabled (for example with the
+ * <code>-W0</code> flag), does nothing.  Otherwise,
+ * converts each of the messages to strings, appends a newline
+ * character to the string if the string does not end in a newline,
+ * and calls <code>Warning.warn</code> with the string.
  *
  *    warn("warning 1", "warning 2")
  *
@@ -296,7 +299,15 @@ static VALUE
 rb_warn_m(int argc, VALUE *argv, VALUE exc)
 {
     if (!NIL_P(ruby_verbose) && argc > 0) {
-	rb_io_puts(argc, argv, rb_stderr);
+	int i;
+	VALUE str;
+	for (i = 0; i < argc; i++) {
+	    str = rb_obj_as_string(argv[i]);
+	    if (RSTRING_LEN(str) == 0 || !rb_str_end_with_asciichar(str, '\n')) {
+		str = rb_str_cat(rb_str_dup(str), "\n", 1);
+	    }
+	    rb_write_warning_str(str);
+	}
     }
     return Qnil;
 }
