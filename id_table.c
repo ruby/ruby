@@ -29,7 +29,7 @@
  *   32: array(14) (capa <= 32) + hash(22)
  *   33: array(12) (capa <= 64) + hash(22)
  *   34: array(14) (capa <= 64) + hash(22)
- *   34: array(15) (capa <= 64) + hash(22)
+ *   35: array(15) (capa <= 64) + hash(22)
  */
 
 #ifndef ID_TABLE_IMPL
