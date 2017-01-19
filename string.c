@@ -3516,10 +3516,8 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 	pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
 			 enc, single_byte_optimizable(str));
 
-	if (!RREGEXP_PTR(sub) || RREGEXP_SRC_LEN(sub)) {
-	    pos = rb_reg_search(sub, str, pos, 1);
-	    pos = rb_str_sublen(str, pos);
-	}
+	pos = rb_reg_search(sub, str, pos, 1);
+	pos = rb_str_sublen(str, pos);
 	if (pos >= 0) return LONG2NUM(pos);
 	break;
 
