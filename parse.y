@@ -8536,10 +8536,17 @@ parser_yylex(struct parser_params *parser)
 	}
 	else if (IS_SPCARG(-1)) {
 	    c = tLPAREN_ARG;
+	    if (lex_state == EXPR_ARG) {
+		rb_warning0("parentheses after method name and a space is interpreted as "
+			    "an argument list, not a parenthesed argument");
+	    }
 	}
 	else if (IS_lex_state(EXPR_ENDFN) && space_seen && !lambda_beginning_p()) {
 	    rb_warning0("parentheses after method name is interpreted as "
 			"an argument list, not a decomposed argument");
+	}
+	else if (lex_state == (EXPR_END|EXPR_LABEL) && space_seen) {
+	    rb_warning0("don't put space before argument parentheses");
 	}
 	paren_nest++;
 	COND_PUSH(0);
