@@ -16,6 +16,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Top-level constant look-up is removed.  [Feature #11547]
 
+* rescue/else/ensure are allowed inside do/end blocks.  [Feature #12906]
+
 === Core classes updates (outstanding ones only)
 
 === Stdlib updates (outstanding ones only)

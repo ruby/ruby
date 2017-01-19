@@ -979,6 +979,73 @@ eom
     assert_in_out_err(%w[-e redo], "", [], /^-e:1: /)
   end
 
+  def test_rescue_do_end_raised
+    result = []
+    assert_raise(RuntimeError) do
+      eval("#{<<-"begin;"}\n#{<<-"end;"}")
+      begin;
+        tap do
+          result << :begin
+          raise "An exception occured!"
+        ensure
+          result << :ensure
+        end
+      end;
+    end
+    assert_equal([:begin, :ensure], result)
+  end
+
+  def test_rescue_do_end_rescued
+    result = []
+    assert_nothing_raised(RuntimeError) do
+      eval("#{<<-"begin;"}\n#{<<-"end;"}")
+      begin;
+        tap do
+          result << :begin
+          raise "An exception occured!"
+        rescue
+          result << :rescue
+        else
+          result << :else
+        ensure
+          result << :ensure
+        end
+      end;
+    end
+    assert_equal([:begin, :rescue, :ensure], result)
+  end
+
+  def test_rescue_do_end_no_raise
+    result = []
+    assert_nothing_raised(RuntimeError) do
+      eval("#{<<-"begin;"}\n#{<<-"end;"}")
+      begin;
+        tap do
+          result << :begin
+        rescue
+          result << :rescue
+        else
+          result << :else
+        ensure
+          result << :ensure
+        end
+      end;
+    end
+    assert_equal([:begin, :else, :ensure], result)
+  end
+
+  def test_rescue_do_end_ensure_result
+    result = eval("#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      proc do
+        :begin
+      ensure
+        :ensure
+      end.call
+    end;
+    assert_equal(:begin, result)
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
