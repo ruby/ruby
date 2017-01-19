@@ -48,7 +48,7 @@ class TestRubyOptions < Test::Unit::TestCase
     end
 
     assert_in_out_err(%w(-p -l -a -e) + ['p [$-p, $-l, $-a]'],
-                      "foo\nbar\nbaz\n") do |r, e|
+                      "foo\nbar\nbaz") do |r, e|
       assert_equal(
         [ '[true, true, true]', 'foo',
           '[true, true, true]', 'bar',
@@ -56,6 +56,7 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_equal([], e)
     end
   end
+
 
   def test_warning
     save_rubyopt = ENV['RUBYOPT']

@@ -10728,7 +10728,7 @@ rb_parser_append_print(VALUE vparser, NODE *node)
 }
 
 NODE *
-rb_parser_while_loop(VALUE vparser, NODE *node, int chop, int split)
+rb_parser_while_loop(VALUE vparser, NODE *node, int chomp, int split)
 {
     NODE *prelude = 0;
     NODE *scope = node;
@@ -10750,9 +10750,9 @@ rb_parser_while_loop(VALUE vparser, NODE *node, int chop, int split)
 					       rb_intern("split"), 0)),
 			    node);
     }
-    if (chop) {
+    if (chomp) {
 	node = block_append(NEW_CALL(NEW_GVAR(idLASTLINE),
-				     rb_intern("chop!"), 0), node);
+				     rb_intern("chomp!"), 0), node);
     }
 
     node = NEW_OPT_N(node);
