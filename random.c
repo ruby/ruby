@@ -603,11 +603,18 @@ random_seed(void)
 }
 
 /*
- * call-seq: Random.raw_seed(size) -> string
+ * call-seq: Random.urandom(size) -> string
  *
- * Returns a raw seed string, using platform providing features.
+ * Returns a string, using platform providing features.
+ * Returned value expected to be a cryptographically secure
+ * pseudo-random number in binary form.
  *
- *   Random.raw_seed(8)  #=> "\x78\x41\xBA\xAF\x7D\xEA\xD8\xEA"
+ * In 2017, Linux manpage random(7) writes that "no cryptographic
+ * primitive available today can hope to promise more than 256 bits of
+ * security".  So it might be questionable to pass size > 32 to this
+ * method.
+ *
+ *   Random.urandom(8)  #=> "\x78\x41\xBA\xAF\x7D\xEA\xD8\xEA"
  */
 static VALUE
 random_raw_seed(VALUE self, VALUE size)
@@ -1616,7 +1623,7 @@ InitVM_Random(void)
     rb_define_singleton_method(rb_cRandom, "srand", rb_f_srand, -1);
     rb_define_singleton_method(rb_cRandom, "rand", random_s_rand, -1);
     rb_define_singleton_method(rb_cRandom, "new_seed", random_seed, 0);
-    rb_define_singleton_method(rb_cRandom, "raw_seed", random_raw_seed, 1);
+    rb_define_singleton_method(rb_cRandom, "urandom", random_raw_seed, 1);
     rb_define_private_method(CLASS_OF(rb_cRandom), "state", random_s_state, 0);
     rb_define_private_method(CLASS_OF(rb_cRandom), "left", random_s_left, 0);
 

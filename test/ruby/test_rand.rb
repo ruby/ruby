@@ -550,9 +550,9 @@ END
     End
   end
 
-  def test_raw_seed
+  def test_urandom
     [0, 1, 100].each do |size|
-      v = Random.raw_seed(size)
+      v = Random.urandom(size)
       assert_kind_of(String, v)
       assert_equal(size, v.bytesize)
     end

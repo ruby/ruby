@@ -1,9 +1,5 @@
 # -*- coding: us-ascii -*-
 # frozen_string_literal: true
-begin
-  require 'openssl'
-rescue LoadError
-end
 
 # == Secure random number generator interface.
 #
@@ -48,8 +44,47 @@ end
 #
 
 module SecureRandom
-  if defined?(OpenSSL::Random) && /mswin|mingw/ !~ RUBY_PLATFORM
-    def self.gen_random(n)
+  @rng_chooser = Mutex.new # :nodoc:
+
+  class << self
+    def bytes(n)
+      return gen_random(n)
+    end
+
+    def gen_random(n)
+      ret = Random.urandom(n)
+      if ret.nil?
+        begin
+          require 'openssl'
+        rescue NoMethodError
+          raise NotImplementedError, "No random device"
+        else
+          @rng_chooser.synchronize do
+            class << self
+              remove_method :gen_random
+              alias gen_random gen_random_openssl
+            end
+          end
+          return gen_random(n)
+        end
+      elsif ret.length != n
+        raise NotImplementedError, \
+              "Unexpected partial read from random device: " \
+              "only #{ret.length} for #{n} bytes"
+      else
+        @rng_chooser.synchronize do
+          class << self
+            remove_method :gen_random
+            alias gen_random gen_random_urandom
+          end
+        end
+        return gen_random(n)
+      end
+    end
+
+    private
+
+    def gen_random_openssl(n)
       @pid = 0 unless defined?(@pid)
       pid = $$
       unless @pid == pid
@@ -63,9 +98,9 @@ module SecureRandom
       end
       return OpenSSL::Random.random_bytes(n)
     end
-  else
-    def self.gen_random(n)
-      ret = Random.raw_seed(n)
+
+    def gen_random_urandom(n)
+      ret = Random.urandom(n)
       unless ret
         raise NotImplementedError, "No random device"
       end
@@ -74,10 +109,6 @@ module SecureRandom
       end
       ret
     end
-  end
-
-  class << self
-    alias bytes gen_random
   end
 end
 
