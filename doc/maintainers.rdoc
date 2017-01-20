@@ -120,8 +120,6 @@ Zachary Scott (zzak)
   _unmaintained_
 [lib/racc/*]
   Aaron Patterson (tenderlove)
-[lib/rbconfig/*]
-  _unmaintained_
 [lib/rdoc.rb, lib/rdoc/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
 [lib/resolv-replace.rb]
