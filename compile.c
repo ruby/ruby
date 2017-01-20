@@ -462,6 +462,8 @@ static int iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_set_exception_table(rb_iseq_t *iseq);
 static int iseq_set_optargs_table(rb_iseq_t *iseq);
 
+static int compile_defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, VALUE needstr);
+
 /*
  * To make Array to LinkedList, use link_anchor
  */
@@ -2903,8 +2905,12 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *cond,
       case NODE_FLIP3:
 	CHECK(compile_flip_flop(iseq, ret, cond, FALSE, then_label, else_label));
 	break;
+      case NODE_DEFINED:
+	CHECK(compile_defined_expr(iseq, ret, cond, Qfalse));
+	goto branch;
       default:
 	CHECK(COMPILE(ret, "branch condition", cond));
+      branch:
 	ADD_INSNL(ret, nd_line(cond), branchunless, else_label);
 	ADD_INSNL(ret, nd_line(cond), jump, then_label);
 	break;
@@ -3703,6 +3709,31 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, rescue, lfinish[1]);
     }
     return done;
+}
+
+static int
+compile_defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, VALUE needstr)
+{
+    const int line = nd_line(node);
+    if (!node->nd_head) {
+	VALUE str = rb_iseq_defined_string(DEFINED_NIL);
+	ADD_INSN1(ret, line, putobject, str);
+    }
+    else {
+	LABEL *lfinish[2];
+	LINK_ELEMENT *last = ret->last;
+	lfinish[0] = NEW_LABEL(line);
+	lfinish[1] = 0;
+	defined_expr(iseq, ret, node->nd_head, lfinish, needstr);
+	if (lfinish[1]) {
+	    INSERT_ELEM_NEXT(last, &new_insn_body(iseq, line, BIN(putnil), 0)->link);
+	    ADD_INSN(ret, line, swap);
+	    ADD_INSN(ret, line, pop);
+	    ADD_LABEL(ret, lfinish[1]);
+	}
+	ADD_LABEL(ret, lfinish[0]);
+    }
+    return COMPILE_OK;
 }
 
 static VALUE
@@ -6112,28 +6143,11 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	}
 	break;
       }
-      case NODE_DEFINED:{
-	if (popped) break;
-	if (!node->nd_head) {
-	    VALUE str = rb_iseq_defined_string(DEFINED_NIL);
-	    ADD_INSN1(ret, nd_line(node), putobject, str);
-	}
-	else {
-	    LABEL *lfinish[2];
-	    LINK_ELEMENT *last = ret->last;
-	    lfinish[0] = NEW_LABEL(line);
-	    lfinish[1] = 0;
-	    defined_expr(iseq, ret, node->nd_head, lfinish, Qtrue);
-	    if (lfinish[1]) {
-		INSERT_ELEM_NEXT(last, &new_insn_body(iseq, line, BIN(putnil), 0)->link);
-		ADD_INSN(ret, line, swap);
-		ADD_INSN(ret, line, pop);
-		ADD_LABEL(ret, lfinish[1]);
-	    }
-	    ADD_LABEL(ret, lfinish[0]);
+      case NODE_DEFINED:
+	if (!popped) {
+	    CHECK(compile_defined_expr(iseq, ret, node, Qtrue));
 	}
 	break;
-      }
       case NODE_POSTEXE:{
 	/* compiled to:
 	 *   ONCE{ rb_mRubyVMFrozenCore::core#set_postexe{ ... } }
