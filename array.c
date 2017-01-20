@@ -4797,6 +4797,7 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
     VALUE opts, randgen = rb_cRandom;
     long n, len, i, j, k, idx[10];
     long rnds[numberof(idx)];
+    long memo_threshold;
 
     if (OPTHASH_GIVEN_P(opts)) {
 	VALUE rnd;
@@ -4856,6 +4857,11 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 	}
 	return rb_ary_new_from_args(3, RARRAY_AREF(ary, i), RARRAY_AREF(ary, j), RARRAY_AREF(ary, k));
     }
+    memo_threshold =
+	len < 2560 ? len / 128 :
+	len < 5120 ? len / 64 :
+	len < 10240 ? len / 32 :
+	len / 16;
     if (n <= numberof(idx)) {
 	long sorted[numberof(idx)];
 	sorted[0] = idx[0] = rnds[0];
@@ -4874,6 +4880,38 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 		ptr_result[i] = RARRAY_AREF(ary, idx[i]);
 	    }
 	});
+    }
+    else if (n <= memo_threshold / 2) {
+	long max_idx = 0;
+#undef RUBY_UNTYPED_DATA_WARNING
+#define RUBY_UNTYPED_DATA_WARNING 0
+	VALUE vmemo = Data_Wrap_Struct(0, 0, 0, st_free_table);
+	st_table *memo = st_init_numtable_with_size(n);
+	DATA_PTR(vmemo) = memo;
+	result = rb_ary_new_capa(n);
+	RARRAY_PTR_USE(result, ptr_result, {
+	    for (i=0; i<n; i++) {
+		long r = RAND_UPTO(len-i) + i;
+		ptr_result[i] = r;
+		if (r > max_idx) max_idx = r;
+	    }
+	    len = RARRAY_LEN(ary);
+	    if (len <= max_idx) n = 0;
+	    else if (n > len) n = len;
+	    RARRAY_PTR_USE(ary, ptr_ary, {
+		for (i=0; i<n; i++) {
+		    long j2 = j = ptr_result[i];
+		    long i2 = i;
+		    st_data_t value;
+		    if (st_lookup(memo, (st_data_t)i, &value)) i2 = (long)value;
+		    if (st_lookup(memo, (st_data_t)j, &value)) j2 = (long)value;
+		    st_insert(memo, (st_data_t)j, (st_data_t)i2);
+		    ptr_result[i] = ptr_ary[j2];
+		}
+	    });
+	});
+	DATA_PTR(vmemo) = 0;
+	st_free_table(memo);
     }
     else {
 	result = rb_ary_dup(ary);
