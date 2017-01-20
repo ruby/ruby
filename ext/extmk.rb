@@ -106,7 +106,7 @@ def extract_makefile(makefile, keep = true)
   srcs = Dir[File.join($srcdir, "*.{#{SRC_EXT.join(%q{,})}}")].map {|fn| File.basename(fn)}.sort
   if !srcs.empty?
     old_srcs = m[/^ORIG_SRCS[ \t]*=[ \t](.*)/, 1] or return false
-    old_srcs.split.sort == srcs or return false
+    (old_srcs.split - srcs).empty? or return false
   end
   $target = target
   $extconf_h = m[/^RUBY_EXTCONF_H[ \t]*=[ \t]*(\S+)/, 1]
