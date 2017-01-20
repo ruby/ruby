@@ -1457,7 +1457,7 @@ random_s_rand(int argc, VALUE *argv, VALUE obj)
 }
 
 #define SIP_HASH_STREAMING 0
-#define sip_hash24 ruby_sip_hash24
+#define sip_hash13 ruby_sip_hash13
 #if !defined _WIN32 && !defined BYTE_ORDER
 # ifdef WORDS_BIGENDIAN
 #   define BYTE_ORDER BIG_ENDIAN
@@ -1501,7 +1501,7 @@ rb_hash_start(st_index_t h)
 st_index_t
 rb_memhash(const void *ptr, long len)
 {
-    sip_uint64_t h = sip_hash24(seed.key.sip, ptr, len);
+    sip_uint64_t h = sip_hash13(seed.key.sip, ptr, len);
 #ifdef HAVE_UINT64_T
     return (st_index_t)h;
 #else
