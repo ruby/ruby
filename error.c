@@ -894,9 +894,7 @@ exc_to_s(VALUE exc)
  *   exception.message   ->  string
  *
  * Returns the result of invoking <code>exception.to_s</code>.
- * Normally this returns the exception's message or name. By
- * supplying a to_str method, exceptions are agreeing to
- * be used where Strings are expected.
+ * Normally this returns the exception's message or name.
  */
 
 static VALUE
