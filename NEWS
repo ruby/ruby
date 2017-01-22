@@ -35,4 +35,6 @@ with all sufficient information, see the ChangeLog file or Redmine
 * (This might not be a "user visible feature change" but) Hash class's
   hash function is now SipHash13. [Feature #13017]
 
+* SecureRandom now prefers OS-provided sources than OpenSSL. [Bug #9569]
+
 === Miscellaneous changes
