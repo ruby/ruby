@@ -220,6 +220,10 @@ build-ext: $(EXTS_MK)
 	$(Q)$(MAKE) -f $(EXTS_MK) $(MFLAGS) libdir="$(libdir)" LIBRUBY_EXTS=$(LIBRUBY_EXTS) \
 	    EXTENCS="$(ENCOBJS)" UPDATE_LIBRARIES=no $(EXTSTATIC)
 
+ext/extinit.c: $(srcdir)/template/extinit.c.tmpl
+	$(Q)$(MINIRUBY) $(srcdir)/tool/generic_erb.rb -o $@ -c \
+	    $(srcdir)/template/extinit.c.tmpl $(EXTINITS)
+
 prog: program wprogram
 
 $(PREP): $(MKFILES)

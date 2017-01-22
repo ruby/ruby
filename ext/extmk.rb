@@ -11,7 +11,6 @@ $destdir = nil
 $dryrun = false
 $clean = nil
 $nodynamic = nil
-$extinit = nil
 $extobjs = []
 $extflags = ""
 $extlibs = nil
@@ -642,13 +641,12 @@ if $ignore
   exit
 end
 
-$extinit ||= ""
 $extobjs ||= []
 $extpath ||= []
 $extflags ||= ""
 $extlibs ||= []
+extinits = {}
 unless $extlist.empty?
-  $extinit << "\n" unless $extinit.empty?
   list = $extlist.dup
   built = []
   while e = list.shift
@@ -662,25 +660,9 @@ unless $extlist.empty?
       next
     end
     base = File.basename(feature)
-    $extinit << "    init(Init_#{base}, \"#{feature}.so\");\n"
+    extinits[base] = feature
     $extobjs << format("ext/%s/%s.%s", target, base, $LIBEXT)
     built << target
-  end
-
-  src = %{\
-#include "ruby/ruby.h"
-
-#define init(func, name) {	\\
-    extern void func(void);	\\
-    ruby_init_ext(name, func);	\\
-}
-
-void ruby_init_ext(const char *name, void (*init)(void));
-
-void Init_ext(void)\n{\n#$extinit}
-}
-  if !modified?(extinit.c, MTIMES) || IO.read(extinit.c) != src
-    open(extinit.c, "w") {|fe| fe.print src}
   end
 
   $extpath.delete("$(topdir)")
@@ -749,6 +731,7 @@ if $configure_only and $command_output
     mf.macro "EXTLIBS", $extlibs
     mf.macro "EXTSO", extso
     mf.macro "EXTLDFLAGS", $extflags.split
+    mf.macro "EXTINITS", extinits.map {|k, v| "#{k},#{v}"}
     submakeopts = []
     if enable_config("shared", $enable_shared)
       submakeopts << 'DLDOBJS="$(EXTOBJS) $(EXTENCS)"'
@@ -785,7 +768,7 @@ if $configure_only and $command_output
       mf.puts "#{tgt}:\n\t#{submake} $@"
     end
     mf.puts "libencs:\n\t$(Q)$(MAKE) -f enc.mk V=$(V) $@"
-    mf.puts "ext/extinit.#{$OBJEXT}:\n\t$(Q)$(MAKE) $(MFLAGS) V=$(V) $@" if $static
+    mf.puts "ext/extinit.#{$OBJEXT}:\n\t$(Q)$(MAKE) $(MFLAGS) V=$(V) EXTINITS=\"$(EXTINITS)\" $@" if $static
     mf.puts
     if $gnumake == "yes"
       submake = "$(MAKE) -C $(@D)"
