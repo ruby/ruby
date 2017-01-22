@@ -1072,7 +1072,8 @@ clean-ext distclean-ext realclean-ext::
 		) )
 
 distclean-ext realclean-ext::
-		-$(Q)rmdir ext
+		-$(Q)$(RM) ext/extinit.c
+		-$(Q)rmdir ext 2> nul || @
 
 clean-extout:
 
