@@ -876,9 +876,9 @@ rb_hash_lookup(VALUE hash, VALUE key)
  *
  *  Returns a value from the hash for the given key. If the key can't be
  *  found, there are several options: With no other arguments, it will
- *  raise an <code>KeyError</code> exception; if <i>default</i> is
- *  given, then that will be returned; if the optional code block is
- *  specified, then that will be run and its result returned.
+ *  raise a <code>KeyError</code> exception; if <i>default</i> is given,
+ *  then that will be returned; if the optional code block is specified,
+ *  then that will be run and its result returned.
  *
  *     h = { "a" => 100, "b" => 200 }
  *     h.fetch("a")                            #=> 100
