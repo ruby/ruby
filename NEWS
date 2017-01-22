@@ -32,4 +32,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Implementation improvements
 
+* (This might not be a "user visible feature change" but) Hash class's
+  hash function is now SipHash13. [Feature #13017]
+
 === Miscellaneous changes
