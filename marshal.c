@@ -1024,7 +1024,7 @@ VALUE
 rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
 {
     struct dump_arg *arg;
-    VALUE wrapper; /* used to avoid memory leak in case of exception */
+    volatile VALUE wrapper; /* used to avoid memory leak in case of exception */
 
     wrapper = TypedData_Make_Struct(rb_cData, struct dump_arg, &dump_arg_data, arg);
     arg->dest = 0;
@@ -2038,7 +2038,7 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc)
 {
     int major, minor, infection = 0;
     VALUE v;
-    VALUE wrapper; /* used to avoid memory leak in case of exception */
+    volatile VALUE wrapper; /* used to avoid memory leak in case of exception */
     struct load_arg *arg;
 
     v = rb_check_string_type(port);
