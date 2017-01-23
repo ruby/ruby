@@ -211,8 +211,8 @@ exts: build-ext
 
 EXTS_MK = exts.mk
 $(EXTS_MK): ext/configure-ext.mk $(TIMESTAMPDIR)/.$(arch).time $(srcdir)/template/exts.mk.tmpl
-	$(MAKE) -f ext/configure-ext.mk V=$(V) MINIRUBY='$(MINIRUBY)' \
-		SCRIPT_ARGS='$(SCRIPT_ARGS)' EXTSTATIC=$(EXTSTATIC) \
+	$(MAKE) -f ext/configure-ext.mk V=$(V) MINIRUBY="$(MINIRUBY)" \
+		EXTSTATIC=$(EXTSTATIC) \
 		gnumake=$(gnumake) EXTLDFLAGS="$(EXTLDFLAGS)" srcdir="$(srcdir)"
 	$(ECHO) generating makefile $@
 	$(Q)$(MINIRUBY) $(srcdir)/tool/generic_erb.rb -o $@ -c \

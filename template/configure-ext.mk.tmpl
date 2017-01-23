@@ -18,8 +18,8 @@ all:
 % exts.each do |dir|
 all: ext/<%=dir%>/exts.mk
 ext/<%=dir%>/exts.mk: FORCE
-	$(Q)$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --command-output=ext/<%=dir%>/exts.mk \
-		$(SCRIPT_ARGS) --extension=<%=dir%> --extstatic $(EXTSTATIC) \
+	$(Q)$(MINIRUBY) $(srcdir)/ext/extmk.rb --make='$(MAKE)' --command-output=ext/<%=dir%>/exts.mk \
+		--extension=<%=dir%> --extstatic $(EXTSTATIC) \
 		--gnumake=$(gnumake) --extflags="$(EXTLDFLAGS)" \
 		-- subconfigure
 % end
