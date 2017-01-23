@@ -645,7 +645,7 @@ $extobjs ||= []
 $extpath ||= []
 $extflags ||= ""
 $extlibs ||= []
-extinits = {}
+extinits = []
 unless $extlist.empty?
   list = $extlist.dup
   built = []
@@ -660,7 +660,7 @@ unless $extlist.empty?
       next
     end
     base = File.basename(feature)
-    extinits[base] = feature
+    extinits << feature
     $extobjs << format("ext/%s/%s.%s", target, base, $LIBEXT)
     built << target
   end
@@ -731,7 +731,7 @@ if $configure_only and $command_output
     mf.macro "EXTLIBS", $extlibs
     mf.macro "EXTSO", extso
     mf.macro "EXTLDFLAGS", $extflags.split
-    mf.macro "EXTINITS", extinits.map {|k, v| "#{k},#{v}"}
+    mf.macro "EXTINITS", extinits
     submakeopts = []
     if enable_config("shared", $enable_shared)
       submakeopts << 'DLDOBJS="$(EXTOBJS) $(EXTENCS)"'
