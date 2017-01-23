@@ -1072,7 +1072,9 @@ clean-ext distclean-ext realclean-ext::
 		) )
 
 distclean-ext realclean-ext::
-		-$(Q)$(RM) ext/extinit.c
+		-$(Q)$(RM) ext/extinit.c ext/configure-ext.mk
+		@cd ext && for /D $(EXTS) %I in (.) \
+		do @if exist %I\exts.mk del %I\exts.mk
 		-$(Q)rmdir ext 2> nul || @
 
 clean-extout:

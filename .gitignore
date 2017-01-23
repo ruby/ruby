@@ -137,6 +137,8 @@ y.tab.c
 
 # /ext/
 /ext/extinit.c
+/ext/configure-ext.mk
+/ext/*/exts.mk
 
 # /ext/-test-/win32/dln/
 /ext/-test-/win32/dln/dlntest.exp

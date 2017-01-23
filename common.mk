@@ -210,9 +210,19 @@ showconfig:
 exts: build-ext
 
 EXTS_MK = exts.mk
-$(EXTS_MK): $(MKFILES) all-incs $(PREP) $(RBCONFIG) $(LIBRUBY) $(TIMESTAMPDIR)/.$(arch).time
+$(EXTS_MK): ext/configure-ext.mk $(TIMESTAMPDIR)/.$(arch).time $(srcdir)/template/exts.mk.tmpl
+	$(MAKE) -f ext/configure-ext.mk V=$(V) MINIRUBY='$(MINIRUBY)' \
+		SCRIPT_ARGS='$(SCRIPT_ARGS)' EXTSTATIC=$(EXTSTATIC) \
+		gnumake=$(gnumake) EXTLDFLAGS="$(EXTLDFLAGS)" srcdir="$(srcdir)"
 	$(ECHO) generating makefile $@
-	$(Q)$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --command-output=$(EXTS_MK) $(EXTMK_ARGS) configure
+	$(Q)$(MINIRUBY) $(srcdir)/tool/generic_erb.rb -o $@ -c \
+	    $(srcdir)/template/exts.mk.tmpl
+
+ext/configure-ext.mk: $(PREP) all-incs $(MKFILES) $(RBCONFIG) $(LIBRUBY)
+	$(ECHO) generating makefiles $@
+	$(Q)$(MAKEDIRS) ext
+	$(Q)$(MINIRUBY) $(srcdir)/tool/generic_erb.rb -o $@ -c \
+	    $(srcdir)/template/$(@F).tmpl --srcdir="$(srcdir)"
 
 configure-ext: $(EXTS_MK)
 

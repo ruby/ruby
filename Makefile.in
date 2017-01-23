@@ -432,7 +432,7 @@ clean-ext distclean-ext realclean-ext::
 	-$(Q)$(RM) ext/extinit.$(OBJEXT)
 
 distclean-ext realclean-ext::
-	-$(Q)$(RM) ext/extinit.c
+	-$(Q)$(RM) ext/extinit.c ext/configure-ext.mk ext/*/exts.mk
 	-$(Q)$(RMDIR) ext 2> /dev/null || true
 
 clean-extout:

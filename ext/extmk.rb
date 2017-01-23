@@ -421,7 +421,8 @@ if target = ARGV.shift and /^[a-z-]+$/ =~ target
                     "INSTALL_DATA=install -c -p -m 0644",
                     "MAKEDIRS=mkdir -p") if $dryrun
   when /configure/
-    $configure_only = true
+    target = target.sub(/^sub/, '')
+    $configure_only = $& || true
   end
 end
 unless $message
@@ -674,7 +675,7 @@ unless $extlist.empty?
   ].map {|n, v|
     "#{n}=#{v}" if v &&= v[/\S(?:.*\S)?/]
   }.compact
-  puts(*conf)
+  puts(*conf) unless $configure_only == 'sub'
   $stdout.flush
   $mflags.concat(conf)
   $makeflags.concat(conf)
@@ -701,6 +702,7 @@ ENV.delete("RUBYOPT")
 if $configure_only and $command_output
   exts.map! {|d| "ext/#{d}/."}
   gems.map! {|d| "gems/#{d}/."}
+  FileUtils.makedirs(File.dirname($command_output))
   atomic_write_open($command_output) do |mf|
     mf.puts "V = 0"
     mf.puts "Q1 = $(V:1=)"
@@ -760,7 +762,7 @@ if $configure_only and $command_output
     mf.puts
     mf.puts "#{rubies.join(' ')}: $(extensions:/.=/#{$force_static ? 'static' : 'all'}) $(gems:/.=/all)"
     submake = "$(Q)$(MAKE) $(MFLAGS) $(SUBMAKEOPTS)"
-    mf.puts "all static: #{rubies.join(' ')}\n"
+    mf.puts "all static: #{rubies.join(' ')}\n" unless $configure_only == 'sub'
     $extobjs.each do |tgt|
       mf.puts "#{tgt}: #{File.dirname(tgt)}/static"
     end
