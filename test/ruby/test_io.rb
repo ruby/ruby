@@ -3463,5 +3463,25 @@ __END__
         assert_equal(["foo\n", "bar\n", "baz\n"], IO.readlines(t.path))
       }
     end
+
+    def test_closed_stream_in_rescue
+      100.times do
+        assert_nothing_raised(RuntimeError, /frozen IOError/) do
+          IO.pipe do |r, w|
+            th = Thread.start {r.close}
+            r.gets
+          rescue IOError
+            # swallow pending exceptions
+            begin
+              sleep 0.001
+            rescue IOError
+              retry
+            end
+          ensure
+            th.kill.join
+          end
+        end
+      end
+    end
   end
 end
