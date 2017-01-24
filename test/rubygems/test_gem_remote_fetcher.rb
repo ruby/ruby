@@ -163,7 +163,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     fetcher = Gem::RemoteFetcher.new nil
     @fetcher = fetcher
     def fetcher.request(uri, request_class, last_modified = nil)
-      raise SocketError, "tarded"
+      raise SocketError, "oops"
     end
 
     uri = 'http://gems.example.com/yaml'
@@ -171,7 +171,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       fetcher.fetch_size uri
     end
 
-    assert_equal "SocketError: tarded (#{uri})", e.message
+    assert_equal "SocketError: oops (#{uri})", e.message
   end
 
   def test_no_proxy

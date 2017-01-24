@@ -111,6 +111,29 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 
     assert_match(/^#{Gem.ruby}.* extconf.rb/, output[1])
     assert_match(File.join(@dest_path, 'mkmf.log'), output[4])
+    assert_includes(output, "To see why this extension failed to compile, please check the mkmf.log which can be found here:\n")
+
+    assert_path_exists File.join @dest_path, 'mkmf.log'
+  end
+
+  def test_class_build_extconf_success_without_warning
+    if vc_windows? && !nmake_found?
+      skip("test_class_build_extconf_fail skipped - nmake not found")
+    end
+
+    File.open File.join(@ext, 'extconf.rb'), 'w' do |extconf|
+      extconf.puts "require 'mkmf'"
+      extconf.puts "File.open('mkmf.log', 'w'){|f| f.write('a')}"
+      extconf.puts "create_makefile 'foo'"
+    end
+
+    output = []
+
+    Dir.chdir @ext do
+      Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
+    end
+
+    refute_includes(output, "To see why this extension failed to compile, please check the mkmf.log which can be found here:\n")
 
     assert_path_exists File.join @dest_path, 'mkmf.log'
   end

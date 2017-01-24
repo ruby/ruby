@@ -33,6 +33,20 @@ class TestStubSpecification < Gem::TestCase
     assert_equal %w[ext/stub_e/extconf.rb],   stub.extensions
   end
 
+  def test_initialize_version
+    stub = stub_with_version
+
+    assert_equal 'stub_v',                    stub.name
+    assert_equal v(2),                        stub.version
+  end
+
+  def test_initialize_with_empty_version
+    stub = stub_without_version
+
+    assert_equal 'stub_v',                    stub.name
+    assert_equal v(0),                        stub.version
+  end
+
   def test_initialize_missing_stubline
     stub = Gem::StubSpecification.gemspec_stub(BAR, @base_dir, @gems_dir)
     assert_equal "bar", stub.name
@@ -162,6 +176,53 @@ class TestStubSpecification < Gem::TestCase
     end
 
     assert stub.to_spec.instance_variable_get :@ignored
+  end
+
+  def stub_with_version
+    spec = File.join @gemhome, 'specifications', 'stub_e-2.gemspec'
+    open spec, 'w' do |io|
+      io.write <<-STUB
+# -*- encoding: utf-8 -*-
+# stub: stub_v 2 ruby lib
+
+Gem::Specification.new do |s|
+  s.name = 'stub_v'
+  s.version = Gem::Version.new '2'
+end
+      STUB
+
+      io.flush
+
+      stub = Gem::StubSpecification.gemspec_stub io.path, @gemhome, File.join(@gemhome, 'gems')
+
+      yield stub if block_given?
+
+      return stub
+    end
+  end
+
+  def stub_without_version
+    spec = File.join @gemhome, 'specifications', 'stub-2.gemspec'
+    open spec, 'w' do |io|
+      io.write <<-STUB
+# -*- encoding: utf-8 -*-
+# stub: stub_v ruby lib
+
+Gem::Specification.new do |s|
+  s.name = 'stub_v'
+  s.version = ""
+end
+      STUB
+
+      io.flush
+
+      stub = Gem::StubSpecification.gemspec_stub io.path, @gemhome, File.join(@gemhome, 'gems')
+
+      yield stub if block_given?
+
+      return stub
+    end
+
   end
 
   def stub_with_extension

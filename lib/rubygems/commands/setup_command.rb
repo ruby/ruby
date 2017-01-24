@@ -47,7 +47,7 @@ class Gem::Commands::SetupCommand < Gem::Command
     end
 
     add_option '--[no-]document [TYPES]', Array,
-               'Generate documentation for RubyGems.',
+               'Generate documentation for RubyGems',
                'List the documentation types you wish to',
                'generate.  For example: rdoc,ri' do |value, options|
       options[:document] = case value

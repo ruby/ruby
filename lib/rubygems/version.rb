@@ -204,8 +204,12 @@ class Gem::Version
   # series of digits or ASCII letters separated by dots.
 
   def initialize version
-    raise ArgumentError, "Malformed version number string #{version}" unless
-      self.class.correct?(version)
+    unless self.class.correct?(version)
+      raise ArgumentError, "Malformed version number string #{version}"
+    end
+
+    # If version is an empty string convert it to 0
+    version = 0 if version =~ /\A\s*\Z/
 
     @version = version.to_s.strip.gsub("-",".pre.")
     @segments = nil

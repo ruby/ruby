@@ -194,18 +194,20 @@ module Gem::Resolver::Molinillo
       def state_index_for_unwind
         current_requirement = requirement
         existing_requirement = requirement_for_existing_name(name)
-        until current_requirement.nil?
-          current_state = find_state_for(current_requirement)
-          return states.index(current_state) if state_any?(current_state)
-          current_requirement = parent_of(current_requirement)
+        index = -1
+        [current_requirement, existing_requirement].each do |r|
+          until r.nil?
+            current_state = find_state_for(r)
+            if state_any?(current_state)
+              current_index = states.index(current_state)
+              index = current_index if current_index > index
+              break
+            end
+            r = parent_of(r)
+          end
         end
 
-        until existing_requirement.nil?
-          existing_state = find_state_for(existing_requirement)
-          return states.index(existing_state) if state_any?(existing_state)
-          existing_requirement = parent_of(existing_requirement)
-        end
-        -1
+        index
       end
 
       # @return [Object] the requirement that led to `requirement` being added
@@ -364,19 +366,17 @@ module Gem::Resolver::Molinillo
           if matching_deps.empty? && !succ.root? && succ.predecessors.to_a == [vertex]
             debug(depth) { "Removing orphaned spec #{succ.name} after swapping #{name}" }
             succ.requirements.each { |r| @parent_of.delete(r) }
-            activated.detach_vertex_named(succ.name)
 
-            all_successor_names = succ.recursive_successors.map(&:name)
-
-            requirements.delete_if do |requirement|
-              requirement_name = name_for(requirement)
-              (requirement_name == succ.name) || all_successor_names.include?(requirement_name)
+            removed_names = activated.detach_vertex_named(succ.name).map(&:name)
+            requirements.delete_if do |r|
+              # the only removed vertices are those with no other requirements,
+              # so it's safe to delete only based upon name here
+              removed_names.include?(name_for(r))
             end
           elsif !matching_deps.include?(outgoing_edge.requirement)
             activated.delete_edge(outgoing_edge)
             requirements.delete(outgoing_edge.requirement)
           end
-          matching_deps.delete(outgoing_edge.requirement)
         end
       end
 
