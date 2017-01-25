@@ -6541,7 +6541,7 @@ print_compiled_byte_code_list(FILE* f, regex_t* reg)
 # endif /* ONIG_DEBUG_COMPILE */
 
 # ifdef ONIG_DEBUG_PARSE_TREE
-void
+static void
 print_indent_tree(FILE* f, Node* node, int indent)
 {
   int i, type, container_p = 0;
