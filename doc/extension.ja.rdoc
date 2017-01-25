@@ -865,7 +865,7 @@ Rubyは拡張ライブラリをロードする時に「Init_ライブラリ名�
 DBMライブラリはdbmのデータと対応するオブジェクトになるはずで
 すから，Cの世界のdbmをRubyの世界に取り込む必要があります．
 
-dbm.cではData_Make_Structを以下のように使っています．
+dbm.cではTypedData_Make_Structを以下のように使っています．
 
   struct dbmdata {
       int  di_size;
