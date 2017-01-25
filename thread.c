@@ -2163,14 +2163,13 @@ rb_threadptr_reset_raised(rb_thread_t *th)
     return 1;
 }
 
-void
-rb_thread_fd_close(int fd)
+int
+rb_notify_fd_close(int fd)
 {
     rb_vm_t *vm = GET_THREAD()->vm;
     rb_thread_t *th = 0;
     int busy;
 
-  retry:
     busy = 0;
     list_for_each(&vm->living_threads, th, vmlt_node) {
 	if (th->waiting_fd == fd) {
@@ -2180,10 +2179,7 @@ rb_thread_fd_close(int fd)
 	    busy = 1;
 	}
     }
-    if (busy) {
-	rb_thread_schedule_limits(0);
-	goto retry;
-    }
+    return busy;
 }
 
 /*
