@@ -335,6 +335,9 @@ define rp_id
   if $id == idLTLT
     printf "(:<<)\n"
   else
+  if $id == idGTGT
+    printf "(:>>)\n"
+  else
   if $id == idLE
     printf "(:<=)\n"
   else
@@ -361,6 +364,18 @@ define rp_id
   else
   if $id == idASET
     printf "(:[]=)\n"
+  else
+  if $id == idCOLON2
+    printf "(:'::')\n"
+  else
+  if $id == idANDOP
+    printf "(:&&)\n"
+  else
+  if $id == idOROP
+    printf "(:||)\n"
+  else
+  if $id == idANDDOT
+    printf "(:&.)\n"
   else
     if $id <= tLAST_OP_ID
       printf "O"
@@ -399,6 +414,11 @@ define rp_id
     else
       echo undef\n
     end
+  end
+  end
+  end
+  end
+  end
   end
   end
   end
