@@ -446,9 +446,13 @@ define output_string
   set $len = ($flags & RUBY_FL_USER1) ? \
           ((struct RString*)($arg0))->as.heap.len : \
           (($flags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
-  output *(char *)(($flags & RUBY_FL_USER1) ? \
+  if $len > 0
+    output *(char *)(($flags & RUBY_FL_USER1) ? \
 	    ((struct RString*)($arg0))->as.heap.ptr : \
 	    ((struct RString*)($arg0))->as.ary) @ $len
+  else
+    output ""
+  end
 end
 
 define rp_string
