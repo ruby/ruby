@@ -225,11 +225,11 @@ rb_vmdebug_stack_dump_th(VALUE thval)
 #if VMDEBUG > 2
 
 /* copy from vm.c */
-static VALUE *
+static const VALUE *
 vm_base_ptr(rb_control_frame_t *cfp)
 {
     rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-    VALUE *bp = prev_cfp->sp + iseq->body->local_table_size + VM_ENV_DATA_SIZE;
+    const VALUE *bp = prev_cfp->sp + cfp->iseq->body->local_table_size + VM_ENV_DATA_SIZE;
 
     if (cfp->iseq->body->type == ISEQ_TYPE_METHOD) {
 	bp += 1;
@@ -240,15 +240,15 @@ vm_base_ptr(rb_control_frame_t *cfp)
 static void
 vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 {
-    int i, argc = 0, local_size = 0;
+    int i, argc = 0, local_table_size = 0;
     VALUE rstr;
     VALUE *sp = cfp->sp;
-    VALUE *ep = cfp->ep;
+    const VALUE *ep = cfp->ep;
 
     if (VM_FRAME_RUBYFRAME_P(cfp)) {
-	rb_iseq_t *iseq = cfp->iseq;
+	const rb_iseq_t *iseq = cfp->iseq;
 	argc = iseq->body->param.lead_num;
-	local_size = iseq->body->local_size;
+	local_table_size = iseq->body->local_table_size;
     }
 
     /* stack trace header */
@@ -264,8 +264,7 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_EVAL  ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_RESCUE)
     {
-
-	VALUE *ptr = ep - local_size;
+	const VALUE *ptr = ep - local_table_size;
 
 	control_frame_dump(th, cfp);
 
@@ -274,7 +273,7 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 	    fprintf(stderr, "  arg   %2d: %8s (%p)\n", i, StringValueCStr(rstr),
 		   (void *)ptr++);
 	}
-	for (; i < local_size - 1; i++) {
+	for (; i < local_table_size - 1; i++) {
 	    rstr = rb_inspect(*ptr);
 	    fprintf(stderr, "  local %2d: %8s (%p)\n", i, StringValueCStr(rstr),
 		   (void *)ptr++);
