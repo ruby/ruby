@@ -219,7 +219,7 @@ $(EXTS_MK): ext/configure-ext.mk $(TIMESTAMPDIR)/.$(arch).time $(srcdir)/templat
 
 ext/configure-ext.mk: $(PREP) all-incs $(MKFILES) $(RBCONFIG) $(LIBRUBY)
 	$(ECHO) generating makefiles $@
-	$(Q)$(MAKEDIRS) ext
+	$(Q)$(MAKEDIRS) $(@D)
 	$(Q)$(MINIRUBY) $(srcdir)/tool/generic_erb.rb -o $@ -c \
 	    $(srcdir)/template/$(@F).tmpl --srcdir="$(srcdir)" \
 	    --miniruby="$(MINIRUBY)" --script-args='$(SCRIPT_ARGS)'

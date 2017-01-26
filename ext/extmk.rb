@@ -486,7 +486,13 @@ for dir in ["ext", File::join($top_srcdir, "ext")]
   end
 end unless $extstatic
 
-ext_prefix = "#{$top_srcdir}/ext"
+@gemname = nil
+if ARGV[0]
+  ext_prefix, exts = ARGV.shift.split('/', 2)
+  $extension = [exts] if exts
+  @gemname = exts if ext_prefix == 'gems'
+end
+ext_prefix = "#{$top_srcdir}/#{ext_prefix || 'ext'}"
 exts = $static_ext.sort_by {|t, i| i}.collect {|t, i| t}
 default_exclude_exts =
   case
@@ -525,6 +531,7 @@ cond = proc {|ext, *|
     exts.delete_if {|d| File.fnmatch?("-*", d)}
   end
 end
+ext_prefix = File.basename(ext_prefix)
 
 if $extout
   extout = RbConfig.expand("#{$extout}", RbConfig::CONFIG.merge("topdir"=>$topdir))
@@ -533,55 +540,20 @@ if $extout
   end
 end
 
-FileUtils.makedirs('gems')
-ext_prefix = "#$top_srcdir/gems"
-gems = Dir.glob(File.join(ext_prefix, ($extension || ''), '**/extconf.rb')).collect {|d|
-  d = File.dirname(d)
-  d.slice!(0, ext_prefix.length + 1)
-  d
-}.find_all {|ext|
-  with_config(ext, &cond)
-}.sort
-
 extend Module.new {
   def timestamp_file(name, target_prefix = nil)
+    if @gemname and name == '$(TARGET_SO_DIR)'
+      name = "$(arch)/gems/#{@gemname}#{target_prefix}"
+    end
     super.sub(%r[/\.extout\.(?:-\.)?], '/.')
   end
 
   def configuration(srcdir)
     super << "EXTSO #{['=', $extso].join(' ')}\n"
   end
-}
 
-dir = Dir.pwd
-FileUtils::makedirs('ext')
-Dir::chdir('ext')
-
-hdrdir = $hdrdir
-$hdrdir = ($top_srcdir = relative_from(srcdir, $topdir = "..")) + "/include"
-extso = []
-fails = []
-exts.each do |d|
-  $static = $force_static ? true : $static_ext[d]
-
-  if $ignore or !$nodynamic or $static
-    result = extmake(d) or abort
-    extso |= $extso
-    fails << result unless result == true
-  end
-end
-
-Dir.chdir('..')
-FileUtils::makedirs('gems')
-Dir.chdir('gems')
-extout = $extout
-unless gems.empty?
-  def self.timestamp_file(name, target_prefix = nil)
-    name = "$(arch)/gems/#{@gemname}#{target_prefix}" if name == '$(TARGET_SO_DIR)'
-    super
-  end
-
-  def self.create_makefile(*args, &block)
+  def create_makefile(*args, &block)
+    return super unless @gemname
     super(*args) do |conf|
       conf.find do |s|
         s.sub!(/^(TARGET_SO_DIR *= *)\$\(RUBYARCHDIR\)/) {
@@ -604,15 +576,25 @@ $(build_complete): $(TARGET_SO)
       conf
     end
   end
+}
+
+dir = Dir.pwd
+FileUtils::makedirs(ext_prefix)
+Dir::chdir(ext_prefix)
+
+hdrdir = $hdrdir
+$hdrdir = ($top_srcdir = relative_from(srcdir, $topdir = "..")) + "/include"
+extso = []
+fails = []
+exts.each do |d|
+  $static = $force_static ? true : $static_ext[d]
+
+  if $ignore or !$nodynamic or $static
+    result = extmake(d, ext_prefix) or abort
+    extso |= $extso
+    fails << result unless result == true
+  end
 end
-gems.each do |d|
-  $extout = extout.dup
-  @gemname = d[%r{\A[^/]+}]
-  extmake(d, 'gems')
-  extso |= $extso
-end
-$extout = extout
-Dir.chdir('../ext')
 
 $top_srcdir = srcdir
 $topdir = "."
@@ -700,8 +682,7 @@ $makeflags.uniq!
 $mflags.unshift("topdir=#$topdir")
 ENV.delete("RUBYOPT")
 if $configure_only and $command_output
-  exts.map! {|d| "ext/#{d}/."}
-  gems.map! {|d| "gems/#{d}/."}
+  exts.map! {|d| "#{ext_prefix}/#{d}/."}
   FileUtils.makedirs(File.dirname($command_output))
   atomic_write_open($command_output) do |mf|
     mf.puts "V = 0"
@@ -728,7 +709,6 @@ if $configure_only and $command_output
     end
 
     mf.macro "extensions", exts
-    mf.macro "gems", gems
     mf.macro "EXTOBJS", $extlist.empty? ? ["dmyext.#{$OBJEXT}"] : ["ext/extinit.#{$OBJEXT}", *$extobjs]
     mf.macro "EXTLIBS", $extlibs
     mf.macro "EXTSO", extso
@@ -753,14 +733,13 @@ if $configure_only and $command_output
     targets = %w[all install static install-so install-rb clean distclean realclean]
     targets.each do |tgt|
       mf.puts "#{tgt}: $(extensions:/.=/#{tgt})"
-      mf.puts "#{tgt}: $(gems:/.=/#{tgt})" unless tgt == 'static'
       mf.puts "#{tgt}: note" unless /clean\z/ =~ tgt
     end
     mf.puts
     mf.puts "clean:\n\t-$(Q)$(RM) ext/extinit.#{$OBJEXT}"
     mf.puts "distclean:\n\t-$(Q)$(RM) ext/extinit.c"
     mf.puts
-    mf.puts "#{rubies.join(' ')}: $(extensions:/.=/#{$force_static ? 'static' : 'all'}) $(gems:/.=/all)"
+    mf.puts "#{rubies.join(' ')}: $(extensions:/.=/#{$force_static ? 'static' : 'all'})"
     submake = "$(Q)$(MAKE) $(MFLAGS) $(SUBMAKEOPTS)"
     mf.puts "all static: #{rubies.join(' ')}\n" unless $configure_only == 'sub'
     $extobjs.each do |tgt|
@@ -780,9 +759,8 @@ if $configure_only and $command_output
       config_string("exec") {|str| submake << str << " "}
       submake << "$(MAKE)"
     end
-    gems = exts + gems
     targets.each do |tgt|
-      (tgt == 'static' ? exts : gems).each do |d|
+      exts.each do |d|
         mf.puts "#{d[0..-2]}#{tgt}:\n\t$(Q)#{submake} $(MFLAGS) V=$(V) $(@F)"
       end
     end
