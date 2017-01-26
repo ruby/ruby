@@ -802,7 +802,7 @@ Here's the example of an initializing function.
   }
 
 The dbm extension wraps the dbm struct in the C environment using
-Data_Make_Struct.
+TypedData_Make_Struct.
 
   struct dbmdata {
       int  di_size;
