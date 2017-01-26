@@ -281,11 +281,16 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 
 	ptr = vm_base_ptr(cfp);
 	for (; ptr < sp; ptr++, i++) {
-	    if (*ptr == Qundef) {
+	    switch (TYPE(*ptr)) {
+	      case T_UNDEF:
 		rstr = rb_str_new2("undef");
-	    }
-	    else {
+		break;
+	      case T_IMEMO:
+		rstr = rb_str_new2("imemo"); /* TODO: can put mode detail information */
+		break;
+	      default:
 		rstr = rb_inspect(*ptr);
+		break;
 	    }
 	    fprintf(stderr, "  stack %2d: %8s (%"PRIdPTRDIFF")\n", i, StringValueCStr(rstr),
 		    (ptr - th->stack));
