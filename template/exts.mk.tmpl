@@ -75,7 +75,7 @@ if gnumake
   submake = "$(MAKE) -C $(@D)"
 else
   submake = "cd $(@D) && "
-  exec = RbConfig::CONFIG["exec"] and !exec.empty? and submake << str << " "
+  exec = RbConfig::CONFIG["exec"] and !exec.empty? and submake << exec << " "
   submake << "$(MAKE)"
 end
 %>
