@@ -215,7 +215,7 @@ $(EXTS_MK): ext/configure-ext.mk $(TIMESTAMPDIR)/.$(arch).time $(srcdir)/templat
 		gnumake=$(gnumake) EXTLDFLAGS="$(EXTLDFLAGS)" srcdir="$(srcdir)"
 	$(ECHO) generating makefile $@
 	$(Q)$(MINIRUBY) $(srcdir)/tool/generic_erb.rb -o $@ -c \
-	    $(srcdir)/template/exts.mk.tmpl
+	    $(srcdir)/template/exts.mk.tmpl --gnumake=$(gnumake)
 
 ext/configure-ext.mk: $(PREP) all-incs $(MKFILES) $(RBCONFIG) $(LIBRUBY)
 	$(ECHO) generating makefiles $@

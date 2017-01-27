@@ -9,6 +9,11 @@ require './rbconfig'
 macros = {}
 deps = []
 note = []
+gnumake = false
+opt = OptionParser.new do |o|
+  o.on('--gnumake=BOOL') {|v| gnumake = v == 'yes'}
+  o.order!(ARGV)
+end
 Dir.glob("ext/*/exts.mk") do |e|
   s = File.read(e)
   s.scan(/^(extensions|EXT[A-Z]+)[ \t]*=[ \t]*((?>(?>[^\\\n]|\\.)*\\\n)*(?>[^\\\n]|\\.)*)$/) do |n, v|
@@ -57,6 +62,13 @@ def self.column
 end
 targets = %w[all static install install-so install-rb clean distclean realclean]
 objext = RbConfig::CONFIG["OBJEXT"]
+if gnumake
+  submake = "$(MAKE) -C $(@D)"
+else
+  submake = "cd $(@D) && "
+  exec = RbConfig::CONFIG["exec"] and !exec.empty? and submake << str << " "
+  submake << "$(MAKE)"
+end
 %>
 
 extensions =<%= macros["extensions"].fold(column) %>
@@ -89,7 +101,7 @@ ext/extinit.<%=objext%>:
 
 % targets.product(macros["extensions"].map {|e|e.chomp("/.")}) do |t, e|
 <%=e%>/<%=t%>:
-	$(Q)$(MAKE) -C $(@D) $(MFLAGS) V=$(V) $(@F)
+	$(Q)<%= submake %> $(MFLAGS) $(SUBMAKEOPTS) V=$(V) $(@F)
 % end
 
 extso:
