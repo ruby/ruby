@@ -14,8 +14,8 @@ opt = OptionParser.new do |o|
 end
 srcdir ||= File.dirname(File.dirname(__FILE__))
 exts = {}
-[["ext", "exts"], ["gems", "gems"]].each do |t, dir|
-  exts[t] = Dir.glob("#{srcdir}/#{dir}/*/").map {|n| n[(srcdir.size+1)..-1]}
+[["exts", "ext"], ["gems", "gems"]].each do |t, dir|
+  exts[t] = Dir.glob("#{srcdir}/#{dir}/*/").map {|n| n[(srcdir.size+1)..-2]}
 end
 %>
 MINIRUBY = <%=miniruby%>
