@@ -130,7 +130,7 @@ def extract_makefile(makefile, keep = true)
   true
 end
 
-def extmake(target, basedir = (maybestatic = 'ext'))
+def extmake(target, basedir = 'ext', maybestatic = true)
   unless $configure_only || verbose?
     print "#{$message} #{target}\n"
     $stdout.flush
@@ -590,7 +590,7 @@ exts.each do |d|
   $static = $force_static ? true : $static_ext[d]
 
   if $ignore or !$nodynamic or $static
-    result = extmake(d, ext_prefix) or abort
+    result = extmake(d, ext_prefix, !@gemname) or abort
     extso |= $extso
     fails << result unless result == true
   end
