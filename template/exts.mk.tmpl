@@ -92,8 +92,8 @@ SUBMAKEOPTS = DLDOBJS="$(EXTOBJS) $(EXTENCS)" EXTOBJS= \
 	      EXTLDFLAGS="$(EXTLDFLAGS)" EXTINITS="$(EXTINITS)" \
 	      UPDATE_LIBRARIES="$(UPDATE_LIBRARIES)" SHOWFLAGS=
 
-all:
-static:
+all: rubies
+static: rubies
 
 clean:
 	-$(Q)$(RM) ext/extinit.<%= objext %>
