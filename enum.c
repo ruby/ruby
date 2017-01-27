@@ -1408,9 +1408,9 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
     if (ary) {
 	long i;
 	for (i = 0; i < RARRAY_LEN(obj); i++) {
-	   VALUE args[1];
-	   args[0] = RARRAY_AREF(obj, i);
-	   nmin_i(obj, (VALUE*)&data, 1, args);
+	    VALUE args[1];
+	    args[0] = RARRAY_AREF(obj, i);
+	    nmin_i(obj, (VALUE*)&data, 1, args);
 	}
     }
     else {
