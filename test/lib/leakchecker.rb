@@ -114,7 +114,9 @@ class LeakChecker
     if prev_count == count
       [prev_count, []]
     else
-      tempfiles = ObjectSpace.each_object(Tempfile).find_all {|t| t.path }
+      tempfiles = ObjectSpace.each_object(Tempfile).find_all {|t|
+        t.instance_variable_defined?(:@tmpfile) and t.path
+      }
       [count, tempfiles]
     end
   end
