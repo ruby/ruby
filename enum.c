@@ -1436,7 +1436,7 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
     if (rev) {
         rb_ary_reverse(result);
     }
-    *((VALUE *)&RBASIC(result)->klass) = rb_cArray;
+    RBASIC_SET_CLASS(result, rb_cArray);
     return result;
 
 }
