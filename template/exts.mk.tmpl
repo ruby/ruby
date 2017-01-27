@@ -9,6 +9,8 @@ require './rbconfig'
 macros = {}
 deps = []
 note = []
+rubies = []
+exeext = RbConfig::CONFIG['EXEEXT']
 gnumake = false
 opt = OptionParser.new do |o|
   o.on('--gnumake=BOOL') {|v| gnumake = v == 'yes'}
@@ -28,8 +30,15 @@ Dir.glob("ext/*/exts.mk") do |e|
       macros[n] = m | v
     end
   end
-  s.scan(%r"^(ext/\S+)/[^/\s:]+:[ \t]*\1/static$|^(?:ruby|install(?:-(?:so|rb))?|static|(?:dist|real)?clean):.+$") do
+  s.scan(%r"^(?:ext/\S+)/[^/\s:]+:[ \t]*\1/static$|
+            ^(?:
+              (ruby\w*#{Regexp.quote(exeext)}[^:]*)|
+              all|static|install(?:-(?:so|rb))?|
+              (?:dist|real)?clean
+             ):.+$
+           "ox) do |r,|
     deps << $&
+    rubies |= r.split if r
   end
   s.scan(%r"^note:\n((?:\t.+\n)+)") do |(n)|
     note |= n.split(/^/)
@@ -83,8 +92,8 @@ SUBMAKEOPTS = DLDOBJS="$(EXTOBJS) $(EXTENCS)" EXTOBJS= \
 	      EXTLDFLAGS="$(EXTLDFLAGS)" EXTINITS="$(EXTINITS)" \
 	      UPDATE_LIBRARIES="$(UPDATE_LIBRARIES)" SHOWFLAGS=
 
-all: ruby
-static: ruby
+all:
+static:
 
 clean:
 	-$(Q)$(RM) ext/extinit.<%= objext %>
@@ -92,8 +101,13 @@ distclean:
 	-$(Q)$(RM) ext/extinit.c
 
 <%= deps.join("\n") %>
-ruby:
+
+rubies: <%= rubies.join(' ') %>
+% rubies.each do |ruby|
+<%= ruby %>:
 	$(Q)$(MAKE) $(MFLAGS) $(SUBMAKEOPTS) $@
+% end
+
 libencs:
 	$(Q)$(MAKE) -f enc.mk V=$(V) $@
 ext/extinit.<%=objext%>:
