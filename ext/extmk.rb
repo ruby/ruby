@@ -375,6 +375,7 @@ def parse_args()
     $optparser.warn(e)
     abort $optparser.to_s
   end
+  $command_output or abort "--command-output option is mandatory"
 
   $destdir ||= ''
 
@@ -681,7 +682,7 @@ $makeflags.uniq!
 
 $mflags.unshift("topdir=#$topdir")
 ENV.delete("RUBYOPT")
-if $configure_only and $command_output
+if $configure_only
   exts.map! {|d| "#{ext_prefix}/#{d}/."}
   FileUtils.makedirs(File.dirname($command_output))
   atomic_write_open($command_output) do |mf|
@@ -781,7 +782,7 @@ if $configure_only and $command_output
     end
 
   end
-elsif $command_output
+else
   message = "making #{rubies.join(', ')}"
   message = "echo #{message}"
   $mflags.concat(rubies)
@@ -800,12 +801,6 @@ elsif $command_output
     end
     ff.chmod(0755)
   end
-elsif !$configure_only
-  message = "making #{rubies.join(', ')}"
-  puts message
-  $stdout.flush
-  $mflags.concat(rubies)
-  system($make, *$mflags) or exit($?.exitstatus)
 end
 # :startdoc:
 
