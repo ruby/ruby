@@ -30,15 +30,17 @@ Dir.glob("ext/*/exts.mk") do |e|
       macros[n] = m | v
     end
   end
-  s.scan(%r"^(?:ext/\S+)/[^/\s:]+:[ \t]*\1/static$|
+  r = s[/^all static: (.+)$/, 1]
+  deps << $&
+  rubies |= r.split if r
+  s.scan(%r"^(ext/\S+)/[^/\s:]+:[ \t]*\1/static$|
             ^(?:
-              (ruby\w*#{Regexp.quote(exeext)}[^:]*)|
+              (?:#{Regexp.new(r)})|
               all|static|install(?:-(?:so|rb))?|
               (?:dist|real)?clean
              ):.+$
-           "ox) do |r,|
+           "x) do
     deps << $&
-    rubies |= r.split if r
   end
   s.scan(%r"^note:\n((?:\t.+\n)+)") do |(n)|
     note |= n.split(/^/)
@@ -92,8 +94,8 @@ SUBMAKEOPTS = DLDOBJS="$(EXTOBJS) $(EXTENCS)" EXTOBJS= \
 	      EXTLDFLAGS="$(EXTLDFLAGS)" EXTINITS="$(EXTINITS)" \
 	      UPDATE_LIBRARIES="$(UPDATE_LIBRARIES)" SHOWFLAGS=
 
-all: rubies
-static: rubies
+all:
+static:
 
 clean:
 	-$(Q)$(RM) ext/extinit.<%= objext %>
@@ -102,7 +104,6 @@ distclean:
 
 <%= deps.join("\n") %>
 
-rubies: <%= rubies.join(' ') %>
 % rubies.each do |ruby|
 <%= ruby %>:
 	$(Q)$(MAKE) $(MFLAGS) $(SUBMAKEOPTS) $@
