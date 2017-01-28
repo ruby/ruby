@@ -422,7 +422,7 @@ module Test
         @workers_hash = {} # out-IO => worker
         @ios          = [] # Array of worker IOs
         begin
-          @options[:parallel].times {launch_worker}
+          [@tasks.size, @options[:parallel]].min.times {launch_worker}
 
           while _io = IO.select(@ios)[0]
             break if _io.any? do |io|
