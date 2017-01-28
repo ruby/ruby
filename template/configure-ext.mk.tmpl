@@ -35,7 +35,7 @@ gems:
 <%=dir%>/exts.mk: FORCE
 	$(Q)$(MINIRUBY) $(srcdir)/ext/extmk.rb --make='$(MAKE)' \
 		--command-output=$@ $(EXTMK_ARGS) <%=opt%> \
-		-- subconfigure $(@D)
+		-- configure $(@D)
 %   end
 % end
 
