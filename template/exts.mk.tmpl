@@ -16,11 +16,13 @@ opt = OptionParser.new do |o|
   o.on('--gnumake=BOOL') {|v| gnumake = v == 'yes'}
   o.order!(ARGV)
 end
-Dir.glob("ext/*/exts.mk") do |e|
+Dir.glob("{ext,gems}/*/exts.mk") do |e|
+  gem = /\Agems(?=\/)/ =~ e
   s = File.read(e)
   s.scan(/^(extensions|EXT[A-Z]+)[ \t]*=[ \t]*((?>(?>[^\\\n]|\\.)*\\\n)*(?>[^\\\n]|\\.)*)$/) do |n, v|
     v.gsub!(/\\\n[ \t]*/, ' ')
     next if v.empty?
+    next if gem and n != "extensions"
     v = v.split
     m = macros[n] ||= []
     case n
@@ -30,12 +32,16 @@ Dir.glob("ext/*/exts.mk") do |e|
       macros[n] = m | v
     end
   end
-  r = s[/^all static: (.+)$/, 1]
-  deps << $&
-  rubies |= r.split if r
+  if gem
+    r = ""
+  else
+    r = s[/^all static: (.+)$/, 1]
+    deps << $&
+    rubies |= r.split if r
+    r = "(?:#{Regexp.new(r)})|"
+  end
   s.scan(%r"^(ext/\S+)/[^/\s:]+:[ \t]*\1/static$|
-            ^(?:
-              (?:#{Regexp.new(r)})|
+            ^(?:#{r}
               all|static|install(?:-(?:so|rb))?|
               (?:dist|real)?clean
              ):.+$
@@ -83,7 +89,6 @@ end
 %>
 
 extensions =<%= macros["extensions"].fold(column) %>
-gems =
 EXTOBJS =<%= macros["EXTOBJS"].fold(column) %>
 EXTLIBS =<%= macros["EXTLIBS"].fold(column) %>
 EXTSO =<%= macros["EXTSO"].fold(column) %>
@@ -116,7 +121,7 @@ ext/extinit.<%=objext%>:
 
 % targets.product(macros["extensions"].map {|e|e.chomp("/.")}) do |t, e|
 <%=e%>/<%=t%>:
-	$(Q)<%= submake %> $(MFLAGS) $(SUBMAKEOPTS) V=$(V) $(@F)
+	$(Q)<%= submake %> $(MFLAGS) V=$(V) $(@F)
 % end
 
 extso:

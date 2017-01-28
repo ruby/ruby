@@ -14,25 +14,27 @@ opt = OptionParser.new do |o|
 end
 srcdir ||= File.dirname(File.dirname(__FILE__))
 exts = {}
-[["exts", "ext"], ["gems", "gems"]].each do |t, dir|
-  exts[t] = Dir.glob("#{srcdir}/#{dir}/*/").map {|n| n[(srcdir.size+1)..-2]}
+[
+  ["exts", "ext", "--extstatic $(EXTSTATIC)"],
+  ["gems", "gems", "--no-extstatic"],
+].each do |t, dir, opt|
+  exts[t] = [opt, Dir.glob("#{srcdir}/#{dir}/*/").map {|n| n[(srcdir.size+1)..-2]}]
 end
 %>
 MINIRUBY = <%=miniruby%>
 SCRIPT_ARGS = <%=script_args%>
-EXTMK_ARGS = $(SCRIPT_ARGS) --extstatic $(EXTSTATIC) \
-	     --gnumake=$(gnumake) --extflags="$(EXTLDFLAGS)" \
+EXTMK_ARGS = $(SCRIPT_ARGS) --gnumake=$(gnumake) --extflags="$(EXTLDFLAGS)" \
 
 all: exts gems
 exts:
 gems:
 
-% exts.each do |t, dirs|
+% exts.each do |t, (opt, dirs)|
 %   dirs.each do |dir|
 <%=t%>: <%=dir%>/exts.mk
 <%=dir%>/exts.mk: FORCE
 	$(Q)$(MINIRUBY) $(srcdir)/ext/extmk.rb --make='$(MAKE)' \
-		--command-output=$@ $(EXTMK_ARGS) \
+		--command-output=$@ $(EXTMK_ARGS) <%=opt%> \
 		-- subconfigure $(@D)
 %   end
 % end
