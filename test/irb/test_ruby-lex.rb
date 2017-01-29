@@ -20,6 +20,21 @@ module TestIRB
       assert_equal([["#\n", 1]], top_level_statement("#\n"))
     end
 
+    def test_top_level_statement
+      result = top_level_statement("#{<<-"begin;"}#{<<~"end;"}")
+      begin;
+        begin
+        end
+        begin
+        end
+      end;
+      assert_equal([
+                     ["begin\n""end\n", 1],
+                     ["begin\n""end\n", 3],
+                   ],
+                   result)
+    end
+
     def top_level_statement(lines)
       input = InputLines.new(lines, "r")
       scanned = []
