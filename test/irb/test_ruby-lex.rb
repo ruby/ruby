@@ -35,6 +35,11 @@ module TestIRB
                    result)
     end
 
+    def test_immature_statement
+      src = "if false\n"
+      assert_equal([[src, 1]], top_level_statement(src))
+    end
+
     def top_level_statement(lines)
       input = InputLines.new(lines, "r")
       scanned = []
