@@ -10,11 +10,8 @@ begin
 rescue LoadError
   # OK, just skip
 else
-  bits = 8 * RbConfig::SIZEOF['long']
-  $LONG_MAX = (1 << (bits - 1)) - 1
-  $LONG_MIN = -1 * $LONG_MAX - 1
-  $FIXNUM_MAX = $LONG_MAX >> 1
-  $FIXNUM_MIN = $LONG_MIN >> 1
+  $FIXNUM_MAX = RbConfig::Limits["FIXNUM_MAX"]
+  $FIXNUM_MIN = RbConfig::Limits["FIXNUM_MIN"]
 end
 
 fsl   = { frozen_string_literal: true } # used later
@@ -272,7 +269,7 @@ tests = [
   [ 'opt_case_dispatch', %q{ case 1.0 when 1.1 then false else true end }, ],
 
   [ 'opt_plus',    %q{ 1 + 1 == 2 }, ],
-  if defined? $LONG_MAX then
+  if defined? $FIXNUM_MAX then
     [ 'opt_plus',  %Q{ #{ $FIXNUM_MAX } + 1 == #{ $FIXNUM_MAX + 1 } }, ]
   end,
   [ 'opt_plus',    %q{ 1.0 + 1.0 == 2.0 }, ],
@@ -281,7 +278,7 @@ tests = [
   [ 'opt_plus',    %q{ ( ['t'] + ['r', ['u', ['e'], ], ] ).join }, ],
   [ 'opt_plus',    %q{ Time.at(1) + 1 == Time.at(2) }, ],
   [ 'opt_minus',   %q{ 1 - 1 == 0 }, ],
-  if defined? $LONG_MAX then
+  if defined? $FIXNUM_MIN then
     [ 'opt_minus', %Q{ #{ $FIXNUM_MIN } - 1 == #{ $FIXNUM_MIN - 1 } }, ]
   end,
   [ 'opt_minus',   %q{ 1.0 - 1.0 == 0.0 }, ],
@@ -364,7 +361,7 @@ tests = [
   [ 'opt_empty_p', %q{ Queue.new.empty? }, ],
 
   [ 'opt_succ',  %q{ 1.succ == 2 }, ],
-  if defined? $LONG_MAX then
+  if defined? $FIXNUM_MAX then
     [ 'opt_succ',%Q{ #{ $FIXNUM_MAX }.succ == #{ $FIXNUM_MAX + 1 } }, ]
   end,
   [ 'opt_succ',  %q{ '1'.succ == '2' }, ],
