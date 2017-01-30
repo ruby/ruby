@@ -29,10 +29,13 @@ extern "C" {
 
 #ifndef __bool_true_false_are_defined
 # ifndef __cplusplus
-#  error :FIXME: You are the first one who use pre-C99 compiler.
-#  error :FIXME: Please add appropriate definition here.
-#  error :FIXME: This part is intentionally left undefined,
-#  error :FIXME: because the author no longer have such environment.
+#  undef bool
+#  undef false
+#  undef true
+#  define bool signed char
+#  define false 0
+#  define true 1
+#  define __bool_true_false_are_defined 1
 # endif
 #endif
 
