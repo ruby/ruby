@@ -13,4 +13,4 @@ assert_equal "ArgumentError", %{
   rescue ArgumentError => e
     e.class
   end
-}
+}, '[Bug #12705]'
