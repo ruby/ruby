@@ -3371,7 +3371,7 @@ __END__
     assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
     bug13076 = '[ruby-core:78845] [Bug #13076]'
     begin;
-      100.times do |i|
+      10.times do |i|
         a = []
         t = []
         10.times do
@@ -3486,7 +3486,7 @@ __END__
     end
 
     def test_closed_stream_in_rescue
-      100.times do
+      10.times do
         assert_nothing_raised(RuntimeError, /frozen IOError/) do
           IO.pipe do |r, w|
             th = Thread.start {r.close}
