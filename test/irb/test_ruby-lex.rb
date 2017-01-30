@@ -52,39 +52,40 @@ module TestIRB
           prompts << a
         end
       }
-      src = "#{<<-"begin;"}#{<<~"end;"}"
+      src = "#{<<-"begin;"}#{<<~'end;'}"
       begin;
-        if false or
-          true
-          "
-          "
-          '
-          '
-        else
-          nil
-          nil
-        end
+        #            #;# LTYPE:INDENT:CONTINUE
+        x            #;# -:0:* # FIXME: a comment should not `continue'
+        x(           #;# -:0:-
+        )            #;# -:1:*
+        a \          #;# -:0:-
+                     #;# -:0:*
+        a;           #;# -:0:-
+        a            #;# -:0:* # FIXME: a semicolon should not `continue'
+                     #;# -:0:-
+        a            #;# -:0:* # FIXME: an empty line should not `continue'
+        a =          #;# -:0:-
+          '          #;# -:0:*
+          '          #;# ':0:*
+        if false or  #;# -:0:-
+          true       #;# -:1:*
+          a          #;# -:1:-
+          "          #;# -:1:-
+          "          #;# ":1:-
+          begin      #;# -:1:-
+            a        #;# -:2:* # FIXME: the first line should not be `continue'd
+            a        #;# -:2:-
+          end        #;# -:2:-
+        else         #;# -:1:-
+          nil        #;# -:1:* # FIXME: just after `else' should not be `continue'd
+        end          #;# -:1:-
       end;
-      assert_equal([[src, 1]], top_level_statement(src))
-      expected = [
-        [nil, 0, false],
-        [nil, 1, true],
-        [nil, 1, false],
-        ['"', 1, false],
-        [nil, 1, false],
-        ["'", 1, false],
-        [nil, 1, false],
-        [nil, 1, true], # FIXME: just after `else' should be `false'
-        [nil, 1, false],
-        [nil, 1, false],
-        [nil, 0, false],
-      ]
-      srcs = src.lines
-      assert_equal(expected.size, prompts.size)
-      expected.each_with_index {|e, i|
-        assert_equal(i + 1, prompts[i][3])
-        assert_equal(e, prompts[i][0..2], "#{i+1}: #{srcs[i]} # #{prompts[i]}")
-      }
+      top_level_statement(src.gsub(/[ \t]*#;#.*/, ''))
+      src.each_line.with_index(1) do |line, i|
+        p = prompts.shift
+        next unless /#;#\s*(?:-|(\S)):(\d+):(?:(\*)|-)/ =~ line
+        assert_equal([$1, $2.to_i, true&$3, i], p[0..3], "#{i}:#{p[4]}: #{line}")
+      end
     end
 
     def top_level_statement(lines)
