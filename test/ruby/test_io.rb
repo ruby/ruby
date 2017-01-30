@@ -3512,11 +3512,13 @@ __END__
         with_pipe do |r, w|
           before = ObjectSpace.count_objects(res)[:T_STRING]
           n = w.write(buf)
+          s = w.syswrite(buf)
           after = ObjectSpace.count_objects(res)[:T_STRING]
           assert_equal before, after,
             'no strings left over after write [ruby-core:78898] [Bug #13085]'
           assert_not_predicate buf, :frozen?, 'no inadvertant freeze'
-          assert_equal buf.bytesize, n, 'wrote expected size'
+          assert_equal buf.bytesize, n, 'write wrote expected size'
+          assert_equal s, n, 'syswrite wrote expected size'
         end
       end
     end

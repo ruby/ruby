@@ -4745,6 +4745,34 @@ rb_io_sysseek(int argc, VALUE *argv, VALUE io)
     return OFFT2NUM(pos);
 }
 
+struct swrite_arg {
+    VALUE orig;
+    VALUE tmp;
+    rb_io_t *fptr;
+};
+
+static VALUE
+swrite_do(VALUE arg)
+{
+    struct swrite_arg *sa = (struct swrite_arg *)arg;
+    const char *ptr;
+    long len;
+
+    RSTRING_GETMEM(sa->tmp, ptr, len);
+
+    return (VALUE)rb_write_internal(sa->fptr->fd, ptr, len);
+}
+
+static VALUE
+swrite_end(VALUE arg)
+{
+    struct swrite_arg *sa = (struct swrite_arg *)arg;
+
+    rb_str_tmp_frozen_release(sa->orig, sa->tmp);
+
+    return Qfalse;
+}
+
 /*
  *  call-seq:
  *     ios.syswrite(string)   -> integer
@@ -4761,26 +4789,25 @@ rb_io_sysseek(int argc, VALUE *argv, VALUE io)
 static VALUE
 rb_io_syswrite(VALUE io, VALUE str)
 {
-    rb_io_t *fptr;
+    struct swrite_arg sa;
     long n;
 
     if (!RB_TYPE_P(str, T_STRING))
 	str = rb_obj_as_string(str);
 
     io = GetWriteIO(io);
-    GetOpenFile(io, fptr);
-    rb_io_check_writable(fptr);
+    GetOpenFile(io, sa.fptr);
+    rb_io_check_writable(sa.fptr);
 
-    str = rb_str_new_frozen(str);
-
-    if (fptr->wbuf.len) {
+    if (sa.fptr->wbuf.len) {
 	rb_warn("syswrite for buffered IO");
     }
 
-    n = rb_write_internal(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str));
-    RB_GC_GUARD(str);
+    sa.orig = str;
+    sa.tmp = rb_str_tmp_frozen_acquire(str);
+    n = (long)rb_ensure(swrite_do, (VALUE)&sa, swrite_end, (VALUE)&sa);
 
-    if (n == -1) rb_sys_fail_path(fptr->pathv);
+    if (n == -1) rb_sys_fail_path(sa.fptr->pathv);
 
     return LONG2FIX(n);
 }
