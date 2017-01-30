@@ -541,6 +541,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define STDC_HEADERS 1
 #define HAVE_SYS_TYPES_H 1
 #define HAVE_SYS_STAT_H 1
+!if $(MSC_VER) >= 1800
+#define HAVE_STDBOOL_H 1
+!endif
 #define HAVE_STDLIB_H 1
 #define HAVE_STDDEF_H 1
 #define HAVE_STRING_H 1
