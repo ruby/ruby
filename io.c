@@ -1419,10 +1419,40 @@ do_writeconv(VALUE str, rb_io_t *fptr, int *converted)
     return str;
 }
 
+struct fwrite_arg {
+    VALUE orig;
+    VALUE tmp;
+    rb_io_t *fptr;
+    int nosync;
+};
+
+static VALUE
+fwrite_do(VALUE arg)
+{
+    struct fwrite_arg *fa = (struct fwrite_arg *)arg;
+    const char *ptr;
+    long len;
+
+    RSTRING_GETMEM(fa->tmp, ptr, len);
+
+    return (VALUE)io_binwrite(fa->tmp, ptr, len, fa->fptr, fa->nosync);
+}
+
+static VALUE
+fwrite_end(VALUE arg)
+{
+    struct fwrite_arg *fa = (struct fwrite_arg *)arg;
+
+    rb_str_tmp_frozen_release(fa->orig, fa->tmp);
+
+    return Qfalse;
+}
+
 static long
 io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
 {
     int converted = 0;
+    struct fwrite_arg fa;
 #ifdef _WIN32
     if (fptr->mode & FMODE_TTY) {
 	long len = rb_w32_write_console(str, fptr->fd);
@@ -1432,11 +1462,13 @@ io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
     str = do_writeconv(str, fptr, &converted);
     if (converted)
 	OBJ_FREEZE(str);
-    else
-	str = rb_str_new_frozen(str);
 
-    return io_binwrite(str, RSTRING_PTR(str), RSTRING_LEN(str),
-		       fptr, nosync);
+    fa.orig = str;
+    fa.tmp = rb_str_tmp_frozen_acquire(str);
+    fa.fptr = fptr;
+    fa.nosync = nosync;
+
+    return (long)rb_ensure(fwrite_do, (VALUE)&fa, fwrite_end, (VALUE)&fa);
 }
 
 ssize_t

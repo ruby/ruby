@@ -70,6 +70,7 @@ VALUE rb_cSymbol;
  * 1:     RSTRING_NOEMBED
  * 2:     STR_SHARED (== ELTS_SHARED)
  * 2-6:   RSTRING_EMBED_LEN (5 bits == 32)
+ * 6:     STR_IS_SHARED_M (shared, when RSTRING_NOEMBED==1 && klass==0)
  * 7:     STR_TMPLOCK
  * 8-9:   ENC_CODERANGE (2 bits)
  * 10-16: ENCODING (7 bits == 128)
@@ -79,6 +80,7 @@ VALUE rb_cSymbol;
  */
 
 #define RUBY_MAX_CHAR_LEN 16
+#define STR_IS_SHARED_M FL_USER6
 #define STR_TMPLOCK FL_USER7
 #define STR_NOFREE FL_USER18
 #define STR_FAKESTR FL_USER19
@@ -150,6 +152,8 @@ VALUE rb_cSymbol;
     if (!FL_TEST(str, STR_FAKESTR)) { \
 	RB_OBJ_WRITE((str), &RSTRING(str)->as.heap.aux.shared, (shared_str)); \
 	FL_SET((str), STR_SHARED); \
+	if (RBASIC_CLASS((shared_str)) == 0) /* for CoW-friendliness */ \
+	    FL_SET_RAW((shared_str), STR_IS_SHARED_M); \
     } \
 } while (0)
 
@@ -1127,6 +1131,45 @@ rb_str_new_frozen(VALUE orig)
     return str;
 }
 
+VALUE
+rb_str_tmp_frozen_acquire(VALUE orig)
+{
+    VALUE tmp;
+
+    if (OBJ_FROZEN_RAW(orig)) return orig;
+
+    tmp = str_new_frozen(0, orig);
+    OBJ_INFECT(tmp, orig);
+
+    return tmp;
+}
+
+void
+rb_str_tmp_frozen_release(VALUE orig, VALUE tmp)
+{
+    if (RBASIC_CLASS(tmp) != 0)
+	return;
+
+    if (FL_TEST_RAW(orig, STR_SHARED) &&
+	    !FL_TEST_RAW(orig, STR_TMPLOCK|RUBY_FL_FREEZE)) {
+	VALUE shared = RSTRING(orig)->as.heap.aux.shared;
+
+	if (shared == tmp && !FL_TEST_RAW(tmp, STR_IS_SHARED_M)) {
+	    FL_UNSET_RAW(orig, STR_SHARED);
+	    assert(RSTRING(orig)->as.heap.ptr == RSTRING(tmp)->as.heap.ptr);
+	    assert(RSTRING(orig)->as.heap.len == RSTRING(tmp)->as.heap.len);
+	    RSTRING(orig)->as.heap.aux.capa = RSTRING(tmp)->as.heap.aux.capa;
+	    RBASIC(orig)->flags |= RBASIC(tmp)->flags & STR_NOFREE;
+	    assert(OBJ_FROZEN_RAW(tmp));
+	    rb_gc_force_recycle(tmp);
+	}
+    }
+    else if (STR_EMBED_P(tmp)) {
+	assert(OBJ_FROZEN_RAW(tmp));
+	rb_gc_force_recycle(tmp);
+    }
+}
+
 static VALUE
 str_new_frozen(VALUE klass, VALUE orig)
 {
@@ -1152,6 +1195,8 @@ str_new_frozen(VALUE klass, VALUE orig)
 		RSTRING(str)->as.heap.len -= ofs + rest;
 	    }
 	    else {
+		if (RBASIC_CLASS(shared) == 0)
+		    FL_SET_RAW(shared, STR_IS_SHARED_M);
 		return shared;
 	    }
 	}
@@ -1171,6 +1216,8 @@ str_new_frozen(VALUE klass, VALUE orig)
 	    RBASIC(str)->flags |= RBASIC(orig)->flags & STR_NOFREE;
 	    RBASIC(orig)->flags &= ~STR_NOFREE;
 	    STR_SET_SHARED(orig, str);
+	    if (klass == 0)
+		FL_UNSET_RAW(str, STR_IS_SHARED_M);
 	}
     }
 
