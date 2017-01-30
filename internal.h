@@ -23,6 +23,19 @@ extern "C" {
 #endif
 #endif
 
+#ifdef HAVE_STDBOOL_H
+# include <stdbool.h>
+#endif
+
+#ifndef __bool_true_false_are_defined
+# ifndef __cplusplus
+#  error :FIXME: You are the first one who use pre-C99 compiler.
+#  error :FIXME: Please add appropriate definition here.
+#  error :FIXME: This part is intentionally left undefined,
+#  error :FIXME: because the author no longer have such environment.
+# endif
+#endif
+
 #define LIKELY(x) RB_LIKELY(x)
 #define UNLIKELY(x) RB_UNLIKELY(x)
 
