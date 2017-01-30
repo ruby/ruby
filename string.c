@@ -1150,7 +1150,11 @@ rb_str_tmp_frozen_release(VALUE orig, VALUE tmp)
     if (RBASIC_CLASS(tmp) != 0)
 	return;
 
-    if (FL_TEST_RAW(orig, STR_SHARED) &&
+    if (STR_EMBED_P(tmp)) {
+	assert(OBJ_FROZEN_RAW(tmp));
+	rb_gc_force_recycle(tmp);
+    }
+    else if (FL_TEST_RAW(orig, STR_SHARED) &&
 	    !FL_TEST_RAW(orig, STR_TMPLOCK|RUBY_FL_FREEZE)) {
 	VALUE shared = RSTRING(orig)->as.heap.aux.shared;
 
@@ -1163,10 +1167,6 @@ rb_str_tmp_frozen_release(VALUE orig, VALUE tmp)
 	    assert(OBJ_FROZEN_RAW(tmp));
 	    rb_gc_force_recycle(tmp);
 	}
-    }
-    else if (STR_EMBED_P(tmp)) {
-	assert(OBJ_FROZEN_RAW(tmp));
-	rb_gc_force_recycle(tmp);
     }
 }
 

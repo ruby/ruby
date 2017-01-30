@@ -3504,5 +3504,21 @@ __END__
         end
       end
     end
+
+    def test_write_no_garbage
+      res = {}
+      ObjectSpace.count_objects(res) # creates strings on first call
+      [ 'foo'.b, '*' * 24 ].each do |buf|
+        with_pipe do |r, w|
+          before = ObjectSpace.count_objects(res)[:T_STRING]
+          n = w.write(buf)
+          after = ObjectSpace.count_objects(res)[:T_STRING]
+          assert_equal before, after,
+            'no strings left over after write [ruby-core:78898] [Bug #13085]'
+          assert_not_predicate buf, :frozen?, 'no inadvertant freeze'
+          assert_equal buf.bytesize, n, 'wrote expected size'
+        end
+      end
+    end
   end
 end
