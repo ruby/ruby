@@ -3486,6 +3486,8 @@ __END__
     end
 
     def test_closed_stream_in_rescue
+      assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+      begin;
       10.times do
         assert_nothing_raised(RuntimeError, /frozen IOError/) do
           IO.pipe do |r, w|
@@ -3503,6 +3505,7 @@ __END__
           end
         end
       end
+      end;
     end
 
     def test_write_no_garbage
