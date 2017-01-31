@@ -773,7 +773,7 @@ queue_delete_from_waiting(struct waiting_delete *p)
 static VALUE
 queue_sleep(VALUE arg)
 {
-    rb_thread_sleep_deadly();
+    rb_thread_sleep_deadly_allow_spurious_wakeup();
     return Qnil;
 }
 

@@ -547,4 +547,21 @@ class TestQueue < Test::Unit::TestCase
     # don't leak this thread
     assert_nothing_raised{counter.join}
   end
+
+  def test_queue_with_trap
+    assert_in_out_err([], <<-INPUT, %w(USR2 USR2 exit), [])
+      q = Queue.new
+      trap(:USR2){
+        q.push 'USR2'
+      }
+      Thread.new{
+        loop{
+          Process.kill :USR2, $$
+        }
+      }
+      puts q.pop
+      puts q.pop
+      puts 'exit'
+    INPUT
+  end
 end
