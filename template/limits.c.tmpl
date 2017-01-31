@@ -58,6 +58,9 @@ Init_limits(void)
     rb_define_const(rb_define_module("RbConfig"), "Limits", h);
 
 #ifdef HAVE_LONG_LONG
+#ifndef ULLONG_MAX
+#define ULLONG_MAX ((unsigned LONG_LONG)LLONG_MAX*2+1)
+#endif
 #define MAX2NUM(name) ULL2NUM(name ## _MAX)
 #define MIN2NUM(name)  LL2NUM(name ## _MIN)
 #else
