@@ -176,7 +176,7 @@ cmdline_options_init(ruby_cmdline_options_t *opt)
 }
 
 static NODE *load_file(VALUE, VALUE, int, ruby_cmdline_options_t *);
-static void forbid_setid(const char *, ruby_cmdline_options_t *);
+static void forbid_setid(const char *, const ruby_cmdline_options_t *);
 #define forbid_setid(s) forbid_setid((s), opt)
 
 static struct {
@@ -1050,6 +1050,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 
 	  case 'x':
 	    if (envopt) goto noenvopt;
+	    forbid_setid("-x");
 	    opt->xflag = TRUE;
 	    s++;
 	    if (*s && chdir(s) < 0) {
@@ -1514,6 +1515,9 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	    argc--;
 	    argv++;
 	}
+	if (opt->script[0] == '-' && !opt->script[1]) {
+	    forbid_setid("program input from stdin");
+	}
     }
 
     opt->script_name = rb_str_new_cstr(opt->script);
@@ -1641,10 +1645,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
     else {
-	if (opt->script[0] == '-' && !opt->script[1]) {
-	    forbid_setid("program input from stdin");
-	}
-
 	base_block = toplevel_context(toplevel_binding);
 	rb_parser_set_context(parser, base_block, TRUE);
 	tree = load_file(parser, opt->script_name, 1, opt);
@@ -1780,8 +1780,6 @@ load_file_internal(VALUE argp_v)
 	if (xflag || opt->xflag) {
 	    line_start--;
 	  search_shebang:
-	    forbid_setid("-x");
-	    opt->xflag = FALSE;
 	    while (!NIL_P(line = rb_io_gets(f))) {
 		line_start++;
 		RSTRING_GETMEM(line, str, len);
@@ -2117,7 +2115,7 @@ init_ids(ruby_cmdline_options_t *opt)
 
 #undef forbid_setid
 static void
-forbid_setid(const char *s, ruby_cmdline_options_t *opt)
+forbid_setid(const char *s, const ruby_cmdline_options_t *opt)
 {
     if (opt->setids & 1)
         rb_raise(rb_eSecurityError, "no %s allowed while running setuid", s);
