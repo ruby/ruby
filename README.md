@@ -97,6 +97,9 @@ This is what you need to do to compile and install Ruby:
 
 6.  Run `make`.
 
+    * On Mac, set RUBY\_CODESIGN environment variable with a signing identity.
+      It uses the identity to sign `ruby` binary. See also codesign(1).
+
 7.  Optionally, run '`make check`' to check whether the compiled Ruby
     interpreter works well. If you see the message "`check succeeded`", your
     ruby works as it should (hopefully).
