@@ -420,7 +420,7 @@ rb_mutex_abandon_all(rb_mutex_t *mutexes)
 static VALUE
 rb_mutex_sleep_forever(VALUE time)
 {
-    sleep_forever(GET_THREAD(), 1, 0); /* permit spurious check */
+    sleep_forever(GET_THREAD(), TRUE, FALSE); /* permit spurious check */
     return Qnil;
 }
 
