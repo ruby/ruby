@@ -4422,6 +4422,7 @@ time_strftime(VALUE time, VALUE format)
     const char *fmt;
     long len;
     rb_encoding *enc;
+    VALUE tmp;
 
     GetTimeval(time, tobj);
     MAKE_TM(time, tobj);
@@ -4429,9 +4430,9 @@ time_strftime(VALUE time, VALUE format)
     if (!rb_enc_str_asciicompat_p(format)) {
 	rb_raise(rb_eArgError, "format should have ASCII compatible encoding");
     }
-    format = rb_str_new4(format);
-    fmt = RSTRING_PTR(format);
-    len = RSTRING_LEN(format);
+    tmp = rb_str_tmp_frozen_acquire(format);
+    fmt = RSTRING_PTR(tmp);
+    len = RSTRING_LEN(tmp);
     enc = rb_enc_get(format);
     if (len == 0) {
 	rb_warning("strftime called with empty format string");
@@ -4440,6 +4441,7 @@ time_strftime(VALUE time, VALUE format)
     else {
 	VALUE str = rb_strftime_alloc(fmt, len, enc, &tobj->vtm, tobj->timew,
 				      TIME_UTC_P(tobj));
+	rb_str_tmp_frozen_release(format, tmp);
 	if (!str) rb_raise(rb_eArgError, "invalid format: %"PRIsVALUE, format);
 	return str;
     }
