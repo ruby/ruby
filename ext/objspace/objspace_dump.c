@@ -192,6 +192,25 @@ dump_append_string_content(struct dump_config *dc, VALUE obj)
     }
 }
 
+static const char *
+imemo_name(int imemo)
+{
+    switch(imemo) {
+#define TYPE_STR(t) case(imemo_##t): return #t; break;
+	TYPE_STR(env)
+	TYPE_STR(cref)
+	TYPE_STR(svar)
+	TYPE_STR(throw_data)
+	TYPE_STR(ifunc)
+	TYPE_STR(memo)
+	TYPE_STR(ment)
+	TYPE_STR(iseq)
+	default:
+	    return "unknown";
+#undef TYPE_STR
+    }
+}
+
 static void
 dump_object(VALUE obj, struct dump_config *dc)
 {
@@ -227,6 +246,10 @@ dump_object(VALUE obj, struct dump_config *dc)
 
       case T_NODE:
 	dump_append(dc, ", \"node_type\":\"%s\"", ruby_node_name(nd_type(obj)));
+	break;
+
+      case T_IMEMO:
+	dump_append(dc, ", \"imemo_type\":\"%s\"", imemo_name(imemo_type(obj)));
 	break;
 
       case T_SYMBOL:
