@@ -475,6 +475,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     int tainted = 0;
     VALUE nextvalue;
     VALUE tmp;
+    VALUE orig;
     VALUE str;
     volatile VALUE hash = Qundef;
 
@@ -498,7 +499,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     if (OBJ_TAINTED(fmt)) tainted = 1;
     StringValue(fmt);
     enc = rb_enc_get(fmt);
-    fmt = rb_str_new4(fmt);
+    orig = fmt;
+    fmt = rb_str_tmp_frozen_acquire(fmt);
     p = RSTRING_PTR(fmt);
     end = p + RSTRING_LEN(fmt);
     blen = 0;
@@ -1196,7 +1198,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     }
 
   sprint_exit:
-    RB_GC_GUARD(fmt);
+    rb_str_tmp_frozen_release(orig, fmt);
     /* XXX - We cannot validate the number of arguments if (digit)$ style used.
      */
     if (posarg >= 0 && nextarg < argc) {
