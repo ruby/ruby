@@ -1763,7 +1763,6 @@ load_file_internal(VALUE argp_v)
     ID set_encoding;
     int xflag = argp->xflag;
 
-    argp->script = 0;
     CONST_ID(set_encoding, "set_encoding");
     if (script) {
 	VALUE c = 1;		/* something not nil */
@@ -1840,8 +1839,7 @@ load_file_internal(VALUE argp_v)
 	    rb_io_ungetbyte(f, c);
 	}
 	else {
-	    if (f != rb_stdin) rb_io_close(f);
-	    f = Qnil;
+	    argp->f = f = Qnil;
 	}
 	if (!(opt->dump & ~DUMP_BIT(version_v))) {
 	    ruby_set_script_name(opt->script_name);
@@ -1865,7 +1863,22 @@ load_file_internal(VALUE argp_v)
     rb_funcall(f, set_encoding, 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
     tree = rb_parser_compile_file_path(parser, orig_fname, f, line_start);
     rb_funcall(f, set_encoding, 1, rb_parser_encoding(parser));
-    if (script && rb_parser_end_seen_p(parser)) argp->script = script;
+    if (script && rb_parser_end_seen_p(parser)) {
+	/*
+	 * DATA is a File that contains the data section of the executed file.
+	 * To create a data section use <tt>__END__</tt>:
+	 *
+	 *   $ cat t.rb
+	 *   puts DATA.gets
+	 *   __END__
+	 *   hello world!
+	 *
+	 *   $ ruby t.rb
+	 *   hello world!
+	 */
+	rb_define_global_const("DATA", f);
+	argp->f = Qnil;
+    }
     return (VALUE)tree;
 }
 
@@ -1951,22 +1964,7 @@ restore_load_file(VALUE arg)
     struct load_file_arg *argp = (struct load_file_arg *)arg;
     VALUE f = argp->f;
 
-    if (argp->script) {
-	/*
-	 * DATA is a File that contains the data section of the executed file.
-	 * To create a data section use <tt>__END__</tt>:
-	 *
-	 *   $ cat t.rb
-	 *   puts DATA.gets
-	 *   __END__
-	 *   hello world!
-	 *
-	 *   $ ruby t.rb
-	 *   hello world!
-	 */
-	rb_define_global_const("DATA", f);
-    }
-    else if (f != rb_stdin) {
+    if (!NIL_P(f) && f != rb_stdin) {
 	rb_io_close(f);
     }
     return Qnil;
