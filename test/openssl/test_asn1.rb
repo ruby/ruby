@@ -566,6 +566,13 @@ rEzBQ0F9dUyqQ9gyRg8KHhDfv9HzT1d/rnUZMkoombwYBRIUChGCYV0GnJcan2Zm
     assert_equal 17, ret[0][6]
   end
 
+  def test_constructive_each
+    data = [OpenSSL::ASN1::Integer.new(0), OpenSSL::ASN1::Integer.new(1)]
+    seq = OpenSSL::ASN1::Sequence.new data
+
+    assert_equal data, seq.entries
+  end
+
   private
 
   def assert_universal(tag, asn1)

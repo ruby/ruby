@@ -357,6 +357,16 @@ class OpenSSL::TestX509Name < OpenSSL::TestCase
     assert_equal(expected, name_hash(name))
   end
 
+  def test_equality
+    name0 = OpenSSL::X509::Name.new([["DC", "org"], ["DC", "ruby-lang"], ["CN", "bar.ruby-lang.org"]])
+    name1 = OpenSSL::X509::Name.new([["DC", "org"], ["DC", "ruby-lang"], ["CN", "bar.ruby-lang.org"]])
+    name2 = OpenSSL::X509::Name.new([["DC", "org"], ["DC", "ruby-lang"], ["CN", "baz.ruby-lang.org"]])
+    assert_equal true, name0 == name1
+    assert_equal true, name0.eql?(name1)
+    assert_equal false, name0 == name2
+    assert_equal false, name0.eql?(name2)
+  end
+
   def test_dup
     name = OpenSSL::X509::Name.parse("/CN=ruby-lang.org")
     assert_equal(name.to_der, name.dup.to_der)
