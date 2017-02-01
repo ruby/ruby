@@ -1256,6 +1256,18 @@ true_to_s(VALUE obj)
     return rb_usascii_str_new2("true");
 }
 
+/*
+ * call-seq:
+ *   true.to_i   ->  1
+ *
+ * The integer representation of <code>true</code> is 1.
+ */
+
+static VALUE
+true_to_i(VALUE obj)
+{
+    return INT2FIX(1);
+}
 
 /*
  *  call-seq:
@@ -1331,6 +1343,19 @@ static VALUE
 false_to_s(VALUE obj)
 {
     return rb_usascii_str_new2("false");
+}
+
+/*
+ * call-seq:
+ *   false.to_i   ->  0
+ *
+ * The integer representation of <code>false</code> is 0.
+ */
+
+static VALUE
+false_to_i(VALUE obj)
+{
+    return INT2FIX(0);
 }
 
 /*
