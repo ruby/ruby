@@ -1092,7 +1092,7 @@ class TestTime < Test::Unit::TestCase
 
   def test_strftime_no_hidden_garbage
     fmt = %w(Y m d).map { |x| "%#{x}" }.join('-') # defeats optimization
-    t = Time.at(0)
+    t = Time.at(0).getutc
     ObjectSpace.count_objects(res = {}) # creates strings on first call
     before = ObjectSpace.count_objects(res)[:T_STRING]
     val = t.strftime(fmt)
