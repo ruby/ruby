@@ -111,17 +111,17 @@ distclean:
 
 % rubies.each do |ruby|
 <%= ruby %>:
-	$(Q)$(MAKE) $(MFLAGS) $(SUBMAKEOPTS) $@
+	$(Q)$(MAKE) $(SUBMAKEOPTS) $@
 % end
 
 libencs:
 	$(Q)$(MAKE) -f enc.mk V=$(V) $@
 ext/extinit.<%=objext%>:
-	$(Q)$(MAKE) $(MFLAGS) V=$(V) EXTINITS="$(EXTINITS)" $@
+	$(Q)$(MAKE) V=$(V) EXTINITS="$(EXTINITS)" $@
 
 % targets.product(macros["extensions"].map {|e|e.chomp("/.")}) do |t, e|
 <%=e%>/<%=t%>:
-	$(Q)<%= submake %> $(MFLAGS) V=$(V) $(@F)
+	$(Q)<%= submake %> V=$(V) $(@F)
 % end
 
 extso:

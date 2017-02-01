@@ -423,7 +423,7 @@ clean-ext distclean-ext realclean-ext::
 	cd ..; \
 	for dir do \
 	    echo $(@:-ext=)ing "$$dir"; \
-	    (cd "ext/$$dir" && exec $(MAKE) $(MFLAGS) $(@:-ext=)) && \
+	    (cd "ext/$$dir" && exec $(MAKE) $(@:-ext=)) && \
 	    case "$@" in \
 	    *distclean-ext*|*realclean-ext*) \
 		$(RMDIRS) "ext/$$dir" 2> /dev/null || true;; \
