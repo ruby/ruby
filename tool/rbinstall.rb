@@ -610,8 +610,9 @@ end
 module RbInstall
   module Specs
     class FileCollector
-      def initialize(base_dir)
-        @base_dir = base_dir
+      def initialize(gemspec)
+        @gemspec = gemspec
+        @base_dir = File.dirname(gemspec)
       end
 
       def collect
@@ -634,8 +635,12 @@ module RbInstall
           prefix = base.sub(/lib\/.*?\z/, "") + "lib/"
         end
 
-        Dir.glob("#{base}{.rb,/**/*.rb}").collect do |ruby_source|
-          remove_prefix(prefix, ruby_source)
+        if base
+          Dir.glob("#{base}{.rb,/**/*.rb}").collect do |ruby_source|
+            remove_prefix(prefix, ruby_source)
+          end
+        else
+          [remove_prefix(File.dirname(@gemspec) + '/', @gemspec.gsub(/gemspec/, 'rb'))]
         end
       end
 
@@ -649,6 +654,8 @@ module RbInstall
             remove_prefix(prefix, built_library)
           end
         when "lib"
+          []
+        else
           []
         end
       end
@@ -753,7 +760,7 @@ install?(:ext, :comm, :gem) do
 
   gems = Dir.glob(srcdir+"/{lib,ext}/**/*.gemspec").map {|src|
     spec = Gem::Specification.load(src) || raise("invalid spec in #{src}")
-    file_collector = RbInstall::Specs::FileCollector.new(File.dirname(src))
+    file_collector = RbInstall::Specs::FileCollector.new(src)
     files = file_collector.collect
     next if files.empty?
     spec.files = files
