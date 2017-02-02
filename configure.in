@@ -2498,9 +2498,9 @@ RUBY_CHECK_BUILTIN_FUNC(__builtin_clzl, [__builtin_clzl(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_clzll, [__builtin_clzll(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_ctz, [__builtin_ctz(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_ctzll, [__builtin_ctzll(0)])
-RUBY_CHECK_BUILTIN_FUNC(__builtin_add_ovewflow, [__builtin_add_ovewflow(0)])
-RUBY_CHECK_BUILTIN_FUNC(__builtin_sub_ovewflow, [__builtin_sub_ovewflow(0)])
-RUBY_CHECK_BUILTIN_FUNC(__builtin_mul_ovewflow, [__builtin_mul_ovewflow(0)])
+RUBY_CHECK_BUILTIN_FUNC(__builtin_add_overflow, [int x;__builtin_add_overflow(0,0,&x)])
+RUBY_CHECK_BUILTIN_FUNC(__builtin_sub_overflow, [int x;__builtin_sub_overflow(0,0,&x)])
+RUBY_CHECK_BUILTIN_FUNC(__builtin_mul_overflow, [int x;__builtin_mul_overflow(0,0,&x)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_constant_p, [__builtin_constant_p(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_choose_expr, [
     [int x[__extension__(__builtin_choose_expr(1, 1, -1))]];
