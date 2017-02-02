@@ -1373,16 +1373,7 @@ opt_plus
 {
     if (FIXNUM_2_P(recv, obj) &&
 	BASIC_OP_UNREDEFINED_P(BOP_PLUS,INTEGER_REDEFINED_OP_FLAG)) {
-	/* fixnum + fixnum */
-#ifndef LONG_LONG_VALUE
-	VALUE msb = (VALUE)1 << ((sizeof(VALUE) * CHAR_BIT) - 1);
-	val = recv - 1 + obj;
-	if ((~(recv ^ obj) & (recv ^ val)) & msb) {
-	    val = rb_int2big((SIGNED_VALUE)((val>>1) | (recv & msb)));
-	}
-#else
-	val = LONG2NUM(FIX2LONG(recv) + FIX2LONG(obj));
-#endif
+	val = rb_fix_plus_fix(recv, obj);
     }
     else if (FLONUM_2_P(recv, obj) &&
 	     BASIC_OP_UNREDEFINED_P(BOP_PLUS, FLOAT_REDEFINED_OP_FLAG)) {
@@ -1426,12 +1417,7 @@ opt_minus
 {
     if (FIXNUM_2_P(recv, obj) &&
 	BASIC_OP_UNREDEFINED_P(BOP_MINUS, INTEGER_REDEFINED_OP_FLAG)) {
-	long a, b, c;
-
-	a = FIX2LONG(recv);
-	b = FIX2LONG(obj);
-	c = a - b;
-	val = LONG2NUM(c);
+	val = rb_fix_minus_fix(recv, obj);
     }
     else if (FLONUM_2_P(recv, obj) &&
 	     BASIC_OP_UNREDEFINED_P(BOP_MINUS, FLOAT_REDEFINED_OP_FLAG)) {

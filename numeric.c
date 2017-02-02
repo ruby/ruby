@@ -3458,15 +3458,7 @@ static VALUE
 fix_plus(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-	long a, b, c;
-	VALUE r;
-
-	a = FIX2LONG(x);
-	b = FIX2LONG(y);
-	c = a + b;
-	r = LONG2NUM(c);
-
-	return r;
+	return rb_fix_plus_fix(x, y);
     }
     else if (RB_TYPE_P(y, T_BIGNUM)) {
 	return rb_big_plus(y, x);
@@ -3513,15 +3505,7 @@ static VALUE
 fix_minus(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-	long a, b, c;
-	VALUE r;
-
-	a = FIX2LONG(x);
-	b = FIX2LONG(y);
-	c = a - b;
-	r = LONG2NUM(c);
-
-	return r;
+	return rb_fix_minus_fix(x, y);
     }
     else if (RB_TYPE_P(y, T_BIGNUM)) {
 	x = rb_int2big(FIX2LONG(x));

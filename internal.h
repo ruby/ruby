@@ -348,6 +348,53 @@ VALUE rb_int128t2big(int128_t n);
 
 #define ST2FIX(h) LONG2FIX((long)(h))
 
+static inline unsigned long
+rb_ulong_rotate_right(unsigned long x)
+{
+    return (x >> 1) | (x << (SIZEOF_LONG * CHAR_BIT - 1));
+}
+
+static inline VALUE
+rb_fix_plus_fix(VALUE x, VALUE y)
+{
+#ifdef HAVE_BUILTIN___BUILTIN_ADD_OVERFLOW
+    long lz;
+    /* NOTE
+     * (1) Fixnum's LSB is always 1.
+     *     It means you can always run `x - 1` without overflow.
+     * (2) Of course `z = x + (y-1)` may overflow.
+     *     Now z's LSB is always 1, and the MSB of true result is also 1.
+     *     You can get true result in long as `(1<<63)|(z>>1)`,
+     *     and it equals to `(z<<63)|(z>>1)` == `ror(z)`.
+     */
+    if (__builtin_add_overflow((long)x, (long)y-1, &lz)) {
+	return rb_int2big(rb_ulong_rotate_right((unsigned long)lz));
+    }
+    else {
+	return (VALUE)lz;
+    }
+#else
+    long lz = FIX2LONG(x) + FIX2LONG(y);
+    return LONG2NUM(lz);
+#endif
+}
+
+static inline VALUE
+rb_fix_minus_fix(VALUE x, VALUE y)
+{
+#ifdef HAVE_BUILTIN___BUILTIN_SUB_OVERFLOW
+    long lz;
+    if (__builtin_sub_overflow((long)x, (long)y-1, &lz)) {
+	return rb_int2big(rb_ulong_rotate_right((unsigned long)lz));
+    }
+    else {
+	return (VALUE)lz;
+    }
+#else
+    long lz = FIX2LONG(x) - FIX2LONG(y);
+    return LONG2NUM(lz);
+#endif
+}
 
 /* arguments must be Fixnum */
 static inline VALUE
