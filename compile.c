@@ -6597,7 +6597,14 @@ iseq_build_from_ary_exception(rb_iseq_t *iseq, struct st_table *labels_table,
 	lcont  = register_label(iseq, labels_table, ptr[4]);
 	sp     = NUM2UINT(ptr[5]);
 
-	(void)sp;
+	/* TODO: Dirty Hack!  Fix me */
+	if (type == CATCH_TYPE_RESCUE ||
+	    type == CATCH_TYPE_BREAK ||
+	    type == CATCH_TYPE_NEXT) {
+	    ++sp;
+	}
+
+	lcont->sp = sp;
 
 	ADD_CATCH_ENTRY(type, lstart, lend, eiseq, lcont);
 
