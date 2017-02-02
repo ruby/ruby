@@ -102,16 +102,16 @@ class TestIseqLoad < Test::Unit::TestCase
     f = File.expand_path(__FILE__)
     # $(top_srcdir)/test/ruby/test_....rb
     3.times { f = File.dirname(f) }
-    Dir[File.join(f, 'ruby', '*.rb')].each do |f|
-      iseq = ISeq.compile_file(f)
-      orig = iseq.to_a.freeze
+    all_assertions do |all|
+      Dir[File.join(f, 'ruby', '*.rb')].each do |f|
+        all.for(f) do
+          iseq = ISeq.compile_file(f)
+          orig = iseq.to_a.freeze
 
-      loaded = ISeq.iseq_load(orig).to_a
-      if loaded != orig
-        warn f
-        warn diff(orig, loaded)
+          loaded = ISeq.iseq_load(orig).to_a
+          assert loaded == orig, proc {"ISeq unmatch:\n"+diff(orig, loaded)}
+        end
       end
-      #assert_equal orig, loaded
     end
   end
 end
