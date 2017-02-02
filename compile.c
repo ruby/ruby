@@ -6919,6 +6919,7 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 {
 #define SYM(s) ID2SYM(rb_intern(#s))
     int i, len;
+    unsigned int arg_size, local_size, stack_max;
     ID *tbl;
     struct st_table *labels_table = st_init_numtable();
     VALUE labels_wrapper = Data_Wrap_Struct(0, 0, st_free_table, labels_table);
@@ -6943,11 +6944,6 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 	}
     }
 
-    /*
-     * we currently ignore misc params,
-     * local_size, stack_size and param.size are all calculated
-     */
-
 #define INT_PARAM(F) int_param(&iseq->body->param.F, params, SYM(F))
     if (INT_PARAM(lead_num)) {
 	iseq->body->param.flags.has_lead = TRUE;
@@ -6957,6 +6953,14 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
     if (INT_PARAM(rest_start)) iseq->body->param.flags.has_rest = TRUE;
     if (INT_PARAM(block_start)) iseq->body->param.flags.has_block = TRUE;
 #undef INT_PARAM
+    {
+#define INT_PARAM(F) F = (int_param(&x, misc, SYM(F)) ? (unsigned int)x : 0)
+	int x;
+	INT_PARAM(arg_size);
+	INT_PARAM(local_size);
+	INT_PARAM(stack_max);
+#undef INT_PARAM
+    }
 
     switch (TYPE(arg_opt_labels)) {
       case T_ARRAY:
@@ -7012,6 +7016,10 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 
     /* body */
     iseq_build_from_ary_body(iseq, anchor, body, labels_wrapper);
+
+    iseq->body->param.size = arg_size;
+    iseq->body->local_table_size = local_size;
+    iseq->body->stack_max = stack_max;
 }
 
 /* for parser */
