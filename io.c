@@ -1419,40 +1419,13 @@ do_writeconv(VALUE str, rb_io_t *fptr, int *converted)
     return str;
 }
 
-struct fwrite_arg {
-    VALUE orig;
-    VALUE tmp;
-    rb_io_t *fptr;
-    int nosync;
-};
-
-static VALUE
-fwrite_do(VALUE arg)
-{
-    struct fwrite_arg *fa = (struct fwrite_arg *)arg;
-    const char *ptr;
-    long len;
-
-    RSTRING_GETMEM(fa->tmp, ptr, len);
-
-    return (VALUE)io_binwrite(fa->tmp, ptr, len, fa->fptr, fa->nosync);
-}
-
-static VALUE
-fwrite_end(VALUE arg)
-{
-    struct fwrite_arg *fa = (struct fwrite_arg *)arg;
-
-    rb_str_tmp_frozen_release(fa->orig, fa->tmp);
-
-    return Qfalse;
-}
-
 static long
 io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
 {
     int converted = 0;
-    struct fwrite_arg fa;
+    VALUE tmp;
+    long n, len;
+    const char *ptr;
 #ifdef _WIN32
     if (fptr->mode & FMODE_TTY) {
 	long len = rb_w32_write_console(str, fptr->fd);
@@ -1463,12 +1436,12 @@ io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
     if (converted)
 	OBJ_FREEZE(str);
 
-    fa.orig = str;
-    fa.tmp = rb_str_tmp_frozen_acquire(str);
-    fa.fptr = fptr;
-    fa.nosync = nosync;
+    tmp = rb_str_tmp_frozen_acquire(str);
+    RSTRING_GETMEM(tmp, ptr, len);
+    n = io_binwrite(tmp, ptr, len, fptr, nosync);
+    rb_str_tmp_frozen_release(str, tmp);
 
-    return (long)rb_ensure(fwrite_do, (VALUE)&fa, fwrite_end, (VALUE)&fa);
+    return n;
 }
 
 ssize_t
@@ -4745,34 +4718,6 @@ rb_io_sysseek(int argc, VALUE *argv, VALUE io)
     return OFFT2NUM(pos);
 }
 
-struct swrite_arg {
-    VALUE orig;
-    VALUE tmp;
-    rb_io_t *fptr;
-};
-
-static VALUE
-swrite_do(VALUE arg)
-{
-    struct swrite_arg *sa = (struct swrite_arg *)arg;
-    const char *ptr;
-    long len;
-
-    RSTRING_GETMEM(sa->tmp, ptr, len);
-
-    return (VALUE)rb_write_internal(sa->fptr->fd, ptr, len);
-}
-
-static VALUE
-swrite_end(VALUE arg)
-{
-    struct swrite_arg *sa = (struct swrite_arg *)arg;
-
-    rb_str_tmp_frozen_release(sa->orig, sa->tmp);
-
-    return Qfalse;
-}
-
 /*
  *  call-seq:
  *     ios.syswrite(string)   -> integer
@@ -4789,25 +4734,27 @@ swrite_end(VALUE arg)
 static VALUE
 rb_io_syswrite(VALUE io, VALUE str)
 {
-    struct swrite_arg sa;
-    long n;
+    VALUE tmp;
+    rb_io_t *fptr;
+    long n, len;
+    const char *ptr;
 
     if (!RB_TYPE_P(str, T_STRING))
 	str = rb_obj_as_string(str);
 
     io = GetWriteIO(io);
-    GetOpenFile(io, sa.fptr);
-    rb_io_check_writable(sa.fptr);
+    GetOpenFile(io, fptr);
+    rb_io_check_writable(fptr);
 
-    if (sa.fptr->wbuf.len) {
+    if (fptr->wbuf.len) {
 	rb_warn("syswrite for buffered IO");
     }
 
-    sa.orig = str;
-    sa.tmp = rb_str_tmp_frozen_acquire(str);
-    n = (long)rb_ensure(swrite_do, (VALUE)&sa, swrite_end, (VALUE)&sa);
-
-    if (n == -1) rb_sys_fail_path(sa.fptr->pathv);
+    tmp = rb_str_tmp_frozen_acquire(str);
+    RSTRING_GETMEM(tmp, ptr, len);
+    n = rb_write_internal(fptr->fd, ptr, len);
+    if (n == -1) rb_sys_fail_path(fptr->pathv);
+    rb_str_tmp_frozen_release(str, tmp);
 
     return LONG2FIX(n);
 }
