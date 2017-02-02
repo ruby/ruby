@@ -42,8 +42,11 @@ class CGIUtilTest < Test::Unit::TestCase
   end
 
   def test_cgi_unescape
-    assert_equal(@str1, CGI::unescape('%26%3C%3E%22+%E3%82%86%E3%82%93%E3%82%86%E3%82%93'))
-    assert_equal(@str1.encoding, CGI::unescape('%26%3C%3E%22+%E3%82%86%E3%82%93%E3%82%86%E3%82%93').encoding) if defined?(::Encoding)
+    str = CGI::unescape('%26%3C%3E%22+%E3%82%86%E3%82%93%E3%82%86%E3%82%93')
+    assert_equal(@str1, str)
+    return unless defined?(::Encoding)
+
+    assert_equal(@str1.encoding, str.encoding)
     assert_equal("\u{30E1 30E2 30EA 691C 7D22}", CGI.unescape("\u{30E1 30E2 30EA}%E6%A4%9C%E7%B4%A2"))
   end
 
@@ -152,8 +155,11 @@ class CGIUtilTest < Test::Unit::TestCase
   end
 
   def test_cgi_include_unescape
-    assert_equal(@str1, unescape('%26%3C%3E%22+%E3%82%86%E3%82%93%E3%82%86%E3%82%93'))
-    assert_equal(@str1.encoding, unescape('%26%3C%3E%22+%E3%82%86%E3%82%93%E3%82%86%E3%82%93').encoding) if defined?(::Encoding)
+    str = unescape('%26%3C%3E%22+%E3%82%86%E3%82%93%E3%82%86%E3%82%93')
+    assert_equal(@str1, str)
+    return unless defined?(::Encoding)
+
+    assert_equal(@str1.encoding, str.encoding)
     assert_equal("\u{30E1 30E2 30EA 691C 7D22}", unescape("\u{30E1 30E2 30EA}%E6%A4%9C%E7%B4%A2"))
   end
 
