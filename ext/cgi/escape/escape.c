@@ -252,7 +252,8 @@ optimized_unescape(VALUE str, VALUE encoding)
     long i, len, beg = 0;
     VALUE dest = 0;
     const char *cstr;
-    int cr, origenc, encidx = rb_to_encoding_index(encoding);
+    rb_encoding *enc = rb_to_encoding(encoding);
+    int cr, origenc, encidx = rb_enc_to_index(enc);
 
     len  = RSTRING_LEN(str);
     cstr = RSTRING_PTR(str);
