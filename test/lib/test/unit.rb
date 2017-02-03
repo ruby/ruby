@@ -148,13 +148,9 @@ module Test
 
         options[:retry] = true
 
-        opts.on '-j N', '--jobs N', "Allow run tests with N jobs at once" do |a|
-          if /^t/ =~ a
-            options[:testing] = true # For testing
-            options[:parallel] = a[1..-1].to_i
-          else
-            options[:parallel] = a.to_i
-          end
+        opts.on '-j N', '--jobs N', /\A(t)?(\d+)\z/, "Allow run tests with N jobs at once" do |_, t, a|
+          options[:testing] = true & t # For testing
+          options[:parallel] = a.to_i
         end
 
         opts.on '--separate', "Restart job process after one testcase has done" do
