@@ -19,7 +19,7 @@ ensured(VALUE module, VALUE object)
 }
 
 static VALUE
-raise(VALUE exc)
+exc_raise(VALUE exc)
 {
     rb_exc_raise(exc);
     return Qnil;
@@ -28,7 +28,7 @@ raise(VALUE exc)
 static VALUE
 ensure_raise(VALUE module, VALUE object, VALUE exc)
 {
-    return rb_ensure(rb_yield, object, raise, exc);
+    return rb_ensure(rb_yield, object, exc_raise, exc);
 }
 
 void
