@@ -924,7 +924,7 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
 {
     int state;
     volatile VALUE result = Qnil;
-    volatile VALUE errinfo;
+    VALUE errinfo;
     rb_thread_t *const th = GET_THREAD();
     rb_ensure_list_t ensure_list;
     ensure_list.entry.marker = 0;
@@ -938,6 +938,9 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
     }
     TH_POP_TAG();
     errinfo = th->errinfo;
+    if (!NIL_P(errinfo) && !RB_TYPE_P(errinfo, T_OBJECT)) {
+	th->errinfo = Qnil;
+    }
     th->ensure_list=ensure_list.next;
     (*ensure_list.entry.e_proc)(ensure_list.entry.data2);
     th->errinfo = errinfo;
