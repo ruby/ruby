@@ -156,6 +156,7 @@ y.tab.c
 
 # /ext/rbconfig/
 /ext/rbconfig/sizeof/sizes.c
+/ext/rbconfig/sizeof/limits.c
 
 # /ext/ripper/
 /ext/ripper/eventids1.c
