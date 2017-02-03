@@ -348,10 +348,10 @@ VALUE rb_int128t2big(int128_t n);
 
 #define ST2FIX(h) LONG2FIX((long)(h))
 
-static inline unsigned long
-rb_ulong_rotate_right(unsigned long x)
+static inline long
+rb_overflowed_fix_to_int(long x)
 {
-    return (x >> 1) | (x << (SIZEOF_LONG * CHAR_BIT - 1));
+    return (long)((unsigned long)(x >> 1) ^ (1LU << (SIZEOF_LONG * CHAR_BIT - 1)));
 }
 
 static inline VALUE
@@ -368,7 +368,7 @@ rb_fix_plus_fix(VALUE x, VALUE y)
      *     and it equals to `(z<<63)|(z>>1)` == `ror(z)`.
      */
     if (__builtin_add_overflow((long)x, (long)y-1, &lz)) {
-	return rb_int2big(rb_ulong_rotate_right((unsigned long)lz));
+	return rb_int2big(rb_overflowed_fix_to_int(lz));
     }
     else {
 	return (VALUE)lz;
@@ -385,7 +385,7 @@ rb_fix_minus_fix(VALUE x, VALUE y)
 #ifdef HAVE_BUILTIN___BUILTIN_SUB_OVERFLOW
     long lz;
     if (__builtin_sub_overflow((long)x, (long)y-1, &lz)) {
-	return rb_int2big(rb_ulong_rotate_right((unsigned long)lz));
+	return rb_int2big(rb_overflowed_fix_to_int(lz));
     }
     else {
 	return (VALUE)lz;
