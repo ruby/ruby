@@ -134,6 +134,23 @@ module Test
         options
       end
 
+      def non_options(files, options)
+        if !options[:parallel] and
+          /(?:\A|\s)--jobserver-auth=(\d+),(\d+)/ =~ ENV["MAKEFLAGS"]
+          begin
+            r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
+            w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
+          rescue
+            r.close if r
+            nil
+          else
+            @jobserver = [r, w]
+            options[:parallel] ||= 1
+          end
+        end
+        super
+      end
+
       def status(*args)
         result = super
         raise @interrupt if @interrupt
@@ -173,9 +190,11 @@ module Test
 
       class Worker
         def self.launch(ruby,args=[])
+          opts = {}
+          @jobserver.each {|fd| opts[fd] = fd} if @jobserver
           io = IO.popen([*ruby, "-W1",
                         "#{File.dirname(__FILE__)}/unit/parallel.rb",
-                        *args], "rb+")
+                        *args], "rb+", opts)
           new(io, io.pid, :waiting)
         end
 
@@ -417,6 +436,7 @@ module Test
         @workers      = [] # Array of workers.
         @workers_hash = {} # out-IO => worker
         @ios          = [] # Array of worker IOs
+        job_tokens    = String.new(encoding: Encoding::ASCII_8BIT) if @jobserver
         begin
           [@tasks.size, @options[:parallel]].min.times {launch_worker}
 
@@ -425,6 +445,13 @@ module Test
               @need_quit or
                 (deal(io, type, result, rep).nil? and
                  !@workers.any? {|x| [:running, :prepare].include? x.status})
+            end
+            if job_tokens and !@tasks.empty? and !@workers.any? {|x| x.status == :ready}
+              t = @jobserver[0].read_nonblock([@tasks.size, @options[:parallel]].min, exception: false)
+              if String === t
+                job_tokens << t
+                t.size.times {launch_worker}
+              end
             end
           end
         rescue Interrupt => ex
@@ -439,6 +466,10 @@ module Test
           end
 
           quit_workers
+          if @jobserver
+            @jobserver[1] << job_tokens
+            job_tokens.clear
+          end
 
           unless @interrupt || !@options[:retry] || @need_quit
             parallel = @options[:parallel]

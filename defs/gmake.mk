@@ -1,5 +1,6 @@
 # -*- makefile-gmake -*-
 gnumake = yes
+override gnumake_recursive := +
 
 CHECK_TARGETS := exam love check%
 TEST_TARGETS := $(filter check test check% test% btest%,$(MAKECMDGOALS))
