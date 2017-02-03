@@ -744,15 +744,7 @@ rb_sym2str(VALUE sym)
 VALUE
 rb_id2str(ID id)
 {
-    VALUE str;
-
-    if ((str = lookup_id_str(id)) != 0) {
-        if (RBASIC(str)->klass == 0)
-            RBASIC_SET_CLASS_RAW(str, rb_cString);
-	return str;
-    }
-
-    return 0;
+    return lookup_id_str(id);
 }
 
 const char *
