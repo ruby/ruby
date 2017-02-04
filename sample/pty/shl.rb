@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #
 #  old-fashioned 'shl' like program
 #  by A. Ito
@@ -22,15 +23,15 @@ def writer
   begin
     while true
       c = STDIN.getc
-      if c == 26 then # C-z
-        $reader.raise(nil)
+      if c == ?\C-z then
+        $reader.raise('Suspend')
         return 'Suspend'
       end
       $w_pty.print c.chr
       $w_pty.flush
     end
   rescue
-    $reader.raise(nil)
+    $reader.raise('Exit')
     return 'Exit'
   ensure
     system "stty echo -raw"
