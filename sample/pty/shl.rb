@@ -41,9 +41,10 @@ end
 $reader = Thread.new {
   while true
     begin
-      next if $r_pty.nil?
+      Thread.stop unless $r_pty
       c = $r_pty.getc
       if c.nil? then
+        Thread.main.raise('Exit')
         Thread.stop
       end
       print c.chr
