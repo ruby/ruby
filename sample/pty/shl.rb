@@ -11,6 +11,7 @@
 #     q        quit
 
 require 'pty'
+require 'io/console'
 
 $shells = []
 $n_shells = 0
@@ -19,7 +20,7 @@ $r_pty = nil
 $w_pty = nil
 
 def writer
-  system "stty -echo raw"
+  STDIN.raw!
   begin
     while true
       c = STDIN.getc
@@ -34,7 +35,7 @@ def writer
     $reader.raise('Exit')
     return 'Exit'
   ensure
-    system "stty echo -raw"
+    STDIN.cooked!
   end
 end
 
