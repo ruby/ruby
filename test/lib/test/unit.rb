@@ -135,6 +135,7 @@ module Test
       end
 
       def non_options(files, options)
+        @jobserver = nil
         if !options[:parallel] and
           /(?:\A|\s)--jobserver-auth=(\d+),(\d+)/ =~ ENV["MAKEFLAGS"]
           begin
