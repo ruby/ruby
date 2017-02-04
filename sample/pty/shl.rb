@@ -14,7 +14,6 @@ require 'pty'
 require 'io/console'
 
 $shells = []
-$n_shells = 0
 
 $r_pty = nil
 $w_pty = nil
@@ -64,17 +63,15 @@ while true
   STDOUT.flush
   case gets
   when /^c/i
-    $shells[$n_shells] = PTY.spawn("/bin/csh")
-    $r_pty,$w_pty = $shells[$n_shells]
-    $n_shells += 1
+    $shells << PTY.spawn("/bin/csh")
+    $r_pty,$w_pty = $shells[-1]
     $reader.run
     if writer == 'Exit'
-      $n_shells -= 1
-      $shells[$n_shells] = nil
+      $shells.pop
     end
   when /^p/i
-    for i in 0..$n_shells
-      unless $shells[i].nil?
+    $shells.each_with_index do |s, i|
+      if s
         print i,"\n"
       end
     end
@@ -87,6 +84,7 @@ while true
       $reader.run
       if writer == 'Exit' then
         $shells[n] = nil
+        $shells.pop until $shells.empty? or $shells[-1]
       end
     end
   when /^q/i
