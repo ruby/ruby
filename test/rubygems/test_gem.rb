@@ -1434,14 +1434,6 @@ class TestGem < Gem::TestCase
 
     install_specs a, b, c
 
-    path = File.join @tempdir, "gem.deps.rb"
-
-    File.open path, "w" do |f|
-      f.puts "gem 'a'"
-      f.puts "gem 'b'"
-      f.puts "gem 'c'"
-    end
-
     path = File.join(@tempdir, "gd-tmp")
     install_gem a, :install_dir => path
     install_gem b, :install_dir => path
@@ -1450,10 +1442,24 @@ class TestGem < Gem::TestCase
     ENV['GEM_PATH'] = path
     ENV['RUBYGEMS_GEMDEPS'] = "-"
 
-    out = `#{Gem.ruby.dup.untaint} -I "#{LIB_PATH.untaint}" -rubygems -e "p Gem.loaded_specs.values.map(&:full_name).sort"`
-    out.sub!(/, "openssl-#{Gem::Version::VERSION_PATTERN}"/, "")
+    path = File.join @tempdir, "gem.deps.rb"
 
-    assert_equal '["a-1", "b-1", "c-1"]', out.strip
+    File.open path, "w" do |f|
+      f.puts "gem 'a'"
+    end
+    out0 = IO.popen([Gem.ruby.dup.untaint, "-I#{LIB_PATH}", "-rubygems",
+                     "-eputs Gem.loaded_specs.values.map(&:full_name).sort"],
+                    &:read).split(/\n/)
+
+    File.open path, "a" do |f|
+      f.puts "gem 'b'"
+      f.puts "gem 'c'"
+    end
+    out = IO.popen([Gem.ruby.dup.untaint, "-I#{LIB_PATH}", "-rubygems",
+                    "-eputs Gem.loaded_specs.values.map(&:full_name).sort"],
+                   &:read).split(/\n/)
+
+    assert_equal ["b-1", "c-1"], out - out0
   end
 
   def test_looks_for_gemdeps_files_automatically_on_start_in_parent_dir
@@ -1465,14 +1471,6 @@ class TestGem < Gem::TestCase
 
     install_specs a, b, c
 
-    path = File.join @tempdir, "gem.deps.rb"
-
-    File.open path, "w" do |f|
-      f.puts "gem 'a'"
-      f.puts "gem 'b'"
-      f.puts "gem 'c'"
-    end
-
     path = File.join(@tempdir, "gd-tmp")
     install_gem a, :install_dir => path
     install_gem b, :install_dir => path
@@ -1482,14 +1480,27 @@ class TestGem < Gem::TestCase
     ENV['RUBYGEMS_GEMDEPS'] = "-"
 
     Dir.mkdir "sub1"
-    out = Dir.chdir "sub1" do
-      `#{Gem.ruby.dup.untaint} -I "#{LIB_PATH.untaint}" -rubygems -e "p Gem.loaded_specs.values.map(&:full_name).sort"`
+
+    path = File.join @tempdir, "gem.deps.rb"
+
+    File.open path, "w" do |f|
+      f.puts "gem 'a'"
     end
-    out.sub!(/, "openssl-#{Gem::Version::VERSION_PATTERN}"/, "")
+    out0 = IO.popen([Gem.ruby.dup.untaint, "-Csub1", "-I#{LIB_PATH}", "-rubygems",
+                     "-eputs Gem.loaded_specs.values.map(&:full_name).sort"],
+                    &:read).split(/\n/)
+
+    File.open path, "a" do |f|
+      f.puts "gem 'b'"
+      f.puts "gem 'c'"
+    end
+    out = IO.popen([Gem.ruby.dup.untaint, "-Csub1", "-I#{LIB_PATH}", "-rubygems",
+                    "-eputs Gem.loaded_specs.values.map(&:full_name).sort"],
+                   &:read).split(/\n/)
 
     Dir.rmdir "sub1"
 
-    assert_equal '["a-1", "b-1", "c-1"]', out.strip
+    assert_equal ["b-1", "c-1"], out - out0
   end
 
   def test_register_default_spec
