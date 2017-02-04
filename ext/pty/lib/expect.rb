@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 $expect_verbose = false
 
 # Expect library adds the IO instance method #expect, which does similar act to
@@ -31,7 +31,7 @@ class IO
   # or yielded.  However, the buffer in a timeout session is kept for the next
   # expect call.  The default timeout is 9999999 seconds.
   def expect(pat,timeout=9999999)
-    buf = ''
+    buf = ''.dup
     case pat
     when String
       e_pat = Regexp.new(Regexp.quote(pat))
@@ -69,4 +69,3 @@ class IO
     nil
   end
 end
-
