@@ -253,7 +253,6 @@ module Test
           return if @io.closed?
           @quit_called = true
           @io.puts "quit"
-          @io.close
         end
 
         def kill
@@ -296,6 +295,10 @@ module Test
       def after_worker_down(worker, e=nil, c=false)
         return unless @options[:parallel]
         return if @interrupt
+        if @jobserver
+          @jobserver[1] << @job_tokens
+          @job_tokens.clear
+        end
         warn e if e
         real_file = worker.real_file and warn "running file: #{real_file}"
         @need_quit = true
@@ -311,6 +314,10 @@ module Test
       def after_worker_quit(worker)
         return unless @options[:parallel]
         return if @interrupt
+        worker.close
+        if @jobserver and !@job_tokens.empty?
+          @jobserver[1] << @job_tokens.slice!(0)
+        end
         @workers.delete(worker)
         @dead_workers << worker
         @ios = @workers.map(&:io)
@@ -377,7 +384,10 @@ module Test
           bang = $1
           worker.status = :ready
 
-          return nil unless task = @tasks.shift
+          unless task = @tasks.shift
+            worker.quit
+            return nil
+          end
           if @options[:separate] and not bang
             worker.quit
             worker = add_worker
@@ -437,7 +447,7 @@ module Test
         @workers      = [] # Array of workers.
         @workers_hash = {} # out-IO => worker
         @ios          = [] # Array of worker IOs
-        job_tokens    = String.new(encoding: Encoding::ASCII_8BIT) if @jobserver
+        @job_tokens   = String.new(encoding: Encoding::ASCII_8BIT) if @jobserver
         begin
           [@tasks.size, @options[:parallel]].min.times {launch_worker}
 
@@ -447,10 +457,10 @@ module Test
                 (deal(io, type, result, rep).nil? and
                  !@workers.any? {|x| [:running, :prepare].include? x.status})
             end
-            if job_tokens and !@tasks.empty? and !@workers.any? {|x| x.status == :ready}
+            if @job_tokens and !@tasks.empty? and !@workers.any? {|x| x.status == :ready}
               t = @jobserver[0].read_nonblock([@tasks.size, @options[:parallel]].min, exception: false)
               if String === t
-                job_tokens << t
+                @job_tokens << t
                 t.size.times {launch_worker}
               end
             end
@@ -467,10 +477,6 @@ module Test
           end
 
           quit_workers
-          if @jobserver
-            @jobserver[1] << job_tokens
-            job_tokens.clear
-          end
 
           unless @interrupt || !@options[:retry] || @need_quit
             parallel = @options[:parallel]
