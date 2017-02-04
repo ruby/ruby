@@ -131,6 +131,9 @@ module Test
         if @options[:parallel]
           @files = args
         end
+        if @jobserver
+          @run_options << @jobserver.each_with_object({}) {|fd, opts| opts[fd] = fd}
+        end
         options
       end
 
@@ -191,11 +194,9 @@ module Test
 
       class Worker
         def self.launch(ruby,args=[])
-          opts = {}
-          @jobserver.each {|fd| opts[fd] = fd} if @jobserver
           io = IO.popen([*ruby, "-W1",
                         "#{File.dirname(__FILE__)}/unit/parallel.rb",
-                        *args], "rb+", opts)
+                        *args], "rb+")
           new(io, io.pid, :waiting)
         end
 
