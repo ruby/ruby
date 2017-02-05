@@ -729,7 +729,7 @@ static double nurat_to_double(VALUE self);
  * Performs addition.
  *
  *    Rational(2, 3)  + Rational(2, 3)   #=> (4/3)
- *    Rational(900)   + Rational(1)      #=> (900/1)
+ *    Rational(900)   + Rational(1)      #=> (901/1)
  *    Rational(-2, 9) + Rational(-9, 2)  #=> (-85/18)
  *    Rational(9, 8)  + 4                #=> (41/8)
  *    Rational(20, 9) + 9.8              #=> 12.022222222222222
