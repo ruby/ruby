@@ -29,7 +29,7 @@ rescue LoadError
 end
 
 STDOUT.sync = true
-File.umask(077)
+File.umask(0222)
 
 def parse_args(argv = ARGV)
   $mantype = 'doc'
