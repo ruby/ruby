@@ -332,7 +332,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
       case NODE_OR:
 	ANN("|| operator");
 	ANN("format: [nd_1st] || [nd_2nd]");
-	ANN("example: foo && bar");
+	ANN("example: foo || bar");
       andor:
 	F_NODE(nd_1st, "left expr");
 	LAST_NODE;
