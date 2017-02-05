@@ -458,7 +458,7 @@ module Test
                 (deal(io, type, result, rep).nil? and
                  !@workers.any? {|x| [:running, :prepare].include? x.status})
             end
-            if @job_tokens and !@tasks.empty? and !@workers.any? {|x| x.status == :ready}
+            if @jobserver and @job_tokens and !@tasks.empty? and !@workers.any? {|x| x.status == :ready}
               t = @jobserver[0].read_nonblock([@tasks.size, @options[:parallel]].min, exception: false)
               if String === t
                 @job_tokens << t
