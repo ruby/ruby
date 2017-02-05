@@ -845,7 +845,14 @@ install?(:ext, :comm, :gem, :'bundle-gems') do
       inst = Gem::Installer.new(gem, options)
       inst.spec.extension_dir = with_destdir(inst.spec.extension_dir)
       begin
-        Gem::DefaultUserInteraction.use_ui(silent) {inst.install}
+        Gem::DefaultUserInteraction.use_ui(silent) do
+          begin
+            File.umask(022)
+            inst.install
+          ensure
+            File.umask(0222)
+          end
+        end
       rescue Gem::InstallError => e
         next
       end
