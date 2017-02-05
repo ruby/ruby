@@ -61,14 +61,11 @@ $reader = Thread.new {
 while true
   print ">> "
   STDOUT.flush
+  n = nil
   case gets
   when /^c/i
     $shells << PTY.spawn("/bin/csh")
-    $r_pty,$w_pty = $shells[-1]
-    $reader.run
-    if writer == 'Exit'
-      $shells.pop
-    end
+    n = -1
   when /^p/i
     $shells.each_with_index do |s, i|
       if s
@@ -79,15 +76,18 @@ while true
     n = $1.to_i
     if $shells[n].nil?
       print "\##{i} doesn't exist\n"
-    else
-      $r_pty,$w_pty = $shells[n]
-      $reader.run
-      if writer == 'Exit' then
-        $shells[n] = nil
-        $shells.pop until $shells.empty? or $shells[-1]
-      end
+      n = nil
     end
   when /^q/i
     exit
+  end
+  if n
+    $r_pty, $w_pty, pid = $shells[n]
+    $reader.run
+    if writer == 'Exit' then
+      Process.wait(pid)
+      $shells[n] = nil
+      $shells.pop until $shells.empty? or $shells[-1]
+    end
   end
 end
