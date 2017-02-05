@@ -749,10 +749,10 @@ end
 
 # :startdoc:
 
-install?(:ext, :comm, :gem, :'default-gem', :'default-gem-comm') do
+install?(:ext, :comm, :gem, :'default-gems', :'default-gems-comm') do
   install_default_gem('lib', srcdir)
 end
-install?(:ext, :arch, :gem, :'default-gem', :'default-gem-arch') do
+install?(:ext, :arch, :gem, :'default-gems', :'default-gems-arch') do
   install_default_gem('ext', srcdir)
 end
 
@@ -794,7 +794,7 @@ def install_default_gem(dir, srcdir)
   end
 end
 
-install?(:ext, :comm, :gem, :'bundled-gem') do
+install?(:ext, :comm, :gem, :'bundle-gems') do
   gem_dir = Gem.default_dir
   directories = Gem.ensure_gem_subdirectories(gem_dir, :mode => $dir_mode)
   prepare "bundle gems", gem_dir, directories
