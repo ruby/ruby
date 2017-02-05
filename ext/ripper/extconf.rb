@@ -1,5 +1,5 @@
 #!ruby -s
-# frozen_string_literal: false
+# frozen_string_literal: true
 
 require 'mkmf'
 require 'rbconfig'

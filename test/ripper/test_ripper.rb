@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 begin
   require 'ripper'
   require 'test/unit'
@@ -37,7 +37,7 @@ class TestRipper::Ripper < Test::Unit::TestCase
 
   def test_filename
     assert_equal '(ripper)', @ripper.filename
-    filename = "ripper"
+    filename = "ripper".dup
     ripper = Ripper.new("", filename)
     filename.clear
     assert_equal "ripper", ripper.filename
@@ -63,11 +63,11 @@ class TestRipper::Ripper < Test::Unit::TestCase
 
   def test_regexp_with_option
     bug11932 = '[ruby-core:72638] [Bug #11932]'
-    src = '/[\xC0-\xF0]/u'.force_encoding(Encoding::UTF_8)
+    src = '/[\xC0-\xF0]/u'.dup.force_encoding(Encoding::UTF_8)
     ripper = Ripper.new(src)
     ripper.parse
     assert_predicate(ripper, :error?)
-    src = '/[\xC0-\xF0]/n'.force_encoding(Encoding::UTF_8)
+    src = '/[\xC0-\xF0]/n'.dup.force_encoding(Encoding::UTF_8)
     ripper = Ripper.new(src)
     ripper.parse
     assert_not_predicate(ripper, :error?, bug11932)
@@ -101,11 +101,11 @@ class TestRipper::Ripper < Test::Unit::TestCase
 
   # https://bugs.jruby.org/4176
   def test_dedent_string
-    col = Ripper.dedent_string '  hello', 0
+    col = Ripper.dedent_string '  hello'.dup, 0
     assert_equal 0, col
-    col = Ripper.dedent_string '  hello', 2
+    col = Ripper.dedent_string '  hello'.dup, 2
     assert_equal 2, col
-    col = Ripper.dedent_string '  hello', 4
+    col = Ripper.dedent_string '  hello'.dup, 4
     assert_equal 2, col
 
     # lexing a squiggly heredoc triggers Ripper#dedent_string use
