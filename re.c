@@ -1088,6 +1088,8 @@ static VALUE
 match_names(VALUE match)
 {
     match_check(match);
+    if (NIL_P(RMATCH(match)->regexp))
+	return rb_ary_new_capa(0);
     return rb_reg_names(RMATCH(match)->regexp);
 }
 
@@ -2740,7 +2742,7 @@ match_hash(VALUE match)
     const struct re_registers *regs;
     st_index_t hashval = rb_hash_start(rb_str_hash(RMATCH(match)->str));
 
-    rb_hash_uint(hashval, reg_hash(RMATCH(match)->regexp));
+    rb_hash_uint(hashval, reg_hash(match_regexp(match)));
     regs = RMATCH_REGS(match);
     hashval = rb_hash_uint(hashval, regs->num_regs);
     hashval = rb_hash_uint(hashval, rb_memhash(regs->beg, regs->num_regs * sizeof(*regs->beg)));
@@ -2762,10 +2764,11 @@ static VALUE
 match_equal(VALUE match1, VALUE match2)
 {
     const struct re_registers *regs1, *regs2;
+
     if (match1 == match2) return Qtrue;
     if (!RB_TYPE_P(match2, T_MATCH)) return Qfalse;
     if (!rb_str_equal(RMATCH(match1)->str, RMATCH(match2)->str)) return Qfalse;
-    if (!rb_reg_equal(RMATCH(match1)->regexp, RMATCH(match2)->regexp)) return Qfalse;
+    if (!rb_reg_equal(match_regexp(match1), match_regexp(match2))) return Qfalse;
     regs1 = RMATCH_REGS(match1);
     regs2 = RMATCH_REGS(match2);
     if (regs1->num_regs != regs2->num_regs) return Qfalse;
