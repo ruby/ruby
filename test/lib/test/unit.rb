@@ -587,12 +587,22 @@ module Test
     end
 
     module Statistics
+      def update_list(list, rec, max)
+        if i = list.empty? ? 0 : list.bsearch_index {|*a| yield(*a)}
+          list[i, 0] = [rec]
+          list[max..-1] = [] if list.size >= max
+        end
+      end
+
       def record(suite, method, assertions, time, error)
-        if max = @options[:longest]
-          longest = @longest ||= []
-          if i = longest.empty? ? 0 : longest.bsearch_index {|_,_,_,t,_|t<time}
-            longest[i, 0] = [[suite.name, method, assertions, time, error]]
-            longest[max..-1] = [] if longest.size >= max
+        if @options.values_at(:longest, :most_asserted).any?
+          @tops ||= {}
+          rec = [suite.name, method, assertions, time, error]
+          if max = @options[:longest]
+            update_list(@tops[:longest] ||= [], rec, max) {|_,_,_,t,_|t<time}
+          end
+          if max = @options[:most_asserted]
+            update_list(@tops[:most_asserted] ||= [], rec, max) {|_,_,a,_,_|a<assertions}
           end
         end
         # (((@record ||= {})[suite] ||= {})[method]) = [assertions, time, error]
@@ -601,10 +611,15 @@ module Test
 
       def run(*args)
         result = super
-        if defined?(@longest) and @longest
-          @longest.each {|suite, method, assertions, time, error|
-            printf "%5.2fsec(%d): %s#%s\n", time, assertions, suite, method
-          }
+        if @tops ||= nil
+          @tops.each do |t, list|
+            if list
+              puts "#{t.to_s.tr('_', ' ')} tests:"
+              list.each {|suite, method, assertions, time, error|
+                printf "%5.2fsec(%d): %s#%s\n", time, assertions, suite, method
+              }
+            end
+          end
         end
         result
       end
@@ -615,6 +630,9 @@ module Test
         opts.separator "statistics options:"
         opts.on '--longest=N', Integer, 'Show longest N tests' do |n|
           options[:longest] = n
+        end
+        opts.on '--most-asserted=N', Integer, 'Show most asserted N tests' do |n|
+          options[:most_asserted] = n
         end
       end
     end
