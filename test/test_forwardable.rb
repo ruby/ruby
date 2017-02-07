@@ -144,7 +144,7 @@ class TestForwardable < Test::Unit::TestCase
     end
   end
 
-  def test_def_single_delegator
+  def test_class_single_delegator
     %i[def_delegator def_single_delegator].each do |m|
       cls = single_forwardable_class do
         __send__ m, :@receiver, :delegated1
@@ -154,7 +154,7 @@ class TestForwardable < Test::Unit::TestCase
     end
   end
 
-  def test_def_single_delegators
+  def test_class_single_delegators
     %i[def_delegators def_single_delegators].each do |m|
       cls = single_forwardable_class do
         __send__ m, :@receiver, :delegated1, :delegated2
@@ -165,7 +165,7 @@ class TestForwardable < Test::Unit::TestCase
     end
   end
 
-  def test_single_delegate
+  def test_class_single_delegate
     %i[delegate single_delegate].each do |m|
       cls = single_forwardable_class do
         __send__ m, delegated1: :@receiver, delegated2: :@receiver
@@ -183,10 +183,50 @@ class TestForwardable < Test::Unit::TestCase
     end
   end
 
+  def test_obj_single_delegator
+    %i[def_delegator def_single_delegator].each do |m|
+      obj = single_forwardable_object do
+        __send__ m, :@receiver, :delegated1
+      end
+
+      assert_same RETURNED1, obj.delegated1
+    end
+  end
+
+  def test_obj_single_delegators
+    %i[def_delegators def_single_delegators].each do |m|
+      obj = single_forwardable_object do
+        __send__ m, :@receiver, :delegated1, :delegated2
+      end
+
+      assert_same RETURNED1, obj.delegated1
+      assert_same RETURNED2, obj.delegated2
+    end
+  end
+
+  def test_obj_single_delegate
+    %i[delegate single_delegate].each do |m|
+      obj = single_forwardable_object do
+        __send__ m, delegated1: :@receiver, delegated2: :@receiver
+      end
+
+      assert_same RETURNED1, obj.delegated1
+      assert_same RETURNED2, obj.delegated2
+
+      obj = single_forwardable_object do
+        __send__ m, %i[delegated1 delegated2] => :@receiver
+      end
+
+      assert_same RETURNED1, obj.delegated1
+      assert_same RETURNED2, obj.delegated2
+    end
+  end
+
   class Foo
     extend Forwardable
 
     def_delegator :bar, :baz
+    def_delegator :caller, :itself, :c
 
     class Exception
     end
@@ -197,6 +237,7 @@ class TestForwardable < Test::Unit::TestCase
       Foo.new.baz
     }
     assert_not_match(/\/forwardable\.rb/, e.backtrace[0])
+    assert_equal(caller(0, 1)[0], Foo.new.c[0])
   end
 
   class Foo2 < BasicObject
@@ -244,5 +285,12 @@ class TestForwardable < Test::Unit::TestCase
 
       class_exec(&block)
     end
+  end
+
+  def single_forwardable_object(&block)
+    obj = Object.new.extend SingleForwardable
+    obj.instance_variable_set(:@receiver, RECEIVER)
+    obj.instance_eval(&block)
+    obj
   end
 end
