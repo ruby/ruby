@@ -737,7 +737,12 @@ class Gem::Installer
   install = instance_method(:install)
   define_method(:install) do
     spec.post_install_message = nil
-    install.bind(self).call
+    begin
+      u = File.umask(0022)
+      install.bind(self).call
+    ensure
+      File.umask(u)
+    end
   end
 
   generate_bin_script = instance_method(:generate_bin_script)
@@ -845,14 +850,7 @@ install?(:ext, :comm, :gem, :'bundle-gems') do
       inst = Gem::Installer.new(gem, options)
       inst.spec.extension_dir = with_destdir(inst.spec.extension_dir)
       begin
-        Gem::DefaultUserInteraction.use_ui(silent) do
-          begin
-            File.umask(022)
-            inst.install
-          ensure
-            File.umask(0222)
-          end
-        end
+        Gem::DefaultUserInteraction.use_ui(silent) {inst.install}
       rescue Gem::InstallError => e
         next
       end
