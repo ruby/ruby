@@ -601,7 +601,7 @@ module Test
 
       def run(*args)
         result = super
-        if @longest
+        if defined?(@longest) and @longest
           @longest.each {|suite, method, assertions, time, error|
             printf "%5.2fsec(%d): %s#%s\n", time, assertions, suite, method
           }
