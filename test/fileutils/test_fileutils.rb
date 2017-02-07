@@ -18,8 +18,11 @@ class TestFileUtils < Test::Unit::TestCase
       fu.instance_variable_set(:@fileutils_output, write)
       th = Thread.new { read.read }
       th2 = Thread.new {
-        yield
-        write.close
+        begin
+          yield
+        ensure
+          write.close
+        end
       }
       th_value, _ = assert_join_threads([th, th2])
       lines = th_value.lines.map {|l| l.chomp }
@@ -215,6 +218,16 @@ class TestFileUtils < Test::Unit::TestCase
   #
   # Test Cases
   #
+
+  def test_assert_output_lines
+    assert_raise(MiniTest::Assertion) {
+      Timeout.timeout(0.1) {
+        assert_output_lines([]) {
+          raise "ok"
+        }
+      }
+    }
+  end
 
   def test_pwd
     check_singleton :pwd
