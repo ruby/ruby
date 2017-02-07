@@ -164,7 +164,7 @@ module TestParallel
     def test_should_run_all_without_any_leaks
       spawn_runner
       buf = Timeout.timeout(10) {@test_out.read}
-      assert_match(/^[SFE\.]{9}$/,buf)
+      assert_match(/^9 tests/,buf)
     end
 
     def test_should_retry_failed_on_workers
