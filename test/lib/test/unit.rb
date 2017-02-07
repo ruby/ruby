@@ -372,6 +372,11 @@ module Test
         end
       end
 
+      FakeClass = Struct.new(:name)
+      def fake_class(name)
+        (@fake_classes ||= {})[name] ||= FakeClass.new(name)
+      end
+
       def deal(io, type, result, rep, shutting_down = false)
         worker = @workers_hash[io]
         cmd = worker.read
@@ -409,6 +414,14 @@ module Test
           $:.push(*r[4]).uniq!
           jobs_status(worker) if @options[:job_status] == :replace
           return true
+        when /^record (.+?)$/
+          begin
+            r = Marshal.load($1.unpack("m")[0])
+          rescue => e
+            print "unknown record: #{e.message} #{$1.unpack("m")[0].dump}"
+            return true
+          end
+          record(fake_class(r[0]), *r[1..-1])
         when /^p (.+?)$/
           del_jobs_status
           print $1.unpack("m")[0]

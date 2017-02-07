@@ -165,6 +165,24 @@ module Test
         @partial_report << [klass.name, meth, e.is_a?(MiniTest::Assertion) ? e : ProxyError.new(e)]
         super
       end
+
+      def record(suite, method, assertions, time, error) # :nodoc:
+        case error
+        when nil
+        when MiniTest::Assertion, MiniTest::Skip
+          case error.cause
+          when nil, MiniTest::Assertion, MiniTest::Skip
+          else
+            bt = error.backtrace
+            error = error.class.new(error.message)
+            error.set_backtrace(bt)
+          end
+        else
+          error = ProxyError.new(error)
+        end
+        _report "record", Marshal.dump([suite.name, method, assertions, time, error])
+        super
+      end
     end
   end
 end
