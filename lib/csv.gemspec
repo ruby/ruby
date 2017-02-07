@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
 
   s.require_path = %w{lib}
   s.files = %w{csv.rb}
-  s.required_ruby_version = ">= 2.5.0"
+  s.required_ruby_version = ">= 2.5.0dev"
 
   s.authors = ["James Edward Gray II"]
   s.email = [nil]

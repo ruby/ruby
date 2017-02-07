@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
 
   s.require_path = %w{lib}
   s.files = %w{cmath.rb}
-  s.required_ruby_version = ">= 2.5.0"
+  s.required_ruby_version = ">= 2.5.0dev"
 
   s.authors = ["Tadayoshi Funaba"]
   s.email = [nil]

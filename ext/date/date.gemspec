@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.require_path = %w{lib}
   s.files = %w{lib/date.rb date_core.c date_parse.c date_strftime.c date_strptime.c date_tmx.h depend extconf.rb prereq.mk zonetab.h zonetab.list}
   s.extensions = %w{extconf.rb}
-  s.required_ruby_version = ">= 2.5.0"
+  s.required_ruby_version = ">= 2.5.0dev"
 
   s.authors = ["Tadayoshi Funaba"]
   s.email = [nil]

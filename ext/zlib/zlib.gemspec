@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.require_path = %w{lib}
   s.files = %w{depend extconf.rb zlib.c}
   s.extensions = %w{extconf.rb}
-  s.required_ruby_version = ">= 2.5.0"
+  s.required_ruby_version = ">= 2.5.0dev"
 
   s.authors = ["UENO Katsuhiro"]
   s.email = [nil]
