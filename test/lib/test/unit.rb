@@ -573,6 +573,39 @@ module Test
       end
     end
 
+    module Statistics
+      def record(suite, method, assertions, time, error)
+        if max = @options[:longest]
+          longest = @longest ||= []
+          if i = longest.empty? ? 0 : longest.bsearch_index {|_,_,_,t,_|t<time}
+            longest[i, 0] = [[suite.name, method, assertions, time, error]]
+            longest[max..-1] = [] if longest.size >= max
+          end
+        end
+        # (((@record ||= {})[suite] ||= {})[method]) = [assertions, time, error]
+        super
+      end
+
+      def run(*args)
+        result = super
+        if @longest
+          @longest.each {|suite, method, assertions, time, error|
+            printf "%5.2fsec(%d): %s#%s\n", time, assertions, suite, method
+          }
+        end
+        result
+      end
+
+      private
+      def setup_options(opts, options)
+        super
+        opts.separator "statistics options:"
+        opts.on '--longest=N', Integer, 'Show longest N tests' do |n|
+          options[:longest] = n
+        end
+      end
+    end
+
     module StatusLine # :nodoc: all
       def terminal_width
         unless @terminal_width ||= nil
@@ -988,6 +1021,7 @@ module Test
       include Test::Unit::Options
       include Test::Unit::StatusLine
       include Test::Unit::Parallel
+      include Test::Unit::Statistics
       include Test::Unit::Skipping
       include Test::Unit::GlobOption
       include Test::Unit::RepeatOption
