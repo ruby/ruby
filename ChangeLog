@@ -1,3 +1,9 @@
+Wed Feb  8 02:20:16 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/win32/resolv/resolv.c (get_dns_server_list): [Win32] get DNS
+	  servers only for connected network devices by GetNetworkParams
+	  API.  [Bug #12604]
+
 Wed Feb  8 02:17:02 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/forwardable.rb (Forwardable._delegator_method): extract
