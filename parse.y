@@ -2259,12 +2259,6 @@ arg		: lhs '=' arg_rhs
 		    {
 		    /*%%%*/
 			$$ = match_op($1, $3);
-			if (nd_type($1) == NODE_LIT) {
-			    VALUE lit = $1->nd_lit;
-			    if (RB_TYPE_P(lit, T_REGEXP)) {
-				$$->nd_args = reg_named_capture_assign(lit);
-			    }
-			}
 		    /*%
 			$$ = dispatch3(binary, $1, ID2SYM(idEqTilde), $3);
 		    %*/
@@ -8975,7 +8969,10 @@ match_op_gen(struct parser_params *parser, NODE *node1, NODE *node2)
 
 	  case NODE_LIT:
 	    if (RB_TYPE_P(node1->nd_lit, T_REGEXP)) {
-		return NEW_MATCH2(node1, node2);
+		const VALUE lit = node1->nd_lit;
+		NODE *match = NEW_MATCH2(node1, node2);
+		match->nd_args = reg_named_capture_assign(lit);
+		return match;
 	    }
 	}
     }
