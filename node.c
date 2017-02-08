@@ -338,7 +338,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
       andor:
 	while (1) {
 	    F_NODE(nd_1st, "left expr");
-	    if (!node->nd_2nd || nd_type(node->nd_2nd) != type)
+	    if (!node->nd_2nd || nd_type(node->nd_2nd) != (int)type)
 		break;
 	    node = node->nd_2nd;
 	}
