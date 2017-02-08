@@ -158,6 +158,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
     int field_flag;
     int i;
     const char *next_indent = default_indent;
+    enum node_type type;
 
     if (!node) {
 	D_NULL_NODE;
@@ -166,7 +167,8 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 
     D_NODE_HEADER(node);
 
-    switch (nd_type(node)) {
+    type = nd_type(node);
+    switch (type) {
       case NODE_BLOCK:
 	ANN("statement sequence");
 	ANN("format: [nd_head]; ...; [nd_next]");
@@ -334,7 +336,12 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("format: [nd_1st] || [nd_2nd]");
 	ANN("example: foo || bar");
       andor:
-	F_NODE(nd_1st, "left expr");
+	while (1) {
+	    F_NODE(nd_1st, "left expr");
+	    if (!node->nd_2nd || nd_type(node->nd_2nd) != type)
+		break;
+	    node = node->nd_2nd;
+	}
 	LAST_NODE;
 	F_NODE(nd_2nd, "right expr");
 	break;
