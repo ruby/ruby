@@ -12,16 +12,13 @@ Abbrev:: Calculates a set of unique abbreviations for a given set of strings
 Base64:: Support for encoding and decoding binary data using a Base64 representation
 Benchmark:: Provides methods to measure and report the time used to execute code
 CGI:: Support for the Common Gateway Interface protocol
-CMath:: Provides Trigonometric and Transcendental functions for complex numbers
 ConditionVariable:: Augments the Mutex class
-CSV:: Provides an interface to read and write CSV files and data
 DEBUGGER__:: Debugging functionality for Ruby
 Delegator:: Provides three abilities to delegate method calls to an object
 DRb:: Distributed object system for Ruby
 E2MM:: Module for defining custom exceptions with specific messages
 English.rb:: Require 'English.rb' to reference global variables with less cryptic names
 ERB:: An easy to use but powerful templating system for Ruby
-FileUtils:: Several file utility methods for copying, moving, removing, etc
 Find:: This module supports top-down traversal of a set of file paths
 Forwardable:: Provides delegation of specified methods to a designated object
 GetoptLong:: Parse command line options similar to the GNU C getopt_long()
@@ -52,7 +49,6 @@ PStore:: Implements a file based persistence mechanism based on a Hash
 Queue:: Synchronized communication between threads
 Racc:: A LALR(1) parser generator written in Ruby.
 RbConfig:: Information of your configure and build of Ruby
-RDoc:: Produces HTML and command-line documentation for Ruby
 resolv-replace.rb:: Replace Socket DNS with Resolv
 Resolv::  Thread-aware DNS resolver library in Ruby
 REXML:: An XML toolkit for Ruby
@@ -76,36 +72,48 @@ TSort:: Topological sorting using Tarjan's algorithm
 un.rb:: Utilities to replace common UNIX commands
 URI:: A Ruby module providing support for Uniform Resource Identifiers
 WeakRef:: Allows a referenced object to be garbage-collected
-WEBrick:: An HTTP server toolkit for Ruby
 XMLRPC:: Remote Procedure Call over HTTP support for Ruby
 YAML:: Ruby client library for the Psych YAML implementation
 
 == Extensions
 
-BigDecimal:: Provides arbitrary-precision floating point decimal arithmetic
 Coverage:: Provides coverage measurement for Ruby
-Date:: A subclass of Object includes Comparable module for handling dates
-DateTime:: Subclass of Date to handling dates, hours, minutes, seconds, offsets
-DBM:: Provides a wrapper for the UNIX-style Database Manager Library
 Digest:: Provides a framework for message digest libraries
 Etc:: Provides access to information typically stored in UNIX /etc directory
 Fcntl:: Loads constants defined in the OS fcntl.h C header file
 Fiddle:: A libffi wrapper for Ruby
 GDBM:: Ruby extension for the GNU dbm (gdbm) library
 IO:: Extensions for Ruby IO class, including #wait and ::console
-JSON:: Implements Javascript Object Notation for Ruby
 NKF:: Ruby extension for Network Kanji Filter
 objspace:: Extends ObjectSpace module to add methods for internal statistics
-OpenSSL:: Provides SSL, TLS and general purpose cryptography for Ruby
 Pathname:: Representation of the name of a file or directory on the filesystem
-Psych:: A YAML parser and emitter for Ruby
 PTY:: Creates and manages pseudo terminals
 Readline:: Provides an interface for GNU Readline and Edit Line (libedit)
 Ripper:: Provides an interface for parsing Ruby programs into S-expressions
 SDBM:: Provides a simple file-based key-value store with String keys and values
 Socket:: Access underlying OS socket implementations
 StringIO:: Pseudo I/O on String objects
-StringScanner:: Provides lexical scanning operations on a String
 Syslog:: Ruby interface for the POSIX system logging facility
 WIN32OLE:: Provides an interface for OLE Automation in Ruby
+
+= Default gems
+
+== Libraries
+
+CMath:: Provides Trigonometric and Transcendental functions for complex numbers
+CSV:: Provides an interface to read and write CSV files and data
+FileUtils:: Several file utility methods for copying, moving, removing, etc
+RDoc:: Produces HTML and command-line documentation for Ruby
+WEBrick:: An HTTP server toolkit for Ruby
+
+== Extensions
+
+BigDecimal:: Provides arbitrary-precision floating point decimal arithmetic
+Date:: A subclass of Object includes Comparable module for handling dates
+DateTime:: Subclass of Date to handling dates, hours, minutes, seconds, offsets
+DBM:: Provides a wrapper for the UNIX-style Database Manager Library
+JSON:: Implements Javascript Object Notation for Ruby
+OpenSSL:: Provides SSL, TLS and general purpose cryptography for Ruby
+Psych:: A YAML parser and emitter for Ruby
+StringScanner:: Provides lexical scanning operations on a String
 Zlib:: Ruby interface for the zlib compression/decompression library
