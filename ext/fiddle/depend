@@ -26,22 +26,29 @@ $(LIBFFI_DIR)/Makefile:
 	$(Q) $(CONFIGURE_LIBFFI)
 
 build-libffi: $(LIBFFI_A)
-build-libffi $(LIBFFI_A):
-	$(Q) $(SUBMAKE_LIBFFI)
+$(LIBFFI_A):
+	$(Q) $(SUBMAKE_PRE) $(MAKE) $(SUBMAKE_ARG)
 
+clean-none:
 clean-libffi:
-	$(Q) $(SUBMAKE_LIBFFI) clean
+libffi/clean: libffi/clean
+	$(Q) $(SUBMAKE_PRE) $(MAKE) $(SUBMAKE_ARG) clean
 
-distclean-libffi:
-	$(Q) $(SUBMAKE_LIBFFI) distclean
+distclean-none:
+distclean-libffi: libffi/distclean
+libffi/distclean:
+	$(Q) $(SUBMAKE_PRE) $(MAKE) $(SUBMAKE_ARG) distclean
 	$(Q) $(RM) $(LIBFFI_DIR)/local.exp
 	$(Q) $(RUBY) -rfileutils -e "FileUtils.rmdir(Dir.glob(ARGV[0]+'/**/{,.*/}'), :parents=>true)" $(LIBFFI_DIR)
 
-realclean-libffi:
+realclean-none:
+realclean-libffi: libffi/realclean
+libffi/realclean:
 	$(Q) $(RMALL) $(LIBFFI_DIR)
 
 .PHONY: clean-libffi distclean-libffi realclean-libffi
 .PHONY: clean-none distclean-none realclean-none
+.PHONY: libffi/clean libffi/distclean libffi/realclean
 
 clean: clean-$(LIBFFI_CLEAN)
 distclean: distclean-$(LIBFFI_CLEAN)
