@@ -72,7 +72,6 @@ TSort:: Topological sorting using Tarjan's algorithm
 un.rb:: Utilities to replace common UNIX commands
 URI:: A Ruby module providing support for Uniform Resource Identifiers
 WeakRef:: Allows a referenced object to be garbage-collected
-XMLRPC:: Remote Procedure Call over HTTP support for Ruby
 YAML:: Ruby client library for the Psych YAML implementation
 
 == Extensions
@@ -112,8 +111,21 @@ BigDecimal:: Provides arbitrary-precision floating point decimal arithmetic
 Date:: A subclass of Object includes Comparable module for handling dates
 DateTime:: Subclass of Date to handling dates, hours, minutes, seconds, offsets
 DBM:: Provides a wrapper for the UNIX-style Database Manager Library
+IO::console:: Console interface
 JSON:: Implements Javascript Object Notation for Ruby
 OpenSSL:: Provides SSL, TLS and general purpose cryptography for Ruby
 Psych:: A YAML parser and emitter for Ruby
 StringScanner:: Provides lexical scanning operations on a String
 Zlib:: Ruby interface for the zlib compression/decompression library
+
+= Bundled gems
+
+== Libraries
+
+DidYouMean:: "Did you mean?" experience in Ruby
+MiniTest:: A test suite with TDD, BDD, mocking and benchmarking
+Net::Telnet:: Telnet client library for Ruby
+PowerAssert:: Power Assert for Ruby.
+Rake:: Ruby build program with capabilities similar to make
+Test::Unit:: A compatibility layer for MiniTest
+XMLRPC:: Remote Procedure Call over HTTP support for Ruby
