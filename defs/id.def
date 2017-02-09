@@ -76,7 +76,6 @@ token_ops = %[\
   UPlus         +@      UPLUS
   UMinus        -@      UMINUS
   Pow           **      POW
-  DSTAR         **
   Cmp           <=>     CMP
   PLUS          +
   MINUS         -
@@ -99,7 +98,6 @@ token_ops = %[\
   AREF          []
   ASET          []=
   COLON2        ::
-  COLON3        ::
   ANDOP         &&
   OROP          ||
   ANDDOT        &.

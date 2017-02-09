@@ -943,7 +943,7 @@ static void token_info_pop_gen(struct parser_params*, const char *token, size_t 
 %token tLSHFT		RUBY_TOKEN(LSHFT)  "<<"
 %token tRSHFT		RUBY_TOKEN(RSHFT)  ">>"
 %token tANDDOT		RUBY_TOKEN(ANDDOT) "&."
-%token tCOLON2		"::"
+%token tCOLON2		RUBY_TOKEN(COLON2) "::"
 %token tCOLON3		":: at EXPR_BEG"
 %token <id> tOP_ASGN	/* +=, -=  etc. */
 %token tASSOC		"=>"
