@@ -149,9 +149,9 @@ create_makefile 'fiddle' do |conf|
   if !libffi
     next conf << "LIBFFI_CLEAN = none\n"
   elsif $gnumake && !$nmake
-    submake_arg = "-C $(@D)\n"
+    submake_arg = "-C $(LIBFFI_DIR)\n"
   else
-    submake_pre = "cd $(@D) && #{config_string("exec")}".strip
+    submake_pre = "cd $(LIBFFI_DIR) && #{config_string("exec")}".strip
   end
   if $nmake
     cmd = "$(RUBY) -C $(LIBFFI_DIR) #{libffi_config} --srcdir=$(LIBFFI_SRCDIR)"
