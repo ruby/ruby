@@ -721,9 +721,12 @@ begin
       fails.each do |d, n, err|
         d = "#{d}:#{n}:"
         if err
-          d << " " << err
+          err.scan(/.+/) do |e|
+            mf.puts %Q<\t@echo "#{d} #{e.gsub(/["`$^]/, '\\\\\\&')}">
+          end
+        else
+          mf.puts %Q<\t@echo "#{d}">
         end
-        mf.puts %Q<\t@echo "#{d}">
       end
       mf.puts %Q<\t@echo "*** Fix the problems, then remove these directories and try again if you want.">
     end
