@@ -19,7 +19,7 @@ end
 Dir.glob("{ext,gems}/*/exts.mk") do |e|
   gem = /\Agems(?=\/)/ =~ e
   s = File.read(e)
-  s.scan(/^(extensions|EXT[A-Z]+)[ \t]*=[ \t]*((?>(?>[^\\\n]|\\.)*\\\n)*(?>[^\\\n]|\\.)*)$/) do |n, v|
+  s.scan(/^(extensions|EXT[A-Z]+|MFLAGS)[ \t]*=[ \t]*((?>(?>[^\\\n]|\\.)*\\\n)*(?>[^\\\n]|\\.)*)$/) do |n, v|
     v.gsub!(/\\\n[ \t]*/, ' ')
     next if v.empty?
     next if gem and n != "extensions"
@@ -85,8 +85,12 @@ else
   submake = "cd $(@D) && "
   exec = RbConfig::CONFIG["exec"] and !exec.empty? and submake << exec << " "
   submake << "$(MAKE)"
+  mflags = " $(MFLAGS)"
 end
-%>
+-%>
+% unless macros["MFLAGS"].empty?
+MFLAGS =<%= macros["MFLAGS"].fold(column) %>
+% end
 
 extensions =<%= macros["extensions"].fold(column) %>
 EXTOBJS =<%= macros["EXTOBJS"].fold(column) %>
@@ -111,17 +115,17 @@ distclean:
 
 % rubies.each do |ruby|
 <%= ruby %>:
-	$(Q)$(MAKE) $(SUBMAKEOPTS) $@
+	$(Q)$(MAKE)<%=mflags%> $(SUBMAKEOPTS) $@
 % end
 
 libencs:
-	$(Q)$(MAKE) -f enc.mk V=$(V) $@
+	$(Q)$(MAKE)<%=mflags%> -f enc.mk V=$(V) $@
 ext/extinit.<%=objext%>:
-	$(Q)$(MAKE) V=$(V) EXTINITS="$(EXTINITS)" $@
+	$(Q)$(MAKE)<%=mflags%> V=$(V) EXTINITS="$(EXTINITS)" $@
 
 % targets.product(macros["extensions"].map {|e|e.chomp("/.")}) do |t, e|
 <%=e%>/<%=t%>:
-	$(Q)<%= submake %> V=$(V) $(@F)
+	$(Q)<%= submake %><%=mflags%> V=$(V) $(@F)
 % end
 
 extso:
