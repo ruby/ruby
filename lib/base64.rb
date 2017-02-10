@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # = base64.rb: methods for base64-encoding and -decoding strings
 #
