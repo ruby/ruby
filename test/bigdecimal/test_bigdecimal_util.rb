@@ -48,4 +48,13 @@ class TestBigDecimalUtil < Test::Unit::TestCase
   def test_Rational_to_d_with_negative_precision
     assert_raise(ArgumentError) { 355.quo(113).to_d(-42) }
   end
+
+  def test_String_to_d
+    assert_equal("2.5".to_d, BigDecimal.new('2.5'))
+  end
+
+  def test_invalid_String_to_d
+    assert_equal("invalid".to_d, BigDecimal.new('0.0'))
+  end
+
 end

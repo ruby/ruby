@@ -1,7 +1,12 @@
 # frozen_string_literal: false
-# BigDecimal extends the native Integer class to provide the #to_d method.
 #
-# When you require the BigDecimal library in your application, this method will
+# bigdecimal/util extends various native classes to provide the #to_d method,
+# and provides BigDecimal#to_d and BigDecimal#to_digits.
+
+
+# bigdecimal/util extends the native Integer class to provide the #to_d method.
+#
+# When you require 'bigdecimal/util' in your application, this method will
 # be available on Integer objects.
 class Integer < Numeric
   # call-seq:
@@ -20,9 +25,9 @@ class Integer < Numeric
   end
 end
 
-# BigDecimal extends the native Float class to provide the #to_d method.
+# bigdecimal/util extends the native Float class to provide the #to_d method.
 #
-# When you require BigDecimal in your application, this method will be
+# When you require 'bigdecimal/util' in your application, this method will be
 # available on Float objects.
 class Float < Numeric
   # call-seq:
@@ -41,9 +46,9 @@ class Float < Numeric
   end
 end
 
-# BigDecimal extends the native String class to provide the #to_d method.
+# bigdecimal/util extends the native String class to provide the #to_d method.
 #
-# When you require BigDecimal in your application, this method will be
+# When you require 'bigdecimal/util' in your application, this method will be
 # available on String objects.
 class String
   # call-seq:
@@ -58,14 +63,18 @@ class String
   #     # => 0.5e0
   #
   def to_d
-    BigDecimal(self)
+    begin
+      BigDecimal(self)
+    rescue ArgumentError
+      BigDecimal(0)
+    end
   end
 end
 
-# BigDecimal extends the native Numeric class to provide the #to_digits and
+# bigdecimal/util extends the BigDecimal class to provide the #to_digits and
 # #to_d methods.
 #
-# When you require BigDecimal in your application, this method will be
+# When you require 'bigdecimal/util' in your application, these methods will be
 # available on BigDecimal objects.
 class BigDecimal < Numeric
   # call-seq:
@@ -99,9 +108,9 @@ class BigDecimal < Numeric
   end
 end
 
-# BigDecimal extends the native Rational class to provide the #to_d method.
+# bigdecimal/util extends the native Rational class to provide the #to_d method.
 #
-# When you require BigDecimal in your application, this method will be
+# When you require 'bigdecimal/util' in your application, this method will be
 # available on Rational objects.
 class Rational < Numeric
   # call-seq:

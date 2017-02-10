@@ -5920,17 +5920,12 @@ Exit:
 }
 
 /*
- *
- * nf: digit position for operation.
- *
- */
-VP_EXPORT int
-VpMidRound(Real *y, unsigned short f, ssize_t nf)
-/*
  * Round relatively from the decimal point.
  *    f: rounding mode
  *   nf: digit location to round from the decimal point.
  */
+VP_EXPORT int
+VpMidRound(Real *y, unsigned short f, ssize_t nf)
 {
     /* fracf: any positive digit under rounding position? */
     /* fracf_1further: any positive digits under one further than the rounding position? */
