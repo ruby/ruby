@@ -79,7 +79,6 @@ YAML:: Ruby client library for the Psych YAML implementation
 Coverage:: Provides coverage measurement for Ruby
 Digest:: Provides a framework for message digest libraries
 Etc:: Provides access to information typically stored in UNIX /etc directory
-Fcntl:: Loads constants defined in the OS fcntl.h C header file
 Fiddle:: A libffi wrapper for Ruby
 GDBM:: Ruby extension for the GNU dbm (gdbm) library
 IO:: Extensions for Ruby IO class, including #wait and ::console
@@ -111,6 +110,7 @@ BigDecimal:: Provides arbitrary-precision floating point decimal arithmetic
 Date:: A subclass of Object includes Comparable module for handling dates
 DateTime:: Subclass of Date to handling dates, hours, minutes, seconds, offsets
 DBM:: Provides a wrapper for the UNIX-style Database Manager Library
+Fcntl:: Loads constants defined in the OS fcntl.h C header file
 IO::console:: Console interface
 JSON:: Implements Javascript Object Notation for Ruby
 OpenSSL:: Provides SSL, TLS and general purpose cryptography for Ruby
