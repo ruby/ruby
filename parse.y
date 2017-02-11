@@ -653,6 +653,15 @@ static int lvar_defined_gen(struct parser_params*, ID);
 #define nd_paren(node) (char)((node)->u2.id >> CHAR_BIT*2)
 #define nd_nest u3.cnt
 
+#define TOKEN2ID(tok) ( \
+    tTOKEN_LOCAL_BEGIN<(tok)&&(tok)<tTOKEN_LOCAL_END ? TOKEN2LOCALID(tok) : \
+    tTOKEN_INSTANCE_BEGIN<(tok)&&(tok)<tTOKEN_INSTANCE_END ? TOKEN2INSTANCEID(tok) : \
+    tTOKEN_GLOBAL_BEGIN<(tok)&&(tok)<tTOKEN_GLOBAL_END ? TOKEN2GLOBALID(tok) : \
+    tTOKEN_CONST_BEGIN<(tok)&&(tok)<tTOKEN_CONST_END ? TOKEN2CONSTID(tok) : \
+    tTOKEN_CLASS_BEGIN<(tok)&&(tok)<tTOKEN_CLASS_END ? TOKEN2CLASSID(tok) : \
+    tTOKEN_ATTRSET_BEGIN<(tok)&&(tok)<tTOKEN_ATTRSET_END ? TOKEN2ATTRSETID(tok) : \
+    ((tok) / ((tok)<tPRESERVED_ID_END && ((tok)>=128 || rb_ispunct(tok)))))
+
 /****** Ripper *******/
 
 #ifdef RIPPER
@@ -683,12 +692,8 @@ static void ripper_error_gen(struct parser_params *parser);
 
 #define yyparse ripper_yyparse
 
-#define ripper_intern(s) ID2SYM(rb_intern(s))
-static VALUE ripper_id2sym(ID);
-#ifdef __GNUC__
-#define ripper_id2sym(id) (rb_ispunct((int)(id)) ? \
-			   ID2SYM(id) : ripper_id2sym(id))
-#endif
+#define ripper_intern(s) STATIC_ID2SYM(rb_intern(s))
+#define TOKEN2VAL(t) STATIC_ID2SYM(TOKEN2ID(t))
 
 #define arg_new() dispatch0(args_new)
 #define arg_add(l,a) dispatch2(args_add, (l), (a))
@@ -744,7 +749,7 @@ static VALUE parser_heredoc_dedent(struct parser_params*,VALUE);
 #define FIXME 0
 
 #else
-#define ripper_id2sym(id) id
+#define TOKEN2VAL(id) id
 #endif /* RIPPER */
 
 #ifndef RIPPER
@@ -1372,7 +1377,7 @@ command_asgn	: lhs '=' command_rhs
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_rhs
 		    {
 			value_expr($5);
-			$$ = new_attr_op_assign($1, ripper_id2sym(idCOLON2), $3, $4, $5);
+			$$ = new_attr_op_assign($1, TOKEN2VAL(tCOLON2), $3, $4, $5);
 		    }
 		| backref tOP_ASGN command_rhs
 		    {
@@ -1431,7 +1436,7 @@ expr		: command_call
 		    /*%%%*/
 			$$ = call_uni_op(method_cond($2), '!');
 		    /*%
-			$$ = dispatch2(unary, ripper_id2sym('!'), $2);
+			$$ = dispatch2(unary, TOKEN2VAL('!'), $2);
 		    %*/
 		    }
 		| arg
@@ -1540,7 +1545,7 @@ command		: fcall command_args       %prec tLOWEST
 			$$ = NEW_CALL($1, $3, $4);
 			fixpos($$, $1);
 		    /*%
-			$$ = dispatch4(command_call, $1, ID2SYM(idCOLON2), $3, $4);
+			$$ = dispatch4(command_call, $1, TOKEN2VAL(tCOLON2), $3, $4);
 		    %*/
 		    }
 		| primary_value tCOLON2 operation2 command_args cmd_brace_block
@@ -1551,7 +1556,7 @@ command		: fcall command_args       %prec tLOWEST
 			$$ = $5;
 			fixpos($$, $1);
 		    /*%
-			$$ = dispatch4(command_call, $1, ID2SYM(idCOLON2), $3, $4);
+			$$ = dispatch4(command_call, $1, TOKEN2VAL(tCOLON2), $3, $4);
 			$$ = method_add_block($$, $5);
 		    %*/
 		   }
@@ -1848,7 +1853,7 @@ lhs		: user_variable
 		    /*%%%*/
 			$$ = attrset($1, idCOLON2, $3);
 		    /*%
-			$$ = dispatch3(field, $1, ID2SYM(idCOLON2), $3);
+			$$ = dispatch3(field, $1, TOKEN2VAL(tCOLON2), $3);
 		    %*/
 		    }
 		| primary_value call_op tCONSTANT
@@ -2057,7 +2062,7 @@ arg		: lhs '=' arg_rhs
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN arg_rhs
 		    {
 			value_expr($5);
-			$$ = new_attr_op_assign($1, ripper_id2sym(idCOLON2), $3, $4, $5);
+			$$ = new_attr_op_assign($1, TOKEN2VAL(tCOLON2), $3, $4, $5);
 		    }
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN arg_rhs
 		    {
@@ -2099,7 +2104,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_bin_op($1, '+', $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM('+'), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL('+'), $3);
 		    %*/
 		    }
 		| arg '-' arg
@@ -2107,7 +2112,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_bin_op($1, '-', $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM('-'), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL('-'), $3);
 		    %*/
 		    }
 		| arg '*' arg
@@ -2115,7 +2120,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_bin_op($1, '*', $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM('*'), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL('*'), $3);
 		    %*/
 		    }
 		| arg '/' arg
@@ -2123,7 +2128,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_bin_op($1, '/', $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM('/'), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL('/'), $3);
 		    %*/
 		    }
 		| arg '%' arg
@@ -2131,7 +2136,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_bin_op($1, '%', $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM('%'), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL('%'), $3);
 		    %*/
 		    }
 		| arg tPOW arg
@@ -2139,7 +2144,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_bin_op($1, tPOW, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM(idPow), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL(tPOW), $3);
 		    %*/
 		    }
 		| tUMINUS_NUM simple_numeric tPOW arg
@@ -2147,8 +2152,8 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = NEW_CALL(call_bin_op($2, tPOW, $4), tUMINUS, 0);
 		    /*%
-			$$ = dispatch3(binary, $2, ID2SYM(idPow), $4);
-			$$ = dispatch2(unary, ID2SYM(idUMinus), $$);
+			$$ = dispatch3(binary, $2, TOKEN2VAL(tPOW), $4);
+			$$ = dispatch2(unary, TOKEN2VAL(tUMINUS), $$);
 		    %*/
 		    }
 		| tUPLUS arg
@@ -2156,7 +2161,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_uni_op($2, tUPLUS);
 		    /*%
-			$$ = dispatch2(unary, ID2SYM(idUPlus), $2);
+			$$ = dispatch2(unary, TOKEN2VAL(tUPLUS), $2);
 		    %*/
 		    }
 		| tUMINUS arg
@@ -2164,7 +2169,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_uni_op($2, tUMINUS);
 		    /*%
-			$$ = dispatch2(unary, ID2SYM(idUMinus), $2);
+			$$ = dispatch2(unary, TOKEN2VAL(tUMINUS), $2);
 		    %*/
 		    }
 		| arg '|' arg
@@ -2172,7 +2177,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_bin_op($1, '|', $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM('|'), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL('|'), $3);
 		    %*/
 		    }
 		| arg '^' arg
@@ -2180,7 +2185,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_bin_op($1, '^', $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM('^'), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL('^'), $3);
 		    %*/
 		    }
 		| arg '&' arg
@@ -2188,7 +2193,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_bin_op($1, '&', $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM('&'), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL('&'), $3);
 		    %*/
 		    }
 		| arg tCMP arg
@@ -2196,7 +2201,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_bin_op($1, tCMP, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM(idCmp), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL(tCMP), $3);
 		    %*/
 		    }
 		| arg '>' arg
@@ -2204,7 +2209,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_bin_op($1, '>', $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM('>'), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL('>'), $3);
 		    %*/
 		    }
 		| arg tGEQ arg
@@ -2212,7 +2217,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_bin_op($1, tGEQ, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM(idGE), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL(tGEQ), $3);
 		    %*/
 		    }
 		| arg '<' arg
@@ -2220,7 +2225,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_bin_op($1, '<', $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM('<'), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL('<'), $3);
 		    %*/
 		    }
 		| arg tLEQ arg
@@ -2228,7 +2233,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_bin_op($1, tLEQ, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM(idLE), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL(tLEQ), $3);
 		    %*/
 		    }
 		| arg tEQ arg
@@ -2236,7 +2241,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_bin_op($1, tEQ, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM(idEq), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL(tEQ), $3);
 		    %*/
 		    }
 		| arg tEQQ arg
@@ -2244,7 +2249,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_bin_op($1, tEQQ, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM(idEqq), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL(tEQQ), $3);
 		    %*/
 		    }
 		| arg tNEQ arg
@@ -2252,7 +2257,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_bin_op($1, tNEQ, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM(idNeq), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL(tNEQ), $3);
 		    %*/
 		    }
 		| arg tMATCH arg
@@ -2260,7 +2265,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = match_op($1, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM(idEqTilde), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL(tMATCH), $3);
 		    %*/
 		    }
 		| arg tNMATCH arg
@@ -2268,7 +2273,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_bin_op($1, tNMATCH, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM(idNeqTilde), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL(tNMATCH), $3);
 		    %*/
 		    }
 		| '!' arg
@@ -2276,7 +2281,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_uni_op(method_cond($2), '!');
 		    /*%
-			$$ = dispatch2(unary, ID2SYM('!'), $2);
+			$$ = dispatch2(unary, TOKEN2VAL('!'), $2);
 		    %*/
 		    }
 		| '~' arg
@@ -2284,7 +2289,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_uni_op($2, '~');
 		    /*%
-			$$ = dispatch2(unary, ID2SYM('~'), $2);
+			$$ = dispatch2(unary, TOKEN2VAL('~'), $2);
 		    %*/
 		    }
 		| arg tLSHFT arg
@@ -2292,7 +2297,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_bin_op($1, tLSHFT, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM(idLTLT), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL(tLSHFT), $3);
 		    %*/
 		    }
 		| arg tRSHFT arg
@@ -2300,7 +2305,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = call_bin_op($1, tRSHFT, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM(idGTGT), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL(tRSHFT), $3);
 		    %*/
 		    }
 		| arg tANDOP arg
@@ -2308,7 +2313,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = logop(NODE_AND, $1, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM(idANDOP), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL(tANDOP), $3);
 		    %*/
 		    }
 		| arg tOROP arg
@@ -2316,7 +2321,7 @@ arg		: lhs '=' arg_rhs
 		    /*%%%*/
 			$$ = logop(NODE_OR, $1, $3);
 		    /*%
-			$$ = dispatch3(binary, $1, ID2SYM(idOROP), $3);
+			$$ = dispatch3(binary, $1, TOKEN2VAL(tOROP), $3);
 		    %*/
 		    }
 		| keyword_defined opt_nl {in_defined = 1;} arg
@@ -3642,7 +3647,7 @@ method_call	: fcall paren_args
 			$$ = NEW_CALL($1, $3, $5);
 			nd_set_line($$, $<num>4);
 		    /*%
-			$$ = dispatch3(call, $1, ripper_id2sym(idCOLON2), $3);
+			$$ = dispatch3(call, $1, TOKEN2VAL(tCOLON2), $3);
 			$$ = method_optarg($$, $5);
 		    %*/
 		    }
@@ -3651,7 +3656,7 @@ method_call	: fcall paren_args
 		    /*%%%*/
 			$$ = NEW_CALL($1, $3, 0);
 		    /*%
-			$$ = dispatch3(call, $1, ID2SYM(idCOLON2), $3);
+			$$ = dispatch3(call, $1, TOKEN2VAL(tCOLON2), $3);
 		    %*/
 		    }
 		| primary_value call_op
@@ -4281,7 +4286,7 @@ numeric 	: simple_numeric
 			$$ = $2;
 			$$->nd_lit = negate_lit($$->nd_lit);
 		    /*%
-			$$ = dispatch2(unary, ID2SYM(idUMinus), $2);
+			$$ = dispatch2(unary, TOKEN2VAL(tUMINUS), $2);
 		    %*/
 		    }
 		;
@@ -4987,30 +4992,18 @@ dot_or_colon	: '.'
 
 call_op 	: '.'
 		    {
-		    /*%%%*/
-			$$ = '.';
-		    /*%
-			$$ = ripper_id2sym('.');
-		    %*/
+			$$ = TOKEN2VAL('.');
 		    }
 		| tANDDOT
 		    {
-		    /*%%%*/
-			$$ = tANDDOT;
-		    /*%
-			$$ = ripper_id2sym(idANDDOT);
-		    %*/
+			$$ = TOKEN2VAL(tANDDOT);
 		    }
 		;
 
 call_op2	: call_op
 		| tCOLON2
 		    {
-		    /*%%%*/
-			$$ = tCOLON2;
-		    /*%
-			$$ = ripper_id2sym(idCOLON2);
-		    %*/
+			$$ = TOKEN2VAL(tCOLON2);
 		    }
 		;
 
@@ -11200,94 +11193,6 @@ ripper_dispatch7(struct parser_params *parser, ID mid, VALUE a, VALUE b, VALUE c
     validate(f);
     validate(g);
     return rb_funcall(parser->value, mid, 7, a, b, c, d, e, f, g);
-}
-
-static const struct kw_assoc {
-    ID id;
-    const char *name;
-} keyword_to_name[] = {
-    {keyword_class,	"class"},
-    {keyword_module,	"module"},
-    {keyword_def,	"def"},
-    {keyword_undef,	"undef"},
-    {keyword_begin,	"begin"},
-    {keyword_rescue,	"rescue"},
-    {keyword_ensure,	"ensure"},
-    {keyword_end,	"end"},
-    {keyword_if,	"if"},
-    {keyword_unless,	"unless"},
-    {keyword_then,	"then"},
-    {keyword_elsif,	"elsif"},
-    {keyword_else,	"else"},
-    {keyword_case,	"case"},
-    {keyword_when,	"when"},
-    {keyword_while,	"while"},
-    {keyword_until,	"until"},
-    {keyword_for,	"for"},
-    {keyword_break,	"break"},
-    {keyword_next,	"next"},
-    {keyword_redo,	"redo"},
-    {keyword_retry,	"retry"},
-    {keyword_in,	"in"},
-    {keyword_do,	"do"},
-    {keyword_do_cond,	"do"},
-    {keyword_do_block,	"do"},
-    {keyword_return,	"return"},
-    {keyword_yield,	"yield"},
-    {keyword_super,	"super"},
-    {keyword_self,	"self"},
-    {keyword_nil,	"nil"},
-    {keyword_true,	"true"},
-    {keyword_false,	"false"},
-    {keyword_and,	"and"},
-    {keyword_or,	"or"},
-    {keyword_not,	"not"},
-    {modifier_if,	"if"},
-    {modifier_unless,	"unless"},
-    {modifier_while,	"while"},
-    {modifier_until,	"until"},
-    {modifier_rescue,	"rescue"},
-    {keyword_alias,	"alias"},
-    {keyword_defined,	"defined?"},
-    {keyword_BEGIN,	"BEGIN"},
-    {keyword_END,	"END"},
-    {keyword__LINE__,	"__LINE__"},
-    {keyword__FILE__,	"__FILE__"},
-    {keyword__ENCODING__, "__ENCODING__"},
-    {0, NULL}
-};
-
-static const char*
-keyword_id_to_str(ID id)
-{
-    const struct kw_assoc *a;
-
-    for (a = keyword_to_name; a->id; a++) {
-        if (a->id == id)
-            return a->name;
-    }
-    return NULL;
-}
-
-#undef ripper_id2sym
-static VALUE
-ripper_id2sym(ID id)
-{
-    const char *name;
-    char buf[8];
-
-    if (id == (ID)(signed char)id) {
-        buf[0] = (char)id;
-        buf[1] = '\0';
-        return ID2SYM(rb_intern2(buf, 1));
-    }
-    if ((name = keyword_id_to_str(id))) {
-        return ID2SYM(rb_intern(name));
-    }
-    if (!rb_id2str(id)) {
-	rb_bug("cannot convert ID to string: %ld", (unsigned long)id);
-    }
-    return ID2SYM(id);
 }
 
 static ID
