@@ -403,6 +403,8 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
 #define STK_CALL_FRAME             0x0800
 #define STK_RETURN                 0x0900
 #define STK_VOID                   0x0a00  /* for fill a blank */
+#define STK_ABSENT_POS             0x0b00  /* for absent */
+#define STK_ABSENT                 0x0c00  /* absent inner loop marker */
 
 /* stack type check mask */
 #define STK_MASK_POP_USED          0x00ff
@@ -673,7 +675,8 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 #define STACK_PUSH_ALT(pat,s,sprev,keep)     STACK_PUSH(STK_ALT,pat,s,sprev,keep)
 #define STACK_PUSH_POS(s,sprev,keep)         STACK_PUSH(STK_POS,NULL_UCHARP,s,sprev,keep)
 #define STACK_PUSH_POS_NOT(pat,s,sprev,keep) STACK_PUSH(STK_POS_NOT,pat,s,sprev,keep)
-#define STACK_PUSH_STOP_BT              STACK_PUSH_TYPE(STK_STOP_BT)
+#define STACK_PUSH_ABSENT                    STACK_PUSH_TYPE(STK_ABSENT)
+#define STACK_PUSH_STOP_BT                   STACK_PUSH_TYPE(STK_STOP_BT)
 #define STACK_PUSH_LOOK_BEHIND_NOT(pat,s,sprev,keep) \
         STACK_PUSH(STK_LOOK_BEHIND_NOT,pat,s,sprev,keep)
 
@@ -785,6 +788,14 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
   STACK_INC;\
 } while(0)
 
+#define STACK_PUSH_ABSENT_POS(start, end) do {\
+  STACK_ENSURE(1);\
+  stk->type = STK_ABSENT_POS;\
+  stk->u.absent_pos.abs_pstr = (start);\
+  stk->u.absent_pos.end_pstr = (end);\
+  STACK_INC;\
+} while(0)
+
 
 #ifdef ONIG_DEBUG
 # define STACK_BASE_CHECK(p, at) \
@@ -883,6 +894,33 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
     }\
     ELSE_IF_STATE_CHECK_MARK(stk);\
   }\
+} while(0)
+
+#define STACK_POP_TIL_ABSENT  do {\
+  while (1) {\
+    stk--;\
+    STACK_BASE_CHECK(stk, "STACK_POP_TIL_ABSENT"); \
+    if (stk->type == STK_ABSENT) break;\
+    else if (stk->type == STK_MEM_START) {\
+      mem_start_stk[stk->u.mem.num] = stk->u.mem.start;\
+      mem_end_stk[stk->u.mem.num]   = stk->u.mem.end;\
+    }\
+    else if (stk->type == STK_REPEAT_INC) {\
+      STACK_AT(stk->u.repeat_inc.si)->u.repeat.count--;\
+    }\
+    else if (stk->type == STK_MEM_END) {\
+      mem_start_stk[stk->u.mem.num] = stk->u.mem.start;\
+      mem_end_stk[stk->u.mem.num]   = stk->u.mem.end;\
+    }\
+    ELSE_IF_STATE_CHECK_MARK(stk);\
+  }\
+} while(0)
+
+#define STACK_POP_ABSENT_POS(start, end) do {\
+  stk--;\
+  STACK_BASE_CHECK(stk, "STACK_POP_ABSENT_POS"); \
+  (start) = stk->u.absent_pos.abs_pstr;\
+  (end) = stk->u.absent_pos.end_pstr;\
 } while(0)
 
 #define STACK_POS_END(k) do {\
@@ -1136,10 +1174,12 @@ static int string_cmp_ic(OnigEncoding enc, int case_fold_flag,
 # define DATA_ENSURE_CHECK1    (s < right_range)
 # define DATA_ENSURE_CHECK(n)  (s + (n) <= right_range)
 # define DATA_ENSURE(n)        if (s + (n) > right_range) goto fail
+# define ABSENT_END_POS        right_range
 #else
 # define DATA_ENSURE_CHECK1    (s < end)
 # define DATA_ENSURE_CHECK(n)  (s + (n) <= end)
 # define DATA_ENSURE(n)        if (s + (n) > end) goto fail
+# define ABSENT_END_POS        end
 #endif /* USE_MATCH_RANGE_MUST_BE_INSIDE_OF_SPECIFIED_RANGE */
 
 
@@ -1372,6 +1412,8 @@ stack_type_str(int stack_type)
     case STK_CALL_FRAME:	return "Call  ";
     case STK_RETURN:		return "Ret   ";
     case STK_VOID:		return "Void  ";
+    case STK_ABSENT_POS:	return "AbsPos";
+    case STK_ABSENT:		return "Absent";
     default:			return "      ";
   }
 }
@@ -1484,7 +1526,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
     &&L_OP_END_LINE,
     &&L_OP_SEMI_END_BUF,
     &&L_OP_BEGIN_POSITION,
-    &&L_OP_BEGIN_POS_OR_LINE,    /* used for implicit anchor optimization */
 
     &&L_OP_BACKREF1,
     &&L_OP_BACKREF2,
@@ -1552,6 +1593,9 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
     &&L_OP_LOOK_BEHIND,          /* (?<=...) start (no needs end opcode) */
     &&L_OP_PUSH_LOOK_BEHIND_NOT, /* (?<!...) start */
     &&L_OP_FAIL_LOOK_BEHIND_NOT, /* (?<!...) end   */
+    &&L_OP_PUSH_ABSENT_POS,      /* (?~...)  start */
+    &&L_OP_ABSENT,               /* (?~...)  start of inner loop */
+    &&L_OP_ABSENT_END,           /* (?~...)  end   */
 
 # ifdef USE_SUBEXP_CALL
     &&L_OP_CALL,                 /* \g<name> */
@@ -1636,8 +1680,8 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #endif
 
 #ifdef ONIG_DEBUG_MATCH
-  fprintf(stderr, "match_at: str: %"PRIdPTR" (%p), end: %"PRIdPTR" (%p), start: %"PRIdPTR" (%p), sprev: %"PRIdPTR" (%p)\n",
-	  (intptr_t )str, str, (intptr_t )end, end, (intptr_t )sstart, sstart, (intptr_t )sprev, sprev);
+  fprintf(stderr, "match_at: str: %"PRIuPTR" (%p), end: %"PRIuPTR" (%p), start: %"PRIuPTR" (%p), sprev: %"PRIuPTR" (%p)\n",
+	  (uintptr_t )str, str, (uintptr_t )end, end, (uintptr_t )sstart, sstart, (uintptr_t )sprev, sprev);
   fprintf(stderr, "size: %d, start offset: %d\n",
 	  (int )(end - str), (int )(sstart - str));
   fprintf(stderr, "\n ofs> str                   stk:type   addr:opcode\n");
@@ -2378,7 +2422,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       JUMP;
 
     CASE(OP_BEGIN_LINE)  MOP_IN(OP_BEGIN_LINE);
-    op_begin_line:
       if (ON_STR_BEGIN(s)) {
 	if (IS_NOTBOL(msa->options)) goto fail;
 	MOP_OUT;
@@ -2450,13 +2493,6 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
     CASE(OP_BEGIN_POSITION)  MOP_IN(OP_BEGIN_POSITION);
       if (s != msa->gpos)
 	goto fail;
-
-      MOP_OUT;
-      JUMP;
-
-    CASE(OP_BEGIN_POS_OR_LINE)  MOP_IN(OP_BEGIN_POS_OR_LINE);
-      if (s != msa->gpos)
-	goto op_begin_line;
 
       MOP_OUT;
       JUMP;
@@ -2721,8 +2757,8 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	STACK_NULL_CHECK(isnull, mem, s);
 	if (isnull) {
 #ifdef ONIG_DEBUG_MATCH
-	  fprintf(stderr, "NULL_CHECK_END: skip  id:%d, s:%"PRIdPTR" (%p)\n",
-		  (int )mem, (intptr_t )s, s);
+	  fprintf(stderr, "NULL_CHECK_END: skip  id:%d, s:%"PRIuPTR" (%p)\n",
+		  (int )mem, (uintptr_t )s, s);
 #endif
 	null_check_found:
 	  /* empty loop founded, skip next instruction */
@@ -2755,8 +2791,8 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	STACK_NULL_CHECK_MEMST(isnull, mem, s, reg);
 	if (isnull) {
 # ifdef ONIG_DEBUG_MATCH
-	  fprintf(stderr, "NULL_CHECK_END_MEMST: skip  id:%d, s:%"PRIdPTR" (%p)\n",
-		  (int )mem, (intptr_t )s, s);
+	  fprintf(stderr, "NULL_CHECK_END_MEMST: skip  id:%d, s:%"PRIuPTR" (%p)\n",
+		  (int )mem, (uintptr_t )s, s);
 # endif
 	  if (isnull == -1) goto fail;
 	  goto null_check_found;
@@ -2780,8 +2816,8 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 # endif
 	if (isnull) {
 # ifdef ONIG_DEBUG_MATCH
-	  fprintf(stderr, "NULL_CHECK_END_MEMST_PUSH: skip  id:%d, s:%"PRIdPTR" (%p)\n",
-		  (int )mem, (intptr_t )s, s);
+	  fprintf(stderr, "NULL_CHECK_END_MEMST_PUSH: skip  id:%d, s:%"PRIuPTR" (%p)\n",
+		  (int )mem, (uintptr_t )s, s);
 # endif
 	  if (isnull == -1) goto fail;
 	  goto null_check_found;
@@ -3033,6 +3069,63 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       goto fail;
       NEXT;
 
+    CASE(OP_PUSH_ABSENT_POS)  MOP_IN(OP_PUSH_ABSENT_POS);
+      /* Save the absent-start-pos and the original end-pos. */
+      STACK_PUSH_ABSENT_POS(s, ABSENT_END_POS);
+      MOP_OUT;
+      JUMP;
+
+    CASE(OP_ABSENT)  MOP_IN(OP_ABSENT);
+      {
+	const UChar* aend = ABSENT_END_POS;
+	UChar* absent;
+	UChar* selfp = p - 1;
+
+	STACK_POP_ABSENT_POS(absent, ABSENT_END_POS);  /* Restore end-pos. */
+	GET_RELADDR_INC(addr, p);
+#ifdef ONIG_DEBUG_MATCH
+	fprintf(stderr, "ABSENT: s:%p, end:%p, absent:%p, aend:%p\n", s, end, absent, aend);
+#endif
+	if ((absent > aend) && (s > absent)) {
+	  /* An empty match occurred in (?~...) at the start point.
+	   * Never match. */
+	  STACK_POP;
+	  goto fail;
+	}
+	else if ((s >= aend) && (s > absent)) {
+	  if (s > aend) {
+	    /* Only one (or less) character matched in the last iteration.
+	     * This is not a possible point. */
+	    goto fail;
+	  }
+	  /* All possible points were found. Try matching after (?~...). */
+	  DATA_ENSURE(0);
+	  p += addr;
+	}
+	else {
+	  STACK_PUSH_ALT(p + addr, s, sprev, pkeep); /* Push possible point. */
+	  n = enclen(encode, s, end);
+	  STACK_PUSH_ABSENT_POS(absent, ABSENT_END_POS); /* Save the original pos. */
+	  STACK_PUSH_ALT(selfp, s + n, s, pkeep); /* Next iteration. */
+	  STACK_PUSH_ABSENT;
+	  ABSENT_END_POS = aend;
+	}
+      }
+      MOP_OUT;
+      JUMP;
+
+    CASE(OP_ABSENT_END)  MOP_IN(OP_ABSENT_END);
+      /* The pattern inside (?~...) was matched.
+       * Set the end-pos temporary and go to next iteration. */
+      if (sprev < ABSENT_END_POS)
+	ABSENT_END_POS = sprev;
+#ifdef ONIG_DEBUG_MATCH
+      fprintf(stderr, "ABSENT_END: end:%p\n", ABSENT_END_POS);
+#endif
+      STACK_POP_TIL_ABSENT;
+      goto fail;
+      NEXT;
+
 #ifdef USE_SUBEXP_CALL
     CASE(OP_CALL)  MOP_IN(OP_CALL);
       GET_ABSADDR_INC(addr, p);
@@ -3270,7 +3363,7 @@ bm_search_notrev(regex_t* reg, const UChar* target, const UChar* target_end,
 
 # ifdef ONIG_DEBUG_SEARCH
   fprintf(stderr, "bm_search_notrev: text: %"PRIuPTR" (%p), text_end: %"PRIuPTR" (%p), text_range: %"PRIuPTR" (%p)\n",
-	  text, text, text_end, text_end, text_range, text_range);
+	  (uintptr_t )text, text, (uintptr_t )text_end, text_end, (uintptr_t )text_range, text_range);
 # endif
 
   tail = target_end - 1;
@@ -3326,8 +3419,8 @@ bm_search(regex_t* reg, const UChar* target, const UChar* target_end,
   const UChar *tail;
 
 # ifdef ONIG_DEBUG_SEARCH
-  fprintf(stderr, "bm_search: text: %"PRIuPTR", text_end: %"PRIuPTR", text_range: %"PRIuPTR"\n",
-	  text, text_end, text_range);
+  fprintf(stderr, "bm_search: text: %"PRIuPTR" (%p), text_end: %"PRIuPTR" (%p), text_range: %"PRIuPTR" (%p)\n",
+	  (uintptr_t )text, text, (uintptr_t )text_end, text_end, (uintptr_t )text_range, text_range);
 # endif
 
   end = text_range + (target_end - target) - 1;
@@ -3482,8 +3575,8 @@ bm_search_notrev(regex_t* reg, const UChar* target, const UChar* target_end,
   OnigEncoding enc = reg->enc;
 
 # ifdef ONIG_DEBUG_SEARCH
-  fprintf(stderr, "bm_search_notrev: text: %"PRIdPTR" (%p), text_end: %"PRIdPTR" (%p), text_range: %"PRIdPTR" (%p)\n",
-	  (intptr_t )text, text, (intptr_t )text_end, text_end, (intptr_t )text_range, text_range);
+  fprintf(stderr, "bm_search_notrev: text: %"PRIuPTR" (%p), text_end: %"PRIuPTR" (%p), text_range: %"PRIuPTR" (%p)\n",
+	  (uintptr_t )text, text, (uintptr_t )text_end, text_end, (uintptr_t )text_range, text_range);
 # endif
 
   tail = target_end - 1;
@@ -3542,8 +3635,8 @@ bm_search(regex_t* reg, const UChar* target, const UChar* target_end,
   ptrdiff_t tlen1;
 
 # ifdef ONIG_DEBUG_SEARCH
-  fprintf(stderr, "bm_search: text: %"PRIuPTR", text_end: %"PRIuPTR", text_range: %"PRIuPTR"\n",
-	  text, text_end, text_range);
+  fprintf(stderr, "bm_search: text: %"PRIuPTR" (%p), text_end: %"PRIuPTR" (%p), text_range: %"PRIuPTR" (%p)\n",
+	  (uintptr_t )text, text, (uintptr_t )text_end, text_end, (uintptr_t )text_range, text_range);
 # endif
 
   tail = target_end - 1;
@@ -3595,8 +3688,8 @@ bm_search_notrev_ic(regex_t* reg, const UChar* target, const UChar* target_end,
   int case_fold_flag = reg->case_fold_flag;
 
 # ifdef ONIG_DEBUG_SEARCH
-  fprintf(stderr, "bm_search_notrev_ic: text: %"PRIdPTR" (%p), text_end: %"PRIdPTR" (%p), text_range: %"PRIdPTR" (%p)\n",
-	  (intptr_t )text, text, (intptr_t )text_end, text_end, (intptr_t )text_range, text_range);
+  fprintf(stderr, "bm_search_notrev_ic: text: %"PRIuPTR" (%p), text_end: %"PRIuPTR" (%p), text_range: %"PRIuPTR" (%p)\n",
+	  (uintptr_t )text, text, (uintptr_t )text_end, text_end, (uintptr_t )text_range, text_range);
 # endif
 
   tail = target_end - 1;
@@ -3653,8 +3746,8 @@ bm_search_ic(regex_t* reg, const UChar* target, const UChar* target_end,
   int case_fold_flag = reg->case_fold_flag;
 
 # ifdef ONIG_DEBUG_SEARCH
-  fprintf(stderr, "bm_search_ic: text: %"PRIdPTR" (%p), text_end: %"PRIdPTR" (%p), text_range: %"PRIdPTR" (%p)\n",
-	  (intptr_t )text, text, (intptr_t )text_end, text_end, (intptr_t )text_range, text_range);
+  fprintf(stderr, "bm_search_ic: text: %"PRIuPTR" (%p), text_end: %"PRIuPTR" (%p), text_range: %"PRIuPTR" (%p)\n",
+	  (uintptr_t )text, text, (uintptr_t )text_end, text_end, (uintptr_t )text_range, text_range);
 # endif
 
   tail = target_end - 1;
@@ -3814,7 +3907,7 @@ forward_search_range(regex_t* reg, const UChar* str, const UChar* end, UChar* s,
 
 #ifdef ONIG_DEBUG_SEARCH
   fprintf(stderr, "forward_search_range: str: %"PRIuPTR" (%p), end: %"PRIuPTR" (%p), s: %"PRIuPTR" (%p), range: %"PRIuPTR" (%p)\n",
-	  (intptr_t )str, str, (intptr_t )end, end, (intptr_t )s, s, (intptr_t )range, range);
+	  (uintptr_t )str, str, (uintptr_t )end, end, (uintptr_t )s, s, (uintptr_t )range, range);
 #endif
 
   p = s;
@@ -4068,7 +4161,7 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
 #ifdef ONIG_DEBUG_SEARCH
   fprintf(stderr,
      "onig_search (entry point): str: %"PRIuPTR" (%p), end: %"PRIuPTR", start: %"PRIuPTR", range: %"PRIuPTR"\n",
-     (intptr_t )str, str, end - str, start - str, range - str);
+     (uintptr_t )str, str, end - str, start - str, range - str);
 #endif
 
   if (region) {
@@ -4302,8 +4395,6 @@ onig_search_gpos(regex_t* reg, const UChar* str, const UChar* end,
 
 	if ((reg->anchor & ANCHOR_ANYCHAR_STAR) != 0) {
 	  do {
-	    if ((reg->anchor & ANCHOR_BEGIN_POSITION) == 0)
-	      msa.gpos = s;     /* move \G position */
 	    MATCH_AND_RETURN_CHECK(orig_range);
 	    prev = s;
 	    s += enclen(reg->enc, s, end);

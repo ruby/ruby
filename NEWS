@@ -20,6 +20,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Core classes updates (outstanding ones only)
 
+* Regexp
+  * Update Onigmo 6.1.1.
+    * Support absent operator https://github.com/k-takata/Onigmo/issues/82
+
 === Stdlib updates (outstanding ones only)
 
 === Compatibility issues (excluding feature bug fixes)

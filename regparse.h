@@ -95,6 +95,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #define ENCLOSE_OPTION           (1<<1)
 #define ENCLOSE_STOP_BACKTRACK   (1<<2)
 #define ENCLOSE_CONDITION        (1<<3)
+#define ENCLOSE_ABSENT           (1<<4)
 
 #define NODE_STR_MARGIN         16
 #define NODE_STR_BUF_SIZE       24  /* sizeof(CClassNode) - sizeof(int)*4 */
