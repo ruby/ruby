@@ -3,6 +3,7 @@ shallow_clone: true
 platform: x64
 environment:
   ruby_version: "23-x64"
+  zlib_version: "1.2.11"
 install:
   - SET
   - '"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" amd64'
@@ -13,8 +14,8 @@ install:
   - mkdir \usr\local\bin
   - mkdir \usr\local\include
   - mkdir \usr\local\lib
-  - appveyor DownloadFile https://downloads.sourceforge.net/project/libpng/zlib/1.2.11/zlib1211.zip
-  - 7z x -o%APPVEYOR_BUILD_FOLDER%\ext\zlib zlib1211.zip
+  - appveyor DownloadFile https://downloads.sourceforge.net/project/libpng/zlib/%zlib_version%/zlib%zlib_version:.=%.zip
+  - 7z x -o%APPVEYOR_BUILD_FOLDER%\ext\zlib zlib%zlib_version:.=%.zip
   - for %%I in (c:\OpenSSL-Win64\*.dll) do mklink /h \usr\local\bin\%%~nxI %%I
 build_script:
   - cd %APPVEYOR_BUILD_FOLDER%
