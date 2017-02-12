@@ -173,8 +173,14 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def test_operator_ambiguous
     thru_operator_ambiguous = false
-    parse('a=1; a %[]', :on_operator_ambiguous) {thru_operator_ambiguous = true}
+    token = syntax = nil
+    parse('a=1; a %[]', :on_operator_ambiguous) {|*a|
+      thru_operator_ambiguous = true
+      _, token, syntax = *a
+    }
     assert_equal true, thru_operator_ambiguous
+    assert_equal :%, token
+    assert_equal "string literal", syntax
   end
 
   def test_array   # array literal

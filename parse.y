@@ -7221,16 +7221,18 @@ parser_prepare(struct parser_params *parser)
 #define IS_AFTER_OPERATOR() IS_lex_state(EXPR_FNAME | EXPR_DOT)
 
 #ifndef RIPPER
-#define ambiguous_operator(op, syn) ( \
+#define ambiguous_operator(tok, op, syn) ( \
     rb_warning0("`"op"' after local variable or literal is interpreted as binary operator"), \
     rb_warning0("even though it seems like "syn""))
 #else
-#define ambiguous_operator(op, syn) dispatch2(operator_ambiguous, ripper_intern(op), rb_str_new_cstr(syn))
+#define ambiguous_operator(tok, op, syn) \
+    dispatch2(operator_ambiguous, TOKEN2VAL(tok), rb_str_new_cstr(syn))
 #endif
-#define warn_balanced(op, syn) ((void) \
+#define warn_balanced(tok, op, syn) ((void) \
     (!IS_lex_state_for(last_state, EXPR_CLASS|EXPR_DOT|EXPR_FNAME|EXPR_ENDFN) && \
      space_seen && !ISSPACE(c) && \
-     (ambiguous_operator(op, syn), 0)))
+     (ambiguous_operator(tok, op, syn), 0)), \
+    (tok))
 
 static VALUE
 parse_rational(struct parser_params *parser, char *str, int len, int seen_point)
@@ -7662,8 +7664,7 @@ parse_percent(struct parser_params *parser, const int space_seen, const enum lex
     }
     SET_LEX_STATE(IS_AFTER_OPERATOR() ? EXPR_ARG : EXPR_BEG);
     pushback(c);
-    warn_balanced("%%", "string literal");
-    return '%';
+    return warn_balanced('%', "%%", "string literal");
 }
 
 static int
@@ -8108,8 +8109,7 @@ parser_yylex(struct parser_params *parser)
 		c = tDSTAR;
 	    }
 	    else {
-		warn_balanced("**", "argument prefix");
-		c = tPOW;
+		c = warn_balanced(tPOW, "**", "argument prefix");
 	    }
 	}
 	else {
@@ -8127,8 +8127,7 @@ parser_yylex(struct parser_params *parser)
 		c = tSTAR;
 	    }
 	    else {
-		warn_balanced("*", "argument prefix");
-		c = '*';
+		c = warn_balanced('*', "*", "argument prefix");
 	    }
 	}
 	SET_LEX_STATE(IS_AFTER_OPERATOR() ? EXPR_ARG : EXPR_BEG);
@@ -8234,8 +8233,7 @@ parser_yylex(struct parser_params *parser)
 		return tOP_ASGN;
 	    }
 	    pushback(c);
-	    warn_balanced("<<", "here document");
-	    return tLSHFT;
+	    return warn_balanced(tLSHFT, "<<", "here document");
 	}
 	pushback(c);
 	return '<';
@@ -8314,8 +8312,7 @@ parser_yylex(struct parser_params *parser)
 	    c = tAMPER;
 	}
 	else {
-	    warn_balanced("&", "argument prefix");
-	    c = '&';
+	    c = warn_balanced('&', "&", "argument prefix");
 	}
 	SET_LEX_STATE(IS_AFTER_OPERATOR() ? EXPR_ARG : EXPR_BEG);
 	return c;
@@ -8365,8 +8362,7 @@ parser_yylex(struct parser_params *parser)
 	}
 	SET_LEX_STATE(EXPR_BEG);
 	pushback(c);
-	warn_balanced("+", "unary operator");
-	return '+';
+	return warn_balanced('+', "+", "unary operator");
 
       case '-':
 	c = nextc();
@@ -8398,8 +8394,7 @@ parser_yylex(struct parser_params *parser)
 	}
 	SET_LEX_STATE(EXPR_BEG);
 	pushback(c);
-	warn_balanced("-", "unary operator");
-	return '-';
+	return warn_balanced('-', "-", "unary operator");
 
       case '.':
 	SET_LEX_STATE(EXPR_BEG);
@@ -8448,9 +8443,9 @@ parser_yylex(struct parser_params *parser)
 	}
 	if (IS_END() || ISSPACE(c) || c == '#') {
 	    pushback(c);
-	    warn_balanced(":", "symbol literal");
+	    c = warn_balanced(':', ":", "symbol literal");
 	    SET_LEX_STATE(EXPR_BEG);
-	    return ':';
+	    return c;
 	}
 	switch (c) {
 	  case '\'':
@@ -8483,8 +8478,7 @@ parser_yylex(struct parser_params *parser)
 	    return tREGEXP_BEG;
 	}
 	SET_LEX_STATE(IS_AFTER_OPERATOR() ? EXPR_ARG : EXPR_BEG);
-	warn_balanced("/", "regexp literal");
-	return '/';
+	return warn_balanced('/', "/", "regexp literal");
 
       case '^':
 	if ((c = nextc()) == '=') {
