@@ -1,6 +1,6 @@
 # -*- makefile-gmake -*-
 gnumake = yes
-override gnumake_recursive := +
+override gnumake_recursive := $(if $(findstring n,$(firstword $(MFLAGS))),,+)
 mflags := $(filter-out -j%,$(MFLAGS))
 
 CHECK_TARGETS := exam love check%
