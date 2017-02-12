@@ -44,6 +44,8 @@ firstline, predefined = __LINE__+1, %[\
   mesg
   exception
   not                                                   NOT
+  and                                                   AND
+  or                                                    OR
 
   _                                                     UScore
   "/*NULL*/"                                            NULL
