@@ -11,7 +11,13 @@ sym_find(VALUE dummy, VALUE sym)
 static VALUE
 sym_pinneddown_p(VALUE dummy, VALUE sym)
 {
-    return rb_check_id(&sym) ? Qtrue : Qfalse;
+    ID id = rb_check_id(&sym);
+    if (!id) return Qnil;
+#ifdef ULL2NUM
+    return ULL2NUM(id);
+#else
+    return ULONG2NUM(id);
+#endif
 }
 
 void
