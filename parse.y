@@ -405,6 +405,7 @@ static NODE* node_newnode(struct parser_params *, enum node_type, VALUE, VALUE, 
 static NODE *cond_gen(struct parser_params*,NODE*,int);
 #define cond(node) cond_gen(parser, (node), FALSE)
 #define method_cond(node) cond_gen(parser, (node), TRUE)
+#define new_nil() NEW_NIL()
 static NODE *new_if_gen(struct parser_params*,NODE*,NODE*,NODE*);
 #define new_if(cc,left,right) new_if_gen(parser, (cc), (left), (right))
 #define new_unless(cc,left,right) new_if_gen(parser, (cc), (right), (left))
@@ -560,8 +561,11 @@ static VALUE assignable_gen(struct parser_params*,VALUE);
 static int id_is_var_gen(struct parser_params *parser, ID id);
 #define id_is_var(id) id_is_var_gen(parser, (id))
 
+#define method_cond(node) (node)
+#define call_uni_op(recv,id) dispatch2(unary, STATIC_ID2SYM(id), (recv))
 #define node_assign(node1, node2) dispatch2(assign, (node1), (node2))
 
+#define new_nil() Qnil
 static VALUE new_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE op, VALUE rhs);
 static VALUE new_attr_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE type, VALUE attr, VALUE op, VALUE rhs);
 #define new_attr_op_assign(lhs, type, attr, op, rhs) new_attr_op_assign_gen(parser, (lhs), (type), (attr), (op), (rhs))
@@ -632,6 +636,12 @@ static int dvar_curr_gen(struct parser_params*,ID);
 
 static int lvar_defined_gen(struct parser_params*, ID);
 #define lvar_defined(id) lvar_defined_gen(parser, (id))
+
+#ifdef RIPPER
+# define METHOD_NOT idNOT
+#else
+# define METHOD_NOT '!'
+#endif
 
 #define RE_OPTION_ONCE (1<<16)
 #define RE_OPTION_ENCODING_SHIFT 8
@@ -1425,19 +1435,11 @@ expr		: command_call
 		    }
 		| keyword_not opt_nl expr
 		    {
-		    /*%%%*/
-			$$ = call_uni_op(method_cond($3), '!');
-		    /*%
-			$$ = dispatch2(unary, ripper_intern("not"), $3);
-		    %*/
+			$$ = call_uni_op(method_cond($3), METHOD_NOT);
 		    }
 		| '!' command_call
 		    {
-		    /*%%%*/
 			$$ = call_uni_op(method_cond($2), '!');
-		    /*%
-			$$ = dispatch2(unary, TOKEN2VAL('!'), $2);
-		    %*/
 		    }
 		| arg
 		;
@@ -2158,19 +2160,11 @@ arg		: lhs '=' arg_rhs
 		    }
 		| tUPLUS arg
 		    {
-		    /*%%%*/
-			$$ = call_uni_op($2, tUPLUS);
-		    /*%
-			$$ = dispatch2(unary, TOKEN2VAL(tUPLUS), $2);
-		    %*/
+			$$ = call_uni_op($2, idUPlus);
 		    }
 		| tUMINUS arg
 		    {
-		    /*%%%*/
-			$$ = call_uni_op($2, tUMINUS);
-		    /*%
-			$$ = dispatch2(unary, TOKEN2VAL(tUMINUS), $2);
-		    %*/
+			$$ = call_uni_op($2, idUMinus);
 		    }
 		| arg '|' arg
 		    {
@@ -2278,19 +2272,11 @@ arg		: lhs '=' arg_rhs
 		    }
 		| '!' arg
 		    {
-		    /*%%%*/
 			$$ = call_uni_op(method_cond($2), '!');
-		    /*%
-			$$ = dispatch2(unary, TOKEN2VAL('!'), $2);
-		    %*/
 		    }
 		| '~' arg
 		    {
-		    /*%%%*/
 			$$ = call_uni_op($2, '~');
-		    /*%
-			$$ = dispatch2(unary, TOKEN2VAL('~'), $2);
-		    %*/
 		    }
 		| arg tLSHFT arg
 		    {
@@ -2763,19 +2749,11 @@ primary		: literal
 		    }
 		| keyword_not '(' expr rparen
 		    {
-		    /*%%%*/
-			$$ = call_uni_op(method_cond($3), '!');
-		    /*%
-			$$ = dispatch2(unary, ripper_intern("not"), $3);
-		    %*/
+			$$ = call_uni_op(method_cond($3), METHOD_NOT);
 		    }
 		| keyword_not '(' rparen
 		    {
-		    /*%%%*/
-			$$ = call_uni_op(method_cond(NEW_NIL()), '!');
-		    /*%
-			$$ = dispatch2(unary, ripper_intern("not"), Qnil);
-		    %*/
+			$$ = call_uni_op(method_cond(new_nil()), METHOD_NOT);
 		    }
 		| fcall brace_block
 		    {
