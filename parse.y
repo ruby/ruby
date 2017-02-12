@@ -562,6 +562,8 @@ static int id_is_var_gen(struct parser_params *parser, ID id);
 #define id_is_var(id) id_is_var_gen(parser, (id))
 
 #define method_cond(node) (node)
+#define call_bin_op(recv,id,arg1) dispatch3(binary, (recv), STATIC_ID2SYM(id), (arg1))
+#define match_op(node1,node2) call_bin_op((node1), idEqTilde, (node2))
 #define call_uni_op(recv,id) dispatch2(unary, STATIC_ID2SYM(id), (recv))
 #define node_assign(node1, node2) dispatch2(assign, (node1), (node2))
 
@@ -2103,60 +2105,31 @@ arg		: lhs '=' arg_rhs
 		    }
 		| arg '+' arg
 		    {
-		    /*%%%*/
 			$$ = call_bin_op($1, '+', $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL('+'), $3);
-		    %*/
 		    }
 		| arg '-' arg
 		    {
-		    /*%%%*/
 			$$ = call_bin_op($1, '-', $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL('-'), $3);
-		    %*/
 		    }
 		| arg '*' arg
 		    {
-		    /*%%%*/
 			$$ = call_bin_op($1, '*', $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL('*'), $3);
-		    %*/
 		    }
 		| arg '/' arg
 		    {
-		    /*%%%*/
 			$$ = call_bin_op($1, '/', $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL('/'), $3);
-		    %*/
 		    }
 		| arg '%' arg
 		    {
-		    /*%%%*/
 			$$ = call_bin_op($1, '%', $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL('%'), $3);
-		    %*/
 		    }
 		| arg tPOW arg
 		    {
-		    /*%%%*/
-			$$ = call_bin_op($1, tPOW, $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL(tPOW), $3);
-		    %*/
+			$$ = call_bin_op($1, idPow, $3);
 		    }
 		| tUMINUS_NUM simple_numeric tPOW arg
 		    {
-		    /*%%%*/
-			$$ = NEW_CALL(call_bin_op($2, tPOW, $4), tUMINUS, 0);
-		    /*%
-			$$ = dispatch3(binary, $2, TOKEN2VAL(tPOW), $4);
-			$$ = dispatch2(unary, TOKEN2VAL(tUMINUS), $$);
-		    %*/
+			$$ = call_uni_op(call_bin_op($2, idPow, $4), idUMinus);
 		    }
 		| tUPLUS arg
 		    {
@@ -2168,107 +2141,55 @@ arg		: lhs '=' arg_rhs
 		    }
 		| arg '|' arg
 		    {
-		    /*%%%*/
 			$$ = call_bin_op($1, '|', $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL('|'), $3);
-		    %*/
 		    }
 		| arg '^' arg
 		    {
-		    /*%%%*/
 			$$ = call_bin_op($1, '^', $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL('^'), $3);
-		    %*/
 		    }
 		| arg '&' arg
 		    {
-		    /*%%%*/
 			$$ = call_bin_op($1, '&', $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL('&'), $3);
-		    %*/
 		    }
 		| arg tCMP arg
 		    {
-		    /*%%%*/
-			$$ = call_bin_op($1, tCMP, $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL(tCMP), $3);
-		    %*/
+			$$ = call_bin_op($1, idCmp, $3);
 		    }
 		| arg '>' arg
 		    {
-		    /*%%%*/
 			$$ = call_bin_op($1, '>', $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL('>'), $3);
-		    %*/
 		    }
 		| arg tGEQ arg
 		    {
-		    /*%%%*/
-			$$ = call_bin_op($1, tGEQ, $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL(tGEQ), $3);
-		    %*/
+			$$ = call_bin_op($1, TOKEN2ID(tGEQ), $3);
 		    }
 		| arg '<' arg
 		    {
-		    /*%%%*/
 			$$ = call_bin_op($1, '<', $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL('<'), $3);
-		    %*/
 		    }
 		| arg tLEQ arg
 		    {
-		    /*%%%*/
-			$$ = call_bin_op($1, tLEQ, $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL(tLEQ), $3);
-		    %*/
+			$$ = call_bin_op($1, idLE, $3);
 		    }
 		| arg tEQ arg
 		    {
-		    /*%%%*/
-			$$ = call_bin_op($1, tEQ, $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL(tEQ), $3);
-		    %*/
+			$$ = call_bin_op($1, idEq, $3);
 		    }
 		| arg tEQQ arg
 		    {
-		    /*%%%*/
-			$$ = call_bin_op($1, tEQQ, $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL(tEQQ), $3);
-		    %*/
+			$$ = call_bin_op($1, idEqq, $3);
 		    }
 		| arg tNEQ arg
 		    {
-		    /*%%%*/
-			$$ = call_bin_op($1, tNEQ, $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL(tNEQ), $3);
-		    %*/
+			$$ = call_bin_op($1, idNeq, $3);
 		    }
 		| arg tMATCH arg
 		    {
-		    /*%%%*/
 			$$ = match_op($1, $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL(tMATCH), $3);
-		    %*/
 		    }
 		| arg tNMATCH arg
 		    {
-		    /*%%%*/
-			$$ = call_bin_op($1, tNMATCH, $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL(tNMATCH), $3);
-		    %*/
+			$$ = call_bin_op($1, idNeqTilde, $3);
 		    }
 		| '!' arg
 		    {
@@ -2280,19 +2201,11 @@ arg		: lhs '=' arg_rhs
 		    }
 		| arg tLSHFT arg
 		    {
-		    /*%%%*/
-			$$ = call_bin_op($1, tLSHFT, $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL(tLSHFT), $3);
-		    %*/
+			$$ = call_bin_op($1, idLTLT, $3);
 		    }
 		| arg tRSHFT arg
 		    {
-		    /*%%%*/
-			$$ = call_bin_op($1, tRSHFT, $3);
-		    /*%
-			$$ = dispatch3(binary, $1, TOKEN2VAL(tRSHFT), $3);
-		    %*/
+			$$ = call_bin_op($1, idGTGT, $3);
 		    }
 		| arg tANDOP arg
 		    {
