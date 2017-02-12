@@ -707,7 +707,6 @@ static void ripper_error_gen(struct parser_params *parser);
 
 #define yyparse ripper_yyparse
 
-#define ripper_intern(s) STATIC_ID2SYM(rb_intern(s))
 #define TOKEN2VAL(t) STATIC_ID2SYM(TOKEN2ID(t))
 
 #define arg_new() dispatch0(args_new)
