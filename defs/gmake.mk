@@ -56,7 +56,7 @@ endif
 
 ORDERED_TEST_TARGETS := $(filter $(TEST_TARGETS), \
 	btest-ruby test-knownbug test-basic \
-	test-testframework test-almost test-all \
+	test-testframework test-ruby test-almost test-all \
 	test-rubyspec \
 	)
 prev_test := $(if $(filter test-rubyspec,$(ORDERED_TEST_TARGETS)),test-rubyspec-precheck)
