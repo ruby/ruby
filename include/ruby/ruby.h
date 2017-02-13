@@ -536,7 +536,11 @@ static inline int rb_type(VALUE obj);
 
 #ifdef __GNUC__
 #define RB_GC_GUARD(v) \
-    (*__extension__ ({volatile VALUE *rb_gc_guarded_ptr = &(v); rb_gc_guarded_ptr;}))
+    (*__extension__ ({ \
+	volatile VALUE *rb_gc_guarded_ptr = &(v); \
+	__asm__("### RB_GC_GUARD("#v")" : : "m"(rb_gc_guarded_ptr)); \
+	rb_gc_guarded_ptr; \
+    }))
 #elif defined _MSC_VER
 #pragma optimize("", off)
 static inline volatile VALUE *rb_gc_guarded_ptr(volatile VALUE *ptr) {return ptr;}
