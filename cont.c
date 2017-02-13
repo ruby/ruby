@@ -170,48 +170,48 @@ NOINLINE(static VALUE cont_capture(volatile int *volatile stat));
 static void
 cont_mark(void *ptr)
 {
+    rb_context_t *cont = ptr;
+
     RUBY_MARK_ENTER("cont");
-    if (ptr) {
-	rb_context_t *cont = ptr;
-	rb_gc_mark(cont->value);
+    rb_gc_mark(cont->value);
 
-	rb_thread_mark(&cont->saved_thread);
-	rb_gc_mark(cont->saved_thread.self);
+    rb_thread_mark(&cont->saved_thread);
+    rb_gc_mark(cont->saved_thread.self);
 
-	if (cont->vm_stack) {
+    if (cont->vm_stack) {
 #ifdef CAPTURE_JUST_VALID_VM_STACK
-	    rb_gc_mark_locations(cont->vm_stack,
-				 cont->vm_stack + cont->vm_stack_slen + cont->vm_stack_clen);
+	rb_gc_mark_locations(cont->vm_stack,
+			     cont->vm_stack + cont->vm_stack_slen + cont->vm_stack_clen);
 #else
-	    rb_gc_mark_locations(cont->vm_stack,
-				 cont->vm_stack, cont->saved_thread.stack_size);
-#endif
-	}
-
-	if (cont->machine.stack) {
-	    if (cont->type == CONTINUATION_CONTEXT) {
-		/* cont */
-		rb_gc_mark_locations(cont->machine.stack,
-				     cont->machine.stack + cont->machine.stack_size);
-            }
-            else {
-		/* fiber */
-		rb_thread_t *th;
-                rb_fiber_t *fib = (rb_fiber_t*)cont;
-		GetThreadPtr(cont->saved_thread.self, th);
-		if ((th->fiber != fib) && fib->status == RUNNING) {
-		    rb_gc_mark_locations(cont->machine.stack,
-					 cont->machine.stack + cont->machine.stack_size);
-		}
-	    }
-	}
-#ifdef __ia64
-	if (cont->machine.register_stack) {
-	    rb_gc_mark_locations(cont->machine.register_stack,
-				 cont->machine.register_stack + cont->machine.register_stack_size);
-	}
+	rb_gc_mark_locations(cont->vm_stack,
+			     cont->vm_stack, cont->saved_thread.stack_size);
 #endif
     }
+
+    if (cont->machine.stack) {
+	if (cont->type == CONTINUATION_CONTEXT) {
+	    /* cont */
+	    rb_gc_mark_locations(cont->machine.stack,
+				 cont->machine.stack + cont->machine.stack_size);
+	}
+	else {
+	    /* fiber */
+	    rb_thread_t *th;
+	    rb_fiber_t *fib = (rb_fiber_t*)cont;
+	    GetThreadPtr(cont->saved_thread.self, th);
+	    if ((th->fiber != fib) && fib->status == RUNNING) {
+		rb_gc_mark_locations(cont->machine.stack,
+				     cont->machine.stack + cont->machine.stack_size);
+	    }
+	}
+    }
+#ifdef __ia64
+    if (cont->machine.register_stack) {
+	rb_gc_mark_locations(cont->machine.register_stack,
+			     cont->machine.register_stack + cont->machine.register_stack_size);
+    }
+#endif
+
     RUBY_MARK_LEAVE("cont");
 }
 
@@ -307,12 +307,10 @@ rb_fiber_mark_self(rb_fiber_t *fib)
 static void
 fiber_mark(void *ptr)
 {
+    rb_fiber_t *fib = ptr;
     RUBY_MARK_ENTER("cont");
-    if (ptr) {
-	rb_fiber_t *fib = ptr;
-	rb_fiber_mark_self(fib->prev);
-	cont_mark(&fib->cont);
-    }
+    rb_fiber_mark_self(fib->prev);
+    cont_mark(&fib->cont);
     RUBY_MARK_LEAVE("cont");
 }
 
