@@ -4095,12 +4095,12 @@ ary_make_hash_by(VALUE ary)
 static inline void
 ary_recycle_hash(VALUE hash)
 {
+    assert(RBASIC_CLASS(hash) == 0);
     if (RHASH(hash)->ntbl) {
 	st_table *tbl = RHASH(hash)->ntbl;
-	RHASH(hash)->ntbl = 0;
 	st_free_table(tbl);
     }
-    RB_GC_GUARD(hash);
+    rb_gc_force_recycle(hash);
 }
 
 /*
