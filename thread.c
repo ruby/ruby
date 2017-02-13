@@ -3573,8 +3573,8 @@ rb_fd_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_fdset_t *excep
     return select(n, r, w, e, timeout);
 }
 
-#if defined __GNUC__ && __GNUC__ >= 6
-#define rb_fd_no_init(fds) ASSUME(!(fds)->maxfd)
+#if defined __GNUC__ && __GNUC__ >= 4
+# define rb_fd_no_init(fds) ASSUME(!(fds)->fdset && !(fds)->maxfd)
 #endif
 
 #undef FD_ZERO
@@ -3640,6 +3640,10 @@ rb_fd_set(int fd, rb_fdset_t *set)
 #define FD_CLR(i, f)	rb_fd_clr((i), (f))
 #define FD_ISSET(i, f)	rb_fd_isset((i), (f))
 
+#if defined __GNUC__ && __GNUC__ >= 4
+# define rb_fd_no_init(fds) ASSUME(!(fds)->fdset)
+#endif
+
 #endif
 
 #ifndef rb_fd_no_init
@@ -3673,8 +3677,8 @@ update_timeval(struct timeval *timeout, double limit)
 }
 
 static int
-do_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds,
-	  rb_fdset_t *exceptfds, struct timeval *timeout)
+do_select(int n, rb_fdset_t *const readfds, rb_fdset_t *const writefds,
+	  rb_fdset_t *const exceptfds, struct timeval *timeout)
 {
     int MAYBE_UNUSED(result);
     int lerrno;

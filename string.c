@@ -7517,6 +7517,9 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	    wantarray = 0;
 #endif
 	}
+#if defined __GNUC__ && !defined __clang__
+	ASSUME(wantarray || !ary); /* if wantarray, ary does not matter */
+#endif
     }
     else {
 	if (wantarray)
