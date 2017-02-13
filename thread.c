@@ -3573,7 +3573,7 @@ rb_fd_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_fdset_t *excep
     return select(n, r, w, e, timeout);
 }
 
-#if defined __GNUC__ && __GNUC__ >= 4
+#if defined __GNUC__ && __GNUC__ >= 5
 # define rb_fd_no_init(fds) ASSUME(!(fds)->fdset && !(fds)->maxfd)
 #endif
 
@@ -3640,7 +3640,7 @@ rb_fd_set(int fd, rb_fdset_t *set)
 #define FD_CLR(i, f)	rb_fd_clr((i), (f))
 #define FD_ISSET(i, f)	rb_fd_isset((i), (f))
 
-#if defined __GNUC__ && __GNUC__ >= 4
+#if defined __GNUC__ && __GNUC__ >= 5
 # define rb_fd_no_init(fds) ASSUME(!(fds)->fdset)
 #endif
 
