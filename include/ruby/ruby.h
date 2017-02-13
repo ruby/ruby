@@ -538,7 +538,7 @@ static inline int rb_type(VALUE obj);
 #define RB_GC_GUARD(v) \
     (*__extension__ ({ \
 	volatile VALUE *rb_gc_guarded_ptr = &(v); \
-	__asm__("### RB_GC_GUARD("#v")" : : "m"(rb_gc_guarded_ptr)); \
+	__asm__("" : : "m"(rb_gc_guarded_ptr)); \
 	rb_gc_guarded_ptr; \
     }))
 #elif defined _MSC_VER
