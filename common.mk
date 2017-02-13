@@ -671,9 +671,9 @@ $(RBCONFIG): $(srcdir)/tool/mkconfig.rb config.status $(srcdir)/version.h
 	> rbconfig.tmp
 	$(IFCHANGE) "--timestamp=$@" rbconfig.rb rbconfig.tmp
 
-test-rubyspec-precheck:
+test-rubyspec-precheck: $(arch)-fake.rb
 
-test-rubyspec: test-rubyspec-precheck $(arch)-fake.rb
+test-rubyspec: test-rubyspec-precheck
 	$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/default.mspec $(MSPECOPT)
 
 RUNNABLE = $(LIBRUBY_RELATIVE:no=un)-runnable
