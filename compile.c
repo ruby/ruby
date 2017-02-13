@@ -6892,7 +6892,7 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
 	return keyword;
     }
 
-    dvs = ALLOC_N(VALUE, default_len);
+    dvs = ALLOC_N(VALUE, (unsigned int)default_len);
 
     for (j = 0; i < len; i++, j++) {
 	key = RARRAY_AREF(keywords, i);
