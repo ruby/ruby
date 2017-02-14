@@ -128,8 +128,6 @@ Zachary Scott (zzak)
   Kouhei Sutou (kou)
 [lib/rubygems.rb, lib/ubygems.rb, lib/rubygems/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
-[lib/scanf.rb]
-  David A. Black (dblack)
 [lib/set.rb]
   Akinori MUSHA (knu)
 [lib/securerandom.rb]
@@ -234,6 +232,8 @@ Zachary Scott (zzak)
 [lib/rdoc.rb, lib/rdoc/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/rdoc/rdoc
+[lib/scanf.rb]
+  David A. Black (dblack)
 [lib/webrick.rb, lib/webrick/*]
   Hiroshi Nakamura (nahi)
 
