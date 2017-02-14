@@ -33,12 +33,6 @@ module Win32
       end
       [ search, nameserver ]
     end
-end
-
-begin
-  require 'win32/resolv.so'
-rescue LoadError
-end
 
 module Kernel32
   extend Importer
@@ -48,7 +42,6 @@ getv = Kernel32.extern "int GetVersionExA(void *)", :stdcall
 info = [ 148, 0, 0, 0, 0 ].pack('V5') + "\0" * 128
 getv.call(info)
 if info.unpack('V5')[4] == 2  # VER_PLATFORM_WIN32_NT
-module Win32
 #====================================================================
 # Windows NT
 #====================================================================
@@ -65,7 +58,7 @@ module Win32
 
       def get_info
         search = nil
-        nameserver = get_dns_server_list
+        nameserver = []
         Registry::HKEY_LOCAL_MACHINE.open(TCPIP_NT) do |reg|
           begin
             slist = reg.read_s('SearchList')
@@ -92,15 +85,20 @@ module Win32
           reg.open('Interfaces') do |h|
             h.each_key do |iface,|
               h.open(iface) do |regif|
-                next unless ns = %w[NameServer DhcpNameServer].find do |key|
-                  begin
-                    ns = regif.read_s(key)
-                  rescue Registry::Error
-                  else
-                    break ns.split(/[,\s]\s*/) unless ns.empty?
+                begin
+                  [ 'NameServer', 'DhcpNameServer' ].each do |key|
+                    begin
+                      ns = regif.read_s(key)
+                    rescue
+                    else
+                      unless ns.empty?
+                        nameserver.concat(ns.split(/[,\s]\s*/))
+                        break
+                      end
+                    end
                   end
+                rescue Registry::Error
                 end
-                next if (nameserver & ns).empty?
 
                 if add_search
                   begin
