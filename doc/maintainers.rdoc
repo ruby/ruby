@@ -279,4 +279,4 @@ Zachary Scott (zzak)
 [test-unit]
   https://github.com/test-unit/test-unit
 [xmlrpc]
-  http://github.cm/ruby/xmlrpc
+  https://github.com/ruby/xmlrpc
