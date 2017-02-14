@@ -1323,7 +1323,7 @@ str_shared_replace(VALUE str, VALUE str2)
     int cr;
     int termlen;
 
-    ASSUME(str2 != str);
+    RUBY_ASSERT(str2 != str);
     enc = STR_ENC_GET(str2);
     cr = ENC_CODERANGE(str2);
     str_discard(str);
