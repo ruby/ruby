@@ -7493,8 +7493,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
     const char *ptr, *pend, *subptr, *subend, *rsptr, *hit, *adjusted;
     long pos, len, rslen;
     int rsnewline = 0;
-
-    VALUE MAYBE_UNUSED(ary);
+    VALUE ary = 0;
 
     if (rb_scan_args(argc, argv, "01:", &rs, &opts) == 0)
 	rs = rb_rs;
@@ -7517,9 +7516,6 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	    wantarray = 0;
 #endif
 	}
-#if defined __GNUC__ && !defined __clang__
-	ASSUME(wantarray || !ary); /* if wantarray, ary does not matter */
-#endif
     }
     else {
 	if (wantarray)
