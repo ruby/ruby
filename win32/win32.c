@@ -1811,6 +1811,9 @@ w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp, rb_encoding *enc)
 	curr = (NtCmdLineElement *)calloc(sizeof(NtCmdLineElement), 1);
 	if (!curr) goto do_nothing;
 	curr->str = rb_w32_wstr_to_mbstr(cp, base, len, &curr->len);
+	if (curr->str && (curr->str = realloc(curr->str, curr->len + 1))) {
+	    curr->str[curr->len] = '\0';
+	}
 	curr->flags |= NTMALLOC;
 
 	if (globbing && (tail = cmdglob(curr, cmdtail, cp, enc))) {
