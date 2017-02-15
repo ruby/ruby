@@ -1053,8 +1053,8 @@ rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
 	rb_io_write(arg->dest, arg->str);
 	rb_str_resize(arg->str, 0);
     }
-    free_dump_arg(arg);
-    rb_gc_force_recycle(wrapper);
+    clear_dump_arg(arg);
+    RB_GC_GUARD(wrapper);
 
     return port;
 }
@@ -2084,8 +2084,8 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc)
 
     if (!NIL_P(proc)) arg->proc = proc;
     v = r_object(arg);
-    free_load_arg(arg);
-    rb_gc_force_recycle(wrapper);
+    clear_load_arg(arg);
+    RB_GC_GUARD(wrapper);
 
     return v;
 }
