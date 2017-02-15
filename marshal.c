@@ -1026,7 +1026,7 @@ rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
     struct dump_arg *arg;
     VALUE wrapper; /* used to avoid memory leak in case of exception */
 
-    wrapper = TypedData_Make_Struct(rb_cData, struct dump_arg, &dump_arg_data, arg);
+    wrapper = TypedData_Make_Struct(0, struct dump_arg, &dump_arg_data, arg);
     arg->dest = 0;
     arg->symbols = st_init_numtable();
     arg->data    = rb_init_identtable();
@@ -1053,8 +1053,8 @@ rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
 	rb_io_write(arg->dest, arg->str);
 	rb_str_resize(arg->str, 0);
     }
-    clear_dump_arg(arg);
-    RB_GC_GUARD(wrapper);
+    free_dump_arg(arg);
+    rb_gc_force_recycle(wrapper);
 
     return port;
 }
@@ -2053,7 +2053,7 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc)
     else {
 	io_needed();
     }
-    wrapper = TypedData_Make_Struct(rb_cData, struct load_arg, &load_arg_data, arg);
+    wrapper = TypedData_Make_Struct(0, struct load_arg, &load_arg_data, arg);
     arg->infection = infection;
     arg->src = port;
     arg->offset = 0;
@@ -2084,8 +2084,8 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc)
 
     if (!NIL_P(proc)) arg->proc = proc;
     v = r_object(arg);
-    clear_load_arg(arg);
-    RB_GC_GUARD(wrapper);
+    free_load_arg(arg);
+    rb_gc_force_recycle(wrapper);
 
     return v;
 }
