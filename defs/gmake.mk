@@ -1,7 +1,7 @@
 # -*- makefile-gmake -*-
 gnumake = yes
 override gnumake_recursive := $(if $(findstring n,$(firstword $(MFLAGS))),,+)
-mflags := $(filter-out -j%,$(MFLAGS))
+override mflags := $(filter-out -j%,$(MFLAGS))
 
 CHECK_TARGETS := exam love check%
 # expand test targets, and those dependents
