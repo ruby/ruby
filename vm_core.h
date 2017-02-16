@@ -1334,7 +1334,7 @@ static inline const rb_iseq_t *
 vm_block_iseq(const struct rb_block *block)
 {
     switch (vm_block_type(block)) {
-      case block_type_iseq: return block->as.captured.code.iseq;
+      case block_type_iseq: return rb_iseq_check(block->as.captured.code.iseq);
       case block_type_proc: return vm_proc_iseq(block->as.proc);
       case block_type_ifunc:
       case block_type_symbol: return NULL;
