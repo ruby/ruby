@@ -1566,7 +1566,7 @@ cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail, UINT cp, rb_encoding *e
     if (patt->len >= PATH_MAX)
 	if (!(buf = malloc(patt->len + 1))) return 0;
 
-    strlcpy(buf, patt->str, patt->len + 1);
+    memcpy(buf, patt->str, patt->len);
     buf[patt->len] = '\0';
     translate_char(buf, '\\', '/', cp);
     status = ruby_brace_glob_with_enc(buf, 0, insert, (VALUE)&tail, enc);
@@ -1864,7 +1864,8 @@ w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp, rb_encoding *enc)
     cptr = buffer + (elements+1) * sizeof(char *);
 
     while ((curr = cmdhead) != 0) {
-	strlcpy(cptr, curr->str, curr->len + 1);
+	memcpy(cptr, curr->str, curr->len);
+	cptr[curr->len] = '\0';
 	*vptr++ = cptr;
 	cptr += curr->len + 1;
 	cmdhead = curr->next;
