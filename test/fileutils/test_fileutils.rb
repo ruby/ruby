@@ -905,6 +905,24 @@ class TestFileUtils < Test::Unit::TestCase
     mkdir_p '/'
   end
 
+  if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM
+    def test_mkdir_p_root
+      if /cygwin/ =~ RUBY_PLATFORM
+        tmpdir = `cygpath -ma .`.chomp
+      else
+        tmpdir = Dir.pwd
+      end
+      skip "No drive letter" unless /\A[a-z]:/i =~ tmpdir
+      drive = "./#{$&}"
+      assert_file_not_exist drive
+      mkdir_p "#{tmpdir}/none/dir"
+      assert_directory "none/dir"
+      assert_file_not_exist drive
+    ensure
+      Dir.rmdir(drive) if drive and File.directory?(drive)
+    end
+  end
+
   def test_mkdir_p_file_perm
     mkdir_p 'tmp/tmp/tmp', :mode => 07777
     assert_directory 'tmp/tmp/tmp'
