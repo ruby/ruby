@@ -942,6 +942,7 @@ rb_alias_variable(ID name1, ID name2)
     entry1->var = entry2->var;
 }
 
+#if 0
 struct gen_ivar_compat_tbl {
     struct gen_ivtbl *ivtbl;
     st_table *tbl;
@@ -960,6 +961,7 @@ gen_ivar_compat_tbl_i(st_data_t id, st_data_t index, st_data_t arg)
     }
     return ST_CONTINUE;
 }
+#endif
 
 static int
 gen_ivtbl_get(VALUE obj, struct gen_ivtbl **ivtbl)
@@ -977,6 +979,7 @@ gen_ivtbl_get(VALUE obj, struct gen_ivtbl **ivtbl)
 st_table*
 rb_generic_ivar_table(VALUE obj)
 {
+#if 0
     st_table *iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
     struct gen_ivar_compat_tbl a;
     st_data_t d;
@@ -1003,6 +1006,11 @@ rb_generic_ivar_table(VALUE obj)
     st_foreach_safe(iv_index_tbl, gen_ivar_compat_tbl_i, (st_data_t)&a);
 
     return a.tbl;
+#else
+    ONLY_FOR_INTERNAL_USE("rb_generic_ivar_table()");
+    UNREACHABLE;
+    return 0;
+#endif
 }
 
 static VALUE
