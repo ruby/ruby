@@ -122,6 +122,8 @@ class TestFileUtils < Test::Unit::TestCase
   include m
   extend m
 
+  UID_1, UID_2 = distinct_uids(2)
+
   include FileUtils
 
   def check_singleton(name)
@@ -1189,7 +1191,7 @@ class TestFileUtils < Test::Unit::TestCase
 
   if have_file_perm?
     def test_chown_error
-      uid, = distinct_uids(1)
+      uid = UID_1
       return unless uid
 
       touch 'tmp/a'
@@ -1301,14 +1303,11 @@ class TestFileUtils < Test::Unit::TestCase
 
     if root_in_posix?
       def test_chown_with_root
-        uid_1, uid_2 = distinct_uids(2)
-        return unless uid_1 and uid_2
-
         gid = @groups[0] # Most of the time, root only has one group
 
         files = ['tmp/a1', 'tmp/a2']
         files.each {|file| touch file}
-        [uid_1, uid_2].each {|uid|
+        [UID_1, UID_2].each {|uid|
           assert_output_lines(["chown #{uid}:#{gid} tmp/a1 tmp/a2"]) {
             chown uid, gid, files, verbose: true
             files.each {|file|
@@ -1320,69 +1319,57 @@ class TestFileUtils < Test::Unit::TestCase
       end
 
       def test_chown_dir_user_ownership_not_recursive_with_root
-        uid_1, uid_2 = distinct_uids(2)
-        return unless uid_1 and uid_2
-
         assert_output_lines([]) {
           mkdir 'tmp/dir'
           touch 'tmp/dir/a'
-          chown uid_1, nil, ['tmp/dir', 'tmp/dir/a']
-          assert_ownership_user uid_1, 'tmp/dir'
-          assert_ownership_user uid_1, 'tmp/dir/a'
-          chown uid_2, nil, 'tmp/dir'
-          assert_ownership_user uid_2, 'tmp/dir'
+          chown UID_1, nil, ['tmp/dir', 'tmp/dir/a']
+          assert_ownership_user UID_1, 'tmp/dir'
+          assert_ownership_user UID_1, 'tmp/dir/a'
+          chown UID_2, nil, 'tmp/dir'
+          assert_ownership_user UID_2, 'tmp/dir'
           # Make sure FileUtils.chown does not chown recursively
-          assert_ownership_user uid_1, 'tmp/dir/a'
+          assert_ownership_user UID_1, 'tmp/dir/a'
         }
       end
 
       def test_chown_R_with_root
-        uid_1, uid_2 = distinct_uids(2)
-        return unless uid_1 and uid_2
-
         assert_output_lines([]) {
           list = ['tmp/dir', 'tmp/dir/a', 'tmp/dir/a/b', 'tmp/dir/a/b/c']
           mkdir_p 'tmp/dir/a/b/c'
           touch 'tmp/d'
           # string input
-          chown_R uid_1, nil, 'tmp/dir'
+          chown_R UID_1, nil, 'tmp/dir'
           list.each {|dir|
-            assert_ownership_user uid_1, dir
+            assert_ownership_user UID_1, dir
           }
-          chown_R uid_1, nil, 'tmp/d'
-          assert_ownership_user uid_1, 'tmp/d'
+          chown_R UID_1, nil, 'tmp/d'
+          assert_ownership_user UID_1, 'tmp/d'
           # list input
-          chown_R uid_2, nil, ['tmp/dir', 'tmp/d']
+          chown_R UID_2, nil, ['tmp/dir', 'tmp/d']
           list += ['tmp/d']
           list.each {|dir|
-            assert_ownership_user uid_2, dir
+            assert_ownership_user UID_2, dir
           }
         }
       end
     else
       def test_chown_without_permission
-        uid_1, uid_2 = distinct_uids(2)
-        return unless uid_1 and uid_2
-
         touch 'tmp/a'
         assert_raise(Errno::EPERM) {
-          chown uid_1, nil, 'tmp/a'
-          chown uid_2, nil, 'tmp/a'
+          chown UID_1, nil, 'tmp/a'
+          chown UID_2, nil, 'tmp/a'
         }
       end
 
       def test_chown_R_without_permission
-        uid_1, uid_2 = distinct_uids(2)
-        return unless uid_1 and uid_2
-
         touch 'tmp/a'
         exception = assert_raise(Errno::EPERM) {
-          chown_R uid_1, nil, 'tmp/a'
-          chown_R uid_2, nil, 'tmp/a'
+          chown_R UID_1, nil, 'tmp/a'
+          chown_R UID_2, nil, 'tmp/a'
         }
       end
     end
-  end
+  end if UID_1 and UID_2
 
   def test_copy_entry
     check_singleton :copy_entry
