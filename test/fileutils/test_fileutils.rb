@@ -530,7 +530,7 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_rm_symlink
     File.open('tmp/lnf_symlink_src', 'w') {|f| f.puts 'dummy' }
-    File.symlink 'tmp/lnf_symlink_src', 'tmp/lnf_symlink_dest'
+    File.symlink 'lnf_symlink_src', 'tmp/lnf_symlink_dest'
     rm_f 'tmp/lnf_symlink_dest'
     assert_file_not_exist 'tmp/lnf_symlink_dest'
     assert_file_exist     'tmp/lnf_symlink_src'
@@ -767,6 +767,7 @@ class TestFileUtils < Test::Unit::TestCase
     check_singleton :ln_s
 
     TARGETS.each do |fname|
+      fname = "../#{fname}"
       ln_s fname, 'tmp/lnsdest'
       assert FileTest.symlink?('tmp/lnsdest'), 'not symlink'
       assert_equal fname, File.readlink('tmp/lnsdest')
@@ -790,6 +791,7 @@ class TestFileUtils < Test::Unit::TestCase
     check_singleton :ln_sf
 
     TARGETS.each do |fname|
+      fname = "../#{fname}"
       ln_sf fname, 'tmp/lnsdest'
       assert FileTest.symlink?('tmp/lnsdest'), 'not symlink'
       assert_equal fname, File.readlink('tmp/lnsdest')
