@@ -129,13 +129,13 @@ str_associated(VALUE str)
 void
 rb_str_associate(VALUE str, VALUE add)
 {
-    ONLY_FOR_INTERNAL_USE("rb_str_associate()");
+    DEPRECATED_INTERNAL_FEATURE("rb_str_associate()");
 }
 
 VALUE
 rb_str_associated(VALUE str)
 {
-    ONLY_FOR_INTERNAL_USE("rb_str_associated()");
+    DEPRECATED_INTERNAL_FEATURE("rb_str_associated()");
 }
 
 /*

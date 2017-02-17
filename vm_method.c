@@ -83,7 +83,7 @@ rb_class_clear_method_cache(VALUE klass, VALUE arg)
 void
 rb_clear_cache(void)
 {
-    ONLY_FOR_INTERNAL_USE("rb_clear_cache()");
+    DEPRECATED_INTERNAL_FEATURE("rb_clear_cache()");
 }
 
 void

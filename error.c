@@ -132,23 +132,23 @@ rb_syntax_error_append(VALUE exc, VALUE file, int line, int column,
 void
 rb_compile_error_with_enc(const char *file, int line, void *enc, const char *fmt, ...)
 {
-    ONLY_FOR_INTERNAL_USE("rb_compile_error_with_enc()");
+    DEPRECATED_INTERNAL_FEATURE("rb_compile_error_with_enc()");
 }
 
 void
 rb_compile_error(const char *file, int line, const char *fmt, ...)
 {
-    ONLY_FOR_INTERNAL_USE("rb_compile_error()");
+    DEPRECATED_INTERNAL_FEATURE("rb_compile_error()");
 }
 
 void
 rb_compile_error_append(const char *fmt, ...)
 {
-    ONLY_FOR_INTERNAL_USE("rb_compile_error_append()");
+    DEPRECATED_INTERNAL_FEATURE("rb_compile_error_append()");
 }
 
 void
-ruby_only_for_internal_use(const char *func)
+ruby_deprecated_internal_feature(const char *func)
 {
     rb_print_backtrace();
     rb_fatal("%s is only for internal use and deprecated; do not use", func);

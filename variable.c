@@ -1007,8 +1007,7 @@ rb_generic_ivar_table(VALUE obj)
 
     return a.tbl;
 #else
-    ONLY_FOR_INTERNAL_USE("rb_generic_ivar_table()");
-    UNREACHABLE;
+    DEPRECATED_INTERNAL_FEATURE("rb_generic_ivar_table()");
     return 0;
 #endif
 }

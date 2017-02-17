@@ -548,7 +548,7 @@ rb_vm_rewind_cfp(rb_thread_t *th, rb_control_frame_t *cfp)
 void
 rb_frame_pop(void)
 {
-    ONLY_FOR_INTERNAL_USE("rb_frame_pop()");
+    DEPRECATED_INTERNAL_FEATURE("rb_frame_pop()");
 }
 
 /* at exit */
