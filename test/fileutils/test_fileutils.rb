@@ -75,6 +75,10 @@ class TestFileUtils < Test::Unit::TestCase
     end
 
     def root_in_posix?
+      if /cygwin/ =~ RUBY_PLATFORM
+        # FIXME: privilege if groups include root user?
+        return Process.groups.include?(0)
+      end
       if Process.respond_to?('uid')
         return Process.uid == 0
       else
