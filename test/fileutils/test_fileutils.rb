@@ -74,6 +74,15 @@ class TestFileUtils < Test::Unit::TestCase
       return true
     end
 
+    @@no_broken_symlink = false
+    if /cygwin/ =~ RUBY_PLATFORM and /\bwinsymlinks:native(?:strict)?\b/ =~ ENV["CYGWIN"]
+      @@no_broken_symlink = true
+    end
+
+    def no_broken_symlink?
+      @@no_broken_symlink
+    end
+
     def root_in_posix?
       if /cygwin/ =~ RUBY_PLATFORM
         # FIXME: privilege if groups include root user?
@@ -324,6 +333,7 @@ class TestFileUtils < Test::Unit::TestCase
     assert_raise(ArgumentError) {
       cp 'tmp/cptmp_symlink', 'tmp/cptmp'
     }
+    return if no_broken_symlink?
     # src==dest (3) looped symlink
     File.symlink 'symlink', 'tmp/symlink'
     assert_raise(Errno::ELOOP) {
@@ -390,6 +400,7 @@ class TestFileUtils < Test::Unit::TestCase
   def test_cp_r_symlink
     # symlink in a directory
     mkdir 'tmp/cpr_src'
+    touch 'tmp/cpr_src/SLdest'
     ln_s 'SLdest', 'tmp/cpr_src/symlink'
     cp_r 'tmp/cpr_src', 'tmp/cpr_dest'
     assert_symlink 'tmp/cpr_dest/symlink'
@@ -415,7 +426,7 @@ class TestFileUtils < Test::Unit::TestCase
     assert_nothing_raised {
       cp_r 'tmp/cross', 'tmp/cross2', :preserve => true
     }
-  end if have_symlink?
+  end if have_symlink? and !no_broken_symlink?
 
   def test_cp_r_pathname
     # pathname
@@ -471,6 +482,9 @@ class TestFileUtils < Test::Unit::TestCase
     assert_raise(ArgumentError) {
       mv 'tmp/cptmp_symlink', 'tmp/cptmp'
     }
+  end if have_symlink?
+
+  def test_mv_broken_symlink
     # src==dest (3) looped symlink
     File.symlink 'symlink', 'tmp/symlink'
     assert_raise(Errno::ELOOP) {
@@ -482,7 +496,7 @@ class TestFileUtils < Test::Unit::TestCase
       mv 'tmp/src', 'tmp/dest'
     }
     assert_equal true, File.symlink?('tmp/dest')
-  end if have_symlink?
+  end if have_symlink? and !no_broken_symlink?
 
   def test_mv_pathname
     # pathname
@@ -744,6 +758,9 @@ class TestFileUtils < Test::Unit::TestCase
     assert_raise(Errno::EEXIST) {
       ln 'tmp/symlink', 'tmp/cptmp'   # symlink -> normal file
     }
+  end if have_symlink?
+
+  def test_ln_broken_symlink
     # src==dest (3) looped symlink
     File.symlink 'cptmp_symlink', 'tmp/cptmp_symlink'
     begin
@@ -751,7 +768,7 @@ class TestFileUtils < Test::Unit::TestCase
     rescue => err
       assert_kind_of SystemCallError, err
     end
-  end if have_symlink?
+  end if have_symlink? and !no_broken_symlink?
 
   def test_ln_pathname
     # pathname
@@ -773,11 +790,16 @@ class TestFileUtils < Test::Unit::TestCase
       assert_equal fname, File.readlink('tmp/lnsdest')
       rm_f 'tmp/lnsdest'
     end
+  end
+
+  def test_ln_s_broken_symlink
     assert_nothing_raised {
       ln_s 'symlink', 'tmp/symlink'
     }
     assert_symlink 'tmp/symlink'
+  end if have_symlink? and !no_broken_symlink?
 
+  def test_ln_s_pathname
     # pathname
     touch 'tmp/lnsdest'
     assert_nothing_raised {
@@ -798,10 +820,15 @@ class TestFileUtils < Test::Unit::TestCase
       ln_sf fname, 'tmp/lnsdest'
       ln_sf fname, 'tmp/lnsdest'
     end
+  end if have_symlink?
+
+  def test_ln_sf_broken_symlink
     assert_nothing_raised {
       ln_sf 'symlink', 'tmp/symlink'
     }
+  end if have_symlink? and !no_broken_symlink?
 
+  def test_ln_sf_pathname
     # pathname
     touch 'tmp/lns_dest'
     assert_nothing_raised {
@@ -981,13 +1008,16 @@ class TestFileUtils < Test::Unit::TestCase
     assert_raise(ArgumentError) {
       install 'tmp/cptmp_symlink', 'tmp/cptmp'
     }
+  end if have_symlink?
+
+  def test_install_broken_symlink
     # src==dest (3) looped symlink
     File.symlink 'symlink', 'tmp/symlink'
     assert_raise(Errno::ELOOP) {
       # File#install invokes open(2), always ELOOP must be raised
       install 'tmp/symlink', 'tmp/symlink'
     }
-  end if have_symlink?
+  end if have_symlink? and !no_broken_symlink?
 
   def test_install_pathname
     # pathname
@@ -1389,6 +1419,7 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_copy_entry_symlink
     # root is a symlink
+    touch 'tmp/somewhere'
     File.symlink 'somewhere', 'tmp/symsrc'
     copy_entry 'tmp/symsrc', 'tmp/symdest'
     assert_symlink 'tmp/symdest'
@@ -1396,6 +1427,7 @@ class TestFileUtils < Test::Unit::TestCase
 
     # content is a symlink
     mkdir 'tmp/dir'
+    touch 'tmp/dir/somewhere'
     File.symlink 'somewhere', 'tmp/dir/sym'
     copy_entry 'tmp/dir', 'tmp/dirdest'
     assert_directory 'tmp/dirdest'
