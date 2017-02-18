@@ -5734,7 +5734,7 @@ rb_ary_dig(int argc, VALUE *argv, VALUE self)
 }
 
 static inline VALUE
-finish_exact_sum(long n, VALUE r, VALUE v)
+finish_exact_sum(long n, VALUE r, VALUE v, int z)
 {
     if (n != 0)
         v = rb_fix_plus(LONG2FIX(n), v);
@@ -5746,6 +5746,9 @@ finish_exact_sum(long n, VALUE r, VALUE v)
 	    v = rb_big_plus(r, v);
 	else
 	    v = rb_rational_plus(r, v);
+    }
+    else if (!n && z) {
+        v = rb_fix_plus(LONG2FIX(0), v);
     }
     return v;
 }
@@ -5831,11 +5834,11 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
         else
             goto not_exact;
     }
-    v = finish_exact_sum(n, r, v);
+    v = finish_exact_sum(n, r, v, argc!=0);
     return v;
 
   not_exact:
-    v = finish_exact_sum(n, r, v);
+    v = finish_exact_sum(n, r, v, i!=0);
 
     if (RB_FLOAT_TYPE_P(e)) {
         /*
