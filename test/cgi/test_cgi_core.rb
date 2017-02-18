@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'test/unit'
 require 'cgi'
 require 'stringio'
@@ -105,11 +105,11 @@ class CGICoreTest < Test::Unit::TestCase
       hash={}
       cgi = CGI.new(:accept_charset=>"UTF-8"){|key,val|hash[key]=val}
       ## cgi[]
-      assert_equal("\xBE\xBE\xB9\xBE".force_encoding("UTF-8"), cgi['str'])
+      assert_equal("\xBE\xBE\xB9\xBE".dup.force_encoding("UTF-8"), cgi['str'])
       ## cgi.params
-      assert_equal(["\xBE\xBE\xB9\xBE".force_encoding("UTF-8")], cgi.params['str'])
+      assert_equal(["\xBE\xBE\xB9\xBE".dup.force_encoding("UTF-8")], cgi.params['str'])
       ## accept-charset error
-      assert_equal({"str"=>"\xBE\xBE\xB9\xBE".force_encoding("UTF-8")},hash)
+      assert_equal({"str"=>"\xBE\xBE\xB9\xBE".dup.force_encoding("UTF-8")},hash)
 
       $stdin.rewind
       assert_raise(CGI::InvalidEncoding) do
@@ -119,9 +119,9 @@ class CGICoreTest < Test::Unit::TestCase
       $stdin.rewind
       cgi = CGI.new(:accept_charset=>"EUC-JP")
       ## cgi[]
-      assert_equal("\xBE\xBE\xB9\xBE".force_encoding("EUC-JP"), cgi['str'])
+      assert_equal("\xBE\xBE\xB9\xBE".dup.force_encoding("EUC-JP"), cgi['str'])
       ## cgi.params
-      assert_equal(["\xBE\xBE\xB9\xBE".force_encoding("EUC-JP")], cgi.params['str'])
+      assert_equal(["\xBE\xBE\xB9\xBE".dup.force_encoding("EUC-JP")], cgi.params['str'])
     else
       assert(true)
     end

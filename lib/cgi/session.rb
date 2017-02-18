@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # cgi/session.rb - session support for cgi scripts
 #

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 class CGI; module Util; end; extend Util; end
 module CGI::Util
   @@accept_charset="UTF-8" unless defined?(@@accept_charset)

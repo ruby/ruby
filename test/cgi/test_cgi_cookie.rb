@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'test/unit'
 require 'cgi'
 require 'stringio'
@@ -15,7 +15,7 @@ class CGICookieTest < Test::Unit::TestCase
       'REQUEST_METHOD' => 'GET',
       'SCRIPT_NAME' => nil,
     )
-    @str1="\xE3\x82\x86\xE3\x82\x93\xE3\x82\x86\xE3\x82\x93"
+    @str1="\xE3\x82\x86\xE3\x82\x93\xE3\x82\x86\xE3\x82\x93".dup
     @str1.force_encoding("UTF-8") if defined?(::Encoding)
   end
 
@@ -39,7 +39,7 @@ class CGICookieTest < Test::Unit::TestCase
 
   def test_cgi_cookie_new_complex
     t = Time.gm(2030, 12, 31, 23, 59, 59)
-    value = ['val1', '&<>"', "\xA5\xE0\xA5\xB9\xA5\xAB"]
+    value = ['val1', '&<>"', "\xA5\xE0\xA5\xB9\xA5\xAB".dup]
     value[2].force_encoding("EUC-JP") if defined?(::Encoding)
     cookie = CGI::Cookie.new('name'=>'name1',
                              'value'=>value,

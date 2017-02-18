@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'test/unit'
 require 'cgi'
 require 'time'
@@ -58,7 +58,7 @@ class CGIHeaderTest < Test::Unit::TestCase
       'expires'    => Time.gm(2000, 1, 23, 12, 34, 56),
       'location'   => 'http://www.ruby-lang.org/',
     }
-    expected =  "Status: 302 Found\r\n"
+    expected =  "Status: 302 Found\r\n".dup
     expected << "Server: webrick\r\n"
     expected << "Connection: close\r\n"
     expected << "Content-Type: text/xhtml; charset=utf8\r\n"
@@ -116,7 +116,7 @@ class CGIHeaderTest < Test::Unit::TestCase
                 CGI::Cookie.new('name'=>'name2', 'value'=>'value2', 'secure'=>true),
               ]
     cgi.instance_variable_set('@output_cookies', cookies)
-    expected =  "Content-Type: text/html; charset=utf8\r\n"
+    expected =  "Content-Type: text/html; charset=utf8\r\n".dup
     expected << "Set-Cookie: name1=abc&123; path=\r\n"
     expected << "Set-Cookie: name2=value2; path=; secure\r\n"
     expected << "\r\n"
@@ -151,7 +151,7 @@ class CGIHeaderTest < Test::Unit::TestCase
       actual.sub!(date, "Date: DATE_IS_REMOVED\r\n")
     end
     ## assertion
-    expected =  "HTTP/1.1 200 OK\r\n"
+    expected =  "HTTP/1.1 200 OK\r\n".dup
     expected << "Date: DATE_IS_REMOVED\r\n"
     expected << "Server: Apache 2.2.0\r\n"
     expected << "Connection: close\r\n"
@@ -163,10 +163,10 @@ class CGIHeaderTest < Test::Unit::TestCase
     expected.sub!(/^HTTP\/1.1 200 OK\r\n/, "HTTP/1.1 302 Found\r\n")
     expected.sub!(/\r\n\r\n/, "\r\nlocation: http://www.example.com/\r\n\r\n")
     assert_equal(expected, actual3)
-    expected =  "Content-Type: text/html\r\n"
+    expected =  "Content-Type: text/html\r\n".dup
     expected << "\r\n"
     assert_equal(expected, actual4)
-    expected =  "Status: 302 Found\r\n"
+    expected =  "Status: 302 Found\r\n".dup
     expected << "Content-Type: text/html\r\n"
     expected << "location: http://www.example.com/\r\n"
     expected << "\r\n"
