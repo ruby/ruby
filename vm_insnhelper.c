@@ -2026,7 +2026,8 @@ vm_call_zsuper(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_calling_info 
     if (!cc->me) {
 	return vm_call_method_nome(th, cfp, calling, ci, cc);
     }
-    if (cc->me->def->type == VM_METHOD_TYPE_REFINED) {
+    if (cc->me->def->type == VM_METHOD_TYPE_REFINED &&
+	cc->me->def->body.refined.orig_me) {
 	cc->me = refined_method_callable_without_refinement(cc->me);
     }
     return vm_call_method_each_type(th, cfp, calling, ci, cc);
