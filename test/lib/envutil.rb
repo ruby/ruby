@@ -4,6 +4,10 @@ require "open3"
 require "timeout"
 require_relative "find_executable"
 require "rbconfig/sizeof"
+begin
+  require 'rbconfig'
+rescue LoadError
+end
 
 class Integer
   FIXNUM_MIN = -(1 << (8 * RbConfig::SIZEOF['long'] - 2))
@@ -227,9 +231,12 @@ module EnvUtil
   if /darwin/ =~ RUBY_PLATFORM
     DIAGNOSTIC_REPORTS_PATH = File.expand_path("~/Library/Logs/DiagnosticReports")
     DIAGNOSTIC_REPORTS_TIMEFORMAT = '%Y-%m-%d-%H%M%S'
-    def self.diagnostic_reports(signame, cmd, pid, now)
+    @ruby_install_name = RbConfig::CONFIG['RUBY_INSTALL_NAME']
+
+    def self.diagnostic_reports(signame, pid, now)
       return unless %w[ABRT QUIT SEGV ILL TRAP].include?(signame)
-      cmd = File.basename(cmd)
+      cmd = rubybin
+      cmd = @ruby_install_name if %r{/ruby-runner#{Regexp.quote(RbConfig::CONFIG["EXEEXT"])}\z}o =~ cmd
       path = DIAGNOSTIC_REPORTS_PATH
       timeformat = DIAGNOSTIC_REPORTS_TIMEFORMAT
       pat = "#{path}/#{cmd}_#{now.strftime(timeformat)}[-_]*.crash"
@@ -248,7 +255,7 @@ module EnvUtil
       nil
     end
   else
-    def self.diagnostic_reports(signame, cmd, pid, now)
+    def self.diagnostic_reports(signame, pid, now)
     end
   end
 
@@ -261,10 +268,7 @@ module EnvUtil
   end
 end
 
-begin
-  require 'rbconfig'
-rescue LoadError
-else
+if defined?(RbConfig)
   module RbConfig
     @ruby = EnvUtil.rubybin
     class << self

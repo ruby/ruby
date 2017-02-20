@@ -509,7 +509,7 @@ EOT
             signame = Signal.signame(signo)
             sigdesc = "signal #{signo}"
           end
-          log = EnvUtil.diagnostic_reports(signame, EnvUtil.rubybin, pid, now)
+          log = EnvUtil.diagnostic_reports(signame, pid, now)
           if signame
             sigdesc = "SIG#{signame} (#{sigdesc})"
           end
@@ -540,7 +540,7 @@ EOT
                             success: nil, **opt)
         stdout, stderr, status = EnvUtil.invoke_ruby(args, test_stdin, true, true, **opt)
         if signo = status.termsig
-          EnvUtil.diagnostic_reports(Signal.signame(signo), EnvUtil.rubybin, status.pid, Time.now)
+          EnvUtil.diagnostic_reports(Signal.signame(signo), status.pid, Time.now)
         end
         if block_given?
           raise "test_stdout ignored, use block only or without block" if test_stdout != []
