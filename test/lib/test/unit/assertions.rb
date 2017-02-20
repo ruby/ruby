@@ -589,14 +589,13 @@ EOT
           file ||= loc.path
           line ||= loc.lineno
         end
-        line -= 5 # lines until src
         src = <<eom
-# -*- coding: #{src.encoding}; -*-
+# -*- coding: #{line += __LINE__; src.encoding}; -*-
   require #{__dir__.dump};include Test::Unit::Assertions
   END {
     puts [Marshal.dump($!)].pack('m'), "assertions=\#{self._assertions}"
   }
-#{src}
+#{line -= __LINE__; src}
   class Test::Unit::Runner
     @@stop_auto_run = true
   end
@@ -621,7 +620,7 @@ eom
           else
             res.set_backtrace(caller)
           end
-          raise res
+          raise res unless SystemExit === res
         end
 
         # really is it succeed?
