@@ -707,7 +707,8 @@ static void ripper_error_gen(struct parser_params *parser);
 
 #define yyparse ripper_yyparse
 
-#define TOKEN2VAL(t) STATIC_ID2SYM(TOKEN2ID(t))
+#define ID2VAL(id) STATIC_ID2SYM(id)
+#define TOKEN2VAL(t) ID2VAL(TOKEN2ID(t))
 
 #define arg_new() dispatch0(args_new)
 #define arg_add(l,a) dispatch2(args_add, (l), (a))
@@ -763,7 +764,8 @@ static VALUE parser_heredoc_dedent(struct parser_params*,VALUE);
 #define FIXME 0
 
 #else
-#define TOKEN2VAL(id) id
+#define ID2VAL(id) (id)
+#define TOKEN2VAL(t) ID2VAL(t)
 #endif /* RIPPER */
 
 #ifndef RIPPER
@@ -1391,7 +1393,7 @@ command_asgn	: lhs '=' command_rhs
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_rhs
 		    {
 			value_expr($5);
-			$$ = new_attr_op_assign($1, TOKEN2VAL(tCOLON2), $3, $4, $5);
+			$$ = new_attr_op_assign($1, ID2VAL(idCOLON2), $3, $4, $5);
 		    }
 		| backref tOP_ASGN command_rhs
 		    {
@@ -1543,7 +1545,7 @@ command		: fcall command_args       %prec tLOWEST
 			$$ = NEW_CALL($1, $3, $4);
 			fixpos($$, $1);
 		    /*%
-			$$ = dispatch4(command_call, $1, TOKEN2VAL(tCOLON2), $3, $4);
+			$$ = dispatch4(command_call, $1, ID2VAL(idCOLON2), $3, $4);
 		    %*/
 		    }
 		| primary_value tCOLON2 operation2 command_args cmd_brace_block
@@ -1554,7 +1556,7 @@ command		: fcall command_args       %prec tLOWEST
 			$$ = $5;
 			fixpos($$, $1);
 		    /*%
-			$$ = dispatch4(command_call, $1, TOKEN2VAL(tCOLON2), $3, $4);
+			$$ = dispatch4(command_call, $1, ID2VAL(idCOLON2), $3, $4);
 			$$ = method_add_block($$, $5);
 		    %*/
 		   }
@@ -1851,7 +1853,7 @@ lhs		: user_variable
 		    /*%%%*/
 			$$ = attrset($1, idCOLON2, $3);
 		    /*%
-			$$ = dispatch3(field, $1, TOKEN2VAL(tCOLON2), $3);
+			$$ = dispatch3(field, $1, ID2VAL(idCOLON2), $3);
 		    %*/
 		    }
 		| primary_value call_op tCONSTANT
@@ -2060,7 +2062,7 @@ arg		: lhs '=' arg_rhs
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN arg_rhs
 		    {
 			value_expr($5);
-			$$ = new_attr_op_assign($1, TOKEN2VAL(tCOLON2), $3, $4, $5);
+			$$ = new_attr_op_assign($1, ID2VAL(idCOLON2), $3, $4, $5);
 		    }
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN arg_rhs
 		    {
@@ -3524,7 +3526,7 @@ method_call	: fcall paren_args
 			$$ = NEW_CALL($1, $3, $5);
 			nd_set_line($$, $<num>4);
 		    /*%
-			$$ = dispatch3(call, $1, TOKEN2VAL(tCOLON2), $3);
+			$$ = dispatch3(call, $1, ID2VAL(idCOLON2), $3);
 			$$ = method_optarg($$, $5);
 		    %*/
 		    }
@@ -3533,7 +3535,7 @@ method_call	: fcall paren_args
 		    /*%%%*/
 			$$ = NEW_CALL($1, $3, 0);
 		    /*%
-			$$ = dispatch3(call, $1, TOKEN2VAL(tCOLON2), $3);
+			$$ = dispatch3(call, $1, ID2VAL(idCOLON2), $3);
 		    %*/
 		    }
 		| primary_value call_op
@@ -4163,7 +4165,7 @@ numeric 	: simple_numeric
 			$$ = $2;
 			$$->nd_lit = negate_lit($$->nd_lit);
 		    /*%
-			$$ = dispatch2(unary, TOKEN2VAL(tUMINUS), $2);
+			$$ = dispatch2(unary, ID2VAL(idUMinus), $2);
 		    %*/
 		    }
 		;
@@ -4873,14 +4875,14 @@ call_op 	: '.'
 		    }
 		| tANDDOT
 		    {
-			$$ = TOKEN2VAL(tANDDOT);
+			$$ = ID2VAL(idANDDOT);
 		    }
 		;
 
 call_op2	: call_op
 		| tCOLON2
 		    {
-			$$ = TOKEN2VAL(tCOLON2);
+			$$ = ID2VAL(idCOLON2);
 		    }
 		;
 
