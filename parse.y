@@ -417,7 +417,7 @@ static NODE *new_if_gen(struct parser_params*,NODE*,NODE*,NODE*);
 #define new_unless(cc,left,right) new_if_gen(parser, (cc), (right), (left))
 static NODE *logop_gen(struct parser_params*,enum node_type,NODE*,NODE*);
 #define logop(type,node1,node2) \
-    logop_gen(parser, (type)==tAND||(type)==tANDOP?NODE_AND:NODE_OR, \
+    logop_gen(parser, (type)==tAND||(type)==(enum ruby_method_ids)tANDOP?NODE_AND:NODE_OR, \
 	      (node1), (node2))
 
 static NODE *newline_node(NODE*);
@@ -2152,7 +2152,7 @@ arg		: lhs '=' arg_rhs
 		    }
 		| arg tGEQ arg
 		    {
-			$$ = call_bin_op($1, TOKEN2ID(tGEQ), $3);
+			$$ = call_bin_op($1, TOKEN2ID((enum ruby_method_ids)tGEQ), $3);
 		    }
 		| arg '<' arg
 		    {
@@ -2200,11 +2200,11 @@ arg		: lhs '=' arg_rhs
 		    }
 		| arg tANDOP arg
 		    {
-			$$ = logop(tANDOP, $1, $3);
+			$$ = logop((enum ruby_method_ids)tANDOP, $1, $3);
 		    }
 		| arg tOROP arg
 		    {
-			$$ = logop(tOROP, $1, $3);
+			$$ = logop((enum ruby_method_ids)tOROP, $1, $3);
 		    }
 		| keyword_defined opt_nl {in_defined = 1;} arg
 		    {
@@ -7949,7 +7949,7 @@ parser_yylex(struct parser_params *parser)
 		c = tDSTAR;
 	    }
 	    else {
-		c = warn_balanced(tPOW, "**", "argument prefix");
+		c = warn_balanced((enum ruby_method_ids)tPOW, "**", "argument prefix");
 	    }
 	}
 	else {
@@ -8073,7 +8073,7 @@ parser_yylex(struct parser_params *parser)
 		return tOP_ASGN;
 	    }
 	    pushback(c);
-	    return warn_balanced(tLSHFT, "<<", "here document");
+	    return warn_balanced((enum ruby_method_ids)tLSHFT, "<<", "here document");
 	}
 	pushback(c);
 	return '<';
