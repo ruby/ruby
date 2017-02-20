@@ -2876,7 +2876,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *cond,
 				     else_label);
 	    break;
 	}
-      case NODE_LIT:		/* NODE_LIT is always not true */
+      case NODE_LIT:		/* NODE_LIT is always true */
       case NODE_TRUE:
       case NODE_STR:
       case NODE_DSTR:
