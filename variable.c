@@ -976,6 +976,7 @@ gen_ivtbl_get(VALUE obj, struct gen_ivtbl **ivtbl)
 }
 
 /* for backwards compatibility only */
+NORETURN(st_table *rb_generic_ivar_table(VALUE));
 st_table*
 rb_generic_ivar_table(VALUE obj)
 {
@@ -1008,7 +1009,6 @@ rb_generic_ivar_table(VALUE obj)
     return a.tbl;
 #else
     DEPRECATED_INTERNAL_FEATURE("rb_generic_ivar_table()");
-    return 0;
 #endif
 }
 
