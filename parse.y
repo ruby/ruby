@@ -786,7 +786,7 @@ static VALUE parser_heredoc_dedent(struct parser_params*,VALUE);
 #define FIXME 0
 
 #else
-#define ID2VAL(id) (id)
+#define ID2VAL(id) ((VALUE)(id))
 #define TOKEN2VAL(t) ID2VAL(t)
 #endif /* RIPPER */
 
