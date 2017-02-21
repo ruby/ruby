@@ -61,6 +61,10 @@ class TestObject < Test::Unit::TestCase
     assert_raise(ArgumentError) {true.clone(freeze: false)}
     assert_raise(ArgumentError) {nil.clone(freeze: false)}
     assert_raise(ArgumentError) {false.clone(freeze: false)}
+    x = EnvUtil.labeled_class("\u{1f4a9}").new
+    assert_raise_with_message(ArgumentError, /\u{1f4a9}/) do
+      Object.new.clone(freeze: x)
+    end
   end
 
   def test_init_dupclone
