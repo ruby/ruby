@@ -24,6 +24,17 @@ DECLARE_DEPRECATED_FEATURE(2.2, rb_str_associated);
 DECLARE_DEPRECATED_FEATURE(2.2, rb_clear_cache);
 DECLARE_DEPRECATED_FEATURE(2.2, rb_frame_pop);
 
+#define DECLARE_DEPRECATED_INTERNAL_FEATURE(func) \
+    NORETURN(ERRORFUNC(("deprecated internal function"), DEPRECATED(void func(void))))
+
+/* error.c */
+DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_compile_error);
+DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_compile_error_with_enc);
+DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_compile_error_append);
+
+/* struct.c */
+DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_struct_ptr);
+
 /* from version.c */
 #ifndef RUBY_SHOW_COPYRIGHT_TO_DIE
 # define RUBY_SHOW_COPYRIGHT_TO_DIE 1

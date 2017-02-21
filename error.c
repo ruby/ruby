@@ -130,24 +130,6 @@ rb_syntax_error_append(VALUE exc, VALUE file, int line, int column,
 }
 
 void
-rb_compile_error_with_enc(const char *file, int line, void *enc, const char *fmt, ...)
-{
-    DEPRECATED_INTERNAL_FEATURE("rb_compile_error_with_enc()");
-}
-
-void
-rb_compile_error(const char *file, int line, const char *fmt, ...)
-{
-    DEPRECATED_INTERNAL_FEATURE("rb_compile_error()");
-}
-
-void
-rb_compile_error_append(const char *fmt, ...)
-{
-    DEPRECATED_INTERNAL_FEATURE("rb_compile_error_append()");
-}
-
-void
 ruby_deprecated_internal_feature(const char *func)
 {
     rb_print_backtrace();
