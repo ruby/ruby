@@ -976,6 +976,9 @@ gen_ivtbl_get(VALUE obj, struct gen_ivtbl **ivtbl)
 }
 
 /* for backwards compatibility only */
+#ifdef __GNUC__
+NORETURN(st_table *rb_generic_ivar_table(VALUE obj));
+#endif
 st_table*
 rb_generic_ivar_table(VALUE obj)
 {
