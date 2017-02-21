@@ -20,6 +20,9 @@ DECLARE_DEPRECATED_FEATURE(2.2, rb_hash_ifnone);
 DECLARE_DEPRECATED_FEATURE(2.2, rb_str_associate);
 DECLARE_DEPRECATED_FEATURE(2.2, rb_str_associated);
 
+/* variable.c */
+DEPRECATED(void rb_autoload(VALUE, ID, const char*));
+
 /* vm.c */
 DECLARE_DEPRECATED_FEATURE(2.2, rb_clear_cache);
 DECLARE_DEPRECATED_FEATURE(2.2, rb_frame_pop);

@@ -902,7 +902,6 @@ VALUE rb_path_to_class(VALUE);
 VALUE rb_path2class(const char*);
 void rb_name_class(VALUE, ID);
 VALUE rb_class_name(VALUE);
-DEPRECATED(void rb_autoload(VALUE, ID, const char*));
 VALUE rb_autoload_load(VALUE, ID);
 VALUE rb_autoload_p(VALUE, ID);
 VALUE rb_f_trace_var(int, const VALUE*);
