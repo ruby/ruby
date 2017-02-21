@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'net/smtp'
 require 'test/unit'
 
@@ -6,6 +6,11 @@ module Net
   class TestSSLSocket < Test::Unit::TestCase
     class MySMTP < SMTP
       attr_accessor :fake_tcp, :fake_ssl
+
+      def initialize(*args)
+        super(*args)
+        @open_timeout = nil
+      end
 
       def tcp_socket address, port
         fake_tcp

@@ -1,9 +1,9 @@
 = RubySpec
 
-RubySpec (http://rubyspec.org) provides the annotation of the Ruby
-implementation in an executable format.  The make task
-`update-rubyspec' retrieves the specification and puts it into this
-directory.
+RubySpec (http://ruby.github.io/rubyspec.github.io/) provides the
+annotation of the Ruby implementation in an executable format.  The
+make task `update-rubyspec' retrieves the specification and puts it
+into this directory.
 
 == Directory structure
  spec

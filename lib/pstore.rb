@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 # = PStore -- Transactional File Storage for Ruby Objects
 #
 # pstore.rb -
@@ -8,7 +8,7 @@
 #
 # See PStore for documentation.
 
-require "digest/md5"
+require "digest"
 
 #
 # PStore implements a file based persistence mechanism based on a Hash.  User
@@ -128,7 +128,7 @@ class PStore
     @abort = false
     @ultra_safe = false
     @thread_safe = thread_safe
-    @lock = Mutex.new
+    @lock = Thread::Mutex.new
   end
 
   # Raises PStore::Error if the calling code is not in a PStore#transaction.
@@ -335,7 +335,7 @@ class PStore
             save_data(checksum, original_data_size, file)
           end
         ensure
-          file.close if !file.closed?
+          file.close
         end
       else
         # This can only occur if read_only == true.
@@ -352,7 +352,12 @@ class PStore
 
   private
   # Constant for relieving Ruby's garbage collector.
-  CHECKSUM_ALGO = Digest::MD5
+  CHECKSUM_ALGO = %w[SHA512 SHA384 SHA256 SHA1 RMD160 MD5].each do |algo|
+    begin
+      break Digest(algo)
+    rescue LoadError
+    end
+  end
   EMPTY_STRING = ""
   EMPTY_MARSHAL_DATA = Marshal.dump({})
   EMPTY_MARSHAL_CHECKSUM = CHECKSUM_ALGO.digest(EMPTY_MARSHAL_DATA)
@@ -390,7 +395,7 @@ class PStore
   # Load the given PStore file.
   # If +read_only+ is true, the unmarshalled Hash will be returned.
   # If +read_only+ is false, a 3-tuple will be returned: the unmarshalled
-  # Hash, an MD5 checksum of the data, and the size of the data.
+  # Hash, a checksum of the data, and the size of the data.
   def load_data(file, read_only)
     if read_only
       begin

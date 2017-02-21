@@ -311,7 +311,7 @@ AS_IF([test -z "$target_alias" -a -n "$os_version_style_transform"],
 AC_DEFUN([RUBY_APPEND_OPTION],
 	[# RUBY_APPEND_OPTION($1)
 	AS_CASE([" [$]{$1-} "],
-	[*' $2 '*], [], ['  '], [ $1="$2"], [ $1="[$]$1 $2"])])
+	[*" $2 "*], [], ['  '], [ $1="$2"], [ $1="[$]$1 $2"])])
 AC_DEFUN([RUBY_APPEND_OPTIONS],
 	[# RUBY_APPEND_OPTIONS($1)
 	for rb_opt in $2; do
@@ -321,7 +321,7 @@ AC_DEFUN([RUBY_APPEND_OPTIONS],
 AC_DEFUN([RUBY_PREPEND_OPTION],
 	[# RUBY_PREPEND_OPTION($1)
 	AS_CASE([" [$]{$1-} "],
-	[*' $2 '*], [], ['  '], [ $1="$2"], [ $1="$2 [$]$1"])])
+	[*" $2 "*], [], ['  '], [ $1="$2"], [ $1="$2 [$]$1"])])
 AC_DEFUN([RUBY_PREPEND_OPTIONS],
 	[# RUBY_PREPEND_OPTIONS($1)
 	unset rb_opts; for rb_opt in $2; do
@@ -536,8 +536,10 @@ for option in --version -v -V -qversion; do
     AS_CASE($cc_version_status, [0], [:], [continue])
     AS_CASE($cc_version_message, [*Warning*], [continue])
     cc_version='$(CC) '$option
+    break
 done
 AC_SUBST(CC_VERSION, $cc_version)
+AC_SUBST(CC_VERSION_MESSAGE, $cc_version_message)
 
 RUBY_UNIVERSAL_ARCH
 if test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" = no -a "$universal_binary" = no; then
@@ -638,18 +640,20 @@ AC_DEFUN([RUBY_DTRACE_AVAILABLE],
 [AC_CACHE_CHECK(whether dtrace USDT is available, rb_cv_dtrace_available,
 [
     echo "provider conftest{ probe fire(); };" > conftest_provider.d
-    if $DTRACE -h -o conftest_provider.h -s conftest_provider.d >/dev/null 2>/dev/null; then
-      AC_TRY_COMPILE([@%:@include "conftest_provider.h"], [CONFTEST_FIRE();], [
+    rb_cv_dtrace_available=no
+    AS_FOR(opt, rb_dtrace_opt, ["-xnolibs" ""], [dnl
+	AS_IF([$DTRACE opt -h -o conftest_provider.h -s conftest_provider.d >/dev/null 2>/dev/null],
+	    [], [continue])
+	AC_TRY_COMPILE([@%:@include "conftest_provider.h"], [CONFTEST_FIRE();],
+	    [], [continue])
 	# DTrace is available on the system
-	rb_cv_dtrace_available=yes
-      ], [rb_cv_dtrace_available=no])
-    else
-      # DTrace is not available while dtrace command exists
-      # for example FreeBSD 8 or FreeBSD 9 without DTrace build option
-      rb_cv_dtrace_available=no
-    fi
+	rb_cv_dtrace_available=yes${rb_dtrace_opt:+"(opt)"}
+	break
+    ])
     rm -f conftest.[co] conftest_provider.[dho]
 ])
+AS_CASE(["$rb_cv_dtrace_available"], ["yes("*")"],
+    [DTRACE_OPT=`expr "$rb_cv_dtrace_available" : "yes(\(.*\))"`])
 ])
 
 AC_DEFUN([RUBY_DTRACE_POSTPROCESS],
@@ -662,13 +666,13 @@ AC_DEFUN([RUBY_DTRACE_POSTPROCESS],
       probe fire();
     };
 _PROBES
-    $DTRACE -h -o conftest_provider.h -s conftest_provider.d >/dev/null 2>/dev/null &&
+    $DTRACE ${DTRACE_OPT} -h -o conftest_provider.h -s conftest_provider.d >/dev/null 2>/dev/null &&
     :
   }; then
     AC_TRY_COMPILE([@%:@include "conftest_provider.h"], [CONFTEST_FIRE();], [
 	if {
 	    cp -p conftest.${ac_objext} conftest.${ac_objext}.save &&
-	    $DTRACE -G -s conftest_provider.d conftest.${ac_objext} 2>/dev/null &&
+	    $DTRACE ${DTRACE_OPT} -G -s conftest_provider.d conftest.${ac_objext} 2>/dev/null &&
 	    :
 	}; then
 	    if cmp -s conftest.o conftest.${ac_objext}.save; then
@@ -804,6 +808,8 @@ AC_DEFUN([RUBY_TRY_LDFLAGS], [
     save_LDFLAGS=
 ])
 
+: ${DLDFLAGS="$LDFLAGS"}
+
 AS_CASE([$RUBY_PATCHLEVEL], [-*],
 	[particular_werror_flags=yes], [particular_werror_flags=no])
 AC_ARG_ENABLE(werror,
@@ -820,7 +826,7 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
     else
 	extra_warning=
     fi
-    if test $gcc_major -eq 5; then
+    if test $gcc_major -ge 5 -a $gcc_major -le 6; then
 	extra_warning="$extra_warning -Wno-maybe-uninitialized"
     fi
     for wflag in -Wno-unused-parameter -Wno-parentheses -Wno-long-long \
@@ -842,6 +848,7 @@ if test "$GCC:${warnflags+set}:no" = yes::no; then
 		 -Wno-packed-bitfield-compat \
 		 -Wsuggest-attribute=noreturn \
 		 -Wsuggest-attribute=format \
+		 -Wimplicit-fallthrough=0 \
 		 $extra_warning \
 		 ; do
 	if test "$particular_werror_flags" != yes; then
@@ -883,6 +890,11 @@ for n in infinity nan; do
     fi
 done
 
+AC_ARG_WITH(compress-debug-sections,
+	AS_HELP_STRING([--with-compress-debug-sections=type],
+	    [enable debug section compression]),
+	[compress_debug_sections=$withval], [compress_debug_sections=])
+
 if test "$GCC" = yes; then
     # NaCl's glibc build generates undefined references to __memset_chk.
     # TODO(sbc): Remove this once NaCl's glibc is fixed.
@@ -910,6 +922,16 @@ if test "$GCC" = yes; then
 	RUBY_APPEND_OPTION(XCFLAGS, -fstack-protector)
 	RUBY_APPEND_OPTION(XLDFLAGS, -fstack-protector)
 	RUBY_APPEND_OPTION(LDFLAGS, -fstack-protector)
+    fi
+
+    AS_CASE("${compress_debug_sections:-zlib}",
+    [none|no], [], [
+    RUBY_TRY_LDFLAGS(${linker_flag}--compress-debug-sections=${compress_debug_sections:-zlib},
+		     [compress_debug_sections=${compress_debug_sections:-zlib}],
+		     [compress_debug_sections=no])
+    ])
+    if test "x$compress_debug_sections" != xno; then
+	RUBY_APPEND_OPTION(DLDFLAGS, ${linker_flag}--compress-debug-sections=$compress_debug_sections)
     fi
 
     AS_CASE(["$target_os"],[mingw*], [
@@ -1227,7 +1249,10 @@ main()
                 ac_cv_func_clock_gettime=yes
                 ac_cv_func_clock_getres=yes
 		ac_cv_func_malloc_usable_size=no
-		{ test "$target_cpu" = x64 && ac_cv_func___builtin_setjmp=no; }
+		AS_IF([test "$target_cpu" = x64], [
+		    ac_cv_func___builtin_setjmp=no
+		    ac_cv_func_round=no
+		])
 		AC_CHECK_TYPE([NET_LUID], [], [],
 			      [@%:@include <winsock2.h>
 			      @%:@include <iphlpapi.h>])
@@ -1310,6 +1335,7 @@ AC_CHECK_HEADERS(sys/select.h)
 AC_CHECK_HEADERS(sys/sendfile.h)
 AC_CHECK_HEADERS(sys/socket.h)
 AC_CHECK_HEADERS(sys/syscall.h)
+AC_CHECK_HEADERS(sys/sysmacros.h)
 AC_CHECK_HEADERS(sys/time.h)
 AC_CHECK_HEADERS(sys/times.h)
 AC_CHECK_HEADERS(sys/uio.h)
@@ -1327,15 +1353,13 @@ AC_ARG_WITH([gmp],
 AS_IF([test "x$with_gmp" != xno],
   [AC_CHECK_HEADERS(gmp.h)
    AS_IF([test "x$ac_cv_header_gmp_h" != xno],
-     AC_CHECK_LIB([gmp], [__gmpz_init]))
-   with_gmp="$ac_cv_lib_gmp___gmpz_init"
-   AS_IF([test -z "$with_gmp"], [with_gmp=no])])
+     AC_SEARCH_LIBS([__gmpz_init], [gmp]))])
 
 AC_ARG_WITH([jemalloc],
   [AS_HELP_STRING([--with-jemalloc],[use jemalloc allocator])],
   [with_jemalloc=$withval], [with_jemalloc=no])
 AS_IF([test "x$with_jemalloc" = xyes],[
-  AC_CHECK_LIB([jemalloc], [malloc_conf], [], [with_jemalloc=no])
+  AC_SEARCH_LIBS([malloc_conf], [jemalloc], [], [with_jemalloc=no])
   AC_CHECK_HEADER(jemalloc/jemalloc.h, [
     AC_DEFINE(RUBY_ALTERNATIVE_MALLOC_HEADER, [<jemalloc/jemalloc.h>])
   ])
@@ -1809,7 +1833,7 @@ AS_VAR_POPDEF([rbcv])dnl
 dnl RUBY_FUNC_ATTRIBUTE(attrib, macroname, cachevar, condition)
 AC_DEFUN([RUBY_FUNC_ATTRIBUTE], [dnl
     RUBY_DECL_ATTRIBUTE([$1], [$2], [$3], [$4],
-	[function], [@%:@define x void conftest_attribute_check(void)]
+	[function], [@%:@define x int conftest_attribute_check(void)]
     )
 ])
 
@@ -1829,6 +1853,8 @@ RUBY_FUNC_ATTRIBUTE(__deprecated__("by "@%:@n), DEPRECATED_BY(n,x), rb_cv_func_d
 RUBY_TYPE_ATTRIBUTE(__deprecated__ mesg, DEPRECATED_TYPE(mesg,x), rb_cv_type_deprecated)
 RUBY_FUNC_ATTRIBUTE(__noinline__, NOINLINE)
 RUBY_FUNC_ATTRIBUTE(__always_inline__, ALWAYS_INLINE)
+RUBY_FUNC_ATTRIBUTE(__warn_unused_result__, WARN_UNUSED_RESULT)
+RUBY_FUNC_ATTRIBUTE(__unused__, MAYBE_UNUSED)
 RUBY_FUNC_ATTRIBUTE(__error__ mesg, ERRORFUNC(mesg,x), rb_cv_func___error__)
 RUBY_FUNC_ATTRIBUTE(__warning__ mesg, WARNINGFUNC(mesg,x), rb_cv_func___warning__)
 RUBY_FUNC_ATTRIBUTE(__weak__, WEAK, rb_cv_func_weak)
@@ -2448,6 +2474,8 @@ main(int argc, char **argv)
 ])
 
 AS_IF([test "$ac_cv_func_crypt_r" = yes],
+    [AC_CHECK_HEADERS(crypt.h)])
+AS_IF([test "$ac_cv_func_crypt_r:$ac_cv_header_crypt_h" = yes:yes],
     [AC_CHECK_MEMBERS([struct crypt_data.initialized], [], [],
 		      [AC_INCLUDES_DEFAULT([@%:@include <crypt.h>])])])
 
@@ -2470,6 +2498,9 @@ RUBY_CHECK_BUILTIN_FUNC(__builtin_clzl, [__builtin_clzl(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_clzll, [__builtin_clzll(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_ctz, [__builtin_ctz(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_ctzll, [__builtin_ctzll(0)])
+RUBY_CHECK_BUILTIN_FUNC(__builtin_add_overflow, [int x;__builtin_add_overflow(0,0,&x)])
+RUBY_CHECK_BUILTIN_FUNC(__builtin_sub_overflow, [int x;__builtin_sub_overflow(0,0,&x)])
+RUBY_CHECK_BUILTIN_FUNC(__builtin_mul_overflow, [int x;__builtin_mul_overflow(0,0,&x)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_constant_p, [__builtin_constant_p(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_choose_expr, [
     [int x[__extension__(__builtin_choose_expr(1, 1, -1))]];
@@ -3814,7 +3845,7 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
 	],
     [linux* | gnu* | k*bsd*-gnu | atheos* | kopensolaris*-gnu | haiku*], [
-	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)'" $LDFLAGS_OPTDIR"
+	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)' "$LDFLAGS_OPTDIR"])
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
 	if test "$load_relative" = yes; then
 	    libprefix="'\$\${ORIGIN}/../${libdir_basename}'"
@@ -3833,7 +3864,7 @@ AS_CASE("$enable_shared", [yes], [
     [netbsd*], [
 	SOLIBS='$(LIBS)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR).$(TEENY)'
-	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR)'" $LDFLAGS_OPTDIR"
+	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR)' "$LDFLAGS_OPTDIR"])
 	if test "$rb_cv_binary_elf" = yes; then # ELF platforms
 	   LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR) lib$(RUBY_SO_NAME).so'
 	else	# a.out platforms
@@ -3861,7 +3892,7 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).sl.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).sl'
 	],
     [aix*], [
-	LIBRUBY_DLDFLAGS="${linker_flag}-bnoentry $XLDFLAGS $LDFLAGS_OPTDIR"
+	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ["${linker_flag}-bnoentry" "$XLDFLAGS" "$LDFLAGS_OPTDIR"])
 	LIBRUBYARG_SHARED='-L${libdir} -l${RUBY_SO_NAME}'
 	SOLIBS='-lm -lc'
 	],
@@ -3873,8 +3904,8 @@ AS_CASE("$enable_shared", [yes], [
 	    LIBRUBY_RELATIVE=yes
 	fi
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-install_name '${libprefix}'/$(LIBRUBY_SO)'
-	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-current_version $(MAJOR).$(MINOR)'
-	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-compatibility_version $(RUBY_PROGRAM_VERSION)'
+	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-compatibility_version $(MAJOR).$(MINOR)'
+	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-current_version $(RUBY_PROGRAM_VERSION)'
 	if test "$visibility_option" = ld; then
 	    LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,_Init_*'
 	    LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,_ruby_static_id_*'
@@ -3962,48 +3993,46 @@ AC_ARG_ENABLE(dtrace,
         [enable DTrace for tracing inside ruby. enabled by default on systems having dtrace]),
         [enable_dtrace=$enableval], [enable_dtrace=auto])
 
-if test "${enable_dtrace}" = "auto"; then
-    if test x"$DTRACE" != x -a x"$cross_compiling" != xyes; then
-        RUBY_DTRACE_AVAILABLE()
-        enable_dtrace=$rb_cv_dtrace_available
-    else
-        enable_dtrace=no
-    fi
-fi
-
 LIBRUBY_A_OBJS='$(OBJS)'
 DTRACE_REBUILD=
-if test "${enable_dtrace}" = "yes"; then
-    if test -z "$DTRACE"; then
-        AC_MSG_ERROR([dtrace(1) is missing])
-    elif test "$cross_compiling" = yes; then
-        AC_MSG_ERROR([--enable-dtrace, however, cross compiling])
-    else
-        RUBY_DTRACE_AVAILABLE()
-        enable_dtrace=$rb_cv_dtrace_available
-        if test "${enable_dtrace}" = "no"; then
-            AC_MSG_ERROR([--enable-dtrace, however, USDT is not available])
-        fi
-        RUBY_DTRACE_POSTPROCESS()
-        if test "$rb_cv_prog_dtrace_g" != 'no'; then
-            DTRACE_OBJ='probes.$(OBJEXT)'
-        fi
-        if test "$rb_cv_prog_dtrace_g" = 'rebuild'; then
-            DTRACE_REBUILD=yes
-            LIBRUBY_A_OBJS='$(DTRACE_GLOMMED_OBJ)'
-        fi
-        AS_CASE("${target_os}", [freebsd*], [
-            # FreeBSD's dtrace requires libelf
-            LIBS="-lelf $LIBS"
-        ])
-    fi
+AS_CASE(["${enable_dtrace}"],
+[yes|auto], [
+    RUBY_DTRACE_AVAILABLE()
+], [
+    rb_cv_dtrace_available=no
+])
+AS_IF([test "${enable_dtrace}" = yes], [dnl
+    AS_IF([test -z "$DTRACE"], [dnl
+	AC_MSG_ERROR([dtrace(1) is missing])
+    ], [test "$cross_compiling" = yes], [dnl
+	AC_MSG_ERROR([--enable-dtrace, however, cross compiling])
+    ], [test "${rb_cv_dtrace_available}" = "no"], [dnl
+       AC_MSG_ERROR([--enable-dtrace, however, USDT is not available])
+    ])
+])
+AS_CASE([$rb_cv_dtrace_available],
+[yes*], [dnl
+    RUBY_DTRACE_POSTPROCESS()
+    AS_IF([test "$rb_cv_prog_dtrace_g" != no], [dnl
+	DTRACE_OBJ='probes.$(OBJEXT)'
+    ])
+    AS_IF([test "$rb_cv_prog_dtrace_g" = rebuild], [dnl
+	DTRACE_REBUILD=yes
+	LIBRUBY_A_OBJS='$(DTRACE_GLOMMED_OBJ)'
+    ])
+    AS_CASE("${target_os}", [freebsd*], [dnl
+        # FreeBSD's dtrace requires libelf
+        LIBS="-lelf $LIBS"
+    ])
     DTRACE_EXT=d
-else
+], [dnl
+    enable_dtrace=no
     DTRACE_EXT=dmyh
-fi
+])
 AC_SUBST(DTRACE_EXT)
 AC_SUBST(DTRACE_OBJ)
 AC_SUBST(DTRACE_REBUILD)
+AC_SUBST(DTRACE_OPT)
 AC_SUBST(LIBRUBY_A_OBJS)
 
 RUBY_SETJMP_TYPE
@@ -4044,6 +4073,14 @@ AC_SUBST(CAPITARGET)
 
 AS_CASE(["$RDOCTARGET:$CAPITARGET"],[nodoc:nodoc],[INSTALLDOC=nodoc],[INSTALLDOC=all])
 AC_SUBST(INSTALLDOC)
+
+AC_ARG_ENABLE(install-static-library,
+	AS_HELP_STRING([--disable-install-static-library], [do not install static ruby library]),
+	[INSTALL_STATIC_LIBRARY=$enableval],
+	AS_IF([test x"$enable_shared" = xyes],
+	    [INSTALL_STATIC_LIBRARY=no],
+	    [INSTALL_STATIC_LIBRARY=yes]))
+AC_SUBST(INSTALL_STATIC_LIBRARY)
 
 if test "$rb_with_pthread" = "yes"; then
     THREAD_MODEL=pthread
@@ -4139,12 +4176,6 @@ AS_CASE(["$target_os"],
     [nacl], [
 	FIRSTMAKEFILE=GNUmakefile:nacl/GNUmakefile.in
 	])
-
-AS_CASE(["$with_gmp: $SOLIBS "], [no:* | *' -lgmp '*|*' $(LIBS) '*], [],
-	[SOLIBS="-lgmp $SOLIBS"])
-
-AS_CASE(["$with_jemalloc: $LIBS "], [no:* | *' -ljemalloc '*], [],
-	[LIBS="-ljemalloc $LIBS"])
 
 MINIOBJS="$MINIDLNOBJ"
 

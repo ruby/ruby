@@ -1031,7 +1031,7 @@ if __FILE__ == $0
   VERBOSE_MODE = verbose_mode
 
   OUTPUT_FILENAME = output_filename
-  OUTPUT_PREFIX = output_filename ? File.basename(output_filename)[/\A[A-Za-z0-9_]*/] : ""
+  OUTPUT_PREFIX = output_filename ? File.basename(output_filename)[/\A[A-Za-z0-9_]*/] : "".dup
   OUTPUT_PREFIX.sub!(/\A_+/, '')
   OUTPUT_PREFIX.sub!(/_*\z/, '_')
 

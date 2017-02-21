@@ -1212,6 +1212,20 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_empty?
+    with_tmpchdir('rubytest-pathname') {|dir|
+      open("nonemptyfile", "w") {|f| f.write "abc" }
+      open("emptyfile", "w") {|f| }
+      Dir.mkdir("nonemptydir")
+      open("nonemptydir/somefile", "w") {|f| }
+      Dir.mkdir("emptydir")
+      assert_equal(true, Pathname("emptyfile").empty?)
+      assert_equal(false, Pathname("nonemptyfile").empty?)
+      assert_equal(true, Pathname("emptydir").empty?)
+      assert_equal(false, Pathname("nonemptydir").empty?)
+    }
+  end
+
   def test_s_glob
     with_tmpchdir('rubytest-pathname') {|dir|
       open("f", "w") {|f| f.write "abc" }

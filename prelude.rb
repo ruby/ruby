@@ -1,5 +1,6 @@
 class Thread
-  MUTEX_FOR_THREAD_EXCLUSIVE = Mutex.new # :nodoc:
+  MUTEX_FOR_THREAD_EXCLUSIVE = Thread::Mutex.new # :nodoc:
+  private_constant :MUTEX_FOR_THREAD_EXCLUSIVE
 
   # call-seq:
   #    Thread.exclusive { block }   => obj
@@ -8,7 +9,7 @@ class Thread
   # value of the block. A thread executing inside the exclusive section will
   # only block other threads which also use the Thread.exclusive mechanism.
   def self.exclusive
-    warn "Thread.exclusive is deprecated, use Mutex", caller
+    warn "Thread.exclusive is deprecated, use Thread::Mutex", caller
     MUTEX_FOR_THREAD_EXCLUSIVE.synchronize{
       yield
     }
@@ -98,7 +99,7 @@ class IO
   #
   #   # write_nonblock writes only 65536 bytes and return 65536.
   #   # (The pipe size is 65536 bytes on this environment.)
-  #   s = "a"  #100000
+  #   s = "a" * 100000
   #   p w.write_nonblock(s)     #=> 65536
   #
   #   # write_nonblock cannot write a byte and raise EWOULDBLOCK (EAGAIN).
@@ -130,5 +131,12 @@ class IO
   # return the symbol :wait_writable instead.
   def write_nonblock(buf, exception: true)
     __write_nonblock(buf, exception)
+  end
+end
+
+class Binding
+  def irb
+    require 'irb'
+    irb
   end
 end

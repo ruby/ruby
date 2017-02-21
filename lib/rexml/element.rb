@@ -551,6 +551,30 @@ module REXML
     # Attributes                                    #
     #################################################
 
+    # Fetches an attribute value or a child.
+    #
+    # If String or Symbol is specified, it's treated as attribute
+    # name. Attribute value as String or +nil+ is returned. This case
+    # is shortcut of +attributes[name]+.
+    #
+    # If Integer is specified, it's treated as the index of
+    # child. It returns Nth child.
+    #
+    #   doc = REXML::Document.new("<a attr='1'><b/><c/></a>")
+    #   doc.root["attr"]             # => "1"
+    #   doc.root.attributes["attr"]  # => "1"
+    #   doc.root[1]                  # => <c/>
+    def [](name_or_index)
+      case name_or_index
+      when String
+        attributes[name_or_index]
+      when Symbol
+        attributes[name_or_index.to_s]
+      else
+        super
+      end
+    end
+
     def attribute( name, namespace=nil )
       prefix = nil
       if namespaces.respond_to? :key

@@ -7,8 +7,8 @@ module Gem::Resolver::Molinillo
     class AddEdgeNoCircular < Action
       # @!group Action
 
-      # (see Action.name)
-      def self.name
+      # (see Action.action_name)
+      def self.action_name
         :add_vertex
       end
 

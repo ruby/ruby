@@ -1,4 +1,5 @@
 # frozen_string_literal: false
+require 'psych/versions'
 case RUBY_ENGINE
 when 'jruby'
   require 'psych_jars'
@@ -223,9 +224,6 @@ require 'psych/class_loader'
 #   # => "a"
 
 module Psych
-  # The version is Psych you're using
-  VERSION         = '2.1.0'
-
   # The version of libyaml Psych is using
   LIBYAML_VERSION = Psych.libyaml_version.join '.'
 

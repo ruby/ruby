@@ -315,6 +315,7 @@ module RSS
       assert_equal(link, item.link)
       assert_nil(item.description)
 
+      pubDate = Time.now
 
       item_size = 5
       rss = RSS::Maker.make("0.91") do |maker|
@@ -325,6 +326,7 @@ module RSS
             _item.title = "#{title}#{i}"
             _item.link = "#{link}#{i}"
             _item.description = "#{description}#{i}"
+            _item.date = pubDate - i
           end
         end
         maker.items.do_sort = true

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # = fileutils.rb
 #
@@ -47,7 +47,7 @@
 #
 # The <tt>options</tt> parameter is a hash of options, taken from the list
 # <tt>:force</tt>, <tt>:noop</tt>, <tt>:preserve</tt>, and <tt>:verbose</tt>.
-# <tt>:noop</tt> means that no changes are made.  The other two are obvious.
+# <tt>:noop</tt> means that no changes are made.  The other three are obvious.
 # Each method documents the options that it honours.
 #
 # All methods that have the concept of a "source" file or directory can take
@@ -201,6 +201,7 @@ module FileUtils
         stack.push path
         path = File.dirname(path)
       end
+      stack.pop                 # root directory should exist
       stack.reverse_each do |dir|
         begin
           fu_mkdir dir, mode
@@ -735,8 +736,8 @@ module FileUtils
   #
   def compare_stream(a, b)
     bsize = fu_stream_blksize(a, b)
-    sa = ""
-    sb = ""
+    sa = String.new(capacity: bsize)
+    sb = String.new(capacity: bsize)
     begin
       a.read(bsize, sa)
       b.read(bsize, sb)
@@ -1244,6 +1245,7 @@ module FileUtils
     end
 
     def copy(dest)
+      lstat
       case
       when file?
         copy_file dest
@@ -1431,9 +1433,9 @@ module FileUtils
     end
 
     if File::ALT_SEPARATOR
-      DIRECTORY_TERM = "(?=[/#{Regexp.quote(File::ALT_SEPARATOR)}]|\\z)".freeze
+      DIRECTORY_TERM = "(?=[/#{Regexp.quote(File::ALT_SEPARATOR)}]|\\z)"
     else
-      DIRECTORY_TERM = "(?=/|\\z)".freeze
+      DIRECTORY_TERM = "(?=/|\\z)"
     end
     SYSCASE = File::FNM_SYSCASE.nonzero? ? "-i" : ""
 

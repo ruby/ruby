@@ -40,12 +40,24 @@ class TestShellwords < Test::Unit::TestCase
   end
 
   def test_backslashes
-    cmdline, expected = [
-      %q{/a//b///c////d/////e/ "/a//b///c////d/////e/ "'/a//b///c////d/////e/ '/a//b///c////d/////e/ },
-      %q{a/b/c//d//e a/b/c//d//e /a//b///c////d/////e/ a/b/c//d//e }
-    ].map { |str| str.tr("/", "\\\\") }
 
-    assert_equal [expected], shellwords(cmdline)
+    [
+      [
+        %q{/a//b///c////d/////e/ "/a//b///c////d/////e/ "'/a//b///c////d/////e/ '/a//b///c////d/////e/ },
+        'a/b/c//d//e /a/b//c//d///e/ /a//b///c////d/////e/ a/b/c//d//e '
+      ],
+      [
+        %q{printf %s /"/$/`///"/r/n},
+        'printf', '%s', '"$`/"rn'
+      ],
+      [
+        %q{printf %s "/"/$/`///"/r/n"},
+        'printf', '%s', '"$`/"/r/n'
+      ]
+    ].map { |strs|
+      cmdline, *expected = strs.map { |str| str.tr("/", "\\\\") }
+      assert_equal expected, shellwords(cmdline)
+    }
   end
 
   def test_stringification

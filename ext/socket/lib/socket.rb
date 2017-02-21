@@ -71,7 +71,7 @@ class Addrinfo
       begin
         yield sock
       ensure
-        sock.close if !sock.closed?
+        sock.close
       end
     else
       sock
@@ -110,10 +110,8 @@ class Addrinfo
   #     puts s.read
   #   }
   #
-  def connect_from(*args, &block)
-    opts = Hash === args.last ? args.pop : {}
-    local_addr_args = args
-    connect_internal(family_addrinfo(*local_addr_args), opts[:timeout], &block)
+  def connect_from(*args, timeout: nil, &block)
+    connect_internal(family_addrinfo(*args), timeout, &block)
   end
 
   # :call-seq:
@@ -135,8 +133,8 @@ class Addrinfo
   #     puts s.read
   #   }
   #
-  def connect(opts={}, &block)
-    connect_internal(nil, opts[:timeout], &block)
+  def connect(timeout: nil, &block)
+    connect_internal(nil, timeout, &block)
   end
 
   # :call-seq:
@@ -158,11 +156,9 @@ class Addrinfo
   #     puts s.read
   #   }
   #
-  def connect_to(*args, &block)
-    opts = Hash === args.last ? args.pop : {}
-    remote_addr_args = args
-    remote_addrinfo = family_addrinfo(*remote_addr_args)
-    remote_addrinfo.send(:connect_internal, self, opts[:timeout], &block)
+  def connect_to(*args, timeout: nil, &block)
+    remote_addrinfo = family_addrinfo(*args)
+    remote_addrinfo.send(:connect_internal, self, timeout, &block)
   end
 
   # creates a socket bound to self.
@@ -189,7 +185,7 @@ class Addrinfo
       begin
         yield sock
       ensure
-        sock.close if !sock.closed?
+        sock.close
       end
     else
       sock
@@ -212,7 +208,7 @@ class Addrinfo
       begin
         yield sock
       ensure
-        sock.close if !sock.closed?
+        sock.close
       end
     else
       sock
@@ -609,14 +605,9 @@ class Socket < BasicSocket
   #     puts sock.read
   #   }
   #
-  def self.tcp(host, port, *rest) # :yield: socket
-    opts = Hash === rest.last ? rest.pop : {}
-    raise ArgumentError, "wrong number of arguments (#{rest.length} for 2)" if 2 < rest.length
-    local_host, local_port = rest
+  def self.tcp(host, port, local_host = nil, local_port = nil, connect_timeout: nil) # :yield: socket
     last_error = nil
     ret = nil
-
-    connect_timeout = opts[:connect_timeout]
 
     local_addr_list = nil
     if local_host != nil || local_port != nil
@@ -626,14 +617,14 @@ class Socket < BasicSocket
     Addrinfo.foreach(host, port, nil, :STREAM) {|ai|
       if local_addr_list
         local_addr = local_addr_list.find {|local_ai| local_ai.afamily == ai.afamily }
-        next if !local_addr
+        next unless local_addr
       else
         local_addr = nil
       end
       begin
         sock = local_addr ?
-          ai.connect_from(local_addr, :timeout => connect_timeout) :
-          ai.connect(:timeout => connect_timeout)
+          ai.connect_from(local_addr, timeout: connect_timeout) :
+          ai.connect(timeout: connect_timeout)
       rescue SystemCallError
         last_error = $!
         next
@@ -641,7 +632,7 @@ class Socket < BasicSocket
       ret = sock
       break
     }
-    if !ret
+    unless ret
       if last_error
         raise last_error
       else
@@ -652,7 +643,7 @@ class Socket < BasicSocket
       begin
         yield ret
       ensure
-        ret.close if !ret.closed?
+        ret.close
       end
     else
       ret
@@ -676,7 +667,7 @@ class Socket < BasicSocket
         if reuseaddr
           s.setsockopt(:SOCKET, :REUSEADDR, 1)
         end
-        if !port
+        unless port
           s.bind(ai)
           port = s.local_address.ip_port
         else
@@ -684,10 +675,10 @@ class Socket < BasicSocket
         end
       }
     rescue Errno::EADDRINUSE
-      sockets.each {|s| s.close }
+      sockets.each(&:close)
       retry
     rescue Exception
-      sockets.each {|s| s.close }
+      sockets.each(&:close)
       raise
     end
     sockets
@@ -704,7 +695,7 @@ class Socket < BasicSocket
         s.listen(Socket::SOMAXCONN)
       }
     rescue Exception
-      sockets.each {|s| s.close }
+      sockets.each(&:close)
       raise
     end
     sockets
@@ -767,7 +758,7 @@ class Socket < BasicSocket
           raise last_error
         end
       rescue Exception
-        sockets.each {|s| s.close }
+        sockets.each(&:close)
         raise
       end
     end
@@ -775,7 +766,7 @@ class Socket < BasicSocket
       begin
         yield sockets
       ensure
-        sockets.each {|s| s.close if !s.closed? }
+        sockets.each(&:close)
       end
     else
       sockets
@@ -894,12 +885,12 @@ class Socket < BasicSocket
     Addrinfo.foreach(host, port, nil, :DGRAM, nil, Socket::AI_PASSIVE) {|ai|
       if ai.ipv4? && ai.ip_address == "0.0.0.0"
         local_addrs.each {|a|
-          next if !a.ipv4?
+          next unless a.ipv4?
           ip_list << Addrinfo.new(a.to_sockaddr, :INET, :DGRAM, 0);
         }
       elsif ai.ipv6? && ai.ip_address == "::" && !ipv6_recvpktinfo
         local_addrs.each {|a|
-          next if !a.ipv6?
+          next unless a.ipv6?
           ip_list << Addrinfo.new(a.to_sockaddr, :INET6, :DGRAM, 0);
         }
       else
@@ -936,7 +927,7 @@ class Socket < BasicSocket
       begin
         yield sockets
       ensure
-        sockets.each {|s| s.close if !s.closed? } if sockets
+        sockets.each(&:close) if sockets
       end
     else
       sockets
@@ -1073,7 +1064,7 @@ class Socket < BasicSocket
       begin
         yield sock
       ensure
-        sock.close if !sock.closed?
+        sock.close
       end
     else
       sock
@@ -1097,7 +1088,7 @@ class Socket < BasicSocket
   #   }
   #
   def self.unix_server_socket(path)
-    if !unix_socket_abstract_name?(path)
+    unless unix_socket_abstract_name?(path)
       begin
         st = File.lstat(path)
       rescue Errno::ENOENT
@@ -1111,8 +1102,8 @@ class Socket < BasicSocket
       begin
         yield s
       ensure
-        s.close if !s.closed?
-        if !unix_socket_abstract_name?(path)
+        s.close
+        unless unix_socket_abstract_name?(path)
           File.unlink path
         end
       end
@@ -1215,7 +1206,6 @@ class UDPSocket < IPSocket
   #
   # Receives up to _maxlen_ bytes from +udpsocket+ using recvfrom(2) after
   # O_NONBLOCK is set for the underlying file descriptor.
-  # If _maxlen_ is omitted, its default value is 65536.
   # _flags_ is zero or more of the +MSG_+ options.
   # The first element of the results, _mesg_, is the data received.
   # The second element, _sender_inet_addr_, is an array to represent the sender address.

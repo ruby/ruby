@@ -64,7 +64,6 @@ class RDoc::Markup::ToBs < RDoc::Markup::ToRdoc
   # Adds bold or underline mixed with backspaces
 
   def convert_string string
-    return string unless string.respond_to? :chars # your ruby is lame
     return string unless @in_b or @in_em
     chars = if @in_b then
               string.chars.map do |char| "#{char}\b#{char}" end
@@ -76,4 +75,3 @@ class RDoc::Markup::ToBs < RDoc::Markup::ToRdoc
   end
 
 end
-

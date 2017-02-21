@@ -63,7 +63,13 @@ define rp
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_OBJECT
     printf "%sT_OBJECT%s: ", $color_type, $color_end
-    print (struct RObject *)($arg0)
+    print ((struct RObject *)($arg0))->basic
+    if ($flags & ROBJECT_EMBED)
+      print/x *((VALUE*)((struct RObject*)($arg0))->as.ary) @ (ROBJECT_EMBED_LEN_MAX+0)
+    else
+      print (((struct RObject *)($arg0))->as.heap)
+      print/x *(((struct RObject*)($arg0))->as.heap.ivptr) @ (((struct RObject*)($arg0))->as.heap.numiv)
+    end
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_CLASS
     printf "%sT_CLASS%s%s: ", $color_type, ($flags & RUBY_FL_SINGLETON) ? "*" : "", $color_end
@@ -89,14 +95,15 @@ define rp
     set $regsrc = ((struct RRegexp*)($arg0))->src
     set $rsflags = ((struct RBasic*)$regsrc)->flags
     printf "%sT_REGEXP%s: ", $color_type, $color_end
-    set print address off
-    output (char *)(($rsflags & RUBY_FL_USER1) ? \
-	    ((struct RString*)$regsrc)->as.heap.ptr : \
-	    ((struct RString*)$regsrc)->as.ary)
-    set print address on
-    printf " len:%ld ", ($rsflags & RUBY_FL_USER1) ? \
+    set $len = ($rsflags & RUBY_FL_USER1) ? \
             ((struct RString*)$regsrc)->as.heap.len : \
             (($rsflags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
+    set print address off
+    output *(char *)(($rsflags & RUBY_FL_USER1) ? \
+	    ((struct RString*)$regsrc)->as.heap.ptr : \
+	    ((struct RString*)$regsrc)->as.ary) @ $len
+    set print address on
+    printf " len:%ld ", $len
     if $flags & RUBY_FL_USER6
       printf "(none) "
     end
@@ -151,28 +158,29 @@ define rp
     print (struct RHash *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_STRUCT
-    printf "%sT_STRUCT%s: len=%ld ", $color_type, $color_end, \
-      (($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) ? \
+    set $len = (($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) ? \
        ($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) >> (RUBY_FL_USHIFT+1) : \
        ((struct RStruct *)($arg0))->as.heap.len)
+    printf "%sT_STRUCT%s: len=%ld ", $color_type, $color_end, $len
     print (struct RStruct *)($arg0)
-    x/xw (($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) ? \
-          ((struct RStruct *)($arg0))->as.ary : \
-          ((struct RStruct *)($arg0))->as.heap.ptr)
+    output/x *(($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) ? \
+              ((struct RStruct *)($arg0))->as.ary : \
+              ((struct RStruct *)($arg0))->as.heap.ptr) @ $len
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_BIGNUM
-    printf "%sT_BIGNUM%s: sign=%d len=%ld ", $color_type, $color_end, \
-      (($flags & RUBY_FL_USER1) != 0), \
-      (($flags & RUBY_FL_USER2) ? \
+    set $len = (($flags & RUBY_FL_USER2) ? \
        ($flags & (RUBY_FL_USER5|RUBY_FL_USER4|RUBY_FL_USER3)) >> (RUBY_FL_USHIFT+3) : \
        ((struct RBignum*)($arg0))->as.heap.len)
+    printf "%sT_BIGNUM%s: sign=%d len=%ld ", $color_type, $color_end, \
+      (($flags & RUBY_FL_USER1) != 0), $len
     if $flags & RUBY_FL_USER2
       printf "(embed) "
     end
     print (struct RBignum *)($arg0)
-    x/xw (($flags & RUBY_FL_USER2) ? \
-          ((struct RBignum*)($arg0))->as.ary : \
-          ((struct RBignum*)($arg0))->as.heap.digits)
+    output/x *(($flags & RUBY_FL_USER2) ? \
+              ((struct RBignum*)($arg0))->as.ary : \
+              ((struct RBignum*)($arg0))->as.heap.digits) @ $len
+    printf "\n"
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_RATIONAL
     printf "%sT_RATIONAL%s: ", $color_type, $color_end
@@ -327,6 +335,9 @@ define rp_id
   if $id == idLTLT
     printf "(:<<)\n"
   else
+  if $id == idGTGT
+    printf "(:>>)\n"
+  else
   if $id == idLE
     printf "(:<=)\n"
   else
@@ -353,6 +364,18 @@ define rp_id
   else
   if $id == idASET
     printf "(:[]=)\n"
+  else
+  if $id == idCOLON2
+    printf "(:'::')\n"
+  else
+  if $id == idANDOP
+    printf "(:&&)\n"
+  else
+  if $id == idOROP
+    printf "(:||)\n"
+  else
+  if $id == idANDDOT
+    printf "(:&.)\n"
   else
     if $id <= tLAST_OP_ID
       printf "O"
@@ -408,6 +431,11 @@ define rp_id
   end
   end
   end
+  end
+  end
+  end
+  end
+  end
 end
 document rp_id
   Print an ID.
@@ -415,21 +443,21 @@ end
 
 define output_string
   set $flags = ((struct RBasic*)($arg0))->flags
-  printf "%s", (char *)(($flags & RUBY_FL_USER1) ? \
+  set $len = ($flags & RUBY_FL_USER1) ? \
+          ((struct RString*)($arg0))->as.heap.len : \
+          (($flags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
+  if $len > 0
+    output *(char *)(($flags & RUBY_FL_USER1) ? \
 	    ((struct RString*)($arg0))->as.heap.ptr : \
-	    ((struct RString*)($arg0))->as.ary)
+	    ((struct RString*)($arg0))->as.ary) @ $len
+  else
+    output ""
+  end
 end
 
 define rp_string
-  set $flags = ((struct RBasic*)($arg0))->flags
-  set print address off
-  output (char *)(($flags & RUBY_FL_USER1) ? \
-	    ((struct RString*)($arg0))->as.heap.ptr : \
-	    ((struct RString*)($arg0))->as.ary)
-  set print address on
-  printf " bytesize:%ld ", ($flags & RUBY_FL_USER1) ? \
-          ((struct RString*)($arg0))->as.heap.len : \
-          (($flags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
+  output_string $arg0
+  printf " bytesize:%ld ", $len
   if !($flags & RUBY_FL_USER1)
     printf "(embed) "
   else
@@ -467,7 +495,7 @@ define rp_class
   end
   printf "\n"
   rb_classname $arg0
-  print *(struct RClass *)($arg0)
+  print/x *(struct RClass *)($arg0)
   print *((struct RClass *)($arg0))->ptr
 end
 document rp_class
@@ -869,8 +897,7 @@ end
 
 define rb_classname
   # up to 128bit int
-  set $rb_classname_permanent = "0123456789ABCDEF"
-  set $rb_classname = classname($arg0, $rb_classname_permanent)
+  set $rb_classname = rb_mod_name($arg0)
   if $rb_classname != RUBY_Qnil
     rp $rb_classname
   else
@@ -976,7 +1003,7 @@ define check_method_entry
   # get $immeo and $can_be_svar and return $me
   set $imemo = (struct RBasic *)$arg0
   set $can_be_svar = $arg1
-  if $imemo != Qfalse
+  if $imemo != RUBY_Qfalse
     set $type = ($imemo->flags >> 12) & 0x07
     if $type == imemo_ment
       set $me = (rb_callable_method_entry_t *)$imemo
@@ -993,7 +1020,7 @@ define output_id
   set $id = $arg0
   # rb_id_to_serial
   if $id > tLAST_OP_ID
-    set $serial = (rb_id_serial_t)($id >> ID_SCOPE_SHIFT)
+    set $serial = (rb_id_serial_t)($id >> RUBY_ID_SCOPE_SHIFT)
   else
     set $serial = (rb_id_serial_t)$id
   end
@@ -1011,7 +1038,7 @@ define output_id
     if $idx < $idslen
       set $t = 0
       set $ary = (struct RArray *)$idsptr[$idx]
-      if $ary != Qnil
+      if $ary != RUBY_Qnil
         set $flags = $ary->basic.flags
         if ($flags & RUBY_FL_USER1)
           set $aryptr = $ary->as.ary
@@ -1048,21 +1075,25 @@ define rb_ps_thread
         printf "???.rb:???:in `???'\n"
       end
     else
-      # if ($cfp->flag & VM_FRAME_MAGIC_MASK) == VM_FRAME_MAGIC_CFUNC
-      if ($cfp->flag & 255) == 0x61
-        #define VM_ENVVAL_BLOCK_PTR_FLAG 0x02
-        #define VM_EP_PREV_EP(ep)   ((VALUE *)GC_GUARDED_PTR_REF((ep)[0]))
-        set $ep = $cfp->ep
-        set $me = NULL
-        while ($ep[0] & 0x02) != 0
-          check_method_entry $ep[-1] 0
-          if $me != NULL
+      # if VM_FRAME_TYPE($cfp->flag) == VM_FRAME_MAGIC_CFUNC
+      set $ep = $cfp->ep
+      if ($ep[0] & 0xffff0001) == 0x55550001
+        #define VM_ENV_FLAG_LOCAL 0x02
+        #define VM_ENV_PREV_EP(ep)   GC_GUARDED_PTR_REF(ep[VM_ENV_DATA_INDEX_SPECVAL])
+        set $me = 0
+        set $env_specval = $ep[-1]
+        set $env_me_cref = $ep[-2]
+        while ($env_specval & 0x02) != 0
+          check_method_entry $env_me_cref 0
+          if $me != 0
             loop_break
           end
           set $ep = $ep[0]
+          set $env_specval = $ep[-1]
+          set $env_me_cref = $ep[-2]
         end
-        if $me == NULL
-          check_method_entry $ep[-1] 1
+        if $me == 0
+          check_method_entry $env_me_cref 1
         end
         set print symbol-filename on
         output/a $me->def->body.cfunc.func

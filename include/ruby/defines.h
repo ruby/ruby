@@ -45,6 +45,9 @@ extern "C" {
 #ifndef NOINLINE
 # define NOINLINE(x) x
 #endif
+#ifndef ALWAYS_INLINE
+# define ALWAYS_INLINE(x) x
+#endif
 #ifndef ERRORFUNC
 # define HAVE_ATTRIBUTE_ERRORFUNC 0
 # define ERRORFUNC(mesg, x) x
@@ -59,12 +62,15 @@ extern "C" {
 #endif
 
 #ifndef GCC_VERSION_SINCE
-#define GCC_VERSION_SINCE(major, minor, patchlevel) \
-  (defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(__clang__) && \
-   ((__GNUC__ > (major)) ||  \
-    ((__GNUC__ == (major) && \
-      ((__GNUC_MINOR__ > (minor)) ||					\
-       (__GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ >= (patchlevel)))))))
+# if defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(__clang__)
+#  define GCC_VERSION_SINCE(major, minor, patchlevel) \
+    ((__GNUC__ > (major)) ||  \
+     ((__GNUC__ == (major) && \
+       ((__GNUC_MINOR__ > (minor)) || \
+        (__GNUC_MINOR__ == (minor) && __GNUC_PATCHLEVEL__ >= (patchlevel))))))
+# else
+#  define GCC_VERSION_SINCE(major, minor, patchlevel) 0
+# endif
 #endif
 
 /* likely */

@@ -4,7 +4,7 @@ require_relative 'utils'
 if defined?(OpenSSL::TestUtils)
 
 require 'socket'
-require_relative '../ruby/ut_eof'
+require_relative 'ut_eof'
 
 module OpenSSL::SSLPairM
   def server
@@ -113,11 +113,25 @@ module OpenSSL::TestPairM
     }
   end
 
+  def test_gets
+    ssl_pair {|s1, s2|
+      s1 << "abc\n\n$def123ghi"
+      s1.close
+      ret = s2.gets
+      assert_equal Encoding::BINARY, ret.encoding
+      assert_equal "abc\n", ret
+      assert_equal "\n$", s2.gets("$")
+      assert_equal "def123", s2.gets(/\d+/)
+      assert_equal "ghi", s2.gets
+      assert_equal nil, s2.gets
+    }
+  end
+
   def test_gets_eof_limit
     ssl_pair {|s1, s2|
       s1.write("hello")
       s1.close # trigger EOF
-      assert_match "hello", s2.gets("\n", 6), "[ruby-core:70149] [Bug #11140]"
+      assert_match "hello", s2.gets("\n", 6), "[ruby-core:70149] [Bug #11400]"
     }
   end
 
@@ -245,18 +259,12 @@ module OpenSSL::TestPairM
   def test_write_nonblock_no_exceptions
     ssl_pair {|s1, s2|
       n = 0
-      begin
-        n += write_nonblock_no_ex s1, "a" * 100000
-        n += write_nonblock_no_ex s1, "b" * 100000
-        n += write_nonblock_no_ex s1, "c" * 100000
-        n += write_nonblock_no_ex s1, "d" * 100000
-        n += write_nonblock_no_ex s1, "e" * 100000
-        n += write_nonblock_no_ex s1, "f" * 100000
-      rescue OpenSSL::SSL::SSLError => e
-        # on some platforms (maybe depend on OpenSSL version), writing to
-        # SSLSocket after SSL_ERROR_WANT_WRITE causes this error.
-        raise e if n == 0
-      end
+      n += write_nonblock_no_ex s1, "a" * 100000
+      n += write_nonblock_no_ex s1, "b" * 100000
+      n += write_nonblock_no_ex s1, "c" * 100000
+      n += write_nonblock_no_ex s1, "d" * 100000
+      n += write_nonblock_no_ex s1, "e" * 100000
+      n += write_nonblock_no_ex s1, "f" * 100000
       s1.close
       assert_equal(n, s2.read.length)
     }
@@ -287,7 +295,7 @@ module OpenSSL::TestPairM
       # fill up a socket so we hit EAGAIN
       written = String.new
       n = 0
-      buf = 'a' * 11
+      buf = 'a' * 4099
       case ret = s1.write_nonblock(buf, exception: false)
       when :wait_readable then break
       when :wait_writable then break
@@ -322,6 +330,16 @@ module OpenSSL::TestPairM
     }
   end
 
+  def test_partial_tls_record_read_nonblock
+    ssl_pair { |s1, s2|
+      # the beginning of a TLS record
+      s1.io.write("\x17")
+      # should raise a IO::WaitReadable since a full TLS record is not available
+      # for reading
+      assert_raise(IO::WaitReadable) { s2.read_nonblock(1) }
+    }
+  end
+
   def tcp_pair
     host = "127.0.0.1"
     serv = TCPServer.new(host, 0)
@@ -332,147 +350,6 @@ module OpenSSL::TestPairM
     [sock1, sock2]
   ensure
     serv.close if serv && !serv.closed?
-  end
-
-  def test_connect_works_when_setting_dh_callback_to_nil
-    ctx2 = OpenSSL::SSL::SSLContext.new
-    ctx2.ciphers = "DH"
-    ctx2.security_level = 0
-    ctx2.tmp_dh_callback = nil
-    sock1, sock2 = tcp_pair
-    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
-    accepted = s2.accept_nonblock(exception: false)
-
-    ctx1 = OpenSSL::SSL::SSLContext.new
-    ctx1.ciphers = "DH"
-    ctx1.security_level = 0
-    ctx1.tmp_dh_callback = nil
-    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
-    t = Thread.new { s1.connect }
-
-    accept = s2.accept
-    assert_equal s1, t.value
-    assert accept
-  ensure
-    t.join if t
-    s1.close if s1
-    s2.close if s2
-    sock1.close if sock1
-    sock2.close if sock2
-    accepted.close if accepted.respond_to?(:close)
-  end
-
-  def test_connect_without_setting_dh_callback
-    ctx2 = OpenSSL::SSL::SSLContext.new
-    ctx2.ciphers = "DH"
-    ctx2.security_level = 0
-    sock1, sock2 = tcp_pair
-    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
-    accepted = s2.accept_nonblock(exception: false)
-
-    ctx1 = OpenSSL::SSL::SSLContext.new
-    ctx1.ciphers = "DH"
-    ctx1.security_level = 0
-    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
-    t = Thread.new { s1.connect }
-
-    accept = s2.accept
-    assert_equal s1, t.value
-    assert accept
-  ensure
-    t.join if t
-    s1.close if s1
-    s2.close if s2
-    sock1.close if sock1
-    sock2.close if sock2
-    accepted.close if accepted.respond_to?(:close)
-  end
-
-  def test_ecdh_callback
-    return unless OpenSSL::SSL::SSLContext.instance_methods.include?(:tmp_ecdh_callback)
-    EnvUtil.suppress_warning do # tmp_ecdh_callback is deprecated (2016-05)
-      begin
-        called = false
-        ctx2 = OpenSSL::SSL::SSLContext.new
-        ctx2.ciphers = "ECDH"
-        # OpenSSL 1.1.0 doesn't have tmp_ecdh_callback so this shouldn't be required
-        ctx2.security_level = 0
-        ctx2.tmp_ecdh_callback = ->(*args) {
-          called = true
-          OpenSSL::PKey::EC.new "prime256v1"
-        }
-
-        sock1, sock2 = tcp_pair
-
-        s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
-        ctx1 = OpenSSL::SSL::SSLContext.new
-        ctx1.ciphers = "ECDH"
-        ctx1.security_level = 0
-
-        s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
-        th = Thread.new do
-          begin
-            rv = s1.connect_nonblock(exception: false)
-            case rv
-            when :wait_writable
-              IO.select(nil, [s1], nil, 5)
-            when :wait_readable
-              IO.select([s1], nil, nil, 5)
-            end
-          end until rv == s1
-        end
-
-        accepted = s2.accept
-        assert called, 'ecdh callback should be called'
-      rescue OpenSSL::SSL::SSLError => e
-        if e.message =~ /no cipher match/
-          skip "ECDH cipher not supported."
-        else
-          raise e
-        end
-      ensure
-        th.join if th
-        s1.close if s1
-        s2.close if s2
-        sock1.close if sock1
-        sock2.close if sock2
-      end
-    end
-  end
-
-  def test_ecdh_curves
-    sock1, sock2 = tcp_pair
-
-    ctx1 = OpenSSL::SSL::SSLContext.new
-    begin
-      ctx1.ciphers = "ECDH"
-    rescue OpenSSL::SSL::SSLError
-      skip "ECDH is not enabled in this OpenSSL" if $!.message =~ /no cipher match/
-      raise
-    end
-    ctx1.ecdh_curves = "P-384:P-521"
-    ctx1.security_level = 0
-    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
-
-    ctx2 = OpenSSL::SSL::SSLContext.new
-    ctx2.ciphers = "ECDH"
-    ctx2.ecdh_curves = "P-256:P-384"
-    ctx2.security_level = 0
-    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
-
-    th = Thread.new { s1.accept }
-    s2.connect
-
-    assert s2.cipher[0].start_with?("AECDH"), "AECDH should be used"
-    if s2.respond_to?(:tmp_key)
-      assert_equal "secp384r1", s2.tmp_key.group.curve_name
-    end
-  ensure
-    th.join if th
-    s1.close if s1
-    s2.close if s2
-    sock1.close if sock1
-    sock2.close if sock2
   end
 
   def test_connect_accept_nonblock_no_exception
@@ -580,25 +457,25 @@ module OpenSSL::TestPairM
 end
 
 class OpenSSL::TestEOF1 < OpenSSL::TestCase
-  include TestEOF
+  include OpenSSL::TestEOF
   include OpenSSL::SSLPair
   include OpenSSL::TestEOF1M
 end
 
 class OpenSSL::TestEOF1LowlevelSocket < OpenSSL::TestCase
-  include TestEOF
+  include OpenSSL::TestEOF
   include OpenSSL::SSLPairLowlevelSocket
   include OpenSSL::TestEOF1M
 end
 
 class OpenSSL::TestEOF2 < OpenSSL::TestCase
-  include TestEOF
+  include OpenSSL::TestEOF
   include OpenSSL::SSLPair
   include OpenSSL::TestEOF2M
 end
 
 class OpenSSL::TestEOF2LowlevelSocket < OpenSSL::TestCase
-  include TestEOF
+  include OpenSSL::TestEOF
   include OpenSSL::SSLPairLowlevelSocket
   include OpenSSL::TestEOF2M
 end

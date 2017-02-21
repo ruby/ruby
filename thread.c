@@ -85,6 +85,7 @@ static ID id_locals;
 static void sleep_timeval(rb_thread_t *th, struct timeval time, int spurious_check);
 static void sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec, int spurious_check);
 static void sleep_forever(rb_thread_t *th, int nodeadlock, int spurious_check);
+static void rb_thread_sleep_deadly_allow_spurious_wakeup(void);
 static double timeofday(void);
 static int rb_threadptr_dead(rb_thread_t *th);
 static void rb_check_deadlock(rb_vm_t *vm);
@@ -466,8 +467,8 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 void
 rb_thread_terminate_all(void)
 {
-    rb_thread_t *th = GET_THREAD(); /* main thread */
-    rb_vm_t *vm = th->vm;
+    rb_thread_t *volatile th = GET_THREAD(); /* main thread */
+    rb_vm_t *volatile vm = th->vm;
     volatile int sleeping = 0;
 
     if (vm->main_thread != th) {
@@ -589,11 +590,11 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 		    th->errinfo = Qnil;
 		    th->root_lep = rb_vm_ep_local_ep(vm_proc_ep(th->first_proc));
 		    th->root_svar = Qfalse;
-		    EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, Qundef);
+		    EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
 		    th->value = rb_vm_invoke_proc(th, proc,
 						  (int)RARRAY_LEN(args), RARRAY_CONST_PTR(args),
 						  VM_BLOCK_HANDLER_NONE);
-		    EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_END, th->self, 0, 0, Qundef);
+		    EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
 		}
 		else {
 		    th->value = (*th->first_func)((void *)args);
@@ -788,19 +789,13 @@ thread_initialize(VALUE thread, VALUE args)
     }
     GetThreadPtr(thread, th);
     if (th->first_args) {
-	VALUE proc = th->first_proc, line, loc;
-	VALUE file;
+	VALUE proc = th->first_proc, loc;
         if (!proc || !RTEST(loc = rb_proc_location(proc))) {
             rb_raise(rb_eThreadError, "already initialized thread");
         }
-	file = RARRAY_AREF(loc, 0);
-	if (NIL_P(line = RARRAY_AREF(loc, 1))) {
-	    rb_raise(rb_eThreadError,
-		     "already initialized thread - %"PRIsVALUE, file);
-	}
         rb_raise(rb_eThreadError,
 		 "already initialized thread - %"PRIsVALUE":%"PRIsVALUE,
-                 file, line);
+                 RARRAY_AREF(loc, 0), RARRAY_AREF(loc, 1));
     }
     return thread_create_core(thread, args, 0);
 }
@@ -851,7 +846,7 @@ thread_join_sleep(VALUE arg)
 
     while (target_th->status != THREAD_KILLED) {
 	if (forever) {
-	    sleep_forever(th, 1, 0);
+	    sleep_forever(th, TRUE, FALSE);
 	}
 	else {
 	    double now = timeofday();
@@ -1142,14 +1137,21 @@ void
 rb_thread_sleep_forever(void)
 {
     thread_debug("rb_thread_sleep_forever\n");
-    sleep_forever(GET_THREAD(), 0, 1);
+    sleep_forever(GET_THREAD(), FALSE, TRUE);
 }
 
 void
 rb_thread_sleep_deadly(void)
 {
     thread_debug("rb_thread_sleep_deadly\n");
-    sleep_forever(GET_THREAD(), 1, 1);
+    sleep_forever(GET_THREAD(), TRUE, TRUE);
+}
+
+static void
+rb_thread_sleep_deadly_allow_spurious_wakeup(void)
+{
+    thread_debug("rb_thread_sleep_deadly_allow_spurious_wakeup\n");
+    sleep_forever(GET_THREAD(), TRUE, FALSE);
 }
 
 static double
@@ -1593,19 +1595,23 @@ rb_threadptr_pending_interrupt_check_mask(rb_thread_t *th, VALUE err)
     VALUE mask;
     long mask_stack_len = RARRAY_LEN(th->pending_interrupt_mask_stack);
     const VALUE *mask_stack = RARRAY_CONST_PTR(th->pending_interrupt_mask_stack);
-    VALUE ancestors = rb_mod_ancestors(err); /* TODO: GC guard */
-    long ancestors_len = RARRAY_LEN(ancestors);
-    const VALUE *ancestors_ptr = RARRAY_CONST_PTR(ancestors);
-    int i, j;
+    VALUE mod;
+    long i;
 
     for (i=0; i<mask_stack_len; i++) {
 	mask = mask_stack[mask_stack_len-(i+1)];
 
-	for (j=0; j<ancestors_len; j++) {
-	    VALUE klass = ancestors_ptr[j];
+	for (mod = err; mod; mod = RCLASS_SUPER(mod)) {
+	    VALUE klass = mod;
 	    VALUE sym;
 
-	    /* TODO: remove rb_intern() */
+	    if (BUILTIN_TYPE(mod) == T_ICLASS) {
+		klass = RBASIC(mod)->klass;
+	    }
+	    else if (mod != RCLASS_ORIGIN(mod)) {
+		continue;
+	    }
+
 	    if ((sym = rb_hash_aref(mask, klass)) != Qnil) {
 		if (sym == sym_immediate) {
 		    return INTERRUPT_IMMEDIATE;
@@ -2063,7 +2069,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	    if (th->status == THREAD_RUNNABLE)
 		th->running_time_us += TIME_QUANTUM_USEC;
 
-	    EXEC_EVENT_HOOK(th, RUBY_INTERNAL_EVENT_SWITCH, th->cfp->self, 0, 0, Qundef);
+	    EXEC_EVENT_HOOK(th, RUBY_INTERNAL_EVENT_SWITCH, th->cfp->self, 0, 0, 0, Qundef);
 
 	    rb_thread_schedule_limits(limits_us);
 	}
@@ -2084,6 +2090,8 @@ rb_threadptr_ready(rb_thread_t *th)
     rb_threadptr_interrupt(th);
 }
 
+void rb_threadptr_setup_exception(rb_thread_t *th, VALUE mesg, VALUE cause);
+
 static VALUE
 rb_threadptr_raise(rb_thread_t *th, int argc, VALUE *argv)
 {
@@ -2099,6 +2107,14 @@ rb_threadptr_raise(rb_thread_t *th, int argc, VALUE *argv)
     else {
 	exc = rb_make_exception(argc, argv);
     }
+
+    /* making an exception object can switch thread,
+       so we need to check thread deadness again */
+    if (rb_threadptr_dead(th)) {
+	return Qnil;
+    }
+
+    rb_threadptr_setup_exception(GET_THREAD(), exc, Qundef);
     rb_threadptr_pending_interrupt_enque(th, exc);
     rb_threadptr_interrupt(th);
     return Qnil;
@@ -2162,19 +2178,23 @@ rb_threadptr_reset_raised(rb_thread_t *th)
     return 1;
 }
 
-void
-rb_thread_fd_close(int fd)
+int
+rb_notify_fd_close(int fd)
 {
     rb_vm_t *vm = GET_THREAD()->vm;
     rb_thread_t *th = 0;
+    int busy;
 
+    busy = 0;
     list_for_each(&vm->living_threads, th, vmlt_node) {
 	if (th->waiting_fd == fd) {
 	    VALUE err = th->vm->special_exceptions[ruby_error_closed_stream];
 	    rb_threadptr_pending_interrupt_enque(th, err);
 	    rb_threadptr_interrupt(th);
+	    busy = 1;
 	}
     }
+    return busy;
 }
 
 /*
@@ -2498,8 +2518,8 @@ rb_thread_s_main(VALUE klass)
  *
  *  The default is +false+.
  *
- *  When set to +true+, all threads will abort (the process will
- *  <code>exit(0)</code>) if an exception is raised in any thread.
+ *  When set to +true+, if any thread is aborted by an exception, the
+ *  raised exception will be re-raised in the main thread.
  *
  *  Can also be specified by the global $DEBUG flag or command line option
  *  +-d+.
@@ -2521,7 +2541,8 @@ rb_thread_s_abort_exc(void)
  *  call-seq:
  *     Thread.abort_on_exception= boolean   -> true or false
  *
- *  When set to +true+, all threads will abort if an exception is raised.
+ *  When set to +true+, if any thread is aborted by an exception, the
+ *  raised exception will be re-raised in the main thread.
  *  Returns the new state.
  *
  *     Thread.abort_on_exception = true
@@ -2582,10 +2603,8 @@ rb_thread_abort_exc(VALUE thread)
  *  call-seq:
  *     thr.abort_on_exception= boolean   -> true or false
  *
- *  When set to +true+, all threads (including the main program) will abort if
- *  an exception is raised in this +thr+.
- *
- *  The process will effectively <code>exit(0)</code>.
+ *  When set to +true+, if this +thr+ is aborted by an exception, the
+ *  raised exception will be re-raised in the main thread.
  *
  *  See also #abort_on_exception.
  *
@@ -3554,9 +3573,7 @@ rb_fd_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_fdset_t *excep
     return select(n, r, w, e, timeout);
 }
 
-#if defined __GNUC__ && __GNUC__ >= 6
-#define rb_fd_no_init(fds) ASSUME(!(fds)->maxfd)
-#endif
+#define rb_fd_no_init(fds) ((void)((fds)->fdset = 0), (void)((fds)->maxfd = 0))
 
 #undef FD_ZERO
 #undef FD_SET
@@ -3621,6 +3638,8 @@ rb_fd_set(int fd, rb_fdset_t *set)
 #define FD_CLR(i, f)	rb_fd_clr((i), (f))
 #define FD_ISSET(i, f)	rb_fd_isset((i), (f))
 
+#define rb_fd_no_init(fds) (void)((fds)->fdset = 0)
+
 #endif
 
 #ifndef rb_fd_no_init
@@ -3654,14 +3673,14 @@ update_timeval(struct timeval *timeout, double limit)
 }
 
 static int
-do_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds,
-	  rb_fdset_t *exceptfds, struct timeval *timeout)
+do_select(int n, rb_fdset_t *const readfds, rb_fdset_t *const writefds,
+	  rb_fdset_t *const exceptfds, struct timeval *timeout)
 {
-    int UNINITIALIZED_VAR(result);
+    int MAYBE_UNUSED(result);
     int lerrno;
-    rb_fdset_t UNINITIALIZED_VAR(orig_read);
-    rb_fdset_t UNINITIALIZED_VAR(orig_write);
-    rb_fdset_t UNINITIALIZED_VAR(orig_except);
+    rb_fdset_t MAYBE_UNUSED(orig_read);
+    rb_fdset_t MAYBE_UNUSED(orig_write);
+    rb_fdset_t MAYBE_UNUSED(orig_except);
     double limit = 0;
     struct timeval wait_rest;
     rb_thread_t *th = GET_THREAD();
@@ -4937,10 +4956,13 @@ update_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
     if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
 	long line = rb_sourceline() - 1;
 	long count;
+	VALUE num;
 	if (line >= RARRAY_LEN(coverage)) { /* no longer tracked */
 	    return;
 	}
-	count = FIX2LONG(RARRAY_AREF(coverage, line)) + 1;
+	num = RARRAY_AREF(coverage, line);
+	if (!FIXNUM_P(num)) return;
+	count = FIX2LONG(num) + 1;
 	if (POSFIXABLE(count)) {
 	    RARRAY_ASET(coverage, line, LONG2FIX(count));
 	}

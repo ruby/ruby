@@ -1,5 +1,4 @@
 # frozen_string_literal: false
-require 'rubygems'
 require 'rubygems/user_interaction'
 require 'fileutils'
 require 'rdoc'
@@ -154,13 +153,7 @@ class RDoc::RubygemsHook
     options = nil
 
     args = @spec.rdoc_options
-
-    if @spec.respond_to? :source_paths then
-      args.concat @spec.source_paths
-    else
-      args.concat @spec.require_paths
-    end
-
+    args.concat @spec.source_paths
     args.concat @spec.extra_rdoc_files
 
     case config_args = Gem.configuration[:rdoc]
@@ -184,7 +177,7 @@ class RDoc::RubygemsHook
     @rdoc.options = options
 
     store = RDoc::Store.new
-    store.encoding = options.encoding if options.respond_to? :encoding
+    store.encoding = options.encoding
     store.dry_run  = options.dry_run
     store.main     = options.main_page
     store.title    = options.title
@@ -251,4 +244,3 @@ class RDoc::RubygemsHook
   end
 
 end
-

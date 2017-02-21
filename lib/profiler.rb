@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 # Profile provides a way to Profile your Ruby application.
 #
 # Profiling your program is a way of determining which methods are called and

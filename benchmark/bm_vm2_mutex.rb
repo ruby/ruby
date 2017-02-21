@@ -1,6 +1,6 @@
 require 'thread'
 
-m = Mutex.new
+m = Thread::Mutex.new
 
 i = 0
 while i<6_000_000 # benchmark loop 2

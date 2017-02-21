@@ -659,6 +659,99 @@ class TestFloat < Test::Unit::TestCase
     }
   end
 
+  def test_round_half_even
+    assert_equal(12.0, 12.5.round(half: :even))
+    assert_equal(14.0, 13.5.round(half: :even))
+
+    assert_equal(2.2, 2.15.round(1, half: :even))
+    assert_equal(2.2, 2.25.round(1, half: :even))
+    assert_equal(2.4, 2.35.round(1, half: :even))
+
+    assert_equal(-2.2, -2.15.round(1, half: :even))
+    assert_equal(-2.2, -2.25.round(1, half: :even))
+    assert_equal(-2.4, -2.35.round(1, half: :even))
+
+    assert_equal(7.1364, 7.13645.round(4, half: :even))
+    assert_equal(7.1365, 7.1364501.round(4, half: :even))
+    assert_equal(7.1364, 7.1364499.round(4, half: :even))
+
+    assert_equal(-7.1364, -7.13645.round(4, half: :even))
+    assert_equal(-7.1365, -7.1364501.round(4, half: :even))
+    assert_equal(-7.1364, -7.1364499.round(4, half: :even))
+  end
+
+  def test_round_half_up
+    assert_equal(13.0, 12.5.round(half: :up))
+    assert_equal(14.0, 13.5.round(half: :up))
+
+    assert_equal(2.2, 2.15.round(1, half: :up))
+    assert_equal(2.3, 2.25.round(1, half: :up))
+    assert_equal(2.4, 2.35.round(1, half: :up))
+
+    assert_equal(-2.2, -2.15.round(1, half: :up))
+    assert_equal(-2.3, -2.25.round(1, half: :up))
+    assert_equal(-2.4, -2.35.round(1, half: :up))
+
+    assert_equal(7.1365, 7.13645.round(4, half: :up))
+    assert_equal(7.1365, 7.1364501.round(4, half: :up))
+    assert_equal(7.1364, 7.1364499.round(4, half: :up))
+
+    assert_equal(-7.1365, -7.13645.round(4, half: :up))
+    assert_equal(-7.1365, -7.1364501.round(4, half: :up))
+    assert_equal(-7.1364, -7.1364499.round(4, half: :up))
+  end
+
+  def test_round_half_down
+    assert_equal(12.0, 12.5.round(half: :down))
+    assert_equal(13.0, 13.5.round(half: :down))
+
+    assert_equal(2.1, 2.15.round(1, half: :down))
+    assert_equal(2.2, 2.25.round(1, half: :down))
+    assert_equal(2.3, 2.35.round(1, half: :down))
+
+    assert_equal(-2.1, -2.15.round(1, half: :down))
+    assert_equal(-2.2, -2.25.round(1, half: :down))
+    assert_equal(-2.3, -2.35.round(1, half: :down))
+
+    assert_equal(7.1364, 7.13645.round(4, half: :down))
+    assert_equal(7.1365, 7.1364501.round(4, half: :down))
+    assert_equal(7.1364, 7.1364499.round(4, half: :down))
+
+    assert_equal(-7.1364, -7.13645.round(4, half: :down))
+    assert_equal(-7.1365, -7.1364501.round(4, half: :down))
+    assert_equal(-7.1364, -7.1364499.round(4, half: :down))
+  end
+
+  def test_round_half_nil
+    assert_equal(13.0, 12.5.round(half: nil))
+    assert_equal(14.0, 13.5.round(half: nil))
+
+    assert_equal(2.2, 2.15.round(1, half: nil))
+    assert_equal(2.3, 2.25.round(1, half: nil))
+    assert_equal(2.4, 2.35.round(1, half: nil))
+
+    assert_equal(-2.2, -2.15.round(1, half: nil))
+    assert_equal(-2.3, -2.25.round(1, half: nil))
+    assert_equal(-2.4, -2.35.round(1, half: nil))
+
+    assert_equal(7.1365, 7.13645.round(4, half: nil))
+    assert_equal(7.1365, 7.1364501.round(4, half: nil))
+    assert_equal(7.1364, 7.1364499.round(4, half: nil))
+
+    assert_equal(-7.1365, -7.13645.round(4, half: nil))
+    assert_equal(-7.1365, -7.1364501.round(4, half: nil))
+    assert_equal(-7.1364, -7.1364499.round(4, half: nil))
+  end
+
+  def test_round_half_invalid
+    assert_raise_with_message(ArgumentError, /Object/) {
+      1.0.round(half: Object)
+    }
+    assert_raise_with_message(ArgumentError, /xxx/) {
+      1.0.round(half: "\0xxx")
+    }
+  end
+
   def test_Float
     assert_in_delta(0.125, Float("0.1_2_5"), 0.00001)
     assert_in_delta(0.125, "0.1_2_5__".to_f, 0.00001)

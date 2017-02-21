@@ -439,7 +439,7 @@ allocation_method_id(VALUE self, VALUE obj)
 }
 
 /*
- * call-seq: allocation_generation(object) -> Fixnum
+ * call-seq: allocation_generation(object) -> integer or nil
  *
  * Returns garbage collector generation for the given +object+.
  *

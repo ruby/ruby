@@ -475,6 +475,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     int tainted = 0;
     VALUE nextvalue;
     VALUE tmp;
+    VALUE orig;
     VALUE str;
     volatile VALUE hash = Qundef;
 
@@ -498,7 +499,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     if (OBJ_TAINTED(fmt)) tainted = 1;
     StringValue(fmt);
     enc = rb_enc_get(fmt);
-    fmt = rb_str_new4(fmt);
+    orig = fmt;
+    fmt = rb_str_tmp_frozen_acquire(fmt);
     p = RSTRING_PTR(fmt);
     end = p + RSTRING_LEN(fmt);
     blen = 0;
@@ -602,7 +604,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    const int message_limit = 20;
 		    len = (int)(rb_enc_right_char_head(start, start + message_limit, p, enc) - start);
 		    rb_enc_raise(enc, rb_eArgError,
-				 "too long name (%"PRIdSIZE" bytes) - %.*s...%c",
+				 "too long name (%"PRIuSIZE" bytes) - %.*s...%c",
 				 (size_t)(p - start - 2), len, start, term);
 		}
 #endif
@@ -705,10 +707,10 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    CHECK(n);
 		    rb_enc_mbcput(c, &buf[blen], enc);
 		    blen += n;
-		    FILL(' ', width-1);
+		    if (width > 1) FILL(' ', width-1);
 		}
 		else {
-		    FILL(' ', width-1);
+		    if (width > 1) FILL(' ', width-1);
 		    CHECK(n);
 		    rb_enc_mbcput(c, &buf[blen], enc);
 		    blen += n;
@@ -1196,7 +1198,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     }
 
   sprint_exit:
-    RB_GC_GUARD(fmt);
+    rb_str_tmp_frozen_release(orig, fmt);
     /* XXX - We cannot validate the number of arguments if (digit)$ style used.
      */
     if (posarg >= 0 && nextarg < argc) {

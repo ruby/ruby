@@ -3,6 +3,7 @@ require_relative 'utils'
 
 class OpenSSL::TestConfig < OpenSSL::TestCase
   def setup
+    super
     file = Tempfile.open("openssl.cnf")
     file << <<__EOD__
 HOME = .
@@ -25,7 +26,7 @@ __EOD__
   def test_constants
     assert(defined?(OpenSSL::Config::DEFAULT_CONFIG_FILE))
     config_file = OpenSSL::Config::DEFAULT_CONFIG_FILE
-    skip "DEFAULT_CONFIG_FILE may return a wrong path on your platforms. [Bug #6830]" unless File.readable?(config_file)
+    pend "DEFAULT_CONFIG_FILE may return a wrong path on your platforms. [Bug #6830]" unless File.readable?(config_file)
     assert_nothing_raised do
       OpenSSL::Config.load(config_file)
     end

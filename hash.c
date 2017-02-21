@@ -84,12 +84,6 @@ static VALUE envtbl;
 static ID id_hash, id_yield, id_default, id_flatten_bang;
 
 VALUE
-rb_hash_ifnone(VALUE h)
-{
-    return RHASH_IFNONE(h);
-}
-
-VALUE
 rb_hash_set_ifnone(VALUE hash, VALUE ifnone)
 {
     RB_OBJ_WRITE(hash, (&RHASH(hash)->ifnone), ifnone);
@@ -145,16 +139,33 @@ rb_hash(VALUE obj)
 
 long rb_objid_hash(st_index_t index);
 
-static st_index_t
+long
+rb_dbl_long_hash(double d)
+{
+    /* normalize -0.0 to 0.0 */
+    if (d == 0.0) d = 0.0;
+#if SIZEOF_INT == SIZEOF_VOIDP
+    return rb_memhash(&d, sizeof(d));
+#else
+    {
+	union {double d; uint64_t i;} u;
+
+	u.d = d;
+	return rb_objid_hash(rb_hash_start(u.i));
+    }
+#endif
+}
+
+static inline long
 any_hash(VALUE a, st_index_t (*other_func)(VALUE))
 {
     VALUE hval;
     st_index_t hnum;
 
     if (SPECIAL_CONST_P(a)) {
-	if (a == Qundef) return 0;
 	if (STATIC_SYM_P(a)) {
 	    hnum = a >> (RUBY_SPECIAL_SHIFT + ID_SCOPE_SHIFT);
+	    hnum = rb_hash_start(hnum);
 	    goto out;
 	}
 	else if (FLONUM_P(a)) {
@@ -175,15 +186,14 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
     }
     else if (BUILTIN_TYPE(a) == T_FLOAT) {
       flt:
-	hval = rb_dbl_hash(rb_float_value(a));
-	hnum = FIX2LONG(hval);
+	hnum = rb_dbl_long_hash(rb_float_value(a));
     }
     else {
 	hnum = other_func(a);
     }
   out:
     hnum <<= 1;
-    return (st_index_t)RSHIFT(hnum, 1);
+    return (long)RSHIFT(hnum, 1);
 }
 
 static st_index_t
@@ -199,34 +209,42 @@ rb_any_hash(VALUE a)
     return any_hash(a, obj_any_hash);
 }
 
-static st_index_t
-rb_num_hash_start(st_index_t n)
+/* Here is a hash function for 64-bit key.  It is about 5 times faster
+   (2 times faster when uint128 type is absent) on Haswell than
+   tailored Spooky or City hash function can be.  */
+
+/* Here we two primes with random bit generation.  */
+static const uint64_t prime1 = ((uint64_t)0x2e0bb864 << 32) | 0xe9ea7df5;
+static const uint64_t prime2 = ((uint64_t)0xcdb32970 << 32) | 0x830fcaa1;
+
+
+static inline uint64_t
+mult_and_mix(uint64_t m1, uint64_t m2)
 {
-    /*
-     * This hash function is lightly-tuned for Ruby.  Further tuning
-     * should be possible.  Notes:
-     *
-     * - (n >> 3) alone is great for heap objects and OK for fixnum,
-     *   however symbols perform poorly.
-     * - (n >> (RUBY_SPECIAL_SHIFT+3)) was added to make symbols hash well,
-     *   n.b.: +3 to remove most ID scope, +1 worked well initially, too
-     *   n.b.: +1 (instead of 3) worked well initially, too
-     * - (n << 16) was finally added to avoid losing bits for fixnums
-     * - avoid expensive modulo instructions, it is currently only
-     *   shifts and bitmask operations.
-     */
-    return (n >> (RUBY_SPECIAL_SHIFT + 3) ^ (n << 16)) ^ (n >> 3);
+#if defined(__GNUC__) && UINT_MAX != ULONG_MAX
+    __uint128_t r = (__uint128_t) m1 * (__uint128_t) m2;
+    return (uint64_t) (r >> 64) ^ (uint64_t) r;
+#else
+    uint64_t hm1 = m1 >> 32, hm2 = m2 >> 32;
+    uint64_t lm1 = m1, lm2 = m2;
+    uint64_t v64_128 = hm1 * hm2;
+    uint64_t v32_96 = hm1 * lm2 + lm1 * hm2;
+    uint64_t v1_32 = lm1 * lm2;
+
+    return (v64_128 + (v32_96 >> 32)) ^ ((v32_96 << 32) + v1_32);
+#endif
+}
+
+static inline uint64_t
+key64_hash(uint64_t key, uint32_t seed)
+{
+    return mult_and_mix(key + seed, prime1);
 }
 
 long
 rb_objid_hash(st_index_t index)
 {
-    st_index_t hnum = rb_num_hash_start(index);
-
-    hnum = rb_hash_start(hnum);
-    hnum = rb_hash_uint(hnum, (st_index_t)rb_any_hash);
-    hnum = rb_hash_end(hnum);
-    return hnum;
+    return (long)key64_hash(rb_hash_start(index), (uint32_t)prime2);
 }
 
 static st_index_t
@@ -238,14 +256,8 @@ objid_hash(VALUE obj)
 VALUE
 rb_obj_hash(VALUE obj)
 {
-    st_index_t hnum = any_hash(obj, objid_hash);
-    return LONG2FIX(hnum);
-}
-
-int
-rb_hash_iter_lev(VALUE h)
-{
-    return RHASH_ITER_LEV(h);
+    long hnum = any_hash(obj, objid_hash);
+    return ST2FIX(hnum);
 }
 
 static const struct st_hash_type objhash = {
@@ -269,7 +281,7 @@ rb_ident_hash(st_data_t n)
     }
 #endif
 
-    return (st_index_t)rb_num_hash_start((st_index_t)n);
+    return (st_index_t)key64_hash(rb_hash_start((st_index_t)n), (uint32_t)prime2);
 }
 
 static const struct st_hash_type identhash = {
@@ -852,9 +864,9 @@ rb_hash_lookup(VALUE hash, VALUE key)
  *
  *  Returns a value from the hash for the given key. If the key can't be
  *  found, there are several options: With no other arguments, it will
- *  raise an <code>KeyError</code> exception; if <i>default</i> is
- *  given, then that will be returned; if the optional code block is
- *  specified, then that will be run and its result returned.
+ *  raise a <code>KeyError</code> exception; if <i>default</i> is given,
+ *  then that will be returned; if the optional code block is specified,
+ *  then that will be run and its result returned.
  *
  *     h = { "a" => 100, "b" => 200 }
  *     h.fetch("a")                            #=> 100
@@ -1639,8 +1651,8 @@ rb_hash_replace(VALUE hash, VALUE hash2)
 
 /*
  *  call-seq:
- *     hsh.length    ->  fixnum
- *     hsh.size      ->  fixnum
+ *     hsh.length    ->  integer
+ *     hsh.size      ->  integer
  *
  *  Returns the number of key-value pairs in the hash.
  *
@@ -1750,7 +1762,10 @@ each_pair_i(VALUE key, VALUE value)
 static int
 each_pair_i_fast(VALUE key, VALUE value)
 {
-    rb_yield_values(2, key, value);
+    VALUE argv[2];
+    argv[0] = key;
+    argv[1] = value;
+    rb_yield_values2(2, argv);
     return ST_CONTINUE;
 }
 
@@ -1788,7 +1803,7 @@ rb_hash_each_pair(VALUE hash)
 }
 
 static int
-map_v_i(VALUE key, VALUE value, VALUE result)
+transform_values_i(VALUE key, VALUE value, VALUE result)
 {
     VALUE new_value = rb_yield(value);
     rb_hash_aset(result, key, new_value);
@@ -1797,29 +1812,29 @@ map_v_i(VALUE key, VALUE value, VALUE result)
 
 /*
  *  call-seq:
- *     hsh.map_v {|value| block } -> hsh
- *     hsh.map_v                  -> an_enumerator
+ *     hsh.transform_values {|value| block } -> hsh
+ *     hsh.transform_values                  -> an_enumerator
  *
  *  Return a new with the results of running block once for every value.
  *  This method does not change the keys.
  *
  *     h = { a: 1, b: 2, c: 3 }
- *     h.map_v {|v| v * v + 1 }  #=> { a: 2, b: 5, c: 10 }
- *     h.map_v(&:to_s)           #=> { a: "1", b: "2", c: "3" }
- *     h.map_v.with_index {|v, i| "#{v}.#{i}" }
- *                               #=> { a: "1.0", b: "2.1", c: "3.2" }
+ *     h.transform_values {|v| v * v + 1 }  #=> { a: 2, b: 5, c: 10 }
+ *     h.transform_values(&:to_s)           #=> { a: "1", b: "2", c: "3" }
+ *     h.transform_values.with_index {|v, i| "#{v}.#{i}" }
+ *                                          #=> { a: "1.0", b: "2.1", c: "3.2" }
  *
  *  If no block is given, an enumerator is returned instead.
  */
 static VALUE
-rb_hash_map_v(VALUE hash)
+rb_hash_transform_values(VALUE hash)
 {
     VALUE result;
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     result = rb_hash_new();
     if (!RHASH_EMPTY_P(hash)) {
-        rb_hash_foreach(hash, map_v_i, result);
+        rb_hash_foreach(hash, transform_values_i, result);
     }
 
     return result;
@@ -1827,27 +1842,27 @@ rb_hash_map_v(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.map_v! {|value| block } -> hsh
- *     hsh.map_v!                  -> an_enumerator
+ *     hsh.transform_values! {|value| block } -> hsh
+ *     hsh.transform_values!                  -> an_enumerator
  *
  *  Return a new with the results of running block once for every value.
  *  This method does not change the keys.
  *
  *     h = { a: 1, b: 2, c: 3 }
- *     h.map_v! {|v| v * v + 1 }  #=> { a: 2, b: 5, c: 10 }
- *     h.map_v!(&:to_s)           #=> { a: "1", b: "2", c: "3" }
- *     h.map_v!.with_index {|v, i| "#{v}.#{i}" }
- *                                #=> { a: "1.0", b: "2.1", c: "3.2" }
+ *     h.transform_values! {|v| v * v + 1 }  #=> { a: 2, b: 5, c: 10 }
+ *     h.transform_values!(&:to_s)           #=> { a: "1", b: "2", c: "3" }
+ *     h.transform_values!.with_index {|v, i| "#{v}.#{i}" }
+ *                                           #=> { a: "1.0", b: "2.1", c: "3.2" }
  *
  *  If no block is given, an enumerator is returned instead.
  */
 static VALUE
-rb_hash_map_v_bang(VALUE hash)
+rb_hash_transform_values_bang(VALUE hash)
 {
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     rb_hash_modify_check(hash);
     if (RHASH(hash)->ntbl)
-        rb_hash_foreach(hash, map_v_i, hash);
+        rb_hash_foreach(hash, transform_values_i, hash);
     return hash;
 }
 
@@ -2106,8 +2121,8 @@ rb_hash_search_value(VALUE key, VALUE value, VALUE arg)
  *  in <i>hsh</i>.
  *
  *     h = { "a" => 100, "b" => 200 }
- *     h.has_value?(100)   #=> true
- *     h.has_value?(999)   #=> false
+ *     h.value?(100)   #=> true
+ *     h.value?(999)   #=> false
  */
 
 static VALUE
@@ -2256,7 +2271,7 @@ hash_i(VALUE key, VALUE val, VALUE arg)
 
 /*
  *  call-seq:
- *     hsh.hash   -> fixnum
+ *     hsh.hash   -> integer
  *
  *  Compute a hash-code for this hash. Two hashes with the same content
  *  will have the same hash code (and will compare using <code>eql?</code>).
@@ -2274,7 +2289,7 @@ rb_hash_hash(VALUE hash)
 	rb_hash_foreach(hash, hash_i, (VALUE)&hval);
     }
     hval = rb_hash_end(hval);
-    return INT2FIX(hval);
+    return ST2FIX(hval);
 }
 
 static int
@@ -2666,7 +2681,70 @@ rb_hash_flatten(int argc, VALUE *argv, VALUE hash)
     return ary;
 }
 
-static VALUE rb_hash_compare_by_id_p(VALUE hash);
+static int
+delete_if_nil(VALUE key, VALUE value, VALUE hash)
+{
+    if (NIL_P(value)) {
+	return ST_DELETE;
+    }
+    return ST_CONTINUE;
+}
+
+static int
+set_if_not_nil(VALUE key, VALUE value, VALUE hash)
+{
+    if (!NIL_P(value)) {
+	rb_hash_aset(hash, key, value);
+    }
+    return ST_CONTINUE;
+}
+
+/*
+ *  call-seq:
+ *     hsh.compact -> new_hash
+ *
+ *  Returns a new hash with the nil values/key pairs removed
+ *
+ *     h = { a: 1, b: false, c: nil }
+ *     h.compact     #=> { a: 1, b: false }
+ *     h             #=> { a: 1, b: false, c: nil }
+ *
+ */
+
+static VALUE
+rb_hash_compact(VALUE hash)
+{
+    VALUE result = rb_hash_new();
+    if (!RHASH_EMPTY_P(hash)) {
+	rb_hash_foreach(hash, set_if_not_nil, result);
+    }
+    return result;
+}
+
+/*
+ *  call-seq:
+ *     hsh.compact! -> hsh
+ *
+ *  Removes all nil values from the hash.
+ *  Returns the hash.
+ *
+ *     h = { a: 1, b: false, c: nil }
+ *     h.compact!     #=> { a: 1, b: false }
+ *
+ */
+
+static VALUE
+rb_hash_compact_bang(VALUE hash)
+{
+    rb_hash_modify_check(hash);
+    if (RHASH(hash)->ntbl) {
+	st_index_t n = RHASH(hash)->ntbl->num_entries;
+	rb_hash_foreach(hash, delete_if_nil, hash);
+	if (n != RHASH(hash)->ntbl->num_entries)
+	    return hash;
+    }
+    return Qnil;
+}
 
 /*
  *  call-seq:
@@ -2703,7 +2781,7 @@ rb_hash_compare_by_id(VALUE hash)
  *
  */
 
-static VALUE
+VALUE
 rb_hash_compare_by_id_p(VALUE hash)
 {
     if (!RHASH(hash)->ntbl)
@@ -2795,7 +2873,7 @@ rb_hash_any_p(VALUE hash)
  *
  *   g = { foo: [10, 11, 12] }
  *   g.dig(:foo, 1)                    #=> 11
- *   g.dig(:foo, 1, 0)                 #=> TypeError: Fixnum does not have #dig method
+ *   g.dig(:foo, 1, 0)                 #=> TypeError: Integer does not have #dig method
  *   g.dig(:foo, :bar)                 #=> TypeError: no implicit conversion of Symbol into Integer
  */
 
@@ -3173,7 +3251,7 @@ rb_f_getenv(VALUE obj, VALUE name)
  * Retrieves the environment variable +name+.
  *
  * If the given name does not exist and neither +default+ nor a block a
- * provided an IndexError is raised.  If a block is given it is called with
+ * provided an KeyError is raised.  If a block is given it is called with
  * the missing name to provide a value.  If a default value is given it will
  * be returned when no block is given.
  */
@@ -3350,8 +3428,6 @@ ruby_setenv(const char *name, const char *value)
 	invalid_envname(name);
     }
 #elif defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
-#undef setenv
-#undef unsetenv
     if (value) {
 	if (setenv(name, value, 1))
 	    rb_sys_fail_str(rb_sprintf("setenv(%s)", name));
@@ -4367,74 +4443,76 @@ Init_Hash(void)
     rb_define_alloc_func(rb_cHash, empty_hash_alloc);
     rb_define_singleton_method(rb_cHash, "[]", rb_hash_s_create, -1);
     rb_define_singleton_method(rb_cHash, "try_convert", rb_hash_s_try_convert, 1);
-    rb_define_method(rb_cHash,"initialize", rb_hash_initialize, -1);
-    rb_define_method(rb_cHash,"initialize_copy", rb_hash_initialize_copy, 1);
-    rb_define_method(rb_cHash,"rehash", rb_hash_rehash, 0);
+    rb_define_method(rb_cHash, "initialize", rb_hash_initialize, -1);
+    rb_define_method(rb_cHash, "initialize_copy", rb_hash_initialize_copy, 1);
+    rb_define_method(rb_cHash, "rehash", rb_hash_rehash, 0);
 
-    rb_define_method(rb_cHash,"to_hash", rb_hash_to_hash, 0);
-    rb_define_method(rb_cHash,"to_h", rb_hash_to_h, 0);
-    rb_define_method(rb_cHash,"to_a", rb_hash_to_a, 0);
-    rb_define_method(rb_cHash,"inspect", rb_hash_inspect, 0);
+    rb_define_method(rb_cHash, "to_hash", rb_hash_to_hash, 0);
+    rb_define_method(rb_cHash, "to_h", rb_hash_to_h, 0);
+    rb_define_method(rb_cHash, "to_a", rb_hash_to_a, 0);
+    rb_define_method(rb_cHash, "inspect", rb_hash_inspect, 0);
     rb_define_alias(rb_cHash, "to_s", "inspect");
-    rb_define_method(rb_cHash,"to_proc", rb_hash_to_proc, 0);
+    rb_define_method(rb_cHash, "to_proc", rb_hash_to_proc, 0);
 
-    rb_define_method(rb_cHash,"==", rb_hash_equal, 1);
-    rb_define_method(rb_cHash,"[]", rb_hash_aref, 1);
-    rb_define_method(rb_cHash,"hash", rb_hash_hash, 0);
-    rb_define_method(rb_cHash,"eql?", rb_hash_eql, 1);
-    rb_define_method(rb_cHash,"fetch", rb_hash_fetch_m, -1);
-    rb_define_method(rb_cHash,"[]=", rb_hash_aset, 2);
-    rb_define_method(rb_cHash,"store", rb_hash_aset, 2);
-    rb_define_method(rb_cHash,"default", rb_hash_default, -1);
-    rb_define_method(rb_cHash,"default=", rb_hash_set_default, 1);
-    rb_define_method(rb_cHash,"default_proc", rb_hash_default_proc, 0);
-    rb_define_method(rb_cHash,"default_proc=", rb_hash_set_default_proc, 1);
-    rb_define_method(rb_cHash,"key", rb_hash_key, 1);
-    rb_define_method(rb_cHash,"index", rb_hash_index, 1);
-    rb_define_method(rb_cHash,"size", rb_hash_size, 0);
-    rb_define_method(rb_cHash,"length", rb_hash_size, 0);
-    rb_define_method(rb_cHash,"empty?", rb_hash_empty_p, 0);
+    rb_define_method(rb_cHash, "==", rb_hash_equal, 1);
+    rb_define_method(rb_cHash, "[]", rb_hash_aref, 1);
+    rb_define_method(rb_cHash, "hash", rb_hash_hash, 0);
+    rb_define_method(rb_cHash, "eql?", rb_hash_eql, 1);
+    rb_define_method(rb_cHash, "fetch", rb_hash_fetch_m, -1);
+    rb_define_method(rb_cHash, "[]=", rb_hash_aset, 2);
+    rb_define_method(rb_cHash, "store", rb_hash_aset, 2);
+    rb_define_method(rb_cHash, "default", rb_hash_default, -1);
+    rb_define_method(rb_cHash, "default=", rb_hash_set_default, 1);
+    rb_define_method(rb_cHash, "default_proc", rb_hash_default_proc, 0);
+    rb_define_method(rb_cHash, "default_proc=", rb_hash_set_default_proc, 1);
+    rb_define_method(rb_cHash, "key", rb_hash_key, 1);
+    rb_define_method(rb_cHash, "index", rb_hash_index, 1);
+    rb_define_method(rb_cHash, "size", rb_hash_size, 0);
+    rb_define_method(rb_cHash, "length", rb_hash_size, 0);
+    rb_define_method(rb_cHash, "empty?", rb_hash_empty_p, 0);
 
-    rb_define_method(rb_cHash,"each_value", rb_hash_each_value, 0);
-    rb_define_method(rb_cHash,"each_key", rb_hash_each_key, 0);
-    rb_define_method(rb_cHash,"each_pair", rb_hash_each_pair, 0);
-    rb_define_method(rb_cHash,"each", rb_hash_each_pair, 0);
+    rb_define_method(rb_cHash, "each_value", rb_hash_each_value, 0);
+    rb_define_method(rb_cHash, "each_key", rb_hash_each_key, 0);
+    rb_define_method(rb_cHash, "each_pair", rb_hash_each_pair, 0);
+    rb_define_method(rb_cHash, "each", rb_hash_each_pair, 0);
 
-    rb_define_method(rb_cHash, "map_v", rb_hash_map_v, 0);
-    rb_define_method(rb_cHash, "map_v!", rb_hash_map_v_bang, 0);
+    rb_define_method(rb_cHash, "transform_values", rb_hash_transform_values, 0);
+    rb_define_method(rb_cHash, "transform_values!", rb_hash_transform_values_bang, 0);
 
-    rb_define_method(rb_cHash,"keys", rb_hash_keys, 0);
-    rb_define_method(rb_cHash,"values", rb_hash_values, 0);
-    rb_define_method(rb_cHash,"values_at", rb_hash_values_at, -1);
-    rb_define_method(rb_cHash,"fetch_values", rb_hash_fetch_values, -1);
+    rb_define_method(rb_cHash, "keys", rb_hash_keys, 0);
+    rb_define_method(rb_cHash, "values", rb_hash_values, 0);
+    rb_define_method(rb_cHash, "values_at", rb_hash_values_at, -1);
+    rb_define_method(rb_cHash, "fetch_values", rb_hash_fetch_values, -1);
 
-    rb_define_method(rb_cHash,"shift", rb_hash_shift, 0);
-    rb_define_method(rb_cHash,"delete", rb_hash_delete_m, 1);
-    rb_define_method(rb_cHash,"delete_if", rb_hash_delete_if, 0);
-    rb_define_method(rb_cHash,"keep_if", rb_hash_keep_if, 0);
-    rb_define_method(rb_cHash,"select", rb_hash_select, 0);
-    rb_define_method(rb_cHash,"select!", rb_hash_select_bang, 0);
-    rb_define_method(rb_cHash,"reject", rb_hash_reject, 0);
-    rb_define_method(rb_cHash,"reject!", rb_hash_reject_bang, 0);
-    rb_define_method(rb_cHash,"clear", rb_hash_clear, 0);
-    rb_define_method(rb_cHash,"invert", rb_hash_invert, 0);
-    rb_define_method(rb_cHash,"update", rb_hash_update, 1);
-    rb_define_method(rb_cHash,"replace", rb_hash_replace, 1);
-    rb_define_method(rb_cHash,"merge!", rb_hash_update, 1);
-    rb_define_method(rb_cHash,"merge", rb_hash_merge, 1);
+    rb_define_method(rb_cHash, "shift", rb_hash_shift, 0);
+    rb_define_method(rb_cHash, "delete", rb_hash_delete_m, 1);
+    rb_define_method(rb_cHash, "delete_if", rb_hash_delete_if, 0);
+    rb_define_method(rb_cHash, "keep_if", rb_hash_keep_if, 0);
+    rb_define_method(rb_cHash, "select", rb_hash_select, 0);
+    rb_define_method(rb_cHash, "select!", rb_hash_select_bang, 0);
+    rb_define_method(rb_cHash, "reject", rb_hash_reject, 0);
+    rb_define_method(rb_cHash, "reject!", rb_hash_reject_bang, 0);
+    rb_define_method(rb_cHash, "clear", rb_hash_clear, 0);
+    rb_define_method(rb_cHash, "invert", rb_hash_invert, 0);
+    rb_define_method(rb_cHash, "update", rb_hash_update, 1);
+    rb_define_method(rb_cHash, "replace", rb_hash_replace, 1);
+    rb_define_method(rb_cHash, "merge!", rb_hash_update, 1);
+    rb_define_method(rb_cHash, "merge", rb_hash_merge, 1);
     rb_define_method(rb_cHash, "assoc", rb_hash_assoc, 1);
     rb_define_method(rb_cHash, "rassoc", rb_hash_rassoc, 1);
     rb_define_method(rb_cHash, "flatten", rb_hash_flatten, -1);
+    rb_define_method(rb_cHash, "compact", rb_hash_compact, 0);
+    rb_define_method(rb_cHash, "compact!", rb_hash_compact_bang, 0);
 
-    rb_define_method(rb_cHash,"include?", rb_hash_has_key, 1);
-    rb_define_method(rb_cHash,"member?", rb_hash_has_key, 1);
-    rb_define_method(rb_cHash,"has_key?", rb_hash_has_key, 1);
-    rb_define_method(rb_cHash,"has_value?", rb_hash_has_value, 1);
-    rb_define_method(rb_cHash,"key?", rb_hash_has_key, 1);
-    rb_define_method(rb_cHash,"value?", rb_hash_has_value, 1);
+    rb_define_method(rb_cHash, "include?", rb_hash_has_key, 1);
+    rb_define_method(rb_cHash, "member?", rb_hash_has_key, 1);
+    rb_define_method(rb_cHash, "has_key?", rb_hash_has_key, 1);
+    rb_define_method(rb_cHash, "has_value?", rb_hash_has_value, 1);
+    rb_define_method(rb_cHash, "key?", rb_hash_has_key, 1);
+    rb_define_method(rb_cHash, "value?", rb_hash_has_value, 1);
 
-    rb_define_method(rb_cHash,"compare_by_identity", rb_hash_compare_by_id, 0);
-    rb_define_method(rb_cHash,"compare_by_identity?", rb_hash_compare_by_id_p, 0);
+    rb_define_method(rb_cHash, "compare_by_identity", rb_hash_compare_by_id, 0);
+    rb_define_method(rb_cHash, "compare_by_identity?", rb_hash_compare_by_id_p, 0);
 
     rb_define_method(rb_cHash, "any?", rb_hash_any_p, 0);
     rb_define_method(rb_cHash, "dig", rb_hash_dig, -1);
@@ -4457,48 +4535,48 @@ Init_Hash(void)
     envtbl = rb_obj_alloc(rb_cObject);
     rb_extend_object(envtbl, rb_mEnumerable);
 
-    rb_define_singleton_method(envtbl,"[]", rb_f_getenv, 1);
-    rb_define_singleton_method(envtbl,"fetch", env_fetch, -1);
-    rb_define_singleton_method(envtbl,"[]=", env_aset, 2);
-    rb_define_singleton_method(envtbl,"store", env_aset, 2);
-    rb_define_singleton_method(envtbl,"each", env_each_pair, 0);
-    rb_define_singleton_method(envtbl,"each_pair", env_each_pair, 0);
-    rb_define_singleton_method(envtbl,"each_key", env_each_key, 0);
-    rb_define_singleton_method(envtbl,"each_value", env_each_value, 0);
-    rb_define_singleton_method(envtbl,"delete", env_delete_m, 1);
-    rb_define_singleton_method(envtbl,"delete_if", env_delete_if, 0);
-    rb_define_singleton_method(envtbl,"keep_if", env_keep_if, 0);
-    rb_define_singleton_method(envtbl,"clear", rb_env_clear, 0);
-    rb_define_singleton_method(envtbl,"reject", env_reject, 0);
-    rb_define_singleton_method(envtbl,"reject!", env_reject_bang, 0);
-    rb_define_singleton_method(envtbl,"select", env_select, 0);
-    rb_define_singleton_method(envtbl,"select!", env_select_bang, 0);
-    rb_define_singleton_method(envtbl,"shift", env_shift, 0);
-    rb_define_singleton_method(envtbl,"invert", env_invert, 0);
-    rb_define_singleton_method(envtbl,"replace", env_replace, 1);
-    rb_define_singleton_method(envtbl,"update", env_update, 1);
-    rb_define_singleton_method(envtbl,"inspect", env_inspect, 0);
-    rb_define_singleton_method(envtbl,"rehash", env_none, 0);
-    rb_define_singleton_method(envtbl,"to_a", env_to_a, 0);
-    rb_define_singleton_method(envtbl,"to_s", env_to_s, 0);
-    rb_define_singleton_method(envtbl,"key", env_key, 1);
-    rb_define_singleton_method(envtbl,"index", env_index, 1);
-    rb_define_singleton_method(envtbl,"size", env_size, 0);
-    rb_define_singleton_method(envtbl,"length", env_size, 0);
-    rb_define_singleton_method(envtbl,"empty?", env_empty_p, 0);
-    rb_define_singleton_method(envtbl,"keys", env_keys, 0);
-    rb_define_singleton_method(envtbl,"values", env_values, 0);
-    rb_define_singleton_method(envtbl,"values_at", env_values_at, -1);
-    rb_define_singleton_method(envtbl,"include?", env_has_key, 1);
-    rb_define_singleton_method(envtbl,"member?", env_has_key, 1);
-    rb_define_singleton_method(envtbl,"has_key?", env_has_key, 1);
-    rb_define_singleton_method(envtbl,"has_value?", env_has_value, 1);
-    rb_define_singleton_method(envtbl,"key?", env_has_key, 1);
-    rb_define_singleton_method(envtbl,"value?", env_has_value, 1);
-    rb_define_singleton_method(envtbl,"to_hash", env_to_hash, 0);
-    rb_define_singleton_method(envtbl,"to_h", env_to_hash, 0);
-    rb_define_singleton_method(envtbl,"assoc", env_assoc, 1);
-    rb_define_singleton_method(envtbl,"rassoc", env_rassoc, 1);
+    rb_define_singleton_method(envtbl, "[]", rb_f_getenv, 1);
+    rb_define_singleton_method(envtbl, "fetch", env_fetch, -1);
+    rb_define_singleton_method(envtbl, "[]=", env_aset, 2);
+    rb_define_singleton_method(envtbl, "store", env_aset, 2);
+    rb_define_singleton_method(envtbl, "each", env_each_pair, 0);
+    rb_define_singleton_method(envtbl, "each_pair", env_each_pair, 0);
+    rb_define_singleton_method(envtbl, "each_key", env_each_key, 0);
+    rb_define_singleton_method(envtbl, "each_value", env_each_value, 0);
+    rb_define_singleton_method(envtbl, "delete", env_delete_m, 1);
+    rb_define_singleton_method(envtbl, "delete_if", env_delete_if, 0);
+    rb_define_singleton_method(envtbl, "keep_if", env_keep_if, 0);
+    rb_define_singleton_method(envtbl, "clear", rb_env_clear, 0);
+    rb_define_singleton_method(envtbl, "reject", env_reject, 0);
+    rb_define_singleton_method(envtbl, "reject!", env_reject_bang, 0);
+    rb_define_singleton_method(envtbl, "select", env_select, 0);
+    rb_define_singleton_method(envtbl, "select!", env_select_bang, 0);
+    rb_define_singleton_method(envtbl, "shift", env_shift, 0);
+    rb_define_singleton_method(envtbl, "invert", env_invert, 0);
+    rb_define_singleton_method(envtbl, "replace", env_replace, 1);
+    rb_define_singleton_method(envtbl, "update", env_update, 1);
+    rb_define_singleton_method(envtbl, "inspect", env_inspect, 0);
+    rb_define_singleton_method(envtbl, "rehash", env_none, 0);
+    rb_define_singleton_method(envtbl, "to_a", env_to_a, 0);
+    rb_define_singleton_method(envtbl, "to_s", env_to_s, 0);
+    rb_define_singleton_method(envtbl, "key", env_key, 1);
+    rb_define_singleton_method(envtbl, "index", env_index, 1);
+    rb_define_singleton_method(envtbl, "size", env_size, 0);
+    rb_define_singleton_method(envtbl, "length", env_size, 0);
+    rb_define_singleton_method(envtbl, "empty?", env_empty_p, 0);
+    rb_define_singleton_method(envtbl, "keys", env_keys, 0);
+    rb_define_singleton_method(envtbl, "values", env_values, 0);
+    rb_define_singleton_method(envtbl, "values_at", env_values_at, -1);
+    rb_define_singleton_method(envtbl, "include?", env_has_key, 1);
+    rb_define_singleton_method(envtbl, "member?", env_has_key, 1);
+    rb_define_singleton_method(envtbl, "has_key?", env_has_key, 1);
+    rb_define_singleton_method(envtbl, "has_value?", env_has_value, 1);
+    rb_define_singleton_method(envtbl, "key?", env_has_key, 1);
+    rb_define_singleton_method(envtbl, "value?", env_has_value, 1);
+    rb_define_singleton_method(envtbl, "to_hash", env_to_hash, 0);
+    rb_define_singleton_method(envtbl, "to_h", env_to_hash, 0);
+    rb_define_singleton_method(envtbl, "assoc", env_assoc, 1);
+    rb_define_singleton_method(envtbl, "rassoc", env_rassoc, 1);
 
     /*
      * ENV is a Hash-like accessor for environment variables.

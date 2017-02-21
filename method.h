@@ -205,7 +205,7 @@ void rb_free_method_entry(const rb_method_entry_t *me);
 void rb_sweep_method_entry(void *vm);
 
 const rb_method_entry_t *rb_method_entry_clone(const rb_method_entry_t *me);
-const rb_callable_method_entry_t *rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, VALUE defined_class);
+const rb_callable_method_entry_t *rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID called_id, VALUE defined_class);
 void rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src);
 
 void rb_scope_visibility_set(rb_method_visibility_t);

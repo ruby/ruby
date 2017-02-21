@@ -385,6 +385,22 @@ EOS
     assert_equal(nil, res.message)
   end
 
+  def test_raises_exception_with_missing_reason
+    io = dummy_io(<<EOS)
+HTTP/1.1 404
+Content-Length: 5
+Connection: close
+
+hello
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+    assert_equal(nil, res.message)
+    assert_raise Net::HTTPServerException do
+      res.error!
+    end
+  end
+
 private
 
   def dummy_io(str)

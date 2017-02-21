@@ -4057,9 +4057,6 @@ rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base)
 	    sign = 0;
 	}
 	ASSERT_LEN();
-	if (str[0] == '+' || str[0] == '-') {
-	    goto bad;
-	}
     }
     if (base <= 0) {
 	if (str[0] == '0' && len > 1) {
@@ -4172,6 +4169,7 @@ rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base)
     digits_start = str;
     if (!str2big_scan_digits(s, str, base, badcheck, &num_digits, &len))
 	goto bad;
+    if (endp) *endp = (char *)(str + len);
     digits_end = digits_start + len;
 
     if (POW2_P(base)) {
@@ -5385,7 +5383,7 @@ big_op(VALUE x, VALUE y, enum big_op_t op)
     VALUE rel;
     int n;
 
-    if (FIXNUM_P(y) || RB_BIGNUM_TYPE_P(y)) {
+    if (RB_INTEGER_TYPE_P(y)) {
 	rel = rb_big_cmp(x, y);
     }
     else if (RB_FLOAT_TYPE_P(y)) {
@@ -5443,8 +5441,8 @@ rb_big_le(VALUE x, VALUE y)
  *     big == obj  -> true or false
  *
  *  Returns <code>true</code> only if <i>obj</i> has the same value
- *  as <i>big</i>. Contrast this with <code>Bignum#eql?</code>, which
- *  requires <i>obj</i> to be a <code>Bignum</code>.
+ *  as <i>big</i>. Contrast this with <code>Integer#eql?</code>, which
+ *  requires <i>obj</i> to be a <code>Integer</code>.
  *
  *     68719476736 == 68719476736.0   #=> true
  */
@@ -6090,10 +6088,11 @@ big_shift(VALUE x, long n)
     return x;
 }
 
-static VALUE
+enum {DBL_BIGDIG = ((DBL_MANT_DIG + BITSPERDIG) / BITSPERDIG)};
+
+static double
 big_fdiv(VALUE x, VALUE y, long ey)
 {
-#define DBL_BIGDIG ((DBL_MANT_DIG + BITSPERDIG) / BITSPERDIG)
     VALUE z;
     long l, ex;
 
@@ -6101,6 +6100,8 @@ big_fdiv(VALUE x, VALUE y, long ey)
     l = BIGNUM_LEN(x);
     ex = l * BITSPERDIG - nlz(BDIGITS(x)[l-1]);
     ex -= 2 * DBL_BIGDIG * BITSPERDIG;
+    if (ex > BITSPERDIG) ex -= BITSPERDIG;
+    else if (ex > 0) ex = 0;
     if (ex) x = big_shift(x, ex);
 
     bigdivrem(x, y, &z, 0);
@@ -6108,14 +6109,14 @@ big_fdiv(VALUE x, VALUE y, long ey)
 #if SIZEOF_LONG > SIZEOF_INT
     {
 	/* Visual C++ can't be here */
-	if (l > INT_MAX) return DBL2NUM(INFINITY);
-	if (l < INT_MIN) return DBL2NUM(0.0);
+	if (l > INT_MAX) return INFINITY;
+	if (l < INT_MIN) return 0.0;
     }
 #endif
-    return DBL2NUM(ldexp(big2dbl(z), (int)l));
+    return ldexp(big2dbl(z), (int)l);
 }
 
-static VALUE
+static double
 big_fdiv_int(VALUE x, VALUE y)
 {
     long l, ey;
@@ -6127,7 +6128,7 @@ big_fdiv_int(VALUE x, VALUE y)
     return big_fdiv(x, y, ey);
 }
 
-static VALUE
+static double
 big_fdiv_float(VALUE x, VALUE y)
 {
     int i;
@@ -6135,8 +6136,8 @@ big_fdiv_float(VALUE x, VALUE y)
     return big_fdiv(x, y, i - DBL_MANT_DIG);
 }
 
-VALUE
-rb_big_fdiv(VALUE x, VALUE y)
+double
+rb_big_fdiv_double(VALUE x, VALUE y)
 {
     double dx, dy;
 
@@ -6154,14 +6155,20 @@ rb_big_fdiv(VALUE x, VALUE y)
     else if (RB_FLOAT_TYPE_P(y)) {
 	dy = RFLOAT_VALUE(y);
 	if (isnan(dy))
-	    return y;
+	    return dy;
 	if (isinf(dx))
 	    return big_fdiv_float(x, y);
     }
     else {
-	return rb_num_coerce_bin(x, y, rb_intern("fdiv"));
+	return RFLOAT_VALUE(rb_num_coerce_bin(x, y, rb_intern("fdiv")));
     }
-    return DBL2NUM(dx / dy);
+    return dx / dy;
+}
+
+VALUE
+rb_big_fdiv(VALUE x, VALUE y)
+{
+    return DBL2NUM(rb_big_fdiv_double(x, y));
 }
 
 VALUE
@@ -6285,7 +6292,7 @@ rb_big_and(VALUE x, VALUE y)
     BDIGIT tmph;
     long tmpn;
 
-    if (!FIXNUM_P(y) && !RB_BIGNUM_TYPE_P(y)) {
+    if (!RB_INTEGER_TYPE_P(y)) {
 	return rb_num_coerce_bit(x, y, '&');
     }
 
@@ -6404,7 +6411,7 @@ rb_big_or(VALUE x, VALUE y)
     BDIGIT tmph;
     long tmpn;
 
-    if (!FIXNUM_P(y) && !RB_BIGNUM_TYPE_P(y)) {
+    if (!RB_INTEGER_TYPE_P(y)) {
 	return rb_num_coerce_bit(x, y, '|');
     }
 
@@ -6498,7 +6505,7 @@ rb_big_xor(VALUE x, VALUE y)
     BDIGIT tmph;
     long tmpn;
 
-    if (!FIXNUM_P(y) && !RB_BIGNUM_TYPE_P(y)) {
+    if (!RB_INTEGER_TYPE_P(y)) {
 	return rb_num_coerce_bit(x, y, '^');
     }
 
@@ -6645,7 +6652,7 @@ rb_big_hash(VALUE x)
     st_index_t hash;
 
     hash = rb_memhash(BDIGITS(x), sizeof(BDIGIT)*BIGNUM_LEN(x)) ^ BIGNUM_SIGN(x);
-    return INT2FIX(hash);
+    return ST2FIX(hash);
 }
 
 /*
@@ -6665,7 +6672,7 @@ rb_big_hash(VALUE x)
 static VALUE
 rb_int_coerce(VALUE x, VALUE y)
 {
-    if (FIXNUM_P(y) || RB_BIGNUM_TYPE_P(y)) {
+    if (RB_INTEGER_TYPE_P(y)) {
         return rb_assoc_new(y, x);
     }
     else {
@@ -6683,6 +6690,12 @@ rb_big_abs(VALUE x)
 	BIGNUM_SET_POSITIVE_SIGN(x);
     }
     return x;
+}
+
+int
+rb_big_sign(VALUE x)
+{
+    return BIGNUM_SIGN(x);
 }
 
 size_t
@@ -6781,6 +6794,7 @@ Init_Bignum(void)
     rb_cBignum = rb_cInteger;
 #endif
     rb_define_const(rb_cObject, "Bignum", rb_cInteger);
+    rb_deprecate_constant(rb_cObject, "Bignum");
 
     rb_define_method(rb_cInteger, "coerce", rb_int_coerce, 1);
 

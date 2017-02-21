@@ -214,10 +214,10 @@ class SimpleRat < Numeric
   def numerator() @num end
   def denominator() @den end
 
-  def +@ () self end
-  def -@ () self.class.new(-@num, @den) end
+  def +@() self end
+  def -@() self.class.new(-@num, @den) end
 
-  def + (o)
+  def +(o)
     case o
     when SimpleRat, Rational
       a = @num * o.denominator
@@ -233,7 +233,7 @@ class SimpleRat < Numeric
     end
   end
 
-  def - (o)
+  def -(o)
     case o
     when SimpleRat, Rational
       a = @num * o.denominator
@@ -249,7 +249,7 @@ class SimpleRat < Numeric
     end
   end
 
-  def * (o)
+  def *(o)
     case o
     when SimpleRat, Rational
       a = @num * o.numerator
@@ -334,7 +334,7 @@ class SimpleRat < Numeric
   def divmod(o) [div(o), modulo(o)] end
   def quotrem(o) [quot(o), remainder(o)] end
 
-  def ** (o)
+  def **(o)
     case o
     when SimpleRat, Rational
       Float(self) ** o
@@ -357,7 +357,7 @@ class SimpleRat < Numeric
     end
   end
 
-  def <=> (o)
+  def <=>(o)
     case o
     when SimpleRat, Rational
       a = @num * o.denominator
@@ -373,7 +373,7 @@ class SimpleRat < Numeric
     end
   end
 
-  def == (o)
+  def ==(o)
     begin
       (self <=> o) == 0
     rescue

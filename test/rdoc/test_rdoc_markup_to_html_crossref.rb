@@ -44,6 +44,12 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
     assert_equal para("<a href=\"C1.html#Section\">Section at C1</a>"), result
   end
 
+  def test_convert_CROSSREF_constant
+    result = @to.convert 'C1::CONST'
+
+    assert_equal para("<a href=\"C1.html#CONST\">C1::CONST</a>"), result
+  end
+
   def test_convert_RDOCLINK_rdoc_ref
     result = @to.convert 'rdoc-ref:C1'
 

@@ -7,6 +7,9 @@
 #include "ruby/re.h"
 #include <ctype.h>
 
+RUBY_EXTERN VALUE rb_int_positive_pow(long x, unsigned long y);
+RUBY_EXTERN unsigned long ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow);
+
 /* #define TIGHT_PARSER */
 
 #define sizeof_array(o) (sizeof o / sizeof o[0])
@@ -339,6 +342,13 @@ subx(VALUE str, VALUE rep, VALUE pat, VALUE hash, int (*cb)(VALUE, VALUE))
 
 #include "zonetab.h"
 
+static int
+str_end_with(const char *s, long l, const char *w)
+{
+    int n = (int)strlen(w);
+    return (l >= n && strncmp(s - n, w, n) == 0);
+}
+
 VALUE
 date_zone_to_diff(VALUE str)
 {
@@ -373,44 +383,27 @@ date_zone_to_diff(VALUE str)
 	    --d;
 	*d = '\0';
     }
-    str = rb_str_new2(dest);
+    l = d - dest;
+    s = dest;
     {
-#define STD " standard time"
-#define DST " daylight time"
-	char *ss, *ds;
-	long sl, dl;
+	static const char STD[] = " standard time";
+	static const char DST1[] = " daylight time";
+	static const char DST2[] = " dst";
 	int dst = 0;
 
-	sl = RSTRING_LEN(str) - (sizeof STD - 1);
-	ss = RSTRING_PTR(str) + sl;
-	dl = RSTRING_LEN(str) - (sizeof DST - 1);
-	ds = RSTRING_PTR(str) + dl;
-
-	if (sl >= 0 && strcmp(ss, STD) == 0) {
-	    str = rb_str_new(RSTRING_PTR(str), sl);
+	if (str_end_with(d, l, STD)) {
+	    l -= sizeof(STD) - 1;
 	}
-	else if (dl >= 0 && strcmp(ds, DST) == 0) {
-	    str = rb_str_new(RSTRING_PTR(str), dl);
+	else if (str_end_with(d, l, DST1)) {
+	    l -= sizeof(DST1) - 1;
 	    dst = 1;
 	}
-#undef STD
-#undef DST
-	else {
-#define DST " dst"
-	    char *ds;
-	    long dl;
-
-	    dl = RSTRING_LEN(str) - (sizeof DST - 1);
-	    ds = RSTRING_PTR(str) + dl;
-
-	    if (dl >= 0 && strcmp(ds, DST) == 0) {
-		str = rb_str_new(RSTRING_PTR(str), dl);
-		dst = 1;
-	    }
-#undef DST
+	else if (str_end_with(d, l, DST2)) {
+	    l -= sizeof(DST2) - 1;
+	    dst = 1;
 	}
 	{
-	    const struct zone *z = zonetab(RSTRING_PTR(str), (unsigned int)RSTRING_LEN(str));
+	    const struct zone *z = zonetab(s, (unsigned int)l);
 	    if (z) {
 		int d = z->offset;
 		if (dst)
@@ -420,100 +413,60 @@ date_zone_to_diff(VALUE str)
 	    }
 	}
 	{
-	    char *s, *p;
-	    VALUE sign;
-	    VALUE hour = Qnil, min = Qnil, sec = Qnil;
-	    VALUE str_orig;
+	    char *p;
+	    int sign = 0;
+	    long hour = 0, min = 0, sec = 0;
 
-	    s = RSTRING_PTR(str);
-	    str_orig = str;
-
-	    if (strncmp(s, "gmt", 3) == 0 ||
-		strncmp(s, "utc", 3) == 0)
+	    if (l > 3 &&
+		(strncmp(s, "gmt", 3) == 0 ||
+		 strncmp(s, "utc", 3) == 0)) {
 		s += 3;
+		l -= 3;
+	    }
 	    if (issign(*s)) {
-		sign = rb_str_new(s, 1);
+		sign = *s == '-';
 		s++;
+		l--;
 
-		str = rb_str_new2(s);
-
-		if ((p = strchr(s, ':')) != NULL) {
-		    hour = rb_str_new(s, p - s);
+		hour = STRTOUL(s, &p, 10);
+		if (*p == ':') {
 		    s = ++p;
-		    if ((p = strchr(s, ':')) != NULL) {
-			min = rb_str_new(s, p - s);
+		    min = STRTOUL(s, &p, 10);
+		    if (*p == ':') {
 			s = ++p;
-			if ((p = strchr(s, ':')) != NULL) {
-			    sec = rb_str_new(s, p - s);
-			}
-			else
-			    sec = rb_str_new2(s);
+			sec = STRTOUL(s, &p, 10);
 		    }
-		    else
-			min = rb_str_new2(s);
-		    RB_GC_GUARD(str_orig);
 		    goto num;
 		}
-		if (strpbrk(RSTRING_PTR(str), ",.")) {
-		    VALUE astr = 0;
-		    char *a, *b;
-
-		    a = ALLOCV_N(char, astr, RSTRING_LEN(str) + 1);
-		    strcpy(a, RSTRING_PTR(str));
-		    b = strpbrk(a, ",.");
-		    *b = '\0';
-		    b++;
-
-		    hour = cstr2num(a);
-		    min = f_mul(rb_rational_new2
-				(cstr2num(b),
-				 f_expt(INT2FIX(10),
-					LONG2NUM((long)strlen(b)))),
-				INT2FIX(60));
-		    ALLOCV_END(astr);
-		    goto num;
+		if (*p == ',' || *p == '.') {
+		    char *e = 0;
+		    p++;
+		    min = STRTOUL(p, &e, 10) * 3600;
+		    if (sign) {
+			hour = -hour;
+			min = -min;
+		    }
+		    offset = rb_rational_new(INT2FIX(min),
+					     rb_int_positive_pow(10, (int)(e - p)));
+		    offset = f_add(INT2FIX(hour * 3600), offset);
+		    goto ok;
 		}
-		{
-		    const char *cs = RSTRING_PTR(str);
-		    long cl = RSTRING_LEN(str);
+		else if (l > 2) {
+		    size_t n;
+		    int ov;
 
-		    if (cl % 2) {
-			if (cl >= 1)
-			    hour = rb_str_new(&cs[0], 1);
-			if (cl >= 3)
-			    min  = rb_str_new(&cs[1], 2);
-			if (cl >= 5)
-			    sec  = rb_str_new(&cs[3], 2);
-		    }
-		    else {
-			if (cl >= 2)
-			    hour = rb_str_new(&cs[0], 2);
-			if (cl >= 4)
-			    min  = rb_str_new(&cs[2], 2);
-			if (cl >= 6)
-			    sec  = rb_str_new(&cs[4], 2);
-		    }
+		    if (l >= 1)
+			hour = ruby_scan_digits(&s[0], 2 - l % 2, 10, &n, &ov);
+		    if (l >= 3)
+			min  = ruby_scan_digits(&s[2 - l % 2], 2, 10, &n, &ov);
+		    if (l >= 5)
+			sec  = ruby_scan_digits(&s[4 - l % 2], 2, 10, &n, &ov);
 		    goto num;
 		}
 	      num:
-		if (NIL_P(hour))
-		    offset = INT2FIX(0);
-		else {
-		    if (RB_TYPE_P(hour, T_STRING))
-			hour = str2num(hour);
-		    offset = f_mul(hour, INT2FIX(3600));
-		}
-		if (!NIL_P(min)) {
-		    if (RB_TYPE_P(min, T_STRING))
-			min = str2num(min);
-		    offset = f_add(offset, f_mul(min, INT2FIX(60)));
-		}
-		if (!NIL_P(sec))
-		    offset = f_add(offset, str2num(sec));
-		if (!NIL_P(sign) &&
-		    RSTRING_LEN(sign) == 1 &&
-		    *RSTRING_PTR(sign) == '-')
-		    offset = f_negate(offset);
+		sec += min * 60 + hour * 3600;
+		if (sign) sec = -sec;
+		offset = INT2FIX(sec);
 	    }
 	}
     }

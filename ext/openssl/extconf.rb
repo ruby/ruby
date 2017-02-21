@@ -33,16 +33,16 @@ end
 Logging::message "=== Checking for system dependent stuff... ===\n"
 have_library("nsl", "t_open")
 have_library("socket", "socket")
-have_header("assert.h")
 
 Logging::message "=== Checking for required stuff... ===\n"
-if $mingw
-  have_library("wsock32")
-  have_library("gdi32")
-end
-
 result = pkg_config("openssl") && have_header("openssl/ssl.h")
 unless result
+  if $mswin || $mingw
+    # required for static OpenSSL libraries
+    have_library("gdi32") # OpenSSL <= 1.0.2 (for RAND_screen())
+    have_library("crypt32")
+  end
+
   result = have_header("openssl/ssl.h")
   result &&= %w[crypto libeay32].any? {|lib| have_library(lib, "CRYPTO_malloc")}
   result &&= %w[ssl ssleay32].any? {|lib| have_library(lib, "SSL_new")}
@@ -60,7 +60,7 @@ unless result
   raise "OpenSSL 0.9.8 or later required."
 end
 
-unless OpenSSL.check_func("SSL_library_init()", "openssl/ssl.h")
+if /darwin/ =~ RUBY_PLATFORM and !OpenSSL.check_func("SSL_library_init()", "openssl/ssl.h")
   raise "Ignore OpenSSL broken by Apple.\nPlease use another openssl. (e.g. using `configure --with-openssl-dir=/path/to/openssl')"
 end
 
@@ -87,6 +87,7 @@ engines.each { |name|
 # added in 0.9.8X
 have_func("EVP_CIPHER_CTX_new")
 have_func("EVP_CIPHER_CTX_free")
+OpenSSL.check_func_or_macro("SSL_CTX_clear_options", "openssl/ssl.h")
 
 # added in 1.0.0
 have_func("ASN1_TIME_adj")
@@ -101,6 +102,7 @@ have_func("i2d_ASN1_SET_ANY")
 have_func("SSL_SESSION_cmp") # removed
 OpenSSL.check_func_or_macro("SSL_set_tlsext_host_name", "openssl/ssl.h")
 have_struct_member("CRYPTO_THREADID", "ptr", "openssl/crypto.h")
+have_func("EVP_PKEY_get0")
 
 # added in 1.0.1
 have_func("SSL_CTX_set_next_proto_select_cb")
@@ -147,11 +149,11 @@ have_func("EVP_PKEY_up_ref")
 OpenSSL.check_func_or_macro("SSL_CTX_set_tmp_ecdh_callback", "openssl/ssl.h") # removed
 OpenSSL.check_func_or_macro("SSL_CTX_set_min_proto_version", "openssl/ssl.h")
 have_func("SSL_CTX_get_security_level")
+have_func("X509_get0_notBefore")
+have_func("SSL_SESSION_get_protocol_version")
 
 Logging::message "=== Checking done. ===\n"
 
 create_header
-create_makefile("openssl") {|conf|
-  conf << "THREAD_MODEL = #{CONFIG["THREAD_MODEL"]}\n"
-}
+create_makefile("openssl")
 Logging::message "Done.\n"

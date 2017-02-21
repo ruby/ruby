@@ -174,7 +174,7 @@ OBJDUMP       = @OBJDUMP@
 OBJCOPY       = @OBJCOPY@
 VCS           = @VCS@
 VCSUP         = @VCSUP@
-DTRACE        = @DTRACE@
+DTRACE        = @DTRACE@ @DTRACE_OPT@
 DTRACE_EXT    = @DTRACE_EXT@
 DTRACE_OBJ    = @DTRACE_OBJ@
 DTRACE_REBUILD= @DTRACE_REBUILD@
@@ -406,6 +406,7 @@ clean-local::
 	$(Q)$(RM) ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output \
 		enc/encinit.c enc/encinit.$(OBJEXT)
 	-$(Q)$(RM) $(pkgconfig_DATA)
+	-$(Q)$(RMALL) ruby-runner$(EXEEXT) ruby-runner.h ruby-runner.*/
 
 distclean-local::
 	$(Q)$(RM) ext/config.cache $(RBCONFIG) Doxyfile
@@ -422,7 +423,7 @@ clean-ext distclean-ext realclean-ext::
 	cd ..; \
 	for dir do \
 	    echo $(@:-ext=)ing "$$dir"; \
-	    (cd "ext/$$dir" && exec $(MAKE) $(MFLAGS) $(@:-ext=)) && \
+	    (cd "ext/$$dir" && exec $(MAKE) $(mflags) $(@:-ext=)) && \
 	    case "$@" in \
 	    *distclean-ext*|*realclean-ext*) \
 		$(RMDIRS) "ext/$$dir" 2> /dev/null || true;; \
@@ -431,7 +432,7 @@ clean-ext distclean-ext realclean-ext::
 	-$(Q)$(RM) ext/extinit.$(OBJEXT)
 
 distclean-ext realclean-ext::
-	-$(Q)$(RM) ext/extinit.c
+	-$(Q)$(RM) ext/extinit.c ext/configure-ext.mk ext/*/exts.mk
 	-$(Q)$(RMDIR) ext 2> /dev/null || true
 
 clean-extout:

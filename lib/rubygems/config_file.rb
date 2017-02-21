@@ -144,6 +144,10 @@ class Gem::ConfigFile
   attr_accessor :ssl_ca_cert
 
   ##
+  # sources to look for gems
+  attr_accessor :sources
+
+  ##
   # Path name of directory or file of openssl client certificate, used for remote https connection with client authentication
 
   attr_reader :ssl_client_cert
@@ -216,6 +220,7 @@ class Gem::ConfigFile
     @update_sources             = @hash[:update_sources]             if @hash.key? :update_sources
     @verbose                    = @hash[:verbose]                    if @hash.key? :verbose
     @disable_default_gem_server = @hash[:disable_default_gem_server] if @hash.key? :disable_default_gem_server
+    @sources                    = @hash[:sources]                    if @hash.key? :sources
 
     @ssl_verify_mode  = @hash[:ssl_verify_mode]  if @hash.key? :ssl_verify_mode
     @ssl_ca_cert      = @hash[:ssl_ca_cert]      if @hash.key? :ssl_ca_cert
@@ -224,7 +229,6 @@ class Gem::ConfigFile
     @api_keys         = nil
     @rubygems_api_key = nil
 
-    Gem.sources = @hash[:sources] if @hash.key? :sources
     handle_arguments arg_list
   end
 

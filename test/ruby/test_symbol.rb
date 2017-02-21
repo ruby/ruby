@@ -121,21 +121,24 @@ class TestSymbol < Test::Unit::TestCase
   end
 
   def test_to_proc_yield
-    assert_ruby_status([], <<-"end;", timeout: 5.0)
+    assert_ruby_status([], "#{<<-"begin;"}\n#{<<-"end;"}", timeout: 5.0)
+    begin;
       GC.stress = true
       true.tap(&:itself)
     end;
   end
 
   def test_to_proc_new_proc
-    assert_ruby_status([], <<-"end;", timeout: 5.0)
+    assert_ruby_status([], "#{<<-"begin;"}\n#{<<-"end;"}", timeout: 5.0)
+    begin;
       GC.stress = true
       2.times {Proc.new(&:itself)}
     end;
   end
 
   def test_to_proc_no_method
-    assert_separately([], <<-"end;", timeout: 5.0)
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}", timeout: 5.0)
+    begin;
       bug11566 = '[ruby-core:70980] [Bug #11566]'
       assert_raise(NoMethodError, bug11566) {Proc.new(&:foo).(1)}
       assert_raise(NoMethodError, bug11566) {:foo.to_proc.(1)}
@@ -143,7 +146,8 @@ class TestSymbol < Test::Unit::TestCase
   end
 
   def test_to_proc_arg
-    assert_separately([], <<-"end;", timeout: 5.0)
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}", timeout: 5.0)
+    begin;
       def (obj = Object.new).proc(&b) b; end
       assert_same(:itself.to_proc, obj.proc(&:itself))
     end;
@@ -168,13 +172,15 @@ class TestSymbol < Test::Unit::TestCase
 
   def test_to_proc_for_hash_each
     bug11830 = '[ruby-core:72205] [Bug #11830]'
-    assert_normal_exit(<<-'end;', bug11830) # do
+    assert_normal_exit("#{<<-"begin;"}\n#{<<-'end;'}", bug11830)
+    begin;
       {}.each(&:destroy)
     end;
   end
 
   def test_to_proc_iseq
-    assert_separately([], <<~"end;", timeout: 1) # do
+    assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}", timeout: 5)
+    begin;
       bug11845 = '[ruby-core:72381] [Bug #11845]'
       assert_nil(:class.to_proc.source_location, bug11845)
       assert_equal([[:rest]], :class.to_proc.parameters, bug11845)
@@ -186,12 +192,19 @@ class TestSymbol < Test::Unit::TestCase
   end
 
   def test_to_proc_binding
-    assert_separately([], <<~"end;", timeout: 1) # do
+    assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}", timeout: 5)
+    begin;
       bug12137 = '[ruby-core:74100] [Bug #12137]'
       assert_raise(ArgumentError, bug12137) {
         :succ.to_proc.binding
       }
     end;
+  end
+
+  def test_to_proc_instance_exec
+    bug = '[ruby-core:78839] [Bug #13074] should evaluate on the argument'
+    assert_equal(2, BasicObject.new.instance_exec(1, &:succ), bug)
+    assert_equal(3, BasicObject.new.instance_exec(1, 2, &:+), bug)
   end
 
   def test_call
@@ -276,6 +289,14 @@ class TestSymbol < Test::Unit::TestCase
     assert_nil(:foo.casecmp("foo"))
   end
 
+  def test_casecmp?
+    assert_equal(true, :FoO.casecmp?(:fOO))
+    assert_equal(false, :FoO.casecmp?(:BaR))
+    assert_equal(false, :baR.casecmp?(:FoO))
+    assert_nil(:foo.casecmp?("foo"))
+    assert_equal(true, :äöü.casecmp?(:ÄÖÜ))
+  end
+
   def test_length
     assert_equal(3, :FoO.length)
     assert_equal(3, :FoO.size)
@@ -317,7 +338,49 @@ class TestSymbol < Test::Unit::TestCase
     assert_raise(ArgumentError) { :"foo".match }
   end
 
-  def test_symbol_poped
+  def test_match_p_regexp
+    /backref/ =~ 'backref'
+    # must match here, but not in a separate method, e.g., assert_send,
+    # to check if $~ is affected or not.
+    assert_equal(true, "".match?(//))
+    assert_equal(true, :abc.match?(/.../))
+    assert_equal(true, 'abc'.match?(/b/))
+    assert_equal(true, 'abc'.match?(/b/, 1))
+    assert_equal(true, 'abc'.match?(/../, 1))
+    assert_equal(true, 'abc'.match?(/../, -2))
+    assert_equal(false, 'abc'.match?(/../, -4))
+    assert_equal(false, 'abc'.match?(/../, 4))
+    assert_equal(true, ("\u3042" + '\x').match?(/../, 1))
+    assert_equal(true, ''.match?(/\z/))
+    assert_equal(true, 'abc'.match?(/\z/))
+    assert_equal(true, 'Ruby'.match?(/R.../))
+    assert_equal(false, 'Ruby'.match?(/R.../, 1))
+    assert_equal(false, 'Ruby'.match?(/P.../))
+    assert_equal('backref', $&)
+  end
+
+  def test_match_p_string
+    /backref/ =~ 'backref'
+    # must match here, but not in a separate method, e.g., assert_send,
+    # to check if $~ is affected or not.
+    assert_equal(true, "".match?(''))
+    assert_equal(true, :abc.match?('...'))
+    assert_equal(true, 'abc'.match?('b'))
+    assert_equal(true, 'abc'.match?('b', 1))
+    assert_equal(true, 'abc'.match?('..', 1))
+    assert_equal(true, 'abc'.match?('..', -2))
+    assert_equal(false, 'abc'.match?('..', -4))
+    assert_equal(false, 'abc'.match?('..', 4))
+    assert_equal(true, ("\u3042" + '\x').match?('..', 1))
+    assert_equal(true, ''.match?('\z'))
+    assert_equal(true, 'abc'.match?('\z'))
+    assert_equal(true, 'Ruby'.match?('R...'))
+    assert_equal(false, 'Ruby'.match?('R...', 1))
+    assert_equal(false, 'Ruby'.match?('P...'))
+    assert_equal('backref', $&)
+  end
+
+  def test_symbol_popped
     assert_nothing_raised { eval('a = 1; :"#{ a }"; 1') }
   end
 
@@ -404,13 +467,15 @@ class TestSymbol < Test::Unit::TestCase
   def test_symbol_fstr_leak
     bug10686 = '[ruby-core:67268] [Bug #10686]'
     x = x = 0
-    assert_no_memory_leak([], '200_000.times { |i| i.to_s.to_sym }; GC.start', <<-"end;", bug10686, limit: 1.71, rss: true)
+    assert_no_memory_leak([], '200_000.times { |i| i.to_s.to_sym }; GC.start', "#{<<-"begin;"}\n#{<<-"end;"}", bug10686, limit: 1.71, rss: true, timeout: 20)
+    begin;
       200_000.times { |i| (i + 200_000).to_s.to_sym }
     end;
   end
 
   def test_hash_redefinition
-    assert_separately([], <<-'end;')
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
       bug11035 = '[ruby-core:68767] [Bug #11035]'
       class Symbol
         def hash

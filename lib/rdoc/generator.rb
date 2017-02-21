@@ -49,4 +49,3 @@ module RDoc::Generator
   autoload :POT,       'rdoc/generator/pot'
 
 end
-

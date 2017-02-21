@@ -108,7 +108,11 @@ enc/<%=e%>.$(OBJEXT): <%=deps.map {|n| rule_subst % n}.join(' ')%>
 %     src = "#{e}.trans"
 
 <%=transvpath % "#{e}.c"%>: <%= transvpath % "#{e}.trans"%>
-%     src = [*IO.read(File.join($srcdir, "trans", src)).scan(/^\s*require\s+[\'\"]([^\'\"]*)/).flatten.map{|c|c+".rb"}]
+%     trans = IO.read(File.join($srcdir, "trans", src))
+%     src = trans.scan(/^\s*require\s+[\'\"]([^\'\"]*)/).flatten.map{|c|c+".rb"}
+%     if src.empty?
+%       src = trans.scan(/^\s*transcode_tblgen_\w+\s+[\'\"]([^\'\"]*)/).flatten.map{|c|c.downcase+"-tbl.rb"}
+%     end
 <%=transvpath % "#{e}.c"%>: <%= src.map {|s| transvpath % "#{s}"}.join(" ")%> $(srcdir)/tool/transcode-tblgen.rb
 %   end
 

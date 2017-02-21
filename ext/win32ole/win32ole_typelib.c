@@ -539,7 +539,7 @@ foletypelib_major_version(VALUE self)
     pTypeLib = itypelib(self);
     oletypelib_get_libattr(pTypeLib, &pTLibAttr);
 
-    major =  INT2NUM(pTLibAttr->wMajorVerNum);
+    major =  RB_INT2NUM(pTLibAttr->wMajorVerNum);
     pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
     return major;
 }
@@ -561,7 +561,7 @@ foletypelib_minor_version(VALUE self)
     ITypeLib *pTypeLib;
     pTypeLib = itypelib(self);
     oletypelib_get_libattr(pTypeLib, &pTLibAttr);
-    minor =  INT2NUM(pTLibAttr->wMinorVerNum);
+    minor =  RB_INT2NUM(pTLibAttr->wMinorVerNum);
     pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
     return minor;
 }

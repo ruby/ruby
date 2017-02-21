@@ -18,7 +18,7 @@ module OpenSSL
       klass = Class.new(Cipher){
         define_method(:initialize){|*args|
           cipher_name = args.inject(name){|n, arg| "#{n}-#{arg}" }
-          super(cipher_name)
+          super(cipher_name.downcase)
         }
       }
       const_set(name, klass)
@@ -26,34 +26,42 @@ module OpenSSL
 
     %w(128 192 256).each{|keylen|
       klass = Class.new(Cipher){
-        define_method(:initialize){|mode|
-          mode ||= "CBC"
-          cipher_name = "AES-#{keylen}-#{mode}"
-          super(cipher_name)
+        define_method(:initialize){|mode = "CBC"|
+          super("aes-#{keylen}-#{mode}".downcase)
         }
       }
       const_set("AES#{keylen}", klass)
     }
 
-    # Generate, set, and return a random key.
-    # You must call cipher.encrypt or cipher.decrypt before calling this method.
+    # call-seq:
+    #   cipher.random_key -> key
+    #
+    # Generate a random key with OpenSSL::Random.random_bytes and sets it to
+    # the cipher, and returns it.
+    #
+    # You must call #encrypt or #decrypt before calling this method.
     def random_key
       str = OpenSSL::Random.random_bytes(self.key_len)
       self.key = str
-      return str
     end
 
-    # Generate, set, and return a random iv.
-    # You must call cipher.encrypt or cipher.decrypt before calling this method.
+    # call-seq:
+    #   cipher.random_iv -> iv
+    #
+    # Generate a random IV with OpenSSL::Random.random_bytes and sets it to the
+    # cipher, and returns it.
+    #
+    # You must call #encrypt or #decrypt before calling this method.
     def random_iv
       str = OpenSSL::Random.random_bytes(self.iv_len)
       self.iv = str
-      return str
     end
 
-    # This class is only provided for backwards compatibility.  Use OpenSSL::Cipher in the future.
-    class Cipher < Cipher
-      # add warning
-    end
+    # Deprecated.
+    #
+    # This class is only provided for backwards compatibility.
+    # Use OpenSSL::Cipher.
+    class Cipher < Cipher; end
+    deprecate_constant :Cipher
   end # Cipher
 end # OpenSSL

@@ -50,8 +50,6 @@ class TestRDocCodeObject < XrefTestCase
   end
 
   def test_comment_equals_encoding
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     refute_equal Encoding::UTF_8, ''.encoding, 'Encoding sanity check'
 
     input = 'text'
@@ -64,8 +62,6 @@ class TestRDocCodeObject < XrefTestCase
   end
 
   def test_comment_equals_encoding_blank
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     refute_equal Encoding::UTF_8, ''.encoding, 'Encoding sanity check'
 
     input = ''
@@ -448,4 +444,3 @@ class TestRDocCodeObject < XrefTestCase
   end
 
 end
-

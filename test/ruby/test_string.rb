@@ -381,6 +381,8 @@ CODE
     $/ = save
 
     assert_equal(S("a").hash, S("a\u0101").chomp(S("\u0101")).hash, '[ruby-core:22414]')
+  ensure
+    $/ = save
   end
 
   def test_chomp!
@@ -437,6 +439,8 @@ CODE
     assert_equal("foo\r", s)
 
     assert_equal(S("a").hash, S("a\u0101").chomp!(S("\u0101")).hash, '[ruby-core:22414]')
+  ensure
+    $/ = save
   end
 
   def test_chop
@@ -495,6 +499,8 @@ CODE
   def test_concat
     assert_equal(S("world!"), S("world").concat(33))
     assert_equal(S("world!"), S("world").concat(S('!')))
+    b = S("sn")
+    assert_equal(S("snsnsn"), b.concat(b, b))
 
     bug7090 = '[ruby-core:47751]'
     result = S("").force_encoding(Encoding::UTF_16LE)
@@ -502,6 +508,7 @@ CODE
     expected = S("\u0300".encode(Encoding::UTF_16LE))
     assert_equal(expected, result, bug7090)
     assert_raise(TypeError) { 'foo' << :foo }
+    assert_raise(RuntimeError) { 'foo'.freeze.concat('bar') }
   end
 
   def test_count
@@ -654,14 +661,15 @@ CODE
 
     res=[]
     S("hello\n\n\nworld").lines(S('')).each {|x| res << x}
-    assert_equal(S("hello\n\n\n"), res[0])
-    assert_equal(S("world"),       res[1])
+    assert_equal(S("hello\n\n"), res[0])
+    assert_equal(S("world"),     res[1])
 
     $/ = "!"
     res=[]
     S("hello!world").lines.each {|x| res << x}
     assert_equal(S("hello!"), res[0])
     assert_equal(S("world"),  res[1])
+  ensure
     $/ = save
   end
 
@@ -774,8 +782,13 @@ CODE
 
     res=[]
     S("hello\n\n\nworld").each_line(S('')) {|x| res << x}
-    assert_equal(S("hello\n\n\n"), res[0])
-    assert_equal(S("world"),       res[1])
+    assert_equal(S("hello\n\n"), res[0])
+    assert_equal(S("world"),     res[1])
+
+    res=[]
+    S("hello\r\n\r\nworld").each_line(S('')) {|x| res << x}
+    assert_equal(S("hello\r\n\r\n"), res[0])
+    assert_equal(S("world"),         res[1])
 
     $/ = "!"
 
@@ -804,6 +817,54 @@ CODE
     assert_nothing_raised(bug7646) do
       "\n\u0100".each_line("\n") {}
     end
+  ensure
+    $/ = save
+  end
+
+  def test_each_line_chomp
+    res = []
+    S("hello\nworld").each_line("\n", chomp: true) {|x| res << x}
+    assert_equal(S("hello"), res[0])
+    assert_equal(S("world"), res[1])
+
+    res = []
+    S("hello\n\n\nworld").each_line(S(''), chomp: true) {|x| res << x}
+    assert_equal(S("hello\n"), res[0])
+    assert_equal(S("world"),   res[1])
+
+    res = []
+    S("hello\r\n\r\nworld").each_line(S(''), chomp: true) {|x| res << x}
+    assert_equal(S("hello\r\n"), res[0])
+    assert_equal(S("world"),     res[1])
+
+    res = []
+    S("hello!world").each_line(S('!'), chomp: true) {|x| res << x}
+    assert_equal(S("hello"), res[0])
+    assert_equal(S("world"), res[1])
+
+    res = []
+    S("a").each_line(S('ab'), chomp: true).each {|x| res << x}
+    assert_equal(1, res.size)
+    assert_equal(S("a"), res[0])
+
+    s = nil
+    "foo\nbar".each_line(nil, chomp: true) {|s2| s = s2 }
+    assert_equal("foo\nbar", s)
+
+    assert_equal "hello", S("hello\nworld").each_line(chomp: true).next
+    assert_equal "hello\nworld", S("hello\nworld").each_line(nil, chomp: true).next
+
+    res = []
+    S("").each_line(chomp: true) {|x| res << x}
+    assert_equal([], res)
+
+    res = []
+    S("\n").each_line(chomp: true) {|x| res << x}
+    assert_equal([S("")], res)
+
+    res = []
+    S("\r\n").each_line(chomp: true) {|x| res << x}
+    assert_equal([S("")], res)
   end
 
   def test_lines
@@ -938,18 +999,6 @@ CODE
     assert_not_equal(S("a").hash, S("a\0").hash, bug4104)
     bug9172 = '[ruby-core:58658] [Bug #9172]'
     assert_not_equal(S("sub-setter").hash, S("discover").hash, bug9172)
-  end
-
-  def test_hash_random
-    str = 'abc'
-    a = [str.hash.to_s]
-    3.times {
-      assert_in_out_err(["-e", "print #{str.dump}.hash"], "") do |r, e|
-        a += r
-        assert_equal([], e)
-      end
-    }
-    assert_not_equal([str.hash.to_s], a.uniq)
   end
 
   def test_hex
@@ -1178,6 +1227,9 @@ CODE
 
     assert_nil("foo".rindex(//, -100))
     assert_nil($~)
+
+    assert_equal(3, "foo".rindex(//))
+    assert_equal([3, 3], $~.offset(0))
   end
 
   def test_rjust
@@ -1365,7 +1417,7 @@ CODE
   end
 
   def test_split
-    assert_nil($;)
+    fs, $; = $;, nil
     assert_equal([S("a"), S("b"), S("c")], S(" a   b\t c ").split)
     assert_equal([S("a"), S("b"), S("c")], S(" a   b\t c ").split(S(" ")))
 
@@ -1389,6 +1441,14 @@ CODE
     assert_equal([], "".split(//, 1))
 
     assert_equal("[2, 3]", [1,2,3].slice!(1,10000).inspect, "moved from btest/knownbug")
+  ensure
+    $; = fs
+  end
+
+  def test_fs
+    assert_raise_with_message(TypeError, /\$;/) {
+      $; = []
+    }
   end
 
   def test_split_encoding
@@ -1551,6 +1611,10 @@ CODE
     assert_equal(S("Abc"), S("abc").sub("a") {m = $~; "A"})
     assert_equal(S("a"), m[0])
     assert_equal(/a/, m.regexp)
+    bug = '[ruby-core:78686] [Bug #13042] other than regexp has no name references'
+    assert_raise_with_message(IndexError, /oops/, bug) {
+      'hello'.gsub('hello', '\k<oops>')
+    }
   end
 
   def test_sub!
@@ -2076,6 +2140,50 @@ CODE
     assert_raise(ArgumentError) { "foo".match }
   end
 
+  def test_match_p_regexp
+    /backref/ =~ 'backref'
+    # must match here, but not in a separate method, e.g., assert_send,
+    # to check if $~ is affected or not.
+    assert_equal(true, "".match?(//))
+    assert_equal(true, :abc.match?(/.../))
+    assert_equal(true, 'abc'.match?(/b/))
+    assert_equal(true, 'abc'.match?(/b/, 1))
+    assert_equal(true, 'abc'.match?(/../, 1))
+    assert_equal(true, 'abc'.match?(/../, -2))
+    assert_equal(false, 'abc'.match?(/../, -4))
+    assert_equal(false, 'abc'.match?(/../, 4))
+    assert_equal(true, "\u3042xx".match?(/../, 1))
+    assert_equal(false, "\u3042x".match?(/../, 1))
+    assert_equal(true, ''.match?(/\z/))
+    assert_equal(true, 'abc'.match?(/\z/))
+    assert_equal(true, 'Ruby'.match?(/R.../))
+    assert_equal(false, 'Ruby'.match?(/R.../, 1))
+    assert_equal(false, 'Ruby'.match?(/P.../))
+    assert_equal('backref', $&)
+  end
+
+  def test_match_p_string
+    /backref/ =~ 'backref'
+    # must match here, but not in a separate method, e.g., assert_send,
+    # to check if $~ is affected or not.
+    assert_equal(true, "".match?(''))
+    assert_equal(true, :abc.match?('...'))
+    assert_equal(true, 'abc'.match?('b'))
+    assert_equal(true, 'abc'.match?('b', 1))
+    assert_equal(true, 'abc'.match?('..', 1))
+    assert_equal(true, 'abc'.match?('..', -2))
+    assert_equal(false, 'abc'.match?('..', -4))
+    assert_equal(false, 'abc'.match?('..', 4))
+    assert_equal(true, "\u3042xx".match?('..', 1))
+    assert_equal(false, "\u3042x".match?('..', 1))
+    assert_equal(true, ''.match?('\z'))
+    assert_equal(true, 'abc'.match?('\z'))
+    assert_equal(true, 'Ruby'.match?('R...'))
+    assert_equal(false, 'Ruby'.match?('R...', 1))
+    assert_equal(false, 'Ruby'.match?('P...'))
+    assert_equal('backref', $&)
+  end
+
   def test_clear
     s = "foo" * 100
     s.clear
@@ -2199,6 +2307,13 @@ CODE
     assert_equal(1, "\u3042B".casecmp("\u3042a"))
   end
 
+  def test_casecmp?
+    assert_equal(true, 'FoO'.casecmp?('fOO'))
+    assert_equal(false, 'FoO'.casecmp?('BaR'))
+    assert_equal(false, 'baR'.casecmp?('FoO'))
+    assert_equal(true, 'äöü'.casecmp?('ÄÖÜ'))
+  end
+
   def test_upcase2
     assert_equal("\u3042AB", "\u3042aB".upcase)
   end
@@ -2305,7 +2420,9 @@ CODE
   end
 
   def test_prepend
-    assert_equal(S("hello world!"), "world!".prepend("hello "))
+    assert_equal(S("hello world!"), "!".prepend("hello ", "world"))
+    b = S("ue")
+    assert_equal(S("ueueue"), b.prepend(b, b))
 
     foo = Object.new
     def foo.to_str

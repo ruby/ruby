@@ -18,7 +18,7 @@
  * versions */
 #define PROC_NEW_REQUIRES_BLOCK 0
 
-#if !defined(__GNUC__) || __GNUC__ < 5
+#if !defined(__GNUC__) || __GNUC__ < 5 || defined(__MINGW32__)
 # define NO_CLOBBERED(v) (*(volatile VALUE *)&(v))
 #else
 # define NO_CLOBBERED(v) (v)
@@ -235,7 +235,7 @@ proc_clone(VALUE self)
  *   C.new.e(1,2)       #=> ArgumentError
  *   C.new.method(:e).to_proc.lambda?   #=> true
  *
- * This exception insures that methods never have tricks
+ * This exception ensures that methods never have tricks
  * and makes it easy to have wrappers to define methods that behave as usual.
  *
  *   class C
@@ -353,7 +353,7 @@ rb_binding_new(void)
  *  environment. See also the description of class +Binding+.
  *
  *     def get_binding(param)
- *       return binding
+ *       binding
  *     end
  *     b = get_binding("hello")
  *     eval("param", b)   #=> "hello"
@@ -375,7 +375,7 @@ rb_f_binding(VALUE self)
  *  reporting syntax errors.
  *
  *     def get_binding(param)
- *       return binding
+ *       binding
  *     end
  *     b = get_binding("hello")
  *     b.eval("param")   #=> "hello"
@@ -446,7 +446,7 @@ check_local_id(VALUE bindval, volatile VALUE *pname)
  *  call-seq:
  *     binding.local_variables -> Array
  *
- *  Returns the +symbol+ names of the binding's local variables
+ *  Returns the names of the binding's local variables as symbols.
  *
  *	def foo
  *  	  a = 1
@@ -455,7 +455,7 @@ check_local_id(VALUE bindval, volatile VALUE *pname)
  *  	  end
  *  	end
  *
- *  This method is short version of the following code.
+ *  This method is the short version of the following code:
  *
  *	binding.eval("local_variables")
  *
@@ -475,7 +475,7 @@ bind_local_variables(VALUE bindval)
  *  call-seq:
  *     binding.local_variable_get(symbol) -> obj
  *
- *  Returns a +value+ of local variable +symbol+.
+ *  Returns the value of the local variable +symbol+.
  *
  *	def foo
  *  	  a = 1
@@ -483,7 +483,7 @@ bind_local_variables(VALUE bindval)
  *  	  binding.local_variable_get(:b) #=> NameError
  *  	end
  *
- *  This method is short version of the following code.
+ *  This method is the short version of the following code:
  *
  *	binding.eval("#{symbol}")
  *
@@ -520,18 +520,19 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
  *  	  bind = binding
  *  	  bind.local_variable_set(:a, 2) # set existing local variable `a'
  *  	  bind.local_variable_set(:b, 3) # create new local variable `b'
- *  	                                 # `b' exists only in binding.
- *  	  p bind.local_variable_get(:a) #=> 2
- *  	  p bind.local_variable_get(:b) #=> 3
- *  	  p a #=> 2
- *  	  p b #=> NameError
+ *  	                                 # `b' exists only in binding
+ *
+ *  	  p bind.local_variable_get(:a)  #=> 2
+ *  	  p bind.local_variable_get(:b)  #=> 3
+ *  	  p a                            #=> 2
+ *  	  p b                            #=> NameError
  *  	end
  *
- *  This method is a similar behavior of the following code
+ *  This method behaves similarly to the following code:
  *
  *    binding.eval("#{symbol} = #{obj}")
  *
- *  if obj can be dumped in Ruby code.
+ *  if +obj+ can be dumped in Ruby code.
  */
 static VALUE
 bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
@@ -560,7 +561,7 @@ bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
  *  call-seq:
  *     binding.local_variable_defined?(symbol) -> obj
  *
- *  Returns a +true+ if a local variable +symbol+ exists.
+ *  Returns +true+ if a local variable +symbol+ exists.
  *
  *	def foo
  *  	  a = 1
@@ -568,7 +569,7 @@ bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
  *  	  binding.local_variable_defined?(:b) #=> false
  *  	end
  *
- *  This method is short version of the following code.
+ *  This method is the short version of the following code:
  *
  *	binding.eval("defined?(#{symbol}) == 'local-variable'")
  *
@@ -873,7 +874,7 @@ rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE passed_pr
 
 /*
  *  call-seq:
- *     prc.arity -> fixnum
+ *     prc.arity -> integer
  *
  *  Returns the number of mandatory arguments. If the block
  *  is declared to take no arguments, returns 0. If the block is known
@@ -934,7 +935,7 @@ rb_block_min_max_arity(const struct rb_block *block, int *max)
 {
     switch (vm_block_type(block)) {
       case block_type_iseq:
-	return rb_iseq_min_max_arity(block->as.captured.code.iseq, max);
+	return rb_iseq_min_max_arity(rb_iseq_check(block->as.captured.code.iseq), max);
       case block_type_proc:
 	return rb_block_min_max_arity(vm_proc_block(block->as.proc), max);
       case block_type_ifunc:
@@ -963,18 +964,17 @@ static int
 rb_proc_min_max_arity(VALUE self, int *max)
 {
     rb_proc_t *proc;
-    const struct rb_block *block;
     GetProcPtr(self, proc);
-    block = &proc->block;
-    return rb_block_min_max_arity(block, max);
+    return rb_block_min_max_arity(&proc->block, max);
 }
 
 int
 rb_proc_arity(VALUE self)
 {
     rb_proc_t *proc;
-    int max, min = rb_proc_min_max_arity(self, &max);
+    int max, min;
     GetProcPtr(self, proc);
+    min = rb_block_min_max_arity(&proc->block, &max);
     return (proc->is_lambda ? min == max : max != UNLIMITED_ARGUMENTS) ? min : -min-1;
 }
 
@@ -1077,21 +1077,17 @@ iseq_location(const rb_iseq_t *iseq)
     if (!iseq) return Qnil;
     rb_iseq_check(iseq);
     loc[0] = iseq->body->location.path;
-    if (iseq->body->line_info_table) {
-	loc[1] = rb_iseq_first_lineno(iseq);
-    }
-    else {
-	loc[1] = Qnil;
-    }
+    loc[1] = iseq->body->location.first_lineno;
+
     return rb_ary_new4(2, loc);
 }
 
 /*
  * call-seq:
- *    prc.source_location  -> [String, Fixnum]
+ *    prc.source_location  -> [String, Integer]
  *
  * Returns the Ruby source filename and line number containing this proc
- * or +nil+ if this proc was not defined in Ruby (i.e. native)
+ * or +nil+ if this proc was not defined in Ruby (i.e. native).
  */
 
 VALUE
@@ -1197,7 +1193,7 @@ proc_hash(VALUE self)
     hash = rb_hash_start(0);
     hash = rb_hash_proc(hash, self);
     hash = rb_hash_end(hash);
-    return LONG2FIX(hash);
+    return ST2FIX(hash);
 }
 
 /*
@@ -1207,6 +1203,14 @@ proc_hash(VALUE self)
  * Returns the unique identifier for this proc, along with
  * an indication of where the proc was defined.
  */
+
+static VALUE
+proc_to_s(VALUE self)
+{
+    const rb_proc_t *proc;
+    GetProcPtr(self, proc);
+    return proc_to_s_(self, proc);
+}
 
 static VALUE
 proc_to_s_(VALUE self, const rb_proc_t *proc)
@@ -1227,12 +1231,9 @@ proc_to_s_(VALUE self, const rb_proc_t *proc)
       case block_type_iseq:
 	{
 	    const rb_iseq_t *iseq = rb_iseq_check(block->as.captured.code.iseq);
-	    int first_lineno = 0;
-	    if (iseq->body->line_info_table) {
-		first_lineno = FIX2INT(rb_iseq_first_lineno(iseq));
-	    }
 	    str = rb_sprintf("#<%s:%p@%"PRIsVALUE":%d%s>", cname, (void *)self,
-			     iseq->body->location.path, first_lineno, is_lambda);
+			     iseq->body->location.path,
+			     FIX2INT(iseq->body->location.first_lineno), is_lambda);
 	}
 	break;
       case block_type_symbol:
@@ -1249,14 +1250,6 @@ proc_to_s_(VALUE self, const rb_proc_t *proc)
 	OBJ_TAINT(str);
     }
     return str;
-}
-
-static VALUE
-proc_to_s(VALUE self)
-{
-    const rb_proc_t *proc;
-    GetProcPtr(self, proc);
-    return proc_to_s_(self, proc);
 }
 
 /*
@@ -1323,7 +1316,7 @@ respond_to_missing_p(VALUE klass, VALUE obj, VALUE sym, int scope)
 
 
 static VALUE
-mnew_missing(VALUE klass, VALUE obj, ID id, ID rid, VALUE mclass)
+mnew_missing(VALUE klass, VALUE obj, ID id, VALUE mclass)
 {
     struct METHOD *data;
     VALUE method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
@@ -1352,13 +1345,12 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass,
 {
     struct METHOD *data;
     VALUE method;
-    ID rid = id;
     rb_method_visibility_t visi = METHOD_VISI_UNDEF;
 
   again:
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
 	if (respond_to_missing_p(klass, obj, ID2SYM(id), scope)) {
-	    return mnew_missing(klass, obj, id, rid, mclass);
+	    return mnew_missing(klass, obj, id, mclass);
 	}
 	if (!error) return Qnil;
 	rb_print_undef(klass, id, METHOD_VISI_UNDEF);
@@ -1372,7 +1364,7 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass,
     }
     if (me->def->type == VM_METHOD_TYPE_ZSUPER) {
 	if (me->defined_class) {
-	    VALUE klass = RCLASS_SUPER(me->defined_class);
+	    VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->defined_class));
 	    id = me->def->original_id;
 	    me = (rb_method_entry_t *)rb_callable_method_entry_without_refinements(klass, id);
 	}
@@ -1639,7 +1631,7 @@ obj_method(VALUE obj, VALUE vid, int scope)
     if (!id) {
 	if (respond_to_missing_p(klass, obj, vid, scope)) {
 	    id = rb_intern_str(vid);
-	    return mnew_missing(klass, obj, id, id, mclass);
+	    return mnew_missing(klass, obj, id, mclass);
 	}
 	rb_method_name_error(klass, vid);
     }
@@ -1728,7 +1720,7 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
 	if (!NIL_P(klass = rb_singleton_class_get(obj)) &&
 	    respond_to_missing_p(klass, obj, vid, FALSE)) {
 	    id = rb_intern_str(vid);
-	    return mnew_missing(klass, obj, id, id, rb_cMethod);
+	    return mnew_missing(klass, obj, id, rb_cMethod);
 	}
       undef:
 	rb_name_err_raise("undefined singleton method `%1$s' for `%2$s'",
@@ -1933,8 +1925,8 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 
 /*
  *  call-seq:
- *     define_singleton_method(symbol, method) -> new_method
- *     define_singleton_method(symbol) { block } -> proc
+ *     define_singleton_method(symbol, method) -> symbol
+ *     define_singleton_method(symbol) { block } -> symbol
  *
  *  Defines a singleton method in the receiver. The _method_
  *  parameter can be a +Proc+, a +Method+ or an +UnboundMethod+ object.
@@ -1966,8 +1958,8 @@ rb_obj_define_method(int argc, VALUE *argv, VALUE obj)
 }
 
 /*
- *     define_method(symbol, method)     -> new_method
- *     define_method(symbol) { block }   -> proc
+ *     define_method(symbol, method)     -> symbol
+ *     define_method(symbol) { block }   -> symbol
  *
  *  Defines a global function by _method_ or the block.
  */
@@ -2226,7 +2218,7 @@ umethod_bind(VALUE method, VALUE recv)
 	else {
 	    klass = rb_include_class_new(methclass, klass);
 	}
-	RB_OBJ_WRITE(method, &bound->me, rb_method_entry_complement_defined_class(bound->me, klass));
+	RB_OBJ_WRITE(method, &bound->me, rb_method_entry_complement_defined_class(bound->me, bound->me->called_id, klass));
     }
 
     return method;
@@ -2261,10 +2253,8 @@ rb_method_entry_min_max_arity(const rb_method_entry_t *me, int *max)
 	return rb_method_entry_min_max_arity(def->body.alias.original_me, max);
       case VM_METHOD_TYPE_BMETHOD:
 	return rb_proc_min_max_arity(def->body.proc, max);
-      case VM_METHOD_TYPE_ISEQ: {
-	const rb_iseq_t *iseq = rb_iseq_check(def->body.iseq.iseqptr);
-	return rb_iseq_min_max_arity(iseq, max);
-      }
+      case VM_METHOD_TYPE_ISEQ:
+	return rb_iseq_min_max_arity(rb_iseq_check(def->body.iseq.iseqptr), max);
       case VM_METHOD_TYPE_UNDEF:
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
 	return *max = 0;
@@ -2301,7 +2291,7 @@ rb_method_entry_arity(const rb_method_entry_t *me)
 
 /*
  *  call-seq:
- *     meth.arity    -> fixnum
+ *     meth.arity    -> integer
  *
  *  Returns an indication of the number of arguments accepted by a
  *  method. Returns a nonnegative integer for methods that take a fixed
@@ -2474,10 +2464,10 @@ rb_obj_method_location(VALUE obj, ID id)
 
 /*
  * call-seq:
- *    meth.source_location  -> [String, Fixnum]
+ *    meth.source_location  -> [String, Integer]
  *
  * Returns the Ruby source filename and line number containing this method
- * or nil if this method was not defined in Ruby (i.e. native)
+ * or nil if this method was not defined in Ruby (i.e. native).
  */
 
 VALUE
@@ -3134,7 +3124,7 @@ Init_Proc(void)
  *         @secret = n
  *       end
  *       def get_binding
- *         return binding()
+ *         binding
  *       end
  *     end
  *

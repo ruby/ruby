@@ -47,8 +47,6 @@ class TestRDocParser < RDoc::TestCase
   end
 
   def test_class_binary_large_japanese_rdoc
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     capture_io do
       begin
         extenc, Encoding.default_external =
@@ -62,8 +60,6 @@ class TestRDocParser < RDoc::TestCase
   end
 
   def test_class_binary_japanese_rdoc
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     file_name = File.expand_path '../test.ja.rdoc', __FILE__
     refute @RP.binary?(file_name)
   end
@@ -123,7 +119,7 @@ class TestRDocParser < RDoc::TestCase
       end
       io
     end
-    tf.close! if tf.respond_to? :close!
+    tf.close!
   end
 
   def test_class_for_modeline
@@ -325,4 +321,3 @@ class TestRDocParser < RDoc::TestCase
   end
 
 end
-

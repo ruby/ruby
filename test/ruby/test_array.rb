@@ -556,13 +556,19 @@ class TestArray < Test::Unit::TestCase
   def test_concat
     assert_equal(@cls[1, 2, 3, 4],     @cls[1, 2].concat(@cls[3, 4]))
     assert_equal(@cls[1, 2, 3, 4],     @cls[].concat(@cls[1, 2, 3, 4]))
+    assert_equal(@cls[1, 2, 3, 4],     @cls[1].concat(@cls[2, 3], [4]))
     assert_equal(@cls[1, 2, 3, 4],     @cls[1, 2, 3, 4].concat(@cls[]))
+    assert_equal(@cls[1, 2, 3, 4],     @cls[1, 2, 3, 4].concat())
     assert_equal(@cls[],               @cls[].concat(@cls[]))
     assert_equal(@cls[@cls[1, 2], @cls[3, 4]], @cls[@cls[1, 2]].concat(@cls[@cls[3, 4]]))
 
     a = @cls[1, 2, 3]
     a.concat(a)
     assert_equal([1, 2, 3, 1, 2, 3], a)
+
+    b = @cls[4, 5]
+    b.concat(b, b)
+    assert_equal([4, 5, 4, 5, 4, 5], b)
 
     assert_raise(TypeError) { [0].concat(:foo) }
     assert_raise(RuntimeError) { [0].freeze.concat(:foo) }
@@ -807,6 +813,15 @@ class TestArray < Test::Unit::TestCase
     assert_nothing_raised(RuntimeError, bug10748) {a.flatten(1)}
   end
 
+  def test_flattern_singleton_class
+    bug12738 = '[ruby-dev:49781] [Bug #12738]'
+    a = [[0]]
+    class << a
+      def m; end
+    end
+    assert_raise(NoMethodError, bug12738) { a.flatten.m }
+  end
+
   def test_flatten!
     a1 = @cls[ 1, 2, 3]
     a2 = @cls[ 5, 6 ]
@@ -842,6 +857,15 @@ class TestArray < Test::Unit::TestCase
     a = @cls[@cls[o]]
     assert_raise_with_message(RuntimeError, bug10748) {a.flatten!}
     assert_nothing_raised(RuntimeError, bug10748) {a.flatten!(1)}
+  end
+
+  def test_flattern_singleton_class!
+    bug12738 = '[ruby-dev:49781] [Bug #12738]'
+    a = [[0]]
+    class << a
+      def m; end
+    end
+    assert_nothing_raised(NameError, bug12738) { a.flatten!.m }
   end
 
   def test_flatten_with_callcc
@@ -1464,7 +1488,7 @@ class TestArray < Test::Unit::TestCase
         1
       }
     }
-    o2 = o1.dup
+    o2 = o1.clone
     ary << o1 << o2
     orig = ary.dup
     assert_raise(RuntimeError, "frozen during comparison") {ary.sort!}
@@ -2139,6 +2163,11 @@ class TestArray < Test::Unit::TestCase
     }
     assert_equal(9, r)
     assert_equal(@cls[7, 8, 9, 10], a, bug10722)
+
+    bug13053 = '[ruby-core:78739] [Bug #13053] Array#select! can resize to negative size'
+    a = @cls[ 1, 2, 3, 4, 5 ]
+    a.select! {|i| a.clear if i == 5; false }
+    assert_equal(0, a.size, bug13053)
   end
 
   # also select!
@@ -2313,6 +2342,13 @@ class TestArray < Test::Unit::TestCase
     end
     ary = (0...10000).to_a
     assert_equal(ary.rotate, ary.shuffle(random: gen_to_int))
+
+    assert_raise(NoMethodError) {
+      ary.shuffle(random: Object.new)
+    }
+    assert_raise(NoMethodError) {
+      ary.shuffle!(random: Object.new)
+    }
   end
 
   def test_sample
@@ -2413,6 +2449,10 @@ class TestArray < Test::Unit::TestCase
     end
     ary = (0...10000).to_a
     assert_equal(5000, ary.sample(random: gen_to_int))
+
+    assert_raise(NoMethodError) {
+      ary.sample(random: Object.new)
+    }
   end
 
   def test_cycle
@@ -2448,11 +2488,18 @@ class TestArray < Test::Unit::TestCase
 
   def test_combination_clear
     bug9939 = '[ruby-core:63149] [Bug #9939]'
-    assert_ruby_status([], <<-'end;', bug9939)
-      100_000.times {Array.new(1000)}
+    assert_nothing_raised(bug9939) {
       a = [*0..100]
       a.combination(3) {|*,x| a.clear}
-    end;
+    }
+
+    bug13052 = '[ruby-core:78738] [Bug #13052] Array#combination segfaults if the Array is modified during iteration'
+    assert_nothing_raised(bug13052) {
+      a = [*0..100]
+      a.combination(1) { a.clear }
+      a = [*0..100]
+      a.repeated_combination(1) { a.clear }
+    }
   end
 
   def test_product2
@@ -2684,7 +2731,7 @@ class TestArray < Test::Unit::TestCase
     Bug11235 = '[ruby-dev:49043] [Bug #11235]'
 
     def test_push_over_ary_max
-      assert_separately(['-', ARY_MAX.to_s, Bug11235], <<-"end;", timeout: 20)
+      assert_separately(['-', ARY_MAX.to_s, Bug11235], <<-"end;", timeout: 30)
         a = Array.new(ARGV[0].to_i)
         assert_raise(IndexError, ARGV[1]) {0x1000.times {a.push(1)}}
       end;
@@ -2786,9 +2833,13 @@ class TestArray < Test::Unit::TestCase
     assert_float_equal(large_number+(small_number*10), [large_number, *[small_number]*10].sum)
     assert_float_equal(large_number+(small_number*10), [large_number/1r, *[small_number]*10].sum)
     assert_float_equal(large_number+(small_number*11), [small_number, large_number/1r, *[small_number]*10].sum)
+    assert_float_equal(small_number, [large_number, small_number, -large_number].sum)
 
     assert_equal("abc", ["a", "b", "c"].sum(""))
     assert_equal([1, [2], 3], [[1], [[2]], [3]].sum([]))
+
+    assert_raise(TypeError) {[0].sum("")}
+    assert_raise(TypeError) {[1].sum("")}
 
     assert_separately(%w[-rmathn], <<-EOS, ignore_stderr: true)
       assert_equal(6, [1r, 2, 3r].sum)

@@ -209,6 +209,28 @@ class TestCSV::Parsing < TestCSV
                              field_size_limit: 2048 )
   end
 
+  def test_field_size_limit_in_extended_column_not_exceeding
+    data = <<~DATA
+      "a","b"
+      "
+      2
+      ",""
+    DATA
+    assert_nothing_raised(CSV::MalformedCSVError) do
+      CSV.parse(data, field_size_limit: 4)
+    end
+  end
+
+  def test_field_size_limit_in_extended_column_exceeding
+    data = <<~DATA
+      "a","b"
+      "
+      2345
+      ",""
+    DATA
+    assert_parse_errors_out(data, field_size_limit: 5)
+  end
+
   private
 
   def assert_parse_errors_out(*args)

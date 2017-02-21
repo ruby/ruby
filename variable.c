@@ -19,6 +19,7 @@
 #include "id.h"
 #include "ccan/list/list.h"
 #include "id_table.h"
+#include "debug_counter.h"
 
 struct rb_id_table *rb_global_tbl;
 static ID autoload, classpath, tmp_classpath, classid;
@@ -942,25 +943,6 @@ rb_alias_variable(ID name1, ID name2)
     entry1->var = entry2->var;
 }
 
-struct gen_ivar_compat_tbl {
-    struct gen_ivtbl *ivtbl;
-    st_table *tbl;
-};
-
-static int
-gen_ivar_compat_tbl_i(st_data_t id, st_data_t index, st_data_t arg)
-{
-    struct gen_ivar_compat_tbl *a = (struct gen_ivar_compat_tbl *)arg;
-
-    if (index < a->ivtbl->numiv) {
-	VALUE val = a->ivtbl->ivptr[index];
-	if (val != Qundef) {
-	    st_add_direct(a->tbl, id, (st_data_t)val);
-	}
-    }
-    return ST_CONTINUE;
-}
-
 static int
 gen_ivtbl_get(VALUE obj, struct gen_ivtbl **ivtbl)
 {
@@ -971,38 +953,6 @@ gen_ivtbl_get(VALUE obj, struct gen_ivtbl **ivtbl)
 	return 1;
     }
     return 0;
-}
-
-/* for backwards compatibility only */
-st_table*
-rb_generic_ivar_table(VALUE obj)
-{
-    st_table *iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
-    struct gen_ivar_compat_tbl a;
-    st_data_t d;
-
-    if (!iv_index_tbl) return 0;
-    if (!FL_TEST(obj, FL_EXIVAR)) return 0;
-    if (!gen_ivtbl_get(obj, &a.ivtbl)) return 0;
-
-    a.tbl = 0;
-    if (!generic_iv_tbl_compat) {
-	generic_iv_tbl_compat = st_init_numtable();
-    }
-    else {
-	if (st_lookup(generic_iv_tbl_compat, (st_data_t)obj, &d)) {
-	    a.tbl = (st_table *)d;
-	    st_clear(a.tbl);
-	}
-    }
-    if (!a.tbl) {
-	a.tbl = st_init_numtable();
-	d = (st_data_t)a.tbl;
-	st_add_direct(generic_iv_tbl_compat, (st_data_t)obj, d);
-    }
-    st_foreach_safe(iv_index_tbl, gen_ivar_compat_tbl_i, (st_data_t)&a);
-
-    return a.tbl;
 }
 
 static VALUE
@@ -1260,6 +1210,7 @@ VALUE
 rb_ivar_get(VALUE obj, ID id)
 {
     VALUE iv = rb_ivar_lookup(obj, id, Qundef);
+    RB_DEBUG_COUNTER_INC(ivar_get);
 
     if (iv == Qundef) {
 	if (RTEST(ruby_verbose))
@@ -1365,6 +1316,8 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
 {
     struct ivar_update ivup;
     uint32_t i, len;
+
+    RB_DEBUG_COUNTER_INC(ivar_set);
 
     rb_check_frozen(obj);
 
@@ -1619,7 +1572,7 @@ rb_ivar_count(VALUE obj)
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
 	if ((tbl = ROBJECT_IV_INDEX_TBL(obj)) != 0) {
-	    st_index_t i, count, num = tbl->num_entries;
+	    st_index_t i, count, num = ROBJECT_NUMIV(obj);
 	    const VALUE *const ivptr = ROBJECT_IVPTR(obj);
 	    for (i = count = 0; i < num; ++i) {
 		if (ivptr[i] != Qundef) {
@@ -2261,9 +2214,9 @@ rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility)
 	while ((ce = rb_const_lookup(tmp, id))) {
 	    if (visibility && RB_CONST_PRIVATE_P(ce)) {
 		rb_name_err_raise("private constant %2$s::%1$s referenced",
-				  klass, ID2SYM(id));
+				  tmp, ID2SYM(id));
 	    }
-	    rb_const_warn_if_deprecated(ce, klass, id);
+	    rb_const_warn_if_deprecated(ce, tmp, id);
 	    value = ce->value;
 	    if (value == Qundef) {
 		if (am == tmp) break;
@@ -2273,8 +2226,12 @@ rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility)
 		continue;
 	    }
 	    if (exclude && tmp == rb_cObject && klass != rb_cObject) {
+#if 0
 		rb_warn("toplevel constant %"PRIsVALUE" referenced by %"PRIsVALUE"::%"PRIsVALUE"",
 			QUOTE_ID(id), rb_class_name(klass), QUOTE_ID(id));
+#else
+		return Qundef;
+#endif
 	    }
 	    return value;
 	}
@@ -2608,7 +2565,27 @@ rb_const_set(VALUE klass, ID id, VALUE val)
      * and avoid order-dependency on const_tbl
      */
     if (rb_cObject && (RB_TYPE_P(val, T_MODULE) || RB_TYPE_P(val, T_CLASS))) {
-	rb_class_name(val);
+	if (NIL_P(rb_class_path_cached(val))) {
+	    if (klass == rb_cObject) {
+		rb_ivar_set(val, classpath, rb_id2str(id));
+		rb_name_class(val, id);
+	    }
+	    else {
+		VALUE path;
+		ID pathid;
+		st_data_t n;
+		st_table *ivtbl = RCLASS_IV_TBL(klass);
+		if (ivtbl &&
+		    (st_lookup(ivtbl, (st_data_t)(pathid = classpath), &n) ||
+		     st_lookup(ivtbl, (st_data_t)(pathid = tmp_classpath), &n))) {
+		    path = rb_str_dup((VALUE)n);
+		    rb_str_append(rb_str_cat2(path, "::"), rb_id2str(id));
+		    OBJ_FREEZE(path);
+		    rb_ivar_set(val, pathid, path);
+		    rb_name_class(val, id);
+		}
+	    }
+	}
     }
 }
 
@@ -2656,7 +2633,8 @@ const_tbl_update(struct autoload_const_set_args *args)
 	}
 	rb_clear_constant_cache();
 	setup_const_entry(ce, klass, val, visibility);
-    } else {
+    }
+    else {
 	rb_clear_constant_cache();
 
 	ce = ZALLOC(rb_const_entry_t);
@@ -2730,6 +2708,22 @@ set_const_visibility(VALUE mod, int argc, const VALUE *argv,
 	}
     }
     rb_clear_constant_cache();
+}
+
+void
+rb_deprecate_constant(VALUE mod, const char *name)
+{
+    rb_const_entry_t *ce;
+    ID id;
+    long len = strlen(name);
+
+    rb_frozen_class_p(mod);
+    if (!(id = rb_check_id_cstr(name, len, NULL)) ||
+	!(ce = rb_const_lookup(mod, id))) {
+	rb_name_err_raise("constant %2$s::%1$s not defined",
+			  mod, rb_fstring_new(name, len));
+    }
+    ce->flag |= CONST_DEPRECATED;
 }
 
 /*

@@ -1044,7 +1044,7 @@ rb_struct_equal(VALUE s, VALUE s2)
 
 /*
  * call-seq:
- *   struct.hash   -> fixnum
+ *   struct.hash   -> integer
  *
  * Returns a hash value based on this struct's contents (see Object#hash).
  *
@@ -1110,8 +1110,8 @@ rb_struct_eql(VALUE s, VALUE s2)
 
 /*
  *  call-seq:
- *     struct.length    -> fixnum
- *     struct.size      -> fixnum
+ *     struct.length    -> integer
+ *     struct.size      -> integer
  *
  *  Returns the number of struct members.
  *
@@ -1124,12 +1124,6 @@ VALUE
 rb_struct_size(VALUE s)
 {
     return LONG2FIX(RSTRUCT_LEN(s));
-}
-
-const VALUE*
-rb_struct_ptr(VALUE s)
-{
-    return RSTRUCT_CONST_PTR(s);
 }
 
 /*
@@ -1158,6 +1152,8 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ *  Document-class: Struct
+ *
  *  A Struct is a convenient way to bundle a number of attributes together,
  *  using accessor methods, without having to write an explicit class.
  *

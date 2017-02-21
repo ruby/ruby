@@ -161,7 +161,7 @@ static VALUE rb_eFiberError;
     if (!(ptr)) rb_raise(rb_eFiberError, "uninitialized fiber"); \
 } while (0)
 
-NOINLINE(static VALUE cont_capture(volatile int *stat));
+NOINLINE(static VALUE cont_capture(volatile int *volatile stat));
 
 #define THREAD_MUST_BE_RUNNING(th) do { \
 	if (!(th)->tag) rb_raise(rb_eThreadError, "not running thread");	\
@@ -170,48 +170,48 @@ NOINLINE(static VALUE cont_capture(volatile int *stat));
 static void
 cont_mark(void *ptr)
 {
+    rb_context_t *cont = ptr;
+
     RUBY_MARK_ENTER("cont");
-    if (ptr) {
-	rb_context_t *cont = ptr;
-	rb_gc_mark(cont->value);
+    rb_gc_mark(cont->value);
 
-	rb_thread_mark(&cont->saved_thread);
-	rb_gc_mark(cont->saved_thread.self);
+    rb_thread_mark(&cont->saved_thread);
+    rb_gc_mark(cont->saved_thread.self);
 
-	if (cont->vm_stack) {
+    if (cont->vm_stack) {
 #ifdef CAPTURE_JUST_VALID_VM_STACK
-	    rb_gc_mark_locations(cont->vm_stack,
-				 cont->vm_stack + cont->vm_stack_slen + cont->vm_stack_clen);
+	rb_gc_mark_locations(cont->vm_stack,
+			     cont->vm_stack + cont->vm_stack_slen + cont->vm_stack_clen);
 #else
-	    rb_gc_mark_locations(cont->vm_stack,
-				 cont->vm_stack, cont->saved_thread.stack_size);
-#endif
-	}
-
-	if (cont->machine.stack) {
-	    if (cont->type == CONTINUATION_CONTEXT) {
-		/* cont */
-		rb_gc_mark_locations(cont->machine.stack,
-				     cont->machine.stack + cont->machine.stack_size);
-            }
-            else {
-		/* fiber */
-		rb_thread_t *th;
-                rb_fiber_t *fib = (rb_fiber_t*)cont;
-		GetThreadPtr(cont->saved_thread.self, th);
-		if ((th->fiber != fib) && fib->status == RUNNING) {
-		    rb_gc_mark_locations(cont->machine.stack,
-					 cont->machine.stack + cont->machine.stack_size);
-		}
-	    }
-	}
-#ifdef __ia64
-	if (cont->machine.register_stack) {
-	    rb_gc_mark_locations(cont->machine.register_stack,
-				 cont->machine.register_stack + cont->machine.register_stack_size);
-	}
+	rb_gc_mark_locations(cont->vm_stack,
+			     cont->vm_stack, cont->saved_thread.stack_size);
 #endif
     }
+
+    if (cont->machine.stack) {
+	if (cont->type == CONTINUATION_CONTEXT) {
+	    /* cont */
+	    rb_gc_mark_locations(cont->machine.stack,
+				 cont->machine.stack + cont->machine.stack_size);
+	}
+	else {
+	    /* fiber */
+	    rb_thread_t *th;
+	    rb_fiber_t *fib = (rb_fiber_t*)cont;
+	    GetThreadPtr(cont->saved_thread.self, th);
+	    if ((th->fiber != fib) && fib->status == RUNNING) {
+		rb_gc_mark_locations(cont->machine.stack,
+				     cont->machine.stack + cont->machine.stack_size);
+	    }
+	}
+    }
+#ifdef __ia64
+    if (cont->machine.register_stack) {
+	rb_gc_mark_locations(cont->machine.register_stack,
+			     cont->machine.register_stack + cont->machine.register_stack_size);
+    }
+#endif
+
     RUBY_MARK_LEAVE("cont");
 }
 
@@ -307,12 +307,10 @@ rb_fiber_mark_self(rb_fiber_t *fib)
 static void
 fiber_mark(void *ptr)
 {
+    rb_fiber_t *fib = ptr;
     RUBY_MARK_ENTER("cont");
-    if (ptr) {
-	rb_fiber_t *fib = ptr;
-	rb_fiber_mark_self(fib->prev);
-	cont_mark(&fib->cont);
-    }
+    rb_fiber_mark_self(fib->prev);
+    cont_mark(&fib->cont);
     RUBY_MARK_LEAVE("cont");
 }
 
@@ -470,9 +468,9 @@ cont_new(VALUE klass)
 }
 
 static VALUE
-cont_capture(volatile int *stat)
+cont_capture(volatile int *volatile stat)
 {
-    rb_context_t *cont;
+    rb_context_t *volatile cont;
     rb_thread_t *th = GET_THREAD();
     volatile VALUE contval;
 
@@ -1102,8 +1100,9 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *  the programmer and not the VM.
  *
  *  As opposed to other stackless light weight concurrency models, each fiber
- *  comes with a small 4KB stack. This enables the fiber to be paused from deeply
- *  nested function calls within the fiber block.
+ *  comes with a stack.  This enables the fiber to be paused from deeply
+ *  nested function calls within the fiber block.  See the ruby(1)
+ *  manpage to configure the size of the fiber stack(s).
  *
  *  When a fiber is created it will not run automatically. Rather it must
  *  be explicitly asked to run using the <code>Fiber#resume</code> method.
@@ -1280,7 +1279,7 @@ rb_fiber_start(void)
 	th->root_svar = Qfalse;
 	fib->status = RUNNING;
 
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, Qnil);
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
 	cont->value = rb_vm_invoke_proc(th, proc, argc, argv, VM_BLOCK_HANDLER_NONE);
     }
     TH_POP_TAG();
@@ -1470,7 +1469,7 @@ fiber_switch(rb_fiber_t *fib, int argc, const VALUE *argv, int is_resume)
     value = fiber_store(fib, th);
     RUBY_VM_CHECK_INTS(th);
 
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, Qnil);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
 
     return value;
 }

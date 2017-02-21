@@ -183,26 +183,14 @@ class RDoc::Markdown::Literals
       return nil
     end
 
-    if "".respond_to? :ord
-      def get_byte
-        if @pos >= @string_size
-          return nil
-        end
-
-        s = @string[@pos].ord
-        @pos += 1
-        s
+    def get_byte
+      if @pos >= @string_size
+        return nil
       end
-    else
-      def get_byte
-        if @pos >= @string_size
-          return nil
-        end
 
-        s = @string[@pos]
-        @pos += 1
-        s
-      end
+      s = @string[@pos].ord
+      @pos += 1
+      s
     end
 
     def parse(rule=nil)
@@ -289,8 +277,6 @@ class RDoc::Markdown::Literals
         else
           return ans
         end
-
-        return ans
       end
     end
 
@@ -323,8 +309,6 @@ class RDoc::Markdown::Literals
         else
           return ans
         end
-
-        return ans
       end
     end
 

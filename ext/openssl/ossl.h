@@ -12,37 +12,12 @@
 
 #include RUBY_EXTCONF_H
 
-#if 0
-  mOSSL = rb_define_module("OpenSSL");
-  mX509 = rb_define_module_under(mOSSL, "X509");
-#endif
-
-/*
-* OpenSSL has defined RFILE and Ruby has defined RFILE - so undef it!
-*/
-#if defined(RFILE) /*&& !defined(OSSL_DEBUG)*/
-#  undef RFILE
-#endif
+#include <assert.h>
+#include <errno.h>
 #include <ruby.h>
 #include <ruby/io.h>
 #include <ruby/thread.h>
-
 #include <openssl/opensslv.h>
-
-#ifdef HAVE_ASSERT_H
-#  include <assert.h>
-#else
-#  define assert(condition)
-#endif
-
-#if defined(_WIN32) && !defined(LIBRESSL_VERSION_NUMBER)
-#  include <openssl/e_os2.h>
-#  if !defined(OPENSSL_SYS_WIN32)
-#    define OPENSSL_SYS_WIN32 1
-#  endif
-#  include <winsock2.h>
-#endif
-#include <errno.h>
 #include <openssl/err.h>
 #include <openssl/asn1.h>
 #include <openssl/x509v3.h>
@@ -53,9 +28,7 @@
 #include <openssl/rand.h>
 #include <openssl/conf.h>
 #include <openssl/conf_api.h>
-#if !defined(_WIN32)
-#  include <openssl/crypto.h>
-#endif
+#include <openssl/crypto.h>
 #if !defined(OPENSSL_NO_ENGINE)
 #  include <openssl/engine.h>
 #endif
@@ -97,19 +70,14 @@ extern VALUE eOSSLError;
 } while (0)
 
 /*
- * String to HEXString conversion
- */
-int string2hex(const unsigned char *, int, char **, int *);
-
-/*
  * Data Conversion
  */
 STACK_OF(X509) *ossl_x509_ary2sk0(VALUE);
 STACK_OF(X509) *ossl_x509_ary2sk(VALUE);
 STACK_OF(X509) *ossl_protect_x509_ary2sk(VALUE,int*);
-VALUE ossl_x509_sk2ary(STACK_OF(X509) *certs);
-VALUE ossl_x509crl_sk2ary(STACK_OF(X509_CRL) *crl);
-VALUE ossl_x509name_sk2ary(STACK_OF(X509_NAME) *names);
+VALUE ossl_x509_sk2ary(const STACK_OF(X509) *certs);
+VALUE ossl_x509crl_sk2ary(const STACK_OF(X509_CRL) *crl);
+VALUE ossl_x509name_sk2ary(const STACK_OF(X509_NAME) *names);
 VALUE ossl_buf2str(char *buf, int len);
 #define ossl_str_adjust(str, p) \
 do{\
@@ -118,6 +86,11 @@ do{\
     assert(newlen <= len);\
     rb_str_set_len((str), newlen);\
 }while(0)
+/*
+ * Convert binary string to hex string. The caller is responsible for
+ * ensuring out has (2 * len) bytes of capacity.
+ */
+void ossl_bin2hex(unsigned char *in, char *out, size_t len);
 
 /*
  * Our default PEM callback
@@ -144,24 +117,8 @@ int ossl_pem_passwd_cb(char *, int, int, void *);
  */
 #define OSSL_ErrMsg() ERR_reason_error_string(ERR_get_error())
 NORETURN(void ossl_raise(VALUE, const char *, ...));
-VALUE ossl_exc_new(VALUE, const char *, ...);
 /* Clear OpenSSL error queue. If dOSSL is set, rb_warn() them. */
 void ossl_clear_error(void);
-
-/*
- * Verify callback
- */
-extern int ossl_store_ctx_ex_verify_cb_idx;
-extern int ossl_store_ex_verify_cb_idx;
-
-struct ossl_verify_cb_args {
-    VALUE proc;
-    VALUE preverify_ok;
-    VALUE store_ctx;
-};
-
-VALUE ossl_call_verify_cb_proc(struct ossl_verify_cb_args *);
-int ossl_verify_cb(int, X509_STORE_CTX *);
 
 /*
  * String to DER String

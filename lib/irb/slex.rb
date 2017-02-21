@@ -53,7 +53,7 @@ module IRB
       node.preproc=proc
     end
 
-    #要チェック?
+    # need a check?
     def postproc(token)
       node = search(token, proc)
       node.postproc=proc

@@ -70,11 +70,11 @@ module Psych
             o.value
           end
         when '!ruby/object:BigDecimal'
-          require 'bigdecimal'
+          require 'bigdecimal' unless defined? BigDecimal
           class_loader.big_decimal._load o.value
         when "!ruby/object:DateTime"
           class_loader.date_time
-          require 'date'
+          require 'date' unless defined? DateTime
           @ss.parse_time(o.value).to_datetime
         when '!ruby/encoding'
           ::Encoding.find o.value

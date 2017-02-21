@@ -16,6 +16,11 @@ class TestHTTP < Test::Unit::TestCase
     uri.class.component.collect {|c| uri.send(c)}
   end
 
+  def test_build
+    u = URI::HTTP.build(host: 'www.example.com', path: '/foo/bar')
+    assert_kind_of(URI::HTTP, u)
+  end
+
   def test_parse
     u = URI.parse('http://a')
     assert_kind_of(URI::HTTP, u)

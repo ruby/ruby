@@ -176,7 +176,7 @@ module MakeMakefile
   ]
 
   def install_dirs(target_prefix = nil)
-    if $extout
+    if $extout and $extmk
       dirs = [
         ['BINDIR',        '$(extout)/bin'],
         ['RUBYCOMMONDIR', '$(extout)/common'],
@@ -943,10 +943,10 @@ SRC
     a = r = nil
     Logging::postpone do
       r = yield
-      a = (fmt ? "#{fmt % r}" : r ? "yes" : "no") << "\n"
-      "#{f}#{m}-------------------- #{a}\n"
+      a = (fmt ? "#{fmt % r}" : r ? "yes" : "no")
+      "#{f}#{m}-------------------- #{a}\n\n"
     end
-    message(a)
+    message "%s\n", a
     Logging::message "--------------------\n\n"
     r
   end
@@ -1372,7 +1372,7 @@ SRC
   # _convertible_ means actually the same type, or typedef'd from the same
   # type.
   #
-  # If the +type+ is a integer type and the _convertible_ type is found,
+  # If the +type+ is an integer type and the _convertible_ type is found,
   # the following macros are passed as preprocessor constants to the compiler
   # using the +type+ name, in uppercase.
   #
@@ -2015,28 +2015,21 @@ TOUCH = exit >
 
 preload = #{defined?($preload) && $preload ? $preload.join(' ') : ''}
 }
-    if $nmake == ?b
-      mk.each do |x|
-        x.gsub!(/^(MAKEDIRS|INSTALL_(?:PROG|DATA))+\s*=.*\n/) do
-          "!ifndef " + $1 + "\n" +
-          $& +
-          "!endif\n"
-        end
-      end
-    end
     mk
   end
 
   def timestamp_file(name, target_prefix = nil)
-    if target_prefix
-      pat = []
-      install_dirs.each do |n, d|
-        pat << n if /\$\(target_prefix\)\z/ =~ d
-      end
-      name = name.gsub(/\$\((#{pat.join("|")})\)/) {$&+target_prefix}
+    pat = {}
+    name = '$(RUBYARCHDIR)' if name == '$(TARGET_SO_DIR)'
+    install_dirs.each do |n, d|
+      pat[n] = $` if /\$\(target_prefix\)\z/ =~ d
     end
+    name = name.gsub(/\$\((#{pat.keys.join("|")})\)/) {pat[$1]+target_prefix}
+    name.sub!(/(\$\((?:site)?arch\))\/*/, '')
+    arch = $1 || ''
+    name.chomp!('/')
     name = name.gsub(/(\$[({]|[})])|(\/+)|[^-.\w]+/) {$1 ? "" : $2 ? ".-." : "_"}
-    "$(TIMESTAMP_DIR)/.#{name}.time"
+    File.join("$(TIMESTAMP_DIR)", arch, "#{name.sub(/\A(?=.)/, '.')}.time")
   end
   # :startdoc:
 
@@ -2268,11 +2261,8 @@ RULES
 
     dllib = target ? "$(TARGET).#{CONFIG['DLEXT']}" : ""
     staticlib = target ? "$(TARGET).#$LIBEXT" : ""
-    mfile = open("Makefile", "wb")
     conf = configuration(srcprefix)
-    conf = yield(conf) if block_given?
-    mfile.puts(conf)
-    mfile.print "
+    conf << "\
 libpath = #{($DEFLIBPATH|$LIBPATH).join(" ")}
 LIBPATH = #{libpath}
 DEFFILE = #{deffile}
@@ -2298,18 +2288,25 @@ DLLIB = #{dllib}
 EXTSTATIC = #{$static || ""}
 STATIC_LIB = #{staticlib unless $static.nil?}
 #{!$extout && defined?($installed_list) ? "INSTALLED_LIST = #{$installed_list}\n" : ""}
-TIMESTAMP_DIR = #{$extout ? '$(extout)/.timestamp' : '.'}
+TIMESTAMP_DIR = #{$extout && $extmk ? '$(extout)/.timestamp' : '.'}
 " #"
     # TODO: fixme
-    install_dirs.each {|d| mfile.print("%-14s= %s\n" % d) if /^[[:upper:]]/ =~ d[0]}
-    n = ($extout ? '$(RUBYARCHDIR)/' : '') + '$(TARGET)'
-    mfile.print "
-TARGET_SO     = #{($extout ? '$(RUBYARCHDIR)/' : '')}$(DLLIB)
+    install_dirs.each {|d| conf << ("%-14s= %s\n" % d) if /^[[:upper:]]/ =~ d[0]}
+    sodir = $extout ? '$(TARGET_SO_DIR)' : '$(RUBYARCHDIR)'
+    n = '$(TARGET_SO_DIR)$(TARGET)'
+    conf << "\
+TARGET_SO_DIR =#{$extout ? " $(RUBYARCHDIR)/" : ''}
+TARGET_SO     = $(TARGET_SO_DIR)$(DLLIB)
 CLEANLIBS     = $(TARGET_SO) #{config_string('cleanlibs') {|t| t.gsub(/\$\*/) {n}}}
 CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, "$(TARGET)#{deffile ? '-$(arch)': ''}")} if target} *.bak
+" #"
 
+    conf = yield(conf) if block_given?
+    mfile = open("Makefile", "wb")
+    mfile.puts(conf)
+    mfile.print "
 all:    #{$extout ? "install" : target ? "$(DLLIB)" : "Makefile"}
-static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{!$extmk ? " install-rb" : ""}"}
+static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{$extout ? " install-rb" : ""}"}
 .PHONY: all install static install-so install-rb
 .PHONY: clean clean-so clean-static clean-rb
 " #"
@@ -2330,7 +2327,7 @@ static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{!$extmk ? " install-rb" :
     end
     dirs = []
     mfile.print "install: install-so install-rb\n\n"
-    sodir = (dir = "$(RUBYARCHDIR)").dup
+    dir = sodir.dup
     mfile.print("install-so: ")
     if target
       f = "$(DLLIB)"
@@ -2420,7 +2417,6 @@ site-install-rb: install-rb
 
     return unless target
 
-    mfile.puts SRC_EXT.collect {|e| ".path.#{e} = $(VPATH)"} if $nmake == ?b
     mfile.print ".SUFFIXES: .#{(SRC_EXT + [$OBJEXT, $ASMEXT]).compact.join(' .')}\n"
     mfile.print "\n"
 
@@ -2449,7 +2445,7 @@ site-install-rb: install-rb
     mfile.print "$(TARGET_SO): "
     mfile.print "$(DEFFILE) " if makedef
     mfile.print "$(OBJS) Makefile"
-    mfile.print " #{timestamp_file('$(RUBYARCHDIR)', target_prefix)}" if $extout
+    mfile.print " #{timestamp_file(sodir, target_prefix)}" if $extout
     mfile.print "\n"
     mfile.print "\t$(ECHO) linking shared-object #{target_prefix.sub(/\A\/(.*)/, '\1/')}$(DLLIB)\n"
     mfile.print "\t-$(Q)$(RM) $(@#{sep})\n"

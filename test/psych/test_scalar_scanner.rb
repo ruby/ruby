@@ -74,6 +74,10 @@ module Psych
       assert ss.tokenize('.nan').nan?
     end
 
+    def test_scan_float_with_exponent_but_no_fraction
+      assert_equal(0.0, ss.tokenize('0.E+0'))
+    end
+
     def test_scan_null
       assert_equal nil, ss.tokenize('null')
       assert_equal nil, ss.tokenize('~')

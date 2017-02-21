@@ -405,7 +405,7 @@ parent_redirect_close(int fd)
 
 /*
  *  call-seq:
- *     Process.pid   -> fixnum
+ *     Process.pid   -> integer
  *
  *  Returns the process id of this process. Not available on all
  *  platforms.
@@ -422,7 +422,7 @@ get_pid(void)
 
 /*
  *  call-seq:
- *     Process.ppid   -> fixnum
+ *     Process.ppid   -> integer
  *
  *  Returns the process id of the parent of this process. Returns
  *  untrustworthy value on Win32/64. Not available on all platforms.
@@ -498,10 +498,10 @@ rb_last_status_clear(void)
 
 /*
  *  call-seq:
- *     stat.to_i     -> fixnum
- *     stat.to_int   -> fixnum
+ *     stat.to_i     -> integer
+ *     stat.to_int   -> integer
  *
- *  Returns the bits in _stat_ as a <code>Fixnum</code>. Poking
+ *  Returns the bits in _stat_ as a <code>Integer</code>. Poking
  *  around in these bits is platform dependent.
  *
  *     fork { exit 0xab }         #=> 26566
@@ -519,7 +519,7 @@ pst_to_i(VALUE st)
 
 /*
  *  call-seq:
- *     stat.pid   -> fixnum
+ *     stat.pid   -> integer
  *
  *  Returns the process ID that this status object represents.
  *
@@ -646,7 +646,7 @@ pst_equal(VALUE st1, VALUE st2)
 
 /*
  *  call-seq:
- *     stat & num   -> fixnum
+ *     stat & num   -> integer
  *
  *  Logical AND of the bits in _stat_ with <em>num</em>.
  *
@@ -667,7 +667,7 @@ pst_bitand(VALUE st1, VALUE st2)
 
 /*
  *  call-seq:
- *     stat >> num   -> fixnum
+ *     stat >> num   -> integer
  *
  *  Shift the bits in _stat_ right <em>num</em> places.
  *
@@ -709,7 +709,7 @@ pst_wifstopped(VALUE st)
 
 /*
  *  call-seq:
- *     stat.stopsig   -> fixnum or nil
+ *     stat.stopsig   -> integer or nil
  *
  *  Returns the number of the signal that caused _stat_ to stop
  *  (or +nil+ if self is not stopped).
@@ -748,7 +748,7 @@ pst_wifsignaled(VALUE st)
 
 /*
  *  call-seq:
- *     stat.termsig   -> fixnum or nil
+ *     stat.termsig   -> integer or nil
  *
  *  Returns the number of the signal that caused _stat_ to
  *  terminate (or +nil+ if self was not terminated by an
@@ -789,7 +789,7 @@ pst_wifexited(VALUE st)
 
 /*
  *  call-seq:
- *     stat.exitstatus   -> fixnum or nil
+ *     stat.exitstatus   -> integer or nil
  *
  *  Returns the least significant eight bits of the return code of
  *  _stat_. Only available if <code>exited?</code> is
@@ -936,9 +936,9 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
 
 /*
  *  call-seq:
- *     Process.wait()                     -> fixnum
- *     Process.wait(pid=-1, flags=0)      -> fixnum
- *     Process.waitpid(pid=-1, flags=0)   -> fixnum
+ *     Process.wait()                     -> integer
+ *     Process.wait(pid=-1, flags=0)      -> integer
+ *     Process.waitpid(pid=-1, flags=0)   -> integer
  *
  *  Waits for a child process to exit, returns its process id, and
  *  sets <code>$?</code> to a <code>Process::Status</code> object
@@ -1247,7 +1247,9 @@ proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
     UNREACHABLE;
 #else
     char **argv;
+#ifndef _WIN32
     char **envp;
+#endif
 
     argv = ARGVSTR2ARGV(argv_str);
 
@@ -1256,12 +1258,16 @@ proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
 	return -1;
     }
 
+#ifdef _WIN32
+    rb_w32_uaspawn(P_OVERLAY, prog, argv);
+#else
     envp = envp_str ? (char **)RSTRING_PTR(envp_str) : NULL;
     if (envp_str)
         execve(prog, argv, envp); /* async-signal-safe */
     else
         execv(prog, argv); /* async-signal-safe (since SUSv4) */
     preserving_errno(try_with_sh(prog, argv, envp)); /* try_with_sh() is async-signal-safe. */
+#endif
     return -1;
 #endif
 }
@@ -1344,6 +1350,7 @@ mark_exec_arg(void *ptr)
     rb_gc_mark(eargp->fd_open);
     rb_gc_mark(eargp->fd_dup2_child);
     rb_gc_mark(eargp->env_modification);
+    rb_gc_mark(eargp->path_env);
     rb_gc_mark(eargp->chdir_dir);
 }
 
@@ -1923,12 +1930,19 @@ rb_execarg_extract_options(VALUE execarg_obj, VALUE opthash)
     return args[1];
 }
 
+#ifdef ENV_IGNORECASE
+#define ENVMATCH(s1, s2) (STRCASECMP((s1), (s2)) == 0)
+#else
+#define ENVMATCH(n1, n2) (strcmp((n1), (n2)) == 0)
+#endif
+
 static int
 check_exec_env_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
 {
     VALUE key = (VALUE)st_key;
     VALUE val = (VALUE)st_val;
-    VALUE env = (VALUE)arg;
+    VALUE env = ((VALUE *)arg)[0];
+    VALUE *path = &((VALUE *)arg)[1];
     char *k;
 
     k = StringValueCStr(key);
@@ -1941,20 +1955,25 @@ check_exec_env_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
     key = EXPORT_STR(key);
     if (!NIL_P(val)) val = EXPORT_STR(val);
 
+    if (ENVMATCH(k, PATH_ENV)) {
+	*path = val;
+    }
     rb_ary_push(env, hide_obj(rb_assoc_new(key, val)));
 
     return ST_CONTINUE;
 }
 
 static VALUE
-rb_check_exec_env(VALUE hash)
+rb_check_exec_env(VALUE hash, VALUE *path)
 {
-    VALUE env;
+    VALUE env[2];
 
-    env = hide_obj(rb_ary_new());
+    env[0] = hide_obj(rb_ary_new());
+    env[1] = Qfalse;
     st_foreach(rb_hash_tbl_raw(hash), check_exec_env_i, (st_data_t)env);
+    *path = env[1];
 
-    return env;
+    return env[0];
 }
 
 static VALUE
@@ -2060,7 +2079,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
         rb_check_exec_options(opthash, execarg_obj);
     }
     if (!NIL_P(env)) {
-        env = rb_check_exec_env(env);
+        env = rb_check_exec_env(env, &eargp->path_env);
         eargp->env_modification = env;
     }
 
@@ -2184,7 +2203,10 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
 
     if (!eargp->use_shell) {
 	const char *abspath;
-        abspath = dln_find_exe_r(RSTRING_PTR(eargp->invoke.cmd.command_name), 0, fbuf, sizeof(fbuf));
+	const char *path_env = 0;
+	if (RTEST(eargp->path_env)) path_env = RSTRING_PTR(eargp->path_env);
+	abspath = dln_find_exe_r(RSTRING_PTR(eargp->invoke.cmd.command_name),
+				 path_env, fbuf, sizeof(fbuf));
 	if (abspath)
 	    eargp->invoke.cmd.command_abspath = rb_str_new_cstr(abspath);
 	else
@@ -2265,7 +2287,7 @@ void
 rb_execarg_setenv(VALUE execarg_obj, VALUE env)
 {
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
-    env = !NIL_P(env) ? rb_check_exec_env(env) : Qfalse;
+    env = !NIL_P(env) ? rb_check_exec_env(env, &eargp->path_env) : Qfalse;
     eargp->env_modification = env;
 }
 
@@ -3646,8 +3668,8 @@ rb_fork_ruby(int *status)
 #if defined(HAVE_WORKING_FORK) && !defined(CANNOT_FORK_WITH_PTHREAD)
 /*
  *  call-seq:
- *     Kernel.fork  [{ block }]   -> fixnum or nil
- *     Process.fork [{ block }]   -> fixnum or nil
+ *     Kernel.fork  [{ block }]   -> integer or nil
+ *     Process.fork [{ block }]   -> integer or nil
  *
  *  Creates a subprocess. If a block is specified, that block is run
  *  in the subprocess, and the subprocess terminates with a status of
@@ -4188,7 +4210,7 @@ rb_f_system(int argc, VALUE *argv)
  *
  *    pid = spawn(command, :umask=>077)
  *
- *  The :in, :out, :err, a fixnum, an IO and an array key specifies a redirection.
+ *  The :in, :out, :err, an integer, an IO and an array key specifies a redirection.
  *  The redirection maps a file descriptor in the child process.
  *
  *  For example, stderr can be merged into stdout as follows:
@@ -4346,7 +4368,7 @@ rb_f_spawn(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     sleep([duration])    -> fixnum
+ *     sleep([duration])    -> integer
  *
  *  Suspends the current thread for _duration_ seconds (which may be any number,
  *  including a +Float+ with fractional seconds). Returns the actual number of
@@ -4529,7 +4551,7 @@ static rb_pid_t ruby_setsid(void);
 #endif
 /*
  *  call-seq:
- *     Process.setsid   -> fixnum
+ *     Process.setsid   -> integer
  *
  *  Establishes this process as a new session and process group
  *  leader, with no controlling tty. Returns the session id. Not
@@ -4583,7 +4605,7 @@ ruby_setsid(void)
 #ifdef HAVE_GETPRIORITY
 /*
  *  call-seq:
- *     Process.getpriority(kind, integer)   -> fixnum
+ *     Process.getpriority(kind, integer)   -> integer
  *
  *  Gets the scheduling priority for specified process, process group,
  *  or user. <em>kind</em> indicates the kind of entity to find: one
@@ -5274,9 +5296,9 @@ p_sys_setresuid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 
 /*
  *  call-seq:
- *     Process.uid           -> fixnum
- *     Process::UID.rid      -> fixnum
- *     Process::Sys.getuid   -> fixnum
+ *     Process.uid           -> integer
+ *     Process::UID.rid      -> integer
+ *     Process::Sys.getuid   -> integer
  *
  *  Returns the (real) user ID of this process.
  *
@@ -5360,7 +5382,7 @@ setreuid(rb_uid_t ruid, rb_uid_t euid)
 
 /*
  *  call-seq:
- *     Process::UID.change_privilege(user)   -> fixnum
+ *     Process::UID.change_privilege(user)   -> integer
  *
  *  Change the current process's real and effective user ID to that
  *  specified by _user_. Returns the new user ID. Not
@@ -5681,9 +5703,9 @@ p_sys_issetugid(VALUE obj)
 
 /*
  *  call-seq:
- *     Process.gid           -> fixnum
- *     Process::GID.rid      -> fixnum
- *     Process::Sys.getgid   -> fixnum
+ *     Process.gid           -> integer
+ *     Process::GID.rid      -> integer
+ *     Process::Sys.getgid   -> integer
  *
  *  Returns the (real) group ID for this process.
  *
@@ -5701,7 +5723,7 @@ proc_getgid(VALUE obj)
 #if defined(HAVE_SETRESGID) || defined(HAVE_SETREGID) || defined(HAVE_SETRGID) || defined(HAVE_SETGID)
 /*
  *  call-seq:
- *     Process.gid= fixnum   -> fixnum
+ *     Process.gid= integer   -> integer
  *
  *  Sets the group ID for this process.
  */
@@ -5909,7 +5931,7 @@ proc_initgroups(VALUE obj, VALUE uname, VALUE base_grp)
 #if defined(_SC_NGROUPS_MAX) || defined(NGROUPS_MAX)
 /*
  *  call-seq:
- *     Process.maxgroups   -> fixnum
+ *     Process.maxgroups   -> integer
  *
  *  Returns the maximum number of gids allowed in the supplemental
  *  group access list.
@@ -5929,7 +5951,7 @@ proc_getmaxgroups(VALUE obj)
 #ifdef HAVE_SETGROUPS
 /*
  *  call-seq:
- *     Process.maxgroups= fixnum   -> fixnum
+ *     Process.maxgroups= integer   -> integer
  *
  *  Sets the maximum number of gids allowed in the supplemental group
  *  access list.
@@ -6064,7 +6086,7 @@ setregid(rb_gid_t rgid, rb_gid_t egid)
 
 /*
  *  call-seq:
- *     Process::GID.change_privilege(group)   -> fixnum
+ *     Process::GID.change_privilege(group)   -> integer
  *
  *  Change the current process's real and effective group ID to that
  *  specified by _group_. Returns the new group ID. Not
@@ -6233,9 +6255,9 @@ p_gid_change_privilege(VALUE obj, VALUE id)
 
 /*
  *  call-seq:
- *     Process.euid           -> fixnum
- *     Process::UID.eid       -> fixnum
- *     Process::Sys.geteuid   -> fixnum
+ *     Process.euid           -> integer
+ *     Process::UID.eid       -> integer
+ *     Process::Sys.geteuid   -> integer
  *
  *  Returns the effective user ID for this process.
  *
@@ -6334,8 +6356,8 @@ rb_seteuid_core(rb_uid_t euid)
 
 /*
  *  call-seq:
- *     Process::UID.grant_privilege(user)   -> fixnum
- *     Process::UID.eid= user               -> fixnum
+ *     Process::UID.grant_privilege(user)   -> integer
+ *     Process::UID.eid= user               -> integer
  *
  *  Set the effective user ID, and if possible, the saved user ID of
  *  the process to the given _user_. Returns the new
@@ -6356,9 +6378,9 @@ p_uid_grant_privilege(VALUE obj, VALUE id)
 
 /*
  *  call-seq:
- *     Process.egid          -> fixnum
- *     Process::GID.eid      -> fixnum
- *     Process::Sys.geteid   -> fixnum
+ *     Process.egid          -> integer
+ *     Process::GID.eid      -> integer
+ *     Process::Sys.geteid   -> integer
  *
  *  Returns the effective group ID for this process. Not available on
  *  all platforms.
@@ -6377,7 +6399,7 @@ proc_getegid(VALUE obj)
 #if defined(HAVE_SETRESGID) || defined(HAVE_SETREGID) || defined(HAVE_SETEGID) || defined(HAVE_SETGID) || defined(_POSIX_SAVED_IDS)
 /*
  *  call-seq:
- *     Process.egid = fixnum   -> fixnum
+ *     Process.egid = integer   -> integer
  *
  *  Sets the effective group ID for this process. Not available on all
  *  platforms.
@@ -6464,8 +6486,8 @@ rb_setegid_core(rb_gid_t egid)
 
 /*
  *  call-seq:
- *     Process::GID.grant_privilege(group)    -> fixnum
- *     Process::GID.eid = group               -> fixnum
+ *     Process::GID.grant_privilege(group)    -> integer
+ *     Process::GID.eid = group               -> integer
  *
  *  Set the effective group ID, and if possible, the saved group ID of
  *  the process to the given _group_. Returns the new
@@ -6508,7 +6530,7 @@ p_uid_exchangeable(void)
 
 /*
  *  call-seq:
- *     Process::UID.re_exchange   -> fixnum
+ *     Process::UID.re_exchange   -> integer
  *
  *  Exchange real and effective user IDs and return the new effective
  *  user ID. Not available on all platforms.
@@ -6570,7 +6592,7 @@ p_gid_exchangeable(void)
 
 /*
  *  call-seq:
- *     Process::GID.re_exchange   -> fixnum
+ *     Process::GID.re_exchange   -> integer
  *
  *  Exchange real and effective group IDs and return the new effective
  *  group ID. Not available on all platforms.
@@ -6641,7 +6663,7 @@ p_uid_sw_ensure(rb_uid_t id)
 
 /*
  *  call-seq:
- *     Process::UID.switch              -> fixnum
+ *     Process::UID.switch              -> integer
  *     Process::UID.switch {|| block}   -> object
  *
  *  Switch the effective and real user IDs of the current process. If
@@ -6754,7 +6776,7 @@ p_gid_sw_ensure(rb_gid_t id)
 
 /*
  *  call-seq:
- *     Process::GID.switch              -> fixnum
+ *     Process::GID.switch              -> integer
  *     Process::GID.switch {|| block}   -> object
  *
  *  Switch the effective and real group IDs of the current process. If
@@ -7107,10 +7129,10 @@ get_mach_timebase_info(void)
  *  The supported constants depends on OS and version.
  *  Ruby provides following types of +clock_id+ if available.
  *
- *  [CLOCK_REALTIME] SUSv2 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 2.1
- *  [CLOCK_MONOTONIC] SUSv3 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 3.4
- *  [CLOCK_PROCESS_CPUTIME_ID] SUSv3 to 4, Linux 2.5.63, OpenBSD 5.4
- *  [CLOCK_THREAD_CPUTIME_ID] SUSv3 to 4, Linux 2.5.63, FreeBSD 7.1, OpenBSD 5.4
+ *  [CLOCK_REALTIME] SUSv2 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 2.1, macOS 10.12
+ *  [CLOCK_MONOTONIC] SUSv3 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 3.4, macOS 10.12
+ *  [CLOCK_PROCESS_CPUTIME_ID] SUSv3 to 4, Linux 2.5.63, OpenBSD 5.4, macOS 10.12
+ *  [CLOCK_THREAD_CPUTIME_ID] SUSv3 to 4, Linux 2.5.63, FreeBSD 7.1, OpenBSD 5.4, macOS 10.12
  *  [CLOCK_VIRTUAL] FreeBSD 3.0, OpenBSD 2.1
  *  [CLOCK_PROF] FreeBSD 3.0, OpenBSD 2.1
  *  [CLOCK_REALTIME_FAST] FreeBSD 8.1
@@ -7120,11 +7142,14 @@ get_mach_timebase_info(void)
  *  [CLOCK_MONOTONIC_FAST] FreeBSD 8.1
  *  [CLOCK_MONOTONIC_PRECISE] FreeBSD 8.1
  *  [CLOCK_MONOTONIC_COARSE] Linux 2.6.32
- *  [CLOCK_MONOTONIC_RAW] Linux 2.6.28
+ *  [CLOCK_MONOTONIC_RAW] Linux 2.6.28, macOS 10.12
+ *  [CLOCK_MONOTONIC_RAW_APPROX] macOS 10.12
  *  [CLOCK_BOOTTIME] Linux 2.6.39
  *  [CLOCK_BOOTTIME_ALARM] Linux 3.0
  *  [CLOCK_UPTIME] FreeBSD 7.0, OpenBSD 5.5
  *  [CLOCK_UPTIME_FAST] FreeBSD 8.1
+ *  [CLOCK_UPTIME_RAW] macOS 10.12
+ *  [CLOCK_UPTIME_RAW_APPROX] macOS 10.12
  *  [CLOCK_UPTIME_PRECISE] FreeBSD 8.1
  *  [CLOCK_SECOND] FreeBSD 8.1
  *
@@ -7823,6 +7848,9 @@ InitVM_process(void)
 #ifdef CLOCK_MONOTONIC_RAW
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_RAW", CLOCKID2NUM(CLOCK_MONOTONIC_RAW));
 #endif
+#ifdef CLOCK_MONOTONIC_RAW_APPROX
+    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_RAW_APPROX", CLOCKID2NUM(CLOCK_MONOTONIC_RAW_APPROX));
+#endif
 #ifdef CLOCK_MONOTONIC_COARSE
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_COARSE", CLOCKID2NUM(CLOCK_MONOTONIC_COARSE));
 #endif
@@ -7840,6 +7868,12 @@ InitVM_process(void)
 #endif
 #ifdef CLOCK_UPTIME_PRECISE
     rb_define_const(rb_mProcess, "CLOCK_UPTIME_PRECISE", CLOCKID2NUM(CLOCK_UPTIME_PRECISE));
+#endif
+#ifdef CLOCK_UPTIME_RAW
+    rb_define_const(rb_mProcess, "CLOCK_UPTIME_RAW", CLOCKID2NUM(CLOCK_UPTIME_RAW));
+#endif
+#ifdef CLOCK_UPTIME_RAW_APPROX
+    rb_define_const(rb_mProcess, "CLOCK_UPTIME_RAW_APPROX", CLOCKID2NUM(CLOCK_UPTIME_RAW_APPROX));
 #endif
 #ifdef CLOCK_SECOND
     rb_define_const(rb_mProcess, "CLOCK_SECOND", CLOCKID2NUM(CLOCK_SECOND));

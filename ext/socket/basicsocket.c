@@ -158,10 +158,10 @@ bsock_close_write(VALUE sock)
  * * +optval+ is the value of the option, it is passed to the underlying
  *   setsockopt() as a pointer to a certain number of bytes. How this is
  *   done depends on the type:
- *   - Fixnum: value is assigned to an int, and a pointer to the int is
+ *   - Integer: value is assigned to an int, and a pointer to the int is
  *     passed, with length of sizeof(int).
  *   - true or false: 1 or 0 (respectively) is assigned to an int, and the
- *     int is passed as for a Fixnum. Note that +false+ must be passed,
+ *     int is passed as for an Integer. Note that +false+ must be passed,
  *     not +nil+.
  *   - String: the string's data and length is passed to the socket.
  * * +socketoption+ is an instance of Socket::Option
@@ -530,7 +530,7 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
     struct rsock_send_arg arg;
     VALUE flags, to;
     rb_io_t *fptr;
-    int n;
+    ssize_t n;
     rb_blocking_function_t *func;
 
     rb_scan_args(argc, argv, "21", &arg.mesg, &flags, &to);
@@ -550,13 +550,13 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
     arg.fd = fptr->fd;
     arg.flags = NUM2INT(flags);
     while (rsock_maybe_fd_writable(arg.fd),
-	   (n = (int)BLOCKING_REGION_FD(func, &arg)) < 0) {
+	   (n = (ssize_t)BLOCKING_REGION_FD(func, &arg)) < 0) {
 	if (rb_io_wait_writable(arg.fd)) {
 	    continue;
 	}
 	rb_sys_fail("send(2)");
     }
-    return INT2FIX(n);
+    return SSIZET2NUM(n);
 }
 
 /*
@@ -564,6 +564,8 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE sock)
  *   basicsocket.do_not_reverse_lookup => true or false
  *
  * Gets the do_not_reverse_lookup flag of _basicsocket_.
+ *
+ *   require 'socket'
  *
  *   BasicSocket.do_not_reverse_lookup = false
  *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|

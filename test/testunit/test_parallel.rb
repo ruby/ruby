@@ -43,6 +43,7 @@ module TestParallel
         assert_match(/^ready/,@worker_out.gets)
         @worker_in.puts "run #{TESTS}/ptest_first.rb test"
         assert_match(/^okay/,@worker_out.gets)
+        assert_match(/^record/,@worker_out.gets)
         assert_match(/^p/,@worker_out.gets)
         assert_match(/^done/,@worker_out.gets)
         assert_match(/^ready/,@worker_out.gets)
@@ -54,8 +55,10 @@ module TestParallel
         assert_match(/^ready/,@worker_out.gets)
         @worker_in.puts "run #{TESTS}/ptest_second.rb test"
         assert_match(/^okay/,@worker_out.gets)
+        assert_match(/^record/,@worker_out.gets)
         assert_match(/^p/,@worker_out.gets)
         assert_match(/^done/,@worker_out.gets)
+        assert_match(/^record/,@worker_out.gets)
         assert_match(/^p/,@worker_out.gets)
         assert_match(/^done/,@worker_out.gets)
         assert_match(/^ready/,@worker_out.gets)
@@ -67,13 +70,16 @@ module TestParallel
         assert_match(/^ready/,@worker_out.gets)
         @worker_in.puts "run #{TESTS}/ptest_first.rb test"
         assert_match(/^okay/,@worker_out.gets)
+        assert_match(/^record/,@worker_out.gets)
         assert_match(/^p/,@worker_out.gets)
         assert_match(/^done/,@worker_out.gets)
         assert_match(/^ready/,@worker_out.gets)
         @worker_in.puts "run #{TESTS}/ptest_second.rb test"
         assert_match(/^okay/,@worker_out.gets)
+        assert_match(/^record/,@worker_out.gets)
         assert_match(/^p/,@worker_out.gets)
         assert_match(/^done/,@worker_out.gets)
+        assert_match(/^record/,@worker_out.gets)
         assert_match(/^p/,@worker_out.gets)
         assert_match(/^done/,@worker_out.gets)
         assert_match(/^ready/,@worker_out.gets)
@@ -93,11 +99,9 @@ module TestParallel
     def test_done
       Timeout.timeout(10) do
         @worker_in.puts "run #{TESTS}/ptest_forth.rb test"
-        7.times { @worker_out.gets }
-        buf = @worker_out.gets
-        assert_match(/^done (.+?)$/, buf)
-
-        /^done (.+?)$/ =~ buf
+        while buf = @worker_out.gets
+          break if /^done (.+?)$/ =~ buf
+        end
 
         result = Marshal.load($1.chomp.unpack("m")[0])
 
@@ -160,7 +164,7 @@ module TestParallel
     def test_should_run_all_without_any_leaks
       spawn_runner
       buf = Timeout.timeout(10) {@test_out.read}
-      assert_match(/^[SFE\.]{9}$/,buf)
+      assert_match(/^9 tests/,buf)
     end
 
     def test_should_retry_failed_on_workers

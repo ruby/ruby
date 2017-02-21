@@ -78,15 +78,15 @@ class TestArgf < Test::Unit::TestCase
       p [a.gets.chomp, a.lineno, b.gets.chomp, b.lineno] #=> ["2", 2, "2", 2]
       a.rewind
       b.rewind
-      p [a.gets.chomp, a.lineno, b.gets.chomp, b.lineno] #=> ["1", 1, "1", 3]
-      p [a.gets.chomp, a.lineno, b.gets.chomp, b.lineno] #=> ["2", 2, "2", 4]
-      p [a.gets.chomp, a.lineno, b.gets.chomp, b.lineno] #=> ["3", 3, "3", 5]
-      p [a.gets.chomp, a.lineno, b.gets.chomp, b.lineno] #=> ["4", 4, "4", 6]
-      p [a.gets.chomp, a.lineno, b.gets.chomp, b.lineno] #=> ["5", 5, "5", 7]
+      p [a.gets.chomp, a.lineno, b.gets.chomp, b.lineno] #=> ["1", 1, "1", 1]
+      p [a.gets.chomp, a.lineno, b.gets.chomp, b.lineno] #=> ["2", 2, "2", 2]
+      p [a.gets.chomp, a.lineno, b.gets.chomp, b.lineno] #=> ["3", 3, "3", 3]
+      p [a.gets.chomp, a.lineno, b.gets.chomp, b.lineno] #=> ["4", 4, "4", 4]
+      p [a.gets.chomp, a.lineno, b.gets.chomp, b.lineno] #=> ["5", 5, "5", 5]
       a.rewind
       b.rewind
-      p [a.gets.chomp, a.lineno, b.gets.chomp, b.lineno] #=> ["5", 5, "5", 8]
-      p [a.gets.chomp, a.lineno, b.gets.chomp, b.lineno] #=> ["6", 6, "6", 9]
+      p [a.gets.chomp, a.lineno, b.gets.chomp, b.lineno] #=> ["5", 5, "5", 5]
+      p [a.gets.chomp, a.lineno, b.gets.chomp, b.lineno] #=> ["6", 6, "6", 6]
     SRC
   end
 
@@ -135,6 +135,27 @@ class TestArgf < Test::Unit::TestCase
         puts [$., ARGF.lineno, ARGF.file.lineno]
       end
     INPUT
+  end
+
+  def test_new_lineno_each
+    f = ARGF.class.new(@t1.path, @t2.path, @t3.path)
+    result = []
+    f.each {|line| result << [f.lineno, line]; break if result.size == 3}
+    assert_equal(3, f.lineno)
+    assert_equal((1..3).map {|i| [i, "#{i}\n"]}, result)
+
+    f.rewind
+    assert_equal(2, f.lineno)
+  ensure
+    f.close
+  end
+
+  def test_new_lineno_each_char
+    f = ARGF.class.new(@t1.path, @t2.path, @t3.path)
+    f.each_char.to_a
+    assert_equal(0, f.lineno)
+  ensure
+    f.close
   end
 
   def test_inplace

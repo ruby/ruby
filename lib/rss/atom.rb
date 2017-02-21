@@ -37,10 +37,12 @@ module RSS
         end
         klass.class_eval do
           class << self
+            # Returns the Atom URI W3C Namespace
             def required_uri
               URI
             end
 
+            # Returns true
             def need_parent?
               true
             end
@@ -92,9 +94,11 @@ module RSS
     end
 
     # The TextConstruct module is used to define a Text construct Atom element,
-    # which is used to store small quantities of human-readable text
+    # which is used to store small quantities of human-readable text.
     #
     # The TextConstruct has a type attribute, e.g. text, html, xhtml
+    #
+    # Reference: https://validator.w3.org/feed/docs/rfc4287.html#text.constructs
     module TextConstruct
       def self.append_features(klass)
         super
@@ -122,6 +126,7 @@ module RSS
 
       attr_writer :xhtml
 
+      # Returns or builds the XHTML content.
       def xhtml
         return @xhtml if @xhtml.nil?
         if @xhtml.is_a?(XML::Element) and
@@ -135,11 +140,13 @@ module RSS
                          {"xmlns" => XHTML_URI}, children)
       end
 
-      # Returns true if type is "xhtml"
+      # Returns true if type is "xhtml".
       def have_xml_content?
         @type == "xhtml"
       end
 
+      # Raises a MissingTagError or NotExpectedTagError
+      # if the element is not properly formatted.
       def atom_validate(ignore_unknown_element, tags, uri)
         if have_xml_content?
           if @xhtml.nil?
@@ -163,10 +170,12 @@ module RSS
       end
     end
 
-    # The PersonConstruct module is used to define a Person Atom element that can be
-    # used to describe a person, corporation, or similar entity
+    # The PersonConstruct module is used to define a person Atom element that can be
+    # used to describe a person, corporation or similar entity.
     #
-    # The PersonConstruct has a Name, Uri, and Email child elements
+    # The PersonConstruct has a Name, Uri and Email child elements.
+    #
+    # Reference: https://validator.w3.org/feed/docs/rfc4287.html#atomPersonConstruct
     module PersonConstruct
 
       # Adds attributes for name, uri, and email to the +klass+
@@ -187,19 +196,25 @@ module RSS
         target.__send__("new_#{self.class.name.split(/::/).last.downcase}")
       end
 
-      # The name of the person or entity
+      # The name of the person or entity.
+      #
+      # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.name
       class Name < RSS::Element
         include CommonModel
         include ContentModel
       end
 
-      # The URI of the person or entity
+      # The URI of the person or entity.
+      #
+      # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.uri
       class Uri < RSS::Element
         include CommonModel
         include URIContentModel
       end
 
-      # The email of the person or entity
+      # The email of the person or entity.
+      #
+      # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.email
       class Email < RSS::Element
         include CommonModel
         include ContentModel
@@ -245,9 +260,28 @@ module RSS
       end
     end
 
-    # Atom feed element
+    # Defines the top-level element of an Atom Feed Document.
+    # It consists of a number of children Entry elements,
+    # and has the following attributes:
     #
-    # A Feed has several metadata attributes in addition to a number of Entry child elements
+    # * author
+    # * categories
+    # * category
+    # * content
+    # * contributor
+    # * entries (aliased as items)
+    # * entry
+    # * generator
+    # * icon
+    # * id
+    # * link
+    # * logo
+    # * rights
+    # * subtitle
+    # * title
+    # * updated
+    #
+    # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.feed
     class Feed < RSS::Element
       include RootElementMixin
       include CommonModel
@@ -322,11 +356,23 @@ module RSS
         end
       end
 
+      # PersonConstruct that contains information regarding the author
+      # of a Feed or Entry.
+      #
+      # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.author
       class Author < RSS::Element
         include CommonModel
         include PersonConstruct
       end
 
+      # Contains information about a category associated with a Feed or Entry.
+      # It has the following attributes:
+      #
+      # * term
+      # * scheme
+      # * label
+      #
+      # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.category
       class Category < RSS::Element
         include CommonModel
 
@@ -344,11 +390,18 @@ module RSS
         end
       end
 
+      # PersonConstruct that contains information regarding the
+      # contributors of a Feed or Entry.
+      #
+      # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.contributor
       class Contributor < RSS::Element
         include CommonModel
         include PersonConstruct
       end
 
+      # Contains information on the agent used to generate the feed.
+      #
+      # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.generator
       class Generator < RSS::Element
         include CommonModel
         include ContentModel
@@ -369,32 +422,34 @@ module RSS
         end
       end
 
-      # Atom Icon element
+      # Defines an image that provides a visual identification for a eed.
+      # The image should have an aspect ratio of 1:1.
       #
-      # Image that provides a visual identification for the Feed.  Image should have an aspect
-      # ratio of 1:1
+      # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.icon
       class Icon < RSS::Element
         include CommonModel
         include URIContentModel
       end
 
-      # Atom ID element
+      # Defines the Universally Unique Identifier (UUID) for a Feed or Entry.
       #
-      # Universally Unique Identifier (UUID) for the Feed
+      # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.id
       class Id < RSS::Element
         include CommonModel
         include URIContentModel
       end
 
-      # Defines an Atom Link element
+      # Defines a reference to a Web resource. It has the following
+      # attributes:
       #
-      # A Link has the following attributes:
       # * href
       # * rel
       # * type
       # * hreflang
       # * title
       # * length
+      #
+      # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.link
       class Link < RSS::Element
         include CommonModel
 
@@ -415,10 +470,10 @@ module RSS
         end
       end
 
-      # Atom Logo element
+      # Defines an image that provides a visual identification for the Feed.
+      # The image should have an aspect ratio of 2:1 (horizontal:vertical).
       #
-      # Image that provides a visual identification for the Feed.  Image should have an aspect
-      # ratio of 2:1 (horizontal:vertical)
+      # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.logo
       class Logo < RSS::Element
         include CommonModel
         include URIContentModel
@@ -433,40 +488,60 @@ module RSS
         end
       end
 
-      # Atom Rights element
+      # TextConstruct that contains copyright information regarding
+      # the content in an Entry or Feed. It should not be used to
+      # convey machine readable licensing information.
       #
-      # TextConstruct that contains copyright information regarding the content in an Entry or Feed
+      # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.rights
       class Rights < RSS::Element
         include CommonModel
         include TextConstruct
       end
 
-      # Atom Subtitle element
+      # TextConstruct that conveys a description or subtitle for a Feed.
       #
-      # TextConstruct that conveys a description or subtitle for a Feed
+      # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.subtitle
       class Subtitle < RSS::Element
         include CommonModel
         include TextConstruct
       end
 
-      # Atom Title element
+      # TextConstruct that conveys a description or title for a Feed or Entry.
       #
-      # TextConstruct that conveys a description or title for a feed or Entry
+      # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.title
       class Title < RSS::Element
         include CommonModel
         include TextConstruct
       end
 
-      # Atom Updated element
+      # DateConstruct indicating the most recent time when a Feed or
+      # Entry was modified in a way the publisher considers
+      # significant.
       #
-      # DateConstruct indicating the most recent time when an Entry or Feed was modified
-      # in a way the publisher considers significant
+      # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.updated
       class Updated < RSS::Element
         include CommonModel
         include DateConstruct
       end
 
-      # Defines a child Atom Entry element for an Atom Feed
+      # Defines a child Atom Entry element of an Atom Feed element.
+      # It has the following attributes:
+      #
+      # * author
+      # * category
+      # * categories
+      # * content
+      # * contributor
+      # * id
+      # * link
+      # * published
+      # * rights
+      # * source
+      # * summary
+      # * title
+      # * updated
+      #
+      # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.entry
       class Entry < RSS::Element
         include CommonModel
         include DuplicateLinkChecker
@@ -490,9 +565,11 @@ module RSS
                    tag, URI, occurs, tag, *args)
         end
 
-        # Returns whether any of the following are true
+        # Returns whether any of the following are true:
+        #
         # * There are any authors in the feed
-        # * If the parent element has an author and the +check_parent+ parameter was given.
+        # * If the parent element has an author and the +check_parent+
+        #   parameter was given.
         # * There is a source element that has an author
         def have_author?(check_parent=true)
           authors.any? {|author| !author.to_s.empty?} or
@@ -520,9 +597,18 @@ module RSS
           items.new_item
         end
 
+        # Feed::Author
         Author = Feed::Author
+        # Feed::Category
         Category = Feed::Category
 
+        # Contains or links to the content of the Entry.
+        # It has the following attributes:
+        #
+        # * type
+        # * src
+        #
+        # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.content
         class Content < RSS::Element
           include CommonModel
 
@@ -546,11 +632,15 @@ module RSS
           content_setup
           add_need_initialize_variable("xml")
 
+          # Returns the element content in XML.
           attr_writer :xml
+
+          # Returns true if the element has inline XML content.
           def have_xml_content?
             inline_xhtml? or inline_other_xml?
           end
 
+          # Returns or builds the element content in XML.
           def xml
             return @xml unless inline_xhtml?
             return @xml if @xml.nil?
@@ -565,6 +655,7 @@ module RSS
                              {"xmlns" => XHTML_URI}, children)
           end
 
+          # Returns the element content in XHTML.
           def xhtml
             if inline_xhtml?
               xml
@@ -573,6 +664,9 @@ module RSS
             end
           end
 
+          # Raises a MissingAttributeError, NotAvailableValueError,
+          # MissingTagError or NotExpectedTagError if the element is
+          # not properly formatted.
           def atom_validate(ignore_unknown_element, tags, uri)
             if out_of_line?
               raise MissingAttributeError.new(tag_name, "type") if @type.nil?
@@ -589,19 +683,27 @@ module RSS
             end
           end
 
+          # Returns true if the element contains inline content
+          # that has a text or HTML media type, or no media type at all.
           def inline_text?
             !out_of_line? and [nil, "text", "html"].include?(@type)
           end
 
+          # Returns true if the element contains inline content that
+          # has a HTML media type.
           def inline_html?
             return false if out_of_line?
             @type == "html" or mime_split == ["text", "html"]
           end
 
+          # Returns true if the element contains inline content that
+          # has a XHTML media type.
           def inline_xhtml?
             !out_of_line? and @type == "xhtml"
           end
 
+          # Returns true if the element contains inline content that
+          # has a MIME media type.
           def inline_other?
             return false if out_of_line?
             media_type, subtype = mime_split
@@ -609,6 +711,8 @@ module RSS
             true
           end
 
+          # Returns true if the element contains inline content that
+          # has a text media type.
           def inline_other_text?
             return false unless inline_other?
             return false if inline_other_xml?
@@ -618,6 +722,8 @@ module RSS
             false
           end
 
+          # Returns true if the element contains inline content that
+          # has a XML media type.
           def inline_other_xml?
             return false unless inline_other?
 
@@ -632,14 +738,18 @@ module RSS
             false
           end
 
+          # Returns true if the element contains inline content
+          # encoded in base64.
           def inline_other_base64?
             inline_other? and !inline_other_text? and !inline_other_xml?
           end
 
+          # Returns true if the element contains linked content.
           def out_of_line?
             not @src.nil?
           end
 
+          # Splits the type attribute into an array, e.g. ["text", "xml"]
           def mime_split
             media_type = subtype = nil
             if /\A\s*([a-z]+)\/([a-z\+]+)\s*(?:;.*)?\z/i =~ @type.to_s
@@ -649,6 +759,7 @@ module RSS
             [media_type, subtype]
           end
 
+          # Returns true if the content needs to be encoded in base64.
           def need_base64_encode?
             inline_other_base64?
           end
@@ -659,17 +770,43 @@ module RSS
           end
         end
 
+        # Feed::Contributor
         Contributor = Feed::Contributor
+        # Feed::Id
         Id = Feed::Id
+        # Feed::Link
         Link = Feed::Link
 
+        # DateConstruct that usually indicates the time of the initial
+        # creation of an Entry.
+        #
+        # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.published
         class Published < RSS::Element
           include CommonModel
           include DateConstruct
         end
 
+        # Feed::Rights
         Rights = Feed::Rights
 
+        # Defines a Atom Source element. It has the following attributes:
+        #
+        # * author
+        # * category
+        # * categories
+        # * content
+        # * contributor
+        # * generator
+        # * icon
+        # * id
+        # * link
+        # * logo
+        # * rights
+        # * subtitle
+        # * title
+        # * updated
+        #
+        # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.source
         class Source < RSS::Element
           include CommonModel
 
@@ -692,36 +829,71 @@ module RSS
                      tag, URI, occurs, tag, *args)
           end
 
+          # Returns true if the Source element has an author.
           def have_author?
             !author.to_s.empty?
           end
 
+          # Feed::Author
           Author = Feed::Author
+          # Feed::Category
           Category = Feed::Category
+          # Feed::Contributor
           Contributor = Feed::Contributor
+          # Feed::Generator
           Generator = Feed::Generator
+          # Feed::Icon
           Icon = Feed::Icon
+          # Feed::Id
           Id = Feed::Id
+          # Feed::Link
           Link = Feed::Link
+          # Feed::Logo
           Logo = Feed::Logo
+          # Feed::Rights
           Rights = Feed::Rights
+          # Feed::Subtitle
           Subtitle = Feed::Subtitle
+          # Feed::Title
           Title = Feed::Title
+          # Feed::Updated
           Updated = Feed::Updated
         end
 
+        # TextConstruct that describes a summary of the Entry.
+        #
+        # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.summary
         class Summary < RSS::Element
           include CommonModel
           include TextConstruct
         end
 
+        # Feed::Title
         Title = Feed::Title
+        # Feed::Updated
         Updated = Feed::Updated
       end
     end
 
-    # Defines a top-level Atom Entry element
+    # Defines a top-level Atom Entry element,
+    # used as the document element of a stand-alone Atom Entry Document.
+    # It has the following attributes:
     #
+    # * author
+    # * category
+    # * categories
+    # * content
+    # * contributor
+    # * id
+    # * link
+    # * published
+    # * rights
+    # * source
+    # * summary
+    # * title
+    # * updated
+    #
+    # Reference: https://validator.w3.org/feed/docs/rfc4287.html#element.entry]
     class Entry < RSS::Element
       include RootElementMixin
       include CommonModel
@@ -746,25 +918,26 @@ module RSS
                  tag, URI, occurs, tag, *args)
       end
 
-      # Creates a new Atom Entry element
+      # Creates a new Atom Entry element.
       def initialize(version=nil, encoding=nil, standalone=nil)
         super("1.0", version, encoding, standalone)
         @feed_type = "atom"
         @feed_subtype = "entry"
       end
 
-      # Returns the Entry in an array
+      # Returns the Entry in an array.
       def items
         [self]
       end
 
-      # sets up the +maker+ for constructing Entry elements
+      # Sets up the +maker+ for constructing Entry elements.
       def setup_maker(maker)
         maker = maker.maker if maker.respond_to?("maker")
         super(maker)
       end
 
-      # Returns where there are any authors present or there is a source with an author
+      # Returns where there are any authors present or there is a
+      # source with an author.
       def have_author?
         authors.any? {|author| !author.to_s.empty?} or
           (source and source.have_author?)
@@ -786,17 +959,29 @@ module RSS
         maker.items.new_item
       end
 
+      # Feed::Entry::Author
       Author = Feed::Entry::Author
+      # Feed::Entry::Category
       Category = Feed::Entry::Category
+      # Feed::Entry::Content
       Content = Feed::Entry::Content
+      # Feed::Entry::Contributor
       Contributor = Feed::Entry::Contributor
+      # Feed::Entry::Id
       Id = Feed::Entry::Id
+      # Feed::Entry::Link
       Link = Feed::Entry::Link
+      # Feed::Entry::Published
       Published = Feed::Entry::Published
+      # Feed::Entry::Rights
       Rights = Feed::Entry::Rights
+      # Feed::Entry::Source
       Source = Feed::Entry::Source
+      # Feed::Entry::Summary
       Summary = Feed::Entry::Summary
+      # Feed::Entry::Title
       Title = Feed::Entry::Title
+      # Feed::Entry::Updated
       Updated = Feed::Entry::Updated
     end
   end

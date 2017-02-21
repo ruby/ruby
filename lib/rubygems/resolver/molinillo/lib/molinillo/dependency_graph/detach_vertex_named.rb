@@ -8,22 +8,29 @@ module Gem::Resolver::Molinillo
       # @!group Action
 
       # (see Action#name)
-      def self.name
+      def self.action_name
         :add_vertex
       end
 
       # (see Action#up)
       def up(graph)
-        return unless @vertex = graph.vertices.delete(name)
+        return [] unless @vertex = graph.vertices.delete(name)
+
+        removed_vertices = [@vertex]
         @vertex.outgoing_edges.each do |e|
           v = e.destination
           v.incoming_edges.delete(e)
-          graph.detach_vertex_named(v.name) unless v.root? || v.predecessors.any?
+          if !v.root? && v.incoming_edges.empty?
+            removed_vertices.concat graph.detach_vertex_named(v.name)
+          end
         end
+
         @vertex.incoming_edges.each do |e|
           v = e.origin
           v.outgoing_edges.delete(e)
         end
+
+        removed_vertices
       end
 
       # (see Action#down)

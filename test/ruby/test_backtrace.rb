@@ -228,7 +228,7 @@ class TestBacktrace < Test::Unit::TestCase
 
   def test_thread_backtrace
     begin
-      q = Queue.new
+      q = Thread::Queue.new
       th = Thread.new{
         th_rec q
       }
@@ -256,7 +256,7 @@ class TestBacktrace < Test::Unit::TestCase
 
   def test_thread_backtrace_locations_with_range
     begin
-      q = Queue.new
+      q = Thread::Queue.new
       th = Thread.new{
         th_rec q
       }

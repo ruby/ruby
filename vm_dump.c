@@ -225,11 +225,11 @@ rb_vmdebug_stack_dump_th(VALUE thval)
 #if VMDEBUG > 2
 
 /* copy from vm.c */
-static VALUE *
+static const VALUE *
 vm_base_ptr(rb_control_frame_t *cfp)
 {
     rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-    VALUE *bp = prev_cfp->sp + iseq->body->local_table_size + VM_ENV_DATA_SIZE;
+    const VALUE *bp = prev_cfp->sp + cfp->iseq->body->local_table_size + VM_ENV_DATA_SIZE;
 
     if (cfp->iseq->body->type == ISEQ_TYPE_METHOD) {
 	bp += 1;
@@ -240,15 +240,15 @@ vm_base_ptr(rb_control_frame_t *cfp)
 static void
 vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 {
-    int i, argc = 0, local_size = 0;
+    int i, argc = 0, local_table_size = 0;
     VALUE rstr;
     VALUE *sp = cfp->sp;
-    VALUE *ep = cfp->ep;
+    const VALUE *ep = cfp->ep;
 
     if (VM_FRAME_RUBYFRAME_P(cfp)) {
-	rb_iseq_t *iseq = cfp->iseq;
+	const rb_iseq_t *iseq = cfp->iseq;
 	argc = iseq->body->param.lead_num;
-	local_size = iseq->body->local_size;
+	local_table_size = iseq->body->local_table_size;
     }
 
     /* stack trace header */
@@ -264,8 +264,7 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_EVAL  ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_RESCUE)
     {
-
-	VALUE *ptr = ep - local_size;
+	const VALUE *ptr = ep - local_table_size;
 
 	control_frame_dump(th, cfp);
 
@@ -274,7 +273,7 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 	    fprintf(stderr, "  arg   %2d: %8s (%p)\n", i, StringValueCStr(rstr),
 		   (void *)ptr++);
 	}
-	for (; i < local_size - 1; i++) {
+	for (; i < local_table_size - 1; i++) {
 	    rstr = rb_inspect(*ptr);
 	    fprintf(stderr, "  local %2d: %8s (%p)\n", i, StringValueCStr(rstr),
 		   (void *)ptr++);
@@ -282,11 +281,16 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 
 	ptr = vm_base_ptr(cfp);
 	for (; ptr < sp; ptr++, i++) {
-	    if (*ptr == Qundef) {
+	    switch (TYPE(*ptr)) {
+	      case T_UNDEF:
 		rstr = rb_str_new2("undef");
-	    }
-	    else {
+		break;
+	      case T_IMEMO:
+		rstr = rb_str_new2("imemo"); /* TODO: can put mode detail information */
+		break;
+	      default:
 		rstr = rb_inspect(*ptr);
+		break;
 	    }
 	    fprintf(stderr, "  stack %2d: %8s (%"PRIdPTRDIFF")\n", i, StringValueCStr(rstr),
 		    (ptr - th->stack));
@@ -336,7 +340,7 @@ rb_vmdebug_thread_dump_regs(VALUE thval)
 }
 
 void
-rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp,VALUE *_pc)
+rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp, const VALUE *_pc)
 {
     const rb_iseq_t *iseq = cfp->iseq;
 
@@ -469,10 +473,14 @@ darwin_sigtramp:
 	unw_set_reg(&cursor, UNW_X86_64_R13, uctx->uc_mcontext->__ss.__r13);
 	unw_set_reg(&cursor, UNW_X86_64_R14, uctx->uc_mcontext->__ss.__r14);
 	unw_set_reg(&cursor, UNW_X86_64_R15, uctx->uc_mcontext->__ss.__r15);
-	ip = *(unw_word_t*)uctx->uc_mcontext->__ss.__rsp;
-	unw_set_reg(&cursor, UNW_REG_IP, ip);
-	trace[n++] = (void *)uctx->uc_mcontext->__ss.__rip;
+	ip = uctx->uc_mcontext->__ss.__rip;
+	if (((char*)ip)[-2] == 0x0f && ((char*)ip)[-1] == 5) {
+	    /* signal received in syscall */
+	    trace[n++] = (void *)ip;
+	    ip = *(unw_word_t*)uctx->uc_mcontext->__ss.__rsp;
+	}
 	trace[n++] = (void *)ip;
+	unw_set_reg(&cursor, UNW_REG_IP, ip);
     }
     while (unw_step(&cursor) > 0) {
 	unw_get_reg(&cursor, UNW_REG_IP, &ip);
@@ -918,43 +926,6 @@ rb_dump_machine_register(const ucontext_t *ctx)
 # define rb_dump_machine_register(ctx) ((void)0)
 #endif /* HAVE_PRINT_MACHINE_REGISTERS */
 
-static void
-preface_dump(void)
-{
-#if defined __APPLE__
-    static const char msg[] = ""
-	"-- Crash Report log information "
-	"--------------------------------------------\n"
-	"   See Crash Report log file under the one of following:\n"
-	"     * ~/Library/Logs/CrashReporter\n"
-	"     * /Library/Logs/CrashReporter\n"
-	"     * ~/Library/Logs/DiagnosticReports\n"
-	"     * /Library/Logs/DiagnosticReports\n"
-	"   for more details.\n"
-	"Don't forget to include the above Crash Report log file in bug reports.\n"
-	"\n";
-    const char *const endmsg = msg + sizeof(msg) - 1;
-    const char *p = msg;
-#define RED "\033[;31;1;7m"
-#define GREEN "\033[;32;7m"
-#define RESET "\033[m"
-
-    if (isatty(fileno(stderr))) {
-	const char *e = strchr(p, '\n');
-	const int w = (int)(e - p);
-	do {
-	    int i = (int)(e - p);
-	    fputs(*p == ' ' ? GREEN : RED, stderr);
-	    fwrite(p, 1, e - p, stderr);
-	    for (; i < w; ++i) fputc(' ', stderr);
-	    fputs(RESET, stderr);
-	    fputc('\n', stderr);
-	} while ((p = e + 1) < endmsg && (e = strchr(p, '\n')) != 0 && e > p + 1);
-    }
-    fwrite(p, 1, endmsg - p, stderr);
-#endif
-}
-
 void
 rb_vm_bugreport(const void *ctx)
 {
@@ -967,8 +938,6 @@ rb_vm_bugreport(const void *ctx)
     enum {other_runtime_info = 0};
 #endif
     const rb_vm_t *const vm = GET_VM();
-
-    preface_dump();
 
     if (vm) {
 	SDR();

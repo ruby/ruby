@@ -283,7 +283,16 @@ class TestSprintf < Test::Unit::TestCase
   end
 
   def test_float_prec
-    assert_equal("5.03", sprintf("%.2f",5.025))
+    assert_equal("5.00", sprintf("%.2f",5.005))
+    assert_equal("5.02", sprintf("%.2f",5.015))
+    assert_equal("5.02", sprintf("%.2f",5.025))
+    assert_equal("5.04", sprintf("%.2f",5.035))
+    bug12889 = '[ruby-core:77864] [Bug #12889]'
+    assert_equal("1234567892", sprintf("%.0f", 1234567891.99999))
+    assert_equal("1234567892", sprintf("%.0f", 1234567892.49999))
+    assert_equal("1234567892", sprintf("%.0f", 1234567892.50000))
+    assert_equal("1234567894", sprintf("%.0f", 1234567893.50000))
+    assert_equal("1234567892", sprintf("%.0f", 1234567892.00000), bug12889)
   end
 
   BSIZ = 120
@@ -436,5 +445,20 @@ class TestSprintf < Test::Unit::TestCase
   def test_named_with_nil
     h = { key: nil, key2: "key2_val" }
     assert_equal("key is , key2 is key2_val", "key is %{key}, key2 is %{key2}" % h)
+  end
+
+  def test_width_underflow
+    bug = 'https://github.com/mruby/mruby/issues/3347'
+    assert_equal("!", sprintf("%*c", 0, ?!.ord), bug)
+  end
+
+  def test_no_hidden_garbage
+    fmt = [4, 2, 2].map { |x| "%0#{x}d" }.join('-') # defeats optimization
+    ObjectSpace.count_objects(res = {}) # creates strings on first call
+    before = ObjectSpace.count_objects(res)[:T_STRING]
+    val = sprintf(fmt, 1970, 1, 1)
+    after = ObjectSpace.count_objects(res)[:T_STRING]
+    assert_equal before + 1, after, 'only new string is the created one'
+    assert_equal '1970-01-01', val
   end
 end

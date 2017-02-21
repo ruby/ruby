@@ -353,4 +353,31 @@ class TestNumeric < Test::Unit::TestCase
       assert_raise(ArgumentError) {1.remainder(x)}
     end;
   end
+
+  def test_comparison_comparable
+    bug12864 = '[ruby-core:77713] [Bug #12864]'
+
+    myinteger = Class.new do
+      include Comparable
+
+      def initialize(i)
+        @i = i.to_i
+      end
+      attr_reader :i
+
+      def <=>(other)
+        @i <=> (other.is_a?(self.class) ? other.i : other)
+      end
+    end
+
+    all_assertions(bug12864) do |a|
+      [5, 2**62, 2**61].each do |i|
+        a.for("%#x"%i) do
+          m = myinteger.new(i)
+          assert_equal(i, m)
+          assert_equal(m, i)
+        end
+      end
+    end
+  end
 end

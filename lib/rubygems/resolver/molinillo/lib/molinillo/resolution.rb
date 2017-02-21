@@ -184,6 +184,8 @@ module Gem::Resolver::Molinillo
           raise VersionConflict.new(c) unless state
           activated.rewind_to(sliced_states.first || :initial_state) if sliced_states
           state.conflicts = c
+          index = states.size - 1
+          @parent_of.reject! { |_, i| i >= index }
         end
       end
 
@@ -192,24 +194,29 @@ module Gem::Resolver::Molinillo
       def state_index_for_unwind
         current_requirement = requirement
         existing_requirement = requirement_for_existing_name(name)
-        until current_requirement.nil?
-          current_state = find_state_for(current_requirement)
-          return states.index(current_state) if state_any?(current_state)
-          current_requirement = parent_of(current_requirement)
+        index = -1
+        [current_requirement, existing_requirement].each do |r|
+          until r.nil?
+            current_state = find_state_for(r)
+            if state_any?(current_state)
+              current_index = states.index(current_state)
+              index = current_index if current_index > index
+              break
+            end
+            r = parent_of(r)
+          end
         end
 
-        until existing_requirement.nil?
-          existing_state = find_state_for(existing_requirement)
-          return states.index(existing_state) if state_any?(existing_state)
-          existing_requirement = parent_of(existing_requirement)
-        end
-        -1
+        index
       end
 
       # @return [Object] the requirement that led to `requirement` being added
       #   to the list of requirements.
       def parent_of(requirement)
-        @parent_of[requirement]
+        return unless requirement
+        return unless index = @parent_of[requirement]
+        return unless parent_state = @states[index]
+        parent_state.requirement
       end
 
       # @return [Object] the requirement that led to a version of a possibility
@@ -351,18 +358,24 @@ module Gem::Resolver::Molinillo
       # @return [void]
       def fixup_swapped_children(vertex)
         payload = vertex.payload
-        dep_names = dependencies_for(payload).map(&method(:name_for))
-        vertex.successors.each do |succ|
-          if !dep_names.include?(succ.name) && !succ.root? && succ.predecessors.to_a == [vertex]
+        deps = dependencies_for(payload).group_by(&method(:name_for))
+        vertex.outgoing_edges.each do |outgoing_edge|
+          @parent_of[outgoing_edge.requirement] = states.size - 1
+          succ = outgoing_edge.destination
+          matching_deps = Array(deps[succ.name])
+          if matching_deps.empty? && !succ.root? && succ.predecessors.to_a == [vertex]
             debug(depth) { "Removing orphaned spec #{succ.name} after swapping #{name}" }
-            activated.detach_vertex_named(succ.name)
+            succ.requirements.each { |r| @parent_of.delete(r) }
 
-            all_successor_names = succ.recursive_successors.map(&:name)
-
-            requirements.delete_if do |requirement|
-              requirement_name = name_for(requirement)
-              (requirement_name == succ.name) || all_successor_names.include?(requirement_name)
+            removed_names = activated.detach_vertex_named(succ.name).map(&:name)
+            requirements.delete_if do |r|
+              # the only removed vertices are those with no other requirements,
+              # so it's safe to delete only based upon name here
+              removed_names.include?(name_for(r))
             end
+          elsif !matching_deps.include?(outgoing_edge.requirement)
+            activated.delete_edge(outgoing_edge)
+            requirements.delete(outgoing_edge.requirement)
           end
         end
       end
@@ -418,7 +431,8 @@ module Gem::Resolver::Molinillo
         debug(depth) { "Requiring nested dependencies (#{nested_dependencies.join(', ')})" }
         nested_dependencies.each do |d|
           activated.add_child_vertex(name_for(d), nil, [name_for(activated_spec)], d)
-          @parent_of[d] = requirement
+          parent_index = states.size - 1
+          @parent_of[d] ||= parent_index
         end
 
         push_state_for_requirements(requirements + nested_dependencies, !nested_dependencies.empty?)

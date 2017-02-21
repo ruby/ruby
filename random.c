@@ -505,7 +505,7 @@ fill_random_bytes_syscall(void *seed, size_t size, int unused)
     CryptGenRandom(prov, size, seed);
     return 0;
 }
-#elif defined __linux__ && defined SYS_getrandom
+#elif defined __linux__ && defined __NR_getrandom
 #include <linux/random.h>
 
 # ifndef GRND_NONBLOCK
@@ -522,7 +522,7 @@ fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
 	if (!need_secure)
 	    flags = GRND_NONBLOCK;
 	errno = 0;
-	ret = syscall(SYS_getrandom, seed, size, flags);
+	ret = syscall(__NR_getrandom, seed, size, flags);
 	if (errno == ENOSYS) {
 	    ATOMIC_SET(try_syscall, 0);
 	    return -1;
@@ -603,11 +603,18 @@ random_seed(void)
 }
 
 /*
- * call-seq: Random.raw_seed(size) -> string
+ * call-seq: Random.urandom(size) -> string
  *
- * Returns a raw seed string, using platform providing features.
+ * Returns a string, using platform providing features.
+ * Returned value expected to be a cryptographically secure
+ * pseudo-random number in binary form.
  *
- *   Random.raw_seed(8)  #=> "\x78\x41\xBA\xAF\x7D\xEA\xD8\xEA"
+ * In 2017, Linux manpage random(7) writes that "no cryptographic
+ * primitive available today can hope to promise more than 256 bits of
+ * security".  So it might be questionable to pass size > 32 to this
+ * method.
+ *
+ *   Random.urandom(8)  #=> "\x78\x41\xBA\xAF\x7D\xEA\xD8\xEA"
  */
 static VALUE
 random_raw_seed(VALUE self, VALUE size)
@@ -1018,7 +1025,7 @@ rb_random_ulong_limited(VALUE obj, unsigned long limit)
     rb_random_t *rnd = try_get_rnd(obj);
     if (!rnd) {
 	VALUE lim = ulong_to_num_plus_1(limit);
-	VALUE v = rb_to_int(rb_funcallv(obj, id_rand, 1, &lim));
+	VALUE v = rb_to_int(rb_funcallv_public(obj, id_rand, 1, &lim));
 	unsigned long r = NUM2ULONG(v);
 	if (rb_num_negative_p(v)) {
 	    rb_raise(rb_eRangeError, "random number too small %ld", r);
@@ -1457,7 +1464,7 @@ random_s_rand(int argc, VALUE *argv, VALUE obj)
 }
 
 #define SIP_HASH_STREAMING 0
-#define sip_hash24 ruby_sip_hash24
+#define sip_hash13 ruby_sip_hash13
 #if !defined _WIN32 && !defined BYTE_ORDER
 # ifdef WORDS_BIGENDIAN
 #   define BYTE_ORDER BIG_ENDIAN
@@ -1473,50 +1480,35 @@ random_s_rand(int argc, VALUE *argv, VALUE obj)
 #endif
 #include "siphash.c"
 
-static st_index_t hashseed;
-typedef uint8_t sipseed_keys_t[16];
+typedef struct {
+    st_index_t hash;
+    uint8_t sip[16];
+} seed_keys_t;
+
 static union {
-    sipseed_keys_t key;
-    uint32_t u32[type_roomof(sipseed_keys_t, uint32_t)];
-} sipseed;
+    seed_keys_t key;
+    uint32_t u32[type_roomof(seed_keys_t, uint32_t)];
+} seed;
 
 static void
-init_hashseed(struct MT *mt)
-{
-    hashseed = genrand_int32(mt);
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 4*8
-    hashseed <<= 32;
-    hashseed |= genrand_int32(mt);
-#endif
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 8*8
-    hashseed <<= 32;
-    hashseed |= genrand_int32(mt);
-#endif
-#if SIZEOF_ST_INDEX_T*CHAR_BIT > 12*8
-    hashseed <<= 32;
-    hashseed |= genrand_int32(mt);
-#endif
-}
-
-static void
-init_siphash(struct MT *mt)
+init_seed(struct MT *mt)
 {
     int i;
 
-    for (i = 0; i < numberof(sipseed.u32); ++i)
-	sipseed.u32[i] = genrand_int32(mt);
+    for (i = 0; i < numberof(seed.u32); ++i)
+	seed.u32[i] = genrand_int32(mt);
 }
 
 st_index_t
 rb_hash_start(st_index_t h)
 {
-    return st_hash_start(hashseed + h);
+    return st_hash_start(seed.key.hash + h);
 }
 
 st_index_t
 rb_memhash(const void *ptr, long len)
 {
-    sip_uint64_t h = sip_hash24(sipseed.key, ptr, len);
+    sip_uint64_t h = sip_hash13(seed.key.sip, ptr, len);
 #ifdef HAVE_UINT64_T
     return (st_index_t)h;
 #else
@@ -1539,8 +1531,7 @@ Init_RandomSeedCore(void)
     fill_random_seed(initial_seed, DEFAULT_SEED_CNT);
     init_by_array(&mt, initial_seed, DEFAULT_SEED_CNT);
 
-    init_hashseed(&mt);
-    init_siphash(&mt);
+    init_seed(&mt);
 
     explicit_bzero(initial_seed, DEFAULT_SEED_LEN);
 }
@@ -1632,7 +1623,7 @@ InitVM_Random(void)
     rb_define_singleton_method(rb_cRandom, "srand", rb_f_srand, -1);
     rb_define_singleton_method(rb_cRandom, "rand", random_s_rand, -1);
     rb_define_singleton_method(rb_cRandom, "new_seed", random_seed, 0);
-    rb_define_singleton_method(rb_cRandom, "raw_seed", random_raw_seed, 1);
+    rb_define_singleton_method(rb_cRandom, "urandom", random_raw_seed, 1);
     rb_define_private_method(CLASS_OF(rb_cRandom), "state", random_s_state, 0);
     rb_define_private_method(CLASS_OF(rb_cRandom), "left", random_s_left, 0);
 

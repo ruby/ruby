@@ -119,6 +119,7 @@ module Gem::Resolver::Molinillo
     #   {Vertex#successors}
     def ==(other)
       return false unless other
+      return true if equal?(other)
       vertices.each do |name, vertex|
         other_vertex = other.vertex_named(name)
         return false unless other_vertex
@@ -134,6 +135,7 @@ module Gem::Resolver::Molinillo
     def add_child_vertex(name, payload, parent_names, requirement)
       root = !parent_names.delete(nil) { true }
       vertex = add_vertex(name, payload, root)
+      vertex.explicit_requirements << requirement if root
       parent_names.each do |parent_name|
         parent_node = vertex_named(parent_name)
         add_edge(parent_node, vertex, requirement)
@@ -152,7 +154,7 @@ module Gem::Resolver::Molinillo
     # Detaches the {#vertex_named} `name` {Vertex} from the graph, recursively
     # removing any non-root vertices that were orphaned in the process
     # @param [String] name
-    # @return [void]
+    # @return [Array<Vertex>] the vertices which have been detached
     def detach_vertex_named(name)
       log.detach_vertex_named(self, name)
     end
@@ -180,6 +182,13 @@ module Gem::Resolver::Molinillo
         raise CircularDependencyError.new([origin, destination])
       end
       add_edge_no_circular(origin, destination, requirement)
+    end
+
+    # Deletes an {Edge} from the dependency graph
+    # @param [Edge] edge
+    # @return [Void]
+    def delete_edge(edge)
+      log.delete_edge(self, edge.origin.name, edge.destination.name, edge.requirement)
     end
 
     # Sets the payload of the vertex with the given name

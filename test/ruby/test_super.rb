@@ -530,4 +530,18 @@ class TestSuper < Test::Unit::TestCase
 
     assert_equal "b", b.new.foo{"c"}
   end
+
+  def test_public_zsuper_with_prepend
+    bug12876 = '[ruby-core:77784] [Bug #12876]'
+    m = EnvUtil.labeled_module("M")
+    c = EnvUtil.labeled_class("C") {prepend m; public :initialize}
+    o = assert_nothing_raised(Timeout::Error, bug12876) {
+      Timeout.timeout(3) {c.new}
+    }
+    assert_instance_of(c, o)
+    m.module_eval {def initialize; raise "exception in M"; end}
+    assert_raise_with_message(RuntimeError, "exception in M") {
+      c.new
+    }
+  end
 end

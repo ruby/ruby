@@ -233,6 +233,7 @@ struct ifaddrs {
 #define IFF_POINTOPOINT IFF_POINTTOPOINT
 #endif
 
+extern void   rb_w32_sysinit(int *, char ***);
 extern DWORD  rb_w32_osid(void);
 extern rb_pid_t  rb_w32_pipe_exec(const char *, const char *, int, int *, int *);
 extern int    flock(int fd, int oper);

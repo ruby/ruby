@@ -93,6 +93,8 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
  *
  * Creates a new UNIX client socket connected to _path_.
  *
+ *   require 'socket'
+ *
  *   s = UNIXSocket.new("/tmp/sock")
  *   s.send "hello", 0
  *

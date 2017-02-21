@@ -83,11 +83,7 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
     assert_hard_link 'fonts/SourceCodePro-Bold.ttf'
     assert_hard_link 'fonts/SourceCodePro-Regular.ttf'
 
-    encoding = if Object.const_defined? :Encoding then
-                 Regexp.escape Encoding::UTF_8.name
-               else
-                 Regexp.escape 'UTF-8'
-               end
+    encoding = Regexp.escape Encoding::UTF_8.name
 
     assert_match %r%<meta charset="#{encoding}">%, File.read('index.html')
     assert_match %r%<meta charset="#{encoding}">%, File.read('Object.html')
@@ -227,4 +223,3 @@ class TestRDocGeneratorDarkfish < RDoc::TestCase
   end
 
 end
-

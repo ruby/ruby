@@ -4,9 +4,9 @@ require "net/imap"
 require "test/unit"
 
 class IMAPTest < Test::Unit::TestCase
-  CA_FILE = File.expand_path("cacert.pem", File.dirname(__FILE__))
-  SERVER_KEY = File.expand_path("server.key", File.dirname(__FILE__))
-  SERVER_CERT = File.expand_path("server.crt", File.dirname(__FILE__))
+  CA_FILE = File.expand_path("../fixtures/cacert.pem", __dir__)
+  SERVER_KEY = File.expand_path("../fixtures/server.key", __dir__)
+  SERVER_CERT = File.expand_path("../fixtures/server.crt", __dir__)
 
   SERVER_ADDR = "127.0.0.1"
 

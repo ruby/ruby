@@ -130,6 +130,7 @@ class OpenStruct
   def each_pair
     return to_enum(__method__) { @table.size } unless block_given?
     @table.each_pair{|p| yield p}
+    self
   end
 
   #

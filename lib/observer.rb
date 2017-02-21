@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # Implementation of the _Observer_ object-oriented design pattern.  The
 # following documentation is copied, with modifications, from "Programming
@@ -114,7 +114,7 @@
 module Observable
 
   #
-  # Add +observer+ as an observer on this object. so that it will receive
+  # Add +observer+ as an observer on this object. So that it will receive
   # notifications.
   #
   # +observer+:: the object that will be notified of changes.

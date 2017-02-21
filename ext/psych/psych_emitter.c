@@ -8,6 +8,7 @@
 #endif
 
 VALUE cPsychEmitter;
+static ID id_io;
 static ID id_write;
 static ID id_line_width;
 static ID id_indentation;
@@ -21,12 +22,8 @@ static void emit(yaml_emitter_t * emitter, yaml_event_t * event)
 
 static int writer(void *ctx, unsigned char *buffer, size_t size)
 {
-    VALUE io = (VALUE)ctx;
-#ifdef HAVE_RUBY_ENCODING_H
+    VALUE self = (VALUE)ctx, io = rb_attr_get(self, id_io);
     VALUE str = rb_enc_str_new((const char *)buffer, (long)size, rb_utf8_encoding());
-#else
-    VALUE str = rb_str_new((const char *)buffer, (long)size);
-#endif
     VALUE wrote = rb_funcall(io, id_write, 1, str);
     return (int)NUM2INT(wrote);
 }
@@ -94,7 +91,8 @@ static VALUE initialize(int argc, VALUE *argv, VALUE self)
 	yaml_emitter_set_canonical(emitter, Qtrue == canonical ? 1 : 0);
     }
 
-    yaml_emitter_set_output(emitter, writer, (void *)io);
+    rb_ivar_set(self, id_io, io);
+    yaml_emitter_set_output(emitter, writer, (void *)self);
 
     return self;
 }
@@ -168,9 +166,7 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
     if(RTEST(tags)) {
 	long i = 0;
 	long len;
-#ifdef HAVE_RUBY_ENCODING_H
 	rb_encoding * encoding = rb_utf8_encoding();
-#endif
 
 	Check_Type(tags, T_ARRAY);
 
@@ -193,10 +189,8 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
 	    value = RARRAY_AREF(tuple, 1);
 	    StringValue(name);
 	    StringValue(value);
-#ifdef HAVE_RUBY_ENCODING_H
 	    name = rb_str_export_to_enc(name, encoding);
 	    value = rb_str_export_to_enc(value, encoding);
-#endif
 
 	    tail->handle = (yaml_char_t *)RSTRING_PTR(name);
 	    tail->prefix = (yaml_char_t *)RSTRING_PTR(value);
@@ -257,14 +251,11 @@ static VALUE scalar(
 	) {
     yaml_emitter_t * emitter;
     yaml_event_t event;
-#ifdef HAVE_RUBY_ENCODING_H
     rb_encoding *encoding;
-#endif
     TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
     Check_Type(value, T_STRING);
 
-#ifdef HAVE_RUBY_ENCODING_H
     encoding = rb_utf8_encoding();
 
     value = rb_str_export_to_enc(value, encoding);
@@ -278,7 +269,6 @@ static VALUE scalar(
 	Check_Type(tag, T_STRING);
 	tag = rb_str_export_to_enc(tag, encoding);
     }
-#endif
 
     yaml_scalar_event_initialize(
 	    &event,
@@ -313,7 +303,6 @@ static VALUE start_sequence(
     yaml_emitter_t * emitter;
     yaml_event_t event;
 
-#ifdef HAVE_RUBY_ENCODING_H
     rb_encoding * encoding = rb_utf8_encoding();
 
     if(!NIL_P(anchor)) {
@@ -325,7 +314,6 @@ static VALUE start_sequence(
 	Check_Type(tag, T_STRING);
 	tag = rb_str_export_to_enc(tag, encoding);
     }
-#endif
 
     TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
@@ -377,12 +365,10 @@ static VALUE start_mapping(
 	) {
     yaml_emitter_t * emitter;
     yaml_event_t event;
-#ifdef HAVE_RUBY_ENCODING_H
     rb_encoding *encoding;
-#endif
+
     TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
-#ifdef HAVE_RUBY_ENCODING_H
     encoding = rb_utf8_encoding();
 
     if(!NIL_P(anchor)) {
@@ -394,7 +380,6 @@ static VALUE start_mapping(
 	Check_Type(tag, T_STRING);
 	tag = rb_str_export_to_enc(tag, encoding);
     }
-#endif
 
     yaml_mapping_start_event_initialize(
 	    &event,
@@ -440,12 +425,10 @@ static VALUE alias(VALUE self, VALUE anchor)
     yaml_event_t event;
     TypedData_Get_Struct(self, yaml_emitter_t, &psych_emitter_type, emitter);
 
-#ifdef HAVE_RUBY_ENCODING_H
     if(!NIL_P(anchor)) {
 	Check_Type(anchor, T_STRING);
 	anchor = rb_str_export_to_enc(anchor, rb_utf8_encoding());
     }
-#endif
 
     yaml_alias_event_initialize(
 	    &event,
@@ -562,6 +545,7 @@ void Init_psych_emitter(void)
     rb_define_method(cPsychEmitter, "line_width", line_width, 0);
     rb_define_method(cPsychEmitter, "line_width=", set_line_width, 1);
 
+    id_io          = rb_intern("io");
     id_write       = rb_intern("write");
     id_line_width  = rb_intern("line_width");
     id_indentation = rb_intern("indentation");

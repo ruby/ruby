@@ -1,13 +1,21 @@
 # -*- makefile-gmake -*-
 gnumake = yes
+override gnumake_recursive := $(if $(findstring n,$(firstword $(MFLAGS))),,+)
+override mflags := $(filter-out -j%,$(MFLAGS))
 
 CHECK_TARGETS := exam love check%
-TEST_TARGETS := $(filter check test check% test% btest%,$(MAKECMDGOALS))
-TEST_TARGETS += $(subst check,test-all,$(patsubst check-%,test-%,$(TEST_TARGETS)))
-TEST_TARGETS := $(patsubst test-%,yes-test-%,$(patsubst btest-%,yes-btest-%,$(TEST_TARGETS)))
-TEST_DEPENDS := $(if $(TEST_TARGETS),$(filter all main exts,$(MAKECMDGOALS)))
-TEST_DEPENDS += $(if $(filter $(CHECK_TARGETS),$(MAKECMDGOALS)),main)
-TEST_DEPENDS += $(if $(filter main,$(TEST_DEPENDS)),$(if $(filter all,$(INSTALLDOC)),docs))
+# expand test targets, and those dependents
+TEST_TARGETS := $(filter exam check test check% test% btest%,$(MAKECMDGOALS))
+TEST_DEPENDS := $(filter-out $(TEST_TARGETS),$(MAKECMDGOALS))
+TEST_TARGETS := $(patsubst exam,check test-rubyspec,$(TEST_TARGETS))
+TEST_DEPENDS := $(filter-out $(TEST_TARGETS),$(TEST_DEPENDS))
+TEST_TARGETS := $(patsubst love,check,$(TEST_TARGETS))
+TEST_DEPENDS := $(filter-out $(TEST_TARGETS),$(TEST_DEPENDS))
+TEST_TARGETS := $(patsubst check,test test-testframework test-almost,$(patsubst check-%,test test-%,$(TEST_TARGETS)))
+TEST_DEPENDS := $(filter-out $(TEST_TARGETS),$(TEST_DEPENDS))
+TEST_TARGETS := $(patsubst test,btest-ruby test-knownbug test-basic,$(TEST_TARGETS))
+TEST_DEPENDS := $(filter-out $(TEST_TARGETS),$(TEST_DEPENDS))
+TEST_DEPENDS += $(if $(filter-out btest%,$(TEST_TARGETS)),all exts)
 
 ifneq ($(filter -O0 -Od,$(optflags)),)
 override XCFLAGS := $(filter-out -D_FORTIFY_SOURCE=%,$(XCFLAGS))
@@ -40,21 +48,21 @@ $(foreach arch,$(filter -arch=%,$(subst -arch ,-arch=,$(ARCH_FLAG))),\
 	$(eval $(call archcmd,$(patsubst -arch=%,%,$(value arch)),$(patsubst -arch=%,-arch %,$(value arch)))))
 endif
 
-ifneq ($(filter $(CHECK_TARGETS) test,$(MAKECMDGOALS)),)
-yes-test-basic: $(TEST_DEPENDS) yes-test-knownbug
-yes-test-knownbug: $(TEST_DEPENDS) yes-btest-ruby
-yes-btest-ruby: $(TEST_DEPENDS)
-endif
-ifneq ($(filter $(CHECK_TARGETS),$(MAKECMDGOALS)) $(filter yes-test-all,$(TEST_TARGETS)),)
-yes-test-testframework yes-test-almost yes-test-ruby: $(filter-out %test-all %test-ruby check%,$(TEST_TARGETS)) \
-	yes-test-basic
-endif
-ifneq ($(filter $(CHECK_TARGETS),$(MAKECMDGOALS))$(if $(filter test-all,$(MAKECMDGOALS)),$(filter test-knownbug,$(MAKECMDGOALS))),)
-yes-test-testframework yes-test-almost yes-test-ruby: yes-test-knownbug
-yes-test-almost: yes-test-testframework
+.PHONY: $(addprefix yes-,$(TEST_TARGETS))
+
+ifneq ($(filter-out btest%,$(TEST_TARGETS)),)
+$(addprefix yes-,$(TEST_TARGETS)): $(TEST_DEPENDS)
 endif
 
-$(TEST_TARGETS): $(TEST_DEPENDS)
+ORDERED_TEST_TARGETS := $(filter $(TEST_TARGETS), \
+	btest-ruby test-knownbug test-basic \
+	test-testframework test-ruby test-almost test-all \
+	test-rubyspec \
+	)
+prev_test := $(if $(filter test-rubyspec,$(ORDERED_TEST_TARGETS)),test-rubyspec-precheck)
+$(foreach test,$(addprefix yes-,$(ORDERED_TEST_TARGETS)), \
+	$(eval $(value test): $(value prev_test)); \
+	$(eval prev_test := $(value test)))
 
 ifneq ($(if $(filter install,$(MAKECMDGOALS)),$(filter uninstall,$(MAKECMDGOALS))),)
 install-targets := $(filter install uninstall,$(MAKECMDGOALS))
@@ -92,3 +100,36 @@ else
 	$(Q) mv $@.new $@
 	$(Q) $(RMALL) make_des_table*
 endif
+
+STUBPROGRAM = rubystub$(EXEEXT)
+IGNOREDPATTERNS = %~ .% %.orig %.rej \#%\#
+SCRIPTBINDIR := $(if $(EXEEXT),,exec/)
+SCRIPTPROGRAMS = $(addprefix $(SCRIPTBINDIR),$(addsuffix $(EXEEXT),$(filter-out $(IGNOREDPATTERNS),$(notdir $(wildcard $(srcdir)/bin/*)))))
+
+stub: $(STUBPROGRAM)
+scriptbin: $(SCRIPTPROGRAMS)
+ifneq ($(STUBPROGRAM),rubystub)
+rubystub: $(STUBPROGRAM)
+endif
+
+$(SCRIPTPROGRAMS): $(STUBPROGRAM)
+
+$(STUBPROGRAM): rubystub.$(OBJEXT) $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
+
+rubystub$(EXEEXT):
+	@rm -f $@
+	$(ECHO) linking $@
+	$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) rubystub.$(OBJEXT) $(EXTOBJS) $(LIBRUBYARG) $(MAINLIBS) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
+	$(Q) $(POSTLINK)
+	$(if $(STRIP),$(Q) $(STRIP) $@)
+
+$(SCRIPTBINDIR)%$(EXEEXT): bin/% $(STUBPROGRAM) \
+			   $(if $(SCRIPTBINDIR),$(TIMESTAMPDIR)/.exec.time)
+	$(ECHO) generating $@
+	$(Q) { cat $(STUBPROGRAM); echo; sed -e '1{' -e '/^#!.*ruby/!i\' -e '#!/bin/ruby' -e '}' $<; } > $@
+	$(Q) chmod +x $@
+	$(Q) $(POSTLINK)
+
+$(TIMESTAMPDIR)/.exec.time:
+	$(Q) mkdir exec
+	$(Q) exit > $@

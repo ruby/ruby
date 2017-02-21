@@ -4,7 +4,6 @@ begin
   require 'net/https'
   require 'stringio'
   require 'timeout'
-  require File.expand_path("../../openssl/utils", File.dirname(__FILE__))
   require File.expand_path("utils", File.dirname(__FILE__))
 rescue LoadError
   # should skip this test
@@ -13,34 +12,40 @@ end
 class TestNetHTTPS < Test::Unit::TestCase
   include TestNetHTTPUtils
 
-  subject = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
-  exts = [
-    ["keyUsage", "keyEncipherment,digitalSignature", true],
-  ]
-  key = OpenSSL::TestUtils::TEST_KEY_RSA1024
-  cert = OpenSSL::TestUtils.issue_cert(
-    subject, key, 1, Time.now, Time.now + 3600, exts,
-    nil, nil, OpenSSL::Digest::SHA1.new
-  )
+  def self.fixture(key)
+    File.read(File.expand_path("../fixtures/#{key}", __dir__))
+  end
+
+  CA_CERT = OpenSSL::X509::Certificate.new(fixture("cacert.pem"))
+  SERVER_KEY = OpenSSL::PKey.read(fixture("server.key"))
+  SERVER_CERT = OpenSSL::X509::Certificate.new(fixture("server.crt"))
+  DHPARAMS = OpenSSL::PKey::DH.new(fixture("dhparams.pem"))
+  TEST_STORE = OpenSSL::X509::Store.new.tap {|s| s.add_cert(CA_CERT) }
 
   CONFIG = {
     'host' => '127.0.0.1',
     'proxy_host' => nil,
     'proxy_port' => nil,
     'ssl_enable' => true,
-    'ssl_certificate' => cert,
-    'ssl_private_key' => key,
+    'ssl_certificate' => SERVER_CERT,
+    'ssl_private_key' => SERVER_KEY,
+    'ssl_tmp_dh_callback' => proc { DHPARAMS },
   }
 
   def test_get
     http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true
+    http.cert_store = TEST_STORE
+    certs = []
     http.verify_callback = Proc.new do |preverify_ok, store_ctx|
-      store_ctx.current_cert.to_der == config('ssl_certificate').to_der
+      certs << store_ctx.current_cert
+      preverify_ok
     end
     http.request_get("/") {|res|
       assert_equal($test_net_http_data, res.body)
     }
+    assert_equal(CA_CERT.to_der, certs[0].to_der)
+    assert_equal(SERVER_CERT.to_der, certs[1].to_der)
   rescue SystemCallError
     skip $!
   end
@@ -48,9 +53,7 @@ class TestNetHTTPS < Test::Unit::TestCase
   def test_post
     http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true
-    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
-      store_ctx.current_cert.to_der == config('ssl_certificate').to_der
-    end
+    http.cert_store = TEST_STORE
     data = config('ssl_private_key').to_der
     http.request_post("/", data, {'content-type' => 'application/x-www-form-urlencoded'}) {|res|
       assert_equal(data, res.body)
@@ -62,9 +65,7 @@ class TestNetHTTPS < Test::Unit::TestCase
   def test_session_reuse
     http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true
-    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
-      store_ctx.current_cert.to_der == config('ssl_certificate').to_der
-    end
+    http.cert_store = TEST_STORE
 
     http.start
     http.get("/")
@@ -93,9 +94,7 @@ class TestNetHTTPS < Test::Unit::TestCase
   def test_session_reuse_but_expire
     http = Net::HTTP.new("localhost", config("port"))
     http.use_ssl = true
-    http.verify_callback = Proc.new do |preverify_ok, store_ctx|
-      store_ctx.current_cert.to_der == config('ssl_certificate').to_der
-    end
+    http.cert_store = TEST_STORE
 
     http.ssl_timeout = -1
     http.start
@@ -164,7 +163,7 @@ class TestNetHTTPS < Test::Unit::TestCase
     http = Net::HTTP.new("127.0.0.1", config("port"))
     http.use_ssl = true
     http.verify_callback = Proc.new do |preverify_ok, store_ctx|
-      store_ctx.current_cert.to_der == config('ssl_certificate').to_der
+      true
     end
     ex = assert_raise(OpenSSL::SSL::SSLError){
       http.request_get("/") {|res| }
@@ -192,4 +191,4 @@ class TestNetHTTPS < Test::Unit::TestCase
       assert th.join(10), bug4246
     }
   end
-end if defined?(OpenSSL::TestUtils)
+end if defined?(OpenSSL::SSL)

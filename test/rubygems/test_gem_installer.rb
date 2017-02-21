@@ -1141,6 +1141,35 @@ gem 'other', version
     refute_path_exists should_be_removed
   end
 
+  def test_install_user_extension_dir
+    @spec.extensions << "extconf.rb"
+    write_file File.join(@tempdir, "extconf.rb") do |io|
+      io.write <<-RUBY
+        require "mkmf"
+        create_makefile("#{@spec.name}")
+      RUBY
+    end
+
+    @spec.files += %w[extconf.rb]
+
+    # Create the non-user ext dir
+    expected_extension_dir = @spec.extension_dir.dup
+    FileUtils.mkdir_p expected_extension_dir
+
+    use_ui @ui do
+      path = Gem::Package.build @spec
+
+      installer = Gem::Installer.at path, :user_install => true
+      installer.install
+    end
+
+    expected_makefile = File.join Gem.user_dir, 'gems', @spec.full_name, 'Makefile'
+
+    assert_path_exists expected_makefile
+    assert_path_exists expected_extension_dir
+    refute_path_exists File.join expected_extension_dir, 'gem_make.out'
+  end
+
   # ruby core repository needs to `depend` file for extension build.
   # but 1.9.2 and earlier mkmf.rb does not create TOUCH file like depend.
   if RUBY_VERSION < '1.9.3'

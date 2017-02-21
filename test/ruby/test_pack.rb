@@ -812,4 +812,44 @@ EXPECTED
       assert_raise_with_message(ArgumentError, /too few/) {ary.pack("AA")}
     end;
   end
+
+  def test_pack_with_buffer
+    buf = String.new(capacity: 100)
+
+    assert_raise_with_message(RuntimeError, /frozen/) {
+      [0xDEAD_BEEF].pack('N', buffer: 'foo'.freeze)
+    }
+    assert_raise_with_message(TypeError, /must be String/) {
+      [0xDEAD_BEEF].pack('N', buffer: Object.new)
+    }
+
+    addr = [buf].pack('p')
+
+    [0xDEAD_BEEF].pack('N', buffer: buf)
+    assert_equal "\xDE\xAD\xBE\xEF", buf
+
+    [0xBABE_F00D].pack('@4N', buffer: buf)
+    assert_equal "\xDE\xAD\xBE\xEF\xBA\xBE\xF0\x0D", buf
+    assert_equal addr, [buf].pack('p')
+
+    [0xBAAD_FACE].pack('@10N', buffer: buf)
+    assert_equal "\xDE\xAD\xBE\xEF\xBA\xBE\xF0\x0D\0\0\xBA\xAD\xFA\xCE", buf
+
+    assert_equal addr, [buf].pack('p')
+  end
+
+  def test_unpack_with_block
+    ret = []; "ABCD".unpack("CCCC") {|v| ret << v }
+    assert_equal [65, 66, 67, 68], ret
+    ret = []; "A".unpack("B*") {|v| ret << v.dup }
+    assert_equal ["01000001"], ret
+  end
+
+  def test_unpack1
+    assert_equal 65, "A".unpack1("C")
+    assert_equal 68, "ABCD".unpack1("x3C")
+    assert_equal 0x3042, "\u{3042 3044 3046}".unpack1("U*")
+    assert_equal "hogefuga", "aG9nZWZ1Z2E=".unpack1("m")
+    assert_equal "01000001", "A".unpack1("B*")
+  end
 end

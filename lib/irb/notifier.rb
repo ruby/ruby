@@ -113,7 +113,7 @@ module IRB
     # create a new composite notifier. Using the first composite notifier
     # object you create, sibling notifiers can be initialized with
     # #def_notifier.
-    class CompositeNotifier<AbstractNotifier
+    class CompositeNotifier < AbstractNotifier
       # Create a new composite notifier object with the given +prefix+, and
       # +base_notifier+ to use for output.
       def initialize(prefix, base_notifier)
@@ -174,7 +174,7 @@ module IRB
 
     # A leveled notifier is comparable to the composite group from
     # CompositeNotifier#notifiers.
-    class LeveledNotifier<AbstractNotifier
+    class LeveledNotifier < AbstractNotifier
       include Comparable
 
       # Create a new leveled notifier with the given +base+, and +prefix+ to
@@ -212,7 +212,7 @@ module IRB
     #
     # This notifier is used as the +zero+ index, or level +0+, for
     # CompositeNotifier#notifiers, and will not output messages of any sort.
-    class NoMsgNotifier<LeveledNotifier
+    class NoMsgNotifier < LeveledNotifier
       # Creates a new notifier that should not be used to output messages.
       def initialize
         @base_notifier = nil

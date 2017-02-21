@@ -1,5 +1,5 @@
 /* C code produced by gperf version 3.0.4 */
-/* Command-line: gperf -E -C -P -p -j1 -i 1 -g -o -t -N zonetab zonetab.list  */
+/* Command-line: gperf -E -C -c -P -p -j1 -i 1 -g -o -t -N zonetab zonetab.list  */
 /* Computed positions: -k'1-4,$' */
 
 #if !((' ' == 32) && ('!' == 33) && ('"' == 34) && ('#' == 35) \
@@ -891,7 +891,7 @@ zonetab (str, len)
             {
               register const char *s = o + stringpool;
 
-              if (*str == *s && !strcmp (str + 1, s + 1))
+              if (*str == *s && !strncmp (str + 1, s + 1, len - 1) && s[len] == '\0')
                 return &wordlist[key];
             }
         }

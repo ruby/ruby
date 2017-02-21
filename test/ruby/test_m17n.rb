@@ -465,7 +465,7 @@ class TestM17N < Test::Unit::TestCase
   def test_regexp_ascii_none
     r = /a/n
 
-    assert_warning(%r{regexp match /.../n against to}) {
+    assert_warning(%r{regexp match /\.\.\./n against to}) {
       assert_regexp_generic_ascii(r)
     }
 
@@ -474,13 +474,13 @@ class TestM17N < Test::Unit::TestCase
     assert_equal(0, r =~ s("a"))
     assert_equal(0, r =~ u("a"))
     assert_equal(nil, r =~ a("\xc2\xa1"))
-    assert_warning(%r{regexp match /.../n against to EUC-JP string}) {
+    assert_warning(%r{regexp match /\.\.\./n against to EUC-JP string}) {
       assert_equal(nil, r =~ e("\xc2\xa1"))
     }
-    assert_warning(%r{regexp match /.../n against to Windows-31J string}) {
+    assert_warning(%r{regexp match /\.\.\./n against to Windows-31J string}) {
       assert_equal(nil, r =~ s("\xc2\xa1"))
     }
-    assert_warning(%r{regexp match /.../n against to UTF-8 string}) {
+    assert_warning(%r{regexp match /\.\.\./n against to UTF-8 string}) {
       assert_equal(nil, r =~ u("\xc2\xa1"))
     }
 
@@ -1623,8 +1623,9 @@ class TestM17N < Test::Unit::TestCase
     assert_raise(ArgumentError){ u("\xE3\x81\x82\xE3\x81\x82\xE3\x81").scrub{u("\x81")} }
     assert_equal(e("\xA4\xA2\xA2\xAE"), e("\xA4\xA2\xA4").scrub{e("\xA2\xAE")})
 
-    assert_equal(u("\x81"), u("a\x81").scrub {|c| break c})
+    assert_equal(u("\x81"), u("a\x81c").scrub {|c| break c})
     assert_raise(ArgumentError) {u("a\x81").scrub {|c| c}}
+    assert_raise(ArgumentError) {u("a").scrub("?") {|c| c}}
   end
 
   def test_scrub_widechar
@@ -1640,6 +1641,12 @@ class TestM17N < Test::Unit::TestCase
     assert_equal("\uFFFD".encode("UTF-32LE"),
                  "\xff".force_encoding(Encoding::UTF_32LE).
                  scrub)
+    c = nil
+    assert_equal("?\u3042".encode(Encoding::UTF_16LE),
+                 "\x00\xD8\x42\x30".force_encoding(Encoding::UTF_16LE).
+                   scrub {|e| c = e; "?".encode(Encoding::UTF_16LE)})
+    assert_equal("\x00\xD8".force_encoding(Encoding::UTF_16LE), c)
+    assert_raise(ArgumentError) {"\uFFFD\u3042".encode("UTF-16BE").scrub("") {}}
   end
 
   def test_scrub_dummy_encoding

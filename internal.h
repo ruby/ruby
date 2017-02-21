@@ -23,27 +23,31 @@ extern "C" {
 #endif
 #endif
 
+#ifdef HAVE_STDBOOL_H
+# include <stdbool.h>
+#endif
+
+#ifndef __bool_true_false_are_defined
+# ifndef __cplusplus
+#  undef bool
+#  undef false
+#  undef true
+#  define bool signed char
+#  define false 0
+#  define true 1
+#  define __bool_true_false_are_defined 1
+# endif
+#endif
+
 #define LIKELY(x) RB_LIKELY(x)
 #define UNLIKELY(x) RB_UNLIKELY(x)
 
-#ifndef __has_attribute
-# define __has_attribute(x) 0
+#ifndef MAYBE_UNUSED
+# define MAYBE_UNUSED(x) x
 #endif
 
-#if __has_attribute(__unused__)
-#define UNINITIALIZED_VAR(x) x __attribute__((__unused__))
-#elif defined(__GNUC__) && __GNUC__ >= 3
-#define UNINITIALIZED_VAR(x) x = x
-#else
-#define UNINITIALIZED_VAR(x) x
-#endif
-
-#if __has_attribute(__warn_unused_result__)
-#define WARN_UNUSED_RESULT(x) x __attribute__((__warn_unused_result__))
-#elif GCC_VERSION_SINCE(3,4,0)
-#define WARN_UNUSED_RESULT(x) x __attribute__((__warn_unused_result__))
-#else
-#define WARN_UNUSED_RESULT(x) x
+#ifndef WARN_UNUSED_RESULT
+# define WARN_UNUSED_RESULT(x) x
 #endif
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
@@ -145,20 +149,20 @@ extern "C" {
 # endif
 #endif
 
-static inline int
+static inline unsigned int
 nlz_int(unsigned int x)
 {
 #if defined(HAVE_BUILTIN___BUILTIN_CLZ)
     if (x == 0) return SIZEOF_INT * CHAR_BIT;
-    return __builtin_clz(x);
+    return (unsigned int)__builtin_clz(x);
 #else
     unsigned int y;
 # if 64 < SIZEOF_INT * CHAR_BIT
-    int n = 128;
+    unsigned int n = 128;
 # elif 32 < SIZEOF_INT * CHAR_BIT
-    int n = 64;
+    unsigned int n = 64;
 # else
-    int n = 32;
+    unsigned int n = 32;
 # endif
 # if 64 < SIZEOF_INT * CHAR_BIT
     y = x >> 64; if (y) {n -= 64; x = y;}
@@ -171,24 +175,24 @@ nlz_int(unsigned int x)
     y = x >>  4; if (y) {n -=  4; x = y;}
     y = x >>  2; if (y) {n -=  2; x = y;}
     y = x >>  1; if (y) {return n - 2;}
-    return (int)(n - x);
+    return (unsigned int)(n - x);
 #endif
 }
 
-static inline int
+static inline unsigned int
 nlz_long(unsigned long x)
 {
 #if defined(HAVE_BUILTIN___BUILTIN_CLZL)
     if (x == 0) return SIZEOF_LONG * CHAR_BIT;
-    return __builtin_clzl(x);
+    return (unsigned int)__builtin_clzl(x);
 #else
     unsigned long y;
 # if 64 < SIZEOF_LONG * CHAR_BIT
-    int n = 128;
+    unsigned int n = 128;
 # elif 32 < SIZEOF_LONG * CHAR_BIT
-    int n = 64;
+    unsigned int n = 64;
 # else
-    int n = 32;
+    unsigned int n = 32;
 # endif
 # if 64 < SIZEOF_LONG * CHAR_BIT
     y = x >> 64; if (y) {n -= 64; x = y;}
@@ -201,25 +205,25 @@ nlz_long(unsigned long x)
     y = x >>  4; if (y) {n -=  4; x = y;}
     y = x >>  2; if (y) {n -=  2; x = y;}
     y = x >>  1; if (y) {return n - 2;}
-    return (int)(n - x);
+    return (unsigned int)(n - x);
 #endif
 }
 
 #ifdef HAVE_LONG_LONG
-static inline int
+static inline unsigned int
 nlz_long_long(unsigned LONG_LONG x)
 {
 #if defined(HAVE_BUILTIN___BUILTIN_CLZLL)
     if (x == 0) return SIZEOF_LONG_LONG * CHAR_BIT;
-    return __builtin_clzll(x);
+    return (unsigned int)__builtin_clzll(x);
 #else
     unsigned LONG_LONG y;
 # if 64 < SIZEOF_LONG_LONG * CHAR_BIT
-    int n = 128;
+    unsigned int n = 128;
 # elif 32 < SIZEOF_LONG_LONG * CHAR_BIT
-    int n = 64;
+    unsigned int n = 64;
 # else
-    int n = 32;
+    unsigned int n = 32;
 # endif
 # if 64 < SIZEOF_LONG_LONG * CHAR_BIT
     y = x >> 64; if (y) {n -= 64; x = y;}
@@ -232,17 +236,17 @@ nlz_long_long(unsigned LONG_LONG x)
     y = x >>  4; if (y) {n -=  4; x = y;}
     y = x >>  2; if (y) {n -=  2; x = y;}
     y = x >>  1; if (y) {return n - 2;}
-    return (int)(n - x);
+    return (unsigned int)(n - x);
 #endif
 }
 #endif
 
 #ifdef HAVE_UINT128_T
-static inline int
+static inline unsigned int
 nlz_int128(uint128_t x)
 {
     uint128_t y;
-    int n = 128;
+    unsigned int n = 128;
     y = x >> 64; if (y) {n -= 64; x = y;}
     y = x >> 32; if (y) {n -= 32; x = y;}
     y = x >> 16; if (y) {n -= 16; x = y;}
@@ -250,12 +254,13 @@ nlz_int128(uint128_t x)
     y = x >>  4; if (y) {n -=  4; x = y;}
     y = x >>  2; if (y) {n -=  2; x = y;}
     y = x >>  1; if (y) {return n - 2;}
-    return (int)(n - x);
+    return (unsigned int)(n - x);
 }
 #endif
 
-static inline int
-nlz_intptr(uintptr_t x) {
+static inline unsigned int
+nlz_intptr(uintptr_t x)
+{
 #if SIZEOF_VOIDP == 8
     return nlz_long_long(x);
 #elif SIZEOF_VOIDP == 4
@@ -263,10 +268,11 @@ nlz_intptr(uintptr_t x) {
 #endif
 }
 
-static inline int
-rb_popcount32(uint32_t x) {
+static inline unsigned int
+rb_popcount32(uint32_t x)
+{
 #ifdef HAVE_BUILTIN___BUILTIN_POPCOUNT
-    return __builtin_popcount(x);
+    return (unsigned int)__builtin_popcount(x);
 #else
     x = (x & 0x55555555) + (x >> 1 & 0x55555555);
     x = (x & 0x33333333) + (x >> 2 & 0x33333333);
@@ -277,7 +283,8 @@ rb_popcount32(uint32_t x) {
 }
 
 static inline int
-rb_popcount64(uint64_t x) {
+rb_popcount64(uint64_t x)
+{
 #ifdef HAVE_BUILTIN___BUILTIN_POPCOUNT
     return __builtin_popcountll(x);
 #else
@@ -291,7 +298,8 @@ rb_popcount64(uint64_t x) {
 }
 
 static inline int
-rb_popcount_intptr(uintptr_t x) {
+rb_popcount_intptr(uintptr_t x)
+{
 #if SIZEOF_VOIDP == 8
     return rb_popcount64(x);
 #elif SIZEOF_VOIDP == 4
@@ -300,7 +308,8 @@ rb_popcount_intptr(uintptr_t x) {
 }
 
 static inline int
-ntz_int32(uint32_t x) {
+ntz_int32(uint32_t x)
+{
 #ifdef HAVE_BUILTIN___BUILTIN_CTZ
     return __builtin_ctz(x);
 #else
@@ -309,7 +318,8 @@ ntz_int32(uint32_t x) {
 }
 
 static inline int
-ntz_int64(uint64_t x) {
+ntz_int64(uint64_t x)
+{
 #ifdef HAVE_BUILTIN___BUILTIN_CTZLL
     return __builtin_ctzll(x);
 #else
@@ -318,7 +328,8 @@ ntz_int64(uint64_t x) {
 }
 
 static inline int
-ntz_intptr(uintptr_t x) {
+ntz_intptr(uintptr_t x)
+{
 #if SIZEOF_VOIDP == 8
     return ntz_int64(x);
 #elif SIZEOF_VOIDP == 4
@@ -334,6 +345,68 @@ ntz_intptr(uintptr_t x) {
 # define DL2NUM(x) (RB_FIXABLE(x) ? LONG2FIX(x) : rb_int128t2big(x))
 VALUE rb_int128t2big(int128_t n);
 #endif
+
+#define ST2FIX(h) LONG2FIX((long)(h))
+
+static inline long
+rb_overflowed_fix_to_int(long x)
+{
+    return (long)((unsigned long)(x >> 1) ^ (1LU << (SIZEOF_LONG * CHAR_BIT - 1)));
+}
+
+static inline VALUE
+rb_fix_plus_fix(VALUE x, VALUE y)
+{
+#ifdef HAVE_BUILTIN___BUILTIN_ADD_OVERFLOW
+    long lz;
+    /* NOTE
+     * (1) `LONG2FIX(FIX2LONG(x)+FIX2LONG(y))`
+     +     = `((lx*2+1)/2 + (ly*2+1)/2)*2+1`
+     +     = `lx*2 + ly*2 + 1`
+     +     = `(lx*2+1) + (ly*2+1) - 1`
+     +     = `x + y - 1`
+     * (2) Fixnum's LSB is always 1.
+     *     It means you can always run `x - 1` without overflow.
+     * (3) Of course `z = x + (y-1)` may overflow.
+     *     At that time true value is
+     *     * positive: 0b0 1xxx...1, and z = 0b1xxx...1
+     *     * nevative: 0b1 0xxx...1, and z = 0b0xxx...1
+     *     To convert this true value to long,
+     *     (a) Use arithmetic shift
+     *         * positive: 0b11xxx...
+     *         * negative: 0b00xxx...
+     *     (b) invert MSB
+     *         * positive: 0b01xxx...
+     *         * negative: 0b10xxx...
+     */
+    if (__builtin_add_overflow((long)x, (long)y-1, &lz)) {
+	return rb_int2big(rb_overflowed_fix_to_int(lz));
+    }
+    else {
+	return (VALUE)lz;
+    }
+#else
+    long lz = FIX2LONG(x) + FIX2LONG(y);
+    return LONG2NUM(lz);
+#endif
+}
+
+static inline VALUE
+rb_fix_minus_fix(VALUE x, VALUE y)
+{
+#ifdef HAVE_BUILTIN___BUILTIN_SUB_OVERFLOW
+    long lz;
+    if (__builtin_sub_overflow((long)x, (long)y-1, &lz)) {
+	return rb_int2big(rb_overflowed_fix_to_int(lz));
+    }
+    else {
+	return (VALUE)lz;
+    }
+#else
+    long lz = FIX2LONG(x) - FIX2LONG(y);
+    return LONG2NUM(lz);
+#endif
+}
 
 /* arguments must be Fixnum */
 static inline VALUE
@@ -406,17 +479,20 @@ rb_fix_mod_fix(VALUE x, VALUE y)
 
 #if defined(HAVE_UINT128_T)
 #   define bit_length(x) \
+    (unsigned int) \
     (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int((unsigned int)(x)) : \
      sizeof(x) <= SIZEOF_LONG ? SIZEOF_LONG * CHAR_BIT - nlz_long((unsigned long)(x)) : \
      sizeof(x) <= SIZEOF_LONG_LONG ? SIZEOF_LONG_LONG * CHAR_BIT - nlz_long_long((unsigned LONG_LONG)(x)) : \
      SIZEOF_INT128_T * CHAR_BIT - nlz_int128((uint128_t)(x)))
 #elif defined(HAVE_LONG_LONG)
 #   define bit_length(x) \
+    (unsigned int) \
     (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int((unsigned int)(x)) : \
      sizeof(x) <= SIZEOF_LONG ? SIZEOF_LONG * CHAR_BIT - nlz_long((unsigned long)(x)) : \
      SIZEOF_LONG_LONG * CHAR_BIT - nlz_long_long((unsigned LONG_LONG)(x)))
 #else
 #   define bit_length(x) \
+    (unsigned int) \
     (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int((unsigned int)(x)) : \
      SIZEOF_LONG * CHAR_BIT - nlz_long((unsigned long)(x)))
 #endif
@@ -494,7 +570,7 @@ struct RBignum {
         BDIGIT ary[BIGNUM_EMBED_LEN_MAX];
     } as;
 };
-#define BIGNUM_SIGN_BIT FL_USER1
+#define BIGNUM_SIGN_BIT ((VALUE)FL_USER1)
 /* sign: positive:1, negative:0 */
 #define BIGNUM_SIGN(b) ((RBASIC(b)->flags & BIGNUM_SIGN_BIT) != 0)
 #define BIGNUM_SET_SIGN(b,sign) \
@@ -504,13 +580,13 @@ struct RBignum {
 #define BIGNUM_NEGATIVE_P(b) (!BIGNUM_SIGN(b))
 #define BIGNUM_NEGATE(b) (RBASIC(b)->flags ^= BIGNUM_SIGN_BIT)
 
-#define BIGNUM_EMBED_FLAG FL_USER2
-#define BIGNUM_EMBED_LEN_MASK (FL_USER5|FL_USER4|FL_USER3)
+#define BIGNUM_EMBED_FLAG ((VALUE)FL_USER2)
+#define BIGNUM_EMBED_LEN_MASK ((VALUE)(FL_USER5|FL_USER4|FL_USER3))
 #define BIGNUM_EMBED_LEN_SHIFT (FL_USHIFT+BIGNUM_EMBED_LEN_NUMBITS)
 #define BIGNUM_LEN(b) \
     ((RBASIC(b)->flags & BIGNUM_EMBED_FLAG) ? \
-     (long)((RBASIC(b)->flags >> BIGNUM_EMBED_LEN_SHIFT) & \
-            (BIGNUM_EMBED_LEN_MASK >> BIGNUM_EMBED_LEN_SHIFT)) : \
+     (size_t)((RBASIC(b)->flags >> BIGNUM_EMBED_LEN_SHIFT) & \
+	      (BIGNUM_EMBED_LEN_MASK >> BIGNUM_EMBED_LEN_SHIFT)) : \
      RBIGNUM(b)->as.heap.len)
 /* LSB:BIGNUM_DIGITS(b)[0], MSB:BIGNUM_DIGITS(b)[BIGNUM_LEN(b)-1] */
 #define BIGNUM_DIGITS(b) \
@@ -568,7 +644,7 @@ struct RHash {
 #undef RHASH_SIZE
 #define RHASH_ITER_LEV(h) (RHASH(h)->iter_lev)
 #define RHASH_IFNONE(h) (RHASH(h)->ifnone)
-#define RHASH_SIZE(h) (RHASH(h)->ntbl ? (st_index_t)RHASH(h)->ntbl->num_entries : 0)
+#define RHASH_SIZE(h) (RHASH(h)->ntbl ? RHASH(h)->ntbl->num_entries : (st_index_t)0)
 #endif
 
 /* missing/setproctitle.c */
@@ -812,8 +888,8 @@ struct MEMO {
     } u3;
 };
 
-#define MEMO_V1_SET(m, v) RB_OBJ_WRITE((memo), &(memo)->v1, (v))
-#define MEMO_V2_SET(m, v) RB_OBJ_WRITE((memo), &(memo)->v2, (v))
+#define MEMO_V1_SET(m, v) RB_OBJ_WRITE((m), &(m)->v1, (v))
+#define MEMO_V2_SET(m, v) RB_OBJ_WRITE((m), &(m)->v2, (v))
 
 #define MEMO_CAST(m) ((struct MEMO *)m)
 
@@ -843,8 +919,8 @@ enum {
 };
 
 struct cmp_opt_data {
-    int opt_methods;
-    int opt_inited;
+    unsigned int opt_methods;
+    unsigned int opt_inited;
 };
 
 #define NEW_CMP_OPT_MEMO(type, value) \
@@ -900,7 +976,7 @@ size_t rb_ary_memsize(VALUE);
 
 /* bignum.c */
 extern const char ruby_digitmap[];
-VALUE rb_big_fdiv(VALUE x, VALUE y);
+double rb_big_fdiv_double(VALUE x, VALUE y);
 VALUE rb_big_uminus(VALUE x);
 VALUE rb_big_hash(VALUE);
 VALUE rb_big_odd_p(VALUE);
@@ -940,6 +1016,7 @@ VALUE rb_singleton_class_get(VALUE obj);
 void Init_class_hierarchy(void);
 
 int rb_class_has_methods(VALUE c);
+void rb_undef_methods_from(VALUE klass, VALUE super);
 
 /* compar.c */
 VALUE rb_invcmp(VALUE, VALUE);
@@ -992,7 +1069,6 @@ extern VALUE rb_eEAGAIN;
 extern VALUE rb_eEWOULDBLOCK;
 extern VALUE rb_eEINPROGRESS;
 void rb_report_bug_valist(VALUE file, int line, const char *fmt, va_list args);
-PRINTF_ARGS(void rb_compile_error_str(VALUE file, int line, void *enc, const char *fmt, ...), 4, 5);
 VALUE rb_syntax_error_append(VALUE, VALUE, int, int, rb_encoding*, const char*, va_list);
 VALUE rb_check_backtrace(VALUE);
 NORETURN(void rb_async_bug_errno(const char *,int));
@@ -1006,8 +1082,9 @@ VALUE rb_name_err_new(VALUE mesg, VALUE recv, VALUE method);
     rb_exc_raise(rb_name_err_new(mesg, recv, name))
 #define rb_name_err_raise(mesg, recv, name) \
     rb_name_err_raise_str(rb_fstring_cstr(mesg), (recv), (name))
-NORETURN(void ruby_only_for_internal_use(const char *));
-#define ONLY_FOR_INTERNAL_USE(func) ruby_only_for_internal_use(func)
+NORETURN(void ruby_deprecated_internal_feature(const char *));
+#define DEPRECATED_INTERNAL_FEATURE(func) \
+    (ruby_deprecated_internal_feature(func), UNREACHABLE)
 
 /* eval.c */
 VALUE rb_refinement_module_get_refined_class(VALUE module);
@@ -1093,8 +1170,10 @@ VALUE rb_hash_has_key(VALUE hash, VALUE key);
 VALUE rb_hash_default_value(VALUE hash, VALUE key);
 VALUE rb_hash_set_default_proc(VALUE hash, VALUE proc);
 long rb_objid_hash(st_index_t index);
+long rb_dbl_long_hash(double d);
 st_table *rb_init_identtable(void);
 st_table *rb_init_identtable_with_size(st_index_t size);
+VALUE rb_hash_compare_by_id_p(VALUE hash);
 
 #define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h)
 VALUE rb_hash_keys(VALUE hash);
@@ -1143,6 +1222,31 @@ VALUE rb_math_sqrt(VALUE);
 void Init_newline(void);
 
 /* numeric.c */
+
+#define FIXNUM_POSITIVE_P(num) ((SIGNED_VALUE)(num) > (SIGNED_VALUE)INT2FIX(0))
+#define FIXNUM_NEGATIVE_P(num) ((SIGNED_VALUE)(num) < 0)
+#define FIXNUM_ZERO_P(num) ((num) == INT2FIX(0))
+
+#define INT_NEGATIVE_P(x) (FIXNUM_P(x) ? FIXNUM_NEGATIVE_P(x) : BIGNUM_NEGATIVE_P(x))
+
+#ifndef ROUND_DEFAULT
+# define ROUND_DEFAULT RUBY_NUM_ROUND_HALF_UP
+#endif
+enum ruby_num_rounding_mode {
+    RUBY_NUM_ROUND_HALF_UP,
+    RUBY_NUM_ROUND_HALF_EVEN,
+    RUBY_NUM_ROUND_HALF_DOWN,
+    RUBY_NUM_ROUND_DEFAULT = ROUND_DEFAULT
+};
+#define ROUND_TO(mode, even, up, down) \
+    ((mode) == RUBY_NUM_ROUND_HALF_EVEN ? even : \
+     (mode) == RUBY_NUM_ROUND_HALF_UP ? up : down)
+#define ROUND_FUNC(mode, name) \
+    ROUND_TO(mode, name##_half_even, name##_half_up, name##_half_down)
+#define ROUND_CALL(mode, name, args) \
+    ROUND_TO(mode, name##_half_even args, \
+	     name##_half_up args, name##_half_down args)
+
 int rb_num_to_uint(VALUE val, unsigned int *ret);
 VALUE ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl);
 int ruby_float_step(VALUE from, VALUE to, VALUE step, int excl);
@@ -1151,16 +1255,31 @@ int rb_num_negative_p(VALUE);
 VALUE rb_int_succ(VALUE num);
 VALUE rb_int_pred(VALUE num);
 VALUE rb_int_uminus(VALUE num);
+VALUE rb_float_uminus(VALUE num);
 VALUE rb_int_plus(VALUE x, VALUE y);
 VALUE rb_int_minus(VALUE x, VALUE y);
 VALUE rb_int_mul(VALUE x, VALUE y);
 VALUE rb_int_idiv(VALUE x, VALUE y);
 VALUE rb_int_modulo(VALUE x, VALUE y);
-VALUE rb_int_round(VALUE num, int ndigits);
+VALUE rb_int_round(VALUE num, int ndigits, enum ruby_num_rounding_mode mode);
 VALUE rb_int2str(VALUE num, int base);
 VALUE rb_dbl_hash(double d);
 VALUE rb_fix_plus(VALUE x, VALUE y);
+VALUE rb_int_gt(VALUE x, VALUE y);
+VALUE rb_float_gt(VALUE x, VALUE y);
 VALUE rb_int_ge(VALUE x, VALUE y);
+enum ruby_num_rounding_mode rb_num_get_rounding_option(VALUE opts);
+double rb_int_fdiv_double(VALUE x, VALUE y);
+VALUE rb_int_pow(VALUE x, VALUE y);
+VALUE rb_float_pow(VALUE x, VALUE y);
+VALUE rb_int_cmp(VALUE x, VALUE y);
+VALUE rb_int_equal(VALUE x, VALUE y);
+VALUE rb_int_divmod(VALUE x, VALUE y);
+VALUE rb_int_and(VALUE x, VALUE y);
+VALUE rb_int_lshift(VALUE x, VALUE y);
+VALUE rb_int_div(VALUE x, VALUE y);
+VALUE rb_int_abs(VALUE num);
+VALUE rb_float_abs(VALUE flt);
 
 #if USE_FLONUM
 #define RUBY_BIT_ROTL(v, n) (((v) << (n)) | ((v) >> ((sizeof(v) * 8) - n)))
@@ -1181,7 +1300,7 @@ rb_float_flonum_value(VALUE v)
 	/* e: xx1... -> 011... */
 	/*    xx0... -> 100... */
 	/*      ^b63           */
-	t.v = RUBY_BIT_ROTR((2 - b63) | (v & ~0x03), 3);
+	t.v = RUBY_BIT_ROTR((2 - b63) | (v & ~(VALUE)0x03), 3);
 	return t.d;
     }
 #endif
@@ -1334,6 +1453,7 @@ struct rb_execarg {
     VALUE fd_open;
     VALUE fd_dup2_child;
     VALUE env_modification; /* Qfalse or [[k1,v1], ...] */
+    VALUE path_env;
     VALUE chdir_dir;
 };
 
@@ -1348,15 +1468,19 @@ rb_pid_t rb_fork_ruby(int *status);
 void rb_last_status_clear(void);
 
 /* rational.c */
+VALUE rb_rational_uminus(VALUE self);
 VALUE rb_rational_plus(VALUE self, VALUE other);
 VALUE rb_lcm(VALUE x, VALUE y);
 VALUE rb_rational_reciprocal(VALUE x);
 VALUE rb_cstr_to_rat(const char *, int);
+VALUE rb_rational_abs(VALUE self);
+VALUE rb_rational_cmp(VALUE self, VALUE other);
 
 /* re.c */
 VALUE rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline);
 VALUE rb_reg_check_preprocess(VALUE);
 long rb_reg_search0(VALUE, VALUE, long, int, int);
+VALUE rb_reg_match_p(VALUE re, VALUE str, long pos);
 void rb_backref_set_string(VALUE string, long pos, long len);
 int rb_match_count(VALUE match);
 int rb_match_nth_defined(int nth, VALUE match);
@@ -1410,6 +1534,9 @@ VALUE rb_id_quote_unprintable(ID);
 char *rb_str_fill_terminator(VALUE str, const int termlen);
 void rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int termlen);
 VALUE rb_str_locktmp_ensure(VALUE str, VALUE (*func)(VALUE), VALUE arg);
+VALUE rb_str_tmp_frozen_acquire(VALUE str);
+void rb_str_tmp_frozen_release(VALUE str, VALUE tmp);
+VALUE rb_str_chomp_string(VALUE str, VALUE chomp);
 #ifdef RUBY_ENCODING_H
 VALUE rb_external_str_with_enc(VALUE str, rb_encoding *eenc);
 VALUE rb_str_cat_conv_enc_opts(VALUE newstr, long ofs, const char *ptr, long len,
@@ -1425,6 +1552,7 @@ VALUE rb_enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl);
 size_t rb_str_memsize(VALUE);
 VALUE rb_sym_proc_call(ID mid, int argc, const VALUE *argv, VALUE passed_proc);
 VALUE rb_sym_to_proc(VALUE sym);
+char *rb_str_to_cstr(VALUE str);
 
 /* symbol.c */
 #ifdef RUBY_ENCODING_H
@@ -1498,6 +1626,7 @@ VALUE rb_search_class_path(VALUE);
 VALUE rb_attr_delete(VALUE, ID);
 VALUE rb_ivar_lookup(VALUE obj, ID id, VALUE undef);
 void rb_autoload_str(VALUE mod, ID id, VALUE file);
+void rb_deprecate_constant(VALUE mod, const char *name);
 
 /* version.c */
 extern const char ruby_engine[];
@@ -1523,7 +1652,7 @@ void rb_vm_pop_cfunc_frame(void);
 int rb_vm_add_root_module(ID id, VALUE module);
 void rb_vm_check_redefinition_by_prepend(VALUE klass);
 VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);
-VALUE ruby_vm_sysstack_error_copy(void);
+VALUE ruby_vm_special_exception_copy(VALUE);
 PUREFUNC(st_table *rb_vm_fstring_table(void));
 
 
@@ -1632,6 +1761,7 @@ VALUE rb_execarg_extract_options(VALUE execarg_obj, VALUE opthash);
 void rb_execarg_setenv(VALUE execarg_obj, VALUE env);
 
 /* rational.c (export) */
+VALUE rb_gcd(VALUE x, VALUE y);
 VALUE rb_gcd_normal(VALUE self, VALUE other);
 #if defined(HAVE_LIBGMP) && defined(HAVE_GMP_H)
 VALUE rb_gcd_gmp(VALUE x, VALUE y);
@@ -1688,6 +1818,24 @@ do { \
 	RUBY_DTRACE_##name(arg, dtrace_file, dtrace_line); \
     } \
 } while (0)
+
+#define RB_OBJ_BUILTIN_TYPE(obj) rb_obj_builtin_type(obj)
+#define OBJ_BUILTIN_TYPE(obj) RB_OBJ_BUILTIN_TYPE(obj)
+#ifdef __GNUC__
+#define rb_obj_builtin_type(obj) \
+__extension__({ \
+    VALUE arg_obj = (obj); \
+    RB_SPECIAL_CONST_P(arg_obj) ? -1 : \
+	RB_BUILTIN_TYPE(arg_obj); \
+    })
+#else
+static inline int
+rb_obj_builtin_type(VALUE obj)
+{
+    return RB_SPECIAL_CONST_P(obj) ? -1 :
+	RB_BUILTIN_TYPE(obj);
+}
+#endif
 
 #if defined(__cplusplus)
 #if 0

@@ -611,6 +611,12 @@ class TestEnumerable < Test::Unit::TestCase
 
     e = @obj.chunk {|elt| :_foo }
     assert_raise(RuntimeError) { e.to_a }
+
+    e = @obj.chunk.with_index {|elt, i| elt - i }
+    assert_equal([[1, [1, 2, 3]],
+                  [-2, [1, 2]]], e.to_a)
+
+    assert_equal(4, (0..3).chunk.size)
   end
 
   def test_slice_before
@@ -897,6 +903,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_float_equal(large_number+(small_number*10), [large_number, *[small_number]*10].each.sum)
     assert_float_equal(large_number+(small_number*10), [large_number/1r, *[small_number]*10].each.sum)
     assert_float_equal(large_number+(small_number*11), [small_number, large_number/1r, *[small_number]*10].each.sum)
+    assert_float_equal(small_number, [large_number, small_number, -large_number].each.sum)
 
     assert_equal("abc", ["a", "b", "c"].each.sum(""))
     assert_equal([1, [2], 3], [[1], [[2]], [3]].each.sum([]))

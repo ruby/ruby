@@ -347,19 +347,28 @@ args_setup_rest_parameter(struct args_info *args, VALUE *locals)
 }
 
 static VALUE
-make_unused_kw_hash(const VALUE *passed_keywords, int passed_keyword_len, const VALUE *kw_argv, const int key_only)
+make_unknown_kw_hash(const VALUE *passed_keywords, int passed_keyword_len, const VALUE *kw_argv)
 {
     int i;
-    VALUE obj = key_only ? rb_ary_tmp_new(1) : rb_hash_new();
+    VALUE obj = rb_ary_tmp_new(1);
 
     for (i=0; i<passed_keyword_len; i++) {
 	if (kw_argv[i] != Qundef) {
-	    if (key_only) {
-		rb_ary_push(obj, passed_keywords[i]);
-	    }
-	    else {
-		rb_hash_aset(obj, passed_keywords[i], kw_argv[i]);
-	    }
+	    rb_ary_push(obj, passed_keywords[i]);
+	}
+    }
+    return obj;
+}
+
+static VALUE
+make_rest_kw_hash(const VALUE *passed_keywords, int passed_keyword_len, const VALUE *kw_argv)
+{
+    int i;
+    VALUE obj = rb_hash_new();
+
+    for (i=0; i<passed_keyword_len; i++) {
+	if (kw_argv[i] != Qundef) {
+	    rb_hash_aset(obj, passed_keywords[i], kw_argv[i]);
 	}
     }
     return obj;
@@ -442,11 +451,11 @@ args_setup_kw_parameters(VALUE* const passed_values, const int passed_keyword_le
 
     if (iseq->body->param.flags.has_kwrest) {
 	const int rest_hash_index = key_num + 1;
-	locals[rest_hash_index] = make_unused_kw_hash(passed_keywords, passed_keyword_len, passed_values, FALSE);
+	locals[rest_hash_index] = make_rest_kw_hash(passed_keywords, passed_keyword_len, passed_values);
     }
     else {
 	if (found != passed_keyword_len) {
-	    VALUE keys = make_unused_kw_hash(passed_keywords, passed_keyword_len, passed_values, TRUE);
+	    VALUE keys = make_unknown_kw_hash(passed_keywords, passed_keyword_len, passed_values);
 	    argument_kw_error(GET_THREAD(), iseq, "unknown", keys);
 	}
     }
@@ -785,6 +794,26 @@ vm_to_proc(VALUE proc)
     }
 }
 
+static VALUE
+refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
+{
+    VALUE obj;
+    ID mid;
+    const rb_callable_method_entry_t *me;
+
+    if (argc-- < 1) {
+	rb_raise(rb_eArgError, "no receiver given");
+    }
+    obj = *argv++;
+    mid = SYM2ID(callback_arg);
+    me = rb_callable_method_entry_with_refinements(CLASS_OF(obj), mid);
+    if (!me) {
+	/* fallback to funcall (e.g. method_missing) */
+	return rb_funcall_with_block(obj, mid, argc, argv, blockarg);
+    }
+    return vm_call0(GET_THREAD(), obj, mid, argc, argv, me);
+}
+
 static void
 vm_caller_setup_arg_block(const rb_thread_t *th, rb_control_frame_t *reg_cfp,
 			  struct rb_calling_info *calling, const struct rb_call_info *ci, rb_iseq_t *blockiseq, const int is_super)
@@ -797,6 +826,17 @@ vm_caller_setup_arg_block(const rb_thread_t *th, rb_control_frame_t *reg_cfp,
 	}
 	else {
 	    if (SYMBOL_P(block_code) && rb_method_basic_definition_p(rb_cSymbol, idTo_proc)) {
+		const rb_cref_t *cref = vm_env_cref(reg_cfp->ep);
+		if (cref && !NIL_P(cref->refinements)) {
+		    VALUE ref = cref->refinements;
+		    VALUE func = rb_hash_lookup(ref, block_code);
+		    if (NIL_P(func)) {
+			/* TODO: limit cached funcs */
+			func = rb_func_proc_new(refine_sym_proc_call, block_code);
+			rb_hash_aset(ref, block_code, func);
+		    }
+		    block_code = func;
+		}
 		calling->block_handler = block_code;
 	    }
 	    else {

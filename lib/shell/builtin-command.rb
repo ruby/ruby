@@ -13,7 +13,7 @@
 require "shell/filter"
 
 class Shell
-  class BuiltInCommand<Filter
+  class BuiltInCommand < Filter
     def wait?
       false
     end
