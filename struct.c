@@ -1126,12 +1126,6 @@ rb_struct_size(VALUE s)
     return LONG2FIX(RSTRUCT_LEN(s));
 }
 
-const VALUE*
-rb_struct_ptr(VALUE s)
-{
-    return RSTRUCT_CONST_PTR(s);
-}
-
 /*
  * call-seq:
  *   struct.dig(key, ...)              -> object

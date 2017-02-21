@@ -371,24 +371,11 @@ NORETURN(VALUE rb_f_exit(int, const VALUE*));
 NORETURN(VALUE rb_f_abort(int, const VALUE*));
 void rb_remove_method(VALUE, const char*);
 void rb_remove_method_id(VALUE, ID);
-DEPRECATED(static inline void rb_disable_super(void));
-DEPRECATED(static inline void rb_enable_super(void));
-static inline void rb_disable_super(void)
-{
-    /* obsolete - no use */
-}
-static inline void rb_enable_super(void)
-{
-    rb_warning("rb_enable_super() is obsolete");
-}
-#define rb_disable_super(klass, name) rb_disable_super()
-#define rb_enable_super(klass, name) rb_enable_super()
 #define HAVE_RB_DEFINE_ALLOC_FUNC 1
 typedef VALUE (*rb_alloc_func_t)(VALUE);
 void rb_define_alloc_func(VALUE, rb_alloc_func_t);
 void rb_undef_alloc_func(VALUE);
 rb_alloc_func_t rb_get_alloc_func(VALUE);
-NORETURN(DEPRECATED(void rb_clear_cache(void)));
 void rb_clear_constant_cache(void);
 void rb_clear_method_cache_by_class(VALUE);
 void rb_alias(VALUE, ID, ID);
@@ -527,8 +514,6 @@ int rb_path_check(const char*);
 int rb_env_path_tainted(void);
 VALUE rb_env_clear(void);
 VALUE rb_hash_size(VALUE);
-DEPRECATED(int rb_hash_iter_lev(VALUE));
-DEPRECATED(VALUE rb_hash_ifnone(VALUE));
 /* io.c */
 #define rb_defout rb_stdout
 RUBY_EXTERN VALUE rb_fs;
@@ -777,8 +762,6 @@ VALUE rb_str_replace(VALUE, VALUE);
 VALUE rb_str_inspect(VALUE);
 VALUE rb_str_dump(VALUE);
 VALUE rb_str_split(VALUE, const char*);
-NORETURN(DEPRECATED(void rb_str_associate(VALUE, VALUE)));
-NORETURN(DEPRECATED(VALUE rb_str_associated(VALUE)));
 void rb_str_setter(VALUE, ID, VALUE*);
 VALUE rb_str_intern(VALUE);
 VALUE rb_sym_to_s(VALUE);
@@ -886,7 +869,6 @@ VALUE rb_struct_getmember(VALUE, ID);
 VALUE rb_struct_s_members(VALUE);
 VALUE rb_struct_members(VALUE);
 VALUE rb_struct_size(VALUE s);
-DEPRECATED(const VALUE *rb_struct_ptr(VALUE s));
 VALUE rb_struct_alloc_noinit(VALUE);
 VALUE rb_struct_define_without_accessor(const char *, VALUE, rb_alloc_func_t, ...);
 VALUE rb_struct_define_without_accessor_under(VALUE outer, const char *class_name, VALUE super, rb_alloc_func_t alloc, ...);
@@ -972,10 +954,6 @@ VALUE rb_time_succ(VALUE);
 int rb_frame_method_id_and_class(ID *idp, VALUE *klassp);
 VALUE rb_make_backtrace(void);
 VALUE rb_make_exception(int, const VALUE*);
-
-/* deprecated */
-NORETURN(DEPRECATED(void rb_frame_pop(void)));
-
 
 RUBY_SYMBOL_EXPORT_END
 

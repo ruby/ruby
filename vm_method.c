@@ -81,12 +81,6 @@ rb_class_clear_method_cache(VALUE klass, VALUE arg)
 }
 
 void
-rb_clear_cache(void)
-{
-    DEPRECATED_INTERNAL_FEATURE("rb_clear_cache()");
-}
-
-void
 rb_clear_constant_cache(void)
 {
     INC_GLOBAL_CONSTANT_STATE();

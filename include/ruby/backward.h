@@ -1,6 +1,26 @@
 #ifndef RUBY_RUBY_BACKWARD_H
 #define RUBY_RUBY_BACKWARD_H 1
 
+#define DECLARE_DEPRECATED_FEATURE(ver, func) \
+    NORETURN(ERRORFUNC(("deprecated since "#ver), DEPRECATED(void func(void))))
+
+/* eval.c */
+DECLARE_DEPRECATED_FEATURE(2.2, rb_disable_super);
+DECLARE_DEPRECATED_FEATURE(2.2, rb_enable_super);
+
+/* hash.c */
+DECLARE_DEPRECATED_FEATURE(2.2, rb_hash_iter_lev);
+DECLARE_DEPRECATED_FEATURE(2.2, rb_hash_ifnone);
+
+/* string.c */
+DECLARE_DEPRECATED_FEATURE(2.2, rb_str_associate);
+DECLARE_DEPRECATED_FEATURE(2.2, rb_str_associated);
+
+/* vm.c */
+DECLARE_DEPRECATED_FEATURE(2.2, rb_clear_cache);
+DECLARE_DEPRECATED_FEATURE(2.2, rb_frame_pop);
+
+/* from version.c */
 #ifndef RUBY_SHOW_COPYRIGHT_TO_DIE
 # define RUBY_SHOW_COPYRIGHT_TO_DIE 1
 #endif
