@@ -942,27 +942,6 @@ rb_alias_variable(ID name1, ID name2)
     entry1->var = entry2->var;
 }
 
-#if 0
-struct gen_ivar_compat_tbl {
-    struct gen_ivtbl *ivtbl;
-    st_table *tbl;
-};
-
-static int
-gen_ivar_compat_tbl_i(st_data_t id, st_data_t index, st_data_t arg)
-{
-    struct gen_ivar_compat_tbl *a = (struct gen_ivar_compat_tbl *)arg;
-
-    if (index < a->ivtbl->numiv) {
-	VALUE val = a->ivtbl->ivptr[index];
-	if (val != Qundef) {
-	    st_add_direct(a->tbl, id, (st_data_t)val);
-	}
-    }
-    return ST_CONTINUE;
-}
-#endif
-
 static int
 gen_ivtbl_get(VALUE obj, struct gen_ivtbl **ivtbl)
 {
@@ -973,45 +952,6 @@ gen_ivtbl_get(VALUE obj, struct gen_ivtbl **ivtbl)
 	return 1;
     }
     return 0;
-}
-
-/* for backwards compatibility only */
-#ifdef __GNUC__
-NORETURN(st_table *rb_generic_ivar_table(VALUE obj));
-#endif
-st_table*
-rb_generic_ivar_table(VALUE obj)
-{
-#if 0
-    st_table *iv_index_tbl = RCLASS_IV_INDEX_TBL(rb_obj_class(obj));
-    struct gen_ivar_compat_tbl a;
-    st_data_t d;
-
-    if (!iv_index_tbl) return 0;
-    if (!FL_TEST(obj, FL_EXIVAR)) return 0;
-    if (!gen_ivtbl_get(obj, &a.ivtbl)) return 0;
-
-    a.tbl = 0;
-    if (!generic_iv_tbl_compat) {
-	generic_iv_tbl_compat = st_init_numtable();
-    }
-    else {
-	if (st_lookup(generic_iv_tbl_compat, (st_data_t)obj, &d)) {
-	    a.tbl = (st_table *)d;
-	    st_clear(a.tbl);
-	}
-    }
-    if (!a.tbl) {
-	a.tbl = st_init_numtable();
-	d = (st_data_t)a.tbl;
-	st_add_direct(generic_iv_tbl_compat, (st_data_t)obj, d);
-    }
-    st_foreach_safe(iv_index_tbl, gen_ivar_compat_tbl_i, (st_data_t)&a);
-
-    return a.tbl;
-#else
-    DEPRECATED_INTERNAL_FEATURE("rb_generic_ivar_table()");
-#endif
 }
 
 static VALUE

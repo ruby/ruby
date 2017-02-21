@@ -35,6 +35,9 @@ DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_compile_error_append);
 /* struct.c */
 DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_struct_ptr);
 
+/* variable.c */
+DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_generic_ivar_table);
+
 /* from version.c */
 #ifndef RUBY_SHOW_COPYRIGHT_TO_DIE
 # define RUBY_SHOW_COPYRIGHT_TO_DIE 1
