@@ -1,6 +1,14 @@
 #ifndef RUBY_RUBY_BACKWARD_H
 #define RUBY_RUBY_BACKWARD_H 1
 
+#define RClass RClassDeprecated
+#ifndef __cplusplus
+DEPRECATED_TYPE(("RClass is internal use only"),
+struct RClass {
+    struct RBasic basic;
+});
+#endif
+
 #define DECLARE_DEPRECATED_FEATURE(ver, func) \
     NORETURN(ERRORFUNC(("deprecated since "#ver), DEPRECATED(void func(void))))
 
