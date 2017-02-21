@@ -1447,20 +1447,6 @@ rb_Complex(VALUE x, VALUE y)
 }
 
 VALUE
-rb_complex_set_real(VALUE cmp, VALUE r)
-{
-    RCOMPLEX_SET_REAL(cmp, r);
-    return cmp;
-}
-
-VALUE
-rb_complex_set_imag(VALUE cmp, VALUE i)
-{
-    RCOMPLEX_SET_IMAG(cmp, i);
-    return cmp;
-}
-
-VALUE
 rb_complex_abs(VALUE cmp)
 {
     return nucomp_abs(cmp);
