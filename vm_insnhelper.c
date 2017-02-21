@@ -16,6 +16,7 @@
 #include "probes.h"
 #include "probes_helper.h"
 #include "ruby/config.h"
+#include "debug_counter.h"
 
 /* control stack frame */
 
@@ -894,6 +895,7 @@ vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
 		    rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
 		val = Qnil;
 	    }
+	    RB_DEBUG_COUNTER_INC(ivar_get_hit);
 	    return val;
 	}
 	else {
@@ -918,6 +920,8 @@ vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
 	}
     }
 #endif	/* USE_IC_FOR_IVAR */
+    RB_DEBUG_COUNTER_INC(ivar_get_miss);
+
     if (is_attr)
 	return rb_attr_get(obj, id);
     return rb_ivar_get(obj, id);
@@ -941,6 +945,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, struct rb_call_cache *cc, int is_
 
 	    if (index < ROBJECT_NUMIV(obj)) {
 		RB_OBJ_WRITE(obj, &ptr[index], val);
+		RB_DEBUG_COUNTER_INC(ivar_set_hit);
 		return val; /* inline cache hit */
 	    }
 	}
@@ -963,6 +968,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, struct rb_call_cache *cc, int is_
 	}
     }
 #endif	/* USE_IC_FOR_IVAR */
+    RB_DEBUG_COUNTER_INC(ivar_set_miss);
     return rb_ivar_set(obj, id, val);
 }
 
@@ -1220,13 +1226,17 @@ vm_search_method(const struct rb_call_info *ci, struct rb_call_cache *cc, VALUE 
     VALUE klass = CLASS_OF(recv);
 
 #if OPT_INLINE_METHOD_CACHE
-    if (LIKELY(GET_GLOBAL_METHOD_STATE() == cc->method_state && RCLASS_SERIAL(klass) == cc->class_serial)) {
+    if (LIKELY(RB_DEBUG_COUNTER_INC_UNLESS(mc_global_state_miss,
+					   GET_GLOBAL_METHOD_STATE() == cc->method_state) &&
+	       RB_DEBUG_COUNTER_INC_UNLESS(mc_class_serial_miss,
+					   RCLASS_SERIAL(klass) == cc->class_serial))) {
 	/* cache hit! */
 	VM_ASSERT(cc->call != NULL);
+	RB_DEBUG_COUNTER_INC(mc_inline_hit);
 	return;
     }
+    RB_DEBUG_COUNTER_INC(mc_inline_miss);
 #endif
-
     cc->me = rb_callable_method_entry(klass, ci->mid);
     VM_ASSERT(callable_method_entry_p(cc->me));
     cc->call = vm_call_general;

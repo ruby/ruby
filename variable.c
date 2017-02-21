@@ -19,6 +19,7 @@
 #include "id.h"
 #include "ccan/list/list.h"
 #include "id_table.h"
+#include "debug_counter.h"
 
 struct rb_id_table *rb_global_tbl;
 static ID autoload, classpath, tmp_classpath, classid;
@@ -1209,6 +1210,7 @@ VALUE
 rb_ivar_get(VALUE obj, ID id)
 {
     VALUE iv = rb_ivar_lookup(obj, id, Qundef);
+    RB_DEBUG_COUNTER_INC(ivar_get);
 
     if (iv == Qundef) {
 	if (RTEST(ruby_verbose))
@@ -1314,6 +1316,8 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
 {
     struct ivar_update ivup;
     uint32_t i, len;
+
+    RB_DEBUG_COUNTER_INC(ivar_set);
 
     rb_check_frozen(obj);
 
