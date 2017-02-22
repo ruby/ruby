@@ -1363,6 +1363,7 @@ VALUE rb_class_search_ancestor(VALUE klass, VALUE super);
 NORETURN(void rb_undefined_alloc(VALUE klass));
 double rb_num_to_dbl(VALUE val);
 VALUE rb_obj_dig(int argc, VALUE *argv, VALUE self, VALUE notfound);
+VALUE rb_immutable_obj_clone(int, VALUE *, VALUE);
 
 struct RBasicRaw {
     VALUE flags;

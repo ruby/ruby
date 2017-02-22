@@ -309,6 +309,9 @@ special_object_p(VALUE obj)
       case T_BIGNUM:
       case T_FLOAT:
       case T_SYMBOL:
+      case T_RATIONAL:
+      case T_COMPLEX:
+	/* not a comprehensive list */
 	return TRUE;
       default:
 	return FALSE;
@@ -346,6 +349,13 @@ rb_obj_clone2(int argc, VALUE *argv, VALUE obj)
     int kwfreeze = freeze_opt(argc, argv);
     if (!special_object_p(obj))
 	return mutable_obj_clone(obj, kwfreeze);
+    return immutable_obj_clone(obj, kwfreeze);
+}
+
+VALUE
+rb_immutable_obj_clone(int argc, VALUE *argv, VALUE obj)
+{
+    int kwfreeze = freeze_opt(argc, argv);
     return immutable_obj_clone(obj, kwfreeze);
 }
 

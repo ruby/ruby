@@ -76,12 +76,18 @@ class TestNumeric < Test::Unit::TestCase
 
   def test_dup
     a = Numeric.new
-    assert_raise(TypeError) { a.dup }
+    assert_same a, a.dup
+  end
 
-    c = Module.new do
-      break eval("class C\u{3042} < Numeric; self; end")
+  def test_clone
+    a = Numeric.new
+    assert_same a, a.clone
+    assert_raise(ArgumentError) {a.clone(freeze: false)}
+
+    c = EnvUtil.labeled_class("\u{1f4a9}", Numeric)
+    assert_raise_with_message(ArgumentError, /\u{1f4a9}/) do
+      c.new.clone(freeze: false)
     end
-    assert_raise_with_message(TypeError, /C\u3042/) {c.new.dup}
   end
 
   def test_quo
