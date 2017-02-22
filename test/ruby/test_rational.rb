@@ -959,6 +959,8 @@ class Rational_Test < Test::Unit::TestCase
     bug = '[ruby-core:79686] [Bug #13242]: Infinity due to overflow'
     x = EnvUtil.suppress_warning {4r**40000000}
     assert_predicate x, :infinite?, bug
+    x = EnvUtil.suppress_warning {(1/4r)**40000000}
+    assert_equal 0, x, bug
   end
 
   def test_positive_p
