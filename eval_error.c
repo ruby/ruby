@@ -72,54 +72,29 @@ error_print(rb_thread_t *th)
     rb_threadptr_error_print(th, th->errinfo);
 }
 
-void
-rb_threadptr_error_print(rb_thread_t *volatile th, volatile VALUE errinfo)
+static void
+print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg)
 {
-    volatile VALUE errat = Qundef;
-    volatile int raised_flag = th->raised_flag;
-    volatile VALUE eclass = Qundef, e = Qundef;
-    const char *volatile einfo;
-    volatile long elen;
+    const char *einfo = "";
+    long elen = 0;
     VALUE mesg;
 
-    if (NIL_P(errinfo))
-	return;
-    rb_thread_raised_clear(th);
+    if (emesg != Qundef) {
+	if (NIL_P(errat) || RARRAY_LEN(errat) == 0 ||
+	    NIL_P(mesg = RARRAY_AREF(errat, 0))) {
+	    error_pos();
+	}
+	else {
+	    warn_print_str(mesg);
+	    warn_print(": ");
+	}
 
-    TH_PUSH_TAG(th);
-    if (TH_EXEC_TAG() == 0) {
-	errat = rb_get_backtrace(errinfo);
-    }
-    else if (errat == Qundef) {
-	errat = Qnil;
-    }
-    else if (eclass == Qundef || e != Qundef) {
-	goto error;
-    }
-    else {
-	goto no_message;
-    }
-    if (NIL_P(errat) || RARRAY_LEN(errat) == 0 ||
-	NIL_P(mesg = RARRAY_AREF(errat, 0))) {
-	error_pos();
-    }
-    else {
-	warn_print_str(mesg);
-	warn_print(": ");
+	if (!NIL_P(emesg)) {
+	    einfo = RSTRING_PTR(emesg);
+	    elen = RSTRING_LEN(emesg);
+	}
     }
 
-    eclass = CLASS_OF(errinfo);
-    if (eclass != Qundef &&
-	(e = rb_check_funcall(errinfo, rb_intern("message"), 0, 0)) != Qundef &&
-	(RB_TYPE_P(e, T_STRING) || !NIL_P(e = rb_check_string_type(e)))) {
-	einfo = RSTRING_PTR(e);
-	elen = RSTRING_LEN(e);
-    }
-    else {
-      no_message:
-	einfo = "";
-	elen = 0;
-    }
     if (eclass == rb_eRuntimeError && elen == 0) {
 	warn_print("unhandled exception\n");
     }
@@ -141,19 +116,23 @@ rb_threadptr_error_print(rb_thread_t *volatile th, volatile VALUE errinfo)
 		len = tail - einfo;
 		tail++;		/* skip newline */
 	    }
-	    warn_print_str(tail ? rb_str_subseq(e, 0, len) : e);
+	    warn_print_str(tail ? rb_str_subseq(emesg, 0, len) : emesg);
 	    if (epath) {
 		warn_print(" (");
 		warn_print_str(epath);
 		warn_print(")\n");
 	    }
 	    if (tail) {
-		warn_print_str(rb_str_subseq(e, tail - einfo, elen - len - 1));
+		warn_print_str(rb_str_subseq(emesg, tail - einfo, elen - len - 1));
 	    }
 	    if (tail ? einfo[elen-1] != '\n' : !epath) warn_print2("\n", 1);
 	}
     }
+}
 
+static void
+print_backtrace(const VALUE eclass, const VALUE errat, int reverse)
+{
     if (!NIL_P(errat)) {
 	long i;
 	long len = RARRAY_LEN(errat);
@@ -164,7 +143,7 @@ rb_threadptr_error_print(rb_thread_t *volatile th, volatile VALUE errinfo)
 #define TRACE_TAIL 5
 
 	for (i = 1; i < len; i++) {
-	    VALUE line = RARRAY_AREF(errat, i);
+	    VALUE line = RARRAY_AREF(errat, reverse ? len - i : i);
 	    if (RB_TYPE_P(line, T_STRING)) {
 		warn_print_str(rb_sprintf("\tfrom %"PRIsVALUE"\n", line));
 	    }
@@ -174,6 +153,45 @@ rb_threadptr_error_print(rb_thread_t *volatile th, volatile VALUE errinfo)
 		i = len - TRACE_TAIL;
 	    }
 	}
+    }
+}
+
+void
+rb_threadptr_error_print(rb_thread_t *volatile th, volatile VALUE errinfo)
+{
+    volatile VALUE errat = Qundef;
+    volatile int raised_flag = th->raised_flag;
+    volatile VALUE eclass = Qundef, emesg = Qundef;
+
+    if (NIL_P(errinfo))
+	return;
+    rb_thread_raised_clear(th);
+
+    TH_PUSH_TAG(th);
+    if (TH_EXEC_TAG() == 0) {
+	errat = rb_get_backtrace(errinfo);
+    }
+    else if (errat == Qundef) {
+	errat = Qnil;
+    }
+    else if (eclass == Qundef || emesg != Qundef) {
+	goto error;
+    }
+    if ((eclass = CLASS_OF(errinfo)) != Qundef) {
+	VALUE e = rb_check_funcall(errinfo, rb_intern("message"), 0, 0);
+	if (e != Qundef) {
+	    if (!RB_TYPE_P(e, T_STRING)) e = rb_check_string_type(e);
+	    emesg = e;
+	}
+    }
+    if (rb_stderr_tty_p()) {
+	if (0) warn_print("Traceback (most recent call last):\n");
+	print_backtrace(eclass, errat, TRUE);
+	print_errinfo(eclass, errat, emesg);
+    }
+    else {
+	print_errinfo(eclass, errat, emesg);
+	print_backtrace(eclass, errat, FALSE);
     }
   error:
     TH_POP_TAG();

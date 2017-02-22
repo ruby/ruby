@@ -1193,6 +1193,7 @@ ssize_t rb_io_bufread(VALUE io, void *buf, size_t size);
 void rb_stdio_set_default_encoding(void);
 VALUE rb_io_flush_raw(VALUE, int);
 size_t rb_io_memsize(const rb_io_t *);
+int rb_stderr_tty_p(void);
 
 /* load.c */
 VALUE rb_get_load_path(void);

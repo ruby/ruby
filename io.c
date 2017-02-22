@@ -7400,6 +7400,14 @@ rb_write_error_str(VALUE mesg)
     }
 }
 
+int
+rb_stderr_tty_p(void)
+{
+    if (rb_stderr == orig_stderr || RFILE(orig_stderr)->fptr->fd < 0)
+	return isatty(fileno(stderr));
+    return 0;
+}
+
 static void
 must_respond_to(ID mid, VALUE val, ID id)
 {
