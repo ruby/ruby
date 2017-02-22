@@ -1252,8 +1252,8 @@ nurat_negative_p(VALUE self)
  *
  *  Returns the absolute value of +rat+.
  *
- *  (1/2r).abs    #=> 1/2r
- *  (-1/2r).abs   #=> 1/2r
+ *     (1/2r).abs    #=> 1/2r
+ *     (-1/2r).abs   #=> 1/2r
  *
  *  Rational#magnitude is an alias of Rational#abs.
  */
@@ -1289,8 +1289,7 @@ nurat_ceil(VALUE self)
  *
  * Returns the truncated value as an integer.
  *
- * Equivalent to
- *    rat.truncate.
+ * Equivalent to Rational#truncate.
  *
  *    Rational(2, 3).to_i   #=> 0
  *    Rational(3).to_i      #=> 3
@@ -1430,9 +1429,9 @@ f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
  *    Rational(2, 3).floor   #=> 0
  *    Rational(-3, 2).floor  #=> -1
  *
- *           decimal      -  1  2  3 . 4  5  6
- *                          ^  ^  ^  ^   ^  ^
- *          precision      -3 -2 -1  0  +1 +2
+ *      #    decimal      -  1  2  3 . 4  5  6
+ *      #                   ^  ^  ^  ^   ^  ^
+ *      #   precision      -3 -2 -1  0  +1 +2
  *
  *    '%f' % Rational('-123.456').floor(+1)  #=> "-123.500000"
  *    '%f' % Rational('-123.456').floor(-1)  #=> "-130.000000"
@@ -1454,9 +1453,9 @@ nurat_floor_n(int argc, VALUE *argv, VALUE self)
  *    Rational(2, 3).ceil   #=> 1
  *    Rational(-3, 2).ceil  #=> -1
  *
- *           decimal      -  1  2  3 . 4  5  6
- *                          ^  ^  ^  ^   ^  ^
- *          precision      -3 -2 -1  0  +1 +2
+ *      #    decimal      -  1  2  3 . 4  5  6
+ *      #                   ^  ^  ^  ^   ^  ^
+ *      #   precision      -3 -2 -1  0  +1 +2
  *
  *    '%f' % Rational('-123.456').ceil(+1)  #=> "-123.400000"
  *    '%f' % Rational('-123.456').ceil(-1)  #=> "-120.000000"
@@ -1478,9 +1477,9 @@ nurat_ceil_n(int argc, VALUE *argv, VALUE self)
  *    Rational(2, 3).truncate   #=> 0
  *    Rational(-3, 2).truncate  #=> -1
  *
- *           decimal      -  1  2  3 . 4  5  6
- *                          ^  ^  ^  ^   ^  ^
- *          precision      -3 -2 -1  0  +1 +2
+ *      #    decimal      -  1  2  3 . 4  5  6
+ *      #                   ^  ^  ^  ^   ^  ^
+ *      #   precision      -3 -2 -1  0  +1 +2
  *
  *    '%f' % Rational('-123.456').truncate(+1)  #=>  "-123.400000"
  *    '%f' % Rational('-123.456').truncate(-1)  #=>  "-120.000000"
@@ -1503,9 +1502,9 @@ nurat_truncate_n(int argc, VALUE *argv, VALUE self)
  *    Rational(2, 3).round   #=> 1
  *    Rational(-3, 2).round  #=> -2
  *
- *           decimal      -  1  2  3 . 4  5  6
- *                          ^  ^  ^  ^   ^  ^
- *          precision      -3 -2 -1  0  +1 +2
+ *      #    decimal      -  1  2  3 . 4  5  6
+ *      #                   ^  ^  ^  ^   ^  ^
+ *      #   precision      -3 -2 -1  0  +1 +2
  *
  *    '%f' % Rational('-123.456').round(+1)  #=> "-123.500000"
  *    '%f' % Rational('-123.456').round(-1)  #=> "-120.000000"
