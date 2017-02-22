@@ -297,6 +297,10 @@ init_copy(VALUE dest, VALUE obj)
     }
 }
 
+static int freeze_opt(int argc, VALUE *argv);
+static VALUE immutable_obj_clone(VALUE obj, int kwfreeze);
+static VALUE mutable_obj_clone(VALUE obj, int kwfreeze);
+PUREFUNC(static inline int special_object_p(VALUE obj));
 static inline int
 special_object_p(VALUE obj)
 {
@@ -339,32 +343,48 @@ special_object_p(VALUE obj)
 static VALUE
 rb_obj_clone2(int argc, VALUE *argv, VALUE obj)
 {
+    int kwfreeze = freeze_opt(argc, argv);
+    if (!special_object_p(obj))
+	return mutable_obj_clone(obj, kwfreeze);
+    return immutable_obj_clone(obj, kwfreeze);
+}
+
+static int
+freeze_opt(int argc, VALUE *argv)
+{
     static ID keyword_ids[1];
     VALUE opt;
-    VALUE kwargs[1];
-    VALUE clone;
-    VALUE singleton;
-    VALUE kwfreeze = Qtrue;
+    VALUE kwfreeze;
 
     if (!keyword_ids[0]) {
 	CONST_ID(keyword_ids[0], "freeze");
     }
     rb_scan_args(argc, argv, "0:", &opt);
     if (!NIL_P(opt)) {
-	rb_get_kwargs(opt, keyword_ids, 0, 1, kwargs);
-	kwfreeze = kwargs[0];
-	if (kwfreeze != Qundef && kwfreeze != Qtrue && kwfreeze != Qfalse) {
+	rb_get_kwargs(opt, keyword_ids, 0, 1, &kwfreeze);
+	if (kwfreeze == Qfalse) return FALSE;
+	if (kwfreeze != Qundef && kwfreeze != Qtrue) {
 	    rb_raise(rb_eArgError, "unexpected value for freeze: %"PRIsVALUE,
 		     rb_obj_class(kwfreeze));
 	}
     }
+    return TRUE;
+}
 
-    if (special_object_p(obj)) {
-	if (kwfreeze == Qfalse)
-	    rb_raise(rb_eArgError, "can't unfreeze %"PRIsVALUE,
-		     rb_obj_class(obj));
-	return obj;
-    }
+static VALUE
+immutable_obj_clone(VALUE obj, int kwfreeze)
+{
+    if (!kwfreeze)
+	rb_raise(rb_eArgError, "can't unfreeze %"PRIsVALUE,
+		 rb_obj_class(obj));
+    return obj;
+}
+
+static VALUE
+mutable_obj_clone(VALUE obj, int kwfreeze)
+{
+    VALUE clone, singleton;
+
     clone = rb_obj_alloc(rb_obj_class(obj));
     RBASIC(clone)->flags &= (FL_TAINT|FL_PROMOTED0|FL_PROMOTED1);
     RBASIC(clone)->flags |= RBASIC(obj)->flags & ~(FL_PROMOTED0|FL_PROMOTED1|FL_FREEZE|FL_FINALIZE);
@@ -378,7 +398,7 @@ rb_obj_clone2(int argc, VALUE *argv, VALUE obj)
     init_copy(clone, obj);
     rb_funcall(clone, id_init_clone, 1, obj);
 
-    if (Qfalse != kwfreeze) {
+    if (kwfreeze) {
 	RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;
     }
 
@@ -388,7 +408,8 @@ rb_obj_clone2(int argc, VALUE *argv, VALUE obj)
 VALUE
 rb_obj_clone(VALUE obj)
 {
-    return rb_obj_clone2(0, NULL, obj);
+    if (special_object_p(obj)) return obj;
+    return mutable_obj_clone(obj, Qtrue);
 }
 
 /*
