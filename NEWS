@@ -24,6 +24,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Update Onigmo 6.1.1.
     * Support absent operator https://github.com/k-takata/Onigmo/issues/82
 
+* Thread
+
+  * Thread#fetch  [Feature #13009]
+
 === Stdlib updates (outstanding ones only)
 
 === Compatibility issues (excluding feature bug fixes)

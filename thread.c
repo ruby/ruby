@@ -3091,6 +3091,39 @@ rb_thread_aref(VALUE thread, VALUE key)
 }
 
 static VALUE
+rb_thread_fetch(int argc, VALUE *argv, VALUE self)
+{
+    VALUE key, val;
+    ID id;
+    rb_thread_t *th;
+    int block_given;
+
+    rb_check_arity(argc, 1, 2);
+    key = argv[0];
+
+    block_given = rb_block_given_p();
+    if (block_given && argc == 2) {
+	rb_warn("block supersedes default value argument");
+    }
+
+    id = rb_check_id(&key);
+    GetThreadPtr(self, th);
+
+    if (id == recursive_key) {
+	return th->local_storage_recursive_hash;
+    }
+    if (id && th->local_storage && st_lookup(th->local_storage, id, &val)) {
+	return val;
+    }
+    if (block_given)
+	return rb_yield(key);
+    else if (argc == 1)
+	rb_raise(rb_eKeyError, "key not found: %"PRIsVALUE, key);
+    else
+	return argv[1];
+}
+
+static VALUE
 threadptr_local_aset(rb_thread_t *th, ID id, VALUE val)
 {
     if (id == recursive_key) {
@@ -4796,6 +4829,7 @@ Init_Thread(void)
     rb_define_method(rb_cThread, "wakeup", rb_thread_wakeup, 0);
     rb_define_method(rb_cThread, "[]", rb_thread_aref, 1);
     rb_define_method(rb_cThread, "[]=", rb_thread_aset, 2);
+    rb_define_method(rb_cThread, "fetch", rb_thread_fetch, -1);
     rb_define_method(rb_cThread, "key?", rb_thread_key_p, 1);
     rb_define_method(rb_cThread, "keys", rb_thread_keys, 0);
     rb_define_method(rb_cThread, "priority", rb_thread_priority, 0);
