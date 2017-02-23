@@ -352,6 +352,7 @@ struct rb_iseq_constant_body {
 	    int rest_start;
 	    const ID *table;
 	    const VALUE *default_values;
+	    union rb_args_kept_keywords keep;
 	} *keyword;
     } param;
 

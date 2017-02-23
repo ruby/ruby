@@ -1364,6 +1364,15 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
 
 	keyword->default_values = dvs;
     }
+
+    keyword->keep = args->kw_keep;
+    {
+	int room = roomof(keyword->num + 1, CHAR_BIT * sizeof(keyword->keep.bits));
+	if (room > 1) {
+	    keyword->keep.ptr = ALLOC_N(VALUE, room);
+	    MEMCPY(keyword->keep.ptr, args->kw_keep.ptr, VALUE, room);
+	}
+    }
 }
 
 static int

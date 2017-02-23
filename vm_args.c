@@ -375,7 +375,11 @@ make_rest_kw_hash(const VALUE *passed_keywords, int passed_keyword_len, const VA
 }
 
 static inline int
-args_setup_kw_parameters_lookup(const ID key, VALUE *ptr, const VALUE *const passed_keywords, VALUE *passed_values, const int passed_keyword_len)
+args_setup_kw_parameters_lookup(const ID key, VALUE *ptr,
+				const VALUE *const passed_keywords,
+				VALUE *passed_values,
+				const int passed_keyword_len,
+				int keep)
 {
     int i;
     const VALUE keyname = ID2SYM(key);
@@ -383,7 +387,7 @@ args_setup_kw_parameters_lookup(const ID key, VALUE *ptr, const VALUE *const pas
     for (i=0; i<passed_keyword_len; i++) {
 	if (keyname == passed_keywords[i]) {
 	    *ptr = passed_values[i];
-	    passed_values[i] = Qundef;
+	    if (!keep) passed_values[i] = Qundef;
 	    return TRUE;
 	}
     }
@@ -403,10 +407,20 @@ args_setup_kw_parameters(VALUE* const passed_values, const int passed_keyword_le
     int i, di, found = 0;
     int unspecified_bits = 0;
     VALUE unspecified_bits_value = Qnil;
+    const VALUE *keep = 0;
+    enum {bits = CHAR_BIT * sizeof(iseq->body->param.keyword->keep.bits)};
+    if (iseq->body->param.keyword->keep.bits & 1) {
+	keep = &iseq->body->param.keyword->keep.bits;
+    }
+    else {
+	keep = iseq->body->param.keyword->keep.ptr;
+    }
 
     for (i=0; i<req_key_num; i++) {
 	ID key = acceptable_keywords[i];
-	if (args_setup_kw_parameters_lookup(key, &locals[i], passed_keywords, passed_values, passed_keyword_len)) {
+	int k = FALSE;
+	if (keep && (keep[(i+1)/bits] & ((VALUE)1 << ((i+1)%bits)))) k = TRUE;
+	if (args_setup_kw_parameters_lookup(key, &locals[i], passed_keywords, passed_values, passed_keyword_len, k)) {
 	    found++;
 	}
 	else {
@@ -418,7 +432,9 @@ args_setup_kw_parameters(VALUE* const passed_values, const int passed_keyword_le
     if (missing) argument_kw_error(GET_THREAD(), iseq, "missing", missing);
 
     for (di=0; i<key_num; i++, di++) {
-	if (args_setup_kw_parameters_lookup(acceptable_keywords[i], &locals[i], passed_keywords, passed_values, passed_keyword_len)) {
+	int k = FALSE;
+	if (keep && (keep[(i+1)/bits] & ((VALUE)1 << ((i+1)%bits)))) k = TRUE;
+	if (args_setup_kw_parameters_lookup(acceptable_keywords[i], &locals[i], passed_keywords, passed_values, passed_keyword_len, k)) {
 	    found++;
 	}
 	else {

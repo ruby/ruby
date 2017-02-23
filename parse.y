@@ -297,6 +297,7 @@ struct parser_params {
     unsigned int in_kwarg: 1;
     unsigned int in_single: 1;
     unsigned int in_def: 1;
+    unsigned int def_arg: 1;
     unsigned int token_seen: 1;
     unsigned int token_info_enabled: 1;
 # if WARN_PAST_SCOPE
@@ -470,7 +471,7 @@ static NODE *new_args_gen(struct parser_params*,NODE*,NODE*,ID,NODE*,NODE*);
 #define new_args(f,o,r,p,t) new_args_gen(parser, (f),(o),(r),(p),(t))
 static NODE *new_args_tail_gen(struct parser_params*,NODE*,ID,ID);
 #define new_args_tail(k,kr,b) new_args_tail_gen(parser, (k),(kr),(b))
-#define new_kw_arg(k) ((k) ? NEW_KW_ARG(0, (k)) : 0)
+#define new_kw_arg(k, o) ((k) ? NEW_KW_ARG((o), (k)) : 0)
 
 static VALUE negate_lit(VALUE);
 static NODE *ret_args_gen(struct parser_params*,NODE*);
@@ -933,7 +934,7 @@ static void token_info_pop_gen(struct parser_params*, const char *token, size_t 
 	keyword__FILE__
 	keyword__ENCODING__
 
-%token <id>   tIDENTIFIER tFID tGVAR tIVAR tCONSTANT tCVAR tLABEL
+%token <id>   tIDENTIFIER tFID tGVAR tIVAR tCONSTANT tCVAR tLABEL tLABEL2
 %token <node> tINTEGER tFLOAT tRATIONAL tIMAGINARY tSTRING_CONTENT tCHAR
 %token <node> tNTH_REF tBACK_REF
 %token <num>  tREGEXP_END
@@ -2861,6 +2862,7 @@ primary		: literal
 		    {
 			$<num>$ = in_def;
 			in_def = 1;
+			parser->def_arg = 1;
 		    }
 		  f_arglist
 		  bodystmt
@@ -2886,6 +2888,7 @@ primary		: literal
 			local_push(0);
 			$<id>$ = current_arg;
 			current_arg = 0;
+			parser->def_arg = 1;
 		    }
 		  f_arglist
 		  bodystmt
@@ -4221,19 +4224,21 @@ superclass	: '<'
 		    }
 		;
 
-f_arglist	: '(' f_args rparen
+f_arglist	: '(' {parser->def_arg = 1;} f_args rparen
 		    {
 		    /*%%%*/
-			$$ = $2;
+			$$ = $3;
 		    /*%
-			$$ = dispatch1(paren, $2);
+			$$ = dispatch1(paren, $3);
 		    %*/
 			SET_LEX_STATE(EXPR_BEG);
 			command_start = TRUE;
+			parser->def_arg = 0;
 		    }
 		|   {
 			$<num>$ = parser->in_kwarg;
 			parser->in_kwarg = 1;
+			parser->def_arg = 1;
 			lex_state |= EXPR_LABEL; /* force for args */
 		    }
 		    f_args term
@@ -4242,6 +4247,7 @@ f_arglist	: '(' f_args rparen
 			$$ = $2;
 			SET_LEX_STATE(EXPR_BEG);
 			command_start = TRUE;
+			parser->def_arg = 0;
 		    }
 		;
 
@@ -4450,6 +4456,15 @@ f_label 	: tLABEL
 			arg_var(formal_argument(id));
 			current_arg = id;
 			$$ = $1;
+			parser->def_arg = 0;
+		    }
+		| tLABEL2
+		    {
+			ID id = get_id($1);
+			arg_var(formal_argument(id));
+			current_arg = id;
+			$$ = $1;
+			parser->def_arg = 1;
 		    }
 		;
 
@@ -4458,7 +4473,8 @@ f_kw		: f_label arg_value
 			current_arg = 0;
 			$$ = assignable($1, $2);
 		    /*%%%*/
-			$$ = new_kw_arg($$);
+			$$ = new_kw_arg($$, parser->def_arg);
+			parser->def_arg = 0;
 		    /*%
 			$$ = rb_assoc_new($$, $2);
 		    %*/
@@ -4468,7 +4484,8 @@ f_kw		: f_label arg_value
 			current_arg = 0;
 			$$ = assignable($1, (NODE *)-1);
 		    /*%%%*/
-			$$ = new_kw_arg($$);
+			$$ = new_kw_arg($$, parser->def_arg);
+			parser->def_arg = 0;
 		    /*%
 			$$ = rb_assoc_new($$, 0);
 		    %*/
@@ -4479,7 +4496,8 @@ f_block_kw	: f_label primary_value
 		    {
 			$$ = assignable($1, $2);
 		    /*%%%*/
-			$$ = new_kw_arg($$);
+			$$ = new_kw_arg($$, parser->def_arg);
+			parser->def_arg = 0;
 		    /*%
 			$$ = rb_assoc_new($$, $2);
 		    %*/
@@ -4488,7 +4506,8 @@ f_block_kw	: f_label primary_value
 		    {
 			$$ = assignable($1, (NODE *)-1);
 		    /*%%%*/
-			$$ = new_kw_arg($$);
+			$$ = new_kw_arg($$, parser->def_arg);
+			parser->def_arg = 0;
 		    /*%
 			$$ = rb_assoc_new($$, 0);
 		    %*/
@@ -7736,10 +7755,16 @@ parse_ident(struct parser_params *parser, int c, int cmd_state)
     }
 
     if (IS_LABEL_POSSIBLE()) {
-	if (IS_LABEL_SUFFIX(0)) {
+	int def_arg = parser->def_arg;
+	parser->def_arg = 0;
+	if (def_arg ? peek(':') : IS_LABEL_SUFFIX(0)) {
 	    SET_LEX_STATE(EXPR_ARG|EXPR_LABELED);
 	    nextc();
 	    set_yylval_name(TOK_INTERN());
+	    if (peek(':')) {
+		nextc();
+		return tLABEL2;
+	    }
 	    return tLABEL;
 	}
     }
@@ -9890,6 +9915,7 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b)
 	struct vtable *required_kw_vars = vtable_alloc(NULL);
 	struct vtable *kw_vars = vtable_alloc(NULL);
 	int i;
+	int keeps = 0;
 
 	while (kwn) {
 	    NODE *val_node = kwn->nd_body->nd_value;
@@ -9901,6 +9927,7 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b)
 	    else {
 		vtable_add(kw_vars, vid);
 	    }
+	    if (kwn->nd_rest) keeps++;
 
 	    kwn = kwn->nd_next;
 	}
@@ -9917,6 +9944,26 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b)
 	arg_var(kw_bits);
 	if (kr) arg_var(kr);
 	if (b) arg_var(b);
+
+	if (keeps) {
+	    enum {bits = CHAR_BIT * sizeof(args->kw_keep.bits)};
+	    int room = roomof(keeps + 1, bits);
+	    VALUE *ptr;
+	    if (room > 1) {
+		ptr = args->kw_keep.ptr = ZALLOC_N(VALUE, room);
+	    }
+	    else {
+		*(ptr = &args->kw_keep.bits) = 1;
+	    }
+	    for (kwn = k; kwn; kwn = kwn->nd_next) {
+		if (kwn->nd_rest) {
+		    int idx = vtable_included(lvtbl->args, kwn->nd_body->nd_vid);
+		    if (idx > 0) {
+			ptr[idx / bits] |= (VALUE)1U << (idx % bits);
+		    }
+		}
+	    }
+	}
 
 	args->kw_rest_arg = NEW_DVAR(kw_bits);
 	args->kw_rest_arg->nd_cflag = kr;

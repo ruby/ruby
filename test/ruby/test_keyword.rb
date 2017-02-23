@@ -590,6 +590,15 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal ["foo", "bar", {sym => "baz"}], h, '[Bug #11027]'
   end
 
+  def test_keyword_kept_in_restkeywords
+    obj = Object.new
+    def obj.m(k1::, k2:, **rest)
+      [k1, k2, rest]
+    end
+    h = obj.m(k1: "foo", k2: "bar", k3: "zot")
+    assert_equal ["foo", "bar", {k1: "foo", k3: "zot"}], h
+  end
+
   class AttrSetTest
     attr_accessor :foo
     alias set_foo :foo=

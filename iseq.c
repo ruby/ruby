@@ -92,6 +92,9 @@ rb_iseq_free(const rb_iseq_t *iseq)
 	    ruby_xfree((void *)iseq->body->param.opt_table);
 
 	    if (iseq->body->param.keyword != NULL) {
+		if (iseq->body->param.keyword->num >= (int)(CHAR_BIT * sizeof(VALUE))) {
+		    ruby_xfree((void *)iseq->body->param.keyword->keep.ptr);
+		}
 		ruby_xfree((void *)iseq->body->param.keyword->default_values);
 		ruby_xfree((void *)iseq->body->param.keyword);
 	    }

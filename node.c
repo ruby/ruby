@@ -1019,7 +1019,11 @@ rb_gc_free_node(VALUE obj)
 	break;
       case NODE_ARGS:
 	if (RNODE(obj)->nd_ainfo) {
-	    xfree(RNODE(obj)->nd_ainfo);
+	    struct rb_args_info *ainfo = RNODE(obj)->nd_ainfo;
+	    if (!(ainfo->kw_keep.bits & 1) && ainfo->kw_keep.ptr) {
+		xfree(ainfo->kw_keep.ptr);
+	    }
+	    xfree(ainfo);
 	}
 	break;
       case NODE_ALLOCA:
