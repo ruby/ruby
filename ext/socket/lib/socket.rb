@@ -315,8 +315,8 @@ class BasicSocket < IO
   #
   # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that sendmsg_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead. At EOF, it will return nil instead
-  # of raising EOFError.
+  # return the symbol +:wait_writable+ instead. At EOF, it will return +nil+
+  # instead of raising EOFError.
   def sendmsg_nonblock(mesg, flags = 0, dest_sockaddr = nil, *controls,
                        exception: true)
     __sendmsg_nonblock(mesg, flags, dest_sockaddr, controls, exception)
@@ -364,8 +364,8 @@ class BasicSocket < IO
   #
   # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that recv_nonblock should not raise an IO::WaitReadable exception, but
-  # return the symbol :wait_readable instead. At EOF, it will return nil instead
-  # of raising EOFError.
+  # return the symbol +:wait_readable+ instead. At EOF, it will return +nil+
+  # instead of raising EOFError.
   #
   # === See
   # * Socket#recvfrom
@@ -439,8 +439,8 @@ class BasicSocket < IO
   #
   # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that recvmsg_nonblock should not raise an IO::WaitReadable exception, but
-  # return the symbol :wait_readable instead. At EOF, it will return nil instead
-  # of raising EOFError.
+  # return the symbol +:wait_readable+ instead. At EOF, it will return +nil+
+  # instead of raising EOFError.
   def recvmsg_nonblock(dlen = nil, flags = 0, clen = nil,
                        scm_rights: false, exception: true)
     __recvmsg_nonblock(dlen, flags, clen, scm_rights, exception)
@@ -517,8 +517,8 @@ class Socket < BasicSocket
   #
   # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that recvfrom_nonblock should not raise an IO::WaitReadable exception, but
-  # return the symbol :wait_readable instead. At EOF, it will return nil instead
-  # of raising EOFError.
+  # return the symbol +:wait_readable+ instead. At EOF, it will return +nil+
+  # instead of raising EOFError.
   #
   # === See
   # * Socket#recvfrom
@@ -575,8 +575,8 @@ class Socket < BasicSocket
   #
   # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that accept_nonblock should not raise an IO::WaitReadable exception, but
-  # return the symbol :wait_readable instead. At EOF, it will return nil instead
-  # of raising EOFError.
+  # return the symbol +:wait_readable+ instead. At EOF, it will return +nil+
+  # instead of raising EOFError.
   #
   # === See
   # * Socket#accept
@@ -1195,8 +1195,8 @@ class Socket < BasicSocket
   #
   # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that connect_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead. At EOF, it will return nil instead
-  # of raising EOFError.
+  # return the symbol +:wait_writable+ instead. At EOF, it will return +nil+
+  # instead of raising EOFError.
   #
   # === See
   #  # Socket#connect
@@ -1254,8 +1254,8 @@ class UDPSocket < IPSocket
   #
   # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that recvfrom_nonblock should not raise an IO::WaitReadable exception, but
-  # return the symbol :wait_readable instead. At EOF, it will return nil instead
-  # of raising EOFError.
+  # return the symbol +:wait_readable+ instead. At EOF, it will return +nil+
+  # instead of raising EOFError.
   #
   # === See
   # * Socket#recvfrom
@@ -1296,8 +1296,8 @@ class TCPServer < TCPSocket
   #
   # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that accept_nonblock should not raise an IO::WaitReadable exception, but
-  # return the symbol :wait_readable instead. At EOF, it will return nil instead
-  # of raising EOFError.
+  # return the symbol +:wait_readable+ instead. At EOF, it will return +nil+
+  # instead of raising EOFError.
   #
   # === See
   # * TCPServer#accept
@@ -1338,8 +1338,8 @@ class UNIXServer < UNIXSocket
   #
   # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that accept_nonblock should not raise an IO::WaitReadable exception, but
-  # return the symbol :wait_readable instead. At EOF, it will return nil instead
-  # of raising EOFError.
+  # return the symbol +:wait_readable+ instead. At EOF, it will return +nil+
+  # instead of raising EOFError.
   #
   # === See
   # * UNIXServer#accept

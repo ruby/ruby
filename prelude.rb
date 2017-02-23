@@ -70,8 +70,8 @@ class IO
   #
   # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that read_nonblock should not raise an IO::WaitReadable exception, but
-  # return the symbol :wait_readable instead. At EOF, it will return nil instead
-  # of raising EOFError.
+  # return the symbol +:wait_readable+ instead. At EOF, it will return nil
+  # instead of raising EOFError.
   def read_nonblock(len, buf = nil, exception: true)
     __read_nonblock(len, buf, exception)
   end
@@ -129,8 +129,8 @@ class IO
   #
   # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that write_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead. At EOF, it will return nil instead
-  # of raising EOFError.
+  # return the symbol +:wait_writable+ instead. At EOF, it will return nil
+  # instead of raising EOFError.
   def write_nonblock(buf, exception: true)
     __write_nonblock(buf, exception)
   end
