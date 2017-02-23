@@ -166,7 +166,8 @@ module OpenSSL::Buffering
   #
   # By specifying `exception: false`, the options hash allows you to indicate
   # that read_nonblock should not raise an IO::Wait*able exception, but
-  # return the symbol :wait_writable or :wait_readable instead.
+  # return the symbol :wait_writable or :wait_readable instead. At EOF, it will
+  # return nil instead of raising EOFError.
 
   def read_nonblock(maxlen, buf=nil, exception: true)
     if maxlen == 0
@@ -378,7 +379,8 @@ module OpenSSL::Buffering
   #
   # By specifying `exception: false`, the options hash allows you to indicate
   # that write_nonblock should not raise an IO::Wait*able exception, but
-  # return the symbol :wait_writable or :wait_readable instead.
+  # return the symbol :wait_writable or :wait_readable instead. At EOF, it will
+  # return nil instead of raising EOFError.
 
   def write_nonblock(s, exception: true)
     flush
