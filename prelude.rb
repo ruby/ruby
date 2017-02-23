@@ -129,8 +129,7 @@ class IO
   #
   # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that write_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol +:wait_writable+ instead. At EOF, it will return nil
-  # instead of raising EOFError.
+  # return the symbol +:wait_writable+ instead.
   def write_nonblock(buf, exception: true)
     __write_nonblock(buf, exception)
   end

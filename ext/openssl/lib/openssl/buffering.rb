@@ -379,8 +379,7 @@ module OpenSSL::Buffering
   #
   # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that write_nonblock should not raise an IO::Wait*able exception, but
-  # return the symbol +:wait_writable+ or +:wait_readable+ instead. At EOF,
-  # it will return +nil+ instead of raising EOFError.
+  # return the symbol +:wait_writable+ or +:wait_readable+ instead.
 
   def write_nonblock(s, exception: true)
     flush
