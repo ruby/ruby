@@ -68,7 +68,7 @@ class IO
   # Note that this method is identical to readpartial
   # except the non-blocking flag is set.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that read_nonblock should not raise an IO::WaitReadable exception, but
   # return the symbol :wait_readable instead. At EOF, it will return nil instead
   # of raising EOFError.
@@ -127,7 +127,7 @@ class IO
   # according to the kind of the IO object.
   # In such cases, write_nonblock raises <code>Errno::EBADF</code>.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that write_nonblock should not raise an IO::WaitWritable exception, but
   # return the symbol :wait_writable instead. At EOF, it will return nil instead
   # of raising EOFError.

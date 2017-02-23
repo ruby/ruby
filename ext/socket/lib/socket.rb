@@ -313,7 +313,7 @@ class BasicSocket < IO
   # but the non-blocking flag is set before the system call
   # and it doesn't retry the system call.
   #
-  # By specifying `exception: false`, the _opts_ hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that sendmsg_nonblock should not raise an IO::WaitWritable exception, but
   # return the symbol :wait_writable instead. At EOF, it will return nil instead
   # of raising EOFError.
@@ -362,7 +362,7 @@ class BasicSocket < IO
   # it is extended by IO::WaitReadable.
   # So IO::WaitReadable can be used to rescue the exceptions for retrying recv_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that recv_nonblock should not raise an IO::WaitReadable exception, but
   # return the symbol :wait_readable instead. At EOF, it will return nil instead
   # of raising EOFError.
@@ -437,7 +437,7 @@ class BasicSocket < IO
   # but non-blocking flag is set before the system call
   # and it doesn't retry the system call.
   #
-  # By specifying `exception: false`, the _opts_ hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that recvmsg_nonblock should not raise an IO::WaitReadable exception, but
   # return the symbol :wait_readable instead. At EOF, it will return nil instead
   # of raising EOFError.
@@ -515,7 +515,7 @@ class Socket < BasicSocket
   # So IO::WaitReadable can be used to rescue the exceptions for retrying
   # recvfrom_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that recvfrom_nonblock should not raise an IO::WaitReadable exception, but
   # return the symbol :wait_readable instead. At EOF, it will return nil instead
   # of raising EOFError.
@@ -573,7 +573,7 @@ class Socket < BasicSocket
   # it is extended by IO::WaitReadable.
   # So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that accept_nonblock should not raise an IO::WaitReadable exception, but
   # return the symbol :wait_readable instead. At EOF, it will return nil instead
   # of raising EOFError.
@@ -1193,7 +1193,7 @@ class Socket < BasicSocket
   # it is extended by IO::WaitWritable.
   # So IO::WaitWritable can be used to rescue the exceptions for retrying connect_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that connect_nonblock should not raise an IO::WaitWritable exception, but
   # return the symbol :wait_writable instead. At EOF, it will return nil instead
   # of raising EOFError.
@@ -1252,7 +1252,7 @@ class UDPSocket < IPSocket
   # it is extended by IO::WaitReadable.
   # So IO::WaitReadable can be used to rescue the exceptions for retrying recvfrom_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that recvfrom_nonblock should not raise an IO::WaitReadable exception, but
   # return the symbol :wait_readable instead. At EOF, it will return nil instead
   # of raising EOFError.
@@ -1294,7 +1294,7 @@ class TCPServer < TCPSocket
   # it is extended by IO::WaitReadable.
   # So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that accept_nonblock should not raise an IO::WaitReadable exception, but
   # return the symbol :wait_readable instead. At EOF, it will return nil instead
   # of raising EOFError.
@@ -1336,7 +1336,7 @@ class UNIXServer < UNIXSocket
   # it is extended by IO::WaitReadable.
   # So IO::WaitReadable can be used to rescue the exceptions for retrying accept_nonblock.
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that accept_nonblock should not raise an IO::WaitReadable exception, but
   # return the symbol :wait_readable instead. At EOF, it will return nil instead
   # of raising EOFError.

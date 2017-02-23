@@ -1598,7 +1598,7 @@ ossl_ssl_connect(VALUE self)
  *     retry
  *   end
  *
- * By specifying `exception: false`, the options hash allows you to indicate
+ * By specifying a keyword argument _exception_ to +false+, you can indicate
  * that connect_nonblock should not raise an IO::WaitReadable or
  * IO::WaitWritable exception, but return the symbol :wait_readable or
  * :wait_writable instead. At EOF, it will return nil instead of raising EOFError.
@@ -1646,7 +1646,7 @@ ossl_ssl_accept(VALUE self)
  *     retry
  *   end
  *
- * By specifying `exception: false`, the options hash allows you to indicate
+ * By specifying a keyword argument _exception_ to +false+, you can indicate
  * that accept_nonblock should not raise an IO::WaitReadable or
  * IO::WaitWritable exception, but return the symbol :wait_readable or
  * :wait_writable instead. At EOF, it will return nil instead of raising EOFError.
