@@ -138,6 +138,11 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGIT % SIZEOF_LONG == 0);
 #define GMP_DIV_DIGITS 20
 #define GMP_BIG2STR_DIGITS 20
 #define GMP_STR2BIG_DIGITS 20
+#ifdef USE_GMP
+# define NAIVE_MUL_DIGITS GMP_MUL_DIGITS
+#else
+# define NAIVE_MUL_DIGITS KARATSUBA_MUL_DIGITS
+#endif
 
 typedef void (mulfunc_t)(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn, BDIGIT *wds, size_t wn);
 
@@ -2487,13 +2492,8 @@ bary_mul_toom3_start(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const
 static void
 bary_mul(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
-#ifdef USE_GMP
-    const size_t naive_threshold = GMP_MUL_DIGITS;
-#else
-    const size_t naive_threshold = KARATSUBA_MUL_DIGITS;
-#endif
     if (xn <= yn) {
-        if (xn < naive_threshold) {
+        if (xn < NAIVE_MUL_DIGITS) {
             if (xds == yds && xn == yn)
                 bary_sq_fast(zds, zn, xds, xn);
             else
@@ -2502,7 +2502,7 @@ bary_mul(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds
         }
     }
     else {
-        if (yn < naive_threshold) {
+        if (yn < NAIVE_MUL_DIGITS) {
             bary_short_mul(zds, zn, yds, yn, xds, xn);
             return;
         }
@@ -5820,17 +5820,10 @@ bigsq(VALUE x)
     xds = BDIGITS(x);
     zds = BDIGITS(z);
 
-#ifdef USE_GMP
-    if (xn < GMP_MUL_DIGITS)
+    if (xn < NAIVE_MUL_DIGITS)
         bary_sq_fast(zds, zn, xds, xn);
     else
         bary_mul(zds, zn, xds, xn, xds, xn);
-#else
-    if (xn < KARATSUBA_MUL_DIGITS)
-        bary_sq_fast(zds, zn, xds, xn);
-    else
-        bary_mul(zds, zn, xds, xn, xds, xn);
-#endif
 
     RB_GC_GUARD(x);
     return z;
