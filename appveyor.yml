@@ -1,13 +1,21 @@
 ---
 shallow_clone: true
-platform: x64
+platform:
+  - x64
 environment:
-  ruby_version: "23-x64"
+  ruby_version: "23-%Platform%"
   zlib_version: "1.2.11"
+  matrix:
+    - vs: "120"
 install:
-  - SET
-  - '"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" amd64'
-  - SET PATH=\usr\local\bin;C:\Ruby%ruby_version%\bin;C:\Ruby%ruby_version%\Devkit\mingw\bin;%PATH%;C:\msys64\usr\bin
+  - SET BITS=%Platform:x86=32%
+  - SET BITS=%BITS:x=%
+  - SET OPENSSL_DIR=c:\OpenSSL-Win%BITS%
+  - CALL SET vcvars=%%^VS%VS%COMNTOOLS^%%..\..\VC\vcvarsall.bat
+  - SET vcvars
+  - '"%vcvars%" %Platform:x64=amd64%'
+  - SET ruby_path=C:\Ruby%ruby_version:-x86=%
+  - SET PATH=\usr\local\bin;%ruby_path%\bin;%ruby_path%\Devkit\mingw\bin;%PATH%;C:\msys64\usr\bin
   - ruby --version
   - 'cl'
   - SET
@@ -16,13 +24,17 @@ install:
   - mkdir \usr\local\lib
   - appveyor DownloadFile https://downloads.sourceforge.net/project/libpng/zlib/%zlib_version%/zlib%zlib_version:.=%.zip
   - 7z x -o%APPVEYOR_BUILD_FOLDER%\ext\zlib zlib%zlib_version:.=%.zip
-  - for %%I in (c:\OpenSSL-Win64\*.dll) do mklink /h \usr\local\bin\%%~nxI %%I
+  - for %%I in (%OPENSSL_DIR%\*.dll) do mklink /h \usr\local\bin\%%~nxI %%I
 build_script:
   - cd %APPVEYOR_BUILD_FOLDER%
-  - win32\configure.bat --without-ext=+,dbm,gdbm,readline --with-opt-dir=/usr/local --with-openssl-dir=c:/OpenSSL-Win64
+  - mkdir %Platform%-mswin_%vs%
+  - cd %Platform%-mswin_%vs%
+  - ..\win32\configure.bat --without-ext=+,dbm,gdbm,readline --with-opt-dir=/usr/local --with-openssl-dir=%OPENSSL_DIR:\=/%
   - nmake -l up
   - nmake -l
   - nmake install-nodoc
 test_script:
   - nmake -l "TESTOPTS=-v -q" btest
   - nmake -l "TESTOPTS=-v -q" test-basic
+matrix:
+  fast_finish: true
