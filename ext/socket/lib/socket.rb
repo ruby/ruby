@@ -363,8 +363,8 @@ class BasicSocket < IO
   # So IO::WaitReadable can be used to rescue the exceptions for retrying recv_nonblock.
   #
   # By specifying `exception: false`, the options hash allows you to indicate
-  # that recv_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead. At EOF, it will return nil instead
+  # that recv_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol :wait_readable instead. At EOF, it will return nil instead
   # of raising EOFError.
   #
   # === See
@@ -438,8 +438,8 @@ class BasicSocket < IO
   # and it doesn't retry the system call.
   #
   # By specifying `exception: false`, the _opts_ hash allows you to indicate
-  # that recvmsg_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead. At EOF, it will return nil instead
+  # that recvmsg_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol :wait_readable instead. At EOF, it will return nil instead
   # of raising EOFError.
   def recvmsg_nonblock(dlen = nil, flags = 0, clen = nil,
                        scm_rights: false, exception: true)
@@ -516,7 +516,7 @@ class Socket < BasicSocket
   # recvfrom_nonblock.
   #
   # By specifying `exception: false`, the options hash allows you to indicate
-  # that accept_nonblock should not raise an IO::WaitReadable exception, but
+  # that recvfrom_nonblock should not raise an IO::WaitReadable exception, but
   # return the symbol :wait_readable instead. At EOF, it will return nil instead
   # of raising EOFError.
   #
@@ -1253,8 +1253,8 @@ class UDPSocket < IPSocket
   # So IO::WaitReadable can be used to rescue the exceptions for retrying recvfrom_nonblock.
   #
   # By specifying `exception: false`, the options hash allows you to indicate
-  # that recvmsg_nonblock should not raise an IO::WaitWritable exception, but
-  # return the symbol :wait_writable instead. At EOF, it will return nil instead
+  # that recvfrom_nonblock should not raise an IO::WaitReadable exception, but
+  # return the symbol :wait_readable instead. At EOF, it will return nil instead
   # of raising EOFError.
   #
   # === See
