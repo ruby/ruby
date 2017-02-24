@@ -181,8 +181,6 @@ Zachary Scott (zzak)
   Koichi Sasada (ko1)
 [ext/fiddle]
   Aaron Patterson (tenderlove)
-[ext/gdbm]
-  Yukihiro Matsumoto (matz)
 [ext/io/nonblock]
   Nobuyuki Nakada (nobu)
 [ext/io/wait]
@@ -248,6 +246,8 @@ Zachary Scott (zzak)
   _unmaintained_
 [ext/fcntl]
   _unmaintained_
+[ext/gdbm]
+  Yukihiro Matsumoto (matz)
 [ext/io/console]
   Nobuyuki Nakada (nobu)
 [ext/json]
