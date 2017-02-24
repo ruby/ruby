@@ -6768,6 +6768,32 @@ BDIGIT rb_bdigit_dbl_isqrt(BDIGIT_DBL);
 # define rb_bdigit_dbl_isqrt(x) (BDIGIT)rb_ulong_isqrt(x)
 #endif
 
+static BDIGIT *
+estimate_initial_sqrt(VALUE *xp, const size_t xn, const BDIGIT *nds, size_t len)
+{
+    const int zbits = nlz(nds[len-1]);
+    const int shift_bits = (len&1 ? BITSPERDIG/2 : BITSPERDIG) - (zbits+1)/2 + 1;
+    VALUE x = bignew_1(0, xn, 1); /* division may release the GVL */
+    BDIGIT *xds = BDIGITS(x);
+
+    *xp = x;
+    /* x = (n >> (b/2+1)) */
+    if (shift_bits == BITSPERDIG) {
+	MEMCPY(xds, nds+len-xn, BDIGIT, xn);
+    }
+    else if (shift_bits > BITSPERDIG) {
+	bary_small_rshift(xds, nds+len-xn, xn, shift_bits-BITSPERDIG, 0);
+    }
+    else {
+	bary_small_rshift(xds, nds+len-xn-1, xn, shift_bits, nds[len-1]);
+    }
+    /* x |= (1 << (b-1)/2) */
+    xds[xn-1] |= (BDIGIT)1u <<
+	((len&1 ? 0 : BITSPERDIG/2) + (BITSPERDIG-zbits-1)/2);
+
+    return xds;
+}
+
 VALUE
 rb_big_isqrt(VALUE n)
 {
@@ -6783,25 +6809,9 @@ rb_big_isqrt(VALUE n)
 #endif
     }
     else {
-	int zbits = nlz(nds[len-1]);
-	int shift_bits = (len&1 ? BITSPERDIG/2 : BITSPERDIG) - (zbits+1)/2 + 1;
 	size_t tn = (len+1) / 2, xn = tn;
-	VALUE t, x = bignew_1(0, xn, 1); /* division may release the GVL */
-	BDIGIT *tds, *xds = BDIGITS(x);
-
-	/* x = (n >> (b/2+1)) */
-	if (shift_bits == BITSPERDIG) {
-	    MEMCPY(xds, nds+tn, BDIGIT, xn);
-	}
-	else if (shift_bits > BITSPERDIG) {
-	    bary_small_rshift(xds, nds+len-xn, xn, shift_bits-BITSPERDIG, 0);
-	}
-	else {
-	    bary_small_rshift(xds, nds+len-xn-1, xn, shift_bits, nds[len-1]);
-	}
-	/* x |= (1 << (b-1)/2) */
-	xds[xn-1] |= (BDIGIT)1u <<
-	    ((len&1 ? 0 : BITSPERDIG/2) + (BITSPERDIG-zbits-1)/2);
+	VALUE t, x;
+	BDIGIT *tds, *xds = estimate_initial_sqrt(&x, xn, nds, len);
 
 	/* t = n/x */
 	tn += BIGDIVREM_EXTRA_WORDS;
