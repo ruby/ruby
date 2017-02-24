@@ -866,6 +866,27 @@ class TestRDocContext < XrefTestCase
     assert_equal [nil, 'Public', 'Internal'], titles
   end
 
+  def test_visibility_def
+    assert_equal :private, @c6.find_method_named('priv1').visibility
+    assert_equal :protected, @c6.find_method_named('prot1').visibility
+    assert_equal :public, @c6.find_method_named('pub1').visibility
+    assert_equal :private, @c6.find_method_named('priv2').visibility
+    assert_equal :protected, @c6.find_method_named('prot2').visibility
+    assert_equal :public, @c6.find_method_named('pub2').visibility
+    assert_equal :private, @c6.find_method_named('priv3').visibility
+    assert_equal :protected, @c6.find_method_named('prot3').visibility
+    assert_equal :public, @c6.find_method_named('pub3').visibility
+    assert_equal :private, @c6.find_method_named('priv4').visibility
+    assert_equal :protected, @c6.find_method_named('prot4').visibility
+    assert_equal :public, @c6.find_method_named('pub4').visibility
+    assert_equal :private, @c6.find_method_named('priv5').visibility
+    assert_equal :protected, @c6.find_method_named('prot5').visibility
+    assert_equal :public, @c6.find_method_named('pub5').visibility
+    assert_equal :private, @c6.find_method_named('priv6').visibility
+    assert_equal :protected, @c6.find_method_named('prot6').visibility
+    assert_equal :public, @c6.find_method_named('pub6').visibility
+  end
+
   def util_visibilities
     @pub  = RDoc::AnyMethod.new nil, 'pub'
     @prot = RDoc::AnyMethod.new nil, 'prot'

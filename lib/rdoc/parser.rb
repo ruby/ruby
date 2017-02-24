@@ -78,7 +78,7 @@ class RDoc::Parser
 
     return true if s[0, 2] == Marshal.dump('')[0, 2] or s.index("\x00")
 
-    mode = "r"
+    mode = 'r:utf-8' # default source encoding has been chagened to utf-8
     s.sub!(/\A#!.*\n/, '')     # assume shebang line isn't longer than 1024.
     encoding = s[/^\s*\#\s*(?:-\*-\s*)?(?:en)?coding:\s*([^\s;]+?)(?:-\*-|[\s;])/, 1]
     mode = "rb:#{encoding}" if encoding
@@ -180,7 +180,9 @@ class RDoc::Parser
     return nil if /coding:/i =~ type
 
     type.downcase
-  rescue ArgumentError # invalid byte sequence, etc.
+  rescue ArgumentError
+  rescue Encoding::InvalidByteSequenceError # invalid byte sequence
+
   end
 
   ##

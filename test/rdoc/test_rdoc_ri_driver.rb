@@ -282,7 +282,7 @@ class TestRDocRIDriver < RDoc::TestCase
     assert_equal expected, out
   end
 
-  def test_add_method_overriden
+  def test_add_method_overridden
     util_multi_store
 
     out = doc
@@ -646,7 +646,7 @@ class TestRDocRIDriver < RDoc::TestCase
     assert_match %r%^=== Implementation from Foo%, out
   end
 
-  def test_display_method_overriden
+  def test_display_method_overridden
     util_multi_store
 
     out, = capture_io do
@@ -1455,10 +1455,10 @@ Foo::Bar#bother
     @inherit = @cFoo.add_method RDoc::AnyMethod.new(nil, 'inherit')
     @inherit.record_location @top_level
 
-    # overriden by Bar in multi_store
-    @overriden = @cFoo.add_method RDoc::AnyMethod.new(nil, 'override')
-    @overriden.comment = 'must not be displayed in Bar#override'
-    @overriden.record_location @top_level
+    # overridden by Bar in multi_store
+    @overridden = @cFoo.add_method RDoc::AnyMethod.new(nil, 'override')
+    @overridden.comment = 'must not be displayed in Bar#override'
+    @overridden.record_location @top_level
 
     @store1.save
 

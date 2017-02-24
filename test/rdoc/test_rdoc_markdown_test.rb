@@ -601,7 +601,7 @@ foo
 
         para("Unordered (bulleted) lists use asterisks, pluses, and hyphens (<code>*</code>,\n" +
              "<code>+</code>, and <code>-</code>) as list markers. These three markers are\n" +
-             "interchangable; this:"),
+             "interchangeable; this:"),
 
         verb("*   Candy.\n",
              "*   Gum.\n",
@@ -1090,7 +1090,7 @@ foo
 
         para("Markdown supports ordered (numbered) and unordered (bulleted) lists."),
 
-        para("Unordered lists use asterisks, pluses, and hyphens -- interchangably\n" +
+        para("Unordered lists use asterisks, pluses, and hyphens -- interchangeably\n" +
              "-- as list markers:"),
 
         verb("*   Red\n",

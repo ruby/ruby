@@ -99,6 +99,11 @@ class RDoc::Context < RDoc::CodeObject
   attr_accessor :visibility
 
   ##
+  # Current visibility of this line
+
+  attr_writer :current_line_visibility
+
+  ##
   # Hash of registered methods. Attributes are also registered here,
   # twice if they are RW.
 
@@ -148,6 +153,7 @@ class RDoc::Context < RDoc::CodeObject
     @extends     = []
     @constants   = []
     @external_aliases = []
+    @current_line_visibility = nil
 
     # This Hash maps a method name to a list of unmatched aliases (aliases of
     # a method not yet encountered).
@@ -478,7 +484,11 @@ class RDoc::Context < RDoc::CodeObject
       end
     else
       @methods_hash[key] = method
-      method.visibility = @visibility
+      if @current_line_visibility
+        method.visibility, @current_line_visibility = @current_line_visibility, nil
+      else
+        method.visibility = @visibility
+      end
       add_to @method_list, method
       resolve_aliases method
     end

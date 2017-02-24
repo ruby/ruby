@@ -162,7 +162,7 @@ class TestRDocStore < XrefTestCase
 
   def test_all_classes_and_modules
     expected = %w[
-      C1 C2 C2::C3 C2::C3::H1 C3 C3::H1 C3::H2 C4 C4::C4 C5 C5::C1
+      C1 C2 C2::C3 C2::C3::H1 C3 C3::H1 C3::H2 C4 C4::C4 C5 C5::C1 C6
       Child
       M1 M1::M2
       Parent
@@ -213,7 +213,7 @@ class TestRDocStore < XrefTestCase
 
   def test_classes
     expected = %w[
-      C1 C2 C2::C3 C2::C3::H1 C3 C3::H1 C3::H2 C4 C4::C4 C5 C5::C1
+      C1 C2 C2::C3 C2::C3::H1 C3 C3::H1 C3::H2 C4 C4::C4 C5 C5::C1 C6
       Child
       Parent
     ]
