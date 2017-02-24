@@ -1,10 +1,8 @@
 # -*- encoding: utf-8 -*-
-$:.unshift File.expand_path("../lib", __FILE__)
-require 'psych'
 
 Gem::Specification.new do |s|
   s.name = "psych"
-  s.version = Psych::VERSION
+  s.version = "2.2.3"
   s.authors = ["Aaron Patterson", "SHIBATA Hiroshi", "Charles Oliver Nutter"]
   s.email = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org", "headius@headius.com"]
   s.date = "2016-11-14"
@@ -34,7 +32,7 @@ DESCRIPTION
   if RUBY_ENGINE == 'jruby'
     s.platform = 'java'
     s.files.concat ["ext/java/PsychEmitter.java", "ext/java/PsychLibrary.java", "ext/java/PsychParser.java", "ext/java/PsychToRuby.java", "ext/java/PsychYamlTree.java", "lib/psych_jars.rb", "lib/psych.jar"]
-    s.requirements = "jar org.yaml:snakeyaml, 1.17"
+    s.requirements = "jar org.yaml:snakeyaml, 1.18"
     s.add_dependency 'jar-dependencies', '>= 0.1.7'
     s.add_development_dependency 'ruby-maven'
   else
