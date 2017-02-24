@@ -1,5 +1,5 @@
 Gem::Specification.new do |s|
-  s.name = "Fcntl"
+  s.name = "fcntl"
   s.version = '0.0.1'
   s.date = '2017-02-10'
   s.summary = "Loads constants defined in the OS fcntl.h C header file"
