@@ -5128,6 +5128,64 @@ int_truncate(int argc, VALUE* argv, VALUE num)
     return rb_int_truncate(num, ndigits);
 }
 
+#define DEFINE_INT_SQRT(rettype, prefix, argtype) \
+rettype \
+prefix##_isqrt(argtype n) \
+{ \
+    if (sizeof(n) * CHAR_BIT > DBL_MANT_DIG && \
+	n >= ((argtype)1UL << DBL_MANT_DIG)) { \
+	unsigned int b = bit_length(n); \
+	argtype t; \
+	rettype x = (rettype)(n >> (b/2+1)); \
+	x |= ((rettype)1LU << (b-1)/2); \
+	while ((t = n/x) < (argtype)x) x = (rettype)((x + t) >> 1); \
+	return x; \
+    } \
+    return (rettype)sqrt((double)n); \
+}
+
+DEFINE_INT_SQRT(unsigned long, rb_ulong, unsigned long)
+#if SIZEOF_BDIGIT*2 > SIZEOF_LONG
+DEFINE_INT_SQRT(BDIGIT, rb_bdigit_dbl, BDIGIT_DBL)
+#endif
+
+#define domain_error(msg) \
+    rb_raise(rb_eMathDomainError, "Numerical argument is out of domain - " #msg)
+
+VALUE rb_big_isqrt(VALUE);
+
+static VALUE
+rb_int_s_isqrt(VALUE self, VALUE num)
+{
+    unsigned long n, sq;
+    if (FIXNUM_P(num)) {
+	if (FIXNUM_NEGATIVE_P(num)) {
+	    domain_error("isqrt");
+	}
+	n = FIX2ULONG(num);
+	sq = rb_ulong_isqrt(n);
+	return LONG2FIX(sq);
+    }
+    if (RB_TYPE_P(num, T_BIGNUM)) {
+	size_t biglen;
+	if (RBIGNUM_NEGATIVE_P(num)) {
+	    domain_error("isqrt");
+	}
+	biglen = BIGNUM_LEN(num);
+	if (biglen == 0) return INT2FIX(0);
+#if SIZEOF_BDIGIT <= SIZEOF_LONG
+	/* short-circuit */
+	if (biglen == 1) {
+	    n = BIGNUM_DIGITS(num)[0];
+	    sq = rb_ulong_isqrt(n);
+	    return ULONG2NUM(sq);
+	}
+#endif
+	return rb_big_isqrt(num);
+    }
+    return Qnil;
+}
+
 /*
  *  Document-class: ZeroDivisionError
  *
@@ -5281,6 +5339,7 @@ Init_Numeric(void)
     rb_cInteger = rb_define_class("Integer", rb_cNumeric);
     rb_undef_alloc_func(rb_cInteger);
     rb_undef_method(CLASS_OF(rb_cInteger), "new");
+    rb_define_singleton_method(rb_cInteger, "sqrt", rb_int_s_isqrt, 1);
 
     rb_define_method(rb_cInteger, "to_s", int_to_s, -1);
     rb_define_alias(rb_cInteger, "inspect", "to_s");

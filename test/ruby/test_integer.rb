@@ -464,4 +464,28 @@ class TestInteger < Test::Unit::TestCase
     end
     assert_equal([0, 1], 10.digits(o))
   end
+
+  def test_square_root
+    assert_raise(Math::DomainError) {Integer.sqrt(-1)}
+    assert_equal(0, Integer.sqrt(0))
+    (1...4).each {|i| assert_equal(1, Integer.sqrt(i))}
+    (4...9).each {|i| assert_equal(2, Integer.sqrt(i))}
+    (9...16).each {|i| assert_equal(3, Integer.sqrt(i))}
+    (1..40).each do |i|
+      mesg = "10**#{i}"
+      s = Integer.sqrt(n = 10**i)
+      if i.even?
+        assert_equal(10**(i/2), Integer.sqrt(n), mesg)
+      else
+        assert_include((s**2)...(s+1)**2, n, mesg)
+      end
+    end
+    50.step(400, 10) do |i|
+      exact = 10**(i/2)
+      x = 10**i
+      assert_equal(exact, Integer.sqrt(x), "10**#{i}")
+      assert_equal(exact, Integer.sqrt(x+1), "10**#{i}+1")
+      assert_equal(exact-1, Integer.sqrt(x-1), "10**#{i}-1")
+    end
+  end
 end

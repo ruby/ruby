@@ -419,14 +419,13 @@ static void
 bary_small_rshift(BDIGIT *zds, const BDIGIT *xds, size_t n, int shift, BDIGIT higher_bdigit)
 {
     BDIGIT_DBL num = 0;
-    BDIGIT x;
 
     assert(0 <= shift && shift < BITSPERDIG);
 
     num = BIGUP(higher_bdigit);
     while (n--) {
-	num = (num | xds[n]) >> shift;
-        x = xds[n];
+	BDIGIT x = xds[n];
+	num = (num | x) >> shift;
 	zds[n] = BIGLO(num);
 	num = BIGUP(x);
     }
@@ -6760,6 +6759,68 @@ rb_big_even_p(VALUE num)
 	return Qfalse;
     }
     return Qtrue;
+}
+
+unsigned long rb_ulong_isqrt(unsigned long);
+#if SIZEOF_BDIGIT*2 > SIZEOF_LONG
+BDIGIT rb_bdigit_dbl_isqrt(BDIGIT_DBL);
+#else
+# define rb_bdigit_dbl_isqrt(x) (BDIGIT)rb_ulong_isqrt(x)
+#endif
+
+VALUE
+rb_big_isqrt(VALUE n)
+{
+    BDIGIT *nds = BDIGITS(n);
+    size_t len = BIGNUM_LEN(n);
+
+    if (len <= 2) {
+	BDIGIT sq = rb_bdigit_dbl_isqrt(bary2bdigitdbl(nds, len));
+#if SIZEOF_BDIGIT > SIZEOF_LONG
+	return ULL2NUM(sq);
+#else
+	return ULONG2NUM(sq);
+#endif
+    }
+    else {
+	int zbits = nlz(nds[len-1]);
+	int shift_bits = (len&1 ? BITSPERDIG/2 : BITSPERDIG) - (zbits+1)/2 + 1;
+	size_t tn = (len+1) / 2, xn = tn;
+	VALUE t, x = bignew_1(0, xn, 1); /* division may release the GVL */
+	BDIGIT *tds, *xds = BDIGITS(x);
+
+	/* x = (n >> (b/2+1)) */
+	if (shift_bits == BITSPERDIG) {
+	    MEMCPY(xds, nds+tn, BDIGIT, xn);
+	}
+	else if (shift_bits > BITSPERDIG) {
+	    bary_small_rshift(xds, nds+len-xn, xn, shift_bits-BITSPERDIG, 0);
+	}
+	else {
+	    bary_small_rshift(xds, nds+len-xn-1, xn, shift_bits, nds[len-1]);
+	}
+	/* x |= (1 << (b-1)/2) */
+	xds[xn-1] |= (BDIGIT)1u <<
+	    ((len&1 ? 0 : BITSPERDIG/2) + (BITSPERDIG-zbits-1)/2);
+
+	/* t = n/x */
+	tn += BIGDIVREM_EXTRA_WORDS;
+	t = bignew_1(0, tn, 1);
+	tds = BDIGITS(t);
+	tn = BIGNUM_LEN(t);
+	while (bary_divmod_branch(tds, tn, NULL, 0, nds, len, xds, xn),
+	       bary_cmp(tds, tn, xds, xn) < 0) {
+	    int carry;
+	    BARY_TRUNC(tds, tn);
+	    carry = bary_add(xds, xn, xds, xn, tds, tn);
+	    bary_small_rshift(xds, xds, xn, 1, carry);
+	    tn = BIGNUM_LEN(t);
+	}
+	rb_big_realloc(t, 0);
+	rb_gc_force_recycle(t);
+	RBASIC_SET_CLASS_RAW(x, rb_cInteger);
+	return x;
+    }
 }
 
 /*
