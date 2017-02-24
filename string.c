@@ -2530,7 +2530,7 @@ str_uminus(VALUE str)
 	return str;
     }
     else {
-	return rb_str_freeze(rb_str_dup(str));
+	return rb_fstring(str);
     }
 }
 
