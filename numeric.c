@@ -5158,6 +5158,7 @@ static VALUE
 rb_int_s_isqrt(VALUE self, VALUE num)
 {
     unsigned long n, sq;
+    num = rb_to_int(num);
     if (FIXNUM_P(num)) {
 	if (FIXNUM_NEGATIVE_P(num)) {
 	    domain_error("isqrt");
@@ -5166,7 +5167,7 @@ rb_int_s_isqrt(VALUE self, VALUE num)
 	sq = rb_ulong_isqrt(n);
 	return LONG2FIX(sq);
     }
-    if (RB_TYPE_P(num, T_BIGNUM)) {
+    else {
 	size_t biglen;
 	if (RBIGNUM_NEGATIVE_P(num)) {
 	    domain_error("isqrt");
@@ -5183,7 +5184,6 @@ rb_int_s_isqrt(VALUE self, VALUE num)
 #endif
 	return rb_big_isqrt(num);
     }
-    return Qnil;
 }
 
 /*

@@ -466,6 +466,7 @@ class TestInteger < Test::Unit::TestCase
   end
 
   def test_square_root
+    assert_raise(TypeError) {Integer.sqrt("x")}
     assert_raise(Math::DomainError) {Integer.sqrt(-1)}
     assert_equal(0, Integer.sqrt(0))
     (1...4).each {|i| assert_equal(1, Integer.sqrt(i))}
