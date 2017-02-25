@@ -28,6 +28,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Thread#fetch  [Feature #13009]
 
+* String
+
+  * String#-@ deduplicates unfrozen strings.  Already-frozen
+    strings remain unchanged for compatibility.  [Feature #13077]
+
 === Stdlib updates (outstanding ones only)
 
 === Compatibility issues (excluding feature bug fixes)
