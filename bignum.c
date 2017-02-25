@@ -12,6 +12,7 @@
 #include "internal.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
+#include "id.h"
 
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
@@ -5364,7 +5365,7 @@ rb_big_cmp(VALUE x, VALUE y)
         return rb_integer_float_cmp(x, y);
     }
     else {
-	return rb_num_coerce_cmp(x, y, rb_intern("<=>"));
+	return rb_num_coerce_cmp(x, y, idCmp);
     }
     return INT2FIX(BIGNUM_SIGN(x) ? 1 : -1);
 }
@@ -5392,9 +5393,9 @@ big_op(VALUE x, VALUE y, enum big_op_t op)
 	ID id = 0;
 	switch (op) {
 	  case big_op_gt: id = '>'; break;
-	  case big_op_ge: id = rb_intern(">="); break;
+	  case big_op_ge: id = idGE; break;
 	  case big_op_lt: id = '<'; break;
-	  case big_op_le: id = rb_intern("<="); break;
+	  case big_op_le: id = idLE; break;
 	}
 	return rb_num_coerce_relop(x, y, id);
     }
@@ -6174,7 +6175,7 @@ rb_big_pow(VALUE x, VALUE y)
     if (RB_FLOAT_TYPE_P(y)) {
 	d = RFLOAT_VALUE(y);
 	if ((BIGNUM_NEGATIVE_P(x) && !BIGZEROP(x)) && d != round(d))
-	    return rb_funcall(rb_complex_raw1(x), rb_intern("**"), 1, y);
+	    return rb_funcall(rb_complex_raw1(x), idPow, 1, y);
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
 	y = bignorm(y);
@@ -6187,7 +6188,7 @@ rb_big_pow(VALUE x, VALUE y)
 	yy = FIX2LONG(y);
 
 	if (yy < 0)
-	    return rb_funcall(rb_rational_raw1(x), rb_intern("**"), 1, y);
+	    return rb_funcall(rb_rational_raw1(x), idPow, 1, y);
 	else {
 	    VALUE z = 0;
 	    SIGNED_VALUE mask;
@@ -6212,7 +6213,7 @@ rb_big_pow(VALUE x, VALUE y)
 	}
     }
     else {
-	return rb_num_coerce_bin(x, y, rb_intern("**"));
+	return rb_num_coerce_bin(x, y, idPow);
     }
     return DBL2NUM(pow(rb_big2dbl(x), d));
 }
