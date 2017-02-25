@@ -50,6 +50,7 @@ static volatile DWORD g_ole_initialized_key = TLS_OUT_OF_INDEXES;
 static BOOL g_uninitialize_hooked = FALSE;
 static BOOL g_cp_installed = FALSE;
 static BOOL g_lcid_installed = FALSE;
+static BOOL g_running_nano = FALSE;
 static HINSTANCE ghhctrl = NULL;
 static HINSTANCE gole32 = NULL;
 static FNCOCREATEINSTANCEEX *gCoCreateInstanceEx = NULL;
@@ -169,6 +170,7 @@ static VALUE fole_activex_initialize(VALUE self);
 static void com_hash_free(void *ptr);
 static void com_hash_mark(void *ptr);
 static size_t com_hash_size(const void *ptr);
+static void check_nano_server(void);
 
 static const rb_data_type_t ole_datatype = {
     "win32ole",
@@ -817,16 +819,23 @@ ole_initialize(void)
     }
 
     if(g_ole_initialized == FALSE) {
+        if(g_running_nano) {
+            hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+        } else {
+            hr = OleInitialize(NULL);
+        }
         hr = OleInitialize(NULL);
         if(FAILED(hr)) {
             ole_raise(hr, rb_eRuntimeError, "fail: OLE initialize");
         }
         g_ole_initialized_set(TRUE);
 
-        hr = CoRegisterMessageFilter(&imessage_filter, &previous_filter);
-        if(FAILED(hr)) {
-            previous_filter = NULL;
-            ole_raise(hr, rb_eRuntimeError, "fail: install OLE MessageFilter");
+        if (g_running_nano == FALSE) {
+            hr = CoRegisterMessageFilter(&imessage_filter, &previous_filter);
+            if(FAILED(hr)) {
+                previous_filter = NULL;
+                ole_raise(hr, rb_eRuntimeError, "fail: install OLE MessageFilter");
+            }
         }
     }
 }
@@ -3891,11 +3900,31 @@ com_hash_size(const void *ptr)
     return st_memsize(tbl);
 }
 
+static void
+check_nano_server(void)
+{
+    HKEY hsubkey;
+    LONG err;
+    const char * subkey = "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Server\\ServerLevels";
+    const char * regval = "NanoServer";
+
+    err = RegOpenKeyEx(HKEY_LOCAL_MACHINE, subkey, 0, KEY_READ, &hsubkey);
+    if (err == ERROR_SUCCESS) {
+        err = RegQueryValueEx(hsubkey, regval, NULL, NULL, NULL, NULL);
+        if (err == ERROR_SUCCESS) {
+            g_running_nano = TRUE;
+        }
+        RegCloseKey(hsubkey);
+    }
+}
+
+
 void
 Init_win32ole(void)
 {
     cWIN32OLE_lcid = LOCALE_SYSTEM_DEFAULT;
     g_ole_initialized_init();
+    check_nano_server();
 
     com_vtbl.QueryInterface = QueryInterface;
     com_vtbl.AddRef = AddRef;
