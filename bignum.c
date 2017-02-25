@@ -6771,26 +6771,37 @@ BDIGIT rb_bdigit_dbl_isqrt(BDIGIT_DBL);
 static BDIGIT *
 estimate_initial_sqrt(VALUE *xp, const size_t xn, const BDIGIT *nds, size_t len)
 {
+    enum {dbl_per_bdig = roomof(DBL_MANT_DIG,BITSPERDIG)};
     const int zbits = nlz(nds[len-1]);
-    const int shift_bits = (len&1 ? BITSPERDIG/2 : BITSPERDIG) - (zbits+1)/2 + 1;
-    VALUE x = bignew_1(0, xn, 1); /* division may release the GVL */
+    VALUE x = *xp = bignew_1(0, xn, 1); /* division may release the GVL */
     BDIGIT *xds = BDIGITS(x);
+    BDIGIT_DBL d = bary2bdigitdbl(nds+len-dbl_per_bdig, dbl_per_bdig);
+    BDIGIT lowbits = 1;
+    int rshift = (int)((BITSPERDIG*2-zbits+(len&BITSPERDIG&1) - DBL_MANT_DIG + 1) & ~1);
+    double f;
 
-    *xp = x;
-    /* x = (n >> (b/2+1)) */
-    if (shift_bits == BITSPERDIG) {
-	MEMCPY(xds, nds+len-xn, BDIGIT, xn);
+    if (rshift > 0) {
+	lowbits = (BDIGIT)d & ~(~(BDIGIT)1U << rshift);
+	d >>= rshift;
     }
-    else if (shift_bits > BITSPERDIG) {
-	bary_small_rshift(xds, nds+len-xn, xn, shift_bits-BITSPERDIG, 0);
+    else if (rshift < 0) {
+	d <<= -rshift;
+	d |= nds[len-dbl_per_bdig-1] >> (BITSPERDIG+rshift);
     }
-    else {
-	bary_small_rshift(xds, nds+len-xn-1, xn, shift_bits, nds[len-1]);
+    f = sqrt((double)d);
+    d = (BDIGIT_DBL)ceil(f);
+    if ((double)d == f) {
+	if (lowbits || (lowbits = !bary_zero_p(nds, len-dbl_per_bdig)))
+	    ++d;
     }
-    /* x |= (1 << (b-1)/2) */
-    xds[xn-1] |= (BDIGIT)1u <<
-	((len&1 ? 0 : BITSPERDIG/2) + (BITSPERDIG-zbits-1)/2);
+    rshift /= 2;
+    rshift += (2-(len&1))*BITSPERDIG/2;
+    if (rshift >= 0) {
+	d <<= rshift;
+    }
+    bdigitdbl2bary(&xds[xn-2], 2, d);
 
+    if (!lowbits) return NULL; /* special case, exact result */
     return xds;
 }
 
@@ -6799,6 +6810,9 @@ rb_big_isqrt(VALUE n)
 {
     BDIGIT *nds = BDIGITS(n);
     size_t len = BIGNUM_LEN(n);
+    size_t xn = (len+1) / 2;
+    VALUE x;
+    BDIGIT *xds;
 
     if (len <= 2) {
 	BDIGIT sq = rb_bdigit_dbl_isqrt(bary2bdigitdbl(nds, len));
@@ -6808,29 +6822,27 @@ rb_big_isqrt(VALUE n)
 	return ULONG2NUM(sq);
 #endif
     }
-    else {
-	size_t tn = (len+1) / 2, xn = tn;
-	VALUE t, x;
-	BDIGIT *tds, *xds = estimate_initial_sqrt(&x, xn, nds, len);
+    else if ((xds = estimate_initial_sqrt(&x, xn, nds, len)) != 0) {
+	size_t tn = xn + BIGDIVREM_EXTRA_WORDS;
+	VALUE t = bignew_1(0, tn, 1);
+	BDIGIT *tds = BDIGITS(t);
+	tn = BIGNUM_LEN(t);
 
 	/* t = n/x */
-	tn += BIGDIVREM_EXTRA_WORDS;
-	t = bignew_1(0, tn, 1);
-	tds = BDIGITS(t);
-	tn = BIGNUM_LEN(t);
 	while (bary_divmod_branch(tds, tn, NULL, 0, nds, len, xds, xn),
 	       bary_cmp(tds, tn, xds, xn) < 0) {
 	    int carry;
 	    BARY_TRUNC(tds, tn);
+	    /* x = (x+t)/2 */
 	    carry = bary_add(xds, xn, xds, xn, tds, tn);
 	    bary_small_rshift(xds, xds, xn, 1, carry);
 	    tn = BIGNUM_LEN(t);
 	}
 	rb_big_realloc(t, 0);
 	rb_gc_force_recycle(t);
-	RBASIC_SET_CLASS_RAW(x, rb_cInteger);
-	return x;
     }
+    RBASIC_SET_CLASS_RAW(x, rb_cInteger);
+    return x;
 }
 
 /*
