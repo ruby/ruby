@@ -432,7 +432,7 @@ bary_small_rshift(BDIGIT *zds, const BDIGIT *xds, size_t n, int shift, BDIGIT hi
 }
 
 static int
-bary_zero_p(BDIGIT *xds, size_t xn)
+bary_zero_p(const BDIGIT *xds, size_t xn)
 {
     if (xn == 0)
         return 1;
