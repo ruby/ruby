@@ -168,19 +168,7 @@ define rp
               ((struct RStruct *)($arg0))->as.heap.ptr) @ $len
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_BIGNUM
-    set $len = (($flags & RUBY_FL_USER2) ? \
-       ($flags & (RUBY_FL_USER5|RUBY_FL_USER4|RUBY_FL_USER3)) >> (RUBY_FL_USHIFT+3) : \
-       ((struct RBignum*)($arg0))->as.heap.len)
-    printf "%sT_BIGNUM%s: sign=%d len=%ld ", $color_type, $color_end, \
-      (($flags & RUBY_FL_USER1) != 0), $len
-    if $flags & RUBY_FL_USER2
-      printf "(embed) "
-    end
-    print (struct RBignum *)($arg0)
-    output/x *(($flags & RUBY_FL_USER2) ? \
-              ((struct RBignum*)($arg0))->as.ary : \
-              ((struct RBignum*)($arg0))->as.heap.digits) @ $len
-    printf "\n"
+    rp_bignum $arg0
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_RATIONAL
     printf "%sT_RATIONAL%s: ", $color_type, $color_end
@@ -486,6 +474,51 @@ define rp_string
 end
 document rp_string
   Print the content of a String.
+end
+
+define rp_bignum
+  set $flags = ((struct RBignum*)($arg0))->basic.flags
+  set $len = (($flags & RUBY_FL_USER2) ? \
+       ($flags & (RUBY_FL_USER5|RUBY_FL_USER4|RUBY_FL_USER3)) >> (RUBY_FL_USHIFT+3) : \
+       ((struct RBignum*)($arg0))->as.heap.len)
+  printf "%sT_BIGNUM%s: sign=%d len=%ld ", $color_type, $color_end, \
+         (($flags & RUBY_FL_USER1) != 0), $len
+  if $flags & RUBY_FL_USER2
+    printf "(embed) "
+  end
+  print (struct RBignum *)($arg0)
+  set $ptr = (($flags & RUBY_FL_USER2) ? \
+              ((struct RBignum*)($arg0))->as.ary : \
+              ((struct RBignum*)($arg0))->as.heap.digits)
+  set $len = $len-1
+  printf "0x%x", $ptr[$len]
+  while $len > 0
+    set $len = $len-1
+    set $val = $ptr[$len]
+    set $w = sizeof($ptr[0])
+    printf "_"
+    if $w > 8
+      printf "%.32x", $val
+    else
+    if $w > 4
+      printf "%.16x", $val
+    else
+    if $w > 2
+      printf "%.8x", $val
+    else
+    if $w > 1
+      printf "%.4x", $val
+    else
+      printf "%.2x", $val
+    end
+    end
+    end
+    end
+  end
+  printf "\n"
+end
+document rp_bignum
+  Print the content of a Bignum.
 end
 
 define rp_class
