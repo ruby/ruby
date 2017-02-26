@@ -427,9 +427,9 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("example: ary[1] += foo");
 	F_NODE(nd_recv, "receiver");
 	F_ID(nd_vid, "operator");
-	F_NODE(nd_args->nd_body, "index");
+	F_NODE(nd_args->nd_head, "index");
 	LAST_NODE;
-	F_NODE(nd_args->nd_head, "rvalue");
+	F_NODE(nd_args->nd_body, "rvalue");
 	break;
 
       case NODE_OP_ASGN2:
