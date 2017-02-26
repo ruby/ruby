@@ -6234,6 +6234,7 @@ parser_heredoc_identifier(struct parser_params *parser)
     int token = tSTRING_BEG;
     long len;
     int newline = 0;
+    int indent = 0;
 
     if (c == '-') {
 	c = nextc();
@@ -6242,8 +6243,7 @@ parser_heredoc_identifier(struct parser_params *parser)
     else if (c == '~') {
 	c = nextc();
 	func = STR_FUNC_INDENT;
-	heredoc_indent = INT_MAX;
-	heredoc_line_indent = 0;
+	indent = INT_MAX;
     }
     switch (c) {
       case '\'':
@@ -6282,7 +6282,7 @@ parser_heredoc_identifier(struct parser_params *parser)
 	if (!parser_is_identchar()) {
 	    pushback(c);
 	    if (func & STR_FUNC_INDENT) {
-		pushback(heredoc_indent > 0 ? '~' : '-');
+		pushback(indent > 0 ? '~' : '-');
 	    }
 	    return 0;
 	}
@@ -6305,6 +6305,8 @@ parser_heredoc_identifier(struct parser_params *parser)
 				  lex_lastline);		/* nd_orig */
     parser_set_line(lex_strterm, ruby_sourceline);
     ripper_flush(parser);
+    heredoc_indent = indent;
+    heredoc_line_indent = 0;
     return token;
 }
 
