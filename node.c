@@ -426,10 +426,16 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("format: [nd_value] [ [nd_args->nd_body] ] [nd_vid]= [nd_args->nd_head]");
 	ANN("example: ary[1] += foo");
 	F_NODE(nd_recv, "receiver");
-	F_ID(nd_vid, "operator");
-	F_NODE(nd_args->nd_body, "index");
+	F_CUSTOM1(nd_mid, "operator") {
+	   switch (node->nd_mid) {
+	     case 0: A("0 (||)"); break;
+	     case 1: A("1 (&&)"); break;
+	     default: A_ID(node->nd_mid);
+	   }
+	};
+	F_NODE(nd_args->nd_head, "index");
 	LAST_NODE;
-	F_NODE(nd_args->nd_head, "rvalue");
+	F_NODE(nd_args->nd_body, "rvalue");
 	break;
 
       case NODE_OP_ASGN2:
