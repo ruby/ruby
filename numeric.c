@@ -5154,6 +5154,32 @@ DEFINE_INT_SQRT(BDIGIT, rb_bdigit_dbl, BDIGIT_DBL)
 
 VALUE rb_big_isqrt(VALUE);
 
+/*
+ *  Document-method: Integer::sqrt
+ *  call-seq:
+ *     Integer.sqrt(n)  ->  integer
+ *
+ *  Returns the integer square root of the non-negative integer +n+,
+ *  i.e. the largest non-negative integer less than or equal to the
+ *  square root of +n+.
+ *
+ *    Integer.sqrt(0)        #=> 0
+ *    Integer.sqrt(1)        #=> 1
+ *    Integer.sqrt(24)       #=> 4
+ *    Integer.sqrt(25)       #=> 5
+ *    Integer.sqrt(10**400)  #=> 10**200
+ *
+ *  Equivalent to <code>Math.sqrt(n).floor</code>, except that
+ *  the result of the latter code may differ from the true value
+ *  due to the limited precision of floating point arithmetic.
+ *
+ *    Integer.sqrt(10**46)     #=> 100000000000000000000000
+ *    Math.sqrt(10**46).floor  #=>  99999999999999991611392 (!)
+ *
+ *  If +n+ is not an Integer, it is converted to an Integer first.
+ *  If +n+ is negative, a Math::DomainError is raised.
+ */
+
 static VALUE
 rb_int_s_isqrt(VALUE self, VALUE num)
 {
