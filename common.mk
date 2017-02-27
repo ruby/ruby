@@ -511,7 +511,7 @@ install-prereq: $(CLEAR_INSTALLED_LIST) yes-fake sudo-precheck PHONY
 clear-installed-list: PHONY
 	@> $(INSTALLED_LIST) set MAKE="$(MAKE)"
 
-clean: clean-ext clean-enc clean-golf clean-rdoc clean-capi clean-extout clean-local clean-platform
+clean: clean-ext clean-enc clean-golf clean-rdoc clean-capi clean-extout clean-local clean-platform clean-rubyspec
 clean-local:: clean-runnable
 	$(Q)$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	$(Q)$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) dmyenc.$(OBJEXT) $(ARCHFILE) .*.time
@@ -532,8 +532,9 @@ clean-platform: PHONY
 clean-extout: PHONY
 	-$(Q)$(RMDIR) $(EXTOUT)/$(arch) $(EXTOUT) 2> $(NULL) || exit 0
 clean-docs: clean-rdoc clean-html clean-capi
+clean-rubyspec: PHONY
 
-distclean: distclean-ext distclean-enc distclean-golf distclean-extout distclean-local distclean-platform
+distclean: distclean-ext distclean-enc distclean-golf distclean-extout distclean-local distclean-platform distclean-rubyspec
 distclean-local:: clean-local
 	$(Q)$(RM) $(MKFILES) yasmdata.rb *.inc $(PRELUDES)
 	$(Q)$(RM) config.cache config.status config.status.lineno
@@ -546,6 +547,7 @@ distclean-html: PHONY
 distclean-capi: PHONY
 distclean-extout: clean-extout
 distclean-platform: clean-platform
+distclean-rubyspec: clean-rubyspec
 
 realclean:: realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
 realclean-local:: distclean-local
@@ -588,6 +590,11 @@ clean-capi distclean-capi realclean-capi:
 clean-platform:
 	$(Q) $(RM) $(PLATFORM_D)
 	-$(Q) $(RMDIR) $(PLATFORM_DIR) 2> $(NULL) || exit 0
+
+RUBYSPEC_CAPIEXT = spec/rubyspec/optional/capi/ext
+clean-rubyspec: PHONY
+	$(Q) $(RM) $(RUBYSPEC_CAPIEXT)/*.$(OBJEXT) $(RUBYSPEC_CAPIEXT)/*.$(DLEXT)
+	-$(Q) $(RMDIRS) $(RUBYSPEC_CAPIEXT)
 
 check: main test test-testframework test-almost
 	$(ECHO) check succeeded
