@@ -974,9 +974,14 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	F_ID(nd_ainfo->rest_arg, "rest argument");
 	F_ID(nd_ainfo->block_arg, "block argument");
 	F_NODE(nd_ainfo->opt_args, "optional arguments");
-	LAST_NODE;
 	F_NODE(nd_ainfo->kw_args, "keyword arguments");
-	F_NODE(nd_ainfo->kw_rest_arg, "keyword rest argument");
+	LAST_NODE;
+	if (node->nd_ainfo->kw_args) {
+	    F_ID(nd_ainfo->kw_rest_arg->nd_cflag, "keyword rest argument");
+	} 
+	else {
+	    F_NODE(nd_ainfo->kw_rest_arg, "keyword rest argument");
+	}
 	break;
 
       case NODE_SCOPE:
