@@ -234,9 +234,11 @@ $(LIBRUBY_A):
 		$(ECHO) linking static-library $@
 		$(Q) $(AR) $(ARFLAGS) $@ $(LIBRUBY_A_OBJS) $(INITOBJS)
 		@-$(RANLIB) $@ 2> /dev/null || true
+
+verify-static-library: $(LIBRUBY_A)
 		$(ECHO) verifying static-library $@
 		@$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)conftest$(EXEEXT)
-		@$(RM) conftest$(EXEEXT) conftest.c
+		@$(RMALL) conftest$(EXEEXT) conftest.c conftest.dSYM
 
 $(LIBRUBY_SO):
 		@-$(PRE_LIBRUBY_UPDATE)

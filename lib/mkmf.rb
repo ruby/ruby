@@ -464,7 +464,6 @@ MSG
       xsystem(command, *opts)
     ensure
       log_src(src)
-      MakeMakefile.rm_rf "#{CONFTEST}.dSYM"
     end
   end
 
@@ -556,7 +555,8 @@ MSG
   def try_link(src, opt="", *opts, &b)
     try_link0(src, opt, *opts, &b)
   ensure
-    MakeMakefile.rm_f "#{CONFTEST}*", "c0x32*"
+    MakeMakefile.rm_f "#{CONFTEST}*"
+    MakeMakefile.rm_rf "#{CONFTEST}.dSYM"
   end
 
   # Returns whether or not the +src+ can be compiled as a C source.  +opt+ is
