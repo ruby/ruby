@@ -2300,7 +2300,7 @@ TIMESTAMP_DIR = #{$extout && $extmk ? '$(extout)/.timestamp' : '.'}
     conf << "\
 TARGET_SO_DIR =#{$extout ? " $(RUBYARCHDIR)/" : ''}
 TARGET_SO     = $(TARGET_SO_DIR)$(DLLIB)
-CLEANLIBS     = $(TARGET_SO) #{config_string('cleanlibs') {|t| t.gsub(/\$\*/) {n}}}
+CLEANLIBS     = #{'$(TARGET_SO) ' if target}#{config_string('cleanlibs') {|t| t.gsub(/\$\*/) {n}}}
 CLEANOBJS     = *.#{$OBJEXT} #{config_string('cleanobjs') {|t| t.gsub(/\$\*/, "$(TARGET)#{deffile ? '-$(arch)': ''}")} if target} *.bak
 " #"
 
