@@ -5969,9 +5969,20 @@ d_lite_next(VALUE self)
  * The argument +n+ should be a numeric value.
  *
  *    Date.new(2001,2,3)  >>  1   #=> #<Date: 2001-03-03 ...>
- *    Date.new(2001,1,30) >>  1   #=> #<Date: 2001-02-28 ...>
- *    Date.new(2001,1,31) >>  1   #=> #<Date: 2001-02-28 ...>
  *    Date.new(2001,2,3)  >> -2   #=> #<Date: 2000-12-03 ...>
+ *
+ * When the same day does not exist for the corresponding month,
+ * the last day of the month is used instead:
+ *
+ *    Date.new(2001,1,28) >> 1   #=> #<Date: 2001-02-28 ...>
+ *    Date.new(2001,1,31) >> 1   #=> #<Date: 2001-02-28 ...>
+ *
+ * This also results in the following, possibly unexpected, behavior:
+ *
+ *    Date.new(2001,1,31) >> 2         #=> #<Date: 2001-03-31 ...>
+ *    Date.new(2001,1,31) >> 1 >> 1    #=> #<Date: 2001-03-28 ...>
+ *
+ *    Date.new(2001,1,31) >> 1 >> -1   #=> #<Date: 2001-01-28 ...>
  */
 static VALUE
 d_lite_rshift(VALUE self, VALUE other)
@@ -6020,9 +6031,20 @@ d_lite_rshift(VALUE self, VALUE other)
  * The argument +n+ should be a numeric value.
  *
  *    Date.new(2001,2,3)  <<  1   #=> #<Date: 2001-01-03 ...>
- *    Date.new(2001,1,30) << 11   #=> #<Date: 2000-02-29 ...>
- *    Date.new(2001,1,31) << 11   #=> #<Date: 2000-02-29 ...>
- *    Date.new(2001,2,3)  << -1   #=> #<Date: 2001-03-03 ...>
+ *    Date.new(2001,2,3)  << -2   #=> #<Date: 2001-04-03 ...>
+ *
+ * When the same day does not exist for the corresponding month,
+ * the last day of the month is used instead:
+ *
+ *    Date.new(2001,3,28) << 1   #=> #<Date: 2001-02-28 ...>
+ *    Date.new(2001,3,31) << 1   #=> #<Date: 2001-02-28 ...>
+ *
+ * This also results in the following, possibly unexpected, behavior:
+ *
+ *    Date.new(2001,3,31) << 2         #=> #<Date: 2001-01-31 ...>
+ *    Date.new(2001,3,31) << 1 << 1    #=> #<Date: 2001-01-28 ...>
+ *
+ *    Date.new(2001,3,31) << 1 << -1   #=> #<Date: 2001-03-28 ...>
  */
 static VALUE
 d_lite_lshift(VALUE self, VALUE other)
@@ -6036,6 +6058,8 @@ d_lite_lshift(VALUE self, VALUE other)
  *    d.next_month([n=1])  ->  date
  *
  * This method is equivalent to d >> n.
+ *
+ * See Date#>> for examples.
  */
 static VALUE
 d_lite_next_month(int argc, VALUE *argv, VALUE self)
@@ -6053,6 +6077,8 @@ d_lite_next_month(int argc, VALUE *argv, VALUE self)
  *    d.prev_month([n=1])  ->  date
  *
  * This method is equivalent to d << n.
+ *
+ * See Date#<< for examples.
  */
 static VALUE
 d_lite_prev_month(int argc, VALUE *argv, VALUE self)
@@ -6070,6 +6096,12 @@ d_lite_prev_month(int argc, VALUE *argv, VALUE self)
  *    d.next_year([n=1])  ->  date
  *
  * This method is equivalent to d >> (n * 12).
+ *
+ *    Date.new(2001,2,3).next_year      #=> #<Date: 2002-02-03 ...>
+ *    Date.new(2008,2,29).next_year     #=> #<Date: 2009-02-28 ...>
+ *    Date.new(2008,2,29).next_year(4)  #=> #<Date: 2012-02-29 ...>
+ *
+ * See also Date#>>.
  */
 static VALUE
 d_lite_next_year(int argc, VALUE *argv, VALUE self)
@@ -6087,6 +6119,12 @@ d_lite_next_year(int argc, VALUE *argv, VALUE self)
  *    d.prev_year([n=1])  ->  date
  *
  * This method is equivalent to d << (n * 12).
+ *
+ *    Date.new(2001,2,3).prev_year      #=> #<Date: 2000-02-03 ...>
+ *    Date.new(2008,2,29).prev_year     #=> #<Date: 2007-02-28 ...>
+ *    Date.new(2008,2,29).prev_year(4)  #=> #<Date: 2004-02-29 ...>
+ *
+ * See also Date#<<.
  */
 static VALUE
 d_lite_prev_year(int argc, VALUE *argv, VALUE self)
