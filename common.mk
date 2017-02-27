@@ -511,7 +511,7 @@ install-prereq: $(CLEAR_INSTALLED_LIST) yes-fake sudo-precheck PHONY
 clear-installed-list: PHONY
 	@> $(INSTALLED_LIST) set MAKE="$(MAKE)"
 
-clean: clean-ext clean-enc clean-golf clean-rdoc clean-capi clean-extout clean-local clean-platform clean-rubyspec
+clean: clean-ext clean-enc clean-golf clean-docs clean-extout clean-local clean-platform clean-rubyspec
 clean-local:: clean-runnable
 	$(Q)$(RM) $(OBJS) $(MINIOBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY) $(LIBRUBY_ALIASES)
 	$(Q)$(RM) $(PROGRAM) $(WPROGRAM) miniruby$(EXEEXT) dmyext.$(OBJEXT) dmyenc.$(OBJEXT) $(ARCHFILE) .*.time
@@ -534,7 +534,7 @@ clean-extout: PHONY
 clean-docs: clean-rdoc clean-html clean-capi
 clean-rubyspec: PHONY
 
-distclean: distclean-ext distclean-enc distclean-golf distclean-extout distclean-local distclean-platform distclean-rubyspec
+distclean: distclean-ext distclean-enc distclean-golf distclean-docs distclean-extout distclean-local distclean-platform distclean-rubyspec
 distclean-local:: clean-local
 	$(Q)$(RM) $(MKFILES) yasmdata.rb *.inc $(PRELUDES)
 	$(Q)$(RM) config.cache config.status config.status.lineno
@@ -542,9 +542,10 @@ distclean-local:: clean-local
 	-$(Q)$(RMALL) $(srcdir)/autom4te.cache
 distclean-ext:: PHONY
 distclean-golf: clean-golf
-distclean-rdoc: PHONY
-distclean-html: PHONY
-distclean-capi: PHONY
+distclean-rdoc: clean-rdoc
+distclean-html: clean-html
+distclean-capi: clean-capi
+distclean-docs: clean-docs
 distclean-extout: clean-extout
 distclean-platform: clean-platform
 distclean-rubyspec: clean-rubyspec
@@ -559,8 +560,13 @@ realclean-local:: distclean-local
 realclean-ext:: PHONY
 realclean-golf: distclean-golf
 	$(Q)$(RM) $(GOLFPRELUDES)
-realclean-capi: PHONY
+realclean-rdoc: distclean-rdoc
+realclean-html: distclean-html
+realclean-capi: distclean-capi
+realclean-docs: distclean-docs
 realclean-extout: distclean-extout
+realclean-platform: distclean-platform
+realclean-rubyspec: distclean-rubyspec
 
 clean-ext distclean-ext realclean-ext::
 	$(Q)$(RM) $(EXTS_MK)
