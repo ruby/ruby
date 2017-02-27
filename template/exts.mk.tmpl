@@ -91,6 +91,9 @@ end
 % unless macros["MFLAGS"].empty?
 MFLAGS =<%= macros["MFLAGS"].fold(column) %>
 % end
+% RbConfig::MAKEFILE_CONFIG.keys.grep(/RM/) do |k|
+<%=k%> = <%=RbConfig::MAKEFILE_CONFIG[k]%>
+% end
 
 extensions =<%= macros["extensions"].fold(column) %>
 EXTOBJS =<%= macros["EXTOBJS"].fold(column) %>
@@ -125,7 +128,13 @@ ext/extinit.<%=objext%>:
 
 % targets.product(macros["extensions"].map {|e|e.chomp("/.")}) do |t, e|
 <%=e%>/<%=t%>:
+%   if /^(dist|real)clean$/ =~ t
+	$(ECHO) $(@F)ing $(@D)
+%   end
 	$(Q)<%= submake %><%=mflags%> V=$(V) $(@F)
+%   if /^(dist|real)clean$/ =~ t
+	$(Q)$(RMDIRS) $(@D)
+%   end
 % end
 
 extso:

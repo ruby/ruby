@@ -417,6 +417,7 @@ distclean-local::
 	-$(Q)$(RMDIRS) $(arch_hdrdir)/ruby 2> /dev/null || true
 
 clean-ext distclean-ext realclean-ext::
+	@[ -f $(EXTS_MK) ] && $(MAKE) -f $(EXTS_MK) $(@:-ext=)
 	@cd ext 2>/dev/null || exit 0; set dummy `echo "${EXTS}" | tr , ' '`; shift; \
 	test "$$#" = 0 && set .; \
 	set dummy `\
