@@ -2862,19 +2862,19 @@ rb_hash_any_p(VALUE hash)
  * call-seq:
  *   hsh.dig(key, ...)                 -> object
  *
- * Extracts the nested value specified by the sequence of <i>idx</i>
+ * Extracts the nested value specified by the sequence of <i>key</i>
  * objects by calling +dig+ at each step, returning +nil+ if any
  * intermediate step is +nil+.
  *
  *   h = { foo: {bar: {baz: 1}}}
  *
- *   h.dig(:foo, :bar, :baz)           #=> 1
- *   h.dig(:foo, :zot, :xyz)           #=> nil
+ *   h.dig(:foo, :bar, :baz)     #=> 1
+ *   h.dig(:foo, :zot, :xyz)     #=> nil
  *
  *   g = { foo: [10, 11, 12] }
- *   g.dig(:foo, 1)                    #=> 11
- *   g.dig(:foo, 1, 0)                 #=> TypeError: Integer does not have #dig method
- *   g.dig(:foo, :bar)                 #=> TypeError: no implicit conversion of Symbol into Integer
+ *   g.dig(:foo, 1)              #=> 11
+ *   g.dig(:foo, 1, 0)           #=> TypeError: Integer does not have #dig method
+ *   g.dig(:foo, :bar)           #=> TypeError: no implicit conversion of Symbol into Integer
  */
 
 VALUE
