@@ -41,6 +41,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Compatibility issues (excluding feature bug fixes)
 
+* Random.raw_seed renamed to become Random.urandom.  It is now
+  applicable to non-seeding purposes due to [Bug #9569].
+
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 === C API updates
