@@ -563,7 +563,7 @@ realclean-extout: distclean-extout
 clean-ext distclean-ext realclean-ext::
 	$(Q)$(RM) $(EXTS_MK)
 	$(Q)$(RM) $(TIMESTAMPDIR)/.*.time $(TIMESTAMPDIR)/.$(arch).time $(TIMESTAMPDIR)/$(arch)/.time
-	$(Q)$(RMDIR) $(TIMESTAMPDIR)/$(arch) $(TIMESTAMPDIR) 2> $(NULL) || exit 0
+	$(Q)$(RMDIRS) $(TIMESTAMPDIR)/$(arch) 2> $(NULL) || exit 0
 
 clean-enc distclean-enc realclean-enc: PHONY
 
