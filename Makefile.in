@@ -420,12 +420,15 @@ clean-ext distclean-ext realclean-ext::
 	@cd ext 2>/dev/null || exit 0; set dummy `echo "${EXTS}" | tr , ' '`; shift; \
 	test "$$#" = 0 && set .; \
 	set dummy `\
-	    find "$$@" -name Makefile -print | sed 's:^\./::;s:/Makefile$$::' | sort; \
+	    find "$$@" \( -name Makefile -o -name exts.mk \) -print | \
+	    sed -n 's:/[^/]*$$::;s:^\./::p' | sort -u; \
 	`; shift; \
 	cd ..; \
 	for dir do \
 	    echo $(@:-ext=)ing "$$dir"; \
-	    (cd "ext/$$dir" && exec $(MAKE) $(mflags) $(@:-ext=)) && \
+	    $(RM) "ext/$$dir/exts.mk"; \
+	    { [ ! -f "ext/$$dir/Makefile" ] || \
+		(cd "ext/$$dir" && exec $(MAKE) $(mflags) $(@:-ext=)); } && \
 	    case "$@" in \
 	    *distclean-ext*|*realclean-ext*) \
 		$(RMDIRS) "ext/$$dir" 2> /dev/null || true;; \
@@ -434,7 +437,7 @@ clean-ext distclean-ext realclean-ext::
 	-$(Q)$(RM) ext/extinit.$(OBJEXT)
 
 distclean-ext realclean-ext::
-	-$(Q)$(RM) ext/extinit.c ext/configure-ext.mk ext/*/exts.mk
+	-$(Q)$(RM) ext/extinit.c ext/configure-ext.mk
 	-$(Q)$(RMDIR) ext 2> /dev/null || true
 
 clean-extout:
