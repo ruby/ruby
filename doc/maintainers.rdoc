@@ -175,8 +175,6 @@ Zachary Scott (zzak)
   Yusuke Endoh (mame)
 [ext/digest, ext/digest/*]
   Akinori MUSHA (knu)
-[ext/etc]
-  _unmaintained_
 [ext/fiber]
   Koichi Sasada (ko1)
 [ext/fiddle]
@@ -243,6 +241,8 @@ Zachary Scott (zzak)
 [ext/date]
   _unmaintained_
 [ext/dbm]
+  _unmaintained_
+[ext/etc]
   _unmaintained_
 [ext/fcntl]
   _unmaintained_
