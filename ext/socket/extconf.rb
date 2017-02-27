@@ -653,7 +653,7 @@ EOS
 #include <netinet/in.h>
 int t(struct in6_addr *addr) {return IN6_IS_ADDR_UNSPECIFIED(addr);}
 SRC
-    print "fixing apple's netinet6/in6.rb ..."; $stdout.flush
+    print "fixing apple's netinet6/in6.h ..."; $stdout.flush
     in6 = File.read("/usr/include/#{hdr}")
     if in6.gsub!(/\*\(const\s+__uint32_t\s+\*\)\(const\s+void\s+\*\)\(&(\(\w+\))->s6_addr\[(\d+)\]\)/) do
         i, r = $2.to_i.divmod(4)
