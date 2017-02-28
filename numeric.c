@@ -5132,8 +5132,7 @@ int_truncate(int argc, VALUE* argv, VALUE num)
 rettype \
 prefix##_isqrt(argtype n) \
 { \
-    if (sizeof(n) * CHAR_BIT > DBL_MANT_DIG && \
-	n >= ((argtype)1UL << DBL_MANT_DIG)) { \
+    if (!argtype##_IN_DOUBLE_P(n)) { \
 	unsigned int b = bit_length(n); \
 	argtype t; \
 	rettype x = (rettype)(n >> (b/2+1)); \
@@ -5144,8 +5143,20 @@ prefix##_isqrt(argtype n) \
     return (rettype)sqrt((double)n); \
 }
 
-DEFINE_INT_SQRT(unsigned long, rb_ulong, unsigned long)
-#if SIZEOF_BDIGIT*2 > SIZEOF_LONG
+#if SIZEOF_LONG*CHAR_BIT > DBL_MANT_DIG
+# define RB_ULONG_IN_DOUBLE_P(n) ((n) < (1UL << DBL_MANT_DIG))
+#else
+# define RB_ULONG_IN_DOUBLE_P(n) 1
+#endif
+#define RB_ULONG unsigned long
+DEFINE_INT_SQRT(unsigned long, rb_ulong, RB_ULONG)
+
+#if 2*SIZEOF_BDIGIT > SIZEOF_LONG
+# if 2*SIZEOF_BDIGIT*CHAR_BIT > DBL_MANT_DIG
+#   define BDIGIT_DBL_IN_DOUBLE_P(n) ((n) < ((BDIGIT_DBL)1UL << DBL_MANT_DIG))
+# else
+#   define BDIGIT_DBL_IN_DOUBLE_P(n) 1
+# endif
 DEFINE_INT_SQRT(BDIGIT, rb_bdigit_dbl, BDIGIT_DBL)
 #endif
 
