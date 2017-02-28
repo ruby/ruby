@@ -201,8 +201,6 @@ Zachary Scott (zzak)
   TAKAO Kouji (kouji)
 [ext/ripper]
   _unmaintained_
-[ext/sdbm]
-  Yukihiro Matsumoto (matz)
 [ext/socket]
   * Tanaka Akira (akr)
   * API change needs matz's approval
@@ -259,6 +257,8 @@ Zachary Scott (zzak)
 [ext/psych]
   Aaron Patterson (tenderlove), Hiroshi SHIBATA(hsbt)
   https://github.com/ruby/psych
+[ext/sdbm]
+  Yukihiro Matsumoto (matz)
 [ext/strscan]
   _unmaintained_
 [ext/zlib]
