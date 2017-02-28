@@ -6765,8 +6765,14 @@ rb_big_even_p(VALUE num)
 unsigned long rb_ulong_isqrt(unsigned long);
 #if SIZEOF_BDIGIT*2 > SIZEOF_LONG
 BDIGIT rb_bdigit_dbl_isqrt(BDIGIT_DBL);
+# ifdef ULL_TO_DOUBLE
+#   define BDIGIT_DBL_TO_DOUBLE(n) ULL_TO_DOUBLE(n)
+# endif
 #else
 # define rb_bdigit_dbl_isqrt(x) (BDIGIT)rb_ulong_isqrt(x)
+#endif
+#ifndef BDIGIT_DBL_TO_DOUBLE
+# define BDIGIT_DBL_TO_DOUBLE(n) (double)(n)
 #endif
 
 static BDIGIT *
@@ -6789,9 +6795,9 @@ estimate_initial_sqrt(VALUE *xp, const size_t xn, const BDIGIT *nds, size_t len)
 	d <<= -rshift;
 	d |= nds[len-dbl_per_bdig-1] >> (BITSPERDIG+rshift);
     }
-    f = sqrt((double)d);
+    f = sqrt(BDIGIT_DBL_TO_DOUBLE(d));
     d = (BDIGIT_DBL)ceil(f);
-    if ((double)d == f) {
+    if (BDIGIT_DBL_TO_DOUBLE(d) == f) {
 	if (lowbits || (lowbits = !bary_zero_p(nds, len-dbl_per_bdig)))
 	    ++d;
     }

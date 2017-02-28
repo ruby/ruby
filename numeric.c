@@ -5140,7 +5140,7 @@ prefix##_isqrt(argtype n) \
 	while ((t = n/x) < (argtype)x) x = (rettype)((x + t) >> 1); \
 	return x; \
     } \
-    return (rettype)sqrt((double)n); \
+    return (rettype)sqrt(argtype##_TO_DOUBLE(n)); \
 }
 
 #if SIZEOF_LONG*CHAR_BIT > DBL_MANT_DIG
@@ -5148,6 +5148,7 @@ prefix##_isqrt(argtype n) \
 #else
 # define RB_ULONG_IN_DOUBLE_P(n) 1
 #endif
+#define RB_ULONG_TO_DOUBLE(n) (double)(n)
 #define RB_ULONG unsigned long
 DEFINE_INT_SQRT(unsigned long, rb_ulong, RB_ULONG)
 
@@ -5156,6 +5157,11 @@ DEFINE_INT_SQRT(unsigned long, rb_ulong, RB_ULONG)
 #   define BDIGIT_DBL_IN_DOUBLE_P(n) ((n) < ((BDIGIT_DBL)1UL << DBL_MANT_DIG))
 # else
 #   define BDIGIT_DBL_IN_DOUBLE_P(n) 1
+# endif
+# ifdef ULL_TO_DOUBLE
+#   define BDIGIT_DBL_TO_DOUBLE(n) ULL_TO_DOUBLE(n)
+# else
+#   define BDIGIT_DBL_TO_DOUBLE(n) (double)(n)
 # endif
 DEFINE_INT_SQRT(BDIGIT, rb_bdigit_dbl, BDIGIT_DBL)
 #endif
