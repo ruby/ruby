@@ -538,6 +538,8 @@ build_complete: $(build_complete)
 $(build_complete): $(TARGET_SO)
 	$(Q) $(TOUCH) $@
 
+clean-so::
+	-$(Q)$(RM) $(build_complete)
 }
       conf
     end

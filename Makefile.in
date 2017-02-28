@@ -418,21 +418,25 @@ distclean-local::
 
 clean-ext distclean-ext realclean-ext::
 	@[ -f $(EXTS_MK) ] && $(MAKE) -f $(EXTS_MK) $(@:-ext=)
-	@cd ext 2>/dev/null || exit 0; set dummy `echo "${EXTS}" | tr , ' '`; shift; \
+	@set dummy `echo "${EXTS}" | tr , ' '`; shift; \
 	test "$$#" = 0 && set .; \
 	set dummy `\
+	    cd ext 2>/dev/null && \
 	    find "$$@" \( -name Makefile -o -name exts.mk \) -print | \
-	    sed -n 's:/[^/]*$$::;s:^\./::p' | sort -u; \
+	    sed -n 's:^\./::;s:^:ext/:;s:/[^/][^/]*$$::p' | sort -u; \
+	` ` \
+	    cd gems 2>/dev/null && \
+	    find "$$@" -name exts.mk -print | \
+	    sed -n 's:^\./::;s:^:gems/:;s:/[^/][^/]*$$::p' | sort -u; \
 	`; shift; \
-	cd ..; \
 	for dir do \
 	    echo $(@:-ext=)ing "$$dir"; \
-	    $(RM) "ext/$$dir/exts.mk"; \
-	    { [ ! -f "ext/$$dir/Makefile" ] || \
-		(cd "ext/$$dir" && exec $(MAKE) $(mflags) $(@:-ext=)); } && \
+	    $(RM) "$$dir/exts.mk"; \
+	    { [ ! -f "$$dir/Makefile" ] || \
+		(cd "$$dir" && exec $(MAKE) $(mflags) $(@:-ext=)); } && \
 	    case "$@" in \
 	    *distclean-ext*|*realclean-ext*) \
-		$(RMDIRS) "ext/$$dir" 2> /dev/null || true;; \
+		$(RMDIRS) "$$dir" 2> /dev/null || true;; \
 	    esac; \
 	done
 	-$(Q)$(RM) ext/extinit.$(OBJEXT)
