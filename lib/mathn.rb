@@ -117,7 +117,7 @@ module Math
   # Compute square root of a non negative number. This method is
   # internally used by +Math.sqrt+.
 
-  def rsqrt(a)
+  def rsqrt(a) # :nodoc:
     if a.kind_of?(Float)
       sqrt!(a)
     elsif a.kind_of?(Rational)
