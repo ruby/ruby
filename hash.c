@@ -4363,7 +4363,7 @@ env_update(VALUE env, VALUE hash)
  *  Hashes are an easy way to represent data structures, such as
  *
  *    books         = {}
- *    books[:matz]  = "The Ruby Language"
+ *    books[:matz]  = "The Ruby Programming Language"
  *    books[:black] = "The Well-Grounded Rubyist"
  *
  *  Hashes are also commonly used as a way to have named parameters in
