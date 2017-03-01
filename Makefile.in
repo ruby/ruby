@@ -416,36 +416,43 @@ distclean-local::
 	-$(Q)$(RM) $(INSTALLED_LIST) $(arch_hdrdir)/ruby/config.h verconf.h
 	-$(Q)$(RMDIRS) $(arch_hdrdir)/ruby 2> /dev/null || true
 
-clean-ext distclean-ext realclean-ext::
-	@[ -f $(EXTS_MK) ] && $(MAKE) -f $(EXTS_MK) $(@:-ext=)
-	@set dummy `echo "${EXTS}" | tr , ' '`; shift; \
+ext/clean.sub gems/clean.sub:: ext/clean.mk
+ext/distclean.sub gems/distclean.sub:: ext/distclean.mk
+ext/realclean.sub gems/realclean.sub:: ext/realclean.mk
+
+ext/clean.mk ext/distclean.mk ext/realclean.mk::
+	$(Q) [ -f $(EXTS_MK) ] && exec $(MAKE) -f $(EXTS_MK) $(@F:.mk=)
+
+ext/clean:: ext/clean.sub
+ext/distclean:: ext/distclean.sub
+ext/realclean:: ext/realclean.sub
+gems/clean:: gems/clean.sub
+gems/distclean:: gems/distclean.sub
+gems/realclean:: gems/realclean.sub
+
+ext/clean.sub ext/distclean.sub ext/realclean.sub \
+gems/clean.sub gems/distclean.sub gems/realclean.sub::
+	$(Q) set dummy `echo "${EXTS}" | tr , ' '`; shift; \
 	test "$$#" = 0 && set .; \
 	set dummy `\
-	    cd ext 2>/dev/null && \
+	    cd $(@D) 2>/dev/null && \
 	    find "$$@" \( -name Makefile -o -name exts.mk \) -print | \
-	    sed -n 's:^\./::;s:^:ext/:;s:/[^/][^/]*$$::p' | sort -u; \
-	` ` \
-	    cd gems 2>/dev/null && \
-	    find "$$@" -name exts.mk -print | \
-	    sed -n 's:^\./::;s:^:gems/:;s:/[^/][^/]*$$::p' | sort -u; \
+	    sed -n 's:^\./::;s:^:$(@D)/:;s:/[^/][^/]*$$::p' | sort -u; \
 	`; shift; \
 	for dir do \
-	    echo $(@:-ext=)ing "$$dir"; \
 	    $(RM) "$$dir/exts.mk"; \
-	    { [ ! -f "$$dir/Makefile" ] || \
-		(cd "$$dir" && exec $(MAKE) $(mflags) $(@:-ext=)); } && \
-	    case "$@" in \
-	    *distclean-ext*|*realclean-ext*) \
-		$(RMDIRS) "$$dir" 2> /dev/null || true;; \
-	    esac; \
-	done
-	-$(Q)$(RM) ext/extinit.$(OBJEXT)
+	    if [ -f "$$dir/Makefile" ]; then \
+		echo $(@F:.sub=)ing "$$dir"; \
+		(cd "$$dir" && exec $(MAKE) $(mflags) $(@F:.sub=)); \
+	    fi; \
+	done || true
 
-distclean-ext realclean-ext::
-	-$(Q)$(RM) ext/extinit.c ext/configure-ext.mk
-	-$(Q)$(RMDIR) ext 2> /dev/null || true
-
-clean-extout:
+ext/distclean ext/realclean gems/distclean gems/realclean::
+	$(Q) set dummy `echo "${EXTS}" | tr , ' '`; shift; \
+	test "$$#" = 0 && set .; \
+	cd $(@D) 2>/dev/null && \
+	find "$$@" -type d -empty -exec $(RMDIRS) {} + 2> /dev/null || true
+	$(Q) $(RMDIRS) $(@D)
 
 clean-enc distclean-enc realclean-enc:
 	@test -f "$(ENC_MK)" || exit 0; \

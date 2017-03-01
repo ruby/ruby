@@ -568,10 +568,29 @@ realclean-extout: distclean-extout
 realclean-platform: distclean-platform
 realclean-rubyspec: distclean-rubyspec
 
-clean-ext distclean-ext realclean-ext::
-	$(Q)$(RM) $(EXTS_MK)
+clean-ext:: ext/clean gems/clean timestamp/clean
+distclean-ext:: ext/distclean gems/distclean timestamp/distclean
+realclean-ext:: ext/realclean gems/realclean timestamp/realclean
+
+ext/clean.mk ext/distclean.mk ext/realclean.mk::
+ext/clean gems/clean:: ext/clean.mk
+ext/distclean gems/distclean:: ext/distclean.mk
+ext/realclean gems/realclean:: ext/realclean.mk
+
+timestamp/clean:: ext/clean gems/clean
+timestamp/distclean:: ext/distclean gems/distclean
+timestamp/realclean:: ext/realclean gems/realclean
+
+timestamp/clean timestamp/distclean timestamp/realclean::
 	$(Q)$(RM) $(TIMESTAMPDIR)/.*.time $(TIMESTAMPDIR)/.$(arch).time $(TIMESTAMPDIR)/$(arch)/.time
 	$(Q)$(RMDIRS) $(TIMESTAMPDIR)/$(arch) 2> $(NULL) || exit 0
+
+clean-ext::
+	-$(Q)$(RM) ext/extinit.$(OBJEXT)
+
+distclean-ext realclean-ext::
+	-$(Q)$(RM) $(EXTS_MK) ext/extinit.* ext/configure-ext.mk
+	-$(Q)$(RMDIR) ext 2> $(NULL) || exit 0
 
 clean-enc distclean-enc realclean-enc: PHONY
 

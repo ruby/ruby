@@ -1063,31 +1063,31 @@ distclean-local::
 		-$(Q)$(RM) $(INSTALLED_LIST:/=\) $(arch_hdrdir:/=\)\ruby\config.h verconf.h
 		-$(Q)$(RMDIRS) $(arch_hdrdir:/=\)\ruby
 
-clean-ext distclean-ext realclean-ext::
-		@cd ext && for /R $(EXTS) %I in (.) \
-		do @if exist %I\Makefile ( \
+ext/clean.mk ext/distclean.mk ext/realclean.mk::
+	$(Q)if exist $(EXTS_MK) $(MAKE) -k -f $(EXTS_MK) top_srcdir=$(srcdir) $(*F)
+
+ext/clean gems/clean ext/distclean gems/distclean ext/realclean gems/realclean::
+		$(Q)cd $(@D) && for /R $(EXTS) %I in (.) \
+		do $(Q)if exist %I\Makefile ( \
 		    cd %I && ( \
 		    call set n=%I && \
-		    call set n=%n:%CD%\ext\=% && \
+		    call set n=%n:%CD%\$(@D)\=% && \
 		    call set n=%n:\.=% && \
-		    call echo $(@:-ext=)ing %n:\=/% & \
-		    $(MAKE) $(MFLAGS) $(@:-ext=) & \
+		    call echo $(@F)ing %n:\=/% & \
+		    $(MAKE) $(MFLAGS) $(@F) & \
 		    cd %CD% & \
 		    $(RMDIRS) %I \
 		) )
 
-distclean-ext realclean-ext::
-		-$(Q)$(RM) ext/extinit.c ext/configure-ext.mk
-		@cd ext && for /D $(EXTS) %I in (.) \
-		do @if exist %I\exts.mk del %I\exts.mk
-		-$(Q)rmdir ext 2> nul || @
-
-clean-extout:
+ext/distclean gems/distclean ext/realclean gems/realclean::
+		$(Q)cd $(@D) && for /R $(EXTS) %I in (exts.mk*) \
+		do $(Q)(del %I & rmdir %~dpI)
+		-$(Q)rmdir $(@D) 2> nul || @
 
 clean-enc distclean-enc realclean-enc:
 !if exist($(ENC_MK))
-	@echo $(@:-enc=ing) encodings
-	@-$(MAKE) $(MAKE_ENC) $(@:-enc=)
+	$(ECHO) $(@:-enc=ing) encodings
+	-$(Q)$(MAKE) $(MAKE_ENC) $(@:-enc=)
 !endif
 
 $(RBCONFIG): $(PREP)
