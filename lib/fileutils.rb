@@ -16,7 +16,7 @@
 #   require 'fileutils'
 #
 #   FileUtils.cd(dir, options)
-#   FileUtils.cd(dir, options) {|dir| .... }
+#   FileUtils.cd(dir, options) {|dir| block }
 #   FileUtils.pwd()
 #   FileUtils.mkdir(dir, options)
 #   FileUtils.mkdir(list, options)
@@ -38,7 +38,7 @@
 #   FileUtils.rm(list, options)
 #   FileUtils.rm_r(list, options)
 #   FileUtils.rm_rf(list, options)
-#   FileUtils.install(src, dest, mode = <src's>, options)
+#   FileUtils.install(src, dest, options)
 #   FileUtils.chmod(mode, list, options)
 #   FileUtils.chmod_R(mode, list, options)
 #   FileUtils.chown(user, group, list, options)
@@ -112,7 +112,7 @@ module FileUtils
   #   FileUtils.cd('/', :verbose => true)   # chdir and report it
   #
   #   FileUtils.cd('/') do  # chdir
-  #     [...]               # do something
+  #     # ...               # do something
   #   end                   # return to original directory
   #
   def cd(dir, verbose: nil, &block) # :yield: dir
@@ -144,7 +144,7 @@ module FileUtils
   end
   module_function :uptodate?
 
-  def remove_trailing_slash(dir)
+  def remove_trailing_slash(dir)   #:nodoc:
     dir == '/' ? dir : dir.chomp(?/)
   end
   private_module_function :remove_trailing_slash
@@ -175,10 +175,11 @@ module FileUtils
   #   FileUtils.mkdir_p '/usr/local/lib/ruby'
   #
   # causes to make following directories, if it does not exist.
-  #     * /usr
-  #     * /usr/local
-  #     * /usr/local/lib
-  #     * /usr/local/lib/ruby
+  #
+  # * /usr
+  # * /usr/local
+  # * /usr/local/lib
+  # * /usr/local/lib/ruby
   #
   # You can pass several directories at a time in a list.
   #
@@ -326,7 +327,8 @@ module FileUtils
 
   #
   # Same as
-  #   #ln_s(src, dest, :force => true)
+  #
+  #   FileUtils.ln_s(src, dest, :force => true)
   #
   def ln_sf(src, dest, noop: nil, verbose: nil)
     ln_s src, dest, force: true, noop: noop, verbose: verbose
@@ -509,7 +511,7 @@ module FileUtils
   #
   # Equivalent to
   #
-  #   #rm(list, :force => true)
+  #   FileUtils.rm(list, :force => true)
   #
   def rm_f(list, noop: nil, verbose: nil)
     rm list, force: true, noop: noop, verbose: verbose
@@ -525,7 +527,7 @@ module FileUtils
   # StandardError when :force option is set.
   #
   #   FileUtils.rm_r Dir.glob('/tmp/*')
-  #   FileUtils.rm_r '/', :force => true          #  :-)
+  #   FileUtils.rm_r 'some_dir', :force => true
   #
   # WARNING: This method causes local vulnerability
   # if one of parent directories or removing directory tree are world
@@ -555,7 +557,7 @@ module FileUtils
   #
   # Equivalent to
   #
-  #   #rm_r(list, :force => true)
+  #   FileUtils.rm_r(list, :force => true)
   #
   # WARNING: This method causes local vulnerability.
   # Read the documentation of #rm_r first.
@@ -575,9 +577,9 @@ module FileUtils
   # (time-of-check-to-time-of-use) local security vulnerability of #rm_r.
   # #rm_r causes security hole when:
   #
-  #   * Parent directory is world writable (including /tmp).
-  #   * Removing directory tree includes world writable directory.
-  #   * The system has symbolic link.
+  # * Parent directory is world writable (including /tmp).
+  # * Removing directory tree includes world writable directory.
+  # * The system has symbolic link.
   #
   # To avoid this security hole, this method applies special preprocess.
   # If +path+ is a directory, this method chown(2) and chmod(2) all
@@ -595,8 +597,8 @@ module FileUtils
   #
   # For details of this security vulnerability, see Perl's case:
   #
-  #   http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2005-0448
-  #   http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2004-0452
+  # * http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2005-0448
+  # * http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2004-0452
   #
   # For fileutils.rb, this vulnerability is reported in [ruby-dev:26100].
   #
@@ -800,7 +802,7 @@ module FileUtils
   end
   private_module_function :user_mask
 
-  def apply_mask(mode, user_mask, op, mode_mask)
+  def apply_mask(mode, user_mask, op, mode_mask)   #:nodoc:
     case op
     when '='
       (mode & ~user_mask) | (user_mask & mode_mask)
