@@ -30,14 +30,19 @@ else
       $libs = append_library($libs, "zdll")
       dll = "zlib1.dll"
       $extso << dll
+      $cleanfiles << "$(topdir)/#{dll}" << "$(ZIMPLIB)"
+      zmk = "\t$(MAKE) -f $(ZSRC)/win32/Makefile.#{$nmake ? 'msc' : 'gcc'} TOP=$(ZSRC)"
       addconf.push(
         "ZIMPLIB = zdll.lib\n",
         "$(TARGET_SO): $(ZIMPLIB)\n",
         "$(ZIMPLIB):\n",
-        "\t$(MAKE) -f $(ZSRC)/win32/Makefile.#{$nmake ? 'msc' : 'gcc'} TOP=$(ZSRC) $@\n",
+        "#{zmk} $@\n",
         "install-so: $(topdir)/#{dll}",
         "$(topdir)/#{dll}: $(ZIMPLIB)\n",
         "\t$(Q) $(COPY) #{dll} $(@D)\n",
+        "clean: clean-zsrc\n",
+        "clean-zsrc:\n",
+        "#{zmk} clean\n",
       )
     end
     Logging.message "using zlib in #{zsrc}\n"
