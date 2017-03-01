@@ -282,7 +282,7 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
       group = OpenSSL::PKey::EC::Group.new(:GFp, 17, 2, 2)
       group.point_conversion_form = :uncompressed
       gen = OpenSSL::PKey::EC::Point.new(group, OpenSSL::BN.new("040501", 16))
-      group.set_generator(gen, 0, 0)
+      group.set_generator(gen, 19, 1)
 
       # 3 * (6, 3) = (16, 13)
       point_a = OpenSSL::PKey::EC::Point.new(group, OpenSSL::BN.new("040603", 16))
