@@ -711,10 +711,10 @@ module FileUtils
   module_function :remove_dir
 
   #
-  # Returns true if the contents of a file A and a file B are identical.
+  # Returns true if the contents of a file +a+ and a file +b+ are identical.
   #
-  #   FileUtils.compare_file('somefile', 'somefile')  #=> true
-  #   FileUtils.compare_file('/bin/cp', '/bin/mv')    #=> maybe false
+  #   FileUtils.compare_file('somefile', 'somefile')       #=> true
+  #   FileUtils.compare_file('/dev/null', '/dev/urandom')  #=> false
   #
   def compare_file(a, b)
     return false unless File.size(a) == File.size(b)
