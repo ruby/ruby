@@ -3643,7 +3643,7 @@ rb_int_fdiv_double(VALUE x, VALUE y)
  *  call-seq:
  *     integer.fdiv(numeric)  ->  float
  *
- *  Returns the floating point result of dividing +fix+ by +numeric+.
+ *  Returns the floating point result of dividing +integer+ by +numeric+.
  *
  *     654321.fdiv(13731)      #=> 47.6528293642124
  *     654321.fdiv(13731.24)   #=> 47.6519964693647
@@ -4644,7 +4644,7 @@ rb_int_abs(VALUE num)
  *  call-seq:
  *     int.size  ->  int
  *
- *  Returns the number of bytes in the machine representation of +fix+.
+ *  Returns the number of bytes in the machine representation of +int+.
  *
  *     1.size            #=> 4
  *     -1.size           #=> 4
