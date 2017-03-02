@@ -706,8 +706,10 @@ $(RBCONFIG): $(srcdir)/tool/mkconfig.rb config.status $(srcdir)/version.h
 
 test-rubyspec-precheck: $(arch)-fake.rb
 
-test-rubyspec: test-rubyspec-precheck
+test-rubyspec: $(TEST_RUNNABLE)-test-rubyspec
+yes-test-rubyspec: test-rubyspec-precheck
 	$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/default.mspec $(MSPECOPT)
+no-test-rubyspec: test-rubyspec-precheck
 
 RUNNABLE = $(LIBRUBY_RELATIVE:no=un)-runnable
 runnable: $(RUNNABLE) prog $(srcdir)/tool/mkrunnable.rb PHONY
@@ -1223,7 +1225,7 @@ exam: check test-rubyspec
 love: sudo-precheck up all test install check
 	@echo love is all you need
 
-yes-test-all: sudo-precheck
+yes-test-all no-test-all: sudo-precheck
 
 sudo-precheck: PHONY
 	@$(SUDO) echo > $(NULL)

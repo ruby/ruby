@@ -3,9 +3,9 @@ gnumake = yes
 override gnumake_recursive := $(if $(findstring n,$(firstword $(MFLAGS))),,+)
 override mflags := $(filter-out -j%,$(MFLAGS))
 
-CHECK_TARGETS := exam love check%
+CHECK_TARGETS := exam love check test check% test% btest%
 # expand test targets, and those dependents
-TEST_TARGETS := $(filter exam check test check% test% btest%,$(MAKECMDGOALS))
+TEST_TARGETS := $(filter $(CHECK_TARGETS),$(MAKECMDGOALS))
 TEST_DEPENDS := $(filter-out $(TEST_TARGETS),$(MAKECMDGOALS))
 TEST_TARGETS := $(patsubst exam,check test-rubyspec,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out exam $(TEST_TARGETS),$(TEST_DEPENDS))
@@ -60,8 +60,8 @@ ORDERED_TEST_TARGETS := $(filter $(TEST_TARGETS), \
 	test-rubyspec \
 	)
 prev_test := $(if $(filter test-rubyspec,$(ORDERED_TEST_TARGETS)),test-rubyspec-precheck)
-$(foreach test,$(addprefix yes-,$(ORDERED_TEST_TARGETS)), \
-	$(eval $(value test): $(value prev_test)); \
+$(foreach test,$(ORDERED_TEST_TARGETS), \
+	$(eval yes-$(value test) no-$(value test): $(value prev_test)); \
 	$(eval prev_test := $(value test)))
 
 ifneq ($(if $(filter install,$(MAKECMDGOALS)),$(filter uninstall,$(MAKECMDGOALS))),)
@@ -72,11 +72,6 @@ endif
 ifneq ($(filter reinstall,$(MAKECMDGOALS)),)
 install-prereq: uninstall
 uninstall sudo-precheck: all $(if $(filter all,$(INSTALLDOC)),docs)
-endif
-
-ifneq ($(filter exam,$(MAKECMDGOALS)),)
-test-rubyspec: check
-yes-test-all no-test-all: test
 endif
 
 ifneq ($(filter love,$(MAKECMDGOALS)),)
