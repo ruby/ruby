@@ -1410,7 +1410,7 @@ rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
     else if (warn && (RBASIC(re)->flags & REG_ENCODING_NONE) &&
 	enc != rb_ascii8bit_encoding() &&
 	cr != ENC_CODERANGE_7BIT) {
-	rb_warn("binary regexp match /.../n against %s string",
+	rb_warn("historical binary regexp match /.../n against %s string",
 		rb_enc_name(enc));
     }
     return enc;
