@@ -3,15 +3,13 @@
 require "open3"
 require "timeout"
 require_relative "find_executable"
-require "rbconfig/sizeof"
 begin
   require 'rbconfig'
 rescue LoadError
 end
-
-class Integer
-  FIXNUM_MIN = -(1 << (8 * RbConfig::SIZEOF['long'] - 2))
-  FIXNUM_MAX = (1 << (8 * RbConfig::SIZEOF['long'] - 2)) - 1
+begin
+  require "rbconfig/sizeof"
+rescue LoadError
 end
 
 module EnvUtil

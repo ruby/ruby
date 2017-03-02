@@ -184,8 +184,8 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(nil, @empty.inject() {9})
   end
 
-  FIXNUM_MIN = Integer::FIXNUM_MIN
-  FIXNUM_MAX = Integer::FIXNUM_MAX
+  FIXNUM_MIN = RbConfig::Limits['FIXNUM_MIN']
+  FIXNUM_MAX = RbConfig::Limits['FIXNUM_MAX']
 
   def test_inject_array_mul
     assert_equal(nil, [].inject(:*))

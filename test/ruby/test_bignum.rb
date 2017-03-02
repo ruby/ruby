@@ -6,8 +6,8 @@ rescue LoadError
 else
 
 class TestBignum < Test::Unit::TestCase
-  FIXNUM_MIN = Integer::FIXNUM_MIN
-  FIXNUM_MAX = Integer::FIXNUM_MAX
+  FIXNUM_MIN = RbConfig::Limits['FIXNUM_MIN']
+  FIXNUM_MAX = RbConfig::Limits['FIXNUM_MAX']
 
   BIGNUM_MIN = FIXNUM_MAX + 1
   b = BIGNUM_MIN

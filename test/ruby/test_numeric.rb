@@ -258,7 +258,7 @@ class TestNumeric < Test::Unit::TestCase
   end
 
   def test_step
-    bignum = Integer::FIXNUM_MAX + 1
+    bignum = RbConfig::Limits['FIXNUM_MAX'] + 1
     assert_raise(ArgumentError) { 1.step(10, 1, 0) { } }
     assert_raise(ArgumentError) { 1.step(10, 1, 0).size }
     assert_raise(ArgumentError) { 1.step(10, 0) { } }
