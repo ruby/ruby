@@ -271,11 +271,9 @@ class TestEval < Test::Unit::TestCase
     eval 'while false; bad = true; print "foo\n" end'
     assert(!bad)
 
-    assert(eval('TRUE'))
+    assert(eval('Object'))
     assert(eval('true'))
-    assert(!eval('NIL'))
     assert(!eval('nil'))
-    assert(!eval('FALSE'))
     assert(!eval('false'))
 
     $foo = 'assert(true)'
@@ -503,6 +501,14 @@ class TestEval < Test::Unit::TestCase
            o.method(:bar).source_location[0]
 
     assert_same a, b
+  end
+
+  def test_fstring_instance_eval
+    bug = "[ruby-core:78116] [Bug #12930]".freeze
+    assert_same bug, (bug.instance_eval {self})
+    assert_raise(RuntimeError) {
+      bug.instance_eval {@ivar = true}
+    }
   end
 
   def test_gced_binding_block

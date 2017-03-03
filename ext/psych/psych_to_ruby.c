@@ -21,11 +21,7 @@ static VALUE build_exception(VALUE self, VALUE klass, VALUE mesg)
  */
 static VALUE path2class(VALUE self, VALUE path)
 {
-#ifdef HAVE_RUBY_ENCODING_H
     return rb_path_to_class(path);
-#else
-    return rb_path2class(StringValuePtr(path));
-#endif
 }
 
 void Init_psych_to_ruby(void)

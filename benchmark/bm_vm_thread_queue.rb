@@ -1,7 +1,7 @@
 require 'thread'
 
 n = 1_000_000
-q = Queue.new
+q = Thread::Queue.new
 consumer = Thread.new{
   while q.pop
     # consuming

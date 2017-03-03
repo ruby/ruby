@@ -1,4 +1,5 @@
 require 'test/unit'
+require 'tempfile'
 
 class TestISeq < Test::Unit::TestCase
   ISeq = RubyVM::InstructionSequence
@@ -17,6 +18,10 @@ class TestISeq < Test::Unit::TestCase
   def lines src
     body = compile(src).to_a[13]
     body.find_all{|e| e.kind_of? Integer}
+  end
+
+  def test_allocate
+    assert_raise(TypeError) {ISeq.allocate}
   end
 
   def test_to_a_lines
@@ -234,6 +239,26 @@ class TestISeq < Test::Unit::TestCase
       end
     end
     assert_equal([m1, e1.message], [m2, e2.message], feature11951)
+    e1, e2 = e1.message.lines
+    assert_send([e1, :start_with?, __FILE__])
+    assert_send([e2, :start_with?, __FILE__])
+  end
+
+  def test_compile_file_error
+    Tempfile.create(%w"test_iseq .rb") do |f|
+      f.puts "end"
+      f.close
+      path = f.path
+      assert_in_out_err(%W[- #{path}], "#{<<-"begin;"}\n#{<<-"end;"}", /keyword_end/, [], success: true)
+      begin;
+        path = ARGV[0]
+        begin
+          RubyVM::InstructionSequence.compile_file(path)
+        rescue SyntaxError => e
+          puts e.message
+        end
+      end;
+    end
   end
 
   def test_translate_by_object

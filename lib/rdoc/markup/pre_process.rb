@@ -102,8 +102,6 @@ class RDoc::Markup::PreProcess
       text = text.text
     end
 
-    encoding = text.encoding if defined?(Encoding)
-
     # regexp helper (square brackets for optional)
     # $1      $2  $3        $4      $5
     # [prefix][\]:directive:[spaces][param]newline
@@ -122,7 +120,7 @@ class RDoc::Markup::PreProcess
         next "#{$1.strip}\n"
       end
 
-      handle_directive $1, $3, $5, code_object, encoding, &block
+      handle_directive $1, $3, $5, code_object, text.encoding, &block
     end
 
     comment = text unless comment
@@ -291,4 +289,3 @@ class RDoc::Markup::PreProcess
   end
 
 end
-

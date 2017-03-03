@@ -60,7 +60,7 @@ class TestRDocOptions < RDoc::TestCase
 
     @options.encode_with coder
 
-    encoding = Object.const_defined?(:Encoding) ? 'UTF-8' : nil
+    encoding = 'UTF-8'
 
     expected = {
       'charset'              => 'UTF-8',
@@ -122,8 +122,6 @@ class TestRDocOptions < RDoc::TestCase
   end
 
   def test_encoding_default
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     assert_equal Encoding::UTF_8, @options.encoding
   end
 
@@ -142,7 +140,6 @@ class TestRDocOptions < RDoc::TestCase
   end
 
   def test_init_with_encoding
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
     RDoc.load_yaml
 
     @options.encoding = Encoding::IBM437
@@ -273,8 +270,6 @@ rdoc_include:
   end
 
   def test_parse_encoding
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     @options.parse %w[--encoding Big5]
 
     assert_equal Encoding::Big5, @options.encoding
@@ -282,8 +277,6 @@ rdoc_include:
   end
 
   def test_parse_encoding_invalid
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     out, err = capture_io do
       @options.parse %w[--encoding invalid]
     end
@@ -764,4 +757,3 @@ rdoc_include:
     assert_equal :private, @options.visibility
   end
 end
-

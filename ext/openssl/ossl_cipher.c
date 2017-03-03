@@ -36,6 +36,7 @@
  */
 VALUE cCipher;
 VALUE eCipherError;
+static ID id_auth_tag_len, id_key_set;
 
 static VALUE ossl_cipher_alloc(VALUE klass);
 static void ossl_cipher_free(void *ptr);
@@ -54,11 +55,24 @@ static const rb_data_type_t ossl_cipher_type = {
 const EVP_CIPHER *
 GetCipherPtr(VALUE obj)
 {
-    EVP_CIPHER_CTX *ctx;
+    if (rb_obj_is_kind_of(obj, cCipher)) {
+	EVP_CIPHER_CTX *ctx;
 
-    SafeGetCipher(obj, ctx);
+	GetCipher(obj, ctx);
 
-    return EVP_CIPHER_CTX_cipher(ctx);
+	return EVP_CIPHER_CTX_cipher(ctx);
+    }
+    else {
+	const EVP_CIPHER *cipher;
+
+	StringValueCStr(obj);
+	cipher = EVP_get_cipherbyname(RSTRING_PTR(obj));
+	if (!cipher)
+	    ossl_raise(rb_eArgError,
+		       "unsupported cipher algorithm: %"PRIsVALUE, obj);
+
+	return cipher;
+    }
 }
 
 VALUE
@@ -104,7 +118,6 @@ ossl_cipher_initialize(VALUE self, VALUE str)
     EVP_CIPHER_CTX *ctx;
     const EVP_CIPHER *cipher;
     char *name;
-    unsigned char dummy_key[EVP_MAX_KEY_LENGTH] = { 0 };
 
     name = StringValueCStr(str);
     GetCipherInit(self, ctx);
@@ -115,16 +128,7 @@ ossl_cipher_initialize(VALUE self, VALUE str)
     if (!(cipher = EVP_get_cipherbyname(name))) {
 	ossl_raise(rb_eRuntimeError, "unsupported cipher algorithm (%"PRIsVALUE")", str);
     }
-    /*
-     * EVP_CipherInit_ex() allows to specify NULL to key and IV, however some
-     * ciphers don't handle well (OpenSSL's bug). [Bug #2768]
-     *
-     * The EVP which has EVP_CIPH_RAND_KEY flag (such as DES3) allows
-     * uninitialized key, but other EVPs (such as AES) does not allow it.
-     * Calling EVP_CipherUpdate() without initializing key causes SEGV so we
-     * set the data filled with "\0" as the key by default.
-     */
-    if (EVP_CipherInit_ex(ctx, cipher, NULL, dummy_key, NULL, -1) != 1)
+    if (EVP_CipherInit_ex(ctx, cipher, NULL, NULL, NULL, -1) != 1)
 	ossl_raise(eCipherError, NULL);
 
     return self;
@@ -237,6 +241,9 @@ ossl_cipher_init(int argc, VALUE *argv, VALUE self, int mode)
 	ossl_raise(eCipherError, NULL);
     }
 
+    if (p_key)
+	rb_ivar_set(self, id_key_set, Qtrue);
+
     return self;
 }
 
@@ -248,7 +255,7 @@ ossl_cipher_init(int argc, VALUE *argv, VALUE self, int mode)
  *
  *  Make sure to call Cipher#encrypt or Cipher#decrypt before using any of the
  *  following methods:
- *  * [key=, iv=, random_key, random_iv, pkcs5_keyivgen]
+ *  * [#key=, #iv=, #random_key, #random_iv, #pkcs5_keyivgen]
  *
  *  Internally calls EVP_CipherInit_ex(ctx, NULL, NULL, NULL, NULL, 1).
  */
@@ -266,7 +273,7 @@ ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
  *
  *  Make sure to call Cipher#encrypt or Cipher#decrypt before using any of the
  *  following methods:
- *  * [key=, iv=, random_key, random_iv, pkcs5_keyivgen]
+ *  * [#key=, #iv=, #random_key, #random_iv, #pkcs5_keyivgen]
  *
  *  Internally calls EVP_CipherInit_ex(ctx, NULL, NULL, NULL, NULL, 0).
  */
@@ -278,20 +285,20 @@ ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     cipher.pkcs5_keyivgen(pass [, salt [, iterations [, digest]]] ) -> nil
+ *     cipher.pkcs5_keyivgen(pass, salt = nil, iterations = 2048, digest = "MD5") -> nil
  *
  *  Generates and sets the key/IV based on a password.
  *
- *  WARNING: This method is only PKCS5 v1.5 compliant when using RC2, RC4-40,
+ *  *WARNING*: This method is only PKCS5 v1.5 compliant when using RC2, RC4-40,
  *  or DES with MD5 or SHA1. Using anything else (like AES) will generate the
  *  key/iv using an OpenSSL specific method. This method is deprecated and
  *  should no longer be used. Use a PKCS5 v2 key generation method from
  *  OpenSSL::PKCS5 instead.
  *
  *  === Parameters
- *  +salt+ must be an 8 byte string if provided.
- *  +iterations+ is a integer with a default of 2048.
- *  +digest+ is a Digest object that defaults to 'MD5'
+ *  * +salt+ must be an 8 byte string if provided.
+ *  * +iterations+ is an integer with a default of 2048.
+ *  * +digest+ is a Digest object that defaults to 'MD5'
  *
  *  A minimum of 1000 iterations is recommended.
  *
@@ -323,6 +330,8 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
     OPENSSL_cleanse(key, sizeof key);
     OPENSSL_cleanse(iv, sizeof iv);
 
+    rb_ivar_set(self, id_key_set, Qtrue);
+
     return Qnil;
 }
 
@@ -331,25 +340,23 @@ ossl_cipher_update_long(EVP_CIPHER_CTX *ctx, unsigned char *out, long *out_len_p
 			const unsigned char *in, long in_len)
 {
     int out_part_len;
+    int limit = INT_MAX / 2 + 1;
     long out_len = 0;
-#define UPDATE_LENGTH_LIMIT INT_MAX
 
-#if SIZEOF_LONG > UPDATE_LENGTH_LIMIT
-    if (in_len > UPDATE_LENGTH_LIMIT) {
-	const int in_part_len = (UPDATE_LENGTH_LIMIT / 2 + 1) & ~1;
-	do {
-	    if (!EVP_CipherUpdate(ctx, out ? (out + out_len) : 0,
-				  &out_part_len, in, in_part_len))
-		return 0;
-	    out_len += out_part_len;
-	    in += in_part_len;
-	} while ((in_len -= in_part_len) > UPDATE_LENGTH_LIMIT);
-    }
-#endif
-    if (!EVP_CipherUpdate(ctx, out ? (out + out_len) : 0,
-			  &out_part_len, in, (int)in_len))
-	return 0;
-    if (out_len_ptr) *out_len_ptr = out_len += out_part_len;
+    do {
+	int in_part_len = in_len > limit ? limit : (int)in_len;
+
+	if (!EVP_CipherUpdate(ctx, out ? (out + out_len) : 0,
+			      &out_part_len, in, in_part_len))
+	    return 0;
+
+	out_len += out_part_len;
+	in += in_part_len;
+    } while ((in_len -= limit) > 0);
+
+    if (out_len_ptr)
+	*out_len_ptr = out_len;
+
     return 1;
 }
 
@@ -362,9 +369,8 @@ ossl_cipher_update_long(EVP_CIPHER_CTX *ctx, unsigned char *out, long *out_len_p
  *  data chunk. When done, the output of Cipher#final should be additionally
  *  added to the result.
  *
- *  === Parameters
- *  +data+ is a nonempty string.
- *  +buffer+ is an optional string to store the result.
+ *  If +buffer+ is given, the encryption/decryption result will be written to
+ *  it. +buffer+ will be resized automatically.
  */
 static VALUE
 ossl_cipher_update(int argc, VALUE *argv, VALUE self)
@@ -375,6 +381,9 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
     VALUE data, str;
 
     rb_scan_args(argc, argv, "11", &data, &str);
+
+    if (!RTEST(rb_attr_get(self, id_key_set)))
+	ossl_raise(eCipherError, "key not set");
 
     StringValue(data);
     in = (unsigned char *)RSTRING_PTR(data);
@@ -477,6 +486,8 @@ ossl_cipher_set_key(VALUE self, VALUE key)
     if (EVP_CipherInit_ex(ctx, NULL, NULL, (unsigned char *)RSTRING_PTR(key), NULL, -1) != 1)
 	ossl_raise(eCipherError, NULL);
 
+    rb_ivar_set(self, id_key_set, Qtrue);
+
     return key;
 }
 
@@ -491,20 +502,22 @@ ossl_cipher_set_key(VALUE self, VALUE key)
  *  Cipher#random_iv to create a secure random IV.
  *
  *  Only call this method after calling Cipher#encrypt or Cipher#decrypt.
- *
- *  If not explicitly set, the OpenSSL default of an all-zeroes ("\\0") IV is
- *  used.
  */
 static VALUE
 ossl_cipher_set_iv(VALUE self, VALUE iv)
 {
     EVP_CIPHER_CTX *ctx;
-    int iv_len;
+    int iv_len = 0;
 
     StringValue(iv);
     GetCipher(self, ctx);
 
-    iv_len = EVP_CIPHER_CTX_iv_length(ctx);
+#if defined(HAVE_AUTHENTICATED_ENCRYPTION)
+    if (EVP_CIPHER_CTX_flags(ctx) & EVP_CIPH_FLAG_AEAD_CIPHER)
+	iv_len = (int)(VALUE)EVP_CIPHER_CTX_get_app_data(ctx);
+#endif
+    if (!iv_len)
+	iv_len = EVP_CIPHER_CTX_iv_length(ctx);
     if (RSTRING_LEN(iv) != iv_len)
 	ossl_raise(rb_eArgError, "iv must be %d bytes", iv_len);
 
@@ -512,6 +525,27 @@ ossl_cipher_set_iv(VALUE self, VALUE iv)
 	ossl_raise(eCipherError, NULL);
 
     return iv;
+}
+
+/*
+ *  call-seq:
+ *     cipher.authenticated? -> true | false
+ *
+ *  Indicated whether this Cipher instance uses an Authenticated Encryption
+ *  mode.
+ */
+static VALUE
+ossl_cipher_is_authenticated(VALUE self)
+{
+    EVP_CIPHER_CTX *ctx;
+
+    GetCipher(self, ctx);
+
+#if defined(HAVE_AUTHENTICATED_ENCRYPTION)
+    return (EVP_CIPHER_CTX_flags(ctx) & EVP_CIPH_FLAG_AEAD_CIPHER) ? Qtrue : Qfalse;
+#else
+    return Qfalse;
+#endif
 }
 
 #ifdef HAVE_AUTHENTICATED_ENCRYPTION
@@ -562,8 +596,9 @@ ossl_cipher_set_auth_data(VALUE self, VALUE data)
  *  then set on the decryption cipher to authenticate the contents of the
  *  ciphertext against changes. If the optional integer parameter +tag_len+ is
  *  given, the returned tag will be +tag_len+ bytes long. If the parameter is
- *  omitted, the maximum length of 16 bytes will be returned. For maximum
- *  security, the default of 16 bytes should be chosen.
+ *  omitted, the default length of 16 bytes or the length previously set by
+ *  #auth_tag_len= will be used. For maximum security, the longest possible
+ *  should be chosen.
  *
  *  The tag may only be retrieved after calling Cipher#final.
  */
@@ -574,7 +609,10 @@ ossl_cipher_get_auth_tag(int argc, VALUE *argv, VALUE self)
     EVP_CIPHER_CTX *ctx;
     int tag_len = 16;
 
-    if (rb_scan_args(argc, argv, "01", &vtag_len) == 1)
+    rb_scan_args(argc, argv, "01", &vtag_len);
+    if (NIL_P(vtag_len))
+	vtag_len = rb_attr_get(self, id_auth_tag_len);
+    if (!NIL_P(vtag_len))
 	tag_len = NUM2INT(vtag_len);
 
     GetCipher(self, ctx);
@@ -600,6 +638,9 @@ ossl_cipher_get_auth_tag(int argc, VALUE *argv, VALUE self)
  *  decrypting any of the ciphertext. After all decryption is
  *  performed, the tag is verified automatically in the call to
  *  Cipher#final.
+ *
+ *  For OCB mode, the tag length must be supplied with #auth_tag_len=
+ *  beforehand.
  */
 static VALUE
 ossl_cipher_set_auth_tag(VALUE self, VALUE vtag)
@@ -624,25 +665,69 @@ ossl_cipher_set_auth_tag(VALUE self, VALUE vtag)
 
 /*
  *  call-seq:
- *     cipher.authenticated? -> boolean
+ *     cipher.auth_tag_len = Integer -> Integer
  *
- *  Indicated whether this Cipher instance uses an Authenticated Encryption
- *  mode.
+ *  Sets the length of the authentication tag to be generated or to be given for
+ *  AEAD ciphers that requires it as in input parameter. Note that not all AEAD
+ *  ciphers support this method.
+ *
+ *  In OCB mode, the length must be supplied both when encrypting and when
+ *  decrypting, and must be before specifying an IV.
  */
 static VALUE
-ossl_cipher_is_authenticated(VALUE self)
+ossl_cipher_set_auth_tag_len(VALUE self, VALUE vlen)
 {
+    int tag_len = NUM2INT(vlen);
     EVP_CIPHER_CTX *ctx;
 
     GetCipher(self, ctx);
+    if (!(EVP_CIPHER_CTX_flags(ctx) & EVP_CIPH_FLAG_AEAD_CIPHER))
+	ossl_raise(eCipherError, "AEAD not supported by this cipher");
 
-    return (EVP_CIPHER_CTX_flags(ctx) & EVP_CIPH_FLAG_AEAD_CIPHER) ? Qtrue : Qfalse;
+    if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, tag_len, NULL))
+	ossl_raise(eCipherError, "unable to set authentication tag length");
+
+    /* for #auth_tag */
+    rb_ivar_set(self, id_auth_tag_len, INT2NUM(tag_len));
+
+    return vlen;
+}
+
+/*
+ * call-seq:
+ *   cipher.iv_len = integer -> integer
+ *
+ * Sets the IV/nonce length of the Cipher. Normally block ciphers don't allow
+ * changing the IV length, but some make use of IV for 'nonce'. You may need
+ * this for interoperability with other applications.
+ */
+static VALUE
+ossl_cipher_set_iv_length(VALUE self, VALUE iv_length)
+{
+    int len = NUM2INT(iv_length);
+    EVP_CIPHER_CTX *ctx;
+
+    GetCipher(self, ctx);
+    if (!(EVP_CIPHER_CTX_flags(ctx) & EVP_CIPH_FLAG_AEAD_CIPHER))
+	ossl_raise(eCipherError, "cipher does not support AEAD");
+
+    if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, len, NULL))
+	ossl_raise(eCipherError, "unable to set IV length");
+
+    /*
+     * EVP_CIPHER_CTX_iv_length() returns the default length. So we need to save
+     * the length somewhere. Luckily currently we aren't using app_data.
+     */
+    EVP_CIPHER_CTX_set_app_data(ctx, (void *)(VALUE)len);
+
+    return iv_length;
 }
 #else
 #define ossl_cipher_set_auth_data rb_f_notimplement
 #define ossl_cipher_get_auth_tag rb_f_notimplement
 #define ossl_cipher_set_auth_tag rb_f_notimplement
-#define ossl_cipher_is_authenticated rb_f_notimplement
+#define ossl_cipher_set_auth_tag_len rb_f_notimplement
+#define ossl_cipher_set_iv_length rb_f_notimplement
 #endif
 
 /*
@@ -692,36 +777,60 @@ ossl_cipher_set_padding(VALUE self, VALUE padding)
     return padding;
 }
 
-#define CIPHER_0ARG_INT(func)					\
-    static VALUE						\
-    ossl_cipher_##func(VALUE self)				\
-    {								\
-	EVP_CIPHER_CTX *ctx;					\
-	GetCipher(self, ctx);					\
-	return INT2NUM(EVP_CIPHER_##func(EVP_CIPHER_CTX_cipher(ctx)));	\
-    }
-
 /*
  *  call-seq:
  *     cipher.key_len -> integer
  *
  *  Returns the key length in bytes of the Cipher.
  */
-CIPHER_0ARG_INT(key_length)
+static VALUE
+ossl_cipher_key_length(VALUE self)
+{
+    EVP_CIPHER_CTX *ctx;
+
+    GetCipher(self, ctx);
+
+    return INT2NUM(EVP_CIPHER_CTX_key_length(ctx));
+}
+
 /*
  *  call-seq:
  *     cipher.iv_len -> integer
  *
  *  Returns the expected length in bytes for an IV for this Cipher.
  */
-CIPHER_0ARG_INT(iv_length)
+static VALUE
+ossl_cipher_iv_length(VALUE self)
+{
+    EVP_CIPHER_CTX *ctx;
+    int len = 0;
+
+    GetCipher(self, ctx);
+#if defined(HAVE_AUTHENTICATED_ENCRYPTION)
+    if (EVP_CIPHER_CTX_flags(ctx) & EVP_CIPH_FLAG_AEAD_CIPHER)
+	len = (int)(VALUE)EVP_CIPHER_CTX_get_app_data(ctx);
+#endif
+    if (!len)
+	len = EVP_CIPHER_CTX_iv_length(ctx);
+
+    return INT2NUM(len);
+}
+
 /*
  *  call-seq:
  *     cipher.block_size -> integer
  *
  *  Returns the size in bytes of the blocks on which this Cipher operates on.
  */
-CIPHER_0ARG_INT(block_size)
+static VALUE
+ossl_cipher_block_size(VALUE self)
+{
+    EVP_CIPHER_CTX *ctx;
+
+    GetCipher(self, ctx);
+
+    return INT2NUM(EVP_CIPHER_CTX_block_size(ctx));
+}
 
 /*
  * INIT
@@ -730,7 +839,8 @@ void
 Init_ossl_cipher(void)
 {
 #if 0
-    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
+    mOSSL = rb_define_module("OpenSSL");
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
 #endif
 
     /* Document-class: OpenSSL::Cipher
@@ -829,12 +939,10 @@ Init_ossl_cipher(void)
      * you absolutely need it</b>
      *
      * Because of this, you will end up with a mode that explicitly requires
-     * an IV in any case. Note that for backwards compatibility reasons,
-     * setting an IV is not explicitly mandated by the Cipher API. If not
-     * set, OpenSSL itself defaults to an all-zeroes IV ("\\0", not the
-     * character). Although the IV can be seen as public information, i.e.
-     * it may be transmitted in public once generated, it should still stay
-     * unpredictable to prevent certain kinds of attacks. Therefore, ideally
+     * an IV in any case. Although the IV can be seen as public information,
+     * i.e. it may be transmitted in public once generated, it should still
+     * stay unpredictable to prevent certain kinds of attacks. Therefore,
+     * ideally
      *
      * <b>Always create a secure random IV for every encryption of your
      * Cipher</b>
@@ -843,16 +951,16 @@ Init_ossl_cipher(void)
      * of the IV as a nonce (number used once) - it's public but random and
      * unpredictable. A secure random IV can be created as follows
      *
-     *  cipher = ...
-     *  cipher.encrypt
-     *  key = cipher.random_key
-     *  iv = cipher.random_iv # also sets the generated IV on the Cipher
+     *   cipher = ...
+     *   cipher.encrypt
+     *   key = cipher.random_key
+     *   iv = cipher.random_iv # also sets the generated IV on the Cipher
      *
-     *  Although the key is generally a random value, too, it is a bad choice
-     *  as an IV. There are elaborate ways how an attacker can take advantage
-     *  of such an IV. As a general rule of thumb, exposing the key directly
-     *  or indirectly should be avoided at all cost and exceptions only be
-     *  made with good reason.
+     * Although the key is generally a random value, too, it is a bad choice
+     * as an IV. There are elaborate ways how an attacker can take advantage
+     * of such an IV. As a general rule of thumb, exposing the key directly
+     * or indirectly should be avoided at all cost and exceptions only be
+     * made with good reason.
      *
      * === Calling Cipher#final
      *
@@ -906,29 +1014,42 @@ Init_ossl_cipher(void)
      * could otherwise be exploited to modify ciphertexts in ways beneficial to
      * potential attackers.
      *
-     * If no associated data is needed for encryption and later decryption,
-     * the OpenSSL library still requires a value to be set - "" may be used in
-     * case none is available. An example using the GCM (Galois Counter Mode):
+     * An associated data is used where there is additional information, such as
+     * headers or some metadata, that must be also authenticated but not
+     * necessarily need to be encrypted. If no associated data is needed for
+     * encryption and later decryption, the OpenSSL library still requires a
+     * value to be set - "" may be used in case none is available.
      *
-     *   cipher = OpenSSL::Cipher.new("aes-128-gcm")
-     *   cipher.encrypt
-     *   key = cipher.random_key
-     *   iv = cipher.random_iv
-     *   cipher.auth_data = ""
+     * An example using the GCM (Galois/Counter Mode). You have 16 bytes +key+,
+     * 12 bytes (96 bits) +nonce+ and the associated data +auth_data+. Be sure
+     * not to reuse the +key+ and +nonce+ pair. Reusing an nonce ruins the
+     * security gurantees of GCM mode.
+     *
+     *   cipher = OpenSSL::Cipher::AES.new(128, :GCM).encrypt
+     *   cipher.key = key
+     *   cipher.iv = nonce
+     *   cipher.auth_data = auth_data
      *
      *   encrypted = cipher.update(data) + cipher.final
-     *   tag = cipher.auth_tag
+     *   tag = cipher.auth_tag # produces 16 bytes tag by default
      *
-     *   decipher = OpenSSL::Cipher.new("aes-128-gcm")
-     *   decipher.decrypt
+     * Now you are the receiver. You know the +key+ and have received +nonce+,
+     * +auth_data+, +encrypted+ and +tag+ through an untrusted network. Note
+     * that GCM accepts an arbitrary length tag between 1 and 16 bytes. You may
+     * additionally need to check that the received tag has the correct length,
+     * or you allow attackers to forge a valid single byte tag for the tampered
+     * ciphertext with a probability of 1/256.
+     *
+     *   raise "tag is truncated!" unless tag.bytesize == 16
+     *   decipher = OpenSSL::Cipher::AES.new(128, :GCM).decrypt
      *   decipher.key = key
-     *   decipher.iv = iv
+     *   decipher.iv = nonce
      *   decipher.auth_tag = tag
-     *   decipher.auth_data = ""
+     *   decipher.auth_data = auth_data
      *
-     *   plain = decipher.update(encrypted) + decipher.final
+     *   decrypted = decipher.update(encrypted) + decipher.final
      *
-     *   puts data == plain #=> true
+     *   puts data == decrypted #=> true
      */
     cCipher = rb_define_class_under(mOSSL, "Cipher", rb_cObject);
     eCipherError = rb_define_class_under(cCipher, "CipherError", eOSSLError);
@@ -948,11 +1069,16 @@ Init_ossl_cipher(void)
     rb_define_method(cCipher, "auth_data=", ossl_cipher_set_auth_data, 1);
     rb_define_method(cCipher, "auth_tag=", ossl_cipher_set_auth_tag, 1);
     rb_define_method(cCipher, "auth_tag", ossl_cipher_get_auth_tag, -1);
+    rb_define_method(cCipher, "auth_tag_len=", ossl_cipher_set_auth_tag_len, 1);
     rb_define_method(cCipher, "authenticated?", ossl_cipher_is_authenticated, 0);
     rb_define_method(cCipher, "key_len=", ossl_cipher_set_key_length, 1);
     rb_define_method(cCipher, "key_len", ossl_cipher_key_length, 0);
     rb_define_method(cCipher, "iv=", ossl_cipher_set_iv, 1);
+    rb_define_method(cCipher, "iv_len=", ossl_cipher_set_iv_length, 1);
     rb_define_method(cCipher, "iv_len", ossl_cipher_iv_length, 0);
     rb_define_method(cCipher, "block_size", ossl_cipher_block_size, 0);
     rb_define_method(cCipher, "padding=", ossl_cipher_set_padding, 1);
+
+    id_auth_tag_len = rb_intern_const("auth_tag_len");
+    id_key_set = rb_intern_const("key_set");
 }

@@ -76,12 +76,18 @@ class TestNumeric < Test::Unit::TestCase
 
   def test_dup
     a = Numeric.new
-    assert_raise(TypeError) { a.dup }
+    assert_same a, a.dup
+  end
 
-    c = Module.new do
-      break eval("class C\u{3042} < Numeric; self; end")
+  def test_clone
+    a = Numeric.new
+    assert_same a, a.clone
+    assert_raise(ArgumentError) {a.clone(freeze: false)}
+
+    c = EnvUtil.labeled_class("\u{1f4a9}", Numeric)
+    assert_raise_with_message(ArgumentError, /\u{1f4a9}/) do
+      c.new.clone(freeze: false)
     end
-    assert_raise_with_message(TypeError, /C\u3042/) {c.new.dup}
   end
 
   def test_quo
@@ -252,7 +258,7 @@ class TestNumeric < Test::Unit::TestCase
   end
 
   def test_step
-    bignum = Integer::FIXNUM_MAX + 1
+    bignum = RbConfig::Limits['FIXNUM_MAX'] + 1
     assert_raise(ArgumentError) { 1.step(10, 1, 0) { } }
     assert_raise(ArgumentError) { 1.step(10, 1, 0).size }
     assert_raise(ArgumentError) { 1.step(10, 0) { } }
@@ -352,5 +358,32 @@ class TestNumeric < Test::Unit::TestCase
       end.new
       assert_raise(ArgumentError) {1.remainder(x)}
     end;
+  end
+
+  def test_comparison_comparable
+    bug12864 = '[ruby-core:77713] [Bug #12864]'
+
+    myinteger = Class.new do
+      include Comparable
+
+      def initialize(i)
+        @i = i.to_i
+      end
+      attr_reader :i
+
+      def <=>(other)
+        @i <=> (other.is_a?(self.class) ? other.i : other)
+      end
+    end
+
+    all_assertions(bug12864) do |a|
+      [5, 2**62, 2**61].each do |i|
+        a.for("%#x"%i) do
+          m = myinteger.new(i)
+          assert_equal(i, m)
+          assert_equal(m, i)
+        end
+      end
+    end
   end
 end

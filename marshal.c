@@ -178,8 +178,22 @@ check_dump_arg(VALUE ret, struct dump_arg *arg, const char *name)
     }
     return ret;
 }
+
+static VALUE
+check_userdump_arg(VALUE obj, ID sym, int argc, const VALUE *argv,
+		   struct dump_arg *arg, const char *name)
+{
+    VALUE ret = rb_funcallv(obj, sym, argc, argv);
+    VALUE klass = CLASS_OF(obj);
+    if (CLASS_OF(ret) == klass) {
+        rb_raise(rb_eRuntimeError, "%"PRIsVALUE"#%s returned same class instance",
+		 klass, name);
+    }
+    return check_dump_arg(ret, arg, name);
+}
+
 #define dump_funcall(arg, obj, sym, argc, argv) \
-    check_dump_arg(rb_funcallv(obj, sym, argc, argv), arg, name_##sym)
+    check_userdump_arg(obj, sym, argc, argv, arg, name_##sym)
 #define dump_check_funcall(arg, obj, sym, argc, argv) \
     check_dump_arg(rb_check_funcall(obj, sym, argc, argv), arg, name_##sym)
 
@@ -591,16 +605,18 @@ encoding_name(VALUE obj, struct dump_arg *arg)
 static void
 w_encoding(VALUE encname, struct dump_call_arg *arg)
 {
+    int limit = arg->limit;
+    if (limit >= 0) ++limit;
     switch (encname) {
       case Qfalse:
       case Qtrue:
 	w_symbol(ID2SYM(rb_intern("E")), arg->arg);
-	w_object(encname, arg->arg, arg->limit + 1);
+	w_object(encname, arg->arg, limit);
       case Qnil:
 	return;
     }
     w_symbol(ID2SYM(rb_id_encoding()), arg->arg);
-    w_object(encname, arg->arg, arg->limit + 1);
+    w_object(encname, arg->arg, limit);
 }
 
 static st_index_t
@@ -659,7 +675,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	rb_raise(rb_eArgError, "exceed depth limit");
     }
 
-    limit--;
+    if (limit > 0) limit--;
     c_arg.limit = limit;
     c_arg.arg = arg;
 
@@ -1010,7 +1026,7 @@ rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
     struct dump_arg *arg;
     VALUE wrapper; /* used to avoid memory leak in case of exception */
 
-    wrapper = TypedData_Make_Struct(rb_cData, struct dump_arg, &dump_arg_data, arg);
+    wrapper = TypedData_Make_Struct(0, struct dump_arg, &dump_arg_data, arg);
     arg->dest = 0;
     arg->symbols = st_init_numtable();
     arg->data    = rb_init_identtable();
@@ -2037,7 +2053,7 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc)
     else {
 	io_needed();
     }
-    wrapper = TypedData_Make_Struct(rb_cData, struct load_arg, &load_arg_data, arg);
+    wrapper = TypedData_Make_Struct(0, struct load_arg, &load_arg_data, arg);
     arg->infection = infection;
     arg->src = port;
     arg->offset = 0;

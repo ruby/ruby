@@ -1,7 +1,7 @@
 # one thread, one mutex (no contention)
 
 require 'thread'
-m = Mutex.new
+m = Thread::Mutex.new
 r = 0
 max = 2000
 lmax = max * max

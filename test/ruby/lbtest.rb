@@ -3,8 +3,8 @@ require 'thread'
 
 class LocalBarrier
   def initialize(n)
-    @wait = Queue.new
-    @done = Queue.new
+    @wait = Thread::Queue.new
+    @done = Thread::Queue.new
     @keeper = begin_keeper(n)
   end
 

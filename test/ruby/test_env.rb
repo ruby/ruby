@@ -46,6 +46,7 @@ class TestEnv < Test::Unit::TestCase
     end
     ENV['TEST'] = 'bar'
     assert_equal('bar', ENV['TEST'])
+    assert_predicate(ENV['TEST'], :tainted?)
     if IGNORE_CASE
       assert_equal('bar', ENV['test'])
     else
@@ -112,6 +113,7 @@ class TestEnv < Test::Unit::TestCase
     assert_invalid_env {|v| ENV[v]}
     ENV[PATH_ENV] = ""
     assert_equal("", ENV[PATH_ENV])
+    assert_predicate(ENV[PATH_ENV], :tainted?)
     assert_nil(ENV[""])
   end
 
@@ -130,6 +132,7 @@ class TestEnv < Test::Unit::TestCase
     assert_nothing_raised { ENV.fetch(PATH_ENV, "foo") }
     ENV[PATH_ENV] = ""
     assert_equal("", ENV.fetch(PATH_ENV))
+    assert_predicate(ENV.fetch(PATH_ENV), :tainted?)
   end
 
   def test_aset
@@ -319,6 +322,8 @@ class TestEnv < Test::Unit::TestCase
       assert_equal("foo", v)
     end
     assert_invalid_env {|var| ENV.assoc(var)}
+    assert_predicate(v, :tainted?)
+    assert_equal(Encoding.find("locale"), v.encoding)
   end
 
   def test_has_value2

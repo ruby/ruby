@@ -16,7 +16,7 @@ struct local_var_list {
 };
 
 static inline VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missing_reason call_status);
-static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const rb_cref_t *cref);
+static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const rb_cref_t *cref, int is_lambda);
 static inline VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
 static inline VALUE vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *argv, VALUE block_handler);
 static VALUE vm_exec(rb_thread_t *th);
@@ -68,7 +68,7 @@ vm_call0_cfunc(rb_thread_t* th, struct rb_calling_info *calling, const struct rb
     VALUE val;
 
     RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, cc->me->owner, ci->mid);
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, calling->recv, ci->mid, cc->me->owner, Qnil);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, calling->recv, ci->mid, ci->mid, cc->me->owner, Qnil);
     {
 	rb_control_frame_t *reg_cfp = th->cfp;
 	const rb_callable_method_entry_t *me = cc->me;
@@ -98,7 +98,7 @@ vm_call0_cfunc(rb_thread_t* th, struct rb_calling_info *calling, const struct rb
 	    rb_vm_pop_frame(th);
 	}
     }
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, calling->recv, ci->mid, callnig->cc->me->owner, val);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, calling->recv, ci->mid, ci->mid, callnig->cc->me->owner, val);
     RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, cc->me->owner, ci->mid);
 
     return val;
@@ -116,8 +116,8 @@ vm_call0_cfunc_with_frame(rb_thread_t* th, struct rb_calling_info *calling, cons
     ID mid = ci->mid;
     VALUE block_handler = calling->block_handler;
 
-    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, me->owner, mid);
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, mid, me->owner, Qnil);
+    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, me->owner, me->def->original_id);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, me->def->original_id, mid, me->owner, Qnil);
     {
 	rb_control_frame_t *reg_cfp = th->cfp;
 
@@ -136,8 +136,8 @@ vm_call0_cfunc_with_frame(rb_thread_t* th, struct rb_calling_info *calling, cons
 	VM_PROFILE_UP(C2C_POPF);
 	rb_vm_pop_frame(th);
     }
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, mid, me->owner, val);
-    RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, me->owner, mid);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, me->def->original_id, mid, me->owner, val);
+    RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, me->owner, me->def->original_id);
 
     return val;
 }
@@ -194,14 +194,17 @@ vm_call0_body(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_
       case VM_METHOD_TYPE_REFINED:
 	{
 	    const rb_method_type_t type = cc->me->def->type;
-	    VALUE super_class;
+	    VALUE super_class = cc->me->defined_class;
 
-	    if (type == VM_METHOD_TYPE_REFINED && cc->me->def->body.refined.orig_me) {
+	    if (type == VM_METHOD_TYPE_ZSUPER) {
+		super_class = RCLASS_ORIGIN(super_class);
+	    }
+	    else if (cc->me->def->body.refined.orig_me) {
 		cc->me = refined_method_callable_without_refinement(cc->me);
 		goto again;
 	    }
 
-	    super_class = RCLASS_SUPER(cc->me->defined_class);
+	    super_class = RCLASS_SUPER(super_class);
 
 	    if (!super_class || !(cc->me = rb_callable_method_entry(super_class, ci->mid))) {
 		enum method_missing_reason ex = (type == VM_METHOD_TYPE_ZSUPER) ? MISSING_SUPER : 0;
@@ -1277,7 +1280,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 {
     int state;
     VALUE result = Qundef;
-    rb_thread_t *th = GET_THREAD();
+    rb_thread_t *volatile th = GET_THREAD();
     struct rb_block block;
     const struct rb_block *base_block;
     volatile VALUE file;
@@ -1570,6 +1573,7 @@ yield_under(VALUE under, VALUE self, int argc, const VALUE *argv)
     struct rb_captured_block new_captured;
     const VALUE *ep = NULL;
     rb_cref_t *cref;
+    int is_lambda = FALSE;
 
     if (block_handler != VM_BLOCK_HANDLER_NONE) {
       again:
@@ -1585,10 +1589,12 @@ yield_under(VALUE under, VALUE self, int argc, const VALUE *argv)
 	    new_block_handler = VM_BH_FROM_IFUNC_BLOCK(&new_captured);
 	    break;
 	  case block_handler_type_proc:
+	    is_lambda = rb_proc_lambda_p(block_handler) != Qfalse;
 	    block_handler = vm_proc_to_block_handler(VM_BH_TO_PROC(block_handler));
 	    goto again;
 	  case block_handler_type_symbol:
-	    return rb_sym_proc_call(SYM2ID(VM_BH_TO_SYMBOL(block_handler)), 1, &self, VM_BLOCK_HANDLER_NONE);
+	    return rb_sym_proc_call(SYM2ID(VM_BH_TO_SYMBOL(block_handler)),
+				    argc, argv, VM_BLOCK_HANDLER_NONE);
 	}
 
 	new_captured.self = self;
@@ -1598,7 +1604,7 @@ yield_under(VALUE under, VALUE self, int argc, const VALUE *argv)
     }
 
     cref = vm_cref_push(th, under, ep, TRUE);
-    return vm_yield_with_cref(th, argc, argv, cref);
+    return vm_yield_with_cref(th, argc, argv, cref, is_lambda);
 }
 
 VALUE
@@ -1619,7 +1625,7 @@ rb_yield_refine_block(VALUE refinement, VALUE refinements)
 	CREF_REFINEMENTS_SET(cref, refinements);
 	VM_FORCE_WRITE_SPECIAL_CONST(&VM_CF_LEP(th->cfp)[VM_ENV_DATA_INDEX_SPECVAL], new_block_handler);
 	new_captured.self = refinement;
-	return vm_yield_with_cref(th, 0, NULL, cref);
+	return vm_yield_with_cref(th, 0, NULL, cref, FALSE);
     }
 }
 
@@ -1666,6 +1672,8 @@ singleton_class_for_eval(VALUE self)
     switch (BUILTIN_TYPE(self)) {
       case T_FLOAT: case T_BIGNUM: case T_SYMBOL:
 	return Qnil;
+      case T_STRING:
+	if (FL_TEST_RAW(self, RSTRING_FSTR)) return Qnil;
       default:
 	return rb_singleton_class(self);
     }
@@ -1992,7 +2000,7 @@ rb_catch(const char *tag, VALUE (*func)(), VALUE data)
     return rb_catch_obj(vtag, func, data);
 }
 
-static VALUE vm_catch_protect(VALUE, rb_block_call_func *, VALUE, int *, rb_thread_t *);
+static VALUE vm_catch_protect(VALUE, rb_block_call_func *, VALUE, int *, rb_thread_t *volatile);
 
 VALUE
 rb_catch_obj(VALUE t, VALUE (*func)(), VALUE data)
@@ -2013,11 +2021,11 @@ rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
 
 static VALUE
 vm_catch_protect(VALUE tag, rb_block_call_func *func, VALUE data,
-		 int *stateptr, rb_thread_t *th)
+		 int *stateptr, rb_thread_t *volatile th)
 {
     int state;
     VALUE val = Qnil;		/* OK */
-    rb_control_frame_t *saved_cfp = th->cfp;
+    rb_control_frame_t *volatile saved_cfp = th->cfp;
 
     TH_PUSH_TAG(th);
 

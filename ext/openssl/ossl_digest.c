@@ -80,10 +80,13 @@ ossl_digest_new(const EVP_MD *md)
     EVP_MD_CTX *ctx;
 
     ret = ossl_digest_alloc(cDigest);
-    GetDigest(ret, ctx);
-    if (EVP_DigestInit_ex(ctx, md, NULL) != 1) {
-	ossl_raise(eDigestError, "Digest initialization failed.");
-    }
+    ctx = EVP_MD_CTX_new();
+    if (!ctx)
+	ossl_raise(eDigestError, "EVP_MD_CTX_new");
+    RTYPEDDATA_DATA(ret) = ctx;
+
+    if (!EVP_DigestInit_ex(ctx, md, NULL))
+	ossl_raise(eDigestError, "Digest initialization failed");
 
     return ret;
 }
@@ -94,13 +97,7 @@ ossl_digest_new(const EVP_MD *md)
 static VALUE
 ossl_digest_alloc(VALUE klass)
 {
-    VALUE obj = TypedData_Wrap_Struct(klass, &ossl_digest_type, 0);
-    EVP_MD_CTX *ctx = EVP_MD_CTX_create();
-    if (ctx == NULL)
-	ossl_raise(rb_eRuntimeError, "EVP_MD_CTX_create() failed");
-    RTYPEDDATA_DATA(obj) = ctx;
-
-    return obj;
+    return TypedData_Wrap_Struct(klass, &ossl_digest_type, 0);
 }
 
 VALUE ossl_digest_update(VALUE, VALUE);
@@ -111,17 +108,16 @@ VALUE ossl_digest_update(VALUE, VALUE);
  *
  * Creates a Digest instance based on +string+, which is either the ln
  * (long name) or sn (short name) of a supported digest algorithm.
+ *
  * If +data+ (a +String+) is given, it is used as the initial input to the
  * Digest instance, i.e.
+ *
  *   digest = OpenSSL::Digest.new('sha256', 'digestdata')
+ *
  * is equal to
+ *
  *   digest = OpenSSL::Digest.new('sha256')
  *   digest.update('digestdata')
- *
- * === Example
- *   digest = OpenSSL::Digest.new('sha1')
- *
- *
  */
 static VALUE
 ossl_digest_initialize(int argc, VALUE *argv, VALUE self)
@@ -134,10 +130,15 @@ ossl_digest_initialize(int argc, VALUE *argv, VALUE self)
     md = GetDigestPtr(type);
     if (!NIL_P(data)) StringValue(data);
 
-    GetDigest(self, ctx);
-    if (EVP_DigestInit_ex(ctx, md, NULL) != 1) {
-	ossl_raise(eDigestError, "Digest initialization failed.");
+    TypedData_Get_Struct(self, EVP_MD_CTX, &ossl_digest_type, ctx);
+    if (!ctx) {
+	RTYPEDDATA_DATA(self) = ctx = EVP_MD_CTX_new();
+	if (!ctx)
+	    ossl_raise(eDigestError, "EVP_MD_CTX_new");
     }
+
+    if (!EVP_DigestInit_ex(ctx, md, NULL))
+	ossl_raise(eDigestError, "Digest initialization failed");
 
     if (!NIL_P(data)) return ossl_digest_update(self, data);
     return self;
@@ -151,7 +152,12 @@ ossl_digest_copy(VALUE self, VALUE other)
     rb_check_frozen(self);
     if (self == other) return self;
 
-    GetDigest(self, ctx1);
+    TypedData_Get_Struct(self, EVP_MD_CTX, &ossl_digest_type, ctx1);
+    if (!ctx1) {
+	RTYPEDDATA_DATA(self) = ctx1 = EVP_MD_CTX_new();
+	if (!ctx1)
+	    ossl_raise(eDigestError, "EVP_MD_CTX_new");
+    }
     SafeGetDigest(other, ctx2);
 
     if (!EVP_MD_CTX_copy(ctx1, ctx2)) {
@@ -203,7 +209,9 @@ ossl_digest_update(VALUE self, VALUE data)
 
     StringValue(data);
     GetDigest(self, ctx);
-    EVP_DigestUpdate(ctx, RSTRING_PTR(data), RSTRING_LEN(data));
+
+    if (!EVP_DigestUpdate(ctx, RSTRING_PTR(data), RSTRING_LEN(data)))
+	ossl_raise(eDigestError, "EVP_DigestUpdate");
 
     return self;
 }
@@ -218,19 +226,21 @@ ossl_digest_finish(int argc, VALUE *argv, VALUE self)
 {
     EVP_MD_CTX *ctx;
     VALUE str;
-
-    rb_scan_args(argc, argv, "01", &str);
+    int out_len;
 
     GetDigest(self, ctx);
+    rb_scan_args(argc, argv, "01", &str);
+    out_len = EVP_MD_CTX_size(ctx);
 
     if (NIL_P(str)) {
-        str = rb_str_new(NULL, EVP_MD_CTX_size(ctx));
+        str = rb_str_new(NULL, out_len);
     } else {
         StringValue(str);
-        rb_str_resize(str, EVP_MD_CTX_size(ctx));
+        rb_str_resize(str, out_len);
     }
 
-    EVP_DigestFinal_ex(ctx, (unsigned char *)RSTRING_PTR(str), NULL);
+    if (!EVP_DigestFinal_ex(ctx, (unsigned char *)RSTRING_PTR(str), NULL))
+	ossl_raise(eDigestError, "EVP_DigestFinal_ex");
 
     return str;
 }
@@ -239,7 +249,7 @@ ossl_digest_finish(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *      digest.name -> string
  *
- * Returns the sn of this Digest instance.
+ * Returns the sn of this Digest algorithm.
  *
  * === Example
  *   digest = OpenSSL::Digest::SHA512.new
@@ -310,7 +320,8 @@ Init_ossl_digest(void)
     rb_require("digest");
 
 #if 0
-    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL */
+    mOSSL = rb_define_module("OpenSSL");
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
 #endif
 
     /* Document-class: OpenSSL::Digest

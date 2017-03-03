@@ -92,7 +92,7 @@ class RDoc::I18n::Locale
   end
 
   ##
-  # Translates the +message+ into locale. If there is no tranlsation
+  # Translates the +message+ into locale. If there is no translation
   # messages for +message+ in locale, +message+ itself is returned.
 
   def translate(message)

@@ -182,6 +182,26 @@ class TestRequire < Test::Unit::TestCase
     end
   end
 
+  def assert_syntax_error_backtrace
+    Dir.mktmpdir do |tmp|
+      req = File.join(tmp, "test.rb")
+      File.write(req, "'\n")
+      e = assert_raise_with_message(SyntaxError, /unterminated/) {
+        yield req
+      }
+      assert_not_nil(bt = e.backtrace)
+      assert_not_empty(bt.find_all {|b| b.start_with? __FILE__})
+    end
+  end
+
+  def test_require_syntax_error
+    assert_syntax_error_backtrace {|req| require req}
+  end
+
+  def test_load_syntax_error
+    assert_syntax_error_backtrace {|req| load req}
+  end
+
   def test_define_class
     begin
       require "socket"
@@ -677,9 +697,9 @@ class TestRequire < Test::Unit::TestCase
     bug7530 = '[ruby-core:50645]'
     Tempfile.create(%w'bug-7530- .rb') {|script|
       script.close
-      assert_in_out_err([{"RUBYOPT" => nil}, "-", script.path], <<-INPUT, %w(:ok), [], bug7530)
+      assert_in_out_err([{"RUBYOPT" => nil}, "-", script.path], <<-INPUT, %w(:ok), [], bug7530, timeout: 60)
         PATH = ARGV.shift
-        THREADS = 2
+        THREADS = 4
         ITERATIONS_PER_THREAD = 1000
 
         THREADS.times.map {
@@ -700,14 +720,14 @@ class TestRequire < Test::Unit::TestCase
       f.close
       File.unlink(f.path)
       File.mkfifo(f.path)
-      assert_ruby_status(["-", f.path], <<-END, timeout: 3)
-      th = Thread.current
-      Thread.start {begin sleep(0.001) end until th.stop?; th.raise(IOError)}
-      begin
-        load(ARGV[0])
-      rescue IOError
-      end
-      END
+      assert_separately(["-", f.path], "#{<<-"begin;"}\n#{<<-"end;"}", timeout: 3)
+      begin;
+        th = Thread.current
+        Thread.start {begin sleep(0.001) end until th.stop?; th.raise(IOError)}
+        assert_raise(IOError) do
+          load(ARGV[0])
+        end
+      end;
     }
   end if File.respond_to?(:mkfifo)
 
@@ -717,22 +737,49 @@ class TestRequire < Test::Unit::TestCase
       File.unlink(f.path)
       File.mkfifo(f.path)
 
-      assert_ruby_status(["-", f.path], <<-INPUT, timeout: 3)
-      path = ARGV[0]
-      th = Thread.current
-      Thread.start {
-        begin
-          sleep(0.001)
-        end until th.stop?
-        open(path, File::WRONLY | File::NONBLOCK) {|fifo_w|
-          fifo_w.print "__END__\n" # ensure finishing
+      assert_separately(["-", f.path], "#{<<-"begin;"}\n#{<<-"end;"}", timeout: 3)
+      begin;
+        path = ARGV[0]
+        th = Thread.current
+        $ok = false
+        Thread.start {
+          begin
+            sleep(0.001)
+          end until th.stop?
+          open(path, File::WRONLY | File::NONBLOCK) {|fifo_w|
+            fifo_w.print "$ok = true\n__END__\n" # ensure finishing
+          }
         }
-      }
 
-      load(path)
-    INPUT
+        load(path)
+        assert($ok)
+      end;
     }
   end if File.respond_to?(:mkfifo)
+
+  def test_loading_fifo_fd_leak
+    Tempfile.create(%w'fifo .rb') {|f|
+      f.close
+      File.unlink(f.path)
+      File.mkfifo(f.path)
+      assert_separately(["-", f.path], "#{<<-"begin;"}\n#{<<-"end;"}", timeout: 3)
+      begin;
+        Process.setrlimit(Process::RLIMIT_NOFILE, 50)
+        th = Thread.current
+        100.times do |i|
+          Thread.start {begin sleep(0.001) end until th.stop?; th.raise(IOError)}
+          assert_raise(IOError, "\#{i} time") do
+            begin
+              tap {tap {tap {load(ARGV[0])}}}
+            rescue LoadError
+              GC.start
+              retry
+            end
+          end
+        end
+      end;
+    }
+  end if File.respond_to?(:mkfifo) and defined?(Process::RLIMIT_NOFILE)
 
   def test_throw_while_loading
     Tempfile.create(%w'bug-11404 .rb') do |f|

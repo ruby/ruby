@@ -43,6 +43,7 @@ WINDOWS_1255_TO_UCS_TBL = [
   ["C7",0x5B7],
   ["C8",0x5B8],
   ["C9",0x5B9],
+  ["CA",0x5BA],
   ["CB",0x5BB],
   ["CC",0x5BC],
   ["CD",0x5BD],

@@ -147,7 +147,7 @@ module TestStruct
     assert_equal("#<struct :@a=3>", o.inspect)
 
     methods = klass.instance_methods(false)
-    assert_equal([:@a, :"@a="].inspect, methods.inspect, '[Bug #8756]')
+    assert_equal([:@a, :"@a="].sort.inspect, methods.sort.inspect, '[Bug #8756]')
     assert_include(methods, :@a)
     assert_include(methods, :"@a=")
   end

@@ -205,8 +205,8 @@ module REXML
 
       # Now, get the bounds.  The XPath bounds are 1..length; the ruby bounds
       # are 0..length.  Therefore, we have to offset the bounds by one.
-      ruby_start = ruby_start.round - 1
-      ruby_length = ruby_length.round
+      ruby_start = round(ruby_start) - 1
+      ruby_length = round(ruby_length)
 
       if ruby_start < 0
        ruby_length += ruby_start unless infinite_length
@@ -376,10 +376,13 @@ module REXML
     end
 
     def Functions::round( number )
+      number = number(number)
       begin
-        number(number).round
+        neg = number.negative?
+        number = number.abs.round(half: :up)
+        neg ? -number : number
       rescue FloatDomainError
-        number(number)
+        number
       end
     end
 

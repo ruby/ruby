@@ -59,7 +59,7 @@ Paragraphe 2.
     assert_equal expected, translate(raw)
   end
 
-  def test_translate_not_transalted_message
+  def test_translate_not_translated_message
     nonexistent_paragraph = <<-PARAGRAPH.strip
 Nonexistent paragraph.
     PARAGRAPH

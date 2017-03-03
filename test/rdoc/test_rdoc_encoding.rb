@@ -25,8 +25,6 @@ class TestRDocEncoding < RDoc::TestCase
   end
 
   def test_class_read_file_encoding
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     expected = "# coding: utf-8\nhi everybody"
 
     @tempfile.write expected
@@ -38,8 +36,6 @@ class TestRDocEncoding < RDoc::TestCase
   end
 
   def test_class_read_file_encoding_convert
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     content = ""
     content.encode! 'ISO-8859-1'
     content << "# coding: ISO-8859-1\nhi \xE9verybody"
@@ -53,8 +49,6 @@ class TestRDocEncoding < RDoc::TestCase
   end
 
   def test_class_read_file_encoding_fail
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     @tempfile.write "# coding: utf-8\n\317\200" # pi
     @tempfile.flush
 
@@ -70,8 +64,6 @@ class TestRDocEncoding < RDoc::TestCase
   end
 
   def test_class_read_file_encoding_fancy
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     expected = "# -*- coding: utf-8; fill-column: 74 -*-\nhi everybody"
     expected.encode! Encoding::UTF_8
 
@@ -84,8 +76,6 @@ class TestRDocEncoding < RDoc::TestCase
   end
 
   def test_class_read_file_encoding_force_transcode
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     @tempfile.write "# coding: utf-8\n\317\200" # pi
     @tempfile.flush
 
@@ -96,8 +86,6 @@ class TestRDocEncoding < RDoc::TestCase
   end
 
   def test_class_read_file_encoding_guess
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     path = File.expand_path '../test.ja.txt', __FILE__
     content = RDoc::Encoding.read_file path, Encoding::UTF_8
 
@@ -105,8 +93,6 @@ class TestRDocEncoding < RDoc::TestCase
   end
 
   def test_class_read_file_encoding_invalid
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     @tempfile.write "# coding: ascii\nM\xE4r"
     @tempfile.flush
 
@@ -121,8 +107,6 @@ class TestRDocEncoding < RDoc::TestCase
   end
 
   def test_class_read_file_encoding_with_signature
-    skip "Encoding not implemented" unless defined? ::Encoding
-
     @tempfile.write "\xEF\xBB\xBFhi everybody"
     @tempfile.flush
 
@@ -133,8 +117,6 @@ class TestRDocEncoding < RDoc::TestCase
   end
 
   def test_class_read_file_encoding_iso_2022_jp
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     input = "# coding: ISO-2022-JP\n:\e$B%3%^%s%I\e(B:"
 
     @tempfile.write input
@@ -154,8 +136,6 @@ class TestRDocEncoding < RDoc::TestCase
     RDoc::Encoding.set_encoding s
 
     # sanity check for 1.8
-
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
 
     assert_equal Encoding::UTF_8, s.encoding
 
@@ -192,8 +172,6 @@ class TestRDocEncoding < RDoc::TestCase
   end
 
   def test_class_set_encoding_bad
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     s = ""
     expected = s.encoding
     RDoc::Encoding.set_encoding s
@@ -217,12 +195,42 @@ class TestRDocEncoding < RDoc::TestCase
     end
   end
 
-  def test_sanity
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
+  def test_skip_frozen_string_literal
+    expected = "# frozen_string_literal: false\nhi everybody"
 
+    @tempfile.write expected
+    @tempfile.flush
+
+    contents = RDoc::Encoding.read_file @tempfile.path, Encoding::UTF_8
+    assert_equal "hi everybody", contents
+    assert_equal Encoding::UTF_8, contents.encoding
+  end
+
+  def test_skip_frozen_string_literal_after_coding
+    expected = "# coding: utf-8\n# frozen-string-literal: false\nhi everybody"
+
+    @tempfile.write expected
+    @tempfile.flush
+
+    contents = RDoc::Encoding.read_file @tempfile.path, Encoding::UTF_8
+    assert_equal "hi everybody", contents
+    assert_equal Encoding::UTF_8, contents.encoding
+  end
+
+  def test_skip_frozen_string_literal_before_coding
+    expected = "# frozen_string_literal: false\n# coding: utf-8\nhi everybody"
+
+    @tempfile.write expected
+    @tempfile.flush
+
+    contents = RDoc::Encoding.read_file @tempfile.path, Encoding::UTF_8
+    assert_equal "hi everybody", contents
+    assert_equal Encoding::UTF_8, contents.encoding
+  end
+
+  def test_sanity
     assert_equal Encoding::US_ASCII, ''.encoding,
                  'If this file is not ASCII tests may incorrectly pass'
   end
 
 end
-

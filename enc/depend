@@ -55,6 +55,7 @@ TRANSCLEANOBJS = <%=cleanobjs.map {|clean|
   clean.gsub(/\$\*(\.\w+)?/) {"$(TRANSOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
 }.join(" ")%>
 LIBTRANS=enc/libtrans.$(LIBEXT)
+UNICODE_HDR_DIR = --missing-unicode-header-dir--
 
 encs: all
 % if MODULE_TYPE == :static
@@ -107,7 +108,11 @@ enc/<%=e%>.$(OBJEXT): <%=deps.map {|n| rule_subst % n}.join(' ')%>
 %     src = "#{e}.trans"
 
 <%=transvpath % "#{e}.c"%>: <%= transvpath % "#{e}.trans"%>
-%     src = [*IO.read(File.join($srcdir, "trans", src)).scan(/^\s*require\s+[\'\"]([^\'\"]*)/).flatten.map{|c|c+".rb"}]
+%     trans = IO.read(File.join($srcdir, "trans", src))
+%     src = trans.scan(/^\s*require\s+[\'\"]([^\'\"]*)/).flatten.map{|c|c+".rb"}
+%     if src.empty?
+%       src = trans.scan(/^\s*transcode_tblgen_\w+\s+[\'\"]([^\'\"]*)/).flatten.map{|c|c.downcase+"-tbl.rb"}
+%     end
 <%=transvpath % "#{e}.c"%>: <%= src.map {|s| transvpath % "#{s}"}.join(" ")%> $(srcdir)/tool/transcode-tblgen.rb
 %   end
 
@@ -602,8 +607,8 @@ enc/unicode.$(OBJEXT): $(top_srcdir)/regint.h
 enc/unicode.$(OBJEXT): config.h
 enc/unicode.$(OBJEXT): defines.h
 enc/unicode.$(OBJEXT): enc/unicode.c
-enc/unicode.$(OBJEXT): enc/unicode/data/$(UNICODE_VERSION)/casefold.h
-enc/unicode.$(OBJEXT): enc/unicode/data/$(UNICODE_VERSION)/name2ctype.h
+enc/unicode.$(OBJEXT): $(UNICODE_HDR_DIR)/casefold.h
+enc/unicode.$(OBJEXT): $(UNICODE_HDR_DIR)/name2ctype.h
 enc/unicode.$(OBJEXT): intern.h
 enc/unicode.$(OBJEXT): missing.h
 enc/unicode.$(OBJEXT): oniguruma.h

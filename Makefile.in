@@ -174,7 +174,7 @@ OBJDUMP       = @OBJDUMP@
 OBJCOPY       = @OBJCOPY@
 VCS           = @VCS@
 VCSUP         = @VCSUP@
-DTRACE        = @DTRACE@
+DTRACE        = @DTRACE@ @DTRACE_OPT@
 DTRACE_EXT    = @DTRACE_EXT@
 DTRACE_OBJ    = @DTRACE_OBJ@
 DTRACE_REBUILD= @DTRACE_REBUILD@
@@ -234,9 +234,11 @@ $(LIBRUBY_A):
 		$(ECHO) linking static-library $@
 		$(Q) $(AR) $(ARFLAGS) $@ $(LIBRUBY_A_OBJS) $(INITOBJS)
 		@-$(RANLIB) $@ 2> /dev/null || true
+
+verify-static-library: $(LIBRUBY_A)
 		$(ECHO) verifying static-library $@
 		@$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)conftest$(EXEEXT)
-		@$(RM) conftest$(EXEEXT) conftest.c
+		@$(RMALL) conftest$(EXEEXT) conftest.c conftest.dSYM
 
 $(LIBRUBY_SO):
 		@-$(PRE_LIBRUBY_UPDATE)
@@ -406,6 +408,7 @@ clean-local::
 	$(Q)$(RM) ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output \
 		enc/encinit.c enc/encinit.$(OBJEXT)
 	-$(Q)$(RM) $(pkgconfig_DATA)
+	-$(Q)$(RMALL) ruby-runner$(EXEEXT) ruby-runner.h *.dSYM
 
 distclean-local::
 	$(Q)$(RM) ext/config.cache $(RBCONFIG) Doxyfile
@@ -413,33 +416,48 @@ distclean-local::
 	-$(Q)$(RM) $(INSTALLED_LIST) $(arch_hdrdir)/ruby/config.h verconf.h
 	-$(Q)$(RMDIRS) $(arch_hdrdir)/ruby 2> /dev/null || true
 
-clean-ext distclean-ext realclean-ext::
-	@cd ext 2>/dev/null || exit 0; set dummy `echo "${EXTS}" | tr , ' '`; shift; \
+ext/clean.sub gems/clean.sub:: ext/clean.mk
+ext/distclean.sub gems/distclean.sub:: ext/distclean.mk
+ext/realclean.sub gems/realclean.sub:: ext/realclean.mk
+
+ext/clean.mk ext/distclean.mk ext/realclean.mk::
+	$(Q) [ -f $(EXTS_MK) ] && exec $(MAKE) -f $(EXTS_MK) $(@F:.mk=)
+
+ext/clean:: ext/clean.sub
+ext/distclean:: ext/distclean.sub
+ext/realclean:: ext/realclean.sub
+gems/clean:: gems/clean.sub
+gems/distclean:: gems/distclean.sub
+gems/realclean:: gems/realclean.sub
+
+ext/clean.sub ext/distclean.sub ext/realclean.sub \
+gems/clean.sub gems/distclean.sub gems/realclean.sub::
+	$(Q) set dummy `echo "${EXTS}" | tr , ' '`; shift; \
 	test "$$#" = 0 && set .; \
 	set dummy `\
-	    find "$$@" -name Makefile -print | sed 's:^\./::;s:/Makefile$$::' | sort; \
+	    cd $(@D) 2>/dev/null && \
+	    find "$$@" \( -name Makefile -o -name exts.mk \) -print | \
+	    sed -n 's:^\./::;s:^:$(@D)/:;s:/[^/][^/]*$$::p' | sort -u; \
 	`; shift; \
-	cd ..; \
 	for dir do \
-	    echo $(@:-ext=)ing "$$dir"; \
-	    (cd "ext/$$dir" && exec $(MAKE) $(MFLAGS) $(@:-ext=)) && \
-	    case "$@" in \
-	    *distclean-ext*|*realclean-ext*) \
-		$(RMDIRS) "ext/$$dir" 2> /dev/null || true;; \
-	    esac; \
-	done
-	-$(Q)$(RM) ext/extinit.$(OBJEXT)
+	    $(RM) "$$dir/exts.mk"; \
+	    if [ -f "$$dir/Makefile" ]; then \
+		echo $(@F:.sub=)ing "$$dir"; \
+		(cd "$$dir" && exec $(MAKE) $(mflags) $(@F:.sub=)); \
+	    fi; \
+	done || true
 
-distclean-ext realclean-ext::
-	-$(Q)$(RM) ext/extinit.c
-	-$(Q)$(RMDIR) ext 2> /dev/null || true
-
-clean-extout:
+ext/distclean ext/realclean gems/distclean gems/realclean::
+	$(Q) set dummy `echo "${EXTS}" | tr , ' '`; shift; \
+	test "$$#" = 0 && set .; \
+	cd $(@D) 2>/dev/null && \
+	find "$$@" -type d -empty -exec $(RMDIRS) {} + 2> /dev/null || true
+	$(Q) $(RMDIRS) $(@D)
 
 clean-enc distclean-enc realclean-enc:
 	@test -f "$(ENC_MK)" || exit 0; \
 	echo $(@:-enc=ing) encodings; \
-	exec $(MAKE) -f $(ENC_MK) $(MFLAGS) $(@:-enc=)
+	exec $(MAKE) $(MAKE_ENC) $(@:-enc=)
 
 ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 	$(ECHO) compiling $@
@@ -466,7 +484,7 @@ update-mspec:
 	  $(Q1:0=:) set -x; \
 	  exec git clone $(MSPEC_GIT_URL) spec/mspec; \
 	fi
-	$(Q)cd $(srcdir)/spec/mspec && exec git --no-pager log -1 --oneline
+	$(Q)$(CHDIR) $(srcdir)/spec/mspec && exec git --no-pager log -1 --oneline
 
 update-rubyspec: update-mspec
 	@$(CHDIR) $(srcdir); \
@@ -480,7 +498,7 @@ update-rubyspec: update-mspec
 	  $(Q1:0=:) set -x; \
 	  exec git clone $(RUBYSPEC_GIT_URL) spec/rubyspec; \
 	fi
-	$(Q)cd $(srcdir)/spec/rubyspec && exec git --no-pager log -1 --oneline
+	$(Q)$(CHDIR) $(srcdir)/spec/rubyspec && exec git --no-pager log -1 --oneline
 
 test-rubyspec-precheck:
 	@if [ ! -d $(srcdir)/spec/rubyspec ]; then echo No rubyspec here.  make update-rubyspec first.; exit 1; fi

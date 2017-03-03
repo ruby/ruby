@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'test/unit'
 require 'pstore'
 require 'tmpdir'
@@ -75,34 +75,39 @@ class PStoreTest < Test::Unit::TestCase
   end
 
   def test_thread_safe
+    q1 = Queue.new
     assert_raise(PStore::Error) do
-      flag = false
       th = Thread.new do
         @pstore.transaction do
           @pstore[:foo] = "bar"
-          flag = true
-          sleep 1
+          q1.push true
+          sleep
         end
       end
       begin
-        sleep 0.1 until flag
+        q1.pop
         @pstore.transaction {}
       ensure
+        th.kill
         th.join
       end
     end
+    q2 = Queue.new
     begin
       pstore = PStore.new(second_file, true)
-      flag = false
+      cur = Thread.current
       th = Thread.new do
         pstore.transaction do
           pstore[:foo] = "bar"
-          flag = true
-          sleep 1
+          q1.push true
+          q2.pop
+          # wait for cur to enter a transaction
+          sleep 0.1 until cur.stop?
         end
       end
       begin
-        sleep 0.1 until flag
+        q1.pop
+        q2.push true
         assert_equal("bar", pstore.transaction { pstore[:foo] })
       ensure
         th.join

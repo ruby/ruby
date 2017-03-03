@@ -17,7 +17,7 @@ class TestMethod < Test::Unit::TestCase
       end
     end
 
-    class B<A
+    class B < A
       private :foo1, :foo2
     end
 

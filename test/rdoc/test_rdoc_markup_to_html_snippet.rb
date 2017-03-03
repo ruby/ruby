@@ -495,7 +495,7 @@ be guessed, raises an error if +name+ couldn't be guessed.
 = \RDoc - Ruby Documentation System
 
 * {RDoc Project Page}[https://github.com/rdoc/rdoc/]
-* {RDoc Documentation}[http://docs.seattlerb.org/rdoc]
+* {RDoc Documentation}[https://rdoc.github.io/rdoc]
 * {RDoc Bug Tracker}[https://github.com/rdoc/rdoc/issues]
 
 == DESCRIPTION:
@@ -709,4 +709,3 @@ This routine modifies its +comment+ parameter.
   end
 
 end
-

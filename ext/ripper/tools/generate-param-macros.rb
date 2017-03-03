@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 off = true
 ARGF.each do |line|
   case line

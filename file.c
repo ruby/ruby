@@ -63,6 +63,10 @@ int flock(int, int);
 #include <pwd.h>
 #endif
 
+#ifdef HAVE_SYS_SYSMACROS_H
+#include <sys/sysmacros.h>
+#endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -191,7 +195,9 @@ rb_get_path_check_convert(VALUE obj, VALUE tmp, int level)
     }
 
     check_path_encoding(tmp);
-    StringValueCStr(tmp);
+    if (!rb_str_to_cstr(tmp)) {
+	rb_raise(rb_eArgError, "path name contains null byte");
+    }
 
     return rb_str_new4(tmp);
 }
@@ -471,7 +477,7 @@ rb_stat_cmp(VALUE self, VALUE other)
 
 /*
  *  call-seq:
- *     stat.dev    -> fixnum
+ *     stat.dev    -> integer
  *
  *  Returns an integer representing the device on which <i>stat</i>
  *  resides.
@@ -487,7 +493,7 @@ rb_stat_dev(VALUE self)
 
 /*
  *  call-seq:
- *     stat.dev_major   -> fixnum
+ *     stat.dev_major   -> integer
  *
  *  Returns the major part of <code>File_Stat#dev</code> or
  *  <code>nil</code>.
@@ -500,7 +506,7 @@ static VALUE
 rb_stat_dev_major(VALUE self)
 {
 #if defined(major)
-    return INT2NUM(major(get_stat(self)->st_dev));
+    return DEVT2NUM(major(get_stat(self)->st_dev));
 #else
     return Qnil;
 #endif
@@ -508,7 +514,7 @@ rb_stat_dev_major(VALUE self)
 
 /*
  *  call-seq:
- *     stat.dev_minor   -> fixnum
+ *     stat.dev_minor   -> integer
  *
  *  Returns the minor part of <code>File_Stat#dev</code> or
  *  <code>nil</code>.
@@ -521,7 +527,7 @@ static VALUE
 rb_stat_dev_minor(VALUE self)
 {
 #if defined(minor)
-    return INT2NUM(minor(get_stat(self)->st_dev));
+    return DEVT2NUM(minor(get_stat(self)->st_dev));
 #else
     return Qnil;
 #endif
@@ -529,7 +535,7 @@ rb_stat_dev_minor(VALUE self)
 
 /*
  *  call-seq:
- *     stat.ino   -> fixnum
+ *     stat.ino   -> integer
  *
  *  Returns the inode number for <i>stat</i>.
  *
@@ -560,7 +566,7 @@ rb_stat_ino(VALUE self)
 
 /*
  *  call-seq:
- *     stat.mode   -> fixnum
+ *     stat.mode   -> integer
  *
  *  Returns an integer representing the permission bits of
  *  <i>stat</i>. The meaning of the bits is platform dependent; on
@@ -579,7 +585,7 @@ rb_stat_mode(VALUE self)
 
 /*
  *  call-seq:
- *     stat.nlink   -> fixnum
+ *     stat.nlink   -> integer
  *
  *  Returns the number of hard links to <i>stat</i>.
  *
@@ -597,7 +603,7 @@ rb_stat_nlink(VALUE self)
 
 /*
  *  call-seq:
- *     stat.uid    -> fixnum
+ *     stat.uid    -> integer
  *
  *  Returns the numeric user id of the owner of <i>stat</i>.
  *
@@ -613,7 +619,7 @@ rb_stat_uid(VALUE self)
 
 /*
  *  call-seq:
- *     stat.gid   -> fixnum
+ *     stat.gid   -> integer
  *
  *  Returns the numeric group id of the owner of <i>stat</i>.
  *
@@ -629,7 +635,7 @@ rb_stat_gid(VALUE self)
 
 /*
  *  call-seq:
- *     stat.rdev   ->  fixnum or nil
+ *     stat.rdev   ->  integer or nil
  *
  *  Returns an integer representing the device type on which
  *  <i>stat</i> resides. Returns <code>nil</code> if the operating
@@ -651,7 +657,7 @@ rb_stat_rdev(VALUE self)
 
 /*
  *  call-seq:
- *     stat.rdev_major   -> fixnum
+ *     stat.rdev_major   -> integer
  *
  *  Returns the major part of <code>File_Stat#rdev</code> or
  *  <code>nil</code>.
@@ -672,7 +678,7 @@ rb_stat_rdev_major(VALUE self)
 
 /*
  *  call-seq:
- *     stat.rdev_minor   -> fixnum
+ *     stat.rdev_minor   -> integer
  *
  *  Returns the minor part of <code>File_Stat#rdev</code> or
  *  <code>nil</code>.
@@ -693,7 +699,7 @@ rb_stat_rdev_minor(VALUE self)
 
 /*
  *  call-seq:
- *     stat.size    -> fixnum
+ *     stat.size    -> integer
  *
  *  Returns the size of <i>stat</i> in bytes.
  *
@@ -1579,7 +1585,7 @@ rb_file_readable_real_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.world_readable?(file_name)   -> fixnum or nil
+ *    File.world_readable?(file_name)   -> integer or nil
  *
  * If <i>file_name</i> is readable by others, returns an integer
  * representing the file permission bits of <i>file_name</i>. Returns
@@ -1643,7 +1649,7 @@ rb_file_writable_real_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.world_writable?(file_name)   -> fixnum or nil
+ *    File.world_writable?(file_name)   -> integer or nil
  *
  * If <i>file_name</i> is writable by others, returns an integer
  * representing the file permission bits of <i>file_name</i>. Returns
@@ -2912,17 +2918,29 @@ static const char file_alt_separator[] = {FILE_ALT_SEPARATOR, '\0'};
 #endif
 
 #ifndef USE_NTFS
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32
 #define USE_NTFS 1
 #else
 #define USE_NTFS 0
 #endif
+#endif
+#ifndef USE_NTFS_ADS
+# if USE_NTFS
+#   define USE_NTFS_ADS 1
+# else
+#   define USE_NTFS_ADS 0
+# endif
 #endif
 
 #if USE_NTFS
 #define istrailinggarbage(x) ((x) == '.' || (x) == ' ')
 #else
 #define istrailinggarbage(x) 0
+#endif
+#if USE_NTFS_ADS
+# define isADS(x) ((x) == ':')
+#else
+# define isADS(x) 0
 #endif
 
 #define Next(p, e, enc) ((p) + rb_enc_mbclen((p), (e), (enc)))
@@ -3094,17 +3112,17 @@ static char *
 ntfs_tail(const char *path, const char *end, rb_encoding *enc)
 {
     while (path < end && *path == '.') path++;
-    while (path < end && *path != ':') {
+    while (path < end && !isADS(*path)) {
 	if (istrailinggarbage(*path)) {
 	    const char *last = path++;
 	    while (path < end && istrailinggarbage(*path)) path++;
-	    if (path >= end || *path == ':') return (char *)last;
+	    if (path >= end || isADS(*path)) return (char *)last;
 	}
 	else if (isdirsep(*path)) {
 	    const char *last = path++;
 	    while (path < end && isdirsep(*path)) path++;
 	    if (path >= end) return (char *)last;
-	    if (*path == ':') path++;
+	    if (isADS(*path)) path++;
 	}
 	else {
 	    Inc(path, end, enc);
@@ -3181,13 +3199,27 @@ copy_home_path(VALUE result, const char *dir)
 VALUE
 rb_home_dir_of(VALUE user, VALUE result)
 {
-    const char *dir, *username = RSTRING_PTR(user);
 #ifdef HAVE_PWD_H
-    struct passwd *pwPtr = getpwnam(username);
+    struct passwd *pwPtr;
 #else
     extern char *getlogin(void);
     const char *pwPtr = 0;
     # define endpwent() ((void)0)
+#endif
+    const char *dir, *username = RSTRING_PTR(user);
+    rb_encoding *enc = rb_enc_get(user);
+#if defined _WIN32
+    rb_encoding *fsenc = rb_utf8_encoding();
+#else
+    rb_encoding *fsenc = rb_filesystem_encoding();
+#endif
+    if (enc != fsenc) {
+        dir = username = RSTRING_PTR(rb_str_conv_enc(user, enc, fsenc));
+    }
+
+#ifdef HAVE_PWD_H
+    pwPtr = getpwnam(username);
+#else
     if (strcasecmp(username, getlogin()) == 0)
 	dir = pwPtr = getenv("HOME");
 #endif
@@ -3203,17 +3235,37 @@ rb_home_dir_of(VALUE user, VALUE result)
     return result;
 }
 
+#ifndef _WIN32
 VALUE
 rb_default_home_dir(VALUE result)
 {
     const char *dir = getenv("HOME");
+
+#if defined HAVE_PWD_H
+    if (!dir) {
+	const char *login = getlogin();
+	if (login) {
+	    struct passwd *pw = getpwnam(login);
+	    if (pw) {
+		copy_home_path(result, pw->pw_dir);
+		endpwent();
+		return result;
+	    }
+	    endpwent();
+	    rb_raise(rb_eArgError, "couldn't find HOME for login `%s' -- expanding `~'",
+		     login);
+	}
+	else {
+	    rb_raise(rb_eArgError, "couldn't find login name -- expanding `~'");
+	}
+    }
+#endif
     if (!dir) {
 	rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
     }
     return copy_home_path(result, dir);
 }
 
-#ifndef _WIN32
 static VALUE
 ospath_new(const char *ptr, long len, rb_encoding *fsenc)
 {
@@ -3434,7 +3486,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	      case ' ': {
 		const char *e = s;
 		while (s < fend && istrailinggarbage(*s)) s++;
-		if (!*s) {
+		if (s >= fend) {
 		    s = e;
 		    goto endpath;
 		}
@@ -3473,19 +3525,23 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
     if (s > b) {
 #if USE_NTFS
+# if USE_NTFS_ADS
 	static const char prime[] = ":$DATA";
 	enum {prime_len = sizeof(prime) -1};
+# endif
       endpath:
+# if USE_NTFS_ADS
 	if (s > b + prime_len && strncasecmp(s - prime_len, prime, prime_len) == 0) {
 	    /* alias of stream */
 	    /* get rid of a bug of x64 VC++ */
-	    if (*(s - (prime_len+1)) == ':') {
+	    if (isADS(*(s - (prime_len+1)))) {
 		s -= prime_len + 1; /* prime */
 	    }
 	    else if (memchr(b, ':', s - prime_len - b)) {
 		s -= prime_len;	/* alternative */
 	    }
 	}
+# endif
 #endif
 	BUFCOPY(b, s-b);
 	rb_str_set_len(result, p-buf);
@@ -4195,7 +4251,7 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
 		if (*p == '.') dot = p;
 		p++;
 	    }
-	    if (!*p || *p == ':') {
+	    if (!*p || isADS(*p)) {
 		p = last;
 		break;
 	    }
@@ -4206,7 +4262,7 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
 #endif
 	}
 #if USE_NTFS
-	else if (*p == ':') {
+	else if (isADS(*p)) {
 	    break;
 	}
 #endif
@@ -4346,7 +4402,7 @@ rb_file_join(VALUE ary, VALUE sep)
     OBJ_INFECT(result, ary);
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	tmp = RARRAY_AREF(ary, i);
-	switch (TYPE(tmp)) {
+	switch (OBJ_BUILTIN_TYPE(tmp)) {
 	  case T_STRING:
 	    if (!checked) check_path_encoding(tmp);
 	    StringValueCStr(tmp);
@@ -5183,7 +5239,7 @@ rb_stat_R(VALUE obj)
 
 /*
  * call-seq:
- *    stat.world_readable? -> fixnum or nil
+ *    stat.world_readable? -> integer or nil
  *
  * If <i>stat</i> is readable by others, returns an integer
  * representing the file permission bits of <i>stat</i>. Returns
@@ -5276,7 +5332,7 @@ rb_stat_W(VALUE obj)
 
 /*
  * call-seq:
- *    stat.world_writable?  ->  fixnum or nil
+ *    stat.world_writable?  ->  integer or nil
  *
  * If <i>stat</i> is writable by others, returns an integer
  * representing the file permission bits of <i>stat</i>. Returns

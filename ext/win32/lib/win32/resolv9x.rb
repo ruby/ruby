@@ -141,7 +141,7 @@ module Win32
         extend Importer
         dlload "wsock32.dll"
       end
-      WsControl = WSock32.extern "int WsControl(int, int, void *, void *, void *, void *", :stdcall
+      WsControl = WSock32.extern "int WsControl(int, int, void *, void *, void *, void *)", :stdcall
       WSAGetLastError = WSock32.extern "int WSAGetLastError(void)", :stdcall
 
       MAX_TDI_ENTITIES = 512

@@ -10,10 +10,15 @@
 **********************************************************************/
 
 #include "ruby/ruby.h"
+#include "id.h"
 
 VALUE rb_mComparable;
 
-static ID cmp;
+static VALUE
+rb_cmp(VALUE x, VALUE y)
+{
+    return rb_funcallv(x, idCmp, 1, &y);
+}
 
 void
 rb_cmperr(VALUE x, VALUE y)
@@ -34,7 +39,7 @@ static VALUE
 invcmp_recursive(VALUE x, VALUE y, int recursive)
 {
     if (recursive) return Qnil;
-    return rb_check_funcall(y, cmp, 1, &x);
+    return rb_cmp(y, x);
 }
 
 VALUE
@@ -54,7 +59,7 @@ static VALUE
 cmp_eq_recursive(VALUE arg1, VALUE arg2, int recursive)
 {
     if (recursive) return Qnil;
-    return rb_funcallv(arg1, cmp, 1, &arg2);
+    return rb_cmp(arg1, arg2);
 }
 
 /*
@@ -79,6 +84,12 @@ cmp_equal(VALUE x, VALUE y)
     return Qfalse;
 }
 
+static int
+cmpint(VALUE x, VALUE y)
+{
+    return rb_cmpint(rb_cmp(x, y), x, y);
+}
+
 /*
  *  call-seq:
  *     obj > other    -> true or false
@@ -90,9 +101,7 @@ cmp_equal(VALUE x, VALUE y)
 static VALUE
 cmp_gt(VALUE x, VALUE y)
 {
-    VALUE c = rb_funcall(x, cmp, 1, y);
-
-    if (rb_cmpint(c, x, y) > 0) return Qtrue;
+    if (cmpint(x, y) > 0) return Qtrue;
     return Qfalse;
 }
 
@@ -107,9 +116,7 @@ cmp_gt(VALUE x, VALUE y)
 static VALUE
 cmp_ge(VALUE x, VALUE y)
 {
-    VALUE c = rb_funcall(x, cmp, 1, y);
-
-    if (rb_cmpint(c, x, y) >= 0) return Qtrue;
+    if (cmpint(x, y) >= 0) return Qtrue;
     return Qfalse;
 }
 
@@ -124,9 +131,7 @@ cmp_ge(VALUE x, VALUE y)
 static VALUE
 cmp_lt(VALUE x, VALUE y)
 {
-    VALUE c = rb_funcall(x, cmp, 1, y);
-
-    if (rb_cmpint(c, x, y) < 0) return Qtrue;
+    if (cmpint(x, y) < 0) return Qtrue;
     return Qfalse;
 }
 
@@ -141,9 +146,7 @@ cmp_lt(VALUE x, VALUE y)
 static VALUE
 cmp_le(VALUE x, VALUE y)
 {
-    VALUE c = rb_funcall(x, cmp, 1, y);
-
-    if (rb_cmpint(c, x, y) <= 0) return Qtrue;
+    if (cmpint(x, y) <= 0) return Qtrue;
     return Qfalse;
 }
 
@@ -165,9 +168,42 @@ cmp_le(VALUE x, VALUE y)
 static VALUE
 cmp_between(VALUE x, VALUE min, VALUE max)
 {
-    if (RTEST(cmp_lt(x, min))) return Qfalse;
-    if (RTEST(cmp_gt(x, max))) return Qfalse;
+    if (cmpint(x, min) < 0) return Qfalse;
+    if (cmpint(x, max) > 0) return Qfalse;
     return Qtrue;
+}
+
+/*
+ *  call-seq:
+ *     obj.clamp(min, max) ->  obj
+ *
+ * Returns <i>min</i> if <i>obj</i> <code><=></code> <i>min</i> is less
+ * than zero, <i>max</i> if <i>obj</i> <code><=></code> <i>max</i> is
+ * greater than zero and <i>obj</i> otherwise.
+ *
+ *     12.clamp(0, 100)         #=> 12
+ *     523.clamp(0, 100)        #=> 100
+ *     -3.123.clamp(0, 100)     #=> 0
+ *
+ *     'd'.clamp('a', 'f')      #=> 'd'
+ *     'z'.clamp('a', 'f')      #=> 'f'
+ */
+
+static VALUE
+cmp_clamp(VALUE x, VALUE min, VALUE max)
+{
+    int c;
+
+    if (cmpint(min, max) > 0) {
+	rb_raise(rb_eArgError, "min argument must be smaller than max argument");
+    }
+
+    c = cmpint(x, min);
+    if (c == 0) return x;
+    if (c < 0) return min;
+    c = cmpint(x, max);
+    if (c > 0) return max;
+    return x;
 }
 
 /*
@@ -222,6 +258,5 @@ Init_Comparable(void)
     rb_define_method(rb_mComparable, "<", cmp_lt, 1);
     rb_define_method(rb_mComparable, "<=", cmp_le, 1);
     rb_define_method(rb_mComparable, "between?", cmp_between, 2);
-
-    cmp = rb_intern("<=>");
+    rb_define_method(rb_mComparable, "clamp", cmp_clamp, 2);
 }

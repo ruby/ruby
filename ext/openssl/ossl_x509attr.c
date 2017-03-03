@@ -72,16 +72,13 @@ ossl_x509attr_new(X509_ATTRIBUTE *attr)
 }
 
 X509_ATTRIBUTE *
-DupX509AttrPtr(VALUE obj)
+GetX509AttrPtr(VALUE obj)
 {
-    X509_ATTRIBUTE *attr, *new;
+    X509_ATTRIBUTE *attr;
 
     SafeGetX509Attr(obj, attr);
-    if (!(new = X509_ATTRIBUTE_dup(attr))) {
-	ossl_raise(eX509AttrError, NULL);
-    }
 
-    return new;
+    return attr;
 }
 
 /*
@@ -130,6 +127,25 @@ ossl_x509attr_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+static VALUE
+ossl_x509attr_initialize_copy(VALUE self, VALUE other)
+{
+    X509_ATTRIBUTE *attr, *attr_other, *attr_new;
+
+    rb_check_frozen(self);
+    GetX509Attr(self, attr);
+    SafeGetX509Attr(other, attr_other);
+
+    attr_new = X509_ATTRIBUTE_dup(attr_other);
+    if (!attr_new)
+	ossl_raise(eX509AttrError, "X509_ATTRIBUTE_dup");
+
+    SetX509Attr(self, attr_new);
+    X509_ATTRIBUTE_free(attr);
+
+    return self;
+}
+
 /*
  * call-seq:
  *    attr.oid = string => string
@@ -141,12 +157,15 @@ ossl_x509attr_set_oid(VALUE self, VALUE oid)
     ASN1_OBJECT *obj;
     char *s;
 
+    GetX509Attr(self, attr);
     s = StringValueCStr(oid);
     obj = OBJ_txt2obj(s, 0);
-    if(!obj) obj = OBJ_txt2obj(s, 1);
     if(!obj) ossl_raise(eX509AttrError, NULL);
-    GetX509Attr(self, attr);
-    X509_ATTRIBUTE_set1_object(attr, obj);
+    if (!X509_ATTRIBUTE_set1_object(attr, obj)) {
+	ASN1_OBJECT_free(obj);
+	ossl_raise(eX509AttrError, "X509_ATTRIBUTE_set1_object");
+    }
+    ASN1_OBJECT_free(obj);
 
     return oid;
 }
@@ -289,11 +308,18 @@ ossl_x509attr_to_der(VALUE self)
 void
 Init_ossl_x509attr(void)
 {
+#if 0
+    mOSSL = rb_define_module("OpenSSL");
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
+    mX509 = rb_define_module_under(mOSSL, "X509");
+#endif
+
     eX509AttrError = rb_define_class_under(mX509, "AttributeError", eOSSLError);
 
     cX509Attr = rb_define_class_under(mX509, "Attribute", rb_cObject);
     rb_define_alloc_func(cX509Attr, ossl_x509attr_alloc);
     rb_define_method(cX509Attr, "initialize", ossl_x509attr_initialize, -1);
+    rb_define_copy_func(cX509Attr, ossl_x509attr_initialize_copy);
     rb_define_method(cX509Attr, "oid=", ossl_x509attr_set_oid, 1);
     rb_define_method(cX509Attr, "oid", ossl_x509attr_get_oid, 0);
     rb_define_method(cX509Attr, "value=", ossl_x509attr_set_value, 1);

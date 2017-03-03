@@ -170,9 +170,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     @prev_seek = nil
     @markup = @options.markup
     @track_visibility = :nodoc != @options.visibility
-
-    @encoding = nil
-    @encoding = @options.encoding if Object.const_defined? :Encoding
+    @encoding = @options.encoding
 
     reset
   end
@@ -1668,6 +1666,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
         unget_tk tk
         keep_comment = true
+        container.current_line_visibility = nil
 
       when TkCLASS then
         parse_class container, single, tk, comment
@@ -1890,6 +1889,8 @@ class RDoc::Parser::Ruby < RDoc::Parser
       #
     when TkNL, TkUNLESS_MOD, TkIF_MOD, TkSEMICOLON then
       container.ongoing_visibility = vis
+    when TkDEF
+      container.current_line_visibility = vis
     else
       update_visibility container, vis_type, vis, singleton
     end
@@ -2158,4 +2159,3 @@ class RDoc::Parser::Ruby < RDoc::Parser
   end
 
 end
-

@@ -60,6 +60,7 @@ end
 def main
   @ruby = File.expand_path('miniruby')
   @verbose = false
+  $VERBOSE = false
   $stress = false
   @color = nil
   @tty = nil
@@ -266,17 +267,17 @@ def nacl?
   @ruby and File.basename(@ruby.split(/\s/).first)['sel_ldr']
 end
 
-def assert_check(testsrc, message = '', opt = '')
+def assert_check(testsrc, message = '', opt = '', **argh)
   show_progress(message) {
-    result = get_result_string(testsrc, opt)
+    result = get_result_string(testsrc, opt, **argh)
     check_coredump
     yield(result)
   }
 end
 
-def assert_equal(expected, testsrc, message = '')
+def assert_equal(expected, testsrc, message = '', opt = '', **argh)
   newtest
-  assert_check(testsrc, message) {|result|
+  assert_check(testsrc, message, opt, **argh) {|result|
     if expected == result
       nil
     else
@@ -404,7 +405,7 @@ def flunk(message = '')
 end
 
 def pretty(src, desc, result)
-  src = src.sub(/\A.*\n/, '')
+  src = src.sub(/\A\s*\n/, '')
   (/\n/ =~ src ? "\n#{adjust_indent(src)}" : src) + "  #=> #{desc}"
 end
 
@@ -418,18 +419,19 @@ def untabify(str)
   str.gsub(/^\t+/) {' ' * (8 * $&.size) }
 end
 
-def make_srcfile(src)
+def make_srcfile(src, frozen_string_literal: nil)
   filename = 'bootstraptest.tmp.rb'
   File.open(filename, 'w') {|f|
+    f.puts "#frozen_string_literal:true" if frozen_string_literal
     f.puts "GC.stress = true" if $stress
     f.puts "print(begin; #{src}; end)"
   }
   filename
 end
 
-def get_result_string(src, opt = '')
+def get_result_string(src, opt = '', **argh)
   if @ruby
-    filename = make_srcfile(src)
+    filename = make_srcfile(src, **argh)
     begin
       `#{@ruby} -W0 #{opt} #{filename}`
     ensure

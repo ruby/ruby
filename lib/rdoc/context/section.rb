@@ -58,6 +58,8 @@ class RDoc::Context::Section
     self.class === other and @title == other.title
   end
 
+  alias eql? ==
+
   ##
   # Adds +comment+ to this section
 
@@ -126,6 +128,10 @@ class RDoc::Context::Section
 
   def inspect # :nodoc:
     "#<%s:0x%x %p>" % [self.class, object_id, title]
+  end
+
+  def hash # :nodoc:
+    @title.hash
   end
 
   ##

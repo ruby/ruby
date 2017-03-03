@@ -24,6 +24,10 @@
 #include <unistd.h>
 #endif
 
+#if defined __APPLE__
+# include <AvailabilityMacros.h>
+#endif
+
 #ifndef EXIT_SUCCESS
 #define EXIT_SUCCESS 0
 #endif
@@ -38,10 +42,14 @@
 
 VALUE rb_iseqw_local_variables(VALUE iseqval);
 VALUE rb_iseqw_new(const rb_iseq_t *);
+int rb_str_end_with_asciichar(VALUE str, int c);
 
 VALUE rb_eEAGAIN;
 VALUE rb_eEWOULDBLOCK;
 VALUE rb_eEINPROGRESS;
+VALUE rb_mWarning;
+
+static ID id_warn;
 
 extern const char ruby_description[];
 
@@ -106,44 +114,41 @@ rb_syntax_error_append(VALUE exc, VALUE file, int line, int column,
     }
     else {
 	VALUE mesg;
-	const char *pre = NULL;
 	if (NIL_P(exc)) {
 	    mesg = rb_enc_str_new(0, 0, enc);
 	    exc = rb_class_new_instance(1, &mesg, rb_eSyntaxError);
 	}
 	else {
 	    mesg = rb_attr_get(exc, idMesg);
-	    pre = "\n";
+	    if (RSTRING_LEN(mesg) > 0 && *(RSTRING_END(mesg)-1) != '\n')
+		rb_str_cat_cstr(mesg, "\n");
 	}
-	err_vcatf(mesg, pre, fn, line, fmt, args);
+	err_vcatf(mesg, NULL, fn, line, fmt, args);
     }
 
     return exc;
 }
 
 void
-rb_compile_error_with_enc(const char *file, int line, void *enc, const char *fmt, ...)
-{
-    ONLY_FOR_INTERNAL_USE("rb_compile_error_with_enc()");
-}
-
-void
-rb_compile_error(const char *file, int line, const char *fmt, ...)
-{
-    ONLY_FOR_INTERNAL_USE("rb_compile_error()");
-}
-
-void
-rb_compile_error_append(const char *fmt, ...)
-{
-    ONLY_FOR_INTERNAL_USE("rb_compile_error_append()");
-}
-
-void
-ruby_only_for_internal_use(const char *func)
+ruby_deprecated_internal_feature(const char *func)
 {
     rb_print_backtrace();
     rb_fatal("%s is only for internal use and deprecated; do not use", func);
+}
+
+static VALUE
+rb_warning_s_warn(VALUE mod, VALUE str)
+{
+    Check_Type(str, T_STRING);
+    rb_must_asciicompat(str);
+    rb_write_error_str(str);
+    return Qnil;
+}
+
+static void
+rb_write_warning_str(VALUE str)
+{
+    rb_funcall(rb_mWarning, id_warn, 1, str);
 }
 
 static VALUE
@@ -166,7 +171,7 @@ rb_compile_warn(const char *file, int line, const char *fmt, ...)
     va_start(args, fmt);
     str = warn_vsprintf(NULL, file, line, fmt, args);
     va_end(args);
-    rb_write_error_str(str);
+    rb_write_warning_str(str);
 }
 
 /* rb_compile_warning() reports only in verbose mode */
@@ -181,7 +186,7 @@ rb_compile_warning(const char *file, int line, const char *fmt, ...)
     va_start(args, fmt);
     str = warn_vsprintf(NULL, file, line, fmt, args);
     va_end(args);
-    rb_write_error_str(str);
+    rb_write_warning_str(str);
 }
 
 static VALUE
@@ -206,7 +211,7 @@ rb_warn(const char *fmt, ...)
     va_start(args, fmt);
     mesg = warning_string(0, fmt, args);
     va_end(args);
-    rb_write_error_str(mesg);
+    rb_write_warning_str(mesg);
 }
 
 void
@@ -220,7 +225,7 @@ rb_enc_warn(rb_encoding *enc, const char *fmt, ...)
     va_start(args, fmt);
     mesg = warning_string(enc, fmt, args);
     va_end(args);
-    rb_write_error_str(mesg);
+    rb_write_warning_str(mesg);
 }
 
 /* rb_warning() reports only in verbose mode */
@@ -235,7 +240,7 @@ rb_warning(const char *fmt, ...)
     va_start(args, fmt);
     mesg = warning_string(0, fmt, args);
     va_end(args);
-    rb_write_error_str(mesg);
+    rb_write_warning_str(mesg);
 }
 
 #if 0
@@ -250,7 +255,7 @@ rb_enc_warning(rb_encoding *enc, const char *fmt, ...)
     va_start(args, fmt);
     mesg = warning_string(enc, fmt, args);
     va_end(args);
-    rb_write_error_str(mesg);
+    rb_write_warning_str(mesg);
 }
 #endif
 
@@ -258,9 +263,11 @@ rb_enc_warning(rb_encoding *enc, const char *fmt, ...)
  * call-seq:
  *    warn(msg, ...)   -> nil
  *
- * Displays each of the given messages followed by a record separator on
- * STDERR unless warnings have been disabled (for example with the
- * <code>-W0</code> flag).
+ * If warnings have been disabled (for example with the
+ * <code>-W0</code> flag), does nothing.  Otherwise,
+ * converts each of the messages to strings, appends a newline
+ * character to the string if the string does not end in a newline,
+ * and calls <code>Warning.warn</code> with the string.
  *
  *    warn("warning 1", "warning 2")
  *
@@ -274,7 +281,18 @@ static VALUE
 rb_warn_m(int argc, VALUE *argv, VALUE exc)
 {
     if (!NIL_P(ruby_verbose) && argc > 0) {
-	rb_io_puts(argc, argv, rb_stderr);
+	int i;
+	VALUE str;
+	for (i = 0; i < argc; i++) {
+	    str = rb_obj_as_string(argv[i]);
+	    if (RSTRING_LEN(str) == 0) {
+		str = rb_default_rs;
+	    }
+	    else if (!rb_str_end_with_asciichar(str, '\n')) {
+		str = rb_str_cat(rb_str_dup(str), "\n", 1);
+	    }
+	    rb_write_warning_str(str);
+	}
     }
     return Qnil;
 }
@@ -318,6 +336,80 @@ bug_report_file(const char *file, int line)
     return NULL;
 }
 
+FUNC_MINIMIZED(static void bug_important_message(FILE *out, const char *const msg, size_t len));
+
+static void
+bug_important_message(FILE *out, const char *const msg, size_t len)
+{
+    const char *const endmsg = msg + len;
+    const char *p = msg;
+
+    if (!len) return;
+    if (isatty(fileno(out))) {
+	static const char red[] = "\033[;31;1;7m";
+	static const char green[] = "\033[;32;7m";
+	static const char reset[] = "\033[m";
+	const char *e = strchr(p, '\n');
+	const int w = (int)(e - p);
+	do {
+	    int i = (int)(e - p);
+	    fputs(*p == ' ' ? green : red, out);
+	    fwrite(p, 1, e - p, out);
+	    for (; i < w; ++i) fputc(' ', out);
+	    fputs(reset, out);
+	    fputc('\n', out);
+	} while ((p = e + 1) < endmsg && (e = strchr(p, '\n')) != 0 && e > p + 1);
+    }
+    fwrite(p, 1, endmsg - p, out);
+}
+
+static void
+preface_dump(FILE *out)
+{
+#if defined __APPLE__
+    static const char msg[] = ""
+	"-- Crash Report log information "
+	"--------------------------------------------\n"
+	"   See Crash Report log file under the one of following:\n"
+# if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6
+	"     * ~/Library/Logs/CrashReporter\n"
+	"     * /Library/Logs/CrashReporter\n"
+# endif
+	"     * ~/Library/Logs/DiagnosticReports\n"
+	"     * /Library/Logs/DiagnosticReports\n"
+	"   for more details.\n"
+	"Don't forget to include the above Crash Report log file in bug reports.\n"
+	"\n";
+    const size_t msglen = sizeof(msg) - 1;
+#else
+    const char *msg = NULL;
+    const size_t msglen = 0;
+#endif
+    bug_important_message(out, msg, msglen);
+}
+
+static void
+postscript_dump(FILE *out)
+{
+#if defined __APPLE__
+    static const char msg[] = ""
+	"[IMPORTANT]"
+	/*" ------------------------------------------------"*/
+	"\n""Don't forget to include the Crash Report log file under\n"
+# if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6
+	"CrashReporter or "
+# endif
+	"DiagnosticReports directory in bug reports.\n"
+	/*"------------------------------------------------------------\n"*/
+	"\n";
+    const size_t msglen = sizeof(msg) - 1;
+#else
+    const char *msg = NULL;
+    const size_t msglen = 0;
+#endif
+    bug_important_message(out, msg, msglen);
+}
+
 static void
 bug_report_begin_valist(FILE *out, const char *fmt, va_list args)
 {
@@ -328,6 +420,7 @@ bug_report_begin_valist(FILE *out, const char *fmt, va_list args)
     fputs(buf, out);
     snprintf(buf, sizeof(buf), "\n%s\n\n", ruby_description);
     fputs(buf, out);
+    preface_dump(out);
 }
 
 #define bug_report_begin(out, fmt) do { \
@@ -348,7 +441,8 @@ bug_report_end(FILE *out)
 	    (*reporter->func)(out, reporter->data);
 	}
     }
-    fprintf(out, REPORTBUG_MSG);
+    fputs(REPORTBUG_MSG, out);
+    postscript_dump(out);
 }
 
 #define report_bug(file, line, fmt, ctx) do { \
@@ -469,6 +563,7 @@ rb_assert_failure(const char *file, int line, const char *name, const char *expr
     fprintf(out, "Assertion Failed: %s:%d:", file, line);
     if (name) fprintf(out, "%s:", name);
     fprintf(out, "%s\n%s\n\n", expr, ruby_description);
+    preface_dump(out);
     rb_vm_bugreport(NULL);
     bug_report_end(out);
     die();
@@ -781,9 +876,7 @@ exc_to_s(VALUE exc)
  *   exception.message   ->  string
  *
  * Returns the result of invoking <code>exception.to_s</code>.
- * Normally this returns the exception's message or name. By
- * supplying a to_str method, exceptions are agreeing to
- * be used where Strings are expected.
+ * Normally this returns the exception's message or name.
  */
 
 static VALUE
@@ -862,6 +955,25 @@ exc_backtrace(VALUE exc)
     }
 
     return obj;
+}
+
+VALUE
+rb_get_backtrace(VALUE exc)
+{
+    ID mid = id_backtrace;
+    if (rb_method_basic_definition_p(CLASS_OF(exc), id_backtrace)) {
+	VALUE info, klass = rb_eException;
+	rb_thread_t *th = GET_THREAD();
+	if (NIL_P(exc))
+	    return Qnil;
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, exc, mid, mid, klass, Qundef);
+	info = exc_backtrace(exc);
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, exc, mid, mid, klass, info);
+	if (NIL_P(info))
+	    return Qnil;
+	return rb_check_backtrace(info);
+    }
+    return rb_funcall(exc, mid, 0, 0);
 }
 
 /*
@@ -1050,7 +1162,7 @@ exit_initialize(int argc, VALUE *argv, VALUE exc)
 
 /*
  * call-seq:
- *   system_exit.status   -> fixnum
+ *   system_exit.status   -> integer
  *
  * Return the status value associated with this system exit.
  */
@@ -1557,7 +1669,7 @@ syserr_initialize(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   system_call_error.errno   -> fixnum
+ *   system_call_error.errno   -> integer
  *
  * Return this SystemCallError's error number.
  */
@@ -1798,7 +1910,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *  Since constant names must start with a capital:
  *
- *     Fixnum.const_set :answer, 42
+ *     Integer.const_set :answer, 42
  *
  *  <em>raises the exception:</em>
  *
@@ -2052,6 +2164,10 @@ Init_Exception(void)
 
     rb_mErrno = rb_define_module("Errno");
 
+    rb_mWarning = rb_define_module("Warning");
+    rb_define_method(rb_mWarning, "warn", rb_warning_s_warn, 1);
+    rb_extend_object(rb_mWarning, rb_mWarning);
+
     rb_define_global_function("warn", rb_warn_m, -1);
 
     id_new = rb_intern_const("new");
@@ -2066,6 +2182,7 @@ Init_Exception(void)
     id_Errno = rb_intern_const("Errno");
     id_errno = rb_intern_const("errno");
     id_i_path = rb_intern_const("@path");
+    id_warn = rb_intern_const("warn");
     id_iseq = rb_make_internal_id();
 }
 
@@ -2289,7 +2406,7 @@ rb_sys_warning(const char *fmt, ...)
     va_end(args);
     rb_str_set_len(mesg, RSTRING_LEN(mesg)-1);
     rb_str_catf(mesg, ": %s\n", strerror(errno_save));
-    rb_write_error_str(mesg);
+    rb_write_warning_str(mesg);
     errno = errno_save;
 }
 
@@ -2309,7 +2426,7 @@ rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...)
     va_end(args);
     rb_str_set_len(mesg, RSTRING_LEN(mesg)-1);
     rb_str_catf(mesg, ": %s\n", strerror(errno_save));
-    rb_write_error_str(mesg);
+    rb_write_warning_str(mesg);
     errno = errno_save;
 }
 

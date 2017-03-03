@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'test/unit'
 require 'date'
 
@@ -577,29 +577,29 @@ class TestSH < Test::Unit::TestCase
   def test_taint
     h = Date._strptime('15:43+09:00', '%R%z')
     assert_equal(false, h[:zone].tainted?)
-    h = Date._strptime('15:43+09:00'.taint, '%R%z')
+    h = Date._strptime('15:43+09:00'.dup.taint, '%R%z')
     assert_equal(true, h[:zone].tainted?)
 
     h = Date._strptime('1;1/0', '%d')
     assert_equal(false, h[:leftover].tainted?)
-    h = Date._strptime('1;1/0'.taint, '%d')
+    h = Date._strptime('1;1/0'.dup.taint, '%d')
     assert_equal(true, h[:leftover].tainted?)
 
     h = Date._parse('15:43+09:00')
     assert_equal(false, h[:zone].tainted?)
-    h = Date._parse('15:43+09:00'.taint)
+    h = Date._parse('15:43+09:00'.dup.taint)
     assert_equal(true, h[:zone].tainted?)
 
     s = Date.today.strftime('new 105')
     assert_equal(false, s.tainted?)
-    s = Date.today.strftime('new 105'.taint)
+    s = Date.today.strftime('new 105'.dup.taint)
     assert_equal(true, s.tainted?)
-    s = Date.today.strftime("new \000 105".taint)
+    s = Date.today.strftime("new \000 105".dup.taint)
     assert_equal(true, s.tainted?)
 
     s = DateTime.now.strftime('super $record')
     assert_equal(false, s.tainted?)
-    s = DateTime.now.strftime('super $record'.taint)
+    s = DateTime.now.strftime('super $record'.dup.taint)
     assert_equal(true, s.tainted?)
   end
 
@@ -617,29 +617,29 @@ class TestSH < Test::Unit::TestCase
       assert_equal(Encoding::US_ASCII, s.encoding) if s
     end
 
-    h = Date._strptime('15:43+09:00'.force_encoding('euc-jp'), '%R%z')
+    h = Date._strptime('15:43+09:00'.dup.force_encoding('euc-jp'), '%R%z')
     assert_equal(Encoding::EUC_JP, h[:zone].encoding)
-    h = Date._strptime('15:43+09:00'.force_encoding('ascii-8bit'), '%R%z')
+    h = Date._strptime('15:43+09:00'.dup.force_encoding('ascii-8bit'), '%R%z')
     assert_equal(Encoding::ASCII_8BIT, h[:zone].encoding)
 
-    h = Date._strptime('1;1/0'.force_encoding('euc-jp'), '%d')
+    h = Date._strptime('1;1/0'.dup.force_encoding('euc-jp'), '%d')
     assert_equal(Encoding::EUC_JP, h[:leftover].encoding)
-    h = Date._strptime('1;1/0'.force_encoding('ascii-8bit'), '%d')
+    h = Date._strptime('1;1/0'.dup.force_encoding('ascii-8bit'), '%d')
     assert_equal(Encoding::ASCII_8BIT, h[:leftover].encoding)
 
-    h = Date._parse('15:43+09:00'.force_encoding('euc-jp'))
+    h = Date._parse('15:43+09:00'.dup.force_encoding('euc-jp'))
     assert_equal(Encoding::EUC_JP, h[:zone].encoding)
-    h = Date._parse('15:43+09:00'.force_encoding('ascii-8bit'))
+    h = Date._parse('15:43+09:00'.dup.force_encoding('ascii-8bit'))
     assert_equal(Encoding::ASCII_8BIT, h[:zone].encoding)
 
-    s = Date.today.strftime('new 105'.force_encoding('euc-jp'))
+    s = Date.today.strftime('new 105'.dup.force_encoding('euc-jp'))
     assert_equal(Encoding::EUC_JP, s.encoding)
-    s = Date.today.strftime('new 105'.force_encoding('ascii-8bit'))
+    s = Date.today.strftime('new 105'.dup.force_encoding('ascii-8bit'))
     assert_equal(Encoding::ASCII_8BIT, s.encoding)
 
-    s = DateTime.now.strftime('super $record'.force_encoding('euc-jp'))
+    s = DateTime.now.strftime('super $record'.dup.force_encoding('euc-jp'))
     assert_equal(Encoding::EUC_JP, s.encoding)
-    s = DateTime.now.strftime('super $record'.force_encoding('ascii-8bit'))
+    s = DateTime.now.strftime('super $record'.dup.force_encoding('ascii-8bit'))
     assert_equal(Encoding::ASCII_8BIT, s.encoding)
   end
 

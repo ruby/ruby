@@ -535,9 +535,6 @@ class TestParse < Test::Unit::TestCase
     assert_nothing_raised(SyntaxError, bug) do
       assert_equal(sym, eval(':"foo\u{0}bar"'))
     end
-    assert_raise(SyntaxError) do
-      eval ':"foo\u{}bar"'
-    end
   end
 
   def test_parse_string
@@ -872,6 +869,93 @@ x = __ENCODING__
     assert_warning('') {eval("a = 1; /(?<a>)/ =~ ''")}
     a = "\u{3042}"
     assert_warning('') {eval("#{a} = 1; /(?<#{a}>)/ =~ ''")}
+  end
+
+  def test_rescue_in_command_assignment
+    bug = '[ruby-core:75621] [Bug #12402]'
+    all_assertions(bug) do |a|
+      a.for("lhs = arg") do
+        v = bug
+        v = raise(bug) rescue "ok"
+        assert_equal("ok", v)
+      end
+      a.for("lhs op_asgn arg") do
+        v = 0
+        v += raise(bug) rescue 1
+        assert_equal(1, v)
+      end
+      a.for("lhs[] op_asgn arg") do
+        v = [0]
+        v[0] += raise(bug) rescue 1
+        assert_equal([1], v)
+      end
+      a.for("lhs.m op_asgn arg") do
+        k = Struct.new(:m)
+        v = k.new(0)
+        v.m += raise(bug) rescue 1
+        assert_equal(k.new(1), v)
+      end
+      a.for("lhs::m op_asgn arg") do
+        k = Struct.new(:m)
+        v = k.new(0)
+        v::m += raise(bug) rescue 1
+        assert_equal(k.new(1), v)
+      end
+      a.for("lhs.C op_asgn arg") do
+        k = Struct.new(:C)
+        v = k.new(0)
+        v.C += raise(bug) rescue 1
+        assert_equal(k.new(1), v)
+      end
+      a.for("lhs::C op_asgn arg") do
+        v = Class.new
+        v::C ||= raise(bug) rescue 1
+        assert_equal(1, v::C)
+      end
+      a.for("lhs = command") do
+        v = bug
+        v = raise bug rescue "ok"
+        assert_equal("ok", v)
+      end
+      a.for("lhs op_asgn command") do
+        v = 0
+        v += raise bug rescue 1
+        assert_equal(1, v)
+      end
+      a.for("lhs[] op_asgn command") do
+        v = [0]
+        v[0] += raise bug rescue 1
+        assert_equal([1], v)
+      end
+      a.for("lhs.m op_asgn command") do
+        k = Struct.new(:m)
+        v = k.new(0)
+        v.m += raise bug rescue 1
+        assert_equal(k.new(1), v)
+      end
+      a.for("lhs::m op_asgn command") do
+        k = Struct.new(:m)
+        v = k.new(0)
+        v::m += raise bug rescue 1
+        assert_equal(k.new(1), v)
+      end
+      a.for("lhs.C op_asgn command") do
+        k = Struct.new(:C)
+        v = k.new(0)
+        v.C += raise bug rescue 1
+        assert_equal(k.new(1), v)
+      end
+      a.for("lhs::C op_asgn command") do
+        v = Class.new
+        v::C ||= raise bug rescue 1
+        assert_equal(1, v::C)
+      end
+    end
+  end
+
+  def test_yyerror_at_eol
+    assert_syntax_error("    0b", /\^/)
+    assert_syntax_error("    0b\n", /\^/)
   end
 
 =begin

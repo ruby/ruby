@@ -99,6 +99,10 @@ module Psych
       assert_cycle '+.'
     end
 
+    def test_float_with_no_fractional_before_exponent
+      assert_cycle '0.E+0'
+    end
+
     def test_string_subclass_with_anchor
       y = Psych.load <<-eoyml
 ---

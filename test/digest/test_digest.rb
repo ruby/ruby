@@ -154,8 +154,10 @@ module TestDigest
     include TestDigest
     ALGO = Digest::SHA384
     DATA = {
-      Data1 => "cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed8086072ba1e7cc2358baeca134c825a7",
-      Data2 => "3391fdddfc8dc7393707a65b1b4709397cf8b1d162af05abfe8f450de5f36bc6b0455a8520bc4e6f5fe95b1fe3c8452b",
+      Data1 => "cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed"\
+               "8086072ba1e7cc2358baeca134c825a7",
+      Data2 => "3391fdddfc8dc7393707a65b1b4709397cf8b1d162af05abfe8f450de5f36bc6"\
+               "b0455a8520bc4e6f5fe95b1fe3c8452b",
     }
   end if defined?(Digest::SHA384)
 
@@ -163,8 +165,10 @@ module TestDigest
     include TestDigest
     ALGO = Digest::SHA512
     DATA = {
-      Data1 => "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f",
-      Data2 => "204a8fc6dda82f0a0ced7beb8e08a41657c16ef468b228a8279be331a703c33596fd15c13b1b07f9aa1d3bea57789ca031ad85c7a71dd70354ec631238ca3445",
+      Data1 => "ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a"\
+               "2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f",
+      Data2 => "204a8fc6dda82f0a0ced7beb8e08a41657c16ef468b228a8279be331a703c335"\
+               "96fd15c13b1b07f9aa1d3bea57789ca031ad85c7a71dd70354ec631238ca3445",
     }
   end if defined?(Digest::SHA512)
 
@@ -176,7 +180,9 @@ module TestDigest
       tmpfile.print str
       tmpfile.close
 
-      assert_equal "cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed8086072ba1e7cc2358baeca134c825a7", Digest::SHA2.file(tmpfile.path, 384).hexdigest
+      assert_equal "cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed"\
+                   "8086072ba1e7cc2358baeca134c825a7",
+                   Digest::SHA2.file(tmpfile.path, 384).hexdigest
     }
   end
 

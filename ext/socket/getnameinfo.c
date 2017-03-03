@@ -76,6 +76,7 @@ typedef int socklen_t;
 
 #include "addrinfo.h"
 #include "sockport.h"
+#include "rubysocket.h"
 
 #define SUCCESS 0
 #define ANY 0

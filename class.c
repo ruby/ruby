@@ -1090,46 +1090,51 @@ rb_mod_ancestors(VALUE mod)
     return ary;
 }
 
-static int
-ins_methods_push(ID name, rb_method_visibility_t visi, VALUE ary, rb_method_visibility_t expected_visi)
+static void
+ins_methods_push(st_data_t name, st_data_t ary)
 {
-    if (visi == METHOD_VISI_UNDEF) return ST_CONTINUE;
+    rb_ary_push((VALUE)ary, ID2SYM((ID)name));
+}
 
-    switch (expected_visi) {
+static int
+ins_methods_i(st_data_t name, st_data_t type, st_data_t ary)
+{
+    switch ((rb_method_visibility_t)type) {
       case METHOD_VISI_UNDEF:
-	if (visi != METHOD_VISI_PRIVATE) rb_ary_push(ary, ID2SYM(name));
-	break;
       case METHOD_VISI_PRIVATE:
-      case METHOD_VISI_PROTECTED:
-      case METHOD_VISI_PUBLIC:
-	if (visi == expected_visi) rb_ary_push(ary, ID2SYM(name));
+	break;
+      default: /* everything but private */
+	ins_methods_push(name, ary);
 	break;
     }
     return ST_CONTINUE;
 }
 
 static int
-ins_methods_i(st_data_t name, st_data_t type, st_data_t ary)
-{
-    return ins_methods_push((ID)name, (rb_method_visibility_t)type, (VALUE)ary, METHOD_VISI_UNDEF); /* everything but private */
-}
-
-static int
 ins_methods_prot_i(st_data_t name, st_data_t type, st_data_t ary)
 {
-    return ins_methods_push((ID)name, (rb_method_visibility_t)type, (VALUE)ary, METHOD_VISI_PROTECTED);
+    if ((rb_method_visibility_t)type == METHOD_VISI_PROTECTED) {
+	ins_methods_push(name, ary);
+    }
+    return ST_CONTINUE;
 }
 
 static int
 ins_methods_priv_i(st_data_t name, st_data_t type, st_data_t ary)
 {
-    return ins_methods_push((ID)name, (rb_method_visibility_t)type, (VALUE)ary, METHOD_VISI_PRIVATE);
+    if ((rb_method_visibility_t)type == METHOD_VISI_PRIVATE) {
+	ins_methods_push(name, ary);
+    }
+    return ST_CONTINUE;
 }
 
 static int
 ins_methods_pub_i(st_data_t name, st_data_t type, st_data_t ary)
 {
-    return ins_methods_push((ID)name, (rb_method_visibility_t)type, (VALUE)ary, METHOD_VISI_PUBLIC);
+    if ((rb_method_visibility_t)type == METHOD_VISI_PUBLIC) {
+	ins_methods_push(name, ary);
+    }
+    return ST_CONTINUE;
 }
 
 struct method_entry_arg {
@@ -1523,6 +1528,23 @@ rb_undef_method(VALUE klass, const char *name)
     rb_add_method(klass, rb_intern(name), VM_METHOD_TYPE_UNDEF, 0, METHOD_VISI_UNDEF);
 }
 
+static enum rb_id_table_iterator_result
+undef_method_i(ID name, VALUE value, void *data)
+{
+    VALUE klass = (VALUE)data;
+    rb_add_method(klass, name, VM_METHOD_TYPE_UNDEF, 0, METHOD_VISI_UNDEF);
+    return ID_TABLE_CONTINUE;
+}
+
+void
+rb_undef_methods_from(VALUE klass, VALUE super)
+{
+    struct rb_id_table *mtbl = RCLASS_M_TBL(super);
+    if (mtbl) {
+	rb_id_table_foreach(mtbl, undef_method_i, (void *)klass);
+    }
+}
+
 /*!
  * \}
  */
@@ -1580,13 +1602,18 @@ singleton_class_of(VALUE obj)
 	switch (BUILTIN_TYPE(obj)) {
 	  case T_FLOAT: case T_BIGNUM: case T_SYMBOL:
 	    goto no_singleton;
+	  case T_STRING:
+	    if (FL_TEST_RAW(obj, RSTRING_FSTR)) goto no_singleton;
+	    break;
 	}
     }
 
     klass = RBASIC(obj)->klass;
     if (!(FL_TEST(klass, FL_SINGLETON) &&
 	  rb_ivar_get(klass, id_attached) == obj)) {
+	rb_serial_t serial = RCLASS_SERIAL(klass);
 	klass = rb_make_metaclass(obj, klass);
+	RCLASS_SERIAL(klass) = serial;
     }
 
     if (OBJ_TAINTED(obj)) {
@@ -1595,7 +1622,7 @@ singleton_class_of(VALUE obj)
     else {
 	FL_UNSET(klass, FL_TAINT);
     }
-    if (OBJ_FROZEN(obj)) OBJ_FREEZE_RAW(klass);
+    RB_FL_SET_RAW(klass, RB_OBJ_FROZEN_RAW(obj));
 
     return klass;
 }
@@ -1638,7 +1665,7 @@ rb_singleton_class_get(VALUE obj)
  * Returns the singleton class of \a obj. Creates it if necessary.
  *
  * \param obj an arbitrary object.
- * \throw TypeError if \a obj is a Fixnum or a Symbol.
+ * \throw TypeError if \a obj is a Integer or a Symbol.
  * \return the singleton class.
  *
  * \post \a obj has its own singleton class.
@@ -1814,6 +1841,9 @@ rb_extract_keywords(VALUE *orighash)
     }
     st_foreach(rb_hash_tbl_raw(hash), separate_symbol, (st_data_t)&parthash);
     *orighash = parthash[1];
+    if (parthash[1] && RBASIC_CLASS(hash) != rb_cHash) {
+	RBASIC_SET_CLASS(parthash[1], RBASIC_CLASS(hash));
+    }
     return parthash[0];
 }
 
@@ -1869,7 +1899,7 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
 	}
     }
     if (!rest && keyword_hash) {
-	if (RHASH_SIZE(keyword_hash) > (unsigned int)j) {
+	if (RHASH_SIZE(keyword_hash) > (unsigned int)(values ? 0 : j)) {
 	    unknown_keyword_error(keyword_hash, table, required+optional);
 	}
     }

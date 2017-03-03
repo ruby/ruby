@@ -91,6 +91,12 @@ class TestGemVersion < Gem::TestCase
     end
   end
 
+  def test_empty_version
+    ["", "   ", " "].each do |empty|
+      assert_equal "0", Gem::Version.new(empty).version
+    end
+  end
+
   def test_prerelease
     assert_prerelease "1.2.0.a"
     assert_prerelease "2.9.b"

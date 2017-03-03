@@ -418,6 +418,7 @@ prog: config
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
 stub: $(STUBPROGRAM)
+rubystub: $(STUBPROGRAM)
 
 !if !exist(enc/trans/newline.c) && exist($(srcdir)/enc/trans/newline.c)
 NEWLINE_C = $(srcdir)/enc/trans/newline.c
@@ -509,8 +510,15 @@ config.status: $(CONFIG_H)
 
 BANG = !
 
-!if exist($(RUBY_CONFIG_H))
-!include $(RUBY_CONFIG_H)
+!if !exist(config.status)
+!else if [for /f "skip=1 delims=, tokens=2-3" %I in (config.status) do @ \
+    if "%I" == "@RUBY_SO_NAME@" ( \
+	if not "%J" == "$(RUBY_SO_NAME)" exit 1 \
+    ) else if "%I" == "@target_alias@" ( \
+	if not "%J" == "$(ARCH)-$(PLATFORM)" exit 1 \
+    ) \
+]
+config.status: nul
 !endif
 
 guard = INCLUDE_RUBY_CONFIG_H
@@ -533,12 +541,17 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define STDC_HEADERS 1
 #define HAVE_SYS_TYPES_H 1
 #define HAVE_SYS_STAT_H 1
+!if $(MSC_VER) >= 1800
+#define HAVE_STDBOOL_H 1
+!endif
 #define HAVE_STDLIB_H 1
 #define HAVE_STDDEF_H 1
 #define HAVE_STRING_H 1
 #define HAVE_MEMORY_H 1
 !if $(MSC_VER) >= 1400
 #define HAVE_LONG_LONG 1
+!else
+#define ULL_TO_DOUBLE(n) ((double)(unsigned long)((n)>>32) * (1I64 << 32) + (unsigned long)(n))
 !endif
 #define HAVE_OFF_T 1
 #define SIZEOF_INT 4
@@ -603,6 +616,8 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define NOINLINE(x) __declspec(noinline) x
 !endif
 #define ALWAYS_INLINE(x) __forceinline x
+#define WARN_UNUSED_RESULT(x) x
+#define MAYBE_UNUSED(x) x
 #define UNREACHABLE __assume(0)
 #define ASSUME(x) __assume(!!(x))
 #define FUNC_STDCALL(x) __stdcall x
@@ -775,14 +790,8 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 #define EXECUTABLE_EXTS $(EXECUTABLE_EXTS)
 #define RUBY_COREDLL "$(RT)"
-#define LIBRUBY_SO "$(LIBRUBY_SO)"
 #define RUBY_PLATFORM "$(arch)"
 #define RUBY_SITEARCH "$(sitearch)"
-#if 0
-$(BANG)if "$(RUBY_SO_NAME)"!="$$(RUBY_SO_NAME)" || "$(ARCH)-$(PLATFORM)"!="$$(ARCH)-$$(PLATFORM)"
-config.h: nul
-$(BANG)endif
-#endif
 #endif /* $(guard) */
 <<
 
@@ -1005,9 +1014,9 @@ $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
 !endif
 
 !if "$(STUBPROGRAM)" != ""
-$(STUBPROGRAM):	win32/stub.$(OBJEXT) $(LIBRUBY) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
+$(STUBPROGRAM):	rubystub.$(OBJEXT) $(LIBRUBY) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 		$(ECHO) linking $(@:\=/)
-		$(Q) $(PURIFY) $(CC) win32/stub.$(OBJEXT) $(RUBY_INSTALL_NAME).res \
+		$(Q) $(PURIFY) $(CC) rubystub.$(OBJEXT) $(RUBY_INSTALL_NAME).res \
 			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
 		$(Q) $(LDSHARED_0)
 		$(Q) $(LDSHARED_1)
@@ -1035,7 +1044,7 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		$(Q) $(LDSHARED_2)
 # | findstr -v -c:LNK4049 -c:LNK4217
 
-$(RUBYDEF):	$(LIBRUBY_A) $(PREP)
+$(RUBYDEF):	$(LIBRUBY_A) $(RBCONFIG)
 		$(ECHO) generating $(@:\=/)
 		$(Q) $(MINIRUBY) $(srcdir)/win32/mkexports.rb \
 		  -output=$@ -arch=$(ARCH) $(LIBRUBY_A)
@@ -1054,28 +1063,31 @@ distclean-local::
 		-$(Q)$(RM) $(INSTALLED_LIST:/=\) $(arch_hdrdir:/=\)\ruby\config.h verconf.h
 		-$(Q)$(RMDIRS) $(arch_hdrdir:/=\)\ruby
 
-clean-ext distclean-ext realclean-ext::
-		@cd ext && for /R $(EXTS) %I in (.) \
-		do @if exist %I\Makefile ( \
+ext/clean.mk ext/distclean.mk ext/realclean.mk::
+	$(Q)if exist $(EXTS_MK) $(MAKE) -k -f $(EXTS_MK) top_srcdir=$(srcdir) $(*F)
+
+ext/clean gems/clean ext/distclean gems/distclean ext/realclean gems/realclean::
+		$(Q)cd $(@D) && for /R $(EXTS) %I in (.) \
+		do $(Q)if exist %I\Makefile ( \
 		    cd %I && ( \
 		    call set n=%I && \
-		    call set n=%n:%CD%\ext\=% && \
+		    call set n=%n:%CD%\$(@D)\=% && \
 		    call set n=%n:\.=% && \
-		    call echo $(@:-ext=)ing %n:\=/% & \
-		    $(MAKE) $(MFLAGS) $(@:-ext=) & \
+		    call echo $(@F)ing %n:\=/% & \
+		    $(MAKE) $(MFLAGS) $(@F) & \
 		    cd %CD% & \
 		    $(RMDIRS) %I \
 		) )
 
-distclean-ext realclean-ext::
-		-$(Q)rmdir ext
-
-clean-extout:
+ext/distclean gems/distclean ext/realclean gems/realclean::
+		$(Q)cd $(@D) && for /R $(EXTS) %I in (exts.mk*) \
+		do $(Q)(del %I & rmdir %~dpI)
+		-$(Q)rmdir $(@D) 2> nul || @
 
 clean-enc distclean-enc realclean-enc:
 !if exist($(ENC_MK))
-	@echo $(@:-enc=ing) encodings
-	@-$(MAKE) -f $(ENC_MK) $(MFLAGS) V=$(V) $(@:-enc=)
+	$(ECHO) $(@:-enc=ing) encodings
+	-$(Q)$(MAKE) $(MAKE_ENC) $(@:-enc=)
 !endif
 
 $(RBCONFIG): $(PREP)

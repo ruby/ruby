@@ -53,17 +53,25 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(1, BigDecimal("1"))
     assert_equal(1, BigDecimal("1", 1))
     assert_raise(ArgumentError) { BigDecimal("1", -1) }
-    assert_raise(ArgumentError) { BigDecimal(4.2) }
-    begin
-      BigDecimal(4.2)
-    rescue ArgumentError => error
-      assert_match(/Float/, error.message)
+
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
+      BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+      assert_equal(1234, BigDecimal(" \t\n\r \r1234 \t\n\r \r"))
+      assert_positive_infinite(BigDecimal(" \t\n\r \rInfinity \t\n\r \r"))
+      assert_negative_infinite(BigDecimal(" \t\n\r \r-Infinity \t\n\r \r"))
+      assert_nan(BigDecimal(" \t\n\r \rNaN \t\n\r \r"))
     end
-    assert_raise(ArgumentError) { BigDecimal(42.quo(7)) }
-    begin
-      BigDecimal(42.quo(7))
-    rescue ArgumentError => error
-      assert_match(/Rational/, error.message)
+  end
+
+  def test_global_new_with_invalid_string
+    [
+      '', '.', 'e1', 'd1', '.e', '.d', '1.e', '1.d', '.1e', '.1d',
+      'invlaid value'
+    ].each do |invalid_string|
+      assert_raise_with_message(ArgumentError, %Q[invalid value for BigDecimal(): "#{invalid_string}"]) do
+        BigDecimal(invalid_string)
+      end
     end
   end
 
@@ -77,18 +85,28 @@ class TestBigDecimal < Test::Unit::TestCase
   def test_global_new_with_rational
     assert_equal(BigDecimal("0.333333333333333333333"), BigDecimal(1.quo(3), 21))
     assert_equal(BigDecimal("-0.333333333333333333333"), BigDecimal(-1.quo(3), 21))
-    assert_raise(ArgumentError) { BigDecimal(1.quo(3)) }
+    assert_raise_with_message(ArgumentError, "can't omit precision for a Rational.") { BigDecimal(42.quo(7)) }
   end
 
   def test_global_new_with_float
     assert_equal(BigDecimal("0.1235"), BigDecimal(0.1234567, 4))
     assert_equal(BigDecimal("-0.1235"), BigDecimal(-0.1234567, 4))
-    assert_raise(ArgumentError) { BigDecimal(0.1) }
+    assert_raise_with_message(ArgumentError, "can't omit precision for a Float.") { BigDecimal(4.2) }
     assert_raise(ArgumentError) { BigDecimal(0.1, Float::DIG + 2) }
     assert_nothing_raised { BigDecimal(0.1, Float::DIG + 1) }
 
     bug9214 = '[ruby-core:58858]'
     assert_equal(BigDecimal(-0.0, Float::DIG).sign, -1, bug9214)
+
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+      assert_nan(BigDecimal(Float::NAN))
+    end
+    BigDecimal.save_exception_mode do
+      BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+      assert_positive_infinite(BigDecimal(Float::INFINITY))
+      assert_negative_infinite(BigDecimal(-Float::INFINITY))
+    end
   end
 
   def test_global_new_with_big_decimal
@@ -116,15 +134,16 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(1, BigDecimal.new("1", 1))
     assert_equal(1, BigDecimal.new(" 1 "))
     assert_equal(111, BigDecimal.new("1_1_1_"))
-    assert_equal(0, BigDecimal.new("_1_1_1"))
     assert_equal(10**(-1), BigDecimal.new("1E-1"), '#4825')
+
+    assert_raise(ArgumentError, /"_1_1_1"/) { BigDecimal.new("_1_1_1") }
 
     BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
     BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
-    assert_equal( 1, BigDecimal.new("Infinity").infinite?)
-    assert_equal(-1, BigDecimal.new("-Infinity").infinite?)
-    assert_equal(true, BigDecimal.new("NaN").nan?)
-    assert_equal( 1, BigDecimal.new("1E1111111111111111111").infinite?)
+    assert_positive_infinite(BigDecimal.new("Infinity"))
+    assert_negative_infinite(BigDecimal.new("-Infinity"))
+    assert_nan(BigDecimal.new("NaN"))
+    assert_positive_infinite(BigDecimal.new("1E1111111111111111111"))
   end
 
   def test_new_with_integer
@@ -392,14 +411,28 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_zero_p
+    BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+    BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+
     assert_equal(true, BigDecimal.new("0").zero?)
+    assert_equal(true, BigDecimal.new("-0").zero?)
     assert_equal(false, BigDecimal.new("1").zero?)
     assert_equal(true, BigDecimal.new("0E200000000000000").zero?)
+    assert_equal(false, BigDecimal.new("Infinity").zero?)
+    assert_equal(false, BigDecimal.new("-Infinity").zero?)
+    assert_equal(false, BigDecimal.new("NaN").zero?)
   end
 
   def test_nonzero_p
+    BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+    BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+
     assert_equal(nil, BigDecimal.new("0").nonzero?)
+    assert_equal(nil, BigDecimal.new("-0").nonzero?)
     assert_equal(BigDecimal.new("1"), BigDecimal.new("1").nonzero?)
+    assert_positive_infinite(BigDecimal.new("Infinity").nonzero?)
+    assert_negative_infinite(BigDecimal.new("-Infinity").nonzero?)
+    assert_nan(BigDecimal.new("NaN").nonzero?)
   end
 
   def test_double_fig
@@ -457,18 +490,8 @@ class TestBigDecimal < Test::Unit::TestCase
     BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
     assert_equal(nil, BigDecimal.new("NaN") <=> n1)
     assert_equal(false, BigDecimal.new("NaN") > n1)
-  end
-
-  def test_cmp_float_nan
-    assert_equal(nil, BigDecimal.new("1") <=> Float::NAN)
-  end
-
-  def test_cmp_float_pos_inf
-    assert_equal(-1, BigDecimal.new("1") <=> Float::INFINITY)
-  end
-
-  def test_cmp_float_neg_inf
-    assert_equal(+1, BigDecimal.new("1") <=> -Float::INFINITY)
+    assert_equal(nil, BigDecimal.new("NaN") <=> BigDecimal.new("NaN"))
+    assert_equal(false, BigDecimal.new("NaN") == BigDecimal.new("NaN"))
   end
 
   def test_cmp_failing_coercion
@@ -493,6 +516,11 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_operator(n2, :>, o1)
     assert_operator(n2, :>=, o1)
     assert_operator(n1, :>=, 1)
+
+    bug10109 = '[ruby-core:64190]'
+    BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+    assert_operator(BigDecimal(0), :<, Float::INFINITY, bug10109)
+    assert_operator(Float::INFINITY, :>, BigDecimal(0), bug10109)
   end
 
   def test_cmp_bignum
@@ -582,7 +610,7 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(0.0, x.to_f)
     assert_equal( 1.0 / 0.0, ( 1 / x).to_f)
     assert_equal(-1.0 / 0.0, (-1 / x).to_f)
-    assert_equal(true, ( 0 / x).to_f.nan?)
+    assert_nan(( 0 / x).to_f)
     x = BigDecimal.new("1")
     assert_equal(1.0, x.to_f)
     x = BigDecimal.new((2**100).to_s)
@@ -632,6 +660,22 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(-0.0, BigDecimal('-10e-325').to_f)
   end
 
+  def test_to_r
+    BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
+    BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+
+    x = BigDecimal.new("0")
+    assert_kind_of(Rational, x.to_r)
+    assert_equal(0, x.to_r)
+    assert_raise(FloatDomainError) {( 1 / x).to_r}
+    assert_raise(FloatDomainError) {(-1 / x).to_r}
+    assert_raise(FloatDomainError) {( 0 / x).to_r}
+
+    assert_equal(1, BigDecimal.new("1").to_r)
+    assert_equal(Rational(3, 2), BigDecimal.new("1.5").to_r)
+    assert_equal((2**100).to_r, BigDecimal.new((2**100).to_s).to_r)
+  end
+
   def test_coerce
     a, b = BigDecimal.new("1").coerce(1.0)
     assert_instance_of(BigDecimal, a)
@@ -654,6 +698,18 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(x, x.send(:+@))
   end
 
+  def test_neg
+    BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+    BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
+
+    assert_equal(BigDecimal.new("-1"), BigDecimal.new("1").send(:-@))
+    assert_equal(BigDecimal.new("-0"), BigDecimal.new("0").send(:-@))
+    assert_equal(BigDecimal.new("0"), BigDecimal.new("-0").send(:-@))
+    assert_equal(BigDecimal.new("-Infinity"), BigDecimal.new("Infinity").send(:-@))
+    assert_equal(BigDecimal.new("Infinity"), BigDecimal.new("-Infinity").send(:-@))
+    assert_equal(true, BigDecimal.new("NaN").send(:-@).nan?)
+  end
+
   def test_add
     x = BigDecimal.new("1")
     assert_equal(BigDecimal.new("2"), x + x)
@@ -666,6 +722,14 @@ class TestBigDecimal < Test::Unit::TestCase
 
     x = BigDecimal.new((2**100).to_s)
     assert_equal(BigDecimal.new((2**100+1).to_s), x + 1)
+
+    BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+    inf    = BigDecimal("Infinity")
+    neginf = BigDecimal("-Infinity")
+
+    BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, true)
+    assert_raise_with_message(FloatDomainError, "Computation results to 'Infinity'") { inf + inf }
+    assert_raise_with_message(FloatDomainError, "Computation results to '-Infinity'") { neginf + neginf }
   end
 
   def test_sub
@@ -680,6 +744,14 @@ class TestBigDecimal < Test::Unit::TestCase
 
     x = BigDecimal.new((2**100).to_s)
     assert_equal(BigDecimal.new((2**100-1).to_s), x - 1)
+
+    BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+    inf    = BigDecimal("Infinity")
+    neginf = BigDecimal("-Infinity")
+
+    BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, true)
+    assert_raise_with_message(FloatDomainError, "Computation results to 'Infinity'") { inf - neginf }
+    assert_raise_with_message(FloatDomainError, "Computation results to '-Infinity'") { neginf - inf }
   end
 
   def test_sub_with_float
@@ -696,6 +768,14 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(x, (x * 1).to_i)
     assert_equal(x, (BigDecimal("1") * x).to_i)
     assert_equal(BigDecimal.new((2**200).to_s), (x * x).to_i)
+
+    BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+    inf    = BigDecimal("Infinity")
+    neginf = BigDecimal("-Infinity")
+
+    BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, true)
+    assert_raise_with_message(FloatDomainError, "Computation results to 'Infinity'") { inf * inf }
+    assert_raise_with_message(FloatDomainError, "Computation results to '-Infinity'") { neginf * inf }
   end
 
   def test_mult_with_float
@@ -723,6 +803,17 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(BigDecimal('1486.868686869'), BigDecimal('1472.0') / BigDecimal('0.99'), '[ruby-core:59365] [#9316]')
 
     assert_equal(4.124045235, BigDecimal('0.9932') / (700 * BigDecimal('0.344045') / BigDecimal('1000.0')), '[#9305]')
+
+    BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+    assert_positive_zero(BigDecimal.new("1.0")  / BigDecimal.new("Infinity"))
+    assert_negative_zero(BigDecimal.new("-1.0") / BigDecimal.new("Infinity"))
+    assert_negative_zero(BigDecimal.new("1.0")  / BigDecimal.new("-Infinity"))
+    assert_positive_zero(BigDecimal.new("-1.0") / BigDecimal.new("-Infinity"))
+
+    BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, true)
+    BigDecimal.mode(BigDecimal::EXCEPTION_ZERODIVIDE, false)
+    assert_raise_with_message(FloatDomainError, "Computation results to 'Infinity'") { BigDecimal.new("1") / 0 }
+    assert_raise_with_message(FloatDomainError, "Computation results to '-Infinity'") { BigDecimal.new("-1") / 0 }
   end
 
   def test_div_with_float
@@ -816,9 +907,18 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(1267650600228229401496703205376, x.abs)
     x = BigDecimal.new("0")
     assert_equal(0, x.abs)
+    x = BigDecimal.new("-0")
+    assert_equal(0, x.abs)
+
+    BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
+    x = BigDecimal.new("Infinity")
+    assert_equal(BigDecimal.new("Infinity"), x.abs)
+    x = BigDecimal.new("-Infinity")
+    assert_equal(BigDecimal.new("Infinity"), x.abs)
+
     BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
     x = BigDecimal.new("NaN")
-    assert_equal(true, x.abs.nan?)
+    assert_nan(x.abs)
   end
 
   def test_sqrt_bigdecimal
@@ -831,16 +931,19 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(true, (x.sqrt(200) - y).abs < BigDecimal("1E#{e-200}"))
     assert_equal(true, (x.sqrt(300) - y).abs < BigDecimal("1E#{e-300}"))
     x = BigDecimal.new("-" + (2**100).to_s)
-    assert_raise(FloatDomainError) { x.sqrt(1) }
+    assert_raise_with_message(FloatDomainError, "sqrt of negative value") { x.sqrt(1) }
     x = BigDecimal.new((2**200).to_s)
     assert_equal(2**100, x.sqrt(1))
 
     BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
     BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
-    assert_raise(FloatDomainError) { BigDecimal.new("NaN").sqrt(1) }
+    assert_raise_with_message(FloatDomainError, "sqrt of 'NaN'(Not a Number)") { BigDecimal.new("NaN").sqrt(1) }
+    assert_raise_with_message(FloatDomainError, "sqrt of negative value") { BigDecimal.new("-Infinity").sqrt(1) }
 
     assert_equal(0, BigDecimal.new("0").sqrt(1))
+    assert_equal(0, BigDecimal.new("-0").sqrt(1))
     assert_equal(1, BigDecimal.new("1").sqrt(1))
+    assert_positive_infinite(BigDecimal.new("Infinity").sqrt(1))
   end
 
   def test_sqrt_5266
@@ -860,6 +963,7 @@ class TestBigDecimal < Test::Unit::TestCase
   def test_fix
     x = BigDecimal.new("1.1")
     assert_equal(1, x.fix)
+    assert_kind_of(BigDecimal, x.fix)
   end
 
   def test_frac
@@ -867,7 +971,7 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(0.1, x.frac)
     assert_equal(0.1, BigDecimal.new("0.1").frac)
     BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
-    assert_equal(true, BigDecimal.new("NaN").frac.nan?)
+    assert_nan(BigDecimal.new("NaN").frac)
   end
 
   def test_round
@@ -915,6 +1019,113 @@ class TestBigDecimal < Test::Unit::TestCase
     end
   end
 
+  def test_round_half_even
+    assert_equal(BigDecimal('12.0'), BigDecimal('12.5').round(half: :even))
+    assert_equal(BigDecimal('14.0'), BigDecimal('13.5').round(half: :even))
+
+    assert_equal(BigDecimal('2.2'), BigDecimal('2.15').round(1, half: :even))
+    assert_equal(BigDecimal('2.2'), BigDecimal('2.25').round(1, half: :even))
+    assert_equal(BigDecimal('2.4'), BigDecimal('2.35').round(1, half: :even))
+
+    assert_equal(BigDecimal('-2.2'), BigDecimal('-2.15').round(1, half: :even))
+    assert_equal(BigDecimal('-2.2'), BigDecimal('-2.25').round(1, half: :even))
+    assert_equal(BigDecimal('-2.4'), BigDecimal('-2.35').round(1, half: :even))
+
+    assert_equal(BigDecimal('7.1364'), BigDecimal('7.13645').round(4, half: :even))
+    assert_equal(BigDecimal('7.1365'), BigDecimal('7.1364501').round(4, half: :even))
+    assert_equal(BigDecimal('7.1364'), BigDecimal('7.1364499').round(4, half: :even))
+
+    assert_equal(BigDecimal('-7.1364'), BigDecimal('-7.13645').round(4, half: :even))
+    assert_equal(BigDecimal('-7.1365'), BigDecimal('-7.1364501').round(4, half: :even))
+    assert_equal(BigDecimal('-7.1364'), BigDecimal('-7.1364499').round(4, half: :even))
+  end
+
+  def test_round_half_up
+    assert_equal(BigDecimal('13.0'), BigDecimal('12.5').round(half: :up))
+    assert_equal(BigDecimal('14.0'), BigDecimal('13.5').round(half: :up))
+
+    assert_equal(BigDecimal('2.2'), BigDecimal('2.15').round(1, half: :up))
+    assert_equal(BigDecimal('2.3'), BigDecimal('2.25').round(1, half: :up))
+    assert_equal(BigDecimal('2.4'), BigDecimal('2.35').round(1, half: :up))
+
+    assert_equal(BigDecimal('-2.2'), BigDecimal('-2.15').round(1, half: :up))
+    assert_equal(BigDecimal('-2.3'), BigDecimal('-2.25').round(1, half: :up))
+    assert_equal(BigDecimal('-2.4'), BigDecimal('-2.35').round(1, half: :up))
+
+    assert_equal(BigDecimal('7.1365'), BigDecimal('7.13645').round(4, half: :up))
+    assert_equal(BigDecimal('7.1365'), BigDecimal('7.1364501').round(4, half: :up))
+    assert_equal(BigDecimal('7.1364'), BigDecimal('7.1364499').round(4, half: :up))
+
+    assert_equal(BigDecimal('-7.1365'), BigDecimal('-7.13645').round(4, half: :up))
+    assert_equal(BigDecimal('-7.1365'), BigDecimal('-7.1364501').round(4, half: :up))
+    assert_equal(BigDecimal('-7.1364'), BigDecimal('-7.1364499').round(4, half: :up))
+  end
+
+  def test_round_half_down
+    assert_equal(BigDecimal('12.0'), BigDecimal('12.5').round(half: :down))
+    assert_equal(BigDecimal('13.0'), BigDecimal('13.5').round(half: :down))
+
+    assert_equal(BigDecimal('2.1'), BigDecimal('2.15').round(1, half: :down))
+    assert_equal(BigDecimal('2.2'), BigDecimal('2.25').round(1, half: :down))
+    assert_equal(BigDecimal('2.3'), BigDecimal('2.35').round(1, half: :down))
+
+    assert_equal(BigDecimal('-2.1'), BigDecimal('-2.15').round(1, half: :down))
+    assert_equal(BigDecimal('-2.2'), BigDecimal('-2.25').round(1, half: :down))
+    assert_equal(BigDecimal('-2.3'), BigDecimal('-2.35').round(1, half: :down))
+
+    assert_equal(BigDecimal('7.1364'), BigDecimal('7.13645').round(4, half: :down))
+    assert_equal(BigDecimal('7.1365'), BigDecimal('7.1364501').round(4, half: :down))
+    assert_equal(BigDecimal('7.1364'), BigDecimal('7.1364499').round(4, half: :down))
+
+    assert_equal(BigDecimal('-7.1364'), BigDecimal('-7.13645').round(4, half: :down))
+    assert_equal(BigDecimal('-7.1365'), BigDecimal('-7.1364501').round(4, half: :down))
+    assert_equal(BigDecimal('-7.1364'), BigDecimal('-7.1364499').round(4, half: :down))
+  end
+
+  def test_round_half_nil
+    x = BigDecimal.new("2.5")
+
+    BigDecimal.save_rounding_mode do
+      BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_UP)
+      assert_equal(3, x.round(0, half: nil))
+    end
+
+    BigDecimal.save_rounding_mode do
+      BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_DOWN)
+      assert_equal(2, x.round(0, half: nil))
+    end
+
+    BigDecimal.save_rounding_mode do
+      BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_HALF_UP)
+      assert_equal(3, x.round(0, half: nil))
+    end
+
+    BigDecimal.save_rounding_mode do
+      BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_HALF_DOWN)
+      assert_equal(2, x.round(0, half: nil))
+    end
+
+    BigDecimal.save_rounding_mode do
+      BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_HALF_EVEN)
+      assert_equal(2, x.round(0, half: nil))
+    end
+
+    BigDecimal.save_rounding_mode do
+      BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_CEILING)
+      assert_equal(3, x.round(0, half: nil))
+    end
+
+    BigDecimal.save_rounding_mode do
+      BigDecimal.mode(BigDecimal::ROUND_MODE, BigDecimal::ROUND_FLOOR)
+      assert_equal(2, x.round(0, half: nil))
+    end
+  end
+
+  def test_round_half_invalid_option
+    assert_raise_with_message(ArgumentError, "invalid rounding mode: invalid") { BigDecimal('12.5').round(half: :invalid) }
+    assert_raise_with_message(ArgumentError, "invalid rounding mode: invalid") { BigDecimal('2.15').round(1, half: :invalid) }
+  end
+
   def test_truncate
     assert_equal(3, BigDecimal.new("3.14159").truncate)
     assert_equal(8, BigDecimal.new("8.7").truncate)
@@ -940,8 +1151,8 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal('-123.45678 90123 45678 9', BigDecimal.new('-123.45678901234567890').to_s('5F'))
     assert_equal('+123.45678901 23456789', BigDecimal.new('123.45678901234567890').to_s('+8F'))
     assert_equal(' 123.4567890123456789', BigDecimal.new('123.45678901234567890').to_s(' F'))
-    assert_equal('0.1234567890123456789E3', BigDecimal.new('123.45678901234567890').to_s)
-    assert_equal('0.12345 67890 12345 6789E3', BigDecimal.new('123.45678901234567890').to_s(5))
+    assert_equal('0.1234567890123456789e3', BigDecimal.new('123.45678901234567890').to_s)
+    assert_equal('0.12345 67890 12345 6789e3', BigDecimal.new('123.45678901234567890').to_s(5))
   end
 
   def test_split
@@ -963,9 +1174,9 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_inspect
-    x = BigDecimal.new("1234.5678")
-    prec, maxprec = x.precs
-    assert_match(/^#<BigDecimal:[0-9a-f]+,'0.12345678E4',#{prec}\(#{maxprec}\)>$/, x.inspect)
+    assert_equal("0.123456789012e0", BigDecimal.new("0.123456789012").inspect)
+    assert_equal("0.123456789012e4", BigDecimal.new("1234.56789012").inspect)
+    assert_equal("0.123456789012e-4", BigDecimal.new("0.0000123456789012").inspect)
   end
 
   def test_power
@@ -1214,23 +1425,23 @@ class TestBigDecimal < Test::Unit::TestCase
     inf = BigDecimal.new("Infinity")
 
     assert_equal(inf, inf + inf)
-    assert_equal(true, (inf + (-inf)).nan?)
-    assert_equal(true, (inf - inf).nan?)
+    assert_nan((inf + (-inf)))
+    assert_nan((inf - inf))
     assert_equal(inf, inf - (-inf))
     assert_equal(inf, inf * inf)
-    assert_equal(true, (inf / inf).nan?)
+    assert_nan((inf / inf))
 
     assert_equal(inf, inf + 1)
     assert_equal(inf, inf - 1)
     assert_equal(inf, inf * 1)
-    assert_equal(true, (inf * 0).nan?)
+    assert_nan((inf * 0))
     assert_equal(inf, inf / 1)
 
     assert_equal(inf, 1 + inf)
     assert_equal(-inf, 1 - inf)
     assert_equal(inf, 1 * inf)
     assert_equal(-inf, -1 * inf)
-    assert_equal(true, (0 * inf).nan?)
+    assert_nan((0 * inf))
     assert_equal(BigDecimal::SIGN_POSITIVE_ZERO, (1 / inf).sign)
     assert_equal(BigDecimal::SIGN_NEGATIVE_ZERO, (-1 / inf).sign)
   end
@@ -1300,14 +1511,14 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_INFINITY
-    assert(BigDecimal::INFINITY.infinite?, "BigDecimal::INFINITY is not a infinity")
+    assert_positive_infinite(BigDecimal::INFINITY)
   end
 
   def test_NAN
-    assert(BigDecimal::NAN.nan?, "BigDecimal::NAN is not NaN")
+    assert_nan(BigDecimal::NAN)
   end
 
-  def test_exp_with_zerp_precision
+  def test_exp_with_zero_precision
     assert_raise(ArgumentError) do
       BigMath.exp(1, 0)
     end
@@ -1336,14 +1547,14 @@ class TestBigDecimal < Test::Unit::TestCase
     BigDecimal.save_exception_mode do
       BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
       assert(BigMath.exp(BigDecimal::INFINITY, 20) > 0)
-      assert(BigMath.exp(BigDecimal::INFINITY, 20).infinite?)
+      assert_positive_infinite(BigMath.exp(BigDecimal::INFINITY, 20))
     end
   end
 
   def test_exp_with_nan
     BigDecimal.save_exception_mode do
       BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
-      assert(BigMath.exp(BigDecimal::NAN, 20).nan?)
+      assert_nan(BigMath.exp(BigDecimal::NAN, 20))
     end
   end
 
@@ -1464,21 +1675,21 @@ class TestBigDecimal < Test::Unit::TestCase
     BigDecimal.save_exception_mode do
       BigDecimal.mode(BigDecimal::EXCEPTION_INFINITY, false)
       assert(BigMath.log(BigDecimal::INFINITY, 20) > 0)
-      assert(BigMath.log(BigDecimal::INFINITY, 20).infinite?)
+      assert_positive_infinite(BigMath.log(BigDecimal::INFINITY, 20))
     end
   end
 
   def test_BigMath_log_with_nan
     BigDecimal.save_exception_mode do
       BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
-      assert(BigMath.log(BigDecimal::NAN, 20).nan?)
+      assert_nan(BigMath.log(BigDecimal::NAN, 20))
     end
   end
 
   def test_BigMath_log_with_float_nan
     BigDecimal.save_exception_mode do
       BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
-      assert(BigMath.log(Float::NAN, 20).nan?)
+      assert_nan(BigMath.log(Float::NAN, 20))
     end
   end
 

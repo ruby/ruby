@@ -13,7 +13,6 @@
 extern VALUE mPKey;
 extern VALUE cPKey;
 extern VALUE ePKeyError;
-extern ID id_private_q;
 extern const rb_data_type_t ossl_evp_pkey_type;
 
 #define OSSL_PKEY_SET_PRIVATE(obj) rb_iv_set((obj), "private", Qtrue)
@@ -49,11 +48,9 @@ int ossl_generate_cb_2(int p, int n, BN_GENCB *cb);
 void ossl_generate_cb_stop(void *ptr);
 
 VALUE ossl_pkey_new(EVP_PKEY *);
-VALUE ossl_pkey_new_from_file(VALUE);
 EVP_PKEY *GetPKeyPtr(VALUE);
 EVP_PKEY *DupPKeyPtr(VALUE);
 EVP_PKEY *GetPrivPKeyPtr(VALUE);
-EVP_PKEY *DupPrivPKeyPtr(VALUE);
 void Init_ossl_pkey(void);
 
 /*

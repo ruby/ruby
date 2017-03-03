@@ -14,7 +14,7 @@
 # :stopdoc:
 module IRB
   module ExtendCommand
-    class Fork<Nop
+    class Fork < Nop
       def execute
         pid = send ExtendCommand.irb_original_method_name("fork")
         unless pid

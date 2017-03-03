@@ -3,7 +3,7 @@
 
 require "test/unit"
 
-class TestComprehensiveCaseFold < Test::Unit::TestCase
+class TestComprehensiveCaseMapping < Test::Unit::TestCase
   UNICODE_VERSION = RbConfig::CONFIG['UNICODE_VERSION']
   UNICODE_DATA_PATH = "../../../enc/unicode/data/#{UNICODE_VERSION}"
 
@@ -22,20 +22,20 @@ class TestComprehensiveCaseFold < Test::Unit::TestCase
   end
 
   def test_data_files_available
-    unless TestComprehensiveCaseFold.data_files_available?
+    unless TestComprehensiveCaseMapping.data_files_available?
       skip "Unicode data files not available in #{UNICODE_DATA_PATH}."
     end
   end
 end
 
-TestComprehensiveCaseFold.data_files_available? and  class TestComprehensiveCaseFold
+TestComprehensiveCaseMapping.data_files_available? and  class TestComprehensiveCaseMapping
   (CaseTest = Struct.new(:method_name, :attributes, :first_data, :follow_data)).class_eval do
     def initialize(method_name, attributes, first_data, follow_data=first_data)
       super
     end
   end
 
-  def self.read_data_file (filename)
+  def self.read_data_file(filename)
     IO.foreach(expand_filename(filename), encoding: Encoding::ASCII_8BIT) do |line|
       if $. == 1
         if filename == 'UnicodeData'
@@ -140,7 +140,7 @@ TestComprehensiveCaseFold.data_files_available? and  class TestComprehensiveCase
     @@tests ||= []
   end
 
-  def self.generate_unicode_case_mapping_tests (encoding)
+  def self.generate_unicode_case_mapping_tests(encoding)
     all_tests.each do |test|
       attributes = test.attributes.map(&:to_s).join '-'
       attributes.prepend '_' unless attributes.empty?
@@ -149,14 +149,14 @@ TestComprehensiveCaseFold.data_files_available? and  class TestComprehensiveCase
           source = code.encode(encoding) * 5
           target = "#{test.first_data[code]}#{test.follow_data[code]*4}".encode(encoding)
           result = source.__send__(test.method_name, *test.attributes)
-          assert_equal target, target,
+          assert_equal target, result,
             proc{"from #{code*5} (#{source.dump}) expected #{target.dump} but was #{result.dump}"}
         end
       end
     end
   end
 
-  def self.generate_case_mapping_tests (encoding)
+  def self.generate_case_mapping_tests(encoding)
     all_tests
     # preselect codepoints to speed up testing for small encodings
     codepoints = @@codepoints.select do |code|
@@ -198,7 +198,7 @@ TestComprehensiveCaseFold.data_files_available? and  class TestComprehensiveCase
   end
 
   # test for encodings that don't yet (or will never) deal with non-ASCII characters
-  def self.generate_ascii_only_case_mapping_tests (encoding)
+  def self.generate_ascii_only_case_mapping_tests(encoding)
     all_tests
     # preselect codepoints to speed up testing for small encodings
     codepoints = @@codepoints.select do |code|
@@ -290,7 +290,7 @@ TestComprehensiveCaseFold.data_files_available? and  class TestComprehensiveCase
   generate_case_mapping_tests 'Windows-1251'
   generate_case_mapping_tests 'Windows-1252'
   generate_case_mapping_tests 'Windows-1253'
-  generate_ascii_only_case_mapping_tests 'Windows-1254'
+  generate_case_mapping_tests 'Windows-1254'
   generate_case_mapping_tests 'Windows-1255'
   generate_ascii_only_case_mapping_tests 'Windows-1256'
   generate_case_mapping_tests 'Windows-1257'

@@ -329,9 +329,7 @@ module Net
       end
       @receiver_thread.join
       synchronize do
-        unless @sock.closed?
-          @sock.close
-        end
+        @sock.close
       end
       raise e if e
     end

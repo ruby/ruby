@@ -207,8 +207,6 @@ lines, one line per element. Lines are assumed to be separated by _sep_.
   end
 
   def test_force_encoding
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     @comment.force_encoding Encoding::UTF_8
 
     assert_equal Encoding::UTF_8, @comment.text.encoding
@@ -343,8 +341,6 @@ lines, one line per element. Lines are assumed to be separated by _sep_.
   end
 
   def test_remove_private_encoding
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     comment = RDoc::Comment.new <<-EOS, @top_level
 # This is text
 #--
@@ -467,8 +463,6 @@ lines, one line per element. Lines are assumed to be separated by _sep_.
   end
 
   def test_remove_private_toggle_encoding
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     comment = RDoc::Comment.new <<-EOS, @top_level
 # This is text
 #--
@@ -485,8 +479,6 @@ lines, one line per element. Lines are assumed to be separated by _sep_.
   end
 
   def test_remove_private_toggle_encoding_ruby_bug?
-    skip "Encoding not implemented" unless Object.const_defined? :Encoding
-
     comment = RDoc::Comment.new <<-EOS, @top_level
 #--
 # this is private
@@ -502,4 +494,3 @@ lines, one line per element. Lines are assumed to be separated by _sep_.
   end
 
 end
-

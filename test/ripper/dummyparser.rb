@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # dummyparser.rb
 #
@@ -186,7 +186,7 @@ class DummyParser < Ripper
   end
 
   def on_word_new
-    ""
+    "".dup
   end
 
   def on_word_add(word, w)

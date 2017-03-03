@@ -51,6 +51,7 @@ class XrefTestCase < RDoc::TestCase
     @c5_c1 = @xref_data.find_module_named 'C5::C1'
     @c3_h1 = @xref_data.find_module_named 'C3::H1'
     @c3_h2 = @xref_data.find_module_named 'C3::H2'
+    @c6    = @xref_data.find_module_named 'C6'
 
     @m1    = @xref_data.find_module_named 'M1'
     @m1_m  = @m1.method_list.first

@@ -3,7 +3,7 @@
 # Contributed by Sokolov Yura
 
 $last = 42.0
-def gen_random (max,im=139968,ia=3877,ic=29573)
+def gen_random(max, im=139968, ia=3877, ic=29573)
     (max * ($last = ($last * ia + ic) % im)) / im
 end
 

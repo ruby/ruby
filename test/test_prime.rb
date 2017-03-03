@@ -140,17 +140,14 @@ class TestPrime < Test::Unit::TestCase
     end
 
     def test_prime?
-      # zero and unit
-      assert_not_predicate(0, :prime?)
-      assert_not_predicate(1, :prime?)
+      PRIMES.each do |p|
+        assert_predicate(p, :prime?)
+      end
 
-      # small primes
-      assert_predicate(2, :prime?)
-      assert_predicate(3, :prime?)
-
-      # squared prime
-      assert_not_predicate(4, :prime?)
-      assert_not_predicate(9, :prime?)
+      composites = (0..PRIMES.last).to_a - PRIMES
+      composites.each do |c|
+        assert_not_predicate(c, :prime?)
+      end
 
       # mersenne numbers
       assert_predicate((2**31-1), :prime?)

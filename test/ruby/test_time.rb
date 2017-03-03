@@ -411,7 +411,7 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_time_interval
-    m = Mutex.new.lock
+    m = Thread::Mutex.new.lock
     assert_nothing_raised {
       Timeout.timeout(10) {
         m.sleep(0)
@@ -1071,5 +1071,43 @@ class TestTime < Test::Unit::TestCase
     }
     assert_equal now2, now3
     assert_equal now2.zone, now3.zone
+  end
+
+  def test_strftime_yearday_on_last_day_of_year
+    t = Time.utc(2015, 12, 31, 0, 0, 0)
+    assert_equal("365", t.strftime("%j"))
+    t = Time.utc(2016, 12, 31, 0, 0, 0)
+    assert_equal("366", t.strftime("%j"))
+
+    t = Time.utc(2015, 12, 30, 20, 0, 0).getlocal("+05:00")
+    assert_equal("365", t.strftime("%j"))
+    t = Time.utc(2016, 12, 30, 20, 0, 0).getlocal("+05:00")
+    assert_equal("366", t.strftime("%j"))
+
+    t = Time.utc(2016, 1, 1, 1, 0, 0).getlocal("-05:00")
+    assert_equal("365", t.strftime("%j"))
+    t = Time.utc(2017, 1, 1, 1, 0, 0).getlocal("-05:00")
+    assert_equal("366", t.strftime("%j"))
+  end
+
+  def test_strftime_no_hidden_garbage
+    fmt = %w(Y m d).map { |x| "%#{x}" }.join('-') # defeats optimization
+    t = Time.at(0).getutc
+    ObjectSpace.count_objects(res = {}) # creates strings on first call
+    before = ObjectSpace.count_objects(res)[:T_STRING]
+    val = t.strftime(fmt)
+    after = ObjectSpace.count_objects(res)[:T_STRING]
+    assert_equal before + 1, after, 'only new string is the created one'
+    assert_equal '1970-01-01', val
+  end
+
+  def test_num_exact_error
+    bad = EnvUtil.labeled_class("BadValue").new
+    x = EnvUtil.labeled_class("Inexact") do
+      def to_s; "Inexact"; end
+      define_method(:to_int) {bad}
+      define_method(:to_r) {bad}
+    end.new
+    assert_raise_with_message(TypeError, /Inexact/) {Time.at(x)}
   end
 end

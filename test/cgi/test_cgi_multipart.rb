@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'test/unit'
 require 'cgi'
 require 'tempfile'
@@ -33,7 +33,7 @@ class MultiPart
 
   def initialize(boundary=nil)
     @boundary = boundary || create_boundary()
-    @buf = ''
+    @buf = ''.dup
     @buf.force_encoding(::Encoding::ASCII_8BIT) if defined?(::Encoding)
   end
   attr_reader :boundary
@@ -53,7 +53,7 @@ class MultiPart
 
   def close
     buf = @buf
-    @buf = ''
+    @buf = ''.dup
     return buf << "--#{boundary}--\r\n"
   end
 
@@ -202,7 +202,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     @boundary = '----WebKitFormBoundaryAAfvAII+YL9102cX'
     @data = [
       {:name=>'hidden1', :value=>'foobar'},
-      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
+      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A".dup},
       {:name=>'file1',   :value=>_read('file1.html'),
        :filename=>'file1.html', :content_type=>'text/html'},
       {:name=>'image1',  :value=>_read('small.png'),
@@ -218,7 +218,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     @boundary = '----WebKitFormBoundaryAAfvAII+YL9102cX'
     @data = [
       {:name=>'hidden1', :value=>'foobar'},
-      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
+      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A".dup},
       {:name=>'file1',   :value=>_read('file1.html'),
        :filename=>'file1.html', :content_type=>'text/html'},
       {:name=>'image1',  :value=>_read('large.png'),
@@ -323,7 +323,7 @@ class CGIMultipartTest < Test::Unit::TestCase
     @boundary = '(.|\n)*'
     @data = [
       {:name=>'hidden1', :value=>'foobar'},
-      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A"},
+      {:name=>'text1',   :value=>"\xE3\x81\x82\xE3\x81\x84\xE3\x81\x86\xE3\x81\x88\xE3\x81\x8A".dup},
       {:name=>'file1',   :value=>_read('file1.html'),
        :filename=>'file1.html', :content_type=>'text/html'},
       {:name=>'image1',  :value=>_read('small.png'),

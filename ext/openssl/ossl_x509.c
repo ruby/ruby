@@ -11,7 +11,7 @@
 
 VALUE mX509;
 
-#define DefX509Const(x) rb_define_const(mX509, #x,INT2FIX(X509_##x))
+#define DefX509Const(x) rb_define_const(mX509, #x, INT2NUM(X509_##x))
 #define DefX509Default(x,i) \
   rb_define_const(mX509, "DEFAULT_" #x, rb_str_new2(X509_get_default_##i()))
 
@@ -34,6 +34,10 @@ ossl_x509_time_adjust(ASN1_TIME *s, VALUE time)
 void
 Init_ossl_x509(void)
 {
+#if 0
+    mOSSL = rb_define_module("OpenSSL");
+#endif
+
     mX509 = rb_define_module_under(mOSSL, "X509");
 
     Init_ossl_x509attr();
@@ -79,17 +83,88 @@ Init_ossl_x509(void)
     DefX509Const(V_ERR_KEYUSAGE_NO_CERTSIGN);
     DefX509Const(V_ERR_APPLICATION_VERIFICATION);
 
+    /* Set by Store#flags= and StoreContext#flags=. Enables CRL checking for the
+     * certificate chain leaf. */
     DefX509Const(V_FLAG_CRL_CHECK);
+    /* Set by Store#flags= and StoreContext#flags=. Enables CRL checking for all
+     * certificates in the certificate chain */
     DefX509Const(V_FLAG_CRL_CHECK_ALL);
+    /* Set by Store#flags= and StoreContext#flags=. Disables critical extension
+     * checking. */
+    DefX509Const(V_FLAG_IGNORE_CRITICAL);
+    /* Set by Store#flags= and StoreContext#flags=. Disables workarounds for
+     * broken certificates. */
+    DefX509Const(V_FLAG_X509_STRICT);
+    /* Set by Store#flags= and StoreContext#flags=. Enables proxy certificate
+     * verification. */
+    DefX509Const(V_FLAG_ALLOW_PROXY_CERTS);
+    /* Set by Store#flags= and StoreContext#flags=. Enables certificate policy
+     * constraints checking. */
+    DefX509Const(V_FLAG_POLICY_CHECK);
+    /* Set by Store#flags= and StoreContext#flags=.
+     * Implies V_FLAG_POLICY_CHECK */
+    DefX509Const(V_FLAG_EXPLICIT_POLICY);
+    /* Set by Store#flags= and StoreContext#flags=.
+     * Implies V_FLAG_POLICY_CHECK */
+    DefX509Const(V_FLAG_INHIBIT_ANY);
+    /* Set by Store#flags= and StoreContext#flags=.
+     * Implies V_FLAG_POLICY_CHECK */
+    DefX509Const(V_FLAG_INHIBIT_MAP);
+    /* Set by Store#flags= and StoreContext#flags=. */
+    DefX509Const(V_FLAG_NOTIFY_POLICY);
+#if defined(X509_V_FLAG_EXTENDED_CRL_SUPPORT)
+    /* Set by Store#flags= and StoreContext#flags=. Enables some additional
+     * features including support for indirect signed CRLs. */
+    DefX509Const(V_FLAG_EXTENDED_CRL_SUPPORT);
+#endif
+#if defined(X509_V_FLAG_USE_DELTAS)
+    /* Set by Store#flags= and StoreContext#flags=. Uses delta CRLs. If not
+     * specified, deltas are ignored. */
+    DefX509Const(V_FLAG_USE_DELTAS);
+#endif
+#if defined(X509_V_FLAG_CHECK_SS_SIGNATURE)
+    /* Set by Store#flags= and StoreContext#flags=. Enables checking of the
+     * signature of the root self-signed CA. */
+    DefX509Const(V_FLAG_CHECK_SS_SIGNATURE);
+#endif
+#if defined(X509_V_FLAG_TRUSTED_FIRST)
+    /* Set by Store#flags= and StoreContext#flags=. When constructing a
+     * certificate chain, search the Store first for the issuer certificate.
+     * Enabled by default in OpenSSL >= 1.1.0. */
+    DefX509Const(V_FLAG_TRUSTED_FIRST);
+#endif
+#if defined(X509_V_FLAG_NO_ALT_CHAINS)
+    /* Set by Store#flags= and StoreContext#flags=. Suppresses searching for
+     * a alternative chain. No effect in OpenSSL >= 1.1.0. */
+    DefX509Const(V_FLAG_NO_ALT_CHAINS);
+#endif
+#if defined(X509_V_FLAG_NO_CHECK_TIME)
+    /* Set by Store#flags= and StoreContext#flags=. Suppresses checking the
+     * validity period of certificates and CRLs. No effect when the current
+     * time is explicitly set by Store#time= or StoreContext#time=. */
+    DefX509Const(V_FLAG_NO_CHECK_TIME);
+#endif
 
+    /* Set by Store#purpose=. SSL/TLS client. */
     DefX509Const(PURPOSE_SSL_CLIENT);
+    /* Set by Store#purpose=. SSL/TLS server. */
     DefX509Const(PURPOSE_SSL_SERVER);
+    /* Set by Store#purpose=. Netscape SSL server. */
     DefX509Const(PURPOSE_NS_SSL_SERVER);
+    /* Set by Store#purpose=. S/MIME signing. */
     DefX509Const(PURPOSE_SMIME_SIGN);
+    /* Set by Store#purpose=. S/MIME encryption. */
     DefX509Const(PURPOSE_SMIME_ENCRYPT);
+    /* Set by Store#purpose=. CRL signing */
     DefX509Const(PURPOSE_CRL_SIGN);
+    /* Set by Store#purpose=. No checks. */
     DefX509Const(PURPOSE_ANY);
+    /* Set by Store#purpose=. OCSP helper. */
     DefX509Const(PURPOSE_OCSP_HELPER);
+#if defined(X509_PURPOSE_TIMESTAMP_SIGN)
+    /* Set by Store#purpose=. Time stamps signer. */
+    DefX509Const(PURPOSE_TIMESTAMP_SIGN);
+#endif
 
     DefX509Const(TRUST_COMPAT);
     DefX509Const(TRUST_SSL_CLIENT);
@@ -98,6 +173,9 @@ Init_ossl_x509(void)
     DefX509Const(TRUST_OBJECT_SIGN);
     DefX509Const(TRUST_OCSP_SIGN);
     DefX509Const(TRUST_OCSP_REQUEST);
+#if defined(X509_TRUST_TSA)
+    DefX509Const(TRUST_TSA);
+#endif
 
     DefX509Default(CERT_AREA, cert_area);
     DefX509Default(CERT_DIR, cert_dir);

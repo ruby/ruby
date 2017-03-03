@@ -37,6 +37,7 @@ class OpenSSL::TestBuffering < OpenSSL::TestCase
   end
 
   def setup
+    super
     @io = IO.new
   end
 

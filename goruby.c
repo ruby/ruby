@@ -20,7 +20,8 @@ RUBY_EXTERN void ruby_init_ext(const char *name, void (*init)(void));
 static VALUE
 init_golf(VALUE arg)
 {
-    ruby_init_ext("golf.so", Init_golf);
+    Init_golf();
+    rb_provide("golf.so");
     return arg;
 }
 

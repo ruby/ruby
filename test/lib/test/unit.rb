@@ -106,10 +106,10 @@ module Test
           elsif negative.empty? and positive.size == 1 and pos_pat !~ positive[0]
             filter = positive[0]
           else
-            filter = Regexp.union(*positive.map! {|s| s[pos_pat, 1] || "\\A#{Regexp.quote(s)}\\z"})
+            filter = Regexp.union(*positive.map! {|s| Regexp.new(s[pos_pat, 1] || "\\A#{Regexp.quote(s)}\\z")})
           end
           unless negative.empty?
-            negative = Regexp.union(*negative.map! {|s| s[neg_pat, 1]})
+            negative = Regexp.union(*negative.map! {|s| Regexp.new(s[neg_pat, 1])})
             filter = /\A(?=.*#{filter})(?!.*#{negative})/
           end
           if Regexp === filter
@@ -131,7 +131,28 @@ module Test
         if @options[:parallel]
           @files = args
         end
+        if @jobserver
+          @run_options << @jobserver.each_with_object({}) {|fd, opts| opts[fd] = fd}
+        end
         options
+      end
+
+      def non_options(files, options)
+        @jobserver = nil
+        if !options[:parallel] and
+          /(?:\A|\s)--jobserver-(?:auth|fds)=(\d+),(\d+)/ =~ ENV["MAKEFLAGS"]
+          begin
+            r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
+            w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
+          rescue
+            r.close if r
+            nil
+          else
+            @jobserver = [r, w]
+            options[:parallel] ||= 1
+          end
+        end
+        super
       end
 
       def status(*args)
@@ -148,13 +169,9 @@ module Test
 
         options[:retry] = true
 
-        opts.on '-j N', '--jobs N', "Allow run tests with N jobs at once" do |a|
-          if /^t/ =~ a
-            options[:testing] = true # For testing
-            options[:parallel] = a[1..-1].to_i
-          else
-            options[:parallel] = a.to_i
-          end
+        opts.on '-j N', '--jobs N', /\A(t)?(\d+)\z/, "Allow run tests with N jobs at once" do |_, t, a|
+          options[:testing] = true & t # For testing
+          options[:parallel] = a.to_i
         end
 
         opts.on '--separate', "Restart job process after one testcase has done" do
@@ -177,7 +194,7 @@ module Test
 
       class Worker
         def self.launch(ruby,args=[])
-          io = IO.popen([*ruby,
+          io = IO.popen([*ruby, "-W1",
                         "#{File.dirname(__FILE__)}/unit/parallel.rb",
                         *args], "rb+")
           new(io, io.pid, :waiting)
@@ -237,7 +254,6 @@ module Test
           return if @io.closed?
           @quit_called = true
           @io.puts "quit"
-          @io.close
         end
 
         def kill
@@ -257,7 +273,7 @@ module Test
         end
 
         def to_s
-          if @file
+          if @file and @status != :ready
             "#{@pid}=#{@file}"
           else
             "#{@pid}:#{@status.to_s.ljust(7)}"
@@ -280,6 +296,10 @@ module Test
       def after_worker_down(worker, e=nil, c=false)
         return unless @options[:parallel]
         return if @interrupt
+        if @jobserver
+          @jobserver[1] << @job_tokens
+          @job_tokens.clear
+        end
         warn e if e
         real_file = worker.real_file and warn "running file: #{real_file}"
         @need_quit = true
@@ -295,6 +315,10 @@ module Test
       def after_worker_quit(worker)
         return unless @options[:parallel]
         return if @interrupt
+        worker.close
+        if @jobserver and !@job_tokens.empty?
+          @jobserver[1] << @job_tokens.slice!(0)
+        end
         @workers.delete(worker)
         @dead_workers << worker
         @ios = @workers.map(&:io)
@@ -348,6 +372,11 @@ module Test
         end
       end
 
+      FakeClass = Struct.new(:name)
+      def fake_class(name)
+        (@fake_classes ||= {})[name] ||= FakeClass.new(name)
+      end
+
       def deal(io, type, result, rep, shutting_down = false)
         worker = @workers_hash[io]
         cmd = worker.read
@@ -361,7 +390,10 @@ module Test
           bang = $1
           worker.status = :ready
 
-          return nil unless task = @tasks.shift
+          unless task = @tasks.shift
+            worker.quit
+            return nil
+          end
           if @options[:separate] and not bang
             worker.quit
             worker = add_worker
@@ -380,7 +412,16 @@ module Test
           result << r[0..1] unless r[0..1] == [nil,nil]
           rep    << {file: worker.real_file, report: r[2], result: r[3], testcase: r[5]}
           $:.push(*r[4]).uniq!
+          jobs_status(worker) if @options[:job_status] == :replace
           return true
+        when /^record (.+?)$/
+          begin
+            r = Marshal.load($1.unpack("m")[0])
+          rescue => e
+            print "unknown record: #{e.message} #{$1.unpack("m")[0].dump}"
+            return true
+          end
+          record(fake_class(r[0]), *r[1..-1])
         when /^p (.+?)$/
           del_jobs_status
           print $1.unpack("m")[0]
@@ -420,14 +461,22 @@ module Test
         @workers      = [] # Array of workers.
         @workers_hash = {} # out-IO => worker
         @ios          = [] # Array of worker IOs
+        @job_tokens   = String.new(encoding: Encoding::ASCII_8BIT) if @jobserver
         begin
-          @options[:parallel].times {launch_worker}
+          [@tasks.size, @options[:parallel]].min.times {launch_worker}
 
           while _io = IO.select(@ios)[0]
             break if _io.any? do |io|
               @need_quit or
                 (deal(io, type, result, rep).nil? and
                  !@workers.any? {|x| [:running, :prepare].include? x.status})
+            end
+            if @jobserver and @job_tokens and !@tasks.empty? and !@workers.any? {|x| x.status == :ready}
+              t = @jobserver[0].read_nonblock([@tasks.size, @options[:parallel]].min, exception: false)
+              if String === t
+                @job_tokens << t
+                t.size.times {launch_worker}
+              end
             end
           end
         rescue Interrupt => ex
@@ -444,6 +493,7 @@ module Test
           quit_workers
 
           unless @interrupt || !@options[:retry] || @need_quit
+            parallel = @options[:parallel]
             @options[:parallel] = false
             suites, rep = rep.partition {|r| r[:testcase] && r[:file] && r[:report].any? {|e| !e[2].is_a?(MiniTest::Skip)}}
             suites.map {|r| r[:file]}.uniq.each {|file| require file}
@@ -453,6 +503,7 @@ module Test
               puts "\n""Retrying..."
               _run_suites(suites, type)
             end
+            @options[:parallel] = parallel
           end
           unless @options[:retry]
             del_status_line or puts
@@ -532,6 +583,57 @@ module Test
                            (r.start_with?("Failure:") ? 1 : 2) }
         failed(nil)
         result
+      end
+    end
+
+    module Statistics
+      def update_list(list, rec, max)
+        if i = list.empty? ? 0 : list.bsearch_index {|*a| yield(*a)}
+          list[i, 0] = [rec]
+          list[max..-1] = [] if list.size >= max
+        end
+      end
+
+      def record(suite, method, assertions, time, error)
+        if @options.values_at(:longest, :most_asserted).any?
+          @tops ||= {}
+          rec = [suite.name, method, assertions, time, error]
+          if max = @options[:longest]
+            update_list(@tops[:longest] ||= [], rec, max) {|_,_,_,t,_|t<time}
+          end
+          if max = @options[:most_asserted]
+            update_list(@tops[:most_asserted] ||= [], rec, max) {|_,_,a,_,_|a<assertions}
+          end
+        end
+        # (((@record ||= {})[suite] ||= {})[method]) = [assertions, time, error]
+        super
+      end
+
+      def run(*args)
+        result = super
+        if @tops ||= nil
+          @tops.each do |t, list|
+            if list
+              puts "#{t.to_s.tr('_', ' ')} tests:"
+              list.each {|suite, method, assertions, time, error|
+                printf "%5.2fsec(%d): %s#%s\n", time, assertions, suite, method
+              }
+            end
+          end
+        end
+        result
+      end
+
+      private
+      def setup_options(opts, options)
+        super
+        opts.separator "statistics options:"
+        opts.on '--longest=N', Integer, 'Show longest N tests' do |n|
+          options[:longest] = n
+        end
+        opts.on '--most-asserted=N', Integer, 'Show most asserted N tests' do |n|
+          options[:most_asserted] = n
+        end
       end
     end
 
@@ -852,6 +954,22 @@ module Test
       end
     end
 
+    module RepeatOption # :nodoc: all
+      def setup_options(parser, options)
+        super
+        options[:repeat_count] = nil
+        parser.separator "repeat options:"
+        parser.on '--repeat-count=NUM', "Number of times to repeat", Integer do |n|
+          options[:repeat_count] = n
+        end
+      end
+
+      def _run_anything(type)
+        @repeat_count = @options[:repeat_count]
+        super
+      end
+    end
+
     module ExcludesOption # :nodoc: all
       class ExcludedMethods < Struct.new(:excludes)
         def exclude(name, reason)
@@ -901,6 +1019,7 @@ module Test
           excludes = excludes.split(File::PATH_SEPARATOR)
         end
         options[:excludes] = excludes || []
+        parser.separator "excludes options:"
         parser.on '-X', '--excludes-dir DIRECTORY', "Directory name of exclude files" do |d|
           options[:excludes].concat d.split(File::PATH_SEPARATOR)
         end
@@ -914,15 +1033,33 @@ module Test
       end
     end
 
+    module SubprocessOption
+      def setup_options(parser, options)
+        super
+        parser.separator "subprocess options:"
+        parser.on '--subprocess-timeout-scale NUM', "Scale subprocess timeout", Float do |scale|
+          raise OptionParser::InvalidArgument, "timeout scale must be positive" unless scale > 0
+          options[:timeout_scale] = scale
+        end
+        if scale = options[:timeout_scale] or
+          (scale = ENV["RUBY_TEST_SUBPROCESS_TIMEOUT_SCALE"] and (scale = scale.to_f) > 0)
+          EnvUtil.subprocess_timeout_scale = scale
+        end
+      end
+    end
+
     class Runner < MiniTest::Unit # :nodoc: all
       include Test::Unit::Options
       include Test::Unit::StatusLine
       include Test::Unit::Parallel
+      include Test::Unit::Statistics
       include Test::Unit::Skipping
       include Test::Unit::GlobOption
+      include Test::Unit::RepeatOption
       include Test::Unit::LoadPathOption
       include Test::Unit::GCStressOption
       include Test::Unit::ExcludesOption
+      include Test::Unit::SubprocessOption
       include Test::Unit::RunCount
 
       class << self; undef autorun; end

@@ -22,7 +22,7 @@ class Shell
       @command = command
       @opts = opts
 
-      @input_queue = Queue.new
+      @input_queue = Thread::Queue.new
       @pid = nil
 
       sh.process_controller.add_schedule(self)

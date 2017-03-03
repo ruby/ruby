@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 #
 # sample program of expect.rb
 #
@@ -23,8 +24,17 @@ PTY.spawn("ftp ftp.ruby-lang.org") do |r_f,w_f,pid|
     username = 'guest'
   end
 
-  r_f.expect(/^(Name).*: |(word):|> /) do
-    w_f.puts($1 ? "ftp" : $2 ? "#{username}@" : "cd pub/ruby")
+  r_f.expect(/^Name.*: /) do
+    w_f.puts("ftp")
+  end
+  r_f.expect(/word:/) do
+    w_f.puts("#{username}@")
+  end
+  r_f.expect(/> /) do
+    w_f.puts("cd pub/ruby")
+  end
+  r_f.expect("> ") do
+    w_f.print "pass\n"
   end
   r_f.expect("> ") do
     w_f.print "dir\n"

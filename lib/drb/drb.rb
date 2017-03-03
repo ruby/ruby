@@ -1205,7 +1205,7 @@ module DRb
   # not normally need to deal with it directly.
   class DRbConn
     POOL_SIZE = 16  # :nodoc:
-    @mutex = Mutex.new
+    @mutex = Thread::Mutex.new
     @pool = []
 
     def self.open(remote_uri)  # :nodoc:
@@ -1824,7 +1824,7 @@ module DRb
   end
   module_function :install_acl
 
-  @mutex = Mutex.new
+  @mutex = Thread::Mutex.new
   def mutex # :nodoc:
     @mutex
   end

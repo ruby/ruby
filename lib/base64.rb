@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # = base64.rb: methods for base64-encoding and -decoding strings
 #
@@ -56,7 +56,7 @@ module Base64
   #    This is line three
   #    And so on...
   def decode64(str)
-    str.unpack("m").first
+    str.unpack1("m")
   end
 
   # Returns the Base64-encoded version of +bin+.
@@ -71,7 +71,7 @@ module Base64
   # ArgumentError is raised if +str+ is incorrectly padded or contains
   # non-alphabet characters.  Note that CR or LF are also rejected.
   def strict_decode64(str)
-    str.unpack("m0").first
+    str.unpack1("m0")
   end
 
   # Returns the Base64-encoded version of +bin+.

@@ -33,7 +33,6 @@
 #include <editline/readline.h>
 #endif
 
-#include "internal.h"
 #include "ruby/io.h"
 #include "ruby/thread.h"
 
@@ -58,7 +57,11 @@ static VALUE mReadline;
 
 #define COMPLETION_PROC "completion_proc"
 #define COMPLETION_CASE_FOLD "completion_case_fold"
-static ID completion_proc, completion_case_fold;
+static ID id_call, completion_proc, completion_case_fold;
+#if defined HAVE_RL_CHAR_IS_QUOTED_P
+#define QUOTING_DETECTION_PROC "quoting_detection_proc"
+static ID quoting_detection_proc;
+#endif
 #if USE_INSERT_IGNORE_ESCAPE
 static ID id_orig_prompt, id_last_prompt;
 #endif
@@ -131,6 +134,13 @@ static VALUE readline_instream;
 static VALUE readline_outstream;
 static FILE *readline_rl_instream;
 static FILE *readline_rl_outstream;
+
+static void
+mustbe_callable(VALUE proc)
+{
+    if (!NIL_P(proc) && !rb_respond_to(proc, id_call))
+        rb_raise(rb_eArgError, "argument must respond to `call'");
+}
 
 #if defined HAVE_RL_GETC_FUNCTION
 
@@ -618,8 +628,7 @@ readline_s_set_output(VALUE self, VALUE output)
 static VALUE
 readline_s_set_pre_input_hook(VALUE self, VALUE proc)
 {
-    if (!NIL_P(proc) && !rb_respond_to(proc, rb_intern("call")))
-        rb_raise(rb_eArgError, "argument must respond to `call'");
+    mustbe_callable(proc);
     return rb_ivar_set(mReadline, id_pre_input_hook, proc);
 }
 
@@ -646,7 +655,7 @@ readline_pre_input_hook(void)
 
     proc = rb_attr_get(mReadline, id_pre_input_hook);
     if (!NIL_P(proc))
-        rb_funcall(proc, rb_intern("call"), 0);
+        rb_funcall(proc, id_call, 0);
     return 0;
 }
 #else
@@ -677,6 +686,16 @@ readline_s_insert_text(VALUE self, VALUE str)
 #endif
 
 #if defined(HAVE_RL_DELETE_TEXT)
+static const char *
+str_subpos(const char *ptr, const char *end, long beg, long *sublen, rb_encoding *enc)
+{
+    VALUE str = rb_enc_str_new_static(ptr, end-ptr, enc);
+    OBJ_FREEZE(str);
+    ptr = rb_str_subpos(str, beg, sublen);
+    rb_gc_force_recycle(str);
+    return ptr;
+}
+
 /*
  * call-seq:
  *   Readline.delete_text([start[, length]]) -> self
@@ -694,21 +713,20 @@ readline_s_delete_text(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 0, 2);
     if (rl_line_buffer) {
-        char *p, *ptr = rl_line_buffer;
-        long beg = 0, len = strlen(rl_line_buffer);
-        struct RString fakestr;
-        VALUE str = rb_setup_fake_str(&fakestr, ptr, len, rb_locale_encoding());
-        OBJ_FREEZE(str);
+        const char *p, *ptr = rl_line_buffer;
+        long beg = 0, len = strlen(ptr);
+        const char *end = ptr + len;
+        rb_encoding *enc = rb_locale_encoding();
         if (argc == 2) {
             beg = NUM2LONG(argv[0]);
             len = NUM2LONG(argv[1]);
           num_pos:
-            p = rb_str_subpos(str, beg, &len);
+            p = str_subpos(ptr, end, beg, &len, enc);
             if (!p) rb_raise(rb_eArgError, "invalid index");
             beg = p - ptr;
         }
         else if (argc == 1) {
-            len = rb_str_strlen(str);
+            len = rb_enc_strlen(ptr, ptr + len, enc);
             if (!rb_range_beg_len(argv[0], &beg, &len, len, 1)) {
                 beg = NUM2LONG(argv[0]);
                 goto num_pos;
@@ -815,8 +833,7 @@ readline_s_redisplay(VALUE self)
 static VALUE
 readline_s_set_completion_proc(VALUE self, VALUE proc)
 {
-    if (!NIL_P(proc) && !rb_respond_to(proc, rb_intern("call")))
-        rb_raise(rb_eArgError, "argument must respond to `call'");
+    mustbe_callable(proc);
     return rb_ivar_set(mReadline, completion_proc, proc);
 }
 
@@ -831,6 +848,51 @@ readline_s_get_completion_proc(VALUE self)
 {
     return rb_attr_get(mReadline, completion_proc);
 }
+
+#ifdef HAVE_RL_CHAR_IS_QUOTED_P
+/*
+ * call-seq:
+ *   Readline.quoting_detection_proc = proc
+ *
+ * Specifies a Proc object +proc+ to determine if a character in the user's
+ * input is escaped. It should take the user's input and the index of the
+ * character in question as input, and return a boolean (true if the specified
+ * character is escaped).
+ *
+ * Readline will only call this proc with characters specified in
+ * +completer_quote_characters+, to discover if they indicate the end of a
+ * quoted argument, or characters specified in
+ * +completer_word_break_characters+, to discover if they indicate a break
+ * between arguments.
+ *
+ * If +completer_quote_characters+ is not set, or if the user input doesn't
+ * contain one of the +completer_quote_characters+ or a +\+ character,
+ * Readline will not attempt to use this proc at all.
+ *
+ * Raises ArgumentError if +proc+ does not respond to the call method.
+ */
+static VALUE
+readline_s_set_quoting_detection_proc(VALUE self, VALUE proc)
+{
+    mustbe_callable(proc);
+    return rb_ivar_set(mReadline, quoting_detection_proc, proc);
+}
+
+/*
+ * call-seq:
+ *   Readline.quoting_detection_proc -> proc
+ *
+ * Returns the quoting detection Proc object.
+ */
+static VALUE
+readline_s_get_quoting_detection_proc(VALUE self)
+{
+    return rb_attr_get(mReadline, quoting_detection_proc);
+}
+#else
+#define readline_s_set_quoting_detection_proc rb_f_notimplement
+#define readline_s_get_quoting_detection_proc rb_f_notimplement
+#endif
 
 /*
  * call-seq:
@@ -953,7 +1015,7 @@ readline_attempted_completion_function(const char *text, int start, int end)
     rl_attempted_completion_over = 1;
 #endif
     case_fold = RTEST(rb_attr_get(mReadline, completion_case_fold));
-    ary = rb_funcall(proc, rb_intern("call"), 1, rb_locale_str_new_cstr(text));
+    ary = rb_funcall(proc, id_call, 1, rb_locale_str_new_cstr(text));
     if (!RB_TYPE_P(ary, T_ARRAY))
         ary = rb_Array(ary);
     matches = RARRAY_LEN(ary);
@@ -1006,6 +1068,32 @@ readline_attempted_completion_function(const char *text, int start, int end)
 
     return result;
 }
+
+#ifdef HAVE_RL_CHAR_IS_QUOTED_P
+static int
+readline_char_is_quoted(char *text, int byte_index)
+{
+    VALUE proc, result, str;
+    long char_index;
+    size_t len;
+
+    proc = rb_attr_get(mReadline, quoting_detection_proc);
+    if (NIL_P(proc)) {
+        return 0;
+    }
+
+    len = strlen(text);
+    if (byte_index < 0 || len < (size_t)byte_index) {
+        rb_raise(rb_eIndexError, "invalid byte index (%d in %"PRIdSIZE")",
+                 byte_index, len);
+    }
+
+    str = rb_locale_str_new(text, len);
+    char_index = rb_str_sublen(str, byte_index);
+    result = rb_funcall(proc, id_call, 2, str, LONG2FIX(char_index));
+    return RTEST(result);
+}
+#endif
 
 #ifdef HAVE_RL_SET_SCREEN_SIZE
 /*
@@ -1794,6 +1882,7 @@ username_completion_proc_call(VALUE self, VALUE str)
     return result;
 }
 
+#undef rb_intern
 void
 Init_readline(void)
 {
@@ -1813,6 +1902,7 @@ Init_readline(void)
 
     using_history();
 
+    id_call = rb_intern("call");
     completion_proc = rb_intern(COMPLETION_PROC);
     completion_case_fold = rb_intern(COMPLETION_CASE_FOLD);
 #if defined(HAVE_RL_PRE_INPUT_HOOK)
@@ -1820,6 +1910,9 @@ Init_readline(void)
 #endif
 #if defined(HAVE_RL_SPECIAL_PREFIXES)
     id_special_prefixes = rb_intern("special_prefixes");
+#endif
+#if defined HAVE_RL_CHAR_IS_QUOTED_P
+    quoting_detection_proc = rb_intern(QUOTING_DETECTION_PROC);
 #endif
 
     mReadline = rb_define_module("Readline");
@@ -1833,6 +1926,10 @@ Init_readline(void)
                                readline_s_set_completion_proc, 1);
     rb_define_singleton_method(mReadline, "completion_proc",
                                readline_s_get_completion_proc, 0);
+    rb_define_singleton_method(mReadline, "quoting_detection_proc=",
+                               readline_s_set_quoting_detection_proc, 1);
+    rb_define_singleton_method(mReadline, "quoting_detection_proc",
+                               readline_s_get_quoting_detection_proc, 0);
     rb_define_singleton_method(mReadline, "completion_case_fold=",
                                readline_s_set_completion_case_fold, 1);
     rb_define_singleton_method(mReadline, "completion_case_fold",
@@ -1979,7 +2076,10 @@ Init_readline(void)
 
     rl_attempted_completion_function = readline_attempted_completion_function;
 #if defined(HAVE_RL_PRE_INPUT_HOOK)
-    rl_pre_input_hook = (rl_hook_func_t *)readline_pre_input_hook;
+    rl_pre_input_hook = readline_pre_input_hook;
+#endif
+#if defined HAVE_RL_CHAR_IS_QUOTED_P
+    rl_char_is_quoted_p = &readline_char_is_quoted;
 #endif
 #ifdef HAVE_RL_CATCH_SIGNALS
     rl_catch_signals = 0;
@@ -1991,3 +2091,9 @@ Init_readline(void)
     rb_gc_register_address(&readline_instream);
     rb_gc_register_address(&readline_outstream);
 }
+
+/*
+ * Local variables:
+ * indent-tabs-mode: nil
+ * end:
+ */

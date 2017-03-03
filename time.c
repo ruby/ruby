@@ -482,51 +482,44 @@ static VALUE
 num_exact(VALUE v)
 {
     VALUE tmp;
-    int t;
 
-    t = TYPE(v);
-    switch (t) {
-      case T_FIXNUM:
-      case T_BIGNUM:
+    if (NIL_P(v)) {
+	rb_raise(rb_eTypeError, "can't convert nil into an exact number");
+    }
+    else if (RB_INTEGER_TYPE_P(v)) {
         return v;
-
-      case T_RATIONAL:
-        break;
-
-      case T_STRING:
-      case T_NIL:
+    }
+    else if (RB_TYPE_P(v, T_RATIONAL)) {
+	goto rational;
+    }
+    else if (RB_TYPE_P(v, T_STRING)) {
         goto typeerror;
-
-      default:
+    }
+    else {
         if ((tmp = rb_check_funcall(v, rb_intern("to_r"), 0, NULL)) != Qundef) {
             /* test to_int method availability to reject non-Numeric
              * objects such as String, Time, etc which have to_r method. */
             if (!rb_respond_to(v, rb_intern("to_int"))) goto typeerror;
-            v = tmp;
-            break;
         }
-        if (!NIL_P(tmp = rb_check_to_integer(v, "to_int"))) {
-            v = tmp;
-            break;
+        else if (!NIL_P(tmp = rb_check_to_int(v))) {
+            return tmp;
         }
-        goto typeerror;
+        else {
+            goto typeerror;
+        }
     }
 
-    t = TYPE(v);
-    switch (t) {
-      case T_FIXNUM:
-      case T_BIGNUM:
-        return v;
-
-      case T_RATIONAL:
+    if (RB_INTEGER_TYPE_P(tmp)) {
+        v = tmp;
+    }
+    else if (RB_TYPE_P(tmp, T_RATIONAL)) {
+        v = tmp;
+      rational:
         if (RRATIONAL(v)->den == INT2FIX(1))
             v = RRATIONAL(v)->num;
-        break;
-
-      default:
+    }
+    else {
       typeerror:
-	if (NIL_P(v))
-	    rb_raise(rb_eTypeError, "can't convert nil into an exact number");
 	rb_raise(rb_eTypeError, "can't convert %"PRIsVALUE" into an exact number",
 		 rb_obj_class(v));
     }
@@ -1889,7 +1882,7 @@ vtm_add_offset(struct vtm *vtm, VALUE off)
                 vtm->mday = 31;
                 vtm->mon = 12; /* December */
                 vtm->year = sub(vtm->year, INT2FIX(1));
-                vtm->yday = leap_year_v_p(vtm->year) ? 365 : 364;
+                vtm->yday = leap_year_v_p(vtm->year) ? 366 : 365;
             }
             else if (vtm->mday == 1) {
                 const int *days_in_month = leap_year_v_p(vtm->year) ?
@@ -2220,15 +2213,13 @@ time_timespec(VALUE num, int interval)
     interval = 1;
 #endif
 
-    switch (TYPE(num)) {
-      case T_FIXNUM:
+    if (FIXNUM_P(num)) {
 	t.tv_sec = NUM2TIMET(num);
 	if (interval && t.tv_sec < 0)
 	    rb_raise(rb_eArgError, "%s must be positive", tstr);
 	t.tv_nsec = 0;
-	break;
-
-      case T_FLOAT:
+    }
+    else if (RB_FLOAT_TYPE_P(num)) {
 	if (interval && RFLOAT_VALUE(num) < 0.0)
 	    rb_raise(rb_eArgError, "%s must be positive", tstr);
 	else {
@@ -2251,16 +2242,14 @@ time_timespec(VALUE num, int interval)
 		rb_raise(rb_eRangeError, "%f out of Time range", RFLOAT_VALUE(num));
 	    }
 	}
-	break;
-
-      case T_BIGNUM:
+    }
+    else if (RB_TYPE_P(num, T_BIGNUM)) {
 	t.tv_sec = NUM2TIMET(num);
 	if (interval && t.tv_sec < 0)
 	    rb_raise(rb_eArgError, "%s must be positive", tstr);
 	t.tv_nsec = 0;
-	break;
-
-      default:
+    }
+    else {
 	i = INT2FIX(1);
 	ary = rb_check_funcall(num, id_divmod, 1, &i);
 	if (ary != Qundef && !NIL_P(ary = rb_check_array_type(ary))) {
@@ -2276,7 +2265,6 @@ time_timespec(VALUE num, int interval)
 	    rb_raise(rb_eTypeError, "can't convert %"PRIsVALUE" into %s",
 		     rb_obj_class(num), tstr);
         }
-	break;
     }
     return t;
 }
@@ -2457,7 +2445,7 @@ obj2subsecx(VALUE obj, VALUE *subsecx)
     return obj2ubits(obj, 6); /* vtm->sec */
 }
 
-static long
+static VALUE
 usec2subsecx(VALUE obj)
 {
     if (RB_TYPE_P(obj, T_STRING)) {
@@ -2514,15 +2502,18 @@ validate_zone_name(VALUE zone_name)
 static void
 validate_vtm(struct vtm *vtm)
 {
-    if (   vtm->mon  < 1 || vtm->mon  > 12
-	|| vtm->mday < 1 || vtm->mday > 31
-	|| vtm->hour < 0 || vtm->hour > 24
-	|| (vtm->hour == 24 && (vtm->min > 0 || vtm->sec > 0))
-	|| vtm->min  < 0 || vtm->min  > 59
-	|| vtm->sec  < 0 || vtm->sec  > 60
-        || lt(vtm->subsecx, INT2FIX(0)) || ge(vtm->subsecx, INT2FIX(TIME_SCALE))
-        || (!NIL_P(vtm->utc_offset) && (validate_utc_offset(vtm->utc_offset), 0)))
-	rb_raise(rb_eArgError, "argument out of range");
+#define validate_vtm_range(mem, b, e) \
+    ((vtm->mem < b || vtm->mem > e) ? \
+     rb_raise(rb_eArgError, #mem" out of range") : (void)0)
+    validate_vtm_range(mon, 1, 12);
+    validate_vtm_range(mday, 1, 31);
+    validate_vtm_range(hour, 0, 24);
+    validate_vtm_range(min, 0, (vtm->hour == 24 ? 0 : 59));
+    validate_vtm_range(sec, 0, (vtm->hour == 24 ? 0 : 60));
+    if (lt(vtm->subsecx, INT2FIX(0)) || ge(vtm->subsecx, INT2FIX(TIME_SCALE)))
+	rb_raise(rb_eArgError, "subsecx out of range");
+    if (!NIL_P(vtm->utc_offset)) validate_utc_offset(vtm->utc_offset);
+#undef validate_vtm_range
 }
 
 static void
@@ -2591,6 +2582,7 @@ time_arg(int argc, VALUE *argv, struct vtm *vtm)
     }
 
     validate_vtm(vtm);
+    RB_GC_GUARD(vtm->subsecx);
 }
 
 static int
@@ -3290,7 +3282,7 @@ time_utc_p(VALUE time)
 
 /*
  * call-seq:
- *   time.hash   -> fixnum
+ *   time.hash   -> integer
  *
  * Returns a hash code for this Time object.
  *
@@ -3766,7 +3758,7 @@ time_round(int argc, VALUE *argv, VALUE time)
 
 /*
  *  call-seq:
- *     time.sec -> fixnum
+ *     time.sec -> integer
  *
  *  Returns the second of the minute (0..60) for _time_.
  *
@@ -3790,7 +3782,7 @@ time_sec(VALUE time)
 
 /*
  *  call-seq:
- *     time.min -> fixnum
+ *     time.min -> integer
  *
  *  Returns the minute of the hour (0..59) for _time_.
  *
@@ -3810,7 +3802,7 @@ time_min(VALUE time)
 
 /*
  *  call-seq:
- *     time.hour -> fixnum
+ *     time.hour -> integer
  *
  *  Returns the hour of the day (0..23) for _time_.
  *
@@ -3830,8 +3822,8 @@ time_hour(VALUE time)
 
 /*
  *  call-seq:
- *     time.day  -> fixnum
- *     time.mday -> fixnum
+ *     time.day  -> integer
+ *     time.mday -> integer
  *
  *  Returns the day of the month (1..n) for _time_.
  *
@@ -3852,8 +3844,8 @@ time_mday(VALUE time)
 
 /*
  *  call-seq:
- *     time.mon   -> fixnum
- *     time.month -> fixnum
+ *     time.mon   -> integer
+ *     time.month -> integer
  *
  *  Returns the month of the year (1..12) for _time_.
  *
@@ -3874,7 +3866,7 @@ time_mon(VALUE time)
 
 /*
  *  call-seq:
- *     time.year -> fixnum
+ *     time.year -> integer
  *
  *  Returns the year for _time_ (including the century).
  *
@@ -3894,7 +3886,7 @@ time_year(VALUE time)
 
 /*
  *  call-seq:
- *     time.wday -> fixnum
+ *     time.wday -> integer
  *
  *  Returns an integer representing the day of the week, 0..6, with
  *  Sunday == 0.
@@ -4041,7 +4033,7 @@ time_saturday(VALUE time)
 
 /*
  *  call-seq:
- *     time.yday -> fixnum
+ *     time.yday -> integer
  *
  *  Returns an integer representing the day of the year, 1..366.
  *
@@ -4139,9 +4131,9 @@ time_zone(VALUE time)
 
 /*
  *  call-seq:
- *     time.gmt_offset -> fixnum
- *     time.gmtoff     -> fixnum
- *     time.utc_offset -> fixnum
+ *     time.gmt_offset -> integer
+ *     time.gmtoff     -> integer
+ *     time.utc_offset -> integer
  *
  *  Returns the offset in seconds between the timezone of _time_
  *  and UTC.
@@ -4430,6 +4422,7 @@ time_strftime(VALUE time, VALUE format)
     const char *fmt;
     long len;
     rb_encoding *enc;
+    VALUE tmp;
 
     GetTimeval(time, tobj);
     MAKE_TM(time, tobj);
@@ -4437,9 +4430,9 @@ time_strftime(VALUE time, VALUE format)
     if (!rb_enc_str_asciicompat_p(format)) {
 	rb_raise(rb_eArgError, "format should have ASCII compatible encoding");
     }
-    format = rb_str_new4(format);
-    fmt = RSTRING_PTR(format);
-    len = RSTRING_LEN(format);
+    tmp = rb_str_tmp_frozen_acquire(format);
+    fmt = RSTRING_PTR(tmp);
+    len = RSTRING_LEN(tmp);
     enc = rb_enc_get(format);
     if (len == 0) {
 	rb_warning("strftime called with empty format string");
@@ -4448,6 +4441,7 @@ time_strftime(VALUE time, VALUE format)
     else {
 	VALUE str = rb_strftime_alloc(fmt, len, enc, &tobj->vtm, tobj->timew,
 				      TIME_UTC_P(tobj));
+	rb_str_tmp_frozen_release(format, tmp);
 	if (!str) rb_raise(rb_eArgError, "invalid format: %"PRIsVALUE, format);
 	return str;
     }

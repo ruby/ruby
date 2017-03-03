@@ -341,6 +341,31 @@ class TestGemRequire < Gem::TestCase
     Kernel::RUBYGEMS_ACTIVATION_MONITOR.exit
   end
 
+  def test_require_when_gem_defined
+    default_gem_spec = new_default_spec("default", "2.0.0.0",
+                                        nil, "default/gem.rb")
+    install_default_specs(default_gem_spec)
+    c = Class.new do
+      def self.gem(*args)
+        raise "received #gem with #{args.inspect}"
+      end
+    end
+    assert c.send(:require, "default/gem")
+    assert_equal %w(default-2.0.0.0), loaded_spec_names
+  end
+
+  def test_require_default_when_gem_defined
+    a = new_spec("a", "1", nil, "lib/a.rb")
+    install_specs a
+    c = Class.new do
+      def self.gem(*args)
+        raise "received #gem with #{args.inspect}"
+      end
+    end
+    assert c.send(:require, "a")
+    assert_equal %w(a-1), loaded_spec_names
+  end
+
   def silence_warnings
     old_verbose, $VERBOSE = $VERBOSE, false
     yield

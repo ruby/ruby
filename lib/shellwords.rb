@@ -6,7 +6,8 @@
 # of the UNIX Bourne shell.
 #
 # The shellwords() function was originally a port of shellwords.pl,
-# but modified to conform to POSIX / SUSv3 (IEEE Std 1003.1-2001 [1]).
+# but modified to conform to the Shell & Utilities volume of the IEEE
+# Std 1003.1-2008, 2016 Edition [1].
 #
 # === Usage
 #
@@ -55,7 +56,7 @@
 #
 # === Resources
 #
-# 1: {IEEE Std 1003.1-2004}[http://pubs.opengroup.org/onlinepubs/009695399/toc.htm]
+# 1: {IEEE Std 1003.1-2008, 2016 Edition, the Shell & Utilities volume}[http://pubs.opengroup.org/onlinepubs/9699919799/utilities/contents.html]
 
 module Shellwords
   # Splits a string into an array of tokens in the same way the UNIX
@@ -81,7 +82,14 @@ module Shellwords
     line.scan(/\G\s*(?>([^\s\\\'\"]+)|'([^\']*)'|"((?:[^\"\\]|\\.)*)"|(\\.?)|(\S))(\s|\z)?/m) do
       |word, sq, dq, esc, garbage, sep|
       raise ArgumentError, "Unmatched double quote: #{line.inspect}" if garbage
-      field << (word || sq || (dq || esc).gsub(/\\(.)/, '\\1'))
+      # 2.2.3 Double-Quotes:
+      #
+      #   The <backslash> shall retain its special meaning as an
+      #   escape character only when followed by one of the following
+      #   characters when considered special:
+      #
+      #   $ ` " \ <newline>
+      field << (word || sq || (dq && dq.gsub(/\\([$`"\\\n])/, '\\1')) || esc.gsub(/\\(.)/, '\\1'))
       if sep
         words << field
         field = String.new

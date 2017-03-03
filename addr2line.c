@@ -225,7 +225,7 @@ fill_line(int num_traces, void **traces, uintptr_t addr, int file, int line,
     }
 }
 
-static void
+static int
 parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 		obj_info_t *obj, line_info_t *lines, int offset)
 {
@@ -287,9 +287,13 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 
     include_directories = p;
 
+    /* temporary measure for compress-debug-sections */
+    if (p >= cu_end) return -1;
+
     /* skip include directories */
     while (*p) {
-	while (*p) p++;
+	p = memchr(p, '\0', cu_end - p);
+	if (!p) return -1;
 	p++;
     }
     p++;
@@ -397,21 +401,24 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 	}
     }
     *debug_line = p;
+    return 0;
 }
 
-static void
+static int
 parse_debug_line(int num_traces, void **traces,
 		 char *debug_line, unsigned long size,
 		 obj_info_t *obj, line_info_t *lines, int offset)
 {
     char *debug_line_end = debug_line + size;
     while (debug_line < debug_line_end) {
-	parse_debug_line_cu(num_traces, traces, &debug_line, obj, lines, offset);
+	if (parse_debug_line_cu(num_traces, traces, &debug_line, obj, lines, offset))
+	    return -1;
     }
     if (debug_line != debug_line_end) {
 	kprintf("Unexpected size of .debug_line in %s\n",
 		binary_filename);
     }
+    return 0;
 }
 
 /* read file and fill lines */
@@ -420,22 +427,25 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	   obj_info_t **objp, line_info_t *lines, int offset);
 
 static void
-append_obj(obj_info_t **objp) {
+append_obj(obj_info_t **objp)
+{
     obj_info_t *newobj = calloc(1, sizeof(obj_info_t));
     if (*objp) (*objp)->next = newobj;
     *objp = newobj;
 }
 
 static void
-follow_debuglink(char *debuglink, int num_traces, void **traces,
+follow_debuglink(const char *debuglink, int num_traces, void **traces,
 		 obj_info_t **objp, line_info_t *lines, int offset)
 {
     /* Ideally we should check 4 paths to follow gnu_debuglink,
        but we handle only one case for now as this format is used
        by some linux distributions. See GDB's info for detail. */
     static const char global_debug_dir[] = "/usr/lib/debug";
-    char *p, *subdir;
+    const size_t global_debug_dir_len = sizeof(global_debug_dir) - 1;
+    char *p;
     obj_info_t *o1 = *objp, *o2;
+    size_t len;
 
     p = strrchr(binary_filename, '/');
     if (!p) {
@@ -443,11 +453,13 @@ follow_debuglink(char *debuglink, int num_traces, void **traces,
     }
     p[1] = '\0';
 
-    subdir = (char *)alloca(strlen(binary_filename) + 1);
-    strcpy(subdir, binary_filename);
-    strcpy(binary_filename, global_debug_dir);
-    strlcat(binary_filename, subdir, PATH_MAX);
-    strlcat(binary_filename, debuglink, PATH_MAX);
+    len = strlen(binary_filename);
+    if (len >= PATH_MAX - global_debug_dir_len)
+	len = PATH_MAX - global_debug_dir_len - 1;
+    memmove(binary_filename + global_debug_dir_len, binary_filename, len);
+    memcpy(binary_filename, global_debug_dir, global_debug_dir_len);
+    len += global_debug_dir_len;
+    strlcpy(binary_filename + len, debuglink, PATH_MAX - len);
 
     append_obj(objp);
     o2 = *objp;
@@ -620,10 +632,11 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	goto finish;
     }
 
-    parse_debug_line(num_traces, traces,
-		     file + debug_line_shdr->sh_offset,
-		     debug_line_shdr->sh_size,
-		     obj, lines, offset);
+    if (parse_debug_line(num_traces, traces,
+			 file + debug_line_shdr->sh_offset,
+			 debug_line_shdr->sh_size,
+			 obj, lines, offset))
+	goto fail;
 finish:
     return dladdr_fbase;
 fail:
@@ -718,8 +731,9 @@ rb_dump_backtrace_with_lines(int num_traces, void **traces)
 	    path = info.dli_fname;
 	    obj->path = path;
 	    lines[i].path = path;
-	    strcpy(binary_filename, path);
-	    fill_lines(num_traces, traces, 1, &obj, lines, i);
+	    strlcpy(binary_filename, path, PATH_MAX);
+	    if (fill_lines(num_traces, traces, 1, &obj, lines, i) == (uintptr_t)-1)
+		break;
 	}
 next_line:
 	continue;

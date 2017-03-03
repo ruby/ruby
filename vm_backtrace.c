@@ -1088,7 +1088,7 @@ static VALUE
 get_klass(const rb_control_frame_t *cfp)
 {
     VALUE klass;
-    if (rb_vm_control_frame_id_and_class(cfp, 0, &klass)) {
+    if (rb_vm_control_frame_id_and_class(cfp, 0, 0, &klass)) {
 	if (RB_TYPE_P(klass, T_ICLASS)) {
 	    return RBASIC(klass)->klass;
 	}
@@ -1173,7 +1173,7 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
     rb_debug_inspector_t dbg_context;
     rb_thread_t *th = GET_THREAD();
     int state;
-    volatile VALUE UNINITIALIZED_VAR(result);
+    volatile VALUE MAYBE_UNUSED(result);
 
     dbg_context.th = th;
     dbg_context.cfp = dbg_context.th->cfp;
