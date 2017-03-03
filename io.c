@@ -7181,11 +7181,12 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
  *  call-seq:
  *     ios.puts(obj, ...)    -> nil
  *
- *  Writes the given objects to <em>ios</em> as with
- *  <code>IO#print</code>. Writes a record separator (typically a
- *  newline) after any that do not already end with a newline sequence.
+ *  Writes the given object(s) to <em>ios</em> as with <code>IO#print</code>.
+ *  Writes a newline after any that do not already end
+ *  with a newline sequence.
+ *
  *  If called with an array argument, writes each element on a new line.
- *  If called without arguments, outputs a single record separator.
+ *  If called without arguments, outputs a single newline.
  *
  *     $stdout.puts("this", "is", "a", "test")
  *
