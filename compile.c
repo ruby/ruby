@@ -559,7 +559,7 @@ validate_label(st_data_t name, st_data_t label, st_data_t arg)
 	do {
 	    COMPILE_ERROR(iseq, lobj->position,
 			  "%"PRIsVALUE": undefined label",
-			  rb_id2str((ID)name));
+			  rb_sym2str((VALUE)name));
 	} while (0);
     }
     return ST_CONTINUE;
@@ -5268,7 +5268,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 		if (nd_type(node->nd_args->nd_head) == NODE_LIT &&
 		    SYMBOL_P(node->nd_args->nd_head->nd_lit)) {
 
-		    label_name = SYM2ID(node->nd_args->nd_head->nd_lit);
+		    label_name = node->nd_args->nd_head->nd_lit;
 		    if (!st_lookup(labels_table, (st_data_t)label_name, &data)) {
 			label = NEW_LABEL(line);
 			label->position = line;
