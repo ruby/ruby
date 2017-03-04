@@ -164,23 +164,24 @@ getc_body(struct getc_struct *p)
 #if defined(_WIN32)
     {
         INPUT_RECORD ir;
-        int n;
+        DWORD n;
         static int prior_key = '0';
         for (;;) {
+            HANDLE h;
             if (prior_key > 0xff) {
                 prior_key = rl_getc(p->input);
                 return prior_key;
             }
-            if (PeekConsoleInput((HANDLE)_get_osfhandle(p->fd), &ir, 1, &n)) {
+            h = (HANDLE)_get_osfhandle(p->fd);
+            if (PeekConsoleInput(h, &ir, 1, &n)) {
                 if (n == 1) {
                     if (ir.EventType == KEY_EVENT && ir.Event.KeyEvent.bKeyDown) {
                         prior_key = rl_getc(p->input);
                         return prior_key;
                     } else {
-                        ReadConsoleInput((HANDLE)_get_osfhandle(p->fd), &ir, 1, &n);
+                        ReadConsoleInput(h, &ir, 1, &n);
                     }
                 } else {
-                    HANDLE h = (HANDLE)_get_osfhandle(p->fd);
                     rb_w32_wait_events(&h, 1, INFINITE);
                 }
             } else {
