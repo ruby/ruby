@@ -926,19 +926,23 @@ enum_first(int argc, VALUE *argv, VALUE obj)
  *     enum.sort                  -> array
  *     enum.sort { |a, b| block } -> array
  *
- *  Returns an array containing the items in <i>enum</i> sorted,
- *  either according to their own <code><=></code> method, or by using
- *  the results of the supplied block. The block should return -1, 0, or
- *  +1 depending on the comparison between <i>a</i> and <i>b</i>. As of
- *  Ruby 1.8, the method <code>Enumerable#sort_by</code> implements a
- *  built-in Schwartzian Transform, useful when key computation or
- *  comparison is expensive.
+ *  Returns an array containing the items in <i>enum</i> sorted.
+ *
+ *  Comparisons for the sort will be done using the items' own
+ *  <code><=></code> operator or using an optional code block.
+ *
+ *  The block must implement a comparison between +a+ and +b+ and return
+ *  an integer less than 0 when +b+ follows +a+, +0+ when +a+ and +b+
+ *  are equivalent, or an integer greater than 0 when +a+ follows +b+.
  *
  *  The result is not guaranteed as stable.  When comparison of two
  *  elements returns +0+, the order of the elements is unpredictable.
  *
- *     %w(rhea kea flea).sort          #=> ["flea", "kea", "rhea"]
+ *     %w(rhea kea flea).sort           #=> ["flea", "kea", "rhea"]
  *     (1..10).sort { |a, b| b <=> a }  #=> [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+ *
+ *  See also Enumerable#sort_by. It implements a Schwartzian transform
+ *  which is useful when key computation or comparison is expensive.
  */
 
 static VALUE
@@ -1012,7 +1016,7 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
  *
  *  If no block is given, an enumerator is returned instead.
  *
- *     %w{apple pear fig}.sort_by { |word| word.length}
+ *     %w{apple pear fig}.sort_by { |word| word.length }
  *                   #=> ["fig", "pear", "apple"]
  *
  *  The current implementation of <code>sort_by</code> generates an
@@ -1057,7 +1061,7 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
  *  This still generates many unnecessary <code>Time</code> objects. A
  *  more efficient technique is to cache the sort keys (modification
  *  times in this case) before the sort. Perl users often call this
- *  approach a Schwartzian Transform, after Randal Schwartz. We
+ *  approach a Schwartzian transform, after Randal Schwartz. We
  *  construct a temporary array, where each element is an array
  *  containing our sort key along with the filename. We sort this array,
  *  and then extract the filename from the result.
