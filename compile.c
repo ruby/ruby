@@ -7489,8 +7489,10 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct r
 		break;
 	    }
 	}
-	assert(insn_len(insn) == op_index+1);
-    };
+	if (insn_len(insn) != op_index+1) {
+	    rb_raise(rb_eRuntimeError, "operand size mismatch");
+	}
+    }
 
 
     return code;
