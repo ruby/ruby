@@ -1642,6 +1642,12 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     list = FIRST_ELEMENT(anchor);
     line_info_index = code_index = sp = 0;
 
+#define BADINSN_ERROR \
+    (dump_disasm_list(list), \
+     xfree(generated_iseq), \
+     xfree(line_info_table), \
+     COMPILE_ERROR)
+
     while (list) {
 	switch (list->type) {
 	  case ISEQ_ELEMENT_INSN:
@@ -1653,6 +1659,11 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
 		/* update sp */
 		sp = calc_sp_depth(sp, iobj);
+		if (sp < 0) {
+		    BADINSN_ERROR(iseq, iobj->line_no,
+				  "argument stack underflow (%d)", sp);
+		    return COMPILE_NG;
+		}
 		if (sp > stack_max) {
 		    stack_max = sp;
 		}
@@ -1667,10 +1678,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		/* operand check */
 		if (iobj->operand_size != len - 1) {
 		    /* printf("operand size miss! (%d, %d)\n", iobj->operand_size, len); */
-		    dump_disasm_list(list);
-		    xfree(generated_iseq);
-		    xfree(line_info_table);
-		    COMPILE_ERROR(iseq, iobj->line_no,
+		    BADINSN_ERROR(iseq, iobj->line_no,
 				  "operand size miss! (%d for %d)",
 				  iobj->operand_size, len - 1);
 		    return COMPILE_NG;
@@ -1685,7 +1693,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			    /* label(destination position) */
 			    LABEL *lobj = (LABEL *)operands[j];
 			    if (!lobj->set) {
-				COMPILE_ERROR(iseq, iobj->line_no,
+				BADINSN_ERROR(iseq, iobj->line_no,
 					      "unknown label");
 				return COMPILE_NG;
 			    }
@@ -1778,9 +1786,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			generated_iseq[code_index + 1 + j] = operands[j];
 			break;
 		      default:
-			xfree(generated_iseq);
-			xfree(line_info_table);
-			COMPILE_ERROR(iseq, iobj->line_no,
+			BADINSN_ERROR(iseq, iobj->line_no,
 				      "unknown operand type: %c", type);
 			return COMPILE_NG;
 		    }
@@ -1854,6 +1860,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     iseq->body->iseq_encoded = (void *)generated_iseq;
     iseq->body->iseq_size = code_index;
     iseq->body->stack_max = stack_max;
+
+    /* get rid of memory leak when REALLOC failed */
+    iseq->body->line_info_table = line_info_table;
 
     REALLOC_N(line_info_table, struct iseq_line_info_entry, line_info_index);
     iseq->body->line_info_table = line_info_table;
