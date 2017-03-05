@@ -5268,7 +5268,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 		LABEL *label;
 		st_data_t data;
 		st_table *labels_table = ISEQ_COMPILE_DATA(iseq)->labels_table;
-		ID label_name;
+		VALUE label_name;
 
 		if (!labels_table) {
 		    labels_table = st_init_numtable();
