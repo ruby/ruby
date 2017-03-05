@@ -1290,6 +1290,16 @@ opt_eq_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
 		 BASIC_OP_UNREDEFINED_P(BOP_EQ, STRING_REDEFINED_OP_FLAG)) {
 	    return rb_str_equal(recv, obj);
 	}
+	else if (RBASIC_CLASS(recv) == rb_cArray &&
+		 RBASIC_CLASS(obj) == rb_cArray &&
+		 BASIC_OP_UNREDEFINED_P(BOP_EQ, ARRAY_REDEFINED_OP_FLAG)) {
+	    return rb_ary_equal(recv, obj);
+	}
+	else if (RBASIC_CLASS(recv) == rb_cHash &&
+		 RBASIC_CLASS(obj) == rb_cHash &&
+		 BASIC_OP_UNREDEFINED_P(BOP_EQ, HASH_REDEFINED_OP_FLAG)) {
+	    return rb_hash_equal(recv, obj);
+	}
     }
 
     {

@@ -2236,7 +2236,7 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
  *
  */
 
-static VALUE
+VALUE
 rb_hash_equal(VALUE hash1, VALUE hash2)
 {
     return hash_equal(hash1, hash2, FALSE);

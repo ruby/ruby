@@ -957,6 +957,7 @@ VALUE rb_gvar_defined(struct rb_global_entry *);
 struct vtm; /* defined by timev.h */
 
 /* array.c */
+VALUE rb_ary_equal(VALUE ary1, VALUE ary2);
 VALUE rb_ary_last(int, const VALUE *, VALUE);
 void rb_ary_set_len(VALUE, long);
 void rb_ary_delete_same(VALUE, VALUE);
@@ -1166,6 +1167,7 @@ void rb_gc_resurrect(VALUE ptr);
 
 /* hash.c */
 struct st_table *rb_hash_tbl_raw(VALUE hash);
+VALUE rb_hash_equal(VALUE hash1, VALUE hash2);
 VALUE rb_hash_has_key(VALUE hash, VALUE key);
 VALUE rb_hash_default_value(VALUE hash, VALUE key);
 VALUE rb_hash_set_default_proc(VALUE hash, VALUE proc);

@@ -3872,7 +3872,7 @@ recursive_equal(VALUE ary1, VALUE ary2, int recur)
  *
  */
 
-static VALUE
+VALUE
 rb_ary_equal(VALUE ary1, VALUE ary2)
 {
     if (ary1 == ary2) return Qtrue;
