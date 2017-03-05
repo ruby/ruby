@@ -7012,18 +7012,20 @@ rb_f_printf(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     ios.print()             -> nil
+ *     ios.print               -> nil
  *     ios.print(obj, ...)     -> nil
  *
- *  Writes the given object(s) to <em>ios</em>. The stream must be
- *  opened for writing. If the output field separator (<code>$,</code>)
- *  is not <code>nil</code>, it will be inserted between each object.
- *  If the output record separator (<code>$\\</code>)
- *  is not <code>nil</code>, it will be appended to the output. If no
- *  arguments are given, prints <code>$_</code>. Objects that aren't
- *  strings will be converted by calling their <code>to_s</code> method.
- *  With no argument, prints the contents of the variable <code>$_</code>.
- *  Returns <code>nil</code>.
+ *  Writes the given object(s) to <em>ios</em>. Returns <code>nil</code>.
+ *
+ *  The stream must be opened for writing.
+ *  Each given object that isn't a string will be converted by calling
+ *  its <code>to_s</code> method.
+ *  When called without arguments, prints the contents of <code>$_</code>.
+ *
+ *  If the output field separator (<code>$,</code>) is not <code>nil</code>,
+ *  it is inserted between objects.
+ *  If the output record separator (<code>$\\</code>) is not <code>nil</code>,
+ *  it is appended to the output.
  *
  *     $stdout.print("This is ", 100, " percent.\n")
  *
