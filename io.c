@@ -1881,8 +1881,6 @@ rb_io_sync(VALUE io)
  *
  *     f = File.new("testfile")
  *     f.sync = true
- *
- *  <em>(produces no output)</em>
  */
 
 static VALUE
@@ -9928,24 +9926,24 @@ seek_before_access(VALUE argp)
  *
  *  The options hash accepts the following keys:
  *
- *  encoding::
+ *  :encoding::
  *    string or encoding
  *
- *    Specifies the encoding of the read string.  +encoding:+ will be ignored
+ *    Specifies the encoding of the read string.  +:encoding+ will be ignored
  *    if +length+ is specified.  See Encoding.aliases for possible encodings.
  *
- *  mode::
+ *  :mode::
  *    string
  *
- *    Specifies the mode argument for open().  It must start with an "r"
- *    otherwise it will cause an error. See IO.new for the list of possible
- *    modes.
+ *    Specifies the <i>mode</i> argument for open().  It must start
+ *    with an "r", otherwise it will cause an error.
+ *    See IO.new for the list of possible modes.
  *
- *  open_args::
- *    array of strings
+ *  :open_args::
+ *    array
  *
  *    Specifies arguments for open() as an array.  This key can not be used
- *    in combination with either +encoding:+ or +mode:+.
+ *    in combination with either +:encoding+ or +:mode+.
  *
  *  Examples:
  *
@@ -10086,8 +10084,8 @@ io_s_write(int argc, VALUE *argv, int binary)
 
 /*
  *  call-seq:
- *     IO.write(name, string, [offset] )   => integer
- *     IO.write(name, string, [offset], open_args )   => integer
+ *     IO.write(name, string [, offset])           -> integer
+ *     IO.write(name, string [, offset] [, opt])   -> integer
  *
  *  Opens the file, optionally seeks to the given <i>offset</i>, writes
  *  <i>string</i>, then returns the length written.
@@ -10095,32 +10093,37 @@ io_s_write(int argc, VALUE *argv, int binary)
  *  If <i>offset</i> is not given, the file is truncated.  Otherwise,
  *  it is not truncated.
  *
- *  If the last argument is a hash, it specifies option for internal
- *  open().  The key would be the following.  open_args: is exclusive
- *  to others.
+ *    IO.write("testfile", "0123456789", 20)  #=> 10
+ *    # File could contain:  "This is line one\nThi0123456789two\nThis is line three\nAnd so on...\n"
+ *    IO.write("testfile", "0123456789")      #=> 10
+ *    # File would now read: "0123456789"
  *
- *   encoding: string or encoding
+ *  If the last argument is a hash, it specifies options for the internal
+ *  open().  It accepts the following keys:
  *
- *    specifies encoding of the read string.  encoding will be ignored
- *    if length is specified.
+ *  :encoding::
+ *    string or encoding
  *
- *   mode: string
+ *    Specifies the encoding of the read string.
+ *    See Encoding.aliases for possible encodings.
  *
- *    specifies mode argument for open().  it should start with "w" or "a" or "r+"
- *    otherwise it would cause error.
+ *  :mode::
+ *    string
  *
- *   perm: integer
+ *    Specifies the <i>mode</i> argument for open().  It must start
+ *    with "w", "a", or "r+", otherwise it will cause an error.
+ *    See IO.new for the list of possible modes.
  *
- *    specifies perm argument for open().
+ *  :perm::
+ *    integer
  *
- *   open_args: array
+ *    Specifies the <i>perm</i> argument for open().
  *
- *    specifies arguments for open() as an array.
+ *  :open_args::
+ *    array
  *
- *     IO.write("testfile", "0123456789", 20) # => 10
- *     # File could contain:  "This is line one\nThi0123456789two\nThis is line three\nAnd so on...\n"
- *     IO.write("testfile", "0123456789")      #=> 10
- *     # File would now read: "0123456789"
+ *    Specifies arguments for open() as an array.
+ *    This key can not be used in combination with other keys.
  */
 
 static VALUE
@@ -12265,13 +12268,13 @@ rb_readwrite_syserr_fail(enum rb_io_wait_readwrite writable, int n, const char *
  *  <code>"\gumby\ruby\test.rb"</code>.  When specifying a Windows-style
  *  filename in a Ruby string, remember to escape the backslashes:
  *
- *    "c:\\gumby\\ruby\\test.rb"
+ *    "C:\\gumby\\ruby\\test.rb"
  *
  *  Our examples here will use the Unix-style forward slashes;
  *  File::ALT_SEPARATOR can be used to get the platform-specific separator
  *  character.
  *
- *  The global constant ARGF (also accessible as $<) provides an
+ *  The global constant ARGF (also accessible as <code>$<</code>) provides an
  *  IO-like stream which allows access to all files mentioned on the
  *  command line (or STDIN if no files are mentioned). ARGF#path and its alias
  *  ARGF#filename are provided to access the name of the file currently being
