@@ -182,7 +182,7 @@ getc_body(struct getc_struct *p)
                         ReadConsoleInput(h, &ir, 1, &n);
                     }
                 } else {
-                    rb_w32_wait_events(&h, 1, INFINITE);
+                    rb_w32_wait_events_blocking(&h, 1, INFINITE);
                 }
             } else {
                 break;
