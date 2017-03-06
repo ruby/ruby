@@ -7553,8 +7553,8 @@ rb_io_make_open_file(VALUE obj)
  *  === Open Mode
  *
  *  When +mode+ is an integer it must be combination of the modes defined in
- *  File::Constants (+File::RDONLY+, +File::WRONLY | File::CREAT+).  See the
- *  open(2) man page for more information.
+ *  File::Constants (+File::RDONLY+, <code>File::WRONLY|File::CREAT</code>).
+ *  See the open(2) man page for more information.
  *
  *  When +mode+ is a string it must be in one of the following forms:
  *
@@ -9933,7 +9933,7 @@ seek_before_access(VALUE argp)
  *    if +length+ is specified.  See Encoding.aliases for possible encodings.
  *
  *  :mode::
- *    string
+ *    string or integer
  *
  *    Specifies the <i>mode</i> argument for open().  It must start
  *    with an "r", otherwise it will cause an error.
@@ -10108,7 +10108,7 @@ io_s_write(int argc, VALUE *argv, int binary)
  *    See Encoding.aliases for possible encodings.
  *
  *  :mode::
- *    string
+ *    string or integer
  *
  *    Specifies the <i>mode</i> argument for open().  It must start
  *    with "w", "a", or "r+", otherwise it will cause an error.
