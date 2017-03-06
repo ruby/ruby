@@ -3190,7 +3190,7 @@ case_when_optimizable_literal(NODE *node)
 	double ival;
 	if (RB_TYPE_P(v, T_FLOAT) &&
 	    modf(RFLOAT_VALUE(v), &ival) == 0.0) {
-	    return FIXABLE(ival) ? LONG2FIX((long)ival) : rb_dbl2big(ival);
+	    return rb_dbl2ival(ival);
 	}
 	if (SYMBOL_P(v) || rb_obj_is_kind_of(v, rb_cNumeric)) {
 	    return v;

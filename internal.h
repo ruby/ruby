@@ -1383,6 +1383,18 @@ rb_float_new_inline(double d)
 #define rb_float_value(v) rb_float_value_inline(v)
 #define rb_float_new(d)   rb_float_new_inline(d)
 
+static inline VALUE
+rb_dbl2ival(double d)
+{
+    VALUE val;
+    if (rb_long2fix_overflow(d, &val)) {
+	return rb_dbl2big(d);
+    }
+    else {
+	return val;
+    }
+}
+
 /* object.c */
 void rb_obj_copy_ivar(VALUE dest, VALUE obj);
 CONSTFUNC(VALUE rb_obj_equal(VALUE obj1, VALUE obj2));

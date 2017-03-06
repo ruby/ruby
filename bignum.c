@@ -3184,15 +3184,13 @@ rb_int2big(SIGNED_VALUE n)
 VALUE
 rb_uint2inum(VALUE n)
 {
-    if (POSFIXABLE(n)) return LONG2FIX(n);
-    return rb_uint2big(n);
+    return ULONG2NUM(n);
 }
 
 VALUE
 rb_int2inum(SIGNED_VALUE n)
 {
-    if (FIXABLE(n)) return LONG2FIX(n);
-    return rb_int2big(n);
+    return LONG2NUM(n);
 }
 
 void
@@ -4438,8 +4436,18 @@ rb_ull2inum(unsigned LONG_LONG n)
 VALUE
 rb_ll2inum(LONG_LONG n)
 {
+#ifdef HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW
+    SIGNED_VALUE v;
+    if (__builtin_mul_overflow(n, 2, &v)) {
+	return rb_ll2big(n);
+    }
+    else {
+	return ((VALUE)v) | RUBY_FIXNUM_FLAG;
+    }
+#else
     if (FIXABLE(n)) return LONG2FIX(n);
     return rb_ll2big(n);
+#endif
 }
 
 #endif  /* HAVE_LONG_LONG */
