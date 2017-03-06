@@ -6916,11 +6916,13 @@ typedef LONG_LONG timetick_int_t;
 #define TIMETICK_INT_MIN LLONG_MIN
 #define TIMETICK_INT_MAX LLONG_MAX
 #define TIMETICK_INT2NUM(v) LL2NUM(v)
+#define MUL_OVERFLOW_TIMETICK_P(a, b) MUL_OVERFLOW_LONG_LONG_P(a, b)
 #else
 typedef long timetick_int_t;
 #define TIMETICK_INT_MIN LONG_MIN
 #define TIMETICK_INT_MAX LONG_MAX
 #define TIMETICK_INT2NUM(v) LONG2NUM(v)
+#define MUL_OVERFLOW_TIMETICK_P(a, b) MUL_OVERFLOW_LONG_P(a, b)
 #endif
 
 CONSTFUNC(static timetick_int_t gcd_timetick_int(timetick_int_t, timetick_int_t));
@@ -7036,8 +7038,7 @@ timetick2integer(struct timetick *ttp,
         timetick_int_t t = ttp->giga_count * 1000000000 + ttp->count;
         for (i = 0; i < num_numerators; i++) {
             timetick_int_t factor = numerators[i];
-            if (MUL_OVERFLOW_SIGNED_INTEGER_P(factor, t,
-                        TIMETICK_INT_MIN, TIMETICK_INT_MAX))
+            if (MUL_OVERFLOW_TIMETICK_P(factor, t))
                 goto generic;
             t *= factor;
         }

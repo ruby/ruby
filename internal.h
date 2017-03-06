@@ -96,15 +96,41 @@ extern "C" {
 #endif
 #define TIMET_MAX_PLUS_ONE (2*(double)(TIMET_MAX/2+1))
 
+#ifdef HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW_P
+#define MUL_OVERFLOW_P(a, b) \
+    __builtin_mul_overflow_p((a), (b), (__typeof__(a * b))0)
+#elif defined HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW
+#define MUL_OVERFLOW_P(a, b) \
+    ({__typeof__(a) c; __builtin_mul_overflow((a), (b), &c);})
+#endif
+
 #define MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, min, max) ( \
     (a) == 0 ? 0 : \
     (a) == -1 ? (b) < -(max) : \
     (a) > 0 ? \
       ((b) > 0 ? (max) / (a) < (b) : (min) / (a) > (b)) : \
       ((b) > 0 ? (min) / (a) < (b) : (max) / (a) > (b)))
+
+#ifdef HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW_P
+/* __builtin_mul_overflow_p can take bitfield */
+/* and GCC permits bitfields for integers other than int */
+#define MUL_OVERFLOW_FIXNUM_P(a, b) ({ \
+    struct { SIGNED_VALUE fixnum : SIZEOF_VALUE * CHAR_BIT - 1; } c; \
+    __builtin_mul_overflow_p((a), (b), c.fixnum); \
+})
+#else
 #define MUL_OVERFLOW_FIXNUM_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, FIXNUM_MIN, FIXNUM_MAX)
-#define MUL_OVERFLOW_LONG_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LONG_MIN, LONG_MAX)
-#define MUL_OVERFLOW_INT_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, INT_MIN, INT_MAX)
+#endif
+
+#ifdef MUL_OVERFLOW_P
+#define MUL_OVERFLOW_LONG_LONG_P(a, b) MUL_OVERFLOW_P(a, b)
+#define MUL_OVERFLOW_LONG_P(a, b)      MUL_OVERFLOW_P(a, b)
+#define MUL_OVERFLOW_INT_P(a, b)       MUL_OVERFLOW_P(a, b)
+#else
+#define MUL_OVERFLOW_LONG_LONG_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LONG_LONG_MIN, LONG_LONG_MAX)
+#define MUL_OVERFLOW_LONG_P(a, b)      MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, LONG_MIN, LONG_MAX)
+#define MUL_OVERFLOW_INT_P(a, b)       MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, INT_MIN, INT_MAX)
+#endif
 
 #ifndef swap16
 # ifdef HAVE_BUILTIN___BUILTIN_BSWAP16
