@@ -1418,8 +1418,8 @@ num_equal(VALUE x, VALUE y)
  *
  */
 
-static VALUE
-flo_eq(VALUE x, VALUE y)
+VALUE
+rb_float_equal(VALUE x, VALUE y)
 {
     volatile double a, b;
 
@@ -1441,6 +1441,8 @@ flo_eq(VALUE x, VALUE y)
 #endif
     return (a == b)?Qtrue:Qfalse;
 }
+
+#define flo_eq rb_float_equal
 
 /*
  * call-seq:
