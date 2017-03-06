@@ -2077,7 +2077,7 @@ Init_readline(void)
 
     rl_attempted_completion_function = readline_attempted_completion_function;
 #if defined(HAVE_RL_PRE_INPUT_HOOK)
-    rl_pre_input_hook = readline_pre_input_hook;
+    rl_pre_input_hook = (Function *)readline_pre_input_hook;
 #endif
 #if defined HAVE_RL_CHAR_IS_QUOTED_P
     rl_char_is_quoted_p = &readline_char_is_quoted;
