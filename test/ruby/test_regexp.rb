@@ -205,6 +205,15 @@ class TestRegexp < Test::Unit::TestCase
     assert_not_include(local_variables, :nil, "[ruby-dev:32675]")
   end
 
+  def test_assign_named_capture_trace
+    bug = '[ruby-core:79940] [Bug #13287]'
+    assert_normal_exit("#{<<-"begin;"}\n#{<<-"end;"}", bug)
+    begin;
+      / (?<foo>.*)/ =~ "bar" &&
+        true
+    end;
+  end
+
   def test_match_regexp
     r = /./
     m = r.match("a")
