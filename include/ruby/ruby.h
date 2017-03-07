@@ -359,11 +359,7 @@ rb_fix2ulong(VALUE x)
 #define RB_FIXNUM_P(f) (((int)(SIGNED_VALUE)(f))&RUBY_FIXNUM_FLAG)
 #define RB_POSFIXABLE(f) ((f) < RUBY_FIXNUM_MAX+1)
 #define RB_NEGFIXABLE(f) ((f) >= RUBY_FIXNUM_MIN)
-#if defined HAVE_BUILTIN___BUILTIN_ADD_OVERFLOW
-# define RB_FIXABLE(f) ({SIGNED_VALUE a=(f),c; !__builtin_add_overflow(a, a, &c);})
-#else
-# define RB_FIXABLE(f) (RB_POSFIXABLE(f) && RB_NEGFIXABLE(f))
-#endif
+#define RB_FIXABLE(f) (RB_POSFIXABLE(f) && RB_NEGFIXABLE(f))
 #define FIX2LONG(x) RB_FIX2LONG(x)
 #define FIX2ULONG(x) RB_FIX2ULONG(x)
 #define FIXNUM_P(f) RB_FIXNUM_P(f)
