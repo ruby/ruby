@@ -1020,6 +1020,7 @@ module MiniTest
       @verbose = false
       @mutex = Thread::Mutex.new
       @info_signal = Signal.list['INFO']
+      @repeat_count = nil
     end
 
     def synchronize # :nodoc:
