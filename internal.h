@@ -368,7 +368,7 @@ ntz_intptr(uintptr_t x)
 # define DL2NUM(x) LL2NUM(x)
 #elif defined(HAVE_INT128_T)
 # define DLONG int128_t
-# define DL2NUM(x) (RB_FIXABLE(x) ? LONG2FIX(x) : rb_int128t2big(x))
+# define DL2NUM(x) ((RB_POSFIXABLE(x) && RB_NEGFIXABLE(x)) ? LONG2FIX(x) : rb_int128t2big(x))
 VALUE rb_int128t2big(int128_t n);
 #endif
 
