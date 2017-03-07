@@ -723,8 +723,8 @@ begin
       fails.each do |d, n, err|
         d = "#{d}:#{n}:"
         if err
-          err.scan(/.+/) do |e|
-            mf.puts %Q<\t@echo "#{d} #{e.gsub(/["`$^]/, '\\\\\\&')}">
+          err.scan(/.+/) do |ee|
+            mf.puts %Q<\t@echo "#{d} #{ee.gsub(/["`$^]/, '\\\\\\&')}">
           end
         else
           mf.puts %Q<\t@echo "#{d}">
