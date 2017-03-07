@@ -101,14 +101,21 @@ err_vcatf(VALUE str, const char *pre, const char *file, int line,
     return str;
 }
 
+#define FILE_LINE_MASK ((UINT_MAX >> FILE_CNT_BITS))
+
 VALUE
 rb_syntax_error_append(VALUE exc, VALUE file, int line, int column,
 		       rb_encoding *enc, const char *fmt, va_list args)
 {
     const char *fn = NIL_P(file) ? NULL : RSTRING_PTR(file);
+    if (line > 32767) {
+fprintf(stderr, "line %d %d\n", line, line & FILE_LINE_MASK);
+    }
     if (!exc) {
 	VALUE mesg = rb_enc_str_new(0, 0, enc);
-	err_vcatf(mesg, NULL, fn, line, fmt, args);
+	int lineno = line;
+	lineno &= FILE_LINE_MASK;
+	err_vcatf(mesg, NULL, fn, lineno, fmt, args);
 	rb_str_cat2(mesg, "\n");
 	rb_write_error_str(mesg);
     }
@@ -123,7 +130,7 @@ rb_syntax_error_append(VALUE exc, VALUE file, int line, int column,
 	    if (RSTRING_LEN(mesg) > 0 && *(RSTRING_END(mesg)-1) != '\n')
 		rb_str_cat_cstr(mesg, "\n");
 	}
-	err_vcatf(mesg, NULL, fn, line, fmt, args);
+	err_vcatf(mesg, NULL, fn, line & FILE_LINE_MASK, fmt, args);
     }
 
     return exc;

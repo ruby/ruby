@@ -8,8 +8,11 @@
 
 assert_equal "ArgumentError", %{
   def s(a) yield a; end
+  def raz
+    raise ArgumentError;
+  end
   begin
-    s([1, 2], &lambda { |a,b| [a,b] })
+    s([1, 2], &lambda { |a,b=raz| [a,b] })
   rescue ArgumentError => e
     e.class
   end

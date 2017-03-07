@@ -33,6 +33,19 @@ class TestMagicLine < Test::Unit::TestCase
     }
   end
 
+  def test_compile_error_line_eof
+    o = Object.new
+    out, err = capture_io do
+       begin
+         o.instance_eval("# -*- line: test.rb 100 -*-\ndef foo; a=<<EOF; end")
+       rescue Exception => error
+         assert_match(/^test.rb:100: syntax error/, error.message);
+       else
+         assert(false, 'no exception');
+       end
+    end
+  end
+
   def test_compile_error_line
     o = Object.new
     out, err = capture_io do

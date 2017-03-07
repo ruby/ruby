@@ -46,7 +46,7 @@ rb_vm_get_sourcefilename(const rb_control_frame_t *cfp)
     if (TYPE(cfp->iseq->body->location.path_array) == T_ARRAY) {
 	unsigned int idx = 0;
 	const rb_iseq_t *iseq = cfp->iseq;
-	if (RUBY_VM_NORMAL_ISEQ_P(iseq)) {
+	if (VM_FRAME_RUBYFRAME_P(cfp) && cfp->iseq) {
 	    idx = calc_lineno(cfp->iseq, cfp->pc) >> FILE_LINE_BITS;
 	}
 	file = rb_ary_entry(cfp->iseq->body->location.path_array, idx);

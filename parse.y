@@ -390,6 +390,9 @@ static int parser_yyerror(struct parser_params*, const char*);
 # define disp_ruby_sourcefile   ((ruby_sourceline >> FILE_LINE_BITS) ? \
                                 RSTRING_PTR(rb_ary_entry(ruby_sourcefile_array, (ruby_sourceline >> FILE_LINE_BITS))) : \
                                 ruby_sourcefile)
+# define disp_ruby_sourcefile_string   ((ruby_sourceline >> FILE_LINE_BITS) ? \
+                                rb_ary_entry(ruby_sourcefile_array, (ruby_sourceline >> FILE_LINE_BITS)) : \
+                                ruby_sourcefile_string)
 # define disp_ruby_sourcefile_line(line) \
                                 (((line) >> FILE_LINE_BITS) ? \
                                 RSTRING_PTR(rb_ary_entry(ruby_sourcefile_array, ((line) >> FILE_LINE_BITS))) : \
@@ -11012,8 +11015,8 @@ parser_compile_error(struct parser_params *parser, const char *fmt, ...)
     va_start(ap, fmt);
     parser->error_buffer =
 	rb_syntax_error_append(parser->error_buffer,
-			       ruby_sourcefile_string,
-			       ruby_sourceline,
+			       disp_ruby_sourcefile_string,
+			       disp_ruby_sourceline,
 			       rb_long2int(lex_p - lex_pbeg),
 			       current_enc, fmt, ap);
     va_end(ap);
