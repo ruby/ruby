@@ -5787,7 +5787,7 @@ rb_str_inspect(VALUE str)
  *  Produces a version of +str+ with all non-printing characters replaced by
  *  <code>\nnn</code> notation and all special characters escaped.
  *
- *    "hello \n ''".dump  #=> "\"hello \\n ''\"
+ *    "hello \n ''".dump  #=> "\"hello \\n ''\""
  */
 
 VALUE
