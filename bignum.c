@@ -4436,18 +4436,8 @@ rb_ull2inum(unsigned LONG_LONG n)
 VALUE
 rb_ll2inum(LONG_LONG n)
 {
-#ifdef HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW
-    SIGNED_VALUE v;
-    if (__builtin_mul_overflow(n, 2, &v)) {
-	return rb_ll2big(n);
-    }
-    else {
-	return ((VALUE)v) | RUBY_FIXNUM_FLAG;
-    }
-#else
     if (FIXABLE(n)) return LONG2FIX(n);
     return rb_ll2big(n);
-#endif
 }
 
 #endif  /* HAVE_LONG_LONG */

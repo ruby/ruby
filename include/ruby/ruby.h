@@ -359,7 +359,11 @@ rb_fix2ulong(VALUE x)
 #define RB_FIXNUM_P(f) (((int)(SIGNED_VALUE)(f))&RUBY_FIXNUM_FLAG)
 #define RB_POSFIXABLE(f) ((f) < RUBY_FIXNUM_MAX+1)
 #define RB_NEGFIXABLE(f) ((f) >= RUBY_FIXNUM_MIN)
-#define RB_FIXABLE(f) (RB_POSFIXABLE(f) && RB_NEGFIXABLE(f))
+#if defined HAVE_BUILTIN___BUILTIN_ADD_OVERFLOW
+# define RB_FIXABLE(f) ({SIGNED_VALUE a=(f),c; !__builtin_add_overflow(a, a, &c);})
+#else
+# define RB_FIXABLE(f) (RB_POSFIXABLE(f) && RB_NEGFIXABLE(f))
+#endif
 #define FIX2LONG(x) RB_FIX2LONG(x)
 #define FIX2ULONG(x) RB_FIX2ULONG(x)
 #define FIXNUM_P(f) RB_FIXNUM_P(f)
@@ -1507,16 +1511,6 @@ rb_integer_type_p(VALUE obj)
 static inline int
 rb_long2fix_overflow(long l, VALUE *ptr)
 {
-#ifdef HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW
-    SIGNED_VALUE v;
-    if (__builtin_mul_overflow(l, 2, &v)) {
-	return 1;
-    }
-    else {
-	*ptr = ((VALUE)v) | RUBY_FIXNUM_FLAG;
-	return 0;
-    }
-#else
     if (RB_FIXABLE(l)) {
 	*ptr = RB_LONG2FIX(l);
 	return 0;
@@ -1524,7 +1518,6 @@ rb_long2fix_overflow(long l, VALUE *ptr)
     else {
 	return 1;
     }
-#endif
 }
 
 #if SIZEOF_INT < SIZEOF_LONG
