@@ -1227,6 +1227,8 @@ exam: check test-rubyspec
 love: sudo-precheck up all test install check
 	@echo love is all you need
 
+great: exam
+
 yes-test-all no-test-all: sudo-precheck
 
 sudo-precheck: PHONY

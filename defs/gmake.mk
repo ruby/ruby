@@ -3,10 +3,12 @@ gnumake = yes
 override gnumake_recursive := $(if $(findstring n,$(firstword $(MFLAGS))),,+)
 override mflags := $(filter-out -j%,$(MFLAGS))
 
-CHECK_TARGETS := exam love check test check% test% btest%
+CHECK_TARGETS := great exam love check test check% test% btest%
 # expand test targets, and those dependents
 TEST_TARGETS := $(filter $(CHECK_TARGETS),$(MAKECMDGOALS))
 TEST_DEPENDS := $(filter-out $(TEST_TARGETS),$(MAKECMDGOALS))
+TEST_TARGETS := $(patsubst great,exam,$(TEST_TARGETS))
+TEST_DEPENDS := $(filter-out great $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst exam,check test-rubyspec,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out exam $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst love,check,$(TEST_TARGETS))
@@ -80,6 +82,9 @@ sudo-precheck: test yes-test-testframework no-test-testframework
 install-prereq: sudo-precheck
 yes-test-all no-test-all: install
 yes-test-almost no-test-almost: install
+endif
+ifneq ($(filter great,$(MAKECMDGOALS)),)
+love: test-rubyspec
 endif
 
 $(srcdir)/missing/des_tables.c: $(srcdir)/missing/crypt.c
