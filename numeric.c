@@ -3007,16 +3007,15 @@ VALUE
 rb_num2fix(VALUE val)
 {
     long v;
-    VALUE w;
 
     if (FIXNUM_P(val)) {
 	return val;
     }
-    else if (rb_long2fix_overflow((v = rb_num2long(val)), &w)) {
-	rb_raise(rb_eRangeError, "integer %ld out of range of fixnum", v);
+    else if (rb_long_is_fixable_p(v = rb_num2long(val))) {
+	return LONG2FIX(v);
     }
     else {
-	return w;
+	rb_raise(rb_eRangeError, "integer %ld out of range of fixnum", v);
     }
 }
 

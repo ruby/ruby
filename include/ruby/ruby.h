@@ -1505,15 +1505,14 @@ rb_integer_type_p(VALUE obj)
 #endif
 
 static inline int
-rb_long2fix_overflow(long l, VALUE *ptr)
+rb_long_is_fixable_p(long v)
 {
-    if (RB_FIXABLE(l)) {
-	*ptr = RB_LONG2FIX(l);
-	return 0;
-    }
-    else {
-	return 1;
-    }
+#ifdef HAVE_BUILTIN___BUILTIN_ADD_OVERFLOW
+    SIGNED_VALUE w;
+    return! __builtin_add_overflow(v, v, &w);
+#else
+    return RB_FIXABLE(v);
+#endif
 }
 
 #if SIZEOF_INT < SIZEOF_LONG
@@ -1523,11 +1522,10 @@ rb_long2fix_overflow(long l, VALUE *ptr)
 static inline VALUE
 rb_int2num_inline(int v)
 {
-    VALUE ret;
-    if (rb_long2fix_overflow(v, &ret))
-	return rb_int2big(v);
+    if (rb_long_is_fixable_p(v))
+	return RB_INT2FIX(v);
     else
-	return ret;
+	return rb_int2big(v);
 }
 #define RB_INT2NUM(x) rb_int2num_inline(x)
 
@@ -1547,11 +1545,10 @@ rb_uint2num_inline(unsigned int v)
 static inline VALUE
 rb_long2num_inline(long v)
 {
-    VALUE ret;
-    if (rb_long2fix_overflow(v, &ret))
-	return rb_int2big(v);
+    if (rb_long_is_fixable_p(v))
+	return RB_LONG2FIX(v);
     else
-	return ret;
+	return rb_int2big(v);
 }
 #define RB_LONG2NUM(x) rb_long2num_inline(x)
 

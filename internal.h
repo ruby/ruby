@@ -368,7 +368,7 @@ ntz_intptr(uintptr_t x)
 # define DL2NUM(x) LL2NUM(x)
 #elif defined(HAVE_INT128_T)
 # define DLONG int128_t
-# define DL2NUM(x) ((RB_POSFIXABLE(x) && RB_NEGFIXABLE(x)) ? LONG2FIX(x) : rb_int128t2big(x))
+# define DL2NUM(x) (RB_FIXABLE(x) ? LONG2FIX(x) : rb_int128t2big(x))
 VALUE rb_int128t2big(int128_t n);
 #endif
 
@@ -1386,12 +1386,11 @@ rb_float_new_inline(double d)
 static inline VALUE
 rb_dbl2ival(double d)
 {
-    VALUE val;
-    if (rb_long2fix_overflow(d, &val)) {
-	return rb_dbl2big(d);
+    if (RB_FIXABLE(d)) {
+	return LONG2FIX((long)d);
     }
     else {
-	return val;
+	return rb_dbl2big(d);
     }
 }
 
