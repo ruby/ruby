@@ -2520,8 +2520,8 @@ str_uplus(VALUE str)
  *
  * If the string is frozen, then return the string itself.
  *
- * If the string is not frozen, then duplicate the string
- * freeze it and return it.
+ * If the string is not frozen, return a frozen, possibly pre-existing
+ * copy of it.
  */
 static VALUE
 str_uminus(VALUE str)
