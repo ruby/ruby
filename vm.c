@@ -984,6 +984,12 @@ invoke_bmethod(rb_thread_t *th, const rb_iseq_t *iseq, VALUE self, const struct 
     return ret;
 }
 
+ALWAYS_INLINE(
+    static VALUE
+    invoke_iseq_block_from_c(rb_thread_t *th, const struct rb_captured_block *captured,
+			     VALUE self, int argc, const VALUE *argv, VALUE passed_block_handler,
+			     const rb_cref_t *cref, const int splattable, int is_lambda)
+);
 static inline VALUE
 invoke_iseq_block_from_c(rb_thread_t *th, const struct rb_captured_block *captured,
 			 VALUE self, int argc, const VALUE *argv, VALUE passed_block_handler,
@@ -1011,6 +1017,13 @@ invoke_iseq_block_from_c(rb_thread_t *th, const struct rb_captured_block *captur
     }
 }
 
+ALWAYS_INLINE(
+    static VALUE
+    invoke_block_from_c_splattable(rb_thread_t *th, VALUE block_handler,
+				   int argc, const VALUE *argv,
+				   VALUE passed_block_handler, const rb_cref_t *cref,
+				   int is_lambda)
+);
 static inline VALUE
 invoke_block_from_c_splattable(rb_thread_t *th, VALUE block_handler,
 			       int argc, const VALUE *argv,
