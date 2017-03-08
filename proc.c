@@ -1212,13 +1212,9 @@ proc_to_s(VALUE self)
 static VALUE
 proc_to_s_(VALUE self, const rb_proc_t *proc)
 {
-    VALUE str = 0;
-    const char *cname = rb_obj_classname(self);
-    const struct rb_block *block;
-    const char *is_lambda;
-
-    block = &proc->block;
-    is_lambda = proc->is_lambda ? " (lambda)" : "";
+    VALUE cname = rb_obj_class(self);
+    const struct rb_block *block = &proc->block;
+    VALUE str = rb_sprintf("#<%"PRIsVALUE":", cname);
 
   again:
     switch (vm_block_type(block)) {
@@ -1228,24 +1224,22 @@ proc_to_s_(VALUE self, const rb_proc_t *proc)
       case block_type_iseq:
 	{
 	    const rb_iseq_t *iseq = rb_iseq_check(block->as.captured.code.iseq);
-	    str = rb_sprintf("#<%s:%p@%"PRIsVALUE":%d%s>", cname, (void *)self,
-			     iseq->body->location.path,
-			     FIX2INT(iseq->body->location.first_lineno), is_lambda);
+	    rb_str_catf(str, "%p@%"PRIsVALUE":%d", (void *)self,
+			iseq->body->location.path,
+			FIX2INT(iseq->body->location.first_lineno));
 	}
 	break;
       case block_type_symbol:
-	str = rb_sprintf("#<%s:%p(&%+"PRIsVALUE")%s>", cname, (void *)self,
-			 block->as.symbol, is_lambda);
+	rb_str_catf(str, "%p(&%+"PRIsVALUE")", (void *)self, block->as.symbol);
 	break;
       case block_type_ifunc:
-	str = rb_sprintf("#<%s:%p%s>", cname, proc->block.as.captured.code.ifunc,
-			 is_lambda);
+	rb_str_catf(str, "%p", proc->block.as.captured.code.ifunc);
 	break;
     }
 
-    if (OBJ_TAINTED(self)) {
-	OBJ_TAINT(str);
-    }
+    if (proc->is_lambda) rb_str_cat_cstr(str, " (lambda)");
+    rb_str_cat_cstr(str, ">");
+    OBJ_INFECT_RAW(str, self);
     return str;
 }
 
