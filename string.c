@@ -5266,7 +5266,7 @@ str_byte_substr(VALUE str, long beg, long len, int empty)
     else
 	p = s + beg;
 
-    if (!STR_EMBEDDABLE_P(len, TERM_LEN(str) && SHARABLE_SUBSTRING_P(beg, len, n))) {
+    if (!STR_EMBEDDABLE_P(len, TERM_LEN(str)) && SHARABLE_SUBSTRING_P(beg, len, n)) {
 	str2 = rb_str_new_frozen(str);
 	str2 = str_new_shared(rb_obj_class(str2), str2);
 	RSTRING(str2)->as.heap.ptr += beg;
