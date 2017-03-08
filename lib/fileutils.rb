@@ -24,11 +24,11 @@
 #   FileUtils.mkdir_p(list, options)
 #   FileUtils.rmdir(dir, options)
 #   FileUtils.rmdir(list, options)
-#   FileUtils.ln(old, new, options)
-#   FileUtils.ln(list, destdir, options)
-#   FileUtils.ln_s(old, new, options)
-#   FileUtils.ln_s(list, destdir, options)
-#   FileUtils.ln_sf(src, dest, options)
+#   FileUtils.ln(target, link, options)
+#   FileUtils.ln(targets, dir, options)
+#   FileUtils.ln_s(target, link, options)
+#   FileUtils.ln_s(targets, dir, options)
+#   FileUtils.ln_sf(target, link, options)
 #   FileUtils.cp(src, dest, options)
 #   FileUtils.cp(list, dir, options)
 #   FileUtils.cp_r(src, dest, options)
@@ -260,23 +260,24 @@ module FileUtils
   module_function :rmdir
 
   #
-  # <b><tt>ln(old, new, **options)</tt></b>
+  # :call-seq:
+  #   FileUtils.ln(target, link, force: nil, noop: nil, verbose: nil)
+  #   FileUtils.ln(target,  dir, force: nil, noop: nil, verbose: nil)
+  #   FileUtils.ln(targets, dir, force: nil, noop: nil, verbose: nil)
   #
-  # Creates a hard link +new+ which points to +old+.
-  # If +new+ already exists and it is a directory, creates a link +new/old+.
-  # If +new+ already exists and it is not a directory, raises Errno::EEXIST.
-  # But if :force option is set, overwrite +new+.
+  # In the first form, creates a hard link +link+ which points to +target+.
+  # If +link+ already exists, raises Errno::EEXIST.
+  # But if the :force option is set, overwrites +link+.
   #
-  #   FileUtils.ln 'gcc', 'cc', :verbose => true
+  #   FileUtils.ln 'gcc', 'cc', verbose: true
   #   FileUtils.ln '/usr/bin/emacs21', '/usr/bin/emacs'
   #
-  # <b><tt>ln(list, destdir, **options)</tt></b>
+  # In the second form, creates a link +dir/target+ pointing to +target+.
+  # In the third form, creates several hard links in the directory +dir+,
+  # pointing to each item in +targets+.
+  # If +dir+ is not a directory, raises Errno::ENOTDIR.
   #
-  # Creates several hard links in a directory, with each one pointing to the
-  # item in +list+.  If +destdir+ is not a directory, raises Errno::ENOTDIR.
-  #
-  #   include FileUtils
-  #   cd '/sbin'
+  #   FileUtils.cd '/sbin'
   #   FileUtils.ln %w(cp mv mkdir), '/bin'   # Now /sbin/cp and /bin/cp are linked.
   #
   def ln(src, dest, force: nil, noop: nil, verbose: nil)
@@ -293,24 +294,24 @@ module FileUtils
   module_function :link
 
   #
-  # <b><tt>ln_s(old, new, **options)</tt></b>
+  # :call-seq:
+  #   FileUtils.ln_s(target, link, force: nil, noop: nil, verbose: nil)
+  #   FileUtils.ln_s(target,  dir, force: nil, noop: nil, verbose: nil)
+  #   FileUtils.ln_s(targets, dir, force: nil, noop: nil, verbose: nil)
   #
-  # Creates a symbolic link +new+ which points to +old+.  If +new+ already
-  # exists and it is a directory, creates a symbolic link +new/old+.  If +new+
-  # already exists and it is not a directory, raises Errno::EEXIST.  But if
-  # :force option is set, overwrite +new+.
+  # In the first form, creates a symbolic link +link+ which points to +target+.
+  # If +link+ already exists, raises Errno::EEXIST.
+  # But if the :force option is set, overwrites +link+.
   #
   #   FileUtils.ln_s '/usr/bin/ruby', '/usr/local/bin/ruby'
-  #   FileUtils.ln_s 'verylongsourcefilename.c', 'c', :force => true
+  #   FileUtils.ln_s 'verylongsourcefilename.c', 'c', force: true
   #
-  # <b><tt>ln_s(list, destdir, **options)</tt></b>
+  # In the second form, creates a link +dir/target+ pointing to +target+.
+  # In the third form, creates several symbolic links in the directory +dir+,
+  # pointing to each item in +targets+.
+  # If +dir+ is not a directory, raises Errno::ENOTDIR.
   #
-  # Creates several symbolic links in a directory, with each one pointing to the
-  # item in +list+.  If +destdir+ is not a directory, raises Errno::ENOTDIR.
-  #
-  # If +destdir+ is not a directory, raises Errno::ENOTDIR.
-  #
-  #   FileUtils.ln_s Dir.glob('bin/*.rb'), '/home/aamine/bin'
+  #   FileUtils.ln_s Dir.glob('/bin/*.rb'), '/home/foo/bin'
   #
   def ln_s(src, dest, force: nil, noop: nil, verbose: nil)
     fu_output_message "ln -s#{force ? 'f' : ''} #{[src,dest].flatten.join ' '}" if verbose
@@ -326,9 +327,12 @@ module FileUtils
   module_function :symlink
 
   #
+  # :call-seq:
+  #   FileUtils.ln_sf(*args)
+  #
   # Same as
   #
-  #   FileUtils.ln_s(src, dest, :force => true)
+  #   FileUtils.ln_s(*args, force: true)
   #
   def ln_sf(src, dest, noop: nil, verbose: nil)
     ln_s src, dest, force: true, noop: noop, verbose: verbose
@@ -371,7 +375,7 @@ module FileUtils
   #
   #   # Examples of copying several files to target directory.
   #   FileUtils.cp_r %w(mail.rb field.rb debug/), site_ruby + '/tmail'
-  #   FileUtils.cp_r Dir.glob('*.rb'), '/home/aamine/lib/ruby', :noop => true, :verbose => true
+  #   FileUtils.cp_r Dir.glob('*.rb'), '/home/foo/lib/ruby', :noop => true, :verbose => true
   #
   #   # If you want to copy all contents of a directory instead of the
   #   # directory itself, c.f. src/x -> dest/x, src/y -> dest/y,
@@ -445,7 +449,7 @@ module FileUtils
   #   FileUtils.mv 'badname.rb', 'goodname.rb'
   #   FileUtils.mv 'stuff.rb', '/notexist/lib/ruby', :force => true  # no error
   #
-  #   FileUtils.mv %w(junk.txt dust.txt), '/home/aamine/.trash/'
+  #   FileUtils.mv %w(junk.txt dust.txt), '/home/foo/.trash/'
   #   FileUtils.mv Dir.glob('test*.rb'), 'test', :noop => true, :verbose => true
   #
   def mv(src, dest, force: nil, noop: nil, verbose: nil, secure: nil)
