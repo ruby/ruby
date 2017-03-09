@@ -186,6 +186,9 @@ ONIG_EXTERN int onigenc_unicode_apply_all_case_fold(OnigCaseFoldType flag, OnigA
 #define UTF16_IS_SURROGATE_FIRST(c)    (((c) & 0xfc) == 0xd8)
 #define UTF16_IS_SURROGATE_SECOND(c)   (((c) & 0xfc) == 0xdc)
 #define UTF16_IS_SURROGATE(c)          (((c) & 0xf8) == 0xd8)
+#define UNICODE_VALID_CODEPOINT_P(c) ( \
+	((c) <= 0x10ffff) && \
+	!((c) < 0x10000 && UTF16_IS_SURROGATE((c) >> 8)))
 
 #define ONIGENC_ISO_8859_1_TO_LOWER_CASE(c) \
   OnigEncISO_8859_1_ToLowerCaseTable[c]
