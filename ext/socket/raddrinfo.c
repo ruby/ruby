@@ -726,10 +726,8 @@ static void
 addrinfo_mark(void *ptr)
 {
     rb_addrinfo_t *rai = ptr;
-    if (rai) {
-        rb_gc_mark(rai->inspectname);
-        rb_gc_mark(rai->canonname);
-    }
+    rb_gc_mark(rai->inspectname);
+    rb_gc_mark(rai->canonname);
 }
 
 #define addrinfo_free RUBY_TYPED_DEFAULT_FREE
