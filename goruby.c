@@ -35,7 +35,11 @@ goruby_options(int argc, char **argv)
     if ((isatty(0) && isatty(1) && isatty(2)) && (pipe(rw) == 0)) {
 	ssize_t n;
 	infd = dup(0);
-	if (infd < 0) return NULL;
+	if (infd < 0) {
+	    close(rw[0]);
+	    close(rw[1]);
+	    goto no_irb;
+	}
 	dup2(rw[0], 0);
 	close(rw[0]);
 	n = write(rw[1], cmd, sizeof(cmd) - 1);
@@ -46,6 +50,7 @@ goruby_options(int argc, char **argv)
 	return ret;
     }
     else {
+      no_irb:
 	return ruby_options(argc, argv);
     }
 }
