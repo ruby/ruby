@@ -6,7 +6,7 @@ override mflags := $(filter-out -j%,$(MFLAGS))
 CHECK_TARGETS := great exam love check test check% test% btest%
 # expand test targets, and those dependents
 TEST_TARGETS := $(filter $(CHECK_TARGETS),$(MAKECMDGOALS))
-TEST_DEPENDS := $(filter-out $(TEST_TARGETS),$(MAKECMDGOALS))
+TEST_DEPENDS := $(filter-out commit $(TEST_TARGETS),$(MAKECMDGOALS))
 TEST_TARGETS := $(patsubst great,exam,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out great $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst exam,check test-rubyspec,$(TEST_TARGETS))
@@ -133,3 +133,17 @@ $(SCRIPTBINDIR)%$(EXEEXT): bin/% $(STUBPROGRAM) \
 $(TIMESTAMPDIR)/.exec.time:
 	$(Q) mkdir exec
 	$(Q) exit > $@
+
+ifneq (,)
+else ifeq ($(VCS),svn)
+VCSCOMMIT = $(VCS) commit $(SVNCOMMITOPTIONS)
+else ifeq ($(VCS),git svn)
+VCSCOMMIT = $(VCS) dcommit $(GITSVNCOMMITOPTIONS)
+else ifeq ($(VCS),git)
+VCSCOMMIT := $(VCS) push $(GITCOMMITOPTIONS)
+endif
+ifneq ($(VCSCOMMIT),)
+.PHONY: commit
+commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS)))
+	@$(CHDIR) "$(srcdir)" && LC_TIME=C exec $(VCSCOMMIT)
+endif
