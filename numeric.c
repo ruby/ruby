@@ -1279,7 +1279,10 @@ flo_mod(VALUE x, VALUE y)
 static VALUE
 dbl2ival(double d)
 {
-    return rb_dbl2ival(d);
+    if (FIXABLE(d)) {
+	return LONG2FIX((long)d);
+    }
+    return rb_dbl2big(d);
 }
 
 /*
@@ -1964,6 +1967,7 @@ static VALUE
 flo_floor(int argc, VALUE *argv, VALUE num)
 {
     double number, f;
+    long val;
     int ndigits = 0;
 
     if (rb_check_arity(argc, 0, 1)) {
@@ -1980,7 +1984,11 @@ flo_floor(int argc, VALUE *argv, VALUE num)
 	return DBL2NUM(f);
     }
     f = floor(number);
-    return dbl2ival(f);
+    if (!FIXABLE(f)) {
+	return rb_dbl2big(f);
+    }
+    val = (long)f;
+    return LONG2FIX(val);
 }
 
 /*
@@ -2319,11 +2327,16 @@ static VALUE
 flo_to_i(VALUE num)
 {
     double f = RFLOAT_VALUE(num);
+    long val;
 
     if (f > 0.0) f = floor(f);
     if (f < 0.0) f = ceil(f);
 
-    return dbl2ival(f);
+    if (!FIXABLE(f)) {
+	return rb_dbl2big(f);
+    }
+    val = (long)f;
+    return LONG2FIX(val);
 }
 
 /*
@@ -3008,15 +3021,12 @@ rb_num2fix(VALUE val)
 {
     long v;
 
-    if (FIXNUM_P(val)) {
-	return val;
-    }
-    else if (rb_long_is_fixable_p(v = rb_num2long(val))) {
-	return LONG2FIX(v);
-    }
-    else {
+    if (FIXNUM_P(val)) return val;
+
+    v = rb_num2long(val);
+    if (!FIXABLE(v))
 	rb_raise(rb_eRangeError, "integer %ld out of range of fixnum", v);
-    }
+    return LONG2FIX(v);
 }
 
 #if HAVE_LONG_LONG

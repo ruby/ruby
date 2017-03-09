@@ -3184,13 +3184,15 @@ rb_int2big(SIGNED_VALUE n)
 VALUE
 rb_uint2inum(VALUE n)
 {
-    return ULONG2NUM(n);
+    if (POSFIXABLE(n)) return LONG2FIX(n);
+    return rb_uint2big(n);
 }
 
 VALUE
 rb_int2inum(SIGNED_VALUE n)
 {
-    return LONG2NUM(n);
+    if (FIXABLE(n)) return LONG2FIX(n);
+    return rb_int2big(n);
 }
 
 void

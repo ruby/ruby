@@ -1345,7 +1345,7 @@ opt_case_dispatch
 	    if (RB_FLOAT_TYPE_P(key)) {
 		double kval = RFLOAT_VALUE(key);
 		if (!isinf(kval) && modf(kval, &kval) == 0.0) {
-		    key = rb_dbl2ival(kval);
+		    key = FIXABLE(kval) ? LONG2FIX((long)kval) : rb_dbl2big(kval);
 		}
 	    }
 	    if (st_lookup(RHASH_TBL_RAW(hash), key, &val)) {

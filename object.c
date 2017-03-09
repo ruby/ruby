@@ -2747,8 +2747,11 @@ rb_convert_to_integer(VALUE val, int base)
     VALUE tmp;
 
     if (RB_FLOAT_TYPE_P(val)) {
+	double f;
 	if (base != 0) goto arg_error;
-	return rb_dbl2ival(RFLOAT_VALUE(val));
+	f = RFLOAT_VALUE(val);
+	if (FIXABLE(f)) return LONG2FIX((long)f);
+	return rb_dbl2big(f);
     }
     else if (RB_INTEGER_TYPE_P(val)) {
 	if (base != 0) goto arg_error;
