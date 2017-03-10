@@ -620,7 +620,7 @@ clean-platform:
 
 RUBYSPEC_CAPIEXT = spec/rubyspec/optional/capi/ext
 clean-rubyspec: PHONY
-	$(Q) $(RM) $(RUBYSPEC_CAPIEXT)/*.$(OBJEXT) $(RUBYSPEC_CAPIEXT)/*.$(DLEXT)
+	-$(Q) $(RM) $(RUBYSPEC_CAPIEXT)/*.$(OBJEXT) $(RUBYSPEC_CAPIEXT)/*.$(DLEXT)
 	-$(Q) $(RMDIRS) $(RUBYSPEC_CAPIEXT)
 
 check: main test test-testframework test-almost
