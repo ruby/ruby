@@ -3825,7 +3825,23 @@ sitearchincludedir='${includedir}/${sitearch}'
 
 AC_ARG_WITH(soname,
 	AS_HELP_STRING([--with-soname=SONAME], [base name of shared library]),
-	[RUBY_SO_NAME=$withval], [RUBY_SO_NAME='$(RUBY_BASE_NAME)'])
+	[RUBY_SO_NAME=$withval],
+	[
+	    AS_CASE(["$target_os"],
+	    [darwin*], [
+	        RUBY_SO_NAME='$(RUBY_BASE_NAME).$(RUBY_PROGRAM_VERSION)'
+	    ],
+	    [cygwin*], [
+	        RUBY_SO_NAME='$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)0'
+	    ],
+	    [mingw*], [
+		RUBY_SO_NAME="${rb_cv_msvcrt}"'-$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)0'
+		AS_IF([test x"${target_cpu}" != xi386], [
+		    RUBY_SO_NAME="${target_cpu}-${RUBY_SO_NAME}"
+		])
+	    ],
+	    [RUBY_SO_NAME='$(RUBY_BASE_NAME)'])
+	])
 
 LIBRUBY_LDSHARED=$LDSHARED
 LIBRUBY_DLDFLAGS=$DLDFLAGS
@@ -3925,7 +3941,6 @@ AS_CASE("$enable_shared", [yes], [
 	SOLIBS='-lm -lc'
 	],
     [darwin*], [
-	RUBY_SO_NAME="$RUBY_SO_NAME"'.$(RUBY_PROGRAM_VERSION)'
 	LIBRUBY_LDSHARED='$(CC) -dynamiclib'
 	if test "$load_relative" = yes; then
 	    libprefix="@executable_path/../${libdir_basename}"
@@ -4157,7 +4172,6 @@ AS_CASE(["$target_os"],
 	fi
 	],
     [cygwin*|mingw*], [
-	RUBY_SO_NAME="${RUBY_SO_NAME}"'$(MAJOR)$(MINOR)0'
 	LIBRUBY_DLDFLAGS="${DLDFLAGS}"' -Wl,--out-implib=$(LIBRUBY)'
 	AS_CASE(["$target_os"],
 	[cygwin*], [
@@ -4167,10 +4181,6 @@ AS_CASE(["$target_os"],
 	    fi
 	    ],
 	[mingw*], [
-	    RUBY_SO_NAME="${rb_cv_msvcrt}-${RUBY_SO_NAME}"
-	    if test x"${target_cpu}" != xi386; then
-		RUBY_SO_NAME="${target_cpu}-${RUBY_SO_NAME}"
-	    fi
 	    if test x"$enable_shared" = xyes; then
 		LIBRUBY_SO='$(RUBY_SO_NAME)'.dll
 		LIBRUBY_DLDFLAGS="${LIBRUBY_DLDFLAGS}"' $(RUBYDEF)'
