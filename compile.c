@@ -5188,7 +5188,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	 *   "literal".freeze -> opt_str_freeze("literal")
 	 */
 	if (node->nd_recv && nd_type(node->nd_recv) == NODE_STR &&
-	    node->nd_mid == idFreeze && node->nd_args == NULL &&
+	    (node->nd_mid == idFreeze || node->nd_mid == idUMinus) &&
+	    node->nd_args == NULL &&
 	    ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
 	    ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
 	    VALUE str = rb_fstring(node->nd_recv->nd_lit);

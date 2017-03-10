@@ -178,6 +178,7 @@ tests = [
   },
 
   [ 'opt_str_freeze', %q{ 'true'.freeze }, ],
+  [ 'opt_str_freeze', %q{ -'true' }, ],
   [ 'opt_str_freeze', <<~'},', ], # {
     class String
       def freeze
