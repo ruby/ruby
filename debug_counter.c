@@ -12,14 +12,16 @@
 #include <stdio.h>
 
 #if USE_DEBUG_COUNTER
+#include "internal.h"
 
-/* do not modify manually. use a script above */
-const char * const debug_counter_names[] = {
-#include "debug_counter_names.inc"
+static const char *const debug_counter_names[] = {
     ""
+#define RB_DEBUG_COUNTER(name) #name,
+#include "debug_counter.h"
+#undef RB_DEBUG_COUNTER
 };
 
-size_t rb_debug_counter[RB_DEBUG_COUNTER_MAX + 1];
+size_t rb_debug_counter[numberof(debug_counter_names)];
 
 __attribute__((destructor))
 static void

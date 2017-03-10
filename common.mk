@@ -886,14 +886,9 @@ incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}known_errors.inc \
       {$(VPATH)}vm_call_iseq_optimized.inc $(srcdir)/revision.h \
       $(REVISION_H) \
       $(UNICODE_DATA_HEADERS) $(srcdir)/enc/jis/props.h \
-      {$(VPATH)}id.h {$(VPATH)}probes.dmyh \
-      {$(VPATH)}debug_counter_names.inc
+      {$(VPATH)}id.h {$(VPATH)}probes.dmyh
 
 insns: $(INSNS)
-
-debug_counter_names.inc: $(srcdir)/tool/debug_counter.rb $(srcdir)/debug_counter.h
-	$(ECHO) generating $@
-	$(Q) $(BASERUBY) $(srcdir)/tool/debug_counter.rb $(srcdir)/debug_counter.h > $@
 
 id.h: $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.h.tmpl $(srcdir)/defs/id.def
 	$(ECHO) generating $@
@@ -1466,7 +1461,6 @@ debug.$(OBJEXT): {$(VPATH)}vm_core.h
 debug.$(OBJEXT): {$(VPATH)}vm_debug.h
 debug.$(OBJEXT): {$(VPATH)}vm_opts.h
 debug_counter.$(OBJEXT): {$(VPATH)}debug_counter.h
-debug_counter.$(OBJEXT): {$(VPATH)}debug_counter_names.inc
 debug_counter.$(OBJEXT): {$(VPATH)}debug_counter.c
 dir.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 dir.$(OBJEXT): $(top_srcdir)/include/ruby.h
