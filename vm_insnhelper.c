@@ -1538,8 +1538,6 @@ vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_
     vm_pop_frame(th, cfp, cfp->ep);
     cfp = th->cfp;
 
-    RUBY_VM_CHECK_INTS(th);
-
     sp_orig = sp = cfp->sp;
 
     /* push self */
@@ -1558,6 +1556,8 @@ vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_
 		  iseq->body->stack_max);
 
     cfp->sp = sp_orig;
+    RUBY_VM_CHECK_INTS(th);
+
     return Qundef;
 }
 
