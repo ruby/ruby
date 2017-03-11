@@ -4102,6 +4102,60 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
     return COMPILE_OK;
 }
 
+static int
+compile_when(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
+{
+    NODE *vals;
+    NODE *val;
+    NODE *orig_node = node;
+    LABEL *endlabel;
+    DECL_ANCHOR(body_seq);
+
+    INIT_ANCHOR(body_seq);
+    endlabel = NEW_LABEL(nd_line(node));
+
+    while (node && nd_type(node) == NODE_WHEN) {
+	const int line = nd_line(node);
+	LABEL *l1 = NEW_LABEL(line);
+	ADD_LABEL(body_seq, l1);
+	CHECK(COMPILE_(body_seq, "when", node->nd_body, popped));
+	ADD_INSNL(body_seq, line, jump, endlabel);
+
+	vals = node->nd_head;
+	if (!vals) {
+	    compile_bug(ERROR_ARGS "NODE_WHEN: must be NODE_ARRAY, but 0");
+	}
+	switch (nd_type(vals)) {
+	  case NODE_ARRAY:
+	    while (vals) {
+		val = vals->nd_head;
+		CHECK(COMPILE(ret, "when2", val));
+		ADD_INSNL(ret, nd_line(val), branchif, l1);
+		vals = vals->nd_next;
+	    }
+	    break;
+	  case NODE_SPLAT:
+	  case NODE_ARGSCAT:
+	  case NODE_ARGSPUSH:
+	    ADD_INSN(ret, nd_line(vals), putnil);
+	    CHECK(COMPILE(ret, "when2/cond splat", vals));
+	    ADD_INSN1(ret, nd_line(vals), checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_WHEN | VM_CHECKMATCH_ARRAY));
+	    ADD_INSNL(ret, nd_line(vals), branchif, l1);
+	    break;
+	  default:
+	    UNKNOWN_NODE("NODE_WHEN", vals);
+	}
+	node = node->nd_next;
+    }
+    /* else */
+    CHECK(COMPILE_(ret, "else", node, popped));
+    ADD_INSNL(ret, nd_line(orig_node), jump, endlabel);
+
+    ADD_SEQ(ret, body_seq);
+    ADD_LABEL(ret, endlabel);
+    return COMPILE_OK;
+}
+
 /**
   compile each node
 
@@ -4189,57 +4243,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
       case NODE_CASE:
 	CHECK(compile_case(iseq, ret, node, popped));
 	break;
-      case NODE_WHEN:{
-	NODE *vals;
-	NODE *val;
-	NODE *orig_node = node;
-	LABEL *endlabel;
-	DECL_ANCHOR(body_seq);
-
-	INIT_ANCHOR(body_seq);
-	endlabel = NEW_LABEL(line);
-
-	while (node && nd_type(node) == NODE_WHEN) {
-	    LABEL *l1 = NEW_LABEL(line = nd_line(node));
-	    ADD_LABEL(body_seq, l1);
-	    CHECK(COMPILE_(body_seq, "when", node->nd_body, popped));
-	    ADD_INSNL(body_seq, line, jump, endlabel);
-
-	    vals = node->nd_head;
-	    if (!vals) {
-		compile_bug(ERROR_ARGS "NODE_WHEN: must be NODE_ARRAY, but 0");
-	    }
-	    switch (nd_type(vals)) {
-	      case NODE_ARRAY:
-		while (vals) {
-		    val = vals->nd_head;
-		    CHECK(COMPILE(ret, "when2", val));
-		    ADD_INSNL(ret, nd_line(val), branchif, l1);
-		    vals = vals->nd_next;
-		}
-		break;
-	      case NODE_SPLAT:
-	      case NODE_ARGSCAT:
-	      case NODE_ARGSPUSH:
-		ADD_INSN(ret, nd_line(vals), putnil);
-		CHECK(COMPILE(ret, "when2/cond splat", vals));
-		ADD_INSN1(ret, nd_line(vals), checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_WHEN | VM_CHECKMATCH_ARRAY));
-		ADD_INSNL(ret, nd_line(vals), branchif, l1);
-		break;
-	      default:
-		UNKNOWN_NODE("NODE_WHEN", vals);
-	    }
-	    node = node->nd_next;
-	}
-	/* else */
-	CHECK(COMPILE_(ret, "else", node, popped));
-	ADD_INSNL(ret, nd_line(orig_node), jump, endlabel);
-
-	ADD_SEQ(ret, body_seq);
-	ADD_LABEL(ret, endlabel);
-
+      case NODE_WHEN:
+	CHECK(compile_when(iseq, ret, node, popped));
 	break;
-      }
       case NODE_OPT_N:
       case NODE_WHILE:
       case NODE_UNTIL:{
