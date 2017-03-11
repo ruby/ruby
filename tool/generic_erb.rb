@@ -39,7 +39,7 @@ end
 template = ARGV.shift or abort opt.to_s
 erb = ERB.new(File.read(template), nil, '%-')
 erb.filename = template
-result = source ? erb.src : erb.result
+result = source ? erb.src : proc{erb.result}.call
 if output
   if ifchange and (vpath.open(output, "rb") {|f| f.read} rescue nil) == result
     puts "#{output} #{unchanged}"
