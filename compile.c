@@ -3992,6 +3992,116 @@ number_literal_p(NODE *n)
     return (n && nd_type(n) == NODE_LIT && RB_INTEGER_TYPE_P(n->nd_lit));
 }
 
+static int
+compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
+{
+    NODE *vals;
+    NODE *tempnode = node;
+    LABEL *endlabel, *elselabel;
+    DECL_ANCHOR(head);
+    DECL_ANCHOR(body_seq);
+    DECL_ANCHOR(cond_seq);
+    int only_special_literals = 1;
+    VALUE literals = rb_hash_new();
+    int line;
+    enum node_type type;
+
+    INIT_ANCHOR(head);
+    INIT_ANCHOR(body_seq);
+    INIT_ANCHOR(cond_seq);
+
+    rb_hash_tbl_raw(literals)->type = &cdhash_type;
+
+    if (node->nd_head == 0) {
+	CHECK(COMPILE_(ret, "when", node->nd_body, popped));
+	return COMPILE_OK;
+    }
+    CHECK(COMPILE(head, "case base", node->nd_head));
+
+    node = node->nd_body;
+    type = nd_type(node);
+    line = nd_line(node);
+
+    if (type != NODE_WHEN) {
+	COMPILE_ERROR(ERROR_ARGS "NODE_CASE: unexpected node. must be NODE_WHEN, but %s", ruby_node_name(type));
+	return COMPILE_NG;
+    }
+
+    endlabel = NEW_LABEL(line);
+    elselabel = NEW_LABEL(line);
+
+    ADD_SEQ(ret, head);	/* case VAL */
+
+    while (type == NODE_WHEN) {
+	LABEL *l1;
+
+	l1 = NEW_LABEL(line);
+	ADD_LABEL(body_seq, l1);
+	ADD_INSN(body_seq, line, pop);
+	CHECK(COMPILE_(body_seq, "when body", node->nd_body, popped));
+	ADD_INSNL(body_seq, line, jump, endlabel);
+
+	vals = node->nd_head;
+	if (vals) {
+	    switch (nd_type(vals)) {
+	      case NODE_ARRAY:
+		only_special_literals = when_vals(iseq, cond_seq, vals, l1, only_special_literals, literals);
+		break;
+	      case NODE_SPLAT:
+	      case NODE_ARGSCAT:
+	      case NODE_ARGSPUSH:
+		only_special_literals = 0;
+		ADD_INSN (cond_seq, nd_line(vals), dup);
+		CHECK(COMPILE(cond_seq, "when/cond splat", vals));
+		ADD_INSN1(cond_seq, nd_line(vals), checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE | VM_CHECKMATCH_ARRAY));
+		ADD_INSNL(cond_seq, nd_line(vals), branchif, l1);
+		break;
+	      default:
+		UNKNOWN_NODE("NODE_CASE", vals);
+	    }
+	}
+	else {
+	    EXPECT_NODE_NONULL("NODE_CASE", node, NODE_ARRAY);
+	}
+
+	node = node->nd_next;
+	if (!node) {
+	    break;
+	}
+	type = nd_type(node);
+	line = nd_line(node);
+    }
+    /* else */
+    if (node) {
+	ADD_LABEL(cond_seq, elselabel);
+	ADD_INSN(cond_seq, line, pop);
+	CHECK(COMPILE_(cond_seq, "else", node, popped));
+	ADD_INSNL(cond_seq, line, jump, endlabel);
+    }
+    else {
+	debugs("== else (implicit)\n");
+	ADD_LABEL(cond_seq, elselabel);
+	ADD_INSN(cond_seq, nd_line(tempnode), pop);
+	if (!popped) {
+	    ADD_INSN(cond_seq, nd_line(tempnode), putnil);
+	}
+	ADD_INSNL(cond_seq, nd_line(tempnode), jump, endlabel);
+    }
+
+    if (only_special_literals) {
+	iseq_add_mark_object(iseq, literals);
+
+	ADD_INSN(ret, nd_line(tempnode), dup);
+	ADD_INSN2(ret, nd_line(tempnode), opt_case_dispatch, literals, elselabel);
+	LABEL_REF(elselabel);
+    }
+
+    ADD_SEQ(ret, cond_seq);
+    ADD_SEQ(ret, body_seq);
+    ADD_LABEL(ret, endlabel);
+    return COMPILE_OK;
+}
+
 /**
   compile each node
 
@@ -4076,113 +4186,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 
 	break;
       }
-      case NODE_CASE:{
-	NODE *vals;
-	NODE *tempnode = node;
-	LABEL *endlabel, *elselabel;
-	DECL_ANCHOR(head);
-	DECL_ANCHOR(body_seq);
-	DECL_ANCHOR(cond_seq);
-	int only_special_literals = 1;
-	VALUE literals = rb_hash_new();
-
-	INIT_ANCHOR(head);
-	INIT_ANCHOR(body_seq);
-	INIT_ANCHOR(cond_seq);
-
-	rb_hash_tbl_raw(literals)->type = &cdhash_type;
-
-	if (node->nd_head == 0) {
-	    CHECK(COMPILE_(ret, "when", node->nd_body, popped));
-	    break;
-	}
-	CHECK(COMPILE(head, "case base", node->nd_head));
-
-	node = node->nd_body;
-	type = nd_type(node);
-	line = nd_line(node);
-
-	if (type != NODE_WHEN) {
-	    COMPILE_ERROR(ERROR_ARGS "NODE_CASE: unexpected node. must be NODE_WHEN, but %s", ruby_node_name(type));
-	  ng:
-	    debug_node_end();
-	    return COMPILE_NG;
-	}
-
-	endlabel = NEW_LABEL(line);
-	elselabel = NEW_LABEL(line);
-
-	ADD_SEQ(ret, head);	/* case VAL */
-
-	while (type == NODE_WHEN) {
-	    LABEL *l1;
-
-	    l1 = NEW_LABEL(line);
-	    ADD_LABEL(body_seq, l1);
-	    ADD_INSN(body_seq, line, pop);
-	    CHECK(COMPILE_(body_seq, "when body", node->nd_body, popped));
-	    ADD_INSNL(body_seq, line, jump, endlabel);
-
-	    vals = node->nd_head;
-	    if (vals) {
-		switch (nd_type(vals)) {
-		  case NODE_ARRAY:
-		    only_special_literals = when_vals(iseq, cond_seq, vals, l1, only_special_literals, literals);
-		    break;
-		  case NODE_SPLAT:
-		  case NODE_ARGSCAT:
-		  case NODE_ARGSPUSH:
-		    only_special_literals = 0;
-		    ADD_INSN (cond_seq, nd_line(vals), dup);
-		    CHECK(COMPILE(cond_seq, "when/cond splat", vals));
-		    ADD_INSN1(cond_seq, nd_line(vals), checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE | VM_CHECKMATCH_ARRAY));
-		    ADD_INSNL(cond_seq, nd_line(vals), branchif, l1);
-		    break;
-		  default:
-		    UNKNOWN_NODE("NODE_CASE", vals);
-		}
-	    }
-	    else {
-		EXPECT_NODE_NONULL("NODE_CASE", node, NODE_ARRAY);
-	    }
-
-	    node = node->nd_next;
-	    if (!node) {
-		break;
-	    }
-	    type = nd_type(node);
-	    line = nd_line(node);
-	}
-	/* else */
-	if (node) {
-	    ADD_LABEL(cond_seq, elselabel);
-	    ADD_INSN(cond_seq, line, pop);
-	    CHECK(COMPILE_(cond_seq, "else", node, popped));
-	    ADD_INSNL(cond_seq, line, jump, endlabel);
-	}
-	else {
-	    debugs("== else (implicit)\n");
-	    ADD_LABEL(cond_seq, elselabel);
-	    ADD_INSN(cond_seq, nd_line(tempnode), pop);
-	    if (!popped) {
-		ADD_INSN(cond_seq, nd_line(tempnode), putnil);
-	    }
-	    ADD_INSNL(cond_seq, nd_line(tempnode), jump, endlabel);
-	}
-
-	if (only_special_literals) {
-	    iseq_add_mark_object(iseq, literals);
-
-	    ADD_INSN(ret, nd_line(tempnode), dup);
-	    ADD_INSN2(ret, nd_line(tempnode), opt_case_dispatch, literals, elselabel);
-	    LABEL_REF(elselabel);
-	}
-
-	ADD_SEQ(ret, cond_seq);
-	ADD_SEQ(ret, body_seq);
-	ADD_LABEL(ret, endlabel);
+      case NODE_CASE:
+	CHECK(compile_case(iseq, ret, node, popped));
 	break;
-      }
       case NODE_WHEN:{
 	NODE *vals;
 	NODE *val;
@@ -4408,7 +4414,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	else if (iseq->body->type == ISEQ_TYPE_EVAL) {
 	  break_in_eval:
 	    COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with break");
-	    goto ng;
+	  ng:
+	    debug_node_end();
+	    return COMPILE_NG;
 	}
 	else {
 	    const rb_iseq_t *ip = iseq->body->parent_iseq;
