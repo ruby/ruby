@@ -139,6 +139,7 @@ else ifeq ($(VCS),svn)
 VCSCOMMIT = $(VCS) commit $(SVNCOMMITOPTIONS)
 else ifeq ($(VCS),git svn)
 VCSCOMMIT = $(VCS) dcommit $(GITSVNCOMMITOPTIONS)
+VCSWAIT = sleep 2 # wait for svn to git sync
 else ifeq ($(VCS),git)
 VCSCOMMIT := $(VCS) push $(GITCOMMITOPTIONS)
 endif
@@ -146,4 +147,6 @@ ifneq ($(VCSCOMMIT),)
 .PHONY: commit
 commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS)))
 	@$(CHDIR) "$(srcdir)" && LC_TIME=C exec $(VCSCOMMIT)
+	$(Q)$(VCSWAIT)
+	$(Q)$(MAKE) $(mflags) Q=$(Q) REVISION_FORCE=PHONY update-src srcs all-incs
 endif
