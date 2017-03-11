@@ -3492,24 +3492,24 @@ compile_colon2(rb_iseq_t *iseq, NODE *node,
     return COMPILE_OK;
 }
 
-static VALUE
+static int
 compile_cpath(LINK_ANCHOR *const ret, rb_iseq_t *iseq, NODE *cpath)
 {
     if (nd_type(cpath) == NODE_COLON3) {
 	/* toplevel class ::Foo */
 	ADD_INSN1(ret, nd_line(cpath), putobject, rb_cObject);
-	return Qfalse;
+	return VM_DEFINECLASS_FLAG_SCOPED;
     }
     else if (cpath->nd_head) {
 	/* Bar::Foo */
 	COMPILE(ret, "nd_else->nd_head", cpath->nd_head);
-	return Qfalse;
+	return VM_DEFINECLASS_FLAG_SCOPED;
     }
     else {
 	/* class at cbase Foo */
 	ADD_INSN1(ret, nd_line(cpath), putspecialobject,
 		  INT2FIX(VM_SPECIAL_OBJECT_CONST_BASE));
-	return Qtrue;
+	return 0;
     }
 }
 
@@ -5950,11 +5950,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	const rb_iseq_t *class_iseq = NEW_CHILD_ISEQ(node->nd_body,
 						     rb_sprintf("<class:%"PRIsVALUE">", rb_id2str(node->nd_cpath->nd_mid)),
 						     ISEQ_TYPE_CLASS, line);
-	VALUE noscope = compile_cpath(ret, iseq, node->nd_cpath);
-	int flags = VM_DEFINECLASS_TYPE_CLASS;
+	const int flags = VM_DEFINECLASS_TYPE_CLASS |
+	    (node->nd_super ? VM_DEFINECLASS_FLAG_HAS_SUPERCLASS : 0) |
+	    compile_cpath(ret, iseq, node->nd_cpath);
 
-	if (!noscope) flags |= VM_DEFINECLASS_FLAG_SCOPED;
-	if (node->nd_super) flags |= VM_DEFINECLASS_FLAG_HAS_SUPERCLASS;
 	CHECK(COMPILE(ret, "super", node->nd_super));
 	ADD_INSN3(ret, line, defineclass, ID2SYM(node->nd_cpath->nd_mid), class_iseq, INT2FIX(flags));
 
@@ -5967,10 +5966,9 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
         const rb_iseq_t *module_iseq = NEW_CHILD_ISEQ(node->nd_body,
 						      rb_sprintf("<module:%"PRIsVALUE">", rb_id2str(node->nd_cpath->nd_mid)),
 						      ISEQ_TYPE_CLASS, line);
-	VALUE noscope = compile_cpath(ret, iseq, node->nd_cpath);
-	int flags = VM_DEFINECLASS_TYPE_MODULE;
+	const int flags = VM_DEFINECLASS_TYPE_MODULE |
+	    compile_cpath(ret, iseq, node->nd_cpath);
 
-	if (!noscope) flags |= VM_DEFINECLASS_FLAG_SCOPED;
 	ADD_INSN (ret, line, putnil); /* dummy */
 	ADD_INSN3(ret, line, defineclass, ID2SYM(node->nd_cpath->nd_mid), module_iseq, INT2FIX(flags));
 
