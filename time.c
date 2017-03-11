@@ -53,41 +53,6 @@ eq(VALUE x, VALUE y)
     return RTEST(rb_funcall(x, id_eq, 1, y));
 }
 
-#ifdef _MSC_VER
-static void *
-value_insane_p(VALUE x)
-{
-    VALUE klass;
-    LPEXCEPTION_POINTERS info;
-    void *failed_address = 0;
-    if (SPECIAL_CONST_P(x)) return 0;
-    if (!RBASIC_CLASS(x)) return (void *)x;
-    __try {
-	RB_GC_GUARD(klass) = RBASIC_CLASS(x);
-    }
-    __except (GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ?
-	      (info = GetExceptionInformation(), EXCEPTION_EXECUTE_HANDLER) :
-	      EXCEPTION_CONTINUE_SEARCH) {
-	PEXCEPTION_RECORD rec = info->ExceptionRecord;
-	failed_address = (void *)rec->ExceptionInformation[1];
-    }
-    return failed_address;
-}
-
-static void
-inquire_value(VALUE x, const char *mesg)
-{
-    void *failed_address = value_insane_p(x);
-    if (failed_address) {
-	rb_fatal("Access violation at %p: class of %p: %s",
-		 failed_address, (void *)x, mesg);
-    }
-}
-#else
-# define value_insane_p(x) ((void)(x), 0)
-# define inquire_value(x, mesg) (void)value_insane_p(x)
-#endif
-
 static int
 cmp(VALUE x, VALUE y)
 {
@@ -98,8 +63,6 @@ cmp(VALUE x, VALUE y)
             return 1;
         return 0;
     }
-    inquire_value(x, "cmp(x)");
-    inquire_value(y, "cmp(y)");
     return rb_cmpint(rb_funcall(x, id_cmp, 1, y), x, y);
 }
 
@@ -2482,7 +2445,7 @@ obj2subsecx(VALUE obj, VALUE *subsecx)
     return obj2ubits(obj, 6); /* vtm->sec */
 }
 
-static long
+static VALUE
 usec2subsecx(VALUE obj)
 {
     if (RB_TYPE_P(obj, T_STRING)) {
@@ -2616,12 +2579,6 @@ time_arg(int argc, VALUE *argv, struct vtm *vtm)
     else {
 	/* when argc == 8, v[6] is timezone, but ignored */
         vtm->sec  = NIL_P(v[5])?0:obj2subsecx(v[5], &vtm->subsecx);
-    }
-
-    if (value_insane_p(vtm->subsecx)) {
-	rb_fatal("argc=%d, sec=%"PRIsVALUE", subsec=%"PRIsVALUE", subsecx=%p",
-		 argc, v[5], argc == 7 ? v[6] : Qnil,
-		 &RBASIC_CLASS(vtm->subsecx));
     }
 
     validate_vtm(vtm);
