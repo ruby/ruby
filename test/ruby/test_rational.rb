@@ -905,6 +905,13 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(5000000000.0, 10000000000.fdiv(2))
     assert_equal(0.5, 1.0.fdiv(2))
     assert_equal(0.25, Rational(1,2).fdiv(2))
+
+    a = 0xa42fcabf_c51ce400_00001000_00000000_00000000_00000000_00000000_00000000
+    b = 1<<1074
+    assert_equal(Rational(a, b).to_f, a.fdiv(b))
+    a = 3
+    b = 0x20_0000_0000_0001
+    assert_equal(Rational(a, b).to_f, a.fdiv(b))
   end
 
   def test_ruby19
