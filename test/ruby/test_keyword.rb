@@ -629,4 +629,16 @@ class TestKeywordArguments < Test::Unit::TestCase
       klass.new(d: 4)
     end
   end
+
+  def test_non_keyword_hash_subclass
+    bug12884 = '[ruby-core:77813] [Bug #12884]'
+    klass = EnvUtil.labeled_class("Child", Hash)
+    obj = Object.new
+    def obj.t(params = klass.new, d: nil); params; end
+    x = klass.new
+    x["foo"] = "bar"
+    result = obj.t(x)
+    assert_equal(x, result)
+    assert_kind_of(klass, result, bug12884)
+  end
 end
