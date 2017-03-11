@@ -3200,16 +3200,20 @@ rb_str_cmp_m(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *     str.casecmp(other_str)   -> -1, 0, +1 or nil
+ *     str.casecmp(other_str)   -> -1, 0, +1, or nil
  *
  *  Case-insensitive version of <code>String#<=></code>.
  *  Currently, case-insensitivity only works on characters A-Z/a-z,
- *  not all of Unicode. This is different from <code>casecmp?</code>.
+ *  not all of Unicode. This is different from String#casecmp?.
  *
- *     "abcdef".casecmp("abcde")     #=> 1
+ *     "aBcDeF".casecmp("abcde")     #=> 1
  *     "aBcDeF".casecmp("abcdef")    #=> 0
- *     "abcdef".casecmp("abcdefg")   #=> -1
+ *     "aBcDeF".casecmp("abcdefg")   #=> -1
  *     "abcdef".casecmp("ABCDEF")    #=> 0
+ *
+ *  +nil+ is returned if the two strings have incompatible encodings.
+ *
+ *     "\u{e4 f6 fc}".encode("ISO-8859-1").casecmp("\u{c4 d6 dc}")   #=> nil
  */
 
 static VALUE
@@ -3274,14 +3278,18 @@ rb_str_casecmp(VALUE str1, VALUE str2)
  *  call-seq:
  *     str.casecmp?(other_str)   -> true, false, or nil
  *
- *  Returns true if str and other_other_str are equal after Unicode case folding,
- *  false if they are not equal, and nil if other_str is not a string.
+ *  Returns +true+ if +str+ and +other_str+ are equal after
+ *  Unicode case folding, +false+ if they are not equal.
  *
- *     "abcdef".casecmp?("abcde")     #=> false
+ *     "aBcDeF".casecmp?("abcde")     #=> false
  *     "aBcDeF".casecmp?("abcdef")    #=> true
- *     "abcdef".casecmp?("abcdefg")   #=> false
+ *     "aBcDeF".casecmp?("abcdefg")   #=> false
  *     "abcdef".casecmp?("ABCDEF")    #=> true
- *     "\u{e4 f6 fc}".casecmp?("\u{c4 d6 dc}") #=> true
+ *     "\u{e4 f6 fc}".casecmp?("\u{c4 d6 dc}")   #=> true
+ *
+ *  +nil+ is returned if the two strings have incompatible encodings.
+ *
+ *     "\u{e4 f6 fc}".encode("ISO-8859-1").casecmp?("\u{c4 d6 dc}")   #=> nil
  */
 
 static VALUE
