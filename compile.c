@@ -4156,6 +4156,7 @@ compile_when(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
     return COMPILE_OK;
 }
 
+static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped);
 /**
   compile each node
 
@@ -4166,10 +4167,6 @@ compile_when(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
 static int
 iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
 {
-    enum node_type type;
-    LINK_ELEMENT *saved_last_element = 0;
-    int line;
-
     if (node == 0) {
 	if (!popped) {
 	    debugs("node: NODE_NIL(implicit)\n");
@@ -4177,8 +4174,16 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	}
 	return COMPILE_OK;
     }
+    return iseq_compile_each0(iseq, ret, node, popped);
+}
 
-    line = (int)nd_line(node);
+
+static int
+iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
+{
+    LINK_ELEMENT *saved_last_element = 0;
+    const int line = (int)nd_line(node);
+    const enum node_type type = nd_type(node);
 
     if (ISEQ_COMPILE_DATA(iseq)->last_line == line) {
 	/* ignore */
@@ -4194,8 +4199,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
     debug_node_start(node);
 #undef BEFORE_RETURN
 #define BEFORE_RETURN debug_node_end()
-
-    type = nd_type(node);
 
     switch (type) {
       case NODE_BLOCK:{
@@ -5332,7 +5335,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	}
 
 	/* args */
-	if (nd_type(node) != NODE_VCALL) {
+	if (type != NODE_VCALL) {
 	    argc = setup_args(iseq, args, node->nd_args, &flag, &keywords);
 	}
 	else {
@@ -5345,7 +5348,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	debugp_param("call args argc", argc);
 	debugp_param("call method", ID2SYM(mid));
 
-	switch (nd_type(node)) {
+	switch ((int)type) {
 	  case NODE_VCALL:
 	    flag |= VM_CALL_VCALL;
 	    /* VCALL is funcall, so fall through */
@@ -5373,7 +5376,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 
 	INIT_ANCHOR(args);
 	ISEQ_COMPILE_DATA(iseq)->current_block = NULL;
-	if (nd_type(node) == NODE_SUPER) {
+	if (type == NODE_SUPER) {
 	    VALUE vargc = setup_args(iseq, args, node->nd_args, &flag, &keywords);
 	    argc = FIX2INT(vargc);
 	}
