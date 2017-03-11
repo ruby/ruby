@@ -220,8 +220,8 @@ rb_any_hash(VALUE a)
    tailored Spooky or City hash function can be.  */
 
 /* Here we two primes with random bit generation.  */
-static const uint64_t prime1 = 0x2e0bb864e9ea7df5ULL;
-static const uint64_t prime2 = 0xcdb32970830fcaa1ULL;
+static const uint64_t prime1 = ((uint64_t)0x2e0bb864 << 32) | 0xe9ea7df5;
+static const uint64_t prime2 = ((uint64_t)0xcdb32970 << 32) | 0x830fcaa1;
 
 
 static inline uint64_t
