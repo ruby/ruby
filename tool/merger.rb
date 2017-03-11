@@ -212,13 +212,14 @@ else
     end
 
     log << l
-    log_svn << l.lines.grep(/^\+\t/).join.gsub(/^\+/, '').gsub(/^\t\*/, "\n\t\*")
+    l = l.lines.grep(/^\+\t/).join.gsub(/^\+/, '').gsub(/^\t\*/, "\n\t\*")
 
-    if log_svn.empty?
-      log_svn = IO.popen %w'svn log ' + r + [q] do |f|
+    if l.empty?
+      l = IO.popen %w'svn log ' + r + [q] do |f|
         f.read
-      end.sub(/\A-+\nr.*\n/, '').sub(/\n-+\n\z/, '').gsub(/^(?=\S)/, "\t")
+      end.sub(/\A-+\nr.*\n/, '').sub(/\n-+\n\z/, '').gsub(/^./, "\t\\&")
     end
+    log_svn << l
 
     a = %w'svn merge --accept=postpone' + r + [q]
     STDERR.puts a.join(' ')
