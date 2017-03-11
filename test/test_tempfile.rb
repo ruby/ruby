@@ -20,6 +20,10 @@ class TestTempfile < Test::Unit::TestCase
     end
   end
 
+  def test_leackchecker
+    assert_instance_of(Tempfile, Tempfile.allocate)
+  end
+
   def test_basic
     t = tempfile("foo")
     path = t.path
