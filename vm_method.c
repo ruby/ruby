@@ -1669,6 +1669,15 @@ rb_mod_public(int argc, VALUE *argv, VALUE module)
  *  defined methods to protected. With arguments, sets the named methods
  *  to have protected visibility.
  *  String arguments are converted to symbols.
+ *
+ *  If a method has protected visibility, it is callable only where
+ *  <code>self</code> of the context is the same as the method.
+ *  (method definition or instance_eval). This behavior is different from
+ *  Java's protected method. Usually <code>private</code> should be used.
+ *
+ *  Note that a protected method is slow because it can't use inline cache.
+ *
+ *  To show a private method on RDoc, use <code>:doc:</code> instead of this.
  */
 
 static VALUE
@@ -1696,6 +1705,8 @@ rb_mod_protected(int argc, VALUE *argv, VALUE module)
  *       private :a
  *     end
  *     Mod.private_instance_methods   #=> [:a, :c]
+ *
+ *  Note that to show a private method on RDoc, use <code>:doc:</code>.
  */
 
 static VALUE
