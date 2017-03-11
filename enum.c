@@ -1166,6 +1166,7 @@ DEFINE_ENUMFUNCS(all)
  *     %w[ant bear cat].all? { |word| word.length >= 3 } #=> true
  *     %w[ant bear cat].all? { |word| word.length >= 4 } #=> false
  *     [nil, true, 99].all?                              #=> false
+ *     [].all?                                           #=> true
  *
  */
 
@@ -1200,6 +1201,7 @@ DEFINE_ENUMFUNCS(any)
  *     %w[ant bear cat].any? { |word| word.length >= 3 } #=> true
  *     %w[ant bear cat].any? { |word| word.length >= 4 } #=> true
  *     [nil, true, 99].any?                              #=> true
+ *     [].any?                                           #=> false
  *
  */
 
