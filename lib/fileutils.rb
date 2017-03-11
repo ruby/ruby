@@ -47,7 +47,7 @@
 #
 # The <tt>options</tt> parameter is a hash of options, taken from the list
 # <tt>:force</tt>, <tt>:noop</tt>, <tt>:preserve</tt>, and <tt>:verbose</tt>.
-# <tt>:noop</tt> means that no changes are made.  The other two are obvious.
+# <tt>:noop</tt> means that no changes are made.  The other three are obvious.
 # Each method documents the options that it honours.
 #
 # All methods that have the concept of a "source" file or directory can take
