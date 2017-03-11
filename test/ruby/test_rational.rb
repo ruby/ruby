@@ -880,6 +880,16 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(1152921470247108503, 1073741789.lcm(1073741827))
   end
 
+  def test_gcd_no_memory_leak
+    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-"end;"}", limit: 1.2, rss: true)
+    x = (1<<121) + 1
+    y = (1<<99) + 1
+    1000.times{x.gcd(y)}
+    begin;
+      100.times {1000.times{x.gcd(y)}}
+    end;
+  end
+
   def test_supp
     assert_predicate(1, :real?)
     assert_predicate(1.1, :real?)

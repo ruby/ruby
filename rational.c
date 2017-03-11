@@ -261,9 +261,14 @@ rb_gcd_gmp(VALUE x, VALUE y)
 
     mpz_gcd(mz, mx, my);
 
+    mpz_clear(mx);
+    mpz_clear(my);
+
     zn = (mpz_sizeinbase(mz, 16) + SIZEOF_BDIGIT*2 - 1) / (SIZEOF_BDIGIT*2);
     z = rb_big_new(zn, 1);
     mpz_export(BIGNUM_DIGITS(z), &count, -1, sizeof(BDIGIT), 0, nails, mz);
+
+    mpz_clear(mz);
 
     return rb_big_norm(z);
 }
