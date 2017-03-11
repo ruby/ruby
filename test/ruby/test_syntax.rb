@@ -917,6 +917,15 @@ eom
     end
   end
 
+  def test_do_block_in_hash_brace
+    bug13073 = '[ruby-core:78837] [Bug #13073]'
+    assert_valid_syntax 'p :foo, {a: proc do end, b: proc do end}', bug13073
+    assert_valid_syntax 'p :foo, {:a => proc do end, b: proc do end}', bug13073
+    assert_valid_syntax 'p :foo, {"a": proc do end, b: proc do end}', bug13073
+    assert_valid_syntax 'p :foo, {** proc do end, b: proc do end}', bug13073
+    assert_valid_syntax 'p :foo, {proc do end => proc do end, b: proc do end}', bug13073
+  end
+
   def test_do_after_local_variable
     obj = Object.new
     def obj.m; yield; end

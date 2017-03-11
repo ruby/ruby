@@ -3762,7 +3762,7 @@ brace_body	: {$<vars>$ = dyna_push();}
 		;
 
 do_body 	: {$<vars>$ = dyna_push();}
-		  {$<val>$ = cmdarg_stack >> 1; CMDARG_SET(0);}
+		  {$<val>$ = cmdarg_stack; CMDARG_SET(0);}
 		  opt_block_param compstmt
 		    {
 			$$ = new_do_body($3, $4);
