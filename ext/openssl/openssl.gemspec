@@ -1,15 +1,15 @@
 # -*- encoding: utf-8 -*-
-# stub: openssl 2.0.2 ruby lib
+# stub: openssl 2.0.3 ruby lib
 # stub: ext/openssl/extconf.rb
 
 Gem::Specification.new do |s|
   s.name = "openssl".freeze
-  s.version = "2.0.2"
+  s.version = "2.0.3"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib".freeze]
   s.authors = ["Martin Bosslet".freeze, "SHIBATA Hiroshi".freeze, "Zachary Scott".freeze, "Kazuki Yamaguchi".freeze]
-  s.date = "2016-12-22"
+  s.date = "2017-01-31"
   s.description = "It wraps the OpenSSL library.".freeze
   s.email = ["ruby-core@ruby-lang.org".freeze]
   s.extensions = ["ext/openssl/extconf.rb".freeze]
@@ -19,7 +19,7 @@ Gem::Specification.new do |s|
   s.licenses = ["Ruby".freeze]
   s.rdoc_options = ["--main".freeze, "README.md".freeze]
   s.required_ruby_version = Gem::Requirement.new(">= 2.3.0".freeze)
-  s.rubygems_version = "2.6.8".freeze
+  s.rubygems_version = "2.6.10".freeze
   s.summary = "OpenSSL provides SSL, TLS and general purpose cryptography.".freeze
 
   if s.respond_to? :specification_version then

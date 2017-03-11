@@ -37,6 +37,12 @@ have_library("socket", "socket")
 Logging::message "=== Checking for required stuff... ===\n"
 result = pkg_config("openssl") && have_header("openssl/ssl.h")
 unless result
+  if $mswin || $mingw
+    # required for static OpenSSL libraries
+    have_library("gdi32") # OpenSSL <= 1.0.2 (for RAND_screen())
+    have_library("crypt32")
+  end
+
   result = have_header("openssl/ssl.h")
   result &&= %w[crypto libeay32].any? {|lib| have_library(lib, "CRYPTO_malloc")}
   result &&= %w[ssl ssleay32].any? {|lib| have_library(lib, "SSL_new")}

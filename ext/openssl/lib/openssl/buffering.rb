@@ -189,7 +189,7 @@ module OpenSSL::Buffering
   end
 
   ##
-  # Reads the next "line+ from the stream.  Lines are separated by +eol+.  If
+  # Reads the next "line" from the stream.  Lines are separated by +eol+.  If
   # +limit+ is provided the result will not be longer than the given number of
   # bytes.
   #
@@ -344,7 +344,7 @@ module OpenSSL::Buffering
   end
 
   ##
-  # Writes +str+ in the non-blocking manner.
+  # Writes +s+ in the non-blocking manner.
   #
   # If there is buffered data, it is flushed first.  This may block.
   #

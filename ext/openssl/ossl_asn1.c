@@ -1291,7 +1291,7 @@ ossl_asn1cons_to_der(VALUE self)
 static VALUE
 ossl_asn1cons_each(VALUE self)
 {
-    rb_funcall(ossl_asn1_get_value(self), id_each, 0);
+    rb_block_call(ossl_asn1_get_value(self), id_each, 0, 0, 0, 0);
 
     return self;
 }
