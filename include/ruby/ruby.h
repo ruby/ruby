@@ -1633,7 +1633,7 @@ rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
 #ifdef C_ALLOCA
 # define RB_ALLOCV(v, n) rb_alloc_tmp_buffer(&(v), (n))
 # define RB_ALLOCV_N(type, v, n) \
-     rb_alloc_tmp_buffer2(&(v), (n), sizeof(type))))
+     rb_alloc_tmp_buffer2(&(v), (n), sizeof(type))
 #else
 # define RUBY_ALLOCV_LIMIT 1024
 # define RB_ALLOCV(v, n) ((n) < RUBY_ALLOCV_LIMIT ? \
