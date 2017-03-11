@@ -18,22 +18,24 @@ class TestRequire < Test::Unit::TestCase
       t.puts "dummy"
       t.close
 
-      assert_separately([], <<-INPUT)
+      assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
+      begin;
         $:.replace([IO::NULL])
         assert_raise(LoadError) do
           require \"#{ t.path }\"
         end
-      INPUT
+      end;
     }
   end
 
   def test_require_too_long_filename
-    assert_separately(["RUBYOPT"=>nil], <<-INPUT)
+    assert_separately(["RUBYOPT"=>nil], "#{<<~"begin;"}\n#{<<~"end;"}")
+    begin;
       $:.replace([IO::NULL])
       assert_raise(LoadError) do
         require '#{ "foo/" * 10000 }foo'
       end
-    INPUT
+    end;
 
     begin
       assert_in_out_err(["-S", "-w", "foo/" * 1024 + "foo"], "") do |r, e|
@@ -445,7 +447,8 @@ class TestRequire < Test::Unit::TestCase
     verbose = $VERBOSE
     Tempfile.create(%w"bug5754 .rb") {|tmp|
       path = tmp.path
-      tmp.print %{\
+      tmp.print "#{<<~"begin;"}\n#{<<~"end;"}"
+      begin;
         th = Thread.current
         t = th[:t]
         scratch = th[:scratch]
@@ -457,7 +460,7 @@ class TestRequire < Test::Unit::TestCase
         else
           scratch << :post
         end
-      }
+      end;
       tmp.close
 
       class << (output = "")
@@ -537,7 +540,8 @@ class TestRequire < Test::Unit::TestCase
         open(File.join("b", "bar.rb"), "w") {|f|
           f.puts "p :ok"
         }
-        assert_in_out_err([], <<-INPUT, %w(:ok), [], bug7158)
+        assert_in_out_err([], "#{<<~"begin;"}\n#{<<~"end;"}", %w(:ok), [], bug7158)
+        begin;
           $:.replace([IO::NULL])
           $: << "."
           Dir.chdir("a")
@@ -546,7 +550,7 @@ class TestRequire < Test::Unit::TestCase
           p :ng unless require "bar"
           Dir.chdir("..")
           p :ng if require "b/bar"
-        INPUT
+        end;
       }
     }
   end
@@ -556,7 +560,8 @@ class TestRequire < Test::Unit::TestCase
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
         open("foo.rb", "w") {}
-        assert_in_out_err([], <<-INPUT, %w(:ok), [], bug7158)
+        assert_in_out_err([], "#{<<~"begin;"}\n#{<<~"end;"}", %w(:ok), [], bug7158)
+        begin;
           $:.replace([IO::NULL])
           a = Object.new
           def a.to_str
@@ -566,7 +571,7 @@ class TestRequire < Test::Unit::TestCase
           require "foo"
           last_path = $:.pop
           p :ok if last_path == a && last_path.class == Object
-        INPUT
+        end;
       }
     }
   end
@@ -578,14 +583,15 @@ class TestRequire < Test::Unit::TestCase
         open("foo.rb", "w") {}
         Dir.mkdir("a")
         open(File.join("a", "bar.rb"), "w") {}
-        assert_in_out_err([], <<-INPUT, %w(:ok), [], bug7158)
+        assert_in_out_err([], "#{<<~"begin;"}\n#{<<~"end;"}", %w(:ok), [], bug7158)
+        begin;
           $:.replace([IO::NULL])
           $: << '~'
           ENV['HOME'] = "#{tmp}"
           require "foo"
           ENV['HOME'] = "#{tmp}/a"
           p :ok if require "bar"
-        INPUT
+        end;
       }
     }
   end
@@ -595,7 +601,8 @@ class TestRequire < Test::Unit::TestCase
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
         open("foo.rb", "w") {}
-        assert_in_out_err([{"RUBYOPT"=>nil}, '--disable-gems'], <<-INPUT, %w(:ok), [], bug7158)
+        assert_in_out_err([{"RUBYOPT"=>nil}, '--disable-gems'], "#{<<~"begin;"}\n#{<<~"end;"}", %w(:ok), [], bug7158)
+        begin;
           $:.replace([IO::NULL])
           a = Object.new
           def a.to_path
@@ -612,7 +619,7 @@ class TestRequire < Test::Unit::TestCase
             "#{tmp}"
           end
           p :ok if require "foo"
-        INPUT
+        end;
       }
     }
   end
@@ -622,7 +629,8 @@ class TestRequire < Test::Unit::TestCase
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
         open("foo.rb", "w") {}
-        assert_in_out_err([{"RUBYOPT"=>nil}, '--disable-gems'], <<-INPUT, %w(:ok), [], bug7158)
+        assert_in_out_err([{"RUBYOPT"=>nil}, '--disable-gems'], "#{<<~"begin;"}\n#{<<~"end;"}", %w(:ok), [], bug7158)
+        begin;
           $:.replace([IO::NULL])
           a = Object.new
           def a.to_str
@@ -639,7 +647,7 @@ class TestRequire < Test::Unit::TestCase
             "#{tmp}"
           end
           p :ok if require "foo"
-        INPUT
+        end;
       }
     }
   end
@@ -651,7 +659,8 @@ class TestRequire < Test::Unit::TestCase
         open("foo.rb", "w") {}
         Dir.mkdir("a")
         open(File.join("a", "bar.rb"), "w") {}
-        assert_in_out_err(['--disable-gems'], <<-INPUT, %w(:ok), [], bug7383)
+        assert_in_out_err(['--disable-gems'], "#{<<~"begin;"}\n#{<<~"end;"}", %w(:ok), [], bug7383)
+        begin;
           $:.replace([IO::NULL])
           $:.#{add} "#{tmp}"
           $:.#{add} "#{tmp}/a"
@@ -667,7 +676,7 @@ class TestRequire < Test::Unit::TestCase
               raise
             end
           end
-        INPUT
+        end;
       }
     }
   end
@@ -685,10 +694,11 @@ class TestRequire < Test::Unit::TestCase
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
         open("bar.rb", "w") {|f| f.puts 'TOPLEVEL_BINDING.eval("lib = 2")' }
-        assert_in_out_err(%w[-r./bar.rb], <<-INPUT, %w([:lib] 2), [], bug7536)
+        assert_in_out_err(%w[-r./bar.rb], "#{<<~"begin;"}\n#{<<~"end;"}", %w([:lib] 2), [], bug7536)
+        begin;
           puts TOPLEVEL_BINDING.eval("local_variables").inspect
           puts TOPLEVEL_BINDING.eval("lib").inspect
-        INPUT
+        end;
       }
     }
   end
@@ -697,7 +707,8 @@ class TestRequire < Test::Unit::TestCase
     bug7530 = '[ruby-core:50645]'
     Tempfile.create(%w'bug-7530- .rb') {|script|
       script.close
-      assert_in_out_err([{"RUBYOPT" => nil}, "-", script.path], <<-INPUT, %w(:ok), [], bug7530, timeout: 60)
+      assert_in_out_err([{"RUBYOPT" => nil}, "-", script.path], "#{<<~"begin;"}\n#{<<~"end;"}", %w(:ok), [], bug7530, timeout: 60)
+      begin;
         PATH = ARGV.shift
         THREADS = 4
         ITERATIONS_PER_THREAD = 1000
@@ -711,7 +722,7 @@ class TestRequire < Test::Unit::TestCase
           end
         }.each(&:join)
         p :ok
-      INPUT
+      end;
     }
   end
 
@@ -720,7 +731,7 @@ class TestRequire < Test::Unit::TestCase
       f.close
       File.unlink(f.path)
       File.mkfifo(f.path)
-      assert_separately(["-", f.path], "#{<<-"begin;"}\n#{<<-"end;"}", timeout: 3)
+      assert_separately(["-", f.path], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 3)
       begin;
         th = Thread.current
         Thread.start {begin sleep(0.001) end until th.stop?; th.raise(IOError)}
@@ -737,7 +748,7 @@ class TestRequire < Test::Unit::TestCase
       File.unlink(f.path)
       File.mkfifo(f.path)
 
-      assert_separately(["-", f.path], "#{<<-"begin;"}\n#{<<-"end;"}", timeout: 3)
+      assert_separately(["-", f.path], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 3)
       begin;
         path = ARGV[0]
         th = Thread.current
@@ -762,7 +773,7 @@ class TestRequire < Test::Unit::TestCase
       f.close
       File.unlink(f.path)
       File.mkfifo(f.path)
-      assert_separately(["-", f.path], "#{<<-"begin;"}\n#{<<-"end;"}", timeout: 3)
+      assert_separately(["-", f.path], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 3)
       begin;
         Process.setrlimit(Process::RLIMIT_NOFILE, 50)
         th = Thread.current
@@ -786,7 +797,8 @@ class TestRequire < Test::Unit::TestCase
       f.puts 'sleep'
       f.close
 
-      assert_separately(["-", f.path], <<-'end;')
+      assert_separately(["-", f.path], "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
         path = ARGV[0]
         class Error < RuntimeError
           def exception(*)
