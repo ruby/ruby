@@ -2164,13 +2164,21 @@ rb_thread_fd_close(int fd)
 {
     rb_vm_t *vm = GET_THREAD()->vm;
     rb_thread_t *th = 0;
+    int busy;
 
+  retry:
+    busy = 0;
     list_for_each(&vm->living_threads, th, vmlt_node) {
 	if (th->waiting_fd == fd) {
 	    VALUE err = th->vm->special_exceptions[ruby_error_closed_stream];
 	    rb_threadptr_pending_interrupt_enque(th, err);
 	    rb_threadptr_interrupt(th);
+	    busy = 1;
 	}
+    }
+    if (busy) {
+	rb_thread_schedule_limits(0);
+	goto retry;
     }
 }
 
