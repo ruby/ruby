@@ -1591,7 +1591,8 @@ yield_under(VALUE under, VALUE self, int argc, const VALUE *argv)
 	    block_handler = vm_proc_to_block_handler(VM_BH_TO_PROC(block_handler));
 	    goto again;
 	  case block_handler_type_symbol:
-	    return rb_sym_proc_call(SYM2ID(VM_BH_TO_SYMBOL(block_handler)), 1, &self, VM_BLOCK_HANDLER_NONE);
+	    return rb_sym_proc_call(SYM2ID(VM_BH_TO_SYMBOL(block_handler)),
+				    argc, argv, VM_BLOCK_HANDLER_NONE);
 	}
 
 	new_captured.self = self;

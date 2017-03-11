@@ -194,6 +194,12 @@ class TestSymbol < Test::Unit::TestCase
     end;
   end
 
+  def test_to_proc_instance_exec
+    bug = '[ruby-core:78839] [Bug #13074] should evaluate on the argument'
+    assert_equal(2, BasicObject.new.instance_exec(1, &:succ), bug)
+    assert_equal(3, BasicObject.new.instance_exec(1, 2, &:+), bug)
+  end
+
   def test_call
     o = Object.new
     def o.foo(x, y); x + y; end
