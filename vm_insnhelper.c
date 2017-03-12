@@ -22,17 +22,17 @@
 static rb_control_frame_t *vm_get_ruby_level_caller_cfp(const rb_thread_t *th, const rb_control_frame_t *cfp);
 
 VALUE
-ruby_vm_sysstack_error_copy(void)
+ruby_vm_special_exception_copy(VALUE exc)
 {
-    VALUE e = rb_obj_alloc(rb_eSysStackError);
-    rb_obj_copy_ivar(e, sysstack_error);
+    VALUE e = rb_obj_alloc(rb_class_real(RBASIC_CLASS(exc)));
+    rb_obj_copy_ivar(e, exc);
     return e;
 }
 
 static void
 vm_stackoverflow(void)
 {
-    rb_exc_raise(ruby_vm_sysstack_error_copy());
+    rb_exc_raise(ruby_vm_special_exception_copy(sysstack_error));
 }
 
 #if VM_CHECK_MODE > 0

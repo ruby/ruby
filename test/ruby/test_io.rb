@@ -3370,7 +3370,7 @@ __END__
     assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
     bug13076 = '[ruby-core:78845] [Bug #13076]'
     begin;
-      100.times do |i|
+      10.times do |i|
         a = []
         t = []
         10.times do
@@ -3482,6 +3482,31 @@ __END__
         end
         assert_equal(["foo\n", "bar\n", "baz\n"], IO.readlines(t.path))
       }
+    end
+
+    def test_closed_stream_in_rescue
+      assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+      begin;
+      10.times do
+        assert_nothing_raised(RuntimeError, /frozen IOError/) do
+          IO.pipe do |r, w|
+            begin
+              th = Thread.start {r.close}
+              r.gets
+            rescue IOError
+              # swallow pending exceptions
+              begin
+                sleep 0.001
+              rescue IOError
+                retry
+              end
+            ensure
+              th.kill.join
+            end
+          end
+        end
+      end
+      end;
     end
   end
 end
