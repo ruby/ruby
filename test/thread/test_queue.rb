@@ -549,14 +549,14 @@ class TestQueue < Test::Unit::TestCase
   end
 
   def test_queue_with_trap
-    assert_in_out_err([], <<-INPUT, %w(USR2 USR2 exit), [])
+    assert_in_out_err([], <<-INPUT, %w(INT INT exit), [])
       q = Queue.new
-      trap(:USR2){
-        q.push 'USR2'
+      trap(:INT){
+        q.push 'INT'
       }
       Thread.new{
         loop{
-          Process.kill :USR2, $$
+          Process.kill :INT, $$
         }
       }
       puts q.pop
