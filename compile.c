@@ -8802,6 +8802,34 @@ compile_dots(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     return COMPILE_OK;
 }
 
+static int
+compile_errinfo(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    if (!popped) {
+	if (iseq->body->type == ISEQ_TYPE_RESCUE) {
+	    ADD_GETLOCAL(ret, node, LVAR_ERRINFO, 0);
+	}
+	else {
+	    const rb_iseq_t *ip = iseq;
+	    int level = 0;
+	    while (ip) {
+		if (ip->body->type == ISEQ_TYPE_RESCUE) {
+		    break;
+		}
+		ip = ip->body->parent_iseq;
+		level++;
+	    }
+	    if (ip) {
+		ADD_GETLOCAL(ret, node, LVAR_ERRINFO, level);
+	    }
+	    else {
+		ADD_INSN(ret, node, putnil);
+	    }
+	}
+    }
+    return COMPILE_OK;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node
@@ -9458,31 +9486,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
 	}
 	break;
       }
-      case NODE_ERRINFO:{
-	if (!popped) {
-	    if (body->type == ISEQ_TYPE_RESCUE) {
-		ADD_GETLOCAL(ret, node, LVAR_ERRINFO, 0);
-	    }
-	    else {
-		const rb_iseq_t *ip = iseq;
-		int level = 0;
-		while (ip) {
-		    if (ip->body->type == ISEQ_TYPE_RESCUE) {
-			break;
-		    }
-		    ip = ip->body->parent_iseq;
-		    level++;
-		}
-		if (ip) {
-		    ADD_GETLOCAL(ret, node, LVAR_ERRINFO, level);
-		}
-		else {
-		    ADD_INSN(ret, node, putnil);
-		}
-	    }
-	}
+      case NODE_ERRINFO:
+	CHECK(compile_errinfo(iseq, ret, node, popped));
 	break;
-      }
       case NODE_DEFINED:
 	if (!popped) {
 	    CHECK(compile_defined_expr(iseq, ret, node, Qtrue));
