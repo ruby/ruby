@@ -837,9 +837,8 @@ rb_w32_sysinit(int *argc, char ***argv)
     _set_invalid_parameter_handler(invalid_parameter);
     _RTC_SetErrorFunc(rtc_error_handler);
     set_pioinfo_extra();
-#else
-    SetErrorMode(SEM_FAILCRITICALERRORS|SEM_NOGPFAULTERRORBOX);
 #endif
+    SetErrorMode(SEM_FAILCRITICALERRORS|SEM_NOGPFAULTERRORBOX);
 
     get_version();
 
