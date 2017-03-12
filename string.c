@@ -2798,6 +2798,9 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
 }
 
 /*
+ *  Document-method: String#<<
+ *  Document-method: String#concat
+ *
  *  call-seq:
  *     str << integer                      -> str
  *     str.concat(integer1, integer2,...)  -> str
@@ -2812,7 +2815,7 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
  *     a = "hello "
  *     a << "world"   #=> "hello world"
  *     a.concat(33)   #=> "hello world!"
- *     a              #=> "hollo world!"
+ *     a              #=> "hello world!"
  *
  *     b = "sn"
  *     b.concat(b, b)    #=> "snsnsn"
