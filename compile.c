@@ -8617,6 +8617,50 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     return COMPILE_OK;
 }
 
+static int
+compile_yield(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    DECL_ANCHOR(args);
+    VALUE argc;
+    unsigned int flag = 0;
+    struct rb_callinfo_kwarg *keywords = NULL;
+
+    INIT_ANCHOR(args);
+
+    switch (iseq->body->local_iseq->body->type) {
+      case ISEQ_TYPE_TOP:
+      case ISEQ_TYPE_MAIN:
+      case ISEQ_TYPE_CLASS:
+	COMPILE_ERROR(ERROR_ARGS "Invalid yield");
+	return COMPILE_NG;
+      default: /* valid */;
+    }
+
+    if (node->nd_head) {
+	argc = setup_args(iseq, args, node->nd_head, &flag, &keywords);
+	CHECK(!NIL_P(argc));
+    }
+    else {
+	argc = INT2FIX(0);
+    }
+
+    ADD_SEQ(ret, args);
+    ADD_INSN1(ret, node, invokeblock, new_callinfo(iseq, 0, FIX2INT(argc), flag, keywords, FALSE));
+
+    if (popped) {
+	ADD_INSN(ret, node, pop);
+    }
+
+    int level = 0;
+    const rb_iseq_t *tmp_iseq = iseq;
+    for (; tmp_iseq != iseq->body->local_iseq; level++ ) {
+        tmp_iseq = tmp_iseq->body->parent_iseq;
+    }
+    if (level > 0) access_outer_variables(iseq, level, rb_intern("yield"), true);
+
+    return COMPILE_OK;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node
@@ -8639,19 +8683,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *node, int poppe
         return COMPILE_OK;
     }
     return iseq_compile_each0(iseq, ret, node, popped);
-}
-
-static int
-check_yield_place(const rb_iseq_t *iseq)
-{
-    switch (iseq->body->local_iseq->body->type) {
-      case ISEQ_TYPE_TOP:
-      case ISEQ_TYPE_MAIN:
-      case ISEQ_TYPE_CLASS:
-        return FALSE;
-      default:
-        return TRUE;
-    }
 }
 
 static int
@@ -8897,42 +8928,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       case NODE_RETURN:
 	CHECK(compile_return(iseq, ret, node, popped));
 	break;
-      case NODE_YIELD:{
-	DECL_ANCHOR(args);
-	VALUE argc;
-	unsigned int flag = 0;
-	struct rb_callinfo_kwarg *keywords = NULL;
-
-	INIT_ANCHOR(args);
-
-        if (check_yield_place(iseq) == FALSE) {
-	    COMPILE_ERROR(ERROR_ARGS "Invalid yield");
-            goto ng;
-        }
-
-	if (node->nd_head) {
-	    argc = setup_args(iseq, args, node->nd_head, &flag, &keywords);
-	    CHECK(!NIL_P(argc));
-	}
-	else {
-	    argc = INT2FIX(0);
-	}
-
-	ADD_SEQ(ret, args);
-	ADD_INSN1(ret, node, invokeblock, new_callinfo(iseq, 0, FIX2INT(argc), flag, keywords, FALSE));
-
-	if (popped) {
-	    ADD_INSN(ret, node, pop);
-	}
-
-        int level = 0;
-        const rb_iseq_t *tmp_iseq = iseq;
-        for (; tmp_iseq != iseq->body->local_iseq; level++ ) {
-            tmp_iseq = tmp_iseq->body->parent_iseq;
-        }
-        if (level > 0) access_outer_variables(iseq, level, rb_intern("yield"), true);
+      case NODE_YIELD:
+	CHECK(compile_yield(iseq, ret, node, popped));
 	break;
-      }
       case NODE_LVAR:{
 	if (!popped) {
 	    compile_lvar(iseq, ret, node, node->nd_vid);
