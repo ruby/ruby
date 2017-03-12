@@ -777,45 +777,42 @@ rb_block_lambda(void)
 /* CHECKME: are the argument checking semantics correct? */
 
 /*
- *  Document-method: call
  *  Document-method: []
+ *  Document-method: call
  *  Document-method: yield
  *
  *  call-seq:
  *     prc.call(params,...)   -> obj
  *     prc[params,...]        -> obj
  *     prc.(params,...)       -> obj
+ *     prc.yield(params,...)  -> obj
  *
  *  Invokes the block, setting the block's parameters to the values in
  *  <i>params</i> using something close to method calling semantics.
- *  Generates a warning if multiple values are passed to a proc that
- *  expects just one (previously this silently converted the parameters
- *  to an array).  Note that <code>prc.()</code> invokes
- *  <code>prc.call()</code> with the parameters given.  It's a syntax sugar to
- *  hide "call".
+ *  Returns the value of the last expression evaluated in the block.
  *
- *  Returns the value of the last expression evaluated in the block. See
- *  also Proc#yield.
+ *     a_proc = Proc.new {|scalar, *values| values.map {|value| value*scalar } }
+ *     a_proc.call(9, 1, 2, 3)    #=> [9, 18, 27]
+ *     a_proc[9, 1, 2, 3]         #=> [9, 18, 27]
+ *     a_proc.(9, 1, 2, 3)        #=> [9, 18, 27]
+ *     a_proc.yield(9, 1, 2, 3)   #=> [9, 18, 27]
  *
- *     a_proc = Proc.new { |scalar, *values| values.collect { |value| value*scalar } }
- *     a_proc.call(9, 1, 2, 3)   #=> [9, 18, 27]
- *     a_proc[9, 1, 2, 3]        #=> [9, 18, 27]
- *     a_proc.(9, 1, 2, 3)       #=> [9, 18, 27]
+ *  Note that <code>prc.()</code> invokes <code>prc.call()</code> with
+ *  the parameters given.  It's syntactic sugar to hide "call".
  *
  *  For procs created using <code>lambda</code> or <code>->()</code> an error
- *  is generated if the wrong number of parameters are passed to a Proc with
- *  multiple parameters.  For procs created using <code>Proc.new</code> or
- *  <code>Kernel.proc</code>, extra parameters are silently discarded.
+ *  is generated if the wrong number of parameters are passed to the proc.
+ *  For procs created using <code>Proc.new</code> or <code>Kernel.proc</code>,
+ *  extra parameters are silently discarded and missing parameters are
+ *  set to +nil+.
  *
- *     a_proc = lambda {|a,b| a}
- *     a_proc.call(1,2,3)
+ *     a_proc = proc {|a,b| [a,b] }
+ *     a_proc.call(1)   #=> [1, nil]
  *
- *  <em>produces:</em>
+ *     a_proc = lambda {|a,b| [a,b] }
+ *     a_proc.call(1)   # ArgumentError: wrong number of arguments (given 1, expected 2)
  *
- *     prog.rb:4:in `block in <main>': wrong number of arguments (given 3, expected 2) (ArgumentError)
- *     	from prog.rb:5:in `call'
- *     	from prog.rb:5:in `<main>'
- *
+ *  See also Proc#lambda?.
  */
 #if 0
 static VALUE
