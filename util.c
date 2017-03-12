@@ -9,6 +9,10 @@
 
 **********************************************************************/
 
+#if defined __MINGW32__ || defined __MINGW64__
+#define MINGW_HAS_SECURE_API 1
+#endif
+
 #include "internal.h"
 
 #include <ctype.h>
