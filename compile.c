@@ -3466,23 +3466,23 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
 }
 
 static int
-compile_colon2(rb_iseq_t *iseq, NODE *node,
-	       LINK_ANCHOR *const pref, LINK_ANCHOR *const body)
+compile_const_prefix(rb_iseq_t *iseq, NODE *node,
+		     LINK_ANCHOR *const pref, LINK_ANCHOR *const body)
 {
     switch (nd_type(node)) {
       case NODE_CONST:
-	debugi("compile_colon2 - colon", node->nd_vid);
+	debugi("compile_const_prefix - colon", node->nd_vid);
 	ADD_INSN1(body, nd_line(node), getconstant, ID2SYM(node->nd_vid));
 	break;
       case NODE_COLON3:
-	debugi("compile_colon2 - colon3", node->nd_mid);
+	debugi("compile_const_prefix - colon3", node->nd_mid);
 	ADD_INSN(body, nd_line(node), pop);
 	ADD_INSN1(body, nd_line(node), putobject, rb_cObject);
 	ADD_INSN1(body, nd_line(node), getconstant, ID2SYM(node->nd_mid));
 	break;
       case NODE_COLON2:
-	compile_colon2(iseq, node->nd_head, pref, body);
-	debugi("compile_colon2 - colon2", node->nd_mid);
+	CHECK(compile_const_prefix(iseq, node->nd_head, pref, body));
+	debugi("compile_const_prefix - colon2", node->nd_mid);
 	ADD_INSN1(body, nd_line(node), getconstant, ID2SYM(node->nd_mid));
 	break;
       default:
@@ -6019,7 +6019,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 
 	    INIT_ANCHOR(pref);
 	    INIT_ANCHOR(body);
-	    compile_colon2(iseq, node, pref, body);
+	    CHECK(compile_const_prefix(iseq, node, pref, body));
 	    if (LIST_SIZE_ZERO(pref)) {
 		if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
 		    ADD_INSN2(ret, line, getinlinecache, lend, INT2FIX(ic_index));
