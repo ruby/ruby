@@ -2316,7 +2316,7 @@ rb_str_subpos(VALUE str, long beg, long *lenp)
 	    beg += blen;
 	    if (beg < 0) return 0;
 	}
-	if (beg + len > blen)
+	if (len > blen - beg)
 	    len = blen - beg;
 	if (len < 0) return 0;
 	p = s + beg;
@@ -4365,12 +4365,14 @@ rb_str_update(VALUE str, long beg, long len, VALUE val)
 	rb_raise(rb_eIndexError, "index %ld out of string", beg);
     }
     if (beg < 0) {
-	if (-beg > slen) {
+	if (beg + slen < 0) {
 	    goto out_of_range;
 	}
 	beg += slen;
     }
-    if (slen < len || slen < beg + len) {
+    assert(beg >= 0);
+    assert(beg <= slen);
+    if (len > slen - beg) {
 	len = slen - beg;
     }
     str_modify_keep_cr(str);
@@ -5184,7 +5186,7 @@ str_byte_substr(VALUE str, long beg, long len, int empty)
 	beg += n;
 	if (beg < 0) return Qnil;
     }
-    if (beg + len > n)
+    if (len > n - beg)
 	len = n - beg;
     if (len <= 0) {
 	if (!empty) return Qnil;

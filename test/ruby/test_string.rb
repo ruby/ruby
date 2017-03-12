@@ -202,6 +202,8 @@ CODE
     assert_equal("fobar", s)
 
     assert_raise(ArgumentError) { "foo"[1, 2, 3] = "" }
+
+    assert_raise(IndexError) {"foo"[RbConfig::Limits["LONG_MIN"]] = "l"}
   end
 
   def test_CMP # '<=>'
