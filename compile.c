@@ -8865,6 +8865,93 @@ compile_kw_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     return COMPILE_OK;
 }
 
+static int
+compile_attrasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    DECL_ANCHOR(recv);
+    DECL_ANCHOR(args);
+    unsigned int flag = 0;
+    ID mid = node->nd_mid;
+    VALUE argc;
+    LABEL *else_label = NULL;
+    VALUE branches = Qfalse;
+
+    /* optimization shortcut
+     *   obj["literal"] = value -> opt_aset_with(obj, "literal", value)
+     */
+    if (mid == idASET && !private_recv_p(node) && node->nd_args &&
+	nd_type(node->nd_args) == NODE_LIST && node->nd_args->nd_alen == 2 &&
+	nd_type(node->nd_args->nd_head) == NODE_STR &&
+	ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
+	!ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
+	ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction)
+    {
+	VALUE str = rb_fstring(node->nd_args->nd_head->nd_lit);
+	CHECK(COMPILE(ret, "recv", node->nd_recv));
+	CHECK(COMPILE(ret, "value", node->nd_args->nd_next->nd_head));
+	if (!popped) {
+	    ADD_INSN(ret, node, swap);
+	    ADD_INSN1(ret, node, topn, INT2FIX(1));
+	}
+	ADD_INSN2(ret, node, opt_aset_with, str,
+		  new_callinfo(iseq, idASET, 2, 0, NULL, FALSE));
+	RB_OBJ_WRITTEN(iseq, Qundef, str);
+	ADD_INSN(ret, node, pop);
+	return COMPILE_OK;
+    }
+
+    INIT_ANCHOR(recv);
+    INIT_ANCHOR(args);
+    argc = setup_args(iseq, args, node->nd_args, &flag, NULL);
+    CHECK(!NIL_P(argc));
+
+    int asgnflag = COMPILE_RECV(recv, "recv", node);
+    CHECK(asgnflag != -1);
+    flag |= (unsigned int)asgnflag;
+
+    debugp_param("argc", argc);
+    debugp_param("nd_mid", ID2SYM(mid));
+
+    if (!rb_is_attrset_id(mid)) {
+	/* safe nav attr */
+	mid = rb_id_attrset(mid);
+	else_label = qcall_branch_start(iseq, recv, &branches, node, node);
+    }
+    if (!popped) {
+	ADD_INSN(ret, node, putnil);
+	ADD_SEQ(ret, recv);
+	ADD_SEQ(ret, args);
+
+	if (flag & VM_CALL_ARGS_BLOCKARG) {
+	    ADD_INSN1(ret, node, topn, INT2FIX(1));
+	    if (flag & VM_CALL_ARGS_SPLAT) {
+		ADD_INSN1(ret, node, putobject, INT2FIX(-1));
+		ADD_SEND_WITH_FLAG(ret, node, idAREF, INT2FIX(1), INT2FIX(asgnflag));
+	    }
+	    ADD_INSN1(ret, node, setn, FIXNUM_INC(argc, 3));
+	    ADD_INSN (ret, node, pop);
+	}
+	else if (flag & VM_CALL_ARGS_SPLAT) {
+	    ADD_INSN(ret, node, dup);
+	    ADD_INSN1(ret, node, putobject, INT2FIX(-1));
+	    ADD_SEND_WITH_FLAG(ret, node, idAREF, INT2FIX(1), INT2FIX(asgnflag));
+	    ADD_INSN1(ret, node, setn, FIXNUM_INC(argc, 2));
+	    ADD_INSN (ret, node, pop);
+	}
+	else {
+	    ADD_INSN1(ret, node, setn, FIXNUM_INC(argc, 1));
+	}
+    }
+    else {
+	ADD_SEQ(ret, recv);
+	ADD_SEQ(ret, args);
+    }
+    ADD_SEND_WITH_FLAG(ret, node, mid, argc, INT2FIX(flag));
+    qcall_branch_end(iseq, ret, else_label, branches, node, node);
+    ADD_INSN(ret, node, pop);
+    return COMPILE_OK;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node
@@ -9561,91 +9648,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
 	}
 	break;
       }
-      case NODE_ATTRASGN:{
-	DECL_ANCHOR(recv);
-	DECL_ANCHOR(args);
-	unsigned int flag = 0;
-	ID mid = node->nd_mid;
-	VALUE argc;
-        LABEL *else_label = NULL;
-        VALUE branches = Qfalse;
-
-	/* optimization shortcut
-	 *   obj["literal"] = value -> opt_aset_with(obj, "literal", value)
-	 */
-	if (mid == idASET && !private_recv_p(node) && node->nd_args &&
-	    nd_type(node->nd_args) == NODE_LIST && node->nd_args->nd_alen == 2 &&
-	    nd_type(node->nd_args->nd_head) == NODE_STR &&
-	    ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
-            !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
-	    ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction)
-	{
-	    VALUE str = rb_fstring(node->nd_args->nd_head->nd_lit);
-	    CHECK(COMPILE(ret, "recv", node->nd_recv));
-	    CHECK(COMPILE(ret, "value", node->nd_args->nd_next->nd_head));
-	    if (!popped) {
-		ADD_INSN(ret, node, swap);
-		ADD_INSN1(ret, node, topn, INT2FIX(1));
-	    }
-            ADD_INSN2(ret, node, opt_aset_with, str,
-                      new_callinfo(iseq, idASET, 2, 0, NULL, FALSE));
-            RB_OBJ_WRITTEN(iseq, Qundef, str);
-	    ADD_INSN(ret, node, pop);
-	    break;
-	}
-
-	INIT_ANCHOR(recv);
-	INIT_ANCHOR(args);
-	argc = setup_args(iseq, args, node->nd_args, &flag, NULL);
-	CHECK(!NIL_P(argc));
-
-        int asgnflag = COMPILE_RECV(recv, "recv", node);
-        CHECK(asgnflag != -1);
-        flag |= (unsigned int)asgnflag;
-
-	debugp_param("argc", argc);
-	debugp_param("nd_mid", ID2SYM(mid));
-
-	if (!rb_is_attrset_id(mid)) {
-	    /* safe nav attr */
-	    mid = rb_id_attrset(mid);
-            else_label = qcall_branch_start(iseq, recv, &branches, node, node);
-	}
-	if (!popped) {
-	    ADD_INSN(ret, node, putnil);
-	    ADD_SEQ(ret, recv);
-	    ADD_SEQ(ret, args);
-
-	    if (flag & VM_CALL_ARGS_BLOCKARG) {
-		ADD_INSN1(ret, node, topn, INT2FIX(1));
-		if (flag & VM_CALL_ARGS_SPLAT) {
-		    ADD_INSN1(ret, node, putobject, INT2FIX(-1));
-                    ADD_SEND_WITH_FLAG(ret, node, idAREF, INT2FIX(1), INT2FIX(asgnflag));
-		}
-		ADD_INSN1(ret, node, setn, FIXNUM_INC(argc, 3));
-		ADD_INSN (ret, node, pop);
-	    }
-	    else if (flag & VM_CALL_ARGS_SPLAT) {
-		ADD_INSN(ret, node, dup);
-		ADD_INSN1(ret, node, putobject, INT2FIX(-1));
-                ADD_SEND_WITH_FLAG(ret, node, idAREF, INT2FIX(1), INT2FIX(asgnflag));
-		ADD_INSN1(ret, node, setn, FIXNUM_INC(argc, 2));
-		ADD_INSN (ret, node, pop);
-	    }
-	    else {
-		ADD_INSN1(ret, node, setn, FIXNUM_INC(argc, 1));
-	    }
-	}
-	else {
-	    ADD_SEQ(ret, recv);
-	    ADD_SEQ(ret, args);
-	}
-	ADD_SEND_WITH_FLAG(ret, node, mid, argc, INT2FIX(flag));
-        qcall_branch_end(iseq, ret, else_label, branches, node, node);
-	ADD_INSN(ret, node, pop);
-
+      case NODE_ATTRASGN:
+	CHECK(compile_attrasgn(iseq, ret, node, popped));
 	break;
-      }
       case NODE_LAMBDA:{
 	/* compile same as lambda{...} */
 	const rb_iseq_t *block = NEW_CHILD_ISEQ(node->nd_body, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, line);
