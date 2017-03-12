@@ -8661,6 +8661,44 @@ compile_yield(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     return COMPILE_OK;
 }
 
+static int
+compile_match(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped, const enum node_type type)
+{
+    DECL_ANCHOR(recv);
+    DECL_ANCHOR(val);
+
+    INIT_ANCHOR(recv);
+    INIT_ANCHOR(val);
+    switch ((int)type) {
+      case NODE_MATCH:
+	ADD_INSN1(recv, node, putobject, node->nd_lit);
+	ADD_INSN2(val, node, getspecial, INT2FIX(0),
+		  INT2FIX(0));
+	break;
+      case NODE_MATCH2:
+	CHECK(COMPILE(recv, "receiver", node->nd_recv));
+	CHECK(COMPILE(val, "value", node->nd_value));
+	break;
+      case NODE_MATCH3:
+	CHECK(COMPILE(recv, "receiver", node->nd_value));
+	CHECK(COMPILE(val, "value", node->nd_recv));
+	break;
+    }
+
+    ADD_SEQ(ret, recv);
+    ADD_SEQ(ret, val);
+    ADD_SEND(ret, node, idEqTilde, INT2FIX(1));
+
+    if (node->nd_args) {
+	compile_named_capture_assign(iseq, ret, node->nd_args);
+    }
+
+    if (popped) {
+	ADD_INSN(ret, node, pop);
+    }
+    return COMPILE_OK;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node
@@ -9019,41 +9057,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
       case NODE_MATCH:
       case NODE_MATCH2:
-      case NODE_MATCH3:{
-	DECL_ANCHOR(recv);
-	DECL_ANCHOR(val);
-
-	INIT_ANCHOR(recv);
-	INIT_ANCHOR(val);
-	switch (nd_type(node)) {
-	  case NODE_MATCH:
-	    ADD_INSN1(recv, node, putobject, node->nd_lit);
-	    ADD_INSN2(val, node, getspecial, INT2FIX(0),
-		      INT2FIX(0));
-	    break;
-	  case NODE_MATCH2:
-	    CHECK(COMPILE(recv, "receiver", node->nd_recv));
-	    CHECK(COMPILE(val, "value", node->nd_value));
-	    break;
-	  case NODE_MATCH3:
-	    CHECK(COMPILE(recv, "receiver", node->nd_value));
-	    CHECK(COMPILE(val, "value", node->nd_recv));
-	    break;
-	}
-
-        ADD_SEQ(ret, recv);
-        ADD_SEQ(ret, val);
-        ADD_SEND(ret, node, idEqTilde, INT2FIX(1));
-
-	if (node->nd_args) {
-	    compile_named_capture_assign(iseq, ret, node->nd_args);
-	}
-
-	if (popped) {
-	    ADD_INSN(ret, node, pop);
-	}
+      case NODE_MATCH3:
+	CHECK(compile_match(iseq, ret, node, popped, type));
 	break;
-      }
       case NODE_LIT:{
 	debugp_param("lit", node->nd_lit);
 	if (!popped) {
