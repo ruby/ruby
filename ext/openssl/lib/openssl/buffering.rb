@@ -164,9 +164,10 @@ module OpenSSL::Buffering
   # when the peer requests a new TLS/SSL handshake.  See openssl the FAQ for
   # more details.  http://www.openssl.org/support/faq.html
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that read_nonblock should not raise an IO::Wait*able exception, but
-  # return the symbol :wait_writable or :wait_readable instead.
+  # return the symbol +:wait_writable+ or +:wait_readable+ instead. At EOF,
+  # it will return +nil+ instead of raising EOFError.
 
   def read_nonblock(maxlen, buf=nil, exception: true)
     if maxlen == 0
@@ -376,9 +377,9 @@ module OpenSSL::Buffering
   # is when the peer requests a new TLS/SSL handshake.  See the openssl FAQ
   # for more details.  http://www.openssl.org/support/faq.html
   #
-  # By specifying `exception: false`, the options hash allows you to indicate
+  # By specifying a keyword argument _exception_ to +false+, you can indicate
   # that write_nonblock should not raise an IO::Wait*able exception, but
-  # return the symbol :wait_writable or :wait_readable instead.
+  # return the symbol +:wait_writable+ or +:wait_readable+ instead.
 
   def write_nonblock(s, exception: true)
     flush
