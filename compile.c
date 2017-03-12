@@ -8364,6 +8364,77 @@ compile_op_asgn2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
     return COMPILE_OK;
 }
 
+static int
+compile_op_cdecl(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    const int line = nd_line(node);
+    LABEL *lfin = 0;
+    LABEL *lassign = 0;
+    ID mid;
+
+    switch (nd_type(node->nd_head)) {
+      case NODE_COLON3:
+	ADD_INSN1(ret, node, putobject, rb_cObject);
+	break;
+      case NODE_COLON2:
+	CHECK(COMPILE(ret, "NODE_OP_CDECL/colon2#nd_head", node->nd_head->nd_head));
+	break;
+      default:
+	COMPILE_ERROR(ERROR_ARGS "%s: invalid node in NODE_OP_CDECL",
+		      ruby_node_name(nd_type(node->nd_head)));
+	return COMPILE_NG;
+    }
+    mid = node->nd_head->nd_mid;
+    /* cref */
+    if (node->nd_aid == idOROP) {
+	lassign = NEW_LABEL(line);
+	ADD_INSN(ret, node, dup); /* cref cref */
+	ADD_INSN3(ret, node, defined, INT2FIX(DEFINED_CONST_FROM),
+		  ID2SYM(mid), Qtrue); /* cref bool */
+	ADD_INSNL(ret, node, branchunless, lassign); /* cref */
+    }
+    ADD_INSN(ret, node, dup); /* cref cref */
+    ADD_INSN1(ret, node, putobject, Qtrue);
+    ADD_INSN1(ret, node, getconstant, ID2SYM(mid)); /* cref obj */
+
+    if (node->nd_aid == idOROP || node->nd_aid == idANDOP) {
+	lfin = NEW_LABEL(line);
+	if (!popped) ADD_INSN(ret, node, dup); /* cref [obj] obj */
+	if (node->nd_aid == idOROP)
+	    ADD_INSNL(ret, node, branchif, lfin);
+	else /* idANDOP */
+	    ADD_INSNL(ret, node, branchunless, lfin);
+	/* cref [obj] */
+	if (!popped) ADD_INSN(ret, node, pop); /* cref */
+	if (lassign) ADD_LABEL(ret, lassign);
+	CHECK(COMPILE(ret, "NODE_OP_CDECL#nd_value", node->nd_value));
+	/* cref value */
+	if (popped)
+	    ADD_INSN1(ret, node, topn, INT2FIX(1)); /* cref value cref */
+	else {
+	    ADD_INSN1(ret, node, dupn, INT2FIX(2)); /* cref value cref value */
+	    ADD_INSN(ret, node, swap); /* cref value value cref */
+	}
+	ADD_INSN1(ret, node, setconstant, ID2SYM(mid)); /* cref [value] */
+	ADD_LABEL(ret, lfin);			    /* cref [value] */
+	if (!popped) ADD_INSN(ret, node, swap); /* [value] cref */
+	ADD_INSN(ret, node, pop); /* [value] */
+    }
+    else {
+	CHECK(COMPILE(ret, "NODE_OP_CDECL#nd_value", node->nd_value));
+	/* cref obj value */
+	ADD_CALL(ret, node, node->nd_aid, INT2FIX(1));
+	/* cref value */
+	ADD_INSN(ret, node, swap); /* value cref */
+	if (!popped) {
+	    ADD_INSN1(ret, node, topn, INT2FIX(1)); /* value cref value */
+	    ADD_INSN(ret, node, swap); /* value value cref */
+	}
+	ADD_INSN1(ret, node, setconstant, ID2SYM(mid));
+    }
+    return COMPILE_OK;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node
@@ -8593,73 +8664,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       case NODE_OP_ASGN2:
 	CHECK(compile_op_asgn2(iseq, ret, node, popped));
 	break;
-      case NODE_OP_CDECL: {
-	LABEL *lfin = 0;
-	LABEL *lassign = 0;
-	ID mid;
-
-	switch (nd_type(node->nd_head)) {
-	  case NODE_COLON3:
-	    ADD_INSN1(ret, node, putobject, rb_cObject);
-	    break;
-	  case NODE_COLON2:
-	    CHECK(COMPILE(ret, "NODE_OP_CDECL/colon2#nd_head", node->nd_head->nd_head));
-	    break;
-	  default:
-	    COMPILE_ERROR(ERROR_ARGS "%s: invalid node in NODE_OP_CDECL",
-			  ruby_node_name(nd_type(node->nd_head)));
-	    goto ng;
-	}
-	mid = node->nd_head->nd_mid;
-	/* cref */
-	if (node->nd_aid == idOROP) {
-	    lassign = NEW_LABEL(line);
-	    ADD_INSN(ret, node, dup); /* cref cref */
-	    ADD_INSN3(ret, node, defined, INT2FIX(DEFINED_CONST_FROM),
-		      ID2SYM(mid), Qtrue); /* cref bool */
-	    ADD_INSNL(ret, node, branchunless, lassign); /* cref */
-	}
-	ADD_INSN(ret, node, dup); /* cref cref */
-        ADD_INSN1(ret, node, putobject, Qtrue);
-        ADD_INSN1(ret, node, getconstant, ID2SYM(mid)); /* cref obj */
-
-	if (node->nd_aid == idOROP || node->nd_aid == idANDOP) {
-	    lfin = NEW_LABEL(line);
-	    if (!popped) ADD_INSN(ret, node, dup); /* cref [obj] obj */
-	    if (node->nd_aid == idOROP)
-		ADD_INSNL(ret, node, branchif, lfin);
-	    else /* idANDOP */
-		ADD_INSNL(ret, node, branchunless, lfin);
-	    /* cref [obj] */
-	    if (!popped) ADD_INSN(ret, node, pop); /* cref */
-	    if (lassign) ADD_LABEL(ret, lassign);
-	    CHECK(COMPILE(ret, "NODE_OP_CDECL#nd_value", node->nd_value));
-	    /* cref value */
-	    if (popped)
-		ADD_INSN1(ret, node, topn, INT2FIX(1)); /* cref value cref */
-	    else {
-		ADD_INSN1(ret, node, dupn, INT2FIX(2)); /* cref value cref value */
-		ADD_INSN(ret, node, swap); /* cref value value cref */
-	    }
-	    ADD_INSN1(ret, node, setconstant, ID2SYM(mid)); /* cref [value] */
-	    ADD_LABEL(ret, lfin);			    /* cref [value] */
-	    if (!popped) ADD_INSN(ret, node, swap); /* [value] cref */
-	    ADD_INSN(ret, node, pop); /* [value] */
-	}
-	else {
-	    CHECK(COMPILE(ret, "NODE_OP_CDECL#nd_value", node->nd_value));
-	    /* cref obj value */
-	    ADD_CALL(ret, node, node->nd_aid, INT2FIX(1));
-	    /* cref value */
-	    ADD_INSN(ret, node, swap); /* value cref */
-	    if (!popped) {
-		ADD_INSN1(ret, node, topn, INT2FIX(1)); /* value cref value */
-		ADD_INSN(ret, node, swap); /* value value cref */
-	    }
-	    ADD_INSN1(ret, node, setconstant, ID2SYM(mid));
-	}
+      case NODE_OP_CDECL:
+	CHECK(compile_op_cdecl(iseq, ret, node, popped));
 	break;
-      }
       case NODE_OP_ASGN_AND:
       case NODE_OP_ASGN_OR:{
 	LABEL *lfin = NEW_LABEL(line);
