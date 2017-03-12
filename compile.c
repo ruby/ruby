@@ -8699,6 +8699,53 @@ compile_match(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     return COMPILE_OK;
 }
 
+static int
+compile_colon2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    const int line = nd_line(node);
+    if (rb_is_const_id(node->nd_mid)) {
+	/* constant */
+	LABEL *lend = NEW_LABEL(line);
+	int ic_index = iseq->body->is_size++;
+
+	DECL_ANCHOR(pref);
+	DECL_ANCHOR(body);
+
+	INIT_ANCHOR(pref);
+	INIT_ANCHOR(body);
+	CHECK(compile_const_prefix(iseq, node, pref, body));
+	if (LIST_INSN_SIZE_ZERO(pref)) {
+	    if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
+		ADD_INSN2(ret, node, opt_getinlinecache, lend, INT2FIX(ic_index));
+	    }
+	    else {
+		ADD_INSN(ret, node, putnil);
+	    }
+
+	    ADD_SEQ(ret, body);
+
+	    if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
+		ADD_INSN1(ret, node, opt_setinlinecache, INT2FIX(ic_index));
+		ADD_LABEL(ret, lend);
+	    }
+	}
+	else {
+	    ADD_SEQ(ret, pref);
+	    ADD_SEQ(ret, body);
+	}
+    }
+    else {
+	/* function call */
+	ADD_CALL_RECEIVER(ret, node);
+	CHECK(COMPILE(ret, "colon2#nd_head", node->nd_head));
+	ADD_CALL(ret, node, node->nd_mid, INT2FIX(1));
+    }
+    if (popped) {
+	ADD_INSN(ret, node, pop);
+    }
+    return COMPILE_OK;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node
@@ -9304,49 +9351,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
 	}
 	break;
       }
-      case NODE_COLON2:{
-	if (rb_is_const_id(node->nd_mid)) {
-	    /* constant */
-	    LABEL *lend = NEW_LABEL(line);
-	    int ic_index = body->is_size++;
-
-	    DECL_ANCHOR(pref);
-	    DECL_ANCHOR(body);
-
-	    INIT_ANCHOR(pref);
-	    INIT_ANCHOR(body);
-	    CHECK(compile_const_prefix(iseq, node, pref, body));
-	    if (LIST_INSN_SIZE_ZERO(pref)) {
-		if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
-                    ADD_INSN2(ret, node, opt_getinlinecache, lend, INT2FIX(ic_index));
-		}
-		else {
-		    ADD_INSN(ret, node, putnil);
-		}
-
-		ADD_SEQ(ret, body);
-
-		if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
-                    ADD_INSN1(ret, node, opt_setinlinecache, INT2FIX(ic_index));
-		    ADD_LABEL(ret, lend);
-		}
-	    }
-	    else {
-		ADD_SEQ(ret, pref);
-		ADD_SEQ(ret, body);
-	    }
-	}
-	else {
-	    /* function call */
-	    ADD_CALL_RECEIVER(ret, node);
-	    CHECK(COMPILE(ret, "colon2#nd_head", node->nd_head));
-	    ADD_CALL(ret, node, node->nd_mid, INT2FIX(1));
-	}
-	if (popped) {
-	    ADD_INSN(ret, node, pop);
-	}
+      case NODE_COLON2:
+	CHECK(compile_colon2(iseq, ret, node, popped));
 	break;
-      }
       case NODE_COLON3:{
 	LABEL *lend = NEW_LABEL(line);
 	int ic_index = body->is_size++;
