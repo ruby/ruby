@@ -479,7 +479,7 @@ eom
       res = http.get(uri.path)
       data = JSON(res.body)
       h = data["issue"]["custom_fields"].find{|x|x["id"]==5}
-      if h and val = h["value"]
+      if h and val = h["value"] and val != ""
         case val[/(?:\A|, )#{Regexp.quote TARGET_VERSION}: ([^,]+)/, 1]
         when 'REQUIRED', 'UNKNOWN', 'DONTNEED', 'WONTFIX'
           val[$~.offset(1)[0]...$~.offset(1)[1]] = 'DONE'
@@ -492,7 +492,7 @@ eom
           raise "unknown status '#$1'"
         end
       else
-        val = '#{TARGET_VERSION}: DONE'
+        val = "#{TARGET_VERSION}: DONE"
       end
 
       data = { "issue" => { "custom_fields" => [ {"id"=>5, "value" => val} ] } }
