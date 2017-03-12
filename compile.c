@@ -8746,6 +8746,36 @@ compile_colon2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     return COMPILE_OK;
 }
 
+static int
+compile_colon3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    const int line = nd_line(node);
+    LABEL *lend = NEW_LABEL(line);
+    int ic_index = iseq->body->is_size++;
+
+    debugi("colon3#nd_mid", node->nd_mid);
+
+    /* add cache insn */
+    if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
+	ADD_INSN2(ret, node, opt_getinlinecache, lend, INT2FIX(ic_index));
+	ADD_INSN(ret, node, pop);
+    }
+
+    ADD_INSN1(ret, node, putobject, rb_cObject);
+    ADD_INSN1(ret, node, putobject, Qtrue);
+    ADD_INSN1(ret, node, getconstant, ID2SYM(node->nd_mid));
+
+    if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
+	ADD_INSN1(ret, node, opt_setinlinecache, INT2FIX(ic_index));
+	ADD_LABEL(ret, lend);
+    }
+
+    if (popped) {
+	ADD_INSN(ret, node, pop);
+    }
+    return COMPILE_OK;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node
@@ -9354,32 +9384,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       case NODE_COLON2:
 	CHECK(compile_colon2(iseq, ret, node, popped));
 	break;
-      case NODE_COLON3:{
-	LABEL *lend = NEW_LABEL(line);
-	int ic_index = body->is_size++;
-
-	debugi("colon3#nd_mid", node->nd_mid);
-
-	/* add cache insn */
-	if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
-            ADD_INSN2(ret, node, opt_getinlinecache, lend, INT2FIX(ic_index));
-	    ADD_INSN(ret, node, pop);
-	}
-
-	ADD_INSN1(ret, node, putobject, rb_cObject);
-        ADD_INSN1(ret, node, putobject, Qtrue);
-        ADD_INSN1(ret, node, getconstant, ID2SYM(node->nd_mid));
-
-	if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
-            ADD_INSN1(ret, node, opt_setinlinecache, INT2FIX(ic_index));
-	    ADD_LABEL(ret, lend);
-	}
-
-	if (popped) {
-	    ADD_INSN(ret, node, pop);
-	}
+      case NODE_COLON3:
+	CHECK(compile_colon3(iseq, ret, node, popped));
 	break;
-      }
       case NODE_DOT2:
       case NODE_DOT3:{
 	int excl = type == NODE_DOT3;
