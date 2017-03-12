@@ -940,6 +940,33 @@ if test "$GCC" = yes; then
       # various  headers.  Most frequent  situation is  the use  of //
       # comments.   We  bypass  ANSI   C  mode  for  them.   Otherwise
       # extension libs cannot include those headers.
+
+      # Since math.h in some mingw64 wrongly delcares frexp and modf
+      # to be pure, the variables pointed by the second arguments are
+      # considered uninitialized unexpectedly.
+      AC_CACHE_CHECK([whether frexp and modf are broken],
+	rb_cv_mingw64_broken_frexp_modf,
+	[
+	  save_CFLAGS="$CFLAGS"
+	  if test "$particular_werror_flags" = "yes"; then
+	    CFLAGS="$CFLAGS -Werror=uninitialized"
+	  else
+	    CFLAGS="$CFLAGS -Werror -Wuninitialized"
+	  fi
+	  AC_TRY_COMPILE([@%:@include <math.h>
+	    int foo(double x)
+	    {
+	      int exp;
+	      frexp(x, &exp);
+	      return exp;
+	    }], [if (foo(0.0)) return 1;],
+	    [rb_cv_mingw64_broken_frexp_modf=no],
+	    [rb_cv_mingw64_broken_frexp_modf=yes])
+	  CFLAGS="$save_CFLAGS"
+	])
+      if test "$rb_cv_mingw64_broken_frexp_modf" = yes; then
+	AC_DEFINE(RUBY_MINGW64_BROKEN_FREXP_MODF)
+      fi
     ],
     [cygwin*|darwin*|netbsd*|nacl], [
       # need lgamma_r(), finite()
