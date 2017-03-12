@@ -8117,6 +8117,143 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
     return COMPILE_OK;
 }
 
+static int
+compile_op_asgn1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    const int line = nd_line(node);
+    VALUE argc;
+    unsigned int flag = 0;
+    int asgnflag = 0;
+    ID id = node->nd_mid;
+    int boff = 0;
+
+    /*
+     * a[x] (op)= y
+     *
+     * nil       # nil
+     * eval a    # nil a
+     * eval x    # nil a x
+     * dupn 2    # nil a x a x
+     * send :[]  # nil a x a[x]
+     * eval y    # nil a x a[x] y
+     * send op   # nil a x ret
+     * setn 3    # ret a x ret
+     * send []=  # ret ?
+     * pop       # ret
+     */
+
+    /*
+     * nd_recv[nd_args->nd_body] (nd_mid)= nd_args->nd_head;
+     * NODE_OP_ASGN nd_recv
+     *              nd_args->nd_head
+     *              nd_args->nd_body
+     *              nd_mid
+     */
+
+    if (!popped) {
+	ADD_INSN(ret, node, putnil);
+    }
+    asgnflag = COMPILE_RECV(ret, "NODE_OP_ASGN1 recv", node);
+    CHECK(asgnflag != -1);
+    switch (nd_type(node->nd_args->nd_head)) {
+      case NODE_ZLIST:
+	argc = INT2FIX(0);
+	break;
+      case NODE_BLOCK_PASS:
+	boff = 1;
+	/* fall through */
+      default:
+	argc = setup_args(iseq, ret, node->nd_args->nd_head, &flag, NULL);
+	CHECK(!NIL_P(argc));
+    }
+    ADD_INSN1(ret, node, dupn, FIXNUM_INC(argc, 1 + boff));
+    flag |= asgnflag;
+    ADD_SEND_WITH_FLAG(ret, node, idAREF, argc, INT2FIX(flag));
+
+    if (id == idOROP || id == idANDOP) {
+	/* a[x] ||= y  or  a[x] &&= y
+
+	   unless/if a[x]
+	   a[x]= y
+	   else
+	   nil
+	   end
+	*/
+	LABEL *label = NEW_LABEL(line);
+	LABEL *lfin = NEW_LABEL(line);
+
+	ADD_INSN(ret, node, dup);
+	if (id == idOROP) {
+	    ADD_INSNL(ret, node, branchif, label);
+	}
+	else { /* idANDOP */
+	    ADD_INSNL(ret, node, branchunless, label);
+	}
+	ADD_INSN(ret, node, pop);
+
+	CHECK(COMPILE(ret, "NODE_OP_ASGN1 args->body: ", node->nd_args->nd_body));
+	if (!popped) {
+	    ADD_INSN1(ret, node, setn, FIXNUM_INC(argc, 2+boff));
+	}
+	if (flag & VM_CALL_ARGS_SPLAT) {
+	    ADD_INSN1(ret, node, newarray, INT2FIX(1));
+	    if (boff > 0) {
+		ADD_INSN1(ret, node, dupn, INT2FIX(3));
+		ADD_INSN(ret, node, swap);
+		ADD_INSN(ret, node, pop);
+	    }
+	    ADD_INSN(ret, node, concatarray);
+	    if (boff > 0) {
+		ADD_INSN1(ret, node, setn, INT2FIX(3));
+		ADD_INSN(ret, node, pop);
+		ADD_INSN(ret, node, pop);
+	    }
+	    ADD_SEND_WITH_FLAG(ret, node, idASET, argc, INT2FIX(flag));
+	}
+	else {
+	    if (boff > 0)
+		ADD_INSN(ret, node, swap);
+	    ADD_SEND_WITH_FLAG(ret, node, idASET, FIXNUM_INC(argc, 1), INT2FIX(flag));
+	}
+	ADD_INSN(ret, node, pop);
+	ADD_INSNL(ret, node, jump, lfin);
+	ADD_LABEL(ret, label);
+	if (!popped) {
+	    ADD_INSN1(ret, node, setn, FIXNUM_INC(argc, 2+boff));
+	}
+	ADD_INSN1(ret, node, adjuststack, FIXNUM_INC(argc, 2+boff));
+	ADD_LABEL(ret, lfin);
+    }
+    else {
+	CHECK(COMPILE(ret, "NODE_OP_ASGN1 args->body: ", node->nd_args->nd_body));
+	ADD_SEND(ret, node, id, INT2FIX(1));
+	if (!popped) {
+	    ADD_INSN1(ret, node, setn, FIXNUM_INC(argc, 2+boff));
+	}
+	if (flag & VM_CALL_ARGS_SPLAT) {
+	    ADD_INSN1(ret, node, newarray, INT2FIX(1));
+	    if (boff > 0) {
+		ADD_INSN1(ret, node, dupn, INT2FIX(3));
+		ADD_INSN(ret, node, swap);
+		ADD_INSN(ret, node, pop);
+	    }
+	    ADD_INSN(ret, node, concatarray);
+	    if (boff > 0) {
+		ADD_INSN1(ret, node, setn, INT2FIX(3));
+		ADD_INSN(ret, node, pop);
+		ADD_INSN(ret, node, pop);
+	    }
+	    ADD_SEND_WITH_FLAG(ret, node, idASET, argc, INT2FIX(flag));
+	}
+	else {
+	    if (boff > 0)
+		ADD_INSN(ret, node, swap);
+	    ADD_SEND_WITH_FLAG(ret, node, idASET, FIXNUM_INC(argc, 1), INT2FIX(flag));
+	}
+	ADD_INSN(ret, node, pop);
+    }
+    return COMPILE_OK;
+}
 
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
@@ -8341,141 +8478,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
                   get_ivar_ic_value(iseq,node->nd_vid));
 	break;
       }
-      case NODE_OP_ASGN1: {
-	VALUE argc;
-	unsigned int flag = 0;
-	int asgnflag = 0;
-	ID id = node->nd_mid;
-	int boff = 0;
-
-	/*
-	 * a[x] (op)= y
-	 *
-	 * nil       # nil
-	 * eval a    # nil a
-	 * eval x    # nil a x
-	 * dupn 2    # nil a x a x
-	 * send :[]  # nil a x a[x]
-	 * eval y    # nil a x a[x] y
-	 * send op   # nil a x ret
-	 * setn 3    # ret a x ret
-	 * send []=  # ret ?
-	 * pop       # ret
-	 */
-
-	/*
-	 * nd_recv[nd_args->nd_body] (nd_mid)= nd_args->nd_head;
-	 * NODE_OP_ASGN nd_recv
-	 *              nd_args->nd_head
-	 *              nd_args->nd_body
-	 *              nd_mid
-	 */
-
-	if (!popped) {
-	    ADD_INSN(ret, node, putnil);
-	}
-	asgnflag = COMPILE_RECV(ret, "NODE_OP_ASGN1 recv", node);
-        CHECK(asgnflag != -1);
-	switch (nd_type(node->nd_args->nd_head)) {
-	  case NODE_ZLIST:
-	    argc = INT2FIX(0);
-	    break;
-	  case NODE_BLOCK_PASS:
-	    boff = 1;
-            /* fall through */
-	  default:
-	    argc = setup_args(iseq, ret, node->nd_args->nd_head, &flag, NULL);
-	    CHECK(!NIL_P(argc));
-	}
-	ADD_INSN1(ret, node, dupn, FIXNUM_INC(argc, 1 + boff));
-        flag |= asgnflag;
-	ADD_SEND_WITH_FLAG(ret, node, idAREF, argc, INT2FIX(flag));
-
-	if (id == idOROP || id == idANDOP) {
-	    /* a[x] ||= y  or  a[x] &&= y
-
-	       unless/if a[x]
-	       a[x]= y
-	       else
-	       nil
-	       end
-	    */
-	    LABEL *label = NEW_LABEL(line);
-	    LABEL *lfin = NEW_LABEL(line);
-
-	    ADD_INSN(ret, node, dup);
-	    if (id == idOROP) {
-		ADD_INSNL(ret, node, branchif, label);
-	    }
-	    else { /* idANDOP */
-		ADD_INSNL(ret, node, branchunless, label);
-	    }
-	    ADD_INSN(ret, node, pop);
-
-	    CHECK(COMPILE(ret, "NODE_OP_ASGN1 args->body: ", node->nd_args->nd_body));
-	    if (!popped) {
-		ADD_INSN1(ret, node, setn, FIXNUM_INC(argc, 2+boff));
-	    }
-	    if (flag & VM_CALL_ARGS_SPLAT) {
-		ADD_INSN1(ret, node, newarray, INT2FIX(1));
-		if (boff > 0) {
-		    ADD_INSN1(ret, node, dupn, INT2FIX(3));
-		    ADD_INSN(ret, node, swap);
-		    ADD_INSN(ret, node, pop);
-		}
-		ADD_INSN(ret, node, concatarray);
-		if (boff > 0) {
-		    ADD_INSN1(ret, node, setn, INT2FIX(3));
-		    ADD_INSN(ret, node, pop);
-		    ADD_INSN(ret, node, pop);
-		}
-		ADD_SEND_WITH_FLAG(ret, node, idASET, argc, INT2FIX(flag));
-	    }
-	    else {
-		if (boff > 0)
-		    ADD_INSN(ret, node, swap);
-		ADD_SEND_WITH_FLAG(ret, node, idASET, FIXNUM_INC(argc, 1), INT2FIX(flag));
-	    }
-	    ADD_INSN(ret, node, pop);
-	    ADD_INSNL(ret, node, jump, lfin);
-	    ADD_LABEL(ret, label);
-	    if (!popped) {
-		ADD_INSN1(ret, node, setn, FIXNUM_INC(argc, 2+boff));
-	    }
-	    ADD_INSN1(ret, node, adjuststack, FIXNUM_INC(argc, 2+boff));
-	    ADD_LABEL(ret, lfin);
-	}
-	else {
-	    CHECK(COMPILE(ret, "NODE_OP_ASGN1 args->body: ", node->nd_args->nd_body));
-	    ADD_SEND(ret, node, id, INT2FIX(1));
-	    if (!popped) {
-		ADD_INSN1(ret, node, setn, FIXNUM_INC(argc, 2+boff));
-	    }
-	    if (flag & VM_CALL_ARGS_SPLAT) {
-		ADD_INSN1(ret, node, newarray, INT2FIX(1));
-		if (boff > 0) {
-		    ADD_INSN1(ret, node, dupn, INT2FIX(3));
-		    ADD_INSN(ret, node, swap);
-		    ADD_INSN(ret, node, pop);
-		}
-		ADD_INSN(ret, node, concatarray);
-		if (boff > 0) {
-		    ADD_INSN1(ret, node, setn, INT2FIX(3));
-		    ADD_INSN(ret, node, pop);
-		    ADD_INSN(ret, node, pop);
-		}
-		ADD_SEND_WITH_FLAG(ret, node, idASET, argc, INT2FIX(flag));
-	    }
-	    else {
-		if (boff > 0)
-		    ADD_INSN(ret, node, swap);
-		ADD_SEND_WITH_FLAG(ret, node, idASET, FIXNUM_INC(argc, 1), INT2FIX(flag));
-	    }
-	    ADD_INSN(ret, node, pop);
-	}
-
+      case NODE_OP_ASGN1:
+	CHECK(compile_op_asgn1(iseq, ret, node, popped));
 	break;
-      }
       case NODE_OP_ASGN2:{
 	ID atype = node->nd_next->nd_mid;
 	ID vid = node->nd_next->nd_vid, aid = rb_id_attrset(vid);
