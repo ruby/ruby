@@ -8255,6 +8255,115 @@ compile_op_asgn1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
     return COMPILE_OK;
 }
 
+static int
+compile_op_asgn2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    const int line = nd_line(node);
+    ID atype = node->nd_next->nd_mid;
+    ID vid = node->nd_next->nd_vid, aid = rb_id_attrset(vid);
+    int asgnflag;
+    LABEL *lfin = NEW_LABEL(line);
+    LABEL *lcfin = NEW_LABEL(line);
+    LABEL *lskip = 0;
+    /*
+      class C; attr_accessor :c; end
+      r = C.new
+      r.a &&= v # asgn2
+
+      eval r    # r
+      dup       # r r
+      eval r.a  # r o
+
+      # or
+      dup       # r o o
+      if lcfin  # r o
+      pop       # r
+      eval v    # r v
+      swap      # v r
+      topn 1    # v r v
+      send a=   # v ?
+      jump lfin # v ?
+
+      lcfin:      # r o
+      swap      # o r
+
+      lfin:       # o ?
+      pop       # o
+
+      # and
+      dup       # r o o
+      unless lcfin
+      pop       # r
+      eval v    # r v
+      swap      # v r
+      topn 1    # v r v
+      send a=   # v ?
+      jump lfin # v ?
+
+      # others
+      eval v    # r o v
+      send ??   # r w
+      send a=   # w
+
+    */
+
+    asgnflag = COMPILE_RECV(ret, "NODE_OP_ASGN2#recv", node);
+    CHECK(asgnflag != -1);
+    if (node->nd_next->nd_aid) {
+	lskip = NEW_LABEL(line);
+	ADD_INSN(ret, node, dup);
+	ADD_INSNL(ret, node, branchnil, lskip);
+    }
+    ADD_INSN(ret, node, dup);
+    ADD_SEND_WITH_FLAG(ret, node, vid, INT2FIX(0), INT2FIX(asgnflag));
+
+    if (atype == idOROP || atype == idANDOP) {
+	ADD_INSN(ret, node, dup);
+	if (atype == idOROP) {
+	    ADD_INSNL(ret, node, branchif, lcfin);
+	}
+	else { /* idANDOP */
+	    ADD_INSNL(ret, node, branchunless, lcfin);
+	}
+	ADD_INSN(ret, node, pop);
+	CHECK(COMPILE(ret, "NODE_OP_ASGN2 val", node->nd_value));
+	ADD_INSN(ret, node, swap);
+	ADD_INSN1(ret, node, topn, INT2FIX(1));
+	ADD_SEND_WITH_FLAG(ret, node, aid, INT2FIX(1), INT2FIX(asgnflag));
+	ADD_INSNL(ret, node, jump, lfin);
+
+	ADD_LABEL(ret, lcfin);
+	ADD_INSN(ret, node, swap);
+
+	ADD_LABEL(ret, lfin);
+	ADD_INSN(ret, node, pop);
+	if (lskip) {
+	    ADD_LABEL(ret, lskip);
+	}
+	if (popped) {
+	    /* we can apply more optimize */
+	    ADD_INSN(ret, node, pop);
+	}
+    }
+    else {
+	CHECK(COMPILE(ret, "NODE_OP_ASGN2 val", node->nd_value));
+	ADD_SEND(ret, node, atype, INT2FIX(1));
+	if (!popped) {
+	    ADD_INSN(ret, node, swap);
+	    ADD_INSN1(ret, node, topn, INT2FIX(1));
+	}
+	ADD_SEND_WITH_FLAG(ret, node, aid, INT2FIX(1), INT2FIX(asgnflag));
+	if (lskip && popped) {
+	    ADD_LABEL(ret, lskip);
+	}
+	ADD_INSN(ret, node, pop);
+	if (lskip && !popped) {
+	    ADD_LABEL(ret, lskip);
+	}
+    }
+    return COMPILE_OK;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node
@@ -8481,111 +8590,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       case NODE_OP_ASGN1:
 	CHECK(compile_op_asgn1(iseq, ret, node, popped));
 	break;
-      case NODE_OP_ASGN2:{
-	ID atype = node->nd_next->nd_mid;
-	ID vid = node->nd_next->nd_vid, aid = rb_id_attrset(vid);
-        int asgnflag;
-	LABEL *lfin = NEW_LABEL(line);
-	LABEL *lcfin = NEW_LABEL(line);
-	LABEL *lskip = 0;
-	/*
-	  class C; attr_accessor :c; end
-	  r = C.new
-	  r.a &&= v # asgn2
-
-	  eval r    # r
-	  dup       # r r
-	  eval r.a  # r o
-
-	  # or
-	  dup       # r o o
-	  if lcfin  # r o
-	  pop       # r
-	  eval v    # r v
-	  swap      # v r
-	  topn 1    # v r v
-	  send a=   # v ?
-	  jump lfin # v ?
-
-	  lcfin:      # r o
-	  swap      # o r
-
-	  lfin:       # o ?
-	  pop       # o
-
-	  # and
-	  dup       # r o o
-	  unless lcfin
-	  pop       # r
-	  eval v    # r v
-	  swap      # v r
-	  topn 1    # v r v
-	  send a=   # v ?
-	  jump lfin # v ?
-
-	  # others
-	  eval v    # r o v
-	  send ??   # r w
-	  send a=   # w
-
-	*/
-
-	asgnflag = COMPILE_RECV(ret, "NODE_OP_ASGN2#recv", node);
-        CHECK(asgnflag != -1);
-	if (node->nd_next->nd_aid) {
-	    lskip = NEW_LABEL(line);
-	    ADD_INSN(ret, node, dup);
-	    ADD_INSNL(ret, node, branchnil, lskip);
-	}
-	ADD_INSN(ret, node, dup);
-        ADD_SEND_WITH_FLAG(ret, node, vid, INT2FIX(0), INT2FIX(asgnflag));
-
-	if (atype == idOROP || atype == idANDOP) {
-	    ADD_INSN(ret, node, dup);
-	    if (atype == idOROP) {
-		ADD_INSNL(ret, node, branchif, lcfin);
-	    }
-	    else { /* idANDOP */
-		ADD_INSNL(ret, node, branchunless, lcfin);
-	    }
-	    ADD_INSN(ret, node, pop);
-	    CHECK(COMPILE(ret, "NODE_OP_ASGN2 val", node->nd_value));
-	    ADD_INSN(ret, node, swap);
-	    ADD_INSN1(ret, node, topn, INT2FIX(1));
-	    ADD_SEND_WITH_FLAG(ret, node, aid, INT2FIX(1), INT2FIX(asgnflag));
-	    ADD_INSNL(ret, node, jump, lfin);
-
-	    ADD_LABEL(ret, lcfin);
-	    ADD_INSN(ret, node, swap);
-
-	    ADD_LABEL(ret, lfin);
-	    ADD_INSN(ret, node, pop);
-	    if (lskip) {
-		ADD_LABEL(ret, lskip);
-	    }
-	    if (popped) {
-		/* we can apply more optimize */
-		ADD_INSN(ret, node, pop);
-	    }
-	}
-	else {
-	    CHECK(COMPILE(ret, "NODE_OP_ASGN2 val", node->nd_value));
-	    ADD_SEND(ret, node, atype, INT2FIX(1));
-	    if (!popped) {
-		ADD_INSN(ret, node, swap);
-		ADD_INSN1(ret, node, topn, INT2FIX(1));
-	    }
-	    ADD_SEND_WITH_FLAG(ret, node, aid, INT2FIX(1), INT2FIX(asgnflag));
-	    if (lskip && popped) {
-		ADD_LABEL(ret, lskip);
-	    }
-	    ADD_INSN(ret, node, pop);
-	    if (lskip && !popped) {
-		ADD_LABEL(ret, lskip);
-	    }
-	}
+      case NODE_OP_ASGN2:
+	CHECK(compile_op_asgn2(iseq, ret, node, popped));
 	break;
-      }
       case NODE_OP_CDECL: {
 	LABEL *lfin = 0;
 	LABEL *lassign = 0;
