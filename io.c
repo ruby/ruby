@@ -1423,6 +1423,9 @@ static long
 io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
 {
     int converted = 0;
+    VALUE tmp;
+    long n, len;
+    const char *ptr;
 #ifdef _WIN32
     if (fptr->mode & FMODE_TTY) {
 	long len = rb_w32_write_console(str, fptr->fd);
@@ -1432,11 +1435,13 @@ io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
     str = do_writeconv(str, fptr, &converted);
     if (converted)
 	OBJ_FREEZE(str);
-    else
-	str = rb_str_new_frozen(str);
 
-    return io_binwrite(str, RSTRING_PTR(str), RSTRING_LEN(str),
-		       fptr, nosync);
+    tmp = rb_str_tmp_frozen_acquire(str);
+    RSTRING_GETMEM(tmp, ptr, len);
+    n = io_binwrite(tmp, ptr, len, fptr, nosync);
+    rb_str_tmp_frozen_release(str, tmp);
+
+    return n;
 }
 
 ssize_t
@@ -4727,8 +4732,10 @@ rb_io_sysseek(int argc, VALUE *argv, VALUE io)
 static VALUE
 rb_io_syswrite(VALUE io, VALUE str)
 {
+    VALUE tmp;
     rb_io_t *fptr;
-    long n;
+    long n, len;
+    const char *ptr;
 
     if (!RB_TYPE_P(str, T_STRING))
 	str = rb_obj_as_string(str);
@@ -4737,16 +4744,15 @@ rb_io_syswrite(VALUE io, VALUE str)
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
 
-    str = rb_str_new_frozen(str);
-
     if (fptr->wbuf.len) {
 	rb_warn("syswrite for buffered IO");
     }
 
-    n = rb_write_internal(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str));
-    RB_GC_GUARD(str);
-
+    tmp = rb_str_tmp_frozen_acquire(str);
+    RSTRING_GETMEM(tmp, ptr, len);
+    n = rb_write_internal(fptr->fd, ptr, len);
     if (n == -1) rb_sys_fail_path(fptr->pathv);
+    rb_str_tmp_frozen_release(str, tmp);
 
     return LONG2FIX(n);
 }
