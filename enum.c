@@ -3213,9 +3213,10 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *
  *    # split mails in mbox (slice before Unix From line after an empty line)
  *    open("mbox") { |f|
- *      f.slice_before(emp: true) { |line, h|
- *        prevemp = h[:emp]
- *        h[:emp] = line == "\n"
+ *      emp = true
+ *      f.slice_before { |line|
+ *        prevemp = emp
+ *        emp = line == "\n"
  *        prevemp && line.start_with?("From ")
  *      }.each { |mail|
  *        mail.pop if mail.last == "\n"
