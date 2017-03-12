@@ -5504,14 +5504,14 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
       }
       case NODE_VALUES:{
 	NODE *n = node;
+	if (popped) {
+	    COMPILE_ERROR(ERROR_ARGS "NODE_VALUES: must not be popped");
+	}
 	while (n) {
 	    CHECK(COMPILE(ret, "values item", n->nd_head));
 	    n = n->nd_next;
 	}
 	ADD_INSN1(ret, line, newarray, INT2FIX(node->nd_alen));
-	if (popped) {
-	    ADD_INSN(ret, line, pop);
-	}
 	break;
       }
       case NODE_HASH:{
