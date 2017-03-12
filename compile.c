@@ -8479,6 +8479,144 @@ compile_op_log(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     return COMPILE_OK;
 }
 
+static int
+compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped, const enum node_type type)
+{
+    struct rb_iseq_constant_body *const body = iseq->body;
+    DECL_ANCHOR(args);
+    int argc;
+    unsigned int flag = 0;
+    struct rb_callinfo_kwarg *keywords = NULL;
+    const rb_iseq_t *parent_block = ISEQ_COMPILE_DATA(iseq)->current_block;
+
+    INIT_ANCHOR(args);
+    ISEQ_COMPILE_DATA(iseq)->current_block = NULL;
+    if (type == NODE_SUPER) {
+	VALUE vargc = setup_args(iseq, args, node->nd_args, &flag, &keywords);
+	CHECK(!NIL_P(vargc));
+	argc = FIX2INT(vargc);
+    }
+    else {
+	/* NODE_ZSUPER */
+	int i;
+	const rb_iseq_t *liseq = body->local_iseq;
+	const struct rb_iseq_constant_body *const local_body = liseq->body;
+	const struct rb_iseq_param_keyword *const local_kwd = local_body->param.keyword;
+	int lvar_level = get_lvar_level(iseq);
+
+	argc = local_body->param.lead_num;
+
+	/* normal arguments */
+	for (i = 0; i < local_body->param.lead_num; i++) {
+	    int idx = local_body->local_table_size - i;
+	    ADD_GETLOCAL(args, node, idx, lvar_level);
+	}
+
+	if (local_body->param.flags.has_opt) {
+	    /* optional arguments */
+	    int j;
+	    for (j = 0; j < local_body->param.opt_num; j++) {
+		int idx = local_body->local_table_size - (i + j);
+		ADD_GETLOCAL(args, node, idx, lvar_level);
+	    }
+	    i += j;
+	    argc = i;
+	}
+	if (local_body->param.flags.has_rest) {
+	    /* rest argument */
+	    int idx = local_body->local_table_size - local_body->param.rest_start;
+	    ADD_GETLOCAL(args, node, idx, lvar_level);
+	    ADD_INSN1(args, node, splatarray, Qfalse);
+
+	    argc = local_body->param.rest_start + 1;
+	    flag |= VM_CALL_ARGS_SPLAT;
+	}
+	if (local_body->param.flags.has_post) {
+	    /* post arguments */
+	    int post_len = local_body->param.post_num;
+	    int post_start = local_body->param.post_start;
+
+	    if (local_body->param.flags.has_rest) {
+		int j;
+		for (j=0; j<post_len; j++) {
+		    int idx = local_body->local_table_size - (post_start + j);
+		    ADD_GETLOCAL(args, node, idx, lvar_level);
+		}
+		ADD_INSN1(args, node, newarray, INT2FIX(j));
+		ADD_INSN (args, node, concatarray);
+		/* argc is settled at above */
+	    }
+	    else {
+		int j;
+		for (j=0; j<post_len; j++) {
+		    int idx = local_body->local_table_size - (post_start + j);
+		    ADD_GETLOCAL(args, node, idx, lvar_level);
+		}
+		argc = post_len + post_start;
+	    }
+	}
+
+	if (local_body->param.flags.has_kw) { /* TODO: support keywords */
+	    int local_size = local_body->local_table_size;
+	    argc++;
+
+	    ADD_INSN1(args, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+
+	    if (local_body->param.flags.has_kwrest) {
+		int idx = local_body->local_table_size - local_kwd->rest_start;
+		ADD_GETLOCAL(args, node, idx, lvar_level);
+                if (local_kwd->num > 0) {
+                    ADD_SEND (args, node, rb_intern("dup"), INT2FIX(0));
+                    flag |= VM_CALL_KW_SPLAT_MUT;
+                }
+	    }
+	    else {
+		ADD_INSN1(args, node, newhash, INT2FIX(0));
+                flag |= VM_CALL_KW_SPLAT_MUT;
+	    }
+	    for (i = 0; i < local_kwd->num; ++i) {
+		ID id = local_kwd->table[i];
+		int idx = local_size - get_local_var_idx(liseq, id);
+		ADD_INSN1(args, node, putobject, ID2SYM(id));
+		ADD_GETLOCAL(args, node, idx, lvar_level);
+	    }
+	    ADD_SEND(args, node, id_core_hash_merge_ptr, INT2FIX(i * 2 + 1));
+	    if (local_body->param.flags.has_rest) {
+		ADD_INSN1(args, node, newarray, INT2FIX(1));
+		ADD_INSN (args, node, concatarray);
+		--argc;
+	    }
+            flag |= VM_CALL_KW_SPLAT;
+	}
+	else if (local_body->param.flags.has_kwrest) {
+	    int idx = local_body->local_table_size - local_kwd->rest_start;
+	    ADD_GETLOCAL(args, node, idx, lvar_level);
+
+	    if (local_body->param.flags.has_rest) {
+		ADD_INSN1(args, node, newarray, INT2FIX(1));
+		ADD_INSN (args, node, concatarray);
+	    }
+	    else {
+		argc++;
+	    }
+            flag |= VM_CALL_KW_SPLAT;
+	}
+    }
+
+    flag |= VM_CALL_SUPER | VM_CALL_FCALL;
+    if (type == NODE_ZSUPER) flag |= VM_CALL_ZSUPER;
+    ADD_INSN(ret, node, putself);
+    ADD_SEQ(ret, args);
+    ADD_INSN2(ret, node, invokesuper,
+	      new_callinfo(iseq, 0, argc, flag, keywords, parent_block != NULL),
+	      parent_block);
+
+    if (popped) {
+	ADD_INSN(ret, node, pop);
+    }
+    return COMPILE_OK;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node
@@ -8728,139 +8866,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         break;
       case NODE_SUPER:
-      case NODE_ZSUPER:{
-	DECL_ANCHOR(args);
-	int argc;
-	unsigned int flag = 0;
-	struct rb_callinfo_kwarg *keywords = NULL;
-	const rb_iseq_t *parent_block = ISEQ_COMPILE_DATA(iseq)->current_block;
-
-	INIT_ANCHOR(args);
-	ISEQ_COMPILE_DATA(iseq)->current_block = NULL;
-	if (type == NODE_SUPER) {
-	    VALUE vargc = setup_args(iseq, args, node->nd_args, &flag, &keywords);
-	    CHECK(!NIL_P(vargc));
-	    argc = FIX2INT(vargc);
-	}
-	else {
-	    /* NODE_ZSUPER */
-	    int i;
-	    const rb_iseq_t *liseq = body->local_iseq;
-	    const struct rb_iseq_constant_body *const local_body = liseq->body;
-	    const struct rb_iseq_param_keyword *const local_kwd = local_body->param.keyword;
-	    int lvar_level = get_lvar_level(iseq);
-
-	    argc = local_body->param.lead_num;
-
-	    /* normal arguments */
-	    for (i = 0; i < local_body->param.lead_num; i++) {
-		int idx = local_body->local_table_size - i;
-		ADD_GETLOCAL(args, node, idx, lvar_level);
-	    }
-
-	    if (local_body->param.flags.has_opt) {
-		/* optional arguments */
-		int j;
-		for (j = 0; j < local_body->param.opt_num; j++) {
-		    int idx = local_body->local_table_size - (i + j);
-		    ADD_GETLOCAL(args, node, idx, lvar_level);
-		}
-		i += j;
-		argc = i;
-	    }
-	    if (local_body->param.flags.has_rest) {
-		/* rest argument */
-		int idx = local_body->local_table_size - local_body->param.rest_start;
-
-		ADD_GETLOCAL(args, node, idx, lvar_level);
-		ADD_INSN1(args, node, splatarray, Qfalse);
-
-		argc = local_body->param.rest_start + 1;
-		flag |= VM_CALL_ARGS_SPLAT;
-	    }
-	    if (local_body->param.flags.has_post) {
-		/* post arguments */
-		int post_len = local_body->param.post_num;
-		int post_start = local_body->param.post_start;
-
-		if (local_body->param.flags.has_rest) {
-		    int j;
-		    for (j=0; j<post_len; j++) {
-			int idx = local_body->local_table_size - (post_start + j);
-			ADD_GETLOCAL(args, node, idx, lvar_level);
-		    }
-		    ADD_INSN1(args, node, newarray, INT2FIX(j));
-		    ADD_INSN (args, node, concatarray);
-		    /* argc is settled at above */
-		}
-		else {
-		    int j;
-		    for (j=0; j<post_len; j++) {
-			int idx = local_body->local_table_size - (post_start + j);
-			ADD_GETLOCAL(args, node, idx, lvar_level);
-		    }
-		    argc = post_len + post_start;
-		}
-	    }
-
-	    if (local_body->param.flags.has_kw) { /* TODO: support keywords */
-		int local_size = local_body->local_table_size;
-		argc++;
-
-		ADD_INSN1(args, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-
-		if (local_body->param.flags.has_kwrest) {
-		    int idx = local_body->local_table_size - local_kwd->rest_start;
-		    ADD_GETLOCAL(args, node, idx, lvar_level);
-                    if (local_kwd->num > 0) {
-                        ADD_SEND(args, node, rb_intern("dup"), INT2FIX(0));
-                        flag |= VM_CALL_KW_SPLAT_MUT;
-                    }
-		}
-		else {
-		    ADD_INSN1(args, node, newhash, INT2FIX(0));
-                    flag |= VM_CALL_KW_SPLAT_MUT;
-		}
-		for (i = 0; i < local_kwd->num; ++i) {
-		    ID id = local_kwd->table[i];
-		    int idx = local_size - get_local_var_idx(liseq, id);
-		    ADD_INSN1(args, node, putobject, ID2SYM(id));
-		    ADD_GETLOCAL(args, node, idx, lvar_level);
-		}
-		ADD_SEND(args, node, id_core_hash_merge_ptr, INT2FIX(i * 2 + 1));
-		if (local_body->param.flags.has_rest) {
-		    ADD_INSN1(args, node, newarray, INT2FIX(1));
-		    ADD_INSN (args, node, concatarray);
-		    --argc;
-		}
-		flag |= VM_CALL_KW_SPLAT;
-	    }
-	    else if (local_body->param.flags.has_kwrest) {
-		int idx = local_body->local_table_size - local_kwd->rest_start;
-		ADD_GETLOCAL(args, node, idx, lvar_level);
-
-		if (local_body->param.flags.has_rest) {
-		    ADD_INSN1(args, node, newarray, INT2FIX(1));
-		    ADD_INSN (args, node, concatarray);
-		}
-		else {
-		    argc++;
-		}
-		flag |= VM_CALL_KW_SPLAT;
-	    }
-	}
-
-	ADD_INSN(ret, node, putself);
-	ADD_SEQ(ret, args);
-        ADD_INSN2(ret, node, invokesuper,
-                  new_callinfo(iseq, 0, argc, flag | VM_CALL_SUPER | (type == NODE_ZSUPER ? VM_CALL_ZSUPER : 0) | VM_CALL_FCALL, keywords, parent_block != NULL),
-		  parent_block);
-
-	if (popped) {
-	    ADD_INSN(ret, node, pop);
-	}
+      case NODE_ZSUPER:
+	CHECK(compile_super(iseq, ret, node, popped, type));
 	break;
-      }
       case NODE_LIST:{
         CHECK(compile_array(iseq, ret, node, popped) >= 0);
 	break;
