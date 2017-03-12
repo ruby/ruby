@@ -2326,17 +2326,17 @@ rb_scan_args_end_idx(const char *fmt)
 		     rb_scan_args_f_var(fmt), \
 		     rb_scan_args_f_hash(fmt), \
 		     rb_scan_args_f_block(fmt), \
-		     rb_scan_args_verify(fmt, varc), vars)
+		     (rb_scan_args_verify(fmt, varc), vars))
 ALWAYS_INLINE(static int
 rb_scan_args_set(int argc, const VALUE *argv,
 		 int n_lead, int n_opt, int n_trail,
 		 int f_var, int f_hash, int f_block,
-		 int varc, VALUE *vars[]));
+		 VALUE *vars[]));
 inline int
 rb_scan_args_set(int argc, const VALUE *argv,
 		 int n_lead, int n_opt, int n_trail,
 		 int f_var, int f_hash, int f_block,
-		 int varc, VALUE *vars[])
+		 VALUE *vars[])
 {
     int i, argi = 0, vari = 0;
     VALUE *var, hash = Qnil;
