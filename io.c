@@ -7181,12 +7181,13 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
  *  call-seq:
  *     ios.puts(obj, ...)    -> nil
  *
- *  Writes the given object(s) to <em>ios</em> as with <code>IO#print</code>.
+ *  Writes the given object(s) to <em>ios</em> as with <code>IO#write</code>.
  *  Writes a newline after any that do not already end
  *  with a newline sequence.
  *
  *  If called with an array argument, writes each element on a new line.
  *  If called without arguments, outputs a single newline.
+ *  This doesn't affect $/. ($RS or INPUT_RECORD_SEPARATOR in English.rb)
  *
  *     $stdout.puts("this", "is", "a", "test")
  *
