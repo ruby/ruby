@@ -8830,6 +8830,41 @@ compile_errinfo(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node,
     return COMPILE_OK;
 }
 
+static int
+compile_kw_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    struct rb_iseq_constant_body *const body = iseq->body;
+    LABEL *end_label = NEW_LABEL(nd_line(node));
+    const NODE *default_value = node->nd_body->nd_value;
+
+    if (default_value == NODE_SPECIAL_REQUIRED_KEYWORD) {
+	/* required argument. do nothing */
+	COMPILE_ERROR(ERROR_ARGS "unreachable");
+	return COMPILE_NG;
+    }
+    else if (nd_type(default_value) == NODE_LIT ||
+	     nd_type(default_value) == NODE_NIL ||
+	     nd_type(default_value) == NODE_TRUE ||
+	     nd_type(default_value) == NODE_FALSE) {
+	COMPILE_ERROR(ERROR_ARGS "unreachable");
+	return COMPILE_NG;
+    }
+    else {
+	/* if keywordcheck(_kw_bits, nth_keyword)
+	 *   kw = default_value
+	 * end
+	 */
+	int kw_bits_idx = body->local_table_size - body->param.keyword->bits_start;
+	int keyword_idx = body->param.keyword->num;
+
+	ADD_INSN2(ret, node, checkkeyword, INT2FIX(kw_bits_idx + VM_ENV_DATA_SIZE - 1), INT2FIX(keyword_idx));
+	ADD_INSNL(ret, node, branchif, end_label);
+	CHECK(COMPILE_POPPED(ret, "keyword default argument", node->nd_body));
+	ADD_LABEL(ret, end_label);
+    }
+    return COMPILE_OK;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node
@@ -9514,38 +9549,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
 	break;
       }
       case NODE_KW_ARG:
-	{
-	    LABEL *end_label = NEW_LABEL(nd_line(node));
-	    const NODE *default_value = node->nd_body->nd_value;
-
-            if (default_value == NODE_SPECIAL_REQUIRED_KEYWORD) {
-		/* required argument. do nothing */
-		COMPILE_ERROR(ERROR_ARGS "unreachable");
-		goto ng;
-	    }
-	    else if (nd_type(default_value) == NODE_LIT ||
-		     nd_type(default_value) == NODE_NIL ||
-		     nd_type(default_value) == NODE_TRUE ||
-		     nd_type(default_value) == NODE_FALSE) {
-		COMPILE_ERROR(ERROR_ARGS "unreachable");
-		goto ng;
-	    }
-	    else {
-		/* if keywordcheck(_kw_bits, nth_keyword)
-		 *   kw = default_value
-		 * end
-		 */
-		int kw_bits_idx = body->local_table_size - body->param.keyword->bits_start;
-		int keyword_idx = body->param.keyword->num;
-
-		ADD_INSN2(ret, node, checkkeyword, INT2FIX(kw_bits_idx + VM_ENV_DATA_SIZE - 1), INT2FIX(keyword_idx));
-		ADD_INSNL(ret, node, branchif, end_label);
-		CHECK(COMPILE_POPPED(ret, "keyword default argument", node->nd_body));
-		ADD_LABEL(ret, end_label);
-	    }
-
-	    break;
-	}
+	CHECK(compile_kw_arg(iseq, ret, node, popped));
+	break;
       case NODE_DSYM:{
 	compile_dstr(iseq, ret, node);
 	if (!popped) {
