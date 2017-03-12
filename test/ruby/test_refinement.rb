@@ -1829,6 +1829,38 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  module SuperToModule
+    class Parent
+    end
+
+    class Child < Parent
+    end
+
+    module FooBar
+      refine Parent do
+        def to_s
+          "Parent"
+        end
+      end
+
+      refine Child do
+        def to_s
+          super + " -> Child"
+        end
+      end
+    end
+
+    using FooBar
+    def Child.test
+      new.to_s
+    end
+  end
+
+  def test_super_to_module
+    bug = '[ruby-core:79588] [Bug #13227]'
+    assert_equal("Parent -> Child", SuperToModule::Child.test, bug)
+  end
+
   private
 
   def eval_using(mod, s)
