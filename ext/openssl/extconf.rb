@@ -60,7 +60,7 @@ unless result
   raise "OpenSSL 0.9.8 or later required."
 end
 
-unless OpenSSL.check_func("SSL_library_init()", "openssl/ssl.h")
+if /darwin/ =~ RUBY_PLATFORM and !OpenSSL.check_func("SSL_library_init()", "openssl/ssl.h")
   raise "Ignore OpenSSL broken by Apple.\nPlease use another openssl. (e.g. using `configure --with-openssl-dir=/path/to/openssl')"
 end
 
