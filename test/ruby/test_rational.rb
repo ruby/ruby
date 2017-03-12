@@ -955,6 +955,14 @@ class Rational_Test < Test::Unit::TestCase
     assert_raise(ZeroDivisionError, bug5713) { Rational(0, 1) ** Rational(-2,3) }
   end
 
+  def test_power_overflow
+    bug = '[ruby-core:79686] [Bug #13242]: Infinity due to overflow'
+    x = EnvUtil.suppress_warning {4r**40000000}
+    assert_predicate x, :infinite?, bug
+    x = EnvUtil.suppress_warning {(1/4r)**40000000}
+    assert_equal 0, x, bug
+  end
+
   def test_positive_p
     assert_predicate(1/2r, :positive?)
     assert_not_predicate(-1/2r, :positive?)
