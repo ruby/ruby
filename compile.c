@@ -8776,6 +8776,32 @@ compile_colon3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     return COMPILE_OK;
 }
 
+static int
+compile_dots(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped, const int excl)
+{
+    VALUE flag = INT2FIX(excl);
+    const NODE *b = node->nd_beg;
+    const NODE *e = node->nd_end;
+
+    if (optimizable_range_item_p(b) && optimizable_range_item_p(e)) {
+	if (!popped) {
+            VALUE bv = nd_type(b) == NODE_LIT ? b->nd_lit : Qnil;
+            VALUE ev = nd_type(e) == NODE_LIT ? e->nd_lit : Qnil;
+	    VALUE val = rb_range_new(bv, ev, excl);
+	    ADD_INSN1(ret, node, putobject, val);
+	    RB_OBJ_WRITTEN(iseq, Qundef, val);
+	}
+    }
+    else {
+	CHECK(COMPILE_(ret, "min", b, popped));
+	CHECK(COMPILE_(ret, "max", e, popped));
+	if (!popped) {
+	    ADD_INSN1(ret, node, newrange, flag);
+	}
+    }
+    return COMPILE_OK;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped);
 /**
   compile each node
@@ -9388,30 +9414,11 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
 	CHECK(compile_colon3(iseq, ret, node, popped));
 	break;
       case NODE_DOT2:
-      case NODE_DOT3:{
-	int excl = type == NODE_DOT3;
-	VALUE flag = INT2FIX(excl);
-	const NODE *b = node->nd_beg;
-	const NODE *e = node->nd_end;
-
-        if (optimizable_range_item_p(b) && optimizable_range_item_p(e)) {
-	    if (!popped) {
-                VALUE bv = nd_type(b) == NODE_LIT ? b->nd_lit : Qnil;
-                VALUE ev = nd_type(e) == NODE_LIT ? e->nd_lit : Qnil;
-                VALUE val = rb_range_new(bv, ev, excl);
-                ADD_INSN1(ret, node, putobject, val);
-                RB_OBJ_WRITTEN(iseq, Qundef, val);
-	    }
-	}
-	else {
-	    CHECK(COMPILE_(ret, "min", b, popped));
-	    CHECK(COMPILE_(ret, "max", e, popped));
-	    if (!popped) {
-		ADD_INSN1(ret, node, newrange, flag);
-	    }
-	}
+	CHECK(compile_dots(iseq, ret, node, popped, FALSE));
 	break;
-      }
+      case NODE_DOT3:
+	CHECK(compile_dots(iseq, ret, node, popped, TRUE));
+	break;
       case NODE_FLIP2:
       case NODE_FLIP3:{
 	LABEL *lend = NEW_LABEL(line);
