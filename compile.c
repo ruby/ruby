@@ -5521,21 +5521,18 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	INIT_ANCHOR(list);
 	switch (type) {
 	  case NODE_ARRAY:
-	    compile_array(iseq, list, node->nd_head, COMPILE_ARRAY_TYPE_HASH);
+	    compile_array_(iseq, list, node->nd_head, COMPILE_ARRAY_TYPE_HASH, NULL, popped);
 	    ADD_SEQ(ret, list);
 	    break;
 
 	  case NODE_ZARRAY:
+	    if (popped) break;
 	    ADD_INSN1(ret, line, newhash, INT2FIX(0));
 	    break;
 
 	  default:
 	    compile_bug(ERROR_ARGS_AT(node->nd_head) "can't make hash with this node: %s",
 			ruby_node_name(type));
-	}
-
-	if (popped) {
-	    ADD_INSN(ret, line, pop);
 	}
 	break;
       }
