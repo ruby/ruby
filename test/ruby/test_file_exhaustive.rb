@@ -1260,6 +1260,19 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_raise(Encoding::CompatibilityError, bug7168) {File.join(names)}
   end
 
+  def test_join_with_changed_separator
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
+    bug = '[ruby-core:79579] [Bug #13223]'
+    begin;
+      class File
+        remove_const :Separator
+        remove_const :SEPARATOR
+      end
+      GC.start
+      assert_equal("hello/world", File.join("hello", "world"), bug)
+    end;
+  end
+
   def test_truncate
     [regular_file, utf8_file].each do |file|
       assert_equal(0, File.truncate(file, 1))

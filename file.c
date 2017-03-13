@@ -4359,20 +4359,17 @@ rb_file_s_split(VALUE klass, VALUE path)
     return rb_assoc_new(rb_file_dirname(path), rb_file_s_basename(1,&path));
 }
 
-static VALUE separator;
-
-static VALUE rb_file_join(VALUE ary, VALUE sep);
+static VALUE rb_file_join(VALUE ary);
 
 static VALUE
-file_inspect_join(VALUE ary, VALUE argp, int recur)
+file_inspect_join(VALUE ary, VALUE arg, int recur)
 {
-    VALUE *arg = (VALUE *)argp;
-    if (recur || ary == arg[0]) rb_raise(rb_eArgError, "recursive array");
-    return rb_file_join(arg[0], arg[1]);
+    if (recur || ary == arg) rb_raise(rb_eArgError, "recursive array");
+    return rb_file_join(arg);
 }
 
 static VALUE
-rb_file_join(VALUE ary, VALUE sep)
+rb_file_join(VALUE ary)
 {
     long len, i;
     VALUE result, tmp;
@@ -4393,10 +4390,7 @@ rb_file_join(VALUE ary, VALUE sep)
 	    len += 10;
 	}
     }
-    if (!NIL_P(sep)) {
-	StringValue(sep);
-	len += RSTRING_LEN(sep) * (RARRAY_LEN(ary) - 1);
-    }
+    len += RARRAY_LEN(ary) - 1;
     result = rb_str_buf_new(len);
     RBASIC_CLEAR_CLASS(result);
     OBJ_INFECT(result, ary);
@@ -4412,11 +4406,7 @@ rb_file_join(VALUE ary, VALUE sep)
 		rb_raise(rb_eArgError, "recursive array");
 	    }
 	    else {
-		VALUE args[2];
-
-		args[0] = tmp;
-		args[1] = sep;
-		tmp = rb_exec_recursive(file_inspect_join, ary, (VALUE)args);
+		tmp = rb_exec_recursive(file_inspect_join, ary, tmp);
 	    }
 	    break;
 	  default:
@@ -4427,15 +4417,13 @@ rb_file_join(VALUE ary, VALUE sep)
 	if (i == 0) {
 	    rb_enc_copy(result, tmp);
 	}
-	else if (!NIL_P(sep)) {
+	else {
 	    tail = chompdirsep(name, name + len, rb_enc_get(result));
 	    if (RSTRING_PTR(tmp) && isdirsep(RSTRING_PTR(tmp)[0])) {
 		rb_str_set_len(result, tail - name);
 	    }
 	    else if (!*tail) {
-		enc = rb_enc_check(result, sep);
-		rb_str_buf_append(result, sep);
-		rb_enc_associate(result, enc);
+		rb_str_cat(result, "/", 1);
 	    }
 	}
 	enc = rb_enc_check(result, tmp);
@@ -4452,7 +4440,7 @@ rb_file_join(VALUE ary, VALUE sep)
  *     File.join(string, ...)  ->  string
  *
  *  Returns a new string formed by joining the strings using
- *  <code>File::SEPARATOR</code>.
+ *  <code>"/"</code>.
  *
  *     File.join("usr", "mail", "gumby")   #=> "usr/mail/gumby"
  *
@@ -4461,7 +4449,7 @@ rb_file_join(VALUE ary, VALUE sep)
 static VALUE
 rb_file_s_join(VALUE klass, VALUE args)
 {
-    return rb_file_join(args, separator);
+    return rb_file_join(args);
 }
 
 #if defined(HAVE_TRUNCATE) || defined(HAVE_CHSIZE)
@@ -5954,6 +5942,8 @@ static const char null_device[] =
 void
 Init_File(void)
 {
+    VALUE separator;
+
     rb_mFileTest = rb_define_module("FileTest");
     rb_cFile = rb_define_class("File", rb_cIO);
 
