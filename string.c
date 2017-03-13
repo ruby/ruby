@@ -2574,7 +2574,7 @@ rb_str_set_len(VALUE str, long len)
     if (STR_SHARED_P(str)) {
 	rb_raise(rb_eRuntimeError, "can't set length of shared string");
     }
-    if (len > (capa = (long)str_capacity(str, termlen))) {
+    if (len > (capa = (long)str_capacity(str, termlen)) || len < 0) {
 	rb_bug("probable buffer overflow: %ld for %ld", len, capa);
     }
     STR_SET_LEN(str, len);
