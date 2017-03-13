@@ -15,12 +15,3 @@ have_func("rb_array_const_ptr", "ruby.h")
 have_func("rb_sym2str", "ruby.h")
 
 create_makefile('bigdecimal')
-
-# Add additional dependencies
-open('Makefile', 'a') do |io|
-  if RUBY_VERSION >= '2.4'
-    io.puts <<-MAKEFILE
-bigdecimal.o: $(hdrdir)/ruby/backward.h
-    MAKEFILE
-  end
-end
