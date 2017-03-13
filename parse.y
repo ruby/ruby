@@ -8147,7 +8147,12 @@ parser_yylex(struct parser_params *parser)
 	}
 	pushback(c);
 	if (IS_SPCARG(c)) {
-	    rb_warning0("`&' interpreted as argument prefix");
+	    if ((c != ':') ||
+		(c = peekc_n(1)) == -1 ||
+		!(c == '\'' || c == '"' ||
+		  is_identchar((lex_p+1), lex_pend, current_enc))) {
+		rb_warning0("`&' interpreted as argument prefix");
+	    }
 	    c = tAMPER;
 	}
 	else if (IS_BEG()) {
