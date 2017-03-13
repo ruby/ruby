@@ -6088,16 +6088,13 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 		iseq_add_mark_object_compile_time(iseq, val);
 		ADD_INSN1(ret, line, putobject, val);
 	    }
-	    break;
-	}
-	CHECK(COMPILE(ret, "min", (NODE *) node->nd_beg));
-	CHECK(COMPILE(ret, "max", (NODE *) node->nd_end));
-	if (popped) {
-	    ADD_INSN(ret, line, pop);
-	    ADD_INSN(ret, line, pop);
 	}
 	else {
-	    ADD_INSN1(ret, line, newrange, flag);
+	    CHECK(COMPILE_(ret, "min", b, popped));
+	    CHECK(COMPILE_(ret, "max", e, popped));
+	    if (!popped) {
+		ADD_INSN1(ret, line, newrange, flag);
+	    }
 	}
 	break;
       }
