@@ -10191,6 +10191,7 @@ Init_String(void)
     rb_fs = Qnil;
     rb_define_hooked_variable("$;", &rb_fs, 0, rb_fs_setter);
     rb_define_hooked_variable("$-F", &rb_fs, 0, rb_fs_setter);
+    rb_gc_register_address(&rb_fs);
 
     rb_cSymbol = rb_define_class("Symbol", rb_cObject);
     rb_include_module(rb_cSymbol, rb_mComparable);

@@ -1451,6 +1451,17 @@ CODE
     assert_raise_with_message(TypeError, /\$;/) {
       $; = []
     }
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    bug = '[ruby-core:79582] $; must not be GCed'
+    begin;
+      $; = " "
+      $a = nil
+      alias $; $a
+      alias $-F $a
+      GC.start
+      assert_equal([], "".split, bug)
+    end;
   end
 
   def test_split_encoding
