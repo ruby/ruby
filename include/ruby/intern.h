@@ -424,7 +424,7 @@ void rb_exec_end_proc(void);
 void rb_thread_schedule(void);
 void rb_thread_wait_fd(int);
 int rb_thread_fd_writable(int);
-void rb_thread_fd_close(int);
+DEPRECATED(void rb_thread_fd_close(int));
 int rb_thread_alone(void);
 void rb_thread_sleep(int);
 void rb_thread_sleep_forever(void);
