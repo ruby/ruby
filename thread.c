@@ -2197,6 +2197,7 @@ rb_notify_fd_close(int fd)
     return busy;
 }
 
+NORETURN(void rb_thread_fd_close(int fd));
 void
 rb_thread_fd_close(int fd)
 {
