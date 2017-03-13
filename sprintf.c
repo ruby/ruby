@@ -517,6 +517,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	VALUE sym = Qnil;
 
 	for (t = p; t < end && *t != '%'; t++) ;
+	if (t + 1 == end) ++t;
 	PUSH(p, t - p);
 	if (coderange != ENC_CODERANGE_BROKEN && scanned < blen) {
 	    scanned += rb_str_coderange_scan_restartable(buf+scanned, buf+blen, enc, &coderange);
