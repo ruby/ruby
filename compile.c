@@ -6103,7 +6103,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	LABEL *lend = NEW_LABEL(line);
 	LABEL *ltrue = NEW_LABEL(line);
 	LABEL *lfalse = NEW_LABEL(line);
-	compile_branch_condition(iseq, ret, node, ltrue, lfalse);
+	CHECK(compile_flip_flop(iseq, ret, node, type == NODE_FLIP2,
+				ltrue, lfalse));
 	ADD_INSNL(ret, line, jump, lend);
 	ADD_LABEL(ret, ltrue);
 	ADD_INSN1(ret, line, putobject, Qtrue);
