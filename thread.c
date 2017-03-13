@@ -2197,15 +2197,10 @@ rb_notify_fd_close(int fd)
     return busy;
 }
 
-NORETURN(void rb_thread_fd_close(int fd));
 void
 rb_thread_fd_close(int fd)
 {
-#ifdef DONT_USE
     while (rb_notify_fd_close(fd));
-#else
-    DEPRECATED_INTERNAL_FEATURE("rb_thread_fd_close");
-#endif
 }
 
 /*
