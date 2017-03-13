@@ -3154,11 +3154,10 @@ rb_str_eql(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *     string <=> other_string   -> -1, 0, +1 or nil
+ *     string <=> other_string   -> -1, 0, +1, or nil
  *
- *
- *  Comparison---Returns -1, 0, +1 or nil depending on whether +string+ is less
- *  than, equal to, or greater than +other_string+.
+ *  Comparison---Returns -1, 0, +1, or +nil+ depending on whether +string+ is
+ *  less than, equal to, or greater than +other_string+.
  *
  *  +nil+ is returned if the two values are incomparable.
  *
@@ -9789,13 +9788,13 @@ sym_succ(VALUE sym)
 /*
  * call-seq:
  *
- *   symbol <=> other_symbol       -> -1, 0, +1 or nil
+ *   symbol <=> other_symbol       -> -1, 0, +1, or nil
  *
  * Compares +symbol+ with +other_symbol+ after calling #to_s on each of the
- * symbols. Returns -1, 0, +1 or nil depending on whether +symbol+ is less
- * than, equal to, or greater than +other_symbol+.
+ * symbols. Returns -1, 0, +1, or +nil+ depending on whether +symbol+ is
+ * less than, equal to, or greater than +other_symbol+.
  *
- *  +nil+ is returned if the two values are incomparable.
+ * +nil+ is returned if the two values are incomparable.
  *
  * See String#<=> for more information.
  */
@@ -9812,11 +9811,22 @@ sym_cmp(VALUE sym, VALUE other)
 /*
  * call-seq:
  *
- *   sym.casecmp(other)  -> -1, 0, +1 or nil
+ *   sym.casecmp(other_symbol)   -> -1, 0, +1, or nil
  *
  * Case-insensitive version of <code>Symbol#<=></code>.
  * Currently, case-insensitivity only works on characters A-Z/a-z,
- * not all of Unicode. This is different from <code>casecmp?</code>.
+ * not all of Unicode. This is different from Symbol#casecmp?.
+ *
+ *   :aBcDeF.casecmp(:abcde)     #=> 1
+ *   :aBcDeF.casecmp(:abcdef)    #=> 0
+ *   :aBcDeF.casecmp(:abcdefg)   #=> -1
+ *   :abcdef.casecmp(:ABCDEF)    #=> 0
+ *
+ * +nil+ is returned if the two symbols have incompatible encodings,
+ * or if +other_symbol+ is not a symbol.
+ *
+ *   :foo.casecmp(2)   #=> nil
+ *   "\u{e4 f6 fc}".encode("ISO-8859-1").to_sym.casecmp(:"\u{c4 d6 dc}")   #=> nil
  */
 
 static VALUE
@@ -9831,10 +9841,22 @@ sym_casecmp(VALUE sym, VALUE other)
 /*
  * call-seq:
  *
- *   sym.casecmp?(other)  -> true, false, or nil
+ *   sym.casecmp?(other_symbol)   -> true, false, or nil
  *
- * Returns true if sym and other are equal after Unicode case folding,
- * false if they are not equal, and nil if other is not a symbol.
+ * Returns +true+ if +sym+ and +other_symbol+ are equal after
+ * Unicode case folding, +false+ if they are not equal.
+ *
+ *   :aBcDeF.casecmp?(:abcde)     #=> false
+ *   :aBcDeF.casecmp?(:abcdef)    #=> true
+ *   :aBcDeF.casecmp?(:abcdefg)   #=> false
+ *   :abcdef.casecmp?(:ABCDEF)    #=> true
+ *   :"\u{e4 f6 fc}".casecmp?(:"\u{c4 d6 dc}")   #=> true
+ *
+ * +nil+ is returned if the two symbols have incompatible encodings,
+ * or if +other_symbol+ is not a symbol.
+ *
+ *   :foo.casecmp?(2)   #=> nil
+ *   "\u{e4 f6 fc}".encode("ISO-8859-1").to_sym.casecmp?(:"\u{c4 d6 dc}")   #=> nil
  */
 
 static VALUE
@@ -9930,7 +9952,8 @@ sym_empty(VALUE sym)
 
 /*
  * call-seq:
- *   sym.upcase [options]   -> symbol
+ *   sym.upcase              -> symbol
+ *   sym.upcase([options])   -> symbol
  *
  * Same as <code>sym.to_s.upcase.intern</code>.
  */
@@ -9943,7 +9966,8 @@ sym_upcase(int argc, VALUE *argv, VALUE sym)
 
 /*
  * call-seq:
- *   sym.downcase [options]   -> symbol
+ *   sym.downcase              -> symbol
+ *   sym.downcase([options])   -> symbol
  *
  * Same as <code>sym.to_s.downcase.intern</code>.
  */
@@ -9956,7 +9980,8 @@ sym_downcase(int argc, VALUE *argv, VALUE sym)
 
 /*
  * call-seq:
- *   sym.capitalize [options]   -> symbol
+ *   sym.capitalize              -> symbol
+ *   sym.capitalize([options])   -> symbol
  *
  * Same as <code>sym.to_s.capitalize.intern</code>.
  */
@@ -9969,7 +9994,8 @@ sym_capitalize(int argc, VALUE *argv, VALUE sym)
 
 /*
  * call-seq:
- *   sym.swapcase [options]   -> symbol
+ *   sym.swapcase              -> symbol
+ *   sym.swapcase([options])   -> symbol
  *
  * Same as <code>sym.to_s.swapcase.intern</code>.
  */
