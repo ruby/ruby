@@ -2991,8 +2991,8 @@ static VALUE
 vm_concat_array(VALUE ary1, VALUE ary2st)
 {
     const VALUE ary2 = ary2st;
-    VALUE tmp1 = rb_check_convert_type(ary1, T_ARRAY, "Array", "to_a");
-    VALUE tmp2 = rb_check_convert_type(ary2, T_ARRAY, "Array", "to_a");
+    VALUE tmp1 = rb_check_convert_type2(ary1, T_ARRAY, "Array", idTo_a);
+    VALUE tmp2 = rb_check_convert_type2(ary2, T_ARRAY, "Array", idTo_a);
 
     if (NIL_P(tmp1)) {
 	tmp1 = rb_ary_new3(1, ary1);
@@ -3011,7 +3011,7 @@ vm_concat_array(VALUE ary1, VALUE ary2st)
 static VALUE
 vm_splat_array(VALUE flag, VALUE ary)
 {
-    VALUE tmp = rb_check_convert_type(ary, T_ARRAY, "Array", "to_a");
+    VALUE tmp = rb_check_convert_type2(ary, T_ARRAY, "Array", idTo_a);
     if (NIL_P(tmp)) {
 	return rb_ary_new3(1, ary);
     }

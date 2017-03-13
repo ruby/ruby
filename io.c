@@ -655,13 +655,13 @@ rb_io_get_fptr(VALUE io)
 VALUE
 rb_io_get_io(VALUE io)
 {
-    return rb_convert_type(io, T_FILE, "IO", "to_io");
+    return rb_convert_type2(io, T_FILE, "IO", idTo_io);
 }
 
 VALUE
 rb_io_check_io(VALUE io)
 {
-    return rb_check_convert_type(io, T_FILE, "IO", "to_io");
+    return rb_check_convert_type2(io, T_FILE, "IO", idTo_io);
 }
 
 VALUE
@@ -9938,7 +9938,7 @@ open_key_args(int argc, VALUE *argv, VALUE opt, struct foreach_arg *arg)
 	VALUE args;
 	long n;
 
-	v = rb_convert_type(v, T_ARRAY, "Array", "to_ary");
+	v = rb_convert_type2(v, T_ARRAY, "Array", idTo_ary);
 	n = RARRAY_LEN(v) + 1;
 #if SIZEOF_LONG > SIZEOF_INT
 	if (n > INT_MAX) {

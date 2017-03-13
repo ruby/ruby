@@ -683,7 +683,7 @@ static rb_event_flag_t
 symbol2event_flag(VALUE v)
 {
     ID id;
-    VALUE sym = rb_convert_type(v, T_SYMBOL, "Symbol", "to_sym");
+    VALUE sym = rb_convert_type2(v, T_SYMBOL, "Symbol", idTo_sym);
     const rb_event_flag_t RUBY_EVENT_A_CALL =
 	RUBY_EVENT_CALL | RUBY_EVENT_B_CALL | RUBY_EVENT_C_CALL;
     const rb_event_flag_t RUBY_EVENT_A_RETURN =

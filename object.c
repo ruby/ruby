@@ -2660,28 +2660,12 @@ static const struct conv_method_tbl {
 #define IMPLICIT_CONVERSIONS 7
 
 static VALUE
-convert_type(VALUE val, const char *tname, const char *method, int raise)
+convert_type2(VALUE val, const char *tname, ID method, int raise, int index)
 {
-    ID m = 0;
-    int i = numberof(conv_method_names);
-    VALUE r;
-    static const char prefix[] = "to_";
-
-    if (strncmp(prefix, method, sizeof(prefix)-1) == 0) {
-	const char *const meth = &method[sizeof(prefix)-1];
-	for (i=0; i < numberof(conv_method_names); i++) {
-	    if (conv_method_names[i].method[0] == meth[0] &&
-		strcmp(conv_method_names[i].method, meth) == 0) {
-		m = conv_method_names[i].id;
-		break;
-	    }
-	}
-    }
-    if (!m) m = rb_intern(method);
-    r = rb_check_funcall(val, m, 0, 0);
+    VALUE r = rb_check_funcall(val, method, 0, 0);
     if (r == Qundef) {
 	if (raise) {
-	    const char *msg = i < IMPLICIT_CONVERSIONS ?
+	    const char *msg = index < IMPLICIT_CONVERSIONS ?
 		"no implicit conversion of" : "can't convert";
 	    const char *cname = NIL_P(val) ? "nil" :
 		val == Qtrue ? "true" :
@@ -2696,6 +2680,27 @@ convert_type(VALUE val, const char *tname, const char *method, int raise)
 	return Qnil;
     }
     return r;
+}
+
+static VALUE
+convert_type(VALUE val, const char *tname, const char *method, int raise)
+{
+    ID m = 0;
+    int i = numberof(conv_method_names);
+    static const char prefix[] = "to_";
+
+    if (strncmp(prefix, method, sizeof(prefix)-1) == 0) {
+	const char *const meth = &method[sizeof(prefix)-1];
+	for (i=0; i < numberof(conv_method_names); i++) {
+	    if (conv_method_names[i].method[0] == meth[0] &&
+		strcmp(conv_method_names[i].method, meth) == 0) {
+		m = conv_method_names[i].id;
+		break;
+	    }
+	}
+    }
+    if (!m) m = rb_intern(method);
+    return convert_type2(val, tname, m, raise, i);
 }
 
 NORETURN(static void conversion_mismatch(VALUE, const char *, const char *, VALUE));
@@ -2722,6 +2727,19 @@ rb_convert_type(VALUE val, int type, const char *tname, const char *method)
 }
 
 VALUE
+rb_convert_type2(VALUE val, int type, const char *tname, ID method)
+{
+    VALUE v;
+
+    if (TYPE(val) == type) return val;
+    v = convert_type2(val, tname, method, TRUE, 0);
+    if (TYPE(v) != type) {
+	conversion_mismatch(val, tname, RSTRING_PTR(rb_id2str(method)), v);
+    }
+    return v;
+}
+
+VALUE
 rb_check_convert_type(VALUE val, int type, const char *tname, const char *method)
 {
     VALUE v;
@@ -2732,6 +2750,21 @@ rb_check_convert_type(VALUE val, int type, const char *tname, const char *method
     if (NIL_P(v)) return Qnil;
     if (TYPE(v) != type) {
 	conversion_mismatch(val, tname, method, v);
+    }
+    return v;
+}
+
+VALUE
+rb_check_convert_type2(VALUE val, int type, const char *tname, ID method)
+{
+    VALUE v;
+
+    /* always convert T_DATA */
+    if (TYPE(val) == type && type != T_DATA) return val;
+    v = convert_type2(val, tname, method, FALSE, 0);
+    if (NIL_P(v)) return Qnil;
+    if (TYPE(v) != type) {
+	conversion_mismatch(val, tname, RSTRING_PTR(rb_id2str(method)), v);
     }
     return v;
 }
@@ -3175,7 +3208,7 @@ rb_String(VALUE val)
 {
     VALUE tmp = rb_check_string_type(val);
     if (NIL_P(tmp))
-	tmp = rb_convert_type(val, T_STRING, "String", "to_s");
+	tmp = rb_convert_type2(val, T_STRING, "String", idTo_s);
     return tmp;
 }
 
@@ -3205,7 +3238,7 @@ rb_Array(VALUE val)
     VALUE tmp = rb_check_array_type(val);
 
     if (NIL_P(tmp)) {
-	tmp = rb_check_convert_type(val, T_ARRAY, "Array", "to_a");
+	tmp = rb_check_convert_type2(val, T_ARRAY, "Array", idTo_a);
 	if (NIL_P(tmp)) {
 	    return rb_ary_new3(1, val);
 	}
