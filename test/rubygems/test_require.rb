@@ -83,6 +83,39 @@ class TestGemRequire < Gem::TestCase
     end
   end
 
+  # Providing -I on the commandline should always beat gems
+  def test_dash_i_beats_default_gems
+    a1 = new_default_spec "a", "1", {"b" => "= 1"}, "test_gem_require_a.rb"
+    b1 = new_default_spec "b", "1", {"c" => "> 0"}, "b/c.rb"
+    c1 = new_default_spec "c", "1", nil, "c/c.rb"
+    c2 = new_default_spec "c", "2", nil, "c/c.rb"
+
+    install_default_specs c1, c2, b1, a1
+
+    dir = Dir.mktmpdir("test_require", @tempdir)
+    dash_i_arg = File.join dir, 'lib'
+
+    c_rb = File.join dash_i_arg, 'c', 'c.rb'
+
+    FileUtils.mkdir_p File.dirname c_rb
+    File.open(c_rb, 'w') { |f| f.write "class Object; HELLO = 'world' end" }
+
+    assert_require 'test_gem_require_a'
+
+    lp = $LOAD_PATH.dup
+
+    # Pretend to provide a commandline argument that overrides a file in gem b
+    $LOAD_PATH.unshift dash_i_arg
+
+    assert_require 'b/c'
+    assert_require 'c/c' # this should be required from -I
+    assert_equal "world", ::Object::HELLO
+    assert_equal %w(a-1 b-1), loaded_spec_names
+  ensure
+    $LOAD_PATH.replace lp
+    Object.send :remove_const, :HELLO if Object.const_defined? :HELLO
+  end
+
   def test_concurrent_require
     Object.const_set :FILE_ENTERED_LATCH, Latch.new(2)
     Object.const_set :FILE_EXIT_LATCH, Latch.new(1)
