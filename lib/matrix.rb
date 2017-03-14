@@ -1685,6 +1685,7 @@ end
 # * Vector.[](*array)
 # * Vector.elements(array, copy = true)
 # * Vector.basis(size: n, index: k)
+# * Vector.zero(n)
 #
 # To access elements:
 # * #[](i)
@@ -1697,6 +1698,7 @@ end
 # * #angle_with(v)
 # * Vector.independent?(*vs)
 # * #independent?(*vs)
+# * #zero?
 #
 # Vector arithmetic:
 # * #*(x) "is matrix or number"
@@ -1765,6 +1767,17 @@ class Vector
     raise ArgumentError, "invalid index (#{index} for 0...#{size})" unless 0 <= index && index < size
     array = Array.new(size, 0)
     array[index] = 1
+    new convert_to_array(array, false)
+  end
+
+  #
+  # Return a zero vector.
+  #
+  #    Vector.zero(3) => Vector[0, 0, 0]
+  #
+  def Vector.zero(size)
+    raise ArgumentError, "invalid size (#{size} for 0..)" if size < 0
+    array = Array.new(size, 0)
     new convert_to_array(array, false)
   end
 
@@ -1880,6 +1893,13 @@ class Vector
   #
   def independent?(*vs)
     self.class.independent?(self, *vs)
+  end
+
+  #
+  # Returns +true+ iff all elements are zero.
+  #
+  def zero?
+    all?(&:zero?)
   end
 
   #--
