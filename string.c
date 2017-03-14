@@ -4022,14 +4022,21 @@ rb_str_succ_bang(VALUE str)
     return str;
 }
 
+static long
+skip_digits(const char *s, long len)
+{
+    const char *s0 = s;
+    while (len-- > 0) {
+	if (!ISDIGIT(*s)) break;
+	s++;
+    }
+    return s - s0;
+}
+
 static int
 all_digits_p(const char *s, long len)
 {
-    while (len-- > 0) {
-	if (!ISDIGIT(*s)) return 0;
-	s++;
-    }
-    return 1;
+    return (skip_digits(s, len) == len);
 }
 
 static VALUE str_upto_each(VALUE beg, VALUE end, int excl, int (*each)(VALUE, VALUE), VALUE);
@@ -4083,6 +4090,33 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
     return str_upto_each(beg, end, RTEST(exclusive), str_upto_i, Qnil);
 }
 
+static long
+common_nondigits(const char *ptr1, long len1, const char *ptr2, long len2, rb_encoding *enc)
+{
+    long i, len;
+    int n1, n2;
+    const char *end1 = ptr1 + len1, *end2 = ptr2 + len2;
+
+    if (len1 <= 0 || len2 <= 0) return -1;
+    len = len1 < len2 ? len1 : len2;
+    for (i = 0; i < len; i += n1) {
+	int c1 = rb_enc_ascget(ptr1+i, end1, &n1, enc);
+	int c2 = rb_enc_ascget(ptr2+i, end2, &n2, enc);
+	if (n1 == n2 && ISDIGIT(c1) && ISDIGIT(c2)) {
+	    long digits1 = skip_digits(ptr1+i, len1-i);
+	    long digits2 = skip_digits(ptr2+i, len2-i);
+	    if ((digits1+i == len1) && (digits2+i == len2))
+		return i;
+	}
+	if (n1 != n2 || c1 != c2) return -1;
+    }
+
+    /* "foo" and "foo2" */
+    if (i < len2 && all_digits_p(ptr2+i, len2-i)) return i;
+
+    return -1;
+}
+
 static VALUE
 str_upto_each(VALUE beg, VALUE end, int excl, int (*each)(VALUE, VALUE), VALUE arg)
 {
@@ -4090,6 +4124,8 @@ str_upto_each(VALUE beg, VALUE end, int excl, int (*each)(VALUE, VALUE), VALUE a
     ID succ;
     int n, ascii;
     rb_encoding *enc;
+    const char *bptr, *eptr;
+    long common, blen, elen;
 
     CONST_ID(succ, "succ");
     StringValue(end);
@@ -4109,38 +4145,73 @@ str_upto_each(VALUE beg, VALUE end, int excl, int (*each)(VALUE, VALUE), VALUE a
 	}
 	return beg;
     }
-    /* both edges are all digits */
-    if (ascii && ISDIGIT(RSTRING_PTR(beg)[0]) && ISDIGIT(RSTRING_PTR(end)[0]) &&
-	all_digits_p(RSTRING_PTR(beg), RSTRING_LEN(beg)) &&
-	all_digits_p(RSTRING_PTR(end), RSTRING_LEN(end))) {
-	VALUE b, e;
-	int width;
 
-	width = RSTRING_LENINT(beg);
-	b = rb_str_to_inum(beg, 10, FALSE);
-	e = rb_str_to_inum(end, 10, FALSE);
+    RSTRING_GETMEM(beg, bptr, blen);
+    RSTRING_GETMEM(end, eptr, elen);
+    /* both edges are all digits */
+    if (ascii && (common = common_nondigits(bptr, blen, eptr, elen, enc)) >= 0) {
+	VALUE b, e, s, com = 0;
+	int width;
+	rb_encoding *usascii = rb_usascii_encoding();
+
+	width = rb_long2int(blen - common);
+	if (common > 0) {
+	    com = rb_str_subseq(beg, 0, common);
+	    b = rb_str_subseq(beg, common, blen - common);
+	    e = rb_str_subseq(end, common, elen - common);
+	}
+	else {
+	    b = beg;
+	    e = end;
+	}
+	b = rb_str_to_inum(b, 10, FALSE);
+	e = rb_str_to_inum(e, 10, FALSE);
 	if (FIXNUM_P(b) && FIXNUM_P(e)) {
 	    long bi = FIX2LONG(b);
 	    long ei = FIX2LONG(e);
-	    rb_encoding *usascii = rb_usascii_encoding();
 
-	    while (bi <= ei) {
-		if (excl && bi == ei) break;
-		if ((*each)(rb_enc_sprintf(usascii, "%.*ld", width, bi), arg)) break;
-		bi++;
+	    if (bi > ei || (excl && bi == ei)) return beg;
+	    s = beg;
+	    if (common == 0 && enc != usascii) {
+		s = rb_str_new_shared(s);
+		rb_enc_associate(s, usascii);
+	    }
+	    if ((*each)(s, arg)) return beg;
+	    while (++bi < ei) {
+		if (com)
+		    s = rb_sprintf("%"PRIsVALUE"%.*ld", com, width, bi);
+		else
+		    s = rb_enc_sprintf(usascii, "%.*ld", width, bi);
+		if ((*each)(s, arg)) return beg;
 	    }
 	}
 	else {
-	    ID op = excl ? '<' : idLE;
-	    VALUE args[2], fmt = rb_obj_freeze(rb_usascii_str_new_cstr("%.*d"));
+	    VALUE args[3], fmt;
+	    int argc;
 
-	    args[0] = INT2FIX(width);
-	    while (rb_funcall(b, op, 1, e)) {
-		args[1] = b;
-		if ((*each)(rb_str_format(numberof(args), args, fmt), arg)) break;
-		b = rb_funcallv(b, succ, 0, 0);
+	    if (!rb_funcall(b, '<', 1, e) || (*each)(beg, arg)) return beg;
+	    if (com) {
+		fmt = rb_usascii_str_new_cstr("%s%.*d");
+		argc = 3;
+		args[0] = com;
+	    }
+	    else {
+		fmt = rb_usascii_str_new_cstr("%.*d");
+		argc = 2;
+	    }
+	    rb_obj_freeze(fmt);
+	    args[argc-2] = INT2FIX(width);
+	    while (rb_funcall(b = rb_funcallv(b, succ, 0, 0), '<', 1, e)) {
+		args[argc-1] = b;
+		if ((*each)(rb_str_format(argc, args, fmt), arg)) return beg;
 	    }
 	}
+	s = end;
+	if (common == 0 && enc != usascii) {
+	    s = rb_str_new_shared(s);
+	    rb_enc_associate(s, usascii);
+	}
+	if (!excl) (*each)(s, arg);
 	return beg;
     }
     /* normal case */

@@ -2053,6 +2053,22 @@ CODE
     assert_equal(83, count, "[ruby-dev:39626]")
   end
 
+  def test_upto_numeric_part
+    bug11406 = '[ruby-core:70176] [Bug #11406]'
+
+    expected = (0..10).map {|i| "foo#{i}"}
+    result = []
+    S("foo0").upto(S("foo10")) {|s| result << s}
+    assert_equal(11, result.size, bug11406)
+    assert_equal(expected, result, bug11406)
+
+    result = []
+    expected[0] = S("foo")
+    S("foo").upto(S("foo10")) {|s| result << s}
+    assert_equal(11, result.size, bug11406)
+    assert_equal(expected, result, bug11406)
+  end
+
   def test_mod_check
     assert_raise(RuntimeError) {
       s = ""
