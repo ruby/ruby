@@ -739,6 +739,7 @@ class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Uni
     spec.files = files
 
     lib_dir = File.join(@tempdir, "default_gems", "lib")
+    lib_dir.instance_variable_set(:@gem_prelude_index, lib_dir)
     $LOAD_PATH.unshift(lib_dir)
     files.each do |file|
       rb_path = File.join(lib_dir, file)
