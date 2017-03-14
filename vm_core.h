@@ -1309,9 +1309,8 @@ vm_block_type_set(const struct rb_block *block, enum rb_block_type type)
 static inline const struct rb_block *
 vm_proc_block(VALUE procval)
 {
-    rb_proc_t *proc = RTYPEDDATA_DATA(procval);
     VM_ASSERT(rb_obj_is_proc(procval));
-    return &proc->block;
+    return &((rb_proc_t *)RTYPEDDATA_DATA(procval))->block;
 }
 
 static inline const rb_iseq_t *vm_block_iseq(const struct rb_block *block);
@@ -1320,7 +1319,6 @@ static inline const VALUE *vm_block_ep(const struct rb_block *block);
 static inline const rb_iseq_t *
 vm_proc_iseq(VALUE procval)
 {
-    VM_ASSERT(rb_obj_is_proc(procval));
     return vm_block_iseq(vm_proc_block(procval));
 }
 
