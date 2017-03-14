@@ -233,8 +233,8 @@ module EnvUtil
 
     def self.diagnostic_reports(signame, pid, now)
       return unless %w[ABRT QUIT SEGV ILL TRAP].include?(signame)
-      cmd = rubybin
-      cmd = @ruby_install_name if %r{/ruby-runner#{Regexp.quote(RbConfig::CONFIG["EXEEXT"])}\z}o =~ cmd
+      cmd = File.basename(rubybin)
+      cmd = @ruby_install_name if "ruby-runner#{RbConfig::CONFIG["EXEEXT"]}" == cmd
       path = DIAGNOSTIC_REPORTS_PATH
       timeformat = DIAGNOSTIC_REPORTS_TIMEFORMAT
       pat = "#{path}/#{cmd}_#{now.strftime(timeformat)}[-_]*.crash"
