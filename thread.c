@@ -550,12 +550,32 @@ ruby_thread_init_stack(rb_thread_t *th)
     native_thread_init_stack(th);
 }
 
+static void
+thread_do_start(rb_thread_t *th, VALUE args)
+{
+    native_set_thread_name(th);
+    if (!th->first_func) {
+	rb_proc_t *proc;
+	GetProcPtr(th->first_proc, proc);
+	th->errinfo = Qnil;
+	th->root_lep = rb_vm_ep_local_ep(vm_proc_ep(th->first_proc));
+	th->root_svar = Qfalse;
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
+	th->value = rb_vm_invoke_proc(th, proc,
+				      (int)RARRAY_LEN(args), RARRAY_CONST_PTR(args),
+				      VM_BLOCK_HANDLER_NONE);
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
+    }
+    else {
+	th->value = (*th->first_func)((void *)args);
+    }
+}
+
 static int
 thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_start)
 {
     int state;
     VALUE args = th->first_args;
-    rb_proc_t *proc;
     rb_thread_list_t *join_list;
     rb_thread_t *main_th;
     VALUE errinfo = Qnil;
@@ -583,23 +603,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 
 	TH_PUSH_TAG(th);
 	if ((state = EXEC_TAG()) == 0) {
-	    SAVE_ROOT_JMPBUF(th, {
-                native_set_thread_name(th);
-		if (!th->first_func) {
-		    GetProcPtr(th->first_proc, proc);
-		    th->errinfo = Qnil;
-		    th->root_lep = rb_vm_ep_local_ep(vm_proc_ep(th->first_proc));
-		    th->root_svar = Qfalse;
-		    EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
-		    th->value = rb_vm_invoke_proc(th, proc,
-						  (int)RARRAY_LEN(args), RARRAY_CONST_PTR(args),
-						  VM_BLOCK_HANDLER_NONE);
-		    EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
-		}
-		else {
-		    th->value = (*th->first_func)((void *)args);
-		}
-	    });
+	    SAVE_ROOT_JMPBUF(th, thread_do_start(th, args));
 	}
 	else {
 	    errinfo = th->errinfo;
