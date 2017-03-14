@@ -6310,14 +6310,17 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
       }
       case NODE_PRELUDE:{
 	const rb_compile_option_t *orig_opt = ISEQ_COMPILE_DATA(iseq)->option;
+	VALUE orig_cov = ISEQ_COVERAGE(iseq);
+	rb_compile_option_t new_opt = *orig_opt;
 	if (node->nd_orig) {
-	    rb_compile_option_t new_opt = *orig_opt;
 	    rb_iseq_make_compile_option(&new_opt, node->nd_orig);
 	    ISEQ_COMPILE_DATA(iseq)->option = &new_opt;
 	}
+	if (!new_opt.coverage_enabled) ISEQ_COVERAGE_SET(iseq, Qfalse);
 	CHECK(COMPILE_POPPED(ret, "prelude", node->nd_head));
 	CHECK(COMPILE_(ret, "body", node->nd_body, popped));
 	ISEQ_COMPILE_DATA(iseq)->option = orig_opt;
+	ISEQ_COVERAGE_SET(iseq, orig_cov);
 	break;
       }
       case NODE_LAMBDA:{
