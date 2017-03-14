@@ -3181,19 +3181,11 @@ static VALUE
 rb_str_cmp_m(VALUE str1, VALUE str2)
 {
     int result;
-
-    if (!RB_TYPE_P(str2, T_STRING)) {
-	VALUE tmp = rb_check_funcall(str2, idTo_str, 0, 0);
-	if (RB_TYPE_P(tmp, T_STRING)) {
-	    result = rb_str_cmp(str1, tmp);
-	}
-	else {
-	    return rb_invcmp(str1, str2);
-	}
+    VALUE s = rb_check_string_type(str2);
+    if (NIL_P(s)) {
+	return rb_invcmp(str1, str2);
     }
-    else {
-	result = rb_str_cmp(str1, str2);
-    }
+    result = rb_str_cmp(str1, s);
     return INT2FIX(result);
 }
 
