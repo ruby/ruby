@@ -465,6 +465,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
     ThreadGroup.new.add(Thread.current)
     @ts_base = Rinda::TupleSpace.new(1)
     @ts = Rinda::TupleSpaceProxy.new(@ts_base)
+    @server = DRb.start_service("druby://localhost:0")
   end
   def teardown
     # implementation-dependent
@@ -474,6 +475,7 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
         th.join
       end
     }
+    @server.stop_service
   end
 
   def test_remote_array_and_hash
@@ -531,8 +533,6 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
     Process.wait(write) if write && status.nil?
     Process.wait(take)  if take
   end
-
-  @server = DRb.primary_server || DRb.start_service("druby://localhost:0")
 end
 
 module RingIPv6
