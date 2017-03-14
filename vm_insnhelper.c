@@ -1288,6 +1288,7 @@ opt_eq_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
 	}
     }
 #undef EQ_UNREDEFINED_P
+#undef BUILTIN_CLASS_P
 
     {
 	vm_search_method(ci, cc, recv);
