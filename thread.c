@@ -550,16 +550,28 @@ ruby_thread_init_stack(rb_thread_t *th)
     native_thread_init_stack(th);
 }
 
+const VALUE *
+rb_vm_proc_local_ep(VALUE proc)
+{
+    const VALUE *ep = vm_proc_ep(proc);
+
+    if (ep) {
+	return rb_vm_ep_local_ep(ep);
+    }
+    else {
+	return NULL;
+    }
+}
+
 static void
 thread_do_start(rb_thread_t *th, VALUE args)
 {
     native_set_thread_name(th);
     if (!th->first_func) {
-	const VALUE *ep = vm_proc_ep(th->first_proc);
 	rb_proc_t *proc;
 	GetProcPtr(th->first_proc, proc);
 	th->errinfo = Qnil;
-	th->root_lep = ep ? rb_vm_ep_local_ep(ep) : NULL;
+	th->root_lep = rb_vm_proc_local_ep(th->first_proc);
 	th->root_svar = Qfalse;
 	EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
 	th->value = rb_vm_invoke_proc(th, proc,

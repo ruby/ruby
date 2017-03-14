@@ -1275,7 +1275,7 @@ rb_fiber_start(void)
 	argv = (argc = cont->argc) > 1 ? RARRAY_CONST_PTR(args) : &args;
 	cont->value = Qnil;
 	th->errinfo = Qnil;
-	th->root_lep = rb_vm_ep_local_ep(vm_block_ep(&proc->block));
+	th->root_lep = rb_vm_proc_local_ep(cont->saved_thread.first_proc);
 	th->root_svar = Qfalse;
 	fib->status = RUNNING;
 
