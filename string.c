@@ -3189,6 +3189,9 @@ rb_str_cmp_m(VALUE str1, VALUE str2)
     return INT2FIX(result);
 }
 
+static VALUE str_casecmp(VALUE str1, VALUE str2);
+static VALUE str_casecmp_p(VALUE str1, VALUE str2);
+
 /*
  *  call-seq:
  *     str.casecmp(other_str)   -> -1, 0, +1, or nil
@@ -3210,11 +3213,17 @@ rb_str_cmp_m(VALUE str1, VALUE str2)
 static VALUE
 rb_str_casecmp(VALUE str1, VALUE str2)
 {
+    StringValue(str2);
+    return str_casecmp(str1, str2);
+}
+
+static VALUE
+str_casecmp(VALUE str1, VALUE str2)
+{
     long len;
     rb_encoding *enc;
     char *p1, *p1end, *p2, *p2end;
 
-    StringValue(str2);
     enc = rb_enc_compatible(str1, str2);
     if (!enc) {
 	return Qnil;
@@ -3286,11 +3295,17 @@ rb_str_casecmp(VALUE str1, VALUE str2)
 static VALUE
 rb_str_casecmp_p(VALUE str1, VALUE str2)
 {
+    StringValue(str2);
+    return str_casecmp_p(str1, str2);
+}
+
+static VALUE
+str_casecmp_p(VALUE str1, VALUE str2)
+{
     rb_encoding *enc;
     VALUE folded_str1, folded_str2;
     VALUE fold_opt = sym_fold;
 
-    StringValue(str2);
     enc = rb_enc_compatible(str1, str2);
     if (!enc) {
 	return Qnil;
@@ -9827,7 +9842,7 @@ sym_casecmp(VALUE sym, VALUE other)
     if (!SYMBOL_P(other)) {
 	return Qnil;
     }
-    return rb_str_casecmp(rb_sym2str(sym), rb_sym2str(other));
+    return str_casecmp(rb_sym2str(sym), rb_sym2str(other));
 }
 
 /*
@@ -9857,7 +9872,7 @@ sym_casecmp_p(VALUE sym, VALUE other)
     if (!SYMBOL_P(other)) {
 	return Qnil;
     }
-    return rb_str_casecmp_p(rb_sym2str(sym), rb_sym2str(other));
+    return str_casecmp_p(rb_sym2str(sym), rb_sym2str(other));
 }
 
 /*
