@@ -2870,15 +2870,10 @@ rb_cstr_to_dbl(const char *p, int badcheck)
 	while (p < end && n < e) prev = *n++ = *p++;
 	while (*p) {
 	    if (*p == '_') {
-		/* remove underscores between digits */
-		if (badcheck) {
-		    if (n == buf || !ISDIGIT(prev)) goto bad;
-		    ++p;
-		    if (!ISDIGIT(*p)) goto bad;
-		}
-		else {
-		    while (*++p == '_');
-		    continue;
+		/* remove an underscore between digits */
+		if (n == buf || !ISDIGIT(prev) || (++p, !ISDIGIT(*p))) {
+		    if (badcheck) goto bad;
+		    break;
 		}
 	    }
 	    prev = *p++;

@@ -755,6 +755,12 @@ class TestFloat < Test::Unit::TestCase
   def test_Float
     assert_in_delta(0.125, Float("0.1_2_5"), 0.00001)
     assert_in_delta(0.125, "0.1_2_5__".to_f, 0.00001)
+    assert_in_delta(0.0, "0_.125".to_f, 0.00001)
+    assert_in_delta(0.0, "0._125".to_f, 0.00001)
+    assert_in_delta(0.1, "0.1__2_5".to_f, 0.00001)
+    assert_in_delta(0.1, "0.1_e10".to_f, 0.00001)
+    assert_in_delta(0.1, "0.1e_10".to_f, 0.00001)
+    assert_in_delta(1.0, "0.1e1__0".to_f, 0.00001)
     assert_equal(1, suppress_warning {Float(([1] * 10000).join)}.infinite?)
     assert_not_predicate(Float(([1] * 10000).join("_")), :infinite?) # is it really OK?
     assert_raise(ArgumentError) { Float("1.0\x001") }
