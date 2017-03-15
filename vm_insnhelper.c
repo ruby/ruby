@@ -884,7 +884,10 @@ vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
 #if USE_IC_FOR_IVAR
     if (LIKELY(RB_TYPE_P(obj, T_OBJECT))) {
 	VALUE val = Qundef;
-	if (LIKELY(is_attr ? cc->aux.index > 0 : ic->ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass))) {
+	if (LIKELY(is_attr ?
+		   RB_DEBUG_COUNTER_INC_UNLESS(ivar_get_ic_miss_unset, cc->aux.index > 0) :
+		   RB_DEBUG_COUNTER_INC_UNLESS(ivar_get_ic_miss_serial,
+					       ic->ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass)))) {
 	    st_index_t index = !is_attr ? ic->ic_value.index : (cc->aux.index - 1);
 	    if (LIKELY(index < ROBJECT_NUMIV(obj))) {
 		val = ROBJECT_IVPTR(obj)[index];
@@ -892,10 +895,10 @@ vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
 	  undef_check:
 	    if (UNLIKELY(val == Qundef)) {
 		if (!is_attr && RTEST(ruby_verbose))
-		    rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
+		  rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
 		val = Qnil;
 	    }
-	    RB_DEBUG_COUNTER_INC(ivar_get_hit);
+	    RB_DEBUG_COUNTER_INC(ivar_get_ic_hit);
 	    return val;
 	}
 	else {
@@ -919,8 +922,11 @@ vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
 	    goto undef_check;
 	}
     }
+    else {
+	RB_DEBUG_COUNTER_INC(ivar_get_ic_miss_noobject); 
+    }
 #endif	/* USE_IC_FOR_IVAR */
-    RB_DEBUG_COUNTER_INC(ivar_get_miss);
+    RB_DEBUG_COUNTER_INC(ivar_get_ic_miss);
 
     if (is_attr)
 	return rb_attr_get(obj, id);
@@ -938,14 +944,14 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, struct rb_call_cache *cc, int is_
 	st_data_t index;
 
 	if (LIKELY(
-	    (!is_attr && ic->ic_serial == RCLASS_SERIAL(klass)) ||
-	    (is_attr && cc->aux.index > 0))) {
+	    (!is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_serial, ic->ic_serial == RCLASS_SERIAL(klass))) ||
+	    ( is_attr && RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_unset, cc->aux.index > 0)))) {
 	    VALUE *ptr = ROBJECT_IVPTR(obj);
 	    index = !is_attr ? ic->ic_value.index : cc->aux.index-1;
 
-	    if (index < ROBJECT_NUMIV(obj)) {
+	    if (RB_DEBUG_COUNTER_INC_UNLESS(ivar_set_ic_miss_oorange, index < ROBJECT_NUMIV(obj))) {
 		RB_OBJ_WRITE(obj, &ptr[index], val);
-		RB_DEBUG_COUNTER_INC(ivar_set_hit);
+		RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
 		return val; /* inline cache hit */
 	    }
 	}
@@ -967,8 +973,11 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, struct rb_call_cache *cc, int is_
 	    /* fall through */
 	}
     }
+    else {
+	RB_DEBUG_COUNTER_INC(ivar_set_ic_miss_noobject);
+    }
 #endif	/* USE_IC_FOR_IVAR */
-    RB_DEBUG_COUNTER_INC(ivar_set_miss);
+    RB_DEBUG_COUNTER_INC(ivar_set_ic_miss);
     return rb_ivar_set(obj, id, val);
 }
 

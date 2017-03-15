@@ -1210,7 +1210,7 @@ VALUE
 rb_ivar_get(VALUE obj, ID id)
 {
     VALUE iv = rb_ivar_lookup(obj, id, Qundef);
-    RB_DEBUG_COUNTER_INC(ivar_get);
+    RB_DEBUG_COUNTER_INC(ivar_get_base);
 
     if (iv == Qundef) {
 	if (RTEST(ruby_verbose))
@@ -1317,7 +1317,7 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
     struct ivar_update ivup;
     uint32_t i, len;
 
-    RB_DEBUG_COUNTER_INC(ivar_set);
+    RB_DEBUG_COUNTER_INC(ivar_set_base);
 
     rb_check_frozen(obj);
 
