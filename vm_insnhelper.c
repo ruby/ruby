@@ -923,7 +923,7 @@ vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
 	}
     }
     else {
-	RB_DEBUG_COUNTER_INC(ivar_get_ic_miss_noobject); 
+	RB_DEBUG_COUNTER_INC(ivar_get_ic_miss_noobject);
     }
 #endif	/* USE_IC_FOR_IVAR */
     RB_DEBUG_COUNTER_INC(ivar_get_ic_miss);
