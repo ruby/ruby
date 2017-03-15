@@ -895,7 +895,7 @@ vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
 	  undef_check:
 	    if (UNLIKELY(val == Qundef)) {
 		if (!is_attr && RTEST(ruby_verbose))
-		  rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
+		    rb_warning("instance variable %"PRIsVALUE" not initialized", QUOTE_ID(id));
 		val = Qnil;
 	    }
 	    RB_DEBUG_COUNTER_INC(ivar_get_ic_hit);
