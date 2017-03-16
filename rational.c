@@ -2280,7 +2280,7 @@ islettere(int c)
 static int
 read_num(const char **s, const char *const end, VALUE *num, VALUE *div)
 {
-    VALUE fp = ONE, exp, fn = ZERO, n;
+    VALUE fp = ONE, exp, fn = ZERO, n = ZERO;
     int expsign = 0, ok = 0;
     char *e;
 
