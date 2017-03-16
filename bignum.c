@@ -4011,22 +4011,28 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
  *       be NUL-terminated.
  * endp: if non-NULL, the address after parsed part is stored.  if
  *       NULL, Qnil is returned when +str+ is not valid as an Integer.
+ * ndigits: if non-NULL, the number of parsed digits is stored.
  * base: see +rb_cstr_to_inum+
+ * flags: bit-ORed flags of belows:
+ *       RB_INT_PARSE_SIGN: allow preceeding spaces and +/- sign
+ *       RB_INT_PARSE_UNDERSCORE: allow an underscore between digits
+ *       RB_INT_PARSE_PREFIX: allow preceeding prefix
  */
 
 VALUE
-rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base)
+rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
+		  int base, int flags)
 {
     const char *const s = str;
     char sign = 1;
     int c;
-    VALUE z;
+    VALUE z = Qnil;
 
     unsigned long val;
     int ov;
 
     const char *digits_start, *digits_end;
-    size_t num_digits;
+    size_t num_digits = 0;
     size_t num_bdigits;
     const ssize_t len0 = len;
     const int badcheck = !endp;
@@ -4044,9 +4050,10 @@ rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base)
     if (!str) {
       bad:
 	if (endp) *endp = (char *)str;
-	return Qnil;
+	if (ndigits) *ndigits = num_digits;
+	return z;
     }
-    if (len) {
+    if (len && (flags & RB_INT_PARSE_SIGN)) {
 	while (ISSPACE(*str)) ADV(1);
 
 	if (str[0] == '+') {
@@ -4088,7 +4095,7 @@ rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base)
 	    base = 10;
 	}
     }
-    else if (len == 1) {
+    else if (len == 1 || !(flags & RB_INT_PARSE_PREFIX)) {
 	/* no prefix */
     }
     else if (base == 2) {
@@ -4115,15 +4122,19 @@ rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base)
         invalid_radix(base);
     }
     if (!len) goto bad;
+    num_digits = str - s;
     if (*str == '0' && len != 1) { /* squeeze preceding 0s */
 	int us = 0;
 	const char *end = len < 0 ? NULL : str + len;
-	while ((c = *++str) == '0' || c == '_') {
+	++num_digits;
+	while ((c = *++str) == '0' ||
+	       ((flags & RB_INT_PARSE_UNDERSCORE) && c == '_')) {
 	    if (c == '_') {
 		if (++us >= 2)
 		    break;
 	    }
 	    else {
+		++num_digits;
 		us = 0;
 	    }
 	    if (str == end) break;
@@ -4135,14 +4146,18 @@ rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base)
     c = *str;
     c = conv_digit(c);
     if (c < 0 || c >= base) {
+	if (!badcheck && num_digits) z = INT2FIX(0);
 	goto bad;
     }
 
+    if (ndigits) *ndigits = num_digits;
     val = ruby_scan_digits(str, len, base, &num_digits, &ov);
     if (!ov) {
 	const char *end = &str[num_digits];
-	if (num_digits > 0 && *end == '_') goto bigparse;
+	if (num_digits > 0 && *end == '_' && (flags & RB_INT_PARSE_UNDERSCORE))
+	    goto bigparse;
 	if (endp) *endp = (char *)end;
+	if (ndigits) *ndigits += num_digits;
 	if (badcheck) {
 	    if (num_digits == 0) return Qnil; /* no number */
 	    while (len < 0 ? *end : end < str + len) {
@@ -4170,6 +4185,7 @@ rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base)
     if (!str2big_scan_digits(s, str, base, badcheck, &num_digits, &len))
 	goto bad;
     if (endp) *endp = (char *)(str + len);
+    if (ndigits) *ndigits += num_digits;
     digits_end = digits_start + len;
 
     if (POW2_P(base)) {
@@ -4199,6 +4215,13 @@ rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base)
     }
 
     return bignorm(z);
+}
+
+VALUE
+rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base)
+{
+    return rb_int_parse_cstr(str, len, endp, NULL, base,
+			     RB_INT_PARSE_DEFAULT);
 }
 
 VALUE

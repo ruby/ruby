@@ -1746,6 +1746,14 @@ VALUE rb_big_divrem_gmp(VALUE x, VALUE y);
 VALUE rb_big2str_gmp(VALUE x, int base);
 VALUE rb_str2big_gmp(VALUE arg, int base, int badcheck);
 #endif
+enum rb_int_parse_flags {
+    RB_INT_PARSE_SIGN       = 0x01,
+    RB_INT_PARSE_UNDERSCORE = 0x02,
+    RB_INT_PARSE_PREFIX     = 0x04,
+    RB_INT_PARSE_ALL        = 0x07,
+    RB_INT_PARSE_DEFAULT    = 0x07
+};
+VALUE rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits, int base, int flags);
 
 /* error.c (export) */
 int rb_bug_reporter_add(void (*func)(FILE *, void *), void *data);
