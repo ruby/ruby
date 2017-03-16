@@ -2356,7 +2356,7 @@ static VALUE
 parse_rat(const char *s, const char *const e, int strict)
 {
     int sign;
-    VALUE num, den, ndiv;
+    VALUE num, den, ndiv, ddiv;
 
     s = skip_ws(s, e);
     sign = read_sign(&s, e);
@@ -2368,12 +2368,8 @@ parse_rat(const char *s, const char *const e, int strict)
     nurat_reduce(&num, &ndiv);
     den = ndiv;
     if (s < e && *s == '/') {
-	char *t;
 	s++;
-	den = rb_int_parse_cstr(s, e-s, &t, NULL,
-				10, RB_INT_PARSE_UNDERSCORE);
-	s = t;
-	if (NIL_P(den)) {
+	if (!read_num(&s, e, &den, &ddiv)) {
 	    if (strict) return Qnil;
 	    den = ndiv;
 	}
@@ -2384,8 +2380,11 @@ parse_rat(const char *s, const char *const e, int strict)
 	    return Qnil;
 	}
 	else {
+	    nurat_reduce(&den, &ddiv);
 	    nurat_reduce(&num, &den);
-	    den = rb_int_mul(den, ndiv);
+	    nurat_reduce(&ndiv, &ddiv);
+	    if (ndiv != ONE) den = rb_int_mul(den, ndiv);
+	    if (ddiv != ONE) num = rb_int_mul(num, ddiv);
 	}
     }
     else if (strict && skip_ws(s, e) != e) {
