@@ -2260,65 +2260,15 @@ issign(int c)
 }
 
 static int
-read_sign(const char **s)
+read_sign(const char **s, const char *const e)
 {
     int sign = '?';
 
-    if (issign(**s)) {
+    if (*s < e && issign(**s)) {
 	sign = **s;
 	(*s)++;
     }
     return sign;
-}
-
-inline static int
-isdecimal(int c)
-{
-    return isdigit((unsigned char)c);
-}
-
-static int
-read_digits(const char **s, int strict,
-	    VALUE *num, int *count)
-{
-    char *b, *bb;
-    int us = 1, ret = 1;
-    VALUE tmp;
-
-    if (!isdecimal(**s)) {
-	*num = ZERO;
-	return 0;
-    }
-
-    bb = b = ALLOCV_N(char, tmp, strlen(*s) + 1);
-
-    while (isdecimal(**s) || **s == '_') {
-	if (**s == '_') {
-	    if (strict) {
-		if (us) {
-		    ret = 0;
-		    goto conv;
-		}
-	    }
-	    us = 1;
-	}
-	else {
-	    if (count)
-		(*count)++;
-	    *b++ = **s;
-	    us = 0;
-	}
-	(*s)++;
-    }
-    if (us)
-	do {
-	    (*s)--;
-	} while (**s == '_');
-  conv:
-    *b = '\0';
-    *num = rb_cstr_to_inum(bb, 10, 0);
-    ALLOCV_END(tmp);
-    return ret;
 }
 
 inline static int
@@ -2328,37 +2278,51 @@ islettere(int c)
 }
 
 static int
-read_num(const char **s, int strict, VALUE *num, VALUE *div)
+read_num(const char **s, const char *const end, VALUE *num, VALUE *div)
 {
-    VALUE fp = ONE, exp, fn = ZERO;
-    int expsign = 0;
+    VALUE fp = ONE, exp, fn = ZERO, n;
+    int expsign = 0, ok = 0;
+    char *e;
 
     *div = ONE;
     *num = ZERO;
-    if (**s != '.') {
-	if (!read_digits(s, strict, num, NULL))
+    if (*s < end && **s != '.') {
+	n = rb_int_parse_cstr(*s, end-*s, &e, NULL,
+			      10, RB_INT_PARSE_UNDERSCORE);
+	if (NIL_P(n))
 	    return 0;
+	*s = e;
+	*num = n;
+	ok = 1;
     }
 
-    if (**s == '.') {
-	int count = 0;
+    if (*s < end && **s == '.') {
+	size_t count = 0;
 
 	(*s)++;
-	if (!read_digits(s, strict, &fp, &count))
-	    return 0;
+	fp = rb_int_parse_cstr(*s, end-*s, &e, &count,
+			       10, RB_INT_PARSE_UNDERSCORE);
+	if (NIL_P(fp))
+	    return 1;
+	*s = e;
 	{
-	    VALUE l = f_expt10(INT2NUM(count));
-	    *num = *num == ZERO ? fp : rb_int_plus(rb_int_mul(*num, l), fp);
+	    VALUE l = f_expt10(SIZET2NUM(count));
+	    n = n == ZERO ? fp : rb_int_plus(rb_int_mul(*num, l), fp);
+	    *num = n;
 	    *div = l;
-	    fn = INT2NUM(count);
+	    fn = SIZET2NUM(count);
 	}
+	ok = 1;
     }
 
-    if (islettere(**s)) {
+    if (ok && *s + 1 < end && islettere(**s)) {
 	(*s)++;
-	expsign = read_sign(s);
-	if (!read_digits(s, strict, &exp, NULL))
-	    return 0;
+	expsign = read_sign(s, end);
+	exp = rb_int_parse_cstr(*s, end-*s, &e, NULL,
+				10, RB_INT_PARSE_UNDERSCORE);
+	if (NIL_P(exp))
+	    return 1;
+	*s = e;
 	if (exp != ZERO) {
 	    if (expsign == '-') {
 		if (fn != ZERO) exp = rb_int_plus(exp, fn);
@@ -2370,109 +2334,88 @@ read_num(const char **s, int strict, VALUE *num, VALUE *div)
 		    *div = f_expt10(exp);
 		}
 		else {
-		    *num = rb_int_mul(*num, f_expt10(exp));
+		    *num = rb_int_mul(n, f_expt10(exp));
 		    *div = ONE;
 		}
 	    }
 	}
     }
 
-    return 1;
+    return ok;
 }
 
-static int
-read_rat_nos(const char **s, int sign, int strict, VALUE *num)
+inline static const char *
+skip_ws(const char *s, const char *e)
 {
-    VALUE den = ONE, div;
+    while (s < e && isspace((unsigned char)*s))
+	++s;
+    return s;
+}
 
-    if (!read_num(s, strict, num, &div)) {
-      failed:
-	if (!canonicalization && !strict)
-	    *num = rb_rational_raw(*num, div);
-	return 0;
+static VALUE
+parse_rat(const char *s, const char *const e, int strict)
+{
+    int sign;
+    VALUE num, den, ndiv;
+
+    s = skip_ws(s, e);
+    sign = read_sign(&s, e);
+
+    if (!read_num(&s, e, &num, &ndiv)) {
+	if (strict) return Qnil;
+	return canonicalization ? ZERO : nurat_s_alloc(rb_cRational);
     }
-    if (div != ONE) nurat_reduce(num, &div);
-    den = div;
-    if (**s == '/') {
-	(*s)++;
-	if (!read_digits(s, strict, &den, NULL)) goto failed;
-	if (den == ZERO) rb_num_zerodiv();
-	nurat_reduce(num, &den);
-	if (div != ONE && den != ONE)
-	    den = rb_int_mul(den, div);
+    nurat_reduce(&num, &ndiv);
+    den = ndiv;
+    if (s < e && *s == '/') {
+	char *t;
+	s++;
+	den = rb_int_parse_cstr(s, e-s, &t, NULL,
+				10, RB_INT_PARSE_UNDERSCORE);
+	s = t;
+	if (NIL_P(den)) {
+	    if (strict) return Qnil;
+	    den = ndiv;
+	}
+	else if (den == ZERO) {
+	    rb_num_zerodiv();
+	}
+	else if (strict && skip_ws(s, e) != e) {
+	    return Qnil;
+	}
+	else {
+	    nurat_reduce(&num, &den);
+	    den = rb_int_mul(den, ndiv);
+	}
+    }
+    else if (strict && skip_ws(s, e) != e) {
+	return Qnil;
     }
 
     if (sign == '-') {
-	if (FIXNUM_P(*num)) {
-	    *num = rb_int_uminus(*num);
+	if (FIXNUM_P(num)) {
+	    num = rb_int_uminus(num);
 	}
 	else {
-	    BIGNUM_NEGATE(*num);
-	    *num = rb_big_norm(*num);
+	    BIGNUM_NEGATE(num);
+	    num = rb_big_norm(num);
 	}
     }
+
     if (!canonicalization || den != ONE)
-	*num = rb_rational_raw(*num, den);
-    return 1;
-}
-
-static int
-read_rat(const char **s, int strict,
-	 VALUE *num)
-{
-    int sign;
-
-    sign = read_sign(s);
-    if (!read_rat_nos(s, sign, strict, num))
-	return 0;
-    return 1;
-}
-
-inline static void
-skip_ws(const char **s)
-{
-    while (isspace((unsigned char)**s))
-	(*s)++;
-}
-
-static int
-parse_rat(const char *s, int strict,
-	  VALUE *num)
-{
-    skip_ws(&s);
-    if (!read_rat(&s, strict, num))
-	return 0;
-    skip_ws(&s);
-
-    if (strict)
-	if (*s != '\0')
-	    return 0;
-    return 1;
+	num = rb_rational_raw(num, den);
+    return num;
 }
 
 static VALUE
 string_to_r_strict(VALUE self)
 {
-    char *s;
     VALUE num;
 
     rb_must_asciicompat(self);
 
-    s = RSTRING_PTR(self);
-
-    if (!s || memchr(s, '\0', RSTRING_LEN(self)))
-	rb_raise(rb_eArgError, "string contains null byte");
-
-    if (s && s[RSTRING_LEN(self)]) {
-	rb_str_modify(self);
-	s = RSTRING_PTR(self);
-	s[RSTRING_LEN(self)] = '\0';
-    }
-
-    if (!s)
-	s = (char *)"";
-
-    if (!parse_rat(s, 1, &num)) {
+    num = parse_rat(RSTRING_PTR(self), RSTRING_END(self), 1);
+    if (NIL_P(num)) {
 	rb_raise(rb_eArgError, "invalid value for convert(): %+"PRIsVALUE,
 		 self);
     }
@@ -2508,23 +2451,11 @@ string_to_r_strict(VALUE self)
 static VALUE
 string_to_r(VALUE self)
 {
-    char *s;
     VALUE num;
 
     rb_must_asciicompat(self);
 
-    s = RSTRING_PTR(self);
-
-    if (s && s[RSTRING_LEN(self)]) {
-	rb_str_modify(self);
-	s = RSTRING_PTR(self);
-	s[RSTRING_LEN(self)] = '\0';
-    }
-
-    if (!s)
-	s = (char *)"";
-
-    (void)parse_rat(s, 0, &num);
+    num = parse_rat(RSTRING_PTR(self), RSTRING_END(self), 0);
 
     if (RB_FLOAT_TYPE_P(num))
 	rb_raise(rb_eFloatDomainError, "Infinity");
@@ -2536,7 +2467,7 @@ rb_cstr_to_rat(const char *s, int strict) /* for complex's internal */
 {
     VALUE num;
 
-    (void)parse_rat(s, strict, &num);
+    num = parse_rat(s, s + strlen(s), strict);
 
     if (RB_FLOAT_TYPE_P(num))
 	rb_raise(rb_eFloatDomainError, "Infinity");
