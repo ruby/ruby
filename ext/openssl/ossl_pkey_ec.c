@@ -84,26 +84,6 @@ static VALUE ec_instance(VALUE klass, EC_KEY *ec)
     return obj;
 }
 
-VALUE ossl_ec_new(EVP_PKEY *pkey)
-{
-    VALUE obj;
-
-    if (!pkey) {
-	obj = ec_instance(cEC, EC_KEY_new());
-    } else {
-	obj = NewPKey(cEC);
-	if (EVP_PKEY_base_id(pkey) != EVP_PKEY_EC) {
-	    ossl_raise(rb_eTypeError, "Not a EC key!");
-	}
-	SetPKey(obj, pkey);
-    }
-    if (obj == Qfalse) {
-	ossl_raise(eECError, NULL);
-    }
-
-    return obj;
-}
-
 /*
  * Creates a new EC_KEY on the EC group obj. arg can be an EC::Group or a String
  * representing an OID.

@@ -69,28 +69,6 @@ rsa_instance(VALUE klass, RSA *rsa)
     return obj;
 }
 
-VALUE
-ossl_rsa_new(EVP_PKEY *pkey)
-{
-    VALUE obj;
-
-    if (!pkey) {
-	obj = rsa_instance(cRSA, RSA_new());
-    }
-    else {
-	obj = NewPKey(cRSA);
-	if (EVP_PKEY_base_id(pkey) != EVP_PKEY_RSA) {
-	    ossl_raise(rb_eTypeError, "Not a RSA key!");
-	}
-	SetPKey(obj, pkey);
-    }
-    if (obj == Qfalse) {
-	ossl_raise(eRSAError, NULL);
-    }
-
-    return obj;
-}
-
 /*
  * Private
  */

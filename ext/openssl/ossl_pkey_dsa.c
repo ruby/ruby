@@ -68,27 +68,6 @@ dsa_instance(VALUE klass, DSA *dsa)
     return obj;
 }
 
-VALUE
-ossl_dsa_new(EVP_PKEY *pkey)
-{
-    VALUE obj;
-
-    if (!pkey) {
-	obj = dsa_instance(cDSA, DSA_new());
-    } else {
-	obj = NewPKey(cDSA);
-	if (EVP_PKEY_base_id(pkey) != EVP_PKEY_DSA) {
-	    ossl_raise(rb_eTypeError, "Not a DSA key!");
-	}
-	SetPKey(obj, pkey);
-    }
-    if (obj == Qfalse) {
-	ossl_raise(eDSAError, NULL);
-    }
-
-    return obj;
-}
-
 /*
  * Private
  */

@@ -54,27 +54,6 @@ dh_instance(VALUE klass, DH *dh)
     return obj;
 }
 
-VALUE
-ossl_dh_new(EVP_PKEY *pkey)
-{
-    VALUE obj;
-
-    if (!pkey) {
-	obj = dh_instance(cDH, DH_new());
-    } else {
-	obj = NewPKey(cDH);
-	if (EVP_PKEY_base_id(pkey) != EVP_PKEY_DH) {
-	    ossl_raise(rb_eTypeError, "Not a DH key!");
-	}
-	SetPKey(obj, pkey);
-    }
-    if (obj == Qfalse) {
-	ossl_raise(eDHError, NULL);
-    }
-
-    return obj;
-}
-
 /*
  * Private
  */

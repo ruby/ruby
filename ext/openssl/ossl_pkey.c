@@ -95,7 +95,7 @@ const rb_data_type_t ossl_evp_pkey_type = {
 static VALUE
 pkey_new0(EVP_PKEY *pkey)
 {
-    VALUE obj;
+    VALUE klass, obj;
     int type;
 
     if (!pkey || (type = EVP_PKEY_base_id(pkey)) == EVP_PKEY_NONE)
@@ -103,26 +103,22 @@ pkey_new0(EVP_PKEY *pkey)
 
     switch (type) {
 #if !defined(OPENSSL_NO_RSA)
-    case EVP_PKEY_RSA:
-	return ossl_rsa_new(pkey);
+      case EVP_PKEY_RSA: klass = cRSA; break;
 #endif
 #if !defined(OPENSSL_NO_DSA)
-    case EVP_PKEY_DSA:
-	return ossl_dsa_new(pkey);
+      case EVP_PKEY_DSA: klass = cDSA; break;
 #endif
 #if !defined(OPENSSL_NO_DH)
-    case EVP_PKEY_DH:
-	return ossl_dh_new(pkey);
+      case EVP_PKEY_DH:  klass = cDH; break;
 #endif
 #if !defined(OPENSSL_NO_EC)
-    case EVP_PKEY_EC:
-	return ossl_ec_new(pkey);
+      case EVP_PKEY_EC:  klass = cEC; break;
 #endif
-    default:
-	obj = NewPKey(cPKey);
-	SetPKey(obj, pkey);
-	return obj;
+      default:           klass = cPKey; break;
     }
+    obj = NewPKey(klass);
+    SetPKey(obj, pkey);
+    return obj;
 }
 
 VALUE
