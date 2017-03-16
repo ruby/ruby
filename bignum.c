@@ -4013,10 +4013,10 @@ rb_cstr_to_inum(const char *str, int base, int badcheck)
  *       NULL, Qnil is returned when +str+ is not valid as an Integer.
  * ndigits: if non-NULL, the number of parsed digits is stored.
  * base: see +rb_cstr_to_inum+
- * flags: bit-ORed flags of belows:
- *       RB_INT_PARSE_SIGN: allow preceeding spaces and +/- sign
+ * flags: bitwise OR of below flags:
+ *       RB_INT_PARSE_SIGN: allow preceding spaces and +/- sign
  *       RB_INT_PARSE_UNDERSCORE: allow an underscore between digits
- *       RB_INT_PARSE_PREFIX: allow preceeding prefix
+ *       RB_INT_PARSE_PREFIX: allow preceding prefix
  */
 
 VALUE
