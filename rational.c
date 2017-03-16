@@ -2396,6 +2396,7 @@ read_rat_nos(const char **s, int sign, int strict, VALUE *num)
     if (**s == '/') {
 	(*s)++;
 	if (!read_digits(s, strict, &den, NULL)) goto failed;
+	if (den == ZERO) rb_num_zerodiv();
 	nurat_reduce(num, &den);
 	if (div != ONE && den != ONE)
 	    den = rb_int_mul(den, div);

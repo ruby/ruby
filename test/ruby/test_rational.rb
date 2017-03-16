@@ -776,6 +776,11 @@ class Rational_Test < Test::Unit::TestCase
     ng[5, 3, '5/3x']
   end
 
+  def test_parse_zero_denominator
+    assert_raise(ZeroDivisionError) {"1/0".to_r}
+    assert_raise(ZeroDivisionError) {Rational("1/0")}
+  end
+
   def test_to_i
     assert_equal(1, Rational(3,2).to_i)
     assert_equal(1, Integer(Rational(3,2)))
