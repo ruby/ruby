@@ -44,31 +44,6 @@ VALUE cDSA;
 VALUE eDSAError;
 
 /*
- * Public
- */
-static VALUE
-dsa_instance(VALUE klass, DSA *dsa)
-{
-    EVP_PKEY *pkey;
-    VALUE obj;
-
-    if (!dsa) {
-	return Qfalse;
-    }
-    obj = NewPKey(klass);
-    if (!(pkey = EVP_PKEY_new())) {
-	return Qfalse;
-    }
-    if (!EVP_PKEY_assign_DSA(pkey, dsa)) {
-	EVP_PKEY_free(pkey);
-	return Qfalse;
-    }
-    SetPKey(obj, pkey);
-
-    return obj;
-}
-
-/*
  * Private
  */
 struct dsa_blocking_gen_arg {
@@ -100,9 +75,9 @@ dsa_generate(int size)
     unsigned long h;
 
     if (!dsa || !cb) {
-	DSA_free(dsa);
-	BN_GENCB_free(cb);
-	return NULL;
+        DSA_free(dsa);
+        BN_GENCB_free(cb);
+        ossl_raise(eDSAError, "malloc failure");
     }
 
     if (rb_block_given_p())
@@ -132,12 +107,12 @@ dsa_generate(int size)
 	    ossl_clear_error();
 	    rb_jump_tag(cb_arg.state);
 	}
-	return NULL;
+        ossl_raise(eDSAError, "DSA_generate_parameters_ex");
     }
 
     if (!DSA_generate_key(dsa)) {
-	DSA_free(dsa);
-	return NULL;
+        DSA_free(dsa);
+        ossl_raise(eDSAError, "DSA_generate_key");
     }
 
     return dsa;
@@ -157,14 +132,18 @@ dsa_generate(int size)
 static VALUE
 ossl_dsa_s_generate(VALUE klass, VALUE size)
 {
-    DSA *dsa = dsa_generate(NUM2INT(size)); /* err handled by dsa_instance */
-    VALUE obj = dsa_instance(klass, dsa);
+    EVP_PKEY *pkey;
+    DSA *dsa;
+    VALUE obj;
 
-    if (obj == Qfalse) {
-	DSA_free(dsa);
-	ossl_raise(eDSAError, NULL);
+    obj = rb_obj_alloc(klass);
+    GetPKey(obj, pkey);
+
+    dsa = dsa_generate(NUM2INT(size));
+    if (!EVP_PKEY_assign_DSA(pkey, dsa)) {
+        DSA_free(dsa);
+        ossl_raise(eDSAError, "EVP_PKEY_assign_DSA");
     }
-
     return obj;
 }
 
@@ -460,20 +439,23 @@ ossl_dsa_to_text(VALUE self)
 static VALUE
 ossl_dsa_to_public_key(VALUE self)
 {
-    EVP_PKEY *pkey;
+    EVP_PKEY *pkey, *pkey_new;
     DSA *dsa;
     VALUE obj;
 
     GetPKeyDSA(self, pkey);
-    /* err check performed by dsa_instance */
+    obj = rb_obj_alloc(rb_obj_class(self));
+    GetPKey(obj, pkey_new);
+
 #define DSAPublicKey_dup(dsa) (DSA *)ASN1_dup( \
 	(i2d_of_void *)i2d_DSAPublicKey, (d2i_of_void *)d2i_DSAPublicKey, (char *)(dsa))
     dsa = DSAPublicKey_dup(EVP_PKEY_get0_DSA(pkey));
 #undef DSAPublicKey_dup
-    obj = dsa_instance(rb_obj_class(self), dsa);
-    if (obj == Qfalse) {
-	DSA_free(dsa);
-	ossl_raise(eDSAError, NULL);
+    if (!dsa)
+        ossl_raise(eDSAError, "DSAPublicKey_dup");
+    if (!EVP_PKEY_assign_DSA(pkey_new, dsa)) {
+        DSA_free(dsa);
+        ossl_raise(eDSAError, "EVP_PKEY_assign_DSA");
     }
     return obj;
 }

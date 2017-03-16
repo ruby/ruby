@@ -45,31 +45,6 @@ VALUE cRSA;
 VALUE eRSAError;
 
 /*
- * Public
- */
-static VALUE
-rsa_instance(VALUE klass, RSA *rsa)
-{
-    EVP_PKEY *pkey;
-    VALUE obj;
-
-    if (!rsa) {
-	return Qfalse;
-    }
-    obj = NewPKey(klass);
-    if (!(pkey = EVP_PKEY_new())) {
-	return Qfalse;
-    }
-    if (!EVP_PKEY_assign_RSA(pkey, rsa)) {
-	EVP_PKEY_free(pkey);
-	return Qfalse;
-    }
-    SetPKey(obj, pkey);
-
-    return obj;
-}
-
-/*
  * Private
  */
 struct rsa_blocking_gen_arg {
@@ -102,7 +77,7 @@ rsa_generate(int size, unsigned long exp)
 	RSA_free(rsa);
 	BN_free(e);
 	BN_GENCB_free(cb);
-	return NULL;
+        ossl_raise(eRSAError, "malloc failure");
     }
     for (i = 0; i < (int)sizeof(exp) * 8; ++i) {
 	if (exp & (1UL << i)) {
@@ -110,7 +85,7 @@ rsa_generate(int size, unsigned long exp)
 		BN_free(e);
 		RSA_free(rsa);
 		BN_GENCB_free(cb);
-		return NULL;
+                ossl_raise(eRSAError, "BN_set_bit");
 	    }
 	}
     }
@@ -139,7 +114,7 @@ rsa_generate(int size, unsigned long exp)
 	    ossl_clear_error();
 	    rb_jump_tag(cb_arg.state);
 	}
-	return NULL;
+        ossl_raise(eRSAError, "RSA_generate_key_ex");
     }
 
     return rsa;
@@ -158,26 +133,26 @@ static VALUE
 ossl_rsa_s_generate(int argc, VALUE *argv, VALUE klass)
 {
 /* why does this method exist?  why can't initialize take an optional exponent? */
+    EVP_PKEY *pkey;
     RSA *rsa;
     VALUE size, exp;
     VALUE obj;
 
     rb_scan_args(argc, argv, "11", &size, &exp);
+    obj = rb_obj_alloc(klass);
+    GetPKey(obj, pkey);
 
-    rsa = rsa_generate(NUM2INT(size), NIL_P(exp) ? RSA_F4 : NUM2ULONG(exp)); /* err handled by rsa_instance */
-    obj = rsa_instance(klass, rsa);
-
-    if (obj == Qfalse) {
-	RSA_free(rsa);
-	ossl_raise(eRSAError, NULL);
+    rsa = rsa_generate(NUM2INT(size), NIL_P(exp) ? RSA_F4 : NUM2ULONG(exp));
+    if (!EVP_PKEY_assign_RSA(pkey, rsa)) {
+        RSA_free(rsa);
+        ossl_raise(eRSAError, "EVP_PKEY_assign_RSA");
     }
-
     return obj;
 }
 
 /*
  * call-seq:
- *   RSA.new(key_size)                 => RSA instance
+ *   RSA.new(size [, exponent])        => RSA instance
  *   RSA.new(encoded_key)              => RSA instance
  *   RSA.new(encoded_key, pass_phrase) => RSA instance
  *
@@ -206,10 +181,11 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
     GetPKey(self, pkey);
     if(rb_scan_args(argc, argv, "02", &arg, &pass) == 0) {
 	rsa = RSA_new();
+        if (!rsa)
+            ossl_raise(eRSAError, "RSA_new");
     }
     else if (RB_INTEGER_TYPE_P(arg)) {
 	rsa = rsa_generate(NUM2INT(arg), NIL_P(pass) ? RSA_F4 : NUM2ULONG(pass));
-	if (!rsa) ossl_raise(eRSAError, NULL);
     }
     else {
 	pass = ossl_pem_passwd_value(pass);
@@ -243,7 +219,7 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
     }
     if (!EVP_PKEY_assign_RSA(pkey, rsa)) {
 	RSA_free(rsa);
-	ossl_raise(eRSAError, NULL);
+	ossl_raise(eRSAError, "EVP_PKEY_assign_RSA");
     }
 
     return self;
@@ -787,17 +763,20 @@ ossl_rsa_to_text(VALUE self)
 static VALUE
 ossl_rsa_to_public_key(VALUE self)
 {
-    EVP_PKEY *pkey;
+    EVP_PKEY *pkey, *pkey_new;
     RSA *rsa;
     VALUE obj;
 
     GetPKeyRSA(self, pkey);
-    /* err check performed by rsa_instance */
+    obj = rb_obj_alloc(rb_obj_class(self));
+    GetPKey(obj, pkey_new);
+
     rsa = RSAPublicKey_dup(EVP_PKEY_get0_RSA(pkey));
-    obj = rsa_instance(rb_obj_class(self), rsa);
-    if (obj == Qfalse) {
-	RSA_free(rsa);
-	ossl_raise(eRSAError, NULL);
+    if (!rsa)
+        ossl_raise(eRSAError, "RSAPublicKey_dup");
+    if (!EVP_PKEY_assign_RSA(pkey_new, rsa)) {
+        RSA_free(rsa);
+        ossl_raise(eRSAError, "EVP_PKEY_assign_RSA");
     }
     return obj;
 }

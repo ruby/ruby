@@ -63,27 +63,6 @@ static ID id_i_group;
 static VALUE ec_group_new(const EC_GROUP *group);
 static VALUE ec_point_new(const EC_POINT *point, const EC_GROUP *group);
 
-static VALUE ec_instance(VALUE klass, EC_KEY *ec)
-{
-    EVP_PKEY *pkey;
-    VALUE obj;
-
-    if (!ec) {
-	return Qfalse;
-    }
-    obj = NewPKey(klass);
-    if (!(pkey = EVP_PKEY_new())) {
-	return Qfalse;
-    }
-    if (!EVP_PKEY_assign_EC_KEY(pkey, ec)) {
-	EVP_PKEY_free(pkey);
-	return Qfalse;
-    }
-    SetPKey(obj, pkey);
-
-    return obj;
-}
-
 /*
  * Creates a new EC_KEY on the EC group obj. arg can be an EC::Group or a String
  * representing an OID.
@@ -130,17 +109,18 @@ ec_key_new_from_group(VALUE arg)
 static VALUE
 ossl_ec_key_s_generate(VALUE klass, VALUE arg)
 {
+    EVP_PKEY *pkey;
     EC_KEY *ec;
     VALUE obj;
 
+    obj = rb_obj_alloc(klass);
+    GetPKey(obj, pkey);
+
     ec = ec_key_new_from_group(arg);
-
-    obj = ec_instance(klass, ec);
-    if (obj == Qfalse) {
-	EC_KEY_free(ec);
-	ossl_raise(eECError, NULL);
+    if (!EVP_PKEY_assign_EC_KEY(pkey, ec)) {
+        EC_KEY_free(ec);
+        ossl_raise(eECError, "EVP_PKEY_assign_EC_KEY");
     }
-
     if (!EC_KEY_generate_key(ec))
 	ossl_raise(eECError, "EC_KEY_generate_key");
 

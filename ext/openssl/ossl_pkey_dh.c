@@ -30,31 +30,6 @@ VALUE cDH;
 VALUE eDHError;
 
 /*
- * Public
- */
-static VALUE
-dh_instance(VALUE klass, DH *dh)
-{
-    EVP_PKEY *pkey;
-    VALUE obj;
-
-    if (!dh) {
-	return Qfalse;
-    }
-    obj = NewPKey(klass);
-    if (!(pkey = EVP_PKEY_new())) {
-	return Qfalse;
-    }
-    if (!EVP_PKEY_assign_DH(pkey, dh)) {
-	EVP_PKEY_free(pkey);
-	return Qfalse;
-    }
-    SetPKey(obj, pkey);
-
-    return obj;
-}
-
-/*
  * Private
  */
 struct dh_blocking_gen_arg {
@@ -84,7 +59,7 @@ dh_generate(int size, int gen)
     if (!dh || !cb) {
 	DH_free(dh);
 	BN_GENCB_free(cb);
-	return NULL;
+        ossl_raise(eDHError, "malloc failure");
     }
 
     if (rb_block_given_p())
@@ -110,12 +85,12 @@ dh_generate(int size, int gen)
 	    ossl_clear_error();
 	    rb_jump_tag(cb_arg.state);
 	}
-	return NULL;
+        ossl_raise(eDHError, "DH_generate_parameters_ex");
     }
 
     if (!DH_generate_key(dh)) {
         DH_free(dh);
-        return NULL;
+        ossl_raise(eDHError, "DH_generate_key");
     }
 
     return dh;
@@ -136,6 +111,7 @@ dh_generate(int size, int gen)
 static VALUE
 ossl_dh_s_generate(int argc, VALUE *argv, VALUE klass)
 {
+    EVP_PKEY *pkey;
     DH *dh ;
     int g = 2;
     VALUE size, gen, obj;
@@ -143,13 +119,14 @@ ossl_dh_s_generate(int argc, VALUE *argv, VALUE klass)
     if (rb_scan_args(argc, argv, "11", &size, &gen) == 2) {
 	g = NUM2INT(gen);
     }
-    dh = dh_generate(NUM2INT(size), g);
-    obj = dh_instance(klass, dh);
-    if (obj == Qfalse) {
-	DH_free(dh);
-	ossl_raise(eDHError, NULL);
-    }
+    obj = rb_obj_alloc(klass);
+    GetPKey(obj, pkey);
 
+    dh = dh_generate(NUM2INT(size), g);
+    if (!EVP_PKEY_assign_DH(pkey, dh)) {
+        DH_free(dh);
+        ossl_raise(eDHError, "EVP_PKEY_assign_DH");
+    }
     return obj;
 }
 
@@ -195,9 +172,7 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
 	if (!NIL_P(gen)) {
 	    g = NUM2INT(gen);
 	}
-	if (!(dh = dh_generate(NUM2INT(arg), g))) {
-	    ossl_raise(eDHError, NULL);
-	}
+        dh = dh_generate(NUM2INT(arg), g);
     }
     else {
 	arg = ossl_to_der_if_possible(arg);
@@ -434,17 +409,21 @@ ossl_dh_to_text(VALUE self)
 static VALUE
 ossl_dh_to_public_key(VALUE self)
 {
+    EVP_PKEY *pkey;
     DH *orig_dh, *dh;
     VALUE obj;
 
-    GetDH(self, orig_dh);
-    dh = DHparams_dup(orig_dh); /* err check perfomed by dh_instance */
-    obj = dh_instance(rb_obj_class(self), dh);
-    if (obj == Qfalse) {
-	DH_free(dh);
-	ossl_raise(eDHError, NULL);
-    }
+    obj = rb_obj_alloc(rb_obj_class(self));
+    GetPKey(obj, pkey);
 
+    GetDH(self, orig_dh);
+    dh = DHparams_dup(orig_dh);
+    if (!dh)
+        ossl_raise(eDHError, "DHparams_dup");
+    if (!EVP_PKEY_assign_DH(pkey, dh)) {
+        DH_free(dh);
+        ossl_raise(eDHError, "EVP_PKEY_assign_DH");
+    }
     return obj;
 }
 
