@@ -726,6 +726,10 @@ class Rational_Test < Test::Unit::TestCase
     ok[500, 1, '5e2']
     ok[5000, 1, '5e3']
     ok[500000000000, 1, '5e1_1']
+    ng[ 5, 1, '5e']
+    ng[ 5, 1, '5e_']
+    ng[ 5, 1, '5e_1']
+    ng[50, 1, '5e1_']
 
     ng[0, 1, '']
     ng[0, 1, ' ']
