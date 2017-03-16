@@ -36,6 +36,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * String#-@ deduplicates unfrozen strings.  Already-frozen
     strings remain unchanged for compatibility.  [Feature #13077]
+  * -"literal" (String#-@) optimized to return the same object
+    (same as "literal".freeze in Ruby 2.1+)
 
 === Stdlib updates (outstanding ones only)
 
