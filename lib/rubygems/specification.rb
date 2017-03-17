@@ -1128,6 +1128,9 @@ class Gem::Specification < Gem::BasicSpecification
     native = {}
 
     specs.reverse_each do |spec|
+      unless spec
+        raise Gem::Exception, "unexpectedly spec is nil: #{specs}"
+      end
       next if spec.version.prerelease? unless prerelease
 
       native[spec.name] = spec.version if spec.platform == Gem::Platform::RUBY
