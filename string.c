@@ -4147,7 +4147,7 @@ str_upto_each(VALUE beg, VALUE end, int excl, int (*each)(VALUE, VALUE), VALUE a
 	}
 	else {
 	    ID op = excl ? '<' : idLE;
-	    VALUE args[2], fmt = rb_fstring_cstr("%.*d");
+	    VALUE args[2], fmt = rb_obj_freeze(rb_usascii_str_new_cstr("%.*d"));
 
 	    args[0] = INT2FIX(width);
 	    while (rb_funcall(b, op, 1, e)) {
@@ -7965,7 +7965,9 @@ rb_str_enumerate_codepoints(VALUE str, int wantarray)
  *
  *  Passes the <code>Integer</code> ordinal of each character in <i>str</i>,
  *  also known as a <i>codepoint</i> when applied to Unicode strings to the
- *  given block.
+ *  given block.  For encodings other than UTF-8/UTF-16(BE|LE)/UTF-32(BE|LE),
+ *  values are directly derived from the binary representation
+ *  of each character.
  *
  *  If no block is given, an enumerator is returned instead.
  *
