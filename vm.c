@@ -992,10 +992,12 @@ invoke_iseq_block_from_c(rb_thread_t *th, const struct rb_captured_block *captur
     const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
     int i, opt_pc;
     VALUE type = is_lambda ? VM_FRAME_MAGIC_LAMBDA : VM_FRAME_MAGIC_BLOCK;
-    VALUE *sp = th->cfp->sp;
+    rb_control_frame_t *cfp = th->cfp;
+    VALUE *sp = cfp->sp;
     const rb_callable_method_entry_t *me = th->passed_bmethod_me;
     th->passed_bmethod_me = NULL;
 
+    CHECK_VM_STACK_OVERFLOW(cfp, argc);
     for (i=0; i<argc; i++) {
 	sp[i] = argv[i];
     }
