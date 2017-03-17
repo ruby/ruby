@@ -1523,7 +1523,7 @@ flo_cmp(VALUE x, VALUE y)
 int
 rb_float_cmp(VALUE x, VALUE y)
 {
-    return FIX2INT(flo_cmp(x, y));
+    return NUM2INT(flo_cmp(x, y));
 }
 
 /*
