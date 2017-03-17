@@ -2420,7 +2420,7 @@ sort_2(const void *ap, const void *bp, void *dummy)
     if (STRING_P(a) && STRING_P(b) && CMP_OPTIMIZABLE(data->cmp_opt, String)) {
 	return rb_str_cmp(a, b);
     }
-    if (RB_FLOAT_TYPE_P(a) && RB_FLOAT_TYPE_P(b) && CMP_OPTIMIZABLE(data->cmp_opt, Float)) {
+    if (RB_FLOAT_TYPE_P(a) && CMP_OPTIMIZABLE(data->cmp_opt, Float)) {
 	return rb_float_cmp(a, b);
     }
 

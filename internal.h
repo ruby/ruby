@@ -965,7 +965,7 @@ struct cmp_opt_data {
      (((long)a > (long)b) ? 1 : ((long)a < (long)b) ? -1 : 0) : \
      (STRING_P(a) && STRING_P(b) && CMP_OPTIMIZABLE(data, String)) ? \
      rb_str_cmp(a, b) : \
-     (RB_FLOAT_TYPE_P(a) && RB_FLOAT_TYPE_P(b) && CMP_OPTIMIZABLE(data, Float)) ? \
+     (RB_FLOAT_TYPE_P(a) && CMP_OPTIMIZABLE(data, Float)) ? \
      rb_float_cmp(a, b) : \
      rb_cmpint(rb_funcallv(a, id_cmp, 1, &b), a, b))
 
