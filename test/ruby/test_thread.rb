@@ -176,6 +176,14 @@ class TestThread < Test::Unit::TestCase
     t2.kill if t2
   end
 
+  def test_new_symbol_proc
+    bug = '[ruby-core:80147] [Bug #13313]'
+    assert_ruby_status([], "#{<<-"begin;"}\n#{<<-'end;'}", bug)
+    begin;
+      exit("1" == Thread.start(1, &:to_s).value)
+    end;
+  end
+
   def test_join
     t = Thread.new { sleep }
     assert_nil(t.join(0.05))
