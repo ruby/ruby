@@ -820,7 +820,8 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
                                         VALUE args[2], result;
                                         args[0] = INT2FIX(precision);
                                         args[1] = subsec;
-                                        result = rb_str_format(2, args, rb_str_new2("%0*d"));
+                                        result = rb_str_format(2, args,
+                                                      rb_fstring_cstr("%0*d"));
                                         (void)strlcpy(s, StringValueCStr(result), endp-s);
                                         s += precision;
                                 }
