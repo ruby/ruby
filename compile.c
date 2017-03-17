@@ -8631,22 +8631,18 @@ ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
 static void
 ibf_loader_mark(void *ptr)
 {
-    if (ptr) {
-	struct ibf_load *load = (struct ibf_load *)ptr;
-	rb_gc_mark(load->str);
-	rb_gc_mark(load->iseq_list);
-	rb_gc_mark(load->obj_list);
-    }
+    struct ibf_load *load = (struct ibf_load *)ptr;
+    rb_gc_mark(load->str);
+    rb_gc_mark(load->iseq_list);
+    rb_gc_mark(load->obj_list);
 }
 
 static void
 ibf_loader_free(void *ptr)
 {
-    if (ptr) {
-	struct ibf_load *load = (struct ibf_load *)ptr;
-	ruby_xfree(load->id_list);
-	ruby_xfree(load);
-    }
+    struct ibf_load *load = (struct ibf_load *)ptr;
+    ruby_xfree(load->id_list);
+    ruby_xfree(load);
 }
 
 static size_t

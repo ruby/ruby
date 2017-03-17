@@ -218,55 +218,54 @@ cont_mark(void *ptr)
 static void
 cont_free(void *ptr)
 {
+    rb_context_t *cont = ptr;
+
     RUBY_FREE_ENTER("cont");
-    if (ptr) {
-	rb_context_t *cont = ptr;
-	RUBY_FREE_UNLESS_NULL(cont->saved_thread.stack);
+    RUBY_FREE_UNLESS_NULL(cont->saved_thread.stack);
 #if FIBER_USE_NATIVE
-	if (cont->type == CONTINUATION_CONTEXT) {
-	    /* cont */
-	    ruby_xfree(cont->ensure_array);
-	    RUBY_FREE_UNLESS_NULL(cont->machine.stack);
-	}
-	else {
-	    /* fiber */
-	    rb_fiber_t *fib = (rb_fiber_t*)cont;
-	    const rb_thread_t *const th = GET_THREAD();
-#ifdef _WIN32
-	    if (th && th->fiber != fib && cont->type != ROOT_FIBER_CONTEXT) {
-		/* don't delete root fiber handle */
-		if (fib->fib_handle) {
-		    DeleteFiber(fib->fib_handle);
-		}
-	    }
-#else /* not WIN32 */
-	    if (th && th->fiber != fib) {
-                if (fib->ss_sp) {
-                    if (cont->type == ROOT_FIBER_CONTEXT) {
-			rb_bug("Illegal root fiber parameter");
-                    }
-		    munmap((void*)fib->ss_sp, fib->ss_size);
-		}
-	    }
-            else {
-		/* It may reached here when finalize */
-		/* TODO examine whether it is a bug */
-                /* rb_bug("cont_free: release self"); */
-            }
-#endif
-	}
-#else /* not FIBER_USE_NATIVE */
+    if (cont->type == CONTINUATION_CONTEXT) {
+	/* cont */
 	ruby_xfree(cont->ensure_array);
 	RUBY_FREE_UNLESS_NULL(cont->machine.stack);
+    }
+    else {
+	/* fiber */
+	rb_fiber_t *fib = (rb_fiber_t*)cont;
+	const rb_thread_t *const th = GET_THREAD();
+#ifdef _WIN32
+	if (th && th->fiber != fib && cont->type != ROOT_FIBER_CONTEXT) {
+	    /* don't delete root fiber handle */
+	    if (fib->fib_handle) {
+		DeleteFiber(fib->fib_handle);
+	    }
+	}
+#else /* not WIN32 */
+	if (th && th->fiber != fib) {
+	    if (fib->ss_sp) {
+		if (cont->type == ROOT_FIBER_CONTEXT) {
+		    rb_bug("Illegal root fiber parameter");
+		}
+		munmap((void*)fib->ss_sp, fib->ss_size);
+	    }
+	}
+	else {
+	    /* It may reached here when finalize */
+	    /* TODO examine whether it is a bug */
+	    /* rb_bug("cont_free: release self"); */
+	}
+#endif
+    }
+#else /* not FIBER_USE_NATIVE */
+    ruby_xfree(cont->ensure_array);
+    RUBY_FREE_UNLESS_NULL(cont->machine.stack);
 #endif
 #ifdef __ia64
-	RUBY_FREE_UNLESS_NULL(cont->machine.register_stack);
+    RUBY_FREE_UNLESS_NULL(cont->machine.register_stack);
 #endif
-	RUBY_FREE_UNLESS_NULL(cont->vm_stack);
+    RUBY_FREE_UNLESS_NULL(cont->vm_stack);
 
-	/* free rb_cont_t or rb_fiber_t */
-	ruby_xfree(ptr);
-    }
+    /* free rb_cont_t or rb_fiber_t */
+    ruby_xfree(ptr);
     RUBY_FREE_LEAVE("cont");
 }
 
@@ -317,16 +316,14 @@ fiber_mark(void *ptr)
 static void
 fiber_free(void *ptr)
 {
+    rb_fiber_t *fib = ptr;
     RUBY_FREE_ENTER("fiber");
-    if (ptr) {
-	rb_fiber_t *fib = ptr;
-	if (fib->cont.type != ROOT_FIBER_CONTEXT &&
-	    fib->cont.saved_thread.local_storage) {
-	    st_free_table(fib->cont.saved_thread.local_storage);
-	}
-
-	cont_free(&fib->cont);
+    if (fib->cont.type != ROOT_FIBER_CONTEXT &&
+	fib->cont.saved_thread.local_storage) {
+	st_free_table(fib->cont.saved_thread.local_storage);
     }
+
+    cont_free(&fib->cont);
     RUBY_FREE_LEAVE("fiber");
 }
 

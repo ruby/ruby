@@ -265,12 +265,10 @@ rb_proc_lambda_p(VALUE procval)
 static void
 binding_free(void *ptr)
 {
-    rb_binding_t *bind;
     RUBY_FREE_ENTER("binding");
-    if (ptr) {
-	bind = ptr;
-	ruby_xfree(bind);
-    }
+
+    ruby_xfree(ptr);
+
     RUBY_FREE_LEAVE("binding");
 }
 

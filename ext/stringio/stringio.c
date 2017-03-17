@@ -52,9 +52,8 @@ static void
 strio_mark(void *p)
 {
     struct StringIO *ptr = p;
-    if (ptr) {
-	rb_gc_mark(ptr->string);
-    }
+
+    rb_gc_mark(ptr->string);
 }
 
 static void

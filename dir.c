@@ -436,9 +436,8 @@ static void
 dir_free(void *ptr)
 {
     struct dir_data *dir = ptr;
-    if (dir) {
-	if (dir->dir) closedir(dir->dir);
-    }
+
+    if (dir->dir) closedir(dir->dir);
     xfree(dir);
 }
 

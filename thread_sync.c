@@ -54,16 +54,14 @@ static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t volatile *t
 static void
 mutex_free(void *ptr)
 {
-    if (ptr) {
-	rb_mutex_t *mutex = ptr;
-	if (mutex->th) {
-	    /* rb_warn("free locked mutex"); */
-	    const char *err = rb_mutex_unlock_th(mutex, mutex->th);
-	    if (err) rb_bug("%s", err);
-	}
-	native_mutex_destroy(&mutex->lock);
-	native_cond_destroy(&mutex->cond);
+    rb_mutex_t *mutex = ptr;
+    if (mutex->th) {
+	/* rb_warn("free locked mutex"); */
+	const char *err = rb_mutex_unlock_th(mutex, mutex->th);
+	if (err) rb_bug("%s", err);
     }
+    native_mutex_destroy(&mutex->lock);
+    native_cond_destroy(&mutex->cond);
     ruby_xfree(ptr);
 }
 

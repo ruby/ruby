@@ -2346,41 +2346,38 @@ rb_thread_mark(void *ptr)
 static void
 thread_free(void *ptr)
 {
-    rb_thread_t *th;
+    rb_thread_t *th = ptr;
     RUBY_FREE_ENTER("thread");
 
-    if (ptr) {
-	th = ptr;
-
-	if (!th->root_fiber) {
-	    RUBY_FREE_UNLESS_NULL(th->stack);
-	}
-
-	if (th->locking_mutex != Qfalse) {
-	    rb_bug("thread_free: locking_mutex must be NULL (%p:%p)", (void *)th, (void *)th->locking_mutex);
-	}
-	if (th->keeping_mutexes != NULL) {
-	    rb_bug("thread_free: keeping_mutexes must be NULL (%p:%p)", (void *)th, (void *)th->keeping_mutexes);
-	}
-
-	if (th->local_storage) {
-	    st_free_table(th->local_storage);
-	}
-
-	if (th->vm && th->vm->main_thread == th) {
-	    RUBY_GC_INFO("main thread\n");
-	}
-	else {
-#ifdef USE_SIGALTSTACK
-	    if (th->altstack) {
-		free(th->altstack);
-	    }
-#endif
-	    ruby_xfree(ptr);
-	}
-        if (ruby_current_thread == th)
-            ruby_current_thread = NULL;
+    if (!th->root_fiber) {
+	RUBY_FREE_UNLESS_NULL(th->stack);
     }
+
+    if (th->locking_mutex != Qfalse) {
+	rb_bug("thread_free: locking_mutex must be NULL (%p:%p)", (void *)th, (void *)th->locking_mutex);
+    }
+    if (th->keeping_mutexes != NULL) {
+	rb_bug("thread_free: keeping_mutexes must be NULL (%p:%p)", (void *)th, (void *)th->keeping_mutexes);
+    }
+
+    if (th->local_storage) {
+	st_free_table(th->local_storage);
+    }
+
+    if (th->vm && th->vm->main_thread == th) {
+	RUBY_GC_INFO("main thread\n");
+    }
+    else {
+#ifdef USE_SIGALTSTACK
+	if (th->altstack) {
+	    free(th->altstack);
+	}
+#endif
+	ruby_xfree(ptr);
+    }
+    if (ruby_current_thread == th)
+	ruby_current_thread = NULL;
+
     RUBY_FREE_LEAVE("thread");
 }
 
