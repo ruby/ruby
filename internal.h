@@ -940,6 +940,7 @@ struct MEMO {
 
 enum {
     cmp_opt_Fixnum,
+    cmp_opt_Float,
     cmp_opt_String,
     cmp_optimizable_count
 };
@@ -964,6 +965,8 @@ struct cmp_opt_data {
      (((long)a > (long)b) ? 1 : ((long)a < (long)b) ? -1 : 0) : \
      (STRING_P(a) && STRING_P(b) && CMP_OPTIMIZABLE(data, String)) ? \
      rb_str_cmp(a, b) : \
+     (RB_FLOAT_TYPE_P(a) && RB_FLOAT_TYPE_P(b) && CMP_OPTIMIZABLE(data, Float)) ? \
+     rb_float_cmp(a, b) : \
      rb_cmpint(rb_funcallv(a, id_cmp, 1, &b), a, b))
 
 /* ment is in method.h */
@@ -1293,6 +1296,7 @@ VALUE rb_int2str(VALUE num, int base);
 VALUE rb_dbl_hash(double d);
 VALUE rb_fix_plus(VALUE x, VALUE y);
 VALUE rb_int_gt(VALUE x, VALUE y);
+int rb_float_cmp(VALUE x, VALUE y);
 VALUE rb_float_gt(VALUE x, VALUE y);
 VALUE rb_int_ge(VALUE x, VALUE y);
 enum ruby_num_rounding_mode rb_num_get_rounding_option(VALUE opts);
