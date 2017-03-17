@@ -6013,7 +6013,7 @@ Init_File(void)
     rb_define_singleton_method(rb_cFile, "extname", rb_file_s_extname, 1);
     rb_define_singleton_method(rb_cFile, "path", rb_file_s_path, 1);
 
-    separator = rb_obj_freeze(rb_usascii_str_new2("/"));
+    separator = rb_fstring_cstr("/");
     /* separates directory parts in path */
     rb_define_const(rb_cFile, "Separator", separator);
     rb_define_const(rb_cFile, "SEPARATOR", separator);
@@ -6027,7 +6027,7 @@ Init_File(void)
     rb_define_const(rb_cFile, "ALT_SEPARATOR", Qnil);
 #endif
     /* path list separator */
-    rb_define_const(rb_cFile, "PATH_SEPARATOR", rb_obj_freeze(rb_str_new2(PATH_SEP)));
+    rb_define_const(rb_cFile, "PATH_SEPARATOR", rb_fstring_cstr(PATH_SEP));
 
     rb_define_method(rb_cIO, "stat",  rb_io_stat, 0); /* this is IO's method */
     rb_define_method(rb_cFile, "lstat",  rb_file_lstat, 0);
