@@ -1443,21 +1443,24 @@ class TestGem < Gem::TestCase
     ENV['RUBYGEMS_GEMDEPS'] = "-"
 
     path = File.join @tempdir, "gem.deps.rb"
+    cmd = [Gem.ruby.dup.untaint, "-I#{LIB_PATH.untaint}", "-rubygems"]
+    if RUBY_VERSION < '1.9'
+      cmd << "-e 'puts Gem.loaded_specs.values.map(&:full_name).sort'"
+      cmd = cmd.join(' ')
+    else
+      cmd << "-eputs Gem.loaded_specs.values.map(&:full_name).sort"
+    end
 
     File.open path, "w" do |f|
       f.puts "gem 'a'"
     end
-    out0 = IO.popen([Gem.ruby.dup.untaint, "-I#{LIB_PATH}", "-rubygems",
-                     "-eputs Gem.loaded_specs.values.map(&:full_name).sort"],
-                    &:read).split(/\n/)
+    out0 = IO.popen(cmd, &:read).split(/\n/)
 
     File.open path, "a" do |f|
       f.puts "gem 'b'"
       f.puts "gem 'c'"
     end
-    out = IO.popen([Gem.ruby.dup.untaint, "-I#{LIB_PATH}", "-rubygems",
-                    "-eputs Gem.loaded_specs.values.map(&:full_name).sort"],
-                   &:read).split(/\n/)
+    out = IO.popen(cmd, &:read).split(/\n/)
 
     assert_equal ["b-1", "c-1"], out - out0
   end
@@ -1482,21 +1485,24 @@ class TestGem < Gem::TestCase
     Dir.mkdir "sub1"
 
     path = File.join @tempdir, "gem.deps.rb"
+    cmd = [Gem.ruby.dup.untaint, "-Csub1", "-I#{LIB_PATH.untaint}", "-rubygems"]
+    if RUBY_VERSION < '1.9'
+      cmd << "-e 'puts Gem.loaded_specs.values.map(&:full_name).sort'"
+      cmd = cmd.join(' ')
+    else
+      cmd << "-eputs Gem.loaded_specs.values.map(&:full_name).sort"
+    end
 
     File.open path, "w" do |f|
       f.puts "gem 'a'"
     end
-    out0 = IO.popen([Gem.ruby.dup.untaint, "-Csub1", "-I#{LIB_PATH}", "-rubygems",
-                     "-eputs Gem.loaded_specs.values.map(&:full_name).sort"],
-                    &:read).split(/\n/)
+    out0 = IO.popen(cmd, &:read).split(/\n/)
 
     File.open path, "a" do |f|
       f.puts "gem 'b'"
       f.puts "gem 'c'"
     end
-    out = IO.popen([Gem.ruby.dup.untaint, "-Csub1", "-I#{LIB_PATH}", "-rubygems",
-                    "-eputs Gem.loaded_specs.values.map(&:full_name).sort"],
-                   &:read).split(/\n/)
+    out = IO.popen(cmd, &:read).split(/\n/)
 
     Dir.rmdir "sub1"
 

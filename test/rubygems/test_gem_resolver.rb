@@ -521,11 +521,11 @@ class TestGemResolver < Gem::TestCase
     assert_equal req('>= 0'), dependency.requirement
 
     activated = e.conflict.activated
-    assert_equal 'c-2', activated.full_name
+    assert_equal 'c-1', activated.full_name
 
-    assert_equal dep('c', '>= 2'), activated.request.dependency
+    assert_equal dep('c', '= 1'), activated.request.dependency
 
-    assert_equal [dep('c', '= 1'), dep('c', '>= 2')],
+    assert_equal [dep('c', '>= 2'), dep('c', '= 1')],
                  e.conflict.conflicting_dependencies
   end
 
