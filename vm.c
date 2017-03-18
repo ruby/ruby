@@ -998,7 +998,7 @@ invoke_iseq_block_from_c(rb_thread_t *th, const struct rb_captured_block *captur
     th->passed_bmethod_me = NULL;
 
     CHECK_VM_STACK_OVERFLOW(cfp, argc);
-    cfp->sp = sp + i;
+    cfp->sp = sp + argc;
     for (i=0; i<argc; i++) {
 	sp[i] = argv[i];
     }
