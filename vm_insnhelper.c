@@ -2506,7 +2506,11 @@ vm_callee_setup_block_arg_arg0_check(VALUE *argv)
 {
     VALUE ary, arg0 = argv[0];
     ary = rb_check_array_type(arg0);
+#if 0
     argv[0] = arg0;
+#else
+    VM_ASSERT(argv[0] == arg0);
+#endif
     return ary;
 }
 

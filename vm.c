@@ -998,12 +998,14 @@ invoke_iseq_block_from_c(rb_thread_t *th, const struct rb_captured_block *captur
     th->passed_bmethod_me = NULL;
 
     CHECK_VM_STACK_OVERFLOW(cfp, argc);
+    cfp->sp = sp + i;
     for (i=0; i<argc; i++) {
 	sp[i] = argv[i];
     }
 
     opt_pc = vm_yield_setup_args(th, iseq, argc, sp, passed_block_handler,
 				 (type == VM_FRAME_MAGIC_LAMBDA ? (splattable ? arg_setup_lambda : arg_setup_method) : arg_setup_block));
+    cfp->sp = sp;
 
     if (me == NULL) {
 	return invoke_block(th, iseq, self, captured, cref, type, opt_pc);
