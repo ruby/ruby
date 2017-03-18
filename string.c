@@ -4147,7 +4147,7 @@ str_upto_each(VALUE beg, VALUE end, int excl, int (*each)(VALUE, VALUE), VALUE a
 	}
 	else {
 	    ID op = excl ? '<' : idLE;
-	    VALUE args[2], fmt = rb_obj_freeze(rb_usascii_str_new_cstr("%.*d"));
+	    VALUE args[2], fmt = rb_fstring_cstr("%.*d");
 
 	    args[0] = INT2FIX(width);
 	    while (rb_funcall(b, op, 1, e)) {
