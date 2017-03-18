@@ -42,9 +42,6 @@ module OpenSSL::TestUtils
 
     def pkey(name)
       OpenSSL::PKey.read(read_file("pkey", name))
-    rescue OpenSSL::PKey::PKeyError
-      # TODO: DH parameters can be read by OpenSSL::PKey.read atm
-      OpenSSL::PKey::DH.new(read_file("pkey", name))
     end
 
     def read_file(category, name)

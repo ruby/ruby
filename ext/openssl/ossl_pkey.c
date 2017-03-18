@@ -178,6 +178,9 @@ ossl_pkey_new_from_data(int argc, VALUE *argv, VALUE self)
     OSSL_BIO_reset(bio);
     if ((pkey = PEM_read_bio_PUBKEY(bio, NULL, NULL, NULL)))
 	goto ok;
+    OSSL_BIO_reset(bio);
+    if ((pkey = PEM_read_bio_Parameters(bio, NULL)))
+	goto ok;
 
     BIO_free(bio);
     ossl_raise(ePKeyError, "Could not parse PKey");

@@ -36,6 +36,8 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     EOF
     key = OpenSSL::PKey::DH.new(pem)
     assert_same_dh dup_public(dh1024), key
+    key = OpenSSL::PKey.read(pem)
+    assert_same_dh dup_public(dh1024), key
 
     assert_equal asn1.to_der, dh1024.to_der
     assert_equal pem, dh1024.export
