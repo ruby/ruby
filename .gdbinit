@@ -68,7 +68,9 @@ define rp
       print/x *((VALUE*)((struct RObject*)($arg0))->as.ary) @ (ROBJECT_EMBED_LEN_MAX+0)
     else
       print (((struct RObject *)($arg0))->as.heap)
-      print/x *(((struct RObject*)($arg0))->as.heap.ivptr) @ (((struct RObject*)($arg0))->as.heap.numiv)
+      if (((struct RObject*)($arg0))->as.heap.numiv) > 0
+        print/x *(((struct RObject*)($arg0))->as.heap.ivptr) @ (((struct RObject*)($arg0))->as.heap.numiv)
+      end
     end
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_CLASS
