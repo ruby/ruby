@@ -477,40 +477,6 @@ ossl_dh_generate_key(VALUE self)
 }
 
 /*
- *  call-seq:
- *     dh.compute_key(pub_bn) -> aString
- *
- * Returns a String containing a shared secret computed from the other party's public value.
- * See DH_compute_key() for further information.
- *
- * === Parameters
- * * _pub_bn_ is a OpenSSL::BN, *not* the DH instance returned by
- *   DH#public_key as that contains the DH parameters only.
- */
-static VALUE
-ossl_dh_compute_key(VALUE self, VALUE pub)
-{
-    DH *dh;
-    const BIGNUM *pub_key, *dh_p;
-    VALUE str;
-    int len;
-
-    GetDH(self, dh);
-    DH_get0_pqg(dh, &dh_p, NULL, NULL);
-    if (!dh_p)
-	ossl_raise(eDHError, "incomplete DH");
-    pub_key = GetBNPtr(pub);
-    len = DH_size(dh);
-    str = rb_str_new(0, len);
-    if ((len = DH_compute_key((unsigned char *)RSTRING_PTR(str), pub_key, dh)) < 0) {
-	ossl_raise(eDHError, NULL);
-    }
-    rb_str_set_len(str, len);
-
-    return str;
-}
-
-/*
  * Document-method: OpenSSL::PKey::DH#set_pqg
  * call-seq:
  *   dh.set_pqg(p, q, g) -> self
@@ -587,7 +553,6 @@ Init_ossl_dh(void)
     rb_define_method(cDH, "public_key", ossl_dh_to_public_key, 0);
     rb_define_method(cDH, "params_ok?", ossl_dh_check_params, 0);
     rb_define_method(cDH, "generate_key!", ossl_dh_generate_key, 0);
-    rb_define_method(cDH, "compute_key", ossl_dh_compute_key, 1);
 
     DEF_OSSL_PKEY_BN(cDH, dh, p);
     DEF_OSSL_PKEY_BN(cDH, dh, q);

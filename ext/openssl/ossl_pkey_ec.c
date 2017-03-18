@@ -489,37 +489,6 @@ static VALUE ossl_ec_key_check_key(VALUE self)
 
 /*
  *  call-seq:
- *     key.dh_compute_key(pubkey)   => String
- *
- *  See the OpenSSL documentation for ECDH_compute_key()
- */
-static VALUE ossl_ec_key_dh_compute_key(VALUE self, VALUE pubkey)
-{
-    EC_KEY *ec;
-    EC_POINT *point;
-    int buf_len;
-    VALUE str;
-
-    GetEC(self, ec);
-    GetECPoint(pubkey, point);
-
-/* BUG: need a way to figure out the maximum string size */
-    buf_len = 1024;
-    str = rb_str_new(0, buf_len);
-/* BUG: take KDF as a block */
-    buf_len = ECDH_compute_key(RSTRING_PTR(str), buf_len, point, ec, NULL);
-    if (buf_len < 0)
-         ossl_raise(eECError, "ECDH_compute_key");
-
-    rb_str_resize(str, buf_len);
-
-    return str;
-}
-
-/* sign_setup */
-
-/*
- *  call-seq:
  *     key.dsa_sign_asn1(data)   => String
  *
  *  See the OpenSSL documentation for ECDSA_sign()
@@ -1657,7 +1626,6 @@ void Init_ossl_ec(void)
     rb_define_alias(cEC, "generate_key", "generate_key!");
     rb_define_method(cEC, "check_key", ossl_ec_key_check_key, 0);
 
-    rb_define_method(cEC, "dh_compute_key", ossl_ec_key_dh_compute_key, 1);
     rb_define_method(cEC, "dsa_sign_asn1", ossl_ec_key_dsa_sign_asn1, 1);
     rb_define_method(cEC, "dsa_verify_asn1", ossl_ec_key_dsa_verify_asn1, 2);
 /* do_sign/do_verify */
