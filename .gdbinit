@@ -124,7 +124,7 @@ define rp
       if ($len == 0)
 	printf "{(empty)} "
       else
-	output/x *((VALUE*)((struct RArray*)($arg0))->as.ary) @ $len
+	print/x *((VALUE*)((struct RArray*)($arg0))->as.ary) @ $len
 	printf " "
       end
     else
@@ -140,7 +140,7 @@ define rp
       if ($len == 0)
 	printf "{(empty)} "
       else
-	output/x *((VALUE*)((struct RArray*)($arg0))->as.heap.ptr) @ $len
+	print/x *((VALUE*)((struct RArray*)($arg0))->as.heap.ptr) @ $len
 	printf " "
       end
     end
