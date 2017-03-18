@@ -227,7 +227,7 @@ class Tempfile < DelegateClass(File)
     if !@tmpfile.closed?
       @tmpfile.size # File#size calls rb_io_flush_raw()
     else
-      File.size?(@tmpfile.path)
+      File.size(@tmpfile.path)
     end
   end
   alias length size
