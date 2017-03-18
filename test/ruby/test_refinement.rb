@@ -1769,6 +1769,31 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal("Foo#x", FooExtClient.return_proc(&:x).(Foo.new))
   end
 
+  def test_symbol_proc_with_block
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    bug = '[ruby-core:80219] [Bug #13325]'
+    begin;
+      module M
+        refine Class.new do
+        end
+      end
+      class C
+        def call(a, x, &b)
+          b.call(a, &x)
+        end
+      end
+      o = C.new
+      r = nil
+      x = ->(z){r = z}
+      assert_equal(42, o.call(42, x, &:tap))
+      assert_equal(42, r)
+      using M
+      r = nil
+      assert_equal(42, o.call(42, x, &:tap), bug)
+      assert_equal(42, r, bug)
+    end;
+  end
+
   module AliasInSubclass
     class C
       def foo
