@@ -93,6 +93,22 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal false, p256.verify("SHA256", signature1, data)
   end
 
+  def test_derive_key
+    # NIST CAVP, KAS_ECC_CDH_PrimitiveTest.txt, P-256 COUNT = 0
+    qCAVSx = "700c48f77f56584c5cc632ca65640db91b6bacce3a4df6b42ce7cc838833d287"
+    qCAVSy = "db71e509e3fd9b060ddb20ba5c51dcc5948d46fbf640dfe0441782cab85fa4ac"
+    dIUT = "7d7dc5f71eb29ddaf80d6214632eeae03d9058af1fb6d22ed80badb62bc1a534"
+    zIUT = "46fc62106420ff012e54a434fbdd2d25ccc5852060561e68040dd7778997bd7b"
+    a = OpenSSL::PKey::EC.new("prime256v1")
+    a.private_key = OpenSSL::BN.new(dIUT, 16)
+    b = OpenSSL::PKey::EC.new("prime256v1")
+    uncompressed = OpenSSL::BN.new("04" + qCAVSx + qCAVSy, 16)
+    b.public_key = OpenSSL::PKey::EC::Point.new(b.group, uncompressed)
+    assert_equal [zIUT].pack("H*"), a.derive(b)
+
+    assert_equal a.derive(b), a.dh_compute_key(b.public_key)
+  end
+
   def test_dsa_sign_verify
     data1 = "foo"
     data2 = "bar"
