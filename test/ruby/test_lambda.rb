@@ -31,8 +31,10 @@ class TestLambdaParameters < Test::Unit::TestCase
     bug9605 = '[ruby-core:61468] [Bug #9605]'
     assert_nothing_raised(ArgumentError, bug9605) {1.times(&->(n){ a += 1 })}
     assert_equal(3, a, bug9605)
-    assert_nothing_raised(ArgumentError, bug9605) {a = [[1, 2]].map(&->(x, y) {x+y})}
-    assert_equal([3], a, bug9605)
+    assert_nothing_raised(ArgumentError, bug9605) {
+      a = %w(Hi there how are you).each_with_index.detect(&->(w, i) {w.length == 3})
+    }
+    assert_equal(["how", 2], a, bug9605)
   end
 
   def test_call_rest_args
