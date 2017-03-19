@@ -1,3 +1,9 @@
+Mon Mar 20 06:35:08 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): convert -e script to the encoding
+	  given by a command line option on Windows.  assume it is the
+	  expected encoding.  [ruby-dev:49461] [Bug #11900]
+
 Mon Mar 20 05:47:49 2017  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_exception.rb: fix thread issues.
