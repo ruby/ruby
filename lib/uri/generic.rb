@@ -271,7 +271,7 @@ module URI
     #
     # Portion of the path that does make use of the slash '/'.
     # The path typically refers to the absolute path and the opaque part.
-    #  (see RFC2396 Section 3 and 5.2)
+    # (See RFC2396 Section 3 and 5.2.)
     #
     attr_reader :opaque
 
@@ -643,9 +643,9 @@ module URI
     # This method is same as URI::Generic#host except
     # brackets for IPv6 (and future IP) addresses are removed.
     #
-    # u = URI("http://[::1]/bar")
-    # p u.hostname      #=> "::1"
-    # p u.host          #=> "[::1]"
+    #   u = URI("http://[::1]/bar")
+    #   p u.hostname      #=> "::1"
+    #   p u.host          #=> "[::1]"
     #
     def hostname
       v = self.host
@@ -657,10 +657,10 @@ module URI
     # This method is same as URI::Generic#host= except
     # the argument can be bare IPv6 address.
     #
-    # u = URI("http://foo/bar")
-    # p u.to_s                  #=> "http://foo/bar"
-    # u.hostname = "::1"
-    # p u.to_s                  #=> "http://[::1]/bar"
+    #   u = URI("http://foo/bar")
+    #   p u.to_s                  #=> "http://foo/bar"
+    #   u.hostname = "::1"
+    #   p u.to_s                  #=> "http://[::1]/bar"
     #
     # If the argument seems IPv6 address,
     # it is wrapped by brackets.
@@ -1293,7 +1293,17 @@ module URI
     end
 
     #
-    # Returns normalized URI
+    # Returns normalized URI.
+    #
+    #   require 'uri'
+    #
+    #   URI("HTTP://my.EXAMPLE.com").normalize
+    #   #=> #<URI::HTTP http://my.example.com/>
+    #
+    # Normalization here means:
+    #
+    # * scheme and host are converted to lowercase,
+    # * an empty path component is set to "/".
     #
     def normalize
       uri = dup
@@ -1438,8 +1448,8 @@ module URI
     #
     # == Description
     #
-    #  attempt to parse other URI +oth+
-    #  return [parsed_oth, self]
+    # attempts to parse other URI +oth+,
+    # returns [parsed_oth, self]
     #
     # == Usage
     #
