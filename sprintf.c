@@ -74,6 +74,7 @@ sign_bits(int base, const char *p)
 } while (0)
 
 #define FILL(c, l) do { \
+    if ((l) <= 0) break;\
     CHECK(l);\
     FILL_(c, l);\
 } while (0)
@@ -758,20 +759,15 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    if ((flags&FWIDTH) && (width > slen)) {
 			width -= (int)slen;
 			if (!(flags&FMINUS)) {
-			    CHECK(width);
-			    while (width--) {
-				buf[blen++] = ' ';
-			    }
+			    FILL(' ', width);
+			    width = 0;
 			}
 			CHECK(len);
 			memcpy(&buf[blen], RSTRING_PTR(str), len);
 			RB_GC_GUARD(str);
 			blen += len;
 			if (flags&FMINUS) {
-			    CHECK(width);
-			    while (width--) {
-				buf[blen++] = ' ';
-			    }
+			    FILL(' ', width);
 			}
 			rb_enc_associate(result, enc);
 			break;
@@ -1009,10 +1005,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    width -= prec;
 		}
 		if (!(flags&FMINUS)) {
-		    CHECK(width);
-		    while (width-- > 0) {
-			buf[blen++] = ' ';
-		    }
+		    FILL(' ', width);
+		    width = 0;
 		}
 		if (sc) PUSH(&sc, 1);
 		if (prefix) {
@@ -1021,23 +1015,18 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		}
 		CHECK(prec - len);
 		if (dots) PUSH("..", 2);
-		if (!sign && valsign < 0) {
-		    char c = sign_bits(base, p);
-		    while (len < prec--) {
-			buf[blen++] = c;
+		if (prec > len) {
+		    if (!sign && valsign < 0) {
+			char c = sign_bits(base, p);
+			FILL_(c, prec - len);
 		    }
-		}
-		else if ((flags & (FMINUS|FPREC)) != FMINUS) {
-		    while (len < prec--) {
-			buf[blen++] = '0';
+		    else if ((flags & (FMINUS|FPREC)) != FMINUS) {
+			FILL_('0', prec - len);
 		    }
 		}
 		PUSH(s, len);
 		RB_GC_GUARD(tmp);
-		CHECK(width);
-		while (width-- > 0) {
-		    buf[blen++] = ' ';
-		}
+		FILL(' ', width);
 	    }
 	    break;
 
