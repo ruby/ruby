@@ -2543,12 +2543,6 @@ vm_callee_setup_block_arg(rb_thread_t *th, struct rb_calling_info *calling, cons
 		    calling->argc = iseq->body->param.lead_num; /* simply truncate arguments */
 		}
 	    }
-	    else if (arg_setup_type == arg_setup_lambda &&
-		     calling->argc == 1 &&
-		     !NIL_P(arg0 = vm_callee_setup_block_arg_arg0_check(argv)) &&
-		     RARRAY_LEN(arg0) == iseq->body->param.lead_num) {
-		calling->argc = vm_callee_setup_block_arg_arg0_splat(cfp, iseq, argv, arg0);
-	    }
 	    else {
 		argument_arity_error(th, iseq, calling->argc, iseq->body->param.lead_num, iseq->body->param.lead_num);
 	    }

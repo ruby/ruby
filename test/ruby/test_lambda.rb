@@ -101,6 +101,12 @@ class TestLambdaParameters < Test::Unit::TestCase
     assert_equal(:ok, x, bug13090)
   end
 
+  def test_arity_error
+    assert_raise(ArgumentError, '[Bug #12705]') do
+      [1, 2].tap(&lambda {|a, b|})
+    end
+  end
+
   def foo
     assert_equal(nil, ->(&b){ b }.call)
   end

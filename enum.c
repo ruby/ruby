@@ -39,7 +39,27 @@ rb_enum_values_pack(int argc, const VALUE *argv)
     i = rb_enum_values_pack(argc, argv); \
 } while (0)
 
-#define enum_yield rb_yield_values2
+static VALUE
+enum_yield(int argc, VALUE ary)
+{
+    if (argc > 1)
+	return rb_yield_lambda(ary);
+    if (argc == 1)
+	return rb_yield(ary);
+    return rb_yield_values2(0, 0);
+}
+
+static VALUE
+enum_yield_array(VALUE ary)
+{
+    long len = RARRAY_LEN(ary);
+
+    if (len > 1)
+	return rb_yield_lambda(ary);
+    if (len == 1)
+	return rb_yield(RARRAY_AREF(ary, 0));
+    return rb_yield_values2(0, 0);
+}
 
 static VALUE
 grep_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
@@ -60,7 +80,7 @@ grep_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     ENUM_WANT_SVALUE();
 
     if (RTEST(rb_funcall(memo->v1, id_eqq, 1, i)) == RTEST(memo->u3.value)) {
-	rb_ary_push(memo->v2, rb_yield(i));
+	rb_ary_push(memo->v2, enum_yield(argc, i));
     }
     return Qnil;
 }
@@ -138,7 +158,7 @@ count_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 {
     struct MEMO *memo = MEMO_CAST(memop);
 
-    if (RTEST(enum_yield(argc, argv))) {
+    if (RTEST(rb_yield_values2(argc, argv))) {
 	memo->u3.cnt++;
     }
     return Qnil;
@@ -204,7 +224,7 @@ find_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 {
     ENUM_WANT_SVALUE();
 
-    if (RTEST(rb_yield(i))) {
+    if (RTEST(enum_yield(argc, i))) {
 	struct MEMO *memo = MEMO_CAST(memop);
 	MEMO_V1_SET(memo, i);
 	memo->u3.cnt = 1;
@@ -276,7 +296,7 @@ find_index_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 {
     struct MEMO *memo = MEMO_CAST(memop);
 
-    if (RTEST(enum_yield(argc, argv))) {
+    if (RTEST(rb_yield_values2(argc, argv))) {
 	MEMO_V1_SET(memo, UINT2NUM(memo->u3.cnt));
 	rb_iter_break();
     }
@@ -332,7 +352,7 @@ find_all_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
     ENUM_WANT_SVALUE();
 
-    if (RTEST(rb_yield(i))) {
+    if (RTEST(enum_yield(argc, i))) {
 	rb_ary_push(ary, i);
     }
     return Qnil;
@@ -402,7 +422,7 @@ reject_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
     ENUM_WANT_SVALUE();
 
-    if (!RTEST(rb_yield(i))) {
+    if (!RTEST(enum_yield(argc, i))) {
 	rb_ary_push(ary, i);
     }
     return Qnil;
@@ -441,7 +461,7 @@ enum_reject(VALUE obj)
 static VALUE
 collect_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
-    rb_ary_push(ary, enum_yield(argc, argv));
+    rb_ary_push(ary, rb_yield_values2(argc, argv));
 
     return Qnil;
 }
@@ -490,7 +510,7 @@ flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
     VALUE tmp;
 
-    i = enum_yield(argc, argv);
+    i = rb_yield_values2(argc, argv);
     tmp = rb_check_array_type(i);
 
     if (NIL_P(tmp)) {
@@ -787,7 +807,7 @@ partition_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arys))
     VALUE ary;
     ENUM_WANT_SVALUE();
 
-    if (RTEST(rb_yield(i))) {
+    if (RTEST(enum_yield(argc, i))) {
 	ary = memo->v1;
     }
     else {
@@ -833,7 +853,7 @@ group_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
     ENUM_WANT_SVALUE();
 
-    group = rb_yield(i);
+    group = enum_yield(argc, i);
     values = rb_hash_aref(hash, group);
     if (!RB_TYPE_P(values, T_ARRAY)) {
 	values = rb_ary_new3(1, i);
@@ -967,7 +987,7 @@ sort_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _data))
 
     ENUM_WANT_SVALUE();
 
-    v = rb_yield(i);
+    v = enum_yield(argc, i);
 
     if (RBASIC(ary)->klass) {
 	rb_raise(rb_eRuntimeError, "sort_by reentered");
@@ -1141,7 +1161,7 @@ name##_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo)) \
 static VALUE \
 name##_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo)) \
 { \
-    return enum_##name##_func(enum_yield(argc, argv), MEMO_CAST(memo));	\
+    return enum_##name##_func(rb_yield_values2(argc, argv), MEMO_CAST(memo));	\
 } \
 \
 static VALUE \
@@ -1360,7 +1380,7 @@ nmin_i(VALUE i, VALUE *_data, int argc, VALUE *argv)
     ENUM_WANT_SVALUE();
 
     if (data->by)
-	cmpv = rb_yield(i);
+	cmpv = enum_yield(argc, i);
     else
 	cmpv = i;
 
@@ -1856,7 +1876,7 @@ min_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
     ENUM_WANT_SVALUE();
 
-    v = rb_yield(i);
+    v = enum_yield(argc, i);
     if (memo->v1 == Qundef) {
 	MEMO_V1_SET(memo, v);
 	MEMO_V2_SET(memo, i);
@@ -1917,7 +1937,7 @@ max_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
     ENUM_WANT_SVALUE();
 
-    v = rb_yield(i);
+    v = enum_yield(argc, i);
     if (memo->v1 == Qundef) {
 	MEMO_V1_SET(memo, v);
 	MEMO_V2_SET(memo, i);
@@ -2054,7 +2074,7 @@ minmax_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
 
     ENUM_WANT_SVALUE();
 
-    vi = rb_yield(i);
+    vi = enum_yield(argc, i);
 
     if (memo->last_bv == Qundef) {
         memo->last_bv = vi;
@@ -2237,7 +2257,7 @@ static VALUE
 each_val_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
 {
     ENUM_WANT_SVALUE();
-    rb_yield(i);
+    enum_yield(argc, i);
     return Qnil;
 }
 
@@ -2484,7 +2504,7 @@ zip_ary(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
 	}
     }
     if (NIL_P(result)) {
-	rb_yield(tmp);
+	enum_yield_array(tmp);
     }
     else {
 	rb_ary_push(result, tmp);
@@ -2535,7 +2555,7 @@ zip_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
 	}
     }
     if (NIL_P(result)) {
-	rb_yield(tmp);
+	enum_yield_array(tmp);
     }
     else {
 	rb_ary_push(result, tmp);
@@ -2657,7 +2677,7 @@ enum_take(VALUE obj, VALUE n)
 static VALUE
 take_while_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
-    if (!RTEST(enum_yield(argc, argv))) rb_iter_break();
+    if (!RTEST(rb_yield_values2(argc, argv))) rb_iter_break();
     rb_ary_push(ary, rb_enum_values_pack(argc, argv));
     return Qnil;
 }
@@ -2737,7 +2757,7 @@ drop_while_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     struct MEMO *memo = MEMO_CAST(args);
     ENUM_WANT_SVALUE();
 
-    if (!memo->u3.state && !RTEST(rb_yield(i))) {
+    if (!memo->u3.state && !RTEST(enum_yield(argc, i))) {
 	memo->u3.state = TRUE;
     }
     if (memo->u3.state) {
@@ -2780,8 +2800,8 @@ cycle_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
     ENUM_WANT_SVALUE();
 
-    rb_ary_push(ary, i);
-    rb_yield(i);
+    rb_ary_push(ary, argc > 1 ? i : rb_ary_new_from_values(argc, argv));
+    enum_yield(argc, i);
     return Qnil;
 }
 
@@ -2848,7 +2868,7 @@ enum_cycle(int argc, VALUE *argv, VALUE obj)
     if (len == 0) return Qnil;
     while (n < 0 || 0 < --n) {
         for (i=0; i<len; i++) {
-            rb_yield(RARRAY_AREF(ary, i));
+	    enum_yield_array(RARRAY_AREF(ary, i));
         }
     }
     return Qnil;
