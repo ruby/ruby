@@ -197,6 +197,226 @@ ossl_pkey_new_from_data(int argc, VALUE *argv, VALUE self)
     return ossl_pkey_new(pkey);
 }
 
+static VALUE
+pkey_gen_apply_options_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ctx_v))
+{
+    VALUE key = rb_ary_entry(i, 0), value = rb_ary_entry(i, 1);
+    EVP_PKEY_CTX *ctx = (EVP_PKEY_CTX *)ctx_v;
+
+    if (SYMBOL_P(key))
+        key = rb_sym2str(key);
+    value = rb_String(value);
+
+    if (EVP_PKEY_CTX_ctrl_str(ctx, StringValueCStr(key), StringValueCStr(value)) <= 0)
+        ossl_raise(ePKeyError, "EVP_PKEY_CTX_ctrl_str(ctx, %+"PRIsVALUE", %+"PRIsVALUE")",
+                   key, value);
+    return Qnil;
+}
+
+static VALUE
+pkey_gen_apply_options0(VALUE args_v)
+{
+    VALUE *args = (VALUE *)args_v;
+
+    rb_block_call(args[1], rb_intern("each"), 0, NULL,
+                  pkey_gen_apply_options_i, args[0]);
+    return Qnil;
+}
+
+struct pkey_blocking_generate_arg {
+    EVP_PKEY_CTX *ctx;
+    EVP_PKEY *pkey;
+    int state;
+    int yield: 1;
+    int genparam: 1;
+    int stop: 1;
+};
+
+static VALUE
+pkey_gen_cb_yield(VALUE ctx_v)
+{
+    EVP_PKEY_CTX *ctx = (void *)ctx_v;
+    int i, info_num;
+    VALUE *argv;
+
+    info_num = EVP_PKEY_CTX_get_keygen_info(ctx, -1);
+    argv = ALLOCA_N(VALUE, info_num);
+    for (i = 0; i < info_num; i++)
+        argv[i] = INT2NUM(EVP_PKEY_CTX_get_keygen_info(ctx, i));
+
+    return rb_yield_values2(info_num, argv);
+}
+
+static int
+pkey_gen_cb(EVP_PKEY_CTX *ctx)
+{
+    struct pkey_blocking_generate_arg *arg = EVP_PKEY_CTX_get_app_data(ctx);
+
+    if (arg->yield) {
+        int state;
+        rb_protect(pkey_gen_cb_yield, (VALUE)ctx, &state);
+        if (state) {
+            arg->stop = 1;
+            arg->state = state;
+        }
+    }
+    return !arg->stop;
+}
+
+static void
+pkey_blocking_gen_stop(void *ptr)
+{
+    struct pkey_blocking_generate_arg *arg = ptr;
+    arg->stop = 1;
+}
+
+static void *
+pkey_blocking_gen(void *ptr)
+{
+    struct pkey_blocking_generate_arg *arg = ptr;
+
+    if (arg->genparam && EVP_PKEY_paramgen(arg->ctx, &arg->pkey) <= 0)
+        return NULL;
+    if (!arg->genparam && EVP_PKEY_keygen(arg->ctx, &arg->pkey) <= 0)
+        return NULL;
+    return arg->pkey;
+}
+
+static VALUE
+pkey_generate(int argc, VALUE *argv, VALUE self, int genparam)
+{
+    EVP_PKEY_CTX *ctx;
+    VALUE alg, options;
+    struct pkey_blocking_generate_arg gen_arg = { 0 };
+    int state;
+
+    rb_scan_args(argc, argv, "11", &alg, &options);
+    if (rb_obj_is_kind_of(alg, cPKey)) {
+        EVP_PKEY *base_pkey;
+
+        GetPKey(alg, base_pkey);
+        ctx = EVP_PKEY_CTX_new(base_pkey, NULL/* engine */);
+        if (!ctx)
+            ossl_raise(ePKeyError, "EVP_PKEY_CTX_new");
+    }
+    else {
+        const EVP_PKEY_ASN1_METHOD *ameth;
+        ENGINE *tmpeng;
+        int pkey_id;
+
+        StringValue(alg);
+        ameth = EVP_PKEY_asn1_find_str(&tmpeng, RSTRING_PTR(alg),
+                                       RSTRING_LENINT(alg));
+        if (!ameth)
+            ossl_raise(ePKeyError, "algorithm %"PRIsVALUE" not found", alg);
+        EVP_PKEY_asn1_get0_info(&pkey_id, NULL, NULL, NULL, NULL, ameth);
+#if !defined(OPENSSL_NO_ENGINE)
+        if (tmpeng)
+            ENGINE_finish(tmpeng);
+#endif
+
+        ctx = EVP_PKEY_CTX_new_id(pkey_id, NULL/* engine */);
+        if (!ctx)
+            ossl_raise(ePKeyError, "EVP_PKEY_CTX_new_id");
+    }
+
+    if (genparam && EVP_PKEY_paramgen_init(ctx) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_PKEY_paramgen_init");
+    }
+    if (!genparam && EVP_PKEY_keygen_init(ctx) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_PKEY_keygen_init");
+    }
+
+    if (!NIL_P(options)) {
+        VALUE args[2];
+
+        args[0] = (VALUE)ctx;
+        args[1] = options;
+        rb_protect(pkey_gen_apply_options0, (VALUE)args, &state);
+        if (state) {
+            EVP_PKEY_CTX_free(ctx);
+            rb_jump_tag(state);
+        }
+    }
+
+    gen_arg.genparam = genparam;
+    gen_arg.ctx = ctx;
+    gen_arg.yield = rb_block_given_p();
+    EVP_PKEY_CTX_set_app_data(ctx, &gen_arg);
+    EVP_PKEY_CTX_set_cb(ctx, pkey_gen_cb);
+    if (gen_arg.yield)
+        pkey_blocking_gen(&gen_arg);
+    else
+        rb_thread_call_without_gvl(pkey_blocking_gen, &gen_arg,
+                                   pkey_blocking_gen_stop, &gen_arg);
+    EVP_PKEY_CTX_free(ctx);
+    if (!gen_arg.pkey) {
+        if (gen_arg.state) {
+            ossl_clear_error();
+            rb_jump_tag(gen_arg.state);
+        }
+        else {
+            ossl_raise(ePKeyError, genparam ? "EVP_PKEY_paramgen" : "EVP_PKEY_keygen");
+        }
+    }
+
+    return ossl_pkey_new(gen_arg.pkey);
+}
+
+/*
+ * call-seq:
+ *    OpenSSL::PKey.generate_parameters(algo_name [, options]) -> pkey
+ *
+ * Generates new parameters for the algorithm. _algo_name_ is a String that
+ * represents the algorithm. The optional argument _options_ is a Hash that
+ * specifies the options specific to the algorithm. The order of the options
+ * can be important.
+ *
+ * A block can be passed optionally. The meaning of the arguments passed to
+ * the block varies depending on the implementation of the algorithm. The block
+ * may be called once or multiple times, or may not even be called.
+ *
+ * For the supported options, see the documentation for the 'openssl genpkey'
+ * utility command.
+ *
+ * == Example
+ *   pkey = OpenSSL::PKey.generate_parameters("DSA", "dsa_paramgen_bits" => 2048)
+ *   p pkey.p.num_bits #=> 2048
+ */
+static VALUE
+ossl_pkey_s_generate_parameters(int argc, VALUE *argv, VALUE self)
+{
+    return pkey_generate(argc, argv, self, 1);
+}
+
+/*
+ * call-seq:
+ *    OpenSSL::PKey.generate_key(algo_name [, options]) -> pkey
+ *    OpenSSL::PKey.generate_key(pkey [, options]) -> pkey
+ *
+ * Generates a new key (pair).
+ *
+ * If a String is given as the first argument, it generates a new random key
+ * for the algorithm specified by the name just as ::generate_parameters does.
+ * If an OpenSSL::PKey::PKey is given instead, it generates a new random key
+ * for the same algorithm as the key, using the parameters the key contains.
+ *
+ * See ::generate_parameters for the details of _options_ and the given block.
+ *
+ * == Example
+ *   pkey_params = OpenSSL::PKey.generate_parameters("DSA", "dsa_paramgen_bits" => 2048)
+ *   pkey_params.priv_key #=> nil
+ *   pkey = OpenSSL::PKey.generate_key(pkey_params)
+ *   pkey.priv_key #=> #<OpenSSL::BN 6277...
+ */
+static VALUE
+ossl_pkey_s_generate_key(int argc, VALUE *argv, VALUE self)
+{
+    return pkey_generate(argc, argv, self, 0);
+}
+
 void
 ossl_pkey_check_public_key(const EVP_PKEY *pkey)
 {
@@ -707,6 +927,8 @@ Init_ossl_pkey(void)
     cPKey = rb_define_class_under(mPKey, "PKey", rb_cObject);
 
     rb_define_module_function(mPKey, "read", ossl_pkey_new_from_data, -1);
+    rb_define_module_function(mPKey, "generate_parameters", ossl_pkey_s_generate_parameters, -1);
+    rb_define_module_function(mPKey, "generate_key", ossl_pkey_s_generate_key, -1);
 
     rb_define_alloc_func(cPKey, ossl_pkey_alloc);
     rb_define_method(cPKey, "initialize", ossl_pkey_initialize, 0);
