@@ -416,7 +416,7 @@ rb_mutex_abandon_all(rb_mutex_t *mutexes)
 static VALUE
 rb_mutex_sleep_forever(VALUE time)
 {
-    sleep_forever(GET_THREAD(), 1, 0); /* permit spurious check */
+    rb_thread_sleep_deadly_allow_spurious_wakeup();
     return Qnil;
 }
 
@@ -763,7 +763,7 @@ queue_delete_from_waiting(struct waiting_delete *p)
 static VALUE
 queue_sleep(VALUE arg)
 {
-    rb_thread_sleep_deadly();
+    rb_thread_sleep_deadly_allow_spurious_wakeup();
     return Qnil;
 }
 
