@@ -2254,8 +2254,8 @@ rb_int_truncate(VALUE num, int ndigits)
  *     2.5.round(half: :even) #=> 2
  *     2.5.round(half: :down) #=> 2
  *     3.5.round(half: :up)   #=> 4
- *     3.5.round(half: :down) #=> 4
- *     3.5.round(half: :even) #=> 3
+ *     3.5.round(half: :even) #=> 4
+ *     3.5.round(half: :down) #=> 3
  */
 
 static VALUE
