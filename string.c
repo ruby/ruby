@@ -2102,11 +2102,11 @@ str_fill_term(VALUE str, char *s, long len, int termlen)
 void
 rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int termlen)
 {
-    long capa = str_capacity(str, oldtermlen);
+    long capa = str_capacity(str, oldtermlen) + oldtermlen;
     long len = RSTRING_LEN(str);
 
     assert(capa >= len);
-    if (capa - len < termlen - oldtermlen) {
+    if (capa - len < termlen) {
 	rb_check_lockedtmp(str);
 	str_make_independent_expand(str, len, 0L, termlen);
     }
@@ -2118,7 +2118,7 @@ rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int terml
 	if (!STR_EMBED_P(str)) {
 	    /* modify capa instead of realloc */
 	    assert(!FL_TEST((str), STR_SHARED));
-	    RSTRING(str)->as.heap.aux.capa = capa - (termlen - oldtermlen);
+	    RSTRING(str)->as.heap.aux.capa = capa - termlen;
 	}
 	if (termlen > oldtermlen) {
 	    TERM_FILL(RSTRING_PTR(str) + len, termlen);
