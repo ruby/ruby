@@ -5,6 +5,8 @@ platform:
 environment:
   ruby_version: "23-%Platform%"
   zlib_version: "1.2.11"
+  UNICODE_VERSION: "9.0.0"
+  UNICODE_URL_BASE: "http://www.unicode.org/Public/%UNICODE_VERSION%/ucd/"
   matrix:
     - vs: "120"
 install:
@@ -22,6 +24,9 @@ install:
   - mkdir \usr\local\bin
   - mkdir \usr\local\include
   - mkdir \usr\local\lib
+  - set UNICODE_DATA_DIR=enc\unicode\data\%UNICODE_VERSION%\
+  - mkdir %UNICODE_DATA_DIR%
+  - for %%I in (UnicodeData CompositionExclusions NormalizationTest CaseFolding SpecialCasing) do appveyor DownloadFile %UNICODE_URL_BASE%%%I.txt -FileName %UNICODE_DATA_DIR%%%I.txt || exit /b 1
   - appveyor DownloadFile https://downloads.sourceforge.net/project/libpng/zlib/%zlib_version%/zlib%zlib_version:.=%.zip
   - 7z x -o%APPVEYOR_BUILD_FOLDER%\ext\zlib zlib%zlib_version:.=%.zip
   - for %%I in (%OPENSSL_DIR%\*.dll) do mklink /h \usr\local\bin\%%~nxI %%I
