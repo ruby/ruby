@@ -73,7 +73,7 @@ in the mail body (not subject) to the address
 This is what you need to do to compile and install Ruby:
 
 1.  If you want to use Microsoft Visual C++ to compile ruby, read
-    win32/README.win32 instead of this document.
+    [win32/README.win32](win32/README.win32) instead of this document.
 
 2.  If `./configure` does not exist or is older than configure.in, run
     `autoconf` to (re)generate configure.
