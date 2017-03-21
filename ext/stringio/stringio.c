@@ -767,12 +767,14 @@ strio_ungetc(VALUE self, VALUE c)
     check_modifiable(ptr);
     if (NIL_P(c)) return Qnil;
     if (FIXNUM_P(c)) {
-	int cc = FIX2INT(c);
+	int len, cc = FIX2INT(c);
 	char buf[16];
 
 	enc = rb_enc_get(ptr->string);
+	len = rb_enc_codelen(cc, enc);
+	if (len <= 0) rb_enc_uint_chr(cc, enc);
 	rb_enc_mbcput(cc, buf, enc);
-	return strio_unget_bytes(ptr, buf, rb_enc_codelen(cc, enc));
+	return strio_unget_bytes(ptr, buf, len);
     }
     else {
 	SafeStringValue(c);
