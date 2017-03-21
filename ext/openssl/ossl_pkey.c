@@ -252,12 +252,19 @@ GetPrivPKeyPtr(VALUE obj)
 {
     EVP_PKEY *pkey;
 
-    if (rb_funcallv(obj, id_private_q, 0, NULL) != Qtrue) {
-	ossl_raise(rb_eArgError, "Private key is needed.");
-    }
     GetPKey(obj, pkey);
+    if (OSSL_PKEY_IS_PRIVATE(obj))
+        return pkey;
+    /*
+     * The EVP API does not provide a way to check if the EVP_PKEY has private
+     * components. Assuming it does...
+     */
+    if (!rb_respond_to(obj, id_private_q))
+        return pkey;
+    if (RTEST(rb_funcallv(obj, id_private_q, 0, NULL)))
+        return pkey;
 
-    return pkey;
+    rb_raise(rb_eArgError, "private key is needed");
 }
 
 EVP_PKEY *
