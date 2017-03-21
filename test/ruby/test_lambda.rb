@@ -31,8 +31,10 @@ class TestLambdaParameters < Test::Unit::TestCase
     bug9605 = '[ruby-core:61468] [Bug #9605]'
     assert_nothing_raised(ArgumentError, bug9605) {1.times(&->(n){ a += 1 })}
     assert_equal(3, a, bug9605)
-    assert_nothing_raised(ArgumentError, bug9605) {a = [[1, 2]].map(&->(x, y) {x+y})}
-    assert_equal([3], a, bug9605)
+    assert_nothing_raised(ArgumentError, bug9605) {
+      a = %w(Hi there how are you).each_with_index.detect(&->(w, i) {w.length == 3})
+    }
+    assert_equal(["how", 2], a, bug9605)
   end
 
   def test_call_rest_args
@@ -99,29 +101,9 @@ class TestLambdaParameters < Test::Unit::TestCase
     assert_equal(:ok, x, bug13090)
   end
 
-  def yield_1(arg)
-    yield arg
-  end
-
-  tap do |;bug9605, expected, result|
-    bug9605 = '[ruby-core:65887] [Bug #9605] arity check should be relaxed'
-    expected = [1,2,3]
-
-    [
-      ["array",  expected],
-      ["to_ary", Struct.new(:to_ary).new(expected)],
-    ].product \
-    [
-      ["proc",   proc {|a, b, c| [a, b, c]}],
-      ["lambda", lambda {|a, b, c| [a, b, c]}],
-    ] do
-      |(vtype, val), (btype, block)|
-      define_method("test_yield_relaxed(#{vtype},&#{btype})") do
-        result = assert_nothing_raised(ArgumentError, bug9605) {
-          break yield_1(val, &block)
-        }
-        assert_equal(expected, result, bug9605)
-      end
+  def test_arity_error
+    assert_raise(ArgumentError, '[Bug #12705]') do
+      [1, 2].tap(&lambda {|a, b|})
     end
   end
 
