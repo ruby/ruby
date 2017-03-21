@@ -59,6 +59,7 @@ class Downloader
   class RubyGems < self
     def self.download(name, dir = nil, since = true, options = {})
       require 'rubygems'
+      options = options.dup
       verify = options.delete(:verify) {Gem::VERSION >= "2.4."}
       options[:ssl_ca_cert] = Dir.glob(File.expand_path("../lib/rubygems/ssl_certs/**/*.pem", File.dirname(__FILE__)))
       file = under(dir, name)
@@ -122,8 +123,14 @@ class Downloader
   #   download 'http://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt',
   #            'UnicodeData.txt', 'enc/unicode/data'
   def self.download(url, name, dir = nil, since = true, options = {})
+    options = options.dup
     options.delete(:verify)
     file = under(dir, name)
+    dryrun = options.delete(:dryrun)
+    if dryrun
+      puts "Download #{url} into #{file}"
+      return false
+    end
     if since.nil? and File.exist?(file)
       if $VERBOSE
         $stdout.puts "#{name} already exists"
@@ -213,6 +220,8 @@ if $0 == __FILE__
       since = false
     when '-V'
       options[:verify] = true
+    when '-n', '--dryrun'
+      options[:dryrun] = true
     when /\A-/
       abort "#{$0}: unknown option #{ARGV[0]}"
     else
