@@ -25,7 +25,7 @@ name = X509::Name.parse(name_str)
 
 keypair = nil
 if keypair_file
-  keypair = PKey::RSA.new(File.open(keypair_file).read)
+  keypair = PKey.read(File.read(keypair_file))
 else
   keypair = PKey::RSA.new(1024) { putc "." }
   puts

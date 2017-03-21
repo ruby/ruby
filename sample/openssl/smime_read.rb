@@ -11,7 +11,7 @@ ca_path   = options["C"]
 data = $stdin.read
 
 cert = X509::Certificate.new(File::read(cert_file))
-key = PKey::RSA.new(File::read(key_file))
+key = PKey::read(File::read(key_file))
 p7enc = PKCS7::read_smime(data)
 data = p7enc.decrypt(key, cert)
 

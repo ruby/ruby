@@ -13,7 +13,7 @@ ca_path   = options["C"]
 
 if cert_file && key_file
   cert = OpenSSL::X509::Certificate.new(File::read(cert_file))
-  key  = OpenSSL::PKey::RSA.new(File::read(key_file))
+  key  = OpenSSL::PKey.read(File::read(key_file))
 else
   key = OpenSSL::PKey::RSA.new(512){ print "." }
   puts

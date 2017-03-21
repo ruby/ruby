@@ -9,7 +9,7 @@ key_file  = options["k"]
 rcpt_file = options["r"]
 
 cert = X509::Certificate.new(File::read(cert_file))
-key = PKey::RSA.new(File::read(key_file))
+key = PKey::read(File::read(key_file))
 
 data  = "Content-Type: text/plain\r\n"
 data << "\r\n"
