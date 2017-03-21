@@ -2397,7 +2397,9 @@ sort_1(const void *ap, const void *bp, void *dummy)
     VALUE retval = sort_reentered(data->ary);
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
     int n;
-    VALUE args[2] = { a, b };
+    VALUE args[2];
+    args[0] = a;
+    args[1] = b;
 
     retval = rb_yield_values2(2, args);
     n = rb_cmpint(retval, a, b);
