@@ -3243,6 +3243,8 @@ int_pow(long x, unsigned long y)
 		VALUE v;
 	      bignum:
 		v = rb_big_pow(rb_int2big(x), LONG2NUM(y));
+		if (RB_FLOAT_TYPE_P(v)) /* infinity due to overflow */
+		    return v;
 		if (z != 1) v = rb_big_mul(rb_int2big(neg ? -z : z), v);
 		return v;
 	    }
