@@ -3285,4 +3285,34 @@ End
       end
     end
   end if File::BINARY != 0
+
+  def test_race_gets_and_close
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    bug13076 = '[ruby-core:78845] [Bug #13076]'
+    begin;
+      100.times do |i|
+        a = []
+        t = []
+        10.times do
+          r,w = IO.pipe
+          a << [r,w]
+          t << Thread.new do
+            begin
+              while r.gets
+              end
+            rescue IOError
+            end
+          end
+        end
+        a.each do |r,w|
+          w.puts "hoge"
+          w.close
+          r.close
+        end
+        assert_nothing_raised(IOError, bug13076) {
+          t.each(&:join)
+        }
+      end
+    end;
+  end
 end
