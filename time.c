@@ -322,7 +322,7 @@ wcmp(wideval_t wx, wideval_t wy)
 #endif
     x = w2v(wx);
     y = w2v(wy);
-    return rb_cmpint(rb_funcall(x, id_cmp, 1, y), x, y);
+    return cmp(x, y);
 }
 
 #define wne(x,y) (!weq((x),(y)))
