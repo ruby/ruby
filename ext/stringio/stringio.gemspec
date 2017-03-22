@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.files = ["README.md".freeze, "depend".freeze, "extconf.rb".freeze, "stringio.c".freeze]
   s.homepage = "https://www.ruby-lang.org".freeze
   s.licenses = ["BSD-2-Clause".freeze]
-  s.required_ruby_version = Gem::Requirement.new(">= 2.1".freeze)
+  s.required_ruby_version = Gem::Requirement.new(">= 2.2".freeze)
   s.rubygems_version = "2.6.11".freeze
   s.summary = "Pseudo IO on String".freeze
   s.cert_chain  = %w[certs/nobu.pem]
