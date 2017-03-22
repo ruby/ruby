@@ -948,6 +948,11 @@ rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars)
 
 /* C -> Ruby: block */
 
+ALWAYS_INLINE(
+    static VALUE
+    invoke_block(rb_thread_t *th, const rb_iseq_t *iseq, VALUE self, const struct rb_captured_block *captured, const rb_cref_t *cref, VALUE type, int opt_pc)
+);
+
 static inline VALUE
 invoke_block(rb_thread_t *th, const rb_iseq_t *iseq, VALUE self, const struct rb_captured_block *captured, const rb_cref_t *cref, VALUE type, int opt_pc)
 {
@@ -1080,6 +1085,13 @@ vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *argv, VALUE block_ha
 {
     return invoke_block_from_c_splattable(th, check_block_handler(th), argc, argv, block_handler, NULL, FALSE);
 }
+
+ALWAYS_INLINE(
+    static VALUE
+    invoke_block_from_c_unsplattable(rb_thread_t *th, const struct rb_block *block,
+				     VALUE self, int argc, const VALUE *argv,
+				     VALUE passed_block_handler, int is_lambda)
+);
 
 static inline VALUE
 invoke_block_from_c_unsplattable(rb_thread_t *th, const struct rb_block *block,
