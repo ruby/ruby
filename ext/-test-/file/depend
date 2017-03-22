@@ -7,6 +7,7 @@ fs.o: $(hdrdir)/ruby/encoding.h
 fs.o: $(hdrdir)/ruby/intern.h
 fs.o: $(hdrdir)/ruby/io.h
 fs.o: $(hdrdir)/ruby/missing.h
+fs.o: $(hdrdir)/ruby/onigmo.h
 fs.o: $(hdrdir)/ruby/oniguruma.h
 fs.o: $(hdrdir)/ruby/ruby.h
 fs.o: $(hdrdir)/ruby/st.h
@@ -31,6 +32,7 @@ stat.o: $(hdrdir)/ruby/encoding.h
 stat.o: $(hdrdir)/ruby/intern.h
 stat.o: $(hdrdir)/ruby/io.h
 stat.o: $(hdrdir)/ruby/missing.h
+stat.o: $(hdrdir)/ruby/onigmo.h
 stat.o: $(hdrdir)/ruby/oniguruma.h
 stat.o: $(hdrdir)/ruby/ruby.h
 stat.o: $(hdrdir)/ruby/st.h

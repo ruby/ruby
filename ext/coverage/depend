@@ -19,6 +19,7 @@ coverage.o: $(hdrdir)/ruby/encoding.h
 coverage.o: $(hdrdir)/ruby/intern.h
 coverage.o: $(hdrdir)/ruby/io.h
 coverage.o: $(hdrdir)/ruby/missing.h
+coverage.o: $(hdrdir)/ruby/onigmo.h
 coverage.o: $(hdrdir)/ruby/oniguruma.h
 coverage.o: $(hdrdir)/ruby/ruby.h
 coverage.o: $(hdrdir)/ruby/st.h

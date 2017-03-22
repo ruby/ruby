@@ -13,6 +13,7 @@ big2str.o: $(hdrdir)/ruby/encoding.h
 big2str.o: $(hdrdir)/ruby/intern.h
 big2str.o: $(hdrdir)/ruby/io.h
 big2str.o: $(hdrdir)/ruby/missing.h
+big2str.o: $(hdrdir)/ruby/onigmo.h
 big2str.o: $(hdrdir)/ruby/oniguruma.h
 big2str.o: $(hdrdir)/ruby/ruby.h
 big2str.o: $(hdrdir)/ruby/st.h
@@ -28,6 +29,7 @@ bigzero.o: $(hdrdir)/ruby/encoding.h
 bigzero.o: $(hdrdir)/ruby/intern.h
 bigzero.o: $(hdrdir)/ruby/io.h
 bigzero.o: $(hdrdir)/ruby/missing.h
+bigzero.o: $(hdrdir)/ruby/onigmo.h
 bigzero.o: $(hdrdir)/ruby/oniguruma.h
 bigzero.o: $(hdrdir)/ruby/ruby.h
 bigzero.o: $(hdrdir)/ruby/st.h
@@ -43,6 +45,7 @@ div.o: $(hdrdir)/ruby/encoding.h
 div.o: $(hdrdir)/ruby/intern.h
 div.o: $(hdrdir)/ruby/io.h
 div.o: $(hdrdir)/ruby/missing.h
+div.o: $(hdrdir)/ruby/onigmo.h
 div.o: $(hdrdir)/ruby/oniguruma.h
 div.o: $(hdrdir)/ruby/ruby.h
 div.o: $(hdrdir)/ruby/st.h
@@ -69,6 +72,7 @@ intpack.o: $(hdrdir)/ruby/encoding.h
 intpack.o: $(hdrdir)/ruby/intern.h
 intpack.o: $(hdrdir)/ruby/io.h
 intpack.o: $(hdrdir)/ruby/missing.h
+intpack.o: $(hdrdir)/ruby/onigmo.h
 intpack.o: $(hdrdir)/ruby/oniguruma.h
 intpack.o: $(hdrdir)/ruby/ruby.h
 intpack.o: $(hdrdir)/ruby/st.h
@@ -84,6 +88,7 @@ mul.o: $(hdrdir)/ruby/encoding.h
 mul.o: $(hdrdir)/ruby/intern.h
 mul.o: $(hdrdir)/ruby/io.h
 mul.o: $(hdrdir)/ruby/missing.h
+mul.o: $(hdrdir)/ruby/onigmo.h
 mul.o: $(hdrdir)/ruby/oniguruma.h
 mul.o: $(hdrdir)/ruby/ruby.h
 mul.o: $(hdrdir)/ruby/st.h
@@ -99,6 +104,7 @@ str2big.o: $(hdrdir)/ruby/encoding.h
 str2big.o: $(hdrdir)/ruby/intern.h
 str2big.o: $(hdrdir)/ruby/io.h
 str2big.o: $(hdrdir)/ruby/missing.h
+str2big.o: $(hdrdir)/ruby/onigmo.h
 str2big.o: $(hdrdir)/ruby/oniguruma.h
 str2big.o: $(hdrdir)/ruby/ruby.h
 str2big.o: $(hdrdir)/ruby/st.h

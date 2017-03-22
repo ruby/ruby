@@ -16,6 +16,7 @@ ancdata.o: $(hdrdir)/ruby/encoding.h
 ancdata.o: $(hdrdir)/ruby/intern.h
 ancdata.o: $(hdrdir)/ruby/io.h
 ancdata.o: $(hdrdir)/ruby/missing.h
+ancdata.o: $(hdrdir)/ruby/onigmo.h
 ancdata.o: $(hdrdir)/ruby/oniguruma.h
 ancdata.o: $(hdrdir)/ruby/ruby.h
 ancdata.o: $(hdrdir)/ruby/st.h
@@ -36,6 +37,7 @@ basicsocket.o: $(hdrdir)/ruby/encoding.h
 basicsocket.o: $(hdrdir)/ruby/intern.h
 basicsocket.o: $(hdrdir)/ruby/io.h
 basicsocket.o: $(hdrdir)/ruby/missing.h
+basicsocket.o: $(hdrdir)/ruby/onigmo.h
 basicsocket.o: $(hdrdir)/ruby/oniguruma.h
 basicsocket.o: $(hdrdir)/ruby/ruby.h
 basicsocket.o: $(hdrdir)/ruby/st.h
@@ -56,6 +58,7 @@ constants.o: $(hdrdir)/ruby/encoding.h
 constants.o: $(hdrdir)/ruby/intern.h
 constants.o: $(hdrdir)/ruby/io.h
 constants.o: $(hdrdir)/ruby/missing.h
+constants.o: $(hdrdir)/ruby/onigmo.h
 constants.o: $(hdrdir)/ruby/oniguruma.h
 constants.o: $(hdrdir)/ruby/ruby.h
 constants.o: $(hdrdir)/ruby/st.h
@@ -77,6 +80,7 @@ ifaddr.o: $(hdrdir)/ruby/encoding.h
 ifaddr.o: $(hdrdir)/ruby/intern.h
 ifaddr.o: $(hdrdir)/ruby/io.h
 ifaddr.o: $(hdrdir)/ruby/missing.h
+ifaddr.o: $(hdrdir)/ruby/onigmo.h
 ifaddr.o: $(hdrdir)/ruby/oniguruma.h
 ifaddr.o: $(hdrdir)/ruby/ruby.h
 ifaddr.o: $(hdrdir)/ruby/st.h
@@ -97,6 +101,7 @@ init.o: $(hdrdir)/ruby/encoding.h
 init.o: $(hdrdir)/ruby/intern.h
 init.o: $(hdrdir)/ruby/io.h
 init.o: $(hdrdir)/ruby/missing.h
+init.o: $(hdrdir)/ruby/onigmo.h
 init.o: $(hdrdir)/ruby/oniguruma.h
 init.o: $(hdrdir)/ruby/ruby.h
 init.o: $(hdrdir)/ruby/st.h
@@ -117,6 +122,7 @@ ipsocket.o: $(hdrdir)/ruby/encoding.h
 ipsocket.o: $(hdrdir)/ruby/intern.h
 ipsocket.o: $(hdrdir)/ruby/io.h
 ipsocket.o: $(hdrdir)/ruby/missing.h
+ipsocket.o: $(hdrdir)/ruby/onigmo.h
 ipsocket.o: $(hdrdir)/ruby/oniguruma.h
 ipsocket.o: $(hdrdir)/ruby/ruby.h
 ipsocket.o: $(hdrdir)/ruby/st.h
@@ -137,6 +143,7 @@ option.o: $(hdrdir)/ruby/encoding.h
 option.o: $(hdrdir)/ruby/intern.h
 option.o: $(hdrdir)/ruby/io.h
 option.o: $(hdrdir)/ruby/missing.h
+option.o: $(hdrdir)/ruby/onigmo.h
 option.o: $(hdrdir)/ruby/oniguruma.h
 option.o: $(hdrdir)/ruby/ruby.h
 option.o: $(hdrdir)/ruby/st.h
@@ -157,6 +164,7 @@ raddrinfo.o: $(hdrdir)/ruby/encoding.h
 raddrinfo.o: $(hdrdir)/ruby/intern.h
 raddrinfo.o: $(hdrdir)/ruby/io.h
 raddrinfo.o: $(hdrdir)/ruby/missing.h
+raddrinfo.o: $(hdrdir)/ruby/onigmo.h
 raddrinfo.o: $(hdrdir)/ruby/oniguruma.h
 raddrinfo.o: $(hdrdir)/ruby/ruby.h
 raddrinfo.o: $(hdrdir)/ruby/st.h
@@ -177,6 +185,7 @@ socket.o: $(hdrdir)/ruby/encoding.h
 socket.o: $(hdrdir)/ruby/intern.h
 socket.o: $(hdrdir)/ruby/io.h
 socket.o: $(hdrdir)/ruby/missing.h
+socket.o: $(hdrdir)/ruby/onigmo.h
 socket.o: $(hdrdir)/ruby/oniguruma.h
 socket.o: $(hdrdir)/ruby/ruby.h
 socket.o: $(hdrdir)/ruby/st.h
@@ -197,6 +206,7 @@ sockssocket.o: $(hdrdir)/ruby/encoding.h
 sockssocket.o: $(hdrdir)/ruby/intern.h
 sockssocket.o: $(hdrdir)/ruby/io.h
 sockssocket.o: $(hdrdir)/ruby/missing.h
+sockssocket.o: $(hdrdir)/ruby/onigmo.h
 sockssocket.o: $(hdrdir)/ruby/oniguruma.h
 sockssocket.o: $(hdrdir)/ruby/ruby.h
 sockssocket.o: $(hdrdir)/ruby/st.h
@@ -217,6 +227,7 @@ tcpserver.o: $(hdrdir)/ruby/encoding.h
 tcpserver.o: $(hdrdir)/ruby/intern.h
 tcpserver.o: $(hdrdir)/ruby/io.h
 tcpserver.o: $(hdrdir)/ruby/missing.h
+tcpserver.o: $(hdrdir)/ruby/onigmo.h
 tcpserver.o: $(hdrdir)/ruby/oniguruma.h
 tcpserver.o: $(hdrdir)/ruby/ruby.h
 tcpserver.o: $(hdrdir)/ruby/st.h
@@ -237,6 +248,7 @@ tcpsocket.o: $(hdrdir)/ruby/encoding.h
 tcpsocket.o: $(hdrdir)/ruby/intern.h
 tcpsocket.o: $(hdrdir)/ruby/io.h
 tcpsocket.o: $(hdrdir)/ruby/missing.h
+tcpsocket.o: $(hdrdir)/ruby/onigmo.h
 tcpsocket.o: $(hdrdir)/ruby/oniguruma.h
 tcpsocket.o: $(hdrdir)/ruby/ruby.h
 tcpsocket.o: $(hdrdir)/ruby/st.h
@@ -257,6 +269,7 @@ udpsocket.o: $(hdrdir)/ruby/encoding.h
 udpsocket.o: $(hdrdir)/ruby/intern.h
 udpsocket.o: $(hdrdir)/ruby/io.h
 udpsocket.o: $(hdrdir)/ruby/missing.h
+udpsocket.o: $(hdrdir)/ruby/onigmo.h
 udpsocket.o: $(hdrdir)/ruby/oniguruma.h
 udpsocket.o: $(hdrdir)/ruby/ruby.h
 udpsocket.o: $(hdrdir)/ruby/st.h
@@ -277,6 +290,7 @@ unixserver.o: $(hdrdir)/ruby/encoding.h
 unixserver.o: $(hdrdir)/ruby/intern.h
 unixserver.o: $(hdrdir)/ruby/io.h
 unixserver.o: $(hdrdir)/ruby/missing.h
+unixserver.o: $(hdrdir)/ruby/onigmo.h
 unixserver.o: $(hdrdir)/ruby/oniguruma.h
 unixserver.o: $(hdrdir)/ruby/ruby.h
 unixserver.o: $(hdrdir)/ruby/st.h
@@ -297,6 +311,7 @@ unixsocket.o: $(hdrdir)/ruby/encoding.h
 unixsocket.o: $(hdrdir)/ruby/intern.h
 unixsocket.o: $(hdrdir)/ruby/io.h
 unixsocket.o: $(hdrdir)/ruby/missing.h
+unixsocket.o: $(hdrdir)/ruby/onigmo.h
 unixsocket.o: $(hdrdir)/ruby/oniguruma.h
 unixsocket.o: $(hdrdir)/ruby/ruby.h
 unixsocket.o: $(hdrdir)/ruby/st.h

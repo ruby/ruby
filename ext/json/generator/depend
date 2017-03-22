@@ -9,6 +9,7 @@ generator.o: $(hdrdir)/ruby/defines.h
 generator.o: $(hdrdir)/ruby/encoding.h
 generator.o: $(hdrdir)/ruby/intern.h
 generator.o: $(hdrdir)/ruby/missing.h
+generator.o: $(hdrdir)/ruby/onigmo.h
 generator.o: $(hdrdir)/ruby/oniguruma.h
 generator.o: $(hdrdir)/ruby/re.h
 generator.o: $(hdrdir)/ruby/regex.h

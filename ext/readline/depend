@@ -7,6 +7,7 @@ readline.o: $(hdrdir)/ruby/encoding.h
 readline.o: $(hdrdir)/ruby/intern.h
 readline.o: $(hdrdir)/ruby/io.h
 readline.o: $(hdrdir)/ruby/missing.h
+readline.o: $(hdrdir)/ruby/onigmo.h
 readline.o: $(hdrdir)/ruby/oniguruma.h
 readline.o: $(hdrdir)/ruby/ruby.h
 readline.o: $(hdrdir)/ruby/st.h

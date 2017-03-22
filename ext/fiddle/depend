@@ -60,6 +60,7 @@ closure.o: $(hdrdir)/ruby/encoding.h
 closure.o: $(hdrdir)/ruby/intern.h
 closure.o: $(hdrdir)/ruby/io.h
 closure.o: $(hdrdir)/ruby/missing.h
+closure.o: $(hdrdir)/ruby/onigmo.h
 closure.o: $(hdrdir)/ruby/oniguruma.h
 closure.o: $(hdrdir)/ruby/ruby.h
 closure.o: $(hdrdir)/ruby/st.h
@@ -141,6 +142,7 @@ pointer.o: $(hdrdir)/ruby/encoding.h
 pointer.o: $(hdrdir)/ruby/intern.h
 pointer.o: $(hdrdir)/ruby/io.h
 pointer.o: $(hdrdir)/ruby/missing.h
+pointer.o: $(hdrdir)/ruby/onigmo.h
 pointer.o: $(hdrdir)/ruby/oniguruma.h
 pointer.o: $(hdrdir)/ruby/ruby.h
 pointer.o: $(hdrdir)/ruby/st.h

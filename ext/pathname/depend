@@ -6,6 +6,7 @@ pathname.o: $(hdrdir)/ruby/defines.h
 pathname.o: $(hdrdir)/ruby/encoding.h
 pathname.o: $(hdrdir)/ruby/intern.h
 pathname.o: $(hdrdir)/ruby/missing.h
+pathname.o: $(hdrdir)/ruby/onigmo.h
 pathname.o: $(hdrdir)/ruby/oniguruma.h
 pathname.o: $(hdrdir)/ruby/ruby.h
 pathname.o: $(hdrdir)/ruby/st.h

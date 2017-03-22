@@ -16,6 +16,7 @@ enc_raise.o: $(hdrdir)/ruby/defines.h
 enc_raise.o: $(hdrdir)/ruby/encoding.h
 enc_raise.o: $(hdrdir)/ruby/intern.h
 enc_raise.o: $(hdrdir)/ruby/missing.h
+enc_raise.o: $(hdrdir)/ruby/onigmo.h
 enc_raise.o: $(hdrdir)/ruby/oniguruma.h
 enc_raise.o: $(hdrdir)/ruby/ruby.h
 enc_raise.o: $(hdrdir)/ruby/st.h

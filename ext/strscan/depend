@@ -6,6 +6,7 @@ strscan.o: $(hdrdir)/ruby/defines.h
 strscan.o: $(hdrdir)/ruby/encoding.h
 strscan.o: $(hdrdir)/ruby/intern.h
 strscan.o: $(hdrdir)/ruby/missing.h
+strscan.o: $(hdrdir)/ruby/onigmo.h
 strscan.o: $(hdrdir)/ruby/oniguruma.h
 strscan.o: $(hdrdir)/ruby/re.h
 strscan.o: $(hdrdir)/ruby/regex.h

@@ -11,6 +11,7 @@ etc.o: $(hdrdir)/ruby/encoding.h
 etc.o: $(hdrdir)/ruby/intern.h
 etc.o: $(hdrdir)/ruby/io.h
 etc.o: $(hdrdir)/ruby/missing.h
+etc.o: $(hdrdir)/ruby/onigmo.h
 etc.o: $(hdrdir)/ruby/oniguruma.h
 etc.o: $(hdrdir)/ruby/ruby.h
 etc.o: $(hdrdir)/ruby/st.h

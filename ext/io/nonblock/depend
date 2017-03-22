@@ -7,6 +7,7 @@ nonblock.o: $(hdrdir)/ruby/encoding.h
 nonblock.o: $(hdrdir)/ruby/intern.h
 nonblock.o: $(hdrdir)/ruby/io.h
 nonblock.o: $(hdrdir)/ruby/missing.h
+nonblock.o: $(hdrdir)/ruby/onigmo.h
 nonblock.o: $(hdrdir)/ruby/oniguruma.h
 nonblock.o: $(hdrdir)/ruby/ruby.h
 nonblock.o: $(hdrdir)/ruby/st.h
