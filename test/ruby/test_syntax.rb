@@ -622,6 +622,10 @@ eom
     assert_equal(expected, actual, bug7559)
   end
 
+  def test_dedented_heredoc_invalid_identifer
+    assert_syntax_error('<<~ "#{}"', /unexpected <</)
+  end
+
   def test_lineno_operation_brace_block
     expected = __LINE__ + 1
     actual = caller_lineno\
