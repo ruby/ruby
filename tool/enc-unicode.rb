@@ -436,6 +436,7 @@ struct uniname2ctype_struct {
   short name;
   unsigned short ctype;
 };
+#define uniname2ctype_offset(str) offsetof(struct uniname2ctype_pool_t, uniname2ctype_pool_##str)
 
 static const struct uniname2ctype_struct *uniname2ctype_p(const char *, unsigned int);
 %}
@@ -525,8 +526,8 @@ if header
   IO.popen(%W[diff -DUSE_UNICODE_AGE_PROPERTIES #{fds[1].path} #{fds[0].path}], "r") {|age|
     IO.popen(%W[diff -DUSE_UNICODE_PROPERTIES #{fds[2].path} -], "r", in: age) {|f|
       f.each {|line|
-        line.gsub!(/\(int\)\(long\)&\(\((struct uniname2ctype_pool_t) \*\)0\)->(uniname2ctype_pool_str\d+),\s+/,
-                   'offsetof(\1, \2), ')
+        line.gsub!(/\(int\)\(long\)&\(\(struct uniname2ctype_pool_t \*\)0\)->uniname2ctype_pool_(str\d+),\s+/,
+                   'uniname2ctype_offset(\1), ')
         puts line
       }
     }
