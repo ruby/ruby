@@ -1162,14 +1162,12 @@ $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
 		$(srcdir)/template/unicode_norm_gen.tmpl \
 		$(UNICODE_DATA_DIR) lib/unicode_normalize
 
-# UPDATE_NAME2CTYPE=    : toplevel
-# UPDATE_NAME2CTYPE=yes : sub-make to update name2ctype.h
-$(UNICODE_HDR_DIR)/$(UPDATE_NAME2CTYPE:yes=.ignore.)name2ctype.h:
-	$(Q) $(MAKE) $(mflags) Q=$(Q) UPDATE_NAME2CTYPE=yes UNICODE_VERSION=$(UNICODE_VERSION) $@
-
-$(UNICODE_HDR_DIR)/$(UPDATE_NAME2CTYPE:yes=name2ctype.h): \
+$(UNICODE_HDR_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=name2ctype.h): \
 		$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_PROPERTY_FILES)
+
+$(UNICODE_HDR_DIR)/name2ctype.h: $(srcdir)/tool/enc-unicode.rb \
+		$(ALWAYS_UPDATE_UNICODE:yes=update-unicode)
 	$(MAKEDIRS) $(@D)
 	$(BOOTSTRAPRUBY) $(srcdir)/tool/enc-unicode.rb --header $(UNICODE_SRC_DATA_DIR) > $@
 
@@ -1183,8 +1181,8 @@ $(UNICODE_HDR_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=casefold.h): \
 		$(UNICODE_SRC_DATA_DIR)/SpecialCasing.txt \
 		$(UNICODE_SRC_DATA_DIR)/CaseFolding.txt
 
-$(UNICODE_HDR_DIR)/casefold.h: $(srcdir)/enc/unicode/case-folding.rb
-	$(Q) $(ALWAYS_UPDATE_UNICODE:yes=exit &&) $(MAKE) $(mflags) Q=$(Q) UNICODE_VERSION=$(UNICODE_VERSION) update-unicode
+$(UNICODE_HDR_DIR)/casefold.h: $(srcdir)/enc/unicode/case-folding.rb \
+		$(ALWAYS_UPDATE_UNICODE:yes=update-unicode)
 	$(MAKEDIRS) $(@D)
 	$(Q) $(BASERUBY) $(srcdir)/enc/unicode/case-folding.rb \
 		--output-file=$@ \
