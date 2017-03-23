@@ -127,16 +127,16 @@ class Downloader
     options.delete(:verify)
     file = under(dir, name)
     dryrun = options.delete(:dryrun)
-    if dryrun
-      puts "Download #{url} into #{file}"
-      return false
-    end
     if since.nil? and File.exist?(file)
       if $VERBOSE
-        $stdout.puts "#{name} already exists"
+        $stdout.puts "#{file} already exists"
         $stdout.flush
       end
       return true
+    end
+    if dryrun
+      puts "Download #{url} into #{file}"
+      return false
     end
     if !https? and url.start_with?("https:")
       warn "*** using http instead of https ***"
@@ -237,14 +237,22 @@ if $0 == __FILE__
     dl = Downloader.const_get(dl)
     ARGV.shift
     ARGV.each do |name|
+      dir = destdir
       if prefix
-        if name.include?('/auxiliary/')
-          name = "#{prefix}/auxiliary/#{File.basename(name)}"
+        name = name.sub(/\A\.\//, '')
+        if name.start_with?(destdir+"/")
+          name = name[(destdir.size+1)..-1]
+          if (dir = File.dirname(name)) == '.'
+            dir = destdir
+          else
+            dir = File.join(destdir, dir)
+          end
         else
-          name = "#{prefix}/#{File.basename(name)}"
+          name = File.basename(name)
         end
+        name = "#{prefix}/#{name}"
       end
-      dl.download(name, destdir, since, options)
+      dl.download(name, dir, since, options)
     end
   else
     abort "usage: #{$0} url name" unless ARGV.size == 2

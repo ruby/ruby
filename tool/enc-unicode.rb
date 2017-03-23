@@ -212,7 +212,7 @@ def parse_GraphemeBreakProperty(data)
   current = nil
   cps = []
   ages = []
-  data_foreach('GraphemeBreakProperty.txt') do |line|
+  data_foreach('auxiliary/GraphemeBreakProperty.txt') do |line|
     if /^# Total code points: / =~ line
       constname = constantize_Grapheme_Cluster_Break(current)
       data[constname] = cps
