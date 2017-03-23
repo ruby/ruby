@@ -307,7 +307,7 @@ end
 def data_foreach(name, &block)
   fn = get_file(name)
   warn "Reading #{name}"
-  pat = /^# #{name.sub(/\./, '-([\\d.]+)\\.')}/
+  pat = /^# #{File.basename(name).sub(/\./, '-([\\d.]+)\\.')}/
   File.open(fn, 'rb') do |f|
     line = f.gets
     unless pat =~ line
