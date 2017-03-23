@@ -1013,6 +1013,7 @@ module DRb
 
     def set_sockopt(soc) # :nodoc:
       soc.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
+      soc.setsockopt(Socket::SOL_SOCKET, Socket::SO_REUSEADDR, true)
     end
   end
 
