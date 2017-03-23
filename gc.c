@@ -666,6 +666,7 @@ struct heap_page {
 	unsigned int has_remembered_objects : 1;
 	unsigned int has_uncollectible_shady_objects : 1;
 	unsigned int in_tomb : 1;
+  unsigned int cow_barrier : 1;
     } flags;
 
     struct heap_page *free_next;
@@ -1722,7 +1723,8 @@ static inline VALUE
 heap_get_freeobj_head(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     RVALUE *p = heap->freelist;
-    if (LIKELY(p != NULL)) {
+
+    if (LIKELY(p != NULL) ) {
 	heap->freelist = p->as.free.next;
     }
     return (VALUE)p;
@@ -1734,7 +1736,7 @@ heap_get_freeobj(rb_objspace_t *objspace, rb_heap_t *heap)
     RVALUE *p = heap->freelist;
 
     while (1) {
-	if (LIKELY(p != NULL)) {
+  if (LIKELY(p != NULL) && !(heap->using_page->flags.cow_barrier)){
 	    heap->freelist = p->as.free.next;
 	    return (VALUE)p;
 	}
@@ -1907,7 +1909,7 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protect
     if (!(during_gc ||
 	  ruby_gc_stressful ||
 	  gc_event_hook_available_p(objspace)) &&
-	(obj = heap_get_freeobj_head(objspace, heap_eden)) != Qfalse) {
+	(obj = heap_get_freeobj(objspace, heap_eden)) != Qfalse) {
 	return newobj_init(klass, flags, v1, v2, v3, wb_protected, objspace, obj);
     }
     else {
@@ -6629,6 +6631,16 @@ gc_start_internal(int argc, VALUE *argv, VALUE self)
     return Qnil;
 }
 
+static VALUE rb_gc_cow_barrier(int argc){
+  rb_objspace_t *objspace = &rb_objspace;
+  struct heap_page *page = heap_eden->pages;
+  while(page){
+    page->flags.cow_barrier = 1;
+    page = page->next;
+  }
+  return Qnil;
+}
+
 VALUE
 rb_gc_start(void)
 {
@@ -9521,6 +9533,7 @@ Init_GC(void)
 
     rb_mGC = rb_define_module("GC");
     rb_define_singleton_method(rb_mGC, "start", gc_start_internal, -1);
+    rb_define_singleton_method(rb_mGC, "cow_barrier", rb_gc_cow_barrier, -1);
     rb_define_singleton_method(rb_mGC, "enable", rb_gc_enable, 0);
     rb_define_singleton_method(rb_mGC, "disable", rb_gc_disable, 0);
     rb_define_singleton_method(rb_mGC, "stress", gc_stress_get, 0);
