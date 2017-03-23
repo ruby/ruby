@@ -26,7 +26,6 @@ install:
   - mkdir \usr\local\lib
   - set UNICODE_DATA_DIR=enc\unicode\data\%UNICODE_VERSION%\
   - mkdir %UNICODE_DATA_DIR%
-  - for %%I in (UnicodeData CompositionExclusions NormalizationTest CaseFolding SpecialCasing) do appveyor DownloadFile %UNICODE_URL_BASE%%%I.txt -FileName %UNICODE_DATA_DIR%%%I.txt || exit /b 1
   - appveyor DownloadFile https://downloads.sourceforge.net/project/libpng/zlib/%zlib_version%/zlib%zlib_version:.=%.zip
   - 7z x -o%APPVEYOR_BUILD_FOLDER%\ext\zlib zlib%zlib_version:.=%.zip
   - for %%I in (%OPENSSL_DIR%\*.dll) do mklink /h \usr\local\bin\%%~nxI %%I
@@ -35,6 +34,7 @@ build_script:
   - mkdir %Platform%-mswin_%vs%
   - cd %Platform%-mswin_%vs%
   - ..\win32\configure.bat --without-ext=+,dbm,gdbm,readline --with-opt-dir=/usr/local --with-openssl-dir=%OPENSSL_DIR:\=/%
+  - nmake -t .unicode-tables.time
   - nmake -l up
   - nmake -l
   - nmake install-nodoc

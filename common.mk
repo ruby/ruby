@@ -744,6 +744,7 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 .PHONY: check test test-all btest btest-ruby test-basic test-knownbug
 .PHONY: run runruby parse benchmark benchmark-each tbench gdb gdb-ruby
 .PHONY: update-mspec update-rubyspec test-rubyspec
+.PHONY: .unicode-tables.time
 
 PHONY:
 
@@ -1151,11 +1152,14 @@ $(UNICODE_FILES):
 $(srcdir)/$(HAVE_BASERUBY:yes=lib/unicode_normalize/tables.rb): \
 	$(UNICODE_SRC_DATA_DIR)/.unicode-tables.time
 
-$(UNICODE_SRC_DATA_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=.unicode-tables.time): $(UNICODE_FILES)
+$(UNICODE_SRC_DATA_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=.unicode-tables.time): \
+	$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
+
+.unicode-tables.time: $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time
 
 $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
-		$(srcdir)/template/unicode_norm_gen.tmpl
-	$(Q) $(ALWAYS_UPDATE_UNICODE:yes=exit &&) $(MAKE) $(mflags) Q=$(Q) UNICODE_VERSION=$(UNICODE_VERSION) update-unicode
+		$(srcdir)/template/unicode_norm_gen.tmpl \
+		$(ALWAYS_UPDATE_UNICODE:yes=update-unicode)
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb \
 		-c -t$@ -o $(srcdir)/lib/unicode_normalize/tables.rb \
 		-I $(srcdir) \
