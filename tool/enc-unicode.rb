@@ -336,22 +336,29 @@ class Unifdef
   def ifdef(sym)
     if @kwdonly
       @stdout.puts "#ifdef #{sym}"
-      return
+    else
+      @stack << @top
+      @top << tmp = [sym]
+      @top = tmp
     end
-    @stack << @top
-    @top << tmp = [sym]
-    @top = tmp
+    if block_given?
+      begin
+        return yield
+      ensure
+        endif(sym)
+      end
+    end
   end
   def endif(sym)
     if @kwdonly
       @stdout.puts "#endif /* #{sym} */"
-      return
+    else
+      unless sym == @top[0]
+        restore
+        raise ArgumentError, "#{sym} unmatch to #{@top[0]}"
+      end
+      @top = @stack.pop
     end
-    unless sym == @top[0]
-      restore
-      raise ArgumentError, "#{sym} unmatch to #{@top[0]}"
-    end
-    @top = @stack.pop
   end
   def show(dest, *syms)
     _show(dest, @output, syms)
@@ -390,6 +397,7 @@ props, data = parse_unicode_data(get_file('UnicodeData.txt'))
 categories = {}
 props.concat parse_scripts(data, categories)
 aliases = parse_aliases(data)
+ages = blocks = graphemeBreaks = nil
 define_posix_props(data)
 POSIX_NAMES.each do |name|
   if name == 'XPosixPunct'
@@ -400,35 +408,35 @@ POSIX_NAMES.each do |name|
     make_const(name, data[name], "[[:#{name}:]]")
   end
 end
-output.ifdef :USE_UNICODE_PROPERTIES
-props.each do |name|
-  category = categories[name] ||
-    case name.size
-    when 1 then 'Major Category'
-    when 2 then 'General Category'
-    else        '-'
-    end
-  make_const(name, data[name], category)
+output.ifdef :USE_UNICODE_PROPERTIES do
+  props.each do |name|
+    category = categories[name] ||
+               case name.size
+               when 1 then 'Major Category'
+               when 2 then 'General Category'
+               else        '-'
+               end
+    make_const(name, data[name], category)
+  end
+  output.ifdef :USE_UNICODE_AGE_PROPERTIES do
+    ages = parse_age(data)
+  end
+  graphemeBreaks = parse_GraphemeBreakProperty(data)
+  blocks = parse_block(data)
 end
-output.ifdef :USE_UNICODE_AGE_PROPERTIES
-ages = parse_age(data)
-output.endif :USE_UNICODE_AGE_PROPERTIES
-graphemeBreaks = parse_GraphemeBreakProperty(data)
-blocks = parse_block(data)
-output.endif :USE_UNICODE_PROPERTIES
 puts(<<'__HEREDOC')
 
 static const OnigCodePoint* const CodeRanges[] = {
 __HEREDOC
 POSIX_NAMES.each{|name|puts"  CR_#{name},"}
-output.ifdef :USE_UNICODE_PROPERTIES
-props.each{|name| puts"  CR_#{name},"}
-output.ifdef :USE_UNICODE_AGE_PROPERTIES
-ages.each{|name|  puts"  CR_#{constantize_agename(name)},"}
-output.endif :USE_UNICODE_AGE_PROPERTIES
-graphemeBreaks.each{|name|  puts"  CR_#{constantize_Grapheme_Cluster_Break(name)},"}
-blocks.each{|name|puts"  CR_#{name},"}
-output.endif :USE_UNICODE_PROPERTIES
+output.ifdef :USE_UNICODE_PROPERTIES do
+  props.each{|name| puts"  CR_#{name},"}
+  output.ifdef :USE_UNICODE_AGE_PROPERTIES do
+    ages.each{|name|  puts"  CR_#{constantize_agename(name)},"}
+  end
+  graphemeBreaks.each{|name|  puts"  CR_#{constantize_Grapheme_Cluster_Break(name)},"}
+  blocks.each{|name|puts"  CR_#{name},"}
+end
 
 puts(<<'__HEREDOC')
 };
@@ -453,39 +461,39 @@ POSIX_NAMES.each do |name|
   name_to_index[name] = i
   puts"%-40s %3d" % [name + ',', i]
 end
-output.ifdef :USE_UNICODE_PROPERTIES
-props.each do |name|
-  i += 1
-  name = normalize_propname(name)
-  name_to_index[name] = i
-  puts "%-40s %3d" % [name + ',', i]
+output.ifdef :USE_UNICODE_PROPERTIES do
+  props.each do |name|
+    i += 1
+    name = normalize_propname(name)
+    name_to_index[name] = i
+    puts "%-40s %3d" % [name + ',', i]
+  end
+  aliases.each_pair do |k, v|
+    next if name_to_index[k]
+    next unless v = name_to_index[v]
+    puts "%-40s %3d" % [k + ',', v]
+  end
+  output.ifdef :USE_UNICODE_AGE_PROPERTIES do
+    ages.each do |name|
+      i += 1
+      name = "age=#{name}"
+      name_to_index[name] = i
+      puts "%-40s %3d" % [name + ',', i]
+    end
+  end
+  graphemeBreaks.each do |name|
+    i += 1
+    name = "graphemeclusterbreak=#{name.delete('_').downcase}"
+    name_to_index[name] = i
+    puts "%-40s %3d" % [name + ',', i]
+  end
+  blocks.each do |name|
+    i += 1
+    name = normalize_propname(name)
+    name_to_index[name] = i
+    puts "%-40s %3d" % [name + ',', i]
+  end
 end
-aliases.each_pair do |k, v|
-  next if name_to_index[k]
-  next unless v = name_to_index[v]
-  puts "%-40s %3d" % [k + ',', v]
-end
-output.ifdef :USE_UNICODE_AGE_PROPERTIES
-ages.each do |name|
-  i += 1
-  name = "age=#{name}"
-  name_to_index[name] = i
-  puts "%-40s %3d" % [name + ',', i]
-end
-output.endif :USE_UNICODE_AGE_PROPERTIES
-graphemeBreaks.each do |name|
-  i += 1
-  name = "graphemeclusterbreak=#{name.delete('_').downcase}"
-  name_to_index[name] = i
-  puts "%-40s %3d" % [name + ',', i]
-end
-blocks.each do |name|
-  i += 1
-  name = normalize_propname(name)
-  name_to_index[name] = i
-  puts "%-40s %3d" % [name + ',', i]
-end
-output.endif :USE_UNICODE_PROPERTIES
 puts(<<'__HEREDOC')
 %%
 static int
