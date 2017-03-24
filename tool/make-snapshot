@@ -225,7 +225,7 @@ def package(vcs, rev, destdir, tmp = nil)
     unless /\Ar(\d+) / =~ f.readline
       abort "#{File.basename $0}: Cannot find revision from '#{last_ChangeLog}'"
     end
-    vcs.export_changelog($1.to_i, revision.to_i, "#{v}/ChangeLog")
+    vcs.export_changelog(url, $1.to_i, revision.to_i, "#{v}/ChangeLog")
   end
 
   open("#{v}/revision.h", "wb") {|f| f.puts "#define RUBY_REVISION #{revision}"}
