@@ -63,6 +63,7 @@ cmp(VALUE x, VALUE y)
             return 1;
         return 0;
     }
+    if (RB_TYPE_P(x, T_BIGNUM)) return FIX2INT(rb_big_cmp(x, y));
     return rb_cmpint(rb_funcall(x, id_cmp, 1, y), x, y);
 }
 
