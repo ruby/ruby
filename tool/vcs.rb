@@ -307,7 +307,7 @@ class VCS
       FileUtils.rm_rf(dir+"/.svn")
     end
 
-    def export_changelog(from, to, path)
+    def export_changelog(url, from, to, path)
       range = [to, (from+1 if from)].compact.join(':')
       IO.popen({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
                %W"svn log -r#{range} #{url}") do |r|
@@ -424,7 +424,7 @@ class VCS
       FileUtils.rm_rf("#{dir}/.git")
     end
 
-    def export_changelog(from, to, path)
+    def export_changelog(url, from, to, path)
       range = [from, to].map do |rev|
         rev or next
         rev = cmd_read({'LANG' => 'C', 'LC_ALL' => 'C'},
