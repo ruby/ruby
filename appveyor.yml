@@ -34,7 +34,7 @@ build_script:
   - mkdir %Platform%-mswin_%vs%
   - cd %Platform%-mswin_%vs%
   - ..\win32\configure.bat --without-ext=+,dbm,gdbm,readline --with-opt-dir=/usr/local --with-openssl-dir=%OPENSSL_DIR:\=/%
-  - nmake -t .unicode-tables.time
+  - nmake -l touch-unicode-files
   - nmake -l up
   - nmake -l
   - nmake install-nodoc

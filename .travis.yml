@@ -43,7 +43,7 @@ before_script:
   - "make reconfig"
   - "cp -pr config.status .ext/include config_2nd"
   - "diff -ru config_1st config_2nd"
-  - "make -t .unicode-tables.time"
+  - "make touch-unicode-files"
   - "make after-update BASERUBY=ruby"
   - "make -s $JOBS"
   - "make update-rubyspec"
