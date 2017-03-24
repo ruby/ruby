@@ -183,4 +183,13 @@ class TC_OpenStruct < Test::Unit::TestCase
     os.foo = 44
     assert_equal(43, os.foo)
   end
+
+  def test_allocate_subclass
+    bug = '[ruby-core:80292] [Bug #13358] allocate should not call initialize'
+    c = Class.new(OpenStruct) {
+      def initialize(x,y={})super(y);end
+    }
+    os = assert_nothing_raised(ArgumentError, bug) {c.allocate}
+    assert_instance_of(c, os)
+  end
 end
