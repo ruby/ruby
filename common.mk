@@ -1173,11 +1173,11 @@ $(UNICODE_SRC_DATA_DIR):
 	$(Q) $(exec) $(MAKEDIRS) $@ || exit && echo $(MAKE)
 
 $(UNICODE_HDR_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=name2ctype.h): \
+		$(srcdir)/tool/enc-unicode.rb \
 		$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_PROPERTY_FILES)
 
-$(UNICODE_HDR_DIR)/name2ctype.h: $(srcdir)/tool/enc-unicode.rb \
-		$(ALWAYS_UPDATE_UNICODE:yes=update-unicode)
+$(UNICODE_HDR_DIR)/name2ctype.h:
 	$(MAKEDIRS) $(@D)
 	$(BOOTSTRAPRUBY) $(srcdir)/tool/enc-unicode.rb --header $(UNICODE_SRC_DATA_DIR) > $@
 
@@ -1187,12 +1187,12 @@ $(UNICODE_HDR_DIR)/name2ctype.h: $(srcdir)/tool/enc-unicode.rb \
 unicode-up: $(UNICODE_DATA_HEADERS)
 
 $(UNICODE_HDR_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=casefold.h): \
+		$(srcdir)/enc/unicode/case-folding.rb \
 		$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_SRC_DATA_DIR)/SpecialCasing.txt \
 		$(UNICODE_SRC_DATA_DIR)/CaseFolding.txt
 
-$(UNICODE_HDR_DIR)/casefold.h: $(srcdir)/enc/unicode/case-folding.rb \
-		$(ALWAYS_UPDATE_UNICODE:yes=update-unicode)
+$(UNICODE_HDR_DIR)/casefold.h:
 	$(MAKEDIRS) $(@D)
 	$(Q) $(BASERUBY) $(srcdir)/enc/unicode/case-folding.rb \
 		--output-file=$@ \
