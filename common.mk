@@ -1160,11 +1160,15 @@ $(UNICODE_SRC_DATA_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=.unicode-tables.time): \
 $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time: $(srcdir)/tool/generic_erb.rb \
 		$(srcdir)/template/unicode_norm_gen.tmpl \
 		$(ALWAYS_UPDATE_UNICODE:yes=update-unicode)
+	$(Q) $(MAKE) $(@D)
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb \
 		-c -t$@ -o $(srcdir)/lib/unicode_normalize/tables.rb \
 		-I $(srcdir) \
 		$(srcdir)/template/unicode_norm_gen.tmpl \
 		$(UNICODE_DATA_DIR) lib/unicode_normalize
+
+$(UNICODE_SRC_DATA_DIR):
+	$(Q) $(exec) $(MAKEDIRS) $@ || exit && echo $(MAKE)
 
 $(UNICODE_HDR_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=name2ctype.h): \
 		$(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
