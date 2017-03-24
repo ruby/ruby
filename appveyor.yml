@@ -35,7 +35,7 @@ build_script:
   - cd %Platform%-mswin_%vs%
   - ..\win32\configure.bat --without-ext=+,dbm,gdbm,readline --with-opt-dir=/usr/local --with-openssl-dir=%OPENSSL_DIR:\=/%
   - nmake -l touch-unicode-files
-  - nmake -l up
+  - nmake -l up UNICODE_FILES=.
   - nmake -l
   - nmake install-nodoc
 test_script:

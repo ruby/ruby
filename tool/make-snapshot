@@ -330,6 +330,7 @@ def package(vcs, rev, destdir, tmp = nil)
         "PWD"=>Dir.pwd,
         "CONFIGURE"=>"configure",
         "arch"=>"noarch",
+        "UNICODE_FILES"=>"",
       }
       vars["UNICODE_VERSION"] = $unicode_version if $unicode_version
       args = vars.dup
@@ -339,6 +340,8 @@ def package(vcs, rev, destdir, tmp = nil)
 
 prereq: clean-cache $(CLEAN_CACHE)
 clean-cache $(CLEAN_CACHE): after-update
+touch-unicode-files:
+update-download:: touch-unicode-files
 update-download:: update-gems
 after-update:: extract-gems
 extract-gems: update-gems
