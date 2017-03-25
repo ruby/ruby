@@ -923,7 +923,7 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
 void
 rb_undef(VALUE klass, ID id)
 {
-    rb_method_entry_t *me;
+    const rb_method_entry_t *me;
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class to undef method");
@@ -934,6 +934,9 @@ rb_undef(VALUE klass, ID id)
     }
 
     me = search_method(klass, id, 0);
+    if (me && me->def->type == VM_METHOD_TYPE_REFINED) {
+	me = rb_resolve_refined_method(Qnil, me, NULL);
+    }
 
     if (UNDEFINED_METHOD_ENTRY_P(me) ||
 	UNDEFINED_REFINED_METHOD_P(me->def)) {

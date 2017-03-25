@@ -1387,6 +1387,25 @@ class TestRefinement < Test::Unit::TestCase
                    :foo, bug10826)
   end
 
+  def test_undef_prepended_method
+    bug13096 = '[ruby-core:78944] [Bug #13096]'
+    klass = EnvUtil.labeled_class("X") do
+      def foo; end
+    end
+    klass.prepend(Module.new)
+    ext = EnvUtil.labeled_module("Ext") do
+      refine klass do
+        def foo
+        end
+      end
+    end
+    assert_nothing_raised(NameError, bug13096) do
+      klass.class_eval do
+        undef :foo
+      end
+    end
+  end
+
   def test_call_refined_method_in_duplicate_module
     bug10885 = '[ruby-dev:48878]'
     assert_in_out_err([], <<-INPUT, [], [], bug10885)
