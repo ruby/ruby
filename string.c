@@ -8345,8 +8345,14 @@ rb_enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl)
     int encidx;
     VALUE buf = Qnil;
     const char *rep;
-    long replen;
+    long replen = -1;
     int tainted = 0;
+
+    if (rb_block_given_p()) {
+	if (!NIL_P(repl))
+	    rb_raise(rb_eArgError, "both of block and replacement given");
+	replen = 0;
+    }
 
     if (cr == ENC_CODERANGE_7BIT || cr == ENC_CODERANGE_VALID)
 	return Qnil;
@@ -8371,9 +8377,8 @@ rb_enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl)
 	const char *e = RSTRING_END(str);
 	const char *p1 = p;
 	int rep7bit_p;
-	if (rb_block_given_p()) {
+	if (!replen) {
 	    rep = NULL;
-	    replen = 0;
 	    rep7bit_p = FALSE;
 	}
 	else if (!NIL_P(repl)) {
@@ -8484,7 +8489,10 @@ rb_enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl)
 	const char *e = RSTRING_END(str);
 	const char *p1 = p;
 	long mbminlen = rb_enc_mbminlen(enc);
-	if (!NIL_P(repl)) {
+	if (!replen) {
+	    rep = NULL;
+	}
+	else if (!NIL_P(repl)) {
 	    rep = RSTRING_PTR(repl);
 	    replen = RSTRING_LEN(repl);
 	}
@@ -8535,7 +8543,7 @@ rb_enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl)
 		    rb_str_buf_cat(buf, rep, replen);
 		}
 		else {
-		    repl = rb_yield(rb_enc_str_new(p, e-p, enc));
+		    repl = rb_yield(rb_enc_str_new(p, clen, enc));
 		    repl = str_compat_and_valid(repl, enc);
 		    tainted |= OBJ_TAINTED_RAW(repl);
 		    rb_str_buf_cat(buf, RSTRING_PTR(repl), RSTRING_LEN(repl));
