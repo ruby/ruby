@@ -432,7 +432,7 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
     if (!READ_DATA_PENDING(fptr)) {\
 	WAIT_FD_IN_WIN32(fptr);\
 	rb_io_check_closed(fptr);\
-     }\
+    }\
 } while(0)
 
 #ifndef S_ISSOCK
@@ -1765,6 +1765,7 @@ io_fillbuf(rb_io_t *fptr)
 		rb_sys_fail_path(path);
 	    }
         }
+	if (r > 0) rb_io_check_closed(fptr);
         fptr->rbuf.off = 0;
         fptr->rbuf.len = (int)r; /* r should be <= rbuf_capa */
         if (r == 0)
