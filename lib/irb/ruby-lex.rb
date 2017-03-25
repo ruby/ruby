@@ -791,7 +791,7 @@ class RubyLex
           token_c = TkSymbol2Token[trans[1]]
           @lex_state = trans[0]
         else
-          if @lex_state != EXPR_FNAME
+          if @lex_state != EXPR_FNAME and peek(0) != ':'
             if ENINDENT_CLAUSE.include?(token)
               # check for ``class = val'' etc.
               valid = true
