@@ -849,14 +849,20 @@ rb_include_class_new(VALUE module, VALUE super)
 
 static int include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super);
 
+static void
+ensure_includable(VALUE klass, VALUE module)
+{
+    rb_frozen_class_p(klass);
+    Check_Type(module, T_MODULE);
+    OBJ_INFECT(klass, module);
+}
+
 void
 rb_include_module(VALUE klass, VALUE module)
 {
     int changed = 0;
 
-    rb_frozen_class_p(klass);
-    Check_Type(module, T_MODULE);
-    OBJ_INFECT(klass, module);
+    ensure_includable(klass, module);
 
     changed = include_modules_at(klass, RCLASS_ORIGIN(klass), module, TRUE);
     if (changed < 0)
@@ -966,9 +972,7 @@ rb_prepend_module(VALUE klass, VALUE module)
     VALUE origin;
     int changed = 0;
 
-    rb_frozen_class_p(klass);
-    Check_Type(module, T_MODULE);
-    OBJ_INFECT(klass, module);
+    ensure_includable(klass, module);
 
     origin = RCLASS_ORIGIN(klass);
     if (origin == klass) {
