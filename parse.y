@@ -6207,7 +6207,6 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
     pushback(c);
     if (tokadd_string(func, term, paren, &quote->nd_nest,
 		      &enc) == -1) {
-	ruby_sourceline = nd_line(quote);
 	if (func & STR_FUNC_REGEXP) {
 	    if (parser->eofp)
 		compile_error(PARSER_ARG "unterminated regexp meets end of file");

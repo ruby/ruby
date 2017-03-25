@@ -131,6 +131,8 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
     assert_location %Q["a\nb\r\nc"]
     assert_location "print(<<""EOS)\nheredoc\nEOS\n"
     assert_location "print(<<-\"EOS\")\nheredoc\n     EOS\n"
+    assert_location "'foo'"
+    assert_location "'foo"
   end
 
   def assert_location(src)
