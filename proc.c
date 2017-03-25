@@ -318,7 +318,7 @@ rb_binding_new(void)
  *  environment. See also the description of class +Binding+.
  *
  *     def get_binding(param)
- *       return binding
+ *       binding
  *     end
  *     b = get_binding("hello")
  *     eval("param", b)   #=> "hello"
@@ -340,7 +340,7 @@ rb_f_binding(VALUE self)
  *  reporting syntax errors.
  *
  *     def get_binding(param)
- *       return binding
+ *       binding
  *     end
  *     b = get_binding("hello")
  *     b.eval("param")   #=> "hello"
@@ -408,7 +408,7 @@ check_local_id(VALUE bindval, volatile VALUE *pname)
  *  call-seq:
  *     binding.local_variables -> Array
  *
- *  Returns the +symbol+ names of the binding's local variables
+ *  Returns the names of the binding's local variables as symbols.
  *
  *	def foo
  *  	  a = 1
@@ -417,7 +417,7 @@ check_local_id(VALUE bindval, volatile VALUE *pname)
  *  	  end
  *  	end
  *
- *  This method is short version of the following code.
+ *  This method is the short version of the following code:
  *
  *	binding.eval("local_variables")
  *
@@ -435,7 +435,7 @@ bind_local_variables(VALUE bindval)
  *  call-seq:
  *     binding.local_variable_get(symbol) -> obj
  *
- *  Returns a +value+ of local variable +symbol+.
+ *  Returns the value of the local variable +symbol+.
  *
  *	def foo
  *  	  a = 1
@@ -443,7 +443,7 @@ bind_local_variables(VALUE bindval)
  *  	  binding.local_variable_get(:b) #=> NameError
  *  	end
  *
- *  This method is short version of the following code.
+ *  This method is the short version of the following code:
  *
  *	binding.eval("#{symbol}")
  *
@@ -476,21 +476,22 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
  *
  *	def foo
  *  	  a = 1
- *  	  b = binding
- *  	  b.local_variable_set(:a, 2) # set existing local variable `a'
- *  	  b.local_variable_set(:b, 3) # create new local variable `b'
- *  	                              # `b' exists only in binding.
- *  	  b.local_variable_get(:a) #=> 2
- *  	  b.local_variable_get(:b) #=> 3
- *  	  p a #=> 2
- *  	  p b #=> NameError
+ *  	  bind = binding
+ *  	  bind.local_variable_set(:a, 2) # set existing local variable `a'
+ *  	  bind.local_variable_set(:b, 3) # create new local variable `b'
+ *  	                                 # `b' exists only in binding
+ *
+ *  	  p bind.local_variable_get(:a)  #=> 2
+ *  	  p bind.local_variable_get(:b)  #=> 3
+ *  	  p a                            #=> 2
+ *  	  p b                            #=> NameError
  *  	end
  *
- *  This method is a similar behavior of the following code
+ *  This method behaves similarly to the following code:
  *
  *    binding.eval("#{symbol} = #{obj}")
  *
- *  if obj can be dumped in Ruby code.
+ *  if +obj+ can be dumped in Ruby code.
  */
 static VALUE
 bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
@@ -516,7 +517,7 @@ bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
  *  call-seq:
  *     binding.local_variable_defined?(symbol) -> obj
  *
- *  Returns a +true+ if a local variable +symbol+ exists.
+ *  Returns +true+ if a local variable +symbol+ exists.
  *
  *	def foo
  *  	  a = 1
@@ -524,7 +525,7 @@ bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
  *  	  binding.local_variable_defined?(:b) #=> false
  *  	end
  *
- *  This method is short version of the following code.
+ *  This method is the short version of the following code:
  *
  *	binding.eval("defined?(#{symbol}) == 'local-variable'")
  *
@@ -952,7 +953,7 @@ iseq_location(rb_iseq_t *iseq)
  *    prc.source_location  -> [String, Fixnum]
  *
  * Returns the Ruby source filename and line number containing this proc
- * or +nil+ if this proc was not defined in Ruby (i.e. native)
+ * or +nil+ if this proc was not defined in Ruby (i.e. native).
  */
 
 VALUE
@@ -2245,7 +2246,7 @@ rb_obj_method_location(VALUE obj, ID id)
  *    meth.source_location  -> [String, Fixnum]
  *
  * Returns the Ruby source filename and line number containing this method
- * or nil if this method was not defined in Ruby (i.e. native)
+ * or nil if this method was not defined in Ruby (i.e. native).
  */
 
 VALUE
@@ -2855,7 +2856,7 @@ Init_Proc(void)
  *         @secret = n
  *       end
  *       def get_binding
- *         return binding()
+ *         binding
  *       end
  *     end
  *
