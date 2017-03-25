@@ -2203,7 +2203,7 @@ EOT
            w.binmode
            w.puts(0x010a.chr(Encoding::UTF_32BE))
            w.puts(0x010a.chr(Encoding::UTF_16BE))
-           w.puts(0x0a010000.chr(Encoding::UTF_32LE))
+           w.puts(0x0a01.chr(Encoding::UTF_32LE))
            w.puts(0x0a01.chr(Encoding::UTF_16LE))
            w.close
          end,
@@ -2211,7 +2211,7 @@ EOT
            r.binmode
            assert_equal("\x00\x00\x01\x0a\n", r.read(5), bug)
            assert_equal("\x01\x0a\n", r.read(3), bug)
-           assert_equal("\x00\x00\x01\x0a\n", r.read(5), bug)
+           assert_equal("\x01\x0a\x00\x00\n", r.read(5), bug)
            assert_equal("\x01\x0a\n", r.read(3), bug)
            assert_equal("", r.read, bug)
            r.close
