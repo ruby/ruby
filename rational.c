@@ -1043,6 +1043,10 @@ nurat_expt(VALUE self, VALUE other)
 		den = ONE;
 		break;
 	    }
+	    if (RB_FLOAT_TYPE_P(num)) { /* infinity due to overflow */
+		if (RB_FLOAT_TYPE_P(den)) return DBL2NUM(NAN);
+		return num;
+	    }
 	    return f_rational_new2(CLASS_OF(self), num, den);
 	}
     }
