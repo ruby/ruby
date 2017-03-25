@@ -1,3 +1,179 @@
+Sun Mar 26 03:55:45 2017  Marcus Stollsteimer  <sto.mar@web.de>
+
+	docs for creating arrays
+
+	* array.c: [DOC] add example for Array.new with block and index.
+	  Reported by Don Cruickshank.  [ruby-core:68442] [Bug #10944]
+
+Sun Mar 26 03:55:01 2017  Marcus Stollsteimer  <sto.mar@web.de>
+
+	date_core.c: fix error in DateTime docs
+
+	* ext/date/date_core.c: [DOC] fix format string for DateTime#rfc3339.
+	  Reported by Andreas Rayo Kniep.  [ruby-core:68418] [Bug #10936]
+
+	* ext/date/date_core.c: [DOC] ditto for DateTime#iso8601 and
+	  DateTime#xmlschema; other small improvements.
+
+Sun Mar 26 03:54:16 2017  Marcus Stollsteimer  <sto.mar@web.de>
+
+	io.c: improve docs
+
+	* io.c: [DOC] improve and harmonize docs for IO#read and ARGF#read;
+	  fix invalid example code for IO#read to make it syntax highlighted.
+
+	* io.c: [DOC] various improvements for docs of IO, ARGF, and Kernel:
+	  fix indent to ensure correct code block detection; sync "outbuf"
+	  paragraph for {IO,ARGF}#read, {IO,ARGF}#readpartial, and IO#sysread;
+	  fix formatting of call-seq's; improve Kernel#open example to use nil?;
+	  fix RDoc markup and typos.
+
+Sun Mar 26 03:42:37 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	vm_method.c: resolve refined method to undef
+
+	* vm_method.c (rb_undef): resolve the method entry which refines a
+	  prepended method entry.  [ruby-core:78944] [Bug #13096]
+
+Sun Mar 26 03:36:29 2017  Marcus Stollsteimer  <sto.mar@web.de>
+
+	date_core.c: expand docs for Date shifting
+
+	* ext/date/date_core.c: [DOC] expand docs for Date shifting
+
+	  * add examples for Date#>> and Date#<< that clarify some edge cases
+	  * add examples for Date#next_year and Date#prev_year
+	  * add cross references to Date#>> and Date#<<
+
+	  [ruby-core:79584] [Bug #13225]
+
+Sun Mar 26 03:35:09 2017  Marcus Stollsteimer  <sto.mar@web.de>
+
+	lib/ostruct.rb: [DOC] revise docs for OpenStruct
+
+	* update paragraph on implementation:
+	  define_singleton_method is used, not define_method
+	* add call-seq with return values for each_pair
+	* adopt description of dig from Array and Hash
+	* fix description of the hash method
+	* :nodoc: initialize_copy, respond_to_missing?
+	* other small improvements, e.g. use the term `attribute' in the docs
+	  (instead of `member'), which is clearer for users of the class
+	* improve code examples: e.g. use more consistent style (always use
+	  double quotes, drop `p' and `puts', ...), update inspect output,
+	  use example data that is not prone to change (like population)
+	* add more code examples
+	* fix some small errors and grammar
+
+	[ruby-core:79265] [Bug #13159]
+
+Sun Mar 26 03:31:18 2017  Eric Wong  <normalperson@yhbt.net>
+
+	doc: improve documentation for Binding [ci skip]
+
+	* remove explicit return from code examples
+	* grammar fixes
+	* other small fixes
+
+	Patch by: Marcus Stollsteimer <sto.mar@web.de>
+
+	[ruby-core:79082] [Bug #13132]
+
+Sun Mar 26 03:28:27 2017  Marcus Stollsteimer  <sto.mar@web.de>
+
+	nodoc OptParse
+
+	* lib/optparse.rb: [DOC] nodoc OptParse, introduced with r46126,
+	  to avoid leaking of its documentation (OptionParser's docs) into
+	  the class documentation of Object.  [ruby-core:79909] [Bug #13281]
+
+Sun Mar 26 03:26:56 2017  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	rational.c: fix rdoc
+
+	* rational.c: [DOC] fix wrong indentations and comment out some lines
+	  in code examples to make them valid Ruby code and syntax highlighted
+	  on the rendered page.
+
+	[ci skip] [ruby-core:79607] [Bug #13233]
+	Author:    Marcus Stollsteimer <sto.mar@web.de>
+
+Sun Mar 26 03:24:28 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	fileutils.rb: do not make root
+
+	* lib/fileutils.rb (FileUtils#mkdir_p): no need to make root
+	  directory which should be exist and cannot be made with mkdir
+	  recent Cygwin can make a directory contains a colon.
+	  [Bug #13214]
+
+Sun Mar 26 03:22:34 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	win32/resolv.rb: ad hoc workaround
+
+	* ext/win32/lib/win32/resolv.rb (Win32::Resolv::SZ): an ad hoc
+	  workaround for broken registry.  SearchList and other registry
+	  values must be REG_SZ, or Windows ignores anything in those
+	  values otherwise.  [ruby-dev:49924] [Bug #13081]
+	  https://github.com/rubygems/rubygems/issues/1700
+	win32/registry.rb: registry type names
+
+	* ext/win32/lib/win32/registry.rb (Win32::Registry#read): show
+	  registry type names instead of numeric values.
+
+Sun Mar 26 03:19:17 2017  Eric Wong  <normalperson@yhbt.net>
+
+	doc: Add example for Symbol#to_s
+
+	* string.c: add example for Symbol#to_s.
+
+	The docs for Symbol#to_s only include an example for
+	Symbol#id2name, but not for #to_s which is an alias;
+	the docs should include examples for both methods.
+
+	From: Marcus Stollsteimer <sto.mar@web.de>
+
+Sun Mar 26 03:16:16 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	rational.c: infinity in power
+
+	* rational.c (nurat_expt): return Infinity due to overflow.
+	  [ruby-core:79686] [Bug #13242]:
+	rational.c: infinity in power
+
+	* rational.c (nurat_expt): return 0 due to overflow.
+	  [ruby-core:79686] [Bug #13242]:
+
+Sun Mar 26 03:13:17 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	vm.c: check type of hash to merge
+
+	* vm.c (core_hash_merge): check the type of the target hash to
+	  merge.  [ruby-core:78536] [Bug #13015]
+
+Sun Mar 26 03:07:08 2017  Koichi Sasada  <ko1@atdot.net>
+
+	use TRUE/FALSE.
+
+	define rb_thread_sleep_deadly_allow_spurious_wakeup().
+
+	* thread.c, thread_sync.c: define new function
+	  rb_thread_sleep_deadly_allow_spurious_wakeup() and use it instead of
+	  using sleep_forever() directly.
+
+	allow Queue operation in trap.
+
+	* thread_sync.c: allow spurious wakeup to check Queue status just after trap.
+	  [Bug #12405]
+
+	* test/thread/test_queue.rb: add a test for it.
+
+	test_queue.rb: fix portability
+
+	* test/thread/test_queue.rb (test_queue_with_trap): fix
+	  portability.  use SIGINT instead of SIGUSR2 which is supported
+	  on not all platforms.
+
 Sun Mar 26 02:44:16 2017  Akinori MUSHA  <knu@iDaemons.org>
 
 	* doc/syntax/literals.rdoc (Strings): [DOC] Revise the character
@@ -12,16 +188,57 @@ Sun Mar 26 02:44:16 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* doc/syntax/literals.rdoc (Strings): mention about ?a literal.
 
+Sun Mar 26 02:37:23 2017  Eric Wong  <normalperson@yhbt.net>
+
+	doc: restore class documentation for Struct
+
+	* struct.c: restore class documentation for Struct
+	  that disappeared with r46663.
+
+	Due to r46663, the class documentation for Struct disappeared.
+	(The revision inserted the definition of `InitVM_Struct` between
+	the rdoc and the definition of `Init_Struct`.)
+
+	The docs are rendered for 2.1: <https://docs.ruby-lang.org/en/2.1.0/Struct.html>,
+	but not for later versions, see: <https://docs.ruby-lang.org/en/2.2.0/Struct.html>
+	(Same for `ri` pages).
+
+	[ruby-core:79416] [Bug #13189]
+
+Sun Mar 26 02:36:34 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	Enumerable#{min,min_by,max,max_by} [ci skip]
+
+	* enum.c: [DOC] Enumerable#{min,min_by,max,max_by} return a sorted
+	  array when +n+ argument is used.
+
+	* enum.c: Small typo : minimum -> maximum
+
+	[Bug #13161]
+	Author:    Eric Duminil <eric.duminil@gmail.com>
+
 Sun Mar 26 02:35:17 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options): convert -e script to the encoding
 	  given by a command line option on Windows.  assume it is the
 	  expected encoding.  [ruby-dev:49461] [Bug #11900]
 
+Sun Mar 26 02:34:13 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	rational.c: fix rdoc [ci skip]
+
+	* rational.c (rb_rational_plus): [DOC] fix an example.
+	  A patch by Trygve Flathen <at.ruby-lang AT flathen.net> in
+	  [ruby-core:71755].  [Bug #11752]
+
 Sun Mar 26 02:32:12 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (poll_child_status): rb_w32_wait_events_blocking() sets
 	  errno internally, then should not set it here.
+
+Sun Mar 26 02:27:37 2017  Koichi Sasada  <ko1@atdot.net>
+
+	check thread deadness correctly.
 
 Sun Mar 26 02:13:04 2017  Koichi Sasada  <ko1@atdot.net>
 
@@ -35,19 +252,211 @@ Sun Mar 26 02:13:04 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  but not from the thread to be interrupted.
 	  [ruby-core:77222] [Bug #12741]
 
-Sat Mar 25 23:35:54 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun Mar 26 02:11:47 2017  Marcus Stollsteimer  <sto.mar@web.de>
 
-	* lib/forwardable.rb (Forwardable._delegator_method): extract
-	  method generator and deal with non-module objects.
-	  [ruby-dev:49656] [Bug #12478]
+	io.c: documentation for puts
 
-Sat Mar 25 23:35:54 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+	* io.c: [DOC] clarify that the 'record separator' between
+	  arguments passed to 'puts' is always a newline.
+	  Based on a patch by Mark Amery. [ruby-core:65801] [Misc #10403]
+	* 2017-03-13
 
-	* lib/forwardable.rb (def_instance_delegator): adjust backtrace of
-	  method body by tail call optimization.  adjusting the delegated
-	  target is still done by deleting backtrace.
+Sun Mar 26 02:08:06 2017  Marcus Stollsteimer  <sto.mar@web.de>
 
-	* lib/forwardable.rb (def_single_delegator): ditto.
+	proc.c: documentation for Proc#{call,yield,[]}
+
+	* proc.c: [DOC] fix and improve docs for Proc#{call,yield,[]}:
+
+	  * change order of Document-method directives as workaround for an
+	    RDoc rendering problem where the documentation for Proc#call displays
+	    a "Document-method: []" code block.  [ruby-core:79887] [Bug #13273]
+	  * add missing call-seq and example for Proc#yield
+	  * remove pointless cross reference to Proc#yield
+	  * update description for handling of extra or missing arguments,
+	    improve examples and add cross reference to #lambda?
+
+Sun Mar 26 02:03:06 2017  Marcus Stollsteimer  <sto.mar@web.de>
+
+	docs for IO#print
+
+	* io.c: [DOC] split documentation for IO#print into smaller paragraphs,
+	  delete duplicate sentence, fix call-seq.
+	  Based on a patch by Dario Daic. [ruby-core:78291] [Bug #12975]
+
+Sun Mar 26 02:01:54 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	fix UTF-32 valid_encoding?
+
+	* enc/utf_32be.c (utf32be_mbc_enc_len): check arguments precisely.
+	  [ruby-core:79966] [Bug #13292]
+
+	* enc/utf_32le.c (utf32le_mbc_enc_len): ditto.
+
+	* regenc.h (UNICODE_VALID_CODEPOINT_P): predicate for valid
+	  Unicode codepoints.
+	fix UTF-32 valid_encoding?
+
+	* test/ruby/test_io_m17n.rb (TestIO_M17N#test_puts_widechar): do
+	  not use invalid codepoint.  [ruby-core:79966] [Bug #13292]
+
+Sun Mar 26 01:48:05 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	date_core.c: [DOC] revise docs [ci skip]
+
+	* fix malformed rdoc for Date#today, Date._strptime,
+	  and DateTime._strptime
+	* add code examples for Date#<< and Date#>> to demonstrate
+	  that different dates can result in the same return value
+	* use Date::ITALY in call-seq instead of only ITALY
+	* fix some copy/paste mistakes where Date should be DateTime
+	* fix various errors and grammar
+	* fix cross references and formatting
+
+	[ruby-core:79433] [Bug #13193]
+	Author:    Marcus Stollsteimer <sto.mar@web.de>
+
+Sun Mar 26 01:35:25 2017  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	lib/ostruct.rb: Fix returned value of each_pair.
+
+	From a patch by Marcus Stollsteimer. [Fixes #13169]
+
+Sun Mar 26 01:31:54 2017  Benoit Daloze  <eregontp@gmail.com>
+
+	fix optimization for hash aset/aref with fstring
+
+	Patch by Eric Wong [ruby-core:78797].
+	I don't like the idea of making insns.def any bigger to support
+	a corner case, and "test_hash_aref_fstring_identity" shows
+	how contrived this is.
+
+	[ruby-core:78783] [Bug #12855]
+	adjust indent [ci skip]
+
+Sun Mar 26 01:29:17 2017  Shugo Maeda  <shugo@ruby-lang.org>
+
+	string.c: rindex(//) should set $~.
+
+	This seems a bug introduced by r520 (1.4.0).  [ruby-core:79110] [Bug #13135]
+
+Sun Mar 26 01:15:34 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	disable critical-error-handler
+
+	* win32/win32.c (rb_w32_sysinit): disable critical-error-handler
+	  message box even on mswin, regardless of runtime DLL version.
+	  [ruby-dev:49988] [Bug #13254]
+
+Sun Mar 26 01:14:19 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	broken mingw
+
+	* configure.in: check whether frexp and modf are broken.
+
+	* include/ruby/win32.h (frexp, modf): ignore bad declarations when
+	  compiling as C++.  [ruby-core:79859] [Bug #13267]
+
+Sun Mar 26 01:13:11 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	parallel.rb: fix intervention
+
+	* test/lib/test/unit/parallel.rb (_report): send a response and a
+	  newline atomically, to get rid of intervention with "p" which
+	  runs in a separate thread.
+
+Sun Mar 26 01:03:27 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	io.c: close before wait
+
+	* io.c (io_close_fptr): notify then close, and wait for other
+	  threads before free fptr.  [ruby-core:79262] [Bug #13158]
+
+Sun Mar 26 00:47:52 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	io.c: fix race between read and close
+
+	* io.c (io_fillbuf): fix race between read and close, in the case
+	  the IO gets closed before the reading thread achieve the lock.
+	  [ruby-core:78845] [Bug #13076]
+	thread.c: fix race between read and close
+
+	* thread.c (rb_thread_fd_close): wait until all threads using the
+	  fd finish the operation, not to free the buffer in use.
+	  [ruby-core:78845] [Bug #13076]
+	revert a part of r57199
+
+	* io.c (io_fillbuf): revert a part of r57199 because it broke IO#getch.
+	  see also [Bug #13076]
+
+	io.c: fix race between read and close
+
+	* io.c (io_fillbuf): fix race between read and close and bail out
+	  in the case the IO gets closed before the reading thread achieve
+	  the lock.  [ruby-core:78845] [Bug #13076]
+
+Sun Mar 26 00:39:40 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	class.c: non-keyword hash class
+
+	* class.c (rb_extract_keywords): keep the class of non-keyword
+	  elements hash as the original.  [ruby-core:77813] [Bug #12884]
+
+Sun Mar 26 00:36:01 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	string.c: block for scrub with ASCII-incompatible
+
+	* string.c (rb_enc_str_scrub): honor the given block with
+	  ASCII-incompatible encoding.  [ruby-core:79039] [Bug #13120]
+	string.c: yield invalid part
+
+	* string.c (rb_enc_str_scrub): yield the invalid part only with
+	  ASCII-incompatible.  [ruby-core:79039] [Bug #13120]
+	string.c: replacement and block
+
+	* string.c (rb_enc_str_scrub): only one of replacement and block
+	  is allowed.  [ruby-core:79038] [Bug #13119]
+
+Sun Mar 26 00:30:36 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	compile.c: check err_info
+
+	* compile.c (iseq_setup): bail out if any errors found.
+	  [ruby-core:76531] [Bug #12613]
+
+Sun Mar 26 00:19:09 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	rational.c: memory leak in gcd
+
+	* rational.c (rb_gcd_gmp): fix memory leak.  patched by KISHIMOTO,
+	  Makoto <ksmakoto AT dd.iij4u.or.jp> in [ruby-dev:49934].
+	  [Bug #13089]
+
+Sun Mar 26 00:16:04 2017  Kazuki Yamaguchi  <k@rhe.jp>
+
+	pack.c: avoid returning uninitialized String
+
+	Fix unpacking with 'b', 'B', 'h' and 'H' format. Do not return an
+	uninitialized String to Ruby before filling the content bytes.
+	Fixes r11175 ("pack.c (pack_unpack): execute block if given with
+	unpacked value instead of creating an array", 2006-10-15).
+	[ruby-core:78841] [Bug #13075]
+	test/ruby/test_pack.rb: fix test case added by r57187
+
+	The test case for String#unpack added by r57187 is not properly testing
+	because the String will be filled after the block invocation.
+	[ruby-core:78841] [Bug #13075]
+
+	Thanks to nagachika for pointing this out:
+
+	  http://d.hatena.ne.jp/nagachika/20161226/ruby_trunk_changes_57184_57194#r57187
+
+Sun Mar 26 00:09:48 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	ruby-lex.rb: fix for label
+
+	* lib/irb/ruby-lex.rb (identify_identifier): treat identifier just
+	  followed by a colon as a lable.  this is not a precise solution
+	  but enough for the time being.  [ruby-core:78526] [Bug #13012]
 
 Tue Dec 27 20:43:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
