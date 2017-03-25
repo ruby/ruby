@@ -2000,4 +2000,5 @@ end
 # ARGV is arguable by OptionParser
 ARGV.extend(OptionParser::Arguable)
 
-OptParse = OptionParser
+# An alias for OptionParser.
+OptParse = OptionParser  # :nodoc:
