@@ -1048,4 +1048,14 @@ q.pop
     assert_not_predicate(status, :signaled?, FailDesc[status, bug9751, output])
     assert_predicate(status, :success?, bug9751)
   end if Process.respond_to?(:fork)
+
+  def test_thread_interrupt_for_killed_thread
+    assert_normal_exit(<<-_end, '[Bug #8996]', timeout: 5)
+      trap(/mswin|mignw/ =~ RUBY_PLATFORM ? :KILL : :TERM){exit}
+      while true
+        t = Thread.new{sleep 0}
+        t.raise Interrupt
+      end
+    _end
+  end
 end
