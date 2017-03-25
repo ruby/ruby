@@ -1,3 +1,17 @@
+Sun Mar 26 02:44:16 2017  Akinori MUSHA  <knu@iDaemons.org>
+
+	* doc/syntax/literals.rdoc (Strings): [DOC] Revise the character
+	  literal part.
+
+Sun Mar 26 02:44:16 2017  Akinori MUSHA  <knu@iDaemons.org>
+
+	* doc/syntax/literals.rdoc (Strings): [DOC] Document the full list
+	  of supported escape sequences in string literals.
+
+Sun Mar 26 02:44:16 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* doc/syntax/literals.rdoc (Strings): mention about ?a literal.
+
 Sun Mar 26 02:35:17 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options): convert -e script to the encoding
