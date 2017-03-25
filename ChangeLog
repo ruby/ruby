@@ -1,3 +1,9 @@
+Sun Mar 26 02:35:17 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_options): convert -e script to the encoding
+	  given by a command line option on Windows.  assume it is the
+	  expected encoding.  [ruby-dev:49461] [Bug #11900]
+
 Sun Mar 26 02:32:12 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (poll_child_status): rb_w32_wait_events_blocking() sets
