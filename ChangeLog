@@ -1,3 +1,17 @@
+Sat Mar 25 23:35:54 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/forwardable.rb (Forwardable._delegator_method): extract
+	  method generator and deal with non-module objects.
+	  [ruby-dev:49656] [Bug #12478]
+
+Sat Mar 25 23:35:54 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/forwardable.rb (def_instance_delegator): adjust backtrace of
+	  method body by tail call optimization.  adjusting the delegated
+	  target is still done by deleting backtrace.
+
+	* lib/forwardable.rb (def_single_delegator): ditto.
+
 Tue Dec 27 20:43:54 2016  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (usec2subsecx): fix return type, which is a numeric object but
