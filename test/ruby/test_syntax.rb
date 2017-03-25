@@ -658,6 +658,23 @@ eom
     end
   end
 
+  def test_syntax_error_in_rescue
+    bug12613 = '[ruby-core:76531] [Bug #12613]'
+    assert_syntax_error("#{<<-"begin;"}\n#{<<-"end;"}", /Invalid retry/, bug12613)
+    begin;
+      while true
+        begin
+          p
+        rescue
+          retry
+        else
+          retry
+        end
+        break
+      end
+    end;
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end

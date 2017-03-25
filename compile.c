@@ -478,9 +478,6 @@ static void
 validate_labels(rb_iseq_t *iseq, st_table *labels_table)
 {
     st_foreach(labels_table, validate_label, (st_data_t)iseq);
-    if (!NIL_P(iseq->compile_data->err_info)) {
-	rb_exc_raise(iseq->compile_data->err_info);
-    }
 }
 
 VALUE
@@ -1046,6 +1043,10 @@ new_child_iseq(rb_iseq_t *iseq, NODE *node,
 static int
 iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *anchor)
 {
+    if (!NIL_P(iseq->compile_data->err_info)) {
+	return COMPILE_NG;
+    }
+
     /* debugs("[compile step 2] (iseq_array_to_linkedlist)\n"); */
 
     if (compile_debug > 5)
