@@ -1100,6 +1100,12 @@ AS_CASE(["$target_os"],
 		    ],
 		    [macosx_10_5=yes], [macosx_10_5=no])
 		AC_MSG_RESULT($macosx_10_5)
+		AS_IF([test "${target_os@%:@darwin}" -ge 16], [
+		    ac_cv_func___syscall=no
+		    ac_cv_func_syscall=no
+		    ac_cv_header_sys_syscall_h=no
+		    ac_cv_header_syscall_h=no
+		])
 		if test $macosx_10_5 = yes; then
 		    ac_cv_func_getcontext=no
 		    ac_cv_func_setcontext=no
