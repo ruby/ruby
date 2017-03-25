@@ -696,6 +696,52 @@ end.join
     assert_equal('d', e.cause.message, 'cause option should be honored always')
   end
 
+  def test_cause_thread_no_cause
+    bug12741 = '[ruby-core:77222] [Bug #12741]'
+
+    x = Thread.current
+    a = false
+    y = Thread.start do
+      Thread.pass until a
+      x.raise "stop"
+    end
+
+    begin
+      raise bug12741
+    rescue
+      e = assert_raise_with_message(RuntimeError, "stop") do
+        a = true
+        sleep 1
+      end
+    end
+    assert_nil(e.cause)
+  end
+
+  def test_cause_thread_with_cause
+    bug12741 = '[ruby-core:77222] [Bug #12741]'
+
+    x = Thread.current
+    a = false
+    y = Thread.start do
+      Thread.pass until a
+      begin
+        raise "caller's cause"
+      rescue
+        x.raise "stop"
+      end
+    end
+
+    begin
+      raise bug12741
+    rescue
+      e = assert_raise_with_message(RuntimeError, "stop") do
+        a = true
+        sleep 1
+      end
+    end
+    assert_equal("caller's cause", e.cause.message)
+  end
+
   def test_unknown_option
     bug = '[ruby-core:63203] [Feature #8257] should pass unknown options'
 

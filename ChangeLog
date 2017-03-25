@@ -1,3 +1,15 @@
+Sun Mar 26 02:13:04 2017  Koichi Sasada  <ko1@atdot.net>
+
+	* test/ruby/test_exception.rb: fix thread issues.
+	  * use Queue instead of a local variable for synchronization.
+	  * join created thread to soleve leaking threads warning.
+
+Sun Mar 26 02:13:04 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread.c (rb_threadptr_raise): set cause from the called thread,
+	  but not from the thread to be interrupted.
+	  [ruby-core:77222] [Bug #12741]
+
 Sat Mar 25 23:35:54 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/forwardable.rb (Forwardable._delegator_method): extract
