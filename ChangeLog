@@ -1,3 +1,8 @@
+Sun Mar 26 02:32:12 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (poll_child_status): rb_w32_wait_events_blocking() sets
+	  errno internally, then should not set it here.
+
 Sun Mar 26 02:13:04 2017  Koichi Sasada  <ko1@atdot.net>
 
 	* test/ruby/test_exception.rb: fix thread issues.
