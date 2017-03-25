@@ -8779,6 +8779,7 @@ sym_inspect(VALUE sym)
  *  Returns the name or string corresponding to <i>sym</i>.
  *
  *     :fred.id2name   #=> "fred"
+ *     :ginger.to_s    #=> "ginger"
  */
 
 
