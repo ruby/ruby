@@ -151,8 +151,7 @@ module Test
       end
 
       def _report(res, *args) # :nodoc:
-        res = "#{res} #{args.pack("m0")}" unless args.empty?
-        @stdout.puts(res)
+        @stdout.write(args.empty? ? "#{res}\n" : "#{res} #{args.pack("m0")}\n")
       end
 
       def puke(klass, meth, e) # :nodoc:
