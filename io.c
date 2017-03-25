@@ -4263,7 +4263,7 @@ static void free_io_buffer(rb_io_buffer_t *buf);
 static void clear_codeconv(rb_io_t *fptr);
 
 static void
-fptr_finalize(rb_io_t *fptr, int noraise)
+fptr_finalize_flush(rb_io_t *fptr, int noraise)
 {
     VALUE err = Qnil;
     int fd = fptr->fd;
@@ -4323,6 +4323,12 @@ fptr_finalize(rb_io_t *fptr, int noraise)
             rb_exc_raise(err);
         }
     }
+}
+
+static void
+fptr_finalize(rb_io_t *fptr, int noraise)
+{
+    fptr_finalize_flush(fptr, noraise);
     free_io_buffer(&fptr->rbuf);
     free_io_buffer(&fptr->wbuf);
     clear_codeconv(fptr);
@@ -4402,6 +4408,7 @@ rb_io_memsize(const rb_io_t *fptr)
     return size;
 }
 
+int rb_notify_fd_close(int fd);
 VALUE
 rb_io_close(VALUE io)
 {
@@ -4409,6 +4416,7 @@ rb_io_close(VALUE io)
     int fd;
     VALUE write_io;
     rb_io_t *write_fptr;
+    int busy;
 
     write_io = GetWriteIO(io);
     if (io != write_io) {
@@ -4423,7 +4431,11 @@ rb_io_close(VALUE io)
     if (fptr->fd < 0) return Qnil;
 
     fd = fptr->fd;
-    rb_thread_fd_close(fd);
+    busy = rb_notify_fd_close(fd);
+    fptr_finalize_flush(fptr, FALSE);
+    if (busy) {
+	do rb_thread_schedule(); while (rb_notify_fd_close(fd));
+    }
     rb_io_fptr_cleanup(fptr, FALSE);
 
     if (fptr->pid) {
@@ -6709,7 +6721,7 @@ io_reopen(VALUE io, VALUE nfile)
             rb_update_max_fd(fd);
             fptr->fd = fd;
 	}
-	rb_thread_fd_close(fd);
+	rb_notify_fd_close(fd);
 	if ((orig->mode & FMODE_READABLE) && pos >= 0) {
 	    if (io_seek(fptr, pos, SEEK_SET) < 0 && errno) {
 		rb_sys_fail_path(fptr->pathv);

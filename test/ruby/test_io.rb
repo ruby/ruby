@@ -3207,4 +3207,25 @@ End
       end
     end;
   end
+
+  def test_race_closed_stream
+    bug13158 = '[ruby-core:79262] [Bug #13158]'
+    closed = nil
+    IO.pipe do |r, w|
+      thread = Thread.new do
+        begin
+          while r.gets
+          end
+        ensure
+          closed = r.closed?
+        end
+      end
+      sleep 0.01
+      r.close
+      assert_raise_with_message(IOError, /stream closed/) do
+        thread.join
+      end
+      assert_equal(true, closed, "#{bug13158}: stream should be closed")
+    end
+  end
 end
