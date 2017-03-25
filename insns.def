@@ -1950,7 +1950,9 @@ opt_aset_with
 (VALUE recv, VALUE val)
 (VALUE val)
 {
-    if (!SPECIAL_CONST_P(recv) && RBASIC_CLASS(recv) == rb_cHash && BASIC_OP_UNREDEFINED_P(BOP_ASET, HASH_REDEFINED_OP_FLAG)) {
+    if (!SPECIAL_CONST_P(recv) && RBASIC_CLASS(recv) == rb_cHash &&
+	BASIC_OP_UNREDEFINED_P(BOP_ASET, HASH_REDEFINED_OP_FLAG) &&
+	rb_hash_compare_by_id_p(recv) == Qfalse) {
 	rb_hash_aset(recv, key, val);
     }
     else {
@@ -1972,7 +1974,9 @@ opt_aref_with
 (VALUE recv)
 (VALUE val)
 {
-    if (!SPECIAL_CONST_P(recv) && RBASIC_CLASS(recv) == rb_cHash && BASIC_OP_UNREDEFINED_P(BOP_AREF, HASH_REDEFINED_OP_FLAG)) {
+    if (!SPECIAL_CONST_P(recv) && RBASIC_CLASS(recv) == rb_cHash &&
+	BASIC_OP_UNREDEFINED_P(BOP_AREF, HASH_REDEFINED_OP_FLAG) &&
+	rb_hash_compare_by_id_p(recv) == Qfalse) {
 	val = rb_hash_aref(recv, key);
     }
     else {
@@ -2121,8 +2125,7 @@ opt_succ
 	    BASIC_OP_UNREDEFINED_P(BOP_SUCC, STRING_REDEFINED_OP_FLAG)) {
 	    val = rb_str_succ(recv);
 	}
-	else
-	  {
+	else {
 	    goto INSN_LABEL(normal_dispatch);
 	}
     }

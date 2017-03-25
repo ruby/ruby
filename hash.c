@@ -2504,8 +2504,6 @@ rb_hash_flatten(int argc, VALUE *argv, VALUE hash)
     return ary;
 }
 
-static VALUE rb_hash_compare_by_id_p(VALUE hash);
-
 /*
  *  call-seq:
  *     hsh.compare_by_identity -> hsh
@@ -2541,7 +2539,7 @@ rb_hash_compare_by_id(VALUE hash)
  *
  */
 
-static VALUE
+VALUE
 rb_hash_compare_by_id_p(VALUE hash)
 {
     if (!RHASH(hash)->ntbl)
