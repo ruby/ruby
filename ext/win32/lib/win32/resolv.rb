@@ -45,6 +45,21 @@ if info.unpack('V5')[4] == 2  # VER_PLATFORM_WIN32_NT
 # Windows NT
 #====================================================================
   module_eval <<-'__EOS__', __FILE__, __LINE__+1
+    module SZ
+      refine Registry do
+        # ad hoc workaround for broken registry
+        def read_s(key)
+          type, str = read(key)
+          unless type == Registry::REG_SZ
+            warn "Broken registry, #{name}\\#{key} was #{Registry.type2name(type)}, ignored"
+            return String.new
+          end
+          str
+        end
+      end
+    end
+    using SZ
+
     TCPIP_NT = 'SYSTEM\CurrentControlSet\Services\Tcpip\Parameters'
 
     class << self
