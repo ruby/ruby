@@ -1424,11 +1424,12 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *     a.min { |a, b| a.length <=> b.length }  #=> "dog"
  *
  *  If the +n+ argument is given, minimum +n+ elements are returned
- *  as an array.
+ *  as a sorted array.
  *
  *     a = %w[albatross dog horse]
  *     a.min(2)                                  #=> ["albatross", "dog"]
  *     a.min(2) {|a, b| a.length <=> b.length }  #=> ["dog", "horse"]
+ *     [5, 1, 3, 4, 2].min(3)                    #=> [1, 2, 3]
  */
 
 static VALUE
@@ -1510,11 +1511,12 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *     a.max { |a, b| a.length <=> b.length }  #=> "albatross"
  *
  *  If the +n+ argument is given, maximum +n+ elements are returned
- *  as an array.
+ *  as an array, sorted in descending order.
  *
  *     a = %w[albatross dog horse]
  *     a.max(2)                                  #=> ["horse", "dog"]
  *     a.max(2) {|a, b| a.length <=> b.length }  #=> ["albatross", "horse"]
+ *     [5, 1, 3, 4, 2].max(3)                    #=> [5, 4, 3]
  */
 
 static VALUE
@@ -1729,7 +1731,8 @@ min_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *     a.min_by { |x| x.length }   #=> "dog"
  *
  *  If the +n+ argument is given, minimum +n+ elements are returned
- *  as an array.
+ *  as an array. These +n+ elements are sorted by the value from the
+ *  given block.
  *
  *     a = %w[albatross dog horse]
  *     p a.min_by(2) {|x| x.length } #=> ["dog", "horse"]
@@ -1788,8 +1791,9 @@ max_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *     a = %w(albatross dog horse)
  *     a.max_by { |x| x.length }   #=> "albatross"
  *
- *  If the +n+ argument is given, minimum +n+ elements are returned
- *  as an array.
+ *  If the +n+ argument is given, maximum +n+ elements are returned
+ *  as an array. These +n+ elements are sorted by the value from the
+ *  given block, in descending order.
  *
  *     a = %w[albatross dog horse]
  *     a.max_by(2) {|x| x.length } #=> ["albatross", "horse"]
