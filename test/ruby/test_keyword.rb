@@ -615,4 +615,24 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(x, result)
     assert_kind_of(klass, result, bug12884)
   end
+
+  def test_kwrest_overwritten
+    bug13015 = '[ruby-core:78536] [Bug #13015]'
+
+    klass = EnvUtil.labeled_class("Parent") do
+      def initialize(d:)
+      end
+    end
+
+    klass = EnvUtil.labeled_class("Child", klass) do
+      def initialize(d:, **h)
+        h = [2, 3]
+        super
+      end
+    end
+
+    assert_raise_with_message(TypeError, /expected Hash/, bug13015) do
+      klass.new(d: 4)
+    end
+  end
 end
