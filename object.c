@@ -22,6 +22,7 @@
 #include "constant.h"
 #include "id.h"
 #include "probes.h"
+#include "vm_core.h"
 
 VALUE rb_cBasicObject;
 VALUE rb_mKernel;
@@ -88,7 +89,8 @@ rb_equal(VALUE obj1, VALUE obj2)
     VALUE result;
 
     if (obj1 == obj2) return Qtrue;
-    if (FIXNUM_P(obj1) && FIXNUM_P(obj2)) return Qfalse;
+    if (FIXNUM_P(obj1) && FIXNUM_P(obj2) && BASIC_OP_UNREDEFINED_P(BOP_EQ, INTEGER_REDEFINED_OP_FLAG))
+	return Qfalse;
 
     result = rb_funcall(obj1, id_eq, 1, obj2);
     if (RTEST(result)) return Qtrue;
