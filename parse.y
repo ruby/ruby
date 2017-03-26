@@ -6207,15 +6207,14 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
     pushback(c);
     if (tokadd_string(func, term, paren, &quote->nd_nest,
 		      &enc) == -1) {
-	if (func & STR_FUNC_REGEXP) {
-	    if (parser->eofp)
+	if (parser->eofp) {
+	    if (func & STR_FUNC_REGEXP) {
 		compile_error(PARSER_ARG "unterminated regexp meets end of file");
-	    return tREGEXP_END;
-	}
-	else {
-	    if (parser->eofp)
+	    }
+	    else {
 		compile_error(PARSER_ARG "unterminated string meets end of file");
-	    return tSTRING_END;
+	    }
+	    quote->u2.id = STR_TERM_END;
 	}
     }
 
