@@ -484,7 +484,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
       system @git, 'add', gemspec
       system @git, 'commit', '-a', '-m', 'a non-empty commit message', '--quiet'
-      head = Gem::Util.popen('git', 'rev-parse', 'master').strip
+      head = Gem::Util.popen(@git, 'rev-parse', 'master').strip
     end
 
     return name, git_spec.version, directory, head
