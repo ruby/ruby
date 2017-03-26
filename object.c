@@ -88,6 +88,8 @@ rb_equal(VALUE obj1, VALUE obj2)
     VALUE result;
 
     if (obj1 == obj2) return Qtrue;
+    if (SPECIAL_CONST_P(obj1) && SPECIAL_CONST_P(obj2)) return Qfalse;
+
     result = rb_funcall(obj1, id_eq, 1, obj2);
     if (RTEST(result)) return Qtrue;
     return Qfalse;
