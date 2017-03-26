@@ -1,3 +1,8 @@
+Sun Mar 26 16:24:02 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_thread.rb (test_thread_interrupt_for_killed_thread):
+	  may fix the test failure on some platforms introduced at r58108.
+
 Sun Mar 26 16:22:03 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	envutil.rb: timeout_error argument to invoke_ruby

@@ -1050,7 +1050,7 @@ q.pop
   end if Process.respond_to?(:fork)
 
   def test_thread_interrupt_for_killed_thread
-    assert_normal_exit(<<-_end, '[Bug #8996]', timeout: 5)
+    assert_normal_exit(<<-_end, '[Bug #8996]', timeout: 5, timeout_error: nil)
       trap(/mswin|mignw/ =~ RUBY_PLATFORM ? :KILL : :TERM){exit}
       while true
         t = Thread.new{sleep 0}
