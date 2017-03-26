@@ -1,3 +1,16 @@
+Sun Mar 26 16:22:03 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	envutil.rb: timeout_error argument to invoke_ruby
+
+	* test/lib/envutil.rb (invoke_ruby): add `timeout_error` optional
+	  keyword argument, the exception class to be raised if the target
+	  process timed out.  if it is nil, no exception will be raised at
+	  timeout but the terminated output, error, and status will be
+	  returned.  defaulted to Timeout::Error.
+
+	* test/lib/envutil.rb (assert_separately): check outputs and
+	  status (including diagnostic reports) of timed-out process.
+
 Sun Mar 26 13:07:21 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* thread.c (rb_thread_sleep_deadly_allow_spurious_wakeup): need to

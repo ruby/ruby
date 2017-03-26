@@ -31,7 +31,7 @@ module EnvUtil
   LANG_ENVS = %w"LANG LC_ALL LC_CTYPE"
 
   def invoke_ruby(args, stdin_data = "", capture_stdout = false, capture_stderr = false,
-                  encoding: nil, timeout: 10, reprieve: 1,
+                  encoding: nil, timeout: 10, reprieve: 1, timeout_error: Timeout::Error,
                   stdout_filter: nil, stderr_filter: nil,
                   rubybin: EnvUtil.rubybin,
                   **opt)
@@ -63,10 +63,7 @@ module EnvUtil
       th_stderr = Thread.new { err_p.read } if capture_stderr && capture_stderr != :merge_to_stdout
       in_p.write stdin_data.to_str unless stdin_data.empty?
       in_p.close
-      if (!th_stdout || th_stdout.join(timeout)) && (!th_stderr || th_stderr.join(timeout))
-        stdout = th_stdout.value if capture_stdout
-        stderr = th_stderr.value if capture_stderr && capture_stderr != :merge_to_stdout
-      else
+      unless (!th_stdout || th_stdout.join(timeout)) && (!th_stderr || th_stderr.join(timeout))
         signal = /mswin|mingw/ =~ RUBY_PLATFORM ? :KILL : :TERM
         case pgroup = opt[:pgroup]
         when 0, true
@@ -87,13 +84,17 @@ module EnvUtil
         else
           break
         end while true
-        bt = caller_locations
-        raise Timeout::Error, "execution of #{bt.shift.label} expired", bt.map(&:to_s)
+        if timeout_error
+          bt = caller_locations
+          raise timeout_error, "execution of #{bt.shift.label} expired", bt.map(&:to_s)
+        end
+        status = $?
       end
+      stdout = th_stdout.value if capture_stdout
+      stderr = th_stderr.value if capture_stderr && capture_stderr != :merge_to_stdout
       out_p.close if capture_stdout
       err_p.close if capture_stderr && capture_stderr != :merge_to_stdout
-      Process.wait pid
-      status = $?
+      status ||= Process.wait2(pid)[1]
       stdout = stdout_filter.call(stdout) if stdout_filter
       stderr = stderr_filter.call(stderr) if stderr_filter
       return stdout, stderr, status
@@ -373,7 +374,7 @@ module Test
 eom
         args = args.dup
         args.insert((Hash === args.first ? 1 : 0), "-w", "--disable=gems", *$:.map {|l| "-I#{l}"})
-        stdout, stderr, status = EnvUtil.invoke_ruby(args, src, true, true, **opt)
+        stdout, stderr, status = EnvUtil.invoke_ruby(args, src, true, true, timeout_error: nil, **opt)
         abort = status.coredump? || (status.signaled? && ABORT_SIGNALS.include?(status.termsig))
         assert(!abort, FailDesc[status, nil, stderr])
         self._assertions += stdout[/^assertions=(\d+)/, 1].to_i
