@@ -1127,7 +1127,7 @@ rb_thread_sleep_deadly(void)
     sleep_forever(GET_THREAD(), TRUE, TRUE);
 }
 
-void
+RUBY_FUNC_EXPORTED void
 rb_thread_sleep_deadly_allow_spurious_wakeup(void)
 {
     thread_debug("rb_thread_sleep_deadly_allow_spurious_wakeup\n");

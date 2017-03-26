@@ -1,3 +1,8 @@
+Sun Mar 26 13:07:21 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* thread.c (rb_thread_sleep_deadly_allow_spurious_wakeup): need to
+	  mark as exported.  this may fix the load error introduced at r58115.
+
 Sun Mar 26 03:55:45 2017  Marcus Stollsteimer  <sto.mar@web.de>
 
 	docs for creating arrays
