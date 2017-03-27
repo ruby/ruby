@@ -243,6 +243,13 @@ puts Tempfile.new('foo').path
     assert_equal 5, t.size
   end
 
+  def test_size_on_empty_file
+    t = tempfile("foo")
+    t.write("")
+    t.close
+    assert_equal 0, t.size
+  end
+
   def test_concurrency
     threads = []
     tempfiles = []
