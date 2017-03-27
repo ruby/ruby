@@ -57,6 +57,9 @@ Oliver M. Bolzer
 Alexey Borzenkov
 * a patch for mkmf.rb
 
+Evan Brodie
+* documentation
+
 Richard Brown
 * a patch for configure.in
 
