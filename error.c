@@ -2388,6 +2388,52 @@ syserr_warning(VALUE mesg, int err)
     rb_write_warning_str(mesg);
 }
 
+#if 0
+void
+rb_sys_warn(const char *fmt, ...)
+{
+    if (!NIL_P(ruby_verbose)) {
+	int errno_save = errno;
+	with_warning_string(mesg, 0, fmt) {
+	    syserr_warning(mesg, errno_save);
+	}
+	errno = errno_save;
+    }
+}
+
+void
+rb_syserr_warn(int err, const char *fmt, ...)
+{
+    if (!NIL_P(ruby_verbose)) {
+	with_warning_string(mesg, 0, fmt) {
+	    syserr_warning(mesg, err);
+	}
+    }
+}
+
+void
+rb_sys_enc_warn(rb_encoding *enc, const char *fmt, ...)
+{
+    if (!NIL_P(ruby_verbose)) {
+	int errno_save = errno;
+	with_warning_string(mesg, enc, fmt) {
+	    syserr_warning(mesg, errno_save);
+	}
+	errno = errno_save;
+    }
+}
+
+void
+rb_syserr_enc_warn(int err, rb_encoding *enc, const char *fmt, ...)
+{
+    if (!NIL_P(ruby_verbose)) {
+	with_warning_string(mesg, enc, fmt) {
+	    syserr_warning(mesg, err);
+	}
+    }
+}
+#endif
+
 void
 rb_sys_warning(const char *fmt, ...)
 {
@@ -2400,6 +2446,18 @@ rb_sys_warning(const char *fmt, ...)
     }
 }
 
+#if 0
+void
+rb_syserr_warning(int err, const char *fmt, ...)
+{
+    if (RTEST(ruby_verbose)) {
+	with_warning_string(mesg, 0, fmt) {
+	    syserr_warning(mesg, err);
+	}
+    }
+}
+#endif
+
 void
 rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...)
 {
@@ -2411,6 +2469,18 @@ rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...)
 	errno = errno_save;
     }
 }
+
+#if 0
+void
+rb_syserr_enc_warning(int err, rb_encoding *enc, const char *fmt, ...)
+{
+    if (RTEST(ruby_verbose)) {
+	with_warning_string(mesg, enc, fmt) {
+	    syserr_warning(mesg, err);
+	}
+    }
+}
+#endif
 
 void
 rb_load_fail(VALUE path, const char *err)
