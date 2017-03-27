@@ -5592,7 +5592,8 @@ rb_ary_dig(int argc, VALUE *argv, VALUE self)
  *  This method is safe to use with mutable objects such as hashes, strings or
  *  other arrays:
  *
- *     Array.new(4) { Hash.new } #=> [{}, {}, {}, {}]
+ *     Array.new(4) { Hash.new }  #=> [{}, {}, {}, {}]
+ *     Array.new(4) {|i| i.to_s } #=> ["0", "1", "2", "3"]
  *
  *  This is also a quick way to build up multi-dimensional arrays:
  *
