@@ -104,6 +104,11 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_redefine_method('String', 'freeze', 'assert_nil "foo".freeze')
   end
 
+  def test_string_uminus
+    assert_same "foo".freeze, -"foo"
+    assert_redefine_method('String', '-@', 'assert_nil(-"foo")')
+  end
+
   def test_string_freeze_saves_memory
     n = 16384
     data = '.'.freeze

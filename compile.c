@@ -5211,7 +5211,12 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	    ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
 	    VALUE str = rb_fstring(node->nd_recv->nd_lit);
 	    iseq_add_mark_object(iseq, str);
-	    ADD_INSN1(ret, line, opt_str_freeze, str);
+	    if (node->nd_mid == idUMinus) {
+		ADD_INSN1(ret, line, opt_str_uminus, str);
+	    }
+	    else {
+		ADD_INSN1(ret, line, opt_str_freeze, str);
+	    }
 	    if (popped) {
 		ADD_INSN(ret, line, pop);
 	    }
