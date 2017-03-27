@@ -4192,6 +4192,8 @@ set_bm_skip(UChar* s, UChar* end, regex_t* reg,
 	n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
 					       p, end, items);
       clen = enclen(enc, p, end);
+      if (p + clen > end)
+	  clen = (int )(end - p);
 
       for (j = 0; j < n; j++) {
 	if ((items[j].code_len != 1) || (items[j].byte_len != clen))
@@ -4222,6 +4224,8 @@ set_bm_skip(UChar* s, UChar* end, regex_t* reg,
 	n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
 					       p, end, items);
       clen = enclen(enc, p, end);
+      if (p + clen > end)
+	  clen = (int )(end - p);
 
       for (j = 0; j < n; j++) {
 	if ((items[j].code_len != 1) || (items[j].byte_len != clen))
@@ -4265,6 +4269,8 @@ set_bm_skip(UChar* s, UChar* end, regex_t* reg,
 	n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
 					       p, end, items);
       clen = enclen(enc, p, end);
+      if (p + clen > end)
+	  clen = (int )(end - p);
 
       for (j = 0; j < n; j++) {
 	if ((items[j].code_len != 1) || (items[j].byte_len != clen))
@@ -4295,6 +4301,8 @@ set_bm_skip(UChar* s, UChar* end, regex_t* reg,
 	n = ONIGENC_GET_CASE_FOLD_CODES_BY_STR(enc, reg->case_fold_flag,
 					       p, end, items);
       clen = enclen(enc, p, end);
+      if (p + clen > end)
+	  clen = (int )(end - p);
 
       for (j = 0; j < n; j++) {
 	if ((items[j].code_len != 1) || (items[j].byte_len != clen))
