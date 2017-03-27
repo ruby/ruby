@@ -504,6 +504,14 @@ class TestEval < Test::Unit::TestCase
     assert_same a, b
   end
 
+  def test_fstring_instance_eval
+    bug = "[ruby-core:78116] [Bug #12930]".freeze
+    assert_same bug, (bug.instance_eval {self})
+    assert_raise(RuntimeError) {
+      bug.instance_eval {@ivar = true}
+    }
+  end
+
   def test_gced_binding_block
     assert_normal_exit %q{
       def m
