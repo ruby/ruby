@@ -73,7 +73,10 @@
 class OpenStruct
   # :nodoc:
   class << self
-    alias allocate new
+    def allocate
+      (x = super).instance_variable_set(:@table, {})
+      x
+    end
   end
 
   #
