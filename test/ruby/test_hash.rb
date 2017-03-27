@@ -229,6 +229,19 @@ class TestHash < Test::Unit::TestCase
     assert_same a.keys[0], b.keys[0]
   end
 
+  def test_hash_aset_fstring_identity
+    h = {}.compare_by_identity
+    h['abc'] = 1
+    h['abc'] = 2
+    assert_equal 2, h.size, '[ruby-core:78783] [Bug #12855]'
+  end
+
+  def test_hash_aref_fstring_identity
+    h = {}.compare_by_identity
+    h['abc'] = 1
+    assert_nil h['abc'], '[ruby-core:78783] [Bug #12855]'
+  end
+
   def test_NEWHASH_fstring_key
     a = {"ABC" => :t}
     b = {"ABC" => :t}
