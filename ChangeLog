@@ -1,3 +1,9 @@
+Mon Mar 27 20:12:23 2017  Anton Davydov  <mail@davydovanton.com>
+
+	* lib/uri/mailto.rb: Removed needless `return` and use `.`` instead of `::`
+	  with class method.
+	* test/uri/test_mailto.rb: Added tests for coverage.
+
 Mon Mar 20 06:35:08 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_options): convert -e script to the encoding

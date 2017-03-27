@@ -84,7 +84,7 @@ module URI
     #    puts m3.to_s  ->  mailto:listman@example.com?subject=subscribe
     #
     def self.build(args)
-      tmp = Util::make_components_hash(self, args)
+      tmp = Util.make_components_hash(self, args)
 
       case tmp[:to]
       when Array
@@ -118,7 +118,7 @@ module URI
         end
       end
 
-      return super(tmp)
+      super(tmp)
     end
 
     #
@@ -187,7 +187,7 @@ module URI
         end
       end
 
-      return true
+      true
     end
     private :check_to
 
@@ -214,7 +214,7 @@ module URI
           "bad component(expected opaque component): #{v}"
       end
 
-      return true
+      true
     end
     private :check_headers
 
@@ -267,22 +267,22 @@ module URI
     #   # => "To: ruby-list@ruby-lang.org\nSubject: subscribe\nCc: myaddr\n\n\n"
     #
     def to_mailtext
-      to = parser.unescape(@to)
+      to = URI.decode_www_form_component(@to)
       head = ''
       body = ''
       @headers.each do |x|
         case x[0]
         when 'body'
-          body = parser.unescape(x[1])
+          body = URI.decode_www_form_component(x[1])
         when 'to'
-          to << ', ' + parser.unescape(x[1])
+          to << ', ' + URI.decode_www_form_component(x[1])
         else
-          head << parser.unescape(x[0]).capitalize + ': ' +
-            parser.unescape(x[1])  + "\n"
+          head << URI.decode_www_form_component(x[0]).capitalize + ': ' +
+            URI.decode_www_form_component(x[1])  + "\n"
         end
       end
 
-      return "To: #{to}
+      "To: #{to}
 #{head}
 #{body}
 "
