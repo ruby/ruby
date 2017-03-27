@@ -1291,13 +1291,14 @@ pack_unpack(VALUE str, VALUE fmt)
 		if (p[-1] == '*' || len > (send - s) * 8)
 		    len = (send - s) * 8;
 		bits = 0;
-		UNPACK_PUSH(bitstr = rb_usascii_str_new(0, len));
+		bitstr = rb_usascii_str_new(0, len);
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 7) bits >>= 1;
 		    else bits = (unsigned char)*s++;
 		    *t++ = (bits & 1) ? '1' : '0';
 		}
+		UNPACK_PUSH(bitstr);
 	    }
 	    break;
 
@@ -1311,13 +1312,14 @@ pack_unpack(VALUE str, VALUE fmt)
 		if (p[-1] == '*' || len > (send - s) * 8)
 		    len = (send - s) * 8;
 		bits = 0;
-		UNPACK_PUSH(bitstr = rb_usascii_str_new(0, len));
+		bitstr = rb_usascii_str_new(0, len);
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 7) bits <<= 1;
 		    else bits = (unsigned char)*s++;
 		    *t++ = (bits & 128) ? '1' : '0';
 		}
+		UNPACK_PUSH(bitstr);
 	    }
 	    break;
 
@@ -1331,7 +1333,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		if (p[-1] == '*' || len > (send - s) * 2)
 		    len = (send - s) * 2;
 		bits = 0;
-		UNPACK_PUSH(bitstr = rb_usascii_str_new(0, len));
+		bitstr = rb_usascii_str_new(0, len);
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 1)
@@ -1340,6 +1342,7 @@ pack_unpack(VALUE str, VALUE fmt)
 			bits = (unsigned char)*s++;
 		    *t++ = hexdigits[bits & 15];
 		}
+		UNPACK_PUSH(bitstr);
 	    }
 	    break;
 
@@ -1353,7 +1356,7 @@ pack_unpack(VALUE str, VALUE fmt)
 		if (p[-1] == '*' || len > (send - s) * 2)
 		    len = (send - s) * 2;
 		bits = 0;
-		UNPACK_PUSH(bitstr = rb_usascii_str_new(0, len));
+		bitstr = rb_usascii_str_new(0, len);
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 1)
@@ -1362,6 +1365,7 @@ pack_unpack(VALUE str, VALUE fmt)
 			bits = (unsigned char)*s++;
 		    *t++ = hexdigits[(bits >> 4) & 15];
 		}
+		UNPACK_PUSH(bitstr);
 	    }
 	    break;
 
