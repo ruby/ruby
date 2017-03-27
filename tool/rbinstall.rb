@@ -763,7 +763,12 @@ install?(:ext, :comm, :gem) do
   if defined?(Zlib)
     Gem.instance_variable_set(:@ruby, with_destdir(File.join(bindir, ruby_install_name)))
     gems.each do |gem|
-      Gem.install(gem, Gem::Requirement.default, options)
+      begin
+        File.umask(022)
+        Gem.install(gem, Gem::Requirement.default, options)
+      ensure
+        File.umask(0222)
+      end
       gemname = File.basename(gem)
       puts "#{" "*30}#{gemname}"
     end
