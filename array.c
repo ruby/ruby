@@ -2886,13 +2886,15 @@ select_bang_ensure(VALUE a)
     long len = RARRAY_LEN(ary);
     long i1 = arg->len[0], i2 = arg->len[1];
 
-    if (i2 < i1) {
+    if (i2 < len && i2 < i1) {
+	long tail = 0;
 	if (i1 < len) {
+	    tail = len - i1;
 	    RARRAY_PTR_USE(ary, ptr, {
-		    MEMMOVE(ptr + i2, ptr + i1, VALUE, len - i1);
+		    MEMMOVE(ptr + i2, ptr + i1, VALUE, tail);
 		});
 	}
-	ARY_SET_LEN(ary, len - i1 + i2);
+	ARY_SET_LEN(ary, i2 + tail);
     }
     return ary;
 }
