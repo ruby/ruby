@@ -184,6 +184,24 @@ class TestDir < Test::Unit::TestCase
     end
   end
 
+  if Process.const_defined?(:RLIMIT_NOFILE)
+    def test_glob_too_may_open_files
+      assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}", chdir: @root)
+      begin;
+        n = 16
+        Process.setrlimit(Process::RLIMIT_NOFILE, n)
+        files = []
+        begin
+          n.times {files << File.open('b')}
+        rescue Errno::EMFILE, Errno::ENFILE => e
+        end
+        assert_raise(e.class) {
+          Dir.glob('*')
+        }
+      end;
+    end
+  end
+
   def assert_entries(entries)
     entries.sort!
     assert_equal(%w(. ..) + ("a".."z").to_a, entries)

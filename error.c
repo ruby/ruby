@@ -2470,7 +2470,6 @@ rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...)
     }
 }
 
-#if 0
 void
 rb_syserr_enc_warning(int err, rb_encoding *enc, const char *fmt, ...)
 {
@@ -2480,7 +2479,6 @@ rb_syserr_enc_warning(int err, rb_encoding *enc, const char *fmt, ...)
 	}
     }
 }
-#endif
 
 void
 rb_load_fail(VALUE path, const char *err)
