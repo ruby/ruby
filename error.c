@@ -200,62 +200,52 @@ warning_string(rb_encoding *enc, const char *fmt, va_list args)
 			 fmt, args);
 }
 
+#define with_warning_string(mesg, enc, fmt) \
+    VALUE mesg; \
+    va_list args; va_start(args, fmt); \
+    mesg = warning_string(enc, fmt, args); \
+    va_end(args);
+
 void
 rb_warn(const char *fmt, ...)
 {
-    VALUE mesg;
-    va_list args;
-
-    if (NIL_P(ruby_verbose)) return;
-
-    va_start(args, fmt);
-    mesg = warning_string(0, fmt, args);
-    va_end(args);
-    rb_write_warning_str(mesg);
+    if (!NIL_P(ruby_verbose)) {
+	with_warning_string(mesg, 0, fmt) {
+	    rb_write_warning_str(mesg);
+	}
+    }
 }
 
 void
 rb_enc_warn(rb_encoding *enc, const char *fmt, ...)
 {
-    VALUE mesg;
-    va_list args;
-
-    if (NIL_P(ruby_verbose)) return;
-
-    va_start(args, fmt);
-    mesg = warning_string(enc, fmt, args);
-    va_end(args);
-    rb_write_warning_str(mesg);
+    if (!NIL_P(ruby_verbose)) {
+	with_warning_string(mesg, enc, fmt) {
+	    rb_write_warning_str(mesg);
+	}
+    }
 }
 
 /* rb_warning() reports only in verbose mode */
 void
 rb_warning(const char *fmt, ...)
 {
-    VALUE mesg;
-    va_list args;
-
-    if (!RTEST(ruby_verbose)) return;
-
-    va_start(args, fmt);
-    mesg = warning_string(0, fmt, args);
-    va_end(args);
-    rb_write_warning_str(mesg);
+    if (RTEST(ruby_verbose)) {
+	with_warning_string(mesg, 0, fmt) {
+	    rb_write_warning_str(mesg);
+	}
+    }
 }
 
 #if 0
 void
 rb_enc_warning(rb_encoding *enc, const char *fmt, ...)
 {
-    VALUE mesg;
-    va_list args;
-
-    if (!RTEST(ruby_verbose)) return;
-
-    va_start(args, fmt);
-    mesg = warning_string(enc, fmt, args);
-    va_end(args);
-    rb_write_warning_str(mesg);
+    if (RTEST(ruby_verbose)) {
+	with_warning_string(mesg, enc, fmt) {
+	    rb_write_warning_str(mesg);
+	}
+    }
 }
 #endif
 
@@ -2390,44 +2380,36 @@ rb_mod_syserr_fail_str(VALUE mod, int e, VALUE mesg)
     rb_exc_raise(exc);
 }
 
+static void
+syserr_warning(VALUE mesg, int err)
+{
+    rb_str_set_len(mesg, RSTRING_LEN(mesg)-1);
+    rb_str_catf(mesg, ": %s\n", strerror(err));
+    rb_write_warning_str(mesg);
+}
+
 void
 rb_sys_warning(const char *fmt, ...)
 {
-    VALUE mesg;
-    va_list args;
-    int errno_save;
-
-    errno_save = errno;
-
-    if (!RTEST(ruby_verbose)) return;
-
-    va_start(args, fmt);
-    mesg = warning_string(0, fmt, args);
-    va_end(args);
-    rb_str_set_len(mesg, RSTRING_LEN(mesg)-1);
-    rb_str_catf(mesg, ": %s\n", strerror(errno_save));
-    rb_write_warning_str(mesg);
-    errno = errno_save;
+    if (RTEST(ruby_verbose)) {
+	int errno_save = errno;
+	with_warning_string(mesg, 0, fmt) {
+	    syserr_warning(mesg, errno_save);
+	}
+	errno = errno_save;
+    }
 }
 
 void
 rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...)
 {
-    VALUE mesg;
-    va_list args;
-    int errno_save;
-
-    errno_save = errno;
-
-    if (!RTEST(ruby_verbose)) return;
-
-    va_start(args, fmt);
-    mesg = warning_string(enc, fmt, args);
-    va_end(args);
-    rb_str_set_len(mesg, RSTRING_LEN(mesg)-1);
-    rb_str_catf(mesg, ": %s\n", strerror(errno_save));
-    rb_write_warning_str(mesg);
-    errno = errno_save;
+    if (RTEST(ruby_verbose)) {
+	int errno_save = errno;
+	with_warning_string(mesg, enc, fmt) {
+	    syserr_warning(mesg, errno_save);
+	}
+	errno = errno_save;
+    }
 }
 
 void
