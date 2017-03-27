@@ -1,3 +1,8 @@
+Tue Mar 28 00:38:39 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (poll_child_status): rb_w32_wait_events_blocking() sets
+	  errno internally, then should not set it here.
+
 Mon Mar 27 20:15:17 2017  Kazuki Tsujimoto  <kazuki@callcc.net>
 
 	* eval.c, method.h, proc.c, vm.c, vm_eval.c, vm_insnhelper.c, vm_method.c:
