@@ -411,4 +411,14 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal str, str.to_sym.to_s
     assert_not_predicate(str, :frozen?, bug11721)
   end
+
+  def test_hash_nondeterministic
+    ruby = EnvUtil.rubybin
+    refute_equal `#{ruby} -e 'puts :foo.hash'`, `#{ruby} -e 'puts :foo.hash'`,
+                 '[ruby-core:80430] [Bug #13376]'
+
+    sym = "dynsym_#{Random.rand(10000)}_#{Time.now}"
+    refute_equal `#{ruby} -e 'puts #{sym.inspect}.to_sym.hash'`,
+                 `#{ruby} -e 'puts #{sym.inspect}.to_sym.hash'`
+  end
 end
