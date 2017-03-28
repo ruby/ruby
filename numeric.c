@@ -5010,7 +5010,7 @@ int_dotimes(VALUE num)
 /*
  *  Document-method: Integer#round
  *  call-seq:
- *     int.round([ndigits])  ->  integer or float
+ *     int.round([ndigits] [, half: symbol])  ->  integer or float
  *
  *  Rounds +int+ to a given precision in decimal digits (default 0 digits).
  *
@@ -5020,6 +5020,15 @@ int_dotimes(VALUE num)
  *     1.round        #=> 1
  *     1.round(2)     #=> 1.0
  *     15.round(-1)   #=> 20
+ *
+ *  The <code>half:</code> optional keyword same as Float#round is available.
+ *
+ *     25.round(-1, half: :up)   #=> 30
+ *     25.round(-1, half: :even) #=> 20
+ *     25.round(-1, half: :down) #=> 20
+ *     35.round(-1, half: :up)   #=> 40
+ *     35.round(-1, half: :even) #=> 40
+ *     35.round(-1, half: :down) #=> 30
  */
 
 static VALUE
