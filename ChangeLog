@@ -1,3 +1,10 @@
+Tue Mar 28 15:39:26 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	configure.in: syscall is deprecated on macOS
+
+	* configure.in: syscall is no longer supported on macOS since 10.12.
+	  [Bug #13361]
+
 Mon Mar 27 01:41:37 2017  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* configure.in: improve ICC (Intel C Compiler) support.
