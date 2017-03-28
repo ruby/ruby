@@ -57,6 +57,9 @@ Oliver M. Bolzer
 Alexey Borzenkov
 * a patch for mkmf.rb
 
+Evan Brodie
+* a patch for documentation of Float#round
+
 Richard Brown
 * a patch for configure.in
 

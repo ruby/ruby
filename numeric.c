@@ -2215,7 +2215,7 @@ rb_int_truncate(VALUE num, int ndigits)
 
 /*
  *  call-seq:
- *     float.round([ndigits])  ->  integer or float
+ *     float.round([ndigits] [, half: symbol])  ->  integer or float
  *
  *  Rounds +float+ to a given precision in decimal digits (default 0 digits).
  *
@@ -2242,13 +2242,20 @@ rb_int_truncate(VALUE num, int ndigits)
  *     34567.89.round(2)  #=> 34567.89
  *     34567.89.round(3)  #=> 34567.89
  *
- *  If <code>half:</code> optional keyword is given, just-half number
+ *  If the <code>half:</code> optional keyword is given, just-half number
  *  will be rounded according to that value.
  *  Supported values for this keyword are follows.
  *
  *  * <code>:up</code> or +nil+: the result will be rounded away from zero
  *  * <code>:even</code>: the result will be rounded to nearest even number
  *  * <code>:down</code>: the result will be rounded close to zero
+ *
+ *     2.5.round(half: :up)   #=> 3
+ *     2.5.round(half: :even) #=> 2
+ *     2.5.round(half: :down) #=> 2
+ *     3.5.round(half: :up)   #=> 4
+ *     3.5.round(half: :even) #=> 4
+ *     3.5.round(half: :down) #=> 3
  */
 
 static VALUE
