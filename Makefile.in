@@ -421,7 +421,7 @@ ext/distclean.sub gems/distclean.sub:: ext/distclean.mk
 ext/realclean.sub gems/realclean.sub:: ext/realclean.mk
 
 ext/clean.mk ext/distclean.mk ext/realclean.mk::
-	$(Q) [ -f $(EXTS_MK) ] && exec $(MAKE) -f $(EXTS_MK) $(@F:.mk=)
+	-$(Q) if [ -f $(EXTS_MK) ]; then exec $(MAKE) -f $(EXTS_MK) $(@F:.mk=); fi
 
 ext/clean:: ext/clean.sub
 ext/distclean:: ext/distclean.sub
