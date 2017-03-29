@@ -895,6 +895,7 @@ defineclass
 	    }
 	    /* new class declaration */
 	    klass = rb_define_class_id(id, super);
+	    rb_iv_set(klass, "iseq", rb_iseqw_new(class_iseq));
 	    rb_set_class_path_string(klass, cbase, rb_id2str(id));
 	    rb_const_set(cbase, id, klass);
 	    rb_class_inherited(super, klass);
@@ -923,6 +924,7 @@ defineclass
 	else {
 	    /* new module declaration */
 	    klass = rb_define_module_id(id);
+	    rb_iv_set(klass, "iseq", rb_iseqw_new(class_iseq));
 	    rb_set_class_path_string(klass, cbase, rb_id2str(id));
 	    rb_const_set(cbase, id, klass);
 	}

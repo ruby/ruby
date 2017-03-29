@@ -11,6 +11,7 @@
 
 **********************************************************************/
 
+#include "eval_intern.h"
 #include "internal.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
@@ -22,6 +23,7 @@
 #include "constant.h"
 #include "id.h"
 #include "probes.h"
+#include "iseq.h"
 
 VALUE rb_cBasicObject;
 VALUE rb_mKernel;
@@ -2604,6 +2606,20 @@ rb_mod_singleton_p(VALUE klass)
     return Qfalse;
 }
 
+VALUE
+rb_mod_source_location(VALUE klass)
+{
+    VALUE loc[2];
+    const rb_iseq_t *iseq = rb_iseqw_to_iseq(rb_iv_get(klass, "iseq"));
+
+    if (!iseq) return Qnil;
+    rb_iseq_check(iseq);
+    loc[0] = iseq->body->location.path;
+    loc[1] = iseq->body->location.first_lineno;
+
+    return rb_ary_new4(2, loc);
+}
+
 static const struct conv_method_tbl {
     const char method[6];
     unsigned short id;
@@ -3620,6 +3636,7 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "private_constant", rb_mod_private_constant, -1); /* in variable.c */
     rb_define_method(rb_cModule, "deprecate_constant", rb_mod_deprecate_constant, -1); /* in variable.c */
     rb_define_method(rb_cModule, "singleton_class?", rb_mod_singleton_p, 0);
+    rb_define_method(rb_cModule, "source_location", rb_mod_source_location, 0);
 
     rb_define_method(rb_cClass, "allocate", rb_class_alloc, 0);
     rb_define_method(rb_cClass, "new", rb_class_s_new, -1);
