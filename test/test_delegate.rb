@@ -119,6 +119,17 @@ class TestDelegateClass < Test::Unit::TestCase
     assert_equal([:bar], s.methods(false))
   end
 
+  def test_eql?
+    s0 = SimpleDelegator.new("foo")
+    s1 = SimpleDelegator.new("bar")
+    s2 = SimpleDelegator.new("foo")
+    assert_equal(s0.eql?(s0), true)
+    assert_equal(s0.eql?("foo"), true)
+    assert_equal(s0.eql?(s2), true)
+    assert_equal(s0.eql?(s1), false)
+    assert_equal(s0.eql?("bar"), false)
+  end
+
   class Foo
     private
     def delegate_test_private
