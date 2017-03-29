@@ -397,4 +397,72 @@ class TestGc < Test::Unit::TestCase
       ObjectSpace.each_object{|o| case o when Module then o.instance_methods end}
     end
   end
+
+  def test_get_parameters
+    res = GC.get_parameters
+    assert_kind_of(Integer, res[:heap_init_slots])
+    assert_kind_of(Integer, res[:heap_free_slots])
+    assert_kind_of(Float,   res[:growth_factor])
+    assert_kind_of(Float,   res[:heap_free_slots_min_ratio])
+    assert_kind_of(Float,   res[:heap_free_slots_goal_ratio])
+    assert_kind_of(Float,   res[:heap_free_slots_max_ratio])
+    assert_kind_of(Float,   res[:oldobject_limit_factor])
+    assert_kind_of(Integer, res[:malloc_limit_min])
+    assert_kind_of(Integer, res[:malloc_limit_max])
+    assert_kind_of(Float,   res[:malloc_limit_growth_factor])
+    assert_kind_of(Integer, res[:oldmalloc_limit_min])
+    assert_kind_of(Integer, res[:oldmalloc_limit_max])
+    assert_kind_of(Float,   res[:oldmalloc_limit_growth_factor])
+  end
+
+  def test_set_parameters
+    GC.set_parameters(
+      heap_init_slots: 1,
+      heap_free_slots: 2,
+      growth_factor: 1.1,
+      heap_free_slots_min_ratio: 0.7,
+      heap_free_slots_goal_ratio: 0.8,
+      heap_free_slots_max_ratio: 0.9,
+      oldobject_limit_factor: 1.2,
+      malloc_limit_min: 3,
+      malloc_limit_max: 4,
+      malloc_limit_growth_factor: 1.3,
+      oldmalloc_limit_min: 5,
+      oldmalloc_limit_max: 6,
+      oldmalloc_limit_growth_factor: 1.4,
+    )
+
+    res = GC.get_parameters
+    assert_equal(1, res[:heap_init_slots])
+    assert_equal(2, res[:heap_free_slots])
+    assert_equal(1.1, res[:growth_factor])
+    assert_equal(0.7, res[:heap_free_slots_min_ratio])
+    assert_equal(0.8, res[:heap_free_slots_goal_ratio])
+    assert_equal(0.9, res[:heap_free_slots_max_ratio])
+    assert_equal(1.2, res[:oldobject_limit_factor])
+    assert_equal(3, res[:malloc_limit_min])
+    assert_equal(4, res[:malloc_limit_max])
+    assert_equal(1.3, res[:malloc_limit_growth_factor])
+    assert_equal(5, res[:oldmalloc_limit_min])
+    assert_equal(6, res[:oldmalloc_limit_max])
+    assert_equal(1.4, res[:oldmalloc_limit_growth_factor])
+
+    assert_raise(ArgumentError) {
+      GC.set_parameters(
+        heap_init_slots: 1,
+        heap_free_slots: 2,
+        growth_factor: 0.9, # <- wrong value
+        heap_free_slots_min_ratio: 0.7,
+        heap_free_slots_goal_ratio: 0.8,
+        heap_free_slots_max_ratio: 0.9,
+        oldobject_limit_factor: 1.2,
+        malloc_limit_min: 3,
+        malloc_limit_max: 4,
+        malloc_limit_growth_factor: 1.3,
+        oldmalloc_limit_min: 5,
+        oldmalloc_limit_max: 6,
+        oldmalloc_limit_growth_factor: 1.4,
+      )
+    }
+  end
 end
