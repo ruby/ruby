@@ -373,11 +373,13 @@ class TestSprintf < Test::Unit::TestCase
   end
 
   def test_percent_sign_at_end
-    assert_warning(/incomplete format specifier/) {
+    assert_raise_with_message(ArgumentError, "incomplete format specifier") do
       sprintf("%")
-    }
-    assert_equal("", sprintf("%"))
-    assert_equal("abc", sprintf("abc%"))
+    end
+
+    assert_raise_with_message(ArgumentError, "incomplete format specifier") do
+      sprintf("abc%")
+    end
   end
 
   def test_rb_sprintf
