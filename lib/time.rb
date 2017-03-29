@@ -612,17 +612,17 @@ class Time
   #
   # where zone is [+-]hhmm.
   #
-  # If +self+ is a UTC time, -0000 is used as zone.
+  # If +self+ is a UTC time, +0000 is used as zone.
   #
   # You must require 'time' to use this method.
   #
   def rfc2822
-    sprintf('%s, %02d %s %0*d %02d:%02d:%02d ',
+    sprintf('%s, %d %s %0*d %02d:%02d:%02d ',
       RFC2822_DAY_NAME[wday],
       day, RFC2822_MONTH_NAME[mon-1], year < 0 ? 5 : 4, year,
       hour, min, sec) <<
     if utc?
-      '-0000'
+      '+0000'
     else
       off = utc_offset
       sign = off < 0 ? '-' : '+'

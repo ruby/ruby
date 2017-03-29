@@ -64,7 +64,7 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
 
   def test_encode_rfc2822
     t = Time.utc(1)
-    assert_equal("Mon, 01 Jan 0001 00:00:00 -0000", t.rfc2822)
+    assert_equal("Mon, 1 Jan 0001 00:00:00 +0000", t.rfc2822)
   end
 
   def test_rfc2616
