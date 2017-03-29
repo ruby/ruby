@@ -162,13 +162,18 @@ static void check_gid_switch(void);
 #endif
 
 #if defined(HAVE_PWD_H)
-# if defined(HAVE_GETPWNAM_R) && defined(_SC_GETPW_R_SIZE_MAX)
+# if defined(HAVE_GETPWNAM_R)
 #  define USE_GETPWNAM_R 1
+# endif
+# if defined(HAVE_GETPWUID_R)
+#  define USE_GETPWUID_R 1
+# endif
+# if (defined(HAVE_GETPWNAM_R) || defined(HAVE_GETPWUID_R)) && defined(_SC_GETPW_R_SIZE_MAX)
 #  define GETPW_R_SIZE_INIT sysconf(_SC_GETPW_R_SIZE_MAX)
 #  define GETPW_R_SIZE_DEFAULT 0x1000
 #  define GETPW_R_SIZE_LIMIT  0x10000
 # endif
-# ifdef USE_GETPWNAM_R
+# if defined(USE_GETPWNAM_R) || defined(USE_GETPWUID_R)
 #   define PREPARE_GETPWNAM \
     VALUE getpw_buf = 0
 #   define FINISH_GETPWNAM \
@@ -5012,35 +5017,62 @@ check_gid_switch(void)
 #if defined(HAVE_PWD_H)
 static rb_uid_t
 obj2uid(VALUE id
-# ifdef USE_GETPWNAM_R
+# if defined(USE_GETPWNAM_R) || defined(USE_GETPWUID_R)
 	, VALUE *getpw_tmp
 # endif
     )
 {
     rb_uid_t uid;
     VALUE tmp;
+    struct passwd *pwptr;
+#if defined(USE_GETPWNAM_R) || defined(USE_GETPWUID_R)
+    struct passwd pwbuf;
+    char *getpw_buf;
+    long getpw_buf_len;
+
+    if (!*getpw_tmp) {
+	getpw_buf_len = GETPW_R_SIZE_INIT;
+	if (getpw_buf_len < 0) getpw_buf_len = GETPW_R_SIZE_DEFAULT;
+	getpw_buf = rb_alloc_tmp_buffer(getpw_tmp, getpw_buf_len);
+    }
+    else {
+	getpw_buf = RSTRING_PTR(*getpw_tmp);
+	getpw_buf_len = rb_str_capacity(*getpw_tmp);
+    }
+    errno = ERANGE;
+    /* gepwnam_r() on MacOS X doesn't set errno if buffer size is insufficient */
+#endif
 
     if (FIXNUM_P(id) || NIL_P(tmp = rb_check_string_type(id))) {
 	uid = NUM2UIDT(id);
-    }
-    else {
-	const char *usrname = StringValueCStr(id);
-	struct passwd *pwptr;
-#ifdef USE_GETPWNAM_R
-	struct passwd pwbuf;
-	char *getpw_buf;
-	long getpw_buf_len;
-	if (!*getpw_tmp) {
-	    getpw_buf_len = GETPW_R_SIZE_INIT;
-	    if (getpw_buf_len < 0) getpw_buf_len = GETPW_R_SIZE_DEFAULT;
-	    getpw_buf = rb_alloc_tmp_buffer(getpw_tmp, getpw_buf_len);
-	}
-	else {
+#ifdef USE_GETPWUID_R
+	while (getpwuid_r(uid, &pwbuf, getpw_buf, getpw_buf_len, &pwptr)) {
+	    int e = errno;
+	    if (e != ERANGE || getpw_buf_len >= GETPW_R_SIZE_LIMIT) {
+		rb_free_tmp_buffer(getpw_tmp);
+		rb_syserr_fail(e, "getpwuid_r");
+	    }
+	    rb_str_modify_expand(*getpw_tmp, getpw_buf_len);
 	    getpw_buf = RSTRING_PTR(*getpw_tmp);
 	    getpw_buf_len = rb_str_capacity(*getpw_tmp);
 	}
-	errno = ERANGE;
-	/* gepwnam_r() on MacOS X doesn't set errno if buffer size is insufficient */
+#else
+	pwptr = getpwuid(uid);
+#endif
+	if (!pwptr) {
+#ifndef USE_GETPWUID_R
+	    endpwent();
+#endif
+	    rb_raise(rb_eArgError, "can't find user for uid %d", uid);
+	}
+	uid = pwptr->pw_uid;
+#ifndef USE_GETPWUID_R
+	endpwent();
+#endif
+    }
+    else {
+	const char *usrname = StringValueCStr(id);
+#ifdef USE_GETPWNAM_R
 	while (getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr)) {
 	    int e = errno;
 	    if (e != ERANGE || getpw_buf_len >= GETPW_R_SIZE_LIMIT) {
