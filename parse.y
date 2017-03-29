@@ -965,7 +965,7 @@ static void token_info_pop_gen(struct parser_params*, const char *token, size_t 
 %type <id>   f_kwrest f_label f_arg_asgn call_op call_op2
 /*%%%*/
 /*%
-%type <val> program reswords then do dot_or_colon
+%type <val> program reswords then do
 %*/
 %token END_OF_INPUT 0	"end-of-input"
 %token tUPLUS		RUBY_TOKEN(UPLUS)  "unary+"
@@ -2897,7 +2897,7 @@ primary		: literal
 			$$ = NEW_DEFS($2, $5, $7, body);
 			nd_set_line($$, $<num>1);
 		    /*%
-			$$ = dispatch5(defs, $2, $3, $5, $7, $8);
+			$$ = dispatch5(defs, $2, $<val>3, $5, $7, $8);
 		    %*/
 			local_pop();
 			in_single = $<num>4 & 1;
@@ -4823,15 +4823,7 @@ operation3	: tIDENTIFIER
 		;
 
 dot_or_colon	: '.'
-		    /*%c%*/
-		    /*%c
-		    { $$ = $<val>1; }
-		    %*/
 		| tCOLON2
-		    /*%c%*/
-		    /*%c
-		    { $$ = $<val>1; }
-		    %*/
 		;
 
 call_op 	: '.'
