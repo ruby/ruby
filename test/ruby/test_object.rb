@@ -329,7 +329,7 @@ class TestObject < Test::Unit::TestCase
     assert_raise(TypeError) { Hash(o) }
   end
 
-  def test_to_integer
+  def test_convert_integer
     o = Object.new
     def o.to_i; nil; end
     assert_raise(TypeError) { Integer(o) }
