@@ -40,7 +40,7 @@ class Delegator < BasicObject
   kernel = ::Kernel.dup
   kernel.class_eval do
     alias __raise__ raise
-    [:to_s, :inspect, :=~, :!~, :===, :<=>, :eql?, :hash].each do |m|
+    [:to_s, :inspect, :=~, :!~, :===, :<=>, :hash].each do |m|
       undef_method m
     end
     private_instance_methods.each do |m|
@@ -136,6 +136,7 @@ class Delegator < BasicObject
     return true if obj.equal?(self)
     self.__getobj__ == obj
   end
+  alias :eql? :==
 
   #
   # Returns true if two objects are not considered of equal value.
