@@ -139,6 +139,7 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
 	if (a == Qundef) return 0;
 	if (STATIC_SYM_P(a)) {
 	    hnum = a >> (RUBY_SPECIAL_SHIFT + ID_SCOPE_SHIFT);
+	    hnum = rb_hash_start(hnum);
 	    goto out;
 	}
 	else if (FLONUM_P(a)) {
@@ -167,7 +168,7 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
     }
   out:
     hnum <<= 1;
-    return (st_index_t)RSHIFT(hnum, 1);
+    return (long)RSHIFT(hnum, 1);
 }
 
 static st_index_t
