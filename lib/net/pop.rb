@@ -550,7 +550,7 @@ module Net
         context.set_params(@ssl_params)
         s = OpenSSL::SSL::SSLSocket.new(s, context)
         s.sync_close = true
-        s.connect
+        ssl_socket_connect(s, @open_timeout)
         if context.verify_mode != OpenSSL::SSL::VERIFY_NONE
           s.post_connection_check(@address)
         end
