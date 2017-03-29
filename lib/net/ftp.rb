@@ -118,6 +118,10 @@ module Net
     # If +ssl_handshake_timeout+ is +nil+, +open_timeout+ is used instead.
     attr_accessor :ssl_handshake_timeout
 
+    # Explicit bind address and port to listen for data. Used for PORT or EPRT command
+    # Default: +nil+.
+    attr_accessor :data_listening_host, :data_listening_port
+
     # Number of seconds to wait for one block to be read (via one read(2)
     # call). Any number may be used, including Floats for fractional
     # seconds. If the FTP object cannot read data in this many seconds,
@@ -561,7 +565,9 @@ module Net
         sock = makeport
         begin
           addr = sock.local_address
-          sendport(addr.ip_address, addr.ip_port)
+          host = @data_listening_host || addr.ip_address
+          port = @data_listening_port || addr.ip_port
+          sendport(host, port)
           if @resume and rest_offset
             resp = sendcmd("REST " + rest_offset.to_s)
             if !resp.start_with?("3")
