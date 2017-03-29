@@ -608,12 +608,18 @@ class TestClass < Test::Unit::TestCase
   end
 
   @@line_of_source_location_test = __LINE__ + 1
-  module SourceLocationTestClass
+  class SourceLocationTestClass
+  end
+
+  # reopened
+  @@reopened_line_of_source_location_test = __LINE__ + 1
+  class SourceLocationTestClass
   end
 
   def test_source_location
     file, lineno = SourceLocationTestClass.source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
     assert_equal(@@line_of_source_location_test, lineno)
+    assert_not_equal(@@reopened_line_of_source_location_test, lineno)
   end
 end
