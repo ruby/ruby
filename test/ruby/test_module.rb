@@ -2221,6 +2221,16 @@ class TestModule < Test::Unit::TestCase
     end;
   end
 
+  @@line_of_source_location_test = __LINE__ + 1
+  module SourceLocationTestModule
+  end
+
+  def test_source_location
+    file, lineno = SourceLocationTestModule.source_location
+    assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
+    assert_equal(@@line_of_source_location_test, lineno)
+  end
+
   private
 
   def assert_top_method_is_private(method)
