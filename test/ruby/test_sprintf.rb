@@ -373,6 +373,9 @@ class TestSprintf < Test::Unit::TestCase
   end
 
   def test_percent_sign_at_end
+    assert_warning(/incomplete format specifier/) {
+      sprintf("%")
+    }
     assert_equal("", sprintf("%"))
     assert_equal("abc", sprintf("abc%"))
   end
