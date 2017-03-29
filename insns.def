@@ -856,6 +856,7 @@ defineclass
 {
     VALUE klass;
     rb_vm_defineclass_type_t type = VM_DEFINECLASS_TYPE(flags);
+    VALUE loc[2];
 
     switch (type) {
       case VM_DEFINECLASS_TYPE_CLASS:
@@ -895,7 +896,9 @@ defineclass
 	    }
 	    /* new class declaration */
 	    klass = rb_define_class_id(id, super);
-	    rb_iv_set(klass, "iseq", rb_iseqw_new(class_iseq));
+	    loc[0] = class_iseq->body->location.path;
+	    loc[1] = class_iseq->body->location.first_lineno;
+	    rb_iv_set(klass, "source_location", rb_ary_new4(2, loc));
 	    rb_set_class_path_string(klass, cbase, rb_id2str(id));
 	    rb_const_set(cbase, id, klass);
 	    rb_class_inherited(super, klass);
@@ -924,7 +927,9 @@ defineclass
 	else {
 	    /* new module declaration */
 	    klass = rb_define_module_id(id);
-	    rb_iv_set(klass, "iseq", rb_iseqw_new(class_iseq));
+	    loc[0] = class_iseq->body->location.path;
+	    loc[1] = class_iseq->body->location.first_lineno;
+	    rb_iv_set(klass, "source_location", rb_ary_new4(2, loc));
 	    rb_set_class_path_string(klass, cbase, rb_id2str(id));
 	    rb_const_set(cbase, id, klass);
 	}

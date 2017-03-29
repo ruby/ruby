@@ -2606,18 +2606,17 @@ rb_mod_singleton_p(VALUE klass)
     return Qfalse;
 }
 
+/*
+ * call-seq:
+ *     mod.source_location -> [String, Integer]
+ *
+ * Returns the Ruby source filename and line number defining this module *at first*
+ * or nil if module was not defined in Ruby (i.e. naitve)
+ */
 VALUE
 rb_mod_source_location(VALUE klass)
 {
-    VALUE loc[2];
-    const rb_iseq_t *iseq = rb_iseqw_to_iseq(rb_iv_get(klass, "iseq"));
-
-    if (!iseq) return Qnil;
-    rb_iseq_check(iseq);
-    loc[0] = iseq->body->location.path;
-    loc[1] = iseq->body->location.first_lineno;
-
-    return rb_ary_new4(2, loc);
+    return rb_iv_get(klass, "source_location");
 }
 
 static const struct conv_method_tbl {
