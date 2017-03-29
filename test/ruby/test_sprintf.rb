@@ -372,7 +372,7 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("%" * BSIZ, sprintf("%%" * BSIZ))
   end
 
-  def test_percent_sing_at_end
+  def test_percent_sign_at_end
     assert_equal("", sprintf("%"))
     assert_equal("abc", sprintf("abc%"))
   end
