@@ -621,7 +621,7 @@ clean-platform:
 RUBYSPEC_CAPIEXT = spec/rubyspec/optional/capi/ext
 clean-rubyspec: PHONY
 	-$(Q) $(RM) $(RUBYSPEC_CAPIEXT)/*.$(OBJEXT) $(RUBYSPEC_CAPIEXT)/*.$(DLEXT)
-	-$(Q) $(RMDIRS) $(RUBYSPEC_CAPIEXT)
+	-$(Q) $(RMDIRS) $(RUBYSPEC_CAPIEXT) 2> $(NULL) || exit 0
 
 check: main test test-testframework test-almost
 	$(ECHO) check succeeded
