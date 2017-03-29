@@ -31,7 +31,7 @@ indicates an extended character. Ruby allows method names and other identifiers
 to contain such characters. Ruby programs cannot contain some characters like
 ASCII NUL (<code>\x00</code>).
 
-The following are the examples of valid ruby methods:
+The following are examples of valid Ruby methods:
 
   def hello
     "hello"
@@ -45,18 +45,18 @@ Typically method names are US-ASCII compatible since the keys to type them
 exist on all keyboards.
 
 Method names may end with a <code>!</code> (bang or exclamation mark), a
-<code>?</code> (question mark) or <code>=</code> equals sign.
+<code>?</code> (question mark), or <code>=</code> (equals sign).
 
-The bang methods (<code>!</code> at the end of method name) are called and
+The bang methods (<code>!</code> at the end of the method name) are called and
 executed just like any other method. However, by convention, a method with an
-exclamation point or bang is considered dangerous. In ruby core library the
+exclamation point or bang is considered dangerous. In Ruby's core library the
 dangerous method implies that when a method ends with a bang (<code>!</code>),
 it indicates that unlike its non-bang equivalent, permanently modifies its
-receiver. Almost always, ruby core library will have a non-bang
+receiver. Almost always, the Ruby core library will have a non-bang
 counterpart (method name which does NOT end with <code>!</code>) of every bang
 method (method name which does end with <code>!</code>) that does not modify
-the receiver. This convention is typically true for ruby core library but
-may or may not hold true for other ruby libraries.
+the receiver. This convention is typically true for the Ruby core library but
+may or may not hold true for other Ruby libraries.
 
 Methods that end with a question mark by convention return boolean, but they
 may not always return just +true+ or +false+.  Often, they will return an
@@ -66,8 +66,8 @@ Methods that end with an equals sign indicate an assignment method.  For
 assignment methods, the return value is ignored and the arguments are returned
 instead.
 
-These are method names for the various ruby operators.  Each of these
-operators accept only one argument.  Following the operator is the typical
+These are method names for the various Ruby operators.  Each of these
+operators accepts only one argument.  Following the operator is the typical
 use or name of the operator.  Creating an alternate meaning for the operator
 may lead to confusion as the user expects plus to add things, minus to
 subtract things, etc.  Additionally, you cannot alter the precedence of the
