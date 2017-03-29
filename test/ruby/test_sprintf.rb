@@ -372,6 +372,11 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("%" * BSIZ, sprintf("%%" * BSIZ))
   end
 
+  def test_percent_sing_at_end
+    assert_equal("", sprintf("%"))
+    assert_equal("abc", sprintf("abc%"))
+  end
+
   def test_rb_sprintf
     assert_match(/^#<TestSprintf::T012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789:0x[0-9a-f]+>$/,
                  T012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789.new.inspect)
