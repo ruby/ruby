@@ -168,7 +168,7 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
     }
   out:
     hnum <<= 1;
-    return (st_index_t)RSHIFT(hnum, 1);
+    return (long)RSHIFT(hnum, 1);
 }
 
 static st_index_t

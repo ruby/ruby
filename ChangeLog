@@ -1,3 +1,8 @@
+Wed Mar 29 23:47:31 2017  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
+
+	* hash.c (any_hash): fix CI failure on L32LLP64 architecture.
+	  The patch was provided by usa. [ruby-core:80484] [Bug #13376]
+
 Wed Mar 29 06:22:27 2017  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* hash.c (any_hash): fix Symbol#hash to be nondeterministic.
