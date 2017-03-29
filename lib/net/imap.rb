@@ -1092,7 +1092,7 @@ module Net
       @open_timeout = options[:open_timeout] || 30
       @read_timeout = options[:read_timeout] || 60
       @parser = ResponseParser.new
-      @sock = Socket.tcp(@host, @port, :connect_timeout => @open_timeout)
+      @sock = tcp_socket(@host, @port)
       begin
         if options[:ssl]
           start_tls_session(options[:ssl])
@@ -1130,6 +1130,13 @@ module Net
         @sock.close
         raise
       end
+    end
+
+    def tcp_socket(host, port)
+      Socket.tcp(host, port, :connect_timeout => @open_timeout)
+    rescue Errno::ETIMEDOUT
+      raise Net::OpenTimeout, "Timeout to open TCP connection to " +
+        "#{host}:#{port} (exceeds #{@open_timeout} seconds)"
     end
 
     def receive_responses
