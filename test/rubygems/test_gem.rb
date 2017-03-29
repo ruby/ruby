@@ -492,7 +492,7 @@ class TestGem < Gem::TestCase
     skip if RUBY_VERSION <= "1.8.7"
 
     cwd = File.expand_path("test/rubygems", @@project_dir)
-    $LOAD_PATH.unshift cwd
+    actual_load_path = $LOAD_PATH.unshift(cwd).dup
 
     discover_path = File.join 'lib', 'sff', 'discover.rb'
 
@@ -518,12 +518,12 @@ class TestGem < Gem::TestCase
     expected = [
       File.expand_path('test/rubygems/sff/discover.rb', @@project_dir),
       File.join(foo1.full_gem_path, discover_path)
-    ]
+    ].sort
 
-    assert_equal expected, Gem.find_files('sff/discover')
-    assert_equal expected, Gem.find_files('sff/**.rb'), '[ruby-core:31730]'
+    assert_equal expected, Gem.find_files('sff/discover').sort
+    assert_equal expected, Gem.find_files('sff/**.rb').sort, '[ruby-core:31730]'
   ensure
-    assert_equal cwd, $LOAD_PATH.shift unless RUBY_VERSION <= "1.8.7"
+    assert_equal cwd, actual_load_path.shift unless RUBY_VERSION <= "1.8.7"
   end
 
   def test_self_find_latest_files
