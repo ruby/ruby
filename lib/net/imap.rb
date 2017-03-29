@@ -200,7 +200,7 @@ module Net
   #    Goldsmith, D. and Davis, M., "UTF-7: A Mail-Safe Transformation Format of
   #    Unicode", RFC 2152, May 1997.
   #
-  class IMAP
+  class IMAP < Protocol
     include MonitorMixin
     if defined?(OpenSSL::SSL)
       include OpenSSL
@@ -1523,7 +1523,7 @@ module Net
       end
       @sock = SSLSocket.new(@sock, context)
       @sock.sync_close = true
-      @sock.connect
+      ssl_socket_connect(@sock, @open_timeout)
       if context.verify_mode != VERIFY_NONE
         @sock.post_connection_check(@host)
       end
