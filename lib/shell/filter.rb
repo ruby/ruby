@@ -56,7 +56,7 @@ class Shell #:nodoc:
         self.input = src
         self
       else
-        Shell.Fail Error::CantApplyMethod, "<", to.class
+        Shell.Fail Error::CantApplyMethod, "<", src.class
       end
     end
 
