@@ -23,13 +23,20 @@
 #define CP_FORMAT(buf, codepage) snprintf(buf, sizeof(buf), "CP%u", (codepage))
 #endif
 
+#ifndef NO_LOCALE_CHARMAP
+# if defined _WIN32 || defined __CYGWIN__ || defined HAVE_LANGINFO_H
+#   define NO_LOCALE_CHARMAP 0
+# else
+#   define NO_LOCALE_CHARMAP 1
+# endif
+#endif
+
+#if !NO_LOCALE_CHARMAP
 static VALUE
 locale_charmap(VALUE (*conv)(const char *))
 {
-#if defined NO_LOCALE_CHARMAP
-# error NO_LOCALE_CHARMAP defined
-#elif defined _WIN32 || defined __CYGWIN__
     const char *codeset = 0;
+#if defined _WIN32 || defined __CYGWIN__
     char cp[SIZEOF_CP_NAME];
 # ifdef __CYGWIN__
     const char *nl_langinfo_codeset(void);
@@ -41,15 +48,15 @@ locale_charmap(VALUE (*conv)(const char *))
 	CP_FORMAT(cp, codepage);
 	codeset = cp;
     }
-    return (*conv)(codeset);
 #elif defined HAVE_LANGINFO_H
-    char *codeset;
     codeset = nl_langinfo(CODESET);
-    return (*conv)(codeset);
+    ASSUME(codeset);
 #else
-    return ENCINDEX_US_ASCII;
+# error locale_charmap() is not implemented
 #endif
+    return (*conv)(codeset);
 }
+#endif
 
 /*
  * call-seq:
@@ -79,27 +86,37 @@ locale_charmap(VALUE (*conv)(const char *))
 VALUE
 rb_locale_charmap(VALUE klass)
 {
+#if NO_LOCALE_CHARMAP
+    return rb_usascii_str_new_cstr("US-ASCII");
+#else
     return locale_charmap(rb_usascii_str_new_cstr);
+#endif
 }
 
+#if !NO_LOCALE_CHARMAP
 static VALUE
 enc_find_index(const char *name)
 {
     return (VALUE)rb_enc_find_index(name);
 }
+#endif
 
 int
 rb_locale_charmap_index(void)
 {
+#if NO_LOCALE_CHARMAP
+    return ENCINDEX_US_ASCII;
+#else
     return (int)locale_charmap(enc_find_index);
+#endif
 }
 
 int
 Init_enc_set_filesystem_encoding(void)
 {
     int idx;
-#if defined NO_LOCALE_CHARMAP
-# error NO_LOCALE_CHARMAP defined
+#if NO_LOCALE_CHARMAP
+    idx = ENCINDEX_US_ASCII;
 #elif defined _WIN32
     char cp[SIZEOF_CP_NAME];
     CP_FORMAT(cp, AreFileApisANSI() ? GetACP() : GetOEMCP());
