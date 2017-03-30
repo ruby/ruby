@@ -7297,6 +7297,26 @@ static VALUE
 gc_set_parameters(int argc, VALUE *argv, VALUE self)
 {
     VALUE opt = Qnil;
+    VALUE kwvals[14];
+
+    size_t heap_init_slots;
+    size_t heap_free_slots;
+    double growth_factor;
+    size_t growth_max_slots;
+
+    double heap_free_slots_min_ratio;
+    double heap_free_slots_goal_ratio;
+    double heap_free_slots_max_ratio;
+    double oldobject_limit_factor;
+
+    size_t malloc_limit_min;
+    size_t malloc_limit_max;
+    double malloc_limit_growth_factor;
+
+    size_t oldmalloc_limit_min;
+    size_t oldmalloc_limit_max;
+    double oldmalloc_limit_growth_factor;
+
     if (!gc_parameters[0]) {
         gc_parameters[0] = rb_intern("heap_init_slots");
         gc_parameters[1] = rb_intern("heap_free_slots");
@@ -7314,43 +7334,33 @@ gc_set_parameters(int argc, VALUE *argv, VALUE self)
         gc_parameters[13] = rb_intern("oldmalloc_limit_growth_factor");
     }
 
-    VALUE kwvals[14];
-
     rb_scan_args(argc, argv, "0:", &opt);
     rb_get_kwargs(opt, gc_parameters, 0, 14, kwvals);
 
-    int heap_init_slots = (Qundef != kwvals[0]) ? FIX2INT(kwvals[0]) : gc_params.heap_init_slots;
-    int heap_free_slots = (Qundef != kwvals[1]) ? FIX2INT(kwvals[1]) : gc_params.heap_free_slots;
-    double growth_factor = (Qundef != kwvals[2]) ? NUM2DBL(kwvals[2]) : gc_params.growth_factor;
-    int growth_max_slots = (Qundef != kwvals[3]) ? FIX2INT(kwvals[3]) : gc_params.growth_max_slots;
-    double heap_free_slots_min_ratio = (Qundef != kwvals[4]) ? NUM2DBL(kwvals[4]) : gc_params.heap_free_slots_min_ratio;
-    double heap_free_slots_goal_ratio = (Qundef != kwvals[5]) ? NUM2DBL(kwvals[5]) : gc_params.heap_free_slots_goal_ratio;
-    double heap_free_slots_max_ratio = (Qundef != kwvals[6]) ? NUM2DBL(kwvals[6]) : gc_params.heap_free_slots_max_ratio;
-    double oldobject_limit_factor = (Qundef != kwvals[7]) ? NUM2DBL(kwvals[7]) : gc_params.oldobject_limit_factor;
-    int malloc_limit_min = (Qundef != kwvals[8]) ? FIX2INT(kwvals[8]) : gc_params.malloc_limit_min;
-    int malloc_limit_max = (Qundef != kwvals[9]) ? FIX2INT(kwvals[9]) : gc_params.malloc_limit_max;
-    double malloc_limit_growth_factor = (Qundef != kwvals[10]) ? NUM2DBL(kwvals[10]) : gc_params.malloc_limit_growth_factor;
-    int oldmalloc_limit_min = (Qundef != kwvals[11]) ? FIX2INT(kwvals[11]) : gc_params.oldmalloc_limit_min;
-    int oldmalloc_limit_max = (Qundef != kwvals[12]) ? FIX2INT(kwvals[12]) : gc_params.oldmalloc_limit_max;
-    double oldmalloc_limit_growth_factor = (Qundef != kwvals[13]) ? NUM2DBL(kwvals[13]) : gc_params.oldmalloc_limit_growth_factor;
+    heap_init_slots = (Qundef != kwvals[0]) ? FIX2UINT(kwvals[0]) : gc_params.heap_init_slots;
+    heap_free_slots = (Qundef != kwvals[1]) ? FIX2UINT(kwvals[1]) : gc_params.heap_free_slots;
+    growth_factor = (Qundef != kwvals[2]) ? NUM2DBL(kwvals[2]) : gc_params.growth_factor;
+    growth_max_slots = (Qundef != kwvals[3]) ? FIX2UINT(kwvals[3]) : gc_params.growth_max_slots;
+    heap_free_slots_min_ratio = (Qundef != kwvals[4]) ? NUM2DBL(kwvals[4]) : gc_params.heap_free_slots_min_ratio;
+    heap_free_slots_goal_ratio = (Qundef != kwvals[5]) ? NUM2DBL(kwvals[5]) : gc_params.heap_free_slots_goal_ratio;
+    heap_free_slots_max_ratio = (Qundef != kwvals[6]) ? NUM2DBL(kwvals[6]) : gc_params.heap_free_slots_max_ratio;
+    oldobject_limit_factor = (Qundef != kwvals[7]) ? NUM2DBL(kwvals[7]) : gc_params.oldobject_limit_factor;
+    malloc_limit_min = (Qundef != kwvals[8]) ? FIX2INT(kwvals[8]) : gc_params.malloc_limit_min;
+    malloc_limit_max = (Qundef != kwvals[9]) ? FIX2INT(kwvals[9]) : gc_params.malloc_limit_max;
+    malloc_limit_growth_factor = (Qundef != kwvals[10]) ? NUM2DBL(kwvals[10]) : gc_params.malloc_limit_growth_factor;
+    oldmalloc_limit_min = (Qundef != kwvals[11]) ? FIX2INT(kwvals[11]) : gc_params.oldmalloc_limit_min;
+    oldmalloc_limit_max = (Qundef != kwvals[12]) ? FIX2INT(kwvals[12]) : gc_params.oldmalloc_limit_max;
+    oldmalloc_limit_growth_factor = (Qundef != kwvals[13]) ? NUM2DBL(kwvals[13]) : gc_params.oldmalloc_limit_growth_factor;
 
-    int validated = (heap_init_slots >= 0 &&
-        heap_free_slots >= 0 &&
-        growth_factor > 1.0 &&
-        growth_max_slots >= 0 &&
+    if (!( growth_factor > 1.0 &&
         heap_free_slots_min_ratio > 0.0 && heap_free_slots_min_ratio < 1.0 &&
         heap_free_slots_goal_ratio > heap_free_slots_min_ratio && heap_free_slots_goal_ratio < heap_free_slots_max_ratio &&
         heap_free_slots_max_ratio > heap_free_slots_min_ratio && heap_free_slots_max_ratio < 1.0 &&
         oldobject_limit_factor > 0.0 &&
-        malloc_limit_min >= 0 &&
-        malloc_limit_max >= 0 &&
         malloc_limit_growth_factor > 1.0 &&
-        oldmalloc_limit_min >= 0 &&
-        oldmalloc_limit_max >= 0 &&
-        oldmalloc_limit_growth_factor > 1.0);
-
-    if (!validated)
+        oldmalloc_limit_growth_factor > 1.0)) {
         rb_raise(rb_eArgError, "Invalid GC parameter");
+    }
 
     gc_params.heap_init_slots = heap_init_slots;
     gc_params.heap_free_slots = heap_free_slots;
