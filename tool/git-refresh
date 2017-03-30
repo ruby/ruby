@@ -3,24 +3,17 @@ set -e
 
 quiet=
 branch=
-OPT_SPEC="\
-${0##*/} [options] URL dir [options]
---
-C=directory         Change directory
-q,quiet             Quiet
-b,branch=branch     Checkout branch
-"
-rev="$(echo "$OPT_SPEC" | git rev-parse --parseopt -- "$@")"
-status=$?
-eval "$rev"
-[ $status = 0 ] || exit $status
 
 until [ $# = 0 ]; do
     case "$1" in
 	--) shift; break;;
-	-C) shift; cd "$1";;
+	-C|--directory) shift; cd "$1";;
+	-C*) cd "${1#-C}";;
+	--directory=*) cd "${1#*=}";;
 	-q) quiet=1;;
-	-b) shift; branch="$1";;
+	-b|--branch) shift; branch="$1";;
+	-b*) branch="${1#-b}";;
+	--branch=*) branch="${1#*=}";;
 	-*) echo "unknown option: $1" 1>&2; exit 1;;
 	*) break;;
     esac
