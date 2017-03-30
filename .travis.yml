@@ -50,9 +50,9 @@ before_script:
   - "${RUBYSPEC_PULL_REQUEST:+git -C spec/rubyspec pull origin +refs/pull/${RUBYSPEC_PULL_REQUEST}/merge:}"
 
 script:
-  - "make test TESTOPTS=--color=never"
-  - "make test-all TESTOPTS='-q -j3 --color=never --job-status=normal'"
-  - "make test-rubyspec MSPECOPT=-fm"
+  - "make -s test TESTOPTS=--color=never"
+  - "make -s test-all TESTOPTS='-q -j3 --color=never --job-status=normal'"
+  - "make -s test-rubyspec MSPECOPT=-fm"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
