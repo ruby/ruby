@@ -18,7 +18,7 @@ MJIT_SYMBOL_EXPORT_END
 
 #define RUBY_DTRACE_METHOD_HOOK(name, ec, klazz, id) \
 do { \
-    if (UNLIKELY(RUBY_DTRACE_##name##_ENABLED())) { \
+    if (RUBY_DTRACE_##name##_ENABLED()) { \
 	struct ruby_dtrace_method_hook_args args; \
 	if (rb_dtrace_setup(ec, klazz, id, &args)) { \
 	    RUBY_DTRACE_##name(args.classname, \
