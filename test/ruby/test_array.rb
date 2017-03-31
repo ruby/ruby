@@ -443,6 +443,17 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1, 2], a)
   end
 
+  def test_append
+    a = @cls[1, 2, 3]
+    assert_equal(@cls[1, 2, 3, 4, 5], a.append(4, 5))
+    assert_equal(@cls[1, 2, 3, 4, 5, nil], a.append(nil))
+
+    a.append
+    assert_equal @cls[1, 2, 3, 4, 5, nil], a
+    a.append 6, 7
+    assert_equal @cls[1, 2, 3, 4, 5, nil, 6, 7], a
+  end
+
   def test_assoc
     a1 = @cls[*%w( cat feline )]
     a2 = @cls[*%w( dog canine )]
