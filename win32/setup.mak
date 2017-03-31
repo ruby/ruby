@@ -60,6 +60,9 @@ NTVER = $(NTVER)
 !if defined(USE_RUBYGEMS)
 USE_RUBYGEMS = $(USE_RUBYGEMS)
 !endif
+!if defined(ENABLE_DEBUG_ENV)
+ENABLE_DEBUG_ENV = $(ENABLE_DEBUG_ENV)
+!endif
 
 <<
 !if !defined(BASERUBY)
