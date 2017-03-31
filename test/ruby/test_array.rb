@@ -1215,6 +1215,14 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[], a)
   end
 
+  def test_prepend
+    a = @cls[]
+    assert_equal(@cls['cat'], a.prepend('cat'))
+    assert_equal(@cls['dog', 'cat'], a.prepend('dog'))
+    assert_equal(@cls[nil, 'dog', 'cat'], a.prepend(nil))
+    assert_equal(@cls[@cls[1,2], nil, 'dog', 'cat'], a.prepend(@cls[1, 2]))
+  end
+
   def test_push
     a = @cls[1, 2, 3]
     assert_equal(@cls[1, 2, 3, 4, 5], a.push(4, 5))
