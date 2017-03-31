@@ -106,12 +106,16 @@ ruby_debug_breakpoint(void)
     /* */
 }
 
+#if defined _WIN32
+# if RUBY_MSVCRT_VERSION >= 80
+extern int ruby_w32_rtc_error;
+# endif
+UINT ruby_w32_codepage;
+#endif
+
 static void
 set_debug_option(const char *str, int len, void *arg)
 {
-#if defined _WIN32 && RUBY_MSVCRT_VERSION >= 80
-    extern int ruby_w32_rtc_error;
-#endif
 #define SET_WHEN(name, var, val) do {	    \
 	if (len == sizeof(name) - 1 &&	    \
 	    strncmp(str, (name), len) == 0) { \
@@ -119,10 +123,25 @@ set_debug_option(const char *str, int len, void *arg)
 	    return;			    \
 	}				    \
     } while (0)
+#define NAME_MATCH_VALUE(name) \
+    ((size_t)len > sizeof(name) && \
+     strncmp(str, (name), sizeof(name)-1) == 0 && \
+     str[sizeof(name)-1] == '=' && \
+     (str += sizeof(name), len -= sizeof(name), 1))
+
     SET_WHEN("gc_stress", *ruby_initial_gc_stress_ptr, Qtrue);
     SET_WHEN("core", ruby_enable_coredump, 1);
-#if defined _WIN32 && RUBY_MSVCRT_VERSION >= 80
+#if defined _WIN32
+# if RUBY_MSVCRT_VERSION >= 80
     SET_WHEN("rtc_error", ruby_w32_rtc_error, 1);
+# endif
+    if (NAME_MATCH_VALUE("codepage")) {
+	int ov;
+	size_t retlen;
+	ruby_w32_codepage =
+	    ruby_scan_digits(str, len, 10, &retlen, &ov);
+	return;
+    }
 #endif
     fprintf(stderr, "unexpected debug option: %.*s\n", len, str);
 }

@@ -23,6 +23,12 @@
 #define CP_FORMAT(buf, codepage) snprintf(buf, sizeof(buf), "CP%u", (codepage))
 #endif
 
+#if defined _WIN32 && defined RUBY_DEBUG_ENV
+extern UINT ruby_w32_codepage;
+#else
+enum {ruby_w32_codepage = 0};
+#endif
+
 #ifndef NO_LOCALE_CHARMAP
 # if defined _WIN32 || defined __CYGWIN__ || defined HAVE_LANGINFO_H
 #   define NO_LOCALE_CHARMAP 0
@@ -43,7 +49,8 @@ locale_charmap(VALUE (*conv)(const char *))
     codeset = nl_langinfo_codeset();
 # endif
     if (!codeset) {
-	UINT codepage = GetConsoleCP();
+	UINT codepage = ruby_w32_codepage;
+	if (!codepage) codepage = GetConsoleCP();
 	if (!codepage) codepage = GetACP();
 	CP_FORMAT(cp, codepage);
 	codeset = cp;
@@ -119,7 +126,9 @@ Init_enc_set_filesystem_encoding(void)
     idx = ENCINDEX_US_ASCII;
 #elif defined _WIN32
     char cp[SIZEOF_CP_NAME];
-    CP_FORMAT(cp, AreFileApisANSI() ? GetACP() : GetOEMCP());
+    const UINT codepage = ruby_w32_codepage ? ruby_w32_codepage :
+	AreFileApisANSI() ? GetACP() : GetOEMCP();
+    CP_FORMAT(cp, codepage);
     idx = rb_enc_find_index(cp);
     if (idx < 0) idx = ENCINDEX_ASCII;
 #elif defined __CYGWIN__
