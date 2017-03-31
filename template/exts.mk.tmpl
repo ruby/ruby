@@ -49,7 +49,9 @@ Dir.glob("{ext,gems}/*/exts.mk") do |e|
     deps << $&
   end
   s.scan(%r"^note:\n((?:\t.+\n)+)") do |(n)|
-    note |= n.split(/^/)
+    n = n.split(/^/)
+    note.pop if n[-1] == note[-1]
+    note |= n
   end
 end
 deps.uniq!
