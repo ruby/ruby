@@ -600,6 +600,8 @@ Richard M. Stallman
 Robin Stocker
 * documentation
 
+Joshua Stowers
+
 Adam Strzelecki
 * a patch for compile.c
 
