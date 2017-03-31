@@ -40,7 +40,7 @@ end
 #   p SecureRandom.random_bytes(10) #=> "\016\t{\370g\310pbr\301"
 #   p SecureRandom.random_bytes(10) #=> "\323U\030TO\234\357\020\a\337"
 module SecureRandom
-  if /mswin|mingw/ =~ RUBY_PLATFORM
+  if !defined?(OpenSSL::Random) && /mswin|mingw/ =~ RUBY_PLATFORM
     require "fiddle/import"
 
     module AdvApi32 # :nodoc:
