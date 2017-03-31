@@ -135,11 +135,15 @@ set_debug_option(const char *str, int len, void *arg)
 # if RUBY_MSVCRT_VERSION >= 80
     SET_WHEN("rtc_error", ruby_w32_rtc_error, 1);
 # endif
-    if (NAME_MATCH_VALUE("codepage")) {
+    {
 	int ov;
 	size_t retlen;
-	ruby_w32_codepage =
-	    ruby_scan_digits(str, len, 10, &retlen, &ov);
+	unsigned long n;
+	if (NAME_MATCH_VALUE("codepage") &&
+	    (n = ruby_scan_digits(str, len, 10, &retlen, &ov),
+	     (size_t)len == retlen && !ov)) {
+	    ruby_w32_codepage = (UINT)n;
+	}
 	return;
     }
 #endif
