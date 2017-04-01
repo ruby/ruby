@@ -2144,6 +2144,37 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	}
     }
 
+    /*
+     * putstring "beg"
+     * putstring "end"
+     * newrange excl
+     *
+     * ==>
+     *
+     * putobject "beg".."end"
+     */
+    if (IS_INSN_ID(iobj, checkmatch)) {
+	INSN *range = (INSN *)get_prev_insn(iobj);
+	INSN *beg, *end;
+
+	if (range && IS_INSN_ID(range, newrange) &&
+		(end = (INSN *)get_prev_insn(range)) != 0 &&
+		IS_INSN_ID(end, putstring) &&
+		(beg = (INSN *)get_prev_insn(end)) != 0 &&
+		IS_INSN_ID(beg, putstring)) {
+	    VALUE str_beg = OPERAND_AT(beg, 0);
+	    VALUE str_end = OPERAND_AT(end, 0);
+	    int excl = FIX2INT(OPERAND_AT(range, 0));
+	    VALUE lit_range = rb_range_new(str_beg, str_end, excl);
+
+	    iseq_add_mark_object(iseq, lit_range);
+	    REMOVE_ELEM(&beg->link);
+	    REMOVE_ELEM(&end->link);
+	    range->insn_id = BIN(putobject);
+	    OPERAND_AT(range, 0) = lit_range;
+	}
+    }
+
     if (IS_INSN_ID(iobj, leave)) {
 	remove_unreachable_chunk(iseq, iobj->link.next);
     }

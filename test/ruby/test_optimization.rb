@@ -495,4 +495,19 @@ EOS
     bug11816 = '[ruby-core:74993] [Bug #11816]'
     assert_ruby_status([], 'nil&.foo &&= false', bug11816)
   end
+
+  def test_peephole_string_literal_range
+    code = <<-EOF
+      case ver
+      when "2.0.0".."2.3.2" then :foo
+      when "1.8.0"..."1.8.8" then :bar
+      end
+    EOF
+    iseq = RubyVM::InstructionSequence.compile(code)
+    insn = iseq.disasm
+    assert_match %r{putobject\s+#{Regexp.quote('"1.8.0"..."1.8.8"')}}, insn
+    assert_match %r{putobject\s+#{Regexp.quote('"2.0.0".."2.3.2"')}}, insn
+    assert_no_match /putstring/, insn
+    assert_no_match /newrange/, insn
+  end
 end
