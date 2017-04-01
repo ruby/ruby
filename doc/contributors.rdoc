@@ -600,6 +600,9 @@ Richard M. Stallman
 Robin Stocker
 * documentation
 
+Joshua Stowers
+* a patch for array.c
+
 Adam Strzelecki
 * a patch for compile.c
 
