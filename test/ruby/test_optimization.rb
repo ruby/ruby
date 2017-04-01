@@ -338,7 +338,7 @@ STDOUT.flush
 foo
 EOF
 EOS
-    status, err = EnvUtil.invoke_ruby([], "", true, true, {}) {
+    status, _err = EnvUtil.invoke_ruby([], "", true, true, {}) {
       |in_p, out_p, err_p, pid|
       in_p.write(script)
       in_p.close
@@ -507,7 +507,7 @@ EOS
     insn = iseq.disasm
     assert_match %r{putobject\s+#{Regexp.quote('"1.8.0"..."1.8.8"')}}, insn
     assert_match %r{putobject\s+#{Regexp.quote('"2.0.0".."2.3.2"')}}, insn
-    assert_no_match /putstring/, insn
-    assert_no_match /newrange/, insn
+    assert_no_match(/putstring/, insn)
+    assert_no_match(/newrange/, insn)
   end
 end
