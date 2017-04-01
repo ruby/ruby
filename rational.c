@@ -1510,11 +1510,12 @@ nurat_truncate_n(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    rat.round               ->  integer
- *    rat.round(precision=0)  ->  integer or rational
+ *    rat.round([ndigits] [, half: symbol])  ->  integer or rational
  *
- * Returns the truncated value (toward the nearest integer;
- * 0.5 => 1; -0.5 => -1).
+ * Rounds +rat+ to a given precision in decimal digits (default 0 digits).
+ *
+ * Precision may be negative.  Returns a rational when +ndigits+
+ * is more than zero.
  *
  *    Rational(3).round      #=> 3
  *    Rational(2, 3).round   #=> 1
@@ -1526,6 +1527,15 @@ nurat_truncate_n(int argc, VALUE *argv, VALUE self)
  *
  *    Rational('-123.456').round(+1).to_f  #=> -123.5
  *    Rational('-123.456').round(-1)       #=> -120
+ *
+ * The <code>half:</code> optional keyword same as Float#round is available.
+ *
+ *    Rational(25, 100).round(1, half: :up)   #=> (3/10)
+ *    Rational(25, 100).round(1, half: :even) #=> (1/5)
+ *    Rational(25, 100).round(1, half: :down) #=> (1/5)
+ *    Rational(35, 100).round(1, half: :up)   #=> (2/5)
+ *    Rational(35, 100).round(1, half: :even) #=> (2/5)
+ *    Rational(35, 100).round(1, half: :down) #=> (3/10)
  */
 static VALUE
 nurat_round_n(int argc, VALUE *argv, VALUE self)
