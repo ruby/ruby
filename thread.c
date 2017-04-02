@@ -20,6 +20,12 @@
   model 3: Native Thread with fine grain lock
     Using pthread and Ruby threads run concurrent or parallel.
 
+  model 4: M:N User:Native threads with Global VM lock
+    Combination of model 1 and 2
+
+  model 5: M:N User:Native thread with fine grain lock
+    Combination of model 1 and 3
+
 ------------------------------------------------------------------------
 
   model 2:
