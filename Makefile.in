@@ -318,6 +318,8 @@ $(srcdir)/aclocal.m4:
 	type $(ACLOCAL) >/dev/null 2>&1 && exec $(ACLOCAL); \
 	touch $(@F)
 
+prereq: $(srcdir)/$(CONFIGURE)
+
 incs: id.h
 all-incs: probes.h
 
