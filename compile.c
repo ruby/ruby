@@ -2167,7 +2167,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    int excl = FIX2INT(OPERAND_AT(range, 0));
 	    VALUE lit_range = rb_range_new(str_beg, str_end, excl);
 
-	    iseq_add_mark_object(iseq, lit_range);
+	    iseq_add_mark_object_compile_time(iseq, lit_range);
 	    REMOVE_ELEM(&beg->link);
 	    REMOVE_ELEM(&end->link);
 	    range->insn_id = BIN(putobject);
