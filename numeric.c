@@ -1936,31 +1936,34 @@ flo_prev_float(VALUE vx)
  *  call-seq:
  *     float.floor([ndigits])  ->  integer or float
  *
- *  Returns the largest number less than or equal to +float+ in
- *  decimal digits (default 0 digits).
+ *  Returns the largest number less than or equal to +float+ with
+ *  a precision of +ndigits+ decimal digits (default: 0).
  *
- *  Precision may be negative.  Returns a floating point number when +ndigits+
- *  is positive, +self+ for zero, and floor down for negative.
+ *  When the precision is negative, the returned value is an integer
+ *  with at least <code>ndigits.abs</code> trailing zeros.
+ *
+ *  Returns a floating point number when +ndigits+ is positive,
+ *  otherwise returns an integer.
  *
  *     1.2.floor      #=> 1
  *     2.0.floor      #=> 2
  *     (-1.2).floor   #=> -2
  *     (-2.0).floor   #=> -2
  *
- *     1.234567.floor(2)  #=> 1.23
- *     1.234567.floor(3)  #=> 1.234
- *     1.234567.floor(4)  #=> 1.2345
- *     1.234567.floor(5)  #=> 1.23456
+ *     1.234567.floor(2)   #=> 1.23
+ *     1.234567.floor(3)   #=> 1.234
+ *     1.234567.floor(4)   #=> 1.2345
+ *     1.234567.floor(5)   #=> 1.23456
  *
- *     34567.89.floor(-5) #=> 0
- *     34567.89.floor(-4) #=> 30000
- *     34567.89.floor(-3) #=> 34000
- *     34567.89.floor(-2) #=> 34500
- *     34567.89.floor(-1) #=> 34560
- *     34567.89.floor(0)  #=> 34567
- *     34567.89.floor(1)  #=> 34567.8
- *     34567.89.floor(2)  #=> 34567.89
- *     34567.89.floor(3)  #=> 34567.89
+ *     34567.89.floor(-5)  #=> 0
+ *     34567.89.floor(-4)  #=> 30000
+ *     34567.89.floor(-3)  #=> 34000
+ *     34567.89.floor(-2)  #=> 34500
+ *     34567.89.floor(-1)  #=> 34560
+ *     34567.89.floor(0)   #=> 34567
+ *     34567.89.floor(1)   #=> 34567.8
+ *     34567.89.floor(2)   #=> 34567.89
+ *     34567.89.floor(3)   #=> 34567.89
  */
 
 static VALUE
@@ -1995,30 +1998,34 @@ flo_floor(int argc, VALUE *argv, VALUE num)
  *  call-seq:
  *     float.ceil([ndigits])  ->  integer or float
  *
- *  Returns the smallest number greater than or equal to +float+ in decimal
- *  digits (default 0 digits).
+ *  Returns the smallest number greater than or equal to +float+ with
+ *  a precision of +ndigits+ decimal digits (default: 0).
  *
- *  Precision may be negative.  Returns a floating point number when +ndigits+
- *  is positive, +self+ for zero, and ceil up for negative.
+ *  When the precision is negative, the returned value is an integer
+ *  with at least <code>ndigits.abs</code> trailing zeros.
+ *
+ *  Returns a floating point number when +ndigits+ is positive,
+ *  otherwise returns an integer.
  *
  *     1.2.ceil      #=> 2
  *     2.0.ceil      #=> 2
  *     (-1.2).ceil   #=> -1
  *     (-2.0).ceil   #=> -2
- *     1.234567.ceil(2)  #=> 1.24
- *     1.234567.ceil(3)  #=> 1.235
- *     1.234567.ceil(4)  #=> 1.2346
- *     1.234567.ceil(5)  #=> 1.23457
  *
- *     34567.89.ceil(-5) #=> 100000
- *     34567.89.ceil(-4) #=> 40000
- *     34567.89.ceil(-3) #=> 35000
- *     34567.89.ceil(-2) #=> 34600
- *     34567.89.ceil(-1) #=> 34570
- *     34567.89.ceil(0)  #=> 34568
- *     34567.89.ceil(1)  #=> 34567.9
- *     34567.89.ceil(2)  #=> 34567.89
- *     34567.89.ceil(3)  #=> 34567.89
+ *     1.234567.ceil(2)   #=> 1.24
+ *     1.234567.ceil(3)   #=> 1.235
+ *     1.234567.ceil(4)   #=> 1.2346
+ *     1.234567.ceil(5)   #=> 1.23457
+ *
+ *     34567.89.ceil(-5)  #=> 100000
+ *     34567.89.ceil(-4)  #=> 40000
+ *     34567.89.ceil(-3)  #=> 35000
+ *     34567.89.ceil(-2)  #=> 34600
+ *     34567.89.ceil(-1)  #=> 34570
+ *     34567.89.ceil(0)   #=> 34568
+ *     34567.89.ceil(1)   #=> 34567.9
+ *     34567.89.ceil(2)   #=> 34567.89
+ *     34567.89.ceil(3)   #=> 34567.89
  */
 
 static VALUE
@@ -2357,10 +2364,19 @@ flo_to_i(VALUE num)
  *  call-seq:
  *     float.truncate([ndigits])  ->  integer or float
  *
- *  Truncates +float+ to a given precision in decimal digits (default 0 digits).
+ *  Returns +float+ truncated (toward zero) to
+ *  a precision of +ndigits+ decimal digits (default: 0).
  *
- *  Precision may be negative.  Returns a floating point number when +ndigits+
- *  is more than zero.
+ *  When the precision is negative, the returned value is an integer
+ *  with at least <code>ndigits.abs</code> trailing zeros.
+ *
+ *  Returns a floating point number when +ndigits+ is positive,
+ *  otherwise returns an integer.
+ *
+ *     2.8.truncate           #=> 2
+ *     (-2.8).truncate        #=> -2
+ *     1.234567.truncate(2)   #=> 1.23
+ *     34567.89.truncate(-2)  #=> 34500
  */
 static VALUE
 flo_truncate(int argc, VALUE *argv, VALUE num)
@@ -2403,13 +2419,11 @@ flo_negative_p(VALUE num)
  *  call-seq:
  *     num.floor([ndigits])  ->  integer or float
  *
- *  Returns the largest integer less than or equal to +num+.
+ *  Returns the largest number less than or equal to +num+ with
+ *  a precision of +ndigits+ decimal digits (default: 0).
  *
- *  Numeric implements this by converting an Integer to a Float and invoking
- *  Float#floor.
- *
- *     1.floor      #=> 1
- *     (-1).floor   #=> -1
+ *  Numeric implements this by converting its value to a Float and
+ *  invoking Float#floor.
  */
 
 static VALUE
@@ -2423,16 +2437,11 @@ num_floor(int argc, VALUE *argv, VALUE num)
  *  call-seq:
  *     num.ceil([ndigits])  ->  integer or float
  *
- *  Returns the smallest possible Integer that is greater than or equal to
- *  +num+.
+ *  Returns the smallest number greater than or equal to +num+ with
+ *  a precision of +ndigits+ decimal digits (default: 0).
  *
- *  Numeric achieves this by converting itself to a Float then invoking
- *  Float#ceil.
- *
- *     1.ceil        #=> 1
- *     1.2.ceil      #=> 2
- *     (-1.2).ceil   #=> -1
- *     (-1.0).ceil   #=> -1
+ *  Numeric implements this by converting its value to a Float and
+ *  invoking Float#ceil.
  */
 
 static VALUE
@@ -2462,10 +2471,11 @@ num_round(int argc, VALUE* argv, VALUE num)
  *  call-seq:
  *     num.truncate([ndigits])  ->  integer or float
  *
- *  Returns +num+ truncated to an Integer.
+ *  Returns +num+ truncated (toward zero) to
+ *  a precision of +ndigits+ decimal digits (default: 0).
  *
- *  Numeric implements this by converting its value to a Float and invoking
- *  Float#truncate.
+ *  Numeric implements this by converting its value to a Float and
+ *  invoking Float#truncate.
  */
 
 static VALUE
@@ -5069,15 +5079,19 @@ int_round(int argc, VALUE* argv, VALUE num)
  *  call-seq:
  *     int.floor([ndigits])  ->  integer or float
  *
- *  Returns the largest number less than or equal to +int+ in decimal
- *  digits (default 0 digits).
+ *  Returns the largest number less than or equal to +int+ with
+ *  a precision of +ndigits+ decimal digits (default: 0).
  *
- *  Precision may be negative.  Returns a floating point number when +ndigits+
- *  is positive, +self+ for zero, and floor down for negative.
+ *  When the precision is negative, the returned value is an integer
+ *  with at least <code>ndigits.abs</code> trailing zeros.
  *
- *     1.floor        #=> 1
- *     1.floor(2)     #=> 1.0
- *     15.floor(-1)   #=> 10
+ *  Returns a floating point number when +ndigits+ is positive,
+ *  +self+ for zero, and an integer for negative.
+ *
+ *     1.floor           #=> 1
+ *     1.floor(2)        #=> 1.0
+ *     18.floor(-1)      #=> 10
+ *     (-18).floor(-1)   #=> -20
  */
 
 static VALUE
@@ -5101,15 +5115,19 @@ int_floor(int argc, VALUE* argv, VALUE num)
  *  call-seq:
  *     int.ceil([ndigits])  ->  integer or float
  *
- *  Returns the smallest number than or equal to +int+ in decimal
- *  digits (default 0 digits).
+ *  Returns the smallest number greater than or equal to +int+ with
+ *  a precision of +ndigits+ decimal digits (default: 0).
  *
- *  Precision may be negative.  Returns a floating point number when +ndigits+
- *  is positive, +self+ for zero, and ceil up for negative.
+ *  When the precision is negative, the returned value is an integer
+ *  with at least <code>ndigits.abs</code> trailing zeros.
  *
- *     1.ceil        #=> 1
- *     1.ceil(2)     #=> 1.0
- *     15.ceil(-1)   #=> 20
+ *  Returns a floating point number when +ndigits+ is positive,
+ *  +self+ for zero, and an integer for negative.
+ *
+ *     1.ceil           #=> 1
+ *     1.ceil(2)        #=> 1.0
+ *     18.ceil(-1)      #=> 20
+ *     (-18).ceil(-1)   #=> -10
  */
 
 static VALUE
@@ -5133,15 +5151,19 @@ int_ceil(int argc, VALUE* argv, VALUE num)
  *  call-seq:
  *     int.truncate([ndigits])  ->  integer or float
  *
- *  Returns the smallest number than or equal to +int+ in decimal
- *  digits (default 0 digits).
+ *  Returns +int+ truncated (toward zero) to
+ *  a precision of +ndigits+ decimal digits (default: 0).
  *
- *  Precision may be negative.  Returns a floating point number when +ndigits+
- *  is positive, +self+ for zero, and truncate up for negative.
+ *  When the precision is negative, the returned value is an integer
+ *  with at least <code>ndigits.abs</code> trailing zeros.
  *
- *     1.truncate        #=> 1
- *     1.truncate(2)     #=> 1.0
- *     15.truncate(-1)   #=> 10
+ *  Returns a floating point number when +ndigits+ is positive,
+ *  +self+ for zero, and an integer for negative.
+ *
+ *     1.truncate           #=> 1
+ *     1.truncate(2)        #=> 1.0
+ *     18.truncate(-1)      #=> 10
+ *     (-18).truncate(-1)   #=> -10
  */
 
 static VALUE

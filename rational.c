@@ -1438,10 +1438,16 @@ f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
 
 /*
  * call-seq:
- *    rat.floor               ->  integer
- *    rat.floor(precision=0)  ->  integer or rational
+ *    rat.floor([ndigits])  ->  integer or rational
  *
- * Returns the truncated value (toward negative infinity).
+ * Returns the largest number less than or equal to +rat+ with
+ * a precision of +ndigits+ decimal digits (default: 0).
+ *
+ * When the precision is negative, the returned value is an integer
+ * with at least <code>ndigits.abs</code> trailing zeros.
+ *
+ * Returns a rational when +ndigits+ is positive,
+ * otherwise returns an integer.
  *
  *    Rational(3).floor      #=> 3
  *    Rational(2, 3).floor   #=> 0
@@ -1462,10 +1468,16 @@ nurat_floor_n(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    rat.ceil               ->  integer
- *    rat.ceil(precision=0)  ->  integer or rational
+ *    rat.ceil([ndigits])  ->  integer or rational
  *
- * Returns the truncated value (toward positive infinity).
+ * Returns the smallest number greater than or equal to +rat+ with
+ * a precision of +ndigits+ decimal digits (default: 0).
+ *
+ * When the precision is negative, the returned value is an integer
+ * with at least <code>ndigits.abs</code> trailing zeros.
+ *
+ * Returns a rational when +ndigits+ is positive,
+ * otherwise returns an integer.
  *
  *    Rational(3).ceil      #=> 3
  *    Rational(2, 3).ceil   #=> 1
@@ -1486,10 +1498,16 @@ nurat_ceil_n(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    rat.truncate               ->  integer
- *    rat.truncate(precision=0)  ->  integer or rational
+ *    rat.truncate([ndigits])  ->  integer or rational
  *
- * Returns the truncated value (toward zero).
+ * Returns +rat+ truncated (toward zero) to
+ * a precision of +ndigits+ decimal digits (default: 0).
+ *
+ * When the precision is negative, the returned value is an integer
+ * with at least <code>ndigits.abs</code> trailing zeros.
+ *
+ * Returns a rational when +ndigits+ is positive,
+ * otherwise returns an integer.
  *
  *    Rational(3).truncate      #=> 3
  *    Rational(2, 3).truncate   #=> 0
