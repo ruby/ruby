@@ -1510,12 +1510,16 @@ nurat_truncate_n(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    rat.round([ndigits] [, half: symbol])  ->  integer or rational
+ *    rat.round([ndigits] [, half: mode])  ->  integer or rational
  *
- * Rounds +rat+ to a given precision in decimal digits (default 0 digits).
+ * Returns +rat+ rounded to the nearest value with
+ * a precision of +ndigits+ decimal digits (default: 0).
  *
- * Precision may be negative.  Returns a rational when +ndigits+
- * is more than zero.
+ * When the precision is negative, the returned value is an integer
+ * with at least <code>ndigits.abs</code> trailing zeros.
+ *
+ * Returns a rational when +ndigits+ is positive,
+ * otherwise returns an integer.
  *
  *    Rational(3).round      #=> 3
  *    Rational(2, 3).round   #=> 1
@@ -1528,14 +1532,18 @@ nurat_truncate_n(int argc, VALUE *argv, VALUE self)
  *    Rational('-123.456').round(+1).to_f  #=> -123.5
  *    Rational('-123.456').round(-1)       #=> -120
  *
- * The <code>half:</code> optional keyword same as Float#round is available.
+ * The optional +half+ keyword argument is available
+ * similar to Float#round.
  *
- *    Rational(25, 100).round(1, half: :up)   #=> (3/10)
- *    Rational(25, 100).round(1, half: :even) #=> (1/5)
- *    Rational(25, 100).round(1, half: :down) #=> (1/5)
- *    Rational(35, 100).round(1, half: :up)   #=> (2/5)
- *    Rational(35, 100).round(1, half: :even) #=> (2/5)
- *    Rational(35, 100).round(1, half: :down) #=> (3/10)
+ *    Rational(25, 100).round(1, half: :up)    #=> (3/10)
+ *    Rational(25, 100).round(1, half: :down)  #=> (1/5)
+ *    Rational(25, 100).round(1, half: :even)  #=> (1/5)
+ *    Rational(35, 100).round(1, half: :up)    #=> (2/5)
+ *    Rational(35, 100).round(1, half: :down)  #=> (3/10)
+ *    Rational(35, 100).round(1, half: :even)  #=> (2/5)
+ *    Rational(-25, 100).round(1, half: :up)   #=> (-3/10)
+ *    Rational(-25, 100).round(1, half: :down) #=> (-1/5)
+ *    Rational(-25, 100).round(1, half: :even) #=> (-1/5)
  */
 static VALUE
 nurat_round_n(int argc, VALUE *argv, VALUE self)

@@ -2215,47 +2215,54 @@ rb_int_truncate(VALUE num, int ndigits)
 
 /*
  *  call-seq:
- *     float.round([ndigits] [, half: symbol])  ->  integer or float
+ *     float.round([ndigits] [, half: mode])  ->  integer or float
  *
- *  Rounds +float+ to a given precision in decimal digits (default 0 digits).
+ *  Returns +float+ rounded to the nearest value with
+ *  a precision of +ndigits+ decimal digits (default: 0).
  *
- *  Precision may be negative.  Returns a floating point number when +ndigits+
- *  is more than zero.
+ *  When the precision is negative, the returned value is an integer
+ *  with at least <code>ndigits.abs</code> trailing zeros.
+ *
+ *  Returns a floating point number when +ndigits+ is positive,
+ *  otherwise returns an integer.
  *
  *     1.4.round      #=> 1
  *     1.5.round      #=> 2
  *     1.6.round      #=> 2
  *     (-1.5).round   #=> -2
  *
- *     1.234567.round(2)  #=> 1.23
- *     1.234567.round(3)  #=> 1.235
- *     1.234567.round(4)  #=> 1.2346
- *     1.234567.round(5)  #=> 1.23457
+ *     1.234567.round(2)   #=> 1.23
+ *     1.234567.round(3)   #=> 1.235
+ *     1.234567.round(4)   #=> 1.2346
+ *     1.234567.round(5)   #=> 1.23457
  *
- *     34567.89.round(-5) #=> 0
- *     34567.89.round(-4) #=> 30000
- *     34567.89.round(-3) #=> 35000
- *     34567.89.round(-2) #=> 34600
- *     34567.89.round(-1) #=> 34570
- *     34567.89.round(0)  #=> 34568
- *     34567.89.round(1)  #=> 34567.9
- *     34567.89.round(2)  #=> 34567.89
- *     34567.89.round(3)  #=> 34567.89
+ *     34567.89.round(-5)  #=> 0
+ *     34567.89.round(-4)  #=> 30000
+ *     34567.89.round(-3)  #=> 35000
+ *     34567.89.round(-2)  #=> 34600
+ *     34567.89.round(-1)  #=> 34570
+ *     34567.89.round(0)   #=> 34568
+ *     34567.89.round(1)   #=> 34567.9
+ *     34567.89.round(2)   #=> 34567.89
+ *     34567.89.round(3)   #=> 34567.89
  *
- *  If the <code>half:</code> optional keyword is given, just-half number
- *  will be rounded according to that value.
- *  Supported values for this keyword are follows.
+ *  If the optional +half+ keyword argument is given,
+ *  numbers that are half-way between two possible rounded values
+ *  will be rounded according to the specified tie-breaking +mode+:
  *
- *  * <code>:up</code> or +nil+: the result will be rounded away from zero
- *  * <code>:even</code>: the result will be rounded to nearest even number
- *  * <code>:down</code>: the result will be rounded close to zero
+ *  * <code>:up</code> or +nil+: round half away from zero (default)
+ *  * <code>:down</code>: round half toward zero
+ *  * <code>:even</code>: round half toward the nearest even number
  *
- *     2.5.round(half: :up)   #=> 3
- *     2.5.round(half: :even) #=> 2
- *     2.5.round(half: :down) #=> 2
- *     3.5.round(half: :up)   #=> 4
- *     3.5.round(half: :even) #=> 4
- *     3.5.round(half: :down) #=> 3
+ *     2.5.round(half: :up)      #=> 3
+ *     2.5.round(half: :down)    #=> 2
+ *     2.5.round(half: :even)    #=> 2
+ *     3.5.round(half: :up)      #=> 4
+ *     3.5.round(half: :down)    #=> 3
+ *     3.5.round(half: :even)    #=> 4
+ *     (-2.5).round(half: :up)   #=> -3
+ *     (-2.5).round(half: :down) #=> -2
+ *     (-2.5).round(half: :even) #=> -2
  */
 
 static VALUE
@@ -2438,13 +2445,11 @@ num_ceil(int argc, VALUE *argv, VALUE num)
  *  call-seq:
  *     num.round([ndigits])  ->  integer or float
  *
- *  Rounds +num+ to a given precision in decimal digits (default 0 digits).
+ *  Returns +num+ rounded to the nearest value with
+ *  a precision of +ndigits+ decimal digits (default: 0).
  *
- *  Precision may be negative.  Returns a floating point number when +ndigits+
- *  is more than zero.
- *
- *  Numeric implements this by converting itself to a Float and invoking
- *  Float#round.
+ *  Numeric implements this by converting its value to a Float and
+ *  invoking Float#round.
  */
 
 static VALUE
@@ -5010,25 +5015,34 @@ int_dotimes(VALUE num)
 /*
  *  Document-method: Integer#round
  *  call-seq:
- *     int.round([ndigits] [, half: symbol])  ->  integer or float
+ *     int.round([ndigits] [, half: mode])  ->  integer or float
  *
- *  Rounds +int+ to a given precision in decimal digits (default 0 digits).
+ *  Returns +int+ rounded to the nearest value with
+ *  a precision of +ndigits+ decimal digits (default: 0).
  *
- *  Precision may be negative.  Returns a floating point number when +ndigits+
- *  is positive, +self+ for zero, and round down for negative.
+ *  When the precision is negative, the returned value is an integer
+ *  with at least <code>ndigits.abs</code> trailing zeros.
  *
- *     1.round        #=> 1
- *     1.round(2)     #=> 1.0
- *     15.round(-1)   #=> 20
+ *  Returns a floating point number when +ndigits+ is positive,
+ *  +self+ for zero, and an integer for negative.
  *
- *  The <code>half:</code> optional keyword same as Float#round is available.
+ *     1.round           #=> 1
+ *     1.round(2)        #=> 1.0
+ *     15.round(-1)      #=> 20
+ *     (-15).round(-1)   #=> -20
  *
- *     25.round(-1, half: :up)   #=> 30
- *     25.round(-1, half: :even) #=> 20
- *     25.round(-1, half: :down) #=> 20
- *     35.round(-1, half: :up)   #=> 40
- *     35.round(-1, half: :even) #=> 40
- *     35.round(-1, half: :down) #=> 30
+ *  The optional +half+ keyword argument is available
+ *  similar to Float#round.
+ *
+ *     25.round(-1, half: :up)      #=> 30
+ *     25.round(-1, half: :down)    #=> 20
+ *     25.round(-1, half: :even)    #=> 20
+ *     35.round(-1, half: :up)      #=> 40
+ *     35.round(-1, half: :down)    #=> 30
+ *     35.round(-1, half: :even)    #=> 40
+ *     (-25).round(-1, half: :up)   #=> -30
+ *     (-25).round(-1, half: :down) #=> -20
+ *     (-25).round(-1, half: :even) #=> -20
  */
 
 static VALUE
