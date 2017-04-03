@@ -24,6 +24,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Integer.sqrt  [Feature #13219]
 
+* IO
+
+  * IO#pread  [Feature #4532]
+  * IO#pwrite  [Feature #4532]
+
 * Regexp
   * Update Onigmo 6.1.1.
     * Support absent operator https://github.com/k-takata/Onigmo/issues/82

@@ -37,6 +37,9 @@ arton
 * He is the distributor of ActiveScriptRuby and experimental 1.9.0-x installers for win32.
 * Wrote patches for win32ole, gc.c, tmpdir.rb
 
+Sergey Avseyev
+* Added IO#pread and IO#pwrite.
+
 == B
 
 Daniel Berger
