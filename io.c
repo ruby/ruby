@@ -4945,7 +4945,7 @@ internal_pwrite_func(void *ptr)
  *     File.read("out")        #=> "\u0000\u0000\u0000ABCDEF"
  */
 static VALUE
-rb_io_pwrite(VALUE io, VALUE offset, VALUE str)
+rb_io_pwrite(VALUE io, VALUE str, VALUE offset)
 {
     rb_io_t *fptr;
     ssize_t n;
