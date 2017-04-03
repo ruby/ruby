@@ -196,14 +196,17 @@ class Net::HTTPGenericRequest
     supply_default_content_type
     write_header sock, ver, path
     wait_for_continue sock, ver if sock.continue_timeout
-    if chunked?
-      chunker = Chunker.new(sock)
-      IO.copy_stream(f, chunker)
-      chunker.finish
-    else
-      # copy_stream can sendfile() to sock.io unless we use SSL.
-      # If sock.io is an SSLSocket, copy_stream will hit SSL_write()
-      IO.copy_stream(f, sock.io)
+
+    Timeout.timeout(sock.write_timeout, ::Net::WriteTimeout) do
+      if chunked?
+        chunker = Chunker.new(sock)
+        IO.copy_stream(f, chunker)
+        chunker.finish
+      else
+        # copy_stream can sendfile() to sock.io unless we use SSL.
+        # If sock.io is an SSLSocket, copy_stream will hit SSL_write()
+        IO.copy_stream(f, sock.io)
+      end
     end
   end
 

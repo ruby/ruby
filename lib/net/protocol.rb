@@ -77,11 +77,18 @@ module Net # :nodoc:
 
   class ReadTimeout            < Timeout::Error; end
 
+  ##
+  # WriteTimeout, a subclass of Timeout::Error, is raised if a chunk of the
+  # request cannot be written within the write_timeout.
+
+  class WriteTimeout           < Timeout::Error; end
+
 
   class BufferedIO   #:nodoc: internal use only
-    def initialize(io, read_timeout: 60, continue_timeout: nil, debug_output: nil)
+    def initialize(io, read_timeout: 60, write_timeout: 60, continue_timeout: nil, debug_output: nil)
       @io = io
       @read_timeout = read_timeout
+      @write_timeout = write_timeout
       @continue_timeout = continue_timeout
       @debug_output = debug_output
       @rbuf = ''.dup
@@ -89,6 +96,7 @@ module Net # :nodoc:
 
     attr_reader :io
     attr_accessor :read_timeout
+    attr_accessor :write_timeout
     attr_accessor :continue_timeout
     attr_accessor :debug_output
 
@@ -225,9 +233,23 @@ module Net # :nodoc:
 
     def write0(str)
       @debug_output << str.dump if @debug_output
-      len = @io.write(str)
-      @written_bytes += len
-      len
+
+      written = 0
+      chunk = str
+
+      until chunk.empty?
+        case rv = @io.write_nonblock(chunk, exception: false)
+        when Numeric
+          written += rv
+          @written_bytes += rv
+          chunk = str.byteslice(written..-1)
+        when :wait_writable
+          @io.to_io.wait_writable(@write_timeout) or raise Net::WriteTimeout
+          # continue looping
+        end
+      end
+
+      written
     end
 
     #

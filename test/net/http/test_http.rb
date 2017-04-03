@@ -468,6 +468,62 @@ module TestNetHTTP_version_1_1_methods
     th.kill
     th.join
   end
+
+  def test_timeout_while_sending_http_request
+    bug13396 = "expected the HTTP session to have timed out but have not."
+
+    server = TCPServer.new('localhost', 0)
+    port = server.addr[1]
+    th = Thread.new do
+      # accept connections... but deliberately do not read requests
+      loop do
+        server.accept
+      end
+    end
+
+    conn = Net::HTTP.new('localhost', port)
+    conn.read_timeout = 1
+    conn.write_timeout = 1
+    conn.open_timeout = 1
+
+    assert_raise(Net::WriteTimeout, bug13396) do
+      conn.put('/', 'a' * (1024 * 5_000))
+    end
+  ensure
+    th.kill
+    th.join
+    server.close
+  end
+
+  def test_timeout_while_sending_streamed_http_request
+    bug13396 = "expected the HTTP session to have timed out but have not."
+
+    server = TCPServer.new('localhost', 0)
+    port = server.addr[1]
+    th = Thread.new do
+      loop do
+        # accept connections... but deliberately do not read requests
+        server.accept
+      end
+    end
+
+    conn = Net::HTTP.new('localhost', port)
+    conn.read_timeout = 1
+    conn.write_timeout = 1
+    conn.open_timeout = 1
+
+    body = 'a' * (1024 * 5_000)
+    request = Net::HTTP::Put.new('/', 'Content-Length' => body.bytesize.to_s)
+    request.body_stream = StringIO.new(body)
+
+    assert_raise(Net::WriteTimeout, bug13396) do
+      conn.request(request)
+    end
+  ensure
+    th.kill
+    th.join
+    server.close
+  end
 end
 
 

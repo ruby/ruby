@@ -668,6 +668,7 @@ module Net   #:nodoc:
       @started = false
       @open_timeout = 60
       @read_timeout = 60
+      @write_timeout = 60
       @continue_timeout = nil
       @debug_output = nil
 
@@ -739,6 +740,18 @@ module Net   #:nodoc:
     def read_timeout=(sec)
       @socket.read_timeout = sec if @socket
       @read_timeout = sec
+    end
+
+    # Number of seconds to wait for one block to be written (via one write(2)
+    # call). Any number may be used, including Floats for fractional
+    # seconds. If the HTTP object cannot write data in this many seconds,
+    # it raises a Net::WriteTimeout exception. The default value is 60 seconds.
+    attr_reader :write_timeout
+
+    # Setter for the write_timeout attribute.
+    def write_timeout=(sec)
+      @socket.write_timeout = sec if @socket
+      @write_timeout = sec
     end
 
     # Seconds to wait for 100 Continue response. If the HTTP object does not
@@ -911,9 +924,13 @@ module Net   #:nodoc:
       D "opened"
       if use_ssl?
         if proxy?
-          plain_sock = BufferedIO.new(s, read_timeout: @read_timeout,
-                                      continue_timeout: @continue_timeout,
-                                      debug_output: @debug_output)
+          plain_sock = BufferedIO.new(
+            s,
+            read_timeout: @read_timeout,
+            write_timeout: @write_timeout,
+            continue_timeout: @continue_timeout,
+            debug_output: @debug_output,
+          )
           buf = "CONNECT #{@address}:#{@port} HTTP/#{HTTPVersion}\r\n"
           buf << "Host: #{@address}:#{@port}\r\n"
           if proxy_user
@@ -952,9 +969,13 @@ module Net   #:nodoc:
         @ssl_session = s.session
         D "SSL established"
       end
-      @socket = BufferedIO.new(s, read_timeout: @read_timeout,
-                               continue_timeout: @continue_timeout,
-                               debug_output: @debug_output)
+      @socket = BufferedIO.new(
+        s,
+        read_timeout: @read_timeout,
+        write_timeout: @write_timeout,
+        continue_timeout: @continue_timeout,
+        debug_output: @debug_output,
+      )
       on_connect
     rescue => exception
       if s
