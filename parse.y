@@ -103,14 +103,14 @@ enum lex_state_e {
 #define IS_lex_state_all(ls)	IS_lex_state_all_for(lex_state, (ls))
 
 # define SET_LEX_STATE(ls) \
-    (lex_state = (yydebug ? trace_lex_state(lex_state, (ls), __LINE__) : \
-		  (enum lex_state_e)(ls)))
-static enum lex_state_e trace_lex_state(enum lex_state_e from, enum lex_state_e to, int line);
+    (lex_state = \
+     (yydebug ? \
+      rb_parser_trace_lex_state(parser, lex_state, (ls), __LINE__) : \
+      (enum lex_state_e)(ls)))
 
 typedef VALUE stack_type;
 
-static void show_bitstack(stack_type, const char *, int);
-# define SHOW_BITSTACK(stack, name) (yydebug ? show_bitstack(stack, name, __LINE__) : (void)0)
+# define SHOW_BITSTACK(stack, name) (yydebug ? rb_parser_show_bitstack(parser, stack, name, __LINE__) : (void)0)
 # define BITSTACK_PUSH(stack, n) (((stack) = ((stack)<<1)|((n)&1)), SHOW_BITSTACK(stack, #stack"(push)"))
 # define BITSTACK_POP(stack)	 (((stack) = (stack) >> 1), SHOW_BITSTACK(stack, #stack"(pop)"))
 # define BITSTACK_LEXPOP(stack)	 (((stack) = ((stack) >> 1) | ((stack) & 1)), SHOW_BITSTACK(stack, #stack"(lexpop)"))
@@ -627,6 +627,8 @@ static VALUE parser_reg_compile(struct parser_params*, VALUE, int, VALUE *);
 RUBY_FUNC_EXPORTED VALUE rb_parser_reg_compile(struct parser_params* parser, VALUE str, int options);
 RUBY_FUNC_EXPORTED int rb_reg_fragment_setenc(struct parser_params*, VALUE, int);
 
+static enum lex_state_e rb_parser_trace_lex_state(struct parser_params *, enum lex_state_e, enum lex_state_e, int);
+static void rb_parser_show_bitstack(struct parser_params *, stack_type, const char *, int);
 
 static ID formal_argument_gen(struct parser_params*, ID);
 #define formal_argument(id) formal_argument_gen(parser, (id))
@@ -9048,8 +9050,20 @@ append_lex_state_name(enum lex_state_e state, VALUE buf)
     return buf;
 }
 
+static void
+flush_debug_buffer(struct parser_params *parser, VALUE out)
+{
+    VALUE mesg = parser->debug_buffer;
+
+    if (!NIL_P(mesg) && RSTRING_LEN(mesg)) {
+	parser->debug_buffer = Qnil;
+	rb_io_puts(1, &mesg, out);
+    }
+}
+
 static enum lex_state_e
-trace_lex_state(enum lex_state_e from, enum lex_state_e to, int line)
+rb_parser_trace_lex_state(struct parser_params *parser, enum lex_state_e from,
+			  enum lex_state_e to, int line)
 {
     VALUE mesg;
     mesg = rb_str_new_cstr("lex_state: ");
@@ -9057,12 +9071,14 @@ trace_lex_state(enum lex_state_e from, enum lex_state_e to, int line)
     rb_str_cat_cstr(mesg, " -> ");
     append_lex_state_name(to, mesg);
     rb_str_catf(mesg, " at line %d\n", line);
+    flush_debug_buffer(parser, rb_stdout);
     rb_io_write(rb_stdout, mesg);
     return to;
 }
 
 static void
-show_bitstack(stack_type stack, const char *name, int line)
+rb_parser_show_bitstack(struct parser_params *parser, stack_type stack,
+			const char *name, int line)
 {
     VALUE mesg = rb_sprintf("%s: ", name);
     if (stack == 0) {
@@ -9074,6 +9090,7 @@ show_bitstack(stack_type stack, const char *name, int line)
 	for (; mask; mask >>= 1) rb_str_cat(mesg, stack & mask ? "1" : "0", 1);
     }
     rb_str_catf(mesg, " at line %d\n", line);
+    flush_debug_buffer(parser, rb_stdout);
     rb_io_write(rb_stdout, mesg);
 }
 
