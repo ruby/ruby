@@ -2155,7 +2155,7 @@ arg		: lhs '=' arg_rhs
 		    }
 		| arg tGEQ arg
 		    {
-			$$ = call_bin_op($1, TOKEN2ID((enum ruby_method_ids)tGEQ), $3);
+			$$ = call_bin_op($1, idGE, $3);
 		    }
 		| arg '<' arg
 		    {
