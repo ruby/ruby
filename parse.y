@@ -624,11 +624,12 @@ static VALUE parser_reg_compile(struct parser_params*, VALUE, int, VALUE *);
 
 #define new_op_assign(lhs, op, rhs) new_op_assign_gen(parser, (lhs), (op), (rhs))
 
-RUBY_FUNC_EXPORTED VALUE rb_parser_reg_compile(struct parser_params* parser, VALUE str, int options);
-RUBY_FUNC_EXPORTED int rb_reg_fragment_setenc(struct parser_params*, VALUE, int);
-
-static enum lex_state_e rb_parser_trace_lex_state(struct parser_params *, enum lex_state_e, enum lex_state_e, int);
-static void rb_parser_show_bitstack(struct parser_params *, stack_type, const char *, int);
+RUBY_SYMBOL_EXPORT_BEGIN
+VALUE rb_parser_reg_compile(struct parser_params* parser, VALUE str, int options);
+int rb_reg_fragment_setenc(struct parser_params*, VALUE, int);
+enum lex_state_e rb_parser_trace_lex_state(struct parser_params *, enum lex_state_e, enum lex_state_e, int);
+void rb_parser_show_bitstack(struct parser_params *, stack_type, const char *, int);
+RUBY_SYMBOL_EXPORT_END
 
 static ID formal_argument_gen(struct parser_params*, ID);
 #define formal_argument(id) formal_argument_gen(parser, (id))
@@ -9022,7 +9023,8 @@ new_xstring_gen(struct parser_params *parser, VALUE str)
 }
 #endif /* !RIPPER */
 
-static const char lex_state_names[][13] = {
+#ifndef RIPPER
+const char rb_parser_lex_state_names[][13] = {
     "EXPR_BEG",    "EXPR_END",    "EXPR_ENDARG", "EXPR_ENDFN",  "EXPR_ARG",
     "EXPR_CMDARG", "EXPR_MID",    "EXPR_FNAME",  "EXPR_DOT",    "EXPR_CLASS",
     "EXPR_LABEL",  "EXPR_LABELED","EXPR_FITEM",
@@ -9041,7 +9043,7 @@ append_lex_state_name(enum lex_state_e state, VALUE buf)
 		rb_str_cat(buf, "|", 1);
 	    }
 	    sep = 1;
-	    rb_str_cat_cstr(buf, lex_state_names[i]);
+	    rb_str_cat_cstr(buf, rb_parser_lex_state_names[i]);
 	}
     }
     if (!sep) {
@@ -9061,7 +9063,7 @@ flush_debug_buffer(struct parser_params *parser, VALUE out)
     }
 }
 
-static enum lex_state_e
+enum lex_state_e
 rb_parser_trace_lex_state(struct parser_params *parser, enum lex_state_e from,
 			  enum lex_state_e to, int line)
 {
@@ -9076,7 +9078,7 @@ rb_parser_trace_lex_state(struct parser_params *parser, enum lex_state_e from,
     return to;
 }
 
-static void
+void
 rb_parser_show_bitstack(struct parser_params *parser, stack_type stack,
 			const char *name, int line)
 {
@@ -9093,6 +9095,7 @@ rb_parser_show_bitstack(struct parser_params *parser, stack_type stack,
     flush_debug_buffer(parser, rb_stdout);
     rb_io_write(rb_stdout, mesg);
 }
+#endif /* !RIPPER */
 
 #ifdef RIPPER
 static VALUE
