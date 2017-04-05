@@ -5,7 +5,7 @@ require 'date'
 module Psych
   class TestDateTime < TestCase
     def test_negative_year
-      time = Time.utc -1, 12, 16
+      time = Time.utc(-1, 12, 16)
       assert_cycle time
     end
 

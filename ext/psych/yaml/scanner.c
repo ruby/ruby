@@ -3504,12 +3504,12 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser, yaml_token_t *token)
         {
             if (IS_BLANK(parser->buffer))
             {
-                /* Check for tab character that abuse indentation. */
+                /* Check for tab characters that abuse indentation. */
 
                 if (leading_blanks && (int)parser->mark.column < indent
                         && IS_TAB(parser->buffer)) {
                     yaml_parser_set_scanner_error(parser, "while scanning a plain scalar",
-                            start_mark, "found a tab character that violate indentation");
+                            start_mark, "found a tab character that violates indentation");
                     goto error;
                 }
 

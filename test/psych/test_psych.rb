@@ -98,8 +98,8 @@ class TestPsych < Psych::TestCase
     assert_equal Psych.libyaml_version.join('.'), Psych::LIBYAML_VERSION
   end
 
-  def test_load_documents
-    docs = Psych.load_documents("--- foo\n...\n--- bar\n...")
+  def test_load_stream
+    docs = Psych.load_stream("--- foo\n...\n--- bar\n...")
     assert_equal %w{ foo bar }, docs
   end
 

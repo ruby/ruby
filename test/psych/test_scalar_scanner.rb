@@ -79,13 +79,19 @@ module Psych
     end
 
     def test_scan_null
-      assert_equal nil, ss.tokenize('null')
-      assert_equal nil, ss.tokenize('~')
-      assert_equal nil, ss.tokenize('')
+      assert_nil ss.tokenize('null')
+      assert_nil ss.tokenize('~')
+      assert_nil ss.tokenize('')
     end
 
     def test_scan_symbol
       assert_equal :foo, ss.tokenize(':foo')
+    end
+
+    def test_scan_not_sexagesimal
+      assert_equal '00:00:00:00:0f', ss.tokenize('00:00:00:00:0f')
+      assert_equal '00:00:00:00:00', ss.tokenize('00:00:00:00:00')
+      assert_equal '00:00:00:00:00.0', ss.tokenize('00:00:00:00:00.0')
     end
 
     def test_scan_sexagesimal_float

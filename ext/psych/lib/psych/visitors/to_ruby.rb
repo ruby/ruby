@@ -380,11 +380,6 @@ module Psych
 
         if o.respond_to?(:init_with)
           o.init_with c
-        elsif o.respond_to?(:yaml_initialize)
-          if $VERBOSE
-            warn "Implementing #{o.class}#yaml_initialize is deprecated, please implement \"init_with(coder)\""
-          end
-          o.yaml_initialize c.tag, c.map
         else
           h.each { |k,v| o.instance_variable_set(:"@#{k}", v) }
         end

@@ -165,10 +165,10 @@ module Psych
       # http://yaml.org/type/null.html
       def test_nil
         assert_cycle nil
-        assert_equal nil, Psych.load('null')
-        assert_equal nil, Psych.load('Null')
-        assert_equal nil, Psych.load('NULL')
-        assert_equal nil, Psych.load('~')
+        assert_nil Psych.load('null')
+        assert_nil Psych.load('Null')
+        assert_nil Psych.load('NULL')
+        assert_nil Psych.load('~')
         assert_equal({'foo' => nil}, Psych.load('foo: '))
 
         assert_cycle 'null'

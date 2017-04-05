@@ -33,28 +33,28 @@ module Psych
     def test_doublequotes_when_there_is_a_single
       str = "@123'abc"
       yaml = Psych.dump str
-      assert_match /---\s*"/, yaml
+      assert_match(/---\s*"/, yaml)
       assert_equal str, Psych.load(yaml)
     end
 
     def test_plain_when_shorten_than_line_width_and_no_final_line_break
       str = "Lorem ipsum"
       yaml = Psych.dump str, line_width: 12
-      assert_match /---\s*[^>|]+\n/, yaml
+      assert_match(/---\s*[^>|]+\n/, yaml)
       assert_equal str, Psych.load(yaml)
     end
 
     def test_plain_when_shorten_than_line_width_and_with_final_line_break
       str = "Lorem ipsum\n"
       yaml = Psych.dump str, line_width: 12
-      assert_match /---\s*[^>|]+\n/, yaml
+      assert_match(/---\s*[^>|]+\n/, yaml)
       assert_equal str, Psych.load(yaml)
     end
 
     def test_folded_when_longer_than_line_width_and_with_final_line_break
       str = "Lorem ipsum dolor sit\n"
       yaml = Psych.dump str, line_width: 12
-      assert_match /---\s*>\n(.*\n){2}\Z/, yaml
+      assert_match(/---\s*>\n(.*\n){2}\Z/, yaml)
       assert_equal str, Psych.load(yaml)
     end
 
@@ -62,7 +62,7 @@ module Psych
     def test_folded_strip_when_longer_than_line_width_and_no_newlines
       str = "Lorem ipsum dolor sit amet, consectetur"
       yaml = Psych.dump str, line_width: 12
-      assert_match /---\s*>-\n(.*\n){3}\Z/, yaml
+      assert_match(/---\s*>-\n(.*\n){3}\Z/, yaml)
       assert_equal str, Psych.load(yaml)
     end
 
@@ -72,7 +72,7 @@ module Psych
         "Lorem ipsum\nZolor\n",
       ].each do |str|
         yaml = Psych.dump str, line_width: 12
-        assert_match /---\s*\|\n(.*\n){2}\Z/, yaml
+        assert_match(/---\s*\|\n(.*\n){2}\Z/, yaml)
         assert_equal str, Psych.load(yaml)
       end
     end
@@ -84,7 +84,7 @@ module Psych
         "Lorem ipsum\nZolor",
       ].each do |str|
         yaml = Psych.dump str, line_width: 12
-        assert_match /---\s*\|-\n(.*\n){2}\Z/, yaml
+        assert_match(/---\s*\|-\n(.*\n){2}\Z/, yaml)
         assert_equal str, Psych.load(yaml)
       end
     end
@@ -129,7 +129,7 @@ string: &70121654388580 !ruby/string
     end
 
     def test_another_subclass_with_attributes
-      y = Psych.load Psych.dump Y.new("foo").tap {|y| y.val = 1}
+      y = Psych.load Psych.dump Y.new("foo").tap {|o| o.val = 1}
       assert_equal "foo", y
       assert_equal Y, y.class
       assert_equal 1, y.val
@@ -154,7 +154,7 @@ string: &70121654388580 !ruby/string
     end
 
     def test_subclass_with_attributes
-      y = Psych.load Psych.dump Y.new.tap {|y| y.val = 1}
+      y = Psych.load Psych.dump Y.new.tap {|o| o.val = 1}
       assert_equal Y, y.class
       assert_equal 1, y.val
     end
