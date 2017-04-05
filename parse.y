@@ -416,8 +416,8 @@ static NODE *new_if_gen(struct parser_params*,NODE*,NODE*,NODE*);
 #define new_if(cc,left,right) new_if_gen(parser, (cc), (left), (right))
 #define new_unless(cc,left,right) new_if_gen(parser, (cc), (right), (left))
 static NODE *logop_gen(struct parser_params*,enum node_type,NODE*,NODE*);
-#define logop(type,node1,node2) \
-    logop_gen(parser, (type)==tAND||(type)==(enum ruby_method_ids)tANDOP?NODE_AND:NODE_OR, \
+#define logop(id,node1,node2) \
+    logop_gen(parser, ((id)==idAND||(id)==idANDOP)?NODE_AND:NODE_OR, \
 	      (node1), (node2))
 
 static NODE *newline_node(NODE*);
@@ -579,7 +579,7 @@ static int id_is_var_gen(struct parser_params *parser, ID id);
 #define call_bin_op(recv,id,arg1) dispatch3(binary, (recv), STATIC_ID2SYM(id), (arg1))
 #define match_op(node1,node2) call_bin_op((node1), idEqTilde, (node2))
 #define call_uni_op(recv,id) dispatch2(unary, STATIC_ID2SYM(id), (recv))
-#define logop(type,node1,node2) call_bin_op((node1), TOKEN2ID(type), (node2))
+#define logop(id,node1,node2) call_bin_op((node1), (id), (node2))
 #define node_assign(node1, node2) dispatch2(assign, (node1), (node2))
 static VALUE new_qcall_gen(struct parser_params *parser, VALUE q, VALUE r, VALUE m, VALUE a);
 #define new_qcall(q,r,m,a) new_qcall_gen(parser, (r), (q), (m), (a))
@@ -1452,11 +1452,11 @@ command_rhs	: command_call   %prec tOP_ASGN
 expr		: command_call
 		| expr keyword_and expr
 		    {
-			$$ = logop(tAND, $1, $3);
+			$$ = logop(idAND, $1, $3);
 		    }
 		| expr keyword_or expr
 		    {
-			$$ = logop(tOR, $1, $3);
+			$$ = logop(idOR, $1, $3);
 		    }
 		| keyword_not opt_nl expr
 		    {
@@ -2203,11 +2203,11 @@ arg		: lhs '=' arg_rhs
 		    }
 		| arg tANDOP arg
 		    {
-			$$ = logop((enum ruby_method_ids)tANDOP, $1, $3);
+			$$ = logop(idANDOP, $1, $3);
 		    }
 		| arg tOROP arg
 		    {
-			$$ = logop((enum ruby_method_ids)tOROP, $1, $3);
+			$$ = logop(idOROP, $1, $3);
 		    }
 		| keyword_defined opt_nl {in_defined = 1;} arg
 		    {
