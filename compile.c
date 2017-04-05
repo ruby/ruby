@@ -150,23 +150,11 @@ struct iseq_compile_data_ensure_node_stack {
 
 #else
 
-static inline ID
-r_id(ID id)
-{
-    return id;
-}
-
-static inline VALUE
-r_value(VALUE value)
-{
-    return value;
-}
-
-#define debugi(header, id)                 r_id(id)
-#define debugp(header, value)              r_value(value)
-#define debugp_verbose(header, value)      r_value(value)
-#define debugp_verbose_node(header, value) r_value(value)
-#define debugp_param(header, value)        r_value(value)
+#define debugi(header, id)                 ((void)0)
+#define debugp(header, value)              ((void)0)
+#define debugp_verbose(header, value)      ((void)0)
+#define debugp_verbose_node(header, value) ((void)0)
+#define debugp_param(header, value)        ((void)0)
 #define debug_node_start(node)             ((void)0)
 #define debug_node_end()                   ((void)0)
 #endif
