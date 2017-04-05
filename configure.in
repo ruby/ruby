@@ -1414,6 +1414,7 @@ AS_IF([test "x$with_jemalloc" = xyes],[
   ])
   AS_IF([test "x$with_jemalloc" = xyes],
     [
+      AC_DEFINE(HAVE_MALLOC_CONF)
       ac_cv_func_malloc_usable_size=yes
     ],
     [AC_MSG_ERROR([jemalloc requested but not found])
