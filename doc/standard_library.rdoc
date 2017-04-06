@@ -77,7 +77,6 @@ YAML:: Ruby client library for the Psych YAML implementation
 
 Coverage:: Provides coverage measurement for Ruby
 Digest:: Provides a framework for message digest libraries
-Fiddle:: A libffi wrapper for Ruby
 IO:: Extensions for Ruby IO class, including #wait and ::console
 NKF:: Ruby extension for Network Kanji Filter
 objspace:: Extends ObjectSpace module to add methods for internal statistics
@@ -86,7 +85,6 @@ PTY:: Creates and manages pseudo terminals
 Readline:: Provides an interface for GNU Readline and Edit Line (libedit)
 Ripper:: Provides an interface for parsing Ruby programs into S-expressions
 Socket:: Access underlying OS socket implementations
-StringIO:: Pseudo I/O on String objects
 Syslog:: Ruby interface for the POSIX system logging facility
 WIN32OLE:: Provides an interface for OLE Automation in Ruby
 
@@ -109,12 +107,14 @@ DateTime:: Subclass of Date to handling dates, hours, minutes, seconds, offsets
 DBM:: Provides a wrapper for the UNIX-style Database Manager Library
 Etc:: Provides access to information typically stored in UNIX /etc directory
 Fcntl:: Loads constants defined in the OS fcntl.h C header file
+Fiddle:: A libffi wrapper for Ruby
 GDBM:: Ruby extension for the GNU dbm (gdbm) library
 IO::console:: Console interface
 JSON:: Implements Javascript Object Notation for Ruby
 OpenSSL:: Provides SSL, TLS and general purpose cryptography for Ruby
 Psych:: A YAML parser and emitter for Ruby
 SDBM:: Provides a simple file-based key-value store with String keys and values
+StringIO:: Pseudo I/O on String objects
 StringScanner:: Provides lexical scanning operations on a String
 Zlib:: Ruby interface for the zlib compression/decompression library
 

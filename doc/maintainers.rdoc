@@ -177,8 +177,6 @@ Zachary Scott (zzak)
   Akinori MUSHA (knu)
 [ext/fiber]
   Koichi Sasada (ko1)
-[ext/fiddle]
-  Aaron Patterson (tenderlove)
 [ext/io/nonblock]
   Nobuyuki Nakada (nobu)
 [ext/io/wait]
@@ -204,8 +202,6 @@ Zachary Scott (zzak)
 [ext/socket]
   * Tanaka Akira (akr)
   * API change needs matz's approval
-[ext/stringio]
-  Nobuyuki Nakada (nobu)
 [ext/syslog]
   Akinori MUSHA (knu)
 [ext/win32]
@@ -244,6 +240,8 @@ Zachary Scott (zzak)
   _unmaintained_
 [ext/fcntl]
   _unmaintained_
+[ext/fiddle]
+  Aaron Patterson (tenderlove)
 [ext/gdbm]
   Yukihiro Matsumoto (matz)
 [ext/io/console]
@@ -259,6 +257,8 @@ Zachary Scott (zzak)
   https://github.com/ruby/psych
 [ext/sdbm]
   Yukihiro Matsumoto (matz)
+[ext/stringio]
+  Nobuyuki Nakada (nobu)
 [ext/strscan]
   _unmaintained_
 [ext/zlib]
