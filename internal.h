@@ -887,7 +887,7 @@ struct vm_throw_data {
     VALUE throw_state;
 };
 
-#define THROW_DATA_P(err) RB_TYPE_P(((VALUE)err), T_IMEMO)
+#define THROW_DATA_P(err) RB_TYPE_P((VALUE)(err), T_IMEMO)
 
 /* IFUNC */
 
