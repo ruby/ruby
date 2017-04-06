@@ -20,6 +20,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Core classes updates (outstanding ones only)
 
+* Array
+
+  * Array#append  [Feature #12746]
+  * Array#prepend  [Feature #12746]
+
 * Integer
 
   * Integer.sqrt  [Feature #13219]
