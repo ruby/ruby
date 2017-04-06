@@ -2778,8 +2778,8 @@ class TestArray < Test::Unit::TestCase
     assert_raise(TypeError) {h.dig(1, 0)}
   end
 
-  FIXNUM_MIN = RbConfig::Limits['FIXNUM_MIN']
-  FIXNUM_MAX = RbConfig::Limits['FIXNUM_MAX']
+  FIXNUM_MIN = RbConfig::LIMITS['FIXNUM_MIN']
+  FIXNUM_MAX = RbConfig::LIMITS['FIXNUM_MAX']
 
   def assert_typed_equal(e, v, cls, msg=nil)
     assert_kind_of(cls, v, msg)

@@ -203,7 +203,7 @@ CODE
 
     assert_raise(ArgumentError) { "foo"[1, 2, 3] = "" }
 
-    assert_raise(IndexError) {"foo"[RbConfig::Limits["LONG_MIN"]] = "l"}
+    assert_raise(IndexError) {"foo"[RbConfig::LIMITS["LONG_MIN"]] = "l"}
   end
 
   def test_CMP # '<=>'

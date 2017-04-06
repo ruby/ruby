@@ -3,8 +3,8 @@ require 'test/unit'
 require '-test-/integer'
 
 class TestInteger < Test::Unit::TestCase
-  FIXNUM_MIN = RbConfig::Limits['FIXNUM_MIN']
-  FIXNUM_MAX = RbConfig::Limits['FIXNUM_MAX']
+  FIXNUM_MIN = RbConfig::LIMITS['FIXNUM_MIN']
+  FIXNUM_MAX = RbConfig::LIMITS['FIXNUM_MAX']
 
   def test_fixnum_range
     assert_bignum(FIXNUM_MIN-1)

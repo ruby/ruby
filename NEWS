@@ -51,6 +51,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Stdlib updates (outstanding ones only)
 
+* RbConfig
+  * New constants:
+    * RbConfig::LIMITS is added to provide the limits of C types.
+
 === Compatibility issues (excluding feature bug fixes)
 
 * Random.raw_seed renamed to become Random.urandom.  It is now
