@@ -1599,29 +1599,69 @@ vm_frametype_name(const rb_control_frame_t *cfp)
 }
 #endif
 
+static VALUE
+frame_return_value(const struct vm_throw_data *err)
+{
+    if (THROW_DATA_P(err) &&
+	THROW_DATA_STATE(err) == TAG_BREAK &&
+	THROW_DATA_CONSUMED_P(err) == FALSE) {
+	return THROW_DATA_VAL(err);
+    }
+    else {
+	return Qnil;
+    }
+}
+
+#if 0
+/* for debug */
+static const char *
+frame_name(const rb_control_frame_t *cfp)
+{
+    unsigned long type = VM_FRAME_TYPE(cfp);
+#define C(t) if (type == VM_FRAME_MAGIC_##t) return #t
+    C(METHOD);
+    C(BLOCK);
+    C(CLASS);
+    C(TOP);
+    C(CFUNC);
+    C(PROC);
+    C(IFUNC);
+    C(EVAL);
+    C(LAMBDA);
+    C(RESCUE);
+    C(DUMMY);
+#undef C
+    return "unknown";
+}
+#endif
+
 static void
-hook_before_rewind(rb_thread_t *th, rb_control_frame_t *cfp, int will_finish_vm_exec)
+hook_before_rewind(rb_thread_t *th, const rb_control_frame_t *cfp, int will_finish_vm_exec, struct vm_throw_data *err)
 {
     switch (VM_FRAME_TYPE(th->cfp)) {
       case VM_FRAME_MAGIC_METHOD:
 	RUBY_DTRACE_METHOD_RETURN_HOOK(th, 0, 0);
-	EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_RETURN, th->cfp->self, 0, 0, 0, Qnil);
+	EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_RETURN, th->cfp->self, 0, 0, 0, frame_return_value(err));
+	THROW_DATA_CONSUMED_SET(err);
 	break;
       case VM_FRAME_MAGIC_BLOCK:
       case VM_FRAME_MAGIC_LAMBDA:
 	if (VM_FRAME_BMETHOD_P(th->cfp)) {
-	    EXEC_EVENT_HOOK(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, 0, Qnil);
+	    EXEC_EVENT_HOOK(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, 0, frame_return_value(err));
 
 	    if (!will_finish_vm_exec) {
 		/* kick RUBY_EVENT_RETURN at invoke_block_from_c() for bmethod */
 		EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_RETURN, th->cfp->self,
 					      rb_vm_frame_method_entry(th->cfp)->def->original_id,
 					      rb_vm_frame_method_entry(th->cfp)->called_id,
-					      rb_vm_frame_method_entry(th->cfp)->owner, Qnil);
+					      rb_vm_frame_method_entry(th->cfp)->owner,
+					      frame_return_value(err));
 	    }
+	    THROW_DATA_CONSUMED_SET(err);
 	}
 	else {
-	    EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, 0, Qnil);
+	    EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, 0, frame_return_value(err));
+	    THROW_DATA_CONSUMED_SET(err);
 	}
 	break;
       case VM_FRAME_MAGIC_CLASS:
@@ -1784,10 +1824,11 @@ vm_exec(rb_thread_t *th)
 				}
 			    }
 			}
-			if (!catch_iseq) {
+			if (catch_iseq == NULL) {
 			    th->errinfo = Qnil;
 			    result = THROW_DATA_VAL(err);
-			    hook_before_rewind(th, th->cfp, TRUE);
+			    THROW_DATA_CATCH_FRAME_SET(err, cfp + 1);
+			    hook_before_rewind(th, th->cfp, TRUE, err);
 			    rb_vm_pop_frame(th);
 			    goto finish_vme;
 			}
@@ -1929,8 +1970,7 @@ vm_exec(rb_thread_t *th)
 	    goto vm_loop_start;
 	}
 	else {
-	    /* skip frame */
-	    hook_before_rewind(th, th->cfp, FALSE);
+	    hook_before_rewind(th, th->cfp, FALSE, err);
 
 	    if (VM_FRAME_FINISHED_P(th->cfp)) {
 		rb_vm_pop_frame(th);
