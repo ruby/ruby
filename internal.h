@@ -855,6 +855,21 @@ imemo_type(VALUE imemo)
     return (RBASIC(imemo)->flags >> FL_USHIFT) & imemo_mask;
 }
 
+static inline int
+imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
+{
+    if (LIKELY(!RB_SPECIAL_CONST_P(imemo))) {
+	/* fixed at compile time if imemo_type is given. */
+	const VALUE mask = (imemo_mask << FL_USHIFT) | RUBY_T_MASK;
+	const VALUE expected_type = (imemo_type << FL_USHIFT) | T_IMEMO;
+	/* fixed at runtime. */
+	return expected_type == (RBASIC(imemo)->flags & mask);
+    }
+    else {
+	return 0;
+    }
+}
+
 /* FL_USER0 to FL_USER2 is for type */
 #define IMEMO_FL_USHIFT (FL_USHIFT + 3)
 #define IMEMO_FL_USER0 FL_USER3

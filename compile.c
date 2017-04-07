@@ -615,7 +615,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, NODE *node)
 	  }
 	}
     }
-    else if (RB_TYPE_P((VALUE)node, T_IMEMO)) {
+    else if (imemo_type_p((VALUE)node, imemo_ifunc)) {
 	const struct vm_ifunc *ifunc = (struct vm_ifunc *)node;
 	/* user callback */
 	(*ifunc->func)(iseq, ret, ifunc->data);

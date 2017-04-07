@@ -45,8 +45,7 @@
 #include "ruby_assert.h"
 
 #if VM_CHECK_MODE > 0
-#define VM_ASSERT(expr) ( \
-	RUBY_ASSERT_MESG_WHEN(VM_CHECK_MODE > 0, expr, #expr))
+#define VM_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(VM_CHECK_MODE > 0, expr, #expr)
 
 #define VM_UNREACHABLE(func) rb_bug(#func ": unreachable")
 
@@ -1044,7 +1043,7 @@ VM_FRAME_BMETHOD_P(const rb_control_frame_t *cfp)
 static inline int
 rb_obj_is_iseq(VALUE iseq)
 {
-    return RB_TYPE_P(iseq, T_IMEMO) && imemo_type(iseq) == imemo_iseq;
+    return imemo_type_p(iseq, imemo_iseq);
 }
 
 #if VM_CHECK_MODE > 0
@@ -1106,8 +1105,7 @@ VM_ENV_ESCAPED_P(const VALUE *ep)
 static inline int
 vm_assert_env(VALUE obj)
 {
-    VM_ASSERT(RB_TYPE_P(obj, T_IMEMO));
-    VM_ASSERT(imemo_type(obj) == imemo_env);
+    VM_ASSERT(imemo_type_p(obj, imemo_env));
     return 1;
 }
 #endif
@@ -1186,8 +1184,7 @@ VM_BH_ISEQ_BLOCK_P(VALUE block_handler)
     if ((block_handler & 0x03) == 0x01) {
 #if VM_CHECK_MODE > 0
 	struct rb_captured_block *captured = VM_TAGGED_PTR_REF(block_handler, 0x03);
-	VM_ASSERT(RB_TYPE_P(captured->code.val, T_IMEMO));
-	VM_ASSERT(imemo_type(captured->code.val) == imemo_iseq);
+	VM_ASSERT(imemo_type_p(captured->code.val, imemo_iseq));
 #endif
 	return 1;
     }
@@ -1218,8 +1215,7 @@ VM_BH_IFUNC_P(VALUE block_handler)
     if ((block_handler & 0x03) == 0x03) {
 #if VM_CHECK_MODE > 0
 	struct rb_captured_block *captured = (void *)(block_handler & ~0x03);
-	VM_ASSERT(RB_TYPE_P(captured->code.val, T_IMEMO));
-	VM_ASSERT(imemo_type(captured->code.val) == imemo_ifunc);
+	VM_ASSERT(imemo_type_p(captured->code.val, imemo_ifunc));
 #endif
 	return 1;
     }
@@ -1284,12 +1280,10 @@ vm_block_type(const struct rb_block *block)
 #if VM_CHECK_MODE > 0
     switch (block->type) {
       case block_type_iseq:
-	VM_ASSERT(RB_TYPE_P(block->as.captured.code.val, T_IMEMO));
-	VM_ASSERT(imemo_type(block->as.captured.code.val) == imemo_iseq);
+	VM_ASSERT(imemo_type_p(block->as.captured.code.val, imemo_iseq));
 	break;
       case block_type_ifunc:
-	VM_ASSERT(RB_TYPE_P(block->as.captured.code.val, T_IMEMO));
-	VM_ASSERT(imemo_type(block->as.captured.code.val) == imemo_ifunc);
+	VM_ASSERT(imemo_type_p(block->as.captured.code.val, imemo_ifunc));
 	break;
       case block_type_symbol:
 	VM_ASSERT(SYMBOL_P(block->as.symbol));

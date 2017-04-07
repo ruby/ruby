@@ -732,7 +732,7 @@ load_lock(const char *ftptr)
 	st_insert(loading_tbl, (st_data_t)ftptr, data);
 	return (char *)ftptr;
     }
-    else if (RB_TYPE_P((VALUE)data, T_IMEMO) && imemo_type((VALUE)data) == imemo_memo) {
+    else if (imemo_type_p(data, imemo_memo)) {
 	struct MEMO *memo = MEMO_CAST(data);
 	void (*init)(void) = (void (*)(void))memo->u3.func;
 	data = (st_data_t)rb_thread_shield_new();

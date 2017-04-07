@@ -864,7 +864,8 @@ rb_vm_make_proc_lambda(rb_thread_t *th, const struct rb_captured_block *captured
 	vm_make_env_object(th, cfp);
     }
     VM_ASSERT(VM_EP_IN_HEAP_P(th, captured->ep));
-    VM_ASSERT(RB_TYPE_P(captured->code.val, T_IMEMO));
+    VM_ASSERT(imemo_type_p(captured->code.val, imemo_iseq) ||
+	      imemo_type_p(captured->code.val, imemo_ifunc));
 
     procval = rb_proc_create_from_captured(klass, captured,
 					   imemo_type(captured->code.val) == imemo_iseq ? block_type_iseq : block_type_ifunc,
