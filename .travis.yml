@@ -47,7 +47,10 @@ before_script:
   - "make after-update BASERUBY=ruby UNICODE_FILES=."
   - "make -s $JOBS"
   - "make update-rubyspec"
-  - "${RUBYSPEC_PULL_REQUEST:+git -C spec/rubyspec pull origin +refs/pull/${RUBYSPEC_PULL_REQUEST}/merge:}"
+  - "${RUBYSPEC_PULL_REQUEST:+git -C spec/rubyspec -c user.email=none -c user.name=none
+      pull --no-edit origin $(for rev in ${RUBYSPEC_PULL_REQUEST//,/ }; do
+        echo +refs/pull/$rev/merge:;
+    done)}"
 
 script:
   - "make -s test TESTOPTS=--color=never"
