@@ -389,7 +389,7 @@ EOT
           msg = message(msg) {
             "Expected #{mu_pp(obj)} (#{obj.class}) to not respond to ##{meth}#{" privately" if priv[0]}"
           }
-          return assert obj.respond_to?(meth, *priv), msg
+          return assert !obj.respond_to?(meth, *priv), msg
         end
         #get rid of overcounting
         if caller_locations(1, 1)[0].path.start_with?(MINI_DIR)
