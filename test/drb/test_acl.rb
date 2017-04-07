@@ -48,58 +48,58 @@ class ACLEntryTest < Test::Unit::TestCase
     a = ACL::ACLEntry.new("*")
     b = ACL::ACLEntry.new("all")
     @hostlist.each do |h|
-      assert(a.match(h))
-      assert(b.match(h))
+      assert_operator(a, :match, h)
+      assert_operator(b, :match, h)
     end
   end
 
   def test_ip_v6
     a = ACL::ACLEntry.new('::ffff:192.0.0.0/104')
-    assert(! a.match(@hosts['localhost']))
-    assert(a.match(@hosts['yum']))
-    assert(a.match(@hosts['ipv6']))
-    assert(! a.match(@hosts['too']))
+    assert_not_operator(a, :match, @hosts['localhost'])
+    assert_operator(a, :match, @hosts['yum'])
+    assert_operator(a, :match, @hosts['ipv6'])
+    assert_not_operator(a, :match, @hosts['too'])
   end
 
   def test_ip
     a = ACL::ACLEntry.new('192.0.0.0/8')
-    assert(! a.match(@hosts['localhost']))
-    assert(a.match(@hosts['yum']))
+    assert_not_operator(a, :match, @hosts['localhost'])
+    assert_operator(a, :match, @hosts['yum'])
 
     a = ACL::ACLEntry.new('192.168.0.1/255.255.0.255')
-    assert(! a.match(@hosts['localhost']))
-    assert(! a.match(@hosts['yum']))
-    assert(a.match(@hosts['x68k']))
+    assert_not_operator(a, :match, @hosts['localhost'])
+    assert_not_operator(a, :match, @hosts['yum'])
+    assert_operator(a, :match, @hosts['x68k'])
 
     a = ACL::ACLEntry.new('192.168.1.0/24')
-    assert(! a.match(@hosts['localhost']))
-    assert(a.match(@hosts['yum']))
-    assert(a.match(@hosts['x68k']))
+    assert_not_operator(a, :match, @hosts['localhost'])
+    assert_operator(a, :match, @hosts['yum'])
+    assert_operator(a, :match, @hosts['x68k'])
 
     a = ACL::ACLEntry.new('92.0.0.0/8')
-    assert(! a.match(@hosts['localhost']))
-    assert(! a.match(@hosts['yum']))
-    assert(! a.match(@hosts['x68k']))
+    assert_not_operator(a, :match, @hosts['localhost'])
+    assert_not_operator(a, :match, @hosts['yum'])
+    assert_not_operator(a, :match, @hosts['x68k'])
 
     a = ACL::ACLEntry.new('127.0.0.1/255.0.0.255')
-    assert(a.match(@hosts['localhost']))
-    assert(! a.match(@hosts['yum']))
-    assert(! a.match(@hosts['x68k']))
+    assert_operator(a, :match, @hosts['localhost'])
+    assert_not_operator(a, :match, @hosts['yum'])
+    assert_not_operator(a, :match, @hosts['x68k'])
   end
 
   def test_name
     a = ACL::ACLEntry.new('*.jp')
-    assert(! a.match(@hosts['localhost']))
-    assert(a.match(@hosts['yum']))
+    assert_not_operator(a, :match, @hosts['localhost'])
+    assert_operator(a, :match, @hosts['yum'])
 
     a = ACL::ACLEntry.new('yum.*.jp')
-    assert(a.match(@hosts['yum']))
-    assert(! a.match(@hosts['lc630']))
+    assert_operator(a, :match, @hosts['yum'])
+    assert_not_operator(a, :match, @hosts['lc630'])
 
     a = ACL::ACLEntry.new('*.macos.or.jp')
-    assert(a.match(@hosts['yum']))
-    assert(a.match(@hosts['lc630']))
-    assert(! a.match(@hosts['lib30']))
+    assert_operator(a, :match, @hosts['yum'])
+    assert_operator(a, :match, @hosts['lc630'])
+    assert_not_operator(a, :match, @hosts['lib30'])
   end
 end
 
@@ -124,29 +124,29 @@ class ACLListTest < Test::Unit::TestCase
   def test_all_1
     a = build(%w(all))
     @hostlist.each do |h|
-      assert(a.match(h))
+      assert_operator(a, :match, h)
     end
   end
 
   def test_all_2
     a = build(%w(localhost 127.0.0.0/8 yum.* *))
     @hostlist.each do |h|
-      assert(a.match(h))
+      assert_operator(a, :match, h)
     end
   end
 
   def test_1
     a = build(%w(192.0.0.1/255.0.0.255 yum.*.jp))
-    assert(a.match(@hosts['yum']))
-    assert(a.match(@hosts['x68k']))
-    assert(! a.match(@hosts['lc630']))
+    assert_operator(a, :match, @hosts['yum'])
+    assert_operator(a, :match, @hosts['x68k'])
+    assert_not_operator(a, :match, @hosts['lc630'])
   end
 
   def test_2
     a = build(%w(*.linux.or.jp))
-    assert(!a.match(@hosts['yum']))
-    assert(a.match(@hosts['x68k']))
-    assert(!a.match(@hosts['lc630']))
+    assert_not_operator(a, :match, @hosts['yum'])
+    assert_operator(a, :match, @hosts['x68k'])
+    assert_not_operator(a, :match, @hosts['lc630'])
   end
 end
 
@@ -161,14 +161,14 @@ class ACLTest < Test::Unit::TestCase
   def test_0
     a = ACL.new
     @hostlist.each do |h|
-      assert(a.allow_addr?(h))
+      assert_operator(a, :allow_addr?, h)
     end
   end
 
   def test_not_0
     a = ACL.new([], ACL::ALLOW_DENY)
     @hostlist.each do |h|
-      assert(! a.allow_addr?(h))
+      assert_not_operator(a, :allow_addr?, h)
     end
   end
 
@@ -178,9 +178,9 @@ class ACLTest < Test::Unit::TestCase
               allow x68k.*)
 
     a = ACL.new(data)
-    assert(a.allow_addr?(@hosts['x68k']))
-    assert(a.allow_addr?(@hosts['localhost']))
-    assert(! a.allow_addr?(@hosts['lc630']))
+    assert_operator(a, :allow_addr?, @hosts['x68k'])
+    assert_operator(a, :allow_addr?, @hosts['localhost'])
+    assert_not_operator(a, :allow_addr?, @hosts['lc630'])
   end
 
   def test_not_1
@@ -189,9 +189,9 @@ class ACLTest < Test::Unit::TestCase
               allow x68k.*)
 
     a = ACL.new(data, ACL::ALLOW_DENY)
-    assert(!a.allow_addr?(@hosts['x68k']))
-    assert(a.allow_addr?(@hosts['localhost']))
-    assert(! a.allow_addr?(@hosts['lc630']))
+    assert_not_operator(a, :allow_addr?, @hosts['x68k'])
+    assert_operator(a, :allow_addr?, @hosts['localhost'])
+    assert_not_operator(a, :allow_addr?, @hosts['lc630'])
   end
 end
 

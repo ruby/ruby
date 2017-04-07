@@ -121,10 +121,10 @@ class TestDRbYield < Test::Unit::TestCase
 
   def test_06_taint
     x = proc {}
-    assert(! x.tainted?)
+    assert_not_predicate(x, :tainted?)
     @there.echo_yield(x) {|o|
       assert_equal(x, o)
-      assert(! x.tainted?)
+      assert_not_predicate(x, :tainted?)
     }
   end
 end
@@ -393,7 +393,7 @@ class TestBug4409 < Test::Unit::TestCase
 
   def test_bug4409
     foo = @there.foo
-    assert(@there.foo?(foo))
+    assert_operator(@there, :foo?, foo)
   end
 end
 

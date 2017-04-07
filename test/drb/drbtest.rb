@@ -124,10 +124,10 @@ module DRbCore
     ary = @there.to_a
     assert_kind_of(DRb::DRbObject, ary)
 
-    assert(@there.respond_to?(:to_a, true))
-    assert(@there.respond_to?(:eval, true))
-    assert(! @there.respond_to?(:eval, false))
-    assert(! @there.respond_to?(:eval))
+    assert_respond_to(@there, [:to_a, true])
+    assert_respond_to(@there, [:eval, true])
+    assert_not_respond_to(@there, [:eval, false])
+    assert_not_respond_to(@there, :eval)
   end
 
   def test_01_02_loop
@@ -171,20 +171,19 @@ module DRbCore
 
   def test_04
     assert_respond_to(@there, 'sum')
-    assert(!(@there.respond_to? "foobar"))
+    assert_not_respond_to(@there, "foobar")
   end
 
   def test_05_eq
     a = @there.to_a[0]
     b = @there.to_a[0]
-    assert(a.object_id != b.object_id)
-    assert(a == b)
+    assert_not_same(a, b)
     assert_equal(a, b)
-    assert(a == @there)
+    assert_equal(a, @there)
     assert_equal(a.hash, b.hash)
     assert_equal(a.hash, @there.hash)
-    assert(a.eql?(b))
-    assert(a.eql?(@there))
+    assert_operator(a, :eql?, b)
+    assert_operator(a, :eql?, @there)
   end
 
   def test_06_timeout
