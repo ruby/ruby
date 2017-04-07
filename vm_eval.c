@@ -1003,6 +1003,7 @@ rb_f_public_send(int argc, VALUE *argv, VALUE recv)
 
 /* yield */
 
+ALWAYS_INLINE(static VALUE rb_yield_0(int argc, const VALUE * argv));
 static inline VALUE
 rb_yield_0(int argc, const VALUE * argv)
 {
