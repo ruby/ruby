@@ -376,6 +376,29 @@ EOT
       end
 
       # :call-seq:
+      #   assert_not_respond_to( object, method, failure_message = nil )
+      #
+      #Tests if the given Object does not respond to +method+.
+      #
+      #An optional failure message may be provided as the final argument.
+      #
+      #    assert_not_respond_to("hello", :reverse)  #Fails
+      #    assert_not_respond_to("hello", :does_not_exist)  #Succeeds
+      def assert_not_respond_to(obj, (meth, *priv), msg = nil)
+        unless priv.empty?
+          msg = message(msg) {
+            "Expected #{mu_pp(obj)} (#{obj.class}) to not respond to ##{meth}#{" privately" if priv[0]}"
+          }
+          return assert obj.respond_to?(meth, *priv), msg
+        end
+        #get rid of overcounting
+        if caller_locations(1, 1)[0].path.start_with?(MINI_DIR)
+          return unless obj.respond_to?(meth)
+        end
+        refute_respond_to(obj, meth, msg)
+      end
+
+      # :call-seq:
       #   assert_send( +send_array+, failure_message = nil )
       #
       # Passes if the method send returns a true value.
