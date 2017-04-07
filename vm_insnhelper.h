@@ -199,18 +199,21 @@ THROW_DATA_NEW(VALUE val, const rb_control_frame_t *cf, VALUE st)
 static inline VALUE
 THROW_DATA_VAL(const struct vm_throw_data *obj)
 {
+    VM_ASSERT(THROW_DATA_P(obj));
     return obj->throw_obj;
 }
 
 static inline const rb_control_frame_t *
 THROW_DATA_CATCH_FRAME(const struct vm_throw_data *obj)
 {
+    VM_ASSERT(THROW_DATA_P(obj));
     return obj->catch_frame;
 }
 
 static inline int
 THROW_DATA_STATE(const struct vm_throw_data *obj)
 {
+    VM_ASSERT(THROW_DATA_P(obj));
     return (int)obj->throw_state;
 }
 
@@ -224,12 +227,14 @@ THROW_DATA_CONSUMED_P(const struct vm_throw_data *obj)
 static inline void
 THROW_DATA_CATCH_FRAME_SET(struct vm_throw_data *obj, const rb_control_frame_t *cfp)
 {
+    VM_ASSERT(THROW_DATA_P(obj));
     obj->catch_frame = cfp;
 }
 
 static inline void
 THROW_DATA_STATE_SET(struct vm_throw_data *obj, int st)
 {
+    VM_ASSERT(THROW_DATA_P(obj));
     obj->throw_state = (VALUE)st;
 }
 
