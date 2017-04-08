@@ -155,7 +155,7 @@ ole_val2variant_err(VALUE val, VARIANT *var)
     if (rb_obj_is_kind_of(v, cWIN32OLE_VARIANT)) {
         v = folevariant_value(v);
     }
-    if (TYPE(v) != T_FIXNUM && TYPE(v) != T_BIGNUM && v != Qnil) {
+    if (!(FIXNUM_P(v) || RB_TYPE_P(v, T_BIGNUM) || v == Qnil)) {
         rb_raise(eWIN32OLERuntimeError, "failed to convert VT_ERROR VARIANT:`%"PRIsVALUE"'", rb_inspect(v));
     }
     V_VT(var) = VT_ERROR;
