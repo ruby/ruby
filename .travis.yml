@@ -47,12 +47,11 @@ before_script:
   - "make after-update BASERUBY=ruby UNICODE_FILES=."
   - "make -s $JOBS"
   - "make update-rubyspec"
-  - "if [ -n \"${RUBYSPEC_PULL_REQUEST}\" ]\n
-    then\n
-      merge=\n
-      for rev in ${RUBYSPEC_PULL_REQUEST//,/ }; do merge=\"$merge +refs/pull/$rev/merge:\"; done\n
-      git -C spec/rubyspec -c user.email=none -c user.name=none pull --no-edit origin $merge\n
-    fi"
+  - "requests="
+  - "for req in ${RUBYSPEC_PULL_REQUEST//,/ }; do
+      requests=\"$requests +refs/pull/$req/merge:\";
+    done"
+  - "${requests:+git -C spec/rubyspec -c user.email=none -c user.name=none pull --no-edit origin $requests}"
 
 script:
   - "make -s test TESTOPTS=--color=never"
