@@ -52,6 +52,7 @@ before_script:
       requests=\"$requests +refs/pull/$req/merge:\";
     done"
   - "${requests:+git -C spec/rubyspec -c user.email=none -c user.name=none pull --no-edit origin $requests}"
+  - "${requests:+git -C spec/rubyspec log --oneline origin/master..@}"
 
 script:
   - "make -s test TESTOPTS=--color=never"
