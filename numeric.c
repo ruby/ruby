@@ -1964,6 +1964,11 @@ flo_prev_float(VALUE vx)
  *     34567.89.floor(1)   #=> 34567.8
  *     34567.89.floor(2)   #=> 34567.89
  *     34567.89.floor(3)   #=> 34567.89
+ *
+ *  Note that the limited precision of floating point arithmetic
+ *  might lead to surprising results:
+ *
+ *     (0.3 / 0.1).floor  #=> 2 (!)
  */
 
 static VALUE
@@ -2026,6 +2031,11 @@ flo_floor(int argc, VALUE *argv, VALUE num)
  *     34567.89.ceil(1)   #=> 34567.9
  *     34567.89.ceil(2)   #=> 34567.89
  *     34567.89.ceil(3)   #=> 34567.89
+ *
+ *  Note that the limited precision of floating point arithmetic
+ *  might lead to surprising results:
+ *
+ *     (2.1 / 0.7).ceil  #=> 4 (!)
  */
 
 static VALUE
@@ -2342,6 +2352,11 @@ float_invariant_round(double number, int ndigits, VALUE *num)
  *  Returns the +float+ truncated to an Integer.
  *
  *  Synonyms are #to_i and #to_int
+ *
+ *  Note that the limited precision of floating point arithmetic
+ *  might lead to surprising results:
+ *
+ *    (0.3 / 0.1).to_i  #=> 2 (!)
  */
 
 static VALUE
@@ -2377,6 +2392,11 @@ flo_to_i(VALUE num)
  *     (-2.8).truncate        #=> -2
  *     1.234567.truncate(2)   #=> 1.23
  *     34567.89.truncate(-2)  #=> 34500
+ *
+ *  Note that the limited precision of floating point arithmetic
+ *  might lead to surprising results:
+ *
+ *     (0.3 / 0.1).truncate  #=> 2 (!)
  */
 static VALUE
 flo_truncate(int argc, VALUE *argv, VALUE num)
