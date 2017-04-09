@@ -1068,7 +1068,6 @@ rb_gc_mark_node(NODE *obj)
       case NODE_RESCUE:
       case NODE_RESBODY:
       case NODE_CLASS:
-      case NODE_BLOCK_PASS:
       case NODE_MATCH2:
 	rb_gc_mark(RNODE(obj)->u2.value);
 	/* fall through */
@@ -1107,6 +1106,7 @@ rb_gc_mark_node(NODE *obj)
       case NODE_ALIAS:
       case NODE_VALIAS:
       case NODE_ARGSCAT:
+      case NODE_BLOCK_PASS:
 	rb_gc_mark(RNODE(obj)->u1.value);
 	/* fall through */
       case NODE_GASGN:	/* 2 */
