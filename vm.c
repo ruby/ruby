@@ -2130,11 +2130,12 @@ rb_vm_mark(void *ptr)
     RUBY_MARK_LEAVE("vm");
 }
 
+#undef rb_vm_register_special_exception
 void
-rb_vm_register_special_exception(enum ruby_special_exceptions sp, VALUE cls, const char *mesg)
+rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE cls, VALUE mesg)
 {
     rb_vm_t *vm = GET_VM();
-    VALUE exc = rb_exc_new3(cls, rb_obj_freeze(rb_str_new2(mesg)));
+    VALUE exc = rb_exc_new3(cls, rb_obj_freeze(mesg));
     OBJ_TAINT(exc);
     OBJ_FREEZE(exc);
     ((VALUE *)vm->special_exceptions)[sp] = exc;

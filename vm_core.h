@@ -1466,7 +1466,10 @@ void ruby_thread_init_stack(rb_thread_t *th);
 int rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, ID *called_idp, VALUE *klassp);
 void rb_vm_rewind_cfp(rb_thread_t *th, rb_control_frame_t *cfp);
 
-void rb_vm_register_special_exception(enum ruby_special_exceptions sp, VALUE exception_class, const char *mesg);
+void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE exception_class, VALUE mesg);
+
+#define rb_vm_register_special_exception(sp, e, m) \
+    rb_vm_register_special_exception_str(sp, e, rb_usascii_str_new_static((m), (long)rb_strlen_lit(m)))
 
 void rb_gc_mark_machine_stack(rb_thread_t *th);
 
