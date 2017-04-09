@@ -131,9 +131,6 @@ module Test
         if @options[:parallel]
           @files = args
         end
-        if @jobserver
-          @run_options << @jobserver.each_with_object({}) {|fd, opts| opts[fd] = fd}
-        end
         options
       end
 
