@@ -590,6 +590,13 @@ math_log10(VALUE unused_obj, VALUE x)
  *    #   [8, 2.82842712474619, 8.0]
  *    #   [9, 3.0, 9.0]
  *    #   [10, 3.16227766016838, 10.0]
+ *
+ *  Note that the limited precision of floating point arithmetic
+ *  might lead to surprising results:
+ *
+ *    Math.sqrt(10**46).to_i  #=> 99999999999999991611392 (!)
+ *
+ *  See also BigDecimal#sqrt.
  */
 
 static VALUE
