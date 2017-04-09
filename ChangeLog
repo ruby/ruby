@@ -1,3 +1,10 @@
+Sun Apr  9 22:21:23 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	thread.c: rb_thread_fd_close [ci skip]
+
+	* thread.c (rb_thread_fd_close): re-define because of a couple of
+	  external libraries used it.
+
 Wed Mar 29 23:47:31 2017  CHIKANAGA Tomoyuki  <nagachika@ruby-lang.org>
 
 	* hash.c (any_hash): fix CI failure on L32LLP64 architecture.

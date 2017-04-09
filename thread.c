@@ -2187,6 +2187,12 @@ rb_notify_fd_close(int fd)
     return busy;
 }
 
+void
+rb_thread_fd_close(int fd)
+{
+    while (rb_notify_fd_close(fd));
+}
+
 /*
  *  call-seq:
  *     thr.raise
