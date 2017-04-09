@@ -101,8 +101,6 @@ static int rb_threadptr_pending_interrupt_empty_p(rb_thread_t *th);
 #define eTerminateSignal INT2FIX(1)
 static volatile int system_working = 1;
 
-#define closed_stream_error GET_VM()->special_exceptions[ruby_error_closed_stream]
-
 inline static void
 st_delete_wrap(st_table *table, st_data_t key)
 {
@@ -2211,7 +2209,7 @@ rb_notify_fd_close(int fd)
     busy = 0;
     list_for_each(&vm->living_threads, th, vmlt_node) {
 	if (th->waiting_fd == fd) {
-	    VALUE err = th->vm->special_exceptions[ruby_error_closed_stream];
+	    VALUE err = th->vm->special_exceptions[ruby_error_stream_closed];
 	    rb_threadptr_pending_interrupt_enque(th, err);
 	    rb_threadptr_interrupt(th);
 	    busy = 1;
@@ -4883,7 +4881,7 @@ Init_Thread(void)
     rb_define_method(rb_cThread, "name=", rb_thread_setname, 1);
     rb_define_method(rb_cThread, "inspect", rb_thread_inspect, 0);
 
-    rb_vm_register_special_exception(ruby_error_closed_stream, rb_eIOError, "stream closed");
+    rb_vm_register_special_exception(ruby_error_stream_closed, rb_eIOError, "stream closed");
 
     cThGroup = rb_define_class("ThreadGroup", rb_cObject);
     rb_define_alloc_func(cThGroup, thgroup_s_alloc);
