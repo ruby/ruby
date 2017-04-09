@@ -4881,7 +4881,8 @@ Init_Thread(void)
     rb_define_method(rb_cThread, "name=", rb_thread_setname, 1);
     rb_define_method(rb_cThread, "inspect", rb_thread_inspect, 0);
 
-    rb_vm_register_special_exception(ruby_error_stream_closed, rb_eIOError, "stream closed");
+    rb_vm_register_special_exception(ruby_error_stream_closed, rb_eIOError,
+				     "stream closed in another thread");
 
     cThGroup = rb_define_class("ThreadGroup", rb_cObject);
     rb_define_alloc_func(cThGroup, thgroup_s_alloc);

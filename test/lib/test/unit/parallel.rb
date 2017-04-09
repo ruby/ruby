@@ -61,7 +61,7 @@ module Test
         begin
           th.join
         rescue IOError
-          raise unless ["stream closed","closed stream"].include? $!.message
+          raise unless /stream closed|closed stream/ =~ $!.message
         end
         i.close
 

@@ -225,7 +225,7 @@ module Test
           rescue Errno::EPIPE
             died
           rescue IOError
-            raise unless ["stream closed","closed stream"].include? $!.message
+            raise unless /stream closed|closed stream/ =~ $!.message
             died
           end
         end

@@ -34,6 +34,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   * IO#pread  [Feature #4532]
   * IO#pwrite  [Feature #4532]
 
+* IOError
+
+  * exception message "stream closed" is changed  [Bug #13405]
+
 * Regexp
   * Update Onigmo 6.1.1.
     * Support absent operator https://github.com/k-takata/Onigmo/issues/82
