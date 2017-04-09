@@ -897,6 +897,7 @@ class Socket < BasicSocket
         ip_list << ai
       end
     }
+    ip_list.uniq!{|e| e.to_sockaddr}
 
     if port == 0
       sockets = ip_sockets_port0(ip_list, false)
