@@ -25,27 +25,40 @@ class MSpecScript
   ]
 end
 
-class MSpecScript
-  if /(?:\A|\s)--jobserver-(?:auth|fds)=(\d+),(\d+)/ =~ ENV["MAKEFLAGS"]
-    begin
-      r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
-      w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
-    rescue
-      r.close if r
-    else
-      jobtokens = r.read_nonblock(1024)
-      cores = jobtokens.size
-      if cores > 0
-        jobserver = w
-        at_exit {
-          jobserver.print(jobtokens)
-          jobserver.close
-        }
-      end
-      remove_method :cores
-      define_method(:cores) do
-        cores
+module MSpecScript::JobServer
+  def cores
+    if /(?:\A|\s)--jobserver-(?:auth|fds)=(\d+),(\d+)/ =~ ENV["MAKEFLAGS"]
+      cores = 0
+      begin
+        r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
+        w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
+        jobtokens = r.read_nonblock(1024)
+      else
+        cores = jobtokens.size
+        if cores > 0
+          jobserver = w
+          w = nil
+          at_exit {
+            jobserver.print(jobtokens)
+            jobserver.close
+          }
+          MSpecScript::JobServer.module_eval do
+            remove_method :cores
+            define_method(:cores) do
+              cores
+            end
+          end
+          return cores
+        end
+      ensure
+        r&.close
+        w&.close
       end
     end
+    super
   end
+end
+
+class MSpecScript
+  prepend JobServer
 end
