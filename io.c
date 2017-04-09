@@ -11988,7 +11988,7 @@ argf_filename_getter(ID id, VALUE *var)
  *     ARGF.file  -> IO or File object
  *
  *  Returns the current file as an +IO+ or +File+ object.
- *  <code>#<IO:<STDIN>></code> is returned when the current file is STDIN.
+ *  <code>$stdin</code> is returned when the current file is STDIN.
  *
  *  For example:
  *
