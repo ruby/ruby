@@ -32,9 +32,10 @@
 #endif
 
 #include "timev.h"
+#include "id.h"
 
-static ID id_divmod, id_mul, id_submicro, id_nano_num, id_nano_den, id_offset, id_zone;
-static ID id_eq, id_ne, id_quo, id_div, id_cmp;
+static ID id_divmod, id_submicro, id_nano_num, id_nano_den, id_offset, id_zone;
+static ID id_quo, id_div;
 
 #define NDIV(x,y) (-(-((x)+1)/(y))-1)
 #define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
@@ -50,7 +51,7 @@ eq(VALUE x, VALUE y)
     if (FIXNUM_P(x) && FIXNUM_P(y)) {
         return x == y;
     }
-    return RTEST(rb_funcall(x, id_eq, 1, y));
+    return RTEST(rb_funcall(x, idEq, 1, y));
 }
 
 static int
@@ -63,7 +64,7 @@ cmp(VALUE x, VALUE y)
             return 1;
         return 0;
     }
-    return rb_cmpint(rb_funcall(x, id_cmp, 1, y), x, y);
+    return rb_cmpint(rb_funcall(x, idCmp, 1, y), x, y);
 }
 
 #define ne(x,y) (!eq((x),(y)))
@@ -308,7 +309,7 @@ weq(wideval_t wx, wideval_t wy)
     if (FIXWV_P(wx) && FIXWV_P(wy)) {
         return WIDEVAL_GET(wx) == WIDEVAL_GET(wy);
     }
-    return RTEST(rb_funcall(w2v(wx), id_eq, 1, w2v(wy)));
+    return RTEST(rb_funcall(w2v(wx), idEq, 1, w2v(wy)));
 #else
     return eq(WIDEVAL_GET(wx), WIDEVAL_GET(wy));
 #endif
@@ -332,7 +333,7 @@ wcmp(wideval_t wx, wideval_t wy)
 #endif
     x = w2v(wx);
     y = w2v(wy);
-    return rb_cmpint(rb_funcall(x, id_cmp, 1, y), x, y);
+    return rb_cmpint(rb_funcall(x, idCmp, 1, y), x, y);
 }
 
 #define wne(x,y) (!weq((x),(y)))
@@ -2268,7 +2269,7 @@ time_timespec(VALUE num, int interval)
             t.tv_sec = NUM2TIMET(i);
             if (interval && t.tv_sec < 0)
                 rb_raise(rb_eArgError, "%s must be positive", tstr);
-            f = rb_funcall(f, id_mul, 1, INT2FIX(1000000000));
+            f = rb_funcall(f, '*', 1, INT2FIX(1000000000));
             t.tv_nsec = NUM2LONG(f);
         }
         else {
@@ -4796,13 +4797,9 @@ Init_Time(void)
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
-    id_eq = rb_intern("==");
-    id_ne = rb_intern("!=");
     id_quo = rb_intern("quo");
     id_div = rb_intern("div");
-    id_cmp = rb_intern("<=>");
     id_divmod = rb_intern("divmod");
-    id_mul = rb_intern("*");
     id_submicro = rb_intern("submicro");
     id_nano_num = rb_intern("nano_num");
     id_nano_den = rb_intern("nano_den");
