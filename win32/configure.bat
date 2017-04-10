@@ -39,6 +39,7 @@ if "%1" == "--disable-rubygems" goto :disable-rubygems
 if "%1" == "--extout" goto :extout
 if "%1" == "--path" goto :path
 if "%1" == "--with-baseruby" goto :baseruby
+if "%1" == "--without-baseruby" goto :baseruby
 if "%1" == "--with-ntver" goto :ntver
 if "%1" == "--with-libdir" goto :libdir
 if "%1" == "--with-git" goto :git
@@ -173,6 +174,11 @@ goto :loop ;
   echo>> ~tmp~.mak 	"BASERUBY=%~2" \
   echo>>confargs.tmp  %1=%2 \
   shift
+  shift
+goto :loop ;
+:nobaseruby
+  echo>> ~tmp~.mak 	"HAVE_BASERUBY=no" \
+  echo>>confargs.tmp  %1=%2 \
   shift
 goto :loop ;
 :libdir

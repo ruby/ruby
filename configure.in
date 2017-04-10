@@ -39,18 +39,19 @@ rm() {
 
 AC_ARG_WITH(baseruby,
 	AS_HELP_STRING([--with-baseruby=RUBY], [use RUBY as baseruby; RUBY is the pathname of ruby]),
-	[
-		AS_CASE(["$withval"],[*ruby*],[BASERUBY=$withval],[AC_MSG_ERROR(need ruby)])
+	[AS_CASE(["$withval"],
+	    [*ruby*],[BASERUBY=$withval; HAVE_BASERUBY=yes],
+	    [no],[HAVE_BASERUBY=no],
+	    [AC_MSG_ERROR(need ruby)])
 	],
 	[
 		AC_PATH_PROG([BASERUBY], [ruby], [false])
 	])
-if test "`RUBYOPT=- $BASERUBY -e 'print 42' 2>/dev/null`" = 42; then
+if test "$HAVE_BASERUBY" = yes -a "`RUBYOPT=- $BASERUBY -e 'print 42' 2>/dev/null`" = 42; then
     if test "`RUBYOPT=- $BASERUBY --disable=gems -e 'print 42' 2>/dev/null`" = 42; then
 	BASERUBY="$BASERUBY --disable=gems"
     fi
     $BASERUBY -C "$srcdir/tool" downloader.rb -e gnu config.guess config.sub
-    HAVE_BASERUBY=yes
 else
     BASERUBY="echo executable host ruby is required.  use --with-baseruby option.; false"
     HAVE_BASERUBY=no
