@@ -37,10 +37,11 @@ rm() {
 
 { # environment section
 
+HAVE_BASERUBY=yes
 AC_ARG_WITH(baseruby,
 	AS_HELP_STRING([--with-baseruby=RUBY], [use RUBY as baseruby; RUBY is the pathname of ruby]),
 	[AS_CASE(["$withval"],
-	    [*ruby*],[BASERUBY=$withval; HAVE_BASERUBY=yes],
+	    [*ruby*],[BASERUBY=$withval],
 	    [no],[HAVE_BASERUBY=no],
 	    [AC_MSG_ERROR(need ruby)])
 	],
