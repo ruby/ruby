@@ -103,7 +103,17 @@ mul(VALUE x, VALUE y)
     return rb_funcall(x, '*', 1, y);
 }
 
-#define div(x,y) (rb_funcall((x), id_div, 1, (y)))
+static VALUE
+_div(VALUE x, VALUE y)
+{
+    if (FIXNUM_P(x) && FIXNUM_P(y)) {
+	return rb_fix_div_fix(x, y);
+    }
+    if (RB_TYPE_P(x, T_BIGNUM))
+        return rb_big_div(x, y);
+    return rb_funcall(x, id_div, 1, y);
+}
+#define div(x,y) _div(x,y)
 
 static VALUE
 mod(VALUE x, VALUE y)
