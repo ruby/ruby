@@ -1078,8 +1078,10 @@ up::
 
 after-update:: extract-extlibs
 
-update-remote:: update-src update-rubyspec update-download
+update-remote:: update-src update-download $(HAVE_GIT:yes=)update-rubyspec
 update-download:: update-unicode update-gems download-extlibs
+
+noupdate-rubyspec:
 
 update-config_files: PHONY
 	$(Q) $(BASERUBY) -C "$(srcdir)/tool" \

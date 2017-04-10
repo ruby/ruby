@@ -172,6 +172,8 @@ IFCHANGE      = $(srcdir)/tool/ifchange
 SET_LC_MESSAGES = env LC_MESSAGES=C
 OBJDUMP       = @OBJDUMP@
 OBJCOPY       = @OBJCOPY@
+HAVE_GIT      = @HAVE_GIT@
+GIT           = @GIT@
 VCS           = @VCS@
 VCSUP         = @VCSUP@
 DTRACE        = @DTRACE@ @DTRACE_OPT@

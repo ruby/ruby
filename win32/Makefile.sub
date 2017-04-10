@@ -393,14 +393,34 @@ top_srcdir = $(srcdir)
 hdrdir = $(srcdir)/include
 VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/missing;$(win_srcdir)
 
+!ifndef GIT
+GIT = git
+!endif
+!if "$(HAVE_GIT)" == "yes" || "$(HAVE_GIT)" == "no"
+!else if "$(GIT)" == ""
+HAVE_GIT = no
+!else if [for %I in ($(GIT)) @if not "%~xI" == "" exit 1]
+! if [for %I in ($(GIT)) @if not "%~$PATH:I" == "" exit 1]
+HAVE_GIT = yes
+! else
+HAVE_GIT = no
+! endif
+!else
+! if [for %x in (%PATHEXT:;= %) do @for %I in ($(GIT)%x) do @if not "%~$PATH:I" == . exit 1]
+HAVE_GIT = yes
+! else
+HAVE_GIT = no
+! endif
+!endif
+
 !if exist($(srcdir)/.svn)
 VCS = svn
 VCSUP = $(VCS) up $(SVNUPOPTIONS)
 !else if exist($(srcdir)/.git/svn)
-VCS = git svn
+VCS = $(GIT) svn
 VCSUP = $(VCS) rebase $(GITSVNREBASEOPTIONS)
 !else if exist($(srcdir)/.git)
-VCS = git
+VCS = $(GIT)
 VCSUP = $(VCS) pull $(GITPULLOPTIONS)
 !else
 VCSUP = rem

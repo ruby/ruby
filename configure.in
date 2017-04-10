@@ -58,6 +58,18 @@ fi
 AC_SUBST(BASERUBY)
 AC_SUBST(HAVE_BASERUBY)
 
+GIT=git
+HAVE_GIT=yes
+AC_ARG_WITH(git,
+	AS_HELP_STRING([--without-git], [never use git]),
+	[AS_CASE([$withval],
+	    [no],  [GIT=never-use HAVE_GIT=no],
+	    [yes], [GIT=git],
+	    [GIT=$withval])])
+AS_IF([test x"$HAVE_GIT" = xyes], [command -v "$GIT" > /dev/null || HAVE_GIT=no])
+AC_SUBST(GIT)
+AC_SUBST(HAVE_GIT)
+
 AC_DEFUN([RUBY_MINGW32],
 [AS_CASE(["$host_os"],
 [cygwin*], [
@@ -4644,19 +4656,19 @@ AC_CONFIG_FILES(Makefile, [
 	    :
 	elif svn info "$srcdir" > /dev/null 2>&1; then
 	    VCS='svn'
-	elif git_dir=`git --work-tree="$srcdir" --git-dir="$srcdir/.git" rev-parse --git-dir 2>/dev/null`; then
+	elif git_dir=`$GIT --work-tree="$srcdir" --git-dir="$srcdir/.git" rev-parse --git-dir 2>/dev/null`; then
 	    if test -d "$git_dir/svn"; then
-		VCS='git svn'
+		VCS='$(GIT) svn'
 	    else
-		VCS='git'
+		VCS='$(GIT)'
 	    fi
 	else
 	    VCS='echo cannot'
 	fi
 	AS_CASE("$VCS",
-		[svn],       [VCSUP='$(VCS) up $(SVNUPOPTIONS)'],
-		["git svn"], [VCSUP='$(VCS) rebase $(GITSVNREBASEOPTIONS)'],
-		[git],       [VCSUP='$(VCS) pull $(GITPULLOPTIONS)'],
+		[svn],          [VCSUP='$(VCS) up $(SVNUPOPTIONS)'],
+		['$(GIT) svn'], [VCSUP='$(VCS) rebase $(GITSVNREBASEOPTIONS)'],
+		['$(GIT)'|git], [VCSUP='$(VCS) pull $(GITPULLOPTIONS)'],
 		[VCSUP='$(VCS)'])
 	sed -n \
 	    -e '[/^@%:@define \(RUBY_RELEASE_[A-Z]*\) \([0-9][0-9]*\)/]{' \
