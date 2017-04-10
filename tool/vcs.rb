@@ -421,7 +421,7 @@ class VCS
     end
 
     def after_export(dir)
-      FileUtils.rm_rf("#{dir}/.git")
+      FileUtils.rm_rf(Dir.glob("#{dir}/.git*"))
     end
 
     def export_changelog(url, from, to, path)
