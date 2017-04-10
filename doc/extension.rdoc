@@ -212,7 +212,7 @@ rb_vsprintf(const char *format, va_list ap) ::
 
 rb_str_append(VALUE str1, VALUE str2) ::
 
-  Appends str2 Ruby string to str1 Ruby string.
+  Appends Ruby string str2 to Ruby string str1.
 
 rb_str_cat(VALUE str, const char *ptr, long len) ::
 
