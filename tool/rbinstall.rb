@@ -775,7 +775,6 @@ def install_default_gem(dir, srcdir)
     file_collector = RbInstall::Specs::FileCollector.new(src)
     files = file_collector.collect
     next if files.empty?
-    spec.files = files
     spec
   }
   gems.compact.sort_by(&:name).each do |gemspec|
