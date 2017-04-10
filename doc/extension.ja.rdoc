@@ -259,7 +259,7 @@ rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc) ::
 
   指定されたエンコーディングでRubyの文字列を生成する.
 
-rb_enc_str_new_literal(const char *ptr) ::
+rb_enc_str_new_literal(const char *ptr, rb_encoding *enc) ::
 
   Cのリテラル文字列から指定されたエンコーディングでRubyの文字列を生成する．
 

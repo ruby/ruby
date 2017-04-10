@@ -233,7 +233,7 @@ rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc) ::
 
   Creates a new Ruby string with the specified encoding.
 
-rb_enc_str_new_literal(const char *ptr) ::
+rb_enc_str_new_literal(const char *ptr, rb_encoding *enc) ::
 
   Creates a new Ruby string from a C string literal with the specified
   encoding.
