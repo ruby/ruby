@@ -210,6 +210,10 @@ rb_vsprintf(const char *format, va_list ap) ::
   must be a VALUE).  Since it conflicts with "%i", for integers in
   format strings, use "%d".
 
+rb_str_append(VALUE str1, VALUE str2) ::
+
+  Appends str2 Ruby string to str1 Ruby string.
+
 rb_str_cat(VALUE str, const char *ptr, long len) ::
 
   Appends len bytes of data from ptr to the Ruby string.
@@ -225,8 +229,8 @@ rb_str_vcatf(VALUE str, const char* format, va_list ap) ::
 
   Appends C string format and successive arguments to Ruby string
   str according to a printf-like format.  These functions are
-  equivalent to rb_str_cat2(str, rb_sprintf(format, ...)) and
-  rb_str_cat2(str, rb_vsprintf(format, ap)), respectively.
+  equivalent to rb_str_append(str, rb_sprintf(format, ...)) and
+  rb_str_append(str, rb_vsprintf(format, ap)), respectively.
 
 rb_enc_str_new(const char *ptr, long len, rb_encoding *enc) ::
 rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc) ::

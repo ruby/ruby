@@ -226,6 +226,10 @@ rb_tainted_str_new_cstr(const char *ptr) ::
 
   Cの文字列から汚染マークが付加されたRubyの文字列を生成する．
 
+rb_str_append(VALUE str1, VALUE str2) ::
+
+  Rubyの文字列str1にRubyの文字列str2を追加する．
+
 rb_sprintf(const char *format, ...) ::
 rb_vsprintf(const char *format, va_list ap) ::
 
@@ -251,8 +255,8 @@ rb_str_vcatf(VALUE str, const char* format, va_list ap) ::
 
   Cの文字列formatと続く引数をprintf(3)のフォーマットにしたがって
   整形し，Rubyの文字列strに追加する．この関数の機能は，それぞれ
-  rb_str_cat2(str, rb_sprintf(format, ...)) や
-  rb_str_cat2(str, rb_vsprintf(format, ap)) と同等である．
+  rb_str_append(str, rb_sprintf(format, ...)) や
+  rb_str_append(str, rb_vsprintf(format, ap)) と同等である．
 
 rb_enc_str_new(const char *ptr, long len, rb_encoding *enc) ::
 rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc) ::
