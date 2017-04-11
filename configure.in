@@ -4700,7 +4700,7 @@ AC_CONFIG_FILES(Makefile, [
 	echo 'ruby: $(PROGRAM);' >> $tmpmk
 	test "$tmpmk" = "$tmpgmk" || rm -f "$tmpgmk"
     fi && mv -f $tmpmk Makefile],
-[EXEEXT='$EXEEXT' gnumake='$gnumake'])
+[EXEEXT='$EXEEXT' gnumake='$gnumake' GIT='$GIT'])
 
 AC_ARG_WITH([ruby-pc],
 	    AC_HELP_STRING([--with-ruby-pc=FILENAME], [pc file basename]),
