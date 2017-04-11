@@ -126,8 +126,7 @@ y.tab.c
 /enc/*.def
 /enc/*.exp
 /enc/*.lib
-/enc/unicode/data/*/*.txt
-/enc/unicode/data/*/*/*.txt
+/enc/unicode/data
 
 # /enc/trans/
 /enc/trans/*.c
