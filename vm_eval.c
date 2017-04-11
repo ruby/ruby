@@ -92,9 +92,7 @@ vm_call0_cfunc(rb_thread_t* th, struct rb_calling_info *calling, const struct rb
 	    th->passed_ci = 0;
 	}
 	else {
-	    if (reg_cfp != th->cfp + 1) {
-		rb_bug("vm_call0_cfunc: cfp consistency error");
-	    }
+	    CHECK_CFP_CONSISTENCY("vm_call0_cfunc");
 	    VM_PROFILE_UP(C2C_POPF);
 	    rb_vm_pop_frame(th);
 	}
@@ -131,9 +129,7 @@ vm_call0_cfunc_with_frame(rb_thread_t* th, struct rb_calling_info *calling, cons
 	VM_PROFILE_UP(C2C_CALL);
 	val = (*cfunc->invoker)(cfunc->func, recv, argc, argv);
 
-	if (UNLIKELY(reg_cfp != th->cfp + 1)) {
-		rb_bug("vm_call0_cfunc_with_frame: cfp consistency error");
-	}
+	CHECK_CFP_CONSISTENCY("vm_call0_cfunc_with_frame");
 	VM_PROFILE_UP(C2C_POPF);
 	rb_vm_pop_frame(th);
     }

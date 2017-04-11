@@ -1715,6 +1715,10 @@ vm_profile_show_result(void)
 #define VM_PROFILE_ATEXIT()
 #endif
 
+#define CHECK_CFP_CONSISTENCY(func) \
+    LIKELY(reg_cfp == th->cfp + 1) ? (void) 0 : \
+    rb_bug(func ": cfp consistency error (%p, %p)", reg_cfp, th->cfp+1)
+
 static inline
 const rb_method_cfunc_t *
 vm_method_cfunc_entry(const rb_callable_method_entry_t *me)
@@ -1768,9 +1772,7 @@ vm_call_cfunc_with_frame(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb
     VM_PROFILE_UP(R2C_CALL);
     val = (*cfunc->invoker)(cfunc->func, recv, argc, reg_cfp->sp + 1);
 
-    if (reg_cfp != th->cfp + 1) {
-	rb_bug("vm_call_cfunc - cfp consistency error");
-    }
+    CHECK_CFP_CONSISTENCY("vm_call_cfunc");
 
     rb_vm_pop_frame(th);
 
@@ -1804,9 +1806,7 @@ vm_call_cfunc_latter(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb_cal
 	th->passed_ci = 0;
     }
     else {
-	if (UNLIKELY(reg_cfp != RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp))) {
-	    rb_bug("vm_call_cfunc_latter: cfp consistency error (%p, %p)", reg_cfp, th->cfp+1);
-	}
+	CHECK_CFP_CONSISTENCY("vm_call_cfunc_latter");
 	vm_pop_frame(th, reg_cfp, reg_cfp->ep);
 	VM_PROFILE_UP(R2C_POPF);
     }
