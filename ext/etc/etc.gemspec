@@ -1,17 +1,29 @@
-Gem::Specification.new do |s|
-  s.name = "etc"
-  s.version = '0.0.1'
-  s.date = '2017-02-27'
-  s.summary = "Provides access to information typically stored in UNIX /etc directory."
-  s.description = "Provides access to information typically stored in UNIX /etc directory."
+# coding: utf-8
 
-  s.require_path = %w{lib}
-  s.files = %w{depend extconf.rb etc.c mkconstants.rb}
-  s.extensions = %w{extconf.rb}
-  s.required_ruby_version = ">= 2.5.0dev"
+Gem::Specification.new do |spec|
+  spec.name          = "etc"
+  spec.version       = "0.2.1"
+  soec.date          = '2017-02-27'
+  spec.authors       = ["Yukihiro Matsumoto"]
+  spec.email         = ["matz@ruby-lang.org"]
 
-  s.authors = ["Yukihiro Matsumoto"]
-  s.email = ["matz@ruby-lang.org"]
-  s.homepage = "https://www.ruby-lang.org"
-  s.license = "BSD-2-Clause"
+  spec.summary       = %q{Provides access to information typically stored in UNIX /etc directory.}
+  spec.description   = %q{Provides access to information typically stored in UNIX /etc directory.}
+  spec.homepage      = "https://github.com/ruby/etc"
+  spec.license       = "BSD-2-Clause"
+
+  spec.files         = `git ls-files -z`.split("\x0").reject do |f|
+    f.match(%r{^(test|spec|features)/})
+  end
+  spec.bindir        = "exe"
+  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+  spec.require_paths = ["lib"]
+  spec.extensions    = %w{extconf.rb}
+
+  spec.required_ruby_version = ">= 2.5.0dev"
+
+  spec.add_development_dependency "bundler"
+  spec.add_development_dependency "rake"
+  spec.add_development_dependency "rake-compiler"
+  spec.add_development_dependency "test-unit"
 end
