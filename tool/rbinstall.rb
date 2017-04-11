@@ -678,10 +678,12 @@ module RbInstall
         return if path == destination_dir
         File.chmod(0700, destination_dir)
         mode = pattern == "bin/*" ? $script_mode : $data_mode
-        install_recursive(path, without_destdir(destination_dir),
-                          :glob => pattern,
-                          :no_install => "*.gemspec",
-                          :mode => mode)
+        spec.files.each do |f|
+          src = File.join(path, f)
+          dest = File.join(without_destdir(destination_dir), f)
+          makedirs(dest[/.*(?=\/)/m])
+          install src, dest, :mode => mode
+        end
         File.chmod($dir_mode, destination_dir)
       end
     end
