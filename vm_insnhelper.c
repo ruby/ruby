@@ -1716,8 +1716,8 @@ vm_profile_show_result(void)
 #endif
 
 #define CHECK_CFP_CONSISTENCY(func) \
-    LIKELY(reg_cfp == th->cfp + 1) ? (void) 0 : \
-    rb_bug(func ": cfp consistency error (%p, %p)", reg_cfp, th->cfp+1)
+    (LIKELY(reg_cfp == th->cfp + 1) ? (void) 0 : \
+     rb_bug(func ": cfp consistency error (%p, %p)", reg_cfp, th->cfp+1))
 
 static inline
 const rb_method_cfunc_t *
