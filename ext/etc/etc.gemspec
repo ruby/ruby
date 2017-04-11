@@ -3,7 +3,7 @@
 Gem::Specification.new do |spec|
   spec.name          = "etc"
   spec.version       = "0.2.1"
-  soec.date          = '2017-02-27'
+  spec.date          = '2017-02-27'
   spec.authors       = ["Yukihiro Matsumoto"]
   spec.email         = ["matz@ruby-lang.org"]
 
