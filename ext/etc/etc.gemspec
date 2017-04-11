@@ -12,13 +12,25 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/ruby/etc"
   spec.license       = "BSD-2-Clause"
 
-  spec.files         = `git ls-files -z`.split("\x0").reject do |f|
-    f.match(%r{^(test|spec|features)/})
-  end
+  spec.files         = %w[
+    .gitignore
+    .travis.yml
+    Gemfile
+    LICENSE.txt
+    README.md
+    Rakefile
+    bin/console
+    bin/setup
+    etc.gemspec
+    ext/etc/etc.c
+    ext/etc/extconf.rb
+    ext/etc/mkconstants.rb
+    test/etc/test_etc.rb
+  ]
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
-  spec.extensions    = %w{extconf.rb}
+  spec.extensions    = %w{ext/etc/extconf.rb}
 
   spec.required_ruby_version = ">= 2.5.0dev"
 
