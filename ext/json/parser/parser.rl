@@ -446,13 +446,21 @@ static VALUE json_string_unescape(VALUE result, char *string, char *stringEnd)
                     break;
                 case 'u':
                     if (pe > stringEnd - 4) {
-                        return Qnil;
+                      rb_enc_raise(
+                        EXC_ENCODING eParserError,
+                        "%u: incomplete unicode character escape sequence at '%s'", __LINE__, p
+                      );
                     } else {
                         UTF32 ch = unescape_unicode((unsigned char *) ++pe);
                         pe += 3;
                         if (UNI_SUR_HIGH_START == (ch & 0xFC00)) {
                             pe++;
-                            if (pe > stringEnd - 6) return Qnil;
+                            if (pe > stringEnd - 6) {
+                              rb_enc_raise(
+                                EXC_ENCODING eParserError,
+                                "%u: incomplete surrogate pair at '%s'", __LINE__, p
+                                );
+                            }
                             if (pe[0] == '\\' && pe[1] == 'u') {
                                 UTF32 sur = unescape_unicode((unsigned char *) pe + 2);
                                 ch = (((ch & 0x3F) << 10) | ((((ch >> 6) & 0xF) + 1) << 16)
@@ -570,7 +578,7 @@ static VALUE convert_encoding(VALUE source)
     }
     FORCE_UTF8(source);
   } else {
-    source = rb_str_conv_enc(source, NULL, rb_utf8_encoding());
+    source = rb_str_conv_enc(source, rb_enc_get(source), rb_utf8_encoding());
   }
 #endif
     return source;
