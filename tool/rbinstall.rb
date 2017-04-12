@@ -763,6 +763,20 @@ install?(:ext, :arch, :gem, :'default-gems', :'default-gems-arch') do
   install_default_gem('ext', srcdir)
 end
 
+def load_gemspec(file)
+  code = File.read(file, encoding: "utf-8:-")
+  code.gsub!(/`git.*?`/m, '""')
+  begin
+    spec = eval(code, binding, file)
+  rescue SignalException, SystemExit
+    raise
+  rescue SyntaxError, Exception
+  end
+  raise("invalid spec in #{file}") unless spec
+  spec.loaded_from = file
+  spec
+end
+
 def install_default_gem(dir, srcdir)
   gem_dir = Gem.default_dir
   directories = Gem.ensure_gem_subdirectories(gem_dir, :mode => $dir_mode)
@@ -773,10 +787,11 @@ def install_default_gem(dir, srcdir)
   makedirs(default_spec_dir)
 
   gems = Dir.glob("#{srcdir}/#{dir}/**/*.gemspec").map {|src|
-    spec = Gem::Specification.load(src) || raise("invalid spec in #{src}")
+    spec = load_gemspec(src)
     file_collector = RbInstall::Specs::FileCollector.new(src)
     files = file_collector.collect
     next if files.empty?
+    spec.files = files
     spec
   }
   gems.compact.sort_by(&:name).each do |gemspec|
@@ -820,10 +835,7 @@ install?(:ext, :comm, :gem, :'bundle-gems') do
   gem_ext_dir = "#$extout/gems/#{CONFIG['arch']}"
   extensions_dir = Gem::StubSpecification.gemspec_stub("", gem_dir, gem_dir).extensions_dir
   Gem::Specification.each_gemspec([srcdir+'/gems/*']) do |path|
-    dir = File.dirname(path)
-    spec = Dir.chdir(dir) {
-      Gem::Specification.load(File.basename(path))
-    }
+    spec = load_gemspec(path)
     next unless spec.platform == Gem::Platform::RUBY
     next unless spec.full_name == path[srcdir.size..-1][/\A\/gems\/([^\/]+)/, 1]
     spec.extension_dir = "#{extensions_dir}/#{spec.full_name}"
