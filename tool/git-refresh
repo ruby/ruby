@@ -8,12 +8,12 @@ until [ $# = 0 ]; do
     case "$1" in
 	--) shift; break;;
 	-C|--directory) shift; cd "$1";;
-	-C*) cd "${1#-C}";;
-	--directory=*) cd "${1#*=}";;
+	-C*) cd `expr "$1" : '-C\(.*\)'`;;
+	--directory=*) cd `expr "$1" : '[^=]*=\(.*\)'`;;
 	-q) quiet=1;;
 	-b|--branch) shift; branch="$1";;
-	-b*) branch="${1#-b}";;
-	--branch=*) branch="${1#*=}";;
+	-b*) branch=`expr "$1" : '-b\(.*\)'`;;
+	--branch=*) branch=`expr "$1" : '[^=]*=\(.*\)'`;;
 	-*) echo "unknown option: $1" 1>&2; exit 1;;
 	*) break;;
     esac
@@ -24,13 +24,13 @@ url="$1"
 dir="$2"
 shift 2
 if [ -d "$dir" ]; then
-    echo updating "${dir#*/}" ...
+    echo updating `expr "$dir" : '*/\(.*\)'` ...
     [ $quiet ] || set -x
     cd "$dir"
     git fetch "$@"
     exec git checkout ${branch:+"$branch"} "$@"
 else
-    echo retrieving "${dir#*/}" ...
+    echo retrieving `expr "$dir" : '*/\(.*\)'` ...
     [ $quiet ] || set -x
     exec git clone "$url" "$dir" "$@"
 fi
