@@ -2396,9 +2396,12 @@ sort_1(const void *ap, const void *bp, void *dummy)
     struct ary_sort_data *data = dummy;
     VALUE retval = sort_reentered(data->ary);
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
+    VALUE args[2];
     int n;
 
-    retval = rb_yield_values(2, a, b);
+    args[0] = a;
+    args[1] = b;
+    retval = rb_yield_values2(2, args);
     n = rb_cmpint(retval, a, b);
     sort_reentered(data->ary);
     return n;
