@@ -24,13 +24,13 @@ url="$1"
 dir="$2"
 shift 2
 if [ -d "$dir" ]; then
-    echo updating `expr "$dir" : '*/\(.*\)'` ...
+    echo updating `expr "/$dir/" : '.*/\([^/][^/]*\)/'` ...
     [ $quiet ] || set -x
     cd "$dir"
     git fetch "$@"
     exec git checkout ${branch:+"$branch"} "$@"
 else
-    echo retrieving `expr "$dir" : '*/\(.*\)'` ...
+    echo retrieving `expr "/$dir/" : '.*/\([^/][^/]*\)/'` ...
     [ $quiet ] || set -x
     exec git clone "$url" "$dir" "$@"
 fi
