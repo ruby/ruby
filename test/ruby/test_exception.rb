@@ -727,6 +727,8 @@ end.join
       end
     end
     assert_nil(e.cause)
+  ensure
+    y.join
   end
 
   def test_cause_thread_with_cause

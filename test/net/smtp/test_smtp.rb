@@ -162,7 +162,7 @@ module Net
       servers = Socket.tcp_server_sockets("localhost", 0)
       begin
         sock = nil
-        Thread.start do
+        t = Thread.start do
           sock = accept(servers)
           sock.close
         end
@@ -176,6 +176,7 @@ module Net
       ensure
         sock.close if sock
         servers.each(&:close)
+        t.join
       end
     end
 
