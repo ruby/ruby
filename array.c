@@ -2420,6 +2420,9 @@ sort_2(const void *ap, const void *bp, void *dummy)
     if (STRING_P(a) && STRING_P(b) && CMP_OPTIMIZABLE(data->cmp_opt, String)) {
 	return rb_str_cmp(a, b);
     }
+    if (RB_FLOAT_TYPE_P(a) && CMP_OPTIMIZABLE(data->cmp_opt, Float)) {
+	return rb_float_cmp(a, b);
+    }
 
     retval = rb_funcallv(a, id_cmp, 1, &b);
     n = rb_cmpint(retval, a, b);

@@ -1520,6 +1520,12 @@ flo_cmp(VALUE x, VALUE y)
     return rb_dbl_cmp(a, b);
 }
 
+int
+rb_float_cmp(VALUE x, VALUE y)
+{
+    return NUM2INT(flo_cmp(x, y));
+}
+
 /*
  * call-seq:
  *   float > real  ->  true or false
