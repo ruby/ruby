@@ -1,15 +1,21 @@
 #!/bin/sh
 set -e
 
+if cd -P . 2>/dev/null; then
+    CHDIR='cd -P'
+else
+    CHDIR='cd'
+fi
+
 quiet=
 branch=
 
 until [ $# = 0 ]; do
     case "$1" in
 	--) shift; break;;
-	-C|--directory) shift; cd "$1";;
-	-C*) cd `expr "$1" : '-C\(.*\)'`;;
-	--directory=*) cd `expr "$1" : '[^=]*=\(.*\)'`;;
+	-C|--directory) shift; $CHDIR "$1";;
+	-C*) $CHDIR `expr "$1" : '-C\(.*\)'`;;
+	--directory=*) $CHDIR `expr "$1" : '[^=]*=\(.*\)'`;;
 	-q) quiet=1;;
 	-b|--branch) shift; branch="$1";;
 	-b*) branch=`expr "$1" : '-b\(.*\)'`;;
@@ -26,7 +32,7 @@ shift 2
 if [ -d "$dir" ]; then
     echo updating `expr "/$dir/" : '.*/\([^/][^/]*\)/'` ...
     [ $quiet ] || set -x
-    cd "$dir"
+    $CHDIR "$dir"
     git fetch "$@"
     exec git checkout ${branch:+"$branch"} "$@"
 else
