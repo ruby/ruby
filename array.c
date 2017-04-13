@@ -555,7 +555,7 @@ RUBY_FUNC_EXPORTED size_t
 rb_ary_memsize(VALUE ary)
 {
     if (ARY_OWNS_HEAP_P(ary)) {
-	return RARRAY(ary)->as.heap.aux.capa * sizeof(VALUE);
+	return ARY_CAPA(ary) * sizeof(VALUE);
     }
     else {
 	return 0;
