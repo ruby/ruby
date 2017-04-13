@@ -2169,6 +2169,7 @@ NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
 void
 ruby_thread_stack_overflow(rb_thread_t *th)
 {
+    ruby_vm_event_flags = 0;
     th->raised_flag = 0;
 #ifdef USE_SIGALTSTACK
     if (!rb_threadptr_during_gc(th)) {
