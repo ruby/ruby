@@ -2754,12 +2754,14 @@ RUBY_CHECK_SETJMP(_setjmp)
 RUBY_CHECK_SETJMP(sigsetjmp, [sigjmp_buf])
 AC_MSG_CHECKING(for setjmp type)
 setjmp_suffix=
+unset setjmp_sigmask
 AC_ARG_WITH(setjmp-type,
 	AS_HELP_STRING([--with-setjmp-type], [select setjmp type]),
 	[
 	AS_CASE([$withval],
 	[__builtin_setjmp], [setjmp=__builtin_setjmp],
 	[_setjmp], [ setjmp_prefix=_],
+	[sigsetjmp,*], [ setjmp_prefix=sig setjmp_sigmask=`expr "$withval" : 'sigsetjmp\(,.*\)'`],
 	[sigsetjmp], [ setjmp_prefix=sig],
 	[setjmp], [ setjmp_prefix=],
 	[setjmpex], [ setjmp_prefix= setjmp_suffix=ex],
@@ -2787,13 +2789,11 @@ else
     setjmp_prefix=
     setjmp_suffix=
 fi
-if test x$setjmp_prefix = xsig; then
-    setjmp_sigmask=yes
-else
-    unset setjmp_sigmask
+if test x$setjmp_prefix:$setjmp_sigmask = xsig:; then
+    setjmp_sigmask=,0
 fi
-AC_MSG_RESULT(${setjmp_prefix}setjmp${setjmp_suffix}${setjmp_cast:+\($setjmp_cast\)})
-AC_DEFINE_UNQUOTED([RUBY_SETJMP(env)], [${setjmp_prefix}setjmp${setjmp_suffix}($setjmp_cast(env)${setjmp_sigmask+,0})])
+AC_MSG_RESULT(${setjmp_prefix}setjmp${setjmp_suffix}${setjmp_cast:+\($setjmp_cast\)}${setjmp_sigmask})
+AC_DEFINE_UNQUOTED([RUBY_SETJMP(env)], [${setjmp_prefix}setjmp${setjmp_suffix}($setjmp_cast(env)${setjmp_sigmask})])
 AC_DEFINE_UNQUOTED([RUBY_LONGJMP(env,val)], [${setjmp_prefix}longjmp($setjmp_cast(env),val)])
 AC_DEFINE_UNQUOTED(RUBY_JMP_BUF, ${setjmp_sigmask+${setjmp_prefix}}jmp_buf)
 AS_IF([test x$setjmp_suffix = xex], [AC_DEFINE_UNQUOTED(RUBY_USE_SETJMPEX, 1)])
