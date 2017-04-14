@@ -2619,6 +2619,7 @@ static const struct conv_method_tbl {
     M(a),
     M(s),
     M(i),
+    M(r),
 #undef M
 };
 #define IMPLICIT_CONVERSIONS 7
