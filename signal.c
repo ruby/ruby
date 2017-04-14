@@ -776,12 +776,16 @@ NORETURN(static void raise_stack_overflow(int sig, rb_thread_t *th));
 static void
 raise_stack_overflow(int sig, rb_thread_t *th)
 {
+#ifdef HAVE_SIGPROCMASK
     sigset_t mask;
+#endif
     clear_received_signal();
+#ifdef HAVE_SIGPROCMASK
     sigemptyset(&mask);
     sigaddset(&mask, sig);
     if (sigprocmask(SIG_UNBLOCK, &mask, NULL))
 	rb_bug_errno("sigprocmask:set", errno);
+#endif
     ruby_thread_stack_overflow(th);
 }
 
