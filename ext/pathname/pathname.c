@@ -1449,6 +1449,7 @@ Init_pathname(void)
     rb_define_method(rb_cPathname, "executable?", path_executable_p, 0);
     rb_define_method(rb_cPathname, "executable_real?", path_executable_real_p, 0);
     rb_define_method(rb_cPathname, "exist?", path_exist_p, 0);
+    rb_define_method(rb_cPathname, "exists?", path_exist_p, 0);
     rb_define_method(rb_cPathname, "grpowned?", path_grpowned_p, 0);
     rb_define_method(rb_cPathname, "directory?", path_directory_p, 0);
     rb_define_method(rb_cPathname, "file?", path_file_p, 0);
