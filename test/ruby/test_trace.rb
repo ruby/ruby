@@ -61,7 +61,7 @@ class TestTrace < Test::Unit::TestCase
   end
 
   def test_trace_stackoverflow
-    assert_normal_exit("#{<<-"begin;"}\n#{<<~"end;"}")
+    assert_normal_exit("#{<<-"begin;"}\n#{<<~"end;"}", timeout: 60)
     begin;
       require 'tracer'
       class HogeError < StandardError
