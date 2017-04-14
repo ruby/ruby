@@ -1011,10 +1011,10 @@ hex2num(char c)
 	rb_ary_store(ary, RARRAY_LEN(ary)+tmp_len-1, Qnil); \
 } while (0)
 
-/* Workaround for Oracle Solaris Studio 12.4 C compiler optimization bug
+/* Workaround for Oracle Solaris Studio 12.4/12.5 C compiler optimization bug
  * with "-xO4" optimization option.
  */
-#if defined(__SUNPRO_C) && __SUNPRO_C == 0x5130
+#if defined(__SUNPRO_C) && 0x5130 <= __SUNPRO_C && __SUNPRO_C <= 0x5140
 # define AVOID_CC_BUG volatile
 #else
 # define AVOID_CC_BUG
