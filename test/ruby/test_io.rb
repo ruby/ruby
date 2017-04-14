@@ -3400,16 +3400,19 @@ __END__
   def test_race_closed_stream
     bug13158 = '[ruby-core:79262] [Bug #13158]'
     closed = nil
+    q = Queue.new
     IO.pipe do |r, w|
       thread = Thread.new do
         begin
+          q << true
           while r.gets
           end
         ensure
           closed = r.closed?
         end
       end
-      sleep 0.01
+      q.pop
+      sleep 0.1 # wait for blocking by r.gets
       r.close
       assert_raise_with_message(IOError, /stream closed/) do
         thread.join
