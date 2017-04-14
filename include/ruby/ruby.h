@@ -1742,6 +1742,27 @@ VALUE rb_check_symbol(volatile VALUE *namep);
     (__builtin_constant_p(str) ? \
      __extension__ (rb_intern2((str), (long)strlen(str))) : \
      (rb_intern)(str))
+
+# define rb_varargs_argc_check_runtime(argc, vargc) \
+    (((argc) <= (vargc)) ? (argc) : \
+     (rb_fatal("argc(%d) exceeds actual arguments(%d)", \
+	       argc, vargc), 0))
+# if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
+#   if HAVE_ATTRIBUTE_ERRORFUNC
+ERRORFUNC((" argument length doesn't match"), int rb_varargs_bad_length(int,int));
+#   else
+#     define rb_varargs_bad_length(argc, vargc) ((argc)/((argc) == (vargc)))
+#   endif
+#   define rb_varargs_argc_check(argc, vargc) \
+    __builtin_choose_expr(__builtin_constant_p(argc), \
+	(((argc) == (vargc)) ? (argc) : \
+	 rb_varargs_bad_length(argc, vargc)), \
+	rb_varargs_argc_check_runtime(argc, vargc))
+# else
+#   define rb_varargs_argc_check(argc, vargc) \
+	rb_varargs_argc_check_runtime(argc, vargc)
+# endif
+
 #else
 #define rb_intern_const(str) rb_intern2((str), (long)strlen(str))
 #endif
@@ -2416,6 +2437,19 @@ rb_scan_args_set(int argc, const VALUE *argv,
 
     return argc;
 }
+#endif
+
+#if defined(__GNUC__) && defined(__OPTIMIZE__)
+# define rb_yield_values(argc, ...) \
+__extension__({ \
+	const int rb_yield_values_argc = (argc); \
+	const VALUE rb_yield_values_args[] = {__VA_ARGS__}; \
+	const int rb_yield_values_nargs = \
+	    (int)(sizeof(rb_yield_values_args) / sizeof(VALUE)); \
+	rb_yield_values2( \
+	    rb_varargs_argc_check(rb_yield_values_argc, rb_yield_values_nargs), \
+	    rb_yield_values_args); \
+    })
 #endif
 
 #ifndef RUBY_DONT_SUBST

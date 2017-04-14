@@ -1023,6 +1023,7 @@ rb_yield(VALUE val)
     }
 }
 
+#undef rb_yield_values
 VALUE
 rb_yield_values(int n, ...)
 {
