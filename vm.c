@@ -1637,8 +1637,11 @@ frame_name(const rb_control_frame_t *cfp)
 #endif
 
 static void
-hook_before_rewind(rb_thread_t *th, const rb_control_frame_t *cfp, int will_finish_vm_exec, struct vm_throw_data *err)
+hook_before_rewind(rb_thread_t *th, const rb_control_frame_t *cfp, int will_finish_vm_exec, int state, struct vm_throw_data *err)
 {
+    if (state == TAG_RAISE && RBASIC_CLASS(err) == rb_eSysStackError) {
+	return;
+    }
     switch (VM_FRAME_TYPE(th->cfp)) {
       case VM_FRAME_MAGIC_METHOD:
 	RUBY_DTRACE_METHOD_RETURN_HOOK(th, 0, 0);
@@ -1829,7 +1832,7 @@ vm_exec(rb_thread_t *th)
 			    th->errinfo = Qnil;
 			    result = THROW_DATA_VAL(err);
 			    THROW_DATA_CATCH_FRAME_SET(err, cfp + 1);
-			    hook_before_rewind(th, th->cfp, TRUE, err);
+			    hook_before_rewind(th, th->cfp, TRUE, state, err);
 			    rb_vm_pop_frame(th);
 			    goto finish_vme;
 			}
@@ -1971,7 +1974,7 @@ vm_exec(rb_thread_t *th)
 	    goto vm_loop_start;
 	}
 	else {
-	    hook_before_rewind(th, th->cfp, FALSE, err);
+	    hook_before_rewind(th, th->cfp, FALSE, state, err);
 
 	    if (VM_FRAME_FINISHED_P(th->cfp)) {
 		rb_vm_pop_frame(th);
