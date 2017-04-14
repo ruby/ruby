@@ -772,9 +772,22 @@ NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
 # elif defined __FreeBSD__
 #   define USE_UCONTEXT_REG 1
 # endif
+NORETURN(static void raise_stack_overflow(int sig, rb_thread_t *th));
+static void
+raise_stack_overflow(int sig, rb_thread_t *th)
+{
+    sigset_t mask;
+    clear_received_signal();
+    sigemptyset(&mask);
+    sigaddset(&mask, sig);
+    if (sigprocmask(SIG_UNBLOCK, &mask, NULL))
+	rb_bug_errno("sigprocmask:set", errno);
+    ruby_thread_stack_overflow(th);
+}
+
 # ifdef USE_UCONTEXT_REG
 static void
-check_stack_overflow(const uintptr_t addr, const ucontext_t *ctx)
+check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
 {
     const DEFINE_MCONTEXT_PTR(mctx, ctx);
 # if defined __linux__
@@ -826,30 +839,28 @@ check_stack_overflow(const uintptr_t addr, const ucontext_t *ctx)
 	     * place. */
 	    th->tag = th->tag->prev;
 	}
-	clear_received_signal();
-	ruby_thread_stack_overflow(th);
+	raise_stack_overflow(sig, th);
     }
 }
 # else
 static void
-check_stack_overflow(const void *addr)
+check_stack_overflow(int sig, const void *addr)
 {
     int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
     rb_thread_t *th = ruby_current_thread;
     if (ruby_stack_overflowed_p(th, addr)) {
-	clear_received_signal();
-	ruby_thread_stack_overflow(th);
+	raise_stack_overflow(sig, th);
     }
 }
 # endif
 # ifdef _WIN32
-#   define CHECK_STACK_OVERFLOW() check_stack_overflow(0)
+#   define CHECK_STACK_OVERFLOW() check_stack_overflow(sig, 0)
 # else
 #   define FAULT_ADDRESS info->si_addr
 #   ifdef USE_UCONTEXT_REG
-#     define CHECK_STACK_OVERFLOW() check_stack_overflow((uintptr_t)FAULT_ADDRESS, ctx)
+#     define CHECK_STACK_OVERFLOW() check_stack_overflow(sig, (uintptr_t)FAULT_ADDRESS, ctx)
 #   else
-#     define CHECK_STACK_OVERFLOW() check_stack_overflow(FAULT_ADDRESS)
+#     define CHECK_STACK_OVERFLOW() check_stack_overflow(sig, FAULT_ADDRESS)
 #   endif
 #   define MESSAGE_FAULT_ADDRESS " at %p", FAULT_ADDRESS
 # endif
