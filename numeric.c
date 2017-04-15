@@ -362,7 +362,7 @@ num_funcall_op_0(VALUE x, VALUE arg, int recursive)
 			  ID2SYM(func), x);
 	}
     }
-    return rb_funcall(x, func, 0, 0);
+    return rb_funcallv(x, func, 0, 0);
 }
 
 static VALUE

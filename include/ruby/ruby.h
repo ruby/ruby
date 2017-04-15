@@ -2450,6 +2450,17 @@ __extension__({ \
 	    rb_varargs_argc_check(rb_yield_values_argc, rb_yield_values_nargs), \
 	    rb_yield_values_args); \
     })
+
+# define rb_funcall(recv, mid, argc, ...) \
+__extension__({ \
+	const int rb_funcall_argc = (argc); \
+	const VALUE rb_funcall_args[] = {__VA_ARGS__}; \
+	const int rb_funcall_nargs = \
+	    (int)(sizeof(rb_funcall_args) / sizeof(VALUE)); \
+	rb_funcallv(recv, mid, \
+	    rb_varargs_argc_check(rb_funcall_argc, rb_funcall_nargs), \
+	    rb_funcall_args); \
+    })
 #endif
 
 #ifndef RUBY_DONT_SUBST

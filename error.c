@@ -963,7 +963,7 @@ rb_get_backtrace(VALUE exc)
 	    return Qnil;
 	return rb_check_backtrace(info);
     }
-    return rb_funcall(exc, mid, 0, 0);
+    return rb_funcallv(exc, mid, 0, 0);
 }
 
 /*

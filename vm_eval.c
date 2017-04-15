@@ -804,6 +804,7 @@ rb_apply(VALUE recv, ID mid, VALUE args)
     return rb_call(recv, mid, argc, argv, CALL_FCALL);
 }
 
+#undef rb_funcall
 /*!
  * Calls a method
  * \param recv   receiver of the method
