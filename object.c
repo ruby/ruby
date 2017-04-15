@@ -3537,6 +3537,7 @@ InitVM_Object(void)
     rb_define_method(rb_mKernel, "instance_of?", rb_obj_is_instance_of, 1);
     rb_define_method(rb_mKernel, "kind_of?", rb_obj_is_kind_of, 1);
     rb_define_method(rb_mKernel, "is_a?", rb_obj_is_kind_of, 1);
+    rb_define_alias(rb_mKernel, "is_an?", "is_a?");
     rb_define_method(rb_mKernel, "tap", rb_obj_tap, 0);
 
     rb_define_global_function("sprintf", rb_f_sprintf, -1); /* in sprintf.c */
