@@ -148,6 +148,11 @@ class TestSprintf < Test::Unit::TestCase
       sprintf("%b", -2147483649), '[ruby-dev:32365]')
     assert_equal(" Inf", sprintf("% e", inf), '[ruby-dev:34002]')
   end
+  
+  def test_hash
+    options = {:capture=>/\d+/}
+    assert_equal("with options {:capture=>/\\d+/}", sprintf("with options %p" % options))
+  end
 
   def test_bignum
     assert_match(/\A10{120}\.0+\z/, sprintf("%f", 100**60))
