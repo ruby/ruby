@@ -4449,6 +4449,66 @@ rb_ary_uniq(VALUE ary)
 
 /*
  *  call-seq:
+ *      ary.sweep!  -> ary or nil
+ *
+ *  Removes +empty+ string from the array.
+ *
+ *  Returns +nil+ if no changes were made, otherwise returns the array.
+ *
+ *      ["", "td", "", "li"].sweep!           #=> ["td", "li"]
+ *      ["table", "td", "ul", "li"].sweep!    #=> nil
+ *
+ */
+static VALUE
+rb_ary_sweep_bang(VALUE ary)
+{
+    VALUE *p, *t, *end;
+    long n;
+
+    rb_ary_modify(ary);
+    p = t = RARRAY_PTR(ary);
+    end = p + RARRAY_LEN(ary);
+
+    while (t < end) {
+        if (STRING_P(*t) && RSTRING_LEN(*t) == 0) t++;
+        else *p++ = *t++;
+    }
+
+    n = p - RARRAY_PTR(ary);
+    if (RARRAY_LEN(ary) == n) {
+        return Qnil;
+    }
+
+    ARY_SET_LEN(ary, n);
+    if (n * 2 < ARY_CAPA(ary) && ARY_DEFAULT_SIZE * 2 < ARY_CAPA(ary)) {
+        ary_resize_capa(ary, n * 2);
+    }
+
+    return ary;
+}
+
+/*
+ *  call-seq:
+ *      ary.sweep  -> new_ary
+ *
+ *  Removes +empty+ strings from the array.
+ *
+ *  Returns a copy of +self+ with all +empty+ strings removed.
+ *
+ *      ["", "td", "", "li"].sweep           #=> ["td", "li"]
+ *      ["table", "td", "ul", "li"].sweep    #=> ["table", "td", "ul", "li"]
+ *
+ */
+static VALUE
+rb_ary_sweep(VALUE ary)
+{
+    ary = rb_ary_dup(ary);
+    rb_ary_sweep_bang(ary);
+    return ary;
+}
+
+/*
+ *  call-seq:
  *     ary.compact!    -> ary  or  nil
  *
  *  Removes +nil+ elements from the array.
@@ -6234,6 +6294,8 @@ Init_Array(void)
 
     rb_define_method(rb_cArray, "uniq", rb_ary_uniq, 0);
     rb_define_method(rb_cArray, "uniq!", rb_ary_uniq_bang, 0);
+    rb_define_method(rb_cArray, "sweep!", rb_ary_sweep_bang, 0);
+    rb_define_method(rb_cArray, "sweep", rb_ary_sweep, 0);
     rb_define_method(rb_cArray, "compact", rb_ary_compact, 0);
     rb_define_method(rb_cArray, "compact!", rb_ary_compact_bang, 0);
     rb_define_method(rb_cArray, "flatten", rb_ary_flatten, -1);

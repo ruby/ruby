@@ -532,6 +532,28 @@ class TestArray < Test::Unit::TestCase
     assert_equal([], a)
   end
 
+  def test_sweep
+    a = @cls[ "", "table", "td", "ul", "li", "" ]
+    assert_equal(@cls["table", "td", "ul", "li"], a.sweep)
+
+    a = @cls["", "", ""]
+    assert_equal(@cls[], a.sweep)
+
+    a = @cls["", 1, "table", nil, :li]
+    assert_equal(@cls[1, "table", nil, :li], a.sweep)
+  end
+
+  def test_sweep!
+    a = @cls[ "", "table", "td", "ul", "li", "" ]
+    assert_equal(@cls["table", "td", "ul", "li"], a.sweep!)
+
+    a = @cls["", "", ""]
+    assert_equal(@cls[], a.sweep!)
+
+    a = @cls[1, "table", nil, :li]
+    assert_equal(nil, a.sweep!)
+  end
+
   def test_compact
     a = @cls[ 1, nil, nil, 2, 3, nil, 4 ]
     assert_equal(@cls[1, 2, 3, 4], a.compact)
