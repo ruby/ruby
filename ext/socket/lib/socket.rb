@@ -446,6 +446,16 @@ end
 
 class Socket < BasicSocket
   # enable the socket option IPV6_V6ONLY if IPV6_V6ONLY is available.
+  class << self
+    alias :hostname :gethostname
+    alias :get_host_by_name :gethostbyname
+    alias :get_host_by_address :gethostbyaddr
+    alias :get_service_by_name :getservbyname
+    alias :get_service_by_port :getservbyport
+    alias :get_address_info :getaddrinfo
+    alias :get_name_info :getnameinfo
+  end
+
   def ipv6only!
     if defined? Socket::IPV6_V6ONLY
       self.setsockopt(:IPV6, :V6ONLY, 1)
