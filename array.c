@@ -4006,9 +4006,6 @@ recursive_cmp(VALUE ary1, VALUE ary2, int recur)
 	else if (STRING_P(e1) && STRING_P(e2) && CMP_OPTIMIZABLE(cmp_opt, String)) {
 	    v = INT2FIX(rb_str_cmp(e1, e2));
 	}
-	else if (RB_FLOAT_TYPE_P(e1) && CMP_OPTIMIZABLE(cmp_opt, Float)) {
-	    v = INT2FIX(rb_float_cmp(e1, e2));
-	}
 	else {
 	    v = rb_funcallv(e1, id_cmp, 1, &e2);
 	}
