@@ -546,7 +546,7 @@ class Resolv
           when RCode::NXDomain
             raise Config::NXDomain.new(reply_name.to_s)
           else
-            raise Config::OtherResolvError.new(reply_name.to_s)
+            raise Config::OtherResolvError.new(reply_name.to_s, reply.rcode)
           end
         }
       ensure
@@ -1117,6 +1117,11 @@ class Resolv
       # Indicates some other unhandled resolver error was encountered.
 
       class OtherResolvError < ResolvError
+        attr_reader :rcode
+        def initialize(message, rcode)
+          super(message)
+          @rcode = rcode
+        end
       end
     end
 
