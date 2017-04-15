@@ -773,18 +773,24 @@ NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
 #   define USE_UCONTEXT_REG 1
 # endif
 NORETURN(static void raise_stack_overflow(int sig, rb_thread_t *th));
+#if defined(HAVE_PTHREAD_SIGMASK)
+# define ruby_sigunmask pthread_sigmask
+#elif defined(HAVE_SIGPROCMASK)
+# define ruby_sigunmask sigprocmask
+#endif
 static void
 raise_stack_overflow(int sig, rb_thread_t *th)
 {
-#ifdef HAVE_SIGPROCMASK
+#if defined(ruby_sigunmask)
     sigset_t mask;
 #endif
     clear_received_signal();
-#ifdef HAVE_SIGPROCMASK
+#if defined(ruby_sigunmask)
     sigemptyset(&mask);
     sigaddset(&mask, sig);
-    if (sigprocmask(SIG_UNBLOCK, &mask, NULL))
-	rb_bug_errno("sigprocmask:set", errno);
+    if (ruby_sigunmask(SIG_UNBLOCK, &mask, NULL)) {
+	rb_bug_errno(STRINGIZE(ruby_sigunmask)":unblock", errno);
+    }
 #endif
     ruby_thread_stack_overflow(th);
 }
