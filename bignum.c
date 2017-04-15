@@ -6824,6 +6824,9 @@ estimate_initial_sqrt(VALUE *xp, const size_t xn, const BDIGIT *nds, size_t len)
 	if (lowbits || (lowbits = !bary_zero_p(nds, len-dbl_per_bdig)))
 	    ++d;
     }
+    else {
+	lowbits = 1;
+    }
     rshift /= 2;
     rshift += (2-(len&1))*BITSPERDIG/2;
     if (rshift >= 0) {

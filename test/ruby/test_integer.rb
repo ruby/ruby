@@ -488,5 +488,17 @@ class TestInteger < Test::Unit::TestCase
       assert_equal(exact, Integer.sqrt(x+1), "10**#{i}+1")
       assert_equal(exact-1, Integer.sqrt(x-1), "10**#{i}-1")
     end
+
+    bug13440 = '[ruby-core:80696] [Bug #13440]'
+    too_big = []
+    too_small = []
+    0.step(to: 50, by: 0.001) do |i|
+      n = (10**i).to_i
+      int_root = Integer.sqrt(n)
+      too_big   << n  if int_root*int_root > n
+      too_small << n  if (int_root+1)*(int_root+1) <= n
+    end
+    assert_empty(too_big, bug13440)
+    assert_empty(too_small, bug13440)
   end
 end
