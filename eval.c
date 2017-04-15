@@ -1532,6 +1532,27 @@ top_include(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
+ *     prepend(module, ...)   -> self
+ *
+ *  Invokes <code>Module.prepend_features</code>
+ *  on each parameter in reverse order. Effectively adds the methods and
+ *  constants in each module to the receiver.
+ */
+
+static VALUE
+top_prepend(int argc, VALUE *argv, VALUE self)
+{
+	rb_thread_t *th = GET_THREAD();
+
+	if (th->top_wrapper) {
+		rb_warning("main.prepend in the wrapped load is effective only in wrapper module");
+		return rb_mod_prepend(argc, argv, th->top_wrapper);
+	}
+	return rb_mod_prepend(argc, argv, rb_cObject);
+}
+
+/*
+ *  call-seq:
  *     using(module)    -> self
  *
  *  Import class refinements from <i>module</i> into the scope where
@@ -1747,6 +1768,9 @@ Init_eval(void)
     rb_define_method(rb_cModule, "include", rb_mod_include, -1);
     rb_define_method(rb_cModule, "prepend", rb_mod_prepend, -1);
 
+    rb_define_method(rb_singleton_class(rb_vm_top_self()), "include", top_include, -1);
+    rb_define_method(rb_singleton_class(rb_vm_top_self()), "prepend", top_prepend, -1);
+
     rb_define_private_method(rb_cModule, "append_features", rb_mod_append_features, 1);
     rb_define_private_method(rb_cModule, "extend_object", rb_mod_extend_object, 1);
     rb_define_private_method(rb_cModule, "prepend_features", rb_mod_prepend_features, 1);
@@ -1764,8 +1788,6 @@ Init_eval(void)
     rb_define_singleton_method(rb_cModule, "nesting", rb_mod_nesting, 0);
     rb_define_singleton_method(rb_cModule, "constants", rb_mod_s_constants, -1);
 
-    rb_define_private_method(rb_singleton_class(rb_vm_top_self()),
-			     "include", top_include, -1);
     rb_define_private_method(rb_singleton_class(rb_vm_top_self()),
 			     "using", top_using, 1);
 

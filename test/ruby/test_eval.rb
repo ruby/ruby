@@ -450,6 +450,26 @@ class TestEval < Test::Unit::TestCase
     assert_equal(feature6609, feature6609_method)
   end
 
+  def test_prepend_toplevel
+    assert_separately([], <<-EOS)
+      Mod = Module.new { def foo; :prepend_foo end }
+      TOPLEVEL_BINDING.eval('prepend Mod')
+
+      assert_equal(:prepend_foo, TOPLEVEL_BINDING.eval('foo'))
+      assert_equal([Mod, Object], Object.ancestors.slice(0, 2))
+    EOS
+  end
+
+  def test_include_toplevel
+    assert_separately([], <<-EOS)
+      Mod = Module.new { def foo; :include_foo end }
+      TOPLEVEL_BINDING.eval('include Mod')
+
+      assert_equal(:include_foo, TOPLEVEL_BINDING.eval('foo'))
+      assert_equal([Object, Mod], Object.ancestors.slice(0, 2))
+    EOS
+  end
+
   def test_eval_using_integer_as_binding
     assert_raise(TypeError) { eval("", 1) }
   end
