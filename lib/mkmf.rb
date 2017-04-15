@@ -2737,6 +2737,7 @@ realclean: distclean
 end
 
 include MakeMakefile
+init_mkmf
 
 if not $extmk and /\A(extconf|makefile).rb\z/ =~ File.basename($0)
   END {mkmf_failed($0)}
