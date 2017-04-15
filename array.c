@@ -945,6 +945,20 @@ rb_ary_push_m(int argc, VALUE *argv, VALUE ary)
     return rb_ary_cat(ary, argv, argc);
 }
 
+/*
+ *  call-seq:
+ *     ary.pop()   -> fixnum
+ *
+ *  Removes and returns the last the end of this array.
+ *  See also Array#push for the opposite effect.
+ *
+ *     a = [ "a", "b", "c" ]
+ *     a.pop()
+ *             #=> "c"
+ *     a
+ *             #=> ["a", "b"]
+ */
+ 
 VALUE
 rb_ary_pop(VALUE ary)
 {
