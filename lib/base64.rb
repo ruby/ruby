@@ -35,6 +35,30 @@ module Base64
   #
   #    Tm93IGlzIHRoZSB0aW1lIGZvciBhbGwgZ29vZCBjb2RlcnMKdG8gbGVhcm4g
   #    UnVieQ==
+  def encode(bin, mode=nil)
+    case mode
+    when nil
+      encode64(bin)
+    when :strict
+      strict_encode64(bin)    
+    when :urlsafe
+      urlsafe_encode64(bin)
+    else
+      raise ArgumentError, "#{mode} is an invalid mode"
+    end
+  end
+
+  # Returns the Base64-encoded version of +bin+.
+  # This method complies with RFC 2045.
+  # Line feeds are added to every 60 encoded characters.
+  #
+  #    require 'base64'
+  #    Base64.encode64("Now is the time for all good coders\nto learn Ruby")
+  #
+  # <i>Generates:</i>
+  #
+  #    Tm93IGlzIHRoZSB0aW1lIGZvciBhbGwgZ29vZCBjb2RlcnMKdG8gbGVhcm4g
+  #    UnVieQ==
   def encode64(bin)
     [bin].pack("m")
   end
