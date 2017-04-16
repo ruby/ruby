@@ -632,6 +632,26 @@ inject_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
 }
 
 static VALUE
+inject_float_op(char mid, VALUE sum, VALUE i, VALUE *carry)
+{
+    if (!RB_FLOAT_TYPE_P(sum)) return Qnil;
+    if (!RB_TYPE_P(i, T_FLOAT)) {
+	i = rb_to_float(i);
+    }
+    if (rb_method_basic_definition_p(rb_cFloat, mid)) {
+	const VALUE cv = *carry;
+	const double s = RFLOAT_VALUE(sum);
+	const double x = RFLOAT_VALUE(i);
+	const double c = RB_FLOAT_TYPE_P(cv) ? RFLOAT_VALUE(cv) : 0;
+	const double y = (mid == '-' ? -x : x) - c;
+	const double t = s + y;
+	*carry = DBL2NUM(+(t - s) - y);
+	return DBL2NUM(t);
+    }
+    return Qnil;
+}
+
+static VALUE
 inject_op_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
 {
     struct MEMO *memo = MEMO_CAST(p);
@@ -644,6 +664,17 @@ inject_op_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
     }
     else if (SYMBOL_P(name = memo->u3.value)) {
 	const ID mid = SYM2ID(name);
+	if (mid == '+' || mid == '-') {
+	    if (argc == 1) {
+		VALUE result = inject_float_op((char)mid, memo->u1.value, i,
+					       &memo->u2.value);
+		if (!NIL_P(result)) {
+		    MEMO_V1_SET(memo, result);
+		    return Qnil;
+		}
+	    }
+	    MEMO_V2_SET(memo, Qnil);
+	}
 	MEMO_V1_SET(memo, rb_funcall(memo->v1, mid, 1, i));
     }
     else {
