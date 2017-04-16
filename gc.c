@@ -2061,7 +2061,7 @@ is_pointer_to_heap(rb_objspace_t *objspace, void *ptr)
 	    lo = mid + 1;
 	}
 	else {
-	    hi = mid;
+	    hi = mid - 1;
 	}
     }
     return FALSE;
