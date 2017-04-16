@@ -3414,7 +3414,7 @@ __END__
           end
         end
         q.pop
-        sleep 0.01 while thread.status != 'sleep'
+        sleep 0.01 until thread.stop?
         r.close
         assert_raise_with_message(IOError, /stream closed/) do
           thread.join
