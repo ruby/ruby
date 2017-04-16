@@ -158,22 +158,6 @@ Init_native_thread(void)
 		 th->native_thread_data.interrupt_event);
 }
 
-static void
-w32_set_event(HANDLE handle)
-{
-    if (SetEvent(handle) == 0) {
-	w32_error("w32_set_event");
-    }
-}
-
-static void
-w32_reset_event(HANDLE handle)
-{
-    if (ResetEvent(handle) == 0) {
-	w32_error("w32_reset_event");
-    }
-}
-
 static int
 w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th)
 {
@@ -184,20 +168,16 @@ w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th)
     thread_debug("  w32_wait_events events:%p, count:%d, timeout:%ld, th:%p\n",
 		 events, count, timeout, th);
     if (th && (intr = th->native_thread_data.interrupt_event)) {
-	gvl_acquire(th->vm, th);
-	if (intr == th->native_thread_data.interrupt_event) {
-	    w32_reset_event(intr);
-	    if (RUBY_VM_INTERRUPTED(th)) {
-		w32_set_event(intr);
-	    }
-
+	if (ResetEvent(intr) && (!RUBY_VM_INTERRUPTED(th) || SetEvent(intr))) {
 	    targets = ALLOCA_N(HANDLE, count + 1);
 	    memcpy(targets, events, sizeof(HANDLE) * count);
 
 	    targets[count++] = intr;
 	    thread_debug("  * handle: %p (count: %d, intr)\n", intr, count);
 	}
-	gvl_release(th->vm);
+	else if (intr == th->native_thread_data.interrupt_event) {
+	    w32_error("w32_wait_events");
+	}
     }
 
     thread_debug("  WaitForMultipleObjects start (count: %d)\n", count);
@@ -682,7 +662,9 @@ ubf_handle(void *ptr)
     rb_thread_t *th = (rb_thread_t *)ptr;
     thread_debug("ubf_handle: %p\n", th);
 
-    w32_set_event(th->native_thread_data.interrupt_event);
+    if (!SetEvent(th->native_thread_data.interrupt_event)) {
+	w32_error("ubf_handle");
+    }
 }
 
 static struct {
