@@ -23,7 +23,15 @@ def prepare_wc_input
   end
 end
 
+# prepare 'fasta.output'
+def prepare_fasta_output
+  Dir['prepare_so_*'].each do |file|
+    system("ruby #{file}")
+  end
+end
+
 prepare_wc_input
+prepare_fasta_output
 
 def bm file
   prog = File.readlines(file).map{|e| e.rstrip}.join("\n")
