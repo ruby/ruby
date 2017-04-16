@@ -3398,27 +3398,30 @@ __END__
   end
 
   def test_race_closed_stream
-    bug13158 = '[ruby-core:79262] [Bug #13158]'
-    closed = nil
-    q = Queue.new
-    IO.pipe do |r, w|
-      thread = Thread.new do
-        begin
-          q << true
-          while r.gets
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      bug13158 = '[ruby-core:79262] [Bug #13158]'
+      closed = nil
+      q = Queue.new
+      IO.pipe do |r, w|
+        thread = Thread.new do
+          begin
+            q << true
+            while r.gets
+            end
+          ensure
+            closed = r.closed?
           end
-        ensure
-          closed = r.closed?
         end
+        q.pop
+        sleep 0.01 while thread.status != 'sleep'
+        r.close
+        assert_raise_with_message(IOError, /stream closed/) do
+          thread.join
+        end
+        assert_equal(true, closed, bug13158 + ': stream should be closed')
       end
-      q.pop
-      sleep 0.01 while thread.status != 'sleep'
-      r.close
-      assert_raise_with_message(IOError, /stream closed/) do
-        thread.join
-      end
-      assert_equal(true, closed, "#{bug13158}: stream should be closed")
-    end
+    end;
   end
 
   if RUBY_ENGINE == "ruby" # implementation details
