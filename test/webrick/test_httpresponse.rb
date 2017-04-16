@@ -156,5 +156,13 @@ module WEBrick
       assert_match(/#{@res.reason_phrase}/, body)
       assert_match(/#{message}/, body)
     end
+
+    def test_head_does_not_return_body
+      res.request_method = 'HEAD'
+      res.body = 'ignored'
+      res.setup_header
+      assert_equal nil, res.header['content-length']
+      assert_equal '', res.body
+    end
   end
 end

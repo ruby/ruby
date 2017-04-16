@@ -241,7 +241,7 @@ module WEBrick
       end
 
       # Determine the message length (RFC2616 -- 4.4 Message Length)
-      if @status == 304 || @status == 204 || HTTPStatus::info?(@status)
+      if @status == 304 || @status == 204 || HTTPStatus::info?(@status) || @request_method == 'HEAD'
         @header.delete('content-length')
         @body = ""
       elsif chunked?
