@@ -163,6 +163,7 @@ w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th)
 {
     HANDLE *targets = events;
     HANDLE intr;
+    const int initcount = count;
     DWORD ret;
 
     thread_debug("  w32_wait_events events:%p, count:%d, timeout:%ld, th:%p\n",
@@ -184,7 +185,7 @@ w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th)
     ret = WaitForMultipleObjects(count, targets, FALSE, timeout);
     thread_debug("  WaitForMultipleObjects end (ret: %lu)\n", ret);
 
-    if (ret == (DWORD)(WAIT_OBJECT_0 + count - 1) && th) {
+    if (ret == (DWORD)(WAIT_OBJECT_0 + initcount) && th) {
 	errno = EINTR;
     }
     if (ret == WAIT_FAILED && THREAD_DEBUG) {
