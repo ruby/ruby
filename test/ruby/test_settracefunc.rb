@@ -1429,7 +1429,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     evs = []
 
     TracePoint.new(:call, :return){|tp|
-      return if Thread.current != target_th
+      next unless target_thread?
       evs << tp.event
     }.enable{
       Bug10724.new
