@@ -10,19 +10,15 @@ opt.on('-q'){$list = false}
 opt.on('-d'){$gcprof = false}
 opt.parse!(ARGV)
 
-script = File.join(File.dirname(__FILE__), ARGV.shift)
-script += '.rb' unless FileTest.exist?(script)
-raise "#{script} not found" unless FileTest.exist?(script)
+script = File.join File.dirname(__FILE__), ARGV.shift 
+script += '.rb' unless FileTest.exist? script 
+raise "#{script} not found" unless FileTest.exist? script
 
 puts "Script: #{script}"
 
-if $gcprof
-  GC::Profiler.enable
-end
+GC::Profiler.enable if $gcprof
 
-tms = Benchmark.measure{|x|
-  load script
-}
+tms = Benchmark.measure {  |x| load script }
 
 gc_time = 0
 
@@ -39,8 +35,7 @@ puts "#{RUBY_DESCRIPTION} #{GC::OPTS.inspect}" if defined?(GC::OPTS)
 desc = "#{RUBY_VERSION}#{RUBY_PATCHLEVEL >= 0 ? "p#{RUBY_PATCHLEVEL}" : "dev"}"
 name = File.basename(script, '.rb')
 
-puts
-puts script
+puts ?\n + script
 puts Benchmark::CAPTION
 puts tms
 puts "GC total time (sec): #{gc_time}"
@@ -51,6 +46,5 @@ if File.exist?('/proc/self/status') && /VmHWM:\s*(\d+.+)/ =~ File.read('/proc/se
   puts "VmHWM: #{$1.chomp}"
 end
 
-puts
-puts "Summary of #{name} on #{desc}\t#{tms.real}\t#{gc_time}\t#{GC.count}"
+puts "\nSummary of #{name} on #{desc}\t#{tms.real}\t#{gc_time}\t#{GC.count}"
 puts "         (real time in sec, GC time in sec, GC count)"
