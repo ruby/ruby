@@ -98,4 +98,17 @@ class TestCall < Test::Unit::TestCase
     ary = [1, 2]
     assert_equal([0, 1, 2, 1], aaa(0, *ary, ary.shift), bug12860)
   end
+
+  def test_safe_call_evaluate_arguments_only_method_call_is_made
+    count = 0
+    proc = proc { count += 1; 1 }
+    s = Struct.new(:x, :y)
+    o = s.new(["a", "b", "c"])
+
+    o.y.?at(proc.call)
+    assert_equal(0, count)
+
+    o.x.?at(proc.call)
+    assert_equal(1, count)
+  end
 end
