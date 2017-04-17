@@ -725,15 +725,50 @@ math_ldexp(VALUE unused_obj, VALUE x, VALUE n)
 /*
  *  call-seq:
  *     Math.hypot(x, y)    -> Float
+ *     Math.hypot(x, ...)  -> Float
  *
  *  Returns sqrt(x**2 + y**2), the hypotenuse of a right-angled triangle with
  *  sides +x+ and +y+.
  *
  *     Math.hypot(3, 4)   #=> 5.0
+ *
+ *  Returns square root of square sum.
  */
 
 static VALUE
-math_hypot(VALUE unused_obj, VALUE x, VALUE y)
+math_hypot(int argc, VALUE *argv, VALUE unused_obj)
+{
+    int i, expx;
+    double x, y, x0;
+
+    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+    x = Get_Double(argv[0]);
+    x = fabs(x);
+    if (argc == 1) return DBL2NUM(x);
+    y = Get_Double(argv[1]);
+    y = fabs(y);
+    if (argc == 2) return DBL2NUM(hypot(x, y));
+    x0 = frexp(x, &expx);
+    if ((expx -= DBL_MAX_EXP / 2) >= 0) {
+	x = ldexp(x0, expx);
+	y = ldexp(y, -(DBL_MAX_EXP / 2));
+    }
+    x *= x;
+    for (i = 2; x += y * y, i < argc; ++i) {
+	y = Get_Double(argv[i]);
+	if (expx >= 0) {
+	    y = ldexp(y, -(DBL_MAX_EXP / 2));
+	}
+    }
+    x = sqrt(x);
+    if (expx >= 0) {
+	x = ldexp(x, (DBL_MAX_EXP / 2));
+    }
+    return DBL2NUM(x);
+}
+
+VALUE
+rb_math_hypot(VALUE x, VALUE y)
 {
     return DBL2NUM(hypot(Get_Double(x), Get_Double(y)));
 }
@@ -947,7 +982,6 @@ exp2(atan2)
 exp1(cos)
 exp1(cosh)
 exp1(exp)
-exp2(hypot)
 
 VALUE
 rb_math_log(int argc, const VALUE *argv)
@@ -1033,7 +1067,7 @@ InitVM_Math(void)
     rb_define_module_function(rb_mMath, "frexp", math_frexp, 1);
     rb_define_module_function(rb_mMath, "ldexp", math_ldexp, 2);
 
-    rb_define_module_function(rb_mMath, "hypot", math_hypot, 2);
+    rb_define_module_function(rb_mMath, "hypot", math_hypot, -1);
 
     rb_define_module_function(rb_mMath, "erf",  math_erf,  1);
     rb_define_module_function(rb_mMath, "erfc", math_erfc, 1);
