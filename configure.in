@@ -2506,6 +2506,8 @@ AC_CHECK_FUNCS(utimensat)
 AC_CHECK_FUNCS(utimes)
 AC_CHECK_FUNCS(wait4)
 AC_CHECK_FUNCS(waitpid)
+AC_CHECK_FUNCS(consttime_memequal)
+AC_CHECK_FUNCS(timingsafe_memcmp)
 
 AS_IF([test "$ac_cv_func_memset_s" = yes],
     [RUBY_DEFINE_IF([!defined __STDC_WANT_LIB_EXT1__], [__STDC_WANT_LIB_EXT1__], 1)])
