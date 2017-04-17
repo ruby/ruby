@@ -21,6 +21,7 @@
 
 require 'net/protocol'
 require 'uri'
+require 'io/wait'
 
 module Net   #:nodoc:
   autoload :OpenSSL, 'openssl'
@@ -920,7 +921,24 @@ module Net   #:nodoc:
              Process.clock_gettime(Process::CLOCK_REALTIME) < @ssl_session.time.to_f + @ssl_session.timeout
             s.session = @ssl_session if @ssl_session
           end
-          Timeout.timeout(@open_timeout, Net::OpenTimeout) { s.connect }
+          if timeout = @open_timeout
+            while true
+              raise Net::OpenTimeout if timeout <= 0
+              start = Process.clock_gettime Process::CLOCK_MONOTONIC
+              # to_io is requied because SSLSocket doesn't have wait_readable yet
+              begin
+                s.connect_nonblock
+                break
+              rescue OpenSSL::SSL::SSLErrorWaitReadable
+                s.to_io.wait_readable(timeout)
+              rescue OpenSSL::SSL::SSLErrorWaitWritable
+                s.to_io.wait_writable(timeout)
+              end
+              timeout -= Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
+            end
+          else
+            s.connect
+          end
           if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
             s.post_connection_check(@address)
           end
