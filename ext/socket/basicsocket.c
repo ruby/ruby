@@ -619,6 +619,57 @@ bsock_do_not_reverse_lookup_set(VALUE sock, VALUE state)
 
 /*
  * call-seq:
+ *   basicsocket.reverse_lookup => true or false
+ *
+ * Gets the reverse_lookup flag of _basicsocket_.
+ * It is inverse of do_not_reverse_lookup flag.
+ *
+ *   BasicSocket.do_not_reverse_lookup = false
+ *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|
+ *     p sock.do_not_reverse_lookup      #=> false
+ *     p sock.reverse_lookup             #=> true
+ *   }
+ */
+static VALUE
+bsock_reverse_lookup(VALUE sock)
+{
+    rb_io_t *fptr;
+
+    GetOpenFile(sock, fptr);
+    return (fptr->mode & FMODE_NOREVLOOKUP) ? Qfalse : Qtrue;
+}
+
+/*
+ * call-seq:
+ *   basicsocket.reverse_lookup = bool
+ *
+ * Sets the reverse_lookup flag of _basicsocket_.
+ *
+ *   TCPSocket.open("www.ruby-lang.org", 80) {|sock|
+ *     p sock.reverse_lookup              #=> false
+ *     p sock.peeraddr                    #=> ["AF_INET", 80, "221.186.184.68", "221.186.184.68"]
+ *     sock.reverse_lookup = true
+ *     p sock.peeraddr                    #=> ["AF_INET", 80, "carbon.ruby-lang.org", "54.163.249.195"]
+ *   }
+ *
+ */
+static VALUE
+bsock_reverse_lookup_set(VALUE sock, VALUE state)
+{
+    rb_io_t *fptr;
+
+    GetOpenFile(sock, fptr);
+    if (RTEST(state)) {
+	fptr->mode &= ~FMODE_NOREVLOOKUP;
+    }
+    else {
+	fptr->mode |= FMODE_NOREVLOOKUP;
+    }
+    return sock;
+}
+
+/*
+ * call-seq:
  *   basicsocket.recv(maxlen[, flags[, outbuf]]) => mesg
  *
  * Receives a message.
@@ -688,6 +739,45 @@ bsock_do_not_rev_lookup_set(VALUE self, VALUE val)
     return val;
 }
 
+/*
+ * call-seq:
+ *   BasicSocket.reverse_lookup => true or false
+ *
+ * Gets the global reverse_lookup flag.
+ * It is the inverse of do_not_reverse_lookup flag.
+ *
+ *   BasicSocket.reverse_lookup         #=> true
+ */
+static VALUE
+bsock_rev_lookup(void)
+{
+    return rsock_do_not_reverse_lookup?Qfalse:Qtrue;
+}
+
+/*
+ * call-seq:
+ *   BasicSocket.reverse_lookup = bool
+ *
+ * Sets the global reverse_lookup flag.
+ *
+ * The flag is used for initial value of reverse_lookup for each socket.
+ *
+ *   s1 = TCPSocket.new("localhost", 80)
+ *   p s1.reverse_lookup                        #=> false
+ *   BasicSocket.reverse_lookup = true
+ *   p BasicSocket.do_not_reverse_lookup        #=> false
+ *   s2 = TCPSocket.new("localhost", 80)
+ *   p s1.reverse_lookup                        #=> true
+ *   p s2.reverse_lookup                        #=> false
+ *
+ */
+static VALUE
+bsock_do_not_rev_lookup_set(VALUE self, VALUE val)
+{
+    rsock_do_not_reverse_lookup = !RTEST(val);
+    return val;
+}
+
 void
 rsock_init_basicsocket(void)
 {
@@ -703,6 +793,8 @@ rsock_init_basicsocket(void)
 			       bsock_do_not_rev_lookup, 0);
     rb_define_singleton_method(rb_cBasicSocket, "do_not_reverse_lookup=",
 			       bsock_do_not_rev_lookup_set, 1);
+    rb_define_singleton_method(rb_cBasicSocket, "reverse_lookup", bsock_rev_lookup, 0);
+    rb_define_singleton_method(rb_cBasicSocket, "reverse_lookup=", bsock_rev_lookup_set, 1);
     rb_define_singleton_method(rb_cBasicSocket, "for_fd", bsock_s_for_fd, 1);
 
     rb_define_method(rb_cBasicSocket, "close_read", bsock_close_read, 0);
@@ -720,6 +812,8 @@ rsock_init_basicsocket(void)
 
     rb_define_method(rb_cBasicSocket, "do_not_reverse_lookup", bsock_do_not_reverse_lookup, 0);
     rb_define_method(rb_cBasicSocket, "do_not_reverse_lookup=", bsock_do_not_reverse_lookup_set, 1);
+    rb_define_method(rb_cBasicSocket, "reverse_lookup", bsock_reverse_lookup, 0);
+    rb_define_method(rb_cBasicSocket, "reverse_lookup=", bsock_reverse_lookup_set, 1);
 
     /* for ext/socket/lib/socket.rb use only: */
     rb_define_private_method(rb_cBasicSocket,
