@@ -1169,9 +1169,15 @@ range_include(VALUE range, VALUE val)
 	!NIL_P(rb_check_to_integer(end, "to_int"))) {
 	return r_cover_p(range, beg, end, val);
     }
-    else if (RB_TYPE_P(beg, T_STRING) && RB_TYPE_P(end, T_STRING)) {
-	VALUE rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive);
-	return rb_str_include_range_p(beg, end, val, RANGE_EXCL(range));
+    else {
+	ID id_include_range_p;
+	VALUE r, args[3];
+	CONST_ID(id_include_range_p, "include_range?");
+	args[0] = end;
+	args[1] = val;
+	args[2] = EXCL(range) ? Qtrue : Qfalse;
+	r = rb_check_funcall(beg, id_include_range_p, 3, args);
+	if (r != Qundef) return r;
     }
     /* TODO: ruby_frame->this_func = rb_intern("include?"); */
     return rb_call_super(1, &val);

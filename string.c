@@ -4189,7 +4189,7 @@ include_range_i(VALUE str, VALUE arg)
     return 1;
 }
 
-VALUE
+static VALUE
 rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive)
 {
     beg = rb_str_new_frozen(beg);
@@ -10222,6 +10222,7 @@ Init_String(void)
     rb_define_method(rb_cString, "b", rb_str_b, 0);
     rb_define_method(rb_cString, "valid_encoding?", rb_str_valid_encoding_p, 0);
     rb_define_method(rb_cString, "ascii_only?", rb_str_is_ascii_only_p, 0);
+    rb_define_method(rb_cString, "include_range?", rb_str_include_range_p, 3);
 
     rb_fs = Qnil;
     rb_define_hooked_variable("$;", &rb_fs, 0, rb_fs_setter);
