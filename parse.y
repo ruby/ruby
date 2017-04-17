@@ -7414,13 +7414,15 @@ parse_qmark(struct parser_params *parser, int space_seen)
 }
 
 static int
-parse_percent(struct parser_params *parser, const int space_seen, const enum lex_state_e last_state)
+parse_percent(struct parser_params *parser, const int space_seen, int cmd_state,
+	      const enum lex_state_e last_state)
 {
     register int c;
 
     if (IS_BEG()) {
 	int term;
 	int paren;
+	int label;
 
 	c = nextc();
       quotation:
@@ -7448,11 +7450,13 @@ parse_percent(struct parser_params *parser, const int space_seen, const enum lex
 
 	switch (c) {
 	  case 'Q':
-	    lex_strterm = NEW_STRTERM(str_dquote, term, paren);
+	    label = (IS_LABEL_POSSIBLE() ? str_label : 0);
+	    lex_strterm = NEW_STRTERM(str_dquote | label, term, paren);
 	    return tSTRING_BEG;
 
 	  case 'q':
-	    lex_strterm = NEW_STRTERM(str_squote, term, paren);
+	    label = (IS_LABEL_POSSIBLE() ? str_label : 0);
+	    lex_strterm = NEW_STRTERM(str_squote | label, term, paren);
 	    return tSTRING_BEG;
 
 	  case 'W':
@@ -8441,7 +8445,7 @@ parser_yylex(struct parser_params *parser)
 	return '\\';
 
       case '%':
-	return parse_percent(parser, space_seen, last_state);
+	return parse_percent(parser, space_seen, cmd_state, last_state);
 
       case '$':
 	return parse_gvar(parser, last_state);
