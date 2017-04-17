@@ -426,6 +426,9 @@ enum_size_over_p(VALUE obj, long n)
  *  Returns an array containing all elements of +enum+
  *  for which the given +block+ returns a true value.
  *
+ *  The <i>find_all</i> and <i>select</i> methods are aliases.
+ *  There is no performance benefit to either.
+ *
  *  If no block is given, an Enumerator is returned instead.
  *
  *
