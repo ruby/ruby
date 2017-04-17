@@ -70,7 +70,7 @@ module IRB # :nodoc:
 
       case key
       when Array
-        for k in key
+        key.each do |k|
           def_inspector(k, inspector)
         end
       when Symbol

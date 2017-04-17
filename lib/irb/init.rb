@@ -233,7 +233,7 @@ module IRB # :nodoc:
       rescue # StandardError, ScriptError
         print "load error: #{rc_file}\n"
         print $!.class, ": ", $!, "\n"
-        for err in $@[0, $@.size - 2]
+        $@[0, $@.size - 2].each do |err|
           print "\t", err, "\n"
         end
       end
@@ -276,7 +276,7 @@ module IRB # :nodoc:
 
   # loading modules
   def IRB.load_modules
-    for m in @CONF[:LOAD_MODULES]
+    @CONF[:LOAD_MODULES].each do |m|
       begin
         require m
       rescue LoadError => err

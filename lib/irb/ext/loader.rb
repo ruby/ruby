@@ -37,7 +37,7 @@ module IRB # :nodoc:
         return nil
       end
 
-      for path in $:
+      $:.each do |path|
         if File.exist?(f = File.join(path, fn))
           return f
         end

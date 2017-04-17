@@ -398,7 +398,7 @@ module IRB
     alias __inspect__ inspect
     def inspect # :nodoc:
       array = []
-      for ivar in instance_variables.sort{|e1, e2| e1 <=> e2}
+      instance_variables.sort{|e1, e2| e1 <=> e2}.each do |ivar|
         ivar = ivar.to_s
         name = ivar.sub(/^@(.*)$/, '\1')
         val = instance_eval(ivar)
