@@ -4397,6 +4397,7 @@ rb_str_splice_0(VALUE str, long beg, long len, VALUE val)
 {
     char *sptr;
     long slen, vlen = RSTRING_LEN(val);
+    int cr;
 
     if (beg == 0 && vlen == 0) {
 	rb_str_drop_bytes(str, len);
@@ -4404,13 +4405,18 @@ rb_str_splice_0(VALUE str, long beg, long len, VALUE val)
 	return;
     }
 
-    rb_str_modify(str);
+    str_modify_keep_cr(str);
     RSTRING_GETMEM(str, sptr, slen);
     if (len < vlen) {
 	/* expand string */
 	RESIZE_CAPA(str, slen + vlen - len);
 	sptr = RSTRING_PTR(str);
     }
+
+    if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT)
+	cr = rb_enc_str_coderange(val);
+    else
+	cr = ENC_CODERANGE_UNKNOWN;
 
     if (vlen != len) {
 	memmove(sptr + beg + vlen,
@@ -4427,6 +4433,7 @@ rb_str_splice_0(VALUE str, long beg, long len, VALUE val)
     STR_SET_LEN(str, slen);
     TERM_FILL(&sptr[slen], TERM_LEN(str));
     OBJ_INFECT(str, val);
+    ENC_CODERANGE_SET(str, cr);
 }
 
 void
