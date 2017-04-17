@@ -276,7 +276,12 @@ module OpenURI
         if proxy_user && proxy_pass
           klass = Net::HTTP::Proxy(proxy_uri.hostname, proxy_uri.port, proxy_user, proxy_pass)
         else
-          klass = Net::HTTP::Proxy(proxy_uri.hostname, proxy_uri.port)
+          proxy_user, proxy_pass = proxy_uri.userinfo.split(':') if proxy_uri.userinfo
+          if proxy_user && proxy_pass
+            klass = Net::HTTP::Proxy(proxy_uri.hostname, proxy_uri.port, proxy_user, proxy_pass)
+          else
+            klass = Net::HTTP::Proxy(proxy_uri.hostname, proxy_uri.port)
+          end
         end
       end
       target_host = target.hostname
