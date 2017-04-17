@@ -28,9 +28,6 @@ static VALUE rb_eUncaughtThrow;
 static ID id_result, id_tag, id_value;
 #define id_mesg idMesg
 
-/* vm_backtrace.c */
-VALUE rb_vm_backtrace_str_ary(rb_thread_t *th, int lev, int n);
-
 typedef enum call_type {
     CALL_PUBLIC,
     CALL_FCALL,
@@ -1269,7 +1266,7 @@ adjust_backtrace_in_eval(rb_thread_t *th, VALUE errinfo)
     VALUE errat = rb_get_backtrace(errinfo);
     VALUE mesg = rb_attr_get(errinfo, id_mesg);
     if (RB_TYPE_P(errat, T_ARRAY)) {
-	VALUE bt2 = rb_vm_backtrace_str_ary(th, 0, 0);
+	VALUE bt2 = rb_threadptr_backtrace_str_ary(th, 0, 0);
 	if (RARRAY_LEN(bt2) > 0) {
 	    if (RB_TYPE_P(mesg, T_STRING) && !RSTRING_LEN(mesg)) {
 		rb_ivar_set(errinfo, id_mesg, RARRAY_AREF(errat, 0));

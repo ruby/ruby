@@ -293,6 +293,11 @@ void rb_vm_set_progname(VALUE filename);
 void rb_thread_terminate_all(void);
 VALUE rb_vm_cbase(void);
 
+/* vm_backtrace.c */
+VALUE rb_threadptr_backtrace_object(rb_thread_t *th);
+VALUE rb_threadptr_backtrace_str_ary(rb_thread_t *th, long lev, long n);
+VALUE rb_threadptr_backtrace_location_ary(rb_thread_t *th, long lev, long n);
+
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
 # ifdef HAVE_MBLEN
 #  define CharNext(p) ((p) + mblen((p), RUBY_MBCHAR_MAXSIZE))

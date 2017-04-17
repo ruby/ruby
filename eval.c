@@ -516,7 +516,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	VALUE at;
 	if (sysstack_error_p(mesg)) {
 	    if (NIL_P(rb_attr_get(mesg, idBt))) {
-		at = rb_vm_backtrace_object();
+		at = rb_threadptr_backtrace_object(th);
 		rb_ivar_set(mesg, idBt, at);
 		rb_ivar_set(mesg, idBt_locations, at);
 	    }
@@ -530,7 +530,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 		if (rb_threadptr_set_raised(th)) goto fatal;
 		bt = rb_get_backtrace(mesg);
 		if (NIL_P(bt)) {
-		    at = rb_vm_backtrace_object();
+		    at = rb_threadptr_backtrace_object(th);
 		    if (OBJ_FROZEN(mesg)) {
 			mesg = rb_obj_dup(mesg);
 		    }

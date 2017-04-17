@@ -706,11 +706,11 @@ raise_argument_error(rb_thread_t *th, const rb_iseq_t *iseq, const VALUE exc)
 	vm_push_frame(th, iseq, VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL, Qnil /* self */,
 		      VM_BLOCK_HANDLER_NONE /* specval*/, Qfalse /* me or cref */,
 		      iseq->body->iseq_encoded, th->cfp->sp, 0, 0 /* stack_max */);
-	at = rb_vm_backtrace_object();
+	at = rb_threadptr_backtrace_object(th);
 	rb_vm_pop_frame(th);
     }
     else {
-	at = rb_vm_backtrace_object();
+	at = rb_threadptr_backtrace_object(th);
     }
 
     rb_ivar_set(exc, idBt_locations, at);

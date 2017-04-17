@@ -1749,7 +1749,6 @@ int rb_backtrace_p(VALUE obj);
 VALUE rb_backtrace_to_str_ary(VALUE obj);
 VALUE rb_backtrace_to_location_ary(VALUE obj);
 void rb_backtrace_print_to(VALUE output);
-VALUE rb_vm_backtrace_object(void);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 const char *rb_objspace_data_type_name(VALUE obj);

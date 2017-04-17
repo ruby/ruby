@@ -4935,7 +4935,6 @@ ruby_native_thread_p(void)
     return th != 0;
 }
 
-VALUE rb_vm_backtrace_str_ary(rb_thread_t *th, long lev, long n);
 static void
 debug_deadlock_check(rb_vm_t *vm, VALUE msg)
 {
@@ -4968,7 +4967,7 @@ debug_deadlock_check(rb_vm_t *vm, VALUE msg)
 	    }
 	}
 	rb_str_catf(msg, "\n   ");
-	rb_str_concat(msg, rb_ary_join(rb_vm_backtrace_str_ary(th, 0, 0), sep));
+	rb_str_concat(msg, rb_ary_join(rb_threadptr_backtrace_str_ary(th, 0, 0), sep));
 	rb_str_catf(msg, "\n");
     }
 }
