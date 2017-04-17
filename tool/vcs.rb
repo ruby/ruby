@@ -6,6 +6,11 @@ require 'fileutils'
 
 ENV.delete('PWD')
 
+# If specified in configure options, adds git location to PATH for MinGW builds
+if (t = ENV['GIT']) && File.exist?(t)
+  ENV['PATH'] = "#{File.dirname(t)}#{File::PATH_SEPARATOR}#{ENV['PATH']}"
+end
+
 unless File.respond_to? :realpath
   require 'pathname'
   def File.realpath(arg)
