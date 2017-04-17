@@ -799,6 +799,13 @@ end.join
     assert_nil(orig_error.cause, bug13043)
   end
 
+  def test_cause_with_frozen_exception
+    exc = ArgumentError.new("foo").freeze
+    assert_raise_with_message(ArgumentError, exc.message) {
+      raise exc, cause: RuntimeError.new("bar")
+    }
+  end
+
   def test_anonymous_message
     assert_in_out_err([], "raise Class.new(RuntimeError), 'foo'", [], /foo\n/)
   end

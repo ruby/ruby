@@ -481,18 +481,17 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	mesg = rb_exc_new(rb_eRuntimeError, 0, 0);
 	nocause = 0;
     }
-    if (cause != Qundef) {
-	exc_setup_cause(mesg, cause);
-    }
-    else if (nocause) {
-	exc_setup_cause(mesg, Qnil);
-    }
-    else if (!rb_ivar_defined(mesg, id_cause)) {
-	exc_setup_cause(mesg, get_thread_errinfo(th));
+    if (cause == Qundef) {
+	if (nocause) {
+	    cause = Qnil;
+	}
+	else if (!rb_ivar_defined(mesg, id_cause)) {
+	    cause = get_thread_errinfo(th);
+	}
     }
 
     file = rb_source_loc(&line);
-    if (file && !NIL_P(mesg)) {
+    if ((file && !NIL_P(mesg)) || (cause != Qundef))  {
 	VALUE at;
 	int status;
 
@@ -501,11 +500,16 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	    VALUE bt;
 	    if (rb_threadptr_set_raised(th)) goto fatal;
 	    bt = rb_get_backtrace(mesg);
-	    if (NIL_P(bt)) {
-		at = rb_threadptr_backtrace_object(th);
+	    if (!NIL_P(bt) || cause == Qundef) {
 		if (OBJ_FROZEN(mesg)) {
 		    mesg = rb_obj_dup(mesg);
 		}
+	    }
+	    if (cause != Qundef) {
+		exc_setup_cause(mesg, cause);
+	    }
+	    if (NIL_P(bt)) {
+		at = rb_threadptr_backtrace_object(th);
 		rb_ivar_set(mesg, idBt_locations, at);
 		set_backtrace(mesg, at);
 	    }
