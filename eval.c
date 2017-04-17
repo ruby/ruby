@@ -434,7 +434,7 @@ rb_frozen_class_p(VALUE klass)
     }
 }
 
-NORETURN(static void rb_longjmp(int, volatile VALUE, VALUE));
+NORETURN(static void rb_longjmp(rb_thread_t *, int, volatile VALUE, VALUE));
 static VALUE get_errinfo(void);
 static VALUE get_thread_errinfo(rb_thread_t *th);
 
@@ -606,9 +606,8 @@ rb_threadptr_setup_exception(rb_thread_t *th, VALUE mesg, VALUE cause)
 }
 
 static void
-rb_longjmp(int tag, volatile VALUE mesg, VALUE cause)
+rb_longjmp(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 {
-    rb_thread_t *th = GET_THREAD();
     setup_exception(th, tag, mesg, cause);
     rb_thread_raised_clear(th);
     TH_JUMP_TAG(th, tag);
@@ -622,7 +621,7 @@ rb_exc_raise(VALUE mesg)
     if (!NIL_P(mesg)) {
 	mesg = make_exception(1, &mesg, FALSE);
     }
-    rb_longjmp(TAG_RAISE, mesg, Qundef);
+    rb_longjmp(GET_THREAD(), TAG_RAISE, mesg, Qundef);
 }
 
 void
@@ -631,7 +630,7 @@ rb_exc_fatal(VALUE mesg)
     if (!NIL_P(mesg)) {
 	mesg = make_exception(1, &mesg, FALSE);
     }
-    rb_longjmp(TAG_FATAL, mesg, Qnil);
+    rb_longjmp(GET_THREAD(), TAG_FATAL, mesg, Qnil);
 }
 
 void
@@ -778,10 +777,7 @@ rb_raise_jump(VALUE mesg, VALUE cause)
     rb_vm_pop_frame(th);
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, self, me->def->original_id, mid, klass, Qnil);
 
-    setup_exception(th, TAG_RAISE, mesg, cause);
-
-    rb_thread_raised_clear(th);
-    TH_JUMP_TAG(th, TAG_RAISE);
+    rb_longjmp(th, TAG_RAISE, mesg, cause);
 }
 
 void
