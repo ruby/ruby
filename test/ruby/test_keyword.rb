@@ -397,6 +397,18 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([[:opt, :m], [:keyreq, :a]], b.parameters)
   end
 
+  def test_return_with_keyword
+    assert_valid_syntax("def foo; return foo: 1; end")
+  end
+
+  def test_next_with_keyword
+    assert_valid_syntax("tap do next foo: 1; end")
+  end
+
+  def test_break_with_keyword
+    assert_valid_syntax("tap do break foo: 1; end")
+  end
+
   def test_super_with_keyword
     bug8236 = '[ruby-core:54094] [Bug #8236]'
     base = Class.new do
