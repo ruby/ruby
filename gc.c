@@ -3966,6 +3966,12 @@ stack_check(rb_thread_t *th, int water_mark)
 #define STACKFRAME_FOR_CALL_CFUNC 512
 
 int
+rb_threadptr_stack_check(rb_thread_t *th)
+{
+    return stack_check(th, STACKFRAME_FOR_CALL_CFUNC);
+}
+
+int
 ruby_stack_check(void)
 {
     return stack_check(GET_THREAD(), STACKFRAME_FOR_CALL_CFUNC);
