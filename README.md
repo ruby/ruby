@@ -157,7 +157,7 @@ Bug reports should be filed at https://bugs.ruby-lang.org. Read [HowToReport] fo
 
 [HowToReport]: https://bugs.ruby-lang.org/projects/ruby/wiki/HowToReport
 
-##Contributing
+## Contributing
 
 See the file [CONTRIBUTING.md](CONTRIBUTING.md)
 
