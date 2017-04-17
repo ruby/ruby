@@ -2204,6 +2204,21 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[4, 5], a)
   end
 
+  # also select!
+  def test_keep_if
+    a = @cls[ 1, 2, 3, 4, 5 ]
+    assert_equal(a, a.keep_if { true })
+    assert_equal(@cls[1, 2, 3, 4, 5], a)
+
+    a = @cls[ 1, 2, 3, 4, 5 ]
+    assert_equal(a, a.keep_if { false })
+    assert_equal(@cls[], a)
+
+    a = @cls[ 1, 2, 3, 4, 5 ]
+    assert_equal(a, a.keep_if { |i| i > 3 })
+    assert_equal(@cls[4, 5], a)
+  end
+
   def test_delete2
     a = [0] * 1024 + [1] + [0] * 1024
     a.delete(0)
