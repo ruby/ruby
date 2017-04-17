@@ -2839,8 +2839,8 @@ enum_cycle_size(VALUE self, VALUE args, VALUE eobj)
  *  If no block is given, an enumerator is returned instead.
  *
  *     a = ["a", "b", "c"]
- *     a.cycle { |x| puts x }  # print, a, b, c, a, b, c,.. forever.
- *     a.cycle(2) { |x| puts x }  # print, a, b, c, a, b, c.
+ *     a.cycle { |x| print x }     #=> abcabc ... forever.
+ *     a.cycle(2) { |x| print x }  #=> abcabc
  *
  */
 
