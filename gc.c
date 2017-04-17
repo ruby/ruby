@@ -7624,21 +7624,25 @@ rb_memerror(void)
 {
     rb_thread_t *th = GET_THREAD();
     rb_objspace_t *objspace = rb_objspace_of(th->vm);
+    VALUE exc;
 
     if (during_gc) gc_exit(objspace, "rb_memerror");
 
-    if (!nomem_error ||
+    exc = nomem_error;
+    if (!exc ||
 	rb_thread_raised_p(th, RAISED_NOMEMORY)) {
 	fprintf(stderr, "[FATAL] failed to allocate memory\n");
 	exit(EXIT_FAILURE);
     }
     if (rb_thread_raised_p(th, RAISED_NOMEMORY)) {
 	rb_thread_raised_clear(th);
-	GET_THREAD()->errinfo = nomem_error;
-	TH_JUMP_TAG(th, TAG_RAISE);
     }
-    rb_thread_raised_set(th, RAISED_NOMEMORY);
-    rb_exc_raise(nomem_error);
+    else {
+	rb_thread_raised_set(th, RAISED_NOMEMORY);
+	exc = ruby_vm_special_exception_copy(exc);
+    }
+    th->errinfo = exc;
+    TH_JUMP_TAG(th, TAG_RAISE);
 }
 
 static void *

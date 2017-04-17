@@ -2071,6 +2071,10 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 		rb_threadptr_to_kill(th);
 	    }
 	    else {
+		if (err == th->vm->special_exceptions[ruby_error_stream_closed]) {
+		    /* the only special exception to be queued accross thread */
+		    err = ruby_vm_special_exception_copy(err);
+		}
 		/* set runnable if th was slept. */
 		if (th->status == THREAD_STOPPED ||
 		    th->status == THREAD_STOPPED_FOREVER)

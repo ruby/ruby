@@ -464,23 +464,6 @@ exc_setup_cause(VALUE exc, VALUE cause)
     return exc;
 }
 
-static inline int
-sysstack_error_p(VALUE exc)
-{
-    return exc == sysstack_error || (!SPECIAL_CONST_P(exc) && RBASIC_CLASS(exc) == rb_eSysStackError);
-}
-
-static inline int
-special_exception_p(rb_thread_t *th, VALUE exc)
-{
-    enum ruby_special_exceptions i;
-    const VALUE *exceptions = th->vm->special_exceptions;
-    for (i = 0; i < ruby_special_error_count; ++i) {
-	if (exceptions[i] == exc) return TRUE;
-    }
-    return FALSE;
-}
-
 static void
 setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 {
@@ -498,9 +481,6 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	mesg = rb_exc_new(rb_eRuntimeError, 0, 0);
 	nocause = 0;
     }
-    else if (special_exception_p(th, mesg)) {
-	mesg = ruby_vm_special_exception_copy(mesg);
-    }
     if (cause != Qundef) {
 	exc_setup_cause(mesg, cause);
     }
@@ -514,33 +494,24 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
     file = rb_source_loc(&line);
     if (file && !NIL_P(mesg)) {
 	VALUE at;
-	if (sysstack_error_p(mesg)) {
-	    if (NIL_P(rb_attr_get(mesg, idBt))) {
-		at = rb_threadptr_backtrace_object(th);
-		rb_ivar_set(mesg, idBt, at);
-		rb_ivar_set(mesg, idBt_locations, at);
-	    }
-	}
-	else {
-	    int status;
+	int status;
 
-	    TH_PUSH_TAG(th);
-	    if ((status = EXEC_TAG()) == 0) {
-		VALUE bt;
-		if (rb_threadptr_set_raised(th)) goto fatal;
-		bt = rb_get_backtrace(mesg);
-		if (NIL_P(bt)) {
-		    at = rb_threadptr_backtrace_object(th);
-		    if (OBJ_FROZEN(mesg)) {
-			mesg = rb_obj_dup(mesg);
-		    }
-		    rb_ivar_set(mesg, idBt_locations, at);
-		    set_backtrace(mesg, at);
+	TH_PUSH_TAG(th);
+	if ((status = EXEC_TAG()) == 0) {
+	    VALUE bt;
+	    if (rb_threadptr_set_raised(th)) goto fatal;
+	    bt = rb_get_backtrace(mesg);
+	    if (NIL_P(bt)) {
+		at = rb_threadptr_backtrace_object(th);
+		if (OBJ_FROZEN(mesg)) {
+		    mesg = rb_obj_dup(mesg);
 		}
-		rb_threadptr_reset_raised(th);
+		rb_ivar_set(mesg, idBt_locations, at);
+		set_backtrace(mesg, at);
 	    }
-	    TH_POP_TAG();
+	    rb_threadptr_reset_raised(th);
 	}
+	TH_POP_TAG();
     }
 
     if (!NIL_P(mesg)) {
@@ -738,7 +709,6 @@ make_exception(int argc, const VALUE *argv, int isstr)
 	exc = argv[0];
 	n = 1;
       exception_call:
-	if (sysstack_error_p(exc)) return exc;
 	mesg = rb_check_funcall(exc, idException, n, argv+1);
 	if (mesg == Qundef) {
 	    rb_raise(rb_eTypeError, "exception class/object expected");
