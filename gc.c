@@ -3937,12 +3937,18 @@ ruby_stack_length(VALUE **p)
     return STACK_LENGTH;
 }
 
+#ifndef PREVENT_STACK_OVERFLOW
 #if !(defined(POSIX_SIGNAL) && defined(SIGSEGV) && defined(HAVE_SIGALTSTACK))
+# define PREVENT_STACK_OVERFLOW 1
+#else
+# define PREVENT_STACK_OVERFLOW 0
+#endif
+#endif
+#if PREVENT_STACK_OVERFLOW
 static int
-stack_check(int water_mark)
+stack_check(rb_thread_t *th, int water_mark)
 {
     int ret;
-    rb_thread_t *th = GET_THREAD();
     SET_STACK_END;
     ret = STACK_LENGTH > STACK_LEVEL_MAX - water_mark;
 #ifdef __ia64
@@ -3953,6 +3959,8 @@ stack_check(int water_mark)
 #endif
     return ret;
 }
+#else
+#define stack_check(th, water_mark) FALSE
 #endif
 
 #define STACKFRAME_FOR_CALL_CFUNC 512
@@ -3960,11 +3968,7 @@ stack_check(int water_mark)
 int
 ruby_stack_check(void)
 {
-#if defined(POSIX_SIGNAL) && defined(SIGSEGV) && defined(HAVE_SIGALTSTACK)
-    return 0;
-#else
-    return stack_check(STACKFRAME_FOR_CALL_CFUNC);
-#endif
+    return stack_check(GET_THREAD(), STACKFRAME_FOR_CALL_CFUNC);
 }
 
 ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS
