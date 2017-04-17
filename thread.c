@@ -2165,20 +2165,6 @@ rb_threadptr_signal_exit(rb_thread_t *th)
 #define USE_SIGALTSTACK
 #endif
 
-NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
-void
-ruby_thread_stack_overflow(rb_thread_t *th)
-{
-    th->raised_flag = 0;
-#ifdef USE_SIGALTSTACK
-    if (!rb_threadptr_during_gc(th)) {
-	rb_exc_raise(sysstack_error);
-    }
-#endif
-    th->errinfo = sysstack_error;
-    TH_JUMP_TAG(th, TAG_RAISE);
-}
-
 int
 rb_threadptr_set_raised(rb_thread_t *th)
 {

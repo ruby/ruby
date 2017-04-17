@@ -30,11 +30,39 @@ ruby_vm_special_exception_copy(VALUE exc)
     return e;
 }
 
+NORETURN(static void threadptr_stack_overflow(rb_thread_t *, int));
+static void
+threadptr_stack_overflow(rb_thread_t *th, int setup)
+{
+    VALUE mesg = th->vm->special_exceptions[ruby_error_sysstack];
+    th->raised_flag = 0;
+    if (setup) {
+	VALUE at = rb_threadptr_backtrace_object(th);
+	mesg = ruby_vm_special_exception_copy(mesg);
+	rb_ivar_set(mesg, idBt, at);
+	rb_ivar_set(mesg, idBt_locations, at);
+    }
+    th->errinfo = mesg;
+    TH_JUMP_TAG(th, TAG_RAISE);
+}
+
 static void
 vm_stackoverflow(void)
 {
-    rb_exc_raise(ruby_vm_special_exception_copy(sysstack_error));
+    threadptr_stack_overflow(GET_THREAD(), TRUE);
 }
+
+NORETURN(void rb_threadptr_stack_overflow(rb_thread_t *th));
+void
+rb_threadptr_stack_overflow(rb_thread_t *th)
+{
+#ifdef USE_SIGALTSTACK
+    threadptr_stack_overflow(th, !rb_threadptr_during_gc(th));
+#else
+    threadptr_stack_overflow(th, FALSE);
+#endif
+}
+
 
 #if VM_CHECK_MODE > 0
 static int

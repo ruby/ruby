@@ -761,7 +761,7 @@ static const char *received_signal;
 #endif
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
-NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
+NORETURN(void rb_threadptr_stack_overflow(rb_thread_t *th));
 # if defined __HAIKU__
 #   define USE_UCONTEXT_REG 1
 # elif !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__ || defined __amd64__))
@@ -792,7 +792,7 @@ raise_stack_overflow(int sig, rb_thread_t *th)
 	rb_bug_errno(STRINGIZE(ruby_sigunmask)":unblock", errno);
     }
 #endif
-    ruby_thread_stack_overflow(th);
+    rb_threadptr_stack_overflow(th);
 }
 
 # ifdef USE_UCONTEXT_REG
