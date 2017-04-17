@@ -657,11 +657,7 @@ module RSS
 
           # Returns the element content in XHTML.
           def xhtml
-            if inline_xhtml?
-              xml
-            else
-              nil
-            end
+            inline_xhtml? ? xml : nil
           end
 
           # Raises a MissingAttributeError, NotAvailableValueError,
