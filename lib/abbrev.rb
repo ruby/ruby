@@ -79,11 +79,11 @@ module Abbrev
     end
 
     words.each do |word|
-      next if word.empty?
+      next if word.strip.empty?
       word.size.downto(1) { |len|
         abbrev = word[0...len]
 
-        next if pattern && pattern !~ abbrev
+        next if pattern&. !~ abbrev
 
         case seen[abbrev] += 1
         when 1
@@ -97,7 +97,7 @@ module Abbrev
     end
 
     words.each do |word|
-      next if pattern && pattern !~ word
+      next if word.strip.empty? or pattern&. !~ word
 
       table[word] = word
     end
