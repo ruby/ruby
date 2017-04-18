@@ -1406,7 +1406,7 @@ opt_aset_with
     VALUE tmp = vm_opt_aset_with(recv, key, val);
 
     if (tmp != Qundef) {
-        val = tmp;
+	val = tmp;
     }
     else {
 	/* other */

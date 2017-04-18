@@ -3244,13 +3244,13 @@ vm_once_dispatch(ISEQ iseq, IC ic, rb_thread_t *th)
 	return is->once.value;
     }
     else if (is->once.running_thread == NULL) {
-        VALUE val;
+	VALUE val;
 	is->once.running_thread = th;
 	val = is->once.value = rb_ensure(vm_once_exec, (VALUE)iseq, vm_once_clear, (VALUE)is);
 	/* is->once.running_thread is cleared by vm_once_clear() */
 	is->once.running_thread = RUNNING_THREAD_ONCE_DONE; /* success */
 	rb_iseq_add_mark_object(th->cfp->iseq, val);
-        return val;
+	return val;
     }
     else if (is->once.running_thread == th) {
 	/* recursive once */
@@ -3260,7 +3260,7 @@ vm_once_dispatch(ISEQ iseq, IC ic, rb_thread_t *th)
 	/* waiting for finish */
 	RUBY_VM_CHECK_INTS(th);
 	rb_thread_schedule();
-        return vm_once_dispatch(iseq, ic, th);
+	return vm_once_dispatch(iseq, ic, th);
     }
 }
 
@@ -3424,7 +3424,7 @@ vm_opt_mod(VALUE recv, VALUE obj)
 
 static inline int
 vm_method_cfunc_is(CALL_INFO ci, CALL_CACHE cc,
-                   VALUE recv, VALUE (*func)())
+		   VALUE recv, VALUE (*func)())
 {
     vm_search_method(ci, cc, recv);
     return check_cfunc(cc->me, func);
