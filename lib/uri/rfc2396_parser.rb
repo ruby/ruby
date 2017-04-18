@@ -42,8 +42,8 @@ module URI
       # reserved      = ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+" |
       #                 "$" | ","
       # reserved      = ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+" |
-      #                 "$" | "," | "[" | "]" (RFC 2732)
-      RESERVED = ";/?:@&=+$,\\[\\]"
+      #                 "$" | "," | "[" | "]" | "|" (RFC 2732)
+      RESERVED = ";/?:@&=+$,\\[\\]|"
 
       # domainlabel   = alphanum | alphanum *( alphanum | "-" ) alphanum
       DOMLABEL = "(?:[#{ALNUM}](?:[-#{ALNUM}]*[#{ALNUM}])?)"
