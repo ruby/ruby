@@ -4,7 +4,8 @@ require 'objspace'
 
 class TestRubyOptimization < Test::Unit::TestCase
   def assert_redefine_method(klass, method, code, msg = nil)
-    assert_separately([], <<-"end;")#    do
+    assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
       class #{klass}
         undef #{method}
         def #{method}(*args)
@@ -183,20 +184,22 @@ class TestRubyOptimization < Test::Unit::TestCase
   def test_hash_aref_with
     h = { "foo" => 1 }
     assert_equal 1, h["foo"]
-    assert_redefine_method('Hash', '[]', <<-end)
+    assert_redefine_method('Hash', '[]', "#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
       h = { "foo" => 1 }
       assert_equal "foo", h["foo"]
-    end
+    end;
   end
 
   def test_hash_aset_with
     h = {}
     assert_equal 1, h["foo"] = 1
-    assert_redefine_method('Hash', '[]=', <<-end)
+    assert_redefine_method('Hash', '[]=', "#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
       h = {}
       assert_equal 1, h["foo"] = 1, "assignment always returns value set"
       assert_nil h["foo"]
-    end
+    end;
   end
 
   class MyObj
@@ -235,7 +238,8 @@ class TestRubyOptimization < Test::Unit::TestCase
   def test_tailcall
     bug4082 = '[ruby-core:33289]'
 
-    tailcall(<<-EOF)
+    tailcall("#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
       def fact_helper(n, res)
         if n == 1
           res
@@ -246,14 +250,15 @@ class TestRubyOptimization < Test::Unit::TestCase
       def fact(n)
         fact_helper(n, 1)
       end
-    EOF
+    end;
     assert_equal(9131, fact(3000).to_s.size, message(bug4082) {disasm(:fact_helper)})
   end
 
   def test_tailcall_with_block
     bug6901 = '[ruby-dev:46065]'
 
-    tailcall(<<-EOF)
+    tailcall("#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
       def identity(val)
         val
       end
@@ -263,7 +268,7 @@ class TestRubyOptimization < Test::Unit::TestCase
           identity(yield)
         }
       end
-    EOF
+    end;
     assert_equal(123, delay { 123 }.call, message(bug6901) {disasm(:delay)})
   end
 
@@ -272,11 +277,12 @@ class TestRubyOptimization < Test::Unit::TestCase
   end
 
   def test_tailcall_inhibited_by_block
-    tailcall(<<-EOF)
+    tailcall("#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
       def yield_result
         just_yield {:ok}
       end
-    EOF
+    end;
     assert_equal(:ok, yield_result, message {disasm(:yield_result)})
   end
 
@@ -291,7 +297,8 @@ class TestRubyOptimization < Test::Unit::TestCase
   def test_tailcall_inhibited_by_rescue
     bug12082 = '[ruby-core:73871] [Bug #12082]'
 
-    tailcall(<<-'end;')
+    tailcall("#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
       def to_be_rescued
         return do_raise
         1 + 2
@@ -308,7 +315,8 @@ class TestRubyOptimization < Test::Unit::TestCase
 
   def test_tailcall_symbol_block_arg
     bug12565 = '[ruby-core:46065]'
-    tailcall(<<-EOF)
+    tailcall("#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
       def apply_one_and_two(&block)
         yield(1, 2)
       end
@@ -316,28 +324,30 @@ class TestRubyOptimization < Test::Unit::TestCase
       def add_one_and_two
         apply_one_and_two(&:+)
       end
-    EOF
+    end;
     assert_equal(3, add_one_and_two,
                  message(bug12565) {disasm(:add_one_and_two)})
   end
 
   def test_tailcall_interrupted_by_sigint
     bug12576 = 'ruby-core:76327'
-    script = <<EOS
-RubyVM::InstructionSequence.compile_option = {
-  :tailcall_optimization => true,
-  :trace_instruction => false
-}
+    script = "#{<<-"begin;"}\n#{<<~'end;'}"
+    begin;
+      RubyVM::InstructionSequence.compile_option = {
+        :tailcall_optimization => true,
+        :trace_instruction => false
+      }
 
-eval <<EOF
-def foo
-  foo
-end
-puts("start")
-STDOUT.flush
-foo
-EOF
-EOS
+      eval "#{<<~"begin;"}\n#{<<~'end;1'}"
+      begin;
+        def foo
+          foo
+        end
+        puts("start")
+        STDOUT.flush
+        foo
+      end;1
+    end;
     status, _err = EnvUtil.invoke_ruby([], "", true, true, {}) {
       |in_p, out_p, err_p, pid|
       in_p.write(script)
@@ -365,7 +375,7 @@ EOS
   def test_tailcall_condition_block
     bug = '[ruby-core:78015] [Bug #12905]'
 
-    src = "#{<<-"begin;"}\n#{<<-"end;"}"
+    src = "#{<<-"begin;"}\n#{<<~"end;"}"
     begin;
       def run(current, final)
         if current < final
@@ -414,7 +424,8 @@ EOS
   end
 
   def test_string_freeze_block
-    assert_separately([], <<-"end;")#    do
+    assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
       class String
         undef freeze
         def freeze
@@ -427,7 +438,8 @@ EOS
   end
 
   def test_opt_case_dispatch
-    code = <<-EOF
+    code = "#{<<-"begin;"}\n#{<<~"end;"}"
+    begin;
       case foo
       when "foo" then :foo
       when true then true
@@ -440,7 +452,7 @@ EOS
       else
         :nomatch
       end
-    EOF
+    end;
     check = {
       'foo' => :foo,
       true => true,
@@ -459,7 +471,8 @@ EOS
     assert_equal :nomatch, eval("foo = :blah\n#{code}")
     check.each do |foo, _|
       klass = foo.class.to_s
-      assert_separately([], <<-"end;") # do
+      assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
+      begin;
         class #{klass}
           undef ===
           def ===(*args)
@@ -497,12 +510,13 @@ EOS
   end
 
   def test_peephole_string_literal_range
-    code = <<-EOF
+    code = "#{<<~"begin;"}\n#{<<~"end;"}"
+    begin;
       case ver
       when "2.0.0".."2.3.2" then :foo
       when "1.8.0"..."1.8.8" then :bar
       end
-    EOF
+    end;
     iseq = RubyVM::InstructionSequence.compile(code)
     insn = iseq.disasm
     assert_match %r{putobject\s+#{Regexp.quote('"1.8.0"..."1.8.8"')}}, insn
