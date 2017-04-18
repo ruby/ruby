@@ -524,4 +524,47 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_no_match(/putstring/, insn)
     assert_no_match(/newrange/, insn)
   end
+
+  def test_branch_condition_backquote
+    bug = '[ruby-core:80740] [Bug #13444] redefined backquote should be called'
+    class << self
+      def `(s)
+        @q = s
+        @r
+      end
+    end
+
+    @q = nil
+    @r = nil
+    assert_equal("bar", ("bar" unless `foo`), bug)
+    assert_equal("foo", @q, bug)
+
+    @q = nil
+    @r = true
+    assert_equal("bar", ("bar" if `foo`), bug)
+    assert_equal("foo", @q, bug)
+
+    @q = nil
+    @r = "z"
+    assert_equal("bar", ("bar" if `foo#{@r}`))
+    assert_equal("fooz", @q, bug)
+  end
+
+  def test_branch_condition_def
+    bug = '[ruby-core:80740] [Bug #13444] method should be defined'
+    c = Class.new do
+      raise "bug" unless def t;:ok;end
+    end
+    assert_nothing_raised(NoMethodError, bug) do
+      assert_equal(:ok, c.new.t)
+    end
+  end
+
+  def test_branch_condition_defs
+    bug = '[ruby-core:80740] [Bug #13444] singleton method should be defined'
+    raise "bug" unless def self.t;:ok;end
+    assert_nothing_raised(NameError, bug) do
+      assert_equal(:ok, t)
+    end
+  end
 end

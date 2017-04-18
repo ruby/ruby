@@ -2249,7 +2249,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 			    OPERAND_AT(pobj, 0) == Qfalse :
 			    FALSE);
 		}
-		else if (IS_INSN_ID(pobj, putstring)) {
+		else if (IS_INSN_ID(pobj, putstring) || IS_INSN_ID(pobj, duparray)) {
 		    cond = IS_INSN_ID(iobj, branchif);
 		}
 		else if (IS_INSN_ID(pobj, putnil)) {
@@ -2907,18 +2907,8 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *cond,
       case NODE_LIT:		/* NODE_LIT is always true */
       case NODE_TRUE:
       case NODE_STR:
-      case NODE_DSTR:
-      case NODE_XSTR:
-      case NODE_DXSTR:
-      case NODE_DREGX:
-      case NODE_DREGX_ONCE:
-      case NODE_DSYM:
-      case NODE_ARRAY:
       case NODE_ZARRAY:
-      case NODE_HASH:
       case NODE_LAMBDA:
-      case NODE_DEFN:
-      case NODE_DEFS:
 	/* printf("useless condition eliminate (%s)\n",  ruby_node_name(nd_type(cond))); */
 	ADD_INSNL(ret, nd_line(cond), jump, then_label);
 	break;
