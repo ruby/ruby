@@ -76,6 +76,9 @@ char *getenv();
     /* END OF FEATURES */
 #define EACH_DEBUG_FEATURES(X, SEP) \
     X(frozen_string_literal) \
+    X(gc_stress) \
+    X(core) \
+    X(rtc_error) \
     /* END OF DEBUG FEATURES */
 #define AMBIGUOUS_FEATURE_NAMES 0 /* no ambiguous feature names now */
 #define DEFINE_FEATURE(bit) feature_##bit
@@ -1602,6 +1605,20 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	rb_funcallv(rb_cISeq, rb_intern_const("compile_option="), 1, &option);
 #undef SET_COMPILE_OPTION
     }
+    if (opt->features & DEBUG_BIT(gc_stress)) {
+	rb_funcall(rb_mGC, rb_intern_const("stress="), 1, Qtrue);
+    }
+    if (opt->features & DEBUG_BIT(core)) {
+	void ruby_uninstall_coredump_handler(void);
+	ruby_uninstall_coredump_handler();
+    }
+#if defined _WIN32 && RUBY_MSVCRT_VERSION >= 80
+    if (opt->features & DEBUG_BIT(rtc_error)) {
+	extern int ruby_w32_rtc_error;
+	ruby_w32_rtc_error = 1;
+    }
+#endif
+
 #if UTF8_PATH
     if (uenc != lenc) {
 	opt->script_name = str_conv_enc(opt->script_name, uenc, lenc);
