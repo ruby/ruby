@@ -2628,7 +2628,7 @@ static VALUE
 convert_type(VALUE val, const char *tname, const char *method, int raise)
 {
     ID m = 0;
-    int i = numberof(conv_method_names);
+    int i;
     VALUE r;
     static const char prefix[] = "to_";
 
@@ -2646,7 +2646,7 @@ convert_type(VALUE val, const char *tname, const char *method, int raise)
     r = rb_check_funcall(val, m, 0, 0);
     if (r == Qundef) {
 	if (raise) {
-	    const char *msg = i < IMPLICIT_CONVERSIONS ?
+	    const char *msg = numberof(conv_method_names) < IMPLICIT_CONVERSIONS ?
 		"no implicit conversion of" : "can't convert";
 	    const char *cname = NIL_P(val) ? "nil" :
 		val == Qtrue ? "true" :
