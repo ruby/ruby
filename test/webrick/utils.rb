@@ -16,15 +16,14 @@ module TestWEBrick
   class WEBrick::HTTPServlet::CGIHandler
     remove_const :Ruby
     Ruby = EnvUtil.rubybin
-    remove_const :CGIRunner
-    CGIRunner = "\"#{Ruby}\" \"#{WEBrick::Config::LIBDIR}/httpservlet/cgi_runner.rb\"" # :nodoc:
+    CGIRunner[0] = Ruby
   end
 
-  RubyBin = "\"#{EnvUtil.rubybin}\""
-  RubyBin << " --disable-gems"
-  RubyBin << " \"-I#{File.expand_path("../..", File.dirname(__FILE__))}/lib\""
-  RubyBin << " \"-I#{File.dirname(EnvUtil.rubybin)}/.ext/common\""
-  RubyBin << " \"-I#{File.dirname(EnvUtil.rubybin)}/.ext/#{RUBY_PLATFORM}\""
+  RubyBin = [EnvUtil.rubybin]
+  RubyBin << "--disable-gems"
+  RubyBin << "-I#{File.expand_path("../..", File.dirname(__FILE__))}/lib"
+  RubyBin << "-I#{File.dirname(EnvUtil.rubybin)}/.ext/common"
+  RubyBin << "-I#{File.dirname(EnvUtil.rubybin)}/.ext/#{RUBY_PLATFORM}"
 
   include Test::Unit::Assertions
   extend Test::Unit::Assertions
