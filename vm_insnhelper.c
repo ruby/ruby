@@ -3136,19 +3136,19 @@ vm_find_or_create_class_by_id(ID id,
     rb_vm_defineclass_type_t type = VM_DEFINECLASS_TYPE(flags);
 
     switch (type) {
-    case VM_DEFINECLASS_TYPE_CLASS:
+      case VM_DEFINECLASS_TYPE_CLASS:
 	/* classdef returns class scope value */
 	return vm_define_class(id, flags, cbase, super);
 
-    case VM_DEFINECLASS_TYPE_SINGLETON_CLASS:
+      case VM_DEFINECLASS_TYPE_SINGLETON_CLASS:
 	/* classdef returns class scope value */
 	return rb_singleton_class(cbase);
 
-    case VM_DEFINECLASS_TYPE_MODULE:
+      case VM_DEFINECLASS_TYPE_MODULE:
 	/* classdef returns class scope value */
 	return vm_define_module(id, flags, cbase);
 
-    default:
+      default:
 	rb_bug("unknown defineclass type: %d", (int)type);
     }
 }
@@ -3268,11 +3268,11 @@ static OFFSET
 vm_case_dispatch(CDHASH hash, OFFSET else_offset, VALUE key)
 {
     switch (OBJ_BUILTIN_TYPE(key)) {
-    case -1:
-    case T_FLOAT:
-    case T_SYMBOL:
-    case T_BIGNUM:
-    case T_STRING:
+      case -1:
+      case T_FLOAT:
+      case T_SYMBOL:
+      case T_BIGNUM:
+      case T_STRING:
 	if (BASIC_OP_UNREDEFINED_P(BOP_EQQ,
 				   SYMBOL_REDEFINED_OP_FLAG |
 				   INTEGER_REDEFINED_OP_FLAG |
@@ -3677,9 +3677,9 @@ static VALUE
 vm_opt_empty_p(VALUE recv)
 {
     switch (vm_opt_length(recv, BOP_EMPTY_P)) {
-    case Qundef: return Qundef;
-    case INT2FIX(0): return Qtrue;
-    default: return Qfalse;
+      case Qundef: return Qundef;
+      case INT2FIX(0): return Qtrue;
+      default: return Qfalse;
     }
 }
 
