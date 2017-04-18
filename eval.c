@@ -492,14 +492,11 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 
     file = rb_source_loc(&line);
     if ((file && !NIL_P(mesg)) || (cause != Qundef))  {
-	VALUE at;
 	int status;
 
 	TH_PUSH_TAG(th);
-	if ((status = EXEC_TAG()) == 0) {
-	    VALUE bt;
-	    if (rb_threadptr_set_raised(th)) goto fatal;
-	    bt = rb_get_backtrace(mesg);
+	if (EXEC_TAG() == 0 && !(status = rb_threadptr_set_raised(th))) {
+	    VALUE bt = rb_get_backtrace(mesg);
 	    if (!NIL_P(bt) || cause == Qundef) {
 		if (OBJ_FROZEN(mesg)) {
 		    mesg = rb_obj_dup(mesg);
@@ -509,13 +506,14 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 		exc_setup_cause(mesg, cause);
 	    }
 	    if (NIL_P(bt)) {
-		at = rb_threadptr_backtrace_object(th);
+		VALUE at = rb_threadptr_backtrace_object(th);
 		rb_ivar_set(mesg, idBt_locations, at);
 		set_backtrace(mesg, at);
 	    }
 	    rb_threadptr_reset_raised(th);
 	}
 	TH_POP_TAG();
+	if (status) goto fatal;
     }
 
     if (!NIL_P(mesg)) {
