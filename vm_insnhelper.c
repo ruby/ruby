@@ -2897,13 +2897,13 @@ vm_get_special_object(const VALUE *const reg_ep,
 		      enum vm_special_object_type type)
 {
     switch (type) {
-    case VM_SPECIAL_OBJECT_VMCORE:
+      case VM_SPECIAL_OBJECT_VMCORE:
 	return rb_mRubyVMFrozenCore;
-    case VM_SPECIAL_OBJECT_CBASE:
+      case VM_SPECIAL_OBJECT_CBASE:
 	return vm_get_cbase(reg_ep);
-    case VM_SPECIAL_OBJECT_CONST_BASE:
+      case VM_SPECIAL_OBJECT_CONST_BASE:
 	return vm_get_const_base(reg_ep);
-    default:
+      default:
 	rb_bug("putspecialobject insn: unknown value_type %d", type);
     }
 }
