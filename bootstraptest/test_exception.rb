@@ -402,7 +402,7 @@ assert_equal 'nil', %q{
   exc.inspect
 }, '[ruby-dev:32608]'
 
-assert_equal 'exception class/object expected', %q{
+assert_equal 'divided by 0', %q{
   class ZeroDivisionError
     def self.new(message)
       42

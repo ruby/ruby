@@ -767,7 +767,7 @@ VALUE rb_eSystemCallError;
 VALUE rb_mErrno;
 static VALUE rb_eNOERROR;
 
-static ID id_new, id_cause, id_message, id_backtrace;
+static ID id_cause, id_message, id_backtrace;
 static ID id_name, id_args, id_Errno, id_errno, id_i_path;
 static ID id_receiver, id_iseq, id_local_variables;
 static ID id_private_call_p;
@@ -782,7 +782,8 @@ extern ID ruby_static_id_status;
 VALUE
 rb_exc_new(VALUE etype, const char *ptr, long len)
 {
-    return rb_funcall(etype, id_new, 1, rb_str_new(ptr, len));
+    VALUE mesg = rb_str_new(ptr, len);
+    return rb_class_new_instance(1, &mesg, etype);
 }
 
 VALUE
@@ -795,7 +796,7 @@ VALUE
 rb_exc_new_str(VALUE etype, VALUE str)
 {
     StringValue(str);
-    return rb_funcall(etype, id_new, 1, str);
+    return rb_class_new_instance(1, &str, etype);
 }
 
 /*
@@ -2160,7 +2161,6 @@ Init_Exception(void)
 
     rb_define_global_function("warn", rb_warn_m, -1);
 
-    id_new = rb_intern_const("new");
     id_cause = rb_intern_const("cause");
     id_message = rb_intern_const("message");
     id_backtrace = rb_intern_const("backtrace");
