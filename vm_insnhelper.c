@@ -1351,6 +1351,19 @@ rb_equal_opt(VALUE obj1, VALUE obj2)
     return opt_eq_func(obj1, obj2, &ci, &cc);
 }
 
+VALUE
+rb_eql_opt(VALUE obj1, VALUE obj2)
+{
+    struct rb_call_info ci;
+    struct rb_call_cache cc;
+
+    ci.mid = idEqlP;
+    cc.method_state = 0;
+    cc.class_serial = 0;
+    cc.me = NULL;
+    return opt_eq_func(obj1, obj2, &ci, &cc);
+}
+
 static VALUE vm_call0(rb_thread_t*, VALUE, ID, int, const VALUE*, const rb_callable_method_entry_t *);
 
 static VALUE
