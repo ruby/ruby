@@ -732,7 +732,7 @@ trace
 {
     rb_event_flag_t flag = (rb_event_flag_t)nf;
 
-    vm_dtrace(nf, th);
+    vm_dtrace(flag, th);
     EXEC_EVENT_HOOK(th, flag, GET_SELF(), 0, 0, 0 /* id and klass are resolved at callee */,
 		    (flag & (RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN)) ? TOPN(0) : Qundef);
 }
