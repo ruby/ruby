@@ -60,13 +60,13 @@ fi
 AC_SUBST(BASERUBY)
 AC_SUBST(HAVE_BASERUBY)
 
-GIT=git
+: ${GIT=git}
 HAVE_GIT=yes
 AC_ARG_WITH(git,
 	AS_HELP_STRING([--without-git], [never use git]),
 	[AS_CASE([$withval],
 	    [no],  [GIT=never-use HAVE_GIT=no],
-	    [yes], [GIT=git],
+	    [yes], [],
 	    [GIT=$withval])])
 AS_IF([test x"$HAVE_GIT" = xyes], [command -v "$GIT" > /dev/null || HAVE_GIT=no])
 AC_SUBST(GIT)
