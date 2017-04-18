@@ -1218,7 +1218,7 @@ rb_name_error_str(VALUE str, const char *fmt, ...)
 
 /*
  * call-seq:
- *   NameError.new([msg, *, name])  -> name_error
+ *   NameError.new([msg, *, name [, receiver]])  -> name_error
  *
  * Construct a new NameError exception. If given the <i>name</i>
  * parameter may subsequently be examined using the <code>NameError.name</code>
@@ -1229,9 +1229,22 @@ static VALUE
 name_err_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE name;
+    VALUE recv;
     VALUE iseqw = Qnil;
+    VALUE args = 0;
 
+    recv = (argc > 2) ? argv[--argc] : Qundef;
     name = (argc > 1) ? argv[--argc] : Qnil;
+    if (recv != Qundef && argc > 0) {
+	VALUE mesg = argv[0];
+	VALUE *newargv = &mesg;
+	if (argc > 1) {
+	    newargv = ALLOCV_N(VALUE, args, argc);
+	    MEMCPY(newargv + 1, argv + 1, VALUE, argc - 1);
+	}
+	argv = newargv;
+	newargv[0] = rb_name_err_mesg_new(mesg, recv, name);
+    }
     rb_call_super(argc, argv);
     rb_ivar_set(self, id_name, name);
     {
@@ -1283,7 +1296,7 @@ name_err_local_variables(VALUE self)
 
 /*
  * call-seq:
- *   NoMethodError.new([msg, *, name [, args]])  -> no_method_error
+ *   NoMethodError.new([msg, *, name [[, receiver], args]])  -> no_method_error
  *
  * Construct a NoMethodError exception for a method of the given name
  * called with the given arguments. The name may be accessed using

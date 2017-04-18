@@ -872,6 +872,18 @@ end.join
     assert_equal(:foo, e.name)
     assert_same(obj, e.receiver)
     assert_equal(%i[a b c d e f g], e.local_variables.sort)
+
+    obj = Object.new
+    def obj._dump(*); raise "failed"; end;
+    e = NameError.new("error", :foo, obj)
+    assert_equal(:foo, e.name)
+    assert_same(obj, e.receiver)
+    assert_equal(:foo, Marshal.load(Marshal.dump(e)).name)
+    e = NoMethodError.new("error", :foo, obj, [])
+    assert_equal(:foo, e.name)
+    assert_same(obj, e.receiver)
+    assert_equal([], e.args)
+    assert_equal(:foo, Marshal.load(Marshal.dump(e)).name)
   end
 
   def test_name_error_info_method_missing
