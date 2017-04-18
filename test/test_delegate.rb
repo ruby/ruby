@@ -129,10 +129,16 @@ class TestDelegateClass < Test::Unit::TestCase
   def test_private_method
     foo = Foo.new
     d = SimpleDelegator.new(foo)
+    def d.delegate_test
+      delegate_test_private
+    end
+
     assert_raise(NoMethodError) {foo.delegate_test_private}
     assert_equal(:m, foo.send(:delegate_test_private))
     assert_raise(NoMethodError, '[ruby-dev:40314]#4') {d.delegate_test_private}
-    assert_raise(NoMethodError, '[ruby-dev:40314]#5') {d.send(:delegate_test_private)}
+    assert_equal(:m, d.delegate_test)
+    assert_raise(NoMethodError) {foo.sprintf("")}
+    assert_raise(NoMethodError) {d.sprintf("")}
   end
 
   def test_global_function

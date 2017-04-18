@@ -76,15 +76,24 @@ class Delegator < BasicObject
   # Handles the magic of delegation through \_\_getobj\_\_.
   #
   def method_missing(m, *args, &block)
+    begin
+      priv = false
+      return super(m, *args, &block)
+    rescue ::NoMethodError => e
+      priv = e.private_call?
+    rescue ::NameError => e
+      priv = true
+    end
+
     r = true
     target = self.__getobj__ {r = false}
 
-    if r && target.respond_to?(m)
+    if r && target.respond_to?(m, priv)
       target.__send__(m, *args, &block)
-    elsif ::Kernel.respond_to?(m, true)
+    elsif ::Kernel.method_defined?(m) or (priv and ::Kernel.private_method_defined?(m))
       ::Kernel.instance_method(m).bind(self).(*args, &block)
     else
-      super(m, *args, &block)
+      ::Kernel.raise e
     end
   end
 

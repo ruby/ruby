@@ -40,7 +40,7 @@ GEM_VENDOR =
 
 SPEC_GIT_BASE = git://github.com/ruby
 MSPEC_GIT_URL = $(SPEC_GIT_BASE)/mspec.git
-RUBYSPEC_GIT_URL = $(SPEC_GIT_BASE)/spec.git
+RUBYSPEC_GIT_URL = $(SPEC_GIT_BASE:ruby=nobu)/rubyspec.git
 
 SIMPLECOV_GIT_URL = git://github.com/colszowka/simplecov.git
 SIMPLECOV_GIT_REF = v0.10.0
