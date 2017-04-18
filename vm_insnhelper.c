@@ -3021,7 +3021,7 @@ static VALUE
 vm_const_get_under(ID id, rb_num_t flags, VALUE cbase)
 {
     VALUE ns;
-    
+
     if ((ns = vm_search_const_defined_class(cbase, id)) == 0) {
 	return ns;
     }
