@@ -743,7 +743,7 @@ def install_default_gem(dir, srcdir)
     puts "#{" "*30}#{gemspec.name} #{gemspec.version}"
     gemspec_path = File.join(default_spec_dir, "#{full_name}.gemspec")
     open_for_install(gemspec_path, $data_mode) do
-      gemspec.to_ruby_for_cache
+      gemspec.to_ruby
     end
 
     unless gemspec.executables.empty? then
