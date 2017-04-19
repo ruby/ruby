@@ -222,7 +222,6 @@ def extmake(target, basedir = 'ext', maybestatic = true)
       rescue SystemExit
 	# ignore
       rescue => error
-        lineno = error.backtrace_locations[0].lineno
         ok = false
       ensure
 	rm_f "conftest*"
@@ -238,18 +237,16 @@ def extmake(target, basedir = 'ext', maybestatic = true)
 
       return true if !error and target.start_with?("-")
 
-      if parent
-        message = "Failed to configure #{target}. It will not be installed."
-      else
-        message = "Skipped to configure #{target}. Its parent is not configured."
+      message = nil
+      if error
+        loc = error.backtrace_locations[0]
+        message = "#{loc.absolute_path}:#{loc.lineno}: #{error.message}"
+        if Logging.log_opened?
+          Logging::message("#{message}\n\t#{error.backtrace.join("\n\t")}\n")
+        end
       end
-      if Logging.log_opened?
-        Logging::message(error.to_s) if error
-        Logging::message(message)
-      end
-      message = error.message if error
 
-      return parent ? [conf, lineno||0, message] : true
+      return [parent, message]
     end
     args = $mflags
     unless $destdir.to_s.empty? or $mflags.defined?("DESTDIR")
@@ -560,7 +557,7 @@ exts.each do |d|
   if !$nodynamic or $static
     result = extmake(d, ext_prefix, !@gemname) or abort
     extso |= $extso
-    fails << result unless result == true
+    fails << [d, result] unless result == true
   end
 end
 
@@ -719,15 +716,17 @@ begin
 
     mf.puts "\n""note:\n"
     unless fails.empty?
-      mf.puts %Q<\t@echo "*** Following extensions failed to configure:">
-      fails.each do |d, n, err|
-        d = "#{d}:#{n}:"
-        if err
-          err.scan(/.+/) do |ee|
-            mf.puts %Q<\t@echo "#{d} #{ee.gsub(/["`$^]/, '\\\\\\&')}">
+      mf.puts %Q<\t@echo "*** Following extensions are not compiled:">
+      fails.each do |ext, (parent, err)|
+        mf.puts %Q<\t@echo "#{ext}:">
+        if parent
+          mf.puts %Q<\t@echo "\tCould not be configured. It will not be installed.">
+          err&.scan(/.+/) do |ee|
+            mf.puts %Q<\t@echo "\t#{ee.gsub(/["`$^]/, '\\\\\\&')}">
           end
+          mf.puts %Q<\t@echo "\tCheck #{ext_prefix}/#{ext}/mkmf.log for more details.">
         else
-          mf.puts %Q<\t@echo "#{d}">
+          mf.puts %Q<\t@echo "\tSkipped because its parent was not configured.">
         end
       end
       mf.puts %Q<\t@echo "*** Fix the problems, then remove these directories and try again if you want.">
