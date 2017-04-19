@@ -3299,23 +3299,50 @@ vm_case_dispatch(CDHASH hash, OFFSET else_offset, VALUE key)
     return 0;
 }
 
+enum binop_operands_type {
+    bot_others = 0,
+    bot_fixnum,
+    bot_flonum,
+    bot_float
+};
+
+static enum binop_operands_type
+vm_opt_binop_dispatch(VALUE recv, VALUE obj, enum ruby_basic_operators BOP)
+{
+    if (FIXNUM_2_P(recv, obj) &&
+	BASIC_OP_UNREDEFINED_P(BOP, INTEGER_REDEFINED_OP_FLAG)) {
+	return bot_fixnum;
+    }
+    else if (FLONUM_2_P(recv, obj) &&
+	     BASIC_OP_UNREDEFINED_P(BOP, FLOAT_REDEFINED_OP_FLAG)) {
+	return bot_flonum;
+    }
+    else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
+	return bot_others;
+    }
+    else if (RBASIC_CLASS(recv) == rb_cFloat &&
+	     RBASIC_CLASS(obj)  == rb_cFloat &&
+	     BASIC_OP_UNREDEFINED_P(BOP, FLOAT_REDEFINED_OP_FLAG)) {
+	return bot_float;
+    }
+    else {
+	return bot_others;
+    }
+}
+
 static VALUE
 vm_opt_plus(VALUE recv, VALUE obj)
 {
-    if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_PLUS,INTEGER_REDEFINED_OP_FLAG)) {
-	return rb_fix_plus_fix(recv, obj);
-    }
-    else if (FLONUM_2_P(recv, obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_PLUS, FLOAT_REDEFINED_OP_FLAG)) {
-	return DBL2NUM(RFLOAT_VALUE(recv) + RFLOAT_VALUE(obj));
-    }
-    else if (FLOAT_INSTANCE_P(recv) && FLOAT_INSTANCE_P(obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_PLUS, FLOAT_REDEFINED_OP_FLAG)) {
-	return DBL2NUM(RFLOAT_VALUE(recv) + RFLOAT_VALUE(obj));
-    }
-    else if (!SPECIAL_CONST_P(recv) && !SPECIAL_CONST_P(obj)) {
-	if (RBASIC_CLASS(recv) == rb_cString && RBASIC_CLASS(obj) == rb_cString &&
+    switch (vm_opt_binop_dispatch(recv, obj, BOP_PLUS)) {
+      case bot_float:
+      case bot_flonum: return DBL2NUM(RFLOAT_VALUE(recv) + RFLOAT_VALUE(obj));
+      case bot_fixnum: return rb_fix_plus_fix(recv, obj);
+      default:
+	if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
+	    return Qundef;
+	}
+	else if (RBASIC_CLASS(recv) == rb_cString &&
+		 RBASIC_CLASS(obj) == rb_cString &&
 		 BASIC_OP_UNREDEFINED_P(BOP_PLUS, STRING_REDEFINED_OP_FLAG)) {
 	    return rb_str_plus(recv, obj);
 	}
@@ -3327,72 +3354,40 @@ vm_opt_plus(VALUE recv, VALUE obj)
 	    return Qundef;
 	}
     }
-    else {
-	return Qundef;
-    }
 }
 
 static VALUE
 vm_opt_minus(VALUE recv, VALUE obj)
 {
-    if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_MINUS, INTEGER_REDEFINED_OP_FLAG)) {
-	return rb_fix_minus_fix(recv, obj);
-    }
-    else if (FLONUM_2_P(recv, obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_MINUS, FLOAT_REDEFINED_OP_FLAG)) {
-	return DBL2NUM(RFLOAT_VALUE(recv) - RFLOAT_VALUE(obj));
-    }
-    else if (FLOAT_INSTANCE_P(recv) && FLOAT_INSTANCE_P(obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_MINUS, FLOAT_REDEFINED_OP_FLAG)) {
-	return DBL2NUM(RFLOAT_VALUE(recv) - RFLOAT_VALUE(obj));
-    }
-    else {
-	return Qundef;
+    switch (vm_opt_binop_dispatch(recv, obj, BOP_MINUS)) {
+      case bot_float:
+      case bot_flonum: return DBL2NUM(RFLOAT_VALUE(recv) - RFLOAT_VALUE(obj));
+      case bot_fixnum: return rb_fix_minus_fix(recv, obj);
+      default:         return Qundef;
     }
 }
 
 static VALUE
 vm_opt_mult(VALUE recv, VALUE obj)
 {
-    if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_MULT, INTEGER_REDEFINED_OP_FLAG)) {
-	return rb_fix_mul_fix(recv, obj);
-    }
-    else if (FLONUM_2_P(recv, obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_MULT, FLOAT_REDEFINED_OP_FLAG)) {
-	return DBL2NUM(RFLOAT_VALUE(recv) * RFLOAT_VALUE(obj));
-    }
-    else if (FLOAT_INSTANCE_P(recv) && FLOAT_INSTANCE_P(obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_MULT, FLOAT_REDEFINED_OP_FLAG)) {
-	return DBL2NUM(RFLOAT_VALUE(recv) * RFLOAT_VALUE(obj));
-    }
-    else {
-	return Qundef;
+    switch (vm_opt_binop_dispatch(recv, obj, BOP_MULT)) {
+      case bot_float:
+      case bot_flonum: return DBL2NUM(RFLOAT_VALUE(recv) * RFLOAT_VALUE(obj));
+      case bot_fixnum: return rb_fix_mul_fix(recv, obj);
+      default:         return Qundef;
     }
 }
 
 static VALUE
 vm_opt_div(VALUE recv, VALUE obj)
 {
-    if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_DIV, INTEGER_REDEFINED_OP_FLAG)) {
-	if (FIX2LONG(obj) == 0) {
-	    return Qundef;
-	}
-	else {
-	    return rb_fix_div_fix(recv, obj);
-	}
-    }
-    else if (FLONUM_2_P(recv, obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_DIV, FLOAT_REDEFINED_OP_FLAG)) {
+    switch (vm_opt_binop_dispatch(recv, obj, BOP_DIV)) {
+      case bot_float:
+      case bot_flonum:
 	return DBL2NUM(RFLOAT_VALUE(recv) / RFLOAT_VALUE(obj));
-    }
-    else if (FLOAT_INSTANCE_P(recv) && FLOAT_INSTANCE_P(obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_DIV, FLOAT_REDEFINED_OP_FLAG)) {
-	return DBL2NUM(RFLOAT_VALUE(recv) / RFLOAT_VALUE(obj));
-    }
-    else {
+      case bot_fixnum:
+	return (FIX2LONG(obj) == 0) ? Qundef : rb_fix_div_fix(recv, obj);
+      default:
 	return Qundef;
     }
 }
@@ -3400,24 +3395,13 @@ vm_opt_div(VALUE recv, VALUE obj)
 static VALUE
 vm_opt_mod(VALUE recv, VALUE obj)
 {
-    if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_MOD, INTEGER_REDEFINED_OP_FLAG )) {
-	if (FIX2LONG(obj) == 0) {
-	    return Qundef;
-	}
-	else {
-	    return rb_fix_mod_fix(recv, obj);
-	}
-    }
-    else if (FLONUM_2_P(recv, obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_MOD, FLOAT_REDEFINED_OP_FLAG)) {
+    switch (vm_opt_binop_dispatch(recv, obj, BOP_MOD)) {
+      case bot_float:
+      case bot_flonum:
 	return DBL2NUM(ruby_float_mod(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj)));
-    }
-    else if (FLOAT_INSTANCE_P(recv) && FLOAT_INSTANCE_P(obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_MOD, FLOAT_REDEFINED_OP_FLAG)) {
-	return DBL2NUM(ruby_float_mod(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj)));
-    }
-    else {
+      case bot_fixnum:
+	return (FIX2LONG(obj) == 0) ? Qundef : rb_fix_mod_fix(recv, obj);
+      default:
 	return Qundef;
     }
 }
@@ -3449,27 +3433,16 @@ vm_opt_neq(CALL_INFO ci, CALL_CACHE cc,
 static VALUE
 vm_opt_lt(VALUE recv, VALUE obj)
 {
-    if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_LT, INTEGER_REDEFINED_OP_FLAG)) {
-	SIGNED_VALUE a = recv, b = obj;
-
-	if (a < b) {
-	    return Qtrue;
-	}
-	else {
-	    return Qfalse;
-	}
-    }
-    else if (FLONUM_2_P(recv, obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_LT, FLOAT_REDEFINED_OP_FLAG)) {
+    switch (vm_opt_binop_dispatch(recv, obj, BOP_LT)) {
+      case bot_float:
+	CHECK_CMP_NAN(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
+	/* FALLTHROUGH */
+      case bot_flonum:
 	/* flonum is not NaN */
 	return RFLOAT_VALUE(recv) < RFLOAT_VALUE(obj) ? Qtrue : Qfalse;
-    }
-    else if (FLOAT_INSTANCE_P(recv) && FLOAT_INSTANCE_P(obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_LT, FLOAT_REDEFINED_OP_FLAG)) {
-	return double_cmp_lt(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
-    }
-    else {
+      case bot_fixnum:
+        return (SIGNED_VALUE)recv < (SIGNED_VALUE)obj ? Qtrue : Qfalse;
+      default:
 	return Qundef;
     }
 }
@@ -3477,27 +3450,16 @@ vm_opt_lt(VALUE recv, VALUE obj)
 static VALUE
 vm_opt_le(VALUE recv, VALUE obj)
 {
-    if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_LE, INTEGER_REDEFINED_OP_FLAG)) {
-	SIGNED_VALUE a = recv, b = obj;
-
-	if (a <= b) {
-	    return Qtrue;
-	}
-	else {
-	    return Qfalse;
-	}
-    }
-    else if (FLONUM_2_P(recv, obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_LE, FLOAT_REDEFINED_OP_FLAG)) {
+    switch (vm_opt_binop_dispatch(recv, obj, BOP_LT)) {
+      case bot_float:
+	CHECK_CMP_NAN(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
+	/* FALLTHROUGH */
+      case bot_flonum:
 	/* flonum is not NaN */
 	return RFLOAT_VALUE(recv) <= RFLOAT_VALUE(obj) ? Qtrue : Qfalse;
-    }
-    else if (FLOAT_INSTANCE_P(recv) && FLOAT_INSTANCE_P(obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_LT, FLOAT_REDEFINED_OP_FLAG)) {
-	return double_cmp_le(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
-    }
-    else {
+      case bot_fixnum:
+        return (SIGNED_VALUE)recv <= (SIGNED_VALUE)obj ? Qtrue : Qfalse;
+      default:
 	return Qundef;
     }
 }
@@ -3505,27 +3467,16 @@ vm_opt_le(VALUE recv, VALUE obj)
 static VALUE
 vm_opt_gt(VALUE recv, VALUE obj)
 {
-    if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_GT, INTEGER_REDEFINED_OP_FLAG)) {
-	SIGNED_VALUE a = recv, b = obj;
-
-	if (a > b) {
-	    return Qtrue;
-	}
-	else {
-	    return Qfalse;
-	}
-    }
-    else if (FLONUM_2_P(recv, obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_GT, FLOAT_REDEFINED_OP_FLAG)) {
+    switch (vm_opt_binop_dispatch(recv, obj, BOP_LT)) {
+      case bot_float:
+	CHECK_CMP_NAN(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
+	/* FALLTHROUGH */
+      case bot_flonum:
 	/* flonum is not NaN */
 	return RFLOAT_VALUE(recv) > RFLOAT_VALUE(obj) ? Qtrue : Qfalse;
-    }
-    else if (FLOAT_INSTANCE_P(recv) && FLOAT_INSTANCE_P(obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_GT, FLOAT_REDEFINED_OP_FLAG)) {
-	return double_cmp_gt(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
-    }
-    else {
+      case bot_fixnum:
+        return (SIGNED_VALUE)recv > (SIGNED_VALUE)obj ? Qtrue : Qfalse;
+      default:
 	return Qundef;
     }
 }
@@ -3533,30 +3484,20 @@ vm_opt_gt(VALUE recv, VALUE obj)
 static VALUE
 vm_opt_ge(VALUE recv, VALUE obj)
 {
-    if (FIXNUM_2_P(recv, obj) &&
-	BASIC_OP_UNREDEFINED_P(BOP_GE, INTEGER_REDEFINED_OP_FLAG)) {
-	SIGNED_VALUE a = recv, b = obj;
-
-	if (a >= b) {
-	    return Qtrue;
-	}
-	else {
-	    return Qfalse;
-	}
-    }
-    else if (FLONUM_2_P(recv, obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_GE, FLOAT_REDEFINED_OP_FLAG)) {
+    switch (vm_opt_binop_dispatch(recv, obj, BOP_LT)) {
+      case bot_float:
+	CHECK_CMP_NAN(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
+	/* FALLTHROUGH */
+      case bot_flonum:
 	/* flonum is not NaN */
 	return RFLOAT_VALUE(recv) >= RFLOAT_VALUE(obj) ? Qtrue : Qfalse;
-    }
-    else if (FLOAT_INSTANCE_P(recv) && FLOAT_INSTANCE_P(obj) &&
-	     BASIC_OP_UNREDEFINED_P(BOP_GT, FLOAT_REDEFINED_OP_FLAG)) {
-	return double_cmp_ge(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj));
-    }
-    else {
+      case bot_fixnum:
+        return (SIGNED_VALUE)recv >= (SIGNED_VALUE)obj ? Qtrue : Qfalse;
+      default:
 	return Qundef;
     }
 }
+
 
 static VALUE
 vm_opt_ltlt(VALUE recv, VALUE obj)
@@ -3686,29 +3627,25 @@ vm_opt_empty_p(VALUE recv)
 static VALUE
 vm_opt_succ(VALUE recv)
 {
-    if (SPECIAL_CONST_P(recv)) {
-	if (FIXNUM_P(recv) &&
-	    BASIC_OP_UNREDEFINED_P(BOP_SUCC, INTEGER_REDEFINED_OP_FLAG)) {
-	    /* fixnum + INT2FIX(1) */
-	    if (recv == LONG2FIX(FIXNUM_MAX)) {
-		return LONG2NUM(FIXNUM_MAX + 1);
-	    }
-	    else {
-		return recv - 1 + INT2FIX(1);
-	    }
+    if (FIXNUM_P(recv) &&
+	BASIC_OP_UNREDEFINED_P(BOP_SUCC, INTEGER_REDEFINED_OP_FLAG)) {
+	/* fixnum + INT2FIX(1) */
+	if (recv == LONG2FIX(FIXNUM_MAX)) {
+	    return LONG2NUM(FIXNUM_MAX + 1);
 	}
 	else {
-	    return Qundef;
+	    return recv - 1 + INT2FIX(1);
 	}
     }
+    else if (SPECIAL_CONST_P(recv)) {
+	return Qundef;
+    }
+    else if (RBASIC_CLASS(recv) == rb_cString &&
+	     BASIC_OP_UNREDEFINED_P(BOP_SUCC, STRING_REDEFINED_OP_FLAG)) {
+	return rb_str_succ(recv);
+    }
     else {
-	if (RBASIC_CLASS(recv) == rb_cString &&
-	    BASIC_OP_UNREDEFINED_P(BOP_SUCC, STRING_REDEFINED_OP_FLAG)) {
-	    return rb_str_succ(recv);
-	}
-	else {
-	    return Qundef;
-	}
+	return Qundef;
     }
 }
 
@@ -3745,4 +3682,3 @@ vm_opt_regexpmatch2(VALUE recv, VALUE obj)
 	return Qundef;
     }
 }
-
