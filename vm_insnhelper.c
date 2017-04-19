@@ -3238,8 +3238,9 @@ static VALUE
 vm_once_dispatch(ISEQ iseq, IC ic, rb_thread_t *th)
 {
     rb_thread_t *const RUNNING_THREAD_ONCE_DONE = (rb_thread_t *)(0x1);
-    union iseq_inline_storage_entry *is = (union iseq_inline_storage_entry *)ic;
+    union iseq_inline_storage_entry *const is = (union iseq_inline_storage_entry *)ic;
 
+  again:
     if (is->once.running_thread == RUNNING_THREAD_ONCE_DONE) {
 	return is->once.value;
     }
@@ -3260,7 +3261,7 @@ vm_once_dispatch(ISEQ iseq, IC ic, rb_thread_t *th)
 	/* waiting for finish */
 	RUBY_VM_CHECK_INTS(th);
 	rb_thread_schedule();
-	return vm_once_dispatch(iseq, ic, th);
+	goto again;
     }
 }
 
