@@ -544,7 +544,7 @@ PUREFUNC(static rb_cref_t *check_cref(VALUE, int));
 static rb_cref_t *
 check_cref(VALUE obj, int can_be_svar)
 {
-    if (obj == Qfalse) return NULL;
+    if (!RTEST(obj)) return NULL;
 
 #if VM_CHECK_MODE > 0
     if (!RB_TYPE_P(obj, T_IMEMO)) rb_bug("check_cref: unknown type: %s", rb_obj_info(obj));
