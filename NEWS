@@ -64,6 +64,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Random.raw_seed renamed to become Random.urandom.  It is now
   applicable to non-seeding purposes due to [Bug #9569].
 
+* BasicSocket#read_nonblock and BasicSocket#write_nonblock no
+  longer sets the O_NONBLOCK file description flag as side effect
+  [Feature #13362]
+
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 === C API updates

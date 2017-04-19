@@ -442,6 +442,24 @@ class BasicSocket < IO
                        scm_rights: false, exception: true)
     __recvmsg_nonblock(dlen, flags, clen, scm_rights, exception)
   end
+
+  # Linux-specific optimizations to avoid fcntl for IO#read_nonblock
+  # and IO#write_nonblock using MSG_DONTWAIT
+  # Do other platforms suport MSG_DONTWAIT reliably?
+  if RUBY_PLATFORM =~ /linux/ && Socket.const_defined?(:MSG_DONTWAIT)
+    def read_nonblock(len, str = nil, exception: true) # :nodoc:
+      case rv = __recv_nonblock(len, 0, str, exception)
+      when '' # recv_nonblock returns empty string on EOF
+        exception ? raise(EOFError, 'end of file reached') : nil
+      else
+        rv
+      end
+    end
+
+    def write_nonblock(buf, exception: true) # :nodoc:
+      __sendmsg_nonblock(buf, 0, nil, nil, exception)
+    end
+  end
 end
 
 class Socket < BasicSocket
