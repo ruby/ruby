@@ -262,9 +262,18 @@ class RubyLex
   end
 
   def lex
-    until (((tk = token).kind_of?(TkNL) || tk.kind_of?(TkEND_OF_SCRIPT)) &&
-        !@continue or
-        tk.nil?)
+    continue = @continue
+    while tk = token
+      case tk
+      when TkNL, TkEND_OF_SCRIPT
+        @continue = continue unless continue.nil?
+        break unless @continue
+      when TkSPACE, TkCOMMENT
+      when TkSEMICOLON, TkBEGIN, TkELSE
+        @continue = continue = false
+      else
+        continue = nil
+      end
     end
     line = get_readed
     if line == "" and tk.kind_of?(TkEND_OF_SCRIPT) || tk.nil?

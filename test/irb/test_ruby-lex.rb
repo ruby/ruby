@@ -55,15 +55,15 @@ module TestIRB
       src, lineno = "#{<<-"begin;"}#{<<~'end;'}", __LINE__+1
       begin;
         #            #;# LTYPE:INDENT:CONTINUE
-        x            #;# -:0:- # FIXME: a comment should not `continue'
+        x            #;# -:0:-
         x(           #;# -:0:-
         )            #;# -:1:*
         a \          #;# -:0:-
                      #;# -:0:*
         a;           #;# -:0:-
-        a            #;# -:0:- # FIXME: a semicolon should not `continue'
+        a            #;# -:0:-
                      #;# -:0:-
-        a            #;# -:0:- # FIXME: an empty line should not `continue'
+        a            #;# -:0:-
         a =          #;# -:0:-
           '          #;# -:0:*
           '          #;# ':0:*
@@ -73,11 +73,11 @@ module TestIRB
           "          #;# -:1:-
           "          #;# ":1:-
           begin      #;# -:1:-
-            a        #;# -:2:- # FIXME: the first line should not be `continue'd
+            a        #;# -:2:-
             a        #;# -:2:-
           end        #;# -:2:-
         else         #;# -:1:-
-          nil        #;# -:1:- # FIXME: just after `else' should not be `continue'd
+          nil        #;# -:1:-
         end          #;# -:1:-
       end;
       top_level_statement(src.gsub(/[ \t]*#;#.*/, ''))
