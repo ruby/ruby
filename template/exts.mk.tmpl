@@ -50,8 +50,10 @@ Dir.glob("{ext,gems}/*/exts.mk") do |e|
   end
   s.scan(%r"^note:\n((?:\t.+\n)+)") do |(n)|
     n = n.split(/^/)
+    e = (note.pop if /@exit/ =~ note[-1])
     note.pop if n[-1] == note[-1]
     note |= n
+    note << e if e
   end
 end
 deps.uniq!
@@ -116,7 +118,9 @@ clean:
 distclean:
 	-$(Q)$(RM) ext/extinit.c
 
-<%= deps.join("\n") %>
+% deps.each do |d|
+<%= d %>
+% end
 
 % rubies.each do |ruby|
 <%= ruby %>:

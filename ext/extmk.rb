@@ -473,6 +473,7 @@ default_exclude_exts =
   else
     %w'*win32*'
   end
+mandatory_exts = {}
 withes, withouts = [["--with", nil], ["--without", default_exclude_exts]].collect {|w, d|
   if !(w = %w[-extensions -ext].collect {|o|arg_config(w+o)}).any?
     d ? proc {|c1| d.any?(&c1)} : proc {true}
@@ -480,13 +481,15 @@ withes, withouts = [["--with", nil], ["--without", default_exclude_exts]].collec
     proc {true}
   else
     w = w.collect {|o| o.split(/,/)}.flatten
-    w.collect! {|o| o == '+' ? d : o}.flatten! if d
+    w.collect! {|o| o == '+' ? d : o}.flatten!
     proc {|c1| w.any?(&c1)}
   end
 }
 cond = proc {|ext, *|
-  cond1 = proc {|n| File.fnmatch(n, ext)}
-  withes.call(cond1) and !withouts.call(cond1)
+  withes.call(proc {|n|
+                !n or (mandatory_exts[ext] = true if File.fnmatch(n, ext))
+              }) and
+    !withouts.call(proc {|n| File.fnmatch(n, ext)})
 }
 ($extension || %w[*]).each do |e|
   e = e.sub(/\A(?:\.\/)+/, '')
@@ -716,12 +719,14 @@ begin
 
     mf.puts "\n""note:\n"
     unless fails.empty?
+      abandon = false
       mf.puts %Q<\t@echo "*** Following extensions are not compiled:">
       fails.each do |ext, (parent, err)|
+        abandon ||= mandatory_exts[ext]
         mf.puts %Q<\t@echo "#{ext}:">
         if parent
           mf.puts %Q<\t@echo "\tCould not be configured. It will not be installed.">
-          err&.scan(/.+/) do |ee|
+          err and err.scan(/.+/) do |ee|
             mf.puts %Q<\t@echo "\t#{ee.gsub(/["`$^]/, '\\\\\\&')}">
           end
           mf.puts %Q<\t@echo "\tCheck #{ext_prefix}/#{ext}/mkmf.log for more details.">
@@ -730,6 +735,9 @@ begin
         end
       end
       mf.puts %Q<\t@echo "*** Fix the problems, then remove these directories and try again if you want.">
+      if abandon
+        mf.puts "\t""@exit 1"
+      end
     end
   end
 end
