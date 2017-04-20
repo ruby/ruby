@@ -388,11 +388,8 @@ toregexp
 (VALUE val) // inc += 1 - cnt;
 {
     VALUE rb_reg_new_ary(VALUE ary, int options);
-    rb_num_t i;
-    const VALUE ary = rb_ary_tmp_new(cnt);
-    for (i = 0; i < cnt; i++) {
-	rb_ary_store(ary, cnt-i-1, TOPN(i));
-    }
+    VALUE rb_ary_tmp_new_from_values(VALUE, long, const VALUE *);
+    const VALUE ary = rb_ary_tmp_new_from_values(0, cnt, STACK_ADDR_FROM_TOP(cnt));
     POPN(cnt);
     val = rb_reg_new_ary(ary, (int)opt);
     rb_ary_clear(ary);

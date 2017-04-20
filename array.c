@@ -515,17 +515,23 @@ VALUE
 }
 
 VALUE
-rb_ary_new_from_values(long n, const VALUE *elts)
+rb_ary_tmp_new_from_values(VALUE klass, long n, const VALUE *elts)
 {
     VALUE ary;
 
-    ary = rb_ary_new2(n);
+    ary = ary_new(klass, n);
     if (n > 0 && elts) {
 	ary_memcpy(ary, 0, n, elts);
 	ARY_SET_LEN(ary, n);
     }
 
     return ary;
+}
+
+VALUE
+rb_ary_new_from_values(long n, const VALUE *elts)
+{
+    return rb_ary_tmp_new_from_values(rb_cArray, n, elts);
 }
 
 VALUE
