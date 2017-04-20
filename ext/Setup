@@ -23,8 +23,6 @@
 #json
 #json/generator
 #json/parser
-#mathn/complex
-#mathn/rational
 #nkf
 #objspace
 #openssl

@@ -181,10 +181,6 @@ Zachary Scott (zzak)
   Nobuyuki Nakada (nobu)
 [ext/io/wait]
   Nobuyuki Nakada (nobu)
-[ext/mathn/complex]
-  Keiju ISHITSUKA (keiju)
-[ext/mathn/rational]
-  Keiju ISHITSUKA (keiju)
 [ext/nkf]
   NARUSE, Yui (narse)
 [ext/objspace]

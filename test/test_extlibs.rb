@@ -61,8 +61,6 @@ class TestExtLibs < Test::Unit::TestCase
   check_existence "io/nonblock"
   check_existence "io/wait"
   check_existence "json"
-  check_existence "mathn/complex"
-  check_existence "mathn/rational"
   check_existence "nkf"
   check_existence "objspace"
   check_existence "openssl", "this may be false positive, but should assert because rubygems requires this"
