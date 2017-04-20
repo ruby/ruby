@@ -46,7 +46,7 @@ Dir.glob("{ext,gems}/*/exts.mk") do |e|
               (?:dist|real)?clean
              ):.+$
            "x) do
-    deps << $&
+    deps << $&.sub(/ +note$/, '')
   end
   s.scan(%r"^note:\n((?:\t.+\n)+)") do |(n)|
     n = n.split(/^/)
