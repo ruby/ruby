@@ -44,7 +44,12 @@ module Kernel
     spec = Gem.find_unresolved_default_spec(path)
     if spec
       Gem.remove_unresolved_default_spec(spec)
-      Kernel.send(:gem, spec.name)
+      begin
+        Kernel.send(:gem, spec.name)
+      rescue Exception
+        RUBYGEMS_ACTIVATION_MONITOR.exit
+        raise
+      end
     end
 
     # If there are no unresolved deps, then we can use just try
