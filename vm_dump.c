@@ -1046,3 +1046,15 @@ rb_vm_bugreport(const void *ctx)
 #endif /* __FreeBSD__ */
     }
 }
+
+void
+rb_vmdebug_stack_dump_all_threads(void)
+{
+    rb_vm_t *vm = GET_THREAD()->vm;
+    rb_thread_t *th = NULL;
+
+    list_for_each(&vm->living_threads, th, vmlt_node) {
+	fprintf(stderr, "th: %p, native_id: %lx\n", th, (unsigned long)th->thread_id);
+	rb_vmdebug_stack_dump_raw(th, th->cfp);
+    }
+}
