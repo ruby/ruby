@@ -781,7 +781,7 @@ RUBY_SYMBOL_EXPORT_END
 static inline double
 rb_w32_pow(double x, double y)
 {
-    return powl(x, y);
+    return (double)powl(x, y);
 }
 #elif defined(__MINGW64_VERSION_MAJOR)
 double rb_w32_pow(double x, double y);
