@@ -406,7 +406,7 @@ class RubyLex
       if @lex_state != EXPR_END && @lex_state != EXPR_CLASS &&
           (@lex_state != EXPR_ARG || @space_seen)
         c = peek(0)
-        if /\S/ =~ c && (/["'`]/ =~ c || /\w/ =~ c || c == "-" || c == "~")
+        if /[-~"'`\w]/ =~ c
           tk = identify_here_document
         end
       end
