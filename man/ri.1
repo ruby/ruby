@@ -7,14 +7,14 @@
 .Nd Ruby API reference front end
 .Sh SYNOPSIS
 .Nm
-.Op Fl Ti
+.Op Fl alTi
 .Op Fl d Ar directory
 .Op Fl f Ar format
-.Op Fl -list-doc-dirs
+.Op Fl w Ar width
+.Op Fl -server Ns [= Ns Ar PORT Ns ]
 .Op Fl -no-standard-docs
+.Op Fl - Ns Oo Cm no- Oc Ns Cm list-doc-dirs
 .Op Fl - Ns Oo Cm no- Oc Ns Bro Cm system Ns | Ns Cm site Ns | Ns Cm gems Ns | Ns Cm home Brc
-.Op Fl - Ns Oo Cm no- Oc Ns Cm use-cache
-.Op Fl -width Ns = Ns Ar width
 .Op Ar target ...
 .Sh DESCRIPTION
 .Nm
@@ -60,9 +60,22 @@ ri compact\!
 .Sh OPTIONS
 .Bl -tag -width "1234567890123" -compact
 .Pp
+.It Fl -help
+Show help and exit.
+.Pp
+.It Fl v
 .It Fl -version
-Prints the version of
-.Nm .
+Output version information and exit.
+.Pp
+.It Fl a
+.It Fl - Ns Oo Cm no- Oc Ns Cm all
+Show all documentation for a class or module.
+.Pp
+.It Fl l
+.It Fl - Ns Oo Cm no- Oc Ns Cm list
+List classes
+.Nm
+knows about.
 .Pp
 .It Fl T
 .It Fl -no-pager
@@ -73,18 +86,20 @@ Send output directly to stdout, rather than to a pager.
 List of directories from which to source documentation in addition to the standard
 directories.  May be repeated.
 .Pp
+.It Fl -server Ns [= Ns Ar PORT Ns ]
+Run RDoc server on the given port.  The default port is 8214.
+.Pp
 .It Fl f Ar FORMAT
-.It Fl -fmt Ar FORMAT
 .It Fl -format Ns = Ns FORMAT
 Format to use when displaying output:
 .Pp
-ansi, bs, html, plain, simple
+ansi, bs, markdown, rdoc
 .Pp
 Use 'bs' (backspace) with most pager programs. To use ANSI, either disable the
 pager or tell the pager to allow control characters.
 .Pp
 .It Fl i
-.It Fl -interactive
+.It Fl - Ns Oo Cm no- Oc Ns Cm interactive
 This makes
 .Nm
 go into interactive mode.
@@ -96,7 +111,7 @@ methods in case multiple methods match against a method search string.  It also
 will allow the user to enter in a method name (with auto-completion, if readline
 is supported) when viewing a class.
 .Pp
-.It Fl -list-doc-dirs
+.It Fl - Ns Oo Cm no- Oc Ns Cm list-doc-dirs
 List the directories from which ri will source documentation on stdout and exit.
 .Pp
 .It Fl -no-standard-docs
@@ -121,11 +136,6 @@ Include documentation from RubyGems. Defaults to true.
 .Pp
 .It Fl - Ns Oo Cm no- Oc Ns Cm home
 Include documentation stored in ~/.rdoc.  Defaults to true.
-.Pp
-.It Fl - Ns Oo Cm no- Oc Ns Cm use-cache
-Whether or not to use
-.Nm Ns
-.Ns 's cache. True by default.
 .Pp
 .It Fl w Ar width
 .It Fl -width Ns = Ns Ar width
