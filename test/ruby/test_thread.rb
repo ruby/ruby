@@ -648,14 +648,14 @@ class TestThread < Test::Unit::TestCase
 
   def make_handle_interrupt_test_thread1 flag
     r = []
-    ready_p = false
-    done = false
+    ready_q = Queue.new
+    done_q = Queue.new
     th = Thread.new{
       begin
         Thread.handle_interrupt(RuntimeError => flag){
           begin
-            ready_p = true
-            sleep 0.01 until done
+            ready_q << true
+            done_q.pop
           rescue
             r << :c1
           end
@@ -664,10 +664,10 @@ class TestThread < Test::Unit::TestCase
         r << :c2
       end
     }
-    Thread.pass until ready_p
+    ready_q.pop
     th.raise
     begin
-      done = true
+      done_q << true
       th.join
     rescue
       r << :c3
