@@ -48,7 +48,6 @@ require "irb/locale"
 #
 #   Usage:  irb.rb [options] [programfile] [arguments]
 #     -f                Suppress read of ~/.irbrc
-#     -m                Bc mode (load mathn, fraction or matrix are available)
 #     -d                Set $DEBUG to true (same as `ruby -d')
 #     -r load-module    Same as `ruby -r'
 #     -I path           Specify $LOAD_PATH directory
@@ -90,7 +89,6 @@ require "irb/locale"
 # as follows in an +irb+ session:
 #
 #     IRB.conf[:IRB_NAME]="irb"
-#     IRB.conf[:MATH_MODE]=false
 #     IRB.conf[:INSPECT_MODE]=nil
 #     IRB.conf[:IRB_RC] = nil
 #     IRB.conf[:BACK_TRACE_LIMIT]=16

@@ -10,7 +10,6 @@
 #
 Usage:  irb.rb [options] [programfile] [arguments]
   -f		    ~/.irbrc を読み込まない.
-  -m		    bcモード(分数, 行列の計算ができる)
   -d                $DEBUG をtrueにする(ruby -d と同じ)
   -r load-module    ruby -r と同じ.
   -I path           $LOAD_PATH に path を追加する.

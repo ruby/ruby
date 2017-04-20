@@ -43,7 +43,6 @@ module IRB # :nodoc:
     @CONF[:LOAD_MODULES] = []
     @CONF[:IRB_RC] = nil
 
-    @CONF[:MATH_MODE] = false
     @CONF[:USE_READLINE] = false unless defined?(ReadlineInputMethod)
     @CONF[:INSPECT_MODE] = true
     @CONF[:USE_TRACER] = false
@@ -128,8 +127,6 @@ module IRB # :nodoc:
       case opt
       when "-f"
         @CONF[:RC] = false
-      when "-m"
-        @CONF[:MATH_MODE] = true
       when "-d"
         $DEBUG = true
         $VERBOSE = true
