@@ -8,6 +8,7 @@ require 'optparse'
 require 'fileutils'
 $:.unshift(File.dirname(__FILE__))
 require 'vpath'
+require 'colorize'
 
 vpath = VPath.new
 timestamp = nil
@@ -25,17 +26,10 @@ opt = OptionParser.new do |o|
   vpath.def_options(o)
   o.order!(ARGV)
 end
-unchanged = "unchanged"
-updated = "updated"
-if color or (color == nil && STDOUT.tty?)
-  if (/\A\e\[.*m\z/ =~ IO.popen("tput smso", "r", err: IO::NULL, &:read) rescue nil)
-    beg = "\e["
-    colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:\n]*)/)] : {}
-    reset = "#{beg}m"
-    unchanged = "#{beg}#{colors["pass"] || "32;1"}m#{unchanged}#{reset}"
-    updated = "#{beg}#{colors["fail"] || "31;1"}m#{updated}#{reset}"
-  end
-end
+color = Colorize.new(color)
+unchanged = color.pass("unchanged")
+updated = color.fail("updated")
+
 template = ARGV.shift or abort opt.to_s
 erb = ERB.new(File.read(template), nil, '%-')
 erb.filename = template

@@ -411,12 +411,15 @@ elsif sep = config_string('BUILD_FILE_SEPARATOR')
 else
   $ruby = '$(topdir)/miniruby' + EXEEXT
 end
-$ruby << " -I'$(topdir)'"
+$ruby = [$ruby]
+$ruby << "-I'$(topdir)'"
 unless CROSS_COMPILING
-  $ruby << " -I'$(top_srcdir)/lib'"
-  $ruby << " -I'$(extout)/$(arch)' -I'$(extout)/common'" if $extout
+  $ruby << "-I'$(top_srcdir)/lib'"
+  $ruby << "-I'$(extout)/$(arch)'" << "-I'$(extout)/common'" if $extout
   ENV["RUBYLIB"] = "-"
 end
+topruby = $ruby
+$ruby = topruby.join(' ')
 $mflags << "ruby=#$ruby"
 
 MTIMES = [__FILE__, 'rbconfig.rb', srcdir+'/lib/mkmf.rb'].collect {|f| File.mtime(f)}
@@ -658,6 +661,8 @@ begin
       puts
     end
 
+    mf.macro "ruby", topruby
+    mf.macro "RUBY", ["$(ruby)"]
     mf.macro "extensions", exts
     mf.macro "EXTOBJS", $extlist.empty? ? ["dmyext.#{$OBJEXT}"] : ["ext/extinit.#{$OBJEXT}", *$extobjs]
     mf.macro "EXTLIBS", $extlibs
@@ -679,8 +684,8 @@ begin
     submakeopts << 'UPDATE_LIBRARIES="$(UPDATE_LIBRARIES)"'
     submakeopts << 'SHOWFLAGS='
     mf.macro "SUBMAKEOPTS", submakeopts
-    mf.macro "NOTE_MESG", %w[echo]
-    mf.macro "NOTE_NAME", %w[echo]
+    mf.macro "NOTE_MESG", %w[$(RUBY) $(top_srcdir)/tool/colorize.rb skip]
+    mf.macro "NOTE_NAME", %w[$(RUBY) $(top_srcdir)/tool/colorize.rb fail]
     mf.puts
     targets = %w[all install static install-so install-rb clean distclean realclean]
     targets.each do |tgt|
