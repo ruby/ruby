@@ -194,7 +194,7 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
       when nil
         break
       else
-        flunk "unexpected read_nonblock return: #{r.inspect}"
+        flunk "unexpected read_nonblock return: #{r.inspect}" unless set_nb # unless for MinGW
       end while true
 
       assert_raise(EOFError) { ssock.read_nonblock(1) }
