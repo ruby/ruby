@@ -1047,6 +1047,10 @@ rb_vm_bugreport(const void *ctx)
     }
 }
 
+#ifdef NON_SCALAR_THREAD_ID
+const char *ruby_fill_thread_id_string(rb_nativethread_id_t thid, rb_thread_id_string_t buf);
+#endif
+
 void
 rb_vmdebug_stack_dump_all_threads(void)
 {
@@ -1054,7 +1058,13 @@ rb_vmdebug_stack_dump_all_threads(void)
     rb_thread_t *th = NULL;
 
     list_for_each(&vm->living_threads, th, vmlt_node) {
+#ifdef NON_SCALAR_THREAD_ID
+	rb_thread_id_string_t buf;
+	ruby_fill_thread_id_string(th->thread_id, buf);
+	fprintf(stderr, "th: %p, native_id: %s\n", th, buf);
+#else
 	fprintf(stderr, "th: %p, native_id: %p\n", th, (void *)th->thread_id);
+#endif
 	rb_vmdebug_stack_dump_raw(th, th->cfp);
     }
 }

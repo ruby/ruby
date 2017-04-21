@@ -203,8 +203,9 @@ void rb_thread_debug(const char *fmt, ...);
 #endif
 
 # ifdef NON_SCALAR_THREAD_ID
-static const char *
-fill_thread_id_string(rb_nativethread_id_t thid, rb_thread_id_string_t buf)
+#define fill_thread_id_string ruby_fill_thread_id_string
+const char *
+ruby_fill_thread_id_string(rb_nativethread_id_t thid, rb_thread_id_string_t buf)
 {
     extern const char ruby_digitmap[];
     size_t i;
