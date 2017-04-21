@@ -639,8 +639,8 @@ hash_insert_raw(st_table *tbl, VALUE key, VALUE val)
 {
     st_data_t v = (st_data_t)val;
     st_data_t k = (rb_obj_class(key) == rb_cString) ?
-	(st_data_t)rb_str_new_frozen(key) :
-	(st_data_t)key;
+        (st_data_t)rb_str_new_frozen(key) :
+        (st_data_t)key;
 
     return st_insert(tbl, k, v);
 }
@@ -650,19 +650,22 @@ rb_hash_new_from_values_with_klass(long argc, const VALUE *argv, VALUE klass)
 {
     long i;
     st_table *t;
+    VALUE v;
 
     if (argc % 2) {
 	rb_raise(rb_eArgError, "odd number of arguments for Hash");
     }
 
     t = st_init_table_with_size(&objhash, argc / 2);
+    v = hash_alloc_from_st(klass, t);
+
     for (i = 0; i < argc; /* */) {
 	VALUE key = argv[i++];
 	VALUE val = argv[i++];
 
 	hash_insert_raw(t, key, val);
     }
-    return hash_alloc_from_st(klass, t);
+    return v;
 }
 
 VALUE
