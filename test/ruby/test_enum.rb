@@ -907,10 +907,6 @@ class TestEnumerable < Test::Unit::TestCase
 
     assert_equal("abc", ["a", "b", "c"].each.sum(""))
     assert_equal([1, [2], 3], [[1], [[2]], [3]].each.sum([]))
-
-    assert_separately(%w[-rmathn], <<-EOS, ignore_stderr: true)
-      assert_equal(6, [1r, 2, 3r].each.sum)
-    EOS
   end
 
   def test_hash_sum

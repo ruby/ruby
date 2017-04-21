@@ -70,8 +70,6 @@ Zachary Scott (zzak)
   Keiju ISHITSUKA (keiju)
 [lib/logger.rb]
   Naotoshi Seo (sonots)
-[lib/mathn.rb]
-  Keiju ISHITSUKA (keiju)
 [lib/matrix.rb]
   Marc-Andre Lafortune (marcandre)
 [lib/mkmf.rb]

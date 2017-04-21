@@ -70,6 +70,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
+* mathn.rb
+  Removed from stdlib. [Feature #10169]
+
 === C API updates
 
 === Supported platform changes

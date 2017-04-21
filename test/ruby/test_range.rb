@@ -640,17 +640,6 @@ class TestRange < Test::Unit::TestCase
     assert_raise(TypeError) { ("a".."z").bsearch {} }
   end
 
-  def test_bsearch_with_mathn
-    assert_separately ['-r', 'mathn'], %q{
-      msg = '[ruby-core:25740]'
-      answer = (1..(1 << 100)).bsearch{|x|
-        assert_predicate(x, :integer?, msg)
-        x >= 42
-      }
-      assert_equal(42, answer, msg)
-    }, ignore_stderr: true
-  end
-
   def test_each_no_blockarg
     a = "a"
     def a.upto(x, e, &b)

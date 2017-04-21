@@ -1765,12 +1765,6 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_kind_of(c, y)
   end
 
-  def test_to_d
-    bug6093 = '[ruby-core:42969]'
-    code = "exit(BigDecimal.new('10.0') == 10.0.to_d)"
-    assert_ruby_status(%w[-rbigdecimal -rbigdecimal/util -rmathn -], code, bug6093)
-  end
-
   def test_bug6406
     assert_in_out_err(%w[-rbigdecimal --disable-gems], <<-EOS, [], [])
     Thread.current.keys.to_s
