@@ -193,6 +193,9 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
         next
       when nil
         break
+      when :wait_readable
+        IO.select([ssock], nil, nil, 10) or
+          flunk 'socket did not become readable'
       else
         flunk "unexpected read_nonblock return: #{r.inspect}"
       end while true
