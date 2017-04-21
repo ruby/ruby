@@ -82,3 +82,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 * SecureRandom now prefers OS-provided sources than OpenSSL. [Bug #9569]
 
 === Miscellaneous changes
+
+* configure option --with-ext now mandates its arguments.  So for
+  instance if you run ./configure --with-ext=openssl,+ then the
+  openssl library is guaranteed compiled, otherwise the build fails
+  abnormally.
+
+  Note however to always add the ",+" at the end of the argument.
+  Otherwise nothing but openssl are built.  [Feature #13302]
