@@ -214,12 +214,6 @@ RUBY_EXTERN char *strerror(int);
 RUBY_EXTERN char *strstr(const char *, const char *);
 #endif
 
-/*
-#ifndef HAVE_STRTOL
-RUBY_EXTERN long strtol(const char *, char **, int);
-#endif
-*/
-
 #ifndef HAVE_STRLCPY
 RUBY_EXTERN size_t strlcpy(char *, const char*, size_t);
 #endif

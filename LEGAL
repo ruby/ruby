@@ -417,7 +417,6 @@ missing/memmove.c:
 missing/strchr.c:
 missing/strerror.c:
 missing/strstr.c:
-missing/strtol.c:
 missing/tgamma.c:
 ext/date/date_strftime.c:
 ext/digest/sha1/sha1.[ch]:
