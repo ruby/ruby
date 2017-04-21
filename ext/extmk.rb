@@ -679,6 +679,8 @@ begin
     submakeopts << 'UPDATE_LIBRARIES="$(UPDATE_LIBRARIES)"'
     submakeopts << 'SHOWFLAGS='
     mf.macro "SUBMAKEOPTS", submakeopts
+    mf.macro "NOTE_MESG", %w[echo]
+    mf.macro "NOTE_NAME", %w[echo]
     mf.puts
     targets = %w[all install static install-so install-rb clean distclean realclean]
     targets.each do |tgt|
@@ -720,10 +722,14 @@ begin
     mf.puts "\n""note:\n"
     unless fails.empty?
       abandon = false
-      mf.puts %Q<\t@echo "*** Following extensions are not compiled:">
+      mf.puts "note: note-body\n"
+      mf.puts "note-body:: note-header\n"
+      mf.puts "note-header:\n"
+      mf.puts %Q<\t@$(NOTE_MESG) "*** Following extensions are not compiled:">
+      mf.puts "note-body:: note-header\n"
       fails.each do |ext, (parent, err)|
         abandon ||= mandatory_exts[ext]
-        mf.puts %Q<\t@echo "#{ext}:">
+        mf.puts %Q<\t@$(NOTE_NAME) "#{ext}:">
         if parent
           mf.puts %Q<\t@echo "\tCould not be configured. It will not be installed.">
           err and err.scan(/.+/) do |ee|
@@ -734,7 +740,8 @@ begin
           mf.puts %Q<\t@echo "\tSkipped because its parent was not configured.">
         end
       end
-      mf.puts %Q<\t@echo "*** Fix the problems, then remove these directories and try again if you want.">
+      mf.puts "note:\n"
+      mf.puts %Q<\t@$(NOTE_MESG) "*** Fix the problems, then remove these directories and try again if you want.">
       if abandon
         mf.puts "\t""@exit 1"
       end

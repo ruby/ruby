@@ -8,7 +8,7 @@ ECHO = $(ECHO1:0=@echo)
 require './rbconfig'
 macros = {}
 deps = []
-note = []
+notes = {}
 rubies = []
 exeext = RbConfig::CONFIG['EXEEXT']
 gnumake = false
@@ -16,10 +16,11 @@ opt = OptionParser.new do |o|
   o.on('--gnumake=BOOL') {|v| gnumake = v == 'yes'}
   o.order!(ARGV)
 end
+contpat = /(?>(?>[^\\\n]|\\.)*\\\n)*(?>[^\\\n]|\\.)*/
 Dir.glob("{ext,gems}/*/exts.mk") do |e|
   gem = /\Agems(?=\/)/ =~ e
   s = File.read(e)
-  s.scan(/^(extensions|EXT[A-Z]+|MFLAGS)[ \t]*=[ \t]*((?>(?>[^\\\n]|\\.)*\\\n)*(?>[^\\\n]|\\.)*)$/) do |n, v|
+  s.scan(/^(extensions|EXT[A-Z]+|MFLAGS|NOTE_[A-Z]+)[ \t]*=[ \t]*(#{contpat})$/o) do |n, v|
     v.gsub!(/\\\n[ \t]*/, ' ')
     next if v.empty?
     next if gem and n != "extensions"
@@ -48,12 +49,15 @@ Dir.glob("{ext,gems}/*/exts.mk") do |e|
            "x) do
     deps << $&.sub(/ +note$/, '')
   end
-  s.scan(%r"^note:\n((?:\t.+\n)+)") do |(n)|
+  s.scan(%r"^(note(?:-\w+)?):(:)?[ \t]*(#{contpat})\n((?:\t.+\n)*)"o) do |(t, m, d, n)|
+    note = (notes[t] ||= [[m||""], []])
+    note[0] |= d.split(/(?:\\\n|[ \t])[ \t]*/)
     n = n.split(/^/)
-    e = (note.pop if /@exit/ =~ note[-1])
-    note.pop if n[-1] == note[-1]
-    note |= n
-    note << e if e
+    if m
+      note[1].concat(n)
+    else
+      note[1] |= n
+    end
   end
 end
 deps.uniq!
@@ -92,19 +96,13 @@ else
   mflags = " $(MFLAGS)"
 end
 -%>
-% unless macros["MFLAGS"].empty?
-MFLAGS =<%= macros["MFLAGS"].fold(column) %>
+% macros.each_pair do |k, v|
+<%=k%> =<%= v.fold(column) %>
 % end
 % RbConfig::MAKEFILE_CONFIG.keys.grep(/RM/) do |k|
 <%=k%> = <%=RbConfig::MAKEFILE_CONFIG[k]%>
 % end
 
-extensions =<%= macros["extensions"].fold(column) %>
-EXTOBJS =<%= macros["EXTOBJS"].fold(column) %>
-EXTLIBS =<%= macros["EXTLIBS"].fold(column) %>
-EXTSO =<%= macros["EXTSO"].fold(column) %>
-EXTLDFLAGS =<%= macros["EXTLDFLAGS"].fold(column) %>
-EXTINITS =<%= macros["EXTINITS"].fold(column) %>
 SUBMAKEOPTS = DLDOBJS="$(EXTOBJS) $(EXTENCS)" EXTOBJS= \
 	      EXTSOLIBS="$(EXTLIBS)" LIBRUBY_SO_UPDATE=$(LIBRUBY_EXTS) \
 	      EXTLDFLAGS="$(EXTLDFLAGS)" EXTINITS="$(EXTINITS)" \
@@ -146,5 +144,7 @@ ext/extinit.<%=objext%>:
 extso:
 	@echo EXTSO=$(EXTSO)
 
-note:
-<%= note.join("") %>
+% notes.each_pair do |k, (d, n)|
+<%= k %>:<%= d.join(' ') %>
+<%= n.join("") %>
+% end
