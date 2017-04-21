@@ -634,15 +634,19 @@ hash_alloc_from_st(VALUE klass, st_table *ntbl)
     return h;
 }
 
-static inline int
-hash_insert_raw(st_table *tbl, VALUE key, VALUE val)
+static inline void
+hash_insert_raw(VALUE hash, st_table *tbl, VALUE key, VALUE val)
 {
     st_data_t v = (st_data_t)val;
     st_data_t k = (rb_obj_class(key) == rb_cString) ?
         (st_data_t)rb_str_new_frozen(key) :
         (st_data_t)key;
 
-    return st_insert(tbl, k, v);
+    st_insert(tbl, k, v);
+    if (hash != Qfalse) {
+	RB_OBJ_WRITTEN(hash, Qundef, key);
+	RB_OBJ_WRITTEN(hash, Qundef, val);
+    }
 }
 
 static VALUE
@@ -663,7 +667,7 @@ rb_hash_new_from_values_with_klass(long argc, const VALUE *argv, VALUE klass)
 	VALUE key = argv[i++];
 	VALUE val = argv[i++];
 
-	hash_insert_raw(t, key, val);
+	hash_insert_raw(v, t, key, val);
     }
     return v;
 }
@@ -717,7 +721,7 @@ rb_hash_new_from_object(VALUE klass, VALUE obj)
 		val = RARRAY_AREF(v, 1);
 	    case 1:
 		key = RARRAY_AREF(v, 0);
-		hash_insert_raw(tbl, key, val);
+		hash_insert_raw(Qfalse, tbl, key, val);
 	    }
 	}
 	return hash_alloc_from_st(klass, tbl);
