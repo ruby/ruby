@@ -638,7 +638,7 @@ static inline int
 hash_insert_raw(st_table *tbl, VALUE key, VALUE val)
 {
     st_data_t v = (st_data_t)val;
-    st_data_t k = (rb_obj_class(k) == rb_cString) ?
+    st_data_t k = (rb_obj_class(key) == rb_cString) ?
 	(st_data_t)rb_str_new_frozen(key) :
 	(st_data_t)key;
 
