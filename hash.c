@@ -626,6 +626,103 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
     return hash;
 }
 
+static inline VALUE
+hash_alloc_from_st(VALUE klass, st_table *ntbl)
+{
+    VALUE h = hash_alloc(klass);
+    RHASH(h)->ntbl = ntbl;
+    return h;
+}
+
+static inline int
+hash_insert_raw(st_table *tbl, VALUE key, VALUE val)
+{
+    st_data_t v = (st_data_t)val;
+    st_data_t k = (rb_obj_class(k) == rb_cString) ?
+	(st_data_t)rb_str_new_frozen(key) :
+	(st_data_t)key;
+
+    return st_insert(tbl, k, v);
+}
+
+static VALUE
+rb_hash_new_from_values_with_klass(long argc, const VALUE *argv, VALUE klass)
+{
+    long i;
+    st_table *t;
+
+    if (argc % 2) {
+	rb_raise(rb_eArgError, "odd number of arguments for Hash");
+    }
+
+    t = st_init_table_with_size(&objhash, argc / 2);
+    for (i = 0; i < argc; /* */) {
+	VALUE key = argv[i++];
+	VALUE val = argv[i++];
+
+	hash_insert_raw(t, key, val);
+    }
+    return hash_alloc_from_st(klass, t);
+}
+
+VALUE
+rb_hash_new_from_values(long argc, const VALUE *argv)
+{
+    return rb_hash_new_from_values_with_klass(argc, argv, rb_cHash);
+}
+
+static VALUE
+rb_hash_new_from_object(VALUE klass, VALUE obj)
+{
+    VALUE tmp = rb_hash_s_try_convert(Qnil, obj);
+    if (!NIL_P(tmp)) {
+	VALUE hash = hash_alloc(klass);
+	if (RHASH(tmp)->ntbl) {
+	    RHASH(hash)->ntbl = st_copy(RHASH(tmp)->ntbl);
+	}
+	return hash;
+    }
+
+    tmp = rb_check_array_type(obj);
+    if (!NIL_P(tmp)) {
+	long i;
+	long len = RARRAY_LEN(tmp);
+	st_table *tbl = len ? st_init_table_with_size(&objhash, len) : NULL;
+	for (i = 0; i < len; ++i) {
+	    VALUE e = RARRAY_AREF(tmp, i);
+	    VALUE v = rb_check_array_type(e);
+	    VALUE key, val = Qnil;
+
+	    if (NIL_P(v)) {
+#if 0 /* refix in the next release */
+		rb_raise(rb_eArgError, "wrong element type %s at %ld (expected array)",
+			 rb_builtin_class_name(e), i);
+
+#else
+		rb_warn("wrong element type %s at %ld (expected array)",
+			rb_builtin_class_name(e), i);
+		rb_warn("ignoring wrong elements is deprecated, remove them explicitly");
+		rb_warn("this causes ArgumentError in the next release");
+		continue;
+#endif
+	    }
+	    switch (RARRAY_LEN(v)) {
+	    default:
+		rb_raise(rb_eArgError, "invalid number of elements (%ld for 1..2)",
+			 RARRAY_LEN(v));
+	    case 2:
+		val = RARRAY_AREF(v, 1);
+	    case 1:
+		key = RARRAY_AREF(v, 0);
+		hash_insert_raw(tbl, key, val);
+	    }
+	}
+	return hash_alloc_from_st(klass, tbl);
+    }
+
+    rb_raise(rb_eArgError, "odd number of arguments for Hash");
+}
+
 /*
  *  call-seq:
  *     Hash[ key, value, ... ]         -> new_hash
@@ -649,69 +746,11 @@ rb_hash_initialize(int argc, VALUE *argv, VALUE hash)
 static VALUE
 rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE hash, tmp;
-    int i;
-
-    if (argc == 1) {
-	tmp = rb_hash_s_try_convert(Qnil, argv[0]);
-	if (!NIL_P(tmp)) {
-	    hash = hash_alloc(klass);
-	    if (RHASH(tmp)->ntbl) {
-		RHASH(hash)->ntbl = st_copy(RHASH(tmp)->ntbl);
-	    }
-	    return hash;
-	}
-
-	tmp = rb_check_array_type(argv[0]);
-	if (!NIL_P(tmp)) {
-	    long i;
-
-	    hash = hash_alloc(klass);
-	    for (i = 0; i < RARRAY_LEN(tmp); ++i) {
-		VALUE e = RARRAY_AREF(tmp, i);
-		VALUE v = rb_check_array_type(e);
-		VALUE key, val = Qnil;
-
-		if (NIL_P(v)) {
-#if 0 /* refix in the next release */
-		    rb_raise(rb_eArgError, "wrong element type %s at %ld (expected array)",
-			     rb_builtin_class_name(e), i);
-
-#else
-		    rb_warn("wrong element type %s at %ld (expected array)",
-			    rb_builtin_class_name(e), i);
-		    rb_warn("ignoring wrong elements is deprecated, remove them explicitly");
-		    rb_warn("this causes ArgumentError in the next release");
-		    continue;
-#endif
-		}
-		switch (RARRAY_LEN(v)) {
-		  default:
-		    rb_raise(rb_eArgError, "invalid number of elements (%ld for 1..2)",
-			     RARRAY_LEN(v));
-		  case 2:
-		    val = RARRAY_AREF(v, 1);
-		  case 1:
-		    key = RARRAY_AREF(v, 0);
-		    rb_hash_aset(hash, key, val);
-		}
-	    }
-	    return hash;
-	}
+    switch (argc) {
+      case 0:  return hash_alloc(klass);
+      case 1:  return rb_hash_new_from_object(klass, argv[0]);
+      default: return rb_hash_new_from_values_with_klass(argc, argv, klass);
     }
-    if (argc % 2 != 0) {
-	rb_raise(rb_eArgError, "odd number of arguments for Hash");
-    }
-
-    hash = hash_alloc(klass);
-    if (argc > 0) {
-        RHASH(hash)->ntbl = st_init_table_with_size(&objhash, argc / 2);
-    }
-    for (i=0; i<argc; i+=2) {
-        rb_hash_aset(hash, argv[i], argv[i + 1]);
-    }
-
-    return hash;
 }
 
 static VALUE
