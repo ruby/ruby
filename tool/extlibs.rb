@@ -142,16 +142,24 @@ class ExtLibs
         end
         extracted = false
         dest = File.dirname(list)
+        url = chksums = nil
         IO.foreach(list) do |line|
           line.sub!(/\s*#.*/, '')
-          if /^\t/ =~ line
+          if chksums
+            chksums.concat(line.split)
+          elsif /^\t/ =~ line
             if extracted and (mode == :all or mode == :patch)
               patch, *args = line.split
               do_patch(dest, patch, args)
             end
             next
+          else
+            url, *chksums = line.split(' ')
           end
-          url, *chksums = line.split(' ')
+          if chksums.last == '\\'
+            chksums.pop
+            next
+          end
           next unless url
           begin
             extracted = do_command(mode, dest, url, cache_dir, chksums)
@@ -159,6 +167,7 @@ class ExtLibs
             warn e.inspect
             success = false
           end
+          url = chksums = nil
         end
       end
     end
