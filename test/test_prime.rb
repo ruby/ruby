@@ -175,7 +175,7 @@ class TestPrime < Test::Unit::TestCase
     sieve = Prime::EratosthenesSieve.instance
     sieve.send(:initialize)
     begin
-      # simulates that Timeout.timeout interrupts Prime::EratosthenesSieve#extend_table
+      # simulates that Timeout.timeout interrupts Prime::EratosthenesSieve#compute_primes
       def sieve.Integer(n)
         n = super(n)
         sleep 10 if /compute_primes/ =~ caller.first
