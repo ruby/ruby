@@ -714,12 +714,12 @@ rb_hash_new_from_object(VALUE klass, VALUE obj)
 #endif
 	    }
 	    switch (RARRAY_LEN(v)) {
-	    default:
+	      default:
 		rb_raise(rb_eArgError, "invalid number of elements (%ld for 1..2)",
 			 RARRAY_LEN(v));
-	    case 2:
+	      case 2:
 		val = RARRAY_AREF(v, 1);
-	    case 1:
+	      case 1:
 		key = RARRAY_AREF(v, 0);
 		hash_insert_raw(Qfalse, tbl, key, val);
 	    }
