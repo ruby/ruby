@@ -1110,4 +1110,21 @@ class TestTime < Test::Unit::TestCase
     end.new
     assert_raise_with_message(TypeError, /Inexact/) {Time.at(x)}
   end
+
+  def test_memsize
+    # Time objects are common in some code, try to keep them small
+    skip "Time object size test" if /^(?:i.?86|x86_64)-linux/ !~ RUBY_PLATFORM
+    require 'objspace'
+    t = Time.at(0)
+    size = GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
+    case size
+    when 20 then expect = 50
+    when 40 then expect = 86
+    else
+      flunk "Unsupported RVALUE_SIZE=#{size}, update test_memsize"
+    end
+    assert_equal expect, ObjectSpace.memsize_of(t)
+  rescue LoadError => e
+    skip "failed to load objspace: #{e.message}"
+  end
 end
