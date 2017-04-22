@@ -843,7 +843,7 @@ static ID id_warn, id_warning, id_gets;
 # else
 # define WARNING_CALL rb_funcall
 # endif
-static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
+PRINTF_ARGS(static void ripper_compile_error(struct parser_params*, const char *fmt, ...), 2, 3);
 # define compile_error ripper_compile_error
 # define PARSER_ARG parser,
 #else
@@ -857,7 +857,7 @@ static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 # define WARNING_ARGS(fmt,n) WARN_ARGS(fmt,n)
 # define WARNING_ARGS_L(l,fmt,n) WARN_ARGS_L(l,fmt,n)
 # define WARNING_CALL rb_compile_warning
-static void parser_compile_error(struct parser_params*, const char *fmt, ...);
+PRINTF_ARGS(static void parser_compile_error(struct parser_params*, const char *fmt, ...), 2, 3);
 # define compile_error parser_compile_error
 # define PARSER_ARG parser,
 #endif
@@ -9001,7 +9001,7 @@ id_is_var_gen(struct parser_params *parser, ID id)
 	    return 0;
 	}
     }
-    compile_error(PARSER_ARG "identifier %s is not valid to get", rb_id2str(id));
+    compile_error(PARSER_ARG "identifier %"PRIsVALUE" is not valid to get", rb_id2str(id));
     return 0;
 }
 
