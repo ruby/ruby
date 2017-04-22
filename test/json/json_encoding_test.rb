@@ -79,6 +79,8 @@ class JSONEncodingTest < Test::Unit::TestCase
     json = '["\ud840\udc01"]'
     assert_equal json, generate(utf8, :ascii_only => true)
     assert_equal utf8, parse(json)
+    assert_raise(JSON::ParserError) { parse('"\u"') }
+    assert_raise(JSON::ParserError) { parse('"\ud800"') }
   end
 
   def test_chars
