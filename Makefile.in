@@ -474,7 +474,7 @@ update-src::
 
 update-download:: update-config_files
 
-after-update:: common-srcs
+after-update:: prereq
 
 update-mspec:
 	$(Q) $(srcdir)/tool/git-refresh -C $(srcdir)/spec $(Q1:0=-q) \
