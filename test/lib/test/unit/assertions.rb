@@ -513,6 +513,7 @@ EOT
             RubyVM::InstructionSequence.compile(src, fname, fname, line)
           end
           assert_match(error, e.message, mesg)
+          e
         end
       end
 
