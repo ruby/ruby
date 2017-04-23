@@ -5,6 +5,7 @@
 
 # Process all the C source files
 *.c
+*.y
 
 # prelude
 prelude.rb

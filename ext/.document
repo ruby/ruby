@@ -80,7 +80,6 @@ pty/pty.c
 racc/cparse/cparse.c
 readline/readline.c
 ripper/lib
-ripper/ripper.c
 sdbm/init.c
 socket
 stringio/stringio.c
