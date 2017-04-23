@@ -552,11 +552,11 @@ EOT
           full_message << " exit #{status.exitstatus}" if status.exited?
           full_message << " killed by #{sigdesc}" if sigdesc
           if out and !out.empty?
-            full_message << "\n#{out.b.gsub(/^/, '| ')}"
-            full_message << "\n" if /\n\z/ !~ full_message
+            full_message << "\n" << out.b.gsub(/^/, '| ')
+            full_message.sub!(/(?<!\n)\z/, "\n")
           end
           if log
-            full_message << "\n#{log.b.gsub(/^/, '| ')}"
+            full_message << "Diagnostic reports:\n" << log.b.gsub(/^/, '| ')
           end
           full_message
         end
