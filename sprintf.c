@@ -1136,7 +1136,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			expr = "Inf";
 		    }
 		    need = (int)strlen(expr);
-		    if ((!isnan(fval) && fval < 0.0) || (flags & FPLUS))
+		    if ((!isnan(fval) && fval < 0.0) || (flags & (FPLUS|FSPACE)))
 			need++;
 		    if ((flags & FWIDTH) && need < width)
 			need = width;
@@ -1157,8 +1157,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 			    buf[blen + need - strlen(expr) - 1] = '-';
 			else if (flags & FPLUS)
 			    buf[blen + need - strlen(expr) - 1] = '+';
-			else if ((flags & FSPACE) && need > width)
-			    blen++;
 			memcpy(&buf[blen + need - strlen(expr)], expr,
 			       strlen(expr));
 		    }
