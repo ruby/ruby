@@ -145,10 +145,6 @@ y.tab.c
 /ext/-test-/win32/dln/dlntest.exp
 /ext/-test-/win32/dln/dlntest.lib
 
-# /ext/dl/callback/
-/ext/dl/callback/callback-*.c
-/ext/dl/callback/callback.c
-
 # /ext/etc/
 /ext/etc/constdefs.h
 
