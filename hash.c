@@ -643,10 +643,8 @@ hash_insert_raw(VALUE hash, st_table *tbl, VALUE key, VALUE val)
         (st_data_t)key;
 
     st_insert(tbl, k, v);
-    if (hash != Qfalse) {
-	RB_OBJ_WRITTEN(hash, Qundef, key);
-	RB_OBJ_WRITTEN(hash, Qundef, val);
-    }
+    RB_OBJ_WRITTEN(hash, Qundef, key);
+    RB_OBJ_WRITTEN(hash, Qundef, val);
 }
 
 static VALUE
@@ -695,6 +693,8 @@ rb_hash_new_from_object(VALUE klass, VALUE obj)
 	long i;
 	long len = RARRAY_LEN(tmp);
 	st_table *tbl = len ? st_init_table_with_size(&objhash, len) : NULL;
+	VALUE hv = hash_alloc_from_st(klass, tbl);;
+
 	for (i = 0; i < len; ++i) {
 	    VALUE e = RARRAY_AREF(tmp, i);
 	    VALUE v = rb_check_array_type(e);
@@ -721,10 +721,10 @@ rb_hash_new_from_object(VALUE klass, VALUE obj)
 		val = RARRAY_AREF(v, 1);
 	      case 1:
 		key = RARRAY_AREF(v, 0);
-		hash_insert_raw(Qfalse, tbl, key, val);
+		hash_insert_raw(hv, tbl, key, val);
 	    }
 	}
-	return hash_alloc_from_st(klass, tbl);
+	return hv;
     }
 
     rb_raise(rb_eArgError, "odd number of arguments for Hash");
