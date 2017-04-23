@@ -134,6 +134,23 @@ class TestNetHTTP < Test::Unit::TestCase
     end
   end
 
+  def test_proxy_eh_ENV_with_user
+    clean_http_proxy_env do
+      ENV['http_proxy'] = 'http://foo:bar@proxy.example:8000'
+
+      http = Net::HTTP.new 'hostname.example'
+
+      assert_equal true, http.proxy?
+      if Net::HTTP::ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE
+        assert_equal 'foo', http.proxy_user
+        assert_equal 'bar', http.proxy_pass
+      else
+        assert_nil http.proxy_user
+        assert_nil http.proxy_pass
+      end
+    end
+  end
+
   def test_proxy_eh_ENV_none_set
     clean_http_proxy_env do
       assert_equal false, Net::HTTP.new('hostname.example').proxy?

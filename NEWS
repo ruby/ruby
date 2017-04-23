@@ -55,6 +55,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Stdlib updates (outstanding ones only)
 
+* Net::HTTP
+  * Net::HTTP#proxy_user and Net::HTTP#proxy_pass now reflects http_proxy
+    environment variable if the system's environment variable is multiuser
+    safe. [Bug #12921]
+
 * RbConfig
   * New constants:
     * RbConfig::LIMITS is added to provide the limits of C types.

@@ -1080,14 +1080,29 @@ module Net   #:nodoc:
       end
     end
 
-    # The proxy username, if one is configured
-    def proxy_user
-      @proxy_user
+    # [Bug #12921]
+    if /linux|freebsd|darwin/ =~ RUBY_PLATFORM
+      ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE = true
+    else
+      ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE = false
     end
 
-    # The proxy password, if one is configured
+    # The username of the proxy server, if one is configured.
+    def proxy_user
+      if ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE && @proxy_from_env
+        proxy_uri&.user
+      else
+        @proxy_user
+      end
+    end
+
+    # The password of the proxy server, if one is configured.
     def proxy_pass
-      @proxy_pass
+      if ENVIRONMENT_VARIABLE_IS_MULTIUSER_SAFE && @proxy_from_env
+        proxy_uri&.password
+      else
+        @proxy_pass
+      end
     end
 
     alias proxyaddr proxy_address   #:nodoc: obsolete
