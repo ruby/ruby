@@ -33,10 +33,10 @@ if [ -d "$dir" ]; then
     echo updating `expr "/$dir/" : '.*/\([^/][^/]*\)/'` ...
     [ $quiet ] || set -x
     $CHDIR "$dir"
-    git fetch "$@"
-    exec git checkout ${branch:+"$branch"} "$@"
+    ${branch:+git fetch "$@"}
+    exec git ${branch:+checkout} "${branch:-pull}" "$@"
 else
     echo retrieving `expr "/$dir/" : '.*/\([^/][^/]*\)/'` ...
     [ $quiet ] || set -x
-    exec git clone "$url" "$dir" "$@"
+    exec git clone ${branch:+--branch "$branch"} "$url" "$dir" "$@"
 fi
