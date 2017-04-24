@@ -958,6 +958,13 @@ x = __ENCODING__
     assert_syntax_error("    0b\n", /\^/)
   end
 
+  def test_error_def_in_argument
+    assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
+      assert_syntax_error("def f r:def d; def f 0end", /unexpected/)
+    end;
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}

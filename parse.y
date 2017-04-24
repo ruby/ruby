@@ -9965,6 +9965,7 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b)
 
     args = ZALLOC(struct rb_args_info);
     node = NEW_NODE(NODE_ARGS, 0, 0, args);
+    if (parser->error_p) return node;
 
     args->block_arg      = b;
     args->kw_args        = k;
