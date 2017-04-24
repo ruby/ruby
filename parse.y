@@ -152,82 +152,6 @@ struct local_vars {
 #define DVARS_SPECIAL_P(tbl) (!POINTER_P(tbl))
 #define POINTER_P(val) ((VALUE)(val) & ~(VALUE)3)
 
-static int
-vtable_size(const struct vtable *tbl)
-{
-    if (POINTER_P(tbl)) {
-        return tbl->pos;
-    }
-    else {
-        return 0;
-    }
-}
-
-#define VTBL_DEBUG 0
-
-static struct vtable *
-vtable_alloc(struct vtable *prev)
-{
-    struct vtable *tbl = ALLOC(struct vtable);
-    tbl->pos = 0;
-    tbl->capa = 8;
-    tbl->tbl = ALLOC_N(ID, tbl->capa);
-    tbl->prev = prev;
-    if (VTBL_DEBUG) printf("vtable_alloc: %p\n", (void *)tbl);
-    return tbl;
-}
-
-static void
-vtable_free(struct vtable *tbl)
-{
-    if (VTBL_DEBUG)printf("vtable_free: %p\n", (void *)tbl);
-    if (POINTER_P(tbl)) {
-        if (tbl->tbl) {
-            xfree(tbl->tbl);
-        }
-        xfree(tbl);
-    }
-}
-
-static void
-vtable_add(struct vtable *tbl, ID id)
-{
-    if (!POINTER_P(tbl)) {
-        rb_bug("vtable_add: vtable is not allocated (%p)", (void *)tbl);
-    }
-    if (VTBL_DEBUG) printf("vtable_add: %p, %"PRIsVALUE"\n", (void *)tbl, rb_id2str(id));
-
-    if (tbl->pos == tbl->capa) {
-        tbl->capa = tbl->capa * 2;
-        REALLOC_N(tbl->tbl, ID, tbl->capa);
-    }
-    tbl->tbl[tbl->pos++] = id;
-}
-
-#ifndef RIPPER
-static void
-vtable_pop(struct vtable *tbl, int n)
-{
-    if (tbl->pos < n) rb_bug("vtable_pop: unreachable");
-    tbl->pos -= n;
-}
-#endif
-
-static int
-vtable_included(const struct vtable * tbl, ID id)
-{
-    int i;
-
-    if (POINTER_P(tbl)) {
-        for (i = 0; i < tbl->pos; i++) {
-            if (tbl->tbl[i] == id) {
-                return i+1;
-            }
-        }
-    }
-    return 0;
-}
-
 typedef struct token_info {
     const char *token;
     int linenum;
@@ -284,6 +208,7 @@ struct parser_params {
     VALUE compile_option;
 
     VALUE debug_buffer;
+    VALUE debug_output;
 
     ID cur_arg;
 
@@ -472,7 +397,8 @@ static NODE *new_args_tail_gen(struct parser_params*,NODE*,ID,ID);
 #define new_args_tail(k,kr,b) new_args_tail_gen(parser, (k),(kr),(b))
 #define new_kw_arg(k) ((k) ? NEW_KW_ARG(0, (k)) : 0)
 
-static VALUE negate_lit(VALUE);
+static VALUE negate_lit_gen(struct parser_params*, VALUE);
+#define negate_lit(lit) negate_lit_gen(parser, lit)
 static NODE *ret_args_gen(struct parser_params*,NODE*);
 #define ret_args(node) ret_args_gen(parser, (node))
 static NODE *arg_blk_pass(NODE*,NODE*);
@@ -861,6 +787,7 @@ PRINTF_ARGS(static void parser_compile_error(struct parser_params*, const char *
 # define compile_error parser_compile_error
 # define PARSER_ARG parser,
 #endif
+PRINTF_ARGS(void rb_parser_fatal(struct parser_params *parser, const char *fmt, ...), 2, 3);
 
 /* Older versions of Yacc set YYMAXDEPTH to a very low value by default (150,
    for instance).  This is too low for Ruby to parse some files, such as
@@ -5144,6 +5071,107 @@ parser_yyerror(struct parser_params *parser, const char *msg)
     return 0;
 }
 
+static int
+vtable_size(const struct vtable *tbl)
+{
+    if (POINTER_P(tbl)) {
+	return tbl->pos;
+    }
+    else {
+	return 0;
+    }
+}
+
+static struct vtable *
+vtable_alloc_gen(struct parser_params *parser, int line, struct vtable *prev)
+{
+    struct vtable *tbl = ALLOC(struct vtable);
+    tbl->pos = 0;
+    tbl->capa = 8;
+    tbl->tbl = ALLOC_N(ID, tbl->capa);
+    tbl->prev = prev;
+#ifndef RIPPER
+    if (yydebug) {
+	rb_parser_printf(parser, "vtable_alloc:%d: %p\n", line, tbl);
+    }
+#endif
+    return tbl;
+}
+#define vtable_alloc(prev) vtable_alloc_gen(parser, __LINE__, prev)
+
+static void
+vtable_free_gen(struct parser_params *parser, int line, const char *name,
+		struct vtable *tbl)
+{
+#ifndef RIPPER
+    if (yydebug) {
+	rb_parser_printf(parser, "vtable_free:%d: %s(%p)\n", line, name, tbl);
+    }
+#endif
+    if (POINTER_P(tbl)) {
+	if (tbl->tbl) {
+	    xfree(tbl->tbl);
+	}
+	xfree(tbl);
+    }
+}
+#define vtable_free(tbl) vtable_free_gen(parser, __LINE__, #tbl, tbl)
+
+static void
+vtable_add_gen(struct parser_params *parser, int line, const char *name,
+	       struct vtable *tbl, ID id)
+{
+#ifndef RIPPER
+    if (yydebug) {
+	rb_parser_printf(parser, "vtable_add:%d: %s(%p), %s\n",
+			 line, name, tbl, rb_id2name(id));
+    }
+#endif
+    if (!POINTER_P(tbl)) {
+	rb_parser_fatal(parser, "vtable_add: vtable is not allocated (%p)", (void *)tbl);
+	return;
+    }
+    if (tbl->pos == tbl->capa) {
+	tbl->capa = tbl->capa * 2;
+	REALLOC_N(tbl->tbl, ID, tbl->capa);
+    }
+    tbl->tbl[tbl->pos++] = id;
+}
+#define vtable_add(tbl, id) vtable_add_gen(parser, __LINE__, #tbl, tbl, id)
+
+#ifndef RIPPER
+static void
+vtable_pop_gen(struct parser_params *parser, int line, const char *name,
+	       struct vtable *tbl, int n)
+{
+    if (yydebug) {
+	rb_parser_printf(parser, "vtable_pop:%d: %s(%p), %d\n",
+			 line, name, tbl, n);
+    }
+    if (tbl->pos < n) {
+	rb_parser_fatal(parser, "vtable_pop: unreachable (%d < %d)", tbl->pos, n);
+	return;
+    }
+    tbl->pos -= n;
+}
+#define vtable_pop(tbl, n) vtable_pop_gen(parser, __LINE__, #tbl, tbl, n)
+#endif
+
+static int
+vtable_included(const struct vtable * tbl, ID id)
+{
+    int i;
+
+    if (POINTER_P(tbl)) {
+	for (i = 0; i < tbl->pos; i++) {
+	    if (tbl->tbl[i] == id) {
+		return i+1;
+	    }
+	}
+    }
+    return 0;
+}
+
 static void parser_prepare(struct parser_params *parser);
 
 #ifndef RIPPER
@@ -9061,13 +9089,16 @@ append_lex_state_name(enum lex_state_e state, VALUE buf)
 }
 
 static void
-flush_debug_buffer(struct parser_params *parser, VALUE out)
+flush_debug_buffer(struct parser_params *parser, VALUE out, VALUE str)
 {
     VALUE mesg = parser->debug_buffer;
 
     if (!NIL_P(mesg) && RSTRING_LEN(mesg)) {
 	parser->debug_buffer = Qnil;
 	rb_io_puts(1, &mesg, out);
+    }
+    if (!NIL_P(str) && RSTRING_LEN(str)) {
+	rb_io_write(parser->debug_output, str);
     }
 }
 
@@ -9081,16 +9112,13 @@ rb_parser_trace_lex_state(struct parser_params *parser, enum lex_state_e from,
     rb_str_cat_cstr(mesg, " -> ");
     append_lex_state_name(to, mesg);
     rb_str_catf(mesg, " at line %d\n", line);
-    flush_debug_buffer(parser, rb_stdout);
-    rb_io_write(rb_stdout, mesg);
+    flush_debug_buffer(parser, parser->debug_output, mesg);
     return to;
 }
 
-void
-rb_parser_show_bitstack(struct parser_params *parser, stack_type stack,
-			const char *name, int line)
+static void
+append_bitstack_value(stack_type stack, VALUE mesg)
 {
-    VALUE mesg = rb_sprintf("%s: ", name);
     if (stack == 0) {
 	rb_str_cat_cstr(mesg, "0");
     }
@@ -9099,9 +9127,47 @@ rb_parser_show_bitstack(struct parser_params *parser, stack_type stack,
 	for (; mask && !(stack & mask); mask >>= 1) continue;
 	for (; mask; mask >>= 1) rb_str_cat(mesg, stack & mask ? "1" : "0", 1);
     }
+}
+
+void
+rb_parser_show_bitstack(struct parser_params *parser, stack_type stack,
+			const char *name, int line)
+{
+    VALUE mesg = rb_sprintf("%s: ", name);
+    append_bitstack_value(stack, mesg);
     rb_str_catf(mesg, " at line %d\n", line);
-    flush_debug_buffer(parser, rb_stdout);
-    rb_io_write(rb_stdout, mesg);
+    flush_debug_buffer(parser, parser->debug_output, mesg);
+}
+
+void
+rb_parser_fatal(struct parser_params *parser, const char *fmt, ...)
+{
+    va_list ap;
+    VALUE mesg = rb_str_new_cstr("internal parser error: ");
+
+    va_start(ap, fmt);
+    rb_str_vcatf(mesg, fmt, ap);
+    va_end(ap);
+#ifndef RIPPER
+    parser_yyerror(parser, RSTRING_PTR(mesg));
+    RB_GC_GUARD(mesg);
+#else
+    dispatch1(parse_error, mesg);
+    ripper_error();
+#endif /* !RIPPER */
+
+    mesg = rb_str_new(0, 0);
+    append_lex_state_name(lex_state, mesg);
+    compile_error(PARSER_ARG "lex_state: %"PRIsVALUE, mesg);
+    rb_str_resize(mesg, 0);
+    append_bitstack_value(cond_stack, mesg);
+    compile_error(PARSER_ARG "cond_stack: %"PRIsVALUE, mesg);
+    rb_str_resize(mesg, 0);
+    append_bitstack_value(cmdarg_stack, mesg);
+    compile_error(PARSER_ARG "cmdarg_stack: %"PRIsVALUE, mesg);
+    if (parser->debug_output == rb_stdout)
+	parser->debug_output = rb_stderr;
+    yydebug = TRUE;
 }
 #endif /* !RIPPER */
 
@@ -9823,7 +9889,7 @@ new_yield_gen(struct parser_params *parser, NODE *node)
 }
 
 static VALUE
-negate_lit(VALUE lit)
+negate_lit_gen(struct parser_params *parser, VALUE lit)
 {
     int type = TYPE(lit);
     switch (type) {
@@ -9851,7 +9917,7 @@ negate_lit(VALUE lit)
 	RFLOAT(lit)->float_value = -RFLOAT_VALUE(lit);
 	break;
       default:
-	rb_bug("unknown literal type (%d) passed to negate_lit", type);
+	rb_parser_fatal(parser, "unknown literal type (%d) passed to negate_lit", type);
 	break;
     }
     return lit;
@@ -10169,7 +10235,7 @@ warn_unused_var(struct parser_params *parser, struct local_vars *local)
     u = local->used->tbl;
     cnt = local->used->pos;
     if (cnt != local->vars->pos) {
-	rb_bug("local->used->pos != local->vars->pos");
+	rb_parser_fatal(parser, "local->used->pos != local->vars->pos");
     }
     for (i = 0; i < cnt; ++i) {
 	if (!v[i] || (u[i] & LVAR_USED)) continue;
@@ -10651,6 +10717,7 @@ parser_initialize(struct parser_params *parser)
     parser->error_buffer = Qfalse;
 #endif
     parser->debug_buffer = Qnil;
+    parser->debug_output = rb_stdout;
     parser->enc = rb_utf8_encoding();
 }
 
@@ -10682,6 +10749,7 @@ parser_mark(void *ptr)
     rb_gc_mark(parser->parsing_thread);
 #endif
     rb_gc_mark(parser->debug_buffer);
+    rb_gc_mark(parser->debug_output);
 #ifdef YYMALLOC
     rb_gc_mark((VALUE)parser->heap);
 #endif
@@ -10934,7 +11002,7 @@ rb_parser_printf(struct parser_params *parser, const char *fmt, ...)
     rb_str_vcatf(mesg, fmt, ap);
     va_end(ap);
     if (RSTRING_END(mesg)[-1] == '\n') {
-	rb_io_write(rb_stdout, mesg);
+	rb_io_write(parser->debug_output, mesg);
 	parser->debug_buffer = Qnil;
     }
 }
