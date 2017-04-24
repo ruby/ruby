@@ -280,6 +280,9 @@ rb_gcd_gmp(VALUE x, VALUE y)
 inline static long
 i_gcd(long x, long y)
 {
+    unsigned long u, v, t;
+    int shift;
+
     if (x < 0)
 	x = -x;
     if (y < 0)
@@ -290,12 +293,29 @@ i_gcd(long x, long y)
     if (y == 0)
 	return x;
 
-    while (x > 0) {
-	long t = x;
-	x = y % x;
-	y = t;
+    u = (unsigned long)x;
+    v = (unsigned long)y;
+    for (shift = 0; ((u | v) & 1) == 0; ++shift) {
+	u >>= 1;
+	v >>= 1;
     }
-    return y;
+
+    while ((u & 1) == 0)
+	u >>= 1;
+
+    do {
+	while ((v & 1) == 0)
+	    v >>= 1;
+
+	if (u > v) {
+	    t = v;
+	    v = u;
+	    u = t;
+	}
+	v = v - u;
+    } while (v != 0);
+
+    return (long)(u << shift);
 }
 
 inline static VALUE
