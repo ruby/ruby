@@ -492,13 +492,16 @@ newhash
 (...)
 (VALUE val) // inc += 1 - num;
 {
+    rb_num_t i;
+
     RUBY_DTRACE_CREATE_HOOK(HASH, num);
 
-    if (num) {
-	val = rb_hash_new_from_values(num, STACK_ADDR_FROM_TOP(num));
-    }
-    else {
-	val = rb_hash_new();
+    val = rb_hash_new();
+
+    for (i = num; i > 0; i -= 2) {
+	const VALUE v = TOPN(i - 2);
+	const VALUE k = TOPN(i - 1);
+	rb_hash_aset(val, k, v);
     }
     POPN(num);
 }

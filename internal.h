@@ -1236,7 +1236,6 @@ VALUE rb_hash_rehash(VALUE hash);
 int rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val);
 #define HASH_DELETED  FL_USER1
 #define HASH_PROC_DEFAULT FL_USER2
-extern VALUE rb_hash_new_from_values(long, const VALUE *);
 
 /* inits.c */
 void rb_call_inits(void);
