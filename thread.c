@@ -192,7 +192,7 @@ vm_living_thread_num(rb_vm_t *vm)
 #if THREAD_DEBUG
 #ifdef HAVE_VA_ARGS_MACRO
 void rb_thread_debug(const char *file, int line, const char *fmt, ...);
-#define thread_debug(fmt, ...) rb_thread_debug(__FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#define thread_debug(...) rb_thread_debug(__FILE__, __LINE__, __VA_ARGS__)
 #define POSITION_FORMAT "%s:%d:"
 #define POSITION_ARGS ,file, line
 #else

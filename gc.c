@@ -893,8 +893,8 @@ static inline void gc_prof_set_heap_info(rb_objspace_t *);
 #define gc_prof_enabled(objspace) ((objspace)->profile.run && (objspace)->profile.current_record)
 
 #ifdef HAVE_VA_ARGS_MACRO
-# define gc_report(level, objspace, fmt, ...) \
-    if ((level) > RGENGC_DEBUG) {} else gc_report_body(level, objspace, fmt, ##__VA_ARGS__)
+# define gc_report(level, objspace, ...) \
+    if ((level) > RGENGC_DEBUG) {} else gc_report_body(level, objspace, __VA_ARGS__)
 #else
 # define gc_report if (!(RGENGC_DEBUG)) {} else gc_report_body
 #endif
