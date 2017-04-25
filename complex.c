@@ -86,6 +86,9 @@ f_add(VALUE x, VALUE y)
     else if (FIXNUM_P(x) && FIXNUM_ZERO_P(x))
 	return y;
 #endif
+    if (FIXNUM_P(x) && FIXNUM_P(y)) {
+	return rb_fix_plus_fix(x, y);
+    }
     return rb_funcall(x, '+', 1, y);
 }
 
@@ -94,6 +97,10 @@ f_div(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y) && FIX2LONG(y) == 1)
 	return x;
+    if (FIXNUM_P(x) && FIXNUM_P(y)) {
+	if (FIXNUM_ZERO_P(y)) rb_num_zerodiv();
+	return rb_fix_div_fix(x, y);
+    }
     return rb_funcall(x, '/', 1, y);
 }
 
@@ -137,6 +144,9 @@ f_mul(VALUE x, VALUE y)
 	    return y;
     }
 #endif
+    if (FIXNUM_P(x) && FIXNUM_P(y)) {
+	return rb_fix_mul_fix(x, y);
+    }
     return rb_funcall(x, '*', 1, y);
 }
 
@@ -147,6 +157,9 @@ f_sub(VALUE x, VALUE y)
     if (FIXNUM_P(y) && FIXNUM_ZERO_P(y))
 	return x;
 #endif
+    if (FIXNUM_P(x) && FIXNUM_P(y)) {
+	return rb_fix_minus_fix(x, y);
+    }
     return rb_funcall(x, '-', 1, y);
 }
 
