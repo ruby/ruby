@@ -46,6 +46,12 @@ with all sufficient information, see the ChangeLog file or Redmine
     of #coerce. Return nil in #coerce if the coercion is impossible.
     [Feature #7688]
 
+* Range
+  * Range#initialize no longer rescue exceptions when comparing begin and
+    end with #<=> and raise a "bad value for range" ArgumentError
+    but instead let the exception from the #<=> call go through.
+    [Feature #7688]
+
 * Regexp
   * Update Onigmo 6.1.1.
     * Support absent operator https://github.com/k-takata/Onigmo/issues/82

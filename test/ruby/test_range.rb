@@ -9,6 +9,14 @@ class TestRange < Test::Unit::TestCase
     assert_equal((0..2), Range.new(0, 2))
     assert_equal((0..2), Range.new(0, 2, false))
     assert_equal((0...2), Range.new(0, 2, true))
+
+    assert_raise(ArgumentError) { (1.."3") }
+
+    obj = Object.new
+    def obj.<=>(other)
+      raise RuntimeError, "cmp"
+    end
+    assert_raise_with_message(RuntimeError, "cmp") { (obj..3) }
   end
 
   def test_frozen_initialize

@@ -34,19 +34,6 @@ static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 
 #define EXCL(r) RTEST(RANGE_EXCL(r))
 
-static VALUE
-range_failed(void)
-{
-    rb_raise(rb_eArgError, "bad value for range");
-    return Qnil;		/* dummy */
-}
-
-static VALUE
-range_check(VALUE *args)
-{
-    return rb_funcall(args[0], id_cmp, 1, args[1]);
-}
-
 static void
 range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
 {
@@ -58,9 +45,9 @@ range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
     if (!FIXNUM_P(beg) || !FIXNUM_P(end)) {
 	VALUE v;
 
-	v = rb_rescue(range_check, (VALUE)args, range_failed, 0);
+	v = rb_funcall(beg, id_cmp, 1, end);
 	if (NIL_P(v))
-	    range_failed();
+	    rb_raise(rb_eArgError, "bad value for range");
     }
 
     RANGE_SET_EXCL(range, exclude_end);
