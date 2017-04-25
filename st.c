@@ -171,8 +171,8 @@ static const struct st_hash_type type_strcasehash = {
 #endif
 
 #define EQUAL(tab,x,y) ((x) == (y) || (*(tab)->type->compare)((x),(y)) == 0)
-#define PTR_EQUAL(tab, ptr, hash_val, key) \
-    ((ptr)->hash == (hash_val) && EQUAL((tab), (key), (ptr)->key))
+#define PTR_EQUAL(tab, ptr, hash_val, key_) \
+    ((ptr)->hash == (hash_val) && EQUAL((tab), (key_), (ptr)->key))
 
 /* Features of a table.  */
 struct st_features {
