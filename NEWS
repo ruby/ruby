@@ -38,6 +38,12 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * exception message "stream closed" is changed  [Bug #13405]
 
+* Numeric
+
+  * Numerical comparison operators (<,<=,>=,>) no longer rescue exceptions
+    of #coerce. Return nil in #coerce if the coercion is impossible.
+    [Feature #7688]
+
 * Regexp
   * Update Onigmo 6.1.1.
     * Support absent operator https://github.com/k-takata/Onigmo/issues/82

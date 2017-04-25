@@ -432,13 +432,6 @@ num_coerce(VALUE x, VALUE y)
     return rb_assoc_new(y, x);
 }
 
-static VALUE
-coerce_body(VALUE arg)
-{
-    VALUE *x = (VALUE *)arg;
-    return rb_funcall(x[1], id_coerce, 1, x[0]);
-}
-
 NORETURN(static void coerce_failed(VALUE x, VALUE y));
 static void
 coerce_failed(VALUE x, VALUE y)
@@ -454,14 +447,6 @@ coerce_failed(VALUE x, VALUE y)
 }
 
 static VALUE
-coerce_rescue(VALUE arg, VALUE errinfo)
-{
-    VALUE *x = (VALUE *)arg;
-    coerce_failed(x[0], x[1]);
-    return Qnil;		/* dummy */
-}
-
-static VALUE
 coerce_rescue_quiet(VALUE arg, VALUE errinfo)
 {
     return Qundef;
@@ -470,33 +455,18 @@ coerce_rescue_quiet(VALUE arg, VALUE errinfo)
 static int
 do_coerce(VALUE *x, VALUE *y, int err)
 {
-    VALUE ary;
-    VALUE a[2];
-
-    a[0] = *x; a[1] = *y;
-
-    if (!rb_respond_to(*y, id_coerce)) {
+    VALUE ary = rb_check_funcall(*y, id_coerce, 1, x);
+    if (ary == Qundef) {
 	if (err) {
 	    coerce_failed(*x, *y);
 	}
 	return FALSE;
     }
-
-    ary = rb_rescue(coerce_body, (VALUE)a, err ? coerce_rescue : coerce_rescue_quiet, (VALUE)a);
-    if (ary == Qundef) {
-	rb_warn("Numerical comparison operators will no more rescue exceptions of #coerce");
-	rb_warn("in the next release. Return nil in #coerce if the coercion is impossible.");
+    if (!err && NIL_P(ary)) {
 	return FALSE;
     }
     if (!RB_TYPE_P(ary, T_ARRAY) || RARRAY_LEN(ary) != 2) {
-	if (err) {
-	    rb_raise(rb_eTypeError, "coerce must return [x, y]");
-	}
-	else if (!NIL_P(ary)) {
-	    rb_warn("Bad return value for #coerce, called by numerical comparison operators.");
-	    rb_warn("#coerce must return [x, y]. The next release will raise an error for this.");
-	}
-	return FALSE;
+	rb_raise(rb_eTypeError, "coerce must return [x, y]");
     }
 
     *x = RARRAY_AREF(ary, 0);

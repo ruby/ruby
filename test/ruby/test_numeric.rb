@@ -54,18 +54,16 @@ class TestNumeric < Test::Unit::TestCase
 
     bug7688 = '[ruby-core:51389] [Bug #7688]'
     a = Class.new(Numeric) do
-      def coerce(x); raise StandardError; end
+      def coerce(x); raise StandardError, "my error"; end
     end.new
-    assert_raise_with_message(TypeError, /can't be coerced into /) { 1 + a }
-    warn = /will no more rescue exceptions of #coerce.+ in the next release/m
-    assert_warn(warn, bug7688) { assert_raise(ArgumentError) { 1 < a } }
+    assert_raise_with_message(StandardError, "my error") { 1 + a }
+    assert_raise_with_message(StandardError, "my error") { 1 < a }
 
     a = Class.new(Numeric) do
       def coerce(x); :bad_return_value; end
     end.new
     assert_raise_with_message(TypeError, "coerce must return [x, y]") { 1 + a }
-    warn = /Bad return value for #coerce.+next release will raise an error/m
-    assert_warn(warn, bug7688) { assert_raise(ArgumentError) { 1 < a } }
+    assert_raise_with_message(TypeError, "coerce must return [x, y]") { 1 < a }
   end
 
   def test_singleton_method
