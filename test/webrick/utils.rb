@@ -15,6 +15,7 @@ module TestWEBrick
 
   class WEBrick::HTTPServlet::CGIHandler
     remove_const :Ruby
+    require "envutil" unless defined?(EnvUtil)
     Ruby = EnvUtil.rubybin
     remove_const :CGIRunner
     CGIRunner = "\"#{Ruby}\" \"#{WEBrick::Config::LIBDIR}/httpservlet/cgi_runner.rb\"" # :nodoc:
@@ -26,6 +27,7 @@ module TestWEBrick
   RubyBin << " \"-I#{File.dirname(EnvUtil.rubybin)}/.ext/common\""
   RubyBin << " \"-I#{File.dirname(EnvUtil.rubybin)}/.ext/#{RUBY_PLATFORM}\""
 
+  require "test/unit" unless defined?(Test::Unit)
   include Test::Unit::Assertions
   extend Test::Unit::Assertions
 
