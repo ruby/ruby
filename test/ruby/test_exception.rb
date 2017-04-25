@@ -943,23 +943,23 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     end
   end
 
-  def test_warning_warn
+  def capture_warning_warn
     verbose = $VERBOSE
-    warning = nil
+    warning = []
 
     ::Warning.class_eval do
       alias_method :warn2, :warn
       remove_method :warn
 
       define_method(:warn) do |str|
-        warning = str
+        warning << str
       end
     end
 
     $VERBOSE = true
-    a = @a
+    yield
 
-    assert_match(/instance variable @a not initialized/, warning)
+    return warning
   ensure
     $VERBOSE = verbose
 
@@ -968,6 +968,11 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       alias_method :warn, :warn2
       remove_method :warn2
     end
+  end
+
+  def test_warning_warn
+    warning = capture_warning_warn {@a}
+    assert_match(/instance variable @a not initialized/, warning[0])
   end
 
   def test_warning_warn_invalid_argument
@@ -980,6 +985,25 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_raise(Encoding::CompatibilityError) do
       ::Warning.warn "\x00a\x00b\x00c".force_encoding("utf-16be")
     end
+  end
+
+  def test_warning_warn_circular_require_backtrace
+    warning = nil
+    path = nil
+    Tempfile.create(%w[circular .rb]) do |t|
+      path = t.path
+      basename = File.basename(path)
+      t.puts "require '#{basename}'"
+      t.close
+      $LOAD_PATH.push(File.dirname(t))
+      warning = capture_warning_warn {require basename}
+    ensure
+      $LOAD_PATH.pop
+      $LOADED_FEATURES.delete(t)
+    end
+    assert_match(/circular require/, warning.first)
+    warning.pop while %r[lib/rubygems/core_ext/kernel_require.rb:] =~ warning.last
+    assert_operator(warning.last, :start_with?, "\tfrom #{path}:1:")
   end
 
   def test_undefined_backtrace

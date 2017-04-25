@@ -145,10 +145,16 @@ rb_warning_s_warn(VALUE mod, VALUE str)
     return Qnil;
 }
 
+VALUE
+rb_warning_warn(VALUE mod, VALUE str)
+{
+    return rb_funcallv(mod, id_warn, 1, &str);
+}
+
 static void
 rb_write_warning_str(VALUE str)
 {
-    rb_funcall(rb_mWarning, id_warn, 1, str);
+    rb_warning_warn(rb_mWarning, str);
 }
 
 static VALUE
