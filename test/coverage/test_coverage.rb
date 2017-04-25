@@ -2,6 +2,7 @@
 require "test/unit"
 require "coverage"
 require "tmpdir"
+require "envutil"
 
 class TestCoverage < Test::Unit::TestCase
   def test_result_without_start
@@ -114,8 +115,10 @@ class TestCoverage < Test::Unit::TestCase
   def test_nonpositive_linenumber
     bug12517 = '[ruby-core:76141] [Bug #12517]'
     Coverage.start
-    assert_nothing_raised(ArgumentError, bug12517) do
-      RubyVM::InstructionSequence.compile(":ok", nil, "<compiled>", 0)
+    EnvUtil.suppress_warning do
+      assert_nothing_raised(ArgumentError, bug12517) do
+        RubyVM::InstructionSequence.compile(":ok", nil, "<compiled>", 0)
+      end
     end
     assert_include Coverage.result, "<compiled>"
   end
@@ -142,7 +145,9 @@ class TestCoverage < Test::Unit::TestCase
 
         Coverage.start
         require tmp + '/test.rb'
-        add_method(Class.new)
+        EnvUtil.suppress_warning do
+          add_method(Class.new)
+        end
         assert_equal Coverage.result[tmp + "/test.rb"], [1, 1, 1, 400, nil, nil, nil, nil, nil, nil, nil], bug13305
       }
     }
