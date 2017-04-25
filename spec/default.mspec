@@ -33,7 +33,6 @@ module MSpecScript::JobServer
         r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
         w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
         jobtokens = r.read_nonblock(1024)
-      else
         cores = jobtokens.size
         if cores > 0
           jobserver = w
