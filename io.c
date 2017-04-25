@@ -6416,7 +6416,7 @@ pipe_close(VALUE io)
  *
  *  If <i>cmd</i> is an +Array+ of +String+,
  *  then it will be used as the subprocess's +argv+ bypassing a shell.
- *  The array can contains a hash at first for environments and
+ *  The array can contain a hash at first for environments and
  *  a hash at last for options similar to <code>spawn</code>.
  *
  *  The default mode for the new file object is ``r'',
