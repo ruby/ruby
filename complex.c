@@ -175,7 +175,18 @@ f_negate(VALUE x)
 }
 
 fun1(numerator)
-fun1(real_p)
+
+inline static VALUE
+f_real_p(VALUE x)
+{
+    if (RB_INTEGER_TYPE_P(x)) {
+        return Qtrue;
+    }
+    else if (RB_FLOAT_TYPE_P(x)) {
+        return Qtrue;
+    }
+    return rb_funcall(x, id_real_p, 0);
+}
 
 inline static VALUE
 f_to_i(VALUE x)
