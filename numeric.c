@@ -446,12 +446,6 @@ coerce_failed(VALUE x, VALUE y)
 	     y, rb_obj_class(x));
 }
 
-static VALUE
-coerce_rescue_quiet(VALUE arg, VALUE errinfo)
-{
-    return Qundef;
-}
-
 static int
 do_coerce(VALUE *x, VALUE *y, int err)
 {
@@ -2585,17 +2579,11 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
     }
 }
 
-static VALUE
-num_step_compare_with_zero(VALUE num)
-{
-    VALUE zero = INT2FIX(0);
-    return rb_check_funcall(num, '>', 1, &zero);
-}
-
 static int
 num_step_negative_p(VALUE num)
 {
     const ID mid = '<';
+    VALUE zero = INT2FIX(0);
     VALUE r;
 
     if (FIXNUM_P(num)) {
@@ -2606,7 +2594,8 @@ num_step_negative_p(VALUE num)
 	if (method_basic_p(rb_cInteger))
 	    return BIGNUM_NEGATIVE_P(num);
     }
-    r = rb_rescue(num_step_compare_with_zero, num, coerce_rescue_quiet, Qnil);
+
+    r = rb_check_funcall(num, '>', 1, &zero);
     if (r == Qundef) {
 	coerce_failed(num, INT2FIX(0));
     }

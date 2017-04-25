@@ -788,7 +788,7 @@ class TestFloat < Test::Unit::TestCase
   end
 
   def test_num2dbl
-    assert_raise(TypeError) do
+    assert_raise(ArgumentError, "comparison of String with 0 failed") do
       1.0.step(2.0, "0.5") {}
     end
     assert_raise(TypeError) do
