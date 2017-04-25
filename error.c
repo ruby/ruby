@@ -136,6 +136,15 @@ ruby_deprecated_internal_feature(const char *func)
     rb_fatal("%s is only for internal use and deprecated; do not use", func);
 }
 
+/*
+ * call-seq:
+ *    warn(msg) -> nil
+ *
+ * Writes warning message to $stderr, followed by a newline
+ * if the message does not end in a newline.  This method is called
+ * by ruby for all emitted warnings.
+ */
+
 static VALUE
 rb_warning_s_warn(VALUE mod, VALUE str)
 {
@@ -144,6 +153,22 @@ rb_warning_s_warn(VALUE mod, VALUE str)
     rb_write_error_str(str);
     return Qnil;
 }
+
+/*
+ *  Document-module: Warning
+ *
+ *  The Warning module contains a single method named #warn, and the
+ *  module extends itself, making Warning.warn available.
+ *  Warning.warn is called for all warnings issued by ruby.
+ *  By default, warnings are printed to $stderr.
+ *
+ *  By overriding Warning.warn, you can change how warnings are
+ *  handled by ruby, either filtering some warnings, and/or outputing
+ *  warnings somewhere other than $stderr.  When Warning.warn is
+ *  overridden, super can be called to get the default behavior of
+ *  printing the warning to $stderr.
+ *
+ */
 
 VALUE
 rb_warning_warn(VALUE mod, VALUE str)
