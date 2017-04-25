@@ -266,7 +266,7 @@ rb_mutex_lock(VALUE self)
 	    th->vm->sleeper++;
 	    /*
 	     * Carefully! while some contended threads are in lock_func(),
-	     * vm->sleepr is unstable value. we have to avoid both deadlock
+	     * vm->sleeper is unstable value. we have to avoid both deadlock
 	     * and busy loop.
 	     */
 	    if ((vm_living_thread_num(th->vm) == th->vm->sleeper) &&
