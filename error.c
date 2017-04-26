@@ -48,6 +48,7 @@ VALUE rb_eEAGAIN;
 VALUE rb_eEWOULDBLOCK;
 VALUE rb_eEINPROGRESS;
 VALUE rb_mWarning;
+VALUE rb_cWarningBuffer;
 
 static ID id_warn;
 
@@ -279,6 +280,13 @@ rb_enc_warning(rb_encoding *enc, const char *fmt, ...)
 }
 #endif
 
+static inline int
+end_with_asciichar(VALUE str, int c)
+{
+    return RB_TYPE_P(str, T_STRING) &&
+	rb_str_end_with_asciichar(str, c);
+}
+
 /*
  * call-seq:
  *    warn(msg, ...)   -> nil
@@ -301,7 +309,14 @@ static VALUE
 rb_warn_m(int argc, VALUE *argv, VALUE exc)
 {
     if (!NIL_P(ruby_verbose) && argc > 0) {
-	rb_io_puts(argc, argv, rb_mWarning);
+	VALUE str = argv[0];
+	if (argc > 1 || !end_with_asciichar(str, '\n')) {
+	    str = rb_str_tmp_new(0);
+	    RBASIC_SET_CLASS(str, rb_cWarningBuffer);
+	    rb_io_puts(argc, argv, str);
+	    RBASIC_SET_CLASS(str, rb_cString);
+	}
+	rb_write_warning_str(str);
     }
     return Qnil;
 }
@@ -2175,8 +2190,10 @@ Init_Exception(void)
 
     rb_mWarning = rb_define_module("Warning");
     rb_define_method(rb_mWarning, "warn", rb_warning_s_warn, 1);
-    rb_define_method(rb_mWarning, "write", rb_warning_s_warn, 1);
     rb_extend_object(rb_mWarning, rb_mWarning);
+
+    rb_cWarningBuffer = rb_define_class_under(rb_mWarning, "buffer", rb_cString);
+    rb_define_method(rb_cWarningBuffer, "write", rb_str_append, 1);
 
     rb_define_global_function("warn", rb_warn_m, -1);
 

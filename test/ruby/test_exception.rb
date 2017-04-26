@@ -973,6 +973,10 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   def test_warning_warn
     warning = capture_warning_warn {@a}
     assert_match(/instance variable @a not initialized/, warning[0])
+
+    assert_equal(["a\nz\n"], capture_warning_warn {warn "a\n", "z"})
+    assert_equal([],         capture_warning_warn {warn})
+    assert_equal(["\n"],     capture_warning_warn {warn ""})
   end
 
   def test_warning_warn_invalid_argument
