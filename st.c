@@ -1956,7 +1956,7 @@ st_numhash(st_data_t n)
     return (st_index_t)((n>>s1|(n<<s2)) ^ (n>>s2));
 }
 
-/* Expand TAB to be suitable for holding SIZ entries in totall.
+/* Expand TAB to be suitable for holding SIZ entries in total.
    Pre-existing entries remain not deleted inside of TAB, but its bins
    are cleared to expect future reconstruction. See rehash below. */
 void
