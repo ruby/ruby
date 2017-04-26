@@ -650,7 +650,6 @@ static VALUE
 rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
 {
     VALUE hash, tmp;
-    int i;
 
     if (argc == 1) {
 	tmp = rb_hash_s_try_convert(Qnil, argv[0]);
@@ -704,12 +703,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
     }
 
     hash = hash_alloc(klass);
-    if (argc > 0) {
-        RHASH(hash)->ntbl = st_init_table_with_size(&objhash, argc / 2);
-    }
-    for (i=0; i<argc; i+=2) {
-        rb_hash_aset(hash, argv[i], argv[i + 1]);
-    }
+    rb_hash_bulk_insert(argc, argv, hash);
 
     return hash;
 }
