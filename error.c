@@ -138,11 +138,11 @@ ruby_deprecated_internal_feature(const char *func)
 
 /*
  * call-seq:
- *    warn(msg) -> nil
+ *    warn(msg)  -> nil
  *
- * Writes warning message to $stderr, followed by a newline
+ * Writes warning message +msg+ to $stderr, followed by a newline
  * if the message does not end in a newline.  This method is called
- * by ruby for all emitted warnings.
+ * by Ruby for all emitted warnings.
  */
 
 static VALUE
@@ -158,16 +158,15 @@ rb_warning_s_warn(VALUE mod, VALUE str)
  *  Document-module: Warning
  *
  *  The Warning module contains a single method named #warn, and the
- *  module extends itself, making Warning.warn available.
- *  Warning.warn is called for all warnings issued by ruby.
+ *  module extends itself, making <code>Warning.warn</code> available.
+ *  Warning.warn is called for all warnings issued by Ruby.
  *  By default, warnings are printed to $stderr.
  *
  *  By overriding Warning.warn, you can change how warnings are
- *  handled by ruby, either filtering some warnings, and/or outputing
+ *  handled by Ruby, either filtering some warnings, and/or outputting
  *  warnings somewhere other than $stderr.  When Warning.warn is
  *  overridden, super can be called to get the default behavior of
  *  printing the warning to $stderr.
- *
  */
 
 VALUE
@@ -2017,7 +2016,7 @@ syserr_eqq(VALUE self, VALUE exc)
 /*
  * Document-class: fatal
  *
- * fatal is an Exception that is raised when ruby has encountered a fatal
+ * fatal is an Exception that is raised when Ruby has encountered a fatal
  * error and must exit.  You are not able to rescue fatal.
  */
 
