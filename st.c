@@ -1959,7 +1959,7 @@ st_numhash(st_data_t n)
 /* Expand TAB to be suitable for holding SIZ entries in total.
    Pre-existing entries remain not deleted inside of TAB, but its bins
    are cleared to expect future reconstruction. See rehash below. */
-void
+static void
 st_expand_table(st_table *tab, st_index_t siz)
 {
     st_table *tmp;
@@ -2069,7 +2069,7 @@ st_rehash_indexed(st_table *tab)
 /* Reconstruct TAB's bins according to TAB's entries. This function
    permits conflicting keys inside of entries.  No errors are reported
    then.  All but one of them are discarded silently. */
-void
+static void
 st_rehash(st_table *tab)
 {
     if (tab->bin_power <= MAX_POWER2_FOR_TABLES_WITHOUT_BINS)
