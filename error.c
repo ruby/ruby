@@ -302,18 +302,7 @@ static VALUE
 rb_warn_m(int argc, VALUE *argv, VALUE exc)
 {
     if (!NIL_P(ruby_verbose) && argc > 0) {
-	int i;
-	VALUE str;
-	for (i = 0; i < argc; i++) {
-	    str = rb_obj_as_string(argv[i]);
-	    if (RSTRING_LEN(str) == 0) {
-		str = rb_default_rs;
-	    }
-	    else if (!rb_str_end_with_asciichar(str, '\n')) {
-		str = rb_str_cat(rb_str_dup(str), "\n", 1);
-	    }
-	    rb_write_warning_str(str);
-	}
+	rb_io_puts(argc, argv, rb_mWarning);
     }
     return Qnil;
 }
@@ -2187,6 +2176,7 @@ Init_Exception(void)
 
     rb_mWarning = rb_define_module("Warning");
     rb_define_method(rb_mWarning, "warn", rb_warning_s_warn, 1);
+    rb_define_method(rb_mWarning, "write", rb_warning_s_warn, 1);
     rb_extend_object(rb_mWarning, rb_mWarning);
 
     rb_define_global_function("warn", rb_warn_m, -1);
