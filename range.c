@@ -37,11 +37,6 @@ static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 static void
 range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
 {
-    VALUE args[2];
-
-    args[0] = beg;
-    args[1] = end;
-
     if (!FIXNUM_P(beg) || !FIXNUM_P(end)) {
 	VALUE v;
 
