@@ -571,7 +571,7 @@ rb_provide_feature(VALUE feature)
 void
 rb_provide(const char *feature)
 {
-    rb_provide_feature(rb_usascii_str_new2(feature));
+    rb_provide_feature(rb_fstring_cstr(feature));
 }
 
 NORETURN(static void load_failed(VALUE));
@@ -1058,8 +1058,7 @@ rb_require_safe(VALUE fname, int safe)
 VALUE
 rb_require(const char *fname)
 {
-    VALUE fn = rb_str_new2(fname);
-    OBJ_FREEZE(fn);
+    VALUE fn = rb_str_new_cstr(fname);
     return rb_require_safe(fn, rb_safe_level());
 }
 
