@@ -1550,6 +1550,9 @@ extern int ruby_enable_coredump;
 int rb_get_next_signal(void);
 int rb_sigaltstack_size(void);
 
+/* st.c */
+extern void rb_hash_bulk_insert(long, const VALUE *, VALUE);
+
 /* strftime.c */
 #ifdef RUBY_ENCODING_H
 VALUE rb_strftime_timespec(const char *format, size_t format_len, rb_encoding *enc,

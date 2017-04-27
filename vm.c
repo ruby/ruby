@@ -2653,13 +2653,9 @@ static VALUE core_hash_merge_kwd(int argc, VALUE *argv);
 static VALUE
 core_hash_merge(VALUE hash, long argc, const VALUE *argv)
 {
-    long i;
-
     Check_Type(hash, T_HASH);
     VM_ASSERT(argc % 2 == 0);
-    for (i=0; i<argc; i+=2) {
-	rb_hash_aset(hash, argv[i], argv[i+1]);
-    }
+    rb_hash_bulk_insert(argc, argv, hash);
     return hash;
 }
 
