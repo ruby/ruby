@@ -1005,9 +1005,9 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       $LOAD_PATH.pop
       $LOADED_FEATURES.delete(t)
     end
+    assert_equal(1, warning.size)
     assert_match(/circular require/, warning.first)
-    warning.pop while %r[lib/rubygems/core_ext/kernel_require.rb:] =~ warning.last
-    assert_operator(warning.last, :start_with?, "\tfrom #{path}:1:")
+    assert_match(/^\tfrom #{Regexp.escape(path)}:1:/, warning.first)
   end
 
   def test_undefined_backtrace

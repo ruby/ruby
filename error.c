@@ -268,6 +268,14 @@ rb_warning(const char *fmt, ...)
     }
 }
 
+VALUE
+rb_warning_string(const char *fmt, ...)
+{
+    with_warning_string(mesg, 0, fmt) {
+    }
+    return mesg;
+}
+
 #if 0
 void
 rb_enc_warning(rb_encoding *enc, const char *fmt, ...)
