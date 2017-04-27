@@ -394,6 +394,35 @@ class TestRubyLiteral < Test::Unit::TestCase
     end;
   end
 
+  def test_hash_duplicated_key
+    h = EnvUtil.suppress_warning do
+      eval <<~end
+        # This is a syntax that renders warning at very early stage.
+        # eval used to delay warning, to be suppressible by EnvUtil.
+        {"a" => 100, "b" => 200, "a" => 300, "a" => 400}
+      end
+    end
+    assert_equal(2, h.size)
+    assert_equal(400, h['a'])
+    assert_equal(200, h['b'])
+    assert_nil(h['c'])
+    assert_equal(nil, h.key('300'))
+  end
+
+  def test_hash_frozen_key_id
+    key = "a".freeze
+    h = {key => 100}
+    assert_equal(100, h['a'])
+    assert_same(key, *h.keys)
+  end
+
+  def test_hash_key_tampering
+    key = "a"
+    h = {key => 100}
+    key.upcase!
+    assert_equal(100, h['a'])
+  end
+
   def test_range
     assert_instance_of Range, (1..2)
     assert_equal(1..2, 1..2)
