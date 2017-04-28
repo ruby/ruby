@@ -791,7 +791,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    {
 		volatile VALUE val = GETARG();
                 int valsign;
-		char nbuf[64], *s;
+		char nbuf[BIT_DIGITS(SIZEOF_LONG*CHAR_BIT)+2], *s;
 		const char *prefix = 0;
 		int sign = 0, dots = 0;
 		char sc = 0;
@@ -1014,9 +1014,9 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    int plen = (int)strlen(prefix);
 		    PUSH(prefix, plen);
 		}
-		CHECK(prec - len);
 		if (dots) PUSH("..", 2);
 		if (prec > len) {
+		    CHECK(prec - len);
 		    if (!sign && valsign < 0) {
 			char c = sign_bits(base, p);
 			FILL_(c, prec - len);
@@ -1073,15 +1073,15 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		if (prec >= len) len = prec + 1; /* integer part 0 */
 		if (sign || (flags&FSPACE)) ++len;
 		if (prec > 0) ++len; /* period */
-		CHECK(len > width ? len : width);
 		fill = width > len ? width - len : 0;
-		if (fill && !(flags&FMINUS) && !(flags&FZERO)) {
+		CHECK(fill + len);
+		if (fill && !(flags&(FMINUS|FZERO))) {
 		    FILL_(' ', fill);
 		}
 		if (sign || (flags&FSPACE)) {
 		    buf[blen++] = sign > 0 ? '+' : sign < 0 ? '-' : ' ';
 		}
-		if (fill && !(flags&FMINUS) && (flags&FZERO)) {
+		if (fill && (flags&(FMINUS|FZERO)) == FZERO) {
 		    FILL_('0', fill);
 		}
 		len = RSTRING_LEN(val) + zero;
