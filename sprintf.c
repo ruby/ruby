@@ -24,7 +24,7 @@
 #define BIT_DIGITS(N)   (((N)*146)/485 + 1)  /* log2(10) =~ 146/485 */
 
 static char *fmt_setup(char*,size_t,int,int,int,int);
-static char *ultoa(unsigned long val, char *endp, int base, int octzero);
+static char *ruby_ultoa(unsigned long val, char *endp, int base, int octzero);
 
 static char
 sign_bits(int base, const char *p)
@@ -939,7 +939,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                         sc = ' ';
                         width--;
                     }
-		    s = ultoa((unsigned long)v, nbuf + sizeof(nbuf), 10, 0);
+		    s = ruby_ultoa((unsigned long)v, nbuf + sizeof(nbuf), 10, 0);
 		    len = (int)(nbuf + sizeof(nbuf) - s);
 		}
 		else {
@@ -1200,12 +1200,12 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
     *--buf = c;
 
     if (flags & FPREC) {
-	buf = ultoa(prec, buf, 10, 0);
+	buf = ruby_ultoa(prec, buf, 10, 0);
 	*--buf = '.';
     }
 
     if (flags & FWIDTH) {
-	buf = ultoa(width, buf, 10, 0);
+	buf = ruby_ultoa(width, buf, 10, 0);
     }
 
     if (flags & FSPACE) *--buf = ' ';
@@ -1248,7 +1248,7 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 #include "vsnprintf.c"
 
 static char *
-ultoa(unsigned long val, char *endp, int base, int flags)
+ruby_ultoa(unsigned long val, char *endp, int base, int flags)
 {
     const char *xdigs = lower_hexdigits;
     int octzero = flags & FSHARP;
