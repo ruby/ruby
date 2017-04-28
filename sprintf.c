@@ -1126,7 +1126,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		fval = RFLOAT_VALUE(rb_Float(val));
 		if (isnan(fval) || isinf(fval)) {
 		    const char *expr;
-		    int i, need;
+		    int need;
 		    int elen;
 		    char sign = '\0';
 
@@ -1138,7 +1138,6 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    }
 		    need = (int)strlen(expr);
 		    elen = need;
-		    i = 0;
 		    if (!isnan(fval) && fval < 0.0)
 			sign = '-';
 		    else if (flags & (FPLUS|FSPACE))
