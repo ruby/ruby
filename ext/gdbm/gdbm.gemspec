@@ -2,8 +2,8 @@
 
 Gem::Specification.new do |spec|
   spec.name          = "gdbm"
-  spec.version       = "0.0.1"
-  spec.date          = '2017-02-24'
+  spec.version       = "2.0.0.beta1"
+  spec.date          = '2017-04-28'
   spec.authors       = ["Yukihiro Matsumoto"]
   spec.email         = ["matz@ruby-lang.org"]
 
