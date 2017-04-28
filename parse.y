@@ -327,6 +327,7 @@ parser_set_line(NODE *n, int l)
     nd_set_line(n, l);
 }
 
+#ifndef RIPPER
 static inline void
 set_line_body(NODE *body, int line)
 {
@@ -338,7 +339,6 @@ set_line_body(NODE *body, int line)
     }
 }
 
-#ifndef RIPPER
 #define yyparse ruby_yyparse
 
 static NODE* node_newnode(struct parser_params *, enum node_type, VALUE, VALUE, VALUE);
