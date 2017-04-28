@@ -23,7 +23,8 @@
 
 #define BIT_DIGITS(N)   (((N)*146)/485 + 1)  /* log2(10) =~ 146/485 */
 
-static void fmt_setup(char*,size_t,int,int,int,int);
+static char *fmt_setup(char*,size_t,int,int,int,int);
+static char *ultoa(unsigned long val, char *endp, int base, int octzero);
 
 static char
 sign_bits(int base, const char *p)
@@ -938,9 +939,8 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                         sc = ' ';
                         width--;
                     }
-                    snprintf(nbuf, sizeof(nbuf), "%ld", v);
-                    s = nbuf;
-		    len = (int)strlen(s);
+		    s = ultoa((unsigned long)v, nbuf + sizeof(nbuf), 10, 0);
+		    len = (int)(nbuf + sizeof(nbuf) - s);
 		}
 		else {
                     tmp = rb_big2str(val, 10);
@@ -1122,12 +1122,11 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    {
 		VALUE val = GETARG();
 		double fval;
-		int i, need;
-		char fbuf[32];
 
 		fval = RFLOAT_VALUE(rb_Float(val));
 		if (isnan(fval) || isinf(fval)) {
 		    const char *expr;
+		    int i, need;
 		    int elen;
 		    char sign = '\0';
 
@@ -1162,23 +1161,16 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    }
 		    break;
 		}
-
-		fmt_setup(fbuf, sizeof(fbuf), *p, flags, width, prec);
-		need = 0;
-		if (*p != 'e' && *p != 'E') {
-		    i = INT_MIN;
-		    frexp(fval, &i);
-		    if (i > 0)
-			need = BIT_DIGITS(i);
+		else {
+		    int cr = ENC_CODERANGE(result);
+		    char fbuf[2*BIT_DIGITS(SIZEOF_INT*CHAR_BIT)+10];
+		    char *fmt = fmt_setup(fbuf, sizeof(fbuf), *p, flags, width, prec);
+		    rb_str_set_len(result, blen);
+		    rb_str_catf(result, fmt, fval);
+		    ENC_CODERANGE_SET(result, cr);
+		    bsiz = rb_str_capacity(result);
+		    RSTRING_GETMEM(result, buf, blen);
 		}
-		need += (flags&FPREC) ? prec : default_float_precision;
-		if ((flags&FWIDTH) && need < width)
-		    need = width;
-		need += 20;
-
-		CHECK(need);
-		snprintf(&buf[blen], need, fbuf, fval);
-		blen += strlen(&buf[blen]);
 	    }
 	    break;
 	}
@@ -1200,29 +1192,29 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     return result;
 }
 
-static void
+static char *
 fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 {
-    char *end = buf + size;
-    *buf++ = '%';
-    if (flags & FSHARP) *buf++ = '#';
-    if (flags & FPLUS)  *buf++ = '+';
-    if (flags & FMINUS) *buf++ = '-';
-    if (flags & FZERO)  *buf++ = '0';
-    if (flags & FSPACE) *buf++ = ' ';
-
-    if (flags & FWIDTH) {
-	snprintf(buf, end - buf, "%d", width);
-	buf += strlen(buf);
-    }
+    buf += size;
+    *--buf = '\0';
+    *--buf = c;
 
     if (flags & FPREC) {
-	snprintf(buf, end - buf, ".%d", prec);
-	buf += strlen(buf);
+	buf = ultoa(prec, buf, 10, 0);
+	*--buf = '.';
     }
 
-    *buf++ = c;
-    *buf = '\0';
+    if (flags & FWIDTH) {
+	buf = ultoa(width, buf, 10, 0);
+    }
+
+    if (flags & FSPACE) *--buf = ' ';
+    if (flags & FZERO)  *--buf = '0';
+    if (flags & FMINUS) *--buf = '-';
+    if (flags & FPLUS)  *--buf = '+';
+    if (flags & FSHARP) *--buf = '#';
+    *--buf = '%';
+    return buf;
 }
 
 #undef FILE
@@ -1254,6 +1246,14 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 #define lower_hexdigits (ruby_hexdigits+0)
 #define upper_hexdigits (ruby_hexdigits+16)
 #include "vsnprintf.c"
+
+static char *
+ultoa(unsigned long val, char *endp, int base, int flags)
+{
+    const char *xdigs = lower_hexdigits;
+    int octzero = flags & FSHARP;
+    return BSD__ultoa(val, endp, base, octzero, xdigs);
+}
 
 int
 ruby_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
