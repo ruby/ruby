@@ -2015,8 +2015,8 @@ numeric_denominator(VALUE self)
  *  Returns the most exact division (rational for integers, float for floats).
  */
 
-static VALUE
-numeric_quo(VALUE x, VALUE y)
+VALUE
+rb_numeric_quo(VALUE x, VALUE y)
 {
     if (RB_FLOAT_TYPE_P(y)) {
         return rb_funcall(x, rb_intern("fdiv"), 1, y);
@@ -2726,7 +2726,7 @@ Init_Rational(void)
 
     rb_define_method(rb_cNumeric, "numerator", numeric_numerator, 0);
     rb_define_method(rb_cNumeric, "denominator", numeric_denominator, 0);
-    rb_define_method(rb_cNumeric, "quo", numeric_quo, 1);
+    rb_define_method(rb_cNumeric, "quo", rb_numeric_quo, 1);
 
     rb_define_method(rb_cInteger, "numerator", integer_numerator, 0);
     rb_define_method(rb_cInteger, "denominator", integer_denominator, 0);
