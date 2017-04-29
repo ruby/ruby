@@ -978,6 +978,16 @@ x = __ENCODING__
     assert_equal(line, obj.location.lineno, bug)
   end
 
+  def test_negative_line_number
+    bug = '[ruby-core:80920] [Bug #13523]'
+    obj = Object.new
+    obj.instance_eval("def t(e = false);raise if e; __LINE__;end", "test", -100)
+    assert_equal(-100, obj.t, bug)
+    assert_equal(-100, obj.method(:t).source_location[1], bug)
+    e = assert_raise(RuntimeError) {obj.t(true)}
+    assert_equal(-100, e.backtrace_locations.first.lineno, bug)
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}
