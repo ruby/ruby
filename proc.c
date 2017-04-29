@@ -928,11 +928,13 @@ rb_iseq_min_max_arity(const rb_iseq_t *iseq, int *max)
 static int
 rb_block_min_max_arity(const struct rb_block *block, int *max)
 {
+  again:
     switch (vm_block_type(block)) {
       case block_type_iseq:
 	return rb_iseq_min_max_arity(rb_iseq_check(block->as.captured.code.iseq), max);
       case block_type_proc:
-	return rb_block_min_max_arity(vm_proc_block(block->as.proc), max);
+	block = vm_proc_block(block->as.proc);
+	goto again;
       case block_type_ifunc:
 	{
 	    const struct vm_ifunc *ifunc = block->as.captured.code.ifunc;
@@ -2223,6 +2225,7 @@ rb_method_entry_min_max_arity(const rb_method_entry_t *me, int *max)
 {
     const rb_method_definition_t *def = me->def;
 
+  again:
     if (!def) return *max = 0;
     switch (def->type) {
       case VM_METHOD_TYPE_CFUNC:
@@ -2239,7 +2242,8 @@ rb_method_entry_min_max_arity(const rb_method_entry_t *me, int *max)
       case VM_METHOD_TYPE_IVAR:
 	return *max = 0;
       case VM_METHOD_TYPE_ALIAS:
-	return rb_method_entry_min_max_arity(def->body.alias.original_me, max);
+	def = def->body.alias.original_me->def;
+	goto again;
       case VM_METHOD_TYPE_BMETHOD:
 	return rb_proc_min_max_arity(def->body.proc, max);
       case VM_METHOD_TYPE_ISEQ:
