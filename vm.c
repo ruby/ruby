@@ -3120,6 +3120,9 @@ Init_vm_objects(void)
     /* initialize mark object array, hash */
     vm->mark_object_ary = rb_ary_tmp_new(128);
     vm->loading_table = st_init_strtable();
+    vm->empty_args = rb_ary_new();
+    rb_obj_freeze(vm->empty_args);
+    rb_gc_register_mark_object(vm->empty_args);
     vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 1000);
 }
 

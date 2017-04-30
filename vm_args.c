@@ -172,6 +172,21 @@ args_rest_array(struct args_info *args)
     return ary;
 }
 
+static inline VALUE
+args_rest_array2(struct args_info *args)
+{
+    VALUE ary;
+
+    if (args->rest) {
+	ary = args->rest;
+	args->rest = 0;
+    }
+    else {
+	ary = GET_VM()->empty_args;
+    }
+    return ary;
+}
+
 static int
 keyword_hash_p(VALUE *kw_hash_ptr, VALUE *rest_hash_ptr, rb_thread_t *th)
 {
@@ -344,8 +359,13 @@ args_setup_opt_parameters(struct args_info *args, int opt_max, VALUE *locals)
 static inline void
 args_setup_rest_parameter(struct args_info *args, VALUE *locals)
 {
-    args_copy(args);
     *locals = args_rest_array(args);
+}
+
+static inline void
+anon_args_setup_rest_parameter(struct args_info *args, VALUE *locals)
+{
+    *locals = args_rest_array2(args);
 }
 
 static VALUE
@@ -650,7 +670,16 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq,
     }
 
     if (iseq->body->param.flags.has_rest) {
-	args_setup_rest_parameter(args, locals + iseq->body->param.rest_start);
+	const ID *tbl = iseq->body->local_table;
+	ID param_name = tbl[iseq->body->param.rest_start];
+
+	args_copy(args);
+
+	if (is_junk_id(param_name)) {
+	    anon_args_setup_rest_parameter(args, locals + iseq->body->param.rest_start);
+	} else {
+	    args_setup_rest_parameter(args, locals + iseq->body->param.rest_start);
+	}
     }
 
     if (iseq->body->param.flags.has_kw) {

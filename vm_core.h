@@ -537,6 +537,7 @@ typedef struct rb_vm_struct {
     VALUE coverages;
 
     VALUE defined_module_hash;
+    VALUE empty_args;
 
     struct rb_objspace *objspace;
 
