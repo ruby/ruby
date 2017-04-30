@@ -109,6 +109,9 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                    [[3, 0], :on_heredoc_end, "EOS"]
                  ],
                  Ripper.lex("<<~EOS\n  heredoc\nEOS")
+    assert_equal [[[1, 0], :on_tstring_beg, "'"],
+                  [[1, 1], :on_tstring_content, "foo"]],
+                 Ripper.lex("'foo")
   end
 
   def test_location
@@ -131,6 +134,8 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
     assert_location %Q["a\nb\r\nc"]
     assert_location "print(<<""EOS)\nheredoc\nEOS\n"
     assert_location "print(<<-\"EOS\")\nheredoc\n     EOS\n"
+    assert_location "'foo'"
+    assert_location "'foo"
   end
 
   def assert_location(src)

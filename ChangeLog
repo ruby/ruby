@@ -1,3 +1,17 @@
+Sun Apr 30 22:55:41 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	keep line number after unterminated string literal
+
+	* parse.y (parser_parse_string): keep line number even after an
+	  unterminated string literal.  it does not matter in the parser,
+	  ripper needs this value after this error.
+
+	parse.y: unterminated content token
+
+	* parse.y (parser_parse_string): defer the end token to next
+	  reading, to yield tSTRING_CONTENT with the unterminated content.
+	  [Bug #13363]
+
 Sun Apr 30 22:52:38 2017  Marcus Stollsteimer  <sto.mar@web.de>
 
 	* io.c: [DOC] expand docs for IO#puts
