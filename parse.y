@@ -6509,7 +6509,7 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
 	    else {
 		compile_error(PARSER_ARG "unterminated string meets end of file");
 	    }
-	    quote->u2.id = -1;
+	    quote->nd_func = -1;
 	}
     }
 
