@@ -1,3 +1,16 @@
+Sun Apr 30 23:01:00 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	class.c: ensure_includable
+
+	* class.c (ensure_includable): extract checks to include and
+	  prepend.
+
+	class.c: prohibit refinement module
+
+	* class.c (ensure_includable): cannot include refinement
+	  module, or the type and the class do not match.
+	  [ruby-core:79632] [Bug #13236]
+
 Sun Apr 30 22:55:41 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	keep line number after unterminated string literal
