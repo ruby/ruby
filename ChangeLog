@@ -1,3 +1,20 @@
+Sun Apr 30 22:38:44 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	sample/pty/shl.rb: update [ci skip]
+
+	* sample/pty/shl.rb: stop writer loop when the child exited.
+	  PTY::ChildExited no longer raises asynchronously since r20298.
+	  [ruby-dev:49974] [Bug #13191]
+
+	* sample/pty/shl.rb: use io/console instead of stty.
+	  [ruby-dev:49974] [Bug #13191]
+
+	* sample/pty/shl.rb: do not manage array length separately.
+	  [ruby-dev:49974] [Bug #13191]
+
+	* sample/pty/shl.rb: leap exited child process.
+	  [ruby-dev:49974] [Bug #13191]
+
 Sun Apr 30 22:35:10 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	configure.in: use AC_SEARCH_LIBS
