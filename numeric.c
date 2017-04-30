@@ -1786,7 +1786,7 @@ static VALUE
 flo_round(int argc, VALUE *argv, VALUE num)
 {
     VALUE nd;
-    double number, f;
+    double number, f, x;
     int ndigits = 0;
     int binexp;
     enum {float_dig = DBL_DIG+2};
@@ -1828,8 +1828,14 @@ flo_round(int argc, VALUE *argv, VALUE num)
 	return DBL2NUM(0);
     }
     f = pow(10, ndigits);
-    return DBL2NUM(round(number * f) / f);
-}
+    x = round(number * f);
+    if (x > 0) {
+	if ((double)((x + 0.5) / f) <= number) x += 1;
+    }
+    else {
+	if ((double)((x - 0.5) / f) >= number) x -= 1;
+    }
+    return DBL2NUM(x / f);}
 
 /*
  *  call-seq:

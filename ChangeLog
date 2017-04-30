@@ -1,3 +1,10 @@
+Sun Apr 30 22:24:25 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* numeric.c (flo_round): [EXPERIMENTAL] adjust the case that the
+	  receiver is close to the exact but unrepresentable middle value
+	  of two values in the given precision.
+	  http://d.hatena.ne.jp/hnw/20160702
+
 Sun Apr  9 22:21:23 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	thread.c: rb_thread_fd_close [ci skip]
