@@ -1066,7 +1066,7 @@ rb_szqueue_pop(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * Document-method: Queue#clear
+ * Document-method: SizedQueue#clear
  *
  * Removes all objects from the queue.
  */
