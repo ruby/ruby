@@ -1,3 +1,11 @@
+Sun Apr 30 22:35:10 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	configure.in: use AC_SEARCH_LIBS
+
+	* configure.in (--with-gmp, --with-jemalloc): use AC_SEARCH_LIBS
+	  to check if no library is required, instead of AC_CHECK_LIB.
+	  [ruby-core:79368] [Bug #13175]
+
 Sun Apr 30 22:24:25 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* numeric.c (flo_round): [EXPERIMENTAL] adjust the case that the
