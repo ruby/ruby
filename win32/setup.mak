@@ -64,6 +64,7 @@ USE_RUBYGEMS = $(USE_RUBYGEMS)
 ENABLE_DEBUG_ENV = $(ENABLE_DEBUG_ENV)
 !endif
 
+# TOOLS
 <<
 !if !defined(BASERUBY)
 	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I>> $(MAKEFILE)
@@ -77,6 +78,12 @@ ENABLE_DEBUG_ENV = $(ENABLE_DEBUG_ENV)
 	@echo HAVE_BASERUBY = yes>> $(MAKEFILE)
 !else
 	@echo HAVE_BASERUBY = no>> $(MAKEFILE)
+!endif
+!if "$(GIT)" != ""
+	@echo GIT = $(GIT)>> $(MAKEFILE)
+!endif
+!if "$(HAVE_GIT)" != ""
+	@echo HAVE_GIT = $(HAVE_GIT)>> $(MAKEFILE)
 !endif
 
 -osname-section-:
