@@ -29,14 +29,15 @@ done
 url="$1"
 dir="$2"
 shift 2
+[ x"$branch" = x ] && unset branch || :
 if [ -d "$dir" ]; then
     echo updating `expr "/$dir/" : '.*/\([^/][^/]*\)/'` ...
     [ $quiet ] || set -x
     $CHDIR "$dir"
-    ${branch:+git fetch "$@"}
-    exec git ${branch:+checkout} "${branch:-pull}" "$@"
+    ${branch+git fetch "$@"}
+    exec git ${branch+checkout} "${branch-pull}" "$@"
 else
     echo retrieving `expr "/$dir/" : '.*/\([^/][^/]*\)/'` ...
     [ $quiet ] || set -x
-    exec git clone ${branch:+--branch "$branch"} "$url" "$dir" "$@"
+    exec git clone ${branch+--branch "$branch"} "$url" "$dir" "$@"
 fi
