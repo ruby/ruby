@@ -1,3 +1,8 @@
+Sun Apr 30 22:52:38 2017  Marcus Stollsteimer  <sto.mar@web.de>
+
+	* io.c: [DOC] expand docs for IO#puts
+	  [Bug #13306]
+
 Sun Apr 30 22:38:44 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	sample/pty/shl.rb: update [ci skip]
