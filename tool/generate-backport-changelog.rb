@@ -46,7 +46,7 @@ Majors = {
 trunk = "."
 target = "."
 ARGV.delete_if{|e| /^--trunk=(.*)/ =~ e && trunk = $1}
-ARGV.delete_if{|e| /^--target=/ =~ e && target = $1}
+ARGV.delete_if{|e| /^--target=(.*)/ =~ e && target = $1}
 usage! if ARGV.size == 0 || trunk == target
 
 revisions = []
