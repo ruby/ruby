@@ -127,6 +127,16 @@ if defined? Zlib
       assert_equal("foobar", Zlib::Inflate.inflate(s))
     end
 
+    def test_expand_buffer;
+      z = Zlib::Deflate.new
+      src = "baz" * 1000
+      z.avail_out = 1
+      GC.stress = true
+      s = z.deflate(src, Zlib::FINISH)
+      GC.stress = false
+      assert_equal(src, Zlib::Inflate.inflate(s))
+    end
+
     def test_total
       z = Zlib::Deflate.new
       1000.times { z << "foo" }
