@@ -40,6 +40,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * exception message "stream closed" is changed  [Bug #13405]
 
+* Kernel
+
+  * Kernel#yield_self  [Feature #6721]
+
 * Numeric
 
   * Numerical comparison operators (<,<=,>=,>) no longer rescue exceptions

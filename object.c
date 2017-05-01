@@ -497,6 +497,23 @@ rb_obj_itself(VALUE obj)
     return obj;
 }
 
+/*
+ *  call-seq:
+ *     obj.yield_self {|_obj|...} -> an_object
+ *
+ *  Yields <i>obj</i> and returns the result.
+ *
+ *	'my string'.yield_self {|s|s.upcase} #=> "MY STRING"
+ *
+ */
+
+static VALUE
+rb_obj_yield_self(VALUE obj)
+{
+    RETURN_ENUMERATOR(obj, 0, 0);
+    return rb_yield_values2(1, &obj);
+}
+
 /* :nodoc: */
 VALUE
 rb_obj_init_copy(VALUE obj, VALUE orig)
@@ -3507,6 +3524,7 @@ InitVM_Object(void)
     rb_define_method(rb_mKernel, "clone", rb_obj_clone2, -1);
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);
     rb_define_method(rb_mKernel, "itself", rb_obj_itself, 0);
+    rb_define_method(rb_mKernel, "yield_self", rb_obj_yield_self, 0);
     rb_define_method(rb_mKernel, "initialize_copy", rb_obj_init_copy, 1);
     rb_define_method(rb_mKernel, "initialize_dup", rb_obj_init_dup_clone, 1);
     rb_define_method(rb_mKernel, "initialize_clone", rb_obj_init_dup_clone, 1);
