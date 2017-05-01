@@ -72,6 +72,7 @@ struct zstream_run_args;
 static void zstream_init(struct zstream*, const struct zstream_funcs*);
 static void zstream_expand_buffer(struct zstream*);
 static void zstream_expand_buffer_into(struct zstream*, unsigned long);
+static int zstream_expand_buffer_non_stream(struct zstream *z);
 static void zstream_append_buffer(struct zstream*, const Bytef*, long);
 static VALUE zstream_detach_buffer(struct zstream*);
 static VALUE zstream_shift_buffer(struct zstream*, long);
@@ -648,19 +649,7 @@ zstream_expand_buffer(struct zstream *z)
 	}
     }
     else {
-	if (RSTRING_LEN(z->buf) - z->buf_filled >= ZSTREAM_AVAIL_OUT_STEP_MAX) {
-	    z->stream.avail_out = ZSTREAM_AVAIL_OUT_STEP_MAX;
-	}
-	else {
-	    long inc = z->buf_filled / 2;
-	    if (inc < ZSTREAM_AVAIL_OUT_STEP_MIN) {
-		inc = ZSTREAM_AVAIL_OUT_STEP_MIN;
-	    }
-	    rb_str_resize(z->buf, z->buf_filled + inc);
-	    z->stream.avail_out = (inc < ZSTREAM_AVAIL_OUT_STEP_MAX) ?
-		(int)inc : ZSTREAM_AVAIL_OUT_STEP_MAX;
-	}
-	z->stream.next_out = (Bytef*)RSTRING_PTR(z->buf) + z->buf_filled;
+	zstream_expand_buffer_non_stream(z);
     }
 }
 
@@ -695,7 +684,7 @@ zstream_expand_buffer_protect(void *ptr)
 }
 
 static int
-zstream_expand_buffer_without_gvl(struct zstream *z)
+zstream_expand_buffer_non_stream(struct zstream *z)
 {
     char * new_str;
     long inc, len;
@@ -997,7 +986,7 @@ zstream_run_func(void *ptr)
 							(void *)z);
 	}
 	else {
-	    state = zstream_expand_buffer_without_gvl(z);
+	    state = zstream_expand_buffer_non_stream(z);
 	}
 
 	if (state) {
