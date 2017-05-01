@@ -179,10 +179,7 @@ fun1(numerator)
 inline static VALUE
 f_real_p(VALUE x)
 {
-    if (RB_INTEGER_TYPE_P(x)) {
-        return Qtrue;
-    }
-    else if (RB_FLOAT_TYPE_P(x)) {
+    if (RB_INTEGER_TYPE_P(x) || RB_FLOAT_TYPE_P(x)) {
         return Qtrue;
     }
     return rb_funcall(x, id_real_p, 0);
