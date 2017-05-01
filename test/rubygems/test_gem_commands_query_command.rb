@@ -642,7 +642,7 @@ pl (1)
     assert_equal expected, @ui.output
   end
 
-  def test_execute_exact
+  def test_execute_exact_remote
     spec_fetcher do |fetcher|
       fetcher.spec 'coolgem-omg', 3
       fetcher.spec 'coolgem', '4.2.1'
@@ -660,6 +660,60 @@ pl (1)
 *** REMOTE GEMS ***
 
 coolgem (4.2.1)
+    EOF
+
+    assert_equal expected, @ui.output
+  end
+
+  def test_execute_exact_local
+    spec_fetcher do |fetcher|
+      fetcher.spec 'coolgem-omg', 3
+      fetcher.spec 'coolgem', '4.2.1'
+      fetcher.spec 'wow_coolgem', 1
+    end
+
+    @cmd.handle_options %w[--exact coolgem]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** LOCAL GEMS ***
+
+coolgem (4.2.1)
+    EOF
+
+    assert_equal expected, @ui.output
+  end
+
+  def test_execute_exact_multiple
+    spec_fetcher do |fetcher|
+      fetcher.spec 'coolgem-omg', 3
+      fetcher.spec 'coolgem', '4.2.1'
+      fetcher.spec 'wow_coolgem', 1
+
+      fetcher.spec 'othergem-omg', 3
+      fetcher.spec 'othergem', '1.2.3'
+      fetcher.spec 'wow_othergem', 1
+    end
+
+    @cmd.handle_options %w[--exact coolgem othergem]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** LOCAL GEMS ***
+
+coolgem (4.2.1)
+
+*** LOCAL GEMS ***
+
+othergem (1.2.3)
     EOF
 
     assert_equal expected, @ui.output

@@ -2102,7 +2102,7 @@ class Gem::Specification < Gem::BasicSpecification
     if $DEBUG
       super
     else
-      "#<#{self.class}:0x#{__id__.to_s(16)} #{full_name}>"
+      "#{super[0..-2]} #{full_name}>"
     end
   end
 

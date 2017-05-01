@@ -44,7 +44,7 @@ class Gem::Commands::SourcesCommand < Gem::Command
     source = Gem::Source.new source_uri
 
     begin
-      if Gem.sources.include? source_uri then
+      if Gem.sources.include? source then
         say "source #{source_uri} already present in the cache"
       else
         source.load_specs :released
