@@ -829,17 +829,8 @@ zstream_buffer_ungets(struct zstream *z, const Bytef *b, unsigned long len)
 static void
 zstream_buffer_ungetbyte(struct zstream *z, int c)
 {
-    if (NIL_P(z->buf) || RSTRING_LEN(z->buf) - z->buf_filled == 0) {
-	zstream_expand_buffer(z);
-    }
-
-    memmove(RSTRING_PTR(z->buf) + 1, RSTRING_PTR(z->buf), z->buf_filled);
-    RSTRING_PTR(z->buf)[0] = (char)c;
-    z->buf_filled++;
-    if (z->stream.avail_out > 0) {
-	z->stream.next_out++;
-	z->stream.avail_out--;
-    }
+    Bytef cc = (Bytef)c;
+    zstream_buffer_ungets(z, &cc, 1);
 }
 
 static void
