@@ -1,7 +1,10 @@
+$LOAD_PATH.unshift File.expand_path('../lib', __FILE__)
+require 'webrick/version'
+
 Gem::Specification.new do |s|
   s.name = "webrick"
-  s.version = '0.0.1'
-  s.date = '2017-01-30'
+  s.version = WEBrick::VERSION
+  s.date = '2017-05-01'
   s.summary = "HTTP server toolkit"
   s.description = "WEBrick is an HTTP server toolkit that can be configured as an HTTPS server, a proxy server, and a virtual-host server."
 
