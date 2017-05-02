@@ -1,4 +1,5 @@
 require 'thread'
+# on producer, one consumer
 
 n = 1_000_000
 q = Thread::SizedQueue.new(100)
