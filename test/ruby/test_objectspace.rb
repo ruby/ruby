@@ -131,6 +131,26 @@ End
     END
   end
 
+  def test_finalizer_error
+    assert_in_out_err(["-e", "#{<<-"begin;"}\n#{<<-"end;"}"], "", [], /error in finalizer/)
+    begin;
+      class A
+        FINALIZER = proc do
+          final
+        end
+        def self.final
+          raise "error in finalizer"
+        end
+        def define_finalizer
+          ObjectSpace.define_finalizer(self, FINALIZER)
+        end
+      end
+      ObjectSpace.report_on_exception_in_finalizer = true
+      A.new.define_finalizer
+      GC.start
+    end;
+  end
+
   def test_each_object
     klass = Class.new
     new_obj = klass.new

@@ -515,6 +515,7 @@ typedef struct rb_objspace {
 	unsigned int during_gc : 1;
 	unsigned int gc_stressful: 1;
 	unsigned int has_hook: 1;
+	unsigned int report_on_exception_in_finalizer: 1;
 #if USE_RGENGC
 	unsigned int during_minor_gc : 1;
 #endif
@@ -1310,6 +1311,7 @@ rb_objspace_alloc(void)
     rb_objspace_t *objspace = &rb_objspace;
 #endif
     malloc_limit = gc_params.malloc_limit_min;
+    objspace->flags.report_on_exception_in_finalizer = TRUE;
 
     return objspace;
 }
@@ -2713,11 +2715,14 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
 {
     long i;
     int status;
+    const int report = objspace->flags.report_on_exception_in_finalizer;
     volatile struct {
 	VALUE errinfo;
 	VALUE objid;
 	long finished;
 	int safe;
+	int reporting;
+	rb_control_frame_t *cfp;
     } saved;
     rb_thread_t *const th = GET_THREAD();
 #define RESTORE_FINALIZER() (\
@@ -2728,11 +2733,20 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
     saved.errinfo = rb_errinfo();
     saved.objid = nonspecial_obj_id(obj);
     saved.finished = 0;
+    saved.reporting = FALSE;
+    saved.cfp = th->cfp;
 
     TH_PUSH_TAG(th);
     status = TH_EXEC_TAG();
     if (status) {
 	++saved.finished;	/* skip failed finalizer */
+	if (status == TAG_RAISE && report && !saved.reporting) {
+	    th->cfp = saved.cfp;
+	    saved.reporting = TRUE;
+	    rb_threadptr_error_print(th, th->errinfo);
+	    saved.reporting = FALSE;
+	    th->cfp = saved.cfp;
+	}
     }
     for (i = saved.finished;
 	 RESTORE_FINALIZER(), i<RARRAY_LEN(table);
@@ -3379,6 +3393,32 @@ count_objects(int argc, VALUE *argv, VALUE os)
     }
 
     return hash;
+}
+
+static VALUE
+report_in_finalizer(VALUE os)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    return objspace->flags.report_on_exception_in_finalizer ? Qtrue : Qfalse;
+}
+
+static VALUE
+report_in_finalizer_set(VALUE os, VALUE flag)
+{
+    rb_objspace_t *objspace = &rb_objspace;
+    switch (flag) {
+      case Qtrue:
+	objspace->flags.report_on_exception_in_finalizer = TRUE;
+	break;
+      case Qfalse:
+	objspace->flags.report_on_exception_in_finalizer = FALSE;
+	break;
+      default:
+	rb_raise(rb_eArgError,
+		 "wrong argument type %s (true or false expected)",
+		 rb_builtin_class_name(flag));
+    }
+    return flag;
 }
 
 /*
@@ -9575,6 +9615,8 @@ Init_GC(void)
 
     rb_define_module_function(rb_mObjSpace, "define_finalizer", define_final, -1);
     rb_define_module_function(rb_mObjSpace, "undefine_finalizer", undefine_final, 1);
+    rb_define_module_function(rb_mObjSpace, "report_on_exception_in_finalizer", report_in_finalizer, 0);
+    rb_define_module_function(rb_mObjSpace, "report_on_exception_in_finalizer=", report_in_finalizer_set, 1);
 
     rb_define_module_function(rb_mObjSpace, "_id2ref", id2ref, 1);
 
