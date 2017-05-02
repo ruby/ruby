@@ -2963,11 +2963,11 @@ rb_str_to_dbl(VALUE str, int badcheck)
 #define special_const_to_float(val, pre, post) \
     switch (val) { \
       case Qnil: \
-	rb_raise(rb_eTypeError, pre "nil" post); \
+	rb_raise_static(rb_eTypeError, pre "nil" post); \
       case Qtrue: \
-	rb_raise(rb_eTypeError, pre "true" post); \
+	rb_raise_static(rb_eTypeError, pre "true" post); \
       case Qfalse: \
-	rb_raise(rb_eTypeError, pre "false" post); \
+	rb_raise_static(rb_eTypeError, pre "false" post); \
     }
 
 static inline void

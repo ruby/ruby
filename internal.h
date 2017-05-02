@@ -1131,6 +1131,11 @@ PRINTF_ARGS(void rb_enc_warning(rb_encoding *enc, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_syserr_enc_warning(int err, rb_encoding *enc, const char *fmt, ...), 3, 4);
 
+#define rb_raise_cstr(etype, mesg) \
+    rb_exc_raise(rb_exc_new_str(etype, rb_str_new_cstr(mesg)))
+#define rb_raise_static(etype, mesg) \
+    rb_exc_raise(rb_exc_new_str(etype, rb_str_new_static(mesg, rb_strlen_lit(mesg))))
+
 VALUE rb_name_err_new(VALUE mesg, VALUE recv, VALUE method);
 #define rb_name_err_raise_str(mesg, recv, name) \
     rb_exc_raise(rb_name_err_new(mesg, recv, name))
