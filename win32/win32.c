@@ -694,6 +694,7 @@ static st_table *socklist = NULL;
 static st_table *conlist = NULL;
 #define conlist_disabled ((st_table *)-1)
 static char *uenvarea;
+#define SOCKET_INITIAL_MODE (O_RDWR|O_BINARY|O_NOINHERIT)
 
 /* License: Ruby's */
 struct constat {
@@ -3717,6 +3718,44 @@ rb_w32_setsockopt(int s, int level, int optname, const char *optval, int optlen)
     return r;
 }
 
+static void
+sock_shutdown_mode(SOCKET sock, int how)
+{
+    const int accmode =
+#if defined O_ACCMODE
+	O_ACCMODE
+#elif defined _O_ACCMODE
+	_O_ACCMODE
+#else
+	(O_RDONLY | O_WRONLY | O_RDWR)
+#endif
+	;
+    int flags;
+    if (socklist_lookup(sock, &flags)) {
+	int acc = flags & accmode;
+	flags &= ~accmode;
+	switch (how) {
+	  case SHUT_RD:
+	    switch (acc) {
+	      case O_RDONLY: acc = 0; break;
+	      case O_RDWR: acc = O_WRONLY; break;
+	    }
+	    break;
+	  case SHUT_WR:
+	    switch (acc) {
+	      case O_WRONLY: acc = 0; break;
+	      case O_RDWR: acc = O_RDONLY; break;
+	    }
+	    break;
+	  case SHUT_RDWR:
+	    acc = 0;
+	    break;
+	}
+	flags |= acc;
+	socklist_insert(sock, flags);
+    }
+}
+
 #undef shutdown
 
 /* License: Artistic or GPL */
@@ -3728,9 +3767,12 @@ rb_w32_shutdown(int s, int how)
 	StartSockets();
     }
     RUBY_CRITICAL {
-	r = shutdown(TO_SOCKET(s), how);
+	SOCKET sock = TO_SOCKET(s);
+	r = shutdown(sock, how);
 	if (r == SOCKET_ERROR)
 	    errno = map_errno(WSAGetLastError());
+	else
+	    sock_shutdown_mode(sock, how);
     }
     return r;
 }
@@ -3804,9 +3846,10 @@ rb_w32_socket(int af, int type, int protocol)
 	    fd = -1;
 	}
 	else {
-	    fd = rb_w32_open_osfhandle(s, O_RDWR|O_BINARY|O_NOINHERIT);
+	    const int flags = SOCKET_INITIAL_MODE;
+	    fd = rb_w32_open_osfhandle(s, flags);
 	    if (fd != -1)
-		socklist_insert(s, MAKE_SOCKDATA(af, 0));
+		socklist_insert(s, MAKE_SOCKDATA(af, flags));
 	    else
 		closesocket(s);
 	}
@@ -4037,23 +4080,24 @@ int
 socketpair(int af, int type, int protocol, int *sv)
 {
     SOCKET pair[2];
+    const int flags = SOCKET_INITIAL_MODE;
 
     if (socketpair_internal(af, type, protocol, pair) < 0)
 	return -1;
-    sv[0] = rb_w32_open_osfhandle(pair[0], O_RDWR|O_BINARY|O_NOINHERIT);
+    sv[0] = rb_w32_open_osfhandle(pair[0], flags);
     if (sv[0] == -1) {
 	closesocket(pair[0]);
 	closesocket(pair[1]);
 	return -1;
     }
-    sv[1] = rb_w32_open_osfhandle(pair[1], O_RDWR|O_BINARY|O_NOINHERIT);
+    sv[1] = rb_w32_open_osfhandle(pair[1], flags);
     if (sv[1] == -1) {
 	rb_w32_close(sv[0]);
 	closesocket(pair[1]);
 	return -1;
     }
-    socklist_insert(pair[0], MAKE_SOCKDATA(af, 0));
-    socklist_insert(pair[1], MAKE_SOCKDATA(af, 0));
+    socklist_insert(pair[0], MAKE_SOCKDATA(af, flags));
+    socklist_insert(pair[1], MAKE_SOCKDATA(af, flags));
 
     return 0;
 }
@@ -4229,7 +4273,19 @@ void setservent (int stayopen) {}
 
 /* License: Ruby's */
 static int
-setfl(SOCKET sock, int arg)
+sock_getfl(SOCKET sock)
+{
+    int flags;
+    if (!socklist_lookup(sock, &flags)) {
+	errno = EBADF;
+	return -1;
+    }
+    return GET_FLAGS(flags);
+}
+
+/* License: Ruby's */
+static int
+sock_setfl(SOCKET sock, int arg)
 {
     int ret;
     int af = 0;
@@ -4256,6 +4312,45 @@ setfl(SOCKET sock, int arg)
     }
 
     return ret;
+}
+
+/* License: Ruby's */
+static int
+std_getfl(HANDLE h)
+{
+    typedef struct {
+	ULONG Attributes;
+	ULONG GrantedAccess;
+	ULONG HandleCount;
+	ULONG PointerCount;
+	ULONG Reserved[10];
+    } PUBLIC_OBJECT_BASIC_INFORMATION;
+    PUBLIC_OBJECT_BASIC_INFORMATION info;
+    unsigned long size;
+    int ret;
+    typedef long (WINAPI *query_object_func)(HANDLE, int, void*, unsigned long, unsigned long*);
+    static query_object_func func = (query_object_func)-1;
+    if (func == (query_object_func)-1) {
+	func = (query_object_func)
+	    get_proc_address("ntdll.dll", "NtQueryObject", NULL);
+    }
+    if (!func) {
+	errno = ENOSYS;
+	return -1;
+    }
+    ret = (*func)(h, 0, &info, sizeof(info), &size);
+    if (!ret) {
+	switch (info.GrantedAccess & (FILE_READ_DATA|FILE_WRITE_DATA)) {
+	  case FILE_READ_DATA|FILE_WRITE_DATA:
+	    return O_RDWR;
+	  case FILE_READ_DATA:
+	    return O_RDONLY;
+	  case FILE_WRITE_DATA:
+	    return O_WRONLY;
+	}
+    }
+    errno = EINVAL;
+    return -1;
 }
 
 /* License: Ruby's */
@@ -4301,6 +4396,15 @@ fcntl(int fd, int cmd, ...)
     DWORD flag;
 
     switch (cmd) {
+      case F_GETFL: {
+	SOCKET sock = TO_SOCKET(fd);
+	if (!is_socket(sock)) {
+	    return std_getfl((HANDLE)sock);
+	}
+	else {
+	    return sock_getfl(sock);
+	}
+      }
       case F_SETFL: {
 	SOCKET sock = TO_SOCKET(fd);
 	if (!is_socket(sock)) {
@@ -4311,7 +4415,7 @@ fcntl(int fd, int cmd, ...)
 	va_start(va, cmd);
 	arg = va_arg(va, int);
 	va_end(va);
-	return setfl(sock, arg);
+	return sock_setfl(sock, arg);
       }
       case F_DUPFD: case F_DUPFD_CLOEXEC: {
 	int ret;
@@ -4375,7 +4479,7 @@ rb_w32_set_nonblock(int fd)
 {
     SOCKET sock = TO_SOCKET(fd);
     if (is_socket(sock)) {
-	return setfl(sock, O_NONBLOCK);
+	return sock_setfl(sock, O_NONBLOCK);
     }
     else if (is_pipe(sock)) {
 	DWORD state;
