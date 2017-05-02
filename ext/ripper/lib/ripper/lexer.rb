@@ -67,7 +67,7 @@ class Ripper
 
     def on_heredoc_dedent(v, w)
       @buf.last.each do |e|
-        if e.event == :on_tstring_content
+        if Elem === e and e.event == :on_tstring_content
           if (n = dedent_string(e.tok, w)) > 0
             e.pos[1] += n
           end
