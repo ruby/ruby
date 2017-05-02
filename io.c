@@ -10370,7 +10370,7 @@ nogvl_wait_for_single_fd(int fd, short events)
     fds.fd = fd;
     fds.events = events;
 
-    return poll(&fds, 1, 0);
+    return poll(&fds, 1, -1);
 }
 
 static int
