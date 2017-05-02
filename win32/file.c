@@ -98,8 +98,16 @@ code_page_i(st_data_t name, st_data_t idx, st_data_t arg)
 		while (i < count) table[i++] = INVALID_CODE_PAGE;
 	    }
 	    table[idx] = (USHORT)code_page;
+
+	    if(table!=NULL) {
+		free(table);
+		table=NULL;
+    	    }
+
 	}
     }
+
+
     return ST_CONTINUE;
 }
 
@@ -705,3 +713,4 @@ Init_w32_codepage(void)
     if (rb_code_page.count) return;
     rb_enc_foreach_name(code_page_i, (st_data_t)&rb_code_page);
 }
+
