@@ -91,8 +91,11 @@ code_page_i(st_data_t name, st_data_t idx, st_data_t arg)
 	    if (count <= idx) {
 		unsigned int i = count;
 		count = (((idx + 4) & ~31) | 28);
-		table = realloc(table, count * sizeof(*table));
-		if (!table) return ST_CONTINUE;
+		USHORT *new_table = realloc(table, count * sizeof(*table));
+		if (!new_table) {
+			return ST_CONTINUE;
+		}
+		table = new_table;
 		cp->count = count;
 		cp->table = table;
 		while (i < count) table[i++] = INVALID_CODE_PAGE;
