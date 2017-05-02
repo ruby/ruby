@@ -483,7 +483,8 @@ VALUE rb_gc_mark_node(NODE *obj);
 
 const struct kwtable *rb_reserved_word(const char *, unsigned int);
 
-struct rb_args_info {
+struct rb_args_info 
+{
     NODE *pre_init;
     NODE *post_init;
 
