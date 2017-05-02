@@ -483,6 +483,10 @@ enum ruby_value_type {
     RUBY_T_ICLASS = 0x1c,
     RUBY_T_ZOMBIE = 0x1d,
 
+    /* pseudo type */
+    /* larger than 0x3f used in 1.8 */
+    RUBY_T_INTEGER = 0x101,
+
     RUBY_T_MASK   = 0x1f
 };
 
@@ -513,6 +517,7 @@ enum ruby_value_type {
 #define T_NODE   RUBY_T_NODE
 #define T_ZOMBIE RUBY_T_ZOMBIE
 #define T_MASK   RUBY_T_MASK
+#define T_INTEGER RUBY_T_INTEGER
 
 #define RB_BUILTIN_TYPE(x) (int)(((struct RBasic*)(x))->flags & RUBY_T_MASK)
 #define BUILTIN_TYPE(x) RB_BUILTIN_TYPE(x)
@@ -532,6 +537,7 @@ static inline int rb_type(VALUE obj);
 	((type) == RUBY_T_UNDEF) ? ((obj) == RUBY_Qundef) : \
 	((type) == RUBY_T_SYMBOL) ? RB_SYMBOL_P(obj) : \
 	((type) == RUBY_T_FLOAT) ? RB_FLOAT_TYPE_P(obj) : \
+	((type) == RUBY_T_INTEGER) ? RB_INTEGER_TYPE_P(obj) : \
 	(!RB_SPECIAL_CONST_P(obj) && RB_BUILTIN_TYPE(obj) == (type)))
 
 #ifdef __GNUC__

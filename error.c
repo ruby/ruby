@@ -719,6 +719,10 @@ rb_check_type(VALUE x, int t)
     }
 
     xt = TYPE(x);
+    if (t == T_INTEGER) {
+	if (xt == T_FIXNUM || xt == T_BIGNUM) return;
+	unexpected_type(x, xt, t);
+    }
     if (xt != t || (xt == T_DATA && RTYPEDDATA_P(x))) {
 	unexpected_type(x, xt, t);
     }
