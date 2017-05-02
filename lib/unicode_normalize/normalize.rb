@@ -159,3 +159,9 @@ module UnicodeNormalize  # :nodoc:
   end
 
 end # module
+
+class String  # :nodoc:
+  def unicode_normalize(form = :nfc)
+    UnicodeNormalize.normalize(self, form)
+  end
+end

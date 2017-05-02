@@ -31,12 +31,7 @@ class String
   #
   def unicode_normalize(form = :nfc)
     require 'unicode_normalize/normalize.rb' unless defined? UnicodeNormalize
-    ## The following line can be uncommented to avoid repeated checking for
-    ## UnicodeNormalize. However, tests didn't show any noticeable speedup
-    ## when doing this. This comment also applies to the commented out lines
-    ## in String#unicode_normalize! and String#unicode_normalized?.
-    # String.send(:define_method, :unicode_normalize, ->(form = :nfc) { UnicodeNormalize.normalize(self, form) } )
-    UnicodeNormalize.normalize(self, form)
+    unicode_normalize form   # no recursion, because redefined in unicode_normalize/normalize.rb
   end
 
   # :call-seq:
