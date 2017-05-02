@@ -157,11 +157,18 @@ module UnicodeNormalize  # :nodoc:
       raise Encoding::CompatibilityError, "Unicode Normalization not appropriate for #{encoding}"
     end
   end
-
 end # module
 
 class String  # :nodoc:
   def unicode_normalize(form = :nfc)
     UnicodeNormalize.normalize(self, form)
+  end
+
+  def unicode_normalize!(form = :nfc)
+    replace(UnicodeNormalize.normalize(self, form))
+  end
+
+  def unicode_normalized?(form = :nfc)
+    UnicodeNormalize.normalized?(self, form)
   end
 end
