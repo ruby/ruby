@@ -7732,7 +7732,7 @@ objspace_malloc_gc_stress(rb_objspace_t *objspace)
 }
 
 static void
-objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, size_t old_size, enum memop_type type)
+objspace_malloc_increase(rb_objspace_t *objspace, size_t new_size, size_t old_size, enum memop_type type)
 {
     if (new_size > old_size) {
 	ATOMIC_SIZE_ADD(malloc_increase, new_size - old_size);
@@ -7774,8 +7774,7 @@ objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, si
 	atomic_sub_nounderflow(&objspace->malloc_params.allocated_size, dec_size);
     }
 
-    if (0) fprintf(stderr, "increase - ptr: %p, type: %s, new_size: %d, old_size: %d\n",
-		   mem,
+    if (0) fprintf(stderr, "itype: %s, new_size: %d, old_size: %d\n",
 		   type == MEMOP_TYPE_MALLOC  ? "malloc" :
 		   type == MEMOP_TYPE_FREE    ? "free  " :
 		   type == MEMOP_TYPE_REALLOC ? "realloc": "error",
@@ -7846,7 +7845,7 @@ objspace_xmalloc0(rb_objspace_t *objspace, size_t size)
     size = objspace_malloc_prepare(objspace, size);
     TRY_WITH_GC(mem = malloc(size));
     size = objspace_malloc_size(objspace, mem, size);
-    objspace_malloc_increase(objspace, mem, size, 0, MEMOP_TYPE_MALLOC);
+    objspace_malloc_increase(objspace, size, 0, MEMOP_TYPE_MALLOC);
     return objspace_malloc_fixup(objspace, mem, size);
 }
 
@@ -7907,7 +7906,7 @@ objspace_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t ol
     mem = (size_t *)mem + 1;
 #endif
 
-    objspace_malloc_increase(objspace, mem, new_size, old_size, MEMOP_TYPE_REALLOC);
+    objspace_malloc_increase(objspace, new_size, old_size, MEMOP_TYPE_REALLOC);
 
     return mem;
 }
@@ -7923,7 +7922,7 @@ objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
 
     free(ptr);
 
-    objspace_malloc_increase(objspace, ptr, 0, old_size, MEMOP_TYPE_FREE);
+    objspace_malloc_increase(objspace, 0, old_size, MEMOP_TYPE_FREE);
 }
 
 static void *
@@ -7963,7 +7962,7 @@ objspace_xcalloc(rb_objspace_t *objspace, size_t count, size_t elsize)
 
     TRY_WITH_GC(mem = calloc(1, size));
     size = objspace_malloc_size(objspace, mem, size);
-    objspace_malloc_increase(objspace, mem, size, 0, MEMOP_TYPE_MALLOC);
+    objspace_malloc_increase(objspace, size, 0, MEMOP_TYPE_MALLOC);
     return objspace_malloc_fixup(objspace, mem, size);
 }
 
