@@ -709,8 +709,7 @@ AC_CHECK_PROGS(DOT, dot)
 AC_CHECK_PROGS(DOXYGEN, doxygen)
 AS_CASE(["${host_os}"], [nacl], [AC_PATH_PROG(PYTHON, python)])
 
-AC_CHECK_PROG(PKG_CONFIG, pkg-config, [pkg-config], [], [],
-    [`"$as_dir/$ac_word$ac_exec_ext" --print-errors --version > /dev/null 2>&1 || echo "$as_dir/$ac_word$ac_exec_ext"`])
+PKG_PROG_PKG_CONFIG
 
 # checks for UNIX variants that set C preprocessor variables
 AC_USE_SYSTEM_EXTENSIONS
