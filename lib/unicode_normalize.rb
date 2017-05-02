@@ -30,7 +30,7 @@ class String
   #                                      #=> Encoding::CompatibilityError raised
   #
   def unicode_normalize(form = :nfc)
-    require 'unicode_normalize/normalize.rb' unless defined? UnicodeNormalize
+    require 'unicode_normalize/normalize.rb'
     unicode_normalize form   # no recursion, because redefined in unicode_normalize/normalize.rb
   end
 
@@ -41,7 +41,7 @@ class String
   # normalization in place.
   #
   def unicode_normalize!(form = :nfc)
-    require 'unicode_normalize/normalize.rb' unless defined? UnicodeNormalize
+    require 'unicode_normalize/normalize.rb'
     unicode_normalize! form
   end
 
@@ -63,7 +63,7 @@ class String
   #                                        #=> Encoding::CompatibilityError raised
   #
   def unicode_normalized?(form = :nfc)
-    require 'unicode_normalize/normalize.rb' unless defined? UnicodeNormalize
+    require 'unicode_normalize/normalize.rb'
     unicode_normalized? form
   end
 end
