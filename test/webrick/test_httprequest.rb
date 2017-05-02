@@ -19,12 +19,12 @@ GET /
   end
 
   def test_parse_09
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       GET /
       foobar    # HTTP/0.9 request don't have header nor entity body.
     _end_of_message_
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
-    req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+    req.parse(StringIO.new(msg))
     assert_equal("GET", req.request_method)
     assert_equal("/", req.unparsed_uri)
     assert_equal(WEBrick::HTTPVersion.new("0.9"), req.http_version)
@@ -36,12 +36,12 @@ GET /
   end
 
   def test_parse_10
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       GET / HTTP/1.0
 
     _end_of_message_
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
-    req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+    req.parse(StringIO.new(msg))
     assert_equal("GET", req.request_method)
     assert_equal("/", req.unparsed_uri)
     assert_equal(WEBrick::HTTPVersion.new("1.0"), req.http_version)
@@ -53,12 +53,12 @@ GET /
   end
 
   def test_parse_11
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       GET /path HTTP/1.1
 
     _end_of_message_
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
-    req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+    req.parse(StringIO.new(msg))
     assert_equal("GET", req.request_method)
     assert_equal("/path", req.unparsed_uri)
     assert_equal("", req.script_name)
@@ -72,17 +72,17 @@ GET /
   end
 
   def test_request_uri_too_large
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       GET /#{"a"*2084} HTTP/1.1
     _end_of_message_
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
     assert_raise(WEBrick::HTTPStatus::RequestURITooLarge){
-      req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+      req.parse(StringIO.new(msg))
     }
   end
 
   def test_parse_headers
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       GET /path HTTP/1.1
       Host: test.ruby-lang.org:8080
       Connection: close
@@ -99,7 +99,7 @@ GET /
       foobar
     _end_of_message_
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
-    req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+    req.parse(StringIO.new(msg))
     assert_equal(
       URI.parse("http://test.ruby-lang.org:8080/path"), req.request_uri)
     assert_equal("test.ruby-lang.org", req.host)
@@ -119,7 +119,7 @@ GET /
   end
 
   def test_parse_header2()
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       POST /foo/bar/../baz?q=a HTTP/1.0
       Content-Length: 9
       User-Agent:
@@ -129,7 +129,7 @@ GET /
       hogehoge
     _end_of_message_
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
-    req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+    req.parse(StringIO.new(msg))
     assert_equal("POST", req.request_method)
     assert_equal("/foo/baz", req.path)
     assert_equal("", req.script_name)
@@ -140,58 +140,58 @@ GET /
   end
 
   def test_parse_headers3
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       GET /path HTTP/1.1
       Host: test.ruby-lang.org
 
     _end_of_message_
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
-    req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+    req.parse(StringIO.new(msg))
     assert_equal(URI.parse("http://test.ruby-lang.org/path"), req.request_uri)
     assert_equal("test.ruby-lang.org", req.host)
     assert_equal(80, req.port)
 
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       GET /path HTTP/1.1
       Host: 192.168.1.1
 
     _end_of_message_
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
-    req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+    req.parse(StringIO.new(msg))
     assert_equal(URI.parse("http://192.168.1.1/path"), req.request_uri)
     assert_equal("192.168.1.1", req.host)
     assert_equal(80, req.port)
 
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       GET /path HTTP/1.1
       Host: [fe80::208:dff:feef:98c7]
 
     _end_of_message_
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
-    req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+    req.parse(StringIO.new(msg))
     assert_equal(URI.parse("http://[fe80::208:dff:feef:98c7]/path"),
                  req.request_uri)
     assert_equal("[fe80::208:dff:feef:98c7]", req.host)
     assert_equal(80, req.port)
 
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       GET /path HTTP/1.1
       Host: 192.168.1.1:8080
 
     _end_of_message_
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
-    req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+    req.parse(StringIO.new(msg))
     assert_equal(URI.parse("http://192.168.1.1:8080/path"), req.request_uri)
     assert_equal("192.168.1.1", req.host)
     assert_equal(8080, req.port)
 
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       GET /path HTTP/1.1
       Host: [fe80::208:dff:feef:98c7]:8080
 
     _end_of_message_
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
-    req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+    req.parse(StringIO.new(msg))
     assert_equal(URI.parse("http://[fe80::208:dff:feef:98c7]:8080/path"),
                  req.request_uri)
     assert_equal("[fe80::208:dff:feef:98c7]", req.host)
@@ -200,13 +200,13 @@ GET /
 
   def test_parse_get_params
     param = "foo=1;foo=2;foo=3;bar=x"
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       GET /path?#{param} HTTP/1.1
       Host: test.ruby-lang.org:8080
 
     _end_of_message_
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
-    req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+    req.parse(StringIO.new(msg))
     query = req.query
     assert_equal("1", query["foo"])
     assert_equal(["1", "2", "3"], query["foo"].to_ary)
@@ -217,7 +217,7 @@ GET /
 
   def test_parse_post_params
     param = "foo=1;foo=2;foo=3;bar=x"
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       POST /path?foo=x;foo=y;foo=z;bar=1 HTTP/1.1
       Host: test.ruby-lang.org:8080
       Content-Length: #{param.size}
@@ -226,7 +226,7 @@ GET /
       #{param}
     _end_of_message_
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
-    req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+    req.parse(StringIO.new(msg))
     query = req.query
     assert_equal("1", query["foo"])
     assert_equal(["1", "2", "3"], query["foo"].to_ary)
@@ -237,13 +237,12 @@ GET /
 
   def test_chunked
     crlf = "\x0d\x0a"
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       POST /path HTTP/1.1
       Host: test.ruby-lang.org:8080
       Transfer-Encoding: chunked
 
     _end_of_message_
-    msg.gsub!(/^ {6}/, "")
     open(__FILE__){|io|
       while chunk = io.read(100)
         msg << chunk.size.to_s(16) << crlf
@@ -257,17 +256,14 @@ GET /
   end
 
   def test_forwarded
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       GET /foo HTTP/1.1
       Host: localhost:10080
       User-Agent: w3m/0.5.2
-      X-Forwarded-For: 123.123.123.123
-      X-Forwarded-Host: forward.example.com
-      X-Forwarded-Server: server.example.com
+      Forwarded: for=123.123.123.123;host=forward.example.com;server=server.example.com
       Connection: Keep-Alive
 
     _end_of_message_
-    msg.gsub!(/^ {6}/, "")
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
     req.parse(StringIO.new(msg))
     assert_equal("server.example.com", req.server_name)
@@ -277,17 +273,14 @@ GET /
     assert_equal("123.123.123.123", req.remote_ip)
     assert(!req.ssl?)
 
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       GET /foo HTTP/1.1
       Host: localhost:10080
       User-Agent: w3m/0.5.2
-      X-Forwarded-For: 192.168.1.10, 172.16.1.1, 123.123.123.123
-      X-Forwarded-Host: forward.example.com:8080
-      X-Forwarded-Server: server.example.com
+      Forwarded: for=192.168.1.10, for=172.16.1.1, for=123.123.123.123;host=forward.example.com:8080;server=server.example.com
       Connection: Keep-Alive
 
     _end_of_message_
-    msg.gsub!(/^ {6}/, "")
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
     req.parse(StringIO.new(msg))
     assert_equal("server.example.com", req.server_name)
@@ -297,7 +290,65 @@ GET /
     assert_equal("123.123.123.123", req.remote_ip)
     assert(!req.ssl?)
 
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
+      GET /foo HTTP/1.1
+      Host: localhost:10080
+      Client-IP: 234.234.234.234
+      Forwarded: for=192.168.1.10, for=10.0.0.1, for=123.123.123.123;host=forward.example.com;proto=https;server=server.example.com
+      X-Requested-With: XMLHttpRequest
+      Connection: Keep-Alive
+
+    _end_of_message_
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    assert_equal("server.example.com", req.server_name)
+    assert_equal("https://forward.example.com/foo", req.request_uri.to_s)
+    assert_equal("forward.example.com", req.host)
+    assert_equal(443, req.port)
+    assert_equal("234.234.234.234", req.remote_ip)
+    assert(req.ssl?)
+  end
+
+  def test_x_forwarded
+    msg = <<~_end_of_message_
+      GET /foo HTTP/1.1
+      Host: localhost:10080
+      User-Agent: w3m/0.5.2
+      X-Forwarded-For: 123.123.123.123
+      X-Forwarded-Host: forward.example.com
+      X-Forwarded-Server: server.example.com
+      Connection: Keep-Alive
+
+    _end_of_message_
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    assert_equal("server.example.com", req.server_name)
+    assert_equal("http://forward.example.com/foo", req.request_uri.to_s)
+    assert_equal("forward.example.com", req.host)
+    assert_equal(80, req.port)
+    assert_equal("123.123.123.123", req.remote_ip)
+    assert(!req.ssl?)
+
+    msg = <<~_end_of_message_
+      GET /foo HTTP/1.1
+      Host: localhost:10080
+      User-Agent: w3m/0.5.2
+      X-Forwarded-For: 192.168.1.10, 172.16.1.1, 123.123.123.123
+      X-Forwarded-Host: forward.example.com:8080
+      X-Forwarded-Server: server.example.com
+      Connection: Keep-Alive
+
+    _end_of_message_
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    assert_equal("server.example.com", req.server_name)
+    assert_equal("http://forward.example.com:8080/foo", req.request_uri.to_s)
+    assert_equal("forward.example.com", req.host)
+    assert_equal(8080, req.port)
+    assert_equal("123.123.123.123", req.remote_ip)
+    assert(!req.ssl?)
+
+    msg = <<~_end_of_message_
       GET /foo HTTP/1.1
       Host: localhost:10080
       Client-IP: 234.234.234.234
@@ -309,7 +360,6 @@ GET /
       Connection: Keep-Alive
 
     _end_of_message_
-    msg.gsub!(/^ {6}/, "")
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
     req.parse(StringIO.new(msg))
     assert_equal("server.example.com", req.server_name)
@@ -319,7 +369,7 @@ GET /
     assert_equal("234.234.234.234", req.remote_ip)
     assert(req.ssl?)
 
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       GET /foo HTTP/1.1
       Host: localhost:10080
       Client-IP: 234.234.234.234
@@ -331,7 +381,6 @@ GET /
       Connection: Keep-Alive
 
     _end_of_message_
-    msg.gsub!(/^ {6}/, "")
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
     req.parse(StringIO.new(msg))
     assert_equal("server1.example.com", req.server_name)
@@ -343,12 +392,11 @@ GET /
   end
 
   def test_continue_sent
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       POST /path HTTP/1.1
       Expect: 100-continue
 
     _end_of_message_
-    msg.gsub!(/^ {6}/, "")
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
     req.parse(StringIO.new(msg))
     assert req['expect']
@@ -360,11 +408,10 @@ GET /
   end
 
   def test_continue_not_sent
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       POST /path HTTP/1.1
 
     _end_of_message_
-    msg.gsub!(/^ {6}/, "")
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
     req.parse(StringIO.new(msg))
     assert !req['expect']
@@ -375,7 +422,7 @@ GET /
 
   def test_bad_messages
     param = "foo=1;foo=2;foo=3;bar=x"
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       POST /path?foo=x;foo=y;foo=z;bar=1 HTTP/1.1
       Host: test.ruby-lang.org:8080
       Content-Type: application/x-www-form-urlencoded
@@ -384,11 +431,11 @@ GET /
     _end_of_message_
     assert_raise(WEBrick::HTTPStatus::LengthRequired){
       req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
-      req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+      req.parse(StringIO.new(msg))
       req.body
     }
 
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       POST /path?foo=x;foo=y;foo=z;bar=1 HTTP/1.1
       Host: test.ruby-lang.org:8080
       Content-Length: 100000
@@ -397,11 +444,11 @@ GET /
     _end_of_message_
     assert_raise(WEBrick::HTTPStatus::BadRequest){
       req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
-      req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+      req.parse(StringIO.new(msg))
       req.body
     }
 
-    msg = <<-_end_of_message_
+    msg = <<~_end_of_message_
       POST /path?foo=x;foo=y;foo=z;bar=1 HTTP/1.1
       Host: test.ruby-lang.org:8080
       Transfer-Encoding: foobar
@@ -410,7 +457,7 @@ GET /
     _end_of_message_
     assert_raise(WEBrick::HTTPStatus::NotImplemented){
       req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
-      req.parse(StringIO.new(msg.gsub(/^ {6}/, "")))
+      req.parse(StringIO.new(msg))
       req.body
     }
   end

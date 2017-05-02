@@ -558,12 +558,37 @@ module WEBrick
       ^(::ffff:)?(10|172\.(1[6-9]|2[0-9]|3[01])|192\.168)\.
     /ixo
 
+    ForwardedInfo = Struct.new(:for, :server, :proto, :host, :port)
+
+    # Setup the first non-private network from Forwaded header.
+    # If Forwaded header does not exist, then try X-Forwaded-* headers.
     # It's said that all X-Forwarded-* headers will contain more than one
     # (comma-separated) value if the original request already contained one of
     # these headers. Since we could use these values as Host header, we choose
     # the initial(first) value. (apr_table_mergen() adds new value after the
     # existing value with ", " prefix)
     def setup_forwarded_info
+      if forwarded = self["forwarded"]
+        forwarded = forwarded.split(/\s*,\s*/).map do |s|
+          info = ForwardedInfo.new
+          s.scan(/\G\s*(for|server|proto|host)=([^;]*)(?:;|\z)/i) do |n, v|
+            info[n.downcase] = v
+          end
+          info.host, info.port = forwarded_host_port(info.host, info.proto)
+          info.freeze
+        end
+        @forwarded = forwarded
+        forwarded.find do |info|
+          next if PrivateNetworkRegexp =~ info.for
+          @forwarded_server = info.server
+          @forwarded_proto = info.proto
+          @forwarded_host = info.host
+          @forwarded_port = info.port
+          @forwarded_for = info.for
+          true
+        end
+        return
+      end
       if @forwarded_server = self["x-forwarded-server"]
         @forwarded_server = @forwarded_server.split(",", 2).first
       end
@@ -571,15 +596,20 @@ module WEBrick
         @forwarded_proto = @forwarded_proto.split(",", 2).first
       end
       if host_port = self["x-forwarded-host"]
-        host_port = host_port.split(",", 2).first
-        @forwarded_host, tmp = host_port.split(":", 2)
-        @forwarded_port = (tmp || (@forwarded_proto == "https" ? 443 : 80)).to_i
+        @forwarded_host, @forwarded_port =
+                         forwarded_host_port(host_port.split(",", 2).first,
+                                             @forwarded_proto)
       end
       if addrs = self["x-forwarded-for"]
         addrs = addrs.split(",").collect(&:strip)
         addrs.reject!{|ip| PrivateNetworkRegexp =~ ip }
         @forwarded_for = addrs.first
       end
+    end
+
+    def forwarded_host_port(host, proto)
+      host, port = host.split(":", 2) if host
+      return host, (port ? port.to_i : (proto == "https" ? 443 : 80))
     end
 
     # :startdoc:
