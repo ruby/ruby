@@ -1023,6 +1023,12 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
     return rb_cmpint(rb_funcall(a, id_cmp, 1, b), a, b);
 }
 
+static int
+sort_by_cmp_descend(const void *ap, const void *bp, void *data)
+{
+    return -sort_by_cmp(ap, bp, data);
+}
+
 /*
  *  call-seq:
  *     enum.sort_by { |obj| block }   -> array
@@ -1098,15 +1104,34 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
  */
 
 static VALUE
-enum_sort_by(VALUE obj)
+enum_sort_by(int argc, VALUE *argv, VALUE obj)
 {
     VALUE ary, buf;
     struct MEMO *memo;
     long i;
     struct sort_by_data *data;
+    int (*cmp)(const void *, const void *, void *) = sort_by_cmp;
 
-    RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
+    RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
 
+    if (argc) {
+	int j;
+	for (j = 0; j < argc; ++j) {
+	    VALUE arg = argv[j];
+	    Check_Type(arg, T_SYMBOL);
+	    if (arg == ID2SYM(rb_intern("ascend")) ||
+		arg == ID2SYM(rb_intern("asc"))) {
+		cmp = sort_by_cmp;
+	    }
+	    else if (arg == ID2SYM(rb_intern("descend")) ||
+		     arg == ID2SYM(rb_intern("desc"))) {
+		cmp = sort_by_cmp_descend;
+	    }
+	    else {
+		rb_raise(rb_eArgError, "unknown option: %"PRIsVALUE, arg);
+	    }
+	}
+    }
     if (RB_TYPE_P(obj, T_ARRAY) && RARRAY_LEN(obj) <= LONG_MAX/2) {
 	ary = rb_ary_new2(RARRAY_LEN(obj)*2);
     }
@@ -1132,7 +1157,7 @@ enum_sort_by(VALUE obj)
     if (RARRAY_LEN(ary) > 2) {
 	RARRAY_PTR_USE(ary, ptr,
 		      ruby_qsort(ptr, RARRAY_LEN(ary)/2, 2*sizeof(VALUE),
-				 sort_by_cmp, (void *)ary));
+				 cmp, (void *)ary));
     }
     if (RBASIC(ary)->klass) {
 	rb_raise(rb_eRuntimeError, "sort_by reentered");
@@ -3904,7 +3929,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "to_h", enum_to_h, -1);
 
     rb_define_method(rb_mEnumerable, "sort", enum_sort, 0);
-    rb_define_method(rb_mEnumerable, "sort_by", enum_sort_by, 0);
+    rb_define_method(rb_mEnumerable, "sort_by", enum_sort_by, -1);
     rb_define_method(rb_mEnumerable, "grep", enum_grep, 1);
     rb_define_method(rb_mEnumerable, "grep_v", enum_grep_v, 1);
     rb_define_method(rb_mEnumerable, "count", enum_count, -1);

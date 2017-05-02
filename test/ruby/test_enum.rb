@@ -280,6 +280,38 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([[3, 2], [2, 1], [2, 4], [1, 0], [1, 3]], @obj.each_with_index.sort_by(&cond))
   end
 
+  def test_sort_by_ascend
+    assert_equal([3, 2, 2, 1, 1], @obj.sort_by(:ascend) {|x| -x })
+    assert_equal((1..300).to_a.reverse, (1..300).sort_by(:ascend) {|x| -x })
+
+    cond = ->(x, i) { [-x, i] }
+    assert_equal([[3, 2], [2, 1], [2, 4], [1, 0], [1, 3]], @obj.each_with_index.sort_by(:ascend, &cond))
+  end
+
+  def test_sort_by_asc
+    assert_equal([3, 2, 2, 1, 1], @obj.sort_by(:asc) {|x| -x })
+    assert_equal((1..300).to_a.reverse, (1..300).sort_by(:asc) {|x| -x })
+
+    cond = ->(x, i) { [-x, i] }
+    assert_equal([[3, 2], [2, 1], [2, 4], [1, 0], [1, 3]], @obj.each_with_index.sort_by(:asc, &cond))
+  end
+
+  def test_sort_by_descend
+    assert_equal([3, 2, 2, 1, 1], @obj.sort_by(:descend) {|x| x })
+    assert_equal((1..300).to_a.reverse, (1..300).sort_by(:descend) {|x| x })
+
+    cond = ->(x, i) { [x, i] }
+    assert_equal([[3, 2], [2, 4], [2, 1], [1, 3], [1, 0]], @obj.each_with_index.sort_by(:descend, &cond))
+  end
+
+  def test_sort_by_desc
+    assert_equal([3, 2, 2, 1, 1], @obj.sort_by(:desc) {|x| x })
+    assert_equal((1..300).to_a.reverse, (1..300).sort_by(:desc) {|x| x })
+
+    cond = ->(x, i) { [x, i] }
+    assert_equal([[3, 2], [2, 4], [2, 1], [1, 3], [1, 0]], @obj.each_with_index.sort_by(:desc, &cond))
+  end
+
   def test_all
     assert_equal(true, @obj.all? {|x| x <= 3 })
     assert_equal(false, @obj.all? {|x| x < 3 })
