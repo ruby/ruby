@@ -9582,6 +9582,48 @@ str_scrub_bang(int argc, VALUE *argv, VALUE str)
     return str;
 }
 
+static VALUE id_normalize;
+static VALUE mUnicodeNormalize;
+static int UnicodeNormalizeRequired = 0;
+
+/*
+ *  call-seq:
+ *    str.unicode_normalize(form=:nfc)
+ *
+ *  Unicode Normalization---Returns a normalized form of +str+,
+ *  using Unicode normalizations NFC, NFD, NFKC, or NFKD.
+ *  The normalization form used is determined by +form+, which can
+ *  be any of the four values +:nfc+, +:nfd+, +:nfkc+, or +:nfkd+.
+ *  The default is +:nfc+.
+ *
+ *  If the string is not in a Unicode Encoding, then an Exception is raised.
+ *  In this context, 'Unicode Encoding' means any of UTF-8, UTF-16BE/LE,
+ *  and UTF-32BE/LE, as well as GB18030, UCS_2BE, and UCS_4BE.
+ *  Anything other than UTF-8 is implemented by converting to UTF-8,
+ *  which makes it slower than UTF-8.
+ *
+ *    "a\u0300".unicode_normalize        #=> 'à' (same as "\u00E0")
+ *    "a\u0300".unicode_normalize(:nfc)  #=> 'à' (same as "\u00E0")
+ *    "\u00E0".unicode_normalize(:nfd)   #=> 'à' (same as "a\u0300")
+ *    "\xE0".force_encoding('ISO-8859-1').unicode_normalize(:nfd)
+ *                                       #=> Encoding::CompatibilityError raised
+ */
+static VALUE
+rb_str_unicode_normalize(int argc, VALUE *argv, VALUE str)
+{
+    if (!UnicodeNormalizeRequired) {
+	rb_require("unicode_normalize/normalize.rb");
+	UnicodeNormalizeRequired = 1;
+    }
+    /* return rb_funcall2(str, id_unicode_normalize, argc, argv); */
+    if (argc==0)
+	return rb_funcall(mUnicodeNormalize, id_normalize, 1, str);
+    else if (argc==1)
+	return rb_funcall(mUnicodeNormalize, id_normalize, 2, str, argv[0]);
+    else
+	rb_raise(rb_eArgError, "too many arguments to unicode_normalize");
+}
+
 /**********************************************************************
  * Document-class: Symbol
  *
@@ -10229,6 +10271,12 @@ Init_String(void)
     rb_define_method(rb_cString, "b", rb_str_b, 0);
     rb_define_method(rb_cString, "valid_encoding?", rb_str_valid_encoding_p, 0);
     rb_define_method(rb_cString, "ascii_only?", rb_str_is_ascii_only_p, 0);
+
+    /* define module here so that we don't have to look it up */
+    mUnicodeNormalize          = rb_define_module("UnicodeNormalize"); 
+    id_normalize               = rb_intern("normalize");
+
+    rb_define_method(rb_cString, "unicode_normalize", rb_str_unicode_normalize, -1);
 
     rb_fs = Qnil;
     rb_define_hooked_variable("$;", &rb_fs, 0, rb_fs_setter);

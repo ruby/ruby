@@ -9,32 +9,6 @@
 class String
 
   # :call-seq:
-  #    str.unicode_normalize(form=:nfc)
-  #
-  # Unicode Normalization---Returns a normalized form of +str+,
-  # using Unicode normalizations NFC, NFD, NFKC, or NFKD.
-  # The normalization form used is determined by +form+, which can
-  # be any of the four values +:nfc+, +:nfd+, +:nfkc+, or +:nfkd+.
-  # The default is +:nfc+.
-  #
-  # If the string is not in a Unicode Encoding, then an Exception is raised.
-  # In this context, 'Unicode Encoding' means any of UTF-8, UTF-16BE/LE,
-  # and UTF-32BE/LE, as well as GB18030, UCS_2BE, and UCS_4BE.
-  # Anything other than UTF-8 is implemented by converting to UTF-8,
-  # which makes it slower than UTF-8.
-  #
-  #   "a\u0300".unicode_normalize        #=> 'à' (same as "\u00E0")
-  #   "a\u0300".unicode_normalize(:nfc)  #=> 'à' (same as "\u00E0")
-  #   "\u00E0".unicode_normalize(:nfd)   #=> 'à' (same as "a\u0300")
-  #   "\xE0".force_encoding('ISO-8859-1').unicode_normalize(:nfd)
-  #                                      #=> Encoding::CompatibilityError raised
-  #
-  def unicode_normalize(form = :nfc)
-    require 'unicode_normalize/normalize.rb'
-    unicode_normalize form   # no recursion, because redefined in unicode_normalize/normalize.rb
-  end
-
-  # :call-seq:
   #    str.unicode_normalize!(form=:nfc)
   #
   # Destructive version of String#unicode_normalize, doing Unicode
