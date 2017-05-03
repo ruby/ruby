@@ -30,7 +30,7 @@ end
 cbreak();
 
 print("this is no-echo line: ");
-readline().print
+readline().display
 cooked();
 print("this is echo line: ");
 readline()
