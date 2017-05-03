@@ -10273,7 +10273,7 @@ Init_String(void)
     rb_define_method(rb_cString, "ascii_only?", rb_str_is_ascii_only_p, 0);
 
     /* define module here so that we don't have to look it up */
-    mUnicodeNormalize          = rb_define_module("UnicodeNormalize"); 
+    mUnicodeNormalize          = rb_define_module("UnicodeNormalize");
     id_normalize               = rb_intern("normalize");
 
     rb_define_method(rb_cString, "unicode_normalize", rb_str_unicode_normalize, -1);
