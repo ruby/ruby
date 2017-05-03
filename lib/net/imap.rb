@@ -18,6 +18,7 @@ require "socket"
 require "monitor"
 require "digest/md5"
 require "strscan"
+require 'net/protocol'
 begin
   require "openssl"
 rescue LoadError
@@ -199,7 +200,7 @@ module Net
   #    Goldsmith, D. and Davis, M., "UTF-7: A Mail-Safe Transformation Format of
   #    Unicode", RFC 2152, May 1997.
   #
-  class IMAP
+  class IMAP < Protocol
     include MonitorMixin
     if defined?(OpenSSL::SSL)
       include OpenSSL
@@ -220,6 +221,16 @@ module Net
 
     # Returns all response handlers.
     attr_reader :response_handlers
+
+    # Seconds to wait until a connection is opened.
+    # If the IMAP object cannot open a connection within this time,
+    # it raises a Net::OpenTimeout exception. The default value is 30 seconds.
+    attr_reader :open_timeout
+
+    # Seconds to wait until reading one block (by one read(1) call).
+    # If the IMAP object cannot complete a read() within this time,
+    # it raises a Net::ReadTimeout exception. The default value is 60 seconds.
+    attr_reader :read_timeout
 
     # The thread to receive exceptions.
     attr_accessor :client_thread
@@ -1048,6 +1059,8 @@ module Net
     #         be installed.
     #         If options[:ssl] is a hash, it's passed to
     #         OpenSSL::SSL::SSLContext#set_params as parameters.
+    # open_timeout:: Seconds to wait until a connection is opened
+    # read_timeout:: Seconds to wait until reading one block
     #
     # The most common errors are:
     #
@@ -1076,8 +1089,10 @@ module Net
       @port = options[:port] || (options[:ssl] ? SSL_PORT : PORT)
       @tag_prefix = "RUBY"
       @tagno = 0
+      @open_timeout = options[:open_timeout] || 30
+      @read_timeout = options[:read_timeout] || 60
       @parser = ResponseParser.new
-      @sock = TCPSocket.open(@host, @port)
+      @sock = tcp_socket(@host, @port)
       begin
         if options[:ssl]
           start_tls_session(options[:ssl])
@@ -1115,6 +1130,13 @@ module Net
         @sock.close
         raise
       end
+    end
+
+    def tcp_socket(host, port)
+      Socket.tcp(host, port, :connect_timeout => @open_timeout)
+    rescue Errno::ETIMEDOUT
+      raise Net::OpenTimeout, "Timeout to open TCP connection to " +
+        "#{host}:#{port} (exceeds #{@open_timeout} seconds)"
     end
 
     def receive_responses
@@ -1199,14 +1221,35 @@ module Net
       end
     end
 
+    def get_response_data(length, terminator = nil)
+      str = nil
+      buff = String.new
+      while true
+        str = @sock.read_nonblock(length, :exception => false)
+        case str
+        when :wait_readable
+          @sock.to_io.wait_readable(@read_timeout) or
+            raise Net::ReadTimeout, "#{@host}:#{@port} read timeout (exceeds #{@read_timeout} seconds)"
+        when nil
+          break
+        else
+          buff.concat(str)
+          if terminator ? buff.include?(terminator) : (buff.length >= length)
+            break
+          end
+        end
+      end
+      buff
+    end
+
     def get_response
       buff = String.new
       while true
-        s = @sock.gets(CRLF)
-        break unless s
+        s = get_response_data(1, CRLF)
+        break if s.length == 0
         buff.concat(s)
         if /\{(\d+)\}\r\n/n =~ s
-          s = @sock.read($1.to_i)
+          s = get_response_data($1.to_i)
           buff.concat(s)
         else
           break
@@ -1487,7 +1530,7 @@ module Net
       end
       @sock = SSLSocket.new(@sock, context)
       @sock.sync_close = true
-      @sock.connect
+      ssl_socket_connect(@sock, @open_timeout)
       if context.verify_mode != VERIFY_NONE
         @sock.post_connection_check(@host)
       end
