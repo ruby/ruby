@@ -484,7 +484,7 @@ dir_s_alloc(VALUE klass)
  *
  *  Returns a new directory object for the named directory.
  *
- *  The optional <i>enc</i> argument specifies the encoding of the directory.
+ *  The optional <i>encoding</i> keyword argument specifies the encoding of the directory.
  *  If not specified, the filesystem encoding is used.
  */
 static VALUE
@@ -555,7 +555,7 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
  *     Dir.open( string ) {| aDir | block } -> anObject
  *     Dir.open( string, encoding: enc ) {| aDir | block } -> anObject
  *
- *  The optional <i>enc</i> argument specifies the encoding of the directory.
+ *  The optional <i>encoding</i> keyword argument specifies the encoding of the directory.
  *  If not specified, the filesystem encoding is used.
  *
  *  With no block, <code>open</code> is a synonym for
@@ -2510,8 +2510,8 @@ dir_foreach(int argc, VALUE *argv, VALUE io)
  *  directory. Will raise a <code>SystemCallError</code> if the named
  *  directory doesn't exist.
  *
- *  The optional <i>enc</i> argument specifies the encoding of the directory.
- *  If not specified, the filesystem encoding is used.
+ *  The optional <i>encoding</i> keyword argument specifies the encoding of the
+ *  directory. If not specified, the filesystem encoding is used.
  *
  *     Dir.entries("testdir")   #=> [".", "..", "config.h", "main.rb"]
  *
