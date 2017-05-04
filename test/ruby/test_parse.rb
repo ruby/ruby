@@ -988,6 +988,16 @@ x = __ENCODING__
     assert_equal(-100, e.backtrace_locations.first.lineno, bug)
   end
 
+  def test_file_in_indented_heredoc
+    name = '[ruby-core:80987] [Bug #13540]' # long enough to be shared
+    assert_equal(name+"\n", eval("#{<<-"begin;"}\n#{<<-'end;'}", nil, name))
+    begin;
+      <<~HEREDOC
+        #{__FILE__}
+      HEREDOC
+    end;
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}

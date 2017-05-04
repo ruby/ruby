@@ -6392,6 +6392,11 @@ dedent_string(VALUE string, int width)
 	    break;
 	}
     }
+    if (!i) return 0;
+    rb_str_modify(string);
+    str = RSTRING_PTR(string);
+    if (RSTRING_LEN(string) != len)
+	rb_fatal("literal string changed: %+"PRIsVALUE, string);
     MEMMOVE(str, str + i, char, len - i);
     rb_str_set_len(string, len - i);
     return i;
@@ -6448,7 +6453,6 @@ parser_dedent_string(VALUE self, VALUE input, VALUE width)
 
     StringValue(input);
     wid = NUM2UINT(width);
-    rb_str_modify(input);
     col = dedent_string(input, wid);
     return INT2NUM(col);
 }
