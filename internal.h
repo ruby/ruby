@@ -1214,8 +1214,6 @@ void ruby_sized_xfree(void *x, size_t size);
 #define SIZED_REALLOC_N(var,type,n,old_n) ((var)=(type*)ruby_sized_xrealloc((char*)(var), (n) * sizeof(type), (old_n) * sizeof(type)))
 #endif
 
-void rb_gc_resurrect(VALUE ptr);
-
 /* optimized version of NEWOBJ() */
 #undef NEWOBJF_OF
 #undef RB_NEWOBJ_OF
