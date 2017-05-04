@@ -7,18 +7,6 @@
 # additions to class String for Unicode normalization
 #++
 class String
-
-  # :call-seq:
-  #    str.unicode_normalize!(form=:nfc)
-  #
-  # Destructive version of String#unicode_normalize, doing Unicode
-  # normalization in place.
-  #
-  def unicode_normalize!(form = :nfc)
-    require 'unicode_normalize/normalize.rb'
-    unicode_normalize! form
-  end
-
   # :call-seq:
   #    str.unicode_normalized?(form=:nfc)
   #

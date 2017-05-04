@@ -9615,13 +9615,34 @@ rb_str_unicode_normalize(int argc, VALUE *argv, VALUE str)
 	rb_require("unicode_normalize/normalize.rb");
 	UnicodeNormalizeRequired = 1;
     }
-    /* return rb_funcall2(str, id_unicode_normalize, argc, argv); */
     if (argc==0)
 	return rb_funcall(mUnicodeNormalize, id_normalize, 1, str);
     else if (argc==1)
 	return rb_funcall(mUnicodeNormalize, id_normalize, 2, str, argv[0]);
     else
 	rb_raise(rb_eArgError, "too many arguments to unicode_normalize");
+}
+
+/*
+ *  call-seq:
+ *    str.unicode_normalize!(form=:nfc)
+ *
+ *  Destructive version of String#unicode_normalize, doing Unicode
+ *  normalization in place.
+ */
+static VALUE
+rb_str_unicode_normalize_bang(int argc, VALUE *argv, VALUE str)
+{
+    if (!UnicodeNormalizeRequired) {
+	rb_require("unicode_normalize/normalize.rb");
+	UnicodeNormalizeRequired = 1;
+    }
+    if (argc==0)
+	return rb_str_replace(str, rb_funcall(mUnicodeNormalize, id_normalize, 1, str));
+    else if (argc==1)
+	return rb_str_replace(str, rb_funcall(mUnicodeNormalize, id_normalize, 2, str, argv[0]));
+    else
+	rb_raise(rb_eArgError, "too many arguments to unicode_normalize!");
 }
 
 /**********************************************************************
@@ -10277,6 +10298,7 @@ Init_String(void)
     id_normalize               = rb_intern("normalize");
 
     rb_define_method(rb_cString, "unicode_normalize", rb_str_unicode_normalize, -1);
+    rb_define_method(rb_cString, "unicode_normalize!", rb_str_unicode_normalize_bang, -1);
 
     rb_fs = Qnil;
     rb_define_hooked_variable("$;", &rb_fs, 0, rb_fs_setter);
