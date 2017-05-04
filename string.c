@@ -9583,6 +9583,7 @@ str_scrub_bang(int argc, VALUE *argv, VALUE str)
 }
 
 static VALUE id_normalize;
+static VALUE id_normalized_p;
 static VALUE mUnicodeNormalize;
 static int UnicodeNormalizeRequired = 0;
 
@@ -9643,6 +9644,38 @@ rb_str_unicode_normalize_bang(int argc, VALUE *argv, VALUE str)
 	return rb_str_replace(str, rb_funcall(mUnicodeNormalize, id_normalize, 2, str, argv[0]));
     else
 	rb_raise(rb_eArgError, "too many arguments to unicode_normalize!");
+}
+
+/*  call-seq:
+ *    str.unicode_normalized?(form=:nfc)
+ *
+ *  Checks whether +str+ is in Unicode normalization form +form+,
+ *  which can be any of the four values +:nfc+, +:nfd+, +:nfkc+, or +:nfkd+.
+ *  The default is +:nfc+.
+ *
+ *  If the string is not in a Unicode Encoding, then an Exception is raised.
+ *  For details, see String#unicode_normalize.
+ *
+ *    "a\u0300".unicode_normalized?        #=> false
+ *    "a\u0300".unicode_normalized?(:nfd)  #=> true
+ *    "\u00E0".unicode_normalized?         #=> true
+ *    "\u00E0".unicode_normalized?(:nfd)   #=> false
+ *    "\xE0".force_encoding('ISO-8859-1').unicode_normalized?
+ *                                         #=> Encoding::CompatibilityError raised
+ */
+static VALUE
+rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
+{
+    if (!UnicodeNormalizeRequired) {
+	rb_require("unicode_normalize/normalize.rb");
+	UnicodeNormalizeRequired = 1;
+    }
+    if (argc==0)
+	return rb_funcall(mUnicodeNormalize, id_normalized_p, 1, str);
+    else if (argc==1)
+	return rb_funcall(mUnicodeNormalize, id_normalized_p, 2, str, argv[0]);
+    else
+	rb_raise(rb_eArgError, "too many arguments to unicode_normalized?");
 }
 
 /**********************************************************************
@@ -10293,12 +10326,14 @@ Init_String(void)
     rb_define_method(rb_cString, "valid_encoding?", rb_str_valid_encoding_p, 0);
     rb_define_method(rb_cString, "ascii_only?", rb_str_is_ascii_only_p, 0);
 
-    /* define module here so that we don't have to look it up */
+    /* define UnicodeNormalize module here so that we don't have to look it up */
     mUnicodeNormalize          = rb_define_module("UnicodeNormalize");
     id_normalize               = rb_intern("normalize");
+    id_normalized_p            = rb_intern("normalized?");
 
     rb_define_method(rb_cString, "unicode_normalize", rb_str_unicode_normalize, -1);
     rb_define_method(rb_cString, "unicode_normalize!", rb_str_unicode_normalize_bang, -1);
+    rb_define_method(rb_cString, "unicode_normalized?", rb_str_unicode_normalized_p, -1);
 
     rb_fs = Qnil;
     rb_define_hooked_variable("$;", &rb_fs, 0, rb_fs_setter);
