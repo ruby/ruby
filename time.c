@@ -835,10 +835,12 @@ gmtimew_noleapsecond(wideval_t timew, struct vtm *vtm)
     int wday;
     VALUE timev;
     wideval_t timew2, w, w2;
+    VALUE subsecx;
 
     vtm->isdst = 0;
 
-    split_second(timew, &timew2, &vtm->subsecx);
+    split_second(timew, &timew2, &subsecx);
+    vtm->subsecx = subsecx;
 
     wdivmod(timew2, WINT2FIXWV(86400), &w2, &w);
     timev = w2v(w2);
@@ -1992,8 +1994,15 @@ time_init_1(int argc, VALUE *argv, VALUE time)
 
     vtm.min  = NIL_P(v[4]) ? 0 : obj2ubits(v[4], 6);
 
-    vtm.subsecx = INT2FIX(0);
-    vtm.sec  = NIL_P(v[5]) ? 0 : obj2subsecx(v[5], &vtm.subsecx);
+    if (NIL_P(v[5])) {
+        vtm.sec = 0;
+        vtm.subsecx = INT2FIX(0);
+    }
+    else {
+        VALUE subsecx;
+        vtm.sec = obj2subsecx(v[5], &subsecx);
+        vtm.subsecx = subsecx;
+    }
 
     vtm.isdst = VTM_ISDST_INITVAL;
     vtm.utc_offset = Qnil;
@@ -2530,6 +2539,7 @@ static void
 time_arg(int argc, VALUE *argv, struct vtm *vtm)
 {
     VALUE v[8];
+    VALUE subsecx = INT2FIX(0);
 
     vtm->year = INT2FIX(0);
     vtm->mon = 0;
@@ -2583,16 +2593,22 @@ time_arg(int argc, VALUE *argv, struct vtm *vtm)
     vtm->min  = NIL_P(v[4])?0:obj2ubits(v[4], 6);
 
     if (!NIL_P(v[6]) && argc == 7) {
-        vtm->sec  = NIL_P(v[5])?0:obj2ubits(v[5],6);
-        vtm->subsecx  = usec2subsecx(v[6]);
+        vtm->sec = NIL_P(v[5])?0:obj2ubits(v[5],6);
+        subsecx  = usec2subsecx(v[6]);
     }
     else {
 	/* when argc == 8, v[6] is timezone, but ignored */
-        vtm->sec  = NIL_P(v[5])?0:obj2subsecx(v[5], &vtm->subsecx);
+        if (NIL_P(v[5])) {
+            vtm->sec = 0;
+        }
+        else {
+            vtm->sec = obj2subsecx(v[5], &subsecx);
+        }
     }
+    vtm->subsecx = subsecx;
 
     validate_vtm(vtm);
-    RB_GC_GUARD(vtm->subsecx);
+    RB_GC_GUARD(subsecx);
 }
 
 static int
