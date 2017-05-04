@@ -1447,19 +1447,21 @@ rb_str_resurrect(VALUE str)
 
 /*
  *  call-seq:
- *     String.new(str="")   -> new_str
- *     String.new(str="", encoding: enc) -> new_str
- *     String.new(str="", capacity: size) -> new_str
+ *     String.new(str="")                   -> new_str
+ *     String.new(str="", encoding: enc)    -> new_str
+ *     String.new(str="", capacity: size)   -> new_str
  *
  *  Returns a new string object containing a copy of <i>str</i>.
  *
- *  The optional <i>encoding</i> argument specifies the encoding of the new string.
- *  If not specified, the encoding of <i>str</i> (or ASCII-8BIT, if <i>str</i>
- *  is not specified) is used.
+ *  The optional <i>encoding</i> keyword argument specifies the encoding
+ *  of the new string.
+ *  If not specified, the encoding of <i>str</i> is used
+ *  (or ASCII-8BIT, if <i>str</i> is not specified).
  *
- *  The optional <i>capacity</i> argument specifies the size of internal buffer.
+ *  The optional <i>capacity</i> keyword argument specifies the size
+ *  of the internal buffer.
  *  This may improve performance, when the string will be concatenated many
- *  times (and call many realloc).
+ *  times (causing many realloc calls).
  */
 
 static VALUE
