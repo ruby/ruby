@@ -1453,11 +1453,11 @@ rb_str_resurrect(VALUE str)
  *
  *  Returns a new string object containing a copy of <i>str</i>.
  *
- *  The optional <i>enc</i> argument specifies the encoding of the new string.
+ *  The optional <i>encoding</i> argument specifies the encoding of the new string.
  *  If not specified, the encoding of <i>str</i> (or ASCII-8BIT, if <i>str</i>
  *  is not specified) is used.
  *
- *  The optional <i>size</i> argument specifies the size of internal buffer.
+ *  The optional <i>capacity</i> argument specifies the size of internal buffer.
  *  This may improve performance, when the string will be concatenated many
  *  times (and call many realloc).
  */
