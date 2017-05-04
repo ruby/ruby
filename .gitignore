@@ -119,6 +119,7 @@ y.tab.c
 /yasmdata.rb
 
 # /benchmark/
+/benchmark/bm_require.data
 /benchmark/bmx_*.rb
 /benchmark/fasta.output.*
 /benchmark/wc.input
