@@ -9585,7 +9585,23 @@ str_scrub_bang(int argc, VALUE *argv, VALUE str)
 static VALUE id_normalize;
 static VALUE id_normalized_p;
 static VALUE mUnicodeNormalize;
-static int UnicodeNormalizeRequired = 0;
+
+static VALUE
+unicode_normalize_common(int argc, VALUE *argv, VALUE str, VALUE id)
+{
+    static int UnicodeNormalizeRequired = 0;
+
+    if (!UnicodeNormalizeRequired) {
+	rb_require("unicode_normalize/normalize.rb");
+	UnicodeNormalizeRequired = 1;
+    }
+    if (argc==0)
+	return rb_funcall(mUnicodeNormalize, id, 1, str);
+    else if (argc==1)
+	return rb_funcall(mUnicodeNormalize, id, 2, str, argv[0]);
+    else
+	rb_raise(rb_eArgError, "too many arguments to unicode normalization function");
+}
 
 /*
  *  call-seq:
@@ -9612,16 +9628,7 @@ static int UnicodeNormalizeRequired = 0;
 static VALUE
 rb_str_unicode_normalize(int argc, VALUE *argv, VALUE str)
 {
-    if (!UnicodeNormalizeRequired) {
-	rb_require("unicode_normalize/normalize.rb");
-	UnicodeNormalizeRequired = 1;
-    }
-    if (argc==0)
-	return rb_funcall(mUnicodeNormalize, id_normalize, 1, str);
-    else if (argc==1)
-	return rb_funcall(mUnicodeNormalize, id_normalize, 2, str, argv[0]);
-    else
-	rb_raise(rb_eArgError, "too many arguments to unicode_normalize");
+    return unicode_normalize_common(argc, argv, str, id_normalize);
 }
 
 /*
@@ -9634,16 +9641,7 @@ rb_str_unicode_normalize(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_unicode_normalize_bang(int argc, VALUE *argv, VALUE str)
 {
-    if (!UnicodeNormalizeRequired) {
-	rb_require("unicode_normalize/normalize.rb");
-	UnicodeNormalizeRequired = 1;
-    }
-    if (argc==0)
-	return rb_str_replace(str, rb_funcall(mUnicodeNormalize, id_normalize, 1, str));
-    else if (argc==1)
-	return rb_str_replace(str, rb_funcall(mUnicodeNormalize, id_normalize, 2, str, argv[0]));
-    else
-	rb_raise(rb_eArgError, "too many arguments to unicode_normalize!");
+    return rb_str_replace(str, unicode_normalize_common(argc, argv, str, id_normalize));
 }
 
 /*  call-seq:
@@ -9666,16 +9664,7 @@ rb_str_unicode_normalize_bang(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
 {
-    if (!UnicodeNormalizeRequired) {
-	rb_require("unicode_normalize/normalize.rb");
-	UnicodeNormalizeRequired = 1;
-    }
-    if (argc==0)
-	return rb_funcall(mUnicodeNormalize, id_normalized_p, 1, str);
-    else if (argc==1)
-	return rb_funcall(mUnicodeNormalize, id_normalized_p, 2, str, argv[0]);
-    else
-	rb_raise(rb_eArgError, "too many arguments to unicode_normalized?");
+    return unicode_normalize_common(argc, argv, str, id_normalized_p);
 }
 
 /**********************************************************************
