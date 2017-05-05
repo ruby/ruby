@@ -1367,7 +1367,7 @@ module URI
     end
 
     #
-    # Compares to URI's
+    # Compares two URIs
     #
     def ==(oth)
       if self.class == oth.class
