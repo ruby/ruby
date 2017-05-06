@@ -4985,11 +4985,10 @@ int_dotimes(VALUE num)
  *  When the precision is negative, the returned value is an integer
  *  with at least <code>ndigits.abs</code> trailing zeros.
  *
- *  Returns a floating point number when +ndigits+ is positive,
- *  +self+ for zero, and an integer for negative.
+ *  Returns +self+ when +ndigits+ is zero or positive.
  *
  *     1.round           #=> 1
- *     1.round(2)        #=> 1.0
+ *     1.round(2)        #=> 1
  *     15.round(-1)      #=> 20
  *     (-15).round(-1)   #=> -20
  *
@@ -5017,10 +5016,7 @@ int_round(int argc, VALUE* argv, VALUE num)
     if (!rb_scan_args(argc, argv, "01:", &nd, &opt)) return num;
     ndigits = NUM2INT(nd);
     mode = rb_num_get_rounding_option(opt);
-    if (ndigits > 0) {
-	return rb_Float(num);
-    }
-    if (ndigits == 0) {
+    if (ndigits >= 0) {
 	return num;
     }
     return rb_int_round(num, ndigits, mode);
@@ -5037,11 +5033,10 @@ int_round(int argc, VALUE* argv, VALUE num)
  *  When the precision is negative, the returned value is an integer
  *  with at least <code>ndigits.abs</code> trailing zeros.
  *
- *  Returns a floating point number when +ndigits+ is positive,
- *  +self+ for zero, and an integer for negative.
+ *  Returns +self+ when +ndigits+ is zero or positive.
  *
  *     1.floor           #=> 1
- *     1.floor(2)        #=> 1.0
+ *     1.floor(2)        #=> 1
  *     18.floor(-1)      #=> 10
  *     (-18).floor(-1)   #=> -20
  */
@@ -5053,10 +5048,7 @@ int_floor(int argc, VALUE* argv, VALUE num)
 
     if (!rb_check_arity(argc, 0, 1)) return num;
     ndigits = NUM2INT(argv[0]);
-    if (ndigits > 0) {
-	return rb_Float(num);
-    }
-    if (ndigits == 0) {
+    if (ndigits >= 0) {
 	return num;
     }
     return rb_int_floor(num, ndigits);
@@ -5073,11 +5065,10 @@ int_floor(int argc, VALUE* argv, VALUE num)
  *  When the precision is negative, the returned value is an integer
  *  with at least <code>ndigits.abs</code> trailing zeros.
  *
- *  Returns a floating point number when +ndigits+ is positive,
- *  +self+ for zero, and an integer for negative.
+ *  Returns +self+ when +ndigits+ is zero or positive.
  *
  *     1.ceil           #=> 1
- *     1.ceil(2)        #=> 1.0
+ *     1.ceil(2)        #=> 1
  *     18.ceil(-1)      #=> 20
  *     (-18).ceil(-1)   #=> -10
  */
@@ -5089,10 +5080,7 @@ int_ceil(int argc, VALUE* argv, VALUE num)
 
     if (!rb_check_arity(argc, 0, 1)) return num;
     ndigits = NUM2INT(argv[0]);
-    if (ndigits > 0) {
-	return rb_Float(num);
-    }
-    if (ndigits == 0) {
+    if (ndigits >= 0) {
 	return num;
     }
     return rb_int_ceil(num, ndigits);
@@ -5109,11 +5097,10 @@ int_ceil(int argc, VALUE* argv, VALUE num)
  *  When the precision is negative, the returned value is an integer
  *  with at least <code>ndigits.abs</code> trailing zeros.
  *
- *  Returns a floating point number when +ndigits+ is positive,
- *  +self+ for zero, and an integer for negative.
+ *  Returns +self+ when +ndigits+ is zero or positive.
  *
  *     1.truncate           #=> 1
- *     1.truncate(2)        #=> 1.0
+ *     1.truncate(2)        #=> 1
  *     18.truncate(-1)      #=> 10
  *     (-18).truncate(-1)   #=> -10
  */
@@ -5125,10 +5112,7 @@ int_truncate(int argc, VALUE* argv, VALUE num)
 
     if (!rb_check_arity(argc, 0, 1)) return num;
     ndigits = NUM2INT(argv[0]);
-    if (ndigits > 0) {
-	return rb_Float(num);
-    }
-    if (ndigits == 0) {
+    if (ndigits >= 0) {
 	return num;
     }
     return rb_int_truncate(num, ndigits);
