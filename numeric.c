@@ -3466,8 +3466,8 @@ rb_int2str(VALUE x, int base)
  * call-seq:
  *    int + numeric  ->  numeric_result
  *
- * Performs addition: the class of the resulting object depends on the class of
- * +numeric+ and on the magnitude of the result. It may return a Bignum.
+ * Performs addition: the class of the resulting object depends on
+ * the class of +numeric+.
  */
 
 static VALUE
@@ -3513,8 +3513,8 @@ rb_int_plus(VALUE x, VALUE y)
  * call-seq:
  *    int - numeric  ->  numeric_result
  *
- * Performs subtraction: the class of the resulting object depends on the class
- * of +numeric+ and on the magnitude of the result. It may return a Bignum.
+ * Performs subtraction: the class of the resulting object depends on
+ * the class of +numeric+.
  */
 
 static VALUE
@@ -3557,9 +3557,8 @@ rb_int_minus(VALUE x, VALUE y)
  * call-seq:
  *    int * numeric  ->  numeric_result
  *
- * Performs multiplication: the class of the resulting object depends on the
- * class of +numeric+ and on the magnitude of the result. It may return a
- * Bignum.
+ * Performs multiplication: the class of the resulting object depends on
+ * the class of +numeric+.
  */
 
 static VALUE
@@ -3660,8 +3659,8 @@ rb_int_fdiv(VALUE x, VALUE y)
  * call-seq:
  *    int / numeric  ->  numeric_result
  *
- * Performs division: the class of the resulting object depends on the class of
- * +numeric+ and on the magnitude of the result. It may return a Bignum.
+ * Performs division: the class of the resulting object depends on
+ * the class of +numeric+.
  */
 
 static VALUE
