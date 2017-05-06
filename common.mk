@@ -773,7 +773,7 @@ $(ENC_TRANS_D):
 	@exit > $@
 
 $(TIMESTAMPDIR)/$(arch)/.time:
-	$(Q)$(MAKEDIRS) $(@D)
+	$(Q)$(MAKEDIRS) $(@D) $(EXTOUT)/$(arch)
 	@exit > $@
 
 ###
