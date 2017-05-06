@@ -9584,12 +9584,12 @@ str_scrub_bang(int argc, VALUE *argv, VALUE str)
     return str;
 }
 
-static VALUE id_normalize;
-static VALUE id_normalized_p;
+static ID id_normalize;
+static ID id_normalized_p;
 static VALUE mUnicodeNormalize;
 
 static VALUE
-unicode_normalize_common(int argc, VALUE *argv, VALUE str, VALUE id)
+unicode_normalize_common(int argc, VALUE *argv, VALUE str, ID id)
 {
     static int UnicodeNormalizeRequired = 0;
 
