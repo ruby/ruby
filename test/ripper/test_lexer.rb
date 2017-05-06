@@ -20,5 +20,16 @@ class TestRipper::Lexer < Test::Unit::TestCase
     D
     E
     assert_equal(str, Ripper.tokenize(str).join(""), bug)
+
+    str = <<~'E'
+    <<~"D"
+    #{
+    <<~"B"
+      this must be a valid ruby
+    B
+    }
+    D
+    E
+    assert_equal(str, Ripper.tokenize(str).join(""), bug)
   end
 end
