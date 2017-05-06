@@ -60,6 +60,10 @@ class CGIUtilTest < Test::Unit::TestCase
     return unless defined?(::Encoding)
 
     assert_raise(TypeError) {CGI.unescape('', nil)}
+    assert_separately(%w[-rcgi/util], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      assert_equal("", CGI.unescape(''))
+    end;
   end
 
   def test_cgi_pretty
