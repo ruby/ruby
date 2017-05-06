@@ -596,7 +596,7 @@ math_log10(VALUE unused_obj, VALUE x)
  *
  *    Math.sqrt(10**46).to_i  #=> 99999999999999991611392 (!)
  *
- *  See also BigDecimal#sqrt.
+ *  See also BigDecimal#sqrt and Integer.sqrt.
  */
 
 static VALUE
