@@ -214,7 +214,7 @@ showconfig:
 exts: build-ext
 
 EXTS_MK = exts.mk
-$(EXTS_MK): ext/configure-ext.mk $(TIMESTAMPDIR)/.$(arch).time $(srcdir)/template/exts.mk.tmpl
+$(EXTS_MK): ext/configure-ext.mk $(TIMESTAMPDIR)/$(arch)/.time $(srcdir)/template/exts.mk.tmpl
 	$(Q)$(MAKE) -f ext/configure-ext.mk $(mflags) V=$(V) EXTSTATIC=$(EXTSTATIC) \
 		gnumake=$(gnumake) MINIRUBY="$(MINIRUBY)" \
 		EXTLDFLAGS="$(EXTLDFLAGS)" srcdir="$(srcdir)"
@@ -585,7 +585,7 @@ timestamp/distclean:: ext/distclean gems/distclean
 timestamp/realclean:: ext/realclean gems/realclean
 
 timestamp/clean timestamp/distclean timestamp/realclean::
-	$(Q)$(RM) $(TIMESTAMPDIR)/.*.time $(TIMESTAMPDIR)/.$(arch).time $(TIMESTAMPDIR)/$(arch)/.time
+	$(Q)$(RM) $(TIMESTAMPDIR)/.*.time $(TIMESTAMPDIR)/$(arch)/.time
 	$(Q)$(RMDIRS) $(TIMESTAMPDIR)/$(arch) 2> $(NULL) || exit 0
 
 clean-ext::
@@ -772,8 +772,8 @@ $(ENC_TRANS_D):
 	$(Q) $(MAKEDIRS) enc/trans $(@D)
 	@exit > $@
 
-$(TIMESTAMPDIR)/.$(arch).time:
-	$(Q)$(MAKEDIRS) $(@D) $(TIMESTAMPDIR)/$(arch)
+$(TIMESTAMPDIR)/$(arch)/.time:
+	$(Q)$(MAKEDIRS) $(@D)
 	@exit > $@
 
 ###
