@@ -1,5 +1,5 @@
 # -*- ruby -*-
-require "./rbconfig.rb"
+require "./rbconfig" unless defined?(RbConfig)
 load File.dirname(__FILE__) + '/rubyspec/default.mspec'
 OBJDIR = File.expand_path("spec/rubyspec/optional/capi/ext")
 class MSpecScript
