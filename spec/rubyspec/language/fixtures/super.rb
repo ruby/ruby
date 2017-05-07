@@ -477,7 +477,7 @@ module Super
       end
     end
   end
-  
+
   module KeywordArguments
     class A
       def foo(**args)

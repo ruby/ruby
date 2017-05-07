@@ -21,7 +21,7 @@ describe "Thread::SizedQueue#max=" do
     @sized_queue.max = 10
     @sized_queue.max.should == 10
   end
-  
+
   it "does not remove items already in the queue beyond the maximum" do
     @sized_queue.enq 1
     @sized_queue.enq 2

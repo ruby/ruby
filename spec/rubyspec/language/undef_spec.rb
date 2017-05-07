@@ -29,7 +29,7 @@ describe "The undef keyword" do
   it "raises a NameError when passed a missing name" do
     Class.new do
       lambda {
-         undef not_exist 
+         undef not_exist
       }.should raise_error(NameError) { |e|
         # a NameError and not a NoMethodError
         e.class.should == NameError

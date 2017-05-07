@@ -9,7 +9,7 @@ describe MSpec, "#deprecate" do
     warning.should start_with(<<-EOS.chomp)
 
 some_method is deprecated, use other_method instead.
-from 
+from
 EOS
     warning.should include(__FILE__)
     warning.should include('8')

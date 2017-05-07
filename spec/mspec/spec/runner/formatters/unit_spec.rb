@@ -65,7 +65,7 @@ Finished in 2.0 seconds
 
 1)
 describe it ERROR
-Exception: broken: 
+Exception: broken:
 path/to/some/file.rb:35:in method
 
 1 example, 0 failures

@@ -232,7 +232,7 @@ describe "The rescue keyword" do
       end
     end.should raise_error(Exception)
   end
-  
+
   it "uses === to compare against rescued classes" do
     rescuer = Class.new
 
@@ -245,12 +245,12 @@ describe "The rescue keyword" do
     rescue rescuer
       rescued = :success
     rescue Exception
-      rescued = :failure 
+      rescued = :failure
     end
-    
+
     rescued.should == :success
   end
-  
+
   it "only accepts Module or Class in rescue clauses" do
     rescuer = 42
     lambda {

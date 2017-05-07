@@ -3,7 +3,7 @@ require File.expand_path('../../spec_helper', __FILE__)
 require 'rexml/document'
 
 describe "REXML::Document.new" do
-  
+
   it "resists CVE-2014-8080 by raising an exception when entity expansion has grown too large" do
     xml = <<XML
     <?xml version="1.0" encoding="UTF-8" ?>
@@ -28,5 +28,5 @@ XML
       e.message.should =~ /entity expansion has grown too large/
     }
   end
-  
+
 end

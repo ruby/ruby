@@ -68,7 +68,7 @@ with_feature :encoding do
         str = "あ"
         str.force_encoding("ascii-8bit")
         encoded = str.encode("utf-8", "utf-8")
-        
+
         encoded.should_not equal(str)
         encoded.encoding.should == Encoding::UTF_8
       end
