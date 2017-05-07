@@ -1,0 +1,43 @@
+s,@EXTOUT@,tmp,g
+s,@ruby_version@,0.0.0,g
+s,@NULLCMD@,:,g
+s,@ARCH_FLAG@,,g
+s,@BASERUBY@,ruby,g
+s,@BOOTSTRAPRUBY@,$(BASERUBY),g
+s,@CC@,false,g
+s,@CFLAGS@,,g
+s,@CHDIR@,cd,g
+s,@CONFIGURE@,configure,g
+s,@CP@,cp,g
+s,@CPPFLAGS@,,g
+s,@CXXFLAGS@,,g
+s,@DLDFLAGS@,,g
+s,@EXEEXT@,,g
+s,@HAVE_BASERUBY@,yes,g
+s,@IFCHANGE@,tool/ifchange,g
+s,@LDFLAGS@,,g
+s,@LIBEXT@,a,g
+s,@LIBRUBY@,libruby.a,g
+s,@LIBRUBY_A@,libruby.a,g
+s,@MINIRUBY@,$(BASERUBY),g
+s,@MKDIR_P@,mkdir -p,g
+s,@OBJEXT@,o,g
+s,@PATH_SEPARATOR@,:,g
+s,@PWD@,.,g
+s,@RM@,rm -f,g
+s,@RMALL@,rm -fr,g
+s,@RMDIR@,rmdir,g
+s,@RMDIRS@,$(RMDIR) -p,g
+s,@RUBY@,$(BASERUBY),g
+s,@RUNRUBY@,$(MINIRUBY),g
+s,@UNICODE_FILES@,,g
+s,@arch@,noarch,g
+s,@bindir@,,g
+s,@configure_args@,,g
+s,@ruby_install_name@,,g
+s,@rubyarchdir@,,g
+s,@rubylibprefix@,,g
+s,@srcdir@,.,g
+
+s/@[A-Za-z][A-Za-z0-9_]*@//g
+s/{\$([A-Za-z]*)}//g

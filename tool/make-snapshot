@@ -210,6 +210,7 @@ def package(vcs, rev, destdir, tmp = nil)
     end
   end
 
+  status = IO.read(File.dirname(__FILE__) + "/prereq.status")
   Dir.chdir(tmp) if tmp
 
   if !File.directory?(v)
@@ -283,27 +284,13 @@ def package(vcs, rev, destdir, tmp = nil)
     if File.file?("common.mk") && /^prereq/ =~ commonmk = IO.read("common.mk")
       puts
       extout = clean.add('tmp')
+      begin
+        status = IO.read("tool/prereq.status")
+      rescue Errno::ENOENT
+        # use fallback file
+      end
       File.open(clean.add("config.status"), "w") {|f|
-        f.puts "s,@configure_args@,|#_!!_#|,g"
-        f.puts "s,@EXTOUT@,|#_!!_#|#{extout},g"
-        f.puts "s,@bindir@,|#_!!_#|,g"
-        f.puts "s,@ruby_install_name@,|#_!!_#|,g"
-        f.puts "s,@ARCH_FLAG@,|#_!!_#|,g"
-        f.puts "s,@CFLAGS@,|#_!!_#|,g"
-        f.puts "s,@CPPFLAGS@,|#_!!_#|,g"
-        f.puts "s,@CXXFLAGS@,|#_!!_#|,g"
-        f.puts "s,@LDFLAGS@,|#_!!_#|,g"
-        f.puts "s,@DLDFLAGS@,|#_!!_#|,g"
-        f.puts "s,@LIBEXT@,|#_!!_#|a,g"
-        f.puts "s,@OBJEXT@,|#_!!_#|o,g"
-        f.puts "s,@EXEEXT@,|#_!!_#|,g"
-        f.puts "s,@LIBRUBY@,|#_!!_#|libruby.a,g"
-        f.puts "s,@LIBRUBY_A@,|#_!!_#|libruby.a,g"
-        f.puts "s,@RM@,|#_!!_#|rm -f,g"
-        f.puts "s,@CP@,|#_!!_#|cp,g"
-        f.puts "s,@rubyarchdir@,|#_!!_#|,g"
-        f.puts "s,@rubylibprefix@,|#_!!_#|,g"
-        f.puts "s,@ruby_version@,|#_!!_#|#{version},g"
+        f.print status
       }
       FileUtils.mkpath(hdrdir = "#{extout}/include/ruby")
       File.open("#{hdrdir}/config.h", "w") {}
@@ -314,24 +301,17 @@ def package(vcs, rev, destdir, tmp = nil)
       baseruby = ENV["BASERUBY"]
       mk = IO.read("Makefile.in").gsub(/^@.*\n/, '')
       vars = {
-        "srcdir"=>".",
-        "CHDIR"=>"cd",
-        "NULLCMD"=>":",
+        "EXTOUT"=>extout,
         "PATH_SEPARATOR"=>File::PATH_SEPARATOR,
-        "IFCHANGE"=>"tool/ifchange",
-        "MKDIR_P"=>"mkdir -p",
-        "RMALL"=>"rm -fr",
         "MINIRUBY"=>miniruby,
-        "RUNRUBY"=>miniruby,
         "RUBY"=>ENV["RUBY"],
-        "HAVE_BASERUBY"=>"yes",
         "BASERUBY"=>baseruby,
-        "BOOTSTRAPRUBY"=>baseruby,
         "PWD"=>Dir.pwd,
-        "CONFIGURE"=>"configure",
-        "arch"=>"noarch",
-        "UNICODE_FILES"=>"",
+        "ruby_version"=>version,
       }
+      status.scan(/^s([%,])@([A-Za-z_][A-Za-z_0-9]*)@\1(.*?)\1g$/) do
+        vars[$2] = $3
+      end
       vars["UNICODE_VERSION"] = $unicode_version if $unicode_version
       args = vars.dup
       mk.gsub!(/@([A-Za-z_]\w*)@/) {args.delete($1); vars[$1] || ENV[$1]}
