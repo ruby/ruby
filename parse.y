@@ -566,6 +566,7 @@ VALUE rb_parser_reg_compile(struct parser_params* parser, VALUE str, int options
 int rb_reg_fragment_setenc(struct parser_params*, VALUE, int);
 enum lex_state_e rb_parser_trace_lex_state(struct parser_params *, enum lex_state_e, enum lex_state_e, int);
 void rb_parser_show_bitstack(struct parser_params *, stack_type, const char *, int);
+PRINTF_ARGS(void rb_parser_fatal(struct parser_params *parser, const char *fmt, ...), 2, 3);
 RUBY_SYMBOL_EXPORT_END
 
 static ID formal_argument_gen(struct parser_params*, ID);
@@ -798,7 +799,6 @@ PRINTF_ARGS(static void parser_compile_error(struct parser_params*, const char *
 # define compile_error parser_compile_error
 # define PARSER_ARG parser,
 #endif
-PRINTF_ARGS(void rb_parser_fatal(struct parser_params *parser, const char *fmt, ...), 2, 3);
 
 /* Older versions of Yacc set YYMAXDEPTH to a very low value by default (150,
    for instance).  This is too low for Ruby to parse some files, such as
