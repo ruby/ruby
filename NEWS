@@ -30,6 +30,8 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Integer.sqrt  [Feature #13219]
   * Integer#step does no longer rescue exceptions when given
     a step value which cannot be compared with #> to 0. [Feature #7688]
+  * Integer#{round,floor,ceil,truncate} now always return an Integer.
+    [Bug #13420]
 
 * IO
 
