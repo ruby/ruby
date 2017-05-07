@@ -172,10 +172,6 @@ y.tab.c
 /gems/*.gem
 /gems/*-*
 
-# /spec/
-/spec/mspec
-/spec/rubyspec
-
 # /tool/
 /tool/config.guess
 /tool/config.sub
