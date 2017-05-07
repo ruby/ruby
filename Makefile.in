@@ -477,14 +477,11 @@ update-download:: update-config_files
 after-update:: prereq
 
 update-mspec:
-	$(Q) $(srcdir)/tool/git-refresh -C $(srcdir)/spec $(Q1:0=-q) \
-		$(MSPEC_GIT_URL) mspec $(GIT_OPTS)
-	$(Q)$(CHDIR) $(srcdir)/spec/mspec && exec git --no-pager log -1 --oneline
+	$(Q)$(CHDIR) $(srcdir)/spec/mspec && exec git --no-pager log -1 --oneline .
 
 update-rubyspec: update-mspec
-	$(Q) $(srcdir)/tool/git-refresh -C $(srcdir)/spec $(Q1:0=-q) \
-		$(RUBYSPEC_GIT_URL) rubyspec $(GIT_OPTS)
-	$(Q)$(CHDIR) $(srcdir)/spec/rubyspec && exec git --no-pager log -1 --oneline
+	$(Q) echo ruby/spec is now in the MRI repository and make update-rubyspec has no effect
+	$(Q)$(CHDIR) $(srcdir)/spec/rubyspec && exec git --no-pager log -1 --oneline .
 
 test-rubyspec-precheck:
 	@if [ ! -d $(srcdir)/spec/rubyspec ]; then echo No rubyspec here.  make update-rubyspec first.; exit 1; fi
