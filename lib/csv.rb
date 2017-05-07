@@ -1876,7 +1876,7 @@ class CSV
           # If we are continuing a previous column
           if part.end_with?(@quote_char) && part.count(@quote_char) % 2 != 0
             # extended column ends
-            csv[-1] = csv[-1].push(part[0..-2]).join("")
+            csv.last << part[0..-2]
             if csv.last =~ @parsers[:stray_quote]
               raise MalformedCSVError,
                     "Missing or stray quote in line #{lineno + 1}"
@@ -1884,13 +1884,13 @@ class CSV
             csv.last.gsub!(@double_quote_char, @quote_char)
             in_extended_col = false
           else
-            csv.last.push(part, @col_sep)
+            csv.last << part << @col_sep
           end
         elsif part.start_with?(@quote_char)
           # If we are starting a new quoted column
           if part.count(@quote_char) % 2 != 0
             # start an extended column
-            csv << [part[1..-1], @col_sep]
+            csv << (part[1..-1] << @col_sep)
             in_extended_col =  true
           elsif part.end_with?(@quote_char)
             # regular quoted column
@@ -1933,7 +1933,7 @@ class CSV
         if @io.eof?
           raise MalformedCSVError,
                 "Unclosed quoted field on line #{lineno + 1}."
-        elsif @field_size_limit and csv.last.sum(&:size) >= @field_size_limit
+        elsif @field_size_limit and csv.last.size >= @field_size_limit
           raise MalformedCSVError, "Field size exceeded on line #{lineno + 1}."
         end
         # otherwise, we need to loop and pull some more data to complete the row
