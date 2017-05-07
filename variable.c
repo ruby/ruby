@@ -2095,7 +2095,7 @@ autoload_reset(VALUE arg)
 	    VALUE th = cur->thread;
 
 	    cur->thread = Qfalse;
-	    list_del(&cur->waitq.node);
+	    list_del_init(&cur->waitq.node); /* idempotent */
 
 	    /*
 	     * cur is stored on the stack of cur->waiting_th,
@@ -2106,6 +2106,34 @@ autoload_reset(VALUE arg)
     }
 
     return 0;			/* ignored */
+}
+
+static VALUE
+autoload_sleep(VALUE arg)
+{
+    struct autoload_state *state = (struct autoload_state *)arg;
+
+    /*
+     * autoload_reset in other thread will resume us and remove us
+     * from the waitq list
+     */
+    do {
+	rb_thread_sleep_deadly();
+    } while (state->thread != Qfalse);
+
+    return Qfalse;
+}
+
+static VALUE
+autoload_sleep_done(VALUE arg)
+{
+    struct autoload_state *state = (struct autoload_state *)arg;
+
+    if (state->thread != Qfalse && rb_thread_to_be_killed(state->thread)) {
+	list_del_init(&state->waitq.node); /* idempotent */
+    }
+
+    return Qfalse;
 }
 
 VALUE
@@ -2145,13 +2173,9 @@ rb_autoload_load(VALUE mod, ID id)
     }
     else {
 	list_add_tail(&ele->state->waitq.head, &state.waitq.node);
-	/*
-	 * autoload_reset in other thread will resume us and remove us
-	 * from the waitq list
-	 */
-	do {
-	    rb_thread_sleep_deadly();
-	} while (state.thread != Qfalse);
+
+	rb_ensure(autoload_sleep, (VALUE)&state,
+		autoload_sleep_done, (VALUE)&state);
     }
 
     /* autoload_data_i can be deleted by another thread while require */

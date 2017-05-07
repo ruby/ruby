@@ -241,6 +241,11 @@ p Foo::Bar
     end
   end
 
+  def test_bug_13526
+    script = File.join(__dir__, 'bug-13526.rb')
+    assert_ruby_status([script], '', '[ruby-core:81016] [Bug #13526]')
+  end
+
   def add_autoload(path)
     (@autoload_paths ||= []) << path
     ::Object.class_eval {autoload(:AutoloadTest, path)}
