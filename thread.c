@@ -1247,7 +1247,7 @@ rb_thread_sleep(int sec)
 }
 
 static void
-rb_thread_schedule_limits(unsigned long limits_us)
+rb_thread_schedule_limits(uint32_t limits_us)
 {
     thread_debug("rb_thread_schedule\n");
     if (!rb_thread_alone()) {
@@ -2085,7 +2085,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	}
 
 	if (timer_interrupt) {
-	    unsigned long limits_us = TIME_QUANTUM_USEC;
+	    uint32_t limits_us = TIME_QUANTUM_USEC;
 
 	    if (th->priority > 0)
 		limits_us <<= th->priority;

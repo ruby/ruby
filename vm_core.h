@@ -816,7 +816,7 @@ typedef struct rb_thread_struct {
 #ifdef USE_SIGALTSTACK
     void *altstack;
 #endif
-    unsigned long running_time_us;
+    uint32_t running_time_us; /* 12500..800000 */
     VALUE name;
 } rb_thread_t;
 
