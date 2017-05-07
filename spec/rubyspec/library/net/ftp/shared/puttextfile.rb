@@ -28,7 +28,7 @@ describe :net_ftp_puttextfile, shared: true do
     @ftp.send(@method, @local_fixture_file, "text")
 
     remote_lines = open(@remote_tmp_file,    "rb") {|f| f.read }
-    local_lines  = open(@local_fixture_file, "rb") {|f| f.read } + "\n"
+    local_lines  = open(@local_fixture_file, "rb") {|f| f.read }
 
     remote_lines.should_not == local_lines
     remote_lines.should == local_lines.gsub("\n", "\r\n")

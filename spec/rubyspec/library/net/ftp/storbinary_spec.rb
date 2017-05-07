@@ -41,7 +41,7 @@ describe "Net::FTP#storbinary" do
         "This is an", " example f",
         "ile\nwhich ", "is going t",
         "o be trans", "mitted\nusi",
-        "ng #putbin", "aryfile."
+        "ng #putbin", "aryfile.\n"
       ]
     end
   end
