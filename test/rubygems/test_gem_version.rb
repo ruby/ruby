@@ -41,6 +41,11 @@ class TestGemVersion < Gem::TestCase
     assert_equal v('1.1'), Gem::Version.create(ver)
   end
 
+  def test_class_correct
+    assert Gem::Version.correct?("5.1")
+    refute Gem::Version.correct?("an incorrect version")
+  end
+
   def test_class_new_subclass
     v1 = Gem::Version.new '1'
     v2 = V.new '1'
