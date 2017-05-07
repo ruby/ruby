@@ -709,10 +709,10 @@ $(RBCONFIG): $(srcdir)/tool/mkconfig.rb config.status $(srcdir)/version.h
 test-rubyspec-precheck: $(arch)-fake.rb
 
 test-rubyspec: $(TEST_RUNNABLE)-test-rubyspec
-yes-test-rubyspec: test-rubyspec-precheck
+yes-test-rubyspec:
 	$(gnumake_recursive)$(Q) \
 	$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/default.mspec $(MSPECOPT)
-no-test-rubyspec: test-rubyspec-precheck
+no-test-rubyspec:
 
 RUNNABLE = $(LIBRUBY_RELATIVE:no=un)-runnable
 runnable: $(RUNNABLE) prog $(srcdir)/tool/mkrunnable.rb PHONY
@@ -1079,7 +1079,8 @@ after-update:: extract-extlibs
 update-remote:: update-src update-download
 update-download:: update-unicode update-gems download-extlibs
 
-noupdate-rubyspec:
+update-mspec:
+update-rubyspec:
 
 update-config_files: PHONY
 	$(Q) $(BASERUBY) -C "$(srcdir)/tool" \
