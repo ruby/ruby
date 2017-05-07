@@ -9480,11 +9480,17 @@ do_fcntl(int fd, int cmd, long narg)
     arg.narg = narg;
 
     retval = (int)rb_thread_io_blocking_region(nogvl_fcntl, &arg, fd);
+    if (retval != -1) {
+	switch (cmd) {
 #if defined(F_DUPFD)
-    if (retval != -1 && cmd == F_DUPFD) {
-	rb_update_max_fd(retval);
-    }
+	case F_DUPFD:
 #endif
+#if defined(F_DUPFD_CLOEXEC)
+	case F_DUPFD_CLOEXEC:
+#endif
+	    rb_update_max_fd(retval);
+	}
+    }
 
     return retval;
 }
