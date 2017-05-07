@@ -1,31 +1,79 @@
-= RubySpec
+# ruby/spec
 
-RubySpec (http://ruby.github.io/rubyspec.github.io/) provides the
-annotation of the Ruby implementation in an executable format.  The
-make task `update-rubyspec' retrieves the specification and puts it
-into this directory.
+ruby/spec (https://github.com/ruby/spec/) is
+a test suite for the Ruby language.
 
-== Directory structure
- spec
-  +-- mspec            driver library for executing the specification.
-  +-- rubyspec
-       +-- core        specification for core libraries
-       |    +-- array
-       |    +-- bignum
-       |    +-- ...
-       |
-       +-- fixtures    example classes for writing specs
-       +-- language    specification for Ruby language itself
-       +-- library     specification for standard libraries
-            +-- addrev
-            +-- ...
+Once a month, @eregon merges the in-tree copy under spec/rubyspec
+with the upstream repository, preserving the commits and history.
+The same happens for other implementations such as JRuby and TruffleRuby.
 
-== How to run
-:make target
-  verifies all specs.
-   $ make test-rubyspec
-:mspec command
-  verifies the specified spec.
-   $ mspec {language|core|library}
-   or
-   $ mspec spec/path/to/some_spec.rb
+Feel welcome to modify the in-tree spec/rubyspec.
+This is the purpose of the in-tree copy,
+to facilitate contributions to ruby/spec for MRI developers.
+
+New features, additional tests for existing features and
+regressions tests are all welcome in ruby/spec.
+There is very little behavior that is implementation-specific,
+as in the end user programs tend to rely on every behavior MRI exhibits.
+In other words: If adding a spec might reveal a bug in
+another implementation, then it is worth adding it.
+Currently, the only module which is MRI-specific is `RubyVM`.
+
+## Runing ruby/spec
+
+To run all specs:
+```bash
+make test-rubyspec
+```
+
+Extra arguments can be added via `MSPECOPT`.
+For instance, to show the help:
+```bash
+make test-rubyspec MSPECOPT=-h
+```
+
+You can also run the specs in parallel, which is currently experimental.
+It takes around 10s instead of 60s on a quad-core laptop.
+```bash
+make test-rubyspec MSPECOPT=-j
+```
+
+To run a specific test, add its path to the command:
+```bash
+make test-rubyspec MSPECOPT=spec/rubyspec/language/for_spec.rb
+```
+
+If ruby trunk is your current `ruby` in `$PATH`, you can also run `mspec` directly:
+```bash
+# change ruby to trunk
+ruby -v # => trunk
+spec/mspec/bin/mspec spec/rubyspec/language/for_spec.rb
+```
+
+## ruby/spec and test/
+
+The main difference between a "spec" under spec/rubyspec and
+a test under test/ is that specs are documenting what they test.
+This is extremely valuable when reading these tests, as it
+helps to quickly understand what specific behavior is tested,
+and how a method should behave. Basic English is fine for spec descriptions.
+Specs also tend to have few expectations (assertions) per spec,
+as they specify one aspect of the behavior and not everything at once.
+Beyond that, the syntax is slightly different but it does the same thing:
+`assert_equal 3, 1+2` is just `(1+2).should == 3`.
+
+Example:
+
+```ruby
+describe "The for expression" do
+  it "iterates over an Enumerable passing each element to the block" do
+    j = 0
+    for i in 1..3
+      j += i
+    end
+    j.should == 6
+  end
+end
+```
+
+For more details, see spec/rubyspec/CONTRIBUTING.md.
