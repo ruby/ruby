@@ -838,7 +838,7 @@ opt_newarray_min
 /**
   @c optimize
   @e Invoke method without block
-  @j Invoke method without block
+  @j ブロックなしでメソッド呼び出しを行う。
  */
 DEFINE_INSN
 opt_send_without_block
