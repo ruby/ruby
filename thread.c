@@ -4940,15 +4940,9 @@ debug_deadlock_check(rb_vm_t *vm, VALUE msg)
 		    th->self, th, thread_id_str(th), th->interrupt_flag);
 	if (th->locking_mutex) {
 	    rb_mutex_t *mutex;
-	    struct rb_thread_struct volatile *mth;
-	    int waiting;
 	    GetMutexPtr(th->locking_mutex, mutex);
-
-	    native_mutex_lock(&mutex->lock);
-	    mth = mutex->th;
-	    waiting = mutex->cond_waiting;
-	    native_mutex_unlock(&mutex->lock);
-	    rb_str_catf(msg, " mutex:%p cond:%d", mth, waiting);
+	    rb_str_catf(msg, " mutex:%p cond:%"PRIuSIZE,
+			mutex->th, rb_mutex_num_waiting(mutex));
 	}
 	{
 	    rb_thread_list_t *list = th->join_list;
@@ -4981,11 +4975,9 @@ rb_check_deadlock(rb_vm_t *vm)
 	    rb_mutex_t *mutex;
 	    GetMutexPtr(th->locking_mutex, mutex);
 
-	    native_mutex_lock(&mutex->lock);
-	    if (mutex->th == th || (!mutex->th && mutex->cond_waiting)) {
+	    if (mutex->th == th || (!mutex->th && !list_empty(&mutex->waitq))) {
 		found = 1;
 	    }
-	    native_mutex_unlock(&mutex->lock);
 	}
 	if (found)
 	    break;
