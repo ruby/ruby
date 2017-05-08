@@ -572,6 +572,21 @@ class TestHash < Test::Unit::TestCase
     assert_equal ['three', nil, 'one', 'nil'], res
   end
 
+  def test_pick
+    res = @h.pick()
+    assert_equal({}, res)
+
+    res = @h.pick(1,2)
+    assert_equal({1 => "one", 2 => "two"}, res)
+
+    res = @h.pick(1,2,1000)
+    assert_equal({1 => "one", 2 => "two", 1000 => nil}, res)
+
+    h = { a: 10 } 
+    h.default= "default"
+    assert_equal({1000 => "default"}, h.pick(1000))
+  end
+
   def test_fetch_values
     res = @h.fetch_values
     assert_equal(0, res.length)

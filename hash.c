@@ -1350,6 +1350,30 @@ rb_hash_values_at(int argc, VALUE *argv, VALUE hash)
 
 /*
  * call-seq:
+ *   hsh.pick(key, ...)   -> Hash
+ *
+ * Return a key-value pair associated with given keys. 
+ *
+ * { :a => 1, 2 => "2", "c" => true }.pick(:a, 2) # => { :a => 1, 2 => "2" }
+ * { :a => 1, 2 => "2", "c" => true }.pick("c", 10000) # => { "c" => true, 10000 => nil }
+ */
+
+VALUE
+rb_hash_pick(int argc, VALUE *argv, VALUE self){
+  int i;
+  VALUE result, value;
+  result = rb_hash_new();
+
+  for(i=0; i < argc; i++){
+    value = rb_hash_aref(self, argv[i]);
+    rb_hash_aset(result, argv[i], value);
+  }
+
+  return result;
+}
+
+/*
+ * call-seq:
  *   hsh.fetch_values(key, ...)                 -> array
  *   hsh.fetch_values(key, ...) { |key| block } -> array
  *
@@ -4485,6 +4509,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "keys", rb_hash_keys, 0);
     rb_define_method(rb_cHash, "values", rb_hash_values, 0);
     rb_define_method(rb_cHash, "values_at", rb_hash_values_at, -1);
+    rb_define_method(rb_cHash, "pick", rb_hash_pick, -1);
     rb_define_method(rb_cHash, "fetch_values", rb_hash_fetch_values, -1);
 
     rb_define_method(rb_cHash, "shift", rb_hash_shift, 0);
