@@ -12,11 +12,12 @@ struct mutex_waiter {
     struct list_node node;
 };
 
+#define MUTEX_ALLOW_TRAP FL_USER1
+
 typedef struct rb_mutex_struct {
     struct rb_thread_struct volatile *th;
     struct rb_mutex_struct *next_mutex;
     struct list_head waitq; /* protected by GVL */
-    int allow_trap;
 } rb_mutex_t;
 
 #if defined(HAVE_WORKING_FORK)
@@ -206,7 +207,8 @@ rb_mutex_lock(VALUE self)
     GetMutexPtr(self, mutex);
 
     /* When running trap handler */
-    if (!mutex->allow_trap && th->interrupt_mask & TRAP_INTERRUPT_MASK) {
+    if (!FL_TEST_RAW(self, MUTEX_ALLOW_TRAP) &&
+		th->interrupt_mask & TRAP_INTERRUPT_MASK) {
 	rb_raise(rb_eThreadError, "can't be called from trap context");
     }
 
@@ -478,10 +480,12 @@ rb_mutex_synchronize_m(VALUE self, VALUE args)
 
 void rb_mutex_allow_trap(VALUE self, int val)
 {
-    rb_mutex_t *m;
-    GetMutexPtr(self, m);
+    Check_TypedStruct(self, &mutex_data_type);
 
-    m->allow_trap = val;
+    if (val)
+	FL_SET_RAW(self, MUTEX_ALLOW_TRAP);
+    else
+	FL_UNSET_RAW(self, MUTEX_ALLOW_TRAP);
 }
 
 /* Queue */
