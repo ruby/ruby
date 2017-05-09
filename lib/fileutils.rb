@@ -202,6 +202,7 @@ module FileUtils
         stack.push path
         path = File.dirname(path)
       end
+      stack.pop                 # root directory should exist
       stack.reverse_each do |dir|
         begin
           fu_mkdir dir, mode
