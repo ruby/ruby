@@ -563,7 +563,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 
     if (tag != TAG_FATAL) {
 	RUBY_DTRACE_HOOK(RAISE, rb_obj_classname(th->errinfo));
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_RAISE, th->cfp->self, 0, 0, 0, mesg);
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_RAISE, th->ec.cfp->self, 0, 0, 0, mesg);
     }
 }
 
@@ -740,7 +740,7 @@ void
 rb_raise_jump(VALUE mesg, VALUE cause)
 {
     rb_thread_t *th = GET_THREAD();
-    const rb_control_frame_t *cfp = th->cfp;
+    const rb_control_frame_t *cfp = th->ec.cfp;
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
     VALUE klass = me->owner;
     VALUE self = cfp->self;
@@ -765,7 +765,7 @@ int
 rb_block_given_p(void)
 {
     rb_thread_t *th = GET_THREAD();
-    if (rb_vm_frame_block_handler(th->cfp) == VM_BLOCK_HANDLER_NONE) {
+    if (rb_vm_frame_block_handler(th->ec.cfp) == VM_BLOCK_HANDLER_NONE) {
 	return FALSE;
     }
     else {
@@ -795,7 +795,7 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 {
     int state;
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *volatile cfp = th->cfp;
+    rb_control_frame_t *volatile cfp = th->ec.cfp;
     volatile VALUE result = Qfalse;
     volatile VALUE e_info = th->errinfo;
     va_list args;
@@ -861,7 +861,7 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int * state)
     volatile VALUE result = Qnil;
     volatile int status;
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *volatile cfp = th->cfp;
+    rb_control_frame_t *volatile cfp = th->ec.cfp;
     struct rb_vm_protect_tag protect_tag;
     rb_jmpbuf_t org_jmpbuf;
 
@@ -946,21 +946,21 @@ frame_called_id(rb_control_frame_t *cfp)
 ID
 rb_frame_this_func(void)
 {
-    return frame_func_id(GET_THREAD()->cfp);
+    return frame_func_id(GET_THREAD()->ec.cfp);
 }
 
 ID
 rb_frame_callee(void)
 {
-    return frame_called_id(GET_THREAD()->cfp);
+    return frame_called_id(GET_THREAD()->ec.cfp);
 }
 
 static rb_control_frame_t *
 previous_frame(rb_thread_t *th)
 {
-    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
+    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->ec.cfp);
     /* check if prev_cfp can be accessible */
-    if ((void *)(th->stack + th->stack_size) == (void *)(prev_cfp)) {
+    if ((void *)(th->ec.stack + th->ec.stack_size) == (void *)(prev_cfp)) {
         return 0;
     }
     return prev_cfp;
@@ -986,7 +986,7 @@ ID
 rb_frame_last_func(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->cfp;
+    rb_control_frame_t *cfp = th->ec.cfp;
     ID mid;
 
     while (!(mid = frame_func_id(cfp)) &&
@@ -1257,7 +1257,7 @@ rb_mod_refine(VALUE module, VALUE klass)
        id_refined_class, id_defined_at;
     VALUE refinements, activated_refinements;
     rb_thread_t *th = GET_THREAD();
-    VALUE block_handler = rb_vm_frame_block_handler(th->cfp);
+    VALUE block_handler = rb_vm_frame_block_handler(th->ec.cfp);
 
     if (block_handler == VM_BLOCK_HANDLER_NONE) {
 	rb_raise(rb_eArgError, "no block given");
@@ -1525,7 +1525,7 @@ top_using(VALUE self, VALUE module)
 static const VALUE *
 errinfo_place(rb_thread_t *th)
 {
-    rb_control_frame_t *cfp = th->cfp;
+    rb_control_frame_t *cfp = th->ec.cfp;
     rb_control_frame_t *end_cfp = RUBY_VM_END_CONTROL_FRAME(th);
 
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {

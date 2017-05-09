@@ -88,7 +88,7 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 #undef  RESTORE_REGS
 #define RESTORE_REGS() \
 { \
-  VM_REG_CFP = th->cfp; \
+  VM_REG_CFP = th->ec.cfp; \
   reg_pc  = reg_cfp->pc; \
 }
 
@@ -106,7 +106,7 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 	return (VALUE)insns_address_table;
     }
 #endif
-    reg_cfp = th->cfp;
+    reg_cfp = th->ec.cfp;
     reg_pc = reg_cfp->pc;
 
 #if OPT_STACK_CACHING
@@ -146,7 +146,7 @@ rb_vm_get_insns_address_table(void)
 static VALUE
 vm_exec_core(rb_thread_t *th, VALUE initial)
 {
-    register rb_control_frame_t *reg_cfp = th->cfp;
+    register rb_control_frame_t *reg_cfp = th->ec.cfp;
 
     while (1) {
 	reg_cfp = ((rb_insn_func_t) (*GET_PC()))(th, reg_cfp);

@@ -690,8 +690,8 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	rb_check_deadlock(th->vm);
 
 	if (!th->root_fiber) {
-	    rb_thread_recycle_stack_release(th->stack);
-	    th->stack = 0;
+	    rb_thread_recycle_stack_release(th->ec.stack);
+	    th->ec.stack = 0;
 	}
     }
     native_mutex_lock(&th->vm->thread_destruct_lock);
@@ -2095,7 +2095,8 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	    if (th->status == THREAD_RUNNABLE)
 		th->running_time_us += TIME_QUANTUM_USEC;
 
-	    EXEC_EVENT_HOOK(th, RUBY_INTERNAL_EVENT_SWITCH, th->cfp->self, 0, 0, 0, Qundef);
+	    EXEC_EVENT_HOOK(th, RUBY_INTERNAL_EVENT_SWITCH, th->ec.cfp->self,
+			    0, 0, 0, Qundef);
 
 	    rb_thread_schedule_limits(limits_us);
 	}
@@ -4996,7 +4997,7 @@ rb_check_deadlock(rb_vm_t *vm)
 static void
 update_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
 {
-    VALUE coverage = rb_iseq_coverage(GET_THREAD()->cfp->iseq);
+    VALUE coverage = rb_iseq_coverage(GET_THREAD()->ec.cfp->iseq);
     if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
 	long line = rb_sourceline() - 1;
 	long count;

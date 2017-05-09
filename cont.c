@@ -87,8 +87,8 @@ typedef struct rb_context_struct {
     VALUE value;
     VALUE *vm_stack;
 #ifdef CAPTURE_JUST_VALID_VM_STACK
-    size_t vm_stack_slen;  /* length of stack (head of th->stack) */
-    size_t vm_stack_clen;  /* length of control frames (tail of th->stack) */
+    size_t vm_stack_slen;  /* length of stack (head of th->ec.stack) */
+    size_t vm_stack_clen;  /* length of control frames (tail of th->ec.stack) */
 #endif
     struct {
 	VALUE *stack;
@@ -221,7 +221,7 @@ cont_free(void *ptr)
     rb_context_t *cont = ptr;
 
     RUBY_FREE_ENTER("cont");
-    RUBY_FREE_UNLESS_NULL(cont->saved_thread.stack);
+    RUBY_FREE_UNLESS_NULL(cont->saved_thread.ec.stack);
 #if FIBER_USE_NATIVE
     if (cont->type == CONTINUATION_CONTEXT) {
 	/* cont */
@@ -280,7 +280,7 @@ cont_memsize(const void *ptr)
 #ifdef CAPTURE_JUST_VALID_VM_STACK
 	size_t n = (cont->vm_stack_slen + cont->vm_stack_clen);
 #else
-	size_t n = cont->saved_thread.stack_size;
+	size_t n = cont->saved_thread.ec.stack_size;
 #endif
 	size += n * sizeof(*cont->vm_stack);
     }
@@ -409,10 +409,8 @@ cont_save_thread(rb_context_t *cont, rb_thread_t *th)
     rb_thread_t *sth = &cont->saved_thread;
 
     /* save thread context */
-    sth->stack = th->stack;
-    sth->stack_size = th->stack_size;
+    sth->ec = th->ec;
     sth->local_storage = th->local_storage;
-    sth->cfp = th->cfp;
     sth->safe_level = th->safe_level;
     sth->raised_flag = th->raised_flag;
     sth->state = th->state;
@@ -470,6 +468,7 @@ cont_capture(volatile int *volatile stat)
     rb_context_t *volatile cont;
     rb_thread_t *th = GET_THREAD();
     volatile VALUE contval;
+    rb_execution_context_t *ec = &th->ec;
 
     THREAD_MUST_BE_RUNNING(th);
     rb_vm_stack_to_heap(th);
@@ -477,16 +476,17 @@ cont_capture(volatile int *volatile stat)
     contval = cont->self;
 
 #ifdef CAPTURE_JUST_VALID_VM_STACK
-    cont->vm_stack_slen = th->cfp->sp - th->stack;
-    cont->vm_stack_clen = th->stack + th->stack_size - (VALUE*)th->cfp;
+    cont->vm_stack_slen = ec->cfp->sp - ec->stack;
+    cont->vm_stack_clen = ec->stack + ec->stack_size - (VALUE*)ec->cfp;
     cont->vm_stack = ALLOC_N(VALUE, cont->vm_stack_slen + cont->vm_stack_clen);
-    MEMCPY(cont->vm_stack, th->stack, VALUE, cont->vm_stack_slen);
-    MEMCPY(cont->vm_stack + cont->vm_stack_slen, (VALUE*)th->cfp, VALUE, cont->vm_stack_clen);
+    MEMCPY(cont->vm_stack, ec->stack, VALUE, cont->vm_stack_slen);
+    MEMCPY(cont->vm_stack + cont->vm_stack_slen,
+		(VALUE*)ec->cfp, VALUE, cont->vm_stack_clen);
 #else
-    cont->vm_stack = ALLOC_N(VALUE, th->stack_size);
-    MEMCPY(cont->vm_stack, th->stack, VALUE, th->stack_size);
+    cont->vm_stack = ALLOC_N(VALUE, ec->stack_size);
+    MEMCPY(cont->vm_stack, ec->stack, VALUE, ec->stack_size);
 #endif
-    cont->saved_thread.stack = NULL;
+    cont->saved_thread.ec.stack = NULL;
 
     cont_save_machine_stack(th, cont);
 
@@ -535,30 +535,30 @@ cont_restore_thread(rb_context_t *cont)
 	th->fiber = sth->fiber;
 	fib = th->fiber ? th->fiber : th->root_fiber;
 
-	if (fib && fib->cont.saved_thread.stack) {
-	    th->stack_size = fib->cont.saved_thread.stack_size;
-	    th->stack = fib->cont.saved_thread.stack;
+	if (fib && fib->cont.saved_thread.ec.stack) {
+	    th->ec.stack_size = fib->cont.saved_thread.ec.stack_size;
+	    th->ec.stack = fib->cont.saved_thread.ec.stack;
 	}
 #ifdef CAPTURE_JUST_VALID_VM_STACK
-	MEMCPY(th->stack, cont->vm_stack, VALUE, cont->vm_stack_slen);
-	MEMCPY(th->stack + sth->stack_size - cont->vm_stack_clen,
+	MEMCPY(th->ec.stack, cont->vm_stack, VALUE, cont->vm_stack_slen);
+	MEMCPY(th->ec.stack + sth->ec.stack_size - cont->vm_stack_clen,
 	       cont->vm_stack + cont->vm_stack_slen, VALUE, cont->vm_stack_clen);
 #else
-	MEMCPY(th->stack, cont->vm_stack, VALUE, sth->stack_size);
+	MEMCPY(th->ec.stack, cont->vm_stack, VALUE, sth->ec.stack_size);
 #endif
     }
     else {
 	/* fiber */
-	th->stack = sth->stack;
-	sth->stack = NULL;
-	th->stack_size = sth->stack_size;
+	th->ec.stack = sth->ec.stack;
+	sth->ec.stack = NULL;
+	th->ec.stack_size = sth->ec.stack_size;
 	th->local_storage = sth->local_storage;
 	th->local_storage_recursive_hash = sth->local_storage_recursive_hash;
 	th->local_storage_recursive_hash_for_trace = sth->local_storage_recursive_hash_for_trace;
 	th->fiber = (rb_fiber_t*)cont;
     }
 
-    th->cfp = sth->cfp;
+    th->ec.cfp = sth->ec.cfp;
     th->safe_level = sth->safe_level;
     th->raised_flag = sth->raised_flag;
     th->state = sth->state;
@@ -1208,12 +1208,12 @@ fiber_init(VALUE fibval, VALUE proc)
     /* initialize cont */
     cont->vm_stack = 0;
 
-    th->stack = NULL;
-    th->stack_size = 0;
+    th->ec.stack = NULL;
+    th->ec.stack_size = 0;
 
-    th->stack_size = cth->vm->default_params.fiber_vm_stack_size / sizeof(VALUE);
-    th->stack = ALLOC_N(VALUE, th->stack_size);
-    th->cfp = (void *)(th->stack + th->stack_size);
+    th->ec.stack_size = cth->vm->default_params.fiber_vm_stack_size / sizeof(VALUE);
+    th->ec.stack = ALLOC_N(VALUE, th->ec.stack_size);
+    th->ec.cfp = (void *)(th->ec.stack + th->ec.stack_size);
 
     rb_vm_push_frame(th,
 		     NULL,
@@ -1222,7 +1222,7 @@ fiber_init(VALUE fibval, VALUE proc)
 		     VM_BLOCK_HANDLER_NONE,
 		     0, /* specval */
 		     NULL, /* pc */
-		     th->stack, /* sp */
+		     th->ec.stack, /* sp */
 		     0, /* local_size */
 		     0);
 

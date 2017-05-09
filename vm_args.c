@@ -526,7 +526,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq,
     int given_argc;
     struct args_info args_body, *args;
     VALUE keyword_hash = Qnil;
-    VALUE * const orig_sp = th->cfp->sp;
+    VALUE * const orig_sp = th->ec.cfp->sp;
     unsigned int i;
 
     /*
@@ -546,7 +546,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq,
     for (i=calling->argc; i<iseq->body->param.size; i++) {
 	locals[i] = Qnil;
     }
-    th->cfp->sp = &locals[i];
+    th->ec.cfp->sp = &locals[i];
 
     /* setup args */
     args = &args_body;
@@ -607,7 +607,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq,
 	}
 	else {
 	    if (arg_setup_type == arg_setup_block) {
-		CHECK_VM_STACK_OVERFLOW(th->cfp, min_argc);
+		CHECK_VM_STACK_OVERFLOW(th->ec.cfp, min_argc);
 		given_argc = min_argc;
 		args_extend(args, min_argc);
 	    }
@@ -693,7 +693,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq,
     }
 #endif
 
-    th->cfp->sp = orig_sp;
+    th->ec.cfp->sp = orig_sp;
     return opt_pc;
 }
 
@@ -705,7 +705,8 @@ raise_argument_error(rb_thread_t *th, const rb_iseq_t *iseq, const VALUE exc)
     if (iseq) {
 	vm_push_frame(th, iseq, VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL, Qnil /* self */,
 		      VM_BLOCK_HANDLER_NONE /* specval*/, Qfalse /* me or cref */,
-		      iseq->body->iseq_encoded, th->cfp->sp, 0, 0 /* stack_max */);
+		      iseq->body->iseq_encoded,
+		      th->ec.cfp->sp, 0, 0 /* stack_max */);
 	at = rb_threadptr_backtrace_object(th);
 	rb_vm_pop_frame(th);
     }

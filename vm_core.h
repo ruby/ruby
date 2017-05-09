@@ -696,15 +696,19 @@ typedef char rb_thread_id_string_t[sizeof(rb_nativethread_id_t) * 2 + 3];
 
 typedef struct rb_fiber_struct rb_fiber_t;
 
+typedef struct rb_thread_context_struct {
+    /* execution information */
+    VALUE *stack;		/* must free, must mark */
+    size_t stack_size;          /* size in word (byte size / sizeof(VALUE)) */
+    rb_control_frame_t *cfp;
+} rb_execution_context_t;
+
 typedef struct rb_thread_struct {
     struct list_node vmlt_node;
     VALUE self;
     rb_vm_t *vm;
 
-    /* execution information */
-    VALUE *stack;		/* must free, must mark */
-    size_t stack_size;          /* size in word (byte size / sizeof(VALUE)) */
-    rb_control_frame_t *cfp;
+    rb_execution_context_t ec;
     int safe_level;
     int raised_flag;
     VALUE last_status; /* $? */
@@ -1172,7 +1176,7 @@ VALUE rb_vm_frame_block_handler(const rb_control_frame_t *cfp);
 #define RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp) ((cfp)+1)
 #define RUBY_VM_NEXT_CONTROL_FRAME(cfp) ((cfp)-1)
 #define RUBY_VM_END_CONTROL_FRAME(th) \
-  ((rb_control_frame_t *)((th)->stack + (th)->stack_size))
+  ((rb_control_frame_t *)((th)->ec.stack + (th)->ec.stack_size))
 #define RUBY_VM_VALID_CONTROL_FRAME_P(cfp, ecfp) \
   ((void *)(ecfp) > (void *)(cfp))
 #define RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp) \
@@ -1405,7 +1409,7 @@ extern void rb_vmdebug_stack_dump_raw(rb_thread_t *, rb_control_frame_t *);
 extern void rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp, const VALUE *_pc);
 extern void rb_vmdebug_debug_print_post(rb_thread_t *th, rb_control_frame_t *cfp);
 
-#define SDR() rb_vmdebug_stack_dump_raw(GET_THREAD(), GET_THREAD()->cfp)
+#define SDR() rb_vmdebug_stack_dump_raw(GET_THREAD(), GET_THREAD()->ec.cfp)
 #define SDR2(cfp) rb_vmdebug_stack_dump_raw(GET_THREAD(), (cfp))
 void rb_vm_bugreport(const void *);
 NORETURN(void rb_bug_context(const void *, const char *fmt, ...));
@@ -1608,7 +1612,7 @@ ruby_exec_event_hook_orig(rb_thread_t *const th, const rb_event_flag_t flag,
 	struct rb_trace_arg_struct trace_arg;
 	trace_arg.event = flag;
 	trace_arg.th = th;
-	trace_arg.cfp = th->cfp;
+	trace_arg.cfp = th->ec.cfp;
 	trace_arg.self = self;
 	trace_arg.id = id;
 	trace_arg.called_id = called_id;

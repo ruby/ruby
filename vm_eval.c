@@ -68,7 +68,7 @@ vm_call0_cfunc(rb_thread_t* th, struct rb_calling_info *calling, const struct rb
     RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, cc->me->owner, ci->mid);
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, calling->recv, ci->mid, ci->mid, cc->me->owner, Qnil);
     {
-	rb_control_frame_t *reg_cfp = th->cfp;
+	rb_control_frame_t *reg_cfp = th->ec.cfp;
 	const rb_callable_method_entry_t *me = cc->me;
 	const rb_method_cfunc_t *cfunc = &me->def->body.cfunc;
 	int len = cfunc->argc;
@@ -82,7 +82,7 @@ vm_call0_cfunc(rb_thread_t* th, struct rb_calling_info *calling, const struct rb
 	VM_PROFILE_UP(C2C_CALL);
 	val = (*cfunc->invoker)(cfunc->func, recv, argc, argv);
 
-	if (reg_cfp == th->cfp) {
+	if (reg_cfp == th->ec.cfp) {
 	    if (UNLIKELY(th->passed_ci != ci)) {
 		rb_bug("vm_call0_cfunc: passed_ci error (ci: %p, passed_ci: %p)", ci, th->passed_ci);
 	    }
@@ -115,7 +115,7 @@ vm_call0_cfunc_with_frame(rb_thread_t* th, struct rb_calling_info *calling, cons
     RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, me->owner, me->def->original_id);
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, me->def->original_id, mid, me->owner, Qnil);
     {
-	rb_control_frame_t *reg_cfp = th->cfp;
+	rb_control_frame_t *reg_cfp = th->ec.cfp;
 
 	vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL, recv,
 		      block_handler, (VALUE)me,
@@ -155,7 +155,7 @@ vm_call0_body(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_
     switch (cc->me->def->type) {
       case VM_METHOD_TYPE_ISEQ:
 	{
-	    rb_control_frame_t *reg_cfp = th->cfp;
+	    rb_control_frame_t *reg_cfp = th->ec.cfp;
 	    int i;
 
 	    CHECK_VM_STACK_OVERFLOW(reg_cfp, calling->argc + 1);
@@ -166,7 +166,7 @@ vm_call0_body(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_
 	    }
 
 	    vm_call_iseq_setup(th, reg_cfp, calling, ci, cc);
-	    VM_ENV_FLAGS_SET(th->cfp->ep, VM_FRAME_FLAG_FINISH);
+	    VM_ENV_FLAGS_SET(th->ec.cfp->ep, VM_FRAME_FLAG_FINISH);
 	    return vm_exec(th); /* CHECK_INTS in this function */
 	}
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
@@ -253,10 +253,10 @@ rb_vm_call(rb_thread_t *th, VALUE recv, VALUE id, int argc, const VALUE *argv, c
 static inline VALUE
 vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
 {
-    VALUE recv = th->cfp->self;
+    VALUE recv = th->ec.cfp->self;
     VALUE klass;
     ID id;
-    rb_control_frame_t *cfp = th->cfp;
+    rb_control_frame_t *cfp = th->ec.cfp;
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
     if (VM_FRAME_RUBYFRAME_P(cfp)) {
@@ -289,7 +289,7 @@ rb_current_receiver(void)
 {
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp;
-    if (!th || !(cfp = th->cfp))
+    if (!th || !(cfp = th->ec.cfp))
 	rb_raise(rb_eRuntimeError, "no self, no life");
     return cfp->self;
 }
@@ -392,7 +392,7 @@ check_funcall_respond_to(rb_thread_t *th, VALUE klass, VALUE recv, ID mid)
 static int
 check_funcall_callable(rb_thread_t *th, const rb_callable_method_entry_t *me)
 {
-    return rb_method_call_status(th, me, CALL_FCALL, th->cfp->self) == MISSING_NONE;
+    return rb_method_call_status(th, me, CALL_FCALL, th->ec.cfp->self) == MISSING_NONE;
 }
 
 static VALUE
@@ -620,7 +620,7 @@ static inline VALUE
 rb_call(VALUE recv, ID mid, int argc, const VALUE *argv, call_type scope)
 {
     rb_thread_t *th = GET_THREAD();
-    return rb_call0(recv, mid, argc, argv, scope, th->cfp->self);
+    return rb_call0(recv, mid, argc, argv, scope, th->ec.cfp->self);
 }
 
 NORETURN(static void raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv,
@@ -885,7 +885,7 @@ rb_funcall_with_block(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE pas
 static VALUE *
 current_vm_stack_arg(rb_thread_t *th, const VALUE *argv)
 {
-    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp);
+    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->ec.cfp);
     if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, prev_cfp)) return NULL;
     if (prev_cfp->sp + 1 != argv) return NULL;
     return prev_cfp->sp + 1;
@@ -904,7 +904,7 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 	self = Qundef;
     }
     else {
-	self = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp)->self;
+	self = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->ec.cfp)->self;
     }
 
     if (argc == 0) {
@@ -1147,7 +1147,7 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
 {
     int state;
     volatile VALUE retval = Qnil;
-    rb_control_frame_t *const cfp = th->cfp;
+    rb_control_frame_t *const cfp = th->ec.cfp;
 
     TH_PUSH_TAG(th);
     state = TH_EXEC_TAG();
@@ -1314,7 +1314,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	    base_block = &bind->block;
 	}
 	else {
-	    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->cfp);
+	    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec.cfp);
 
 	    if (cfp != 0) {
 		block.as.captured = *VM_CFP_TO_CAPTURED_BLOCK(cfp);
@@ -1363,7 +1363,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 
 	/* save new env */
 	if (bind && iseq->body->local_table_size > 0) {
-	    vm_bind_update_env(bind, vm_make_env_object(th, th->cfp));
+	    vm_bind_update_env(bind, vm_make_env_object(th, th->ec.cfp));
 	}
     }
 
@@ -1569,7 +1569,7 @@ static VALUE
 yield_under(VALUE under, VALUE self, int argc, const VALUE *argv)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->cfp;
+    rb_control_frame_t *cfp = th->ec.cfp;
     VALUE block_handler = VM_CF_BLOCK_HANDLER(cfp);
     VALUE new_block_handler = 0;
     const struct rb_captured_block *captured = NULL;
@@ -1603,7 +1603,7 @@ yield_under(VALUE under, VALUE self, int argc, const VALUE *argv)
 	new_captured.self = self;
 	ep = captured->ep;
 
-	VM_FORCE_WRITE_SPECIAL_CONST(&VM_CF_LEP(th->cfp)[VM_ENV_DATA_INDEX_SPECVAL], new_block_handler);
+	VM_FORCE_WRITE_SPECIAL_CONST(&VM_CF_LEP(th->ec.cfp)[VM_ENV_DATA_INDEX_SPECVAL], new_block_handler);
     }
 
     cref = vm_cref_push(th, under, ep, TRUE);
@@ -1614,7 +1614,7 @@ VALUE
 rb_yield_refine_block(VALUE refinement, VALUE refinements)
 {
     rb_thread_t *th = GET_THREAD();
-    VALUE block_handler = VM_CF_BLOCK_HANDLER(th->cfp);
+    VALUE block_handler = VM_CF_BLOCK_HANDLER(th->ec.cfp);
 
     if (vm_block_handler_type(block_handler) != block_handler_type_iseq) {
 	rb_bug("rb_yield_refine_block: an iseq block is required");
@@ -1626,7 +1626,7 @@ rb_yield_refine_block(VALUE refinement, VALUE refinements)
 	const VALUE *ep = captured->ep;
 	rb_cref_t *cref = vm_cref_push(th, refinement, ep, TRUE);
 	CREF_REFINEMENTS_SET(cref, refinements);
-	VM_FORCE_WRITE_SPECIAL_CONST(&VM_CF_LEP(th->cfp)[VM_ENV_DATA_INDEX_SPECVAL], new_block_handler);
+	VM_FORCE_WRITE_SPECIAL_CONST(&VM_CF_LEP(th->ec.cfp)[VM_ENV_DATA_INDEX_SPECVAL], new_block_handler);
 	new_captured.self = refinement;
 	return vm_yield_with_cref(th, 0, NULL, cref, FALSE);
     }
@@ -2028,7 +2028,7 @@ vm_catch_protect(VALUE tag, rb_block_call_func *func, VALUE data,
 {
     int state;
     VALUE val = Qnil;		/* OK */
-    rb_control_frame_t *volatile saved_cfp = th->cfp;
+    rb_control_frame_t *volatile saved_cfp = th->ec.cfp;
 
     TH_PUSH_TAG(th);
 
@@ -2107,7 +2107,7 @@ rb_f_local_variables(void)
     struct local_var_list vars;
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp =
-	vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(th->cfp));
+	vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(th->ec.cfp));
     unsigned int i;
 
     local_var_list_init(&vars);
@@ -2163,7 +2163,7 @@ VALUE
 rb_f_block_given_p(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->cfp;
+    rb_control_frame_t *cfp = th->ec.cfp;
     cfp = vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
 
     if (cfp != NULL && VM_CF_BLOCK_HANDLER(cfp) != VM_BLOCK_HANDLER_NONE) {
@@ -2178,7 +2178,7 @@ VALUE
 rb_current_realfilepath(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->cfp;
+    rb_control_frame_t *cfp = th->ec.cfp;
     cfp = vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
     if (cfp != 0) return cfp->iseq->body->location.absolute_path;
     return Qnil;

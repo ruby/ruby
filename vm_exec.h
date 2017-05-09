@@ -157,7 +157,7 @@ default:                        \
 
 #endif
 
-#define VM_SP_CNT(th, sp) ((sp) - (th)->stack)
+#define VM_SP_CNT(th, sp) ((sp) - (th)->ec.stack)
 
 #if OPT_CALL_THREADED_CODE
 #define THROW_EXCEPTION(exc) do { \

@@ -7116,7 +7116,7 @@ caller_location(VALUE *path, VALUE *absolute_path)
 {
     const rb_thread_t *const th = GET_THREAD();
     const rb_control_frame_t *const cfp =
-	rb_vm_get_ruby_level_next_cfp(th, th->cfp);
+	rb_vm_get_ruby_level_next_cfp(th, th->ec.cfp);
 
     if (cfp) {
 	int line = rb_vm_get_sourceline(cfp);
