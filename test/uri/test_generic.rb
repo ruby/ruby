@@ -839,6 +839,31 @@ class URI::TestGeneric < Test::Unit::TestCase
     with_proxy_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'192.0.2.2') {|env|
       assert_equal(URI('http://127.0.0.1:8080'), URI("http://192.0.2.1/").find_proxy(env))
       assert_nil(URI("http://192.0.2.2/").find_proxy(env))
+
+      getaddress = IPSocket.method(:getaddress)
+      begin
+        class << IPSocket
+          undef getaddress
+          def getaddress(host)
+            host == "example.org" or raise
+            "192.0.2.1"
+          end
+        end
+        assert_equal(URI('http://127.0.0.1:8080'), URI.parse("http://example.org").find_proxy(env))
+        class << IPSocket
+          undef getaddress
+          def getaddress(host)
+            host == "example.org" or raise
+            "192.0.2.2"
+          end
+        end
+        assert_nil(URI.parse("http://example.org").find_proxy(env))
+      ensure
+        IPSocket.singleton_class.class_eval do
+          undef getaddress
+          define_method(:getaddress, getaddress)
+        end
+      end
     }
     with_proxy_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'example.org') {|env|
       assert_nil(URI("http://example.org/").find_proxy(env))
