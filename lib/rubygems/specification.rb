@@ -723,6 +723,9 @@ class Gem::Specification < Gem::BasicSpecification
   def self._all # :nodoc:
     unless defined?(@@all) && @@all then
       @@all = stubs.map(&:to_spec)
+      if @@all.any?(&:nil?) # TODO: remove once we're happy
+        raise "nil spec! included in #{stubs.inspect}"
+      end
 
       # After a reset, make sure already loaded specs
       # are still marked as activated.
