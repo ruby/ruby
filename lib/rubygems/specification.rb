@@ -943,6 +943,7 @@ class Gem::Specification < Gem::BasicSpecification
   # -- wilsonb
 
   def self.all= specs
+    raise "nil spec!" if specs.any?(&:nil?) # TODO: remove once we're happy
     @@stubs_by_name = specs.group_by(&:name)
     @@all = @@stubs = specs
   end
