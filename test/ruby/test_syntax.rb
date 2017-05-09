@@ -898,6 +898,10 @@ eom
     assert_valid_syntax %q{a b(c d), 1 do end}, bug11873
     assert_valid_syntax %q{a b{c(d)}, 1 do end}, bug11873
     assert_valid_syntax %q{a b(c(d)), 1 do end}, bug11873
+    assert_valid_syntax %q{a b{c d}, "x" do end}, bug11873
+    assert_valid_syntax %q{a b(c d), "x" do end}, bug11873
+    assert_valid_syntax %q{a b{c(d)}, "x" do end}, bug11873
+    assert_valid_syntax %q{a b(c(d)), "x" do end}, bug11873
   end
 
   def test_block_after_cmdarg_in_paren
