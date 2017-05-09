@@ -278,7 +278,7 @@ class TestQueue < Test::Unit::TestCase
     end
 
     q = DumpableQueue.new
-    assert_raise_with_message(TypeError, /internal Array/, bug9674) do
+    assert_raise(TypeError, bug9674) do
       Marshal.dump(q)
     end
   end
