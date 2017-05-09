@@ -47,7 +47,7 @@ extern VALUE ruby_vm_const_missing_count;
 #define VM_REG_EP  (VM_REG_CFP->ep)
 
 #define RESTORE_REGS() do { \
-    VM_REG_CFP = th->cfp; \
+    VM_REG_CFP = th->ec.cfp; \
 } while (0)
 
 #define REG_A   reg_a
