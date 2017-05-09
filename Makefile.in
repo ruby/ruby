@@ -456,7 +456,7 @@ ext/distclean ext/realclean gems/distclean gems/realclean::
 	test "$$#" = 0 && set .; \
 	cd $(@D) 2>/dev/null && \
 	find "$$@" -type d -empty -exec $(RMDIRS) {} + 2> /dev/null || true
-	$(Q) $(RMDIRS) $(@D)
+	$(Q) $(RMDIRS) $(@D) 2> /dev/null || true
 
 clean-enc distclean-enc realclean-enc:
 	@test -f "$(ENC_MK)" || exit 0; \
