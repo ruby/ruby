@@ -939,6 +939,15 @@ eom
     assert_equal(:ok, result)
   end
 
+  def test_brace_after_local_variable
+    obj = Object.new
+    def obj.m; yield; end
+    result = assert_nothing_raised(SyntaxError) do
+      obj.instance_eval("m = 1; m {:ok}")
+    end
+    assert_equal(:ok, result)
+  end
+
   def test_return_toplevel
     feature4840 = '[ruby-core:36785] [Feature #4840]'
     code = "#{<<~"begin;"}\n#{<<~"end;"}"
