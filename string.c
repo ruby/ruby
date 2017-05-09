@@ -9592,12 +9592,13 @@ static VALUE
 unicode_normalize_common(int argc, VALUE *argv, VALUE str, ID id)
 {
     static int UnicodeNormalizeRequired = 0;
-    VALUE argv2[2] = { str };
+    VALUE argv2[2];
 
     if (!UnicodeNormalizeRequired) {
 	rb_require("unicode_normalize/normalize.rb");
 	UnicodeNormalizeRequired = 1;
     }
+    argv2[0] = str;
     rb_scan_args(argc, argv, "01", &argv2[1]);
     return rb_funcallv(mUnicodeNormalize, id, argc+1, argv2);
 }
