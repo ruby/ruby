@@ -9592,17 +9592,14 @@ static VALUE
 unicode_normalize_common(int argc, VALUE *argv, VALUE str, ID id)
 {
     static int UnicodeNormalizeRequired = 0;
+    VALUE argv2[2] = { str };
 
     if (!UnicodeNormalizeRequired) {
 	rb_require("unicode_normalize/normalize.rb");
 	UnicodeNormalizeRequired = 1;
     }
-    if (argc==0)
-	return rb_funcall(mUnicodeNormalize, id, 1, str);
-    else if (argc==1)
-	return rb_funcall(mUnicodeNormalize, id, 2, str, argv[0]);
-    else
-	rb_raise(rb_eArgError, "too many arguments to unicode normalization function");
+    rb_scan_args(argc, argv, "01", &argv2[1]);
+    return rb_funcallv(mUnicodeNormalize, id, argc+1, argv2);
 }
 
 /*
