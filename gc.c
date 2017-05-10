@@ -7880,7 +7880,7 @@ objspace_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t ol
 {
     void *mem;
 
-    if (!ptr) return objspace_xmalloc(objspace, new_size);
+    if (!ptr) return objspace_xmalloc0(objspace, new_size);
 
     /*
      * The behavior of realloc(ptr, 0) is implementation defined.
@@ -7979,6 +7979,10 @@ ruby_xcalloc(size_t n, size_t size)
 void *
 ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size)
 {
+    if ((ssize_t)new_size < 0) {
+	negative_size_allocation_error("too large allocation size");
+    }
+
     return objspace_xrealloc(&rb_objspace, ptr, new_size, old_size);
 }
 
