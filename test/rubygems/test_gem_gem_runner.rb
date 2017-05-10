@@ -1,6 +1,15 @@
 # frozen_string_literal: true
 require 'rubygems/test_case'
-require 'rubygems/gem_runner'
+begin
+  require 'rubygems/gem_runner'
+ensure
+  if $!
+    if Dir.exist?(ENV["GEM_HOME"])
+      require "find"
+      Find.find(ENV["GEM_HOME"]).each{|l|puts l}
+    end
+  end
+end
 
 class TestGemGemRunner < Gem::TestCase
 
