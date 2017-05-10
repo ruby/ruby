@@ -724,7 +724,7 @@ class Gem::Specification < Gem::BasicSpecification
     unless defined?(@@all) && @@all then
       @@all = stubs.map(&:to_spec)
       if @@all.any?(&:nil?) # TODO: remove once we're happy
-        raise "nil spec! included in #{stubs.inspect}"
+        raise "pid: #{$$} nil spec! included in #{stubs.inspect}"
       end
 
       # After a reset, make sure already loaded specs
