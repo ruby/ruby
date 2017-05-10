@@ -800,11 +800,8 @@ ruby_lgamma_r(const double d, int *sign)
 {
     const double g = lgamma_r(d, sign);
     if (isinf(g)) {
-	if (d == 0.0 && signbit(d)) {
-	    *sign = -1;
-	    return INFINITY;
-	} else if (d == 0.0 && !signbit(d)) {
-	    *sign = 1;
+	if (d == 0.0) {
+	    *sign = signbit(d) ? -1 : +1;
 	    return INFINITY;
 	}
     }
