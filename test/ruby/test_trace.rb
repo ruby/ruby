@@ -59,28 +59,4 @@ class TestTrace < Test::Unit::TestCase
              a.any? {true}
            }.value, bug2722)
   end
-
-  def test_trace_stackoverflow
-    assert_normal_exit("#{<<-"begin;"}\n#{<<~"end;"}", timeout: 60)
-    begin;
-      require 'timeout'
-      require 'tracer'
-      class HogeError < StandardError
-        def to_s
-          message.upcase        # disable tailcall optimization
-        end
-      end
-      Tracer.stdout = open(IO::NULL, "w")
-      begin
-        Timeout.timeout(5) do
-          Tracer.on
-          HogeError.new.to_s
-        end
-      rescue Timeout::Error
-        # ok. there are no SEGV or critical error
-      rescue SystemStackError => e
-        # ok.
-      end
-    end;
-  end
 end
