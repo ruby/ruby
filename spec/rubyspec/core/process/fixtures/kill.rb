@@ -9,16 +9,13 @@ ruby_exe = ARGV.shift
 # instead, which will likely abort the specs process.
 Process.setsid if scenario
 
-signaled = false
 mutex = Mutex.new
 
 Signal.trap(:TERM) do
   if mutex.try_lock
-    unless signaled
-      signaled = true
-      STDOUT.puts "signaled"
-      STDOUT.flush
-    end
+    STDOUT.puts "signaled"
+    STDOUT.flush
+    $signaled = true
   end
 end
 
@@ -46,4 +43,4 @@ if scenario
   system(*ruby_exe.split(' '), "-e", code)
 end
 
-sleep 0.001 until signaled
+sleep 0.001 until mutex.locked? and $signaled
