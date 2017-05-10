@@ -42,8 +42,8 @@ if scenario
     raise "unknown scenario: #{scenario.inspect}"
   end
 
-  cmd = %[#{ruby_exe} -e 'Process.kill(#{signal}, #{process})']
-  Thread.new { system cmd }.join
+  code = "Process.kill(#{signal}, #{process})"
+  system(*ruby_exe.split(' '), "-e", code)
 end
 
-sleep 0.1 until signaled
+sleep 0.001 until signaled
