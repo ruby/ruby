@@ -1,8 +1,6 @@
 require File.expand_path('../../../spec_helper', __FILE__)
 require File.expand_path('../fixtures/classes', __FILE__)
 
-ruby_exe = RUBY_EXE.split
-
 describe "IO.popen" do
   before :each do
     @io = nil
@@ -199,28 +197,28 @@ describe "IO.popen" do
     end
 
     it "accepts an Array of command and arguments" do
-      exe, *args = *ruby_exe
+      exe, *args = ruby_cmd(nil).split
       IO.popen({"FOO" => "bar"}, [[exe, "specfu"], *args, "-e", "puts ENV['FOO']"]) do |io|
         io.read.should == "bar\n"
       end
     end
 
     it "accepts an Array of command and arguments, and an IO mode" do
-      exe, *args = *ruby_exe
+      exe, *args = ruby_cmd(nil).split
       IO.popen({"FOO" => "bar"}, [[exe, "specfu"], *args, "-e", "puts ENV['FOO']"], "r") do |io|
         io.read.should == "bar\n"
       end
     end
 
     it "accepts an Array command with a separate trailing Hash of Process.exec options" do
-      IO.popen({"FOO" => "bar"}, [*ruby_exe, "-e", "STDERR.puts ENV['FOO']"],
+      IO.popen({"FOO" => "bar"}, [*ruby_cmd(nil).split, "-e", "STDERR.puts ENV['FOO']"],
                err: [:child, :out]) do |io|
         io.read.should == "bar\n"
       end
     end
 
     it "accepts an Array command with a separate trailing Hash of Process.exec options, and an IO mode" do
-      IO.popen({"FOO" => "bar"}, [*ruby_exe, "-e", "STDERR.puts ENV['FOO']"],
+      IO.popen({"FOO" => "bar"}, [*ruby_cmd(nil).split, "-e", "STDERR.puts ENV['FOO']"],
                "r", err: [:child, :out]) do |io|
         io.read.should == "bar\n"
       end
@@ -229,45 +227,45 @@ describe "IO.popen" do
 
   context "with a leading Array argument" do
     it "uses the Array as command plus args for the child process" do
-      IO.popen([*ruby_exe, "-e", "puts 'hello'"]) do |io|
+      IO.popen([*ruby_cmd(nil).split, "-e", "puts 'hello'"]) do |io|
         io.read.should == "hello\n"
       end
     end
 
     it "accepts a leading ENV Hash" do
-      IO.popen([{"FOO" => "bar"}, *ruby_exe, "-e", "puts ENV['FOO']"]) do |io|
+      IO.popen([{"FOO" => "bar"}, *ruby_cmd(nil).split, "-e", "puts ENV['FOO']"]) do |io|
         io.read.should == "bar\n"
       end
     end
 
     it "accepts a trailing Hash of Process.exec options" do
-      IO.popen([*ruby_exe, "does_not_exist", {err: [:child, :out]}]) do |io|
+      IO.popen([*ruby_cmd(nil).split, "does_not_exist", {err: [:child, :out]}]) do |io|
         io.read.should =~ /LoadError/
       end
     end
 
     it "accepts an IO mode argument following the Array" do
-      IO.popen([*ruby_exe, "does_not_exist", {err: [:child, :out]}], "r") do |io|
+      IO.popen([*ruby_cmd(nil).split, "does_not_exist", {err: [:child, :out]}], "r") do |io|
         io.read.should =~ /LoadError/
       end
     end
 
     it "accepts [env, command, arg1, arg2, ..., exec options]" do
-      IO.popen([{"FOO" => "bar"}, *ruby_exe, "-e", "STDERR.puts ENV[:FOO.to_s]",
+      IO.popen([{"FOO" => "bar"}, *ruby_cmd(nil).split, "-e", "STDERR.puts ENV[:FOO.to_s]",
                 err: [:child, :out]]) do |io|
         io.read.should == "bar\n"
       end
     end
 
     it "accepts '[env, command, arg1, arg2, ..., exec options], mode'" do
-      IO.popen([{"FOO" => "bar"}, *ruby_exe, "-e", "STDERR.puts ENV[:FOO.to_s]",
+      IO.popen([{"FOO" => "bar"}, *ruby_cmd(nil).split, "-e", "STDERR.puts ENV[:FOO.to_s]",
                 err: [:child, :out]], "r") do |io|
         io.read.should == "bar\n"
       end
     end
 
     it "accepts '[env, command, arg1, arg2, ..., exec options], mode, IO options'" do
-      IO.popen([{"FOO" => "bar"}, *ruby_exe, "-e", "STDERR.puts ENV[:FOO.to_s]",
+      IO.popen([{"FOO" => "bar"}, *ruby_cmd(nil).split, "-e", "STDERR.puts ENV[:FOO.to_s]",
                 err: [:child, :out]], "r",
                internal_encoding: Encoding::EUC_JP) do |io|
         io.read.should == "bar\n"
@@ -276,7 +274,7 @@ describe "IO.popen" do
     end
 
     it "accepts '[env, command, arg1, arg2, ...], mode, IO + exec options'" do
-      IO.popen([{"FOO" => "bar"}, *ruby_exe, "-e", "STDERR.puts ENV[:FOO.to_s]"], "r",
+      IO.popen([{"FOO" => "bar"}, *ruby_cmd(nil).split, "-e", "STDERR.puts ENV[:FOO.to_s]"], "r",
                err: [:child, :out], internal_encoding: Encoding::EUC_JP) do |io|
         io.read.should == "bar\n"
         io.internal_encoding.should == Encoding::EUC_JP

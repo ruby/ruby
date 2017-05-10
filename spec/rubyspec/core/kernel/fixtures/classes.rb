@@ -32,26 +32,26 @@ module KernelSpecs
   end
 
   def self.has_private_method(name)
-    cmd = %[| #{RUBY_EXE} -n -e "print Kernel.private_method_defined?('#{name}')"]
+    cmd = %[| #{ruby_cmd(nil)} -n -e "print Kernel.private_method_defined?('#{name}')"]
     ruby_exe("puts", args: cmd) == "true"
   end
 
   def self.chop(str, method)
-    cmd = "| #{RUBY_EXE} -n -e '$_ = #{str.inspect}; #{method}; print $_'"
+    cmd = "| #{ruby_cmd(nil)} -n -e '$_ = #{str.inspect}; #{method}; print $_'"
     ruby_exe "puts", args: cmd
   end
 
   def self.encoded_chop(file)
-    ruby_exe "puts", args: "| #{RUBY_EXE} -n #{file}"
+    ruby_exe "puts", args: "| #{ruby_cmd(nil)} -n #{file}"
   end
 
   def self.chomp(str, method, sep="\n")
-    cmd = "| #{RUBY_EXE} -n -e '$_ = #{str.inspect}; $/ = #{sep.inspect}; #{method}; print $_'"
+    cmd = "| #{ruby_cmd(nil)} -n -e '$_ = #{str.inspect}; $/ = #{sep.inspect}; #{method}; print $_'"
     ruby_exe "puts", args: cmd
   end
 
   def self.encoded_chomp(file)
-    ruby_exe "puts", args: "| #{RUBY_EXE} -n #{file}"
+    ruby_exe "puts", args: "| #{ruby_cmd(nil)} -n #{file}"
   end
 
   # kind_of?, is_a?, instance_of?
