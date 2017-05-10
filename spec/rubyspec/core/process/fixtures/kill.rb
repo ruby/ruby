@@ -2,7 +2,6 @@ require 'thread'
 
 pid_file = ARGV.shift
 scenario = ARGV.shift
-ruby_exe = ARGV.shift
 
 # We must do this first otherwise there will be a race with the process that
 # creates this process and the TERM signal below could go to that process
@@ -40,7 +39,7 @@ if scenario
   end
 
   code = "Process.kill(#{signal}, #{process})"
-  system(*ruby_exe.split(' '), "-e", code)
+  system(ENV["RUBY_EXE"], *ENV["RUBY_FLAGS"].split(' '), "-e", code)
 end
 
 sleep 0.001 until mutex.locked? and $signaled
