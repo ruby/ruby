@@ -298,7 +298,8 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t volatile *th)
     }
     else if (mutex->th != th) {
 	err = "Attempt to unlock a mutex which is locked by another thread";
-    } else {
+    }
+    else {
 	struct mutex_waiter *cur = 0, *next = 0;
 	rb_mutex_t *volatile *th_mutex = &th->keeping_mutexes;
 
@@ -306,19 +307,19 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t volatile *th)
 	list_for_each_safe(&mutex->waitq, cur, next, node) {
 	    list_del_init(&cur->node);
 	    switch (cur->th->status) {
-	    case THREAD_RUNNABLE: /* from someone else calling Thread#run */
-	    case THREAD_STOPPED_FOREVER: /* likely (rb_mutex_lock) */
+	      case THREAD_RUNNABLE: /* from someone else calling Thread#run */
+	      case THREAD_STOPPED_FOREVER: /* likely (rb_mutex_lock) */
 		rb_threadptr_interrupt(cur->th);
 		goto found;
-	    case THREAD_STOPPED: /* probably impossible */
+	      case THREAD_STOPPED: /* probably impossible */
 		rb_bug("unexpected THREAD_STOPPED");
-	    case THREAD_KILLED:
+	      case THREAD_KILLED:
                 /* not sure about this, possible in exit GC? */
 		rb_bug("unexpected THREAD_KILLED");
 		continue;
 	    }
 	}
-found:
+      found:
 	while (*th_mutex != mutex) {
 	    th_mutex = &(*th_mutex)->next_mutex;
 	}

@@ -543,7 +543,8 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 			if (off < 0) {
 				off = -off;
 				sign = -1;
-			} else {
+			}
+			else {
 				sign = +1;
 			}
                         switch (colons) {

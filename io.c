@@ -9483,10 +9483,10 @@ do_fcntl(int fd, int cmd, long narg)
     if (retval != -1) {
 	switch (cmd) {
 #if defined(F_DUPFD)
-	case F_DUPFD:
+	  case F_DUPFD:
 #endif
 #if defined(F_DUPFD_CLOEXEC)
-	case F_DUPFD_CLOEXEC:
+	  case F_DUPFD_CLOEXEC:
 #endif
 	    rb_update_max_fd(retval);
 	}

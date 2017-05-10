@@ -174,7 +174,8 @@ hash_delete_index(struct rb_id_table *tbl, int ix)
 	ITEM_SET_KEY(tbl, ix, 0);
 	tbl->items[ix].val = 0;
 	return TRUE;
-    } else {
+    }
+    else {
 	return FALSE;
     }
 }

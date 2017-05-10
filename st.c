@@ -1005,10 +1005,12 @@ find_table_bin_ptr_and_reserve(st_table *tab, st_hash_t *hash_value,
                 MARK_BIN_EMPTY(tab, ind);
             }
             break;
-        } else if (! DELETED_BIN_P(entry_index)) {
+	}
+	else if (! DELETED_BIN_P(entry_index)) {
             if (PTR_EQUAL(tab, &entries[entry_index - ENTRY_BASE], curr_hash_value, key))
                 break;
-        } else if (first_deleted_bin_ind == UNDEFINED_BIN_IND)
+	}
+	else if (first_deleted_bin_ind == UNDEFINED_BIN_IND)
             first_deleted_bin_ind = ind;
 #ifdef QUADRATIC_PROBE
 	ind = hash_bin(ind + d, tab);
@@ -1034,7 +1036,8 @@ st_lookup(st_table *tab, st_data_t key, st_data_t *value)
         bin = find_entry(tab, hash, key);
 	if (bin == UNDEFINED_ENTRY_IND)
 	    return 0;
-    } else {
+    }
+    else {
         bin = find_table_entry_ind(tab, hash, key);
 	if (bin == UNDEFINED_ENTRY_IND)
 	    return 0;
@@ -1057,7 +1060,8 @@ st_get_key(st_table *tab, st_data_t key, st_data_t *result)
         bin = find_entry(tab, hash, key);
 	if (bin == UNDEFINED_ENTRY_IND)
 	    return 0;
-    } else {
+    }
+    else {
         bin = find_table_entry_ind(tab, hash, key);
 	if (bin == UNDEFINED_ENTRY_IND)
 	    return 0;
@@ -1100,7 +1104,8 @@ st_insert(st_table *tab, st_data_t key, st_data_t value)
 	if (new_p)
 	    tab->num_entries++;
 	bin_ind = UNDEFINED_BIN_IND;
-    } else {
+    }
+    else {
         bin = find_table_bin_ptr_and_reserve(tab, &hash_value,
 					     key, &bin_ind);
 	new_p = bin == UNDEFINED_ENTRY_IND;
@@ -1183,7 +1188,8 @@ st_insert2(st_table *tab, st_data_t key, st_data_t value,
         bin = find_entry(tab, hash_value, key);
 	new_p = bin == UNDEFINED_ENTRY_IND;
 	bin_ind = UNDEFINED_BIN_IND;
-    } else {
+    }
+    else {
         bin = find_table_bin_ptr_and_reserve(tab, &hash_value,
 					     key, &bin_ind);
 	new_p = bin == UNDEFINED_ENTRY_IND;
@@ -1269,7 +1275,8 @@ st_general_delete(st_table *tab, st_data_t *key, st_data_t *value)
 	    if (value != 0) *value = 0;
 	    return 0;
 	}
-    } else {
+    }
+    else {
         bin_ind = find_table_bin_ind(tab, hash, *key);
 	if (bin_ind == UNDEFINED_BIN_IND) {
 	    if (value != 0) *value = 0;
@@ -1330,7 +1337,8 @@ st_shift(st_table *tab, st_data_t *key, st_data_t *value)
 	        bin = find_entry(tab, curr_entry_ptr->hash, curr_entry_ptr->key);
 		st_assert(bin != UNDEFINED_ENTRY_IND
 			  && &entries[bin] == curr_entry_ptr);
-	    } else {
+	    }
+	    else {
 	        bin_ind = find_table_bin_ind(tab, curr_entry_ptr->hash,
 					     curr_entry_ptr->key);
 		st_assert(bin_ind != UNDEFINED_BIN_IND
@@ -1385,7 +1393,8 @@ st_update(st_table *tab, st_data_t key,
 	existing = bin != UNDEFINED_ENTRY_IND;
 	entry = &entries[bin];
 	bin_ind = UNDEFINED_BIN_IND;
-    } else {
+    }
+    else {
         bin_ind = find_table_bin_ind(tab, hash, key);
 	existing = bin_ind != UNDEFINED_BIN_IND;
 	if (existing) {
@@ -1469,7 +1478,8 @@ st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg,
 	    if (packed_p) {
 	        i = find_entry(tab, hash, key);
 		error_p = i == UNDEFINED_ENTRY_IND;
-	    } else {
+	    }
+	    else {
 	        i = find_table_entry_ind(tab, hash, key);
 		error_p = i == UNDEFINED_ENTRY_IND;
 		i -= ENTRY_BASE;
@@ -1500,7 +1510,8 @@ st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg,
 	        bin = find_entry(tab, hash, curr_entry_ptr->key);
 		if (bin == UNDEFINED_ENTRY_IND)
 		    break;
-	    } else {
+	    }
+	    else {
 	        bin_ind = find_table_bin_ind(tab, hash, curr_entry_ptr->key);
 		if (bin_ind == UNDEFINED_BIN_IND)
 		    break;
