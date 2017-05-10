@@ -7,7 +7,7 @@ ruby_exe = ARGV.shift
 # We must do this first otherwise there will be a race with the process that
 # creates this process and the TERM signal below could go to that process
 # instead, which will likely abort the specs process.
-Process.setsid if scenario && Process.respond_to?(:setsid)
+Process.setsid if scenario
 
 signaled = false
 mutex = Mutex.new
@@ -25,8 +25,8 @@ end
 File.open(pid_file, "wb") { |f| f.puts Process.pid }
 
 if scenario
-  # We are sending a signal to ourselves or the process group
-  process = Process.respond_to?(:getpgid) ? "Process.getpgid(Process.pid)" : "Process.pid"
+  # We are sending a signal to the process group
+  process = "Process.getpgrp"
 
   case scenario
   when "self"
