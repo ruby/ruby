@@ -900,7 +900,8 @@ module MiniTest
         puts "Finished%s %ss in %.6fs, %.4f tests/s, %.4f assertions/s.\n" %
              [(@repeat_count ? "(#{count}/#{@repeat_count}) " : ""), type,
                t, @test_count.fdiv(t), @assertion_count.fdiv(t)]
-      end while @repeat_count && count < @repeat_count && report.empty?
+      end while @repeat_count && count < @repeat_count &&
+                report.empty? && failures.zero? && errors.zero?
 
       output.sync = old_sync if sync
 
