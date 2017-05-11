@@ -3657,6 +3657,7 @@ static VALUE get_pat(VALUE);
  *     'hello'.match('(.)\1')      #=> #<MatchData "ll" 1:"l">
  *     'hello'.match('(.)\1')[0]   #=> "ll"
  *     'hello'.match(/(.)\1/)[0]   #=> "ll"
+ *     'hello'.match(/(.)\1/, 3)   #=> nil
  *     'hello'.match('xx')         #=> nil
  *
  *  If a block is given, invoke the block with MatchData if match succeed, so
