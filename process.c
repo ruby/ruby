@@ -173,11 +173,6 @@ static void check_gid_switch(void);
     VALUE getpw_buf = 0
 #   define FINISH_GETPWNAM \
     (getpw_buf ? (void)rb_str_resize(getpw_buf, 0) : (void)0)
-#   ifdef __APPLE__
-#     define GETPWNAM_R_RETRY_P(e) (e == 0 || e == ERANGE)
-#   else
-#     define GETPWNAM_R_RETRY_P(e) (e == ERANGE)
-#   endif
 #   define OBJ2UID1(id) obj2uid((id), &getpw_buf)
 #   define OBJ2UID(id) obj2uid0(id)
 static rb_uid_t obj2uid(VALUE id, VALUE *getpw_buf);
@@ -220,11 +215,6 @@ static rb_uid_t obj2uid(VALUE id);
     VALUE getgr_buf = 0
 #   define FINISH_GETGRNAM \
     (getgr_buf ? (void)rb_str_resize(getgr_buf, 0) : (void)0)
-#   ifdef __APPLE__
-#     define GETGRNAM_R_RETRY_P(e) (e == 0 || e == ERANGE)
-#   else
-#     define GETGRNAM_R_RETRY_P(e) (e == ERANGE)
-#   endif
 #   define OBJ2GID1(id) obj2gid((id), &getgr_buf)
 #   define OBJ2GID(id) obj2gid0(id)
 static rb_gid_t obj2gid(VALUE id, VALUE *getgr_buf);
@@ -5040,6 +5030,7 @@ obj2uid(VALUE id
 	struct passwd pwbuf;
 	char *getpw_buf;
 	long getpw_buf_len;
+	int e;
 	if (!*getpw_tmp) {
 	    getpw_buf_len = GETPW_R_SIZE_INIT;
 	    if (getpw_buf_len < 0) getpw_buf_len = GETPW_R_SIZE_DEFAULT;
@@ -5048,11 +5039,9 @@ obj2uid(VALUE id
 	getpw_buf = RSTRING_PTR(*getpw_tmp);
 	getpw_buf_len = rb_str_capacity(*getpw_tmp);
 	rb_str_set_len(*getpw_tmp, getpw_buf_len);
-	errno = ERANGE;
-	/* gepwnam_r() on MacOS X doesn't set errno if buffer size is insufficient */
-	while (getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr)) {
-	    int e = errno;
-	    if (!GETPWNAM_R_RETRY_P(e) || getpw_buf_len >= GETPW_R_SIZE_LIMIT) {
+	errno = 0;
+	while ((e = getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr)) != 0) {
+	    if (e != ERANGE || getpw_buf_len >= GETPW_R_SIZE_LIMIT) {
 		rb_str_resize(*getpw_tmp, 0);
 		rb_syserr_fail(e, "getpwnam_r");
 	    }
@@ -5118,6 +5107,7 @@ obj2gid(VALUE id
 	struct group grbuf;
 	char *getgr_buf;
 	long getgr_buf_len;
+	int e;
 	if (!*getgr_tmp) {
 	    getgr_buf_len = GETGR_R_SIZE_INIT;
 	    if (getgr_buf_len < 0) getgr_buf_len = GETGR_R_SIZE_DEFAULT;
@@ -5126,11 +5116,9 @@ obj2gid(VALUE id
 	getgr_buf = RSTRING_PTR(*getgr_tmp);
 	getgr_buf_len = rb_str_capacity(*getgr_tmp);
 	rb_str_set_len(*getgr_tmp, getgr_buf_len);
-	errno = ERANGE;
-	/* gegrnam_r() on MacOS X doesn't set errno if buffer size is insufficient */
-	while (getgrnam_r(grpname, &grbuf, getgr_buf, getgr_buf_len, &grptr)) {
-	    int e = errno;
-	    if (!GETGRNAM_R_RETRY_P(e) || getgr_buf_len >= GETGR_R_SIZE_LIMIT) {
+	errno = 0;
+	while ((e = getgrnam_r(grpname, &grbuf, getgr_buf, getgr_buf_len, &grptr)) != 0) {
+	    if (e != ERANGE || getgr_buf_len >= GETGR_R_SIZE_LIMIT) {
 		rb_str_resize(*getgr_tmp, 0);
 		rb_syserr_fail(e, "getgrnam_r");
 	    }
