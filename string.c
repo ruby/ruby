@@ -9984,7 +9984,8 @@ sym_match(VALUE sym, VALUE other)
 
 /*
  * call-seq:
- *   sym.match(obj [, pos])   -> MatchData or nil
+ *   sym.match(pattern)        -> matchdata or nil
+ *   sym.match(pattern, pos)   -> matchdata or nil
  *
  * Returns <code>sym.to_s.match</code>.
  */
@@ -9997,7 +9998,8 @@ sym_match_m(int argc, VALUE *argv, VALUE sym)
 
 /*
  * call-seq:
- *   sym.match?(obj [, pos])   -> true or false
+ *   sym.match?(pattern)        -> true or false
+ *   sym.match?(pattern, pos)   -> true or false
  *
  * Returns <code>sym.to_s.match?</code>.
  */
@@ -10026,8 +10028,8 @@ sym_aref(int argc, VALUE *argv, VALUE sym)
 
 /*
  * call-seq:
- *   sym.length    -> integer
- *   sym.size    -> integer
+ *   sym.length   -> integer
+ *   sym.size     -> integer
  *
  * Same as <code>sym.to_s.length</code>.
  */
@@ -10042,7 +10044,7 @@ sym_length(VALUE sym)
  * call-seq:
  *   sym.empty?   -> true or false
  *
- * Returns that _sym_ is :"" or not.
+ * Returns whether _sym_ is :"" or not.
  */
 
 static VALUE
