@@ -1548,7 +1548,7 @@ rb_enc_default_internal(void)
  * Additionally String#encode and String#encode! use the default internal
  * encoding if no encoding is given.
  *
- * The locale encoding (__ENCODING__), not default_internal, is used as the
+ * The script encoding (__ENCODING__), not default_internal, is used as the
  * encoding of created strings.
  *
  * Encoding::default_internal is initialized by the source file's
