@@ -9984,9 +9984,9 @@ sym_match(VALUE sym, VALUE other)
 
 /*
  * call-seq:
- *   sym.match(obj)   -> MatchData or nil
+ *   sym.match(obj [, pos])   -> MatchData or nil
  *
- * Returns <code>sym.to_s.match(obj)</code>.
+ * Returns <code>sym.to_s.match</code>.
  */
 
 static VALUE
@@ -9997,9 +9997,9 @@ sym_match_m(int argc, VALUE *argv, VALUE sym)
 
 /*
  * call-seq:
- *   sym.match?(obj)   -> true or false
+ *   sym.match?(obj [, pos])   -> true or false
  *
- * Returns <code>sym.to_s.match?(obj)</code>.
+ * Returns <code>sym.to_s.match?</code>.
  */
 
 static VALUE
