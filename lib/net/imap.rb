@@ -325,6 +325,7 @@ module Net
 
     # Disconnects from the server.
     def disconnect
+      return if disconnected?
       begin
         begin
           # try to call SSL::SSLSocket#io.

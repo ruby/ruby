@@ -526,6 +526,33 @@ class IMAPTest < Test::Unit::TestCase
     end
   end
 
+  def test_disconnect
+    server = create_tcp_server
+    port = server.addr[1]
+    @threads << Thread.start do
+      sock = server.accept
+      begin
+        sock.print("* OK test server\r\n")
+        sock.gets
+        sock.print("* BYE terminating connection\r\n")
+        sock.print("RUBY0001 OK LOGOUT completed\r\n")
+      ensure
+        sock.close
+        server.close
+      end
+    end
+    begin
+      imap = Net::IMAP.new(SERVER_ADDR, :port => port)
+      imap.logout
+      imap.disconnect
+      assert_equal(true, imap.disconnected?)
+      imap.disconnect
+      assert_equal(true, imap.disconnected?)
+    ensure
+      imap.disconnect if imap && !imap.disconnected?
+    end
+  end
+
   private
 
   def imaps_test
