@@ -7872,7 +7872,7 @@ xmalloc2_size(const size_t count, const size_t elsize)
 static void *
 objspace_xmalloc2(rb_objspace_t *objspace, size_t n, size_t size)
 {
-    return objspace_xmalloc0(&rb_objspace, xmalloc2_size(n, size));
+    return objspace_xmalloc0(objspace, xmalloc2_size(n, size));
 }
 
 static void *
