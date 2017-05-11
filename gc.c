@@ -8464,7 +8464,7 @@ wmap_aset_update(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
     else {
 	optr = 0;
 	size = 1;
-	ptr = ruby_xmalloc2(2, sizeof(VALUE));
+	ptr = ruby_xmalloc0(2 * sizeof(VALUE));
     }
     ptr[0] = size;
     ptr[size] = (VALUE)arg;
