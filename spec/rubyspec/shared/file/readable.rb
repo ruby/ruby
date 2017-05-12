@@ -2,7 +2,7 @@ describe :file_readable, shared: true do
   before :each do
     @file = tmp('i_exist')
     platform_is :windows do
-      @file2 = "C:\\windows\\notepad.exe"
+      @file2 = File.join(ENV["WINDIR"], "system32/drivers/etc/services").tr(File::SEPARATOR, File::ALT_SEPARATOR)
     end
     platform_is_not :windows do
       @file2 = "/etc/passwd"
