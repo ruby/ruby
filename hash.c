@@ -3070,8 +3070,15 @@ extern char **environ;
 static VALUE
 env_str_transcode(VALUE str, rb_encoding *enc)
 {
-    return rb_str_conv_enc_opts(str, NULL, enc,
-				ECONV_INVALID_REPLACE | ECONV_UNDEF_REPLACE, Qnil);
+    rb_encoding *internal = rb_default_internal_encoding();
+    if (!internal) {
+	return rb_str_conv_enc_opts(str, NULL, enc,
+				    ECONV_INVALID_REPLACE | ECONV_UNDEF_REPLACE,
+				    Qnil);
+    }
+    else {
+	return rb_external_str_with_enc(str, rb_utf8_encoding());
+    }
 }
 #endif
 
