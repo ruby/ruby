@@ -362,10 +362,8 @@ VALUE string_spec_StringValue(VALUE self, VALUE str) {
 static VALUE string_spec_rb_str_hash(VALUE self, VALUE str) {
   st_index_t val = rb_str_hash(str);
 
-#if SIZEOF_LONG == SIZEOF_VOIDP
+#if SIZEOF_LONG == SIZEOF_VOIDP || SIZEOF_LONG_LONG == SIZEOF_VOIDP
   return LONG2FIX((long)val);
-#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
-  return LL2NUM((LONG_LONG)val);
 #else
 # error unsupported platform
 #endif
