@@ -7818,6 +7818,9 @@ objspace_malloc_prepare(rb_objspace_t *objspace, size_t size)
 static inline void *
 objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
 {
+    size = objspace_malloc_size(objspace, mem, size);
+    objspace_malloc_increase(objspace, mem, size, 0, MEMOP_TYPE_MALLOC);
+
 #if CALC_EXACT_MALLOC_SIZE
     ((size_t *)mem)[0] = size;
     mem = (size_t *)mem + 1;
@@ -7845,8 +7848,6 @@ objspace_xmalloc0(rb_objspace_t *objspace, size_t size)
 
     size = objspace_malloc_prepare(objspace, size);
     TRY_WITH_GC(mem = malloc(size));
-    size = objspace_malloc_size(objspace, mem, size);
-    objspace_malloc_increase(objspace, mem, size, 0, MEMOP_TYPE_MALLOC);
     return objspace_malloc_fixup(objspace, mem, size);
 }
 
@@ -7962,8 +7963,6 @@ objspace_xcalloc(rb_objspace_t *objspace, size_t count, size_t elsize)
     size = objspace_malloc_prepare(objspace, size);
 
     TRY_WITH_GC(mem = calloc(1, size));
-    size = objspace_malloc_size(objspace, mem, size);
-    objspace_malloc_increase(objspace, mem, size, 0, MEMOP_TYPE_MALLOC);
     return objspace_malloc_fixup(objspace, mem, size);
 }
 
