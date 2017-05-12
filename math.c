@@ -778,7 +778,7 @@ math_erfc(VALUE unused_obj, VALUE x)
     return DBL2NUM(erfc(Get_Double(x)));
 }
 
-#if defined __MINGW32__
+#if defined _WIN32
 static inline double
 ruby_tgamma(const double d)
 {
