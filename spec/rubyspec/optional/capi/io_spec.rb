@@ -251,29 +251,31 @@ describe "C-API IO function" do
     end
   end
 
-  describe "rb_io_wait_readable" do
-    it "returns false if there is no error condition" do
-      @o.rb_io_wait_readable(@r_io, false).should be_false
-    end
-
-    it "raises and IOError if passed a closed stream" do
-      @r_io.close
-      lambda { @o.rb_io_wait_readable(@r_io, false) }.should raise_error(IOError)
-    end
-
-    it "blocks until the io is readable and returns true" do
-      @o.instance_variable_set :@write_data, false
-      thr = Thread.new do
-        sleep 0.1 until @o.instance_variable_get(:@write_data)
-        @w_io.write "rb_io_wait_readable"
+  platform_is_not :windows do
+    describe "rb_io_wait_readable" do
+      it "returns false if there is no error condition" do
+        @o.rb_io_wait_readable(@r_io, false).should be_false
       end
 
-      Thread.pass until thr.alive?
+      it "raises and IOError if passed a closed stream" do
+        @r_io.close
+        lambda { @o.rb_io_wait_readable(@r_io, false) }.should raise_error(IOError)
+      end
 
-      @o.rb_io_wait_readable(@r_io, true).should be_true
-      @o.instance_variable_get(:@read_data).should == "rb_io_wait_re"
+      it "blocks until the io is readable and returns true" do
+        @o.instance_variable_set :@write_data, false
+        thr = Thread.new do
+          sleep 0.1 until @o.instance_variable_get(:@write_data)
+          @w_io.write "rb_io_wait_readable"
+        end
 
-      thr.join
+        Thread.pass until thr.alive?
+
+        @o.rb_io_wait_readable(@r_io, true).should be_true
+        @o.instance_variable_get(:@read_data).should == "rb_io_wait_re"
+
+        thr.join
+      end
     end
   end
 
