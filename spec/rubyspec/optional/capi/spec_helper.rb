@@ -25,7 +25,6 @@ def compile_extension(name)
 
   # TODO use rakelib/ext_helper.rb?
   arch_hdrdir = nil
-  ruby_hdrdir = nil
 
   if RUBY_NAME == 'rbx'
     hdrdir = RbConfig::CONFIG["rubyhdrdir"]
@@ -33,7 +32,6 @@ def compile_extension(name)
     if hdrdir = RbConfig::CONFIG["rubyhdrdir"]
       arch_hdrdir = RbConfig::CONFIG["rubyarchhdrdir"] ||
                     File.join(hdrdir, RbConfig::CONFIG["arch"])
-      ruby_hdrdir = File.join hdrdir, "ruby"
     else
       hdrdir = RbConfig::CONFIG["archdir"]
     end
@@ -69,32 +67,46 @@ def compile_extension(name)
   cflags    = (ENV["CFLAGS"] || RbConfig::CONFIG["CFLAGS"]).dup
   cflags   += " #{RbConfig::CONFIG["ARCH_FLAG"]}" if RbConfig::CONFIG["ARCH_FLAG"]
   cflags   += " #{RbConfig::CONFIG["CCDLFLAGS"]}" if RbConfig::CONFIG["CCDLFLAGS"]
-  incflags  = "-I#{path} -I#{hdrdir}"
+  cppflags  = (ENV["CPPFLAGS"] || RbConfig::CONFIG["CPPFLAGS"]).dup
+  incflags  = "-I#{path}"
   incflags << " -I#{arch_hdrdir}" if arch_hdrdir
-  incflags << " -I#{ruby_hdrdir}" if ruby_hdrdir
+  incflags << " -I#{hdrdir}"
+  csrcflag  = RbConfig::CONFIG["CSRCFLAG"]
+  coutflag  = RbConfig::CONFIG["COUTFLAG"]
 
-  output = `#{cc} #{incflags} #{cflags} -c #{source} -o #{obj}`
+  compile_cmd = "#{cc} #{incflags} #{cflags} #{cppflags} #{coutflag}#{obj} -c #{csrcflag}#{source}"
+  output = `#{compile_cmd}`
 
   unless $?.success? and File.exist?(obj)
-    puts "ERROR:\n#{output}"
+    puts "\nERROR:\n#{compile_cmd}\n#{output}"
     puts "incflags=#{incflags}"
     puts "cflags=#{cflags}"
+    puts "cppflags=#{cppflags}"
     raise "Unable to compile \"#{source}\""
   end
 
   ldshared  = RbConfig::CONFIG["LDSHARED"]
   ldshared += " #{RbConfig::CONFIG["ARCH_FLAG"]}" if RbConfig::CONFIG["ARCH_FLAG"]
-  libpath   = "-L#{path}"
   libs      = RbConfig::CONFIG["LIBS"]
   dldflags  = "#{RbConfig::CONFIG["LDFLAGS"]} #{RbConfig::CONFIG["DLDFLAGS"]} #{RbConfig::CONFIG["EXTDLDFLAGS"]}"
   dldflags.sub!(/-Wl,-soname,\S+/, '')
-  dldflags.sub!("$(TARGET_ENTRY)", "Init_#{ext}")
 
-  link_cmd = "#{ldshared} #{obj} #{libpath} #{dldflags} #{libs} -o #{lib}"
+  if /mswin/ =~ RUBY_PLATFORM
+    dldflags.sub!("$(LIBPATH)", RbConfig::CONFIG["LIBPATHFLAG"] % path)
+    libs    += RbConfig::CONFIG["LIBRUBY"]
+    outflag  = RbConfig::CONFIG["OUTFLAG"]
+
+    link_cmd = "#{ldshared} #{outflag}#{lib} #{obj} #{libs} -link #{dldflags} /export:Init_#{ext}"
+  else
+    libpath   = "-L#{path}"
+    dldflags.sub!("$(TARGET_ENTRY)", "Init_#{ext}")
+
+    link_cmd = "#{ldshared} #{obj} #{libpath} #{dldflags} #{libs} -o #{lib}"
+  end
   output = `#{link_cmd}`
 
   unless $?.success?
-    puts "ERROR:\n#{link_cmd}\n#{output}"
+    puts "\nERROR:\n#{link_cmd}\n#{output}"
     raise "Unable to link \"#{source}\""
   end
 
