@@ -6,8 +6,11 @@ ensure
   if $!
     if Dir.exist?(ENV["GEM_HOME"])
       require "find"
-      ary = Find.find(ENV["GEM_HOME"]).map{|l|puts l}
-      raise ary.inspect
+      ary = Find.find(ENV["GEM_HOME"]).to_a
+      raise <<eom
+GEM_HOME: #{ENV["GEM_HOME"]}
+contant: #{ary.inspect}
+eom
     end
   end
 end
