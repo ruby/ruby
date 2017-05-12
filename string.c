@@ -9620,9 +9620,9 @@ unicode_normalize_common(int argc, VALUE *argv, VALUE str, ID id)
  *  Anything other than UTF-8 is implemented by converting to UTF-8,
  *  which makes it slower than UTF-8.
  *
- *    "a\u0300".unicode_normalize        #=> 'à' (same as "\u00E0")
- *    "a\u0300".unicode_normalize(:nfc)  #=> 'à' (same as "\u00E0")
- *    "\u00E0".unicode_normalize(:nfd)   #=> 'à' (same as "a\u0300")
+ *    "a\u0300".unicode_normalize        #=> "\u00E0"
+ *    "a\u0300".unicode_normalize(:nfc)  #=> "\u00E0"
+ *    "\u00E0".unicode_normalize(:nfd)   #=> "a\u0300"
  *    "\xE0".force_encoding('ISO-8859-1').unicode_normalize(:nfd)
  *                                       #=> Encoding::CompatibilityError raised
  */
