@@ -29,12 +29,8 @@ def compile_extension(name)
   if RUBY_NAME == 'rbx'
     hdrdir = RbConfig::CONFIG["rubyhdrdir"]
   elsif RUBY_NAME =~ /^ruby/
-    if hdrdir = RbConfig::CONFIG["rubyhdrdir"]
-      arch_hdrdir = RbConfig::CONFIG["rubyarchhdrdir"] ||
-                    File.join(hdrdir, RbConfig::CONFIG["arch"])
-    else
-      hdrdir = RbConfig::CONFIG["archdir"]
-    end
+    hdrdir = RbConfig::CONFIG["rubyhdrdir"]
+    arch_hdrdir = RbConfig::CONFIG["rubyarchhdrdir"]
   elsif RUBY_NAME == 'jruby'
     require 'mkmf'
     hdrdir = $hdrdir
