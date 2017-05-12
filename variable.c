@@ -1987,6 +1987,17 @@ check_autoload_required(VALUE mod, ID id, const char **loadingpath)
     if (!RSTRING_LEN(file) || !*RSTRING_PTR(file)) {
 	rb_raise(rb_eArgError, "empty file name");
     }
+
+    /*
+     * if somebody else is autoloading, we MUST wait for them, since
+     * rb_provide_feature can provide a feature before autoload_const_set
+     * completes.  We must wait until autoload_const_set finishes in
+     * the other thread.
+     */
+    if (ele->state && ele->state->thread != rb_thread_current()) {
+	return load;
+    }
+
     loading = RSTRING_PTR(file);
     safe = rb_safe_level();
     rb_set_safe_level_force(0);
