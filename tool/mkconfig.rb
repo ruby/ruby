@@ -289,7 +289,7 @@ print <<EOS
     newval = val.gsub(/\\$\\$|\\$\\(([^()]+)\\)|\\$\\{([^{}]+)\\}/) {
       var = $&
       if !(v = $1 || $2)
-	'$'
+	'$'.dup
       elsif key = config[v = v[/\\A[^:]+(?=(?::(.*?)=(.*))?\\z)/]]
 	pat, sub = $1, $2
 	config[v] = false
