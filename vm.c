@@ -566,7 +566,7 @@ ruby_vm_run_at_exit_hooks(rb_vm_t *vm)
     while (l) {
 	rb_at_exit_list* t = l->next;
 	rb_vm_at_exit_func *func = l->func;
-	free(l);
+	ruby_xfree(l);
 	l = t;
 	(*func)(vm);
     }
