@@ -778,22 +778,6 @@ math_erfc(VALUE unused_obj, VALUE x)
     return DBL2NUM(erfc(Get_Double(x)));
 }
 
-#if defined _WIN32
-static inline double
-ruby_tgamma(const double d)
-{
-    const double g = tgamma(d);
-    if (isinf(g)) {
-	if (d == 0.0 && signbit(d)) return -INFINITY;
-    }
-    if (isnan(g)) {
-	if (!signbit(d)) return INFINITY;
-    }
-    return g;
-}
-#define tgamma(d) ruby_tgamma(d)
-#endif
-
 #if defined LGAMMA_R_PM0_FIX
 static inline double
 ruby_lgamma_r(const double d, int *sign)
