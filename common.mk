@@ -1229,7 +1229,7 @@ change: PHONY
 
 exam: check test-rubyspec
 
-love: sudo-precheck up all test install check
+love: sudo-precheck up all test install exam
 	@echo love is all you need
 
 great: exam
