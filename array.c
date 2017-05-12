@@ -1786,7 +1786,12 @@ rb_ary_insert(int argc, VALUE *argv, VALUE ary)
     if (pos == -1) {
 	pos = RARRAY_LEN(ary);
     }
-    if (pos < 0) {
+    else if (pos < 0) {
+	long minpos = -RARRAY_LEN(ary) - 1;
+	if (pos < minpos) {
+	    rb_raise(rb_eIndexError, "index %ld too small for array; minimum: %ld",
+		     pos, minpos);
+	}
 	pos++;
     }
     rb_ary_splice(ary, pos, 0, argv + 1, argc - 1);
