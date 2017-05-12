@@ -7838,8 +7838,8 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
 	} \
     } while (0)
 
-/* this shouldn't be called directly.
- * objspace_xmalloc and objspace_xmalloc2 checks allocation size.
+/* these shouldn't be called directly.
+ * objspace_* functinos do not check allocation size.
  */
 static void *
 objspace_xmalloc0(rb_objspace_t *objspace, size_t size)
@@ -7851,15 +7851,6 @@ objspace_xmalloc0(rb_objspace_t *objspace, size_t size)
     return objspace_malloc_fixup(objspace, mem, size);
 }
 
-static void *
-objspace_xmalloc(rb_objspace_t *objspace, size_t size)
-{
-    if ((ssize_t)size < 0) {
-	negative_size_allocation_error("too large allocation size");
-    }
-    return objspace_xmalloc0(objspace, size);
-}
-
 static inline size_t
 xmalloc2_size(const size_t count, const size_t elsize)
 {
@@ -7868,12 +7859,6 @@ xmalloc2_size(const size_t count, const size_t elsize)
 	ruby_malloc_size_overflow(count, elsize);
     }
     return ret;
-}
-
-static void *
-objspace_xmalloc2(rb_objspace_t *objspace, size_t n, size_t size)
-{
-    return objspace_xmalloc0(objspace, xmalloc2_size(n, size));
 }
 
 static void *
@@ -7936,7 +7921,10 @@ ruby_xmalloc0(size_t size)
 void *
 ruby_xmalloc(size_t size)
 {
-    return objspace_xmalloc(&rb_objspace, size);
+    if ((ssize_t)size < 0) {
+	negative_size_allocation_error("too large allocation size");
+    }
+    return ruby_xmalloc0(size);
 }
 
 void
@@ -7950,18 +7938,15 @@ ruby_malloc_size_overflow(size_t count, size_t elsize)
 void *
 ruby_xmalloc2(size_t n, size_t size)
 {
-    return objspace_xmalloc2(&rb_objspace, n, size);
+    return objspace_xmalloc0(&rb_objspace, xmalloc2_size(n, size));
 }
 
 static void *
-objspace_xcalloc(rb_objspace_t *objspace, size_t count, size_t elsize)
+objspace_xcalloc(rb_objspace_t *objspace, size_t size)
 {
     void *mem;
-    size_t size;
 
-    size = xmalloc2_size(count, elsize);
     size = objspace_malloc_prepare(objspace, size);
-
     TRY_WITH_GC(mem = calloc(1, size));
     return objspace_malloc_fixup(objspace, mem, size);
 }
@@ -7969,7 +7954,7 @@ objspace_xcalloc(rb_objspace_t *objspace, size_t count, size_t elsize)
 void *
 ruby_xcalloc(size_t n, size_t size)
 {
-    return objspace_xcalloc(&rb_objspace, n, size);
+    return objspace_xcalloc(&rb_objspace, xmalloc2_size(n, size));
 }
 
 #ifdef ruby_sized_xrealloc
