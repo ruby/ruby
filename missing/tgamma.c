@@ -13,30 +13,7 @@ reference - Haruhiko Okumura: C-gengo niyoru saishin algorithm jiten
 #include <math.h>
 #include <errno.h>
 
-#ifdef HAVE_LGAMMA_R
-
-double tgamma(double x)
-{
-    int sign;
-    double d;
-    if (x == 0.0) { /* Pole Error */
-        errno = ERANGE;
-        return 1/x < 0 ? -HUGE_VAL : HUGE_VAL;
-    }
-    if (x < 0) {
-        static double zero = 0.0;
-        double i, f;
-        f = modf(-x, &i);
-        if (f == 0.0) { /* Domain Error */
-            errno = EDOM;
-            return zero/zero;
-        }
-    }
-    d = lgamma_r(x, &sign);
-    return sign * exp(d);
-}
-
-#else
+#ifndef HAVE_LGAMMA_R
 
 #include <errno.h>
 #define PI      3.14159265358979324  /* $\pi$ */
@@ -68,15 +45,16 @@ loggamma(double x)  /* the natural logarithm of the Gamma function. */
                 + (B4  / ( 4 *  3))) * w + (B2  / ( 2 *  1))) / x
                 + 0.5 * LOG_2PI - log(v) - x + (x - 0.5) * log(x);
 }
+#endif
 
 double tgamma(double x)  /* Gamma function */
 {
+    int sign;
     if (x == 0.0) { /* Pole Error */
         errno = ERANGE;
         return 1/x < 0 ? -HUGE_VAL : HUGE_VAL;
     }
     if (x < 0) {
-        int sign;
         static double zero = 0.0;
         double i, f;
         f = modf(-x, &i);
@@ -84,9 +62,15 @@ double tgamma(double x)  /* Gamma function */
             errno = EDOM;
             return zero/zero;
         }
+#ifndef HAVE_LGAMMA_R
         sign = (fmod(i, 2.0) != 0.0) ? 1 : -1;
         return sign * PI / (sin(PI * f) * exp(loggamma(1 - x)));
-    }
-    return exp(loggamma(x));
-}
 #endif
+    }
+#ifndef HAVE_LGAMMA_R
+    return exp(loggamma(x));
+#else
+    x = lgamma_r(x, &sign);
+    return sign * exp(x);
+#endif
+}
