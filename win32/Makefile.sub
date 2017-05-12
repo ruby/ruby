@@ -571,6 +571,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define SIZEOF_FLOAT 4
 #define SIZEOF_DOUBLE 8
 #define SIGNEDNESS_OF_TIME_T -1
+#define NEGATIVE_TIME_T 1
 !if $(RT_VER) >= 80
 #define SIZEOF_TIME_T 8
 #define TIMET2NUM(v) LL2NUM(v)
