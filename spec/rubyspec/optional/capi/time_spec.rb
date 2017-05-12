@@ -34,7 +34,9 @@ describe "CApiTimeSpecs" do
         time = @s.rb_time_num_new(1232141421, nil)
         time.should be_an_instance_of(Time)
         time.to_i.should == 1232141421
-        time.gmt_offset.should == 3600
+        platform_is_not :windows do
+          time.gmt_offset.should == 3600
+        end
       end
     end
 
