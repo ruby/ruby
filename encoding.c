@@ -1487,10 +1487,10 @@ rb_enc_set_default_external(VALUE encoding)
  * call-seq:
  *   Encoding.default_external = enc
  *
- * Sets default external encoding.  You should not set
- * Encoding::default_external in ruby code as strings created before changing
- * the value may have a different encoding from strings created after the value
- * was changed., instead you should use <tt>ruby -E</tt> to invoke ruby with
+ * Sets default external encoding. You should avoid using this method,
+ * as strings created before changing the value from Ruby
+ * may have a different encoding from strings created afterwards.
+ * Instead, you should use <tt>ruby -E</tt> to invoke Ruby with
  * the correct default_external.
  *
  * See Encoding::default_external for information on how the default external
