@@ -240,7 +240,10 @@ class IMAPTest < Test::Unit::TestCase
             end
           end
           th.raise(Interrupt)
-          exception_raised = true
+          m.synchronize do
+            exception_raised = true
+            c.signal
+          end
         end
         imap.idle do |res|
           m.synchronize do
@@ -417,7 +420,7 @@ class IMAPTest < Test::Unit::TestCase
       begin
         m = Monitor.new
         in_idle = false
-        exception_raised = false
+        closed = false
         c = m.new_cond
         threads << Thread.start do
           m.synchronize do
@@ -426,14 +429,17 @@ class IMAPTest < Test::Unit::TestCase
             end
           end
           sock.close
-          exception_raised = true
+          m.synchronize do
+            closed = true
+            c.signal
+          end
         end
         assert_raise(Net::IMAP::Error) do
           imap.idle do |res|
             m.synchronize do
               in_idle = true
               c.signal
-              until exception_raised
+              until closed
                 c.wait(0.1)
               end
             end
