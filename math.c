@@ -778,22 +778,6 @@ math_erfc(VALUE unused_obj, VALUE x)
     return DBL2NUM(erfc(Get_Double(x)));
 }
 
-#if defined LGAMMA_R_PM0_FIX
-static inline double
-ruby_lgamma_r(const double d, int *sign)
-{
-    const double g = lgamma_r(d, sign);
-    if (isinf(g)) {
-	if (d == 0.0) {
-	    *sign = signbit(d) ? -1 : +1;
-	    return INFINITY;
-	}
-    }
-    return g;
-}
-#define lgamma_r(d, sign) ruby_lgamma_r(d, sign)
-#endif
-
 /*
  * call-seq:
  *    Math.gamma(x)  -> Float
@@ -910,6 +894,10 @@ math_lgamma(VALUE unused_obj, VALUE x)
     if (isinf(d)) {
 	if (signbit(d)) domain_error("lgamma");
 	return rb_assoc_new(DBL2NUM(INFINITY), INT2FIX(1));
+    }
+    if (d == 0.0) {
+	VALUE vsign = signbit(d) ? INT2FIX(-1) : INT2FIX(+1);
+	return rb_assoc_new(DBL2NUM(INFINITY), vsign);
     }
     v = DBL2NUM(lgamma_r(d, &sign));
     return rb_assoc_new(v, INT2FIX(sign));
