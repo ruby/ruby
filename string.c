@@ -1008,8 +1008,12 @@ rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *eenc)
     if (!ienc || eenc == ienc) {
 	return rb_tainted_str_new_with_enc(ptr, len, eenc);
     }
-    str = rb_tainted_str_new_with_enc(NULL, len, ienc);
-    rb_str_cat_conv_enc_opts(str, 0, ptr, len, eenc, 0, Qnil);
+    str = rb_tainted_str_new_with_enc(NULL, 0, ienc);
+    if (NIL_P(rb_str_cat_conv_enc_opts(str, 0, ptr, len, eenc, 0, Qnil))) {
+	STR_SET_LEN(str, 0);
+	rb_enc_associate(str, eenc);
+	rb_str_cat(str, ptr, len);
+    }
     return str;
 }
 
