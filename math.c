@@ -869,7 +869,13 @@ math_gamma(VALUE unused_obj, VALUE x)
     double d;
     d = Get_Double(x);
     /* check for domain error */
-    if (isinf(d) && signbit(d)) domain_error("gamma");
+    if (isinf(d)) {
+	if (signbit(d)) domain_error("gamma");
+	return DBL2NUM(INFINITY);
+    }
+    if (d == 0.0) {
+	return signbit(d) ? DBL2NUM(-INFINITY) : DBL2NUM(INFINITY);
+    }
     if (d == floor(d)) {
 	if (d < 0.0) domain_error("gamma");
 	if (1.0 <= d && d <= (double)NFACT_TABLE) {
