@@ -543,6 +543,7 @@ thread_cleanup_func(void *th_ptr, int atfork)
 	return;
 
     native_mutex_destroy(&th->interrupt_lock);
+    native_cond_destroy(&th->interrupt_cond);
     native_thread_destroy(th);
 }
 
