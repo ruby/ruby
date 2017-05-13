@@ -917,7 +917,7 @@ rb_str_cat_conv_enc_opts(VALUE newstr, long ofs, const char *ptr, long len,
     long olen;
 
     olen = RSTRING_LEN(newstr);
-    if (ofs < -olen || olen <= ofs)
+    if (ofs < -olen || olen < ofs)
         rb_raise(rb_eIndexError, "index %ld out of string", ofs);
     if (ofs < 0) ofs += olen;
     if (!from) {
