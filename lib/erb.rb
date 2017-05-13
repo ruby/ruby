@@ -867,8 +867,8 @@ class ERB
   # requires the setup of an ERB _compiler_ object.
   #
   def set_eoutvar(compiler, eoutvar = '_erbout')
-    compiler.put_cmd = "#{eoutvar}.concat"
-    compiler.insert_cmd = "#{eoutvar}.concat"
+    compiler.put_cmd = "#{eoutvar}.<<"
+    compiler.insert_cmd = "#{eoutvar}.<<"
     compiler.pre_cmd = ["#{eoutvar} = String.new"]
     compiler.post_cmd = ["#{eoutvar}.force_encoding(__ENCODING__)"]
   end
