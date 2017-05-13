@@ -575,8 +575,8 @@ describe "Process.spawn" do
     end
 
     platform_is :windows do
-      it "raises Errno::ENOEXEC when the file is not an executable file" do
-        lambda { Process.spawn __FILE__ }.should raise_error(Errno::ENOEXEC)
+      it "raises Errno::EACCES or Errno::ENOEXEC when the file is not an executable file" do
+        lambda { Process.spawn __FILE__ }.should raise_error(->(e){[Errno::EACCES, Errno::ENOEXEC].find{|exc| exc === e}})
       end
     end
   end
