@@ -997,10 +997,20 @@ rb_str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
 VALUE
 rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *eenc)
 {
+    rb_encoding *ienc;
     VALUE str;
 
-    str = rb_tainted_str_new_with_enc(ptr, len, eenc);
-    return rb_external_str_with_enc(str, eenc);
+    if (!eenc || (eenc == rb_ascii8bit_encoding()) ||
+	(eenc == rb_usascii_encoding() && search_nonascii(ptr, ptr + len))) {
+	return rb_tainted_str_new(ptr, len);
+    }
+    ienc = rb_default_internal_encoding();
+    if (!ienc || eenc == ienc) {
+	return rb_tainted_str_new_with_enc(ptr, len, eenc);
+    }
+    str = rb_tainted_str_new_with_enc(NULL, len, ienc);
+    rb_str_cat_conv_enc_opts(str, 0, ptr, len, eenc, 0, Qnil);
+    return str;
 }
 
 VALUE
