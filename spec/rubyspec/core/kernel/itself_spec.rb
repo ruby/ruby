@@ -5,6 +5,5 @@ describe "Kernel#itself" do
   it "returns the receiver itself" do
     foo = Object.new
     foo.itself.should equal foo
-    foo.itself.object_id.should equal foo.object_id
   end
 end
