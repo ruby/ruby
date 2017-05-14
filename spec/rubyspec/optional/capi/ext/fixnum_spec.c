@@ -29,6 +29,8 @@ void Init_fixnum_spec(void) {
 #ifdef HAVE_RB_FIX2INT
   rb_define_method(cls, "rb_fix2int", fixnum_spec_rb_fix2int, 1);
 #endif
+
+  (void)cls;
 }
 
 #ifdef __cplusplus
