@@ -60,7 +60,7 @@ static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t volatile *t
 static size_t
 rb_mutex_num_waiting(rb_mutex_t *mutex)
 {
-    struct mutex_waiter *w;
+    struct mutex_waiter *w = 0;
     size_t n = 0;
 
     list_for_each(&mutex->waitq, w, node) {
