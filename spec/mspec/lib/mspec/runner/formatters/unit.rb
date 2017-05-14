@@ -8,7 +8,7 @@ class UnitdiffFormatter < DottedFormatter
     @exceptions.each do |exc|
       outcome = exc.failure? ? "FAILED" : "ERROR"
       print "\n#{count += 1})\n#{exc.description} #{outcome}\n"
-      print exc.message, ": \n"
+      print exc.message, ":\n"
       print exc.backtrace, "\n"
     end
     print "\n#{@tally.format}\n"

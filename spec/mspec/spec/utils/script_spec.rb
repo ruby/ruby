@@ -356,9 +356,9 @@ describe MSpecScript, "#entries" do
   end
 
   it "returns the pattern in an array if it is a file" do
-    File.should_receive(:expand_path).with("file").and_return("file/expanded")
-    File.should_receive(:file?).with("file/expanded").and_return(true)
-    @script.entries("file").should == ["file/expanded"]
+    File.should_receive(:expand_path).with("file").and_return("file/expanded.rb")
+    File.should_receive(:file?).with("file/expanded.rb").and_return(true)
+    @script.entries("file").should == ["file/expanded.rb"]
   end
 
   it "returns Dir['pattern/**/*_spec.rb'] if pattern is a directory" do
@@ -381,9 +381,10 @@ describe MSpecScript, "#entries" do
     end
 
     it "returns the pattern in an array if it is a file" do
-      File.should_receive(:expand_path).with(@name).and_return(@name)
-      File.should_receive(:file?).with(@name).and_return(true)
-      @script.entries("name").should == [@name]
+      name = "#{@name}.rb"
+      File.should_receive(:expand_path).with(name).and_return(name)
+      File.should_receive(:file?).with(name).and_return(true)
+      @script.entries("name.rb").should == [name]
     end
 
     it "returns Dir['pattern/**/*_spec.rb'] if pattern is a directory" do
