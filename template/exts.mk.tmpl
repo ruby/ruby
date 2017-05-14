@@ -124,6 +124,9 @@ distclean:
 <%= ruby %>:
 	$(Q)$(MAKE)<%=mflags%> $(SUBMAKEOPTS) $@
 % end
+% if rubies.size > 1
+<%= rubies[1..-1].join(' ')%>: <%= rubies[0] %>
+% end
 
 libencs:
 	$(Q)$(MAKE)<%=mflags%> -f enc.mk V=$(V) $@
