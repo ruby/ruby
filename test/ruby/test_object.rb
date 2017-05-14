@@ -23,7 +23,9 @@ class TestObject < Test::Unit::TestCase
     object = Object.new
     assert_same(self, object.yield_self {self}, feature)
     assert_same(object, object.yield_self {|x| break x}, feature)
-    assert_instance_of(Enumerator, object.yield_self)
+    enum = object.yield_self
+    assert_instance_of(Enumerator, enum)
+    assert_equal(1, enum.size)
   end
 
   def test_dup

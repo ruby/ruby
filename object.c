@@ -497,6 +497,12 @@ rb_obj_itself(VALUE obj)
     return obj;
 }
 
+static VALUE
+rb_obj_size(VALUE self, VALUE args, VALUE obj)
+{
+    return LONG2FIX(1);
+}
+
 /*
  *  call-seq:
  *     obj.yield_self {|_obj|...} -> an_object
@@ -510,7 +516,7 @@ rb_obj_itself(VALUE obj)
 static VALUE
 rb_obj_yield_self(VALUE obj)
 {
-    RETURN_ENUMERATOR(obj, 0, 0);
+    RETURN_SIZED_ENUMERATOR(obj, 0, 0, rb_obj_size);
     return rb_yield_values2(1, &obj);
 }
 
