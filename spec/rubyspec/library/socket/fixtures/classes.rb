@@ -51,7 +51,18 @@ module SocketSpecs
   end
 
   def self.socket_path
-    tmp("unix_server_spec.socket", false)
+    path = tmp("unix.sock", false)
+    # Check for too long unix socket path (max 108 bytes including \0 => 107)
+    # Note that Linux accepts not null-terminated paths but the man page advises against it.
+    if path.bytesize > 107
+      path = "/tmp/unix_server_spec.socket"
+    end
+    rm_socket(path)
+    path
+  end
+
+  def self.rm_socket(path)
+    File.delete(path) if File.exist?(path)
   end
 
   # TCPServer echo server accepting one connection

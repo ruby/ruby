@@ -69,12 +69,12 @@ HERE
       SquigglyHeredocSpecs.unquoted.should == "unquoted interpolated\n"
     end
 
-    it 'allows HEREDOC with <<"identifier", interpolated' do
+    it 'allows HEREDOC with <<~"identifier", interpolated' do
       require File.expand_path('../fixtures/squiggly_heredoc', __FILE__)
       SquigglyHeredocSpecs.doublequoted.should == "doublequoted interpolated\n"
     end
 
-    it "allows HEREDOC with <<'identifier', no interpolation" do
+    it "allows HEREDOC with <<~'identifier', no interpolation" do
       require File.expand_path('../fixtures/squiggly_heredoc', __FILE__)
       SquigglyHeredocSpecs.singlequoted.should == "singlequoted \#{\"interpolated\"}\n"
     end

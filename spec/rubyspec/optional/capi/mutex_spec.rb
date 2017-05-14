@@ -15,7 +15,7 @@ describe "C-API Mutex functions" do
   end
 
   describe "rb_mutex_locked_p" do
-    it "returns true if the mutex is locked" do
+    it "returns fakse if the mutex is not locked" do
       @s.rb_mutex_locked_p(@m).should be_false
     end
 

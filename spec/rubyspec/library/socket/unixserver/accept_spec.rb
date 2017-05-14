@@ -5,16 +5,15 @@ platform_is_not :windows do
   describe "UNIXServer#accept" do
     before :each do
       @path = SocketSpecs.socket_path
-      rm_r @path
     end
 
     after :each do
-      rm_r @path
+      SocketSpecs.rm_socket @path
     end
 
     it "accepts what is written by the client" do
-      server = UNIXServer.open(SocketSpecs.socket_path)
-      client = UNIXSocket.open(SocketSpecs.socket_path)
+      server = UNIXServer.open(@path)
+      client = UNIXSocket.open(@path)
 
       client.send('hello', 0)
 

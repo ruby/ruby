@@ -156,7 +156,7 @@ describe "Multiple assignment" do
       [a, b, c].should == [1, [], 2]
     end
 
-    it "raises a TypeError if #to_ary does not return an Array" do
+    it "raises a TypeError if #to_ary does not return an Array with MLHS" do
       x = mock("multi-assign splat")
       x.should_receive(:to_ary).and_return(1)
 
@@ -249,7 +249,7 @@ describe "Multiple assignment" do
       [a, b].should == [1, 2]
     end
 
-    it "raises a TypeError if #to_ary does not return an Array" do
+    it "raises a TypeError if #to_ary does not return an Array on a single RHS" do
       y = mock("multi-assign method return value")
       y.should_receive(:to_ary).and_return(1)
 
@@ -359,6 +359,10 @@ describe "Multiple assignment" do
       (* = *a).should == [1]
     end
 
+    it "consumes values for a grouped anonymous splat" do
+      ((*) = *1).should == [1]
+    end
+
     it "assigns a single LHS splat" do
       x = 1
       (*a = *x).should == [1]
@@ -445,15 +449,7 @@ describe "Multiple assignment" do
       a.should == [x]
     end
 
-    it "calls #to_a to convert an Object RHS with a single LHS" do
-      x = mock("multi-assign splat")
-      x.should_receive(:to_a).and_return([1, 2])
-
-      a = *x
-      a.should == [1, 2]
-    end
-
-    it "raises a TypeError if #to_a does not return an Array" do
+    it "raises a TypeError if #to_a does not return an Array with a single LHS" do
       x = mock("multi-assign splat")
       x.should_receive(:to_a).and_return(1)
 
@@ -468,7 +464,7 @@ describe "Multiple assignment" do
       [a, b, c].should == [1, 2, nil]
     end
 
-    it "raises a TypeError if #to_a does not return an Array" do
+    it "raises a TypeError if #to_a does not return an Array with a simple MLHS" do
       x = mock("multi-assign splat")
       x.should_receive(:to_a).and_return(1)
 
@@ -491,7 +487,7 @@ describe "Multiple assignment" do
       [a, b, c].should == [1, [], 2]
     end
 
-    it "raises a TypeError if #to_a does not return an Array" do
+    it "raises a TypeError if #to_a does not return an Array with MLHS" do
       x = mock("multi-assign splat")
       x.should_receive(:to_a).and_return(1)
 
@@ -516,14 +512,6 @@ describe "Multiple assignment" do
       [a, b, c, d, e, f, g].should == [1, [], nil, [], nil, [], nil]
     end
 
-    it "consumes values for an anonymous splat" do
-      (* = *1).should == [1]
-    end
-
-    it "consumes values for a grouped anonymous splat" do
-      ((*) = *1).should == [1]
-    end
-
     it "does not mutate a RHS Array" do
       x = [1, 2, 3, 4]
       a, *b, c, d = *x
@@ -542,6 +530,10 @@ describe "Multiple assignment" do
   context "with a MRHS value" do
     it "consumes values for an anonymous splat" do
       (* = 1, 2, 3).should == [1, 2, 3]
+    end
+
+    it "consumes values for a grouped anonymous splat" do
+      ((*) = 1, 2, 3).should == [1, 2, 3]
     end
 
     it "consumes values for multiple '_' variables" do
@@ -573,7 +565,7 @@ describe "Multiple assignment" do
       [a, b].should == [1, [3, 4]]
     end
 
-    it "raises a TypeError if #to_a does not return an Array" do
+    it "raises a TypeError if #to_a does not return an Array with a splat MLHS" do
       x = mock("multi-assign splat MRHS")
       x.should_receive(:to_a).and_return(1)
 
@@ -588,7 +580,7 @@ describe "Multiple assignment" do
       [a, b].should == [1, [x]]
     end
 
-    it "calls #to_a to convert a splatted Object as part of a MRHS with a splat MLHS" do
+    it "calls #to_a to convert a splatted Object as part of a MRHS" do
       x = mock("multi-assign splat MRHS")
       x.should_receive(:to_a).and_return([3, 4])
 
@@ -596,14 +588,14 @@ describe "Multiple assignment" do
       [a, b].should == [3, [4, 1]]
     end
 
-    it "raises a TypeError if #to_a does not return an Array" do
+    it "raises a TypeError if #to_a does not return an Array with a splat MRHS" do
       x = mock("multi-assign splat MRHS")
       x.should_receive(:to_a).and_return(1)
 
       lambda { a, *b = *x, 1 }.should raise_error(TypeError)
     end
 
-    it "does not call #to_ary to convert a splatted Object as part of a MRHS with a splat MRHS" do
+    it "does not call #to_ary to convert a splatted Object with a splat MRHS" do
       x = mock("multi-assign splat MRHS")
       x.should_not_receive(:to_ary)
 
@@ -627,22 +619,14 @@ describe "Multiple assignment" do
       a.should == [1, 2, 3]
     end
 
-    it "assigns a grouped LHS with splats from nested Arrays" do
+    it "assigns a grouped LHS with splats from nested Arrays for simple values" do
       (a, *b), c, (*d, (e, *f, g)) = 1, 2, 3, 4
       [a, b, c, d, e, f, g].should == [1, [], 2, [], 3, [], nil]
     end
 
-    it "assigns a grouped LHS with splats from nested Arrays" do
+    it "assigns a grouped LHS with splats from nested Arrays for nested arrays" do
       (a, *b), c, (*d, (e, *f, g)) = [1, [2, 3]], [4, 5], [6, 7, 8]
       [a, b, c, d, e, f, g].should == [1, [[2, 3]], [4, 5], [6, 7], 8, [], nil]
-    end
-
-    it "consumes values for an anonymous splat" do
-      (* = 1, 2, 3).should == [1, 2, 3]
-    end
-
-    it "consumes values for a grouped anonymous splat" do
-      ((*) = 1, 2, 3).should == [1, 2, 3]
     end
 
     it "calls #to_ary to convert an Object when the position receiving the value is a multiple assignment" do
@@ -677,7 +661,7 @@ describe "Multiple assignment" do
       [a, b, c, d].should == [1, [2, 3], 4, 5]
     end
 
-    it "raises a TypeError if #to_ary does not return an Array" do
+    it "raises a TypeError if #to_ary does not return an Array in a MRHS" do
       x = mock("multi-assign mixed splatted RHS")
       x.should_receive(:to_ary).and_return(x)
 

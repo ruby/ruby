@@ -6,8 +6,6 @@ describe "UNIXSocket#recvfrom" do
   platform_is_not :windows do
     before :each do
       @path = SocketSpecs.socket_path
-      rm_r @path
-
       @server = UNIXServer.open(@path)
       @client = UNIXSocket.open(@path)
     end
@@ -15,7 +13,7 @@ describe "UNIXSocket#recvfrom" do
     after :each do
       @client.close
       @server.close
-      rm_r @path
+      SocketSpecs.rm_socket @path
     end
 
     it "receives len bytes from sock" do

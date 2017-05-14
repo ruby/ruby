@@ -1,6 +1,7 @@
 module FileSpecs
-  # Try to set up known locations of each filetype
-  def self.reconfigure()
+  def self.configure_types
+    return if @configured
+
     @file   = tmp("test.txt")
     @dir    = Dir.pwd
     @fifo   = tmp("test_fifo")
@@ -15,45 +16,43 @@ module FileSpecs
         @link = links.first
         break
       end
-
     end
+
+    @configured = true
   end
 
-  # TODO: Automatic reload mechanism
-  reconfigure
-
-  def self.normal_file()
-    File.open(@file, "w") {} # 'Touch'
+  def self.normal_file
+    touch(@file)
     yield @file
   ensure
     rm_r @file
   end
 
-  def self.directory()
+  def self.directory
     yield @dir
   end
 
   # TODO: need a platform-independent helper here
-  def self.fifo()
+  def self.fifo
     system "mkfifo #{@fifo} 2> /dev/null"
     yield @fifo
   ensure
     rm_r @fifo
   end
 
-  def self.block_device()
+  def self.block_device
     yield @block
   end
 
-  def self.character_device()
+  def self.character_device
     yield @char
   end
 
-  def self.symlink()
+  def self.symlink
     yield @link
   end
 
-  def self.socket()
+  def self.socket
     require 'socket'
     name = tmp("ftype_socket.socket")
     rm_r name

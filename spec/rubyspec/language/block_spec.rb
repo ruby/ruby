@@ -599,7 +599,7 @@ describe "A block" do
       @y.m(1, 2) { |a, (b, (c, d))| [a, b, c, d] }.should == [1, 2, nil, nil]
     end
 
-    it "destructures a single multi-level Array value yielded" do
+    it "destructures a nested Array value yielded" do
       @y.m(1, [2, 3]) { |a, (b, (c, d))| [a, b, c, d] }.should == [1, 2, 3, nil]
     end
 
@@ -617,7 +617,7 @@ describe "A block" do
       @y.m(1, 2) { |a, ((b, c), d)| [a, b, c, d] }.should == [1, 2, nil, nil]
     end
 
-    it "destructures a single multi-level Array value yielded" do
+    it "destructures a nested value yielded" do
       @y.m(1, [2, 3]) { |a, ((b, c), d)| [a, b, c, d] }.should == [1, 2, nil, 3]
     end
 

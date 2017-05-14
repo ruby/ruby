@@ -5,14 +5,13 @@ require 'tempfile'
 describe :unixserver_new, shared: true do
   platform_is_not :windows do
     before :each do
-      @path = tmp("unixserver_spec")
-      rm_r @path
+      @path = SocketSpecs.socket_path
     end
 
     after :each do
       @server.close if @server
       @server = nil
-      rm_r @path
+      SocketSpecs.rm_socket @path
     end
 
     it "creates a new UNIXServer" do

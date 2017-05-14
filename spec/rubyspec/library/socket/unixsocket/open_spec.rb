@@ -14,7 +14,7 @@ describe "UNIXSocket.open" do
 
     after :each do
       @server.close
-      rm_r @path
+      SocketSpecs.rm_socket @path
     end
 
     it "opens a unix socket on the specified file and yields it to the block" do

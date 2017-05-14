@@ -74,16 +74,17 @@ describe "IO#advise" do
   end
 
   platform_is :linux do
-    require 'etc'
-    uname = if Etc.respond_to?(:uname)
-              Etc.uname[:release]
-            else
-              `uname -r`.chomp
-            end
-    if (uname.split('.').map(&:to_i) <=> [3,6]) < 0
-      # [ruby-core:65355] tmpfs is not supported
-    else
-      it "supports the willneed advice type" do
+    it "supports the willneed advice type" do
+      require 'etc'
+      uname = if Etc.respond_to?(:uname)
+                Etc.uname[:release]
+              else
+                `uname -r`.chomp
+              end
+      if (uname.split('.').map(&:to_i) <=> [3,6]) < 0
+        # [ruby-core:65355] tmpfs is not supported
+        1.should == 1
+      else
         @io.advise(:willneed).should be_nil
       end
     end

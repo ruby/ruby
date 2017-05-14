@@ -167,10 +167,6 @@ describe "Regexp with character classes" do
     "\u{36F}".match(/[[:blank:]]/).should be_nil
   end
 
-  it "doesn't match Unicode control characters with [[:blank:]]" do
-    "\u{16}".match(/[[:blank:]]/).should be_nil
-  end
-
   it "doesn't Unicode letter characters with [[:cntrl:]]" do
     "à".match(/[[:cntrl:]]/).should be_nil
   end
@@ -393,9 +389,6 @@ describe "Regexp with character classes" do
 
   it "matches Unicode Pf characters with [[:punct:]]" do
     "\u{201D}".match(/[[:punct:]]/).to_a.should == ["\u{201D}"]
-  end
-
-  it "matches Unicode Pf characters with [[:punct:]]" do
     "\u{00BB}".match(/[[:punct:]]/).to_a.should == ["\u{00BB}"]
   end
 

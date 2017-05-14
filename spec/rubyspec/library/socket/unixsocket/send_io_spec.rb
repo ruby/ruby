@@ -20,7 +20,7 @@ describe "UNIXSocket#send_io" do
       @file.close
       @client.close
       @server.close
-      rm_r @path
+      SocketSpecs.rm_socket @path
     end
 
     it "sends the fd for an IO object across the socket" do

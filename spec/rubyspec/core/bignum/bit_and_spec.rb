@@ -16,8 +16,8 @@ describe "Bignum#&" do
   end
 
   it "returns self bitwise AND other when one operand is negative" do
-    ((2*bignum_value) & -1).should == 18446744073709551616
-    ((4*bignum_value) & -1).should == 36893488147419103232
+    ((2*bignum_value) & -1).should == (2*bignum_value)
+    ((4*bignum_value) & -1).should == (4*bignum_value)
     (@bignum & -0xffffffffffffff5).should == 9223372036854775809
     (@bignum & -@bignum).should == 1
     (@bignum & -0x8000000000000000).should == 9223372036854775808

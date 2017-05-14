@@ -28,5 +28,13 @@ module BindingSpecs
     def get_empty_binding
       binding
     end
+
+    def get_binding_in_block
+      a = true
+      1.times do
+        b = false
+        return binding
+      end
+    end
   end
 end

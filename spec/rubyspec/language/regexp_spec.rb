@@ -139,7 +139,7 @@ describe "Literal Regexps" do
     pattern.should_not =~ 'T'
   end
 
-  it "supports conditional regular expressions with positional capture groups" do
+  it "supports conditional regular expressions with named capture groups" do
     pattern = /\A(?<word>foo)?(?(<word>)(T)|(F))\z/
 
     pattern.should =~ 'fooT'

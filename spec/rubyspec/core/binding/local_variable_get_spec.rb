@@ -42,4 +42,15 @@ describe "Binding#local_variable_get" do
 
     bind.local_variable_get(:number).should == 10
   end
+
+  it "raises a NameError on global access" do
+    bind = binding
+    lambda { bind.local_variable_get(:$0) }.should raise_error(NameError)
+  end
+
+  it "raises a NameError on special variable access" do
+    bind = binding
+    lambda { bind.local_variable_get(:$~) }.should raise_error(NameError)
+    lambda { bind.local_variable_get(:$_) }.should raise_error(NameError)
+  end
 end

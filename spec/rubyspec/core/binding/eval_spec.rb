@@ -13,6 +13,16 @@ describe "Binding#eval" do
     bind.eval("Inside.name").should == "BindingSpecs::Demo::Inside"
   end
 
+  it "does not leak variables to cloned bindings" do
+    obj = BindingSpecs::Demo.new(1)
+    bind = obj.get_empty_binding
+    bind2 = bind.dup
+
+    bind.eval("x = 72")
+    bind.local_variables.should == [:x]
+    bind2.local_variables.should == []
+  end
+
   describe "with a file given" do
     it "does not store the filename permanently" do
       obj = BindingSpecs::Demo.new(1)

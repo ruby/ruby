@@ -4,13 +4,13 @@ require File.expand_path('../../fixtures/classes', __FILE__)
 platform_is_not :windows do
   describe "UNIXServer#for_fd" do
     before :each do
-      @unix_path = tmp("unix_socket")
+      @unix_path = SocketSpecs.socket_path
       @unix = UNIXServer.new(@unix_path)
     end
 
     after :each do
       @unix.close if @unix
-      rm_r @unix_path
+      SocketSpecs.rm_socket @unix_path
     end
 
     it "can calculate the path" do

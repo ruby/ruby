@@ -6,7 +6,7 @@ require 'fileutils'
 require 'tmpdir'
 
 OBJDIR ||= File.expand_path("../../../ext/#{RUBY_NAME}/#{RUBY_VERSION}", __FILE__)
-FileUtils.makedirs(OBJDIR)
+mkdir_p(OBJDIR)
 
 def extension_path
   File.expand_path("../ext", __FILE__)
@@ -109,24 +109,6 @@ def compile_extension(name)
   lib
 ensure
   ENV[preloadenv] = preload if preloadenv
-end
-
-def compile_extension_truffleruby(name)
-  sulong_config_file = File.join(extension_path, '.jruby-cext-build.yml')
-  output_file = File.join(object_path, "#{name}_spec.#{RbConfig::CONFIG['DLEXT']}")
-
-  File.open(sulong_config_file, 'w') do |f|
-    f.puts "src: #{name}_spec.c"
-    f.puts "out: #{output_file}"
-  end
-
-  command = ["#{RbConfig::CONFIG['bindir']}/../tool/jt.rb", 'cextc', extension_path]
-  system(*command)
-  raise "Compilation of #{extension_path} failed: #{$?}\n#{command.join(' ')}" unless $?.success?
-
-  output_file
-ensure
-  File.delete(sulong_config_file) if File.exist?(sulong_config_file)
 end
 
 def compile_truffleruby_extconf_make(name, path, objdir)

@@ -7,7 +7,6 @@ platform_is_not :windows do
 
     before :each do
       @path = SocketSpecs.socket_path
-      rm_r @path
       @server = UNIXServer.open(@path)
       @s1 = UNIXSocket.new(@path)
       @s2 = @server.accept
@@ -17,7 +16,7 @@ platform_is_not :windows do
       @server.close
       @s1.close
       @s2.close
-      rm_r @path
+      SocketSpecs.rm_socket @path
     end
 
     it_should_behave_like "partially closable sockets"

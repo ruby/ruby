@@ -8,6 +8,21 @@ describe "Fixnum#&" do
     (0xffff & bignum_value + 0xffff_ffff).should == 65535
   end
 
+  it "returns self bitwise AND other when one operand is negative" do
+    ((1 << 33) & -1).should == (1 << 33)
+    (-1 & (1 << 33)).should == (1 << 33)
+
+    ((-(1<<33)-1) & 5).should == 5
+    (5 & (-(1<<33)-1)).should == 5
+  end
+
+  it "returns self bitwise AND other when both operands are negative" do
+    (-5 & -1).should == -5
+    (-3 & -4).should == -4
+    (-12 & -13).should == -16
+    (-13 & -12).should == -16
+  end
+
   it "returns self bitwise AND a Bignum" do
     (-1 & 2**64).should == 18446744073709551616
   end
