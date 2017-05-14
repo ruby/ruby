@@ -1317,6 +1317,7 @@ main()
 		    ac_cv_func___builtin_setjmp=no
 		    ac_cv_func_round=no
 		])
+		ac_cv_func_tgamma=no
 		AC_CHECK_TYPE([NET_LUID], [], [],
 			      [@%:@include <winsock2.h>
 			      @%:@include <iphlpapi.h>])
