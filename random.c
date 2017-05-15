@@ -392,6 +392,21 @@ rand_init(struct MT *mt, VALUE seed)
     return seed;
 }
 
+static VALUE
+to_seed(VALUE seed)
+{
+    VALUE vseed = seed;
+
+    seed = rb_check_to_int(seed);
+    if (NIL_P(seed)) {
+	char *p = StringValuePtr(vseed);
+	seed = rb_integer_unpack(p, RSTRING_LEN(vseed), 1, 0,
+				 INTEGER_PACK_LITTLE_ENDIAN);
+	RB_GC_GUARD(vseed);
+    }
+    return seed;
+}
+
 /*
  * call-seq:
  *   Random.new(seed = Random.new_seed) -> prng
@@ -414,7 +429,7 @@ random_init(int argc, VALUE *argv, VALUE obj)
     else {
 	vseed = argv[0];
 	rb_check_copyable(obj, vseed);
-	vseed = rb_to_int(vseed);
+	vseed = to_seed(vseed);
     }
     rnd->seed = rand_init(&rnd->mt, vseed);
     return obj;
@@ -787,7 +802,7 @@ rb_f_srand(int argc, VALUE *argv, VALUE obj)
 	seed = random_seed();
     }
     else {
-	seed = rb_to_int(argv[0]);
+	seed = to_seed(argv[0]);
     }
     old = r->seed;
     r->seed = rand_init(&r->mt, seed);
