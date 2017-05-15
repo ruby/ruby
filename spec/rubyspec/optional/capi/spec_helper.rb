@@ -83,13 +83,13 @@ def compile_extension(name)
 
   ldshared  = RbConfig::CONFIG["LDSHARED"]
   ldshared += " #{RbConfig::CONFIG["ARCH_FLAG"]}" if RbConfig::CONFIG["ARCH_FLAG"]
-  libs      = RbConfig::CONFIG["LIBS"]
+  libs      = "#{RbConfig::CONFIG["LIBRUBYARG"]} #{RbConfig::CONFIG["LIBS"]}"
   dldflags  = "#{RbConfig::CONFIG["LDFLAGS"]} #{RbConfig::CONFIG["DLDFLAGS"]} #{RbConfig::CONFIG["EXTDLDFLAGS"]}"
   dldflags.sub!(/-Wl,-soname,\S+/, '')
+  dldflags.sub!(/\$\(DEFFILE\)/, '')
 
   if /mswin/ =~ RUBY_PLATFORM
     dldflags.sub!("$(LIBPATH)", RbConfig::CONFIG["LIBPATHFLAG"] % path)
-    libs    += RbConfig::CONFIG["LIBRUBY"]
     outflag  = RbConfig::CONFIG["OUTFLAG"]
 
     link_cmd = "#{ldshared} #{outflag}#{lib} #{obj} #{libs} -link #{dldflags} /export:Init_#{ext}"
