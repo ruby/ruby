@@ -410,6 +410,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
     Gem::Specification._clear_load_cache
     Gem::Specification.unresolved_deps.clear
+    Gem::refresh
   end
 
   def common_installer_setup
