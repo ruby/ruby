@@ -98,7 +98,7 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
   end
 
   def socks
-    sserv = TCPServer.new(0)
+    sserv = TCPServer.new('localhost', 0)
     ssock = nil
     t = Thread.new { ssock = sserv.accept }
     csock = TCPSocket.new('localhost', sserv.addr[1])
