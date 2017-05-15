@@ -80,4 +80,49 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
       pkey.verify("SHA256", "data", hmac)
     }
   end
+
+  def test_ed25519
+    # Test vector from RFC 8032 Section 7.1 TEST 2
+    priv_pem = <<~EOF
+    -----BEGIN PRIVATE KEY-----
+    MC4CAQAwBQYDK2VwBCIEIEzNCJso/5banbbDRuwRTg9bijGfNaumJNqM9u1PuKb7
+    -----END PRIVATE KEY-----
+    EOF
+    pub_pem = <<~EOF
+    -----BEGIN PUBLIC KEY-----
+    MCowBQYDK2VwAyEAPUAXw+hDiVqStwqnTRt+vJyYLM8uxJaMwM1V8Sr0Zgw=
+    -----END PUBLIC KEY-----
+    EOF
+    begin
+      priv = OpenSSL::PKey.read(priv_pem)
+      pub = OpenSSL::PKey.read(pub_pem)
+    rescue OpenSSL::PKey::PKeyError
+      # OpenSSL < 1.1.1
+      pend "Ed25519 is not implemented"
+    end
+    assert_instance_of OpenSSL::PKey::PKey, priv
+    assert_instance_of OpenSSL::PKey::PKey, pub
+    assert_equal priv_pem, priv.private_to_pem
+    assert_equal pub_pem, priv.public_to_pem
+    assert_equal pub_pem, pub.public_to_pem
+
+    sig = [<<~EOF.gsub(/[^0-9a-f]/, "")].pack("H*")
+    92a009a9f0d4cab8720e820b5f642540
+    a2b27b5416503f8fb3762223ebdb69da
+    085ac1e43e15996e458f3613d0f11d8c
+    387b2eaeb4302aeeb00d291612bb0c00
+    EOF
+    data = ["72"].pack("H*")
+    assert_equal sig, priv.sign(nil, data)
+    assert_equal true, priv.verify(nil, sig, data)
+    assert_equal true, pub.verify(nil, sig, data)
+    assert_equal false, pub.verify(nil, sig, data.succ)
+
+    # PureEdDSA wants nil as the message digest
+    assert_raise(OpenSSL::PKey::PKeyError) { priv.sign("SHA512", data) }
+    assert_raise(OpenSSL::PKey::PKeyError) { pub.verify("SHA512", sig, data) }
+
+    # Ed25519 pkey type does not support key derivation
+    assert_raise(OpenSSL::PKey::PKeyError) { priv.derive(pub) }
+  end
 end

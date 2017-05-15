@@ -771,6 +771,26 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
         EVP_MD_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_DigestSignInit");
     }
+#if OPENSSL_VERSION_NUMBER >= 0x10101000 && !defined(LIBRESSL_VERSION_NUMBER)
+    if (EVP_DigestSign(ctx, NULL, &siglen, (unsigned char *)RSTRING_PTR(data),
+                       RSTRING_LEN(data)) < 1) {
+        EVP_MD_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_DigestSign");
+    }
+    if (siglen > LONG_MAX)
+        rb_raise(ePKeyError, "signature would be too large");
+    sig = ossl_str_new(NULL, (long)siglen, &state);
+    if (state) {
+        EVP_MD_CTX_free(ctx);
+        rb_jump_tag(state);
+    }
+    if (EVP_DigestSign(ctx, (unsigned char *)RSTRING_PTR(sig), &siglen,
+                       (unsigned char *)RSTRING_PTR(data),
+                       RSTRING_LEN(data)) < 1) {
+        EVP_MD_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_DigestSign");
+    }
+#else
     if (EVP_DigestSignUpdate(ctx, RSTRING_PTR(data), RSTRING_LEN(data)) < 1) {
         EVP_MD_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_DigestSignUpdate");
@@ -791,6 +811,7 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
         EVP_MD_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_DigestSignFinal");
     }
+#endif
     EVP_MD_CTX_free(ctx);
     rb_str_set_len(sig, siglen);
     return sig;
@@ -839,6 +860,14 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
         EVP_MD_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_DigestVerifyInit");
     }
+#if OPENSSL_VERSION_NUMBER >= 0x10101000 && !defined(LIBRESSL_VERSION_NUMBER)
+    ret = EVP_DigestVerify(ctx, (unsigned char *)RSTRING_PTR(sig),
+                           RSTRING_LEN(sig), (unsigned char *)RSTRING_PTR(data),
+                           RSTRING_LEN(data));
+    EVP_MD_CTX_free(ctx);
+    if (ret < 0)
+        ossl_raise(ePKeyError, "EVP_DigestVerify");
+#else
     if (EVP_DigestVerifyUpdate(ctx, RSTRING_PTR(data), RSTRING_LEN(data)) < 1) {
         EVP_MD_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_DigestVerifyUpdate");
@@ -848,6 +877,7 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
     EVP_MD_CTX_free(ctx);
     if (ret < 0)
         ossl_raise(ePKeyError, "EVP_DigestVerifyFinal");
+#endif
     if (ret)
         return Qtrue;
     else {
