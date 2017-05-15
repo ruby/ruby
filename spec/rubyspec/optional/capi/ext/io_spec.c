@@ -11,13 +11,13 @@ extern "C" {
 #endif
 
 static int set_non_blocking(int fd) {
-  int flags;
 #if defined(O_NONBLOCK) && defined(F_GETFL)
-  if (-1 == (flags = fcntl(fd, F_GETFL, 0)))
+  int flags = fcntl(fd, F_GETFL, 0);
+  if (flags == -1)
     flags = 0;
   return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 #elif defined(FIOBIO)
-  flags = 1;
+  int flags = 1;
   return ioctl(fd, FIOBIO, &flags);
 #else
   errno = ENOSYS;
