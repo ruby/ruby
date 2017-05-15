@@ -785,12 +785,14 @@ class TestFileUtils < Test::Unit::TestCase
 
     TARGETS.each do |fname|
       fname = "../#{fname}"
-      ln_s fname, 'tmp/lnsdest'
-      assert FileTest.symlink?('tmp/lnsdest'), 'not symlink'
-      assert_equal fname, File.readlink('tmp/lnsdest')
-      rm_f 'tmp/lnsdest'
+      lnfname = 'tmp/lnsdest'
+      ln_s fname, lnfname
+      assert FileTest.symlink?(lnfname), 'not symlink'
+      assert_equal fname, File.readlink(lnfname)
+    ensure
+      rm_f lnfname
     end
-  end
+  end if have_symlink? and !no_broken_symlink?
 
   def test_ln_s_broken_symlink
     assert_nothing_raised {
