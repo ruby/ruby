@@ -281,8 +281,8 @@ class ERB
   #
   #   compiler = ERB::Compiler.new('<>')
   #   compiler.pre_cmd    = ["_erbout=String.new"]
-  #   compiler.put_cmd    = "_erbout.concat"
-  #   compiler.insert_cmd = "_erbout.concat"
+  #   compiler.put_cmd    = "_erbout.<<"
+  #   compiler.insert_cmd = "_erbout.<<"
   #   compiler.post_cmd   = ["_erbout"]
   #
   #   code, enc = compiler.compile("Got <%= obj %>!\n")
@@ -291,7 +291,7 @@ class ERB
   # <i>Generates</i>:
   #
   #   #coding:UTF-8
-  #   _erbout=String.new; _erbout.concat "Got "; _erbout.concat(( obj ).to_s); _erbout.concat "!\n"; _erbout
+  #   _erbout=String.new; _erbout.<< "Got "; _erbout.<<(( obj ).to_s); _erbout.<< "!\n"; _erbout
   #
   # By default the output is sent to the print method.  For example:
   #
@@ -867,8 +867,8 @@ class ERB
   # requires the setup of an ERB _compiler_ object.
   #
   def set_eoutvar(compiler, eoutvar = '_erbout')
-    compiler.put_cmd = "#{eoutvar}.concat"
-    compiler.insert_cmd = "#{eoutvar}.concat"
+    compiler.put_cmd = "#{eoutvar}.<<"
+    compiler.insert_cmd = "#{eoutvar}.<<"
     compiler.pre_cmd = ["#{eoutvar} = String.new"]
     compiler.post_cmd = ["#{eoutvar}.force_encoding(__ENCODING__)"]
   end
