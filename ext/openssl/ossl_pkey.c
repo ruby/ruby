@@ -753,35 +753,47 @@ static VALUE
 ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
 {
     EVP_PKEY *pkey;
-    const EVP_MD *md;
+    const EVP_MD *md = NULL;
     EVP_MD_CTX *ctx;
-    unsigned int buf_len;
-    VALUE str;
-    int result;
+    size_t siglen;
+    int state;
+    VALUE sig;
 
     pkey = GetPrivPKeyPtr(self);
-    md = ossl_evp_get_digestbyname(digest);
+    if (!NIL_P(digest))
+        md = ossl_evp_get_digestbyname(digest);
     StringValue(data);
-    str = rb_str_new(0, EVP_PKEY_size(pkey));
 
     ctx = EVP_MD_CTX_new();
     if (!ctx)
-	ossl_raise(ePKeyError, "EVP_MD_CTX_new");
-    if (!EVP_SignInit_ex(ctx, md, NULL)) {
-	EVP_MD_CTX_free(ctx);
-	ossl_raise(ePKeyError, "EVP_SignInit_ex");
+        ossl_raise(ePKeyError, "EVP_MD_CTX_new");
+    if (EVP_DigestSignInit(ctx, NULL, md, /* engine */NULL, pkey) < 1) {
+        EVP_MD_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_DigestSignInit");
     }
-    if (!EVP_SignUpdate(ctx, RSTRING_PTR(data), RSTRING_LEN(data))) {
-	EVP_MD_CTX_free(ctx);
-	ossl_raise(ePKeyError, "EVP_SignUpdate");
+    if (EVP_DigestSignUpdate(ctx, RSTRING_PTR(data), RSTRING_LEN(data)) < 1) {
+        EVP_MD_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_DigestSignUpdate");
     }
-    result = EVP_SignFinal(ctx, (unsigned char *)RSTRING_PTR(str), &buf_len, pkey);
+    if (EVP_DigestSignFinal(ctx, NULL, &siglen) < 1) {
+        EVP_MD_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_DigestSignFinal");
+    }
+    if (siglen > LONG_MAX)
+        rb_raise(ePKeyError, "signature would be too large");
+    sig = ossl_str_new(NULL, (long)siglen, &state);
+    if (state) {
+        EVP_MD_CTX_free(ctx);
+        rb_jump_tag(state);
+    }
+    if (EVP_DigestSignFinal(ctx, (unsigned char *)RSTRING_PTR(sig),
+                            &siglen) < 1) {
+        EVP_MD_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_DigestSignFinal");
+    }
     EVP_MD_CTX_free(ctx);
-    if (!result)
-	ossl_raise(ePKeyError, "EVP_SignFinal");
-    rb_str_set_len(str, buf_len);
-
-    return str;
+    rb_str_set_len(sig, siglen);
+    return sig;
 }
 
 /*
@@ -809,38 +821,38 @@ static VALUE
 ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
 {
     EVP_PKEY *pkey;
-    const EVP_MD *md;
+    const EVP_MD *md = NULL;
     EVP_MD_CTX *ctx;
-    int siglen, result;
+    int ret;
 
     GetPKey(self, pkey);
     ossl_pkey_check_public_key(pkey);
-    md = ossl_evp_get_digestbyname(digest);
+    if (!NIL_P(digest))
+        md = ossl_evp_get_digestbyname(digest);
     StringValue(sig);
-    siglen = RSTRING_LENINT(sig);
     StringValue(data);
 
     ctx = EVP_MD_CTX_new();
     if (!ctx)
-	ossl_raise(ePKeyError, "EVP_MD_CTX_new");
-    if (!EVP_VerifyInit_ex(ctx, md, NULL)) {
-	EVP_MD_CTX_free(ctx);
-	ossl_raise(ePKeyError, "EVP_VerifyInit_ex");
+        ossl_raise(ePKeyError, "EVP_MD_CTX_new");
+    if (EVP_DigestVerifyInit(ctx, NULL, md, /* engine */NULL, pkey) < 1) {
+        EVP_MD_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_DigestVerifyInit");
     }
-    if (!EVP_VerifyUpdate(ctx, RSTRING_PTR(data), RSTRING_LEN(data))) {
-	EVP_MD_CTX_free(ctx);
-	ossl_raise(ePKeyError, "EVP_VerifyUpdate");
+    if (EVP_DigestVerifyUpdate(ctx, RSTRING_PTR(data), RSTRING_LEN(data)) < 1) {
+        EVP_MD_CTX_free(ctx);
+        ossl_raise(ePKeyError, "EVP_DigestVerifyUpdate");
     }
-    result = EVP_VerifyFinal(ctx, (unsigned char *)RSTRING_PTR(sig), siglen, pkey);
+    ret = EVP_DigestVerifyFinal(ctx, (unsigned char *)RSTRING_PTR(sig),
+                                RSTRING_LEN(sig));
     EVP_MD_CTX_free(ctx);
-    switch (result) {
-    case 0:
-	ossl_clear_error();
-	return Qfalse;
-    case 1:
-	return Qtrue;
-    default:
-	ossl_raise(ePKeyError, "EVP_VerifyFinal");
+    if (ret < 0)
+        ossl_raise(ePKeyError, "EVP_DigestVerifyFinal");
+    if (ret)
+        return Qtrue;
+    else {
+        ossl_clear_error();
+        return Qfalse;
     }
 }
 

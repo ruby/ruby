@@ -68,4 +68,16 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     assert_equal 512, pkey.p.num_bits
     assert_not_equal nil, pkey.priv_key
   end
+
+  def test_hmac_sign_verify
+    pkey = OpenSSL::PKey.generate_key("HMAC", { "key" => "abcd" })
+
+    hmac = OpenSSL::HMAC.new("abcd", "SHA256").update("data").digest
+    assert_equal hmac, pkey.sign("SHA256", "data")
+
+    # EVP_PKEY_HMAC does not support verify
+    assert_raise(OpenSSL::PKey::PKeyError) {
+      pkey.verify("SHA256", "data", hmac)
+    }
+  end
 end
