@@ -372,6 +372,9 @@ apply2files(void (*func)(const char *, VALUE, void *), int argc, VALUE *argv, vo
  *  Returns the pathname used to create <i>file</i> as a string. Does
  *  not normalize the name.
  *
+ *  The pathname may not point the file corresponding to <i>file</i>.
+ *  e.g. file has been moved, deleted, or created with <code>File::TMPFILE</code> option.
+ *
  *     File.new("testfile").path               #=> "testfile"
  *     File.new("/tmp/../tmp/xxx", "w").path   #=> "/tmp/../tmp/xxx"
  *
