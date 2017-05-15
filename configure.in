@@ -1318,6 +1318,7 @@ main()
 		    ac_cv_func_round=no
 		])
 		ac_cv_func_tgamma=no
+		rb_cv_negative_time_t=yes
 		AC_CHECK_TYPE([NET_LUID], [], [],
 			      [@%:@include <winsock2.h>
 			      @%:@include <iphlpapi.h>])
