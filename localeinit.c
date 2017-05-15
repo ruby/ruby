@@ -23,10 +23,8 @@
 #define CP_FORMAT(buf, codepage) snprintf(buf, sizeof(buf), "CP%u", (codepage))
 #endif
 
-#if defined _WIN32 && defined RUBY_DEBUG_ENV
+#if defined _WIN32
 extern UINT ruby_w32_codepage;
-#else
-enum {ruby_w32_codepage = 0};
 #endif
 
 #ifndef NO_LOCALE_CHARMAP

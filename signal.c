@@ -1435,9 +1435,6 @@ ruby_sig_finalize(void)
 
 
 int ruby_enable_coredump = 0;
-#ifndef RUBY_DEBUG_ENV
-#define ruby_enable_coredump 0
-#endif
 
 /*
  * Many operating systems allow signals to be sent to running
