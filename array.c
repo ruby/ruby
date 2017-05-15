@@ -1492,6 +1492,50 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
     return Qnil;
 }
 
+
+/*
+ * Call-seq:
+ *
+ *	array.indexes(elem)	-> array
+ *
+ * Returns an array of indexes of the word into the concerned array
+ *
+ * 	a = ["a", "b", "c", "a"]
+ *	a.indexes("a") 		# => [0, 3]
+ *	a.index_all("a")	# => [0, 3]
+ *	a.indexes("b")		# => [1]
+ * 
+ * This method also has an alias which is Array#index_all
+ */
+static VALUE
+rb_ary_indexes(int argc, VALUE *argv, VALUE ary)
+{
+	
+    VALUE val;
+    long i;
+
+    if (argc > 0) {
+	   RETURN_ENUMERATOR(ary, 0, 0);
+        array_length = 0;
+
+    	for (i=0; i<RARRAY_LEN(ary); i++) {
+    	    if (RTEST(rb_yield(RARRAY_PTR(ary)[i]))) {
+    		  array_length++;
+    	    }
+    	}
+
+        indexes = rb_ary_new2(array_length);
+        index = 0;
+
+        for (i=0; i<RARRAY_LEN(ary); i++) {
+            if (RTEST(rb_yield(RARRAY_PTR(ary)[i]))) {
+              indexes[index] = LONG2NUM(i);
+              index++;
+            }
+        }
+    	return indexes;
+    }
+}
 /*
  *  call-seq:
  *     ary.rindex(obj)             ->  int or nil
@@ -6197,6 +6241,8 @@ Init_Array(void)
     rb_define_method(rb_cArray, "empty?", rb_ary_empty_p, 0);
     rb_define_method(rb_cArray, "find_index", rb_ary_index, -1);
     rb_define_method(rb_cArray, "index", rb_ary_index, -1);
+    rb_define_method(rb_cArray, "indexes", rb_ary_indexes, -1);
+    rb_define_method(rb_cArray, "index_all", rb_ary_indexes, -1);
     rb_define_method(rb_cArray, "rindex", rb_ary_rindex, -1);
     rb_define_method(rb_cArray, "join", rb_ary_join_m, -1);
     rb_define_method(rb_cArray, "reverse", rb_ary_reverse_m, 0);
