@@ -1,0 +1,3 @@
+chacha.o: chacha.c
+chacha.o: chacha_private.h
+chacha.o: $(hdrdir)/ruby/random.h
