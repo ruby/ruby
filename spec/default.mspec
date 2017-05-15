@@ -49,6 +49,7 @@ module MSpecScript::JobServer
           end
           return cores
         end
+      rescue Errno::EBADF
       ensure
         r&.close
         w&.close
