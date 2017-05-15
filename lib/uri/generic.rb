@@ -1325,6 +1325,51 @@ module URI
         set_host(self.host.downcase)
       end
     end
+      
+    #
+    # Returns canonicalized URI.
+    #
+    #   require 'uri'
+    #
+    #   irb(main):929:0> URI("http://my.example.com/some_path").canonicalize "/dir/../dar/./dor/file.txt"
+    #   => #<URI::HTTP http://my.example.com/dar/dor/file.txt>
+    #
+
+    #
+    # Canonicalize means it supportes these types of input, according to the RFC:
+    # fully qualified path, server, path, file, search, quary.
+    # '.' and '..' are removed, where the latter also goes one dir up.
+    #
+
+    def canonicalize(input)
+      uri = 
+        if URI.parse(input).scheme
+          input
+        else #if it's not a qualified uri
+          if input[0,2].eql?('//') # if it starts with '//', set it as a host
+            "#{self.scheme}:#{input}"
+          elsif input[0].eql?('/') #if it starts with '/', set it as the path
+            "#{self.scheme}://#{self.host}#{input}" 
+          elsif input[0].eql?('?') #if it starts with '?' append or replace with current search
+            "#{self.to_s.split('?').first}#{input}"
+          elsif input[0].eql?('#') #if it starts with '#' append or replace with current query
+            "#{self.to_s.split('#').first}#{input}"
+          else
+            "#{File.dirname(self.to_s)}/#{input}" #if it doesn't start with any special characters, append it to the path
+          end
+        end
+    
+      uri = URI.parse(uri)
+      uri.normalize!
+      newpath = uri.path
+      unless newpath.eql?('/')
+        loop do 
+          break unless newpath.gsub!(%r{([^/]+)/\.\./?}) { |match| $1 == '..' ? match : ''}         
+        end #if there are '..' then remove them and go up a dir
+        uri.path = newpath.gsub(%r{/\.(/|$)}, '/') #if there are '.', remove them
+      end
+      uri
+    end
 
     #
     # Constructs String from URI
