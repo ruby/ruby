@@ -938,6 +938,12 @@ $(PRELUDE_C): $(COMPILE_PRELUDE) \
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -c -o $@ \
 		$(srcdir)/template/prelude.c.tmpl golf_prelude.rb
 
+MAINCPPFLAGS = $(ENABLE_DEBUG_ENV:yes=-DRUBY_DEBUG_ENV=1)
+
+$(MAINOBJ): $(srcdir)/$(MAINSRC)
+	$(ECHO) compiling $(srcdir)/$(MAINSRC)
+	$(Q) $(CC) $(MAINCPPFLAGS) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(srcdir)/$(MAINSRC)
+
 {$(VPATH)}probes.dmyh: {$(srcdir)}probes.d $(srcdir)/tool/gen_dummy_probes.rb
 
 probes.dmyh:

@@ -364,6 +364,7 @@ OS_DEST_FILE = $(@:/=\)
 !if !defined(WINMAINOBJ)
 WINMAINOBJ    = winmain.$(OBJEXT)
 !endif
+MAINSRC       = $(MAINOBJ:.obj=.c)
 ARCHMINIOBJS  = dmydln.$(OBJEXT) miniruby.res
 LIBOBJS       = $(MISSING) $(LIBOBJS)
 
@@ -772,9 +773,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 #define CANONICALIZATION_FOR_MATHN 1
 #define DEFAULT_KCODE KCODE_NONE
-!if "$(ENABLE_DEBUG_ENV)" == "yes"
-#define RUBY_DEBUG_ENV 1
-!endif
 #define LOAD_RELATIVE 1
 #define DLEXT ".so"
 !if "$(EXTSTATIC)" == "static"
