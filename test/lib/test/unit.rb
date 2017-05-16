@@ -290,13 +290,17 @@ module Test
 
       end
 
-      def after_worker_down(worker, e=nil, c=false)
-        return unless @options[:parallel]
-        return if @interrupt
+      def flush_job_tokens
         if @jobserver
           @jobserver[1] << @job_tokens
           @job_tokens.clear
         end
+      end
+
+      def after_worker_down(worker, e=nil, c=false)
+        return unless @options[:parallel]
+        return if @interrupt
+        flush_job_tokens
         warn e if e
         real_file = worker.real_file and warn "running file: #{real_file}"
         @need_quit = true
@@ -488,6 +492,7 @@ module Test
           end
 
           quit_workers
+          flush_job_tokens
 
           unless @interrupt || !@options[:retry] || @need_quit
             parallel = @options[:parallel]
