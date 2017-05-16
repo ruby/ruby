@@ -9,7 +9,9 @@ describe :tcpsocket_new, shared: true do
   it "refuses the connection when there is no server to connect to" do
     lambda do
       TCPSocket.send(@method, SocketSpecs.hostname, SocketSpecs.reserved_unused_port)
-    end.should raise_error([Errno::ECONNREFUSED, Errno::EADDRNOTAVAIL])
+    end.should raise_error(SystemCallError) {|e|
+      [Errno::ECONNREFUSED, Errno::EADDRNOTAVAIL].should include(e.class)
+    }
   end
 
   describe "with a running server" do
