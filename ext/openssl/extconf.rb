@@ -36,17 +36,57 @@ have_library("socket", "socket")
 
 Logging::message "=== Checking for required stuff... ===\n"
 result = pkg_config("openssl") && have_header("openssl/ssl.h")
-unless result
+
+def find_openssl_library
   if $mswin || $mingw
     # required for static OpenSSL libraries
     have_library("gdi32") # OpenSSL <= 1.0.2 (for RAND_screen())
     have_library("crypt32")
   end
 
-  result = have_header("openssl/ssl.h")
-  result &&= %w[crypto libeay32].any? {|lib| have_library(lib, "CRYPTO_malloc")}
-  result &&= %w[ssl ssleay32].any? {|lib| have_library(lib, "SSL_new")}
-  unless result
+  return false unless have_header("openssl/ssl.h")
+
+  libpath = $LIBPATH.dup
+  libpath |= ENV["LIB"].split(File::PATH_SEPARATOR).map{|d| d.tr(File::ALT_SEPARATOR, File::SEPARATOR)} if $mswin
+
+  result = false
+  %w[crypto eay32].each do |base|
+    libs = [base]
+    if $mswin || $mingw
+      libs << "lib" + libs.first
+      if base == "crypto"
+        libs << libs.first + "-[0-9][0-9]"
+        libs << "lib" + libs.last
+      end
+      libs = Dir.glob(libs.map{|l| libpath.map{|d| File.join(d, l + ".*")}}.flatten).map{|path| File.basename(path, ".*")}.uniq
+    end
+    libs.each do |lib|
+      result = have_library(lib, "CRYPTO_malloc")
+      break if result
+    end
+    break if result
+  end
+  return false unless result
+
+  %w[ssl ssleay32].each do |base|
+    libs = [base]
+    if $mswin || $mingw
+      libs << "lib" + libs.first
+      if base == "ssl"
+        libs << libs.first + "-[0-9][0-9]"
+        libs << "lib" + libs.last
+      end
+      libs = Dir.glob(libs.map{|l| libpath.map{|d| File.join(d, l + ".*")}}.flatten).map{|path| File.basename(path, ".*")}.uniq
+    end
+    libs.each do |lib|
+      return true if have_library(lib, "SSL_new")
+    end
+  end
+  return false
+end
+
+unless result
+  unless find_openssl_library
     Logging::message "=== Checking for required stuff failed. ===\n"
     Logging::message "Makefile wasn't created. Fix the errors above.\n"
     exit 1
