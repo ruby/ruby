@@ -2,7 +2,7 @@ require 'mspec/utils/deprecate'
 
 class RaiseErrorMatcher
   def initialize(exception, message, &block)
-    @exception = exception
+    @exception = Array(exception)
     @message = message
     @block = block
   end
@@ -19,7 +19,7 @@ class RaiseErrorMatcher
   end
 
   def matching_exception?(exc)
-    return false unless @exception === exc
+    return false unless @exception.any? {|exception_class| exception_class === exc}
     if @message then
       case @message
       when String
@@ -36,6 +36,9 @@ class RaiseErrorMatcher
   end
 
   def exception_class_and_message(exception_class, message)
+    if Array === exception_class and exception_class.size == 1
+      exception_class = exception_class[0]
+    end
     if message
       "#{exception_class} (#{message})"
     else
@@ -65,7 +68,7 @@ class RaiseErrorMatcher
 
   def negative_failure_message
     message = ["Expected to not get #{format_expected_exception}", ""]
-    unless @actual.class == @exception
+    unless @exception.include?(@actual.class)
       message[1] = "but got #{format_exception(@actual)}"
     end
     message
