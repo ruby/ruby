@@ -104,6 +104,20 @@ class TestCSV::Features < TestCSV
     assert_equal($/, CSV.new(STDERR).row_sep)
   end
 
+  def test_line
+    lines = [
+      %Q(abc,def\n),
+      %Q(abc,"d\nef"\n),
+      %Q(abc,"d\r\nef"\n),
+      %Q(abc,"d\ref")
+    ]
+    csv = CSV.new(lines.join(''))
+    lines.each do |line|
+      csv.shift
+      assert_equal(line, csv.line)
+    end
+  end
+
   def test_lineno
     assert_equal(5, @sample_data.lines.to_a.size)
 

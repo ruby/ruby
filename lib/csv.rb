@@ -1656,7 +1656,7 @@ class CSV
   # The line number of the last row read from this file.  Fields with nested
   # line-end characters will not affect this count.
   #
-  attr_reader :lineno
+  attr_reader :lineno, :line
 
   ### IO and StringIO Delegation ###
 
@@ -1829,6 +1829,12 @@ class CSV
       # add another read to the line
       unless parse = @io.gets(@row_sep)
         return nil
+      end
+
+      if in_extended_col
+        @line.concat(parse)
+      else
+        @line = parse.clone
       end
 
       parse.sub!(@parsers[:line_end], "")
