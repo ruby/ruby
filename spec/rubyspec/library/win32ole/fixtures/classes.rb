@@ -1,3 +1,4 @@
+require 'win32ole'
 module WIN32OLESpecs
   def self.new_ole(name)
     retried = false
