@@ -5,8 +5,10 @@ describe "Dir.home" do
   it "returns the current user's home directory as a string if called without arguments" do
     home_directory = ENV['HOME']
     platform_is :windows do
-      path = ENV['HOMEDRIVE'] + ENV['HOMEPATH']
-      home_directory = path.tr('\\', '/').chomp('/')
+      unless home_directory
+        home_directory = ENV['HOMEDRIVE'] + ENV['HOMEPATH']
+      end
+      home_directory = home_directory.tr('\\', '/').chomp('/')
     end
 
     Dir.home.should == home_directory
