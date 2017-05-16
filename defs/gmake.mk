@@ -11,6 +11,7 @@ TEST_DEPENDS := $(filter-out commit $(TEST_TARGETS),$(MAKECMDGOALS))
 TEST_TARGETS := $(patsubst great,exam,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out great $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst exam,check test-rubyspec,$(TEST_TARGETS))
+TEST_TARGETS := $(patsubst test-rubyspec,test-spec,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out exam $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst love,check,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out love $(TEST_TARGETS),$(TEST_DEPENDS))
@@ -60,9 +61,9 @@ endif
 ORDERED_TEST_TARGETS := $(filter $(TEST_TARGETS), \
 	btest-ruby test-knownbug test-basic \
 	test-testframework test-ruby test-almost test-all \
-	test-rubyspec \
+	test-spec \
 	)
-prev_test := $(if $(filter test-rubyspec,$(ORDERED_TEST_TARGETS)),test-rubyspec-precheck)
+prev_test := $(if $(filter test-spec,$(ORDERED_TEST_TARGETS)),test-spec-precheck)
 $(foreach test,$(ORDERED_TEST_TARGETS), \
 	$(eval yes-$(value test) no-$(value test): $(value prev_test)); \
 	$(eval prev_test := $(value test)))
