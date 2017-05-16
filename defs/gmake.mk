@@ -19,7 +19,7 @@ TEST_TARGETS := $(patsubst check,test test-testframework test-almost,$(patsubst 
 TEST_DEPENDS := $(filter-out check $(TEST_TARGETS),$(TEST_DEPENDS))
 TEST_TARGETS := $(patsubst test,btest-ruby test-knownbug test-basic,$(TEST_TARGETS))
 TEST_DEPENDS := $(filter-out test $(TEST_TARGETS),$(TEST_DEPENDS))
-TEST_DEPENDS += $(if $(filter-out btest%,$(TEST_TARGETS)),all exts)
+# TEST_DEPENDS += $(if $(filter-out btest%,$(TEST_TARGETS)),all exts)
 
 ifneq ($(filter -O0 -Od,$(optflags)),)
 override XCFLAGS := $(filter-out -D_FORTIFY_SOURCE=%,$(XCFLAGS))
