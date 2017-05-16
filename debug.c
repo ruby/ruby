@@ -110,6 +110,9 @@ ruby_debug_breakpoint(void)
 # if RUBY_MSVCRT_VERSION >= 80
 extern int ruby_w32_rtc_error;
 # endif
+#endif
+#if defined _WIN32 || defined __CYGWIN__
+#include <windows.h>
 UINT ruby_w32_codepage;
 #endif
 
@@ -135,6 +138,8 @@ set_debug_option(const char *str, int len, void *arg)
 # if RUBY_MSVCRT_VERSION >= 80
     SET_WHEN("rtc_error", ruby_w32_rtc_error, 1);
 # endif
+#endif
+#if defined _WIN32 || defined __CYGWIN__
     {
 	int ov;
 	size_t retlen;

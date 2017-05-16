@@ -21,9 +21,7 @@
 #if defined _WIN32 || defined __CYGWIN__
 #define SIZEOF_CP_NAME ((sizeof(UINT) * 8 / 3) + 4)
 #define CP_FORMAT(buf, codepage) snprintf(buf, sizeof(buf), "CP%u", (codepage))
-#endif
 
-#if defined _WIN32
 extern UINT ruby_w32_codepage;
 #endif
 
