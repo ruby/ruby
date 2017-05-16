@@ -443,10 +443,11 @@ class TestProcess < Test::Unit::TestCase
   def test_execopts_open_chdir_m17n_path
     with_tmpchdir {|d|
       Dir.mkdir "テスト"
-      system(*PWD, :chdir => "テスト", :out => "open_chdir_テスト")
+      (pwd = PWD.dup).insert(1, '-EUTF-8:UTF-8')
+      system(*pwd, :chdir => "テスト", :out => "open_chdir_テスト")
       assert_file.exist?("open_chdir_テスト")
       assert_file.not_exist?("テスト/open_chdir_テスト")
-      assert_equal("#{d}/テスト", File.read("open_chdir_テスト").chomp.encode(__ENCODING__))
+      assert_equal("#{d}/テスト", File.read("open_chdir_テスト", encoding: "UTF-8").chomp)
     }
   end if windows? || Encoding.find('locale') == Encoding::UTF_8
 
