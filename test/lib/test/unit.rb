@@ -184,7 +184,7 @@ module Test
           options[:retry] = false
         end
 
-        opts.on '--ruby VAL', "Path to ruby; It'll have used at -j option" do |a|
+        opts.on '--ruby VAL', "Path to ruby which is used at -j option" do |a|
           options[:ruby] = a.split(/ /).reject(&:empty?)
         end
       end
