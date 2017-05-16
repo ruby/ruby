@@ -2080,6 +2080,8 @@ EOF
   end
 
   def test_abort_tls
+    return unless defined?(OpenSSL)
+
     commands = []
     server = create_ftp_server { |sock|
       sock.print("220 (test_ftp).\r\n")
@@ -2124,6 +2126,8 @@ EOF
         ftp.abort
         assert_equal("ABOR\r\n", commands.shift)
         assert_equal(nil, commands.shift)
+      rescue RuntimeError, LoadError
+        # skip (require openssl)
       ensure
         ftp.close if ftp
       end
