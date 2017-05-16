@@ -46,6 +46,11 @@ module SocketSpecs
     find_available_port
   end
 
+  def self.reserved_unused_port
+    # https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
+    0
+  end
+
   def self.sockaddr_in(port, host)
     Socket::SockAddr_In.new(Socket.sockaddr_in(port, host))
   end
