@@ -1014,8 +1014,8 @@ class CSV
   HeaderConverters = {
     downcase: lambda { |h| h.encode(ConverterEncoding).downcase },
     symbol:   lambda { |h|
-      h.encode(ConverterEncoding).downcase.strip.gsub(/\s+/, "_").
-                                                 gsub(/\W+/, "").to_sym
+      h.encode(ConverterEncoding).downcase.gsub(/[^[\s\w]]+/, "").strip.
+                                           gsub(/\s+/, "_").to_sym
     }
   }
 
