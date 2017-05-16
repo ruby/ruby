@@ -35,7 +35,7 @@ module SocketSpecs
   end
 
   def self.port
-    @@_port ||= find_available_port
+    @port ||= find_available_port
   end
 
   def self.str_port
