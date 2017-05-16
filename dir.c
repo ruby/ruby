@@ -74,6 +74,7 @@ char *strchr(char*,char);
 #define rmdir(p) rb_w32_urmdir(p)
 #undef opendir
 #define opendir(p) rb_w32_uopendir(p)
+#define ruby_getcwd() rb_w32_ugetcwd(NULL, 0)
 #define IS_WIN32 1
 #else
 #define IS_WIN32 0
@@ -1051,10 +1052,14 @@ rb_dir_getwd(void)
 {
     char *path;
     VALUE cwd;
-    int fsenc = rb_enc_to_index(rb_filesystem_encoding());
+    rb_encoding *fs = rb_filesystem_encoding();
+    int fsenc = rb_enc_to_index(fs);
 
     if (fsenc == ENCINDEX_US_ASCII) fsenc = ENCINDEX_ASCII;
     path = my_getcwd();
+#ifdef _WIN32
+    cwd = rb_str_conv_enc(rb_utf8_str_new_cstr(path), NULL, fs);
+#else
 #ifdef __APPLE__
     cwd = rb_str_normalize_ospath(path, strlen(path));
     OBJ_TAINT(cwd);
@@ -1062,6 +1067,7 @@ rb_dir_getwd(void)
     cwd = rb_tainted_str_new2(path);
 #endif
     rb_enc_associate_index(cwd, fsenc);
+#endif
 
     xfree(path);
     return cwd;
