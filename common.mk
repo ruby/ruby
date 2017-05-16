@@ -710,6 +710,7 @@ $(RBCONFIG): $(srcdir)/tool/mkconfig.rb config.status $(srcdir)/version.h
 	$(IFCHANGE) "--timestamp=$@" rbconfig.rb rbconfig.tmp
 
 test-rubyspec: test-spec
+yes-test-rubyspec: yes-test-spec
 
 test-spec-precheck: $(arch)-fake.rb
 
