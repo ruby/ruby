@@ -1,6 +1,7 @@
 require File.expand_path('../../fixtures/classes', __FILE__)
 
 platform_is :windows do
+  require 'win32ole'
 
   describe "WIN32OLE#ole_get_methods" do
 
