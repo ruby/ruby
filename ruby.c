@@ -423,6 +423,8 @@ str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
 				ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE,
 				Qnil);
 }
+#else
+# define str_conv_enc(str, from, to) (str)
 #endif
 
 void ruby_init_loadpath_safe(int safe_level);
@@ -1564,9 +1566,15 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	ienc = enc;
 #endif
     }
-    rb_enc_associate(opt->script_name, lenc);
+    if (IF_UTF8_PATH((uenc = rb_utf8_encoding()) != lenc, 0)) {
+	opt->script_name = str_conv_enc(opt->script_name, uenc, lenc);
+	opt->script = RSTRING_PTR(opt->script_name);
+    }
+    else {
+	rb_enc_associate(opt->script_name, lenc);
+    }
     rb_obj_freeze(opt->script_name);
-    if (IF_UTF8_PATH((uenc = rb_utf8_encoding()) != lenc, 1)) {
+    if (IF_UTF8_PATH(uenc != lenc, 1)) {
 	long i;
 	VALUE load_path = GET_VM()->load_path;
 	const ID id_initial_load_path_mark = INITIAL_LOAD_PATH_MARK;
@@ -1602,12 +1610,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	rb_funcallv(rb_cISeq, rb_intern_const("compile_option="), 1, &option);
 #undef SET_COMPILE_OPTION
     }
-#if UTF8_PATH
-    if (uenc != lenc) {
-	opt->script_name = str_conv_enc(opt->script_name, uenc, lenc);
-	opt->script = RSTRING_PTR(opt->script_name);
-    }
-#endif
     ruby_set_argv(argc, argv);
     process_sflag(&opt->sflag);
 
