@@ -4063,6 +4063,15 @@ AC_SUBST(DTRACE_REBUILD)
 AC_SUBST(DTRACE_OPT)
 AC_SUBST(LIBRUBY_A_OBJS)
 
+AC_ARG_ENABLE(gcov,
+       AS_HELP_STRING([--enable-gcov], [enable coverage measurement by gcov]),
+       [AC_SUBST(gcov, yes)])
+if test x"$gcov" = xyes; then
+    cflags="$cflags -coverage"
+    CFLAGS="$CFLAGS -coverage"
+    LDFLAGS="$LDFLAGS -coverage"
+fi
+
 RUBY_SETJMP_TYPE
 }
 { # build section
