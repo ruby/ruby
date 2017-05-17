@@ -404,12 +404,12 @@ class TestDir_M17N < Test::Unit::TestCase
     with_tmpdir {|d|
       orig = %W"d\u{e9}tente x\u{304c 304e 3050 3052 3054}"
       orig.each {|n| open(n, "w") {}}
+      enc = Encoding.find("filesystem")
+      enc = Encoding::ASCII_8BIT if enc == Encoding::US_ASCII
       if /mswin|mingw/ =~ RUBY_PLATFORM
-        opts = {:encoding => Encoding.default_external}
+        opts = {:encoding => enc}
         orig.map! {|o| o.encode("filesystem") rescue o.tr("^a-z", "?")}
       else
-        enc = Encoding.find("filesystem")
-        enc = Encoding::ASCII_8BIT if enc == Encoding::US_ASCII
         orig.each {|o| o.force_encoding(enc) }
       end
       ents = Dir.entries(".", opts).reject {|n| /\A\./ =~ n}
