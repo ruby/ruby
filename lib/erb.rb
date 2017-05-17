@@ -994,7 +994,7 @@ class ERB
     #   Programming%20Ruby%3A%20%20The%20Pragmatic%20Programmer%27s%20Guide
     #
     def url_encode(s)
-      s.to_s.b.gsub(/[^a-zA-Z0-9_\-.]/n) { |m|
+      s.to_s.b.gsub(/[^a-zA-Z0-9_\-.~]/n) { |m|
         sprintf("%%%02X", m.unpack("C")[0])
       }
     end

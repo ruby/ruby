@@ -464,6 +464,10 @@ EOS
 
     assert_equal("%A5%B5%A5%F3%A5%D7%A5%EB",
                  ERB::Util.url_encode("\xA5\xB5\xA5\xF3\xA5\xD7\xA5\xEB".force_encoding("EUC-JP")))
+
+    assert_equal("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~",
+                 ERB::Util.url_encode("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"),
+                 "should not escape any unreserved characters, as per RFC3986 Section 2.3")
   end
 
   def test_percent_after_etag
