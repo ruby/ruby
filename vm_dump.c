@@ -475,8 +475,8 @@ darwin_sigtramp:
 	unw_set_reg(&cursor, UNW_X86_64_R14, uctx->uc_mcontext->__ss.__r14);
 	unw_set_reg(&cursor, UNW_X86_64_R15, uctx->uc_mcontext->__ss.__r15);
 	ip = uctx->uc_mcontext->__ss.__rip;
-	if (((char*)ip)[-2] == 0x0f && ((char*)ip)[-1] == 5) {
-	    /* signal received in syscall */
+	if (!ip || (((char*)ip)[-2] == 0x0f && ((char*)ip)[-1] == 5)) {
+	    /* NULL reference or signal received in syscall */
 	    trace[n++] = (void *)ip;
 	    ip = *(unw_word_t*)uctx->uc_mcontext->__ss.__rsp;
 	}
