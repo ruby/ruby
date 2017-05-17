@@ -1874,32 +1874,32 @@ class CSV
       parts.each do |part|
         if in_extended_col
           # If we are continuing a previous column
-          if part[-1] == @quote_char && part.count(@quote_char) % 2 != 0
+          if part.end_with?(@quote_char) && part.count(@quote_char) % 2 != 0
             # extended column ends
             csv[-1] = csv[-1].push(part[0..-2]).join("")
             if csv.last =~ @parsers[:stray_quote]
               raise MalformedCSVError,
                     "Missing or stray quote in line #{lineno + 1}"
             end
-            csv.last.gsub!(@quote_char * 2, @quote_char)
+            csv.last.gsub!(@double_quote_char, @quote_char)
             in_extended_col = false
           else
             csv.last.push(part, @col_sep)
           end
-        elsif part[0] == @quote_char
+        elsif part.start_with?(@quote_char)
           # If we are starting a new quoted column
           if part.count(@quote_char) % 2 != 0
             # start an extended column
             csv << [part[1..-1], @col_sep]
             in_extended_col =  true
-          elsif part[-1] == @quote_char
+          elsif part.end_with?(@quote_char)
             # regular quoted column
             csv << part[1..-2]
             if csv.last =~ @parsers[:stray_quote]
               raise MalformedCSVError,
                     "Missing or stray quote in line #{lineno + 1}"
             end
-            csv.last.gsub!(@quote_char * 2, @quote_char)
+            csv.last.gsub!(@double_quote_char, @quote_char)
           elsif @liberal_parsing
             csv << part
           else
@@ -2017,6 +2017,7 @@ class CSV
     @col_sep    = options.delete(:col_sep).to_s.encode(@encoding)
     @row_sep    = options.delete(:row_sep)  # encode after resolving :auto
     @quote_char = options.delete(:quote_char).to_s.encode(@encoding)
+    @double_quote_char = @quote_char * 2
 
     if @quote_char.length != 1
       raise ArgumentError, ":quote_char has to be a single character String"
