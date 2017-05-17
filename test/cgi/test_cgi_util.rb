@@ -29,6 +29,12 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_equal('%26%3C%3E%22+%E3%82%86%E3%82%93%E3%82%86%E3%82%93'.ascii_only?, CGI::escape(@str1).ascii_only?) if defined?(::Encoding)
   end
 
+  def test_cgi_escape_with_unreserved_characters
+      assert_equal("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~",
+		 CGI::escape("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"),
+                 "should not escape any unreserved characters, as per RFC3986 Section 2.3")
+  end
+
   def test_cgi_escape_with_invalid_byte_sequence
     assert_nothing_raised(ArgumentError) do
       assert_equal('%C0%3C%3C', CGI::escape("\xC0\<\<".dup.force_encoding("UTF-8")))
