@@ -3472,7 +3472,7 @@ rb_thread_key_p(VALUE self, VALUE key)
     if (!id || local_storage == NULL) {
 	return Qfalse;
     }
-    else if (st_lookup(local_storage, id, 0)) {
+    else if (st_is_member(local_storage, id)) {
 	return Qtrue;
     }
     else {

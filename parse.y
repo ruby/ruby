@@ -821,7 +821,7 @@ new_unique_key_hash(struct parser_params *p, VALUE ary, const YYLTYPE *loc)
 	    goto error;
 	}
 	if (!RB_TYPE_P(key, T_STRING)) goto error;
-	if (st_lookup(tbl, (st_data_t)RSTRING_PTR(key), 0)) goto error;
+	if (st_is_member(tbl, (st_data_t)RSTRING_PTR(key))) goto error;
 	st_insert(tbl, (st_data_t)RSTRING_PTR(key), (st_data_t)ary);
     }
     st_free_table(tbl);
@@ -11463,7 +11463,7 @@ error_duplicate_keys(struct parser_params *p, NODE *hash)
 	if (nd_type(head) != NODE_LIT) {
 	    yyerror1(&head->nd_loc, "key must be symbol literal");
 	}
-	if (st_lookup(literal_keys, (key = head->nd_lit), 0)) {
+	if (st_is_member(literal_keys, (key = head->nd_lit))) {
 	    yyerror1(&head->nd_loc, "duplicated key name");
 	}
 	else {

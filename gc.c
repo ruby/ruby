@@ -3634,7 +3634,7 @@ cached_object_id(VALUE obj)
 
         while (1) {
             /* id is the object id */
-            if (st_lookup(objspace->id_to_obj_tbl, (st_data_t)id, 0)) {
+            if (st_is_member(objspace->id_to_obj_tbl, (st_data_t)id)) {
                 objspace->profile.object_id_collisions++;
                 id += sizeof(VALUE);
             }
@@ -7515,7 +7515,7 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
       case T_NODE:
       case T_CLASS:
         if (FL_TEST(obj, FL_FINALIZE)) {
-            if (st_lookup(finalizer_table, obj, 0)) {
+            if (st_is_member(finalizer_table, obj)) {
                 return FALSE;
             }
         }

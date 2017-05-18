@@ -1335,7 +1335,7 @@ rb_ivar_defined(VALUE obj, ID id)
 	break;
       case T_CLASS:
       case T_MODULE:
-	if (RCLASS_IV_TBL(obj) && st_lookup(RCLASS_IV_TBL(obj), (st_data_t)id, 0))
+	if (RCLASS_IV_TBL(obj) && st_is_member(RCLASS_IV_TBL(obj), (st_data_t)id))
 	    return Qtrue;
 	break;
       default:
