@@ -492,7 +492,7 @@ update-simplecov-html:
 update-simplecov:
 	$(Q) $(srcdir)/tool/git-refresh -C $(srcdir)/coverage $(Q1:0=-q) \
 		--branch $(SIMPLECOV_GIT_REF)  \
-		$(SIMPLECOV_GIT_URL) simplecov-html $(GIT_OPTS)
+		$(SIMPLECOV_GIT_URL) simplecov $(GIT_OPTS)
 
 update-coverage: update-simplecov update-simplecov-html update-doclie
 
