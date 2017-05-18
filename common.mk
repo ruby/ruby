@@ -764,7 +764,7 @@ PHONY:
 	$(Q)$(BASERUBY) $(srcdir)/tool/id2token.rb --path-separator=.$(PATH_SEPARATOR)./ --vpath=$(VPATH) id.h $(SRC_FILE) > parse.tmp.y
 	$(Q)$(YACC) -d $(YFLAGS) -o y.tab.c parse.tmp.y
 	$(Q)$(RM) parse.tmp.y
-	$(Q)sed -f $(srcdir)/tool/ytab.sed -e "/^#/s!parse\.tmp\.[iy]!parse.y!" -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@.new
+	$(Q)sed -f $(srcdir)/tool/ytab.sed -e "/^#/s|parse\.tmp\.[iy]|$(SRC_FILE)|" -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@.new
 	$(Q)$(MV) $@.new $@
 	$(Q)sed -e "/^#line.*y\.tab\.h/d;/^#line.*parse.*\.y/d" y.tab.h > $(@:.c=.h)
 	$(Q)$(RM) y.tab.c y.tab.h
