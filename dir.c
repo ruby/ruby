@@ -1054,9 +1054,14 @@ rb_dir_getwd(void)
     VALUE cwd;
     rb_encoding *fs = rb_filesystem_encoding();
     int fsenc = rb_enc_to_index(fs);
+    VALUE path_guard;
 
+#undef RUBY_UNTYPED_DATA_WARNING
+#define RUBY_UNTYPED_DATA_WARNING 0
     if (fsenc == ENCINDEX_US_ASCII) fsenc = ENCINDEX_ASCII;
+    path_guard = Data_Wrap_Struct((VALUE)0, NULL, RUBY_DEFAULT_FREE, NULL);
     path = my_getcwd();
+    DATA_PTR(path_guard) = path;
 #ifdef _WIN32
     cwd = rb_str_conv_enc(rb_utf8_str_new_cstr(path), NULL, fs);
 #else
@@ -1068,6 +1073,7 @@ rb_dir_getwd(void)
 #endif
     rb_enc_associate_index(cwd, fsenc);
 #endif
+    DATA_PTR(path_guard) = 0;
 
     xfree(path);
     return cwd;
