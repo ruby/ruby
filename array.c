@@ -5209,7 +5209,7 @@ flatten(VALUE ary, int level)
 	    }
 	    else {
 		id = (st_data_t)tmp;
-		if (st_lookup(memo, id, 0)) {
+		if (st_is_member(memo, id)) {
                     st_clear(memo);
 		    rb_raise(rb_eArgError, "tried to flatten recursive array");
 		}

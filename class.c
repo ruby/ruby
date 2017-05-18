@@ -1176,7 +1176,7 @@ method_entry_i(ID key, VALUE value, void *data)
 	if (!me) return ID_TABLE_CONTINUE;
 	if (!arg->recur && me->owner != owner) return ID_TABLE_CONTINUE;
     }
-    if (!st_lookup(arg->list, key, 0)) {
+    if (!st_is_member(arg->list, key)) {
 	if (UNDEFINED_METHOD_ENTRY_P(me)) {
 	    type = METHOD_VISI_UNDEF; /* none */
 	}
