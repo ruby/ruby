@@ -30,8 +30,8 @@ class CGIUtilTest < Test::Unit::TestCase
   end
 
   def test_cgi_escape_with_unreserved_characters
-      assert_equal("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~",
-		 CGI::escape("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"),
+    assert_equal("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~",
+                 CGI::escape("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"),
                  "should not escape any unreserved characters, as per RFC3986 Section 2.3")
   end
 
