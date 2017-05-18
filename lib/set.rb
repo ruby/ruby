@@ -236,10 +236,9 @@ class Set
 
   # Returns true if the set is a superset of the given set.
   def superset?(set)
-    case
-    when set.instance_of?(self.class)
+    if set.instance_of?(self.class)
       @hash >= set.instance_variable_get(:@hash)
-    when set.is_a?(Set)
+    elsif set.is_a?(Set)
       size >= set.size && set.all? { |o| include?(o) }
     else
       raise ArgumentError, "value must be a set"
@@ -249,10 +248,9 @@ class Set
 
   # Returns true if the set is a proper superset of the given set.
   def proper_superset?(set)
-    case
-    when set.instance_of?(self.class)
+    if set.instance_of?(self.class)
       @hash > set.instance_variable_get(:@hash)
-    when set.is_a?(Set)
+    elsif set.is_a?(Set)
       size > set.size && set.all? { |o| include?(o) }
     else
       raise ArgumentError, "value must be a set"
@@ -262,10 +260,9 @@ class Set
 
   # Returns true if the set is a subset of the given set.
   def subset?(set)
-    case
-    when set.instance_of?(self.class)
+    if set.instance_of?(self.class)
       @hash <= set.instance_variable_get(:@hash)
-    when set.is_a?(Set)
+    elsif set.is_a?(Set)
       size <= set.size && all? { |o| set.include?(o) }
     else
       raise ArgumentError, "value must be a set"
@@ -275,10 +272,9 @@ class Set
 
   # Returns true if the set is a proper subset of the given set.
   def proper_subset?(set)
-    case
-    when set.instance_of?(self.class)
+    if set.instance_of?(self.class)
       @hash < set.instance_variable_get(:@hash)
-    when set.is_a?(Set)
+    elsif set.is_a?(Set)
       size < set.size && all? { |o| set.include?(o) }
     else
       raise ArgumentError, "value must be a set"
