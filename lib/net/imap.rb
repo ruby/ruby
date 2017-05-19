@@ -1098,6 +1098,7 @@ module Net
         @tagged_responses = {}
         @response_handlers = []
         @tagged_response_arrival = new_cond
+        @continued_command_tag = nil
         @continuation_request_arrival = new_cond
         @idle_done_cond = nil
         @logout_command_tag = nil
@@ -1160,8 +1161,12 @@ module Net
             when TaggedResponse
               @tagged_responses[resp.tag] = resp
               @tagged_response_arrival.broadcast
-              if resp.tag == @logout_command_tag
+              case resp.tag
+              when @logout_command_tag
                 return
+              when @continued_command_tag
+                @exception = RESPONSE_ERRORS[resp.name].new(resp)
+                @continuation_request_arrival.signal
               end
             when UntaggedResponse
               record_response(resp.name, resp.data)
@@ -1251,7 +1256,7 @@ module Net
         put_string(tag + " " + cmd)
         args.each do |i|
           put_string(" ")
-          send_data(i)
+          send_data(i, tag)
         end
         put_string(CRLF)
         if cmd == "LOGOUT"
@@ -1307,7 +1312,7 @@ module Net
       end
     end
 
-    def send_data(data)
+    def send_data(data, tag = nil)
       case data
       when nil
         put_string("NIL")
@@ -1322,7 +1327,7 @@ module Net
       when Symbol
         send_symbol_data(data)
       else
-        data.send_data(self)
+        data.send_data(self, tag)
       end
     end
 
@@ -1345,11 +1350,16 @@ module Net
       put_string('"' + str.gsub(/["\\]/n, "\\\\\\&") + '"')
     end
 
-    def send_literal(str)
+    def send_literal(str, tag)
       put_string("{" + str.bytesize.to_s + "}" + CRLF)
-      @continuation_request_arrival.wait
-      raise @exception if @exception
-      put_string(str)
+      @continued_command_tag = tag
+      begin
+        @continuation_request_arrival.wait
+        raise @exception if @exception
+        put_string(str)
+      ensure
+        @continued_command_tag = nil
+      end
     end
 
     def send_number_data(num)
@@ -1510,7 +1520,7 @@ module Net
     end
 
     class RawData # :nodoc:
-      def send_data(imap)
+      def send_data(imap, tag)
         imap.send(:put_string, @data)
       end
 
@@ -1525,7 +1535,7 @@ module Net
     end
 
     class Atom # :nodoc:
-      def send_data(imap)
+      def send_data(imap, tag)
         imap.send(:put_string, @data)
       end
 
@@ -1540,7 +1550,7 @@ module Net
     end
 
     class QuotedString # :nodoc:
-      def send_data(imap)
+      def send_data(imap, tag)
         imap.send(:send_quoted_string, @data)
       end
 
@@ -1555,8 +1565,8 @@ module Net
     end
 
     class Literal # :nodoc:
-      def send_data(imap)
-        imap.send(:send_literal, @data)
+      def send_data(imap, tag)
+        imap.send(:send_literal, @data, tag)
       end
 
       def validate
@@ -1570,7 +1580,7 @@ module Net
     end
 
     class MessageSet # :nodoc:
-      def send_data(imap)
+      def send_data(imap, tag)
         imap.send(:put_string, format_internal(@data))
       end
 
@@ -3653,6 +3663,10 @@ module Net
     # out due to inactivity.
     class ByeResponseError < ResponseError
     end
+    
+    RESPONSE_ERRORS = Hash.new(ResponseError)
+    RESPONSE_ERRORS["NO"] = NoResponseError
+    RESPONSE_ERRORS["BAD"] = BadResponseError
 
     # Error raised when too many flags are interned to symbols.
     class FlagCountError < Error

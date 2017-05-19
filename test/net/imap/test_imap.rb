@@ -559,6 +559,91 @@ class IMAPTest < Test::Unit::TestCase
     end
   end
 
+  def test_append
+    server = create_tcp_server
+    port = server.addr[1]
+    mail = <<EOF.gsub(/\n/, "\r\n")
+From: shugo@example.com
+To: matz@example.com
+Subject: hello
+
+hello world
+EOF
+    requests = []
+    received_mail = nil
+    @threads << Thread.start do
+      sock = server.accept
+      begin
+        sock.print("* OK test server\r\n")
+        line = sock.gets
+        requests.push(line)
+        size = line.slice(/{(\d+)}\r\n/, 1).to_i
+        sock.print("+ Ready for literal data\r\n")
+        received_mail = sock.read(size)
+        sock.gets
+        sock.print("RUBY0001 OK APPEND completed\r\n")
+        sock.gets
+        sock.print("* BYE terminating connection\r\n")
+        sock.print("RUBY0002 OK LOGOUT completed\r\n")
+      ensure
+        sock.close
+        server.close
+      end
+    end
+
+    begin
+      imap = Net::IMAP.new(SERVER_ADDR, :port => port)
+      resp = imap.append("INBOX", mail)
+      assert_equal(1, requests.length)
+      assert_equal("RUBY0001 APPEND INBOX {#{mail.size}}\r\n", requests[0])
+      assert_equal(mail, received_mail)
+      imap.logout
+    ensure
+      imap.disconnect if imap
+    end
+  end
+
+  def test_append_fail
+    server = create_tcp_server
+    port = server.addr[1]
+    mail = <<EOF.gsub(/\n/, "\r\n")
+From: shugo@example.com
+To: matz@example.com
+Subject: hello
+
+hello world
+EOF
+    requests = []
+    received_mail = nil
+    @threads << Thread.start do
+      sock = server.accept
+      begin
+        sock.print("* OK test server\r\n")
+        line = sock.gets
+        requests.push(line)
+        sock.print("RUBY0001 NO Mailbox doesn't exist\r\n")
+        sock.gets
+        sock.print("* BYE terminating connection\r\n")
+        sock.print("RUBY0002 OK LOGOUT completed\r\n")
+      ensure
+        sock.close
+        server.close
+      end
+    end
+
+    begin
+      imap = Net::IMAP.new(SERVER_ADDR, :port => port)
+      assert_raise(Net::IMAP::NoResponseError) do
+        imap.append("INBOX", mail)
+      end
+      assert_equal(1, requests.length)
+      assert_equal("RUBY0001 APPEND INBOX {#{mail.size}}\r\n", requests[0])
+      imap.logout
+    ensure
+      imap.disconnect if imap
+    end
+  end
+
   private
 
   def imaps_test
