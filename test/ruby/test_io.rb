@@ -3553,4 +3553,16 @@ __END__
       }
     end if IO.method_defined?(:pread) and IO.method_defined?(:pwrite)
   end
+
+  def test_select_exceptfds
+    TCPServer.open('localhost', 0) do |svr|
+      con = TCPSocket.new('localhost', svr.addr[1])
+      acc = svr.accept
+      assert_equal 6, con.send('hello', Socket::MSG_OOB)
+      set = IO.select(nil, nil, [acc], 30)
+      assert_equal([[], [], [acc]], set, 'IO#select exceptions array OK')
+      acc.close
+      con.close
+    end
+  end if Socket.const_defined?(:MSG_OOB)
 end
