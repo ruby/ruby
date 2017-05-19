@@ -25,6 +25,12 @@ describe "String#capitalize" do
     end
   end
 
+  ruby_version_is '2.4' do
+    it "works for all of Unicode" do
+      "äöü".capitalize.should == "Äöü"
+    end
+  end
+
   it "returns subclass instances when called on a subclass" do
     StringSpecs::MyString.new("hello").capitalize.should be_an_instance_of(StringSpecs::MyString)
     StringSpecs::MyString.new("Hello").capitalize.should be_an_instance_of(StringSpecs::MyString)

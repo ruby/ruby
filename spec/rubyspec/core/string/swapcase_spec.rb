@@ -22,6 +22,12 @@ describe "String#swapcase" do
     end
   end
 
+  ruby_version_is '2.4' do
+    it "works for all of Unicode" do
+      "äÖü".swapcase.should == "ÄöÜ"
+    end
+  end
+
   it "returns subclass instances when called on a subclass" do
     StringSpecs::MyString.new("").swapcase.should be_an_instance_of(StringSpecs::MyString)
     StringSpecs::MyString.new("hello").swapcase.should be_an_instance_of(StringSpecs::MyString)
