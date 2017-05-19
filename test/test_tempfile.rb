@@ -343,6 +343,12 @@ puts Tempfile.new('foo').path
       assert_file.exist?(path)
     }
     assert_file.not_exist?(path)
+
+    Tempfile.create("tempfile-create") {|f|
+      path = f.path
+      File.unlink(f.path)
+    }
+    assert_file.not_exist?(path)
   end
 
   def test_create_without_block
