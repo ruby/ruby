@@ -144,10 +144,16 @@ typedef struct rb_method_refined_struct {
     const VALUE owner;
 } rb_method_refined_t;
 
-typedef struct rb_method_definition_struct {
-    rb_method_type_t type :  8; /* method type */
-    int alias_count       : 28;
-    int complemented_count: 28;
+enum method_optimized_type {
+    OPTIMIZED_METHOD_TYPE_SEND,
+    OPTIMIZED_METHOD_TYPE_CALL,
+    OPTIMIZED_METHOD_TYPE__MAX
+};
+
+PACKED_STRUCT_UNALIGNED(struct rb_method_definition_struct {
+    rb_method_type_t type :  4; /* method type */
+    int alias_count : 28;
+    int complemented_count : 28;
 
     union {
 	rb_method_iseq_t iseq;
@@ -157,16 +163,13 @@ typedef struct rb_method_definition_struct {
 	rb_method_refined_t refined;
 
 	const VALUE proc;                 /* should be marked */
-	enum method_optimized_type {
-	    OPTIMIZED_METHOD_TYPE_SEND,
-	    OPTIMIZED_METHOD_TYPE_CALL,
-
-	    OPTIMIZED_METHOD_TYPE__MAX
-	} optimize_type;
+	enum method_optimized_type optimize_type;
     } body;
 
     ID original_id;
-} rb_method_definition_t;
+});
+
+typedef struct rb_method_definition_struct rb_method_definition_t;
 
 #define UNDEFINED_METHOD_ENTRY_P(me) (!(me) || !(me)->def || (me)->def->type == VM_METHOD_TYPE_UNDEF)
 #define UNDEFINED_REFINED_METHOD_P(def) \
