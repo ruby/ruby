@@ -6,8 +6,8 @@ static VALUE rb_eClosedQueueError;
 
 /* Mutex */
 
-/* mutex_waiter is always on-stack */
-struct mutex_waiter {
+/* sync_waiter is always on-stack */
+struct sync_waiter {
     rb_thread_t *th;
     struct list_node node;
 };
@@ -60,7 +60,7 @@ static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t volatile *t
 static size_t
 rb_mutex_num_waiting(rb_mutex_t *mutex)
 {
-    struct mutex_waiter *w = 0;
+    struct sync_waiter *w = 0;
     size_t n = 0;
 
     list_for_each(&mutex->waitq, w, node) {
@@ -213,7 +213,7 @@ rb_mutex_lock(VALUE self)
     }
 
     if (rb_mutex_trylock(self) == Qfalse) {
-	struct mutex_waiter w;
+	struct sync_waiter w;
 
 	if (mutex->th == th) {
 	    rb_raise(rb_eThreadError, "deadlock; recursive locking");
@@ -300,7 +300,7 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t volatile *th)
 	err = "Attempt to unlock a mutex which is locked by another thread";
     }
     else {
-	struct mutex_waiter *cur = 0, *next = 0;
+	struct sync_waiter *cur = 0, *next = 0;
 	rb_mutex_t *volatile *th_mutex = &th->keeping_mutexes;
 
 	mutex->th = 0;
