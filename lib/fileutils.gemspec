@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = "fileutils"
-  s.version = '0.7.1'
+  s.version = '0.7.2'
   s.date = '2017-02-06'
   s.summary = "Several file utility methods for copying, moving, removing, etc."
   s.description = "Several file utility methods for copying, moving, removing, etc."
@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
 
   s.authors = ["Minero Aoki"]
   s.email = [nil]
-  s.homepage = "https://www.ruby-lang.org"
+  s.homepage = "https://github.com/ruby/fileutils"
   s.license = "BSD-2-Clause"
 
   s.add_development_dependency 'rake'
