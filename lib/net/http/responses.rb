@@ -32,7 +32,9 @@ end
 class Net::HTTPSwitchProtocol < Net::HTTPInformation     # 101
   HAS_BODY = false
 end
-# 102 - RFC 2518; removed in RFC 4918
+class Net::HTTPProcessing < Net::HTTPInformation         # 102
+  HAS_BODY = false
+end
 
 class Net::HTTPOK < Net::HTTPSuccess                            # 200
   HAS_BODY = true
@@ -58,7 +60,9 @@ end
 class Net::HTTPMultiStatus < Net::HTTPSuccess                   # 207 - RFC 4918
   HAS_BODY = true
 end
-# 208 Already Reported - RFC 5842; experimental
+class Net::HTTPAlreadyReported < Net::HTTPSuccess               # 208 - RFC 5842
+  HAS_BODY = true
+end
 class Net::HTTPIMUsed < Net::HTTPSuccess                        # 226 - RFC 3229
   HAS_BODY = true
 end
@@ -148,6 +152,9 @@ class Net::HTTPExpectationFailed < Net::HTTPClientError             # 417
 end
 # 418 I'm a teapot - RFC 2324; a joke RFC
 # 420 Enhance Your Calm - Twitter
+class Net::HTTPMisdirectedRequest < Net::HTTPClientError            # 421 - RFC 7540
+  HAS_BODY = true
+end
 class Net::HTTPUnprocessableEntity < Net::HTTPClientError           # 422 - RFC 4918
   HAS_BODY = true
 end
@@ -196,13 +203,19 @@ end
 class Net::HTTPVersionNotSupported < Net::HTTPServerError           # 505
   HAS_BODY = true
 end
-# 506 Variant Also Negotiates - RFC 2295; experimental
+class Net::HTTPVariantAlsoNegotiates < Net::HTTPServerError         # 506
+  HAS_BODY = true
+end
 class Net::HTTPInsufficientStorage < Net::HTTPServerError           # 507 - RFC 4918
   HAS_BODY = true
 end
-# 508 Loop Detected - RFC 5842; experimental
+class Net::HTTPLoopDetected < Net::HTTPServerError                  # 508 - RFC 5842
+  HAS_BODY = true
+end
 # 509 Bandwidth Limit Exceeded - Apache bw/limited extension
-# 510 Not Extended - RFC 2774; experimental
+class Net::HTTPNotExtended < Net::HTTPServerError                   # 510 - RFC 2774
+  HAS_BODY = true
+end
 class Net::HTTPNetworkAuthenticationRequired < Net::HTTPServerError # 511 - RFC 6585
   HAS_BODY = true
 end
