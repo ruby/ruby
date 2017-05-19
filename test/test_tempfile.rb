@@ -346,6 +346,7 @@ puts Tempfile.new('foo').path
 
     Tempfile.create("tempfile-create") {|f|
       path = f.path
+      f.close
       File.unlink(f.path)
     }
     assert_file.not_exist?(path)
