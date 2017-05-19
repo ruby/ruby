@@ -1477,7 +1477,7 @@ module Net   #:nodoc:
              # avoid a dependency on OpenSSL
              defined?(OpenSSL::SSL) ? OpenSSL::SSL::SSLError : IOError,
              Timeout::Error => exception
-        if count == 0 && IDEMPOTENT_METHODS_.include?(req.method)
+        if count == 0 && IDEMPOTENT_METHODS_.include?(req.method) && !block_given?
           count += 1
           @socket.close if @socket
           D "Conn close because of error #{exception}, and retry"
