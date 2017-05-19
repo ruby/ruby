@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 # :stopdoc:
+# https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
 class Net::HTTPUnknownResponse < Net::HTTPResponse
   HAS_BODY = true
   EXCEPTION_TYPE = Net::HTTPError
@@ -169,7 +170,7 @@ end
 class Net::HTTPRequestHeaderFieldsTooLarge < Net::HTTPClientError   # 431 - RFC 6585
   HAS_BODY = true
 end
-class Net::HTTPUnavailableForLegalReasons < Net::HTTPClientError    # 451
+class Net::HTTPUnavailableForLegalReasons < Net::HTTPClientError    # 451 - RFC 7725
   HAS_BODY = true
 end
 # 444 No Response - Nginx
@@ -217,6 +218,7 @@ class Net::HTTPResponse
   CODE_TO_OBJ = {
     '100' => Net::HTTPContinue,
     '101' => Net::HTTPSwitchProtocol,
+    '102' => Net::HTTPProcessing,
 
     '200' => Net::HTTPOK,
     '201' => Net::HTTPCreated,
@@ -226,6 +228,7 @@ class Net::HTTPResponse
     '205' => Net::HTTPResetContent,
     '206' => Net::HTTPPartialContent,
     '207' => Net::HTTPMultiStatus,
+    '208' => Net::HTTPAlreadyReported,
     '226' => Net::HTTPIMUsed,
 
     '300' => Net::HTTPMultipleChoices,
@@ -255,6 +258,7 @@ class Net::HTTPResponse
     '415' => Net::HTTPUnsupportedMediaType,
     '416' => Net::HTTPRequestedRangeNotSatisfiable,
     '417' => Net::HTTPExpectationFailed,
+    '421' => Net::HTTPMisdirectedRequest,
     '422' => Net::HTTPUnprocessableEntity,
     '423' => Net::HTTPLocked,
     '424' => Net::HTTPFailedDependency,
@@ -262,6 +266,7 @@ class Net::HTTPResponse
     '428' => Net::HTTPPreconditionRequired,
     '429' => Net::HTTPTooManyRequests,
     '431' => Net::HTTPRequestHeaderFieldsTooLarge,
+    '451' => Net::HTTPUnavailableForLegalReasons,
 
     '500' => Net::HTTPInternalServerError,
     '501' => Net::HTTPNotImplemented,
@@ -269,7 +274,10 @@ class Net::HTTPResponse
     '503' => Net::HTTPServiceUnavailable,
     '504' => Net::HTTPGatewayTimeOut,
     '505' => Net::HTTPVersionNotSupported,
+    '506' => Net::HTTPVariantAlsoNegotiates,
     '507' => Net::HTTPInsufficientStorage,
+    '508' => Net::HTTPLoopDetected,
+    '510' => Net::HTTPNotExtended,
     '511' => Net::HTTPNetworkAuthenticationRequired,
   }
 end
