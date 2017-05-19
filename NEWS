@@ -78,7 +78,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Net::HTTP
   * Add more HTTP status classes
 
-* Net::HTTP
+  * Net::HTTP::STATUS_CODES is added as HTTP Status Code Repository [Misc #12935]
+
   * Net::HTTP#proxy_user and Net::HTTP#proxy_pass now reflects http_proxy
     environment variable if the system's environment variable is multiuser
     safe. [Bug #12921]
