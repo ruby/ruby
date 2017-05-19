@@ -334,10 +334,12 @@ def Tempfile.create(basename="", tmpdir=nil, mode: 0, **options)
     begin
       yield tmpfile
     ensure
-      if File.identical?(tmpfile, tmpfile.path)
-        unlinked = File.unlink tmpfile.path rescue nil
+      unless tmpfile.closed?
+        if File.identical?(tmpfile, tmpfile.path)
+          unlinked = File.unlink tmpfile.path rescue nil
+        end
+        tmpfile.close
       end
-      tmpfile.close
       unless unlinked
         begin
           File.unlink tmpfile.path
