@@ -141,7 +141,7 @@ print_backtrace(const VALUE eclass, const VALUE errat, int reverse)
 	int width = ((int)log10((double)(len > threshold ?
 					 ((len - 1) / threshold) :
 					 len - 1)) +
-		     (len <  ? 0 : 9) + 1);
+		     (len < threshold ? 0 : 9) + 1);
 
 #define TRACE_MAX (TRACE_HEAD+TRACE_TAIL+5)
 #define TRACE_HEAD 8
