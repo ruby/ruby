@@ -86,6 +86,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Compatibility issues (excluding feature bug fixes)
 
+* Net::HTTP
+  * Net::HTTP#start now pass :ENV to p_addr by default. [Bug #13351]
+    To avoid this, pass nil explicitly.
+
 * Random.raw_seed renamed to become Random.urandom.  It is now
   applicable to non-seeding purposes due to [Bug #9569].
 

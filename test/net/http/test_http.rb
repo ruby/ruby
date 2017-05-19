@@ -233,6 +233,23 @@ end
 
 module TestNetHTTP_version_1_1_methods
 
+  def test_s_start
+    h = Net::HTTP.start(config('host'), config('port'))
+    assert_equal config('host'), h.address
+    assert_equal config('port'), h.port
+    assert_equal true, h.instance_variable_get(:@proxy_from_env)
+
+    h = Net::HTTP.start(config('host'), config('port'), :ENV)
+    assert_equal config('host'), h.address
+    assert_equal config('port'), h.port
+    assert_equal true, h.instance_variable_get(:@proxy_from_env)
+
+    h = Net::HTTP.start(config('host'), config('port'), nil)
+    assert_equal config('host'), h.address
+    assert_equal config('port'), h.port
+    assert_equal false, h.instance_variable_get(:@proxy_from_env)
+  end
+
   def test_s_get
     assert_equal $test_net_http_data,
         Net::HTTP.get(config('host'), '/', config('port'))

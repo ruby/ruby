@@ -560,7 +560,7 @@ module Net   #:nodoc:
 
     # :call-seq:
     #   HTTP.start(address, port, p_addr, p_port, p_user, p_pass, &block)
-    #   HTTP.start(address, port=nil, p_addr=nil, p_port=nil, p_user=nil, p_pass=nil, opt, &block)
+    #   HTTP.start(address, port=nil, p_addr=:ENV, p_port=nil, p_user=nil, p_pass=nil, opt, &block)
     #
     # Creates a new Net::HTTP object, then additionally opens the TCP
     # connection and HTTP session.
@@ -591,6 +591,7 @@ module Net   #:nodoc:
     def HTTP.start(address, *arg, &block) # :yield: +http+
       arg.pop if opt = Hash.try_convert(arg[-1])
       port, p_addr, p_port, p_user, p_pass = *arg
+      p_addr = :ENV if arg.size < 2
       port = https_default_port if !port && opt && opt[:use_ssl]
       http = new(address, port, p_addr, p_port, p_user, p_pass)
 
