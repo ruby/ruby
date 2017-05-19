@@ -427,7 +427,8 @@ freeze_hide_obj(VALUE obj)
 #define gl_node_level ISEQ_COMPILE_DATA(iseq)->node_level
 #endif
 
-static void dump_disasm_list(LINK_ELEMENT *elem);
+static void dump_disasm_list_with_cursor(const LINK_ELEMENT *elem, const LINK_ELEMENT *curr);
+static void dump_disasm_list(const LINK_ELEMENT *elem);
 
 static int insn_data_length(INSN *iobj);
 static int calc_sp_depth(int depth, INSN *iobj);
@@ -1631,7 +1632,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     line_info_index = code_index = sp = 0;
 
 #define BADINSN_ERROR \
-    (dump_disasm_list(list), \
+    (dump_disasm_list_with_cursor(&anchor->anchor, list), \
      xfree(generated_iseq), \
      xfree(line_info_table), \
      COMPILE_ERROR)
@@ -6494,7 +6495,13 @@ insn_data_to_s_detail(INSN *iobj)
 }
 
 static void
-dump_disasm_list(struct iseq_link_element *link)
+dump_disasm_list(const LINK_ELEMENT *link)
+{
+    dump_disasm_list_with_cursor(link, NULL);
+}
+
+static void
+dump_disasm_list_with_cursor(const LINK_ELEMENT *link, const LINK_ELEMENT *curr)
 {
     int pos = 0;
     INSN *iobj;
@@ -6504,6 +6511,7 @@ dump_disasm_list(struct iseq_link_element *link)
     printf("-- raw disasm--------\n");
 
     while (link) {
+	if (curr) putc(curr == link ? '*' : ' ', stdout);
 	switch (link->type) {
 	  case ISEQ_ELEMENT_INSN:
 	    {
