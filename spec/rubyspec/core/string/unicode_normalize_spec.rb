@@ -80,30 +80,29 @@ describe "String#unicode_normalize!" do
     str = "\u00E0"
     str.unicode_normalize!(:nfd)
 
-    str.should_not == "a\u00E0"
-    str.should == "à"
+    str.should_not == "\u00E0"
+    str.should == "a\u0300"
   end
 
   it "modifies self in place (nfkc)" do
-    str = "a\u0300"
+    str = "\u1E9B\u0323"
     str.unicode_normalize!(:nfkc)
 
-    str.should_not == "a\u0300"
-    str.should == "à"
+    str.should_not == "\u1E9B\u0323"
+    str.should == "\u1E69"
   end
 
   it "modifies self in place (nfkd)" do
-    str = "\u00E0"
+    str = "\u1E9B\u0323"
     str.unicode_normalize!(:nfkd)
 
-    str.should_not == "a\u00E0"
-    str.should == "à"
+    str.should_not == "\u1E9B\u0323"
+    str.should == "s\u0323\u0307"
   end
 
   it "raises an Encoding::CompatibilityError if the string is not in an unicode encoding" do
-    ohm = "\u2126"
     lambda {
-      ohm.force_encoding("ISO-8859-1").unicode_normalize!
+      [0xE0].pack('C').force_encoding("ISO-8859-1").unicode_normalize!
     }.should raise_error(Encoding::CompatibilityError)
   end
 
