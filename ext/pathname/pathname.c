@@ -1015,7 +1015,7 @@ glob_i(RB_BLOCK_CALL_FUNC_ARGLIST(elt, klass))
 /*
  * Returns or yields Pathname objects.
  *
- *  Pathname.glob("config/" "*.rb")
+ *  Pathname.glob("config/" + "*.rb")
  *	#=> [#<Pathname:config/environment.rb>, #<Pathname:config/routes.rb>, ..]
  *
  * See Dir.glob.
