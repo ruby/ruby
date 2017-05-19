@@ -3663,7 +3663,7 @@ module Net
     # out due to inactivity.
     class ByeResponseError < ResponseError
     end
-    
+
     RESPONSE_ERRORS = Hash.new(ResponseError)
     RESPONSE_ERRORS["NO"] = NoResponseError
     RESPONSE_ERRORS["BAD"] = BadResponseError
