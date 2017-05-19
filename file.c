@@ -1508,7 +1508,9 @@ rb_file_chardev_p(VALUE obj, VALUE fname)
  *
  * Return <code>true</code> if the named file exists.
  *
- * _file_name_ can be an IO object.
+ * _file_name_ can be an IO object. If you are working on Windows
+ * or with paths containing whitespaces, it's recommended to use
+ * File.expand_path on the _file_name_ to correctly escape backslashes.
  *
  * "file exists" means that stat() or fstat() system call is successful.
  */
