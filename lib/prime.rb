@@ -419,7 +419,7 @@ class Prime
     end
   end
 
-  # Internal use. An implementation of eratosthenes' sieve
+  # Internal use. An implementation of Eratosthenes' sieve
   class EratosthenesSieve
     include Singleton
 
