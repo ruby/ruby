@@ -479,6 +479,9 @@ update-download:: update-config_files
 
 after-update:: prereq
 
+gcov:
+	$(Q) $(BASERUBY) $(srcdir)/tool/run-gcov.rb
+
 update-doclie:
 	$(Q) $(srcdir)/tool/git-refresh -C $(srcdir)/coverage $(Q1:0=-q) \
 		--branch $(DOCLIE_GIT_REF) \

@@ -36,6 +36,9 @@ cygruby*.def
 extconf.h
 y.output
 y.tab.c
+*.gcda
+*.gcno
+*.gcov
 
 # /
 /*-fake.rb
