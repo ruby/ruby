@@ -174,20 +174,21 @@ class TestPrime < Test::Unit::TestCase
   def test_eratosthenes_works_fine_after_timeout
     sieve = Prime::EratosthenesSieve.instance
     sieve.send(:initialize)
+    # simulates that Timeout.timeout interrupts Prime::EratosthenesSieve#compute_primes
+    class << Integer
+      alias_method :org_sqrt, :sqrt
+    end
     begin
-      # simulates that Timeout.timeout interrupts Prime::EratosthenesSieve#compute_primes
-      def sieve.Integer(n)
-        n = super(n)
+      def Integer.sqrt(n)
         sleep 10 if /compute_primes/ =~ caller.first
-        return n
+        org_sqrt(n)
       end
-
       assert_raise(Timeout::Error) do
         Timeout.timeout(0.5) { Prime.each(7*37){} }
       end
     ensure
-      class << sieve
-        remove_method :Integer
+      class << Integer
+        alias_method :sqrt, :org_sqrt
       end
     end
 
