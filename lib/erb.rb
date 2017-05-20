@@ -389,7 +389,7 @@ class ERB
         @trim_mode = trim_mode
         @percent = percent
         if @trim_mode == '>'
-          @scan_reg  = /(.*?)(%>\n|#{(stags + etags).join('|')}|\n|\z)/m
+          @scan_reg  = /(.*?)(%>\r?\n|#{(stags + etags).join('|')}|\n|\z)/m
           @scan_line = self.method(:trim_line1)
         elsif @trim_mode == '<>'
           @scan_reg  = /(.*?)(%>\r?\n|#{(stags + etags).join('|')}|\n|\z)/m
@@ -441,7 +441,7 @@ class ERB
         line.scan(@scan_reg) do |tokens|
           tokens.each do |token|
             next if token.empty?
-            if token == "%>\n"
+            if token == "%>\n" || token == "%>\r\n"
               yield('%>')
               yield(:cr)
             else

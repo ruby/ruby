@@ -88,6 +88,11 @@ with all sufficient information, see the ChangeLog file or Redmine
   * New constants:
     * RbConfig::LIMITS is added to provide the limits of C types.
 
+* ERB
+  * Carriage returns are changed to be trimmed properly if trim_mode is specified
+    and used. Duplicated newlines will be removed on Windows.
+    [Bug #5339] [Bug #11464]
+
 === Compatibility issues (excluding feature bug fixes)
 
 * Net::HTTP
