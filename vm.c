@@ -2521,7 +2521,6 @@ th_init(rb_thread_t *th, VALUE self)
     th->status = THREAD_RUNNABLE;
     th->errinfo = Qnil;
     th->last_status = Qnil;
-    th->waiting_fd = -1;
     th->root_svar = Qfalse;
     th->local_storage_recursive_hash = Qnil;
     th->local_storage_recursive_hash_for_trace = Qnil;

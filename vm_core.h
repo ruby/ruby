@@ -490,6 +490,7 @@ typedef struct rb_vm_struct {
     struct rb_thread_struct *main_thread;
     struct rb_thread_struct *running_thread;
 
+    struct list_head waiting_fds; /* <=> struct waiting_fd */
     struct list_head living_threads;
     size_t living_thread_num;
     VALUE thgroup_default;
@@ -715,8 +716,6 @@ typedef struct rb_thread_struct {
 
     /* passing state */
     int state;
-
-    int waiting_fd;
 
     /* for rb_iterate */
     VALUE passed_block_handler;
@@ -1442,6 +1441,7 @@ void rb_thread_wakeup_timer_thread(void);
 static inline void
 rb_vm_living_threads_init(rb_vm_t *vm)
 {
+    list_head_init(&vm->waiting_fds);
     list_head_init(&vm->living_threads);
     vm->living_thread_num = 0;
 }
