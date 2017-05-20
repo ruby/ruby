@@ -2909,6 +2909,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *cond,
 	    LABEL *label = NEW_LABEL(nd_line(cond));
 	    CHECK(compile_branch_condition(iseq, ret, cond->nd_1st, label,
 					   else_label));
+	    if (!label->refcnt) break;
 	    ADD_LABEL(ret, label);
 	    cond = cond->nd_2nd;
 	    goto again;
@@ -2918,6 +2919,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *cond,
 	    LABEL *label = NEW_LABEL(nd_line(cond));
 	    CHECK(compile_branch_condition(iseq, ret, cond->nd_1st, then_label,
 					   label));
+	    if (!label->refcnt) break;
 	    ADD_LABEL(ret, label);
 	    cond = cond->nd_2nd;
 	    goto again;
@@ -4250,7 +4252,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	INIT_ANCHOR(else_seq);
 	then_label = NEW_LABEL(line);
 	else_label = NEW_LABEL(line);
-	end_label = NEW_LABEL(line);
+	end_label = 0;
 
 	compile_branch_condition(iseq, cond_seq, node->nd_cond,
 				 then_label, else_label);
@@ -4259,14 +4261,21 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 
 	ADD_SEQ(ret, cond_seq);
 
-	ADD_LABEL(ret, then_label);
-	ADD_SEQ(ret, then_seq);
-	ADD_INSNL(ret, line, jump, end_label);
+	if (then_label->refcnt) {
+	    ADD_LABEL(ret, then_label);
+	    ADD_SEQ(ret, then_seq);
+	    end_label = NEW_LABEL(line);
+	    ADD_INSNL(ret, line, jump, end_label);
+	}
 
-	ADD_LABEL(ret, else_label);
-	ADD_SEQ(ret, else_seq);
+	if (else_label->refcnt) {
+	    ADD_LABEL(ret, else_label);
+	    ADD_SEQ(ret, else_seq);
+	}
 
-	ADD_LABEL(ret, end_label);
+	if (end_label) {
+	    ADD_LABEL(ret, end_label);
+	}
 
 	break;
       }
