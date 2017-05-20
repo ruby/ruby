@@ -64,6 +64,7 @@ typedef struct iseq_label_data {
     int refcnt;
     unsigned int set: 1;
     unsigned int rescued: 2;
+    unsigned int unremovable: 1;
 } LABEL;
 
 typedef struct iseq_insn_data {
@@ -276,13 +277,15 @@ struct iseq_compile_data_ensure_node_stack {
 #define ADD_ADJUST_RESTORE(seq, label) \
   ADD_ELEM((seq), (LINK_ELEMENT *) new_adjust_body(iseq, (label), -1))
 
+#define LABEL_UNREMOVABLE(label) \
+    ((label) ? (LABEL_REF(label), (label)->unremovable=1) : 0)
 #define ADD_CATCH_ENTRY(type, ls, le, iseqv, lc) do {				\
     VALUE _e = rb_ary_new3(5, (type),						\
 			   (VALUE)(ls) | 1, (VALUE)(le) | 1,			\
 			   (VALUE)(iseqv), (VALUE)(lc) | 1);			\
-    if (ls) LABEL_REF(ls);							\
-    if (le) LABEL_REF(le);							\
-    if (lc) LABEL_REF(lc);							\
+    LABEL_UNREMOVABLE(ls);							\
+    LABEL_UNREMOVABLE(le);							\
+    LABEL_UNREMOVABLE(lc);							\
     rb_ary_push(ISEQ_COMPILE_DATA(iseq)->catch_table_ary, freeze_hide_obj(_e));	\
 } while (0)
 
@@ -1026,7 +1029,7 @@ new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line)
     adjust->link.next = 0;
     adjust->label = label;
     adjust->line_no = line;
-    if (label) LABEL_REF(label);
+    LABEL_UNREMOVABLE(label);
     return adjust;
 }
 
@@ -2016,8 +2019,29 @@ replace_destination(INSN *dobj, INSN *nobj)
 static int
 remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 {
-    int removed = 0;
+    LINK_ELEMENT *first = i, *end;
+
+    if (!i) return 0;
     while (i) {
+	if (IS_INSN(i)) {
+	    if (IS_INSN_ID(i, jump) || IS_INSN_ID(i, leave)) {
+		break;
+	    }
+	}
+	else if (IS_LABEL(i)) {
+	    if (((LABEL *)i)->unremovable) return 0;
+	    if (((LABEL *)i)->refcnt > 0) {
+		if (i == first) return 0;
+		i = i->prev;
+		break;
+	    }
+	}
+	else return 0;
+	i = i->next;
+    }
+    end = i;
+    i = first;
+    do {
 	if (IS_INSN(i)) {
 	    struct rb_iseq_constant_body *body = iseq->body;
 	    VALUE insn = INSN_OF(i);
@@ -2036,15 +2060,9 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 		}
 	    }
 	}
-	else if (IS_LABEL(i)) {
-	    if (((LABEL *)i)->refcnt > 0) break;
-	}
-	else break;
 	REMOVE_ELEM(i);
-	removed = 1;
-	i = i->next;
-    }
-    return removed;
+    } while ((i != end) && (i = i->next) != 0);
+    return 1;
 }
 
 static int
@@ -6511,7 +6529,7 @@ dump_disasm_list_with_cursor(const LINK_ELEMENT *link, const LINK_ELEMENT *curr)
     printf("-- raw disasm--------\n");
 
     while (link) {
-	if (curr) putc(curr == link ? '*' : ' ', stdout);
+	if (curr) printf(curr == link ? "*" : " ");
 	switch (link->type) {
 	  case ISEQ_ELEMENT_INSN:
 	    {

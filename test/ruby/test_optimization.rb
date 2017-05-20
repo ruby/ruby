@@ -567,4 +567,12 @@ class TestRubyOptimization < Test::Unit::TestCase
       assert_equal(:ok, t)
     end
   end
+
+  def test_retry_label_in_unreachable_chunk
+    bug = '[ruby-core:81272] [Bug #13578]'
+    assert_valid_syntax("#{<<-"begin;"}\n#{<<-"end;"}", bug)
+    begin;
+      def t; if false; case 42; when s {}; end; end; end
+    end;
+  end
 end
