@@ -57,7 +57,7 @@ Zachary Scott (zzak)
 [lib/e2mmap.rb]
   Keiju ISHITSUKA (keiju)
 [lib/erb.rb]
-  Masatoshi SEKI (seki)
+  Masatoshi SEKI (seki), Takashi Kokubun (k0kubun)
 [lib/find.rb]
   Kazuki Tsujimoto (ktsj)
 [lib/forwardable.rb]
