@@ -2902,6 +2902,7 @@ static int
 compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *cond,
 			 LABEL *then_label, LABEL *else_label)
 {
+  again:
     switch (nd_type(cond)) {
       case NODE_AND:
 	{
@@ -2909,9 +2910,8 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *cond,
 	    CHECK(compile_branch_condition(iseq, ret, cond->nd_1st, label,
 					   else_label));
 	    ADD_LABEL(ret, label);
-	    CHECK(compile_branch_condition(iseq, ret, cond->nd_2nd, then_label,
-					   else_label));
-	    break;
+	    cond = cond->nd_2nd;
+	    goto again;
 	}
       case NODE_OR:
 	{
@@ -2919,9 +2919,8 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *cond,
 	    CHECK(compile_branch_condition(iseq, ret, cond->nd_1st, then_label,
 					   label));
 	    ADD_LABEL(ret, label);
-	    compile_branch_condition(iseq, ret, cond->nd_2nd, then_label,
-				     else_label);
-	    break;
+	    cond = cond->nd_2nd;
+	    goto again;
 	}
       case NODE_LIT:		/* NODE_LIT is always true */
       case NODE_TRUE:
