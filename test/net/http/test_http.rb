@@ -225,7 +225,7 @@ class TestNetHTTP < Test::Unit::TestCase
     def host.to_str; raise SocketError, "open failure"; end
     uri = Struct.new(:scheme, :hostname, :port).new("http", host, port)
     assert_raise_with_message(SocketError, /#{host}:#{port}/) do
-      Net::HTTP.get(uri)
+      clean_http_proxy_env{ Net::HTTP.get(uri) }
     end
   end
 
