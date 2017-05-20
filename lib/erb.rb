@@ -499,22 +499,9 @@ class ERB
 
     Scanner.default_scanner = TrimScanner
 
-    class SimpleScanner < Scanner # :nodoc:
-      def scan
-        @src.scan(/(.*?)(#{(stags + etags).join('|')}|\n|\z)/m) do |tokens|
-          tokens.each do |token|
-            next if token.empty?
-            yield(token)
-          end
-        end
-      end
-    end
-
-    Scanner.regist_scanner(SimpleScanner, nil, false)
-
     begin
       require 'strscan'
-      class SimpleScanner2 < Scanner # :nodoc:
+      class SimpleScanner < Scanner # :nodoc:
         def scan
           stag_reg = /(.*?)(#{stags.join('|')}|\z)/m
           etag_reg = /(.*?)(#{etags.join('|')}|\z)/m
@@ -526,7 +513,10 @@ class ERB
           end
         end
       end
-      Scanner.regist_scanner(SimpleScanner2, nil, false)
+      Scanner.regist_scanner(SimpleScanner, nil, false)
+
+      # Deprecated. Kept for backward compatibility.
+      SimpleScanner2 = SimpleScanner # :nodoc:
 
       class ExplicitScanner < Scanner # :nodoc:
         def scan
