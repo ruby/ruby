@@ -2496,7 +2496,7 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
 static VALUE
 rb_hash_merge(VALUE hash1, VALUE hash2)
 {
-    return rb_hash_update(rb_obj_dup(hash1), hash2);
+    return rb_hash_update(rb_hash_dup(hash1), hash2);
 }
 
 static int
