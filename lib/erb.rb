@@ -395,7 +395,7 @@ class ERB
           @scan_reg  = /(.*?)(%>\r?\n|#{(stags + etags).join('|')}|\n|\z)/m
           @scan_line = self.method(:trim_line2)
         elsif @trim_mode == '-'
-          @scan_reg  = /(.*?)(^[ \t]*<%\-|<%\-|-%>\n|-%>|#{(stags + etags).join('|')}|\z)/m
+          @scan_reg  = /(.*?)(^[ \t]*<%\-|<%\-|-%>\r?\n|-%>|#{(stags + etags).join('|')}|\z)/m
           @scan_line = self.method(:explicit_trim_line)
         else
           @scan_reg  = /(.*?)(#{(stags + etags).join('|')}|\n|\z)/m
@@ -479,7 +479,7 @@ class ERB
             next if token.empty?
             if @stag.nil? && /[ \t]*<%-/ =~ token
               yield('<%')
-            elsif @stag && token == "-%>\n"
+            elsif @stag && (token == "-%>\n" || token == "-%>\r\n")
               yield('%>')
               yield(:cr)
             elsif @stag && token == '-%>'
@@ -534,7 +534,7 @@ class ERB
               yield('<%')
             elsif elem == '-%>'
               yield('%>')
-              yield(:cr) if scanner.scan(/(\n|\z)/)
+              yield(:cr) if scanner.scan(/(\r?\n|\z)/)
             else
               yield(elem)
             end
