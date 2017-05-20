@@ -501,6 +501,8 @@ class ERB
 
     begin
       require 'strscan'
+    rescue LoadError
+    else
       class SimpleScanner < Scanner # :nodoc:
         def scan
           stag_reg = /(.*?)(#{stags.join('|')}|\z)/m
@@ -540,8 +542,6 @@ class ERB
         end
       end
       Scanner.regist_scanner(ExplicitScanner, '-', false)
-
-    rescue LoadError
     end
 
     class Buffer # :nodoc:
