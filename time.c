@@ -64,6 +64,7 @@ cmp(VALUE x, VALUE y)
             return 1;
         return 0;
     }
+    if (RB_TYPE_P(x, T_BIGNUM)) return FIX2INT(rb_big_cmp(x, y));
     return rb_cmpint(rb_funcall(x, idCmp, 1, y), x, y);
 }
 
@@ -332,7 +333,7 @@ wcmp(wideval_t wx, wideval_t wy)
 #endif
     x = w2v(wx);
     y = w2v(wy);
-    return rb_cmpint(rb_funcall(x, idCmp, 1, y), x, y);
+    return cmp(x, y);
 }
 
 #define wne(x,y) (!weq((x),(y)))
