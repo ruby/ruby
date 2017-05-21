@@ -3234,16 +3234,21 @@ static VALUE str_casecmp_p(VALUE str1, VALUE str2);
  *     "aBcDeF".casecmp("abcdefg")   #=> -1
  *     "abcdef".casecmp("ABCDEF")    #=> 0
  *
- *  +nil+ is returned if the two strings have incompatible encodings.
+ *  +nil+ is returned if the two strings have incompatible encodings,
+ *  or if +other_str+ is not a string.
  *
+ *     "foo".casecmp(2)   #=> nil
  *     "\u{e4 f6 fc}".encode("ISO-8859-1").casecmp("\u{c4 d6 dc}")   #=> nil
  */
 
 static VALUE
 rb_str_casecmp(VALUE str1, VALUE str2)
 {
-    StringValue(str2);
-    return str_casecmp(str1, str2);
+    VALUE s = rb_check_string_type(str2);
+    if (NIL_P(s)) {
+	return Qnil;
+    }
+    return str_casecmp(str1, s);
 }
 
 static VALUE
@@ -3316,16 +3321,21 @@ str_casecmp(VALUE str1, VALUE str2)
  *     "abcdef".casecmp?("ABCDEF")    #=> true
  *     "\u{e4 f6 fc}".casecmp?("\u{c4 d6 dc}")   #=> true
  *
- *  +nil+ is returned if the two strings have incompatible encodings.
+ *  +nil+ is returned if the two strings have incompatible encodings,
+ *  or if +other_str+ is not a string.
  *
+ *     "foo".casecmp?(2)   #=> nil
  *     "\u{e4 f6 fc}".encode("ISO-8859-1").casecmp?("\u{c4 d6 dc}")   #=> nil
  */
 
 static VALUE
 rb_str_casecmp_p(VALUE str1, VALUE str2)
 {
-    StringValue(str2);
-    return str_casecmp_p(str1, str2);
+    VALUE s = rb_check_string_type(str2);
+    if (NIL_P(s)) {
+	return Qnil;
+    }
+    return str_casecmp_p(str1, s);
 }
 
 static VALUE
@@ -9939,7 +9949,6 @@ sym_cmp(VALUE sym, VALUE other)
 
 /*
  * call-seq:
- *
  *   sym.casecmp(other_symbol)   -> -1, 0, +1, or nil
  *
  * Case-insensitive version of <code>Symbol#<=></code>.
@@ -9969,7 +9978,6 @@ sym_casecmp(VALUE sym, VALUE other)
 
 /*
  * call-seq:
- *
  *   sym.casecmp?(other_symbol)   -> true, false, or nil
  *
  * Returns +true+ if +sym+ and +other_symbol+ are equal after

@@ -2321,6 +2321,13 @@ CODE
     assert_equal(1, "FoO".casecmp("BaR"))
     assert_equal(-1, "baR".casecmp("FoO"))
     assert_equal(1, "\u3042B".casecmp("\u3042a"))
+
+    assert_nil("foo".casecmp(:foo))
+    assert_nil("foo".casecmp(Object.new))
+
+    o = Object.new
+    def o.to_str; "fOO"; end
+    assert_equal(0, "FoO".casecmp(o))
   end
 
   def test_casecmp?
@@ -2328,6 +2335,13 @@ CODE
     assert_equal(false, 'FoO'.casecmp?('BaR'))
     assert_equal(false, 'baR'.casecmp?('FoO'))
     assert_equal(true, 'äöü'.casecmp?('ÄÖÜ'))
+
+    assert_nil("foo".casecmp?(:foo))
+    assert_nil("foo".casecmp?(Object.new))
+
+    o = Object.new
+    def o.to_str; "fOO"; end
+    assert_equal(true, "FoO".casecmp?(o))
   end
 
   def test_upcase2
