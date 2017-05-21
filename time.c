@@ -345,33 +345,25 @@ wcmp(wideval_t wx, wideval_t wy)
 static wideval_t
 wadd(wideval_t wx, wideval_t wy)
 {
-    VALUE x;
 #if WIDEVALUE_IS_WIDER
     if (FIXWV_P(wx) && FIXWV_P(wy)) {
         wideint_t r = FIXWV2WINT(wx) + FIXWV2WINT(wy);
         return WINT2WV(r);
     }
-    else
 #endif
-    x = w2v(wx);
-    if (RB_TYPE_P(x, T_BIGNUM)) return v2w(rb_big_plus(x, w2v(wy)));
-    return v2w(rb_funcall(x, '+', 1, w2v(wy)));
+    return v2w(addv(w2v(wx), w2v(wy)));
 }
 
 static wideval_t
 wsub(wideval_t wx, wideval_t wy)
 {
-    VALUE x;
 #if WIDEVALUE_IS_WIDER
     if (FIXWV_P(wx) && FIXWV_P(wy)) {
         wideint_t r = FIXWV2WINT(wx) - FIXWV2WINT(wy);
         return WINT2WV(r);
     }
-    else
 #endif
-    x = w2v(wx);
-    if (RB_TYPE_P(x, T_BIGNUM)) return v2w(rb_big_minus(x, w2v(wy)));
-    return v2w(rb_funcall(x, '-', 1, w2v(wy)));
+    return v2w(subv(w2v(wx), w2v(wy)));
 }
 
 static wideval_t
