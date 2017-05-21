@@ -286,15 +286,19 @@ class TestSymbol < Test::Unit::TestCase
     assert_equal(0, :FoO.casecmp(:fOO))
     assert_equal(1, :FoO.casecmp(:BaR))
     assert_equal(-1, :baR.casecmp(:FoO))
+
     assert_nil(:foo.casecmp("foo"))
+    assert_nil(:foo.casecmp(Object.new))
   end
 
   def test_casecmp?
     assert_equal(true, :FoO.casecmp?(:fOO))
     assert_equal(false, :FoO.casecmp?(:BaR))
     assert_equal(false, :baR.casecmp?(:FoO))
-    assert_nil(:foo.casecmp?("foo"))
     assert_equal(true, :äöü.casecmp?(:ÄÖÜ))
+
+    assert_nil(:foo.casecmp?("foo"))
+    assert_nil(:foo.casecmp?(Object.new))
   end
 
   def test_length

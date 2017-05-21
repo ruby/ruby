@@ -2317,6 +2317,9 @@ CODE
 =end
 
   def test_casecmp
+    assert_equal(0, "FoO".casecmp("fOO"))
+    assert_equal(1, "FoO".casecmp("BaR"))
+    assert_equal(-1, "baR".casecmp("FoO"))
     assert_equal(1, "\u3042B".casecmp("\u3042a"))
   end
 
