@@ -171,7 +171,9 @@ module Net # :nodoc:
     def rbuf_fill
       case rv = @io.read_nonblock(BUFSIZE, exception: false)
       when String
-        return @rbuf << rv
+        @rbuf << rv
+        rv.clear
+        return
       when :wait_readable
         @io.to_io.wait_readable(@read_timeout) or raise Net::ReadTimeout
         # continue looping
