@@ -3,13 +3,16 @@
 # Used to download, extract and patch extension libraries (extlibs)
 # for Ruby. See common.mk for Ruby's usage.
 
-require 'fileutils'
 require 'digest'
 require_relative 'downloader'
 
 class ExtLibs
-  def do_download(url, base, cache_dir)
-    Downloader.download(url, base, cache_dir, nil)
+  def cache_file(url, cache_dir)
+    Downloader.cache_file(url, nil, :cache_dir => cache_dir)
+  end
+
+  def do_download(url, cache_dir)
+    Downloader.download(url, nil, nil, nil, :cache_dir => cache_dir)
   end
 
   def do_checksum(cache, chksums)
@@ -77,22 +80,23 @@ class ExtLibs
   end
 
   def do_command(mode, dest, url, cache_dir, chksums)
-    base = File.basename(url)
-    cache = File.join(cache_dir, base)
-    target = File.join(dest, base[/.*(?=\.tar(?:\.\w+)?\z)/])
-
     extracted = false
+    base = /.*(?=\.tar(?:\.\w+)?\z)/
+
     case mode
     when :download
-      do_download(url, base, cache_dir)
+      cache = do_download(url, cache_dir)
       do_checksum(cache, chksums)
     when :extract
+      cache = cache_file(url, cache_dir)
+      target = File.join(dest, File.basename(cache)[base])
       unless File.directory?(target)
         do_checksum(cache, chksums)
         extracted = do_extract(cache, dest)
       end
     when :all
-      do_download(url, base, cache_dir)
+      cache = do_download(url, cache_dir)
+      target = File.join(dest, File.basename(cache)[base])
       unless File.directory?(target)
         do_checksum(cache, chksums)
         extracted = do_extract(cache, dest)
@@ -102,7 +106,7 @@ class ExtLibs
   end
 
   def run(argv)
-    cache_dir = ENV['CACHE_DIR'] || ".downloaded-cache"
+    cache_dir = nil
     mode = :all
     until argv.empty?
       case argv[0]
@@ -130,8 +134,6 @@ class ExtLibs
       end
       argv.shift
     end
-
-    FileUtils.mkdir_p(cache_dir)
 
     success = true
     argv.each do |dir|

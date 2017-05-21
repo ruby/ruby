@@ -1096,20 +1096,19 @@ update-mspec:
 update-rubyspec:
 
 update-config_files: PHONY
-	$(Q) $(BASERUBY) -C "$(srcdir)/tool" \
-	    ../tool/downloader.rb -e gnu \
+	$(Q) $(BASERUBY) -C "$(srcdir)" tool/downloader.rb -d tool -e gnu \
 	    config.guess config.sub
 
 update-gems: PHONY
 	$(ECHO) Downloading bundled gem files...
-	$(Q) $(BASERUBY) -C "$(srcdir)/gems" \
-	    -I../tool -rdownloader -answ \
+	$(Q) $(BASERUBY) -C "$(srcdir)" \
+	    -I./tool -rdownloader -answ \
 	    -e 'gem, ver = *$$F' \
 	    -e 'old = Dir.glob("#{gem}-*.gem")' \
 	    -e 'gem = "#{gem}-#{ver}.gem"' \
-	    -e 'Downloader::RubyGems.download(gem, nil, nil) and' \
+	    -e 'Downloader::RubyGems.download(gem, "gems", nil) and' \
 	    -e 'File.unlink(*(old-[gem]))' \
-	    bundled_gems
+	    gems/bundled_gems
 
 extract-gems: PHONY
 	$(ECHO) Extracting bundled gem files...

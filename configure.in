@@ -52,7 +52,7 @@ if test "$HAVE_BASERUBY" = yes -a "`RUBYOPT=- $BASERUBY -e 'print 42' 2>/dev/nul
     if test "`RUBYOPT=- $BASERUBY --disable=gems -e 'print 42' 2>/dev/null`" = 42; then
 	BASERUBY="$BASERUBY --disable=gems"
     fi
-    $BASERUBY -C "$srcdir/tool" downloader.rb -e gnu config.guess config.sub
+    $BASERUBY -C "$srcdir" tool/downloader.rb -d tool -e gnu config.guess config.sub
 else
     BASERUBY="echo executable host ruby is required.  use --with-baseruby option.; false"
     HAVE_BASERUBY=no
