@@ -62,8 +62,7 @@ class Downloader
       options = options.dup
       verify = options.delete(:verify) {Gem::VERSION >= "2.4."}
       options[:ssl_ca_cert] = Dir.glob(File.expand_path("../lib/rubygems/ssl_certs/**/*.pem", File.dirname(__FILE__)))
-      file = under(dir, name)
-      super("https://rubygems.org/downloads/#{name}", file, nil, since, options) or
+      super("https://rubygems.org/downloads/#{name}", name, dir, since, options) or
         return false
       return true unless verify
     end
