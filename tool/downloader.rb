@@ -60,11 +60,8 @@ class Downloader
     def self.download(name, dir = nil, since = true, options = {})
       require 'rubygems'
       options = options.dup
-      verify = options.delete(:verify) {Gem::VERSION >= "2.4."}
       options[:ssl_ca_cert] = Dir.glob(File.expand_path("../lib/rubygems/ssl_certs/**/*.pem", File.dirname(__FILE__)))
-      super("https://rubygems.org/downloads/#{name}", name, dir, since, options) or
-        return false
-      return true unless verify
+      super("https://rubygems.org/downloads/#{name}", name, dir, since, options)
     end
   end
 
@@ -123,7 +120,6 @@ class Downloader
   #            'UnicodeData.txt', 'enc/unicode/data'
   def self.download(url, name, dir = nil, since = true, options = {})
     options = options.dup
-    options.delete(:verify)
     file = under(dir, name)
     dryrun = options.delete(:dryrun)
     if since.nil? and File.exist?(file)
@@ -189,10 +185,6 @@ class Downloader
     raise "failed to download #{name}\n#{e.message}: #{url}"
   end
 
-  def self.verify(file)
-    true
-  end
-
   def self.under(dir, name)
     dir ? File.join(dir, File.basename(name)) : name
   end
@@ -217,8 +209,6 @@ if $0 == __FILE__
       since = nil
     when '-a'
       since = false
-    when '-V'
-      options[:verify] = true
     when '-n', '--dryrun'
       options[:dryrun] = true
     when /\A-/
