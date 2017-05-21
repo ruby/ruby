@@ -19,8 +19,9 @@ describe "String#casecmp independent of case" do
   end
 
   it "tries to convert other to string using to_str" do
-    other = mock('abc')
-    def other.to_str() "abc" end
+    other = mock('x')
+    other.should_receive(:to_str).and_return("abc")
+
     "abc".casecmp(other).should == 0
   end
 
