@@ -225,15 +225,17 @@ class Downloader
   def self.link_cache(cache, file, name, verbose = false)
     return false unless cache and cache.exist?
     return true if cache.eql?(file)
-    begin
-      file.make_symlink(cache.relative_path_from(file.parent))
-    rescue SystemCallError
-    else
-      if verbose
-        $stdout.puts "made symlink #{name} to #{cache}"
-        $stdout.flush
+    if /cygwin/ !~ RUBY_PLATFORM or /winsymlink:nativestrict/ =~ ENV['CYGWIN']
+      begin
+        file.make_symlink(cache.relative_path_from(file.parent))
+      rescue SystemCallError
+      else
+        if verbose
+          $stdout.puts "made symlink #{name} to #{cache}"
+          $stdout.flush
+        end
+        return true
       end
-      return true
     end
     begin
       file.make_link(cache)
