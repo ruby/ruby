@@ -43,12 +43,23 @@ describe "Kernel#test" do
     Kernel.test(?R, @file).should be_true
   end
 
-  it "returns true when passed ?w if the argument is readable by the effective uid" do
-    Kernel.test(?w, @file).should be_true
-  end
+  context "writable test" do
+    before do
+      @tmp_file = tmp("file.kernel.test")
+      open(@tmp_file, "w") {}
+    end
 
-  it "returns true when passed ?W if the argument is readable by the real uid" do
-    Kernel.test(?W, @file).should be_true
+    after do
+      rm_r @tmp_file
+    end
+
+    it "returns true when passed ?w if the argument is readable by the effective uid" do
+      Kernel.test(?w, @tmp_file).should be_true
+    end
+
+    it "returns true when passed ?W if the argument is readable by the real uid" do
+      Kernel.test(?W, @tmp_file).should be_true
+    end
   end
 
   context "time commands" do
