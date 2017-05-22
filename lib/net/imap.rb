@@ -1100,6 +1100,7 @@ module Net
         @tagged_response_arrival = new_cond
         @continued_command_tag = nil
         @continuation_request_arrival = new_cond
+        @continuation_request_exception = nil
         @idle_done_cond = nil
         @logout_command_tag = nil
         @debug_output_bol = true
@@ -1165,7 +1166,8 @@ module Net
               when @logout_command_tag
                 return
               when @continued_command_tag
-                @exception = RESPONSE_ERRORS[resp.name].new(resp)
+                @continuation_request_exception =
+                  RESPONSE_ERRORS[resp.name].new(resp)
                 @continuation_request_arrival.signal
               end
             when UntaggedResponse
@@ -1351,14 +1353,19 @@ module Net
     end
 
     def send_literal(str, tag)
-      put_string("{" + str.bytesize.to_s + "}" + CRLF)
-      @continued_command_tag = tag
-      begin
-        @continuation_request_arrival.wait
-        raise @exception if @exception
-        put_string(str)
-      ensure
-        @continued_command_tag = nil
+      synchronize do
+        put_string("{" + str.bytesize.to_s + "}" + CRLF)
+        @continued_command_tag = tag
+        @continuation_request_exception = nil
+        begin
+          @continuation_request_arrival.wait
+          e = @continuation_request_exception || @exception
+          raise e if e
+          put_string(str)
+        ensure
+          @continued_command_tag = nil
+          @continuation_request_exception = nil
+        end
       end
     end
 

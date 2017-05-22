@@ -582,7 +582,7 @@ EOF
         received_mail = sock.read(size)
         sock.gets
         sock.print("RUBY0001 OK APPEND completed\r\n")
-        sock.gets
+        requests.push(sock.gets)
         sock.print("* BYE terminating connection\r\n")
         sock.print("RUBY0002 OK LOGOUT completed\r\n")
       ensure
@@ -598,6 +598,8 @@ EOF
       assert_equal("RUBY0001 APPEND INBOX {#{mail.size}}\r\n", requests[0])
       assert_equal(mail, received_mail)
       imap.logout
+      assert_equal(2, requests.length)
+      assert_equal("RUBY0002 LOGOUT\r\n", requests[1])
     ensure
       imap.disconnect if imap
     end
@@ -619,10 +621,9 @@ EOF
       sock = server.accept
       begin
         sock.print("* OK test server\r\n")
-        line = sock.gets
-        requests.push(line)
+        requests.push(sock.gets)
         sock.print("RUBY0001 NO Mailbox doesn't exist\r\n")
-        sock.gets
+        requests.push(sock.gets)
         sock.print("* BYE terminating connection\r\n")
         sock.print("RUBY0002 OK LOGOUT completed\r\n")
       ensure
@@ -639,6 +640,8 @@ EOF
       assert_equal(1, requests.length)
       assert_equal("RUBY0001 APPEND INBOX {#{mail.size}}\r\n", requests[0])
       imap.logout
+      assert_equal(2, requests.length)
+      assert_equal("RUBY0002 LOGOUT\r\n", requests[1])
     ensure
       imap.disconnect if imap
     end
