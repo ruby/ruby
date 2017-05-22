@@ -195,7 +195,11 @@ class Downloader
       $stdout.puts "done"
       $stdout.flush
     end
-    save_cache(cache, file, name)
+    if dest.eql?(cache)
+      link_cache(cache, file, name)
+    else
+      save_cache(cache, file, name)
+    end
     return file.to_path
   rescue => e
     raise "failed to download #{name}\n#{e.message}: #{url}"
