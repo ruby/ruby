@@ -119,12 +119,14 @@ module Net # :nodoc:
       read_bytes = 0
       begin
         while read_bytes + @rbuf.size < len
-          dest << (s = rbuf_consume(@rbuf.size))
+          s = rbuf_consume(@rbuf.size)
           read_bytes += s.size
+          dest << s
           rbuf_fill
         end
-        dest << (s = rbuf_consume(len - read_bytes))
+        s = rbuf_consume(len - read_bytes)
         read_bytes += s.size
+        dest << s
       rescue EOFError
         raise unless ignore_eof
       end
@@ -137,8 +139,9 @@ module Net # :nodoc:
       read_bytes = 0
       begin
         while true
-          dest << (s = rbuf_consume(@rbuf.size))
+          s = rbuf_consume(@rbuf.size)
           read_bytes += s.size
+          dest << s
           rbuf_fill
         end
       rescue EOFError
