@@ -371,11 +371,13 @@ class ERB
         klass.new(src, trim_mode, percent)
       end
 
+      DEFAULT_STAGS = %w(<%% <%= <%# <%).freeze
+      DEFAULT_ETAGS = %w(%%> %>).freeze
       def initialize(src, trim_mode, percent)
         @src = src
         @stag = nil
-        @stags = %w(<%% <%= <%# <%).freeze
-        @etags = %w(%%> %>).freeze
+        @stags = DEFAULT_STAGS
+        @etags = DEFAULT_ETAGS
       end
       attr_accessor :stag
       attr_reader :stags, :etags
@@ -505,8 +507,8 @@ class ERB
     else
       class SimpleScanner < Scanner # :nodoc:
         def scan
-          stag_reg = /(.*?)(#{stags.join('|')}|\z)/m
-          etag_reg = /(.*?)(#{etags.join('|')}|\z)/m
+          stag_reg = (stags == DEFAULT_STAGS) ? /(.*?)(<%[%=#]?|\z)/m : /(.*?)(#{stags.join('|')}|\z)/m
+          etag_reg = (etags == DEFAULT_ETAGS) ? /(.*?)(%%?>|\z)/m : /(.*?)(#{etags.join('|')}|\z)/m
           scanner = StringScanner.new(@src)
           while ! scanner.eos?
             scanner.scan(@stag ? etag_reg : stag_reg)
