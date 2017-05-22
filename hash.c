@@ -1839,14 +1839,15 @@ rb_hash_transform_values(VALUE hash)
  *     hsh.transform_values! {|value| block } -> hsh
  *     hsh.transform_values!                  -> an_enumerator
  *
- *  Return a new hash with the results of running block once for every value.
+ *  Invokes the given block once for each value in <i>hsh</i>, replacing it
+ *  with the new value returned by the block, and then returns <i>hsh</i>.
  *  This method does not change the keys.
  *
  *     h = { a: 1, b: 2, c: 3 }
  *     h.transform_values! {|v| v * v + 1 }  #=> { a: 2, b: 5, c: 10 }
- *     h.transform_values!(&:to_s)           #=> { a: "1", b: "2", c: "3" }
+ *     h.transform_values!(&:to_s)           #=> { a: "2", b: "5", c: "10" }
  *     h.transform_values!.with_index {|v, i| "#{v}.#{i}" }
- *                                           #=> { a: "1.0", b: "2.1", c: "3.2" }
+ *                                           #=> { a: "1.0", b: "5.1", c: "10.2" }
  *
  *  If no block is given, an enumerator is returned instead.
  */
