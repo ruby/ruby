@@ -25,6 +25,11 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Array#append  [Feature #12746]
   * Array#prepend  [Feature #12746]
 
+* Dir
+
+  * Dir.glob provides new optional keyword argument, :base.
+    [Feature#13056]
+
 * Integer
 
   * Integer.sqrt  [Feature #13219]

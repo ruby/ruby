@@ -2082,7 +2082,7 @@ glob_helper(
 }
 
 static int
-ruby_glob0(const char *path, int flags,
+ruby_glob0(const char *path, const char *base, int flags,
 	   const ruby_glob_funcs_t *funcs, VALUE arg,
 	   rb_encoding *enc)
 {
@@ -2090,7 +2090,7 @@ ruby_glob0(const char *path, int flags,
     const char *root, *start;
     char *buf;
     size_t n;
-    int status;
+    int status, dirsep = FALSE;
 
     start = root = path;
     flags |= FNM_SYSCASE;
@@ -2101,6 +2101,11 @@ ruby_glob0(const char *path, int flags,
     if (*root == '/') root++;
 
     n = root - start;
+    if (!n && base) {
+	n = strlen(base);
+	start = base;
+	dirsep = TRUE;
+    }
     buf = GLOB_ALLOC_N(char, n + 1);
     if (!buf) return -1;
     MEMCPY(buf, start, char, n);
@@ -2111,7 +2116,7 @@ ruby_glob0(const char *path, int flags,
 	GLOB_FREE(buf);
 	return -1;
     }
-    status = glob_helper(buf, n, 0, path_unknown, &list, &list + 1,
+    status = glob_helper(buf, n, dirsep, path_unknown, &list, &list + 1,
 			 flags, funcs, arg, enc);
     glob_free_pattern(list);
     GLOB_FREE(buf);
@@ -2125,7 +2130,7 @@ ruby_glob(const char *path, int flags, ruby_glob_func *func, VALUE arg)
     ruby_glob_funcs_t funcs;
     funcs.match = func;
     funcs.error = NULL;
-    return ruby_glob0(path, flags & ~GLOB_VERBOSE,
+    return ruby_glob0(path, 0, flags & ~GLOB_VERBOSE,
 		      &funcs, arg, rb_ascii8bit_encoding());
 }
 
@@ -2154,7 +2159,7 @@ rb_glob(const char *path, void (*func)(const char *, VALUE, void *), VALUE arg)
     args.value = arg;
     args.enc = rb_ascii8bit_encoding();
 
-    status = ruby_glob0(path, GLOB_VERBOSE, &rb_glob_funcs,
+    status = ruby_glob0(path, 0, GLOB_VERBOSE, &rb_glob_funcs,
 			(VALUE)&args, args.enc);
     if (status) GLOB_JUMP_TAG(status);
 }
@@ -2243,7 +2248,7 @@ glob_brace(const char *path, VALUE val, void *enc)
 {
     struct brace_args *arg = (struct brace_args *)val;
 
-    return ruby_glob0(path, arg->flags, &arg->funcs, arg->value, enc);
+    return ruby_glob0(path, 0, arg->flags, &arg->funcs, arg->value, enc);
 }
 
 int
@@ -2267,6 +2272,7 @@ ruby_brace_glob(const char *str, int flags, ruby_glob_func *func, VALUE arg)
 
 struct push_glob_args {
     struct glob_args glob;
+    const char *base;
     int flags;
 };
 
@@ -2275,12 +2281,12 @@ push_caller(const char *path, VALUE val, void *enc)
 {
     struct push_glob_args *arg = (struct push_glob_args *)val;
 
-    return ruby_glob0(path, arg->flags, &rb_glob_funcs,
+    return ruby_glob0(path, arg->base, arg->flags, &rb_glob_funcs,
 		      (VALUE)&arg->glob, enc);
 }
 
 static int
-push_glob(VALUE ary, VALUE str, int flags)
+push_glob(VALUE ary, VALUE str, VALUE base, int flags)
 {
     struct push_glob_args args;
     rb_encoding *enc = rb_enc_get(str);
@@ -2296,7 +2302,11 @@ push_glob(VALUE ary, VALUE str, int flags)
     args.glob.func = push_pattern;
     args.glob.value = ary;
     args.glob.enc = enc;
+    args.base = 0;
     args.flags = flags;
+    if (!NIL_P(base) && rb_enc_check(str, base)) {
+	args.base = RSTRING_PTR(base);
+    }
 #if defined _WIN32 || defined __APPLE__
     enc = rb_utf8_encoding();
 #endif
@@ -2307,7 +2317,7 @@ push_glob(VALUE ary, VALUE str, int flags)
 }
 
 static VALUE
-rb_push_glob(VALUE str, int flags) /* '\0' is delimiter */
+rb_push_glob(VALUE str, VALUE base, int flags) /* '\0' is delimiter */
 {
     long offset = 0;
     VALUE ary;
@@ -2320,7 +2330,7 @@ rb_push_glob(VALUE str, int flags) /* '\0' is delimiter */
 	int status;
 	p = RSTRING_PTR(str) + offset;
 	status = push_glob(ary, rb_enc_str_new(p, strlen(p), rb_enc_get(str)),
-			   flags);
+			   base, flags);
 	if (status) GLOB_JUMP_TAG(status);
 	if (offset >= RSTRING_LEN(str)) break;
 	p += strlen(p) + 1;
@@ -2334,7 +2344,7 @@ rb_push_glob(VALUE str, int flags) /* '\0' is delimiter */
 }
 
 static VALUE
-dir_globs(long argc, const VALUE *argv, int flags)
+dir_globs(long argc, const VALUE *argv, VALUE base, int flags)
 {
     VALUE ary = rb_ary_new();
     long i;
@@ -2343,16 +2353,36 @@ dir_globs(long argc, const VALUE *argv, int flags)
 	int status;
 	VALUE str = argv[i];
 	GlobPathValue(str, TRUE);
-	status = push_glob(ary, str, flags);
+	status = push_glob(ary, str, base, flags);
 	if (status) GLOB_JUMP_TAG(status);
     }
 
     return ary;
 }
 
+static void
+dir_glob_options(VALUE opt, VALUE *base, int *flags)
+{
+    ID kw[2];
+    VALUE args[2];
+    kw[0] = rb_intern("base");
+    if (flags) kw[1] = rb_intern("flags");
+    rb_get_kwargs(opt, kw, 0, flags ? 2 : 1, args);
+    if (args[0] == Qundef) {
+	*base = Qnil;
+    }
+    else {
+	GlobPathValue(args[0], TRUE);
+	*base = args[0];
+    }
+    if (flags && args[1] != Qundef) {
+	*flags = NUM2INT(args[1]);
+    }
+}
+
 /*
  *  call-seq:
- *     Dir[ string [, string ...] ] -> array
+ *     Dir[ string [, string ...], [base: path] ] -> array
  *
  *  Equivalent to calling
  *  <code>Dir.glob([</code><i>string,...</i><code>],0)</code>.
@@ -2361,16 +2391,19 @@ dir_globs(long argc, const VALUE *argv, int flags)
 static VALUE
 dir_s_aref(int argc, VALUE *argv, VALUE obj)
 {
+    VALUE opts, base;
+    argc = rb_scan_args(argc, argv, "*:", NULL, &opts);
+    dir_glob_options(opts, &base, NULL);
     if (argc == 1) {
-	return rb_push_glob(argv[0], 0);
+	return rb_push_glob(argv[0], base, 0);
     }
-    return dir_globs(argc, argv, 0);
+    return dir_globs(argc, argv, base, 0);
 }
 
 /*
  *  call-seq:
- *     Dir.glob( pattern, [flags] ) -> matches
- *     Dir.glob( pattern, [flags] ) { |filename| block }  -> nil
+ *     Dir.glob( pattern, [flags], [base: path] ) -> matches
+ *     Dir.glob( pattern, [flags], [base: path] ) { |filename| block }  -> nil
  *
  *  Expands +pattern+, which is an Array of patterns or a pattern String, and
  *  returns the results as +matches+ or as arguments given to the block.
@@ -2445,21 +2478,23 @@ dir_s_aref(int argc, VALUE *argv, VALUE obj)
 static VALUE
 dir_s_glob(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE str, rflags, ary;
+    VALUE str, rflags, ary, opts, base;
     int flags;
 
-    if (rb_scan_args(argc, argv, "11", &str, &rflags) == 2)
+    argc = rb_scan_args(argc, argv, "11:", &str, &rflags, &opts);
+    if (argc == 2)
 	flags = NUM2INT(rflags);
     else
 	flags = 0;
+    dir_glob_options(opts, &base, &flags);
 
     ary = rb_check_array_type(str);
     if (NIL_P(ary)) {
-	ary = rb_push_glob(str, flags);
+	ary = rb_push_glob(str, base, flags);
     }
     else {
 	VALUE v = ary;
-	ary = dir_globs(RARRAY_LEN(v), RARRAY_CONST_PTR(v), flags);
+	ary = dir_globs(RARRAY_LEN(v), RARRAY_CONST_PTR(v), base, flags);
 	RB_GC_GUARD(v);
     }
 
