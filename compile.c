@@ -173,6 +173,7 @@ struct iseq_compile_data_ensure_node_stack {
 
 /* create new label */
 #define NEW_LABEL(l) new_label_body(iseq, (l))
+#define LABEL_FORMAT "<L%03d>"
 
 #define iseq_path(iseq) ((iseq)->body->location.path)
 #define iseq_absolute_path(iseq) ((iseq)->body->location.absolute_path)
@@ -6444,7 +6445,7 @@ insn_data_to_s_detail(INSN *iobj)
 	      case TS_OFFSET:	/* label(destination position) */
 		{
 		    LABEL *lobj = (LABEL *)OPERAND_AT(iobj, j);
-		    rb_str_catf(str, "<L%03d>", lobj->label_no);
+		    rb_str_catf(str, LABEL_FORMAT, lobj->label_no);
 		    break;
 		}
 		break;
@@ -6550,7 +6551,7 @@ dump_disasm_list_with_cursor(const LINK_ELEMENT *link, const LINK_ELEMENT *curr)
 	  case ISEQ_ELEMENT_LABEL:
 	    {
 		lobj = (LABEL *)link;
-		printf("<L%03d>\n", lobj->label_no);
+		printf(LABEL_FORMAT"\n", lobj->label_no);
 		break;
 	    }
 	  case ISEQ_ELEMENT_NONE:
