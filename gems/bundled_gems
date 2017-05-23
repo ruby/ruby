@@ -3,5 +3,5 @@ minitest 5.10.1
 net-telnet 0.1.1
 power_assert 1.0.2
 rake 12.0.0
-test-unit 3.2.3
+test-unit 3.2.4
 xmlrpc 0.2.1
