@@ -3555,6 +3555,10 @@ __END__
   end
 
   def test_select_exceptfds
+    if Etc.uname[:sysname] == 'SunOS' && Etc.uname[:release] == '5.11'
+      skip "Solaris 11 fails this"
+    end
+
     TCPServer.open('localhost', 0) do |svr|
       con = TCPSocket.new('localhost', svr.addr[1])
       acc = svr.accept
