@@ -19,19 +19,28 @@ install:
   - ruby --version
   - 'cl'
   - SET
+  - echo> Makefile srcdir=.
+  - echo>> Makefile MSC_VER=0
+  - echo>> Makefile RT=none
+  - echo>> Makefile RT_VER=0
+  - echo>> Makefile BUILTIN_ENCOBJS=nul
+  - type win32\Makefile.sub >> Makefile
+  - nmake %mflags% touch-unicode-files
+  - nmake %mflags% up incs UNICODE_FILES=.
+  - del Makefile
   - mkdir \usr\local\bin
   - mkdir \usr\local\include
   - mkdir \usr\local\lib
   - appveyor DownloadFile https://downloads.sourceforge.net/project/libpng/zlib/%zlib_version%/zlib%zlib_version:.=%.zip
   - 7z x -o%APPVEYOR_BUILD_FOLDER%\ext\zlib zlib%zlib_version:.=%.zip
   - for %%I in (%OPENSSL_DIR%\*.dll) do mklink /h \usr\local\bin\%%~nxI %%I
+  - mkdir %Platform%-mswin_%vs%
+  - ps: Get-ChildItem "win32" -Recurse | foreach {$_.Attributes = 'Readonly'}
+  - ps: Get-Item $env:Platform"-mswin_"$env:vs | foreach {$_.Attributes = 'Normal'}
 build_script:
   - cd %APPVEYOR_BUILD_FOLDER%
-  - mkdir %Platform%-mswin_%vs%
   - cd %Platform%-mswin_%vs%
   - ..\win32\configure.bat --without-ext=+,dbm,gdbm,readline --with-opt-dir=/usr/local --with-openssl-dir=%OPENSSL_DIR:\=/%
-  - nmake -l touch-unicode-files
-  - nmake -l up UNICODE_FILES=.
   - nmake -l
   - nmake install-nodoc
 test_script:
