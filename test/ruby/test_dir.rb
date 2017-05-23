@@ -208,6 +208,12 @@ class TestDir < Test::Unit::TestCase
     assert_equal(files, Dir.glob("*/*.c", base: @root).sort)
   end
 
+  def test_glob_base_dir
+    files = %w[a/foo.c c/bar.c].map {|n| File.join(@root, n)}
+    files.each {|n| File.write(n, "")}
+    assert_equal(files, Dir.open(@root) {|d| Dir.glob("*/*.c", base: d)}.sort)
+  end
+
   def assert_entries(entries)
     entries.sort!
     assert_equal(%w(. ..) + ("a".."z").to_a, entries)
