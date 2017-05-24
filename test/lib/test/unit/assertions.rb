@@ -835,6 +835,17 @@ eom
           @failures[key] = [@count, e]
         end
 
+        def foreach(*keys)
+          keys.each do |key|
+            @count += 1
+            begin
+              yield key
+            rescue Exception => e
+              @failures[key] = [@count, e]
+            end
+          end
+        end
+
         def message
           i = 0
           total = @count.to_s
@@ -856,6 +867,14 @@ eom
         assert(all.pass?, message(msg) {all.message.chomp(".")})
       end
       alias all_assertions assert_all_assertions
+
+      def assert_all_assertions_foreach(msg = nil, *keys, &block)
+        all = AllFailures.new
+        all.foreach(*keys, &block)
+      ensure
+        assert(all.pass?, message(msg) {all.message.chomp(".")})
+      end
+      alias all_assertions_foreach assert_all_assertions_foreach
 
       def build_message(head, template=nil, *arguments) #:nodoc:
         template &&= template.chomp
