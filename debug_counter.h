@@ -22,6 +22,7 @@ RB_DEBUG_COUNTER(mc_class_serial_miss)
 RB_DEBUG_COUNTER(mc_cme_complement)
 RB_DEBUG_COUNTER(mc_cme_complement_hit)
 RB_DEBUG_COUNTER(mc_search_super)
+
 RB_DEBUG_COUNTER(ivar_get_ic_hit)
 RB_DEBUG_COUNTER(ivar_get_ic_miss)
 RB_DEBUG_COUNTER(ivar_get_ic_miss_serial)
@@ -35,6 +36,21 @@ RB_DEBUG_COUNTER(ivar_set_ic_miss_oorange)
 RB_DEBUG_COUNTER(ivar_set_ic_miss_noobject)
 RB_DEBUG_COUNTER(ivar_get_base)
 RB_DEBUG_COUNTER(ivar_set_base)
+
+/* object counts */
+RB_DEBUG_COUNTER(obj_free)
+
+RB_DEBUG_COUNTER(obj_str_ptr)
+RB_DEBUG_COUNTER(obj_str_embed)
+RB_DEBUG_COUNTER(obj_str_shared)
+RB_DEBUG_COUNTER(obj_str_nofree)
+RB_DEBUG_COUNTER(obj_str_fstr)
+
+RB_DEBUG_COUNTER(obj_ary_ptr)
+RB_DEBUG_COUNTER(obj_ary_embed)
+
+RB_DEBUG_COUNTER(obj_obj_ptr)
+RB_DEBUG_COUNTER(obj_obj_embed)
 #endif
 
 #ifndef RUBY_DEBUG_COUNTER_H

@@ -33,6 +33,7 @@
 #include <setjmp.h>
 #include <sys/types.h>
 #include "ruby_assert.h"
+#include "debug_counter.h"
 
 #undef rb_data_object_wrap
 
@@ -2103,6 +2104,8 @@ make_io_zombie(rb_objspace_t *objspace, VALUE obj)
 static int
 obj_free(rb_objspace_t *objspace, VALUE obj)
 {
+    RB_DEBUG_COUNTER_INC(obj_free);
+
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_FREEOBJ, obj);
 
     switch (BUILTIN_TYPE(obj)) {
@@ -2137,6 +2140,10 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	if (!(RANY(obj)->as.basic.flags & ROBJECT_EMBED) &&
             RANY(obj)->as.object.as.heap.ivptr) {
 	    xfree(RANY(obj)->as.object.as.heap.ivptr);
+	    RB_DEBUG_COUNTER_INC(obj_obj_ptr);
+	}
+	else {
+	    RB_DEBUG_COUNTER_INC(obj_obj_embed);
 	}
 	break;
       case T_MODULE:

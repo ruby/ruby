@@ -18,6 +18,7 @@
 #include "gc.h"
 #include "ruby_assert.h"
 #include "id.h"
+#include "debug_counter.h"
 
 #define BEG(no) (regs->beg[(no)])
 #define END(no) (regs->end[(no)])
@@ -1310,9 +1311,18 @@ rb_str_free(VALUE str)
     if (FL_TEST(str, RSTRING_FSTR)) {
 	st_data_t fstr = (st_data_t)str;
 	st_delete(rb_vm_fstring_table(), &fstr, NULL);
+	RB_DEBUG_COUNTER_INC(obj_str_fstr);
     }
 
-    if (!STR_EMBED_P(str) && !FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+    if (STR_EMBED_P(str)) {
+	RB_DEBUG_COUNTER_INC(obj_str_embed);
+    }
+    else if (FL_TEST(str, STR_SHARED | STR_NOFREE)) {
+	(void)RB_DEBUG_COUNTER_INC_IF(obj_str_shared, FL_TEST(str, STR_SHARED));
+	(void)RB_DEBUG_COUNTER_INC_IF(obj_str_shared, FL_TEST(str, STR_NOFREE));
+    }
+    else {
+	RB_DEBUG_COUNTER_INC(obj_str_ptr);
 	ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
     }
 }

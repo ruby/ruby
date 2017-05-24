@@ -16,6 +16,7 @@
 #include "ruby/st.h"
 #include "probes.h"
 #include "id.h"
+#include "debug_counter.h"
 
 #ifndef ARRAY_DEBUG
 # define NDEBUG
@@ -553,7 +554,11 @@ void
 rb_ary_free(VALUE ary)
 {
     if (ARY_OWNS_HEAP_P(ary)) {
+	RB_DEBUG_COUNTER_INC(obj_ary_ptr);
 	ruby_sized_xfree((void *)ARY_HEAP_PTR(ary), ARY_HEAP_SIZE(ary));
+    }
+    else {
+	RB_DEBUG_COUNTER_INC(obj_ary_embed);
     }
 }
 
