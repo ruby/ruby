@@ -213,15 +213,24 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(2.0+3.0i, [2.0, 3.0i].inject(:+))
   end
 
-  def test_inject_array_plus_redefined
-    assert_separately([], <<-"end;")
-      class Integer
-        undef :+
-        def +(x)
-          0
+  def test_inject_array_op_redefined
+    assert_separately([], "#{<<~"end;"}\n""end")
+    all_assertions_foreach("", *%i[+ * / - %]) do |op|
+      bug = '[ruby-dev:49510] [Bug#12178] should respect redefinition'
+      begin
+        Integer.class_eval do
+          alias_method :orig, op
+          define_method(op) do |x|
+            0
+          end
+        end
+        assert_equal(0, [1,2,3].inject(op), bug)
+      ensure
+        Integer.class_eval do
+          undef_method op
+          alias_method op, :orig
         end
       end
-      assert_equal(0, [1,2,3].inject(:+), "[ruby-dev:49510] [Bug#12178]")
     end;
   end
 
