@@ -1587,6 +1587,7 @@ rb_thread_create_timer_thread(void)
 	int err;
 #ifdef HAVE_PTHREAD_ATTR_INIT
 	pthread_attr_t attr;
+	rb_vm_t *vm = GET_VM();
 
 	err = pthread_attr_init(&attr);
 	if (err != 0) {
@@ -1623,10 +1624,20 @@ rb_thread_create_timer_thread(void)
 	    rb_bug("rb_thread_create_timer_thread: Timer thread was already created\n");
 	}
 #ifdef HAVE_PTHREAD_ATTR_INIT
-	err = pthread_create(&timer_thread.id, &attr, thread_timer, &GET_VM()->gvl);
+	err = pthread_create(&timer_thread.id, &attr, thread_timer, &vm->gvl);
 	pthread_attr_destroy(&attr);
+
+	if (err == EINVAL) {
+	    /*
+	     * Even if we are careful with our own stack use in thread_timer(),
+	     * any third-party libraries (eg libkqueue) which rely on __thread
+	     * storage can cause small stack sizes to fail.  So lets hope the
+	     * default stack size is enough for them:
+	     */
+	    err = pthread_create(&timer_thread.id, NULL, thread_timer, &vm->gvl);
+	}
 #else
-	err = pthread_create(&timer_thread.id, NULL, thread_timer, &GET_VM()->gvl);
+	err = pthread_create(&timer_thread.id, NULL, thread_timer, &vm->gvl);
 #endif
 	if (err != 0) {
 	    rb_warn("pthread_create failed for timer: %s, scheduling broken",
