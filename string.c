@@ -8727,7 +8727,7 @@ rb_str_crypt(VALUE str, VALUE salt)
 # if defined SIZEOF_CRYPT_DATA && SIZEOF_CRYPT_DATA <= 256
     struct crypt_data cdata, *const data = &cdata;
 # else
-#   undef LARGE_CRYPT_DATA
+#   define LARGE_CRYPT_DATA
     struct crypt_data *data = ALLOC(struct crypt_data);
 # endif
 #else

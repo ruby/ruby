@@ -546,6 +546,10 @@ CODE
       assert_raise(ArgumentError) {S("mypassword").crypt(S("aa".encode(enc)))}
       assert_raise(ArgumentError) {S("mypassword".encode(enc)).crypt(S("aa"))}
     end
+
+    @cls == String and assert_no_memory_leak([], 's = ""', <<~'end;') # do
+      1000.times { s.crypt(-"..").clear  }
+    end;
   end
 
   def test_delete
