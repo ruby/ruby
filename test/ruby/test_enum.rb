@@ -196,11 +196,6 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(105, [5, 7].inject(3, :*))
   end
 
-  def assert_float_equal(e, v, msg=nil)
-    assert_equal(Float, v.class, msg)
-    assert_equal(e, v, msg)
-  end
-
   def test_inject_array_plus
     assert_equal(3, [3].inject(:+))
     assert_equal(8, [3, 5].inject(:+))
