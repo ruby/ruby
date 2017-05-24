@@ -1972,21 +1972,21 @@ glob_helper(
 	    int dotfile = 0;
 	    IF_NORMALIZE_UTF8PATH(VALUE utf8str = Qnil);
 
-	    if (recursive && dp->d_name[0] == '.') {
+	    name = dp->d_name;
+	    namlen = NAMLEN(dp);
+	    if (recursive && name[0] == '.') {
 		++dotfile;
-		if (!dp->d_name[1]) {
+		if (namlen == 1) {
 		    /* unless DOTMATCH, skip current directories not to recurse infinitely */
 		    if (!(flags & FNM_DOTMATCH)) continue;
 		    ++dotfile;
 		}
-		else if (dp->d_name[1] == '.' && !dp->d_name[2]) {
+		else if (namlen == 2 && name[1] == '.') {
 		    /* always skip parent directories not to recurse infinitely */
 		    continue;
 		}
 	    }
 
-	    name = dp->d_name;
-	    namlen = NAMLEN(dp);
 # if NORMALIZE_UTF8PATH
 	    if (norm_p && has_nonascii(name, namlen)) {
 		if (!NIL_P(utf8str = rb_str_normalize_ospath(name, namlen))) {
