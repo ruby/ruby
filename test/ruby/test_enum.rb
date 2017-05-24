@@ -234,6 +234,25 @@ class TestEnumerable < Test::Unit::TestCase
     end;
   end
 
+  def test_inject_array_op_private
+    assert_separately([], "#{<<~"end;"}\n""end")
+    all_assertions_foreach("", *%i[+ * / - %]) do |op|
+      bug = '[ruby-core:81349] [Bug #13592] should respect visibility'
+      assert_raise_with_message(NoMethodError, /private method/, bug) do
+        begin
+          Integer.class_eval do
+            private op
+          end
+          [1,2,3].inject(op)
+        ensure
+          Integer.class_eval do
+            public op
+          end
+        end
+      end
+    end;
+  end
+
   def test_partition
     assert_equal([[1, 3, 1], [2, 2]], @obj.partition {|x| x % 2 == 1 })
     cond = ->(x, i) { x % 2 == 1 }

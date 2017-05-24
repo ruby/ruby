@@ -678,8 +678,9 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
 
     id = SYM2ID(op);
     if (id == idPLUS) {
-        if ((FIXNUM_P(v) || RB_TYPE_P(v, T_BIGNUM)) &&
-             rb_method_basic_definition_p(rb_cInteger, idPLUS)) {
+	if (RB_INTEGER_TYPE_P(v) &&
+	    rb_method_basic_definition_p(rb_cInteger, idPLUS) &&
+	    rb_obj_respond_to(v, idPLUS, FALSE)) {
             n = 0;
             for (; i < RARRAY_LEN(ary); i++) {
                 e = RARRAY_AREF(ary, i);
@@ -705,7 +706,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
         }
     }
     for (; i < RARRAY_LEN(ary); i++) {
-        v = rb_funcall(v, id, 1, RARRAY_AREF(ary, i));
+        v = rb_funcallv_public(v, id, 1, &RARRAY_CONST_PTR(ary)[i]);
     }
     return v;
 }
