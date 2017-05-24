@@ -8722,8 +8722,14 @@ rb_str_oct(VALUE str)
 static VALUE
 rb_str_crypt(VALUE str, VALUE salt)
 {
+#undef LARGE_CRYPT_DATA
 #ifdef HAVE_CRYPT_R
+# if defined SIZEOF_CRYPT_DATA && SIZEOF_CRYPT_DATA <= 256
+    struct crypt_data cdata, *const data = &cdata;
+# else
+#   undef LARGE_CRYPT_DATA
     struct crypt_data *data = ALLOC(struct crypt_data);
+# endif
 #else
     extern char *crypt(const char *, const char *);
 #endif
@@ -8762,7 +8768,7 @@ rb_str_crypt(VALUE str, VALUE salt)
     res = crypt(s, saltp);
 #endif
     if (!res) {
-#ifdef HAVE_CRYPT_R
+#ifdef LARGE_CRYPT_DATA
 	int err = errno;
 	xfree(data);
 	errno = err;
@@ -8770,7 +8776,7 @@ rb_str_crypt(VALUE str, VALUE salt)
 	rb_sys_fail("crypt");
     }
     result = rb_str_new_cstr(res);
-#ifdef HAVE_CRYPT_R
+#ifdef LARGE_CRYPT_DATA
     xfree(data);
 #endif
     FL_SET_RAW(result, OBJ_TAINTED_RAW(str) | OBJ_TAINTED_RAW(salt));
