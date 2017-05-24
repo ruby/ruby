@@ -8713,7 +8713,7 @@ static VALUE
 rb_str_crypt(VALUE str, VALUE salt)
 {
 #ifdef HAVE_CRYPT_R
-    struct crypt_data data;
+    struct crypt_data *data = ALLOC(struct crypt_data);
 #else
     extern char *crypt(const char *, const char *);
 #endif
@@ -8745,16 +8745,24 @@ rb_str_crypt(VALUE str, VALUE salt)
 #endif
 #ifdef HAVE_CRYPT_R
 # ifdef HAVE_STRUCT_CRYPT_DATA_INITIALIZED
-    data.initialized = 0;
+    data->initialized = 0;
 # endif
-    res = crypt_r(s, saltp, &data);
+    res = crypt_r(s, saltp, data);
 #else
     res = crypt(s, saltp);
 #endif
     if (!res) {
+#ifdef HAVE_CRYPT_R
+	int err = errno;
+	xfree(data);
+	errno = err;
+#endif
 	rb_sys_fail("crypt");
     }
     result = rb_str_new_cstr(res);
+#ifdef HAVE_CRYPT_R
+    xfree(data);
+#endif
     FL_SET_RAW(result, OBJ_TAINTED_RAW(str) | OBJ_TAINTED_RAW(salt));
     return result;
 }
