@@ -380,8 +380,11 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
 		}
 	    }
 	}
+	rb_ary_modify(ary);
     }
-    rb_ary_modify(ary);
+    else {
+	rb_ary_modify_check(ary);
+    }
     capa = ARY_CAPA(ary);
     if (new_len > capa) {
 	ary_double_capa(ary, new_len);
