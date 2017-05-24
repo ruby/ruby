@@ -74,8 +74,12 @@ describe "IO.popen" do
   end
 
   it "does not throw an exception if child exited and has been waited for" do
-    @io = IO.popen(ruby_cmd('sleep'))
-    Process.kill "KILL", @io.pid
+    # Avoid the /bin/sh subshell using :options and :args to sleep.
+    # We don't want to kill only the subshell and leave "ruby -e sleep"
+    # running indefinitely
+    @io = IO.popen(ruby_cmd(nil, :options => '-e', :args => 'sleep'))
+    pid = @io.pid
+    Process.kill "KILL", pid
     @io.close
     platform_is_not :windows do
       $?.signaled?.should == true
