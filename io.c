@@ -13,6 +13,7 @@
 
 #include "internal.h"
 #include "ruby/io.h"
+#include "ruby/process.h"
 #include "ruby/thread.h"
 #include "dln.h"
 #include "encindex.h"
