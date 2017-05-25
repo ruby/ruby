@@ -955,6 +955,13 @@ module URI
     end
 
     #
+    # Checks if a URI is a relative reference, i.e. it doesn't include a scheme.
+    #
+    def relative_reference?
+      @scheme.nil?
+    end
+
+    #
     # Checks if URI is an absolute one
     #
     def absolute?
@@ -1102,10 +1109,6 @@ module URI
         #raise BadURIError, "both URI are absolute" if absolute?
         # hmm... should return oth for usability?
         return rel
-      end
-
-      unless self.absolute?
-        raise BadURIError, "both URI are relative"
       end
 
       base = self.dup

@@ -41,7 +41,7 @@ class Gem::FakeFetcher
   def find_data(path)
     return File.read path.path if URI === path and 'file' == path.scheme
 
-    if URI === path and "URI::#{path.scheme.upcase}" != path.class.name then
+    if URI === path and (path.scheme.nil? or "URI::#{path.scheme.upcase}" != path.class.name) then
       raise ArgumentError,
         "mismatch for scheme #{path.scheme} and class #{path.class}"
     end
