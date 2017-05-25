@@ -774,7 +774,7 @@ dir_read(VALUE dir)
     }
 }
 
-static VALUE dir_each_entry(VALUE, VALUE (*)(VALUE, VALUE), VALUE);
+static VALUE dir_each_entry(VALUE, VALUE (*)(VALUE, VALUE), VALUE, int);
 
 static VALUE
 dir_yield(VALUE arg, VALUE path)
@@ -806,11 +806,11 @@ static VALUE
 dir_each(VALUE dir)
 {
     RETURN_ENUMERATOR(dir, 0, 0);
-    return dir_each_entry(dir, dir_yield, Qnil);
+    return dir_each_entry(dir, dir_yield, Qnil, FALSE);
 }
 
 static VALUE
-dir_each_entry(VALUE dir, VALUE (*each)(VALUE, VALUE), VALUE arg)
+dir_each_entry(VALUE dir, VALUE (*each)(VALUE, VALUE), VALUE arg, int children_only)
 {
     struct dir_data *dirp;
     struct dirent *dp;
@@ -823,6 +823,11 @@ dir_each_entry(VALUE dir, VALUE (*each)(VALUE, VALUE), VALUE arg)
 	const char *name = dp->d_name;
 	size_t namlen = NAMLEN(dp);
 	VALUE path;
+
+	if (children_only && name[0] == '.') {
+	    if (namlen == 1) continue; /* current directory */
+	    if (namlen == 2 && name[1] == '.') continue; /* parent directory */
+	}
 #if NORMALIZE_UTF8PATH
 	if (norm_p && has_nonascii(name, namlen) &&
 	    !NIL_P(path = rb_str_normalize_ospath(name, namlen))) {
@@ -2628,7 +2633,7 @@ static VALUE
 dir_collect(VALUE dir)
 {
     VALUE ary = rb_ary_new();
-    dir_each_entry(dir, rb_ary_push, ary);
+    dir_each_entry(dir, rb_ary_push, ary, FALSE);
     return ary;
 }
 
@@ -2654,6 +2659,76 @@ dir_entries(int argc, VALUE *argv, VALUE io)
 
     dir = dir_open_dir(argc, argv);
     return rb_ensure(dir_collect, dir, dir_close, dir);
+}
+
+static VALUE
+dir_each_child(VALUE dir)
+{
+    return dir_each_entry(dir, dir_yield, Qnil, TRUE);
+}
+
+/*
+ *  call-seq:
+ *     Dir.each_child( dirname ) {| filename | block }                 -> nil
+ *     Dir.each_child( dirname, encoding: enc ) {| filename | block }  -> nil
+ *     Dir.each_child( dirname )                                       -> an_enumerator
+ *     Dir.each_child( dirname, encoding: enc )                        -> an_enumerator
+ *
+ *  Calls the block once for each entry except for "." and ".." in the
+ *  named directory, passing the filename of each entry as a parameter
+ *  to the block.
+ *
+ *  If no block is given, an enumerator is returned instead.
+ *
+ *     Dir.foreach("testdir") {|x| puts "Got #{x}" }
+ *
+ *  <em>produces:</em>
+ *
+ *     Got config.h
+ *     Got main.rb
+ *
+ */
+static VALUE
+dir_s_each_child(int argc, VALUE *argv, VALUE io)
+{
+    VALUE dir;
+
+    RETURN_ENUMERATOR(io, argc, argv);
+    dir = dir_open_dir(argc, argv);
+    rb_ensure(dir_each_child, dir, dir_close, dir);
+    return Qnil;
+}
+
+static VALUE
+dir_collect_children(VALUE dir)
+{
+    VALUE ary = rb_ary_new();
+    dir_each_entry(dir, rb_ary_push, ary, TRUE);
+    return ary;
+}
+
+/*
+ *  call-seq:
+ *     Dir.children( dirname )                -> array
+ *     Dir.children( dirname, encoding: enc ) -> array
+ *
+ *  Returns an array containing all of the filenames except for "."
+ *  and ".." in the given directory. Will raise a
+ *  <code>SystemCallError</code> if the named directory doesn't exist.
+ *
+ *  The optional <i>encoding</i> keyword argument specifies the encoding of the
+ *  directory. If not specified, the filesystem encoding is used.
+ *
+ *     Dir.entries("testdir")   #=> ["config.h", "main.rb"]
+ *
+ */
+static VALUE
+dir_s_children(int argc, VALUE *argv, VALUE io)
+{
+    VALUE dir;
+
+    dir = dir_open_dir(argc, argv);
+    return rb_ensure(dir_collect_children, dir, dir_close, dir);
 }
 
 static int
@@ -2954,6 +3029,8 @@ Init_Dir(void)
     rb_define_singleton_method(rb_cDir, "open", dir_s_open, -1);
     rb_define_singleton_method(rb_cDir, "foreach", dir_foreach, -1);
     rb_define_singleton_method(rb_cDir, "entries", dir_entries, -1);
+    rb_define_singleton_method(rb_cDir, "each_child", dir_s_each_child, -1);
+    rb_define_singleton_method(rb_cDir, "children", dir_s_children, -1);
 
     rb_define_method(rb_cDir,"initialize", dir_initialize, -1);
     rb_define_method(rb_cDir,"fileno", dir_fileno, 0);

@@ -28,7 +28,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Dir
 
   * Dir.glob provides new optional keyword argument, :base.
-    [Feature#13056]
+    [Feature #13056]
+  * Dir.children  [Feature #11302]
+  * Dir.each_child  [Feature #11302]
 
 * Integer
 

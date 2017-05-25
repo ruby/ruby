@@ -214,9 +214,11 @@ class TestDir < Test::Unit::TestCase
     assert_equal(files, Dir.open(@root) {|d| Dir.glob("*/*.c", base: d)}.sort)
   end
 
-  def assert_entries(entries)
+  def assert_entries(entries, children = false)
     entries.sort!
-    assert_equal(%w(. ..) + ("a".."z").to_a, entries)
+    expected = ("a".."z").to_a
+    expected = %w(. ..) + expected unless children
+    assert_equal(expected, entries)
   end
 
   def test_entries
@@ -226,6 +228,14 @@ class TestDir < Test::Unit::TestCase
 
   def test_foreach
     assert_entries(Dir.foreach(@root).to_a)
+  end
+
+  def test_children
+    assert_entries(Dir.children(@root), true)
+  end
+
+  def test_each_child
+    assert_entries(Dir.each_child(@root).to_a, true)
   end
 
   def test_dir_enc
