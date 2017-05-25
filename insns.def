@@ -348,8 +348,8 @@ concatstrings
 
 /**
   @c put
-  @e push the result of to_str.
-  @j to_str の結果をスタックにプッシュする。
+  @e push the result of to_s.
+  @j to_s の結果をスタックにプッシュする。
  */
 DEFINE_INSN
 tostring
