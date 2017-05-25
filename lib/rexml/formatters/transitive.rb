@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require 'rexml/formatters/pretty'
+require 'rexml/formatters/default'
 
 module REXML
   module Formatters
@@ -13,10 +13,16 @@ module REXML
     # formatted.  Since this formatter does not alter whitespace nodes, the
     # results of formatting already formatted XML will be odd.
     class Transitive < Default
+
+      # If compact is set to true, then the formatter will attempt to use as
+      # little space as possible
+      attr_accessor :compact
+
       def initialize( indentation=2, ie_hack=false )
         @indentation = indentation
         @level = 0
         @ie_hack = ie_hack
+        @compact = false
       end
 
       protected
@@ -28,24 +34,25 @@ module REXML
           attr.write( output )
         end unless node.attributes.empty?
 
-        output << "\n"
-        output << ' '*@level
+        unless @compact
+          output << "\n"
+          output << ' '*@level
+        end
         if node.children.empty?
           output << " " if @ie_hack
           output << "/"
         else
           output << ">"
-          # If compact and all children are text, and if the formatted output
-          # is less than the specified width, then try to print everything on
-          # one line
           @level += @indentation
           node.children.each { |child|
             write( child, output )
           }
           @level -= @indentation
           output << "</#{node.expanded_name}"
-          output << "\n"
-          output << ' '*@level
+          unless @compact
+            output << "\n"
+            output << ' '*@level
+          end
         end
         output << ">"
       end
