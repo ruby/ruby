@@ -564,6 +564,39 @@ EOS
       assert_equal(flag, erb.result)
     end
   end
+
+  def test_result_with_locals
+    erb = @erb.new("<%= foo %>")
+    assert_equal("1", erb.result(locals: { foo: "1" }))
+
+    erb = @erb.new("<%= foo %>")
+    b = Struct.new(:foo).new("1").instance_eval { binding }
+    assert_equal("2", erb.result(b, locals: { foo: "2" }))
+
+    erb = @erb.new("<%= foo %><%= bar %>")
+    b = Struct.new(:foo).new("1").instance_eval { binding }
+    assert_equal("12", erb.result(b, locals: { bar: "2" }))
+  end
+
+  def test_result_with_locals_does_not_modify_given_binding
+    EnvUtil.suppress_warning do
+      a = 1
+      assert_equal("2", @erb.new("<%= a %>").result(binding, locals: { a: 2 }))
+      assert_equal(1, a)
+    end
+  end
+
+  def test_result_with_locals_named_binding
+    b = binding
+    binding = 1
+    assert_equal("2", @erb.new("<%= binding %>").result(b, locals: { binding: 2 }))
+  end
+
+  def test_result_with_invalid_name_locals
+    (%i[foo-bar { } | ( )] << :' ').each do |invalid_local|
+      assert_raise(NameError) { @erb.new("").result(locals: { invalid_local => 1 }) }
+    end
+  end
 end
 
 class TestERBCoreWOStrScan < TestERBCore

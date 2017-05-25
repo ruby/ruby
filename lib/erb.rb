@@ -877,8 +877,18 @@ class ERB
   #
   # _b_ accepts a Binding object which is used to set the context of
   # code evaluation.
+  # _locals_ accepts a Hash object which is used to set local variables
+  # on the Binding object.
   #
-  def result(b=new_toplevel)
+  def result(b=new_toplevel, locals: nil)
+    if locals
+      shadows = locals.keys.select { |l| b.local_variable_defined?(l) }
+      b = eval("Proc.new { |#{shadows.join(',')}| self.send(:binding) }.call", b)
+      locals.each_pair do |key, value|
+        b.local_variable_set(key, value)
+      end
+    end
+
     if @safe_level
       proc {
         $SAFE = @safe_level
