@@ -1344,8 +1344,6 @@ inline
 VALUE
 opt_eql_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
 {
-#define BUILTIN_CLASS_P(x, k) (!SPECIAL_CONST_P(x) && RBASIC_CLASS(x) == k)
-#define EQ_UNREDEFINED_P(t) BASIC_OP_UNREDEFINED_P(BOP_EQ, t##_REDEFINED_OP_FLAG)
     if (FIXNUM_2_P(recv, obj)) {
 	if (EQ_UNREDEFINED_P(INTEGER)) {
 	    return (recv == obj) ? Qtrue : Qfalse;
@@ -1377,6 +1375,8 @@ opt_eql_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
 
     return Qundef;
 }
+#undef BUILTIN_CLASS_P
+#undef EQ_UNREDEFINED_P
 
 VALUE
 rb_equal_opt(VALUE obj1, VALUE obj2)
