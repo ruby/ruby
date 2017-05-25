@@ -1806,10 +1806,11 @@ transform_values_i(VALUE key, VALUE value, VALUE result)
 
 /*
  *  call-seq:
- *     hsh.transform_values {|value| block } -> hsh
+ *     hsh.transform_values {|value| block } -> new_hash
  *     hsh.transform_values                  -> an_enumerator
  *
- *  Return a new hash with the results of running block once for every value.
+ *  Returns a new hash with the results of running the block once for
+ *  every value.
  *  This method does not change the keys.
  *
  *     h = { a: 1, b: 2, c: 3 }
