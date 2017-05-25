@@ -1643,8 +1643,8 @@ flo_le(VALUE x, VALUE y)
  *  so an implementation-dependent value is returned.
  */
 
-static VALUE
-flo_eql(VALUE x, VALUE y)
+VALUE
+rb_float_eql(VALUE x, VALUE y)
 {
     if (RB_TYPE_P(y, T_FLOAT)) {
 	double a = RFLOAT_VALUE(x);
@@ -1657,6 +1657,8 @@ flo_eql(VALUE x, VALUE y)
     }
     return Qfalse;
 }
+
+#define flo_eql rb_float_eql
 
 /*
  * call-seq:

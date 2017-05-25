@@ -1295,6 +1295,9 @@ check_cfunc(const rb_callable_method_entry_t *me, VALUE (*func)())
     }
 }
 
+#define BUILTIN_CLASS_P(x, k) (!SPECIAL_CONST_P(x) && RBASIC_CLASS(x) == k)
+#define EQ_UNREDEFINED_P(t) BASIC_OP_UNREDEFINED_P(BOP_EQ, t##_REDEFINED_OP_FLAG)
+
 static
 #ifndef NO_BIG_INLINE
 inline
@@ -1302,8 +1305,6 @@ inline
 VALUE
 opt_eq_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
 {
-#define BUILTIN_CLASS_P(x, k) (!SPECIAL_CONST_P(x) && RBASIC_CLASS(x) == k)
-#define EQ_UNREDEFINED_P(t) BASIC_OP_UNREDEFINED_P(BOP_EQ, t##_REDEFINED_OP_FLAG)
     if (FIXNUM_2_P(recv, obj)) {
 	if (EQ_UNREDEFINED_P(INTEGER)) {
 	    return (recv == obj) ? Qtrue : Qfalse;
@@ -1324,8 +1325,47 @@ opt_eq_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
 	    return rb_str_equal(recv, obj);
 	}
     }
-#undef EQ_UNREDEFINED_P
-#undef BUILTIN_CLASS_P
+
+    {
+	vm_search_method(ci, cc, recv);
+
+	if (check_cfunc(cc->me, rb_obj_equal)) {
+	    return recv == obj ? Qtrue : Qfalse;
+	}
+    }
+
+    return Qundef;
+}
+
+static
+#ifndef NO_BIG_INLINE
+inline
+#endif
+VALUE
+opt_eql_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
+{
+#define BUILTIN_CLASS_P(x, k) (!SPECIAL_CONST_P(x) && RBASIC_CLASS(x) == k)
+#define EQ_UNREDEFINED_P(t) BASIC_OP_UNREDEFINED_P(BOP_EQ, t##_REDEFINED_OP_FLAG)
+    if (FIXNUM_2_P(recv, obj)) {
+	if (EQ_UNREDEFINED_P(INTEGER)) {
+	    return (recv == obj) ? Qtrue : Qfalse;
+	}
+    }
+    else if (FLONUM_2_P(recv, obj)) {
+	if (EQ_UNREDEFINED_P(FLOAT)) {
+	    return (recv == obj) ? Qtrue : Qfalse;
+	}
+    }
+    else if (BUILTIN_CLASS_P(recv, rb_cFloat)) {
+	if (EQ_UNREDEFINED_P(FLOAT)) {
+	    return rb_float_eql(recv, obj);
+	}
+    }
+    else if (BUILTIN_CLASS_P(recv, rb_cString)) {
+	if (EQ_UNREDEFINED_P(STRING)) {
+	    return rb_str_eql(recv, obj);
+	}
+    }
 
     {
 	vm_search_method(ci, cc, recv);
@@ -1361,7 +1401,7 @@ rb_eql_opt(VALUE obj1, VALUE obj2)
     cc.method_state = 0;
     cc.class_serial = 0;
     cc.me = NULL;
-    return opt_eq_func(obj1, obj2, &ci, &cc);
+    return opt_eql_func(obj1, obj2, &ci, &cc);
 }
 
 static VALUE vm_call0(rb_thread_t*, VALUE, ID, int, const VALUE*, const rb_callable_method_entry_t *);
