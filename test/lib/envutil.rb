@@ -46,16 +46,24 @@ module EnvUtil
     attr_accessor :subprocess_timeout_scale
   end
 
+  def apply_timeout_scale(t)
+    if scale = EnvUtil.subprocess_timeout_scale
+      t * scale
+    else
+      t
+    end
+  end
+  module_function :apply_timeout_scale
+
   def invoke_ruby(args, stdin_data = "", capture_stdout = false, capture_stderr = false,
                   encoding: nil, timeout: 10, reprieve: 1, timeout_error: Timeout::Error,
                   stdout_filter: nil, stderr_filter: nil,
                   signal: :TERM,
                   rubybin: EnvUtil.rubybin,
                   **opt)
-    if scale = EnvUtil.subprocess_timeout_scale
-      timeout *= scale if timeout
-      reprieve *= scale if reprieve
-    end
+    timeout = apply_timeout_scale(timeout)
+    reprieve = apply_timeout_scale(reprieve) if reprieve
+
     in_c, in_p = IO.pipe
     out_p, out_c = IO.pipe if capture_stdout
     err_p, err_c = IO.pipe if capture_stderr && capture_stderr != :merge_to_stdout
