@@ -2463,10 +2463,10 @@ dir_glob_options(VALUE opt, VALUE *base, int *flags)
 
 /*
  *  call-seq:
- *     Dir[ string [, string ...], [base: path] ] -> array
+ *     Dir[ string [, string ...] [, base: path] ] -> array
  *
  *  Equivalent to calling
- *  <code>Dir.glob([</code><i>string,...</i><code>],0)</code>.
+ *  <code>Dir.glob([</code><i>string,...</i><code>], 0)</code>.
  *
  */
 static VALUE
@@ -2483,16 +2483,21 @@ dir_s_aref(int argc, VALUE *argv, VALUE obj)
 
 /*
  *  call-seq:
- *     Dir.glob( pattern, [flags], [base: path] ) -> matches
+ *     Dir.glob( pattern, [flags], [base: path] )                       -> array
  *     Dir.glob( pattern, [flags], [base: path] ) { |filename| block }  -> nil
  *
- *  Expands +pattern+, which is an Array of patterns or a pattern String, and
- *  returns the results as +matches+ or as arguments given to the block.
+ *  Expands +pattern+, which is a pattern string or an Array of pattern
+ *  strings, and returns an array containing the matching filenames.
+ *  If a block is given, calls the block once for each matching filename,
+ *  passing the filename as a parameter to the block.
  *
- *  Note that this pattern is not a regexp, it's closer to a shell glob.  See
- *  File::fnmatch for the meaning of the +flags+ parameter.  Note that case
- *  sensitivity depends on your system (so File::FNM_CASEFOLD is ignored), as
- *  does the order in which the results are returned.
+ *  The optional +base+ keyword argument specifies the base directory for
+ *  interpreting relative pathnames instead of the current working directory.
+ *
+ *  Note that the pattern is not a regexp, it's closer to a shell glob.
+ *  See File::fnmatch for the meaning of the +flags+ parameter.
+ *  Case sensitivity depends on your system (File::FNM_CASEFOLD is ignored),
+ *  as does the order in which the results are returned.
  *
  *  <code>*</code>::
  *    Matches any file. Can be restricted by other values in the glob.
@@ -2546,6 +2551,10 @@ dir_s_aref(int argc, VALUE *argv, VALUE obj)
  *     Dir.glob(rbfiles)                   #=> ["main.rb",
  *                                         #    "lib/song.rb",
  *                                         #    "lib/song/karaoke.rb"]
+ *
+ *     Dir.glob(rbfiles, base: "lib")      #=> ["lib/song.rb",
+ *                                         #    "lib/song/karaoke.rb"]
+ *
  *     libdirs = File.join("**", "lib")
  *     Dir.glob(libdirs)                   #=> ["lib"]
  *
