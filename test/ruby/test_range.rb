@@ -325,6 +325,17 @@ class TestRange < Test::Unit::TestCase
     assert_predicate(("0".."1").taint.inspect, :tainted?, bug11767)
   end
 
+  def test_shift
+    assert_equal((1..10).shift(10), 11..20)
+    assert_equal((1...10).shift(10), 11...20)
+    assert_equal((11..20).shift(-10), 1..10)
+    assert_equal((11...20).shift(-10), 1...10)
+
+    assert_raise(TypeError) do
+      ("a"..."c").shift(10)
+    end
+  end
+
   def test_eqq
     assert_operator(0..10, :===, 5)
     assert_not_operator(0..10, :===, 11)

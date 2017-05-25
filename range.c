@@ -1099,6 +1099,34 @@ range_inspect(VALUE range)
 }
 
 /*
+ * call-seq:
+ *    rng.shift(10) -> rng
+ *
+ * Set a number to shift the range as a whole,
+ * either positive or negative.
+ * Passing ranges made with strings will raise a TypeError
+ *    rng = (11..20)
+ *    rng.shift(10)  #=> 21..30
+ *    rng.shift(5)   #=> 16..25
+ *    rng.shift(-10) #=> 1..10
+ *    rng.shift(-5)  #=> 6..15
+ */
+
+static VALUE
+range_shift(VALUE range, VALUE val)
+{
+  VALUE beg = RANGE_BEG(range);
+  VALUE end = RANGE_END(range);
+
+  beg = FIX2INT(beg);
+  end = FIX2INT(end);
+  beg += FIX2INT(val);
+  end += FIX2INT(val);
+
+  return rb_range_new(INT2FIX(beg), INT2FIX(end), RANGE_EXCL(range));
+}
+
+/*
  *  call-seq:
  *     rng === obj       ->  true or false
  *
@@ -1330,6 +1358,7 @@ Init_Range(void)
     rb_define_method(rb_cRange, "size", range_size, 0);
     rb_define_method(rb_cRange, "to_s", range_to_s, 0);
     rb_define_method(rb_cRange, "inspect", range_inspect, 0);
+    rb_define_method(rb_cRange, "shift", range_shift, 1);
 
     rb_define_method(rb_cRange, "exclude_end?", range_exclude_end_p, 0);
 
