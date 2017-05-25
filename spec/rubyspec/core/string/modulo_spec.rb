@@ -14,9 +14,18 @@ describe "String#%" do
     ("%d%% %s" % [10, "of chickens!"]).should == "10% of chickens!"
   end
 
-  it "formats single % character at the end as literal %" do
-    ("%" % []).should == "%"
-    ("foo%" % []).should == "foo%"
+  ruby_version_is ""..."2.5" do
+    it "formats single % character at the end as literal %" do
+      ("%" % []).should == "%"
+      ("foo%" % []).should == "foo%"
+    end
+  end
+
+  ruby_version_is "2.5" do
+    it "raises an error if single % appears at the end" do
+      lambda { ("%" % []) }.should raise_error(ArgumentError)
+      lambda { ("foo%" % [])}.should raise_error(ArgumentError)
+    end
   end
 
   it "formats single % character before a newline as literal %" do
