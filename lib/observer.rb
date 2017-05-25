@@ -112,6 +112,10 @@
 #   Current price: 79
 #   --- Sun Jun 09 00:10:25 CDT 2002: Price below 80: 79
 module Observable
+  def self.included(mod)
+    @observer_peers ||= {}
+    @observer_state ||= false
+  end
 
   #
   # Add +observer+ as an observer on this object. So that it will receive
@@ -126,7 +130,6 @@ module Observable
   #          <tt>*arg</tt> is the value passed to #notify_observers by this
   #          Observable
   def add_observer(observer, func=:update)
-    @observer_peers = {} unless defined? @observer_peers
     unless observer.respond_to? func
       raise NoMethodError, "observer does not respond to `#{func}'"
     end
@@ -139,25 +142,21 @@ module Observable
   #
   # +observer+:: An observer of this Observable
   def delete_observer(observer)
-    @observer_peers.delete observer if defined? @observer_peers
+    @observer_peers.delete observer
   end
 
   #
   # Remove all observers associated with this object.
   #
   def delete_observers
-    @observer_peers.clear if defined? @observer_peers
+    @observer_peers.clear
   end
 
   #
   # Return the number of observers associated with this object.
   #
   def count_observers
-    if defined? @observer_peers
-      @observer_peers.size
-    else
-      0
-    end
+    @observer_peers.size
   end
 
   #
@@ -175,11 +174,7 @@ module Observable
   # #notify_observers call.
   #
   def changed?
-    if defined? @observer_state and @observer_state
-      true
-    else
-      false
-    end
+    !!@observer_state
   end
 
   #
@@ -191,11 +186,9 @@ module Observable
   #
   # <tt>*arg</tt>:: Any arguments to pass to the observers.
   def notify_observers(*arg)
-    if defined? @observer_state and @observer_state
-      if defined? @observer_peers
-        @observer_peers.each do |k, v|
-          k.send v, *arg
-        end
+    if @observer_state
+      @observer_peers.each do |k, v|
+        k.send v, *arg
       end
       @observer_state = false
     end
