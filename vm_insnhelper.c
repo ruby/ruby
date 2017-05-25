@@ -1324,6 +1324,11 @@ opt_eq_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
 	    return rb_str_equal(recv, obj);
 	}
     }
+    else if (SYMBOL_P(recv) && SYMBOL_P(obj)) {
+        if (EQ_UNREDEFINED_P(SYMBOL)) {
+	    return rb_obj_equal(recv, obj);
+	}
+    }
 #undef EQ_UNREDEFINED_P
 #undef BUILTIN_CLASS_P
 
