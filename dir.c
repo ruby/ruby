@@ -774,6 +774,14 @@ dir_read(VALUE dir)
     }
 }
 
+static VALUE dir_each_entry(VALUE, VALUE (*)(VALUE, VALUE), VALUE);
+
+static VALUE
+dir_yield(VALUE arg, VALUE path)
+{
+    return rb_yield(path);
+}
+
 /*
  *  call-seq:
  *     dir.each { |filename| block }  -> dir
@@ -797,11 +805,17 @@ dir_read(VALUE dir)
 static VALUE
 dir_each(VALUE dir)
 {
+    RETURN_ENUMERATOR(dir, 0, 0);
+    return dir_each_entry(dir, dir_yield, Qnil);
+}
+
+static VALUE
+dir_each_entry(VALUE dir, VALUE (*each)(VALUE, VALUE), VALUE arg)
+{
     struct dir_data *dirp;
     struct dirent *dp;
     IF_NORMALIZE_UTF8PATH(int norm_p);
 
-    RETURN_ENUMERATOR(dir, 0, 0);
     GetDIR(dir, dirp);
     rewinddir(dirp->dir);
     IF_NORMALIZE_UTF8PATH(norm_p = need_normalization(dirp->dir, RSTRING_PTR(dirp->path)));
@@ -817,7 +831,7 @@ dir_each(VALUE dir)
 	else
 #endif
 	path = rb_external_str_new_with_enc(name, namlen, dirp->enc);
-	rb_yield(path);
+	(*each)(arg, path);
 	if (dirp->dir == NULL) dir_closed();
     }
     return dir;
@@ -2610,6 +2624,14 @@ dir_foreach(int argc, VALUE *argv, VALUE io)
     return Qnil;
 }
 
+static VALUE
+dir_collect(VALUE dir)
+{
+    VALUE ary = rb_ary_new();
+    dir_each_entry(dir, rb_ary_push, ary);
+    return ary;
+}
+
 /*
  *  call-seq:
  *     Dir.entries( dirname )                -> array
@@ -2631,7 +2653,7 @@ dir_entries(int argc, VALUE *argv, VALUE io)
     VALUE dir;
 
     dir = dir_open_dir(argc, argv);
-    return rb_ensure(rb_Array, dir, dir_close, dir);
+    return rb_ensure(dir_collect, dir, dir_close, dir);
 }
 
 static int
