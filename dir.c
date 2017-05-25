@@ -2680,7 +2680,7 @@ dir_each_child(VALUE dir)
  *
  *  If no block is given, an enumerator is returned instead.
  *
- *     Dir.foreach("testdir") {|x| puts "Got #{x}" }
+ *     Dir.each_child("testdir") {|x| puts "Got #{x}" }
  *
  *  <em>produces:</em>
  *
@@ -2719,7 +2719,7 @@ dir_collect_children(VALUE dir)
  *  The optional <i>encoding</i> keyword argument specifies the encoding of the
  *  directory. If not specified, the filesystem encoding is used.
  *
- *     Dir.entries("testdir")   #=> ["config.h", "main.rb"]
+ *     Dir.children("testdir")   #=> ["config.h", "main.rb"]
  *
  */
 static VALUE
