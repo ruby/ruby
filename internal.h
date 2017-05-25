@@ -1739,6 +1739,7 @@ VALUE rb_yield_lambda(VALUE values);
 
 /* vm_insnhelper.c */
 VALUE rb_equal_opt(VALUE obj1, VALUE obj2);
+VALUE rb_eql_opt(VALUE obj1, VALUE obj2);
 
 /* vm_method.c */
 void Init_eval_method(void);
