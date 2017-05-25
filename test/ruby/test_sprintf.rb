@@ -424,6 +424,16 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("%" * BSIZ, sprintf("%%" * BSIZ))
   end
 
+  def test_percent_sign_at_end
+    assert_raise_with_message(ArgumentError, "incomplete format specifier") do
+      sprintf("%")
+    end
+
+    assert_raise_with_message(ArgumentError, "incomplete format specifier") do
+      sprintf("abc%")
+    end
+  end
+
   def test_rb_sprintf
     assert_match(/^#<TestSprintf::T012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789:0x[0-9a-f]+>$/,
                  T012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789.new.inspect)
