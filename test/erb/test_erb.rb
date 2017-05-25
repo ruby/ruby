@@ -564,6 +564,35 @@ EOS
       assert_equal(flag, erb.result)
     end
   end
+
+  def test_result_with_hash
+    erb = @erb.new("<%= foo %>")
+    assert_equal("1", erb.result_with_hash(foo: "1"))
+  end
+
+  def test_result_with_hash_does_not_use_caller_local_variables
+    erb = @erb.new("<%= foo %>")
+    foo = 1
+    assert_raise(NameError) { erb.result_with_hash({}) }
+  end
+
+  def test_result_with_hash_does_not_modify_caller_binding
+    erb = @erb.new("<%= foo %>")
+    erb.result_with_hash(foo: "1")
+    assert_equal(false, binding.local_variable_defined?(:foo))
+  end
+
+  def test_result_with_hash_does_not_modify_toplevel_binding
+    erb = @erb.new("<%= foo %>")
+    erb.result_with_hash(foo: "1")
+    assert_equal(false, TOPLEVEL_BINDING.local_variable_defined?(:foo))
+  end
+
+  # This depends on the behavior that #local_variable_set raises TypeError by invalid key.
+  def test_result_with_hash_with_invalid_keys_raises_type_error
+    erb = @erb.new("<%= 1 %>")
+    assert_raise(TypeError) { erb.result_with_hash({ 1 => "1" }) }
+  end
 end
 
 class TestERBCoreWOStrScan < TestERBCore

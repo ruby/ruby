@@ -889,6 +889,16 @@ class ERB
     end
   end
 
+  # Render a template on a new toplevel binding with local variables specified
+  # by a Hash object.
+  def result_with_hash(hash)
+    b = new_toplevel
+    hash.each_pair do |key, value|
+      b.local_variable_set(key, value)
+    end
+    result(b)
+  end
+
   ##
   # Returns a new binding each time *near* TOPLEVEL_BINDING for runs that do
   # not specify a binding.
