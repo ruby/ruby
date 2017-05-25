@@ -221,6 +221,7 @@ class TestDir < Test::Unit::TestCase
 
   def test_entries
     assert_entries(Dir.open(@root) {|dir| dir.entries})
+    assert_entries(Dir.entries(@root).to_a)
   end
 
   def test_foreach
