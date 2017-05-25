@@ -88,7 +88,10 @@ rb_equal(VALUE obj1, VALUE obj2)
     VALUE result;
 
     if (obj1 == obj2) return Qtrue;
-    result = rb_funcall(obj1, id_eq, 1, obj2);
+    result = rb_equal_opt(obj1, obj2);
+    if (result == Qundef) {
+	result = rb_funcall(obj1, id_eq, 1, obj2);
+    }
     if (RTEST(result)) return Qtrue;
     return Qfalse;
 }
