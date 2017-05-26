@@ -1325,6 +1325,11 @@ opt_eq_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
 	    return rb_str_equal(recv, obj);
 	}
     }
+    else if (SYMBOL_P(recv) && SYMBOL_P(obj)) {
+	if (EQ_UNREDEFINED_P(SYMBOL)) {
+	    return (recv == obj) ? Qtrue : Qfalse;
+	}
+    }
 
     {
 	vm_search_method(ci, cc, recv);
