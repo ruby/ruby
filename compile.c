@@ -1019,6 +1019,7 @@ new_label_body(rb_iseq_t *iseq, long line)
     labelobj->refcnt = 0;
     labelobj->set = 0;
     labelobj->rescued = LABEL_RESCUE_NONE;
+    labelobj->unremovable = 0;
     return labelobj;
 }
 
