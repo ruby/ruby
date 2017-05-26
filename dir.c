@@ -1588,7 +1588,7 @@ glob_free_pattern(struct glob_pattern *list)
 }
 
 static char *
-join_path(const char *path, long len, int dirsep, const char *name, size_t namlen)
+join_path(const char *path, size_t len, int dirsep, const char *name, size_t namlen)
 {
     char *buf = GLOB_ALLOC_N(char, len+namlen+(dirsep?1:0)+1);
 
@@ -1778,6 +1778,7 @@ struct glob_args {
     void (*func)(const char *, VALUE, void *);
     const char *path;
     const char *base;
+    size_t baselen;
     VALUE value;
     rb_encoding *enc;
 };
@@ -1864,7 +1865,8 @@ static int
 glob_helper(
     int fd,
     const char *path,
-    long pathlen,
+    size_t baselen,
+    size_t namelen,
     int dirsep, /* '/' should be placed before appending child entry's name to 'path'. */
     rb_pathtype_t pathtype, /* type of 'path' */
     struct glob_pattern **beg,
@@ -1879,6 +1881,7 @@ glob_helper(
     struct glob_pattern **cur, **new_beg, **new_end;
     int plain = 0, magical = 0, recursive = 0, match_all = 0, match_dir = 0;
     int escape = !(flags & FNM_NOESCAPE);
+    size_t pathlen = baselen + namelen;
 
     for (cur = beg; cur < end; ++cur) {
 	struct glob_pattern *p = *cur;
@@ -1929,13 +1932,15 @@ glob_helper(
 	    }
 	}
 	if (match_all && pathtype > path_noent) {
-	    status = glob_call_func(funcs->match, path, arg, enc);
+	    const char *subpath = path + baselen + (baselen && path[baselen] == '/');
+	    status = glob_call_func(funcs->match, subpath, arg, enc);
 	    if (status) return status;
 	}
 	if (match_dir && pathtype == path_directory) {
-	    char *tmp = join_path(path, pathlen, dirsep, "", 0);
+	    const char *subpath = path + baselen + (baselen && path[baselen] == '/');
+	    char *tmp = join_path(subpath, namelen, dirsep, "", 0);
 	    if (!tmp) return -1;
-	    status = glob_call_func(funcs->match, tmp, arg, enc);
+	    status = glob_call_func(funcs->match, tmp + (baselen ? dirsep : 0), arg, enc);
 	    GLOB_FREE(tmp);
 	    if (status) return status;
 	}
@@ -2067,7 +2072,7 @@ glob_helper(
 		}
 	    }
 
-	    status = glob_helper(fd, buf, name - buf + namlen, 1,
+	    status = glob_helper(fd, buf, baselen, name - buf - baselen + namlen, 1,
 				 new_pathtype, new_beg, new_end,
 				 flags, funcs, arg, enc);
 	    GLOB_FREE(buf);
@@ -2132,7 +2137,8 @@ glob_helper(
 		    if (!buf) break;
 		}
 #endif
-		status = glob_helper(fd, buf, pathlen + strlen(buf + pathlen), 1,
+		status = glob_helper(fd, buf, baselen,
+				     namelen + strlen(buf + pathlen), 1,
 				     new_pathtype, new_beg, new_end,
 				     flags, funcs, arg, enc);
 		GLOB_FREE(buf);
@@ -2155,7 +2161,7 @@ ruby_glob0(const char *path, int fd, const char *base, int flags,
     struct glob_pattern *list;
     const char *root, *start;
     char *buf;
-    size_t n;
+    size_t n, baselen = 0;
     int status, dirsep = FALSE;
 
     start = root = path;
@@ -2169,6 +2175,7 @@ ruby_glob0(const char *path, int fd, const char *base, int flags,
     n = root - start;
     if (!n && base) {
 	n = strlen(base);
+	baselen = n;
 	start = base;
 	dirsep = TRUE;
     }
@@ -2182,7 +2189,8 @@ ruby_glob0(const char *path, int fd, const char *base, int flags,
 	GLOB_FREE(buf);
 	return -1;
     }
-    status = glob_helper(fd, buf, n, dirsep, path_unknown, &list, &list + 1,
+    status = glob_helper(fd, buf, baselen, n-baselen, dirsep,
+			 path_unknown, &list, &list + 1,
 			 flags, funcs, arg, enc);
     glob_free_pattern(list);
     GLOB_FREE(buf);
@@ -2493,6 +2501,9 @@ dir_s_aref(int argc, VALUE *argv, VALUE obj)
  *
  *  The optional +base+ keyword argument specifies the base directory for
  *  interpreting relative pathnames instead of the current working directory.
+ *  As the results are not prefixed with the base directory name in this
+ *  case, you will need to prepend the base directory name if you want real
+ *  paths.
  *
  *  Note that the pattern is not a regexp, it's closer to a shell glob.
  *  See File::fnmatch for the meaning of the +flags+ parameter.
@@ -2552,8 +2563,8 @@ dir_s_aref(int argc, VALUE *argv, VALUE obj)
  *                                         #    "lib/song.rb",
  *                                         #    "lib/song/karaoke.rb"]
  *
- *     Dir.glob(rbfiles, base: "lib")      #=> ["lib/song.rb",
- *                                         #    "lib/song/karaoke.rb"]
+ *     Dir.glob(rbfiles, base: "lib")      #=> ["song.rb",
+ *                                         #    "song/karaoke.rb"]
  *
  *     libdirs = File.join("**", "lib")
  *     Dir.glob(libdirs)                   #=> ["lib"]
