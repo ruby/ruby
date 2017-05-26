@@ -582,7 +582,7 @@ class ERB
     def content_dump(s) # :nodoc:
       n = s.count("\n")
       if n > 0
-        s.dump + "\n" * n
+        s.dump << "\n" * n
       else
         s.dump
       end
