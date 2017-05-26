@@ -2324,16 +2324,11 @@ static VALUE
 flo_to_i(VALUE num)
 {
     double f = RFLOAT_VALUE(num);
-    long val;
 
     if (f > 0.0) f = floor(f);
     if (f < 0.0) f = ceil(f);
 
-    if (!FIXABLE(f)) {
-	return rb_dbl2big(f);
-    }
-    val = (long)f;
-    return LONG2FIX(val);
+    return dbl2ival(f);
 }
 
 /*
