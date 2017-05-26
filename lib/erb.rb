@@ -291,7 +291,7 @@ class ERB
   # <i>Generates</i>:
   #
   #   #coding:UTF-8
-  #   _erbout=''.dup; _erbout.<< "Got "; _erbout.<<(( obj ).to_s); _erbout.<< "!\n"; _erbout
+  #   _erbout=''.dup; _erbout.<< -"Got "; _erbout.<<(( obj ).to_s); _erbout.<< -"!\n"; _erbout
   #
   # By default the output is sent to the print method.  For example:
   #
