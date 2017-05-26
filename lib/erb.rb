@@ -280,7 +280,7 @@ class ERB
   # ERB#src:
   #
   #   compiler = ERB::Compiler.new('<>')
-  #   compiler.pre_cmd    = ["_erbout=String.new"]
+  #   compiler.pre_cmd    = ["_erbout=''.dup"]
   #   compiler.put_cmd    = "_erbout.<<"
   #   compiler.insert_cmd = "_erbout.<<"
   #   compiler.post_cmd   = ["_erbout"]
@@ -291,7 +291,7 @@ class ERB
   # <i>Generates</i>:
   #
   #   #coding:UTF-8
-  #   _erbout=String.new; _erbout.<< "Got "; _erbout.<<(( obj ).to_s); _erbout.<< "!\n"; _erbout
+  #   _erbout=''.dup; _erbout.<< "Got "; _erbout.<<(( obj ).to_s); _erbout.<< "!\n"; _erbout
   #
   # By default the output is sent to the print method.  For example:
   #
@@ -861,8 +861,8 @@ class ERB
   def set_eoutvar(compiler, eoutvar = '_erbout')
     compiler.put_cmd = "#{eoutvar}.<<"
     compiler.insert_cmd = "#{eoutvar}.<<"
-    compiler.pre_cmd = ["#{eoutvar} = String.new"]
-    compiler.post_cmd = ["#{eoutvar}.force_encoding(__ENCODING__)"]
+    compiler.pre_cmd = ["#{eoutvar} = ''.dup"]
+    compiler.post_cmd = [eoutvar]
   end
 
   # Generate results and print them. (see ERB#result)
