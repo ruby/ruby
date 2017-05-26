@@ -1295,8 +1295,42 @@ check_cfunc(const rb_callable_method_entry_t *me, VALUE (*func)())
     }
 }
 
+static inline int
+vm_method_cfunc_is(CALL_INFO ci, CALL_CACHE cc,
+		   VALUE recv, VALUE (*func)())
+{
+    vm_search_method(ci, cc, recv);
+    return check_cfunc(cc->me, func);
+}
+
+static VALUE
+opt_equal_fallback(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
+{
+    if (vm_method_cfunc_is(ci, cc, recv, rb_obj_equal)) {
+	return recv == obj ? Qtrue : Qfalse;
+    }
+
+    return Qundef;
+}
+
 #define BUILTIN_CLASS_P(x, k) (!SPECIAL_CONST_P(x) && RBASIC_CLASS(x) == k)
 #define EQ_UNREDEFINED_P(t) BASIC_OP_UNREDEFINED_P(BOP_EQ, t##_REDEFINED_OP_FLAG)
+
+/* 1: compare by identity, 0: not applicable, -1: redefined */
+static inline int
+comparable_by_identity(VALUE recv, VALUE obj)
+{
+    if (FIXNUM_2_P(recv, obj)) {
+	return (EQ_UNREDEFINED_P(INTEGER) != 0) * 2 - 1;
+    }
+    if (FLONUM_2_P(recv, obj)) {
+	return (EQ_UNREDEFINED_P(FLOAT) != 0) * 2 - 1;
+    }
+    if (SYMBOL_P(recv) && SYMBOL_P(obj)) {
+	return (EQ_UNREDEFINED_P(SYMBOL) != 0) * 2 - 1;
+    }
+    return 0;
+}
 
 static
 #ifndef NO_BIG_INLINE
@@ -1305,15 +1339,13 @@ inline
 VALUE
 opt_eq_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
 {
-    if (FIXNUM_2_P(recv, obj)) {
-	if (EQ_UNREDEFINED_P(INTEGER)) {
-	    return (recv == obj) ? Qtrue : Qfalse;
-	}
+    switch (comparable_by_identity(recv, obj)) {
+      case 1:
+	return (recv == obj) ? Qtrue : Qfalse;
+      case -1:
+	goto fallback;
     }
-    else if (FLONUM_2_P(recv, obj)) {
-	if (EQ_UNREDEFINED_P(FLOAT)) {
-	    return (recv == obj) ? Qtrue : Qfalse;
-	}
+    if (0) {
     }
     else if (BUILTIN_CLASS_P(recv, rb_cFloat)) {
 	if (EQ_UNREDEFINED_P(FLOAT)) {
@@ -1325,21 +1357,9 @@ opt_eq_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
 	    return rb_str_equal(recv, obj);
 	}
     }
-    else if (SYMBOL_P(recv) && SYMBOL_P(obj)) {
-	if (EQ_UNREDEFINED_P(SYMBOL)) {
-	    return (recv == obj) ? Qtrue : Qfalse;
-	}
-    }
 
-    {
-	vm_search_method(ci, cc, recv);
-
-	if (check_cfunc(cc->me, rb_obj_equal)) {
-	    return recv == obj ? Qtrue : Qfalse;
-	}
-    }
-
-    return Qundef;
+  fallback:
+    return opt_equal_fallback(recv, obj, ci, cc);
 }
 
 static
@@ -1349,15 +1369,13 @@ inline
 VALUE
 opt_eql_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
 {
-    if (FIXNUM_2_P(recv, obj)) {
-	if (EQ_UNREDEFINED_P(INTEGER)) {
-	    return (recv == obj) ? Qtrue : Qfalse;
-	}
+    switch (comparable_by_identity(recv, obj)) {
+      case 1:
+	return (recv == obj) ? Qtrue : Qfalse;
+      case -1:
+	goto fallback;
     }
-    else if (FLONUM_2_P(recv, obj)) {
-	if (EQ_UNREDEFINED_P(FLOAT)) {
-	    return (recv == obj) ? Qtrue : Qfalse;
-	}
+    if (0) {
     }
     else if (BUILTIN_CLASS_P(recv, rb_cFloat)) {
 	if (EQ_UNREDEFINED_P(FLOAT)) {
@@ -1370,15 +1388,8 @@ opt_eql_func(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
 	}
     }
 
-    {
-	vm_search_method(ci, cc, recv);
-
-	if (check_cfunc(cc->me, rb_obj_equal)) {
-	    return recv == obj ? Qtrue : Qfalse;
-	}
-    }
-
-    return Qundef;
+  fallback:
+    return opt_equal_fallback(recv, obj, ci, cc);
 }
 #undef BUILTIN_CLASS_P
 #undef EQ_UNREDEFINED_P
@@ -3463,14 +3474,6 @@ vm_opt_mod(VALUE recv, VALUE obj)
       default:
 	return Qundef;
     }
-}
-
-static inline int
-vm_method_cfunc_is(CALL_INFO ci, CALL_CACHE cc,
-		   VALUE recv, VALUE (*func)())
-{
-    vm_search_method(ci, cc, recv);
-    return check_cfunc(cc->me, func);
 }
 
 static VALUE
