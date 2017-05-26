@@ -3679,7 +3679,10 @@ rb_ary_concat_multi(int argc, VALUE *argv, VALUE ary)
 {
     rb_ary_modify_check(ary);
 
-    if (argc > 0) {
+    if (argc == 1) {
+	rb_ary_concat(ary, argv[0]);
+    }
+    else if (argc > 1) {
 	int i;
 	VALUE args = rb_ary_tmp_new(argc);
 	for (i = 0; i < argc; i++) {
