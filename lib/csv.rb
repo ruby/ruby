@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 # encoding: US-ASCII
 # frozen_string_literal: true
 # = csv.rb -- CSV Reading and Writing
