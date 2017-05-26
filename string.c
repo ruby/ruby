@@ -2937,7 +2937,8 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
 
     if (argc == 1) {
 	return rb_str_concat(str, argv[0]);
-    } else if (argc > 1) {
+    }
+    else if (argc > 1) {
 	int i;
 	VALUE arg_str = rb_str_tmp_new(0);
 	rb_enc_copy(arg_str, str);
