@@ -2236,7 +2236,7 @@ class CSV
     fields.map.with_index do |field, index|
       converters.each do |converter|
         break if field.nil?
-        field = if converter.arity == 1  # straight field converter
+        field = if converter.arity.abs == 1  # straight field converter
           converter[field]
         else                             # FieldInfo converter
           header = @use_headers && !headers ? @headers[index] : nil
