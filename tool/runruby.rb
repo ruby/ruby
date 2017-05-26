@@ -70,8 +70,8 @@ config["bindir"] = abs_archdir
 env = {}
 
 runner = File.join(abs_archdir, "ruby-runner#{config['EXEEXT']}")
-runner = File.expand_path(ruby) unless File.exist?(runner)
-env["RUBY"] = runner
+runner = nil unless File.exist?(runner)
+env["RUBY"] = runner || File.expand_path(ruby)
 env["PATH"] = [abs_archdir, ENV["PATH"]].compact.join(File::PATH_SEPARATOR)
 
 if e = ENV["RUBYLIB"]
@@ -84,12 +84,14 @@ if File.file?(libruby_so)
   if e = config['LIBPATHENV'] and !e.empty?
     env[e] = [abs_archdir, ENV[e]].compact.join(File::PATH_SEPARATOR)
   end
-  if e = config['PRELOADENV']
-    e = nil if e.empty?
-    e ||= "LD_PRELOAD" if /linux/ =~ RUBY_PLATFORM
-  end
-  if e
-    env[e] = [libruby_so, ENV[e]].compact.join(File::PATH_SEPARATOR)
+  unless runner
+    if e = config['PRELOADENV']
+      e = nil if e.empty?
+      e ||= "LD_PRELOAD" if /linux/ =~ RUBY_PLATFORM
+    end
+    if e
+      env[e] = [libruby_so, ENV[e]].compact.join(File::PATH_SEPARATOR)
+    end
   end
 end
 
