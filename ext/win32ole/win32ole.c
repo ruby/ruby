@@ -824,7 +824,6 @@ ole_initialize(void)
         } else {
             hr = OleInitialize(NULL);
         }
-        hr = OleInitialize(NULL);
         if(FAILED(hr)) {
             ole_raise(hr, rb_eRuntimeError, "fail: OLE initialize");
         }
