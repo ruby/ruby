@@ -3458,7 +3458,7 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *  If no block is given, an enumerator is returned instead.
  *
  *     f = File.new("testfile")
- *     f.each {|line| puts "#{f.lineno}: #{line}" }
+ *     f.each_line {|line| puts "#{f.lineno}: #{line}" }
  *
  *  <em>produces:</em>
  *
