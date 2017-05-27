@@ -83,7 +83,7 @@ describe MSpecMain, "#run" do
 
   it "calls #multi_exec if the command is 'ci' and the multi option is passed" do
     @script.should_receive(:multi_exec).and_return do |argv|
-      argv.should == ["ruby", "#{MSPEC_HOME}/bin/mspec-ci", "-fy"]
+      argv.should == ["ruby", "#{MSPEC_HOME}/bin/mspec-ci"]
     end
     @script.options ["ci", "-j"]
     lambda do
@@ -138,14 +138,6 @@ describe "The -j, --multi option" do
       @config[:multi] = nil
       @script.options [opt]
       @config[:multi].should == true
-    end
-  end
-
-  it "sets the formatter to YamlFormatter" do
-    ["-j", "--multi"].each do |opt|
-      @config[:options] = []
-      @script.options [opt]
-      @config[:options].should include("-fy")
     end
   end
 end

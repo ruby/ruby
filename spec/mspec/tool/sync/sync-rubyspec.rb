@@ -14,6 +14,7 @@ IMPLS = {
     git: "https://github.com/ruby/ruby.git",
     master: "trunk",
     prefix: "spec/rubyspec",
+    merge_message: "Update to ruby/spec@",
   },
 }
 
@@ -50,6 +51,10 @@ class RubyImplementation
   def from_commit
     from = @data[:from_commit]
     "#{from}..." if from
+  end
+
+  def last_merge_message
+    @data[:merge_message] || "Merge ruby/spec commit"
   end
 
   def prefix
@@ -113,7 +118,7 @@ def rebase_commits(impl)
       if ENV["LAST_MERGE"]
         last_merge = `git log -n 1 --format='%H %ct' #{ENV["LAST_MERGE"]}`
       else
-        last_merge = `git log --grep='Merge ruby/spec commit' -n 1 --format='%H %ct'`
+        last_merge = `git log --grep='#{impl.last_merge_message}' -n 1 --format='%H %ct'`
       end
       last_merge, commit_timestamp = last_merge.chomp.split(' ')
 
@@ -167,6 +172,8 @@ def verify_commits(impl)
     end
 
     puts "Manually check commit messages:"
+    print "Press enter >"
+    STDIN.gets
     sh "git", "log", "master..."
   end
 end
@@ -183,6 +190,7 @@ def check_ci
   puts <<-EOS
   Push to master, and check that the CI passes:
     https://github.com/ruby/spec/commits/master
+
   EOS
 end
 
