@@ -28,9 +28,10 @@ os:
 
 before_install:
   - "CONFIG_FLAG="
-  - "JOBS='-j 4'"
+  - "JOBS=-j`nproc`"
 
 before_script:
+  - "echo JOBS=$JOBS"
   - "uname -a"
   - "uname -r"
   - "rm -fr .ext autom4te.cache"
@@ -39,7 +40,7 @@ before_script:
   - "sed -f tool/prereq.status Makefile.in common.mk > Makefile"
   - "make update-config_files"
   - "make touch-unicode-files"
-  - "make srcs UNICODE_FILES=."
+  - "make -s $JOBS srcs UNICODE_FILES=."
   - "make update-rubyspec"
   - "requests=; for req in ${RUBYSPEC_PULL_REQUEST//,/ }; do
       requests=\"$requests +refs/pull/$req/merge:\";
@@ -60,8 +61,8 @@ before_script:
 
 script:
   - "make -s test TESTOPTS=--color=never"
-  - "make -s test-all TESTOPTS='-q -j3 --color=never --job-status=normal'"
-  - "make -s test-rubyspec MSPECOPT=-fm"
+  - "make -s $JOBS test-all TESTOPTS='-q --color=never --job-status=normal'"
+  - "make -s $JOBS test-rubyspec MSPECOPT=-fm"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
