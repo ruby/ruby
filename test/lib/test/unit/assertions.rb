@@ -715,6 +715,13 @@ eom
         skip
       end
 
+      def assert_cpu_usage_low(msg = nil, pct: 0.005)
+        require 'benchmark'
+        tms = Benchmark.measure(msg || '') { yield }
+        max = pct * tms.real
+        assert_operator tms.total, :<=, max, msg
+      end
+
       def assert_is_minus_zero(f)
         assert(1.0/f == -Float::INFINITY, "#{f} is not -0.0")
       end
