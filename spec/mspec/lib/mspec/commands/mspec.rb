@@ -44,7 +44,6 @@ class MSpecMain < MSpecScript
 
     options.on("-j", "--multi", "Run multiple (possibly parallel) subprocesses") do
       config[:multi] = true
-      config[:options] << "-fy"
     end
 
     options.version MSpec::VERSION do
@@ -94,6 +93,9 @@ class MSpecMain < MSpecScript
 
     require 'mspec/runner/formatters/multi'
     formatter = MultiFormatter.new
+    if config[:formatter]
+      warn "formatter options is ignored due to multi option"
+    end
 
     output_files = []
     processes = [cores, @files.size].min
@@ -105,7 +107,7 @@ class MSpecMain < MSpecScript
         "SPEC_TEMP_DIR" => "rubyspec_temp_#{i}",
         "MSPEC_MULTI" => i.to_s
       }
-      command = argv + ["-o", name]
+      command = argv + ["-fy", "-o", name]
       $stderr.puts "$ #{command.join(' ')}" if $MSPEC_DEBUG
       IO.popen([env, *command], "rb+")
     }
