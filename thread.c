@@ -3969,6 +3969,9 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *tv)
 static rb_fdset_t *
 init_set_fd(int fd, rb_fdset_t *fds)
 {
+    if (fd < 0) {
+	return 0;
+    }
     rb_fd_init(fds);
     rb_fd_set(fd, fds);
 

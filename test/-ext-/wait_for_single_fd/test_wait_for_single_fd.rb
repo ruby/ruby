@@ -22,6 +22,13 @@ class TestWaitForSingleFD < Test::Unit::TestCase
   end
 
   def test_wait_for_invalid_fd
+    # Negative FDs should not cause NoMemoryError or segfault when
+    # using select().  For now, match the poll() implementation
+    # used on Linux, which sleeps the given amount of time given
+    # when fd is negative (as documented in the Linux poll(2) manpage)
+    assert_equal 0, IO.wait_for_single_fd(-999, RB_WAITFD_IN, 0)
+    assert_equal 0, IO.wait_for_single_fd(-1, RB_WAITFD_OUT, 0)
+
     # FreeBSD 8.2 or prior sticks this
     # http://bugs.ruby-lang.org/issues/5524
     skip if /freebsd[1-8]/ =~ RUBY_PLATFORM
