@@ -1372,11 +1372,11 @@ do_opendir(const int basefd, const char *path, int flags, rb_encoding *enc,
 #endif
 	    if (dirp) break;
 	    e = errno;
+	    /* fallback */
+	  case 0:
 #if USE_OPENDIR_AT
 	    if (fd >= 0) close(fd);
 #endif
-	    /* fallback */
-	  case 0:
 	    *status = 0;
 	    if (to_be_ignored(e)) break;
 	    if (errfunc) {
