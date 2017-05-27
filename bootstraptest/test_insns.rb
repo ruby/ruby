@@ -69,7 +69,7 @@ tests = [
   [ 'tostring / concatstrings', %q{ "#{true}" }, ],
   [ 'freezestring',             %q{ "#{true}"}, fsl, ],
   [ 'freezestring',             %q{ "#{true}"}, '-d', fsl, ],
-  [ 'torexp',                   %q{ /#{true}/ =~ "true" && $~ }, ],
+  [ 'toregexp',                 %q{ /#{true}/ =~ "true" && $~ }, ],
 
   [ 'newarray',    %q{ ["true"][0] }, ],
   [ 'duparray',    %q{ [ true ][0] }, ],
