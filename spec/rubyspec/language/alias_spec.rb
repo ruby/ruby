@@ -24,6 +24,62 @@ describe "The alias keyword" do
     @obj.__value.should == 5
   end
 
+  it "works with a simple symbol on the left-hand side" do
+    @meta.class_eval do
+      alias :a value
+    end
+    @obj.a.should == 5
+  end
+
+  it "works with a single quoted symbol on the left-hand side" do
+    @meta.class_eval do
+      alias :'a' value
+    end
+    @obj.a.should == 5
+  end
+
+  it "works with a doubule quoted symbol on the left-hand side" do
+    @meta.class_eval do
+      alias :"a" value
+    end
+    @obj.a.should == 5
+  end
+
+  it "works with an interoplated symbol on the left-hand side" do
+    @meta.class_eval do
+      alias :"#{'a'}" value
+    end
+    @obj.a.should == 5
+  end
+
+  it "works with a simple symbol on the right-hand side" do
+    @meta.class_eval do
+      alias a :value
+    end
+    @obj.a.should == 5
+  end
+
+  it "works with a single quoted symbol on the right-hand side" do
+    @meta.class_eval do
+      alias a :'value'
+    end
+    @obj.a.should == 5
+  end
+
+  it "works with a doubule quoted symbol on the right-hand side" do
+    @meta.class_eval do
+      alias a :"value"
+    end
+    @obj.a.should == 5
+  end
+
+  it "works with an interoplated symbol on the right-hand side" do
+    @meta.class_eval do
+      alias a :"#{'value'}"
+    end
+    @obj.a.should == 5
+  end
+
   it "adds the new method to the list of methods" do
     original_methods = @obj.methods
     @meta.class_eval do

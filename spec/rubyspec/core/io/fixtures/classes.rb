@@ -14,7 +14,7 @@ module IOSpecs
       "\n",
       "\n",
       "Aqu\303\255 est\303\241 la l\303\255nea tres.\n",
-      "Ist hier Linie vier.\n",
+      "Hier ist Zeile vier.\n",
       "\n",
       "Est\303\241 aqui a linha cinco.\n",
       "Here is line six.\n" ]
@@ -31,8 +31,8 @@ module IOSpecs
       "Aquí está",
       " la línea",
       " tres.\n",
-      "Ist hier L",
-      "inie vier.",
+      "Hier ist Z",
+      "eile vier.",
       "\n",
       "\n",
       "Está aqui",
@@ -55,9 +55,10 @@ module IOSpecs
       "está ",
       "la ",
       "línea ",
-      "tres.\nIst ",
-      "hier ",
-      "Linie ",
+      "tres.\nHier",
+      " ",
+      "ist ",
+      "Zeile ",
       "vier.\n\nEst",
       "á ",
       "aqui ",
@@ -71,37 +72,35 @@ module IOSpecs
   end
 
   def self.lines_r_separator
-    [ "Voici la ligne une.\nQui \303\250 la linea due.\n\n\n" \
-      "Aqu\303\255 est\303\241 la l\303\255nea tr",
-      "es.\nIst hier",
-      " Linie vier",
+    [ "Voici la ligne une.\nQui \303\250 la linea due.\n\n\nAqu\303\255 est\303\241 la l\303\255nea tr",
+      "es.\nHier",
+      " ist Zeile vier",
       ".\n\nEst\303\241 aqui a linha cinco.\nHer",
       "e is line six.\n" ]
   end
 
   def self.lines_empty_separator
     [ "Voici la ligne une.\nQui \303\250 la linea due.\n\n",
-      "Aqu\303\255 est\303\241 la l\303\255nea tres.\nIst hier Linie vier.\n\n",
+      "Aqu\303\255 est\303\241 la l\303\255nea tres.\nHier ist Zeile vier.\n\n",
       "Est\303\241 aqui a linha cinco.\nHere is line six.\n" ]
   end
 
   def self.lines_space_separator
     [ "Voici ", "la ", "ligne ", "une.\nQui ",
       "\303\250 ", "la ", "linea ", "due.\n\n\nAqu\303\255 ",
-      "est\303\241 ", "la ", "l\303\255nea ", "tres.\nIst ",
-      "hier ", "Linie ", "vier.\n\nEst\303\241 ", "aqui ", "a ",
+      "est\303\241 ", "la ", "l\303\255nea ", "tres.\nHier ",
+      "ist ", "Zeile ", "vier.\n\nEst\303\241 ", "aqui ", "a ",
       "linha ", "cinco.\nHere ", "is ", "line ", "six.\n" ]
   end
 
   def self.lines_arbitrary_separator
     [ "Voici la ligne une.\nQui \303\250",
-      " la linea due.\n\n\nAqu\303\255 est\303\241 la l\303\255nea tres.\n" \
-      "Ist hier Linie vier.\n\nEst\303\241 aqui a linha cinco.\nHere is line six.\n" ]
+      " la linea due.\n\n\nAqu\303\255 est\303\241 la l\303\255nea tres.\nHier ist Zeile vier.\n\nEst\303\241 aqui a linha cinco.\nHere is line six.\n" ]
   end
 
   def self.paragraphs
     [ "Voici la ligne une.\nQui \303\250 la linea due.\n\n",
-      "Aqu\303\255 est\303\241 la l\303\255nea tres.\nIst hier Linie vier.\n\n",
+      "Aqu\303\255 est\303\241 la l\303\255nea tres.\nHier ist Zeile vier.\n\n",
       "Est\303\241 aqui a linha cinco.\nHere is line six.\n" ]
   end
 

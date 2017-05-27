@@ -20,6 +20,9 @@ matrix:
       env: CHECK_LEAKS=true
     - os: linux
       rvm: ruby-head
+  allow_failures:
+    - os: linux
+      rvm: ruby-head
 branches:
   only:
     - master

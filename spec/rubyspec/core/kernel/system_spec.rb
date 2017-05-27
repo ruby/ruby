@@ -42,7 +42,7 @@ describe :kernel_system, shared: true do
       @shell = ENV['SHELL']
     end
 
-    before :each do
+    after :each do
       ENV['SHELL'] = @shell
     end
 
@@ -51,7 +51,7 @@ describe :kernel_system, shared: true do
     end
 
     it "ignores SHELL env var and always uses `sh`" do
-      ENV['SHELL'] = "/bin/zsh"
+      ENV['SHELL'] = "/bin/fakeshell"
       lambda { @object.system("echo $0") }.should output_to_fd("sh\n")
     end
   end

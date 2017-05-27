@@ -46,7 +46,7 @@ describe "Kernel#test" do
   context "writable test" do
     before do
       @tmp_file = tmp("file.kernel.test")
-      open(@tmp_file, "w") {}
+      touch(@tmp_file)
     end
 
     after do

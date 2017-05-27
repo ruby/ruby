@@ -3,7 +3,7 @@ Qui è la linea due.
 
 
 Aquí está la línea tres.
-Ist hier Linie vier.
+Hier ist Zeile vier.
 
 Está aqui a linha cinco.
 Here is line six.

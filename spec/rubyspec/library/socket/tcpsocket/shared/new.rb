@@ -29,28 +29,28 @@ describe :tcpsocket_new, shared: true do
     end
 
     it "silently ignores 'nil' as the third parameter" do
-      @socket = TCPSocket.send(@method, @hostname, SocketSpecs.port, nil)
+      @socket = TCPSocket.send(@method, @hostname, @server.port, nil)
       @socket.should be_an_instance_of(TCPSocket)
     end
 
     it "connects to a listening server with host and port" do
-      @socket = TCPSocket.send(@method, @hostname, SocketSpecs.port)
+      @socket = TCPSocket.send(@method, @hostname, @server.port)
       @socket.should be_an_instance_of(TCPSocket)
     end
 
     it "connects to a server when passed local_host argument" do
-      @socket = TCPSocket.send(@method, @hostname, SocketSpecs.port, @hostname)
+      @socket = TCPSocket.send(@method, @hostname, @server.port, @hostname)
       @socket.should be_an_instance_of(TCPSocket)
     end
 
     it "connects to a server when passed local_host and local_port arguments" do
-      @socket = TCPSocket.send(@method, @hostname, SocketSpecs.port,
+      @socket = TCPSocket.send(@method, @hostname, @server.port,
                                @hostname, SocketSpecs.local_port)
       @socket.should be_an_instance_of(TCPSocket)
     end
 
     it "has an address once it has connected to a listening server" do
-      @socket = TCPSocket.send(@method, @hostname, SocketSpecs.port)
+      @socket = TCPSocket.send(@method, @hostname, @server.port)
       @socket.should be_an_instance_of(TCPSocket)
 
       # TODO: Figure out how to abstract this. You can get AF_INET

@@ -5,10 +5,7 @@ describe "TCPSocket#setsockopt" do
   before :each do
     @server = SocketSpecs::SpecTCPServer.new
     @hostname = @server.hostname
-  end
-
-  before :each do
-    @sock = TCPSocket.new @hostname, SocketSpecs.port
+    @sock = TCPSocket.new @hostname, @server.port
   end
 
   after :each do

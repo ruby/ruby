@@ -17,8 +17,11 @@ describe "Socket::IPSocket#recvfrom" do
     data = nil
     t = Thread.new do
       client = @server.accept
-      data = client.recvfrom(6)
-      client.close
+      begin
+        data = client.recvfrom(6)
+      ensure
+        client.close
+      end
     end
 
     @client.send('hello', 0)
@@ -33,8 +36,11 @@ describe "Socket::IPSocket#recvfrom" do
     data = nil
     t = Thread.new do
       client = @server.accept
-      data = client.recvfrom(3)
-      client.close
+      begin
+        data = client.recvfrom(3)
+      ensure
+        client.close
+      end
     end
 
     @client.send('hello', 0)

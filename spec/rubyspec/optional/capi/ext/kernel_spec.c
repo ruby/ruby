@@ -183,6 +183,18 @@ VALUE kernel_spec_rb_rescue2(int argc, VALUE *args, VALUE self) {
 }
 #endif
 
+#ifdef HAVE_RB_PROTECT
+static VALUE kernel_spec_rb_protect_yield(VALUE self, VALUE obj, VALUE ary) {
+  int status = 0;
+  VALUE res = rb_protect(rb_yield, obj, &status);
+  rb_ary_store(ary, 0, INT2NUM(23));
+  if (status) {
+    rb_jump_tag(status);
+  }
+  return res;
+}
+#endif
+
 #ifdef HAVE_RB_SYS_FAIL
 VALUE kernel_spec_rb_sys_fail(VALUE self, VALUE msg) {
   errno = 1;
@@ -216,6 +228,21 @@ VALUE kernel_spec_rb_warn(VALUE self, VALUE msg) {
 #ifdef HAVE_RB_YIELD
 static VALUE kernel_spec_rb_yield(VALUE self, VALUE obj) {
   return rb_yield(obj);
+}
+
+static int kernel_cb(const void *a, const void *b) {
+  rb_yield(Qtrue);
+  return 0;
+}
+
+static VALUE kernel_indirected(int (*compar)(const void *, const void *)) {
+  int bob[] = { 1, 1, 2, 3, 5, 8, 13 };
+  qsort(bob, 7, sizeof(int), compar);
+  return Qfalse;
+}
+
+static VALUE kernel_spec_rb_yield_indirected(VALUE self, VALUE obj) {
+  return kernel_indirected(kernel_cb);
 }
 #endif
 
@@ -338,6 +365,10 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_rescue2", kernel_spec_rb_rescue2, -1);
 #endif
 
+#ifdef HAVE_RB_PROTECT
+  rb_define_method(cls, "rb_protect_yield", kernel_spec_rb_protect_yield, 2);
+#endif
+
 #ifdef HAVE_RB_CATCH
   rb_define_method(cls, "rb_catch", kernel_spec_rb_catch, 2);
 #endif
@@ -360,6 +391,7 @@ void Init_kernel_spec(void) {
 
 #ifdef HAVE_RB_YIELD
   rb_define_method(cls, "rb_yield", kernel_spec_rb_yield, 1);
+  rb_define_method(cls, "rb_yield_indirected", kernel_spec_rb_yield_indirected, 1);
 #endif
 
 #ifdef HAVE_RB_YIELD_VALUES

@@ -2,7 +2,7 @@
 #include "rubyspec.h"
 #include "ruby/io.h"
 #include <fcntl.h>
-#if HAVE_UNISTD_H
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
@@ -145,13 +145,13 @@ VALUE io_spec_rb_io_wait_readable(VALUE self, VALUE io, VALUE read_p) {
   wait_bool ret;
 
   if (set_non_blocking(fd) == -1)
-    rb_sys_fail(0);
+    rb_sys_fail("set_non_blocking failed");
 
   if(RTEST(read_p)) {
-    rb_ivar_set(self, rb_intern("@write_data"), Qtrue);
     if(read(fd, buf, RB_IO_WAIT_READABLE_BUF) != -1) {
       return Qnil;
     }
+    rb_ivar_set(self, rb_intern("@write_data"), Qtrue);
   }
 
   ret = rb_io_wait_readable(fd);

@@ -1,16 +1,49 @@
 require File.expand_path('../../spec_helper', __FILE__)
 
 describe "The undef keyword" do
-  it "undefines a method" do
-    undef_class = Class.new do
-      def meth(o); o; end
+  describe "undefines a method" do
+    before :each do
+      @undef_class = Class.new do
+        def meth(o); o; end
+      end
+      @obj = @undef_class.new
+      @obj.meth(5).should == 5
     end
-    obj = undef_class.new
-    obj.meth(5).should == 5
-    undef_class.class_eval do
-      undef meth
+    
+    it "with an identifier" do
+      @undef_class.class_eval do
+        undef meth
+      end
+      lambda { @obj.meth(5) }.should raise_error(NoMethodError)
     end
-    lambda { obj.meth(5) }.should raise_error(NoMethodError)
+    
+    it "with a simple symbol" do
+      @undef_class.class_eval do
+        undef :meth
+      end
+      lambda { @obj.meth(5) }.should raise_error(NoMethodError)
+    end
+    
+    it "with a single quoted symbol" do
+      @undef_class.class_eval do
+        undef :'meth'
+      end
+      lambda { @obj.meth(5) }.should raise_error(NoMethodError)
+    end
+    
+    it "with a double quoted symbol" do
+      @undef_class.class_eval do
+        undef :"meth"
+      end
+      lambda { @obj.meth(5) }.should raise_error(NoMethodError)
+    end
+    
+    it "with a interpolated symbol" do
+      @undef_class.class_eval do
+        undef :"#{'meth'}"
+      end
+      lambda { @obj.meth(5) }.should raise_error(NoMethodError)
+    end
   end
 
   it "allows undefining multiple methods at a time" do

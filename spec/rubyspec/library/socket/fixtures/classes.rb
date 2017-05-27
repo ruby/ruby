@@ -72,26 +72,20 @@ module SocketSpecs
 
   # TCPServer echo server accepting one connection
   class SpecTCPServer
-    attr_accessor :hostname, :port, :logger
+    attr_reader :hostname, :port
 
-    def initialize(host=nil, port=nil, logger=nil)
-      @hostname = host || SocketSpecs.hostname
-      @port = port || SocketSpecs.port
-      @logger = logger
+    def initialize
+      @hostname = SocketSpecs.hostname
+      @server = TCPServer.new @hostname, 0
+      @port = @server.addr[1]
 
-      start
-    end
-
-    def start
       log "SpecTCPServer starting on #{@hostname}:#{@port}"
-      @server = TCPServer.new @hostname, @port
 
       @thread = Thread.new do
         socket = @server.accept
         log "SpecTCPServer accepted connection: #{socket}"
         service socket
       end
-      self
     end
 
     def service(socket)

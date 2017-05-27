@@ -2,8 +2,6 @@ require File.expand_path('../../../spec_helper', __FILE__)
 $extmk = false
 
 require 'rbconfig'
-require 'fileutils'
-require 'tmpdir'
 
 OBJDIR ||= File.expand_path("../../../ext/#{RUBY_NAME}/#{RUBY_VERSION}", __FILE__)
 mkdir_p(OBJDIR)
@@ -83,15 +81,13 @@ def compile_extension(name)
 
   ldshared  = RbConfig::CONFIG["LDSHARED"]
   ldshared += " #{RbConfig::CONFIG["ARCH_FLAG"]}" if RbConfig::CONFIG["ARCH_FLAG"]
-  libs      = RbConfig::CONFIG["LIBRUBYARG_SHARED"]
-  libs     += " " if libs
-  libs     += RbConfig::CONFIG["LIBS"]
+  libs      = RbConfig::CONFIG["LIBS"]
   dldflags  = "#{RbConfig::CONFIG["LDFLAGS"]} #{RbConfig::CONFIG["DLDFLAGS"]} #{RbConfig::CONFIG["EXTDLDFLAGS"]}"
   dldflags.sub!(/-Wl,-soname,\S+/, '')
-  dldflags.sub!(/\$\(DEFFILE\)/, '')
 
   if /mswin/ =~ RUBY_PLATFORM
     dldflags.sub!("$(LIBPATH)", RbConfig::CONFIG["LIBPATHFLAG"] % path)
+    libs    += RbConfig::CONFIG["LIBRUBY"]
     outflag  = RbConfig::CONFIG["OUTFLAG"]
 
     link_cmd = "#{ldshared} #{outflag}#{lib} #{obj} #{libs} -link #{dldflags} /export:Init_#{ext}"
@@ -114,29 +110,36 @@ ensure
 end
 
 def compile_truffleruby_extconf_make(name, path, objdir)
-  ext       = "#{name}_spec"
-  file      = "#{ext}.c"
-  source    = "#{path}/#{file}"
-  lib_target = "#{objdir}/#{ext}.#{RbConfig::CONFIG['DLEXT']}"
-  temp_dir = Dir.mktmpdir
+  ext = "#{name}_spec"
+  file = "#{ext}.c"
+  source = "#{path}/#{ext}.c"
+  lib = "#{objdir}/#{ext}.#{RbConfig::CONFIG['DLEXT']}"
+
+  # Copy needed source files to tmpdir
+  tmpdir = tmp("cext_#{name}")
+  Dir.mkdir tmpdir
   begin
-    copy =  "#{temp_dir}/#{file}"
-    FileUtils.cp "#{path}/rubyspec.h", temp_dir
-    FileUtils.cp "#{path}/truffleruby.h", temp_dir
-    FileUtils.cp source, copy
-    extconf_src = "require 'mkmf'\n" +
-                  "create_makefile('#{ext}', '#{temp_dir}')"
-    File.write("#{temp_dir}/extconf.rb", extconf_src)
-    Dir.chdir(temp_dir) do
-      system "#{RbConfig.ruby} extconf.rb"
-      system "make"                                    # run make in temp dir
-      FileUtils.cp "#{ext}.su", lib_target             # copy to .su file to library dir
-      FileUtils.cp "#{ext}.bc", objdir                 # copy to .bc file to library dir
+    ["rubyspec.h", "truffleruby.h", "#{ext}.c"].each do |file|
+      cp "#{path}/#{file}", "#{tmpdir}/#{file}"
+    end
+
+    Dir.chdir(tmpdir) do
+      required = require 'mkmf'
+      # Reinitialize mkmf if already required
+      init_mkmf unless required
+      create_makefile(ext, tmpdir)
+      system "make"
+
+      copy_exts = RbConfig::CONFIG.values_at('OBJEXT', 'DLEXT')
+      Dir.glob("*.{#{copy_exts.join(',')}}") do |file|
+        cp file, "#{objdir}/#{file}"
+      end
     end
   ensure
-    FileUtils.remove_entry temp_dir
+    rm_r tmpdir
   end
-  lib_target
+
+  lib
 end
 
 def load_extension(name)
