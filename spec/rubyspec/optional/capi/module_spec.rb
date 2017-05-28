@@ -62,18 +62,16 @@ describe "CApiModule" do
       mod = @m.rb_define_module_under(CApiModuleSpecs, "ModuleSpecsModuleUnder2")
       mod.name.should == "CApiModuleSpecs::ModuleSpecsModuleUnder2"
     end
-  end
-
-  describe "rb_define_module_under" do
-    before :each do
-      compile_extension("module_under_autoload")
-    end
 
     it "defines a module for an existing Autoload with an extension" do
+      compile_extension("module_under_autoload")
+
       CApiModuleSpecs::ModuleUnderAutoload.name.should == "CApiModuleSpecs::ModuleUnderAutoload"
     end
 
     it "defines a module for an existing Autoload with a ruby object" do
+      compile_extension("module_under_autoload")
+
       CApiModuleSpecs::RubyUnderAutoload.name.should == "CApiModuleSpecs::RubyUnderAutoload"
     end
   end
