@@ -53,6 +53,10 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal(false, a.ipv6?)
 
     a = IPAddr.new("192.168.1.2/24")
+    assert_equal("192.168.0.0", a.ip_address)
+    assert_equal("255.255.255.0", a.subnet)
+
+    a = IPAddr.new("192.168.1.2/24")
     assert_equal("192.168.1.0", a.to_s)
     assert_equal("192.168.1.0", a.to_string)
     assert_equal(Socket::AF_INET, a.family)
