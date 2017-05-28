@@ -386,6 +386,15 @@ class IPAddr
                    af, _to_string(@addr), _to_string(@mask_addr))
   end
 
+  def ip_address
+    return _to_string(@addr)
+  end
+
+  def subnet
+    return _to_string(@mask_addr)
+  end
+  
+
   protected
 
   # Set +@addr+, the internal stored ip address, to given +addr+. The
