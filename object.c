@@ -802,6 +802,21 @@ rb_obj_tap(VALUE obj)
     return obj;
 }
 
+/*
+ *  call-seq:
+ *     obj.pass{|x|...}    -> block result
+ *
+ *  Yields self to the block, and then returns result.
+ *
+ *	Time.now.pass { |t| t.sunday? ? 'Yay!' : ':(' }
+ *
+ */
+
+VALUE
+rb_obj_pass(VALUE obj)
+{
+    return rb_yield(obj);
+}
 
 /*
  * Document-method: inherited
@@ -3573,6 +3588,7 @@ InitVM_Object(void)
     rb_define_method(rb_mKernel, "kind_of?", rb_obj_is_kind_of, 1);
     rb_define_method(rb_mKernel, "is_a?", rb_obj_is_kind_of, 1);
     rb_define_method(rb_mKernel, "tap", rb_obj_tap, 0);
+    rb_define_method(rb_mKernel, "pass", rb_obj_pass, 0);
 
     rb_define_global_function("sprintf", rb_f_sprintf, -1); /* in sprintf.c */
     rb_define_global_function("format", rb_f_sprintf, -1);  /* in sprintf.c */
