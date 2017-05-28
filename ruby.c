@@ -177,7 +177,9 @@ cmdline_options_init(ruby_cmdline_options_t *opt)
     return opt;
 }
 
-static NODE *load_file(VALUE, VALUE, int, ruby_cmdline_options_t *);
+static NODE *load_file(VALUE parser, VALUE fname, VALUE f, int script,
+		       ruby_cmdline_options_t *opt);
+static VALUE open_load_file(VALUE fname_v, int *xflag);
 static void forbid_setid(const char *, const ruby_cmdline_options_t *);
 #define forbid_setid(s) forbid_setid((s), opt)
 
@@ -1649,9 +1651,11 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
     else {
+	VALUE f;
 	base_block = toplevel_context(toplevel_binding);
 	rb_parser_set_context(parser, base_block, TRUE);
-	tree = load_file(parser, opt->script_name, 1, opt);
+	f = open_load_file(opt->script_name, &opt->xflag);
+	tree = load_file(parser, opt->script_name, f, 1, opt);
     }
     ruby_set_script_name(opt->script_name);
     if (dump & DUMP_BIT(yydebug)) {
@@ -1747,7 +1751,6 @@ struct load_file_arg {
     VALUE parser;
     VALUE fname;
     int script;
-    int xflag;
     ruby_cmdline_options_t *opt;
     VALUE f;
 };
@@ -1765,7 +1768,6 @@ load_file_internal(VALUE argp_v)
     NODE *tree = 0;
     rb_encoding *enc;
     ID set_encoding;
-    int xflag = argp->xflag;
 
     CONST_ID(set_encoding, "set_encoding");
     if (script) {
@@ -1780,7 +1782,7 @@ load_file_internal(VALUE argp_v)
 	enc = rb_ascii8bit_encoding();
 	rb_funcall(f, set_encoding, 1, rb_enc_from_encoding(enc));
 
-	if (xflag || opt->xflag) {
+	if (opt->xflag) {
 	    line_start--;
 	  search_shebang:
 	    while (!NIL_P(line = rb_io_gets(f))) {
@@ -1889,7 +1891,8 @@ load_file_internal(VALUE argp_v)
 static VALUE
 open_load_file(VALUE fname_v, int *xflag)
 {
-    const char *fname = StringValueCStr(fname_v);
+    const char *fname = (fname_v = rb_str_encode_ospath(fname_v),
+			 StringValueCStr(fname_v));
     long flen = RSTRING_LEN(fname_v);
     VALUE f;
     int e;
@@ -1975,15 +1978,14 @@ restore_load_file(VALUE arg)
 }
 
 static NODE *
-load_file(VALUE parser, VALUE fname, int script, ruby_cmdline_options_t *opt)
+load_file(VALUE parser, VALUE fname, VALUE f, int script, ruby_cmdline_options_t *opt)
 {
     struct load_file_arg arg;
     arg.parser = parser;
     arg.fname = fname;
     arg.script = script;
     arg.opt = opt;
-    arg.xflag = 0;
-    arg.f = open_load_file(rb_str_encode_ospath(fname), &arg.xflag);
+    arg.f = f;
     return (NODE *)rb_ensure(load_file_internal, (VALUE)&arg,
 			     restore_load_file, (VALUE)&arg);
 }
@@ -1998,17 +2000,15 @@ rb_load_file(const char *fname)
 void *
 rb_load_file_str(VALUE fname_v)
 {
-    ruby_cmdline_options_t opt;
-
-    return load_file(rb_parser_new(), fname_v, 0, cmdline_options_init(&opt));
+    return rb_parser_load_file(rb_parser_new(), fname_v);
 }
 
 void *
 rb_parser_load_file(VALUE parser, VALUE fname_v)
 {
     ruby_cmdline_options_t opt;
-
-    return load_file(parser, fname_v, 0, cmdline_options_init(&opt));
+    VALUE f = open_load_file(fname_v, &cmdline_options_init(&opt)->xflag);
+    return load_file(parser, fname_v, f, 0, &opt);
 }
 
 /*
