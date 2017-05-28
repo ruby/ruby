@@ -22,6 +22,11 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_not_predicate str, :frozen?, '[ruby-core:71785] [Bug #11759]'
   end
 
+  def test_encoding
+    encoding = URI::Generic.build(host: 'localhost').to_s.encoding.to_s
+    assert_equal('UTF-8', encoding)
+  end
+
   def test_parse
     # 0
     assert_kind_of(URI::HTTP, @base_url)
