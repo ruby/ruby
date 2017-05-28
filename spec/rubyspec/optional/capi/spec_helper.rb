@@ -22,20 +22,21 @@ def compile_extension(name)
   end
 
   ext = "#{name}_spec"
+  source = "#{extension_path}/#{ext}.c"
   lib = "#{object_path}/#{ext}.#{RbConfig::CONFIG['DLEXT']}"
   ruby_header = "#{RbConfig::CONFIG['rubyhdrdir']}/ruby.h"
 
   return lib if File.exist?(lib) and
-                File.mtime(lib) > File.mtime("#{extension_path}/rubyspec.h") and
-                File.mtime(lib) > File.mtime("#{extension_path}/#{ext}.c") and
+                File.mtime(lib) > File.mtime(source) and
                 File.mtime(lib) > File.mtime(ruby_header) and
+                File.mtime(lib) > File.mtime("#{extension_path}/rubyspec.h") and
                 true            # sentinel
 
   # Copy needed source files to tmpdir
   tmpdir = tmp("cext_#{name}")
   Dir.mkdir(tmpdir)
   begin
-    ["rubyspec.h", "#{ext}.c"].each do |file|
+    ["jruby.h", "rubinius.h", "truffleruby.h", "rubyspec.h", "#{ext}.c"].each do |file|
       cp "#{extension_path}/#{file}", "#{tmpdir}/#{file}"
     end
 
@@ -57,7 +58,9 @@ def compile_extension(name)
       raise "make failed:\n#{output}" unless $?.success?
       $stderr.puts output if debug
 
-      cp File.basename(lib), lib
+      Dir.glob("*.#{RbConfig::CONFIG['DLEXT']}") do |file|
+        cp file, "#{object_path}/#{file}"
+      end
     end
   ensure
     rm_r tmpdir
