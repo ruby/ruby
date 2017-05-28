@@ -122,15 +122,6 @@ enum dump_flag_bits {
 typedef struct ruby_cmdline_options ruby_cmdline_options_t;
 
 struct ruby_cmdline_options {
-    int sflag, xflag;
-    int do_loop, do_print;
-    int do_line, do_split;
-    int do_search;
-    unsigned int features;
-    int verbose;
-    int safe_level;
-    unsigned int setids;
-    unsigned int dump;
     const char *script;
     VALUE script_name;
     VALUE e_script;
@@ -141,7 +132,18 @@ struct ruby_cmdline_options {
 	} enc;
     } src, ext, intern;
     VALUE req_list;
+    unsigned int features;
+    unsigned int dump;
+    int safe_level;
+    int sflag, xflag;
     unsigned int warning: 1;
+    unsigned int verbose: 1;
+    unsigned int do_loop: 1;
+    unsigned int do_print: 1;
+    unsigned int do_line: 1;
+    unsigned int do_split: 1;
+    unsigned int do_search: 1;
+    unsigned int setids: 2;
 };
 
 static void init_ids(ruby_cmdline_options_t *);
