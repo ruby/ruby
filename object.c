@@ -520,7 +520,10 @@ rb_obj_size(VALUE self, VALUE args, VALUE obj)
  *
  *  Yields <i>obj</i> and returns the result.
  *
- *	'my string'.yield_self {|s|s.upcase} #=> "MY STRING"
+ *     require "ostruct"
+ *     OpenStruct
+ *      .new(firstname: "John", lastname: "Doe")
+ *      .yield_self { |u| "#{u.firstname} #{u.lastname}" } #=> "John Doe"
  *
  */
 
