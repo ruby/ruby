@@ -574,6 +574,7 @@ EOS
     erb = @erb.new("<%= foo %>")
     foo = 1
     assert_raise(NameError) { erb.result_with_hash({}) }
+    assert_equal("1", erb.result_with_hash(foo: foo))
   end
 
   def test_result_with_hash_does_not_modify_caller_binding
