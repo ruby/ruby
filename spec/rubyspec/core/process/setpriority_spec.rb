@@ -4,18 +4,12 @@ describe "Process.setpriority" do
   platform_is_not :windows do
     it "sets the scheduling priority for a specified process" do
       priority = Process.getpriority(Process::PRIO_PROCESS, 0)
-      IO.popen('-') do |f|
-        if f
-          pr = Integer(f.gets)
-          Integer(f.gets).should == 0
-          Integer(f.gets).should == (pr+1)
-        else
-          pr = Process.getpriority(Process::PRIO_PROCESS, 0)
-          p pr
-          p Process.setpriority(Process::PRIO_PROCESS, 0, (pr + 1))
-          p Process.getpriority(Process::PRIO_PROCESS, 0)
-        end
-      end
+
+      out = ruby_exe(fixture(__FILE__, "setpriority.rb"), args: "process")
+      out = out.lines.map { |l| Integer(l) }
+      pr = out[0]
+      out.should == [pr, 0, pr+1]
+
       Process.getpriority(Process::PRIO_PROCESS, 0).should == priority
     end
 
@@ -24,19 +18,12 @@ describe "Process.setpriority" do
     platform_is_not :darwin, :freebsd do
       it "sets the scheduling priority for a specified process group" do
         priority = Process.getpriority(Process::PRIO_PGRP, 0)
-        IO.popen('-') do |f|
-          if f
-            pr = Integer(f.gets)
-            Integer(f.gets).should == 0
-            Integer(f.gets).should == (pr+1)
-          else
-            Process.setpgrp
-            pr = Process.getpriority(Process::PRIO_PGRP, 0)
-            p pr
-            p Process.setpriority(Process::PRIO_PGRP, 0, pr + 1)
-            p Process.getpriority(Process::PRIO_PGRP, 0)
-          end
-        end
+
+        out = ruby_exe(fixture(__FILE__, "setpriority.rb"), args: "group")
+        out = out.lines.map { |l| Integer(l) }
+        pr = out[0]
+        out.should == [pr, 0, pr+1]
+
         Process.getpriority(Process::PRIO_PGRP, 0).should == priority
       end
     end
