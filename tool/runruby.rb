@@ -97,10 +97,9 @@ end
 
 ENV.update env
 
-cmd = [ruby]
+cmd = [runner || ruby]
 cmd.concat(ARGV)
 cmd.unshift(*precommand) unless precommand.empty?
-cmd.push(:close_others => false)
 
 if show
   require 'shellwords'
@@ -108,4 +107,4 @@ if show
   puts Shellwords.join(cmd)
 end
 
-exec(*cmd)
+exec(*cmd, close_others: false)
