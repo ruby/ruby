@@ -17,11 +17,18 @@ class Object
     parts.each do |part|
       name = File.join name, part
 
-      if File.file? name
+      stat = File.stat name
+      if stat.file?
         raise ArgumentError, "path component of #{path} is a file"
       end
 
-      Dir.mkdir name unless File.directory? name
+      unless stat.directory?
+        begin
+          Dir.mkdir name
+        rescue Errno::EEXIST
+          raise unless File.directory? name
+        end
+      end
     end
   end
 
