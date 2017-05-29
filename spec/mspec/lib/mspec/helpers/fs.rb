@@ -17,12 +17,12 @@ class Object
     parts.each do |part|
       name = File.join name, part
 
-      stat = File.stat name
-      if stat.file?
+      stat = File.stat name rescue nil
+      if stat and stat.file?
         raise ArgumentError, "path component of #{path} is a file"
       end
 
-      unless stat.directory?
+      unless stat and stat.directory?
         begin
           Dir.mkdir name
         rescue Errno::EEXIST
