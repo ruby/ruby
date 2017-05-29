@@ -58,7 +58,7 @@ END
   end
 
   it "is able to h() or u() if ERB::Util is included" do
-    class MyERB1
+    myerb1 = Class.new do
       include ERB::Util
       def main
         input = "<%=h '<>' %>"
@@ -66,12 +66,12 @@ END
       end
     end
     expected = '&lt;&gt;'
-    actual = _steal_stdout { MyERB1.new.main() }
+    actual = _steal_stdout { myerb1.new.main() }
     actual.should == expected
   end
 
   it "use TOPLEVEL_BINDING if binding is not passed" do
-    class MyERB2
+    myerb2 = Class.new do
       include ERB::Util
       def main1
         #input = "<%= binding.to_s %>"
@@ -86,11 +86,11 @@ END
 
     eval '_xxx_var_ = 123', TOPLEVEL_BINDING
     expected = '123'
-    actual = _steal_stdout { MyERB2.new.main1() }
+    actual = _steal_stdout { myerb2.new.main1() }
     actual.should == expected
 
     lambda {
-      _steal_stdout { MyERB2.new.main2() }
+      _steal_stdout { myerb2.new.main2() }
     }.should raise_error(NameError)
   end
 end
