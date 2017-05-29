@@ -93,6 +93,19 @@ describe Object, "#mkdir_p" do
     File.open(@dir1, "w") { |f| }
     lambda { mkdir_p @dir2 }.should raise_error(ArgumentError)
   end
+
+  it "works if multiple processes try to create the same directory concurrently" do
+    original = File.method(:directory?)
+    File.should_receive(:directory?).at_least(:once) { |dir|
+      ret = original.call(dir)
+      if !ret and dir == @dir1
+        Dir.mkdir(dir) # Simulate race
+      end
+      ret
+    }
+    mkdir_p @dir1
+    original.call(@dir1).should be_true
+  end
 end
 
 describe Object, "#rm_r" do
