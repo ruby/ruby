@@ -13,7 +13,7 @@ class Net::HTTPGenericRequest
     @request_has_body = reqbody
     @response_has_body = resbody
 
-    if URI === uri_or_path then
+    if URI === uri_or_path
       @uri = uri_or_path.dup
       host = @uri.hostname.dup
       host << ":".freeze << @uri.port.to_s if @uri.port != @uri.default_port
@@ -29,11 +29,11 @@ class Net::HTTPGenericRequest
 
     @decode_content = false
 
-    if @response_has_body and Net::HTTP::HAVE_ZLIB then
+    if @response_has_body and Net::HTTP::HAVE_ZLIB
       if !initheader ||
          !initheader.keys.any? { |k|
            %w[accept-encoding range].include? k.downcase
-         } then
+         }
         @decode_content = true
         initheader = initheader ? initheader.dup : {}
         initheader["accept-encoding"] =
