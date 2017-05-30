@@ -193,8 +193,10 @@ describe "C-API Kernel function" do
       @s.rb_yield(1) { break 73 }.should == 73
     end
 
-    it "rb_yield through a callback to a block that breaks with a value returns the value" do
-      @s.rb_yield_indirected(1) { break 73 }.should == 73
+    platform_is_not :"solaris2.10" do # NOTE: i386-pc-solaris2.10
+      it "rb_yield through a callback to a block that breaks with a value returns the value" do
+        @s.rb_yield_indirected(1) { break 73 }.should == 73
+      end
     end
   end
 
