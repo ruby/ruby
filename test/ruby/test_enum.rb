@@ -604,6 +604,22 @@ class TestEnumerable < Test::Unit::TestCase
       [o, o, o].sort_by {|x| x }
       c.call
     end
+
+    assert_raise_with_message(RuntimeError, /reentered/) do
+      i = 0
+      c = nil
+      o = Object.new
+      class << o; self; end.class_eval do
+        define_method(:<=>) do |x|
+          callcc {|c2| c ||= c2 }
+          i += 1
+          0
+        end
+      end
+      [o, o].min(1)
+      assert_operator(i, :<=, 5, "infinite loop")
+      c.call
+    end
   end
 
   def test_reverse_each

@@ -1263,16 +1263,24 @@ struct nmin_data {
   const char *method;
 };
 
+static VALUE
+cmpint_reenter_check(struct nmin_data *data, VALUE val)
+{
+    if (RBASIC(data->buf)->klass) {
+	rb_raise(rb_eRuntimeError, "%s reentered", data->method);
+    }
+    return val;
+}
+
 static int
 nmin_cmp(const void *ap, const void *bp, void *_data)
 {
     struct cmp_opt_data cmp_opt = { 0, 0 };
     struct nmin_data *data = (struct nmin_data *)_data;
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
-    if (RBASIC(data->buf)->klass) {
-	rb_raise(rb_eRuntimeError, "%s reentered", data->method);
-    }
+#define rb_cmpint(cmp, a, b) rb_cmpint(cmpint_reenter_check(data, (cmp)), a, b)
     return OPTIMIZED_CMP(a, b, cmp_opt);
+#undef rb_cmpint
 }
 
 static int
@@ -1281,12 +1289,9 @@ nmin_block_cmp(const void *ap, const void *bp, void *_data)
     struct nmin_data *data = (struct nmin_data *)_data;
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
     VALUE cmp = rb_yield_values(2, a, b);
-    if (RBASIC(data->buf)->klass) {
-	rb_raise(rb_eRuntimeError, "%s reentered", data->method);
-    }
+    cmpint_reenter_check(data, cmp);
     return rb_cmpint(cmp, a, b);
 }
-
 
 static void
 nmin_filter(struct nmin_data *data)
