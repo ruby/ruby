@@ -493,18 +493,22 @@ rb_obj_dup(VALUE obj)
 
 /*
  *  call-seq:
- *     obj.itself -> an_object
+ *     obj.itself               -> an_object
+ *     obj.itself { |o| block } -> an_object
  *
- *  Returns <i>obj</i>.
+ *  Returns <i>obj</i>.  If the optional <em>block</em> is supplied,
+ *  the object is passed to it, and the block's result is returned.
  *
  *	string = 'my string' #=> "my string"
  *	string.itself.object_id == string.object_id #=> true
+ *	string.itself { |s| s.upcase } #=> "MY STRING"
  *
  */
 
 static VALUE
 rb_obj_itself(VALUE obj)
 {
+    if (rb_block_given_p()) return rb_yield(obj);
     return obj;
 }
 

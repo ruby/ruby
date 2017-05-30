@@ -14,8 +14,14 @@ class TestObject < Test::Unit::TestCase
 
   def test_itself
     feature6373 = '[ruby-core:44704] [Feature #6373]'
+    feature10095 = '[ruby-core:64039] [Feature #10095]'
     object = Object.new
     assert_same(object, object.itself, feature6373)
+    assert_same(object, object.itself{|o| o}, feature10095)
+
+    string = 'foo'
+    assert_equal('FOO', string.itself {|o| o.upcase}, feature10095)
+    assert_equal('foo', string, feature10095)
   end
 
   def test_yield_self
