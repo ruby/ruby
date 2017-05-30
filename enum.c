@@ -1010,6 +1010,7 @@ sort_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _data))
 static int
 sort_by_cmp(const void *ap, const void *bp, void *data)
 {
+    struct cmp_opt_data cmp_opt = { 0, 0 };
     VALUE a;
     VALUE b;
     VALUE ary = (VALUE)data;
@@ -1021,7 +1022,7 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
     a = *(VALUE *)ap;
     b = *(VALUE *)bp;
 
-    return rb_cmpint(rb_funcall(a, id_cmp, 1, b), a, b);
+    return OPTIMIZED_CMP(a, b, cmp_opt);
 }
 
 /*
@@ -1267,13 +1268,13 @@ struct nmin_data {
 static int
 nmin_cmp(const void *ap, const void *bp, void *_data)
 {
+    struct cmp_opt_data cmp_opt = { 0, 0 };
     struct nmin_data *data = (struct nmin_data *)_data;
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
-    VALUE cmp = rb_funcall(a, id_cmp, 1, b);
     if (RBASIC(data->buf)->klass) {
 	rb_raise(rb_eRuntimeError, "%s reentered", data->method);
     }
-    return rb_cmpint(cmp, a, b);
+    return OPTIMIZED_CMP(a, b, cmp_opt);
 }
 
 static int
@@ -1872,6 +1873,7 @@ enum_minmax(VALUE obj)
 static VALUE
 min_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 {
+    struct cmp_opt_data cmp_opt = { 0, 0 };
     struct MEMO *memo = MEMO_CAST(args);
     VALUE v;
 
@@ -1882,7 +1884,7 @@ min_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 	MEMO_V1_SET(memo, v);
 	MEMO_V2_SET(memo, i);
     }
-    else if (rb_cmpint(rb_funcall(v, id_cmp, 1, memo->v1), v, memo->v1) < 0) {
+    else if (OPTIMIZED_CMP(v, memo->v1, cmp_opt) < 0) {
 	MEMO_V1_SET(memo, v);
 	MEMO_V2_SET(memo, i);
     }
@@ -1933,6 +1935,7 @@ enum_min_by(int argc, VALUE *argv, VALUE obj)
 static VALUE
 max_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 {
+    struct cmp_opt_data cmp_opt = { 0, 0 };
     struct MEMO *memo = MEMO_CAST(args);
     VALUE v;
 
@@ -1943,7 +1946,7 @@ max_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 	MEMO_V1_SET(memo, v);
 	MEMO_V2_SET(memo, i);
     }
-    else if (rb_cmpint(rb_funcall(v, id_cmp, 1, memo->v1), v, memo->v1) > 0) {
+    else if (OPTIMIZED_CMP(v, memo->v1, cmp_opt) > 0) {
 	MEMO_V1_SET(memo, v);
 	MEMO_V2_SET(memo, i);
     }
@@ -2048,6 +2051,8 @@ struct minmax_by_t {
 static void
 minmax_by_i_update(VALUE v1, VALUE v2, VALUE i1, VALUE i2, struct minmax_by_t *memo)
 {
+    struct cmp_opt_data cmp_opt = { 0, 0 };
+
     if (memo->min_bv == Qundef) {
 	memo->min_bv = v1;
 	memo->max_bv = v2;
@@ -2055,11 +2060,11 @@ minmax_by_i_update(VALUE v1, VALUE v2, VALUE i1, VALUE i2, struct minmax_by_t *m
 	memo->max = i2;
     }
     else {
-	if (rb_cmpint(rb_funcall(v1, id_cmp, 1, memo->min_bv), v1, memo->min_bv) < 0) {
+	if (OPTIMIZED_CMP(v1, memo->min_bv, cmp_opt) < 0) {
 	    memo->min_bv = v1;
 	    memo->min = i1;
 	}
-	if (rb_cmpint(rb_funcall(v2, id_cmp, 1, memo->max_bv), v2, memo->max_bv) > 0) {
+	if (OPTIMIZED_CMP(v2, memo->max_bv, cmp_opt) > 0) {
 	    memo->max_bv = v2;
 	    memo->max = i2;
 	}
@@ -2069,6 +2074,7 @@ minmax_by_i_update(VALUE v1, VALUE v2, VALUE i1, VALUE i2, struct minmax_by_t *m
 static VALUE
 minmax_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
 {
+    struct cmp_opt_data cmp_opt = { 0, 0 };
     struct minmax_by_t *memo = MEMO_FOR(struct minmax_by_t, _memo);
     VALUE vi, vj, j;
     int n;
@@ -2086,7 +2092,7 @@ minmax_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
     j = memo->last;
     memo->last_bv = Qundef;
 
-    n = rb_cmpint(rb_funcall(vj, id_cmp, 1, vi), vj, vi);
+    n = OPTIMIZED_CMP(vj, vi, cmp_opt);
     if (n == 0) {
         i = j;
         vi = vj;
