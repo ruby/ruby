@@ -361,9 +361,7 @@ find_all_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 static VALUE
 enum_size(VALUE self, VALUE args, VALUE eobj)
 {
-    VALUE r;
-    r = rb_check_funcall(self, id_size, 0, 0);
-    return (r == Qundef) ? Qnil : r;
+    return rb_check_funcall_default(self, id_size, 0, 0, Qnil);
 }
 
 static long
