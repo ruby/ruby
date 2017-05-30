@@ -493,12 +493,12 @@ rb_obj_dup(VALUE obj)
 
 /*
  *  call-seq:
- *     obj.itself -> an_object
+ *     obj.itself    -> obj
  *
- *  Returns <i>obj</i>.
+ *  Returns the receiver.
  *
- *	string = 'my string' #=> "my string"
- *	string.itself.object_id == string.object_id #=> true
+ *     string = "my string"
+ *     string.itself.object_id == string.object_id   #=> true
  *
  */
 
@@ -516,11 +516,12 @@ rb_obj_size(VALUE self, VALUE args, VALUE obj)
 
 /*
  *  call-seq:
- *     obj.yield_self {|_obj|...} -> an_object
+ *     obj.yield_self {|x| block }    -> an_object
  *
- *  Yields <i>obj</i> and returns the result.
+ *  Yields self to the block and returns the result of the block.
  *
- *	'my string'.yield_self {|s|s.upcase} #=> "MY STRING"
+ *     "my string".yield_self {|s| s.upcase }   #=> "MY STRING"
+ *     3.next.yield_self {|x| x**x }.to_s       #=> "256"
  *
  */
 
@@ -782,16 +783,16 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
 
 /*
  *  call-seq:
- *     obj.tap{|x| block }    -> obj
+ *     obj.tap {|x| block }    -> obj
  *
  *  Yields self to the block, and then returns self.
  *  The primary purpose of this method is to "tap into" a method chain,
  *  in order to perform operations on intermediate results within the chain.
  *
- *	(1..10)                  .tap {|x| puts "original: #{x}" }
- *	  .to_a                  .tap {|x| puts "array:    #{x}" }
- *	  .select {|x| x.even? } .tap {|x| puts "evens:    #{x}" }
- *	  .map {|x| x*x }        .tap {|x| puts "squares:  #{x}" }
+ *     (1..10)                  .tap {|x| puts "original: #{x}" }
+ *       .to_a                  .tap {|x| puts "array:    #{x}" }
+ *       .select {|x| x.even? } .tap {|x| puts "evens:    #{x}" }
+ *       .map {|x| x*x }        .tap {|x| puts "squares:  #{x}" }
  *
  */
 
