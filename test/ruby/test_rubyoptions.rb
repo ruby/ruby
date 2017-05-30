@@ -449,7 +449,8 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_notfound
     notexist = "./notexist.rb"
-    rubybin = EnvUtil.rubybin.dup
+    dir, *rubybin = RbConfig::CONFIG.values_at('bindir', 'RUBY_INSTALL_NAME', 'EXEEXT')
+    rubybin = "#{dir}/#{rubybin.join('')}"
     rubybin.gsub!(%r(/), '\\') if /mswin|mingw/ =~ RUBY_PLATFORM
     rubybin = Regexp.quote(rubybin)
     pat = Regexp.quote(notexist)

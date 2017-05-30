@@ -282,10 +282,7 @@ if defined?(RbConfig)
       attr_reader :ruby
     end
     dir = File.dirname(ruby)
-    name = File.basename(ruby, CONFIG['EXEEXT'])
     CONFIG['bindir'] = dir
-    CONFIG['ruby_install_name'] = name
-    CONFIG['RUBY_INSTALL_NAME'] = name
     Gem::ConfigMap[:bindir] = dir if defined?(Gem::ConfigMap)
   end
 end
