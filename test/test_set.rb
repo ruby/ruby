@@ -492,6 +492,25 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(Set[2,4,6,'A','B','C',nil], set)
   end
 
+  def test_collect
+    set = Set[1,2,3,'a','b','c',-1..1,2..4]
+
+    ret = set.collect { |i|
+      case i
+      when Numeric
+        i * 2
+      when String
+        i.upcase
+      else
+        nil
+      end
+    }
+
+    assert_not_same(set, ret)
+    assert_equal(Set[1,2,3,'a','b','c',-1..1,2..4], set)
+    assert_equal(Set[2,4,6,'A','B','C',nil], ret)
+  end
+
   def test_reject!
     set = Set.new(1..10)
 
