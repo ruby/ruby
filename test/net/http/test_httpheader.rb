@@ -326,6 +326,8 @@ class HTTPHeaderTest < Test::Unit::TestCase
     assert_equal 'application/pdf', @c.content_type
     @c.set_content_type 'text/html', {'charset' => 'iso-2022-jp'}
     assert_equal 'text/html', @c.content_type
+    @c.set_content_type 'text/html; charset=iso-2022-jp'
+    assert_equal 'text/html; charset=iso-2022-jp', @c.content_type
     @c.content_type = 'text'
     assert_equal 'text', @c.content_type
   end

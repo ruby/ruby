@@ -320,7 +320,8 @@ module Net::HTTPHeader
   def content_type
     return nil unless main_type()
     if sub_type()
-    then "#{main_type()}/#{sub_type()}"
+      main_and_sub_type = "#{main_type()}/#{sub_type()}"
+      encoding() ? "#{main_and_sub_type};#{encoding()}" : main_and_sub_type
     else main_type()
     end
   end
@@ -340,6 +341,14 @@ module Net::HTTPHeader
     _, sub = *self['Content-Type'].split(';').first.to_s.split('/')
     return nil unless sub
     sub.strip
+  end
+
+  # Returns a content type encoding string such as "html".
+  # This method returns nil if Content-Type: header field does not exist
+  # or encoding is not given (e.g. "Content-Type: text/html").
+  def encoding
+    return nil unless @header['content-type']
+    self['Content-Type'].split(';')[1]
   end
 
   # Any parameters specified for the content type, returned as a Hash.
