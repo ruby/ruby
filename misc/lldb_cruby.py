@@ -48,7 +48,14 @@ def lldb_rp(debugger, command, result, internal_dict):
     process = target.GetProcess()
     thread = process.GetSelectedThread()
     frame = thread.GetSelectedFrame()
-    val = frame.EvaluateExpression(command)
+    if frame.IsValid():
+        val = frame.EvaluateExpression(command)
+    else:
+        val = target.EvaluateExpression(command)
+    error = val.GetError()
+    if error.Fail():
+        print >> result, error
+        return
     num = val.GetValueAsSigned()
     if num == RUBY_Qfalse:
         print >> result, 'false'
@@ -57,7 +64,7 @@ def lldb_rp(debugger, command, result, internal_dict):
     elif num == RUBY_Qnil:
         print >> result, 'nil'
     elif num == RUBY_Qundef:
-        print >> result, 'Qundef'
+        print >> result, 'undef'
     elif fixnum_p(num):
         print >> result, num >> 1
     elif flonum_p(num):
