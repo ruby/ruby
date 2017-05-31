@@ -3285,7 +3285,8 @@ set_zero(st_data_t key, st_data_t val, st_data_t arg)
  *	}
  *
  *  The contents of the returned hash are implementation specific.
- *  It may be changed in future.
+ *  It may be changed in future. The +:TOTAL+ key contains the count
+ *  of all currently allocated and previously freed objects.
  *
  *  The keys starting with +:T_+ means live objects.
  *  For example, +:T_ARRAY+ is the number of arrays.
