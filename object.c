@@ -2660,7 +2660,7 @@ static const struct conv_method_tbl {
 #define IMPLICIT_CONVERSIONS 7
 
 static VALUE
-convert_type2(VALUE val, const char *tname, ID method, int raise, int index)
+convert_type_with_id(VALUE val, const char *tname, ID method, int raise, int index)
 {
     VALUE r = rb_check_funcall(val, method, 0, 0);
     if (r == Qundef) {
@@ -2700,7 +2700,7 @@ convert_type(VALUE val, const char *tname, const char *method, int raise)
 	}
     }
     if (!m) m = rb_intern(method);
-    return convert_type2(val, tname, m, raise, i);
+    return convert_type_with_id(val, tname, m, raise, i);
 }
 
 NORETURN(static void conversion_mismatch(VALUE, const char *, const char *, VALUE));
@@ -2732,7 +2732,7 @@ rb_convert_type_with_id(VALUE val, int type, const char *tname, ID method)
     VALUE v;
 
     if (TYPE(val) == type) return val;
-    v = convert_type2(val, tname, method, TRUE, 0);
+    v = convert_type_with_id(val, tname, method, TRUE, 0);
     if (TYPE(v) != type) {
 	conversion_mismatch(val, tname, RSTRING_PTR(rb_id2str(method)), v);
     }
@@ -2761,7 +2761,7 @@ rb_check_convert_type_with_id(VALUE val, int type, const char *tname, ID method)
 
     /* always convert T_DATA */
     if (TYPE(val) == type && type != T_DATA) return val;
-    v = convert_type2(val, tname, method, FALSE, 0);
+    v = convert_type_with_id(val, tname, method, FALSE, 0);
     if (NIL_P(v)) return Qnil;
     if (TYPE(v) != type) {
 	conversion_mismatch(val, tname, RSTRING_PTR(rb_id2str(method)), v);
