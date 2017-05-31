@@ -2727,7 +2727,7 @@ rb_convert_type(VALUE val, int type, const char *tname, const char *method)
 }
 
 VALUE
-rb_convert_type2(VALUE val, int type, const char *tname, ID method)
+rb_convert_type_with_id(VALUE val, int type, const char *tname, ID method)
 {
     VALUE v;
 
@@ -2755,7 +2755,7 @@ rb_check_convert_type(VALUE val, int type, const char *tname, const char *method
 }
 
 VALUE
-rb_check_convert_type2(VALUE val, int type, const char *tname, ID method)
+rb_check_convert_type_with_id(VALUE val, int type, const char *tname, ID method)
 {
     VALUE v;
 
@@ -3208,7 +3208,7 @@ rb_String(VALUE val)
 {
     VALUE tmp = rb_check_string_type(val);
     if (NIL_P(tmp))
-	tmp = rb_convert_type2(val, T_STRING, "String", idTo_s);
+	tmp = rb_convert_type_with_id(val, T_STRING, "String", idTo_s);
     return tmp;
 }
 
@@ -3238,7 +3238,7 @@ rb_Array(VALUE val)
     VALUE tmp = rb_check_array_type(val);
 
     if (NIL_P(tmp)) {
-	tmp = rb_check_convert_type2(val, T_ARRAY, "Array", idTo_a);
+	tmp = rb_check_convert_type_with_id(val, T_ARRAY, "Array", idTo_a);
 	if (NIL_P(tmp)) {
 	    return rb_ary_new3(1, val);
 	}

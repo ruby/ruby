@@ -2611,7 +2611,7 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 
     if (argc == 1) {
 	if (!(k_numeric_p(a1) && k_integer_p(a1)))
-	    return rb_convert_type2(a1, T_RATIONAL, "Rational", idTo_r);
+	    return rb_convert_type_with_id(a1, T_RATIONAL, "Rational", idTo_r);
     }
     else {
 	if ((k_numeric_p(a1) && k_numeric_p(a2)) &&

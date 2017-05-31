@@ -1015,7 +1015,7 @@ rb_stat(VALUE file, struct stat *st)
 {
     VALUE tmp;
 
-    tmp = rb_check_convert_type2(file, T_FILE, "IO", idTo_io);
+    tmp = rb_check_convert_type_with_id(file, T_FILE, "IO", idTo_io);
     if (!NIL_P(tmp)) {
 	rb_io_t *fptr;
 
@@ -1034,7 +1034,7 @@ w32_io_info(VALUE *file, BY_HANDLE_FILE_INFORMATION *st)
     VALUE tmp;
     HANDLE f, ret = 0;
 
-    tmp = rb_check_convert_type2(*file, T_FILE, "IO", idTo_io);
+    tmp = rb_check_convert_type_with_id(*file, T_FILE, "IO", idTo_io);
     if (!NIL_P(tmp)) {
 	rb_io_t *fptr;
 
