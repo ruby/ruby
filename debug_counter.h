@@ -13,6 +13,8 @@
 #endif
 
 #ifdef RB_DEBUG_COUNTER
+
+/* method search */
 RB_DEBUG_COUNTER(mc_inline_hit)
 RB_DEBUG_COUNTER(mc_inline_miss)
 RB_DEBUG_COUNTER(mc_global_hit)
@@ -23,6 +25,7 @@ RB_DEBUG_COUNTER(mc_cme_complement)
 RB_DEBUG_COUNTER(mc_cme_complement_hit)
 RB_DEBUG_COUNTER(mc_search_super)
 
+/* ivar access */
 RB_DEBUG_COUNTER(ivar_get_ic_hit)
 RB_DEBUG_COUNTER(ivar_get_ic_miss)
 RB_DEBUG_COUNTER(ivar_get_ic_miss_serial)
@@ -36,6 +39,13 @@ RB_DEBUG_COUNTER(ivar_set_ic_miss_oorange)
 RB_DEBUG_COUNTER(ivar_set_ic_miss_noobject)
 RB_DEBUG_COUNTER(ivar_get_base)
 RB_DEBUG_COUNTER(ivar_set_base)
+
+/* lvar access */
+RB_DEBUG_COUNTER(lvar_get)
+RB_DEBUG_COUNTER(lvar_get_dynamic)
+RB_DEBUG_COUNTER(lvar_set)
+RB_DEBUG_COUNTER(lvar_set_dynamic)
+RB_DEBUG_COUNTER(lvar_set_slowpath)
 
 /* object counts */
 RB_DEBUG_COUNTER(obj_free)

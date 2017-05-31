@@ -320,6 +320,7 @@ vm_env_write_slowpath(const VALUE *ep, int index, VALUE v)
     rb_gc_writebarrier_remember(VM_ENV_ENVVAL(ep));
     VM_FORCE_WRITE(&ep[index], v);
     VM_ENV_FLAGS_UNSET(ep, VM_ENV_FLAG_WB_REQUIRED);
+    RB_DEBUG_COUNTER_INC(lvar_set_slowpath);
 }
 
 static inline void

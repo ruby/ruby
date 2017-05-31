@@ -58,6 +58,8 @@ getlocal
 (VALUE val)
 {
     val = *(vm_get_ep(GET_EP(), level) - idx);
+    RB_DEBUG_COUNTER_INC(lvar_get);
+    (void)RB_DEBUG_COUNTER_INC_IF(lvar_get_dynamic, level > 0);
 }
 
 /**
@@ -74,6 +76,8 @@ setlocal
 ()
 {
     vm_env_write(vm_get_ep(GET_EP(), level), -(int)idx, val);
+    RB_DEBUG_COUNTER_INC(lvar_set);
+    (void)RB_DEBUG_COUNTER_INC_IF(lvar_set_dynamic, level > 0);
 }
 
 /**
