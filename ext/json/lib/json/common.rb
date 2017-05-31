@@ -150,6 +150,9 @@ module JSON
   # * *create_additions*: If set to false, the Parser doesn't create
   #   additions even if a matching class and create_id was found. This option
   #   defaults to false.
+  # * *quirks_mode*: If set to true, allow parsing of string, integer, boolean,
+  #   and null values by the Parser as per RFC 4627. This option defaults to 
+  #   false.
   # * *object_class*: Defaults to Hash
   # * *array_class*: Defaults to Array
   def parse(source, opts = {})
