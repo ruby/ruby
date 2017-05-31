@@ -284,6 +284,7 @@ RCFLAGS=-nologo
 !endif
 !endif
 
+ENABLE_SHARED = yes
 LIBRUBY_LDSHARED = $(LDSHARED)
 LIBRUBY_DLDFLAGS = $(EXTLDFLAGS) -implib:dummy.lib -def:$(RUBYDEF)
 

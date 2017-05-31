@@ -1080,7 +1080,7 @@ lldb: miniruby$(EXEEXT) PHONY
 	lldb -o '$(LLDB_INIT)' miniruby$(EXEEXT) -- $(TESTRUN_SCRIPT)
 
 lldb-ruby: $(PROGRAM) PHONY
-	lldb $(enable_shared:yes=-o 'target modules add $(LIBRUBY_SO)') -o '$(LLDB_INIT)' $(PROGRAM) -- $(TESTRUN_SCRIPT)
+	lldb $(enable_shared:yes=-o 'target modules add ${LIBRUBY_SO}') -o '$(LLDB_INIT)' $(PROGRAM) -- $(TESTRUN_SCRIPT)
 
 dist:
 	$(BASERUBY) $(srcdir)/tool/make-snapshot \
