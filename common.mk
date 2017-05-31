@@ -13,6 +13,7 @@ ECHO = @$(ECHO0)
 
 mflags = $(MFLAGS)
 gnumake_recursive =
+enable_shared = $(ENABLE_SHARED:no=)
 
 UNICODE_VERSION = 9.0.0
 
@@ -1072,6 +1073,14 @@ gdb: miniruby$(EXEEXT) run.gdb PHONY
 
 gdb-ruby: $(PROGRAM) run.gdb PHONY
 	$(Q) $(RUNRUBY_COMMAND) $(RUNRUBY_DEBUGGER) -- $(TESTRUN_SCRIPT)
+
+LLDB_INIT = command script import -r $(srcdir)/misc/lldb_cruby.py
+
+lldb: miniruby$(EXEEXT) PHONY
+	lldb -o '$(LLDB_INIT)' miniruby$(EXEEXT) -- $(TESTRUN_SCRIPT)
+
+lldb-ruby: $(PROGRAM) PHONY
+	lldb $(enable_shared:yes=-o 'target modules add $(LIBRUBY_SO)') -o '$(LLDB_INIT)' $(PROGRAM) -- $(TESTRUN_SCRIPT)
 
 dist:
 	$(BASERUBY) $(srcdir)/tool/make-snapshot \
