@@ -777,7 +777,7 @@ vm_to_proc(VALUE proc)
 {
     if (UNLIKELY(!rb_obj_is_proc(proc))) {
 	VALUE b;
-	b = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
+	b = rb_check_convert_type_with_id(proc, T_DATA, "Proc", idTo_proc);
 
 	if (NIL_P(b) || !rb_obj_is_proc(b)) {
 	    rb_raise(rb_eTypeError,

@@ -642,13 +642,13 @@ rb_assoc_new(VALUE car, VALUE cdr)
 static VALUE
 to_ary(VALUE ary)
 {
-    return rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
+    return rb_convert_type_with_id(ary, T_ARRAY, "Array", idTo_ary);
 }
 
 VALUE
 rb_check_array_type(VALUE ary)
 {
-    return rb_check_convert_type(ary, T_ARRAY, "Array", "to_ary");
+    return rb_check_convert_type_with_id(ary, T_ARRAY, "Array", idTo_ary);
 }
 
 /*
@@ -2012,7 +2012,7 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result, int *first)
 		val = tmp;
 		goto str_join;
 	    }
-	    tmp = rb_check_convert_type(val, T_ARRAY, "Array", "to_ary");
+	    tmp = rb_check_convert_type_with_id(val, T_ARRAY, "Array", idTo_ary);
 	    if (!NIL_P(tmp)) {
 		obj = val;
 		val = tmp;

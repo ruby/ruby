@@ -711,13 +711,13 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
 static VALUE
 to_hash(VALUE hash)
 {
-    return rb_convert_type(hash, T_HASH, "Hash", "to_hash");
+    return rb_convert_type_with_id(hash, T_HASH, "Hash", idTo_hash);
 }
 
 VALUE
 rb_check_hash_type(VALUE hash)
 {
-    return rb_check_convert_type(hash, T_HASH, "Hash", "to_hash");
+    return rb_check_convert_type_with_id(hash, T_HASH, "Hash", idTo_hash);
 }
 
 /*
@@ -1027,7 +1027,7 @@ rb_hash_set_default_proc(VALUE hash, VALUE proc)
 	SET_DEFAULT(hash, proc);
 	return proc;
     }
-    b = rb_check_convert_type(proc, T_DATA, "Proc", "to_proc");
+    b = rb_check_convert_type_with_id(proc, T_DATA, "Proc", idTo_proc);
     if (NIL_P(b) || !rb_obj_is_proc(b)) {
 	rb_raise(rb_eTypeError,
 		 "wrong default_proc type %s (expected Proc)",

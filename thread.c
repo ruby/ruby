@@ -1875,7 +1875,7 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
     }
 
     mask = 0;
-    mask_arg = rb_convert_type(mask_arg, T_HASH, "Hash", "to_hash");
+    mask_arg = rb_convert_type_with_id(mask_arg, T_HASH, "Hash", idTo_hash);
     rb_hash_foreach(mask_arg, handle_interrupt_arg_check_i, (VALUE)&mask);
     if (!mask) {
 	return rb_yield(Qnil);

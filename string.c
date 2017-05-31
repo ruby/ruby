@@ -1341,7 +1341,7 @@ rb_str_memsize(VALUE str)
 VALUE
 rb_str_to_str(VALUE str)
 {
-    return rb_convert_type(str, T_STRING, "String", "to_str");
+    return rb_convert_type_with_id(str, T_STRING, "String", idTo_str);
 }
 
 static inline void str_discard(VALUE str);
@@ -2225,7 +2225,7 @@ rb_str_fill_terminator(VALUE str, const int newminlen)
 VALUE
 rb_check_string_type(VALUE str)
 {
-    str = rb_check_convert_type(str, T_STRING, "String", "to_str");
+    str = rb_check_convert_type_with_id(str, T_STRING, "String", idTo_str);
     return str;
 }
 
