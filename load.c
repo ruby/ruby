@@ -969,6 +969,8 @@ rb_require_internal(VALUE fname, int safe)
 
     RUBY_DTRACE_HOOK(REQUIRE_ENTRY, StringValuePtr(fname));
 
+    fname = rb_get_path_check(fname, safe);
+
     TH_PUSH_TAG(th);
     saved.safe = rb_safe_level();
     if ((state = EXEC_TAG()) == 0) {
@@ -976,16 +978,13 @@ rb_require_internal(VALUE fname, int safe)
 	long handle;
 	int found;
 
-	rb_set_safe_level_force(safe);
-	FilePathValue(fname);
 	rb_set_safe_level_force(0);
 
 	RUBY_DTRACE_HOOK(FIND_REQUIRE_ENTRY, StringValuePtr(fname));
-
 	path = rb_str_encode_ospath(fname);
 	found = search_required(path, &path, safe);
-
 	RUBY_DTRACE_HOOK(FIND_REQUIRE_RETURN, StringValuePtr(fname));
+
 	if (found) {
 	    if (!path || !(ftptr = load_lock(RSTRING_PTR(path)))) {
 		result = 0;
@@ -1018,6 +1017,7 @@ rb_require_internal(VALUE fname, int safe)
 
     rb_set_safe_level_force(saved.safe);
     if (state) {
+	RB_GC_GUARD(fname);
 	/* never TAG_RETURN */
 	return state;
     }

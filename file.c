@@ -200,7 +200,7 @@ rb_get_path_check_convert(VALUE obj, VALUE tmp, int level)
     return rb_str_new4(tmp);
 }
 
-static VALUE
+VALUE
 rb_get_path_check(VALUE obj, int level)
 {
     VALUE tmp = rb_get_path_check_to_string(obj, level);

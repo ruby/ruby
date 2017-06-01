@@ -1168,6 +1168,7 @@ VALUE rb_file_expand_path_fast(VALUE, VALUE);
 VALUE rb_file_expand_path_internal(VALUE, VALUE, int, int, VALUE);
 VALUE rb_get_path_check_to_string(VALUE, int);
 VALUE rb_get_path_check_convert(VALUE, VALUE, int);
+VALUE rb_get_path_check(VALUE, int);
 void Init_File(void);
 int ruby_is_fd_loadable(int fd);
 
