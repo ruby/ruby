@@ -437,7 +437,7 @@ VALUE rb_cDir;
 
 struct dir_data {
     DIR *dir;
-    VALUE path;
+    const VALUE path;
     rb_encoding *enc;
 };
 
@@ -466,7 +466,7 @@ dir_memsize(const void *ptr)
 static const rb_data_type_t dir_data_type = {
     "dir",
     {dir_mark, dir_free, dir_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static VALUE dir_close(VALUE);
@@ -487,7 +487,7 @@ dir_s_alloc(VALUE klass)
     VALUE obj = TypedData_Make_Struct(klass, struct dir_data, &dir_data_type, dirp);
 
     dirp->dir = NULL;
-    dirp->path = Qnil;
+    RB_OBJ_WRITE(obj, &dirp->path, Qnil);
     dirp->enc = NULL;
 
     return obj;
@@ -536,7 +536,7 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
     TypedData_Get_Struct(dir, struct dir_data, &dir_data_type, dp);
     if (dp->dir) closedir(dp->dir);
     dp->dir = NULL;
-    dp->path = Qnil;
+    RB_OBJ_WRITE(dir, &dp->path, Qnil);
     dp->enc = fsenc;
     path = RSTRING_PTR(dirname);
     dp->dir = opendir(path);
@@ -559,7 +559,7 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
 	    rb_syserr_fail_path(e, orig);
 	}
     }
-    dp->path = orig;
+    RB_OBJ_WRITE(dir, &dp->path, orig);
 
     return dir;
 }
