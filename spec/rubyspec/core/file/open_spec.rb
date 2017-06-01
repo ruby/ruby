@@ -522,10 +522,10 @@ describe "File.open" do
     platform_is :linux do
       if defined?(File::TMPFILE)
         it "creates an unnamed temporary file with File::TMPFILE" do
-          dir = tmp("").chomp("/")
-          rm_r @file
-          Dir["#{dir}/*"].should == []
+          dir = tmp("tmpfilespec")
+          mkdir_p dir
           begin
+            Dir["#{dir}/*"].should == []
             File.open(dir, "r+", flags: File::TMPFILE) do |io|
               io.write("ruby")
               io.flush
@@ -537,6 +537,8 @@ describe "File.open" do
             # EOPNOTSUPP: no support from the filesystem
             # EINVAL: presumably bug in glibc
             1.should == 1
+          ensure
+            rm_r dir
           end
         end
       end
