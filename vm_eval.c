@@ -404,7 +404,7 @@ check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc
 
     ret = basic_obj_respond_to_missing(th, klass, recv,
 				       ID2SYM(mid), PRIV);
-    if (!RTEST(ret)) return def;
+    if (!RTEST(ret) || ret == Qundef) return def;
     args.respond = respond > 0;
     args.respond_to_missing = (ret != Qundef);
     ret = def;
