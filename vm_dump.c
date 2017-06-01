@@ -107,7 +107,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	    iseq_name = RSTRING_PTR(cfp->iseq->body->location.label);
 	    line = rb_vm_get_sourceline(cfp);
 	    if (line) {
-		snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(cfp->iseq->body->location.path), line);
+		snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(rb_iseq_path(cfp->iseq)), line);
 	    }
 	}
     }

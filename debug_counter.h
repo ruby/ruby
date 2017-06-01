@@ -61,6 +61,11 @@ RB_DEBUG_COUNTER(obj_ary_embed)
 
 RB_DEBUG_COUNTER(obj_obj_ptr)
 RB_DEBUG_COUNTER(obj_obj_embed)
+
+/* load */
+RB_DEBUG_COUNTER(load_files)
+RB_DEBUG_COUNTER(load_path_is_not_realpath)
+
 #endif
 
 #ifndef RUBY_DEBUG_COUNTER_H

@@ -753,7 +753,7 @@ fill_path_and_lineno(rb_trace_arg_t *trace_arg)
 	rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(trace_arg->th, trace_arg->cfp);
 
 	if (cfp) {
-	    trace_arg->path = cfp->iseq->body->location.path;
+	    trace_arg->path = rb_iseq_path(cfp->iseq);
 	    trace_arg->lineno = rb_vm_get_sourceline(cfp);
 	}
 	else {

@@ -261,12 +261,38 @@ struct rb_call_cache {
 #define GetCoreDataFromValue(obj, type, ptr) ((ptr) = CoreDataFromValue((obj), type))
 
 typedef struct rb_iseq_location_struct {
-    VALUE path;
-    VALUE absolute_path;
-    VALUE base_label;
-    VALUE label;
+    VALUE pathobj;      /* String (path) or Array [path, realpath]. Frozen. */
+    VALUE base_label;   /* String */
+    VALUE label;        /* String */
     VALUE first_lineno; /* TODO: may be unsigned short */
 } rb_iseq_location_t;
+
+#define PATHOBJ_PATH     0
+#define PATHOBJ_REALPATH 1
+
+static inline VALUE
+pathobj_path(VALUE pathobj)
+{
+    if (RB_TYPE_P(pathobj, T_STRING)) {
+	return pathobj;
+    }
+    else {
+	VM_ASSERT(RB_TYPE_P(pathobj, T_ARRAY));
+	return RARRAY_AREF(pathobj, PATHOBJ_PATH);
+    }
+}
+
+static inline VALUE
+pathobj_realpath(VALUE pathobj)
+{
+    if (RB_TYPE_P(pathobj, T_STRING)) {
+	return pathobj;
+    }
+    else {
+	VM_ASSERT(RB_TYPE_P(pathobj, T_ARRAY));
+	return RARRAY_AREF(pathobj, PATHOBJ_REALPATH);
+    }
+}
 
 struct rb_iseq_constant_body {
     enum iseq_type {
@@ -842,16 +868,16 @@ typedef enum {
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /* node -> iseq */
-rb_iseq_t *rb_iseq_new         (NODE *node, VALUE name, VALUE path, VALUE absolute_path, const rb_iseq_t *parent, enum iseq_type);
-rb_iseq_t *rb_iseq_new_top     (NODE *node, VALUE name, VALUE path, VALUE absolute_path, const rb_iseq_t *parent);
-rb_iseq_t *rb_iseq_new_main    (NODE *node,             VALUE path, VALUE absolute_path, const rb_iseq_t *parent);
-rb_iseq_t *rb_iseq_new_with_opt(NODE* node, VALUE name, VALUE path, VALUE absolute_path, VALUE first_lineno,
+rb_iseq_t *rb_iseq_new         (NODE *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, enum iseq_type);
+rb_iseq_t *rb_iseq_new_top     (NODE *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent);
+rb_iseq_t *rb_iseq_new_main    (NODE *node,             VALUE path, VALUE realpath, const rb_iseq_t *parent);
+rb_iseq_t *rb_iseq_new_with_opt(NODE* node, VALUE name, VALUE path, VALUE realpath, VALUE first_lineno,
 				const rb_iseq_t *parent, enum iseq_type, const rb_compile_option_t*);
 
 /* src -> iseq */
 rb_iseq_t *rb_iseq_compile(VALUE src, VALUE file, VALUE line);
 rb_iseq_t *rb_iseq_compile_on_base(VALUE src, VALUE file, VALUE line, const struct rb_block *base_block);
-rb_iseq_t *rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE line, const struct rb_block *base_block, VALUE opt);
+rb_iseq_t *rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, const struct rb_block *base_block, VALUE opt);
 
 VALUE rb_iseq_disasm(const rb_iseq_t *iseq);
 int rb_iseq_disasm_insn(VALUE str, const VALUE *iseqval, size_t pos, const rb_iseq_t *iseq, VALUE child);
@@ -889,7 +915,7 @@ extern const rb_data_type_t ruby_binding_data_type;
 
 typedef struct {
     struct rb_block block;
-    VALUE path;
+    VALUE pathobj;
     unsigned short first_lineno;
 } rb_binding_t;
 
@@ -1417,7 +1443,13 @@ NORETURN(void rb_bug_context(const void *, const char *fmt, ...));
 RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_iseq_eval(const rb_iseq_t *iseq);
 VALUE rb_iseq_eval_main(const rb_iseq_t *iseq);
+VALUE rb_iseq_path(const rb_iseq_t *iseq);
+VALUE rb_iseq_realpath(const rb_iseq_t *iseq);
 RUBY_SYMBOL_EXPORT_END
+
+VALUE rb_iseq_pathobj_new(VALUE path, VALUE realpath);
+void rb_iseq_pathobj_set(const rb_iseq_t *iseq, VALUE path, VALUE realpath);
+
 int rb_thread_method_id_and_class(rb_thread_t *th, ID *idp, ID *called_idp, VALUE *klassp);
 
 VALUE rb_vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, int argc, const VALUE *argv, VALUE block_handler);

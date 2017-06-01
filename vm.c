@@ -902,7 +902,7 @@ rb_vm_make_binding(rb_thread_t *th, const rb_control_frame_t *src_cfp)
     vm_bind_update_env(bind, envval);
     bind->block.as.captured.self = cfp->self;
     bind->block.as.captured.code.iseq = cfp->iseq;
-    bind->path = ruby_level_cfp->iseq->body->location.path;
+    bind->pathobj = ruby_level_cfp->iseq->body->location.pathobj;
     bind->first_lineno = rb_vm_get_sourceline(ruby_level_cfp);
 
     return bindval;
@@ -911,7 +911,9 @@ rb_vm_make_binding(rb_thread_t *th, const rb_control_frame_t *src_cfp)
 const VALUE *
 rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars)
 {
-    VALUE envval, path = bind->path;
+    VALUE envval, pathobj = bind->pathobj;
+    VALUE path = pathobj_path(pathobj);
+    VALUE realpath = pathobj_realpath(pathobj);
     const struct rb_block *base_block;
     const rb_env_t *env;
     rb_thread_t *th = GET_THREAD();
@@ -932,7 +934,7 @@ rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars)
     node = NEW_NODE(NODE_SCOPE, dyns, 0, 0);
 
     if (base_iseq) {
-	iseq = rb_iseq_new(node, base_iseq->body->location.label, path, path, base_iseq, ISEQ_TYPE_EVAL);
+	iseq = rb_iseq_new(node, base_iseq->body->location.label, path, realpath, base_iseq, ISEQ_TYPE_EVAL);
     }
     else {
 	VALUE tempstr = rb_fstring_cstr("<temp>");
@@ -1234,7 +1236,7 @@ rb_sourcefilename(void)
     rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec.cfp);
 
     if (cfp) {
-	return cfp->iseq->body->location.path;
+	return rb_iseq_path(cfp->iseq);
     }
     else {
 	return Qnil;
@@ -1248,7 +1250,7 @@ rb_sourcefile(void)
     rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec.cfp);
 
     if (cfp) {
-	return RSTRING_PTR(cfp->iseq->body->location.path);
+	return RSTRING_PTR(rb_iseq_path(cfp->iseq));
     }
     else {
 	return 0;
@@ -1277,7 +1279,7 @@ rb_source_location(int *pline)
 
     if (cfp) {
 	if (pline) *pline = rb_vm_get_sourceline(cfp);
-	return cfp->iseq->body->location.path;
+	return rb_iseq_path(cfp->iseq);
     }
     else {
 	if (pline) *pline = 0;
@@ -2060,7 +2062,7 @@ rb_thread_current_status(const rb_thread_t *th)
 	    const rb_iseq_t *iseq = cfp->iseq;
 	    int line_no = rb_vm_get_sourceline(cfp);
 	    str = rb_sprintf("%"PRIsVALUE":%d:in `%"PRIsVALUE"'",
-			     iseq->body->location.path, line_no, iseq->body->location.label);
+			     rb_iseq_path(iseq), line_no, iseq->body->location.label);
 	}
     }
     else if ((me = rb_vm_frame_method_entry(cfp)) && me->def->original_id) {
@@ -3085,7 +3087,8 @@ rb_vm_set_progname(VALUE filename)
     rb_thread_t *th = GET_VM()->main_thread;
     rb_control_frame_t *cfp = (void *)(th->ec.stack + th->ec.stack_size);
     --cfp;
-    RB_OBJ_WRITE(cfp->iseq, &cfp->iseq->body->location.path, filename);
+
+    rb_iseq_pathobj_set(cfp->iseq, rb_str_dup(filename), rb_iseq_realpath(cfp->iseq));
 }
 
 extern const struct st_hash_type rb_fstring_hash_type;

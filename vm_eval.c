@@ -1296,20 +1296,20 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	rb_cref_t *cref = cref_arg;
 	rb_binding_t *bind = 0;
 	const rb_iseq_t *iseq;
-	VALUE absolute_path = Qnil;
+	VALUE realpath = Qnil;
 	VALUE fname;
 
 	if (file != Qundef) {
-	    absolute_path = file;
+	    realpath = file;
 	}
 
 	if (!NIL_P(scope)) {
 	    bind = Check_TypedStruct(scope, &ruby_binding_data_type);
 
-	    if (NIL_P(absolute_path) && !NIL_P(bind->path)) {
-		file = bind->path;
+	    if (NIL_P(realpath)) {
+		file = pathobj_path(bind->pathobj);
+		realpath = pathobj_realpath(bind->pathobj);
 		line = bind->first_lineno;
-		absolute_path = rb_current_realfilepath();
 	    }
 	    base_block = &bind->block;
 	}
@@ -1332,13 +1332,8 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	    fname = rb_usascii_str_new_cstr("(eval)");
 	}
 
-	if (RTEST(fname))
-	    fname = rb_fstring(fname);
-	if (RTEST(absolute_path))
-	    absolute_path = rb_fstring(absolute_path);
-
 	/* make eval iseq */
-	iseq = rb_iseq_compile_with_option(src, fname, absolute_path, INT2FIX(line), base_block, Qnil);
+	iseq = rb_iseq_compile_with_option(src, fname, realpath, INT2FIX(line), base_block, Qnil);
 
 	if (!iseq) {
 	    rb_exc_raise(adjust_backtrace_in_eval(th, th->errinfo));
@@ -2180,7 +2175,7 @@ rb_current_realfilepath(void)
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *cfp = th->ec.cfp;
     cfp = vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
-    if (cfp != 0) return cfp->iseq->body->location.absolute_path;
+    if (cfp != 0) return rb_iseq_realpath(cfp->iseq);
     return Qnil;
 }
 

@@ -112,8 +112,7 @@ VALUE rb_iseqw_line_trace_specify(VALUE iseqval, VALUE pos, VALUE set);
 VALUE rb_iseqw_new(const rb_iseq_t *iseq);
 const rb_iseq_t *rb_iseqw_to_iseq(VALUE iseqw);
 
-VALUE rb_iseq_path(const rb_iseq_t *iseq);
-VALUE rb_iseq_absolute_path(const rb_iseq_t *iseq);
+VALUE rb_iseq_absolute_path(const rb_iseq_t *iseq); /* obsolete */
 VALUE rb_iseq_label(const rb_iseq_t *iseq);
 VALUE rb_iseq_base_label(const rb_iseq_t *iseq);
 VALUE rb_iseq_first_lineno(const rb_iseq_t *iseq);

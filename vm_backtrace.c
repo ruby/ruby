@@ -232,7 +232,7 @@ location_path(rb_backtrace_location_t *loc)
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
       case LOCATION_TYPE_ISEQ_CALCED:
-	return loc->body.iseq.iseq->body->location.path;
+	return rb_iseq_path(loc->body.iseq.iseq);
       case LOCATION_TYPE_CFUNC:
 	if (loc->body.cfunc.prev_loc) {
 	    return location_path(loc->body.cfunc.prev_loc);
@@ -260,20 +260,20 @@ location_path_m(VALUE self)
 }
 
 static VALUE
-location_absolute_path(rb_backtrace_location_t *loc)
+location_realpath(rb_backtrace_location_t *loc)
 {
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
       case LOCATION_TYPE_ISEQ_CALCED:
-	return loc->body.iseq.iseq->body->location.absolute_path;
+	return rb_iseq_realpath(loc->body.iseq.iseq);
       case LOCATION_TYPE_CFUNC:
 	if (loc->body.cfunc.prev_loc) {
-	    return location_absolute_path(loc->body.cfunc.prev_loc);
+	    return location_realpath(loc->body.cfunc.prev_loc);
 	}
 	return Qnil;
       case LOCATION_TYPE_IFUNC:
       default:
-	rb_bug("location_absolute_path: unreachable");
+	rb_bug("location_realpath: unreachable");
 	UNREACHABLE;
     }
 }
@@ -286,7 +286,7 @@ location_absolute_path(rb_backtrace_location_t *loc)
 static VALUE
 location_absolute_path_m(VALUE self)
 {
-    return location_absolute_path(location_ptr(self));
+    return location_realpath(location_ptr(self));
 }
 
 static VALUE
@@ -314,20 +314,20 @@ location_to_str(rb_backtrace_location_t *loc)
 
     switch (loc->type) {
       case LOCATION_TYPE_ISEQ:
-	file = loc->body.iseq.iseq->body->location.path;
+	file = rb_iseq_path(loc->body.iseq.iseq);
 	name = loc->body.iseq.iseq->body->location.label;
 
 	lineno = loc->body.iseq.lineno.lineno = calc_lineno(loc->body.iseq.iseq, loc->body.iseq.lineno.pc);
 	loc->type = LOCATION_TYPE_ISEQ_CALCED;
 	break;
       case LOCATION_TYPE_ISEQ_CALCED:
-	file = loc->body.iseq.iseq->body->location.path;
+	file = rb_iseq_path(loc->body.iseq.iseq);
 	lineno = loc->body.iseq.lineno.lineno;
 	name = loc->body.iseq.iseq->body->location.label;
 	break;
       case LOCATION_TYPE_CFUNC:
 	if (loc->body.cfunc.prev_loc) {
-	    file = loc->body.cfunc.prev_loc->body.iseq.iseq->body->location.path;
+	    file = rb_iseq_path(loc->body.cfunc.prev_loc->body.iseq.iseq);
 	    lineno = location_lineno(loc->body.cfunc.prev_loc);
 	}
 	else {
@@ -686,7 +686,7 @@ oldbt_iter_iseq(void *ptr, const rb_control_frame_t *cfp)
     const rb_iseq_t *iseq = cfp->iseq;
     const VALUE *pc = cfp->pc;
     struct oldbt_arg *arg = (struct oldbt_arg *)ptr;
-    VALUE file = arg->filename = iseq->body->location.path;
+    VALUE file = arg->filename = rb_iseq_path(iseq);
     VALUE name = iseq->body->location.label;
     int lineno = arg->lineno = calc_lineno(iseq, pc);
 
@@ -1314,7 +1314,7 @@ VALUE
 rb_profile_frame_absolute_path(VALUE frame)
 {
     const rb_iseq_t *iseq = frame2iseq(frame);
-    return iseq ? rb_iseq_absolute_path(iseq) : Qnil;
+    return iseq ? rb_iseq_realpath(iseq) : Qnil;
 }
 
 VALUE

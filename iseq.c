@@ -107,16 +107,13 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 {
     RUBY_MARK_ENTER("iseq");
 
-    RUBY_GC_INFO("%s @ %s\n", RSTRING_PTR(iseq->body->location.label), RSTRING_PTR(iseq->body->location.path));
-
     if (iseq->body) {
 	const struct rb_iseq_constant_body *body = iseq->body;
 
 	RUBY_MARK_UNLESS_NULL(body->mark_ary);
 	rb_gc_mark(body->location.label);
 	rb_gc_mark(body->location.base_label);
-	rb_gc_mark(body->location.path);
-	RUBY_MARK_UNLESS_NULL(body->location.absolute_path);
+	rb_gc_mark(body->location.pathobj);
 	RUBY_MARK_UNLESS_NULL((VALUE)body->parent_iseq);
     }
 
@@ -216,17 +213,38 @@ iseq_alloc(void)
     return iseq;
 }
 
-static rb_iseq_location_t *
-iseq_location_setup(rb_iseq_t *iseq, VALUE path, VALUE absolute_path, VALUE name, VALUE first_lineno)
+VALUE
+rb_iseq_pathobj_new(VALUE path, VALUE realpath)
 {
-    rb_iseq_location_t *loc = &iseq->body->location;
-    RB_OBJ_WRITE(iseq, &loc->path, path);
-    if (RTEST(absolute_path) && rb_str_cmp(path, absolute_path) == 0) {
-	RB_OBJ_WRITE(iseq, &loc->absolute_path, path);
+    VALUE pathobj;
+    VM_ASSERT(RB_TYPE_P(path, T_STRING));
+    VM_ASSERT(realpath == Qnil || RB_TYPE_P(realpath, T_STRING));
+
+    if (path == realpath ||
+	(!NIL_P(realpath) && rb_str_cmp(path, realpath) == 0)) {
+	pathobj = rb_fstring(path);
     }
     else {
-	RB_OBJ_WRITE(iseq, &loc->absolute_path, absolute_path);
+	if (!NIL_P(realpath)) realpath = rb_fstring(realpath);
+	pathobj = rb_ary_new_from_args(2, rb_fstring(path), realpath);
+	rb_obj_freeze(pathobj);
     }
+    return pathobj;
+}
+
+void
+rb_iseq_pathobj_set(const rb_iseq_t *iseq, VALUE path, VALUE realpath)
+{
+    RB_OBJ_WRITE(iseq, &iseq->body->location.pathobj,
+		 rb_iseq_pathobj_new(path, realpath));
+}
+
+static rb_iseq_location_t *
+iseq_location_setup(rb_iseq_t *iseq, VALUE name, VALUE path, VALUE realpath, VALUE first_lineno)
+{
+    rb_iseq_location_t *loc = &iseq->body->location;
+
+    rb_iseq_pathobj_set(iseq, path, realpath);
     RB_OBJ_WRITE(iseq, &loc->label, name);
     RB_OBJ_WRITE(iseq, &loc->base_label, name);
     loc->first_lineno = first_lineno;
@@ -267,7 +285,7 @@ rb_iseq_add_mark_object(const rb_iseq_t *iseq, VALUE obj)
 
 static VALUE
 prepare_iseq_build(rb_iseq_t *iseq,
-		   VALUE name, VALUE path, VALUE absolute_path, VALUE first_lineno,
+		   VALUE name, VALUE path, VALUE realpath, VALUE first_lineno,
 		   const rb_iseq_t *parent, enum iseq_type type,
 		   const rb_compile_option_t *option)
 {
@@ -281,9 +299,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
     set_relation(iseq, parent);
 
     name = rb_fstring(name);
-    path = rb_fstring(path);
-    if (RTEST(absolute_path)) absolute_path = rb_fstring(absolute_path);
-    iseq_location_setup(iseq, path, absolute_path, name, first_lineno);
+    iseq_location_setup(iseq, name, path, realpath, first_lineno);
     if (iseq != iseq->body->local_iseq) {
 	RB_OBJ_WRITE(iseq, &iseq->body->location.base_label, iseq->body->local_iseq->body->location.label);
     }
@@ -311,7 +327,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
     if (option->coverage_enabled) {
 	VALUE coverages = rb_get_coverages();
 	if (RTEST(coverages)) {
-	    coverage = rb_hash_lookup(coverages, path);
+	    coverage = rb_hash_lookup(coverages, rb_iseq_path(iseq));
 	    if (NIL_P(coverage)) coverage = Qfalse;
 	}
     }
@@ -329,8 +345,9 @@ cleanup_iseq_build(rb_iseq_t *iseq)
     compile_data_free(data);
 
     if (RTEST(err)) {
+	VALUE path = pathobj_path(iseq->body->location.pathobj);
 	if (err == Qtrue) err = rb_exc_new_cstr(rb_eSyntaxError, "compile error");
-	rb_funcallv(err, rb_intern("set_backtrace"), 1, &iseq->body->location.path);
+	rb_funcallv(err, rb_intern("set_backtrace"), 1, &path);
 	rb_exc_raise(err);
     }
     return Qtrue;
@@ -438,25 +455,25 @@ make_compile_option_value(rb_compile_option_t *option)
 }
 
 rb_iseq_t *
-rb_iseq_new(NODE *node, VALUE name, VALUE path, VALUE absolute_path,
+rb_iseq_new(NODE *node, VALUE name, VALUE path, VALUE realpath,
 	    const rb_iseq_t *parent, enum iseq_type type)
 {
-    return rb_iseq_new_with_opt(node, name, path, absolute_path, INT2FIX(0), parent, type,
+    return rb_iseq_new_with_opt(node, name, path, realpath, INT2FIX(0), parent, type,
 				&COMPILE_OPTION_DEFAULT);
 }
 
 rb_iseq_t *
-rb_iseq_new_top(NODE *node, VALUE name, VALUE path, VALUE absolute_path, const rb_iseq_t *parent)
+rb_iseq_new_top(NODE *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent)
 {
-    return rb_iseq_new_with_opt(node, name, path, absolute_path, INT2FIX(0), parent, ISEQ_TYPE_TOP,
+    return rb_iseq_new_with_opt(node, name, path, realpath, INT2FIX(0), parent, ISEQ_TYPE_TOP,
 				&COMPILE_OPTION_DEFAULT);
 }
 
 rb_iseq_t *
-rb_iseq_new_main(NODE *node, VALUE path, VALUE absolute_path, const rb_iseq_t *parent)
+rb_iseq_new_main(NODE *node, VALUE path, VALUE realpath, const rb_iseq_t *parent)
 {
     return rb_iseq_new_with_opt(node, rb_fstring_cstr("<main>"),
-				path, absolute_path, INT2FIX(0),
+				path, realpath, INT2FIX(0),
 				parent, ISEQ_TYPE_MAIN, &COMPILE_OPTION_DEFAULT);
 }
 
@@ -475,7 +492,7 @@ iseq_translate(rb_iseq_t *iseq)
 }
 
 rb_iseq_t *
-rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE path, VALUE absolute_path,
+rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE path, VALUE realpath,
 		     VALUE first_lineno, const rb_iseq_t *parent,
 		     enum iseq_type type, const rb_compile_option_t *option)
 {
@@ -483,7 +500,7 @@ rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE path, VALUE absolute_path,
     rb_iseq_t *iseq = iseq_alloc();
 
     if (!option) option = &COMPILE_OPTION_DEFAULT;
-    prepare_iseq_build(iseq, name, path, absolute_path, first_lineno, parent, type, option);
+    prepare_iseq_build(iseq, name, path, realpath, first_lineno, parent, type, option);
 
     rb_iseq_compile_node(iseq, node);
     cleanup_iseq_build(iseq);
@@ -542,7 +559,7 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
     rb_iseq_t *iseq = iseq_alloc();
 
     VALUE magic, version1, version2, format_type, misc;
-    VALUE name, path, absolute_path, first_lineno;
+    VALUE name, path, realpath, first_lineno;
     VALUE type, body, locals, params, exception;
 
     st_data_t iseq_type;
@@ -565,8 +582,8 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
 
     name        = CHECK_STRING(rb_ary_entry(data, i++));
     path        = CHECK_STRING(rb_ary_entry(data, i++));
-    absolute_path = rb_ary_entry(data, i++);
-    absolute_path = NIL_P(absolute_path) ? Qnil : CHECK_STRING(absolute_path);
+    realpath    = rb_ary_entry(data, i++);
+    realpath    = NIL_P(realpath) ? Qnil : CHECK_STRING(realpath);
     first_lineno = CHECK_INTEGER(rb_ary_entry(data, i++));
 
     type        = CHECK_SYMBOL(rb_ary_entry(data, i++));
@@ -584,7 +601,7 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
 
     make_compile_option(&option, opt);
     option.peephole_optimization = FALSE; /* because peephole optimization can modify original iseq */
-    prepare_iseq_build(iseq, name, path, absolute_path, first_lineno,
+    prepare_iseq_build(iseq, name, path, realpath, first_lineno,
 		       parent, (enum iseq_type)iseq_type, &option);
 
     rb_iseq_build_from_ary(iseq, misc, locals, params, exception, body);
@@ -612,7 +629,7 @@ rb_iseq_load(VALUE data, VALUE parent, VALUE opt)
 }
 
 rb_iseq_t *
-rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE line, const struct rb_block *base_block, VALUE opt)
+rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, const struct rb_block *base_block, VALUE opt)
 {
     rb_thread_t *th = GET_THREAD();
     rb_iseq_t *iseq = NULL;
@@ -652,7 +669,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE absolute_path, VALUE li
 	INITIALIZED VALUE label = parent ?
 	    parent->body->location.label :
 	    rb_fstring_cstr("<compiled>");
-	iseq = rb_iseq_new_with_opt(node, label, file, absolute_path, line,
+	iseq = rb_iseq_new_with_opt(node, label, file, realpath, line,
 				    parent, type, &option);
     }
 
@@ -674,13 +691,19 @@ rb_iseq_compile_on_base(VALUE src, VALUE file, VALUE line, const struct rb_block
 VALUE
 rb_iseq_path(const rb_iseq_t *iseq)
 {
-    return iseq->body->location.path;
+    return pathobj_path(iseq->body->location.pathobj);
+}
+
+VALUE
+rb_iseq_realpath(const rb_iseq_t *iseq)
+{
+    return pathobj_realpath(iseq->body->location.pathobj);
 }
 
 VALUE
 rb_iseq_absolute_path(const rb_iseq_t *iseq)
 {
-    return iseq->body->location.absolute_path;
+    return rb_iseq_realpath(iseq);
 }
 
 VALUE
@@ -967,7 +990,7 @@ iseqw_inspect(VALUE self)
     else {
 	return rb_sprintf("<%s:%s@%s>",
 			  rb_obj_classname(self),
-			  RSTRING_PTR(iseq->body->location.label), RSTRING_PTR(iseq->body->location.path));
+			  RSTRING_PTR(iseq->body->location.label), RSTRING_PTR(rb_iseq_path(iseq)));
     }
 }
 
@@ -1019,7 +1042,7 @@ iseqw_path(VALUE self)
 static VALUE
 iseqw_absolute_path(VALUE self)
 {
-    return rb_iseq_absolute_path(iseqw_check(self));
+    return rb_iseq_realpath(iseqw_check(self));
 }
 
 /*  Returns the label of this instruction sequence.
@@ -1484,7 +1507,7 @@ iseq_inspect(const rb_iseq_t *iseq)
 	return rb_sprintf("#<ISeq: uninitialized>");
     }
     else {
-	return rb_sprintf("#<ISeq:%s@%s>", RSTRING_PTR(iseq->body->location.label), RSTRING_PTR(iseq->body->location.path));
+	return rb_sprintf("#<ISeq:%s@%s>", RSTRING_PTR(iseq->body->location.label), RSTRING_PTR(rb_iseq_path(iseq)));
     }
 }
 
@@ -2087,8 +2110,8 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     rb_ary_push(val, INT2FIX(1));
     rb_ary_push(val, misc);
     rb_ary_push(val, iseq->body->location.label);
-    rb_ary_push(val, iseq->body->location.path);
-    rb_ary_push(val, iseq->body->location.absolute_path);
+    rb_ary_push(val, rb_iseq_path(iseq));
+    rb_ary_push(val, rb_iseq_realpath(iseq));
     rb_ary_push(val, iseq->body->location.first_lineno);
     rb_ary_push(val, type);
     rb_ary_push(val, locals);

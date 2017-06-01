@@ -267,7 +267,7 @@ method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, 
 		cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec.cfp);
 
 		if (cfp && (line = rb_vm_get_sourceline(cfp))) {
-		    VALUE location = rb_ary_new3(2, cfp->iseq->body->location.path, INT2FIX(line));
+		    VALUE location = rb_ary_new3(2, rb_iseq_path(cfp->iseq), INT2FIX(line));
 		    RB_OBJ_WRITE(me, &def->body.attr.location, rb_ary_freeze(location));
 		}
 		else {
@@ -558,7 +558,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 		break;
 	    }
 	    if (iseq) {
-		rb_compile_warning(RSTRING_PTR(iseq->body->location.path),
+		rb_compile_warning(RSTRING_PTR(rb_iseq_path(iseq)),
 				   FIX2INT(iseq->body->location.first_lineno),
 				   "previous definition of %"PRIsVALUE" was here",
 				   rb_id2str(old_def->original_id));

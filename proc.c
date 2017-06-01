@@ -276,13 +276,9 @@ static void
 binding_mark(void *ptr)
 {
     rb_binding_t *bind = ptr;
-
     RUBY_MARK_ENTER("binding");
-
     block_mark(&bind->block);
-
-    RUBY_MARK_UNLESS_NULL(bind->path);
-
+    rb_gc_mark(bind->pathobj);
     RUBY_MARK_LEAVE("binding");
 }
 
@@ -320,7 +316,7 @@ binding_dup(VALUE self)
     GetBindingPtr(self, src);
     GetBindingPtr(bindval, dst);
     dst->block = src->block;
-    dst->path = src->path;
+    dst->pathobj = src->pathobj;
     dst->first_lineno = src->first_lineno;
     return bindval;
 }
@@ -1073,7 +1069,7 @@ iseq_location(const rb_iseq_t *iseq)
 
     if (!iseq) return Qnil;
     rb_iseq_check(iseq);
-    loc[0] = iseq->body->location.path;
+    loc[0] = rb_iseq_path(iseq);
     loc[1] = iseq->body->location.first_lineno;
 
     return rb_ary_new4(2, loc);
@@ -1225,7 +1221,7 @@ proc_to_s_(VALUE self, const rb_proc_t *proc)
 	{
 	    const rb_iseq_t *iseq = rb_iseq_check(block->as.captured.code.iseq);
 	    rb_str_catf(str, "%p@%"PRIsVALUE":%d", (void *)self,
-			iseq->body->location.path,
+			rb_iseq_path(iseq),
 			FIX2INT(iseq->body->location.first_lineno));
 	}
 	break;
@@ -2777,12 +2773,12 @@ proc_binding(VALUE self)
 
     if (iseq) {
 	rb_iseq_check(iseq);
-	bind->path = iseq->body->location.path;
+	bind->pathobj = iseq->body->location.pathobj;
 	bind->first_lineno = FIX2INT(rb_iseq_first_lineno(iseq));
     }
     else {
-	bind->path = Qnil;
-	bind->first_lineno = 0;
+	bind->pathobj = rb_iseq_pathobj_new(rb_fstring_cstr("(binding)"), Qnil);
+	bind->first_lineno = 1;
     }
 
     return bindval;

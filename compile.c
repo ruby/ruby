@@ -175,9 +175,6 @@ struct iseq_compile_data_ensure_node_stack {
 #define NEW_LABEL(l) new_label_body(iseq, (l))
 #define LABEL_FORMAT "<L%03d>"
 
-#define iseq_path(iseq) ((iseq)->body->location.path)
-#define iseq_absolute_path(iseq) ((iseq)->body->location.absolute_path)
-
 #define NEW_ISEQ(node, name, type, line_no) \
   new_child_iseq(iseq, (node), rb_fstring(name), 0, (type), (line_no))
 
@@ -328,7 +325,7 @@ static void
 append_compile_error(rb_iseq_t *iseq, int line, const char *fmt, ...)
 {
     VALUE err_info = ISEQ_COMPILE_DATA(iseq)->err_info;
-    VALUE file = iseq->body->location.path;
+    VALUE file = rb_iseq_path(iseq);
     VALUE err = err_info == Qtrue ? Qfalse : err_info;
     va_list args;
 
@@ -349,7 +346,7 @@ compile_bug(rb_iseq_t *iseq, int line, const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    rb_report_bug_valist(iseq->body->location.path, line, fmt, args);
+    rb_report_bug_valist(rb_iseq_path(iseq), line, fmt, args);
     va_end(args);
     abort();
 }
@@ -532,7 +529,7 @@ iseq_add_mark_object(const rb_iseq_t *iseq, VALUE v)
     return COMPILE_OK;
 }
 
-#define ruby_sourcefile		RSTRING_PTR(iseq->body->location.path)
+#define ruby_sourcefile		RSTRING_PTR(rb_iseq_path(iseq))
 
 static int
 iseq_add_mark_object_compile_time(const rb_iseq_t *iseq, VALUE v)
@@ -1116,7 +1113,7 @@ new_child_iseq(rb_iseq_t *iseq, NODE *node,
 
     debugs("[new_child_iseq]> ---------------------------------------\n");
     ret_iseq = rb_iseq_new_with_opt(node, name,
-				    iseq_path(iseq), iseq_absolute_path(iseq),
+				    rb_iseq_path(iseq), rb_iseq_realpath(iseq),
 				    INT2FIX(line_no), parent, type, ISEQ_COMPILE_DATA(iseq)->option);
     debugs("[new_child_iseq]< ---------------------------------------\n");
     iseq_add_mark_object(iseq, (VALUE)ret_iseq);
@@ -5809,7 +5806,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	    }
 	    else {
 		if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
-		    VALUE debug_info = rb_ary_new_from_args(2, iseq->body->location.path, INT2FIX(line));
+		    VALUE debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX(line));
 		    VALUE str = rb_str_dup(node->nd_lit);
 		    rb_ivar_set(str, id_debug_created_info, rb_obj_freeze(debug_info));
 		    ADD_INSN1(ret, line, putobject, rb_obj_freeze(str));
@@ -5832,7 +5829,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	    if (ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal) {
 		VALUE debug_info = Qnil;
 		if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
-		    debug_info = rb_ary_new_from_args(2, iseq->body->location.path, INT2FIX(line));
+		    debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX(line));
 		    iseq_add_mark_object_compile_time(iseq, rb_obj_freeze(debug_info));
 		}
 		ADD_INSN1(ret, line, freezestring, debug_info);
@@ -7148,7 +7145,7 @@ rb_local_defined(ID id, const struct rb_block *base_block)
 }
 
 static int
-caller_location(VALUE *path, VALUE *absolute_path)
+caller_location(VALUE *path, VALUE *realpath)
 {
     const rb_thread_t *const th = GET_THREAD();
     const rb_control_frame_t *const cfp =
@@ -7156,13 +7153,13 @@ caller_location(VALUE *path, VALUE *absolute_path)
 
     if (cfp) {
 	int line = rb_vm_get_sourceline(cfp);
-	*path = cfp->iseq->body->location.path;
-	*absolute_path = cfp->iseq->body->location.absolute_path;
+	*path = rb_iseq_path(cfp->iseq);
+	*realpath = rb_iseq_realpath(cfp->iseq);
 	return line;
     }
     else {
 	*path = rb_fstring_cstr("<compiled>");
-	*absolute_path = *path;
+	*realpath = *path;
 	return 1;
     }
 }
@@ -7177,14 +7174,14 @@ static const rb_iseq_t *
 method_for_self(VALUE name, VALUE arg, rb_insn_func_t func,
 		VALUE (*build)(rb_iseq_t *, LINK_ANCHOR *const, VALUE))
 {
-    VALUE path, absolute_path;
+    VALUE path, realpath;
     accessor_args acc;
 
     acc.arg = arg;
     acc.func = func;
-    acc.line = caller_location(&path, &absolute_path);
+    acc.line = caller_location(&path, &realpath);
     return rb_iseq_new_with_opt((NODE *)IFUNC_NEW(build, (VALUE)&acc, 0),
-				rb_sym2str(name), path, absolute_path,
+				rb_sym2str(name), path, realpath,
 				INT2FIX(acc.line), 0, ISEQ_TYPE_METHOD, 0);
 }
 
@@ -7797,8 +7794,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     struct rb_iseq_constant_body dump_body;
     dump_body = *iseq->body;
 
-    dump_body.location.path = ibf_dump_object(dump, dump_body.location.path);
-    dump_body.location.absolute_path = ibf_dump_object(dump, dump_body.location.absolute_path);
+    dump_body.location.pathobj = ibf_dump_object(dump, dump_body.location.pathobj); /* TODO: freeze */
     dump_body.location.base_label = ibf_dump_object(dump, dump_body.location.base_label);
     dump_body.location.label = ibf_dump_object(dump, dump_body.location.label);
 
@@ -7847,8 +7843,7 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
 
     RB_OBJ_WRITE(iseq, &load_body->mark_ary, iseq_mark_ary_create((int)body->mark_ary));
 
-    RB_OBJ_WRITE(iseq, &load_body->location.path,          ibf_load_location_str(load, body->location.path));
-    RB_OBJ_WRITE(iseq, &load_body->location.absolute_path, ibf_load_location_str(load, body->location.absolute_path));
+    RB_OBJ_WRITE(iseq, &load_body->location.pathobj,       ibf_load_location_str(load, body->location.pathobj));
     RB_OBJ_WRITE(iseq, &load_body->location.base_label,    ibf_load_location_str(load, body->location.base_label));
     RB_OBJ_WRITE(iseq, &load_body->location.label,         ibf_load_location_str(load, body->location.label));
     load_body->location.first_lineno = body->location.first_lineno;
