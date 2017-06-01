@@ -404,7 +404,7 @@ check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc
 
     ret = basic_obj_respond_to_missing(th, klass, recv,
 				       ID2SYM(mid), PRIV);
-    if (!RTEST(ret) || ret == Qundef) return def;
+    if (!RTEST(ret)) return def;
     args.respond = respond > 0;
     args.respond_to_missing = (ret != Qundef);
     ret = def;
@@ -448,8 +448,10 @@ rb_check_funcall_default(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE 
 
     me = rb_search_method_entry(recv, mid);
     if (!check_funcall_callable(th, me)) {
-	return check_funcall_missing(th, klass, recv, mid, argc, argv,
-				     respond, def);
+	VALUE ret = check_funcall_missing(th, klass, recv, mid, argc, argv,
+					  respond, def);
+	if (ret == Qundef) ret = def;
+	return ret;
     }
     stack_check(th);
     return vm_call0(th, recv, mid, argc, argv, me);
