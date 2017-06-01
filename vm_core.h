@@ -914,8 +914,8 @@ extern const rb_data_type_t ruby_binding_data_type;
   GetCoreDataFromValue((obj), rb_binding_t, (ptr))
 
 typedef struct {
-    struct rb_block block;
-    VALUE pathobj;
+    const struct rb_block block;
+    const VALUE pathobj;
     unsigned short first_lineno;
 } rb_binding_t;
 
@@ -1195,6 +1195,8 @@ VM_STACK_ENV_WRITE(const VALUE *ep, int index, VALUE v)
 
 const VALUE *rb_vm_ep_local_ep(const VALUE *ep);
 const VALUE *rb_vm_proc_local_ep(VALUE proc);
+void rb_vm_block_ep_update(VALUE obj, const struct rb_block *dst, const VALUE *ep);
+void rb_vm_block_copy(VALUE obj, const struct rb_block *dst, const struct rb_block *src);
 
 VALUE rb_vm_frame_block_handler(const rb_control_frame_t *cfp);
 
@@ -1458,7 +1460,7 @@ VALUE rb_vm_make_proc(rb_thread_t *th, const struct rb_captured_block *captured,
 VALUE rb_vm_make_binding(rb_thread_t *th, const rb_control_frame_t *src_cfp);
 VALUE rb_vm_env_local_variables(const rb_env_t *env);
 const rb_env_t *rb_vm_env_prev_env(const rb_env_t *env);
-const VALUE *rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars);
+const VALUE *rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const ID *dynvars);
 void rb_vm_inc_const_missing_count(void);
 void rb_vm_gvl_destroy(rb_vm_t *vm);
 VALUE rb_vm_call(rb_thread_t *th, VALUE recv, VALUE id, int argc,

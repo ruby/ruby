@@ -262,12 +262,19 @@ vm_cref_dump(const char *mesg, const rb_cref_t *cref)
     }
 }
 
+void
+rb_vm_block_ep_update(VALUE obj, const struct rb_block *dst, const VALUE *ep)
+{
+    *((const VALUE **)&dst->as.captured.ep) = ep;
+    RB_OBJ_WRITTEN(obj, Qundef, VM_ENV_ENVVAL(ep));
+}
+
 static void
-vm_bind_update_env(rb_binding_t *bind, VALUE envval)
+vm_bind_update_env(VALUE bindval, rb_binding_t *bind, VALUE envval)
 {
     const rb_env_t *env = (rb_env_t *)envval;
-    bind->block.as.captured.code.iseq = env->iseq;
-    bind->block.as.captured.ep = env->ep;
+    RB_OBJ_WRITE(bindval, &bind->block.as.captured.code.iseq, env->iseq);
+    rb_vm_block_ep_update(bindval, &bind->block, env->ep);
 }
 
 #if VM_COLLECT_USAGE_DETAILS
@@ -467,7 +474,7 @@ vm_set_main_stack(rb_thread_t *th, const rb_iseq_t *iseq)
 
     /* save binding */
     if (iseq->body->local_table_size > 0) {
-	vm_bind_update_env(bind, vm_make_env_object(th, th->ec.cfp));
+	vm_bind_update_env(toplevel_binding, bind, vm_make_env_object(th, th->ec.cfp));
     }
 }
 
@@ -806,8 +813,7 @@ rb_proc_create_from_captured(VALUE klass,
     /* copy block */
     RB_OBJ_WRITE(procval, &proc->block.as.captured.self, captured->self);
     RB_OBJ_WRITE(procval, &proc->block.as.captured.code.val, captured->code.val);
-    *((const VALUE **)&proc->block.as.captured.ep) = captured->ep;
-    RB_OBJ_WRITTEN(procval, Qundef, VM_ENV_ENVVAL(captured->ep));
+    rb_vm_block_ep_update(procval, &proc->block, captured->ep);
 
     vm_block_type_set(&proc->block, block_type);
     proc->safe_level = safe_level;
@@ -815,6 +821,26 @@ rb_proc_create_from_captured(VALUE klass,
     proc->is_lambda = is_lambda;
 
     return procval;
+}
+
+void
+rb_vm_block_copy(VALUE obj, const struct rb_block *dst, const struct rb_block *src)
+{
+    /* copy block */
+    switch (vm_block_type(src)) {
+      case block_type_iseq:
+      case block_type_ifunc:
+	RB_OBJ_WRITE(obj, &dst->as.captured.self, src->as.captured.self);
+	RB_OBJ_WRITE(obj, &dst->as.captured.code.val, src->as.captured.code.val);
+	rb_vm_block_ep_update(obj, dst, src->as.captured.ep);
+	break;
+      case block_type_symbol:
+	RB_OBJ_WRITE(obj, &dst->as.symbol, src->as.symbol);
+	break;
+      case block_type_proc:
+	RB_OBJ_WRITE(obj, &dst->as.proc, src->as.proc);
+	break;
+    }
 }
 
 VALUE
@@ -825,23 +851,7 @@ rb_proc_create(VALUE klass, const struct rb_block *block,
     rb_proc_t *proc = RTYPEDDATA_DATA(procval);
 
     VM_ASSERT(VM_EP_IN_HEAP_P(GET_THREAD(), vm_block_ep(block)));
-
-    /* copy block */
-    switch (vm_block_type(block)) {
-      case block_type_iseq:
-      case block_type_ifunc:
-	RB_OBJ_WRITE(procval, &proc->block.as.captured.self, block->as.captured.self);
-	RB_OBJ_WRITE(procval, &proc->block.as.captured.code.val, block->as.captured.code.val);
-	*((const VALUE **)&proc->block.as.captured.ep) = block->as.captured.ep;
-	RB_OBJ_WRITTEN(procval, Qundef, VM_ENV_ENVVAL(block->as.captured.ep));
-	break;
-      case block_type_symbol:
-	RB_OBJ_WRITE(procval, &proc->block.as.symbol, block->as.symbol);
-	break;
-      case block_type_proc:
-	RB_OBJ_WRITE(procval, &proc->block.as.proc, block->as.proc);
-	break;
-    }
+    rb_vm_block_copy(procval, &proc->block, block);
     vm_block_type_set(&proc->block, block->type);
     proc->safe_level = safe_level;
     proc->is_from_method = is_from_method;
@@ -899,17 +909,17 @@ rb_vm_make_binding(rb_thread_t *th, const rb_control_frame_t *src_cfp)
 
     bindval = rb_binding_alloc(rb_cBinding);
     GetBindingPtr(bindval, bind);
-    vm_bind_update_env(bind, envval);
-    bind->block.as.captured.self = cfp->self;
-    bind->block.as.captured.code.iseq = cfp->iseq;
-    bind->pathobj = ruby_level_cfp->iseq->body->location.pathobj;
+    vm_bind_update_env(bindval, bind, envval);
+    RB_OBJ_WRITE(bindval, &bind->block.as.captured.self, cfp->self);
+    RB_OBJ_WRITE(bindval, &bind->block.as.captured.code.iseq, cfp->iseq);
+    RB_OBJ_WRITE(bindval, &bind->pathobj, ruby_level_cfp->iseq->body->location.pathobj);
     bind->first_lineno = rb_vm_get_sourceline(ruby_level_cfp);
 
     return bindval;
 }
 
 const VALUE *
-rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars)
+rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const ID *dynvars)
 {
     VALUE envval, pathobj = bind->pathobj;
     VALUE path = pathobj_path(pathobj);
@@ -944,7 +954,7 @@ rb_binding_add_dynavars(rb_binding_t *bind, int dyncount, const ID *dynvars)
     ALLOCV_END(idtmp);
 
     vm_set_eval_stack(th, iseq, 0, base_block);
-    vm_bind_update_env(bind, envval = vm_make_env_object(th, th->ec.cfp));
+    vm_bind_update_env(bindval, bind, envval = vm_make_env_object(th, th->ec.cfp));
     rb_vm_pop_frame(th);
 
     env = (const rb_env_t *)envval;

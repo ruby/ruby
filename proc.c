@@ -266,9 +266,7 @@ static void
 binding_free(void *ptr)
 {
     RUBY_FREE_ENTER("binding");
-
     ruby_xfree(ptr);
-
     RUBY_FREE_LEAVE("binding");
 }
 
@@ -276,6 +274,7 @@ static void
 binding_mark(void *ptr)
 {
     rb_binding_t *bind = ptr;
+
     RUBY_MARK_ENTER("binding");
     block_mark(&bind->block);
     rb_gc_mark(bind->pathobj);
@@ -295,7 +294,7 @@ const rb_data_type_t ruby_binding_data_type = {
 	binding_free,
 	binding_memsize,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 VALUE
@@ -307,6 +306,7 @@ rb_binding_alloc(VALUE klass)
     return obj;
 }
 
+
 /* :nodoc: */
 static VALUE
 binding_dup(VALUE self)
@@ -315,8 +315,8 @@ binding_dup(VALUE self)
     rb_binding_t *src, *dst;
     GetBindingPtr(self, src);
     GetBindingPtr(bindval, dst);
-    dst->block = src->block;
-    dst->pathobj = src->pathobj;
+    rb_vm_block_copy(bindval, &dst->block, &src->block);
+    RB_OBJ_WRITE(bindval, &dst->pathobj, src->pathobj);
     dst->first_lineno = src->first_lineno;
     return bindval;
 }
@@ -542,7 +542,7 @@ bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
     if ((ptr = get_local_variable_ptr(env, lid)) == NULL) {
 	/* not found. create new env */
-	ptr = rb_binding_add_dynavars(bind, 1, &lid);
+	ptr = rb_binding_add_dynavars(bindval, bind, 1, &lid);
 	env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
     }
 
@@ -2766,18 +2766,19 @@ proc_binding(VALUE self)
 
     bindval = rb_binding_alloc(rb_cBinding);
     GetBindingPtr(bindval, bind);
-
-    bind->block.as.captured.self = binding_self;
-    bind->block.as.captured.code.iseq = env->iseq;
-    bind->block.as.captured.ep = env->ep;
+    RB_OBJ_WRITE(bindval, &bind->block.as.captured.self, binding_self);
+    RB_OBJ_WRITE(bindval, &bind->block.as.captured.code.iseq, env->iseq);
+    rb_vm_block_ep_update(bindval, &bind->block, env->ep);
+    RB_OBJ_WRITTEN(bindval, Qundef, VM_ENV_ENVVAL(env->ep));
 
     if (iseq) {
 	rb_iseq_check(iseq);
-	bind->pathobj = iseq->body->location.pathobj;
+	RB_OBJ_WRITE(bindval, &bind->pathobj, iseq->body->location.pathobj);
 	bind->first_lineno = FIX2INT(rb_iseq_first_lineno(iseq));
     }
     else {
-	bind->pathobj = rb_iseq_pathobj_new(rb_fstring_cstr("(binding)"), Qnil);
+	RB_OBJ_WRITE(bindval, &bind->pathobj,
+		     rb_iseq_pathobj_new(rb_fstring_cstr("(binding)"), Qnil));
 	bind->first_lineno = 1;
     }
 

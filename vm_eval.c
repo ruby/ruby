@@ -1360,7 +1360,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 
 	/* save new env */
 	if (bind && iseq->body->local_table_size > 0) {
-	    vm_bind_update_env(bind, vm_make_env_object(th, th->ec.cfp));
+	    vm_bind_update_env(scope, bind, vm_make_env_object(th, th->ec.cfp));
 	}
     }
 
