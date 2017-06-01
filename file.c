@@ -179,10 +179,7 @@ rb_get_path_check_to_string(VALUE obj, int level)
 	return obj;
     }
     CONST_ID(to_path, "to_path");
-    tmp = rb_check_funcall(obj, to_path, 0, 0);
-    if (tmp == Qundef) {
-	tmp = obj;
-    }
+    tmp = rb_check_funcall_default(obj, to_path, 0, 0, obj);
     StringValue(tmp);
     return tmp;
 }
