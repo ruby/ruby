@@ -1,8 +1,8 @@
 class Object
   # Copies a file
   def cp(source, dest)
-    File.open(dest, "w") do |d|
-      File.open(source, "r") do |s|
+    File.open(dest, "wb") do |d|
+      File.open(source, "rb") do |s|
         while data = s.read(1024)
           d.write data
         end
