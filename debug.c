@@ -29,6 +29,10 @@ const union {
     enum ruby_encoding_consts   encoding_consts;
     enum ruby_coderange_type    enc_coderange_types;
     enum ruby_econv_flag_type   econv_flag_types;
+    enum ruby_robject_flags     robject_flags;
+    enum ruby_rmodule_flags     rmodule_flags;
+    enum ruby_rstring_flags     rstring_flags;
+    enum ruby_rarray_flags      rarray_flags;
     enum {
         RUBY_NODE_TYPESHIFT = NODE_TYPESHIFT,
         RUBY_NODE_TYPEMASK  = NODE_TYPEMASK,
