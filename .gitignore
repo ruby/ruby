@@ -196,6 +196,9 @@ lcov*.info
 /ext/socket/constdefs.h
 /ext/socket/constdefs.c
 
+# /ext/zlib/
+/ext/zlib/zlib-*
+
 # /gems
 /gems/*.gem
 /gems/src
