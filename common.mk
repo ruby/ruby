@@ -203,6 +203,9 @@ showflags:
 	"	CPPFLAGS = $(CPPFLAGS)" \
 	"	DLDFLAGS = $(DLDFLAGS)" \
 	"	SOLIBS = $(SOLIBS)" \
+	"	LANG = $(LANG)" \
+	"	LC_ALL = $(LC_ALL)" \
+	"	LC_CTYPE = $(LC_CTYPE)" \
 	$(MESSAGE_END)
 	-@$(CC_VERSION)
 
