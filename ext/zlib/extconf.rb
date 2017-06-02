@@ -20,7 +20,7 @@ else
     dirs.delete_if {|x| !File.directory?(x)}
     zsrc = dirs.max_by {|x| x.scan(/\d+/).map(&:to_i)}
   end
-  if zsrc
+  if zsrc && enable_config('bundled-zlib')
     addconf = [
       "ZSRC = $(srcdir)/#{File.basename(zsrc)}\n",
       "all:\n",
