@@ -124,7 +124,8 @@ class TestRequire < Test::Unit::TestCase
         if SECURITY_WARNING
           File.chmod(0777, File.dirname(require_path))
           require_path.untaint
-          ospath = require_path.encode('filesystem')
+          ospath = (require_path.encode('filesystem') rescue
+                     require_path.encode(self.class.ospath_encoding(require_path)))
           assert_warn(/Insecure world writable dir/) do
             assert_raise_with_message(SecurityError, "loading from unsafe path #{ospath}") do
               SECURITY_WARNING.call(require_path)
