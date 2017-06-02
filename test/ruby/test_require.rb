@@ -87,6 +87,17 @@ class TestRequire < Test::Unit::TestCase
     end
   end
 
+  SECURITY_WARNING =
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      nil
+    else
+      proc do |require_path|
+        File.chmod(0777, File.dirname(require_path))
+        $SAFE = 1
+        require(require_path)
+      end
+    end
+
   def assert_require_nonascii_path(encoding, bug)
     Dir.mktmpdir {|tmp|
       dir = "\u3042" * 5
@@ -109,6 +120,17 @@ class TestRequire < Test::Unit::TestCase
           assert_equal(self.class.ospath_encoding(require_path), $:.last.encoding, '[Bug #8753]')
           assert(!require(require_path), bug)
         }
+        $:.replace(load_path)
+        $".replace(features)
+        if SECURITY_WARNING
+          require_path.untaint
+          ospath = require_path.encode(self.class.ospath_encoding(require_path))
+          assert_warn(/Insecure world writable dir/) do
+            assert_raise_with_message(SecurityError, "loading from unsafe path #{ospath}") do
+              SECURITY_WARNING.call(require_path)
+            end
+          end
+        end
       ensure
         $:.replace(load_path)
         $".replace(features)

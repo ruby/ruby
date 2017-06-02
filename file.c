@@ -5840,7 +5840,7 @@ rb_find_file_safe(VALUE path, int safe_level)
     if (f[0] == '~') {
 	tmp = file_expand_path_1(path);
 	if (safe_level >= 1 && OBJ_TAINTED(tmp)) {
-	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
+	    rb_raise(rb_eSecurityError, "loading from unsafe file %"PRIsVALUE, tmp);
 	}
 	path = copy_path_class(tmp, path);
 	f = RSTRING_PTR(path);
@@ -5849,7 +5849,7 @@ rb_find_file_safe(VALUE path, int safe_level)
 
     if (expanded || rb_is_absolute_path(f) || is_explicit_relative(f)) {
 	if (safe_level >= 1 && !fpath_check(path)) {
-	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", f);
+	    rb_raise(rb_eSecurityError, "loading from unsafe path %"PRIsVALUE, path);
 	}
 	if (!rb_file_load_ok(f)) return 0;
 	if (!expanded)
@@ -5881,7 +5881,7 @@ rb_find_file_safe(VALUE path, int safe_level)
 
   found:
     if (safe_level >= 1 && !fpath_check(tmp)) {
-	rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
+	rb_raise(rb_eSecurityError, "loading from unsafe file %"PRIsVALUE, tmp);
     }
 
     return copy_path_class(tmp, path);
