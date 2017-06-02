@@ -62,6 +62,12 @@ class TestRequire < Test::Unit::TestCase
     assert_require_nonascii_path(encoding, bug8165)
   end
 
+  def test_require_insecure_path
+    assert_require_insecure_path("foo")
+    encoding = 'filesystem'
+    assert_require_insecure_path(nil, encoding)
+  end
+
   def test_require_nonascii_path_utf8
     bug8676 = '[ruby-core:56136] [Bug #8676]'
     encoding = Encoding::UTF_8
@@ -69,11 +75,23 @@ class TestRequire < Test::Unit::TestCase
     assert_require_nonascii_path(encoding, bug8676)
   end
 
+  def test_require_insecure_path_utf8
+    encoding = Encoding::UTF_8
+    return if Encoding.find('filesystem') == encoding
+    assert_require_insecure_path(nil, encoding)
+  end
+
   def test_require_nonascii_path_shift_jis
     bug8676 = '[ruby-core:56136] [Bug #8676]'
     encoding = Encoding::Shift_JIS
     return if Encoding.find('filesystem') == encoding
     assert_require_nonascii_path(encoding, bug8676)
+  end
+
+  def test_require_insecure_path_shift_jis
+    encoding = Encoding::Shift_JIS
+    return if Encoding.find('filesystem') == encoding
+    assert_require_insecure_path(nil, encoding)
   end
 
   case RUBY_PLATFORM
@@ -97,9 +115,8 @@ class TestRequire < Test::Unit::TestCase
       end
     end
 
-  def assert_require_nonascii_path(encoding, bug)
+  def prepare_require_path(dir, encoding)
     Dir.mktmpdir {|tmp|
-      dir = "\u3042" * 5
       begin
         require_path = File.join(tmp, dir, 'foo.rb').encode(encoding)
       rescue
@@ -110,6 +127,17 @@ class TestRequire < Test::Unit::TestCase
       begin
         load_path = $:.dup
         features = $".dup
+        yield require_path
+      ensure
+        $:.replace(load_path)
+        $".replace(features)
+      end
+    }
+  end
+
+  def assert_require_nonascii_path(encoding, bug)
+    prepare_require_path("\u3042" * 5, encoding) {|require_path|
+      begin
         # leave paths for require encoding objects
         bug = "#{bug} require #{encoding} path"
         require_path = "#{require_path}"
@@ -119,22 +147,25 @@ class TestRequire < Test::Unit::TestCase
           assert_equal(self.class.ospath_encoding(require_path), $:.last.encoding, '[Bug #8753]')
           assert(!require(require_path), bug)
         }
-        $:.replace(load_path)
-        $".replace(features)
-        if SECURITY_WARNING
-          File.chmod(0777, File.dirname(require_path))
-          require_path.untaint
-          ospath = (require_path.encode('filesystem') rescue
-                     require_path.encode(self.class.ospath_encoding(require_path)))
-          assert_warn(/Insecure world writable dir/) do
-            assert_raise_with_message(SecurityError, "loading from unsafe path #{ospath}") do
-              SECURITY_WARNING.call(require_path)
-            end
-          end
+      end
+    }
+  end
+
+  def assert_require_insecure_path(dirname, encoding = nil)
+    return unless SECURITY_WARNING
+    dirname ||= "\u3042" * 5
+    encoding ||= dirname.encoding
+    prepare_require_path(dirname, encoding) {|require_path|
+      require_path.untaint
+      require(require_path)
+      $".pop
+      File.chmod(0777, File.dirname(require_path))
+      ospath = (require_path.encode('filesystem') rescue
+                require_path.encode(self.class.ospath_encoding(require_path)))
+      assert_warn(/Insecure world writable dir/) do
+        assert_raise_with_message(SecurityError, "loading from unsafe path #{ospath}") do
+          SECURITY_WARNING.call(require_path)
         end
-      ensure
-        $:.replace(load_path)
-        $".replace(features)
       end
     }
   end
