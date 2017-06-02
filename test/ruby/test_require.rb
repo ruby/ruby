@@ -92,7 +92,6 @@ class TestRequire < Test::Unit::TestCase
       nil
     else
       proc do |require_path|
-        File.chmod(0777, File.dirname(require_path))
         $SAFE = 1
         require(require_path)
       end
@@ -123,8 +122,9 @@ class TestRequire < Test::Unit::TestCase
         $:.replace(load_path)
         $".replace(features)
         if SECURITY_WARNING
+          File.chmod(0777, File.dirname(require_path))
           require_path.untaint
-          ospath = require_path.encode(self.class.ospath_encoding(require_path))
+          ospath = require_path.encode('filesystem')
           assert_warn(/Insecure world writable dir/) do
             assert_raise_with_message(SecurityError, "loading from unsafe path #{ospath}") do
               SECURITY_WARNING.call(require_path)
