@@ -1079,11 +1079,21 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
 {
     int i;
     ID id_prepend_features, id_prepended;
+    VALUE new_mod;
 
     CONST_ID(id_prepend_features, "prepend_features");
     CONST_ID(id_prepended, "prepended");
 
-    rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
+    if(rb_block_given_p()) {
+      new_mod = rb_module_new();
+      rb_mod_module_exec(1, &new_mod, new_mod);
+
+      rb_funcall(new_mod, id_prepend_features, 1, module);
+      rb_funcall(new_mod, id_prepended, 1, module);
+    } else if (argc == 0) {
+      rb_raise(rb_eArgError, "you must supply either a block, or at least one module to prepend");
+    }
+
     for (i = 0; i < argc; i++)
 	Check_Type(argv[i], T_MODULE);
     while (argc--) {

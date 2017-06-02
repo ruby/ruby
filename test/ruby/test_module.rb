@@ -1572,6 +1572,16 @@ class TestModule < Test::Unit::TestCase
     assert_equal(expected, obj.m1)
   end
 
+  def test_prepend_block
+    C0.prepend do
+      def m1; [:B1, *super] end
+    end
+
+    obj = C0.new
+    expected = [:B1,:M1,:C0,:M0]
+    assert_equal(expected, obj.m1)
+  end
+
   def test_public_prepend
     assert_nothing_raised('#8846') do
       Class.new.prepend(Module.new)
