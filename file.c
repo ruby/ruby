@@ -5634,9 +5634,9 @@ path_check_0(VALUE path, int execpath)
 	    && !(p && execpath && (st.st_mode & S_ISVTX))
 #endif
 	    && !access(p0, W_OK)) {
-	    rb_warn("Insecure world writable dir %s in %sPATH, mode 0%"
-		    PRI_MODET_PREFIX"o",
-		    p0, (execpath ? "" : "LOAD_"), st.st_mode);
+	    rb_enc_warn(enc, "Insecure world writable dir %s in %sPATH, mode 0%"
+			PRI_MODET_PREFIX"o",
+			p0, (execpath ? "" : "LOAD_"), st.st_mode);
 	    if (p) *p = '/';
 	    RB_GC_GUARD(path);
 	    return 0;

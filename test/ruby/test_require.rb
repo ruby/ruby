@@ -170,6 +170,9 @@ class TestRequire < Test::Unit::TestCase
       end
       assert_include(e.message, "loading from unsafe path")
       assert_include(stderr, "Insecure world writable dir")
+      require_path = require_path.encode(self.class.ospath_encoding(require_path))
+      assert_include(e.message, require_path)
+      assert_include(stderr, File.dirname(require_path))
     }
   end
 
