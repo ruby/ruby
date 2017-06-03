@@ -222,13 +222,20 @@ class TestRequire < Test::Unit::TestCase
   end
 
   def test_require_with_unc
-    ruby = File.expand_path(EnvUtil.rubybin).sub(/\A(\w):/, '//127.0.0.1/\1$/')
-    skip "local drive #$1: is not shared" unless File.exist?(ruby)
-    pid = nil
-    assert_nothing_raised {pid = spawn(ruby, "-rabbrev", "-e0")}
-    ret, status = Process.wait2(pid)
-    assert_equal(pid, ret)
-    assert_predicate(status, :success?)
+    Tempfile.create(["test_ruby_test_require", ".rb"]) {|t|
+      t.puts "puts __FILE__"
+      t.close
+
+      path = File.expand_path(t.path).sub(/\A(\w):/, '//127.0.0.1/\1$/')
+      skip "local drive #$1: is not shared" unless File.exist?(path)
+      args = ['--disable-gems', "-I#{File.dirname(path)}"]
+      assert_in_out_err(args, "#{<<~"END;"}", [path], [])
+      begin
+        require '#{File.basename(path)}'
+      rescue Errno::EPERM
+      end
+      END;
+    }
   end if /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_require_twice
