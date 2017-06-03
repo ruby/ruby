@@ -165,13 +165,15 @@ ary_memfill(VALUE ary, long beg, long size, VALUE val)
     });
 }
 
+static const int array_cache_line_size = (int)(128/sizeof(VALUE)); /* is magic number (cache line size) */
+
 static void
 ary_memcpy0(VALUE ary, long beg, long argc, const VALUE *argv, VALUE buff_owner_ary)
 {
 #if 1
     assert(!ARY_SHARED_P(buff_owner_ary));
 
-    if (argc > (int)(128/sizeof(VALUE)) /* is magic number (cache line size) */) {
+    if (argc > array_cache_line_size) {
 	rb_gc_writebarrier_remember(buff_owner_ary);
 	RARRAY_PTR_USE(ary, ptr, {
 	    MEMCPY(ptr+beg, argv, VALUE, argc);
