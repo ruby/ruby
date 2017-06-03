@@ -1008,7 +1008,7 @@ invoke_iseq_block_from_c(rb_thread_t *th, const struct rb_captured_block *captur
 {
     const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
     int i, opt_pc;
-    VALUE type = is_lambda ? VM_FRAME_MAGIC_LAMBDA : VM_FRAME_MAGIC_BLOCK;
+    VALUE type = VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0);
     rb_control_frame_t *cfp = th->ec.cfp;
     VALUE *sp = cfp->sp;
     const rb_callable_method_entry_t *me = th->passed_bmethod_me;
@@ -1021,7 +1021,7 @@ invoke_iseq_block_from_c(rb_thread_t *th, const struct rb_captured_block *captur
     }
 
     opt_pc = vm_yield_setup_args(th, iseq, argc, sp, passed_block_handler,
-				 (type == VM_FRAME_MAGIC_LAMBDA ? (splattable ? arg_setup_lambda : arg_setup_method) : arg_setup_block));
+				 (is_lambda ? (splattable ? arg_setup_lambda : arg_setup_method) : arg_setup_block));
     cfp->sp = sp;
 
     if (me == NULL) {
@@ -1605,10 +1605,8 @@ vm_frametype_name(const rb_control_frame_t *cfp)
       case VM_FRAME_MAGIC_CLASS:  return "class";
       case VM_FRAME_MAGIC_TOP:    return "top";
       case VM_FRAME_MAGIC_CFUNC:  return "cfunc";
-      case VM_FRAME_MAGIC_PROC:   return "proc";
       case VM_FRAME_MAGIC_IFUNC:  return "ifunc";
       case VM_FRAME_MAGIC_EVAL:   return "eval";
-      case VM_FRAME_MAGIC_LAMBDA: return "lambda";
       case VM_FRAME_MAGIC_RESCUE: return "rescue";
       default:
 	rb_bug("unknown frame");
@@ -1665,7 +1663,6 @@ hook_before_rewind(rb_thread_t *th, const rb_control_frame_t *cfp, int will_fini
 	THROW_DATA_CONSUMED_SET(err);
 	break;
       case VM_FRAME_MAGIC_BLOCK:
-      case VM_FRAME_MAGIC_LAMBDA:
 	if (VM_FRAME_BMETHOD_P(th->ec.cfp)) {
 	    EXEC_EVENT_HOOK(th, RUBY_EVENT_B_RETURN, th->ec.cfp->self, 0, 0, 0, frame_return_value(err));
 

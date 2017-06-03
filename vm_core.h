@@ -980,12 +980,12 @@ typedef rb_control_frame_t *
 
 enum {
     /* Frame/Environment flag bits:
-     *   MMMM MMMM MMMM MMMM ____ ____ FFFF EEEX (LSB)
+     *   MMMM MMMM MMMM MMMM ____ __FF FFFF EEEX (LSB)
      *
      * X   : tag for GC marking (It seems as Fixnum)
      * EEE : 3 bits Env flags
-     * FFFF: 4 bits Frame flags
-     * MMMM: 16 bits frame magic (to check frame corruption)
+     * FF..: 6 bits Frame flags
+     * MM..: 16 bits frame magic (to check frame corruption)
      */
 
     /* frame types */
@@ -994,12 +994,10 @@ enum {
     VM_FRAME_MAGIC_CLASS  = 0x33330001,
     VM_FRAME_MAGIC_TOP    = 0x44440001,
     VM_FRAME_MAGIC_CFUNC  = 0x55550001,
-    VM_FRAME_MAGIC_PROC   = 0x66660001,
-    VM_FRAME_MAGIC_IFUNC  = 0x77770001,
-    VM_FRAME_MAGIC_EVAL   = 0x88880001,
-    VM_FRAME_MAGIC_LAMBDA = 0x99990001,
-    VM_FRAME_MAGIC_RESCUE = 0xaaaa0001,
-    VM_FRAME_MAGIC_DUMMY  = 0xbbbb0001,
+    VM_FRAME_MAGIC_IFUNC  = 0x66660001,
+    VM_FRAME_MAGIC_EVAL   = 0x77770001,
+    VM_FRAME_MAGIC_RESCUE = 0x88880001,
+    VM_FRAME_MAGIC_DUMMY  = 0x99990001,
 
     VM_FRAME_MAGIC_MASK   = 0xffff0001,
 
@@ -1008,6 +1006,7 @@ enum {
     VM_FRAME_FLAG_FINISH    = 0x0020,
     VM_FRAME_FLAG_BMETHOD   = 0x0040,
     VM_FRAME_FLAG_CFRAME    = 0x0080,
+    VM_FRAME_FLAG_LAMBDA    = 0x0100,
 
     /* env flag */
     VM_ENV_FLAG_LOCAL       = 0x0002,
@@ -1058,9 +1057,15 @@ VM_FRAME_TYPE(const rb_control_frame_t *cfp)
 }
 
 static inline int
+VM_FRAME_LAMBDA_P(const rb_control_frame_t *cfp)
+{
+    return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_LAMBDA) != 0;
+}
+
+static inline int
 VM_FRAME_FINISHED_P(const rb_control_frame_t *cfp)
 {
-    return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_FINISH ) != 0;
+    return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_FINISH) != 0;
 }
 
 static inline int

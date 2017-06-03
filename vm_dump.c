@@ -60,12 +60,6 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
       case VM_FRAME_MAGIC_CFUNC:
 	magic = "CFUNC";
 	break;
-      case VM_FRAME_MAGIC_PROC:
-	magic = "PROC";
-	break;
-      case VM_FRAME_MAGIC_LAMBDA:
-	magic = "LAMBDA";
-	break;
       case VM_FRAME_MAGIC_IFUNC:
 	magic = "IFUNC";
 	break;
@@ -258,8 +252,6 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_TOP   ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_BLOCK ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_CLASS ||
-	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_PROC  ||
-	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_LAMBDA||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_CFUNC ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_IFUNC ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_EVAL  ||

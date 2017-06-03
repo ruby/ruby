@@ -130,7 +130,7 @@ vm_check_frame_detail(VALUE type, int req_block, int req_me, int req_cref, VALUE
 	}
 	else { /* cref or Qfalse */
 	    if (cref_or_me != Qfalse && cref_or_me_type != imemo_cref) {
-		if ((magic == VM_FRAME_MAGIC_LAMBDA || magic == VM_FRAME_MAGIC_IFUNC) && (cref_or_me_type == imemo_ment)) {
+		if (((type & VM_FRAME_FLAG_LAMBDA) || magic == VM_FRAME_MAGIC_IFUNC) && (cref_or_me_type == imemo_ment)) {
 		    /* ignore */
 		}
 		else {
@@ -178,10 +178,8 @@ vm_check_frame(VALUE type,
 	CHECK(VM_FRAME_MAGIC_TOP,    TRUE,  FALSE, TRUE,  FALSE);
 	CHECK(VM_FRAME_MAGIC_CFUNC,  TRUE,  TRUE,  FALSE, TRUE);
 	CHECK(VM_FRAME_MAGIC_BLOCK,  FALSE, FALSE, FALSE, FALSE);
-	CHECK(VM_FRAME_MAGIC_PROC,   FALSE, FALSE, FALSE, FALSE);
 	CHECK(VM_FRAME_MAGIC_IFUNC,  FALSE, FALSE, FALSE, TRUE);
 	CHECK(VM_FRAME_MAGIC_EVAL,   FALSE, FALSE, FALSE, FALSE);
-	CHECK(VM_FRAME_MAGIC_LAMBDA, FALSE, FALSE, FALSE, FALSE);
 	CHECK(VM_FRAME_MAGIC_RESCUE, FALSE, FALSE, FALSE, FALSE);
 	CHECK(VM_FRAME_MAGIC_DUMMY,  TRUE,  FALSE, FALSE, FALSE);
       default:
@@ -1073,7 +1071,7 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 	    }
 	}
 
-	if (VM_FRAME_TYPE(escape_cfp) == VM_FRAME_MAGIC_LAMBDA) {
+	if (VM_FRAME_LAMBDA_P(escape_cfp)) {
 	    /* lambda{... break ...} */
 	    is_orphan = 0;
 	    state = TAG_RETURN;
@@ -1141,7 +1139,7 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 	    }
 
 	    if (lep == target_lep) {
-		if (VM_FRAME_TYPE(escape_cfp) == VM_FRAME_MAGIC_LAMBDA) {
+		if (VM_FRAME_LAMBDA_P(escape_cfp)) {
 		    if (in_class_frame) {
 			/* lambda {class A; ... return ...; end} */
 			goto valid_return;
@@ -2684,7 +2682,7 @@ vm_invoke_iseq_block(rb_thread_t *th, rb_control_frame_t *reg_cfp,
     SET_SP(rsp);
 
     vm_push_frame(th, iseq,
-		  is_lambda ? VM_FRAME_MAGIC_LAMBDA : VM_FRAME_MAGIC_BLOCK,
+		  VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0),
 		  captured->self,
 		  VM_GUARDED_PREV_EP(captured->ep), 0,
 		  iseq->body->iseq_encoded + opt_pc,
