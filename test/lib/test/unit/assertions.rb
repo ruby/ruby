@@ -715,10 +715,24 @@ eom
         skip
       end
 
-      def assert_cpu_usage_low(msg = nil, pct: 0.015)
+      def assert_cpu_usage_low(msg = nil, pct: 0.01)
         require 'benchmark'
+
         tms = Benchmark.measure(msg || '') { yield }
         max = pct * tms.real
+        if tms.real < 0.1 # TIME_QUANTUM_USEC in thread_pthread.c
+          warn "test #{msg || 'assert_cpu_usage_low'} too short to be accurate"
+        end
+
+        # kernel resolution can limit the minimum time we can measure
+        # [ruby-core:81540]
+        min_hz = windows? ? 67 : 100
+        min_measurable = 1.0 / min_hz
+        min_measurable *= 1.10 # add a little (10%) to account for misc. overheads
+        if max < min_measurable
+          max = min_measurable
+        end
+
         assert_operator tms.total, :<=, max, msg
       end
 
