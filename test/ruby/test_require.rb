@@ -226,7 +226,7 @@ class TestRequire < Test::Unit::TestCase
       t.puts "puts __FILE__"
       t.close
 
-      path = File.expand_path(t.path).sub(/\A(\w):/, '//127.0.0.1/\1$/')
+      path = File.expand_path(t.path).sub(/\A(\w):/, '//127.0.0.1/\1$')
       skip "local drive #$1: is not shared" unless File.exist?(path)
       args = ['--disable-gems', "-I#{File.dirname(path)}"]
       assert_in_out_err(args, "#{<<~"END;"}", [path], [])
