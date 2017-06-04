@@ -966,22 +966,22 @@ rb_require_internal(VALUE fname, int safe)
 	int safe;
     } volatile saved;
     char *volatile ftptr = 0;
+    VALUE path;
 
     RUBY_DTRACE_HOOK(REQUIRE_ENTRY, StringValuePtr(fname));
 
     fname = rb_get_path_check(fname, safe);
+    path = rb_str_encode_ospath(fname);
 
     TH_PUSH_TAG(th);
     saved.safe = rb_safe_level();
     if ((state = EXEC_TAG()) == 0) {
-	VALUE path;
 	long handle;
 	int found;
 
 	rb_set_safe_level_force(0);
 
 	RUBY_DTRACE_HOOK(FIND_REQUIRE_ENTRY, StringValuePtr(fname));
-	path = rb_str_encode_ospath(fname);
 	found = search_required(path, &path, safe);
 	RUBY_DTRACE_HOOK(FIND_REQUIRE_RETURN, StringValuePtr(fname));
 
