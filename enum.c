@@ -566,7 +566,8 @@ enum_flat_map(VALUE obj)
 static VALUE
 enum_to_a(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE ary = rb_ary_new();
+    VALUE size = rb_check_funcall(obj, id_size, 0, 0);
+    VALUE ary = rb_ary_new2(size == Qundef ? RARRAY_EMBED_LEN_MAX : NUM2LONG(size));
 
     rb_block_call(obj, id_each, argc, argv, collect_all, ary);
     OBJ_INFECT(ary, obj);
