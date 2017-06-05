@@ -1637,7 +1637,7 @@ has_redirection(const char *cmd, UINT cp)
 static inline WCHAR *
 skipspace(WCHAR *ptr)
 {
-    while (iswspace(*ptr))
+    while (ISSPACE(*ptr))
 	ptr++;
     return ptr;
 }
@@ -1659,7 +1659,7 @@ w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp, rb_encoding *enc)
     //
     // just return if we don't have a command line
     //
-    while (iswspace(*cmd))
+    while (ISSPACE(*cmd))
 	cmd++;
     if (!*cmd) {
 	*vec = NULL;
