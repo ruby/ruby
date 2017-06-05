@@ -1078,11 +1078,11 @@ check_block_handler(rb_thread_t *th)
 }
 
 static VALUE
-vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const rb_cref_t *cref)
+vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const rb_cref_t *cref, int is_lambda)
 {
     return invoke_block_from_c_bh(th, check_block_handler(th),
 				  argc, argv, VM_BLOCK_HANDLER_NONE,
-				  cref, FALSE, FALSE);
+				  cref, is_lambda, FALSE);
 }
 
 static VALUE
