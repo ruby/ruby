@@ -1573,11 +1573,12 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_prepend_block
-    C0.prepend do
-      def m1; [:B1, *super] end
-    end
+    obj = Class.new(C0) do
+      prepend do
+        def m1; [:B1, *super] end
+      end
+    end.new
 
-    obj = C0.new
     expected = [:B1,:M1,:C0,:M0]
     assert_equal(expected, obj.m1)
   end
