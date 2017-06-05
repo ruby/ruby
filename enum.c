@@ -43,7 +43,7 @@ static VALUE
 enum_yield(int argc, VALUE ary)
 {
     if (argc > 1)
-	return rb_yield_lambda(ary);
+	return rb_yield_force_blockarg(ary);
     if (argc == 1)
 	return rb_yield(ary);
     return rb_yield_values2(0, 0);
@@ -55,7 +55,7 @@ enum_yield_array(VALUE ary)
     long len = RARRAY_LEN(ary);
 
     if (len > 1)
-	return rb_yield_lambda(ary);
+	return rb_yield_force_blockarg(ary);
     if (len == 1)
 	return rb_yield(RARRAY_AREF(ary, 0));
     return rb_yield_values2(0, 0);
