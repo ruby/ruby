@@ -29,8 +29,7 @@ struct args_info {
 
 enum arg_setup_type {
     arg_setup_method,
-    arg_setup_block,
-    arg_setup_lambda
+    arg_setup_block
 };
 
 static inline int
@@ -594,8 +593,6 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq,
 	    args_check_block_arg0(args, th)) {
 	    given_argc = RARRAY_LENINT(args->rest);
 	}
-	break;
-      case arg_setup_lambda:
 	break;
     }
 

@@ -1021,7 +1021,7 @@ invoke_iseq_block_from_c(rb_thread_t *th, const struct rb_captured_block *captur
     }
 
     opt_pc = vm_yield_setup_args(th, iseq, argc, sp, passed_block_handler,
-				 (is_lambda ? (splattable ? arg_setup_lambda : arg_setup_method) : arg_setup_block));
+				 (is_lambda ? arg_setup_method : arg_setup_block));
     cfp->sp = sp;
 
     if (me == NULL) {

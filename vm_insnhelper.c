@@ -2677,7 +2677,7 @@ vm_invoke_iseq_block(rb_thread_t *th, rb_control_frame_t *reg_cfp,
     const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
     const int arg_size = iseq->body->param.size;
     VALUE * const rsp = GET_SP() - calling->argc;
-    int opt_pc = vm_callee_setup_block_arg(th, calling, ci, iseq, rsp, is_lambda ? arg_setup_lambda : arg_setup_block);
+    int opt_pc = vm_callee_setup_block_arg(th, calling, ci, iseq, rsp, is_lambda ? arg_setup_method : arg_setup_block);
 
     SET_SP(rsp);
 
