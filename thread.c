@@ -2212,10 +2212,16 @@ rb_notify_fd_close(int fd)
     list_for_each(&vm->waiting_fds, wfd, wfd_node) {
 	if (wfd->fd == fd) {
 	    rb_thread_t *th = wfd->th;
-	    VALUE err = th->vm->special_exceptions[ruby_error_stream_closed];
+	    VALUE err;
+
+	    busy = 1;
+	    if (!th) {
+		continue;
+	    }
+	    wfd->th = 0;
+	    err = th->vm->special_exceptions[ruby_error_stream_closed];
 	    rb_threadptr_pending_interrupt_enque(th, err);
 	    rb_threadptr_interrupt(th);
-	    busy = 1;
 	}
     }
     return busy;
