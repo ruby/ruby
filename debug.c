@@ -154,10 +154,9 @@ set_debug_option(const char *str, int len, void *arg)
 	    if (!ov && retlen) {
 		ruby_w32_codepage[i] = (UINT)n;
 	    }
-	    if ((size_t)len <= retlen) break;
 	    str += retlen;
 	    len -= retlen;
-	    if (*str != ':') break;
+	    if (!len || *str != ':') break;
 	    ++str;
 	    --len;
 	}
