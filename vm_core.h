@@ -1007,6 +1007,7 @@ enum {
     VM_FRAME_FLAG_BMETHOD   = 0x0040,
     VM_FRAME_FLAG_CFRAME    = 0x0080,
     VM_FRAME_FLAG_LAMBDA    = 0x0100,
+    VM_FRAME_FLAG_PROC      = 0x0200,
 
     /* env flag */
     VM_ENV_FLAG_LOCAL       = 0x0002,

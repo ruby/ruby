@@ -1004,11 +1004,11 @@ invoke_bmethod(rb_thread_t *th, const rb_iseq_t *iseq, VALUE self, const struct 
 static inline VALUE
 invoke_iseq_block_from_c(rb_thread_t *th, const struct rb_captured_block *captured,
 			 VALUE self, int argc, const VALUE *argv, VALUE passed_block_handler,
-			 const rb_cref_t *cref, int is_lambda)
+			 const rb_cref_t *cref, VALUE additional_type)
 {
     const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
     int i, opt_pc;
-    VALUE type = VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0);
+    VALUE type = VM_FRAME_MAGIC_BLOCK | additional_type;
     rb_control_frame_t *cfp = th->ec.cfp;
     VALUE *sp = cfp->sp;
     const rb_callable_method_entry_t *me = th->passed_bmethod_me;
@@ -1021,7 +1021,7 @@ invoke_iseq_block_from_c(rb_thread_t *th, const struct rb_captured_block *captur
     }
 
     opt_pc = vm_yield_setup_args(th, iseq, argc, sp, passed_block_handler,
-				 (is_lambda ? arg_setup_method : arg_setup_block));
+				 ((type & VM_FRAME_FLAG_LAMBDA) ? arg_setup_method : arg_setup_block));
     cfp->sp = sp;
 
     if (me == NULL) {
@@ -1038,6 +1038,8 @@ invoke_block_from_c_bh(rb_thread_t *th, VALUE block_handler,
 		       VALUE passed_block_handler, const rb_cref_t *cref,
 		       int is_lambda, int force_blockarg)
 {
+    VALUE additional_type = is_lambda ? VM_FRAME_FLAG_LAMBDA : 0;
+
   again:
     switch (vm_block_handler_type(block_handler)) {
       case block_handler_type_iseq:
@@ -1045,7 +1047,7 @@ invoke_block_from_c_bh(rb_thread_t *th, VALUE block_handler,
 	    const struct rb_captured_block *captured = VM_BH_TO_ISEQ_BLOCK(block_handler);
 	    return invoke_iseq_block_from_c(th, captured, captured->self,
 					    argc, argv, passed_block_handler,
-					    cref, is_lambda);
+					    cref, additional_type);
 	}
       case block_handler_type_ifunc:
 	return vm_yield_with_cfunc(th, VM_BH_TO_IFUNC_BLOCK(block_handler),
@@ -1055,8 +1057,11 @@ invoke_block_from_c_bh(rb_thread_t *th, VALUE block_handler,
 	return vm_yield_with_symbol(th, VM_BH_TO_SYMBOL(block_handler),
 				    argc, argv, passed_block_handler);
       case block_handler_type_proc:
-	if (force_blockarg == FALSE) {
-	    is_lambda = block_proc_is_lambda(VM_BH_TO_PROC(block_handler));
+	if (force_blockarg == FALSE && block_proc_is_lambda(VM_BH_TO_PROC(block_handler))) {
+	    additional_type = VM_FRAME_FLAG_LAMBDA;
+	}
+	else {
+	    additional_type = VM_FRAME_FLAG_PROC;
 	}
 	block_handler = vm_proc_to_block_handler(VM_BH_TO_PROC(block_handler));
 	goto again;
@@ -1114,17 +1119,23 @@ invoke_block_from_c_proc(rb_thread_t *th, const rb_proc_t *proc,
 			 VALUE passed_block_handler, int is_lambda)
 {
     const struct rb_block *block = &proc->block;
+    VALUE additional_type = is_lambda ? VM_FRAME_FLAG_LAMBDA : VM_FRAME_FLAG_PROC;
 
   again:
     switch (vm_block_type(block)) {
       case block_type_iseq:
-	return invoke_iseq_block_from_c(th, &block->as.captured, self, argc, argv, passed_block_handler, NULL, is_lambda);
+	return invoke_iseq_block_from_c(th, &block->as.captured, self, argc, argv, passed_block_handler, NULL, additional_type);
       case block_type_ifunc:
 	return vm_yield_with_cfunc(th, &block->as.captured, self, argc, argv, passed_block_handler);
       case block_type_symbol:
 	return vm_yield_with_symbol(th, block->as.symbol, argc, argv, passed_block_handler);
       case block_type_proc:
-	is_lambda = block_proc_is_lambda(block->as.proc);
+	if (block_proc_is_lambda(block->as.proc)) {
+	    additional_type = VM_FRAME_FLAG_LAMBDA;
+	}
+	else {
+	    additional_type = VM_FRAME_FLAG_PROC;
+	}
 	block = vm_proc_block(block->as.proc);
 	goto again;
     }

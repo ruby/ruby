@@ -2213,8 +2213,6 @@ rb_notify_fd_close(int fd)
 	if (wfd->fd == fd) {
 	    rb_thread_t *th = wfd->th;
 	    VALUE err = th->vm->special_exceptions[ruby_error_stream_closed];
-
-	    wfd->fd = -1; /* ensure we only enqueue once */
 	    rb_threadptr_pending_interrupt_enque(th, err);
 	    rb_threadptr_interrupt(th);
 	    busy = 1;
