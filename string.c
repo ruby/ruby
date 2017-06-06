@@ -5538,7 +5538,7 @@ rb_str_reverse_bang(VALUE str)
  *
  *     "hello".include? "lo"   #=> true
  *     "hello".include? "ol"   #=> false
- *     "hello".include? ?h     #=> true
+ *     "hello".include? "h"     #=> true
  */
 
 static VALUE
