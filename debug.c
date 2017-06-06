@@ -117,7 +117,7 @@ extern int ruby_w32_rtc_error;
 #endif
 #if defined _WIN32 || defined __CYGWIN__
 #include <windows.h>
-UINT ruby_w32_codepage;
+UINT ruby_w32_codepage[2];
 #endif
 
 static void
@@ -131,7 +131,7 @@ set_debug_option(const char *str, int len, void *arg)
 	}				    \
     } while (0)
 #define NAME_MATCH_VALUE(name) \
-    ((size_t)len > sizeof(name) && \
+    ((size_t)len >= sizeof(name) && \
      strncmp(str, (name), sizeof(name)-1) == 0 && \
      str[sizeof(name)-1] == '=' && \
      (str += sizeof(name), len -= sizeof(name), 1))
@@ -144,14 +144,25 @@ set_debug_option(const char *str, int len, void *arg)
 # endif
 #endif
 #if defined _WIN32 || defined __CYGWIN__
-    {
+    if (NAME_MATCH_VALUE("codepage")) {
+	int i;
 	int ov;
 	size_t retlen;
 	unsigned long n;
-	if (NAME_MATCH_VALUE("codepage") &&
-	    (n = ruby_scan_digits(str, len, 10, &retlen, &ov),
-	     (size_t)len == retlen && !ov)) {
-	    ruby_w32_codepage = (UINT)n;
+	for (i = 0; i < numberof(ruby_w32_codepage); ++i) {
+	    n = ruby_scan_digits(str, len, 10, &retlen, &ov);
+	    if (!ov && retlen) {
+		ruby_w32_codepage[i] = (UINT)n;
+	    }
+	    if ((size_t)len <= retlen) break;
+	    str += retlen;
+	    len -= retlen;
+	    if (*str != ':') break;
+	    ++str;
+	    --len;
+	}
+	if (len > 0) {
+	    fprintf(stderr, "ignored codepage option: `%.*s'\n", len, str);
 	}
 	return;
     }

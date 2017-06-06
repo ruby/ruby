@@ -22,7 +22,7 @@
 #define SIZEOF_CP_NAME ((sizeof(UINT) * 8 / 3) + 4)
 #define CP_FORMAT(buf, codepage) snprintf(buf, sizeof(buf), "CP%u", (codepage))
 
-extern UINT ruby_w32_codepage;
+extern UINT ruby_w32_codepage[2];
 #endif
 
 #ifndef NO_LOCALE_CHARMAP
@@ -45,7 +45,7 @@ locale_charmap(VALUE (*conv)(const char *))
     codeset = nl_langinfo_codeset();
 # endif
     if (!codeset) {
-	UINT codepage = ruby_w32_codepage;
+	UINT codepage = ruby_w32_codepage[0];
 	if (!codepage) codepage = GetConsoleCP();
 	if (!codepage) codepage = GetACP();
 	CP_FORMAT(cp, codepage);
@@ -122,7 +122,7 @@ Init_enc_set_filesystem_encoding(void)
     idx = ENCINDEX_US_ASCII;
 #elif defined _WIN32
     char cp[SIZEOF_CP_NAME];
-    const UINT codepage = ruby_w32_codepage ? ruby_w32_codepage :
+    const UINT codepage = ruby_w32_codepage[1] ? ruby_w32_codepage[1] :
 	AreFileApisANSI() ? GetACP() : GetOEMCP();
     CP_FORMAT(cp, codepage);
     idx = rb_enc_find_index(cp);
