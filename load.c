@@ -701,10 +701,10 @@ rb_f_load(int argc, VALUE *argv)
 
     rb_scan_args(argc, argv, "11", &fname, &wrap);
 
-    RUBY_DTRACE_HOOK(LOAD_ENTRY, StringValuePtr(fname));
-
     orig_fname = rb_get_path_check_to_string(fname, rb_safe_level());
     fname = rb_str_encode_ospath(orig_fname);
+    RUBY_DTRACE_HOOK(LOAD_ENTRY, RSTRING_PTR(orig_fname));
+
     path = rb_find_file(fname);
     if (!path) {
 	if (!rb_file_load_ok(RSTRING_PTR(fname)))
@@ -713,7 +713,7 @@ rb_f_load(int argc, VALUE *argv)
     }
     rb_load_internal(path, RTEST(wrap));
 
-    RUBY_DTRACE_HOOK(LOAD_RETURN, StringValuePtr(fname));
+    RUBY_DTRACE_HOOK(LOAD_RETURN, RSTRING_PTR(orig_fname));
 
     return Qtrue;
 }
@@ -968,10 +968,9 @@ rb_require_internal(VALUE fname, int safe)
     char *volatile ftptr = 0;
     VALUE path;
 
-    RUBY_DTRACE_HOOK(REQUIRE_ENTRY, StringValuePtr(fname));
-
     fname = rb_get_path_check(fname, safe);
     path = rb_str_encode_ospath(fname);
+    RUBY_DTRACE_HOOK(REQUIRE_ENTRY, RSTRING_PTR(fname));
 
     TH_PUSH_TAG(th);
     saved.safe = rb_safe_level();
@@ -981,9 +980,9 @@ rb_require_internal(VALUE fname, int safe)
 
 	rb_set_safe_level_force(0);
 
-	RUBY_DTRACE_HOOK(FIND_REQUIRE_ENTRY, StringValuePtr(fname));
+	RUBY_DTRACE_HOOK(FIND_REQUIRE_ENTRY, RSTRING_PTR(fname));
 	found = search_required(path, &path, safe);
-	RUBY_DTRACE_HOOK(FIND_REQUIRE_RETURN, StringValuePtr(fname));
+	RUBY_DTRACE_HOOK(FIND_REQUIRE_RETURN, RSTRING_PTR(fname));
 
 	if (found) {
 	    if (!path || !(ftptr = load_lock(RSTRING_PTR(path)))) {
@@ -1024,7 +1023,7 @@ rb_require_internal(VALUE fname, int safe)
 
     th->errinfo = errinfo;
 
-    RUBY_DTRACE_HOOK(REQUIRE_RETURN, StringValuePtr(fname));
+    RUBY_DTRACE_HOOK(REQUIRE_RETURN, RSTRING_PTR(fname));
 
     return result;
 }
