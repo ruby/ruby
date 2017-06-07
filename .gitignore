@@ -65,6 +65,7 @@ y.tab.c
 /beos
 /bmlog-*
 /breakpoints.gdb
+/conftest
 /config.cache
 /config.h
 /config.h.in
