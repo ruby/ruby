@@ -900,14 +900,9 @@ module Net   #:nodoc:
       end
 
       D "opening connection to #{conn_address}:#{conn_port}..."
-      s = Timeout.timeout(@open_timeout, Net::OpenTimeout) {
-        begin
-          TCPSocket.open(conn_address, conn_port, @local_host, @local_port)
-        rescue => e
-          raise e, "Failed to open TCP connection to " +
-            "#{conn_address}:#{conn_port} (#{e.message})"
-        end
-      }
+
+      s = open_socket(conn_address, conn_port, @open_timeout)
+
       s.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
       D "opened"
       if use_ssl?
@@ -965,6 +960,34 @@ module Net   #:nodoc:
       raise
     end
     private :connect
+
+    def open_socket(conn_address, conn_port, open_timeout)
+      socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM)
+      if @local_host && @local_port
+        local_addr = Socket.pack_sockaddr_in(@local_port, @local_host)
+        socket.bind(local_addr)
+      end
+      conn_addr = Socket.pack_sockaddr_in(conn_port, conn_address)
+
+      begin
+        socket.connect_nonblock(conn_addr)
+      rescue Errno::EINPROGRESS
+        _, rs, _ = IO.select(nil, [socket], nil, open_timeout)
+        if rs
+          retry
+        else
+          raise Net::OpenTimeout, "Timeout to open " +
+              "#{conn_address}:#{conn_port} (exceeds #{open_timeout} seconds)"
+        end
+      rescue Errno::EISCONN
+        # It is connected.
+      rescue => e
+        raise e, "Failed to open TCP connection to" +
+            "#{conn_address}:#{conn_port} (#{e.message})"
+      end
+      socket
+    end
+    private :open_socket
 
     def on_connect
     end

@@ -541,9 +541,8 @@ module Net
 
     # internal method for Net::POP3.start
     def do_start(account, password) # :nodoc:
-      s = Timeout.timeout(@open_timeout, Net::OpenTimeout) do
-        TCPSocket.open(@address, port)
-      end
+      s = open_socket(@address, port, @open_timeout)
+
       if use_ssl?
         raise 'openssl library not installed' unless defined?(OpenSSL)
         context = OpenSSL::SSL::SSLContext.new
@@ -576,6 +575,30 @@ module Net
       end
     end
     private :do_start
+
+    def open_socket(conn_address, conn_port, open_timeout)
+      socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM)
+      conn_addr = Socket.pack_sockaddr_in(conn_port, conn_address)
+
+      begin
+        socket.connect_nonblock(conn_addr)
+      rescue Errno::EINPROGRESS
+        _, rs, _ = IO.select(nil, [socket], nil, open_timeout)
+        if rs
+          retry
+        else
+          raise Net::OpenTimeout, "Timeout to open " +
+              "#{conn_address}:#{conn_port} (exceeds #{open_timeout} seconds)"
+        end
+      rescue Errno::EISCONN
+        # It is connected.
+      rescue => e
+        raise e, "Failed to open TCP connection to" +
+            "#{conn_address}:#{conn_port} (#{e.message})"
+      end
+      socket
+    end
+    private :open_socket
 
     # Does nothing
     def on_connect # :nodoc:
