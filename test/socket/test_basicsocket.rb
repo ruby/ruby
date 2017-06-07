@@ -197,7 +197,7 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
         IO.select([ssock], nil, nil, 10) or
           flunk 'socket did not become readable'
       else
-        flunk "unexpected read_nonblock return: #{r.inspect}"
+        flunk "unexpected read_nonblock return: #{r.inspect}" unless set_nb # unless for MinGW
       end while true
 
       assert_raise(EOFError) { ssock.read_nonblock(1) }
