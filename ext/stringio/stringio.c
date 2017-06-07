@@ -1616,6 +1616,7 @@ Init_stringio(void)
     rb_define_method(StringIO, "initialize_copy", strio_copy, 1);
     rb_define_method(StringIO, "reopen", strio_reopen, -1);
 
+    rb_define_method(StringIO, "to_s", strio_get_string, 0);
     rb_define_method(StringIO, "string", strio_get_string, 0);
     rb_define_method(StringIO, "string=", strio_set_string, 1);
     rb_define_method(StringIO, "lineno", strio_get_lineno, 0);
