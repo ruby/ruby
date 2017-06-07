@@ -331,7 +331,7 @@ update-gems:
         f.puts "prereq: update-download"
         f.puts mk
       end
-      system("make", "prereq", *args.map {|arg| arg.join("=")})
+      system(ENV["MAKE"] || ENV["make"] || "make", "prereq", *args.map {|arg| arg.join("=")})
       clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk")
       print "prerequisites"
     else
