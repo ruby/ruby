@@ -418,7 +418,7 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
  *  Returns the remaining data held in the cipher object. Further calls to
  *  Cipher#update or Cipher#final will return garbage. This call should always
  *  be made as the last call of an encryption or decryption operation, after
- *  after having fed the entire plaintext or ciphertext to the Cipher instance.
+ *  having fed the entire plaintext or ciphertext to the Cipher instance.
  *
  *  If an authenticated cipher was used, a CipherError is raised if the tag
  *  could not be authenticated successfully. Only call this method after
