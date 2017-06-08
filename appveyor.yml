@@ -8,6 +8,7 @@ environment:
   matrix:
     - vs: "120"
 install:
+  - chcp
   - SET BITS=%Platform:x86=32%
   - SET BITS=%BITS:x=%
   - SET OPENSSL_DIR=c:\OpenSSL-Win%BITS%
@@ -43,8 +44,11 @@ build_script:
   - ..\win32\configure.bat --without-ext=+,dbm,gdbm,readline --with-opt-dir=/usr/local --with-openssl-dir=%OPENSSL_DIR:\=/%
   - nmake -l
   - nmake install-nodoc
+  - set /a JOBS=2*%NUMBER_OF_PROCESSORS%
 test_script:
   - nmake -l "TESTOPTS=-v -q" btest
   - nmake -l "TESTOPTS=-v -q" test-basic
+  - nmake -l "TESTOPTS=-q -j%JOBS%" test-all
+  - nmake -l test-spec
 matrix:
   fast_finish: true
