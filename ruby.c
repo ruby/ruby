@@ -1446,6 +1446,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
     NODE *tree = 0;
     VALUE parser;
+    VALUE script_name;
     const rb_iseq_t *iseq;
     rb_encoding *enc, *lenc;
 #if UTF8_PATH
@@ -1570,13 +1571,15 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	ienc = enc;
 #endif
     }
-    if (IF_UTF8_PATH((uenc = rb_utf8_encoding()) != lenc, 0)) {
+    script_name = opt->script_name;
+    rb_enc_associate(opt->script_name,
+		     IF_UTF8_PATH(uenc = rb_utf8_encoding(), lenc));
+#if UTF8_PATH
+    if (uenc != lenc) {
 	opt->script_name = str_conv_enc(opt->script_name, uenc, lenc);
 	opt->script = RSTRING_PTR(opt->script_name);
     }
-    else {
-	rb_enc_associate(opt->script_name, lenc);
-    }
+#endif
     rb_obj_freeze(opt->script_name);
     if (IF_UTF8_PATH(uenc != lenc, 1)) {
 	long i;
@@ -1654,7 +1657,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	VALUE f;
 	base_block = toplevel_context(toplevel_binding);
 	rb_parser_set_context(parser, base_block, TRUE);
-	f = open_load_file(opt->script_name, &opt->xflag);
+	f = open_load_file(script_name, &opt->xflag);
 	tree = load_file(parser, opt->script_name, f, 1, opt);
     }
     ruby_set_script_name(opt->script_name);
@@ -1712,7 +1715,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     {
 	VALUE path = Qnil;
 	if (!opt->e_script && strcmp(opt->script, "-")) {
-	    path = rb_realpath_internal(Qnil, opt->script_name, 1);
+	    path = rb_realpath_internal(Qnil, script_name, 1);
 	}
 	base_block = toplevel_context(toplevel_binding);
 	iseq = rb_iseq_new_main(tree, opt->script_name, path, vm_block_iseq(base_block));
