@@ -230,7 +230,7 @@ class Set
   #
   # See also Enumerable#include?
   def include?(o)
-    @hash[o]
+    @hash.key?(o)
   end
   alias member? include?
 
