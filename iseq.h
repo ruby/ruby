@@ -151,7 +151,7 @@ struct iseq_catch_table_entry {
 	CATCH_TYPE_REDO   = INT2FIX(5),
 	CATCH_TYPE_NEXT   = INT2FIX(6)
     } type;
-    
+
     /*
      * iseq type:
      *   CATCH_TYPE_RESCUE, CATCH_TYPE_ENSURE:
