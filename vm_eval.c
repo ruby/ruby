@@ -16,9 +16,10 @@ struct local_var_list {
 };
 
 static inline VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missing_reason call_status);
-static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const rb_cref_t *cref);
+static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const rb_cref_t *cref, int is_lambda);
 static inline VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
 static inline VALUE vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *argv, VALUE block_handler);
+static inline VALUE vm_yield_lambda_splattable(rb_thread_t *th, VALUE args);
 static VALUE vm_exec(rb_thread_t *th);
 static void vm_set_eval_stack(rb_thread_t * th, const rb_iseq_t *iseq, const rb_cref_t *cref, const struct rb_block *base_block);
 static int vm_collect_local_variables_in_heap(rb_thread_t *th, const VALUE *dfp, const struct local_var_list *vars);
@@ -1068,6 +1069,12 @@ rb_yield_splat(VALUE values)
 }
 
 VALUE
+rb_yield_lambda(VALUE values)
+{
+    return vm_yield_lambda_splattable(GET_THREAD(), values);
+}
+
+VALUE
 rb_yield_block(VALUE val, VALUE arg, int argc, const VALUE *argv, VALUE blockarg)
 {
     return vm_yield_with_block(GET_THREAD(), argc, argv,
@@ -1573,6 +1580,7 @@ yield_under(VALUE under, VALUE self, int argc, const VALUE *argv)
     struct rb_captured_block new_captured;
     const VALUE *ep = NULL;
     rb_cref_t *cref;
+    int is_lambda = FALSE;
 
     if (block_handler != VM_BLOCK_HANDLER_NONE) {
       again:
@@ -1588,10 +1596,12 @@ yield_under(VALUE under, VALUE self, int argc, const VALUE *argv)
 	    new_block_handler = VM_BH_FROM_IFUNC_BLOCK(&new_captured);
 	    break;
 	  case block_handler_type_proc:
+	    is_lambda = rb_proc_lambda_p(block_handler) != Qfalse;
 	    block_handler = vm_proc_to_block_handler(VM_BH_TO_PROC(block_handler));
 	    goto again;
 	  case block_handler_type_symbol:
-	    return rb_sym_proc_call(SYM2ID(VM_BH_TO_SYMBOL(block_handler)), 1, &self, VM_BLOCK_HANDLER_NONE);
+	    return rb_sym_proc_call(SYM2ID(VM_BH_TO_SYMBOL(block_handler)),
+				    argc, argv, VM_BLOCK_HANDLER_NONE);
 	}
 
 	new_captured.self = self;
@@ -1601,7 +1611,7 @@ yield_under(VALUE under, VALUE self, int argc, const VALUE *argv)
     }
 
     cref = vm_cref_push(th, under, ep, TRUE);
-    return vm_yield_with_cref(th, argc, argv, cref);
+    return vm_yield_with_cref(th, argc, argv, cref, is_lambda);
 }
 
 VALUE
@@ -1622,7 +1632,7 @@ rb_yield_refine_block(VALUE refinement, VALUE refinements)
 	CREF_REFINEMENTS_SET(cref, refinements);
 	VM_FORCE_WRITE_SPECIAL_CONST(&VM_CF_LEP(th->cfp)[VM_ENV_DATA_INDEX_SPECVAL], new_block_handler);
 	new_captured.self = refinement;
-	return vm_yield_with_cref(th, 0, NULL, cref);
+	return vm_yield_with_cref(th, 0, NULL, cref, FALSE);
     }
 }
 

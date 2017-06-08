@@ -2608,7 +2608,27 @@ rb_const_set(VALUE klass, ID id, VALUE val)
      * and avoid order-dependency on const_tbl
      */
     if (rb_cObject && (RB_TYPE_P(val, T_MODULE) || RB_TYPE_P(val, T_CLASS))) {
-	rb_class_name(val);
+	if (NIL_P(rb_class_path_cached(val))) {
+	    if (klass == rb_cObject) {
+		rb_ivar_set(val, classpath, rb_id2str(id));
+		rb_name_class(val, id);
+	    }
+	    else {
+		VALUE path;
+		ID pathid;
+		st_data_t n;
+		st_table *ivtbl = RCLASS_IV_TBL(klass);
+		if (ivtbl &&
+		    (st_lookup(ivtbl, (st_data_t)(pathid = classpath), &n) ||
+		     st_lookup(ivtbl, (st_data_t)(pathid = tmp_classpath), &n))) {
+		    path = rb_str_dup((VALUE)n);
+		    rb_str_append(rb_str_cat2(path, "::"), rb_id2str(id));
+		    OBJ_FREEZE(path);
+		    rb_ivar_set(val, pathid, path);
+		    rb_name_class(val, id);
+		}
+	    }
+	}
     }
 }
 
@@ -2656,7 +2676,8 @@ const_tbl_update(struct autoload_const_set_args *args)
 	}
 	rb_clear_constant_cache();
 	setup_const_entry(ce, klass, val, visibility);
-    } else {
+    }
+    else {
 	rb_clear_constant_cache();
 
 	ce = ZALLOC(rb_const_entry_t);

@@ -880,6 +880,16 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(1152921470247108503, 1073741789.lcm(1073741827))
   end
 
+  def test_gcd_no_memory_leak
+    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-"end;"}", limit: 1.2, rss: true)
+    x = (1<<121) + 1
+    y = (1<<99) + 1
+    1000.times{x.gcd(y)}
+    begin;
+      100.times {1000.times{x.gcd(y)}}
+    end;
+  end
+
   def test_supp
     assert_predicate(1, :real?)
     assert_predicate(1.1, :real?)
@@ -905,6 +915,13 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(5000000000.0, 10000000000.fdiv(2))
     assert_equal(0.5, 1.0.fdiv(2))
     assert_equal(0.25, Rational(1,2).fdiv(2))
+
+    a = 0xa42fcabf_c51ce400_00001000_00000000_00000000_00000000_00000000_00000000
+    b = 1<<1074
+    assert_equal(Rational(a, b).to_f, a.fdiv(b))
+    a = 3
+    b = 0x20_0000_0000_0001
+    assert_equal(Rational(a, b).to_f, a.fdiv(b))
   end
 
   def test_ruby19
@@ -936,6 +953,14 @@ class Rational_Test < Test::Unit::TestCase
     assert_eql zero, zero ** Rational(2, 3)
     assert_raise(ZeroDivisionError, bug5713) { Rational(0, 1) ** -big }
     assert_raise(ZeroDivisionError, bug5713) { Rational(0, 1) ** Rational(-2,3) }
+  end
+
+  def test_power_overflow
+    bug = '[ruby-core:79686] [Bug #13242]: Infinity due to overflow'
+    x = EnvUtil.suppress_warning {4r**40000000}
+    assert_predicate x, :infinite?, bug
+    x = EnvUtil.suppress_warning {(1/4r)**40000000}
+    assert_equal 0, x, bug
   end
 
   def test_positive_p

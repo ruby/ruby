@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require 'strscan'
 require 'rubygems/request_set/lockfile/parser'
 
 class Gem::RequestSet::Lockfile::Tokenizer
@@ -58,6 +57,7 @@ class Gem::RequestSet::Lockfile::Tokenizer
   private
 
   def tokenize input
+    require 'strscan'
     s = StringScanner.new input
 
     until s.eos? do

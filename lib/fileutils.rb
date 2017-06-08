@@ -16,7 +16,7 @@
 #   require 'fileutils'
 #
 #   FileUtils.cd(dir, options)
-#   FileUtils.cd(dir, options) {|dir| .... }
+#   FileUtils.cd(dir, options) {|dir| block }
 #   FileUtils.pwd()
 #   FileUtils.mkdir(dir, options)
 #   FileUtils.mkdir(list, options)
@@ -24,11 +24,11 @@
 #   FileUtils.mkdir_p(list, options)
 #   FileUtils.rmdir(dir, options)
 #   FileUtils.rmdir(list, options)
-#   FileUtils.ln(old, new, options)
-#   FileUtils.ln(list, destdir, options)
-#   FileUtils.ln_s(old, new, options)
-#   FileUtils.ln_s(list, destdir, options)
-#   FileUtils.ln_sf(src, dest, options)
+#   FileUtils.ln(target, link, options)
+#   FileUtils.ln(targets, dir, options)
+#   FileUtils.ln_s(target, link, options)
+#   FileUtils.ln_s(targets, dir, options)
+#   FileUtils.ln_sf(target, link, options)
 #   FileUtils.cp(src, dest, options)
 #   FileUtils.cp(list, dir, options)
 #   FileUtils.cp_r(src, dest, options)
@@ -38,7 +38,7 @@
 #   FileUtils.rm(list, options)
 #   FileUtils.rm_r(list, options)
 #   FileUtils.rm_rf(list, options)
-#   FileUtils.install(src, dest, mode = <src's>, options)
+#   FileUtils.install(src, dest, options)
 #   FileUtils.chmod(mode, list, options)
 #   FileUtils.chmod_R(mode, list, options)
 #   FileUtils.chown(user, group, list, options)
@@ -47,7 +47,7 @@
 #
 # The <tt>options</tt> parameter is a hash of options, taken from the list
 # <tt>:force</tt>, <tt>:noop</tt>, <tt>:preserve</tt>, and <tt>:verbose</tt>.
-# <tt>:noop</tt> means that no changes are made.  The other two are obvious.
+# <tt>:noop</tt> means that no changes are made.  The other three are obvious.
 # Each method documents the options that it honours.
 #
 # All methods that have the concept of a "source" file or directory can take
@@ -112,7 +112,7 @@ module FileUtils
   #   FileUtils.cd('/', :verbose => true)   # chdir and report it
   #
   #   FileUtils.cd('/') do  # chdir
-  #     [...]               # do something
+  #     # ...               # do something
   #   end                   # return to original directory
   #
   def cd(dir, verbose: nil, &block) # :yield: dir
@@ -144,7 +144,7 @@ module FileUtils
   end
   module_function :uptodate?
 
-  def remove_trailing_slash(dir)
+  def remove_trailing_slash(dir)   #:nodoc:
     dir == '/' ? dir : dir.chomp(?/)
   end
   private_module_function :remove_trailing_slash
@@ -175,10 +175,11 @@ module FileUtils
   #   FileUtils.mkdir_p '/usr/local/lib/ruby'
   #
   # causes to make following directories, if it does not exist.
-  #     * /usr
-  #     * /usr/local
-  #     * /usr/local/lib
-  #     * /usr/local/lib/ruby
+  #
+  # * /usr
+  # * /usr/local
+  # * /usr/local/lib
+  # * /usr/local/lib/ruby
   #
   # You can pass several directories at a time in a list.
   #
@@ -258,23 +259,24 @@ module FileUtils
   module_function :rmdir
 
   #
-  # <b><tt>ln(old, new, **options)</tt></b>
+  # :call-seq:
+  #   FileUtils.ln(target, link, force: nil, noop: nil, verbose: nil)
+  #   FileUtils.ln(target,  dir, force: nil, noop: nil, verbose: nil)
+  #   FileUtils.ln(targets, dir, force: nil, noop: nil, verbose: nil)
   #
-  # Creates a hard link +new+ which points to +old+.
-  # If +new+ already exists and it is a directory, creates a link +new/old+.
-  # If +new+ already exists and it is not a directory, raises Errno::EEXIST.
-  # But if :force option is set, overwrite +new+.
+  # In the first form, creates a hard link +link+ which points to +target+.
+  # If +link+ already exists, raises Errno::EEXIST.
+  # But if the :force option is set, overwrites +link+.
   #
-  #   FileUtils.ln 'gcc', 'cc', :verbose => true
+  #   FileUtils.ln 'gcc', 'cc', verbose: true
   #   FileUtils.ln '/usr/bin/emacs21', '/usr/bin/emacs'
   #
-  # <b><tt>ln(list, destdir, **options)</tt></b>
+  # In the second form, creates a link +dir/target+ pointing to +target+.
+  # In the third form, creates several hard links in the directory +dir+,
+  # pointing to each item in +targets+.
+  # If +dir+ is not a directory, raises Errno::ENOTDIR.
   #
-  # Creates several hard links in a directory, with each one pointing to the
-  # item in +list+.  If +destdir+ is not a directory, raises Errno::ENOTDIR.
-  #
-  #   include FileUtils
-  #   cd '/sbin'
+  #   FileUtils.cd '/sbin'
   #   FileUtils.ln %w(cp mv mkdir), '/bin'   # Now /sbin/cp and /bin/cp are linked.
   #
   def ln(src, dest, force: nil, noop: nil, verbose: nil)
@@ -291,24 +293,24 @@ module FileUtils
   module_function :link
 
   #
-  # <b><tt>ln_s(old, new, **options)</tt></b>
+  # :call-seq:
+  #   FileUtils.ln_s(target, link, force: nil, noop: nil, verbose: nil)
+  #   FileUtils.ln_s(target,  dir, force: nil, noop: nil, verbose: nil)
+  #   FileUtils.ln_s(targets, dir, force: nil, noop: nil, verbose: nil)
   #
-  # Creates a symbolic link +new+ which points to +old+.  If +new+ already
-  # exists and it is a directory, creates a symbolic link +new/old+.  If +new+
-  # already exists and it is not a directory, raises Errno::EEXIST.  But if
-  # :force option is set, overwrite +new+.
+  # In the first form, creates a symbolic link +link+ which points to +target+.
+  # If +link+ already exists, raises Errno::EEXIST.
+  # But if the :force option is set, overwrites +link+.
   #
   #   FileUtils.ln_s '/usr/bin/ruby', '/usr/local/bin/ruby'
-  #   FileUtils.ln_s 'verylongsourcefilename.c', 'c', :force => true
+  #   FileUtils.ln_s 'verylongsourcefilename.c', 'c', force: true
   #
-  # <b><tt>ln_s(list, destdir, **options)</tt></b>
+  # In the second form, creates a link +dir/target+ pointing to +target+.
+  # In the third form, creates several symbolic links in the directory +dir+,
+  # pointing to each item in +targets+.
+  # If +dir+ is not a directory, raises Errno::ENOTDIR.
   #
-  # Creates several symbolic links in a directory, with each one pointing to the
-  # item in +list+.  If +destdir+ is not a directory, raises Errno::ENOTDIR.
-  #
-  # If +destdir+ is not a directory, raises Errno::ENOTDIR.
-  #
-  #   FileUtils.ln_s Dir.glob('bin/*.rb'), '/home/aamine/bin'
+  #   FileUtils.ln_s Dir.glob('/bin/*.rb'), '/home/foo/bin'
   #
   def ln_s(src, dest, force: nil, noop: nil, verbose: nil)
     fu_output_message "ln -s#{force ? 'f' : ''} #{[src,dest].flatten.join ' '}" if verbose
@@ -324,8 +326,12 @@ module FileUtils
   module_function :symlink
 
   #
+  # :call-seq:
+  #   FileUtils.ln_sf(*args)
+  #
   # Same as
-  #   #ln_s(src, dest, :force => true)
+  #
+  #   FileUtils.ln_s(*args, force: true)
   #
   def ln_sf(src, dest, noop: nil, verbose: nil)
     ln_s src, dest, force: true, noop: noop, verbose: verbose
@@ -368,7 +374,7 @@ module FileUtils
   #
   #   # Examples of copying several files to target directory.
   #   FileUtils.cp_r %w(mail.rb field.rb debug/), site_ruby + '/tmail'
-  #   FileUtils.cp_r Dir.glob('*.rb'), '/home/aamine/lib/ruby', :noop => true, :verbose => true
+  #   FileUtils.cp_r Dir.glob('*.rb'), '/home/foo/lib/ruby', :noop => true, :verbose => true
   #
   #   # If you want to copy all contents of a directory instead of the
   #   # directory itself, c.f. src/x -> dest/x, src/y -> dest/y,
@@ -442,7 +448,7 @@ module FileUtils
   #   FileUtils.mv 'badname.rb', 'goodname.rb'
   #   FileUtils.mv 'stuff.rb', '/notexist/lib/ruby', :force => true  # no error
   #
-  #   FileUtils.mv %w(junk.txt dust.txt), '/home/aamine/.trash/'
+  #   FileUtils.mv %w(junk.txt dust.txt), '/home/foo/.trash/'
   #   FileUtils.mv Dir.glob('test*.rb'), 'test', :noop => true, :verbose => true
   #
   def mv(src, dest, force: nil, noop: nil, verbose: nil, secure: nil)
@@ -508,7 +514,7 @@ module FileUtils
   #
   # Equivalent to
   #
-  #   #rm(list, :force => true)
+  #   FileUtils.rm(list, :force => true)
   #
   def rm_f(list, noop: nil, verbose: nil)
     rm list, force: true, noop: noop, verbose: verbose
@@ -524,7 +530,7 @@ module FileUtils
   # StandardError when :force option is set.
   #
   #   FileUtils.rm_r Dir.glob('/tmp/*')
-  #   FileUtils.rm_r '/', :force => true          #  :-)
+  #   FileUtils.rm_r 'some_dir', :force => true
   #
   # WARNING: This method causes local vulnerability
   # if one of parent directories or removing directory tree are world
@@ -554,7 +560,7 @@ module FileUtils
   #
   # Equivalent to
   #
-  #   #rm_r(list, :force => true)
+  #   FileUtils.rm_r(list, :force => true)
   #
   # WARNING: This method causes local vulnerability.
   # Read the documentation of #rm_r first.
@@ -574,9 +580,9 @@ module FileUtils
   # (time-of-check-to-time-of-use) local security vulnerability of #rm_r.
   # #rm_r causes security hole when:
   #
-  #   * Parent directory is world writable (including /tmp).
-  #   * Removing directory tree includes world writable directory.
-  #   * The system has symbolic link.
+  # * Parent directory is world writable (including /tmp).
+  # * Removing directory tree includes world writable directory.
+  # * The system has symbolic link.
   #
   # To avoid this security hole, this method applies special preprocess.
   # If +path+ is a directory, this method chown(2) and chmod(2) all
@@ -594,8 +600,8 @@ module FileUtils
   #
   # For details of this security vulnerability, see Perl's case:
   #
-  #   http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2005-0448
-  #   http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2004-0452
+  # * http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2005-0448
+  # * http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2004-0452
   #
   # For fileutils.rb, this vulnerability is reported in [ruby-dev:26100].
   #
@@ -799,7 +805,7 @@ module FileUtils
   end
   private_module_function :user_mask
 
-  def apply_mask(mode, user_mask, op, mode_mask)
+  def apply_mask(mode, user_mask, op, mode_mask)   #:nodoc:
     case op
     when '='
       (mode & ~user_mask) | (user_mask & mode_mask)

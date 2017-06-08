@@ -3366,6 +3366,57 @@ __END__
     end
   end if File::BINARY != 0
 
+  def test_race_gets_and_close
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    bug13076 = '[ruby-core:78845] [Bug #13076]'
+    begin;
+      10.times do |i|
+        a = []
+        t = []
+        10.times do
+          r,w = IO.pipe
+          a << [r,w]
+          t << Thread.new do
+            begin
+              while r.gets
+              end
+            rescue IOError
+            end
+          end
+        end
+        a.each do |r,w|
+          w.puts "hoge"
+          w.close
+          r.close
+        end
+        assert_nothing_raised(IOError, bug13076) {
+          t.each(&:join)
+        }
+      end
+    end;
+  end
+
+  def test_race_closed_stream
+    bug13158 = '[ruby-core:79262] [Bug #13158]'
+    closed = nil
+    IO.pipe do |r, w|
+      thread = Thread.new do
+        begin
+          while r.gets
+          end
+        ensure
+          closed = r.closed?
+        end
+      end
+      sleep 0.01
+      r.close
+      assert_raise_with_message(IOError, /stream closed/) do
+        thread.join
+      end
+      assert_equal(true, closed, "#{bug13158}: stream should be closed")
+    end
+  end
+
   if RUBY_ENGINE == "ruby" # implementation details
     def test_foreach_rs_conversion
       make_tempfile {|t|
@@ -3431,6 +3482,49 @@ __END__
         end
         assert_equal(["foo\n", "bar\n", "baz\n"], IO.readlines(t.path))
       }
+    end
+
+    def test_closed_stream_in_rescue
+      assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+      begin;
+      10.times do
+        assert_nothing_raised(RuntimeError, /frozen IOError/) do
+          IO.pipe do |r, w|
+            begin
+              th = Thread.start {r.close}
+              r.gets
+            rescue IOError
+              # swallow pending exceptions
+              begin
+                sleep 0.001
+              rescue IOError
+                retry
+              end
+            ensure
+              th.kill.join
+            end
+          end
+        end
+      end
+      end;
+    end
+
+    def test_write_no_garbage
+      res = {}
+      ObjectSpace.count_objects(res) # creates strings on first call
+      [ 'foo'.b, '*' * 24 ].each do |buf|
+        with_pipe do |r, w|
+          before = ObjectSpace.count_objects(res)[:T_STRING]
+          n = w.write(buf)
+          s = w.syswrite(buf)
+          after = ObjectSpace.count_objects(res)[:T_STRING]
+          assert_equal before, after,
+            'no strings left over after write [ruby-core:78898] [Bug #13085]'
+          assert_not_predicate buf, :frozen?, 'no inadvertant freeze'
+          assert_equal buf.bytesize, n, 'IO#write wrote expected size'
+          assert_equal s, n, 'IO#syswrite wrote expected size'
+        end
+      end
     end
   end
 end

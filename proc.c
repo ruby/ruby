@@ -353,7 +353,7 @@ rb_binding_new(void)
  *  environment. See also the description of class +Binding+.
  *
  *     def get_binding(param)
- *       return binding
+ *       binding
  *     end
  *     b = get_binding("hello")
  *     eval("param", b)   #=> "hello"
@@ -375,7 +375,7 @@ rb_f_binding(VALUE self)
  *  reporting syntax errors.
  *
  *     def get_binding(param)
- *       return binding
+ *       binding
  *     end
  *     b = get_binding("hello")
  *     b.eval("param")   #=> "hello"
@@ -446,7 +446,7 @@ check_local_id(VALUE bindval, volatile VALUE *pname)
  *  call-seq:
  *     binding.local_variables -> Array
  *
- *  Returns the +symbol+ names of the binding's local variables
+ *  Returns the names of the binding's local variables as symbols.
  *
  *	def foo
  *  	  a = 1
@@ -455,7 +455,7 @@ check_local_id(VALUE bindval, volatile VALUE *pname)
  *  	  end
  *  	end
  *
- *  This method is short version of the following code.
+ *  This method is the short version of the following code:
  *
  *	binding.eval("local_variables")
  *
@@ -475,7 +475,7 @@ bind_local_variables(VALUE bindval)
  *  call-seq:
  *     binding.local_variable_get(symbol) -> obj
  *
- *  Returns a +value+ of local variable +symbol+.
+ *  Returns the value of the local variable +symbol+.
  *
  *	def foo
  *  	  a = 1
@@ -483,7 +483,7 @@ bind_local_variables(VALUE bindval)
  *  	  binding.local_variable_get(:b) #=> NameError
  *  	end
  *
- *  This method is short version of the following code.
+ *  This method is the short version of the following code:
  *
  *	binding.eval("#{symbol}")
  *
@@ -520,18 +520,19 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
  *  	  bind = binding
  *  	  bind.local_variable_set(:a, 2) # set existing local variable `a'
  *  	  bind.local_variable_set(:b, 3) # create new local variable `b'
- *  	                                 # `b' exists only in binding.
- *  	  p bind.local_variable_get(:a) #=> 2
- *  	  p bind.local_variable_get(:b) #=> 3
- *  	  p a #=> 2
- *  	  p b #=> NameError
+ *  	                                 # `b' exists only in binding
+ *
+ *  	  p bind.local_variable_get(:a)  #=> 2
+ *  	  p bind.local_variable_get(:b)  #=> 3
+ *  	  p a                            #=> 2
+ *  	  p b                            #=> NameError
  *  	end
  *
- *  This method is a similar behavior of the following code
+ *  This method behaves similarly to the following code:
  *
  *    binding.eval("#{symbol} = #{obj}")
  *
- *  if obj can be dumped in Ruby code.
+ *  if +obj+ can be dumped in Ruby code.
  */
 static VALUE
 bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
@@ -560,7 +561,7 @@ bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
  *  call-seq:
  *     binding.local_variable_defined?(symbol) -> obj
  *
- *  Returns a +true+ if a local variable +symbol+ exists.
+ *  Returns +true+ if a local variable +symbol+ exists.
  *
  *	def foo
  *  	  a = 1
@@ -568,7 +569,7 @@ bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
  *  	  binding.local_variable_defined?(:b) #=> false
  *  	end
  *
- *  This method is short version of the following code.
+ *  This method is the short version of the following code:
  *
  *	binding.eval("defined?(#{symbol}) == 'local-variable'")
  *
@@ -776,45 +777,42 @@ rb_block_lambda(void)
 /* CHECKME: are the argument checking semantics correct? */
 
 /*
- *  Document-method: call
  *  Document-method: []
+ *  Document-method: call
  *  Document-method: yield
  *
  *  call-seq:
  *     prc.call(params,...)   -> obj
  *     prc[params,...]        -> obj
  *     prc.(params,...)       -> obj
+ *     prc.yield(params,...)  -> obj
  *
  *  Invokes the block, setting the block's parameters to the values in
  *  <i>params</i> using something close to method calling semantics.
- *  Generates a warning if multiple values are passed to a proc that
- *  expects just one (previously this silently converted the parameters
- *  to an array).  Note that <code>prc.()</code> invokes
- *  <code>prc.call()</code> with the parameters given.  It's a syntax sugar to
- *  hide "call".
+ *  Returns the value of the last expression evaluated in the block.
  *
- *  Returns the value of the last expression evaluated in the block. See
- *  also Proc#yield.
+ *     a_proc = Proc.new {|scalar, *values| values.map {|value| value*scalar } }
+ *     a_proc.call(9, 1, 2, 3)    #=> [9, 18, 27]
+ *     a_proc[9, 1, 2, 3]         #=> [9, 18, 27]
+ *     a_proc.(9, 1, 2, 3)        #=> [9, 18, 27]
+ *     a_proc.yield(9, 1, 2, 3)   #=> [9, 18, 27]
  *
- *     a_proc = Proc.new { |scalar, *values| values.collect { |value| value*scalar } }
- *     a_proc.call(9, 1, 2, 3)   #=> [9, 18, 27]
- *     a_proc[9, 1, 2, 3]        #=> [9, 18, 27]
- *     a_proc.(9, 1, 2, 3)       #=> [9, 18, 27]
+ *  Note that <code>prc.()</code> invokes <code>prc.call()</code> with
+ *  the parameters given.  It's syntactic sugar to hide "call".
  *
  *  For procs created using <code>lambda</code> or <code>->()</code> an error
- *  is generated if the wrong number of parameters are passed to a Proc with
- *  multiple parameters.  For procs created using <code>Proc.new</code> or
- *  <code>Kernel.proc</code>, extra parameters are silently discarded.
+ *  is generated if the wrong number of parameters are passed to the proc.
+ *  For procs created using <code>Proc.new</code> or <code>Kernel.proc</code>,
+ *  extra parameters are silently discarded and missing parameters are
+ *  set to +nil+.
  *
- *     a_proc = lambda {|a,b| a}
- *     a_proc.call(1,2,3)
+ *     a_proc = proc {|a,b| [a,b] }
+ *     a_proc.call(1)   #=> [1, nil]
  *
- *  <em>produces:</em>
+ *     a_proc = lambda {|a,b| [a,b] }
+ *     a_proc.call(1)   # ArgumentError: wrong number of arguments (given 1, expected 2)
  *
- *     prog.rb:4:in `block in <main>': wrong number of arguments (given 3, expected 2) (ArgumentError)
- *     	from prog.rb:5:in `call'
- *     	from prog.rb:5:in `<main>'
- *
+ *  See also Proc#lambda?.
  */
 #if 0
 static VALUE
@@ -1086,7 +1084,7 @@ iseq_location(const rb_iseq_t *iseq)
  *    prc.source_location  -> [String, Integer]
  *
  * Returns the Ruby source filename and line number containing this proc
- * or +nil+ if this proc was not defined in Ruby (i.e. native)
+ * or +nil+ if this proc was not defined in Ruby (i.e. native).
  */
 
 VALUE
@@ -2468,7 +2466,7 @@ rb_obj_method_location(VALUE obj, ID id)
  *    meth.source_location  -> [String, Integer]
  *
  * Returns the Ruby source filename and line number containing this method
- * or nil if this method was not defined in Ruby (i.e. native)
+ * or nil if this method was not defined in Ruby (i.e. native).
  */
 
 VALUE
@@ -3125,7 +3123,7 @@ Init_Proc(void)
  *         @secret = n
  *       end
  *       def get_binding
- *         return binding()
+ *         binding
  *       end
  *     end
  *

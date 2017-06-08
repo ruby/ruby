@@ -587,6 +587,11 @@ class TestRubyOptions < Test::Unit::TestCase
         (?:.*\n)?
         For\sdetails:\shttp:\/\/.*\.ruby-lang\.org/.*\n
         \n
+        (?:
+          \[IMPORTANT\]\n
+          (?:.+\n)+
+          \n
+        )?
       )x,
     ]
     ExpectedStderrList << additional if additional

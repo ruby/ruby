@@ -82,7 +82,7 @@ module URI
     # Escapes the string, replacing all unsafe characters with codes.
     #
     # This method is obsolete and should not be used. Instead, use
-    # CGI.escape, URI.www_form_encode or URI.www_form_encode_component
+    # CGI.escape, URI.encode_www_form or URI.encode_www_form_component
     # depending on your specific use case.
     #
     # == Usage

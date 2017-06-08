@@ -108,7 +108,7 @@ sequences are as follows:
   \c\M-x         same as above
   \c? or \C-?    delete, ASCII 7Fh (DEL)
 
-Any other character followed by a backslash is interpreted as the
+Any other character following a backslash is interpreted as the
 character itself.
 
 Double-quote strings allow interpolation of other values using

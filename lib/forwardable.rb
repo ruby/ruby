@@ -130,12 +130,13 @@ module Forwardable
   #    delegate [method, method, ...] => accessor
   #
   def instance_delegate(hash)
-    hash.each{ |methods, accessor|
-      methods = [methods] unless methods.respond_to?(:each)
-      methods.each{ |method|
-        def_instance_delegator(accessor, method)
-      }
-    }
+    hash.each do |methods, accessor|
+      unless defined?(methods.each)
+        def_instance_delegator(accessor, methods)
+      else
+        methods.each {|method| def_instance_delegator(accessor, method)}
+      end
+    end
   end
 
   #
@@ -204,7 +205,7 @@ module Forwardable
       mesg = "#{Module === obj ? obj : obj.class}\##{ali} at #{loc.path}:#{loc.lineno} forwarding to private method "
       method_call = "#{<<-"begin;"}\n#{<<-"end;".chomp}"
         begin;
-          unless ::Kernel.instance_method(:respond_to?).bind(_).call(:"#{method}")
+          unless defined? _.#{method}
             ::Kernel.warn "\#{caller_locations(1)[0]}: "#{mesg.dump}"\#{_.class}"'##{method}'
             _#{method_call}
           else
@@ -261,12 +262,13 @@ module SingleForwardable
   #    delegate [method, method, ...] => accessor
   #
   def single_delegate(hash)
-    hash.each{ |methods, accessor|
-      methods = [methods] unless methods.respond_to?(:each)
-      methods.each{ |method|
-        def_single_delegator(accessor, method)
-      }
-    }
+    hash.each do |methods, accessor|
+      unless defined?(methods.each)
+        def_single_delegator(accessor, methods)
+      else
+        methods.each {|method| def_single_delegator(accessor, method)}
+      end
+    end
   end
 
   #

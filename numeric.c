@@ -3614,6 +3614,13 @@ fix_fdiv_double(VALUE x, VALUE y)
 double
 rb_int_fdiv_double(VALUE x, VALUE y)
 {
+    if (RB_INTEGER_TYPE_P(y) && !FIXNUM_ZERO_P(y)) {
+	VALUE gcd = rb_gcd(x, y);
+	if (!FIXNUM_ZERO_P(gcd)) {
+	    x = rb_int_idiv(x, gcd);
+	    y = rb_int_idiv(y, gcd);
+	}
+    }
     if (FIXNUM_P(x)) {
         return fix_fdiv_double(x, y);
     }
@@ -3628,7 +3635,7 @@ rb_int_fdiv_double(VALUE x, VALUE y)
  *  call-seq:
  *     integer.fdiv(numeric)  ->  float
  *
- *  Returns the floating point result of dividing +fix+ by +numeric+.
+ *  Returns the floating point result of dividing +integer+ by +numeric+.
  *
  *     654321.fdiv(13731)      #=> 47.6528293642124
  *     654321.fdiv(13731.24)   #=> 47.6519964693647
@@ -3897,6 +3904,8 @@ int_pow(long x, unsigned long y)
 		VALUE v;
 	      bignum:
 		v = rb_big_pow(rb_int2big(x), LONG2NUM(y));
+		if (RB_FLOAT_TYPE_P(v)) /* infinity due to overflow */
+		    return v;
 		if (z != 1) v = rb_big_mul(rb_int2big(neg ? -z : z), v);
 		return v;
 	    }
@@ -4626,7 +4635,7 @@ rb_int_abs(VALUE num)
  *  call-seq:
  *     int.size  ->  int
  *
- *  Returns the number of bytes in the machine representation of +fix+.
+ *  Returns the number of bytes in the machine representation of +int+.
  *
  *     1.size            #=> 4
  *     -1.size           #=> 4

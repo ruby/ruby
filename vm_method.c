@@ -1171,7 +1171,7 @@ rb_attr(VALUE klass, ID id, int read, int write, int ex)
 void
 rb_undef(VALUE klass, ID id)
 {
-    rb_method_entry_t *me;
+    const rb_method_entry_t *me;
 
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class to undef method");
@@ -1182,6 +1182,9 @@ rb_undef(VALUE klass, ID id)
     }
 
     me = search_method(klass, id, 0);
+    if (me && me->def->type == VM_METHOD_TYPE_REFINED) {
+	me = rb_resolve_refined_method(Qnil, me);
+    }
 
     if (UNDEFINED_METHOD_ENTRY_P(me) ||
 	UNDEFINED_REFINED_METHOD_P(me->def)) {
@@ -1666,6 +1669,15 @@ rb_mod_public(int argc, VALUE *argv, VALUE module)
  *  defined methods to protected. With arguments, sets the named methods
  *  to have protected visibility.
  *  String arguments are converted to symbols.
+ *
+ *  If a method has protected visibility, it is callable only where
+ *  <code>self</code> of the context is the same as the method.
+ *  (method definition or instance_eval). This behavior is different from
+ *  Java's protected method. Usually <code>private</code> should be used.
+ *
+ *  Note that a protected method is slow because it can't use inline cache.
+ *
+ *  To show a private method on RDoc, use <code>:doc:</code> instead of this.
  */
 
 static VALUE
@@ -1693,6 +1705,8 @@ rb_mod_protected(int argc, VALUE *argv, VALUE module)
  *       private :a
  *     end
  *     Mod.private_instance_methods   #=> [:a, :c]
+ *
+ *  Note that to show a private method on RDoc, use <code>:doc:</code>.
  */
 
 static VALUE

@@ -205,6 +205,15 @@ class TestRegexp < Test::Unit::TestCase
     assert_not_include(local_variables, :nil, "[ruby-dev:32675]")
   end
 
+  def test_assign_named_capture_trace
+    bug = '[ruby-core:79940] [Bug #13287]'
+    assert_normal_exit("#{<<-"begin;"}\n#{<<-"end;"}", bug)
+    begin;
+      / (?<foo>.*)/ =~ "bar" &&
+        true
+    end;
+  end
+
   def test_match_regexp
     r = /./
     m = r.match("a")
@@ -1196,6 +1205,25 @@ class TestRegexp < Test::Unit::TestCase
 
       assert_equal("foo", // =~ "")
     RUBY
+  end
+
+  def test_invalid_free_at_parse_depth_limit_over
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      begin
+        require '-test-/regexp'
+      rescue LoadError
+      else
+        bug = '[ruby-core:79624] [Bug #13234]'
+        Bug::Regexp.parse_depth_limit = 10
+        src = "[" * 100
+        3.times do
+          assert_raise_with_message(RegexpError, /parse depth limit over/, bug) do
+            Regexp.new(src)
+          end
+        end
+      end
+    end;
   end
 
   # This assertion is for porting x2() tests in testpy.py of Onigmo.

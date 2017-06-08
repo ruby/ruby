@@ -3,7 +3,7 @@ module OpenSSL
   def self.deprecated_warning_flag
     unless flag = (@deprecated_warning_flag ||= nil)
       if try_compile("", flag = "-Werror=deprecated-declarations")
-        if with_config("broken-apple-openssl")
+        if /darwin/ =~ RUBY_PLATFORM and with_config("broken-apple-openssl")
           flag = "-Wno-deprecated-declarations"
         end
         $warnflags << " #{flag}"

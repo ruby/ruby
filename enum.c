@@ -39,7 +39,27 @@ rb_enum_values_pack(int argc, const VALUE *argv)
     i = rb_enum_values_pack(argc, argv); \
 } while (0)
 
-#define enum_yield rb_yield_values2
+static VALUE
+enum_yield(int argc, VALUE ary)
+{
+    if (argc > 1)
+	return rb_yield_lambda(ary);
+    if (argc == 1)
+	return rb_yield(ary);
+    return rb_yield_values2(0, 0);
+}
+
+static VALUE
+enum_yield_array(VALUE ary)
+{
+    long len = RARRAY_LEN(ary);
+
+    if (len > 1)
+	return rb_yield_lambda(ary);
+    if (len == 1)
+	return rb_yield(RARRAY_AREF(ary, 0));
+    return rb_yield_values2(0, 0);
+}
 
 static VALUE
 grep_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
@@ -60,7 +80,7 @@ grep_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     ENUM_WANT_SVALUE();
 
     if (RTEST(rb_funcall(memo->v1, id_eqq, 1, i)) == RTEST(memo->u3.value)) {
-	rb_ary_push(memo->v2, rb_yield(i));
+	rb_ary_push(memo->v2, enum_yield(argc, i));
     }
     return Qnil;
 }
@@ -138,7 +158,7 @@ count_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 {
     struct MEMO *memo = MEMO_CAST(memop);
 
-    if (RTEST(enum_yield(argc, argv))) {
+    if (RTEST(rb_yield_values2(argc, argv))) {
 	memo->u3.cnt++;
     }
     return Qnil;
@@ -204,7 +224,7 @@ find_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 {
     ENUM_WANT_SVALUE();
 
-    if (RTEST(rb_yield(i))) {
+    if (RTEST(enum_yield(argc, i))) {
 	struct MEMO *memo = MEMO_CAST(memop);
 	MEMO_V1_SET(memo, i);
 	memo->u3.cnt = 1;
@@ -276,7 +296,7 @@ find_index_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 {
     struct MEMO *memo = MEMO_CAST(memop);
 
-    if (RTEST(enum_yield(argc, argv))) {
+    if (RTEST(rb_yield_values2(argc, argv))) {
 	MEMO_V1_SET(memo, UINT2NUM(memo->u3.cnt));
 	rb_iter_break();
     }
@@ -332,7 +352,7 @@ find_all_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
     ENUM_WANT_SVALUE();
 
-    if (RTEST(rb_yield(i))) {
+    if (RTEST(enum_yield(argc, i))) {
 	rb_ary_push(ary, i);
     }
     return Qnil;
@@ -402,7 +422,7 @@ reject_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
     ENUM_WANT_SVALUE();
 
-    if (!RTEST(rb_yield(i))) {
+    if (!RTEST(enum_yield(argc, i))) {
 	rb_ary_push(ary, i);
     }
     return Qnil;
@@ -441,7 +461,7 @@ enum_reject(VALUE obj)
 static VALUE
 collect_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
-    rb_ary_push(ary, enum_yield(argc, argv));
+    rb_ary_push(ary, rb_yield_values2(argc, argv));
 
     return Qnil;
 }
@@ -490,7 +510,7 @@ flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
     VALUE tmp;
 
-    i = enum_yield(argc, argv);
+    i = rb_yield_values2(argc, argv);
     tmp = rb_check_array_type(i);
 
     if (NIL_P(tmp)) {
@@ -787,7 +807,7 @@ partition_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arys))
     VALUE ary;
     ENUM_WANT_SVALUE();
 
-    if (RTEST(rb_yield(i))) {
+    if (RTEST(enum_yield(argc, i))) {
 	ary = memo->v1;
     }
     else {
@@ -833,7 +853,7 @@ group_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
     ENUM_WANT_SVALUE();
 
-    group = rb_yield(i);
+    group = enum_yield(argc, i);
     values = rb_hash_aref(hash, group);
     if (!RB_TYPE_P(values, T_ARRAY)) {
 	values = rb_ary_new3(1, i);
@@ -926,19 +946,23 @@ enum_first(int argc, VALUE *argv, VALUE obj)
  *     enum.sort                  -> array
  *     enum.sort { |a, b| block } -> array
  *
- *  Returns an array containing the items in <i>enum</i> sorted,
- *  either according to their own <code><=></code> method, or by using
- *  the results of the supplied block. The block should return -1, 0, or
- *  +1 depending on the comparison between <i>a</i> and <i>b</i>. As of
- *  Ruby 1.8, the method <code>Enumerable#sort_by</code> implements a
- *  built-in Schwartzian Transform, useful when key computation or
- *  comparison is expensive.
+ *  Returns an array containing the items in <i>enum</i> sorted.
  *
- *  The result is not guaranteed as stable.  When comparison of two
+ *  Comparisons for the sort will be done using the items' own
+ *  <code><=></code> operator or using an optional code block.
+ *
+ *  The block must implement a comparison between +a+ and +b+ and return
+ *  an integer less than 0 when +b+ follows +a+, +0+ when +a+ and +b+
+ *  are equivalent, or an integer greater than 0 when +a+ follows +b+.
+ *
+ *  The result is not guaranteed to be stable.  When the comparison of two
  *  elements returns +0+, the order of the elements is unpredictable.
  *
- *     %w(rhea kea flea).sort          #=> ["flea", "kea", "rhea"]
+ *     %w(rhea kea flea).sort           #=> ["flea", "kea", "rhea"]
  *     (1..10).sort { |a, b| b <=> a }  #=> [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+ *
+ *  See also Enumerable#sort_by. It implements a Schwartzian transform
+ *  which is useful when key computation or comparison is expensive.
  */
 
 static VALUE
@@ -963,7 +987,7 @@ sort_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _data))
 
     ENUM_WANT_SVALUE();
 
-    v = rb_yield(i);
+    v = enum_yield(argc, i);
 
     if (RBASIC(ary)->klass) {
 	rb_raise(rb_eRuntimeError, "sort_by reentered");
@@ -1007,12 +1031,12 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
  *  Sorts <i>enum</i> using a set of keys generated by mapping the
  *  values in <i>enum</i> through the given block.
  *
- *  The result is not guaranteed as stable.  When two keys are equal,
+ *  The result is not guaranteed to be stable.  When two keys are equal,
  *  the order of the corresponding elements is unpredictable.
  *
  *  If no block is given, an enumerator is returned instead.
  *
- *     %w{apple pear fig}.sort_by { |word| word.length}
+ *     %w{apple pear fig}.sort_by { |word| word.length }
  *                   #=> ["fig", "pear", "apple"]
  *
  *  The current implementation of <code>sort_by</code> generates an
@@ -1057,7 +1081,7 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
  *  This still generates many unnecessary <code>Time</code> objects. A
  *  more efficient technique is to cache the sort keys (modification
  *  times in this case) before the sort. Perl users often call this
- *  approach a Schwartzian Transform, after Randal Schwartz. We
+ *  approach a Schwartzian transform, after Randal Schwartz. We
  *  construct a temporary array, where each element is an array
  *  containing our sort key along with the filename. We sort this array,
  *  and then extract the filename from the result.
@@ -1137,7 +1161,7 @@ name##_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo)) \
 static VALUE \
 name##_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo)) \
 { \
-    return enum_##name##_func(enum_yield(argc, argv), MEMO_CAST(memo));	\
+    return enum_##name##_func(rb_yield_values2(argc, argv), MEMO_CAST(memo));	\
 } \
 \
 static VALUE \
@@ -1166,6 +1190,7 @@ DEFINE_ENUMFUNCS(all)
  *     %w[ant bear cat].all? { |word| word.length >= 3 } #=> true
  *     %w[ant bear cat].all? { |word| word.length >= 4 } #=> false
  *     [nil, true, 99].all?                              #=> false
+ *     [].all?                                           #=> true
  *
  */
 
@@ -1200,6 +1225,7 @@ DEFINE_ENUMFUNCS(any)
  *     %w[ant bear cat].any? { |word| word.length >= 3 } #=> true
  *     %w[ant bear cat].any? { |word| word.length >= 4 } #=> true
  *     [nil, true, 99].any?                              #=> true
+ *     [].any?                                           #=> false
  *
  */
 
@@ -1354,7 +1380,7 @@ nmin_i(VALUE i, VALUE *_data, int argc, VALUE *argv)
     ENUM_WANT_SVALUE();
 
     if (data->by)
-	cmpv = rb_yield(i);
+	cmpv = enum_yield(argc, i);
     else
 	cmpv = i;
 
@@ -1434,7 +1460,7 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
     if (rev) {
         rb_ary_reverse(result);
     }
-    *((VALUE *)&RBASIC(result)->klass) = rb_cArray;
+    RBASIC_SET_CLASS(result, rb_cArray);
     return result;
 
 }
@@ -1561,11 +1587,12 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *     a.min { |a, b| a.length <=> b.length }  #=> "dog"
  *
  *  If the +n+ argument is given, minimum +n+ elements are returned
- *  as an array.
+ *  as a sorted array.
  *
  *     a = %w[albatross dog horse]
  *     a.min(2)                                  #=> ["albatross", "dog"]
  *     a.min(2) {|a, b| a.length <=> b.length }  #=> ["dog", "horse"]
+ *     [5, 1, 3, 4, 2].min(3)                    #=> [1, 2, 3]
  */
 
 static VALUE
@@ -1654,11 +1681,12 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *     a.max { |a, b| a.length <=> b.length }  #=> "albatross"
  *
  *  If the +n+ argument is given, maximum +n+ elements are returned
- *  as an array.
+ *  as an array, sorted in descending order.
  *
  *     a = %w[albatross dog horse]
  *     a.max(2)                                  #=> ["horse", "dog"]
  *     a.max(2) {|a, b| a.length <=> b.length }  #=> ["albatross", "horse"]
+ *     [5, 1, 3, 4, 2].max(3)                    #=> [5, 4, 3]
  */
 
 static VALUE
@@ -1848,7 +1876,7 @@ min_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
     ENUM_WANT_SVALUE();
 
-    v = rb_yield(i);
+    v = enum_yield(argc, i);
     if (memo->v1 == Qundef) {
 	MEMO_V1_SET(memo, v);
 	MEMO_V2_SET(memo, i);
@@ -1876,7 +1904,8 @@ min_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *     a.min_by { |x| x.length }   #=> "dog"
  *
  *  If the +n+ argument is given, minimum +n+ elements are returned
- *  as an array.
+ *  as an array. These +n+ elements are sorted by the value from the
+ *  given block.
  *
  *     a = %w[albatross dog horse]
  *     p a.min_by(2) {|x| x.length } #=> ["dog", "horse"]
@@ -1908,7 +1937,7 @@ max_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 
     ENUM_WANT_SVALUE();
 
-    v = rb_yield(i);
+    v = enum_yield(argc, i);
     if (memo->v1 == Qundef) {
 	MEMO_V1_SET(memo, v);
 	MEMO_V2_SET(memo, i);
@@ -1935,8 +1964,9 @@ max_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *     a = %w(albatross dog horse)
  *     a.max_by { |x| x.length }   #=> "albatross"
  *
- *  If the +n+ argument is given, minimum +n+ elements are returned
- *  as an array.
+ *  If the +n+ argument is given, maximum +n+ elements are returned
+ *  as an array. These +n+ elements are sorted by the value from the
+ *  given block, in descending order.
  *
  *     a = %w[albatross dog horse]
  *     a.max_by(2) {|x| x.length } #=> ["albatross", "horse"]
@@ -2044,7 +2074,7 @@ minmax_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
 
     ENUM_WANT_SVALUE();
 
-    vi = rb_yield(i);
+    vi = enum_yield(argc, i);
 
     if (memo->last_bv == Qundef) {
         memo->last_bv = vi;
@@ -2227,7 +2257,7 @@ static VALUE
 each_val_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
 {
     ENUM_WANT_SVALUE();
-    rb_yield(i);
+    enum_yield(argc, i);
     return Qnil;
 }
 
@@ -2474,7 +2504,7 @@ zip_ary(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
 	}
     }
     if (NIL_P(result)) {
-	rb_yield(tmp);
+	enum_yield_array(tmp);
     }
     else {
 	rb_ary_push(result, tmp);
@@ -2525,7 +2555,7 @@ zip_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
 	}
     }
     if (NIL_P(result)) {
-	rb_yield(tmp);
+	enum_yield_array(tmp);
     }
     else {
 	rb_ary_push(result, tmp);
@@ -2647,7 +2677,7 @@ enum_take(VALUE obj, VALUE n)
 static VALUE
 take_while_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
-    if (!RTEST(enum_yield(argc, argv))) rb_iter_break();
+    if (!RTEST(rb_yield_values2(argc, argv))) rb_iter_break();
     rb_ary_push(ary, rb_enum_values_pack(argc, argv));
     return Qnil;
 }
@@ -2727,7 +2757,7 @@ drop_while_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     struct MEMO *memo = MEMO_CAST(args);
     ENUM_WANT_SVALUE();
 
-    if (!memo->u3.state && !RTEST(rb_yield(i))) {
+    if (!memo->u3.state && !RTEST(enum_yield(argc, i))) {
 	memo->u3.state = TRUE;
     }
     if (memo->u3.state) {
@@ -2770,8 +2800,8 @@ cycle_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 {
     ENUM_WANT_SVALUE();
 
-    rb_ary_push(ary, i);
-    rb_yield(i);
+    rb_ary_push(ary, argc > 1 ? i : rb_ary_new_from_values(argc, argv));
+    enum_yield(argc, i);
     return Qnil;
 }
 
@@ -2838,7 +2868,7 @@ enum_cycle(int argc, VALUE *argv, VALUE obj)
     if (len == 0) return Qnil;
     while (n < 0 || 0 < --n) {
         for (i=0; i<len; i++) {
-            rb_yield(RARRAY_AREF(ary, i));
+	    enum_yield_array(RARRAY_AREF(ary, i));
         }
     }
     return Qnil;
@@ -3207,9 +3237,10 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *
  *    # split mails in mbox (slice before Unix From line after an empty line)
  *    open("mbox") { |f|
- *      f.slice_before(emp: true) { |line, h|
- *        prevemp = h[:emp]
- *        h[:emp] = line == "\n"
+ *      emp = true
+ *      f.slice_before { |line|
+ *        prevemp = emp
+ *        emp = line == "\n"
  *        prevemp && line.start_with?("From ")
  *      }.each { |mail|
  *        mail.pop if mail.last == "\n"

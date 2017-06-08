@@ -304,6 +304,7 @@ special_object_p(VALUE obj)
     switch (BUILTIN_TYPE(obj)) {
       case T_BIGNUM:
       case T_FLOAT:
+      case T_SYMBOL:
 	return TRUE;
       default:
 	return FALSE;

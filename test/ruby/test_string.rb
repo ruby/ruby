@@ -202,6 +202,8 @@ CODE
     assert_equal("fobar", s)
 
     assert_raise(ArgumentError) { "foo"[1, 2, 3] = "" }
+
+    #assert_raise(IndexError) {"foo"[RbConfig::Limits["LONG_MIN"]] = "l"}
   end
 
   def test_CMP # '<=>'
@@ -1217,6 +1219,9 @@ CODE
 
     assert_nil("foo".rindex(//, -100))
     assert_nil($~)
+
+    assert_equal(3, "foo".rindex(//))
+    assert_equal([3, 3], $~.offset(0))
   end
 
   def test_rjust

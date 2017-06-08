@@ -4057,9 +4057,6 @@ rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base)
 	    sign = 0;
 	}
 	ASSERT_LEN();
-	if (str[0] == '+' || str[0] == '-') {
-	    goto bad;
-	}
     }
     if (base <= 0) {
 	if (str[0] == '0' && len > 1) {
@@ -4172,6 +4169,7 @@ rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base)
     digits_start = str;
     if (!str2big_scan_digits(s, str, base, badcheck, &num_digits, &len))
 	goto bad;
+    if (endp) *endp = (char *)(str + len);
     digits_end = digits_start + len;
 
     if (POW2_P(base)) {
@@ -6101,6 +6099,8 @@ big_fdiv(VALUE x, VALUE y, long ey)
     l = BIGNUM_LEN(x);
     ex = l * BITSPERDIG - nlz(BDIGITS(x)[l-1]);
     ex -= 2 * DBL_BIGDIG * BITSPERDIG;
+    if (ex > BITSPERDIG) ex -= BITSPERDIG;
+    else if (ex > 0) ex = 0;
     if (ex) x = big_shift(x, ex);
 
     bigdivrem(x, y, &z, 0);

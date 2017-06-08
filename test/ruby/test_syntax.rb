@@ -656,6 +656,10 @@ eom
     assert_equal(expected, actual, bug7559)
   end
 
+  def test_dedented_heredoc_invalid_identifer
+    assert_syntax_error('<<~ "#{}"', /unexpected <</)
+  end
+
   def test_lineno_operation_brace_block
     expected = __LINE__ + 1
     actual = caller_lineno\
@@ -917,6 +921,15 @@ eom
     end
   end
 
+  def test_do_block_in_hash_brace
+    bug13073 = '[ruby-core:78837] [Bug #13073]'
+    assert_valid_syntax 'p :foo, {a: proc do end, b: proc do end}', bug13073
+    assert_valid_syntax 'p :foo, {:a => proc do end, b: proc do end}', bug13073
+    assert_valid_syntax 'p :foo, {"a": proc do end, b: proc do end}', bug13073
+    assert_valid_syntax 'p :foo, {** proc do end, b: proc do end}', bug13073
+    assert_valid_syntax 'p :foo, {proc do end => proc do end, b: proc do end}', bug13073
+  end
+
   def test_do_after_local_variable
     obj = Object.new
     def obj.m; yield; end
@@ -947,6 +960,23 @@ eom
         end
       end
     end
+  end
+
+  def test_syntax_error_in_rescue
+    bug12613 = '[ruby-core:76531] [Bug #12613]'
+    assert_syntax_error("#{<<-"begin;"}\n#{<<-"end;"}", /Invalid retry/, bug12613)
+    begin;
+      while true
+        begin
+          p
+        rescue
+          retry
+        else
+          retry
+        end
+        break
+      end
+    end;
   end
 
   private

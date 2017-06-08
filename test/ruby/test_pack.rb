@@ -838,10 +838,18 @@ EXPECTED
     assert_equal addr, [buf].pack('p')
   end
 
+  def test_unpack_with_block
+    ret = []; "ABCD".unpack("CCCC") {|v| ret << v }
+    assert_equal [65, 66, 67, 68], ret
+    ret = []; "A".unpack("B*") {|v| ret << v.dup }
+    assert_equal ["01000001"], ret
+  end
+
   def test_unpack1
     assert_equal 65, "A".unpack1("C")
     assert_equal 68, "ABCD".unpack1("x3C")
     assert_equal 0x3042, "\u{3042 3044 3046}".unpack1("U*")
     assert_equal "hogefuga", "aG9nZWZ1Z2E=".unpack1("m")
+    assert_equal "01000001", "A".unpack1("B*")
   end
 end

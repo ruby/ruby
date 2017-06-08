@@ -176,6 +176,14 @@ class TestThread < Test::Unit::TestCase
     t2.kill if t2
   end
 
+  def test_new_symbol_proc
+    bug = '[ruby-core:80147] [Bug #13313]'
+    assert_ruby_status([], "#{<<-"begin;"}\n#{<<-'end;'}", bug)
+    begin;
+      exit("1" == Thread.start(1, &:to_s).value)
+    end;
+  end
+
   def test_join
     t = Thread.new { sleep }
     assert_nil(t.join(0.05))
@@ -1159,5 +1167,15 @@ q.pop
     bug12290 = '[ruby-core:74963] [Bug #12290]'
     c = Class.new(Thread) {def initialize() self.name = "foo"; super; end}
     assert_equal("foo", c.new {Thread.current.name}.value, bug12290)
+  end
+
+  def test_thread_interrupt_for_killed_thread
+    assert_normal_exit(<<-_end, '[Bug #8996]', timeout: 5, timeout_error: nil)
+      trap(:TERM){exit}
+      while true
+        t = Thread.new{sleep 0}
+        t.raise Interrupt
+      end
+    _end
   end
 end

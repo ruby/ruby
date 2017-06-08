@@ -39,7 +39,12 @@ class Gem::StubSpecification < Gem::BasicSpecification
     def initialize data, extensions
       parts          = data[PREFIX.length..-1].split(" ".freeze, 4)
       @name          = parts[0].freeze
-      @version       = Gem::Version.new parts[1]
+      @version       = if Gem::Version.correct?(parts[1])
+                         Gem::Version.new(parts[1])
+                       else
+                         Gem::Version.new(0)
+                       end
+
       @platform      = Gem::Platform.new parts[2]
       @extensions    = extensions
       @full_name     = if platform == Gem::Platform::RUBY

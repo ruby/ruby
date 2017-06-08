@@ -1260,7 +1260,7 @@ dependencies: []
       s.version = '1'
     end
 
-    spec.instance_variable_set :@licenses, Object.new.singleton_class
+    spec.instance_variable_set :@licenses, (class << (Object.new);self;end)
     spec.loaded_from = '/path/to/file'
 
     e = assert_raises Gem::FormatException do

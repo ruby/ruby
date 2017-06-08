@@ -470,6 +470,17 @@ sysstack_error_p(VALUE exc)
     return exc == sysstack_error || (!SPECIAL_CONST_P(exc) && RBASIC_CLASS(exc) == rb_eSysStackError);
 }
 
+static inline int
+special_exception_p(rb_thread_t *th, VALUE exc)
+{
+    enum ruby_special_exceptions i;
+    const VALUE *exceptions = th->vm->special_exceptions;
+    for (i = 0; i < ruby_special_error_count; ++i) {
+	if (exceptions[i] == exc) return TRUE;
+    }
+    return FALSE;
+}
+
 static void
 setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 {
@@ -487,6 +498,9 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	mesg = rb_exc_new(rb_eRuntimeError, 0, 0);
 	nocause = 0;
     }
+    else if (special_exception_p(th, mesg)) {
+	mesg = ruby_vm_special_exception_copy(mesg);
+    }
     if (cause != Qundef) {
 	exc_setup_cause(mesg, cause);
     }
@@ -503,9 +517,6 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	if (sysstack_error_p(mesg)) {
 	    if (NIL_P(rb_attr_get(mesg, idBt))) {
 		at = rb_vm_backtrace_object();
-		if (mesg == sysstack_error) {
-		    mesg = ruby_vm_sysstack_error_copy();
-		}
 		rb_ivar_set(mesg, idBt, at);
 		rb_ivar_set(mesg, idBt_locations, at);
 	    }
@@ -913,7 +924,7 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
 {
     int state;
     volatile VALUE result = Qnil;
-    volatile VALUE errinfo;
+    VALUE errinfo;
     rb_thread_t *const th = GET_THREAD();
     rb_ensure_list_t ensure_list;
     ensure_list.entry.marker = 0;
@@ -927,6 +938,9 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
     }
     TH_POP_TAG();
     errinfo = th->errinfo;
+    if (!NIL_P(errinfo) && !RB_TYPE_P(errinfo, T_OBJECT)) {
+	th->errinfo = Qnil;
+    }
     th->ensure_list=ensure_list.next;
     (*ensure_list.entry.e_proc)(ensure_list.entry.data2);
     th->errinfo = errinfo;

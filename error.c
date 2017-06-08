@@ -24,6 +24,10 @@
 #include <unistd.h>
 #endif
 
+#if defined __APPLE__
+# include <AvailabilityMacros.h>
+#endif
+
 #ifndef EXIT_SUCCESS
 #define EXIT_SUCCESS 0
 #endif
@@ -336,6 +340,80 @@ bug_report_file(const char *file, int line)
     return NULL;
 }
 
+FUNC_MINIMIZED(static void bug_important_message(FILE *out, const char *const msg, size_t len));
+
+static void
+bug_important_message(FILE *out, const char *const msg, size_t len)
+{
+    const char *const endmsg = msg + len;
+    const char *p = msg;
+
+    if (!len) return;
+    if (isatty(fileno(out))) {
+	static const char red[] = "\033[;31;1;7m";
+	static const char green[] = "\033[;32;7m";
+	static const char reset[] = "\033[m";
+	const char *e = strchr(p, '\n');
+	const int w = (int)(e - p);
+	do {
+	    int i = (int)(e - p);
+	    fputs(*p == ' ' ? green : red, out);
+	    fwrite(p, 1, e - p, out);
+	    for (; i < w; ++i) fputc(' ', out);
+	    fputs(reset, out);
+	    fputc('\n', out);
+	} while ((p = e + 1) < endmsg && (e = strchr(p, '\n')) != 0 && e > p + 1);
+    }
+    fwrite(p, 1, endmsg - p, out);
+}
+
+static void
+preface_dump(FILE *out)
+{
+#if defined __APPLE__
+    static const char msg[] = ""
+	"-- Crash Report log information "
+	"--------------------------------------------\n"
+	"   See Crash Report log file under the one of following:\n"
+# if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6
+	"     * ~/Library/Logs/CrashReporter\n"
+	"     * /Library/Logs/CrashReporter\n"
+# endif
+	"     * ~/Library/Logs/DiagnosticReports\n"
+	"     * /Library/Logs/DiagnosticReports\n"
+	"   for more details.\n"
+	"Don't forget to include the above Crash Report log file in bug reports.\n"
+	"\n";
+    const size_t msglen = sizeof(msg) - 1;
+#else
+    const char *msg = NULL;
+    const size_t msglen = 0;
+#endif
+    bug_important_message(out, msg, msglen);
+}
+
+static void
+postscript_dump(FILE *out)
+{
+#if defined __APPLE__
+    static const char msg[] = ""
+	"[IMPORTANT]"
+	/*" ------------------------------------------------"*/
+	"\n""Don't forget to include the Crash Report log file under\n"
+# if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6
+	"CrashReporter or "
+# endif
+	"DiagnosticReports directory in bug reports.\n"
+	/*"------------------------------------------------------------\n"*/
+	"\n";
+    const size_t msglen = sizeof(msg) - 1;
+#else
+    const char *msg = NULL;
+    const size_t msglen = 0;
+#endif
+    bug_important_message(out, msg, msglen);
+}
+
 static void
 bug_report_begin_valist(FILE *out, const char *fmt, va_list args)
 {
@@ -346,6 +424,7 @@ bug_report_begin_valist(FILE *out, const char *fmt, va_list args)
     fputs(buf, out);
     snprintf(buf, sizeof(buf), "\n%s\n\n", ruby_description);
     fputs(buf, out);
+    preface_dump(out);
 }
 
 #define bug_report_begin(out, fmt) do { \
@@ -366,7 +445,8 @@ bug_report_end(FILE *out)
 	    (*reporter->func)(out, reporter->data);
 	}
     }
-    fprintf(out, REPORTBUG_MSG);
+    fputs(REPORTBUG_MSG, out);
+    postscript_dump(out);
 }
 
 #define report_bug(file, line, fmt, ctx) do { \
@@ -487,6 +567,7 @@ rb_assert_failure(const char *file, int line, const char *name, const char *expr
     fprintf(out, "Assertion Failed: %s:%d:", file, line);
     if (name) fprintf(out, "%s:", name);
     fprintf(out, "%s\n%s\n\n", expr, ruby_description);
+    preface_dump(out);
     rb_vm_bugreport(NULL);
     bug_report_end(out);
     die();
@@ -799,9 +880,7 @@ exc_to_s(VALUE exc)
  *   exception.message   ->  string
  *
  * Returns the result of invoking <code>exception.to_s</code>.
- * Normally this returns the exception's message or name. By
- * supplying a to_str method, exceptions are agreeing to
- * be used where Strings are expected.
+ * Normally this returns the exception's message or name.
  */
 
 static VALUE

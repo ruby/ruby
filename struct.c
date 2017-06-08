@@ -436,10 +436,10 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 
 /*
  *  call-seq:
- *    Struct.new([class_name] [, member_name]+>)                        -> StructClass
- *    Struct.new([class_name] [, member_name]+>) {|StructClass| block } -> StructClass
- *    StructClass.new(value, ...)                                       -> obj
- *    StructClass[value, ...]                                           -> obj
+ *    Struct.new([class_name] [, member_name]+)                        -> StructClass
+ *    Struct.new([class_name] [, member_name]+) {|StructClass| block } -> StructClass
+ *    StructClass.new(value, ...)                                      -> object
+ *    StructClass[value, ...]                                          -> object
  *
  *  The first two forms are used to create a new Struct subclass +class_name+
  *  that can contain a value for each +member_name+.  This subclass can be
@@ -457,6 +457,12 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *     Struct::Customer.new("Dave", "123 Main")
  *     #=> #<struct Struct::Customer name="Dave", address="123 Main">
  *
+ *     # Create a structure named by its constant
+ *     Customer = Struct.new(:name, :address)
+ *     #=> Customer
+ *     Customer.new("Dave", "123 Main")
+ *     #=> #<struct Customer name="Dave", address="123 Main">
+ *
  *  If a block is given it will be evaluated in the context of
  *  +StructClass+, passing the created class as a parameter:
  *
@@ -465,7 +471,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *         "Hello #{name}!"
  *       end
  *     end
- *     Customer.new("Dave", "123 Main").greeting  # => "Hello Dave!"
+ *     Customer.new("Dave", "123 Main").greeting  #=> "Hello Dave!"
  *
  *  This is the recommended way to customize a struct.  Subclassing an
  *  anonymous struct creates an extra anonymous class that will never be used.
@@ -476,11 +482,11 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *  Passing more parameters than number of attributes will raise
  *  an ArgumentError.
  *
- *     # Create a structure named by its constant
  *     Customer = Struct.new(:name, :address)
- *     #=> Customer
  *     Customer.new("Dave", "123 Main")
  *     #=> #<struct Customer name="Dave", address="123 Main">
+ *     Customer["Dave"]
+ *     #=> #<struct Customer name="Dave", address=nil>
  */
 
 static VALUE
@@ -625,7 +631,7 @@ struct_enum_size(VALUE s, VALUE args, VALUE eobj)
 /*
  *  call-seq:
  *     struct.each {|obj| block }  -> struct
- *     struct.each                 -> an_enumerator
+ *     struct.each                 -> enumerator
  *
  *  Yields the value of each struct member in order.  If no block is given an
  *  enumerator is returned.
@@ -656,7 +662,7 @@ rb_struct_each(VALUE s)
 /*
  *  call-seq:
  *     struct.each_pair {|sym, obj| block }     -> struct
- *     struct.each_pair                         -> an_enumerator
+ *     struct.each_pair                         -> enumerator
  *
  *  Yields the name and value of each struct member in order.  If no block is
  *  given an enumerator is returned.
@@ -747,7 +753,7 @@ inspect_struct(VALUE s, VALUE dummy, int recur)
  *   struct.to_s      -> string
  *   struct.inspect   -> string
  *
- * Describe the contents of this struct in a string.
+ * Returns a description of this struct as a string.
  */
 
 static VALUE
@@ -871,8 +877,8 @@ invalid_struct_pos(VALUE s, VALUE idx)
 
 /*
  *  call-seq:
- *     struct[member]   -> anObject
- *     struct[index]    -> anObject
+ *     struct[member]   -> object
+ *     struct[index]    -> object
  *
  *  Attribute Reference---Returns the value of the given struct +member+ or
  *  the member at the given +index+.   Raises NameError if the +member+ does
@@ -948,7 +954,7 @@ struct_entry(VALUE s, long n)
 
 /*
  *  call-seq:
- *     struct.values_at(selector, ...)  -> an_array
+ *     struct.values_at(selector, ...)  -> array
  *
  *  Returns the struct member values for each +selector+ as an Array.  A
  *  +selector+ may be either an Integer offset or a Range of offsets (as in
@@ -956,7 +962,7 @@ struct_entry(VALUE s, long n)
  *
  *     Customer = Struct.new(:name, :address, :zip)
  *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
- *     joe.values_at 0, 2 #=> ["Joe Smith", 12345]
+ *     joe.values_at(0, 2)   #=> ["Joe Smith", 12345]
  *
  */
 
@@ -968,8 +974,8 @@ rb_struct_values_at(int argc, VALUE *argv, VALUE s)
 
 /*
  *  call-seq:
- *     struct.select {|i| block }    -> array
- *     struct.select                 -> an_enumerator
+ *     struct.select {|obj| block }  -> array
+ *     struct.select                 -> enumerator
  *
  *  Yields each member value from the struct to the block and returns an Array
  *  containing the member values from the +struct+ for which the given block
@@ -977,7 +983,7 @@ rb_struct_values_at(int argc, VALUE *argv, VALUE s)
  *
  *     Lots = Struct.new(:a, :b, :c, :d, :e, :f)
  *     l = Lots.new(11, 22, 33, 44, 55, 66)
- *     l.select {|v| (v % 2).zero? }   #=> [22, 44, 66]
+ *     l.select {|v| v.even? }   #=> [22, 44, 66]
  */
 
 static VALUE
@@ -1046,7 +1052,7 @@ rb_struct_equal(VALUE s, VALUE s2)
  * call-seq:
  *   struct.hash   -> integer
  *
- * Returns a hash value based on this struct's contents (see Object#hash).
+ * Returns a hash value based on this struct's contents.
  *
  * See also Object#hash.
  */
@@ -1136,15 +1142,16 @@ rb_struct_ptr(VALUE s)
  * call-seq:
  *   struct.dig(key, ...)              -> object
  *
- * Extracts the nested value specified by the sequence of <i>idx</i>
+ * Extracts the nested value specified by the sequence of +key+
  * objects by calling +dig+ at each step, returning +nil+ if any
  * intermediate step is +nil+.
  *
- *   klass = Struct.new(:a)
- *   o = klass.new(klass.new({b: [1, 2, 3]}))
+ *   Foo = Struct.new(:a)
+ *   f = Foo.new(Foo.new({b: [1, 2, 3]}))
  *
- *   o.dig(:a, :a, :b, 0)              #=> 1
- *   o.dig(:b, 0)                      #=> nil
+ *   f.dig(:a, :a, :b, 0)    # => 1
+ *   f.dig(:b, 0)            # => nil
+ *   f.dig(:a, :a, :b, :c)   # TypeError: no implicit conversion of Symbol into Integer
  */
 
 static VALUE
@@ -1158,6 +1165,8 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ *  Document-class: Struct
+ *
  *  A Struct is a convenient way to bundle a number of attributes together,
  *  using accessor methods, without having to write an explicit class.
  *
@@ -1178,7 +1187,7 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
  *  See Struct::new for further examples of creating struct subclasses and
  *  instances.
  *
- *  In the method descriptions that follow a "member" parameter refers to a
+ *  In the method descriptions that follow, a "member" parameter refers to a
  *  struct member which is either a quoted string (<code>"name"</code>) or a
  *  Symbol (<code>:name</code>).
  */

@@ -23,6 +23,8 @@ class TestObject < Test::Unit::TestCase
     assert_equal true, true.dup
     assert_equal nil, nil.dup
     assert_equal false, false.dup
+    x = :x; assert_equal x, x.dup
+    x = "bug13145".intern; assert_equal x, x.dup
     x = 1 << 64; assert_equal x, x.dup
     x = 1.72723e-77; assert_equal x, x.dup
 
@@ -51,6 +53,8 @@ class TestObject < Test::Unit::TestCase
     assert_equal true, true.clone
     assert_equal nil, nil.clone
     assert_equal false, false.clone
+    x = :x; assert_equal x, x.dup
+    x = "bug13145".intern; assert_equal x, x.dup
     x = 1 << 64; assert_equal x, x.clone
     x = 1.72723e-77; assert_equal x, x.clone
     assert_raise(ArgumentError) {1.clone(freeze: false)}

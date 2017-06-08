@@ -20,6 +20,10 @@ class TestTempfile < Test::Unit::TestCase
     end
   end
 
+  def test_leackchecker
+    assert_instance_of(Tempfile, Tempfile.allocate)
+  end
+
   def test_basic
     t = tempfile("foo")
     path = t.path
@@ -241,6 +245,13 @@ puts Tempfile.new('foo').path
     t.write("hello")
     t.close
     assert_equal 5, t.size
+  end
+
+  def test_size_on_empty_file
+    t = tempfile("foo")
+    t.write("")
+    t.close
+    assert_equal 0, t.size
   end
 
   def test_concurrency

@@ -85,6 +85,7 @@ static ID id_locals;
 static void sleep_timeval(rb_thread_t *th, struct timeval time, int spurious_check);
 static void sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec, int spurious_check);
 static void sleep_forever(rb_thread_t *th, int nodeadlock, int spurious_check);
+static void rb_thread_sleep_deadly_allow_spurious_wakeup(void);
 static double timeofday(void);
 static int rb_threadptr_dead(rb_thread_t *th);
 static void rb_check_deadlock(rb_vm_t *vm);
@@ -549,12 +550,45 @@ ruby_thread_init_stack(rb_thread_t *th)
     native_thread_init_stack(th);
 }
 
+const VALUE *
+rb_vm_proc_local_ep(VALUE proc)
+{
+    const VALUE *ep = vm_proc_ep(proc);
+
+    if (ep) {
+	return rb_vm_ep_local_ep(ep);
+    }
+    else {
+	return NULL;
+    }
+}
+
+static void
+thread_do_start(rb_thread_t *th, VALUE args)
+{
+    native_set_thread_name(th);
+    if (!th->first_func) {
+	rb_proc_t *proc;
+	GetProcPtr(th->first_proc, proc);
+	th->errinfo = Qnil;
+	th->root_lep = rb_vm_proc_local_ep(th->first_proc);
+	th->root_svar = Qfalse;
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
+	th->value = rb_vm_invoke_proc(th, proc,
+				      (int)RARRAY_LEN(args), RARRAY_CONST_PTR(args),
+				      VM_BLOCK_HANDLER_NONE);
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
+    }
+    else {
+	th->value = (*th->first_func)((void *)args);
+    }
+}
+
 static int
 thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_start)
 {
     int state;
     VALUE args = th->first_args;
-    rb_proc_t *proc;
     rb_thread_list_t *join_list;
     rb_thread_t *main_th;
     VALUE errinfo = Qnil;
@@ -582,23 +616,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 
 	TH_PUSH_TAG(th);
 	if ((state = EXEC_TAG()) == 0) {
-	    SAVE_ROOT_JMPBUF(th, {
-                native_set_thread_name(th);
-		if (!th->first_func) {
-		    GetProcPtr(th->first_proc, proc);
-		    th->errinfo = Qnil;
-		    th->root_lep = rb_vm_ep_local_ep(vm_proc_ep(th->first_proc));
-		    th->root_svar = Qfalse;
-		    EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
-		    th->value = rb_vm_invoke_proc(th, proc,
-						  (int)RARRAY_LEN(args), RARRAY_CONST_PTR(args),
-						  VM_BLOCK_HANDLER_NONE);
-		    EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
-		}
-		else {
-		    th->value = (*th->first_func)((void *)args);
-		}
-	    });
+	    SAVE_ROOT_JMPBUF(th, thread_do_start(th, args));
 	}
 	else {
 	    errinfo = th->errinfo;
@@ -845,7 +863,7 @@ thread_join_sleep(VALUE arg)
 
     while (target_th->status != THREAD_KILLED) {
 	if (forever) {
-	    sleep_forever(th, 1, 0);
+	    sleep_forever(th, TRUE, FALSE);
 	}
 	else {
 	    double now = timeofday();
@@ -1136,14 +1154,21 @@ void
 rb_thread_sleep_forever(void)
 {
     thread_debug("rb_thread_sleep_forever\n");
-    sleep_forever(GET_THREAD(), 0, 1);
+    sleep_forever(GET_THREAD(), FALSE, TRUE);
 }
 
 void
 rb_thread_sleep_deadly(void)
 {
     thread_debug("rb_thread_sleep_deadly\n");
-    sleep_forever(GET_THREAD(), 1, 1);
+    sleep_forever(GET_THREAD(), TRUE, TRUE);
+}
+
+static void
+rb_thread_sleep_deadly_allow_spurious_wakeup(void)
+{
+    thread_debug("rb_thread_sleep_deadly_allow_spurious_wakeup\n");
+    sleep_forever(GET_THREAD(), TRUE, FALSE);
 }
 
 static double
@@ -2095,6 +2120,13 @@ rb_threadptr_raise(rb_thread_t *th, int argc, VALUE *argv)
     else {
 	exc = rb_make_exception(argc, argv);
     }
+
+    /* making an exception object can switch thread,
+       so we need to check thread deadness again */
+    if (rb_threadptr_dead(th)) {
+	return Qnil;
+    }
+
     rb_threadptr_setup_exception(GET_THREAD(), exc, Qundef);
     rb_threadptr_pending_interrupt_enque(th, exc);
     rb_threadptr_interrupt(th);
@@ -2159,19 +2191,29 @@ rb_threadptr_reset_raised(rb_thread_t *th)
     return 1;
 }
 
-void
-rb_thread_fd_close(int fd)
+int
+rb_notify_fd_close(int fd)
 {
     rb_vm_t *vm = GET_THREAD()->vm;
     rb_thread_t *th = 0;
+    int busy;
 
+    busy = 0;
     list_for_each(&vm->living_threads, th, vmlt_node) {
 	if (th->waiting_fd == fd) {
 	    VALUE err = th->vm->special_exceptions[ruby_error_closed_stream];
 	    rb_threadptr_pending_interrupt_enque(th, err);
 	    rb_threadptr_interrupt(th);
+	    busy = 1;
 	}
     }
+    return busy;
+}
+
+void
+rb_thread_fd_close(int fd)
+{
+    while (rb_notify_fd_close(fd));
 }
 
 /*

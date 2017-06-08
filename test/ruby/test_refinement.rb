@@ -1474,6 +1474,25 @@ class TestRefinement < Test::Unit::TestCase
     INPUT
   end
 
+  def test_undef_prepended_method
+    bug13096 = '[ruby-core:78944] [Bug #13096]'
+    klass = EnvUtil.labeled_class("X") do
+      def foo; end
+    end
+    klass.prepend(Module.new)
+    ext = EnvUtil.labeled_module("Ext") do
+      refine klass do
+        def foo
+        end
+      end
+    end
+    assert_nothing_raised(NameError, bug13096) do
+      klass.class_eval do
+        undef :foo
+      end
+    end
+  end
+
   def test_call_refined_method_in_duplicate_module
     bug10885 = '[ruby-dev:48878]'
     assert_in_out_err([], <<-INPUT, [], [], bug10885)
@@ -1750,6 +1769,31 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal("Foo#x", FooExtClient.return_proc(&:x).(Foo.new))
   end
 
+  def test_symbol_proc_with_block
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    bug = '[ruby-core:80219] [Bug #13325]'
+    begin;
+      module M
+        refine Class.new do
+        end
+      end
+      class C
+        def call(a, x, &b)
+          b.call(a, &x)
+        end
+      end
+      o = C.new
+      r = nil
+      x = ->(z){r = z}
+      assert_equal(42, o.call(42, x, &:tap))
+      assert_equal(42, r)
+      using M
+      r = nil
+      assert_equal(42, o.call(42, x, &:tap), bug)
+      assert_equal(42, r, bug)
+    end;
+  end
+
   module AliasInSubclass
     class C
       def foo
@@ -1808,6 +1852,38 @@ class TestRefinement < Test::Unit::TestCase
       using PublicCows
       assert_equal("Moo", Cow.new.moo, bug12729)
     end;
+  end
+
+  module SuperToModule
+    class Parent
+    end
+
+    class Child < Parent
+    end
+
+    module FooBar
+      refine Parent do
+        def to_s
+          "Parent"
+        end
+      end
+
+      refine Child do
+        def to_s
+          super + " -> Child"
+        end
+      end
+    end
+
+    using FooBar
+    def Child.test
+      new.to_s
+    end
+  end
+
+  def test_super_to_module
+    bug = '[ruby-core:79588] [Bug #13227]'
+    assert_equal("Parent -> Child", SuperToModule::Child.test, bug)
   end
 
   private

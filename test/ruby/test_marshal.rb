@@ -644,6 +644,9 @@ class TestMarshal < Test::Unit::TestCase
     c = Bug9523.new
     assert_raise_with_message(RuntimeError, /Marshal\.dump reentered at marshal_dump/) do
       Marshal.dump(c)
+      GC.start
+      1000.times {"x"*1000}
+      GC.start
       c.cc.call
     end
   end

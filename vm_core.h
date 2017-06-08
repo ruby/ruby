@@ -1166,6 +1166,8 @@ VM_STACK_ENV_WRITE(const VALUE *ep, int index, VALUE v)
 }
 
 const VALUE *rb_vm_ep_local_ep(const VALUE *ep);
+const VALUE *rb_vm_proc_local_ep(VALUE proc);
+
 VALUE rb_vm_frame_block_handler(const rb_control_frame_t *cfp);
 
 #define RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp) ((cfp)+1)

@@ -22,17 +22,17 @@
 static rb_control_frame_t *vm_get_ruby_level_caller_cfp(const rb_thread_t *th, const rb_control_frame_t *cfp);
 
 VALUE
-ruby_vm_sysstack_error_copy(void)
+ruby_vm_special_exception_copy(VALUE exc)
 {
-    VALUE e = rb_obj_alloc(rb_eSysStackError);
-    rb_obj_copy_ivar(e, sysstack_error);
+    VALUE e = rb_obj_alloc(rb_class_real(RBASIC_CLASS(exc)));
+    rb_obj_copy_ivar(e, exc);
     return e;
 }
 
 static void
 vm_stackoverflow(void)
 {
-    rb_exc_raise(ruby_vm_sysstack_error_copy());
+    rb_exc_raise(ruby_vm_special_exception_copy(sysstack_error));
 }
 
 #if VM_CHECK_MODE > 0
@@ -1538,8 +1538,6 @@ vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_
     vm_pop_frame(th, cfp, cfp->ep);
     cfp = th->cfp;
 
-    RUBY_VM_CHECK_INTS(th);
-
     sp_orig = sp = cfp->sp;
 
     /* push self */
@@ -1558,6 +1556,8 @@ vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_
 		  iseq->body->stack_max);
 
     cfp->sp = sp_orig;
+    RUBY_VM_CHECK_INTS(th);
+
     return Qundef;
 }
 
@@ -2026,7 +2026,8 @@ vm_call_zsuper(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_calling_info 
     if (!cc->me) {
 	return vm_call_method_nome(th, cfp, calling, ci, cc);
     }
-    if (cc->me->def->type == VM_METHOD_TYPE_REFINED) {
+    if (cc->me->def->type == VM_METHOD_TYPE_REFINED &&
+	cc->me->def->body.refined.orig_me) {
 	cc->me = refined_method_callable_without_refinement(cc->me);
     }
     return vm_call_method_each_type(th, cfp, calling, ci, cc);
@@ -2520,12 +2521,6 @@ vm_callee_setup_block_arg(rb_thread_t *th, struct rb_calling_info *calling, cons
 		else if (calling->argc > iseq->body->param.lead_num) {
 		    calling->argc = iseq->body->param.lead_num; /* simply truncate arguments */
 		}
-	    }
-	    else if (arg_setup_type == arg_setup_lambda &&
-		     calling->argc == 1 &&
-		     !NIL_P(arg0 = vm_callee_setup_block_arg_arg0_check(argv)) &&
-		     RARRAY_LEN(arg0) == iseq->body->param.lead_num) {
-		calling->argc = vm_callee_setup_block_arg_arg0_splat(cfp, iseq, argv, arg0);
 	    }
 	    else {
 		argument_arity_error(th, iseq, calling->argc, iseq->body->param.lead_num, iseq->body->param.lead_num);

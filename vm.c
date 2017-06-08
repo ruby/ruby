@@ -1021,15 +1021,17 @@ invoke_iseq_block_from_c(rb_thread_t *th, const struct rb_captured_block *captur
 static inline VALUE
 invoke_block_from_c_splattable(rb_thread_t *th, VALUE block_handler,
 			       int argc, const VALUE *argv,
-			       VALUE passed_block_handler, const rb_cref_t *cref)
+			       VALUE passed_block_handler, const rb_cref_t *cref,
+			       int splattable, int is_lambda)
 {
-    int is_lambda = FALSE;
   again:
     switch (vm_block_handler_type(block_handler)) {
       case block_handler_type_iseq:
 	{
 	    const struct rb_captured_block *captured = VM_BH_TO_ISEQ_BLOCK(block_handler);
-	    return invoke_iseq_block_from_c(th, captured, captured->self, argc, argv, passed_block_handler, cref, TRUE, is_lambda);
+	    return invoke_iseq_block_from_c(th, captured, captured->self,
+					    argc, argv, passed_block_handler,
+					    cref, splattable, is_lambda);
 	}
       case block_handler_type_ifunc:
 	return vm_yield_with_cfunc(th, VM_BH_TO_IFUNC_BLOCK(block_handler), VM_BH_TO_IFUNC_BLOCK(block_handler)->self,
@@ -1037,7 +1039,8 @@ invoke_block_from_c_splattable(rb_thread_t *th, VALUE block_handler,
       case block_handler_type_symbol:
 	return vm_yield_with_symbol(th, VM_BH_TO_SYMBOL(block_handler), argc, argv, passed_block_handler);
       case block_handler_type_proc:
-	is_lambda = block_proc_is_lambda(VM_BH_TO_PROC(block_handler));
+	if (!splattable)
+	    is_lambda = block_proc_is_lambda(VM_BH_TO_PROC(block_handler));
 	block_handler = vm_proc_to_block_handler(VM_BH_TO_PROC(block_handler));
 	goto again;
     }
@@ -1058,21 +1061,33 @@ check_block_handler(rb_thread_t *th)
 }
 
 static VALUE
-vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const rb_cref_t *cref)
+vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const rb_cref_t *cref, int is_lambda)
 {
-    return invoke_block_from_c_splattable(th, check_block_handler(th), argc, argv, VM_BLOCK_HANDLER_NONE, cref);
+    return invoke_block_from_c_splattable(th, check_block_handler(th),
+					  argc, argv, VM_BLOCK_HANDLER_NONE,
+					  cref, FALSE, is_lambda);
 }
 
 static VALUE
 vm_yield(rb_thread_t *th, int argc, const VALUE *argv)
 {
-    return invoke_block_from_c_splattable(th, check_block_handler(th), argc, argv, VM_BLOCK_HANDLER_NONE, NULL);
+    return invoke_block_from_c_splattable(th, check_block_handler(th),
+					  argc, argv, VM_BLOCK_HANDLER_NONE,
+					  NULL, FALSE, FALSE);
 }
 
 static VALUE
 vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *argv, VALUE block_handler)
 {
-    return invoke_block_from_c_splattable(th, check_block_handler(th), argc, argv, block_handler, NULL);
+    return invoke_block_from_c_splattable(th, check_block_handler(th),
+					  argc, argv, block_handler,
+					  NULL, FALSE, FALSE);
+}
+
+static VALUE
+vm_yield_lambda_splattable(rb_thread_t *th, VALUE args)
+{
+    return invoke_block_from_c_splattable(th, check_block_handler(th), 1, &args, VM_BLOCK_HANDLER_NONE, NULL, TRUE, FALSE);
 }
 
 static inline VALUE

@@ -58,7 +58,8 @@ const OnigSyntaxType OnigSyntaxRuby = {
       ONIG_SYN_OP2_ESC_CAPITAL_X_EXTENDED_GRAPHEME_CLUSTER |
       ONIG_SYN_OP2_QMARK_LPAREN_CONDITION |
       ONIG_SYN_OP2_ESC_CAPITAL_R_LINEBREAK |
-      ONIG_SYN_OP2_ESC_CAPITAL_K_KEEP )
+      ONIG_SYN_OP2_ESC_CAPITAL_K_KEEP |
+      ONIG_SYN_OP2_QMARK_TILDE_ABSENT )
   , ( SYN_GNU_REGEX_BV |
       ONIG_SYN_ALLOW_INTERVAL_LOW_ABBREV |
       ONIG_SYN_DIFFERENT_LEN_ALT_LOOK_BEHIND |
@@ -1024,14 +1025,15 @@ scan_env_add_mem_entry(ScanEnv* env)
       if (IS_NULL(env->mem_nodes_dynamic)) {
 	alloc = INIT_SCANENV_MEMNODES_ALLOC_SIZE;
 	p = (Node** )xmalloc(sizeof(Node*) * alloc);
+	CHECK_NULL_RETURN_MEMERR(p);
 	xmemcpy(p, env->mem_nodes_static,
 		sizeof(Node*) * SCANENV_MEMNODES_SIZE);
       }
       else {
 	alloc = env->mem_alloc * 2;
 	p = (Node** )xrealloc(env->mem_nodes_dynamic, sizeof(Node*) * alloc);
+	CHECK_NULL_RETURN_MEMERR(p);
       }
-      CHECK_NULL_RETURN_MEMERR(p);
 
       for (i = env->num_mem + 1; i < alloc; i++)
 	p[i] = NULL_NODE;
@@ -3176,7 +3178,7 @@ fetch_token_in_cc(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
       PUNFETCH;
       num = fetch_escaped_value(&p, end, env, &c2);
       if (num < 0) return num;
-      if ((OnigCodePoint)tok->u.c != c2) {
+      if ((OnigCodePoint )tok->u.c != c2) {
 	tok->u.code = (OnigCodePoint )c2;
 	tok->type   = TK_CODE_POINT;
       }
@@ -3780,7 +3782,7 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
 	num = fetch_escaped_value(&p, end, env, &c2);
 	if (num < 0) return num;
 	/* set_raw: */
-	if ((OnigCodePoint)tok->u.c != c2) {
+	if ((OnigCodePoint )tok->u.c != c2) {
 	  tok->type = TK_CODE_POINT;
 	  tok->u.code = (OnigCodePoint )c2;
 	}
@@ -4570,11 +4572,11 @@ parse_char_class(Node** np, Node** asc_np, OnigToken* tok, UChar** src, UChar* e
   enum CCVALTYPE val_type, in_type;
   int val_israw, in_israw;
 
+  *np = *asc_np = NULL_NODE;
   env->parse_depth++;
   if (env->parse_depth > ParseDepthLimit)
     return ONIGERR_PARSE_DEPTH_LIMIT_OVER;
   prev_cc = asc_prev_cc = (CClassNode* )NULL;
-  *np = *asc_np = NULL_NODE;
   r = fetch_token_in_cc(tok, src, end, env);
   if (r == TK_CHAR && tok->u.c == '^' && tok->escaped == 0) {
     neg = 1;
@@ -4989,6 +4991,14 @@ parse_enclose(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
     case '>':   /* (?>...) stop backtrack */
       *np = node_new_enclose(ENCLOSE_STOP_BACKTRACK);
       break;
+    case '~':   /* (?~...) absent operator */
+      if (IS_SYNTAX_OP2(env->syntax, ONIG_SYN_OP2_QMARK_TILDE_ABSENT)) {
+	*np = node_new_enclose(ENCLOSE_ABSENT);
+      }
+      else {
+	return ONIGERR_UNDEFINED_GROUP_OPTION;
+      }
+      break;
 
 #ifdef USE_NAMED_GROUP
     case '\'':
@@ -5030,7 +5040,9 @@ parse_enclose(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
 	named_group1:
 	  list_capture = 0;
 
+# ifdef USE_CAPTURE_HISTORY
 	named_group2:
+# endif
 	  name = p;
 	  r = fetch_name((OnigCodePoint )c, &p, end, &name_end, env, &num, 0);
 	  if (r < 0) return r;
@@ -5060,9 +5072,10 @@ parse_enclose(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
 #endif
       break;
 
+#ifdef USE_CAPTURE_HISTORY
     case '@':
       if (IS_SYNTAX_OP2(env->syntax, ONIG_SYN_OP2_ATMARK_CAPTURE_HISTORY)) {
-#ifdef USE_NAMED_GROUP
+# ifdef USE_NAMED_GROUP
 	if (!PEND &&
 	    IS_SYNTAX_OP2(env->syntax, ONIG_SYN_OP2_QMARK_LT_NAMED_GROUP)) {
 	  PFETCH(c);
@@ -5072,7 +5085,7 @@ parse_enclose(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
 	  }
 	  PUNFETCH;
 	}
-#endif
+# endif
 	*np = node_new_enclose_memory(env->option, 0);
 	CHECK_NULL_RETURN_MEMERR(*np);
 	num = scan_env_add_mem_entry(env);
@@ -5087,6 +5100,7 @@ parse_enclose(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
 	return ONIGERR_UNDEFINED_GROUP_OPTION;
       }
       break;
+#endif /* USE_CAPTURE_HISTORY */
 
     case '(':   /* conditional expression: (?(cond)yes), (?(cond)yes|no) */
       if (!PEND &&

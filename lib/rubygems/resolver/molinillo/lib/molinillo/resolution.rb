@@ -52,7 +52,7 @@ module Gem::Resolver::Molinillo
         @base = base
         @states = []
         @iteration_counter = 0
-        @parent_of = {}
+        @parents_of = Hash.new { |h, k| h[k] = [] }
       end
 
       # Resolves the {#original_requested} dependencies into a full dependency
@@ -105,7 +105,7 @@ module Gem::Resolver::Molinillo
 
         handle_missing_or_push_dependency_state(initial_state)
 
-        debug { "Starting resolution (#{@started_at})" }
+        debug { "Starting resolution (#{@started_at})\nUser-requested dependencies: #{original_requested}" }
         resolver_ui.before_resolution
       end
 
@@ -178,14 +178,14 @@ module Gem::Resolver::Molinillo
       # Unwinds the states stack because a conflict has been encountered
       # @return [void]
       def unwind_for_conflict
-        debug(depth) { "Unwinding for conflict: #{requirement}" }
+        debug(depth) { "Unwinding for conflict: #{requirement} to #{state_index_for_unwind / 2}" }
         conflicts.tap do |c|
           sliced_states = states.slice!((state_index_for_unwind + 1)..-1)
           raise VersionConflict.new(c) unless state
           activated.rewind_to(sliced_states.first || :initial_state) if sliced_states
           state.conflicts = c
           index = states.size - 1
-          @parent_of.reject! { |_, i| i >= index }
+          @parents_of.each { |_, a| a.reject! { |i| i >= index } }
         end
       end
 
@@ -194,25 +194,27 @@ module Gem::Resolver::Molinillo
       def state_index_for_unwind
         current_requirement = requirement
         existing_requirement = requirement_for_existing_name(name)
-        until current_requirement.nil?
-          current_state = find_state_for(current_requirement)
-          return states.index(current_state) if state_any?(current_state)
-          current_requirement = parent_of(current_requirement)
+        index = -1
+        [current_requirement, existing_requirement].each do |r|
+          until r.nil?
+            current_state = find_state_for(r)
+            if state_any?(current_state)
+              current_index = states.index(current_state)
+              index = current_index if current_index > index
+              break
+            end
+            r = parent_of(r)
+          end
         end
 
-        until existing_requirement.nil?
-          existing_state = find_state_for(existing_requirement)
-          return states.index(existing_state) if state_any?(existing_state)
-          existing_requirement = parent_of(existing_requirement)
-        end
-        -1
+        index
       end
 
       # @return [Object] the requirement that led to `requirement` being added
       #   to the list of requirements.
       def parent_of(requirement)
         return unless requirement
-        return unless index = @parent_of[requirement]
+        return unless index = @parents_of[requirement].last
         return unless parent_state = @states[index]
         parent_state.requirement
       end
@@ -354,29 +356,41 @@ module Gem::Resolver::Molinillo
       # Ensures there are no orphaned successors to the given {vertex}.
       # @param [DependencyGraph::Vertex] vertex the vertex to fix up.
       # @return [void]
-      def fixup_swapped_children(vertex)
+      def fixup_swapped_children(vertex) # rubocop:disable Metrics/CyclomaticComplexity
         payload = vertex.payload
         deps = dependencies_for(payload).group_by(&method(:name_for))
         vertex.outgoing_edges.each do |outgoing_edge|
-          @parent_of[outgoing_edge.requirement] = states.size - 1
+          requirement = outgoing_edge.requirement
+          parent_index = @parents_of[requirement].last
           succ = outgoing_edge.destination
           matching_deps = Array(deps[succ.name])
+          dep_matched = matching_deps.include?(requirement)
+
+          # only push the current index when it was originally required by the
+          # same named spec
+          if parent_index && states[parent_index].name == name
+            @parents_of[requirement].push(states.size - 1)
+          end
+
           if matching_deps.empty? && !succ.root? && succ.predecessors.to_a == [vertex]
             debug(depth) { "Removing orphaned spec #{succ.name} after swapping #{name}" }
-            succ.requirements.each { |r| @parent_of.delete(r) }
-            activated.detach_vertex_named(succ.name)
+            succ.requirements.each { |r| @parents_of.delete(r) }
 
-            all_successor_names = succ.recursive_successors.map(&:name)
-
-            requirements.delete_if do |requirement|
-              requirement_name = name_for(requirement)
-              (requirement_name == succ.name) || all_successor_names.include?(requirement_name)
+            removed_names = activated.detach_vertex_named(succ.name).map(&:name)
+            requirements.delete_if do |r|
+              # the only removed vertices are those with no other requirements,
+              # so it's safe to delete only based upon name here
+              removed_names.include?(name_for(r))
             end
-          elsif !matching_deps.include?(outgoing_edge.requirement)
+          elsif !dep_matched
+            debug(depth) { "Removing orphaned dependency #{requirement} after swapping #{name}" }
+            # also reset if we're removing the edge, but only if its parent has
+            # already been fixed up
+            @parents_of[requirement].push(states.size - 1) if @parents_of[requirement].empty?
+
             activated.delete_edge(outgoing_edge)
-            requirements.delete(outgoing_edge.requirement)
+            requirements.delete(requirement)
           end
-          matching_deps.delete(outgoing_edge.requirement)
         end
       end
 
@@ -395,13 +409,18 @@ module Gem::Resolver::Molinillo
       # @return [Boolean] whether the current spec is satisfied as a new
       # possibility.
       def new_spec_satisfied?
+        unless requirement_satisfied_by?(requirement, activated, possibility)
+          debug(depth) { 'Unsatisfied by requested spec' }
+          return false
+        end
+
         locked_requirement = locked_requirement_named(name)
-        requested_spec_satisfied = requirement_satisfied_by?(requirement, activated, possibility)
+
         locked_spec_satisfied = !locked_requirement ||
           requirement_satisfied_by?(locked_requirement, activated, possibility)
-        debug(depth) { 'Unsatisfied by requested spec' } unless requested_spec_satisfied
         debug(depth) { 'Unsatisfied by locked spec' } unless locked_spec_satisfied
-        requested_spec_satisfied && locked_spec_satisfied
+
+        locked_spec_satisfied
       end
 
       # @param [String] requirement_name the spec name to search for
@@ -417,7 +436,7 @@ module Gem::Resolver::Molinillo
       # @return [void]
       def activate_spec
         conflicts.delete(name)
-        debug(depth) { 'Activated ' + name + ' at ' + possibility.to_s }
+        debug(depth) { "Activated #{name} at #{possibility}" }
         activated.set_payload(name, possibility)
         require_nested_dependencies_for(possibility)
       end
@@ -432,7 +451,8 @@ module Gem::Resolver::Molinillo
         nested_dependencies.each do |d|
           activated.add_child_vertex(name_for(d), nil, [name_for(activated_spec)], d)
           parent_index = states.size - 1
-          @parent_of[d] ||= parent_index
+          parents = @parents_of[d]
+          parents << parent_index if parents.empty?
         end
 
         push_state_for_requirements(requirements + nested_dependencies, !nested_dependencies.empty?)

@@ -12,6 +12,8 @@ NORETURN(static void raise_argument_error(rb_thread_t *th, const rb_iseq_t *iseq
 NORETURN(static void argument_arity_error(rb_thread_t *th, const rb_iseq_t *iseq, const int miss_argc, const int min_argc, const int max_argc));
 NORETURN(static void argument_kw_error(rb_thread_t *th, const rb_iseq_t *iseq, const char *error, const VALUE keys));
 VALUE rb_keyword_error_new(const char *error, VALUE keys); /* class.c */
+static VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv,
+			    enum method_missing_reason call_status);
 
 struct args_info {
     /* basic args info */
@@ -594,13 +596,7 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq,
 	}
 	break;
       case arg_setup_lambda:
-	if (given_argc == 1 &&
-	    given_argc != iseq->body->param.lead_num &&
-	    !iseq->body->param.flags.has_opt &&
-	    !iseq->body->param.flags.has_rest &&
-	    args_check_block_arg0(args, th)) {
-	    given_argc = RARRAY_LENINT(args->rest);
-	}
+	break;
     }
 
     /* argc check */
@@ -800,6 +796,7 @@ refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
     VALUE obj;
     ID mid;
     const rb_callable_method_entry_t *me;
+    rb_thread_t *th;
 
     if (argc-- < 1) {
 	rb_raise(rb_eArgError, "no receiver given");
@@ -807,11 +804,14 @@ refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
     obj = *argv++;
     mid = SYM2ID(callback_arg);
     me = rb_callable_method_entry_with_refinements(CLASS_OF(obj), mid);
-    if (!me) {
-	/* fallback to funcall (e.g. method_missing) */
-	return rb_funcall_with_block(obj, mid, argc, argv, blockarg);
+    th = GET_THREAD();
+    if (!NIL_P(blockarg)) {
+	vm_passed_block_handler_set(th, blockarg);
     }
-    return vm_call0(GET_THREAD(), obj, mid, argc, argv, me);
+    if (!me) {
+	return method_missing(obj, mid, argc, argv, MISSING_NOENTRY);
+    }
+    return vm_call0(th, obj, mid, argc, argv, me);
 }
 
 static void

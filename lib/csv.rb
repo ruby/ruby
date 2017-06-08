@@ -1927,7 +1927,7 @@ class CSV
         if @io.eof?
           raise MalformedCSVError,
                 "Unclosed quoted field on line #{lineno + 1}."
-        elsif @field_size_limit and csv.last.size >= @field_size_limit
+        elsif @field_size_limit and csv.last.sum(&:size) >= @field_size_limit
           raise MalformedCSVError, "Field size exceeded on line #{lineno + 1}."
         end
         # otherwise, we need to loop and pull some more data to complete the row
