@@ -1088,6 +1088,9 @@ void ruby_register_rollback_func_for_ensure(VALUE (*ensure_func)(ANYARGS), VALUE
 /* debug.c */
 PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
 
+/* dir.c */
+VALUE rb_dir_getwd_ospath(void);
+
 /* dmyext.c */
 void Init_enc(void);
 void Init_ext(void);

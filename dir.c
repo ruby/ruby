@@ -1082,35 +1082,50 @@ dir_s_chdir(int argc, VALUE *argv, VALUE obj)
 }
 
 VALUE
-rb_dir_getwd(void)
+rb_dir_getwd_ospath(void)
 {
     char *path;
     VALUE cwd;
-    rb_encoding *fs = rb_filesystem_encoding();
-    int fsenc = rb_enc_to_index(fs);
     VALUE path_guard;
 
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
-    if (fsenc == ENCINDEX_US_ASCII) fsenc = ENCINDEX_ASCII;
     path_guard = Data_Wrap_Struct((VALUE)0, NULL, RUBY_DEFAULT_FREE, NULL);
     path = my_getcwd();
     DATA_PTR(path_guard) = path;
 #ifdef _WIN32
-    cwd = rb_str_conv_enc(rb_utf8_str_new_cstr(path), NULL, fs);
-#else
-#ifdef __APPLE__
+    cwd = rb_utf8_str_new_cstr(path);
+    OBJ_TAINT(cwd);
+#elif defined __APPLE__
     cwd = rb_str_normalize_ospath(path, strlen(path));
     OBJ_TAINT(cwd);
 #else
     cwd = rb_tainted_str_new2(path);
 #endif
-    rb_enc_associate_index(cwd, fsenc);
-#endif
     DATA_PTR(path_guard) = 0;
 
     xfree(path);
     return cwd;
+}
+
+VALUE
+rb_dir_getwd(void)
+{
+    rb_encoding *fs = rb_filesystem_encoding();
+    int fsenc = rb_enc_to_index(fs);
+    VALUE cwd = rb_dir_getwd_ospath();
+
+    switch (fsenc) {
+      case ENCINDEX_US_ASCII:
+	fsenc = ENCINDEX_ASCII;
+      case ENCINDEX_ASCII:
+	break;
+#if defined _WIN32 || defined __APPLE__
+      default:
+	return rb_str_conv_enc(cwd, NULL, fs);
+#endif
+    }
+    return rb_enc_associate_index(cwd, fsenc);
 }
 
 /*

@@ -127,6 +127,14 @@ int flock(int, int);
 #define STAT(p, s)	stat((p), (s))
 #endif
 
+#if defined _WIN32 || defined __APPLE__
+# define USE_OSPATH 1
+# define TO_OSPATH(str) rb_str_encode_ospath(str)
+#else
+# define USE_OSPATH 0
+# define TO_OSPATH(str) (str)
+#endif
+
 VALUE rb_cFile;
 VALUE rb_mFileTest;
 VALUE rb_cStat;
@@ -222,7 +230,7 @@ rb_get_path(VALUE obj)
 VALUE
 rb_str_encode_ospath(VALUE path)
 {
-#if defined _WIN32 || defined __APPLE__
+#if USE_OSPATH
     int encidx = ENCODING_GET(path);
 #ifdef _WIN32
     if (encidx == ENCINDEX_ASCII) {
@@ -3811,11 +3819,10 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE l
             else {
                 struct stat sbuf;
                 int ret;
-                VALUE testpath2 = rb_str_encode_ospath(testpath);
 #ifdef __native_client__
-                ret = stat(RSTRING_PTR(testpath2), &sbuf);
+                ret = stat(RSTRING_PTR(testpath), &sbuf);
 #else
-                ret = lstat(RSTRING_PTR(testpath2), &sbuf);
+                ret = lstat(RSTRING_PTR(testpath), &sbuf);
 #endif
                 if (ret == -1) {
 		    int e = errno;
@@ -3890,9 +3897,12 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
 
     if (!NIL_P(basedir)) {
         FilePathValue(basedir);
-        basedir = rb_str_dup_frozen(basedir);
+        basedir = TO_OSPATH(rb_str_dup_frozen(basedir));
     }
 
+    enc = rb_enc_get(unresolved_path);
+    origenc = enc;
+    unresolved_path = TO_OSPATH(unresolved_path);
     RSTRING_GETMEM(unresolved_path, ptr, len);
     path_names = skipprefixroot(ptr, ptr + len, rb_enc_get(unresolved_path));
     if (ptr != path_names) {
@@ -3909,7 +3919,7 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
         }
     }
 
-    curdir = rb_dir_getwd();
+    curdir = rb_dir_getwd_ospath();
     RSTRING_GETMEM(curdir, ptr, len);
     curdir_names = skipprefixroot(ptr, ptr + len, rb_enc_get(curdir));
     resolved = rb_str_subseq(curdir, 0, curdir_names - ptr);
@@ -3917,7 +3927,6 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
   root_found:
     RSTRING_GETMEM(resolved, prefixptr, prefixlen);
     pend = prefixptr + prefixlen;
-    enc = rb_enc_get(resolved);
     ptr = chompdirsep(prefixptr, pend, enc);
     if (ptr < pend) {
         prefixlen = ++ptr - prefixptr;
@@ -3932,7 +3941,6 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
     }
 #endif
 
-    origenc = enc;
     switch (rb_enc_to_index(enc)) {
       case ENCINDEX_ASCII:
       case ENCINDEX_US_ASCII:
@@ -3946,8 +3954,14 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
         realpath_rec(&prefixlen, &resolved, basedir_names, loopcheck, 1, 0);
     realpath_rec(&prefixlen, &resolved, path_names, loopcheck, strict, 1);
 
-    if (origenc != enc && rb_enc_str_asciionly_p(resolved))
-	rb_enc_associate(resolved, origenc);
+    if (origenc != rb_enc_get(resolved)) {
+	if (rb_enc_str_asciionly_p(resolved)) {
+	    rb_enc_associate(resolved, origenc);
+	}
+	else {
+	    resolved = rb_str_conv_enc(resolved, NULL, origenc);
+	}
+    }
 
     OBJ_TAINT(resolved);
     return resolved;
