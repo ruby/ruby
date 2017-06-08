@@ -67,7 +67,12 @@ end
 libs << File.expand_path("lib", srcdir)
 config["bindir"] = abs_archdir
 
-env = {}
+env = {
+  # Test with the smallest possible machine stack sizes.
+  # These values are clamped to machine-dependent minimum values in vm_core.h
+  'RUBY_THREAD_MACHINE_STACK_SIZE' => '1',
+  'RUBY_FIBER_MACHINE_STACK_SIZE' => '1',
+}
 
 runner = File.join(abs_archdir, "ruby-runner#{config['EXEEXT']}")
 runner = nil unless File.exist?(runner)
