@@ -629,9 +629,11 @@ ruby_signal(int signum, sighandler_t handler)
 	return SIG_ERR;
     }
     if (old.sa_flags & SA_SIGINFO)
-	return (sighandler_t)old.sa_sigaction;
+	handler = (sighandler_t)old.sa_sigaction;
     else
-	return old.sa_handler;
+	handler = old.sa_handler;
+    ASSUME(handler != SIG_ERR);
+    return handler;
 }
 
 sighandler_t
@@ -1384,6 +1386,7 @@ sig_list(void)
     return h;
 }
 
+#define install_sighandler_fail(signum) rb_bug("failed to install "signum" handler")
 static int
 install_sighandler(int signum, sighandler_t handler)
 {
@@ -1398,7 +1401,9 @@ install_sighandler(int signum, sighandler_t handler)
     return 0;
 }
 #ifndef __native_client__
-#  define install_sighandler(signum, handler) (install_sighandler(signum, handler) ? rb_bug(#signum) : (void)0)
+#  define install_sighandler(signum, handler) \
+    (install_sighandler(signum, handler) && reserved_signal_p(signum) ? \
+     install_sighandler_fail(#signum) : (void)0)
 #endif
 
 #if defined(SIGCLD) || defined(SIGCHLD)
@@ -1418,7 +1423,8 @@ init_sigchld(int sig)
     return 0;
 }
 #  ifndef __native_client__
-#    define init_sigchld(signum) (init_sigchld(signum) ? rb_bug(#signum) : (void)0)
+#    define init_sigchld(signum) \
+    (init_sigchld(signum) ? install_sighandler_fail(#signum) : (void)0)
 #  endif
 #endif
 
