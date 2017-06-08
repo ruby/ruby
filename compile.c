@@ -4399,17 +4399,20 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	const rb_iseq_t *prevblock = ISEQ_COMPILE_DATA(iseq)->current_block;
 	LABEL *retry_label = NEW_LABEL(line);
 	LABEL *retry_end_l = NEW_LABEL(line);
+	const rb_iseq_t *child_iseq;
 
 	ADD_LABEL(ret, retry_label);
 	if (nd_type(node) == NODE_FOR) {
 	    CHECK(COMPILE(ret, "iter caller (for)", node->nd_iter));
 
-	    ISEQ_COMPILE_DATA(iseq)->current_block = NEW_CHILD_ISEQ(node->nd_body, make_name_for_block(iseq),
+	    ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq =
+	      NEW_CHILD_ISEQ(node->nd_body, make_name_for_block(iseq),
 							       ISEQ_TYPE_BLOCK, line);
-	    ADD_SEND_WITH_BLOCK(ret, line, idEach, INT2FIX(0), ISEQ_COMPILE_DATA(iseq)->current_block);
+	    ADD_SEND_WITH_BLOCK(ret, line, idEach, INT2FIX(0), child_iseq);
 	}
 	else {
-	    ISEQ_COMPILE_DATA(iseq)->current_block = NEW_CHILD_ISEQ(node->nd_body, make_name_for_block(iseq),
+	    ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq =
+	      NEW_CHILD_ISEQ(node->nd_body, make_name_for_block(iseq),
 							       ISEQ_TYPE_BLOCK, line);
 	    CHECK(COMPILE(ret, "iter caller", node->nd_iter));
 	}
@@ -4421,7 +4424,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 
 	ISEQ_COMPILE_DATA(iseq)->current_block = prevblock;
 
-	ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, NULL, retry_end_l);
+	ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, child_iseq, retry_end_l);
 
 	break;
       }

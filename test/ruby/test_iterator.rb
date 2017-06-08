@@ -279,6 +279,9 @@ class TestIterator < Test::Unit::TestCase
   def proc_call(&b)
     b.call
   end
+  def proc_call2(b)
+    b.call
+  end
   def proc_yield()
     yield
   end
@@ -300,6 +303,7 @@ class TestIterator < Test::Unit::TestCase
 
   def test_ljump
     assert_raise(LocalJumpError) {get_block{break}.call}
+    assert_raise(LocalJumpError) {proc_call2(get_block{break}){}}
 
     # cannot use assert_nothing_raised due to passing block.
     begin
