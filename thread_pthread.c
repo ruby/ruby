@@ -79,7 +79,7 @@ gvl_acquire_common(rb_vm_t *vm)
 	vm->gvl.waiting++;
 	if (vm->gvl.waiting == 1) {
 	    /*
-	     * Wake up timer thread iff timer thread is slept.
+	     * Wake up timer thread if timer thread is slept.
 	     * When timer thread is polling mode, we don't want to
 	     * make confusing timer thread interval time.
 	     */
