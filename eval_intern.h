@@ -7,7 +7,7 @@
 static inline void
 vm_passed_block_handler_set(rb_thread_t *th, VALUE block_handler)
 {
-    VM_ASSERT(vm_block_handler_verify(block_handler));
+    vm_block_handler_verify(block_handler);
     th->passed_block_handler = block_handler;
 }
 
@@ -15,7 +15,7 @@ static inline void
 pass_passed_block_handler(rb_thread_t *th)
 {
     VALUE block_handler = rb_vm_frame_block_handler(th->ec.cfp);
-    VM_ASSERT(vm_block_handler_verify(block_handler));
+    vm_block_handler_verify(block_handler);
     vm_passed_block_handler_set(th, block_handler);
     VM_ENV_FLAGS_SET(th->ec.cfp->ep, VM_FRAME_FLAG_PASSED);
 }

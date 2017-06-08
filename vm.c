@@ -166,6 +166,7 @@ vm_passed_block_handler(rb_thread_t *th)
 {
     VALUE block_handler = th->passed_block_handler;
     th->passed_block_handler = VM_BLOCK_HANDLER_NONE;
+    vm_block_handler_verify(block_handler);
     return block_handler;
 }
 
@@ -1069,7 +1070,7 @@ static inline VALUE
 check_block_handler(rb_thread_t *th)
 {
     VALUE block_handler = VM_CF_BLOCK_HANDLER(th->ec.cfp);
-    VM_ASSERT(vm_block_handler_verify(block_handler));
+    vm_block_handler_verify(block_handler);
     if (UNLIKELY(block_handler == VM_BLOCK_HANDLER_NONE)) {
 	rb_vm_localjump_error("no block given", Qnil, 0);
     }
@@ -1167,7 +1168,7 @@ rb_vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc,
 		  int argc, const VALUE *argv, VALUE passed_block_handler)
 {
     VALUE self = vm_block_self(&proc->block);
-    VM_ASSERT(vm_block_handler_verify(passed_block_handler));
+    vm_block_handler_verify(passed_block_handler);
 
     if (proc->is_from_method) {
 	return vm_invoke_bmethod(th, proc, self, argc, argv, passed_block_handler);

@@ -1302,12 +1302,11 @@ vm_block_handler_type(VALUE block_handler)
     }
 }
 
-static inline int
+static inline void
 vm_block_handler_verify(VALUE block_handler)
 {
     VM_ASSERT(block_handler == VM_BLOCK_HANDLER_NONE ||
 	      (vm_block_handler_type(block_handler), 1));
-    return 1;
 }
 
 static inline enum rb_block_type
