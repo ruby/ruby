@@ -593,8 +593,8 @@ rb_iseq_compile_node(rb_iseq_t *iseq, NODE *node)
 		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_B_RETURN);
 
 		/* wide range catch handler must put at last */
-		ADD_CATCH_ENTRY(CATCH_TYPE_REDO, start, end, 0, start);
-		ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, start, end, 0, end);
+		ADD_CATCH_ENTRY(CATCH_TYPE_REDO, start, end, NULL, start);
+		ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, start, end, NULL, end);
 		break;
 	    }
 	  case ISEQ_TYPE_CLASS:
@@ -4357,12 +4357,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	    ADD_INSN(ret, line, pop);
 	}
 
-	ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, redo_label, break_label,
-			0, break_label);
-	ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, redo_label, break_label, 0,
-			next_catch_label);
-	ADD_CATCH_ENTRY(CATCH_TYPE_REDO, redo_label, break_label, 0,
-			ISEQ_COMPILE_DATA(iseq)->redo_label);
+	ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, redo_label, break_label, NULL, break_label);
+	ADD_CATCH_ENTRY(CATCH_TYPE_NEXT,  redo_label, break_label, NULL, next_catch_label);
+	ADD_CATCH_ENTRY(CATCH_TYPE_REDO,  redo_label, break_label, NULL, ISEQ_COMPILE_DATA(iseq)->redo_label);
 
 	ISEQ_COMPILE_DATA(iseq)->start_label = prev_start_label;
 	ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
@@ -4424,7 +4421,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 
 	ISEQ_COMPILE_DATA(iseq)->current_block = prevblock;
 
-	ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, 0, retry_end_l);
+	ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, NULL, retry_end_l);
 
 	break;
       }
@@ -4678,7 +4675,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 
 	/* register catch entry */
 	ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, rescue, lcont);
-	ADD_CATCH_ENTRY(CATCH_TYPE_RETRY, lend, lcont, 0, lstart);
+	ADD_CATCH_ENTRY(CATCH_TYPE_RETRY, lend, lcont, NULL, lstart);
 	break;
       }
       case NODE_RESBODY:{
