@@ -44,6 +44,7 @@ build_script:
   - ..\win32\configure.bat --without-ext=+,dbm,gdbm,readline --with-opt-dir=/usr/local --with-openssl-dir=%OPENSSL_DIR:\=/%
   - nmake -l
   - nmake install-nodoc
+  - \usr\bin\ruby -v -e "p :locale => Encoding.find('locale'), :filesystem => Encoding.find('filesystem')"
   - set /a JOBS=2*%NUMBER_OF_PROCESSORS%
 test_script:
   - nmake -l "TESTOPTS=-v -q" btest
