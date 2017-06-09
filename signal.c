@@ -1390,7 +1390,6 @@ sig_list(void)
 	static const char failed[] = "failed to install "signame" handler"; \
 	if (!(cond)) break; \
 	if (reserved_signal_p(signum)) rb_bug(failed); \
-	ruby_enable_coredump = 1; \
 	perror(failed); \
     } while (0)
 static int
