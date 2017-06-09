@@ -1386,10 +1386,13 @@ sig_list(void)
     return h;
 }
 
-#define install_sighandler_fail(signame, signum) \
-    (reserved_signal_p(signum) ? \
-     rb_bug("failed to install "signame" handler") : \
-     perror("failed to install "signame" handler"))
+#define INSTALL_SIGHANDLER(cond, signame, signum) do {	\
+	static const char failed[] = "failed to install "signame" handler"; \
+	if (!(cond)) break; \
+	if (reserved_signal_p(signum)) rb_bug(failed); \
+	ruby_enable_coredump = 1; \
+	perror(failed); \
+    } while (0)
 static int
 install_sighandler(int signum, sighandler_t handler)
 {
@@ -1405,8 +1408,7 @@ install_sighandler(int signum, sighandler_t handler)
 }
 #ifndef __native_client__
 #  define install_sighandler(signum, handler) \
-    (install_sighandler(signum, handler) ? \
-     install_sighandler_fail(#signum, signum) : (void)0)
+    INSTALL_SIGHANDLER(install_sighandler(signum, handler), #signum, signum)
 #endif
 
 #if defined(SIGCLD) || defined(SIGCHLD)
@@ -1427,7 +1429,7 @@ init_sigchld(int sig)
 }
 #  ifndef __native_client__
 #    define init_sigchld(signum) \
-    (init_sigchld(signum) ? install_sighandler_fail(#signum, signum) : (void)0)
+    INSTALL_SIGHANDLER(init_sigchld(signum), #signum, signum)
 #  endif
 #endif
 
