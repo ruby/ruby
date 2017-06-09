@@ -77,9 +77,6 @@
 #define RUBY_THREAD_PRIORITY_MIN -3
 #endif
 
-#if defined HAVE_VALGRIND_MEMCHECK_H && __APPLE__
-#define THREAD_DEBUG -1
-#endif
 #ifndef THREAD_DEBUG
 #define THREAD_DEBUG 0
 #endif

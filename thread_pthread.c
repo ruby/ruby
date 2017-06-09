@@ -1602,9 +1602,17 @@ rb_thread_create_timer_thread(void)
 	     * at least 16KB (4 pages).  FreeBSD 8.2 AMD64 causes
 	     * machine stack overflow only with PTHREAD_STACK_MIN.
 	     */
+	    enum {
+		needs_more_stack =
+#if defined HAVE_VALGRIND_MEMCHECK_H && defined __APPLE__
+		1
+#else
+		THREAD_DEBUG != 0
+#endif
+	    };
 	    size_t stack_size = PTHREAD_STACK_MIN; /* may be dynamic, get only once */
 	    if (stack_size < min_size) stack_size = min_size;
-	    if (THREAD_DEBUG) stack_size += BUFSIZ;
+	    if (needs_more_stack) stack_size += BUFSIZ;
 	    pthread_attr_setstacksize(&attr, stack_size);
 	}
 # endif
