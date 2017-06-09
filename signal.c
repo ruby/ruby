@@ -1386,7 +1386,10 @@ sig_list(void)
     return h;
 }
 
-#define install_sighandler_fail(signum) rb_bug("failed to install "signum" handler")
+#define install_sighandler_fail(signame, signum) \
+    (reserved_signal_p(signum) ? \
+     rb_bug("failed to install "signame" handler") : \
+     perror("failed to install "signame" handler"))
 static int
 install_sighandler(int signum, sighandler_t handler)
 {
@@ -1402,8 +1405,8 @@ install_sighandler(int signum, sighandler_t handler)
 }
 #ifndef __native_client__
 #  define install_sighandler(signum, handler) \
-    (install_sighandler(signum, handler) && reserved_signal_p(signum) ? \
-     install_sighandler_fail(#signum) : (void)0)
+    (install_sighandler(signum, handler) ? \
+     install_sighandler_fail(#signum, signum) : (void)0)
 #endif
 
 #if defined(SIGCLD) || defined(SIGCHLD)
@@ -1424,7 +1427,7 @@ init_sigchld(int sig)
 }
 #  ifndef __native_client__
 #    define init_sigchld(signum) \
-    (init_sigchld(signum) ? install_sighandler_fail(#signum) : (void)0)
+    (init_sigchld(signum) ? install_sighandler_fail(#signum, signum) : (void)0)
 #  endif
 #endif
 
