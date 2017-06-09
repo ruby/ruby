@@ -394,6 +394,23 @@ ossl_debug_set(VALUE self, VALUE val)
 }
 
 /*
+ * call-seq
+ *   OpenSSL.fips_mode -> true | false
+ */
+static VALUE
+ossl_fips_mode_get(VALUE self)
+{
+
+#ifdef OPENSSL_FIPS
+    VALUE enabled;
+    enabled = FIPS_mode() ? Qtrue : Qfalse;
+    return enabled;
+#else
+    return Qfalse;
+#endif
+}
+
+/*
  * call-seq:
  *   OpenSSL.fips_mode = boolean -> boolean
  *
@@ -1069,7 +1086,7 @@ Init_openssl(void)
     rb_define_const(mOSSL, "OPENSSL_VERSION_NUMBER", INT2NUM(OPENSSL_VERSION_NUMBER));
 
     /*
-     * Boolean indicating whether OpenSSL is FIPS-enabled or not
+     * Boolean indicating whether OpenSSL is FIPS-capable or not
      */
     rb_define_const(mOSSL, "OPENSSL_FIPS",
 #ifdef OPENSSL_FIPS
@@ -1079,6 +1096,7 @@ Init_openssl(void)
 #endif
 		   );
 
+    rb_define_module_function(mOSSL, "fips_mode", ossl_fips_mode_get, 0);
     rb_define_module_function(mOSSL, "fips_mode=", ossl_fips_mode_set, 1);
 
     /*
