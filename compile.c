@@ -529,8 +529,6 @@ iseq_add_mark_object(const rb_iseq_t *iseq, VALUE v)
     return COMPILE_OK;
 }
 
-#define ruby_sourcefile		RSTRING_PTR(rb_iseq_path(iseq))
-
 static int
 iseq_add_mark_object_compile_time(const rb_iseq_t *iseq, VALUE v)
 {
@@ -3250,7 +3248,8 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, NODE *vals,
 	}
 	else {
 	    if (rb_hash_lookup(literals, lit) != Qnil) {
-		rb_compile_warning(ruby_sourcefile, nd_line(val),
+		VALUE file = rb_iseq_path(iseq);
+		rb_compile_warning(RSTRING_PTR(file), nd_line(val),
 				   "duplicated when clause is ignored");
 	    }
 	    else {
