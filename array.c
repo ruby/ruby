@@ -910,7 +910,10 @@ ary_take_first_or_last(int argc, const VALUE *argv, VALUE ary, enum ary_take_pos
  *  expression returns the array itself, so several appends
  *  may be chained together.
  *
- *     [ 1, 2 ] << "c" << "d" << [ 3, 4 ]
+ *     a = [ 1, 2 ]
+ *     a << "c" << "d" << [ 3, 4 ]
+ *             #=>  [ 1, 2, "c", "d", [ 3, 4 ] ]
+ *     a
  *             #=>  [ 1, 2, "c", "d", [ 3, 4 ] ]
  *
  */
