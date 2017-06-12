@@ -6,6 +6,8 @@ require 'test/unit'
 module Net
   class TestSMTP < Test::Unit::TestCase
     class FakeSocket
+      attr_reader :write_io
+
       def initialize out = "250 OK\n"
         @write_io = StringIO.new
         @read_io  = StringIO.new out
@@ -50,6 +52,51 @@ module Net
       smtp.instance_variable_set :@socket, FakeSocket.new
 
       assert smtp.rset
+    end
+
+    def test_mailfrom
+      sock = FakeSocket.new
+      smtp = Net::SMTP.new 'localhost', 25
+      smtp.instance_variable_set :@socket, sock
+      assert smtp.mailfrom("foo@example.com").success?
+      assert_equal "MAIL FROM:<foo@example.com>\r\n", sock.write_io.string
+    end
+
+    def test_rcptto
+      sock = FakeSocket.new
+      smtp = Net::SMTP.new 'localhost', 25
+      smtp.instance_variable_set :@socket, sock
+      assert smtp.rcptto("foo@example.com").success?
+      assert_equal "RCPT TO:<foo@example.com>\r\n", sock.write_io.string
+    end
+
+    def test_auth_plain
+      sock = FakeSocket.new
+      smtp = Net::SMTP.new 'localhost', 25
+      smtp.instance_variable_set :@socket, sock
+      assert smtp.auth_plain("foo", "bar").success?
+      assert_equal "AUTH PLAIN AGZvbwBiYXI=\r\n", sock.write_io.string
+    end
+
+    def test_crlf_injection
+      smtp = Net::SMTP.new 'localhost', 25
+      smtp.instance_variable_set :@socket, FakeSocket.new
+
+      assert_raise(ArgumentError) do
+        smtp.mailfrom("foo\r\nbar")
+      end
+
+      assert_raise(ArgumentError) do
+        smtp.mailfrom("foo\rbar")
+      end
+
+      assert_raise(ArgumentError) do
+        smtp.mailfrom("foo\nbar")
+      end
+
+      assert_raise(ArgumentError) do
+        smtp.rcptto("foo\r\nbar")
+      end
     end
   end
 end

@@ -1,3 +1,9 @@
+Sun Jun 11 21:25:09 2017  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/smtp.rb (getok, get_response): raise an ArgumentError when
+	  CR or LF is included in a line, because they are not allowed in
+	  RFC5321. https://hackerone.com/reports/137631 [Backport 0827a7e]
+
 Mon May  1 06:36:57 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* parse.y (parser_parse_string): set the mark of term to `nd_func`
