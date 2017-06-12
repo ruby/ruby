@@ -1081,6 +1081,7 @@ dir_s_chdir(int argc, VALUE *argv, VALUE obj)
     return INT2FIX(0);
 }
 
+#ifndef _WIN32
 VALUE
 rb_dir_getwd_ospath(void)
 {
@@ -1093,10 +1094,7 @@ rb_dir_getwd_ospath(void)
     path_guard = Data_Wrap_Struct((VALUE)0, NULL, RUBY_DEFAULT_FREE, NULL);
     path = my_getcwd();
     DATA_PTR(path_guard) = path;
-#ifdef _WIN32
-    cwd = rb_utf8_str_new_cstr(path);
-    OBJ_TAINT(cwd);
-#elif defined __APPLE__
+#ifdef __APPLE__
     cwd = rb_str_normalize_ospath(path, strlen(path));
     OBJ_TAINT(cwd);
 #else
@@ -1107,6 +1105,7 @@ rb_dir_getwd_ospath(void)
     xfree(path);
     return cwd;
 }
+#endif
 
 VALUE
 rb_dir_getwd(void)

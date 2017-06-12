@@ -4656,7 +4656,7 @@ clock_getres(clockid_t clock_id, struct timespec *sp)
 
 /* License: Ruby's */
 static char *
-w32_getcwd(char *buffer, int size, UINT cp)
+w32_getcwd(char *buffer, int size, UINT cp, void *alloc(int, void *), void *arg)
 {
     WCHAR *p;
     int wlen, len;
@@ -4687,7 +4687,7 @@ w32_getcwd(char *buffer, int size, UINT cp)
 	}
     }
     else {
-	buffer = malloc(len);
+	buffer = (*alloc)(len, arg);
 	if (!buffer) {
 	    errno = ENOMEM;
 	    return NULL;
@@ -4699,17 +4699,42 @@ w32_getcwd(char *buffer, int size, UINT cp)
 }
 
 /* License: Ruby's */
+static void *
+getcwd_alloc(int size, void *dummy)
+{
+    return malloc(size);
+}
+
+/* License: Ruby's */
 char *
 rb_w32_getcwd(char *buffer, int size)
 {
-    return w32_getcwd(buffer, size, filecp());
+    return w32_getcwd(buffer, size, filecp(), getcwd_alloc, NULL);
 }
 
 /* License: Ruby's */
 char *
 rb_w32_ugetcwd(char *buffer, int size)
 {
-    return w32_getcwd(buffer, size, CP_UTF8);
+    return w32_getcwd(buffer, size, CP_UTF8, getcwd_alloc, NULL);
+}
+
+/* License: Ruby's */
+static void *
+getcwd_value(int size, void *arg)
+{
+    VALUE str = *(VALUE *)arg = rb_utf8_str_new(0, size - 1);
+    OBJ_TAINT(str);
+    return RSTRING_PTR(str);
+}
+
+/* License: Ruby's */
+VALUE
+rb_dir_getwd_ospath(void)
+{
+    VALUE cwd = Qnil;
+    w32_getcwd(NULL, 0, CP_UTF8, getcwd_value, &cwd);
+    return cwd;
 }
 
 /* License: Artistic or GPL */
