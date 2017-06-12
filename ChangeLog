@@ -1,3 +1,9 @@
+Sun Jun 11 21:25:09 2017  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/smtp.rb (getok, get_response): raise an ArgumentError when
+	  CR or LF is included in a line, because they are not allowed in
+	  RFC5321. https://hackerone.com/reports/137631 [Backport 0827a7e]
+
 Tue Mar 28 15:39:26 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	configure.in: syscall is deprecated on macOS
