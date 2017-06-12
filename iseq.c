@@ -983,14 +983,15 @@ static VALUE
 iseqw_inspect(VALUE self)
 {
     const rb_iseq_t *iseq = iseqw_check(self);
+    VALUE klass = rb_class_name(rb_obj_class(self));
 
     if (!iseq->body->location.label) {
-        return rb_sprintf("#<%s: uninitialized>", rb_obj_classname(self));
+	return rb_sprintf("#<%"PRIsVALUE": uninitialized>", klass);
     }
     else {
-	return rb_sprintf("<%s:%s@%s>",
-			  rb_obj_classname(self),
-			  RSTRING_PTR(iseq->body->location.label), RSTRING_PTR(rb_iseq_path(iseq)));
+	return rb_sprintf("<%"PRIsVALUE":%"PRIsVALUE"@%"PRIsVALUE">",
+			  klass,
+			  iseq->body->location.label, rb_iseq_path(iseq));
     }
 }
 
