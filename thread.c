@@ -425,7 +425,6 @@ rb_threadptr_interrupt_common(rb_thread_t *th, int trap)
     else {
 	/* none */
     }
-    native_cond_signal(&th->interrupt_cond);
     native_mutex_unlock(&th->interrupt_lock);
 }
 
@@ -549,7 +548,6 @@ thread_cleanup_func(void *th_ptr, int atfork)
 	return;
 
     native_mutex_destroy(&th->interrupt_lock);
-    native_cond_destroy(&th->interrupt_cond);
     native_thread_destroy(th);
 }
 
@@ -739,7 +737,6 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     th->interrupt_mask = 0;
 
     native_mutex_initialize(&th->interrupt_lock);
-    native_cond_initialize(&th->interrupt_cond, RB_CONDATTR_CLOCK_MONOTONIC);
     th->report_on_exception = th->vm->thread_report_on_exception;
 
     /* kick thread */
@@ -4920,8 +4917,6 @@ Init_Thread(void)
 	    gvl_acquire(th->vm, th);
 	    native_mutex_initialize(&th->vm->thread_destruct_lock);
 	    native_mutex_initialize(&th->interrupt_lock);
-	    native_cond_initialize(&th->interrupt_cond,
-				   RB_CONDATTR_CLOCK_MONOTONIC);
 
 	    th->pending_interrupt_queue = rb_ary_tmp_new(0);
 	    th->pending_interrupt_queue_checked = 0;
@@ -5076,27 +5071,4 @@ rb_uninterruptible(VALUE (*b_proc)(ANYARGS), VALUE data)
     rb_ary_push(cur_th->pending_interrupt_mask_stack, interrupt_mask);
 
     return rb_ensure(b_proc, data, rb_ary_pop, cur_th->pending_interrupt_mask_stack);
-}
-
-void
-ruby_kill(rb_pid_t pid, int sig)
-{
-    int err;
-    rb_thread_t *th = GET_THREAD();
-
-    /*
-     * When target pid is self, many caller assume signal will be
-     * delivered immediately and synchronously.
-     */
-    {
-	GVL_UNLOCK_BEGIN();
-	native_mutex_lock(&th->interrupt_lock);
-	err = kill(pid, sig);
-	native_cond_wait(&th->interrupt_cond, &th->interrupt_lock);
-	native_mutex_unlock(&th->interrupt_lock);
-	GVL_UNLOCK_END();
-    }
-    if (err < 0) {
-	rb_sys_fail(0);
-    }
 }

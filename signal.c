@@ -495,7 +495,7 @@ rb_f_kill(int argc, const VALUE *argv)
 #ifdef SIGSTOP
 		  case SIGSTOP:
 #endif
-		    ruby_kill(pid, sig);
+		    kill(pid, sig);
 		    break;
 		  default:
 		    t = signal_ignored(sig);
