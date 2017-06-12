@@ -119,12 +119,10 @@ st_delete_wrap(st_table *table, st_data_t key)
 
 struct rb_blocking_region_buffer {
     enum rb_thread_status prev_status;
-    struct rb_unblock_callback oldubf;
 };
 
-static int set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func, void *arg,
-				struct rb_unblock_callback *old, int fail_if_interrupted);
-static void reset_unblock_function(rb_thread_t *th, const struct rb_unblock_callback *old);
+static int unblock_function_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg, int fail_if_interrupted);
+static void unblock_function_clear(rb_thread_t *th);
 
 static inline int blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
 					rb_unblock_function_t *ubf, void *arg, int fail_if_interrupted);
@@ -378,8 +376,7 @@ rb_nativethread_lock_unlock(rb_nativethread_lock_t *lock)
 }
 
 static int
-set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func, void *arg,
-		     struct rb_unblock_callback *old, int fail_if_interrupted)
+unblock_function_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg, int fail_if_interrupted)
 {
     do {
 	if (fail_if_interrupted) {
@@ -395,7 +392,8 @@ set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func, void *arg,
     } while (RUBY_VM_INTERRUPTED_ANY(th) &&
 	     (native_mutex_unlock(&th->interrupt_lock), TRUE));
 
-    if (old) *old = th->unblock;
+    VM_ASSERT(th->unblock.func == NULL);
+
     th->unblock.func = func;
     th->unblock.arg = arg;
     native_mutex_unlock(&th->interrupt_lock);
@@ -404,10 +402,10 @@ set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func, void *arg,
 }
 
 static void
-reset_unblock_function(rb_thread_t *th, const struct rb_unblock_callback *old)
+unblock_function_clear(rb_thread_t *th)
 {
     native_mutex_lock(&th->interrupt_lock);
-    th->unblock = *old;
+    th->unblock.func = NULL;
     native_mutex_unlock(&th->interrupt_lock);
 }
 
@@ -415,11 +413,13 @@ static void
 rb_threadptr_interrupt_common(rb_thread_t *th, int trap)
 {
     native_mutex_lock(&th->interrupt_lock);
-    if (trap)
+    if (trap) {
 	RUBY_VM_SET_TRAP_INTERRUPT(th);
-    else
+    }
+    else {
 	RUBY_VM_SET_INTERRUPT(th);
-    if (th->unblock.func) {
+    }
+    if (th->unblock.func != NULL) {
 	(th->unblock.func)(th->unblock.arg);
     }
     else {
@@ -1283,7 +1283,7 @@ blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
 		      rb_unblock_function_t *ubf, void *arg, int fail_if_interrupted)
 {
     region->prev_status = th->status;
-    if (set_unblock_function(th, ubf, arg, &region->oldubf, fail_if_interrupted)) {
+    if (unblock_function_set(th, ubf, arg, fail_if_interrupted)) {
 	th->blocking_region_buffer = region;
 	th->status = THREAD_STOPPED;
 	thread_debug("enter blocking region (%p)\n", (void *)th);
@@ -1304,7 +1304,7 @@ blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
     thread_debug("leave blocking region (%p)\n", (void *)th);
     unregister_ubf_list(th);
     th->blocking_region_buffer = 0;
-    reset_unblock_function(th, &region->oldubf);
+    unblock_function_clear(th);
     if (th->status == THREAD_STOPPED) {
 	th->status = region->prev_status;
     }
