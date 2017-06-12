@@ -2368,6 +2368,7 @@ rb_thread_mark(void *ptr)
     rb_thread_t *th = ptr;
     RUBY_MARK_ENTER("thread");
 
+    /* mark VM stack */
     if (th->ec.stack) {
 	VALUE *p = th->ec.stack;
 	VALUE *sp = th->ec.cfp->sp;
@@ -2387,6 +2388,14 @@ rb_thread_mark(void *ptr)
 
 	    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 	}
+    }
+
+    /* mark machine stack */
+    if (GET_THREAD() != th && th->machine.stack_start && th->machine.stack_end) {
+	rb_gc_mark_machine_stack(th);
+	rb_gc_mark_locations((VALUE *)&th->machine.regs,
+			     (VALUE *)(&th->machine.regs) +
+			     sizeof(th->machine.regs) / sizeof(VALUE));
     }
 
     /* mark ruby objects */
@@ -2411,13 +2420,6 @@ rb_thread_mark(void *ptr)
     rb_mark_tbl(th->local_storage);
     RUBY_MARK_UNLESS_NULL(th->local_storage_recursive_hash);
     RUBY_MARK_UNLESS_NULL(th->local_storage_recursive_hash_for_trace);
-
-    if (GET_THREAD() != th && th->machine.stack_start && th->machine.stack_end) {
-	rb_gc_mark_machine_stack(th);
-	rb_gc_mark_locations((VALUE *)&th->machine.regs,
-			     (VALUE *)(&th->machine.regs) +
-			     sizeof(th->machine.regs) / sizeof(VALUE));
-    }
 
     RUBY_MARK_UNLESS_NULL(th->name);
 
