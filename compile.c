@@ -428,6 +428,7 @@ freeze_hide_obj(VALUE obj)
 #define gl_node_level ISEQ_COMPILE_DATA(iseq)->node_level
 #endif
 
+static void dump_disasm_list_with_cursor_dest(const LINK_ELEMENT *link, const LINK_ELEMENT *curr, const LABEL *dest);
 static void dump_disasm_list_with_cursor(const LINK_ELEMENT *elem, const LINK_ELEMENT *curr);
 static void dump_disasm_list(const LINK_ELEMENT *elem);
 
@@ -2648,7 +2649,7 @@ iseq_insns_unification(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 #include "opt_sc.inc"
 
 static int
-insn_set_sc_state(rb_iseq_t *iseq, INSN *iobj, int state)
+insn_set_sc_state(rb_iseq_t *iseq, const LINK_ELEMENT *anchor, INSN *iobj, int state)
 {
     int nstate;
     int insn_id;
@@ -2663,11 +2664,11 @@ insn_set_sc_state(rb_iseq_t *iseq, INSN *iobj, int state)
 
 	if (lobj->sc_state != 0) {
 	    if (lobj->sc_state != nstate) {
-		dump_disasm_list((LINK_ELEMENT *)iobj);
-		dump_disasm_list((LINK_ELEMENT *)lobj);
-		printf("\n-- %d, %d\n", lobj->sc_state, nstate);
+		dump_disasm_list_with_cursor_dest(anchor, &iobj->link, lobj);
 		COMPILE_ERROR(iseq, iobj->line_no,
-			      "insn_set_sc_state error\n");
+			      "insn_set_sc_state error: %d at "LABEL_FORMAT
+			      ", %d expected\n",
+			      lobj->sc_state, lobj->label_no, nstate);
 		return COMPILE_NG;
 	    }
 	}
@@ -2781,7 +2782,7 @@ iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		    /* none */
 		}		/* end of switch */
 	      normal_insn:
-		state = insn_set_sc_state(iseq, iobj, state);
+		state = insn_set_sc_state(iseq, anchor, iobj, state);
 		break;
 	    }
 	  case ISEQ_ELEMENT_LABEL:
@@ -6525,6 +6526,12 @@ dump_disasm_list(const LINK_ELEMENT *link)
 static void
 dump_disasm_list_with_cursor(const LINK_ELEMENT *link, const LINK_ELEMENT *curr)
 {
+    dump_disasm_list_with_cursor_dest(link, curr, NULL);
+}
+
+static void
+dump_disasm_list_with_cursor_dest(const LINK_ELEMENT *link, const LINK_ELEMENT *curr, const LABEL *dest)
+{
     int pos = 0;
     INSN *iobj;
     LABEL *lobj;
@@ -6546,7 +6553,7 @@ dump_disasm_list_with_cursor(const LINK_ELEMENT *link, const LINK_ELEMENT *curr)
 	  case ISEQ_ELEMENT_LABEL:
 	    {
 		lobj = (LABEL *)link;
-		printf(LABEL_FORMAT"\n", lobj->label_no);
+		printf(LABEL_FORMAT"%s\n", lobj->label_no, dest == lobj ? " <---" : "");
 		break;
 	    }
 	  case ISEQ_ELEMENT_NONE:
