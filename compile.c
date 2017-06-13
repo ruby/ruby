@@ -1564,8 +1564,8 @@ get_ivar_ic_value(rb_iseq_t *iseq,ID id)
 }
 
 #define BADINSN_ERROR \
-    (xfree(generated_iseq), \
-     xfree(line_info_table), \
+    (generated_iseq ? xfree(generated_iseq) : 0, \
+     line_info_table ? xfree(line_info_table) : 0, \
      dump_disasm_list_with_cursor(&anchor->anchor, list), \
      COMPILE_ERROR)
 
@@ -1575,10 +1575,10 @@ get_ivar_ic_value(rb_iseq_t *iseq,ID id)
 static int
 iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 {
-    struct iseq_line_info_entry *line_info_table;
+    struct iseq_line_info_entry *line_info_table = NULL;
     unsigned int last_line = 0;
     LINK_ELEMENT *list;
-    VALUE *generated_iseq;
+    VALUE *generated_iseq = NULL;
 
     int insn_num, code_index, line_info_index, sp, stack_max = 0, line = 0;
 
