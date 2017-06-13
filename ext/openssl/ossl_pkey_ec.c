@@ -162,24 +162,17 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
     } else if (rb_obj_is_kind_of(arg, cEC_GROUP)) {
 	ec = ec_key_new_from_group(arg);
     } else {
-	BIO *in;
-
-	pass = ossl_pem_passwd_value(pass);
-	in = ossl_obj2bio(&arg);
-
-	ec = PEM_read_bio_ECPrivateKey(in, NULL, ossl_pem_passwd_cb, (void *)pass);
-	if (!ec) {
-	    OSSL_BIO_reset(in);
-	    ec = PEM_read_bio_EC_PUBKEY(in, NULL, ossl_pem_passwd_cb, (void *)pass);
-	}
-	if (!ec) {
-	    OSSL_BIO_reset(in);
-	    ec = d2i_ECPrivateKey_bio(in, NULL);
-	}
-	if (!ec) {
-	    OSSL_BIO_reset(in);
-	    ec = d2i_EC_PUBKEY_bio(in, NULL);
-	}
+        BIO *in = ossl_obj2bio(&arg);
+        EVP_PKEY *tmp;
+        pass = ossl_pem_passwd_value(pass);
+        tmp = ossl_pkey_read_generic(in, pass);
+        if (tmp) {
+            if (EVP_PKEY_base_id(tmp) != EVP_PKEY_EC)
+                rb_raise(eECError, "incorrect pkey type: %s",
+                         OBJ_nid2sn(EVP_PKEY_base_id(tmp)));
+            ec = EVP_PKEY_get1_EC_KEY(tmp);
+            EVP_PKEY_free(tmp);
+        }
 	BIO_free(in);
 
 	if (!ec) {

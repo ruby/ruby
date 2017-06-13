@@ -170,37 +170,34 @@ ossl_dsa_s_generate(VALUE klass, VALUE size)
 static VALUE
 ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 {
-    EVP_PKEY *pkey;
-    DSA *dsa;
+    EVP_PKEY *pkey, *tmp;
+    DSA *dsa = NULL;
     BIO *in;
     VALUE arg, pass;
 
     GetPKey(self, pkey);
-    if(rb_scan_args(argc, argv, "02", &arg, &pass) == 0) {
+    rb_scan_args(argc, argv, "02", &arg, &pass);
+    if (argc == 0) {
         dsa = DSA_new();
+        if (!dsa)
+            ossl_raise(eDSAError, "DSA_new");
     }
-    else if (RB_INTEGER_TYPE_P(arg)) {
-	if (!(dsa = dsa_generate(NUM2INT(arg)))) {
-	    ossl_raise(eDSAError, NULL);
-	}
+    else if (argc == 1 && RB_INTEGER_TYPE_P(arg)) {
+        dsa = dsa_generate(NUM2INT(arg));
     }
     else {
 	pass = ossl_pem_passwd_value(pass);
 	arg = ossl_to_der_if_possible(arg);
 	in = ossl_obj2bio(&arg);
-	dsa = PEM_read_bio_DSAPrivateKey(in, NULL, ossl_pem_passwd_cb, (void *)pass);
-	if (!dsa) {
-	    OSSL_BIO_reset(in);
-	    dsa = PEM_read_bio_DSA_PUBKEY(in, NULL, NULL, NULL);
-	}
-	if (!dsa) {
-	    OSSL_BIO_reset(in);
-	    dsa = d2i_DSAPrivateKey_bio(in, NULL);
-	}
-	if (!dsa) {
-	    OSSL_BIO_reset(in);
-	    dsa = d2i_DSA_PUBKEY_bio(in, NULL);
-	}
+
+        tmp = ossl_pkey_read_generic(in, pass);
+        if (tmp) {
+            if (EVP_PKEY_base_id(tmp) != EVP_PKEY_DSA)
+                rb_raise(eDSAError, "incorrect pkey type: %s",
+                         OBJ_nid2sn(EVP_PKEY_base_id(tmp)));
+            dsa = EVP_PKEY_get1_DSA(tmp);
+            EVP_PKEY_free(tmp);
+        }
 	if (!dsa) {
 	    OSSL_BIO_reset(in);
 #define PEM_read_bio_DSAPublicKey(bp,x,cb,u) (DSA *)PEM_ASN1_read_bio( \

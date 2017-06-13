@@ -136,6 +136,35 @@ ossl_pkey_new(EVP_PKEY *pkey)
     return obj;
 }
 
+EVP_PKEY *
+ossl_pkey_read_generic(BIO *bio, VALUE pass)
+{
+    void *ppass = (void *)pass;
+    EVP_PKEY *pkey;
+
+    if ((pkey = d2i_PrivateKey_bio(bio, NULL)))
+	goto out;
+    OSSL_BIO_reset(bio);
+    if ((pkey = d2i_PKCS8PrivateKey_bio(bio, NULL, ossl_pem_passwd_cb, ppass)))
+	goto out;
+    OSSL_BIO_reset(bio);
+    if ((pkey = d2i_PUBKEY_bio(bio, NULL)))
+	goto out;
+    OSSL_BIO_reset(bio);
+    /* PEM_read_bio_PrivateKey() also parses PKCS #8 formats */
+    if ((pkey = PEM_read_bio_PrivateKey(bio, NULL, ossl_pem_passwd_cb, ppass)))
+	goto out;
+    OSSL_BIO_reset(bio);
+    if ((pkey = PEM_read_bio_PUBKEY(bio, NULL, NULL, NULL)))
+	goto out;
+    OSSL_BIO_reset(bio);
+    if ((pkey = PEM_read_bio_Parameters(bio, NULL)))
+	goto out;
+
+  out:
+    return pkey;
+}
+
 /*
  *  call-seq:
  *     OpenSSL::PKey.read(string [, pwd ]) -> PKey
@@ -160,33 +189,11 @@ ossl_pkey_new_from_data(int argc, VALUE *argv, VALUE self)
     VALUE data, pass;
 
     rb_scan_args(argc, argv, "11", &data, &pass);
-    pass = ossl_pem_passwd_value(pass);
-
     bio = ossl_obj2bio(&data);
-    if ((pkey = d2i_PrivateKey_bio(bio, NULL)))
-	goto ok;
-    OSSL_BIO_reset(bio);
-    if ((pkey = d2i_PKCS8PrivateKey_bio(bio, NULL, ossl_pem_passwd_cb, (void *)pass)))
-	goto ok;
-    OSSL_BIO_reset(bio);
-    if ((pkey = d2i_PUBKEY_bio(bio, NULL)))
-	goto ok;
-    OSSL_BIO_reset(bio);
-    /* PEM_read_bio_PrivateKey() also parses PKCS #8 formats */
-    if ((pkey = PEM_read_bio_PrivateKey(bio, NULL, ossl_pem_passwd_cb, (void *)pass)))
-	goto ok;
-    OSSL_BIO_reset(bio);
-    if ((pkey = PEM_read_bio_PUBKEY(bio, NULL, NULL, NULL)))
-	goto ok;
-    OSSL_BIO_reset(bio);
-    if ((pkey = PEM_read_bio_Parameters(bio, NULL)))
-	goto ok;
-
+    pkey = ossl_pkey_read_generic(bio, ossl_pem_passwd_value(pass));
     BIO_free(bio);
-    ossl_raise(ePKeyError, "Could not parse PKey");
-
-ok:
-    BIO_free(bio);
+    if (!pkey)
+	ossl_raise(ePKeyError, "Could not parse PKey");
     return ossl_pkey_new(pkey);
 }
 
