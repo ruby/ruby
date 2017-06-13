@@ -49,6 +49,20 @@ EVP_PKEY *ossl_pkey_read_generic(BIO *, VALUE);
 EVP_PKEY *GetPKeyPtr(VALUE);
 EVP_PKEY *DupPKeyPtr(VALUE);
 EVP_PKEY *GetPrivPKeyPtr(VALUE);
+
+/*
+ * Serializes _self_ in X.509 SubjectPublicKeyInfo format and returns the
+ * resulting String. Sub-classes use this when overriding #to_der.
+ */
+VALUE ossl_pkey_export_spki(VALUE self, int to_der);
+/*
+ * Serializes the private key _self_ in the traditional private key format
+ * and returns the resulting String. Sub-classes use this when overriding
+ * #to_der.
+ */
+VALUE ossl_pkey_export_traditional(int argc, VALUE *argv, VALUE self,
+				   int to_der);
+
 void Init_ossl_pkey(void);
 
 /*

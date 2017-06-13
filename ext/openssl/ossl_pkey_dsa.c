@@ -296,34 +296,12 @@ static VALUE
 ossl_dsa_export(int argc, VALUE *argv, VALUE self)
 {
     DSA *dsa;
-    BIO *out;
-    const EVP_CIPHER *ciph = NULL;
-    VALUE cipher, pass, str;
 
     GetDSA(self, dsa);
-    rb_scan_args(argc, argv, "02", &cipher, &pass);
-    if (!NIL_P(cipher)) {
-	ciph = ossl_evp_get_cipherbyname(cipher);
-	pass = ossl_pem_passwd_value(pass);
-    }
-    if (!(out = BIO_new(BIO_s_mem()))) {
-	ossl_raise(eDSAError, NULL);
-    }
-    if (DSA_HAS_PRIVATE(dsa)) {
-	if (!PEM_write_bio_DSAPrivateKey(out, dsa, ciph, NULL, 0,
-					 ossl_pem_passwd_cb, (void *)pass)){
-	    BIO_free(out);
-	    ossl_raise(eDSAError, NULL);
-	}
-    } else {
-	if (!PEM_write_bio_DSA_PUBKEY(out, dsa)) {
-	    BIO_free(out);
-	    ossl_raise(eDSAError, NULL);
-	}
-    }
-    str = ossl_membio2str(out);
-
-    return str;
+    if (DSA_HAS_PRIVATE(dsa))
+        return ossl_pkey_export_traditional(argc, argv, self, 0);
+    else
+        return ossl_pkey_export_spki(self, 0);
 }
 
 /*
@@ -337,25 +315,12 @@ static VALUE
 ossl_dsa_to_der(VALUE self)
 {
     DSA *dsa;
-    int (*i2d_func)(DSA *, unsigned char **);
-    unsigned char *p;
-    long len;
-    VALUE str;
 
     GetDSA(self, dsa);
-    if(DSA_HAS_PRIVATE(dsa))
-	i2d_func = (int (*)(DSA *,unsigned char **))i2d_DSAPrivateKey;
+    if (DSA_HAS_PRIVATE(dsa))
+        return ossl_pkey_export_traditional(0, NULL, self, 1);
     else
-	i2d_func = i2d_DSA_PUBKEY;
-    if((len = i2d_func(dsa, NULL)) <= 0)
-	ossl_raise(eDSAError, NULL);
-    str = rb_str_new(0, len);
-    p = (unsigned char *)RSTRING_PTR(str);
-    if(i2d_func(dsa, &p) < 0)
-	ossl_raise(eDSAError, NULL);
-    ossl_str_adjust(str, p);
-
-    return str;
+        return ossl_pkey_export_spki(self, 1);
 }
 
 

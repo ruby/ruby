@@ -141,7 +141,7 @@ ossl_ec_key_s_generate(VALUE klass, VALUE arg)
 static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
-    EC_KEY *ec;
+    EC_KEY *ec = NULL;
     VALUE arg, pass;
 
     GetPKey(self, pkey);
@@ -378,66 +378,6 @@ static VALUE ossl_ec_key_is_private(VALUE self)
     return EC_KEY_get0_private_key(ec) ? Qtrue : Qfalse;
 }
 
-static VALUE ossl_ec_key_to_string(VALUE self, VALUE ciph, VALUE pass, int format)
-{
-    EC_KEY *ec;
-    BIO *out;
-    int i = -1;
-    int private = 0;
-    VALUE str;
-    const EVP_CIPHER *cipher = NULL;
-
-    GetEC(self, ec);
-
-    if (EC_KEY_get0_public_key(ec) == NULL)
-        ossl_raise(eECError, "can't export - no public key set");
-
-    if (EC_KEY_check_key(ec) != 1)
-	ossl_raise(eECError, "can't export - EC_KEY_check_key failed");
-
-    if (EC_KEY_get0_private_key(ec))
-        private = 1;
-
-    if (!NIL_P(ciph)) {
-	cipher = ossl_evp_get_cipherbyname(ciph);
-	pass = ossl_pem_passwd_value(pass);
-    }
-
-    if (!(out = BIO_new(BIO_s_mem())))
-        ossl_raise(eECError, "BIO_new(BIO_s_mem())");
-
-    switch(format) {
-    case EXPORT_PEM:
-    	if (private) {
-            i = PEM_write_bio_ECPrivateKey(out, ec, cipher, NULL, 0, ossl_pem_passwd_cb, (void *)pass);
-    	} else {
-            i = PEM_write_bio_EC_PUBKEY(out, ec);
-        }
-
-    	break;
-    case EXPORT_DER:
-        if (private) {
-            i = i2d_ECPrivateKey_bio(out, ec);
-        } else {
-            i = i2d_EC_PUBKEY_bio(out, ec);
-        }
-
-    	break;
-    default:
-        BIO_free(out);
-    	ossl_raise(rb_eRuntimeError, "unknown format (internal error)");
-    }
-
-    if (i != 1) {
-        BIO_free(out);
-        ossl_raise(eECError, "outlen=%d", i);
-    }
-
-    str = ossl_membio2str(out);
-
-    return str;
-}
-
 /*
  *  call-seq:
  *     key.export([cipher, pass_phrase]) => String
@@ -448,11 +388,16 @@ static VALUE ossl_ec_key_to_string(VALUE self, VALUE ciph, VALUE pass, int forma
  * instance. Note that encryption will only be effective for a private key,
  * public keys will always be encoded in plain text.
  */
-static VALUE ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
+static VALUE
+ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
 {
-    VALUE cipher, passwd;
-    rb_scan_args(argc, argv, "02", &cipher, &passwd);
-    return ossl_ec_key_to_string(self, cipher, passwd, EXPORT_PEM);
+    EC_KEY *ec;
+
+    GetEC(self, ec);
+    if (EC_KEY_get0_private_key(ec))
+        return ossl_pkey_export_traditional(argc, argv, self, 0);
+    else
+        return ossl_pkey_export_spki(self, 0);
 }
 
 /*
@@ -461,9 +406,16 @@ static VALUE ossl_ec_key_export(int argc, VALUE *argv, VALUE self)
  *
  *  See the OpenSSL documentation for i2d_ECPrivateKey_bio()
  */
-static VALUE ossl_ec_key_to_der(VALUE self)
+static VALUE
+ossl_ec_key_to_der(VALUE self)
 {
-    return ossl_ec_key_to_string(self, Qnil, Qnil, EXPORT_DER);
+    EC_KEY *ec;
+
+    GetEC(self, ec);
+    if (EC_KEY_get0_private_key(ec))
+        return ossl_pkey_export_traditional(0, NULL, self, 1);
+    else
+        return ossl_pkey_export_spki(self, 1);
 }
 
 /*
