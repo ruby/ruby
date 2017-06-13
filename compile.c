@@ -428,8 +428,7 @@ freeze_hide_obj(VALUE obj)
 #define gl_node_level ISEQ_COMPILE_DATA(iseq)->node_level
 #endif
 
-static void dump_disasm_list_with_cursor_dest(const LINK_ELEMENT *link, const LINK_ELEMENT *curr, const LABEL *dest);
-static void dump_disasm_list_with_cursor(const LINK_ELEMENT *elem, const LINK_ELEMENT *curr);
+static void dump_disasm_list_with_cursor(const LINK_ELEMENT *link, const LINK_ELEMENT *curr, const LABEL *dest);
 static void dump_disasm_list(const LINK_ELEMENT *elem);
 
 static int insn_data_length(INSN *iobj);
@@ -1563,10 +1562,13 @@ get_ivar_ic_value(rb_iseq_t *iseq,ID id)
     return val;
 }
 
+#define BADINSN_DUMP(anchor, list, dest) \
+    dump_disasm_list_with_cursor(&anchor->anchor, list, dest)
+
 #define BADINSN_ERROR \
     (generated_iseq ? xfree(generated_iseq) : 0, \
      line_info_table ? xfree(line_info_table) : 0, \
-     dump_disasm_list_with_cursor(&anchor->anchor, list), \
+     BADINSN_DUMP(anchor, list, NULL), \
      COMPILE_ERROR)
 
 /**
@@ -2664,7 +2666,7 @@ insn_set_sc_state(rb_iseq_t *iseq, const LINK_ELEMENT *anchor, INSN *iobj, int s
 
 	if (lobj->sc_state != 0) {
 	    if (lobj->sc_state != nstate) {
-		dump_disasm_list_with_cursor_dest(anchor, &iobj->link, lobj);
+		BADINSN_DUMP(anchor, iobj, lobj);
 		COMPILE_ERROR(iseq, iobj->line_no,
 			      "insn_set_sc_state error: %d at "LABEL_FORMAT
 			      ", %d expected\n",
@@ -6520,17 +6522,11 @@ insn_data_to_s_detail(INSN *iobj)
 static void
 dump_disasm_list(const LINK_ELEMENT *link)
 {
-    dump_disasm_list_with_cursor(link, NULL);
+    dump_disasm_list_with_cursor(link, NULL, NULL);
 }
 
 static void
-dump_disasm_list_with_cursor(const LINK_ELEMENT *link, const LINK_ELEMENT *curr)
-{
-    dump_disasm_list_with_cursor_dest(link, curr, NULL);
-}
-
-static void
-dump_disasm_list_with_cursor_dest(const LINK_ELEMENT *link, const LINK_ELEMENT *curr, const LABEL *dest)
+dump_disasm_list_with_cursor(const LINK_ELEMENT *link, const LINK_ELEMENT *curr, const LABEL *dest)
 {
     int pos = 0;
     INSN *iobj;
