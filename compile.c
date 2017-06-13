@@ -1562,6 +1562,12 @@ get_ivar_ic_value(rb_iseq_t *iseq,ID id)
     return val;
 }
 
+#define BADINSN_ERROR \
+    (xfree(generated_iseq), \
+     xfree(line_info_table), \
+     dump_disasm_list_with_cursor(&anchor->anchor, list), \
+     COMPILE_ERROR)
+
 /**
   ruby insn object list -> raw instruction sequence
  */
@@ -1610,9 +1616,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		break;
 	    }
 	  default:
-	    dump_disasm_list(FIRST_ELEMENT(anchor));
-	    dump_disasm_list(list);
-	    COMPILE_ERROR(iseq, line, "error: set_sequence");
+	    BADINSN_ERROR(iseq, line, "unknown list type: %d", list->type);
 	    return COMPILE_NG;
 	}
 	list = list->next;
@@ -1630,12 +1634,6 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
     list = FIRST_ELEMENT(anchor);
     line_info_index = code_index = sp = 0;
-
-#define BADINSN_ERROR \
-    (dump_disasm_list_with_cursor(&anchor->anchor, list), \
-     xfree(generated_iseq), \
-     xfree(line_info_table), \
-     COMPILE_ERROR)
 
     while (list) {
 	switch (list->type) {
@@ -1683,7 +1681,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			    LABEL *lobj = (LABEL *)operands[j];
 			    if (!lobj->set) {
 				BADINSN_ERROR(iseq, iobj->line_no,
-					      "unknown label");
+					      "unknown label: "LABEL_FORMAT, lobj->label_no);
 				return COMPILE_NG;
 			    }
 			    if (lobj->sp == -1) {
