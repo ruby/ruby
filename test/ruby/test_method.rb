@@ -901,6 +901,17 @@ class TestMethod < Test::Unit::TestCase
     assert_nil(m)
   end
 
+  def test_super_method_with_prepended_module
+    bug = '[ruby-core:81666] [Bug #13656]'
+    c1 = EnvUtil.labeled_class("C1") {def m; end}
+    c2 = EnvUtil.labeled_class("C2", c1) {def m; end}
+    c2.prepend(EnvUtil.labeled_module("M"))
+    m = c2.instance_method(:m)
+    assert_equal(c2, m.owner)
+    m = m.super_method
+    assert_equal(c1, m.owner, bug)
+  end
+
   def rest_parameter(*rest)
     rest
   end
