@@ -59,47 +59,6 @@ vm_call0(rb_thread_t* th, VALUE recv, ID id, int argc, const VALUE *argv, const 
     return vm_call0_body(th, calling, &ci_entry, &cc_entry, argv);
 }
 
-#if OPT_CALL_CFUNC_WITHOUT_FRAME
-static VALUE
-vm_call0_cfunc(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv)
-{
-    VALUE val;
-
-    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, cc->me->owner, ci->mid);
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, calling->recv, ci->mid, ci->mid, cc->me->owner, Qnil);
-    {
-	rb_control_frame_t *reg_cfp = th->ec.cfp;
-	const rb_callable_method_entry_t *me = cc->me;
-	const rb_method_cfunc_t *cfunc = &me->def->body.cfunc;
-	int len = cfunc->argc;
-	VALUE recv = calling->recv;
-	int argc = calling->argc;
-
-	if (len >= 0) rb_check_arity(argc, len, len);
-
-	th->passed_ci = ci;
-	cc->aux.inc_sp = 0;
-	VM_PROFILE_UP(C2C_CALL);
-	val = (*cfunc->invoker)(cfunc->func, recv, argc, argv);
-
-	if (reg_cfp == th->ec.cfp) {
-	    if (UNLIKELY(th->passed_ci != ci)) {
-		rb_bug("vm_call0_cfunc: passed_ci error (ci: %p, passed_ci: %p)", ci, th->passed_ci);
-	    }
-	    th->passed_ci = 0;
-	}
-	else {
-	    CHECK_CFP_CONSISTENCY("vm_call0_cfunc");
-	    VM_PROFILE_UP(C2C_POPF);
-	    rb_vm_pop_frame(th);
-	}
-    }
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, calling->recv, ci->mid, ci->mid, callnig->cc->me->owner, val);
-    RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, cc->me->owner, ci->mid);
-
-    return val;
-}
-#else
 static VALUE
 vm_call0_cfunc_with_frame(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv)
 {
@@ -141,7 +100,6 @@ vm_call0_cfunc(rb_thread_t* th, struct rb_calling_info *calling, const struct rb
 {
     return vm_call0_cfunc_with_frame(th, calling, ci, cc, argv);
 }
-#endif
 
 /* `ci' should point temporal value (on stack value) */
 static VALUE

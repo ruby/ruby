@@ -1542,25 +1542,7 @@ extern rb_vm_t *ruby_current_vm;
 extern rb_event_flag_t ruby_vm_event_flags;
 
 #define GET_VM() ruby_current_vm
-
-#ifndef OPT_CALL_CFUNC_WITHOUT_FRAME
-#define OPT_CALL_CFUNC_WITHOUT_FRAME 0
-#endif
-
-#define GET_THREAD() vm_thread_with_frame(ruby_current_thread)
-#if OPT_CALL_CFUNC_WITHOUT_FRAME
-static inline rb_thread_t *
-vm_thread_with_frame(rb_thread_t *th)
-{
-    if (UNLIKELY(th->passed_ci != 0)) {
-	void rb_vm_call_cfunc_push_frame(rb_thread_t *th);
-	rb_vm_call_cfunc_push_frame(th);
-    }
-    return th;
-}
-#else
-#define vm_thread_with_frame(th) (th)
-#endif
+#define GET_THREAD() ruby_current_thread
 
 #define rb_thread_set_current_raw(th) (void)(ruby_current_thread = (th))
 #define rb_thread_set_current(th) do { \

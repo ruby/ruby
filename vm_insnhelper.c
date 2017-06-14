@@ -1880,88 +1880,12 @@ vm_call_cfunc_with_frame(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb
     return val;
 }
 
-#if OPT_CALL_CFUNC_WITHOUT_FRAME
-static VALUE
-vm_call_cfunc_latter(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling)
-{
-    VALUE val;
-    int argc = calling->argc;
-    VALUE *argv = STACK_ADDR_FROM_TOP(argc);
-    VALUE recv = calling->recv;
-    const rb_method_cfunc_t *cfunc = vm_method_cfunc_entry(cc->me);
-
-    th->passed_calling = calling;
-    reg_cfp->sp -= argc + 1;
-    ci->aux.inc_sp = argc + 1;
-    VM_PROFILE_UP(R2C_CALL);
-    val = (*cfunc->invoker)(cfunc->func, recv, argc, argv);
-
-    /* check */
-    if (reg_cfp == th->ec.cfp) { /* no frame push */
-	if (UNLIKELY(th->passed_ci != ci)) {
-	    rb_bug("vm_call_cfunc_latter: passed_ci error (ci: %p, passed_ci: %p)", ci, th->passed_ci);
-	}
-	th->passed_ci = 0;
-    }
-    else {
-	CHECK_CFP_CONSISTENCY("vm_call_cfunc_latter");
-	vm_pop_frame(th, reg_cfp, reg_cfp->ep);
-	VM_PROFILE_UP(R2C_POPF);
-    }
-
-    return val;
-}
-
-static VALUE
-vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci)
-{
-    VALUE val;
-    const rb_callable_method_entry_t *me = cc->me;
-    int len = vm_method_cfunc_entry(me)->argc;
-    VALUE recv = calling->recv;
-
-    CALLER_SETUP_ARG(reg_cfp, calling, ci);
-    if (len >= 0) rb_check_arity(calling->argc, len, len);
-
-    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, me->owner, me->called_id);
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, me->called_id, me->owner, Qnil);
-
-    if (!(cc->me->def->flag & METHOD_VISI_PROTECTED) &&
-	!(ci->flag & VM_CALL_ARGS_SPLAT) &&
-	!(ci->kw_arg != NULL)) {
-	CI_SET_FASTPATH(cc, vm_call_cfunc_latter, 1);
-    }
-    val = vm_call_cfunc_latter(th, reg_cfp, calling);
-
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, me->called_id, me->owner, val);
-    RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, me->owner, me->called_id);
-
-    return val;
-}
-
-void
-rb_vm_call_cfunc_push_frame(rb_thread_t *th)
-{
-    struct rb_calling_info *calling = th->passed_calling;
-    const rb_callable_method_entry_t *me = calling->me;
-    th->passed_ci = 0;
-
-    vm_push_frame(th, 0, VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL,
-		  calling->recv, calling->block_handler, (VALUE)me /* cref */,
-		  0, th->ec.cfp->sp + cc->aux.inc_sp, 0, 0);
-
-    if (calling->call != vm_call_general) {
-	calling->call = vm_call_cfunc_with_frame;
-    }
-}
-#else /* OPT_CALL_CFUNC_WITHOUT_FRAME */
 static VALUE
 vm_call_cfunc(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc)
 {
     CALLER_SETUP_ARG(reg_cfp, calling, ci);
     return vm_call_cfunc_with_frame(th, reg_cfp, calling, ci, cc);
 }
-#endif
 
 static VALUE
 vm_call_ivar(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc)
