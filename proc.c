@@ -2524,6 +2524,7 @@ method_inspect(VALUE method)
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     str = rb_str_buf_new2("#<");
+    OBJ_INFECT_RAW(str, method);
     s = rb_obj_classname(method);
     rb_str_buf_cat2(str, s);
     rb_str_buf_cat2(str, ": ");
