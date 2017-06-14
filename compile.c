@@ -1566,8 +1566,8 @@ get_ivar_ic_value(rb_iseq_t *iseq,ID id)
     dump_disasm_list_with_cursor(&anchor->anchor, list, dest)
 
 #define BADINSN_ERROR \
-    (generated_iseq ? xfree(generated_iseq) : 0, \
-     line_info_table ? xfree(line_info_table) : 0, \
+    (xfree(generated_iseq), \
+     xfree(line_info_table), \
      BADINSN_DUMP(anchor, list, NULL), \
      COMPILE_ERROR)
 
