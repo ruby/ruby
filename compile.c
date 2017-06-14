@@ -1577,10 +1577,10 @@ get_ivar_ic_value(rb_iseq_t *iseq,ID id)
 static int
 iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 {
-    struct iseq_line_info_entry *line_info_table = NULL;
+    struct iseq_line_info_entry *line_info_table;
     unsigned int last_line = 0;
     LINK_ELEMENT *list;
-    VALUE *generated_iseq = NULL;
+    VALUE *generated_iseq;
 
     int insn_num, code_index, line_info_index, sp, stack_max = 0, line = 0;
 
@@ -1619,7 +1619,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		break;
 	    }
 	  default:
-	    BADINSN_ERROR(iseq, line, "unknown list type: %d", list->type);
+	    BADINSN_DUMP(anchor, list, NULL);
+	    COMPILE_ERROR(iseq, line, "unknown list type: %d", list->type);
 	    return COMPILE_NG;
 	}
 	list = list->next;
