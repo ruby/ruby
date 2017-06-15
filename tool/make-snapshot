@@ -93,6 +93,9 @@ class Dir
 end
 
 $packages &&= $packages.split(/[, ]+/).tap {|pkg|
+  if all = pkg.index("all")
+    pkg[all, 1] = PACKAGES.keys - pkg
+  end
   pkg -= PACKAGES.keys
   pkg.empty? or abort "#{File.basename $0}: unknown packages - #{pkg.join(", ")}"
 }
