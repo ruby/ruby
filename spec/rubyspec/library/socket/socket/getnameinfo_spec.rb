@@ -14,9 +14,9 @@ describe "Socket.getnameinfo" do
   end
 
   it "gets the name information and don't resolve it" do
-    sockaddr = Socket.sockaddr_in SocketSpecs.port, '127.0.0.1'
+    sockaddr = Socket.sockaddr_in 3333, '127.0.0.1'
     name_info = Socket.getnameinfo(sockaddr, Socket::NI_NUMERICHOST | Socket::NI_NUMERICSERV)
-    name_info.should == ['127.0.0.1', "#{SocketSpecs.port}"]
+    name_info.should == ['127.0.0.1', "3333"]
   end
 
   def should_be_valid_dns_name(name)
@@ -28,10 +28,10 @@ describe "Socket.getnameinfo" do
   end
 
   it "gets the name information and resolve the host" do
-    sockaddr = Socket.sockaddr_in SocketSpecs.port, '127.0.0.1'
+    sockaddr = Socket.sockaddr_in 3333, '127.0.0.1'
     name_info = Socket.getnameinfo(sockaddr, Socket::NI_NUMERICSERV)
     should_be_valid_dns_name(name_info[0])
-    name_info[1].should == SocketSpecs.port.to_s
+    name_info[1].should == 3333.to_s
   end
 
   it "gets the name information and resolves the service" do
@@ -44,8 +44,8 @@ describe "Socket.getnameinfo" do
   end
 
   it "gets a 3-element array and doesn't resolve hostname" do
-    name_info = Socket.getnameinfo(["AF_INET", SocketSpecs.port, '127.0.0.1'], Socket::NI_NUMERICHOST | Socket::NI_NUMERICSERV)
-    name_info.should == ['127.0.0.1', "#{SocketSpecs.port}"]
+    name_info = Socket.getnameinfo(["AF_INET", 3333, '127.0.0.1'], Socket::NI_NUMERICHOST | Socket::NI_NUMERICSERV)
+    name_info.should == ['127.0.0.1', "3333"]
   end
 
   it "gets a 3-element array and resolves the service" do
@@ -54,8 +54,8 @@ describe "Socket.getnameinfo" do
   end
 
   it "gets a 4-element array and doesn't resolve hostname" do
-    name_info = Socket.getnameinfo(["AF_INET", SocketSpecs.port, 'foo', '127.0.0.1'], Socket::NI_NUMERICHOST | Socket::NI_NUMERICSERV)
-    name_info.should == ['127.0.0.1', "#{SocketSpecs.port}"]
+    name_info = Socket.getnameinfo(["AF_INET", 3333, 'foo', '127.0.0.1'], Socket::NI_NUMERICHOST | Socket::NI_NUMERICSERV)
+    name_info.should == ['127.0.0.1', "3333"]
   end
 
   it "gets a 4-element array and resolves the service" do

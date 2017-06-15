@@ -4,8 +4,9 @@ require File.expand_path('../../fixtures/classes', __FILE__)
 describe "Socket::BasicSocket#getpeername" do
 
   before :each do
-    @server = TCPServer.new("127.0.0.1", SocketSpecs.port)
-    @client = TCPSocket.new("127.0.0.1", SocketSpecs.port)
+    @server = TCPServer.new("127.0.0.1", 0)
+    @port = @server.addr[1]
+    @client = TCPSocket.new("127.0.0.1", @port)
   end
 
   after :each do
@@ -14,7 +15,7 @@ describe "Socket::BasicSocket#getpeername" do
   end
 
   it "returns the sockaddr of the other end of the connection" do
-    server_sockaddr = Socket.pack_sockaddr_in(SocketSpecs.port, "127.0.0.1")
+    server_sockaddr = Socket.pack_sockaddr_in(@port, "127.0.0.1")
     @client.getpeername.should == server_sockaddr
   end
 

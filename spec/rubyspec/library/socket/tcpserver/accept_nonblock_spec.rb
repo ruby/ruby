@@ -3,7 +3,8 @@ require File.expand_path('../../fixtures/classes', __FILE__)
 
 describe "Socket::TCPServer.accept_nonblock" do
   before :each do
-    @server = TCPServer.new("127.0.0.1", SocketSpecs.port)
+    @server = TCPServer.new("127.0.0.1", 0)
+    @port = @server.addr[1]
   end
 
   after :each do
@@ -16,13 +17,13 @@ describe "Socket::TCPServer.accept_nonblock" do
       @server.accept_nonblock
     }.should raise_error(IO::WaitReadable)
 
-    c = TCPSocket.new("127.0.0.1", SocketSpecs.port)
+    c = TCPSocket.new("127.0.0.1", @port)
     sleep 0.1
     s = @server.accept_nonblock
 
     port, address = Socket.unpack_sockaddr_in(s.getsockname)
 
-    port.should == SocketSpecs.port
+    port.should == @port
     address.should == "127.0.0.1"
     s.should be_kind_of(TCPSocket)
 

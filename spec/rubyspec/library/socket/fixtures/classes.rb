@@ -23,29 +23,6 @@ module SocketSpecs
     Socket.getaddrinfo(host, nil)[0][3]
   end
 
-  def self.find_available_port
-    begin
-      s = TCPServer.open(0)
-      port = s.addr[1]
-      s.close
-      port
-    rescue
-      43191
-    end
-  end
-
-  def self.port
-    @port ||= find_available_port
-  end
-
-  def self.str_port
-    port.to_s
-  end
-
-  def self.local_port
-    find_available_port
-  end
-
   def self.reserved_unused_port
     # https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers
     0

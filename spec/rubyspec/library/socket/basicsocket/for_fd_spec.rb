@@ -4,7 +4,7 @@ require File.expand_path('../../fixtures/classes', __FILE__)
 
 describe "BasicSocket#for_fd" do
   before :each do
-    @server = TCPServer.new(SocketSpecs.port)
+    @server = TCPServer.new(0)
     @s2 = nil
   end
 

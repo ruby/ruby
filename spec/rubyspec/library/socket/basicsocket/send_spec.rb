@@ -3,8 +3,9 @@ require File.expand_path('../../fixtures/classes', __FILE__)
 
 describe "BasicSocket#send" do
   before :each do
-    @server = TCPServer.new('127.0.0.1', SocketSpecs.port)
-    @socket = TCPSocket.new('127.0.0.1', SocketSpecs.port)
+    @server = TCPServer.new('127.0.0.1', 0)
+    @port = @server.addr[1]
+    @socket = TCPSocket.new('127.0.0.1', @port)
   end
 
   after :each do
@@ -74,7 +75,7 @@ describe "BasicSocket#send" do
      Thread.pass while t.status and t.status != "sleep"
      t.status.should_not be_nil
 
-     sockaddr = Socket.pack_sockaddr_in(SocketSpecs.port, "127.0.0.1")
+     sockaddr = Socket.pack_sockaddr_in(@port, "127.0.0.1")
      @socket.send('hello', 0, sockaddr).should == 5
      @socket.shutdown # indicate, that we are done sending
 

@@ -3,7 +3,7 @@ require File.expand_path('../../fixtures/classes', __FILE__)
 
 describe "TCPServer#gets" do
   before :each do
-    @server = TCPServer.new(SocketSpecs.hostname, SocketSpecs.port)
+    @server = TCPServer.new(SocketSpecs.hostname, 0)
   end
 
   after :each do

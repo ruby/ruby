@@ -5,7 +5,7 @@ require 'socket'
 
 describe 'TCPServer#listen' do
   before :each do
-    @server = TCPServer.new(SocketSpecs.hostname, SocketSpecs.port)
+    @server = TCPServer.new(SocketSpecs.hostname, 0)
   end
 
   after :each do

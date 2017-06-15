@@ -44,8 +44,14 @@ describe :tcpsocket_new, shared: true do
     end
 
     it "connects to a server when passed local_host and local_port arguments" do
+      server = TCPServer.new(SocketSpecs.hostname, 0)
+      begin
+        available_port = server.addr[1]
+      ensure
+        server.close
+      end
       @socket = TCPSocket.send(@method, @hostname, @server.port,
-                               @hostname, SocketSpecs.local_port)
+                               @hostname, available_port)
       @socket.should be_an_instance_of(TCPSocket)
     end
 

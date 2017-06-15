@@ -213,22 +213,6 @@ module KernelSpecs
     end
   end
 
-  module KernelBlockGiven
-    def self.accept_block
-      Kernel.block_given?
-    end
-
-    def self.accept_block_as_argument(&block)
-      Kernel.block_given?
-    end
-
-    class << self
-      define_method(:defined_block) do
-        Kernel.block_given?
-      end
-    end
-  end
-
   module SelfBlockGiven
     def self.accept_block
       self.send(:block_given?)
