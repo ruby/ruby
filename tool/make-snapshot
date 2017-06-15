@@ -45,8 +45,12 @@ PACKAGES = {
 }
 
 if system("7z", out: IO::NULL)
-  PACKAGES["gzip"] = %w".tar.gz 7z a dummy -tgzip -mx -so"
-  PACKAGES["zip"]  = %w".zip    7z a -tzip  -mx"
+  unless system(PACKAGES["gzip"][1..-1], in: IO::NULL, out: IO::NULL, err: :close)
+    PACKAGES["gzip"] = %w".tar.gz 7z a dummy -tgzip -mx -so"
+  end
+  unless system(PACKAGES["zip"][1..-1], in: IO::NULL, out: IO::NULL, err: :close)
+    PACKAGES["zip"]  = %w".zip    7z a -tzip  -mx"
+  end
 end
 if gzip = ENV.delete("GZIP")
   PACKAGES["gzip"].concat(gzip.shellsplit)
