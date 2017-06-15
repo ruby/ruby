@@ -7,6 +7,7 @@ require 'fileutils'
 require 'shellwords'
 require 'tmpdir'
 require File.expand_path("../vcs", __FILE__)
+require File.expand_path("../colorize", __FILE__)
 STDOUT.sync = true
 
 $srcdir ||= nil
@@ -18,6 +19,7 @@ $packages ||= nil
 $digests ||= nil
 $tooldir = File.expand_path("..", __FILE__)
 $unicode_version = nil if ($unicode_version ||= nil) == ""
+$colorize = Colorize.new
 
 def usage
   <<USAGE
@@ -262,7 +264,17 @@ def package(vcs, rev, destdir, tmp = nil)
   end
   system(*%W"patch -d #{v} -p0 -i #{$patch_file}") if $patch_file
   if !$exported or $patch_file
-    "take a breath, and go ahead".scan(/./) {|c|print c; sleep(c == "," ? 0.7 : 0.05)}; puts
+    colors = %w[red yellow green cyan blue magenta]
+    "take a breath, and go ahead".scan(/./) do |c|
+      if c == ' '
+        print c
+      else
+        colors.push(color = colors.shift)
+        print $colorize.decorate(c, color)
+      end
+      sleep(c == "," ? 0.7 : 0.05)
+    end
+    puts
   end
   def (clean = []).add(n) push(n); n end
   Dir.chdir(v) do
@@ -277,10 +289,10 @@ def package(vcs, rev, destdir, tmp = nil)
     unless File.exist?("configure")
       print "creating configure..."
       unless system([ENV["AUTOCONF"]]*2)
-        puts " failed"
+        puts $colorize.fail(" failed")
         return
       end
-      puts " done"
+      puts $colorize.pass(" done")
     end
     clean.add("autom4te.cache")
     clean.add("enc/unicode/data")
@@ -354,10 +366,10 @@ update-gems:
       FileUtils.rm_rf("gems")
     end
     unless $?.success?
-      puts " failed"
+      puts $colorize.fail(" failed")
       return
     end
-    puts " done"
+    puts $colorize.pass(" done")
   end
 
   if v == "."
@@ -381,9 +393,9 @@ update-gems:
         tarball = "#{$archname||v}.tar"
         print "creating tarball... #{tarball}"
         if system("tar", "cf", tarball, v)
-          puts " done"
+          puts $colorize.pass(" done")
         else
-          puts " failed"
+          puts $colorize.fail(" failed")
           tarball = ""
           next
         end
@@ -401,10 +413,10 @@ update-gems:
       done = system(*cmd)
     end
     if done
-      puts " done"
+      puts $colorize.pass(" done")
       file
     else
-      puts " failed"
+      puts $colorize.fail(" failed")
       nil
     end
   end.compact
@@ -432,7 +444,7 @@ revisions.collect {|rev| package(vcs, rev, destdir, tmp)}.flatten.each do |name|
     next
   end
   str = open(name, "rb") {|f| f.read}
-  puts "* #{name}"
+  puts "* #{$colorize.pass(name)}"
   puts "  SIZE:   #{str.bytesize} bytes"
   $digests.each do |alg|
     printf "  %-8s%s\n", "#{alg}:", Digest.const_get(alg).hexdigest(str)

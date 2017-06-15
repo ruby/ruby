@@ -1,3 +1,5 @@
+# frozen-string-literal: true
+
 class Colorize
   def initialize(color = nil)
     @colors = @reset = nil
@@ -11,7 +13,11 @@ class Colorize
     self
   end
 
-  DEFAULTS = {"pass"=>"32;1", "fail"=>"31;1", "skip"=>"33;1"}
+  DEFAULTS = {
+    "pass"=>"32;1", "fail"=>"31;1", "skip"=>"33;1",
+    "black"=>"30", "red"=>"31", "green"=>"32", "yellow"=>"33",
+    "blue"=>"34", "magenta"=>"35", "cyan"=>"36", "white"=>"37",
+  }
 
   def decorate(str, name)
     if @colors and color = (@colors[name] || DEFAULTS[name])
@@ -21,16 +27,10 @@ class Colorize
     end
   end
 
-  def pass(str)
-    decorate(str, "pass")
-  end
-
-  def fail(str)
-    decorate(str, "fail")
-  end
-
-  def skip(str)
-    decorate(str, "skip")
+  DEFAULTS.each_key do |name|
+    define_method(name) {|str|
+      decorate(str, name)
+    }
   end
 end
 
