@@ -59,7 +59,7 @@ def compile_extension(name)
       ENV.delete "MAKEFLAGS" # Fix make warning when invoked with -j in MRI
 
       # Do not capture stderr as we want to show compiler warnings
-      output = `#{make} V=1`
+      output = `#{make} V=1 DESTDIR=`
       raise "#{make} failed:\n#{output}" unless $?.success?
       $stderr.puts output if debug
 
