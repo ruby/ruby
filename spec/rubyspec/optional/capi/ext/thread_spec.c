@@ -28,23 +28,27 @@ static VALUE thread_spec_rb_thread_alone() {
 static void* blocking_gvl_func(void* data) {
   int rfd = *(int *)data;
   char dummy;
-  ssize_t rv;
+  ssize_t r;
 
   do {
-    rv = read(rfd, &dummy, 1);
-  } while (rv == -1 && errno == EINTR);
+    r = read(rfd, &dummy, 1);
+  } while (r == -1 && errno == EINTR);
 
-  return (void*)((rv == 1) ? Qtrue : Qfalse);
+  close(rfd);
+
+  return (void*)((r == 1) ? Qtrue : Qfalse);
 }
 
 static void unblock_gvl_func(void *data) {
   int wfd = *(int *)data;
-  char dummy = 0;
-  ssize_t rv;
+  char dummy = 'A';
+  ssize_t r;
 
   do {
-    rv = write(wfd, &dummy, 1);
-  } while (rv == -1 && errno == EINTR);
+    r = write(wfd, &dummy, 1);
+  } while (r == -1 && errno == EINTR);
+
+  close(wfd);
 }
 
 /* Returns true if the thread is interrupted. */
@@ -57,8 +61,6 @@ static VALUE thread_spec_rb_thread_call_without_gvl(VALUE self) {
   }
   ret = rb_thread_call_without_gvl(blocking_gvl_func, &fds[0],
                                    unblock_gvl_func, &fds[1]);
-  close(fds[0]);
-  close(fds[1]);
   return (VALUE)ret;
 }
 
