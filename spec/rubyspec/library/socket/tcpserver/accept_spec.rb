@@ -4,7 +4,8 @@ require File.expand_path('../../fixtures/classes', __FILE__)
 
 describe "TCPServer#accept" do
   before :each do
-    @server = TCPServer.new("127.0.0.1", SocketSpecs.port)
+    @server = TCPServer.new("127.0.0.1", 0)
+    @port = @server.addr[1]
   end
 
   after :each do
@@ -22,7 +23,7 @@ describe "TCPServer#accept" do
     end
     Thread.pass while t.status and t.status != "sleep"
 
-    socket = TCPSocket.new('127.0.0.1', SocketSpecs.port)
+    socket = TCPSocket.new('127.0.0.1', @port)
     socket.write('hello')
     socket.shutdown(1) # we are done with sending
     socket.read.should == 'goodbye'
@@ -38,14 +39,12 @@ describe "TCPServer#accept" do
 
     # kill thread, ensure it dies in a reasonable amount of time
     t.kill
-    a = 1
-    while a < 2000
-      break unless t.alive?
-      Thread.pass
-      sleep 0.2
+    a = 0
+    while t.alive? and a < 5000
+      sleep 0.001
       a += 1
     end
-    a.should < 2000
+    a.should < 5000
   end
 
   it "can be interrupted by Thread#raise" do

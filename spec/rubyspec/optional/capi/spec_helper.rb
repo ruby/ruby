@@ -1,9 +1,11 @@
 require File.expand_path('../../../spec_helper', __FILE__)
+
+# MRI magic to use built but not installed ruby
 $extmk = false
 
 require 'rbconfig'
 
-OBJDIR ||= File.expand_path("../../../ext/#{RUBY_NAME}/#{RUBY_VERSION}", __FILE__)
+OBJDIR ||= File.expand_path("../../../ext/#{RUBY_ENGINE}/#{RUBY_VERSION}", __FILE__)
 mkdir_p(OBJDIR)
 
 def extension_path
@@ -15,130 +17,59 @@ def object_path
 end
 
 def compile_extension(name)
-  preloadenv = RbConfig::CONFIG["PRELOADENV"] || "LD_PRELOAD"
-  preload, ENV[preloadenv] = ENV[preloadenv], nil if preloadenv
+  debug = false
+  run_mkmf_in_process = RUBY_ENGINE == 'truffleruby'
 
-  path = extension_path
-  objdir = object_path
-
-  # TODO use rakelib/ext_helper.rb?
-  arch_hdrdir = nil
-
-  if RUBY_NAME == 'rbx'
-    hdrdir = RbConfig::CONFIG["rubyhdrdir"]
-  elsif RUBY_NAME =~ /^ruby/
-    hdrdir = RbConfig::CONFIG["rubyhdrdir"]
-    arch_hdrdir = RbConfig::CONFIG["rubyarchhdrdir"]
-  elsif RUBY_NAME == 'jruby'
-    require 'mkmf'
-    hdrdir = $hdrdir
-  elsif RUBY_NAME == "maglev"
-    require 'mkmf'
-    hdrdir = $hdrdir
-  elsif RUBY_NAME == 'truffleruby'
-    return compile_truffleruby_extconf_make(name, path, objdir)
-  else
-    raise "Don't know how to build C extensions with #{RUBY_NAME}"
-  end
-
-  ext       = "#{name}_spec"
-  source    = File.join(path, "#{ext}.c")
-  obj       = File.join(objdir, "#{ext}.#{RbConfig::CONFIG['OBJEXT']}")
-  lib       = File.join(objdir, "#{ext}.#{RbConfig::CONFIG['DLEXT']}")
-
-  ruby_header     = File.join(hdrdir, "ruby.h")
-  rubyspec_header = File.join(path, "rubyspec.h")
-
-  return lib if File.exist?(lib) and File.mtime(lib) > File.mtime(source) and
-                File.mtime(lib) > File.mtime(ruby_header) and
-                File.mtime(lib) > File.mtime(rubyspec_header) and
-                true            # sentinel
-
-  # avoid problems where compilation failed but previous shlib exists
-  File.delete lib if File.exist? lib
-
-  cc        = RbConfig::CONFIG["CC"]
-  cflags    = (ENV["CFLAGS"] || RbConfig::CONFIG["CFLAGS"]).dup
-  cflags   += " #{RbConfig::CONFIG["ARCH_FLAG"]}" if RbConfig::CONFIG["ARCH_FLAG"]
-  cflags   += " #{RbConfig::CONFIG["CCDLFLAGS"]}" if RbConfig::CONFIG["CCDLFLAGS"]
-  cppflags  = (ENV["CPPFLAGS"] || RbConfig::CONFIG["CPPFLAGS"]).dup
-  incflags  = "-I#{path}"
-  incflags << " -I#{arch_hdrdir}" if arch_hdrdir
-  incflags << " -I#{hdrdir}"
-  csrcflag  = RbConfig::CONFIG["CSRCFLAG"]
-  coutflag  = RbConfig::CONFIG["COUTFLAG"]
-
-  compile_cmd = "#{cc} #{incflags} #{cflags} #{cppflags} #{coutflag}#{obj} -c #{csrcflag}#{source}"
-  output = `#{compile_cmd}`
-
-  unless $?.success? and File.exist?(obj)
-    puts "\nERROR:\n#{compile_cmd}\n#{output}"
-    puts "incflags=#{incflags}"
-    puts "cflags=#{cflags}"
-    puts "cppflags=#{cppflags}"
-    raise "Unable to compile \"#{source}\""
-  end
-
-  ldshared  = RbConfig::CONFIG["LDSHARED"]
-  ldshared += " #{RbConfig::CONFIG["ARCH_FLAG"]}" if RbConfig::CONFIG["ARCH_FLAG"]
-  libs      = RbConfig::CONFIG["LIBS"]
-  dldflags  = "#{RbConfig::CONFIG["LDFLAGS"]} #{RbConfig::CONFIG["DLDFLAGS"]} #{RbConfig::CONFIG["EXTDLDFLAGS"]}"
-  dldflags.sub!(/-Wl,-soname,\S+/, '')
-
-  if /mswin/ =~ RUBY_PLATFORM
-    dldflags.sub!("$(LIBPATH)", RbConfig::CONFIG["LIBPATHFLAG"] % path)
-    libs    += RbConfig::CONFIG["LIBRUBY"]
-    outflag  = RbConfig::CONFIG["OUTFLAG"]
-
-    link_cmd = "#{ldshared} #{outflag}#{lib} #{obj} #{libs} -link #{dldflags} /export:Init_#{ext}"
-  else
-    libpath   = "-L#{path}"
-    dldflags.sub!("$(TARGET_ENTRY)", "Init_#{ext}")
-
-    link_cmd = "#{ldshared} #{obj} #{libpath} #{dldflags} #{libs} -o #{lib}"
-  end
-  output = `#{link_cmd}`
-
-  unless $?.success?
-    puts "\nERROR:\n#{link_cmd}\n#{output}"
-    raise "Unable to link \"#{source}\""
-  end
-
-  lib
-ensure
-  ENV[preloadenv] = preload if preloadenv
-end
-
-def compile_truffleruby_extconf_make(name, path, objdir)
   ext = "#{name}_spec"
-  file = "#{ext}.c"
-  source = "#{path}/#{ext}.c"
-  lib = "#{objdir}/#{ext}.#{RbConfig::CONFIG['DLEXT']}"
+  lib = "#{object_path}/#{ext}.#{RbConfig::CONFIG['DLEXT']}"
+  ruby_header = "#{RbConfig::CONFIG['rubyhdrdir']}/ruby.h"
+
+  return lib if File.exist?(lib) and
+                File.mtime(lib) > File.mtime("#{extension_path}/rubyspec.h") and
+                File.mtime(lib) > File.mtime("#{extension_path}/#{ext}.c") and
+                File.mtime(lib) > File.mtime(ruby_header) and
+                true            # sentinel
 
   # Copy needed source files to tmpdir
   tmpdir = tmp("cext_#{name}")
-  Dir.mkdir tmpdir
+  Dir.mkdir(tmpdir)
   begin
-    ["rubyspec.h", "truffleruby.h", "#{ext}.c"].each do |file|
-      cp "#{path}/#{file}", "#{tmpdir}/#{file}"
+    ["rubyspec.h", "#{ext}.c"].each do |file|
+      cp "#{extension_path}/#{file}", "#{tmpdir}/#{file}"
     end
 
     Dir.chdir(tmpdir) do
-      required = require 'mkmf'
-      # Reinitialize mkmf if already required
-      init_mkmf unless required
-      create_makefile(ext, tmpdir)
-      system "make"
-
-      copy_exts = RbConfig::CONFIG.values_at('OBJEXT', 'DLEXT')
-      Dir.glob("*.{#{copy_exts.join(',')}}") do |file|
-        cp file, "#{objdir}/#{file}"
+      if run_mkmf_in_process
+        required = require 'mkmf'
+        # Reinitialize mkmf if already required
+        init_mkmf unless required
+        create_makefile(ext, tmpdir)
+      else
+        File.write("extconf.rb", "require 'mkmf'\n" +
+          "$ruby = ENV.values_at('RUBY_EXE', 'RUBY_FLAGS').join(' ')\n" +
+          # MRI magic to consider building non-bundled extensions
+          "$extout = nil\n" +
+          "create_makefile(#{ext.inspect})\n")
+        output = ruby_exe("extconf.rb")
+        raise "extconf failed:\n#{output}" unless $?.success?
+        $stderr.puts output if debug
       end
+
+      make = RbConfig::CONFIG['host_os'].include?("mswin") ? "nmake" : "make"
+      ENV.delete "MAKEFLAGS" # Fix make warning when invoked with -j in MRI
+
+      # Do not capture stderr as we want to show compiler warnings
+      output = `#{make} V=1`
+      raise "#{make} failed:\n#{output}" unless $?.success?
+      $stderr.puts output if debug
+
+      cp File.basename(lib), lib
     end
   ensure
     rm_r tmpdir
   end
 
+  File.chmod(0755, lib)
   lib
 end
 

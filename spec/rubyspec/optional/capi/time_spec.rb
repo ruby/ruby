@@ -165,28 +165,30 @@ describe "CApiTimeSpecs" do
       usec.should == 500000
     end
 
-    it "creates a timeval for a negative Fixnum" do
-      sec, usec = @s.rb_time_timeval(-1232141421)
-      sec.should be_kind_of(Integer)
-      sec.should == -1232141421
-      usec.should be_kind_of(Integer)
-      usec.should == 0
-    end
+    platform_is_not :mingw32 do
+      it "creates a timeval for a negative Fixnum" do
+        sec, usec = @s.rb_time_timeval(-1232141421)
+        sec.should be_kind_of(Integer)
+        sec.should == -1232141421
+        usec.should be_kind_of(Integer)
+        usec.should == 0
+      end
 
-    it "creates a timeval for a negative Float" do
-      sec, usec = @s.rb_time_timeval(-1.5)
-      sec.should be_kind_of(Integer)
-      sec.should == -2
-      usec.should be_kind_of(Integer)
-      usec.should == 500000
-    end
+      it "creates a timeval for a negative Float" do
+        sec, usec = @s.rb_time_timeval(-1.5)
+        sec.should be_kind_of(Integer)
+        sec.should == -2
+        usec.should be_kind_of(Integer)
+        usec.should == 500000
+      end
 
-    it "creates a timeval for a negative Rational" do
-      sec, usec = @s.rb_time_timeval(Rational(-3, 2))
-      sec.should be_kind_of(Integer)
-      sec.should == -2
-      usec.should be_kind_of(Integer)
-      usec.should == 500000
+      it "creates a timeval for a negative Rational" do
+        sec, usec = @s.rb_time_timeval(Rational(-3, 2))
+        sec.should be_kind_of(Integer)
+        sec.should == -2
+        usec.should be_kind_of(Integer)
+        usec.should == 500000
+      end
     end
 
     it "creates a timeval from a Time object" do
@@ -222,28 +224,30 @@ describe "CApiTimeSpecs" do
       nsec.should == 500000000
     end
 
-    it "creates a timespec for a negative Fixnum" do
-      sec, nsec = @s.rb_time_timespec(-1232141421)
-      sec.should be_kind_of(Integer)
-      sec.should == -1232141421
-      nsec.should be_kind_of(Integer)
-      nsec.should == 0
-    end
+    platform_is_not :mingw32 do
+      it "creates a timespec for a negative Fixnum" do
+        sec, nsec = @s.rb_time_timespec(-1232141421)
+        sec.should be_kind_of(Integer)
+        sec.should == -1232141421
+        nsec.should be_kind_of(Integer)
+        nsec.should == 0
+      end
 
-    it "creates a timespec for a negative Float" do
-      sec, nsec = @s.rb_time_timespec(-1.5)
-      sec.should be_kind_of(Integer)
-      sec.should == -2
-      nsec.should be_kind_of(Integer)
-      nsec.should == 500000000
-    end
+      it "creates a timespec for a negative Float" do
+        sec, nsec = @s.rb_time_timespec(-1.5)
+        sec.should be_kind_of(Integer)
+        sec.should == -2
+        nsec.should be_kind_of(Integer)
+        nsec.should == 500000000
+      end
 
-    it "creates a timespec for a negative Rational" do
-      sec, nsec = @s.rb_time_timespec(Rational(-3, 2))
-      sec.should be_kind_of(Integer)
-      sec.should == -2
-      nsec.should be_kind_of(Integer)
-      nsec.should == 500000000
+      it "creates a timespec for a negative Rational" do
+        sec, nsec = @s.rb_time_timespec(Rational(-3, 2))
+        sec.should be_kind_of(Integer)
+        sec.should == -2
+        nsec.should be_kind_of(Integer)
+        nsec.should == 500000000
+      end
     end
 
     it "creates a timespec from a Time object" do

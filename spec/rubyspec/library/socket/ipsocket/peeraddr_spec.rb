@@ -4,8 +4,9 @@ require File.expand_path('../../fixtures/classes', __FILE__)
 describe "Socket::IPSocket#peeraddr" do
   before :each do
     @do_not_reverse_lookup = BasicSocket.do_not_reverse_lookup
-    @server = TCPServer.new("127.0.0.1", SocketSpecs.port)
-    @client = TCPSocket.new("127.0.0.1", SocketSpecs.port)
+    @server = TCPServer.new("127.0.0.1", 0)
+    @port = @server.addr[1]
+    @client = TCPSocket.new("127.0.0.1", @port)
   end
 
   after :each do
@@ -23,7 +24,7 @@ describe "Socket::IPSocket#peeraddr" do
     BasicSocket.do_not_reverse_lookup = false
     addrinfo = @client.peeraddr
     addrinfo[0].should == "AF_INET"
-    addrinfo[1].should == SocketSpecs.port
+    addrinfo[1].should == @port
     addrinfo[2].should == SocketSpecs.hostname
     addrinfo[3].should == "127.0.0.1"
   end
@@ -33,7 +34,7 @@ describe "Socket::IPSocket#peeraddr" do
     BasicSocket.do_not_reverse_lookup = true
     addrinfo = @client.peeraddr
     addrinfo[0].should == "AF_INET"
-    addrinfo[1].should == SocketSpecs.port
+    addrinfo[1].should == @port
     addrinfo[2].should == "127.0.0.1"
     addrinfo[3].should == "127.0.0.1"
   end
@@ -41,7 +42,7 @@ describe "Socket::IPSocket#peeraddr" do
   it "returns an IP instead of hostname if passed false" do
     addrinfo = @client.peeraddr(false)
     addrinfo[0].should == "AF_INET"
-    addrinfo[1].should == SocketSpecs.port
+    addrinfo[1].should == @port
     addrinfo[2].should == "127.0.0.1"
     addrinfo[3].should == "127.0.0.1"
   end

@@ -3,12 +3,12 @@ require File.expand_path('../../fixtures/classes', __FILE__)
 
 describe "UDPSocket.send" do
   before :each do
-    @ready = false
+    @port = nil
     @server_thread = Thread.new do
       @server = UDPSocket.open
       begin
-        @server.bind(nil, SocketSpecs.port)
-        @ready = true
+        @server.bind(nil, 0)
+        @port = @server.addr[1]
         begin
           @msg = @server.recvfrom_nonblock(64)
         rescue IO::WaitReadable
@@ -19,12 +19,16 @@ describe "UDPSocket.send" do
         @server.close if !@server.closed?
       end
     end
-    Thread.pass while @server_thread.status and !@ready
+    Thread.pass while @server_thread.status and !@port
+  end
+
+  after :each do
+    @server_thread.join
   end
 
   it "sends data in ad hoc mode" do
     @socket = UDPSocket.open
-    @socket.send("ad hoc", 0, SocketSpecs.hostname, SocketSpecs.port)
+    @socket.send("ad hoc", 0, SocketSpecs.hostname, @port)
     @socket.close
     @server_thread.join
 
@@ -36,7 +40,7 @@ describe "UDPSocket.send" do
 
   it "sends data in ad hoc mode (with port given as a String)" do
     @socket = UDPSocket.open
-    @socket.send("ad hoc", 0, SocketSpecs.hostname, SocketSpecs.str_port)
+    @socket.send("ad hoc", 0, SocketSpecs.hostname, @port.to_s)
     @socket.close
     @server_thread.join
 
@@ -48,7 +52,7 @@ describe "UDPSocket.send" do
 
   it "sends data in connection mode" do
     @socket = UDPSocket.open
-    @socket.connect(SocketSpecs.hostname, SocketSpecs.port)
+    @socket.connect(SocketSpecs.hostname, @port)
     @socket.send("connection-based", 0)
     @socket.close
     @server_thread.join
@@ -63,10 +67,10 @@ describe "UDPSocket.send" do
     @socket = UDPSocket.open
     begin
       lambda do
-        @socket.send('1' * 100_000, 0, SocketSpecs.hostname, SocketSpecs.str_port)
+        @socket.send('1' * 100_000, 0, SocketSpecs.hostname, @port.to_s)
       end.should raise_error(Errno::EMSGSIZE)
     ensure
-      @socket.send("ad hoc", 0, SocketSpecs.hostname, SocketSpecs.port)
+      @socket.send("ad hoc", 0, SocketSpecs.hostname, @port)
       @socket.close
       @server_thread.join
     end

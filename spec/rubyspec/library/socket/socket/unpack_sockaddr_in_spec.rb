@@ -5,13 +5,13 @@ require 'socket'
 describe "Socket.unpack_sockaddr_in" do
 
   it "decodes the host name and port number of a packed sockaddr_in" do
-    sockaddr = Socket.sockaddr_in SocketSpecs.port, '127.0.0.1'
-    Socket.unpack_sockaddr_in(sockaddr).should == [SocketSpecs.port, '127.0.0.1']
+    sockaddr = Socket.sockaddr_in 3333, '127.0.0.1'
+    Socket.unpack_sockaddr_in(sockaddr).should == [3333, '127.0.0.1']
   end
 
   it "gets the hostname and port number from a passed Addrinfo" do
-    addrinfo = Addrinfo.tcp('127.0.0.1', SocketSpecs.port)
-    Socket.unpack_sockaddr_in(addrinfo).should == [SocketSpecs.port, '127.0.0.1']
+    addrinfo = Addrinfo.tcp('127.0.0.1', 3333)
+    Socket.unpack_sockaddr_in(addrinfo).should == [3333, '127.0.0.1']
   end
 
   platform_is_not :windows do

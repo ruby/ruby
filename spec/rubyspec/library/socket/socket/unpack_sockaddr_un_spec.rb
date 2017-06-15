@@ -14,12 +14,12 @@ describe 'Socket.unpack_sockaddr_un' do
     end
 
     it 'raises an ArgumentError when the sin_family is not AF_UNIX' do
-      sockaddr = Socket.sockaddr_in(SocketSpecs.port, '127.0.0.1')
+      sockaddr = Socket.sockaddr_in(0, '127.0.0.1')
       lambda { Socket.unpack_sockaddr_un(sockaddr) }.should raise_error(ArgumentError)
     end
 
     it 'raises an ArgumentError when passed addrinfo is not AF_UNIX' do
-      addrinfo = Addrinfo.tcp('127.0.0.1', SocketSpecs.port)
+      addrinfo = Addrinfo.tcp('127.0.0.1', 0)
       lambda { Socket.unpack_sockaddr_un(addrinfo) }.should raise_error(ArgumentError)
     end
   end

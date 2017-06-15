@@ -6,7 +6,8 @@ require 'socket'
 describe "Socket#connect_nonblock" do
   before :each do
     @hostname = "127.0.0.1"
-    @addr = Socket.sockaddr_in(SocketSpecs.port, @hostname)
+    @server = TCPServer.new(@hostname, 0) # started, but no accept
+    @addr = Socket.sockaddr_in(@server.addr[1], @hostname)
     @socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
     @thread = nil
   end
@@ -17,27 +18,31 @@ describe "Socket#connect_nonblock" do
   end
 
   it "connects the socket to the remote side" do
-    ready = false
+    port = nil
+    accept = false
     @thread = Thread.new do
-      server = TCPServer.new(@hostname, SocketSpecs.port)
-      ready = true
+      server = TCPServer.new(@hostname, 0)
+      port = server.addr[1]
+      Thread.pass until accept
       conn = server.accept
       conn << "hello!"
       conn.close
       server.close
     end
 
-    Thread.pass while (@thread.status and @thread.status != 'sleep') or !ready
+    Thread.pass until port
 
+    addr = Socket.sockaddr_in(port, @hostname)
     begin
-      @socket.connect_nonblock(@addr)
+      @socket.connect_nonblock(addr)
     rescue Errno::EINPROGRESS
     end
 
+    accept = true
     IO.select nil, [@socket]
 
     begin
-      @socket.connect_nonblock(@addr)
+      @socket.connect_nonblock(addr)
     rescue Errno::EISCONN
       # Not all OS's use this errno, so we trap and ignore it
     end

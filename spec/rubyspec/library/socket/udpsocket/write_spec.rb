@@ -4,11 +4,11 @@ require File.expand_path('../../fixtures/classes', __FILE__)
 describe "UDPSocket#write" do
   it "raises EMSGSIZE if msg is too long" do
     begin
-      host, port = SocketSpecs.hostname, SocketSpecs.port
+      host = SocketSpecs.hostname
       s1 = UDPSocket.new
-      s1.bind(host, port)
+      s1.bind(host, 0)
       s2 = UDPSocket.new
-      s2.connect(host, port)
+      s2.connect(host, s1.addr[1])
 
       lambda do
         s2.write('1' * 100_000)

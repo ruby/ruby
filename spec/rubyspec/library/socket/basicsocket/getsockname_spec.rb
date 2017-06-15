@@ -8,16 +8,16 @@ describe "Socket::BasicSocket#getsockname" do
   end
 
   it "returns the sockaddr associacted with the socket" do
-    @socket = TCPServer.new("127.0.0.1", SocketSpecs.port)
+    @socket = TCPServer.new("127.0.0.1", 0)
     sockaddr = Socket.unpack_sockaddr_in(@socket.getsockname)
-    sockaddr.should == [SocketSpecs.port, "127.0.0.1"]
+    sockaddr.should == [@socket.addr[1], "127.0.0.1"]
  end
 
   it "works on sockets listening in ipaddr_any" do
-    @socket = TCPServer.new(SocketSpecs.port)
+    @socket = TCPServer.new(0)
     sockaddr = Socket.unpack_sockaddr_in(@socket.getsockname)
     ["::", "0.0.0.0", "::ffff:0.0.0.0"].include?(sockaddr[1]).should be_true
-    sockaddr[0].should == SocketSpecs.port
+    sockaddr[0].should == @socket.addr[1]
   end
 
   it "returns empty sockaddr for unbinded sockets" do

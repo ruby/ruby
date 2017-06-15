@@ -5,7 +5,7 @@ require 'socket'
 describe "Addrinfo#bind" do
 
   before :each do
-    @addrinfo = Addrinfo.tcp("127.0.0.1", SocketSpecs.port)
+    @addrinfo = Addrinfo.tcp("127.0.0.1", 0)
   end
 
   after :each do

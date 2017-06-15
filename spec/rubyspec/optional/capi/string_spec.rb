@@ -501,7 +501,7 @@ describe "C-API String function" do
   describe "rb_str_hash" do
     it "hashes the string into a number" do
       s = "hello"
-      @s.rb_str_hash(s).should == s.hash
+      @s.rb_str_hash(s).should be_kind_of(Integer)
     end
   end
 
