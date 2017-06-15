@@ -56,8 +56,11 @@ NORETURN(void rb_threadptr_stack_overflow(rb_thread_t *th));
 void
 rb_threadptr_stack_overflow(rb_thread_t *th)
 {
+    if (rb_during_gc()) {
+	rb_fatal("machine stack overflow while GC is running.");
+    }
 #ifdef USE_SIGALTSTACK
-    threadptr_stack_overflow(th, !rb_threadptr_during_gc(th));
+    threadptr_stack_overflow(th, TRUE);
 #else
     threadptr_stack_overflow(th, FALSE);
 #endif
