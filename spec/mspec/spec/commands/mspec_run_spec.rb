@@ -56,11 +56,6 @@ describe MSpecRun, "#options" do
     @script.options ["-B", "cfg.mspec", one_spec]
   end
 
-  it "enables the name option" do
-    @options.should_receive(:name)
-    @script.options @argv
-  end
-
   it "enables the randomize option to runs specs in random order" do
     @options.should_receive(:randomize)
     @script.options @argv

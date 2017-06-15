@@ -61,11 +61,6 @@ describe MSpecTag, "#options" do
     @script.options ["-B", "cfg.mspec", one_spec]
   end
 
-  it "enables the name option" do
-    @options.should_receive(:name)
-    @script.options @argv
-  end
-
   it "enables the dry run option" do
     @options.should_receive(:pretend)
     @script.options @argv

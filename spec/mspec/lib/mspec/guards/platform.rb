@@ -5,9 +5,9 @@ class PlatformGuard < SpecGuard
     args.any? do |name|
       case name
       when :rubinius
-        RUBY_NAME.start_with?('rbx')
+        RUBY_ENGINE.start_with?('rbx')
       when :ruby, :jruby, :truffleruby, :ironruby, :macruby, :maglev, :topaz, :opal
-        RUBY_NAME.start_with?(name.to_s)
+        RUBY_ENGINE.start_with?(name.to_s)
       else
         raise "unknown implementation #{name}"
       end
@@ -67,12 +67,10 @@ class PlatformGuard < SpecGuard
   end
 end
 
-class Object
-  def platform_is(*args, &block)
-    PlatformGuard.new(*args).run_if(:platform_is, &block)
-  end
+def platform_is(*args, &block)
+  PlatformGuard.new(*args).run_if(:platform_is, &block)
+end
 
-  def platform_is_not(*args, &block)
-    PlatformGuard.new(*args).run_unless(:platform_is_not, &block)
-  end
+def platform_is_not(*args, &block)
+  PlatformGuard.new(*args).run_unless(:platform_is_not, &block)
 end

@@ -200,13 +200,6 @@ class MSpecOptions
        "Load FILE containing configuration options", &block)
   end
 
-  def name
-    on("-n", "--name", "RUBY_NAME",
-       "Set the value of RUBY_NAME (used to determine the implementation)") do |n|
-      Object.const_set :RUBY_NAME, n
-    end
-  end
-
   def targets
     on("-t", "--target", "TARGET",
        "Implementation to run the specs, where TARGET is:") do |t|
@@ -469,7 +462,6 @@ class MSpecOptions
     # Generated with:
     # puts File.read(__FILE__).scan(/def (\w+).*\n\s*on\(/)
     configure {}
-    name
     targets
     formatters
     filters

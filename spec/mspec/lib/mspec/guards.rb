@@ -1,4 +1,3 @@
-require 'mspec/utils/ruby_name'
 require 'mspec/guards/block_device'
 require 'mspec/guards/bug'
 require 'mspec/guards/conflict'

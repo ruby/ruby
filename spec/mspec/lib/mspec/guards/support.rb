@@ -9,8 +9,6 @@ class SupportedGuard < SpecGuard
   end
 end
 
-class Object
-  def not_supported_on(*args, &block)
-    SupportedGuard.new(*args).run_unless(:not_supported_on, &block)
-  end
+def not_supported_on(*args, &block)
+  SupportedGuard.new(*args).run_unless(:not_supported_on, &block)
 end

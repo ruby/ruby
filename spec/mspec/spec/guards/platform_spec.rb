@@ -120,56 +120,56 @@ describe PlatformGuard, ".implementation?" do
   end
 
   before :each do
-    @ruby_name = Object.const_get :RUBY_NAME
+    @ruby_engine = Object.const_get :RUBY_ENGINE
   end
 
   after :each do
-    Object.const_set :RUBY_NAME, @ruby_name
+    Object.const_set :RUBY_ENGINE, @ruby_engine
   end
 
-  it "returns true if passed :ruby and RUBY_NAME == 'ruby'" do
-    Object.const_set :RUBY_NAME, 'ruby'
+  it "returns true if passed :ruby and RUBY_ENGINE == 'ruby'" do
+    Object.const_set :RUBY_ENGINE, 'ruby'
     PlatformGuard.implementation?(:ruby).should == true
   end
 
-  it "returns true if passed :rubinius and RUBY_NAME == 'rbx'" do
-    Object.const_set :RUBY_NAME, 'rbx'
+  it "returns true if passed :rubinius and RUBY_ENGINE == 'rbx'" do
+    Object.const_set :RUBY_ENGINE, 'rbx'
     PlatformGuard.implementation?(:rubinius).should == true
   end
 
-  it "returns true if passed :jruby and RUBY_NAME == 'jruby'" do
-    Object.const_set :RUBY_NAME, 'jruby'
+  it "returns true if passed :jruby and RUBY_ENGINE == 'jruby'" do
+    Object.const_set :RUBY_ENGINE, 'jruby'
     PlatformGuard.implementation?(:jruby).should == true
   end
 
-  it "returns true if passed :ironruby and RUBY_NAME == 'ironruby'" do
-    Object.const_set :RUBY_NAME, 'ironruby'
+  it "returns true if passed :ironruby and RUBY_ENGINE == 'ironruby'" do
+    Object.const_set :RUBY_ENGINE, 'ironruby'
     PlatformGuard.implementation?(:ironruby).should == true
   end
 
-  it "returns true if passed :maglev and RUBY_NAME == 'maglev'" do
-    Object.const_set :RUBY_NAME, 'maglev'
+  it "returns true if passed :maglev and RUBY_ENGINE == 'maglev'" do
+    Object.const_set :RUBY_ENGINE, 'maglev'
     PlatformGuard.implementation?(:maglev).should == true
   end
 
-  it "returns true if passed :topaz and RUBY_NAME == 'topaz'" do
-    Object.const_set :RUBY_NAME, 'topaz'
+  it "returns true if passed :topaz and RUBY_ENGINE == 'topaz'" do
+    Object.const_set :RUBY_ENGINE, 'topaz'
     PlatformGuard.implementation?(:topaz).should == true
   end
 
-  it "returns true if passed :ruby and RUBY_NAME matches /^ruby/" do
-    Object.const_set :RUBY_NAME, 'ruby'
+  it "returns true if passed :ruby and RUBY_ENGINE matches /^ruby/" do
+    Object.const_set :RUBY_ENGINE, 'ruby'
     PlatformGuard.implementation?(:ruby).should == true
 
-    Object.const_set :RUBY_NAME, 'ruby1.8'
+    Object.const_set :RUBY_ENGINE, 'ruby1.8'
     PlatformGuard.implementation?(:ruby).should == true
 
-    Object.const_set :RUBY_NAME, 'ruby1.9'
+    Object.const_set :RUBY_ENGINE, 'ruby1.9'
     PlatformGuard.implementation?(:ruby).should == true
   end
 
   it "raises an error when passed an unrecognized name" do
-    Object.const_set :RUBY_NAME, 'ruby'
+    Object.const_set :RUBY_ENGINE, 'ruby'
     lambda {
       PlatformGuard.implementation?(:python)
     }.should raise_error(/unknown implementation/)

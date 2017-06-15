@@ -33,11 +33,6 @@ describe MSpecCI, "#options" do
     @script.options ["-B", "cfg.mspec"]
   end
 
-  it "enables the name option" do
-    @options.should_receive(:name)
-    @script.options
-  end
-
   it "enables the dry run option" do
     @options.should_receive(:pretend)
     @script.options
