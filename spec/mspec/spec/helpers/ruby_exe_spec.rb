@@ -4,6 +4,10 @@ require 'mspec/helpers'
 require 'rbconfig'
 
 class RubyExeSpecs
+  public :ruby_exe_options
+  public :resolve_ruby_exe
+  public :ruby_cmd
+  public :ruby_exe
 end
 
 describe "#ruby_exe_options" do
@@ -11,14 +15,14 @@ describe "#ruby_exe_options" do
     @verbose = $VERBOSE
     $VERBOSE = nil
 
-    @ruby_name = Object.const_get :RUBY_NAME
+    @ruby_engine = Object.const_get :RUBY_ENGINE
     @ruby_exe_env = ENV['RUBY_EXE']
 
     @script = RubyExeSpecs.new
   end
 
   after :all do
-    Object.const_set :RUBY_NAME, @ruby_name
+    Object.const_set :RUBY_ENGINE, @ruby_engine
     ENV['RUBY_EXE'] = @ruby_exe_env
     $VERBOSE = @verbose
   end
@@ -32,33 +36,33 @@ describe "#ruby_exe_options" do
     @script.ruby_exe_options(:env).should == "kowabunga"
   end
 
-  it "returns 'bin/jruby' when passed :engine and RUBY_NAME is 'jruby'" do
-    Object.const_set :RUBY_NAME, 'jruby'
+  it "returns 'bin/jruby' when passed :engine and RUBY_ENGINE is 'jruby'" do
+    Object.const_set :RUBY_ENGINE, 'jruby'
     @script.ruby_exe_options(:engine).should == 'bin/jruby'
   end
 
-  it "returns 'bin/rbx' when passed :engine, RUBY_NAME is 'rbx'" do
-    Object.const_set :RUBY_NAME, 'rbx'
+  it "returns 'bin/rbx' when passed :engine, RUBY_ENGINE is 'rbx'" do
+    Object.const_set :RUBY_ENGINE, 'rbx'
     @script.ruby_exe_options(:engine).should == 'bin/rbx'
   end
 
-  it "returns 'ir' when passed :engine and RUBY_NAME is 'ironruby'" do
-    Object.const_set :RUBY_NAME, 'ironruby'
+  it "returns 'ir' when passed :engine and RUBY_ENGINE is 'ironruby'" do
+    Object.const_set :RUBY_ENGINE, 'ironruby'
     @script.ruby_exe_options(:engine).should == 'ir'
   end
 
-  it "returns 'maglev-ruby' when passed :engine and RUBY_NAME is 'maglev'" do
-    Object.const_set :RUBY_NAME, 'maglev'
+  it "returns 'maglev-ruby' when passed :engine and RUBY_ENGINE is 'maglev'" do
+    Object.const_set :RUBY_ENGINE, 'maglev'
     @script.ruby_exe_options(:engine).should == 'maglev-ruby'
   end
 
-  it "returns 'topaz' when passed :engine and RUBY_NAME is 'topaz'" do
-    Object.const_set :RUBY_NAME, 'topaz'
+  it "returns 'topaz' when passed :engine and RUBY_ENGINE is 'topaz'" do
+    Object.const_set :RUBY_ENGINE, 'topaz'
     @script.ruby_exe_options(:engine).should == 'topaz'
   end
 
-  it "returns RUBY_NAME + $(EXEEXT) when passed :name" do
-    bin = RUBY_NAME + (RbConfig::CONFIG['EXEEXT'] || RbConfig::CONFIG['exeext'] || '')
+  it "returns RUBY_ENGINE + $(EXEEXT) when passed :name" do
+    bin = RUBY_ENGINE + (RbConfig::CONFIG['EXEEXT'] || RbConfig::CONFIG['exeext'] || '')
     name = File.join ".", bin
     @script.ruby_exe_options(:name).should == name
   end

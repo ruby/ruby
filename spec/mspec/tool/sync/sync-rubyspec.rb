@@ -24,6 +24,9 @@ raise RUBYSPEC_REPO unless Dir.exist?(RUBYSPEC_REPO)
 
 NOW = Time.now
 
+BRIGHT_YELLOW = "\e[33;1m"
+RESET = "\e[0m"
+
 class RubyImplementation
   attr_reader :name
 
@@ -110,7 +113,7 @@ def rebase_commits(impl)
 
     rebased = impl.rebased_branch
     if branch?(rebased)
-      puts "#{rebased} already exists, assuming it correct"
+      puts "#{BRIGHT_YELLOW}#{rebased} already exists, assuming it correct#{RESET}"
       sh "git", "checkout", rebased
     else
       sh "git", "checkout", impl.name
@@ -118,7 +121,7 @@ def rebase_commits(impl)
       if ENV["LAST_MERGE"]
         last_merge = `git log -n 1 --format='%H %ct' #{ENV["LAST_MERGE"]}`
       else
-        last_merge = `git log --grep='#{impl.last_merge_message}' -n 1 --format='%H %ct'`
+        last_merge = `git log --grep='^#{impl.last_merge_message}' -n 1 --format='%H %ct'`
       end
       last_merge, commit_timestamp = last_merge.chomp.split(' ')
 

@@ -30,7 +30,6 @@ class MSpecTag < MSpecScript
 
     options.doc "\n How to modify the execution"
     options.configure { |f| load f }
-    options.name
     options.pretend
     options.unguarded
     options.interrupt

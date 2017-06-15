@@ -11,8 +11,6 @@ class BlockDeviceGuard < SpecGuard
   end
 end
 
-class Object
-  def with_block_device(&block)
-    BlockDeviceGuard.new.run_if(:with_block_device, &block)
-  end
+def with_block_device(&block)
+  BlockDeviceGuard.new.run_if(:with_block_device, &block)
 end
