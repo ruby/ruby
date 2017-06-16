@@ -164,6 +164,8 @@ module Psych
         @emitter.end_mapping
       end
 
+      alias :visit_Delegator :visit_Object
+
       def visit_Struct o
         tag = ['!ruby/struct', o.class.name].compact.join(':')
 

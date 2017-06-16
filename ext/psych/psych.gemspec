@@ -2,10 +2,10 @@
 
 Gem::Specification.new do |s|
   s.name = "psych"
-  s.version = "3.0.0.beta1"
+  s.version = "3.0.0.beta2"
   s.authors = ["Aaron Patterson", "SHIBATA Hiroshi", "Charles Oliver Nutter"]
   s.email = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org", "headius@headius.com"]
-  s.date = "2016-11-14"
+  s.date = "2017-06-16"
   s.summary = "Psych is a YAML parser and emitter"
   s.description = <<-DESCRIPTION
 Psych is a YAML parser and emitter. Psych leverages libyaml[http://pyyaml.org/wiki/LibYAML]

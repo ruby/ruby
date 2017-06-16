@@ -4,6 +4,15 @@ require 'psych/helper'
 module Psych
   module Visitors
     class TestYAMLTree < TestCase
+      class TestDelegatorClass < Delegator
+        def initialize(obj); super; @obj = obj; end
+        def __setobj__(obj); @obj = obj; end
+        def __getobj__; @obj; end
+      end
+
+      class TestSimpleDelegatorClass < SimpleDelegator
+      end
+
       def setup
         super
         @v = Visitors::YAMLTree.create
@@ -174,6 +183,14 @@ module Psych
         assert_cycle 'null'
         assert_cycle 'nUll'
         assert_cycle '~'
+      end
+
+      def test_delegator
+        assert_cycle(TestDelegatorClass.new([1, 2, 3]))
+      end
+
+      def test_simple_delegator
+        assert_cycle(TestSimpleDelegatorClass.new([1, 2, 3]))
       end
     end
   end

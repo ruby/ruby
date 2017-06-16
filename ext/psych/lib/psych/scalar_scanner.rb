@@ -143,7 +143,7 @@ module Psych
         offset += ((tz[1] || 0) * 60)
       end
 
-      klass.at((time - offset).to_i, us)
+      klass.new(yy, m, dd, hh, mm, ss+us/(1_000_000r), offset)
     end
   end
 end
