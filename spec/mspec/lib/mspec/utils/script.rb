@@ -234,9 +234,9 @@ class MSpecScript
     files patterns
   end
 
-  def cores
+  def cores(max = 1)
     require 'etc'
-    Etc.nprocessors
+    [Etc.nprocessors, max].min
   end
 
   def setup_env

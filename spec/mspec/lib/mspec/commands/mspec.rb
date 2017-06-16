@@ -98,7 +98,7 @@ class MSpecMain < MSpecScript
     end
 
     output_files = []
-    processes = [cores, @files.size].min
+    processes = cores(@files.size)
     children = processes.times.map { |i|
       name = tmp "mspec-multi-#{i}"
       output_files << name

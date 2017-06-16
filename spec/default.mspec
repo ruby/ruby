@@ -24,15 +24,16 @@ class MSpecScript
 end
 
 module MSpecScript::JobServer
-  def cores
-    if /(?:\A|\s)--jobserver-(?:auth|fds)=(\d+),(\d+)/ =~ ENV["MAKEFLAGS"]
-      cores = 0
+  def cores(max = 1)
+    if max > 1 and /(?:\A|\s)--jobserver-(?:auth|fds)=(\d+),(\d+)/ =~ ENV["MAKEFLAGS"]
+      cores = 1
       begin
         r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
         w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
-        jobtokens = r.read_nonblock(1024)
+        jobtokens = r.read_nonblock(max - 1)
         cores = jobtokens.size
         if cores > 0
+          cores += 1
           jobserver = w
           w = nil
           at_exit {
