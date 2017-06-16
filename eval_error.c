@@ -206,12 +206,6 @@ rb_threadptr_error_print(rb_thread_t *volatile th, volatile VALUE errinfo)
     rb_thread_raised_set(th, raised_flag);
 }
 
-void
-ruby_error_print(void)
-{
-    error_print(GET_THREAD());
-}
-
 #define undef_mesg_for(v, k) rb_fstring_cstr("undefined"v" method `%1$s' for "k" `%2$s'")
 #define undef_mesg(v) ( \
 	is_mod ? \

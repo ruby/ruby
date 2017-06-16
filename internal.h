@@ -1154,7 +1154,6 @@ VALUE rb_warning_string(const char *fmt, ...);
 VALUE rb_refinement_module_get_refined_class(VALUE module);
 
 /* eval_error.c */
-void ruby_error_print(void);
 VALUE rb_get_backtrace(VALUE info);
 
 /* eval_jump.c */

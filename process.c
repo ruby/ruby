@@ -3857,8 +3857,10 @@ rb_f_abort(int argc, const VALUE *argv)
 {
     rb_check_arity(argc, 0, 1);
     if (argc == 0) {
-	if (!NIL_P(GET_THREAD()->errinfo)) {
-	    ruby_error_print();
+	rb_thread_t *th = GET_THREAD();
+	VALUE errinfo = th->errinfo;
+	if (!NIL_P(errinfo)) {
+	    rb_threadptr_error_print(th, errinfo);
 	}
 	rb_exit(EXIT_FAILURE);
     }
