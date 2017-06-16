@@ -4,6 +4,7 @@ require 'test_helper'
 require 'stringio'
 require 'tempfile'
 require 'ostruct'
+require 'bigdecimal'
 
 class JSONParserTest < Test::Unit::TestCase
   include JSON
