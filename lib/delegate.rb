@@ -153,6 +153,13 @@ class Delegator < BasicObject
   end
 
   #
+  # Dumps the \_\_getobj\_\_
+  #
+  def inspect
+    "<#{self.class} __getobj__: #{__getobj__.inspect}>"
+  end
+
+  #
   # This method must be overridden by subclasses and should return the object
   # method calls are being delegated to.
   #
