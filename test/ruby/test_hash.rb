@@ -350,11 +350,11 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_delete
-    h1 = @cls[ 1 => 'one', 2 => 'two', true => 'true' ]
+    h1 = @cls[ 1 => 'one', 2 => 'two', true => 'true', false => 'false' ]
     h2 = @cls[ 1 => 'one', 2 => 'two' ]
     h3 = @cls[ 2 => 'two' ]
 
-    assert_equal('true', h1.delete(true))
+    assert_equal(['true', nil, 'false'], h1.delete(true, nil, false))
     assert_equal(h2, h1)
 
     assert_equal('one', h1.delete(1))

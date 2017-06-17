@@ -1131,40 +1131,53 @@ rb_hash_delete(VALUE hash, VALUE key)
 
 /*
  *  call-seq:
- *     hsh.delete(key)                   -> value
- *     hsh.delete(key) {| key | block }  -> value
+ *     hsh.delete(key)                        -> value
+ *     hsh.delete(key, ...)                   -> array
+ *     hsh.delete(key) {| key | block }       -> value
+ *     hsh.delete(key, ...) {| key | block }  -> array
  *
- *  Deletes the key-value pair and returns the value from <i>hsh</i> whose
- *  key is equal to <i>key</i>. If the key is not found, it returns
- *  <em>nil</em>. If the optional code block is given and the
+ *  Deletes one or more key-value pairs and returns the values from <i>hsh</i>
+ *  whose keys were given. If any of the keys are not found, it returns
+ *  <em>nil</em> for those values. If the optional code block is given and a
  *  key is not found, pass in the key and return the result of
  *  <i>block</i>.
  *
- *     h = { "a" => 100, "b" => 200 }
- *     h.delete("a")                              #=> 100
+ *     h = { "a" => 100, "b" => 200, "c" => 300 }
+ *     h.delete("a", "b")                         #=> [100, 200]
+ *     h.delete("c")                              #=> 300
  *     h.delete("z")                              #=> nil
  *     h.delete("z") { |el| "#{el} not found" }   #=> "z not found"
  *
  */
 
 static VALUE
-rb_hash_delete_m(VALUE hash, VALUE key)
+rb_hash_delete_m(int argc, VALUE *argv, VALUE hash)
 {
-    VALUE val;
-
     rb_hash_modify_check(hash);
-    val = rb_hash_delete_entry(hash, key);
 
-    if (val != Qundef) {
-	return val;
+    VALUE val;
+    VALUE result = rb_ary_new2(argc);
+    long i;
+
+    for (i=0; i<argc; i++) {
+      val = rb_hash_delete_entry(hash, argv[i]);
+
+      if (val != Qundef) {
+        rb_ary_push(result, val);
+      }
+      else if (rb_block_given_p()) {
+        rb_ary_push(result, rb_yield(argv[i]));
+      }
+      else {
+        rb_ary_push(result, Qnil);
+      }
+    }
+
+    if (argc > 1) {
+      return result;
     }
     else {
-	if (rb_block_given_p()) {
-	    return rb_yield(key);
-	}
-	else {
-	    return Qnil;
-	}
+      return rb_ary_entry(result, 0);
     }
 }
 
@@ -4488,7 +4501,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "fetch_values", rb_hash_fetch_values, -1);
 
     rb_define_method(rb_cHash, "shift", rb_hash_shift, 0);
-    rb_define_method(rb_cHash, "delete", rb_hash_delete_m, 1);
+    rb_define_method(rb_cHash, "delete", rb_hash_delete_m, -1);
     rb_define_method(rb_cHash, "delete_if", rb_hash_delete_if, 0);
     rb_define_method(rb_cHash, "keep_if", rb_hash_keep_if, 0);
     rb_define_method(rb_cHash, "select", rb_hash_select, 0);
