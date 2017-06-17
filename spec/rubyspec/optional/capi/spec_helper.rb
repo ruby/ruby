@@ -57,10 +57,9 @@ def compile_extension(name)
 
       make = ENV['MAKE']
       make ||= (RbConfig::CONFIG['host_os'].include?("mswin") ? "nmake" : "make")
-      ENV.delete "MAKEFLAGS" # Fix make warning when invoked with -j in MRI
 
       # Do not capture stderr as we want to show compiler warnings
-      output = `#{make} V=1 DESTDIR=`
+      output = IO.popen([make, "V=1", "DESTDIR=", close_others: false], &:read)
       raise "#{make} failed:\n#{output}" unless $?.success?
       $stderr.puts output if debug
 

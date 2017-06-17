@@ -109,7 +109,7 @@ class MSpecMain < MSpecScript
       }
       command = argv + ["-fy", "-o", name]
       $stderr.puts "$ #{command.join(' ')}" if $MSPEC_DEBUG
-      IO.popen([env, *command], "rb+")
+      IO.popen([env, *command, close_others: false], "rb+")
     }
 
     puts children.map { |child| child.gets }.uniq
