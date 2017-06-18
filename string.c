@@ -8255,6 +8255,7 @@ rb_str_chomp_string(VALUE str, VALUE rs)
     long olen = RSTRING_LEN(str);
     long len = chompped_length(str, rs);
     if (len >= olen) return Qnil;
+    str_modify_keep_cr(str);
     STR_SET_LEN(str, len);
     TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
     if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
@@ -8275,7 +8276,7 @@ static VALUE
 rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
 {
     VALUE rs;
-    str_modify_keep_cr(str);
+    str_modifiable(str);
     if (RSTRING_LEN(str) == 0) return Qnil;
     rs = chomp_rs(argc, argv);
     if (NIL_P(rs)) return Qnil;

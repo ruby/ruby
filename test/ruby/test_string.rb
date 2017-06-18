@@ -444,6 +444,14 @@ CODE
 
     s = S("").freeze
     assert_raise_with_message(RuntimeError, /frozen/) {s.chomp!}
+
+    s = S("ax")
+    o = Struct.new(:s).new(s)
+    def o.to_str
+      s.freeze
+      "x"
+    end
+    assert_raise_with_message(RuntimeError, /frozen/) {s.chomp!(o)}
   ensure
     $/ = save
   end
