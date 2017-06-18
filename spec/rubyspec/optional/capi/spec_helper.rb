@@ -57,6 +57,10 @@ def compile_extension(name)
 
       make = ENV['MAKE']
       make ||= (RbConfig::CONFIG['host_os'].include?("mswin") ? "nmake" : "make")
+      if File.basename(make, ".*") == "nmake"
+        # suppress logo of nmake.exe to stderr
+        ENV["MAKEFLAGS"] = "l#{ENV["MAKEFLAGS"]}"
+      end
 
       # Do not capture stderr as we want to show compiler warnings
       output = IO.popen([make, "V=1", "DESTDIR=", close_others: false], &:read)
