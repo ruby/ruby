@@ -292,8 +292,11 @@ module Test
 
       def flush_job_tokens
         if @jobserver
-          @jobserver[1] << @job_tokens
-          @job_tokens.clear
+          r, w = @jobserver.shift(2)
+          @jobserver = nil
+          w << @job_tokens.slice!(0..-1)
+          r.close
+          w.close
         end
       end
 
@@ -317,8 +320,8 @@ module Test
         return unless @options[:parallel]
         return if @interrupt
         worker.close
-        if @jobserver and !@job_tokens.empty?
-          @jobserver[1] << @job_tokens.slice!(0)
+        if @jobserver and (token = @job_tokens.slice!(0))
+          @jobserver[1] << token
         end
         @workers.delete(worker)
         @dead_workers << worker
