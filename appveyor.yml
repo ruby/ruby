@@ -45,8 +45,8 @@ build_script:
   - nmake -l
   - nmake install-nodoc
   - \usr\bin\ruby -v -e "p :locale => Encoding.find('locale'), :filesystem => Encoding.find('filesystem')"
-  - set /a JOBS=2*%NUMBER_OF_PROCESSORS%
 test_script:
+  - set /a JOBS=%NUMBER_OF_PROCESSORS%
   - nmake -l "TESTOPTS=-v -q" btest
   - nmake -l "TESTOPTS=-v -q" test-basic
   - nmake -l "TESTOPTS=-q -j%JOBS%" test-all
