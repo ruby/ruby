@@ -441,6 +441,9 @@ CODE
     assert_equal("foo\r", s)
 
     assert_equal(S("a").hash, S("a\u0101").chomp!(S("\u0101")).hash, '[ruby-core:22414]')
+
+    s = S("").freeze
+    assert_raise_with_message(RuntimeError, /frozen/) {s.chomp!}
   ensure
     $/ = save
   end
