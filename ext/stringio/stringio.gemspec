@@ -1,4 +1,5 @@
 # -*- encoding: utf-8 -*-
+# frozen_string_literal: true
 # stub: stringio 0.0.0 ruby lib
 # stub: extconf.rb
 
