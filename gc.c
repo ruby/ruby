@@ -223,6 +223,11 @@ static ruby_gc_params_t gc_params = {
 #ifndef RGENGC_DEBUG
 #define RGENGC_DEBUG       0
 #endif
+#if RGENGC_DEBUG < 0
+#undef RGENGC_DEBUG
+#define RGENGC_DEBUG ruby_rgengc_debug
+#endif
+int ruby_rgengc_debug;
 
 /* RGENGC_CHECK_MODE
  * 0: disable all assertions

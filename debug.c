@@ -119,10 +119,14 @@ extern int ruby_w32_rtc_error;
 #include <windows.h>
 UINT ruby_w32_codepage[2];
 #endif
+extern int ruby_rgengc_debug;
 
 static void
 set_debug_option(const char *str, int len, void *arg)
 {
+    int ov;
+    size_t retlen;
+    unsigned long n;
 #define SET_WHEN(name, var, val) do {	    \
 	if (len == sizeof(name) - 1 &&	    \
 	    strncmp(str, (name), len) == 0) { \
@@ -130,14 +134,42 @@ set_debug_option(const char *str, int len, void *arg)
 	    return;			    \
 	}				    \
     } while (0)
-#define NAME_MATCH_VALUE(name) \
-    ((size_t)len >= sizeof(name) && \
-     strncmp(str, (name), sizeof(name)-1) == 0 && \
-     str[sizeof(name)-1] == '=' && \
-     (str += sizeof(name), len -= sizeof(name), 1))
+#define NAME_MATCH_VALUE(name)				\
+    ((size_t)len >= sizeof(name)-1 &&			\
+     strncmp(str, (name), sizeof(name)-1) == 0 &&	\
+     ((len == sizeof(name)-1 && !(len = 0)) ||		\
+      (str[sizeof(name)-1] == '=' &&			\
+       (str += sizeof(name), len -= sizeof(name), 1))))
+#define SET_UINT(val) do { \
+	n = ruby_scan_digits(str, len, 10, &retlen, &ov); \
+	if (!ov && retlen) { \
+	    val = (unsigned int)n; \
+	} \
+	str += retlen; \
+	len -= retlen; \
+    } while (0)
+#define SET_UINT_LIST(name, vals, num) do { \
+	int i; \
+	for (i = 0; i < (num); ++i) { \
+	    SET_UINT((vals)[i]); \
+	    if (!len || *str != ':') break; \
+	    ++str; \
+	    --len; \
+	} \
+	if (len > 0) { \
+	    fprintf(stderr, "ignored "name" option: `%.*s'\n", len, str); \
+	} \
+    } while (0)
+#define SET_WHEN_UINT(name, vals, num, req) \
+    if (NAME_MATCH_VALUE(name)) SET_UINT_LIST(name, vals, num);
 
     SET_WHEN("gc_stress", *ruby_initial_gc_stress_ptr, Qtrue);
     SET_WHEN("core", ruby_enable_coredump, 1);
+    if (NAME_MATCH_VALUE("rgengc")) {
+	if (!len) ruby_rgengc_debug = 1;
+	else SET_UINT_LIST("rgengc", &ruby_rgengc_debug, 1);
+	return;
+    }
 #if defined _WIN32
 # if RUBY_MSVCRT_VERSION >= 80
     SET_WHEN("rtc_error", ruby_w32_rtc_error, 1);
@@ -145,24 +177,8 @@ set_debug_option(const char *str, int len, void *arg)
 #endif
 #if defined _WIN32 || defined __CYGWIN__
     if (NAME_MATCH_VALUE("codepage")) {
-	int i;
-	int ov;
-	size_t retlen;
-	unsigned long n;
-	for (i = 0; i < numberof(ruby_w32_codepage); ++i) {
-	    n = ruby_scan_digits(str, len, 10, &retlen, &ov);
-	    if (!ov && retlen) {
-		ruby_w32_codepage[i] = (UINT)n;
-	    }
-	    str += retlen;
-	    len -= retlen;
-	    if (!len || *str != ':') break;
-	    ++str;
-	    --len;
-	}
-	if (len > 0) {
-	    fprintf(stderr, "ignored codepage option: `%.*s'\n", len, str);
-	}
+	if (!len) fprintf(stderr, "missing codepage argument");
+	else SET_UINT_LIST("codepage", ruby_w32_codepage, numberof(ruby_w32_codepage));
 	return;
     }
 #endif
