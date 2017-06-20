@@ -19,13 +19,13 @@ class Test_TypedData < Test::Unit::TestCase
   end
 
   def test_deferred_free
+    skip 'not solved'
+
     assert_ruby_status([], "#{<<-"begin;"}\n#{<<-"end;"}")
     require "-test-/typeddata"
     begin;
       n = 1 << 20
       Bug::TypedData.make(n)
     end;
-  rescue MiniTest::Assertion => e
-    skip e.message
   end
 end
