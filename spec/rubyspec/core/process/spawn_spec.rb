@@ -400,55 +400,55 @@ describe "Process.spawn" do
   it "redirects STDOUT to the given file descriptior if out: Fixnum" do
     File.open(@name, 'w') do |file|
       lambda do
-        Process.wait Process.spawn(ruby_cmd(fixture(__FILE__, "print.rb")), out: file.fileno)
-      end.should output_to_fd("glark", file)
+        Process.wait Process.spawn("echo glark", out: file.fileno)
+      end.should output_to_fd("glark\n", file)
     end
   end
 
   it "redirects STDOUT to the given file if out: IO" do
     File.open(@name, 'w') do |file|
       lambda do
-        Process.wait Process.spawn(ruby_cmd(fixture(__FILE__, "print.rb")), out: file)
-      end.should output_to_fd("glark", file)
+        Process.wait Process.spawn("echo glark", out: file)
+      end.should output_to_fd("glark\n", file)
     end
   end
 
   it "redirects STDOUT to the given file if out: String" do
-    Process.wait Process.spawn(ruby_cmd(fixture(__FILE__, "print.rb")), out: @name)
-    File.read(@name).should == "glark"
+    Process.wait Process.spawn("echo glark", out: @name)
+    File.read(@name).should == "glark\n"
   end
 
   it "redirects STDOUT to the given file if out: [String name, String mode]" do
-    Process.wait Process.spawn(ruby_cmd(fixture(__FILE__, "print.rb")), out: [@name, 'w'])
-    File.read(@name).should == "glark"
+    Process.wait Process.spawn("echo glark", out: [@name, 'w'])
+    File.read(@name).should == "glark\n"
   end
 
   it "redirects STDERR to the given file descriptior if err: Fixnum" do
     File.open(@name, 'w') do |file|
       lambda do
-        Process.wait Process.spawn(ruby_cmd("STDERR.print :glark"), err: file.fileno)
-      end.should output_to_fd("glark", file)
+        Process.wait Process.spawn("echo glark>&2", err: file.fileno)
+      end.should output_to_fd("glark\n", file)
     end
   end
 
   it "redirects STDERR to the given file descriptor if err: IO" do
     File.open(@name, 'w') do |file|
       lambda do
-        Process.wait Process.spawn(ruby_cmd("STDERR.print :glark"), err: file)
-      end.should output_to_fd("glark", file)
+        Process.wait Process.spawn("echo glark>&2", err: file)
+      end.should output_to_fd("glark\n", file)
     end
   end
 
   it "redirects STDERR to the given file if err: String" do
-    Process.wait Process.spawn(ruby_cmd("STDERR.print :glark"), err: @name)
-    File.read(@name).should == "glark"
+    Process.wait Process.spawn("echo glark>&2", err: @name)
+    File.read(@name).should == "glark\n"
   end
 
   it "redirects STDERR to child STDOUT if :err => [:child, :out]" do
     File.open(@name, 'w') do |file|
       lambda do
-        Process.wait Process.spawn(ruby_cmd("STDERR.print :glark"), :out => file, :err => [:child, :out])
-      end.should output_to_fd("glark", file)
+        Process.wait Process.spawn("echo glark>&2", :out => file, :err => [:child, :out])
+      end.should output_to_fd("glark\n", file)
     end
   end
 
