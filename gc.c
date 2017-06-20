@@ -3594,7 +3594,7 @@ gc_sweep_start(rb_objspace_t *objspace)
 static void
 gc_sweep_finish(rb_objspace_t *objspace)
 {
-    gc_report(1, objspace, "gc_sweep_finish");
+    gc_report(1, objspace, "gc_sweep_finish\n");
 
     gc_prof_set_heap_info(objspace);
     heap_pages_free_unused_pages(objspace);
