@@ -1,5 +1,5 @@
 # -*- coding: us-ascii -*-
-# frozen_string_literal: false
+# frozen_string_literal: true
 require "open3"
 require "timeout"
 require_relative "find_executable"
@@ -159,7 +159,7 @@ module EnvUtil
   end
 
   def verbose_warning
-    class << (stderr = "")
+    class << (stderr = "".dup)
       alias write <<
     end
     stderr, $stderr, verbose, $VERBOSE = $stderr, stderr, $VERBOSE, true

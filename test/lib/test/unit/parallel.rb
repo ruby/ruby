@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 $LOAD_PATH.unshift "#{File.dirname(__FILE__)}/../.."
 require 'test/unit'
 

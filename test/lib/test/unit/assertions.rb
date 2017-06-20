@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'minitest/unit'
 require 'pp'
 
@@ -452,7 +452,7 @@ EOT
 
       ms = instance_methods(true).map {|sym| sym.to_s }
       ms.grep(/\Arefute_/) do |m|
-        mname = ('assert_not_' << m.to_s[/.*?_(.*)/, 1])
+        mname = ('assert_not_'.dup << m.to_s[/.*?_(.*)/, 1])
         alias_method(mname, m) unless ms.include? mname
       end
       alias assert_include assert_includes
@@ -543,7 +543,7 @@ EOT
           if status.coredump?
             sigdesc << " (core dumped)"
           end
-          full_message = ''
+          full_message = ''.dup
           message = message.call if Proc === message
           if message and !message.empty?
             full_message << message << "\n"
@@ -828,7 +828,7 @@ eom
           end
           result = File.__send__(predicate, *args)
           result = !result if neg
-          mesg = "Expected file " << args.shift.inspect
+          mesg = "Expected file ".dup << args.shift.inspect
           mesg << "#{neg} to be #{predicate}"
           mesg << mu_pp(args).sub(/\A\[(.*)\]\z/m, '(\1)') unless args.empty?
           mesg << " #{failure_message}" if failure_message
