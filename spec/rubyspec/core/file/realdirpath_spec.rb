@@ -88,9 +88,13 @@ platform_is :windows do
       @file = tmp("realdirpath")
     end
 
+    after :each do
+      rm_r @file
+    end
+
     it "returns the same path" do
-      file = __FILE__
-      File.realdirpath(file).should == file
+      touch @file
+      File.realdirpath(@file).should == @file
     end
 
     it "returns the same path even if the last component does not exist" do
