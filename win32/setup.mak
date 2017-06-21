@@ -155,6 +155,9 @@ echo RUBY_PROGRAM_VERSION = %ruby_version:""=%
 echo MAJOR = %major%
 echo MINOR = %minor%
 echo TEENY = %teeny%
+#if defined RUBY_PATCHLEVEL && RUBY_PATCHLEVEL < 0
+echo RUBY_DEVEL = yes
+#endif
 del %0 & exit
 <<
 
