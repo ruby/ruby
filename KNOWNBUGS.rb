@@ -6,7 +6,7 @@
 # So all tests will cause failure.
 #
 
-assert_normal_exit("#{<<-";END;"}")
+assert_normal_exit("#{<<-";END;"}", timeout: 5)
 begin
   require "-test-/typeddata"
 rescue LoadError
