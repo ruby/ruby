@@ -85,6 +85,8 @@ with all sufficient information, see the ChangeLog file or Redmine
     (same as "literal".freeze in Ruby 2.1+) [Feature #13295]
   * String#{casecmp,casecmp?} now return nil for non-string arguments
     instead of raising a TypeError. [Bug #13312]
+  * String##delete_prefix is added to remove prefix [Feature #12694]
+  * String#delete_prefix! is added to remove prefix destructively [Feature #12694]
 
 === Stdlib updates (outstanding ones only)
 

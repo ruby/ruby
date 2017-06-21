@@ -2416,6 +2416,101 @@ CODE
     assert_equal("\u3042", s4)
   end
 
+  def test_delete_prefix
+    assert_raise(TypeError) { 'hello'.delete_prefix(nil) }
+    assert_raise(TypeError) { 'hello'.delete_prefix(1) }
+    assert_raise(TypeError) { 'hello'.delete_prefix(/hel/) }
+
+    s = S("hello")
+    assert_equal("lo", s.delete_prefix('hel'))
+    assert_equal("hello", s)
+
+    s = S("hello")
+    assert_equal("hello", s.delete_prefix('lo'))
+    assert_equal("hello", s)
+
+    s = S("\u{3053 3093 306b 3061 306f}")
+    assert_equal("\u{306b 3061 306f}", s.delete_prefix("\u{3053 3093}"))
+    assert_equal("\u{3053 3093 306b 3061 306f}", s)
+
+    s = S("\u{3053 3093 306b 3061 306f}")
+    assert_equal("\u{3053 3093 306b 3061 306f}", s.delete_prefix('hel'))
+    assert_equal("\u{3053 3093 306b 3061 306f}", s)
+
+    s = S("hello")
+    assert_equal("hello", s.delete_prefix("\u{3053 3093}"))
+    assert_equal("hello", s)
+
+    # skip if argument is a broken string
+    s = S("\xe3\x81\x82")
+    assert_equal("\xe3\x81\x82", s.delete_prefix("\xe3"))
+    assert_equal("\xe3\x81\x82", s)
+
+    # clear coderange
+    s = S("\u{3053 3093}hello")
+    assert_not_predicate(s, :ascii_only?)
+    assert_predicate(s.delete_prefix("\u{3053 3093}"), :ascii_only?)
+
+    # argument should be converted to String
+    klass = Class.new {|klass| def to_str; 'a'; end }
+    s = S("abba")
+    assert_equal("bba", s.delete_prefix(klass.new))
+    assert_equal("abba", s)
+  end
+
+  def test_delete_prefix_bang
+    assert_raise(TypeError) { 'hello'.delete_prefix!(nil) }
+    assert_raise(TypeError) { 'hello'.delete_prefix!(1) }
+    assert_raise(TypeError) { 'hello'.delete_prefix!(/hel/) }
+
+    s = S("hello")
+    assert_equal("lo", s.delete_prefix!('hel'))
+    assert_equal("lo", s)
+
+    s = S("hello")
+    assert_equal(nil, s.delete_prefix!('lo'))
+    assert_equal("hello", s)
+
+    s = S("\u{3053 3093 306b 3061 306f}")
+    assert_equal("\u{306b 3061 306f}", s.delete_prefix!("\u{3053 3093}"))
+    assert_equal("\u{306b 3061 306f}", s)
+
+    s = S("\u{3053 3093 306b 3061 306f}")
+    assert_equal(nil, s.delete_prefix!('hel'))
+    assert_equal("\u{3053 3093 306b 3061 306f}", s)
+
+    s = S("hello")
+    assert_equal(nil, s.delete_prefix!("\u{3053 3093}"))
+    assert_equal("hello", s)
+
+    # skip if argument is a broken string
+    s = S("\xe3\x81\x82")
+    assert_equal(nil, s.delete_prefix!("\xe3"))
+    assert_equal("\xe3\x81\x82", s)
+
+    # clear coderange
+    s = S("\u{3053 3093}hello")
+    assert_not_predicate(s, :ascii_only?)
+    assert_predicate(s.delete_prefix!("\u{3053 3093}"), :ascii_only?)
+
+    # argument should be converted to String
+    klass = Class.new {|klass| def to_str; 'a'; end }
+    s = S("abba")
+    assert_equal("bba", s.delete_prefix!(klass.new))
+    assert_equal("bba", s)
+
+    s = S("ax").freeze
+    assert_raise_with_message(RuntimeError, /frozen/) {s.delete_prefix!("a")}
+
+    s = S("ax")
+    o = Struct.new(:s).new(s)
+    def o.to_str
+      s.freeze
+      "a"
+    end
+    assert_raise_with_message(RuntimeError, /frozen/) {s.delete_prefix!(o)}
+  end
+
 =begin
   def test_symbol_table_overflow
     assert_in_out_err([], <<-INPUT, [], /symbol table overflow \(symbol [a-z]{8}\) \(RuntimeError\)/)
