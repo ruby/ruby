@@ -318,13 +318,10 @@ def assert_valid_syntax(testsrc, message = '')
   }
 end
 
-def assert_normal_exit(testsrc, *rest)
+def assert_normal_exit(testsrc, *rest, timeout: nil, **opt)
   newtest
-  opt = {}
-  opt = rest.pop if Hash === rest.last
   message, ignore_signals = rest
   message ||= ''
-  timeout = opt[:timeout]
   show_progress(message) {
     faildesc = nil
     filename = make_srcfile(testsrc)
