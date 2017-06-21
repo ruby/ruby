@@ -977,5 +977,6 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([[1896, "Athens"], [1900, "Paris"], [1904, "Chicago"], [1908, "Rome"]],
                  olympics.uniq{|k,v| v})
     assert_equal([1, 2, 3, 4, 5, 10], (1..100).uniq{|x| (x**2) % 10 }.first(6))
+    assert_equal([1, [1, 2]], Foo.new.to_enum.uniq)
   end
 end
