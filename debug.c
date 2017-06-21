@@ -121,8 +121,8 @@ UINT ruby_w32_codepage[2];
 #endif
 extern int ruby_rgengc_debug;
 
-static void
-set_debug_option(const char *str, int len, void *arg)
+int
+ruby_env_debug_option(const char *str, int len, void *arg)
 {
     int ov;
     size_t retlen;
@@ -131,7 +131,7 @@ set_debug_option(const char *str, int len, void *arg)
 	if (len == sizeof(name) - 1 &&	    \
 	    strncmp(str, (name), len) == 0) { \
 	    (var) = (val);		    \
-	    return;			    \
+	    return 1;			    \
 	}				    \
     } while (0)
 #define NAME_MATCH_VALUE(name)				\
@@ -168,7 +168,7 @@ set_debug_option(const char *str, int len, void *arg)
     if (NAME_MATCH_VALUE("rgengc")) {
 	if (!len) ruby_rgengc_debug = 1;
 	else SET_UINT_LIST("rgengc", &ruby_rgengc_debug, 1);
-	return;
+	return 1;
     }
 #if defined _WIN32
 # if RUBY_MSVCRT_VERSION >= 80
@@ -179,10 +179,18 @@ set_debug_option(const char *str, int len, void *arg)
     if (NAME_MATCH_VALUE("codepage")) {
 	if (!len) fprintf(stderr, "missing codepage argument");
 	else SET_UINT_LIST("codepage", ruby_w32_codepage, numberof(ruby_w32_codepage));
-	return;
+	return 1;
     }
 #endif
-    fprintf(stderr, "unexpected debug option: %.*s\n", len, str);
+    return 0;
+}
+
+static void
+set_debug_option(const char *str, int len, void *arg)
+{
+    if (!ruby_env_debug_option(str, len, arg)) {
+	fprintf(stderr, "unexpected debug option: %.*s\n", len, str);
+    }
 }
 
 void

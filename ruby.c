@@ -856,12 +856,16 @@ disable_option(const char *str, int len, void *arg)
     feature_option(str, len, arg, 0U);
 }
 
+RUBY_EXTERN const int  ruby_patchlevel;
+int ruby_env_debug_option(const char *str, int len, void *arg);
+
 static void
 debug_option(const char *str, int len, void *arg)
 {
     static const char list[] = EACH_DEBUG_FEATURES(LITERAL_NAME_ELEMENT, ", ");
 #define SET_WHEN_DEBUG(bit) SET_WHEN(#bit, DEBUG_BIT(bit), str, len)
     EACH_DEBUG_FEATURES(SET_WHEN_DEBUG, ;);
+    if (ruby_patchlevel < 0 && ruby_env_debug_option(str, len, 0)) return;
     rb_warn("unknown argument for --debug: `%.*s'", len, str);
     rb_warn("debug features are [%.*s].", (int)strlen(list), list);
 }
