@@ -2156,6 +2156,22 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_reopen_with_block
+    make_tempfile {|t|
+      open(__FILE__) do |f|
+        f.gets
+        assert_nothing_raised {
+          reopened = nil
+          f.reopen(t.path) do |_reopened|
+            reopened = _reopened
+            assert_equal("foo\n", reopened.gets)
+          end
+          assert_equal(true, reopened.closed?)
+        }
+      end
+    }
+  end
+
   def test_reopen_inherit
     mkcdtmpdir {
       system(EnvUtil.rubybin, '-e', <<"End")

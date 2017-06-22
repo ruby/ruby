@@ -7058,6 +7058,10 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
 	}
     }
 
+    if (rb_block_given_p()) {
+	return rb_ensure(rb_yield, file, io_close, file);
+    }
+
     return file;
 }
 
