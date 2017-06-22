@@ -1024,7 +1024,7 @@ runruby: $(PROGRAM) PHONY
 	$(RUNRUBY) $(TESTRUN_SCRIPT)
 
 parse: fake miniruby$(EXEEXT) PHONY
-	$(BTESTRUBY) $(srcdir)/tool/parse.rb $(TESTRUN_SCRIPT)
+	$(BTESTRUBY) --dump=parsetree_with_comment,insns $(TESTRUN_SCRIPT)
 
 bisect: PHONY
 	$(srcdir)/tool/bisect.sh miniruby $(srcdir)
