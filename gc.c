@@ -1403,6 +1403,11 @@ heap_pages_expand_sorted_to(rb_objspace_t *objspace, size_t next_length)
 static void
 heap_pages_expand_sorted(rb_objspace_t *objspace)
 {
+    /* usually heap_allocatable_pages + heap_eden->total_pages == heap_pages_sorted_length
+     * beacuse heap_allocatable_pages contains heap_tomb->total_pages (recycle heap_tomb pages).
+     * howerver, if there are pages which do not have empty slots, then try to create new pages
+     * so that the additional allocatable_pages counts (heap_tomb->total_pages) are added.
+     */
     size_t next_length = heap_allocatable_pages;
     next_length += heap_eden->total_pages;
     next_length += heap_tomb->total_pages;
@@ -1410,7 +1415,18 @@ heap_pages_expand_sorted(rb_objspace_t *objspace)
     if (next_length > heap_pages_sorted_length) {
 	heap_pages_expand_sorted_to(objspace, next_length);
     }
+
+    GC_ASSERT(heap_allocatable_pages + heap_eden->total_pages <= heap_pages_sorted_length);
+    GC_ASSERT(heap_allocated_pages <= heap_pages_sorted_length);
 }
+
+static void
+heap_allocatable_pages_set(rb_objspace_t *objspace, size_t s)
+{
+    heap_allocatable_pages = s;
+    heap_pages_expand_sorted(objspace);
+}
+
 
 static inline void
 heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
@@ -1546,9 +1562,7 @@ heap_page_allocate(rb_objspace_t *objspace)
 	    rb_bug("same heap page is allocated: %p at %"PRIuVALUE, (void *)page_body, (VALUE)mid);
 	}
     }
-    if (heap_allocated_pages >= heap_pages_sorted_length) {
-	heap_pages_expand_sorted_to(objspace, heap_allocated_pages + 1);
-    }
+
     if (hi < heap_allocated_pages) {
 	MEMMOVE(&heap_pages_sorted[hi+1], &heap_pages_sorted[hi], struct heap_page_header*, heap_allocated_pages - hi);
     }
@@ -1556,6 +1570,11 @@ heap_page_allocate(rb_objspace_t *objspace)
     heap_pages_sorted[hi] = page;
 
     heap_allocated_pages++;
+
+    GC_ASSERT(heap_eden->total_pages + heap_allocatable_pages <= heap_pages_sorted_length);
+    GC_ASSERT(heap_eden->total_pages + heap_tomb->total_pages == heap_allocated_pages - 1);
+    GC_ASSERT(heap_allocated_pages <= heap_pages_sorted_length);
+
     objspace->profile.total_allocated_pages++;
 
     if (heap_allocated_pages > heap_pages_sorted_length) {
@@ -1592,14 +1611,21 @@ heap_page_resurrect(rb_objspace_t *objspace)
 	page = page->next;
     }
 
+    
+
     return NULL;
 }
 
 static struct heap_page *
 heap_page_create(rb_objspace_t *objspace)
 {
-    struct heap_page *page = heap_page_resurrect(objspace);
+    struct heap_page *page;
     const char *method = "recycle";
+
+    heap_allocatable_pages--;
+
+    page = heap_page_resurrect(objspace);
+
     if (page == NULL) {
 	page = heap_page_allocate(objspace);
 	method = "allocate";
@@ -1633,12 +1659,13 @@ heap_add_pages(rb_objspace_t *objspace, rb_heap_t *heap, size_t add)
 {
     size_t i;
 
-    heap_allocatable_pages = add;
-    heap_pages_expand_sorted(objspace);
+    heap_allocatable_pages_set(objspace, add);
+
     for (i = 0; i < add; i++) {
 	heap_assign_page(objspace, heap);
     }
-    heap_allocatable_pages = 0;
+
+    GC_ASSERT(heap_allocatable_pages == 0);
 }
 
 static size_t
@@ -1688,8 +1715,7 @@ heap_set_increment(rb_objspace_t *objspace, size_t additional_pages)
 
     if (next_used_limit == heap_allocated_pages) next_used_limit++;
 
-    heap_allocatable_pages = next_used_limit - used;
-    heap_pages_expand_sorted(objspace);
+    heap_allocatable_pages_set(objspace, next_used_limit - used);
 
     gc_report(1, objspace, "heap_set_increment: heap_allocatable_pages is %d\n", (int)heap_allocatable_pages);
 }
@@ -1700,7 +1726,10 @@ heap_increment(rb_objspace_t *objspace, rb_heap_t *heap)
     if (heap_allocatable_pages > 0) {
 	gc_report(1, objspace, "heap_increment: heap_pages_sorted_length: %d, heap_pages_inc: %d, heap->total_pages: %d\n",
 		  (int)heap_pages_sorted_length, (int)heap_allocatable_pages, (int)heap->total_pages);
-	heap_allocatable_pages--;
+
+	GC_ASSERT(heap_allocatable_pages + heap_eden->total_pages <= heap_pages_sorted_length);
+	GC_ASSERT(heap_allocated_pages <= heap_pages_sorted_length);
+
 	heap_assign_page(objspace, heap);
 	return TRUE;
     }
@@ -3625,7 +3654,7 @@ gc_sweep_finish(rb_objspace_t *objspace)
 
     /* if heap_pages has unused pages, then assign them to increment */
     if (heap_allocatable_pages < heap_tomb->total_pages) {
-	heap_allocatable_pages = heap_tomb->total_pages;
+	heap_allocatable_pages_set(objspace, heap_tomb->total_pages);
     }
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END_SWEEP, 0);
