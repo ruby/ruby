@@ -1611,7 +1611,7 @@ heap_page_resurrect(rb_objspace_t *objspace)
 	page = page->next;
     }
 
-    
+
 
     return NULL;
 }
