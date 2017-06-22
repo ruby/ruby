@@ -2210,6 +2210,32 @@ ruby_set_argv(int argc, char **argv)
     }
 }
 
+static void
+just_before_input(void)
+{
+#ifdef __AFL_HAVE_MANUAL_CONTROL
+    /* AFL is to spawn many processes; which is a heavy duty.  To make
+     * things fast AFL automatically caches a once-spawned process for
+     * later reuse; by taking a snapshot of that process and
+     * fork()-ing it repeatedly, instead of calling fork() first then
+     * execve() every time.  Without any configuration the image-
+     * taking routine would sneak into right before the call to
+     * main().  That works, but suboptimal because ruby does a lot of
+     * things after main until it actually starts loading scripts.
+     * This call to __AFL_INIT() macro is to notify AFL about such
+     * point that it can safely take a snapshot of this ruby process.
+     *
+     * This must be carefully placed.  According to AFL's manual we
+     * have to chose where (1) no threads except main one are run yet,
+     * (2) no timers are registered yet, (3) no file descriptors are
+     * created yet, or (4) no input has read. @shyouhei thinks that in
+     * case of ruby such place can only be at the right beginning of
+     * argv handling.
+     */
+    __AFL_INIT();
+#endif
+}
+
 void *
 ruby_process_options(int argc, char **argv)
 {
@@ -2224,6 +2250,7 @@ ruby_process_options(int argc, char **argv)
     ruby_script(script_name);  /* for the time being */
     rb_argv0 = rb_str_new4(rb_progname);
     rb_gc_register_mark_object(rb_argv0);
+    just_before_input();
     iseq = process_options(argc, argv, cmdline_options_init(&opt));
 
 #ifndef HAVE_SETPROCTITLE
