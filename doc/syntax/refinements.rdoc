@@ -49,13 +49,13 @@ until the end of the current class or module definition, or until the end of
 the current file if used at the top-level.
 
 You may activate refinements in a string passed to Kernel#eval. Refinements
-are active the end of the eval string.
+are active until the end of the eval string.
 
 Refinements are lexical in scope.  Refinements are only active within a scope
-after the call to using. Any code before the using statement will not have the
+after the call to +using+. Any code before the +using+ statement will not have the
 refinement activated.
 
-When control is transferred outside the scope the refinement is deactivated.
+When control is transferred outside the scope, the refinement is deactivated.
 This means that if you require or load a file or call a method that is defined
 outside the current scope the refinement will be deactivated:
 
@@ -80,7 +80,7 @@ outside the current scope the refinement will be deactivated:
   x.foo       # prints "C#foo in M"
   call_foo(x) #=> raises NoMethodError
 
-If a method is defined in a scope where a refinement is active the refinement
+If a method is defined in a scope where a refinement is active, the refinement
 will be active when the method is called.  This example spans multiple files:
 
 c.rb:
@@ -159,8 +159,8 @@ In a class:
   end
   # not activated here
 
-Note that the refinements in M are not activated automatically if the class
-Foo is reopened later.
+Note that the refinements in +M+ are *not* activated automatically if the class
++Foo+ is reopened later.
 
 In eval:
 
@@ -180,9 +180,9 @@ When not evaluated:
   end
   # not activated here
 
-When defining multiple refinements in the same module, inside a refine block
-all refinements from the same module are active when a refined method is
-called:
+When defining multiple refinements in the same module inside multiple +refine+ blocks,
+all refinements from the same module are active when a refined method(any of the +.to_json+ method from Example below) is
+called for the first time:
 
   module ToJSON
     refine Integer do
@@ -225,12 +225,12 @@ If no method was found at any point this repeats with the superclass of +C+.
 
 Note that methods in a subclass have priority over refinements in a
 superclass.  For example, if the method <code>/</code> is defined in a
-refinement for Integer <code>1 / 2</code> invokes the original Fixnum#/
-because Fixnum is a subclass of Integer and is searched before the refinements
-for the superclass Integer.
+refinement for Numeric <code>1 / 2</code> invokes the original Integer#/
+because Integer is a subclass of Numeric and is searched before the refinements
+for the superclass Numeric. Since the method <code>/</code> is also present in child +Integer+ therefore, the method lookup never went to the superclass.
 
-If a method +foo+ is defined on Integer in a refinement, <code>1.foo</code>
-invokes that method since +foo+ does not exist on Fixnum.
+However, if a method +foo+ is defined on Numeric in a refinement, <code>1.foo</code>
+invokes that method since +foo+ does not exist on Integer.
 
 == +super+
 
