@@ -541,7 +541,7 @@ EOT
             sigdesc = "SIG#{signame} (#{sigdesc})"
           end
           if status.coredump?
-            sigdesc << " (core dumped)"
+            sigdesc = "#{sigdesc} (core dumped)"
           end
           full_message = ''.dup
           message = message.call if Proc === message
