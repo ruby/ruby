@@ -419,13 +419,18 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_count_symbols
+    assert_separately(%w[-robjspace], "#{<<~';;;'}")
+    h0 = ObjectSpace.count_symbols
+
     syms = (1..128).map{|i| ("xyzzy#{i}_#{Process.pid}_#{rand(1_000_000)}_" * 128).to_sym}
-    c = Class.new{define_method(syms[-1]){}}
+    syms << Class.new{define_method(syms[-1]){}}
 
     h = ObjectSpace.count_symbols
-    assert_operator h[:mortal_dynamic_symbol],   :>=, 128, h.inspect
-    assert_operator h[:immortal_dynamic_symbol], :>=, 1, h.inspect
-    assert_operator h[:immortal_static_symbol],  :>=, Object.methods.size, h.inspect
-    assert_equal h[:immortal_symbol], h[:immortal_dynamic_symbol] + h[:immortal_static_symbol], h.inspect
+    m = proc {h0.inspect + "\n" + h.inspect}
+    assert_equal 127, h[:mortal_dynamic_symbol] - h0[:mortal_dynamic_symbol],   m
+    assert_equal 1, h[:immortal_dynamic_symbol] - h0[:immortal_dynamic_symbol], m
+    assert_operator h[:immortal_static_symbol],  :>=, Object.methods.size, m
+    assert_equal h[:immortal_symbol], h[:immortal_dynamic_symbol] + h[:immortal_static_symbol], m
+    ;;;
   end
 end
