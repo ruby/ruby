@@ -419,7 +419,7 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_count_symbols
-    syms = (1..128).map{|i| ("xyzzy#{i}" * 128).to_sym}
+    syms = (1..128).map{|i| ("xyzzy#{i}_#{Process.pid}_#{rand(1_000_000)}_" * 128).to_sym}
     c = Class.new{define_method(syms[-1]){}}
 
     h = ObjectSpace.count_symbols
