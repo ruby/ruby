@@ -225,12 +225,12 @@ If no method was found at any point this repeats with the superclass of +C+.
 
 Note that methods in a subclass have priority over refinements in a
 superclass.  For example, if the method <code>/</code> is defined in a
-refinement for Integer <code>1 / 2</code> invokes the original Fixnum#/
-because Fixnum is a subclass of Integer and is searched before the refinements
-for the superclass Integer.
+refinement for Numeric <code>1 / 2</code> invokes the original Integer#/
+because Integer is a subclass of Numeric and is searched before the refinements
+for the superclass Numeric. Since the method <code>/</code> is also present in child +Integer+ therefore, the method lookup never went to the superclass.
 
-If a method +foo+ is defined on Integer in a refinement, <code>1.foo</code>
-invokes that method since +foo+ does not exist on Fixnum.
+However, if a method +foo+ is defined on Numeric in a refinement, <code>1.foo</code>
+invokes that method since +foo+ does not exist on Integer.
 
 == +super+
 
