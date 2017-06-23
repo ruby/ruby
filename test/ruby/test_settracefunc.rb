@@ -1605,7 +1605,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def tp_return_value mid
     ary = []
     TracePoint.new(:return, :b_return){|tp| ary << [tp.event, tp.method_id, tp.return_value]}.enable{
-      next if !target_thread?
       send mid
     }
     ary.pop # last b_return event is not required.
