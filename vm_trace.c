@@ -329,12 +329,10 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 	if (th->trace_arg == 0 && /* check reentrant */
 	    trace_arg->self != rb_mRubyVMFrozenCore /* skip special methods. TODO: remove it. */) {
 	    const VALUE errinfo = th->errinfo;
-	    const enum ruby_tag_type outer_state = th->tag_state;
 	    const VALUE old_recursive = th->local_storage_recursive_hash;
 	    int state = 0;
 
 	    th->local_storage_recursive_hash = th->local_storage_recursive_hash_for_trace;
-	    th->tag_state = TAG_NONE;
 	    th->errinfo = Qnil;
 
 	    th->vm->trace_running++;
@@ -366,7 +364,6 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 		}
 		TH_JUMP_TAG(th, state);
 	    }
-	    th->tag_state = outer_state;
 	}
     }
 }
@@ -387,7 +384,6 @@ VALUE
 rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
 {
     volatile int raised;
-    volatile enum ruby_tag_type outer_state;
     VALUE result = Qnil;
     rb_thread_t *volatile th = GET_THREAD();
     enum ruby_tag_type state;
@@ -399,8 +395,6 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
     if (!th->trace_arg) th->trace_arg = &dummy_trace_arg;
 
     raised = rb_threadptr_reset_raised(th);
-    outer_state = th->tag_state;
-    th->tag_state = TAG_NONE;
 
     TH_PUSH_TAG(th);
     if ((state = TH_EXEC_TAG()) == TAG_NONE) {
@@ -419,7 +413,6 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
 	TH_JUMP_TAG(th, state);
     }
 
-    th->tag_state = outer_state;
     return result;
 }
 

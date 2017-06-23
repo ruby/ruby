@@ -1476,7 +1476,6 @@ vm_iter_break(rb_thread_t *th, VALUE val)
     }
 #endif
 
-    th->tag_state = TAG_BREAK;
     th->errinfo = (VALUE)THROW_DATA_NEW(val, target_cfp, TAG_BREAK);
     TH_JUMP_TAG(th, TAG_BREAK);
 }
@@ -1787,9 +1786,10 @@ vm_exec(rb_thread_t *th)
     if ((state = EXEC_TAG()) == TAG_NONE) {
       vm_loop_start:
 	result = vm_exec_core(th, initial);
-	if ((state = th->tag_state) != TAG_NONE) {
+	VM_ASSERT(th->tag == &_tag);
+	if ((state = _tag.state) != TAG_NONE) {
 	    err = (struct vm_throw_data *)result;
-	    th->tag_state = TAG_NONE;
+	    _tag.state = TAG_NONE;
 	    goto exception_handler;
 	}
     }
@@ -1939,7 +1939,7 @@ vm_exec(rb_thread_t *th)
 #endif
 			}
 			th->errinfo = Qnil;
-			th->tag_state = TAG_NONE;
+			VM_ASSERT(th->tag->state == TAG_NONE);
 			goto vm_loop_start;
 		    }
 		}
@@ -1989,7 +1989,7 @@ vm_exec(rb_thread_t *th)
 			  catch_iseq->body->stack_max);
 
 	    state = 0;
-	    th->tag_state = TAG_NONE;
+	    th->tag->state = TAG_NONE;
 	    th->errinfo = Qnil;
 	    goto vm_loop_start;
 	}

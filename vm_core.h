@@ -691,8 +691,9 @@ typedef RUBY_JMP_BUF rb_jmpbuf_t;
 struct rb_vm_tag {
     VALUE tag;
     VALUE retval;
-    rb_jmpbuf_t buf;
     struct rb_vm_tag *prev;
+    enum ruby_tag_type state;
+    rb_jmpbuf_t buf;
 };
 
 struct rb_vm_protect_tag {
@@ -742,9 +743,6 @@ typedef struct rb_thread_struct {
     int safe_level;
     int raised_flag;
     VALUE last_status; /* $? */
-
-    /* passing state */
-    enum ruby_tag_type tag_state;
 
     /* for rb_iterate */
     VALUE passed_block_handler;

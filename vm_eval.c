@@ -1136,7 +1136,7 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
 	    rb_vm_rewind_cfp(th, cfp);
 
 	    state = 0;
-	    th->tag_state = TAG_NONE;
+	    th->tag->state = TAG_NONE;
 	    th->errinfo = Qnil;
 
 	    if (state == TAG_RETRY) goto iter_retry;
