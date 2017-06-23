@@ -10,7 +10,7 @@ module Forwardable
 
   def self._valid_method?(method)
     catch {|tag|
-      eval("BEGIN{throw tag}; ().#{method}", binding, __FILE__, __LINE__)
+      eval("BEGIN{throw tag}; _=().#{method}", binding, __FILE__, __LINE__)
     }
   rescue SyntaxError
     false
