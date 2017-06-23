@@ -3297,6 +3297,22 @@ vm_case_dispatch(CDHASH hash, OFFSET else_offset, VALUE key)
     return 0;
 }
 
+NORETURN(static void
+	 vm_stack_consistency_error(rb_thread_t *,
+				    const rb_control_frame_t *,
+				    const VALUE *));
+static void
+vm_stack_consistency_error(rb_thread_t *th,
+			   const rb_control_frame_t *cfp,
+			   const VALUE *bp)
+{
+    const ptrdiff_t nsp = VM_SP_CNT(th, cfp->sp);
+    const ptrdiff_t nbp = VM_SP_CNT(th, bp);
+    static const char stack_consistency_error[] =
+	"Stack consistency error (sp: %"PRIdPTRDIFF", bp: %"PRIdPTRDIFF")";
+    rb_bug(stack_consistency_error, nsp, nbp);
+}
+
 enum binop_operands_type {
     bot_others = 0,
     bot_fixnum,
