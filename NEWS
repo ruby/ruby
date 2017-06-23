@@ -44,7 +44,6 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * IO#pread  [Feature #4532]
   * IO#pwrite  [Feature #4532]
-  * IO#reopen takes a block [Feature #2631]
 
 * IOError
 
