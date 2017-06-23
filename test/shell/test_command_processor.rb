@@ -68,7 +68,7 @@ class TestShell::CommandProcessor < Test::Unit::TestCase
   end
 
   def test_option_type
-    name = 'foo'
+    name = 'foo.cmd'
     path = File.join(@tmpdir, name)
 
     open(path, 'w', 0755) {}
