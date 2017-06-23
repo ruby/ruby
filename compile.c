@@ -3836,7 +3836,7 @@ add_ensure_iseq(LINK_ANCHOR *const ret, rb_iseq_t *iseq, int is_return)
 
     INIT_ANCHOR(ensure);
     while (enlp) {
-	if (enlp->erange != 0) {
+	if (enlp->erange != NULL) {
 	    DECL_ANCHOR(ensure_part);
 	    LABEL *lstart = NEW_LABEL(0);
 	    LABEL *lend = NEW_LABEL(0);
@@ -4305,7 +4305,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	LABEL *tmp_label = NULL;
 
 	ISEQ_COMPILE_DATA(iseq)->loopval_popped = 0;
-	push_ensure_entry(iseq, &enl, 0, 0);
+	push_ensure_entry(iseq, &enl, NULL, NULL);
 
 	if (type == NODE_OPT_N || node->nd_state == 1) {
 	    ADD_INSNL(ret, line, jump, next_label);
@@ -4762,7 +4762,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	ADD_LABEL(ret, lstart);
 	CHECK(COMPILE_(ret, "ensure head", node->nd_head, popped));
 	ADD_LABEL(ret, lend);
-	if (ensr->anchor.next == 0) {
+	if (ensr->anchor.next == NULL) {
 	    ADD_INSN(ret, line, nop);
 	}
 	else {
