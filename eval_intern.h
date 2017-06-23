@@ -160,14 +160,14 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 static inline int
 rb_threadptr_tag_state(rb_thread_t *th)
 {
-    int state = th->state;
+    enum ruby_tag_type state = th->state;
     th->state = 0;
     return state;
 }
 
-NORETURN(static inline void rb_threadptr_tag_jump(rb_thread_t *, int));
+NORETURN(static inline void rb_threadptr_tag_jump(rb_thread_t *, enum ruby_tag_type st));
 static inline void
-rb_threadptr_tag_jump(rb_thread_t *th, int st)
+rb_threadptr_tag_jump(rb_thread_t *th, enum ruby_tag_type st)
 {
     th->state = st;
     ruby_longjmp(th->tag->buf, 1);

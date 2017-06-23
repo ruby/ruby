@@ -113,13 +113,13 @@ exec_end_procs_chain(struct end_proc_data *volatile *procs, VALUE *errp)
 void
 rb_exec_end_proc(void)
 {
-    int status;
+    enum ruby_tag_type state;
     volatile int safe = rb_safe_level();
     rb_thread_t *th = GET_THREAD();
     volatile VALUE errinfo = th->errinfo;
 
     TH_PUSH_TAG(th);
-    if ((status = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
       again:
 	exec_end_procs_chain(&ephemeral_end_procs, &th->errinfo);
 	exec_end_procs_chain(&end_procs, &th->errinfo);
@@ -127,7 +127,7 @@ rb_exec_end_proc(void)
     else {
 	VAR_INITIALIZED(th);
 	TH_TMPPOP_TAG();
-	error_handle(status);
+	error_handle(state);
 	if (!NIL_P(th->errinfo)) errinfo = th->errinfo;
 	TH_REPUSH_TAG();
 	goto again;

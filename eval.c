@@ -45,7 +45,7 @@ static ID id_cause;
 int
 ruby_setup(void)
 {
-    int state;
+    enum ruby_tag_type state;
 
     if (GET_VM())
 	return 0;
@@ -56,7 +56,7 @@ ruby_setup(void)
     Init_vm_objects();
 
     PUSH_TAG();
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
 	rb_call_inits();
 	ruby_prog_init();
 	GET_VM()->running = 1;
@@ -94,12 +94,12 @@ ruby_init(void)
 void *
 ruby_options(int argc, char **argv)
 {
-    int state;
+    enum ruby_tag_type state;
     void *volatile iseq = 0;
 
     ruby_init_stack((void *)&iseq);
     PUSH_TAG();
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
 	SAVE_ROOT_JMPBUF(GET_THREAD(), iseq = ruby_process_options(argc, argv));
     }
     else {
@@ -115,7 +115,7 @@ static void
 ruby_finalize_0(void)
 {
     PUSH_TAG();
-    if (EXEC_TAG() == 0) {
+    if (EXEC_TAG() == TAG_NONE) {
 	rb_trap_exit();
     }
     POP_TAG();
@@ -168,7 +168,7 @@ ruby_cleanup(volatile int ex)
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
     TH_PUSH_TAG(th);
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
 	SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(th); });
 
       step_0: step++;
@@ -240,7 +240,7 @@ ruby_exec_internal(void *n)
     if (!n) return 0;
 
     TH_PUSH_TAG(th);
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
 	SAVE_ROOT_JMPBUF(th, {
 	    rb_iseq_eval_main(iseq);
 	});
@@ -492,10 +492,10 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 
     file = rb_source_loc(&line);
     if ((file && !NIL_P(mesg)) || (cause != Qundef))  {
-	int status;
+	enum ruby_tag_type state;
 
 	TH_PUSH_TAG(th);
-	if (EXEC_TAG() == 0 && !(status = rb_threadptr_set_raised(th))) {
+	if (EXEC_TAG() == TAG_NONE && !(state = rb_threadptr_set_raised(th))) {
 	    VALUE bt = rb_get_backtrace(mesg);
 	    if (!NIL_P(bt) || cause == Qundef) {
 		if (OBJ_FROZEN(mesg)) {
@@ -513,7 +513,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	    rb_threadptr_reset_raised(th);
 	}
 	TH_POP_TAG();
-	if (status) goto fatal;
+	if (state) goto fatal;
     }
 
     if (!NIL_P(mesg)) {
@@ -522,11 +522,11 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 
     if (RTEST(ruby_debug) && !NIL_P(e = th->errinfo) &&
 	!rb_obj_is_kind_of(e, rb_eSystemExit)) {
-	int status;
+	enum ruby_tag_type state;
 
 	mesg = e;
 	TH_PUSH_TAG(th);
-	if ((status = EXEC_TAG()) == 0) {
+	if ((state = EXEC_TAG()) == TAG_NONE) {
 	    th->errinfo = Qnil;
 	    e = rb_obj_as_string(mesg);
 	    th->errinfo = mesg;
@@ -545,12 +545,12 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	    warn_print_str(e);
 	}
 	TH_POP_TAG();
-	if (status == TAG_FATAL && th->errinfo == exception_error) {
+	if (state == TAG_FATAL && th->errinfo == exception_error) {
 	    th->errinfo = mesg;
 	}
-	else if (status) {
+	else if (state) {
 	    rb_threadptr_reset_raised(th);
-	    TH_JUMP_TAG(th, status);
+	    TH_JUMP_TAG(th, state);
 	}
     }
 
@@ -793,7 +793,7 @@ VALUE
 rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 	   VALUE (* r_proc) (ANYARGS), VALUE data2, ...)
 {
-    int state;
+    enum ruby_tag_type state;
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *volatile cfp = th->ec.cfp;
     volatile VALUE result = Qfalse;
@@ -801,7 +801,7 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
     va_list args;
 
     TH_PUSH_TAG(th);
-    if ((state = TH_EXEC_TAG()) == 0) {
+    if ((state = TH_EXEC_TAG()) == TAG_NONE) {
       retry_entry:
 	result = (*b_proc) (data1);
     }
@@ -856,10 +856,10 @@ rb_rescue(VALUE (* b_proc)(ANYARGS), VALUE data1,
 }
 
 VALUE
-rb_protect(VALUE (* proc) (VALUE), VALUE data, int * state)
+rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
 {
     volatile VALUE result = Qnil;
-    volatile int status;
+    volatile enum ruby_tag_type state;
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *volatile cfp = th->ec.cfp;
     struct rb_vm_protect_tag protect_tag;
@@ -870,7 +870,7 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int * state)
     TH_PUSH_TAG(th);
     th->protect_tag = &protect_tag;
     MEMCPY(&org_jmpbuf, &(th)->root_jmpbuf, rb_jmpbuf_t, 1);
-    if ((status = TH_EXEC_TAG()) == 0) {
+    if ((state = TH_EXEC_TAG()) == TAG_NONE) {
 	SAVE_ROOT_JMPBUF(th, result = (*proc) (data));
     }
     else {
@@ -880,10 +880,7 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int * state)
     th->protect_tag = protect_tag.prev;
     TH_POP_TAG();
 
-    if (state) {
-	*state = status;
-    }
-
+    if (pstate != NULL) *pstate = state;
     return result;
 }
 
@@ -901,7 +898,7 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
     ensure_list.next = th->ensure_list;
     th->ensure_list = &ensure_list;
     TH_PUSH_TAG(th);
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
 	result = (*b_proc) (data1);
     }
     TH_POP_TAG();

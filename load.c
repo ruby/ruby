@@ -579,7 +579,7 @@ const rb_iseq_t *rb_iseq_load_iseq(VALUE fname);
 static int
 rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 {
-    int state;
+    enum ruby_tag_type state;
     volatile VALUE wrapper = th->top_wrapper;
     volatile VALUE self = th->top_self;
 #if !defined __GNUC__
@@ -600,7 +600,7 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 
     TH_PUSH_TAG(th);
     state = EXEC_TAG();
-    if (state == 0) {
+    if (state == TAG_NONE) {
 	NODE *node;
 	const rb_iseq_t *iseq;
 
@@ -665,19 +665,19 @@ rb_load(VALUE fname, int wrap)
 }
 
 void
-rb_load_protect(VALUE fname, int wrap, int *state)
+rb_load_protect(VALUE fname, int wrap, int *pstate)
 {
-    int status;
+    enum ruby_tag_type state;
     volatile VALUE path = 0;
 
     PUSH_TAG();
-    if ((status = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
 	path = file_to_load(fname);
     }
     POP_TAG();
-    if (!status) status = rb_load_internal0(GET_THREAD(), path, wrap);
-    if (state)
-	*state = status;
+
+    if (state != TAG_NONE) state = rb_load_internal0(GET_THREAD(), path, wrap);
+    if (state != TAG_NONE) *pstate = state;
 }
 
 /*
@@ -961,7 +961,7 @@ rb_require_internal(VALUE fname, int safe)
     volatile int result = -1;
     rb_thread_t *th = GET_THREAD();
     volatile VALUE errinfo = th->errinfo;
-    int state;
+    enum ruby_tag_type state;
     struct {
 	int safe;
     } volatile saved;
@@ -974,7 +974,7 @@ rb_require_internal(VALUE fname, int safe)
 
     TH_PUSH_TAG(th);
     saved.safe = rb_safe_level();
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
 	long handle;
 	int found;
 

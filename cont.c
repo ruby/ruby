@@ -1261,10 +1261,10 @@ rb_fiber_start(void)
     rb_thread_t *th = GET_THREAD();
     rb_fiber_t *fib = th->fiber;
     rb_proc_t *proc;
-    int state;
+    enum ruby_tag_type state;
 
     TH_PUSH_TAG(th);
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
 	rb_context_t *cont = &VAR_FROM_MEMORY(fib)->cont;
 	int argc;
 	const VALUE *argv, args = cont->value;

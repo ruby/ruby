@@ -1174,7 +1174,7 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
 {
     rb_debug_inspector_t dbg_context;
     rb_thread_t *th = GET_THREAD();
-    int state;
+    enum ruby_tag_type state;
     volatile VALUE MAYBE_UNUSED(result);
 
     dbg_context.th = th;
@@ -1184,7 +1184,7 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
     dbg_context.contexts = collect_caller_bindings(th);
 
     TH_PUSH_TAG(th);
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
 	result = (*func)(&dbg_context, data);
     }
     TH_POP_TAG();

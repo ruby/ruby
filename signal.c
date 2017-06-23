@@ -991,7 +991,7 @@ signal_exec(VALUE cmd, int safe, int sig)
 {
     rb_thread_t *cur_th = GET_THREAD();
     volatile unsigned long old_interrupt_mask = cur_th->interrupt_mask;
-    int state;
+    enum ruby_tag_type state;
 
     /*
      * workaround the following race:
@@ -1004,7 +1004,7 @@ signal_exec(VALUE cmd, int safe, int sig)
 
     cur_th->interrupt_mask |= TRAP_INTERRUPT_MASK;
     TH_PUSH_TAG(cur_th);
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
 	VALUE signum = INT2NUM(sig);
 	rb_eval_cmd(cmd, rb_ary_new3(1, signum), safe);
     }

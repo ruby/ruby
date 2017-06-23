@@ -2049,10 +2049,10 @@ call_method_data_safe(rb_thread_t *th, const struct METHOD *data,
 		      int safe)
 {
     VALUE result = Qnil;	/* OK */
-    int state;
+    enum ruby_tag_type state;
 
     TH_PUSH_TAG(th);
-    if ((state = TH_EXEC_TAG()) == 0) {
+    if ((state = TH_EXEC_TAG()) == TAG_NONE) {
 	/* result is used only if state == 0, no exceptions is caught. */
 	/* otherwise it doesn't matter even if clobbered. */
 	NO_CLOBBERED(result) = call_method_data(th, data, argc, argv, passed_procval);

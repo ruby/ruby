@@ -490,7 +490,7 @@ rb_thread_terminate_all(void)
     rb_threadptr_unlock_all_locking_mutexes(th);
 
     TH_PUSH_TAG(th);
-    if (TH_EXEC_TAG() == 0) {
+    if (TH_EXEC_TAG() == TAG_NONE) {
       retry:
 	thread_debug("rb_thread_terminate_all (main thread: %p)\n", (void *)th);
 	terminate_all(vm, th);
@@ -597,7 +597,7 @@ thread_do_start(rb_thread_t *th, VALUE args)
 static int
 thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_start)
 {
-    int state;
+    enum ruby_tag_type state;
     VALUE args = th->first_args;
     rb_thread_list_t *join_list;
     rb_thread_t *main_th;
@@ -625,7 +625,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	rb_thread_set_current(th);
 
 	TH_PUSH_TAG(th);
-	if ((state = EXEC_TAG()) == 0) {
+	if ((state = EXEC_TAG()) == TAG_NONE) {
 	    SAVE_ROOT_JMPBUF(th, thread_do_start(th, args));
 	}
 	else {
@@ -1444,7 +1444,7 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
     rb_vm_t *vm = GET_VM();
     rb_thread_t *th = GET_THREAD();
     volatile int saved_errno = 0;
-    int state;
+    enum ruby_tag_type state;
     struct waiting_fd wfd;
 
     wfd.fd = fd;
@@ -1452,7 +1452,7 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
     list_add(&vm->waiting_fds, &wfd.wfd_node);
 
     TH_PUSH_TAG(th);
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
 	BLOCKING_REGION({
 	    val = func(data1);
 	    saved_errno = errno;
@@ -1865,7 +1865,7 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
     VALUE mask;
     rb_thread_t *th = GET_THREAD();
     volatile VALUE r = Qnil;
-    int state;
+    enum ruby_tag_type state;
 
     if (!rb_block_given_p()) {
 	rb_raise(rb_eArgError, "block is needed.");
@@ -1885,7 +1885,7 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
     }
 
     TH_PUSH_TAG(th);
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
 	r = rb_yield(Qnil);
     }
     TH_POP_TAG();
@@ -4689,7 +4689,7 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 	return (*func)(obj, arg, TRUE);
     }
     else {
-	int state;
+	enum ruby_tag_type state;
 
 	p.func = func;
 
@@ -4708,7 +4708,7 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 	    volatile VALUE ret = Qundef;
 	    recursive_push(p.list, p.objid, p.pairid);
 	    PUSH_TAG();
-	    if ((state = EXEC_TAG()) == 0) {
+	    if ((state = EXEC_TAG()) == TAG_NONE) {
 		ret = (*func)(obj, arg, FALSE);
 	    }
 	    POP_TAG();

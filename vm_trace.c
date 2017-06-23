@@ -284,7 +284,7 @@ exec_hooks_unprotected(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg
 static int
 exec_hooks_protected(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
 {
-    int state;
+    enum ruby_tag_type state;
     volatile int raised;
 
     if (exec_hooks_precheck(th, list, trace_arg) == 0) return 0;
@@ -294,7 +294,7 @@ exec_hooks_protected(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t
     /* TODO: Support !RUBY_EVENT_HOOK_FLAG_SAFE hooks */
 
     TH_PUSH_TAG(th);
-    if ((state = TH_EXEC_TAG()) == 0) {
+    if ((state = TH_EXEC_TAG()) == TAG_NONE) {
 	exec_hooks_body(th, list, trace_arg);
     }
     TH_POP_TAG();
@@ -329,12 +329,12 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 	if (th->trace_arg == 0 && /* check reentrant */
 	    trace_arg->self != rb_mRubyVMFrozenCore /* skip special methods. TODO: remove it. */) {
 	    const VALUE errinfo = th->errinfo;
-	    const int outer_state = th->state;
+	    const enum ruby_tag_type outer_state = th->state;
 	    const VALUE old_recursive = th->local_storage_recursive_hash;
 	    int state = 0;
 
 	    th->local_storage_recursive_hash = th->local_storage_recursive_hash_for_trace;
-	    th->state = 0;
+	    th->state = TAG_NONE;
 	    th->errinfo = Qnil;
 
 	    th->vm->trace_running++;
@@ -387,10 +387,10 @@ VALUE
 rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
 {
     volatile int raised;
-    volatile int outer_state;
+    volatile enum ruby_tag_type outer_state;
     VALUE result = Qnil;
     rb_thread_t *volatile th = GET_THREAD();
-    int state;
+    enum ruby_tag_type state;
     const int tracing = th->trace_arg ? 1 : 0;
     rb_trace_arg_t dummy_trace_arg;
     dummy_trace_arg.event = 0;
@@ -400,10 +400,10 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
 
     raised = rb_threadptr_reset_raised(th);
     outer_state = th->state;
-    th->state = 0;
+    th->state = TAG_NONE;
 
     TH_PUSH_TAG(th);
-    if ((state = TH_EXEC_TAG()) == 0) {
+    if ((state = TH_EXEC_TAG()) == TAG_NONE) {
 	result = (*func)(arg);
     }
     TH_POP_TAG();
@@ -1615,8 +1615,7 @@ rb_postponed_job_flush(rb_vm_t *vm)
     th->interrupt_mask |= block_mask;
     {
 	TH_PUSH_TAG(th);
-	EXEC_TAG();
-	{
+	if (EXEC_TAG() == TAG_NONE) {
 	    int index;
 	    while ((index = vm->postponed_job_index) > 0) {
 		if (ATOMIC_CAS(vm->postponed_job_index, index, index-1) == index) {

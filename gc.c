@@ -2777,7 +2777,7 @@ static void
 run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
 {
     long i;
-    int status;
+    enum ruby_tag_type state;
     volatile struct {
 	VALUE errinfo;
 	VALUE objid;
@@ -2795,14 +2795,15 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
     saved.finished = 0;
 
     TH_PUSH_TAG(th);
-    status = TH_EXEC_TAG();
-    if (status) {
-	++saved.finished;	/* skip failed finalizer */
+    if ((state = TH_EXEC_TAG()) == TAG_NONE) {
+	for (i = saved.finished;
+	     RESTORE_FINALIZER(), i<RARRAY_LEN(table);
+	     saved.finished = ++i) {
+	    run_single_final(RARRAY_AREF(table, i), saved.objid);
+	}
     }
-    for (i = saved.finished;
-	 RESTORE_FINALIZER(), i<RARRAY_LEN(table);
-	 saved.finished = ++i) {
-	run_single_final(RARRAY_AREF(table, i), saved.objid);
+    else {
+	++saved.finished;	/* skip failed finalizer */
     }
     TH_POP_TAG();
 #undef RESTORE_FINALIZER

@@ -1138,11 +1138,11 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
 	       int argc, const VALUE *argv, VALUE passed_block_handler)
 {
     VALUE val = Qundef;
-    int state;
+    enum ruby_tag_type state;
     volatile int stored_safe = th->safe_level;
 
     TH_PUSH_TAG(th);
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
 	th->safe_level = proc->safe_level;
 	val = invoke_block_from_c_proc(th, proc, self, argc, argv, passed_block_handler, proc->is_lambda);
     }
@@ -1777,19 +1777,19 @@ hook_before_rewind(rb_thread_t *th, const rb_control_frame_t *cfp, int will_fini
 static VALUE
 vm_exec(rb_thread_t *th)
 {
-    int state;
+    enum ruby_tag_type state;
     VALUE result;
     VALUE initial = 0;
     struct vm_throw_data *err;
 
     TH_PUSH_TAG(th);
     _tag.retval = Qnil;
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
       vm_loop_start:
 	result = vm_exec_core(th, initial);
-	if ((state = th->state) != 0) {
+	if ((state = th->state) != TAG_NONE) {
 	    err = (struct vm_throw_data *)result;
-	    th->state = 0;
+	    th->state = TAG_NONE;
 	    goto exception_handler;
 	}
     }
@@ -1939,7 +1939,7 @@ vm_exec(rb_thread_t *th)
 #endif
 			}
 			th->errinfo = Qnil;
-			th->state = 0;
+			th->state = TAG_NONE;
 			goto vm_loop_start;
 		    }
 		}
@@ -1989,7 +1989,7 @@ vm_exec(rb_thread_t *th)
 			  catch_iseq->body->stack_max);
 
 	    state = 0;
-	    th->state = 0;
+	    th->state = TAG_NONE;
 	    th->errinfo = Qnil;
 	    goto vm_loop_start;
 	}

@@ -1105,7 +1105,7 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
 	    const struct vm_ifunc *const ifunc,
 	    rb_thread_t *const th)
 {
-    int state;
+    enum ruby_tag_type state;
     volatile VALUE retval = Qnil;
     rb_control_frame_t *const cfp = th->ec.cfp;
 
@@ -1136,7 +1136,7 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
 	    rb_vm_rewind_cfp(th, cfp);
 
 	    state = 0;
-	    th->state = 0;
+	    th->state = TAG_NONE;
 	    th->errinfo = Qnil;
 
 	    if (state == TAG_RETRY) goto iter_retry;
@@ -1328,7 +1328,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
     }
 
     TH_PUSH_TAG(th);
-    if ((state = TH_EXEC_TAG()) == 0) {
+    if ((state = TH_EXEC_TAG()) == TAG_NONE) {
 	result = vm_exec(th);
     }
     TH_POP_TAG();
@@ -1445,9 +1445,9 @@ rb_eval_string(const char *str)
  * @return The evaluated result if succeeded, an undefined value if otherwise.
  */
 VALUE
-rb_eval_string_protect(const char *str, int *state)
+rb_eval_string_protect(const char *str, int *pstate)
 {
-    return rb_protect((VALUE (*)(VALUE))rb_eval_string, (VALUE)str, state);
+    return rb_protect((VALUE (*)(VALUE))rb_eval_string, (VALUE)str, pstate);
 }
 
 /**
@@ -1462,9 +1462,9 @@ rb_eval_string_protect(const char *str, int *state)
  * @return The evaluated result if succeeded, an undefined value if otherwise.
  */
 VALUE
-rb_eval_string_wrap(const char *str, int *state)
+rb_eval_string_wrap(const char *str, int *pstate)
 {
-    int status;
+    int state;
     rb_thread_t *th = GET_THREAD();
     VALUE self = th->top_self;
     VALUE wrapper = th->top_wrapper;
@@ -1474,16 +1474,16 @@ rb_eval_string_wrap(const char *str, int *state)
     th->top_self = rb_obj_clone(rb_vm_top_self());
     rb_extend_object(th->top_self, th->top_wrapper);
 
-    val = rb_eval_string_protect(str, &status);
+    val = rb_eval_string_protect(str, &state);
 
     th->top_self = self;
     th->top_wrapper = wrapper;
 
-    if (state) {
-	*state = status;
+    if (pstate) {
+	*pstate = state;
     }
-    else if (status) {
-	TH_JUMP_TAG(th, status);
+    else if (state != TAG_NONE) {
+	TH_JUMP_TAG(th, state);
     }
     return val;
 }
@@ -1491,7 +1491,7 @@ rb_eval_string_wrap(const char *str, int *state)
 VALUE
 rb_eval_cmd(VALUE cmd, VALUE arg, int level)
 {
-    int state;
+    enum ruby_tag_type state;
     volatile VALUE val = Qnil;		/* OK */
     const int VAR_NOCLOBBERED(safe) = rb_safe_level();
     rb_thread_t *const VAR_NOCLOBBERED(th) = GET_THREAD();
@@ -1502,7 +1502,7 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
 
     TH_PUSH_TAG(th);
     rb_set_safe_level_force(level);
-    if ((state = TH_EXEC_TAG()) == 0) {
+    if ((state = TH_EXEC_TAG()) == TAG_NONE) {
 	if (!RB_TYPE_P(cmd, T_STRING)) {
 	    val = rb_funcallv(cmd, idCall, RARRAY_LENINT(arg),
 			      RARRAY_CONST_PTR(arg));
@@ -1981,7 +1981,7 @@ static VALUE
 vm_catch_protect(VALUE tag, rb_block_call_func *func, VALUE data,
 		 int *stateptr, rb_thread_t *volatile th)
 {
-    int state;
+    enum ruby_tag_type state;
     VALUE val = Qnil;		/* OK */
     rb_control_frame_t *volatile saved_cfp = th->ec.cfp;
 
@@ -1989,7 +1989,7 @@ vm_catch_protect(VALUE tag, rb_block_call_func *func, VALUE data,
 
     _tag.tag = tag;
 
-    if ((state = TH_EXEC_TAG()) == 0) {
+    if ((state = TH_EXEC_TAG()) == TAG_NONE) {
 	/* call with argc=1, argv = [tag], block = Qnil to insure compatibility */
 	val = (*func)(tag, data, 1, (const VALUE *)&tag, Qnil);
     }

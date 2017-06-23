@@ -1112,10 +1112,10 @@ exc_equal(VALUE exc, VALUE obj)
     if (exc == obj) return Qtrue;
 
     if (rb_obj_class(exc) != rb_obj_class(obj)) {
-	int status = 0;
+	int state;
 
-	obj = rb_protect(try_convert_to_exception, obj, &status);
-	if (status || obj == Qundef) {
+	obj = rb_protect(try_convert_to_exception, obj, &state);
+	if (state || obj == Qundef) {
 	    rb_set_errinfo(Qnil);
 	    return Qfalse;
 	}
