@@ -512,6 +512,8 @@ class TestParse < Test::Unit::TestCase
     assert_raise(SyntaxError) { eval("?\v") }
     assert_raise(SyntaxError) { eval("?\r") }
     assert_raise(SyntaxError) { eval("?\f") }
+    assert_raise(SyntaxError) { eval("?\f") }
+    assert_raise(SyntaxError) { eval(" ?a\x8a".force_encoding("utf-8")) }
     assert_equal("\u{1234}", eval("?\u{1234}"))
     assert_equal("\u{1234}", eval('?\u{1234}'))
   end
