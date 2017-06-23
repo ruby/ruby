@@ -691,10 +691,15 @@ typedef RUBY_JMP_BUF rb_jmpbuf_t;
 struct rb_vm_tag {
     VALUE tag;
     VALUE retval;
+    rb_jmpbuf_t buf;
     struct rb_vm_tag *prev;
     enum ruby_tag_type state;
-    rb_jmpbuf_t buf;
 };
+
+STATIC_ASSERT(rb_vm_tag_buf_offset, offsetof(struct rb_vm_tag, buf) > 0);
+STATIC_ASSERT(rb_vm_tag_buf_end,
+	      offsetof(struct rb_vm_tag, buf) + sizeof(rb_jmpbuf_t) <
+	      sizeof(struct rb_vm_tag));
 
 struct rb_vm_protect_tag {
     struct rb_vm_protect_tag *prev;
