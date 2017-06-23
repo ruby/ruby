@@ -3644,11 +3644,12 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 
 	/* method dispatch */
       case NODE_CALL:
+      case NODE_OPCALL:
       case NODE_VCALL:
       case NODE_FCALL:
       case NODE_ATTRASGN:{
 	const int explicit_receiver =
-	    (type == NODE_CALL ||
+	    (type == NODE_CALL || type == NODE_OPCALL ||
 	     (type == NODE_ATTRASGN && !private_recv_p(node)));
 
 	if (!lfinish[1] && (node->nd_args || explicit_receiver)) {
@@ -5237,6 +5238,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	break;
       }
       case NODE_CALL:
+      case NODE_OPCALL:
 	/* optimization shortcut
 	 *   "literal".freeze -> opt_str_freeze("literal")
 	 */
@@ -5363,7 +5365,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	}
 #endif
 	/* receiver */
-	if (type == NODE_CALL || type == NODE_QCALL) {
+	if (type == NODE_CALL || type == NODE_OPCALL || type == NODE_QCALL) {
 	    CHECK(COMPILE(recv, "recv", node->nd_recv));
 	    if (type == NODE_QCALL) {
 		lskip = NEW_LABEL(line);

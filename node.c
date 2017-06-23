@@ -475,6 +475,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	break;
 
       case NODE_CALL:
+      case NODE_OPCALL:
 	ANN("method invocation");
 	ANN("format: [nd_recv].[nd_mid]([nd_args])");
 	ANN("example: obj.foo(1)");

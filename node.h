@@ -92,6 +92,8 @@ enum node_type {
 #define NODE_OP_CDECL    NODE_OP_CDECL
     NODE_CALL,
 #define NODE_CALL        NODE_CALL
+    NODE_OPCALL,
+#define NODE_OPCALL      NODE_OPCALL
     NODE_FCALL,
 #define NODE_FCALL       NODE_FCALL
     NODE_VCALL,
@@ -418,6 +420,7 @@ typedef struct RNode {
 #define NEW_DSYM(s) NEW_NODE(NODE_DSYM,s,0,0)
 #define NEW_EVSTR(n) NEW_NODE(NODE_EVSTR,0,(n),0)
 #define NEW_CALL(r,m,a) NEW_NODE(NODE_CALL,r,m,a)
+#define NEW_OPCALL(r,m,a) NEW_NODE(NODE_OPCALL,r,m,a)
 #define NEW_FCALL(m,a) NEW_NODE(NODE_FCALL,0,m,a)
 #define NEW_VCALL(m) NEW_NODE(NODE_VCALL,0,m,0)
 #define NEW_SUPER(a) NEW_NODE(NODE_SUPER,0,0,a)

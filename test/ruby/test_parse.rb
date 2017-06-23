@@ -761,6 +761,7 @@ x = __ENCODING__
     x = x = 1
     assert_nil eval("x; nil")
     assert_nil eval("1+1; nil")
+    assert_nil eval("1.+(1); nil")
     assert_nil eval("TestParse; nil")
     assert_nil eval("::TestParse; nil")
     assert_nil eval("x..x; nil")

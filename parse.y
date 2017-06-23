@@ -8837,14 +8837,14 @@ call_bin_op_gen(struct parser_params *parser, NODE *recv, ID id, NODE *arg1)
 {
     value_expr(recv);
     value_expr(arg1);
-    return NEW_CALL(recv, id, NEW_LIST(arg1));
+    return NEW_OPCALL(recv, id, NEW_LIST(arg1));
 }
 
 static NODE *
 call_uni_op_gen(struct parser_params *parser, NODE *recv, ID id)
 {
     value_expr(recv);
-    return NEW_CALL(recv, id, 0);
+    return NEW_OPCALL(recv, id, 0);
 }
 
 static NODE*
@@ -9523,7 +9523,7 @@ void_expr_gen(struct parser_params *parser, NODE *node)
 
     if (!node) return;
     switch (nd_type(node)) {
-      case NODE_CALL:
+      case NODE_OPCALL:
 	switch (node->nd_mid) {
 	  case '+':
 	  case '-':
