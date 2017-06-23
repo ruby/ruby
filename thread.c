@@ -4689,11 +4689,10 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 	return (*func)(obj, arg, TRUE);
     }
     else {
-	enum ruby_tag_type state;
-
 	p.func = func;
 
 	if (outermost) {
+	    int state;
 	    recursive_push(p.list, ID2SYM(recursive_key), 0);
 	    recursive_push(p.list, p.objid, p.pairid);
 	    result = rb_catch_protect(p.list, exec_recursive_i, (VALUE)&p, &state);
@@ -4705,6 +4704,7 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 	    }
 	}
 	else {
+	    enum ruby_tag_type state;
 	    volatile VALUE ret = Qundef;
 	    recursive_push(p.list, p.objid, p.pairid);
 	    PUSH_TAG();
