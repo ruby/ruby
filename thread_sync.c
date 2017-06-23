@@ -730,7 +730,7 @@ queue_do_push(VALUE self, struct rb_queue *q, VALUE obj)
  *
  * - +close+ will be ignored.
  *
- * - calling enq/push/<< will return nil.
+ * - calling enq/push/<< will raise an exception.
  *
  * - when +empty?+ is false, calling deq/pop/shift will return an object
  *   from the queue as usual.
