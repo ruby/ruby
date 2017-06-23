@@ -3,7 +3,7 @@ module Forwardable
   FILTER_EXCEPTION = ""
 
   def self._valid_method?(method)
-    iseq = RubyVM::InstructionSequence.compile("().#{method}", nil, nil, 0, false)
+    iseq = RubyVM::InstructionSequence.compile("_=().#{method}", nil, nil, 0, false)
   rescue SyntaxError
     false
   else
