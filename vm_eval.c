@@ -1958,28 +1958,9 @@ rb_catch(const char *tag, VALUE (*func)(), VALUE data)
     return rb_catch_obj(vtag, func, data);
 }
 
-static VALUE vm_catch_protect(VALUE, rb_block_call_func *, VALUE, int *, rb_thread_t *volatile);
-
-VALUE
-rb_catch_obj(VALUE t, VALUE (*func)(), VALUE data)
-{
-    int state;
-    rb_thread_t *th = GET_THREAD();
-    VALUE val = vm_catch_protect(t, (rb_block_call_func *)func, data, &state, th);
-    if (state)
-	TH_JUMP_TAG(th, state);
-    return val;
-}
-
-VALUE
-rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr)
-{
-    return vm_catch_protect(t, func, data, stateptr, GET_THREAD());
-}
-
 static VALUE
 vm_catch_protect(VALUE tag, rb_block_call_func *func, VALUE data,
-		 int *stateptr, rb_thread_t *volatile th)
+		 enum ruby_tag_type *stateptr, rb_thread_t *volatile th)
 {
     enum ruby_tag_type state;
     VALUE val = Qnil;		/* OK */
@@ -2003,6 +1984,22 @@ vm_catch_protect(VALUE tag, rb_block_call_func *func, VALUE data,
     if (stateptr)
 	*stateptr = state;
 
+    return val;
+}
+
+VALUE
+rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, enum ruby_tag_type *stateptr)
+{
+    return vm_catch_protect(t, func, data, stateptr, GET_THREAD());
+}
+
+VALUE
+rb_catch_obj(VALUE t, VALUE (*func)(), VALUE data)
+{
+    enum ruby_tag_type state;
+    rb_thread_t *th = GET_THREAD();
+    VALUE val = vm_catch_protect(t, (rb_block_call_func *)func, data, &state, th);
+    if (state) TH_JUMP_TAG(th, state);
     return val;
 }
 

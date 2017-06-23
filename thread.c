@@ -4689,22 +4689,22 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 	return (*func)(obj, arg, TRUE);
     }
     else {
+	enum ruby_tag_type state;
+
 	p.func = func;
 
 	if (outermost) {
-	    int state;
 	    recursive_push(p.list, ID2SYM(recursive_key), 0);
 	    recursive_push(p.list, p.objid, p.pairid);
 	    result = rb_catch_protect(p.list, exec_recursive_i, (VALUE)&p, &state);
 	    if (!recursive_pop(p.list, p.objid, p.pairid)) goto invalid;
 	    if (!recursive_pop(p.list, ID2SYM(recursive_key), 0)) goto invalid;
-	    if (state) JUMP_TAG(state);
+	    if (state != TAG_NONE) JUMP_TAG(state);
 	    if (result == p.list) {
 		result = (*func)(obj, arg, TRUE);
 	    }
 	}
 	else {
-	    enum ruby_tag_type state;
 	    volatile VALUE ret = Qundef;
 	    recursive_push(p.list, p.objid, p.pairid);
 	    PUSH_TAG();
@@ -4718,7 +4718,7 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 			 "for %+"PRIsVALUE" in %+"PRIsVALUE,
 			 sym, rb_thread_current());
 	    }
-	    if (state) JUMP_TAG(state);
+	    if (state != TAG_NONE) JUMP_TAG(state);
 	    result = ret;
 	}
     }

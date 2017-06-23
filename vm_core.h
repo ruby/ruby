@@ -1537,6 +1537,8 @@ const rb_callable_method_entry_t *rb_vm_frame_method_entry(const rb_control_fram
 #define CHECK_VM_STACK_OVERFLOW(cfp, margin) \
     WHEN_VM_STACK_OVERFLOWED(cfp, (cfp)->sp, margin) vm_stackoverflow()
 
+VALUE rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, enum ruby_tag_type *stateptr);
+
 /* for thread */
 
 #if RUBY_VM_THREAD_MODEL == 2
