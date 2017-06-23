@@ -156,12 +156,12 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 # define VAR_NOCLOBBERED(var) var
 #endif
 
-/* clear th->state, and return the value */
+/* clear th->tag_state, and return the value */
 static inline int
 rb_threadptr_tag_state(rb_thread_t *th)
 {
-    enum ruby_tag_type state = th->state;
-    th->state = 0;
+    enum ruby_tag_type state = th->tag_state;
+    th->tag_state = TAG_NONE;
     return state;
 }
 
@@ -169,7 +169,7 @@ NORETURN(static inline void rb_threadptr_tag_jump(rb_thread_t *, enum ruby_tag_t
 static inline void
 rb_threadptr_tag_jump(rb_thread_t *th, enum ruby_tag_type st)
 {
-    th->state = st;
+    th->tag_state = st;
     ruby_longjmp(th->tag->buf, 1);
 }
 

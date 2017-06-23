@@ -744,7 +744,7 @@ typedef struct rb_thread_struct {
     VALUE last_status; /* $? */
 
     /* passing state */
-    enum ruby_tag_type state;
+    enum ruby_tag_type tag_state;
 
     /* for rb_iterate */
     VALUE passed_block_handler;

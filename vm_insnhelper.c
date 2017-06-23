@@ -1029,17 +1029,16 @@ vm_throw_continue(rb_thread_t *th, VALUE err)
     /* continue throw */
 
     if (FIXNUM_P(err)) {
-	th->state = FIX2INT(err);
+	th->tag_state = FIX2INT(err);
     }
     else if (SYMBOL_P(err)) {
-	th->state = TAG_THROW;
+	th->tag_state = TAG_THROW;
     }
     else if (THROW_DATA_P(err)) {
-	th->state = THROW_DATA_STATE((struct vm_throw_data *)err);
+	th->tag_state = THROW_DATA_STATE((struct vm_throw_data *)err);
     }
     else {
-	th->state = TAG_RAISE;
-	/*th->state = FIX2INT(rb_ivar_get(err, idThrowState));*/
+	th->tag_state = TAG_RAISE;
     }
     return err;
 }
@@ -1178,7 +1177,7 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 	rb_bug("isns(throw): unsupport throw type");
     }
 
-    th->state = state;
+    th->tag_state = state;
     return (VALUE)THROW_DATA_NEW(throwobj, escape_cfp, state);
 }
 
