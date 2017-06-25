@@ -1571,6 +1571,112 @@ get_ivar_ic_value(rb_iseq_t *iseq,ID id)
      BADINSN_DUMP(anchor, list, NULL), \
      COMPILE_ERROR)
 
+static int
+fix_sp_depth(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
+{
+    int stack_max = 0, sp = 0, line = 0;
+    LINK_ELEMENT *list;
+
+    for (list = FIRST_ELEMENT(anchor); list; list = list->next) {
+	if (list->type == ISEQ_ELEMENT_LABEL) {
+	    LABEL *lobj = (LABEL *)list;
+	    lobj->set = TRUE;
+	}
+    }
+
+    for (list = FIRST_ELEMENT(anchor); list; list = list->next) {
+	switch (list->type) {
+	  case ISEQ_ELEMENT_INSN:
+	    {
+		int j, len, insn;
+		const char *types;
+		VALUE *operands;
+		INSN *iobj = (INSN *)list;
+
+		/* update sp */
+		sp = calc_sp_depth(sp, iobj);
+		if (sp < 0) {
+		    BADINSN_DUMP(anchor, list, NULL);
+		    COMPILE_ERROR(iseq, iobj->line_no,
+				  "argument stack underflow (%d)", sp);
+		    return -1;
+		}
+		if (sp > stack_max) {
+		    stack_max = sp;
+		}
+
+		line = iobj->line_no;
+		/* fprintf(stderr, "insn: %-16s, sp: %d\n", insn_name(iobj->insn_id), sp); */
+		operands = iobj->operands;
+		insn = iobj->insn_id;
+		types = insn_op_types(insn);
+		len = insn_len(insn);
+
+		/* operand check */
+		if (iobj->operand_size != len - 1) {
+		    /* printf("operand size miss! (%d, %d)\n", iobj->operand_size, len); */
+		    BADINSN_DUMP(anchor, list, NULL);
+		    COMPILE_ERROR(iseq, iobj->line_no,
+				  "operand size miss! (%d for %d)",
+				  iobj->operand_size, len - 1);
+		    return -1;
+		}
+
+		for (j = 0; types[j]; j++) {
+		    if (types[j] == TS_OFFSET) {
+			/* label(destination position) */
+			LABEL *lobj = (LABEL *)operands[j];
+			if (!lobj->set) {
+			    BADINSN_DUMP(anchor, list, NULL);
+			    COMPILE_ERROR(iseq, iobj->line_no,
+					  "unknown label: "LABEL_FORMAT, lobj->label_no);
+			    return -1;
+			}
+			if (lobj->sp == -1) {
+			    lobj->sp = sp;
+			}
+		    }
+		}
+		break;
+	    }
+	  case ISEQ_ELEMENT_LABEL:
+	    {
+		LABEL *lobj = (LABEL *)list;
+		if (lobj->sp == -1) {
+		    lobj->sp = sp;
+		}
+		else {
+		    sp = lobj->sp;
+		}
+		break;
+	    }
+	  case ISEQ_ELEMENT_NONE:
+	    {
+		/* ignore */
+		break;
+	    }
+	  case ISEQ_ELEMENT_ADJUST:
+	    {
+		ADJUST *adjust = (ADJUST *)list;
+		int orig_sp = sp;
+
+		sp = adjust->label ? adjust->label->sp : 0;
+		if (adjust->line_no != -1 && orig_sp - sp < 0) {
+		    compile_bug(iseq, adjust->line_no,
+				"iseq_set_sequence: adjust bug %d < %d",
+				orig_sp, sp);
+		}
+		break;
+	    }
+	  default:
+	    BADINSN_DUMP(anchor, list, NULL);
+	    COMPILE_ERROR(iseq, line, "unknown list type: %d", list->type);
+	    return -1;
+	}
+    }
+    return stack_max;
+}
+
 /**
   ruby insn object list -> raw instruction sequence
  */
@@ -1582,7 +1688,10 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     LINK_ELEMENT *list;
     VALUE *generated_iseq;
 
-    int insn_num, code_index, line_info_index, sp, stack_max = 0, line = 0;
+    int insn_num, code_index, line_info_index, sp = 0;
+    int stack_max = fix_sp_depth(iseq, anchor);
+
+    if (stack_max < 0) return COMPILE_NG;
 
     /* fix label position */
     list = FIRST_ELEMENT(anchor);
@@ -1592,7 +1701,6 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 	  case ISEQ_ELEMENT_INSN:
 	    {
 		INSN *iobj = (INSN *)list;
-		line = iobj->line_no;
 		code_index += insn_data_length(iobj);
 		insn_num++;
 		break;
@@ -1601,7 +1709,6 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 	    {
 		LABEL *lobj = (LABEL *)list;
 		lobj->position = code_index;
-		lobj->set = TRUE;
 		break;
 	    }
 	  case ISEQ_ELEMENT_NONE:
@@ -1618,10 +1725,6 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		}
 		break;
 	    }
-	  default:
-	    BADINSN_DUMP(anchor, list, NULL);
-	    COMPILE_ERROR(iseq, line, "unknown list type: %d", list->type);
-	    return COMPILE_NG;
 	}
 	list = list->next;
     }
@@ -1650,30 +1753,12 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
 		/* update sp */
 		sp = calc_sp_depth(sp, iobj);
-		if (sp < 0) {
-		    BADINSN_ERROR(iseq, iobj->line_no,
-				  "argument stack underflow (%d)", sp);
-		    return COMPILE_NG;
-		}
-		if (sp > stack_max) {
-		    stack_max = sp;
-		}
-
 		/* fprintf(stderr, "insn: %-16s, sp: %d\n", insn_name(iobj->insn_id), sp); */
 		operands = iobj->operands;
 		insn = iobj->insn_id;
 		generated_iseq[code_index] = insn;
 		types = insn_op_types(insn);
 		len = insn_len(insn);
-
-		/* operand check */
-		if (iobj->operand_size != len - 1) {
-		    /* printf("operand size miss! (%d, %d)\n", iobj->operand_size, len); */
-		    BADINSN_ERROR(iseq, iobj->line_no,
-				  "operand size miss! (%d for %d)",
-				  iobj->operand_size, len - 1);
-		    return COMPILE_NG;
-		}
 
 		for (j = 0; types[j]; j++) {
 		    char type = types[j];
@@ -1683,14 +1768,6 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			{
 			    /* label(destination position) */
 			    LABEL *lobj = (LABEL *)operands[j];
-			    if (!lobj->set) {
-				BADINSN_ERROR(iseq, iobj->line_no,
-					      "unknown label: "LABEL_FORMAT, lobj->label_no);
-				return COMPILE_NG;
-			    }
-			    if (lobj->sp == -1) {
-				lobj->sp = sp;
-			    }
 			    generated_iseq[code_index + 1 + j] = lobj->position - (code_index + len);
 			    break;
 			}
@@ -1793,12 +1870,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 	  case ISEQ_ELEMENT_LABEL:
 	    {
 		LABEL *lobj = (LABEL *)list;
-		if (lobj->sp == -1) {
-		    lobj->sp = sp;
-		}
-		else {
-		    sp = lobj->sp;
-		}
+		sp = lobj->sp;
 		break;
 	    }
 	  case ISEQ_ELEMENT_ADJUST:
