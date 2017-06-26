@@ -107,9 +107,9 @@ typedef struct rb_context_struct {
 } rb_context_t;
 
 enum fiber_status {
-    CREATED,
-    RUNNING,
-    TERMINATED
+    FIBER_CREATED,
+    FIBER_RUNNING,
+    FIBER_TERMINATED
 };
 
 #if FIBER_USE_NATIVE && !defined(_WIN32)
@@ -199,7 +199,7 @@ cont_mark(void *ptr)
 	    rb_thread_t *th;
 	    rb_fiber_t *fib = (rb_fiber_t*)cont;
 	    GetThreadPtr(cont->saved_thread.self, th);
-	    if ((th->fiber != fib) && fib->status == RUNNING) {
+	    if ((th->fiber != fib) && fib->status == FIBER_RUNNING) {
 		rb_gc_mark_locations(cont->machine.stack,
 				     cont->machine.stack + cont->machine.stack_size);
 	    }
@@ -687,7 +687,7 @@ fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib)
 {
     rb_thread_t *th = GET_THREAD(), *sth = &newfib->cont.saved_thread;
 
-    if (newfib->status != RUNNING) {
+    if (newfib->status != FIBER_RUNNING) {
 	fiber_initialize_machine_stack_context(newfib, th->vm->default_params.fiber_machine_stack_size);
     }
 
@@ -699,7 +699,7 @@ fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib)
     }
 
     /* save  oldfib's machine stack */
-    if (oldfib->status != TERMINATED) {
+    if (oldfib->status != FIBER_TERMINATED) {
 	STACK_GROW_DIR_DETECTION;
 	SET_MACHINE_STACK_END(&th->machine.stack_end);
 	if (STACK_DIR_UPPER(0, 1)) {
@@ -1176,7 +1176,7 @@ fiber_t_alloc(VALUE fibval)
     fib->cont.type = FIBER_CONTEXT;
     cont_init(&fib->cont, th);
     fib->prev = NULL;
-    fib->status = CREATED;
+    fib->status = FIBER_CREATED;
 
     DATA_PTR(fibval) = fib;
 
@@ -1272,7 +1272,7 @@ rb_fiber_start(void)
 	th->errinfo = Qnil;
 	th->root_lep = rb_vm_proc_local_ep(cont->saved_thread.first_proc);
 	th->root_svar = Qfalse;
-	fib->status = RUNNING;
+	fib->status = FIBER_RUNNING;
 
 	EXEC_EVENT_HOOK(th, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
 	cont->value = rb_vm_invoke_proc(th, proc, argc, argv, VM_BLOCK_HANDLER_NONE);
@@ -1307,7 +1307,7 @@ root_fiber_alloc(rb_thread_t *th)
     fib->fib_handle = ConvertThreadToFiber(0);
 #endif
 #endif
-    fib->status = RUNNING;
+    fib->status = FIBER_RUNNING;
 
     return fib;
 }
@@ -1431,10 +1431,10 @@ fiber_switch(rb_fiber_t *fib, int argc, const VALUE *argv, int is_resume)
     else if (cont->saved_thread.protect_tag != th->protect_tag) {
 	rb_raise(rb_eFiberError, "fiber called across stack rewinding barrier");
     }
-    else if (fib->status == TERMINATED) {
+    else if (fib->status == FIBER_TERMINATED) {
 	value = rb_exc_new2(rb_eFiberError, "dead fiber called");
 
-	if (th->fiber->status != TERMINATED) rb_exc_raise(value);
+	if (th->fiber->status != FIBER_TERMINATED) rb_exc_raise(value);
 
 	/* th->fiber is also dead => switch to root fiber */
 	/* (this means we're being called from rb_fiber_terminate, */
@@ -1481,7 +1481,7 @@ static void
 rb_fiber_terminate(rb_fiber_t *fib)
 {
     VALUE value = fib->cont.value;
-    fib->status = TERMINATED;
+    fib->status = FIBER_TERMINATED;
 #if FIBER_USE_NATIVE && !defined(_WIN32)
     /* Ruby must not switch to other thread until storing terminated_machine_stack */
     terminated_machine_stack.ptr = fib->ss_sp;
@@ -1541,7 +1541,7 @@ rb_fiber_alive_p(VALUE fibval)
 {
     rb_fiber_t *fib;
     GetFiberPtr(fibval, fib);
-    return fib->status != TERMINATED ? Qtrue : Qfalse;
+    return fib->status != FIBER_TERMINATED ? Qtrue : Qfalse;
 }
 
 /*
