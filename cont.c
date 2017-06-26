@@ -545,22 +545,24 @@ cont_restore_thread(rb_context_t *cont)
 #else
 	MEMCPY(th->ec.stack, cont->vm_stack, VALUE, sth->ec.stack_size);
 #endif
+
+	/* other members of ec */
+	th->ec.cfp = sth->ec.cfp;
     }
     else {
 	/* fiber */
-	th->ec.stack = sth->ec.stack;
+	th->ec = sth->ec;
 	sth->ec.stack = NULL;
-	th->ec.stack_size = sth->ec.stack_size;
+
 	th->local_storage = sth->local_storage;
 	th->local_storage_recursive_hash = sth->local_storage_recursive_hash;
 	th->local_storage_recursive_hash_for_trace = sth->local_storage_recursive_hash_for_trace;
+
 	th->fiber = (rb_fiber_t*)cont;
     }
 
-    th->ec.cfp = sth->ec.cfp;
     th->safe_level = sth->safe_level;
     th->raised_flag = sth->raised_flag;
-    VM_ASSERT(sth->status == THREAD_RUNNABLE);
     th->tag = sth->tag;
     th->protect_tag = sth->protect_tag;
     th->errinfo = sth->errinfo;
@@ -568,6 +570,8 @@ cont_restore_thread(rb_context_t *cont)
     th->root_lep = sth->root_lep;
     th->root_svar = sth->root_svar;
     th->ensure_list = sth->ensure_list;
+
+    VM_ASSERT(sth->status == THREAD_RUNNABLE);
 }
 
 #if FIBER_USE_NATIVE
