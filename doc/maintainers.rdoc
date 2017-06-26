@@ -219,7 +219,7 @@ Zachary Scott (zzak)
 [lib/scanf.rb]
   David A. Black (dblack)
 [lib/webrick.rb, lib/webrick/*]
-  Hiroshi Nakamura (nahi)
+  _unmaintained_
 
 === Extensions
 
