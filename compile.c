@@ -4887,7 +4887,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	ID id = node->nd_vid;
 	int idx = iseq->body->local_iseq->body->local_table_size - get_local_var_idx(iseq, id);
 
-	debugs("lvar: %"PRIsVALUE" idx: %d\n", rb_id2str(id), idx);
+	debugs("lvar: %s idx: %d\n", rb_id2name(id), idx);
 	CHECK(COMPILE(ret, "rvalue", node->nd_value));
 
 	if (!popped) {
@@ -5730,7 +5730,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	    ID id = node->nd_vid;
 	    int idx = iseq->body->local_iseq->body->local_table_size - get_local_var_idx(iseq, id);
 
-	    debugs("id: %"PRIsVALUE" idx: %d\n", rb_id2str(id), idx);
+	    debugs("id: %s idx: %d\n", rb_id2name(id), idx);
 	    ADD_GETLOCAL(ret, line, idx, get_lvar_level(iseq));
 	}
 	break;
