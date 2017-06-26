@@ -8842,9 +8842,12 @@ new_evstr_gen(struct parser_params *parser, NODE *node)
 static NODE *
 call_bin_op_gen(struct parser_params *parser, NODE *recv, ID id, NODE *arg1)
 {
+    NODE *expr;
     value_expr(recv);
     value_expr(arg1);
-    return NEW_OPCALL(recv, id, NEW_LIST(arg1));
+    expr = NEW_OPCALL(recv, id, NEW_LIST(arg1));
+    fixpos(expr, recv);
+    return expr;
 }
 
 static NODE *
