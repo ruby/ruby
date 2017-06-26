@@ -413,7 +413,7 @@ cont_save_thread(rb_context_t *cont, rb_thread_t *th)
     sth->local_storage = th->local_storage;
     sth->safe_level = th->safe_level;
     sth->raised_flag = th->raised_flag;
-    sth->status = th->status;
+    VM_ASSERT(th->status == THREAD_RUNNABLE);
     sth->tag = th->tag;
     sth->protect_tag = th->protect_tag;
     sth->errinfo = th->errinfo;
@@ -560,7 +560,7 @@ cont_restore_thread(rb_context_t *cont)
     th->ec.cfp = sth->ec.cfp;
     th->safe_level = sth->safe_level;
     th->raised_flag = sth->raised_flag;
-    th->status = sth->status;
+    VM_ASSERT(sth->status == THREAD_RUNNABLE);
     th->tag = sth->tag;
     th->protect_tag = sth->protect_tag;
     th->errinfo = sth->errinfo;
