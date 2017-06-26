@@ -133,16 +133,16 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
   struct rb_vm_tag _tag; \
   _tag.state = TAG_NONE; \
   _tag.tag = Qundef; \
-  _tag.prev = _th->tag;
+  _tag.prev = _th->ec.tag;
 
 #define TH_POP_TAG() \
-  _th->tag = _tag.prev; \
+  _th->ec.tag = _tag.prev; \
 } while (0)
 
 #define TH_TMPPOP_TAG() \
-  _th->tag = _tag.prev
+  _th->ec.tag = _tag.prev
 
-#define TH_REPUSH_TAG() (void)(_th->tag = &_tag)
+#define TH_REPUSH_TAG() (void)(_th->ec.tag = &_tag)
 
 #define PUSH_TAG() TH_PUSH_TAG(GET_THREAD())
 #define POP_TAG()      TH_POP_TAG()
@@ -157,12 +157,12 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 # define VAR_NOCLOBBERED(var) var
 #endif
 
-/* clear th->tag->state, and return the value */
+/* clear th->ec.tag->state, and return the value */
 static inline int
 rb_threadptr_tag_state(rb_thread_t *th)
 {
-    enum ruby_tag_type state = th->tag->state;
-    th->tag->state = TAG_NONE;
+    enum ruby_tag_type state = th->ec.tag->state;
+    th->ec.tag->state = TAG_NONE;
     return state;
 }
 
@@ -170,8 +170,8 @@ NORETURN(static inline void rb_threadptr_tag_jump(rb_thread_t *, enum ruby_tag_t
 static inline void
 rb_threadptr_tag_jump(rb_thread_t *th, enum ruby_tag_type st)
 {
-    th->tag->state = st;
-    ruby_longjmp(th->tag->buf, 1);
+    th->ec.tag->state = st;
+    ruby_longjmp(th->ec.tag->buf, 1);
 }
 
 /*
@@ -265,10 +265,10 @@ enum {
 };
 int rb_threadptr_set_raised(rb_thread_t *th);
 int rb_threadptr_reset_raised(rb_thread_t *th);
-#define rb_thread_raised_set(th, f)   ((th)->raised_flag |= (f))
-#define rb_thread_raised_reset(th, f) ((th)->raised_flag &= ~(f))
-#define rb_thread_raised_p(th, f)     (((th)->raised_flag & (f)) != 0)
-#define rb_thread_raised_clear(th)    ((th)->raised_flag = 0)
+#define rb_thread_raised_set(th, f)   ((th)->ec.raised_flag |= (f))
+#define rb_thread_raised_reset(th, f) ((th)->ec.raised_flag &= ~(f))
+#define rb_thread_raised_p(th, f)     (((th)->ec.raised_flag & (f)) != 0)
+#define rb_thread_raised_clear(th)    ((th)->ec.raised_flag = 0)
 int rb_threadptr_stack_check(rb_thread_t *th);
 
 VALUE rb_f_eval(int argc, const VALUE *argv, VALUE self);

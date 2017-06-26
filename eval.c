@@ -173,7 +173,7 @@ ruby_cleanup(volatile int ex)
 
       step_0: step++;
 	errs[1] = th->errinfo;
-	th->safe_level = 0;
+	th->ec.safe_level = 0;
 	ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
 
 	SAVE_ROOT_JMPBUF(th, ruby_finalize_0());
@@ -865,10 +865,10 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
     struct rb_vm_protect_tag protect_tag;
     rb_jmpbuf_t org_jmpbuf;
 
-    protect_tag.prev = th->protect_tag;
+    protect_tag.prev = th->ec.protect_tag;
 
     TH_PUSH_TAG(th);
-    th->protect_tag = &protect_tag;
+    th->ec.protect_tag = &protect_tag;
     MEMCPY(&org_jmpbuf, &(th)->root_jmpbuf, rb_jmpbuf_t, 1);
     if ((state = TH_EXEC_TAG()) == TAG_NONE) {
 	SAVE_ROOT_JMPBUF(th, result = (*proc) (data));
@@ -877,7 +877,7 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
 	rb_vm_rewind_cfp(th, cfp);
     }
     MEMCPY(&(th)->root_jmpbuf, &org_jmpbuf, rb_jmpbuf_t, 1);
-    th->protect_tag = protect_tag.prev;
+    th->ec.protect_tag = protect_tag.prev;
     TH_POP_TAG();
 
     if (pstate != NULL) *pstate = state;

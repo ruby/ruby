@@ -358,7 +358,7 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 	    if (state) {
 		if (pop_p) {
 		    if (VM_FRAME_FINISHED_P(th->ec.cfp)) {
-			th->tag = th->tag->prev;
+			th->ec.tag = th->ec.tag->prev;
 		    }
 		    rb_vm_pop_frame(th);
 		}

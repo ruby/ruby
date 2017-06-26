@@ -3772,7 +3772,7 @@ rb_f_exit_bang(int argc, VALUE *argv, VALUE obj)
 void
 rb_exit(int status)
 {
-    if (GET_THREAD()->tag) {
+    if (GET_THREAD()->ec.tag) {
 	VALUE args[2];
 
 	args[0] = INT2NUM(status);

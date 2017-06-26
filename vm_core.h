@@ -737,6 +737,12 @@ typedef struct rb_thread_context_struct {
     VALUE *stack;		/* must free, must mark */
     size_t stack_size;          /* size in word (byte size / sizeof(VALUE)) */
     rb_control_frame_t *cfp;
+
+    struct rb_vm_tag *tag;
+    struct rb_vm_protect_tag *protect_tag;
+
+    int safe_level;
+    int raised_flag;
 } rb_execution_context_t;
 
 typedef struct rb_thread_struct {
@@ -745,8 +751,7 @@ typedef struct rb_thread_struct {
     rb_vm_t *vm;
 
     rb_execution_context_t ec;
-    int safe_level;
-    int raised_flag;
+
     VALUE last_status; /* $? */
 
     /* for rb_iterate */
@@ -800,9 +805,6 @@ typedef struct rb_thread_struct {
     struct rb_unblock_callback unblock;
     VALUE locking_mutex;
     struct rb_mutex_struct *keeping_mutexes;
-
-    struct rb_vm_tag *tag;
-    struct rb_vm_protect_tag *protect_tag;
 
     /* storage */
     st_table *local_storage;

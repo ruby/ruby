@@ -164,7 +164,7 @@ static VALUE rb_eFiberError;
 NOINLINE(static VALUE cont_capture(volatile int *volatile stat));
 
 #define THREAD_MUST_BE_RUNNING(th) do { \
-	if (!(th)->tag) rb_raise(rb_eThreadError, "not running thread");	\
+	if (!(th)->ec.tag) rb_raise(rb_eThreadError, "not running thread");	\
     } while (0)
 
 static void
@@ -410,12 +410,9 @@ cont_save_thread(rb_context_t *cont, rb_thread_t *th)
 
     /* save thread context */
     sth->ec = th->ec;
+
     sth->local_storage = th->local_storage;
-    sth->safe_level = th->safe_level;
-    sth->raised_flag = th->raised_flag;
     VM_ASSERT(th->status == THREAD_RUNNABLE);
-    sth->tag = th->tag;
-    sth->protect_tag = th->protect_tag;
     sth->errinfo = th->errinfo;
     sth->first_proc = th->first_proc;
     sth->root_lep = th->root_lep;
@@ -548,6 +545,10 @@ cont_restore_thread(rb_context_t *cont)
 
 	/* other members of ec */
 	th->ec.cfp = sth->ec.cfp;
+	th->ec.safe_level = sth->ec.safe_level;
+	th->ec.raised_flag = sth->ec.raised_flag;
+	th->ec.tag = sth->ec.tag;
+	th->ec.protect_tag = sth->ec.protect_tag;
     }
     else {
 	/* fiber */
@@ -561,10 +562,6 @@ cont_restore_thread(rb_context_t *cont)
 	th->fiber = (rb_fiber_t*)cont;
     }
 
-    th->safe_level = sth->safe_level;
-    th->raised_flag = sth->raised_flag;
-    th->tag = sth->tag;
-    th->protect_tag = sth->protect_tag;
     th->errinfo = sth->errinfo;
     th->first_proc = sth->first_proc;
     th->root_lep = sth->root_lep;
@@ -1066,7 +1063,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
     if (cont->saved_thread.self != th->self) {
 	rb_raise(rb_eRuntimeError, "continuation called across threads");
     }
-    if (cont->saved_thread.protect_tag != th->protect_tag) {
+    if (cont->saved_thread.ec.protect_tag != th->ec.protect_tag) {
 	rb_raise(rb_eRuntimeError, "continuation called across stack rewinding barrier");
     }
     if (cont->saved_thread.fiber) {
@@ -1228,7 +1225,7 @@ fiber_init(VALUE fibval, VALUE proc)
 		     0, /* local_size */
 		     0);
 
-    th->tag = 0;
+    th->ec.tag = 0;
     th->local_storage = st_init_numtable();
     th->local_storage_recursive_hash = Qnil;
     th->local_storage_recursive_hash_for_trace = Qnil;
@@ -1432,7 +1429,7 @@ fiber_switch(rb_fiber_t *fib, int argc, const VALUE *argv, int is_resume)
     if (cont->saved_thread.self != th->self) {
 	rb_raise(rb_eFiberError, "fiber called across threads");
     }
-    else if (cont->saved_thread.protect_tag != th->protect_tag) {
+    else if (cont->saved_thread.ec.protect_tag != th->ec.protect_tag) {
 	rb_raise(rb_eFiberError, "fiber called across stack rewinding barrier");
     }
     else if (fib->status == FIBER_TERMINATED) {

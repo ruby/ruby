@@ -2038,7 +2038,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
     rb_atomic_t interrupt;
     int postponed_job_interrupt = 0;
 
-    if (th->raised_flag) return;
+    if (th->ec.raised_flag) return;
 
     while ((interrupt = threadptr_get_interrupts(th)) != 0) {
 	int sig;
@@ -2181,20 +2181,20 @@ rb_threadptr_signal_exit(rb_thread_t *th)
 int
 rb_threadptr_set_raised(rb_thread_t *th)
 {
-    if (th->raised_flag & RAISED_EXCEPTION) {
+    if (th->ec.raised_flag & RAISED_EXCEPTION) {
 	return 1;
     }
-    th->raised_flag |= RAISED_EXCEPTION;
+    th->ec.raised_flag |= RAISED_EXCEPTION;
     return 0;
 }
 
 int
 rb_threadptr_reset_raised(rb_thread_t *th)
 {
-    if (!(th->raised_flag & RAISED_EXCEPTION)) {
+    if (!(th->ec.raised_flag & RAISED_EXCEPTION)) {
 	return 0;
     }
-    th->raised_flag &= ~RAISED_EXCEPTION;
+    th->ec.raised_flag &= ~RAISED_EXCEPTION;
     return 1;
 }
 
@@ -2935,7 +2935,7 @@ rb_thread_safe_level(VALUE thread)
     rb_thread_t *th;
     GetThreadPtr(thread, th);
 
-    return INT2NUM(th->safe_level);
+    return INT2NUM(th->ec.safe_level);
 }
 
 /*

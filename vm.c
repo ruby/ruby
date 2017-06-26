@@ -882,7 +882,7 @@ rb_vm_make_proc_lambda(rb_thread_t *th, const struct rb_captured_block *captured
 
     procval = rb_proc_create_from_captured(klass, captured,
 					   imemo_type(captured->code.val) == imemo_iseq ? block_type_iseq : block_type_ifunc,
-					   (int8_t)th->safe_level, FALSE, is_lambda);
+					   (int8_t)th->ec.safe_level, FALSE, is_lambda);
     return procval;
 }
 
@@ -1139,16 +1139,16 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
 {
     VALUE val = Qundef;
     enum ruby_tag_type state;
-    volatile int stored_safe = th->safe_level;
+    volatile int stored_safe = th->ec.safe_level;
 
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == TAG_NONE) {
-	th->safe_level = proc->safe_level;
+	th->ec.safe_level = proc->safe_level;
 	val = invoke_block_from_c_proc(th, proc, self, argc, argv, passed_block_handler, proc->is_lambda);
     }
     TH_POP_TAG();
 
-    th->safe_level = stored_safe;
+    th->ec.safe_level = stored_safe;
 
     if (state) {
 	TH_JUMP_TAG(th, state);
@@ -1418,7 +1418,7 @@ rb_vm_make_jump_tag_but_local_jump(int state, VALUE val)
     VALUE result = Qnil;
 
     if (val == Qundef) {
-	val = GET_THREAD()->tag->retval;
+	val = GET_THREAD()->ec.tag->retval;
     }
     switch (state) {
       case 0:
@@ -1786,7 +1786,7 @@ vm_exec(rb_thread_t *th)
     if ((state = EXEC_TAG()) == TAG_NONE) {
       vm_loop_start:
 	result = vm_exec_core(th, initial);
-	VM_ASSERT(th->tag == &_tag);
+	VM_ASSERT(th->ec.tag == &_tag);
 	if ((state = _tag.state) != TAG_NONE) {
 	    err = (struct vm_throw_data *)result;
 	    _tag.state = TAG_NONE;
@@ -1939,7 +1939,7 @@ vm_exec(rb_thread_t *th)
 #endif
 			}
 			th->errinfo = Qnil;
-			VM_ASSERT(th->tag->state == TAG_NONE);
+			VM_ASSERT(th->ec.tag->state == TAG_NONE);
 			goto vm_loop_start;
 		    }
 		}
@@ -1989,7 +1989,7 @@ vm_exec(rb_thread_t *th)
 			  catch_iseq->body->stack_max);
 
 	    state = 0;
-	    th->tag->state = TAG_NONE;
+	    th->ec.tag->state = TAG_NONE;
 	    th->errinfo = Qnil;
 	    goto vm_loop_start;
 	}

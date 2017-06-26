@@ -1136,7 +1136,7 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
 	    rb_vm_rewind_cfp(th, cfp);
 
 	    state = 0;
-	    th->tag->state = TAG_NONE;
+	    th->ec.tag->state = TAG_NONE;
 	    th->errinfo = Qnil;
 
 	    if (state == TAG_RETRY) goto iter_retry;
@@ -1853,7 +1853,7 @@ void
 rb_throw_obj(VALUE tag, VALUE value)
 {
     rb_thread_t *th = GET_THREAD();
-    struct rb_vm_tag *tt = th->tag;
+    struct rb_vm_tag *tt = th->ec.tag;
 
     while (tt) {
 	if (tt->tag == tag) {
@@ -1976,7 +1976,7 @@ vm_catch_protect(VALUE tag, rb_block_call_func *func, VALUE data,
     }
     else if (state == TAG_THROW && THROW_DATA_VAL((struct vm_throw_data *)th->errinfo) == tag) {
 	rb_vm_rewind_cfp(th, saved_cfp);
-	val = th->tag->retval;
+	val = th->ec.tag->retval;
 	th->errinfo = Qnil;
 	state = 0;
     }

@@ -167,7 +167,7 @@ void
 rb_threadptr_error_print(rb_thread_t *volatile th, volatile VALUE errinfo)
 {
     volatile VALUE errat = Qundef;
-    volatile int raised_flag = th->raised_flag;
+    volatile int raised_flag = th->ec.raised_flag;
     volatile VALUE eclass = Qundef, emesg = Qundef;
 
     if (NIL_P(errinfo))

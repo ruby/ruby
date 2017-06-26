@@ -35,7 +35,7 @@ static void
 threadptr_stack_overflow(rb_thread_t *th, int setup)
 {
     VALUE mesg = th->vm->special_exceptions[ruby_error_sysstack];
-    th->raised_flag = 0;
+    th->ec.raised_flag = 0;
     if (setup) {
 	VALUE at = rb_threadptr_backtrace_object(th);
 	mesg = ruby_vm_special_exception_copy(mesg);
@@ -1029,16 +1029,16 @@ vm_throw_continue(rb_thread_t *th, VALUE err)
     /* continue throw */
 
     if (FIXNUM_P(err)) {
-	th->tag->state = FIX2INT(err);
+	th->ec.tag->state = FIX2INT(err);
     }
     else if (SYMBOL_P(err)) {
-	th->tag->state = TAG_THROW;
+	th->ec.tag->state = TAG_THROW;
     }
     else if (THROW_DATA_P(err)) {
-	th->tag->state = THROW_DATA_STATE((struct vm_throw_data *)err);
+	th->ec.tag->state = THROW_DATA_STATE((struct vm_throw_data *)err);
     }
     else {
-	th->tag->state = TAG_RAISE;
+	th->ec.tag->state = TAG_RAISE;
     }
     return err;
 }
@@ -1177,7 +1177,7 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 	rb_bug("isns(throw): unsupport throw type");
     }
 
-    th->tag->state = state;
+    th->ec.tag->state = state;
     return (VALUE)THROW_DATA_NEW(throwobj, escape_cfp, state);
 }
 

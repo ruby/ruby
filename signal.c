@@ -845,11 +845,11 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
     if (sp_page == fault_page || sp_page == fault_page + 1 ||
 	sp_page <= fault_page && fault_page <= bp_page) {
 	rb_thread_t *th = ruby_current_thread;
-	if ((uintptr_t)th->tag->buf / pagesize <= fault_page + 1) {
+	if ((uintptr_t)th->ec.tag->buf / pagesize <= fault_page + 1) {
 	    /* drop the last tag if it is close to the fault,
 	     * otherwise it can cause stack overflow again at the same
 	     * place. */
-	    th->tag = th->tag->prev;
+	    th->ec.tag = th->ec.tag->prev;
 	}
 	raise_stack_overflow(sig, th);
     }
