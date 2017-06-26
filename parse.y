@@ -183,6 +183,7 @@ struct parser_params {
 	const char *pbeg;
 	const char *pcur;
 	const char *pend;
+	const char *ptok;
 	long gets_ptr;
 	enum lex_state_e state;
 	int paren_nest;
@@ -242,7 +243,6 @@ struct parser_params {
 #else
     /* Ripper only */
 
-    const char *tokp;
     VALUE delayed;
     int delayed_line;
     int delayed_col;
@@ -267,6 +267,7 @@ struct parser_params {
 
 static int parser_yyerror(struct parser_params*, const char*);
 #define yyerror(msg) parser_yyerror(parser, (msg))
+#define token_flush(p) ((p)->lex.ptok = (p)->lex.pcur)
 
 #define lex_strterm		(parser->lex.strterm)
 #define lex_state		(parser->lex.state)
@@ -312,6 +313,7 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define ruby_debug_lines	(parser->debug_lines)
 #define ruby_coverage		(parser->coverage)
 #endif
+#define tokp			lex.ptok
 
 #define CALL_Q_P(q) ((q) == TOKEN2VAL(tANDDOT))
 #define NODE_CALL_Q(q) (CALL_Q_P(q) ? NODE_QCALL : NODE_CALL)
@@ -4814,8 +4816,8 @@ trailer		: /* none */
 		| ','
 		;
 
-term		: ';' {yyerrok;}
-		| '\n'
+term		: ';' {yyerrok;token_flush(parser);}
+		| '\n' {token_flush(parser);}
 		;
 
 terms		: term
@@ -4884,12 +4886,10 @@ ripper_yylval_id(ID x)
 #endif
 
 #ifndef RIPPER
-#define ripper_flush(p) (void)(p)
 #define dispatch_scan_event(t) ((void)0)
 #define dispatch_delayed_token(t) ((void)0)
 #define has_delayed_token() (0)
 #else
-#define ripper_flush(p) ((p)->tokp = (p)->lex.pcur)
 
 #define yylval_rval (*(RB_TYPE_P(yylval.val, T_NODE) ? &yylval.node->nd_rval : &yylval.val))
 
@@ -4913,7 +4913,7 @@ ripper_scan_event_val(struct parser_params *parser, int t)
 {
     VALUE str = STR_NEW(parser->tokp, lex_p - parser->tokp);
     VALUE rval = ripper_dispatch1(parser, ripper_token2eventid(t), str);
-    ripper_flush(parser);
+    token_flush(parser);
     return rval;
 }
 
@@ -5041,7 +5041,7 @@ parser_yyerror(struct parser_params *parser, const char *msg)
     long len;
     int i;
 
-    p = lex_p;
+    p = parser->tokp;
     lim = p - lex_pbeg > max_line_margin ? p - max_line_margin : lex_pbeg;
     while (lim < p) {
 	if (*(p-1) == '\n') break;
@@ -5074,10 +5074,15 @@ parser_yyerror(struct parser_params *parser, const char *msg)
 	buf = ALLOCA_N(char, i+2);
 	code = p;
 	caret = p2 = buf;
+	i = (int)(parser->tokp - p);
 	while (i-- > 0) {
 	    *p2++ = *p++ == '\t' ? '\t' : ' ';
 	}
 	*p2++ = '^';
+	if (lex_p > parser->tokp + 1) {
+	    memset(p2, '~', (lex_p - parser->tokp) - 1);
+	    p2 += (lex_p - parser->tokp) - 1;
+	}
 	*p2 = '\0';
 	newline = "\n";
     }
@@ -5534,7 +5539,7 @@ parser_nextline(struct parser_params *parser)
     parser->line_count++;
     lex_pbeg = lex_p = RSTRING_PTR(v);
     lex_pend = lex_p + RSTRING_LEN(v);
-    ripper_flush(parser);
+    token_flush(parser);
     lex_lastline = v;
     return 0;
 }
@@ -6132,7 +6137,7 @@ parser_tokadd_string(struct parser_params *parser,
 
 #ifdef RIPPER
 static void
-ripper_flush_string_content(struct parser_params *parser, rb_encoding *enc)
+token_flush_string_content(struct parser_params *parser, rb_encoding *enc)
 {
     VALUE content = yylval.val;
     if (!ripper_is_node_yylval(content))
@@ -6152,7 +6157,7 @@ ripper_flush_string_content(struct parser_params *parser, rb_encoding *enc)
     yylval.val = content;
 }
 
-#define flush_string_content(enc) ripper_flush_string_content(parser, (enc))
+#define flush_string_content(enc) token_flush_string_content(parser, (enc))
 #else
 #define flush_string_content(enc) ((void)(enc))
 #endif
@@ -6354,7 +6359,7 @@ parser_heredoc_identifier(struct parser_params *parser)
 				  len,				/* nd_nth */
 				  lex_lastline);		/* nd_orig */
     parser_set_line(lex_strterm, ruby_sourceline);
-    ripper_flush(parser);
+    token_flush(parser);
     heredoc_indent = indent;
     heredoc_line_indent = 0;
     return token;
@@ -6375,7 +6380,7 @@ parser_heredoc_restore(struct parser_params *parser, NODE *here)
     ruby_sourceline = nd_line(here);
     dispose_string(here->nd_lit);
     rb_gc_force_recycle((VALUE)here);
-    ripper_flush(parser);
+    token_flush(parser);
 }
 
 static int
@@ -6558,7 +6563,7 @@ ripper_dispatch_heredoc_end(struct parser_params *parser)
     str = STR_NEW(parser->tokp, lex_pend - parser->tokp);
     ripper_dispatch1(parser, ripper_token2eventid(tHEREDOC_END), str);
     lex_goto_eol(parser);
-    ripper_flush(parser);
+    token_flush(parser);
 }
 
 #define dispatch_heredoc_end() ripper_dispatch_heredoc_end(parser)
@@ -7930,6 +7935,8 @@ parser_yylex(struct parser_params *parser)
       outofloop:
 	pushback(c);
 	dispatch_scan_event(tSP);
+#else
+	token_flush(parser);
 #endif
 	goto retry;
 
@@ -8536,7 +8543,7 @@ parser_yylex(struct parser_params *parser)
 static int
 yylex(YYSTYPE *lval, struct parser_params *parser)
 {
-    int t;
+    enum yytokentype t;
 
     parser->lval = lval;
     lval->val = Qundef;
