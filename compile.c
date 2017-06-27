@@ -4824,8 +4824,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	CHECK(COMPILE_POPPED(ensr, "ensure ensr", node->nd_ensr));
 	last = ensr->last;
 	last_leave = last && IS_INSN(last) && IS_INSN_ID(last, leave);
-	if (!popped && last_leave)
-	    popped = 1;
 
 	er.begin = lstart;
 	er.end = lend;
@@ -4833,13 +4831,16 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	push_ensure_entry(iseq, &enl, &er, node->nd_ensr);
 
 	ADD_LABEL(ret, lstart);
-	CHECK(COMPILE_(ret, "ensure head", node->nd_head, popped));
+	CHECK(COMPILE_(ret, "ensure head", node->nd_head, (popped | last_leave)));
 	ADD_LABEL(ret, lend);
 	if (ensr->anchor.next == NULL) {
 	    ADD_INSN(ret, line, nop);
 	}
 	else {
 	    ADD_SEQ(ret, ensr);
+	    if (!popped && last_leave) {
+		ADD_INSN(ret, line, putnil);
+	    }
 	}
 	ADD_LABEL(ret, lcont);
 	if (last_leave) ADD_INSN(ret, line, pop);
