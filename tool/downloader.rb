@@ -129,6 +129,9 @@ class Downloader
     else
       name = File.basename(url.path)
     end
+    cache_save = options.delete(:cache_save) {
+      ENV["CACHE_SAVE"] != "no"
+    }
     cache = cache_file(url, name, options.delete(:cache_dir))
     file ||= cache
     if since.nil? and file.exist?
@@ -136,7 +139,9 @@ class Downloader
         $stdout.puts "#{file} already exists"
         $stdout.flush
       end
-      save_cache(cache, file, name)
+      if cache_save
+        save_cache(cache, file, name)
+      end
       return file.to_path
     end
     if dryrun
@@ -197,7 +202,7 @@ class Downloader
     end
     if dest.eql?(cache)
       link_cache(cache, file, name)
-    else
+    elsif cache_save
       save_cache(cache, file, name)
     end
     return file.to_path
@@ -282,6 +287,11 @@ if $0 == __FILE__
       since = false
     when '-n', '--dryrun'
       options[:dryrun] = true
+    when '--cache-dir'
+      options[:cache_dir] = ARGV[1]
+      ARGV.shift
+    when /\A--cache-dir=(.*)/m
+      options[:cache_dir] = $1
     when /\A-/
       abort "#{$0}: unknown option #{ARGV[0]}"
     else

@@ -208,8 +208,13 @@ def package(vcs, rev, destdir, tmp = nil)
         FileUtils.mkpath(File.dirname(dest))
         begin
           FileUtils.ln(file, dest, force: true)
+          next unless File.symlink?(dest)
+          File.unlink(dest)
         rescue SystemCallError
-          FileUtils.cp(file, dest, preserve: true)
+        end
+        begin
+          FileUtils.cp_r(file, dest, preserve: true)
+        rescue SystemCallError
         end
       end
     end
@@ -334,11 +339,10 @@ def package(vcs, rev, destdir, tmp = nil)
       mk << <<-'APPEND'
 
 prereq: clean-cache $(CLEAN_CACHE)
-clean-cache $(CLEAN_CACHE): after-update
+clean-cache $(CLEAN_CACHE): extract-gems
 touch-unicode-files:
 update-download:: touch-unicode-files
 update-download:: update-gems
-after-update:: extract-gems
 extract-gems: update-gems
 update-gems:
       APPEND
@@ -346,6 +350,7 @@ update-gems:
         f.puts "prereq: update-download"
         f.puts mk
       end
+      ENV["CACHE_SAVE"] = "no"
       system(ENV["MAKE"] || ENV["make"] || "make", "prereq", *args.map {|arg| arg.join("=")})
       clean.push("rbconfig.rb", ".rbconfig.time", "enc.mk")
       print "prerequisites"
