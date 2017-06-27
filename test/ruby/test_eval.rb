@@ -525,4 +525,14 @@ class TestEval < Test::Unit::TestCase
       b.eval('yield')
     }, '[Bug #10368]'
   end
+
+  def test_return_in_eval_proc
+    x = proc {eval("return :ng")}
+    assert_raise(LocalJumpError) {x.call}
+  end
+
+  def test_return_in_eval_lambda
+    x = lambda {eval("return :ok")}
+    assert_equal(:ok, x.call)
+  end
 end
