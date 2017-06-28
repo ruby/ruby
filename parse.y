@@ -321,7 +321,7 @@ static int parser_yyerror(struct parser_params*, const char*);
 
 #define lambda_beginning_p() (lpar_beg && lpar_beg == paren_nest)
 
-static int yylex(YYSTYPE*, struct parser_params*);
+static enum yytokentype yylex(YYSTYPE*, struct parser_params*);
 
 static inline void
 parser_set_line(NODE *n, int l)
@@ -4838,8 +4838,8 @@ none		: /* none */
 static int parser_regx_options(struct parser_params*);
 static int parser_tokadd_string(struct parser_params*,int,int,int,long*,rb_encoding**);
 static void parser_tokaddmbc(struct parser_params *parser, int c, rb_encoding *enc);
-static int parser_parse_string(struct parser_params*,NODE*);
-static int parser_here_document(struct parser_params*,NODE*);
+static enum yytokentype parser_parse_string(struct parser_params*,NODE*);
+static enum yytokentype parser_here_document(struct parser_params*,NODE*);
 
 
 # define nextc()                      parser_nextc(parser)
@@ -6183,7 +6183,7 @@ const unsigned int ruby_global_name_punct_bits[] = {
 #undef SPECIAL_PUNCT
 #endif
 
-static int
+static enum yytokentype
 parser_peek_variable_name(struct parser_params *parser)
 {
     int c;
@@ -6219,7 +6219,7 @@ parser_peek_variable_name(struct parser_params *parser)
     return 0;
 }
 
-static inline int
+static inline enum yytokentype
 parser_string_term(struct parser_params *parser, int func)
 {
     if (!(func & STR_FUNC_REGEXP)) return tSTRING_END;
@@ -6228,7 +6228,7 @@ parser_string_term(struct parser_params *parser, int func)
     return tREGEXP_END;
 }
 
-static int
+static enum yytokentype
 parser_parse_string(struct parser_params *parser, NODE *quote)
 {
     int func = (int)quote->nd_func;
@@ -6282,11 +6282,11 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
     return tSTRING_CONTENT;
 }
 
-static int
+static enum yytokentype
 parser_heredoc_identifier(struct parser_params *parser)
 {
     int c = nextc(), term, func = 0;
-    int token = tSTRING_BEG;
+    enum yytokentype token = tSTRING_BEG;
     long len;
     int newline = 0;
     int indent = 0;
@@ -6530,8 +6530,9 @@ parser_number_literal_suffix(struct parser_params *parser, int mask)
     return result;
 }
 
-static int
-parser_set_number_literal(struct parser_params *parser, VALUE v, int type, int suffix)
+static enum yytokentype
+parser_set_number_literal(struct parser_params *parser, VALUE v,
+			  enum yytokentype type, int suffix)
 {
     if (suffix & NUM_SUFFIX_I) {
 	v = rb_complex_raw(INT2FIX(0), v);
@@ -6545,7 +6546,7 @@ parser_set_number_literal(struct parser_params *parser, VALUE v, int type, int s
 static int
 parser_set_integer_literal(struct parser_params *parser, VALUE v, int suffix)
 {
-    int type = tINTEGER;
+    enum yytokentype type = tINTEGER;
     if (suffix & NUM_SUFFIX_R) {
 	v = rb_rational_raw1(v);
 	type = tRATIONAL;
@@ -6571,7 +6572,7 @@ ripper_dispatch_heredoc_end(struct parser_params *parser)
 #define dispatch_heredoc_end() ((void)0)
 #endif
 
-static int
+static enum yytokentype
 parser_here_document(struct parser_params *parser, NODE *here)
 {
     int c, func, indent = 0;
@@ -7133,7 +7134,7 @@ parser_prepare(struct parser_params *parser)
     (!IS_lex_state_for(last_state, EXPR_CLASS|EXPR_DOT|EXPR_FNAME|EXPR_ENDFN) && \
      space_seen && !ISSPACE(c) && \
      (ambiguous_operator(tok, op, syn), 0)), \
-    (tok))
+     (enum yytokentype)(tok))
 
 static VALUE
 parse_rational(struct parser_params *parser, char *str, int len, int seen_point)
@@ -7381,7 +7382,7 @@ parse_numeric(struct parser_params *parser, int c)
     return set_integer_literal(rb_cstr_to_inum(tok(), 10, FALSE), suffix);
 }
 
-static int
+static enum yytokentype
 parse_qmark(struct parser_params *parser, int space_seen)
 {
     rb_encoding *enc;
@@ -7472,7 +7473,7 @@ parse_qmark(struct parser_params *parser, int space_seen)
     return tCHAR;
 }
 
-static int
+static enum yytokentype
 parse_percent(struct parser_params *parser, const int space_seen, const enum lex_state_e last_state)
 {
     register int c;
@@ -7611,7 +7612,7 @@ parse_numvar(struct parser_params *parser)
     }
 }
 
-static int
+static enum yytokentype
 parse_gvar(struct parser_params *parser, const enum lex_state_e last_state)
 {
     register int c;
@@ -7713,10 +7714,10 @@ parse_gvar(struct parser_params *parser, const enum lex_state_e last_state)
     return tGVAR;
 }
 
-static int
+static enum yytokentype
 parse_atmark(struct parser_params *parser, const enum lex_state_e last_state)
 {
-    int result = tIVAR;
+    enum yytokentype result = tIVAR;
     register int c = nextc();
 
     newtok();
@@ -7752,10 +7753,10 @@ parse_atmark(struct parser_params *parser, const enum lex_state_e last_state)
     return result;
 }
 
-static int
+static enum yytokentype
 parse_ident(struct parser_params *parser, int c, int cmd_state)
 {
-    int result = 0;
+    enum yytokentype result = 0;
     int mb = ENC_CODERANGE_7BIT;
     const enum lex_state_e last_state = lex_state;
     ID ident;
@@ -7867,7 +7868,7 @@ parse_ident(struct parser_params *parser, int c, int cmd_state)
     return result;
 }
 
-static int
+static enum yytokentype
 parser_yylex(struct parser_params *parser)
 {
     register int c;
@@ -7879,7 +7880,7 @@ parser_yylex(struct parser_params *parser)
     int token_seen = parser->token_seen;
 
     if (lex_strterm) {
-	int token;
+	enum yytokentype token;
 	if (nd_type(lex_strterm) == NODE_HEREDOC) {
 	    token = here_document(lex_strterm);
 	    if (token == tSTRING_END) {
@@ -8540,7 +8541,7 @@ parser_yylex(struct parser_params *parser)
     return parse_ident(parser, c, cmd_state);
 }
 
-static int
+static enum yytokentype
 yylex(YYSTYPE *lval, struct parser_params *parser)
 {
     enum yytokentype t;
