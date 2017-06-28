@@ -414,9 +414,6 @@ cont_save_thread(rb_context_t *cont, rb_thread_t *th)
     VM_ASSERT(th->status == THREAD_RUNNABLE);
     sth->errinfo = th->errinfo;
     sth->first_proc = th->first_proc;
-    sth->root_lep = th->root_lep;
-    sth->root_svar = th->root_svar;
-    sth->ensure_list = th->ensure_list;
 
     sth->trace_arg = th->trace_arg;
 
@@ -490,10 +487,10 @@ cont_capture(volatile int *volatile stat)
 	rb_ensure_list_t *p;
 	int size = 0;
 	rb_ensure_entry_t *entry;
-	for (p=th->ensure_list; p; p=p->next)
+	for (p=th->ec.ensure_list; p; p=p->next)
 	    size++;
 	entry = cont->ensure_array = ALLOC_N(rb_ensure_entry_t,size+1);
-	for (p=th->ensure_list; p; p=p->next) {
+	for (p=th->ec.ensure_list; p; p=p->next) {
 	    if (!p->entry.marker)
 		p->entry.marker = rb_ary_tmp_new(0); /* dummy object */
 	    *entry++ = p->entry;
@@ -548,6 +545,9 @@ cont_restore_thread(rb_context_t *cont)
 	th->ec.raised_flag = sth->ec.raised_flag;
 	th->ec.tag = sth->ec.tag;
 	th->ec.protect_tag = sth->ec.protect_tag;
+	th->ec.root_lep = sth->ec.root_lep;
+	th->ec.root_svar = sth->ec.root_svar;
+	th->ec.ensure_list = sth->ec.ensure_list;
     }
     else {
 	/* fiber */
@@ -558,9 +558,6 @@ cont_restore_thread(rb_context_t *cont)
 
     th->errinfo = sth->errinfo;
     th->first_proc = sth->first_proc;
-    th->root_lep = sth->root_lep;
-    th->root_svar = sth->root_svar;
-    th->ensure_list = sth->ensure_list;
 
     VM_ASSERT(sth->status == THREAD_RUNNABLE);
 }
@@ -1065,7 +1062,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
 	    rb_raise(rb_eRuntimeError, "continuation called across fiber");
 	}
     }
-    rollback_ensure_stack(contval, th->ensure_list, cont->ensure_array);
+    rollback_ensure_stack(contval, th->ec.ensure_list, cont->ensure_array);
 
     cont->argc = argc;
     cont->value = make_passing_arg(argc, argv);
@@ -1265,8 +1262,8 @@ rb_fiber_start(void)
 	argv = (argc = cont->argc) > 1 ? RARRAY_CONST_PTR(args) : &args;
 	cont->value = Qnil;
 	th->errinfo = Qnil;
-	th->root_lep = rb_vm_proc_local_ep(cont->saved_thread.first_proc);
-	th->root_svar = Qfalse;
+	th->ec.root_lep = rb_vm_proc_local_ep(cont->saved_thread.first_proc);
+	th->ec.root_svar = Qfalse;
 	fib->status = FIBER_RUNNING;
 
 	EXEC_EVENT_HOOK(th, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);

@@ -581,8 +581,8 @@ thread_do_start(rb_thread_t *th, VALUE args)
 	rb_proc_t *proc;
 	GetProcPtr(th->first_proc, proc);
 	th->errinfo = Qnil;
-	th->root_lep = rb_vm_proc_local_ep(th->first_proc);
-	th->root_svar = Qfalse;
+	th->ec.root_lep = rb_vm_proc_local_ep(th->first_proc);
+	th->ec.root_svar = Qfalse;
 	EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
 	th->value = rb_vm_invoke_proc(th, proc,
 				      (int)RARRAY_LEN(args), RARRAY_CONST_PTR(args),

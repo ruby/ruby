@@ -369,11 +369,11 @@ lep_svar(rb_thread_t *th, const VALUE *lep)
 {
     VALUE svar;
 
-    if (lep && (th == NULL || th->root_lep != lep)) {
+    if (lep && (th == NULL || th->ec.root_lep != lep)) {
 	svar = lep[VM_ENV_DATA_INDEX_ME_CREF];
     }
     else {
-	svar = th->root_svar;
+	svar = th->ec.root_svar;
     }
 
     VM_ASSERT(svar == Qfalse || vm_svar_valid_p(svar));
@@ -386,11 +386,11 @@ lep_svar_write(rb_thread_t *th, const VALUE *lep, const struct vm_svar *svar)
 {
     VM_ASSERT(vm_svar_valid_p((VALUE)svar));
 
-    if (lep && (th == NULL || th->root_lep != lep)) {
+    if (lep && (th == NULL || th->ec.root_lep != lep)) {
 	vm_env_write(lep, VM_ENV_DATA_INDEX_ME_CREF, (VALUE)svar);
     }
     else {
-	RB_OBJ_WRITE(th->self, &th->root_svar, svar);
+	RB_OBJ_WRITE(th->self, &th->ec.root_svar, svar);
     }
 }
 

@@ -895,8 +895,8 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
     ensure_list.entry.marker = 0;
     ensure_list.entry.e_proc = e_proc;
     ensure_list.entry.data2 = data2;
-    ensure_list.next = th->ensure_list;
-    th->ensure_list = &ensure_list;
+    ensure_list.next = th->ec.ensure_list;
+    th->ec.ensure_list = &ensure_list;
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == TAG_NONE) {
 	result = (*b_proc) (data1);
@@ -906,7 +906,7 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
     if (!NIL_P(errinfo) && !RB_TYPE_P(errinfo, T_OBJECT)) {
 	th->errinfo = Qnil;
     }
-    th->ensure_list=ensure_list.next;
+    th->ec.ensure_list=ensure_list.next;
     (*ensure_list.entry.e_proc)(ensure_list.entry.data2);
     th->errinfo = errinfo;
     if (state)

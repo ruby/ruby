@@ -751,6 +751,13 @@ typedef struct rb_thread_context_struct {
     st_table *local_storage;
     VALUE local_storage_recursive_hash;
     VALUE local_storage_recursive_hash_for_trace;
+
+    /* eval env */
+    const VALUE *root_lep;
+    VALUE root_svar;
+
+    /* ensure & callcc */
+    rb_ensure_list_t *ensure_list;
 } rb_execution_context_t;
 
 typedef struct rb_thread_struct {
@@ -774,10 +781,6 @@ typedef struct rb_thread_struct {
     /* for load(true) */
     VALUE top_self;
     VALUE top_wrapper;
-
-    /* eval env */
-    const VALUE *root_lep;
-    VALUE root_svar;
 
     /* thread control */
     rb_nativethread_id_t thread_id;
@@ -844,9 +847,6 @@ typedef struct rb_thread_struct {
     rb_fiber_t *fiber;
     rb_fiber_t *root_fiber;
     rb_jmpbuf_t root_jmpbuf;
-
-    /* ensure & callcc */
-    rb_ensure_list_t *ensure_list;
 
     /* misc */
     enum method_missing_reason method_missing_reason: 8;

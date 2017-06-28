@@ -2407,7 +2407,7 @@ rb_thread_mark(void *ptr)
     RUBY_MARK_UNLESS_NULL(th->errinfo);
     RUBY_MARK_UNLESS_NULL(th->pending_interrupt_queue);
     RUBY_MARK_UNLESS_NULL(th->pending_interrupt_mask_stack);
-    RUBY_MARK_UNLESS_NULL(th->root_svar);
+    RUBY_MARK_UNLESS_NULL(th->ec.root_svar);
     RUBY_MARK_UNLESS_NULL(th->top_self);
     RUBY_MARK_UNLESS_NULL(th->top_wrapper);
     rb_fiber_mark_self(th->fiber);
@@ -2539,7 +2539,7 @@ th_init(rb_thread_t *th, VALUE self)
     th->status = THREAD_RUNNABLE;
     th->errinfo = Qnil;
     th->last_status = Qnil;
-    th->root_svar = Qfalse;
+    th->ec.root_svar = Qfalse;
     th->ec.local_storage_recursive_hash = Qnil;
     th->ec.local_storage_recursive_hash_for_trace = Qnil;
 #ifdef NON_SCALAR_THREAD_ID
@@ -2564,7 +2564,7 @@ ruby_thread_init(VALUE self)
 
     th->top_wrapper = 0;
     th->top_self = rb_vm_top_self();
-    th->root_svar = Qfalse;
+    th->ec.root_svar = Qfalse;
     return self;
 }
 
