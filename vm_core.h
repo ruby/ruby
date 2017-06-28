@@ -672,8 +672,12 @@ typedef struct rb_control_frame_struct {
 
 extern const rb_data_type_t ruby_threadptr_data_type;
 
-#define GetThreadPtr(obj, ptr) \
-    TypedData_Get_Struct((obj), rb_thread_t, &ruby_threadptr_data_type, (ptr))
+static inline struct rb_thread_struct *
+rb_thread_ptr(VALUE thval)
+{
+    VM_ASSERT(rb_check_typeddata(obj, &ruby_threadptr_data_type) != NULL);
+    return (struct rb_thread_struct *)DATA_PTR(thval);
+}
 
 enum rb_thread_status {
     THREAD_RUNNABLE,

@@ -889,13 +889,12 @@ threadptr_backtrace_to_ary(rb_thread_t *th, int argc, const VALUE *argv, int lev
 static VALUE
 thread_backtrace_to_ary(int argc, const VALUE *argv, VALUE thval, int to_str)
 {
-    rb_thread_t *th;
-    GetThreadPtr(thval, th);
+    rb_thread_t *target_th = rb_thread_ptr(thval);
 
-    if (th->to_kill || th->status == THREAD_KILLED)
-	return Qnil;
+    if (target_th->to_kill || target_th->status == THREAD_KILLED)
+      return Qnil;
 
-    return threadptr_backtrace_to_ary(th, argc, argv, 0, 0, to_str);
+    return threadptr_backtrace_to_ary(target_th, argc, argv, 0, 0, to_str);
 }
 
 VALUE

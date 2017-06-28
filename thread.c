@@ -712,14 +712,13 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 static VALUE
 thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
 {
-    rb_thread_t *th, *current_th = GET_THREAD();
+    rb_thread_t *th = rb_thread_ptr(thval), *current_th = GET_THREAD();
     int err;
 
     if (OBJ_FROZEN(current_th->thgroup)) {
 	rb_raise(rb_eThreadError,
 		 "can't start a new thread (frozen ThreadGroup)");
     }
-    GetThreadPtr(thval, th);
 
     /* setup thread environment */
     th->first_func = fn;
@@ -781,7 +780,7 @@ thread_s_new(int argc, VALUE *argv, VALUE klass)
 	rb_raise(rb_eThreadError, "can't alloc thread");
 
     rb_obj_call_init(thread, argc, argv);
-    GetThreadPtr(thread, th);
+    th = rb_thread_ptr(thread);
     if (!threadptr_initialized(th)) {
 	rb_raise(rb_eThreadError, "uninitialized thread - check `%"PRIsVALUE"#initialize'",
 		 klass);
@@ -809,21 +808,23 @@ thread_start(VALUE klass, VALUE args)
 static VALUE
 thread_initialize(VALUE thread, VALUE args)
 {
-    rb_thread_t *th;
+    rb_thread_t *th = rb_thread_ptr(thread);
+
     if (!rb_block_given_p()) {
 	rb_raise(rb_eThreadError, "must be called with a block");
     }
-    GetThreadPtr(thread, th);
-    if (th->first_args) {
+    else if (th->first_args) {
 	VALUE proc = th->first_proc, loc;
-        if (!proc || !RTEST(loc = rb_proc_location(proc))) {
-            rb_raise(rb_eThreadError, "already initialized thread");
-        }
-        rb_raise(rb_eThreadError,
+	if (!proc || !RTEST(loc = rb_proc_location(proc))) {
+	    rb_raise(rb_eThreadError, "already initialized thread");
+	}
+	rb_raise(rb_eThreadError,
 		 "already initialized thread - %"PRIsVALUE":%"PRIsVALUE,
-                 RARRAY_AREF(loc, 0), RARRAY_AREF(loc, 1));
+		 RARRAY_AREF(loc, 0), RARRAY_AREF(loc, 1));
     }
-    return thread_create_core(thread, args, 0);
+    else {
+	return thread_create_core(thread, args, 0);
+    }
 }
 
 VALUE
@@ -987,18 +988,15 @@ thread_join(rb_thread_t *target_th, double delay)
 static VALUE
 thread_join_m(int argc, VALUE *argv, VALUE self)
 {
-    rb_thread_t *target_th;
     double delay = DELAY_INFTY;
     VALUE limit;
-
-    GetThreadPtr(self, target_th);
 
     rb_scan_args(argc, argv, "01", &limit);
     if (!NIL_P(limit)) {
 	delay = rb_num2dbl(limit);
     }
 
-    return thread_join(target_th, delay);
+    return thread_join(rb_thread_ptr(self), delay);
 }
 
 /*
@@ -1018,8 +1016,7 @@ thread_join_m(int argc, VALUE *argv, VALUE self)
 static VALUE
 thread_value(VALUE self)
 {
-    rb_thread_t *th;
-    GetThreadPtr(self, th);
+    rb_thread_t *th = rb_thread_ptr(self);
     thread_join(th, DELAY_INFTY);
     return th->value;
 }
@@ -1239,9 +1236,7 @@ rb_thread_check_trap_pending(void)
 int
 rb_thread_interrupted(VALUE thval)
 {
-    rb_thread_t *th;
-    GetThreadPtr(thval, th);
-    return (int)RUBY_VM_INTERRUPTED(th);
+    return (int)RUBY_VM_INTERRUPTED(rb_thread_ptr(thval));
 }
 
 void
@@ -1918,9 +1913,7 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
 static VALUE
 rb_thread_pending_interrupt_p(int argc, VALUE *argv, VALUE target_thread)
 {
-    rb_thread_t *target_th;
-
-    GetThreadPtr(target_thread, target_th);
+    rb_thread_t *target_th = rb_thread_ptr(target_thread);
 
     if (!target_th->pending_interrupt_queue) {
 	return Qfalse;
@@ -2113,9 +2106,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 void
 rb_thread_execute_interrupts(VALUE thval)
 {
-    rb_thread_t *th;
-    GetThreadPtr(thval, th);
-    rb_threadptr_execute_interrupts(th, 1);
+    rb_threadptr_execute_interrupts(rb_thread_ptr(thval), 1);
 }
 
 static void
@@ -2254,15 +2245,15 @@ rb_thread_fd_close(int fd)
 static VALUE
 thread_raise_m(int argc, VALUE *argv, VALUE self)
 {
-    rb_thread_t *target_th;
-    rb_thread_t *th = GET_THREAD();
-    GetThreadPtr(self, target_th);
+    rb_thread_t *target_th = rb_thread_ptr(self);
+    const rb_thread_t *current_th = GET_THREAD();
+
     threadptr_check_pending_interrupt_queue(target_th);
     rb_threadptr_raise(target_th, argc, argv);
 
     /* To perform Thread.current.raise as Kernel.raise */
-    if (th == target_th) {
-	RUBY_VM_CHECK_INTS(th);
+    if (current_th == target_th) {
+	RUBY_VM_CHECK_INTS(target_th);
     }
     return Qnil;
 }
@@ -2284,9 +2275,7 @@ thread_raise_m(int argc, VALUE *argv, VALUE self)
 VALUE
 rb_thread_kill(VALUE thread)
 {
-    rb_thread_t *th;
-
-    GetThreadPtr(thread, th);
+    rb_thread_t *th = rb_thread_ptr(thread);
 
     if (th->to_kill || th->status == THREAD_KILLED) {
 	return thread;
@@ -2312,9 +2301,7 @@ rb_thread_kill(VALUE thread)
 int
 rb_thread_to_be_killed(VALUE thread)
 {
-    rb_thread_t *th;
-
-    GetThreadPtr(thread, th);
+    rb_thread_t *th = rb_thread_ptr(thread);
 
     if (th->to_kill || th->status == THREAD_KILLED) {
 	return TRUE;
@@ -2391,15 +2378,16 @@ rb_thread_wakeup(VALUE thread)
 VALUE
 rb_thread_wakeup_alive(VALUE thread)
 {
-    rb_thread_t *th;
-    GetThreadPtr(thread, th);
+    rb_thread_t *target_th = rb_thread_ptr(thread);
+    if (target_th->status == THREAD_KILLED) return Qnil;
 
-    if (th->status == THREAD_KILLED) {
-	return Qnil;
+    rb_threadptr_ready(target_th);
+
+    if (target_th->status == THREAD_STOPPED ||
+	target_th->status == THREAD_STOPPED_FOREVER) {
+	target_th->status = THREAD_RUNNABLE;
     }
-    rb_threadptr_ready(th);
-    if (th->status == THREAD_STOPPED || th->status == THREAD_STOPPED_FOREVER)
-	th->status = THREAD_RUNNABLE;
+
     return thread;
 }
 
@@ -2626,9 +2614,7 @@ rb_thread_s_abort_exc_set(VALUE self, VALUE val)
 static VALUE
 rb_thread_abort_exc(VALUE thread)
 {
-    rb_thread_t *th;
-    GetThreadPtr(thread, th);
-    return th->abort_on_exception ? Qtrue : Qfalse;
+    return rb_thread_ptr(thread)->abort_on_exception ? Qtrue : Qfalse;
 }
 
 
@@ -2648,10 +2634,7 @@ rb_thread_abort_exc(VALUE thread)
 static VALUE
 rb_thread_abort_exc_set(VALUE thread, VALUE val)
 {
-    rb_thread_t *th;
-
-    GetThreadPtr(thread, th);
-    th->abort_on_exception = RTEST(val);
+    rb_thread_ptr(thread)->abort_on_exception = RTEST(val);
     return val;
 }
 
@@ -2736,9 +2719,7 @@ rb_thread_s_report_exc_set(VALUE self, VALUE val)
 static VALUE
 rb_thread_report_exc(VALUE thread)
 {
-    rb_thread_t *th;
-    GetThreadPtr(thread, th);
-    return th->report_on_exception ? Qtrue : Qfalse;
+    return rb_thread_ptr(thread)->report_on_exception ? Qtrue : Qfalse;
 }
 
 
@@ -2758,10 +2739,7 @@ rb_thread_report_exc(VALUE thread)
 static VALUE
 rb_thread_report_exc_set(VALUE thread, VALUE val)
 {
-    rb_thread_t *th;
-
-    GetThreadPtr(thread, th);
-    th->report_on_exception = RTEST(val);
+    rb_thread_ptr(thread)->report_on_exception = RTEST(val);
     return val;
 }
 
@@ -2779,15 +2757,8 @@ rb_thread_report_exc_set(VALUE thread, VALUE val)
 VALUE
 rb_thread_group(VALUE thread)
 {
-    rb_thread_t *th;
-    VALUE group;
-    GetThreadPtr(thread, th);
-    group = th->thgroup;
-
-    if (!group) {
-	group = Qnil;
-    }
-    return group;
+    VALUE group = rb_thread_ptr(thread)->thgroup;
+    return group == 0 ? Qnil : group;
 }
 
 static const char *
@@ -2795,10 +2766,7 @@ thread_status_name(rb_thread_t *th, int detail)
 {
     switch (th->status) {
       case THREAD_RUNNABLE:
-	if (th->to_kill)
-	    return "aborting";
-	else
-	    return "run";
+	return th->to_kill ? "aborting" : "run";
       case THREAD_STOPPED_FOREVER:
 	if (detail) return "sleep_forever";
       case THREAD_STOPPED:
@@ -2851,17 +2819,20 @@ rb_threadptr_dead(rb_thread_t *th)
 static VALUE
 rb_thread_status(VALUE thread)
 {
-    rb_thread_t *th;
-    GetThreadPtr(thread, th);
+    rb_thread_t *target_th = rb_thread_ptr(thread);
 
-    if (rb_threadptr_dead(th)) {
-	if (!NIL_P(th->errinfo) && !FIXNUM_P(th->errinfo)
-	    /* TODO */ ) {
+    if (rb_threadptr_dead(target_th)) {
+	if (!NIL_P(target_th->errinfo) &&
+	    !FIXNUM_P(target_th->errinfo)) {
 	    return Qnil;
 	}
-	return Qfalse;
+	else {
+	    return Qfalse;
+	}
     }
-    return rb_str_new2(thread_status_name(th, FALSE));
+    else {
+	return rb_str_new2(thread_status_name(target_th, FALSE));
+    }
 }
 
 
@@ -2882,12 +2853,12 @@ rb_thread_status(VALUE thread)
 static VALUE
 rb_thread_alive_p(VALUE thread)
 {
-    rb_thread_t *th;
-    GetThreadPtr(thread, th);
-
-    if (rb_threadptr_dead(th))
+    if (rb_threadptr_dead(rb_thread_ptr(thread))) {
 	return Qfalse;
-    return Qtrue;
+    }
+    else {
+	return Qtrue;
+    }
 }
 
 /*
@@ -2907,14 +2878,18 @@ rb_thread_alive_p(VALUE thread)
 static VALUE
 rb_thread_stop_p(VALUE thread)
 {
-    rb_thread_t *th;
-    GetThreadPtr(thread, th);
+    rb_thread_t *th = rb_thread_ptr(thread);
 
-    if (rb_threadptr_dead(th))
+    if (rb_threadptr_dead(th)) {
 	return Qtrue;
-    if (th->status == THREAD_STOPPED || th->status == THREAD_STOPPED_FOREVER)
+    }
+    else if (th->status == THREAD_STOPPED ||
+	     th->status == THREAD_STOPPED_FOREVER) {
 	return Qtrue;
-    return Qfalse;
+    }
+    else {
+	return Qfalse;
+    }
 }
 
 /*
@@ -2932,10 +2907,7 @@ rb_thread_stop_p(VALUE thread)
 static VALUE
 rb_thread_safe_level(VALUE thread)
 {
-    rb_thread_t *th;
-    GetThreadPtr(thread, th);
-
-    return INT2NUM(th->ec.safe_level);
+    return INT2NUM(rb_thread_ptr(thread)->ec.safe_level);
 }
 
 /*
@@ -2948,9 +2920,7 @@ rb_thread_safe_level(VALUE thread)
 static VALUE
 rb_thread_getname(VALUE thread)
 {
-    rb_thread_t *th;
-    GetThreadPtr(thread, th);
-    return th->name;
+    return rb_thread_ptr(thread)->name;
 }
 
 /*
@@ -2967,8 +2937,8 @@ rb_thread_setname(VALUE thread, VALUE name)
 #ifdef SET_ANOTHER_THREAD_NAME
     const char *s = "";
 #endif
-    rb_thread_t *th;
-    GetThreadPtr(thread, th);
+    rb_thread_t *target_th = rb_thread_ptr(thread);
+
     if (!NIL_P(name)) {
 	rb_encoding *enc;
 	StringValueCStr(name);
@@ -2982,10 +2952,10 @@ rb_thread_setname(VALUE thread, VALUE name)
 	s = RSTRING_PTR(name);
 #endif
     }
-    th->name = name;
+    target_th->name = name;
 #if defined(SET_ANOTHER_THREAD_NAME)
-    if (threadptr_initialized(th)) {
-	SET_ANOTHER_THREAD_NAME(th->thread_id, s);
+    if (threadptr_initialized(target_th)) {
+	SET_ANOTHER_THREAD_NAME(target_th->thread_id, s);
     }
 #endif
     return name;
@@ -3002,18 +2972,17 @@ static VALUE
 rb_thread_inspect(VALUE thread)
 {
     VALUE cname = rb_class_path(rb_obj_class(thread));
-    rb_thread_t *th;
+    rb_thread_t *target_th = rb_thread_ptr(thread);
     const char *status;
     VALUE str;
 
-    GetThreadPtr(thread, th);
-    status = thread_status_name(th, TRUE);
+    status = thread_status_name(target_th, TRUE);
     str = rb_sprintf("#<%"PRIsVALUE":%p", cname, (void *)thread);
-    if (!NIL_P(th->name)) {
-	rb_str_catf(str, "@%"PRIsVALUE, th->name);
+    if (!NIL_P(target_th->name)) {
+	rb_str_catf(str, "@%"PRIsVALUE, target_th->name);
     }
-    if (!th->first_func && th->first_proc) {
-	VALUE loc = rb_proc_location(th->first_proc);
+    if (!target_th->first_func && target_th->first_proc) {
+	VALUE loc = rb_proc_location(target_th->first_proc);
 	if (!NIL_P(loc)) {
 	    const VALUE *ptr = RARRAY_CONST_PTR(loc);
 	    rb_str_catf(str, "@%"PRIsVALUE":%"PRIsVALUE, ptr[0], ptr[1]);
@@ -3051,9 +3020,7 @@ threadptr_local_aref(rb_thread_t *th, ID id)
 VALUE
 rb_thread_local_aref(VALUE thread, ID id)
 {
-    rb_thread_t *th;
-    GetThreadPtr(thread, th);
-    return threadptr_local_aref(th, id);
+    return threadptr_local_aref(rb_thread_ptr(thread), id);
 }
 
 /*
@@ -3129,7 +3096,7 @@ rb_thread_fetch(int argc, VALUE *argv, VALUE self)
 {
     VALUE key, val;
     ID id;
-    rb_thread_t *th;
+    rb_thread_t *target_th = rb_thread_ptr(self);
     int block_given;
 
     rb_check_arity(argc, 1, 2);
@@ -3141,12 +3108,12 @@ rb_thread_fetch(int argc, VALUE *argv, VALUE self)
     }
 
     id = rb_check_id(&key);
-    GetThreadPtr(self, th);
 
     if (id == recursive_key) {
-	return th->ec.local_storage_recursive_hash;
+	return target_th->ec.local_storage_recursive_hash;
     }
-    else if (id && th->ec.local_storage && st_lookup(th->ec.local_storage, id, &val)) {
+    else if (id && target_th->ec.local_storage &&
+	     st_lookup(target_th->ec.local_storage, id, &val)) {
 	return val;
     }
     else if (block_given) {
@@ -3188,14 +3155,11 @@ threadptr_local_aset(rb_thread_t *th, ID id, VALUE val)
 VALUE
 rb_thread_local_aset(VALUE thread, ID id, VALUE val)
 {
-    rb_thread_t *th;
-    GetThreadPtr(thread, th);
-
     if (OBJ_FROZEN(thread)) {
 	rb_error_frozen("thread locals");
     }
 
-    return threadptr_local_aset(th, id, val);
+    return threadptr_local_aset(rb_thread_ptr(thread), id, val);
 }
 
 /*
@@ -3292,12 +3256,8 @@ rb_thread_variable_set(VALUE thread, VALUE id, VALUE val)
 static VALUE
 rb_thread_key_p(VALUE self, VALUE key)
 {
-    rb_thread_t *th;
     ID id = rb_check_id(&key);
-    st_table *local_storage;
-
-    GetThreadPtr(self, th);
-    local_storage= th->ec.local_storage;
+    st_table *local_storage = rb_thread_ptr(self)->ec.local_storage;
 
     if (!id || local_storage == NULL) {
 	return Qfalse;
@@ -3340,12 +3300,11 @@ rb_thread_alone(void)
 static VALUE
 rb_thread_keys(VALUE self)
 {
-    rb_thread_t *th;
+    st_table *local_storage = rb_thread_ptr(self)->ec.local_storage;
     VALUE ary = rb_ary_new();
-    GetThreadPtr(self, th);
 
-    if (th->ec.local_storage) {
-	st_foreach(th->ec.local_storage, thread_keys_i, ary);
+    if (local_storage) {
+	st_foreach(local_storage, thread_keys_i, ary);
     }
     return ary;
 }
@@ -3441,9 +3400,7 @@ rb_thread_variable_p(VALUE thread, VALUE key)
 static VALUE
 rb_thread_priority(VALUE thread)
 {
-    rb_thread_t *th;
-    GetThreadPtr(thread, th);
-    return INT2NUM(th->priority);
+    return INT2NUM(rb_thread_ptr(thread)->priority);
 }
 
 
@@ -3476,13 +3433,11 @@ rb_thread_priority(VALUE thread)
 static VALUE
 rb_thread_priority_set(VALUE thread, VALUE prio)
 {
-    rb_thread_t *th;
+    rb_thread_t *target_th = rb_thread_ptr(thread);
     int priority;
-    GetThreadPtr(thread, th);
-
 
 #if USE_NATIVE_THREAD_PRIORITY
-    th->priority = NUM2INT(prio);
+    target_th->priority = NUM2INT(prio);
     native_thread_apply_priority(th);
 #else
     priority = NUM2INT(prio);
@@ -3492,9 +3447,9 @@ rb_thread_priority_set(VALUE thread, VALUE prio)
     else if (priority < RUBY_THREAD_PRIORITY_MIN) {
 	priority = RUBY_THREAD_PRIORITY_MIN;
     }
-    th->priority = priority;
+    target_th->priority = priority;
 #endif
-    return INT2NUM(th->priority);
+    return INT2NUM(target_th->priority);
 }
 
 /* for IO */
@@ -4379,10 +4334,8 @@ thgroup_enclosed_p(VALUE group)
 static VALUE
 thgroup_add(VALUE group, VALUE thread)
 {
-    rb_thread_t *th;
+    rb_thread_t *target_th = rb_thread_ptr(thread);
     struct thgroup *data;
-
-    GetThreadPtr(thread, th);
 
     if (OBJ_FROZEN(group)) {
 	rb_raise(rb_eThreadError, "can't move to the frozen thread group");
@@ -4392,20 +4345,20 @@ thgroup_add(VALUE group, VALUE thread)
 	rb_raise(rb_eThreadError, "can't move to the enclosed thread group");
     }
 
-    if (!th->thgroup) {
+    if (!target_th->thgroup) {
 	return Qnil;
     }
 
-    if (OBJ_FROZEN(th->thgroup)) {
+    if (OBJ_FROZEN(target_th->thgroup)) {
 	rb_raise(rb_eThreadError, "can't move from the frozen thread group");
     }
-    TypedData_Get_Struct(th->thgroup, struct thgroup, &thgroup_data_type, data);
+    TypedData_Get_Struct(target_th->thgroup, struct thgroup, &thgroup_data_type, data);
     if (data->enclosed) {
 	rb_raise(rb_eThreadError,
 		 "can't move from the enclosed thread group");
     }
 
-    th->thgroup = group;
+    target_th->thgroup = group;
     return group;
 }
 

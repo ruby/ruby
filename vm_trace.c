@@ -92,14 +92,6 @@ recalc_remove_ruby_vm_event_flags(rb_event_flag_t events)
 
 /* add/remove hooks */
 
-static rb_thread_t *
-thval2thread_t(VALUE thval)
-{
-    rb_thread_t *th;
-    GetThreadPtr(thval, th);
-    return th;
-}
-
 static rb_event_hook_t *
 alloc_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data, rb_event_hook_flag_t hook_flags)
 {
@@ -136,7 +128,7 @@ rb_threadptr_add_event_hook(rb_thread_t *th, rb_event_hook_func_t func, rb_event
 void
 rb_thread_add_event_hook(VALUE thval, rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
 {
-    rb_threadptr_add_event_hook(thval2thread_t(thval), func, events, data, RUBY_EVENT_HOOK_FLAG_SAFE);
+    rb_threadptr_add_event_hook(rb_thread_ptr(thval), func, events, data, RUBY_EVENT_HOOK_FLAG_SAFE);
 }
 
 void
@@ -149,7 +141,7 @@ rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data)
 void
 rb_thread_add_event_hook2(VALUE thval, rb_event_hook_func_t func, rb_event_flag_t events, VALUE data, rb_event_hook_flag_t hook_flags)
 {
-    rb_threadptr_add_event_hook(thval2thread_t(thval), func, events, data, hook_flags);
+    rb_threadptr_add_event_hook(rb_thread_ptr(thval), func, events, data, hook_flags);
 }
 
 void
@@ -189,13 +181,13 @@ rb_threadptr_remove_event_hook(rb_thread_t *th, rb_event_hook_func_t func, VALUE
 int
 rb_thread_remove_event_hook(VALUE thval, rb_event_hook_func_t func)
 {
-    return rb_threadptr_remove_event_hook(thval2thread_t(thval), func, Qundef);
+    return rb_threadptr_remove_event_hook(rb_thread_ptr(thval), func, Qundef);
 }
 
 int
 rb_thread_remove_event_hook_with_data(VALUE thval, rb_event_hook_func_t func, VALUE data)
 {
-    return rb_threadptr_remove_event_hook(thval2thread_t(thval), func, data);
+    return rb_threadptr_remove_event_hook(rb_thread_ptr(thval), func, data);
 }
 
 int
@@ -519,10 +511,7 @@ thread_add_trace_func(rb_thread_t *th, VALUE trace)
 static VALUE
 thread_add_trace_func_m(VALUE obj, VALUE trace)
 {
-    rb_thread_t *th;
-
-    GetThreadPtr(obj, th);
-    thread_add_trace_func(th, trace);
+    thread_add_trace_func(rb_thread_ptr(obj), trace);
     return trace;
 }
 
@@ -538,19 +527,19 @@ thread_add_trace_func_m(VALUE obj, VALUE trace)
  */
 
 static VALUE
-thread_set_trace_func_m(VALUE obj, VALUE trace)
+thread_set_trace_func_m(VALUE target_thread, VALUE trace)
 {
-    rb_thread_t *th;
+    rb_thread_t *target_th = rb_thread_ptr(target_thread);
 
-    GetThreadPtr(obj, th);
-    rb_threadptr_remove_event_hook(th, call_trace_func, Qundef);
+    rb_threadptr_remove_event_hook(target_th, call_trace_func, Qundef);
 
     if (NIL_P(trace)) {
 	return Qnil;
     }
-
-    thread_add_trace_func(th, trace);
-    return trace;
+    else {
+	thread_add_trace_func(target_th, trace);
+	return trace;
+    }
 }
 
 static const char *
@@ -1218,9 +1207,10 @@ tracepoint_new(VALUE klass, rb_thread_t *target_th, rb_event_flag_t events, void
 VALUE
 rb_tracepoint_new(VALUE target_thval, rb_event_flag_t events, void (*func)(VALUE, void *), void *data)
 {
-    rb_thread_t *target_th = 0;
+    rb_thread_t *target_th = NULL;
+
     if (RTEST(target_thval)) {
-	GetThreadPtr(target_thval, target_th);
+	target_th = rb_thread_ptr(target_thval);
 	/* TODO: Test it!
 	 * Warning: This function is not tested.
 	 */

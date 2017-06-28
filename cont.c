@@ -196,9 +196,9 @@ cont_mark(void *ptr)
 	}
 	else {
 	    /* fiber */
-	    rb_thread_t *th;
+	    rb_thread_t *th = rb_thread_ptr(cont->saved_thread.self);
 	    rb_fiber_t *fib = (rb_fiber_t*)cont;
-	    GetThreadPtr(cont->saved_thread.self, th);
+
 	    if ((th->fiber != fib) && fib->status == FIBER_RUNNING) {
 		rb_gc_mark_locations(cont->machine.stack,
 				     cont->machine.stack + cont->machine.stack_size);
@@ -1514,9 +1514,8 @@ rb_fiber_yield(int argc, const VALUE *argv)
 void
 rb_fiber_reset_root_local_storage(VALUE thval)
 {
-    rb_thread_t *th;
+    rb_thread_t *th = rb_thread_ptr(thval);
 
-    GetThreadPtr(thval, th);
     if (th->root_fiber && th->root_fiber != th->fiber) {
 	th->ec.local_storage = th->root_fiber->cont.saved_thread.ec.local_storage;
     }

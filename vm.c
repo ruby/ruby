@@ -2555,9 +2555,8 @@ th_init(rb_thread_t *th, VALUE self)
 static VALUE
 ruby_thread_init(VALUE self)
 {
-    rb_thread_t *th;
+    rb_thread_t *th = rb_thread_ptr(self);
     rb_vm_t *vm = GET_THREAD()->vm;
-    GetThreadPtr(self, th);
 
     th->vm = vm;
     th_init(th, self);

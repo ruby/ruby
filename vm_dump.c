@@ -212,9 +212,8 @@ rb_vmdebug_proc_dump_raw(rb_proc_t *proc)
 void
 rb_vmdebug_stack_dump_th(VALUE thval)
 {
-    rb_thread_t *th;
-    GetThreadPtr(thval, th);
-    rb_vmdebug_stack_dump_raw(th, th->ec.cfp);
+    rb_thread_t *target_th = rb_thread_ptr(thval);
+    rb_vmdebug_stack_dump_raw(target_th, target_th->ec.cfp);
 }
 
 #if VMDEBUG > 2
@@ -327,9 +326,7 @@ rb_vmdebug_debug_print_register(rb_thread_t *th)
 void
 rb_vmdebug_thread_dump_regs(VALUE thval)
 {
-    rb_thread_t *th;
-    GetThreadPtr(thval, th);
-    rb_vmdebug_debug_print_register(th);
+    rb_vmdebug_debug_print_register(rb_thread_ptr(thval));
 }
 
 void
@@ -399,10 +396,8 @@ rb_vmdebug_debug_print_post(rb_thread_t *th, rb_control_frame_t *cfp
 VALUE
 rb_vmdebug_thread_dump_state(VALUE self)
 {
-    rb_thread_t *th;
-    rb_control_frame_t *cfp;
-    GetThreadPtr(self, th);
-    cfp = th->ec.cfp;
+    rb_thread_t *th = rb_thread_ptr(self);
+    rb_control_frame_t *cfp = th->ec.cfp;
 
     fprintf(stderr, "Thread state dump:\n");
     fprintf(stderr, "pc : %p, sp : %p\n", (void *)cfp->pc, (void *)cfp->sp);
