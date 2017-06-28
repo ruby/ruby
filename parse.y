@@ -5461,7 +5461,7 @@ rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE file, int start)
 #define STR_FUNC_SYMBOL 0x10
 #define STR_FUNC_INDENT 0x20
 #define STR_FUNC_LABEL  0x40
-#define STR_TERM_END    -1
+#define STR_FUNC_TERM   0x8000
 
 enum string_type {
     str_label  = STR_FUNC_LABEL,
@@ -6237,7 +6237,9 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
     int c, space = 0;
     rb_encoding *enc = current_enc;
 
-    if (term == STR_TERM_END) return tSTRING_END;
+    if (func & STR_FUNC_TERM) {
+	return func & STR_FUNC_REGEXP ? tREGEXP_END : tSTRING_END;
+    }
     c = nextc();
     if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
 	do {c = nextc();} while (ISSPACE(c));
@@ -6245,7 +6247,7 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
     }
     if (c == term && !quote->nd_nest) {
 	if (func & STR_FUNC_QWORDS) {
-	    quote->u2.id = STR_TERM_END;
+	    quote->nd_func |= STR_FUNC_TERM;
 	    return ' ';
 	}
 	return parser_string_term(parser, func);
@@ -6271,7 +6273,7 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
 	    else {
 		compile_error(PARSER_ARG "unterminated string meets end of file");
 	    }
-	    quote->u2.id = STR_TERM_END;
+	    quote->nd_func |= STR_FUNC_TERM;
 	}
     }
 
@@ -6704,7 +6706,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
 			    yylval.val, str);
 #endif
     heredoc_restore(lex_strterm);
-    lex_strterm = NEW_STRTERM(func, STR_TERM_END, 0);
+    lex_strterm = NEW_STRTERM(func | STR_FUNC_TERM, 0, 0);
     set_yylval_str(str);
     return tSTRING_CONTENT;
 }

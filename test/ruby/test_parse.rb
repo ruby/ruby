@@ -1022,6 +1022,14 @@ x = __ENCODING__
     assert_operator(line, :end_with?, "...\n")
   end
 
+  def test_unterminated_regexp_error
+    e = assert_raise(SyntaxError) do
+      eval("/x")
+    end.message
+    assert_match(/unterminated regexp meets end of file/, e)
+    assert_not_match(/unexpected tSTRING_END/, e)
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}
