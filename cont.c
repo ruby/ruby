@@ -125,6 +125,7 @@ static machine_stack_cache_t terminated_machine_stack;
 
 struct rb_fiber_struct {
     rb_context_t cont;
+    VALUE first_proc;
     struct rb_fiber_struct *prev;
     enum fiber_status status;
     /* If a fiber invokes "transfer",
@@ -308,6 +309,7 @@ fiber_mark(void *ptr)
 {
     rb_fiber_t *fib = ptr;
     RUBY_MARK_ENTER("cont");
+    rb_gc_mark(fib->first_proc);
     rb_fiber_mark_self(fib->prev);
     cont_mark(&fib->cont);
     RUBY_MARK_LEAVE("cont");
@@ -412,7 +414,6 @@ cont_save_thread(rb_context_t *cont, rb_thread_t *th)
 
     /* save thread context */
     sth->ec = th->ec;
-    sth->first_proc = th->first_proc;
 
     /* saved_thread->machine.stack_(start|end) should be NULL */
     /* because it may happen GC afterward */
@@ -554,8 +555,6 @@ cont_restore_thread(rb_context_t *cont)
 	sth->ec.stack = NULL;
 	th->fiber = (rb_fiber_t*)cont;
     }
-
-    th->first_proc = sth->first_proc;
 
     VM_ASSERT(sth->status == THREAD_RUNNABLE);
 }
@@ -1217,7 +1216,7 @@ fiber_init(VALUE fibval, VALUE proc)
     th->ec.local_storage_recursive_hash = Qnil;
     th->ec.local_storage_recursive_hash_for_trace = Qnil;
 
-    th->first_proc = proc;
+    fib->first_proc = proc;
 
 #if !FIBER_USE_NATIVE
     MEMCPY(&cont->jmpbuf, &cth->root_jmpbuf, rb_jmpbuf_t, 1);
@@ -1254,11 +1253,11 @@ rb_fiber_start(void)
 	rb_context_t *cont = &VAR_FROM_MEMORY(fib)->cont;
 	int argc;
 	const VALUE *argv, args = cont->value;
-	GetProcPtr(cont->saved_thread.first_proc, proc);
+	GetProcPtr(fib->first_proc, proc);
 	argv = (argc = cont->argc) > 1 ? RARRAY_CONST_PTR(args) : &args;
 	cont->value = Qnil;
 	th->ec.errinfo = Qnil;
-	th->ec.root_lep = rb_vm_proc_local_ep(cont->saved_thread.first_proc);
+	th->ec.root_lep = rb_vm_proc_local_ep(fib->first_proc);
 	th->ec.root_svar = Qfalse;
 	fib->status = FIBER_RUNNING;
 

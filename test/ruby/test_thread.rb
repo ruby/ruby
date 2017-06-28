@@ -34,6 +34,19 @@ class TestThread < Test::Unit::TestCase
     th.join
   end
 
+  def test_inspect_with_fiber
+    inspect1 = inspect2 = nil
+
+    Thread.new{
+      inspect1 = Thread.current.inspect
+      Fiber.new{
+        inspect2 = Thread.current.inspect
+      }.resume
+    }.join
+
+    assert_equal inspect1, inspect2, '[Bug #13689]'
+  end
+
   def test_main_thread_variable_in_enumerator
     assert_equal Thread.main, Thread.current
 
