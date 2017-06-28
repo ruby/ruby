@@ -1013,6 +1013,15 @@ x = __ENCODING__
     end
   end
 
+  def test_truncated_source_line
+    e = assert_raise_with_message(SyntaxError, /unexpected tIDENTIFIER/) do
+      eval("'0123456789012345678901234567890123456789' abcdefghijklmnopqrstuvwxyz0123456789 0123456789012345678901234567890123456789")
+    end
+    line = e.message.lines[1]
+    assert_operator(line, :start_with?, "...")
+    assert_operator(line, :end_with?, "...\n")
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}

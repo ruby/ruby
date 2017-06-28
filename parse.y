@@ -5036,42 +5036,38 @@ parser_yyerror(struct parser_params *parser, const char *msg)
 #ifndef RIPPER
     const int max_line_margin = 30;
     const char *p, *pe;
-    const char *pre = "", *post = "";
+    const char *pre = "", *post = "", *pend;
     const char *code = "", *caret = "", *newline = "";
     const char *lim;
     char *buf;
     long len;
     int i;
 
-    p = parser->tokp;
+    p = lex_p;
     lim = p - lex_pbeg > max_line_margin ? p - max_line_margin : lex_pbeg;
-    while (lim < p) {
-	if (*(p-1) == '\n') break;
-	p--;
-    }
+    while ((lim < p) && (*(p-1) != '\n')) p--;
 
-    pe = lex_p;
-    lim = lex_pend - pe > max_line_margin ? pe + max_line_margin : lex_pend;
-    while (pe < lim) {
-	if (*pe == '\n') break;
-	pe++;
+    pend = lex_pend;
+    if (pend > lex_pbeg && pend[-1] == '\n') {
+	if (--pend > lex_pbeg && pend[-1] == '\r') --pend;
     }
+    pe = lex_p;
+    lim = pend - pe > max_line_margin ? pe + max_line_margin : pend;
+    while ((pe < lim) && (*pe != '\n')) pe++;
 
     len = pe - p;
     if (len > 4) {
 	char *p2;
 
-	if (len > max_line_margin * 2 + 10) {
-	    if (lex_p - p > max_line_margin) {
-		p = rb_enc_prev_char(p, lex_p - max_line_margin, pe, rb_enc_get(lex_lastline));
-		pre = "...";
-	    }
-	    if (pe - lex_p > max_line_margin) {
-		pe = rb_enc_prev_char(lex_p, lex_p + max_line_margin, pe, rb_enc_get(lex_lastline));
-		post = "...";
-	    }
-	    len = pe - p;
+	if (p > lex_pbeg) {
+	    p = rb_enc_prev_char(lex_pbeg, p, lex_p, rb_enc_get(lex_lastline));
+	    if (p > lex_pbeg) pre = "...";
 	}
+	if (pe < pend) {
+	    pe = rb_enc_prev_char(lex_p, pe, pend, rb_enc_get(lex_lastline));
+	    if (pe < pend) post = "...";
+	}
+	len = pe - p;
 	i = (int)(lex_p - p);
 	buf = ALLOCA_N(char, i+2);
 	code = p;
