@@ -675,8 +675,7 @@ extern const rb_data_type_t ruby_threadptr_data_type;
 static inline struct rb_thread_struct *
 rb_thread_ptr(VALUE thval)
 {
-    VM_ASSERT(rb_check_typeddata(obj, &ruby_threadptr_data_type) != NULL);
-    return (struct rb_thread_struct *)DATA_PTR(thval);
+    return (struct rb_thread_struct *)rb_check_typeddata(thval, &ruby_threadptr_data_type);
 }
 
 enum rb_thread_status {
