@@ -3033,12 +3033,13 @@ static VALUE
 threadptr_local_aref(rb_thread_t *th, ID id)
 {
     if (id == recursive_key) {
-	return th->local_storage_recursive_hash;
+	return th->ec.local_storage_recursive_hash;
     }
     else {
 	st_data_t val;
+	st_table *local_storage = th->ec.local_storage;
 
-	if (th->local_storage && st_lookup(th->local_storage, id, &val)) {
+	if (local_storage != NULL && st_lookup(local_storage, id, &val)) {
 	    return (VALUE)val;
 	}
 	else {
@@ -3143,37 +3144,44 @@ rb_thread_fetch(int argc, VALUE *argv, VALUE self)
     GetThreadPtr(self, th);
 
     if (id == recursive_key) {
-	return th->local_storage_recursive_hash;
+	return th->ec.local_storage_recursive_hash;
     }
-    if (id && th->local_storage && st_lookup(th->local_storage, id, &val)) {
+    else if (id && th->ec.local_storage && st_lookup(th->ec.local_storage, id, &val)) {
 	return val;
     }
-    if (block_given)
+    else if (block_given) {
 	return rb_yield(key);
-    else if (argc == 1)
+    }
+    else if (argc == 1) {
 	rb_raise(rb_eKeyError, "key not found: %"PRIsVALUE, key);
-    else
+    }
+    else {
 	return argv[1];
+    }
 }
 
 static VALUE
 threadptr_local_aset(rb_thread_t *th, ID id, VALUE val)
 {
     if (id == recursive_key) {
-	th->local_storage_recursive_hash = val;
+	th->ec.local_storage_recursive_hash = val;
 	return val;
-    }
-    else if (NIL_P(val)) {
-	if (!th->local_storage) return Qnil;
-	st_delete_wrap(th->local_storage, id);
-	return Qnil;
     }
     else {
-	if (!th->local_storage) {
-	    th->local_storage = st_init_numtable();
+	st_table *local_storage = th->ec.local_storage;
+
+	if (NIL_P(val)) {
+	    if (!local_storage) return Qnil;
+	    st_delete_wrap(local_storage, id);
+	    return Qnil;
 	}
-	st_insert(th->local_storage, id, val);
-	return val;
+	else {
+	    if (local_storage == NULL) {
+		th->ec.local_storage = local_storage = st_init_numtable();
+	    }
+	    st_insert(local_storage, id, val);
+	    return val;
+	}
     }
 }
 
@@ -3286,16 +3294,20 @@ rb_thread_key_p(VALUE self, VALUE key)
 {
     rb_thread_t *th;
     ID id = rb_check_id(&key);
+    st_table *local_storage;
 
     GetThreadPtr(self, th);
+    local_storage= th->ec.local_storage;
 
-    if (!id || !th->local_storage) {
+    if (!id || local_storage == NULL) {
 	return Qfalse;
     }
-    if (st_lookup(th->local_storage, id, 0)) {
+    else if (st_lookup(local_storage, id, 0)) {
 	return Qtrue;
     }
-    return Qfalse;
+    else {
+	return Qfalse;
+    }
 }
 
 static int
@@ -3332,8 +3344,8 @@ rb_thread_keys(VALUE self)
     VALUE ary = rb_ary_new();
     GetThreadPtr(self, th);
 
-    if (th->local_storage) {
-	st_foreach(th->local_storage, thread_keys_i, ary);
+    if (th->ec.local_storage) {
+	st_foreach(th->ec.local_storage, thread_keys_i, ary);
     }
     return ary;
 }
@@ -4512,13 +4524,13 @@ rb_thread_shield_destroy(VALUE self)
 static VALUE
 threadptr_recursive_hash(rb_thread_t *th)
 {
-    return th->local_storage_recursive_hash;
+    return th->ec.local_storage_recursive_hash;
 }
 
 static void
 threadptr_recursive_hash_set(rb_thread_t *th, VALUE hash)
 {
-    th->local_storage_recursive_hash = hash;
+    th->ec.local_storage_recursive_hash = hash;
 }
 
 ID rb_frame_last_func(void);

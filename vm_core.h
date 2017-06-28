@@ -743,6 +743,11 @@ typedef struct rb_thread_context_struct {
 
     int safe_level;
     int raised_flag;
+
+    /* storage (ec (fiber) local) */
+    st_table *local_storage;
+    VALUE local_storage_recursive_hash;
+    VALUE local_storage_recursive_hash_for_trace;
 } rb_execution_context_t;
 
 typedef struct rb_thread_struct {
@@ -805,11 +810,6 @@ typedef struct rb_thread_struct {
     struct rb_unblock_callback unblock;
     VALUE locking_mutex;
     struct rb_mutex_struct *keeping_mutexes;
-
-    /* storage */
-    st_table *local_storage;
-    VALUE local_storage_recursive_hash;
-    VALUE local_storage_recursive_hash_for_trace;
 
     rb_thread_list_t *join_list;
 

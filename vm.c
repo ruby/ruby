@@ -2417,9 +2417,9 @@ rb_thread_mark(void *ptr)
 
     RUBY_MARK_UNLESS_NULL(th->locking_mutex);
 
-    rb_mark_tbl(th->local_storage);
-    RUBY_MARK_UNLESS_NULL(th->local_storage_recursive_hash);
-    RUBY_MARK_UNLESS_NULL(th->local_storage_recursive_hash_for_trace);
+    rb_mark_tbl(th->ec.local_storage);
+    RUBY_MARK_UNLESS_NULL(th->ec.local_storage_recursive_hash);
+    RUBY_MARK_UNLESS_NULL(th->ec.local_storage_recursive_hash_for_trace);
 
     RUBY_MARK_UNLESS_NULL(th->name);
 
@@ -2445,8 +2445,8 @@ thread_free(void *ptr)
 	rb_bug("thread_free: keeping_mutexes must be NULL (%p:%p)", (void *)th, (void *)th->keeping_mutexes);
     }
 
-    if (th->local_storage) {
-	st_free_table(th->local_storage);
+    if (th->ec.local_storage) {
+	st_free_table(th->ec.local_storage);
     }
 
     if (th->vm && th->vm->main_thread == th) {
@@ -2475,8 +2475,8 @@ thread_memsize(const void *ptr)
     if (!th->root_fiber) {
 	size += th->ec.stack_size * sizeof(VALUE);
     }
-    if (th->local_storage) {
-	size += st_memsize(th->local_storage);
+    if (th->ec.local_storage) {
+	size += st_memsize(th->ec.local_storage);
     }
     return size;
 }
@@ -2540,8 +2540,8 @@ th_init(rb_thread_t *th, VALUE self)
     th->errinfo = Qnil;
     th->last_status = Qnil;
     th->root_svar = Qfalse;
-    th->local_storage_recursive_hash = Qnil;
-    th->local_storage_recursive_hash_for_trace = Qnil;
+    th->ec.local_storage_recursive_hash = Qnil;
+    th->ec.local_storage_recursive_hash_for_trace = Qnil;
 #ifdef NON_SCALAR_THREAD_ID
     th->thread_id_string[0] = '\0';
 #endif
