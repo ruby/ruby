@@ -4886,10 +4886,12 @@ ripper_yylval_id(ID x)
 #endif
 
 #ifndef RIPPER
+#define numeric_literl_flush(p) (parser->tokp = (p))
 #define dispatch_scan_event(t) ((void)0)
 #define dispatch_delayed_token(t) ((void)0)
 #define has_delayed_token() (0)
 #else
+#define numeric_literl_flush(p) ((void)0)
 
 #define yylval_rval (*(RB_TYPE_P(yylval.val, T_NODE) ? &yylval.node->nd_rval : &yylval.val))
 
@@ -6516,6 +6518,7 @@ parser_number_literal_suffix(struct parser_params *parser, int mask)
 	}
 	if (!ISASCII(c) || ISALPHA(c) || c == '_') {
 	    lex_p = lastp;
+	    numeric_literl_flush(lex_p);
 	    return 0;
 	}
 	pushback(c);
@@ -6529,6 +6532,7 @@ parser_number_literal_suffix(struct parser_params *parser, int mask)
 	}
 	break;
     }
+    numeric_literl_flush(lex_p);
     return result;
 }
 
@@ -7357,6 +7361,7 @@ parse_numeric(struct parser_params *parser, int c)
     if (nondigit) {
 	char tmp[30];
       trailing_uc:
+	numeric_literl_flush(lex_p - 1);
 	snprintf(tmp, sizeof(tmp), "trailing `%c' in number", nondigit);
 	yyerror(tmp);
     }
@@ -7378,6 +7383,7 @@ parse_numeric(struct parser_params *parser, int c)
 	    }
 	    v = DBL2NUM(d);
 	}
+	numeric_literl_flush(lex_p);
 	return set_number_literal(v, type, suffix);
     }
     suffix = number_literal_suffix(NUM_SUFFIX_ALL);

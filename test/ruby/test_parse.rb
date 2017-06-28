@@ -1007,6 +1007,12 @@ x = __ENCODING__
     end
   end
 
+  def test_unexpected_token_after_numeric
+    assert_raise_with_message(SyntaxError, /^    \^~~\z/) do
+      eval('0000xyz')
+    end
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}
