@@ -5074,14 +5074,16 @@ parser_yyerror(struct parser_params *parser, const char *msg)
 	buf = ALLOCA_N(char, i+2);
 	code = p;
 	caret = p2 = buf;
-	i = (int)(parser->tokp - p);
-	while (i-- > 0) {
-	    *p2++ = *p++ == '\t' ? '\t' : ' ';
+	if (p <= parser->tokp) {
+	    while (p < parser->tokp) {
+		*p2++ = *p++ == '\t' ? '\t' : ' ';
+	    }
+	    *p2++ = '^';
+	    p++;
 	}
-	*p2++ = '^';
-	if (lex_p > parser->tokp + 1) {
-	    memset(p2, '~', (lex_p - parser->tokp) - 1);
-	    p2 += (lex_p - parser->tokp) - 1;
+	if (lex_p > p) {
+	    memset(p2, '~', (lex_p - p));
+	    p2 += (lex_p - p);
 	}
 	*p2 = '\0';
 	newline = "\n";
