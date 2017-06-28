@@ -1129,7 +1129,7 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
 	retval = (*it_proc) (data1);
     }
     else if (state == TAG_BREAK || state == TAG_RETRY) {
-	const struct vm_throw_data *const err = (struct vm_throw_data *)th->errinfo;
+	const struct vm_throw_data *const err = (struct vm_throw_data *)th->ec.errinfo;
 	const rb_control_frame_t *const escape_cfp = THROW_DATA_CATCH_FRAME(err);
 
 	if (cfp == escape_cfp) {
@@ -1137,7 +1137,7 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
 
 	    state = 0;
 	    th->ec.tag->state = TAG_NONE;
-	    th->errinfo = Qnil;
+	    th->ec.errinfo = Qnil;
 
 	    if (state == TAG_RETRY) goto iter_retry;
 	    retval = THROW_DATA_VAL(err);
@@ -1296,7 +1296,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	iseq = rb_iseq_compile_with_option(src, fname, realpath, INT2FIX(line), base_block, Qnil);
 
 	if (!iseq) {
-	    rb_exc_raise(adjust_backtrace_in_eval(th, th->errinfo));
+	    rb_exc_raise(adjust_backtrace_in_eval(th, th->ec.errinfo));
 	}
 
 	/* TODO: what the code checking? */
@@ -1335,7 +1335,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 
     if (state) {
 	if (state == TAG_RAISE) {
-	    adjust_backtrace_in_eval(th, th->errinfo);
+	    adjust_backtrace_in_eval(th, th->ec.errinfo);
 	}
 	TH_JUMP_TAG(th, state);
     }
@@ -1870,7 +1870,7 @@ rb_throw_obj(VALUE tag, VALUE value)
 	rb_exc_raise(rb_class_new_instance(numberof(desc), desc, rb_eUncaughtThrow));
     }
 
-    th->errinfo = (VALUE)THROW_DATA_NEW(tag, NULL, TAG_THROW);
+    th->ec.errinfo = (VALUE)THROW_DATA_NEW(tag, NULL, TAG_THROW);
     TH_JUMP_TAG(th, TAG_THROW);
 }
 
@@ -1974,10 +1974,10 @@ vm_catch_protect(VALUE tag, rb_block_call_func *func, VALUE data,
 	/* call with argc=1, argv = [tag], block = Qnil to insure compatibility */
 	val = (*func)(tag, data, 1, (const VALUE *)&tag, Qnil);
     }
-    else if (state == TAG_THROW && THROW_DATA_VAL((struct vm_throw_data *)th->errinfo) == tag) {
+    else if (state == TAG_THROW && THROW_DATA_VAL((struct vm_throw_data *)th->ec.errinfo) == tag) {
 	rb_vm_rewind_cfp(th, saved_cfp);
 	val = th->ec.tag->retval;
-	th->errinfo = Qnil;
+	th->ec.errinfo = Qnil;
 	state = 0;
     }
     TH_POP_TAG();

@@ -580,7 +580,7 @@ thread_do_start(rb_thread_t *th, VALUE args)
     if (!th->first_func) {
 	rb_proc_t *proc;
 	GetProcPtr(th->first_proc, proc);
-	th->errinfo = Qnil;
+	th->ec.errinfo = Qnil;
 	th->ec.root_lep = rb_vm_proc_local_ep(th->first_proc);
 	th->ec.root_svar = Qfalse;
 	EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
@@ -629,7 +629,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    SAVE_ROOT_JMPBUF(th, thread_do_start(th, args));
 	}
 	else {
-	    errinfo = th->errinfo;
+	    errinfo = th->ec.errinfo;
 	    if (state == TAG_FATAL) {
 		/* fatal error within this thread, need to stop whole script */
 	    }
@@ -923,8 +923,8 @@ thread_join(rb_thread_t *target_th, double delay)
     thread_debug("thread_join: success (thid: %"PRI_THREAD_ID")\n",
 		 thread_id_str(target_th));
 
-    if (target_th->errinfo != Qnil) {
-	VALUE err = target_th->errinfo;
+    if (target_th->ec.errinfo != Qnil) {
+	VALUE err = target_th->ec.errinfo;
 
 	if (FIXNUM_P(err)) {
 	    switch (err) {
@@ -935,7 +935,7 @@ thread_join(rb_thread_t *target_th, double delay)
 		rb_bug("thread_join: Fixnum (%d) should not reach here.", FIX2INT(err));
 	    }
 	}
-	else if (THROW_DATA_P(target_th->errinfo)) {
+	else if (THROW_DATA_P(target_th->ec.errinfo)) {
 	    rb_bug("thread_join: THROW_DATA should not reach here.");
 	}
 	else {
@@ -2008,7 +2008,7 @@ rb_threadptr_to_kill(rb_thread_t *th)
     rb_threadptr_pending_interrupt_clear(th);
     th->status = THREAD_RUNNABLE;
     th->to_kill = 1;
-    th->errinfo = INT2FIX(TAG_FATAL);
+    th->ec.errinfo = INT2FIX(TAG_FATAL);
     TH_JUMP_TAG(th, TAG_FATAL);
 }
 
@@ -2822,8 +2822,8 @@ rb_thread_status(VALUE thread)
     rb_thread_t *target_th = rb_thread_ptr(thread);
 
     if (rb_threadptr_dead(target_th)) {
-	if (!NIL_P(target_th->errinfo) &&
-	    !FIXNUM_P(target_th->errinfo)) {
+	if (!NIL_P(target_th->ec.errinfo) &&
+	    !FIXNUM_P(target_th->ec.errinfo)) {
 	    return Qnil;
 	}
 	else {

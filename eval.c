@@ -127,7 +127,7 @@ static void
 ruby_finalize_1(void)
 {
     ruby_sig_finalize();
-    GET_THREAD()->errinfo = Qnil;
+    GET_THREAD()->ec.errinfo = Qnil;
     rb_gc_call_finalizer_at_exit();
 }
 
@@ -172,7 +172,7 @@ ruby_cleanup(volatile int ex)
 	SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(th); });
 
       step_0: step++;
-	errs[1] = th->errinfo;
+	errs[1] = th->ec.errinfo;
 	th->ec.safe_level = 0;
 	ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
 
@@ -182,7 +182,7 @@ ruby_cleanup(volatile int ex)
 	/* protect from Thread#raise */
 	th->status = THREAD_KILLED;
 
-	errs[0] = th->errinfo;
+	errs[0] = th->ec.errinfo;
 	SAVE_ROOT_JMPBUF(th, rb_thread_terminate_all());
     }
     else {
@@ -192,7 +192,7 @@ ruby_cleanup(volatile int ex)
 	}
 	if (ex == 0) ex = state;
     }
-    th->errinfo = errs[1];
+    th->ec.errinfo = errs[1];
     sysex = error_handle(ex);
 
     state = 0;
@@ -201,7 +201,7 @@ ruby_cleanup(volatile int ex)
 
 	if (!RTEST(err)) continue;
 
-	/* th->errinfo contains a NODE while break'ing */
+	/* th->ec.errinfo contains a NODE while break'ing */
 	if (THROW_DATA_P(err)) continue;
 
 	if (rb_obj_is_kind_of(err, rb_eSystemExit)) {
@@ -473,7 +473,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
     int nocause = 0;
 
     if (NIL_P(mesg)) {
-	mesg = th->errinfo;
+	mesg = th->ec.errinfo;
 	if (INTERNAL_EXCEPTION_P(mesg)) TH_JUMP_TAG(th, TAG_FATAL);
 	nocause = 1;
     }
@@ -517,19 +517,19 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
     }
 
     if (!NIL_P(mesg)) {
-	th->errinfo = mesg;
+	th->ec.errinfo = mesg;
     }
 
-    if (RTEST(ruby_debug) && !NIL_P(e = th->errinfo) &&
+    if (RTEST(ruby_debug) && !NIL_P(e = th->ec.errinfo) &&
 	!rb_obj_is_kind_of(e, rb_eSystemExit)) {
 	enum ruby_tag_type state;
 
 	mesg = e;
 	TH_PUSH_TAG(th);
 	if ((state = EXEC_TAG()) == TAG_NONE) {
-	    th->errinfo = Qnil;
+	    th->ec.errinfo = Qnil;
 	    e = rb_obj_as_string(mesg);
-	    th->errinfo = mesg;
+	    th->ec.errinfo = mesg;
 	    if (file && line) {
 		e = rb_sprintf("Exception `%"PRIsVALUE"' at %s:%d - %"PRIsVALUE"\n",
 			       rb_obj_class(mesg), file, line, e);
@@ -545,8 +545,8 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	    warn_print_str(e);
 	}
 	TH_POP_TAG();
-	if (state == TAG_FATAL && th->errinfo == exception_error) {
-	    th->errinfo = mesg;
+	if (state == TAG_FATAL && th->ec.errinfo == exception_error) {
+	    th->ec.errinfo = mesg;
 	}
 	else if (state) {
 	    rb_threadptr_reset_raised(th);
@@ -556,13 +556,13 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 
     if (rb_threadptr_set_raised(th)) {
       fatal:
-	th->errinfo = exception_error;
+	th->ec.errinfo = exception_error;
 	rb_threadptr_reset_raised(th);
 	TH_JUMP_TAG(th, TAG_FATAL);
     }
 
     if (tag != TAG_FATAL) {
-	RUBY_DTRACE_HOOK(RAISE, rb_obj_classname(th->errinfo));
+	RUBY_DTRACE_HOOK(RAISE, rb_obj_classname(th->ec.errinfo));
 	EXEC_EVENT_HOOK(th, RUBY_EVENT_RAISE, th->ec.cfp->self, 0, 0, 0, mesg);
     }
 }
@@ -797,7 +797,7 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
     rb_thread_t *th = GET_THREAD();
     rb_control_frame_t *volatile cfp = th->ec.cfp;
     volatile VALUE result = Qfalse;
-    volatile VALUE e_info = th->errinfo;
+    volatile VALUE e_info = th->ec.errinfo;
     va_list args;
 
     TH_PUSH_TAG(th);
@@ -809,7 +809,7 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 	/* escape from r_proc */
 	if (state == TAG_RETRY) {
 	    state = 0;
-	    th->errinfo = Qnil;
+	    th->ec.errinfo = Qnil;
 	    result = Qfalse;
 	    goto retry_entry;
 	}
@@ -823,7 +823,7 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 
 	    va_init_list(args, data2);
 	    while ((eclass = va_arg(args, VALUE)) != 0) {
-		if (rb_obj_is_kind_of(th->errinfo, eclass)) {
+		if (rb_obj_is_kind_of(th->ec.errinfo, eclass)) {
 		    handle = TRUE;
 		    break;
 		}
@@ -834,9 +834,9 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 		result = Qnil;
 		state = 0;
 		if (r_proc) {
-		    result = (*r_proc) (data2, th->errinfo);
+		    result = (*r_proc) (data2, th->ec.errinfo);
 		}
-		th->errinfo = e_info;
+		th->ec.errinfo = e_info;
 	    }
 	}
     }
@@ -902,13 +902,13 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
 	result = (*b_proc) (data1);
     }
     TH_POP_TAG();
-    errinfo = th->errinfo;
+    errinfo = th->ec.errinfo;
     if (!NIL_P(errinfo) && !RB_TYPE_P(errinfo, T_OBJECT)) {
-	th->errinfo = Qnil;
+	th->ec.errinfo = Qnil;
     }
     th->ec.ensure_list=ensure_list.next;
     (*ensure_list.entry.e_proc)(ensure_list.entry.data2);
-    th->errinfo = errinfo;
+    th->ec.errinfo = errinfo;
     if (state)
 	TH_JUMP_TAG(th, state);
     return result;
@@ -1549,7 +1549,7 @@ get_thread_errinfo(rb_thread_t *th)
 	return *ptr;
     }
     else {
-	return th->errinfo;
+	return th->ec.errinfo;
     }
 }
 
@@ -1588,7 +1588,7 @@ VALUE
 rb_errinfo(void)
 {
     rb_thread_t *th = GET_THREAD();
-    return th->errinfo;
+    return th->ec.errinfo;
 }
 
 void
@@ -1597,7 +1597,7 @@ rb_set_errinfo(VALUE err)
     if (!NIL_P(err) && !rb_obj_is_kind_of(err, rb_eException)) {
 	rb_raise(rb_eTypeError, "assigning non-exception to $!");
     }
-    GET_THREAD()->errinfo = err;
+    GET_THREAD()->ec.errinfo = err;
 }
 
 VALUE

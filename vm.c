@@ -1476,7 +1476,7 @@ vm_iter_break(rb_thread_t *th, VALUE val)
     }
 #endif
 
-    th->errinfo = (VALUE)THROW_DATA_NEW(val, target_cfp, TAG_BREAK);
+    th->ec.errinfo = (VALUE)THROW_DATA_NEW(val, target_cfp, TAG_BREAK);
     TH_JUMP_TAG(th, TAG_BREAK);
 }
 
@@ -1803,7 +1803,7 @@ vm_exec(rb_thread_t *th)
 	VALUE type;
 	const rb_control_frame_t *escape_cfp;
 
-	err = (struct vm_throw_data *)th->errinfo;
+	err = (struct vm_throw_data *)th->ec.errinfo;
 
       exception_handler:
 	cont_pc = cont_sp = 0;
@@ -1849,7 +1849,7 @@ vm_exec(rb_thread_t *th)
 			    }
 			}
 			if (catch_iseq == NULL) {
-			    th->errinfo = Qnil;
+			    th->ec.errinfo = Qnil;
 			    result = THROW_DATA_VAL(err);
 			    THROW_DATA_CATCH_FRAME_SET(err, cfp + 1);
 			    hook_before_rewind(th, th->ec.cfp, TRUE, state, err);
@@ -1866,7 +1866,7 @@ vm_exec(rb_thread_t *th)
 #else
 		    *th->ec.cfp->sp++ = THROW_DATA_VAL(err);
 #endif
-		    th->errinfo = Qnil;
+		    th->ec.errinfo = Qnil;
 		    goto vm_loop_start;
 		}
 	    }
@@ -1905,7 +1905,7 @@ vm_exec(rb_thread_t *th)
 			escape_cfp = THROW_DATA_CATCH_FRAME(err);
 			if (cfp == escape_cfp) {
 			    cfp->pc = cfp->iseq->body->iseq_encoded + entry->cont;
-			    th->errinfo = Qnil;
+			    th->ec.errinfo = Qnil;
 			    goto vm_loop_start;
 			}
 		    }
@@ -1938,7 +1938,7 @@ vm_exec(rb_thread_t *th)
 			    *th->ec.cfp->sp++ = THROW_DATA_VAL(err);
 #endif
 			}
-			th->errinfo = Qnil;
+			th->ec.errinfo = Qnil;
 			VM_ASSERT(th->ec.tag->state == TAG_NONE);
 			goto vm_loop_start;
 		    }
@@ -1990,7 +1990,7 @@ vm_exec(rb_thread_t *th)
 
 	    state = 0;
 	    th->ec.tag->state = TAG_NONE;
-	    th->errinfo = Qnil;
+	    th->ec.errinfo = Qnil;
 	    goto vm_loop_start;
 	}
 	else {
@@ -1998,7 +1998,7 @@ vm_exec(rb_thread_t *th)
 
 	    if (VM_FRAME_FINISHED_P(th->ec.cfp)) {
 		rb_vm_pop_frame(th);
-		th->errinfo = (VALUE)err;
+		th->ec.errinfo = (VALUE)err;
 		TH_TMPPOP_TAG();
 		TH_JUMP_TAG(th, state);
 	    }
@@ -2404,7 +2404,7 @@ rb_thread_mark(void *ptr)
 
     RUBY_MARK_UNLESS_NULL(th->thgroup);
     RUBY_MARK_UNLESS_NULL(th->value);
-    RUBY_MARK_UNLESS_NULL(th->errinfo);
+    RUBY_MARK_UNLESS_NULL(th->ec.errinfo);
     RUBY_MARK_UNLESS_NULL(th->pending_interrupt_queue);
     RUBY_MARK_UNLESS_NULL(th->pending_interrupt_mask_stack);
     RUBY_MARK_UNLESS_NULL(th->ec.root_svar);
@@ -2537,8 +2537,8 @@ th_init(rb_thread_t *th, VALUE self)
 		  0 /* dummy pc */, th->ec.stack, 0, 0);
 
     th->status = THREAD_RUNNABLE;
-    th->errinfo = Qnil;
     th->last_status = Qnil;
+    th->ec.errinfo = Qnil;
     th->ec.root_svar = Qfalse;
     th->ec.local_storage_recursive_hash = Qnil;
     th->ec.local_storage_recursive_hash_for_trace = Qnil;

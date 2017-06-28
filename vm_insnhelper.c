@@ -42,7 +42,7 @@ threadptr_stack_overflow(rb_thread_t *th, int setup)
 	rb_ivar_set(mesg, idBt, at);
 	rb_ivar_set(mesg, idBt_locations, at);
     }
-    th->errinfo = mesg;
+    th->ec.errinfo = mesg;
     TH_JUMP_TAG(th, TAG_RAISE);
 }
 

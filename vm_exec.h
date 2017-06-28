@@ -161,7 +161,7 @@ default:                        \
 
 #if OPT_CALL_THREADED_CODE
 #define THROW_EXCEPTION(exc) do { \
-    th->errinfo = (VALUE)(exc); \
+    th->ec.errinfo = (VALUE)(exc); \
     return 0; \
 } while (0)
 #else

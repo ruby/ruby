@@ -743,9 +743,11 @@ typedef struct rb_thread_context_struct {
 
     struct rb_vm_tag *tag;
     struct rb_vm_protect_tag *protect_tag;
-
     int safe_level;
     int raised_flag;
+
+    /* temporary place of errinfo */
+    VALUE errinfo;
 
     /* storage (ec (fiber) local) */
     st_table *local_storage;
@@ -755,6 +757,9 @@ typedef struct rb_thread_context_struct {
     /* eval env */
     const VALUE *root_lep;
     VALUE root_svar;
+
+    /* trace information */
+    struct rb_trace_arg_struct *trace_arg;
 
     /* ensure & callcc */
     rb_ensure_list_t *ensure_list;
@@ -797,9 +802,6 @@ typedef struct rb_thread_struct {
     VALUE thgroup;
     VALUE value;
 
-    /* temporary place of errinfo */
-    VALUE errinfo;
-
     /* temporary place of retval on OPT_CALL_THREADED_CODE */
 #if OPT_CALL_THREADED_CODE
     VALUE retval;
@@ -841,7 +843,6 @@ typedef struct rb_thread_struct {
 
     /* tracer */
     rb_hook_list_t event_hooks;
-    struct rb_trace_arg_struct *trace_arg; /* trace information */
 
     /* fiber */
     rb_fiber_t *fiber;

@@ -7695,7 +7695,7 @@ rb_memerror(void)
 	rb_thread_raised_set(th, RAISED_NOMEMORY);
 	exc = ruby_vm_special_exception_copy(exc);
     }
-    th->errinfo = exc;
+    th->ec.errinfo = exc;
     TH_JUMP_TAG(th, TAG_RAISE);
 }
 

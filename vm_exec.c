@@ -162,8 +162,8 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 	return ret;
     }
     else {
-	VALUE err = th->errinfo;
-	th->errinfo = Qnil;
+	VALUE err = th->ec.errinfo;
+	th->ec.errinfo = Qnil;
 	return err;
     }
 }

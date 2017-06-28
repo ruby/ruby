@@ -408,14 +408,11 @@ cont_save_thread(rb_context_t *cont, rb_thread_t *th)
 {
     rb_thread_t *sth = &cont->saved_thread;
 
+    VM_ASSERT(th->status == THREAD_RUNNABLE);
+
     /* save thread context */
     sth->ec = th->ec;
-
-    VM_ASSERT(th->status == THREAD_RUNNABLE);
-    sth->errinfo = th->errinfo;
     sth->first_proc = th->first_proc;
-
-    sth->trace_arg = th->trace_arg;
 
     /* saved_thread->machine.stack_(start|end) should be NULL */
     /* because it may happen GC afterward */
@@ -548,6 +545,8 @@ cont_restore_thread(rb_context_t *cont)
 	th->ec.root_lep = sth->ec.root_lep;
 	th->ec.root_svar = sth->ec.root_svar;
 	th->ec.ensure_list = sth->ec.ensure_list;
+	th->ec.errinfo = sth->ec.errinfo;
+	th->ec.trace_arg = sth->ec.trace_arg;
     }
     else {
 	/* fiber */
@@ -556,7 +555,6 @@ cont_restore_thread(rb_context_t *cont)
 	th->fiber = (rb_fiber_t*)cont;
     }
 
-    th->errinfo = sth->errinfo;
     th->first_proc = sth->first_proc;
 
     VM_ASSERT(sth->status == THREAD_RUNNABLE);
@@ -1067,8 +1065,6 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
     cont->argc = argc;
     cont->value = make_passing_arg(argc, argv);
 
-    /* restore `tracing' context. see [Feature #4347] */
-    th->trace_arg = cont->saved_thread.trace_arg;
     cont_restore_0(cont, &contval);
     return Qnil; /* unreachable */
 }
@@ -1261,7 +1257,7 @@ rb_fiber_start(void)
 	GetProcPtr(cont->saved_thread.first_proc, proc);
 	argv = (argc = cont->argc) > 1 ? RARRAY_CONST_PTR(args) : &args;
 	cont->value = Qnil;
-	th->errinfo = Qnil;
+	th->ec.errinfo = Qnil;
 	th->ec.root_lep = rb_vm_proc_local_ep(cont->saved_thread.first_proc);
 	th->ec.root_svar = Qfalse;
 	fib->status = FIBER_RUNNING;
@@ -1273,10 +1269,10 @@ rb_fiber_start(void)
 
     if (state) {
 	if (state == TAG_RAISE || state == TAG_FATAL) {
-	    rb_threadptr_pending_interrupt_enque(th, th->errinfo);
+	    rb_threadptr_pending_interrupt_enque(th, th->ec.errinfo);
 	}
 	else {
-	    VALUE err = rb_vm_make_jump_tag_but_local_jump(state, th->errinfo);
+	    VALUE err = rb_vm_make_jump_tag_but_local_jump(state, th->ec.errinfo);
 	    if (!NIL_P(err))
 		rb_threadptr_pending_interrupt_enque(th, err);
 	}
@@ -1444,10 +1440,6 @@ fiber_switch(rb_fiber_t *fib, int argc, const VALUE *argv, int is_resume)
 
     if (is_resume) {
 	fib->prev = fiber_current();
-    }
-    else {
-	/* restore `tracing' context. see [Feature #4347] */
-	th->trace_arg = cont->saved_thread.trace_arg;
     }
 
     cont->argc = argc;
