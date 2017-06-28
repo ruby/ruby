@@ -1006,6 +1006,9 @@ class TestTranscode < Test::Unit::TestCase
     fffd5 = "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD".encode 'UTF-16BE'
     fffd6 = "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD".encode 'UTF-16BE'
 
+    assert_equal fffd1, "\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+
     assert_equal fffd2, "\xC0\x80".encode("utf-16be", "utf-8", invalid: :replace)
     assert_equal fffd2, "\xC0\xBF".encode("utf-16be", "utf-8", invalid: :replace)
     assert_equal fffd2, "\xC1\x80".encode("utf-16be", "utf-8", invalid: :replace)
