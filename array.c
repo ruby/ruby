@@ -25,7 +25,10 @@
 
 VALUE rb_cArray;
 
-static ID id_cmp, id_div, id_power;
+static ID id_div;
+
+/* for OPTIMIZED_CMP: */
+#define id_cmp idCmp
 
 #define ARY_DEFAULT_SIZE 16
 #define ARY_MAX_SIZE (LONG_MAX / (int)sizeof(VALUE))
@@ -5310,7 +5313,7 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
     }
 
     v = LONG2NUM(k);
-    return rb_funcallv(LONG2NUM(n), id_power, 1, &v);
+    return rb_funcallv(LONG2NUM(n), idPow, 1, &v);
 }
 
 /*
@@ -6259,8 +6262,6 @@ Init_Array(void)
     rb_define_method(rb_cArray, "dig", rb_ary_dig, -1);
     rb_define_method(rb_cArray, "sum", rb_ary_sum, -1);
 
-    id_cmp = rb_intern("<=>");
     id_random = rb_intern("random");
     id_div = rb_intern("div");
-    id_power = rb_intern("**");
 }
