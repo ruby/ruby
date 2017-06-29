@@ -5,8 +5,8 @@ class HaveConstantMatcher < VariableMatcher
   self.description      = 'constant'
 end
 
-class Object
-  def have_constant(variable)
+module MSpecMatchers
+  private def have_constant(variable)
     HaveConstantMatcher.new(variable)
   end
 end

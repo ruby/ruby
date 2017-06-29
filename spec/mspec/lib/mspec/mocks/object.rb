@@ -1,10 +1,6 @@
 require 'mspec/mocks/proxy'
 
 class Object
-  def stub!(sym)
-    Mock.install_method self, sym, :stub
-  end
-
   def should_receive(sym)
     Mock.install_method self, sym
   end
@@ -14,15 +10,19 @@ class Object
     proxy.exactly(0).times
   end
 
-  def mock(name, options={})
-    MockObject.new name, options
+  def stub!(sym)
+    Mock.install_method self, sym, :stub
   end
+end
 
-  def mock_int(val)
-    MockIntObject.new(val)
-  end
+def mock(name, options={})
+  MockObject.new name, options
+end
 
-  def mock_numeric(name, options={})
-    NumericMockObject.new name, options
-  end
+def mock_int(val)
+  MockIntObject.new(val)
+end
+
+def mock_numeric(name, options={})
+  NumericMockObject.new name, options
 end

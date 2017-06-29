@@ -38,6 +38,14 @@ require 'mspec/helpers/tmp'
 # If +nil+ is passed for the first argument, the command line
 # will be built only from the options hash.
 #
+# If no arguments are passed to ruby_exe, it returns an Array
+# containing the interpreter executable and the flags:
+#
+#    spawn(*ruby_exe, "-e", "puts :hello")
+#
+# This avoids spawning an extra shell, and ensure the pid returned by spawn
+# corresponds to the ruby process and not the shell.
+#
 # The RUBY_EXE constant is setup by mspec automatically
 # and is used by ruby_exe and ruby_cmd. The mspec runner script
 # will set ENV['RUBY_EXE'] to the name of the executable used
@@ -121,9 +129,13 @@ def resolve_ruby_exe
   raise Exception, "Unable to find a suitable ruby executable."
 end
 
-def ruby_exe(code, opts = {})
+def ruby_exe(code = :not_given, opts = {})
   if opts[:dir]
     raise "ruby_exe(..., dir: dir) is no longer supported, use Dir.chdir"
+  end
+
+  if code == :not_given
+    return RUBY_EXE.split(' ')
   end
 
   env = opts[:env] || {}

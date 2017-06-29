@@ -72,8 +72,8 @@ class RaiseErrorMatcher
   end
 end
 
-class Object
-  def raise_error(exception=Exception, message=nil, &block)
+module MSpecMatchers
+  private def raise_error(exception=Exception, message=nil, &block)
     RaiseErrorMatcher.new(exception, message, &block)
   end
 end

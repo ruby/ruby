@@ -20,8 +20,8 @@ class BeCloseMatcher
   end
 end
 
-class Object
-  def be_close(expected, tolerance)
+module MSpecMatchers
+  private def be_close(expected, tolerance)
     BeCloseMatcher.new(expected, tolerance)
   end
 end

@@ -60,8 +60,8 @@ class OutputMatcher
   end
 end
 
-class Object
-  def output(stdout=nil, stderr=nil)
+module MSpecMatchers
+  private def output(stdout=nil, stderr=nil)
     OutputMatcher.new(stdout, stderr)
   end
 end

@@ -18,9 +18,16 @@ IMPLS = {
   },
 }
 
+MSPEC = ARGV.delete('--mspec')
+
 # Assuming the rubyspec repo is a sibling of the mspec repo
 RUBYSPEC_REPO = File.expand_path("../../../../rubyspec", __FILE__)
 raise RUBYSPEC_REPO unless Dir.exist?(RUBYSPEC_REPO)
+
+MSPEC_REPO = File.expand_path("../../../../mspec", __FILE__)
+raise MSPEC_REPO if MSPEC && !Dir.exist?(MSPEC_REPO)
+
+SOURCE_REPO = MSPEC ? MSPEC_REPO : RUBYSPEC_REPO
 
 NOW = Time.now
 
@@ -57,10 +64,13 @@ class RubyImplementation
   end
 
   def last_merge_message
-    @data[:merge_message] || "Merge ruby/spec commit"
+    message = @data[:merge_message] || "Merge ruby/spec commit"
+    message.gsub!("ruby/spec", "ruby/mspec") if MSPEC
+    message
   end
 
   def prefix
+    return "spec/mspec" if MSPEC
     @data[:prefix] || "spec/ruby"
   end
 
@@ -96,18 +106,18 @@ end
 def filter_commits(impl)
   Dir.chdir(impl.repo_name) do
     date = NOW.strftime("%F")
-    branch = "specs-#{date}"
+    branch = "#{MSPEC ? :mspec : :specs}-#{date}"
 
     unless branch?(branch)
       sh "git", "checkout", "-b", branch
       sh "git", "filter-branch", "-f", "--subdirectory-filter", impl.prefix, *impl.from_commit
-      sh "git", "push", "-f", RUBYSPEC_REPO, "#{branch}:#{impl.name}"
+      sh "git", "push", "-f", SOURCE_REPO, "#{branch}:#{impl.name}"
     end
   end
 end
 
 def rebase_commits(impl)
-  Dir.chdir(RUBYSPEC_REPO) do
+  Dir.chdir(SOURCE_REPO) do
     sh "git", "checkout", "master"
     sh "git", "pull"
 
@@ -144,25 +154,29 @@ end
 
 def test_new_specs
   require "yaml"
-  Dir.chdir(RUBYSPEC_REPO) do
-    versions = YAML.load_file(".travis.yml")
-    versions = versions["matrix"]["include"].map { |job| job["rvm"] }
-    versions.delete "ruby-head"
-    min_version, max_version = versions.minmax
+  Dir.chdir(SOURCE_REPO) do
+    if MSPEC
+      sh "bundle", "exec", "rspec"
+    else
+      versions = YAML.load_file(".travis.yml")
+      versions = versions["matrix"]["include"].map { |job| job["rvm"] }
+      versions.delete "ruby-head"
+      min_version, max_version = versions.minmax
 
-    run_rubyspec = -> version {
-      command = "chruby #{version} && ../mspec/bin/mspec -j"
-      sh ENV["SHELL"], "-c", command
-    }
-    run_rubyspec[min_version]
-    run_rubyspec[max_version]
-    run_rubyspec["trunk"]
+      run_rubyspec = -> version {
+        command = "chruby #{version} && ../mspec/bin/mspec -j"
+        sh ENV["SHELL"], "-c", command
+      }
+      run_rubyspec[min_version]
+      run_rubyspec[max_version]
+      run_rubyspec["trunk"]
+    end
   end
 end
 
 def verify_commits(impl)
   puts
-  Dir.chdir(RUBYSPEC_REPO) do
+  Dir.chdir(SOURCE_REPO) do
     history = `git log master...`
     history.lines.slice_before(/^commit \h{40}$/).each do |commit, *message|
       commit = commit.chomp.split.last
@@ -182,7 +196,7 @@ def verify_commits(impl)
 end
 
 def fast_forward_master(impl)
-  Dir.chdir(RUBYSPEC_REPO) do
+  Dir.chdir(SOURCE_REPO) do
     sh "git", "checkout", "master"
     sh "git", "merge", "--ff-only", "#{impl.name}-rebased"
   end
@@ -192,7 +206,7 @@ def check_ci
   puts
   puts <<-EOS
   Push to master, and check that the CI passes:
-    https://github.com/ruby/spec/commits/master
+    https://github.com/ruby/#{:m if MSPEC}spec/commits/master
 
   EOS
 end

@@ -114,6 +114,7 @@ class MSpecMain < MSpecScript
 
     puts children.map { |child| child.gets }.uniq
     formatter.start
+    last_files = {}
 
     until @files.empty?
       IO.select(children)[0].each { |io|
@@ -127,22 +128,33 @@ class MSpecMain < MSpecScript
           while chunk = (io.read_nonblock(4096) rescue nil)
             reply += chunk
           end
-          raise reply
+          reply.chomp!('.')
+          msg = "A child mspec-run process printed unexpected output on STDOUT"
+          if last_file = last_files[io]
+            msg += " while running #{last_file}"
+          end
+          abort "\n#{msg}: #{reply.inspect}"
         end
-        io.puts @files.shift unless @files.empty?
+
+        unless @files.empty?
+          file = @files.shift
+          last_files[io] = file
+          io.puts file
+        end
       }
     end
 
-    ok = true
+    success = true
     children.each { |child|
       child.puts "QUIT"
-      Process.wait(child.pid)
-      ok &&= $?.success?
+      _pid, status = Process.wait2(child.pid)
+      success &&= status.success?
+      child.close
     }
 
     formatter.aggregate_results(output_files)
     formatter.finish
-    ok
+    success
   end
 
   def run
@@ -152,7 +164,7 @@ class MSpecMain < MSpecScript
     argv.concat config[:flags]
     argv.concat config[:loadpath]
     argv.concat config[:requires]
-    argv << "#{MSPEC_HOME}/bin/mspec-#{ config[:command] || "run" }"
+    argv << "#{MSPEC_HOME}/bin/mspec-#{config[:command] || 'run'}"
     argv.concat config[:options]
 
     if config[:multi]

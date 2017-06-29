@@ -17,12 +17,12 @@ class InfinityMatcher
   end
 end
 
-class Object
-  def be_positive_infinity
+module MSpecMatchers
+  private def be_positive_infinity
     InfinityMatcher.new(1)
   end
 
-  def be_negative_infinity
+  private def be_negative_infinity
     InfinityMatcher.new(-1)
   end
 end

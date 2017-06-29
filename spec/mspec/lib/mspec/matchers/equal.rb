@@ -19,8 +19,8 @@ class EqualMatcher
   end
 end
 
-class Object
-  def equal(expected)
+module MSpecMatchers
+  private def equal(expected)
     EqualMatcher.new(expected)
   end
 end

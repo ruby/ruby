@@ -33,6 +33,7 @@ MSpec.register :finish, monitor
 at_exit { MSpec.actions :finish }
 
 MSpec.actions :start
+MSpec.setup_env
 
 # Specs
 describe "MSpec expectation method #should" do

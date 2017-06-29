@@ -11,6 +11,7 @@ describe Object, "#it_behaves_like" do
 
     @state = ContextState.new "Top level"
     @state.instance_variable_set :@parsed, true
+    @state.singleton_class.send(:public, :it_behaves_like)
 
     @shared = ContextState.new :shared_spec, :shared => true
     MSpec.stub(:retrieve_shared).and_return(@shared)
@@ -51,6 +52,7 @@ describe Object, "#it_behaves_like" do
 
       @state2 = ContextState.new "Second top level"
       @state2.instance_variable_set :@parsed, true
+      @state2.singleton_class.send(:public, :it_behaves_like)
     end
 
     it "ensures the shared spec state is distinct" do

@@ -396,7 +396,7 @@ class MSpecOptions
       end
       def obj.load
         file = MSpec.retrieve :file
-        print "\n#{file.ljust(@width)}"
+        STDERR.print "\n#{file.ljust(@width)}"
       end
       MSpec.register :start, obj
       MSpec.register :load, obj
@@ -407,7 +407,7 @@ class MSpecOptions
       obj = Object.new
       obj.instance_variable_set :@marker, o
       def obj.load
-        print @marker
+        STDERR.print @marker
       end
       MSpec.register :load, obj
     end

@@ -1,28 +1,26 @@
 class Object
-  def before(at=:each, &block)
+  private def before(at=:each, &block)
     MSpec.current.before at, &block
   end
 
-  def after(at=:each, &block)
+  private def after(at=:each, &block)
     MSpec.current.after at, &block
   end
 
-  def describe(mod, msg=nil, options=nil, &block)
+  private def describe(mod, msg=nil, options=nil, &block)
     MSpec.describe mod, msg, &block
   end
 
-  def it(msg, &block)
+  private def it(msg, &block)
     MSpec.current.it msg, &block
   end
 
-  def it_should_behave_like(desc)
+  private def it_should_behave_like(desc)
     MSpec.current.it_should_behave_like desc
   end
 
-  # For ReadRuby compatiability
-  def doc(*a)
-  end
-
   alias_method :context, :describe
+  private :context
   alias_method :specify, :it
+  private :specify
 end

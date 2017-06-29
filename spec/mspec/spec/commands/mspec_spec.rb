@@ -60,13 +60,13 @@ describe MSpecMain, "#run" do
   end
 
   it "uses exec to invoke the runner script" do
-    @script.should_receive(:exec).with("ruby", "#{MSPEC_HOME}/bin/mspec-run")
+    @script.should_receive(:exec).with("ruby", "#{MSPEC_HOME}/bin/mspec-run", close_others: false)
     @script.options []
     @script.run
   end
 
   it "shows the command line on stderr" do
-    @script.should_receive(:exec).with("ruby", "#{MSPEC_HOME}/bin/mspec-run")
+    @script.should_receive(:exec).with("ruby", "#{MSPEC_HOME}/bin/mspec-run", close_others: false)
     @script.options []
     @script.run
     $stderr.to_s.should == "$ ruby #{Dir.pwd}/bin/mspec-run\n"
@@ -74,7 +74,7 @@ describe MSpecMain, "#run" do
 
   it "adds config[:launch] to the exec options" do
     @script.should_receive(:exec).with("ruby",
-        "-Xlaunch.option", "#{MSPEC_HOME}/bin/mspec-run")
+        "-Xlaunch.option", "#{MSPEC_HOME}/bin/mspec-run", close_others: false)
     @config[:launch] << "-Xlaunch.option"
     @script.options []
     @script.run

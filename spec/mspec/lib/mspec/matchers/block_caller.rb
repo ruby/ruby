@@ -28,8 +28,8 @@ class BlockingMatcher
   end
 end
 
-class Object
-  def block_caller(timeout = 0.1)
+module MSpecMatchers
+  private def block_caller(timeout = 0.1)
     BlockingMatcher.new
   end
 end

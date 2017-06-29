@@ -1,9 +1,5 @@
 require 'mspec/expectations/expectations'
 
-class Object
-  alias_method :__mspec_object_id__, :object_id
-end
-
 module Mock
   def self.reset
     @mocks = @stubs = @objects = nil
@@ -22,7 +18,7 @@ module Mock
   end
 
   def self.replaced_name(obj, sym)
-    :"__mspec_#{obj.__mspec_object_id__}_#{sym}__"
+    :"__mspec_#{obj.__id__}_#{sym}__"
   end
 
   def self.replaced_key(obj, sym)

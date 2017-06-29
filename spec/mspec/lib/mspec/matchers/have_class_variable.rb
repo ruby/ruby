@@ -5,8 +5,8 @@ class HaveClassVariableMatcher < VariableMatcher
   self.description      = 'class variable'
 end
 
-class Object
-  def have_class_variable(variable)
+module MSpecMatchers
+  private def have_class_variable(variable)
     HaveClassVariableMatcher.new(variable)
   end
 end

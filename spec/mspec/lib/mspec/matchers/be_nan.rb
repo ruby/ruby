@@ -13,8 +13,8 @@ class BeNaNMatcher
   end
 end
 
-class Object
-  def be_nan
+module MSpecMatchers
+  private def be_nan
     BeNaNMatcher.new
   end
 end

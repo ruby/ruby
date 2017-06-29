@@ -19,8 +19,8 @@ class EqlMatcher
   end
 end
 
-class Object
-  def eql(expected)
+module MSpecMatchers
+  private def eql(expected)
     EqlMatcher.new(expected)
   end
 end

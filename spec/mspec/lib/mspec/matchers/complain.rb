@@ -49,8 +49,8 @@ class ComplainMatcher
   end
 end
 
-class Object
-  def complain(complaint=nil)
+module MSpecMatchers
+  private def complain(complaint=nil)
     ComplainMatcher.new(complaint)
   end
 end

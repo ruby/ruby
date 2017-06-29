@@ -64,8 +64,8 @@ class OutputToFDMatcher
   end
 end
 
-class Object
-  def output_to_fd(what, where = STDOUT)
+module MSpecMatchers
+  private def output_to_fd(what, where = STDOUT)
     OutputToFDMatcher.new what, where
   end
 end
