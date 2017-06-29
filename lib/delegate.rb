@@ -326,10 +326,6 @@ class SimpleDelegator < Delegator
   #
   # Changes the delegate object to _obj_.
   #
-  # It's important to note that this does *not* cause SimpleDelegator's methods
-  # to change.  Because of this, you probably only want to change delegation
-  # to objects of the same type as the original delegate.
-  #
   # Here's an example of changing the delegation object.
   #
   #   names = SimpleDelegator.new(%w{James Edward Gray II})
