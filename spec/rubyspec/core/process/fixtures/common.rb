@@ -1,4 +1,17 @@
 module ProcessSpecs
+  def self.use_system_ruby(context)
+    if defined?(MSpecScript::SYSTEM_RUBY)
+      context.send(:before, :all) do
+        @ruby = ::RUBY_EXE
+        Object.const_set(:RUBY_EXE, MSpecScript::SYSTEM_RUBY)
+      end
+
+      context.send(:after, :all) do
+        Object.const_set(:RUBY_EXE, @ruby)
+      end
+    end
+  end
+
   class Daemonizer
     attr_reader :input, :data
 
@@ -55,13 +68,6 @@ module ProcessSpecs
     end
 
     def wait_on_result
-      # Ensure the process exits
-      begin
-        Process.kill :TERM, pid if pid
-      rescue Errno::ESRCH
-        # Ignore the process not existing
-      end
-
       @thread.join
     end
 

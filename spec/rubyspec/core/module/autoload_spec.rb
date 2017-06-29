@@ -414,7 +414,7 @@ describe "Module#autoload" do
         mod_names = []
         mod_count.times do |i|
           mod_name = :"Mod#{i}"
-          autoload mod_name, autoload_path
+          Object.autoload mod_name, autoload_path
           mod_names << mod_name
         end
 

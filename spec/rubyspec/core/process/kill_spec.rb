@@ -2,6 +2,8 @@ require File.expand_path('../../../spec_helper', __FILE__)
 require File.expand_path('../fixtures/common', __FILE__)
 
 describe "Process.kill" do
+  ProcessSpecs.use_system_ruby(self)
+
   before :each do
     @pid = Process.pid
   end
@@ -22,7 +24,7 @@ describe "Process.kill" do
   end
 
   it "raises Errno::ESRCH if the process does not exist" do
-    pid = Process.spawn(ruby_cmd("sleep 10"))
+    pid = Process.spawn(*ruby_exe, "-e", "sleep 10")
     Process.kill("SIGKILL", pid)
     Process.wait(pid)
     lambda {
@@ -33,6 +35,8 @@ end
 
 platform_is_not :windows do
   describe "Process.kill" do
+    ProcessSpecs.use_system_ruby(self)
+
     before :each do
       @sp = ProcessSpecs::Signalizer.new
     end
@@ -73,6 +77,8 @@ platform_is_not :windows do
   end
 
   describe "Process.kill" do
+    ProcessSpecs.use_system_ruby(self)
+
     before :each do
       @sp1 = ProcessSpecs::Signalizer.new
       @sp2 = ProcessSpecs::Signalizer.new
@@ -95,57 +101,27 @@ platform_is_not :windows do
   end
 
   describe "Process.kill" do
-    before :each do
-      @sp = ProcessSpecs::Signalizer.new "self"
-    end
-
     after :each do
-      @sp.cleanup
+      @sp.cleanup if @sp
     end
 
     it "signals the process group if the PID is zero" do
+      @sp = ProcessSpecs::Signalizer.new "self"
       @sp.result.should == "signaled"
-    end
-  end
-
-  describe "Process.kill" do
-    before :each do
-      @sp = ProcessSpecs::Signalizer.new "group_numeric"
-    end
-
-    after :each do
-      @sp.cleanup
     end
 
     it "signals the process group if the signal number is negative" do
+      @sp = ProcessSpecs::Signalizer.new "group_numeric"
       @sp.result.should == "signaled"
-    end
-  end
-
-  describe "Process.kill" do
-    before :each do
-      @sp = ProcessSpecs::Signalizer.new "group_short_string"
-    end
-
-    after :each do
-      @sp.cleanup
     end
 
     it "signals the process group if the short signal name starts with a minus sign" do
+      @sp = ProcessSpecs::Signalizer.new "group_short_string"
       @sp.result.should == "signaled"
-    end
-  end
-
-  describe "Process.kill" do
-    before :each do
-      @sp = ProcessSpecs::Signalizer.new "group_full_string"
-    end
-
-    after :each do
-      @sp.cleanup
     end
 
     it "signals the process group if the full signal name starts with a minus sign" do
+      @sp = ProcessSpecs::Signalizer.new "group_full_string"
       @sp.result.should == "signaled"
     end
   end

@@ -35,6 +35,12 @@ describe :float_modulo, shared: true do
     (1/r).should < 0
   end
 
+  it "tries to coerce the modulus" do
+    obj = mock("modulus")
+    obj.should_receive(:coerce).with(1.25).and_return([1.25, 0.5])
+    (1.25 % obj).should == 0.25
+  end
+
   it "raises a ZeroDivisionError if other is zero" do
     lambda { 1.0.send(@method, 0) }.should raise_error(ZeroDivisionError)
     lambda { 1.0.send(@method, 0.0) }.should raise_error(ZeroDivisionError)

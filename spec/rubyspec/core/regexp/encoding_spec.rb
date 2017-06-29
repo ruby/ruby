@@ -15,7 +15,7 @@ describe "Regexp#encoding" do
   end
 
   it "returns ASCII-8BIT if the 'n' modifier is supplied and non-US-ASCII characters are present" do
-    /#{}\xc2\xa1/n.encoding.should == Encoding::ASCII_8BIT
+    /\xc2\xa1/n.encoding.should == Encoding::ASCII_8BIT
   end
 
   it "defaults to UTF-8 if \\u escapes appear" do

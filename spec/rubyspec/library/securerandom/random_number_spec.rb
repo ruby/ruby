@@ -12,6 +12,16 @@ describe "SecureRandom.random_number" do
     end
   end
 
+  it "generates a random (potentially bignum) integer value for bignum argument" do
+    max = 12345678901234567890
+    11.times do
+      num = SecureRandom.random_number max
+      num.should be_kind_of(Integer)
+      (0 <= num).should == true
+      (num < max).should == true
+    end
+  end
+
   it "generates a random float number between 0.0 and 1.0 if no argument provided" do
     64.times do
       num = SecureRandom.random_number
@@ -21,8 +31,46 @@ describe "SecureRandom.random_number" do
     end
   end
 
+  ruby_version_is "2.3" do
+    it "generates a random value in given (integer) range limits" do
+      64.times do
+        num = SecureRandom.random_number 11...13
+        num.should be_kind_of(Integer)
+        (11 <= num).should == true
+        (num < 13).should == true
+      end
+    end
+
+    it "generates a random value in given big (integer) range limits" do
+      lower = 12345678901234567890
+      upper = 12345678901234567890 + 5
+      32.times do
+        num = SecureRandom.random_number lower..upper
+        num.should be_kind_of(Integer)
+        (lower <= num).should == true
+        (num <= upper).should == true
+      end
+    end
+
+    it "generates a random value in given (float) range limits" do
+      64.times do
+        num = SecureRandom.random_number 0.6..0.9
+        num.should be_kind_of(Float)
+        (0.6 <= num).should == true
+        (num <= 0.9).should == true
+      end
+    end
+  end
+
   it "generates a random float number between 0.0 and 1.0 if argument is negative" do
     num = SecureRandom.random_number(-10)
+    num.should be_kind_of(Float)
+    (0.0 <= num).should == true
+    (num < 1.0).should == true
+  end
+
+  it "generates a random float number between 0.0 and 1.0 if argument is negative float" do
+    num = SecureRandom.random_number(-11.1)
     num.should be_kind_of(Float)
     (0.0 <= num).should == true
     (num < 1.0).should == true

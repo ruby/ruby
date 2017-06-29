@@ -1134,7 +1134,7 @@ with_feature :encoding do
         STDIN.external_encoding.should equal(Encoding::ISO_8859_16)
       end
 
-      it "has the encodings set by #set_encoding"do
+      it "has the encodings set by #set_encoding" do
         code = "STDIN.set_encoding Encoding::IBM775, Encoding::IBM866; " \
                "p [STDIN.external_encoding.name, STDIN.internal_encoding.name]"
         ruby_exe(code).chomp.should == %{["IBM775", "IBM866"]}
@@ -1167,7 +1167,7 @@ with_feature :encoding do
         STDOUT.external_encoding.should be_nil
       end
 
-      it "has the encodings set by #set_encoding"do
+      it "has the encodings set by #set_encoding" do
         code = "STDOUT.set_encoding Encoding::IBM775, Encoding::IBM866; " \
                "p [STDOUT.external_encoding.name, STDOUT.internal_encoding.name]"
         ruby_exe(code).chomp.should == %{["IBM775", "IBM866"]}
@@ -1193,7 +1193,7 @@ with_feature :encoding do
         STDERR.external_encoding.should be_nil
       end
 
-      it "has the encodings set by #set_encoding"do
+      it "has the encodings set by #set_encoding" do
         code = "STDERR.set_encoding Encoding::IBM775, Encoding::IBM866; " \
                "p [STDERR.external_encoding.name, STDERR.internal_encoding.name]"
         ruby_exe(code).chomp.should == %{["IBM775", "IBM866"]}

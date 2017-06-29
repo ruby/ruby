@@ -9,10 +9,10 @@ describe "IO#<<" do
   end
 
   it "calls #to_s on the object to print it" do
-     lambda {
-       $stderr << 1337
+    lambda {
+      $stderr << 1337
     }.should output_to_fd("1337", $stderr)
-   end
+  end
 
   it "raises an error if the stream is closed" do
     io = IOSpecs.closed_io

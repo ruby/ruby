@@ -1,4 +1,5 @@
 require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/common', __FILE__)
 
 newline = "\n"
 platform_is :windows do
@@ -31,8 +32,14 @@ describe :process_spawn_does_not_close_std_streams, shared: true do
 end
 
 describe "Process.spawn" do
+  ProcessSpecs.use_system_ruby(self)
+
   before :each do
     @name = tmp("process_spawn.txt")
+    @var = "$FOO"
+    platform_is :windows do
+      @var = "%FOO%"
+    end
   end
 
   after :each do
@@ -44,14 +51,14 @@ describe "Process.spawn" do
   end
 
   it "returns the process ID of the new process as a Fixnum" do
-    pid = Process.spawn(ruby_cmd("exit"))
+    pid = Process.spawn(*ruby_exe, "-e", "exit")
     Process.wait pid
     pid.should be_an_instance_of(Fixnum)
   end
 
   it "returns immediately" do
     start = Time.now
-    pid = Process.spawn(ruby_cmd("sleep 10"))
+    pid = Process.spawn(*ruby_exe, "-e", "sleep 10")
     (Time.now - start).should < 5
     Process.kill :KILL, pid
     Process.wait pid
@@ -196,52 +203,57 @@ describe "Process.spawn" do
   end
 
   it "sets environment variables in the child environment" do
-    Process.wait Process.spawn({"FOO" => "BAR"}, ruby_cmd(fixture(__FILE__, "env.rb"), args: @name))
-    File.read(@name).should == "BAR"
+    Process.wait Process.spawn({"FOO" => "BAR"}, "echo #{@var}>#{@name}")
+    File.read(@name).should == "BAR\n"
   end
 
   it "unsets environment variables whose value is nil" do
     ENV["FOO"] = "BAR"
-    Process.wait Process.spawn({"FOO" => nil}, ruby_cmd(fixture(__FILE__, "env.rb"), args: @name))
-    File.read(@name).should == ""
+    Process.wait Process.spawn({"FOO" => nil}, "echo #{@var}>#{@name}")
+    expected = "\n"
+    platform_is :windows do
+      # Windows does not expand the variable if it is unset
+      expected = "#{@var}\n"
+    end
+    File.read(@name).should == expected
   end
 
   it "calls #to_hash to convert the environment" do
     o = mock("to_hash")
     o.should_receive(:to_hash).and_return({"FOO" => "BAR"})
-    Process.wait Process.spawn(o, ruby_cmd(fixture(__FILE__, "env.rb"), args: @name))
-    File.read(@name).should == "BAR"
+    Process.wait Process.spawn(o, "echo #{@var}>#{@name}")
+    File.read(@name).should == "BAR\n"
   end
 
   it "calls #to_str to convert the environment keys" do
     o = mock("to_str")
     o.should_receive(:to_str).and_return("FOO")
-    Process.wait Process.spawn({o => "BAR"}, ruby_cmd(fixture(__FILE__, "env.rb"), args: @name))
-    File.read(@name).should == "BAR"
+    Process.wait Process.spawn({o => "BAR"}, "echo #{@var}>#{@name}")
+    File.read(@name).should == "BAR\n"
   end
 
   it "calls #to_str to convert the environment values" do
     o = mock("to_str")
     o.should_receive(:to_str).and_return("BAR")
-    Process.wait Process.spawn({"FOO" => o}, ruby_cmd(fixture(__FILE__, "env.rb"), args: @name))
-    File.read(@name).should == "BAR"
+    Process.wait Process.spawn({"FOO" => o}, "echo #{@var}>#{@name}")
+    File.read(@name).should == "BAR\n"
   end
 
   it "raises an ArgumentError if an environment key includes an equals sign" do
     lambda do
-      Process.spawn({"FOO=" => "BAR"}, ruby_cmd(fixture(__FILE__, "env.rb"), args: @name))
+      Process.spawn({"FOO=" => "BAR"}, "echo #{@var}>#{@name}")
     end.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if an environment key includes a null byte" do
     lambda do
-      Process.spawn({"\000" => "BAR"}, ruby_cmd(fixture(__FILE__, "env.rb"), args: @name))
+      Process.spawn({"\000" => "BAR"}, "echo #{@var}>#{@name}")
     end.should raise_error(ArgumentError)
   end
 
   it "raises an ArgumentError if an environment value includes a null byte" do
     lambda do
-      Process.spawn({"FOO" => "\000"}, ruby_cmd(fixture(__FILE__, "env.rb"), args: @name))
+      Process.spawn({"FOO" => "\000"}, "echo #{@var}>#{@name}")
     end.should raise_error(ArgumentError)
   end
 
@@ -252,7 +264,7 @@ describe "Process.spawn" do
       "PATH" => ENV["PATH"],
       "HOME" => ENV["HOME"]
     }
-    @common_env_spawn_args = [@minimal_env, ruby_cmd(fixture(__FILE__, "env.rb"), options: "--disable-gems", args: @name)]
+    @common_env_spawn_args = [@minimal_env, "echo #{@var}>#{@name}"]
   end
 
   platform_is_not :windows do
@@ -260,7 +272,7 @@ describe "Process.spawn" do
       ENV["FOO"] = "BAR"
       Process.wait Process.spawn(*@common_env_spawn_args, unsetenv_others: true)
       $?.success?.should be_true
-      File.read(@name).should == ""
+      File.read(@name).should == "\n"
     end
   end
 
@@ -268,15 +280,15 @@ describe "Process.spawn" do
     ENV["FOO"] = "BAR"
     Process.wait Process.spawn(*@common_env_spawn_args, unsetenv_others: false)
     $?.success?.should be_true
-    File.read(@name).should == "BAR"
+    File.read(@name).should == "BAR\n"
   end
 
   platform_is_not :windows do
     it "does not unset environment variables included in the environment hash" do
       env = @minimal_env.merge({"FOO" => "BAR"})
-      Process.wait Process.spawn(env, ruby_cmd(fixture(__FILE__, "env.rb"), options: "--disable-gems", args: @name), unsetenv_others: true)
+      Process.wait Process.spawn(env, "echo #{@var}>#{@name}", unsetenv_others: true)
       $?.success?.should be_true
-      File.read(@name).should == "BAR"
+      File.read(@name).should == "BAR\n"
     end
   end
 
@@ -400,55 +412,55 @@ describe "Process.spawn" do
   it "redirects STDOUT to the given file descriptior if out: Fixnum" do
     File.open(@name, 'w') do |file|
       lambda do
-        Process.wait Process.spawn(ruby_cmd(fixture(__FILE__, "print.rb")), out: file.fileno)
-      end.should output_to_fd("glark", file)
+        Process.wait Process.spawn("echo glark", out: file.fileno)
+      end.should output_to_fd("glark\n", file)
     end
   end
 
   it "redirects STDOUT to the given file if out: IO" do
     File.open(@name, 'w') do |file|
       lambda do
-        Process.wait Process.spawn(ruby_cmd(fixture(__FILE__, "print.rb")), out: file)
-      end.should output_to_fd("glark", file)
+        Process.wait Process.spawn("echo glark", out: file)
+      end.should output_to_fd("glark\n", file)
     end
   end
 
   it "redirects STDOUT to the given file if out: String" do
-    Process.wait Process.spawn(ruby_cmd(fixture(__FILE__, "print.rb")), out: @name)
-    File.read(@name).should == "glark"
+    Process.wait Process.spawn("echo glark", out: @name)
+    File.read(@name).should == "glark\n"
   end
 
   it "redirects STDOUT to the given file if out: [String name, String mode]" do
-    Process.wait Process.spawn(ruby_cmd(fixture(__FILE__, "print.rb")), out: [@name, 'w'])
-    File.read(@name).should == "glark"
+    Process.wait Process.spawn("echo glark", out: [@name, 'w'])
+    File.read(@name).should == "glark\n"
   end
 
   it "redirects STDERR to the given file descriptior if err: Fixnum" do
     File.open(@name, 'w') do |file|
       lambda do
-        Process.wait Process.spawn(ruby_cmd("STDERR.print :glark"), err: file.fileno)
-      end.should output_to_fd("glark", file)
+        Process.wait Process.spawn("echo glark>&2", err: file.fileno)
+      end.should output_to_fd("glark\n", file)
     end
   end
 
   it "redirects STDERR to the given file descriptor if err: IO" do
     File.open(@name, 'w') do |file|
       lambda do
-        Process.wait Process.spawn(ruby_cmd("STDERR.print :glark"), err: file)
-      end.should output_to_fd("glark", file)
+        Process.wait Process.spawn("echo glark>&2", err: file)
+      end.should output_to_fd("glark\n", file)
     end
   end
 
   it "redirects STDERR to the given file if err: String" do
-    Process.wait Process.spawn(ruby_cmd("STDERR.print :glark"), err: @name)
-    File.read(@name).should == "glark"
+    Process.wait Process.spawn("echo glark>&2", err: @name)
+    File.read(@name).should == "glark\n"
   end
 
   it "redirects STDERR to child STDOUT if :err => [:child, :out]" do
     File.open(@name, 'w') do |file|
       lambda do
-        Process.wait Process.spawn(ruby_cmd("STDERR.print :glark"), :out => file, :err => [:child, :out])
-      end.should output_to_fd("glark", file)
+        Process.wait Process.spawn("echo glark>&2", :out => file, :err => [:child, :out])
+      end.should output_to_fd("glark\n", file)
     end
   end
 

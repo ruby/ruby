@@ -11,7 +11,7 @@ describe "Socket::BasicSocket#getsockname" do
     @socket = TCPServer.new("127.0.0.1", 0)
     sockaddr = Socket.unpack_sockaddr_in(@socket.getsockname)
     sockaddr.should == [@socket.addr[1], "127.0.0.1"]
- end
+  end
 
   it "works on sockets listening in ipaddr_any" do
     @socket = TCPServer.new(0)

@@ -28,6 +28,10 @@ describe "BigDecimal#<=" do
 
     @infinity = BigDecimal("Infinity")
     @infinity_neg = BigDecimal("-Infinity")
+
+    @float_infinity = Float::INFINITY
+    @float_infinity_neg = -Float::INFINITY
+
     @nan = BigDecimal("NaN")
   end
 
@@ -66,6 +70,17 @@ describe "BigDecimal#<=" do
     (@infinity_neg <= @infinity_neg).should == true
     (@infinity <= @infinity_neg).should == false
     (@infinity_neg <= @infinity).should == true
+  end
+
+  ruby_bug "#13674", ""..."2.4" do
+    it "properly handles Float infinity values" do
+      @values.each { |val|
+        (val <= @float_infinity).should == true
+        (@float_infinity <= val).should == false
+        (val <= @float_infinity_neg).should == false
+        (@float_infinity_neg <= val).should == true
+      }
+    end
   end
 
   it "properly handles NaN values" do

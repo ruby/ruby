@@ -260,7 +260,7 @@ describe "C-API Kernel function" do
       end.should raise_error(NameError)
       proof[0].should == 23
     end
-end
+  end
 
   describe "rb_rescue" do
     before :each do

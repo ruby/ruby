@@ -14,6 +14,7 @@ describe "Socket#connect_nonblock" do
 
   after :each do
     @socket.close
+    @server.close
     @thread.join if @thread
   end
 

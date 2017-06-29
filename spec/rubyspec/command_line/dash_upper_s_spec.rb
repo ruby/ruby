@@ -19,5 +19,11 @@ describe 'The -S command line option' do
       result = ruby_exe(nil, options: '-S launcher.rb', env: { 'PATH' => @path }, args: '2>&1')
       result.should =~ /success$/
     end
+
+    it "runs launcher found in PATH and sets the exit status to 1 if it fails" do
+      result = ruby_exe(nil, options: '-S dash_s_fail', env: { 'PATH' => @path }, args: '2>&1')
+      result.should =~ /\bdie\b/
+      $?.exitstatus.should == 1
+    end
   end
 end

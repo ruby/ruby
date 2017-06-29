@@ -18,9 +18,9 @@ describe "Kernel#public_method" do
 
   it "raises a NameError when called on a protected method" do
     @obj.send(:protected_method).should == :protected_method
-    lambda do
+    lambda {
       @obj.public_method(:protected_method)
-     end.should raise_error(NameError)
+    }.should raise_error(NameError)
   end
 
   it "raises a NameError if we only repond_to_missing? method, true" do

@@ -22,6 +22,12 @@ describe 'Kernel#caller' do
     locations.length.should == 1
   end
 
+  it 'returns an Array of caller locations using a range' do
+    locations = KernelSpecs::CallerTest.locations(1..1)
+
+    locations.length.should == 1
+  end
+
   it 'returns the locations as String instances' do
     locations = KernelSpecs::CallerTest.locations
     line      = __LINE__ - 1

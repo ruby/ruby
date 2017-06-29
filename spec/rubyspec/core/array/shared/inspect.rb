@@ -18,6 +18,46 @@ describe :array_inspect, shared: true do
     items.send(@method).should == "[0, 1, 2]"
   end
 
+  it "does not call #to_s on a String returned from #inspect" do
+    str = "abc"
+    str.should_not_receive(:to_s)
+
+    [str].send(@method).should == '["abc"]'
+  end
+
+  it "calls #to_s on the object returned from #inspect if the Object isn't a String" do
+    obj = mock("Array#inspect/to_s calls #to_s")
+    obj.should_receive(:inspect).and_return(obj)
+    obj.should_receive(:to_s).and_return("abc")
+
+    [obj].send(@method).should == "[abc]"
+  end
+
+  it "does not call #to_str on the object returned from #inspect when it is not a String" do
+    obj = mock("Array#inspect/to_s does not call #to_str")
+    obj.should_receive(:inspect).and_return(obj)
+    obj.should_not_receive(:to_str)
+
+    [obj].send(@method).should =~ /^\[#<MockObject:0x[0-9a-f]+>\]$/
+  end
+
+  it "does not call #to_str on the object returned from #to_s when it is not a String" do
+    obj = mock("Array#inspect/to_s does not call #to_str on #to_s result")
+    obj.should_receive(:inspect).and_return(obj)
+    obj.should_receive(:to_s).and_return(obj)
+    obj.should_not_receive(:to_str)
+
+    [obj].send(@method).should =~ /^\[#<MockObject:0x[0-9a-f]+>\]$/
+  end
+
+  it "does not swallow exceptions raised by #to_s" do
+    obj = mock("Array#inspect/to_s does not swallow #to_s exceptions")
+    obj.should_receive(:inspect).and_return(obj)
+    obj.should_receive(:to_s).and_raise(Exception)
+
+    lambda { [obj].send(@method) }.should raise_error(Exception)
+  end
+
   it "represents a recursive element with '[...]'" do
     ArraySpecs.recursive_array.send(@method).should == "[1, \"two\", 3.0, [...], [...], [...], [...], [...]]"
     ArraySpecs.head_recursive_array.send(@method).should == "[[...], [...], [...], [...], [...], 1, \"two\", 3.0]"

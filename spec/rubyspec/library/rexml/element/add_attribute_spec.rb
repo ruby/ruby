@@ -34,7 +34,7 @@ describe "REXML::Element#add_attribute" do
     @person.attributes["male"].should == "true"
   end
 
- it "returns the attribute added" do
+  it "returns the attribute added" do
     attr = REXML::Attribute.new("name", "Tony")
     @person.add_attribute(attr).should == attr
   end

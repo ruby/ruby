@@ -20,12 +20,12 @@ describe "Matrix#regular?" do
   end
 
   it "raises an error for rectangular matrices" do
-     lambda {
-       Matrix[[1], [2], [3]].regular?
-     }.should raise_error(Matrix::ErrDimensionMismatch)
+    lambda {
+      Matrix[[1], [2], [3]].regular?
+    }.should raise_error(Matrix::ErrDimensionMismatch)
 
-     lambda {
-       Matrix.empty(3,0).regular?
-     }.should raise_error(Matrix::ErrDimensionMismatch)
-   end
+    lambda {
+      Matrix.empty(3,0).regular?
+    }.should raise_error(Matrix::ErrDimensionMismatch)
+  end
 end

@@ -258,12 +258,12 @@ describe "Array#[]= with [index]" do
   end
 
   it "sets the value of the element at index" do
-      a = [1, 2, 3, 4]
-      a[2] = 5
-      a[-1] = 6
-      a[5] = 3
-      a.should == [1, 2, 5, 6, nil, 3]
-    end
+    a = [1, 2, 3, 4]
+    a[2] = 5
+    a[-1] = 6
+    a[5] = 3
+    a.should == [1, 2, 5, 6, nil, 3]
+  end
 
   it "sets the value of the element if it is right beyond the array boundary" do
     a = [1, 2, 3, 4]
@@ -370,11 +370,11 @@ describe "Array#[]= with [m..n]" do
   end
 
   it "replaces the section defined by range" do
-      a = [6, 5, 4, 3, 2, 1]
-      a[1...2] = 9
-      a[3..6] = [6, 6, 6]
-      a.should == [6, 9, 4, 6, 6, 6]
-    end
+    a = [6, 5, 4, 3, 2, 1]
+    a[1...2] = 9
+    a[3..6] = [6, 6, 6]
+    a.should == [6, 9, 4, 6, 6, 6]
+  end
 
   it "replaces the section if m and n < 0" do
     a = [1, 2, 3, 4, 5]
@@ -415,4 +415,3 @@ describe "Array#[] after a shift" do
     a.should == [3,4]
   end
 end
-

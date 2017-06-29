@@ -63,7 +63,7 @@ ruby_version_is "2.3" do
       end
 
       describe "when the returned lazy enumerator is evaluated by Enumerable#first" do
-       it "stops after specified times when not given a block" do
+        it "stops after specified times when not given a block" do
           (0..Float::INFINITY).lazy.grep_v(3..5).grep_v(6..10).first(3).should == [0, 1, 2]
 
           @eventsmixed.grep_v(Symbol).grep_v(String).first(1)

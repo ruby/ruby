@@ -133,7 +133,7 @@ with_feature :encoding do
       str += [0xDF].pack('C')
       str.ascii_only?.should be_false
       str.encoding.should == Encoding::ASCII_8BIT
-     end
+    end
 
     # TODO: Deal with case when the byte in question isn't valid in the source
     # encoding?

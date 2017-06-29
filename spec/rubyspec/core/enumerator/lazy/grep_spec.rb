@@ -64,7 +64,7 @@ describe "Enumerator::Lazy#grep" do
     end
 
     describe "when the returned lazy enumerator is evaluated by Enumerable#first" do
-     it "stops after specified times when not given a block" do
+      it "stops after specified times when not given a block" do
         (0..Float::INFINITY).lazy.grep(Integer).grep(Object).first(3).should == [0, 1, 2]
 
         @eventsmixed.grep(BasicObject).grep(Object).first(1)

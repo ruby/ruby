@@ -3,7 +3,7 @@ describe :strscan_matched_size, shared: true do
     @s = StringScanner.new("This is a test")
   end
 
- it "returns the size of the most recent match" do
+  it "returns the size of the most recent match" do
     @s.check(/This/)
     @s.send(@method).should == 4
     @s.send(@method).should == 4

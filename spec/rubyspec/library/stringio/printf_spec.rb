@@ -27,7 +27,7 @@ describe "StringIO#printf" do
 
     @io.printf("%d %04x", 123, 123)
     @io.pos.should eql(16)
-   end
+  end
 end
 
 describe "StringIO#printf when in append mode" do

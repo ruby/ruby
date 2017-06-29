@@ -35,10 +35,7 @@ module NetFTPSpecs
       response @connect_message || "220 Dummy FTP Server ready!"
 
       begin
-        loop do
-          command = @socket.recv(1024)
-          break if command.nil?
-
+        while command = @socket.recv(1024)
           command, argument = command.chomp.split(" ", 2)
 
           if command == "QUIT"

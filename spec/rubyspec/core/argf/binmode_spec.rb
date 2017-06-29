@@ -8,7 +8,9 @@ describe "ARGF.binmode" do
   end
 
   it "returns self" do
-    ruby_exe("puts(ARGF.binmode == ARGF)", args: @bin_file).chomp.should == 'true'
+    argf [@bin_file] do
+      @argf.binmode.should equal @argf
+    end
   end
 
   platform_is :windows do
@@ -29,18 +31,13 @@ describe "ARGF.binmode" do
     end
   end
 
-  platform_is_not :windows do
-    # This does nothing on Unix but it should not raise any errors.
-    it "does not raise an error" do
-      ruby_exe("ARGF.binmode", args: @bin_file)
-      $?.should  be_kind_of(Process::Status)
-      $?.to_i.should == 0
-    end
-  end
-
   it "sets the file's encoding to ASCII-8BIT" do
-    script = fixture __FILE__, "encoding.rb"
-    output = "true\n#{Encoding::ASCII_8BIT}\n#{Encoding::ASCII_8BIT}\n"
-    ruby_exe(script, args: [@bin_file, @file1]).should == output
+    argf [@bin_file, @file1] do
+      @argf.binmode
+      @argf.binmode?.should == true
+      @argf.gets.encoding.should == Encoding::ASCII_8BIT
+      @argf.skip
+      @argf.read.encoding.should == Encoding::ASCII_8BIT
+    end
   end
 end
