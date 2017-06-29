@@ -1773,16 +1773,6 @@ rb_define_attr(VALUE klass, const char *name, int read, int write)
     rb_attr(klass, rb_intern(name), read, write, FALSE);
 }
 
-int
-rb_obj_basic_to_s_p(VALUE obj)
-{
-    const rb_method_entry_t *me = rb_method_entry(CLASS_OF(obj), rb_intern("to_s"));
-    if (me && me->def && me->def->type == VM_METHOD_TYPE_CFUNC &&
-	me->def->body.cfunc.func == rb_any_to_s)
-	return 1;
-    return 0;
-}
-
 VALUE
 rb_keyword_error_new(const char *error, VALUE keys)
 {
