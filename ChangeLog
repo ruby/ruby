@@ -1,3 +1,8 @@
+Fri Jun 30 20:31:59 2017  Marcus Stollsteimer  <sto.mar@web.de>
+
+	* string.c: [DOC] clarify docs for String#split when called with limit
+	  and capture groups. Reported by Cichol Tsai. [Bug #13621]
+
 Fri Jun 30 20:23:31 2017  Takashi Kokubun  <takashikkbn@gmail.com>
 
 	* lib/erb.rb: Allow explicit trimming carriage return when trim_mode is
