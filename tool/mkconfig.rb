@@ -131,7 +131,7 @@ File.foreach "config.status" do |line|
       if universal
         val.sub!(/universal/, %q[#{arch && universal[/(?:\A|\s)#{Regexp.quote(arch)}=(\S+)/, 1] || '\&'}])
       end
-    when /^includedir$/
+    when /^oldincludedir$/
       val = '"$(SDKROOT)"'+val if /darwin/ =~ arch
     end
     v = "  CONFIG[\"#{name}\"] #{eq} #{val}\n"
