@@ -2572,7 +2572,7 @@ method_super_method(VALUE method)
     const rb_method_entry_t *me;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    super_class = RCLASS_SUPER(method_entry_defined_class(data->me));
+    super_class = RCLASS_SUPER(RCLASS_ORIGIN(method_entry_defined_class(data->me)));
     if (!super_class) return Qnil;
     me = (rb_method_entry_t *)rb_callable_method_entry_without_refinements(super_class, data->me->called_id);
     if (!me) return Qnil;
