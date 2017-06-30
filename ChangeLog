@@ -1,3 +1,17 @@
+Fri Jun 30 21:20:14 2017  Koichi Sasada  <ko1@atdot.net>
+
+	* thread.c (ruby_thread_stack_overflow): disable VM events when stack
+	  overflow occurred; it causes another stack overflow again in making
+	  backtrace object, and crashes. [Bug #13425]
+
+	* vm.c (hook_before_rewind): skip rewind hooks if err is
+	  SystemStackError because rewind hooks can cause stack overflow again
+	  and again.
+
+	* thread.c (ruby_thread_stack_overflow): do not disable all hooks.
+	  Additionally, clearing ruby_vm_event_flags is not suitable way
+	  to disable hooks.
+
 Fri Jun 30 21:13:25 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* proc.c (method_super_method): skip prepended modules and continue from

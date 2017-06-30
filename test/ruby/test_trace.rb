@@ -59,4 +59,19 @@ class TestTrace < Test::Unit::TestCase
              a.any? {true}
            }.value, bug2722)
   end
+
+  def test_trace_stackoverflow
+    assert_normal_exit("#{<<-"begin;"}\n#{<<~"end;"}", timeout: 60)
+    begin;
+      require 'tracer'
+      class HogeError < StandardError
+        def to_s
+          message.upcase        # disable tailcall optimization
+        end
+      end
+      Tracer.stdout = open(IO::NULL, "w")
+      Tracer.on
+      HogeError.new.to_s
+    end;
+  end
 end
