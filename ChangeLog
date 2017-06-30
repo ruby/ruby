@@ -1,3 +1,9 @@
+Fri Jun 30 21:57:27 2017  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rexml/parsers/streamparser.rb: add close tag check on end of
+	  document to StreamParser [Bug #13636]
+	  Reported by Anton Sivakov. Thanks!!!
+
 Fri Jun 30 21:54:01 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (rb_ary_insert): check position to insert even if no elements
