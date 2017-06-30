@@ -458,6 +458,8 @@ exc_setup_cause(VALUE exc, VALUE cause)
     }
 #endif
     if (!NIL_P(cause) && cause != exc) {
+	if (OBJ_FROZEN(exc))
+	    exc = rb_obj_dup(exc);
 	rb_ivar_set(exc, id_cause, cause);
     }
     return exc;
@@ -487,13 +489,13 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	nocause = 0;
     }
     if (cause != Qundef) {
-	exc_setup_cause(mesg, cause);
+	mesg = exc_setup_cause(mesg, cause);
     }
     else if (nocause) {
-	exc_setup_cause(mesg, Qnil);
+	mesg = exc_setup_cause(mesg, Qnil);
     }
     else if (!rb_ivar_defined(mesg, id_cause)) {
-	exc_setup_cause(mesg, get_thread_errinfo(th));
+	mesg = exc_setup_cause(mesg, get_thread_errinfo(th));
     }
 
     file = rb_source_loc(&line);
