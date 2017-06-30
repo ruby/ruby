@@ -1,3 +1,9 @@
+Fri Jun 30 22:05:39 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_precise_mbclen): check invalid multibyte char at
+	  skipping strings following ?x literal string, not to stuck in a
+	  infinite loop. [Bug #13672]
+
 Fri Jun 30 22:00:56 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/pathname/lib/pathname.rb (Pathname#plus): UNC root pathname needs
