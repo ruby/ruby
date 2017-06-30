@@ -3325,7 +3325,14 @@ vm_stack_consistency_error(rb_thread_t *th,
     const ptrdiff_t nbp = VM_SP_CNT(th, bp);
     static const char stack_consistency_error[] =
 	"Stack consistency error (sp: %"PRIdPTRDIFF", bp: %"PRIdPTRDIFF")";
+#if defined RUBY_DEVEL
+    VALUE mesg = rb_sprintf(stack_consistency_error, nsp, nbp);
+    rb_str_cat_cstr(mesg, "\n");
+    rb_str_append(mesg, rb_iseq_disasm(cfp->iseq));
+    rb_exc_fatal(rb_exc_new3(rb_eFatal, mesg));
+#else
     rb_bug(stack_consistency_error, nsp, nbp);
+#endif
 }
 
 enum binop_operands_type {
