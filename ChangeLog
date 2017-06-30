@@ -1,3 +1,18 @@
+Fri Jun 30 21:40:42 2017  Kazuki Yamaguchi <k@rhe.jp>
+
+	* ext/openssl/ossl_x509store.c: clear error queue after calling
+	  X509_LOOKUP_load_file()
+
+	  X509_LOOKUP_load_file(), which ends up calling
+	  X509_load_cert_crl_file()
+	  internally, may leave error entries in the queue even when it returns
+	  non-zero value (which indicates success).
+
+	  This will be fixed by OpenSSL 1.1.1, but can be worked around by
+	  clearing the error queue ourselves.
+
+	  Fixes: [Backport #11033]
+
 Fri Jun 30 21:35:16 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (heap_page_allocate): expand sorted pages before inserting

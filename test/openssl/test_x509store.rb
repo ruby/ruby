@@ -36,6 +36,32 @@ class OpenSSL::TestX509Store < Test::Unit::TestCase
     OpenSSL::TestUtils.issue_crl(*args)
   end
 
+  def test_add_file
+    now = Time.at(Time.now.to_i)
+    ca_exts = [
+      ["basicConstraints", "CA:TRUE", true],
+      ["keyUsage", "cRLSign,keyCertSign", true],
+    ]
+    cert1 = issue_cert(@ca1, @rsa1024, 1, now, now+3600, ca_exts,
+                       nil, nil, "sha1")
+    cert2 = issue_cert(@ca2, @rsa2048, 1, now, now+3600, ca_exts,
+                       nil, nil, "sha1")
+    tmpfile = Tempfile.open { |f| f << cert1.to_pem << cert2.to_pem; f }
+
+    store = OpenSSL::X509::Store.new
+    assert_equal false, store.verify(cert1)
+    assert_equal false, store.verify(cert2)
+    store.add_file(tmpfile.path)
+    assert_equal true, store.verify(cert1)
+    assert_equal true, store.verify(cert2)
+
+    # OpenSSL < 1.1.1 leaks an error on a duplicate certificate
+    assert_nothing_raised { store.add_file(tmpfile.path) }
+    assert_equal [], OpenSSL.errors
+  ensure
+    tmpfile and tmpfile.close!
+  end
+
   def test_verify
     now = Time.at(Time.now.to_i)
     ca_exts = [

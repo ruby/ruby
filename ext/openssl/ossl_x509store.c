@@ -249,6 +249,13 @@ ossl_x509store_add_file(VALUE self, VALUE file)
     if(X509_LOOKUP_load_file(lookup, path, X509_FILETYPE_PEM) != 1){
         ossl_raise(eX509StoreError, NULL);
     }
+    /*
+     * X509_load_cert_crl_file() which is called from X509_LOOKUP_load_file()
+     * did not check the return value of X509_STORE_add_{cert,crl}(), leaking
+     * "cert already in hash table" errors on the error queue, if duplicate
+     * certificates are found. This will be fixed by OpenSSL 1.1.1.
+     */
+    ERR_clear_error();
 
     return self;
 }
