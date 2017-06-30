@@ -1,3 +1,11 @@
+Fri Jun 30 19:46:46 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_str_format): while "% 2f" and "% 4f" result in " Inf"
+	  and " Inf" respectively, "% 3f" results in "Inf" (no space).
+
+	* sprintf.c (rb_str_format): as for non-finite float, calculate the
+	  exact needed size with the space flag.
+
 Fri Jun 30 19:41:48 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* thread_win32.c (w32_wait_events): do not acquire GVL, to fix deadlock
