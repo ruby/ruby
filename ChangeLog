@@ -1,3 +1,13 @@
+Fri Jun 30 19:35:31 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (Init_class_hierarchy): prevent rb_cObject which is the class
+	  tree root, from GC. [Bug #12492]
+
+Fri Jun 30 19:32:52 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* class.c (Init_class_hierarchy): prevent rb_cObject which is the
+	  class tree root, from GC.  [ruby-dev:49666] [Bug #12492]
+
 Fri Jun 30 19:29:45 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/ripper/lib/ripper/lexer.rb (on_heredoc_dedent): fix for nested
