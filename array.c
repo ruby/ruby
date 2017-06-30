@@ -1766,8 +1766,8 @@ rb_ary_insert(int argc, VALUE *argv, VALUE ary)
 
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     rb_ary_modify_check(ary);
-    if (argc == 1) return ary;
     pos = NUM2LONG(argv[0]);
+    if (argc == 1) return ary;
     if (pos == -1) {
 	pos = RARRAY_LEN(ary);
     }
