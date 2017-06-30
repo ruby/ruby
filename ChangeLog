@@ -1,3 +1,10 @@
+Fri Jun 30 21:51:40 2017  Marcus Stollsteimer  <sto.mar@web.de>
+
+	* ext/date/date_core.c: [DOC] fix documentation for %Z format of
+	  {Date,DateTime}.strftime.
+	  Reported by Damon Timm. Based on a patch by nano.
+	  [Bug #13231] [Fix GH-1565]
+
 Fri Jun 30 21:46:50 2017  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb: Accept empty text element as valid element
