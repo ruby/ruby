@@ -1186,9 +1186,11 @@ yaml_parser_increase_flow_level(yaml_parser_t *parser)
 static int
 yaml_parser_decrease_flow_level(yaml_parser_t *parser)
 {
+    yaml_simple_key_t dummy_key;    /* Used to eliminate a compiler warning. */
+
     if (parser->flow_level) {
         parser->flow_level --;
-        (void)POP(parser, parser->simple_keys);
+        dummy_key = POP(parser, parser->simple_keys);
     }
 
     return 1;
@@ -1222,14 +1224,12 @@ yaml_parser_roll_indent(yaml_parser_t *parser, ptrdiff_t column,
         if (!PUSH(parser, parser->indents, parser->indent))
             return 0;
 
-#if PTRDIFF_MAX > INT_MAX
         if (column > INT_MAX) {
             parser->error = YAML_MEMORY_ERROR;
             return 0;
         }
-#endif
 
-        parser->indent = (int)column;
+        parser->indent = column;
 
         /* Create a token and insert it into the queue. */
 
@@ -3504,12 +3504,12 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser, yaml_token_t *token)
         {
             if (IS_BLANK(parser->buffer))
             {
-                /* Check for tab character that abuse indentation. */
+                /* Check for tab characters that abuse indentation. */
 
                 if (leading_blanks && (int)parser->mark.column < indent
                         && IS_TAB(parser->buffer)) {
                     yaml_parser_set_scanner_error(parser, "while scanning a plain scalar",
-                            start_mark, "found a tab character that violate indentation");
+                            start_mark, "found a tab character that violates indentation");
                     goto error;
                 }
 
