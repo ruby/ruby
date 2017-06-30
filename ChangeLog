@@ -1,3 +1,8 @@
+Fri Jun 30 20:00:18 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (is_case_sensitive): use getattrlist() if fgetattrlist() is
+	  unavailable, on OSX 10.5. [Bug #11054]
+
 Fri Jun 30 19:58:16 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* tool/mkconfig.rb (RbConfig): prefix SDKROOT to oldincludedir
