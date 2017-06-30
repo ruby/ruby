@@ -1,3 +1,10 @@
+Fri Jun 30 19:37:47 2017  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
+
+	* io.c (nogvl_wait_for_single_fd): nogvl_wait_for_single_fd must wait
+	  as its name.
+	  poll(fds, n, 0) mean no timeout and immediately return. If you want to
+	  wait something, you need to use -1 instead.
+
 Fri Jun 30 19:35:31 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* class.c (Init_class_hierarchy): prevent rb_cObject which is the class
