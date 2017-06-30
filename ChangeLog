@@ -1,3 +1,9 @@
+Fri Jun 30 19:53:30 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (obj2uid, obj2gid): use temporary string as the buffer
+	  instead of rb_alloc_tmp_buffer, which is NODE_ALLOCA since r51492.
+	  [Bug #13554]
+
 Fri Jun 30 19:50:25 2017  Eric Wong  <e@80x24.org>
 
 	* variable.c (autoload_reset): use idempotent list_del_init
