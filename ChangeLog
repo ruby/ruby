@@ -1,3 +1,10 @@
+Fri Jun 30 21:46:50 2017  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb: Accept empty text element as valid element
+	  Parser has been accepted it but XML serializer wasn't accepted.
+	  Reported by stefano frabetti. Thanks!!!
+	  [Bug #13531]
+
 Fri Jun 30 21:40:42 2017  Kazuki Yamaguchi <k@rhe.jp>
 
 	* ext/openssl/ossl_x509store.c: clear error queue after calling

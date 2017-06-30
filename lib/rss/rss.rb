@@ -963,7 +963,7 @@ EOC
             children = child
             children.any? {|c| c.have_required_elements?}
           else
-            !child.to_s.empty?
+            not child.nil?
           end
         else
           true
