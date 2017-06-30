@@ -1117,11 +1117,11 @@ number:			if ((dprec = prec) >= 0)
 		 */
 		fieldsz = size;
 long_len:
-		if (sign)
-			fieldsz++;
-		if (flags & HEXPREFIX)
-			fieldsz += 2;
 		realsz = dprec > fieldsz ? dprec : fieldsz;
+		if (sign)
+			realsz++;
+		if (flags & HEXPREFIX)
+			realsz += 2;
 
 		/* right-adjusting blank padding */
 		if ((flags & (LADJUST|ZEROPAD)) == 0)
@@ -1143,10 +1143,6 @@ long_len:
 
 		/* leading zeroes from decimal precision */
 		PAD_L(dprec - fieldsz, zeroes);
-		if (sign)
-			fieldsz--;
-		if (flags & HEXPREFIX)
-			fieldsz -= 2;
 
 		/* the string or number proper */
 #ifdef FLOATING_POINT
