@@ -1,3 +1,9 @@
+Fri Jun 30 19:56:06 2017  Eric Wong  <e@80x24.org>
+
+	* variable.c (check_autoload_required): do not assume a provided feature
+	  means autoload is complete, always wait if autoload is being performed
+	  by another thread. [Bug #11384] Thanks to s.wanabe@gmail.com
+
 Fri Jun 30 19:53:30 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (obj2uid, obj2gid): use temporary string as the buffer
