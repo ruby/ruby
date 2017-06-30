@@ -15,6 +15,9 @@
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
 #endif
+#if RUBY_DEVEL && !defined RUBY_DEBUG_ENV
+# define RUBY_DEBUG_ENV 1
+#endif
 #if defined RUBY_DEBUG_ENV && !RUBY_DEBUG_ENV
 # undef RUBY_DEBUG_ENV
 #endif
