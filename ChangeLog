@@ -1,3 +1,9 @@
+Fri Jun 30 22:00:56 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/pathname/lib/pathname.rb (Pathname#plus): UNC root pathname needs
+	  a separator. File.basename returns "/" on UNC root, as well as sole
+	  drive letter, even if it does not end with a separator. [Bug #13515]
+
 Fri Jun 30 21:57:27 2017  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rexml/parsers/streamparser.rb: add close tag check on end of
