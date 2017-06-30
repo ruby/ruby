@@ -1,3 +1,8 @@
+Fri Jun 30 20:16:15 2017  Takashi Kokubun  <takashikkbn@gmail.com>
+
+	* lib/erb.rb: Allow trimming carriage return when trim_mode is "<>", for
+	  Windows environments. [Bug #11464]
+
 Fri Jun 30 20:07:37 2017  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* util.c (ruby_strtod) Merge latest dtoa.c [Bug #13545]

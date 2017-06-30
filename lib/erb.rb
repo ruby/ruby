@@ -444,11 +444,11 @@ class ERB
 
       def trim_line2(line)
         head = nil
-        line.scan(/(.*?)(<%%|%%>|<%=|<%#|<%|%>\n|%>|\n|\z)/m) do |tokens|
+        line.scan(/(.*?)(<%%|%%>|<%=|<%#|<%|%>\r?\n|%>|\n|\z)/m) do |tokens|
           tokens.each do |token|
             next if token.empty?
             head = token unless head
-            if token == "%>\n"
+            if token == "%>\n" || token == "%>\r\n"
               yield('%>')
               if is_erb_stag?(head)
                 yield(:cr)
