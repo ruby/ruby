@@ -321,7 +321,9 @@ struct iseq_compile_data_ensure_node_stack {
 #define IS_INSN_ID(iobj, insn) (INSN_OF(iobj) == BIN(insn))
 
 /* error */
-typedef void (*compile_error_func)(rb_iseq_t *, int, const char *, ...);
+#if CPDEBUG > 0
+NORETURN(static void append_compile_error(rb_iseq_t *iseq, int line, const char *fmt, ...));
+#endif
 
 static void
 append_compile_error(rb_iseq_t *iseq, int line, const char *fmt, ...)
@@ -341,6 +343,7 @@ append_compile_error(rb_iseq_t *iseq, int line, const char *fmt, ...)
     else if (!err_info) {
 	RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->err_info, Qtrue);
     }
+    if (compile_debug) rb_exc_fatal(err);
 }
 
 static void
@@ -353,16 +356,7 @@ compile_bug(rb_iseq_t *iseq, int line, const char *fmt, ...)
     abort();
 }
 
-NOINLINE(static compile_error_func prepare_compile_error(rb_iseq_t *iseq));
-
-static compile_error_func
-prepare_compile_error(rb_iseq_t *iseq)
-{
-    if (compile_debug) return &compile_bug;
-    return &append_compile_error;
-}
-
-#define COMPILE_ERROR prepare_compile_error(iseq)
+#define COMPILE_ERROR append_compile_error
 
 #define ERROR_ARGS_AT(n) iseq, nd_line(n),
 #define ERROR_ARGS ERROR_ARGS_AT(node)
