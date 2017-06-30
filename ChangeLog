@@ -1,3 +1,18 @@
+Fri Jun 30 19:50:25 2017  Eric Wong  <e@80x24.org>
+
+	* variable.c (autoload_reset): use idempotent list_del_init
+
+	* variable.c (autoload_sleep): moved code from rb_autoload_load
+
+	* variable.c (autoload_sleep_done): cleanup for use with rb_ensure
+
+	* variable.c (rb_autoload_load): ensure list delete happens in case the
+	  thread dies during sleep
+
+	* test/ruby/bug-13526.rb: new script for separate execution
+
+	* test/ruby/test_autoload.rb (test_bug_13526): new test [Bug #13526]
+
 Fri Jun 30 19:46:46 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_str_format): while "% 2f" and "% 4f" result in " Inf"
