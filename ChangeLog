@@ -1,3 +1,10 @@
+Fri Jun 30 20:34:49 2017  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* sample/pty/shl.rb: update sample
+	  * Specify frozen_string_literal: true.
+	  * Fix TypeError of raise.
+	  * Use a character literal instead of Integer.
+
 Fri Jun 30 20:31:59 2017  Marcus Stollsteimer  <sto.mar@web.de>
 
 	* string.c: [DOC] clarify docs for String#split when called with limit
