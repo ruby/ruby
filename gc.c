@@ -1314,6 +1314,29 @@ rb_objspace_free(rb_objspace_t *objspace)
 }
 
 static void
+heap_pages_expand_sorted_to(rb_objspace_t *objspace, size_t next_length)
+{
+    struct heap_page **sorted;
+    size_t size = next_length * sizeof(struct heap_page *);
+
+    gc_report(3, objspace, "heap_pages_expand_sorted: next_length: %d, size: %d\n", (int)next_length, (int)size);
+
+    if (heap_pages_sorted_length > 0) {
+	sorted = (struct heap_page **)realloc(heap_pages_sorted, size);
+	if (sorted) heap_pages_sorted = sorted;
+    }
+    else {
+	sorted = heap_pages_sorted = (struct heap_page **)malloc(size);
+    }
+
+    if (sorted == 0) {
+	rb_memerror();
+    }
+
+    heap_pages_sorted_length = next_length;
+}
+
+static void
 heap_pages_expand_sorted(rb_objspace_t *objspace)
 {
     size_t next_length = heap_allocatable_pages;
@@ -1321,24 +1344,7 @@ heap_pages_expand_sorted(rb_objspace_t *objspace)
     next_length += heap_tomb->page_length;
 
     if (next_length > heap_pages_sorted_length) {
-	struct heap_page **sorted;
-	size_t size = next_length * sizeof(struct heap_page *);
-
-	gc_report(3, objspace, "heap_pages_expand_sorted: next_length: %d, size: %d\n", (int)next_length, (int)size);
-
-	if (heap_pages_sorted_length > 0) {
-	    sorted = (struct heap_page **)realloc(heap_pages_sorted, size);
-	    if (sorted) heap_pages_sorted = sorted;
-	}
-	else {
-	    sorted = heap_pages_sorted = (struct heap_page **)malloc(size);
-	}
-
-	if (sorted == 0) {
-	    rb_memerror();
-	}
-
-	heap_pages_sorted_length = next_length;
+	heap_pages_expand_sorted_to(objspace, next_length);
     }
 }
 
@@ -1477,6 +1483,9 @@ heap_page_allocate(rb_objspace_t *objspace)
 	    rb_bug("same heap page is allocated: %p at %"PRIuVALUE, (void *)page_body, (VALUE)mid);
 	}
     }
+    if (heap_allocated_pages >= heap_pages_sorted_length) {
+	heap_pages_expand_sorted_to(objspace, heap_allocated_pages + 1);
+    }
     if (hi < heap_allocated_pages) {
 	MEMMOVE(&heap_pages_sorted[hi+1], &heap_pages_sorted[hi], struct heap_page_header*, heap_allocated_pages - hi);
     }
@@ -1486,7 +1495,10 @@ heap_page_allocate(rb_objspace_t *objspace)
     heap_allocated_pages++;
     objspace->profile.total_allocated_pages++;
 
-    if (RGENGC_CHECK_MODE) assert(heap_allocated_pages <= heap_pages_sorted_length);
+    if (heap_allocated_pages > heap_pages_sorted_length) {
+	rb_bug("heap_page_allocate: allocated(%"PRIdSIZE") > sorted(%"PRIdSIZE")",
+	       heap_allocated_pages, heap_pages_sorted_length);
+    }
 
     /* adjust obj_limit (object number available in this page) */
     start = (RVALUE*)((VALUE)page_body + sizeof(struct heap_page_header));
@@ -1516,12 +1528,16 @@ heap_page_allocate(rb_objspace_t *objspace)
 static struct heap_page *
 heap_page_resurrect(rb_objspace_t *objspace)
 {
-    struct heap_page *page;
+    struct heap_page *page = heap_tomb->pages;
 
-    if ((page = heap_tomb->pages) != NULL) {
-	heap_unlink_page(objspace, heap_tomb, page);
-	return page;
+    while (page) {
+	if (page->freelist != NULL) {
+	    heap_unlink_page(objspace, heap_tomb, page);
+	    return page;
+	}
+	page = page->next;
     }
+
     return NULL;
 }
 
