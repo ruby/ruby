@@ -1,3 +1,11 @@
+Fri Jun 30 20:23:31 2017  Takashi Kokubun  <takashikkbn@gmail.com>
+
+	* lib/erb.rb: Allow explicit trimming carriage return when trim_mode is
+	  "-", for Windows environments. [Bug #5339]
+
+	* lib/erb.rb: Allow trimming CR in all trim_modes to unify a behavior
+	  with r58823 and r58825.
+
 Fri Jun 30 20:16:15 2017  Takashi Kokubun  <takashikkbn@gmail.com>
 
 	* lib/erb.rb: Allow trimming carriage return when trim_mode is "<>", for
