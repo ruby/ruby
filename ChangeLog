@@ -1,3 +1,12 @@
+Fri Jun 30 19:41:48 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* thread_win32.c (w32_wait_events): do not acquire GVL, to fix deadlock
+	  at read/close race condition. instead, just ignore interrupt_event if
+	  it is closed.
+
+	* thread_win32.c (w32_wait_events): fix wait object index in the case of
+	  interrupt_event is not usable.
+
 Fri Jun 30 19:37:47 2017  KOSAKI Motohiro  <kosaki.motohiro@gmail.com>
 
 	* io.c (nogvl_wait_for_single_fd): nogvl_wait_for_single_fd must wait
