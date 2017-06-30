@@ -1,3 +1,9 @@
+Fri Jun 30 21:10:48 2017  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/smtp.rb (getok, get_response): raise an ArgumentError when
+	  CR or LF is included in a line, because they are not allowed in
+	  RFC5321.  Thanks, Jeremy Daer.
+
 Fri Jun 30 21:07:56 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval.c (exc_setup_cause): need to unfreeze(=dup) the exception before
