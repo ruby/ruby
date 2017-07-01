@@ -66,12 +66,19 @@ class Ripper
     private
 
     def on_heredoc_dedent(v, w)
-      @buf.last.each do |e|
-        if e.event == :on_tstring_content
+      ignored_sp = []
+      heredoc = @buf.last
+      heredoc.each_with_index do |e, i|
+        if Elem === e and e.event == :on_tstring_content
+          tok = e.tok.dup if w > 0 and /\A\s/ =~ e.tok
           if (n = dedent_string(e.tok, w)) > 0
+            ignored_sp << [i, Elem.new(e.pos.dup, :on_ignored_sp, tok[0, n])]
             e.pos[1] += n
           end
         end
+      end
+      ignored_sp.reverse_each do |i, e|
+        heredoc[i, 0] = [e]
       end
       v
     end
