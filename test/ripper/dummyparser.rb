@@ -38,6 +38,11 @@ class NodeList
     self
   end
 
+  def concat(item)
+    @list.concat item
+    self
+  end
+
   def prepend(items)
     @list.unshift items
   end
@@ -207,6 +212,34 @@ class DummyParser < Ripper
 
   def on_qwords_add(words, word)
     words.push word
+  end
+
+  def on_mlhs_new
+    NodeList.new
+  end
+
+  def on_mlhs_paren(list)
+    Node.new(:mlhs, list)
+  end
+
+  def on_mlhs_add(list, node)
+    list.push node
+  end
+
+  def on_mlhs_add_block(list, blk)
+    if blk
+      list.push('&' + blk.to_s)
+    else
+      list
+    end
+  end
+
+  def on_mlhs_add_star(list, arg)
+    list.push('*' + arg.to_s)
+  end
+
+  def on_mlhs_add_post(list, post)
+    list.concat(post.list)
   end
 
   def on_rescue(exc, *rest)
