@@ -134,6 +134,18 @@ class Ripper
       list
     end
 
+    def on_mlhs_paren(list)
+      [:mlhs, *list]
+    end
+
+    def on_mlhs_add_star(list, star)
+      list.push([:rest_param, star])
+    end
+
+    def on_mlhs_add_post(list, post)
+      list.concat(post)
+    end
+
     PARSER_EVENT_TABLE.each do |event, arity|
       if /_new\z/ =~ event and arity == 0
         alias_method "on_#{event}", :_dispatch_event_new
