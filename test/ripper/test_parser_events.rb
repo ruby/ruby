@@ -474,19 +474,42 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_mlhs_add_star = false
     tree = parse("a, *b, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_include(tree, "massign([a,*b,[c]]", bug2232)
+    assert_include(tree, "massign([a,*b,c]", bug2232)
     thru_mlhs_add_star = false
     tree = parse("a, *, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_include(tree, "massign([a,*,[c]]", bug4364)
+    assert_include(tree, "massign([a,*,c]", bug4364)
     thru_mlhs_add_star = false
     tree = parse("*b, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_include(tree, "massign([*b,[c]]", bug4364)
+    assert_include(tree, "massign([*b,c]", bug4364)
     thru_mlhs_add_star = false
     tree = parse("*, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_include(tree, "massign([*,[c]],", bug4364)
+    assert_include(tree, "massign([*,c],", bug4364)
+  end
+
+  def test_mlhs_add_post
+    thru_mlhs_add_post = false
+    tree = parse("a, *b = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal false, thru_mlhs_add_post
+    assert_include(tree, "massign([a,*b],")
+    thru_massign_add_post = false
+    tree = parse("a, *b, c = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "massign([a,*b,c],")
+    thru_mlhs_add_post = false
+    tree = parse("a, *, c = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "massign([a,*,c],")
+    thru_mlhs_add_post = false
+    tree = parse("*b, c = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "massign([*b,c],")
+    thru_mlhs_add_post = false
+    tree = parse("*, c = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "massign([*,c],")
   end
 
   def test_mlhs_new

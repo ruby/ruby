@@ -691,13 +691,12 @@ static void ripper_error_gen(struct parser_params *parser);
 #define mlhs_new() dispatch0(mlhs_new)
 #define mlhs_add(l,a) dispatch2(mlhs_add, (l), (a))
 #define mlhs_add_star(l,a) dispatch2(mlhs_add_star, (l), (a))
+#define mlhs_add_post(l,a) dispatch2(mlhs_add_post, (l), (a))
 
 #define params_new(pars, opts, rest, pars2, kws, kwrest, blk) \
         dispatch7(params, (pars), (opts), (rest), (pars2), (kws), (kwrest), (blk))
 
 #define blockvar_new(p,v) dispatch2(block_var, (p), (v))
-#define blockvar_add_star(l,a) dispatch2(block_var_add_star, (l), (a))
-#define blockvar_add_block(l,a) dispatch2(block_var_add_block, (l), (a))
 
 #define method_optarg(m,a) ((a)==Qundef ? (m) : dispatch2(method_add_arg,(m),(a)))
 #define method_arg(m,a) dispatch2(method_add_arg,(m),(a))
@@ -1602,7 +1601,7 @@ mlhs_basic	: mlhs_head
 			$$ = NEW_MASGN($1, NEW_POSTARG($3,$5));
 		    /*%
 			$1 = mlhs_add_star($1, $3);
-			$$ = mlhs_add($1, $5);
+			$$ = mlhs_add_post($1, $5);
 		    %*/
 		    }
 		| mlhs_head tSTAR
@@ -1619,7 +1618,7 @@ mlhs_basic	: mlhs_head
 			$$ = NEW_MASGN($1, NEW_POSTARG(-1, $4));
 		    /*%
 			$1 = mlhs_add_star($1, Qnil);
-			$$ = mlhs_add($1, $4);
+			$$ = mlhs_add_post($1, $4);
 		    %*/
 		    }
 		| tSTAR mlhs_node
@@ -1636,7 +1635,7 @@ mlhs_basic	: mlhs_head
 			$$ = NEW_MASGN(0, NEW_POSTARG($2,$4));
 		    /*%
 			$2 = mlhs_add_star(mlhs_new(), $2);
-			$$ = mlhs_add($2, $4);
+			$$ = mlhs_add_post($2, $4);
 		    %*/
 		    }
 		| tSTAR
@@ -1653,7 +1652,7 @@ mlhs_basic	: mlhs_head
 			$$ = NEW_MASGN(0, NEW_POSTARG(-1, $3));
 		    /*%
 			$$ = mlhs_add_star(mlhs_new(), Qnil);
-			$$ = mlhs_add($$, $3);
+			$$ = mlhs_add_post($$, $3);
 		    %*/
 		    }
 		;
