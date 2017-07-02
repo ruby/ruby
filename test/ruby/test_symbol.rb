@@ -514,4 +514,16 @@ class TestSymbol < Test::Unit::TestCase
     assert_not_equal sym.to_sym.hash,
                      `#{ruby} -e 'puts #{sym.inspect}.to_sym.hash'`.to_i
   end
+
+  def test_eq_can_be_redefined
+    assert_in_out_err([], <<-RUBY, ["foo"], [])
+      class Symbol
+        def ==(obj)
+          "foo"
+        end
+      end
+
+      puts :a == :a
+    RUBY
+  end
 end

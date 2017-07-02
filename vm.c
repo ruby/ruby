@@ -1576,7 +1576,7 @@ vm_init_redefined_flag(void)
     OP(MULT, MULT), (C(Integer), C(Float));
     OP(DIV, DIV), (C(Integer), C(Float));
     OP(MOD, MOD), (C(Integer), C(Float));
-    OP(Eq, EQ), (C(Integer), C(Float), C(String));
+    OP(Eq, EQ), (C(Integer), C(Float), C(String), C(Symbol));
     OP(Eqq, EQQ), (C(Integer), C(Float), C(Symbol), C(String),
 		   C(NilClass), C(TrueClass), C(FalseClass));
     OP(LT, LT), (C(Integer), C(Float));
