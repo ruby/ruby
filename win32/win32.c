@@ -6737,9 +6737,11 @@ constat_apply(HANDLE handle, struct constat *s, WCHAR w)
 	break;
       case L'H':
       case L'f':
-	pos.Y = (arg1 > csbi.dwSize.Y ? csbi.dwSize.Y : arg1) - 1;
+	pos.Y = arg1 + csbi.srWindow.Top - 1;
+	if (pos.Y > csbi.srWindow.Bottom) pos.Y = csbi.srWindow.Bottom;
 	if (count < 2 || (arg1 = seq[1]) <= 0) arg1 = 1;
-	pos.X = (arg1 > csbi.dwSize.X ? csbi.dwSize.X : arg1) - 1;
+	pos.X = arg1 + csbi.srWindow.Left - 1;
+	if (pos.X > csbi.srWindow.Right) pos.X = csbi.srWindow.Right;
 	SetConsoleCursorPosition(handle, pos);
 	break;
       case L'J':
