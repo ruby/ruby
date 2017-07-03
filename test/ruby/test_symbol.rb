@@ -518,6 +518,7 @@ class TestSymbol < Test::Unit::TestCase
   def test_eq_can_be_redefined
     assert_in_out_err([], <<-RUBY, ["foo"], [])
       class Symbol
+        remove_method :==
         def ==(obj)
           "foo"
         end
