@@ -6710,8 +6710,8 @@ constat_apply(HANDLE handle, struct constat *s, WCHAR w)
 	csbi.dwCursorPosition.X = 0;
       case L'A':
 	csbi.dwCursorPosition.Y -= arg1;
-	if (csbi.dwCursorPosition.Y < 0)
-	    csbi.dwCursorPosition.Y = 0;
+	if (csbi.dwCursorPosition.Y < csbi.srWindow.Top)
+	    csbi.dwCursorPosition.Y = csbi.srWindow.Top;
 	SetConsoleCursorPosition(handle, csbi.dwCursorPosition);
 	break;
       case L'E':
@@ -6719,29 +6719,35 @@ constat_apply(HANDLE handle, struct constat *s, WCHAR w)
       case L'B':
       case L'e':
 	csbi.dwCursorPosition.Y += arg1;
-	if (csbi.dwCursorPosition.Y >= csbi.dwSize.Y)
-	    csbi.dwCursorPosition.Y = csbi.dwSize.Y;
+	if (csbi.dwCursorPosition.Y > csbi.srWindow.Bottom)
+	    csbi.dwCursorPosition.Y = csbi.srWindow.Bottom;
 	SetConsoleCursorPosition(handle, csbi.dwCursorPosition);
 	break;
       case L'C':
 	csbi.dwCursorPosition.X += arg1;
-	if (csbi.dwCursorPosition.X >= csbi.dwSize.X)
-	    csbi.dwCursorPosition.X = csbi.dwSize.X;
+	if (csbi.dwCursorPosition.X >= csbi.srWindow.Right)
+	    csbi.dwCursorPosition.X = csbi.srWindow.Right;
 	SetConsoleCursorPosition(handle, csbi.dwCursorPosition);
 	break;
       case L'D':
 	csbi.dwCursorPosition.X -= arg1;
-	if (csbi.dwCursorPosition.X < 0)
-	    csbi.dwCursorPosition.X = 0;
+	if (csbi.dwCursorPosition.X < csbi.srWindow.Left)
+	    csbi.dwCursorPosition.X = csbi.srWindow.Left;
 	SetConsoleCursorPosition(handle, csbi.dwCursorPosition);
 	break;
       case L'G':
       case L'`':
-	csbi.dwCursorPosition.X = (arg1 > csbi.dwSize.X ? csbi.dwSize.X : arg1) - 1;
+	arg1 += csbi.srWindow.Left;
+	if (arg1 > csbi.srWindow.Right)
+	    arg1 = csbi.srWindow.Right;
+	csbi.dwCursorPosition.X = arg1;
 	SetConsoleCursorPosition(handle, csbi.dwCursorPosition);
 	break;
       case L'd':
-	csbi.dwCursorPosition.Y = (arg1 > csbi.dwSize.Y ? csbi.dwSize.Y : arg1) - 1;
+	arg1 += csbi.srWindow.Top;
+	if (arg1 > csbi.srWindow.Bottom)
+	    arg1 = csbi.srWindow.Bottom;
+	csbi.dwCursorPosition.Y = arg1;
 	SetConsoleCursorPosition(handle, csbi.dwCursorPosition);
 	break;
       case L'H':
