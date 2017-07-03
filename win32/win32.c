@@ -6682,6 +6682,16 @@ constat_attr(int count, const int *seq, WORD attr, WORD default_attr, int *rever
 
 /* License: Ruby's */
 static void
+constat_clear(HANDLE handle, WORD attr, DWORD len, COORD pos)
+{
+    DWORD written;
+
+    FillConsoleOutputAttribute(handle, attr, len, pos, &written);
+    FillConsoleOutputCharacterW(handle, L' ', len, pos, &written);
+}
+
+/* License: Ruby's */
+static void
 constat_apply(HANDLE handle, struct constat *s, WCHAR w)
 {
     CONSOLE_SCREEN_BUFFER_INFO csbi;
@@ -6689,7 +6699,6 @@ constat_apply(HANDLE handle, struct constat *s, WCHAR w)
     int count = s->vt100.state;
     int arg1 = 1;
     COORD pos;
-    DWORD written;
 
     if (!GetConsoleScreenBufferInfo(handle, &csbi)) return;
     if (count > 0 && seq[0] > 0) arg1 = seq[0];
@@ -6747,38 +6756,53 @@ constat_apply(HANDLE handle, struct constat *s, WCHAR w)
       case L'J':
 	switch (arg1) {
 	  case 0:	/* erase after cursor */
-	    FillConsoleOutputCharacterW(handle, L' ',
-					csbi.dwSize.X * (csbi.dwSize.Y - csbi.dwCursorPosition.Y) - csbi.dwCursorPosition.X,
-					csbi.dwCursorPosition, &written);
+	    constat_clear(handle, csbi.wAttributes,
+			  (csbi.dwSize.X * (csbi.srWindow.Bottom - csbi.dwCursorPosition.Y + 1)
+			   - csbi.dwCursorPosition.X),
+			  csbi.dwCursorPosition);
 	    break;
 	  case 1:	/* erase before cursor */
 	    pos.X = 0;
-	    pos.Y = csbi.dwCursorPosition.Y;
-	    FillConsoleOutputCharacterW(handle, L' ',
-					csbi.dwSize.X * csbi.dwCursorPosition.Y + csbi.dwCursorPosition.X,
-					pos, &written);
+	    pos.Y = csbi.srWindow.Top;
+	    constat_clear(handle, csbi.wAttributes,
+			  (csbi.dwSize.X * (csbi.dwCursorPosition.Y - csbi.srWindow.Top)
+			   + csbi.dwCursorPosition.X),
+			  pos);
 	    break;
 	  case 2:	/* erase entire screen */
 	    pos.X = 0;
+	    pos.Y = csbi.srWindow.Top;
+	    constat_clear(handle, csbi.wAttributes,
+			  (csbi.dwSize.X * (csbi.srWindow.Bottom - csbi.srWindow.Top + 1)),
+			  pos);
+	    break;
+	  case 3:	/* erase entire screen */
+	    pos.X = 0;
 	    pos.Y = 0;
-	    FillConsoleOutputCharacterW(handle, L' ', csbi.dwSize.X * csbi.dwSize.Y, pos, &written);
+	    constat_clear(handle, csbi.wAttributes,
+			  (csbi.dwSize.X * csbi.dwSize.Y),
+			  pos);
 	    break;
 	}
 	break;
       case L'K':
 	switch (arg1) {
 	  case 0:	/* erase after cursor */
-	    FillConsoleOutputCharacterW(handle, L' ', csbi.dwSize.X - csbi.dwCursorPosition.X, csbi.dwCursorPosition, &written);
+	    constat_clear(handle, csbi.wAttributes,
+			  (csbi.dwSize.X - csbi.dwCursorPosition.X),
+			  csbi.dwCursorPosition);
 	    break;
 	  case 1:	/* erase before cursor */
 	    pos.X = 0;
 	    pos.Y = csbi.dwCursorPosition.Y;
-	    FillConsoleOutputCharacterW(handle, L' ', csbi.dwCursorPosition.X, pos, &written);
+	    constat_clear(handle, csbi.wAttributes,
+			  csbi.dwCursorPosition.X, pos);
 	    break;
 	  case 2:	/* erase entire line */
 	    pos.X = 0;
 	    pos.Y = csbi.dwCursorPosition.Y;
-	    FillConsoleOutputCharacterW(handle, L' ', csbi.dwSize.X, pos, &written);
+	    constat_clear(handle, csbi.wAttributes,
+			  csbi.dwSize.X, pos);
 	    break;
 	}
 	break;
