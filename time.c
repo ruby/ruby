@@ -3597,9 +3597,9 @@ time_to_s(VALUE time)
 }
 
 static VALUE
-time_add(struct time_object *tobj, VALUE offset, int sign)
+time_add(struct time_object *tobj, VALUE torig, VALUE offset, int sign)
 {
-    VALUE result;
+    VALUE result, zone;
     offset = num_exact(offset);
     if (sign < 0)
         result = time_new_timew(rb_cTime, wsub(tobj->timew, rb_time_magnify(v2w(offset))));
@@ -3614,6 +3614,11 @@ time_add(struct time_object *tobj, VALUE offset, int sign)
         GetTimeval(result, tobj);
         TIME_SET_FIXOFF(tobj, off);
     }
+    if (!tobj->vtm.zone && !NIL_P(zone = rb_attr_get(torig, id_zone))) {
+	tobj->vtm.zone = StringValueCStr(zone);
+	rb_ivar_set(result, id_zone, zone);
+    }
+
     return result;
 }
 
@@ -3637,7 +3642,7 @@ time_plus(VALUE time1, VALUE time2)
     if (IsTimeval(time2)) {
 	rb_raise(rb_eTypeError, "time + time?");
     }
-    return time_add(tobj, time2, 1);
+    return time_add(tobj, time1, time2, 1);
 }
 
 /*
@@ -3667,7 +3672,7 @@ time_minus(VALUE time1, VALUE time2)
 	GetTimeval(time2, tobj2);
         return rb_Float(rb_time_unmagnify_to_float(wsub(tobj->timew, tobj2->timew)));
     }
-    return time_add(tobj, time2, -1);
+    return time_add(tobj, time1, time2, -1);
 }
 
 /*
@@ -3770,9 +3775,9 @@ time_round(int argc, VALUE *argv, VALUE time)
     den = quov(INT2FIX(1), a);
     v = modv(v, den);
     if (lt(v, quov(den, INT2FIX(2))))
-        return time_add(tobj, v, -1);
+        return time_add(tobj, time, v, -1);
     else
-        return time_add(tobj, subv(den, v), 1);
+        return time_add(tobj, time, subv(den, v), 1);
 }
 
 /*
@@ -4693,7 +4698,8 @@ end_submicro: ;
 	time_fixoff(time);
     }
     if (!NIL_P(zone)) {
-	zone = rb_str_new_frozen(zone);
+	if (TIME_FIXOFF_P(tobj)) TIME_SET_LOCALTIME(tobj);
+	zone = rb_fstring(zone);
 	tobj->vtm.zone = StringValueCStr(zone);
 	rb_ivar_set(time, id_zone, zone);
     }

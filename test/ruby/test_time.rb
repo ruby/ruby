@@ -308,7 +308,9 @@ class TestTime < Test::Unit::TestCase
     in_timezone('JST-9') do
       t = Time.local(2013, 2, 24)
       assert_equal('JST', Time.local(2013, 2, 24).zone)
-      assert_equal('JST', Marshal.load(Marshal.dump(t)).zone)
+      t = Marshal.load(Marshal.dump(t))
+      assert_equal('JST', t.zone)
+      assert_equal('JST', (t+1).zone, '[ruby-core:81892] [Bug #13710]')
     end
   end
 
