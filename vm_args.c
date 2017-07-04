@@ -719,7 +719,26 @@ raise_argument_error(rb_thread_t *th, const rb_iseq_t *iseq, const VALUE exc)
 static void
 argument_arity_error(rb_thread_t *th, const rb_iseq_t *iseq, const int miss_argc, const int min_argc, const int max_argc)
 {
-    raise_argument_error(th, iseq, rb_arity_error_new(miss_argc, min_argc, max_argc));
+    VALUE exc = rb_arity_error_new(miss_argc, min_argc, max_argc);
+    if (iseq->body->param.flags.has_kw) {
+	const struct rb_iseq_param_keyword *const kw = iseq->body->param.keyword;
+	const ID *keywords = kw->table;
+	int req_key_num = kw->required_num;
+	if (req_key_num > 0) {
+	    static const char required[] = "; required keywords";
+	    VALUE mesg = rb_attr_get(exc, idMesg);
+	    rb_str_resize(mesg, RSTRING_LEN(mesg)-1);
+	    rb_str_cat(mesg, required, sizeof(required) - 1 - (req_key_num == 1));
+	    rb_str_cat_cstr(mesg, ":");
+	    do {
+		rb_str_cat_cstr(mesg, " ");
+		rb_str_append(mesg, rb_id2str(*keywords++));
+		rb_str_cat_cstr(mesg, ",");
+	    } while (--req_key_num);
+	    RSTRING_PTR(mesg)[RSTRING_LEN(mesg)-1] = ')';
+	}
+    }
+    raise_argument_error(th, iseq, exc);
 }
 
 static void

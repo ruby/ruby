@@ -641,4 +641,17 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(x, result)
     assert_kind_of(klass, result, bug12884)
   end
+
+  def test_arity_error_message
+    obj = Object.new
+    def obj.t(x:) end
+    assert_raise_with_message(ArgumentError, /required keyword: x\)/) do
+      obj.t(42)
+    end
+    obj = Object.new
+    def obj.t(x:, y:, z: nil) end
+    assert_raise_with_message(ArgumentError, /required keywords: x, y\)/) do
+      obj.t(42)
+    end
+  end
 end
