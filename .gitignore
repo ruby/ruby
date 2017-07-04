@@ -39,6 +39,7 @@ y.tab.c
 *.gcda
 *.gcno
 *.gcov
+lcov*.info
 
 # /
 /*-fake.rb
@@ -85,6 +86,7 @@ y.tab.c
 /goruby
 /id.[ch]
 /largefile.h
+/lcov-out
 /lex.c
 /libruby*.*
 /miniprelude.c
