@@ -34,6 +34,7 @@
  */
 VALUE cCipher;
 VALUE eCipherError;
+static ID id_key_set;
 
 static VALUE ossl_cipher_alloc(VALUE klass);
 static void ossl_cipher_free(void *ptr);
@@ -114,7 +115,6 @@ ossl_cipher_initialize(VALUE self, VALUE str)
     EVP_CIPHER_CTX *ctx;
     const EVP_CIPHER *cipher;
     char *name;
-    unsigned char key[EVP_MAX_KEY_LENGTH];
 
     name = StringValuePtr(str);
     GetCipherInit(self, ctx);
@@ -126,14 +126,7 @@ ossl_cipher_initialize(VALUE self, VALUE str)
     if (!(cipher = EVP_get_cipherbyname(name))) {
 	ossl_raise(rb_eRuntimeError, "unsupported cipher algorithm (%s)", name);
     }
-    /*
-     * The EVP which has EVP_CIPH_RAND_KEY flag (such as DES3) allows
-     * uninitialized key, but other EVPs (such as AES) does not allow it.
-     * Calling EVP_CipherUpdate() without initializing key causes SEGV so we
-     * set the data filled with "\0" as the key by default.
-     */
-    memset(key, 0, EVP_MAX_KEY_LENGTH);
-    if (EVP_CipherInit_ex(ctx, cipher, NULL, key, NULL, -1) != 1)
+    if (EVP_CipherInit_ex(ctx, cipher, NULL, NULL, NULL, -1) != 1)
 	ossl_raise(eCipherError, NULL);
 
     return self;
@@ -252,6 +245,9 @@ ossl_cipher_init(int argc, VALUE *argv, VALUE self, int mode)
 	ossl_raise(eCipherError, NULL);
     }
 
+    if (p_key)
+	rb_ivar_set(self, id_key_set, Qtrue);
+
     return self;
 }
 
@@ -338,6 +334,8 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
     OPENSSL_cleanse(key, sizeof key);
     OPENSSL_cleanse(iv, sizeof iv);
 
+    rb_ivar_set(self, id_key_set, Qtrue);
+
     return Qnil;
 }
 
@@ -390,6 +388,9 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
     VALUE data, str;
 
     rb_scan_args(argc, argv, "11", &data, &str);
+
+    if (!RTEST(rb_attr_get(self, id_key_set)))
+	ossl_raise(eCipherError, "key not set");
 
     StringValue(data);
     in = (unsigned char *)RSTRING_PTR(data);
@@ -489,6 +490,8 @@ ossl_cipher_set_key(VALUE self, VALUE key)
 
     if (EVP_CipherInit_ex(ctx, NULL, NULL, (unsigned char *)RSTRING_PTR(key), NULL, -1) != 1)
         ossl_raise(eCipherError, NULL);
+
+    rb_ivar_set(self, id_key_set, Qtrue);
 
     return key;
 }
@@ -1008,4 +1011,6 @@ Init_ossl_cipher(void)
     rb_define_method(cCipher, "iv_len", ossl_cipher_iv_length, 0);
     rb_define_method(cCipher, "block_size", ossl_cipher_block_size, 0);
     rb_define_method(cCipher, "padding=", ossl_cipher_set_padding, 1);
+
+    id_key_set = rb_intern_const("key_set");
 }

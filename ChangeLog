@@ -1,3 +1,12 @@
+Wed Jul  5 15:55:35 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/openssl/ossl_cipher.c: remove the encryption key initialization
+	  from Cipher#initialize. This is effectively a revert of r32723
+	  ("Avoid possible SEGV from AES encryption/decryption", 2011-07-28).
+	  the patch is derived from https://github.com/ruby/openssl/commit/8108e0a6db133f3375608303fdd2083eb5115062,
+	  written by Kazuki Yamaguchi.
+	  [Backport #8221]
+
 Sat Jul  1 00:28:22 2017  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/psych/yaml: update libyaml to 0.1.7.
