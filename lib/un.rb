@@ -313,17 +313,28 @@ end
 #   --do-not-reverse-lookup     disable reverse lookup
 #   --request-timeout=SECOND    request timeout in seconds
 #   --http-version=VERSION      HTTP version
+#   --ssl-certificate=CERT      The SSL certificate file for the server
+#   --ssl-private-key=KEY       The SSL private key file for the server certificate
 #   -v                          verbose
 #
 
 def httpd
   setup("", "BindAddress=ADDR", "Port=PORT", "MaxClients=NUM", "TempDir=DIR",
-        "DoNotReverseLookup", "RequestTimeout=SECOND", "HTTPVersion=VERSION") do
+        "DoNotReverseLookup", "RequestTimeout=SECOND", "HTTPVersion=VERSION",
+        "SSLCertificate=CERT", "SSLPrivateKey=KEY") do
     |argv, options|
     require 'webrick'
     opt = options[:RequestTimeout] and options[:RequestTimeout] = opt.to_i
     [:Port, :MaxClients].each do |name|
       opt = options[name] and (options[name] = Integer(opt)) rescue nil
+    end
+    if cert = options[:SSLCertificate]
+      require 'webrick/https'
+      require 'openssl'
+      options[:SSLCertificate] = OpenSSL::X509::Certificate.new(File.read(cert))
+      options[:SSLEnable] = true
+      options[:SSLPrivateKey] &&= OpenSSL::PKey::RSA.new(File.read(options[:SSLPrivateKey]))
+      options[:Port] ||= 8443   # HTTPS Alternate
     end
     options[:Port] ||= 8080     # HTTP Alternate
     options[:DocumentRoot] = argv.shift || '.'
