@@ -329,11 +329,12 @@ def httpd
       opt = options[name] and (options[name] = Integer(opt)) rescue nil
     end
     if cert = options[:SSLCertificate]
+      key = options[:SSLPrivateKey] or
+        raise "--ssl-private-key option must also be given"
       require 'webrick/https'
-      require 'openssl'
-      options[:SSLCertificate] = OpenSSL::X509::Certificate.new(File.read(cert))
       options[:SSLEnable] = true
-      options[:SSLPrivateKey] &&= OpenSSL::PKey::RSA.new(File.read(options[:SSLPrivateKey]))
+      options[:SSLCertificate] = OpenSSL::X509::Certificate.new(File.read(cert))
+      options[:SSLPrivateKey] = OpenSSL::PKey.read(File.read(key))
       options[:Port] ||= 8443   # HTTPS Alternate
     end
     options[:Port] ||= 8080     # HTTP Alternate
