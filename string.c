@@ -2117,17 +2117,10 @@ str_null_char(const char *s, long len, const int minlen, rb_encoding *enc)
 static char *
 str_fill_term(VALUE str, char *s, long len, int termlen)
 {
-    long capa = str_capacity(str, termlen);
-
     /* This function assumes that (capa + termlen) bytes of memory
      * is allocated, like many other functions in this file.
      */
-
-    if (capa < len) {
-	rb_check_lockedtmp(str);
-	str_make_independent_expand(str, len, 0L, termlen);
-    }
-    else if (str_dependent_p(str)) {
+    if (str_dependent_p(str)) {
 	if (!zero_filled(s + len, termlen))
 	    str_make_independent_expand(str, len, 0L, termlen);
     }
