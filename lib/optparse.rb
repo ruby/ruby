@@ -1865,7 +1865,7 @@ XXX
   DecimalInteger = /\A[-+]?#{decimal}\z/io
   accept(DecimalInteger, DecimalInteger) {|s,|
     begin
-      Integer(s)
+      Integer(s, 10)
     rescue ArgumentError
       raise OptionParser::InvalidArgument, s
     end if s
