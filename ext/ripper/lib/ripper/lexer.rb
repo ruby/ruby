@@ -72,6 +72,11 @@ class Ripper
         if Elem === e and e.event == :on_tstring_content
           tok = e.tok.dup if w > 0 and /\A\s/ =~ e.tok
           if (n = dedent_string(e.tok, w)) > 0
+            if e.tok.empty?
+              e.tok = tok[0, n]
+              e.event = :on_ignored_sp
+              next
+            end
             ignored_sp << [i, Elem.new(e.pos.dup, :on_ignored_sp, tok[0, n])]
             e.pos[1] += n
           end
