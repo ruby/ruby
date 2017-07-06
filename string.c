@@ -5279,13 +5279,13 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
     enc = STR_ENC_GET(str);
     head = RSTRING_PTR(str);
     ptr = &head[pos];
-    if (!STR_EMBEDDABLE_P(len, rb_enc_mbminlen(enc))) {
+    if (!STR_EMBED_P(str)) {
 	cr = ENC_CODERANGE(str);
 	switch (cr) {
 	  case ENC_CODERANGE_7BIT:
 	    left = ptr;
 	    *ptr = byte;
-	    if (ISASCII(byte)) break;
+	    if (ISASCII(byte)) goto end;
 	    nlen = rb_enc_precise_mbclen(left, head+len, enc);
 	    if (!MBCLEN_CHARFOUND_P(nlen))
 		ENC_CODERANGE_SET(str, ENC_CODERANGE_BROKEN);
