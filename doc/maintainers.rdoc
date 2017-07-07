@@ -219,7 +219,8 @@ Zachary Scott (zzak)
 [lib/scanf.rb]
   David A. Black (dblack)
 [lib/webrick.rb, lib/webrick/*]
-  _unmaintained_
+  Eric Wong (normalperson)
+  https://bugs.ruby-lang.org/
 
 === Extensions
 
