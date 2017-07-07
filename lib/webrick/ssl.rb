@@ -48,6 +48,8 @@ module WEBrick
     #   Number of CA certificates to walk when verifying a certificate chain
     # :SSLVerifyCallback    ::
     #   Custom certificate verification callback
+    # :SSLServerNameCallback::
+    #   Custom servername indication callback
     # :SSLTimeout           ::
     #   Maximum session lifetime
     # :SSLOptions           ::
@@ -193,10 +195,19 @@ module WEBrick
       ctx.verify_mode = config[:SSLVerifyClient]
       ctx.verify_depth = config[:SSLVerifyDepth]
       ctx.verify_callback = config[:SSLVerifyCallback]
+      ctx.servername_cb = config[:SSLServerNameCallback] || proc { |args| ssl_servername_callback(*args) }
       ctx.timeout = config[:SSLTimeout]
       ctx.options = config[:SSLOptions]
       ctx.ciphers = config[:SSLCiphers]
       ctx
     end
+
+    ##
+    # ServerNameIndication callback
+
+    def ssl_servername_callback(sslsocket, hostname = nil)
+      # default
+    end
+
   end
 end

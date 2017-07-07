@@ -10,6 +10,7 @@
 # $IPR: https.rb,v 1.15 2003/07/22 19:20:42 gotoyuzo Exp $
 
 require 'webrick/ssl'
+require 'webrick/httpserver'
 
 module WEBrick
   module Config
@@ -83,5 +84,52 @@ module WEBrick
     end
 
     # :startdoc:
+  end
+
+  ##
+  #--
+  # Fake WEBrick::HTTPRequest for lookup_server
+
+  class SNIRequest
+
+    ##
+    # The SNI hostname
+
+    attr_reader :host
+
+    ##
+    # The socket address of the server
+
+    attr_reader :addr
+
+    ##
+    # The port this request is for
+
+    attr_reader :port
+
+    ##
+    # Creates a new SNIRequest.
+
+    def initialize(sslsocket, hostname)
+      @host = hostname
+      @addr = sslsocket.addr
+      @port = @addr[1]
+    end
+  end
+
+
+  ##
+  #--
+  # Adds SSL functionality to WEBrick::HTTPServer
+
+  class HTTPServer < ::WEBrick::GenericServer
+    ##
+    # ServerNameIndication callback
+
+    def ssl_servername_callback(sslsocket, hostname = nil)
+      req = SNIRequest.new(sslsocket, hostname)
+      server = lookup_server(req)
+      server ? server.ssl_context : nil
+    end
   end
 end
