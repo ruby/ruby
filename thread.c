@@ -96,6 +96,11 @@ static int rb_threadptr_pending_interrupt_empty_p(rb_thread_t *th);
 static volatile int system_working = 1;
 
 #define closed_stream_error GET_VM()->special_exceptions[ruby_error_closed_stream]
+struct waiting_fd {
+    struct list_node wfd_node; /* <=> vm.waiting_fds */
+    rb_thread_t *th;
+    int fd;
+};
 
 inline static void
 st_delete_wrap(st_table *table, st_data_t key)
@@ -1288,7 +1293,6 @@ call_without_gvl(void *(*func)(void *), void *data1,
     rb_thread_t *th = GET_THREAD();
     int saved_errno = 0;
 
-    th->waiting_fd = -1;
     if (ubf == RUBY_UBF_IO || ubf == RUBY_UBF_PROCESS) {
 	ubf = ubf_select;
 	data2 = th;
@@ -1411,11 +1415,15 @@ VALUE
 rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
 {
     volatile VALUE val = Qundef; /* shouldn't be used */
+    rb_vm_t *vm = GET_VM();
     rb_thread_t *th = GET_THREAD();
     volatile int saved_errno = 0;
     int state;
+    struct waiting_fd wfd;
 
-    th->waiting_fd = fd;
+    wfd.fd = fd;
+    wfd.th = th;
+    list_add(&vm->waiting_fds, &wfd.wfd_node);
 
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == 0) {
@@ -1426,8 +1434,8 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
     }
     TH_POP_TAG();
 
-    /* clear waiting_fd anytime */
-    th->waiting_fd = -1;
+    /* must be deleted before jump */
+    list_del(&wfd.wfd_node);
 
     if (state) {
 	JUMP_TAG(state);
@@ -2172,16 +2180,23 @@ int
 rb_notify_fd_close(int fd)
 {
     rb_vm_t *vm = GET_THREAD()->vm;
-    rb_thread_t *th = 0;
+    struct waiting_fd *wfd = 0;
     int busy;
 
     busy = 0;
-    list_for_each(&vm->living_threads, th, vmlt_node) {
-	if (th->waiting_fd == fd) {
-	    VALUE err = th->vm->special_exceptions[ruby_error_closed_stream];
+    list_for_each(&vm->waiting_fds, wfd, wfd_node) {
+	if (wfd->fd == fd) {
+	    rb_thread_t *th = wfd->th;
+	    VALUE err;
+
+	    busy = 1;
+	    if (!th) {
+		continue;
+	    }
+	    wfd->th = 0;
+	    err = th->vm->special_exceptions[ruby_error_closed_stream];
 	    rb_threadptr_pending_interrupt_enque(th, err);
 	    rb_threadptr_interrupt(th);
-	    busy = 1;
 	}
     }
     return busy;
