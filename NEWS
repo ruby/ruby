@@ -125,7 +125,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * BasicSocket#read_nonblock and BasicSocket#write_nonblock no
   longer sets the O_NONBLOCK file description flag as side effect
-  [Feature #13362]
+  (on Linux only) [Feature #13362]
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
