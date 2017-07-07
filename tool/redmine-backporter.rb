@@ -368,6 +368,11 @@ commands = {
     unless i["changesets"]
       abort "You don't have view_changesets permission"
     end
+    unless i["custom_fields"]
+      puts "The specified ticket \##{@issue} seems to be a feature ticket"
+      @issue = nil
+      next
+    end
     id = "##{i["id"]}".color(*PRIORITIES[i["priority"]["name"]])
     sio = StringIO.new
     sio.puts <<eom
