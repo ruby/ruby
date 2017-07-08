@@ -17,6 +17,7 @@
 # is also a good place to look at.
 
 language: c
+dist: trusty
 
 sudo: false
 
