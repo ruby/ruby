@@ -481,8 +481,24 @@ EOT
       # compatibility with test-unit
       alias pend skip
 
+      if defined?(RubyVM::InstructionSequence)
+        def syntax_check(code, fname, line)
+          code = code.dup.force_encoding(Encoding::UTF_8)
+          RubyVM::InstructionSequence.compile(code, fname, fname, line)
+          :ok
+        end
+      else
+        def syntax_check(code, fname, line)
+          code = code.b
+          code.sub!(/\A(?:\xef\xbb\xbf)?(\s*\#.*$)*(\n)?/n) {
+            "#$&#{"\n" if $1 && !$2}BEGIN{throw tag, :ok}\n"
+          }
+          code = code.force_encoding(Encoding::UTF_8)
+          catch {|tag| eval(code, binding, fname, line - 1)}
+        end
+      end
+
       def prepare_syntax_check(code, fname = caller_locations(2, 1)[0], mesg = fname.to_s, verbose: nil)
-        code = code.dup.force_encoding(Encoding::UTF_8)
         verbose, $VERBOSE = $VERBOSE, verbose
         case
         when Array === fname
@@ -501,7 +517,7 @@ EOT
         prepare_syntax_check(code, *args) do |src, fname, line, mesg|
           yield if defined?(yield)
           assert_nothing_raised(SyntaxError, mesg) do
-            RubyVM::InstructionSequence.compile(src, fname, fname, line)
+            assert_equal(:ok, syntax_check(src, fname, line), mesg)
           end
         end
       end
@@ -510,7 +526,7 @@ EOT
         prepare_syntax_check(code, *args) do |src, fname, line, mesg|
           yield if defined?(yield)
           e = assert_raise(SyntaxError, mesg) do
-            RubyVM::InstructionSequence.compile(src, fname, fname, line)
+            syntax_check(src, fname, line)
           end
           assert_match(error, e.message, mesg)
           e
