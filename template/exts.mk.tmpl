@@ -20,7 +20,7 @@ contpat = /(?>(?>[^\\\n]|\\.)*\\\n)*(?>[^\\\n]|\\.)*/
 Dir.glob("{ext,gems}/*/exts.mk") do |e|
   gem = /\Agems(?=\/)/ =~ e
   s = File.read(e)
-  s.scan(/^(extensions|EXT[A-Z]+|MFLAGS|NOTE_[A-Z]+)[ \t]*=[ \t]*(#{contpat})$/o) do |n, v|
+  s.scan(/^(extensions|SUBMAKEOPTS|EXT[A-Z]+|MFLAGS|NOTE_[A-Z]+)[ \t]*=[ \t]*(#{contpat})$/o) do |n, v|
     v.gsub!(/\\\n[ \t]*/, ' ')
     next if v.empty?
     next if gem and n != "extensions"
@@ -102,11 +102,6 @@ end
 % RbConfig::MAKEFILE_CONFIG.keys.grep(/RM/) do |k|
 <%=k%> = <%=RbConfig::MAKEFILE_CONFIG[k]%>
 % end
-
-SUBMAKEOPTS = DLDOBJS="$(EXTOBJS) $(EXTENCS)" EXTOBJS= \
-	      EXTSOLIBS="$(EXTLIBS)" LIBRUBY_SO_UPDATE=$(LIBRUBY_EXTS) \
-	      EXTLDFLAGS="$(EXTLDFLAGS)" EXTINITS="$(EXTINITS)" \
-	      UPDATE_LIBRARIES="$(UPDATE_LIBRARIES)" SHOWFLAGS=
 
 all:
 static:
