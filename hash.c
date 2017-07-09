@@ -18,6 +18,7 @@
 #include "probes.h"
 #include "id.h"
 #include "symbol.h"
+#include "gc.h"
 
 #ifdef __APPLE__
 # ifdef HAVE_CRT_EXTERNS_H
@@ -1518,8 +1519,21 @@ hash_aset(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
 static int
 hash_aset_str(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
 {
-    if (!existing) {
-	*key = rb_str_new_frozen(*key);
+    if (!existing && !RB_OBJ_FROZEN(*key)) {
+	VALUE fstr;
+	st_table *tbl = rb_vm_fstring_table();
+
+	if (st_lookup(tbl, *key, (st_data_t *)&fstr)) {
+	    if (rb_objspace_garbage_object_p(fstr)) {
+		*key = rb_fstring(*key);
+	    }
+	    else {
+		*key = fstr;
+	    }
+	}
+	else {
+	    *key = rb_str_new_frozen(*key);
+	}
     }
     return hash_aset(key, val, arg, existing);
 }
