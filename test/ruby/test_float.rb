@@ -16,6 +16,8 @@ class TestFloat < Test::Unit::TestCase
     assert_in_delta(13.4 % 1, 0.4, 0.0001)
     assert_equal(36893488147419111424,
                  36893488147419107329.0.to_i)
+    assert_equal(1185151044158398820374743613440,
+                 1.1851510441583988e+30.to_i)
   end
 
   def nan_test(x,y)
