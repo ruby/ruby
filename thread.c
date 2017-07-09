@@ -2227,7 +2227,7 @@ rb_notify_fd_close(int fd)
 void
 rb_thread_fd_close(int fd)
 {
-    while (rb_notify_fd_close(fd));
+    while (rb_notify_fd_close(fd)) rb_thread_schedule();
 }
 
 /*
