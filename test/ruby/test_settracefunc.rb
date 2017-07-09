@@ -1599,4 +1599,150 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal [[:c_call, :itself, :alias_itself], [:c_return, :itself, :alias_itself]], events
     events.clear
   end
+
+  # tests for `return_value` with non-local exit [Bug #13369]
+
+  def tp_return_value mid
+    ary = []
+    TracePoint.new(:return, :b_return){|tp| ary << [tp.event, tp.method_id, tp.return_value]}.enable{
+      send mid
+    }
+    ary.pop # last b_return event is not required.
+    ary
+  end
+
+  def f_raise
+    raise
+  rescue
+    return :f_raise_return
+  end
+
+  def f_iter1
+    yield
+    return :f_iter1_return
+  end
+
+  def f_iter2
+    yield
+    return :f_iter2_return
+  end
+
+  def f_return_in_iter
+    f_iter1 do
+      f_iter2 do
+        return :f_return_in_iter_return
+      end
+    end
+    2
+  end
+
+  def f_break_in_iter
+    f_iter1 do
+      f_iter2 do
+        break :f_break_in_iter_break
+      end
+      :f_iter1_block_value
+    end
+    :f_break_in_iter_return
+  end
+
+  def test_return_value_with_rescue
+    assert_equal [[:return,   :f_raise,          :f_raise_return]],
+                 tp_return_value(:f_raise),
+                 '[Bug #13369]'
+
+    assert_equal [[:b_return, :f_return_in_iter, nil],
+                  [:return,   :f_iter2,          nil],
+                  [:b_return, :f_return_in_iter, nil],
+                  [:return,   :f_iter1,          nil],
+                  [:return,   :f_return_in_iter, :f_return_in_iter_return]],
+                 tp_return_value(:f_return_in_iter),
+                 '[Bug #13369]'
+
+    assert_equal [[:b_return, :f_break_in_iter,  :f_break_in_iter_break],
+                  [:return,   :f_iter2,          nil],
+                  [:b_return, :f_break_in_iter,  :f_iter1_block_value],
+                  [:return,   :f_iter1,          :f_iter1_return],
+                  [:return,   :f_break_in_iter,  :f_break_in_iter_return]],
+                 tp_return_value(:f_break_in_iter),
+                 '[Bug #13369]'
+  end
+
+  define_method(:f_last_defined) do
+    :f_last_defined
+  end
+
+  define_method(:f_return_defined) do
+    return :f_return_defined
+  end
+
+  define_method(:f_break_defined) do
+    return :f_break_defined
+  end
+
+  define_method(:f_raise_defined) do
+    begin
+      raise
+    rescue
+      return :f_raise_defined
+    end
+  end
+
+  define_method(:f_break_in_rescue_defined) do
+    begin
+      raise
+    rescue
+      break :f_break_in_rescue_defined
+    end
+  end
+
+  def test_return_value_with_rescue_and_defined_methods
+    assert_equal [[:b_return, :f_last_defined, :f_last_defined],
+                  [:return,   :f_last_defined, :f_last_defined]],
+                 tp_return_value(:f_last_defined),
+                 '[Bug #13369]'
+
+    assert_equal [[:b_return, :f_return_defined, nil], # current limitation
+                  [:return,   :f_return_defined, :f_return_defined]],
+                 tp_return_value(:f_return_defined),
+                 '[Bug #13369]'
+
+    assert_equal [[:b_return, :f_break_defined, nil],
+                  [:return,   :f_break_defined, :f_break_defined]],
+                 tp_return_value(:f_break_defined),
+                 '[Bug #13369]'
+
+    assert_equal [[:b_return, :f_raise_defined, nil],
+                  [:return,   :f_raise_defined, f_raise_defined]],
+                 tp_return_value(:f_raise_defined),
+                 '[Bug #13369]'
+
+    assert_equal [[:b_return, :f_break_in_rescue_defined, nil],
+                  [:return,   :f_break_in_rescue_defined, f_break_in_rescue_defined]],
+                 tp_return_value(:f_break_in_rescue_defined),
+                 '[Bug #13369]'
+  end
+
+  def f_iter
+    yield
+  end
+
+  def f_break_in_rescue
+    f_iter do
+      begin
+        raise
+      rescue
+        break :b
+      end
+    end
+    :f_break_in_rescue_return_value
+  end
+
+  def test_break_with_rescue
+    assert_equal [[:b_return, :f_break_in_rescue, :b],
+                  [:return, :f_iter, nil],
+                  [:return, :f_break_in_rescue, :f_break_in_rescue_return_value]],
+                 tp_return_value(:f_break_in_rescue),
+                 '[Bug #13369]'
+  end
 end
