@@ -185,7 +185,7 @@ class Downloader
       raise
     end
     mtime = nil
-    dest = (cache && !cache.exist? ? cache : file)
+    dest = (cache_save && cache && !cache.exist? ? cache : file)
     dest.parent.mkpath
     dest.open("wb", 0600) do |f|
       f.write(data)
