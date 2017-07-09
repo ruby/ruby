@@ -330,7 +330,7 @@ def package(vcs, rev, destdir, tmp = nil)
         "ruby_version"=>version,
       }
       status.scan(/^s([%,])@([A-Za-z_][A-Za-z_0-9]*)@\1(.*?)\1g$/) do
-        vars[$2] = $3
+        vars[$2] ||= $3
       end
       vars["UNICODE_VERSION"] = $unicode_version if $unicode_version
       args = vars.dup
@@ -340,11 +340,14 @@ def package(vcs, rev, destdir, tmp = nil)
 
 prereq: clean-cache $(CLEAN_CACHE)
 clean-cache $(CLEAN_CACHE): extract-gems
-touch-unicode-files:
+touch-unicode-files: _touch-unicode-files
 update-download:: touch-unicode-files
 update-download:: update-gems
 extract-gems: update-gems
 update-gems:
+_touch-unicode-files:
+	$(MAKEDIRS) $(UNICODE_SRC_DATA_DIR)
+	touch $(UNICODE_SRC_DATA_DIR)/.unicode-tables.time $(UNICODE_DATA_HEADERS)
       APPEND
       open(clean.add("Makefile"), "w") do |f|
         f.puts "prereq: update-download"
