@@ -392,7 +392,7 @@ class ERB
           @scan_reg  = /(.*?)(%>\n|#{(stags + etags).join('|')}|\n|\z)/m
           @scan_line = self.method(:trim_line1)
         elsif @trim_mode == '<>'
-          @scan_reg  = /(.*?)(%>\n|#{(stags + etags).join('|')}|\n|\z)/m
+          @scan_reg  = /(.*?)(%>\r?\n|#{(stags + etags).join('|')}|\n|\z)/m
           @scan_line = self.method(:trim_line2)
         elsif @trim_mode == '-'
           @scan_reg  = /(.*?)(^[ \t]*<%\-|<%\-|-%>\n|-%>|#{(stags + etags).join('|')}|\z)/m
@@ -457,7 +457,7 @@ class ERB
           tokens.each do |token|
             next if token.empty?
             head = token unless head
-            if token == "%>\n"
+            if token == "%>\n" || token == "%>\r\n"
               yield('%>')
               if is_erb_stag?(head)
                 yield(:cr)
