@@ -3611,11 +3611,13 @@ compile_cpath(LINK_ANCHOR *const ret, rb_iseq_t *iseq, NODE *cpath)
 }
 
 #define private_recv_p(node) (nd_type((node)->nd_recv) == NODE_SELF)
-
-#define defined_expr defined_expr0
 static int
 defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
-	     NODE *node, LABEL **lfinish, VALUE needstr)
+	     NODE *node, LABEL **lfinish, VALUE needstr);
+
+static int
+defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
+	      NODE *node, LABEL **lfinish, VALUE needstr)
 {
     enum defined_type expr_type = 0;
     enum node_type type;
@@ -3640,7 +3642,7 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	NODE *vals = node;
 
 	do {
-	    defined_expr(iseq, ret, vals->nd_head, lfinish, Qfalse);
+	    defined_expr0(iseq, ret, vals->nd_head, lfinish, Qfalse);
 
 	    if (!lfinish[1]) {
 		lfinish[1] = NEW_LABEL(nd_line(node));
@@ -3690,19 +3692,14 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	if (!lfinish[1]) {
 	    lfinish[1] = NEW_LABEL(nd_line(node));
 	}
-	defined_expr(iseq, ret, node->nd_head, lfinish, Qfalse);
+	defined_expr0(iseq, ret, node->nd_head, lfinish, Qfalse);
 	ADD_INSNL(ret, nd_line(node), branchunless, lfinish[1]);
+	COMPILE(ret, "defined/colon2#nd_head", node->nd_head);
 
-	if (rb_is_const_id(node->nd_mid)) {
-	    COMPILE(ret, "defined/colon2#nd_head", node->nd_head);
-	    ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_CONST),
-		      ID2SYM(node->nd_mid), needstr);
-	}
-	else {
-	    COMPILE(ret, "defined/colon2#nd_head", node->nd_head);
-	    ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_METHOD),
-		      ID2SYM(node->nd_mid), needstr);
-	}
+	ADD_INSN3(ret, nd_line(node), defined,
+		  (rb_is_const_id(node->nd_mid) ?
+		   INT2FIX(DEFINED_CONST) : INT2FIX(DEFINED_METHOD)),
+		  ID2SYM(node->nd_mid), needstr);
 	return 1;
       case NODE_COLON3:
 	ADD_INSN1(ret, nd_line(node), putobject, rb_cObject);
@@ -3724,11 +3721,11 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	    lfinish[1] = NEW_LABEL(nd_line(node));
 	}
 	if (node->nd_args) {
-	    defined_expr(iseq, ret, node->nd_args, lfinish, Qfalse);
+	    defined_expr0(iseq, ret, node->nd_args, lfinish, Qfalse);
 	    ADD_INSNL(ret, nd_line(node), branchunless, lfinish[1]);
 	}
 	if (explicit_receiver) {
-	    defined_expr(iseq, ret, node->nd_recv, lfinish, Qfalse);
+	    defined_expr0(iseq, ret, node->nd_recv, lfinish, Qfalse);
 	    ADD_INSNL(ret, nd_line(node), branchunless, lfinish[1]);
 	    COMPILE(ret, "defined/recv", node->nd_recv);
 	    ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_METHOD),
@@ -3792,7 +3789,6 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
     }
     return 0;
 }
-#undef defined_expr
 
 static int
 defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
