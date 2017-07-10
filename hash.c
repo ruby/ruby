@@ -1520,15 +1520,15 @@ static int
 hash_aset_str(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
 {
     if (!existing && !RB_OBJ_FROZEN(*key)) {
-	VALUE fstr;
+	st_data_t fstr;
 	st_table *tbl = rb_vm_fstring_table();
 
-	if (st_lookup(tbl, *key, (st_data_t *)&fstr)) {
+	if (st_lookup(tbl, *key, &fstr)) {
 	    if (rb_objspace_garbage_object_p(fstr)) {
 		*key = rb_fstring(*key);
 	    }
 	    else {
-		*key = fstr;
+		*key = (VALUE)fstr;
 	    }
 	}
 	else {
