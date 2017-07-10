@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Exit cleanly from an early interrupt
+Signal.trap("INT") { exit 1 }
+
+update = "update".start_with?(ARGV.first || " ") && ARGV.find {|a| a.start_with?("--bundler") }
+update &&= update =~ /--bundler(?:=(.+))?/ && $1 || "> 0.a"
+ENV["BUNDLER_VERSION"] = update if update
+require "bundler/postit_trampoline"
+
+require "bundler"
+# Check if an older version of bundler is installed
+$LOAD_PATH.each do |path|
+  next unless path =~ %r{/bundler-0\.(\d+)} && $1.to_i < 9
+  err = String.new
+  err << "Looks like you have a version of bundler that's older than 0.9.\n"
+  err << "Please remove your old versions.\n"
+  err << "An easy way to do this is by running `gem cleanup bundler`."
+  abort(err)
+end
+
+require "bundler/friendly_errors"
+Bundler.with_friendly_errors do
+  require "bundler/cli"
+
+  # Allow any command to use --help flag to show help for that command
+  help_flags = %w(--help -h)
+  help_flag_used = ARGV.any? {|a| help_flags.include? a }
+  args = help_flag_used ? Bundler::CLI.reformatted_help_args(ARGV) : ARGV
+
+  Bundler::CLI.start(args, :debug => true)
+end
