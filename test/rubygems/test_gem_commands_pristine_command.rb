@@ -145,7 +145,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     out = @ui.output.split "\n"
 
     assert_equal 'Restoring gems to pristine condition...', out.shift
-    assert_equal 'Building native extensions.  This could take a while...',
+    assert_equal 'Building native extensions. This could take a while...',
                  out.shift
     assert_equal "Restored #{a.full_name}", out.shift
     assert_empty out, out.inspect

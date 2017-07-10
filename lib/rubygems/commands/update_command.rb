@@ -70,7 +70,7 @@ command to remove old versions.
 
   def check_latest_rubygems version # :nodoc:
     if Gem.rubygems_version == version then
-      say "Latest version currently installed. Aborting."
+      say "Latest version already installed. Done."
       terminate_interaction
     end
 

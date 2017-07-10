@@ -107,7 +107,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     end
 
     out = @ui.output.split "\n"
-    assert_equal "Latest version currently installed. Aborting.", out.shift
+    assert_equal "Latest version already installed. Done.", out.shift
     assert_empty out
   end
 

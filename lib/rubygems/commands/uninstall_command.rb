@@ -30,7 +30,7 @@ class Gem::Commands::UninstallCommand < Gem::Command
       options[:ignore] = value
     end
 
-    add_option('-D', '--[no-]-check-development',
+    add_option('-D', '--[no-]check-development',
                'Check development dependencies while uninstalling',
                '(default: false)') do |value, options|
       options[:check_dev] = value

@@ -106,6 +106,21 @@ class TestGemVersionOption < Gem::TestCase
     assert_equal expected, @cmd.options
   end
 
+  def test_multiple_version_operator_option_compound
+    @cmd.add_version_option
+
+    @cmd.handle_options ['--version', '< 1', '--version', '> 0.9']
+
+    expected = {
+      :args => [],
+      :explicit_prerelease => false,
+      :prerelease => false,
+      :version => Gem::Requirement.new('< 1', '> 0.9'),
+    }
+
+    assert_equal expected, @cmd.options
+  end
+
   def test_version_option_explicit_prerelease
     @cmd.add_prerelease_option
     @cmd.add_version_option

@@ -588,7 +588,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       done_installing = true
     end
 
-    spec = quick_spec 'a', 2
+    spec = util_spec 'a', 2
 
     util_build_gem spec
 
@@ -616,7 +616,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_install_gem_ignore_dependencies_specific_file
-    spec = quick_spec 'a', 2
+    spec = util_spec 'a', 2
 
     util_build_gem spec
 

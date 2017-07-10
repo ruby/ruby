@@ -786,7 +786,7 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
     engine_version = options[:engine_version]
 
     raise ArgumentError,
-          'you must specify engine_version along with the ruby engine' if
+          'You must specify engine_version along with the Ruby engine' if
             engine and not engine_version
 
     return true if @installing
@@ -799,7 +799,7 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
     end
 
     if engine and engine != Gem.ruby_engine then
-      message = "Your ruby engine is #{Gem.ruby_engine}, " +
+      message = "Your Ruby engine is #{Gem.ruby_engine}, " +
                 "but your #{gem_deps_file} requires #{engine}"
 
       raise Gem::RubyVersionMismatch, message
@@ -810,7 +810,7 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
 
       if engine_version != my_engine_version then
         message =
-          "Your ruby engine version is #{Gem.ruby_engine} #{my_engine_version}, " +
+          "Your Ruby engine version is #{Gem.ruby_engine} #{my_engine_version}, " +
           "but your #{gem_deps_file} requires #{engine} #{engine_version}"
 
         raise Gem::RubyVersionMismatch, message

@@ -124,7 +124,7 @@ class Gem::Package::Old < Gem::Package
       break unless line
     end
 
-    raise Gem::Exception, "Failed to find end of ruby script while reading gem"
+    raise Gem::Exception, "Failed to find end of Ruby script while reading gem"
   end
 
   ##

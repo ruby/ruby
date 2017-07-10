@@ -157,16 +157,20 @@ class Gem::Specification < Gem::BasicSpecification
     :summary                   => nil,
     :test_files                => [],
     :version                   => nil,
-  }
+  }.freeze
 
-  Dupable = { } # :nodoc:
+  INITIALIZE_CODE_FOR_DEFAULTS = { } # :nodoc:
 
   @@default_value.each do |k,v|
-    case v
-    when Time, Numeric, Symbol, true, false, nil
-      Dupable[k] = false
+    INITIALIZE_CODE_FOR_DEFAULTS[k] = case v
+    when [], {}, true, false, nil, Numeric, Symbol
+      v.inspect
+    when String
+      v.dump
+    when Numeric
+       "default_value(:#{k})"
     else
-      Dupable[k] = true
+       "default_value(:#{k}).dup"
     end
   end
 
@@ -394,8 +398,6 @@ class Gem::Specification < Gem::BasicSpecification
   attr_reader :description
 
   ##
-  # :category: Recommended gemspec attributes
-  #
   # A contact email address (or addresses) for this gem
   #
   # Usage:
@@ -455,9 +457,23 @@ class Gem::Specification < Gem::BasicSpecification
   #   bytes
   # * All strings must be UTF-8, no binary data is allowed
   #
-  # To add metadata for the location of a issue tracker:
+  # You can use metadata to specify links to your gem's homepage, codebase,
+  # documentation, wiki, mailing list, issue tracker and changelog.
   #
-  #   s.metadata = { "issue_tracker" => "https://example/issues" }
+  #   s.metadata = {
+  #     "bug_tracker_uri"   => "https://example.com/user/bestgemever/issues",
+  #     "changelog_uri"     => "https://example.com/user/bestgemever/CHANGELOG.md",
+  #     "documentation_uri" => "https://www.example.info/gems/bestgemever/0.0.1",
+  #     "homepage_uri"      => "https://bestgemever.example.io",
+  #     "mailing_list_uri"  => "https://groups.example.com/bestgemever",
+  #     "source_code_uri"   => "https://example.com/user/bestgemever",
+  #     "wiki_uri"          => "https://example.com/user/bestgemever/wiki"
+  #   }
+  #
+  # These links will be used on your gem's page on rubygems.org and must pass
+  # validation against following regex.
+  #
+  #   %r{\Ahttps?:\/\/([^\s:@]+:[^\s:@]*@)?[A-Za-z\d\-]+(\.[A-Za-z\d\-]+)+\.?(:\d{1,5})?([\/?]\S*)?\z}
 
   attr_accessor :metadata
 
@@ -473,7 +489,7 @@ class Gem::Specification < Gem::BasicSpecification
   # activated when a gem is required.
 
   def add_development_dependency(gem, *requirements)
-    add_dependency_with_type(gem, :development, *requirements)
+    add_dependency_with_type(gem, :development, requirements)
   end
 
   ##
@@ -484,7 +500,7 @@ class Gem::Specification < Gem::BasicSpecification
   #   spec.add_runtime_dependency 'example', '~> 1.1', '>= 1.1.4'
 
   def add_runtime_dependency(gem, *requirements)
-    add_dependency_with_type(gem, :runtime, *requirements)
+    add_dependency_with_type(gem, :runtime, requirements)
   end
 
   ##
@@ -725,9 +741,6 @@ class Gem::Specification < Gem::BasicSpecification
   def self._all # :nodoc:
     unless defined?(@@all) && @@all then
       @@all = stubs.map(&:to_spec)
-      if @@all.any?(&:nil?) # TODO: remove once we're happy
-        raise "pid: #{$$} nil spec! included in #{stubs.inspect}"
-      end
 
       # After a reset, make sure already loaded specs
       # are still marked as activated.
@@ -885,7 +898,7 @@ class Gem::Specification < Gem::BasicSpecification
   # properly sorted.
 
   def self.add_spec spec
-    warn "Gem::Specification.add_spec is deprecated and will be removed in Rubygems 3.0" unless Gem::Deprecate.skip
+    warn "Gem::Specification.add_spec is deprecated and will be removed in RubyGems 3.0" unless Gem::Deprecate.skip
     # TODO: find all extraneous adds
     # puts
     # p :add_spec => [spec.full_name, caller.reject { |s| s =~ /minitest/ }]
@@ -910,7 +923,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Adds multiple specs to the known specifications.
 
   def self.add_specs *specs
-    warn "Gem::Specification.add_specs is deprecated and will be removed in Rubygems 3.0" unless Gem::Deprecate.skip
+    warn "Gem::Specification.add_specs is deprecated and will be removed in RubyGems 3.0" unless Gem::Deprecate.skip
 
     raise "nil spec!" if specs.any?(&:nil?) # TODO: remove once we're happy
 
@@ -948,7 +961,6 @@ class Gem::Specification < Gem::BasicSpecification
   # -- wilsonb
 
   def self.all= specs
-    raise "nil spec!" if specs.any?(&:nil?) # TODO: remove once we're happy
     @@stubs_by_name = specs.group_by(&:name)
     @@all = @@stubs = specs
   end
@@ -1020,6 +1032,13 @@ class Gem::Specification < Gem::BasicSpecification
     # TODO: maybe try: find_all { |s| spec === dep }
 
     Gem::Dependency.new(name, *requirements).matching_specs
+  end
+
+  ##
+  # Returns every spec that has the given +full_name+
+
+  def self.find_all_by_full_name(full_name)
+    stubs.select {|s| s.full_name == full_name }.map(&:to_spec)
   end
 
   ##
@@ -1250,7 +1269,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Removes +spec+ from the known specs.
 
   def self.remove_spec spec
-    warn "Gem::Specification.remove_spec is deprecated and will be removed in Rubygems 3.0" unless Gem::Deprecate.skip
+    warn "Gem::Specification.remove_spec is deprecated and will be removed in RubyGems 3.0" unless Gem::Deprecate.skip
     _all.delete spec
     stubs.delete_if { |s| s.full_name == spec.full_name }
     (@@stubs_by_name[spec.name] || []).delete_if { |s| s.full_name == spec.full_name }
@@ -1520,7 +1539,7 @@ class Gem::Specification < Gem::BasicSpecification
   # +requirements+.  Valid types are currently <tt>:runtime</tt> and
   # <tt>:development</tt>.
 
-  def add_dependency_with_type(dependency, type, *requirements)
+  def add_dependency_with_type(dependency, type, requirements)
     requirements = if requirements.empty? then
                      Gem::Requirement.default
                    else
@@ -2026,6 +2045,20 @@ class Gem::Specification < Gem::BasicSpecification
     yaml_initialize coder.tag, coder.map
   end
 
+
+
+  eval <<-RB, binding, __FILE__, __LINE__ + 1
+    def set_nil_attributes_to_nil
+      #{@@nil_attributes.map {|key| "@#{key} = nil" }.join "; "}
+    end
+    private :set_nil_attributes_to_nil
+
+    def set_not_nil_attributes_to_default_values
+      #{@@non_nil_attributes.map {|key| "@#{key} = #{INITIALIZE_CODE_FOR_DEFAULTS[key]}" }.join ";"}
+    end
+    private :set_not_nil_attributes_to_default_values
+  RB
+
   ##
   # Specification constructor. Assigns the default values to the attributes
   # and yields itself for further initialization.  Optionally takes +name+ and
@@ -2041,15 +2074,8 @@ class Gem::Specification < Gem::BasicSpecification
     @original_platform = nil
     @installed_by_version = nil
 
-    @@nil_attributes.each do |key|
-      instance_variable_set "@#{key}", nil
-    end
-
-    @@non_nil_attributes.each do |key|
-      default = default_value(key)
-      value = Dupable[key] ? default.dup : default
-      instance_variable_set "@#{key}", value
-    end
+    set_nil_attributes_to_nil
+    set_not_nil_attributes_to_default_values
 
     @new_platform = Gem::Platform::RUBY
 
@@ -2746,29 +2772,7 @@ class Gem::Specification < Gem::BasicSpecification
               'metadata must be a hash'
     end
 
-    metadata.keys.each do |k|
-      if !k.kind_of?(String)
-        raise Gem::InvalidSpecificationException,
-                'metadata keys must be a String'
-      end
-
-      if k.size > 128
-        raise Gem::InvalidSpecificationException,
-                "metadata key too large (#{k.size} > 128)"
-      end
-    end
-
-    metadata.values.each do |k|
-      if !k.kind_of?(String)
-        raise Gem::InvalidSpecificationException,
-                'metadata values must be a String'
-      end
-
-      if k.size > 1024
-        raise Gem::InvalidSpecificationException,
-                "metadata value too large (#{k.size} > 1024)"
-      end
-    end
+    validate_metadata
 
     licenses.each { |license|
       if license.length > 64
@@ -2822,7 +2826,7 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
 
     # Warnings
 
-    %w[author email homepage summary].each do |attribute|
+    %w[author homepage summary files].each do |attribute|
       value = self.send attribute
       warning "no #{attribute} specified" if value.nil? or value.empty?
     end
@@ -2852,6 +2856,48 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
   ensure
     if $! or @warnings > 0 then
       alert_warning "See http://guides.rubygems.org/specification-reference/ for help"
+    end
+  end
+
+  def validate_metadata
+    url_validation_regex = %r{\Ahttps?:\/\/([^\s:@]+:[^\s:@]*@)?[A-Za-z\d\-]+(\.[A-Za-z\d\-]+)+\.?(:\d{1,5})?([\/?]\S*)?\z}
+    link_keys = %w(
+      bug_tracker_uri
+      changelog_uri
+      documentation_uri
+      homepage_uri
+      mailing_list_uri
+      source_code_uri
+      wiki_uri
+    )
+
+    metadata.each do|key, value|
+      if !key.kind_of?(String)
+        raise Gem::InvalidSpecificationException,
+                "metadata keys must be a String"
+      end
+
+      if key.size > 128
+        raise Gem::InvalidSpecificationException,
+                "metadata key too large (#{key.size} > 128)"
+      end
+
+      if !value.kind_of?(String)
+        raise Gem::InvalidSpecificationException,
+                "metadata values must be a String"
+      end
+
+      if value.size > 1024
+        raise Gem::InvalidSpecificationException,
+                "metadata value too large (#{value.size} > 1024)"
+      end
+
+      if link_keys.include? key
+        if value !~ url_validation_regex
+          raise Gem::InvalidSpecificationException,
+                 "metadata['#{key}'] has invalid link: #{value.inspect}"
+        end
+      end
     end
   end
 
