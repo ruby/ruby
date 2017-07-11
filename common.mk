@@ -725,6 +725,17 @@ yes-test-spec: test-spec-precheck
 	$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/default.mspec $(MSPECOPT) $(SPECOPTS)
 no-test-spec:
 
+test-bundler-precheck: $(arch)-fake.rb programs
+
+test-bundler-prepare:
+	GEM_HOME=$(srcdir)/.bundle GEM_PATH=$(srcdir)/.bundle $(BASERUBY) -S gem install --no-ri --no-rdoc --conservative 'rspec:~> 3.5'
+
+test-bundler: $(TEST_RUNNABLE)-test-bundler
+yes-test-bundler: test-bundler-precheck test-bundler-prepare
+	$(gnumake_recursive)$(Q) \
+	GEM_HOME=$(srcdir)/.bundle GEM_PATH=$(srcdir)/.bundle $(RUNRUBY) -r./$(arch)-fake $(srcdir)/.bundle/bin/rspec $(srcdir)/spec/bundler
+no-test-bundler:
+
 RUNNABLE = $(LIBRUBY_RELATIVE:no=un)-runnable
 runnable: $(RUNNABLE) prog $(srcdir)/tool/mkrunnable.rb PHONY
 	$(Q) $(MINIRUBY) $(srcdir)/tool/mkrunnable.rb -v $(EXTOUT)
@@ -735,7 +746,6 @@ libencs: libenc libtrans
 encs enc trans libencs libenc libtrans: $(SHOWFLAGS) $(ENC_MK) $(LIBRUBY) $(PREP) PHONY
 	$(ECHO) making $@
 	$(Q) $(MAKE) $(MAKE_ENC) $@
-
 
 libenc enc: {$(VPATH)}encdb.h
 libtrans trans: {$(VPATH)}transdb.h
