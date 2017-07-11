@@ -300,6 +300,17 @@ class TestHash < Test::Unit::TestCase
     assert_same "ABC".freeze, a.keys[0]
   end
 
+  def test_tainted_string_key
+    str = 'str'.taint
+    h = {}
+    h[str] = nil
+    key = h.keys.first
+    assert_equal true, str.tainted?
+    assert_equal false, str.frozen?
+    assert_equal true, key.tainted?
+    assert_equal true, key.frozen?
+  end
+
   def test_EQUAL # '=='
     h1 = @cls[ "a" => 1, "c" => 2 ]
     h2 = @cls[ "a" => 1, "c" => 2, 7 => 35 ]

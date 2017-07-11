@@ -1516,20 +1516,34 @@ hash_aset(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
     return ST_CONTINUE;
 }
 
+static VALUE
+fstring_existing_str(VALUE str)
+{
+    st_data_t fstr;
+    st_table *tbl = rb_vm_fstring_table();
+
+    if (st_lookup(tbl, str, &fstr)) {
+	if (rb_objspace_garbage_object_p(fstr)) {
+	    return rb_fstring(str);
+	}
+	else {
+	    return (VALUE)fstr;
+	}
+    }
+    else {
+	return Qnil;
+    }
+}
+
 static int
 hash_aset_str(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
 {
     if (!existing && !RB_OBJ_FROZEN(*key)) {
-	st_data_t fstr;
-	st_table *tbl = rb_vm_fstring_table();
+	VALUE k;
 
-	if (st_lookup(tbl, *key, &fstr)) {
-	    if (rb_objspace_garbage_object_p(fstr)) {
-		*key = rb_fstring(*key);
-	    }
-	    else {
-		*key = (VALUE)fstr;
-	    }
+	if (!RB_OBJ_TAINTED(*key) &&
+	    (k = fstring_existing_str(*key)) != Qnil) {
+	    *key = k;
 	}
 	else {
 	    *key = rb_str_new_frozen(*key);
