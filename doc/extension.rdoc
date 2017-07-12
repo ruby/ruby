@@ -1721,7 +1721,7 @@ RGenGC (mostly) keeps compatibility.
 
 Generally, the use of the technique called write barriers is required in
 extension libraries for generational GC
-(http://en.wikipedia.org/wiki/Garbage_collection_%28computer_science%29).
+(https://en.wikipedia.org/wiki/Garbage_collection_%28computer_science%29).
 RGenGC works fine without write barriers in extension libraries.
 
 If your library adheres to the following tips, performance can
