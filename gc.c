@@ -228,8 +228,9 @@ static ruby_gc_params_t gc_params = {
 #endif
 #endif
 #if RGENGC_DEBUG < 0
-#undef RGENGC_DEBUG
-#define RGENGC_DEBUG ruby_rgengc_debug
+# define RGENGC_DEBUG_ENABLED(level) (-(RGENGC_DEBUG) >= (level) && ruby_rgengc_debug >= (level))
+#else
+# define RGENGC_DEBUG_ENABLED(level) ((RGENGC_DEBUG) >= (level))
 #endif
 int ruby_rgengc_debug;
 
@@ -910,9 +911,9 @@ static inline void gc_prof_set_heap_info(rb_objspace_t *);
 
 #ifdef HAVE_VA_ARGS_MACRO
 # define gc_report(level, objspace, ...) \
-    if ((level) > RGENGC_DEBUG) {} else gc_report_body(level, objspace, __VA_ARGS__)
+    if (!RGENGC_DEBUG_ENABLED(level)) {} else gc_report_body(level, objspace, __VA_ARGS__)
 #else
-# define gc_report if (!(RGENGC_DEBUG)) {} else gc_report_body
+# define gc_report if (!RGENGC_DEBUG_ENABLED(0)) {} else gc_report_body
 #endif
 PRINTF_ARGS(static void gc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...), 3, 4);
 static const char *obj_info(VALUE obj);
