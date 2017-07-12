@@ -149,7 +149,7 @@
 typedef unsigned long rb_num_t;
 
 enum ruby_tag_type {
-    RUBY_TAG_NONE       = 0x0,
+    RUBY_TAG_NONE	= 0x0,
     RUBY_TAG_RETURN	= 0x1,
     RUBY_TAG_BREAK	= 0x2,
     RUBY_TAG_NEXT	= 0x3,
@@ -161,7 +161,7 @@ enum ruby_tag_type {
     RUBY_TAG_MASK	= 0xf
 };
 
-#define TAG_NONE        RUBY_TAG_NONE
+#define TAG_NONE	RUBY_TAG_NONE
 #define TAG_RETURN	RUBY_TAG_RETURN
 #define TAG_BREAK	RUBY_TAG_BREAK
 #define TAG_NEXT	RUBY_TAG_NEXT
