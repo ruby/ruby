@@ -1842,7 +1842,7 @@ XXX
   #
   # Float number format, and converts to Float.
   #
-  float = "(?:#{decimal}(?:\\.(?:#{decimal})?)?|\\.#{decimal})(?:E[-+]?#{decimal})?"
+  float = "(?:#{decimal}(?=(.)?)(?:\\.(?:#{decimal})?)?|\\.#{decimal})(?:E[-+]?#{decimal})?"
   floatpat = %r"\A[-+]?#{float}\z"io
   accept(Float, floatpat) {|s,| s.to_f if s}
 
@@ -1851,11 +1851,13 @@ XXX
   # for float format, and Rational for rational format.
   #
   real = "[-+]?(?:#{octal}|#{float})"
-  accept(Numeric, /\A(#{real})(?:\/(#{real}))?\z/io) {|s, d, n|
+  accept(Numeric, /\A(#{real})(?:\/(#{real}))?\z/io) {|s, d, f, n,|
     if n
       Rational(d, n)
-    elsif s
-      eval(s)
+    elsif f
+      Float(s)
+    else
+      Integer(s)
     end
   }
 
@@ -1889,10 +1891,14 @@ XXX
   # integer format, Float for float format.
   #
   DecimalNumeric = floatpat     # decimal integer is allowed as float also.
-  accept(DecimalNumeric, floatpat) {|s,|
+  accept(DecimalNumeric, floatpat) {|s, f|
     begin
-      eval(s)
-    rescue SyntaxError
+      if f
+        Float(s)
+      else
+        Integer(s)
+      end
+    rescue ArgumentError
       raise OptionParser::InvalidArgument, s
     end if s
   }
