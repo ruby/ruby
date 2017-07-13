@@ -11057,6 +11057,7 @@ parser_compile_error(struct parser_params *parser, const char *fmt, ...)
 {
     va_list ap;
 
+    rb_io_flush(parser->debug_output);
     parser->error_p = 1;
     va_start(ap, fmt);
     parser->error_buffer =
