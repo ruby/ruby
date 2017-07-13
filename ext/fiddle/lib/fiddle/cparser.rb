@@ -21,6 +21,7 @@ module Fiddle
     # Parses a C struct's members
     #
     # Example:
+    #   require 'fiddle/import'
     #
     #   include Fiddle::CParser
     #     #=> Object
@@ -66,6 +67,7 @@ module Fiddle
     # be looked up.
     #
     # Example:
+    #   require 'fiddle/import'
     #
     #   include Fiddle::CParser
     #     #=> Object
@@ -102,6 +104,7 @@ module Fiddle
     # value will be the C type to be looked up.
     #
     # Example:
+    #   require 'fiddle/import'
     #
     #   include Fiddle::CParser
     #     #=> Object
