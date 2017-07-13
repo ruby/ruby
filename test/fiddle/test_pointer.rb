@@ -10,8 +10,6 @@ module Fiddle
       Fiddle.dlwrap arg
     end
 
-    include Test::Unit::Assertions
-
     def test_cptr_to_int
       null = Fiddle::NULL
       assert_equal(null.to_i, null.to_int)

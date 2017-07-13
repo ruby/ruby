@@ -6,8 +6,6 @@ end
 
 module Fiddle
   class TestFunction < Fiddle::TestCase
-    include Test::Unit::Assertions
-
     def setup
       super
       Fiddle.last_error = nil
