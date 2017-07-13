@@ -453,7 +453,7 @@ class TestRubyOptions < Test::Unit::TestCase
     notexist = "./notexist.rb"
     dir, *rubybin = RbConfig::CONFIG.values_at('bindir', 'RUBY_INSTALL_NAME', 'EXEEXT')
     rubybin = "#{dir}/#{rubybin.join('')}"
-    rubybin.gsub!(%r(/), '\\') if /mswin|mingw/ =~ RUBY_PLATFORM
+    rubybin.tr!('/', '\\') if /mswin|mingw/ =~ RUBY_PLATFORM
     rubybin = Regexp.quote(rubybin)
     pat = Regexp.quote(notexist)
     bug1573 = '[ruby-core:23717]'
