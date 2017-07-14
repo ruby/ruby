@@ -26,6 +26,7 @@ $repositories = {
   rubygems: 'rubygems/rubygems',
   rdoc: 'rdoc/rdoc',
   json: 'flori/json',
+  psych: 'ruby/psych',
   fileutils: 'ruby/fileutils',
   fiddle: 'ruby/fiddle',
   stringio: 'ruby/stringio',
@@ -80,8 +81,10 @@ def sync_default_gems(gem)
     `cp -rf ../psych/ext/psych ./ext`
     `cp -rf ../psych/lib ./ext/psych`
     `cp -rf ../psych/test/psych ./test`
-    `rm -rf ext/psych/lib/psych.bundle ext/psych/lib/org ext/psych/lib/psych.jar ext/psych/lib/psych_jars.rb`
+    `rm -rf ext/psych/lib/org ext/psych/lib/psych.jar ext/psych/lib/psych_jars.rb`
+    `rm -rf ext/psych/lib/psych.{bundle,so} ext/psych/lib/{2.0,2.1,2.2,2.3,2.4}`
     `cp ../psych/psych.gemspec ext/psych/`
+    `git checkout ext/psych/depend`
   when "fileutils"
     `rm -rf lib/fileutils.rb test/fileutils lib/fileutils.gemspec`
     `cp -rf ../fileutils/lib/* lib`
