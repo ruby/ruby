@@ -3399,7 +3399,7 @@ rb_gzfile_total_out(VALUE obj)
     if (total_out >= (uLong)buf_filled) {
         return rb_uint2inum(total_out - buf_filled);
     } else {
-        return LONG2FIX(-(buf_filled - total_out));
+        return LONG2FIX(-(buf_filled - (long)total_out));
     }
 }
 
