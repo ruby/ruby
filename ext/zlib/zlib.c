@@ -3393,7 +3393,14 @@ static VALUE
 rb_gzfile_total_out(VALUE obj)
 {
     struct gzfile *gz = get_gzfile(obj);
-    return rb_uint2inum(gz->z.stream.total_out - ZSTREAM_BUF_FILLED(&gz->z));
+    uLong total_out = gz->z.stream.total_out;
+    long buf_filled = ZSTREAM_BUF_FILLED(&gz->z);
+
+    if (total_out >= (uLong)buf_filled) {
+        return rb_uint2inum(total_out - buf_filled);
+    } else {
+        return LONG2FIX(-(buf_filled - total_out));
+    }
 }
 
 /*

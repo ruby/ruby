@@ -663,6 +663,18 @@ if defined? Zlib
       }
     end
 
+    def test_ungetc_at_start_of_file
+      s = "".dup
+      w = Zlib::GzipWriter.new(StringIO.new(s))
+      w << "abc"
+      w.close
+      r = Zlib::GzipReader.new(StringIO.new(s))
+
+      r.ungetc ?!
+
+      assert_equal(-1, r.pos, "[ruby-core:81488][Bug #13616]")
+    end
+
     def test_open
       Tempfile.create("test_zlib_gzip_reader_open") {|t|
         t.close
