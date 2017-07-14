@@ -715,6 +715,17 @@ class TC_Set < Test::Unit::TestCase
     assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2, #<Set: {...}>}>}>', set2.inspect)
   end
 
+  def test_to_s
+    set1 = Set[1, 2]
+    assert_equal('#<Set: {1, 2}>', set1.to_s)
+
+    set2 = Set[Set[0], 1, 2, set1]
+    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2}>}>', set2.to_s)
+
+    set1.add(set2)
+    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2, #<Set: {...}>}>}>', set2.to_s)
+  end
+
   def test_compare_by_identity
     a1, a2 = "a", "a"
     b1, b2 = "b", "b"

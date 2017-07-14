@@ -569,6 +569,8 @@ class Set
     end
   end
 
+  alias to_s inspect
+
   def pretty_print(pp)  # :nodoc:
     pp.text sprintf('#<%s: {', self.class.name)
     pp.nest(1) {
