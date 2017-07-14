@@ -20,7 +20,8 @@ static: check
 
 ripper.y: $(srcdir)/tools/preproc.rb $(top_srcdir)/parse.y
 	$(ECHO) extracting $@ from $(top_srcdir)/parse.y
-	$(Q) $(RUBY) $(top_srcdir)/tool/id2token.rb --path-separator=.$(PATH_SEPARATOR)./ --vpath=$(VPATH) id.h $(top_srcdir)/parse.y > ripper.tmp.y
+	$(Q) $(RUBY) $(top_srcdir)/tool/id2token.rb --path-separator=.$(PATH_SEPARATOR)./ \
+		--vpath=$(VPATH)$(PATH_SEPARATOR)$(top_srcdir) id.h $(top_srcdir)/parse.y > ripper.tmp.y
 	$(Q) $(RUBY) $(srcdir)/tools/preproc.rb ripper.tmp.y --output=$@
 	$(Q) $(RM) ripper.tmp.y
 
