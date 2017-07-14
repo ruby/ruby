@@ -1817,7 +1817,7 @@ check_exec_options_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
     VALUE execarg_obj = (VALUE)arg;
     if (rb_execarg_addopt(execarg_obj, key, val) != ST_CONTINUE) {
 	if (SYMBOL_P(key))
-	    rb_raise(rb_eArgError, "wrong exec option symbol: %"PRIsVALUE,
+	    rb_raise(rb_eArgError, "wrong exec option symbol: % "PRIsVALUE,
 		     key);
 	rb_raise(rb_eArgError, "wrong exec option");
     }
@@ -4678,13 +4678,13 @@ proc_setpriority(VALUE obj, VALUE which, VALUE who, VALUE prio)
 
 #if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
 static int
-rlimit_resource_name2int(const char *name, int casetype)
+rlimit_resource_name2int(const char *name, long len, int casetype)
 {
     int resource;
     const char *p;
 #define RESCHECK(r) \
     do { \
-        if (STRCASECMP(name, #r) == 0) { \
+        if (len == rb_strlen_lit(#r) && STRCASECMP(name, #r) == 0) { \
             resource = RLIMIT_##r; \
             goto found; \
         } \
@@ -4787,25 +4787,29 @@ rlimit_resource_name2int(const char *name, int casetype)
 }
 
 static int
-rlimit_type_by_hname(const char *name)
+rlimit_type_by_hname(const char *name, long len)
 {
-    return rlimit_resource_name2int(name, 0);
+    return rlimit_resource_name2int(name, len, 0);
 }
 
 static int
-rlimit_type_by_lname(const char *name)
+rlimit_type_by_lname(const char *name, long len)
 {
-    return rlimit_resource_name2int(name, 1);
+    return rlimit_resource_name2int(name, len, 1);
 }
 
 static int
 rlimit_type_by_sym(VALUE key)
 {
-    const char *rname = RSTRING_PTR(rb_sym2str(key));
+    VALUE name = rb_sym2str(key);
+    const char *rname = RSTRING_PTR(name);
+    long len = RSTRING_LEN(name);
     int rtype = -1;
+    static const char prefix[] = "rlimit_";
+    enum {prefix_len = sizeof(prefix)-1};
 
-    if (strncmp("rlimit_", rname, 7) == 0) {
-	rtype = rlimit_type_by_lname(rname + 7);
+    if (len > prefix_len && strncmp(prefix, rname, prefix_len) == 0) {
+	rtype = rlimit_type_by_lname(rname + prefix_len, len - prefix_len);
     }
 
     RB_GC_GUARD(key);
@@ -4816,6 +4820,7 @@ static int
 rlimit_resource_type(VALUE rtype)
 {
     const char *name;
+    long len;
     VALUE v;
     int r;
 
@@ -4823,6 +4828,7 @@ rlimit_resource_type(VALUE rtype)
       case T_SYMBOL:
 	v = rb_sym2str(rtype);
 	name = RSTRING_PTR(v);
+	len = RSTRING_LEN(v);
         break;
 
       default:
@@ -4831,6 +4837,7 @@ rlimit_resource_type(VALUE rtype)
             rtype = v;
       case T_STRING:
             name = StringValueCStr(rtype);
+	    len = RSTRING_LEN(rtype);
             break;
         }
         /* fall through */
@@ -4840,11 +4847,11 @@ rlimit_resource_type(VALUE rtype)
         return NUM2INT(rtype);
     }
 
-    r = rlimit_type_by_hname(name);
+    r = rlimit_type_by_hname(name, len);
     if (r != -1)
         return r;
 
-    rb_raise(rb_eArgError, "invalid resource name: %"PRIsVALUE, rtype);
+    rb_raise(rb_eArgError, "invalid resource name: % "PRIsVALUE, rtype);
 
     UNREACHABLE;
 }

@@ -254,6 +254,10 @@ class TestProcess < Test::Unit::TestCase
         system("#{RUBY}", '-e', 'exit',  :rlimit_bogus => 123)
       end
     end;
+
+    assert_raise(ArgumentError, /rlimit_cpu/) {
+      system(RUBY, '-e', 'exit', "rlimit_cpu\0".to_sym => 3600)
+    }
   end
 
   MANDATORY_ENVS = %w[RUBYLIB]
