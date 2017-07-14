@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 module Psych
   # The version is Psych you're using
   VERSION = '3.0.0.beta2'

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 class Object
   def self.yaml_tag url
     Psych.add_tag(url, self)

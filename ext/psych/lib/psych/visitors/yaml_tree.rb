@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'psych/tree_builder'
 require 'psych/scalar_scanner'
 require 'psych/class_loader'
@@ -321,7 +321,7 @@ module Psych
           end
           @emitter.scalar o, nil, tag, plain, quote, style
         else
-          maptag = '!ruby/string'
+          maptag = '!ruby/string'.dup
           maptag << ":#{o.class}" unless o.class == ::String
 
           register o, @emitter.start_mapping(nil, maptag, false, Nodes::Mapping::BLOCK)
@@ -378,12 +378,16 @@ module Psych
 
       def visit_Array o
         if o.class == ::Array
-          register o, @emitter.start_sequence(nil, nil, true, Nodes::Sequence::BLOCK)
-          o.each { |c| accept c }
-          @emitter.end_sequence
+          visit_Enumerator o
         else
           visit_array_subclass o
         end
+      end
+
+      def visit_Enumerator o
+        register o, @emitter.start_sequence(nil, nil, true, Nodes::Sequence::BLOCK)
+        o.each { |c| accept c }
+        @emitter.end_sequence
       end
 
       def visit_NilClass o
@@ -411,15 +415,9 @@ module Psych
       end
 
       private
-      # FIXME: Remove the index and count checks in Psych 3.0
-      NULL         = "\x00"
-      BINARY_RANGE = "\x00-\x7F"
-      WS_RANGE     = "^ -~\t\r\n"
 
       def binary? string
-        (string.encoding == Encoding::ASCII_8BIT && !string.ascii_only?) ||
-          string.index(NULL) ||
-          string.count(BINARY_RANGE, WS_RANGE).fdiv(string.length) > 0.3
+        string.encoding == Encoding::ASCII_8BIT && !string.ascii_only?
       end
 
       def visit_array_subclass o

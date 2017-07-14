@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'helper'
 
 module Psych
@@ -13,6 +13,12 @@ module Psych
     def setup
       super
       @list = [{ :a => 'b' }, 'foo']
+    end
+
+    def test_enumerator
+      x = [1, 2, 3, 4]
+      y = Psych.load Psych.dump x.to_enum
+      assert_equal x, y
     end
 
     def test_another_subclass_with_attributes
