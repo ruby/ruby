@@ -1865,8 +1865,8 @@ rb_hash_transform_keys(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.transform_keys! {|value| block } -> hsh
- *     hsh.transform_keys!                  -> an_enumerator
+ *     hsh.transform_keys! {|key| block } -> hsh
+ *     hsh.transform_keys!                -> an_enumerator
  *
  *  Invokes the given block once for each key in <i>hsh</i>, replacing it
  *  with the new key returned by the block, and then returns <i>hsh</i>.
@@ -1889,8 +1889,8 @@ rb_hash_transform_keys_bang(VALUE hash)
 	long i;
 	VALUE keys = rb_hash_keys(hash);
 	for (i = 0; i < RARRAY_LEN(keys); ++i) {
-	    VALUE new_key = rb_yield(RARRAY_AREF(keys, i));
-	    rb_hash_aset(hash, new_key, rb_hash_delete(hash, RARRAY_AREF(keys, i)));
+	    VALUE key = RARRAY_AREF(keys, i), new_key = rb_yield(key);
+	    rb_hash_aset(hash, new_key, rb_hash_delete(hash, key));
 	}
     }
     return hash;
