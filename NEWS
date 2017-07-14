@@ -32,6 +32,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Dir.children  [Feature #11302]
   * Dir.each_child  [Feature #11302]
 
+* File
+
+  * :newline option to File.open implies text mode now.  [Bug #13350]
+
 * Integer
 
   * Integer.sqrt  [Feature #13219]
