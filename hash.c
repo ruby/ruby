@@ -1825,6 +1825,78 @@ rb_hash_each_pair(VALUE hash)
 }
 
 static int
+transform_keys_i(VALUE key, VALUE value, VALUE result)
+{
+    VALUE new_key = rb_yield(key);
+    rb_hash_aset(result, new_key, value);
+    return ST_CONTINUE;
+}
+
+/*
+ *  call-seq:
+ *     hsh.transform_keys {|key| block } -> new_hash
+ *     hsh.transform_keys                -> an_enumerator
+ *
+ *  Returns a new hash with the results of running the block once for
+ *  every key.
+ *  This method does not change the values.
+ *
+ *     h = { a: 1, b: 2, c: 3 }
+ *     h.transform_keys {|k| k.to_s }  #=> { "a" => 1, "b" => 2, "c" => 3 }
+ *     h.transform_keys(&:to_s)        #=> { "a" => 1, "b" => 2, "c" => 3 }
+ *     h.transform_keys.with_index {|k, i| "#{k}.#{i}" }
+ *                                     #=> { "a.0" => 1, "b.1" => 2, "c.2" => 3 }
+ *
+ *  If no block is given, an enumerator is returned instead.
+ */
+static VALUE
+rb_hash_transform_keys(VALUE hash)
+{
+    VALUE result;
+
+    RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
+    result = rb_hash_new();
+    if (!RHASH_EMPTY_P(hash)) {
+        rb_hash_foreach(hash, transform_keys_i, result);
+    }
+
+    return result;
+}
+
+/*
+ *  call-seq:
+ *     hsh.transform_keys! {|value| block } -> hsh
+ *     hsh.transform_keys!                  -> an_enumerator
+ *
+ *  Invokes the given block once for each key in <i>hsh</i>, replacing it
+ *  with the new key returned by the block, and then returns <i>hsh</i>.
+ *  This method does not change the values.
+ *
+ *     h = { a: 1, b: 2, c: 3 }
+ *     h.transform_keys! {|k| k.to_s }  #=> { "a" => 1, "b" => 2, "c" => 3 }
+ *     h.transform_keys!(&:to_sym)      #=> { a: 1, b: 2, c: 3 }
+ *     h.transform_keys!.with_index {|k, i| "#{k}.#{i}" }
+ *                                      #=> { "a.0" => 1, "b.1" => 2, "c.2" => 3 }
+ *
+ *  If no block is given, an enumerator is returned instead.
+ */
+static VALUE
+rb_hash_transform_keys_bang(VALUE hash)
+{
+    RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
+    rb_hash_modify_check(hash);
+    if (RHASH(hash)->ntbl) {
+	long i;
+	VALUE keys = rb_hash_keys(hash);
+	for (i = 0; i < RARRAY_LEN(keys); ++i) {
+	    VALUE new_key = rb_yield(RARRAY_AREF(keys, i));
+	    rb_hash_aset(hash, new_key, rb_hash_delete(hash, RARRAY_AREF(keys, i)));
+	}
+    }
+    return hash;
+}
+
+static int
 transform_values_i(VALUE key, VALUE value, VALUE result)
 {
     VALUE new_value = rb_yield(value);
@@ -4507,6 +4579,8 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "each_pair", rb_hash_each_pair, 0);
     rb_define_method(rb_cHash, "each", rb_hash_each_pair, 0);
 
+    rb_define_method(rb_cHash, "transform_keys", rb_hash_transform_keys, 0);
+    rb_define_method(rb_cHash, "transform_keys!", rb_hash_transform_keys_bang, 0);
     rb_define_method(rb_cHash, "transform_values", rb_hash_transform_values, 0);
     rb_define_method(rb_cHash, "transform_values!", rb_hash_transform_values_bang, 0);
 

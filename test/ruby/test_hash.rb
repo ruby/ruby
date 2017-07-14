@@ -1530,6 +1530,34 @@ class TestHash < Test::Unit::TestCase
     assert_equal([10, 20, 30], [1, 2, 3].map(&h))
   end
 
+  def test_transform_keys
+    x = @cls[a: 1, b: 2, c: 3]
+    y = x.transform_keys {|k| :"#{k}!" }
+    assert_equal({a: 1, b: 2, c: 3}, x)
+    assert_equal({a!: 1, b!: 2, c!: 3}, y)
+
+    enum = x.transform_keys
+    assert_equal(x.size, enum.size)
+    assert_instance_of(Enumerator, enum)
+
+    y = x.transform_keys.with_index {|k, i| "#{k}.#{i}" }
+    assert_equal(%w(a.0 b.1 c.2), y.keys)
+  end
+
+  def test_transform_keys_bang
+    x = @cls[a: 1, b: 2, c: 3]
+    y = x.transform_keys! {|k| :"#{k}!" }
+    assert_equal({a!: 1, b!: 2, c!: 3}, x)
+    assert_same(x, y)
+
+    enum = x.transform_keys!
+    assert_equal(x.size, enum.size)
+    assert_instance_of(Enumerator, enum)
+
+    x.transform_keys!.with_index {|k, i| "#{k}.#{i}" }
+    assert_equal(%w(a!.0 b!.1 c!.2), x.keys)
+  end
+
   def test_transform_values
     x = @cls[a: 1, b: 2, c: 3]
     y = x.transform_values {|v| v ** 2 }
