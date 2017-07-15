@@ -2455,9 +2455,9 @@ sort_2(const void *ap, const void *bp, void *dummy)
  *  The result is not guaranteed to be stable.  When the comparison of two
  *  elements returns +0+, the order of the elements is unpredictable.
  *
- *     a = [ "d", "a", "e", "c", "b" ]
- *     a.sort!                     #=> ["a", "b", "c", "d", "e"]
- *     a.sort! { |a, b| b <=> a }  #=> ["e", "d", "c", "b", "a"]
+ *     ary = [ "d", "a", "e", "c", "b" ]
+ *     ary.sort!                     #=> ["a", "b", "c", "d", "e"]
+ *     ary.sort! { |a, b| b <=> a }  #=> ["e", "d", "c", "b", "a"]
  *
  *  See also Enumerable#sort_by.
  */
@@ -2539,9 +2539,9 @@ rb_ary_sort_bang(VALUE ary)
  *  The result is not guaranteed to be stable.  When the comparison of two
  *  elements returns +0+, the order of the elements is unpredictable.
  *
- *     a = [ "d", "a", "e", "c", "b" ]
- *     a.sort                     #=> ["a", "b", "c", "d", "e"]
- *     a.sort { |a, b| b <=> a }  #=> ["e", "d", "c", "b", "a"]
+ *     ary = [ "d", "a", "e", "c", "b" ]
+ *     ary.sort                     #=> ["a", "b", "c", "d", "e"]
+ *     ary.sort { |a, b| b <=> a }  #=> ["e", "d", "c", "b", "a"]
  *
  *  See also Enumerable#sort_by.
  */
