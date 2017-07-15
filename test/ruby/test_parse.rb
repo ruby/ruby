@@ -484,21 +484,27 @@ class TestParse < Test::Unit::TestCase
   end
 
   def test_string
-    assert_raise(SyntaxError) do
+    mesg = 'from the backslash through the invalid char'
+
+    e = assert_raise_with_message(SyntaxError, /hex escape/) do
       eval '"\xg1"'
     end
+    assert_equal('   ^', e.message.lines.last, mesg)
 
-    assert_raise(SyntaxError) do
+    e = assert_raise(SyntaxError) do
       eval '"\u{1234"'
     end
+    assert_match(' ^~~~~~~', e.message.lines.last, mesg)
 
-    assert_raise(SyntaxError) do
+    e = assert_raise_with_message(SyntaxError, /escape character syntax/) do
       eval '"\M1"'
     end
+    assert_equal(' ^~~', e.message.lines.last, mesg)
 
-    assert_raise(SyntaxError) do
+    e = assert_raise_with_message(SyntaxError, /escape character syntax/) do
       eval '"\C1"'
     end
+    assert_equal(' ^~~', e.message.lines.last, mesg)
 
     assert_equal("\x81", eval('"\C-\M-a"'))
     assert_equal("\177", eval('"\c?"'))

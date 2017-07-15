@@ -5636,6 +5636,7 @@ parser_tok_hex(struct parser_params *parser, size_t *numlen)
 
     c = scan_hex(lex_p, 2, numlen);
     if (!*numlen) {
+	parser->tokp = lex_p;
 	yyerror("invalid hex escape");
 	return 0;
     }
@@ -5780,7 +5781,6 @@ parser_read_escape(struct parser_params *parser, int flags,
       case 'M':
 	if (flags & ESCAPE_META) goto eof;
 	if ((c = nextc()) != '-') {
-	    pushback(c);
 	    goto eof;
 	}
 	if ((c = nextc()) == '\\') {
@@ -5794,7 +5794,6 @@ parser_read_escape(struct parser_params *parser, int flags,
 
       case 'C':
 	if ((c = nextc()) != '-') {
-	    pushback(c);
 	    goto eof;
 	}
       case 'c':
@@ -5811,6 +5810,7 @@ parser_read_escape(struct parser_params *parser, int flags,
       eof:
       case -1:
         yyerror("Invalid escape character syntax");
+	pushback(c);
 	return '\0';
 
       default:
@@ -6045,6 +6045,9 @@ parser_tokadd_string(struct parser_params *parser,
 	}
 	else if (c == '\\') {
 	    const char *beg = lex_p - 1;
+#ifndef RIPPER
+	    parser->tokp = beg;
+#endif
 	    c = nextc();
 	    switch (c) {
 	      case '\n':
