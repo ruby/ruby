@@ -7965,7 +7965,7 @@ tokadd_utf8(struct parser_params *p, rb_encoding **encp,
 #define ESCAPE_META    2
 
 static int
-read_escape(struct parser_params *p, int flags, rb_encoding **encp)
+read_escape(struct parser_params *p, int flags)
 {
     int c;
     size_t numlen;
@@ -8024,7 +8024,7 @@ read_escape(struct parser_params *p, int flags, rb_encoding **encp)
                 nextc(p);
                 goto eof;
             }
-            return read_escape(p, flags|ESCAPE_META, encp) | 0x80;
+            return read_escape(p, flags|ESCAPE_META) | 0x80;
         }
         else if (c == -1 || !ISASCII(c)) goto eof;
         else {
@@ -8053,7 +8053,7 @@ read_escape(struct parser_params *p, int flags, rb_encoding **encp)
                 nextc(p);
                 goto eof;
             }
-            c = read_escape(p, flags|ESCAPE_CONTROL, encp);
+            c = read_escape(p, flags|ESCAPE_CONTROL);
         }
         else if (c == '?')
             return 0177;
@@ -8101,7 +8101,7 @@ tokaddmbc(struct parser_params *p, int c, rb_encoding *enc)
 }
 
 static int
-tokadd_escape(struct parser_params *p, rb_encoding **encp)
+tokadd_escape(struct parser_params *p)
 {
     int c;
     size_t numlen;
@@ -8341,7 +8341,7 @@ tokadd_string(struct parser_params *p,
                       case 'C':
                       case 'M': {
                         pushback(p, c);
-                        c = read_escape(p, 0, enc);
+                        c = read_escape(p, 0);
 
                         char *t = tokspace(p, rb_strlen_lit("\\x00"));
                         *t++ = '\\';
@@ -8357,7 +8357,7 @@ tokadd_string(struct parser_params *p,
                         continue;
                     }
                     pushback(p, c);
-                    if ((c = tokadd_escape(p, enc)) < 0)
+                    if ((c = tokadd_escape(p)) < 0)
                         return -1;
                     if (*enc && *enc != *encp) {
                         mixed_escape(p->lex.ptok+2, *enc, *encp);
@@ -8367,7 +8367,7 @@ tokadd_string(struct parser_params *p,
                 else if (func & STR_FUNC_EXPAND) {
                     pushback(p, c);
                     if (func & STR_FUNC_ESCAPE) tokadd(p, '\\');
-                    c = read_escape(p, 0, enc);
+                    c = read_escape(p, 0);
                 }
                 else if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
                     /* ignore backslashed spaces in %w */
@@ -9908,7 +9908,7 @@ parse_qmark(struct parser_params *p, int space_seen)
             if (tokadd_mbchar(p, c) == -1) return 0;
         }
         else {
-            c = read_escape(p, 0, &enc);
+            c = read_escape(p, 0);
             tokadd(p, c);
         }
     }
