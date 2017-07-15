@@ -457,7 +457,9 @@ class Logger
     if @logdev.nil? or severity < @level
       return true
     end
-    progname ||= @progname
+    if progname.nil?
+      progname = @progname
+    end
     if message.nil?
       if block_given?
         message = yield
