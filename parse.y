@@ -5652,6 +5652,7 @@ parser_tokadd_codepoint(struct parser_params *parser, rb_encoding **encp,
 {
     size_t numlen;
     int codepoint = scan_hex(lex_p, wide ? 6 : 4, &numlen);
+    lex_p += numlen;
     if (wide ? (numlen == 0) : (numlen < 4))  {
 	yyerror("invalid Unicode escape");
 	return FALSE;
@@ -5664,12 +5665,20 @@ parser_tokadd_codepoint(struct parser_params *parser, rb_encoding **encp,
 	yyerror("invalid Unicode codepoint");
 	return FALSE;
     }
-    lex_p += numlen;
     if (regexp_literal) {
 	tokcopy((int)numlen);
     }
     else if (codepoint >= 0x80) {
-	*encp = rb_utf8_encoding();
+	rb_encoding *utf8 = rb_utf8_encoding();
+	if (*encp && utf8 != *encp) {
+	    static const char mixed_utf8[] = "UTF-8 mixed within %s source";
+	    size_t len = sizeof(mixed_utf8) - 2 + strlen(rb_enc_name(*encp));
+	    char *mesg = alloca(len);
+	    snprintf(mesg, len, mixed_utf8, rb_enc_name(*encp));
+	    yyerror(mesg);
+	    return TRUE;
+	}
+	*encp = utf8;
 	tokaddmbc(codepoint, *encp);
     }
     else {
@@ -5696,19 +5705,23 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
 
     if (peek(open_brace)) {  /* handle \u{...} form */
 	int c, last = nextc();
-	do c = nextc(); while (ISSPACE(c));
-	pushback(c);
+	if (lex_p >= lex_pend) goto unterminated;
+	while (ISSPACE(c = *lex_p) && ++lex_p < lex_pend);
 	while (!string_literal || c != close_brace) {
 	    if (regexp_literal) tokadd(last);
 	    if (!parser_tokadd_codepoint(parser, encp, regexp_literal, TRUE)) {
 		return 0;
 	    }
-	    while (ISSPACE(c = nextc())) last = c;
-	    pushback(c);
+	    while (ISSPACE(c = *lex_p)) {
+		if (++lex_p >= lex_pend) goto unterminated;
+		last = c;
+	    }
 	    if (!string_literal) break;
 	}
 
 	if (c != close_brace) {
+	  unterminated:
+	    parser->tokp = lex_p;
 	    yyerror("unterminated Unicode escape");
 	    return 0;
 	}
@@ -5999,8 +6012,7 @@ parser_tokadd_string(struct parser_params *parser,
 		     rb_encoding **encp)
 {
     int c;
-    int has_nonascii = 0;
-    rb_encoding *enc = *encp;
+    rb_encoding *enc = 0;
     char *errbuf = 0;
     static const char mixed_msg[] = "%s mixed within %s source";
 
@@ -6044,9 +6056,8 @@ parser_tokadd_string(struct parser_params *parser,
 	    }
 	}
 	else if (c == '\\') {
-	    const char *beg = lex_p - 1;
 #ifndef RIPPER
-	    parser->tokp = beg;
+	    parser->tokp = lex_p - 1;
 #endif
 	    c = nextc();
 	    switch (c) {
@@ -6065,11 +6076,10 @@ parser_tokadd_string(struct parser_params *parser,
 		    tokadd('\\');
 		    break;
 		}
-		parser_tokadd_utf8(parser, &enc, 1,
-				   func & STR_FUNC_SYMBOL,
-				   func & STR_FUNC_REGEXP);
-		if (has_nonascii && enc != *encp) {
-		    mixed_escape(beg, enc, *encp);
+		if (!parser_tokadd_utf8(parser, &enc, term,
+					func & STR_FUNC_SYMBOL,
+					func & STR_FUNC_REGEXP)) {
+		    return -1;
 		}
 		continue;
 
@@ -6087,8 +6097,8 @@ parser_tokadd_string(struct parser_params *parser,
 		    pushback(c);
 		    if ((c = tokadd_escape(&enc)) < 0)
 			return -1;
-		    if (has_nonascii && enc != *encp) {
-			mixed_escape(beg, enc, *encp);
+		    if (enc && enc != *encp) {
+			mixed_escape(parser->tokp+2, enc, *encp);
 		    }
 		    continue;
 		}
@@ -6109,8 +6119,10 @@ parser_tokadd_string(struct parser_params *parser,
 	}
 	else if (!parser_isascii()) {
 	  non_ascii:
-	    has_nonascii = 1;
-	    if (enc != *encp) {
+	    if (!enc) {
+		enc = *encp;
+	    }
+	    else if (enc != *encp) {
 		mixed_error(enc, *encp);
 		continue;
 	    }
@@ -6122,15 +6134,17 @@ parser_tokadd_string(struct parser_params *parser,
 	    break;
 	}
         if (c & 0x80) {
-	    has_nonascii = 1;
-	    if (enc != *encp) {
+	    if (!enc) {
+		enc = *encp;
+	    }
+	    else if (enc != *encp) {
 		mixed_error(enc, *encp);
 		continue;
 	    }
         }
 	tokadd(c);
     }
-    *encp = enc;
+    if (enc) *encp = enc;
     return c;
 }
 
@@ -7460,7 +7474,8 @@ parse_qmark(struct parser_params *parser, int space_seen)
     else if (c == '\\') {
 	if (peek('u')) {
 	    nextc();
-	    if (!parser_tokadd_utf8(parser, &enc, 0, 0, 0))
+	    enc = rb_utf8_encoding();
+	    if (!parser_tokadd_utf8(parser, &enc, -1, 0, 0))
 		return 0;
 	}
 	else if (!lex_eol_p() && !(c = *lex_p, ISASCII(c))) {
