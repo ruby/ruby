@@ -4885,12 +4885,12 @@ ripper_yylval_id(ID x)
 #endif
 
 #ifndef RIPPER
-#define numeric_literal_flush(p) (parser->tokp = (p))
+#define literal_flush(p) (parser->tokp = (p))
 #define dispatch_scan_event(t) ((void)0)
 #define dispatch_delayed_token(t) ((void)0)
 #define has_delayed_token() (0)
 #else
-#define numeric_literal_flush(p) ((void)0)
+#define literal_flush(p) ((void)0)
 
 #define yylval_rval (*(RB_TYPE_P(yylval.val, T_NODE) ? &yylval.node->nd_rval : &yylval.val))
 
@@ -5652,6 +5652,7 @@ parser_tokadd_codepoint(struct parser_params *parser, rb_encoding **encp,
 {
     size_t numlen;
     int codepoint = scan_hex(lex_p, wide ? 6 : 4, &numlen);
+    literal_flush(lex_p);
     lex_p += numlen;
     if (wide ? (numlen == 0) : (numlen < 4))  {
 	yyerror("invalid Unicode escape");
@@ -5721,7 +5722,7 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
 
 	if (c != close_brace) {
 	  unterminated:
-	    parser->tokp = lex_p;
+	    literal_flush(lex_p);
 	    yyerror("unterminated Unicode escape");
 	    return 0;
 	}
@@ -6056,9 +6057,7 @@ parser_tokadd_string(struct parser_params *parser,
 	    }
 	}
 	else if (c == '\\') {
-#ifndef RIPPER
-	    parser->tokp = lex_p - 1;
-#endif
+	    literal_flush(lex_p - 1);
 	    c = nextc();
 	    switch (c) {
 	      case '\n':
@@ -6532,7 +6531,7 @@ parser_number_literal_suffix(struct parser_params *parser, int mask)
 	}
 	if (!ISASCII(c) || ISALPHA(c) || c == '_') {
 	    lex_p = lastp;
-	    numeric_literal_flush(lex_p);
+	    literal_flush(lex_p);
 	    return 0;
 	}
 	pushback(c);
@@ -6546,7 +6545,7 @@ parser_number_literal_suffix(struct parser_params *parser, int mask)
 	}
 	break;
     }
-    numeric_literal_flush(lex_p);
+    literal_flush(lex_p);
     return result;
 }
 
@@ -7375,7 +7374,7 @@ parse_numeric(struct parser_params *parser, int c)
     if (nondigit) {
 	char tmp[30];
       trailing_uc:
-	numeric_literal_flush(lex_p - 1);
+	literal_flush(lex_p - 1);
 	snprintf(tmp, sizeof(tmp), "trailing `%c' in number", nondigit);
 	yyerror(tmp);
     }
@@ -7397,7 +7396,7 @@ parse_numeric(struct parser_params *parser, int c)
 	    }
 	    v = DBL2NUM(d);
 	}
-	numeric_literal_flush(lex_p);
+	literal_flush(lex_p);
 	return set_number_literal(v, type, suffix);
     }
     suffix = number_literal_suffix(NUM_SUFFIX_ALL);

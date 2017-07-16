@@ -490,7 +490,10 @@ class TestParse < Test::Unit::TestCase
     assert_equal('   ^', e.message.lines.last, mesg)
 
     e = assert_syntax_error('"\u{1234"', 'Unicode escape')
-    assert_match(' ^~~~~~~', e.message.lines.last, mesg)
+    assert_match('        ^', e.message.lines.last, mesg)
+
+    e = assert_syntax_error('"\u{xxxx}"', 'invalid Unicode escape')
+    assert_match('    ^', e.message.lines.last, mesg)
 
     e = assert_syntax_error('"\M1"', /escape character syntax/)
     assert_equal(' ^~~', e.message.lines.last, mesg)
