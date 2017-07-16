@@ -781,13 +781,13 @@ eom
               msg = message(msg) {
                 expect_msg = "Expected #{mu_pp pattern}\n"
                 if /\n[^\n]/ =~ rest
-                  actual_mesg = "to match\n"
+                  actual_mesg = +"to match\n"
                   rest.scan(/.*\n+/) {
                     actual_mesg << '  ' << $&.inspect << "+\n"
                   }
                   actual_mesg.sub!(/\+\n\z/, '')
                 else
-                  actual_mesg = "to match #{mu_pp rest}"
+                  actual_mesg = "to match " + mu_pp(rest)
                 end
                 actual_mesg << "\nafter #{i} patterns with #{actual.length - rest.length} characters"
                 expect_msg + actual_mesg
