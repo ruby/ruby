@@ -489,11 +489,23 @@ class TestParse < Test::Unit::TestCase
     e = assert_syntax_error('"\xg1"', /hex escape/)
     assert_equal('   ^', e.message.lines.last, mesg)
 
-    e = assert_syntax_error('"\u{1234"', 'Unicode escape')
-    assert_match('        ^', e.message.lines.last, mesg)
+    e = assert_syntax_error('"\u{1234"', 'unterminated Unicode escape')
+    assert_equal('        ^', e.message.lines.last, mesg)
 
     e = assert_syntax_error('"\u{xxxx}"', 'invalid Unicode escape')
-    assert_match('    ^', e.message.lines.last, mesg)
+    assert_equal('    ^', e.message.lines.last, mesg)
+
+    e = assert_syntax_error('"\u{xxxx', 'Unicode escape')
+    assert_pattern_list([
+                          /.*: invalid Unicode escape\n.*\n/,
+                          /    \^/,
+                          /\n/,
+                          /.*: unterminated Unicode escape\n.*\n/,
+                          /    \^/,
+                          /\n/,
+                          /.*: unterminated string.*\n.*\n/,
+                          /        \^/,
+                        ], e.message)
 
     e = assert_syntax_error('"\M1"', /escape character syntax/)
     assert_equal(' ^~~', e.message.lines.last, mesg)

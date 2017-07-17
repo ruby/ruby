@@ -5042,15 +5042,15 @@ parser_yyerror(struct parser_params *parser, const char *msg)
     long len;
     int i;
 
-    p = lex_p;
-    lim = p - lex_pbeg > max_line_margin ? p - max_line_margin : lex_pbeg;
-    while ((lim < p) && (*(p-1) != '\n')) p--;
-
     pend = lex_pend;
     if (pend > lex_pbeg && pend[-1] == '\n') {
 	if (--pend > lex_pbeg && pend[-1] == '\r') --pend;
     }
-    pe = lex_p;
+
+    p = pe = lex_p < pend ? lex_p : pend;
+    lim = p - lex_pbeg > max_line_margin ? p - max_line_margin : lex_pbeg;
+    while ((lim < p) && (*(p-1) != '\n')) p--;
+
     lim = pend - pe > max_line_margin ? pe + max_line_margin : pend;
     while ((pe < lim) && (*pe != '\n')) pe++;
 
@@ -5067,20 +5067,22 @@ parser_yyerror(struct parser_params *parser, const char *msg)
 	    if (pe < pend) post = "...";
 	}
 	len = pe - p;
-	i = (int)(lex_p - p);
+	lim = lex_p < pend ? lex_p : pend;
+	i = (int)(lim - p);
 	buf = ALLOCA_N(char, i+2);
 	code = p;
 	caret = p2 = buf;
-	if (p <= parser->tokp) {
-	    while (p < parser->tokp) {
+	pe = (parser->tokp < lim ? parser->tokp : lim);
+	if (p <= pe) {
+	    while (p < pe) {
 		*p2++ = *p++ == '\t' ? '\t' : ' ';
 	    }
 	    *p2++ = '^';
 	    p++;
 	}
-	if (lex_p > p) {
-	    memset(p2, '~', (lex_p - p));
-	    p2 += (lex_p - p);
+	if (lim > p) {
+	    memset(p2, '~', (lim - p));
+	    p2 += (lim - p);
 	}
 	*p2 = '\0';
 	newline = "\n";
@@ -5711,7 +5713,7 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
 	while (!string_literal || c != close_brace) {
 	    if (regexp_literal) tokadd(last);
 	    if (!parser_tokadd_codepoint(parser, encp, regexp_literal, TRUE)) {
-		return 0;
+		break;
 	    }
 	    while (ISSPACE(c = *lex_p)) {
 		if (++lex_p >= lex_pend) goto unterminated;
@@ -6282,11 +6284,17 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
     if (tokadd_string(func, term, paren, &quote->nd_nest,
 		      &enc) == -1) {
 	if (parser->eofp) {
+#ifndef RIPPER
+# define unterminated_literal(mesg) yyerror(mesg)
+#else
+# define unterminated_literal(mesg) compile_error(PARSER_ARG  mesg)
+#endif
+	    literal_flush(lex_p);
 	    if (func & STR_FUNC_REGEXP) {
-		compile_error(PARSER_ARG "unterminated regexp meets end of file");
+		unterminated_literal("unterminated regexp meets end of file");
 	    }
 	    else {
-		compile_error(PARSER_ARG "unterminated string meets end of file");
+		unterminated_literal("unterminated string meets end of file");
 	    }
 	    quote->nd_func |= STR_FUNC_TERM;
 	}
