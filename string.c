@@ -3345,7 +3345,7 @@ rb_str_casecmp_p(VALUE str1, VALUE str2)
 }
 
 static VALUE
-str_casecmp_p(VALUE str1, VALUE str2)
+str_casecmp_p_slow(VALUE str1, VALUE str2)
 {
     rb_encoding *enc;
     VALUE folded_str1, folded_str2;
@@ -3360,6 +3360,19 @@ str_casecmp_p(VALUE str1, VALUE str2)
     folded_str2 = rb_str_downcase(1, &fold_opt, str2);
 
     return rb_str_eql(folded_str1, folded_str2);
+}
+
+static inline VALUE
+str_casecmp_p(VALUE str1, VALUE str2)
+{
+    if (rb_enc_str_asciionly_p(str1)) {
+	VALUE ret = str_casecmp(str1, str2);
+	if (NIL_P(ret)) return Qnil;
+	return FIX2INT(ret) == 0 ? Qtrue : Qfalse;
+    }
+    else {
+	return str_casecmp_p_slow(str1, str2);
+    }
 }
 
 #define rb_str_index(str, sub, offset) rb_strseq_index(str, sub, offset, 0)
