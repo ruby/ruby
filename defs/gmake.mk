@@ -152,3 +152,7 @@ commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS
 	$(Q)$(VCSWAIT)
 	$(Q)$(MAKE) $(mflags) Q=$(Q) REVISION_FORCE=PHONY update-src srcs all-incs
 endif
+
+ifeq ($(words $(filter update-gems extract-gems,$(MAKECMDGOALS))),2)
+extract-gems: update-gems
+endif
