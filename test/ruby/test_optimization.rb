@@ -196,6 +196,9 @@ class TestRubyOptimization < Test::Unit::TestCase
       assert_predicate h.keys[0], :frozen?
       assert_same exp, h.keys[0]
 
+      h = { key => 1 }
+      assert_same exp, h.keys[0], 'newhash insn should reuse strings, too'
+
       h1 = {}
       h2 = {}
       key.taint
@@ -205,6 +208,10 @@ class TestRubyOptimization < Test::Unit::TestCase
       k2 = h2.keys[0]
       assert_same k1, k2
       assert_predicate k1, :tainted?
+
+      h = { key => 1 }
+      assert_not_predicate key, :frozen?
+      assert_same k1, h.keys[0], 'newhash insn should reuse tainted strings'
 
       assert_equal GC::INTERNAL_CONSTANTS[:RVALUE_SIZE],
                    ObjectSpace.memsize_of(k1),

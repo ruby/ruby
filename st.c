@@ -2092,6 +2092,23 @@ st_rehash(st_table *tab)
 }
 
 #ifdef RUBY
+
+static VALUE
+str_key(VALUE key)
+{
+    VALUE k;
+
+    if (RB_OBJ_FROZEN(key)) {
+	return key;
+    }
+    if ((k = rb_fstring_existing(key)) != Qnil) {
+	return k;
+    }
+    else {
+	return rb_str_new_frozen(key);
+    }
+}
+
 /* Mimics ruby's { foo => bar } syntax. This function is placed here
    because it touches table internals and write barriers at once. */
 void
@@ -2114,8 +2131,7 @@ rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
     for (i = 0; i < argc; /* */) {
         VALUE key = argv[i++];
         VALUE val = argv[i++];
-        st_data_t k = (rb_obj_class(key) == rb_cString) ?
-            rb_str_new_frozen(key) : key;
+        st_data_t k = (rb_obj_class(key) == rb_cString) ? str_key(key) : key;
         st_table_entry e;
         e.hash = do_hash(k, tab);
         e.key = k;
