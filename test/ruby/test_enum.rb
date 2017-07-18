@@ -837,6 +837,10 @@ class TestEnumerable < Test::Unit::TestCase
     lambda2 = ->(x, i) { [x.upcase, i] }
     assert_equal([['A',0], ['B',1], ['C',2], ['D',3], ['E',4]],
       @obj.each_with_index.map(&lambda2))
+
+    hash = { a: 'hoge', b: 'fuga' }
+    lambda = -> (k, v) { "#{k}:#{v}" }
+    assert_equal ["a:hoge", "b:fuga"], hash.map(&lambda)
   end
 
   def test_flat_map

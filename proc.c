@@ -637,16 +637,47 @@ sym_proc_new(VALUE klass, VALUE sym)
     return procval;
 }
 
-VALUE
-rb_func_proc_new(rb_block_call_func_t func, VALUE val)
+struct vm_ifunc *
+rb_vm_ifunc_new(VALUE (*func)(ANYARGS), const void *data, int min_argc, int max_argc)
 {
-    return cfunc_proc_new(rb_cProc, (VALUE)IFUNC_NEW(func, val, 0), 0);
+    union {
+	struct vm_ifunc_argc argc;
+	VALUE packed;
+    } arity;
+
+    if (min_argc < UNLIMITED_ARGUMENTS ||
+#if SIZEOF_INT * 2 > SIZEOF_VALUE
+	min_argc >= (int)(1U << (SIZEOF_VALUE * CHAR_BIT) / 2) ||
+#endif
+	0) {
+	rb_raise(rb_eRangeError, "minimum argument number out of range: %d",
+		 min_argc);
+    }
+    if (max_argc < UNLIMITED_ARGUMENTS ||
+#if SIZEOF_INT * 2 > SIZEOF_VALUE
+	max_argc >= (int)(1U << (SIZEOF_VALUE * CHAR_BIT) / 2) ||
+#endif
+	0) {
+	rb_raise(rb_eRangeError, "maximum argument number out of range: %d",
+		 max_argc);
+    }
+    arity.argc.min = min_argc;
+    arity.argc.max = max_argc;
+    return IFUNC_NEW(func, data, arity.packed);
 }
 
 VALUE
-rb_func_lambda_new(rb_block_call_func_t func, VALUE val)
+rb_func_proc_new(rb_block_call_func_t func, VALUE val)
 {
-    return cfunc_proc_new(rb_cProc, (VALUE)IFUNC_NEW(func, val, 0), 1);
+    struct vm_ifunc *ifunc = rb_vm_ifunc_proc_new(func, (void *)val);
+    return cfunc_proc_new(rb_cProc, (VALUE)ifunc, 0);
+}
+
+VALUE
+rb_func_lambda_new(rb_block_call_func_t func, VALUE val, int min_argc, int max_argc)
+{
+    struct vm_ifunc *ifunc = rb_vm_ifunc_new(func, (void *)val, min_argc, max_argc);
+    return cfunc_proc_new(rb_cProc, (VALUE)ifunc, 1);
 }
 
 static const char proc_without_block[] = "tried to create Proc object without a block";
@@ -946,8 +977,9 @@ rb_vm_block_min_max_arity(const struct rb_block *block, int *max)
 		/* e.g. method(:foo).to_proc.arity */
 		return method_min_max_arity((VALUE)ifunc->data, max);
 	    }
+	    *max = ifunc->argc.max;
+	    return ifunc->argc.min;
 	}
-	/* fall through */
       case block_type_symbol:
 	break;
     }
