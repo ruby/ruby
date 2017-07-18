@@ -349,6 +349,99 @@ register_fstring(VALUE str)
     return ret;
 }
 
+static int
+tainted_fstr_update(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
+{
+    VALUE *fstr = (VALUE *)arg;
+    VALUE str = (VALUE)*key;
+
+    if (existing) {
+	/* because of lazy sweep, str may be unmarked already and swept
+	 * at next time */
+	if (rb_objspace_garbage_object_p(str)) {
+	    *fstr = Qundef;
+	    return ST_DELETE;
+	}
+
+	*fstr = str;
+	return ST_STOP;
+    }
+    else {
+	str = rb_str_resurrect(str);
+	RB_OBJ_TAINT_RAW(str);
+	RB_FL_SET_RAW(str, RSTRING_FSTR);
+	RB_OBJ_FREEZE_RAW(str);
+
+	*key = *val = *fstr = str;
+	return ST_CONTINUE;
+    }
+}
+
+static VALUE
+rb_fstring_existing0(VALUE str)
+{
+    st_table *frozen_strings = rb_vm_fstring_table();
+    st_data_t fstr;
+
+    if (st_lookup(frozen_strings, str, &fstr)) {
+	if (rb_objspace_garbage_object_p(fstr)) {
+	    return register_fstring(str);
+	}
+	else {
+	    return (VALUE)fstr;
+	}
+    }
+    return Qnil;
+}
+
+static VALUE
+rb_tainted_fstring_existing(VALUE str)
+{
+    VALUE ret;
+    st_data_t fstr;
+    st_table *tfstrings = rb_vm_tfstring_table();
+
+    if (st_lookup(tfstrings, str, &fstr)) {
+	ret = (VALUE)fstr;
+	if (!rb_objspace_garbage_object_p(ret)) {
+	    return ret;
+	}
+    }
+    ret = rb_fstring_existing0(str);
+    if (NIL_P(ret)) {
+	return Qnil;
+    }
+    if (!RB_FL_TEST_RAW(ret, RSTRING_FSTR)) {
+	return Qnil;
+    }
+    do {
+	fstr = (st_data_t)ret;
+	st_update(tfstrings, fstr, tainted_fstr_update, (st_data_t)&fstr);
+    } while ((VALUE)fstr == Qundef);
+
+    ret = (VALUE)fstr;
+    assert(OBJ_FROZEN_RAW(ret));
+    assert(!FL_TEST_RAW(ret, STR_FAKESTR));
+    assert(!FL_TEST_RAW(ret, FL_EXIVAR));
+    assert(FL_TEST_RAW(ret, RSTRING_FSTR));
+    assert(FL_TEST_RAW(ret, FL_TAINT));
+    assert(RBASIC_CLASS(ret) == rb_cString);
+
+    return ret;
+}
+
+VALUE
+rb_fstring_existing(VALUE str)
+{
+    if (FL_TEST_RAW(str, RSTRING_FSTR))
+	return str;
+
+    if (!RB_OBJ_TAINTED_RAW(str))
+	return rb_fstring_existing0(str);
+
+    return rb_tainted_fstring_existing(str);
+}
+
 static VALUE
 setup_fake_str(struct RString *fake_str, const char *name, long len, int encidx)
 {
@@ -1311,6 +1404,7 @@ rb_str_free(VALUE str)
     if (FL_TEST(str, RSTRING_FSTR)) {
 	st_data_t fstr = (st_data_t)str;
 	st_delete(rb_vm_fstring_table(), &fstr, NULL);
+	st_delete(rb_vm_tfstring_table(), &fstr, NULL);
 	RB_DEBUG_COUNTER_INC(obj_str_fstr);
     }
 

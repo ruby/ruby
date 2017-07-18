@@ -1574,6 +1574,7 @@ VALUE rb_strftime(const char *format, size_t format_len, rb_encoding *enc,
 /* string.c */
 VALUE rb_fstring(VALUE);
 VALUE rb_fstring_new(const char *ptr, long len);
+VALUE rb_fstring_existing(VALUE);
 #define rb_fstring_lit(str) rb_fstring_new((str), rb_strlen_lit(str))
 #define rb_fstring_literal(str) rb_fstring_lit(str)
 VALUE rb_fstring_cstr(const char *str);
@@ -1726,7 +1727,7 @@ void rb_vm_check_redefinition_by_prepend(VALUE klass);
 VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);
 VALUE ruby_vm_special_exception_copy(VALUE);
 PUREFUNC(st_table *rb_vm_fstring_table(void));
-
+PUREFUNC(st_table *rb_vm_tfstring_table(void));
 
 /* vm_dump.c */
 void rb_print_backtrace(void);

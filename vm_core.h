@@ -574,6 +574,7 @@ typedef struct rb_vm_struct {
 
     VALUE *defined_strings;
     st_table *frozen_strings;
+    st_table *tainted_frozen_strings;
 
     /* params */
     struct { /* size in byte */
