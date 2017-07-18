@@ -2740,7 +2740,7 @@ CODE
     assert_predicate(-str, :frozen?)
 
     assert_same(str, +str)
-    assert_not_send(str, -str)
+    assert_not_same(str, -str)
 
     str = "bar".freeze
     assert_predicate(str, :frozen?)
