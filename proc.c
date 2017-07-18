@@ -930,7 +930,7 @@ rb_iseq_min_max_arity(const rb_iseq_t *iseq, int *max)
 }
 
 static int
-rb_block_min_max_arity(const struct rb_block *block, int *max)
+rb_vm_block_min_max_arity(const struct rb_block *block, int *max)
 {
   again:
     switch (vm_block_type(block)) {
@@ -966,7 +966,7 @@ rb_proc_min_max_arity(VALUE self, int *max)
 {
     rb_proc_t *proc;
     GetProcPtr(self, proc);
-    return rb_block_min_max_arity(&proc->block, max);
+    return rb_vm_block_min_max_arity(&proc->block, max);
 }
 
 int
@@ -975,7 +975,7 @@ rb_proc_arity(VALUE self)
     rb_proc_t *proc;
     int max, min;
     GetProcPtr(self, proc);
-    min = rb_block_min_max_arity(&proc->block, &max);
+    min = rb_vm_block_min_max_arity(&proc->block, &max);
     return (proc->is_lambda ? min == max : max != UNLIMITED_ARGUMENTS) ? min : -min-1;
 }
 
@@ -1015,7 +1015,7 @@ rb_block_arity(void)
     }
 
     block_setup(&block, block_handler);
-    min = rb_block_min_max_arity(&block, &max);
+    min = rb_vm_block_min_max_arity(&block, &max);
 
     switch (vm_block_type(&block)) {
       case block_handler_type_symbol:
@@ -1033,6 +1033,22 @@ rb_block_arity(void)
       default:
 	return max != UNLIMITED_ARGUMENTS ? min : -min-1;
     }
+}
+
+int
+rb_block_min_max_arity(int *max)
+{
+    rb_thread_t *th = GET_THREAD();
+    rb_control_frame_t *cfp = th->ec.cfp;
+    VALUE block_handler = rb_vm_frame_block_handler(cfp);
+    struct rb_block block;
+
+    if (block_handler == VM_BLOCK_HANDLER_NONE) {
+	rb_raise(rb_eArgError, "no block given");
+    }
+
+    block_setup(&block, block_handler);
+    return rb_vm_block_min_max_arity(&block, max);
 }
 
 const rb_iseq_t *
