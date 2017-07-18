@@ -301,54 +301,6 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existi
     }
 }
 
-RUBY_FUNC_EXPORTED
-VALUE
-rb_fstring(VALUE str)
-{
-    VALUE fstr;
-    int bare;
-
-    Check_Type(str, T_STRING);
-
-    if (FL_TEST(str, RSTRING_FSTR))
-	return str;
-
-    bare = BARE_STRING_P(str);
-    if (STR_EMBED_P(str) && !bare) {
-	OBJ_FREEZE_RAW(str);
-	return str;
-    }
-
-    fstr = register_fstring(str);
-
-    if (!bare) {
-	str_replace_shared_without_enc(str, fstr);
-	OBJ_FREEZE_RAW(str);
-	return str;
-    }
-    return fstr;
-}
-
-static VALUE
-register_fstring(VALUE str)
-{
-    VALUE ret;
-    st_table *frozen_strings = rb_vm_fstring_table();
-
-    do {
-	ret = str;
-	st_update(frozen_strings, (st_data_t)str,
-		  fstr_update_callback, (st_data_t)&ret);
-    } while (ret == Qundef);
-
-    assert(OBJ_FROZEN(ret));
-    assert(!FL_TEST_RAW(ret, STR_FAKESTR));
-    assert(!FL_TEST_RAW(ret, FL_EXIVAR));
-    assert(!FL_TEST_RAW(ret, FL_TAINT));
-    assert(RBASIC_CLASS(ret) == rb_cString);
-    return ret;
-}
-
 static int
 tainted_fstr_update(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
 {
@@ -375,6 +327,78 @@ tainted_fstr_update(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
 	*key = *val = *fstr = str;
 	return ST_CONTINUE;
     }
+}
+
+static VALUE
+register_fstring_tainted(VALUE str, st_table *tfstrings)
+{
+    st_data_t fstr;
+
+    do {
+	fstr = (st_data_t)str;
+	st_update(tfstrings, fstr, tainted_fstr_update, (st_data_t)&fstr);
+    } while ((VALUE)fstr == Qundef);
+
+    str = (VALUE)fstr;
+    assert(OBJ_FROZEN_RAW(str));
+    assert(!FL_TEST_RAW(str, STR_FAKESTR));
+    assert(!FL_TEST_RAW(str, FL_EXIVAR));
+    assert(FL_TEST_RAW(str, RSTRING_FSTR));
+    assert(FL_TEST_RAW(str, FL_TAINT));
+    assert(RBASIC_CLASS(str) == rb_cString);
+
+    return str;
+}
+
+RUBY_FUNC_EXPORTED
+VALUE
+rb_fstring(VALUE str)
+{
+    VALUE fstr;
+    int bare_ish;
+
+    Check_Type(str, T_STRING);
+
+    if (FL_TEST(str, RSTRING_FSTR))
+	return str;
+
+    bare_ish = !FL_TEST_RAW(str, FL_EXIVAR) && RBASIC_CLASS(str) == rb_cString;
+    if (STR_EMBED_P(str) && !bare_ish) {
+	OBJ_FREEZE_RAW(str);
+	return str;
+    }
+    if (!FL_TEST_RAW(str, FL_TAINT)) {
+	fstr = register_fstring(str);
+    }
+    else {
+	fstr = register_fstring_tainted(str, rb_vm_tfstring_table());
+    }
+    if (!bare_ish) {
+	str_replace_shared_without_enc(str, fstr);
+	OBJ_FREEZE_RAW(str);
+	return str;
+    }
+    return fstr;
+}
+
+static VALUE
+register_fstring(VALUE str)
+{
+    VALUE ret;
+    st_table *frozen_strings = rb_vm_fstring_table();
+
+    do {
+	ret = str;
+	st_update(frozen_strings, (st_data_t)str,
+		  fstr_update_callback, (st_data_t)&ret);
+    } while (ret == Qundef);
+
+    assert(OBJ_FROZEN(ret));
+    assert(!FL_TEST_RAW(ret, STR_FAKESTR));
+    assert(!FL_TEST_RAW(ret, FL_EXIVAR));
+    assert(!FL_TEST_RAW(ret, FL_TAINT));
+    assert(RBASIC_CLASS(ret) == rb_cString);
+    return ret;
 }
 
 static VALUE
@@ -414,20 +438,8 @@ rb_tainted_fstring_existing(VALUE str)
     if (!RB_FL_TEST_RAW(ret, RSTRING_FSTR)) {
 	return Qnil;
     }
-    do {
-	fstr = (st_data_t)ret;
-	st_update(tfstrings, fstr, tainted_fstr_update, (st_data_t)&fstr);
-    } while ((VALUE)fstr == Qundef);
 
-    ret = (VALUE)fstr;
-    assert(OBJ_FROZEN_RAW(ret));
-    assert(!FL_TEST_RAW(ret, STR_FAKESTR));
-    assert(!FL_TEST_RAW(ret, FL_EXIVAR));
-    assert(FL_TEST_RAW(ret, RSTRING_FSTR));
-    assert(FL_TEST_RAW(ret, FL_TAINT));
-    assert(RBASIC_CLASS(ret) == rb_cString);
-
-    return ret;
+    return register_fstring_tainted(str, tfstrings);
 }
 
 VALUE

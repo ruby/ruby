@@ -2749,10 +2749,15 @@ CODE
 
     assert_not_equal(str.object_id, (+str).object_id)
     assert_equal(str.object_id, (-str).object_id)
+
+    return unless @cls == String
     bar = %w(b a r).join('')
     assert_not_predicate bar, :tainted?
     assert_not_predicate str, :tainted?
     assert_same(str, -bar, "uminus deduplicates [Feature #13077]")
+    bar = %w(b a r).taint.join('')
+    tstr = str.dup.taint
+    assert_same -tstr, -bar
   end
 
   def test_ord
