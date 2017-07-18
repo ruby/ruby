@@ -131,5 +131,22 @@ module WEBrick
       server = lookup_server(req)
       server ? server.ssl_context : nil
     end
+
+    # :stopdoc:
+
+    ##
+    # Check whether +server+ is also SSL server.
+    # Also +server+'s SSL context will be created.
+
+    alias orig_virtual_host virtual_host
+
+    def virtual_host(server)
+      if @config[:SSLEnable] && !server.ssl_context
+        raise ArgumentError, "virtual host must set SSLEnable to true"
+      end
+      orig_virtual_host(server)
+    end
+
+    # :startdoc:
   end
 end

@@ -147,7 +147,13 @@ module WEBrick
     # SSL context for the server when run in SSL mode
 
     def ssl_context # :nodoc:
-      @ssl_context ||= nil
+      @ssl_context ||= begin
+        if @config[:SSLEnable]
+          ssl_context = setup_ssl_context(@config)
+          @logger.info("\n" + @config[:SSLCertificate].to_text)
+          ssl_context
+        end
+      end
     end
 
     undef listen
@@ -158,10 +164,6 @@ module WEBrick
     def listen(address, port) # :nodoc:
       listeners = Utils::create_listeners(address, port)
       if @config[:SSLEnable]
-        unless ssl_context
-          @ssl_context = setup_ssl_context(@config)
-          @logger.info("\n" + @config[:SSLCertificate].to_text)
-        end
         listeners.collect!{|svr|
           ssvr = ::OpenSSL::SSL::SSLServer.new(svr, ssl_context)
           ssvr.start_immediately = @config[:SSLStartImmediately]
