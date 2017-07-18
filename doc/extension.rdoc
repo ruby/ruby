@@ -1603,6 +1603,96 @@ Note: In the format string, "%"PRIsVALUE can be used for Object#to_s
 must be a VALUE).  Since it conflicts with "%i", for integers in
 format strings, use "%d".
 
+=== Threading
+
+As of Ruby 1.9, Ruby supports native 1:1 threading with one kernel
+thread per Ruby Thread object.  Currently, there is a GVL (Global VM Lock)
+which prevents simultaneous execution of Ruby code which may be released
+by the rb_thread_call_without_gvl and rb_thread_call_without_gvl2 functions.
+These functions are tricky-to-use and documented in thread.c; do not
+use them before reading comments in thread.c.
+
+void rb_thread_schedule(void) ::
+
+  Give the scheduler a hint to pass execution to another thread.
+
+=== Input/Output (IO) on a single file descriptor
+
+int rb_io_wait_readable(int fd) ::
+
+  Wait indefinitely for the given FD to become readable, allowing other
+  threads to be scheduled.  Returns a true value if a read may be
+  performed, false if there is an unrecoverable error.
+
+int rb_io_wait_writable(int fd) ::
+
+  Like rb_io_wait_readable, but for writability.
+
+int rb_wait_for_single_fd(int fd, int events, struct timeval *timeout) ::
+
+  Allows waiting on a single FD for one or multiple events with a
+  specified timeout.
+
+  +events+ is a mask of any combination of the following values:
+
+  * RB_WAITFD_IN - wait for readability of normal data
+  * RB_WAITFD_OUT - wait for writability
+  * RB_WAITFD_PRI - wait for readability of urgent data
+
+  Use a NULL +timeout+ to wait indefinitely.
+
+=== I/O Multiplexing
+
+Ruby supports I/O multiplexing based on the select(2) system call.
+The Linux select_tut(2) manpage
+<http://man7.org/linux/man-pages/man2/select_tut.2.html>
+provides a good overview on how to use select(2), and the Ruby API has
+analogous functions and data structures to the well-known select API.
+Understanding of select(2) is required to understand this section.
+
+typedef struct rb_fdset_t ::
+
+  The data structure which wraps the fd_set bitmap used by select(2).
+  This allows Ruby to use FD sets larger than that allowed by
+  historic limitations on modern platforms.
+
+void rb_fd_init(rb_fdset_t *) ::
+
+  Initializes the rb_fdset_t, it must be initialized before other rb_fd_*
+  operations.  Analogous to calling malloc(3) to allocate an fd_set.
+
+void rb_fd_term(rb_fdset_t *) ::
+
+  Destroys the rb_fdset_t, releasing any memory and resources it used.
+  It must be reinitialized using rb_fd_init before future use.
+  Analogous to calling free(3) to release memory for an fd_set.
+
+void rb_fd_zero(rb_fdset_t *) ::
+
+  Clears all FDs from the rb_fdset_t, analogous to FD_ZERO(3).
+
+void rb_fd_set(int fd, rb_fdset_t *) ::
+
+  Adds a given FD in the rb_fdset_t, analogous to FD_SET(3).
+
+void rb_fd_clr(int fd, rb_fdset_t *) ::
+
+  Removes a given FD from the rb_fdset_t, analogous to FD_CLR(3).
+
+int rb_fd_isset(int fd, const rb_fdset_t *) ::
+
+  Returns true if a given FD is set in the rb_fdset_t, false if not.
+  Analogous to FD_ISSET(3).
+
+int rb_thread_fd_select(int nfds, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_fdset_t *exceptfds, struct timeval *timeout) ::
+
+  Analogous to the select(2) system call, but allows other Ruby
+  threads to be scheduled while waiting.
+
+  When only waiting on a single FD, favor rb_io_wait_readable,
+  rb_io_wait_writable, or rb_wait_for_single_fd functions since
+  they can be optimized for specific platforms (currently, only Linux).
+
 === Initialize and Start the Interpreter
 
 The embedding API functions are below (not needed for extension libraries):
