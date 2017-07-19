@@ -346,10 +346,10 @@ get_power2(st_index_t size)
 static inline st_index_t
 get_bin(st_index_t *bins, int s, st_index_t n)
 {
-  return (s == 0 ? ((unsigned char *) bins)[n]
-	  : s == 1 ? ((unsigned short *) bins)[n]
-	  : s == 2 ? ((unsigned int *) bins)[n]
-	  : ((st_index_t *) bins)[n]);
+    return (s == 0 ? ((unsigned char *) bins)[n]
+	    : s == 1 ? ((unsigned short *) bins)[n]
+	    : s == 2 ? ((unsigned int *) bins)[n]
+	    : ((st_index_t *) bins)[n]);
 }
 
 /* Set up N-th bin in array BINS of table with bins size index S to
@@ -970,7 +970,8 @@ find_table_bin_ind_direct(st_table *tab, st_hash_t hash_value, st_data_t key)
    UNDEFINED_ENTRY_IND if it is not found.  */
 static st_index_t
 find_table_bin_ptr_and_reserve(st_table *tab, st_hash_t *hash_value,
-			       st_data_t key, st_index_t *bin_ind) {
+			       st_data_t key, st_index_t *bin_ind)
+{
     st_index_t ind;
     st_hash_t curr_hash_value = *hash_value;
 #ifdef QUADRATIC_PROBE
@@ -1136,7 +1137,8 @@ st_insert(st_table *tab, st_data_t key, st_data_t value)
    entry with KEY before the insertion.  */
 static inline void
 st_add_direct_with_hash(st_table *tab,
-			st_data_t key, st_data_t value, st_hash_t hash) {
+			st_data_t key, st_data_t value, st_hash_t hash)
+{
     st_table_entry *entry;
     st_index_t ind;
     st_index_t bin_ind;
@@ -1174,7 +1176,8 @@ st_add_direct(st_table *tab, st_data_t key, st_data_t value)
    and update the value of the found entry.  */
 int
 st_insert2(st_table *tab, st_data_t key, st_data_t value,
-           st_data_t (*func)(st_data_t)) {
+           st_data_t (*func)(st_data_t))
+{
     st_table_entry *entry;
     st_index_t bin;
     st_index_t ind, check;
@@ -1310,7 +1313,8 @@ st_delete(st_table *tab, st_data_t *key, st_data_t *value)
    traversing without a specific way to do this.  */
 int
 st_delete_safe(st_table *tab, st_data_t *key, st_data_t *value,
-               st_data_t never ATTRIBUTE_UNUSED) {
+               st_data_t never ATTRIBUTE_UNUSED)
+{
     return st_general_delete(tab, key, value);
 }
 
@@ -1364,7 +1368,8 @@ st_shift(st_table *tab, st_data_t *key, st_data_t *value)
 /* See comments for function st_delete_safe.  */
 void
 st_cleanup_safe(st_table *tab ATTRIBUTE_UNUSED,
-                st_data_t never ATTRIBUTE_UNUSED) {
+                st_data_t never ATTRIBUTE_UNUSED)
+{
 }
 
 /* Find entry with KEY in table TAB, call FUNC with the key and the
@@ -1377,7 +1382,8 @@ st_cleanup_safe(st_table *tab ATTRIBUTE_UNUSED,
    in the table before the call.  */
 int
 st_update(st_table *tab, st_data_t key,
-	  st_update_callback_func *func, st_data_t arg) {
+	  st_update_callback_func *func, st_data_t arg)
+{
     st_table_entry *entry = NULL; /* to avoid uninitialized value warning */
     st_index_t bin = 0; /* Ditto */
     st_table_entry *entries;
@@ -1411,7 +1417,7 @@ st_update(st_table *tab, st_data_t key,
     retval = (*func)(&key, &value, arg, existing);
     st_assert(check == tab->rebuilds_num);
     switch (retval) {
-    case ST_CONTINUE:
+      case ST_CONTINUE:
         if (! existing) {
 	    st_add_direct_with_hash(tab, key, value, hash);
             break;
@@ -1421,7 +1427,7 @@ st_update(st_table *tab, st_data_t key,
         }
         entry->record = value;
         break;
-    case ST_DELETE:
+      case ST_DELETE:
         if (existing) {
 	    if (bin_ind != UNDEFINED_BIN_IND)
 	        MARK_BIN_DELETED(tab, bin_ind);
@@ -1450,7 +1456,8 @@ st_update(st_table *tab, st_data_t key,
    during traversing.  */
 static inline int
 st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg,
-		   int check_p) {
+		   int check_p)
+{
     st_index_t bin;
     st_index_t bin_ind;
     st_table_entry *entries, *curr_entry_ptr;
@@ -1495,17 +1502,17 @@ st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg,
 	    curr_entry_ptr = &entries[i];
 	}
 	switch (retval) {
-	case ST_CONTINUE:
+	  case ST_CONTINUE:
 	    break;
-	case ST_CHECK:
+	  case ST_CHECK:
 	    if (check_p)
 		break;
-	case ST_STOP:
+	  case ST_STOP:
 #ifdef ST_DEBUG
 	    st_check(tab);
 #endif
 	    return 0;
-	case ST_DELETE:
+	  case ST_DELETE:
 	    if (packed_p) {
 	        bin = find_entry(tab, hash, curr_entry_ptr->key);
 		if (bin == UNDEFINED_ENTRY_IND)
@@ -1537,14 +1544,15 @@ st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg,
 int
 st_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg)
 {
-  return st_general_foreach(tab, func, arg, FALSE);
+    return st_general_foreach(tab, func, arg, FALSE);
 }
 
 /* See comments for function st_delete_safe.  */
 int
 st_foreach_check(st_table *tab, int (*func)(ANYARGS), st_data_t arg,
-                 st_data_t never ATTRIBUTE_UNUSED) {
-  return st_general_foreach(tab, func, arg, TRUE);
+                 st_data_t never ATTRIBUTE_UNUSED)
+{
+    return st_general_foreach(tab, func, arg, TRUE);
 }
 
 /* Set up array KEYS by at most SIZE keys of head table TAB entries.
@@ -1580,7 +1588,8 @@ st_keys(st_table *tab, st_data_t *keys, st_index_t size)
 /* See comments for function st_delete_safe.  */
 st_index_t
 st_keys_check(st_table *tab, st_data_t *keys, st_index_t size,
-              st_data_t never ATTRIBUTE_UNUSED) {
+              st_data_t never ATTRIBUTE_UNUSED)
+{
     return st_general_keys(tab, keys, size);
 }
 
@@ -1617,7 +1626,8 @@ st_values(st_table *tab, st_data_t *values, st_index_t size)
 /* See comments for function st_delete_safe.  */
 st_index_t
 st_values_check(st_table *tab, st_data_t *values, st_index_t size,
-		st_data_t never ATTRIBUTE_UNUSED) {
+		st_data_t never ATTRIBUTE_UNUSED)
+{
     return st_general_values(tab, values, size);
 }
 
@@ -1811,17 +1821,17 @@ st_hash(const void *ptr, size_t len, st_index_t h)
 #if UNALIGNED_WORD_ACCESS && SIZEOF_ST_INDEX_T <= 8 && CHAR_BIT == 8
     /* in this case byteorder doesn't really matter */
 #if SIZEOF_ST_INDEX_T > 4
-	case 7: t |= data_at(6) << 48;
-	case 6: t |= data_at(5) << 40;
-	case 5: t |= data_at(4) << 32;
-	case 4:
-	    t |= (st_index_t)*(uint32_t*)data;
-	    goto skip_tail;
+      case 7: t |= data_at(6) << 48;
+      case 6: t |= data_at(5) << 40;
+      case 5: t |= data_at(4) << 32;
+      case 4:
+	t |= (st_index_t)*(uint32_t*)data;
+	goto skip_tail;
 # define SKIP_TAIL 1
 #endif
-	case 3: t |= data_at(2) << 16;
-	case 2: t |= data_at(1) << 8;
-	case 1: t |= data_at(0);
+      case 3: t |= data_at(2) << 16;
+      case 2: t |= data_at(1) << 8;
+      case 1: t |= data_at(0);
 #else
 #ifdef WORDS_BIGENDIAN
 # define UNALIGNED_ADD(n) case (n) + 1: \
