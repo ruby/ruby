@@ -36,6 +36,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * :newline option to File.open implies text mode now.  [Bug #13350]
 
+* Hash
+
+  * Hash#transform_keys  [Feature #13583]
+  * Hash#transform_keys!  [Feature #13583]
+
 * Integer
 
   * Integer.sqrt  [Feature #13219]
