@@ -733,7 +733,7 @@ test-bundler-prepare:
 test-bundler: $(TEST_RUNNABLE)-test-bundler
 yes-test-bundler: test-bundler-precheck test-bundler-prepare
 	$(gnumake_recursive)$(Q) \
-	GEM_HOME=$(srcdir)/.bundle GEM_PATH=$(srcdir)/.bundle $(RUNRUBY) -r./$(arch)-fake $(srcdir)/.bundle/bin/rspec $(srcdir)/spec/bundler
+	GEM_HOME=$(srcdir)/.bundle GEM_PATH=$(srcdir)/.bundle $(RUNRUBY) -I$(srcdir)/spec/bundler -r./$(arch)-fake $(srcdir)/.bundle/bin/rspec $(srcdir)/spec/bundler
 no-test-bundler:
 
 RUNNABLE = $(LIBRUBY_RELATIVE:no=un)-runnable

@@ -54,7 +54,7 @@ $debug = false
 
 Spec::Rubygems.setup
 FileUtils.rm_rf(Spec::Path.gem_repo1)
-ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -r#{Spec::Path.root}/spec/support/hax.rb"
+ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -r#{Spec::Path.root}/bundler/support/hax.rb"
 ENV["BUNDLE_SPEC_RUN"] = "true"
 ENV["BUNDLE_PLUGINS"] = "true"
 
@@ -114,9 +114,19 @@ RSpec.configure do |config|
     system_gems []
     in_app_root
     @all_output = String.new
+
+    # XXX
+    ENV['RUBY'] = "#{Spec::Path.root}/ruby"
+
+    @orig_ruby = if ENV['RUBY'] then
+                   ruby = Gem.ruby
+                   Gem.ruby = ENV['RUBY']
+                   ruby
+                 end
   end
 
   config.after :each do |example|
+    Gem.ruby = @orig_ruby
     @all_output.strip!
     if example.exception && !@all_output.empty?
       warn @all_output unless config.formatters.grep(RSpec::Core::Formatters::DocumentationFormatter).empty?
