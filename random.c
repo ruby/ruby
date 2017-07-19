@@ -338,7 +338,7 @@ get_rnd(VALUE obj)
 {
     rb_random_t *ptr;
     TypedData_Get_Struct(obj, rb_random_t, &random_data_type, ptr);
-    return ptr;
+    return rand_start(ptr);
 }
 
 static rb_random_t *
@@ -348,7 +348,7 @@ try_get_rnd(VALUE obj)
 	return rand_start(&default_rand);
     }
     if (!rb_typeddata_is_kind_of(obj, &random_data_type)) return NULL;
-    return DATA_PTR(obj);
+    return rand_start(DATA_PTR(obj));
 }
 
 /* :nodoc: */
