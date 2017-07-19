@@ -734,10 +734,15 @@ test-bundler-prepare:
 	$(Q) $(srcdir)/tool/git-refresh -C $(srcdir)/spec $(Q1:0=-q) \
 			--branch $(BUNDLER_GIT_REF) \
 			$(BUNDLER_GIT_URL) bundler $(GIT_OPTS)
+	$(CHDIR) $(srcdir)/spec/bundler && git checkout . && patch -p0 < ../bundler.patch
 	GEM_HOME=$(srcdir)/spec/bundler/.bundle GEM_PATH=$(srcdir)/spec/bundler/.bundle \
 			$(XRUBY) "$(srcdir)/bin/gem" install --no-ri --no-rdoc --conservative 'rspec:~> 3.5'
 test-bundler: $(TEST_RUNNABLE)-test-bundler
 yes-test-bundler: test-bundler-precheck test-bundler-prepare
+	$(gnumake_recursive)$(Q) \
+		GEM_HOME=.bundle GEM_PATH=.bundle \
+		BUNDLE_RUBY="$(abspath ./ruby) -I$(abspath $(srcdir)/lib) -I$(abspath .) -I$(abspath $(EXTOUT)/common)" \
+		$(XRUBY) -C $(srcdir)/spec/bundler ".bundle/bin/rspec"
 no-test-bundler:
 
 RUNNABLE = $(LIBRUBY_RELATIVE:no=un)-runnable
