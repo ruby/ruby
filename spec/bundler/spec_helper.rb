@@ -8,11 +8,17 @@ require "uri"
 require "digest/sha1"
 require "rubygems"
 
-begin
-  spec = Gem::Specification.load("bundler.gemspec")
-rescue Errno::ENOENT
+spec = Gem::Specification.load("bundler.gemspec")
+
+unless spec
   # for ruby core repository.
   spec = Gem::Specification.load("#{File.expand_path('../../../lib', __FILE__)}/bundler.gemspec")
+end
+
+module Gem
+  def self.ruby= ruby
+    @ruby = ruby
+  end
 end
 
 begin
