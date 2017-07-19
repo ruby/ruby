@@ -181,44 +181,6 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_redefine_method('Hash', 'empty?', 'assert_nil({}.empty?); assert_nil({1=>1}.empty?)')
   end
 
-  def test_hash_reuse_fstring
-    embed = -'h e l l o'
-    shared = -'this string is too long to be embedded and should be shared'
-    assert_not_equal GC::INTERNAL_CONSTANTS[:RVALUE_SIZE],
-                     ObjectSpace.memsize_of(shared),
-                     'update this test if string embedding changed'
-
-    [ embed, shared ].each do |exp|
-      key = exp.split(' ').join(' ')
-      h = {}
-      h[key] = true
-      assert_not_same key, h.keys[0]
-      assert_predicate h.keys[0], :frozen?
-      assert_same exp, h.keys[0]
-
-      h = { key => 1 }
-      assert_same exp, h.keys[0], 'newhash insn should reuse strings, too'
-
-      h1 = {}
-      h2 = {}
-      key.taint
-      h1[key] = true
-      h2[key] = true
-      k1 = h1.keys[0]
-      k2 = h2.keys[0]
-      assert_same k1, k2
-      assert_predicate k1, :tainted?
-
-      h = { key => 1 }
-      assert_not_predicate key, :frozen?
-      assert_same k1, h.keys[0], 'newhash insn should reuse tainted strings'
-
-      assert_equal GC::INTERNAL_CONSTANTS[:RVALUE_SIZE],
-                   ObjectSpace.memsize_of(k1),
-                   'tainted string should share with untainted fstring'
-    end
-  end
-
   def test_hash_aref_with
     h = { "foo" => 1 }
     assert_equal 1, h["foo"]

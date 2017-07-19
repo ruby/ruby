@@ -2206,10 +2206,6 @@ ruby_vm_destruct(rb_vm_t *vm)
 	    st_free_table(vm->frozen_strings);
 	    vm->frozen_strings = 0;
 	}
-	if (vm->tainted_frozen_strings) {
-	    st_free_table(vm->tainted_frozen_strings);
-	    vm->tainted_frozen_strings = 0;
-	}
 	rb_vm_gvl_destroy(vm);
 	if (objspace) {
 	    rb_objspace_free(objspace);
@@ -3146,8 +3142,6 @@ Init_vm_objects(void)
     vm->mark_object_ary = rb_ary_tmp_new(128);
     vm->loading_table = st_init_strtable();
     vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 1000);
-    vm->tainted_frozen_strings =
-		st_init_table_with_size(&rb_fstring_hash_type, 1000);
 }
 
 /* top self */
@@ -3207,12 +3201,6 @@ st_table *
 rb_vm_fstring_table(void)
 {
     return GET_VM()->frozen_strings;
-}
-
-st_table *
-rb_vm_tfstring_table(void)
-{
-    return GET_VM()->tainted_frozen_strings;
 }
 
 #if VM_COLLECT_USAGE_DETAILS

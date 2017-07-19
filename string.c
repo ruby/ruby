@@ -301,79 +301,27 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t arg, int existi
     }
 }
 
-static int
-tainted_fstr_update(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
-{
-    VALUE *fstr = (VALUE *)arg;
-    VALUE str = (VALUE)*key;
-
-    if (existing) {
-	/* because of lazy sweep, str may be unmarked already and swept
-	 * at next time */
-	if (rb_objspace_garbage_object_p(str)) {
-	    *fstr = Qundef;
-	    return ST_DELETE;
-	}
-
-	*fstr = str;
-	return ST_STOP;
-    }
-    else {
-	str = rb_str_resurrect(str);
-	RB_OBJ_TAINT_RAW(str);
-	RB_FL_SET_RAW(str, RSTRING_FSTR);
-	RB_OBJ_FREEZE_RAW(str);
-
-	*key = *val = *fstr = str;
-	return ST_CONTINUE;
-    }
-}
-
-static VALUE
-register_fstring_tainted(VALUE str, st_table *tfstrings)
-{
-    st_data_t fstr;
-
-    do {
-	fstr = (st_data_t)str;
-	st_update(tfstrings, fstr, tainted_fstr_update, (st_data_t)&fstr);
-    } while ((VALUE)fstr == Qundef);
-
-    str = (VALUE)fstr;
-    assert(OBJ_FROZEN_RAW(str));
-    assert(!FL_TEST_RAW(str, STR_FAKESTR));
-    assert(!FL_TEST_RAW(str, FL_EXIVAR));
-    assert(FL_TEST_RAW(str, RSTRING_FSTR));
-    assert(FL_TEST_RAW(str, FL_TAINT));
-    assert(RBASIC_CLASS(str) == rb_cString);
-
-    return str;
-}
-
 RUBY_FUNC_EXPORTED
 VALUE
 rb_fstring(VALUE str)
 {
     VALUE fstr;
-    int bare_ish;
+    int bare;
 
     Check_Type(str, T_STRING);
 
     if (FL_TEST(str, RSTRING_FSTR))
 	return str;
 
-    bare_ish = !FL_TEST_RAW(str, FL_EXIVAR) && RBASIC_CLASS(str) == rb_cString;
-    if (STR_EMBED_P(str) && !bare_ish) {
+    bare = BARE_STRING_P(str);
+    if (STR_EMBED_P(str) && !bare) {
 	OBJ_FREEZE_RAW(str);
 	return str;
     }
-    if (!FL_TEST_RAW(str, FL_TAINT)) {
-	fstr = register_fstring(str);
-    }
-    else {
-	fstr = register_fstring_tainted(str, rb_vm_tfstring_table());
-    }
-    if (!bare_ish) {
+
+    fstr = register_fstring(str);
+
+    if (!bare) {
 	str_replace_shared_without_enc(str, fstr);
 	OBJ_FREEZE_RAW(str);
 	return str;
@@ -399,59 +347,6 @@ register_fstring(VALUE str)
     assert(!FL_TEST_RAW(ret, FL_TAINT));
     assert(RBASIC_CLASS(ret) == rb_cString);
     return ret;
-}
-
-static VALUE
-rb_fstring_existing0(VALUE str)
-{
-    st_table *frozen_strings = rb_vm_fstring_table();
-    st_data_t fstr;
-
-    if (st_lookup(frozen_strings, str, &fstr)) {
-	if (rb_objspace_garbage_object_p(fstr)) {
-	    return register_fstring(str);
-	}
-	else {
-	    return (VALUE)fstr;
-	}
-    }
-    return Qnil;
-}
-
-static VALUE
-rb_tainted_fstring_existing(VALUE str)
-{
-    VALUE ret;
-    st_data_t fstr;
-    st_table *tfstrings = rb_vm_tfstring_table();
-
-    if (st_lookup(tfstrings, str, &fstr)) {
-	ret = (VALUE)fstr;
-	if (!rb_objspace_garbage_object_p(ret)) {
-	    return ret;
-	}
-    }
-    ret = rb_fstring_existing0(str);
-    if (NIL_P(ret)) {
-	return Qnil;
-    }
-    if (!RB_FL_TEST_RAW(ret, RSTRING_FSTR)) {
-	return Qnil;
-    }
-
-    return register_fstring_tainted(str, tfstrings);
-}
-
-VALUE
-rb_fstring_existing(VALUE str)
-{
-    if (FL_TEST_RAW(str, RSTRING_FSTR))
-	return str;
-
-    if (!RB_OBJ_TAINTED_RAW(str))
-	return rb_fstring_existing0(str);
-
-    return rb_tainted_fstring_existing(str);
 }
 
 static VALUE
@@ -1416,7 +1311,6 @@ rb_str_free(VALUE str)
     if (FL_TEST(str, RSTRING_FSTR)) {
 	st_data_t fstr = (st_data_t)str;
 	st_delete(rb_vm_fstring_table(), &fstr, NULL);
-	st_delete(rb_vm_tfstring_table(), &fstr, NULL);
 	RB_DEBUG_COUNTER_INC(obj_str_fstr);
     }
 
