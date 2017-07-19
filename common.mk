@@ -1,4 +1,4 @@
-bin: $(PROGRAM) $(WPROGRAM)
+bunbin: $(PROGRAM) $(WPROGRAM)
 lib: $(LIBRUBY)
 dll: $(LIBRUBY_SO)
 
@@ -38,6 +38,9 @@ INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir) -I$(srcdir) -I$(UNICODE_HDR_DIR)
 GEM_HOME =
 GEM_PATH =
 GEM_VENDOR =
+
+BUNDLER_GIT_URL = git://github.com/bundler/bundler.git
+BUNDLER_GIT_REF = v1.14.3
 
 SIMPLECOV_GIT_URL = git://github.com/colszowka/simplecov.git
 SIMPLECOV_GIT_REF = v0.15.0
@@ -728,12 +731,13 @@ no-test-spec:
 test-bundler-precheck: $(arch)-fake.rb programs
 
 test-bundler-prepare:
-	GEM_HOME=$(srcdir)/.bundle GEM_PATH=$(srcdir)/.bundle $(BASERUBY) -S gem install --no-ri --no-rdoc --conservative 'rspec:~> 3.5'
-
+	$(Q) $(srcdir)/tool/git-refresh -C $(srcdir)/spec $(Q1:0=-q) \
+			--branch $(BUNDLER_GIT_REF) \
+			$(BUNDLER_GIT_URL) bundler $(GIT_OPTS)
+	GEM_HOME=$(srcdir)/spec/bundler/.bundle GEM_PATH=$(srcdir)/spec/bundler/.bundle \
+			$(XRUBY) "$(srcdir)/bin/gem" install --no-ri --no-rdoc --conservative 'rspec:~> 3.5'
 test-bundler: $(TEST_RUNNABLE)-test-bundler
 yes-test-bundler: test-bundler-precheck test-bundler-prepare
-	$(gnumake_recursive)$(Q) \
-	GEM_HOME=$(srcdir)/.bundle GEM_PATH=$(srcdir)/.bundle $(RUNRUBY) -I$(srcdir)/spec/bundler -r./$(arch)-fake $(srcdir)/.bundle/bin/rspec $(srcdir)/spec/bundler
 no-test-bundler:
 
 RUNNABLE = $(LIBRUBY_RELATIVE:no=un)-runnable
