@@ -429,9 +429,20 @@ END
   def assert_fork_status(n, mesg, &block)
     IO.pipe do |r, w|
       (1..n).map do
-        p1 = fork {w.puts(block.call.to_s)}
-        _, st = Process.waitpid2(p1)
-        assert_send([st, :success?], mesg)
+        st = desc = nil
+        IO.pipe do |re, we|
+          p1 = fork {
+            re.close
+            STDERR.reopen(we)
+            w.puts(block.call.to_s)
+          }
+          we.close
+          err = Thread.start {re.read}
+          _, st = Process.waitpid2(p1)
+          desc = FailDesc[st, mesg, err.value]
+        end
+        assert(!st.signaled?, desc)
+        assert(st.success?, mesg)
         r.gets.strip
       end
     end
