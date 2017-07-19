@@ -41,14 +41,6 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Hash#transform_keys  [Feature #13583]
   * Hash#transform_keys!  [Feature #13583]
 
-* Integer
-
-  * Integer.sqrt  [Feature #13219]
-  * Integer#step does no longer rescue exceptions when given
-    a step value which cannot be compared with #> to 0. [Feature #7688]
-  * Integer#{round,floor,ceil,truncate} now always return an Integer.
-    [Bug #13420]
-
 * IO
 
   * IO#pread  [Feature #4532]
@@ -57,6 +49,14 @@ with all sufficient information, see the ChangeLog file or Redmine
 * IOError
 
   * exception message "stream closed" is changed  [Bug #13405]
+
+* Integer
+
+  * Integer.sqrt  [Feature #13219]
+  * Integer#step does no longer rescue exceptions when given
+    a step value which cannot be compared with #> to 0. [Feature #7688]
+  * Integer#{round,floor,ceil,truncate} now always return an Integer.
+    [Bug #13420]
 
 * Kernel
 
@@ -82,10 +82,6 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Update Onigmo 6.1.1.
     * Support absent operator https://github.com/k-takata/Onigmo/issues/82
 
-* Thread
-
-  * Thread#fetch  [Feature #13009]
-
 * String
 
   * String#-@ deduplicates unfrozen strings.  Already-frozen
@@ -97,7 +93,18 @@ with all sufficient information, see the ChangeLog file or Redmine
   * String#delete_prefix is added to remove prefix [Feature #12694]
   * String#delete_prefix! is added to remove prefix destructively [Feature #12694]
 
+* Thread
+
+  * Thread#fetch  [Feature #13009]
+
 === Stdlib updates (outstanding ones only)
+
+* ERB
+  * Add ERB#result_with_hash to render a template with local variables passed
+    with a Hash object. [Feature #8631]
+
+  * Carriage returns are changed to be trimmed properly if trim_mode is specified
+    and used. Duplicated newlines will be removed on Windows. [Bug #5339] [Bug #11464]
 
 * Net::HTTP
   * Add more HTTP status classes
@@ -112,13 +119,6 @@ with all sufficient information, see the ChangeLog file or Redmine
   * New constants:
     * RbConfig::LIMITS is added to provide the limits of C types.
 
-* ERB
-  * Add ERB#result_with_hash to render a template with local variables passed
-    with a Hash object. [Feature #8631]
-
-  * Carriage returns are changed to be trimmed properly if trim_mode is specified
-    and used. Duplicated newlines will be removed on Windows. [Bug #5339] [Bug #11464]
-
 * Set
   * Add Set#to_s as alias to #inspect [Feature #13676]
 
@@ -128,16 +128,16 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Compatibility issues (excluding feature bug fixes)
 
+* BasicSocket#read_nonblock and BasicSocket#write_nonblock no
+  longer sets the O_NONBLOCK file description flag as side effect
+  (on Linux only) [Feature #13362]
+
 * Net::HTTP
   * Net::HTTP#start now pass :ENV to p_addr by default. [Bug #13351]
     To avoid this, pass nil explicitly.
 
 * Random.raw_seed renamed to become Random.urandom.  It is now
   applicable to non-seeding purposes due to [Bug #9569].
-
-* BasicSocket#read_nonblock and BasicSocket#write_nonblock no
-  longer sets the O_NONBLOCK file description flag as side effect
-  (on Linux only) [Feature #13362]
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
