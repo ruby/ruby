@@ -9250,6 +9250,83 @@ rb_str_delete_prefix(VALUE str, VALUE prefix)
     return rb_str_subseq(str, prefixlen, RSTRING_LEN(str) - prefixlen);
 }
 
+static long
+deleted_suffix_length(VALUE str, VALUE suffix)
+{
+    char *strptr, *suffixptr, *s;
+    long olen, suffixlen;
+    rb_encoding *enc;
+
+    StringValue(suffix);
+    if (is_broken_string(suffix)) return 0;
+    enc = rb_enc_check(str, suffix);
+
+    /* return 0 if not start with suffix */
+    suffixlen = RSTRING_LEN(suffix);
+    if (suffixlen <= 0) return 0;
+    olen = RSTRING_LEN(str);
+    if (olen < suffixlen) return 0;
+    strptr = RSTRING_PTR(str);
+    suffixptr = RSTRING_PTR(suffix);
+    s = strptr + olen - suffixlen;
+    if (memcmp(s, suffixptr, suffixlen) != 0) return 0;
+    if (rb_enc_left_char_head(strptr, s, strptr + olen, enc) != s) return 0;
+
+    return suffixlen;
+}
+
+/*
+ *  call-seq:
+ *     str.delete_suffix!(suffix) -> self or nil
+ *
+ *  Deletes trailing <code>suffix</code> from <i>str</i>, returning
+ *  <code>nil</code> if no change was made.
+ *
+ *     "hello".delete_suffix!("llo") #=> "he"
+ *     "hello".delete_suffix!("hel") #=> nil
+ */
+
+static VALUE
+rb_str_delete_suffix_bang(VALUE str, VALUE suffix)
+{
+    long olen, suffixlen, len;
+    str_modifiable(str);
+
+    suffixlen = deleted_suffix_length(str, suffix);
+    if (suffixlen <= 0) return Qnil;
+
+    olen = RSTRING_LEN(str);
+    str_modify_keep_cr(str);
+    len = olen - suffixlen;
+    STR_SET_LEN(str, len);
+    TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
+    if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
+	ENC_CODERANGE_CLEAR(str);
+    }
+    return str;
+}
+
+/*
+ *  call-seq:
+ *     str.delete_suffix(suffix) -> new_str
+ *
+ *  Returns a copy of <i>str</i> with trailing <code>suffix</code> deleted.
+ *
+ *     "hello".delete_suffix("llo") #=> "he"
+ *     "hello".delete_suffix("hel") #=> "hello"
+ */
+
+static VALUE
+rb_str_delete_suffix(VALUE str, VALUE suffix)
+{
+    long suffixlen;
+
+    suffixlen = deleted_suffix_length(str, suffix);
+    if (suffixlen <= 0) return rb_str_dup(str);
+
+    return rb_str_subseq(str, 0, RSTRING_LEN(str) - suffixlen);
+}
+
 void
 rb_str_setter(VALUE val, ID id, VALUE *var)
 {
@@ -10406,6 +10483,7 @@ Init_String(void)
     rb_define_method(rb_cString, "lstrip", rb_str_lstrip, 0);
     rb_define_method(rb_cString, "rstrip", rb_str_rstrip, 0);
     rb_define_method(rb_cString, "delete_prefix", rb_str_delete_prefix, 1);
+    rb_define_method(rb_cString, "delete_suffix", rb_str_delete_suffix, 1);
 
     rb_define_method(rb_cString, "sub!", rb_str_sub_bang, -1);
     rb_define_method(rb_cString, "gsub!", rb_str_gsub_bang, -1);
@@ -10415,6 +10493,7 @@ Init_String(void)
     rb_define_method(rb_cString, "lstrip!", rb_str_lstrip_bang, 0);
     rb_define_method(rb_cString, "rstrip!", rb_str_rstrip_bang, 0);
     rb_define_method(rb_cString, "delete_prefix!", rb_str_delete_prefix_bang, 1);
+    rb_define_method(rb_cString, "delete_suffix!", rb_str_delete_suffix_bang, 1);
 
     rb_define_method(rb_cString, "tr", rb_str_tr, 2);
     rb_define_method(rb_cString, "tr_s", rb_str_tr_s, 2);
