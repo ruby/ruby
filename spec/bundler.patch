@@ -1,11 +1,11 @@
 diff --git spec/spec_helper.rb spec/spec_helper.rb
-index 5574c4ae3..ad9e503ea 100644
+index 5574c4ae3..136f8d73c 100644
 --- spec/spec_helper.rb
 +++ spec/spec_helper.rb
 @@ -51,6 +51,12 @@ ENV["THOR_COLUMNS"] = "10000"
-
+ 
  Spec::CodeClimate.setup
-
+ 
 +module Gem
 +  def self.ruby= ruby
 +    @ruby = ruby
@@ -15,19 +15,36 @@ index 5574c4ae3..ad9e503ea 100644
  RSpec.configure do |config|
    config.include Spec::Builders
    config.include Spec::Helpers
-@@ -102,9 +108,15 @@ RSpec.configure do |config|
-     system_gems []
-     in_app_root
-     @all_output = String.new
+@@ -94,9 +100,18 @@ RSpec.configure do |config|
+   end
+ 
+   config.before :all do
 +    @orig_ruby = if ENV['BUNDLE_RUBY']
 +                   ruby = Gem.ruby
 +                   Gem.ruby = ENV['BUNDLE_RUBY']
 +                   ruby
 +                 end
+     build_repo1
    end
-
-   config.after :each do |example|
+ 
++  config.after :all do
 +    Gem.ruby = @orig_ruby
-     @all_output.strip!
-     if example.exception && !@all_output.empty?
-       warn @all_output unless config.formatters.grep(RSpec::Core::Formatters::DocumentationFormatter).empty?
++  end
++
+   config.before :each do
+     reset!
+     system_gems []
+diff --git spec/support/helpers.rb spec/support/helpers.rb
+index 738b1f7b3..21d59d552 100644
+--- spec/support/helpers.rb
++++ spec/support/helpers.rb
+@@ -158,7 +158,8 @@ module Spec
+         args = args.gsub(/(?=")/, "\\")
+         args = %("#{args}")
+       end
+-      sys_exec("#{Gem.ruby} -rubygems -S gem --backtrace #{command} #{args}")
++      gem = ENV['BUNDLE_GEM'] || "#{Gem.ruby} -rubygems -S gem --backtrace"
++      sys_exec("#{gem} #{command} #{args}")
+     end
+     bang :gem_command
+ 
