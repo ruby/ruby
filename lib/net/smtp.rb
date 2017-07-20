@@ -1035,9 +1035,9 @@ module Net
       end
 
       # Creates a CRAM-MD5 challenge. You can view more information on CRAM-MD5
-      # on Wikipedia: http://en.wikipedia.org/wiki/CRAM-MD5
+      # on Wikipedia: https://en.wikipedia.org/wiki/CRAM-MD5
       def cram_md5_challenge
-        @string.split(/ /)[1].unpack('m')[0]
+        @string.split(/ /)[1].unpack1('m')
       end
 
       # Returns a hash of the human readable reply text in the response if it
