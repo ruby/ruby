@@ -1565,25 +1565,6 @@ errinfo_getter(ID id)
     return get_errinfo();
 }
 
-#if 0
-static void
-errinfo_setter(VALUE val, ID id, VALUE *var)
-{
-    if (!NIL_P(val) && !rb_obj_is_kind_of(val, rb_eException)) {
-	rb_raise(rb_eTypeError, "assigning non-exception to $!");
-    }
-    else {
-	const VALUE *ptr = errinfo_place(GET_THREAD());
-	if (ptr) {
-	    *ptr = val;
-	}
-	else {
-	    rb_raise(rb_eRuntimeError, "errinfo_setter: not in rescue clause.");
-	}
-    }
-}
-#endif
-
 VALUE
 rb_errinfo(void)
 {
@@ -1598,12 +1579,6 @@ rb_set_errinfo(VALUE err)
 	rb_raise(rb_eTypeError, "assigning non-exception to $!");
     }
     GET_THREAD()->ec.errinfo = err;
-}
-
-VALUE
-rb_rubylevel_errinfo(void)
-{
-    return get_errinfo();
 }
 
 static VALUE
