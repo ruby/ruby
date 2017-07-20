@@ -1,5 +1,31 @@
+diff --git spec/commands/exec_spec.rb spec/commands/exec_spec.rb
+index cb4daa46b..16b91e5d1 100644
+--- spec/commands/exec_spec.rb
++++ spec/commands/exec_spec.rb
+@@ -218,7 +218,7 @@ describe "bundle exec" do
+     expect(out).to include("bundler: exec needs a command to run")
+   end
+ 
+-  describe "with help flags" do
++  describe "with help flags", :ruby_trunk do
+     each_prefix = proc do |string, &blk|
+       1.upto(string.length) {|l| blk.call(string[0, l]) }
+     end
+diff --git spec/commands/help_spec.rb spec/commands/help_spec.rb
+index 380e3be15..2ba340de2 100644
+--- spec/commands/help_spec.rb
++++ spec/commands/help_spec.rb
+@@ -1,7 +1,7 @@
+ # frozen_string_literal: true
+ require "spec_helper"
+ 
+-describe "bundle help" do
++describe "bundle help", :ruby_trunk do
+   # Rubygems 1.4+ no longer load gem plugins so this test is no longer needed
+   rubygems_under_14 = Gem::Requirement.new("< 1.4").satisfied_by?(Gem::Version.new(Gem::VERSION))
+   it "complains if older versions of bundler are installed", :if => rubygems_under_14 do
 diff --git spec/spec_helper.rb spec/spec_helper.rb
-index 5574c4ae3..136f8d73c 100644
+index 5574c4ae3..405f7c3ab 100644
 --- spec/spec_helper.rb
 +++ spec/spec_helper.rb
 @@ -51,6 +51,12 @@ ENV["THOR_COLUMNS"] = "10000"
@@ -15,7 +41,15 @@ index 5574c4ae3..136f8d73c 100644
  RSpec.configure do |config|
    config.include Spec::Builders
    config.include Spec::Helpers
-@@ -94,9 +100,18 @@ RSpec.configure do |config|
+@@ -83,6 +89,7 @@ RSpec.configure do |config|
+   config.filter_run_excluding :rubygems => LessThanProc.with(Gem::VERSION)
+   config.filter_run_excluding :git => LessThanProc.with(git_version)
+   config.filter_run_excluding :rubygems_master => (ENV["RGV"] != "master")
++  config.filter_run_excluding :ruby_trunk => !!(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
+ 
+   config.filter_run_when_matching :focus unless ENV["CI"]
+ 
+@@ -94,9 +101,18 @@ RSpec.configure do |config|
    end
  
    config.before :all do
