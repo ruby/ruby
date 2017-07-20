@@ -235,6 +235,10 @@ class TestLogger < Test::Unit::TestCase
     log = log_add(logger, WARN, nil, "progname?")
     assert_equal("progname?\n", log.msg)
     assert_equal("my_progname", log.progname)
+    #
+    logger = Logger.new(nil)
+    log = log_add(logger, INFO, nil, false)
+    assert_equal("false\n", log.msg)
   end
 
   def test_level_log
