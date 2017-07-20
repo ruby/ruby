@@ -986,6 +986,7 @@ eom
       raise((return; "should not raise"))
       begin raise; ensure return; end; self
       begin raise; ensure return; end and self
+      nil&defined?0--begin e=no_method_error(); return; 0;end
     end;
     all_assertions(feature4840) do |a|
       code.each_line do |s|
