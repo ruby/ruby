@@ -4492,12 +4492,20 @@ kwrest_mark	: tPOW
 f_kwrest	: kwrest_mark tIDENTIFIER
 		    {
 			shadowing_lvar(get_id($2));
+		    /*%%%*/
 			$$ = $2;
+		    /*%
+			$$ = dispatch1(kwrest_param, $2);
+		    %*/
 		    }
 		| kwrest_mark
 		    {
+		    /*%%%*/
 			$$ = internal_id();
 			arg_var($$);
+		    /*%
+			$$ = dispatch1(kwrest_param, Qnil);
+		    %*/
 		    }
 		;
 

@@ -893,7 +893,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_params = false
     parse('a {|**x|}', :on_params) {|_, *v| thru_params = true; arg = v}
     assert_equal true, thru_params
-    assert_equal [nil, nil, nil, nil, nil, "x", nil], arg
+    assert_equal [nil, nil, nil, nil, nil, "**x", nil], arg
   end
 
   def test_params_mlhs
@@ -1077,6 +1077,15 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_rest_param = false
     parse('def a(*x) end', :on_rest_param) {thru_rest_param = true}
     assert_equal true, thru_rest_param
+  end
+
+  def test_kwrest_param
+    thru_kwrest = false
+    parse('def a(**) end', :on_kwrest_param) {|n, val| thru_kwrest = val}
+    assert_equal nil, thru_kwrest
+    thru_kwrest = false
+    parse('def a(**x) end', :on_kwrest_param) {|n, val| thru_kwrest = val}
+    assert_equal "x", thru_kwrest
   end
 
   def test_retry

@@ -153,6 +153,10 @@ class DummyParser < Ripper
     "*#{var}"
   end
 
+  def on_kwrest_param(var)
+    "**#{var}"
+  end
+
   def on_blockarg(var)
     "&#{var}"
   end
