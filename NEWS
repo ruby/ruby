@@ -141,6 +141,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Random.raw_seed renamed to become Random.urandom.  It is now
   applicable to non-seeding purposes due to [Bug #9569].
 
+* ConditionVariable, Queue and SizedQueue reimplemented for speed.
+  They no longer subclass Struct. [Feature #13552]
+
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 * mathn.rb
@@ -156,6 +159,8 @@ with all sufficient information, see the ChangeLog file or Redmine
   hash function is now SipHash13. [Feature #13017]
 
 * SecureRandom now prefers OS-provided sources than OpenSSL. [Bug #9569]
+
+* Mutex rewritten to be smaller and faster [Feature #13517]
 
 === Miscellaneous changes
 
