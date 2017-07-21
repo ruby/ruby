@@ -1653,11 +1653,11 @@ XXX
   # Wrapper method for getopts.rb.
   #
   #   params = ARGV.getopts("ab:", "foo", "bar:", "zot:Z;zot option")
-  #   # params[:a] = true   # -a
-  #   # params[:b] = "1"    # -b1
-  #   # params[:foo] = "1"  # --foo
-  #   # params[:bar] = "x"  # --bar x
-  #   # params[:zot] = "z"  # --zot Z
+  #   # params["a"] = true   # -a
+  #   # params["b"] = "1"    # -b1
+  #   # params["foo"] = "1"  # --foo
+  #   # params["bar"] = "x"  # --bar x
+  #   # params["zot"] = "z"  # --zot Z
   #
   def getopts(*args)
     argv = Array === args.first ? args.shift : default_argv
