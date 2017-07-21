@@ -40,7 +40,7 @@ GEM_PATH =
 GEM_VENDOR =
 
 BUNDLER_GIT_URL = git://github.com/bundler/bundler.git
-BUNDLER_GIT_REF = v1.14.3
+BUNDLER_GIT_REF = v1.15.2
 
 SIMPLECOV_GIT_URL = git://github.com/colszowka/simplecov.git
 SIMPLECOV_GIT_REF = v0.15.0
