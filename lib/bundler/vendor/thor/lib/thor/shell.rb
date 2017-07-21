@@ -9,7 +9,7 @@ class Bundler::Thor
       # it will use a colored log, otherwise it will use a basic one without color.
       #
       def shell
-        @shell ||= if ENV["THOR_SHELL"] && ENV["THOR_SHELL"].size > 0
+        @shell ||= if ENV["THOR_SHELL"] && !ENV["THOR_SHELL"].empty?
           Bundler::Thor::Shell.const_get(ENV["THOR_SHELL"])
         elsif RbConfig::CONFIG["host_os"] =~ /mswin|mingw/ && !ENV["ANSICON"]
           Bundler::Thor::Shell::Basic

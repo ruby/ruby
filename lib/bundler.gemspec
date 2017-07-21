@@ -8,11 +8,24 @@ Gem::Specification.new do |s|
   s.name        = "bundler"
   s.version     = Bundler::VERSION
   s.license     = "MIT"
-  s.authors     = ["André Arko", "Samuel Giddins"]
+  s.authors     = [
+    "André Arko", "Samuel Giddins", "Chris Morris", "James Wen", "Tim Moore",
+    "André Medeiros", "Jessica Lynn Suttles", "Terence Lee", "Carl Lerche",
+    "Yehuda Katz"
+  ]
   s.email       = ["team@bundler.io"]
   s.homepage    = "http://bundler.io"
   s.summary     = "The best way to manage your application's dependencies"
   s.description = "Bundler manages an application's dependencies through its entire life, across many machines, systematically and repeatably"
+
+  if s.respond_to?(:metadata=)
+    s.metadata = {
+      "bug_tracker_uri" => "http://github.com/bundler/bundler/issues",
+      "changelog_uri" => "https://github.com/bundler/bundler/blob/master/CHANGELOG.md",
+      "homepage_uri" => "https://bundler.io/",
+      "source_code_uri" => "http://github.com/bundler/bundler/",
+    }
+  end
 
   s.required_ruby_version     = ">= 1.8.7"
   s.required_rubygems_version = ">= 1.3.6"
@@ -32,11 +45,4 @@ Gem::Specification.new do |s|
   s.bindir        = "exe"
   s.executables   = %w(bundle bundler)
   s.require_paths = ["lib"]
-
-  s.post_install_message = <<-END.lines.map(&:strip).join(" ")
-    Bundler and RubyGems.org are free for anyone to use, but maintaining them
-    costs more than $25,000 USD every month. Help us cover those costs so that
-    we can keep the gem ecosystem free for everyone:
-    https://ruby.to/support-bundler
-  END
 end

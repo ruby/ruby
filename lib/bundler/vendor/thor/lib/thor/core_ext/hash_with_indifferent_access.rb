@@ -28,6 +28,14 @@ class Bundler::Thor
         super(convert_key(key))
       end
 
+      def fetch(key, *args)
+        super(convert_key(key), *args)
+      end
+
+      def key?(key)
+        super(convert_key(key))
+      end
+
       def values_at(*indices)
         indices.map { |key| self[convert_key(key)] }
       end
@@ -60,7 +68,7 @@ class Bundler::Thor
       #   options.shebang                 # => "/usr/lib/local/ruby"
       #   options.test_framework?(:rspec) # => options[:test_framework] == :rspec
       #
-      def method_missing(method, *args, &block)
+      def method_missing(method, *args)
         method = method.to_s
         if method =~ /^(\w+)\?$/
           if args.empty?

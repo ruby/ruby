@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require "tsort"
 require "forwardable"
+require "set"
 
 module Bundler
   class SpecSet
@@ -11,20 +12,18 @@ module Bundler
     def_delegators :sorted, :each
 
     def initialize(specs)
-      @specs = specs.sort_by(&:name)
+      @specs = specs
     end
 
-    def for(dependencies, skip = [], check = false, match_current_platform = false)
-      handled = {}
+    def for(dependencies, skip = [], check = false, match_current_platform = false, raise_on_missing = true)
+      handled = Set.new
       deps = dependencies.dup
       specs = []
       skip += ["bundler"]
 
-      until deps.empty?
-        dep = deps.shift
-        next if handled[dep] || skip.include?(dep.name)
-
-        handled[dep] = true
+      loop do
+        break unless dep = deps.shift
+        next if !handled.add?(dep) || skip.include?(dep.name)
 
         if spec = spec_for_dependency(dep, match_current_platform)
           specs << spec
@@ -36,6 +35,8 @@ module Bundler
           end
         elsif check
           return false
+        elsif raise_on_missing
+          raise "Unable to find a spec satisfying #{dep} in the set. Perhaps the lockfile is corrupted?"
         end
       end
 
@@ -75,20 +76,21 @@ module Bundler
     end
 
     def materialize(deps, missing_specs = nil)
-      materialized = self.for(deps, [], false, true).to_a
+      materialized = self.for(deps, [], false, true, missing_specs).to_a
       deps = materialized.map(&:name).uniq
       materialized.map! do |s|
         next s unless s.is_a?(LazySpecification)
         s.source.dependency_names = deps if s.source.respond_to?(:dependency_names=)
         spec = s.__materialize__
-        if missing_specs
-          missing_specs << s unless spec
-        else
-          raise GemNotFound, "Could not find #{s.full_name} in any of the sources" unless spec
+        unless spec
+          unless missing_specs
+            raise GemNotFound, "Could not find #{s.full_name} in any of the sources"
+          end
+          missing_specs << s
         end
-        spec if spec
+        spec
       end
-      SpecSet.new(materialized.compact)
+      SpecSet.new(missing_specs ? materialized.compact : materialized)
     end
 
     # Materialize for all the specs in the spec set, regardless of what platform they're for
@@ -116,6 +118,13 @@ module Bundler
 
     def find_by_name_and_platform(name, platform)
       @specs.detect {|spec| spec.name == name && spec.match_platform(platform) }
+    end
+
+    def what_required(spec)
+      unless req = find {|s| s.dependencies.any? {|d| d.type == :runtime && d.name == spec.name } }
+        return [spec]
+      end
+      what_required(req) << spec
     end
 
   private
@@ -151,18 +160,20 @@ module Bundler
     end
 
     def tsort_each_node
-      @specs.each {|s| yield s }
+      # MUST sort by name for backwards compatibility
+      @specs.sort_by(&:name).each {|s| yield s }
     end
 
     def spec_for_dependency(dep, match_current_platform)
+      specs_for_platforms = lookup[dep.name]
       if match_current_platform
         Bundler.rubygems.platforms.reverse_each do |pl|
-          match = GemHelpers.select_best_platform_match(lookup[dep.name], pl)
+          match = GemHelpers.select_best_platform_match(specs_for_platforms, pl)
           return match if match
         end
         nil
       else
-        GemHelpers.select_best_platform_match(lookup[dep.name], dep.__platform)
+        GemHelpers.select_best_platform_match(specs_for_platforms, dep.__platform)
       end
     end
 

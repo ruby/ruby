@@ -10,7 +10,7 @@ module Bundler::Molinillo
       # @return [Object] the payload the vertex holds
       attr_accessor :payload
 
-      # @return [Arrary<Object>] the explicit requirements that required
+      # @return [Array<Object>] the explicit requirements that required
       #   this vertex
       attr_reader :explicit_requirements
 

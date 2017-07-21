@@ -25,12 +25,7 @@ module Bundler
           raise GemfileLockNotFound, "This Bundle hasn't been installed yet. " \
             "Run `bundle install` to update and install the bundled gems."
         end
-        # cycle through the requested gems, to make sure they exist
-        names = Bundler.locked_gems.specs.map(&:name)
-        gems.each do |g|
-          next if names.include?(g)
-          raise GemNotFound, Bundler::CLI::Common.gem_not_found_message(g, names)
-        end
+        Bundler::CLI::Common.ensure_all_gems_in_lockfile!(gems)
 
         if groups.any?
           specs = Bundler.definition.specs_for groups

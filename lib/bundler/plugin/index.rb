@@ -20,6 +20,8 @@ module Bundler
         end
       end
 
+      attr_reader :commands
+
       def initialize
         @plugin_paths = {}
         @commands = {}

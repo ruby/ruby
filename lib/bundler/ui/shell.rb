@@ -40,16 +40,15 @@ module Bundler
       end
 
       def debug(msg, newline = nil)
-        tell_me(msg, nil, newline) if level("debug")
+        tell_me(msg, nil, newline) if debug?
       end
 
       def debug?
-        # needs to be false instead of nil to be newline param to other methods
-        level("debug") ? true : false
+        level("debug")
       end
 
       def quiet?
-        LEVELS.index(@level) <= LEVELS.index("warn")
+        level("quiet")
       end
 
       def ask(msg)
@@ -66,11 +65,15 @@ module Bundler
 
       def level=(level)
         raise ArgumentError unless LEVELS.include?(level.to_s)
-        @level = level
+        @level = level.to_s
       end
 
       def level(name = nil)
-        name ? LEVELS.index(name) <= LEVELS.index(@level) : @level
+        return @level unless name
+        unless index = LEVELS.index(name)
+          raise "#{name.inspect} is not a valid level"
+        end
+        index <= LEVELS.index(@level)
       end
 
       def trace(e, newline = nil, force = false)

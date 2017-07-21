@@ -84,7 +84,7 @@ class Bundler::Thor
       def force_or_skip_or_conflict(force, skip, &block)
         if force
           say_status :force, :yellow
-          block.call unless pretend?
+          yield unless pretend?
         elsif skip
           say_status :skip, :yellow
         else

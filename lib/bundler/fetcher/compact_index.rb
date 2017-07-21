@@ -122,14 +122,13 @@ module Bundler
       end
 
       def md5_available?
-        begin
-          require "openssl"
-          return false if defined?(OpenSSL::OPENSSL_FIPS) && OpenSSL::OPENSSL_FIPS
-        rescue LoadError
-          nil
-        end
-
+        require "openssl"
+        OpenSSL::Digest::MD5.digest("")
         true
+      rescue LoadError
+        true
+      rescue OpenSSL::Digest::DigestError
+        false
       end
     end
   end

@@ -61,7 +61,7 @@ module Bundler
     def initialize(lockfile)
       @platforms    = []
       @sources      = []
-      @dependencies = []
+      @dependencies = {}
       @state        = nil
       @specs        = {}
 
@@ -171,43 +171,53 @@ module Bundler
       end
     end
 
-    NAME_VERSION = '(?! )(.*?)(?: \(([^-]*)(?:-(.*))?\))?'.freeze
-    NAME_VERSION_2 = /^ {2}#{NAME_VERSION}(!)?$/
-    NAME_VERSION_4 = /^ {4}#{NAME_VERSION}$/
-    NAME_VERSION_6 = /^ {6}#{NAME_VERSION}$/
+    space = / /
+    NAME_VERSION = /
+      ^(#{space}{2}|#{space}{4}|#{space}{6})(?!#{space}) # Exactly 2, 4, or 6 spaces at the start of the line
+      (.*?)                                              # Name
+      (?:#{space}\(([^-]*)                               # Space, followed by version
+      (?:-(.*))?\))?                                     # Optional platform
+      (!)?                                               # Optional pinned marker
+      $                                                  # Line end
+    /xo
 
     def parse_dependency(line)
-      if line =~ NAME_VERSION_2
-        name = $1
-        version = $2
-        pinned = $4
-        version = version.split(",").map(&:strip) if version
+      return unless line =~ NAME_VERSION
+      spaces = $1
+      return unless spaces.size == 2
+      name = $2
+      version = $3
+      pinned = $5
 
-        dep = Bundler::Dependency.new(name, version)
+      version = version.split(",").map(&:strip) if version
 
-        if pinned && dep.name != "bundler"
-          spec = @specs.find {|_, v| v.name == dep.name }
-          dep.source = spec.last.source if spec
+      dep = Bundler::Dependency.new(name, version)
 
-          # Path sources need to know what the default name / version
-          # to use in the case that there are no gemspecs present. A fake
-          # gemspec is created based on the version set on the dependency
-          # TODO: Use the version from the spec instead of from the dependency
-          if version && version.size == 1 && version.first =~ /^\s*= (.+)\s*$/ && dep.source.is_a?(Bundler::Source::Path)
-            dep.source.name    = name
-            dep.source.version = $1
-          end
+      if pinned && dep.name != "bundler"
+        spec = @specs.find {|_, v| v.name == dep.name }
+        dep.source = spec.last.source if spec
+
+        # Path sources need to know what the default name / version
+        # to use in the case that there are no gemspecs present. A fake
+        # gemspec is created based on the version set on the dependency
+        # TODO: Use the version from the spec instead of from the dependency
+        if version && version.size == 1 && version.first =~ /^\s*= (.+)\s*$/ && dep.source.is_a?(Bundler::Source::Path)
+          dep.source.name    = name
+          dep.source.version = $1
         end
-
-        @dependencies << dep
       end
+
+      @dependencies[dep.name] = dep
     end
 
     def parse_spec(line)
-      if line =~ NAME_VERSION_4
-        name = $1
-        version = $2
-        platform = $3
+      return unless line =~ NAME_VERSION
+      spaces = $1
+      name = $2
+      version = $3
+      platform = $4
+
+      if spaces.size == 4
         version = Gem::Version.new(version)
         platform = platform ? Gem::Platform.new(platform) : Gem::Platform::RUBY
         @current_spec = LazySpecification.new(name, version, platform)
@@ -216,9 +226,7 @@ module Bundler
         # Avoid introducing multiple copies of the same spec (caused by
         # duplicate GIT sections)
         @specs[@current_spec.identifier] ||= @current_spec
-      elsif line =~ NAME_VERSION_6
-        name = $1
-        version = $2
+      elsif spaces.size == 6
         version = version.split(",").map(&:strip) if version
         dep = Gem::Dependency.new(name, version)
         @current_spec.dependencies << dep

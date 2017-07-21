@@ -14,7 +14,7 @@ class Bundler::Thor
         when true
           "--#{key}"
         when Array
-          "--#{key} #{value.map { |v| v.inspect }.join(' ')}"
+          "--#{key} #{value.map(&:inspect).join(' ')}"
         when Hash
           "--#{key} #{value.map { |k, v| "#{k}:#{v}" }.join(' ')}"
         when nil, false
@@ -40,7 +40,9 @@ class Bundler::Thor
         @non_assigned_required.delete(hash_options[key])
       end
 
-      @shorts, @switches, @extra = {}, {}, []
+      @shorts = {}
+      @switches = {}
+      @extra = []
 
       options.each do |option|
         @switches[option.switch_name] = option
@@ -52,7 +54,7 @@ class Bundler::Thor
       end
     end
 
-    def remaining # rubocop:disable TrivialAccessors
+    def remaining
       @extra
     end
 
@@ -119,7 +121,7 @@ class Bundler::Thor
     def check_unknown!
       # an unknown option starts with - or -- and has no more --'s afterward.
       unknown = @extra.select { |str| str =~ /^--?(?:(?!--).)*$/ }
-      fail UnknownArgumentError, "Unknown switches '#{unknown.join(', ')}'" unless unknown.empty?
+      raise UnknownArgumentError, "Unknown switches '#{unknown.join(', ')}'" unless unknown.empty?
     end
 
   protected
@@ -207,7 +209,7 @@ class Bundler::Thor
         elsif option.lazy_default
           return option.lazy_default
         else
-          fail MalformattedArgumentError, "No value provided for option '#{switch}'"
+          raise MalformattedArgumentError, "No value provided for option '#{switch}'"
         end
       end
 

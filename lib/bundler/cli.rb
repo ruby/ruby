@@ -4,7 +4,6 @@ require "bundler/vendored_thor"
 
 module Bundler
   class CLI < Thor
-    include Thor::Actions
     AUTO_INSTALL_CMDS = %w(show binstubs outdated exec open console licenses clean).freeze
 
     def self.start(*)
@@ -13,6 +12,7 @@ module Bundler
       Bundler.ui = UI::Shell.new
       raise e
     ensure
+      warn_on_outdated_bundler
       Bundler::SharedHelpers.print_major_deprecations!
     end
 
@@ -22,10 +22,12 @@ module Bundler
 
     def initialize(*args)
       super
-      Bundler.reset!
 
       custom_gemfile = options[:gemfile] || Bundler.settings[:gemfile]
-      ENV["BUNDLE_GEMFILE"] = File.expand_path(custom_gemfile) if custom_gemfile && !custom_gemfile.empty?
+      if custom_gemfile && !custom_gemfile.empty?
+        ENV["BUNDLE_GEMFILE"] = File.expand_path(custom_gemfile)
+        Bundler.reset_paths!
+      end
 
       Bundler.settings[:retry] = options[:retry] if options[:retry]
 
@@ -83,6 +85,9 @@ module Bundler
         super
       end
     end
+
+    # Ensure `bundle help --no-color` is valid
+    all_commands["help"].disable_class_options = false
 
     def self.handle_no_command_error(command, has_namespace = $thor_runner)
       if Bundler.feature_flag.plugins? && Bundler::Plugin.command?(command)
@@ -238,6 +243,13 @@ module Bundler
     # TODO: 2.0 remove `bundle list`
     map %w(list) => "show"
 
+    desc "info GEM [OPTIONS]", "Show information for the given gem"
+    method_option "path", :type => :boolean, :banner => "Print full path to gem"
+    def info(gem_name)
+      require "bundler/cli/info"
+      Info.new(options, gem_name).run
+    end
+
     desc "binstubs GEM [OPTIONS]", "Install the binstubs of the listed gem"
     long_desc <<-D
       Generate binstubs for executables in [GEM]. Binstubs are put into bin,
@@ -253,6 +265,19 @@ module Bundler
     def binstubs(*gems)
       require "bundler/cli/binstubs"
       Binstubs.new(options, gems).run
+    end
+
+    desc "add GEM VERSION", "Add gem to Gemfile and run bundle install"
+    long_desc <<-D
+      Adds the specified gem to Gemfile (if valid) and run 'bundle install' in one step.
+    D
+    method_option "version", :aliases => "-v", :type => :string
+    method_option "group", :aliases => "-g", :type => :string
+    method_option "source", :aliases => "-s", :type => :string
+
+    def add(gem_name)
+      require "bundler/cli/add"
+      Add.new(options.dup, gem_name).run
     end
 
     desc "outdated GEM [OPTIONS]", "list installed gems with newer versions available"
@@ -347,6 +372,7 @@ module Bundler
       will show the current value, as well as any superceded values and
       where they were specified.
     D
+    method_option "parseable", :type => :boolean, :banner => "Use minimal formatting for more parseable output"
     def config(*args)
       require "bundler/cli/config"
       Config.new(options, args, self).run
@@ -460,11 +486,15 @@ module Bundler
       Platform.new(options).run
     end
 
-    desc "inject GEM VERSION ...", "Add the named gem(s), with version requirements, to the resolved Gemfile"
-    def inject(name, version, *gems)
+    desc "inject GEM VERSION", "Add the named gem, with version requirements, to the resolved Gemfile"
+    method_option "source", :type => :string, :banner =>
+     "Install gem from the given source"
+    method_option "group", :type => :string, :banner =>
+     "Install gem into a bundler group"
+    def inject(name, version)
       SharedHelpers.major_deprecation "The `inject` command has been replaced by the `add` command"
       require "bundler/cli/inject"
-      Inject.new(options, name, version, gems).run
+      Inject.new(options.dup, name, version).run
     end
 
     desc "lock", "Creates a lockfile without installing"
@@ -515,6 +545,18 @@ module Bundler
     def doctor
       require "bundler/cli/doctor"
       Doctor.new(options).run
+    end
+
+    desc "issue", "Learn how to report an issue in Bundler"
+    def issue
+      require "bundler/cli/issue"
+      Issue.new.run
+    end
+
+    desc "pristine", "Restores installed gems to pristine condition from files located in the gem cache. Gem installed from a git repository will be issued `git checkout --force`."
+    def pristine
+      require "bundler/cli/pristine"
+      Pristine.new.run
     end
 
     if Bundler.feature_flag.plugins?
@@ -570,14 +612,41 @@ module Bundler
     end
 
     def print_command
-      return unless ENV["BUNDLE_POSTIT_TRAMPOLINING_VERSION"] || Bundler.ui.debug?
+      return unless Bundler.ui.debug?
       _, _, config = @_initializer
-      current_command = config[:current_command].name
-      return if %w(exec version check platform show help).include?(current_command)
-      command = ["bundle", current_command] + args
-      command << Thor::Options.to_switches(options)
+      current_command = config[:current_command]
+      command_name = current_command.name
+      return if %w(exec version check platform show help).include?(command_name)
+      command = ["bundle", command_name] + args
+      options_to_print = options.dup
+      options_to_print.delete_if do |k, v|
+        next unless o = current_command.options[k]
+        o.default == v
+      end
+      command << Thor::Options.to_switches(options_to_print.sort_by(&:first)).strip
       command.reject!(&:empty?)
       Bundler.ui.info "Running `#{command * " "}` with bundler #{Bundler::VERSION}"
     end
+
+    def self.warn_on_outdated_bundler
+      return if Bundler.settings[:disable_version_check]
+
+      latest = Fetcher::CompactIndex.
+               new(nil, Source::Rubygems::Remote.new(URI("https://rubygems.org")), nil).
+               send(:compact_index_client).
+               instance_variable_get(:@cache).
+               dependencies("bundler").
+               map {|d| Gem::Version.new(d.first) }.
+               max
+      return unless latest
+
+      current = Gem::Version.new(VERSION)
+      return if current >= latest
+
+      Bundler.ui.warn "The latest bundler is #{latest}, but you are currently running #{current}.\nTo update, run `gem install bundler#{" --pre" if latest.prerelease?}`"
+    rescue
+      nil
+    end
+    private_class_method :warn_on_outdated_bundler
   end
 end

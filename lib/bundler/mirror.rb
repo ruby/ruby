@@ -1,4 +1,6 @@
 # frozen_string_literal: true
+require "socket"
+
 module Bundler
   class Settings
     # Class used to build the mirror set and then find a mirror for a given URI

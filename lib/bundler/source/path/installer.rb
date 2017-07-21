@@ -13,7 +13,7 @@ module Bundler
           @format_executable  = options[:format_executable] || false
           @build_args         = options[:build_args] || Bundler.rubygems.build_args
           @gem_bin_dir        = "#{Bundler.rubygems.gem_dir}/bin"
-          @disable_extentions = options[:disable_extensions]
+          @disable_extensions = options[:disable_extensions]
 
           if Bundler.requires_sudo?
             @tmp_dir = Bundler.tmp(spec.full_name).to_s
@@ -27,7 +27,7 @@ module Bundler
           SharedHelpers.chdir(@gem_dir) do
             run_hooks(:pre_install)
 
-            unless @disable_extentions
+            unless @disable_extensions
               build_extensions
               run_hooks(:post_build)
             end

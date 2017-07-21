@@ -51,13 +51,13 @@ class Bundler::Thor
       def set_color(string, *colors)
         if colors.all? { |color| color.is_a?(Symbol) || color.is_a?(String) }
           html_colors = colors.map { |color| lookup_color(color) }
-          "<span style=\"#{html_colors.join("; ")};\">#{string}</span>"
+          "<span style=\"#{html_colors.join('; ')};\">#{string}</span>"
         else
           color, bold = colors
           html_color = self.class.const_get(color.to_s.upcase) if color.is_a?(Symbol)
           styles = [html_color]
           styles << BOLD if bold
-          "<span style=\"#{styles.join("; ")};\">#{string}</span>"
+          "<span style=\"#{styles.join('; ')};\">#{string}</span>"
         end
       end
 
@@ -68,7 +68,7 @@ class Bundler::Thor
       #
       # TODO: Implement #ask for Bundler::Thor::Shell::HTML
       def ask(statement, color = nil)
-        fail NotImplementedError, "Implement #ask for Bundler::Thor::Shell::HTML"
+        raise NotImplementedError, "Implement #ask for Bundler::Thor::Shell::HTML"
       end
 
     protected
@@ -111,7 +111,7 @@ class Bundler::Thor
       # for diff.
       #
       def diff_lcs_loaded? #:nodoc:
-        return true  if defined?(Diff::LCS)
+        return true if defined?(Diff::LCS)
         return @diff_lcs_loaded unless @diff_lcs_loaded.nil?
 
         @diff_lcs_loaded = begin

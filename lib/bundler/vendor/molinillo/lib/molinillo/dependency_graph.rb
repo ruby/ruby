@@ -98,18 +98,27 @@ module Bundler::Molinillo
       "#{self.class}:#{vertices.values.inspect}"
     end
 
+    # @param [Hash] options options for dot output.
     # @return [String] Returns a dot format representation of the graph
-    def to_dot
+    def to_dot(options = {})
+      edge_label = options.delete(:edge_label)
+      raise ArgumentError, "Unknown options: #{options.keys}" unless options.empty?
+
       dot_vertices = []
       dot_edges = []
       vertices.each do |n, v|
         dot_vertices << "  #{n} [label=\"{#{n}|#{v.payload}}\"]"
         v.outgoing_edges.each do |e|
-          dot_edges << "  #{e.origin.name} -> #{e.destination.name} [label=\"#{e.requirement}\"]"
+          label = edge_label ? edge_label.call(e) : e.requirement
+          dot_edges << "  #{e.origin.name} -> #{e.destination.name} [label=#{label.to_s.dump}]"
         end
       end
+
+      dot_vertices.uniq!
       dot_vertices.sort!
+      dot_edges.uniq!
       dot_edges.sort!
+
       dot = dot_vertices.unshift('digraph G {').push('') + dot_edges.push('}')
       dot.join("\n")
     end
@@ -123,7 +132,8 @@ module Bundler::Molinillo
       vertices.each do |name, vertex|
         other_vertex = other.vertex_named(name)
         return false unless other_vertex
-        return false unless other_vertex.successors.map(&:name).to_set == vertex.successors.map(&:name).to_set
+        return false unless vertex.payload == other_vertex.payload
+        return false unless other_vertex.successors.to_set == vertex.successors.to_set
       end
     end
 

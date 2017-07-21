@@ -189,7 +189,7 @@ module Bundler
     end
 
     def github(repo, options = {})
-      raise ArgumentError, "Github sources require a block" unless block_given?
+      raise ArgumentError, "GitHub sources require a block" unless block_given?
       github_uri  = @git_sources["github"].call(repo)
       git_options = normalize_hash(options).merge("uri" => github_uri)
       git_source  = @sources.add_git_source(git_options)
@@ -384,6 +384,12 @@ module Bundler
 
     def validate_keys(command, opts, valid_keys)
       invalid_keys = opts.keys - valid_keys
+
+      git_source = opts.keys & @git_sources.keys.map(&:to_s)
+      if opts["branch"] && !(opts["git"] || opts["github"] || git_source.any?)
+        raise GemfileError, %(The `branch` option for `#{command}` is not allowed. Only gems with a git source can specify a branch)
+      end
+
       if invalid_keys.any?
         message = String.new
         message << "You passed #{invalid_keys.map {|k| ":" + k }.join(", ")} "

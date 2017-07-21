@@ -3,7 +3,7 @@ require "shellwords"
 require "tempfile"
 module Bundler
   class Source
-    class Git < Path
+    class Git
       class GitNotInstalledError < GitError
         def initialize
           msg = String.new
@@ -132,7 +132,7 @@ module Bundler
             if submodules
               git_retry "submodule update --init --recursive"
             elsif Gem::Version.create(version) >= Gem::Version.create("2.9.0")
-              git_retry "submodule deinit --all"
+              git_retry "submodule deinit --all --force"
             end
           end
         end

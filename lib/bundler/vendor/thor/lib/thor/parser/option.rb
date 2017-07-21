@@ -40,31 +40,33 @@ class Bundler::Thor
     #
     # By default all options are optional, unless :required is given.
     #
-    def self.parse(key, value) # rubocop:disable MethodLength
+    def self.parse(key, value)
       if key.is_a?(Array)
         name, *aliases = key
       else
-        name, aliases = key, []
+        name = key
+        aliases = []
       end
 
       name    = name.to_s
       default = value
 
       type = case value
-             when Symbol
-               default = nil
-               if VALID_TYPES.include?(value)
-                 value
-               elsif required = (value == :required) # rubocop:disable AssignmentInCondition
-                 :string
-               end
-             when TrueClass, FalseClass
-               :boolean
-             when Numeric
-               :numeric
-             when Hash, Array, String
-               value.class.name.downcase.to_sym
-             end
+      when Symbol
+        default = nil
+        if VALID_TYPES.include?(value)
+          value
+        elsif required = (value == :required) # rubocop:disable AssignmentInCondition
+          :string
+        end
+      when TrueClass, FalseClass
+        :boolean
+      when Numeric
+        :numeric
+      when Hash, Array, String
+        value.class.name.downcase.to_sym
+      end
+
       new(name.to_s, :required => required, :type => type, :default => default, :aliases => aliases)
     end
 
@@ -86,7 +88,7 @@ class Bundler::Thor
       sample = "[#{sample}]" unless required?
 
       if boolean?
-        sample << ", [#{dasherize("no-" + human_name)}]" unless name == "force"
+        sample << ", [#{dasherize('no-' + human_name)}]" unless (name == "force") || name.start_with?("no-")
       end
 
       if aliases.empty?
@@ -107,7 +109,26 @@ class Bundler::Thor
   protected
 
     def validate!
-      fail ArgumentError, "An option cannot be boolean and required." if boolean? && required?
+      raise ArgumentError, "An option cannot be boolean and required." if boolean? && required?
+      validate_default_type!
+    end
+
+    def validate_default_type!
+      default_type = case @default
+      when nil
+        return
+      when TrueClass, FalseClass
+        required? ? :string : :boolean
+      when Numeric
+        :numeric
+      when Symbol
+        :string
+      when Hash, Array, String
+        @default.class.name.downcase.to_sym
+      end
+
+      # TODO: This should raise an ArgumentError in a future version of Bundler::Thor
+      warn "Expected #{@type} default value for '#{switch_name}'; got #{@default.inspect} (#{default_type})" unless default_type == @type
     end
 
     def dasherized?
@@ -119,7 +140,7 @@ class Bundler::Thor
     end
 
     def dasherize(str)
-      (str.length > 1 ? "--" : "-") + str.gsub("_", "-")
+      (str.length > 1 ? "--" : "-") + str.tr("_", "-")
     end
   end
 end

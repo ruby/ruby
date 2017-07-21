@@ -6,7 +6,7 @@ module Bundler
   module Plugin
     class API
       # This class provides the base to build source plugins
-      # All the method here are require to build a source plugin (except
+      # All the method here are required to build a source plugin (except
       # `uri_hash`, `gem_install_dir`; they are helpers).
       #
       # Defaults for methods, where ever possible are provided which is
@@ -286,6 +286,12 @@ module Bundler
         # Note: Do not override if you don't know what you are doing.
         def root
           Bundler.root
+        end
+
+        # @private
+        # Returns true
+        def bundler_plugin_api_source?
+          true
         end
       end
     end

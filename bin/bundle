@@ -2,12 +2,10 @@
 # frozen_string_literal: true
 
 # Exit cleanly from an early interrupt
-Signal.trap("INT") { exit 1 }
-
-update = "update".start_with?(ARGV.first || " ") && ARGV.find {|a| a.start_with?("--bundler") }
-update &&= update =~ /--bundler(?:=(.+))?/ && $1 || "> 0.a"
-ENV["BUNDLER_VERSION"] = update if update
-require "bundler/postit_trampoline"
+Signal.trap("INT") do
+  Bundler.ui.debug("\n#{caller.join("\n")}") if defined?(Bundler)
+  exit 1
+end
 
 require "bundler"
 # Check if an older version of bundler is installed

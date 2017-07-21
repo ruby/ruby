@@ -61,8 +61,12 @@ module Bundler
       def to_s
         at = if local?
           path
-        elsif options["ref"]
-          shortref_for_display(options["ref"])
+        elsif user_ref = options["ref"]
+          if ref =~ /\A[a-z0-9]{4,}\z/i
+            shortref_for_display(user_ref)
+          else
+            user_ref
+          end
         else
           ref
         end
@@ -105,6 +109,8 @@ module Bundler
 
       def unlock!
         git_proxy.revision = nil
+        options["revision"] = nil
+
         @unlocked = true
       end
 
@@ -147,7 +153,6 @@ module Bundler
         changed
       end
 
-      # TODO: cache git specs
       def specs(*)
         set_local!(app_cache_path) if has_app_cache? && !local?
 
@@ -161,7 +166,9 @@ module Bundler
         local_specs
       end
 
-      def install(spec, force = false)
+      def install(spec, options = {})
+        force = options[:force]
+
         Bundler.ui.info "Using #{version_message(spec)} from #{self}"
 
         if requires_checkout? && !@copied && !force
@@ -169,8 +176,12 @@ module Bundler
           git_proxy.copy_to(install_path, submodules)
           serialize_gemspecs_in(install_path)
           @copied = true
+        elsif force
+          git_proxy.copy_to(install_path, submodules)
         end
-        generate_bin(spec, !Bundler.rubygems.spec_missing_extensions?(spec))
+
+        generate_bin_options = { :disable_extensions => !Bundler.rubygems.spec_missing_extensions?(spec), :build_args => options[:build_args] }
+        generate_bin(spec, generate_bin_options)
 
         requires_checkout? ? spec.post_install_message : nil
       end
@@ -231,6 +242,8 @@ module Bundler
           # The gemspecs we cache should already be evaluated.
           spec = Bundler.load_gemspec(spec_path)
           next unless spec
+          Bundler.rubygems.set_installed_by_version(spec)
+          Bundler.rubygems.validate(spec)
           File.open(spec_path, "wb") {|file| file.write(spec.to_ruby) }
         end
       end
@@ -294,6 +307,17 @@ module Bundler
       rescue GitError
         raise unless Bundler.feature_flag.allow_offline_install?
         Bundler.ui.warn "Using cached git data because of network errors"
+      end
+
+      # no-op, since we validate when re-serializing the gemspec
+      def validate_spec(_spec); end
+
+      if Bundler.rubygems.stubs_provide_full_functionality?
+        def load_gemspec(file)
+          stub = Gem::StubSpecification.gemspec_stub(file, install_path.parent, install_path.parent)
+          stub.full_gem_path = Pathname.new(file).dirname.expand_path(root).to_s.untaint
+          StubSpecification.from_stub(stub)
+        end
       end
     end
   end

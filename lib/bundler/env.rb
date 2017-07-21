@@ -5,12 +5,12 @@ require "bundler/source/git/git_proxy"
 module Bundler
   class Env
     def write(io)
-      io.write report(:print_gemfile => true, :print_gemspecs => true)
+      io.write report
     end
 
     def report(options = {})
-      print_gemfile = options.delete(:print_gemfile)
-      print_gemspecs = options.delete(:print_gemspecs)
+      print_gemfile = options.delete(:print_gemfile) { true }
+      print_gemspecs = options.delete(:print_gemspecs) { true }
 
       out = String.new("## Environment\n\n```\n")
       out << "Bundler   #{Bundler::VERSION}\n"
@@ -29,14 +29,16 @@ module Bundler
 
       out << "```\n"
 
-      out << "\n## Bundler settings\n\n```\n" unless Bundler.settings.all.empty?
-      Bundler.settings.all.each do |setting|
-        out << setting << "\n"
-        Bundler.settings.pretty_values_for(setting).each do |line|
-          out << "  " << line << "\n"
+      unless Bundler.settings.all.empty?
+        out << "\n## Bundler settings\n\n```\n"
+        Bundler.settings.all.each do |setting|
+          out << setting << "\n"
+          Bundler.settings.pretty_values_for(setting).each do |line|
+            out << "  " << line << "\n"
+          end
         end
+        out << "```\n"
       end
-      out << "```\n"
 
       return out unless SharedHelpers.in_bundle?
 

@@ -33,6 +33,13 @@ module Bundler
       end
 
       if args.empty?
+        if options[:parseable]
+          if value = Bundler.settings[name]
+            Bundler.ui.info("#{name}=#{value}")
+          end
+          return
+        end
+
         confirm(name)
         return
       end
@@ -44,11 +51,20 @@ module Bundler
   private
 
     def confirm_all
-      Bundler.ui.confirm "Settings are listed in order of priority. The top value will be used.\n"
-      Bundler.settings.all.each do |setting|
-        Bundler.ui.confirm "#{setting}"
-        show_pretty_values_for(setting)
-        Bundler.ui.confirm ""
+      if @options[:parseable]
+        thor.with_padding do
+          Bundler.settings.all.each do |setting|
+            val = Bundler.settings[setting]
+            Bundler.ui.info "#{setting}=#{val}"
+          end
+        end
+      else
+        Bundler.ui.confirm "Settings are listed in order of priority. The top value will be used.\n"
+        Bundler.settings.all.each do |setting|
+          Bundler.ui.confirm "#{setting}"
+          show_pretty_values_for(setting)
+          Bundler.ui.confirm ""
+        end
       end
     end
 
@@ -68,7 +84,9 @@ module Bundler
 
     def message
       locations = Bundler.settings.locations(name)
-      if scope == "global"
+      if @options[:parseable]
+        "#{name}=#{new_value}" if new_value
+      elsif scope == "global"
         if locations[:local]
           "Your application has set #{name} to #{locations[:local].inspect}. " \
             "This will override the global value you are currently setting"

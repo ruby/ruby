@@ -18,7 +18,9 @@ module Bundler
           Bundler.ui.error "Gem specification #{gemspec} doesn't exist"
           exit 1
         end
-        spec = Gem::Specification.load(gemspec)
+
+        spec = Bundler.load_gemspec_uncached(gemspec)
+
         puts "Writing new Gemfile to #{SharedHelpers.pwd}/Gemfile"
         File.open("Gemfile", "wb") do |file|
           file << "# Generated from #{gemspec}\n"

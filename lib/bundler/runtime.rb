@@ -11,6 +11,8 @@ module Bundler
     end
 
     def setup(*groups)
+      @definition.ensure_equivalent_gemfile_and_lockfile if Bundler.settings[:frozen]
+
       groups.map!(&:to_sym)
 
       # Has to happen first
@@ -24,21 +26,10 @@ module Bundler
       # Activate the specs
       load_paths = specs.map do |spec|
         unless spec.loaded_from
-          raise GemNotFound, "#{spec.full_name} is missing. Run `bundle` to get it."
+          raise GemNotFound, "#{spec.full_name} is missing. Run `bundle install` to get it."
         end
 
-        if (activated_spec = Bundler.rubygems.loaded_specs(spec.name)) && activated_spec.version != spec.version
-          e = Gem::LoadError.new "You have already activated #{activated_spec.name} #{activated_spec.version}, " \
-                                 "but your Gemfile requires #{spec.name} #{spec.version}. Prepending " \
-                                 "`bundle exec` to your command may solve this."
-          e.name = spec.name
-          if e.respond_to?(:requirement=)
-            e.requirement = Gem::Requirement.new(spec.version.to_s)
-          else
-            e.version_requirement = Gem::Requirement.new(spec.version.to_s)
-          end
-          raise e
-        end
+        check_for_activated_spec!(spec)
 
         Bundler.rubygems.mark_loaded(spec)
         spec.load_paths.reject {|path| $LOAD_PATH.include?(path) }
@@ -127,6 +118,7 @@ module Bundler
     definition_method :requires
 
     def lock(opts = {})
+      return if @definition.nothing_changed? && !@definition.unlocking?
       @definition.lock(Bundler.default_lockfile, opts[:preserve_unknown_sections])
     end
 
@@ -301,6 +293,28 @@ module Bundler
       end
 
       output
+    end
+
+    def check_for_activated_spec!(spec)
+      return unless activated_spec = Bundler.rubygems.loaded_specs(spec.name)
+      return if activated_spec.version == spec.version
+
+      suggestion = if Bundler.rubygems.spec_default_gem?(activated_spec)
+        "Since #{spec.name} is a default gem, you can either remove your dependency on it" \
+        " or try updating to a newer version of bundler that supports #{spec.name} as a default gem."
+      else
+        "Prepending `bundle exec` to your command may solve this."
+      end
+
+      e = Gem::LoadError.new "You have already activated #{activated_spec.name} #{activated_spec.version}, " \
+                             "but your Gemfile requires #{spec.name} #{spec.version}. #{suggestion}"
+      e.name = spec.name
+      if e.respond_to?(:requirement=)
+        e.requirement = Gem::Requirement.new(spec.version.to_s)
+      else
+        e.version_requirement = Gem::Requirement.new(spec.version.to_s)
+      end
+      raise e
     end
   end
 end

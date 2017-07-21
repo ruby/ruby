@@ -58,17 +58,23 @@ module Bundler
     # Search this index's specs, and any source indexes that this index knows
     # about, returning all of the results.
     def search(query, base = nil)
+      sort_specs(unsorted_search(query, base))
+    end
+
+    def unsorted_search(query, base)
       results = local_search(query, base)
-      seen = results.map(&:full_name).to_set
+
+      seen = results.map(&:full_name).to_set unless @sources.empty?
 
       @sources.each do |source|
-        source.search(query, base).each do |spec|
+        source.unsorted_search(query, base).each do |spec|
           results << spec if seen.add?(spec.full_name)
         end
       end
 
-      sort_specs(results)
+      results
     end
+    protected :unsorted_search
 
     def self.sort_specs(specs)
       specs.sort_by do |s|
@@ -144,6 +150,8 @@ module Bundler
       end
     end
 
+    # Whether all the specs in self are in other
+    # TODO: rename to #include?
     def ==(other)
       all? do |spec|
         other_spec = other[spec].first

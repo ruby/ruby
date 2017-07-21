@@ -5,8 +5,8 @@ module Bundler
     ILLFORMED_MESSAGE = 'Ill-formed requirement ["#<YAML::Syck::DefaultKey'.freeze
     include MatchPlatform
 
-    attr_reader :name, :version, :platform, :dependencies, :required_rubygems_version, :required_ruby_version, :checksum
-    attr_accessor :source, :remote
+    attr_reader :name, :version, :platform, :required_rubygems_version, :required_ruby_version, :checksum
+    attr_accessor :source, :remote, :dependencies
 
     def initialize(name, version, platform, dependencies, metadata = nil)
       @name         = name
@@ -91,6 +91,7 @@ module Bundler
     end
 
     def __swap__(spec)
+      SharedHelpers.ensure_same_dependencies(self, dependencies, spec.dependencies)
       @remote_specification = spec
     end
 

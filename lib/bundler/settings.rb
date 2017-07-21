@@ -15,6 +15,8 @@ module Bundler
       disable_exec_load
       disable_local_branch_check
       disable_shared_gems
+      disable_version_check
+      force_ruby_platform
       frozen
       gem.coc
       gem.mit
@@ -22,7 +24,6 @@ module Bundler
       major_deprecations
       no_install
       no_prune
-      force_ruby_platform
       only_update_to_newer_versions
       plugins
       silence_root_warning
@@ -61,15 +62,7 @@ module Bundler
                 nil
               end end end end end
 
-      if value.nil?
-        nil
-      elsif is_bool(name) || value == "false"
-        to_bool(value)
-      elsif is_num(name)
-        value.to_i
-      else
-        value
-      end
+      converted_value(value, name)
     end
 
     def []=(key, value)
@@ -159,15 +152,15 @@ module Bundler
 
       locations = []
       if @local_config.key?(key)
-        locations << "Set for your local app (#{local_config_file}): #{@local_config[key].inspect}"
+        locations << "Set for your local app (#{local_config_file}): #{converted_value(@local_config[key], exposed_key).inspect}"
       end
 
       if value = ENV[key]
-        locations << "Set via #{key}: #{value.inspect}"
+        locations << "Set via #{key}: #{converted_value(value, exposed_key).inspect}"
       end
 
       if @global_config.key?(key)
-        locations << "Set for the current user (#{global_config_file}): #{@global_config[key].inspect}"
+        locations << "Set for the current user (#{global_config_file}): #{converted_value(@global_config[key], exposed_key).inspect}"
       end
 
       return ["You have not configured a value for `#{exposed_key}`"] if locations.empty?
@@ -280,11 +273,27 @@ module Bundler
       value
     end
 
+    def converted_value(value, key)
+      if value.nil?
+        nil
+      elsif is_bool(key) || value == "false"
+        to_bool(value)
+      elsif is_num(key)
+        value.to_i
+      else
+        value
+      end
+    end
+
     def global_config_file
       if ENV["BUNDLE_CONFIG"] && !ENV["BUNDLE_CONFIG"].empty?
         Pathname.new(ENV["BUNDLE_CONFIG"])
       else
-        Bundler.user_bundle_path.join("config")
+        begin
+          Bundler.user_bundle_path.join("config")
+        rescue PermissionError, GenericSystemCallError
+          nil
+        end
       end
     end
 

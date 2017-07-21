@@ -70,6 +70,13 @@ module Bundler
       message
     end
 
+    def self.ensure_all_gems_in_lockfile!(names, locked_gems = Bundler.locked_gems)
+      locked_names = locked_gems.specs.map(&:name)
+      names.-(locked_names).each do |g|
+        raise GemNotFound, gem_not_found_message(g, locked_names)
+      end
+    end
+
     def self.configure_gem_version_promoter(definition, options)
       patch_level = patch_level_options(options)
       raise InvalidOption, "Provide only one of the following options: #{patch_level.join(", ")}" unless patch_level.length <= 1

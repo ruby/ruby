@@ -72,7 +72,7 @@ class Bundler::Thor
 
     protected
 
-      def execute! # rubocop:disable MethodLength
+      def execute!
         lookup = Util.escape_globs(source)
         lookup = config[:recursive] ? File.join(lookup, "**") : lookup
         lookup = file_level_lookup(lookup)
@@ -85,7 +85,7 @@ class Bundler::Thor
 
           case file_source
           when /\.empty_directory$/
-            dirname = File.dirname(file_destination).gsub(/\/\.$/, "")
+            dirname = File.dirname(file_destination).gsub(%r{/\.$}, "")
             next if dirname == given_destination
             base.empty_directory(dirname, config)
           when /#{TEMPLATE_EXTNAME}$/

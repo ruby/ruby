@@ -34,7 +34,14 @@ module Bundler
           if retrying.nil? && local_path.file?
             FileUtils.cp local_path, local_temp_path
             headers["If-None-Match"] = etag_for(local_temp_path)
-            headers["Range"] = "bytes=#{local_temp_path.size}-"
+            headers["Range"] =
+              if local_temp_path.size.nonzero?
+                # Subtract a byte to ensure the range won't be empty.
+                # Avoids 416 (Range Not Satisfiable) responses.
+                "bytes=#{local_temp_path.size - 1}-"
+              else
+                "bytes=#{local_temp_path.size}-"
+              end
           else
             # Fastly ignores Range when Accept-Encoding: gzip is set
             headers["Accept-Encoding"] = "gzip"
@@ -48,12 +55,15 @@ module Bundler
             content = Zlib::GzipReader.new(StringIO.new(content)).read
           end
 
-          mode = response.is_a?(Net::HTTPPartialContent) ? "a" : "w"
           SharedHelpers.filesystem_access(local_temp_path) do
-            local_temp_path.open(mode) {|f| f << content }
+            if response.is_a?(Net::HTTPPartialContent) && local_temp_path.size.nonzero?
+              local_temp_path.open("a") {|f| f << slice_body(content, 1..-1) }
+            else
+              local_temp_path.open("w") {|f| f << content }
+            end
           end
 
-          response_etag = response["ETag"].gsub(%r{\AW/}, "")
+          response_etag = (response["ETag"] || "").gsub(%r{\AW/}, "")
           if etag_for(local_temp_path) == response_etag
             SharedHelpers.filesystem_access(local_path) do
               FileUtils.mv(local_temp_path, local_path)
@@ -72,6 +82,14 @@ module Bundler
       def etag_for(path)
         sum = checksum_for_file(path)
         sum ? %("#{sum}") : nil
+      end
+
+      def slice_body(body, range)
+        if body.respond_to?(:byteslice)
+          body.byteslice(range)
+        else # pre-1.9.3
+          body.unpack("@#{range.first}a#{range.end + 1}").first
+        end
       end
 
       def checksum_for_file(path)

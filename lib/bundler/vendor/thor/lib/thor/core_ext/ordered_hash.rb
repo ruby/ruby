@@ -1,96 +1,127 @@
 class Bundler::Thor
-  module CoreExt #:nodoc:
-    if RUBY_VERSION >= "1.9"
-      class OrderedHash < ::Hash
-      end
-    else
-      # This class is based on the Ruby 1.9 ordered hashes.
-      #
-      # It keeps the semantics and most of the efficiency of normal hashes
-      # while also keeping track of the order in which elements were set.
-      #
-      class OrderedHash #:nodoc:
-        include Enumerable
-
-        Node = Struct.new(:key, :value, :next, :prev)
-
-        def initialize
-          @hash = {}
+  module CoreExt
+    class OrderedHash < ::Hash
+      if RUBY_VERSION < "1.9"
+        def initialize(*args, &block)
+          super
+          @keys = []
         end
 
-        def [](key)
-          @hash[key] && @hash[key].value
+        def initialize_copy(other)
+          super
+          # make a deep copy of keys
+          @keys = other.keys
         end
 
         def []=(key, value)
-          if node = @hash[key] # rubocop:disable AssignmentInCondition
-            node.value = value
-          else
-            node = Node.new(key, value)
-
-            if !defined?(@first) || @first.nil?
-              @first = @last = node
-            else
-              node.prev = @last
-              @last.next = node
-              @last = node
-            end
-          end
-
-          @hash[key] = node
-          value
+          @keys << key unless key?(key)
+          super
         end
 
         def delete(key)
-          if node = @hash[key] # rubocop:disable AssignmentInCondition
-            prev_node = node.prev
-            next_node = node.next
-
-            next_node.prev = prev_node if next_node
-            prev_node.next = next_node if prev_node
-
-            @first = next_node if @first == node
-            @last = prev_node  if @last  == node
-
-            value = node.value
+          if key? key
+            index = @keys.index(key)
+            @keys.delete_at index
           end
-
-          @hash.delete(key)
-          value
+          super
         end
 
-        def keys
-          map { |k, v| k }
-        end
-
-        def values
-          map { |k, v| v }
-        end
-
-        def each
-          return unless defined?(@first) && @first
-          yield [@first.key, @first.value]
-          node = @first
-          yield [node.key, node.value] while node = node.next # rubocop:disable AssignmentInCondition
+        def delete_if
+          super
+          sync_keys!
           self
         end
 
-        def merge(other)
-          hash = self.class.new
+        alias_method :reject!, :delete_if
 
-          each do |key, value|
-            hash[key] = value
-          end
-
-          other.each do |key, value|
-            hash[key] = value
-          end
-
-          hash
+        def reject(&block)
+          dup.reject!(&block)
         end
 
-        def empty?
-          @hash.empty?
+        def keys
+          @keys.dup
+        end
+
+        def values
+          @keys.map { |key| self[key] }
+        end
+
+        def to_hash
+          self
+        end
+
+        def to_a
+          @keys.map { |key| [key, self[key]] }
+        end
+
+        def each_key
+          return to_enum(:each_key) unless block_given?
+          @keys.each { |key| yield(key) }
+          self
+        end
+
+        def each_value
+          return to_enum(:each_value) unless block_given?
+          @keys.each { |key| yield(self[key]) }
+          self
+        end
+
+        def each
+          return to_enum(:each) unless block_given?
+          @keys.each { |key| yield([key, self[key]]) }
+          self
+        end
+
+        def each_pair
+          return to_enum(:each_pair) unless block_given?
+          @keys.each { |key| yield(key, self[key]) }
+          self
+        end
+
+        alias_method :select, :find_all
+
+        def clear
+          super
+          @keys.clear
+          self
+        end
+
+        def shift
+          k = @keys.first
+          v = delete(k)
+          [k, v]
+        end
+
+        def merge!(other_hash)
+          if block_given?
+            other_hash.each { |k, v| self[k] = key?(k) ? yield(k, self[k], v) : v }
+          else
+            other_hash.each { |k, v| self[k] = v }
+          end
+          self
+        end
+
+        alias_method :update, :merge!
+
+        def merge(other_hash, &block)
+          dup.merge!(other_hash, &block)
+        end
+
+        # When replacing with another hash, the initial order of our keys must come from the other hash -ordered or not.
+        def replace(other)
+          super
+          @keys = other.keys
+          self
+        end
+
+        def inspect
+          "#<#{self.class} #{super}>"
+        end
+
+        private
+
+        def sync_keys!
+          @keys.delete_if { |k| !key?(k) }
         end
       end
     end

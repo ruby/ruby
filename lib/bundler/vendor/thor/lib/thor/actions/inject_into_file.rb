@@ -22,11 +22,8 @@ class Bundler::Thor
     #   end
     #
     def insert_into_file(destination, *args, &block)
-      if block_given?
-        data, config = block, args.shift
-      else
-        data, config = args.shift, args.shift
-      end
+      data = block_given? ? block : args.shift
+      config = args.shift
       action InjectIntoFile.new(self, destination, data, config)
     end
     alias_method :inject_into_file, :insert_into_file
@@ -39,9 +36,9 @@ class Bundler::Thor
 
         @behavior, @flag = if @config.key?(:after)
           [:after, @config.delete(:after)]
-                           else
-                             [:before, @config.delete(:before)]
-                           end
+        else
+          [:before, @config.delete(:before)]
+        end
 
         @replacement = data.is_a?(Proc) ? data.call : data
         @flag = Regexp.escape(@flag) unless @flag.is_a?(Regexp)
@@ -94,12 +91,11 @@ class Bundler::Thor
       # Adds the content to the file.
       #
       def replace!(regexp, string, force)
-        unless base.options[:pretend]
-          content = File.binread(destination)
-          if force || !content.include?(replacement)
-            content.gsub!(regexp, string)
-            File.open(destination, "wb") { |file| file.write(content) }
-          end
+        return if base.options[:pretend]
+        content = File.binread(destination)
+        if force || !content.include?(replacement)
+          content.gsub!(regexp, string)
+          File.open(destination, "wb") { |file| file.write(content) }
         end
       end
     end

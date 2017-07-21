@@ -1,4 +1,4 @@
-require 'test_helper'
+require "test_helper"
 
 class <%= config[:constant_name] %>Test < Minitest::Test
   def test_that_it_has_a_version_number

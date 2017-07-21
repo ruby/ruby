@@ -90,6 +90,7 @@ module Bundler
       @standalone = standalone
       @force = force
       @specs = all_specs.map {|s| SpecInstallation.new(s) }
+      @spec_set = all_specs
     end
 
     def call
@@ -116,7 +117,7 @@ module Bundler
           spec_install.post_install_message = message
         elsif !success
           spec_install.state = :failed
-          spec_install.error = message
+          spec_install.error = "#{message}\n\n#{require_tree_for_spec(spec_install.spec)}"
         end
         spec_install
       }
@@ -164,6 +165,19 @@ module Bundler
       end
 
       Bundler.ui.warn(warning.join("\n"))
+    end
+
+    def require_tree_for_spec(spec)
+      tree = @spec_set.what_required(spec)
+      t = String.new("In #{File.basename(SharedHelpers.default_gemfile)}:\n")
+      tree.each_with_index do |s, depth|
+        t << "  " * depth.succ << s.name
+        unless tree.last == s
+          t << %( was resolved to #{s.version}, which depends on)
+        end
+        t << %(\n)
+      end
+      t
     end
 
     # Keys in the remains hash represent uninstalled gems specs.

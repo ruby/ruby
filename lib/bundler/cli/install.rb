@@ -13,8 +13,6 @@ module Bundler
 
       warn_if_root
 
-      warn_if_outdated
-
       [:with, :without].each do |option|
         if options[option]
           options[option] = options[option].join(":").tr(" ", ":").split(":")
@@ -78,7 +76,7 @@ module Bundler
         relative_path = absolute_path.sub(File.expand_path(".") + File::SEPARATOR, "." + File::SEPARATOR)
         Bundler.ui.confirm "Bundled gems are installed into #{relative_path}."
       else
-        Bundler.ui.confirm "Use `bundle show [gemname]` to see where a bundled gem is installed."
+        Bundler.ui.confirm "Use `bundle info [gemname]` to see where a bundled gem is installed."
       end
 
       Bundler::CLI::Common.output_post_install_messages installer.post_install_messages
@@ -116,20 +114,6 @@ module Bundler
         "application for all non-root users on this machine.", :wrap => true
     end
 
-    def warn_if_outdated
-      return if ENV["BUNDLE_POSTIT_TRAMPOLINING_VERSION"].nil?
-      installed_version = Gem::Version.new(ENV["BUNDLE_POSTIT_TRAMPOLINING_VERSION"].dup)
-      running_version = Gem::Version.new(Bundler::VERSION)
-      return if Gem::Requirement.new(installed_version).satisfied_by?(running_version)
-      if Bundler.settings[:warned_version].nil? || running_version > Gem::Version.new(Bundler.settings[:warned_version])
-        Bundler.settings[:warned_version] = running_version
-        Bundler.ui.warn "You're running Bundler #{installed_version} but this " \
-          "project uses #{running_version}. To update, run `bundle update " \
-          "--bundler`. You won't see this message again unless you upgrade " \
-          "to a newer version of Bundler.", :wrap => true
-      end
-    end
-
     def dependencies_count_for(definition)
       count = definition.dependencies.count
       "#{count} Gemfile #{count == 1 ? "dependency" : "dependencies"}"
@@ -145,7 +129,7 @@ module Bundler
         conflicting_groups = options[:without] & options[:with]
         unless conflicting_groups.empty?
           Bundler.ui.error "You can't list a group in both, --with and --without." \
-          "The offending groups are: #{conflicting_groups.join(", ")}."
+          " The offending groups are: #{conflicting_groups.join(", ")}."
           exit 1
         end
       end

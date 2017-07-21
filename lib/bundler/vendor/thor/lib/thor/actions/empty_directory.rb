@@ -32,7 +32,8 @@ class Bundler::Thor
       # config<Hash>:: give :verbose => false to not log the status.
       #
       def initialize(base, destination, config = {})
-        @base, @config   = base, {:verbose => true}.merge(config)
+        @base = base
+        @config = {:verbose => true}.merge(config)
         self.destination = destination
       end
 
@@ -80,11 +81,10 @@ class Bundler::Thor
       #   given_destination    #=> baz
       #
       def destination=(destination)
-        if destination
-          @given_destination = convert_encoded_instructions(destination.to_s)
-          @destination = ::File.expand_path(@given_destination, base.destination_root)
-          @relative_destination = base.relative_to_original_destination_root(@destination)
-        end
+        return unless destination
+        @given_destination = convert_encoded_instructions(destination.to_s)
+        @destination = ::File.expand_path(@given_destination, base.destination_root)
+        @relative_destination = base.relative_to_original_destination_root(@destination)
       end
 
       # Filenames in the encoded form are converted. If you have a file:
@@ -113,7 +113,7 @@ class Bundler::Thor
           on_conflict_behavior(&block)
         else
           say_status :create, :green
-          block.call unless pretend?
+          yield unless pretend?
         end
 
         destination
@@ -121,7 +121,7 @@ class Bundler::Thor
 
       # What to do when the destination file already exists.
       #
-      def on_conflict_behavior(&block)
+      def on_conflict_behavior
         say_status :exist, :blue
       end
 

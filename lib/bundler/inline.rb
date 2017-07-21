@@ -60,9 +60,11 @@ def gemfile(install = false, options = {}, &gemfile)
 
   Bundler.ui = ui if install
   if install || missing_specs.call
-    installer = Bundler::Installer.install(Bundler.root, definition, :system => true, :inline => true)
-    installer.post_install_messages.each do |name, message|
-      Bundler.ui.info "Post-install message from #{name}:\n#{message}"
+    Bundler.settings.temporary(:inline => true) do
+      installer = Bundler::Installer.install(Bundler.root, definition, :system => true)
+      installer.post_install_messages.each do |name, message|
+        Bundler.ui.info "Post-install message from #{name}:\n#{message}"
+      end
     end
   end
 

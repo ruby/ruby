@@ -134,7 +134,7 @@ class Bundler::Thor
       # for diff.
       #
       def diff_lcs_loaded? #:nodoc:
-        return true  if defined?(Diff::LCS)
+        return true if defined?(Diff::LCS)
         return @diff_lcs_loaded unless @diff_lcs_loaded.nil?
 
         @diff_lcs_loaded = begin

@@ -14,7 +14,7 @@ class Bundler::Thor
     #
     #   create_link "config/apache.conf", "/etc/apache.conf"
     #
-    def create_link(destination, *args, &block)
+    def create_link(destination, *args)
       config = args.last.is_a?(Hash) ? args.pop : {}
       source = args.first
       action CreateLink.new(self, destination, source, config)

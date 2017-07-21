@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 require "uri"
 require "rubygems/user_interaction"
-require "rubygems/spec_fetcher"
 
 module Bundler
   class Source
@@ -290,8 +289,10 @@ module Bundler
           idx = Index.new
           have_bundler = false
           Bundler.rubygems.all_specs.reverse_each do |spec|
-            next if spec.name == "bundler" && spec.version.to_s != VERSION
-            have_bundler = true if spec.name == "bundler"
+            if spec.name == "bundler"
+              next unless spec.version.to_s == VERSION
+              have_bundler = true
+            end
             spec.source = self
             if Bundler.rubygems.spec_missing_extensions?(spec, false)
               Bundler.ui.debug "Source #{self} is ignoring #{spec} because it is missing extensions"
@@ -411,6 +412,7 @@ module Bundler
         return false unless spec.remote
         uri = spec.remote.uri
         spec.fetch_platform
+        Bundler.ui.confirm("Fetching #{version_message(spec)}")
 
         download_path = requires_sudo? ? Bundler.tmp(spec.full_name) : rubygems_dir
         gem_path = "#{rubygems_dir}/cache/#{spec.full_name}.gem"

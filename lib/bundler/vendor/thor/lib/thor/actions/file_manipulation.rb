@@ -26,7 +26,7 @@ class Bundler::Thor
 
       create_file destination, nil, config do
         content = File.binread(source)
-        content = block.call(content) if block
+        content = yield(content) if block
         content
       end
       if config[:mode] == :preserve
@@ -49,7 +49,7 @@ class Bundler::Thor
     #
     #   link_file "doc/README"
     #
-    def link_file(source, *args, &block)
+    def link_file(source, *args)
       config = args.last.is_a?(Hash) ? args.pop : {}
       destination = args.first || source
       source = File.expand_path(find_in_source_paths(source.to_s))
@@ -82,7 +82,7 @@ class Bundler::Thor
       render = open(source) { |input| input.binmode.read }
 
       destination ||= if block_given?
-        block.arity == 1 ? block.call(render) : block.call
+        block.arity == 1 ? yield(render) : yield
       else
         File.basename(source)
       end
@@ -110,11 +110,11 @@ class Bundler::Thor
       destination = args.first || source.sub(/#{TEMPLATE_EXTNAME}$/, "")
 
       source  = File.expand_path(find_in_source_paths(source.to_s))
-      context = instance_eval("binding")
+      context = config.delete(:context) || instance_eval("binding")
 
       create_file destination, nil, config do
-        content = ERB.new(::File.binread(source), nil, "-", "@output_buffer").result(context)
-        content = block.call(content) if block
+        content = CapturableERB.new(::File.binread(source), nil, "-", "@output_buffer").result(context)
+        content = yield(content) if block
         content
       end
     end
@@ -154,7 +154,7 @@ class Bundler::Thor
     #
     def prepend_to_file(path, *args, &block)
       config = args.last.is_a?(Hash) ? args.pop : {}
-      config.merge!(:after => /\A/)
+      config[:after] = /\A/
       insert_into_file(path, *(args << config), &block)
     end
     alias_method :prepend_file, :prepend_to_file
@@ -176,7 +176,7 @@ class Bundler::Thor
     #
     def append_to_file(path, *args, &block)
       config = args.last.is_a?(Hash) ? args.pop : {}
-      config.merge!(:before => /\z/)
+      config[:before] = /\z/
       insert_into_file(path, *(args << config), &block)
     end
     alias_method :append_file, :append_to_file
@@ -200,7 +200,7 @@ class Bundler::Thor
     #
     def inject_into_class(path, klass, *args, &block)
       config = args.last.is_a?(Hash) ? args.pop : {}
-      config.merge!(:after => /class #{klass}\n|class #{klass} .*\n/)
+      config[:after] = /class #{klass}\n|class #{klass} .*\n/
       insert_into_file(path, *(args << config), &block)
     end
 
@@ -285,7 +285,7 @@ class Bundler::Thor
     #
     def remove_file(path, config = {})
       return unless behavior == :invoke
-      path  = File.expand_path(path, destination_root)
+      path = File.expand_path(path, destination_root)
 
       say_status :remove, relative_to_original_destination_root(path), config.fetch(:verbose, true)
       ::FileUtils.rm_rf(path) if !options[:pretend] && File.exist?(path)
@@ -301,8 +301,8 @@ class Bundler::Thor
       @output_buffer.concat(string)
     end
 
-    def capture(*args, &block)
-      with_output_buffer { block.call(*args) }
+    def capture(*args)
+      with_output_buffer { yield(*args) }
     end
 
     def with_output_buffer(buf = "") #:nodoc:
@@ -311,6 +311,17 @@ class Bundler::Thor
       output_buffer
     ensure
       self.output_buffer = old_buffer
+    end
+
+    # Bundler::Thor::Actions#capture depends on what kind of buffer is used in ERB.
+    # Thus CapturableERB fixes ERB to use String buffer.
+    class CapturableERB < ERB
+      def set_eoutvar(compiler, eoutvar = "_erbout")
+        compiler.put_cmd = "#{eoutvar}.concat"
+        compiler.insert_cmd = "#{eoutvar}.concat"
+        compiler.pre_cmd = ["#{eoutvar} = ''"]
+        compiler.post_cmd = [eoutvar]
+      end
     end
   end
 end

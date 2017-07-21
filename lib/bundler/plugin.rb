@@ -37,7 +37,11 @@ module Bundler
 
       save_plugins names, specs
     rescue PluginError => e
-      specs.values.map {|spec| Bundler.rm_rf(spec.full_gem_path) } if specs
+      if specs
+        specs_to_delete = Hash[specs.select {|k, _v| names.include?(k) && !index.commands.values.include?(k) }]
+        specs_to_delete.values.each {|spec| Bundler.rm_rf(spec.full_gem_path) }
+      end
+
       Bundler.ui.error "Failed to install plugin #{name}: #{e.message}\n  #{e.backtrace.join("\n ")}"
     end
 

@@ -64,6 +64,7 @@ module Bundler
       else
         definition.resolve_with_cache!
       end
+      Bundler.reset!
       definition.specs
     end
 

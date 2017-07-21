@@ -94,6 +94,7 @@ module Bundler
     def rubygem_push(path)
       allowed_push_host = nil
       gem_command = "gem push '#{path}'"
+      gem_command += " --key #{gem_key}" if gem_key
       if @gemspec.respond_to?(:metadata)
         allowed_push_host = @gemspec.metadata["allowed_push_host"]
         gem_command += " --host #{allowed_push_host}" if allowed_push_host
@@ -179,6 +180,10 @@ module Bundler
         block.call(outbuf) if status.zero? && block
         [outbuf, status]
       end
+    end
+
+    def gem_key
+      Bundler.settings["gem.push_key"].to_s.downcase if Bundler.settings["gem.push_key"]
     end
 
     def gem_push?

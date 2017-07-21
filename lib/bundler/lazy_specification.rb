@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 require "uri"
-require "rubygems/spec_fetcher"
 require "bundler/match_platform"
 
 module Bundler
@@ -30,7 +29,7 @@ module Bundler
       @name          = name
       @version       = version
       @dependencies  = []
-      @platform      = platform
+      @platform      = platform || Gem::Platform::RUBY
       @source        = source
       @specification = nil
     end
@@ -73,7 +72,15 @@ module Bundler
       @specification = if source.is_a?(Source::Gemspec) && source.gemspec.name == name
         source.gemspec.tap {|s| s.source = source }
       else
-        source.specs.search(search_object).last
+        search = source.specs.search(search_object).last
+        if search && Gem::Platform.new(search.platform) != Gem::Platform.new(platform) && !search.runtime_dependencies.-(dependencies.reject {|d| d.type == :development }).empty?
+          Bundler.ui.warn "Unable to use the platform-specific (#{search.platform}) version of #{name} (#{version}) " \
+            "because it has different dependencies from the #{platform} version. " \
+            "To use the platform-specific version of the gem, run `bundle config specific_platform true` and install again."
+          search = source.specs.search(self).last
+        end
+        search.dependencies = dependencies if search.is_a?(RemoteSpecification) || search.is_a?(EndpointSpecification)
+        search
       end
     end
 
@@ -91,6 +98,11 @@ module Bundler
 
     def identifier
       @__identifier ||= Identifier.new(name, version, source, platform, dependencies)
+    end
+
+    def git_version
+      return unless source.is_a?(Bundler::Source::Git)
+      " #{source.revision[0..6]}"
     end
 
   private

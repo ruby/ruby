@@ -27,7 +27,7 @@ module Bundler
       @func = func
       @size = size
       @threads = nil
-      trap("INT") { abort_threads }
+      SharedHelpers.trap("INT") { abort_threads }
     end
 
     # Enqueue a request to be executed in the worker pool
@@ -76,6 +76,7 @@ module Bundler
 
     def abort_threads
       return unless @threads
+      Bundler.ui.debug("\n#{caller.join("\n")}")
       @threads.each(&:exit)
       exit 1
     end

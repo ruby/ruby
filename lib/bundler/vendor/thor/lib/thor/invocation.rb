@@ -108,8 +108,8 @@ class Bundler::Thor
       command, args, opts, config = args
 
       klass, command = _retrieve_class_and_command(name, command)
-      fail "Missing Bundler::Thor class for invoke #{name}" unless klass
-      fail "Expected Bundler::Thor class, got #{klass}" unless klass <= Bundler::Thor::Base
+      raise "Missing Bundler::Thor class for invoke #{name}" unless klass
+      raise "Expected Bundler::Thor class, got #{klass}" unless klass <= Bundler::Thor::Base
 
       args, opts, config = _parse_initialization_options(args, opts, config)
       klass.send(:dispatch, command, args, opts, config) do |instance|
@@ -150,10 +150,9 @@ class Bundler::Thor
     # use the given name and return self as class. Otherwise, call
     # prepare_for_invocation in the current class.
     def _retrieve_class_and_command(name, sent_command = nil) #:nodoc:
-      case
-      when name.nil?
+      if name.nil?
         [self.class, nil]
-      when self.class.all_commands[name.to_s]
+      elsif self.class.all_commands[name.to_s]
         [self.class, name.to_s]
       else
         klass, command = self.class.prepare_for_invocation(nil, name)

@@ -4,7 +4,7 @@ require "bundler/vendor/thor/lib/thor/base"
 # is that it invokes all commands at once. It also include some methods that allows
 # invocations to be done at the class method, which are not available to Bundler::Thor
 # commands.
-class Bundler::Thor::Group # rubocop:disable ClassLength
+class Bundler::Thor::Group
   class << self
     # The description for this Bundler::Thor::Group. If none is provided, but a source root
     # exists, tries to find the USAGE one folder above it, otherwise searches
@@ -53,7 +53,7 @@ class Bundler::Thor::Group # rubocop:disable ClassLength
     # The namespace/class given will have its options showed on the help
     # usage. Check invoke_from_option for more information.
     #
-    def invoke(*names, &block) # rubocop:disable MethodLength
+    def invoke(*names, &block)
       options = names.last.is_a?(Hash) ? names.pop : {}
       verbose = options.fetch(:verbose, true)
 
@@ -62,7 +62,7 @@ class Bundler::Thor::Group # rubocop:disable ClassLength
         invocation_blocks[name] = block if block_given?
 
         class_eval <<-METHOD, __FILE__, __LINE__
-          def _invoke_#{name.to_s.gsub(/\W/, "_")}
+          def _invoke_#{name.to_s.gsub(/\W/, '_')}
             klass, command = self.class.prepare_for_invocation(nil, #{name.inspect})
 
             if klass
@@ -107,21 +107,21 @@ class Bundler::Thor::Group # rubocop:disable ClassLength
     # invoked. The block receives two parameters, an instance of the current
     # class and the klass to be invoked.
     #
-    def invoke_from_option(*names, &block) # rubocop:disable MethodLength
+    def invoke_from_option(*names, &block)
       options = names.last.is_a?(Hash) ? names.pop : {}
       verbose = options.fetch(:verbose, :white)
 
       names.each do |name|
         unless class_options.key?(name)
-          fail ArgumentError, "You have to define the option #{name.inspect} " <<
-                               "before setting invoke_from_option."
+          raise ArgumentError, "You have to define the option #{name.inspect} " \
+                              "before setting invoke_from_option."
         end
 
         invocations[name] = true
         invocation_blocks[name] = block if block_given?
 
         class_eval <<-METHOD, __FILE__, __LINE__
-          def _invoke_from_option_#{name.to_s.gsub(/\W/, "_")}
+          def _invoke_from_option_#{name.to_s.gsub(/\W/, '_')}
             return unless options[#{name.inspect}]
 
             value = options[#{name.inspect}]
@@ -188,7 +188,7 @@ class Bundler::Thor::Group # rubocop:disable ClassLength
         group_options[human_name] ||= []
         group_options[human_name] += klass.class_options.values.select do |class_option|
           base_options[class_option.name.to_sym].nil? && class_option.group.nil? &&
-          !group_options.values.flatten.any? { |i| i.name == class_option.name }
+            !group_options.values.flatten.any? { |i| i.name == class_option.name }
         end
 
         yield klass if block_given?
@@ -204,11 +204,11 @@ class Bundler::Thor::Group # rubocop:disable ClassLength
     end
     alias_method :printable_tasks, :printable_commands
 
-    def handle_argument_error(command, error, args, arity) #:nodoc:
+    def handle_argument_error(command, error, _args, arity) #:nodoc:
       msg = "#{basename} #{command.name} takes #{arity} argument"
       msg << "s" if arity > 1
       msg << ", but it should not."
-      fail error, msg
+      raise error, msg
     end
 
   protected
@@ -267,9 +267,9 @@ protected
       if block
         case block.arity
         when 3
-          block.call(self, klass, command)
+          yield(self, klass, command)
         when 2
-          block.call(self, klass)
+          yield(self, klass)
         when 1
           instance_exec(klass, &block)
         end

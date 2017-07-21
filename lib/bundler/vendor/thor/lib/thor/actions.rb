@@ -73,14 +73,15 @@ class Bundler::Thor
     #
     def initialize(args = [], options = {}, config = {})
       self.behavior = case config[:behavior].to_s
-                      when "force", "skip"
-                        _cleanup_options_and_set(options, config[:behavior])
-                        :invoke
-                      when "revoke"
-                        :revoke
-                      else
-                        :invoke
-                      end
+      when "force", "skip"
+        _cleanup_options_and_set(options, config[:behavior])
+        :invoke
+      when "revoke"
+        :revoke
+      else
+        :invoke
+      end
+
       super
       self.destination_root = config[:destination_root]
     end
@@ -129,7 +130,7 @@ class Bundler::Thor
 
     # Receives a file or directory and search for it in the source paths.
     #
-    def find_in_source_paths(file) # rubocop:disable MethodLength
+    def find_in_source_paths(file)
       possible_files = [file, file + TEMPLATE_EXTNAME]
       relative_root = relative_to_original_destination_root(destination_root, false)
 
@@ -146,13 +147,13 @@ class Bundler::Thor
         message << "Please invoke #{self.class.name}.source_root(PATH) with the PATH containing your templates. "
       end
 
-      if source_paths.empty?
-        message << "Currently you have no source paths."
-      else
-        message << "Your current source paths are: \n#{source_paths.join("\n")}"
-      end
+      message << if source_paths.empty?
+                   "Currently you have no source paths."
+                 else
+                   "Your current source paths are: \n#{source_paths.join("\n")}"
+                 end
 
-      fail Error, message
+      raise Error, message
     end
 
     # Do something in the root or on a provided subfolder. If a relative path
@@ -214,10 +215,10 @@ class Bundler::Thor
       say_status :apply, path, verbose
       shell.padding += 1 if verbose
 
-      if is_uri
-        contents = open(path, "Accept" => "application/x-thor-template") { |io| io.read }
+      contents = if is_uri
+        open(path, "Accept" => "application/x-thor-template", &:read)
       else
-        contents = open(path) { |io| io.read }
+        open(path, &:read)
       end
 
       instance_eval(contents, path)
@@ -250,9 +251,7 @@ class Bundler::Thor
 
       say_status :run, desc, config.fetch(:verbose, true)
 
-      unless options[:pretend]
-        config[:capture] ? `#{command}` : system("#{command}")
-      end
+      !options[:pretend] && config[:capture] ? `#{command}` : system(command.to_s)
     end
 
     # Executes a ruby script (taking into account WIN32 platform quirks).
@@ -308,7 +307,7 @@ class Bundler::Thor
     def _cleanup_options_and_set(options, key) #:nodoc:
       case options
       when Array
-        %w[--force -f --skip -s].each { |i| options.delete(i) }
+        %w(--force -f --skip -s).each { |i| options.delete(i) }
         options << "--#{key}"
       when Hash
         [:force, :skip, "force", "skip"].each { |i| options.delete(i) }

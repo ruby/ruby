@@ -1,13 +1,13 @@
 # coding: utf-8
-lib = File.expand_path('../lib', __FILE__)
+lib = File.expand_path("../lib", __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require '<%=config[:namespaced_path]%>/version'
+require "<%= config[:namespaced_path] %>/version"
 
 Gem::Specification.new do |spec|
-  spec.name          = <%=config[:name].inspect%>
-  spec.version       = <%=config[:constant_name]%>::VERSION
-  spec.authors       = [<%=config[:author].inspect%>]
-  spec.email         = [<%=config[:email].inspect%>]
+  spec.name          = <%= config[:name].inspect %>
+  spec.version       = <%= config[:constant_name] %>::VERSION
+  spec.authors       = [<%= config[:author].inspect %>]
+  spec.email         = [<%= config[:email].inspect %>]
 
   spec.summary       = %q{TODO: Write a short summary, because Rubygems requires one.}
   spec.description   = %q{TODO: Write a longer description or delete this line.}
@@ -19,7 +19,7 @@ Gem::Specification.new do |spec|
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
   # to allow pushing to a single host or delete this section to allow pushing to any host.
   if spec.respond_to?(:metadata)
-    spec.metadata['allowed_push_host'] = "TODO: Set to 'http://mygemserver.com'"
+    spec.metadata["allowed_push_host"] = "TODO: Set to 'http://mygemserver.com'"
   else
     raise "RubyGems 2.0 or newer is required to protect against " \
       "public gem pushes."
@@ -32,7 +32,7 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 <%- if config[:ext] -%>
-  spec.extensions    = ["ext/<%=config[:underscored_name]%>/extconf.rb"]
+  spec.extensions    = ["ext/<%= config[:underscored_name] %>/extconf.rb"]
 <%- end -%>
 
   spec.add_development_dependency "bundler", "~> <%= config[:bundler_version] %>"
@@ -41,6 +41,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake-compiler"
 <%- end -%>
 <%- if config[:test] -%>
-  spec.add_development_dependency "<%=config[:test]%>", "~> <%=config[:test_framework_version]%>"
+  spec.add_development_dependency "<%= config[:test] %>", "~> <%= config[:test_framework_version] %>"
 <%- end -%>
 end

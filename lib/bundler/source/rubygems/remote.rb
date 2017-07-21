@@ -30,6 +30,10 @@ module Bundler
           end
         end
 
+        def to_s
+          "rubygems remote at #{anonymized_uri}"
+        end
+
       private
 
         def apply_auth(uri, auth)

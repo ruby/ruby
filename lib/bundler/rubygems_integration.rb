@@ -74,10 +74,18 @@ module Bundler
     def spec_missing_extensions?(spec, default = true)
       return spec.missing_extensions? if spec.respond_to?(:missing_extensions?)
 
-      return false if spec.respond_to?(:default_gem?) && spec.default_gem?
+      return false if spec_default_gem?(spec)
       return false if spec.extensions.empty?
 
       default
+    end
+
+    def spec_default_gem?(spec)
+      spec.respond_to?(:default_gem?) && spec.default_gem?
+    end
+
+    def stub_set_spec(stub, spec)
+      stub.instance_variable_set(:@spec, spec)
     end
 
     def path(obj)
@@ -213,6 +221,7 @@ module Bundler
     end
 
     def fetch_specs(all, pre, &blk)
+      require "rubygems/spec_fetcher"
       specs = Gem::SpecFetcher.new.list(all, pre)
       specs.each { yield } if block_given?
       specs
@@ -319,48 +328,53 @@ module Bundler
       end
     end
 
-    def replace_gem(specs)
+    def binstubs_call_gem?
+      true
+    end
+
+    def stubs_provide_full_functionality?
+      false
+    end
+
+    def replace_gem(specs, specs_by_name)
       reverse_rubygems_kernel_mixin
 
-      executables = specs.map(&:executables).flatten
+      executables = nil
 
       kernel = (class << ::Kernel; self; end)
       [kernel, ::Kernel].each do |kernel_class|
         redefine_method(kernel_class, :gem) do |dep, *reqs|
-          if executables.include? File.basename(caller.first.split(":").first)
+          executables ||= specs.map(&:executables).flatten if ::Bundler.rubygems.binstubs_call_gem?
+          if executables && executables.include?(File.basename(caller.first.split(":").first))
             break
           end
+
           reqs.pop if reqs.last.is_a?(Hash)
 
           unless dep.respond_to?(:name) && dep.respond_to?(:requirement)
             dep = Gem::Dependency.new(dep, reqs)
           end
 
-          spec = specs.find {|s| s.name == dep.name }
-
-          if spec.nil?
-
-            e = Gem::LoadError.new "#{dep.name} is not part of the bundle. Add it to Gemfile."
-            e.name = dep.name
-            if e.respond_to?(:requirement=)
-              e.requirement = dep.requirement
-            else
-              e.version_requirement = dep.requirement
-            end
-            raise e
-          elsif dep !~ spec
-            e = Gem::LoadError.new "can't activate #{dep}, already activated #{spec.full_name}. " \
-                                   "Make sure all dependencies are added to Gemfile."
-            e.name = dep.name
-            if e.respond_to?(:requirement=)
-              e.requirement = dep.requirement
-            else
-              e.version_requirement = dep.requirement
-            end
-            raise e
+          if spec = specs_by_name[dep.name]
+            return true if dep.matches_spec?(spec)
           end
 
-          true
+          message = if spec.nil?
+            "#{dep.name} is not part of the bundle." \
+            " Add it to your #{Bundler.default_gemfile.basename}."
+          else
+            "can't activate #{dep}, already activated #{spec.full_name}. " \
+            "Make sure all dependencies are added to Gemfile."
+          end
+
+          e = Gem::LoadError.new(message)
+          e.name = dep.name
+          if e.respond_to?(:requirement=)
+            e.requirement = dep.requirement
+          elsif e.respond_to?(:version_requirement=)
+            e.version_requirement = dep.requirement
+          end
+          raise e
         end
 
         # TODO: delete this in 2.0, it's a backwards compatibility shim
@@ -392,20 +406,34 @@ module Bundler
     # Used to make bin stubs that are not created by bundler work
     # under bundler. The new Gem.bin_path only considers gems in
     # +specs+
-    def replace_bin_path(specs)
+    def replace_bin_path(specs, specs_by_name)
       gem_class = (class << Gem; self; end)
 
       redefine_method(gem_class, :find_spec_for_exe) do |gem_name, *args|
         exec_name = args.first
 
+        spec_with_name = specs_by_name[gem_name]
         spec = if exec_name
-          specs.find {|s| s.name == gem_name && s.executables.include?(exec_name) } ||
+          if spec_with_name && spec_with_name.executables.include?(exec_name)
+            spec_with_name
+          else
             specs.find {|s| s.executables.include?(exec_name) }
+          end
         else
-          specs.find {|s| s.name == gem_name }
+          spec_with_name
         end
-        raise(Gem::Exception, "can't find executable #{exec_name}") unless spec
+
+        unless spec
+          message = "can't find executable #{exec_name} for gem #{gem_name}"
+          if !exec_name || spec_with_name.nil?
+            message += ". #{gem_name} is not currently included in the bundle, " \
+                       "perhaps you meant to add it to your #{Bundler.default_gemfile.basename}?"
+          end
+          raise Gem::Exception, message
+        end
+
         raise Gem::Exception, "no default executable for #{spec.full_name}" unless exec_name ||= spec.default_executable
+
         unless spec.name == name
           Bundler::SharedHelpers.major_deprecation \
             "Bundler is using a binstub that was created for a different gem.\n" \
@@ -422,8 +450,10 @@ module Bundler
         # Copy of Rubygems activate_bin_path impl
         requirement = args.last
         spec = find_spec_for_exe name, exec_name, [requirement]
-        Gem::LOADED_SPECS_MUTEX.synchronize { spec.activate }
-        spec.bin_file exec_name
+
+        gem_bin = File.join(spec.full_gem_path, spec.bindir, exec_name)
+        gem_from_path_bin = File.join(File.dirname(spec.loaded_from), spec.bindir, exec_name)
+        File.exist?(gem_bin) ? gem_bin : gem_from_path_bin
       end
 
       redefine_method(gem_class, :bin_path) do |name, *args|
@@ -449,11 +479,14 @@ module Bundler
     # Replace or hook into Rubygems to provide a bundlerized view
     # of the world.
     def replace_entrypoints(specs)
-      replace_gem(specs)
+      specs_by_name = specs.reduce({}) do |h, s|
+        h[s.name] = s
+        h
+      end
 
+      replace_gem(specs, specs_by_name)
       stub_rubygems(specs)
-
-      replace_bin_path(specs)
+      replace_bin_path(specs, specs_by_name)
       replace_refresh
 
       Gem.clear_paths
@@ -665,6 +698,10 @@ module Bundler
         Gem.post_reset do
           Gem::Specification.all = specs
         end
+
+        redefine_method((class << Gem; self; end), :finish_resolve) do |*|
+          []
+        end
       end
 
       def all_specs
@@ -745,7 +782,13 @@ module Bundler
       end
 
       def backport_ext_builder_monitor
-        require "rubygems/ext"
+        # So we can avoid requiring "rubygems/ext" in its entirety
+        Gem.module_eval <<-RB, __FILE__, __LINE__ + 1
+          module Ext
+          end
+        RB
+
+        require "rubygems/ext/builder"
 
         Gem::Ext::Builder.class_eval do
           unless const_defined?(:CHDIR_MONITOR)
@@ -775,6 +818,21 @@ module Bundler
         Bundler.ui = nil
         activated_spec_names = runtime.requested_specs.map(&:to_spec).sort_by(&:name)
         [Gemdeps.new(runtime), activated_spec_names]
+      end
+
+      if provides?(">= 2.5.2")
+        # RubyGems-generated binstubs call Kernel#gem
+        def binstubs_call_gem?
+          false
+        end
+
+        # only 2.5.2+ has all of the stub methods we want to use, and since this
+        # is a performance optimization _only_,
+        # we'll restrict ourselves to the most
+        # recent RG versions instead of all versions that have stubs
+        def stubs_provide_full_functionality?
+          true
+        end
       end
     end
   end

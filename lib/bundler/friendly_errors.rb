@@ -81,7 +81,7 @@ module Bundler
 
           I tried...
 
-        - **Have you read our issues document, https://github.com/bundler/bundler/blob/master/ISSUES.md?**
+        - **Have you read our issues document, https://github.com/bundler/bundler/blob/master/doc/contributing/ISSUES.md?**
 
           ...
 
@@ -92,7 +92,7 @@ module Bundler
           #{e.backtrace && e.backtrace.join("\n          ").chomp}
         ```
 
-        #{Bundler::Env.new.report(:print_gemfile => false, :print_gemspecs => false)}
+        #{Bundler::Env.new.report}
         --- TEMPLATE END ----------------------------------------------------------------
 
       EOS

@@ -1,7 +1,7 @@
 require "set"
 require "bundler/vendor/thor/lib/thor/base"
 
-class Bundler::Thor # rubocop:disable ClassLength
+class Bundler::Thor
   class << self
     # Allows for custom "Command" package naming.
     #
@@ -9,7 +9,7 @@ class Bundler::Thor # rubocop:disable ClassLength
     # name<String>
     # options<Hash>
     #
-    def package_name(name, options = {})
+    def package_name(name, _ = {})
       @package_name = name.nil? || name == "" ? nil : name
     end
 
@@ -57,7 +57,9 @@ class Bundler::Thor # rubocop:disable ClassLength
         command.usage = usage             if usage
         command.description = description if description
       else
-        @usage, @desc, @hide = usage, description, options[:hide] || false
+        @usage = usage
+        @desc = description
+        @hide = options[:hide] || false
       end
     end
 
@@ -156,6 +158,10 @@ class Bundler::Thor # rubocop:disable ClassLength
     end
     alias_method :option, :method_option
 
+    def disable_class_options
+      @disable_class_options = true
+    end
+
     # Prints help information for the given command.
     #
     # ==== Parameters
@@ -170,7 +176,7 @@ class Bundler::Thor # rubocop:disable ClassLength
       shell.say "Usage:"
       shell.say "  #{banner(command)}"
       shell.say
-      class_options_help(shell, nil => command.options.map { |_, o| o })
+      class_options_help(shell, nil => command.options.values)
       if command.long_description
         shell.say "Description:"
         shell.print_wrapped(command.long_description, :indent => 2)
@@ -231,8 +237,9 @@ class Bundler::Thor # rubocop:disable ClassLength
 
       define_method(subcommand) do |*args|
         args, opts = Bundler::Thor::Arguments.split(args)
-        args.unshift("help") if opts.include? "--help" or opts.include? "-h"
-        invoke subcommand_class, args, opts, :invoked_via_subcommand => true, :class_options => options
+        invoke_args = [args, opts, {:invoked_via_subcommand => true, :class_options => options}]
+        invoke_args.unshift "help" if opts.delete("--help") || opts.delete("-h")
+        invoke subcommand_class, *invoke_args
       end
     end
     alias_method :subtask, :subcommand
@@ -320,6 +327,7 @@ class Bundler::Thor # rubocop:disable ClassLength
     end
 
   protected
+
     def stop_on_unknown_option #:nodoc:
       @stop_on_unknown_option ||= Set.new
     end
@@ -345,12 +353,14 @@ class Bundler::Thor # rubocop:disable ClassLength
           opts.clear
         end
       else
-        args, opts = given_args, nil
+        args = given_args
+        opts = nil
         command = dynamic_command_class.new(meth)
       end
 
       opts = given_opts || opts || []
-      config.merge!(:current_command => command, :command_options => command.options)
+      config[:current_command] = command
+      config[:command_options] = command.options
 
       instance = new(args, opts, config)
       yield instance if block_given?
@@ -380,17 +390,18 @@ class Bundler::Thor # rubocop:disable ClassLength
       @usage ||= nil
       @desc ||= nil
       @long_desc ||= nil
+      @disable_class_options ||= nil
 
       if @usage && @desc
         base_class = @hide ? Bundler::Thor::HiddenCommand : Bundler::Thor::Command
-        commands[meth] = base_class.new(meth, @desc, @long_desc, @usage, method_options)
-        @usage, @desc, @long_desc, @method_options, @hide = nil
+        commands[meth] = base_class.new(meth, @desc, @long_desc, @usage, method_options, @disable_class_options)
+        @usage, @desc, @long_desc, @method_options, @hide, @disable_class_options = nil
         true
       elsif all_commands[meth] || meth == "method_missing"
         true
       else
-        puts "[WARNING] Attempted to create command #{meth.inspect} without usage or description. " <<
-             "Call desc if you want this method to be available as command or declare it inside a " <<
+        puts "[WARNING] Attempted to create command #{meth.inspect} without usage or description. " \
+             "Call desc if you want this method to be available as command or declare it inside a " \
              "no_commands{} block. Invoked from #{caller[1].inspect}."
         false
       end
@@ -405,11 +416,7 @@ class Bundler::Thor # rubocop:disable ClassLength
     # Retrieve the command name from given args.
     def retrieve_command_name(args) #:nodoc:
       meth = args.first.to_s unless args.empty?
-      if meth && (map[meth] || meth !~ /^\-/)
-        args.shift
-      else
-        nil
-      end
+      args.shift if meth && (map[meth] || meth !~ /^\-/)
     end
     alias_method :retrieve_task_name, :retrieve_command_name
 
@@ -421,20 +428,20 @@ class Bundler::Thor # rubocop:disable ClassLength
     # +normalize_command_name+ also converts names like +animal-prison+
     # into +animal_prison+.
     def normalize_command_name(meth) #:nodoc:
-      return default_command.to_s.gsub("-", "_") unless meth
+      return default_command.to_s.tr("-", "_") unless meth
 
       possibilities = find_command_possibilities(meth)
-      if possibilities.size > 1
-        fail AmbiguousTaskError, "Ambiguous command #{meth} matches [#{possibilities.join(', ')}]"
-      elsif possibilities.size < 1
-        meth = meth || default_command
+      raise AmbiguousTaskError, "Ambiguous command #{meth} matches [#{possibilities.join(', ')}]" if possibilities.size > 1
+
+      if possibilities.empty?
+        meth ||= default_command
       elsif map[meth]
         meth = map[meth]
       else
         meth = possibilities.first
       end
 
-      meth.to_s.gsub("-", "_") # treat foo-bar as foo_bar
+      meth.to_s.tr("-", "_") # treat foo-bar as foo_bar
     end
     alias_method :normalize_task_name, :normalize_command_name
 
@@ -470,6 +477,7 @@ class Bundler::Thor # rubocop:disable ClassLength
   map HELP_MAPPINGS => :help
 
   desc "help [COMMAND]", "Describe available commands or one specific command"
+  disable_class_options
   def help(command = nil, subcommand = false)
     if command
       if self.class.subcommands.include? command

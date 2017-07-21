@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 require "uri"
-require "rubygems/spec_fetcher"
 
 module Bundler
   # Represents a lazily loaded gem specification, where the full specification
@@ -12,6 +11,7 @@ module Bundler
     include Comparable
 
     attr_reader :name, :version, :platform
+    attr_writer :dependencies
     attr_accessor :source, :remote
 
     def initialize(name, version, platform, spec_fetcher)
@@ -19,6 +19,7 @@ module Bundler
       @version      = Gem::Version.create version
       @platform     = platform
       @spec_fetcher = spec_fetcher
+      @dependencies = nil
     end
 
     # Needed before installs, since the arch matters then and quick
@@ -50,6 +51,7 @@ module Bundler
     # once the remote gem is downloaded, the backend specification will
     # be swapped out.
     def __swap__(spec)
+      SharedHelpers.ensure_same_dependencies(self, dependencies, spec.dependencies)
       @_remote_specification = spec
     end
 
@@ -70,7 +72,28 @@ module Bundler
       "#<#{self.class} name=#{name} version=#{version} platform=#{platform}>"
     end
 
+    def dependencies
+      @dependencies ||= begin
+        deps = method_missing(:dependencies)
+
+        # allow us to handle when the specs dependencies are an array of array of string
+        # see https://github.com/bundler/bundler/issues/5797
+        deps = deps.map {|d| d.is_a?(Gem::Dependency) ? d : Gem::Dependency.new(*d) }
+
+        deps
+      end
+    end
+
+    def git_version
+      return unless loaded_from && source.is_a?(Bundler::Source::Git)
+      " #{source.revision[0..6]}"
+    end
+
   private
+
+    def to_ary
+      nil
+    end
 
     def _remote_specification
       @_remote_specification ||= @spec_fetcher.fetch_spec([@name, @version, @platform])
