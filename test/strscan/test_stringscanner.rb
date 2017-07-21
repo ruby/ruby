@@ -718,4 +718,14 @@ class TestStringScanner < Test::Unit::TestCase
     s.scan(/test strin/)
     assert_equal('#<StringScanner 10/16 "...strin" @ "g tes...">', s.inspect)
   end
+
+  def test_aref_without_regex
+    s = StringScanner.new('abc')
+    s.get_byte
+    assert_nil(s[:c])
+    assert_nil(s["c"])
+    s.getch
+    assert_nil(s[:c])
+    assert_nil(s["c"])
+  end
 end
