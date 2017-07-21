@@ -1658,6 +1658,7 @@ fix_sp_depth(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
 		sp = adjust->label ? adjust->label->sp : 0;
 		if (adjust->line_no != -1 && orig_sp - sp < 0) {
+		    BADINSN_DUMP(anchor, list, NULL);
 		    compile_bug(iseq, adjust->line_no,
 				"iseq_set_sequence: adjust bug %d < %d",
 				orig_sp, sp);
