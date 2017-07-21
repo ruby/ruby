@@ -1,9 +1,9 @@
 diff --git spec/commands/exec_spec.rb spec/commands/exec_spec.rb
-index cb4daa46b..16b91e5d1 100644
+index d70fc636c..fe9945b32 100644
 --- spec/commands/exec_spec.rb
 +++ spec/commands/exec_spec.rb
-@@ -218,7 +218,7 @@ describe "bundle exec" do
-     expect(out).to include("bundler: exec needs a command to run")
+@@ -244,7 +244,7 @@ RSpec.describe "bundle exec" do
+     end
    end
  
 -  describe "with help flags" do
@@ -12,20 +12,20 @@ index cb4daa46b..16b91e5d1 100644
        1.upto(string.length) {|l| blk.call(string[0, l]) }
      end
 diff --git spec/commands/help_spec.rb spec/commands/help_spec.rb
-index 380e3be15..2ba340de2 100644
+index 790d26fda..7d7a416ad 100644
 --- spec/commands/help_spec.rb
 +++ spec/commands/help_spec.rb
 @@ -1,7 +1,7 @@
  # frozen_string_literal: true
  require "spec_helper"
  
--describe "bundle help" do
-+describe "bundle help", :ruby_trunk do
+-RSpec.describe "bundle help" do
++RSpec.describe "bundle help", :ruby_trunk do
    # Rubygems 1.4+ no longer load gem plugins so this test is no longer needed
-   rubygems_under_14 = Gem::Requirement.new("< 1.4").satisfied_by?(Gem::Version.new(Gem::VERSION))
-   it "complains if older versions of bundler are installed", :if => rubygems_under_14 do
+   it "complains if older versions of bundler are installed", :rubygems => "< 1.4" do
+     system_gems "bundler-0.8.1"
 diff --git spec/spec_helper.rb spec/spec_helper.rb
-index 5574c4ae3..f16ec0ea5 100644
+index 297d81f53..6231509ed 100644
 --- spec/spec_helper.rb
 +++ spec/spec_helper.rb
 @@ -51,6 +51,12 @@ ENV["THOR_COLUMNS"] = "10000"
@@ -41,7 +41,7 @@ index 5574c4ae3..f16ec0ea5 100644
  RSpec.configure do |config|
    config.include Spec::Builders
    config.include Spec::Helpers
-@@ -83,6 +89,7 @@ RSpec.configure do |config|
+@@ -91,6 +97,7 @@ RSpec.configure do |config|
    config.filter_run_excluding :rubygems => LessThanProc.with(Gem::VERSION)
    config.filter_run_excluding :git => LessThanProc.with(git_version)
    config.filter_run_excluding :rubygems_master => (ENV["RGV"] != "master")
@@ -49,7 +49,7 @@ index 5574c4ae3..f16ec0ea5 100644
  
    config.filter_run_when_matching :focus unless ENV["CI"]
  
-@@ -93,6 +100,14 @@ RSpec.configure do |config|
+@@ -101,6 +108,14 @@ RSpec.configure do |config|
      c.syntax = :expect
    end
  
@@ -63,8 +63,8 @@ index 5574c4ae3..f16ec0ea5 100644
 +
    config.before :all do
      build_repo1
-   end
-@@ -117,4 +132,8 @@ RSpec.configure do |config|
+     # HACK: necessary until rspec-mocks > 3.5.0 is used
+@@ -133,4 +148,8 @@ RSpec.configure do |config|
      Dir.chdir(original_wd)
      ENV.replace(original_env)
    end
@@ -74,10 +74,10 @@ index 5574c4ae3..f16ec0ea5 100644
 +  end
  end
 diff --git spec/support/helpers.rb spec/support/helpers.rb
-index 738b1f7b3..21d59d552 100644
+index d971ea92c..8fe503dcf 100644
 --- spec/support/helpers.rb
 +++ spec/support/helpers.rb
-@@ -158,7 +158,8 @@ module Spec
+@@ -156,7 +156,8 @@ module Spec
          args = args.gsub(/(?=")/, "\\")
          args = %("#{args}")
        end
