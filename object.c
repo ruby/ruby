@@ -60,7 +60,7 @@ VALUE rb_cFalseClass; /*!< FalseClass class */
  * Make the object invisible from Ruby code.
  *
  * It is useful to let Ruby's GC manage your internal data structure --
- * The object keeps being managed by GC, but \c ObjectSpace#each_objects
+ * The object keeps being managed by GC, but \c ObjectSpace.each_object
  * never yields the object.
  *
  * Note that the object also lose a way to call a method on it.
@@ -245,7 +245,7 @@ rb_obj_not_equal(VALUE obj1, VALUE obj2)
  * It returns the \a cl itself if it is neither a singleton class or a module.
  *
  * \param[in] cl a Class object.
- * \return the ancestor class found, or a falsthy vaule if nothing found.
+ * \return the ancestor class found, or a falsey value if nothing found.
  */
 VALUE
 rb_class_real(VALUE cl)
@@ -581,7 +581,7 @@ rb_obj_yield_self(VALUE obj)
 /**
  * :nodoc:
  *--
- * Default implemenentation of \c #initialize_copy
+ * Default implementation of \c #initialize_copy
  * \param[in,out] obj the receiver being initialized
  * \param[in] orig    the object to be copied from.
  *++
@@ -642,7 +642,7 @@ rb_any_to_s(VALUE obj)
 VALUE rb_str_escape(VALUE str);
 /*!
  * Convenient wrapper of \c Object#inspect.
- * Returns a human-readable strng representation of \a obj,
+ * Returns a human-readable string representation of \a obj,
  * similarly to \c Object#inspect.
  *
  * Unlike Ruby-level \c #inspect, it escapes characters to keep the
@@ -2943,7 +2943,7 @@ conversion_mismatch(VALUE val, const char *tname, const char *method, VALUE resu
  * Converts an object into another type.
  * Calls the specified conversion method if necessary.
  *
- * \param[in] val   the object to be converted
+ * \param[in] val    the object to be converted
  * \param[in] type   a value of \c ruby_value_type
  * \param[in] tname  name of the target type.
  *   only used for error messages.
@@ -2983,7 +2983,7 @@ rb_convert_type_with_id(VALUE val, int type, const char *tname, ID method)
  * Tries to convert an object into another type.
  * Calls the specified conversion method if necessary.
  *
- * \param[in] val   the object to be converted
+ * \param[in] val    the object to be converted
  * \param[in] type   a value of \c ruby_value_type
  * \param[in] tname  name of the target type.
  *   only used for error messages.
