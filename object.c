@@ -1551,7 +1551,7 @@ true_xor(VALUE obj, VALUE obj2)
  * call-seq:
  *   false.to_s   ->  "false"
  *
- * 'nuf said...
+ * The string representation of <code>false</code> is "false".
  */
 
 static VALUE
@@ -1817,7 +1817,7 @@ rb_mod_eqq(VALUE mod, VALUE arg)
  *
  * \param[in] mod a Module object
  * \param[in] arg another Module object or an iclass of a module
- * \retval Qtrue if \a mod inherits \a arg
+ * \retval Qtrue if \a mod inherits \a arg, or \a mod equals \a arg
  * \retval Qfalse if \a arg inherits \a mod
  * \retval Qnil if otherwise
  *++
