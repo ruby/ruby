@@ -788,7 +788,7 @@ static VALUE class_search_ancestor(VALUE cl, VALUE c);
  *--
  * Determines if \a obj is an instance of \a c.
  *
- * Equivalent to \c Object\#is_instance_of in Ruby. 
+ * Equivalent to \c Object\#is_instance_of in Ruby.
  * \param[in] obj the object to be determined.
  * \param[in] c a Class object
  *++
