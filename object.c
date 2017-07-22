@@ -2310,6 +2310,7 @@ rb_mod_attr_reader(int argc, VALUE *argv, VALUE klass)
  *  The last form is equivalent to <code>attr_reader(name)</code> but deprecated.
  *--
  * \private
+ * \todo can be static?
  *++
  */
 VALUE

@@ -28,6 +28,11 @@
 # include <AvailabilityMacros.h>
 #endif
 
+/*!
+ * \defgroup exception Exception handlings
+ * \{
+ */
+
 #ifndef EXIT_SUCCESS
 #define EXIT_SUCCESS 0
 #endif
@@ -2602,3 +2607,7 @@ Init_syserr(void)
 #undef defined_error
 #undef undefined_error
 }
+
+/*!
+ * \}
+ */

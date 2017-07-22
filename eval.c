@@ -38,7 +38,8 @@ static ID id_cause;
     (!SPECIAL_CONST_P(obj) && \
      (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE))
 
-/* Initializes the Ruby VM and builtin libraries.
+/*!
+ * Initializes the Ruby VM and builtin libraries.
  * @retval 0 if succeeded.
  * @retval non-zero an error occurred.
  */
@@ -66,7 +67,8 @@ ruby_setup(void)
     return state;
 }
 
-/* Calls ruby_setup() and check error.
+/*!
+ * Calls ruby_setup() and check error.
  *
  * Prints errors and calls exit(3) if an error occurred.
  */
@@ -392,6 +394,12 @@ rb_mod_s_constants(int argc, VALUE *argv, VALUE mod)
     return rb_const_list(data);
 }
 
+/*!
+ * Asserts that \a klass is not a frozen class.
+ * \param[in] klass a \c Module object
+ * \exception RuntimeError if \a klass is not a class or frozen.
+ * \ingroup class
+ */
 void
 rb_frozen_class_p(VALUE klass)
 {
@@ -567,6 +575,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
     }
 }
 
+/*! \private */
 void
 rb_threadptr_setup_exception(rb_thread_t *th, VALUE mesg, VALUE cause)
 {
@@ -588,6 +597,13 @@ rb_longjmp(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 
 static VALUE make_exception(int argc, const VALUE *argv, int isstr);
 
+/*!
+ * Raises an exception in the current thread.
+ * \param[in] mesg an Exception class or an \c Exception object.
+ * \exception always raises an instance of the given exception class or
+ *   the given \c Exception object.
+ * \ingroup exception
+ */
 void
 rb_exc_raise(VALUE mesg)
 {
@@ -597,6 +613,13 @@ rb_exc_raise(VALUE mesg)
     rb_longjmp(GET_THREAD(), TAG_RAISE, mesg, Qundef);
 }
 
+/*!
+ * Raises a fatal error in the current thread.
+ *
+ * Same as rb_exc_raise() but raises a fatal error, which Ruby codes
+ * cannot rescue.
+ * \ingroup exception
+ */
 void
 rb_exc_fatal(VALUE mesg)
 {
@@ -606,13 +629,17 @@ rb_exc_fatal(VALUE mesg)
     rb_longjmp(GET_THREAD(), TAG_FATAL, mesg, Qnil);
 }
 
+/*!
+ * Raises an \c Interrupt exception.
+ * \ingroup exception
+ */
 void
 rb_interrupt(void)
 {
     rb_raise(rb_eInterrupt, "%s", "");
 }
 
-enum {raise_opt_cause, raise_max_opt};
+enum {raise_opt_cause, raise_max_opt}; /*< \private */
 
 static int
 extract_raise_opts(int argc, const VALUE *argv, VALUE *opts)
@@ -730,12 +757,35 @@ make_exception(int argc, const VALUE *argv, int isstr)
     return mesg;
 }
 
+/*!
+ * Make an \c Exception object from the list of arguments in a manner
+ * similar to \c Kernel\#raise.
+ *
+ * \param[in] argc the number of arguments
+ * \param[in] argv a pointer to the array of arguments.
+ *
+ * The first form of this function takes a \c String argument. Then
+ * it returns a \c RuntimeError whose error message is the given value.
+ *
+ * The second from of this function takes an \c Exception object. Then
+ * it just returns the given value.
+ *
+ * The last form takes an exception class, an optional error message and
+ * an optional array of backtrace. Then it passes the optional arguments
+ * to \c #exception method of the exception class.
+ *
+ * \return the exception object, or \c Qnil if \c argc is 0.
+ * \ingroup exception
+ */
 VALUE
 rb_make_exception(int argc, const VALUE *argv)
 {
     return make_exception(argc, argv, TRUE);
 }
 
+/*! \private
+ * \todo can be static?
+ */
 void
 rb_raise_jump(VALUE mesg, VALUE cause)
 {
@@ -752,6 +802,14 @@ rb_raise_jump(VALUE mesg, VALUE cause)
     rb_longjmp(th, TAG_RAISE, mesg, cause);
 }
 
+/*!
+ * Continues the exception caught by rb_protect() and rb_eval_string_protect().
+ *
+ * This function never return to the caller.
+ * \param[in] the value of \c *state which the protect function has set to the
+ *   their last parameter.
+ * \ingroup exception
+ */
 void
 rb_jump_tag(int tag)
 {
@@ -761,6 +819,11 @@ rb_jump_tag(int tag)
     JUMP_TAG(tag);
 }
 
+/*! Determines if the current method is given a block.
+ * \retval zero if not given
+ * \retval non-zero if given
+ * \ingroup defmethod
+ */
 int
 rb_block_given_p(void)
 {
@@ -773,6 +836,11 @@ rb_block_given_p(void)
     }
 }
 
+/*!  Determines if the current method is an interator.
+ * 
+ * An alias of rb_block_given_p().
+ * \ingroup defmethod
+ */
 int
 rb_iterator_p(void)
 {
@@ -781,6 +849,11 @@ rb_iterator_p(void)
 
 VALUE rb_eThreadError;
 
+/*! Declares that the current method needs a block.
+ *
+ * Raises a \c LocalJumpError if not given a block.
+ * \ingroup defmethod
+ */
 void
 rb_need_block(void)
 {
@@ -789,6 +862,28 @@ rb_need_block(void)
     }
 }
 
+/*! An equivalent of \c rescue calause.
+ *
+ * Equivalent to <code>begin .. rescue err_type .. end</code>
+ *
+ * \param[in] b_proc a function which potentially raises an exception.
+ * \param[in] data1 the argument of \a b_proc
+ * \param[in] r_proc a function which rescues an exception in \a b_proc.
+ * \param[in] data2 the first argument of \a r_proc
+ * \param[in] ... 1 or more exception classes. Must be terminated by \c (VALUE)0.
+ *
+ * First it calls the function \a b_proc, with \a data1 as the argument.
+ * When \a b_proc raises an exception, it calls \a r_proc with \a data2 and
+ * the exception object if the exception is a kind of one of the given
+ * exception classes.
+ *
+ * \return the return value of \a b_proc if no exception occurs,
+ *   or the return value of \a r_proc if otherwise.
+ * \sa rb_rescue
+ * \sa rb_ensure
+ * \sa rb_protect
+ * \ingroup exception
+ */
 VALUE
 rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 	   VALUE (* r_proc) (ANYARGS), VALUE data2, ...)
@@ -847,6 +942,20 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
     return result;
 }
 
+/*! An equivalent of \c rescue clause.
+ *
+ * Equivalent to <code>begin .. rescue .. end</code>.
+ *
+ * It is same as
+ * \code{cpp}
+ * rb_rescue2(b_proc, data1, r_proc, data2, rb_eStandardError, (VALUE)0);
+ * \endcode
+ *
+ * \sa rb_rescue2
+ * \sa rb_ensure
+ * \sa rb_protect
+ * \ingroup exception
+ */
 VALUE
 rb_rescue(VALUE (* b_proc)(ANYARGS), VALUE data1,
 	  VALUE (* r_proc)(ANYARGS), VALUE data2)
@@ -855,6 +964,23 @@ rb_rescue(VALUE (* b_proc)(ANYARGS), VALUE data1,
 		      (VALUE)0);
 }
 
+/*! Protects a function call from potential global escapes from the function.
+ *
+ * Such global escapes include exceptions, \c Kernel\#throw, \c break in
+ * an iterator, for example.
+ * It first calls the function func with arg as the argument.
+ * If no exception occurred during func, it returns the result of func and
+ * *state is zero.
+ * Otherwise, it returns Qnil and sets *state to nonzero.
+ * If state is NULL, it is not set in both cases.
+ *
+ * You have to clear the error info with rb_set_errinfo(Qnil) when
+ * ignoring the caught exception.
+ * \ingroup exception
+ * \sa rb_rescue
+ * \sa rb_rescue2
+ * \sa rb_ensure
+ */
 VALUE
 rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
 {
@@ -884,6 +1010,20 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
     return result;
 }
 
+/*!
+ * An equivalent to \c ensure clause.
+ *
+ * Equivalent to <code>begin .. ensure .. end</code>.
+ *
+ * Calls the function \a b_proc with \a data1 as the argument,
+ * then calls \a e_proc with \a data2 when execution terminated.
+ * \return The return value of \a b_proc if no exception occurred,
+ *   or \c Qnil if otherwise.
+ * \sa rb_rescue
+ * \sa rb_rescue2
+ * \sa rb_protect
+ * \ingroup exception
+ */
 VALUE
 rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE data2)
 {
@@ -940,12 +1080,35 @@ frame_called_id(rb_control_frame_t *cfp)
     }
 }
 
+/*!
+ * The original name of the current method.
+ *
+ * The function returns the original name of the method even if
+ * an alias of the method is called.
+ * The function can also return 0 if it is not in a method. This
+ * case can happen in a toplevel of a source file, for example.
+ *
+ * \returns the ID of the name or 0
+ * \sa rb_frame_callee
+ * \ingroup defmethod
+ */
 ID
 rb_frame_this_func(void)
 {
     return frame_func_id(GET_THREAD()->ec.cfp);
 }
 
+/*!
+ * The name of the current method.
+ *
+ * The function returns the alias if an alias of the method is called.
+ * The function can also return 0 if it is not in a method. This
+ * case can happen in a toplevel of a source file, for example.
+ *
+ * \returns the ID of the name or 0.
+ * \sa rb_frame_this_func
+ * \ingroup defmethod
+ */
 ID
 rb_frame_callee(void)
 {
@@ -979,6 +1142,12 @@ prev_frame_func(void)
     return frame_func_id(prev_cfp);
 }
 
+/*!
+ * \private
+ * Returns the ID of the last method in the call stack.
+ * \sa rb_frame_this_func
+ * \ingroup defmethod
+ */
 ID
 rb_frame_last_func(void)
 {
@@ -1109,6 +1278,10 @@ hidden_identity_hash_new(void)
     return hash;
 }
 
+/*!
+ * \private
+ * \todo can be static?
+ */
 void
 rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
 {
@@ -1191,6 +1364,10 @@ using_module_recursive(const rb_cref_t *cref, VALUE klass)
     rb_hash_foreach(refinements, using_refinement, (VALUE) cref);
 }
 
+/*!
+ * \private
+ * \todo can be static?
+ */
 void
 rb_using_module(const rb_cref_t *cref, VALUE module)
 {
@@ -1199,6 +1376,7 @@ rb_using_module(const rb_cref_t *cref, VALUE module)
     rb_clear_method_cache_by_class(rb_cObject);
 }
 
+/*! \private */
 VALUE
 rb_refinement_module_get_refined_class(VALUE module)
 {
@@ -1383,6 +1561,16 @@ rb_mod_s_used_modules(void)
     return rb_funcall(ary, rb_intern("uniq"), 0);
 }
 
+/*!
+ * Calls \c #initialize method of \a obj with the given arguments.
+ *
+ * It also forwards the given block to \c #initialize if given.
+ *
+ * \param[in] obj the receiver object
+ * \param[in] argc the number of arguments
+ * \param[in] argv a pointer to the array of arguments
+ * \ingroup object
+ */
 void
 rb_obj_call_init(VALUE obj, int argc, const VALUE *argv)
 {
@@ -1390,6 +1578,12 @@ rb_obj_call_init(VALUE obj, int argc, const VALUE *argv)
     rb_funcallv(obj, idInitialize, argc, argv);
 }
 
+/*!
+ * Extend the object with the module.
+ *
+ * Same as \c Object\#extend_object.
+ * \ingroup class
+ */
 void
 rb_extend_object(VALUE obj, VALUE module)
 {
@@ -1565,6 +1759,12 @@ errinfo_getter(ID id)
     return get_errinfo();
 }
 
+/*! The current exception in the current thread.
+ *
+ * Same as \c $! in Ruby.
+ * \return the current exception or \c Qnil
+ * \ingroup exception
+ */
 VALUE
 rb_errinfo(void)
 {
@@ -1572,6 +1772,14 @@ rb_errinfo(void)
     return th->ec.errinfo;
 }
 
+/*! Sets the current exception (\c $!) to the given value
+ *
+ * \param[in] err an \c Exception object or \c Qnil.
+ * \exception TypeError if \a err is neither an exception or \c nil.
+ * \note this function does not raise the exception.
+ *   Use \c rb_raise() when you want to raise.
+ * \ingroup exception
+ */
 void
 rb_set_errinfo(VALUE err)
 {
