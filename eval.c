@@ -837,7 +837,7 @@ rb_block_given_p(void)
 }
 
 /*!  Determines if the current method is an interator.
- * 
+ *
  * An alias of rb_block_given_p().
  * \ingroup defmethod
  */
