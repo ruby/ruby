@@ -346,6 +346,7 @@ append_compile_error(rb_iseq_t *iseq, int line, const char *fmt, ...)
     if (compile_debug) rb_exc_fatal(err);
 }
 
+#if 0
 static void
 compile_bug(rb_iseq_t *iseq, int line, const char *fmt, ...)
 {
@@ -355,34 +356,38 @@ compile_bug(rb_iseq_t *iseq, int line, const char *fmt, ...)
     va_end(args);
     abort();
 }
+#endif
 
 #define COMPILE_ERROR append_compile_error
 
 #define ERROR_ARGS_AT(n) iseq, nd_line(n),
 #define ERROR_ARGS ERROR_ARGS_AT(node)
 
-#define EXPECT_NODE(prefix, node, ndtype) \
+#define EXPECT_NODE(prefix, node, ndtype, errval) \
 do { \
     NODE *error_node = (node); \
     enum node_type error_type = nd_type(error_node); \
     if (error_type != (ndtype)) { \
-	compile_bug(ERROR_ARGS_AT(error_node) \
-		    prefix ": " #ndtype " is expected, but %s", \
-		    ruby_node_name(error_type)); \
+	COMPILE_ERROR(ERROR_ARGS_AT(error_node) \
+		      prefix ": " #ndtype " is expected, but %s", \
+		      ruby_node_name(error_type)); \
+	return errval; \
     } \
 } while (0)
 
-#define EXPECT_NODE_NONULL(prefix, parent, ndtype) \
+#define EXPECT_NODE_NONULL(prefix, parent, ndtype, errval) \
 do { \
-    compile_bug(ERROR_ARGS_AT(parent) \
-		prefix ": must be " #ndtype ", but 0"); \
+    COMPILE_ERROR(ERROR_ARGS_AT(parent) \
+		  prefix ": must be " #ndtype ", but 0"); \
+    return errval; \
 } while (0)
 
-#define UNKNOWN_NODE(prefix, node) \
+#define UNKNOWN_NODE(prefix, node, errval) \
 do { \
     NODE *error_node = (node); \
-    compile_bug(ERROR_ARGS_AT(error_node) prefix ": unknown node (%s)", \
-		ruby_node_name(nd_type(error_node))); \
+    COMPILE_ERROR(ERROR_ARGS_AT(error_node) prefix ": unknown node (%s)", \
+		  ruby_node_name(nd_type(error_node))); \
+    return errval; \
 } while (0)
 
 #define COMPILE_OK 1
@@ -640,7 +645,8 @@ rb_iseq_compile_node(rb_iseq_t *iseq, NODE *node)
 	    CHECK(COMPILE(ret, "defined guard", node));
 	    break;
 	  default:
-	    compile_bug(ERROR_ARGS "unknown scope");
+	    COMPILE_ERROR(ERROR_ARGS "unknown scope");
+	    return COMPILE_NG;
 	}
     }
 
@@ -1362,7 +1368,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, NODE *node_args)
 	int last_comma = 0;
 	ID block_id = 0;
 
-	EXPECT_NODE("iseq_set_arguments", node_args, NODE_ARGS);
+	EXPECT_NODE("iseq_set_arguments", node_args, NODE_ARGS, COMPILE_NG);
 
 	iseq->body->param.lead_num = (int)args->pre_args_num;
 	if (iseq->body->param.lead_num > 0) iseq->body->param.flags.has_lead = TRUE;
@@ -1659,9 +1665,10 @@ fix_sp_depth(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		sp = adjust->label ? adjust->label->sp : 0;
 		if (adjust->line_no != -1 && orig_sp - sp < 0) {
 		    BADINSN_DUMP(anchor, list, NULL);
-		    compile_bug(iseq, adjust->line_no,
-				"iseq_set_sequence: adjust bug %d < %d",
-				orig_sp, sp);
+		    COMPILE_ERROR(iseq, adjust->line_no,
+				  "iseq_set_sequence: adjust bug %d < %d",
+				  orig_sp, sp);
+		    return -1;
 		}
 		break;
 	    }
@@ -1903,9 +1910,10 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			generated_iseq[code_index++] = BIN(nop);
 		    }
 		    else {
-			compile_bug(iseq, adjust->line_no,
-				    "iseq_set_sequence: adjust bug %d < %d",
-				    orig_sp, sp);
+			COMPILE_ERROR(iseq, adjust->line_no,
+				      "iseq_set_sequence: adjust bug %d < %d",
+				      orig_sp, sp);
+			return COMPILE_NG;
 		    }
 		}
 		break;
@@ -2885,8 +2893,9 @@ compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int 
     if (!NIL_P(lit)) {
 	cnt++;
 	if (!RB_TYPE_P(lit, T_STRING)) {
-	    compile_bug(ERROR_ARGS "dstr: must be string: %s",
-			rb_builtin_type_name(TYPE(lit)));
+	    COMPILE_ERROR(ERROR_ARGS "dstr: must be string: %s",
+			  rb_builtin_type_name(TYPE(lit)));
+	    return COMPILE_NG;
 	}
 	lit = node->nd_lit = rb_fstring(lit);
 	ADD_INSN1(ret, nd_line(node), putobject, lit);
@@ -3110,8 +3119,8 @@ static_literal_value(NODE *node)
 }
 
 static int
-compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE* node_root,
-	       enum compile_array_type_t type, struct rb_call_info_kw_arg **keywords_ptr, int popped)
+compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE* node_root,
+	      enum compile_array_type_t type, struct rb_call_info_kw_arg **keywords_ptr, int popped)
 {
     NODE *node = node_root;
     int line = (int)nd_line(node);
@@ -3139,7 +3148,7 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE* node_root,
 
 	    for (i=0; i<max && node; i++, len++, node = node->nd_next) {
 		if (CPDEBUG > 0) {
-		    EXPECT_NODE("compile_array", node, NODE_ARRAY);
+		    EXPECT_NODE("compile_array", node, NODE_ARRAY, -1);
 		}
 
 		if (type != COMPILE_ARRAY_TYPE_ARRAY && !node->nd_head) {
@@ -3213,7 +3222,8 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE* node_root,
 			    ADD_SEND(ret, line, id_core_hash_merge_ary, INT2FIX(1));
 			    /* wrong number of arguments -----------------------^ */
 #else
-			    compile_bug(ERROR_ARGS "core#hash_merge_ary");
+			    COMPILE_ERROR(ERROR_ARGS "core#hash_merge_ary");
+			    return -1;
 #endif
 			}
 		    }
@@ -3270,12 +3280,6 @@ compile_array_(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE* node_root,
 	}
     }
     return len;
-}
-
-static VALUE
-compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE* node_root, enum compile_array_type_t type)
-{
-    return compile_array_(iseq, ret, node_root, type, NULL, 0);
 }
 
 static VALUE
@@ -3973,7 +3977,9 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, NODE *argn,
 	    *flag |= VM_CALL_ARGS_SPLAT;
 
 	    if (next_is_array) {
-		argc = INT2FIX(compile_array(iseq, args, argn->nd_head, COMPILE_ARRAY_TYPE_ARGS) + 1);
+		int len = compile_array(iseq, args, argn->nd_head, COMPILE_ARRAY_TYPE_ARGS, NULL, FALSE);
+		if (len < 0) return Qnil;
+		argc = INT2FIX(len + 1);
 	    }
 	    else {
 		argn = argn->nd_head;
@@ -3983,11 +3989,13 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, NODE *argn,
 	  }
 	  case NODE_ARRAY:
 	    {
-		argc = INT2FIX(compile_array_(iseq, args, argn, COMPILE_ARRAY_TYPE_ARGS, keywords, FALSE));
+		int len = compile_array(iseq, args, argn, COMPILE_ARRAY_TYPE_ARGS, keywords, FALSE);
+		if (len < 0) return Qnil;
+		argc = INT2FIX(len);
 		break;
 	    }
 	  default: {
-	    UNKNOWN_NODE("setup_arg", argn);
+	    UNKNOWN_NODE("setup_arg", argn, Qnil);
 	  }
 	}
     }
@@ -4152,11 +4160,11 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
 		ADD_INSNL(cond_seq, nd_line(vals), branchif, l1);
 		break;
 	      default:
-		UNKNOWN_NODE("NODE_CASE", vals);
+		UNKNOWN_NODE("NODE_CASE", vals, COMPILE_NG);
 	    }
 	}
 	else {
-	    EXPECT_NODE_NONULL("NODE_CASE", node, NODE_ARRAY);
+	    EXPECT_NODE_NONULL("NODE_CASE", node, NODE_ARRAY, COMPILE_NG);
 	}
 
 	node = node->nd_next;
@@ -4218,7 +4226,8 @@ compile_when(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
 
 	vals = node->nd_head;
 	if (!vals) {
-	    compile_bug(ERROR_ARGS "NODE_WHEN: must be NODE_ARRAY, but 0");
+	    COMPILE_ERROR(ERROR_ARGS "NODE_WHEN: must be NODE_ARRAY, but 0");
+	    return COMPILE_NG;
 	}
 	switch (nd_type(vals)) {
 	  case NODE_ARRAY:
@@ -4238,7 +4247,7 @@ compile_when(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
 	    ADD_INSNL(ret, nd_line(vals), branchif, l1);
 	    break;
 	  default:
-	    UNKNOWN_NODE("NODE_WHEN", vals);
+	    UNKNOWN_NODE("NODE_WHEN", vals, COMPILE_NG);
 	}
 	node = node->nd_next;
     }
@@ -4412,7 +4421,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 
 	if (node->nd_state == Qundef) {
 	    /* ADD_INSN(ret, line, putundef); */
-	    compile_bug(ERROR_ARGS "unsupported: putundef");
+	    COMPILE_ERROR(ERROR_ARGS "unsupported: putundef");
+	    goto ng;
 	}
 	else {
 	    ADD_INSN(ret, line, putnil);
@@ -4778,7 +4788,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 		    ADD_INSNL(ret, line, branchif, label_hit);
 		    break;
 		  default:
-		    UNKNOWN_NODE("NODE_RESBODY", narg);
+		    UNKNOWN_NODE("NODE_RESBODY", narg, COMPILE_NG);
 		}
 	    }
 	    else {
@@ -4903,8 +4913,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	idx = get_dyna_var_idx(iseq, node->nd_vid, &lv, &ls);
 
 	if (idx < 0) {
-	    compile_bug(ERROR_ARGS "NODE_DASGN(_CURR): unknown id (%"PRIsVALUE")",
-			rb_id2str(node->nd_vid));
+	    COMPILE_ERROR(ERROR_ARGS "NODE_DASGN(_CURR): unknown id (%"PRIsVALUE")",
+			  rb_id2str(node->nd_vid));
+	    goto ng;
 	}
 	ADD_SETLOCAL(ret, line, ls - idx, lv);
 	break;
@@ -5001,6 +5012,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	  default:
 	    INIT_ANCHOR(args);
 	    argc = setup_args(iseq, args, node->nd_args->nd_head, &flag, NULL);
+	    CHECK(!NIL_P(argc));
 	    ADD_SEQ(ret, args);
 	}
 	ADD_INSN1(ret, line, dupn, FIXNUM_INC(argc, 1 + boff));
@@ -5446,6 +5458,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	/* args */
 	if (type != NODE_VCALL) {
 	    argc = setup_args(iseq, args, node->nd_args, &flag, &keywords);
+	    CHECK(!NIL_P(argc));
 	}
 	else {
 	    argc = INT2FIX(0);
@@ -5487,6 +5500,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	ISEQ_COMPILE_DATA(iseq)->current_block = NULL;
 	if (type == NODE_SUPER) {
 	    VALUE vargc = setup_args(iseq, args, node->nd_args, &flag, &keywords);
+	    CHECK(!NIL_P(vargc));
 	    argc = FIX2INT(vargc);
 	}
 	else {
@@ -5602,7 +5616,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	break;
       }
       case NODE_ARRAY:{
-	compile_array_(iseq, ret, node, COMPILE_ARRAY_TYPE_ARRAY, NULL, popped);
+	CHECK(compile_array(iseq, ret, node, COMPILE_ARRAY_TYPE_ARRAY, NULL, popped) >= 0);
 	break;
       }
       case NODE_ZARRAY:{
@@ -5630,7 +5644,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	INIT_ANCHOR(list);
 	switch (type) {
 	  case NODE_ARRAY:
-	    compile_array_(iseq, list, node->nd_head, COMPILE_ARRAY_TYPE_HASH, NULL, popped);
+	    CHECK(compile_array(iseq, list, node->nd_head, COMPILE_ARRAY_TYPE_HASH, NULL, popped) >= 0);
 	    ADD_SEQ(ret, list);
 	    break;
 
@@ -5640,8 +5654,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	    break;
 
 	  default:
-	    compile_bug(ERROR_ARGS_AT(node->nd_head) "can't make hash with this node: %s",
-			ruby_node_name(type));
+	    COMPILE_ERROR(ERROR_ARGS_AT(node->nd_head) "can't make hash with this node: %s",
+			  ruby_node_name(type));
+	    goto ng;
 	}
 	break;
       }
@@ -5717,6 +5732,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 
 	if (node->nd_head) {
 	    argc = setup_args(iseq, args, node->nd_head, &flag, &keywords);
+	    CHECK(!NIL_P(argc));
 	}
 	else {
 	    argc = INT2FIX(0);
@@ -5746,8 +5762,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	if (!popped) {
 	    idx = get_dyna_var_idx(iseq, node->nd_vid, &lv, &ls);
 	    if (idx < 0) {
-		compile_bug(ERROR_ARGS "unknown dvar (%"PRIsVALUE")",
-			    rb_id2str(node->nd_vid));
+		COMPILE_ERROR(ERROR_ARGS "unknown dvar (%"PRIsVALUE")",
+			      rb_id2str(node->nd_vid));
+		goto ng;
 	    }
 	    ADD_GETLOCAL(ret, line, ls - idx, lv);
 	}
@@ -6312,13 +6329,15 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 
 	    if (default_value == (NODE *)-1) {
 		/* required argument. do nothing */
-		compile_bug(ERROR_ARGS "unreachable");
+		COMPILE_ERROR(ERROR_ARGS "unreachable");
+		goto ng;
 	    }
 	    else if (nd_type(default_value) == NODE_LIT ||
 		     nd_type(default_value) == NODE_NIL ||
 		     nd_type(default_value) == NODE_TRUE ||
 		     nd_type(default_value) == NODE_FALSE) {
-		compile_bug(ERROR_ARGS "unreachable");
+		COMPILE_ERROR(ERROR_ARGS "unreachable");
+		goto ng;
 	    }
 	    else {
 		/* if keywordcheck(_kw_bits, nth_keyword)
@@ -6382,6 +6401,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	INIT_ANCHOR(recv);
 	INIT_ANCHOR(args);
 	argc = setup_args(iseq, args, node->nd_args, &flag, NULL);
+	CHECK(!NIL_P(argc));
 
 	flag |= COMPILE_RECV(recv, "recv", node);
 
@@ -6459,8 +6479,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	break;
       }
       default:
-	UNKNOWN_NODE("iseq_compile_each", node);
-	return COMPILE_NG;
+	UNKNOWN_NODE("iseq_compile_each", node, COMPILE_NG);
     }
 
     /* check & remove redundant trace(line) */
