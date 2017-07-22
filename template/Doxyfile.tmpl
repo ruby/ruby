@@ -61,7 +61,7 @@ SYMBOL_CACHE_SIZE      = 0
 #---------------------------------------------------------------------------
 EXTRACT_ALL            = YES
 EXTRACT_PRIVATE        = NO
-EXTRACT_STATIC         = YES
+EXTRACT_STATIC         = NO
 EXTRACT_LOCAL_CLASSES  = YES
 EXTRACT_LOCAL_METHODS  = NO
 EXTRACT_ANON_NSPACES   = NO
@@ -69,7 +69,7 @@ HIDE_UNDOC_MEMBERS     = NO
 HIDE_UNDOC_CLASSES     = NO
 HIDE_FRIEND_COMPOUNDS  = NO
 HIDE_IN_BODY_DOCS      = YES
-INTERNAL_DOCS          = YES
+INTERNAL_DOCS          = NO
 CASE_SENSE_NAMES       = NO
 HIDE_SCOPE_NAMES       = NO
 SHOW_INCLUDE_FILES     = YES
@@ -104,7 +104,7 @@ WARN_LOGFILE           =
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          = *.c *.h *.y *.def
 RECURSIVE              = YES
-EXCLUDE                = ext/dl/callback ccan
+EXCLUDE                = <%=srcdir%>/ext/dl/callback <%=srcdir%>/ccan <%=srcdir%>/ext/psych/yaml
 EXCLUDE_SYMLINKS       = YES
 EXCLUDE_PATTERNS       = *.src doc enc build */ext/-test-/* tmp test yarvtest lib bootstraptest spec .ext .git .svn extconf.h *prelude.c encdb.h transdb.h insns.def
 EXCLUDE_SYMBOLS        = 

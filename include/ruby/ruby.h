@@ -1272,6 +1272,11 @@ int rb_big_sign(VALUE);
 #define RB_OBJ_FREEZE_RAW(x) (void)(RBASIC(x)->flags |= RUBY_FL_FREEZE)
 #define RB_OBJ_FREEZE(x) rb_obj_freeze_inline((VALUE)x)
 
+/*!
+ * \defgroup deprecated_macros deprecated macro APIs
+ * \{
+ * \par These macros are deprecated. Prefer their `RB_`-prefixed versions.
+ */
 #define FL_ABLE(x) RB_FL_ABLE(x)
 #define FL_TEST_RAW(x,f) RB_FL_TEST_RAW(x,f)
 #define FL_TEST(x,f) RB_FL_TEST(x,f)
@@ -1299,6 +1304,8 @@ int rb_big_sign(VALUE);
 #define OBJ_FROZEN(x) RB_OBJ_FROZEN(x)
 #define OBJ_FREEZE_RAW(x) RB_OBJ_FREEZE_RAW(x)
 #define OBJ_FREEZE(x) RB_OBJ_FREEZE(x)
+
+/* \} */
 
 void rb_freeze_singleton_class(VALUE klass);
 
@@ -1652,7 +1659,7 @@ rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
 #define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(size_t)(n))
 #define MEMCMP(p1,p2,type,n) memcmp((p1), (p2), sizeof(type)*(size_t)(n))
 
-void rb_obj_infect(VALUE,VALUE);
+void rb_obj_infect(VALUE victim, VALUE carrier);
 
 typedef int ruby_glob_func(const char*,VALUE, void*);
 void rb_glob(const char*,void(*)(const char*,VALUE,void*),VALUE);
