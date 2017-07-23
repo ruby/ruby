@@ -952,6 +952,16 @@ eom
     assert_equal(:ok, result)
   end
 
+  def test_brace_after_literal_argument
+    bug = '[ruby-core:81037] [Bug #13547]'
+    error = /unexpected '{'/
+    assert_syntax_error('m "x" {}', error)
+    assert_syntax_error('m 1 {}', error, bug)
+    assert_syntax_error('m 1.0 {}', error, bug)
+    assert_syntax_error('m :m {}', error, bug)
+    assert_syntax_error('m :"#{m}" {}', error, bug)
+  end
+
   def test_return_toplevel
     feature4840 = '[ruby-core:36785] [Feature #4840]'
     code = "#{<<~"begin;"}\n#{<<~"end;"}"
