@@ -898,6 +898,10 @@ eom
     assert_valid_syntax %q{a b(c d), 1 do end}, bug11873
     assert_valid_syntax %q{a b{c(d)}, 1 do end}, bug11873
     assert_valid_syntax %q{a b(c(d)), 1 do end}, bug11873
+    assert_valid_syntax %q{a b{c d}, "x" do end}, bug11873
+    assert_valid_syntax %q{a b(c d), "x" do end}, bug11873
+    assert_valid_syntax %q{a b{c(d)}, "x" do end}, bug11873
+    assert_valid_syntax %q{a b(c(d)), "x" do end}, bug11873
   end
 
   def test_block_after_cmdarg_in_paren
@@ -935,6 +939,15 @@ eom
     def obj.m; yield; end
     result = assert_nothing_raised(SyntaxError) do
       obj.instance_eval("m = 1; m do :ok end")
+    end
+    assert_equal(:ok, result)
+  end
+
+  def test_brace_after_local_variable
+    obj = Object.new
+    def obj.m; yield; end
+    result = assert_nothing_raised(SyntaxError) do
+      obj.instance_eval("m = 1; m {:ok}")
     end
     assert_equal(:ok, result)
   end
