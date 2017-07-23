@@ -1618,7 +1618,7 @@ static inline void *
 rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
 {
     size_t cnt = (size_t)count;
-    if (elsize % sizeof(VALUE) == 0) {
+    if (elsize == sizeof(VALUE)) {
 	if (RB_UNLIKELY(cnt > LONG_MAX / sizeof(VALUE))) {
 	    ruby_malloc_size_overflow(cnt, elsize);
 	}
