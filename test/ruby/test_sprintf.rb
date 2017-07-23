@@ -514,6 +514,12 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal("!", sprintf("%*c", 0, ?!.ord), bug)
   end
 
+  def test_negative_width_overflow
+    assert_raise_with_message(ArgumentError, /too big/) do
+      sprintf("%*s", RbConfig::LIMITS["INT_MIN"], "")
+    end
+  end
+
   def test_no_hidden_garbage
     fmt = [4, 2, 2].map { |x| "%0#{x}d" }.join('-') # defeats optimization
     ObjectSpace.count_objects(res = {}) # creates strings on first call

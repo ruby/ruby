@@ -648,6 +648,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 	    if (width < 0) {
 		flags |= FMINUS;
 		width = -width;
+		if (width < 0) rb_raise(rb_eArgError, "width too big");
 	    }
 	    p++;
 	    goto retry;
