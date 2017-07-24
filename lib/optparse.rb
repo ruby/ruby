@@ -1744,16 +1744,16 @@ XXX
   def candidate(word)
     list = []
     case word
+    when '-'
+      long = short = true
     when /\A--/
       word, arg = word.split(/=/, 2)
       argpat = Completion.regexp(arg, false) if arg and !arg.empty?
       long = true
-    when /\A-(!-)/
-      short = true
     when /\A-/
-      long = short = true
+      short = true
     end
-    pat = Completion.regexp(word, true)
+    pat = Completion.regexp(word, long)
     visit(:each_option) do |opt|
       next unless Switch === opt
       opts = (long ? opt.long : []) + (short ? opt.short : [])
