@@ -127,6 +127,28 @@ index 790d26fda..83b8347c4 100644
      with_fake_man do
        bundle "--help"
      end
+diff --git spec/commands/newgem_spec.rb spec/commands/newgem_spec.rb
+index a3c3a3641..9861e886d 100644
+--- spec/commands/newgem_spec.rb
++++ spec/commands/newgem_spec.rb
+@@ -328,7 +328,7 @@ RSpec.describe "bundle gem" do
+       end
+ 
+       Dir.chdir(bundled_app(gem_name)) do
+-        sys_exec("rake")
++        sys_exec(rake)
+         expect(out).to include("SUCCESS")
+       end
+     end
+@@ -613,7 +613,7 @@ RSpec.describe "bundle gem" do
+       end
+ 
+       Dir.chdir(bundled_app(gem_name)) do
+-        sys_exec("rake")
++        sys_exec(rake)
+         expect(out).to include("SUCCESS")
+       end
+     end
 diff --git spec/install/gemfile/git_spec.rb spec/install/gemfile/git_spec.rb
 index 8843fb7eb..965e75b22 100644
 --- spec/install/gemfile/git_spec.rb
@@ -304,10 +326,10 @@ index 297d81f53..6231509ed 100644
 +  end
  end
 diff --git spec/support/helpers.rb spec/support/helpers.rb
-index d971ea92c..8fe503dcf 100644
+index d971ea92c..a2e6a740b 100644
 --- spec/support/helpers.rb
 +++ spec/support/helpers.rb
-@@ -156,7 +156,8 @@ module Spec
+@@ -156,10 +156,19 @@ module Spec
          args = args.gsub(/(?=")/, "\\")
          args = %("#{args}")
        end
@@ -317,3 +339,14 @@ index d971ea92c..8fe503dcf 100644
      end
      bang :gem_command
  
++    def rake
++      if ENV['BUNDLE_RUBY'] && ENV['BUNDLE_GEM']
++        "#{ENV['BUNDLE_RUBY']} #{ENV['GEM_PATH']}/bin/rake"
++      else
++        'rake'
++      end
++    end
++
+     def sys_exec(cmd)
+       Open3.popen3(cmd.to_s) do |stdin, stdout, stderr, wait_thr|
+         yield stdin, stdout, wait_thr if block_given?
