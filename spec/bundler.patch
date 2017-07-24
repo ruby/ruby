@@ -1,3 +1,16 @@
+diff --git spec/commands/clean_spec.rb spec/commands/clean_spec.rb
+index 8fd4b6fbe..3d97631a1 100644
+--- spec/commands/clean_spec.rb
++++ spec/commands/clean_spec.rb
+@@ -679,7 +679,7 @@ RSpec.describe "bundle clean" do
+     should_not_have_gems "foo-1.0"
+   end
+ 
+-  it "doesn't remove extensions artifacts from bundled git gems after clean", :rubygems => "2.2" do
++  it "doesn't remove extensions artifacts from bundled git gems after clean", :ruby_trunk, :rubygems => "2.2" do
+     build_git "very_simple_git_binary", &:add_c_extension
+ 
+     revision = revision_for(lib_path("very_simple_git_binary-1.0"))
 diff --git spec/commands/exec_spec.rb spec/commands/exec_spec.rb
 index d70fc636c..fe9945b32 100644
 --- spec/commands/exec_spec.rb
@@ -24,6 +37,97 @@ index 790d26fda..7d7a416ad 100644
    # Rubygems 1.4+ no longer load gem plugins so this test is no longer needed
    it "complains if older versions of bundler are installed", :rubygems => "< 1.4" do
      system_gems "bundler-0.8.1"
+diff --git spec/install/gemfile/git_spec.rb spec/install/gemfile/git_spec.rb
+index 8843fb7eb..2dea88430 100644
+--- spec/install/gemfile/git_spec.rb
++++ spec/install/gemfile/git_spec.rb
+@@ -1004,7 +1004,7 @@ RSpec.describe "bundle install with git sources" do
+     end
+   end
+ 
+-  context "with an extension" do
++  context "with an extension", :ruby_trunk do
+     it "installs the extension" do
+       build_git "foo" do |s|
+         s.add_dependency "rake"
+diff --git spec/install/gems/native_extensions_spec.rb spec/install/gems/native_extensions_spec.rb
+index 7531768b5..053fa8e20 100644
+--- spec/install/gems/native_extensions_spec.rb
++++ spec/install/gems/native_extensions_spec.rb
+@@ -1,7 +1,7 @@
+ # frozen_string_literal: true
+ require "spec_helper"
+ 
+-RSpec.describe "installing a gem with native extensions" do
++RSpec.describe "installing a gem with native extensions", :ruby_trunk do
+   it "installs" do
+     build_repo2 do
+       build_gem "c_extension" do |s|
+diff --git spec/install/gems/resolving_spec.rb spec/install/gems/resolving_spec.rb
+index c22799344..f2f3448e0 100644
+--- spec/install/gems/resolving_spec.rb
++++ spec/install/gems/resolving_spec.rb
+@@ -1,7 +1,7 @@
+ # frozen_string_literal: true
+ require "spec_helper"
+ 
+-RSpec.describe "bundle install with install-time dependencies" do
++RSpec.describe "bundle install with install-time dependencies", :ruby_trunk do
+   it "installs gems with implicit rake dependencies" do
+     install_gemfile <<-G
+       source "file://#{gem_repo1}"
+diff --git spec/install/gems/standalone_spec.rb spec/install/gems/standalone_spec.rb
+index 496844ae1..1bff30617 100644
+--- spec/install/gems/standalone_spec.rb
++++ spec/install/gems/standalone_spec.rb
+@@ -67,7 +67,7 @@ RSpec.shared_examples "bundle install --standalone" do
+     include_examples "common functionality"
+   end
+ 
+-  describe "with gems with native extension" do
++  describe "with gems with native extension", :ruby_trunk do
+     before do
+       install_gemfile <<-G, :standalone => true
+         source "file://#{gem_repo1}"
+diff --git spec/install/path_spec.rb spec/install/path_spec.rb
+index ad6071d29..690751fda 100644
+--- spec/install/path_spec.rb
++++ spec/install/path_spec.rb
+@@ -129,7 +129,7 @@ RSpec.describe "bundle install" do
+       expect(the_bundle).to include_gems "rack 1.0.0"
+     end
+ 
+-    it "re-installs gems whose extensions have been deleted", :rubygems => ">= 2.3" do
++    it "re-installs gems whose extensions have been deleted", :ruby_trunk, :rubygems => ">= 2.3" do
+       build_lib "very_simple_binary", "1.0.0", :to_system => true do |s|
+         s.write "lib/very_simple_binary.rb", "raise 'FAIL'"
+       end
+diff --git spec/runtime/setup_spec.rb spec/runtime/setup_spec.rb
+index 754ec94d1..f5b8d8b5e 100644
+--- spec/runtime/setup_spec.rb
++++ spec/runtime/setup_spec.rb
+@@ -759,7 +759,7 @@ end
+     expect(out).to eq("yay")
+   end
+ 
+-  it "should clean $LOAD_PATH properly" do
++  it "should clean $LOAD_PATH properly", :ruby_trunk do
+     gem_name = "very_simple_binary"
+     full_gem_name = gem_name + "-1.0"
+     ext_dir = File.join(tmp "extenstions", full_gem_name)
+diff --git spec/runtime/with_clean_env_spec.rb spec/runtime/with_clean_env_spec.rb
+index b351e86c8..a10cc97f1 100644
+--- spec/runtime/with_clean_env_spec.rb
++++ spec/runtime/with_clean_env_spec.rb
+@@ -26,7 +26,7 @@ RSpec.describe "Bundler.with_env helpers" do
+       end
+     end
+ 
+-    it "works with nested bundle exec invocations" do
++    it "works with nested bundle exec invocations", :ruby_trunk do
+       create_file("exe.rb", <<-'RB')
+         count = ARGV.first.to_i
+         exit if count < 0
 diff --git spec/spec_helper.rb spec/spec_helper.rb
 index 297d81f53..6231509ed 100644
 --- spec/spec_helper.rb
