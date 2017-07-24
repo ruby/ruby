@@ -12,44 +12,152 @@ index 8fd4b6fbe..3d97631a1 100644
  
      revision = revision_for(lib_path("very_simple_git_binary-1.0"))
 diff --git spec/commands/exec_spec.rb spec/commands/exec_spec.rb
-index d70fc636c..fe9945b32 100644
+index d70fc636c..9134862ed 100644
 --- spec/commands/exec_spec.rb
 +++ spec/commands/exec_spec.rb
-@@ -244,7 +244,7 @@ RSpec.describe "bundle exec" do
-     end
-   end
+@@ -294,35 +294,35 @@ RSpec.describe "bundle exec" do
+           expect(out).to eq('args: ["-h"]')
+         end
  
--  describe "with help flags" do
-+  describe "with help flags", :ruby_trunk do
-     each_prefix = proc do |string, &blk|
-       1.upto(string.length) {|l| blk.call(string[0, l]) }
-     end
+-        it "shows bundle-exec's man page when --help is between exec and the executable" do
++        it "shows bundle-exec's man page when --help is between exec and the executable", :ruby_trunk do
+           with_fake_man do
+             bundle "#{exec} --help cat"
+           end
+           expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
+         end
+ 
+-        it "shows bundle-exec's man page when --help is before exec" do
++        it "shows bundle-exec's man page when --help is before exec", :ruby_trunk do
+           with_fake_man do
+             bundle "--help #{exec}"
+           end
+           expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
+         end
+ 
+-        it "shows bundle-exec's man page when -h is before exec" do
++        it "shows bundle-exec's man page when -h is before exec", :ruby_trunk do
+           with_fake_man do
+             bundle "-h #{exec}"
+           end
+           expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
+         end
+ 
+-        it "shows bundle-exec's man page when --help is after exec" do
++        it "shows bundle-exec's man page when --help is after exec", :ruby_trunk do
+           with_fake_man do
+             bundle "#{exec} --help"
+           end
+           expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
+         end
+ 
+-        it "shows bundle-exec's man page when -h is after exec" do
++        it "shows bundle-exec's man page when -h is after exec", :ruby_trunk do
+           with_fake_man do
+             bundle "#{exec} -h"
+           end
 diff --git spec/commands/help_spec.rb spec/commands/help_spec.rb
-index 790d26fda..7d7a416ad 100644
+index 790d26fda..83b8347c4 100644
 --- spec/commands/help_spec.rb
 +++ spec/commands/help_spec.rb
-@@ -1,7 +1,7 @@
- # frozen_string_literal: true
- require "spec_helper"
- 
--RSpec.describe "bundle help" do
-+RSpec.describe "bundle help", :ruby_trunk do
-   # Rubygems 1.4+ no longer load gem plugins so this test is no longer needed
-   it "complains if older versions of bundler are installed", :rubygems => "< 1.4" do
-     system_gems "bundler-0.8.1"
-diff --git spec/install/gemfile/git_spec.rb spec/install/gemfile/git_spec.rb
-index 8843fb7eb..2dea88430 100644
---- spec/install/gemfile/git_spec.rb
-+++ spec/install/gemfile/git_spec.rb
-@@ -1004,7 +1004,7 @@ RSpec.describe "bundle install with git sources" do
-     end
+@@ -11,21 +11,21 @@ RSpec.describe "bundle help" do
+     expect(err).to include("running `gem cleanup bundler`.")
    end
  
--  context "with an extension" do
-+  context "with an extension", :ruby_trunk do
-     it "installs the extension" do
+-  it "uses mann when available" do
++  it "uses mann when available", :ruby_trunk do
+     with_fake_man do
+       bundle "help gemfile"
+     end
+     expect(out).to eq(%(["#{root}/man/gemfile.5"]))
+   end
+ 
+-  it "prefixes bundle commands with bundle- when finding the groff files" do
++  it "prefixes bundle commands with bundle- when finding the groff files", :ruby_trunk do
+     with_fake_man do
+       bundle "help install"
+     end
+     expect(out).to eq(%(["#{root}/man/bundle-install.1"]))
+   end
+ 
+-  it "simply outputs the txt file when there is no man on the path" do
++  it "simply outputs the txt file when there is no man on the path", :ruby_trunk do
+     with_path_as("") do
+       bundle "help install"
+     end
+@@ -50,28 +50,28 @@ RSpec.describe "bundle help" do
+     expect(out).to eq("--help")
+   end
+ 
+-  it "is called when the --help flag is used after the command" do
++  it "is called when the --help flag is used after the command", :ruby_trunk do
+     with_fake_man do
+       bundle "install --help"
+     end
+     expect(out).to eq(%(["#{root}/man/bundle-install.1"]))
+   end
+ 
+-  it "is called when the --help flag is used before the command" do
++  it "is called when the --help flag is used before the command", :ruby_trunk do
+     with_fake_man do
+       bundle "--help install"
+     end
+     expect(out).to eq(%(["#{root}/man/bundle-install.1"]))
+   end
+ 
+-  it "is called when the -h flag is used before the command" do
++  it "is called when the -h flag is used before the command", :ruby_trunk do
+     with_fake_man do
+       bundle "-h install"
+     end
+     expect(out).to eq(%(["#{root}/man/bundle-install.1"]))
+   end
+ 
+-  it "is called when the -h flag is used after the command" do
++  it "is called when the -h flag is used after the command", :ruby_trunk do
+     with_fake_man do
+       bundle "install -h"
+     end
+@@ -85,7 +85,7 @@ RSpec.describe "bundle help" do
+     expect(out).to include('Could not find command "instill".')
+   end
+ 
+-  it "is called when only using the --help flag" do
++  it "is called when only using the --help flag", :ruby_trunk do
+     with_fake_man do
+       bundle "--help"
+     end
+diff --git spec/install/gemfile/git_spec.rb spec/install/gemfile/git_spec.rb
+index 8843fb7eb..965e75b22 100644
+--- spec/install/gemfile/git_spec.rb
++++ spec/install/gemfile/git_spec.rb
+@@ -1005,7 +1005,7 @@ RSpec.describe "bundle install with git sources" do
+   end
+ 
+   context "with an extension" do
+-    it "installs the extension" do
++    it "installs the extension", :ruby_trunk do
        build_git "foo" do |s|
          s.add_dependency "rake"
+         s.extensions << "Rakefile"
+@@ -1037,7 +1037,7 @@ RSpec.describe "bundle install with git sources" do
+       expect(out).to eq(Pathname.glob(system_gem_path("bundler/gems/extensions/**/foo-1.0-*")).first.to_s)
+     end
+ 
+-    it "does not use old extension after ref changes" do
++    it "does not use old extension after ref changes", :ruby_trunk do
+       git_reader = build_git "foo", :no_default => true do |s|
+         s.extensions = ["ext/extconf.rb"]
+         s.write "ext/extconf.rb", <<-RUBY
+@@ -1099,7 +1099,7 @@ In Gemfile:
+       expect(out).not_to include("gem install foo")
+     end
+ 
+-    it "does not reinstall the extension", :rubygems => ">= 2.3.0" do
++    it "does not reinstall the extension", :ruby_trunk, :rubygems => ">= 2.3.0" do
+       build_git "foo" do |s|
+         s.add_dependency "rake"
+         s.extensions << "Rakefile"
 diff --git spec/install/gems/native_extensions_spec.rb spec/install/gems/native_extensions_spec.rb
 index 7531768b5..053fa8e20 100644
 --- spec/install/gems/native_extensions_spec.rb
@@ -64,18 +172,36 @@ index 7531768b5..053fa8e20 100644
      build_repo2 do
        build_gem "c_extension" do |s|
 diff --git spec/install/gems/resolving_spec.rb spec/install/gems/resolving_spec.rb
-index c22799344..f2f3448e0 100644
+index c22799344..1f0370ed2 100644
 --- spec/install/gems/resolving_spec.rb
 +++ spec/install/gems/resolving_spec.rb
-@@ -1,7 +1,7 @@
- # frozen_string_literal: true
+@@ -2,7 +2,7 @@
  require "spec_helper"
  
--RSpec.describe "bundle install with install-time dependencies" do
-+RSpec.describe "bundle install with install-time dependencies", :ruby_trunk do
-   it "installs gems with implicit rake dependencies" do
+ RSpec.describe "bundle install with install-time dependencies" do
+-  it "installs gems with implicit rake dependencies" do
++  it "installs gems with implicit rake dependencies", :ruby_trunk do
      install_gemfile <<-G
        source "file://#{gem_repo1}"
+       gem "with_implicit_rake_dep"
+@@ -49,7 +49,7 @@ RSpec.describe "bundle install with install-time dependencies" do
+       expect(the_bundle).to include_gems "net_b 1.0"
+     end
+ 
+-    it "installs plugins depended on by other plugins" do
++    it "installs plugins depended on by other plugins", :ruby_trunk do
+       install_gemfile <<-G
+         source "file://#{gem_repo1}"
+         gem "net_a"
+@@ -58,7 +58,7 @@ RSpec.describe "bundle install with install-time dependencies" do
+       expect(the_bundle).to include_gems "net_a 1.0", "net_b 1.0"
+     end
+ 
+-    it "installs multiple levels of dependencies" do
++    it "installs multiple levels of dependencies", :ruby_trunk do
+       install_gemfile <<-G
+         source "file://#{gem_repo1}"
+         gem "net_c"
 diff --git spec/install/gems/standalone_spec.rb spec/install/gems/standalone_spec.rb
 index 496844ae1..1bff30617 100644
 --- spec/install/gems/standalone_spec.rb

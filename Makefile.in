@@ -489,7 +489,7 @@ yes-test-bundler: test-bundler-precheck test-bundler-prepare
 		GEM_HOME=.bundle GEM_PATH=.bundle \
 		BUNDLE_RUBY="$(abspath ./ruby) -I$(abspath $(srcdir)/lib) -I$(abspath .) -I$(abspath $(EXTOUT)/common) -I$(abspath $(EXTOUT)/$(arch))" \
 		BUNDLE_GEM="$(abspath ./ruby) -I$(abspath $(srcdir)/lib) -I$(abspath .) -I$(abspath $(EXTOUT)/common) -I$(abspath $(EXTOUT)/$(arch)) -rubygems $(abspath $(srcdir)/bin/gem) --backtrace" \
-		$(XRUBY) -C $(srcdir)/spec/bundler ".bundle/bin/rspec" --format progress
+		$(XRUBY) -C $(srcdir)/spec/bundler ".bundle/bin/rspec" --format progress spec
 no-test-bundler:
 
 update-src::
