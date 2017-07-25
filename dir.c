@@ -2268,7 +2268,7 @@ push_pattern(const char *path, VALUE ary, void *enc)
 
 static int
 ruby_brace_expand(const char *str, int flags, ruby_glob_func *func, VALUE arg,
-		  rb_encoding *enc)
+		  rb_encoding *enc, VALUE var)
 {
     const int escape = !(flags & FNM_NOESCAPE);
     const char *p = str;
@@ -2313,7 +2313,7 @@ ruby_brace_expand(const char *str, int flags, ruby_glob_func *func, VALUE arg,
 	    }
 	    memcpy(buf+shift, t, p-t);
 	    strlcpy(buf+shift+(p-t), rbrace+1, len-(shift+(p-t)));
-	    status = ruby_brace_expand(buf, flags, func, arg, enc);
+	    status = ruby_brace_expand(buf, flags, func, arg, enc, var);
 	    if (status) break;
 	}
 	GLOB_FREE(buf);
@@ -2322,6 +2322,7 @@ ruby_brace_expand(const char *str, int flags, ruby_glob_func *func, VALUE arg,
 	status = glob_call_func(func, s, arg, enc);
     }
 
+    RB_GC_GUARD(var);
     return status;
 }
 
@@ -2349,7 +2350,7 @@ ruby_brace_glob_with_enc(const char *str, int flags, ruby_glob_func *func, VALUE
     args.funcs.error = NULL;
     args.value = arg;
     args.flags = flags;
-    return ruby_brace_expand(str, flags, glob_brace, (VALUE)&args, enc);
+    return ruby_brace_expand(str, flags, glob_brace, (VALUE)&args, enc, Qfalse);
 }
 
 int
@@ -2409,9 +2410,8 @@ push_glob(VALUE ary, VALUE str, VALUE base, int flags)
     enc = rb_utf8_encoding();
 #endif
 
-    RB_GC_GUARD(str);
     return ruby_brace_expand(RSTRING_PTR(str), flags,
-			     push_caller, (VALUE)&args, enc);
+			     push_caller, (VALUE)&args, enc, str);
 }
 
 static VALUE
@@ -2905,7 +2905,7 @@ file_s_fnmatch(int argc, VALUE *argv, VALUE obj)
 	args.value = path;
 	args.flags = flags;
 	if (ruby_brace_expand(RSTRING_PTR(pattern), flags, fnmatch_brace,
-			      (VALUE)&args, rb_enc_get(pattern)) > 0)
+			      (VALUE)&args, rb_enc_get(pattern), pattern) > 0)
 	    return Qtrue;
     }
     else {
