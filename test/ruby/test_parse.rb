@@ -516,6 +516,8 @@ class TestParse < Test::Unit::TestCase
     src = '"\xD0\u{90'"\n""000000000000000000000000"
     assert_syntax_error(src, /:#{__LINE__}: unterminated/o)
 
+    assert_syntax_error('"\u{100000000}"', /invalid Unicode escape/)
+
     assert_equal("\x81", eval('"\C-\M-a"'))
     assert_equal("\177", eval('"\c?"'))
   end

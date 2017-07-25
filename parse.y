@@ -5661,20 +5661,20 @@ parser_tokadd_codepoint(struct parser_params *parser, rb_encoding **encp,
 			int regexp_literal, int wide)
 {
     size_t numlen;
-    int codepoint = scan_hex(lex_p, wide ? 6 : 4, &numlen);
+    int codepoint = scan_hex(lex_p, wide ? lex_pend - lex_p : 4, &numlen);
     literal_flush(lex_p);
     lex_p += numlen;
-    if (wide ? (numlen == 0) : (numlen < 4))  {
+    if (wide ? (numlen == 0 || numlen > 6) : (numlen < 4))  {
 	yyerror("invalid Unicode escape");
-	return FALSE;
+	return wide && numlen > 0;
     }
     if (codepoint > 0x10ffff) {
 	yyerror("invalid Unicode codepoint (too large)");
-	return FALSE;
+	return wide;
     }
     if ((codepoint & 0xfffff800) == 0xd800) {
 	yyerror("invalid Unicode codepoint");
-	return FALSE;
+	return wide;
     }
     if (regexp_literal) {
 	tokcopy((int)numlen);
@@ -5687,7 +5687,7 @@ parser_tokadd_codepoint(struct parser_params *parser, rb_encoding **encp,
 	    char *mesg = alloca(len);
 	    snprintf(mesg, len, mixed_utf8, rb_enc_name(*encp));
 	    yyerror(mesg);
-	    return TRUE;
+	    return wide;
 	}
 	*encp = utf8;
 	tokaddmbc(codepoint, *encp);
@@ -5718,7 +5718,7 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
 	int c, last = nextc();
 	if (lex_p >= lex_pend) goto unterminated;
 	while (ISSPACE(c = *lex_p) && ++lex_p < lex_pend);
-	while (!string_literal || c != close_brace) {
+	do {
 	    if (regexp_literal) tokadd(last);
 	    if (!parser_tokadd_codepoint(parser, encp, regexp_literal, TRUE)) {
 		break;
@@ -5727,8 +5727,7 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
 		if (++lex_p >= lex_pend) goto unterminated;
 		last = c;
 	    }
-	    if (!string_literal) break;
-	}
+	} while (c != close_brace);
 
 	if (c != close_brace) {
 	  unterminated:
