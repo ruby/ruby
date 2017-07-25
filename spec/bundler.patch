@@ -12,9 +12,36 @@ index 8fd4b6fbe..3d97631a1 100644
  
      revision = revision_for(lib_path("very_simple_git_binary-1.0"))
 diff --git spec/commands/exec_spec.rb spec/commands/exec_spec.rb
-index d70fc636c..9134862ed 100644
+index d70fc636c..5ba461b91 100644
 --- spec/commands/exec_spec.rb
 +++ spec/commands/exec_spec.rb
+@@ -25,7 +25,7 @@ RSpec.describe "bundle exec" do
+     expect(out).to eq("1.0.0")
+   end
+ 
+-  it "works when running from a random directory" do
++  it "works when running from a random directory", :ruby_trunk do
+     install_gemfile <<-G
+       gem "rack"
+     G
+@@ -170,7 +170,7 @@ RSpec.describe "bundle exec" do
+     expect(out).to have_rubyopts(rubyopt)
+   end
+ 
+-  it "does not duplicate already exec'ed RUBYLIB" do
++  it "does not duplicate already exec'ed RUBYLIB", :ruby_trunk do
+     install_gemfile <<-G
+       gem "rack"
+     G
+@@ -218,7 +218,7 @@ RSpec.describe "bundle exec" do
+     expect(out).to include("bundler: exec needs a command to run")
+   end
+ 
+-  it "raises a helpful error when exec'ing to something outside of the bundle", :rubygems => ">= 2.5.2" do
++  it "raises a helpful error when exec'ing to something outside of the bundle", :ruby_trunk, :rubygems => ">= 2.5.2" do
+     install_gemfile! <<-G
+       source "file://#{gem_repo1}"
+       gem "with_license"
 @@ -294,35 +294,35 @@ RSpec.describe "bundle exec" do
            expect(out).to eq('args: ["-h"]')
          end
@@ -56,6 +83,31 @@ index d70fc636c..9134862ed 100644
            with_fake_man do
              bundle "#{exec} -h"
            end
+@@ -340,13 +340,13 @@ RSpec.describe "bundle exec" do
+         G
+       end
+ 
+-      it "works when unlocked" do
++      it "works when unlocked", :ruby_trunk do
+         bundle "exec 'cd #{tmp("gems")} && rackup'"
+         expect(out).to eq("1.0.0")
+         expect(out).to include("1.0.0")
+       end
+ 
+-      it "works when locked" do
++      it "works when locked", :ruby_trunk do
+         expect(the_bundle).to be_locked
+         bundle "exec 'cd #{tmp("gems")} && rackup'"
+         expect(out).to include("1.0.0")
+@@ -566,7 +566,7 @@ RSpec.describe "bundle exec" do
+       it_behaves_like "it runs"
+     end
+ 
+-    context "when the file uses the current ruby shebang" do
++    context "when the file uses the current ruby shebang", :ruby_trunk do
+       let(:shebang) { "#!#{Gem.ruby}" }
+       it_behaves_like "it runs"
+     end
 diff --git spec/commands/help_spec.rb spec/commands/help_spec.rb
 index 790d26fda..83b8347c4 100644
 --- spec/commands/help_spec.rb
@@ -127,6 +179,19 @@ index 790d26fda..83b8347c4 100644
      with_fake_man do
        bundle "--help"
      end
+diff --git spec/commands/info_spec.rb spec/commands/info_spec.rb
+index b37de765e..7264af31c 100644
+--- spec/commands/info_spec.rb
++++ spec/commands/info_spec.rb
+@@ -25,7 +25,7 @@ RSpec.describe "bundle info" do
+       end
+     end
+ 
+-    context "given a default gem shippped in ruby" do
++    context "given a default gem shippped in ruby", :ruby_trunk do
+       it "prints information about the default gem", :if => (RUBY_VERSION >= "2.0") do
+         bundle "info rdoc"
+         expect(out).to include("* rdoc")
 diff --git spec/commands/newgem_spec.rb spec/commands/newgem_spec.rb
 index a3c3a3641..9861e886d 100644
 --- spec/commands/newgem_spec.rb
@@ -148,6 +213,19 @@ index a3c3a3641..9861e886d 100644
 +        sys_exec(rake)
          expect(out).to include("SUCCESS")
        end
+     end
+diff --git spec/commands/show_spec.rb spec/commands/show_spec.rb
+index 45af03595..2fbb61bbc 100644
+--- spec/commands/show_spec.rb
++++ spec/commands/show_spec.rb
+@@ -40,7 +40,7 @@ RSpec.describe "bundle show" do
+       expect(out).to include(default_bundle_path("gems", "rails-2.3.2").to_s)
+     end
+ 
+-    it "prints the path to the running bundler" do
++    it "prints the path to the running bundler", :ruby_trunk do
+       bundle "show bundler"
+       expect(out).to eq(File.expand_path("../../../", __FILE__))
      end
 diff --git spec/install/gemfile/git_spec.rb spec/install/gemfile/git_spec.rb
 index 8843fb7eb..965e75b22 100644
@@ -180,6 +258,32 @@ index 8843fb7eb..965e75b22 100644
        build_git "foo" do |s|
          s.add_dependency "rake"
          s.extensions << "Rakefile"
+diff --git spec/install/gems/compact_index_spec.rb spec/install/gems/compact_index_spec.rb
+index 825185c82..03b54cf29 100644
+--- spec/install/gems/compact_index_spec.rb
++++ spec/install/gems/compact_index_spec.rb
+@@ -613,7 +613,7 @@ The checksum of /versions does not match the checksum provided by the server! So
+     end
+   end
+ 
+-  context "when ruby is compiled without openssl" do
++  context "when ruby is compiled without openssl", :ruby_trunk do
+     before do
+       # Install a monkeypatch that reproduces the effects of openssl being
+       # missing when the fetcher runs, as happens in real life. The reason
+diff --git spec/install/gems/dependency_api_spec.rb spec/install/gems/dependency_api_spec.rb
+index d2de0d358..12b9bab07 100644
+--- spec/install/gems/dependency_api_spec.rb
++++ spec/install/gems/dependency_api_spec.rb
+@@ -602,7 +602,7 @@ RSpec.describe "gemcutter's dependency API" do
+     end
+   end
+ 
+-  context "when ruby is compiled without openssl" do
++  context "when ruby is compiled without openssl", :ruby_trunk do
+     before do
+       # Install a monkeypatch that reproduces the effects of openssl being
+       # missing when the fetcher runs, as happens in real life. The reason
 diff --git spec/install/gems/native_extensions_spec.rb spec/install/gems/native_extensions_spec.rb
 index 7531768b5..053fa8e20 100644
 --- spec/install/gems/native_extensions_spec.rb
@@ -250,10 +354,41 @@ index ad6071d29..690751fda 100644
        build_lib "very_simple_binary", "1.0.0", :to_system => true do |s|
          s.write "lib/very_simple_binary.rb", "raise 'FAIL'"
        end
+diff --git spec/runtime/gem_tasks_spec.rb spec/runtime/gem_tasks_spec.rb
+index 422ec4547..7cb0f32c0 100644
+--- spec/runtime/gem_tasks_spec.rb
++++ spec/runtime/gem_tasks_spec.rb
+@@ -20,7 +20,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
+ 
+   it "includes the relevant tasks" do
+     with_gem_path_as(Spec::Path.base_system_gems.to_s) do
+-      sys_exec "ruby -S rake -T"
++      sys_exec "#{rake} -T"
+     end
+ 
+     expect(err).to eq("")
 diff --git spec/runtime/setup_spec.rb spec/runtime/setup_spec.rb
-index 754ec94d1..f5b8d8b5e 100644
+index 754ec94d1..2a32b639a 100644
 --- spec/runtime/setup_spec.rb
 +++ spec/runtime/setup_spec.rb
+@@ -120,7 +120,7 @@ RSpec.describe "Bundler.setup" do
+       lp.map! {|p| p.sub(/^#{system_gem_path}/, "") }
+     end
+ 
+-    it "puts loaded gems after -I and RUBYLIB" do
++    it "puts loaded gems after -I and RUBYLIB", :ruby_trunk do
+       install_gemfile <<-G
+         source "file://#{gem_repo1}"
+         gem "rack"
+@@ -145,7 +145,7 @@ RSpec.describe "Bundler.setup" do
+       expect(rack_load_order).to be > 0
+     end
+ 
+-    it "orders the load path correctly when there are dependencies" do
++    it "orders the load path correctly when there are dependencies", :ruby_trunk do
+       install_gemfile <<-G
+         source "file://#{gem_repo1}"
+         gem "rails"
 @@ -759,7 +759,7 @@ end
      expect(out).to eq("yay")
    end
@@ -264,9 +399,18 @@ index 754ec94d1..f5b8d8b5e 100644
      full_gem_name = gem_name + "-1.0"
      ext_dir = File.join(tmp "extenstions", full_gem_name)
 diff --git spec/runtime/with_clean_env_spec.rb spec/runtime/with_clean_env_spec.rb
-index b351e86c8..a10cc97f1 100644
+index b351e86c8..5baaf61be 100644
 --- spec/runtime/with_clean_env_spec.rb
 +++ spec/runtime/with_clean_env_spec.rb
+@@ -8,7 +8,7 @@ RSpec.describe "Bundler.with_env helpers" do
+       bundle "install --path vendor/bundle"
+     end
+ 
+-    it "should return the PATH present before bundle was activated" do
++    it "should return the PATH present before bundle was activated", :ruby_trunk do
+       code = "print Bundler.original_env['PATH']"
+       path = `getconf PATH`.strip + "#{File::PATH_SEPARATOR}/foo"
+       with_path_as(path) do
 @@ -26,7 +26,7 @@ RSpec.describe "Bundler.with_env helpers" do
        end
      end
@@ -276,6 +420,15 @@ index b351e86c8..a10cc97f1 100644
        create_file("exe.rb", <<-'RB')
          count = ARGV.first.to_i
          exit if count < 0
+@@ -68,7 +68,7 @@ RSpec.describe "Bundler.with_env helpers" do
+       expect(result).not_to include("-rbundler/setup")
+     end
+ 
+-    it "should clean up RUBYLIB" do
++    it "should clean up RUBYLIB", :ruby_trunk do
+       code = "print Bundler.clean_env['RUBYLIB']"
+       ENV["RUBYLIB"] = File.expand_path("../../../lib", __FILE__) + File::PATH_SEPARATOR + "/foo"
+       result = bundle("exec ruby -e #{code.inspect}")
 diff --git spec/spec_helper.rb spec/spec_helper.rb
 index 297d81f53..6231509ed 100644
 --- spec/spec_helper.rb
