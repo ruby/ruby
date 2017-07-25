@@ -1440,7 +1440,7 @@ has_magic(const char *p, const char *pend, int flags, rb_encoding *enc)
 	    break;
 #endif
 	  default:
-	    if (IS_WIN32 || ISALPHA(c)) {
+	    if (!FNM_SYSCASE && (IS_WIN32 || ISALPHA(c))) {
 		hasalpha = 1;
 	    }
 	    break;
