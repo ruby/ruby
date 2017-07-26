@@ -304,4 +304,11 @@ EOF
     assert_equal("INBOX", response.data.mailbox)
     assert_equal(1234, response.data.attr["UIDVALIDITY"])
   end
+
+  # [Bug #10119]
+  def test_msg_att_modseq_data
+    parser = Net::IMAP::ResponseParser.new
+    response = parser.parse("* 1 FETCH (FLAGS (\Seen) MODSEQ (12345) UID 5)\r\n")
+    assert_equal(12345, response.data.attr["MODSEQ"])
+  end
 end

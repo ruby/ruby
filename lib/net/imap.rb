@@ -814,13 +814,13 @@ module Net
     #   #=> "12-Oct-2000 22:40:59 +0900"
     #   p data.attr["UID"]
     #   #=> 98
-    def fetch(set, attr)
-      return fetch_internal("FETCH", set, attr)
+    def fetch(set, attr, mod = nil)
+      return fetch_internal("FETCH", set, attr, mod)
     end
 
     # Similar to #fetch(), but +set+ contains unique identifiers.
-    def uid_fetch(set, attr)
-      return fetch_internal("UID FETCH", set, attr)
+    def uid_fetch(set, attr, mod = nil)
+      return fetch_internal("UID FETCH", set, attr, mod)
     end
 
     # Sends a STORE command to alter data associated with messages
@@ -1304,8 +1304,12 @@ module Net
       when Integer
         NumValidator.ensure_number(data)
       when Array
-        data.each do |i|
-          validate_data(i)
+        if data[0] == 'CHANGEDSINCE'
+          NumValidator.ensure_mod_sequence_value(data[1])
+        else
+          data.each do |i|
+            validate_data(i)
+          end
         end
       when Time
       when Symbol
@@ -1417,7 +1421,7 @@ module Net
       end
     end
 
-    def fetch_internal(cmd, set, attr)
+    def fetch_internal(cmd, set, attr, mod = nil)
       case attr
       when String then
         attr = RawData.new(attr)
@@ -1429,7 +1433,11 @@ module Net
 
       synchronize do
         @responses.delete("FETCH")
-        send_command(cmd, MessageSet.new(set), attr)
+        if mod
+          send_command(cmd, MessageSet.new(set), attr, mod)
+        else
+          send_command(cmd, MessageSet.new(set), attr)
+        end
         return @responses.delete("FETCH")
       end
     end
@@ -1663,6 +1671,15 @@ module Net
           num != 0 && valid_number?(num)
         end
 
+        # Check is passed argument valid 'mod_sequence_value' in RFC 4551 terminology
+        def valid_mod_sequence_value?(num)
+          # mod-sequence-value  = 1*DIGIT
+          #                        ; Positive unsigned 64-bit integer
+          #                        ; (mod-sequence)
+          #                        ; (1 <= n < 18,446,744,073,709,551,615)
+          num >= 1 && num < 18446744073709551615
+        end
+
         # Ensure argument is 'number' or raise DataFormatError
         def ensure_number(num)
           return if valid_number?(num)
@@ -1676,6 +1693,14 @@ module Net
           return if valid_nz_number?(num)
 
           msg = "nz_number must be non-zero unsigned 32-bit integer: #{num}"
+          raise DataFormatError, msg
+        end
+
+        # Ensure argument is 'mod_sequence_value' or raise DataFormatError
+        def ensure_mod_sequence_value(num)
+          return if valid_mod_sequence_value?(num)
+
+          msg = "mod_sequence_value must be unsigned 64-bit integer: #{num}"
           raise DataFormatError, msg
         end
       end
@@ -2343,6 +2368,8 @@ module Net
             name, val = body_data
           when /\A(?:UID)\z/ni
             name, val = uid_data
+          when /\A(?:MODSEQ)\z/ni
+            name, val = modseq_data
           else
             parse_error("unknown attribute `%s' for {%d}", token.value, n)
           end
@@ -2830,6 +2857,16 @@ module Net
         name = token.value.upcase
         match(T_SPACE)
         return name, number
+      end
+
+      def modseq_data
+        token = match(T_ATOM)
+        name = token.value.upcase
+        match(T_SPACE)
+        match(T_LPAR)
+        modseq = number
+        match(T_RPAR)
+        return name, modseq
       end
 
       def text_response
