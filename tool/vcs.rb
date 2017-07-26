@@ -317,6 +317,10 @@ class VCS
         end
       end
     end
+
+    def commit
+      system(*%W"#{COMMAND} commit")
+    end
   end
 
   class GIT < self
@@ -455,6 +459,15 @@ class VCS
           end
         end
       end
+    end
+
+    def commit
+      rev = cmd_read(%W"#{COMMAND} svn info"+[STDERR=>[:child, :out]])[/^Last Changed Rev: (\d+)/, 1]
+      ret = system(COMMAND, "svn", "dcommit")
+      if ret and rev
+        cmd_read(%W"#{COMMAND} svn reset -r#{rev}")
+      end
+      ret
     end
   end
 end
