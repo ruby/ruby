@@ -86,9 +86,7 @@ notifications:
     template:
       - "%{message} by @%{author}: See %{build_url}"
 
-  email:
-    - ko1c-failure@atdot.net
-    - shibata.hiroshi@gmail.com
+  slack: ruby:69mfLJaJVptlspU8HTQv1DhM
 
 # Local Variables:
 # mode: YAML
