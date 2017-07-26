@@ -862,7 +862,7 @@ rb_need_block(void)
     }
 }
 
-/*! An equivalent of \c rescue calause.
+/*! An equivalent of \c rescue clause.
  *
  * Equivalent to <code>begin .. rescue err_type .. end</code>
  *
@@ -1581,7 +1581,7 @@ rb_obj_call_init(VALUE obj, int argc, const VALUE *argv)
 /*!
  * Extend the object with the module.
  *
- * Same as \c Object\#extend_object.
+ * Same as \c Module\#extend_object.
  * \ingroup class
  */
 void
@@ -1775,7 +1775,7 @@ rb_errinfo(void)
 /*! Sets the current exception (\c $!) to the given value
  *
  * \param[in] err an \c Exception object or \c Qnil.
- * \exception TypeError if \a err is neither an exception or \c nil.
+ * \exception TypeError if \a err is neither an exception nor \c nil.
  * \note this function does not raise the exception.
  *   Use \c rb_raise() when you want to raise.
  * \ingroup exception
