@@ -974,6 +974,10 @@ eom
     assert_syntax_error('m 1.0 {}', error, bug)
     assert_syntax_error('m :m {}', error, bug)
     assert_syntax_error('m :"#{m}" {}', error, bug)
+    assert_syntax_error('m ?x {}', error, bug)
+    assert_syntax_error('m %[] {}', error, bug)
+    assert_syntax_error('m 0..1 {}', error, bug)
+    assert_syntax_error('m [] {}', error, bug)
   end
 
   def test_return_toplevel

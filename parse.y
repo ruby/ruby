@@ -8374,7 +8374,7 @@ parser_yylex(struct parser_params *parser)
 	if (c == ')')
 	    SET_LEX_STATE(EXPR_ENDFN);
 	else
-	    SET_LEX_STATE(EXPR_ENDARG);
+	    SET_LEX_STATE(EXPR_END);
 	if (c == '}') {
 	    if (!brace_nest--) c = tSTRING_DEND;
 	}
