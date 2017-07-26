@@ -453,17 +453,17 @@ class CSV
       if headers_and_or_indices.empty?  # return all fields--no arguments
         @row.map { |pair| pair.last }
       else                              # or work like values_at()
-        headers_and_or_indices.inject(Array.new) do |all, h_or_i|
-          all + if h_or_i.is_a? Range
+        headers_and_or_indices.each_with_object([]) do |h_or_i, all|
+          if h_or_i.is_a? Range
             index_begin = h_or_i.begin.is_a?(Integer) ? h_or_i.begin :
                                                         index(h_or_i.begin)
             index_end   = h_or_i.end.is_a?(Integer)   ? h_or_i.end :
                                                         index(h_or_i.end)
             new_range   = h_or_i.exclude_end? ? (index_begin...index_end) :
                                                 (index_begin..index_end)
-            fields.values_at(new_range)
+            all.concat fields.values_at(new_range)
           else
-            [field(*Array(h_or_i))]
+            all << field(*Array(h_or_i))
           end
         end
       end
@@ -533,7 +533,7 @@ class CSV
     #
     def to_hash
       # flatten just one level of the internal Array
-      Hash[*@row.inject(Array.new) { |ary, pair| ary.push(*pair) }]
+      @row.to_h
     end
 
     #
@@ -879,12 +879,8 @@ class CSV
     # then all of the field rows will follow.
     #
     def to_a
-      @table.inject([headers]) do |array, row|
-        if row.header_row?
-          array
-        else
-          array + [row.fields]
-        end
+      @table.each_with_object([headers]) do |row, array|
+        array << row.fields unless row.header_row?
       end
     end
 
@@ -897,12 +893,8 @@ class CSV
     #
     def to_csv(options = Hash.new)
       wh = options.fetch(:write_headers, true)
-      @table.inject(wh ? [headers.to_csv(options)] : [ ]) do |rows, row|
-        if row.header_row?
-          rows
-        else
-          rows + [row.fields.to_csv(options)]
-        end
+      @table.each_with_object(wh ? [headers.to_csv(options)] : []) do |row, rows|
+        rows << row.fields.to_csv(options) unless row.header_row?
       end.join('')
     end
     alias_method :to_s, :to_csv
