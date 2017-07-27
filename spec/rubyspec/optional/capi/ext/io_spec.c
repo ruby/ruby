@@ -140,7 +140,7 @@ VALUE io_spec_rb_io_taint_check(VALUE self, VALUE io) {
 VALUE io_spec_rb_io_wait_readable(VALUE self, VALUE io, VALUE read_p) {
   int fd = io_spec_get_fd(io);
   char buf[RB_IO_WAIT_READABLE_BUF];
-  int ret, r, saved_errno;
+  int ret, saved_errno;
 
   if (set_non_blocking(fd) == -1)
     rb_sys_fail("set_non_blocking failed");
@@ -157,10 +157,10 @@ VALUE io_spec_rb_io_wait_readable(VALUE self, VALUE io, VALUE read_p) {
   ret = rb_io_wait_readable(fd);
 
   if(RTEST(read_p)) {
-    r = read(fd, buf, RB_IO_WAIT_READABLE_BUF);
+    ssize_t r = read(fd, buf, RB_IO_WAIT_READABLE_BUF);
     if (r != RB_IO_WAIT_READABLE_BUF) {
       perror("read");
-      return INT2FIX(r);
+      return SSIZET2NUM(r);
     }
     rb_ivar_set(self, rb_intern("@read_data"),
         rb_str_new(buf, RB_IO_WAIT_READABLE_BUF));
