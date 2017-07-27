@@ -540,7 +540,7 @@ class CSV
     #
     #   csv_row.fields.to_csv( options )
     #
-    def to_csv(options = Hash.new)
+    def to_csv(**options)
       fields.to_csv(options)
     end
     alias_method :to_s, :to_csv
@@ -894,9 +894,8 @@ class CSV
     # This method assumes you want the Table.headers(), unless you explicitly
     # pass <tt>:write_headers => false</tt>.
     #
-    def to_csv(options = Hash.new)
-      wh = options.fetch(:write_headers, true)
-      @table.inject(wh ? [headers.to_csv(options)] : [ ]) do |rows, row|
+    def to_csv(write_headers: true, **options)
+      @table.inject(write_headers ? [headers.to_csv(options)] : [ ]) do |rows, row|
         if row.header_row?
           rows
         else
@@ -1060,7 +1059,7 @@ class CSV
   # If a block is given, the instance is passed to the block and the return
   # value becomes the return value of the block.
   #
-  def self.instance(data = $stdout, options = Hash.new)
+  def self.instance(data = $stdout, **options)
     # create a _signature_ for this method call, data object and options
     sig = [data.object_id] +
           options.values_at(*DEFAULT_OPTIONS.keys.sort_by { |sym| sym.to_s })
@@ -1078,9 +1077,9 @@ class CSV
 
   #
   # :call-seq:
-  #   filter( options = Hash.new ) { |row| ... }
-  #   filter( input, options = Hash.new ) { |row| ... }
-  #   filter( input, output, options = Hash.new ) { |row| ... }
+  #   filter( **options ) { |row| ... }
+  #   filter( input, **options ) { |row| ... }
+  #   filter( input, output, **options ) { |row| ... }
   #
   # This method is a convenience for building Unix-like filters for CSV data.
   # Each row is yielded to the provided block which can alter it as needed.
@@ -1100,25 +1099,23 @@ class CSV
   # The <tt>:output_row_sep</tt> +option+ defaults to
   # <tt>$INPUT_RECORD_SEPARATOR</tt> (<tt>$/</tt>).
   #
-  def self.filter(*args)
+  def self.filter(input, output=nil, **options)
     # parse options for input, output, or both
     in_options, out_options = Hash.new, {row_sep: $INPUT_RECORD_SEPARATOR}
-    if args.last.is_a? Hash
-      args.pop.each do |key, value|
-        case key.to_s
-        when /\Ain(?:put)?_(.+)\Z/
-          in_options[$1.to_sym] = value
-        when /\Aout(?:put)?_(.+)\Z/
-          out_options[$1.to_sym] = value
-        else
-          in_options[key]  = value
-          out_options[key] = value
-        end
+    options.each do |key, value|
+      case key.to_s
+      when /\Ain(?:put)?_(.+)\Z/
+        in_options[$1.to_sym] = value
+      when /\Aout(?:put)?_(.+)\Z/
+        out_options[$1.to_sym] = value
+      else
+        in_options[key]  = value
+        out_options[key] = value
       end
     end
     # build input and output wrappers
-    input  = new(args.shift || ARGF,    in_options)
-    output = new(args.shift || $stdout, out_options)
+    input  = new(input  || ARGF,    in_options)
+    output = new(output || $stdout, out_options)
 
     # read, yield, write
     input.each do |row|
@@ -1141,7 +1138,7 @@ class CSV
   # <tt>encoding: "UTF-32BE:UTF-8"</tt> would read UTF-32BE data from the file
   # but transcode it to UTF-8 before CSV parses it.
   #
-  def self.foreach(path, options = Hash.new, &block)
+  def self.foreach(path, **options, &block)
     return to_enum(__method__, path, options) unless block
     open(path, options) do |csv|
       csv.each(&block)
@@ -1150,8 +1147,8 @@ class CSV
 
   #
   # :call-seq:
-  #   generate( str, options = Hash.new ) { |csv| ... }
-  #   generate( options = Hash.new ) { |csv| ... }
+  #   generate( str, **options ) { |csv| ... }
+  #   generate( **options ) { |csv| ... }
   #
   # This method wraps a String you provide, or an empty default String, in a
   # CSV object which is passed to the provided block.  You can use the block to
@@ -1166,19 +1163,17 @@ class CSV
   # String to set the base Encoding for the output.  CSV needs this hint if you
   # plan to output non-ASCII compatible data.
   #
-  def self.generate(*args)
+  def self.generate(str=nil, **options)
     # add a default empty String, if none was given
-    if args.first.is_a? String
-      io = StringIO.new(args.shift)
+    if str
+      io = StringIO.new(str)
       io.seek(0, IO::SEEK_END)
-      args.unshift(io)
     else
-      encoding = args[-1][:encoding] if args.last.is_a?(Hash)
+      encoding = options[:encoding]
       str      = String.new
       str.force_encoding(encoding) if encoding
-      args.unshift(str)
     end
-    csv = new(*args)  # wrap
+    csv = new(str, options) # wrap
     yield csv         # yield for appending
     csv.string        # return final String
   end
@@ -1196,10 +1191,9 @@ class CSV
   # The <tt>:row_sep</tt> +option+ defaults to <tt>$INPUT_RECORD_SEPARATOR</tt>
   # (<tt>$/</tt>) when calling this method.
   #
-  def self.generate_line(row, options = Hash.new)
-    options  = {row_sep: $INPUT_RECORD_SEPARATOR}.merge(options)
-    encoding = options.delete(:encoding)
-    str      = String.new
+  def self.generate_line(row, encoding: nil, **options)
+    options[:row_sep] ||= $INPUT_RECORD_SEPARATOR
+    str = String.new
     if encoding
       str.force_encoding(encoding)
     elsif field = row.find { |f| not f.nil? }
@@ -1210,10 +1204,10 @@ class CSV
 
   #
   # :call-seq:
-  #   open( filename, mode = "rb", options = Hash.new ) { |faster_csv| ... }
-  #   open( filename, options = Hash.new ) { |faster_csv| ... }
-  #   open( filename, mode = "rb", options = Hash.new )
-  #   open( filename, options = Hash.new )
+  #   open( filename, mode = "rb", **options ) { |faster_csv| ... }
+  #   open( filename, **options ) { |faster_csv| ... }
+  #   open( filename, mode = "rb", **options )
+  #   open( filename, **options )
   #
   # This method opens an IO object, and wraps that with CSV.  This is intended
   # as the primary interface for writing a CSV file.
@@ -1271,18 +1265,17 @@ class CSV
   # * truncate()
   # * tty?()
   #
-  def self.open(*args)
-    # find the +options+ Hash
-    options = if args.last.is_a? Hash then args.pop else Hash.new end
+  def self.open(*args, **options)
     # wrap a File opened with the remaining +args+ with no newline
     # decorator
-    file_opts = {universal_newline: false}.merge(options)
+    file_opts = options.dup
+    file_opts[:universal_newline] ||= false
     begin
       f = File.open(*args, file_opts)
     rescue ArgumentError => e
       raise unless /needs binmode/ =~ e.message and args.size == 1
       args << "rb"
-      file_opts = {encoding: Encoding.default_external}.merge(file_opts)
+      file_opts[:encoding] ||= Encoding.default_external
       retry
     end
     begin
@@ -1306,14 +1299,14 @@ class CSV
 
   #
   # :call-seq:
-  #   parse( str, options = Hash.new ) { |row| ... }
-  #   parse( str, options = Hash.new )
+  #   parse( str, **options ) { |row| ... }
+  #   parse( str, **options )
   #
   # This method can be used to easily parse CSV out of a String.  You may either
   # provide a +block+ which will be called with each row of the String in turn,
   # or just use the returned Array of Arrays (when no +block+ is given).
   #
-  # You pass your +str+ to read from, and an optional +options+ Hash containing
+  # You pass your +str+ to read from, and an optional +options+ containing
   # anything CSV::new() understands.
   #
   def self.parse(*args, &block)
@@ -1336,7 +1329,7 @@ class CSV
   #
   # The +options+ parameter can be anything CSV::new() understands.
   #
-  def self.parse_line(line, options = Hash.new)
+  def self.parse_line(line, **options)
     new(line, options).shift
   end
 
@@ -1367,7 +1360,7 @@ class CSV
   #                     converters:        :numeric,
   #                     header_converters: :symbol }.merge(options) )
   #
-  def self.table(path, options = Hash.new)
+  def self.table(path, **options)
     read( path, { headers:           true,
                   converters:        :numeric,
                   header_converters: :symbol }.merge(options) )
@@ -1525,7 +1518,7 @@ class CSV
   # Options cannot be overridden in the instance methods for performance reasons,
   # so be sure to set what you want here.
   #
-  def initialize(data, options = Hash.new)
+  def initialize(data, internal_encoding: nil, encoding: nil, **options)
     if data.nil?
       raise ArgumentError.new("Cannot parse nil as CSV")
     end
@@ -1536,17 +1529,12 @@ class CSV
     # create the IO object we will read from
     @io       = data.is_a?(String) ? StringIO.new(data) : data
     # honor the IO encoding if we can, otherwise default to ASCII-8BIT
-    @encoding = raw_encoding(nil) ||
-                ( if encoding = options.delete(:internal_encoding)
-                    case encoding
-                    when Encoding; encoding
-                    else Encoding.find(encoding)
-                    end
-                  end ) ||
-                ( case encoding = options.delete(:encoding)
-                  when Encoding; encoding
-                  when /\A[^:]+/; Encoding.find($&)
-                  end ) ||
+    internal_encoding = Encoding.find(internal_encoding) if internal_encoding
+    if encoding
+      encoding, = encoding.split(":") if encoding.is_a?(String)
+      encoding = Encoding.find(encoding)
+    end
+    @encoding = raw_encoding(nil) || internal_encoding || encoding ||
                 Encoding.default_internal || Encoding.default_external
     #
     # prepare for building safe regular expressions in the target encoding,
@@ -1561,12 +1549,7 @@ class CSV
     init_headers(options)
     init_comments(options)
 
-    @force_encoding = !!(encoding || options.delete(:encoding))
-    options.delete(:internal_encoding)
-    options.delete(:external_encoding)
-    unless options.empty?
-      raise ArgumentError, "Unknown options:  #{options.keys.join(', ')}."
-    end
+    @force_encoding = !!encoding
 
     # track our own lineno since IO gets confused about line-ends is CSV fields
     @lineno = 0
@@ -2011,11 +1994,11 @@ class CSV
   #
   # This method also establishes the quoting rules used for CSV output.
   #
-  def init_separators(options)
+  def init_separators(col_sep: nil, row_sep: nil, quote_char: nil, force_quotes: nil, **options)
     # store the selected separators
-    @col_sep    = options.delete(:col_sep).to_s.encode(@encoding)
-    @row_sep    = options.delete(:row_sep)  # encode after resolving :auto
-    @quote_char = options.delete(:quote_char).to_s.encode(@encoding)
+    @col_sep    = col_sep.to_s.encode(@encoding)
+    @row_sep    = row_sep # encode after resolving :auto
+    @quote_char = quote_char.to_s.encode(@encoding)
     @double_quote_char = @quote_char * 2
 
     if @quote_char.length != 1
@@ -2081,13 +2064,11 @@ class CSV
     @row_sep = @row_sep.to_s.encode(@encoding)
 
     # establish quoting rules
-    @force_quotes   = options.delete(:force_quotes)
-    do_quote        = lambda do |field|
-      field         = String(field)
+    @force_quotes = force_quotes
+    do_quote = lambda do |field|
+      field = String(field)
       encoded_quote = @quote_char.encode(field.encoding)
-      encoded_quote                                +
-      field.gsub(encoded_quote, encoded_quote * 2) +
-      encoded_quote
+      encoded_quote + field.gsub(encoded_quote, encoded_quote * 2) + encoded_quote
     end
     quotable_chars = encode_str("\r\n", @col_sep, @quote_char)
     @quote         = if @force_quotes
@@ -2111,11 +2092,11 @@ class CSV
   end
 
   # Pre-compiles parsers and stores them by name for access during reads.
-  def init_parsers(options)
+  def init_parsers(skip_blanks: nil, field_size_limit: nil, liberal_parsing: nil, **options)
     # store the parser behaviors
-    @skip_blanks      = options.delete(:skip_blanks)
-    @field_size_limit = options.delete(:field_size_limit)
-    @liberal_parsing  = options.delete(:liberal_parsing)
+    @skip_blanks      = skip_blanks
+    @field_size_limit = field_size_limit
+    @liberal_parsing  = liberal_parsing
 
     # prebuild Regexps for faster parsing
     esc_row_sep = escape_re(@row_sep)
@@ -2173,10 +2154,10 @@ class CSV
   end
 
   # Stores header row settings and loads header converters, if needed.
-  def init_headers(options)
-    @use_headers    = options.delete(:headers)
-    @return_headers = options.delete(:return_headers)
-    @write_headers  = options.delete(:write_headers)
+  def init_headers(headers: nil, return_headers: nil, write_headers: nil, **options)
+    @use_headers    = headers
+    @return_headers = return_headers
+    @write_headers  = write_headers
 
     # headers must be delayed until shift(), in case they need a row of content
     @headers = nil
@@ -2190,8 +2171,8 @@ class CSV
   # Strings are converted to a Regexp.
   #
   # See also CSV.new
-  def init_comments(options)
-    @skip_lines = options.delete(:skip_lines)
+  def init_comments(skip_lines: nil, **options)
+    @skip_lines = skip_lines
     @skip_lines = Regexp.new(@skip_lines) if @skip_lines.is_a? String
     if @skip_lines and not @skip_lines.respond_to?(:match)
       raise ArgumentError, ":skip_lines has to respond to matches"
@@ -2371,7 +2352,7 @@ class Array # :nodoc:
   #
   #   ["CSV", "data"].to_csv
   #     #=> "CSV,data\n"
-  def to_csv(options = Hash.new)
+  def to_csv(**options)
     CSV.generate_line(self, options)
   end
 end
@@ -2381,7 +2362,7 @@ class String # :nodoc:
   #
   #   "CSV,data".parse_csv
   #     #=> ["CSV", "data"]
-  def parse_csv(options = Hash.new)
+  def parse_csv(**options)
     CSV.parse_line(self, options)
   end
 end
