@@ -5,7 +5,7 @@ class MSpecEnv
   include MSpecMatchers
 end
 
-# Expactations are sometimes used in a module body
+# Expectations are sometimes used in a module body
 class Module
   include MSpecMatchers
 end

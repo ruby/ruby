@@ -234,7 +234,7 @@ class MSpecScript
     files patterns
   end
 
-  def cores(max = 1)
+  def cores(max)
     require 'etc'
     [Etc.nprocessors, max].min
   end
