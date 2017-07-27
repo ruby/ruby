@@ -40,12 +40,12 @@ describe "The break statement in a captured block" do
 
     it "raises a LocalJumpError when invoking the block from a method" do
       lambda { @program.break_in_nested_method }.should raise_error(LocalJumpError)
-      ScratchPad.recorded.should == [:a, :xa, :c, :aa, :b]
+      ScratchPad.recorded.should == [:a, :xa, :cc, :aa, :b]
     end
 
     it "raises a LocalJumpError when yielding to the block" do
       lambda { @program.break_in_yielding_method }.should raise_error(LocalJumpError)
-      ScratchPad.recorded.should == [:a, :xa, :c, :aa, :b]
+      ScratchPad.recorded.should == [:a, :xa, :cc, :aa, :b]
     end
   end
 
@@ -58,6 +58,20 @@ describe "The break statement in a captured block" do
     it "raises a LocalJumpError when yielding to the block" do
       lambda { @program.break_in_yield_captured }.should raise_error(LocalJumpError)
       ScratchPad.recorded.should == [:a, :za, :xa, :zd, :aa, :zb]
+    end
+  end
+
+  describe "from another thread" do
+    it "raises a LocalJumpError when getting the value from another thread" do
+      ScratchPad << :a
+      thread_with_break = Thread.new do
+        ScratchPad << :b
+        break :break
+        ScratchPad << :c
+      end
+
+      lambda { thread_with_break.value }.should raise_error(LocalJumpError)
+      ScratchPad.recorded.should == [:a, :b]
     end
   end
 end

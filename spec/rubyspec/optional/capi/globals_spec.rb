@@ -188,7 +188,7 @@ describe "CApiGlobalSpecs" do
         running = true
       end
 
-      Thread.pass until running
+      Thread.pass while thr.status and !running
       $_.should be_nil
 
       thr.join
@@ -215,7 +215,7 @@ describe "CApiGlobalSpecs" do
         running = true
       end
 
-      Thread.pass until running
+      Thread.pass while thr.status and !running
       $_.should be_nil
 
       thr.join

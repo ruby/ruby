@@ -3,12 +3,15 @@ describe :strscan_peek, shared: true do
     @s = StringScanner.new('This is a test')
   end
 
-  it "returns at most the specified number of characters from the current position" do
+  it "returns at most the specified number of bytes from the current position" do
     @s.send(@method, 4).should == "This"
     @s.pos.should == 0
     @s.pos = 5
     @s.send(@method, 2).should == "is"
     @s.send(@method, 1000).should == "is a test"
+
+    s = StringScanner.new("été")
+    s.send(@method, 2).should == "é"
   end
 
   it "returns an empty string when the passed argument is zero" do

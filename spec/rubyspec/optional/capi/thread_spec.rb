@@ -107,6 +107,10 @@ describe "C-API Thread function" do
       # Wait until it's blocking...
       Thread.pass while thr.status and thr.status != "sleep"
 
+      # The thread status is set to sleep by rb_thread_call_without_gvl(),
+      # but the thread might not be in the blocking read(2) yet, so wait a bit.
+      sleep 0.1
+
       # Wake it up, causing the unblock function to be run.
       thr.wakeup
 

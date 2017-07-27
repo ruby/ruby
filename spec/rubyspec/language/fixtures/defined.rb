@@ -83,7 +83,9 @@ module DefinedSpecs
     end
 
     def global_variable_read
-      value = $defined_specs_global_variable_read
+      suppress_warning do
+        value = $defined_specs_global_variable_read
+      end
       defined? $defined_specs_global_variable_read
     end
 

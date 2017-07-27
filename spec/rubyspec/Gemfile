@@ -1,3 +1,3 @@
 source 'https://rubygems.org'
 
-gem 'mspec', :github => 'ruby/mspec'
+gem 'mspec', :git => 'https://github.com/ruby/mspec'

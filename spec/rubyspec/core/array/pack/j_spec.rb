@@ -8,7 +8,7 @@ ruby_version_is '2.3' do
   # To handle the special case of x64-mingw32
   pointer_size = RUBY_PLATFORM =~ /\bx64\b/ ? 64 : 1.size * 8
 
-  if pointer_size == 64 then
+  guard -> { pointer_size == 64 } do
     describe "Array#pack with format 'J'" do
       it_behaves_like :array_pack_basic, 'J'
       it_behaves_like :array_pack_basic_non_float, 'J'
@@ -114,7 +114,7 @@ ruby_version_is '2.3' do
     end
   end
 
-  if pointer_size == 32 then
+  guard -> { pointer_size == 32 } do
     describe "Array#pack with format 'J'" do
       it_behaves_like :array_pack_basic, 'J'
       it_behaves_like :array_pack_basic_non_float, 'J'

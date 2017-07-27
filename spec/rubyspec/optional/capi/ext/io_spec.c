@@ -1,6 +1,7 @@
 #include "ruby.h"
 #include "rubyspec.h"
 #include "ruby/io.h"
+#include <errno.h>
 #include <fcntl.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -133,46 +134,46 @@ VALUE io_spec_rb_io_taint_check(VALUE self, VALUE io) {
 }
 #endif
 
-typedef int wait_bool;
-#define wait_bool_to_ruby_bool(x) (x ? Qtrue : Qfalse)
-
 #ifdef HAVE_RB_IO_WAIT_READABLE
 #define RB_IO_WAIT_READABLE_BUF 13
 
 VALUE io_spec_rb_io_wait_readable(VALUE self, VALUE io, VALUE read_p) {
   int fd = io_spec_get_fd(io);
   char buf[RB_IO_WAIT_READABLE_BUF];
-  wait_bool ret;
+  int ret, r, saved_errno;
 
   if (set_non_blocking(fd) == -1)
     rb_sys_fail("set_non_blocking failed");
 
   if(RTEST(read_p)) {
-    if(read(fd, buf, RB_IO_WAIT_READABLE_BUF) != -1) {
+    if (read(fd, buf, RB_IO_WAIT_READABLE_BUF) != -1) {
       return Qnil;
     }
+    saved_errno = errno;
     rb_ivar_set(self, rb_intern("@write_data"), Qtrue);
+    errno = saved_errno;
   }
 
   ret = rb_io_wait_readable(fd);
 
   if(RTEST(read_p)) {
-    if(read(fd, buf, RB_IO_WAIT_READABLE_BUF) != 13) {
-      return Qnil;
+    r = read(fd, buf, RB_IO_WAIT_READABLE_BUF);
+    if (r != RB_IO_WAIT_READABLE_BUF) {
+      perror("read");
+      return INT2FIX(r);
     }
     rb_ivar_set(self, rb_intern("@read_data"),
         rb_str_new(buf, RB_IO_WAIT_READABLE_BUF));
   }
 
-  return wait_bool_to_ruby_bool(ret);
+  return ret ? Qtrue : Qfalse;
 }
 #endif
 
 #ifdef HAVE_RB_IO_WAIT_WRITABLE
 VALUE io_spec_rb_io_wait_writable(VALUE self, VALUE io) {
-  wait_bool ret;
-  ret = rb_io_wait_writable(io_spec_get_fd(io));
-  return wait_bool_to_ruby_bool(ret);
+  int ret = rb_io_wait_writable(io_spec_get_fd(io));
+  return ret ? Qtrue : Qfalse;
 }
 #endif
 
