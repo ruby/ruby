@@ -547,9 +547,9 @@ typedef struct rb_vm_struct {
 
     /* signal */
     struct {
-	VALUE cmd;
-	int safe;
-    } trap_list[RUBY_NSIG];
+	VALUE cmd[RUBY_NSIG];
+	unsigned char safe[RUBY_NSIG];
+    } trap_list;
 
     /* hook */
     rb_hook_list_t event_hooks;

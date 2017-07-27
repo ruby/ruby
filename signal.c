@@ -1022,11 +1022,11 @@ void
 rb_trap_exit(void)
 {
     rb_vm_t *vm = GET_VM();
-    VALUE trap_exit = vm->trap_list[0].cmd;
+    VALUE trap_exit = vm->trap_list.cmd[0];
 
     if (trap_exit) {
-	vm->trap_list[0].cmd = 0;
-	signal_exec(trap_exit, vm->trap_list[0].safe, 0);
+	vm->trap_list.cmd[0] = 0;
+	signal_exec(trap_exit, vm->trap_list.safe[0], 0);
     }
 }
 
@@ -1034,8 +1034,8 @@ void
 rb_signal_exec(rb_thread_t *th, int sig)
 {
     rb_vm_t *vm = GET_VM();
-    VALUE cmd = vm->trap_list[sig].cmd;
-    int safe = vm->trap_list[sig].safe;
+    VALUE cmd = vm->trap_list.cmd[sig];
+    int safe = vm->trap_list.safe[sig];
 
     if (cmd == 0) {
 	switch (sig) {
@@ -1237,7 +1237,7 @@ trap(int sig, sighandler_t func, VALUE command)
     rb_vm_t *vm = GET_VM();
 
     /*
-     * Be careful. ruby_signal() and trap_list[sig].cmd must be changed
+     * Be careful. ruby_signal() and trap_list.cmd[sig] must be changed
      * atomically. In current implementation, we only need to don't call
      * RUBY_VM_CHECK_INTS().
      */
@@ -1248,7 +1248,7 @@ trap(int sig, sighandler_t func, VALUE command)
 	oldfunc = ruby_signal(sig, func);
 	if (oldfunc == SIG_ERR) rb_sys_fail_str(rb_signo2signm(sig));
     }
-    oldcmd = vm->trap_list[sig].cmd;
+    oldcmd = vm->trap_list.cmd[sig];
     switch (oldcmd) {
       case 0:
       case Qtrue:
@@ -1264,8 +1264,8 @@ trap(int sig, sighandler_t func, VALUE command)
 	break;
     }
 
-    vm->trap_list[sig].cmd = command;
-    vm->trap_list[sig].safe = rb_safe_level();
+    vm->trap_list.cmd[sig] = command;
+    vm->trap_list.safe[sig] = rb_safe_level();
 
     return oldcmd;
 }
@@ -1422,7 +1422,7 @@ init_sigchld(int sig)
 	ruby_signal(sig, oldfunc);
     }
     else {
-	GET_VM()->trap_list[sig].cmd = 0;
+	GET_VM()->trap_list.cmd[sig] = 0;
     }
     return 0;
 }
