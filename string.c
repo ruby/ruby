@@ -2892,6 +2892,7 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
     }
     else {
       str = rb_str_buf_new(len);
+      rb_enc_copy(str, strary[0]);
       s = 0;
     }
 
