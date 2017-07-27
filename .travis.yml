@@ -86,7 +86,11 @@ notifications:
     template:
       - "%{message} by @%{author}: See %{build_url}"
 
-  slack: ruby:69mfLJaJVptlspU8HTQv1DhM
+  slack:
+    secure: lbYVj0Th1AOxovf44zjMr7v6JgWVcsw4tmK3LhzbdpR6GnPHRkrFxDBykk+tE1346qJJ0YLlyFn3ib3Z4QyttIO00Sg6mqk8NGPjG7DrwUJ6o43Yd1ePZr80W+8Wz20/LVEOAhidJI3LANU2+bWa/VdcHtFT1/Cr+CMrdITD+tI=
+    on_pull_requests: false
+    on_success: change
+    on_failure: always
 
 # Local Variables:
 # mode: YAML
