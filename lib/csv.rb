@@ -532,8 +532,7 @@ class CSV
     # order and clobbers duplicate fields.
     #
     def to_hash
-      # flatten just one level of the internal Array
-      Hash[*@row.inject(Array.new) { |ary, pair| ary.push(*pair) }]
+      @row.to_h
     end
 
     #
