@@ -137,6 +137,15 @@ class TestCSV::Features < TestCSV
     test_lineno
   end
 
+  def test_unknown_options
+    assert_raise_with_message(ArgumentError, /unknown keyword/) {
+      CSV.new(@sample_data, unknown: :error)
+    }
+    assert_raise_with_message(ArgumentError, /unknown keyword/) {
+      CSV.new(@sample_data, universal_newline: true)
+    }
+  end
+
   def test_skip_blanks
     assert_equal(4, @csv.to_a.size)
 

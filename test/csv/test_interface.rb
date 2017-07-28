@@ -166,6 +166,9 @@ class TestCSV::Interface < TestCSV
     assert_not_nil(line)
     assert_instance_of(String, line)
     assert_equal("1;2;3\n", line)
+
+    line = CSV.generate_line(%w"1 2", row_sep: nil)
+    assert_equal("1,2", line)
   end
 
   def test_write_header_detection

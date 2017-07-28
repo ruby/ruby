@@ -1066,7 +1066,7 @@ class CSV
 
     # fetch or create the instance for this signature
     @@instances ||= Hash.new
-    instance    =   (@@instances[sig] ||= new(data, options))
+    instance = (@@instances[sig] ||= new(data, options))
 
     if block_given?
       yield instance  # run block, if given, returning result
@@ -1099,7 +1099,7 @@ class CSV
   # The <tt>:output_row_sep</tt> +option+ defaults to
   # <tt>$INPUT_RECORD_SEPARATOR</tt> (<tt>$/</tt>).
   #
-  def self.filter(input, output=nil, **options)
+  def self.filter(input=nil, output=nil, **options)
     # parse options for input, output, or both
     in_options, out_options = Hash.new, {row_sep: $INPUT_RECORD_SEPARATOR}
     options.each do |key, value|
@@ -1192,7 +1192,7 @@ class CSV
   # (<tt>$/</tt>) when calling this method.
   #
   def self.generate_line(row, encoding: nil, **options)
-    options[:row_sep] ||= $INPUT_RECORD_SEPARATOR
+    options = {row_sep: $INPUT_RECORD_SEPARATOR}.merge(options)
     str = String.new
     if encoding
       str.force_encoding(encoding)
@@ -1268,14 +1268,14 @@ class CSV
   def self.open(*args, **options)
     # wrap a File opened with the remaining +args+ with no newline
     # decorator
-    file_opts = options.dup
-    file_opts[:universal_newline] ||= false
+    file_opts = {universal_newline: false}.merge(options)
+
     begin
       f = File.open(*args, file_opts)
     rescue ArgumentError => e
       raise unless /needs binmode/ =~ e.message and args.size == 1
       args << "rb"
-      file_opts[:encoding] ||= Encoding.default_external
+      file_opts = {encoding: Encoding.default_external}.merge(file_opts)
       retry
     end
     begin
@@ -1518,20 +1518,19 @@ class CSV
   # Options cannot be overridden in the instance methods for performance reasons,
   # so be sure to set what you want here.
   #
-  def initialize(data, internal_encoding: nil, encoding: nil, **options)
-    if data.nil?
-      raise ArgumentError.new("Cannot parse nil as CSV")
-    end
-
-    # build the options for this read/write
-    options = DEFAULT_OPTIONS.merge(options)
+  def initialize(data, col_sep: ",", row_sep: :auto, quote_char: '"', field_size_limit:   nil,
+                 converters: nil, unconverted_fields: nil, headers: false, return_headers: false,
+                 write_headers: nil, header_converters: nil, skip_blanks: false, force_quotes: false,
+                 skip_lines: nil, liberal_parsing: false, internal_encoding: nil, external_encoding: nil, encoding: nil)
+    raise ArgumentError.new("Cannot parse nil as CSV") if data.nil?
 
     # create the IO object we will read from
-    @io       = data.is_a?(String) ? StringIO.new(data) : data
+    @io = data.is_a?(String) ? StringIO.new(data) : data
     # honor the IO encoding if we can, otherwise default to ASCII-8BIT
     internal_encoding = Encoding.find(internal_encoding) if internal_encoding
+    external_encoding = Encoding.find(external_encoding) if external_encoding
     if encoding
-      encoding, = encoding.split(":") if encoding.is_a?(String)
+      encoding, = encoding.split(":", 2) if encoding.is_a?(String)
       encoding = Encoding.find(encoding)
     end
     @encoding = raw_encoding(nil) || internal_encoding || encoding ||
@@ -1540,14 +1539,23 @@ class CSV
     # prepare for building safe regular expressions in the target encoding,
     # if we can transcode the needed characters
     #
-    @re_esc   =   "\\".encode(@encoding).freeze rescue ""
-    @re_chars =   /#{%"[-\\]\\[\\.^$?*+{}()|# \r\n\t\f\v]".encode(@encoding)}/
+    @re_esc   = "\\".encode(@encoding).freeze rescue ""
+    @re_chars = /#{%"[-\\]\\[\\.^$?*+{}()|# \r\n\t\f\v]".encode(@encoding)}/
+    @unconverted_fields = unconverted_fields
 
-    init_separators(options)
-    init_parsers(options)
-    init_converters(options)
-    init_headers(options)
-    init_comments(options)
+    # Stores header row settings and loads header converters, if needed.
+    @use_headers    = headers
+    @return_headers = return_headers
+    @write_headers  = write_headers
+
+    # headers must be delayed until shift(), in case they need a row of content
+    @headers = nil
+
+    init_separators(col_sep, row_sep, quote_char, force_quotes)
+    init_parsers(skip_blanks, field_size_limit, liberal_parsing)
+    init_converters(converters, :@converters, :convert)
+    init_converters(header_converters, :@header_converters, :header_convert)
+    init_comments(skip_lines)
 
     @force_encoding = !!encoding
 
@@ -1994,7 +2002,7 @@ class CSV
   #
   # This method also establishes the quoting rules used for CSV output.
   #
-  def init_separators(col_sep: nil, row_sep: nil, quote_char: nil, force_quotes: nil, **options)
+  def init_separators(col_sep, row_sep, quote_char, force_quotes)
     # store the selected separators
     @col_sep    = col_sep.to_s.encode(@encoding)
     @row_sep    = row_sep # encode after resolving :auto
@@ -2092,7 +2100,7 @@ class CSV
   end
 
   # Pre-compiles parsers and stores them by name for access during reads.
-  def init_parsers(skip_blanks: nil, field_size_limit: nil, liberal_parsing: nil, **options)
+  def init_parsers(skip_blanks, field_size_limit, liberal_parsing)
     # store the parser behaviors
     @skip_blanks      = skip_blanks
     @field_size_limit = field_size_limit
@@ -2124,45 +2132,23 @@ class CSV
   # The <tt>:unconverted_fields</tt> option is also activated for
   # <tt>:converters</tt> calls, if requested.
   #
-  def init_converters(options, field_name = :converters)
-    if field_name == :converters
-      @unconverted_fields = options.delete(:unconverted_fields)
-    end
-
-    instance_variable_set("@#{field_name}", Array.new)
-
-    # find the correct method to add the converters
-    convert = method(field_name.to_s.sub(/ers\Z/, ""))
+  def init_converters(converters, ivar_name, convert_method)
+    converters = case converters
+                 when nil then []
+                 when Array then converters
+                 else [converters]
+                 end
+    instance_variable_set(ivar_name, [])
+    convert = method(convert_method)
 
     # load converters
-    unless options[field_name].nil?
-      # allow a single converter not wrapped in an Array
-      unless options[field_name].is_a? Array
-        options[field_name] = [options[field_name]]
-      end
-      # load each converter...
-      options[field_name].each do |converter|
-        if converter.is_a? Proc  # custom code block
-          convert.call(&converter)
-        else                     # by name
-          convert.call(converter)
-        end
+    converters.each do |converter|
+      if converter.is_a? Proc  # custom code block
+        convert.call(&converter)
+      else                     # by name
+        convert.call(converter)
       end
     end
-
-    options.delete(field_name)
-  end
-
-  # Stores header row settings and loads header converters, if needed.
-  def init_headers(headers: nil, return_headers: nil, write_headers: nil, **options)
-    @use_headers    = headers
-    @return_headers = return_headers
-    @write_headers  = write_headers
-
-    # headers must be delayed until shift(), in case they need a row of content
-    @headers = nil
-
-    init_converters(options, :header_converters)
   end
 
   # Stores the pattern of comments to skip from the provided options.
@@ -2171,7 +2157,7 @@ class CSV
   # Strings are converted to a Regexp.
   #
   # See also CSV.new
-  def init_comments(skip_lines: nil, **options)
+  def init_comments(skip_lines)
     @skip_lines = skip_lines
     @skip_lines = Regexp.new(@skip_lines) if @skip_lines.is_a? String
     if @skip_lines and not @skip_lines.respond_to?(:match)
