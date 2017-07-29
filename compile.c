@@ -6244,7 +6244,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	LABEL *lfalse = NEW_LABEL(line);
 	CHECK(compile_flip_flop(iseq, ret, node, type == NODE_FLIP2,
 				ltrue, lfalse));
-	ADD_INSNL(ret, line, jump, lend);
 	ADD_LABEL(ret, ltrue);
 	ADD_INSN1(ret, line, putobject, Qtrue);
 	ADD_INSNL(ret, line, jump, lend);
