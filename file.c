@@ -5551,6 +5551,7 @@ rb_stat_sticky(VALUE obj)
 #define HAVE_MKFIFO
 #endif
 
+#ifdef HAVE_MKFIFO
 /*
  *  call-seq:
  *     File.mkfifo(file_name, mode=0666)  => 0
@@ -5561,7 +5562,6 @@ rb_stat_sticky(VALUE obj)
  *  (mode & ~umask).
  */
 
-#ifdef HAVE_MKFIFO
 static VALUE
 rb_file_s_mkfifo(int argc, VALUE *argv)
 {
