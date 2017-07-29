@@ -2283,11 +2283,12 @@ vm_call_method_each_type(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_cal
       no_refinement_dispatch:
 	if (cc->me->def->body.refined.orig_me) {
 	    cc->me = refined_method_callable_without_refinement(cc->me);
-	    return vm_call_method(th, cfp, calling, ci, cc);
 	}
 	else {
-	    return vm_call_zsuper(th, cfp, calling, ci, cc, cc->me->owner);
+	    VALUE klass = RCLASS_SUPER(cc->me->owner);
+	    cc->me = klass ? rb_callable_method_entry(klass, ci->mid) : NULL;
 	}
+	return vm_call_method(th, cfp, calling, ci, cc);
       }
     }
 
