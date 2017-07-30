@@ -252,7 +252,7 @@ method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, 
 	  case VM_METHOD_TYPE_CFUNC:
 	    {
 		rb_method_cfunc_t *cfunc = (rb_method_cfunc_t *)opts;
-		setup_method_cfunc_struct(&def->body.cfunc, cfunc->func, cfunc->argc);
+		setup_method_cfunc_struct(UNALIGNED_MEMBER_PTR(def, body.cfunc), cfunc->func, cfunc->argc);
 		return;
 	    }
 	  case VM_METHOD_TYPE_ATTRSET:
@@ -279,7 +279,7 @@ method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, 
 	    RB_OBJ_WRITE(me, &def->body.proc, (VALUE)opts);
 	    return;
 	  case VM_METHOD_TYPE_NOTIMPLEMENTED:
-	    setup_method_cfunc_struct(&def->body.cfunc, rb_f_notimplement, -1);
+	    setup_method_cfunc_struct(UNALIGNED_MEMBER_PTR(def, body.cfunc), rb_f_notimplement, -1);
 	    return;
 	  case VM_METHOD_TYPE_OPTIMIZED:
 	    def->body.optimize_type = (enum method_optimized_type)opts;

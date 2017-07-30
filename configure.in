@@ -1653,6 +1653,7 @@ AC_CACHE_CHECK(packed struct attribute, rb_cv_packed_struct,
     done])
 AS_IF([test "$rb_cv_packed_struct" != no], [
     AC_DEFINE_UNQUOTED([PACKED_STRUCT(x)], [$rb_cv_packed_struct])
+    RUBY_TRY_CFLAGS(-Wno-address-of-packed-member, [AC_DEFINE(USE_UNALIGNED_MEMBER_ACCESS)])
 ], [
     AC_DEFINE_UNQUOTED([PACKED_STRUCT(x)], x)
 ])

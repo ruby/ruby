@@ -157,6 +157,22 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 # define VAR_NOCLOBBERED(var) var
 #endif
 
+#if defined(USE_UNALIGNED_MEMBER_ACCESS) && USE_UNALIGNED_MEMBER_ACCESS
+# define UNALIGNED_MEMBER_ACCESS(expr) __extension__({ \
+    _Pragma("GCC diagnostic push"); \
+    _Pragma("GCC diagnostic ignored \"-Waddress-of-packed-member\""); \
+    typeof(expr) unaligned_member_access_result = (expr); \
+    _Pragma("GCC diagnostic pop"); \
+    unaligned_member_access_result; \
+})
+#else
+# define UNALIGNED_MEMBER_ACCESS(expr) expr
+#endif
+#define UNALIGNED_MEMBER_PTR(ptr, mem) UNALIGNED_MEMBER_ACCESS(&(ptr)->mem)
+
+#undef RB_OBJ_WRITE
+#define RB_OBJ_WRITE(a, slot, b) UNALIGNED_MEMBER_ACCESS(rb_obj_write((VALUE)(a), (VALUE *)(slot), (VALUE)(b), __FILE__, __LINE__))
+
 /* clear th->ec.tag->state, and return the value */
 static inline int
 rb_threadptr_tag_state(rb_thread_t *th)
