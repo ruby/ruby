@@ -1705,6 +1705,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 	  case ISEQ_ELEMENT_INSN:
 	    {
 		INSN *iobj = (INSN *)list;
+		/* update sp */
+		sp = calc_sp_depth(sp, iobj);
 		code_index += insn_data_length(iobj);
 		insn_num++;
 		break;
@@ -1713,6 +1715,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 	    {
 		LABEL *lobj = (LABEL *)list;
 		lobj->position = code_index;
+		sp = lobj->sp;
 		break;
 	    }
 	  case ISEQ_ELEMENT_NONE:
@@ -1724,8 +1727,13 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 	    {
 		ADJUST *adjust = (ADJUST *)list;
 		if (adjust->line_no != -1) {
-		    code_index += 2 /* insn + 1 operand */;
-		    insn_num++;
+		    int orig_sp = sp;
+		    sp = adjust->label ? adjust->label->sp : 0;
+		    if (orig_sp - sp > 0) {
+			if (orig_sp - sp > 1) code_index++; /* 1 operand */
+			code_index++; /* insn */
+			insn_num++;
+		    }
 		}
 		break;
 	    }
@@ -1890,26 +1898,22 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		}
 
 		if (adjust->line_no != -1) {
-		    if (orig_sp - sp > 0) {
+		    const int diff = orig_sp - sp;
+		    if (diff > 0) {
 			if (last_line != (unsigned int)adjust->line_no) {
 			    line_info_table[line_info_index].line_no = last_line = adjust->line_no;
 			    line_info_table[line_info_index].position = code_index;
 			    line_info_index++;
 			}
+		    }
+		    if (diff > 1) {
 			generated_iseq[code_index++] = BIN(adjuststack);
 			generated_iseq[code_index++] = orig_sp - sp;
 		    }
-		    else if (orig_sp - sp == 0) {
-			/* jump to next insn */
-			if (last_line != (unsigned int)adjust->line_no) {
-			    line_info_table[line_info_index].line_no = last_line = adjust->line_no;
-			    line_info_table[line_info_index].position = code_index;
-			    line_info_index++;
-			}
-			generated_iseq[code_index++] = BIN(nop);
-			generated_iseq[code_index++] = BIN(nop);
+		    else if (diff == 1) {
+			generated_iseq[code_index++] = BIN(pop);
 		    }
-		    else {
+		    else if (diff < 0) {
 			COMPILE_ERROR(iseq, adjust->line_no,
 				      "iseq_set_sequence: adjust bug %d < %d",
 				      orig_sp, sp);
