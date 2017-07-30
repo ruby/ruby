@@ -3168,27 +3168,17 @@ extern char **environ;
 #define ENVNMATCH(s1, s2, n) (memcmp((s1), (s2), (n)) == 0)
 #endif
 
-#ifdef _WIN32
-static VALUE
-env_str_transcode(VALUE str, rb_encoding *enc)
-{
-    rb_encoding *internal = rb_default_internal_encoding();
-    if (!internal) {
-	return rb_str_conv_enc_opts(str, NULL, enc,
-				    ECONV_INVALID_REPLACE | ECONV_UNDEF_REPLACE,
-				    Qnil);
-    }
-    else {
-	return rb_external_str_with_enc(str, rb_utf8_encoding());
-    }
-}
-#endif
-
 static VALUE
 env_enc_str_new(const char *ptr, long len, rb_encoding *enc)
 {
 #ifdef _WIN32
-    VALUE str = env_str_transcode(rb_utf8_str_new(ptr, len), enc);
+    rb_encoding *internal = rb_default_internal_encoding();
+    const int ecflags = ECONV_INVALID_REPLACE | ECONV_UNDEF_REPLACE;
+    rb_encoding *utf8 = rb_utf8_encoding();
+    VALUE str = rb_enc_str_new(NULL, 0, (internal ? internal : enc));
+    if (NIL_P(rb_str_cat_conv_enc_opts(str, 0, ptr, len, utf8, ecflags, Qnil))) {
+	rb_str_initialize(str, ptr, len, utf8);
+    }
 #else
     VALUE str = rb_external_str_new_with_enc(ptr, len, enc);
 #endif
