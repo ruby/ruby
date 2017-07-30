@@ -157,7 +157,8 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 # define VAR_NOCLOBBERED(var) var
 #endif
 
-#if defined(USE_UNALIGNED_MEMBER_ACCESS) && USE_UNALIGNED_MEMBER_ACCESS
+#if defined(USE_UNALIGNED_MEMBER_ACCESS) && USE_UNALIGNED_MEMBER_ACCESS && \
+    defined(__clang__)
 # define UNALIGNED_MEMBER_ACCESS(expr) __extension__({ \
     _Pragma("GCC diagnostic push"); \
     _Pragma("GCC diagnostic ignored \"-Waddress-of-packed-member\""); \
