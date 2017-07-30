@@ -1630,6 +1630,7 @@ VALUE rb_external_str_with_enc(VALUE str, rb_encoding *eenc);
 VALUE rb_str_cat_conv_enc_opts(VALUE newstr, long ofs, const char *ptr, long len,
 			       rb_encoding *from, int ecflags, VALUE ecopts);
 VALUE rb_enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl);
+VALUE rb_str_initialize(VALUE str, const char *ptr, long len, rb_encoding *enc);
 #endif
 #define STR_NOEMBED      FL_USER1
 #define STR_SHARED       FL_USER2 /* = ELTS_SHARED */

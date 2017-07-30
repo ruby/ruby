@@ -932,6 +932,15 @@ rb_str_cat_conv_enc_opts(VALUE newstr, long ofs, const char *ptr, long len,
 				 ecflags, ecopts);
 }
 
+VALUE
+rb_str_initialize(VALUE str, const char *ptr, long len, rb_encoding *enc)
+{
+    STR_SET_LEN(str, 0);
+    rb_enc_associate(str, enc);
+    rb_str_cat(str, ptr, len);
+    return str;
+}
+
 static VALUE
 str_cat_conv_enc_opts(VALUE newstr, long ofs, const char *ptr, long len,
 		      rb_encoding *from, rb_encoding *to,
@@ -1024,9 +1033,7 @@ rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *eenc)
     /* when the conversion failed for some reason, just ignore the
      * default_internal and result in the given encoding as-is. */
     if (NIL_P(rb_str_cat_conv_enc_opts(str, 0, ptr, len, eenc, 0, Qnil))) {
-	STR_SET_LEN(str, 0);
-	rb_enc_associate(str, eenc);
-	rb_str_cat(str, ptr, len);
+	rb_str_initialize(str, ptr, len, eenc);
     }
     return str;
 }
