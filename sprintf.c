@@ -521,7 +521,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 
 	for (t = p; t < end && *t != '%'; t++) ;
 	if (t + 1 == end) {
-	    rb_raise(rb_eArgError, "incomplete format specifier");
+	    rb_raise(rb_eArgError, "incomplete format specifier; use %%%% (double %%) instead");
 	}
 	PUSH(p, t - p);
 	if (coderange != ENC_CODERANGE_BROKEN && scanned < blen) {
