@@ -581,17 +581,21 @@ AS_CASE(["$target_cpu-$target_os"], [[i[3-6]86*]], [
 		 CFLAGS="$save_CFLAGS"
 	 ])])
 
+AS_CASE(["$target_os"], [darwin*], [
+  ac_cv_prog_ac_ct_RANLIB=:
+  ac_cv_prog_ac_ct_AR='libtool -static'
+  rb_cv_arflags='-no_warning_for_no_symbols -o'
+])
 AC_CHECK_TOOL(RANLIB, ranlib, :)
 AC_CHECK_TOOL(AR, ar)
 AS_IF([test -z "$AR"], [
   AC_CHECK_PROGS(AR, aal, ar)
 ])
-AC_CACHE_CHECK([for $AR D option], [rb_cv_ar_D_option], [
+AC_CACHE_CHECK([for $AR flags], [rb_cv_arflags], [
     AS_IF([$AR rcD conftest.a > /dev/null 2>&1 && rm conftest.a],
-	[rb_cv_ar_D_option=yes], [rb_cv_ar_D_option=no])
+	[rb_cv_arflags=rcD], [rb_cv_arflags=rcu])
 ])
-AS_IF([test "$rb_cv_ar_D_option" = yes], [ARFLAGS='rcD '], [ARFLAGS='rcu '])
-AC_SUBST(ARFLAGS)
+AC_SUBST(ARFLAGS, ["$rb_cv_arflags "])
 
 AC_CHECK_TOOL(AS, as)
 ASFLAGS=$ASFLAGS
