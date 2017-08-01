@@ -888,7 +888,8 @@ eom
           total = @count.to_s
           fmt = "%#{total.size}d"
           @failures.map {|k, (n, v)|
-            "\n#{i+=1}. [#{fmt%n}/#{total}] Assertion for #{k.inspect}\n#{v.message.b.gsub(/^/, '   | ')}"
+            v = v.message
+            "\n#{i+=1}. [#{fmt%n}/#{total}] Assertion for #{k.inspect}\n#{v.b.gsub(/^/, '   | ').force_encoding(v.encoding)}"
           }.join("\n")
         end
 
