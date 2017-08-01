@@ -7793,7 +7793,7 @@ parse_atmark(struct parser_params *parser, const enum lex_state_e last_state)
 static enum yytokentype
 parse_ident(struct parser_params *parser, int c, int cmd_state)
 {
-    enum yytokentype result = 0;
+    enum yytokentype result;
     int mb = ENC_CODERANGE_7BIT;
     const enum lex_state_e last_state = lex_state;
     ID ident;
@@ -7804,36 +7804,19 @@ parse_ident(struct parser_params *parser, int c, int cmd_state)
 	c = nextc();
     } while (parser_is_identchar());
     if ((c == '!' || c == '?') && !peek('=')) {
+	result = tFID;
+	tokadd(c);
+    }
+    else if (c == '=' && IS_lex_state(EXPR_FNAME) &&
+	     (!peek('~') && !peek('>') && (!peek('=') || (peek_n('>', 1))))) {
+	result = tIDENTIFIER;
 	tokadd(c);
     }
     else {
+	result = ISUPPER(tok()[0]) ? tCONSTANT : tIDENTIFIER;
 	pushback(c);
     }
     tokfix();
-
-    if (toklast() == '!' || toklast() == '?') {
-	result = tFID;
-    }
-    else {
-	if (IS_lex_state(EXPR_FNAME)) {
-	    register int c = nextc();
-	    if (c == '=' && !peek('~') && !peek('>') &&
-		(!peek('=') || (peek_n('>', 1)))) {
-		result = tIDENTIFIER;
-		tokadd(c);
-		tokfix();
-	    }
-	    else {
-		pushback(c);
-	    }
-	}
-	if (result == 0 && ISUPPER(tok()[0])) {
-	    result = tCONSTANT;
-	}
-	else {
-	    result = tIDENTIFIER;
-	}
-    }
 
     if (IS_LABEL_POSSIBLE()) {
 	if (IS_LABEL_SUFFIX(0)) {
