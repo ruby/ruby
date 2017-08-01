@@ -237,7 +237,7 @@ module TestNetHTTP_version_1_1_methods
     begin
       h = Net::HTTP.start(config('host'), config('port'))
     ensure
-      h.finish if h
+      h&.finish
     end
     assert_equal config('host'), h.address
     assert_equal config('port'), h.port
@@ -246,7 +246,7 @@ module TestNetHTTP_version_1_1_methods
     begin
       h = Net::HTTP.start(config('host'), config('port'), :ENV)
     ensure
-      h.finish if h
+      h&.finish
     end
     assert_equal config('host'), h.address
     assert_equal config('port'), h.port
@@ -255,7 +255,7 @@ module TestNetHTTP_version_1_1_methods
     begin
       h = Net::HTTP.start(config('host'), config('port'), nil)
     ensure
-      h.finish if h
+      h&.finish
     end
     assert_equal config('host'), h.address
     assert_equal config('port'), h.port
