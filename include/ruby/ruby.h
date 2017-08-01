@@ -2028,7 +2028,8 @@ rb_special_const_p(VALUE obj)
 static inline void
 rb_clone_setup(VALUE clone, VALUE obj)
 {
-    rb_obj_setup(clone, rb_singleton_class_clone(obj), RBASIC(obj)->flags);
+    rb_obj_setup(clone, rb_singleton_class_clone(obj),
+                 RBASIC(obj)->flags & ~(FL_PROMOTED0|FL_PROMOTED1|FL_FINALIZE));
     rb_singleton_class_attached(RBASIC_CLASS(clone), clone);
     if (RB_FL_TEST(obj, RUBY_FL_EXIVAR)) rb_copy_generic_ivar(clone, obj);
 }
