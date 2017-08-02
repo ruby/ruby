@@ -153,7 +153,7 @@ class CGI
   #               "language"   => "ja",
   #               "expires"    => Time.now + 30,
   #               "cookie"     => [cookie1, cookie2],
-  #               "my_header1" => "my_value"
+  #               "my_header1" => "my_value",
   #               "my_header2" => "my_value")
   #
   # This method does not perform charset conversion.
