@@ -20,6 +20,7 @@
 # * https://github.com/ruby/scanf
 # * https://github.com/ruby/cmath
 # * https://github.com/ruby/strscan
+# * https://github.com/ruby/ipaddr
 #
 
 $repositories = {
@@ -43,6 +44,7 @@ $repositories = {
   scanf: 'ruby/scanf',
   cmath: 'ruby/cmath',
   strscan: 'ruby/strscan',
+  ipaddr: 'ruby/ipaddr',
 }
 
 def sync_default_gems(gem)
@@ -180,6 +182,11 @@ def sync_default_gems(gem)
     `cp -f ../strscan/strscan.gemspec ext/strscan`
     `rm -f ext/strscan/regenc.h ext/strscan/regint.h`
     `git checkout ext/strscan/depend`
+  when "ipaddr"
+    `rm -rf lib/ipaddr.rb test/test_ipaddr.rb`
+    `cp -rf ../ipaddr/lib/* lib`
+    `cp -rf ../ipaddr/test/test_ipaddr.rb test`
+    `cp -f ../ipaddr/ipaddr.gemspec lib`
   else
   end
 end
