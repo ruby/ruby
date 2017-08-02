@@ -42,7 +42,6 @@ before_script:
   - "make update-config_files"
   - "make touch-unicode-files"
   - "make -s $JOBS srcs UNICODE_FILES=."
-  - "make update-rubyspec"
   - "requests=; for req in ${RUBYSPEC_PULL_REQUEST//,/ }; do
       requests=\"$requests +refs/pull/$req/merge:\";
     done"
