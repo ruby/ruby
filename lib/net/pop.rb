@@ -169,7 +169,7 @@ module Net
   #
   #     # Use APOP authentication if $isapop == true
   #     pop = Net::POP3.APOP($is_apop).new('apop.example.com', 110)
-  #     pop.start(YourAccount', 'YourPassword') do |pop|
+  #     pop.start('YourAccount', 'YourPassword') do |pop|
   #       # Rest of the code is the same.
   #     end
   #
@@ -771,7 +771,7 @@ module Net
     # === Example without block
     #
     #     POP3.start('pop.example.com', 110,
-    #                'YourAccount, 'YourPassword') do |pop|
+    #                'YourAccount', 'YourPassword') do |pop|
     #       n = 1
     #       pop.mails.each do |popmail|
     #         File.open("inbox/#{n}", 'w') do |f|
@@ -785,7 +785,7 @@ module Net
     # === Example with block
     #
     #     POP3.start('pop.example.com', 110,
-    #                'YourAccount, 'YourPassword') do |pop|
+    #                'YourAccount', 'YourPassword') do |pop|
     #       n = 1
     #       pop.mails.each do |popmail|
     #         File.open("inbox/#{n}", 'w') do |f|
@@ -844,7 +844,7 @@ module Net
     # === Example
     #
     #     POP3.start('pop.example.com', 110,
-    #                'YourAccount, 'YourPassword') do |pop|
+    #                'YourAccount', 'YourPassword') do |pop|
     #       n = 1
     #       pop.mails.each do |popmail|
     #         File.open("inbox/#{n}", 'w') do |f|
