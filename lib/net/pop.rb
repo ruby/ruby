@@ -168,7 +168,7 @@ module Net
   #     require 'net/pop'
   #
   #     # Use APOP authentication if $isapop == true
-  #     pop = Net::POP3.APOP($is_apop).new('apop.example.com', 110)
+  #     pop = Net::POP3.APOP($isapop).new('apop.example.com', 110)
   #     pop.start('YourAccount', 'YourPassword') do |pop|
   #       # Rest of the code is the same.
   #     end
