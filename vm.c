@@ -2330,7 +2330,7 @@ static int thread_recycle_stack_count = 0;
 static VALUE *
 thread_recycle_stack(size_t size)
 {
-    if (thread_recycle_stack_count) {
+    if (thread_recycle_stack_count > 0) {
 	/* TODO: check stack size if stack sizes are variable */
 	return thread_recycle_stack_slot[--thread_recycle_stack_count];
     }
@@ -2346,6 +2346,8 @@ thread_recycle_stack(size_t size)
 void
 rb_thread_recycle_stack_release(VALUE *stack)
 {
+    VM_ASSERT(stack != NULL);
+
 #if USE_THREAD_DATA_RECYCLE
     if (thread_recycle_stack_count < RECYCLE_MAX) {
 	thread_recycle_stack_slot[thread_recycle_stack_count++] = stack;
@@ -2429,8 +2431,9 @@ thread_free(void *ptr)
     rb_thread_t *th = ptr;
     RUBY_FREE_ENTER("thread");
 
-    if (!th->root_fiber) {
-	RUBY_FREE_UNLESS_NULL(th->ec.stack);
+    if (th->ec.stack != NULL) {
+	rb_thread_recycle_stack_release(th->ec.stack);
+	th->ec.stack = NULL;
     }
 
     if (th->locking_mutex != Qfalse) {

@@ -694,10 +694,8 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	rb_threadptr_unlock_all_locking_mutexes(th);
 	rb_check_deadlock(th->vm);
 
-	if (!th->root_fiber) {
-	    rb_thread_recycle_stack_release(th->ec.stack);
-	    th->ec.stack = 0;
-	}
+	rb_thread_recycle_stack_release(th->ec.stack);
+	th->ec.stack = NULL;
     }
     native_mutex_lock(&th->vm->thread_destruct_lock);
     /* make sure vm->running_thread never point me after this point.*/

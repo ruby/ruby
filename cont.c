@@ -1288,6 +1288,7 @@ root_fiber_alloc(rb_thread_t *th)
     rb_fiber_t *fib;
     /* no need to allocate vm stack */
     fib = fiber_t_alloc(fiber_alloc(rb_cFiber));
+    fib->cont.saved_thread.ec.stack = NULL;
     fib->cont.type = ROOT_FIBER_CONTEXT;
 #if FIBER_USE_NATIVE
 #ifdef _WIN32
