@@ -13,6 +13,8 @@ def lldb_init(debugger):
     target = debugger.GetSelectedTarget()
     global SIZEOF_VALUE
     SIZEOF_VALUE = target.FindFirstType("VALUE").GetByteSize()
+
+    value_types = []
     g = globals()
     for enum in target.FindFirstGlobalVariable('ruby_dummy_gdb_enums'):
         enum = enum.GetType()
@@ -22,6 +24,28 @@ def lldb_init(debugger):
             name = member.GetName()
             value = member.GetValueAsUnsigned()
             g[name] = value
+
+            if name.startswith('RUBY_T_'):
+                value_types.append(name)
+    g['value_types'] = value_types
+
+def string2cstr(rstring):
+    """Returns the pointer to the C-string in the given String object"""
+    flags = rstring.GetValueForExpressionPath(".basic->flags").unsigned
+    if flags & RUBY_T_MASK != RUBY_T_STRING:
+        raise TypeError("not a string")
+    if flags & RUBY_FL_USER1:
+        cptr = int(rstring.GetValueForExpressionPath(".as.heap.ptr").value, 0)
+        clen = int(rstring.GetValueForExpressionPath(".as.heap.len").value, 0)
+    else:
+        cptr = int(rstring.GetValueForExpressionPath(".as.ary").value, 0)
+        clen = (flags & RSTRING_EMBED_LEN_MASK) >> RSTRING_EMBED_LEN_SHIFT
+    return cptr, clen
+
+def output_string(ctx, rstring):
+    cptr, clen = string2cstr(rstring)
+    expr = 'printf("%%.*s", (size_t)%d, (const char*)%d)' % (clen, cptr)
+    ctx.frame.EvaluateExpression(expr)
 
 def fixnum_p(x):
     return x & RUBY_FIXNUM_FLAG != 0
@@ -105,8 +129,47 @@ def lldb_rp(debugger, command, result, internal_dict):
                     debugger.HandleCommand("expression -Z %d -fx -- (const VALUE*)((struct RArray*)%d)->as.heap.ptr" % (len, val.GetValueAsUnsigned()))
             debugger.HandleCommand("p (struct RArray *) %0#x" % val.GetValueAsUnsigned())
 
+def count_objects(debugger, command, ctx, result, internal_dict):
+    objspace = ctx.frame.EvaluateExpression("ruby_current_vm->objspace")
+    num_pages = objspace.GetValueForExpressionPath(".heap_pages.allocated_pages").unsigned
+
+    counts = {}
+    total = 0
+    for t in range(0x00, RUBY_T_MASK+1):
+        counts[t] = 0
+
+    for i in range(0, num_pages):
+        print "\rcounting... %d/%d" % (i, num_pages),
+        page = objspace.GetValueForExpressionPath('.heap_pages.sorted[%d]' % i)
+        p = page.GetChildMemberWithName('start')
+        num_slots = page.GetChildMemberWithName('total_slots').unsigned
+        for j in range(0, num_slots):
+            obj = p.GetValueForExpressionPath('[%d]' % j)
+            flags = obj.GetValueForExpressionPath('.as.basic.flags').unsigned
+            obj_type = flags & RUBY_T_MASK
+            counts[obj_type] += 1
+        total += num_slots
+
+    print "\rTOTAL: %d, FREE: %d" % (total, counts[0x00])
+    for sym in value_types:
+        print "%s: %d" % (sym, counts[globals()[sym]])
+
+def stack_dump_raw(debugger, command, ctx, result, internal_dict):
+    ctx.frame.EvaluateExpression("rb_vmdebug_stack_dump_raw_current()")
+
+def dump_node(debugger, command, ctx, result, internal_dict):
+    args = shlex.split(command)
+    if not args:
+        return
+    node = args[0]
+
+    dump = ctx.frame.EvaluateExpression("(struct RString*)rb_parser_dump_tree((NODE*)(%s), 0)" % node)
+    output_string(ctx, dump)
 
 def __lldb_init_module(debugger, internal_dict):
     debugger.HandleCommand("command script add -f lldb_cruby.lldb_rp rp")
+    debugger.HandleCommand("command script add -f lldb_cruby.count_objects rb_count_objects")
+    debugger.HandleCommand("command script add -f lldb_cruby.stack_dump_raw SDR")
+    debugger.HandleCommand("command script add -f lldb_cruby.dump_node dump_node")
     lldb_init(debugger)
     print "lldb scripts for ruby has been installed."
