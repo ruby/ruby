@@ -402,6 +402,9 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
     if (!tracing) th->vm->trace_running--;
 
     if (state) {
+#if defined RUBY_USE_SETJMPEX && RUBY_USE_SETJMPEX
+	RB_GC_GUARD(result);
+#endif
 	TH_JUMP_TAG(th, state);
     }
 
