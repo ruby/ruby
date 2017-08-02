@@ -91,6 +91,9 @@ notifications:
     on_success: change
     on_failure: always
 
+  email:
+    - ko1c-failure@atdot.net
+
 # Local Variables:
 # mode: YAML
 # coding: utf-8-unix
