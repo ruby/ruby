@@ -500,7 +500,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 
     file = rb_source_loc(&line);
     if ((file && !NIL_P(mesg)) || (cause != Qundef))  {
-	enum ruby_tag_type state;
+	int state = 0;
 
 	TH_PUSH_TAG(th);
 	if (EXEC_TAG() == TAG_NONE && !(state = rb_threadptr_set_raised(th))) {
