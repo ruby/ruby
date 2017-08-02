@@ -556,6 +556,7 @@ cont_restore_thread(rb_context_t *cont)
 	th->fiber = (rb_fiber_t*)cont;
     }
 
+    VM_ASSERT(th->ec.stack != NULL);
     VM_ASSERT(sth->status == THREAD_RUNNABLE);
 }
 
@@ -1288,7 +1289,6 @@ root_fiber_alloc(rb_thread_t *th)
     rb_fiber_t *fib;
     /* no need to allocate vm stack */
     fib = fiber_t_alloc(fiber_alloc(rb_cFiber));
-    fib->cont.saved_thread.ec.stack = NULL;
     fib->cont.type = ROOT_FIBER_CONTEXT;
 #if FIBER_USE_NATIVE
 #ifdef _WIN32
@@ -1297,6 +1297,7 @@ root_fiber_alloc(rb_thread_t *th)
 #endif
     fib->status = FIBER_RUNNING;
 
+    th->root_fiber = th->fiber = fib;
     return fib;
 }
 
@@ -1305,9 +1306,9 @@ fiber_current(void)
 {
     rb_thread_t *th = GET_THREAD();
     if (th->fiber == 0) {
-	/* save root */
 	rb_fiber_t *fib = root_fiber_alloc(th);
-	th->root_fiber = th->fiber = fib;
+	/* Running thread object has stack management responsibility */
+	fib->cont.saved_thread.ec.stack = NULL;
     }
     return th->fiber;
 }
@@ -1348,9 +1349,8 @@ fiber_store(rb_fiber_t *next_fib, rb_thread_t *th)
 	cont_save_thread(&fib->cont, th);
     }
     else {
-	/* create current fiber */
+	/* create root fiber */
 	fib = root_fiber_alloc(th);
-	th->root_fiber = th->fiber = fib;
     }
 
 #if FIBER_USE_NATIVE

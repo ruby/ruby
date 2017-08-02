@@ -90,6 +90,8 @@ VM_CFP_IN_HEAP_P(const rb_thread_t *th, const rb_control_frame_t *cfp)
 {
     const VALUE *start = th->ec.stack;
     const VALUE *end = (VALUE *)th->ec.stack + th->ec.stack_size;
+    VM_ASSERT(start != NULL);
+
     if (start <= (VALUE *)cfp && (VALUE *)cfp < end) {
 	return FALSE;
     }
@@ -103,6 +105,8 @@ VM_EP_IN_HEAP_P(const rb_thread_t *th, const VALUE *ep)
 {
     const VALUE *start = th->ec.stack;
     const VALUE *end = (VALUE *)th->ec.cfp;
+    VM_ASSERT(start != NULL);
+
     if (start <= ep && ep < end) {
 	return FALSE;
     }
