@@ -472,12 +472,9 @@ exc_setup_cause(VALUE exc, VALUE cause)
     return exc;
 }
 
-static void
-setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
+static inline VALUE
+exc_setup_message(rb_thread_t *th, VALUE mesg, VALUE *cause)
 {
-    VALUE e;
-    const char *file = 0;
-    int line;
     int nocause = 0;
 
     if (NIL_P(mesg)) {
@@ -489,18 +486,27 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	mesg = rb_exc_new(rb_eRuntimeError, 0, 0);
 	nocause = 0;
     }
-    if (cause == Qundef) {
+    if (*cause == Qundef) {
 	if (nocause) {
-	    cause = Qnil;
+	    *cause = Qnil;
 	}
 	else if (!rb_ivar_defined(mesg, id_cause)) {
-	    cause = get_thread_errinfo(th);
+	    *cause = get_thread_errinfo(th);
 	}
     }
+    return mesg;
+}
+
+static void
+setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
+{
+    VALUE e;
+    const char *file = 0;
+    int line;
 
     file = rb_source_loc(&line);
     if ((file && !NIL_P(mesg)) || (cause != Qundef))  {
-	int state = 0;
+	volatile int state = 0;
 
 	TH_PUSH_TAG(th);
 	if (EXEC_TAG() == TAG_NONE && !(state = rb_threadptr_set_raised(th))) {
@@ -590,6 +596,7 @@ rb_threadptr_setup_exception(rb_thread_t *th, VALUE mesg, VALUE cause)
 static void
 rb_longjmp(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 {
+    mesg = exc_setup_message(th, mesg, &cause);
     setup_exception(th, tag, mesg, cause);
     rb_thread_raised_clear(th);
     TH_JUMP_TAG(th, tag);
