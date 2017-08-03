@@ -5479,6 +5479,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	    if (type == ISEQ_TYPE_TOP || type == ISEQ_TYPE_MAIN ||
 		((type == ISEQ_TYPE_RESCUE || type == ISEQ_TYPE_ENSURE) &&
 		 (parent_type == ISEQ_TYPE_TOP || parent_type == ISEQ_TYPE_MAIN))) {
+		ADD_ADJUST(ret, line, 0);
 		ADD_INSN(ret, line, putnil);
 		ADD_INSN(ret, line, leave);
 	    }

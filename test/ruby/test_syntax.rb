@@ -964,7 +964,7 @@ eom
 
   def test_return_toplevel
     feature4840 = '[ruby-core:36785] [Feature #4840]'
-    code = "#{<<~"begin;"}\n#{<<~"end;"}"
+    code = "#{<<~"begin;"}\n#{<<~'end;'}"
     begin;
       return; raise
       begin return; rescue SystemExit; exit false; end
@@ -974,6 +974,8 @@ eom
       begin raise; rescue; return; end
       return false; raise
       return 1; raise
+      "#{return}"
+      raise((return; "should not raise"))
     end;
     all_assertions(feature4840) do |a|
       code.each_line do |s|
