@@ -478,8 +478,16 @@ WARN
     }
   end
 
+  def test_invalid_break
+    assert_syntax_error("def m; break; end", /Invalid break/)
+    assert_syntax_error('/#{break}/', /Invalid break/)
+    assert_syntax_error('/#{break}/o', /Invalid break/)
+  end
+
   def test_invalid_next
     assert_syntax_error("def m; next; end", /Invalid next/)
+    assert_syntax_error('/#{next}/', /Invalid next/)
+    assert_syntax_error('/#{next}/o', /Invalid next/)
   end
 
   def test_lambda_with_space

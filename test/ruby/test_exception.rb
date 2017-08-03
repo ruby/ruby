@@ -1019,15 +1019,4 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       }
     end;
   end
-
-  def test_break_in_once
-    assert_separately([], "#{<<-"begin;"}\n#{<<~'end;'}")
-    begin;
-      obj = Object.new
-      def obj.try
-        /#{break}/o
-      end
-      assert_raise(LocalJumpError, /proc-closure/) {obj.try}
-    end;
-  end
 end
