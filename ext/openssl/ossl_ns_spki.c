@@ -322,7 +322,7 @@ ossl_spki_verify(VALUE self, VALUE key)
 
 /* Document-class: OpenSSL::Netscape::SPKI
  *
- * A Simple Public Key Infrastructure implementation (pronounced "spookey").
+ * A Simple Public Key Infrastructure implementation (pronounced "spooky").
  * The structure is defined as
  *   PublicKeyAndChallenge ::= SEQUENCE {
  *     spki SubjectPublicKeyInfo,
@@ -348,7 +348,7 @@ ossl_spki_verify(VALUE self, VALUE key)
  *   spki.public_key = key.public_key
  *   spki.sign(key, OpenSSL::Digest::SHA256.new)
  *   #send a request containing this to a server generating a certificate
- * === Verifiying an SPKI request
+ * === Verifying an SPKI request
  *   request = #...
  *   spki = OpenSSL::Netscape::SPKI.new request
  *   unless spki.verify(spki.public_key)

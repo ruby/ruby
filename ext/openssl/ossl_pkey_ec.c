@@ -296,7 +296,7 @@ ossl_ec_key_get_group(VALUE self)
  *   key.group = group
  *
  * Sets the EC::Group for the key. The group structure is internally copied so
- * modifition to +group+ after assigning to a key has no effect on the key.
+ * modification to +group+ after assigning to a key has no effect on the key.
  */
 static VALUE
 ossl_ec_key_set_group(VALUE self, VALUE group_v)
@@ -1597,11 +1597,11 @@ ossl_ec_point_to_bn(int argc, VALUE *argv, VALUE self)
  * Performs elliptic curve point multiplication.
  *
  * The first form calculates <tt>bn1 * point + bn2 * G</tt>, where +G+ is the
- * generator of the group of +point+. +bn2+ may be ommitted, and in that case,
+ * generator of the group of +point+. +bn2+ may be omitted, and in that case,
  * the result is just <tt>bn1 * point</tt>.
  *
  * The second form calculates <tt>bns[0] * point + bns[1] * points[0] + ...
- * + bns[-1] * points[-1] + bn2 * G</tt>. +bn2+ may be ommitted. +bns+ must be
+ * + bns[-1] * points[-1] + bn2 * G</tt>. +bn2+ may be omitted. +bns+ must be
  * an array of OpenSSL::BN. +points+ must be an array of
  * OpenSSL::PKey::EC::Point. Please note that <tt>points[0]</tt> is not
  * multiplied by <tt>bns[0]</tt>, but <tt>bns[1]</tt>.

@@ -34,6 +34,29 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     OpenSSL::TestUtils.issue_crl(*args)
   end
 
+  def test_add_file
+    ca_exts = [
+      ["basicConstraints", "CA:TRUE", true],
+      ["keyUsage", "cRLSign,keyCertSign", true],
+    ]
+    cert1 = issue_cert(@ca1, @rsa1024, 1, ca_exts, nil, nil)
+    cert2 = issue_cert(@ca2, @rsa2048, 1, ca_exts, nil, nil)
+    tmpfile = Tempfile.open { |f| f << cert1.to_pem << cert2.to_pem; f }
+
+    store = OpenSSL::X509::Store.new
+    assert_equal false, store.verify(cert1)
+    assert_equal false, store.verify(cert2)
+    store.add_file(tmpfile.path)
+    assert_equal true, store.verify(cert1)
+    assert_equal true, store.verify(cert2)
+
+    # OpenSSL < 1.1.1 leaks an error on a duplicate certificate
+    assert_nothing_raised { store.add_file(tmpfile.path) }
+    assert_equal [], OpenSSL.errors
+  ensure
+    tmpfile and tmpfile.close!
+  end
+
   def test_verify
     # OpenSSL uses time(2) while Time.now uses clock_gettime(CLOCK_REALTIME),
     # and there may be difference.
@@ -194,6 +217,7 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
   end
 
   def test_set_errors
+    return if OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10100000
     now = Time.now
     ca1_cert = issue_cert(@ca1, @rsa2048, 1, [], nil, nil)
     store = OpenSSL::X509::Store.new

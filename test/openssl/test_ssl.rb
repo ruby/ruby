@@ -66,7 +66,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         buf = ""
         ssl.syswrite(str)
         assert_same buf, ssl.sysread(str.size, buf)
-        assert_equal(str, newstr)
+        assert_equal(str, buf)
       }
     }
   end

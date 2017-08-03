@@ -1483,7 +1483,8 @@ ossl_ssl_setup(VALUE self)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
     rb_io_check_writable(fptr);
-    SSL_set_fd(ssl, TO_SOCKET(FPTR_TO_FD(fptr)));
+    if (!SSL_set_fd(ssl, TO_SOCKET(FPTR_TO_FD(fptr))))
+	ossl_raise(eSSLError, "SSL_set_fd");
 
     return Qtrue;
 }
