@@ -1940,7 +1940,7 @@ glob_helper(
 		pathtype = path_noent;
 	    }
 	}
-	if (match_dir && pathtype == path_unknown) {
+	if (match_dir && (pathtype == path_unknown || pathtype == path_symlink)) {
 	    if (do_stat(fd, base, &st, flags, enc) == 0) {
 		pathtype = IFTODT(st.st_mode);
 	    }
@@ -2042,14 +2042,12 @@ glob_helper(
 		break;
 	    }
 	    name = buf + pathlen + (dirsep != 0);
-	    if (recursive && dotfile < ((flags & FNM_DOTMATCH) ? 2 : 1)) {
+	    if (dotfile < ((flags & FNM_DOTMATCH) ? 2 : 1) &&
 #ifdef DT_UNKNOWN
-		if ((new_pathtype = dp->d_type) != (rb_pathtype_t)DT_UNKNOWN)
-		    /* Got it. We need nothing more. */
-		    ;
-		else
+		((new_pathtype = dp->d_type) == (rb_pathtype_t)DT_UNKNOWN) &&
 		    /* fall back to call lstat(2) */
 #endif
+		recursive) {
 		/* RECURSIVE never match dot files unless FNM_DOTMATCH is set */
 		if (do_lstat(fd, buf, &st, flags, enc) == 0)
 		    new_pathtype = IFTODT(st.st_mode);
