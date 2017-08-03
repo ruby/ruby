@@ -2456,7 +2456,7 @@ __extension__({ \
 	    (int)(sizeof(rb_yield_values_args) / sizeof(VALUE)); \
 	rb_yield_values2( \
 	    rb_varargs_argc_check(rb_yield_values_argc, rb_yield_values_nargs), \
-	    rb_yield_values_args); \
+	    rb_yield_values_nargs ? rb_yield_values_args : NULL); \
     })
 
 # define rb_funcall(recv, mid, argc, ...) \
@@ -2467,7 +2467,7 @@ __extension__({ \
 	    (int)(sizeof(rb_funcall_args) / sizeof(VALUE)); \
 	rb_funcallv(recv, mid, \
 	    rb_varargs_argc_check(rb_funcall_argc, rb_funcall_nargs), \
-	    rb_funcall_args); \
+	    rb_funcall_nargs ? rb_funcall_args : NULL); \
     })
 #endif
 
