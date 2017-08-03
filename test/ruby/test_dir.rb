@@ -207,6 +207,7 @@ class TestDir < Test::Unit::TestCase
     files.each {|n| File.write(File.join(@root, n), "")}
     assert_equal(files, Dir.glob("*/*.c", base: @root).sort)
     assert_equal(files, Dir.chdir(@root) {Dir.glob("*/*.c", base: ".").sort})
+    assert_equal(%w[foo.c], Dir.chdir(@root) {Dir.glob("*.c", base: "a").sort})
     assert_equal(files, Dir.chdir(@root) {Dir.glob("*/*.c", base: "").sort})
     assert_equal(files, Dir.chdir(@root) {Dir.glob("*/*.c", base: nil).sort})
   end
@@ -215,6 +216,7 @@ class TestDir < Test::Unit::TestCase
     files = %w[a/foo.c c/bar.c]
     files.each {|n| File.write(File.join(@root, n), "")}
     assert_equal(files, Dir.open(@root) {|d| Dir.glob("*/*.c", base: d)}.sort)
+    assert_equal(%w[foo.c], Dir.chdir(@root) {Dir.open("a") {|d| Dir.glob("*", base: d)}})
   end
 
   def assert_entries(entries, children = false)

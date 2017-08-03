@@ -1896,6 +1896,9 @@ glob_helper(
     int plain = 0, magical = 0, recursive = 0, match_all = 0, match_dir = 0;
     int escape = !(flags & FNM_NOESCAPE);
     size_t pathlen = baselen + namelen;
+    const char *base = path;
+
+    if (fd != AT_FDCWD && *(base += baselen) == '/') base++;
 
     for (cur = beg; cur < end; ++cur) {
 	struct glob_pattern *p = *cur;
@@ -1928,9 +1931,9 @@ glob_helper(
 	}
     }
 
-    if (*path) {
+    if (*base) {
 	if (match_all && pathtype == path_unknown) {
-	    if (do_lstat(fd, path, &st, flags, enc) == 0) {
+	    if (do_lstat(fd, base, &st, flags, enc) == 0) {
 		pathtype = IFTODT(st.st_mode);
 	    }
 	    else {
@@ -1938,7 +1941,7 @@ glob_helper(
 	    }
 	}
 	if (match_dir && pathtype == path_unknown) {
-	    if (do_stat(fd, path, &st, flags, enc) == 0) {
+	    if (do_stat(fd, base, &st, flags, enc) == 0) {
 		pathtype = IFTODT(st.st_mode);
 	    }
 	    else {
@@ -1980,7 +1983,7 @@ glob_helper(
 # else
 	    ;
 # endif
-	dirp = do_opendir(fd, *path ? path : ".", flags, enc, funcs->error, arg, &status);
+	dirp = do_opendir(fd, *base ? base : ".", flags, enc, funcs->error, arg, &status);
 	if (dirp == NULL) {
 # if FNM_SYSCASE || NORMALIZE_UTF8PATH
 	    if ((magical < 2) && !recursive && (errno == EACCES)) {
@@ -1990,7 +1993,7 @@ glob_helper(
 # endif
 	    return status;
 	}
-	IF_NORMALIZE_UTF8PATH(norm_p = need_normalization(dirp, *path ? path : "."));
+	IF_NORMALIZE_UTF8PATH(norm_p = need_normalization(dirp, *base ? base : "."));
 
 # if NORMALIZE_UTF8PATH
 	if (!(norm_p || magical || recursive)) {
