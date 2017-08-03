@@ -62,8 +62,15 @@ def compile_extension(name)
         ENV["MAKEFLAGS"] = "l#{ENV["MAKEFLAGS"]}"
       end
 
+      opts = {}
+      if /(?:\A|\s)--jobserver-(?:auth|fds)=(\d+),(\d+)/ =~ ENV["MAKEFLAGS"]
+        r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
+        w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
+        opts[r] = r
+        opts[w] = w
+      end
       # Do not capture stderr as we want to show compiler warnings
-      output = IO.popen([make, "V=1", "DESTDIR=", close_others: false], &:read)
+      output = IO.popen([make, "V=1", "DESTDIR=", opts], &:read)
       raise "#{make} failed:\n#{output}" unless $?.success?
       $stderr.puts output if debug
 
