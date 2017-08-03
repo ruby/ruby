@@ -2466,7 +2466,7 @@ dir_glob_options(VALUE opt, VALUE *base, int *flags)
     kw[0] = rb_intern("base");
     if (flags) kw[1] = rb_intern("flags");
     rb_get_kwargs(opt, kw, 0, flags ? 2 : 1, args);
-    if (args[0] == Qundef) {
+    if (args[0] == Qundef || NIL_P(args[0])) {
 	*base = Qnil;
     }
 #if USE_OPENDIR_AT
@@ -2476,6 +2476,7 @@ dir_glob_options(VALUE opt, VALUE *base, int *flags)
 #endif
     else {
 	GlobPathValue(args[0], TRUE);
+	if (!RSTRING_LEN(args[0])) args[0] = Qnil;
 	*base = args[0];
     }
     if (flags && args[1] != Qundef) {

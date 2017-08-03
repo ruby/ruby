@@ -206,6 +206,9 @@ class TestDir < Test::Unit::TestCase
     files = %w[a/foo.c c/bar.c]
     files.each {|n| File.write(File.join(@root, n), "")}
     assert_equal(files, Dir.glob("*/*.c", base: @root).sort)
+    assert_equal(files, Dir.chdir(@root) {Dir.glob("*/*.c", base: ".").sort})
+    assert_equal(files, Dir.chdir(@root) {Dir.glob("*/*.c", base: "").sort})
+    assert_equal(files, Dir.chdir(@root) {Dir.glob("*/*.c", base: nil).sort})
   end
 
   def test_glob_base_dir
