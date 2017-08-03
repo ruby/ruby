@@ -219,10 +219,10 @@ class TestDir < Test::Unit::TestCase
     assert_equal(%w[foo.c], Dir.chdir(@root) {Dir.open("a") {|d| Dir.glob("*", base: d)}})
   end
 
-  def assert_entries(entries, children = false)
+  def assert_entries(entries, children_only = false)
     entries.sort!
     expected = ("a".."z").to_a
-    expected = %w(. ..) + expected unless children
+    expected = %w(. ..) + expected unless children_only
     assert_equal(expected, entries)
   end
 
