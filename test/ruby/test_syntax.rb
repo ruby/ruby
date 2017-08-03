@@ -984,6 +984,8 @@ eom
       return 1; raise
       "#{return}"
       raise((return; "should not raise"))
+      begin raise; ensure return; end; self
+      begin raise; ensure return; end and self
     end;
     all_assertions(feature4840) do |a|
       code.each_line do |s|

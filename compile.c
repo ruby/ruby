@@ -4647,8 +4647,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	CHECK(COMPILE_POPPED(ensr, "ensure ensr", node->nd_ensr));
 	last = ensr->last;
 	last_leave = last && IS_INSN(last) && IS_INSN_ID(last, leave);
-	if (!popped && last_leave)
-	    popped = 1;
 
 	er.begin = lstart;
 	er.end = lend;
@@ -4656,13 +4654,16 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	push_ensure_entry(iseq, &enl, &er, node->nd_ensr);
 
 	ADD_LABEL(ret, lstart);
-	CHECK(COMPILE_(ret, "ensure head", node->nd_head, popped));
+	CHECK(COMPILE_(ret, "ensure head", node->nd_head, (popped | last_leave)));
 	ADD_LABEL(ret, lend);
 	if (ensr->anchor.next == 0) {
 	    ADD_INSN(ret, line, nop);
 	}
 	else {
 	    ADD_SEQ(ret, ensr);
+	    if (!popped && last_leave) {
+		ADD_INSN(ret, line, putnil);
+	    }
 	}
 	ADD_LABEL(ret, lcont);
 	if (last_leave) ADD_INSN(ret, line, pop);
@@ -5476,14 +5477,22 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	if (is) {
 	    enum iseq_type type = is->body->type;
 	    const rb_iseq_t *parent_iseq = is->body->parent_iseq;
-	    enum iseq_type parent_type = parent_iseq ? parent_iseq->body->type : type;
+	    enum iseq_type parent_type;
 
-	    if (type == ISEQ_TYPE_TOP || type == ISEQ_TYPE_MAIN ||
-		((type == ISEQ_TYPE_RESCUE || type == ISEQ_TYPE_ENSURE) &&
-		 (parent_type == ISEQ_TYPE_TOP || parent_type == ISEQ_TYPE_MAIN))) {
+	    if (type == ISEQ_TYPE_TOP || type == ISEQ_TYPE_MAIN) {
 		ADD_ADJUST(ret, line, 0);
 		ADD_INSN(ret, line, putnil);
 		ADD_INSN(ret, line, leave);
+	    }
+	    else if ((type == ISEQ_TYPE_RESCUE || type == ISEQ_TYPE_ENSURE) &&
+		     parent_iseq &&
+		     ((parent_type = parent_iseq->body->type) == ISEQ_TYPE_TOP ||
+		      parent_type == ISEQ_TYPE_MAIN)) {
+		ADD_INSN(ret, line, putnil);
+		ADD_INSN1(ret, line, throw, INT2FIX(TAG_RETURN));
+		if (popped) {
+		    ADD_INSN(ret, line, pop);
+		}
 	    }
 	    else {
 		LABEL *splabel = 0;
