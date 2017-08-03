@@ -222,6 +222,7 @@ goto :loop ;
   echo   --with-static-linked-ext link external modules statically
   echo   --with-ext="a,b,..."    use extensions a, b, ...
   echo   --without-ext="a,b,..." ignore extensions a, b, ...
+  echo   --with-out-dir=DIR-LIST add optional headers and libraries directories separated by $PATH_SEPARATOR
   echo   --disable-install-doc   do not install rdoc indexes during install
   echo   --with-ntver=0xXXXX     target NT version (shouldn't use with old SDK)
   del *.tmp
