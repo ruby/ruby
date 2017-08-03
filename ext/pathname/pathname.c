@@ -3,6 +3,20 @@
 
 static VALUE rb_cPathname;
 static ID id_at_path, id_to_path;
+static ID id_ENOTDIR, id_atime, id_basename, id_binread, id_binwrite,
+    id_birthtime, id_blockdev_p, id_chardev_p, id_chmod, id_chown,
+    id_ctime, id_directory_p, id_dirname, id_empty_p, id_entries,
+    id_executable_p, id_executable_real_p, id_exist_p, id_expand_path,
+    id_extname, id_file_p, id_fnmatch, id_foreach, id_ftype, id_getwd,
+    id_glob, id_grpowned_p, id_lchmod, id_lchown, id_link, id_lstat,
+    id_mkdir, id_mtime, id_open, id_owned_p, id_pipe_p, id_read,
+    id_readable_p, id_readable_real_p, id_readlines, id_readlink,
+    id_realdirpath, id_realpath, id_rename, id_rmdir, id_setgid_p,
+    id_setuid_p, id_size, id_size_p, id_socket_p, id_split, id_stat,
+    id_sticky_p, id_sub, id_symlink, id_symlink_p, id_sysopen,
+    id_truncate, id_unlink, id_utime, id_world_readable_p,
+    id_world_writable_p, id_writable_p, id_writable_real_p, id_write,
+    id_zero_p;
 
 static VALUE
 get_strpath(VALUE obj)
@@ -203,10 +217,10 @@ path_sub(int argc, VALUE *argv, VALUE self)
     VALUE str = get_strpath(self);
 
     if (rb_block_given_p()) {
-        str = rb_block_call(str, rb_intern("sub"), argc, argv, 0, 0);
+        str = rb_block_call(str, id_sub, argc, argv, 0, 0);
     }
     else {
-        str = rb_funcallv(str, rb_intern("sub"), argc, argv);
+        str = rb_funcallv(str, id_sub, argc, argv);
     }
     return rb_class_new_instance(1, &str, rb_obj_class(self));
 }
@@ -261,7 +275,7 @@ path_realpath(int argc, VALUE *argv, VALUE self)
 {
     VALUE basedir, str;
     rb_scan_args(argc, argv, "01", &basedir);
-    str = rb_funcall(rb_cFile, rb_intern("realpath"), 2, get_strpath(self), basedir);
+    str = rb_funcall(rb_cFile, id_realpath, 2, get_strpath(self), basedir);
     return rb_class_new_instance(1, &str, rb_obj_class(self));
 }
 
@@ -277,7 +291,7 @@ path_realdirpath(int argc, VALUE *argv, VALUE self)
 {
     VALUE basedir, str;
     rb_scan_args(argc, argv, "01", &basedir);
-    str = rb_funcall(rb_cFile, rb_intern("realdirpath"), 2, get_strpath(self), basedir);
+    str = rb_funcall(rb_cFile, id_realdirpath, 2, get_strpath(self), basedir);
     return rb_class_new_instance(1, &str, rb_obj_class(self));
 }
 
@@ -300,10 +314,10 @@ path_each_line(int argc, VALUE *argv, VALUE self)
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
     if (rb_block_given_p()) {
-        return rb_block_call(rb_cIO, rb_intern("foreach"), 1+n, args, 0, 0);
+        return rb_block_call(rb_cIO, id_foreach, 1+n, args, 0, 0);
     }
     else {
-        return rb_funcallv(rb_cIO, rb_intern("foreach"), 1+n, args);
+        return rb_funcallv(rb_cIO, id_foreach, 1+n, args);
     }
 }
 
@@ -325,7 +339,7 @@ path_read(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv(rb_cIO, rb_intern("read"), 1+n, args);
+    return rb_funcallv(rb_cIO, id_read, 1+n, args);
 }
 
 /*
@@ -345,7 +359,7 @@ path_binread(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "02", &args[1], &args[2]);
-    return rb_funcallv(rb_cIO, rb_intern("binread"), 1+n, args);
+    return rb_funcallv(rb_cIO, id_binread, 1+n, args);
 }
 
 /*
@@ -366,7 +380,7 @@ path_write(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv(rb_cIO, rb_intern("write"), 1+n, args);
+    return rb_funcallv(rb_cIO, id_write, 1+n, args);
 }
 
 /*
@@ -387,7 +401,7 @@ path_binwrite(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv(rb_cIO, rb_intern("binwrite"), 1+n, args);
+    return rb_funcallv(rb_cIO, id_binwrite, 1+n, args);
 }
 
 /*
@@ -409,7 +423,7 @@ path_readlines(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
-    return rb_funcallv(rb_cIO, rb_intern("readlines"), 1+n, args);
+    return rb_funcallv(rb_cIO, id_readlines, 1+n, args);
 }
 
 /*
@@ -427,7 +441,7 @@ path_sysopen(int argc, VALUE *argv, VALUE self)
 
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "02", &args[1], &args[2]);
-    return rb_funcallv(rb_cIO, rb_intern("sysopen"), 1+n, args);
+    return rb_funcallv(rb_cIO, id_sysopen, 1+n, args);
 }
 
 /*
@@ -441,7 +455,7 @@ path_sysopen(int argc, VALUE *argv, VALUE self)
 static VALUE
 path_atime(VALUE self)
 {
-    return rb_funcall(rb_cFile, rb_intern("atime"), 1, get_strpath(self));
+    return rb_funcall(rb_cFile, id_atime, 1, get_strpath(self));
 }
 
 #if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) || defined(_WIN32)
@@ -457,7 +471,7 @@ path_atime(VALUE self)
 static VALUE
 path_birthtime(VALUE self)
 {
-    return rb_funcall(rb_cFile, rb_intern("birthtime"), 1, get_strpath(self));
+    return rb_funcall(rb_cFile, id_birthtime, 1, get_strpath(self));
 }
 #else
 # define path_birthtime rb_f_notimplement
@@ -474,7 +488,7 @@ path_birthtime(VALUE self)
 static VALUE
 path_ctime(VALUE self)
 {
-    return rb_funcall(rb_cFile, rb_intern("ctime"), 1, get_strpath(self));
+    return rb_funcall(rb_cFile, id_ctime, 1, get_strpath(self));
 }
 
 /*
@@ -488,7 +502,7 @@ path_ctime(VALUE self)
 static VALUE
 path_mtime(VALUE self)
 {
-    return rb_funcall(rb_cFile, rb_intern("mtime"), 1, get_strpath(self));
+    return rb_funcall(rb_cFile, id_mtime, 1, get_strpath(self));
 }
 
 /*
@@ -502,7 +516,7 @@ path_mtime(VALUE self)
 static VALUE
 path_chmod(VALUE self, VALUE mode)
 {
-    return rb_funcall(rb_cFile, rb_intern("chmod"), 2, mode, get_strpath(self));
+    return rb_funcall(rb_cFile, id_chmod, 2, mode, get_strpath(self));
 }
 
 /*
@@ -516,7 +530,7 @@ path_chmod(VALUE self, VALUE mode)
 static VALUE
 path_lchmod(VALUE self, VALUE mode)
 {
-    return rb_funcall(rb_cFile, rb_intern("lchmod"), 2, mode, get_strpath(self));
+    return rb_funcall(rb_cFile, id_lchmod, 2, mode, get_strpath(self));
 }
 
 /*
@@ -530,7 +544,7 @@ path_lchmod(VALUE self, VALUE mode)
 static VALUE
 path_chown(VALUE self, VALUE owner, VALUE group)
 {
-    return rb_funcall(rb_cFile, rb_intern("chown"), 3, owner, group, get_strpath(self));
+    return rb_funcall(rb_cFile, id_chown, 3, owner, group, get_strpath(self));
 }
 
 /*
@@ -544,7 +558,7 @@ path_chown(VALUE self, VALUE owner, VALUE group)
 static VALUE
 path_lchown(VALUE self, VALUE owner, VALUE group)
 {
-    return rb_funcall(rb_cFile, rb_intern("lchown"), 3, owner, group, get_strpath(self));
+    return rb_funcall(rb_cFile, id_lchown, 3, owner, group, get_strpath(self));
 }
 
 /*
@@ -562,9 +576,9 @@ path_fnmatch(int argc, VALUE *argv, VALUE self)
     VALUE str = get_strpath(self);
     VALUE pattern, flags;
     if (rb_scan_args(argc, argv, "11", &pattern, &flags) == 1)
-        return rb_funcall(rb_cFile, rb_intern("fnmatch"), 2, pattern, str);
+        return rb_funcall(rb_cFile, id_fnmatch, 2, pattern, str);
     else
-        return rb_funcall(rb_cFile, rb_intern("fnmatch"), 3, pattern, str, flags);
+        return rb_funcall(rb_cFile, id_fnmatch, 3, pattern, str, flags);
 }
 
 /*
@@ -578,7 +592,7 @@ path_fnmatch(int argc, VALUE *argv, VALUE self)
 static VALUE
 path_ftype(VALUE self)
 {
-    return rb_funcall(rb_cFile, rb_intern("ftype"), 1, get_strpath(self));
+    return rb_funcall(rb_cFile, id_ftype, 1, get_strpath(self));
 }
 
 /*
@@ -592,7 +606,7 @@ path_ftype(VALUE self)
 static VALUE
 path_make_link(VALUE self, VALUE old)
 {
-    return rb_funcall(rb_cFile, rb_intern("link"), 2, old, get_strpath(self));
+    return rb_funcall(rb_cFile, id_link, 2, old, get_strpath(self));
 }
 
 /*
@@ -609,10 +623,10 @@ path_open(int argc, VALUE *argv, VALUE self)
     args[0] = get_strpath(self);
     n = rb_scan_args(argc, argv, "03", &args[1], &args[2], &args[3]);
     if (rb_block_given_p()) {
-        return rb_block_call(rb_cFile, rb_intern("open"), 1+n, args, 0, 0);
+        return rb_block_call(rb_cFile, id_open, 1+n, args, 0, 0);
     }
     else {
-        return rb_funcallv(rb_cFile, rb_intern("open"), 1+n, args);
+        return rb_funcallv(rb_cFile, id_open, 1+n, args);
     }
 }
 
@@ -625,7 +639,7 @@ static VALUE
 path_readlink(VALUE self)
 {
     VALUE str;
-    str = rb_funcall(rb_cFile, rb_intern("readlink"), 1, get_strpath(self));
+    str = rb_funcall(rb_cFile, id_readlink, 1, get_strpath(self));
     return rb_class_new_instance(1, &str, rb_obj_class(self));
 }
 
@@ -637,7 +651,7 @@ path_readlink(VALUE self)
 static VALUE
 path_rename(VALUE self, VALUE to)
 {
-    return rb_funcall(rb_cFile, rb_intern("rename"), 2, get_strpath(self), to);
+    return rb_funcall(rb_cFile, id_rename, 2, get_strpath(self), to);
 }
 
 /*
@@ -648,7 +662,7 @@ path_rename(VALUE self, VALUE to)
 static VALUE
 path_stat(VALUE self)
 {
-    return rb_funcall(rb_cFile, rb_intern("stat"), 1, get_strpath(self));
+    return rb_funcall(rb_cFile, id_stat, 1, get_strpath(self));
 }
 
 /*
@@ -657,7 +671,7 @@ path_stat(VALUE self)
 static VALUE
 path_lstat(VALUE self)
 {
-    return rb_funcall(rb_cFile, rb_intern("lstat"), 1, get_strpath(self));
+    return rb_funcall(rb_cFile, id_lstat, 1, get_strpath(self));
 }
 
 /*
@@ -671,7 +685,7 @@ path_lstat(VALUE self)
 static VALUE
 path_make_symlink(VALUE self, VALUE old)
 {
-    return rb_funcall(rb_cFile, rb_intern("symlink"), 2, old, get_strpath(self));
+    return rb_funcall(rb_cFile, id_symlink, 2, old, get_strpath(self));
 }
 
 /*
@@ -682,7 +696,7 @@ path_make_symlink(VALUE self, VALUE old)
 static VALUE
 path_truncate(VALUE self, VALUE length)
 {
-    return rb_funcall(rb_cFile, rb_intern("truncate"), 2, get_strpath(self), length);
+    return rb_funcall(rb_cFile, id_truncate, 2, get_strpath(self), length);
 }
 
 /*
@@ -693,7 +707,7 @@ path_truncate(VALUE self, VALUE length)
 static VALUE
 path_utime(VALUE self, VALUE atime, VALUE mtime)
 {
-    return rb_funcall(rb_cFile, rb_intern("utime"), 3, atime, mtime, get_strpath(self));
+    return rb_funcall(rb_cFile, id_utime, 3, atime, mtime, get_strpath(self));
 }
 
 /*
@@ -707,9 +721,9 @@ path_basename(int argc, VALUE *argv, VALUE self)
     VALUE str = get_strpath(self);
     VALUE fext;
     if (rb_scan_args(argc, argv, "01", &fext) == 0)
-        str = rb_funcall(rb_cFile, rb_intern("basename"), 1, str);
+        str = rb_funcall(rb_cFile, id_basename, 1, str);
     else
-        str = rb_funcall(rb_cFile, rb_intern("basename"), 2, str, fext);
+        str = rb_funcall(rb_cFile, id_basename, 2, str, fext);
     return rb_class_new_instance(1, &str, rb_obj_class(self));
 }
 
@@ -722,7 +736,7 @@ static VALUE
 path_dirname(VALUE self)
 {
     VALUE str = get_strpath(self);
-    str = rb_funcall(rb_cFile, rb_intern("dirname"), 1, str);
+    str = rb_funcall(rb_cFile, id_dirname, 1, str);
     return rb_class_new_instance(1, &str, rb_obj_class(self));
 }
 
@@ -735,7 +749,7 @@ static VALUE
 path_extname(VALUE self)
 {
     VALUE str = get_strpath(self);
-    return rb_funcall(rb_cFile, rb_intern("extname"), 1, str);
+    return rb_funcall(rb_cFile, id_extname, 1, str);
 }
 
 /*
@@ -749,9 +763,9 @@ path_expand_path(int argc, VALUE *argv, VALUE self)
     VALUE str = get_strpath(self);
     VALUE dname;
     if (rb_scan_args(argc, argv, "01", &dname) == 0)
-        str = rb_funcall(rb_cFile, rb_intern("expand_path"), 1, str);
+        str = rb_funcall(rb_cFile, id_expand_path, 1, str);
     else
-        str = rb_funcall(rb_cFile, rb_intern("expand_path"), 2, str, dname);
+        str = rb_funcall(rb_cFile, id_expand_path, 2, str, dname);
     return rb_class_new_instance(1, &str, rb_obj_class(self));
 }
 
@@ -765,7 +779,7 @@ path_split(VALUE self)
 {
     VALUE str = get_strpath(self);
     VALUE ary, dirname, basename;
-    ary = rb_funcall(rb_cFile, rb_intern("split"), 1, str);
+    ary = rb_funcall(rb_cFile, id_split, 1, str);
     ary = rb_check_array_type(ary);
     dirname = rb_ary_entry(ary, 0);
     basename = rb_ary_entry(ary, 1);
@@ -780,7 +794,7 @@ path_split(VALUE self)
 static VALUE
 path_blockdev_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("blockdev?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_blockdev_p, 1, get_strpath(self));
 }
 
 /*
@@ -789,7 +803,7 @@ path_blockdev_p(VALUE self)
 static VALUE
 path_chardev_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("chardev?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_chardev_p, 1, get_strpath(self));
 }
 
 /*
@@ -798,7 +812,7 @@ path_chardev_p(VALUE self)
 static VALUE
 path_executable_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("executable?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_executable_p, 1, get_strpath(self));
 }
 
 /*
@@ -807,7 +821,7 @@ path_executable_p(VALUE self)
 static VALUE
 path_executable_real_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("executable_real?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_executable_real_p, 1, get_strpath(self));
 }
 
 /*
@@ -816,7 +830,7 @@ path_executable_real_p(VALUE self)
 static VALUE
 path_exist_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("exist?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_exist_p, 1, get_strpath(self));
 }
 
 /*
@@ -825,7 +839,7 @@ path_exist_p(VALUE self)
 static VALUE
 path_grpowned_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("grpowned?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_grpowned_p, 1, get_strpath(self));
 }
 
 /*
@@ -834,7 +848,7 @@ path_grpowned_p(VALUE self)
 static VALUE
 path_directory_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("directory?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_directory_p, 1, get_strpath(self));
 }
 
 /*
@@ -843,7 +857,7 @@ path_directory_p(VALUE self)
 static VALUE
 path_file_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("file?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_file_p, 1, get_strpath(self));
 }
 
 /*
@@ -852,7 +866,7 @@ path_file_p(VALUE self)
 static VALUE
 path_pipe_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("pipe?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_pipe_p, 1, get_strpath(self));
 }
 
 /*
@@ -861,7 +875,7 @@ path_pipe_p(VALUE self)
 static VALUE
 path_socket_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("socket?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_socket_p, 1, get_strpath(self));
 }
 
 /*
@@ -870,7 +884,7 @@ path_socket_p(VALUE self)
 static VALUE
 path_owned_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("owned?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_owned_p, 1, get_strpath(self));
 }
 
 /*
@@ -879,7 +893,7 @@ path_owned_p(VALUE self)
 static VALUE
 path_readable_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("readable?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_readable_p, 1, get_strpath(self));
 }
 
 /*
@@ -888,7 +902,7 @@ path_readable_p(VALUE self)
 static VALUE
 path_world_readable_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("world_readable?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_world_readable_p, 1, get_strpath(self));
 }
 
 /*
@@ -897,7 +911,7 @@ path_world_readable_p(VALUE self)
 static VALUE
 path_readable_real_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("readable_real?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_readable_real_p, 1, get_strpath(self));
 }
 
 /*
@@ -906,7 +920,7 @@ path_readable_real_p(VALUE self)
 static VALUE
 path_setuid_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("setuid?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_setuid_p, 1, get_strpath(self));
 }
 
 /*
@@ -915,7 +929,7 @@ path_setuid_p(VALUE self)
 static VALUE
 path_setgid_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("setgid?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_setgid_p, 1, get_strpath(self));
 }
 
 /*
@@ -924,7 +938,7 @@ path_setgid_p(VALUE self)
 static VALUE
 path_size(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("size"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_size, 1, get_strpath(self));
 }
 
 /*
@@ -933,7 +947,7 @@ path_size(VALUE self)
 static VALUE
 path_size_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("size?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_size_p, 1, get_strpath(self));
 }
 
 /*
@@ -942,7 +956,7 @@ path_size_p(VALUE self)
 static VALUE
 path_sticky_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("sticky?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_sticky_p, 1, get_strpath(self));
 }
 
 /*
@@ -951,7 +965,7 @@ path_sticky_p(VALUE self)
 static VALUE
 path_symlink_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("symlink?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_symlink_p, 1, get_strpath(self));
 }
 
 /*
@@ -960,7 +974,7 @@ path_symlink_p(VALUE self)
 static VALUE
 path_writable_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("writable?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_writable_p, 1, get_strpath(self));
 }
 
 /*
@@ -969,7 +983,7 @@ path_writable_p(VALUE self)
 static VALUE
 path_world_writable_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("world_writable?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_world_writable_p, 1, get_strpath(self));
 }
 
 /*
@@ -978,7 +992,7 @@ path_world_writable_p(VALUE self)
 static VALUE
 path_writable_real_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("writable_real?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_writable_real_p, 1, get_strpath(self));
 }
 
 /*
@@ -987,7 +1001,7 @@ path_writable_real_p(VALUE self)
 static VALUE
 path_zero_p(VALUE self)
 {
-    return rb_funcall(rb_mFileTest, rb_intern("zero?"), 1, get_strpath(self));
+    return rb_funcall(rb_mFileTest, id_zero_p, 1, get_strpath(self));
 }
 
 /*
@@ -1000,10 +1014,10 @@ path_empty_p(VALUE self)
 {
 
     VALUE path = get_strpath(self);
-    if (RTEST(rb_funcall(rb_mFileTest, rb_intern("directory?"), 1, path)))
-        return rb_funcall(rb_cDir, rb_intern("empty?"), 1, path);
+    if (RTEST(rb_funcall(rb_mFileTest, id_directory_p, 1, path)))
+        return rb_funcall(rb_cDir, id_empty_p, 1, path);
     else
-        return rb_funcall(rb_mFileTest, rb_intern("empty?"), 1, path);
+        return rb_funcall(rb_mFileTest, id_empty_p, 1, path);
 }
 
 static VALUE
@@ -1028,12 +1042,12 @@ path_s_glob(int argc, VALUE *argv, VALUE klass)
 
     n = rb_scan_args(argc, argv, "11", &args[0], &args[1]);
     if (rb_block_given_p()) {
-        return rb_block_call(rb_cDir, rb_intern("glob"), n, args, glob_i, klass);
+        return rb_block_call(rb_cDir, id_glob, n, args, glob_i, klass);
     }
     else {
         VALUE ary;
         long i;
-        ary = rb_funcallv(rb_cDir, rb_intern("glob"), n, args);
+        ary = rb_funcallv(rb_cDir, id_glob, n, args);
         ary = rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
         for (i = 0; i < RARRAY_LEN(ary); i++) {
             VALUE elt = RARRAY_AREF(ary, i);
@@ -1056,7 +1070,7 @@ static VALUE
 path_s_getwd(VALUE klass)
 {
     VALUE str;
-    str = rb_funcall(rb_cDir, rb_intern("getwd"), 0);
+    str = rb_funcall(rb_cDir, id_getwd, 0);
     return rb_class_new_instance(1, &str, klass);
 }
 
@@ -1093,7 +1107,7 @@ path_entries(VALUE self)
     long i;
     klass = rb_obj_class(self);
     str = get_strpath(self);
-    ary = rb_funcall(rb_cDir, rb_intern("entries"), 1, str);
+    ary = rb_funcall(rb_cDir, id_entries, 1, str);
     ary = rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
     for (i = 0; i < RARRAY_LEN(ary); i++) {
 	VALUE elt = RARRAY_AREF(ary, i);
@@ -1114,9 +1128,9 @@ path_mkdir(int argc, VALUE *argv, VALUE self)
     VALUE str = get_strpath(self);
     VALUE vmode;
     if (rb_scan_args(argc, argv, "01", &vmode) == 0)
-        return rb_funcall(rb_cDir, rb_intern("mkdir"), 1, str);
+        return rb_funcall(rb_cDir, id_mkdir, 1, str);
     else
-        return rb_funcall(rb_cDir, rb_intern("mkdir"), 2, str, vmode);
+        return rb_funcall(rb_cDir, id_mkdir, 2, str, vmode);
 }
 
 /*
@@ -1127,7 +1141,7 @@ path_mkdir(int argc, VALUE *argv, VALUE self)
 static VALUE
 path_rmdir(VALUE self)
 {
-    return rb_funcall(rb_cDir, rb_intern("rmdir"), 1, get_strpath(self));
+    return rb_funcall(rb_cDir, id_rmdir, 1, get_strpath(self));
 }
 
 /*
@@ -1141,7 +1155,7 @@ path_opendir(VALUE self)
     VALUE args[1];
 
     args[0] = get_strpath(self);
-    return rb_block_call(rb_cDir, rb_intern("open"), 1, args, 0, 0);
+    return rb_block_call(rb_cDir, id_open, 1, args, 0, 0);
 }
 
 static VALUE
@@ -1160,19 +1174,19 @@ path_each_entry(VALUE self)
     VALUE args[1];
 
     args[0] = get_strpath(self);
-    return rb_block_call(rb_cDir, rb_intern("foreach"), 1, args, each_entry_i, rb_obj_class(self));
+    return rb_block_call(rb_cDir, id_foreach, 1, args, each_entry_i, rb_obj_class(self));
 }
 
 static VALUE
 unlink_body(VALUE str)
 {
-    return rb_funcall(rb_cDir, rb_intern("unlink"), 1, str);
+    return rb_funcall(rb_cDir, id_unlink, 1, str);
 }
 
 static VALUE
 unlink_rescue(VALUE str, VALUE errinfo)
 {
-    return rb_funcall(rb_cFile, rb_intern("unlink"), 1, str);
+    return rb_funcall(rb_cFile, id_unlink, 1, str);
 }
 
 /*
@@ -1182,7 +1196,7 @@ unlink_rescue(VALUE str, VALUE errinfo)
 static VALUE
 path_unlink(VALUE self)
 {
-    VALUE eENOTDIR = rb_const_get_at(rb_mErrno, rb_intern("ENOTDIR"));
+    VALUE eENOTDIR = rb_const_get_at(rb_mErrno, id_ENOTDIR);
     VALUE str = get_strpath(self);
     return rb_rescue2(unlink_body, str, unlink_rescue, str, eENOTDIR, (VALUE)0);
 }
@@ -1392,8 +1406,7 @@ path_f_pathname(VALUE self, VALUE str)
 void
 Init_pathname(void)
 {
-    id_at_path = rb_intern("@path");
-    id_to_path = rb_intern("to_path");
+    InitVM(pathname);
 
     rb_cPathname = rb_define_class("Pathname", rb_cObject);
     rb_define_method(rb_cPathname, "initialize", path_initialize, 1);
@@ -1481,4 +1494,78 @@ Init_pathname(void)
     rb_define_method(rb_cPathname, "delete", path_unlink, 0);
     rb_undef_method(rb_cPathname, "=~");
     rb_define_global_function("Pathname", path_f_pathname, 1);
+}
+
+void
+InitVM_pathname(void)
+{
+#undef rb_intern
+    id_at_path = rb_intern("@path");
+    id_to_path = rb_intern("to_path");
+    id_ENOTDIR = rb_intern("ENOTDIR");
+    id_atime = rb_intern("atime");
+    id_basename = rb_intern("basename");
+    id_binread = rb_intern("binread");
+    id_binwrite = rb_intern("binwrite");
+    id_birthtime = rb_intern("birthtime");
+    id_blockdev_p = rb_intern("blockdev?");
+    id_chardev_p = rb_intern("chardev?");
+    id_chmod = rb_intern("chmod");
+    id_chown = rb_intern("chown");
+    id_ctime = rb_intern("ctime");
+    id_directory_p = rb_intern("directory?");
+    id_dirname = rb_intern("dirname");
+    id_empty_p = rb_intern("empty?");
+    id_entries = rb_intern("entries");
+    id_executable_p = rb_intern("executable?");
+    id_executable_real_p = rb_intern("executable_real?");
+    id_exist_p = rb_intern("exist?");
+    id_expand_path = rb_intern("expand_path");
+    id_extname = rb_intern("extname");
+    id_file_p = rb_intern("file?");
+    id_fnmatch = rb_intern("fnmatch");
+    id_foreach = rb_intern("foreach");
+    id_ftype = rb_intern("ftype");
+    id_getwd = rb_intern("getwd");
+    id_glob = rb_intern("glob");
+    id_grpowned_p = rb_intern("grpowned?");
+    id_lchmod = rb_intern("lchmod");
+    id_lchown = rb_intern("lchown");
+    id_link = rb_intern("link");
+    id_lstat = rb_intern("lstat");
+    id_mkdir = rb_intern("mkdir");
+    id_mtime = rb_intern("mtime");
+    id_open = rb_intern("open");
+    id_owned_p = rb_intern("owned?");
+    id_pipe_p = rb_intern("pipe?");
+    id_read = rb_intern("read");
+    id_readable_p = rb_intern("readable?");
+    id_readable_real_p = rb_intern("readable_real?");
+    id_readlines = rb_intern("readlines");
+    id_readlink = rb_intern("readlink");
+    id_realdirpath = rb_intern("realdirpath");
+    id_realpath = rb_intern("realpath");
+    id_rename = rb_intern("rename");
+    id_rmdir = rb_intern("rmdir");
+    id_setgid_p = rb_intern("setgid?");
+    id_setuid_p = rb_intern("setuid?");
+    id_size = rb_intern("size");
+    id_size_p = rb_intern("size?");
+    id_socket_p = rb_intern("socket?");
+    id_split = rb_intern("split");
+    id_stat = rb_intern("stat");
+    id_sticky_p = rb_intern("sticky?");
+    id_sub = rb_intern("sub");
+    id_symlink = rb_intern("symlink");
+    id_symlink_p = rb_intern("symlink?");
+    id_sysopen = rb_intern("sysopen");
+    id_truncate = rb_intern("truncate");
+    id_unlink = rb_intern("unlink");
+    id_utime = rb_intern("utime");
+    id_world_readable_p = rb_intern("world_readable?");
+    id_world_writable_p = rb_intern("world_writable?");
+    id_writable_p = rb_intern("writable?");
+    id_writable_real_p = rb_intern("writable_real?");
+    id_write = rb_intern("write");
+    id_zero_p = rb_intern("zero?");
 }
