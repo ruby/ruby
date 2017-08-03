@@ -3,6 +3,8 @@
 #
 # Usage: run `command script import -r misc/lldb_cruby.py` on LLDB
 #
+# Test: misc/test_lldb_cruby.rb
+#
 
 import lldb
 import commands
