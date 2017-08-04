@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+require 'net/http'
+
 if $0 == __FILE__
   require 'open-uri'
   IO.foreach(__FILE__) do |line|
