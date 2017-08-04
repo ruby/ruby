@@ -517,7 +517,7 @@ class ERB
           end
         end
       end
-      Scanner.regist_scanner(SimpleScanner, nil, false)
+      Scanner.register_scanner(SimpleScanner, nil, false)
 
       # Deprecated. Kept for backward compatibility.
       SimpleScanner2 = SimpleScanner # :nodoc:
@@ -544,7 +544,7 @@ class ERB
           end
         end
       end
-      Scanner.regist_scanner(ExplicitScanner, '-', false)
+      Scanner.register_scanner(ExplicitScanner, '-', false)
     end
 
     class Buffer # :nodoc:
