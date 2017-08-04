@@ -521,6 +521,7 @@ class ERB
 
       # Deprecated. Kept for backward compatibility.
       SimpleScanner2 = SimpleScanner # :nodoc:
+      deprecate_constant :SimpleScanner2
 
       class ExplicitScanner < Scanner # :nodoc:
         def scan
