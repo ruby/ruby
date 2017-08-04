@@ -5480,9 +5480,12 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	    enum iseq_type parent_type;
 
 	    if (type == ISEQ_TYPE_TOP || type == ISEQ_TYPE_MAIN) {
+		LABEL *splabel = NEW_LABEL(line);
+		ADD_LABEL(ret, splabel);
 		ADD_ADJUST(ret, line, 0);
 		ADD_INSN(ret, line, putnil);
 		ADD_INSN(ret, line, leave);
+		ADD_ADJUST_RESTORE(ret, splabel);
 	    }
 	    else if ((type == ISEQ_TYPE_RESCUE || type == ISEQ_TYPE_ENSURE) &&
 		     parent_iseq &&
