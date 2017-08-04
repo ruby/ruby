@@ -217,6 +217,18 @@ on machines that don't support it, in the following manner:
   exec /usr/local/bin/ruby -S $0 $*
 .Ed
 .Pp
+On some systems
+.Li "$0"
+does not always contain the full pathname, so you need the
+.Fl S
+switch to tell Ruby to search for the script if necessary (to handle embedded
+spaces and such).  A better construct than
+.Li "$*"
+would be
+.Li ${1+"$@"} ,
+but it does not work if the script is being interpreted by
+.Xr csh 1 .
+.Pp
 .It Fl T Ns Op Ar level=1
 Turns on taint checks at the specified level (default 1).
 .Pp
@@ -341,18 +353,6 @@ and set the corresponding variable in the script.  For example:
 # prints "true" if invoked with `-xyz' switch.
 print "true\en" if $xyz
 .Ed
-.Pp
-On some systems
-.Li "$0"
-does not always contain the full pathname, so you need the
-.Fl S
-switch to tell Ruby to search for the script if necessary (to handle embedded
-spaces and such).  A better construct than
-.Li "$*"
-would be
-.Li ${1+"$@"} ,
-but it does not work if the script is being interpreted by
-.Xr csh 1 .
 .Pp
 .It Fl v
 Enables verbose mode.  Ruby will print its version at the beginning
