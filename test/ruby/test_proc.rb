@@ -1322,6 +1322,20 @@ class TestProc < Test::Unit::TestCase
     assert_equal(20, b.eval("b"))
   end
 
+  def test_local_variable_set_wb
+    assert_ruby_status([], <<-'end;', '[Bug #13605]')
+      b = binding
+      n = 20_000
+
+      n.times do |i|
+        v = rand(2_000)
+        name = "n#{v}"
+        value = Object.new
+        b.local_variable_set name, value
+      end
+    end;
+  end
+
   def test_local_variable_defined?
     b = get_binding
     assert_equal(true, b.local_variable_defined?(:a))
