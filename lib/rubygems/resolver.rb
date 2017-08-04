@@ -254,13 +254,14 @@ class Gem::Resolver
   end
 
   def sort_dependencies(dependencies, activated, conflicts)
-    dependencies.sort_by do |dependency|
+    dependencies.sort_by.with_index do |dependency, i|
       name = name_for(dependency)
       [
         activated.vertex_named(name).payload ? 0 : 1,
         amount_constrained(dependency),
         conflicts[name] ? 0 : 1,
         activated.vertex_named(name).payload ? 0 : search_for(dependency).count,
+        i # for stable sort
       ]
     end
   end
