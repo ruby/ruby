@@ -503,6 +503,17 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, 9], m1(1, o, &->(a, k: 0) {break [a, k]}), bug10016)
   end
 
+  def test_splat_hash
+    m = Object.new
+    def m.f() :ok; end
+    o = {a: 1}
+    assert_raise_with_message(ArgumentError, /unknown keyword: a/) {
+      m.f(**o)
+    }
+    o = {}
+    assert_equal(:ok, m.f(**o), '[ruby-core:68124] [Bug #10856]')
+  end
+
   def test_gced_object_in_stack
     bug8964 = '[ruby-dev:47729] [Bug #8964]'
     assert_normal_exit %q{

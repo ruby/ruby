@@ -1585,7 +1585,7 @@ static inline int
 vm_callee_setup_arg(rb_thread_t *th, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc,
 		    const rb_iseq_t *iseq, VALUE *argv, int param_size, int local_size)
 {
-    if (LIKELY(simple_iseq_p(iseq))) {
+    if (LIKELY(simple_iseq_p(iseq) && !(ci->flag & VM_CALL_KW_SPLAT))) {
 	rb_control_frame_t *cfp = th->ec.cfp;
 
 	CALLER_SETUP_ARG(cfp, calling, ci); /* splat arg */
