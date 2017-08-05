@@ -3847,6 +3847,7 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
 static VALUE
 uniq_func(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 {
+    ENUM_WANT_SVALUE();
     rb_hash_add_new_element(hash, i, i);
     return Qnil;
 }
@@ -3854,6 +3855,7 @@ uniq_func(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 static VALUE
 uniq_iter(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 {
+    ENUM_WANT_SVALUE();
     rb_hash_add_new_element(hash, rb_yield_values2(argc, argv), i);
     return Qnil;
 }
