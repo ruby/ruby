@@ -4585,6 +4585,8 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "keep_if", rb_hash_keep_if, 0);
     rb_define_method(rb_cHash, "select", rb_hash_select, 0);
     rb_define_method(rb_cHash, "select!", rb_hash_select_bang, 0);
+    rb_define_method(rb_cHash, "filter", rb_hash_select, 0);
+    rb_define_method(rb_cHash, "filter!", rb_hash_select_bang, 0)
     rb_define_method(rb_cHash, "reject", rb_hash_reject, 0);
     rb_define_method(rb_cHash, "reject!", rb_hash_reject_bang, 0);
     rb_define_method(rb_cHash, "clear", rb_hash_clear, 0);

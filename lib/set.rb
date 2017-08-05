@@ -400,6 +400,15 @@ class Set
     self if size != n
   end
 
+  # Equivalent to Set#select!
+  # Returns an enumerator if no block is given.
+  def filter!(&block)
+    block or return enum_for(__method__) { size }
+    n = size
+    keep_if(&block)
+    self if size != n
+  end
+
   # Merges the elements of the given enumerable object to the set and
   # returns self.
   def merge(enum)
