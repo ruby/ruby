@@ -941,16 +941,30 @@ enum vm_check_match_type {
 #define VM_CHECKMATCH_TYPE_MASK   0x03
 #define VM_CHECKMATCH_ARRAY       0x04
 
-#define VM_CALL_ARGS_SPLAT      (0x01 << 0) /* m(*args) */
-#define VM_CALL_ARGS_BLOCKARG   (0x01 << 1) /* m(&block) */
-#define VM_CALL_FCALL           (0x01 << 2) /* m(...) */
-#define VM_CALL_VCALL           (0x01 << 3) /* m */
-#define VM_CALL_ARGS_SIMPLE     (0x01 << 4) /* (ci->flag & (SPLAT|BLOCKARG)) && blockiseq == NULL && ci->kw_arg == NULL */
-#define VM_CALL_BLOCKISEQ       (0x01 << 5) /* has blockiseq */
-#define VM_CALL_KWARG           (0x01 << 6) /* has kwarg */
-#define VM_CALL_TAILCALL        (0x01 << 7) /* located at tail position */
-#define VM_CALL_SUPER           (0x01 << 8) /* super */
-#define VM_CALL_OPT_SEND        (0x01 << 9) /* internal flag */
+enum vm_call_flag_bits {
+    VM_CALL_ARGS_SPLAT_bit,     /* m(*args) */
+    VM_CALL_ARGS_BLOCKARG_bit,  /* m(&block) */
+    VM_CALL_FCALL_bit,          /* m(...) */
+    VM_CALL_VCALL_bit,          /* m */
+    VM_CALL_ARGS_SIMPLE_bit,    /* (ci->flag & (SPLAT|BLOCKARG)) && blockiseq == NULL && ci->kw_arg == NULL */
+    VM_CALL_BLOCKISEQ_bit,      /* has blockiseq */
+    VM_CALL_KWARG_bit,          /* has kwarg */
+    VM_CALL_TAILCALL_bit,       /* located at tail position */
+    VM_CALL_SUPER_bit,          /* super */
+    VM_CALL_OPT_SEND_bit,       /* internal flag */
+    VM_CALL__END
+};
+
+#define VM_CALL_ARGS_SPLAT      (0x01 << VM_CALL_ARGS_SPLAT_bit)
+#define VM_CALL_ARGS_BLOCKARG   (0x01 << VM_CALL_ARGS_BLOCKARG_bit)
+#define VM_CALL_FCALL           (0x01 << VM_CALL_FCALL_bit)
+#define VM_CALL_VCALL           (0x01 << VM_CALL_VCALL_bit)
+#define VM_CALL_ARGS_SIMPLE     (0x01 << VM_CALL_ARGS_SIMPLE_bit)
+#define VM_CALL_BLOCKISEQ       (0x01 << VM_CALL_BLOCKISEQ_bit)
+#define VM_CALL_KWARG           (0x01 << VM_CALL_KWARG_bit)
+#define VM_CALL_TAILCALL        (0x01 << VM_CALL_TAILCALL_bit)
+#define VM_CALL_SUPER           (0x01 << VM_CALL_SUPER_bit)
+#define VM_CALL_OPT_SEND        (0x01 << VM_CALL_OPT_SEND_bit)
 
 enum vm_special_object_type {
     VM_SPECIAL_OBJECT_VMCORE = 1,
