@@ -222,6 +222,18 @@ class TestEnv < Test::Unit::TestCase
     assert_nil(ENV.select! {|k, v| IGNORE_CASE ? k.upcase != "TEST" : k != "test" })
   end
 
+  def test_filter_bang
+    h1 = {}
+    ENV.each_pair {|k, v| h1[k] = v }
+    ENV["test"] = "foo"
+    ENV.filter! {|k, v| IGNORE_CASE ? k.upcase != "TEST" : k != "test" }
+    h2 = {}
+    ENV.each_pair {|k, v| h2[k] = v }
+    assert_equal(h1, h2)
+
+    assert_nil(ENV.filter! {|k, v| IGNORE_CASE ? k.upcase != "TEST" : k != "test" })
+  end
+
   def test_keep_if
     h1 = {}
     ENV.each_pair {|k, v| h1[k] = v }
@@ -242,6 +254,21 @@ class TestEnv < Test::Unit::TestCase
   def test_select
     ENV["test"] = "foo"
     h = ENV.select {|k| IGNORE_CASE ? k.upcase == "TEST" : k == "test" }
+    assert_equal(1, h.size)
+    k = h.keys.first
+    v = h.values.first
+    if IGNORE_CASE
+      assert_equal("TEST", k.upcase)
+      assert_equal("FOO", v.upcase)
+    else
+      assert_equal("test", k)
+      assert_equal("foo", v)
+    end
+  end
+
+  def test_filter
+    ENV["test"] = "foo"
+    h = ENV.filter {|k| IGNORE_CASE ? k.upcase == "TEST" : k == "test" }
     assert_equal(1, h.size)
     k = h.keys.first
     v = h.values.first
