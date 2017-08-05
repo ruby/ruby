@@ -90,6 +90,8 @@ VM_CFP_IN_HEAP_P(const rb_thread_t *th, const rb_control_frame_t *cfp)
 {
     const VALUE *start = th->stack;
     const VALUE *end = (VALUE *)th->stack + th->stack_size;
+    VM_ASSERT(start != NULL);
+
     if (start <= (VALUE *)cfp && (VALUE *)cfp < end) {
 	return FALSE;
     }
@@ -103,6 +105,8 @@ VM_EP_IN_HEAP_P(const rb_thread_t *th, const VALUE *ep)
 {
     const VALUE *start = th->stack;
     const VALUE *end = (VALUE *)th->cfp;
+    VM_ASSERT(start != NULL);
+
     if (start <= ep && ep < end) {
 	return FALSE;
     }
@@ -2315,7 +2319,7 @@ static int thread_recycle_stack_count = 0;
 static VALUE *
 thread_recycle_stack(size_t size)
 {
-    if (thread_recycle_stack_count) {
+    if (thread_recycle_stack_count > 0) {
 	/* TODO: check stack size if stack sizes are variable */
 	return thread_recycle_stack_slot[--thread_recycle_stack_count];
     }
@@ -2331,6 +2335,8 @@ thread_recycle_stack(size_t size)
 void
 rb_thread_recycle_stack_release(VALUE *stack)
 {
+    VM_ASSERT(stack != NULL);
+
 #if USE_THREAD_DATA_RECYCLE
     if (thread_recycle_stack_count < RECYCLE_MAX) {
 	thread_recycle_stack_slot[thread_recycle_stack_count++] = stack;
@@ -2414,6 +2420,10 @@ thread_free(void *ptr)
 
     if (ptr) {
 	th = ptr;
+	if (th->stack != NULL) {
+	    rb_thread_recycle_stack_release(th->stack);
+	    th->stack = NULL;
+	}
 
 	if (!th->root_fiber) {
 	    RUBY_FREE_UNLESS_NULL(th->stack);

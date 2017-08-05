@@ -575,6 +575,8 @@ cont_restore_thread(rb_context_t *cont)
     th->root_lep = sth->root_lep;
     th->root_svar = sth->root_svar;
     th->ensure_list = sth->ensure_list;
+    VM_ASSERT(th->stack != NULL);
+    VM_ASSERT(sth->status == THREAD_RUNNABLE);
 }
 
 #if FIBER_USE_NATIVE
@@ -1316,6 +1318,7 @@ root_fiber_alloc(rb_thread_t *th)
 #endif
     fib->status = RUNNING;
 
+    th->root_fiber = th->fiber = fib;
     return fib;
 }
 
@@ -1324,9 +1327,9 @@ fiber_current(void)
 {
     rb_thread_t *th = GET_THREAD();
     if (th->fiber == 0) {
-	/* save root */
 	rb_fiber_t *fib = root_fiber_alloc(th);
-	th->root_fiber = th->fiber = fib;
+	/* Running thread object has stack management responsibility */
+	fib->cont.saved_thread.stack = NULL;
     }
     return th->fiber;
 }
@@ -1367,9 +1370,8 @@ fiber_store(rb_fiber_t *next_fib, rb_thread_t *th)
 	cont_save_thread(&fib->cont, th);
     }
     else {
-	/* create current fiber */
+	/* create root fiber */
 	fib = root_fiber_alloc(th);
-	th->root_fiber = th->fiber = fib;
     }
 
 #if FIBER_USE_NATIVE
