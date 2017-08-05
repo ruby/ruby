@@ -1,5 +1,9 @@
 # frozen_string_literal: false
-class CGI; module Util; end; extend Util; end
+class CGI
+  module Util; end
+  include Util
+  extend Util
+end
 module CGI::Util
   @@accept_charset="UTF-8" unless defined?(@@accept_charset)
   # URL-encode a string.

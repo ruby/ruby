@@ -53,6 +53,16 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_equal(Encoding::UTF_8, CGI::unescape("%C0%3C%3C".force_encoding("UTF-8")).encoding)
   end
 
+  def test_cgi_unescape_accept_charset
+    return unless defined?(::Encoding)
+
+    assert_raise(TypeError) {CGI.unescape('', nil)}
+    assert_separately(%w[-rcgi/util], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      assert_equal("", CGI.unescape(''))
+    end;
+  end
+
   def test_cgi_pretty
     assert_equal("<HTML>\n  <BODY>\n  </BODY>\n</HTML>\n",CGI::pretty("<HTML><BODY></BODY></HTML>"))
     assert_equal("<HTML>\n\t<BODY>\n\t</BODY>\n</HTML>\n",CGI::pretty("<HTML><BODY></BODY></HTML>","\t"))
