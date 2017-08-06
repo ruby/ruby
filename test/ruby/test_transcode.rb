@@ -1008,6 +1008,15 @@ class TestTranscode < Test::Unit::TestCase
 
     assert_equal fffd1, "\x80".encode("utf-16be", "utf-8", invalid: :replace)
     assert_equal fffd1, "\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xC3".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xDF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xE0".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xE0\xA0".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xE0\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xE1".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xEC".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xE1\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xEC\xBF".encode("utf-16be", "utf-8", invalid: :replace)
 
     assert_equal fffd2, "\xC0\x80".encode("utf-16be", "utf-8", invalid: :replace)
     assert_equal fffd2, "\xC0\xBF".encode("utf-16be", "utf-8", invalid: :replace)
