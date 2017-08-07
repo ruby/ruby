@@ -19,13 +19,13 @@ VALUE rb_mEnumerable;
 
 static ID id_next;
 static ID id_div;
-static ID id_call;
-static ID id_size;
 
 #define id_each idEach
 #define id_eqq  idEqq
 #define id_cmp  idCmp
 #define id_lshift idLTLT
+#define id_call idCall
+#define id_size idSize
 
 VALUE
 rb_enum_values_pack(int argc, const VALUE *argv)
@@ -3970,7 +3970,5 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "uniq", enum_uniq, 0);
 
     id_next = rb_intern("next");
-    id_call = rb_intern("call");
-    id_size = rb_intern("size");
     id_div = rb_intern("div");
 }
