@@ -2310,6 +2310,22 @@ enum_each_entry(int argc, VALUE *argv, VALUE obj)
     return obj;
 }
 
+static VALUE
+add_int(VALUE x, long n)
+{
+    const VALUE y = LONG2NUM(n);
+    if (RB_INTEGER_TYPE_P(x)) return rb_int_plus(x, y);
+    return rb_funcallv(x, '+', 1, &y);
+}
+
+static VALUE
+div_int(VALUE x, long n)
+{
+    const VALUE y = LONG2NUM(n);
+    if (RB_INTEGER_TYPE_P(x)) return rb_int_idiv(x, y);
+    return rb_funcallv(x, id_div, 1, &y);
+}
+
 #define dont_recycle_block_arg(arity) ((arity) == 1 || (arity) < 0)
 
 static VALUE
@@ -2347,8 +2363,8 @@ enum_each_slice_size(VALUE obj, VALUE args, VALUE eobj)
     size = enum_size(obj, 0, 0);
     if (size == Qnil) return Qnil;
 
-    n = rb_funcall(size, '+', 1, LONG2NUM(slice_size-1));
-    return rb_funcall(n, id_div, 1, LONG2FIX(slice_size));
+    n = add_int(size, slice_size-1);
+    return div_int(n, slice_size);
 }
 
 /*
@@ -2413,6 +2429,8 @@ each_cons_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 static VALUE
 enum_each_cons_size(VALUE obj, VALUE args, VALUE eobj)
 {
+    struct cmp_opt_data cmp_opt = { 0, 0 };
+    const VALUE zero = LONG2FIX(0);
     VALUE n, size;
     long cons_size = NUM2LONG(RARRAY_AREF(args, 0));
     if (cons_size <= 0) rb_raise(rb_eArgError, "invalid size");
@@ -2420,8 +2438,8 @@ enum_each_cons_size(VALUE obj, VALUE args, VALUE eobj)
     size = enum_size(obj, 0, 0);
     if (size == Qnil) return Qnil;
 
-    n = rb_funcall(size, '+', 1, LONG2NUM(1 - cons_size));
-    return (rb_cmpint(rb_funcall(n, id_cmp, 1, LONG2FIX(0)), n, LONG2FIX(0)) == -1) ? LONG2FIX(0) : n;
+    n = add_int(size, 1 - cons_size);
+    return (OPTIMIZED_CMP(n, zero, cmp_opt) == -1) ? zero : n;
 }
 
 /*
