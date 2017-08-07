@@ -67,7 +67,7 @@ grep_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     struct MEMO *memo = MEMO_CAST(args);
     ENUM_WANT_SVALUE();
 
-    if (RTEST(rb_funcall(memo->v1, id_eqq, 1, i)) == RTEST(memo->u3.value)) {
+    if (RTEST(rb_funcallv(memo->v1, id_eqq, 1, &i)) == RTEST(memo->u3.value)) {
 	rb_ary_push(memo->v2, i);
     }
     return Qnil;
@@ -79,7 +79,7 @@ grep_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     struct MEMO *memo = MEMO_CAST(args);
     ENUM_WANT_SVALUE();
 
-    if (RTEST(rb_funcall(memo->v1, id_eqq, 1, i)) == RTEST(memo->u3.value)) {
+    if (RTEST(rb_funcallv(memo->v1, id_eqq, 1, &i)) == RTEST(memo->u3.value)) {
 	rb_ary_push(memo->v2, enum_yield(argc, i));
     }
     return Qnil;
@@ -644,7 +644,7 @@ inject_op_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, p))
     }
     else if (SYMBOL_P(name = memo->u3.value)) {
 	const ID mid = SYM2ID(name);
-	MEMO_V1_SET(memo, rb_funcall(memo->v1, mid, 1, i));
+	MEMO_V1_SET(memo, rb_funcallv(memo->v1, mid, 1, &i));
     }
     else {
 	VALUE args[2];
@@ -2626,13 +2626,14 @@ enum_zip(int argc, VALUE *argv, VALUE obj)
 	argv[i] = ary;
     }
     if (!allary) {
+	const VALUE sym_each = ID2SYM(id_each);
 	CONST_ID(conv, "to_enum");
 	for (i=0; i<argc; i++) {
 	    if (!rb_respond_to(argv[i], id_each)) {
 		rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (must respond to :each)",
 			 rb_obj_class(argv[i]));
             }
-	    argv[i] = rb_funcall(argv[i], conv, 1, ID2SYM(id_each));
+	    argv[i] = rb_funcallv(argv[i], conv, 1, &sym_each);
 	}
     }
     if (!rb_block_given_p()) {
@@ -2832,7 +2833,8 @@ enum_cycle_size(VALUE self, VALUE args, VALUE eobj)
     if (n == Qnil) return DBL2NUM(INFINITY);
     mul = NUM2LONG(n);
     if (mul <= 0) return INT2FIX(0);
-    return rb_funcall(size, '*', 1, LONG2FIX(mul));
+    n = LONG2FIX(mul);
+    return rb_funcallv(size, '*', 1, &n);
 }
 
 /*
@@ -2903,18 +2905,21 @@ chunk_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _argp))
 
     ENUM_WANT_SVALUE();
 
-    v = rb_funcall(argp->categorize, id_call, 1, i);
+    v = rb_funcallv(argp->categorize, id_call, 1, &i);
 
     if (v == alone) {
         if (!NIL_P(argp->prev_value)) {
-            rb_funcall(argp->yielder, id_lshift, 1, rb_assoc_new(argp->prev_value, argp->prev_elts));
+	    s = rb_assoc_new(argp->prev_value, argp->prev_elts);
+            rb_funcallv(argp->yielder, id_lshift, 1, &s);
             argp->prev_value = argp->prev_elts = Qnil;
         }
-        rb_funcall(argp->yielder, id_lshift, 1, rb_assoc_new(v, rb_ary_new3(1, i)));
+	v = rb_assoc_new(v, rb_ary_new3(1, i));
+        rb_funcallv(argp->yielder, id_lshift, 1, &v);
     }
     else if (NIL_P(v) || v == separator) {
         if (!NIL_P(argp->prev_value)) {
-            rb_funcall(argp->yielder, id_lshift, 1, rb_assoc_new(argp->prev_value, argp->prev_elts));
+	    v = rb_assoc_new(argp->prev_value, argp->prev_elts);
+            rb_funcallv(argp->yielder, id_lshift, 1, &v);
             argp->prev_value = argp->prev_elts = Qnil;
         }
     }
@@ -2931,7 +2936,8 @@ chunk_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _argp))
                 rb_ary_push(argp->prev_elts, i);
             }
             else {
-                rb_funcall(argp->yielder, id_lshift, 1, rb_assoc_new(argp->prev_value, argp->prev_elts));
+		s = rb_assoc_new(argp->prev_value, argp->prev_elts);
+                rb_funcallv(argp->yielder, id_lshift, 1, &s);
                 argp->prev_value = v;
                 argp->prev_elts = rb_ary_new3(1, i);
             }
@@ -2955,8 +2961,10 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
 
     rb_block_call(enumerable, id_each, 0, 0, chunk_ii, arg);
     memo = MEMO_FOR(struct chunk_arg, arg);
-    if (!NIL_P(memo->prev_elts))
-	rb_funcall(memo->yielder, id_lshift, 1, rb_assoc_new(memo->prev_value, memo->prev_elts));
+    if (!NIL_P(memo->prev_elts)) {
+	arg = rb_assoc_new(memo->prev_value, memo->prev_elts);
+	rb_funcallv(memo->yielder, id_lshift, 1, &arg);
+    }
     return Qnil;
 }
 
@@ -3079,12 +3087,12 @@ slicebefore_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _argp))
     ENUM_WANT_SVALUE();
 
     if (!NIL_P(argp->sep_pat))
-        header_p = rb_funcall(argp->sep_pat, id_eqq, 1, i);
+        header_p = rb_funcallv(argp->sep_pat, id_eqq, 1, &i);
     else
-        header_p = rb_funcall(argp->sep_pred, id_call, 1, i);
+        header_p = rb_funcallv(argp->sep_pred, id_call, 1, &i);
     if (RTEST(header_p)) {
         if (!NIL_P(argp->prev_elts))
-            rb_funcall(argp->yielder, id_lshift, 1, argp->prev_elts);
+            rb_funcallv(argp->yielder, id_lshift, 1, &argp->prev_elts);
         argp->prev_elts = rb_ary_new3(1, i);
     }
     else {
@@ -3113,7 +3121,7 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
     rb_block_call(enumerable, id_each, 0, 0, slicebefore_ii, arg);
     memo = MEMO_FOR(struct slicebefore_arg, arg);
     if (!NIL_P(memo->prev_elts))
-        rb_funcall(memo->yielder, id_lshift, 1, memo->prev_elts);
+        rb_funcallv(memo->yielder, id_lshift, 1, &memo->prev_elts);
     return Qnil;
 }
 
@@ -3309,16 +3317,16 @@ sliceafter_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
     }
 
     if (NIL_P(memo->pred)) {
-        split_p = RTEST(rb_funcall(memo->pat, id_eqq, 1, i));
+        split_p = RTEST(rb_funcallv(memo->pat, id_eqq, 1, &i));
         UPDATE_MEMO;
     }
     else {
-        split_p = RTEST(rb_funcall(memo->pred, id_call, 1, i));
+        split_p = RTEST(rb_funcallv(memo->pred, id_call, 1, &i));
         UPDATE_MEMO;
     }
 
     if (split_p) {
-        rb_funcall(memo->yielder, id_lshift, 1, memo->prev_elts);
+        rb_funcallv(memo->yielder, id_lshift, 1, &memo->prev_elts);
         UPDATE_MEMO;
         memo->prev_elts = Qnil;
     }
@@ -3343,7 +3351,7 @@ sliceafter_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
     rb_block_call(enumerable, id_each, 0, 0, sliceafter_ii, arg);
     memo = MEMO_FOR(struct sliceafter_arg, arg);
     if (!NIL_P(memo->prev_elts))
-        rb_funcall(memo->yielder, id_lshift, 1, memo->prev_elts);
+        rb_funcallv(memo->yielder, id_lshift, 1, &memo->prev_elts);
     return Qnil;
 }
 
@@ -3431,14 +3439,17 @@ slicewhen_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
         memo->prev_elts = rb_ary_new3(1, i);
     }
     else {
-        split_p = RTEST(rb_funcall(memo->pred, id_call, 2, memo->prev_elt, i));
+	VALUE args[2];
+	args[0] = memo->prev_elt;
+	args[1] = i;
+        split_p = RTEST(rb_funcallv(memo->pred, id_call, 2, args));
         UPDATE_MEMO;
 
         if (memo->inverted)
             split_p = !split_p;
 
         if (split_p) {
-            rb_funcall(memo->yielder, id_lshift, 1, memo->prev_elts);
+            rb_funcallv(memo->yielder, id_lshift, 1, &memo->prev_elts);
             UPDATE_MEMO;
             memo->prev_elts = rb_ary_new3(1, i);
         }
@@ -3471,7 +3482,7 @@ slicewhen_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
     rb_block_call(enumerable, id_each, 0, 0, slicewhen_ii, arg);
     memo = MEMO_FOR(struct slicewhen_arg, arg);
     if (!NIL_P(memo->prev_elts))
-        rb_funcall(memo->yielder, id_lshift, 1, memo->prev_elts);
+        rb_funcallv(memo->yielder, id_lshift, 1, &memo->prev_elts);
     return Qnil;
 }
 
@@ -3717,7 +3728,7 @@ sum_iter(VALUE i, struct enum_sum_memo *memo)
     }
     else {
       some_value:
-        v = rb_funcall(v, idPLUS, 1, i);
+        v = rb_funcallv(v, idPLUS, 1, &i);
     }
 
     memo->v = v;
