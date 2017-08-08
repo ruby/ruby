@@ -2021,6 +2021,7 @@ glob_helper(
 		    /* unless DOTMATCH, skip current directories not to recurse infinitely */
 		    if (!(flags & FNM_DOTMATCH)) continue;
 		    ++dotfile;
+		    new_pathtype = path_directory; /* force to skip stat/lstat */
 		}
 		else if (namlen == 2 && name[1] == '.') {
 		    /* always skip parent directories not to recurse infinitely */
@@ -2042,12 +2043,14 @@ glob_helper(
 		break;
 	    }
 	    name = buf + pathlen + (dirsep != 0);
-	    if (dotfile < ((flags & FNM_DOTMATCH) ? 2 : 1) &&
 #ifdef DT_UNKNOWN
-		((new_pathtype = dp->d_type) == (rb_pathtype_t)DT_UNKNOWN) &&
-		    /* fall back to call lstat(2) */
+	    if (dp->d_type != DT_UNKNOWN) {
+		/* Got it. We need no more lstat. */
+		new_pathtype = dp->d_type;
+	    }
 #endif
-		recursive) {
+	    if (recursive && dotfile < ((flags & FNM_DOTMATCH) ? 2 : 1) &&
+		new_pathtype == path_unknown) {
 		/* RECURSIVE never match dot files unless FNM_DOTMATCH is set */
 		if (do_lstat(fd, buf, &st, flags, enc) == 0)
 		    new_pathtype = IFTODT(st.st_mode);
@@ -2066,8 +2069,9 @@ glob_helper(
 		struct glob_pattern *p = *cur;
 		if (p->type == RECURSIVE) {
 		    if (new_pathtype == path_directory || /* not symlink but real directory */
-			new_pathtype == path_exist)
-			*new_end++ = p; /* append recursive pattern */
+			new_pathtype == path_exist) {
+			if (dotfile < 2) *new_end++ = p; /* append recursive pattern */
+		    }
 		    p = p->next; /* 0 times recursion */
 		}
 		switch (p->type) {
