@@ -2070,7 +2070,8 @@ glob_helper(
 		if (p->type == RECURSIVE) {
 		    if (new_pathtype == path_directory || /* not symlink but real directory */
 			new_pathtype == path_exist) {
-			if (dotfile < 2) *new_end++ = p; /* append recursive pattern */
+			if (dotfile < ((flags & FNM_DOTMATCH) ? 2 : 1))
+			    *new_end++ = p; /* append recursive pattern */
 		    }
 		    p = p->next; /* 0 times recursion */
 		}
