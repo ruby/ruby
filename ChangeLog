@@ -13,6 +13,40 @@ Wed Aug  9 17:10:27 2017  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/http.rb (connect): use Net::Protocol#ssl_socket_connect.
 
+Wed Aug  9 17:08:01 2017  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	Zlib::GzipReader#pos underflows after calling #ungetbyte or #ungetc at start of file [Bug #13616]
+
+	patched by Andrew Haines <andrew@haines.org.nz> [ruby-core:81488]
+	zlib.c: fix unnormalized Fixnum
+
+	* ext/zlib/zlib.c (rb_gzfile_total_out): cast to long not to
+	  result in an unsigned long to normalized to Fixnum on LLP64
+	  platforms.  [ruby-core:81488]
+
+Wed Aug  9 17:03:00 2017  Eric Wong  <normalperson@yhbt.net>
+
+	process.c: handle dynamic :rlimit_* symbols in spawn execopts
+
+	* process.c (rb_execarg_addopt_rlimit): hoist out of rb_execarg_addopt
+	  (rlimit_type_by_sym): new wrapper for dynamic symbol
+	  (rb_execarg_addopt): check for dsym via rlimit_type_by_sym
+	* test/ruby/test_process.rb (test_execopts_rlimit): check dsym w/o pindown
+	  Add extra check for bogus rlimit args, too.
+	  [ruby-core:82033] [Bug #13744]
+	process.c: null bytes
+
+	* process.c (rlimit_type_by_sym): prohibit null bytes in key
+	  names.  [ruby-core:82033] [Bug #13744]
+
+Wed Aug  9 16:56:52 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	optparse.rb: get rid of eval
+
+	* lib/optparse.rb: try Float() and Integer() instead of eval,
+	  which does too much things.
+
+
 Fri Jul  7 10:58:10 2017  Eric Wong  <e@80x24.org>
 
 	This backport of r58812 is necessary to ease backporting r59028,
