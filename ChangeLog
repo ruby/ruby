@@ -1,3 +1,12 @@
+Wed Aug  9 17:22:29 2017  TAKANO `takano32' Mitsuhiro  <tak@no32.tk>
+
+	a64: fix crash on register stack mark/sweep pass
+
+	* thread_pthread.c: move 'register_stack_start' earlier.
+	  [ruby-core:79928] [Bug #13284] [Fix GH-1625]
+
+	Author:    Sergei Trofimovich <slyfox@gentoo.org>
+
 Wed Aug  9 17:10:27 2017  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/net/smtp/test_smtp.rb (test_tls_connect, test_tls_connect):

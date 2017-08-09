@@ -738,6 +738,12 @@ ruby_init_stack(volatile VALUE *addr
     )
 {
     native_main_thread.id = pthread_self();
+#ifdef __ia64
+    if (!native_main_thread.register_stack_start ||
+        (VALUE*)bsp < native_main_thread.register_stack_start) {
+        native_main_thread.register_stack_start = (VALUE*)bsp;
+    }
+#endif
 #if MAINSTACKADDR_AVAILABLE
     if (native_main_thread.stack_maxsize) return;
     {
@@ -759,12 +765,6 @@ ruby_init_stack(volatile VALUE *addr
                     native_main_thread.stack_start > addr,
                     native_main_thread.stack_start < addr)) {
         native_main_thread.stack_start = (VALUE *)addr;
-    }
-#endif
-#ifdef __ia64
-    if (!native_main_thread.register_stack_start ||
-        (VALUE*)bsp < native_main_thread.register_stack_start) {
-        native_main_thread.register_stack_start = (VALUE*)bsp;
     }
 #endif
     {
