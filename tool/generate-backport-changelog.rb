@@ -3,7 +3,7 @@ require "time"
 
 def usage!
   STDERR.puts <<-EOS
-Usage: $0 [--trunk=<dir>] [--target=<dir>] <revision(s)>
+Usage: #$0 [--trunk=<dir>] [--target=<dir>] <revision(s)>
 
 Generate ChangeLog entries for backporting.
 The entries are output to STDOUT, and the messages of this tool are output to
