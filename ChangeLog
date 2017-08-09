@@ -1,3 +1,18 @@
+Wed Aug  9 17:10:27 2017  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/net/smtp/test_smtp.rb (test_tls_connect, test_tls_connect):
+	  use Socket.tcp_server_sockets in case localhost is resolved to ::1.
+
+Wed Aug  9 17:10:27 2017  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/smtp.rb (tlsconnect): support timeout for TLS handshake.
+	  [ruby-core:76893] [Bug #12678]
+
+	* lib/net/protocol.rb (ssl_socket_connect): new method to implement
+	  timeout for TLS handshake.
+
+	* lib/net/http.rb (connect): use Net::Protocol#ssl_socket_connect.
+
 Fri Jul  7 10:58:10 2017  Eric Wong  <e@80x24.org>
 
 	This backport of r58812 is necessary to ease backporting r59028,

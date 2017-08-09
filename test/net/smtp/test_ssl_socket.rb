@@ -7,6 +7,11 @@ module Net
     class MySMTP < SMTP
       attr_accessor :fake_tcp, :fake_ssl
 
+      def initialize(*args)
+        super(*args)
+        @open_timeout = nil
+      end
+
       def tcp_socket address, port
         fake_tcp
       end
