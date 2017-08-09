@@ -1,3 +1,16 @@
+Wed Aug  9 22:27:23 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_syntax.rb (test_invalid_{break,next}): use
+	  assert_in_out_err instead of assert_syntax_error because on ruby_2_3
+	  assert_syntax_error uses eval.
+
+Wed Aug  9 22:27:23 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* compile.c (iseq_compile_each0): turned dregx context in "once"
+	  into "guarded" type from "block" type, to disallow `next`,
+	  `break`, `redo` as well as outside "once".
+	  [Bug #13690]
+
 Wed Aug  9 21:28:34 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_process.rb (test_rlimit_{name,value}): test in UTF-8
