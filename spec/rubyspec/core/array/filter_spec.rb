@@ -1,8 +1,8 @@
-require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/enumeratorize'
-require_relative 'shared/keep_if'
-require_relative '../enumerable/shared/enumeratorized'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
+require File.expand_path('../shared/enumeratorize', __FILE__)
+require File.expand_path('../shared/keep_if', __FILE__)
+require File.expand_path('../../enumerable/shared/enumeratorized', __FILE__)
 
 describe "Array#filter" do
   it_behaves_like :enumeratorize, :filter

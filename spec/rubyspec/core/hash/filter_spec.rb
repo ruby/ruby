@@ -1,7 +1,7 @@
-require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/iteration'
-require_relative '../enumerable/shared/enumeratorized'
+require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
+require File.expand_path('../shared/iteration', __FILE__)
+require File.expand_path('../../enumerable/shared/enumeratorized', __FILE__)
 
 describe "Hash#filter" do
   before :each do
