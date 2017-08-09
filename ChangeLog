@@ -1,3 +1,10 @@
+Wed Aug  9 19:09:20 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* node.h (nd_line): should sign-extend.  shifting `VALUE` extends
+	  with zero bits if `sizeof(VALUE)` equals to `sizeof(int)`.  the
+	  zero bits are truncated if `sizeof(VALUE)` is bigger enough.
+	  [ruby-core:80920] [Bug #13523]
+
 Wed Aug  9 17:53:09 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* compile.c (iseq_compile_each): the lifetime of new_opt have to be
