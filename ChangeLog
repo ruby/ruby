@@ -1,3 +1,8 @@
+Wed Aug  9 19:32:17 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* random.c (get_rnd, try_get_rnd): ensure initialized to get rid
+	  of crash in forked processes. [Bug #13753]
+
 Wed Aug  9 19:30:34 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/strscan/strscan.c (strscan_aref): fix segfault after
