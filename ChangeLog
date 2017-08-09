@@ -1,3 +1,8 @@
+Wed Aug  9 17:28:35 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (setup_exception): make unfrozen copy of special
+	  exception before setting up a cause.
+
 Wed Aug  9 17:22:29 2017  TAKANO `takano32' Mitsuhiro  <tak@no32.tk>
 
 	a64: fix crash on register stack mark/sweep pass

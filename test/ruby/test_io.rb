@@ -3357,5 +3357,28 @@ End
       end
       assert_equal(true, closed, "#{bug13158}: stream should be closed")
     end
+
+    def test_closed_stream_in_rescue
+      assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+      begin;
+      10.times do
+        assert_nothing_raised(RuntimeError, /frozen IOError/) do
+          IO.pipe do |r, w|
+            th = Thread.start {r.close}
+            r.gets
+          rescue IOError
+            # swallow pending exceptions
+            begin
+              sleep 0.001
+            rescue IOError
+              retry
+            end
+          ensure
+            th.kill.join
+          end
+        end
+      end
+      end;
+    end
   end
 end
