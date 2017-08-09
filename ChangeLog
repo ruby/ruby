@@ -1,3 +1,13 @@
+Wed Aug  9 19:45:16 2017  sorah (Shota Fukumori)  <her@sorah.jp>
+
+	Init_frozen_strings definition is removed in r51511.
+	https://bugs.ruby-lang.org/issues/11423
+
+	Patch by Kohei Suzuki <eagletmt@gmail.com>
+
+	* internal.h: Remove declaration of unexist function
+	  [Fix GH-1558]
+
 Wed Aug  9 19:34:17 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* internal.h (THROW_DATA_P): parenthesize the argument which is
