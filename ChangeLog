@@ -1,3 +1,9 @@
+Wed Aug  9 17:53:09 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): the lifetime of new_opt have to be
+	  until this case block is end.  this is a part of r57971.
+	  [Backport #13766]
+
 Wed Aug  9 17:35:47 2017  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	this patch contains r54158, r57410, r57631 and r57954.
