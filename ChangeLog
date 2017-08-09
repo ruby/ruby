@@ -1,3 +1,23 @@
+Wed Aug  9 19:34:17 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* internal.h (THROW_DATA_P): parenthesize the argument which is
+	  casted.
+
+Wed Aug  9 19:34:17 2017  Koichi Sasada  <ko1@atdot.net>
+
+	* vm.c: get return_value from imemo_throw_data object (THROW_DATA_VAL()).
+	  imemo_throw_data (TAG_BREAK) contains returned value.
+	  However, imemo_throw_data (TAG_BREAK) can skip several frames so that
+	  we need to use it only once (at most internal frame). To record it,
+	  we introduced THROW_DATA_CONSUMED and check it.
+
+	* internal.h: define THROW_DATA_CONSUMED flag.
+
+	* test/ruby/test_settracefunc.rb: add tests for [Bug #13369]
+
+	* vm_insnhelper.h: add THROW_DATA_CONSUMED_P() and
+	  THROW_DATA_CONSUMED_SET().
+
 Wed Aug  9 19:32:17 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* random.c (get_rnd, try_get_rnd): ensure initialized to get rid
