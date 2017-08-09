@@ -242,6 +242,22 @@ class TestProcess < Test::Unit::TestCase
       :rlimit_core=>n, :rlimit_cpu=>3600]) {|io|
       assert_equal("[#{n}, #{n}]\n[3600, 3600]", io.read.chomp)
     }
+
+    assert_raise(ArgumentError) do
+      system(RUBY, '-e', 'exit',  'rlimit_bogus'.to_sym => 123)
+    end
+    assert_separately([],<<-"end;") # [ruby-core:82033] [Bug #13744]
+      assert(system("#{RUBY}", "-e",
+                 "exit([3600,3600] == Process.getrlimit(:CPU))",
+             'rlimit_cpu'.to_sym => 3600))
+      assert_raise(ArgumentError) do
+        system("#{RUBY}", '-e', 'exit',  :rlimit_bogus => 123)
+      end
+    end;
+
+    assert_raise(ArgumentError, /rlimit_cpu/) {
+      system(RUBY, '-e', 'exit', "rlimit_cpu\0".to_sym => 3600)
+    }
   end
 
   MANDATORY_ENVS = %w[RUBYLIB]
