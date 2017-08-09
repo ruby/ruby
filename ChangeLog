@@ -1,3 +1,9 @@
+Wed Aug  9 19:30:34 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/strscan/strscan.c (strscan_aref): fix segfault after
+	  get_byte or getch which do not apply regexp.
+	  [Bug #13759]
+
 Wed Aug  9 19:28:40 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: add rpath flags which is needed for OPTDIR as well
