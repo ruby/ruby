@@ -1,3 +1,9 @@
+Wed Aug  9 19:14:07 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* vm_insnhelper.c (vm_throw_start): size of catch table has been
+	  included in iseq_catch_table struct, which could be NULL, since
+	  2.2. e.g., proc-closure in `once'. 
+
 Wed Aug  9 19:09:20 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* node.h (nd_line): should sign-extend.  shifting `VALUE` extends
