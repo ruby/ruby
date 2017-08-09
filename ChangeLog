@@ -1,3 +1,8 @@
+Wed Aug  9 21:13:24 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* compile.c (iseq_compile_each): remove unused definition of unused
+	  variable derived from original patch.
+
 Wed Aug  9 19:45:16 2017  sorah (Shota Fukumori)  <her@sorah.jp>
 
 	Init_frozen_strings definition is removed in r51511.
