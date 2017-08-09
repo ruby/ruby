@@ -26,7 +26,7 @@ describe "Hash#filter" do
 
     filter_pairs = []
     reject_pairs = []
-    h.dup.filter { |*pair| select_pairs << pair }
+    h.dup.filter { |*pair| filter_pairs << pair }
     h.reject { |*pair| reject_pairs << pair }
 
     filter_pairs.should == reject_pairs

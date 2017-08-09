@@ -2224,21 +2224,6 @@ class TestArray < Test::Unit::TestCase
     a = @cls[ 1, 2, 3, 4, 5 ]
     assert_equal(a, a.filter! { |i| i > 3 })
     assert_equal(@cls[4, 5], a)
-
-    # For select!: bug10722 = '[ruby-dev:48805] [Bug #10722]'
-    a = @cls[ 5, 6, 7, 8, 9, 10 ]
-    r = a.filter! {|i|
-      break i if i > 8
-      # assert_equal(a[0], i, "should be selected values only") if i == 7
-      i >= 7
-    }
-    assert_equal(9, r)
-    assert_equal(@cls[7, 8, 9, 10], a, bug10722)
-
-    # For select!: bug13053 = '[ruby-core:78739] [Bug #13053] Array#select! can resize to negative size'
-    a = @cls[ 1, 2, 3, 4, 5 ]
-    a.filter! {|i| a.clear if i == 5; false }
-    assert_equal(0, a.size, bug13053)
   end
 
   def test_delete2

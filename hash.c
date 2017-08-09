@@ -4586,7 +4586,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "select", rb_hash_select, 0);
     rb_define_method(rb_cHash, "select!", rb_hash_select_bang, 0);
     rb_define_method(rb_cHash, "filter", rb_hash_select, 0);
-    rb_define_method(rb_cHash, "filter!", rb_hash_select_bang, 0)
+    rb_define_method(rb_cHash, "filter!", rb_hash_select_bang, 0);
     rb_define_method(rb_cHash, "reject", rb_hash_reject, 0);
     rb_define_method(rb_cHash, "reject!", rb_hash_reject_bang, 0);
     rb_define_method(rb_cHash, "clear", rb_hash_clear, 0);
@@ -4648,6 +4648,8 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "reject!", env_reject_bang, 0);
     rb_define_singleton_method(envtbl, "select", env_select, 0);
     rb_define_singleton_method(envtbl, "select!", env_select_bang, 0);
+    rb_define_singleton_method(envtbl, "filter", env_select, 0);
+    rb_define_singleton_method(envtbl, "filter!", env_select_bang, 0);
     rb_define_singleton_method(envtbl, "shift", env_shift, 0);
     rb_define_singleton_method(envtbl, "invert", env_invert, 0);
     rb_define_singleton_method(envtbl, "replace", env_replace, 1);
