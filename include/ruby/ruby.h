@@ -551,26 +551,22 @@ static inline int rb_type(VALUE obj);
 	((type) == RUBY_T_FLOAT) ? RB_FLOAT_TYPE_P(obj) : \
 	(!RB_SPECIAL_CONST_P(obj) && RB_BUILTIN_TYPE(obj) == (type)))
 
-/* RB_GC_GUARD_PTR() is an intermediate macro, and has no effect by
- * itself.  don't use it directly */
 #ifdef __GNUC__
-#define RB_GC_GUARD_PTR(ptr) \
-    __extension__ ({volatile VALUE *rb_gc_guarded_ptr = (ptr); rb_gc_guarded_ptr;})
-#else
-#ifdef _MSC_VER
+#define RB_GC_GUARD(v) \
+    (*__extension__ ({ \
+	volatile VALUE *rb_gc_guarded_ptr = &(v); \
+	__asm__("" : : "m"(rb_gc_guarded_ptr)); \
+	rb_gc_guarded_ptr; \
+    }))
+#elif defined _MSC_VER
 #pragma optimize("", off)
 static inline volatile VALUE *rb_gc_guarded_ptr(volatile VALUE *ptr) {return ptr;}
 #pragma optimize("", on)
+#define RB_GC_GUARD(v) (*rb_gc_guarded_ptr(&(v)))
 #else
 volatile VALUE *rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val);
 #define HAVE_RB_GC_GUARDED_PTR_VAL 1
 #define RB_GC_GUARD(v) (*rb_gc_guarded_ptr_val(&(v),(v)))
-#endif
-#define RB_GC_GUARD_PTR(ptr) rb_gc_guarded_ptr(ptr)
-#endif
-
-#ifndef RB_GC_GUARD
-#define RB_GC_GUARD(v) (*RB_GC_GUARD_PTR(&(v)))
 #endif
 
 #ifdef __GNUC__

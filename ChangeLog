@@ -1,3 +1,37 @@
+Wed Aug  9 17:35:47 2017  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	this patch contains r54158, r57410, r57631 and r57954.
+
+	Prevent GC by volatile [Bug #13150]
+
+	test/ruby/test_marshal.rb test_context_switch (load) and test_gc (dump)
+	are failed on FreeBSD 10.3 and gcc7 (FreeBSD Ports Collection) 7.0.0
+	20170115 (experimental); RB_GC_GUARD looks not worked well.
+
+	* include/ruby/ruby.h (RB_GC_GUARD): prevent guarded pointer from
+	  optimization by using as an input to inline asm.
+
+	* ruby.h: remove comment
+
+	* include/ruby/ruby.h (RB_GC_GUARD): remove comment unsupported by
+	  Solaris AS.
+
+	Hidden objects (klass == 0) are not visible to Ruby code invoked
+	from other threads or signal handlers, so they can never be
+	accessed from other contexts.  This makes it safe to call
+	rb_gc_force_recycle on the object slot after releasing malloc
+	memory.
+
+	* marshal.c (rb_marshal_dump_limited): hide dump_arg and recycle when
+	  done (rb_marshal_load_with_proc): hide load_arg and recycle when done
+	  [ruby-core:79518]
+
+	* marshal.c (rb_marshal_dump_limited): do not free dump_arg, which
+	  may be dereferenced in check_dump_arg due to continuation, and
+	  get rid of dangling pointers.
+
+	* marshal.c (rb_marshal_load_with_proc): ditto for load_arg.
+
 Wed Aug  9 17:28:35 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (setup_exception): make unfrozen copy of special
