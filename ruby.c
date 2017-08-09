@@ -450,7 +450,7 @@ dladdr_path(const void* addr)
 	return rb_str_new(0, 0);
     }
 #ifdef __linux__
-    else if (dli.dli_fname == origarg.argv[0]) {
+    else if (origarg.argc > 0 && origarg.argv && dli.dli_fname == origarg.argv[0]) {
 	fname = rb_str_new_cstr("/proc/self/exe");
 	path = rb_readlink(fname, NULL);
     }
@@ -912,7 +912,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
     const char *s;
     int warning = opt->warning;
 
-    if (argc == 0)
+    if (argc <= 0 || !argv)
 	return 0;
 
     for (argc--, argv++; argc > 0; argc--, argv++) {
@@ -1465,13 +1465,17 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     const struct rb_block *base_block;
     unsigned int dump = opt->dump & dump_exit_bits;
 
-    argc -= i;
-    argv += i;
-
     if (opt->dump & (DUMP_BIT(usage)|DUMP_BIT(help))) {
-	usage(origarg.argv[0], (opt->dump & DUMP_BIT(help)));
+	const char *const progname =
+	    (argc > 0 && argv && argv[0] ? argv[0] :
+	     origarg.argc > 0 && origarg.argv && origarg.argv[0] ? origarg.argv[0] :
+	     ruby_engine);
+	usage(progname, (opt->dump & DUMP_BIT(help)));
 	return Qtrue;
     }
+
+    argc -= i;
+    argv += i;
 
     if ((opt->features & FEATURE_BIT(rubyopt)) &&
 	opt->safe_level == 0 && (s = getenv("RUBYOPT"))) {
@@ -1502,7 +1506,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     }
 
     if (!opt->e_script) {
-	if (argc == 0) {	/* no more args */
+	if (argc <= 0) {	/* no more args */
 	    if (opt->verbose)
 		return Qtrue;
 	    opt->script = "-";
@@ -2192,9 +2196,9 @@ ruby_set_argv(int argc, char **argv)
     VALUE av = rb_argv;
 
 #if defined(USE_DLN_A_OUT)
-    if (origarg.argv)
+    if (origarg.argc > 0 && origarg.argv)
 	dln_argv0 = origarg.argv[0];
-    else
+    else if (argc > 0 && argv)
 	dln_argv0 = argv[0];
 #endif
     rb_ary_clear(av);
@@ -2213,6 +2217,10 @@ ruby_process_options(int argc, char **argv)
     VALUE iseq;
     const char *script_name = (argc > 0 && argv[0]) ? argv[0] : ruby_engine;
 
+    if (!origarg.argv || origarg.argc <= 0) {
+	origarg.argc = argc;
+	origarg.argv = argv;
+    }
     ruby_script(script_name);  /* for the time being */
     rb_argv0 = rb_str_new4(rb_progname);
     rb_gc_register_mark_object(rb_argv0);
@@ -2255,11 +2263,12 @@ fill_standard_fds(void)
     }
 }
 
-/*! Initializes the process for ruby(1).
+/*! Initializes the process for libruby.
  *
  * This function assumes this process is ruby(1) and it has just started.
- * Usually programs that embeds CRuby interpreter should not call this function,
- * and should do their own initialization.
+ * Usually programs that embed CRuby interpreter may not call this function,
+ * and may do their own initialization.
+ * argc and argv cannot be NULL.
  */
 void
 ruby_sysinit(int *argc, char ***argv)
@@ -2267,10 +2276,12 @@ ruby_sysinit(int *argc, char ***argv)
 #if defined(_WIN32)
     rb_w32_sysinit(argc, argv);
 #endif
-    origarg.argc = *argc;
-    origarg.argv = *argv;
+    if (*argc >= 0 && *argv) {
+	origarg.argc = *argc;
+	origarg.argv = *argv;
 #if defined(USE_DLN_A_OUT)
-    dln_argv0 = origarg.argv[0];
+	dln_argv0 = origarg.argv[0];
 #endif
+    }
     fill_standard_fds();
 }
