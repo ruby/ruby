@@ -616,7 +616,8 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq,
 
     if (given_argc > min_argc &&
 	(iseq->body->param.flags.has_kw || iseq->body->param.flags.has_kwrest ||
-	 (!iseq->body->param.flags.has_rest && (ci->flag & VM_CALL_KW_SPLAT))) &&
+	 (!iseq->body->param.flags.has_rest && given_argc > max_argc &&
+	  (ci->flag & VM_CALL_KW_SPLAT))) &&
 	args->kw_argv == NULL) {
 	if (args_pop_keyword_hash(args, &keyword_hash, th)) {
 	    given_argc--;

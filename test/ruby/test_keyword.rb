@@ -506,12 +506,16 @@ class TestKeywordArguments < Test::Unit::TestCase
   def test_splat_hash
     m = Object.new
     def m.f() :ok; end
+    def m.f2(a = nil) a; end
     o = {a: 1}
     assert_raise_with_message(ArgumentError, /unknown keyword: a/) {
       m.f(**o)
     }
     o = {}
     assert_equal(:ok, m.f(**o), '[ruby-core:68124] [Bug #10856]')
+
+    o = {a: 42}
+    assert_equal({a: 42}, m.f2(**o), '[ruby-core:82280] [Bug #13791]')
   end
 
   def test_gced_object_in_stack
