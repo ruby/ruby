@@ -578,13 +578,28 @@ cont_capture(volatile int *volatile stat)
 }
 
 static inline void
+fiber_restore_thread(rb_thread_t *th, rb_fiber_t *fib)
+{
+    rb_thread_t *sth = &fib->cont.saved_thread;
+
+    th->ec = sth->ec;
+    sth->ec.vm_stack = NULL;
+    th->fiber = fib;
+
+    VM_ASSERT(th->ec.vm_stack != NULL);
+    VM_ASSERT(sth->status == THREAD_RUNNABLE);
+}
+
+
+static inline void
 cont_restore_thread(rb_context_t *cont)
 {
-    rb_thread_t *th = GET_THREAD(), *sth = &cont->saved_thread;
+    rb_thread_t *th = GET_THREAD();
 
     /* restore thread context */
     if (cont->type == CONTINUATION_CONTEXT) {
 	/* continuation */
+	rb_thread_t *sth = &cont->saved_thread;
 	const rb_fiber_t *fib;
 
 	th->fiber = sth->fiber;
@@ -613,16 +628,14 @@ cont_restore_thread(rb_context_t *cont)
 	th->ec.ensure_list = sth->ec.ensure_list;
 	th->ec.errinfo = sth->ec.errinfo;
 	th->ec.trace_arg = sth->ec.trace_arg;
+
+	VM_ASSERT(th->ec.vm_stack != NULL);
+	VM_ASSERT(sth->status == THREAD_RUNNABLE);
     }
     else {
 	/* fiber */
-	th->ec = sth->ec;
-	sth->ec.vm_stack = NULL;
-	th->fiber = (rb_fiber_t*)cont;
+	fiber_restore_thread(th, (rb_fiber_t*)cont);
     }
-
-    VM_ASSERT(th->ec.vm_stack != NULL);
-    VM_ASSERT(sth->status == THREAD_RUNNABLE);
 }
 
 #if FIBER_USE_NATIVE
@@ -743,7 +756,7 @@ fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib)
     rb_thread_t *th = GET_THREAD(), *sth = &newfib->cont.saved_thread;
 
     /* restore thread context */
-    cont_restore_thread(&newfib->cont);
+    fiber_restore_thread(th, newfib);
     th->machine.stack_maxsize = sth->machine.stack_maxsize;
     if (sth->machine.stack_end && (newfib != oldfib)) {
 	rb_bug("fiber_setcontext: sth->machine.stack_end has non zero value");
