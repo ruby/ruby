@@ -516,6 +516,8 @@ class TestKeywordArguments < Test::Unit::TestCase
 
     o = {a: 42}
     assert_equal({a: 42}, m.f2(**o), '[ruby-core:82280] [Bug #13791]')
+
+    assert_equal({a: 42}, m.f2("a".to_sym => 42), '[ruby-core:82291] [Bug #13793]')
   end
 
   def test_gced_object_in_stack

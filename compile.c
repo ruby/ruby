@@ -3052,11 +3052,14 @@ compile_array_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	    NODE *key_node = node->nd_head;
 
 	    assert(nd_type(node) == NODE_ARRAY);
-	    if (key_node && nd_type(key_node) == NODE_LIT && RB_TYPE_P(key_node->nd_lit, T_SYMBOL)) {
+	    if (!key_node) {
+		if (flag) *flag |= VM_CALL_KW_SPLAT;
+		return FALSE;
+	    }
+	    else if (nd_type(key_node) == NODE_LIT && RB_TYPE_P(key_node->nd_lit, T_SYMBOL)) {
 		/* can be keywords */
 	    }
 	    else {
-		if (flag) *flag |= VM_CALL_KW_SPLAT;
 		return FALSE;
 	    }
 	    node = node->nd_next; /* skip value node */
