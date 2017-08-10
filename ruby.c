@@ -731,11 +731,11 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
 
     while (ISSPACE(*s)) s++;
     if (!*s) return;
-    argstr = rb_str_tmp_new((len = strlen(s)) + 2);
+    argstr = rb_str_tmp_new((len = strlen(s)) + (envopt!=0));
     argary = rb_str_tmp_new(0);
 
     p = RSTRING_PTR(argstr);
-    *p++ = ' ';
+    if (envopt) *p++ = ' ';
     memcpy(p, s, len + 1);
     ap = 0;
     rb_str_cat(argary, (char *)&ap, sizeof(ap));
@@ -752,7 +752,7 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
     rb_str_cat(argary, (char *)&ap, sizeof(ap));
     argv = (char **)RSTRING_PTR(argary);
 
-    while ((i = proc_options(argc, argv, opt, envopt)) > 1 && (argc -= i) > 0) {
+    while ((i = proc_options(argc, argv, opt, envopt)) > 1 && envopt && (argc -= i) > 0) {
 	argv += i;
 	if (**argv != '-') {
 	    *--*argv = '-';

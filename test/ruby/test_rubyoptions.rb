@@ -338,6 +338,8 @@ class TestRubyOptions < Test::Unit::TestCase
                       %w[4], [], bug4118)
     assert_in_out_err(%w[-x], "#!/bin/sh\n""#!shebang\n""#!ruby\n""puts __LINE__\n",
                       %w[4], [], bug4118)
+
+    assert_ruby_status(%w[], "#! ruby -- /", '[ruby-core:82267] [Bug #13786]')
   end
 
   def test_sflag
