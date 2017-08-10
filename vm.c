@@ -88,8 +88,8 @@ rb_vm_frame_block_handler(const rb_control_frame_t *cfp)
 static int
 VM_CFP_IN_HEAP_P(const rb_thread_t *th, const rb_control_frame_t *cfp)
 {
-    const VALUE *start = th->ec.stack;
-    const VALUE *end = (VALUE *)th->ec.stack + th->ec.stack_size;
+    const VALUE *start = th->ec.vm_stack;
+    const VALUE *end = (VALUE *)th->ec.vm_stack + th->ec.vm_stack_size;
     VM_ASSERT(start != NULL);
 
     if (start <= (VALUE *)cfp && (VALUE *)cfp < end) {
@@ -103,7 +103,7 @@ VM_CFP_IN_HEAP_P(const rb_thread_t *th, const rb_control_frame_t *cfp)
 static int
 VM_EP_IN_HEAP_P(const rb_thread_t *th, const VALUE *ep)
 {
-    const VALUE *start = th->ec.stack;
+    const VALUE *start = th->ec.vm_stack;
     const VALUE *end = (VALUE *)th->ec.cfp;
     VM_ASSERT(start != NULL);
 
@@ -2370,11 +2370,11 @@ rb_thread_mark(void *ptr)
     RUBY_MARK_ENTER("thread");
 
     /* mark VM stack */
-    if (th->ec.stack) {
-	VALUE *p = th->ec.stack;
+    if (th->ec.vm_stack) {
+	VALUE *p = th->ec.vm_stack;
 	VALUE *sp = th->ec.cfp->sp;
 	rb_control_frame_t *cfp = th->ec.cfp;
-	rb_control_frame_t *limit_cfp = (void *)(th->ec.stack + th->ec.stack_size);
+	rb_control_frame_t *limit_cfp = (void *)(th->ec.vm_stack + th->ec.vm_stack_size);
 
 	rb_gc_mark_values((long)(sp - p), p);
 
@@ -2435,9 +2435,9 @@ thread_free(void *ptr)
     rb_thread_t *th = ptr;
     RUBY_FREE_ENTER("thread");
 
-    if (th->ec.stack != NULL) {
-	rb_thread_recycle_stack_release(th->ec.stack);
-	th->ec.stack = NULL;
+    if (th->ec.vm_stack != NULL) {
+	rb_thread_recycle_stack_release(th->ec.vm_stack);
+	th->ec.vm_stack = NULL;
     }
 
     if (th->locking_mutex != Qfalse) {
@@ -2475,7 +2475,7 @@ thread_memsize(const void *ptr)
     size_t size = sizeof(rb_thread_t);
 
     if (!th->root_fiber) {
-	size += th->ec.stack_size * sizeof(VALUE);
+	size += th->ec.vm_stack_size * sizeof(VALUE);
     }
     if (th->ec.local_storage) {
 	size += st_memsize(th->ec.local_storage);
@@ -2525,18 +2525,18 @@ th_init(rb_thread_t *th, VALUE self)
     /* altstack of main thread is reallocated in another place */
     th->altstack = malloc(rb_sigaltstack_size());
 #endif
-    /* th->ec.stack_size is word number.
+    /* th->ec.vm_stack_size is word number.
      * th->vm->default_params.thread_vm_stack_size is byte size.
      */
-    th->ec.stack_size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
-    th->ec.stack = thread_recycle_stack(th->ec.stack_size);
+    th->ec.vm_stack_size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
+    th->ec.vm_stack = thread_recycle_stack(th->ec.vm_stack_size);
 
-    th->ec.cfp = (void *)(th->ec.stack + th->ec.stack_size);
+    th->ec.cfp = (void *)(th->ec.vm_stack + th->ec.vm_stack_size);
 
     vm_push_frame(th, 0 /* dummy iseq */, VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_CFRAME /* dummy frame */,
 		  Qnil /* dummy self */, VM_BLOCK_HANDLER_NONE /* dummy block ptr */,
 		  0 /* dummy cref/me */,
-		  0 /* dummy pc */, th->ec.stack, 0, 0);
+		  0 /* dummy pc */, th->ec.vm_stack, 0, 0);
 
     th->status = THREAD_RUNNABLE;
     th->last_status = Qnil;
@@ -3102,7 +3102,7 @@ void
 rb_vm_set_progname(VALUE filename)
 {
     rb_thread_t *th = GET_VM()->main_thread;
-    rb_control_frame_t *cfp = (void *)(th->ec.stack + th->ec.stack_size);
+    rb_control_frame_t *cfp = (void *)(th->ec.vm_stack + th->ec.vm_stack_size);
     --cfp;
 
     rb_iseq_pathobj_set(cfp->iseq, rb_str_dup(filename), rb_iseq_realpath(cfp->iseq));

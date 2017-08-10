@@ -1127,7 +1127,7 @@ previous_frame(rb_thread_t *th)
 {
     rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->ec.cfp);
     /* check if prev_cfp can be accessible */
-    if ((void *)(th->ec.stack + th->ec.stack_size) == (void *)(prev_cfp)) {
+    if ((void *)(th->ec.vm_stack + th->ec.vm_stack_size) == (void *)(prev_cfp)) {
         return 0;
     }
     return prev_cfp;

@@ -737,8 +737,8 @@ typedef struct rb_fiber_struct rb_fiber_t;
 
 typedef struct rb_thread_context_struct {
     /* execution information */
-    VALUE *stack;		/* must free, must mark */
-    size_t stack_size;          /* size in word (byte size / sizeof(VALUE)) */
+    VALUE *vm_stack;		/* must free, must mark */
+    size_t vm_stack_size;       /* size in word (byte size / sizeof(VALUE)) */
     rb_control_frame_t *cfp;
 
     struct rb_vm_tag *tag;
@@ -1235,7 +1235,7 @@ VALUE rb_vm_frame_block_handler(const rb_control_frame_t *cfp);
 #define RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp) ((cfp)+1)
 #define RUBY_VM_NEXT_CONTROL_FRAME(cfp) ((cfp)-1)
 #define RUBY_VM_END_CONTROL_FRAME(th) \
-  ((rb_control_frame_t *)((th)->ec.stack + (th)->ec.stack_size))
+  ((rb_control_frame_t *)((th)->ec.vm_stack + (th)->ec.vm_stack_size))
 #define RUBY_VM_VALID_CONTROL_FRAME_P(cfp, ecfp) \
   ((void *)(ecfp) > (void *)(cfp))
 #define RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp) \
