@@ -309,7 +309,7 @@ rb_ary_to_ary(VALUE obj) ::
 There are many functions to operate an array.  They may dump core if other
 types are given.
 
-rb_ary_aref(argc, VALUE *argv, VALUE ary) ::
+rb_ary_aref(int argc, const VALUE *argv, VALUE ary) ::
 
   Equivalent to Array#[].
 

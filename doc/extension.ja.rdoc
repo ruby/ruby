@@ -332,7 +332,7 @@ rb_ary_to_ary(VALUE obj) ::
 引数aryに配列を渡さなければならない. さもないと
 コアを吐く.
 
-rb_ary_aref(argc, VALUE *argv, VALUE ary) ::
+rb_ary_aref(int argc, const VALUE *argv, VALUE ary) ::
 
   Array#[]と同等.
 
