@@ -1422,9 +1422,11 @@ fiber_store(rb_fiber_t *next_fib, rb_thread_t *th)
     VM_ASSERT(FIBER_RESUMED_P(fib) || FIBER_TERMINATED_P(fib));
     VM_ASSERT(FIBER_RUNNABLE_P(next_fib));
 
+#if FIBER_USE_NATIVE
     if (FIBER_CREATED_P(next_fib)) {
 	fiber_initialize_machine_stack_context(next_fib, th->vm->default_params.fiber_machine_stack_size);
     }
+#endif
 
     if (FIBER_RESUMED_P(fib)) fiber_status_set(fib, FIBER_SUSPENDED);
     fiber_status_set(next_fib, FIBER_RESUMED);
