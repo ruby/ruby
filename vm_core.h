@@ -51,7 +51,7 @@
 
 #else
 #define VM_ASSERT(expr) ((void)0)
-#define VM_UNREACHABLE(func) ((void)0)
+#define VM_UNREACHABLE(func) UNREACHABLE
 #endif
 
 #define RUBY_VM_THREAD_MODEL 2
