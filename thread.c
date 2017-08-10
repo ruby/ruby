@@ -552,7 +552,7 @@ thread_cleanup_func(void *th_ptr, int atfork)
 }
 
 static VALUE rb_threadptr_raise(rb_thread_t *, int, VALUE *);
-static VALUE rb_thread_inspect(VALUE thread);
+static VALUE rb_thread_to_s(VALUE thread);
 
 void
 ruby_thread_init_stack(rb_thread_t *th)
@@ -641,7 +641,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 		/* exit on main_thread */
 	    }
 	    else if (th->report_on_exception) {
-		VALUE mesg = rb_thread_inspect(th->self);
+		VALUE mesg = rb_thread_to_s(th->self);
 		rb_str_cat_cstr(mesg, " terminated with exception:\n");
 		rb_write_error_str(mesg);
 		rb_threadptr_error_print(th, errinfo);
@@ -2961,13 +2961,13 @@ rb_thread_setname(VALUE thread, VALUE name)
 
 /*
  * call-seq:
- *   thr.inspect   -> string
+ *   thr.to_s -> string
  *
  * Dump the name, id, and status of _thr_ to a string.
  */
 
 static VALUE
-rb_thread_inspect(VALUE thread)
+rb_thread_to_s(VALUE thread)
 {
     VALUE cname = rb_class_path(rb_obj_class(thread));
     rb_thread_t *target_th = rb_thread_ptr(thread);
@@ -4851,7 +4851,8 @@ Init_Thread(void)
 
     rb_define_method(rb_cThread, "name", rb_thread_getname, 0);
     rb_define_method(rb_cThread, "name=", rb_thread_setname, 1);
-    rb_define_method(rb_cThread, "inspect", rb_thread_inspect, 0);
+    rb_define_method(rb_cThread, "to_s", rb_thread_to_s, 0);
+    rb_define_alias(rb_cThread, "inspect", "to_s");
 
     rb_vm_register_special_exception(ruby_error_stream_closed, rb_eIOError,
 				     "stream closed in another thread");
