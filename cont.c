@@ -1360,7 +1360,7 @@ rb_fiber_start(void)
     }
 
     rb_fiber_terminate(fib);
-    rb_bug("rb_fiber_start: unreachable");
+    VM_UNREACHABLE(rb_fiber_start);
 }
 
 static rb_fiber_t *
@@ -1478,14 +1478,14 @@ fiber_store(rb_fiber_t *next_fib, rb_thread_t *th)
 	if (fib->cont.argc == -1) rb_exc_raise(fib->cont.value);
 	if (next_fib->cont.value == Qundef) {
 	    cont_restore_0(&next_fib->cont, &next_fib->cont.value);
-	    rb_bug("rb_fiber_resume: unreachable");
+	    VM_UNREACHABLE(fiber_store);
 	}
 	return fib->cont.value;
     }
     else {
 	VALUE undef = Qundef;
 	cont_restore_0(&next_fib->cont, &undef);
-	rb_bug("rb_fiber_resume: unreachable");
+	VM_UNREACHABLE(fiber_store);
     }
 #endif /* FIBER_USE_NATIVE */
 }
