@@ -240,8 +240,8 @@ cont_mark(void *ptr)
 	}
 	else {
 	    /* fiber */
-	    rb_thread_t *th = rb_thread_ptr(cont->saved_thread.self);
-	    rb_fiber_t *fib = (rb_fiber_t*)cont;
+	    const rb_thread_t *th = rb_thread_ptr(cont->saved_thread.self);
+	    const rb_fiber_t *fib = (rb_fiber_t*)cont;
 
 	    if ((th->fiber != fib) && FIBER_SUSPENDED_P(fib)) {
 		rb_gc_mark_locations(cont->machine.stack,
@@ -274,7 +274,7 @@ cont_free(void *ptr)
     }
     else {
 	/* fiber */
-	rb_fiber_t *fib = (rb_fiber_t*)cont;
+	const rb_fiber_t *fib = (rb_fiber_t*)cont;
 	const rb_thread_t *const th = GET_THREAD();
 #ifdef _WIN32
 	if (th && th->fiber != fib && cont->type != ROOT_FIBER_CONTEXT) {
@@ -362,7 +362,7 @@ fiber_verify(const rb_fiber_t *fib)
 }
 
 void
-rb_fiber_mark_self(rb_fiber_t *fib)
+rb_fiber_mark_self(const rb_fiber_t *fib)
 {
     if (fib)
 	rb_gc_mark(fib->cont.self);
@@ -585,7 +585,7 @@ cont_restore_thread(rb_context_t *cont)
     /* restore thread context */
     if (cont->type == CONTINUATION_CONTEXT) {
 	/* continuation */
-	rb_fiber_t *fib;
+	const rb_fiber_t *fib;
 
 	th->fiber = sth->fiber;
 	fib = th->fiber ? th->fiber : th->root_fiber;
@@ -1607,7 +1607,7 @@ rb_fiber_reset_root_local_storage(VALUE thval)
 VALUE
 rb_fiber_alive_p(VALUE fibval)
 {
-    rb_fiber_t *fib;
+    const rb_fiber_t *fib;
     GetFiberPtr(fibval, fib);
     return FIBER_TERMINATED_P(fib) ? Qfalse : Qtrue;
 }
