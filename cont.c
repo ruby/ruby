@@ -87,7 +87,7 @@ typedef struct rb_context_struct {
     VALUE value;
     VALUE *vm_stack;
 #ifdef CAPTURE_JUST_VALID_VM_STACK
-    size_t vm_stack_slen;  /* length of stack (head of th->ec.svm_tack) */
+    size_t vm_stack_slen;  /* length of stack (head of th->ec.vm_stack) */
     size_t vm_stack_clen;  /* length of control frames (tail of th->ec.vm_stack) */
 #endif
     struct {
