@@ -48,8 +48,6 @@ static int method_min_max_arity(VALUE, int *max);
 
 #define IS_METHOD_PROC_IFUNC(ifunc) ((ifunc)->func == bmcall)
 
-static VALUE proc_to_s_(VALUE self, const rb_proc_t *proc);
-
 static void
 block_mark(const struct rb_block *block)
 {
@@ -1245,27 +1243,10 @@ proc_hash(VALUE self)
     return ST2FIX(hash);
 }
 
-/*
- * call-seq:
- *   prc.to_s   -> string
- *
- * Returns the unique identifier for this proc, along with
- * an indication of where the proc was defined.
- */
-
-static VALUE
-proc_to_s(VALUE self)
-{
-    const rb_proc_t *proc;
-    GetProcPtr(self, proc);
-    return proc_to_s_(self, proc);
-}
-
-static VALUE
-proc_to_s_(VALUE self, const rb_proc_t *proc)
+VALUE
+rb_block_to_s(VALUE self, const struct rb_block *block, const char *additional_info)
 {
     VALUE cname = rb_obj_class(self);
-    const struct rb_block *block = &proc->block;
     VALUE str = rb_sprintf("#<%"PRIsVALUE":", cname);
 
   again:
@@ -1285,14 +1266,30 @@ proc_to_s_(VALUE self, const rb_proc_t *proc)
 	rb_str_catf(str, "%p(&%+"PRIsVALUE")", (void *)self, block->as.symbol);
 	break;
       case block_type_ifunc:
-	rb_str_catf(str, "%p", proc->block.as.captured.code.ifunc);
+	rb_str_catf(str, "%p", block->as.captured.code.ifunc);
 	break;
     }
 
-    if (proc->is_lambda) rb_str_cat_cstr(str, " (lambda)");
+    if (additional_info) rb_str_cat_cstr(str, additional_info);
     rb_str_cat_cstr(str, ">");
     OBJ_INFECT_RAW(str, self);
     return str;
+}
+
+/*
+ * call-seq:
+ *   prc.to_s   -> string
+ *
+ * Returns the unique identifier for this proc, along with
+ * an indication of where the proc was defined.
+ */
+
+static VALUE
+proc_to_s(VALUE self)
+{
+    const rb_proc_t *proc;
+    GetProcPtr(self, proc);
+    return rb_block_to_s(self, &proc->block, proc->is_lambda ? " (lambda)" : NULL);
 }
 
 /*

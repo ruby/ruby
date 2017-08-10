@@ -1495,6 +1495,7 @@ int rb_block_arity(void);
 int rb_block_min_max_arity(int *max);
 VALUE rb_func_proc_new(rb_block_call_func_t func, VALUE val);
 VALUE rb_func_lambda_new(rb_block_call_func_t func, VALUE val, int min_argc, int max_argc);
+VALUE rb_block_to_s(VALUE self, const struct rb_block *block, const char *additional_info);
 
 /* process.c */
 #define RB_MAX_GROUPS (65536)

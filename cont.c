@@ -1717,6 +1717,26 @@ rb_fiber_s_current(VALUE klass)
     return rb_fiber_current();
 }
 
+/*
+ * call-seq:
+ *   fiber.to_s   -> string
+ *
+ * Returns fiber information string.
+ *
+ */
+
+static VALUE
+fiber_to_s(VALUE fibval)
+{
+    const rb_fiber_t *fib;
+    const rb_proc_t *proc;
+    char status_info[0x10];
+
+    GetFiberPtr(fibval, fib);
+    GetProcPtr(fib->first_proc, proc);
+    snprintf(status_info, 0x10, " (%s)", fiber_status_name(fib->status));
+    return rb_block_to_s(fibval, &proc->block, status_info);
+}
 
 
 /*
@@ -1754,6 +1774,8 @@ Init_Cont(void)
     rb_define_singleton_method(rb_cFiber, "yield", rb_fiber_s_yield, -1);
     rb_define_method(rb_cFiber, "initialize", rb_fiber_init, 0);
     rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);
+    rb_define_method(rb_cFiber, "to_s", fiber_to_s, 0);
+    rb_define_alias(rb_cFiber, "inspect", "to_s");
 }
 
 RUBY_SYMBOL_EXPORT_BEGIN

@@ -352,5 +352,17 @@ class TestFiber < Test::Unit::TestCase
       exit("1" == Fiber.new(&:to_s).resume(1))
     end;
   end
+
+  def test_to_s
+    f = Fiber.new do
+      assert_match(/resumed/, f.to_s)
+      Fiber.yield
+    end
+    assert_match(/created/, f.to_s)
+    f.resume
+    assert_match(/suspended/, f.to_s)
+    f.resume
+    assert_match(/terminated/, f.to_s)
+  end
 end
 
