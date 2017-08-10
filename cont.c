@@ -1738,7 +1738,6 @@ fiber_to_s(VALUE fibval)
     return rb_block_to_s(fibval, &proc->block, status_info);
 }
 
-
 /*
  *  Document-class: FiberError
  *
