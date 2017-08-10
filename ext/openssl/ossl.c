@@ -129,13 +129,6 @@ ossl_bin2hex(unsigned char *in, char *out, size_t inlen)
 /*
  * our default PEM callback
  */
-
-/*
- * OpenSSL requires passwords for PEM-encoded files to be at least four
- * characters long. See crypto/pem/pem_lib.c (as of 1.0.2h)
- */
-#define OSSL_MIN_PWD_LEN 4
-
 VALUE
 ossl_pem_passwd_value(VALUE pass)
 {
@@ -144,8 +137,6 @@ ossl_pem_passwd_value(VALUE pass)
 
     StringValue(pass);
 
-    if (RSTRING_LEN(pass) < OSSL_MIN_PWD_LEN)
-	ossl_raise(eOSSLError, "password must be at least %d bytes", OSSL_MIN_PWD_LEN);
     /* PEM_BUFSIZE is currently used as the second argument of pem_password_cb,
      * that is +max_len+ of ossl_pem_passwd_cb() */
     if (RSTRING_LEN(pass) > PEM_BUFSIZE)
@@ -157,11 +148,10 @@ ossl_pem_passwd_value(VALUE pass)
 static VALUE
 ossl_pem_passwd_cb0(VALUE flag)
 {
-    VALUE pass;
-
-    pass = rb_yield(flag);
-    SafeStringValue(pass);
-
+    VALUE pass = rb_yield(flag);
+    if (NIL_P(pass))
+	return Qnil;
+    StringValue(pass);
     return pass;
 }
 
@@ -178,7 +168,7 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd_)
 	 * bytes silently if the input is over 1024 bytes */
 	if (RB_TYPE_P(pass, T_STRING)) {
 	    len = RSTRING_LEN(pass);
-	    if (len >= OSSL_MIN_PWD_LEN && len <= max_len) {
+	    if (len <= max_len) {
 		memcpy(buf, RSTRING_PTR(pass), len);
 		return (int)len;
 	    }
@@ -204,11 +194,9 @@ ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd_)
 	    rb_set_errinfo(Qnil);
 	    return -1;
 	}
+	if (NIL_P(pass))
+	    return -1;
 	len = RSTRING_LEN(pass);
-	if (len < OSSL_MIN_PWD_LEN) {
-	    rb_warning("password must be at least %d bytes", OSSL_MIN_PWD_LEN);
-	    continue;
-	}
 	if (len > max_len) {
 	    rb_warning("password must not be longer than %d bytes", max_len);
 	    continue;

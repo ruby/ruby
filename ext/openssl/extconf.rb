@@ -109,14 +109,10 @@ end
 Logging::message "=== Checking for OpenSSL features... ===\n"
 # compile options
 
-# check OPENSSL_NO_{SSL2,SSL3_METHOD} macro: on some environment, these symbols
-# exist even if compiled with no-ssl2 or no-ssl3-method.
-unless have_macro("OPENSSL_NO_SSL2", "openssl/opensslconf.h")
-  have_func("SSLv2_method")
-end
-unless have_macro("OPENSSL_NO_SSL3_METHOD", "openssl/opensslconf.h")
-  have_func("SSLv3_method")
-end
+# SSLv2 and SSLv3 may be removed in future versions of OpenSSL, and even macros
+# like OPENSSL_NO_SSL2 may not be defined.
+have_func("SSLv2_method")
+have_func("SSLv3_method")
 have_func("TLSv1_1_method")
 have_func("TLSv1_2_method")
 have_func("RAND_egd")
