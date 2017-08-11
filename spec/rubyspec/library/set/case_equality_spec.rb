@@ -5,4 +5,3 @@ require 'set'
 describe "Set#===" do
   it_behaves_like :set_include, :===
 end
-
