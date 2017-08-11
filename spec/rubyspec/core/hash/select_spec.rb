@@ -11,7 +11,7 @@ describe "Hash#select" do
 
   it "yields two arguments: key and value" do
     all_args = []
-    { 1 => 2, 3 => 4 }.select { |*args| all_args << args }
+    { 1 => 2, 3 => 4 }.select { |args| all_args << args }
     all_args.sort.should == [[1, 2], [3, 4]]
   end
 

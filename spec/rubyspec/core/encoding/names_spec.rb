@@ -28,7 +28,7 @@ with_feature :encoding do
     it "includes any aliases the encoding has" do
       Encoding.name_list.each do |name|
         e = Encoding.find(name) or next
-        aliases = Encoding.aliases.select{|a,n| n == name}.keys
+        aliases = Encoding.aliases.select{|a,n| n == name}.to_h.keys
         names = e.names
         aliases.each {|a| names.include?(a).should be_true}
       end
