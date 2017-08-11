@@ -2546,6 +2546,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = new_hash($2);
+			$$->nd_alen = TRUE;
 		    /*%
 			$$ = dispatch1(hash, escape_Qundef($2));
 		    %*/

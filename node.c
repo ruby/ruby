@@ -545,9 +545,16 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	break;
 
       case NODE_HASH:
-	ANN("hash constructor");
-	ANN("format: { [nd_head] }");
-	ANN("example: { 1 => 2, 3 => 4 }");
+	if (!node->nd_alen) {
+	    ANN("keyword arguments");
+	    ANN("format: nd_head");
+	    ANN("example: a: 1, b: 2");
+	}
+	else {
+	    ANN("hash constructor");
+	    ANN("format: { [nd_head] }");
+	    ANN("example: { 1 => 2, 3 => 4 }");
+	}
 	LAST_NODE;
 	F_NODE(nd_head, "contents");
 	break;
