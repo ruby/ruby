@@ -12,6 +12,7 @@
 #include "internal.h"
 #include "ruby/util.h"
 #include "id.h"
+#include "symbol.h"
 
 #include <assert.h>
 
@@ -2644,7 +2645,7 @@ enum_zip(int argc, VALUE *argv, VALUE obj)
 	argv[i] = ary;
     }
     if (!allary) {
-	const VALUE sym_each = ID2SYM(id_each);
+	static const VALUE sym_each = STATIC_ID2SYM(id_each);
 	CONST_ID(conv, "to_enum");
 	for (i=0; i<argc; i++) {
 	    if (!rb_respond_to(argv[i], id_each)) {

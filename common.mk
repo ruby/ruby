@@ -1637,6 +1637,7 @@ enum.$(OBJEXT): {$(VPATH)}onigmo.h
 enum.$(OBJEXT): {$(VPATH)}oniguruma.h
 enum.$(OBJEXT): {$(VPATH)}st.h
 enum.$(OBJEXT): {$(VPATH)}subst.h
+enum.$(OBJEXT): {$(VPATH)}symbol.h
 enum.$(OBJEXT): {$(VPATH)}util.h
 enumerator.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enumerator.$(OBJEXT): $(top_srcdir)/include/ruby.h
