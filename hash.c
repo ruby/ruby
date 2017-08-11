@@ -1294,39 +1294,6 @@ reject_i(VALUE key, VALUE value, VALUE result)
 }
 
 /*
- *  call-seq:
- *     hsh.reject {|key, value| block}   -> a_hash
- *     hsh.reject                        -> an_enumerator
- *
- *  Returns a new hash consisting of entries for which the block returns false.
- *
- *  If no block is given, an enumerator is returned instead.
- *
- *     h = { "a" => 100, "b" => 200, "c" => 300 }
- *     h.reject {|k,v| k < "b"}  #=> {"b" => 200, "c" => 300}
- *     h.reject {|k,v| v > 100}  #=> {"a" => 100}
- */
-
-VALUE
-rb_hash_reject(VALUE hash)
-{
-    VALUE result;
-
-    RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    if (RTEST(ruby_verbose)) {
-	VALUE klass;
-	if (HAS_EXTRA_STATES(hash, klass)) {
-	    rb_warn("extra states are no longer copied: %+"PRIsVALUE, hash);
-	}
-    }
-    result = rb_hash_new();
-    if (!RHASH_EMPTY_P(hash)) {
-	rb_hash_foreach(hash, reject_i, result);
-    }
-    return result;
-}
-
-/*
  * call-seq:
  *   hsh.values_at(key, ...)   -> array
  *
@@ -1384,33 +1351,6 @@ select_i(VALUE key, VALUE value, VALUE result)
 	rb_hash_aset(result, key, value);
     }
     return ST_CONTINUE;
-}
-
-/*
- *  call-seq:
- *     hsh.select {|key, value| block}   -> a_hash
- *     hsh.select                        -> an_enumerator
- *
- *  Returns a new hash consisting of entries for which the block returns true.
- *
- *  If no block is given, an enumerator is returned instead.
- *
- *     h = { "a" => 100, "b" => 200, "c" => 300 }
- *     h.select {|k,v| k > "a"}  #=> {"b" => 200, "c" => 300}
- *     h.select {|k,v| v < 200}  #=> {"a" => 100}
- */
-
-VALUE
-rb_hash_select(VALUE hash)
-{
-    VALUE result;
-
-    RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    result = rb_hash_new();
-    if (!RHASH_EMPTY_P(hash)) {
-	rb_hash_foreach(hash, select_i, result);
-    }
-    return result;
 }
 
 static int
@@ -4583,9 +4523,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "delete", rb_hash_delete_m, 1);
     rb_define_method(rb_cHash, "delete_if", rb_hash_delete_if, 0);
     rb_define_method(rb_cHash, "keep_if", rb_hash_keep_if, 0);
-    rb_define_method(rb_cHash, "select", rb_hash_select, 0);
     rb_define_method(rb_cHash, "select!", rb_hash_select_bang, 0);
-    rb_define_method(rb_cHash, "reject", rb_hash_reject, 0);
     rb_define_method(rb_cHash, "reject!", rb_hash_reject_bang, 0);
     rb_define_method(rb_cHash, "clear", rb_hash_clear, 0);
     rb_define_method(rb_cHash, "invert", rb_hash_invert, 0);
