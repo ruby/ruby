@@ -139,7 +139,7 @@ module RSS
           :term => category.term,
           :scheme => category.scheme,
           :label => category.label,
-        }.reject {|key, value| value.nil?}
+        }.reject {|key, value| value.nil?}.to_h
       end
       assert_equal(categories, new_categories)
 

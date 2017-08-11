@@ -658,7 +658,7 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_reject
-    assert_equal({3=>4,5=>6}, @cls[1=>2,3=>4,5=>6].reject {|k, v| k + v < 7 })
+    assert_equal({3=>4,5=>6}, @cls[1=>2,3=>4,5=>6].reject {|k, v| k + v < 7 }.to_h)
 
     base = @cls[ 1 => 'one', 2 => false, true => 'true', 'cat' => 99 ]
     h1   = @cls[ 1 => 'one', 2 => false, true => 'true' ]
@@ -965,7 +965,7 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_select
-    assert_equal({3=>4,5=>6}, @cls[1=>2,3=>4,5=>6].select {|k, v| k + v >= 7 })
+    assert_equal({3=>4,5=>6}, @cls[1=>2,3=>4,5=>6].select {|k, v| k + v >= 7 }.to_h)
 
     base = @cls[ 1 => 'one', '2' => false, true => 'true', 'cat' => 99 ]
     h1   = @cls[ '2' => false, 'cat' => 99 ]
