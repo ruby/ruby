@@ -606,7 +606,7 @@ rb_reg_to_s(VALUE re)
 
 	    ++ptr;
 	    len -= 2;
-            err = onig_new(&rp, ptr, ptr + len, ONIG_OPTION_DEFAULT,
+            err = onig_new(&rp, ptr, ptr + len, options,
 			   enc, OnigDefaultSyntax, NULL);
 	    onig_free(rp);
 	    ruby_verbose = verbose;

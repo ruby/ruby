@@ -74,6 +74,12 @@ class TestRegexp < Test::Unit::TestCase
     end
   end
 
+  def test_to_s_extended_subexp
+    re = /#\g#{"\n"}/x
+    re = /#{re}/
+    assert_warn('', '[ruby-core:82328] [Bug #13798]') {re.to_s}
+  end
+
   def test_union
     assert_equal :ok, begin
       Regexp.union(
