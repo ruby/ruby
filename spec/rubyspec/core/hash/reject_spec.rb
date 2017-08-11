@@ -4,37 +4,37 @@ require File.expand_path('../shared/iteration', __FILE__)
 require File.expand_path('../../enumerable/shared/enumeratorized', __FILE__)
 
 describe "Hash#reject" do
-  it "returns a new hash removing keys for which the block yields true" do
+  it "returns a new Array removing keys for which the block yields true" do
     h = { 1=>false, 2=>true, 3=>false, 4=>true }
-    h.reject { |k,v| v }.keys.sort.should == [1,3]
+    h.reject { |k,v| v }.to_h.keys.sort.should == [1,3]
   end
 
-  it "is equivalent to hsh.dup.delete_if" do
+  it "returns an Array whose to_h is equivalent to hsh.dup.delete_if" do
     h = { a: 'a', b: 'b', c: 'd' }
-    h.reject { |k,v| k == 'd' }.should == (h.dup.delete_if { |k, v| k == 'd' })
+    h.reject { |k,v| k == 'd' }.to_h.should == (h.dup.delete_if { |k, v| k == 'd' })
 
     all_args_reject = []
     all_args_delete_if = []
     h = { 1 => 2, 3 => 4 }
-    h.reject { |*args| all_args_reject << args }
+    h.reject { |args| all_args_reject << args }
     h.delete_if { |*args| all_args_delete_if << args }
     all_args_reject.should == all_args_delete_if
 
     h = { 1 => 2 }
     # dup doesn't copy singleton methods
-    def h.to_a() end
-    h.reject { false }.to_a.should == [[1, 2]]
+    def h.to_h() end
+    h.reject { false }.to_h.should == {1=>2}
   end
 
   context "with extra state" do
-    it "returns Hash instance for subclasses" do
-      HashSpecs::MyHash[1 => 2, 3 => 4].reject { false }.should be_kind_of(Hash)
-      HashSpecs::MyHash[1 => 2, 3 => 4].reject { true }.should be_kind_of(Hash)
+    it "returns Array instance for subclasses" do
+      HashSpecs::MyHash[1 => 2, 3 => 4].reject { false }.should be_kind_of(Array)
+      HashSpecs::MyHash[1 => 2, 3 => 4].reject { true }.should be_kind_of(Array)
     end
 
     it "does not taint the resulting hash" do
       h = { a: 1 }.taint
-      h.reject {false}.tainted?.should == false
+      h.reject {false}.to_h.tainted?.should == false
     end
   end
 
@@ -43,7 +43,7 @@ describe "Hash#reject" do
 
     reject_pairs = []
     reject_bang_pairs = []
-    h.dup.reject { |*pair| reject_pairs << pair }
+    h.dup.reject { |pair| reject_pairs << pair }
     h.reject! { |*pair| reject_bang_pairs << pair }
 
     reject_pairs.should == reject_bang_pairs

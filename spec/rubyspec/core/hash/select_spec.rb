@@ -15,9 +15,9 @@ describe "Hash#select" do
     all_args.sort.should == [[1, 2], [3, 4]]
   end
 
-  it "returns a Hash of entries for which block is true" do
+  it "returns an Array of entries for which block is true" do
     a_pairs = { 'a' => 9, 'c' => 4, 'b' => 5, 'd' => 2 }.select { |k,v| v % 2 == 0 }
-    a_pairs.should be_an_instance_of(Hash)
+    a_pairs.should be_an_instance_of(Array)
     a_pairs.sort.should == [['c', 4], ['d', 2]]
   end
 
