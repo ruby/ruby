@@ -169,7 +169,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   @@attributes = @@default_value.keys.sort_by { |s| s.to_s }
-  @@array_attributes = @@default_value.reject { |k,v| v != [] }.keys
+  @@array_attributes = @@default_value.reject { |k,v| v != [] }.to_h.keys
   @@nil_attributes, @@non_nil_attributes = @@default_value.keys.partition { |k|
     @@default_value[k].nil?
   }
