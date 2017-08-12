@@ -1493,7 +1493,7 @@ module URI
         # HTTP_PROXY conflicts with *_proxy for proxy settings and
         # HTTP_* for header information in CGI.
         # So it should be careful to use it.
-        pairs = env.reject {|k, v| /\Ahttp_proxy\z/i !~ k }
+        pairs = env.reject {|k, v| /\Ahttp_proxy\z/i !~ k }.to_h
         case pairs.length
         when 0 # no proxy setting anyway.
           proxy_uri = nil

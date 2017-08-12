@@ -156,9 +156,9 @@ module Psych
       @yamldbm['a'] = 'b'
       @yamldbm['c'] = 'd'
       @yamldbm['e'] = 'f'
-      assert_equal({'c'=>'d','e'=>'f'}, @yamldbm.reject {|k,v| k == 'a'})
-      assert_equal({'a'=>'b','e'=>'f'}, @yamldbm.reject {|k,v| v == 'd'})
-      assert_equal({'a'=>'b','c'=>'d','e'=>'f'}, @yamldbm.reject {false})
+      assert_equal({'c'=>'d','e'=>'f'}, @yamldbm.reject {|k,v| k == 'a'}.to_h)
+      assert_equal({'a'=>'b','e'=>'f'}, @yamldbm.reject {|k,v| v == 'd'}.to_h)
+      assert_equal({'a'=>'b','c'=>'d','e'=>'f'}, @yamldbm.reject {false}.to_h)
     end
 
     def test_values
