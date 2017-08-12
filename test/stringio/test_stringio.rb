@@ -570,12 +570,12 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("\u3042\u3044", f.read(nil, nil), bug5207)
     f.rewind
     s = ""
-    f.read(nil, s)
+    assert_same(s, f.read(nil, s))
     assert_equal("\u3042\u3044", s, bug5207)
     f.rewind
     # not empty buffer
     s = "0123456789"
-    f.read(nil, s)
+    assert_same(s, f.read(nil, s))
     assert_equal("\u3042\u3044", s)
   end
 
