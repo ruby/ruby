@@ -419,7 +419,7 @@ CODE
     assert_predicate(s.chomp("\u{3053 3093}"), :ascii_only?)
 
     # argument should be converted to String
-    klass = Class.new {|klass| def to_str; 'a'; end }
+    klass = Class.new { def to_str; 'a'; end }
     s = S("abba")
     assert_equal("abb", s.chomp(klass.new))
     assert_equal("abba", s)
@@ -536,7 +536,7 @@ CODE
     assert_predicate(s.chomp!("\u{3053 3093}"), :ascii_only?)
 
     # argument should be converted to String
-    klass = Class.new {|klass| def to_str; 'a'; end }
+    klass = Class.new { def to_str; 'a'; end }
     s = S("abba")
     assert_equal("abb", s.chomp!(klass.new))
     assert_equal("abb", s)
@@ -2552,7 +2552,7 @@ CODE
     assert_predicate(s.delete_prefix("\u{3053 3093}"), :ascii_only?)
 
     # argument should be converted to String
-    klass = Class.new {|klass| def to_str; 'a'; end }
+    klass = Class.new { def to_str; 'a'; end }
     s = S("abba")
     assert_equal("bba", s.delete_prefix(klass.new))
     assert_equal("abba", s)
@@ -2594,7 +2594,7 @@ CODE
     assert_predicate(s.delete_prefix!("\u{3053 3093}"), :ascii_only?)
 
     # argument should be converted to String
-    klass = Class.new {|klass| def to_str; 'a'; end }
+    klass = Class.new { def to_str; 'a'; end }
     s = S("abba")
     assert_equal("bba", s.delete_prefix!(klass.new))
     assert_equal("bba", s)
@@ -2647,7 +2647,7 @@ CODE
     assert_predicate(s.delete_suffix("\u{3053 3093}"), :ascii_only?)
 
     # argument should be converted to String
-    klass = Class.new {|klass| def to_str; 'a'; end }
+    klass = Class.new { def to_str; 'a'; end }
     s = S("abba")
     assert_equal("abb", s.delete_suffix(klass.new))
     assert_equal("abba", s)
@@ -2713,7 +2713,7 @@ CODE
     assert_predicate(s.delete_suffix!("\u{3053 3093}"), :ascii_only?)
 
     # argument should be converted to String
-    klass = Class.new {|klass| def to_str; 'a'; end }
+    klass = Class.new { def to_str; 'a'; end }
     s = S("abba")
     assert_equal("abb", s.delete_suffix!(klass.new))
     assert_equal("abb", s)
