@@ -577,6 +577,13 @@ class TestStringIO < Test::Unit::TestCase
     s = "0123456789"
     assert_same(s, f.read(nil, s))
     assert_equal("\u3042\u3044", s)
+
+    bug13806 = '[ruby-core:82349] [Bug #13806]'
+    assert_string("", Encoding::UTF_8, f.read, bug13806)
+    assert_string("", Encoding::UTF_8, f.read(nil, nil), bug13806)
+    s.force_encoding(Encoding::US_ASCII)
+    assert_same(s, f.read(nil, s))
+    assert_string("", Encoding::UTF_8, s, bug13806)
   end
 
   def test_readpartial
@@ -755,5 +762,9 @@ class TestStringIO < Test::Unit::TestCase
       s.gets("xxx", limit)
       assert_equal(0x100000, s.pos)
     end;
+  end
+
+  def assert_string(content, encoding, str, mesg = nil)
+    assert_equal([content, encoding], [str, str.encoding], mesg)
   end
 end
