@@ -1149,7 +1149,8 @@ strio_gets(int argc, VALUE *argv, VALUE self)
     VALUE str;
 
     if (prepare_getline_args(&arg, argc, argv)->limit == 0) {
-	return rb_str_new(0, 0);
+	struct StringIO *ptr = readable(self);
+	return rb_enc_str_new(0, 0, get_enc(ptr));
     }
 
     str = strio_getline(&arg, readable(self));

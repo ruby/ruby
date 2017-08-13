@@ -79,6 +79,8 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal("def\n", stringio.gets(""))
     assert_raise(TypeError){StringIO.new("").gets(1, 1)}
     assert_nothing_raised {StringIO.new("").gets(nil, nil)}
+
+    assert_string("", Encoding::UTF_8, StringIO.new("foo").gets(0))
   end
 
   def test_gets_chomp
