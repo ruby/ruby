@@ -188,7 +188,8 @@ class MSpecScript
       if File.file?(expanded) && expanded.end_with?('.rb')
         return [expanded]
       elsif File.directory?(expanded)
-        return Dir["#{expanded}/**/*_spec.rb"].sort
+        specs = Dir["#{expanded}/**/*_spec.rb"].sort
+        return specs unless specs.empty?
       end
     end
 
