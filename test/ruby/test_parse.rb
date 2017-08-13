@@ -881,8 +881,11 @@ x = __ENCODING__
   def test_unused_variable
     o = Object.new
     assert_warning(/assigned but unused variable/) {o.instance_eval("def foo; a=1; nil; end")}
+    assert_warning(/assigned but unused variable/) {o.instance_eval("def bar; a=1; a(); end")}
     a = "\u{3042}"
     assert_warning(/#{a}/) {o.instance_eval("def foo; #{a}=1; nil; end")}
+    o = Object.new
+    assert_warning(/assigned but unused variable/) {o.instance_eval("def foo; tap {a=1; a()}; end")}
   end
 
   def test_named_capture_conflict
