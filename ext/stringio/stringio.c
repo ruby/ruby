@@ -107,15 +107,14 @@ enc_subseq(VALUE str, long pos, long len, rb_encoding *enc)
 }
 
 static VALUE
-strio_substr(struct StringIO *ptr, long pos, long len)
+strio_substr(struct StringIO *ptr, long pos, long len, rb_encoding *enc)
 {
     VALUE str = ptr->string;
-    rb_encoding *enc = get_enc(ptr);
     long rlen = RSTRING_LEN(str) - pos;
 
     if (len > rlen) len = rlen;
     if (len < 0) len = 0;
-    if (len == 0) return rb_str_new(0,0);
+    if (len == 0) return rb_enc_str_new(0, 0, enc);
     return enc_subseq(str, pos, len, enc);
 }
 
@@ -1059,6 +1058,7 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
     long n, limit = arg->limit;
     VALUE str = arg->rs;
     int w = 0;
+    rb_encoding *enc = get_enc(ptr);
 
     if (ptr->pos >= (n = RSTRING_LEN(ptr->string))) {
 	return Qnil;
@@ -1073,7 +1073,7 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
 	if (arg->chomp) {
 	    w = chomp_newline_width(s, e);
 	}
-	str = strio_substr(ptr, ptr->pos, e - s - w);
+	str = strio_substr(ptr, ptr->pos, e - s - w, enc);
     }
     else if ((n = RSTRING_LEN(str)) == 0) {
 	p = s;
@@ -1099,14 +1099,14 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
 	if (!w && arg->chomp) {
 	    w = chomp_newline_width(s, e);
 	}
-	str = strio_substr(ptr, s - RSTRING_PTR(ptr->string), e - s - w);
+	str = strio_substr(ptr, s - RSTRING_PTR(ptr->string), e - s - w, enc);
     }
     else if (n == 1) {
 	if ((p = memchr(s, RSTRING_PTR(str)[0], e - s)) != 0) {
 	    e = p + 1;
 	    w = (arg->chomp ? (p > s && *(p-1) == '\r') + 1 : 0);
 	}
-	str = strio_substr(ptr, ptr->pos, e - s - w);
+	str = strio_substr(ptr, ptr->pos, e - s - w, enc);
     }
     else {
 	if (n < e - s) {
@@ -1127,7 +1127,7 @@ strio_getline(struct getline_arg *arg, struct StringIO *ptr)
 		}
 	    }
 	}
-	str = strio_substr(ptr, ptr->pos, e - s - w);
+	str = strio_substr(ptr, ptr->pos, e - s - w, enc);
     }
     ptr->pos = e - RSTRING_PTR(ptr->string);
     ptr->lineno++;
@@ -1409,8 +1409,8 @@ strio_read(int argc, VALUE *argv, VALUE self)
 	break;
     }
     if (NIL_P(str)) {
-	str = strio_substr(ptr, ptr->pos, len);
-	if (binary) rb_enc_associate(str, rb_ascii8bit_encoding());
+	rb_encoding *enc = binary ? rb_ascii8bit_encoding() : get_enc(ptr);
+	str = strio_substr(ptr, ptr->pos, len, enc);
     }
     else {
 	long rest = RSTRING_LEN(ptr->string) - ptr->pos;

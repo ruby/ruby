@@ -96,6 +96,8 @@ class TestStringIO < Test::Unit::TestCase
     stringio = StringIO.new("abc\n\ndef\n")
     assert_equal("abc\n", stringio.gets("", chomp: true))
     assert_equal("def", stringio.gets("", chomp: true))
+
+    assert_string("", Encoding::UTF_8, StringIO.new("\n").gets(chomp: true))
   end
 
   def test_gets_chomp_eol
