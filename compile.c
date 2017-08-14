@@ -5615,7 +5615,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	}
 
 	/* dummy receiver */
-	ADD_INSN1(ret, line, putobject, nd_type(node) == NODE_ZSUPER ? Qfalse : Qtrue);
+	ADD_INSN1(ret, line, putobject, type == NODE_ZSUPER ? Qfalse : Qtrue);
 	ADD_SEQ(ret, args);
 	ADD_INSN3(ret, line, invokesuper,
 		  new_callinfo(iseq, 0, argc, flag | VM_CALL_SUPER | VM_CALL_FCALL, keywords, parent_block != NULL),
