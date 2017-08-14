@@ -2,7 +2,7 @@
 module REXML
   module Formatters
     class Default
-      # Prints out the XML document with no formatting -- except if id_hack is
+      # Prints out the XML document with no formatting -- except if ie_hack is
       # set.
       #
       # ie_hack::
