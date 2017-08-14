@@ -356,7 +356,7 @@ allocation_sourcefile(VALUE self, VALUE obj)
 }
 
 /*
- * call-seq: allocation_sourceline(object) -> string
+ * call-seq: allocation_sourceline(object) -> integer
  *
  * Returns the original line from source for from the given +object+.
  *
