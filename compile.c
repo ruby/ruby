@@ -4272,6 +4272,96 @@ compile_when(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
     return COMPILE_OK;
 }
 
+static int
+compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped, const enum node_type type)
+{
+    const int line = (int)nd_line(node);
+    LABEL *prev_start_label = ISEQ_COMPILE_DATA(iseq)->start_label;
+    LABEL *prev_end_label = ISEQ_COMPILE_DATA(iseq)->end_label;
+    LABEL *prev_redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label;
+    int prev_loopval_popped = ISEQ_COMPILE_DATA(iseq)->loopval_popped;
+
+    struct iseq_compile_data_ensure_node_stack enl;
+
+    LABEL *next_label = ISEQ_COMPILE_DATA(iseq)->start_label = NEW_LABEL(line);	/* next  */
+    LABEL *redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label = NEW_LABEL(line);	/* redo  */
+    LABEL *break_label = ISEQ_COMPILE_DATA(iseq)->end_label = NEW_LABEL(line);	/* break */
+    LABEL *end_label = NEW_LABEL(line);
+    LABEL *adjust_label = NEW_LABEL(line);
+
+    LABEL *next_catch_label = NEW_LABEL(line);
+    LABEL *tmp_label = NULL;
+
+    ISEQ_COMPILE_DATA(iseq)->loopval_popped = 0;
+    push_ensure_entry(iseq, &enl, NULL, NULL);
+
+    if (type == NODE_OPT_N || node->nd_state == 1) {
+	ADD_INSNL(ret, line, jump, next_label);
+    }
+    else {
+	tmp_label = NEW_LABEL(line);
+	ADD_INSNL(ret, line, jump, tmp_label);
+    }
+    ADD_LABEL(ret, adjust_label);
+    ADD_INSN(ret, line, putnil);
+    ADD_LABEL(ret, next_catch_label);
+    ADD_INSN(ret, line, pop);
+    ADD_INSNL(ret, line, jump, next_label);
+    if (tmp_label) ADD_LABEL(ret, tmp_label);
+
+    ADD_LABEL(ret, redo_label);
+    CHECK(COMPILE_POPPED(ret, "while body", node->nd_body));
+    ADD_LABEL(ret, next_label);	/* next */
+
+    if (type == NODE_WHILE) {
+	compile_branch_condition(iseq, ret, node->nd_cond,
+				 redo_label, end_label);
+    }
+    else if (type == NODE_UNTIL) {
+	/* until */
+	compile_branch_condition(iseq, ret, node->nd_cond,
+				 end_label, redo_label);
+    }
+    else {
+	ADD_CALL_RECEIVER(ret, line);
+	ADD_CALL(ret, line, idGets, INT2FIX(0));
+	ADD_INSNL(ret, line, branchif, redo_label);
+	/* opt_n */
+    }
+
+    ADD_LABEL(ret, end_label);
+    ADD_ADJUST_RESTORE(ret, adjust_label);
+
+    if (node->nd_state == Qundef) {
+	/* ADD_INSN(ret, line, putundef); */
+	COMPILE_ERROR(ERROR_ARGS "unsupported: putundef");
+	return COMPILE_NG;
+    }
+    else {
+	ADD_INSN(ret, line, putnil);
+    }
+
+    ADD_LABEL(ret, break_label);	/* break */
+
+    if (popped) {
+	ADD_INSN(ret, line, pop);
+    }
+
+    ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, redo_label, break_label, NULL,
+		    break_label);
+    ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, redo_label, break_label, NULL,
+		    next_catch_label);
+    ADD_CATCH_ENTRY(CATCH_TYPE_REDO, redo_label, break_label, NULL,
+		    ISEQ_COMPILE_DATA(iseq)->redo_label);
+
+    ISEQ_COMPILE_DATA(iseq)->start_label = prev_start_label;
+    ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
+    ISEQ_COMPILE_DATA(iseq)->redo_label = prev_redo_label;
+    ISEQ_COMPILE_DATA(iseq)->loopval_popped = prev_loopval_popped;
+    ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->prev;
+    return COMPILE_OK;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped);
 /**
   compile each node
@@ -4374,89 +4464,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	break;
       case NODE_OPT_N:
       case NODE_WHILE:
-      case NODE_UNTIL:{
-	LABEL *prev_start_label = ISEQ_COMPILE_DATA(iseq)->start_label;
-	LABEL *prev_end_label = ISEQ_COMPILE_DATA(iseq)->end_label;
-	LABEL *prev_redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label;
-	int prev_loopval_popped = ISEQ_COMPILE_DATA(iseq)->loopval_popped;
-
-	struct iseq_compile_data_ensure_node_stack enl;
-
-	LABEL *next_label = ISEQ_COMPILE_DATA(iseq)->start_label = NEW_LABEL(line);	/* next  */
-	LABEL *redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label = NEW_LABEL(line);	/* redo  */
-	LABEL *break_label = ISEQ_COMPILE_DATA(iseq)->end_label = NEW_LABEL(line);	/* break */
-	LABEL *end_label = NEW_LABEL(line);
-	LABEL *adjust_label = NEW_LABEL(line);
-
-	LABEL *next_catch_label = NEW_LABEL(line);
-	LABEL *tmp_label = NULL;
-
-	ISEQ_COMPILE_DATA(iseq)->loopval_popped = 0;
-	push_ensure_entry(iseq, &enl, NULL, NULL);
-
-	if (type == NODE_OPT_N || node->nd_state == 1) {
-	    ADD_INSNL(ret, line, jump, next_label);
-	}
-	else {
-	    tmp_label = NEW_LABEL(line);
-	    ADD_INSNL(ret, line, jump, tmp_label);
-	}
-	ADD_LABEL(ret, adjust_label);
-	ADD_INSN(ret, line, putnil);
-	ADD_LABEL(ret, next_catch_label);
-	ADD_INSN(ret, line, pop);
-	ADD_INSNL(ret, line, jump, next_label);
-	if (tmp_label) ADD_LABEL(ret, tmp_label);
-
-	ADD_LABEL(ret, redo_label);
-	CHECK(COMPILE_POPPED(ret, "while body", node->nd_body));
-	ADD_LABEL(ret, next_label);	/* next */
-
-	if (type == NODE_WHILE) {
-	    compile_branch_condition(iseq, ret, node->nd_cond,
-				     redo_label, end_label);
-	}
-	else if (type == NODE_UNTIL) {
-	    /* until */
-	    compile_branch_condition(iseq, ret, node->nd_cond,
-				     end_label, redo_label);
-	}
-	else {
-	    ADD_CALL_RECEIVER(ret, line);
-	    ADD_CALL(ret, line, idGets, INT2FIX(0));
-	    ADD_INSNL(ret, line, branchif, redo_label);
-	    /* opt_n */
-	}
-
-	ADD_LABEL(ret, end_label);
-	ADD_ADJUST_RESTORE(ret, adjust_label);
-
-	if (node->nd_state == Qundef) {
-	    /* ADD_INSN(ret, line, putundef); */
-	    COMPILE_ERROR(ERROR_ARGS "unsupported: putundef");
-	    goto ng;
-	}
-	else {
-	    ADD_INSN(ret, line, putnil);
-	}
-
-	ADD_LABEL(ret, break_label);	/* break */
-
-	if (popped) {
-	    ADD_INSN(ret, line, pop);
-	}
-
-	ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, redo_label, break_label, NULL, break_label);
-	ADD_CATCH_ENTRY(CATCH_TYPE_NEXT,  redo_label, break_label, NULL, next_catch_label);
-	ADD_CATCH_ENTRY(CATCH_TYPE_REDO,  redo_label, break_label, NULL, ISEQ_COMPILE_DATA(iseq)->redo_label);
-
-	ISEQ_COMPILE_DATA(iseq)->start_label = prev_start_label;
-	ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
-	ISEQ_COMPILE_DATA(iseq)->redo_label = prev_redo_label;
-	ISEQ_COMPILE_DATA(iseq)->loopval_popped = prev_loopval_popped;
-	ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->prev;
+      case NODE_UNTIL:
+	CHECK(compile_loop(iseq, ret, node, popped, type));
 	break;
-      }
       case NODE_FOR:
 	if (node->nd_var) {
 	    /* massign to var in "for"
