@@ -117,11 +117,10 @@ class TestOpenURI < Test::Unit::TestCase
   end
 
   def test_tempfile_rest_parameter
-    assert_nothing_raised {
-      temp_file = Tempfile.new
-      open(temp_file, 'a')
-      temp_file.close
-    }
+    temp_file = Tempfile.new
+    assert_nothing_raised { open(temp_file, 'a') }
+  ensure
+    temp_file.close
   end
 
   def test_read_timeout
