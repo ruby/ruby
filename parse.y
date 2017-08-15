@@ -4673,6 +4673,7 @@ singleton	: var_ref
 			      case NODE_ARRAY:
 			      case NODE_ZARRAY:
 				yyerror("can't define singleton method for literals");
+				break;
 			      default:
 				value_expr($3);
 				break;
