@@ -226,7 +226,7 @@ module URI
     # RFC 1738 specifically states that the path for an FTP URI does not
     # include the / which separates the URI path from the URI host. Example:
     #
-    #     ftp://ftp.example.com/pub/ruby
+    # +ftp://ftp.example.com/pub/ruby+
     #
     # The above URI indicates that the client should connect to
     # ftp.example.com then cd pub/ruby from the initial login directory.
@@ -234,7 +234,7 @@ module URI
     # If you want to cd to an absolute directory, you must include an
     # escaped / (%2F) in the path. Example:
     #
-    #     ftp://ftp.example.com/%2Fpub/ruby
+    # +ftp://ftp.example.com/%2Fpub/ruby+
     #
     # This method will then return "/pub/ruby"
     #
