@@ -3,6 +3,7 @@ require 'test/unit'
 require 'open-uri'
 require 'webrick'
 require 'webrick/httpproxy'
+require 'tempfile'
 begin
   require 'zlib'
 rescue LoadError
@@ -113,6 +114,13 @@ class TestOpenURI < Test::Unit::TestCase
 
   def test_open_too_many_arg
     assert_raise(ArgumentError) { open("http://192.0.2.1/tma", "r", 0666, :extra) {} }
+  end
+
+  def test_tempfile_rest_parameter
+    assert_nothing_raised {
+      temp_file = Tempfile.new
+      open(temp_file, 'a')
+    }
   end
 
   def test_read_timeout
