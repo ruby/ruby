@@ -111,7 +111,6 @@ setspecial
 /**
   @c variable
   @e Get value of instance variable id of self.
-     If is_local is not 0, get value of class local variable.
   @j self のインスタンス変数 id の値を得る。
  */
 DEFINE_INSN
@@ -126,7 +125,6 @@ getinstancevariable
 /**
   @c variable
   @e Set value of instance variable id of self to val.
-     If is_local is not 0, set value of class local variable.
   @j self のインスタンス変数 id を val にする。
  */
 DEFINE_INSN
