@@ -81,8 +81,9 @@ module Base64
   # Note that the result can still contain '='.
   # You can remove the padding by setting +padding+ as false.
   def urlsafe_encode64(bin, padding: true)
-    str = strict_encode64(bin).tr("+/", "-_")
-    str = str.delete("=") unless padding
+    str = strict_encode64(bin)
+    str.tr!("+/", "-_")
+    str.delete!("=") unless padding
     str
   end
 
