@@ -120,6 +120,7 @@ class TestOpenURI < Test::Unit::TestCase
     assert_nothing_raised {
       temp_file = Tempfile.new
       open(temp_file, 'a')
+      temp_file.close
     }
   end
 
