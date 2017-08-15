@@ -4578,6 +4578,26 @@ compile_redo(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
     return COMPILE_OK;
 }
 
+static int
+compile_retry(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
+{
+    const int line = nd_line(node);
+
+    if (iseq->body->type == ISEQ_TYPE_RESCUE) {
+	ADD_INSN(ret, line, putnil);
+	ADD_INSN1(ret, line, throw, INT2FIX(TAG_RETRY));
+
+	if (popped) {
+	    ADD_INSN(ret, line, pop);
+	}
+    }
+    else {
+	COMPILE_ERROR(ERROR_ARGS "Invalid retry");
+	return COMPILE_NG;
+    }
+    return COMPILE_OK;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped);
 /**
   compile each node
@@ -4752,21 +4772,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
       case NODE_REDO:
 	CHECK(compile_redo(iseq, ret, node, popped));
 	break;
-      case NODE_RETRY:{
-	if (iseq->body->type == ISEQ_TYPE_RESCUE) {
-	    ADD_INSN(ret, line, putnil);
-	    ADD_INSN1(ret, line, throw, INT2FIX(TAG_RETRY));
-
-	    if (popped) {
-		ADD_INSN(ret, line, pop);
-	    }
-	}
-	else {
-	    COMPILE_ERROR(ERROR_ARGS "Invalid retry");
-	    goto ng;
-	}
+      case NODE_RETRY:
+	CHECK(compile_retry(iseq, ret, node, popped));
 	break;
-      }
       case NODE_BEGIN:{
 	CHECK(COMPILE_(ret, "NODE_BEGIN", node->nd_body, popped));
 	break;
