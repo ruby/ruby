@@ -15,11 +15,11 @@ struct local_var_list {
     VALUE tbl;
 };
 
-static inline VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missing_reason call_status);
-static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const rb_cref_t *cref, int is_lambda);
-static inline VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
-static inline VALUE vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *argv, VALUE block_handler);
-static inline VALUE vm_yield_force_blockarg(rb_thread_t *th, VALUE args);
+static __attribute__((always_inline)) VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missing_reason call_status);
+static __attribute__((always_inline)) VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const rb_cref_t *cref, int is_lambda);
+static __attribute__((always_inline)) VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
+static __attribute__((always_inline)) VALUE vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *argv, VALUE block_handler);
+static __attribute__((always_inline)) VALUE vm_yield_force_blockarg(rb_thread_t *th, VALUE args);
 static VALUE vm_exec(rb_thread_t *th);
 static void vm_set_eval_stack(rb_thread_t * th, const rb_iseq_t *iseq, const rb_cref_t *cref, const struct rb_block *base_block);
 static int vm_collect_local_variables_in_heap(rb_thread_t *th, const VALUE *dfp, const struct local_var_list *vars);
@@ -959,7 +959,7 @@ rb_f_public_send(int argc, VALUE *argv, VALUE recv)
 
 /* yield */
 
-static inline VALUE
+static __attribute__((always_inline)) VALUE
 rb_yield_0(int argc, const VALUE * argv)
 {
     return vm_yield(GET_THREAD(), argc, argv);
