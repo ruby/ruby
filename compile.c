@@ -4504,6 +4504,80 @@ compile_next(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
     return COMPILE_OK;
 }
 
+static int
+compile_redo(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
+{
+    const int line = nd_line(node);
+
+    if (ISEQ_COMPILE_DATA(iseq)->redo_label) {
+	LABEL *splabel = NEW_LABEL(0);
+	debugs("redo in while");
+	ADD_LABEL(ret, splabel);
+	ADD_ADJUST(ret, line, ISEQ_COMPILE_DATA(iseq)->redo_label);
+	add_ensure_iseq(ret, iseq, 0);
+	ADD_INSNL(ret, line, jump, ISEQ_COMPILE_DATA(iseq)->redo_label);
+	ADD_ADJUST_RESTORE(ret, splabel);
+	if (!popped) {
+	    ADD_INSN(ret, line, putnil);
+	}
+    }
+    else if (iseq->body->type == ISEQ_TYPE_EVAL) {
+      redo_in_eval:
+	COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with redo");
+	return COMPILE_NG;
+    }
+    else if (ISEQ_COMPILE_DATA(iseq)->start_label) {
+	LABEL *splabel = NEW_LABEL(0);
+
+	debugs("redo in block");
+	ADD_LABEL(ret, splabel);
+	add_ensure_iseq(ret, iseq, 0);
+	ADD_ADJUST(ret, line, ISEQ_COMPILE_DATA(iseq)->start_label);
+	ADD_INSNL(ret, line, jump, ISEQ_COMPILE_DATA(iseq)->start_label);
+	ADD_ADJUST_RESTORE(ret, splabel);
+
+	if (!popped) {
+	    ADD_INSN(ret, line, putnil);
+	}
+    }
+    else {
+	const rb_iseq_t *ip = iseq;
+	const unsigned long level = VM_THROW_NO_ESCAPE_FLAG;
+
+	while (ip) {
+	    if (!ISEQ_COMPILE_DATA(ip)) {
+		ip = 0;
+		break;
+	    }
+
+	    if (ISEQ_COMPILE_DATA(ip)->redo_label != 0) {
+		break;
+	    }
+	    else if (ip->body->type == ISEQ_TYPE_BLOCK) {
+		break;
+	    }
+	    else if (ip->body->type == ISEQ_TYPE_EVAL) {
+		goto redo_in_eval;
+	    }
+
+	    ip = ip->body->parent_iseq;
+	}
+	if (ip != 0) {
+	    ADD_INSN(ret, line, putnil);
+	    ADD_INSN1(ret, line, throw, INT2FIX(level | TAG_REDO));
+
+	    if (popped) {
+		ADD_INSN(ret, line, pop);
+	    }
+	}
+	else {
+	    COMPILE_ERROR(ERROR_ARGS "Invalid redo");
+	    return COMPILE_NG;
+	}
+    }
+    return COMPILE_OK;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped);
 /**
   compile each node
@@ -4675,75 +4749,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
       case NODE_NEXT:
 	CHECK(compile_next(iseq, ret, node, popped));
 	break;
-      case NODE_REDO:{
-	if (ISEQ_COMPILE_DATA(iseq)->redo_label) {
-	    LABEL *splabel = NEW_LABEL(0);
-	    debugs("redo in while");
-	    ADD_LABEL(ret, splabel);
-	    ADD_ADJUST(ret, line, ISEQ_COMPILE_DATA(iseq)->redo_label);
-	    add_ensure_iseq(ret, iseq, 0);
-	    ADD_INSNL(ret, line, jump, ISEQ_COMPILE_DATA(iseq)->redo_label);
-	    ADD_ADJUST_RESTORE(ret, splabel);
-	    if (!popped) {
-		ADD_INSN(ret, line, putnil);
-	    }
-	}
-	else if (iseq->body->type == ISEQ_TYPE_EVAL) {
-	  redo_in_eval:
-	    COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with redo");
-	    goto ng;
-	}
-	else if (ISEQ_COMPILE_DATA(iseq)->start_label) {
-	    LABEL *splabel = NEW_LABEL(0);
-
-	    debugs("redo in block");
-	    ADD_LABEL(ret, splabel);
-	    add_ensure_iseq(ret, iseq, 0);
-	    ADD_ADJUST(ret, line, ISEQ_COMPILE_DATA(iseq)->start_label);
-	    ADD_INSNL(ret, line, jump, ISEQ_COMPILE_DATA(iseq)->start_label);
-	    ADD_ADJUST_RESTORE(ret, splabel);
-
-	    if (!popped) {
-		ADD_INSN(ret, line, putnil);
-	    }
-	}
-	else {
-	    const rb_iseq_t *ip = iseq;
-	    const unsigned long level = VM_THROW_NO_ESCAPE_FLAG;
-
-	    while (ip) {
-		if (!ISEQ_COMPILE_DATA(ip)) {
-		    ip = 0;
-		    break;
-		}
-
-		if (ISEQ_COMPILE_DATA(ip)->redo_label != 0) {
-		    break;
-		}
-		else if (ip->body->type == ISEQ_TYPE_BLOCK) {
-		    break;
-		}
-		else if (ip->body->type == ISEQ_TYPE_EVAL) {
-		    goto redo_in_eval;
-		}
-
-		ip = ip->body->parent_iseq;
-	    }
-	    if (ip != 0) {
-		ADD_INSN(ret, line, putnil);
-		ADD_INSN1(ret, line, throw, INT2FIX(level | TAG_REDO));
-
-		if (popped) {
-		    ADD_INSN(ret, line, pop);
-		}
-	    }
-	    else {
-		COMPILE_ERROR(ERROR_ARGS "Invalid redo");
-		goto ng;
-	    }
-	}
+      case NODE_REDO:
+	CHECK(compile_redo(iseq, ret, node, popped));
 	break;
-      }
       case NODE_RETRY:{
 	if (iseq->body->type == ISEQ_TYPE_RESCUE) {
 	    ADD_INSN(ret, line, putnil);
