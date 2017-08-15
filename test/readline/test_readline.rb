@@ -83,7 +83,7 @@ class TestReadline < Test::Unit::TestCase
         stdin.write("first second\t")
         stdin.flush
         Readline.completion_append_character = " "
-        line = replace_stdio(stdin.path, stdout.path) {
+        replace_stdio(stdin.path, stdout.path) {
           Readline.readline("> ", false)
         }
         assert_equal("second", actual_text)
