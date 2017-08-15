@@ -1006,10 +1006,6 @@ invoke_bmethod(rb_thread_t *th, const rb_iseq_t *iseq, VALUE self, const struct 
     return ret;
 }
 
-ALWAYS_INLINE(static inline VALUE
-invoke_iseq_block_from_c(rb_thread_t *th, const struct rb_captured_block *captured,
-			 VALUE self, int argc, const VALUE *argv, VALUE passed_block_handler,
-			 const rb_cref_t *cref, int is_lambda));
 static inline VALUE
 invoke_iseq_block_from_c(rb_thread_t *th, const struct rb_captured_block *captured,
 			 VALUE self, int argc, const VALUE *argv, VALUE passed_block_handler,
@@ -1041,11 +1037,11 @@ invoke_iseq_block_from_c(rb_thread_t *th, const struct rb_captured_block *captur
     }
 }
 
-ALWAYS_INLINE(static inline VALUE
+static inline VALUE
 invoke_block_from_c_bh(rb_thread_t *th, VALUE block_handler,
 		       int argc, const VALUE *argv,
 		       VALUE passed_block_handler, const rb_cref_t *cref,
-		       int is_lambda, int force_blockarg))
+		       int is_lambda, int force_blockarg)
 {
   again:
     switch (vm_block_handler_type(block_handler)) {
