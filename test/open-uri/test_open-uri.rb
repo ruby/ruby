@@ -120,7 +120,7 @@ class TestOpenURI < Test::Unit::TestCase
     temp_file = Tempfile.new
     assert_nothing_raised { open(temp_file, 'a') }
   ensure
-    temp_file.close
+    temp_file.close!
   end
 
   def test_read_timeout
