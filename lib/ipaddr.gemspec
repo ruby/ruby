@@ -15,9 +15,7 @@ Both IPv4 and IPv6 are supported.
   DESCRIPTION
   spec.homepage      = "https://github.com/ruby/ipaddr"
 
-  spec.files         = `git ls-files -z`.split("\x0").reject do |f|
-    f.match(%r{^(test|spec|features)/})
-  end
+  spec.files         = [".gitignore", ".travis.yml", "Gemfile", "LICENSE.txt", "README.md", "Rakefile", "bin/console", "bin/setup", "ipaddr.gemspec", "lib/ipaddr.rb"]
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
