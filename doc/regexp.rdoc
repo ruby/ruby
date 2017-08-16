@@ -63,9 +63,10 @@ The following are <i>metacharacters</i> <tt>(</tt>, <tt>)</tt>,
 <tt>[</tt>, <tt>]</tt>, <tt>{</tt>, <tt>}</tt>, <tt>.</tt>, <tt>?</tt>,
 <tt>+</tt>, <tt>*</tt>. They have a specific meaning when appearing in a
 pattern. To match them literally they must be backslash-escaped. To match
-a backslash literally backslash-escape that: <tt>\\\\\\</tt>.
+a backslash literally, backslash-escape it: <tt>\\\\</tt>.
 
     /1 \+ 2 = 3\?/.match('Does 1 + 2 = 3?') #=> #<MatchData "1 + 2 = 3?">
+    /a\\\\b/.match('a\\\\b')                    #=> #<MatchData "a\\b">
 
 Patterns behave like double-quoted strings so can contain the same
 backslash escapes.
