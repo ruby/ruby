@@ -35,7 +35,7 @@ static void
 threadptr_stack_overflow(rb_thread_t *th, int setup)
 {
     VALUE mesg = th->vm->special_exceptions[ruby_error_sysstack];
-    th->ec.raised_flag = 0;
+    th->ec.raised_flag = RAISED_STACKOVERFLOW;
     if (setup) {
 	VALUE at = rb_threadptr_backtrace_object(th);
 	mesg = ruby_vm_special_exception_copy(mesg);
@@ -1833,6 +1833,8 @@ vm_profile_show_result(void)
 
 #define CHECK_CFP_CONSISTENCY(func) \
     (LIKELY(reg_cfp == th->ec.cfp + 1) ? (void) 0 : \
+     rb_thread_raised_p(th, RAISED_STACKOVERFLOW) ? \
+     rb_thread_raised_reset(th, RAISED_STACKOVERFLOW) : \
      rb_bug(func ": cfp consistency error (%p, %p)", reg_cfp, th->ec.cfp+1))
 
 static inline
