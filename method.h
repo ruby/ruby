@@ -151,7 +151,7 @@ enum method_optimized_type {
 };
 
 PACKED_STRUCT_UNALIGNED(struct rb_method_definition_struct {
-    unsigned int type :  4; /* method type */
+    rb_method_type_t type :  4; /* method type */
     int alias_count : 28;
     int complemented_count : 28;
 
