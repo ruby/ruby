@@ -6563,7 +6563,6 @@ parser_number_literal_suffix(struct parser_params *parser, int mask)
 	}
 	break;
     }
-    literal_flush(lex_p);
     return result;
 }
 
@@ -7935,6 +7934,9 @@ parser_yylex(struct parser_params *parser)
     parser->token_seen = TRUE;
   retry:
     last_state = lex_state;
+#ifndef RIPPER
+    token_flush(parser);
+#endif
     switch (c = nextc()) {
       case '\0':		/* NUL */
       case '\004':		/* ^D */
@@ -7959,8 +7961,6 @@ parser_yylex(struct parser_params *parser)
       outofloop:
 	pushback(c);
 	dispatch_scan_event(tSP);
-#else
-	token_flush(parser);
 #endif
 	goto retry;
 

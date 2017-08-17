@@ -987,6 +987,9 @@ x = __ENCODING__
     begin;
       assert_syntax_error("def f r:def d; def f 0end", /unexpected/)
     end;
+
+    assert_syntax_error("def\nf(000)end", /^  \^~~/)
+    assert_syntax_error("def\nf(&)end", /^   \^/)
   end
 
   def test_method_location_in_rescue
