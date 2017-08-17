@@ -1905,6 +1905,18 @@ rb_str_times(VALUE str, VALUE times)
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative argument");
     }
+    if (RSTRING_LEN(str) == 1 && RSTRING_PTR(str)[0] == 0) {
+       str2 = str_alloc(rb_obj_class(str));
+       if (!STR_EMBEDDABLE_P(len, 1)) {
+           RSTRING(str2)->as.heap.aux.capa = len;
+           RSTRING(str2)->as.heap.ptr = ZALLOC_N(char, (size_t)len + 1);
+           STR_SET_NOEMBED(str2);
+       }
+       STR_SET_LEN(str2, len);
+       rb_enc_copy(str2, str);
+       OBJ_INFECT(str2, str);
+       return str2;
+    }
     if (len && LONG_MAX/len <  RSTRING_LEN(str)) {
 	rb_raise(rb_eArgError, "argument too big");
     }
