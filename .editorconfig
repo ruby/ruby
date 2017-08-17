@@ -8,10 +8,10 @@ tab_width = 8
 indent_style = tab
 indent_size = 4
 
-[**.bat]
+[*.bat]
 end_of_line = crlf
 
-[**.rb]
+[*.rb]
 indent_style = space
 indent_size = 2
 
