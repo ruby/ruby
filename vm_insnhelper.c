@@ -57,7 +57,9 @@ void
 rb_threadptr_stack_overflow(rb_thread_t *th)
 {
     if (rb_during_gc()) {
-	rb_fatal("machine stack overflow while GC is running.");
+	th->ec.raised_flag = RAISED_STACKOVERFLOW;
+	th->ec.errinfo = th->vm->special_exceptions[ruby_error_sysstack_gc];
+	TH_JUMP_TAG(th, TAG_RAISE);
     }
 #ifdef USE_SIGALTSTACK
     threadptr_stack_overflow(th, TRUE);

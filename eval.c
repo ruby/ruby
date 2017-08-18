@@ -1930,6 +1930,7 @@ Init_eval(void)
     rb_define_global_function("untrace_var", rb_f_untrace_var, -1);	/* in variable.c */
 
     rb_vm_register_special_exception(ruby_error_reenter, rb_eFatal, "exception reentered");
+    rb_vm_register_special_exception(ruby_error_sysstack_gc, rb_eFatal, "machine stack overflow while GC is running.");
 
     id_signo = rb_intern_const("signo");
     id_status = rb_intern_const("status");

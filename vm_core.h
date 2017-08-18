@@ -455,6 +455,7 @@ enum ruby_special_exceptions {
     ruby_error_reenter,
     ruby_error_nomemory,
     ruby_error_sysstack,
+    ruby_error_sysstack_gc,
     ruby_error_stream_closed,
     ruby_special_error_count
 };
