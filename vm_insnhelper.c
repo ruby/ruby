@@ -1833,10 +1833,20 @@ vm_profile_show_result(void)
 #define VM_PROFILE_ATEXIT()
 #endif
 
+static inline int
+vm_cfp_consistent_p(rb_thread_t *th, const rb_control_frame_t *reg_cfp)
+{
+    const int ov_flags = RAISED_STACKOVERFLOW;
+    if (LIKELY(reg_cfp == th->ec.cfp + 1)) return TRUE;
+    if (rb_thread_raised_p(th, ov_flags)) {
+	rb_thread_raised_reset(th, ov_flags);
+	return TRUE;
+    }
+    return FALSE;
+}
+
 #define CHECK_CFP_CONSISTENCY(func) \
-    (LIKELY(reg_cfp == th->ec.cfp + 1) ? (void) 0 : \
-     rb_thread_raised_p(th, RAISED_STACKOVERFLOW) ? \
-     rb_thread_raised_reset(th, RAISED_STACKOVERFLOW) : \
+    (LIKELY(vm_cfp_consistent_p(th, reg_cfp)) ? (void)0 : \
      rb_bug(func ": cfp consistency error (%p, %p)", reg_cfp, th->ec.cfp+1))
 
 static inline
