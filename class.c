@@ -1776,18 +1776,20 @@ rb_define_attr(VALUE klass, const char *name, int read, int write)
 VALUE
 rb_keyword_error_new(const char *error, VALUE keys)
 {
-    const char *msg = "";
-    VALUE error_message;
+    const VALUE *ptr = RARRAY_CONST_PTR(keys);
+    long i = 0, len = RARRAY_LEN(keys);
+    VALUE error_message = rb_sprintf("%s keyword%.*s", error, len > 1, "s");
 
-    if (RARRAY_LEN(keys) == 1) {
-	keys = RARRAY_AREF(keys, 0);
+    if (len > 0) {
+	rb_str_cat_cstr(error_message, ": ");
+	while (1) {
+	    const VALUE k = ptr[i];
+	    Check_Type(k, T_SYMBOL); /* wrong hash is given to rb_get_kwargs */
+	    rb_str_append(error_message, rb_sym2str(k));
+	    if (++i >= len) break;
+	    rb_str_cat_cstr(error_message, ", ");
+	}
     }
-    else {
-	keys = rb_ary_join(keys, rb_usascii_str_new2(", "));
-	msg = "s";
-    }
-
-    error_message = rb_sprintf("%s keyword%s: %"PRIsVALUE, error, msg, keys);
 
     return rb_exc_new_str(rb_eArgError, error_message);
 }
