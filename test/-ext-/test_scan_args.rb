@@ -102,6 +102,7 @@ class TestScanArgs < Test::Unit::TestCase
     assert_equal([0, nil, {b: 1}], Bug::ScanArgs.opt_hash(b: 1))
     assert_equal([1, "a", {b: 1}], Bug::ScanArgs.opt_hash("a", b: 1))
     assert_raise(ArgumentError) {Bug::ScanArgs.opt_hash("a", "b")}
+    assert_equal([1, {"a"=>0}, {b: 1}], Bug::ScanArgs.opt_hash("a"=>0, b: 1))
   end
 
   def test_lead_opt_hash
@@ -111,6 +112,7 @@ class TestScanArgs < Test::Unit::TestCase
     assert_equal([2, "a", "b", {c: 1}], Bug::ScanArgs.lead_opt_hash("a", "b", c: 1))
     assert_equal([1, {c: 1}, nil, nil], Bug::ScanArgs.lead_opt_hash(c: 1))
     assert_raise(ArgumentError) {Bug::ScanArgs.lead_opt_hash("a", "b", "c")}
+    assert_equal([2, "a", {"b"=>0}, {c: 1}], Bug::ScanArgs.lead_opt_hash("a", "b"=>0, c: 1))
   end
 
   def test_var_hash
@@ -118,6 +120,7 @@ class TestScanArgs < Test::Unit::TestCase
     assert_equal([1, ["a"], nil], Bug::ScanArgs.var_hash("a"))
     assert_equal([1, ["a"], {b: 1}], Bug::ScanArgs.var_hash("a", b: 1))
     assert_equal([0, [], {b: 1}], Bug::ScanArgs.var_hash(b: 1))
+    assert_equal([1, [{"a"=>0}], {b: 1}], Bug::ScanArgs.var_hash("a"=>0, b: 1))
   end
 
   def test_lead_var_hash
@@ -128,6 +131,7 @@ class TestScanArgs < Test::Unit::TestCase
     assert_equal([1, "a", [], {c: 1}], Bug::ScanArgs.lead_var_hash("a", c: 1))
     assert_equal([1, {c: 1}, [], nil], Bug::ScanArgs.lead_var_hash(c: 1))
     assert_equal([3, "a", ["b", "c"], nil], Bug::ScanArgs.lead_var_hash("a", "b", "c"))
+    assert_equal([2, "a", [{"b"=>0}], {c: 1}], Bug::ScanArgs.lead_var_hash("a", "b"=>0, c: 1))
   end
 
   def test_opt_var_hash
@@ -138,6 +142,7 @@ class TestScanArgs < Test::Unit::TestCase
     assert_equal([1, "a", [], {c: 1}], Bug::ScanArgs.opt_var_hash("a", c: 1))
     assert_equal([0, nil, [], {c: 1}], Bug::ScanArgs.opt_var_hash(c: 1))
     assert_equal([3, "a", ["b", "c"], nil], Bug::ScanArgs.opt_var_hash("a", "b", "c"))
+    assert_equal([2, "a", [{"b"=>0}], {c: 1}], Bug::ScanArgs.opt_var_hash("a", "b"=>0, c: 1))
   end
 
   def test_lead_opt_var_hash
@@ -149,6 +154,7 @@ class TestScanArgs < Test::Unit::TestCase
     assert_equal([1, {c: 1}, nil, [], nil], Bug::ScanArgs.lead_opt_var_hash(c: 1))
     assert_equal([3, "a", "b", ["c"], nil], Bug::ScanArgs.lead_opt_var_hash("a", "b", "c"))
     assert_equal([3, "a", "b", ["c"], {d: 1}], Bug::ScanArgs.lead_opt_var_hash("a", "b", "c", d: 1))
+    assert_equal([3, "a", "b", [{"c"=>0}], {d: 1}], Bug::ScanArgs.lead_opt_var_hash("a", "b", "c"=>0, d: 1))
   end
 
   def test_opt_trail_hash
@@ -159,6 +165,7 @@ class TestScanArgs < Test::Unit::TestCase
     assert_equal([2, "a", "b", {c: 1}], Bug::ScanArgs.opt_trail_hash("a", "b", c: 1))
     assert_equal([1, nil, {c: 1}, nil], Bug::ScanArgs.opt_trail_hash(c: 1))
     assert_raise(ArgumentError) {Bug::ScanArgs.opt_trail_hash("a", "b", "c")}
+    assert_equal([2, "a", {"b"=>0}, {c: 1}], Bug::ScanArgs.opt_trail_hash("a", "b"=>0, c: 1))
   end
 
   def test_lead_opt_trail_hash
@@ -171,6 +178,7 @@ class TestScanArgs < Test::Unit::TestCase
     assert_equal([3, "a", "b", "c", nil], Bug::ScanArgs.lead_opt_trail_hash("a", "b", "c"))
     assert_equal([3, "a", "b", "c", {c: 1}], Bug::ScanArgs.lead_opt_trail_hash("a", "b", "c", c: 1))
     assert_raise(ArgumentError) {Bug::ScanArgs.lead_opt_trail_hash("a", "b", "c", "d")}
+    assert_equal([3, "a", "b", {"c"=>0}, {c: 1}], Bug::ScanArgs.lead_opt_trail_hash("a", "b", "c"=>0, c: 1))
   end
 
   def test_var_trail_hash
@@ -182,6 +190,7 @@ class TestScanArgs < Test::Unit::TestCase
     assert_equal([1, [], {c: 1}, nil], Bug::ScanArgs.var_trail_hash(c: 1))
     assert_equal([3, ["a", "b"], "c", nil], Bug::ScanArgs.var_trail_hash("a", "b", "c"))
     assert_equal([3, ["a", "b"], "c", {c: 1}], Bug::ScanArgs.var_trail_hash("a", "b", "c", c: 1))
+    assert_equal([3, ["a", "b"], {"c"=>0}, {c: 1}], Bug::ScanArgs.var_trail_hash("a", "b", "c"=>0, c: 1))
   end
 
   def test_lead_var_trail_hash
@@ -193,6 +202,7 @@ class TestScanArgs < Test::Unit::TestCase
     assert_equal([2, "a", [], "b", {c: 1}], Bug::ScanArgs.lead_var_trail_hash("a", "b", c: 1))
     assert_equal([3, "a", ["b"], "c", nil], Bug::ScanArgs.lead_var_trail_hash("a", "b", "c"))
     assert_equal([3, "a", ["b"], "c", {c: 1}], Bug::ScanArgs.lead_var_trail_hash("a", "b", "c", c: 1))
+    assert_equal([3, "a", ["b"], {"c"=>0}, {c: 1}], Bug::ScanArgs.lead_var_trail_hash("a", "b", c: 1, "c"=>0))
   end
 
   def test_opt_var_trail_hash
@@ -204,6 +214,7 @@ class TestScanArgs < Test::Unit::TestCase
     assert_equal([2, "a", [], "b", {c: 1}], Bug::ScanArgs.opt_var_trail_hash("a", "b", c: 1))
     assert_equal([3, "a", ["b"], "c", nil], Bug::ScanArgs.opt_var_trail_hash("a", "b", "c"))
     assert_equal([3, "a", ["b"], "c", {c: 1}], Bug::ScanArgs.opt_var_trail_hash("a", "b", "c", c: 1))
+    assert_equal([3, "a", ["b"], {"c"=>0}, {c: 1}], Bug::ScanArgs.opt_var_trail_hash("a", "b", "c"=>0, c: 1))
   end
 
   def test_lead_opt_var_trail_hash
@@ -215,5 +226,6 @@ class TestScanArgs < Test::Unit::TestCase
     assert_equal([3, "a", "b", [], "c", nil], Bug::ScanArgs.lead_opt_var_trail_hash("a", "b", "c"))
     assert_equal([3, "a", "b", [], "c", {c: 1}], Bug::ScanArgs.lead_opt_var_trail_hash("a", "b", "c", c: 1))
     assert_equal([4, "a", "b", ["c"], "d", nil], Bug::ScanArgs.lead_opt_var_trail_hash("a", "b", "c", "d"))
+    assert_equal([4, "a", "b", ["c"], {"d"=>0}, {c: 1}], Bug::ScanArgs.lead_opt_var_trail_hash("a", "b", "c", "d"=>0, c: 1))
   end
 end
