@@ -1448,7 +1448,6 @@ rb_iseq_disasm_insn(VALUE ret, const VALUE *code, size_t pos,
     }
 
     for (j = 0; types[j]; j++) {
-	const char *types = insn_op_types(insn);
 	VALUE opstr = rb_insn_operand_intern(iseq, insn, j, code[pos + j + 1],
 					     len, pos, &code[pos + j + 2],
 					     child);
