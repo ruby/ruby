@@ -58,7 +58,7 @@ rb_threadptr_stack_overflow(rb_thread_t *th)
 {
     if (rb_during_gc()) {
 	th->ec.raised_flag = RAISED_STACKOVERFLOW;
-	th->ec.errinfo = th->vm->special_exceptions[ruby_error_sysstack_gc];
+	th->ec.errinfo = th->vm->special_exceptions[ruby_error_stackfatal];
 	TH_JUMP_TAG(th, TAG_RAISE);
     }
 #ifdef USE_SIGALTSTACK
