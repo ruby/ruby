@@ -4004,6 +4004,7 @@ ruby_stack_length(VALUE **p)
     return STACK_LENGTH;
 }
 
+#define PREVENT_STACK_OVERFLOW 1
 #ifndef PREVENT_STACK_OVERFLOW
 #if !(defined(POSIX_SIGNAL) && defined(SIGSEGV) && defined(HAVE_SIGALTSTACK))
 # define PREVENT_STACK_OVERFLOW 1
