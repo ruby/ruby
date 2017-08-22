@@ -374,4 +374,7 @@ class TestCSV::Features < TestCSV
     assert_equal [["line", "1", "a"], ["line", "2", "b"]], c.each.to_a
   end
 
+  def test_table_nil_equality
+    assert_nothing_raised(NoMethodError) { CSV.parse("test", headers: true) == nil }
+  end
 end

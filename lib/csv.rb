@@ -870,7 +870,8 @@ class CSV
 
     # Returns +true+ if all rows of this table ==() +other+'s rows.
     def ==(other)
-      @table == other.table
+      return @table == other.table if other.is_a? CSV::Table
+      @table == other
     end
 
     #
