@@ -774,14 +774,13 @@ NORETURN(void rb_threadptr_stack_overflow(rb_thread_t *th));
 # elif defined __FreeBSD__
 #   define USE_UCONTEXT_REG 1
 # endif
-NORETURN(static void raise_stack_overflow(int sig, rb_thread_t *th));
 #if defined(HAVE_PTHREAD_SIGMASK)
 # define ruby_sigunmask pthread_sigmask
 #elif defined(HAVE_SIGPROCMASK)
 # define ruby_sigunmask sigprocmask
 #endif
 static void
-raise_stack_overflow(int sig, rb_thread_t *th)
+reset_sigmask(int sig)
 {
 #if defined(ruby_sigunmask)
     sigset_t mask;
@@ -794,7 +793,6 @@ raise_stack_overflow(int sig, rb_thread_t *th)
 	rb_bug_errno(STRINGIZE(ruby_sigunmask)":unblock", errno);
     }
 #endif
-    rb_threadptr_stack_overflow(th);
 }
 
 # ifdef USE_UCONTEXT_REG
@@ -851,7 +849,8 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
 	     * place. */
 	    th->ec.tag = th->ec.tag->prev;
 	}
-	raise_stack_overflow(sig, th);
+	reset_sigmask(sig);
+	rb_threadptr_stack_overflow(th);
     }
 }
 # else
@@ -861,7 +860,8 @@ check_stack_overflow(int sig, const void *addr)
     int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
     rb_thread_t *th = ruby_current_thread;
     if (ruby_stack_overflowed_p(th, addr)) {
-	raise_stack_overflow(sig, th);
+	reset_sigmask(sig);
+	rb_threadptr_stack_overflow(th);
     }
 }
 # endif
