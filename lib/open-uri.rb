@@ -27,7 +27,18 @@ module Kernel
   # We can accept URIs and strings that begin with http://, https:// and
   # ftp://. In these cases, the opened file object is extended by OpenURI::Meta.
   def open(name, *rest, &block) # :doc:
-    if name.respond_to?(:open)
+    if name.respond_to?(:to_io)
+      io = name.to_io.dup
+      if block
+        begin
+          yield io
+        ensure
+          io.close
+        end
+      else
+        io
+      end
+    elsif name.respond_to?(:open)
       name.open(*rest, &block)
     elsif name.respond_to?(:to_str) &&
           %r{\A[A-Za-z][A-Za-z0-9+\-\.]*://} =~ name &&
