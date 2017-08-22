@@ -137,6 +137,14 @@ class TestCSV::Interface < TestCSV
     end
   end
 
+  def test_open_handles_prematurely_closed_file_descriptor_gracefully
+    assert_nothing_raised(Exception) do
+      CSV.open(@path) do |csv|
+        csv.close
+      end
+    end
+  end
+
   ### Test Write Interface ###
 
   def test_generate
