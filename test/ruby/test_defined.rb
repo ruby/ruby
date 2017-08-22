@@ -99,6 +99,10 @@ class TestDefined < Test::Unit::TestCase
     end
   end
 
+  def test_defined_empty_paren_arg
+    assert_nil(defined?(p () + 1))
+  end
+
   def test_defined_impl_specific
     feature7035 = '[ruby-core:47558]' # not spec
     assert_predicate(defined?(Foo), :frozen?, feature7035)

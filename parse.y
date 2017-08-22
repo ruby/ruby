@@ -2487,7 +2487,7 @@ primary		: literal
 		| tLPAREN_ARG {SET_LEX_STATE(EXPR_ENDARG);} rparen
 		    {
 		    /*%%%*/
-			$$ = 0;
+			$$ = NEW_BEGIN(0);
 		    /*%
 			$$ = dispatch1(paren, 0);
 		    %*/
