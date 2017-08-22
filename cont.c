@@ -80,16 +80,22 @@ enum context_type {
     ROOT_FIBER_CONTEXT = 2
 };
 
+struct cont_saved_vm_stack {
+    VALUE *ptr;
+#ifdef CAPTURE_JUST_VALID_VM_STACK
+    size_t slen;  /* length of stack (head of th->ec.vm_stack) */
+    size_t clen;  /* length of control frames (tail of th->ec.vm_stack) */
+#endif
+};
+
 typedef struct rb_context_struct {
     enum context_type type;
     int argc;
     VALUE self;
     VALUE value;
-    VALUE *vm_stack;
-#ifdef CAPTURE_JUST_VALID_VM_STACK
-    size_t vm_stack_slen;  /* length of stack (head of th->ec.vm_stack) */
-    size_t vm_stack_clen;  /* length of control frames (tail of th->ec.vm_stack) */
-#endif
+
+    struct cont_saved_vm_stack saved_vm_stack;
+
     struct {
 	VALUE *stack;
 	VALUE *stack_src;
@@ -222,13 +228,13 @@ cont_mark(void *ptr)
     rb_thread_mark(&cont->saved_thread);
     rb_gc_mark(cont->saved_thread.self);
 
-    if (cont->vm_stack) {
+    if (cont->saved_vm_stack.ptr) {
 #ifdef CAPTURE_JUST_VALID_VM_STACK
-	rb_gc_mark_locations(cont->vm_stack,
-			     cont->vm_stack + cont->vm_stack_slen + cont->vm_stack_clen);
+	rb_gc_mark_locations(cont->saved_vm_stack.ptr,
+			     cont->saved_vm_stack.ptr + cont->saved_vm_stack.slen + cont->saved_vm_stack.clen);
 #else
-	rb_gc_mark_locations(cont->vm_stack,
-			     cont->vm_stack, cont->saved_thread.stack_size);
+	rb_gc_mark_locations(cont->saved_vm_stack.ptr,
+			     cont->saved_vm_stack.ptr, cont->saved_thread.stack_size);
 #endif
     }
 
@@ -306,7 +312,7 @@ cont_free(void *ptr)
 #ifdef __ia64
     RUBY_FREE_UNLESS_NULL(cont->machine.register_stack);
 #endif
-    RUBY_FREE_UNLESS_NULL(cont->vm_stack);
+    RUBY_FREE_UNLESS_NULL(cont->saved_vm_stack.ptr);
 
     /* free rb_cont_t or rb_fiber_t */
     ruby_xfree(ptr);
@@ -320,13 +326,13 @@ cont_memsize(const void *ptr)
     size_t size = 0;
 
     size = sizeof(*cont);
-    if (cont->vm_stack) {
+    if (cont->saved_vm_stack.ptr) {
 #ifdef CAPTURE_JUST_VALID_VM_STACK
-	size_t n = (cont->vm_stack_slen + cont->vm_stack_clen);
+	size_t n = (cont->saved_vm_stack.slen + cont->saved_vm_stack.clen);
 #else
 	size_t n = cont->saved_thread.ec.vm_stack_size;
 #endif
-	size += n * sizeof(*cont->vm_stack);
+	size += n * sizeof(*cont->saved_vm_stack.ptr);
     }
 
     if (cont->machine.stack) {
@@ -531,15 +537,15 @@ cont_capture(volatile int *volatile stat)
     contval = cont->self;
 
 #ifdef CAPTURE_JUST_VALID_VM_STACK
-    cont->vm_stack_slen = ec->cfp->sp - ec->vm_stack;
-    cont->vm_stack_clen = ec->vm_stack + ec->vm_stack_size - (VALUE*)ec->cfp;
-    cont->vm_stack = ALLOC_N(VALUE, cont->vm_stack_slen + cont->vm_stack_clen);
-    MEMCPY(cont->vm_stack, ec->vm_stack, VALUE, cont->vm_stack_slen);
-    MEMCPY(cont->vm_stack + cont->vm_stack_slen,
-		(VALUE*)ec->cfp, VALUE, cont->vm_stack_clen);
+    cont->saved_vm_stack.slen = ec->cfp->sp - ec->vm_stack;
+    cont->saved_vm_stack.clen = ec->vm_stack + ec->vm_stack_size - (VALUE*)ec->cfp;
+    cont->saved_vm_stack.ptr = ALLOC_N(VALUE, cont->saved_vm_stack.slen + cont->saved_vm_stack.clen);
+    MEMCPY(cont->saved_vm_stack.ptr, ec->vm_stack, VALUE, cont->saved_vm_stack.slen);
+    MEMCPY(cont->saved_vm_stack.ptr + cont->saved_vm_stack.slen,
+		(VALUE*)ec->cfp, VALUE, cont->saved_vm_stack.clen);
 #else
-    cont->vm_stack = ALLOC_N(VALUE, ec->vm_stack_size);
-    MEMCPY(cont->vm_stack, ec->vm_stack, VALUE, ec->vm_stack_size);
+    cont->saved_vm_stack.ptr = ALLOC_N(VALUE, ec->vm_stack_size);
+    MEMCPY(cont->saved_vm_stack.ptr, ec->vm_stack, VALUE, ec->vm_stack_size);
 #endif
     cont->saved_thread.ec.vm_stack = NULL;
 
@@ -610,11 +616,11 @@ cont_restore_thread(rb_context_t *cont)
 	    th->ec.vm_stack = fib->cont.saved_thread.ec.vm_stack;
 	}
 #ifdef CAPTURE_JUST_VALID_VM_STACK
-	MEMCPY(th->ec.vm_stack, cont->vm_stack, VALUE, cont->vm_stack_slen);
-	MEMCPY(th->ec.vm_stack + sth->ec.vm_stack_size - cont->vm_stack_clen,
-	       cont->vm_stack + cont->vm_stack_slen, VALUE, cont->vm_stack_clen);
+	MEMCPY(th->ec.vm_stack, cont->saved_vm_stack.ptr, VALUE, cont->saved_vm_stack.slen);
+	MEMCPY(th->ec.vm_stack + sth->ec.vm_stack_size - cont->saved_vm_stack.clen,
+	       cont->saved_vm_stack.ptr + cont->saved_vm_stack.slen, VALUE, cont->saved_vm_stack.clen);
 #else
-	MEMCPY(th->ec.vm_stack, cont->vm_stack, VALUE, sth->ec.vm_stack_size);
+	MEMCPY(th->ec.vm_stack, cont->saved_vm_stack.ptr, VALUE, sth->ec.vm_stack_size);
 #endif
 
 	/* other members of ec */
@@ -1269,7 +1275,7 @@ fiber_init(VALUE fibval, VALUE proc)
     rb_thread_t *cth = GET_THREAD();
 
     /* initialize cont */
-    cont->vm_stack = 0;
+    cont->saved_vm_stack.ptr = NULL;
 
     th->ec.vm_stack = NULL;
     th->ec.vm_stack_size = 0;
