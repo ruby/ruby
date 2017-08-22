@@ -52,11 +52,11 @@ vm_stackoverflow(void)
     threadptr_stack_overflow(GET_THREAD(), TRUE);
 }
 
-NORETURN(void rb_threadptr_stack_overflow(rb_thread_t *th));
+NORETURN(void rb_threadptr_stack_overflow(rb_thread_t *th, int crit));
 void
-rb_threadptr_stack_overflow(rb_thread_t *th)
+rb_threadptr_stack_overflow(rb_thread_t *th, int crit)
 {
-    if (rb_during_gc()) {
+    if (crit || rb_during_gc()) {
 	th->ec.raised_flag = RAISED_STACKOVERFLOW;
 	th->ec.errinfo = th->vm->special_exceptions[ruby_error_stackfatal];
 	TH_JUMP_TAG(th, TAG_RAISE);

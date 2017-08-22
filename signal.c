@@ -763,7 +763,7 @@ static const char *received_signal;
 #endif
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
-NORETURN(void rb_threadptr_stack_overflow(rb_thread_t *th));
+NORETURN(void rb_threadptr_stack_overflow(rb_thread_t *th, int crit));
 # if defined __HAIKU__
 #   define USE_UCONTEXT_REG 1
 # elif !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__ || defined __amd64__))
@@ -843,14 +843,16 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
     if (sp_page == fault_page || sp_page == fault_page + 1 ||
 	sp_page <= fault_page && fault_page <= bp_page) {
 	rb_thread_t *th = ruby_current_thread;
+	int crit = FALSE;
 	if ((uintptr_t)th->ec.tag->buf / pagesize <= fault_page + 1) {
 	    /* drop the last tag if it is close to the fault,
 	     * otherwise it can cause stack overflow again at the same
 	     * place. */
 	    th->ec.tag = th->ec.tag->prev;
+	    crit = TRUE;
 	}
 	reset_sigmask(sig);
-	rb_threadptr_stack_overflow(th);
+	rb_threadptr_stack_overflow(th, crit);
     }
 }
 # else
@@ -861,7 +863,7 @@ check_stack_overflow(int sig, const void *addr)
     rb_thread_t *th = ruby_current_thread;
     if (ruby_stack_overflowed_p(th, addr)) {
 	reset_sigmask(sig);
-	rb_threadptr_stack_overflow(th);
+	rb_threadptr_stack_overflow(th, FALSE);
     }
 }
 # endif
