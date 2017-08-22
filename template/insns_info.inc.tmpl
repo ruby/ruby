@@ -13,13 +13,22 @@
 #define <%=t%> '<%=c%>'
 % end
 
-static const char *const insn_name_info[] = {
-% @insns.each do |insn|
-    "<%= insn.name %>",
+static const unsigned short insn_name_info_offset[] = {
+% insn_name_length = @insns.inject(0) do |ofs, insn|
+    <%= ofs %>,
+%   ofs + insn.name.size + 1
 % end
 };
 
-ASSERT_VM_INSTRUCTION_SIZE(insn_name_info);
+ASSERT_VM_INSTRUCTION_SIZE(insn_name_info_offset);
+
+static const char insn_name_info_base[<%=insn_name_length%>] = ""
+% @insns.each do |insn|
+    "<%= insn.name %>\0"
+% end
+;
+
+#define insn_name_info insn_name_info_base+insn_name_info_offset
 
 static const char *const insn_operand_info[] = {
 % @insns.each do |insn|
@@ -38,7 +47,7 @@ static const int insn_len_info[] = {
 ASSERT_VM_INSTRUCTION_SIZE(insn_len_info);
 
 #ifdef USE_INSN_RET_NUM
-static const int insn_stack_push_num_info[] = {
+static const unsigned short insn_stack_push_num_info[] = {
 % @insns.each do |insn|
     <%= insn.rets.size %>,
 % end
