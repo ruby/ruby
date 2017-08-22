@@ -1561,6 +1561,12 @@ class CSV
 
     # track our own lineno since IO gets confused about line-ends is CSV fields
     @lineno = 0
+
+    # make sure headers have been assigned
+    if header_row? and [Array, String].include? @use_headers.class and @write_headers
+      parse_headers  # won't read data for Array or String
+      self << @headers
+    end
   end
 
   #
@@ -1677,9 +1683,8 @@ class CSV
   #
   def <<(row)
     # make sure headers have been assigned
-    if header_row? and [Array, String].include? @use_headers.class
+    if header_row? and [Array, String].include? @use_headers.class and !@write_headers
       parse_headers  # won't read data for Array or String
-      self << @headers if @write_headers
     end
 
     # handle CSV::Row objects and Hashes

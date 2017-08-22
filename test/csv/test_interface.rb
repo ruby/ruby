@@ -295,6 +295,19 @@ class TestCSV::Interface < TestCSV
     end
   end
 
+  def test_write_headers_empty
+    File.unlink(@path)
+
+    CSV.open( @path, "wb", headers:       "b|a|c",
+                           write_headers: true,
+                           col_sep:       "|" ) do |csv|
+    end
+
+    File.open(@path, "rb") do |f|
+      assert_equal("b|a|c", f.gets.strip)
+    end
+  end
+
   def test_append  # aliased add_row() and puts()
     File.unlink(@path)
 
