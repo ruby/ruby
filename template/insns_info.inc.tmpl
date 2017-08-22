@@ -9,29 +9,39 @@
   or tool/insns2vm.rb
  */
 
-<%= insn_type_chars %>
+% TYPE_CHARS.each do |t, c|
+#define <%=t%> '<%=c%>'
+% end
 
 static const char *const insn_name_info[] = {
-<%= insn_names %>
+% @insns.each do |insn|
+    "<%= insn.name %>",
+% end
 };
 
 ASSERT_VM_INSTRUCTION_SIZE(insn_name_info);
 
 static const char *const insn_operand_info[] = {
-<%= operands_info %>
+% @insns.each do |insn|
+    "<% insn.opes.each {|type, _| %><%=TYPE_CHARS.fetch(op2typesig(type))%><%}%>",
+% end
 };
 
 ASSERT_VM_INSTRUCTION_SIZE(insn_operand_info);
 
 static const int insn_len_info[] = {
-<%= operands_num_info %>
+% @insns.each do |insn|
+    <%= insn.opes.size + 1 %>,
+% end
 };
 
 ASSERT_VM_INSTRUCTION_SIZE(insn_len_info);
 
 #ifdef USE_INSN_RET_NUM
 static const int insn_stack_push_num_info[] = {
-<%= stack_num_info %>
+% @insns.each do |insn|
+    <%= insn.rets.size %>,
+% end
 };
 
 ASSERT_VM_INSTRUCTION_SIZE(insn_stack_push_num_info);
@@ -41,12 +51,16 @@ ASSERT_VM_INSTRUCTION_SIZE(insn_stack_push_num_info);
 static int
 insn_stack_increase(int depth, int insn, VALUE *opes)
 {
-  switch(insn){
-<%= stack_increase %>
-  default:
-    rb_bug("insn_sp_increase: unreachable");
-  }
-  return 0;
+    switch (insn) {
+% @insns.each do |insn|
+      case BIN(<%= insn.name %>): {
+	<%= insn.sp_increase_c_expr %>
+      }
+% end
+      default:
+	rb_bug("insn_sp_increase: unreachable");
+    }
+    return 0;
 }
 #endif
 
@@ -55,37 +69,37 @@ insn_stack_increase(int depth, int insn, VALUE *opes)
 static int
 insn_len(VALUE insn)
 {
-  return insn_len_info[(int)insn];
+    return insn_len_info[(int)insn];
 }
 
 static const char *
 insn_name(VALUE insn)
 {
-  return insn_name_info[(int)insn];
+    return insn_name_info[(int)insn];
 }
 
 static const char *
 insn_op_types(VALUE insn)
 {
-  return insn_operand_info[(int)insn];
+    return insn_operand_info[(int)insn];
 }
 
 static int
 insn_op_type(VALUE insn, long pos)
 {
-  int len = insn_len(insn) - 1;
-  if(pos < len){
-    return insn_operand_info[(int)insn][pos];
-  }
-  else{
-    return 0;
-  }
+    int len = insn_len(insn) - 1;
+    if (pos < len) {
+	return insn_operand_info[(int)insn][pos];
+    }
+    else{
+	return 0;
+    }
 }
 
 #ifdef USE_INSN_RET_NUM
 static int
 insn_ret_num(VALUE insn)
 {
-  return insn_stack_push_num_info[(int)insn];
+    return insn_stack_push_num_info[(int)insn];
 }
 #endif
