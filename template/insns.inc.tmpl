@@ -18,3 +18,5 @@ enum ruby_vminsn_type {
   VM_INSTRUCTION_SIZE            = <%= @insns.size %>
 };
 
+#define ASSERT_VM_INSTRUCTION_SIZE(array) \
+    STATIC_ASSERT(numberof_##array, numberof(array) == VM_INSTRUCTION_SIZE)

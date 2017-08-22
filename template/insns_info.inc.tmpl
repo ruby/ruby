@@ -15,18 +15,26 @@ static const char *const insn_name_info[] = {
 <%= insn_names %>
 };
 
+ASSERT_VM_INSTRUCTION_SIZE(insn_name_info);
+
 static const char *const insn_operand_info[] = {
 <%= operands_info %>
 };
+
+ASSERT_VM_INSTRUCTION_SIZE(insn_operand_info);
 
 static const int insn_len_info[] = {
 <%= operands_num_info %>
 };
 
+ASSERT_VM_INSTRUCTION_SIZE(insn_len_info);
+
 #ifdef USE_INSN_RET_NUM
 static const int insn_stack_push_num_info[] = {
 <%= stack_num_info %>
 };
+
+ASSERT_VM_INSTRUCTION_SIZE(insn_stack_push_num_info);
 #endif
 
 #ifdef USE_INSN_STACK_INCREASE

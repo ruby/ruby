@@ -6737,7 +6737,7 @@ rb_insns_name_array(void)
 {
     VALUE ary = rb_ary_new();
     int i;
-    for (i = 0; i < numberof(insn_name_info); i++) {
+    for (i = 0; i < VM_INSTRUCTION_SIZE; i++) {
 	rb_ary_push(ary, rb_fstring_cstr(insn_name_info[i]));
     }
     return rb_obj_freeze(ary);
