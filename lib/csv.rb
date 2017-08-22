@@ -2159,7 +2159,7 @@ class CSV
   # See also CSV.new
   def init_comments(skip_lines)
     @skip_lines = skip_lines
-    @skip_lines = Regexp.new(@skip_lines) if @skip_lines.is_a? String
+    @skip_lines = Regexp.new(Regexp.escape(@skip_lines)) if @skip_lines.is_a? String
     if @skip_lines and not @skip_lines.respond_to?(:match)
       raise ArgumentError, ":skip_lines has to respond to matches"
     end

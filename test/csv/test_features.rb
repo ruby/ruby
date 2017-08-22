@@ -353,6 +353,15 @@ class TestCSV::Features < TestCSV
     assert_equal [["line", "1", "a"], ["line", "2", "b"]], c.each.to_a
   end
 
+  def test_comment_rows_are_ignored_with_heredoc
+    c = csv = CSV.new(<<~EOL, skip_lines: ".")
+    1,foo
+    .2,bar
+    3,baz
+    EOL
+    assert_equal [["1", "foo"], ["3", "baz"]], c.each.to_a
+  end
+
   def test_quoted_skip_line_markers_are_ignored
     sample_data = "line,1,a\n\"#not\",a,line\nline,2,b"
     c = CSV.new sample_data, :skip_lines => /\A\s*#/
