@@ -2796,15 +2796,14 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
     saved.finished = 0;
 
     TH_PUSH_TAG(th);
-    if ((state = TH_EXEC_TAG()) == TAG_NONE) {
-	for (i = saved.finished;
-	     RESTORE_FINALIZER(), i<RARRAY_LEN(table);
-	     saved.finished = ++i) {
-	    run_single_final(RARRAY_AREF(table, i), saved.objid);
-	}
-    }
-    else {
+    state = TH_EXEC_TAG();
+    if (state != TAG_NONE) {
 	++saved.finished;	/* skip failed finalizer */
+    }
+    for (i = saved.finished;
+	 RESTORE_FINALIZER(), i<RARRAY_LEN(table);
+	 saved.finished = ++i) {
+	run_single_final(RARRAY_AREF(table, i), saved.objid);
     }
     TH_POP_TAG();
 #undef RESTORE_FINALIZER

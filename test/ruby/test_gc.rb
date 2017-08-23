@@ -397,4 +397,26 @@ class TestGc < Test::Unit::TestCase
       ObjectSpace.each_object{|o| case o when Module then o.instance_methods end}
     end
   end
+
+  def test_exception_in_finalizer
+    result = []
+    c1 = proc do
+      result << :c1
+      raise
+    end
+    c2 = proc do
+      result << :c2
+      raise
+    end
+    tap {
+      tap {
+        obj = Object.new
+        ObjectSpace.define_finalizer(obj, c1)
+        ObjectSpace.define_finalizer(obj, c2)
+        obj = nil
+      }
+    }
+    GC.start
+    assert_equal([:c1, :c2], result)
+  end
 end
