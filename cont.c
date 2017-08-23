@@ -194,7 +194,6 @@ fiber_status_set(const rb_fiber_t *fib, enum fiber_status s)
     if (0) fprintf(stderr, "fib: %p, status: %s -> %s\n", fib, fiber_status_name(fib->status), fiber_status_name(s));
     VM_ASSERT(!FIBER_TERMINATED_P(fib));
     VM_ASSERT(fib->status != s);
-    if (s == FIBER_RESUMED) bp();
     *((enum fiber_status *)&fib->status) = s;
 }
 
