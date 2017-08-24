@@ -1000,6 +1000,8 @@ debug_list(ISEQ_ARG_DECLARE LINK_ANCHOR *const anchor)
 #if CPDEBUG < 0
 #define debug_list(anc) debug_list(iseq, (anc))
 #endif
+#else
+#define debug_list(anc) ((void)0)
 #endif
 
 static LABEL *
@@ -1914,11 +1916,13 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			generated_iseq[code_index++] = BIN(pop);
 		    }
 		    else if (diff < 0) {
+			int label_no = adjust->label ? adjust->label->label_no : -1;
 			xfree(generated_iseq);
 			xfree(line_info_table);
+			debug_list(anchor);
 			COMPILE_ERROR(iseq, adjust->line_no,
-				      "iseq_set_sequence: adjust bug %d < %d",
-				      orig_sp, sp);
+				      "iseq_set_sequence: adjust bug to %d %d < %d",
+				      label_no, orig_sp, sp);
 			return COMPILE_NG;
 		    }
 		}
