@@ -1914,6 +1914,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			generated_iseq[code_index++] = BIN(pop);
 		    }
 		    else if (diff < 0) {
+			xfree(generated_iseq);
+			xfree(line_info_table);
 			COMPILE_ERROR(iseq, adjust->line_no,
 				      "iseq_set_sequence: adjust bug %d < %d",
 				      orig_sp, sp);
