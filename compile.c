@@ -866,7 +866,6 @@ INSERT_ELEM_PREV(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
     }
 }
 
-#if 0
 /*
  * elemX, elem1, elemY => elemX, elem2, elemY
  */
@@ -882,7 +881,6 @@ REPLACE_ELEM(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
 	elem1->next->prev = elem2;
     }
 }
-#endif
 
 static void
 REMOVE_ELEM(LINK_ELEMENT *elem)
@@ -2211,7 +2209,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	else if ((piobj = (INSN *)get_prev_insn(iobj)) != 0 &&
 		 (IS_INSN_ID(piobj, branchif) ||
 		  IS_INSN_ID(piobj, branchunless))) {
-	    if (niobj == (INSN *)get_destination_insn(piobj)) {
+	    INSN *pdiobj = (INSN *)get_destination_insn(piobj);
+	    if (niobj == pdiobj) {
 		/*
 		 * useless jump elimination (if/unless destination):
 		 *   if   L1
@@ -2230,6 +2229,24 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		  ? BIN(branchunless) : BIN(branchif);
 		replace_destination(piobj, iobj);
 		REMOVE_ELEM(&iobj->link);
+	    }
+	    else if (diobj == pdiobj) {
+		/*
+		 * useless jump elimination (if/unless before jump):
+		 * L1:
+		 *   ...
+		 *   if   L1
+		 *   jump L1
+		 *
+		 * ==>
+		 * L1:
+		 *   ...
+		 *   pop
+		 *   jump L1
+		 */
+		INSN *popiobj = new_insn_core(iseq, iobj->line_no,
+					      BIN(pop), 0, 0);
+		REPLACE_ELEM(&piobj->link, &popiobj->link);
 	    }
 	}
 	else if (remove_unreachable_chunk(iseq, iobj->link.next)) {
