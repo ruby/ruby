@@ -2168,6 +2168,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	     */
 	    unref_destination(iobj, 0);
 	    REMOVE_ELEM(&iobj->link);
+	    return COMPILE_OK;
 	}
 	else if (iobj != diobj && IS_INSN_ID(diobj, jump) &&
 		 OPERAND_AT(iobj, 0) != OPERAND_AT(diobj, 0)) {
@@ -2229,6 +2230,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		  ? BIN(branchunless) : BIN(branchif);
 		replace_destination(piobj, iobj);
 		REMOVE_ELEM(&iobj->link);
+		return COMPILE_OK;
 	    }
 	    else if (diobj == pdiobj) {
 		/*
@@ -2249,7 +2251,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		REPLACE_ELEM(&piobj->link, &popiobj->link);
 	    }
 	}
-	else if (remove_unreachable_chunk(iseq, iobj->link.next)) {
+	if (remove_unreachable_chunk(iseq, iobj->link.next)) {
 	    goto again;
 	}
     }
