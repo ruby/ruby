@@ -879,13 +879,11 @@ class CSV
     # then all of the field rows will follow.
     #
     def to_a
-      @table.inject([headers]) do |array, row|
-        if row.header_row?
-          array
-        else
-          array + [row.fields]
-        end
+      array = [headers]
+      @table.each do |row|
+        array.push(row.fields) unless row.header_row?
       end
+      return array
     end
 
     #
@@ -896,13 +894,11 @@ class CSV
     # pass <tt>:write_headers => false</tt>.
     #
     def to_csv(write_headers: true, **options)
-      @table.inject(write_headers ? [headers.to_csv(options)] : [ ]) do |rows, row|
-        if row.header_row?
-          rows
-        else
-          rows + [row.fields.to_csv(options)]
-        end
-      end.join('')
+      array = write_headers ? [headers.to_csv(options)] : []
+      @table.each do |row|
+        array.push(row.fields.to_csv(options)) unless row.header_row?
+      end
+      return array.join('')
     end
     alias_method :to_s, :to_csv
 
