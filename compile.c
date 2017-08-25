@@ -2158,16 +2158,6 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
   again:
     if (IS_INSN_ID(iobj, jump)) {
 	INSN *niobj, *diobj, *piobj;
-	/*
-	 *  useless jump elimination:
-	 *     jump LABEL1
-	 *     ...
-	 *   LABEL1:
-	 *     jump LABEL2
-	 *
-	 *   => in this case, first jump instruction should jump to
-	 *      LABEL2 directly
-	 */
 	diobj = (INSN *)get_destination_insn(iobj);
 	niobj = (INSN *)get_next_insn(iobj);
 
@@ -2183,6 +2173,16 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	}
 	else if (iobj != diobj && IS_INSN_ID(diobj, jump) &&
 		 OPERAND_AT(iobj, 0) != OPERAND_AT(diobj, 0)) {
+	    /*
+	     *  useless jump elimination:
+	     *     jump LABEL1
+	     *     ...
+	     *   LABEL1:
+	     *     jump LABEL2
+	     *
+	     *   => in this case, first jump instruction should jump to
+	     *      LABEL2 directly
+	     */
 	    replace_destination(iobj, diobj);
 	    remove_unreachable_chunk(iseq, iobj->link.next);
 	    goto again;
@@ -2208,24 +2208,24 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    INSERT_ELEM_NEXT(&iobj->link, &popiobj->link);
 	    goto again;
 	}
-	/*
-	 * useless jump elimination (if/unless destination):
-	 *   if   L1
-	 *   jump L2
-	 * L1:
-	 *   ...
-	 * L2:
-	 *
-	 * ==>
-	 *   unless L2
-	 * L1:
-	 *   ...
-	 * L2:
-	 */
 	else if ((piobj = (INSN *)get_prev_insn(iobj)) != 0 &&
 		 (IS_INSN_ID(piobj, branchif) ||
 		  IS_INSN_ID(piobj, branchunless))) {
 	    if (niobj == (INSN *)get_destination_insn(piobj)) {
+		/*
+		 * useless jump elimination (if/unless destination):
+		 *   if   L1
+		 *   jump L2
+		 * L1:
+		 *   ...
+		 * L2:
+		 *
+		 * ==>
+		 *   unless L2
+		 * L1:
+		 *   ...
+		 * L2:
+		 */
 		piobj->insn_id = (IS_INSN_ID(piobj, branchif))
 		  ? BIN(branchunless) : BIN(branchif);
 		replace_destination(piobj, iobj);
