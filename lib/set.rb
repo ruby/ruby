@@ -81,7 +81,7 @@ class Set
   # If a block is given, the elements of enum are preprocessed by the
   # given block.
   def initialize(enum = nil, &block) # :yields: o
-    @hash ||= Hash.new(false)
+    @hash = {}
 
     enum.nil? and return
 
@@ -230,7 +230,7 @@ class Set
   #
   # See also Enumerable#include?
   def include?(o)
-    @hash[o]
+    @hash.include?(o)
   end
   alias member? include?
 
