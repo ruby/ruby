@@ -1540,6 +1540,17 @@ native_set_thread_name(rb_thread_t *th)
 #endif
 }
 
+static VALUE
+native_set_another_thread_name(rb_nativethread_id_t thread_id, VALUE name)
+{
+#ifdef SET_ANOTHER_THREAD_NAME
+    const char *s = "";
+    if (!NIL_P(name)) s = RSTRING_PTR(name);
+    SET_ANOTHER_THREAD_NAME(thread_id, s);
+#endif
+    return name;
+}
+
 static void *
 thread_timer(void *p)
 {

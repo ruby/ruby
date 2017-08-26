@@ -7857,6 +7857,48 @@ rb_w32_pow(double x, double y)
 }
 #endif
 
+int
+rb_w32_set_thread_description(HANDLE th, const WCHAR *name)
+{
+    int result = FALSE;
+    typedef HRESULT (WINAPI *set_thread_description_func)(HANDLE, PCWSTR);
+    static set_thread_description_func set_thread_description =
+	(set_thread_description_func)-1;
+    if (set_thread_description == (set_thread_description_func)-1) {
+	set_thread_description = (set_thread_description_func)
+	    get_proc_address("kernel32", "SetThreadDescription", NULL);
+    }
+    if (set_thread_description != (set_thread_description_func)-1) {
+	result = set_thread_description(th, name);
+    }
+    return result;
+}
+
+int
+rb_w32_set_thread_description_str(HANDLE th, VALUE name)
+{
+    int idx, result = FALSE;
+    WCHAR *s;
+
+    if (NIL_P(name)) {
+	rb_w32_set_thread_description(th, L"");
+	return;
+    }
+    s = (WCHAR *)StringValueCStr(name);
+    idx = rb_enc_get_index(name);
+    if (idx == ENCINDEX_UTF_16LE) {
+	result = rb_w32_set_thread_description(th, s);
+    }
+    else {
+	name = rb_str_conv_enc(name, rb_enc_from_index(idx), rb_utf8_encoding());
+	s = mbstr_to_wstr(CP_UTF8, RSTRING_PTR(name), RSTRING_LEN(name)+1, NULL);
+	result = rb_w32_set_thread_description(th, s);
+	free(s);
+    }
+    RB_GC_GUARD(name);
+    return result;
+}
+
 VALUE (*const rb_f_notimplement_)(int, const VALUE *, VALUE) = rb_f_notimplement;
 
 #if RUBY_MSVCRT_VERSION < 120

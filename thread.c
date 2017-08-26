@@ -2932,9 +2932,6 @@ rb_thread_getname(VALUE thread)
 static VALUE
 rb_thread_setname(VALUE thread, VALUE name)
 {
-#ifdef SET_ANOTHER_THREAD_NAME
-    const char *s = "";
-#endif
     rb_thread_t *target_th = rb_thread_ptr(thread);
 
     if (!NIL_P(name)) {
@@ -2946,16 +2943,11 @@ rb_thread_setname(VALUE thread, VALUE name)
 		     rb_enc_name(enc));
 	}
 	name = rb_str_new_frozen(name);
-#ifdef SET_ANOTHER_THREAD_NAME
-	s = RSTRING_PTR(name);
-#endif
     }
     target_th->name = name;
-#if defined(SET_ANOTHER_THREAD_NAME)
     if (threadptr_initialized(target_th)) {
-	SET_ANOTHER_THREAD_NAME(target_th->thread_id, s);
+	native_set_another_thread_name(target_th->thread_id, name);
     }
-#endif
     return name;
 }
 

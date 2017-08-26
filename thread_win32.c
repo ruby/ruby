@@ -669,6 +669,10 @@ ubf_handle(void *ptr)
     }
 }
 
+int rb_w32_set_thread_description(HANDLE th, const WCHAR *name);
+int rb_w32_set_thread_description_str(HANDLE th, VALUE name);
+#define native_set_another_thread_name rb_w32_set_thread_description_str
+
 static struct {
     HANDLE id;
     HANDLE lock;
@@ -679,6 +683,7 @@ static unsigned long __stdcall
 timer_thread_func(void *dummy)
 {
     thread_debug("timer_thread\n");
+    rb_w32_set_thread_description(GetCurrentThread(), L"ruby-timer-thread");
     while (WaitForSingleObject(timer_thread.lock, TIME_QUANTUM_USEC/1000) ==
 	   WAIT_TIMEOUT) {
 	timer_thread_function(dummy);
