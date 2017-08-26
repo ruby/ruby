@@ -465,7 +465,13 @@ class VCS
       rev = cmd_read(%W"#{COMMAND} svn info"+[STDERR=>[:child, :out]])[/^Last Changed Rev: (\d+)/, 1]
       ret = system(COMMAND, "svn", "dcommit")
       if ret and rev
-        cmd_read(%W"#{COMMAND} svn reset -r#{rev}")
+        old = [cmd_read(%W"#{COMMAND} log -1 --format=%H").chomp]
+        old << cmd_read(%W"#{COMMAND} svn reset -r#{rev}")[/^r#{rev} = (\h+)/, 1]
+        3.times do
+          sleep 2
+          system(*%W"#{COMMAND} pull --no-edit --rebase")
+          break unless old.include?(cmd_read(%W"#{COMMAND} log -1 --format=%H").chomp)
+        end
       end
       ret
     end
