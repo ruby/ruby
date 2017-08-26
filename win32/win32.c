@@ -7881,8 +7881,7 @@ rb_w32_set_thread_description_str(HANDLE th, VALUE name)
     WCHAR *s;
 
     if (NIL_P(name)) {
-	rb_w32_set_thread_description(th, L"");
-	return;
+	return rb_w32_set_thread_description(th, L"");
     }
     s = (WCHAR *)StringValueCStr(name);
     idx = rb_enc_get_index(name);
