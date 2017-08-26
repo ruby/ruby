@@ -26,7 +26,7 @@
 const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 0xC0, 0x4F, 0x8F, 0x5D, 0x9A}};
 #endif
 
-#define WIN32OLE_VERSION "1.8.5"
+#define WIN32OLE_VERSION "1.8.6"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -2440,12 +2440,16 @@ fole_s_ole_uninitialize(VALUE self)
 /*
  *  call-seq:
  *     WIN32OLE.new(server, [host]) -> WIN32OLE object
+ *     WIN32OLE.new(server, license: 'key') -> WIN32OLE object
  *
  *  Returns a new WIN32OLE object(OLE Automation object).
  *  The first argument server specifies OLE Automation server.
  *  The first argument should be CLSID or PROGID.
  *  If second argument host specified, then returns OLE Automation
  *  object on host.
+ *  If :license keyword argument is provided,
+ *  IClassFactory2::CreateInstanceLic is used to create instance of
+ *  licensed server.
  *
  *      WIN32OLE.new('Excel.Application') # => Excel OLE Automation WIN32OLE object.
  *      WIN32OLE.new('{00024500-0000-0000-C000-000000000046}') # => Excel OLE Automation WIN32OLE object.
@@ -2456,13 +2460,19 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
     VALUE svr_name;
     VALUE host;
     VALUE others;
+    VALUE opts;
     HRESULT hr;
     CLSID   clsid;
     OLECHAR *pBuf;
+    OLECHAR *key_buf;
     IDispatch *pDispatch;
+    IClassFactory2 * pIClassFactory2;
     void *p;
+    static ID keyward_ids[1];
+    VALUE kwargs[1];
+
     rb_call_super(0, 0);
-    rb_scan_args(argc, argv, "11*", &svr_name, &host, &others);
+    rb_scan_args(argc, argv, "11*:", &svr_name, &host, &others, &opts);
 
     StringValue(svr_name);
     if (rb_safe_level() > 0 && OBJ_TAINTED(svr_name)) {
@@ -2491,9 +2501,35 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
                   StringValuePtr(svr_name));
     }
 
-    /* get IDispatch interface */
-    hr = CoCreateInstance(&clsid, NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER,
-                          &IID_IDispatch, &p);
+    if (!keyward_ids[0]) {
+        keyward_ids[0] = rb_intern_const("license");
+    }
+    rb_get_kwargs(opts, keyward_ids, 0, 1, kwargs);
+
+    if (kwargs[0] == Qundef) {
+        /* get IDispatch interface */
+        hr = CoCreateInstance(
+            &clsid,
+            NULL,
+            CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER,
+            &IID_IDispatch,
+            &p
+        );
+    } else {
+        hr = CoGetClassObject(
+            &clsid,
+            CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER,
+            NULL,
+            &IID_IClassFactory2,
+            (LPVOID)&pIClassFactory2
+        );
+        if (hr == S_OK) {
+            key_buf = ole_vstr2wc(kwargs[0]);
+            hr = pIClassFactory2->lpVtbl->CreateInstanceLic(pIClassFactory2, NULL, NULL, &IID_IDispatch, key_buf, &p);
+            SysFreeString(key_buf);
+            OLE_RELEASE(pIClassFactory2);
+        }
+    }
     pDispatch = p;
     if(FAILED(hr)) {
         ole_raise(hr, eWIN32OLERuntimeError,
