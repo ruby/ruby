@@ -4656,6 +4656,61 @@ compile_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
     return COMPILE_OK;
 }
 
+static int
+compile_resbody(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
+{
+    const int line = nd_line(node);
+    NODE *resq = node;
+    NODE *narg;
+    LABEL *label_miss, *label_hit;
+
+    while (resq) {
+	label_miss = NEW_LABEL(line);
+	label_hit = NEW_LABEL(line);
+
+	narg = resq->nd_args;
+	if (narg) {
+	    switch (nd_type(narg)) {
+	      case NODE_ARRAY:
+		while (narg) {
+		    ADD_GETLOCAL(ret, line, LVAR_ERRINFO, 0);
+		    CHECK(COMPILE(ret, "rescue arg", narg->nd_head));
+		    ADD_INSN1(ret, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
+		    ADD_INSNL(ret, line, branchif, label_hit);
+		    narg = narg->nd_next;
+		}
+		break;
+	      case NODE_SPLAT:
+	      case NODE_ARGSCAT:
+	      case NODE_ARGSPUSH:
+		ADD_GETLOCAL(ret, line, LVAR_ERRINFO, 0);
+		CHECK(COMPILE(ret, "rescue/cond splat", narg));
+		ADD_INSN1(ret, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE | VM_CHECKMATCH_ARRAY));
+		ADD_INSNL(ret, line, branchif, label_hit);
+		break;
+	      default:
+		UNKNOWN_NODE("NODE_RESBODY", narg, COMPILE_NG);
+	    }
+	}
+	else {
+	    ADD_GETLOCAL(ret, line, LVAR_ERRINFO, 0);
+	    ADD_INSN1(ret, line, putobject, rb_eStandardError);
+	    ADD_INSN1(ret, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
+	    ADD_INSNL(ret, line, branchif, label_hit);
+	}
+	ADD_INSNL(ret, line, jump, label_miss);
+	ADD_LABEL(ret, label_hit);
+	CHECK(COMPILE(ret, "resbody body", resq->nd_body));
+	if (ISEQ_COMPILE_DATA(iseq)->option->tailcall_optimization) {
+	    ADD_INSN(ret, line, nop);
+	}
+	ADD_INSN(ret, line, leave);
+	ADD_LABEL(ret, label_miss);
+	resq = resq->nd_head;
+    }
+    return COMPILE_OK;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped);
 /**
   compile each node
@@ -4840,57 +4895,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
       case NODE_RESCUE:
 	CHECK(compile_rescue(iseq, ret, node, popped));
 	break;
-      case NODE_RESBODY:{
-	NODE *resq = node;
-	NODE *narg;
-	LABEL *label_miss, *label_hit;
-
-	while (resq) {
-	    label_miss = NEW_LABEL(line);
-	    label_hit = NEW_LABEL(line);
-
-	    narg = resq->nd_args;
-	    if (narg) {
-		switch (nd_type(narg)) {
-		  case NODE_ARRAY:
-		    while (narg) {
-			ADD_GETLOCAL(ret, line, LVAR_ERRINFO, 0);
-			CHECK(COMPILE(ret, "rescue arg", narg->nd_head));
-			ADD_INSN1(ret, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
-			ADD_INSNL(ret, line, branchif, label_hit);
-			narg = narg->nd_next;
-		    }
-		    break;
-		  case NODE_SPLAT:
-		  case NODE_ARGSCAT:
-		  case NODE_ARGSPUSH:
-		    ADD_GETLOCAL(ret, line, LVAR_ERRINFO, 0);
-		    CHECK(COMPILE(ret, "rescue/cond splat", narg));
-		    ADD_INSN1(ret, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE | VM_CHECKMATCH_ARRAY));
-		    ADD_INSNL(ret, line, branchif, label_hit);
-		    break;
-		  default:
-		    UNKNOWN_NODE("NODE_RESBODY", narg, COMPILE_NG);
-		}
-	    }
-	    else {
-		ADD_GETLOCAL(ret, line, LVAR_ERRINFO, 0);
-		ADD_INSN1(ret, line, putobject, rb_eStandardError);
-		ADD_INSN1(ret, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
-		ADD_INSNL(ret, line, branchif, label_hit);
-	    }
-	    ADD_INSNL(ret, line, jump, label_miss);
-	    ADD_LABEL(ret, label_hit);
-	    CHECK(COMPILE(ret, "resbody body", resq->nd_body));
-	    if (ISEQ_COMPILE_DATA(iseq)->option->tailcall_optimization) {
-		ADD_INSN(ret, line, nop);
-	    }
-	    ADD_INSN(ret, line, leave);
-	    ADD_LABEL(ret, label_miss);
-	    resq = resq->nd_head;
-	}
+      case NODE_RESBODY:
+	CHECK(compile_resbody(iseq, ret, node, popped));
 	break;
-      }
       case NODE_ENSURE:{
 	DECL_ANCHOR(ensr);
 	const rb_iseq_t *ensure = NEW_CHILD_ISEQ(node->nd_ensr,
