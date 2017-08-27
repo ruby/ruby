@@ -432,7 +432,7 @@ class IMAPTest < Test::Unit::TestCase
             c.signal
           end
         end
-        assert_raise(Net::IMAP::Error) do
+        assert_raise(EOFError) do
           imap.idle do |res|
             m.synchronize do
               in_idle = true

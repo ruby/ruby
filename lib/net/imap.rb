@@ -964,7 +964,7 @@ module Net
           @idle_done_cond.wait(timeout)
           @idle_done_cond = nil
           if @receiver_thread_terminating
-            raise Net::IMAP::Error, "connection closed"
+            raise @exception || Net::IMAP::Error.new("connection closed")
           end
         ensure
           unless @receiver_thread_terminating
@@ -2268,8 +2268,13 @@ module Net
 
       def continue_req
         match(T_PLUS)
-        match(T_SPACE)
-        return ContinuationRequest.new(resp_text, @str)
+        token = lookahead
+        if token.symbol == T_SPACE
+          shift_token
+          return ContinuationRequest.new(resp_text, @str)
+        else
+          return ContinuationRequest.new(ResponseText.new(nil, ""), @str)
+        end
       end
 
       def response_untagged
