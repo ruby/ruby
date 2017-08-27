@@ -4623,6 +4623,39 @@ compile_retry(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
     return COMPILE_OK;
 }
 
+static int
+compile_rescue(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
+{
+    const int line = nd_line(node);
+    LABEL *lstart = NEW_LABEL(line);
+    LABEL *lend = NEW_LABEL(line);
+    LABEL *lcont = NEW_LABEL(line);
+    const rb_iseq_t *rescue = NEW_CHILD_ISEQ(node->nd_resq,
+					     rb_str_concat(rb_str_new2("rescue in "), iseq->body->location.label),
+					     ISEQ_TYPE_RESCUE, line);
+
+    lstart->rescued = LABEL_RESCUE_BEG;
+    lend->rescued = LABEL_RESCUE_END;
+    ADD_LABEL(ret, lstart);
+    CHECK(COMPILE(ret, "rescue head", node->nd_head));
+    ADD_LABEL(ret, lend);
+    if (node->nd_else) {
+	ADD_INSN(ret, line, pop);
+	CHECK(COMPILE(ret, "rescue else", node->nd_else));
+    }
+    ADD_INSN(ret, line, nop);
+    ADD_LABEL(ret, lcont);
+
+    if (popped) {
+	ADD_INSN(ret, line, pop);
+    }
+
+    /* register catch entry */
+    ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, rescue, lcont);
+    ADD_CATCH_ENTRY(CATCH_TYPE_RETRY, lend, lcont, NULL, lstart);
+    return COMPILE_OK;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped);
 /**
   compile each node
@@ -4804,35 +4837,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	CHECK(COMPILE_(ret, "NODE_BEGIN", node->nd_body, popped));
 	break;
       }
-      case NODE_RESCUE:{
-	LABEL *lstart = NEW_LABEL(line);
-	LABEL *lend = NEW_LABEL(line);
-	LABEL *lcont = NEW_LABEL(line);
-	const rb_iseq_t *rescue = NEW_CHILD_ISEQ(node->nd_resq,
-						 rb_str_concat(rb_str_new2("rescue in "), iseq->body->location.label),
-						 ISEQ_TYPE_RESCUE, line);
-
-	lstart->rescued = LABEL_RESCUE_BEG;
-	lend->rescued = LABEL_RESCUE_END;
-	ADD_LABEL(ret, lstart);
-	CHECK(COMPILE(ret, "rescue head", node->nd_head));
-	ADD_LABEL(ret, lend);
-	if (node->nd_else) {
-	    ADD_INSN(ret, line, pop);
-	    CHECK(COMPILE(ret, "rescue else", node->nd_else));
-	}
-	ADD_INSN(ret, line, nop);
-	ADD_LABEL(ret, lcont);
-
-	if (popped) {
-	    ADD_INSN(ret, line, pop);
-	}
-
-	/* register catch entry */
-	ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, rescue, lcont);
-	ADD_CATCH_ENTRY(CATCH_TYPE_RETRY, lend, lcont, NULL, lstart);
+      case NODE_RESCUE:
+	CHECK(compile_rescue(iseq, ret, node, popped));
 	break;
-      }
       case NODE_RESBODY:{
 	NODE *resq = node;
 	NODE *narg;
