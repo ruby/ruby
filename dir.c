@@ -2015,21 +2015,19 @@ glob_helper(
 
 	    name = dp->d_name;
 	    namlen = NAMLEN(dp);
-            if((namlen == 1 || namlen == 2) && name[0] == '.') {
-                if (recursive) {
-                    ++dotfile;
-                    if (namlen == 1) {
-                        /* unless DOTMATCH, skip current directories not to recurse infinitely */
-                        if (!(flags & FNM_DOTMATCH)) continue;
-                        ++dotfile;
-                        new_pathtype = path_directory; /* force to skip stat/lstat */
-                    }
-                }
-                else {
-                    /* always skip parent and current directories not to recurse infinitely */
-                    continue;
-                }
-            }
+	    if (recursive && name[0] == '.') {
+		++dotfile;
+		if (namlen == 1) {
+		    /* unless DOTMATCH, skip current directories not to recurse infinitely */
+		    if (!(flags & FNM_DOTMATCH)) continue;
+		    ++dotfile;
+		    new_pathtype = path_directory; /* force to skip stat/lstat */
+		}
+		else if (namlen == 2 && name[1] == '.') {
+		    /* always skip parent directories not to recurse infinitely */
+		    continue;
+		}
+	    }
 
 # if NORMALIZE_UTF8PATH
 	    if (norm_p && has_nonascii(name, namlen)) {
@@ -2152,7 +2150,7 @@ glob_helper(
 		    break;
 		}
 #if USE_NAME_ON_FS == USE_NAME_ON_FS_REAL_BASENAME
-                int last = 0; // todo, I need to call it only for the last element
+        int last = 0; // todo, I need to call it only for the last element
 		if ((((*cur)->type == ALPHA) || (((*cur)->type == PLAIN) && last && name[0] != '.'))) {
 		    long base = pathlen + (dirsep != 0);
 		    buf = replace_real_basename(buf, base, enc, IF_NORMALIZE_UTF8PATH(1)+0,
