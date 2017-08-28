@@ -7868,7 +7868,7 @@ rb_w32_set_thread_description(HANDLE th, const WCHAR *name)
 	set_thread_description = (set_thread_description_func)
 	    get_proc_address("kernel32", "SetThreadDescription", NULL);
     }
-    if (set_thread_description != (set_thread_description_func)-1) {
+    if (set_thread_description) {
 	result = set_thread_description(th, name);
     }
     return result;
