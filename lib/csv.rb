@@ -242,7 +242,7 @@ class CSV
       @row = if headers.size >= fields.size
         headers.zip(fields)
       else
-        fields.zip(headers).map { |pair| pair.reverse! }
+        fields.zip(headers).each(&:reverse!)
       end
     end
 
@@ -267,7 +267,7 @@ class CSV
 
     # Returns the headers of this row.
     def headers
-      @row.map { |pair| pair.first }
+      @row.map(&:first)
     end
 
     #
@@ -451,21 +451,23 @@ class CSV
     #
     def fields(*headers_and_or_indices)
       if headers_and_or_indices.empty?  # return all fields--no arguments
-        @row.map { |pair| pair.last }
+        @row.map(&:last)
       else                              # or work like values_at()
-        headers_and_or_indices.inject(Array.new) do |all, h_or_i|
-          all + if h_or_i.is_a? Range
+        all = []
+        headers_and_or_indices.each do |h_or_i|
+          if h_or_i.is_a? Range
             index_begin = h_or_i.begin.is_a?(Integer) ? h_or_i.begin :
                                                         index(h_or_i.begin)
             index_end   = h_or_i.end.is_a?(Integer)   ? h_or_i.end :
                                                         index(h_or_i.end)
             new_range   = h_or_i.exclude_end? ? (index_begin...index_end) :
                                                 (index_begin..index_end)
-            fields.values_at(new_range)
+            all.concat(fields.values_at(new_range))
           else
-            [field(*Array(h_or_i))]
+            all << field(*Array(h_or_i))
           end
         end
+        return all
       end
     end
     alias_method :values_at, :fields
@@ -835,11 +837,10 @@ class CSV
       if @mode == :row or @mode == :col_or_row  # by index
         @table.delete_if(&block)
       else                                      # by header
-        to_delete = Array.new
-        headers.each_with_index do |header, i|
-          to_delete << header if block[[header, self[header]]]
+        deleted = []
+        headers.each do |header|
+          deleted << delete(header) if block[[header, self[header]]]
         end
-        to_delete.map { |header| delete(header) }
       end
 
       self  # for chaining
@@ -1188,11 +1189,11 @@ class CSV
   # The <tt>:row_sep</tt> +option+ defaults to <tt>$INPUT_RECORD_SEPARATOR</tt>
   # (<tt>$/</tt>) when calling this method.
   #
-  def self.generate_line(row, encoding: nil, **options)
+  def self.generate_line(row, **options)
     options = {row_sep: $INPUT_RECORD_SEPARATOR}.merge(options)
     str = String.new
-    if encoding
-      str.force_encoding(encoding)
+    if options[:encoding]
+      str.force_encoding(options[:encoding])
     elsif field = row.find { |f| not f.nil? }
       str.force_encoding(String(field).encoding)
     end
@@ -1262,16 +1263,16 @@ class CSV
   # * truncate()
   # * tty?()
   #
-  def self.open(*args, **options)
+  def self.open(filename, mode="r", **options)
     # wrap a File opened with the remaining +args+ with no newline
     # decorator
     file_opts = {universal_newline: false}.merge(options)
 
     begin
-      f = File.open(*args, file_opts)
+      f = File.open(filename, mode, file_opts)
     rescue ArgumentError => e
-      raise unless /needs binmode/ =~ e.message and args.size == 1
-      args << "rb"
+      raise unless /needs binmode/ =~ e.message and mode == "r"
+      mode = "rb"
       file_opts = {encoding: Encoding.default_external}.merge(file_opts)
       retry
     end
@@ -1727,7 +1728,7 @@ class CSV
   # converted field or the field itself.
   #
   def convert(name = nil, &converter)
-    add_converter(:converters, self.class::Converters, name, &converter)
+    add_converter(:@converters, self.class::Converters, name, &converter)
   end
 
   #
@@ -1742,7 +1743,7 @@ class CSV
   # effect.
   #
   def header_convert(name = nil, &converter)
-    add_converter( :header_converters,
+    add_converter( :@header_converters,
                    self.class::HeaderConverters,
                    name,
                    &converter )
@@ -2176,7 +2177,7 @@ class CSV
   #
   def add_converter(var_name, const, name = nil, &converter)
     if name.nil?  # custom converter
-      instance_variable_get("@#{var_name}") << converter
+      instance_variable_get(var_name) << converter
     else          # named converter
       combo = const[name]
       case combo
@@ -2185,7 +2186,7 @@ class CSV
           add_converter(var_name, const, converter_name)
         end
       else        # individual named converter
-        instance_variable_get("@#{var_name}") << combo
+        instance_variable_get(var_name) << combo
       end
     end
   end
@@ -2265,7 +2266,7 @@ class CSV
     class << row
       attr_reader :unconverted_fields
     end
-    row.instance_eval { @unconverted_fields = fields }
+    row.instance_variable_set(:@unconverted_fields, fields)
     row
   end
 
