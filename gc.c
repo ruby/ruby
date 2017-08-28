@@ -4033,7 +4033,7 @@ stack_check(rb_thread_t *th, int water_mark)
 #define stack_check(th, water_mark) FALSE
 #endif
 
-#define STACKFRAME_FOR_CALL_CFUNC 512
+#define STACKFRAME_FOR_CALL_CFUNC 838
 
 int
 rb_threadptr_stack_check(rb_thread_t *th)
