@@ -1948,7 +1948,7 @@ rb_hash_transform_values(VALUE hash)
  *     h.transform_values! {|v| v * v + 1 }  #=> { a: 2, b: 5, c: 10 }
  *     h.transform_values!(&:to_s)           #=> { a: "2", b: "5", c: "10" }
  *     h.transform_values!.with_index {|v, i| "#{v}.#{i}" }
- *                                           #=> { a: "1.0", b: "5.1", c: "10.2" }
+ *                                           #=> { a: "2.0", b: "5.1", c: "10.2" }
  *
  *  If no block is given, an enumerator is returned instead.
  */
