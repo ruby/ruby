@@ -4133,6 +4133,48 @@ number_literal_p(NODE *n)
 }
 
 static int
+compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
+{
+    const int line = nd_line(node);
+    DECL_ANCHOR(cond_seq);
+    DECL_ANCHOR(then_seq);
+    DECL_ANCHOR(else_seq);
+    LABEL *then_label, *else_label, *end_label;
+
+    INIT_ANCHOR(cond_seq);
+    INIT_ANCHOR(then_seq);
+    INIT_ANCHOR(else_seq);
+    then_label = NEW_LABEL(line);
+    else_label = NEW_LABEL(line);
+    end_label = 0;
+
+    compile_branch_condition(iseq, cond_seq, node->nd_cond,
+			     then_label, else_label);
+    CHECK(COMPILE_(then_seq, "then", node->nd_body, popped));
+    CHECK(COMPILE_(else_seq, "else", node->nd_else, popped));
+
+    ADD_SEQ(ret, cond_seq);
+
+    if (then_label->refcnt) {
+	ADD_LABEL(ret, then_label);
+	ADD_SEQ(ret, then_seq);
+	end_label = NEW_LABEL(line);
+	ADD_INSNL(ret, line, jump, end_label);
+    }
+
+    if (else_label->refcnt) {
+	ADD_LABEL(ret, else_label);
+	ADD_SEQ(ret, else_seq);
+    }
+
+    if (end_label) {
+	ADD_LABEL(ret, end_label);
+    }
+
+    return COMPILE_OK;
+}
+
+static int
 compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
 {
     NODE *vals;
@@ -4822,44 +4864,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	}
 	break;
       }
-      case NODE_IF:{
-	DECL_ANCHOR(cond_seq);
-	DECL_ANCHOR(then_seq);
-	DECL_ANCHOR(else_seq);
-	LABEL *then_label, *else_label, *end_label;
-
-	INIT_ANCHOR(cond_seq);
-	INIT_ANCHOR(then_seq);
-	INIT_ANCHOR(else_seq);
-	then_label = NEW_LABEL(line);
-	else_label = NEW_LABEL(line);
-	end_label = 0;
-
-	compile_branch_condition(iseq, cond_seq, node->nd_cond,
-				 then_label, else_label);
-	CHECK(COMPILE_(then_seq, "then", node->nd_body, popped));
-	CHECK(COMPILE_(else_seq, "else", node->nd_else, popped));
-
-	ADD_SEQ(ret, cond_seq);
-
-	if (then_label->refcnt) {
-	    ADD_LABEL(ret, then_label);
-	    ADD_SEQ(ret, then_seq);
-	    end_label = NEW_LABEL(line);
-	    ADD_INSNL(ret, line, jump, end_label);
-	}
-
-	if (else_label->refcnt) {
-	    ADD_LABEL(ret, else_label);
-	    ADD_SEQ(ret, else_seq);
-	}
-
-	if (end_label) {
-	    ADD_LABEL(ret, end_label);
-	}
-
+      case NODE_IF:
+	CHECK(compile_if(iseq, ret, node, popped));
 	break;
-      }
       case NODE_CASE:
 	CHECK(compile_case(iseq, ret, node, popped));
 	break;
