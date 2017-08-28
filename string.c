@@ -7469,7 +7469,8 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     }
     else if (split_type == string) {
 	char *ptr = RSTRING_PTR(str);
-	char *temp = ptr;
+	char *str_start = ptr;
+	char *substr_start = ptr;
 	char *eptr = RSTRING_END(str);
 	char *sptr = RSTRING_PTR(spat);
 	long slen = RSTRING_LEN(spat);
@@ -7484,11 +7485,13 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 		ptr = t;
 		continue;
 	    }
-	    rb_ary_push(result, rb_str_subseq(str, ptr - temp, end));
+	    rb_ary_push(result, rb_str_subseq(str, substr_start - str_start,
+					      (ptr+end) - substr_start));
 	    ptr += end + slen;
+	    substr_start = ptr;
 	    if (!NIL_P(limit) && lim <= ++i) break;
 	}
-	beg = ptr - temp;
+	beg = ptr - str_start;
     }
     else {
 	char *ptr = RSTRING_PTR(str);
