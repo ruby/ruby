@@ -1288,7 +1288,7 @@ class CSV
       begin
         yield csv
       ensure
-        csv.closed? || csv.close
+        csv.close
       end
     else
       csv
