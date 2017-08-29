@@ -2022,7 +2022,7 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result, int *first)
 		val = tmp;
 		goto str_join;
 	    }
-	    tmp = rb_check_convert_type_with_id(val, T_ARRAY, "Array", idTo_ary);
+	    tmp = rb_check_array_type(val);
 	    if (!NIL_P(tmp)) {
 		obj = val;
 		val = tmp;
