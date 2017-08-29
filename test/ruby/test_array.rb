@@ -1899,8 +1899,10 @@ class TestArray < Test::Unit::TestCase
 
   def test_permutation_stack_error
     bug9932 = '[ruby-core:63103] [Bug #9932]'
-    assert_separately([], <<-"end;", timeout: 30) #    do
-      assert_nothing_raised(SystemStackError, "#{bug9932}") do
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
+    bug = "#{bug9932}"
+    begin;
+      assert_nothing_raised(SystemStackError, bug) do
         assert_equal(:ok, Array.new(100_000, nil).permutation {break :ok})
       end
     end;
@@ -1932,7 +1934,8 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_repeated_permutation_stack_error
-    assert_separately([], <<-"end;", timeout: 30) #    do
+    assert_separately([], "#{<<-"begin;"}\n#{<<~'end;'}", timeout: 30)
+    begin;
       assert_nothing_raised(SystemStackError) do
         assert_equal(:ok, Array.new(100_000, nil).repeated_permutation(500_000) {break :ok})
       end
@@ -1969,7 +1972,8 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_repeated_combination_stack_error
-    assert_separately([], <<-"end;", timeout: 20) #    do
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 20)
+    begin;
       assert_nothing_raised(SystemStackError) do
         assert_equal(:ok, Array.new(100_000, nil).repeated_combination(500_000) {break :ok})
       end
@@ -2752,21 +2756,24 @@ class TestArray < Test::Unit::TestCase
     Bug11235 = '[ruby-dev:49043] [Bug #11235]'
 
     def test_push_over_ary_max
-      assert_separately(['-', ARY_MAX.to_s, Bug11235], <<-"end;", timeout: 30)
+      assert_separately(['-', ARY_MAX.to_s, Bug11235], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
+      begin;
         a = Array.new(ARGV[0].to_i)
         assert_raise(IndexError, ARGV[1]) {0x1000.times {a.push(1)}}
       end;
     end
 
     def test_unshift_over_ary_max
-      assert_separately(['-', ARY_MAX.to_s, Bug11235], <<-"end;")
+      assert_separately(['-', ARY_MAX.to_s, Bug11235], "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
         a = Array.new(ARGV[0].to_i)
         assert_raise(IndexError, ARGV[1]) {0x1000.times {a.unshift(1)}}
       end;
     end
 
     def test_splice_over_ary_max
-      assert_separately(['-', ARY_MAX.to_s, Bug11235], <<-"end;")
+      assert_separately(['-', ARY_MAX.to_s, Bug11235], "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
         a = Array.new(ARGV[0].to_i)
         assert_raise(IndexError, ARGV[1]) {a[0, 0] = Array.new(0x1000)}
       end;
