@@ -500,7 +500,7 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
     if ((ptr = get_local_variable_ptr(&env, lid)) == NULL) {
 	sym = ID2SYM(lid);
       undefined:
-	rb_name_err_raise("local variable `%1$s' not defined for %2$s",
+	rb_name_err_raise("local variable `%1$s' is not defined for %2$s",
 			  bindval, sym);
     }
 
