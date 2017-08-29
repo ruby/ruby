@@ -70,13 +70,6 @@ class RDoc::CodeObject
   attr_reader :metadata
 
   ##
-  # Offset in #file where this CodeObject was defined
-  #--
-  # TODO character or byte?
-
-  attr_accessor :offset
-
-  ##
   # Sets the parent CodeObject
 
   attr_writer :parent

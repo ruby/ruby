@@ -276,12 +276,6 @@ class TestRDocCodeObject < XrefTestCase
     assert_equal 'not_rdoc', @co.metadata['markup']
   end
 
-  def test_offset
-    @c1_m.offset = 5
-
-    assert_equal 5, @c1_m.offset
-  end
-
   def test_options
     assert_kind_of RDoc::Options, @co.options
 

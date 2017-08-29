@@ -80,7 +80,6 @@ class RDoc::RI::Driver
     options[:interactive] = false
     options[:profile]     = false
     options[:show_all]    = false
-    options[:use_cache]   = true
     options[:use_stdout]  = !$stdout.tty?
     options[:width]       = 72
 
@@ -122,7 +121,7 @@ class RDoc::RI::Driver
       opt.summary_indent = ' ' * 4
 
       opt.banner = <<-EOT
-Usage: #{opt.program_name} [options] [names...]
+Usage: #{opt.program_name} [options] [name ...]
 
 Where name can be:
 
@@ -132,8 +131,8 @@ Where name can be:
 
   gem_name: | gem_name:README | gem_name:History
 
-All class names may be abbreviated to their minimum unambiguous form. If a name
-is ambiguous, all valid options will be listed.
+All class names may be abbreviated to their minimum unambiguous form.
+If a name is ambiguous, all valid options will be listed.
 
 A '.' matches either class or instance methods, while #method
 matches only instance and ::method matches only class methods.
@@ -151,23 +150,23 @@ For example:
     #{opt.program_name} zip
     #{opt.program_name} rdoc:README
 
-Note that shell quoting or escaping may be required for method names containing
-punctuation:
+Note that shell quoting or escaping may be required for method names
+containing punctuation:
 
     #{opt.program_name} 'Array.[]'
     #{opt.program_name} compact\\!
 
-To see the default directories ri will search, run:
+To see the default directories #{opt.program_name} will search, run:
 
     #{opt.program_name} --list-doc-dirs
 
-Specifying the --system, --site, --home, --gems or --doc-dir options will
-limit ri to searching only the specified directories.
+Specifying the --system, --site, --home, --gems, or --doc-dir options
+will limit ri to searching only the specified directories.
 
-ri options may be set in the 'RI' environment variable.
+ri options may be set in the RI environment variable.
 
-The ri pager can be set with the 'RI_PAGER' environment variable or the
-'PAGER' environment variable.
+The ri pager can be set with the RI_PAGER environment variable
+or the PAGER environment variable.
       EOT
 
       opt.separator nil
@@ -199,15 +198,15 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
       opt.separator nil
 
       opt.on("--[no-]pager",
-             "Send output directly to stdout,",
-             "rather than to a pager.") do |use_pager|
+             "Send output to a pager,",
+             "rather than directly to stdout.") do |use_pager|
         options[:use_stdout] = !use_pager
       end
 
       opt.separator nil
 
       opt.on("-T",
-             "Synonym for --no-pager") do
+             "Synonym for --no-pager.") do
         options[:use_stdout] = true
       end
 
@@ -220,7 +219,7 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
 
       opt.separator nil
 
-      opt.on("--server [PORT]", Integer,
+      opt.on("--server[=PORT]", Integer,
              "Run RDoc server on the given port.",
              "The default port is 8214.") do |port|
         options[:server] = port || 8214
@@ -235,11 +234,27 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
       formatters -= %w[html label test] # remove useless output formats
 
       opt.on("--format=NAME", "-f",
-             "Uses the selected formatter. The default",
+             "Use the selected formatter.  The default",
              "formatter is bs for paged output and ansi",
-             "otherwise. Valid formatters are:",
-             formatters.join(' '), formatters) do |value|
+             "otherwise.  Valid formatters are:",
+             "#{formatters.join(', ')}.", formatters) do |value|
         options[:formatter] = RDoc::Markup.const_get "To#{value.capitalize}"
+      end
+
+      opt.separator nil
+
+      opt.on("--help", "-h",
+             "Show help and exit.") do
+        puts opts
+        exit
+      end
+
+      opt.separator nil
+
+      opt.on("--version", "-v",
+             "Output version information and exit.") do
+        puts "#{opts.program_name} #{opts.version}"
+        exit
       end
 
       opt.separator nil
@@ -273,7 +288,7 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
              "Do not include documentation from",
              "the Ruby standard library, site_lib,",
              "installed gems, or ~/.rdoc.",
-             "Use with --doc-dir") do
+             "Use with --doc-dir.") do
         options[:use_system] = false
         options[:use_site] = false
         options[:use_gems] = false
@@ -283,8 +298,8 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
       opt.separator nil
 
       opt.on("--[no-]system",
-             "Include documentation from Ruby's standard",
-             "library.  Defaults to true.") do |value|
+             "Include documentation from Ruby's",
+             "standard library.  Defaults to true.") do |value|
         options[:use_system] = value
       end
 
@@ -318,14 +333,14 @@ The ri pager can be set with the 'RI_PAGER' environment variable or the
       opt.separator nil
 
       opt.on("--[no-]profile",
-             "Run with the ruby profiler") do |value|
+             "Run with the ruby profiler.") do |value|
         options[:profile] = value
       end
 
       opt.separator nil
 
       opt.on("--dump=CACHE", File,
-             "Dumps data from an ri cache or data file") do |value|
+             "Dump data from an ri cache or data file.") do |value|
         options[:dump_path] = value
       end
     end

@@ -1,7 +1,7 @@
 # sync following repositories to ruby repository
 #
 # * https://github.com/rubygems/rubygems
-# * https://github.com/rdoc/rdoc
+# * https://github.com/ruby/rdoc
 # * https://github.com/flori/json
 # * https://github.com/ruby/psych
 # * https://github.com/ruby/fileutils
@@ -25,7 +25,7 @@
 
 $repositories = {
   rubygems: 'rubygems/rubygems',
-  rdoc: 'rdoc/rdoc',
+  rdoc: 'ruby/rdoc',
   json: 'flori/json',
   psych: 'ruby/psych',
   fileutils: 'ruby/fileutils',
@@ -65,10 +65,11 @@ def sync_default_gems(gem)
     `cp ../../rubygems/rubygems/LICENSE.txt ./lib/rubygems`
   when "rdoc"
     `rm -rf lib/rdoc* test/rdoc`
-    `cp -rf ../../rdoc/rdoc/lib/rdoc* ./lib`
-    `cp -rf ../../rdoc/rdoc/test test/rdoc`
-    `cp ../../rdoc/rdoc/rdoc.gemspec ./lib/rdoc`
+    `cp -rf ../rdoc/lib/rdoc* ./lib`
+    `cp -rf ../rdoc/test test/rdoc`
+    `cp ../rdoc/rdoc.gemspec ./lib/rdoc`
     `rm -f lib/rdoc/markdown.kpeg lib/rdoc/markdown/literals.kpeg lib/rdoc/rd/block_parser.ry lib/rdoc/rd/inline_parser.ry`
+    `git checkout lib/rdoc/.document`
   when "json"
     `rm -rf ext/json test/json`
     `cp -rf ../../flori/json/ext/json/ext ext/json`

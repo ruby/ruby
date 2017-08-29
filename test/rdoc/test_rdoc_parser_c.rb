@@ -1139,7 +1139,6 @@ Init_Foo(void) {
     assert_equal 'my_method', other_function.name
     assert_equal 'a comment for rb_other_function', other_function.comment.text
     assert_equal '()', other_function.params
-    assert_equal 118, other_function.offset
     assert_equal 8, other_function.line
 
     code = other_function.token_stream.first.text
@@ -1173,7 +1172,6 @@ Init_Foo(void) {
     assert_equal 'my_method', other_function.name
     assert_equal 'a comment for other_function', other_function.comment.text
     assert_equal '()', other_function.params
-    assert_equal 39, other_function.offset
     assert_equal 4, other_function.line
 
     code = other_function.token_stream.first.text
@@ -1402,7 +1400,6 @@ rb_m(int argc, VALUE *argv, VALUE obj) {
 
     assert_equal 'm', m.name
     assert_equal @top_level, m.file
-    assert_equal 115, m.offset
     assert_equal 7, m.line
 
     assert_equal '(p1)', m.params

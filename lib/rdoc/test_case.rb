@@ -6,7 +6,7 @@ rescue NoMethodError, Gem::LoadError
 end
 
 require 'minitest/autorun'
-require 'minitest/benchmark' if ENV['BENCHMARK']
+require 'minitest/benchmark' unless ENV['NOBENCHMARK']
 
 require 'fileutils'
 require 'pp'

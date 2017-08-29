@@ -670,7 +670,6 @@ class RDoc::Parser::C < RDoc::Parser
       tk.set_text body
       meth_obj.add_token tk
       meth_obj.comment = comment
-      meth_obj.offset  = offset
       meth_obj.line    = file_content[0, offset].count("\n") + 1
 
       body
@@ -689,7 +688,6 @@ class RDoc::Parser::C < RDoc::Parser
       tk.set_text body
       meth_obj.add_token tk
       meth_obj.comment = comment
-      meth_obj.offset  = offset
       meth_obj.line    = file_content[0, offset].count("\n") + 1
 
       body

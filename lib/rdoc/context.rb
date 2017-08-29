@@ -762,7 +762,7 @@ class RDoc::Context < RDoc::CodeObject
     attributes.default = []
 
     sort_sections.each do |section|
-      yield section, constants[section].sort, attributes[section].sort
+      yield section, constants[section].select(&:display?).sort, attributes[section].select(&:display?).sort
     end
   end
 

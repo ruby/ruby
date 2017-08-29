@@ -481,6 +481,32 @@ class TestRDocContext < XrefTestCase
     assert_equal expected_attrs, attrs
   end
 
+  def test_each_section_only_display
+    sects  = []
+    consts = []
+    attrs  = []
+
+    @c7.each_section do |section, constants, attributes|
+      sects  << section
+      consts << constants
+      attrs  << attributes
+    end
+
+    assert_equal [nil], sects.map { |section| section.title }
+
+    expected_consts = [
+      @c7.constants.select(&:display?).sort
+    ]
+
+    assert_equal expected_consts, consts
+
+    expected_attrs = [
+      @c7.attributes.select(&:display?).sort
+    ]
+
+    assert_equal expected_attrs, attrs
+  end
+
   def test_each_section_enumerator
     assert_kind_of Enumerator, @c1.each_section
   end

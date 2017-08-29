@@ -36,17 +36,27 @@ module RDoc::TokenStream
               when RDoc::RubyToken::TkIVAR     then 'ruby-ivar'
               when RDoc::RubyToken::TkOp       then 'ruby-operator'
               when RDoc::RubyToken::TkId       then 'ruby-identifier'
+              when RDoc::RubyToken::TkREGEXP   then 'ruby-regexp'
+              when RDoc::RubyToken::TkDREGEXP  then 'ruby-regexp'
               when RDoc::RubyToken::TkNode     then 'ruby-node'
               when RDoc::RubyToken::TkCOMMENT  then 'ruby-comment'
-              when RDoc::RubyToken::TkREGEXP   then 'ruby-regexp'
+              when RDoc::RubyToken::TkXSTRING  then 'ruby-string'
               when RDoc::RubyToken::TkSTRING   then 'ruby-string'
               when RDoc::RubyToken::TkVal      then 'ruby-value'
               end
 
-      text = CGI.escapeHTML t.text
+      comment_with_nl = false
+      case t
+      when RDoc::RubyToken::TkRD_COMMENT, RDoc::RubyToken::TkHEREDOCEND
+        comment_with_nl = true if t.text =~ /\n$/
+        text = t.text.rstrip
+      else
+        text = t.text
+      end
+      text = CGI.escapeHTML text
 
       if style then
-        "<span class=\"#{style}\">#{text}</span>"
+        "<span class=\"#{style}\">#{text}</span>#{"\n" if comment_with_nl}"
       else
         text
       end

@@ -589,7 +589,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # +comment+.
 
   def parse_attr(context, single, tk, comment)
-    offset  = tk.seek
     line_no = tk.line_no
 
     args = parse_symbol_arg 1
@@ -606,7 +605,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
       end
 
       att = create_attr context, single, name, rw, comment
-      att.offset = offset
       att.line   = line_no
 
       read_documentation_modifiers att, RDoc::ATTR_MODIFIERS
@@ -620,7 +618,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # comment for each to +comment+.
 
   def parse_attr_accessor(context, single, tk, comment)
-    offset  = tk.seek
     line_no = tk.line_no
 
     args = parse_symbol_arg
@@ -642,7 +639,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     for name in args
       att = create_attr context, single, name, rw, comment
-      att.offset = offset
       att.line   = line_no
     end
   end
@@ -651,7 +647,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # Parses an +alias+ in +context+ with +comment+
 
   def parse_alias(context, single, tk, comment)
-    offset  = tk.seek
     line_no = tk.line_no
 
     skip_tkspace
@@ -680,7 +675,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
     al = RDoc::Alias.new(get_tkread, old_name, new_name, comment,
                          single == SINGLE)
     record_location al
-    al.offset = offset
     al.line   = line_no
 
     read_documentation_modifiers al, RDoc::ATTR_MODIFIERS
@@ -733,7 +727,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # Parses a class in +context+ with +comment+
 
   def parse_class container, single, tk, comment
-    offset  = tk.seek
     line_no = tk.line_no
 
     declaration_context = container
@@ -748,7 +741,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
         case name = get_class_specification
         when 'self', container.name
           parse_statements container, SINGLE
-          return # don't update offset or line
+          return # don't update line
         else
           parse_class_singleton container, name, comment
         end
@@ -757,8 +750,10 @@ class RDoc::Parser::Ruby < RDoc::Parser
         return
       end
 
-    cls.offset = offset
     cls.line   = line_no
+
+    # after end modifiers
+    read_documentation_modifiers cls, RDoc::CLASS_MODIFIERS
 
     cls
   end
@@ -845,7 +840,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # true, no found constants will be added to RDoc.
 
   def parse_constant container, tk, comment, ignore_constants = false
-    offset  = tk.seek
     line_no = tk.line_no
 
     name = tk.name
@@ -885,7 +879,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     value.replace body
     record_location con
-    con.offset = offset
     con.line   = line_no
     read_documentation_modifiers con, RDoc::CONSTANT_MODIFIERS
 
@@ -950,7 +943,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
   def parse_comment container, tk, comment
     return parse_comment_tomdoc container, tk, comment if @markup == 'tomdoc'
     column  = tk.char_no
-    offset  = tk.seek
     line_no = tk.line_no
 
     text = comment.text
@@ -966,7 +958,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     if co then
       co.singleton = singleton
-      co.offset    = offset
       co.line      = line_no
     end
 
@@ -1031,19 +1022,18 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
   def parse_comment_tomdoc container, tk, comment
     return unless signature = RDoc::TomDoc.signature(comment)
-    offset  = tk.seek
+    column  = tk.char_no
     line_no = tk.line_no
 
     name, = signature.split %r%[ \(]%, 2
 
     meth = RDoc::GhostMethod.new get_tkread, name
     record_location meth
-    meth.offset    = offset
     meth.line      = line_no
 
     meth.start_collecting_tokens
     indent = TkSPACE.new 0, 1, 1
-    indent.set_text " " * offset
+    indent.set_text " " * column
 
     position_comment = TkCOMMENT.new 0, line_no, 1
     position_comment.set_text "# File #{@top_level.relative_name}, line #{line_no}"
@@ -1183,7 +1173,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
   def parse_meta_method(container, single, tk, comment)
     column  = tk.char_no
-    offset  = tk.seek
     line_no = tk.line_no
 
     start_collecting_tokens
@@ -1200,7 +1189,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     meth = RDoc::MetaMethod.new get_tkread, name
     record_location meth
-    meth.offset = offset
     meth.line   = line_no
     meth.singleton = singleton
 
@@ -1291,7 +1279,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
     added_container = false
     name = nil
     column  = tk.char_no
-    offset  = tk.seek
     line_no = tk.line_no
 
     start_collecting_tokens
@@ -1309,7 +1296,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
     meth.singleton = single == SINGLE ? true : singleton
 
     record_location meth
-    meth.offset = offset
     meth.line   = line_no
 
     meth.start_collecting_tokens
@@ -1327,6 +1313,9 @@ class RDoc::Parser::Ruby < RDoc::Parser
     comment.extract_call_seq meth
 
     meth.comment = comment
+
+    # after end modifiers
+    read_documentation_modifiers meth, RDoc::METHOD_MODIFIERS
 
     @stats.add_method meth
   end
@@ -1519,6 +1508,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       end
       tk = get_tk
     end
+    @scanner.first_in_method_statement = true
 
     get_tkread_clean(/\s+/, ' ')
   end
@@ -1558,6 +1548,9 @@ class RDoc::Parser::Ruby < RDoc::Parser
     read_documentation_modifiers mod, RDoc::CLASS_MODIFIERS
     mod.add_comment comment, @top_level
     parse_statements mod
+
+    # after end modifiers
+    read_documentation_modifiers mod, RDoc::CLASS_MODIFIERS
 
     @stats.add_module mod
   end
@@ -1732,7 +1725,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
       when TkEND then
         nest -= 1
         if nest == 0 then
-          read_documentation_modifiers container, RDoc::CLASS_MODIFIERS
           container.ongoing_visibility = save_visibility
 
           parse_comment container, tk, comment unless comment.empty?
@@ -2039,7 +2031,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
   def skip_optional_do_after_expression
     skip_tkspace false
     tk = get_tk
-    end_token = get_end_token tk
 
     b_nest = 0
     nest = 0
@@ -2047,23 +2038,18 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     loop do
       case tk
-      when TkSEMICOLON then
+      when TkSEMICOLON, TkNL then
         break if b_nest.zero?
       when TkLPAREN, TkfLPAREN then
         nest += 1
+      when TkRPAREN then
+        nest -= 1
       when TkBEGIN then
         b_nest += 1
       when TkEND then
         b_nest -= 1
       when TkDO
         break if nest.zero?
-      when end_token then
-        if end_token == TkRPAREN
-          nest -= 1
-          break if @scanner.lex_state == :EXPR_END and nest.zero?
-        else
-          break unless @scanner.continue
-        end
       when nil then
         break
       end

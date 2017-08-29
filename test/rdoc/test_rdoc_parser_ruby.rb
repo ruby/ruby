@@ -74,7 +74,7 @@ class C; end
 
     comment = parser.collect_first_comment
 
-    assert_equal RDoc::Comment.new("first\n\n", @top_level), comment
+    assert_equal RDoc::Comment.new("=begin\nfirst\n=end\n\n", @top_level), comment
   end
 
   def test_get_class_or_module
@@ -282,6 +282,31 @@ class C; end
     assert_equal 'blah', @top_level.metadata['unhandled']
   end
 
+  def test_parse_for_in
+    klass = RDoc::NormalClass.new 'Foo'
+    klass.parent = @top_level
+
+    comment = RDoc::Comment.new '', @top_level
+
+    util_parser <<ruby
+def sum(n)
+  result = 0
+  for i in 1..n do
+    result += i
+  end
+  result
+end
+ruby
+
+    tk = @parser.get_tk
+
+    @parser.parse_method klass, RDoc::Parser::Ruby::NORMAL, tk, comment
+
+    sum = klass.method_list.first
+    assert_equal 'sum',      sum.name
+    assert_equal @top_level, sum.file
+  end
+
   def test_parse_alias
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
@@ -297,7 +322,6 @@ class C; end
     assert_equal klass,      alas.parent
     assert_equal 'comment',  alas.comment
     assert_equal @top_level, alas.file
-    assert_equal 0,          alas.offset
     assert_equal 1,          alas.line
   end
 
@@ -365,7 +389,6 @@ class C; end
     assert_equal 'foo', foo.name
     assert_equal 'my attr', foo.comment.text
     assert_equal @top_level, foo.file
-    assert_equal 0, foo.offset
     assert_equal 1, foo.line
   end
 
@@ -404,7 +427,6 @@ class C; end
     assert_equal 'RW', foo.rw
     assert_equal 'my attr', foo.comment.text
     assert_equal @top_level, foo.file
-    assert_equal 0, foo.offset
     assert_equal 1, foo.line
 
     bar = klass.attributes.last
@@ -617,7 +639,6 @@ class C; end
     assert_equal 'Foo', foo.full_name
     assert_equal 'my class', foo.comment.text
     assert_equal [@top_level], foo.in_files
-    assert_equal 0, foo.offset
     assert_equal 1, foo.line
   end
 
@@ -637,7 +658,6 @@ end
 
     c = @top_level.classes.first
     assert_equal 'C', c.full_name
-    assert_equal 0, c.offset
     assert_equal 1, c.line
   end
 
@@ -727,7 +747,6 @@ end
     assert_equal 'Foo', foo.full_name
     assert_empty foo.comment
     assert_equal [@top_level], foo.in_files
-    assert_equal 0, foo.offset
     assert_equal 1, foo.line
   end
 
@@ -756,6 +775,16 @@ end
     @parser.parse_class @top_level, RDoc::Parser::Ruby::NORMAL, tk, comment
 
     assert_empty @top_level.classes.first.comment
+  end
+
+  def test_parse_class_lower_name_warning
+    @options.verbosity = 2
+    out, err = capture_io do
+      util_parser "class foo\nend"
+      tk = @parser.get_tk
+      @parser.parse_class @top_level, RDoc::Parser::Ruby::NORMAL, tk, @comment
+    end
+    assert_match /Expected class name or '<<'\. Got/, err
   end
 
   def test_parse_multi_ghost_methods
@@ -920,7 +949,6 @@ end
     assert_equal %w[A::B A::d], modules.map { |c| c.full_name }
 
     b = modules.first
-    assert_equal 10, b.offset
     assert_equal 2,  b.line
 
     # make sure method/alias was not added to enclosing class/module
@@ -1083,7 +1111,6 @@ EOF
     assert_equal 'RW',       foo.rw
     assert_equal 'my attr',  foo.comment.text
     assert_equal @top_level, foo.file
-    assert_equal 0,          foo.offset
     assert_equal 1,          foo.line
 
     assert_equal nil,        foo.viewer
@@ -1147,7 +1174,6 @@ EOF
     assert_equal 'foo',       foo.name
     assert_equal 'my method', foo.comment.text
     assert_equal @top_level,  foo.file
-    assert_equal 0,           foo.offset
     assert_equal 1,           foo.line
 
     assert_equal [],        foo.aliases
@@ -1223,7 +1249,6 @@ EOF
 
     assert_equal 'A', foo.name
     assert_equal @top_level, foo.file
-    assert_equal 0, foo.offset
     assert_equal 1, foo.line
   end
 
@@ -1389,7 +1414,6 @@ A::B::C = 1
     assert_equal 'foo',       foo.name
     assert_equal 'my method', foo.comment.text
     assert_equal @top_level,  foo.file
-    assert_equal 0,           foo.offset
     assert_equal 1,           foo.line
 
     assert_equal [],      foo.aliases
@@ -1587,7 +1611,6 @@ end
     assert_equal 'foo',       foo.name
     assert_equal 'my method', foo.comment.text
     assert_equal @top_level,  foo.file
-    assert_equal 0,           foo.offset
     assert_equal 1,           foo.line
 
     assert_equal [],        foo.aliases
@@ -1625,6 +1648,47 @@ end
     ]
 
     assert_equal stream, foo.token_stream
+  end
+
+  def test_parse_redefinable_methods
+    klass = RDoc::NormalClass.new 'Foo'
+    klass.parent = @top_level
+
+    comment = RDoc::Comment.new "", @top_level
+
+    redefinable_ops = %w[| ^ & <=> == === =~ > >= < <= << >> + - * / % ** ~ +@ -@ [] []= ` !  != !~]
+    redefinable_ops.each do |redefinable_op|
+      util_parser "def #{redefinable_op}\nend\n"
+      tk = @parser.get_tk
+      @parser.parse_method klass, RDoc::Parser::Ruby::NORMAL, tk, comment
+    end
+
+    klass.method_list.each do |method|
+      assert_kind_of RDoc::RubyToken::TkId, method.token_stream[5]
+      assert_includes redefinable_ops, method.token_stream[5].text
+    end
+  end
+
+  def test_parse_method_bracket
+    util_parser <<-RUBY
+class C
+  def [] end
+  def self.[] end
+  def []= end
+  def self.[]= end
+end
+    RUBY
+
+    @parser.scan
+
+    c = @store.find_class_named 'C'
+
+    assert_equal 4, c.method_list.size
+    assert_equal 'C#[]', c.method_list[0].full_name
+    assert_equal 'C::[]', c.method_list[1].full_name
+    assert_equal 'C#[]=', c.method_list[2].full_name
+    assert_equal 'C::[]=', c.method_list[3].full_name
+    assert c.aliases.empty?
   end
 
   def test_parse_method_alias
@@ -1978,6 +2042,30 @@ end
     assert_equal 'Foo#blah', methods.first.full_name
   end
 
+  def test_parse_statements_postfix_if_unless
+    util_parser <<-CODE
+class C
+  def foo
+    1 if nil
+  end
+
+  def bar
+    2 unless nil
+  end
+end
+    CODE
+
+    @parser.parse_statements @top_level, RDoc::Parser::Ruby::NORMAL, nil
+
+    c = @top_level.classes.first
+    assert_equal 'C', c.full_name, 'class C'
+
+    methods = c.method_list
+    assert_equal 2, methods.length
+    assert_equal 'C#foo', methods[0].full_name
+    assert_equal 'C#bar', methods[1].full_name
+  end
+
   def test_parse_statements_class_nested
     comment = RDoc::Comment.new "##\n# my method\n", @top_level
 
@@ -1994,7 +2082,7 @@ end
   end
 
   def test_parse_statements_def_percent_string_pound
-    util_parser "class C\ndef a\n%r{#}\nend\ndef b() end\nend"
+    util_parser "class C\ndef a\n%r{#}\n%r{\#{}}\nend\ndef b() end\nend"
 
     @parser.parse_statements @top_level, RDoc::Parser::Ruby::NORMAL
 
@@ -2011,9 +2099,11 @@ end
       tk(:SPACE,      11, 2, 3, nil,   ' '),
       tk(:IDENTIFIER, 12, 2, 4, 'a',   'a'),
       tk(:NL,         13, 2, 5, nil,   "\n"),
-      tk(:DREGEXP,    14, 3, 0, nil,   '%r{#}'),
+      tk(:REGEXP,     14, 3, 0, nil,   '%r{#}'),
       tk(:NL,         19, 3, 5, nil,   "\n"),
-      tk(:END,        20, 4, 0, 'end', 'end'),
+      tk(:DREGEXP,    20, 4, 0, nil,   '%r{#{}}'),
+      tk(:NL,         27, 4, 7, nil,   "\n"),
+      tk(:END,        28, 5, 0, 'end', 'end'),
     ]
 
     assert_equal expected, a.token_stream
@@ -2377,6 +2467,162 @@ end
     assert_equal :private, date_time_now.visibility, date_time_now.full_name
   end
 
+  def test_parse_statements_complex_condition_in_for
+    util_parser <<RUBY
+class Foo
+  def blah()
+    for i in (k)...n do
+    end
+    for i in (k)...n
+    end
+  end
+end
+RUBY
+
+    expected = <<EXPTECTED
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">blah</span>()
+  <span class="ruby-keyword">for</span> <span class="ruby-identifier">i</span> <span class="ruby-keyword">in</span> (<span class="ruby-identifier">k</span>)<span class="ruby-operator">...</span><span class="ruby-identifier">n</span> <span class="ruby-keyword">do</span>
+  <span class="ruby-keyword">end</span>
+  <span class="ruby-keyword">for</span> <span class="ruby-identifier">i</span> <span class="ruby-keyword">in</span> (<span class="ruby-identifier">k</span>)<span class="ruby-operator">...</span><span class="ruby-identifier">n</span>
+  <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span>
+EXPTECTED
+    expected = expected.rstrip
+
+    @parser.scan
+
+    foo = @top_level.classes.first
+    assert_equal 'Foo', foo.full_name
+
+    blah = foo.method_list.first
+    markup_code = blah.markup_code.sub(/^.*\n/, '')
+    assert_equal markup_code, expected
+  end
+
+  def test_parse_statements_postfix_if_after_heredocbeg
+    @filename = 'file.rb'
+    util_parser <<RUBY
+class Foo
+  def blah()
+    <<~EOM if true
+    EOM
+  end
+end
+RUBY
+
+    expected = <<EXPTECTED
+  <span class="ruby-keyword">def</span> <span class="ruby-identifier">blah</span>()
+    <span class="ruby-identifier">&lt;&lt;~EOM</span> <span class="ruby-keyword">if</span> <span class="ruby-keyword">true</span>
+<span class="ruby-value"></span><span class="ruby-identifier">    EOM</span>
+  <span class="ruby-keyword">end</span>
+EXPTECTED
+    expected = expected.rstrip
+
+    @parser.scan
+
+    foo = @top_level.classes.first
+    assert_equal 'Foo', foo.full_name
+
+    blah = foo.method_list.first
+    markup_code = blah.markup_code.sub(/^.*\n/, '')
+    assert_equal markup_code, expected
+  end
+
+  def test_parse_statements_method_oneliner_with_regexp
+    util_parser <<RUBY
+class Foo
+  def blah() /bar/ end
+end
+RUBY
+
+    expected = <<EXPTECTED
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">blah</span>() <span class="ruby-regexp">/bar/</span> <span class="ruby-keyword">end</span>
+EXPTECTED
+    expected = expected.rstrip
+
+    @parser.scan
+
+    foo = @top_level.classes.first
+    assert_equal 'Foo', foo.full_name
+
+    blah = foo.method_list.first
+    markup_code = blah.markup_code.sub(/^.*\n/, '')
+    assert_equal expected, markup_code
+  end
+
+  def test_parse_statements_embdoc_in_document
+    @filename = 'file.rb'
+    util_parser <<RUBY
+class Foo
+  # doc
+  #
+  #   =begin
+  #   test embdoc
+  #   =end
+  #
+  def blah
+  end
+end
+RUBY
+
+    expected = <<EXPTECTED
+<p>doc
+
+<pre class="ruby"><span class="ruby-comment">=begin
+test embdoc
+=end</span>
+</pre>
+EXPTECTED
+
+    @parser.scan
+
+    foo = @top_level.classes.first
+    assert_equal 'Foo', foo.full_name
+
+    blah = foo.method_list.first
+    markup_comment = blah.search_record[6]
+    assert_equal markup_comment, expected
+  end
+
+  def test_parse_require_dynamic_string
+    content = <<-RUBY
+prefix = 'path'
+require "\#{prefix}/a_library"
+require 'test'
+RUBY
+
+    util_parser content
+
+    @parser.parse_statements @top_level
+
+    assert_equal 1, @top_level.requires.length
+  end
+
+  def test_parse_postfix_nodoc
+    util_parser <<-RUBY
+class A
+end # :nodoc:
+
+class B
+  def a
+  end # :nodoc:
+
+  def b
+  end
+end
+RUBY
+
+    @parser.parse_statements @top_level
+
+    c_a = @top_level.classes.select(&:document_self).first
+    assert_equal 'B', c_a.full_name
+
+    assert_equal 2, @top_level.classes.length
+    assert_equal 1, @top_level.classes.count(&:document_self)
+    assert_equal 1, c_a.method_list.length
+    assert_equal 'B#b', c_a.method_list.first.full_name
+  end
+
   def test_parse_statements_identifier_require
     content = "require 'bar'"
 
@@ -2502,6 +2748,25 @@ end
 
     assert_equal 'A#a', m_a.full_name
     assert_equal 'A#b', m_b.full_name
+  end
+
+
+  def test_parse_symbol_in_paren_arg
+    util_parser <<RUBY
+class Foo
+  def blah
+  end
+  private(:blah)
+end
+RUBY
+
+    @parser.scan
+
+    foo = @top_level.classes.first
+    assert_equal 'Foo', foo.full_name
+
+    blah = foo.method_list.first
+    assert_equal :private, blah.visibility
   end
 
   def test_parse_symbol_in_arg
@@ -2736,7 +3001,7 @@ end
   def test_sanity_interpolation_curly
     util_parser '%{ #{} }'
 
-    assert_equal '%Q{ #{} }', @parser.get_tk.text
+    assert_equal '%{ #{} }', @parser.get_tk.text
     assert_equal RDoc::RubyToken::TkNL, @parser.get_tk.class
   end
 
@@ -2793,11 +3058,11 @@ end
 
     foo = @top_level.classes.first
 
-    assert_equal 'Foo comment', foo.comment.text
+    assert_equal "=begin rdoc\nFoo comment\n=end", foo.comment.text
 
     m = foo.method_list.first
 
-    assert_equal 'm comment', m.comment.text
+    assert_equal "=begin\nm comment\n=end", m.comment.text
   end
 
   def test_scan_block_comment_nested # Issue #41
@@ -2819,7 +3084,7 @@ end
     foo = @top_level.modules.first
 
     assert_equal 'Foo', foo.full_name
-    assert_equal 'findmeindoc', foo.comment.text
+    assert_equal "=begin rdoc\nfindmeindoc\n=end", foo.comment.text
 
     bar = foo.classes.first
 
@@ -2866,12 +3131,12 @@ end
 
     foo = @top_level.classes.first
 
-    assert_equal "= DESCRIPTION\n\nThis is a simple test class\n\n= RUMPUS\n\nIs a silly word",
+    assert_equal "=begin rdoc\n\n= DESCRIPTION\n\nThis is a simple test class\n\n= RUMPUS\n\nIs a silly word\n\n=end",
       foo.comment.text
 
     m = foo.method_list.first
 
-    assert_equal 'A nice girl', m.comment.text
+    assert_equal "=begin rdoc\nA nice girl\n=end", m.comment.text
   end
 
   def test_scan_class_nested_nodoc
@@ -3243,6 +3508,33 @@ end
 
     assert_equal :private, c_b.visibility
     assert c_b.singleton
+  end
+
+  def test_scan_visibility_count
+    util_parser <<-RUBY
+class C < Original::Base
+  class C2 < Original::Base
+    def m0() end
+    def m1() end
+
+    private
+
+    def m2() end
+    def m3() end
+    def m4() end
+  end
+end
+    RUBY
+
+    @parser.scan
+
+    c = @store.find_class_named 'C::C2'
+
+    private_method_count = c.method_list.count { |m| :private == m.visibility }
+    assert_equal 3, private_method_count
+
+    public_method_count = c.method_list.count { |m| :public == m.visibility }
+    assert_equal 2, public_method_count
   end
 
   def test_singleton_method_via_eigenclass

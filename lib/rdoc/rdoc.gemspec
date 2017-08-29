@@ -21,7 +21,7 @@ Gem::Specification.new do |s|
 RDoc produces HTML and command-line documentation for Ruby projects.
 RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentation from the command-line.
   DESCRIPTION
-  s.homepage = "https://rdoc.github.io/rdoc"
+  s.homepage = "https://ruby.github.io/rdoc"
   s.licenses = ["Ruby"]
 
   s.bindir = "exe"
@@ -46,7 +46,7 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
     TODO.rdoc
   ]
 
-  s.required_ruby_version = Gem::Requirement.new(">= 1.9.3")
+  s.required_ruby_version = Gem::Requirement.new(">= 2.2.2")
   s.rubygems_version = "2.5.2"
   s.required_rubygems_version = Gem::Requirement.new(">= 2.2")
 

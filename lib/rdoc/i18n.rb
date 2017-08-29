@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 ##
-# This module provides i18n related features.
+# This module provides i18n realated features.
 
 module RDoc::I18n
 

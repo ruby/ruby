@@ -82,6 +82,18 @@ class C6
   def prot6() end
 end
 
+class C7
+  attr_reader :attr_reader
+  attr_reader :attr_reader_nodoc # :nodoc:
+  attr_writer :attr_writer
+  attr_writer :attr_writer_nodoc # :nodoc:
+  attr_accessor :attr_accessor
+  attr_accessor :attr_accessor_nodoc # :nodoc:
+
+  CONST = :const
+  CONST_NODOC = :const_nodoc # :nodoc:
+end
+
 module M1
   def m
   end
