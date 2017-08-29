@@ -1542,7 +1542,7 @@ glob_make_pattern(const char *p, const char *e, int flags, rb_encoding *enc)
 	else {
 	    const char *m = find_dirsep(p, e, flags, enc);
 	    const enum glob_pattern_type magic = has_magic(p, m, flags, enc);
-	    const enum glob_pattern_type non_magic = (USE_NAME_ON_FS || FNM_SYSCASE) ? PLAIN : ALPHA;
+	    const enum glob_pattern_type non_magic = ALPHA;
 	    char *buf;
 
 	    if (!(FNM_SYSCASE || magic > non_magic) && !recursive && *m) {
@@ -2150,10 +2150,14 @@ glob_helper(
 		    break;
 		}
 #if USE_NAME_ON_FS == USE_NAME_ON_FS_REAL_BASENAME
-		if ((*cur)->type == ALPHA) {
+        int last = 0; // todo, I need to call it only for the last element
+		if ((((*cur)->type == ALPHA) || (((*cur)->type == PLAIN) && last && name[0] != '.'))) {
 		    long base = pathlen + (dirsep != 0);
 		    buf = replace_real_basename(buf, base, enc, IF_NORMALIZE_UTF8PATH(1)+0,
 						flags, &new_pathtype);
+                    //printf("stat: ");
+                    //printf(buf);
+                    //printf("\n");
 		    if (!buf) break;
 		}
 #endif
