@@ -1994,7 +1994,10 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result, int *first)
 	if (RB_TYPE_P(val, T_STRING)) {
 	  str_join:
 	    rb_str_buf_append(result, val);
-	    *first = FALSE;
+	    if (*first) {
+		rb_enc_copy(result, val);
+		*first = FALSE;
+	    }
 	}
 	else if (RB_TYPE_P(val, T_ARRAY)) {
 	    obj = val;
@@ -2025,10 +2028,6 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result, int *first)
 		goto ary_join;
 	    }
 	    val = rb_obj_as_string(val);
-	    if (*first) {
-		rb_enc_copy(result, val);
-		*first = FALSE;
-	    }
 	    goto str_join;
 	}
     }
