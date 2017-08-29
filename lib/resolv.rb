@@ -2,7 +2,6 @@
 
 require 'socket'
 require 'timeout'
-require 'thread'
 require 'io/wait'
 
 begin
