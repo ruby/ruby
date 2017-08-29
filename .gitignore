@@ -113,6 +113,7 @@ lcov*.info
 /ruby-runner
 /ruby-runner.h
 /ruby-man.rd.gz
+/run.gdb
 /sizes.c
 /test.rb
 /tmp
