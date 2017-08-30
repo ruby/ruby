@@ -75,7 +75,7 @@ module Net::HTTPHeader
       append_field_value(ary, val)
       @header[key.downcase] = ary
     else
-      val = val.to_str
+      val = val.to_s
       if /[\r\n]/.match?(val)
         raise ArgumentError, 'header field value cannnot include CR/LF'
       end
