@@ -5079,10 +5079,16 @@ permute0(const long n, const long r, long *const p, char *const used, const VALU
 static VALUE
 descending_factorial(long from, long how_many)
 {
-    VALUE cnt = LONG2FIX(how_many >= 0);
-    while (how_many-- > 0) {
-	VALUE v = LONG2FIX(from--);
-	cnt = rb_int_mul(cnt, v);
+    VALUE cnt;
+    if (how_many > 0) {
+	cnt = LONG2FIX(from);
+	while (--how_many > 0) {
+	    long v = --from;
+	    cnt = rb_int_mul(cnt, LONG2FIX(v));
+	}
+    }
+    else {
+	cnt = LONG2FIX(how_many == 0);
     }
     return cnt;
 }
