@@ -1838,12 +1838,22 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_combination
-    assert_equal(@cls[[]], @cls[1,2,3,4].combination(0).to_a)
-    assert_equal(@cls[[1],[2],[3],[4]], @cls[1,2,3,4].combination(1).to_a)
-    assert_equal(@cls[[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]], @cls[1,2,3,4].combination(2).to_a)
-    assert_equal(@cls[[1,2,3],[1,2,4],[1,3,4],[2,3,4]], @cls[1,2,3,4].combination(3).to_a)
-    assert_equal(@cls[[1,2,3,4]], @cls[1,2,3,4].combination(4).to_a)
-    assert_equal(@cls[], @cls[1,2,3,4].combination(5).to_a)
+    a = @cls[]
+    assert_equal(1, a.combination(0).size)
+    assert_equal(0, a.combination(1).size)
+    a = @cls[1,2,3,4]
+    assert_equal(1, a.combination(0).size)
+    assert_equal(4, a.combination(1).size)
+    assert_equal(6, a.combination(2).size)
+    assert_equal(4, a.combination(3).size)
+    assert_equal(1, a.combination(4).size)
+    assert_equal(0, a.combination(5).size)
+    assert_equal(@cls[[]], a.combination(0).to_a)
+    assert_equal(@cls[[1],[2],[3],[4]], a.combination(1).to_a)
+    assert_equal(@cls[[1,2],[1,3],[1,4],[2,3],[2,4],[3,4]], a.combination(2).to_a)
+    assert_equal(@cls[[1,2,3],[1,2,4],[1,3,4],[2,3,4]], a.combination(3).to_a)
+    assert_equal(@cls[[1,2,3,4]], a.combination(4).to_a)
+    assert_equal(@cls[], a.combination(5).to_a)
   end
 
   def test_product
@@ -1875,7 +1885,16 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_permutation
+    a = @cls[]
+    assert_equal(1, a.permutation(0).size)
+    assert_equal(0, a.permutation(1).size)
     a = @cls[1,2,3]
+    assert_equal(1, a.permutation(0).size)
+    assert_equal(3, a.permutation(1).size)
+    assert_equal(6, a.permutation(2).size)
+    assert_equal(6, a.permutation(3).size)
+    assert_equal(0, a.permutation(4).size)
+    assert_equal(6, a.permutation.size)
     assert_equal(@cls[[]], a.permutation(0).to_a)
     assert_equal(@cls[[1],[2],[3]], a.permutation(1).to_a.sort)
     assert_equal(@cls[[1,2],[1,3],[2,1],[2,3],[3,1],[3,2]],
@@ -1910,7 +1929,14 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_repeated_permutation
+    a = @cls[]
+    assert_equal(1, a.repeated_permutation(0).size)
+    assert_equal(0, a.repeated_permutation(1).size)
     a = @cls[1,2]
+    assert_equal(1, a.repeated_permutation(0).size)
+    assert_equal(2, a.repeated_permutation(1).size)
+    assert_equal(4, a.repeated_permutation(2).size)
+    assert_equal(8, a.repeated_permutation(3).size)
     assert_equal(@cls[[]], a.repeated_permutation(0).to_a)
     assert_equal(@cls[[1],[2]], a.repeated_permutation(1).to_a.sort)
     assert_equal(@cls[[1,1],[1,2],[2,1],[2,2]],
@@ -1944,7 +1970,15 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_repeated_combination
+    a = @cls[]
+    assert_equal(1, a.repeated_combination(0).size)
+    assert_equal(0, a.repeated_combination(1).size)
     a = @cls[1,2,3]
+    assert_equal(1, a.repeated_combination(0).size)
+    assert_equal(3, a.repeated_combination(1).size)
+    assert_equal(6, a.repeated_combination(2).size)
+    assert_equal(10, a.repeated_combination(3).size)
+    assert_equal(15, a.repeated_combination(4).size)
     assert_equal(@cls[[]], a.repeated_combination(0).to_a)
     assert_equal(@cls[[1],[2],[3]], a.repeated_combination(1).to_a.sort)
     assert_equal(@cls[[1,1],[1,2],[1,3],[2,2],[2,3],[3,3]],
@@ -2495,6 +2529,9 @@ class TestArray < Test::Unit::TestCase
     a = []
     [0, 1, 2].cycle(3) {|i| a << i }
     assert_equal([0, 1, 2, 0, 1, 2, 0, 1, 2], a)
+
+    assert_equal(Float::INFINITY, a.cycle.size)
+    assert_equal(27, a.cycle(3).size)
   end
 
   def test_reverse_each2

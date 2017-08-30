@@ -25,8 +25,6 @@
 
 VALUE rb_cArray;
 
-static ID id_div;
-
 /* for OPTIMIZED_CMP: */
 #define id_cmp idCmp
 
@@ -4955,7 +4953,7 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
     mul = NUM2LONG(n);
     if (mul <= 0) return INT2FIX(0);
     n = LONG2FIX(mul);
-    return rb_funcallv(rb_ary_length(self), '*', 1, &n);
+    return rb_fix_mul_fix(rb_ary_length(self), n);
 }
 
 /*
@@ -5084,7 +5082,7 @@ descending_factorial(long from, long how_many)
     VALUE cnt = LONG2FIX(how_many >= 0);
     while (how_many-- > 0) {
 	VALUE v = LONG2FIX(from--);
-	cnt = rb_funcallv(cnt, '*', 1, &v);
+	cnt = rb_int_mul(cnt, v);
     }
     return cnt;
 }
@@ -5101,7 +5099,7 @@ binomial_coefficient(long comb, long size)
     }
     r = descending_factorial(size, comb);
     v = descending_factorial(comb, comb);
-    return rb_funcallv(r, id_div, 1, &v);
+    return rb_int_idiv(r, v);
 }
 
 static VALUE
@@ -5306,14 +5304,14 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
 {
     long n = RARRAY_LEN(ary);
     long k = NUM2LONG(RARRAY_AREF(args, 0));
-    VALUE v;
 
     if (k < 0) {
 	return LONG2FIX(0);
     }
-
-    v = LONG2NUM(k);
-    return rb_funcallv(LONG2NUM(n), idPow, 1, &v);
+    if (n <= 0) {
+	return LONG2FIX(!k);
+    }
+    return rb_int_positive_pow(n, (unsigned long)k);
 }
 
 /*
@@ -6263,5 +6261,4 @@ Init_Array(void)
     rb_define_method(rb_cArray, "sum", rb_ary_sum, -1);
 
     id_random = rb_intern("random");
-    id_div = rb_intern("div");
 }
