@@ -5096,16 +5096,23 @@ descending_factorial(long from, long how_many)
 static VALUE
 binomial_coefficient(long comb, long size)
 {
-    VALUE r, v;
+    VALUE r;
+    long i;
     if (comb > size-comb) {
 	comb = size-comb;
     }
     if (comb < 0) {
 	return LONG2FIX(0);
     }
-    r = descending_factorial(size, comb);
-    v = descending_factorial(comb, comb);
-    return rb_int_idiv(r, v);
+    else if (comb == 0) {
+	return LONG2FIX(1);
+    }
+    r = LONG2FIX(size);
+    for (i = 1; i < comb; ++i) {
+	r = rb_int_mul(r, LONG2FIX(size - i));
+	r = rb_int_idiv(r, LONG2FIX(i + 1));
+    }
+    return r;
 }
 
 static VALUE
