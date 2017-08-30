@@ -65,34 +65,4 @@
 # include "revision.h"
 #endif
 
-#ifdef RUBY_REVISION
-# if RUBY_PATCHLEVEL == -1
-#  ifndef RUBY_BRANCH_NAME
-#   define RUBY_BRANCH_NAME "master"
-#  endif
-#  define RUBY_REVISION_STR " "RUBY_BRANCH_NAME" "RUBY_REVISION
-# else
-#  define RUBY_REVISION_STR " revision "RUBY_REVISION
-# endif
-#else
-# define RUBY_REVISION "HEAD"
-# define RUBY_REVISION_STR ""
-#endif
-#if !defined RUBY_RELEASE_DATETIME || RUBY_PATCHLEVEL != -1
-# undef RUBY_RELEASE_DATETIME
-# define RUBY_RELEASE_DATETIME RUBY_RELEASE_DATE
-#endif
-
-# define RUBY_DESCRIPTION_WITH(opt) \
-    "ruby "RUBY_VERSION		    \
-    RUBY_PATCHLEVEL_STR		    \
-    " ("RUBY_RELEASE_DATETIME	    \
-    RUBY_REVISION_STR")"opt" "	    \
-    "["RUBY_PLATFORM"]"
-# define RUBY_COPYRIGHT		    \
-    "ruby - Copyright (C) "	    \
-    RUBY_BIRTH_YEAR_STR"-"   \
-    RUBY_RELEASE_YEAR_STR" " \
-    RUBY_AUTHOR
-
 #endif /* RUBY_TOPLEVEL_VERSION_H */

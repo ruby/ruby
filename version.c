@@ -20,6 +20,29 @@
 #define EXIT_SUCCESS 0
 #endif
 
+#ifdef RUBY_REVISION
+# if RUBY_PATCHLEVEL == -1
+#  ifndef RUBY_BRANCH_NAME
+#   define RUBY_BRANCH_NAME "master"
+#  endif
+#  define RUBY_REVISION_STR " "RUBY_BRANCH_NAME" "RUBY_REVISION
+# else
+#  define RUBY_REVISION_STR " revision "RUBY_REVISION
+# endif
+#else
+# define RUBY_REVISION "HEAD"
+# define RUBY_REVISION_STR ""
+#endif
+#if !defined RUBY_RELEASE_DATETIME || RUBY_PATCHLEVEL != -1
+# undef RUBY_RELEASE_DATETIME
+# define RUBY_RELEASE_DATETIME RUBY_RELEASE_DATE
+#endif
+
+# define RUBY_DESCRIPTION_WITH(opt) \
+    "ruby " RUBY_VERSION RUBY_PATCHLEVEL_STR " " \
+    "(" RUBY_RELEASE_DATETIME RUBY_REVISION_STR ")" opt " " \
+    "[" RUBY_PLATFORM "]"
+
 #define PRINT(type) puts(ruby_##type)
 #define MKSTR(type) rb_obj_freeze(rb_usascii_str_new_static(ruby_##type, sizeof(ruby_##type)-1))
 #define MKINT(name) INT2FIX(ruby_##name)
@@ -44,7 +67,9 @@ const int ruby_patchlevel = RUBY_PATCHLEVEL;
 const char ruby_description[] = RUBY_DESCRIPTION_WITH("");
 static const char ruby_description_with_mjit[] = RUBY_DESCRIPTION_WITH(" +MJIT");
 static const char ruby_description_with_yjit[] = RUBY_DESCRIPTION_WITH(" +YJIT");
-const char ruby_copyright[] = RUBY_COPYRIGHT;
+const char ruby_copyright[] = "ruby - Copyright (C) "
+    RUBY_BIRTH_YEAR_STR "-" RUBY_RELEASE_YEAR_STR " "
+    RUBY_AUTHOR;
 const char ruby_engine[] = "ruby";
 
 // Might change after initialization
