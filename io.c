@@ -2140,7 +2140,7 @@ io_bufread(char *ptr, long len, rb_io_t *fptr)
     return len - n;
 }
 
-static void io_setstrbuf(VALUE *str, long len);
+static int io_setstrbuf(VALUE *str, long len);
 
 struct bufread_arg {
     char *str_ptr;
@@ -2359,33 +2359,45 @@ io_shift_cbuf(rb_io_t *fptr, int len, VALUE *strp)
     return str;
 }
 
-static void
+static int
 io_setstrbuf(VALUE *str, long len)
 {
 #ifdef _WIN32
     len = (len + 1) & ~1L;	/* round up for wide char */
 #endif
     if (NIL_P(*str)) {
-	*str = rb_str_new(0, 0);
+	*str = rb_str_new(0, len);
+	return TRUE;
     }
     else {
 	VALUE s = StringValue(*str);
 	long clen = RSTRING_LEN(s);
 	if (clen >= len) {
 	    rb_str_modify(s);
-	    return;
+	    return FALSE;
 	}
 	len -= clen;
     }
     rb_str_modify_expand(*str, len);
+    return FALSE;
+}
+
+#define MAX_REALLOC_GAP 4096
+static void
+io_shrink_read_string(VALUE str, long n)
+{
+    if (rb_str_capacity(str) - n > MAX_REALLOC_GAP) {
+	rb_str_resize(str, n);
+    }
 }
 
 static void
-io_set_read_length(VALUE str, long n)
+io_set_read_length(VALUE str, long n, int shrinkable)
 {
     if (RSTRING_LEN(str) != n) {
 	rb_str_modify(str);
 	rb_str_set_len(str, n);
+	if (shrinkable) io_shrink_read_string(str, n);
     }
 }
 
@@ -2397,11 +2409,12 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
     long pos;
     rb_encoding *enc;
     int cr;
+    int shrinkable;
 
     if (NEED_READCONV(fptr)) {
 	int first = !NIL_P(str);
 	SET_BINARY_MODE(fptr);
-	io_setstrbuf(&str,0);
+	shrinkable = io_setstrbuf(&str,0);
         make_readconv(fptr, 0);
         while (1) {
             VALUE v;
@@ -2420,6 +2433,7 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
             if (v == MORE_CHAR_FINISHED) {
                 clear_readconv(fptr);
 		if (first) rb_str_set_len(str, first = 0);
+		if (shrinkable) io_shrink_read_string(str, RSTRING_LEN(str));
                 return io_enc_str(str, fptr);
             }
         }
@@ -2433,7 +2447,7 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
     cr = 0;
 
     if (siz == 0) siz = BUFSIZ;
-    io_setstrbuf(&str,siz);
+    shrinkable = io_setstrbuf(&str, siz);
     for (;;) {
 	READ_CHECK(fptr);
 	n = io_fread(str, bytes, siz - bytes, fptr);
@@ -2449,6 +2463,7 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
 	siz += BUFSIZ;
 	rb_str_modify_expand(str, BUFSIZ);
     }
+    if (shrinkable) io_shrink_read_string(str, RSTRING_LEN(str));
     str = io_enc_str(str, fptr);
     ENC_CODERANGE_SET(str, cr);
     return str;
@@ -2511,6 +2526,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, VALUE opts, int nonblock)
     VALUE length, str;
     long n, len;
     struct read_internal_arg arg;
+    int shrinkable;
 
     rb_scan_args(argc, argv, "11", &length, &str);
 
@@ -2518,7 +2534,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, VALUE opts, int nonblock)
 	rb_raise(rb_eArgError, "negative length %ld given", len);
     }
 
-    io_setstrbuf(&str,len);
+    shrinkable = io_setstrbuf(&str, len);
     OBJ_TAINT(str);
 
     GetOpenFile(io, fptr);
@@ -2555,7 +2571,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, VALUE opts, int nonblock)
             rb_syserr_fail_path(e, fptr->pathv);
         }
     }
-    io_set_read_length(str, n);
+    io_set_read_length(str, n, shrinkable);
 
     if (n == 0)
         return Qnil;
@@ -2651,12 +2667,13 @@ io_read_nonblock(VALUE io, VALUE length, VALUE str, VALUE ex)
     rb_io_t *fptr;
     long n, len;
     struct read_internal_arg arg;
+    int shrinkable;
 
     if ((len = NUM2LONG(length)) < 0) {
 	rb_raise(rb_eArgError, "negative length %ld given", len);
     }
 
-    io_setstrbuf(&str,len);
+    shrinkable = io_setstrbuf(&str, len);
     OBJ_TAINT(str);
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
@@ -2667,7 +2684,7 @@ io_read_nonblock(VALUE io, VALUE length, VALUE str, VALUE ex)
     n = read_buffered_data(RSTRING_PTR(str), len, fptr);
     if (n <= 0) {
 	rb_io_set_nonblock(fptr);
-	io_setstrbuf(&str, len);
+	shrinkable |= io_setstrbuf(&str, len);
 	arg.fd = fptr->fd;
 	arg.str_ptr = RSTRING_PTR(str);
 	arg.len = len;
@@ -2683,7 +2700,7 @@ io_read_nonblock(VALUE io, VALUE length, VALUE str, VALUE ex)
             rb_syserr_fail_path(e, fptr->pathv);
         }
     }
-    io_set_read_length(str, n);
+    io_set_read_length(str, n, shrinkable);
 
     if (n == 0) {
 	if (ex == Qfalse) return Qnil;
@@ -2802,6 +2819,7 @@ io_read(int argc, VALUE *argv, VALUE io)
     rb_io_t *fptr;
     long n, len;
     VALUE length, str;
+    int shrinkable;
 #if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
     int previous_mode;
 #endif
@@ -2818,12 +2836,12 @@ io_read(int argc, VALUE *argv, VALUE io)
 	rb_raise(rb_eArgError, "negative length %ld given", len);
     }
 
-    io_setstrbuf(&str,len);
+    shrinkable = io_setstrbuf(&str,len);
 
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
     if (len == 0) {
-	io_set_read_length(str, 0);
+	io_set_read_length(str, 0, shrinkable);
 	return str;
     }
 
@@ -2832,7 +2850,7 @@ io_read(int argc, VALUE *argv, VALUE io)
     previous_mode = set_binary_mode_with_seek_cur(fptr);
 #endif
     n = io_fread(str, 0, len, fptr);
-    io_set_read_length(str, n);
+    io_set_read_length(str, n, shrinkable);
 #if defined(RUBY_TEST_CRLF_ENVIRONMENT) || defined(_WIN32)
     if (previous_mode == O_TEXT) {
 	setmode(fptr->fd, O_TEXT);
@@ -4787,11 +4805,12 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     rb_io_t *fptr;
     long n, ilen;
     struct read_internal_arg arg;
+    int shrinkable;
 
     rb_scan_args(argc, argv, "11", &len, &str);
     ilen = NUM2LONG(len);
 
-    io_setstrbuf(&str,ilen);
+    shrinkable = io_setstrbuf(&str, ilen);
     if (ilen == 0) return str;
 
     GetOpenFile(io, fptr);
@@ -4823,7 +4842,7 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     if (n == -1) {
 	rb_sys_fail_path(fptr->pathv);
     }
-    io_set_read_length(str, n);
+    io_set_read_length(str, n, shrinkable);
     if (n == 0 && ilen > 0) {
 	rb_eof_error();
     }
@@ -4884,12 +4903,13 @@ rb_io_pread(int argc, VALUE *argv, VALUE io)
     rb_io_t *fptr;
     ssize_t n;
     struct prdwr_internal_arg arg;
+    int shrinkable;
 
     rb_scan_args(argc, argv, "21", &len, &offset, &str);
     arg.count = NUM2SIZET(len);
     arg.offset = NUM2OFFT(offset);
 
-    io_setstrbuf(&str, (long)arg.count);
+    shrinkable = io_setstrbuf(&str, (long)arg.count);
     if (arg.count == 0) return str;
     arg.buf = RSTRING_PTR(str);
 
@@ -4905,7 +4925,7 @@ rb_io_pread(int argc, VALUE *argv, VALUE io)
     if (n == -1) {
 	rb_sys_fail_path(fptr->pathv);
     }
-    io_set_read_length(str, n);
+    io_set_read_length(str, n, shrinkable);
     if (n == 0 && arg.count > 0) {
 	rb_eof_error();
     }
