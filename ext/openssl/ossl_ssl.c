@@ -80,6 +80,9 @@ static const struct {
 #if !defined(OPENSSL_NO_TLS1_2) && !defined(OPENSSL_NO_TLS1_2_METHOD) && defined(HAVE_TLSV1_2_METHOD)
     OSSL_SSL_METHOD_ENTRY(TLSv1_2, TLS1_2_VERSION),
 #endif
+#if !defined(OPENSSL_NO_TLS1_2) && !defined(OPENSSL_NO_TLS1_2_METHOD) && !defined(HAVE_TLSV1_3_METHOD)
+    OSSL_SSL_METHOD_ENTRY(TLSv1_3, TLS1_3_VERSION),
+#endif
     OSSL_SSL_METHOD_ENTRY(SSLv23, 0),
 #undef OSSL_SSL_METHOD_ENTRY
 };
@@ -2699,6 +2702,9 @@ Init_ossl_ssl(void)
 #endif
 #if defined(SSL_OP_NO_TLSv1_2)
     ossl_ssl_def_const(OP_NO_TLSv1_2);
+#endif
+#if defined(SSL_OP_NO_TLSv1_3)
+    ossl_ssl_def_const(OP_NO_TLSv1_3);
 #endif
 #if defined(SSL_OP_NO_TICKET)
     ossl_ssl_def_const(OP_NO_TICKET);
