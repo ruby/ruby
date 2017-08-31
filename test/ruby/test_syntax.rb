@@ -998,13 +998,10 @@ eom
       begin raise; ensure return; end and self
       nil&defined?0--begin e=no_method_error(); return; 0;end
     end;
-    all_assertions(feature4840) do |a|
-      code.each_line do |s|
-        s.chomp!
-        a.for(s) do
-          assert_ruby_status([], s, proc {RubyVM::InstructionSequence.compile(s).disasm})
-        end
-      end
+    all_assertions_foreach(feature4840, *code.split(/\n/)) do |s|
+      assert_in_out_err([], s, [*s[/#=> (.*)/, 1]], [],
+                        proc {RubyVM::InstructionSequence.compile(s).disasm},
+                        success: true)
     end
   end
 
