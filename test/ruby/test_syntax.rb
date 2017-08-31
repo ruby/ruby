@@ -999,7 +999,7 @@ eom
       nil&defined?0--begin e=no_method_error(); return; 0;end
     end;
     all_assertions_foreach(feature4840, *code.split(/\n/)) do |s|
-      assert_in_out_err([], s, [*s[/#=> (.*)/, 1]], [],
+      assert_in_out_err(%[-W0], s, [*s[/#=> (.*)/, 1]], [],
                         proc {RubyVM::InstructionSequence.compile(s).disasm},
                         success: true)
     end
