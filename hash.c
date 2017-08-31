@@ -2819,10 +2819,10 @@ rb_hash_compact(VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.compact! -> hsh
+ *     hsh.compact! -> hsh or nil
  *
  *  Removes all nil values from the hash.
- *  Returns the hash.
+ *  Returns nil if no changes were made, otherwise returns the hash.
  *
  *     h = { a: 1, b: false, c: nil }
  *     h.compact!     #=> { a: 1, b: false }
