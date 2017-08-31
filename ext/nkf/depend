@@ -10,6 +10,7 @@ nkf.o: $(hdrdir)/ruby/defines.h
 nkf.o: $(hdrdir)/ruby/encoding.h
 nkf.o: $(hdrdir)/ruby/intern.h
 nkf.o: $(hdrdir)/ruby/missing.h
+nkf.o: $(hdrdir)/ruby/onigmo.h
 nkf.o: $(hdrdir)/ruby/oniguruma.h
 nkf.o: $(hdrdir)/ruby/ruby.h
 nkf.o: $(hdrdir)/ruby/st.h

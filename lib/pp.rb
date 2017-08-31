@@ -14,17 +14,16 @@ module Kernel
     PP.pp(self, ''.dup)
   end
 
-  private
   # prints arguments in pretty form.
   #
   # pp returns argument(s).
-  def pp(*objs) # :nodoc:
+  def pp(*objs)
     objs.each {|obj|
       PP.pp(obj)
     }
     objs.size <= 1 ? objs.first : objs
   end
-  module_function :pp # :nodoc:
+  module_function :pp
 end
 
 ##
@@ -312,7 +311,7 @@ class PP < PrettyPrint
         inspect_method = method_method.call(:inspect)
       rescue NameError
       end
-      if inspect_method && /\(Kernel\)#/ !~ inspect_method.inspect
+      if inspect_method && inspect_method.owner != Kernel
         q.text self.inspect
       elsif !inspect_method && self.respond_to?(:inspect)
         q.text self.inspect
@@ -346,7 +345,7 @@ class PP < PrettyPrint
     # However, doing this requires that every class that #inspect is called on
     # implement #pretty_print, or a RuntimeError will be raised.
     def pretty_print_inspect
-      if /\(PP::ObjectMixin\)#/ =~ Object.instance_method(:method).bind(self).call(:pretty_print).inspect
+      if Object.instance_method(:method).bind(self).call(:pretty_print).owner == PP::ObjectMixin
         raise "pretty_print is not overridden for #{self.class}"
       end
       PP.singleline_pp(self, ''.dup)
@@ -415,6 +414,21 @@ class Range # :nodoc:
     q.text(self.exclude_end? ? '...' : '..')
     q.breakable ''
     q.pp self.end
+  end
+end
+
+class String # :nodoc:
+  def pretty_print(q) # :nodoc:
+    lines = self.lines
+    if lines.size > 1
+      q.group(0, '', '') do
+        q.seplist(lines, lambda { q.text ' +'; q.breakable }) do |v|
+          q.pp v
+        end
+      end
+    else
+      q.text inspect
+    end
   end
 end
 

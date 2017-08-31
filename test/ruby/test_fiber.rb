@@ -344,5 +344,25 @@ class TestFiber < Test::Unit::TestCase
     assert_equal("inner", s2)
     assert_equal(s1, $_, bug7678)
   end
+
+  def test_new_symbol_proc
+    bug = '[ruby-core:80147] [Bug #13313]'
+    assert_ruby_status([], "#{<<-"begin;"}\n#{<<-'end;'}", bug)
+    begin;
+      exit("1" == Fiber.new(&:to_s).resume(1))
+    end;
+  end
+
+  def test_to_s
+    f = Fiber.new do
+      assert_match(/resumed/, f.to_s)
+      Fiber.yield
+    end
+    assert_match(/created/, f.to_s)
+    f.resume
+    assert_match(/suspended/, f.to_s)
+    f.resume
+    assert_match(/terminated/, f.to_s)
+  end
 end
 

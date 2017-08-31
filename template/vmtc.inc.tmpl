@@ -13,6 +13,9 @@
  */
 
 static const void *const insns_address_table[] = {
-<%= insns_table %>
+% @insns.each do |insn|
+    LABEL_PTR(<%=insn.name%>),
+% end
 };
 
+ASSERT_VM_INSTRUCTION_SIZE(insns_address_table);

@@ -451,6 +451,22 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     assert_equal expected, @to.res.join
   end
 
+  def test_accept_verbatim_nl_after_backslash
+    verb = @RM::Verbatim.new("a = 1 if first_flag_var and \\\n", "  this_is_flag_var\n")
+
+    @to.start_accepting
+    @to.accept_verbatim verb
+
+    expected = <<-EXPECTED
+
+<pre class="ruby"><span class="ruby-identifier">a</span> = <span class="ruby-value">1</span> <span class="ruby-keyword">if</span> <span class="ruby-identifier">first_flag_var</span> <span class="ruby-keyword">and</span> \\
+  <span class="ruby-identifier">this_is_flag_var</span>
+</pre>
+    EXPECTED
+
+    assert_equal expected, @to.res.join
+  end
+
   def test_accept_verbatim_pipe
     @options.pipe = true
 
@@ -469,6 +485,106 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     assert_equal expected, @to.res.join
   end
 
+  def test_accept_verbatim_escape_in_string
+    code = <<-'RUBY'
+def foo
+  [
+    '\\',
+    '\'',
+    "'",
+    "\'\"\`",
+    "\#",
+    "\#{}",
+    "#",
+    "#{}",
+    /'"/,
+    /\'\"/,
+    /\//,
+    /\\/,
+    /\#/,
+    /\#{}/,
+    /#/,
+    /#{}/
+  ]
+end
+def bar
+end
+    RUBY
+    verb = @RM::Verbatim.new(*code.split(/(?<=\n)/))
+
+    @to.start_accepting
+    @to.accept_verbatim verb
+
+    expected = <<-'EXPECTED'
+
+<pre class="ruby"><span class="ruby-keyword">def</span> <span class="ruby-identifier">foo</span>
+  [
+    <span class="ruby-string">&#39;\\&#39;</span>,
+    <span class="ruby-string">&#39;\&#39;&#39;</span>,
+    <span class="ruby-string">&quot;&#39;&quot;</span>,
+    <span class="ruby-string">&quot;\&#39;\&quot;\`&quot;</span>,
+    <span class="ruby-string">&quot;\#&quot;</span>,
+    <span class="ruby-string">&quot;\#{}&quot;</span>,
+    <span class="ruby-string">&quot;#&quot;</span>,
+    <span class="ruby-node">&quot;#{}&quot;</span>,
+    <span class="ruby-regexp">/&#39;&quot;/</span>,
+    <span class="ruby-regexp">/\&#39;\&quot;/</span>,
+    <span class="ruby-regexp">/\//</span>,
+    <span class="ruby-regexp">/\\/</span>,
+    <span class="ruby-regexp">/\#/</span>,
+    <span class="ruby-regexp">/\#{}/</span>,
+    <span class="ruby-regexp">/#/</span>,
+    <span class="ruby-regexp">/#{}/</span>
+  ]
+<span class="ruby-keyword">end</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">bar</span>
+<span class="ruby-keyword">end</span>
+</pre>
+    EXPECTED
+
+    assert_equal expected, @to.res.join
+  end
+
+  def test_accept_verbatim_escape_in_backtick
+    code = <<-'RUBY'
+def foo
+  [
+    `\\`,
+    `\'\"\``,
+    `\#`,
+    `\#{}`,
+    `#`,
+    `#{}`
+  ]
+end
+def bar
+end
+    RUBY
+    verb = @RM::Verbatim.new(*code.split(/(?<=\n)/))
+
+    @to.start_accepting
+    @to.accept_verbatim verb
+
+    expected = <<-'EXPECTED'
+
+<pre class="ruby"><span class="ruby-keyword">def</span> <span class="ruby-identifier">foo</span>
+  [
+    <span class="ruby-string">`\\`</span>,
+    <span class="ruby-string">`\&#39;\&quot;\``</span>,
+    <span class="ruby-string">`\#`</span>,
+    <span class="ruby-string">`\#{}`</span>,
+    <span class="ruby-string">`#`</span>,
+    <span class="ruby-node">`#{}`</span>
+  ]
+<span class="ruby-keyword">end</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">bar</span>
+<span class="ruby-keyword">end</span>
+</pre>
+    EXPECTED
+
+    assert_equal expected, @to.res.join
+  end
+
   def test_accept_verbatim_ruby
     verb = @RM::Verbatim.new("1 + 1\n")
     verb.format = :ruby
@@ -481,6 +597,36 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
 <pre class="ruby"><span class="ruby-value">1</span> <span class="ruby-operator">+</span> <span class="ruby-value">1</span>
 </pre>
     EXPECTED
+
+    assert_equal expected, @to.res.join
+  end
+
+  def test_accept_verbatim_redefinable_operators
+    functions = %w[| ^ & <=> == === =~ > >= < <= << >> + - * / % ** ~ +@ -@ [] []= ` !  != !~].map { |redefinable_op|
+      ["def #{redefinable_op}\n", "end\n"]
+    }.flatten
+
+    verb = @RM::Verbatim.new(*functions)
+
+    @to.start_accepting
+    @to.accept_verbatim verb
+
+    expected = <<-EXPECTED
+
+<pre class="ruby">
+    EXPECTED
+    expected = expected.rstrip
+
+    %w[| ^ &amp; &lt;=&gt; == === =~ &gt; &gt;= &lt; &lt;= &lt;&lt; &gt;&gt; + - * / % ** ~ +@ -@ [] []= ` !  != !~].each do |html_escaped_op|
+      expected += <<-EXPECTED
+<span class="ruby-keyword">def</span> <span class="ruby-identifier">#{html_escaped_op}</span>
+<span class="ruby-keyword">end</span>
+      EXPECTED
+    end
+
+    expected += <<-EXPECTED
+</pre>
+EXPECTED
 
     assert_equal expected, @to.res.join
   end

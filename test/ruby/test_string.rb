@@ -202,6 +202,8 @@ CODE
     assert_equal("fobar", s)
 
     assert_raise(ArgumentError) { "foo"[1, 2, 3] = "" }
+
+    assert_raise(IndexError) {"foo"[RbConfig::LIMITS["LONG_MIN"]] = "l"}
   end
 
   def test_CMP # '<=>'
@@ -381,6 +383,56 @@ CODE
     $/ = save
 
     assert_equal(S("a").hash, S("a\u0101").chomp(S("\u0101")).hash, '[ruby-core:22414]')
+
+    s = S("hello")
+    assert_equal("hel", s.chomp('lo'))
+    assert_equal("hello", s)
+
+    s = S("hello")
+    assert_equal("hello", s.chomp('he'))
+    assert_equal("hello", s)
+
+    s = S("\u{3053 3093 306b 3061 306f}")
+    assert_equal("\u{3053 3093 306b}", s.chomp("\u{3061 306f}"))
+    assert_equal("\u{3053 3093 306b 3061 306f}", s)
+
+    s = S("\u{3053 3093 306b 3061 306f}")
+    assert_equal("\u{3053 3093 306b 3061 306f}", s.chomp('lo'))
+    assert_equal("\u{3053 3093 306b 3061 306f}", s)
+
+    s = S("hello")
+    assert_equal("hello", s.chomp("\u{3061 306f}"))
+    assert_equal("hello", s)
+
+    # skip if argument is a broken string
+    s = S("\xe3\x81\x82")
+    assert_equal("\xe3\x81\x82", s.chomp("\x82"))
+    assert_equal("\xe3\x81\x82", s)
+
+    s = S("\x95\x5c").force_encoding("Shift_JIS")
+    assert_equal("\x95\x5c".force_encoding("Shift_JIS"), s.chomp("\x5c"))
+    assert_equal("\x95\x5c".force_encoding("Shift_JIS"), s)
+
+    # clear coderange
+    s = S("hello\u{3053 3093}")
+    assert_not_predicate(s, :ascii_only?)
+    assert_predicate(s.chomp("\u{3053 3093}"), :ascii_only?)
+
+    # argument should be converted to String
+    klass = Class.new { def to_str; 'a'; end }
+    s = S("abba")
+    assert_equal("abb", s.chomp(klass.new))
+    assert_equal("abba", s)
+
+    # chomp removes any of "\n", "\r\n", "\r" when "\n" is specified
+    s = "foo\n"
+    assert_equal("foo", s.chomp("\n"))
+    s = "foo\r\n"
+    assert_equal("foo", s.chomp("\n"))
+    s = "foo\r"
+    assert_equal("foo", s.chomp("\n"))
+  ensure
+    $/ = save
   end
 
   def test_chomp!
@@ -437,6 +489,67 @@ CODE
     assert_equal("foo\r", s)
 
     assert_equal(S("a").hash, S("a\u0101").chomp!(S("\u0101")).hash, '[ruby-core:22414]')
+
+    s = S("").freeze
+    assert_raise_with_message(RuntimeError, /frozen/) {s.chomp!}
+
+    s = S("ax")
+    o = Struct.new(:s).new(s)
+    def o.to_str
+      s.freeze
+      "x"
+    end
+    assert_raise_with_message(RuntimeError, /frozen/) {s.chomp!(o)}
+
+    s = S("hello")
+    assert_equal("hel", s.chomp!('lo'))
+    assert_equal("hel", s)
+
+    s = S("hello")
+    assert_equal(nil, s.chomp!('he'))
+    assert_equal("hello", s)
+
+    s = S("\u{3053 3093 306b 3061 306f}")
+    assert_equal("\u{3053 3093 306b}", s.chomp!("\u{3061 306f}"))
+    assert_equal("\u{3053 3093 306b}", s)
+
+    s = S("\u{3053 3093 306b 3061 306f}")
+    assert_equal(nil, s.chomp!('lo'))
+    assert_equal("\u{3053 3093 306b 3061 306f}", s)
+
+    s = S("hello")
+    assert_equal(nil, s.chomp!("\u{3061 306f}"))
+    assert_equal("hello", s)
+
+    # skip if argument is a broken string
+    s = S("\xe3\x81\x82")
+    assert_equal(nil, s.chomp!("\x82"))
+    assert_equal("\xe3\x81\x82", s)
+
+    s = S("\x95\x5c").force_encoding("Shift_JIS")
+    assert_equal(nil, s.chomp!("\x5c"))
+    assert_equal("\x95\x5c".force_encoding("Shift_JIS"), s)
+
+    # clear coderange
+    s = S("hello\u{3053 3093}")
+    assert_not_predicate(s, :ascii_only?)
+    assert_predicate(s.chomp!("\u{3053 3093}"), :ascii_only?)
+
+    # argument should be converted to String
+    klass = Class.new { def to_str; 'a'; end }
+    s = S("abba")
+    assert_equal("abb", s.chomp!(klass.new))
+    assert_equal("abb", s)
+
+    # chomp removes any of "\n", "\r\n", "\r" when "\n" is specified
+    s = "foo\n"
+    assert_equal("foo", s.chomp!("\n"))
+    s = "foo\r\n"
+    assert_equal("foo", s.chomp!("\n"))
+    s = "foo\r"
+    assert_equal("foo", s.chomp!("\n"))
+  ensure
+    $/ = save
   end
 
   def test_chop
@@ -495,6 +608,8 @@ CODE
   def test_concat
     assert_equal(S("world!"), S("world").concat(33))
     assert_equal(S("world!"), S("world").concat(S('!')))
+    b = S("sn")
+    assert_equal(S("snsnsn"), b.concat(b, b))
 
     bug7090 = '[ruby-core:47751]'
     result = S("").force_encoding(Encoding::UTF_16LE)
@@ -502,6 +617,7 @@ CODE
     expected = S("\u0300".encode(Encoding::UTF_16LE))
     assert_equal(expected, result, bug7090)
     assert_raise(TypeError) { 'foo' << :foo }
+    assert_raise(RuntimeError) { 'foo'.freeze.concat('bar') }
   end
 
   def test_count
@@ -537,6 +653,10 @@ CODE
       assert_raise(ArgumentError) {S("mypassword").crypt(S("aa".encode(enc)))}
       assert_raise(ArgumentError) {S("mypassword".encode(enc)).crypt(S("aa"))}
     end
+
+    @cls == String and assert_no_memory_leak([], 's = ""', <<~'end;') # do
+      1000.times { s.crypt(-"..").clear  }
+    end;
   end
 
   def test_delete
@@ -654,14 +774,15 @@ CODE
 
     res=[]
     S("hello\n\n\nworld").lines(S('')).each {|x| res << x}
-    assert_equal(S("hello\n\n\n"), res[0])
-    assert_equal(S("world"),       res[1])
+    assert_equal(S("hello\n\n"), res[0])
+    assert_equal(S("world"),     res[1])
 
     $/ = "!"
     res=[]
     S("hello!world").lines.each {|x| res << x}
     assert_equal(S("hello!"), res[0])
     assert_equal(S("world"),  res[1])
+  ensure
     $/ = save
   end
 
@@ -764,6 +885,46 @@ CODE
     end
   end
 
+  def test_each_grapheme_cluster
+    [
+      "\u{20 200d}",
+      "\u{600 600}",
+      "\u{600 20}",
+      "\u{261d 1F3FB}",
+      "\u{1f600}",
+      "\u{20 308}",
+      "\u{1F477 1F3FF 200D 2640 FE0F}",
+      "\u{1F468 200D 1F393}",
+      "\u{1F46F 200D 2642 FE0F}",
+      "\u{1f469 200d 2764 fe0f 200d 1f469}",
+    ].each do |g|
+      assert_equal [g], g.each_grapheme_cluster.to_a
+    end
+
+    assert_equal ["\u000A", "\u0308"], "\u{a 308}".each_grapheme_cluster.to_a
+    assert_equal ["\u000D", "\u0308"], "\u{d 308}".each_grapheme_cluster.to_a
+  end
+
+  def test_grapheme_clusters
+    [
+      "\u{20 200d}",
+      "\u{600 600}",
+      "\u{600 20}",
+      "\u{261d 1F3FB}",
+      "\u{1f600}",
+      "\u{20 308}",
+      "\u{1F477 1F3FF 200D 2640 FE0F}",
+      "\u{1F468 200D 1F393}",
+      "\u{1F46F 200D 2642 FE0F}",
+      "\u{1f469 200d 2764 fe0f 200d 1f469}",
+    ].each do |g|
+      assert_equal [g], g.grapheme_clusters
+    end
+
+    assert_equal ["\u000A", "\u0308"], "\u{a 308}".grapheme_clusters
+    assert_equal ["\u000D", "\u0308"], "\u{d 308}".grapheme_clusters
+  end
+
   def test_each_line
     save = $/
     $/ = "\n"
@@ -774,8 +935,13 @@ CODE
 
     res=[]
     S("hello\n\n\nworld").each_line(S('')) {|x| res << x}
-    assert_equal(S("hello\n\n\n"), res[0])
-    assert_equal(S("world"),       res[1])
+    assert_equal(S("hello\n\n"), res[0])
+    assert_equal(S("world"),     res[1])
+
+    res=[]
+    S("hello\r\n\r\nworld").each_line(S('')) {|x| res << x}
+    assert_equal(S("hello\r\n\r\n"), res[0])
+    assert_equal(S("world"),         res[1])
 
     $/ = "!"
 
@@ -804,6 +970,54 @@ CODE
     assert_nothing_raised(bug7646) do
       "\n\u0100".each_line("\n") {}
     end
+  ensure
+    $/ = save
+  end
+
+  def test_each_line_chomp
+    res = []
+    S("hello\nworld").each_line("\n", chomp: true) {|x| res << x}
+    assert_equal(S("hello"), res[0])
+    assert_equal(S("world"), res[1])
+
+    res = []
+    S("hello\n\n\nworld").each_line(S(''), chomp: true) {|x| res << x}
+    assert_equal(S("hello\n"), res[0])
+    assert_equal(S("world"),   res[1])
+
+    res = []
+    S("hello\r\n\r\nworld").each_line(S(''), chomp: true) {|x| res << x}
+    assert_equal(S("hello\r\n"), res[0])
+    assert_equal(S("world"),     res[1])
+
+    res = []
+    S("hello!world").each_line(S('!'), chomp: true) {|x| res << x}
+    assert_equal(S("hello"), res[0])
+    assert_equal(S("world"), res[1])
+
+    res = []
+    S("a").each_line(S('ab'), chomp: true).each {|x| res << x}
+    assert_equal(1, res.size)
+    assert_equal(S("a"), res[0])
+
+    s = nil
+    "foo\nbar".each_line(nil, chomp: true) {|s2| s = s2 }
+    assert_equal("foo\nbar", s)
+
+    assert_equal "hello", S("hello\nworld").each_line(chomp: true).next
+    assert_equal "hello\nworld", S("hello\nworld").each_line(nil, chomp: true).next
+
+    res = []
+    S("").each_line(chomp: true) {|x| res << x}
+    assert_equal([], res)
+
+    res = []
+    S("\n").each_line(chomp: true) {|x| res << x}
+    assert_equal([S("")], res)
+
+    res = []
+    S("\r\n").each_line(chomp: true) {|x| res << x}
+    assert_equal([S("")], res)
   end
 
   def test_lines
@@ -938,18 +1152,6 @@ CODE
     assert_not_equal(S("a").hash, S("a\0").hash, bug4104)
     bug9172 = '[ruby-core:58658] [Bug #9172]'
     assert_not_equal(S("sub-setter").hash, S("discover").hash, bug9172)
-  end
-
-  def test_hash_random
-    str = 'abc'
-    a = [str.hash.to_s]
-    3.times {
-      assert_in_out_err(["-e", "print #{str.dump}.hash"], "") do |r, e|
-        a += r
-        assert_equal([], e)
-      end
-    }
-    assert_not_equal([str.hash.to_s], a.uniq)
   end
 
   def test_hex
@@ -1178,6 +1380,9 @@ CODE
 
     assert_nil("foo".rindex(//, -100))
     assert_nil($~)
+
+    assert_equal(3, "foo".rindex(//))
+    assert_equal([3, 3], $~.offset(0))
   end
 
   def test_rjust
@@ -1365,7 +1570,7 @@ CODE
   end
 
   def test_split
-    assert_nil($;)
+    fs, $; = $;, nil
     assert_equal([S("a"), S("b"), S("c")], S(" a   b\t c ").split)
     assert_equal([S("a"), S("b"), S("c")], S(" a   b\t c ").split(S(" ")))
 
@@ -1389,6 +1594,25 @@ CODE
     assert_equal([], "".split(//, 1))
 
     assert_equal("[2, 3]", [1,2,3].slice!(1,10000).inspect, "moved from btest/knownbug")
+  ensure
+    $; = fs
+  end
+
+  def test_fs
+    assert_raise_with_message(TypeError, /\$;/) {
+      $; = []
+    }
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    bug = '[ruby-core:79582] $; must not be GCed'
+    begin;
+      $; = " "
+      $a = nil
+      alias $; $a
+      alias $-F $a
+      GC.start
+      assert_equal([], "".split, bug)
+    end;
   end
 
   def test_split_encoding
@@ -1551,6 +1775,10 @@ CODE
     assert_equal(S("Abc"), S("abc").sub("a") {m = $~; "A"})
     assert_equal(S("a"), m[0])
     assert_equal(/a/, m.regexp)
+    bug = '[ruby-core:78686] [Bug #13042] other than regexp has no name references'
+    assert_raise_with_message(IndexError, /oops/, bug) {
+      'hello'.gsub('hello', '\k<oops>')
+    }
   end
 
   def test_sub!
@@ -2076,6 +2304,50 @@ CODE
     assert_raise(ArgumentError) { "foo".match }
   end
 
+  def test_match_p_regexp
+    /backref/ =~ 'backref'
+    # must match here, but not in a separate method, e.g., assert_send,
+    # to check if $~ is affected or not.
+    assert_equal(true, "".match?(//))
+    assert_equal(true, :abc.match?(/.../))
+    assert_equal(true, 'abc'.match?(/b/))
+    assert_equal(true, 'abc'.match?(/b/, 1))
+    assert_equal(true, 'abc'.match?(/../, 1))
+    assert_equal(true, 'abc'.match?(/../, -2))
+    assert_equal(false, 'abc'.match?(/../, -4))
+    assert_equal(false, 'abc'.match?(/../, 4))
+    assert_equal(true, "\u3042xx".match?(/../, 1))
+    assert_equal(false, "\u3042x".match?(/../, 1))
+    assert_equal(true, ''.match?(/\z/))
+    assert_equal(true, 'abc'.match?(/\z/))
+    assert_equal(true, 'Ruby'.match?(/R.../))
+    assert_equal(false, 'Ruby'.match?(/R.../, 1))
+    assert_equal(false, 'Ruby'.match?(/P.../))
+    assert_equal('backref', $&)
+  end
+
+  def test_match_p_string
+    /backref/ =~ 'backref'
+    # must match here, but not in a separate method, e.g., assert_send,
+    # to check if $~ is affected or not.
+    assert_equal(true, "".match?(''))
+    assert_equal(true, :abc.match?('...'))
+    assert_equal(true, 'abc'.match?('b'))
+    assert_equal(true, 'abc'.match?('b', 1))
+    assert_equal(true, 'abc'.match?('..', 1))
+    assert_equal(true, 'abc'.match?('..', -2))
+    assert_equal(false, 'abc'.match?('..', -4))
+    assert_equal(false, 'abc'.match?('..', 4))
+    assert_equal(true, "\u3042xx".match?('..', 1))
+    assert_equal(false, "\u3042x".match?('..', 1))
+    assert_equal(true, ''.match?('\z'))
+    assert_equal(true, 'abc'.match?('\z'))
+    assert_equal(true, 'Ruby'.match?('R...'))
+    assert_equal(false, 'Ruby'.match?('R...', 1))
+    assert_equal(false, 'Ruby'.match?('P...'))
+    assert_equal('backref', $&)
+  end
+
   def test_clear
     s = "foo" * 100
     s.clear
@@ -2196,7 +2468,31 @@ CODE
 =end
 
   def test_casecmp
+    assert_equal(0, "FoO".casecmp("fOO"))
+    assert_equal(1, "FoO".casecmp("BaR"))
+    assert_equal(-1, "baR".casecmp("FoO"))
     assert_equal(1, "\u3042B".casecmp("\u3042a"))
+
+    assert_nil("foo".casecmp(:foo))
+    assert_nil("foo".casecmp(Object.new))
+
+    o = Object.new
+    def o.to_str; "fOO"; end
+    assert_equal(0, "FoO".casecmp(o))
+  end
+
+  def test_casecmp?
+    assert_equal(true, 'FoO'.casecmp?('fOO'))
+    assert_equal(false, 'FoO'.casecmp?('BaR'))
+    assert_equal(false, 'baR'.casecmp?('FoO'))
+    assert_equal(true, 'äöü'.casecmp?('ÄÖÜ'))
+
+    assert_nil("foo".casecmp?(:foo))
+    assert_nil("foo".casecmp?(Object.new))
+
+    o = Object.new
+    def o.to_str; "fOO"; end
+    assert_equal(true, "FoO".casecmp?(o))
   end
 
   def test_upcase2
@@ -2256,6 +2552,222 @@ CODE
     assert_equal("\u3042", s4)
   end
 
+  def test_delete_prefix
+    assert_raise(TypeError) { 'hello'.delete_prefix(nil) }
+    assert_raise(TypeError) { 'hello'.delete_prefix(1) }
+    assert_raise(TypeError) { 'hello'.delete_prefix(/hel/) }
+
+    s = S("hello")
+    assert_equal("lo", s.delete_prefix('hel'))
+    assert_equal("hello", s)
+
+    s = S("hello")
+    assert_equal("hello", s.delete_prefix('lo'))
+    assert_equal("hello", s)
+
+    s = S("\u{3053 3093 306b 3061 306f}")
+    assert_equal("\u{306b 3061 306f}", s.delete_prefix("\u{3053 3093}"))
+    assert_equal("\u{3053 3093 306b 3061 306f}", s)
+
+    s = S("\u{3053 3093 306b 3061 306f}")
+    assert_equal("\u{3053 3093 306b 3061 306f}", s.delete_prefix('hel'))
+    assert_equal("\u{3053 3093 306b 3061 306f}", s)
+
+    s = S("hello")
+    assert_equal("hello", s.delete_prefix("\u{3053 3093}"))
+    assert_equal("hello", s)
+
+    # skip if argument is a broken string
+    s = S("\xe3\x81\x82")
+    assert_equal("\xe3\x81\x82", s.delete_prefix("\xe3"))
+    assert_equal("\xe3\x81\x82", s)
+
+    s = S("\x95\x5c").force_encoding("Shift_JIS")
+    assert_equal("\x95\x5c".force_encoding("Shift_JIS"), s.delete_prefix("\x95"))
+    assert_equal("\x95\x5c".force_encoding("Shift_JIS"), s)
+
+    # clear coderange
+    s = S("\u{3053 3093}hello")
+    assert_not_predicate(s, :ascii_only?)
+    assert_predicate(s.delete_prefix("\u{3053 3093}"), :ascii_only?)
+
+    # argument should be converted to String
+    klass = Class.new { def to_str; 'a'; end }
+    s = S("abba")
+    assert_equal("bba", s.delete_prefix(klass.new))
+    assert_equal("abba", s)
+  end
+
+  def test_delete_prefix_bang
+    assert_raise(TypeError) { 'hello'.delete_prefix!(nil) }
+    assert_raise(TypeError) { 'hello'.delete_prefix!(1) }
+    assert_raise(TypeError) { 'hello'.delete_prefix!(/hel/) }
+
+    s = S("hello")
+    assert_equal("lo", s.delete_prefix!('hel'))
+    assert_equal("lo", s)
+
+    s = S("hello")
+    assert_equal(nil, s.delete_prefix!('lo'))
+    assert_equal("hello", s)
+
+    s = S("\u{3053 3093 306b 3061 306f}")
+    assert_equal("\u{306b 3061 306f}", s.delete_prefix!("\u{3053 3093}"))
+    assert_equal("\u{306b 3061 306f}", s)
+
+    s = S("\u{3053 3093 306b 3061 306f}")
+    assert_equal(nil, s.delete_prefix!('hel'))
+    assert_equal("\u{3053 3093 306b 3061 306f}", s)
+
+    s = S("hello")
+    assert_equal(nil, s.delete_prefix!("\u{3053 3093}"))
+    assert_equal("hello", s)
+
+    # skip if argument is a broken string
+    s = S("\xe3\x81\x82")
+    assert_equal(nil, s.delete_prefix!("\xe3"))
+    assert_equal("\xe3\x81\x82", s)
+
+    # clear coderange
+    s = S("\u{3053 3093}hello")
+    assert_not_predicate(s, :ascii_only?)
+    assert_predicate(s.delete_prefix!("\u{3053 3093}"), :ascii_only?)
+
+    # argument should be converted to String
+    klass = Class.new { def to_str; 'a'; end }
+    s = S("abba")
+    assert_equal("bba", s.delete_prefix!(klass.new))
+    assert_equal("bba", s)
+
+    s = S("ax").freeze
+    assert_raise_with_message(RuntimeError, /frozen/) {s.delete_prefix!("a")}
+
+    s = S("ax")
+    o = Struct.new(:s).new(s)
+    def o.to_str
+      s.freeze
+      "a"
+    end
+    assert_raise_with_message(RuntimeError, /frozen/) {s.delete_prefix!(o)}
+  end
+
+  def test_delete_suffix
+    assert_raise(TypeError) { 'hello'.delete_suffix(nil) }
+    assert_raise(TypeError) { 'hello'.delete_suffix(1) }
+    assert_raise(TypeError) { 'hello'.delete_suffix(/hel/) }
+
+    s = S("hello")
+    assert_equal("hel", s.delete_suffix('lo'))
+    assert_equal("hello", s)
+
+    s = S("hello")
+    assert_equal("hello", s.delete_suffix('he'))
+    assert_equal("hello", s)
+
+    s = S("\u{3053 3093 306b 3061 306f}")
+    assert_equal("\u{3053 3093 306b}", s.delete_suffix("\u{3061 306f}"))
+    assert_equal("\u{3053 3093 306b 3061 306f}", s)
+
+    s = S("\u{3053 3093 306b 3061 306f}")
+    assert_equal("\u{3053 3093 306b 3061 306f}", s.delete_suffix('lo'))
+    assert_equal("\u{3053 3093 306b 3061 306f}", s)
+
+    s = S("hello")
+    assert_equal("hello", s.delete_suffix("\u{3061 306f}"))
+    assert_equal("hello", s)
+
+    # skip if argument is a broken string
+    s = S("\xe3\x81\x82")
+    assert_equal("\xe3\x81\x82", s.delete_suffix("\x82"))
+    assert_equal("\xe3\x81\x82", s)
+
+    # clear coderange
+    s = S("hello\u{3053 3093}")
+    assert_not_predicate(s, :ascii_only?)
+    assert_predicate(s.delete_suffix("\u{3053 3093}"), :ascii_only?)
+
+    # argument should be converted to String
+    klass = Class.new { def to_str; 'a'; end }
+    s = S("abba")
+    assert_equal("abb", s.delete_suffix(klass.new))
+    assert_equal("abba", s)
+
+    # chomp removes any of "\n", "\r\n", "\r" when "\n" is specified,
+    # but delete_suffix does not
+    s = "foo\n"
+    assert_equal("foo", s.delete_suffix("\n"))
+    s = "foo\r\n"
+    assert_equal("foo\r", s.delete_suffix("\n"))
+    s = "foo\r"
+    assert_equal("foo\r", s.delete_suffix("\n"))
+  end
+
+  def test_delete_suffix_bang
+    assert_raise(TypeError) { 'hello'.delete_suffix!(nil) }
+    assert_raise(TypeError) { 'hello'.delete_suffix!(1) }
+    assert_raise(TypeError) { 'hello'.delete_suffix!(/hel/) }
+
+    s = S("hello").freeze
+    assert_raise_with_message(RuntimeError, /frozen/) {s.delete_suffix!('lo')}
+
+    s = S("ax")
+    o = Struct.new(:s).new(s)
+    def o.to_str
+      s.freeze
+      "x"
+    end
+    assert_raise_with_message(RuntimeError, /frozen/) {s.delete_suffix!(o)}
+
+    s = S("hello")
+    assert_equal("hel", s.delete_suffix!('lo'))
+    assert_equal("hel", s)
+
+    s = S("hello")
+    assert_equal(nil, s.delete_suffix!('he'))
+    assert_equal("hello", s)
+
+    s = S("\u{3053 3093 306b 3061 306f}")
+    assert_equal("\u{3053 3093 306b}", s.delete_suffix!("\u{3061 306f}"))
+    assert_equal("\u{3053 3093 306b}", s)
+
+    s = S("\u{3053 3093 306b 3061 306f}")
+    assert_equal(nil, s.delete_suffix!('lo'))
+    assert_equal("\u{3053 3093 306b 3061 306f}", s)
+
+    s = S("hello")
+    assert_equal(nil, s.delete_suffix!("\u{3061 306f}"))
+    assert_equal("hello", s)
+
+    # skip if argument is a broken string
+    s = S("\xe3\x81\x82")
+    assert_equal(nil, s.delete_suffix!("\x82"))
+    assert_equal("\xe3\x81\x82", s)
+
+    s = S("\x95\x5c").force_encoding("Shift_JIS")
+    assert_equal(nil, s.delete_suffix!("\x5c"))
+    assert_equal("\x95\x5c".force_encoding("Shift_JIS"), s)
+
+    # clear coderange
+    s = S("hello\u{3053 3093}")
+    assert_not_predicate(s, :ascii_only?)
+    assert_predicate(s.delete_suffix!("\u{3053 3093}"), :ascii_only?)
+
+    # argument should be converted to String
+    klass = Class.new { def to_str; 'a'; end }
+    s = S("abba")
+    assert_equal("abb", s.delete_suffix!(klass.new))
+    assert_equal("abb", s)
+
+    # chomp removes any of "\n", "\r\n", "\r" when "\n" is specified,
+    # but delete_suffix does not
+    s = "foo\n"
+    assert_equal("foo", s.delete_suffix!("\n"))
+    s = "foo\r\n"
+    assert_equal("foo\r", s.delete_suffix!("\n"))
+    s = "foo\r"
+    assert_equal(nil, s.delete_suffix!("\n"))
+  end
+
 =begin
   def test_symbol_table_overflow
     assert_in_out_err([], <<-INPUT, [], /symbol table overflow \(symbol [a-z]{8}\) \(RuntimeError\)/)
@@ -2305,7 +2817,9 @@ CODE
   end
 
   def test_prepend
-    assert_equal(S("hello world!"), "world!".prepend("hello "))
+    assert_equal(S("hello world!"), "!".prepend("hello ", "world"))
+    b = S("ue")
+    assert_equal(S("ueueue"), b.prepend(b, b))
 
     foo = Object.new
     def foo.to_str
@@ -2406,20 +2920,23 @@ CODE
 
   def test_uplus_minus
     str = "foo"
-    assert_equal(false, str.frozen?)
-    assert_equal(false, (+str).frozen?)
-    assert_equal(true,  (-str).frozen?)
+    assert_not_predicate(str, :frozen?)
+    assert_not_predicate(+str, :frozen?)
+    assert_predicate(-str, :frozen?)
 
-    assert_equal(str.object_id, (+str).object_id)
-    assert_not_equal(str.object_id, (-str).object_id)
+    assert_same(str, +str)
+    assert_not_same(str, -str)
 
     str = "bar".freeze
-    assert_equal(true,  str.frozen?)
-    assert_equal(false, (+str).frozen?)
-    assert_equal(true,  (-str).frozen?)
+    assert_predicate(str, :frozen?)
+    assert_not_predicate(+str, :frozen?)
+    assert_predicate(-str, :frozen?)
 
-    assert_not_equal(str.object_id, (+str).object_id)
-    assert_equal(str.object_id, (-str).object_id)
+    assert_not_same(str, +str)
+    assert_same(str, -str)
+
+    bar = %w(b a r).join('')
+    assert_same(str, -bar, "uminus deduplicates [Feature #13077]")
   end
 
   def test_ord

@@ -371,12 +371,8 @@ class TestKeywordArguments < Test::Unit::TestCase
       break eval("proc {|a:| a}", nil, 'xyzzy', __LINE__)
     end
     assert_raise_with_message(ArgumentError, /missing keyword/, feature7701) {b.call}
-    assert_raise_with_message(ArgumentError, /unknown keyword/, feature7701) {b.call(a:0, b:1)}
-    begin
-      b.call(a: 0, b: 1)
-    rescue => e
-      assert_equal('xyzzy', e.backtrace_locations[0].path)
-    end
+    e = assert_raise_with_message(ArgumentError, /unknown keyword/, feature7701) {b.call(a:0, b:1)}
+    assert_equal('xyzzy', e.backtrace_locations[0].path)
 
     assert_equal(42, b.call(a: 42), feature7701)
     assert_equal([[:keyreq, :a]], b.parameters, feature7701)
@@ -390,6 +386,15 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([[:keyreq, :a], [:keyrest, :bl]], b.parameters, feature7701)
     assert_raise_with_message(ArgumentError, /missing keyword/, bug8139) {b.call(c: bug8139)}
     assert_raise_with_message(ArgumentError, /missing keyword/, bug8139) {b.call}
+
+    b = assert_nothing_raised(SyntaxError, feature7701) do
+      break eval("proc {|m, a:| [m, a]}", nil, 'xyzzy', __LINE__)
+    end
+    assert_raise_with_message(ArgumentError, /missing keyword/) {b.call}
+    assert_equal([:ok, 42], b.call(:ok, a: 42))
+    e = assert_raise_with_message(ArgumentError, /unknown keyword/) {b.call(42, a:0, b:1)}
+    assert_equal('xyzzy', e.backtrace_locations[0].path)
+    assert_equal([[:opt, :m], [:keyreq, :a]], b.parameters)
   end
 
   def test_super_with_keyword
@@ -498,6 +503,23 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([1, 9], m1(1, o, &->(a, k: 0) {break [a, k]}), bug10016)
   end
 
+  def test_splat_hash
+    m = Object.new
+    def m.f() :ok; end
+    def m.f2(a = nil) a; end
+    o = {a: 1}
+    assert_raise_with_message(ArgumentError, /unknown keyword: a/) {
+      m.f(**o)
+    }
+    o = {}
+    assert_equal(:ok, m.f(**o), '[ruby-core:68124] [Bug #10856]')
+
+    o = {a: 42}
+    assert_equal({a: 42}, m.f2(**o), '[ruby-core:82280] [Bug #13791]')
+
+    assert_equal({a: 42}, m.f2("a".to_sym => 42), '[ruby-core:82291] [Bug #13793]')
+  end
+
   def test_gced_object_in_stack
     bug8964 = '[ruby-dev:47729] [Bug #8964]'
     assert_normal_exit %q{
@@ -538,6 +560,13 @@ class TestKeywordArguments < Test::Unit::TestCase
     end
     assert_raise_with_message(ArgumentError, /unknown keyword: k1/, bug10413) {
       o.foo {raise "unreachable"}
+    }
+  end
+
+  def test_unknown_keyword
+    bug13004 = '[ruby-dev:49893] [Bug #13004]'
+    assert_raise_with_message(ArgumentError, /unknown keyword: invalid-argument/, bug13004) {
+      [].sample(random: nil, "invalid-argument": nil)
     }
   end
 
@@ -596,5 +625,50 @@ class TestKeywordArguments < Test::Unit::TestCase
       obj.set_foo(x: 1, y: 2, **h)
       assert_equal({x: 1, y: 2, **h}, obj.foo)
     }
+  end
+
+  def test_kwrest_overwritten
+    bug13015 = '[ruby-core:78536] [Bug #13015]'
+
+    klass = EnvUtil.labeled_class("Parent") do
+      def initialize(d:)
+      end
+    end
+
+    klass = EnvUtil.labeled_class("Child", klass) do
+      def initialize(d:, **h)
+        h = [2, 3]
+        super
+      end
+    end
+
+    assert_raise_with_message(TypeError, /expected Hash/, bug13015) do
+      klass.new(d: 4)
+    end
+  end
+
+  def test_non_keyword_hash_subclass
+    bug12884 = '[ruby-core:77813] [Bug #12884]'
+    klass = EnvUtil.labeled_class("Child", Hash)
+    obj = Object.new
+    def obj.t(params = klass.new, d: nil); params; end
+    x = klass.new
+    x["foo"] = "bar"
+    result = obj.t(x)
+    assert_equal(x, result)
+    assert_kind_of(klass, result, bug12884)
+  end
+
+  def test_arity_error_message
+    obj = Object.new
+    def obj.t(x:) end
+    assert_raise_with_message(ArgumentError, /required keyword: x\)/) do
+      obj.t(42)
+    end
+    obj = Object.new
+    def obj.t(x:, y:, z: nil) end
+    assert_raise_with_message(ArgumentError, /required keywords: x, y\)/) do
+      obj.t(42)
+    end
   end
 end

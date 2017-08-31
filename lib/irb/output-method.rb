@@ -82,7 +82,7 @@ module IRB
   end
 
   # A standard output printer
-  class StdioOutputMethod<OutputMethod
+  class StdioOutputMethod < OutputMethod
     # Prints the given +opts+ to standard output, see IO#print for more
     # information.
     def print(*opts)

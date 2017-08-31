@@ -26,7 +26,8 @@ module RDoc::RubyToken
     Symbol = Integer
   end
 
-  def set_token_position(line, char)
+  def set_token_position(seek, line, char)
+    @prev_seek = seek
     @prev_line_no = line
     @prev_char_no = char
   end
@@ -302,8 +303,8 @@ module RDoc::RubyToken
     [:TkIN,         TkKW,  "in",     :EXPR_BEG],
     [:TkDO,         TkKW,  "do",     :EXPR_BEG],
     [:TkRETURN,     TkKW,  "return", :EXPR_MID],
-    [:TkYIELD,      TkKW,  "yield",  :EXPR_END],
-    [:TkSUPER,      TkKW,  "super",  :EXPR_END],
+    [:TkYIELD,      TkKW,  "yield",  :EXPR_ARG],
+    [:TkSUPER,      TkKW,  "super",  :EXPR_ARG],
     [:TkSELF,       TkKW,  "self",   :EXPR_END],
     [:TkNIL,        TkKW,  "nil",    :EXPR_END],
     [:TkTRUE,       TkKW,  "true",   :EXPR_END],
@@ -316,11 +317,12 @@ module RDoc::RubyToken
     [:TkWHILE_MOD,  TkKW],
     [:TkUNTIL_MOD,  TkKW],
     [:TkALIAS,      TkKW,  "alias",    :EXPR_FNAME],
-    [:TkDEFINED,    TkKW,  "defined?", :EXPR_END],
+    [:TkDEFINED,    TkKW,  "defined?", :EXPR_ARG],
     [:TklBEGIN,     TkKW,  "BEGIN",    :EXPR_END],
     [:TklEND,       TkKW,  "END",      :EXPR_END],
     [:Tk__LINE__,   TkKW,  "__LINE__", :EXPR_END],
     [:Tk__FILE__,   TkKW,  "__FILE__", :EXPR_END],
+    [:Tk__ENCODING__,TkKW, "__ENCODING__", :EXPR_END],
 
     [:TkIDENTIFIER, TkId],
     [:TkFID,        TkId],
@@ -328,9 +330,13 @@ module RDoc::RubyToken
     [:TkCVAR,       TkId],
     [:TkIVAR,       TkId],
     [:TkCONSTANT,   TkId],
+    [:TkHEREDOCBEG, TkId],
+    [:TkHEREDOCEND, TkId],
 
     [:TkINTEGER,    TkVal],
     [:TkFLOAT,      TkVal],
+    [:TkRATIONAL,   TkVal],
+    [:TkIMAGINARY,  TkVal],
     [:TkSTRING,     TkVal],
     [:TkHEREDOC,    TkVal],
     [:TkXSTRING,    TkVal],
@@ -353,6 +359,7 @@ module RDoc::RubyToken
     [:TkNEQ,        TkOp,   "!="],
     [:TkGEQ,        TkOp,   ">="],
     [:TkLEQ,        TkOp,   "<="],
+    [:TkHASHROCKET, TkOp,   "=>"],
     [:TkANDOP,      TkOp,   "&&"],
     [:TkOROP,       TkOp,   "||"],
     [:TkMATCH,      TkOp,   "=~"],
@@ -367,6 +374,7 @@ module RDoc::RubyToken
     [:TkCOLON3,     TkOp,   '::'],
     #[:OPASGN,       TkOp],               # +=, -=  etc. #
     [:TkASSOC,      TkOp,   "=>"],
+    [:TkLAMBDA,     TkOp,   "->"],
     [:TkQUESTION,   TkOp,   "?"], #?
     [:TkCOLON,      TkOp,   ":"],        #:
 
@@ -394,6 +402,7 @@ module RDoc::RubyToken
 
     [:TkASSIGN,     Token,  "="],
     [:TkDOT,        Token,  "."],
+    [:TkSAFENAV,    Token,  "&."],
     [:TkLPAREN,     Token,  "("],  #(exp)
     [:TkLBRACK,     Token,  "["],  #[arry]
     [:TkLBRACE,     Token,  "{"],  #{hash}

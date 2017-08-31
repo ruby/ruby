@@ -1,7 +1,6 @@
 .\"Ruby is copyrighted by Yukihiro Matsumoto <matz@netlab.jp>.
 .Dd October 31, 2015
-.Dt RUBY(1) "" "Ruby Programmers Reference Guide"
-.\".Dt RUBY 1
+.Dt RUBY \&1 "Ruby Programmer's Reference Guide"
 .Os UNIX
 .Sh NAME
 .Nm ruby
@@ -120,11 +119,21 @@ On most
 systems, you can load object files into the Ruby interpreter
 on-the-fly.
 .It Sy "Rich libraries"
-Libraries called "builtin libraries" and "standard libraries" are bundled with Ruby.
-And you can obtain more libraries via the package management system called `RubyGems'.
-.Pp
-Moreover there are thousands of Ruby projects on GitHub
-.Aq Pa https://github.com/languages/Ruby .
+In addition to the
+.Dq builtin libraries
+and
+.Dq standard libraries
+that are bundled with Ruby, a vast amount of third-party libraries
+.Pq Dq gems
+are available via the package management system called
+.Sq RubyGems ,
+namely the
+.Xr gem 1
+command.  Visit RubyGems.org
+.Pq Lk https://rubygems.org/
+to find the gems you need, and explore GitHub
+.Pq Lk https://github.com/
+to see how they are being developed and used.
 .El
 .Pp
 .Sh OPTIONS
@@ -207,6 +216,18 @@ on machines that don't support it, in the following manner:
 # This line makes the next one a comment in Ruby \e
   exec /usr/local/bin/ruby -S $0 $*
 .Ed
+.Pp
+On some systems
+.Li "$0"
+does not always contain the full pathname, so you need the
+.Fl S
+switch to tell Ruby to search for the script if necessary (to handle embedded
+spaces and such).  A better construct than
+.Li "$*"
+would be
+.Li ${1+"$@"} ,
+but it does not work if the script is being interpreted by
+.Xr csh 1 .
 .Pp
 .It Fl T Ns Op Ar level=1
 Turns on taint checks at the specified level (default 1).
@@ -333,18 +354,6 @@ and set the corresponding variable in the script.  For example:
 print "true\en" if $xyz
 .Ed
 .Pp
-On some systems
-.Li "$0"
-does not always contain the full pathname, so you need the
-.Fl S
-switch to tell Ruby to search for the script if necessary (to handle embedded
-spaces and such).  A better construct than
-.Li "$*"
-would be
-.Li ${1+"$@"} ,
-but it does not work if the script is being interpreted by
-.Xr csh 1 .
-.Pp
 .It Fl v
 Enables verbose mode.  Ruby will print its version at the beginning
 and set the variable
@@ -386,8 +395,7 @@ debug the Ruby interpreter.
 .It Fl -disable- Ns Ar FEATURE
 .It Fl -enable- Ns Ar FEATURE
 Disables (or enables) the specified
-.Ar FEATURE Ns
-\&.
+.Ar FEATURE .
 .Bl -tag -width "--disable-rubyopt" -compact
 .It Fl -disable-gems
 .It Fl -enable-gems
@@ -623,29 +631,31 @@ default: 262144 or 524288
 .Pp
 .El
 .Sh SEE ALSO
-.Bl -hang -compact -width "http://www.ruby-lang.org/123"
-.It https://www.ruby-lang.org/
+.Bl -hang -compact -width "https://www.ruby-toolbox.com/"
+.It Lk https://www.ruby-lang.org/
 The official web site.
-.It https://www.ruby-toolbox.com/
+.It Lk https://www.ruby-toolbox.com/
 Comprehensive catalog of Ruby libraries.
 .El
 .Pp
 .Sh REPORTING BUGS
 .Bl -bullet
-.Li Security vulnerabilities should be reported via an email to
-.Aq security@ruby-lang.org Ns
-.Li .
-Reported problems will be published after they've been fixed.
+.It
+Security vulnerabilities should be reported via an email to
+.Mt security@ruby-lang.org .
+Reported problems will be published after being fixed.
 .Pp
-.Li And you can report other bugs and feature requests via the
-Ruby Issue Tracking System (https://bugs.ruby-lang.org/).
+.It
+Other bugs and feature requests can be reported via the
+Ruby Issue Tracking System
+.Pq Lk https://bugs.ruby-lang.org/ .
 Do not report security vulnerabilities
-via the system because it publishes the vulnerabilities immediately.
+via this system because it publishes the vulnerabilities immediately.
 .El
 .Sh AUTHORS
 Ruby is designed and implemented by
 .An Yukihiro Matsumoto Aq matz@netlab.jp .
 .Pp
 See
-.Aq Pa https://bugs.ruby-lang.org/projects/ruby/wiki/Contributors
+.Aq Lk https://bugs.ruby-lang.org/projects/ruby/wiki/Contributors
 for contributors to Ruby.

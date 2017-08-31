@@ -38,11 +38,15 @@ firstline, predefined = __LINE__+1, %[\
   to_a
   to_s
   to_i
+  to_r
   bt
   bt_locations
   call
   mesg
   exception
+  not                                                   NOT
+  and                                                   AND
+  or                                                    OR
 
   _                                                     UScore
   "/*NULL*/"                                            NULL
@@ -76,7 +80,6 @@ token_ops = %[\
   UPlus         +@      UPLUS
   UMinus        -@      UMINUS
   Pow           **      POW
-  DSTAR         **
   Cmp           <=>     CMP
   PLUS          +
   MINUS         -
@@ -99,7 +102,6 @@ token_ops = %[\
   AREF          []
   ASET          []=
   COLON2        ::
-  COLON3        ::
   ANDOP         &&
   OROP          ||
   ANDDOT        &.

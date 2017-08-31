@@ -16,6 +16,8 @@
 #define AR(str) rb_str_concat(buf, (str))
 
 #define A_INDENT add_indent(buf, indent)
+#define D_INDENT rb_str_cat2(indent, next_indent)
+#define D_DEDENT rb_str_resize(indent, RSTRING_LEN(indent) - 4)
 #define A_ID(id) add_id(buf, (id))
 #define A_INT(val) rb_str_catf(buf, "%d", (val))
 #define A_LONG(val) rb_str_catf(buf, "%ld", (val))
@@ -32,9 +34,9 @@
 #define COMPOUND_FIELD(len, name, block) \
     do { \
 	D_FIELD_HEADER((len), (name), "\n");	\
-	rb_str_cat2(indent, next_indent); \
+	D_INDENT; \
 	block; \
-	rb_str_resize(indent, RSTRING_LEN(indent) - 4); \
+	D_DEDENT; \
     } while (0)
 
 #define COMPOUND_FIELD1(name, ann, block) \
@@ -132,11 +134,31 @@ dump_option(VALUE buf, VALUE indent, VALUE opt)
     rb_hash_foreach(opt, add_option_i, (VALUE)&arg);
 }
 
+static void dump_node(VALUE, VALUE, int, NODE *);
+static const char default_indent[] = "|   ";
+
+static void
+dump_array(VALUE buf, VALUE indent, int comment, NODE *node)
+{
+    int field_flag;
+    const char *next_indent = default_indent;
+    F_LONG(nd_alen, "length");
+    F_NODE(nd_head, "element");
+    while (node->nd_next && nd_type(node->nd_next) == NODE_ARRAY) {
+	node = node->nd_next;
+	F_NODE(nd_head, "element");
+    }
+    LAST_NODE;
+    F_NODE(nd_next, "next element");
+}
+
 static void
 dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 {
     int field_flag;
-    const char *next_indent = "|   ";
+    int i;
+    const char *next_indent = default_indent;
+    enum node_type type;
 
     if (!node) {
 	D_NULL_NODE;
@@ -145,12 +167,25 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 
     D_NODE_HEADER(node);
 
-    switch (nd_type(node)) {
+    type = nd_type(node);
+    switch (type) {
       case NODE_BLOCK:
 	ANN("statement sequence");
-	ANN("format: [nd_head]; [nd_next]");
+	ANN("format: [nd_head]; ...; [nd_next]");
 	ANN("example: foo; bar");
-	F_NODE(nd_head, "current statement");
+	i = 0;
+	do {
+	    A_INDENT;
+	    rb_str_catf(buf, "+- nd_head (%s%d):\n",
+			comment ? "statement #" : "", ++i);
+	    if (!node->nd_next) LAST_NODE;
+	    D_INDENT;
+	    dump_node(buf, indent, comment, node->nd_head);
+	    D_DEDENT;
+	} while (node->nd_next &&
+		 nd_type(node->nd_next) == NODE_BLOCK &&
+		 (node = node->nd_next, 1));
+	if (!node->nd_next) break;
 	LAST_NODE;
 	F_NODE(nd_next, "next block");
 	break;
@@ -299,9 +334,14 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
       case NODE_OR:
 	ANN("|| operator");
 	ANN("format: [nd_1st] || [nd_2nd]");
-	ANN("example: foo && bar");
+	ANN("example: foo || bar");
       andor:
-	F_NODE(nd_1st, "left expr");
+	while (1) {
+	    F_NODE(nd_1st, "left expr");
+	    if (!node->nd_2nd || nd_type(node->nd_2nd) != (int)type)
+		break;
+	    node = node->nd_2nd;
+	}
 	LAST_NODE;
 	F_NODE(nd_2nd, "right expr");
 	break;
@@ -386,10 +426,16 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("format: [nd_value] [ [nd_args->nd_body] ] [nd_vid]= [nd_args->nd_head]");
 	ANN("example: ary[1] += foo");
 	F_NODE(nd_recv, "receiver");
-	F_ID(nd_vid, "operator");
-	F_NODE(nd_args->nd_body, "index");
+	F_CUSTOM1(nd_mid, "operator") {
+	   switch (node->nd_mid) {
+	     case 0: A("0 (||)"); break;
+	     case 1: A("1 (&&)"); break;
+	     default: A_ID(node->nd_mid);
+	   }
+	};
+	F_NODE(nd_args->nd_head, "index");
 	LAST_NODE;
-	F_NODE(nd_args->nd_head, "rvalue");
+	F_NODE(nd_args->nd_body, "rvalue");
 	break;
 
       case NODE_OP_ASGN2:
@@ -429,6 +475,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	break;
 
       case NODE_CALL:
+      case NODE_OPCALL:
 	ANN("method invocation");
 	ANN("format: [nd_recv].[nd_mid]([nd_args])");
 	ANN("example: obj.foo(1)");
@@ -488,10 +535,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("format: [ [nd_head], [nd_next].. ] (length: [nd_alen])");
 	ANN("example: return 1, 2, 3");
       ary:
-	F_LONG(nd_alen, "length");
-	F_NODE(nd_head, "element");
-	LAST_NODE;
-	F_NODE(nd_next, "next element");
+	dump_array(buf, indent, comment, node);
 	break;
 
       case NODE_ZARRAY:
@@ -501,9 +545,16 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	break;
 
       case NODE_HASH:
-	ANN("hash constructor");
-	ANN("format: { [nd_head] }");
-	ANN("example: { 1 => 2, 3 => 4 }");
+	if (!node->nd_alen) {
+	    ANN("keyword arguments");
+	    ANN("format: nd_head");
+	    ANN("example: a: 1, b: 2");
+	}
+	else {
+	    ANN("hash constructor");
+	    ANN("format: { [nd_head] }");
+	    ANN("example: { 1 => 2, 3 => 4 }");
+	}
 	LAST_NODE;
 	F_NODE(nd_head, "contents");
 	break;
@@ -931,8 +982,8 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	F_ID(nd_ainfo->rest_arg, "rest argument");
 	F_ID(nd_ainfo->block_arg, "block argument");
 	F_NODE(nd_ainfo->opt_args, "optional arguments");
-	LAST_NODE;
 	F_NODE(nd_ainfo->kw_args, "keyword arguments");
+	LAST_NODE;
 	F_NODE(nd_ainfo->kw_rest_arg, "keyword rest argument");
 	break;
 
@@ -1025,7 +1076,6 @@ rb_gc_mark_node(NODE *obj)
       case NODE_RESCUE:
       case NODE_RESBODY:
       case NODE_CLASS:
-      case NODE_BLOCK_PASS:
       case NODE_MATCH2:
 	rb_gc_mark(RNODE(obj)->u2.value);
 	/* fall through */
@@ -1064,6 +1114,7 @@ rb_gc_mark_node(NODE *obj)
       case NODE_ALIAS:
       case NODE_VALIAS:
       case NODE_ARGSCAT:
+      case NODE_BLOCK_PASS:
 	rb_gc_mark(RNODE(obj)->u1.value);
 	/* fall through */
       case NODE_GASGN:	/* 2 */

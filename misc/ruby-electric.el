@@ -10,7 +10,7 @@
 ;; URL: https://github.com/knu/ruby-electric.el
 ;; Keywords: languages ruby
 ;; License: The same license terms as Ruby
-;; Version: 2.2.3
+;; Version: 2.3.1
 
 ;;; Commentary:
 ;;
@@ -171,6 +171,7 @@ cons, ACTION can be set to one of the following values:
     (define-key map [remap newline] 'ruby-electric-space/return)
     (define-key map [remap newline-and-indent] 'ruby-electric-space/return)
     (define-key map [remap electric-newline-and-maybe-indent] 'ruby-electric-space/return)
+    (define-key map [remap reindent-then-newline-and-indent] 'ruby-electric-space/return)
     (dolist (x ruby-electric-delimiters-alist)
       (let* ((delim   (car x))
              (plist   (cdr x))
@@ -289,22 +290,44 @@ enabled."
                  (get-text-property point 'face))))
     (if (listp value) value (list value))))
 
-(defun ruby-electric--faces-at-point-include-p (&rest faces)
+(defun ruby-electric--faces-include-p (pfaces &rest faces)
   (and ruby-electric-mode
        (loop for face in faces
-             with pfaces = (ruby-electric--get-faces-at-point)
              thereis (memq face pfaces))))
 
-(defun ruby-electric-code-at-point-p()
-  (not (ruby-electric--faces-at-point-include-p
+(defun ruby-electric--faces-at-point-include-p (&rest faces)
+  (apply 'ruby-electric--faces-include-p
+         (ruby-electric--get-faces-at-point)
+         faces))
+
+(defun ruby-electric-code-face-p (faces)
+  (not (ruby-electric--faces-include-p
+        faces
         'font-lock-string-face
-        'font-lock-comment-face)))
+        'font-lock-comment-face
+        'enh-ruby-string-delimiter-face
+        'enh-ruby-heredoc-delimiter-face
+        'enh-ruby-regexp-delimiter-face
+        'enh-ruby-regexp-face)))
 
-(defun ruby-electric-string-at-point-p()
-  (ruby-electric--faces-at-point-include-p
-   'font-lock-string-face))
+(defun ruby-electric-code-at-point-p ()
+  (ruby-electric-code-face-p
+   (ruby-electric--get-faces-at-point)))
 
-(defun ruby-electric-comment-at-point-p()
+(defun ruby-electric-string-face-p (faces)
+  (ruby-electric--faces-include-p
+   faces
+   'font-lock-string-face
+   'enh-ruby-string-delimiter-face
+   'enh-ruby-heredoc-delimiter-face
+   'enh-ruby-regexp-delimiter-face
+   'enh-ruby-regexp-face))
+
+(defun ruby-electric-string-at-point-p ()
+  (ruby-electric-string-face-p
+   (ruby-electric--get-faces-at-point)))
+
+(defun ruby-electric-comment-at-point-p ()
   (ruby-electric--faces-at-point-include-p
    'font-lock-comment-face))
 
@@ -347,7 +370,9 @@ enabled."
                           (goto-char (region-end))))
                        (t
                         (insert last-command-event)
-                        nil))))
+                        nil)))
+                (faces-at-point
+                 (ruby-electric--get-faces-at-point)))
             ,@body
             (and region-beginning
                  ;; If no extra character is inserted, go back to the
@@ -361,12 +386,17 @@ enabled."
   (ruby-electric-insert
    arg
    (cond
-    ((ruby-electric-code-at-point-p)
+    ((or (ruby-electric-code-at-point-p)
+         (ruby-electric--faces-include-p
+          faces-at-point
+          'enh-ruby-string-delimiter-face
+          'enh-ruby-regexp-delimiter-face))
      (save-excursion
        (insert "}")
        (font-lock-fontify-region (line-beginning-position) (point)))
      (cond
-      ((ruby-electric-string-at-point-p) ;; %w{}, %r{}, etc.
+      ((or (ruby-electric-string-at-point-p)  ;; %w{}, %r{}, etc.
+           (looking-back "%[QqWwRrxIis]{"))
        (if region-beginning
            (forward-char 1)))
       (ruby-electric-newline-before-closing-bracket
@@ -389,6 +419,7 @@ enabled."
              (insert " "))
          (insert " "))
        (insert " ")
+       (backward-char 1)
        (and region-beginning
             (forward-char 1)))))
     ((ruby-electric-string-at-point-p)
@@ -452,24 +483,7 @@ enabled."
      (cond
       ;; quotes
       ((char-equal closing last-command-event)
-       (cond ((let ((start-position (or region-beginning (point))))
-                ;; check if this quote has just started a string
-                (and
-                 (unwind-protect
-                     (save-excursion
-                       (subst-char-in-region (1- start-position) start-position
-                                             last-command-event ?\s)
-                       (goto-char (1- start-position))
-                       (save-excursion
-                         (font-lock-fontify-region (line-beginning-position) (1+ (point))))
-                       (not (ruby-electric-string-at-point-p)))
-                     (subst-char-in-region (1- start-position) start-position
-                                           ?\s last-command-event))
-                 (save-excursion
-                   (goto-char (1- start-position))
-                   (save-excursion
-                     (font-lock-fontify-region (line-beginning-position) (1+ (point))))
-                   (ruby-electric-string-at-point-p))))
+       (cond ((not (ruby-electric-string-face-p faces-at-point))
               (if region-beginning
                   ;; escape quotes of the same kind, backslash and hash
                   (let ((re (format "[%c\\%s]"

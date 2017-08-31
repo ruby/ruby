@@ -9,7 +9,7 @@ end
 
 def stop_msg_loop
   puts "Now Stop IE..."
-  $LOOP = FALSE;
+  $LOOP = false;
 end
 
 def default_handler(event, *args)
@@ -20,7 +20,7 @@ def default_handler(event, *args)
 end
 
 ie = WIN32OLE.new('InternetExplorer.Application')
-ie.visible = TRUE
+ie.visible = true
 ie.gohome
 
 ev = WIN32OLE_EVENT.new(ie, 'DWebBrowserEvents')
@@ -29,7 +29,7 @@ ev.on_event {|*args| default_handler(*args)}
 ev.on_event("NavigateComplete") {|url| navigate(url)}
 ev.on_event("Quit") {|*args| stop_msg_loop}
 
-$LOOP = TRUE
+$LOOP = true
 while ($LOOP)
   WIN32OLE_EVENT.message_loop
 end

@@ -88,16 +88,16 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 #undef  RESTORE_REGS
 #define RESTORE_REGS() \
 { \
-  REG_CFP = th->cfp; \
+  VM_REG_CFP = th->ec.cfp; \
   reg_pc  = reg_cfp->pc; \
 }
 
-#undef  REG_PC
-#define REG_PC reg_pc
+#undef  VM_REG_PC
+#define VM_REG_PC reg_pc
 #undef  GET_PC
 #define GET_PC() (reg_pc)
 #undef  SET_PC
-#define SET_PC(x) (reg_cfp->pc = REG_PC = (x))
+#define SET_PC(x) (reg_cfp->pc = VM_REG_PC = (x))
 #endif
 
 #if OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
@@ -106,7 +106,7 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 	return (VALUE)insns_address_table;
     }
 #endif
-    reg_cfp = th->cfp;
+    reg_cfp = th->ec.cfp;
     reg_pc = reg_cfp->pc;
 
 #if OPT_STACK_CACHING
@@ -146,7 +146,7 @@ rb_vm_get_insns_address_table(void)
 static VALUE
 vm_exec_core(rb_thread_t *th, VALUE initial)
 {
-    register rb_control_frame_t *reg_cfp = th->cfp;
+    register rb_control_frame_t *reg_cfp = th->ec.cfp;
 
     while (1) {
 	reg_cfp = ((rb_insn_func_t) (*GET_PC()))(th, reg_cfp);
@@ -162,8 +162,8 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 	return ret;
     }
     else {
-	VALUE err = th->errinfo;
-	th->errinfo = Qnil;
+	VALUE err = th->ec.errinfo;
+	th->ec.errinfo = Qnil;
 	return err;
     }
 }

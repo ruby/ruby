@@ -37,6 +37,9 @@ arton
 * He is the distributor of ActiveScriptRuby and experimental 1.9.0-x installers for win32.
 * Wrote patches for win32ole, gc.c, tmpdir.rb
 
+Sergey Avseyev
+* Added IO#pread and IO#pwrite.
+
 == B
 
 Daniel Berger
@@ -56,6 +59,9 @@ Oliver M. Bolzer
 
 Alexey Borzenkov
 * a patch for mkmf.rb
+
+Evan Brodie
+* a patch for documentation of Float#round
 
 Richard Brown
 * a patch for configure.in
@@ -595,6 +601,15 @@ Richard M. Stallman
 * missing/alloca.c
 
 Robin Stocker
+* documentation
+
+Joshua Stowers
+* a patch for array.c
+
+Marcus Stollsteimer (stomar)
+* committer
+* a maintainer of www.ruby-lang.org
+* patches for cgi (HTML5 tag maker), bigdecimal, and others
 * documentation
 
 Adam Strzelecki

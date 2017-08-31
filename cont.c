@@ -80,16 +80,22 @@ enum context_type {
     ROOT_FIBER_CONTEXT = 2
 };
 
+struct cont_saved_vm_stack {
+    VALUE *ptr;
+#ifdef CAPTURE_JUST_VALID_VM_STACK
+    size_t slen;  /* length of stack (head of th->ec.vm_stack) */
+    size_t clen;  /* length of control frames (tail of th->ec.vm_stack) */
+#endif
+};
+
 typedef struct rb_context_struct {
     enum context_type type;
     int argc;
     VALUE self;
     VALUE value;
-    VALUE *vm_stack;
-#ifdef CAPTURE_JUST_VALID_VM_STACK
-    size_t vm_stack_slen;  /* length of stack (head of th->stack) */
-    size_t vm_stack_clen;  /* length of control frames (tail of th->stack) */
-#endif
+
+    struct cont_saved_vm_stack saved_vm_stack;
+
     struct {
 	VALUE *stack;
 	VALUE *stack_src;
@@ -106,11 +112,31 @@ typedef struct rb_context_struct {
     rb_ensure_list_t *ensure_list;
 } rb_context_t;
 
+
+/*
+ * Fiber status:
+ *    [Fiber.new] ------> FIBER_CREATED
+ *                        | [Fiber#resume]
+ *                        v
+ *                   +--> FIBER_RESUMED ----+
+ *    [Fiber#resume] |    | [Fiber.yield]   |
+ *                   |    v                 |
+ *                   +-- FIBER_SUSPENDED    | [Terminate]
+ *                                          |
+ *                       FIBER_TERMINATED <-+
+ */
 enum fiber_status {
-    CREATED,
-    RUNNING,
-    TERMINATED
+    FIBER_CREATED,
+    FIBER_RESUMED,
+    FIBER_SUSPENDED,
+    FIBER_TERMINATED
 };
+
+#define FIBER_CREATED_P(fib)    ((fib)->status == FIBER_CREATED)
+#define FIBER_RESUMED_P(fib)    ((fib)->status == FIBER_RESUMED)
+#define FIBER_SUSPENDED_P(fib)  ((fib)->status == FIBER_SUSPENDED)
+#define FIBER_TERMINATED_P(fib) ((fib)->status == FIBER_TERMINATED)
+#define FIBER_RUNNABLE_P(fib)   (FIBER_CREATED_P(fib) || FIBER_SUSPENDED_P(fib))
 
 #if FIBER_USE_NATIVE && !defined(_WIN32)
 #define MAX_MACHINE_STACK_CACHE  10
@@ -125,8 +151,9 @@ static machine_stack_cache_t terminated_machine_stack;
 
 struct rb_fiber_struct {
     rb_context_t cont;
+    VALUE first_proc;
     struct rb_fiber_struct *prev;
-    enum fiber_status status;
+    const enum fiber_status status;
     /* If a fiber invokes "transfer",
      * then this fiber can't "resume" any more after that.
      * You shouldn't mix "transfer" and "resume".
@@ -148,6 +175,28 @@ struct rb_fiber_struct {
 #endif
 };
 
+static const char *
+fiber_status_name(enum fiber_status s)
+{
+    switch (s) {
+      case FIBER_CREATED: return "created";
+      case FIBER_RESUMED: return "resumed";
+      case FIBER_SUSPENDED: return "suspended";
+      case FIBER_TERMINATED: return "terminated";
+    }
+    VM_UNREACHABLE(fiber_status_name);
+    return NULL;
+}
+
+static void
+fiber_status_set(const rb_fiber_t *fib, enum fiber_status s)
+{
+    if (0) fprintf(stderr, "fib: %p, status: %s -> %s\n", fib, fiber_status_name(fib->status), fiber_status_name(s));
+    VM_ASSERT(!FIBER_TERMINATED_P(fib));
+    VM_ASSERT(fib->status != s);
+    *((enum fiber_status *)&fib->status) = s;
+}
+
 static const rb_data_type_t cont_data_type, fiber_data_type;
 static VALUE rb_cContinuation;
 static VALUE rb_cFiber;
@@ -161,112 +210,111 @@ static VALUE rb_eFiberError;
     if (!(ptr)) rb_raise(rb_eFiberError, "uninitialized fiber"); \
 } while (0)
 
-NOINLINE(static VALUE cont_capture(volatile int *stat));
+NOINLINE(static VALUE cont_capture(volatile int *volatile stat));
 
 #define THREAD_MUST_BE_RUNNING(th) do { \
-	if (!(th)->tag) rb_raise(rb_eThreadError, "not running thread");	\
+	if (!(th)->ec.tag) rb_raise(rb_eThreadError, "not running thread");	\
     } while (0)
 
 static void
 cont_mark(void *ptr)
 {
+    rb_context_t *cont = ptr;
+
     RUBY_MARK_ENTER("cont");
-    if (ptr) {
-	rb_context_t *cont = ptr;
-	rb_gc_mark(cont->value);
+    rb_gc_mark(cont->value);
 
-	rb_thread_mark(&cont->saved_thread);
-	rb_gc_mark(cont->saved_thread.self);
+    rb_thread_mark(&cont->saved_thread);
+    rb_gc_mark(cont->saved_thread.self);
 
-	if (cont->vm_stack) {
+    if (cont->saved_vm_stack.ptr) {
 #ifdef CAPTURE_JUST_VALID_VM_STACK
-	    rb_gc_mark_locations(cont->vm_stack,
-				 cont->vm_stack + cont->vm_stack_slen + cont->vm_stack_clen);
+	rb_gc_mark_locations(cont->saved_vm_stack.ptr,
+			     cont->saved_vm_stack.ptr + cont->saved_vm_stack.slen + cont->saved_vm_stack.clen);
 #else
-	    rb_gc_mark_locations(cont->vm_stack,
-				 cont->vm_stack, cont->saved_thread.stack_size);
-#endif
-	}
-
-	if (cont->machine.stack) {
-	    if (cont->type == CONTINUATION_CONTEXT) {
-		/* cont */
-		rb_gc_mark_locations(cont->machine.stack,
-				     cont->machine.stack + cont->machine.stack_size);
-            }
-            else {
-		/* fiber */
-		rb_thread_t *th;
-                rb_fiber_t *fib = (rb_fiber_t*)cont;
-		GetThreadPtr(cont->saved_thread.self, th);
-		if ((th->fiber != fib) && fib->status == RUNNING) {
-		    rb_gc_mark_locations(cont->machine.stack,
-					 cont->machine.stack + cont->machine.stack_size);
-		}
-	    }
-	}
-#ifdef __ia64
-	if (cont->machine.register_stack) {
-	    rb_gc_mark_locations(cont->machine.register_stack,
-				 cont->machine.register_stack + cont->machine.register_stack_size);
-	}
+	rb_gc_mark_locations(cont->saved_vm_stack.ptr,
+			     cont->saved_vm_stack.ptr, cont->saved_thread.stack_size);
 #endif
     }
+
+    if (cont->machine.stack) {
+	if (cont->type == CONTINUATION_CONTEXT) {
+	    /* cont */
+	    rb_gc_mark_locations(cont->machine.stack,
+				 cont->machine.stack + cont->machine.stack_size);
+	}
+	else {
+	    /* fiber */
+	    const rb_thread_t *th = rb_thread_ptr(cont->saved_thread.self);
+	    const rb_fiber_t *fib = (rb_fiber_t*)cont;
+
+	    if ((th->fiber != fib) && FIBER_SUSPENDED_P(fib)) {
+		rb_gc_mark_locations(cont->machine.stack,
+				     cont->machine.stack + cont->machine.stack_size);
+	    }
+	}
+    }
+#ifdef __ia64
+    if (cont->machine.register_stack) {
+	rb_gc_mark_locations(cont->machine.register_stack,
+			     cont->machine.register_stack + cont->machine.register_stack_size);
+    }
+#endif
+
     RUBY_MARK_LEAVE("cont");
 }
 
 static void
 cont_free(void *ptr)
 {
+    rb_context_t *cont = ptr;
+
     RUBY_FREE_ENTER("cont");
-    if (ptr) {
-	rb_context_t *cont = ptr;
-	RUBY_FREE_UNLESS_NULL(cont->saved_thread.stack);
+    RUBY_FREE_UNLESS_NULL(cont->saved_thread.ec.vm_stack);
 #if FIBER_USE_NATIVE
-	if (cont->type == CONTINUATION_CONTEXT) {
-	    /* cont */
-	    ruby_xfree(cont->ensure_array);
-	    RUBY_FREE_UNLESS_NULL(cont->machine.stack);
-	}
-	else {
-	    /* fiber */
-	    rb_fiber_t *fib = (rb_fiber_t*)cont;
-	    const rb_thread_t *const th = GET_THREAD();
-#ifdef _WIN32
-	    if (th && th->fiber != fib && cont->type != ROOT_FIBER_CONTEXT) {
-		/* don't delete root fiber handle */
-		if (fib->fib_handle) {
-		    DeleteFiber(fib->fib_handle);
-		}
-	    }
-#else /* not WIN32 */
-	    if (th && th->fiber != fib) {
-                if (fib->ss_sp) {
-                    if (cont->type == ROOT_FIBER_CONTEXT) {
-			rb_bug("Illegal root fiber parameter");
-                    }
-		    munmap((void*)fib->ss_sp, fib->ss_size);
-		}
-	    }
-            else {
-		/* It may reached here when finalize */
-		/* TODO examine whether it is a bug */
-                /* rb_bug("cont_free: release self"); */
-            }
-#endif
-	}
-#else /* not FIBER_USE_NATIVE */
+    if (cont->type == CONTINUATION_CONTEXT) {
+	/* cont */
 	ruby_xfree(cont->ensure_array);
 	RUBY_FREE_UNLESS_NULL(cont->machine.stack);
+    }
+    else {
+	/* fiber */
+	const rb_fiber_t *fib = (rb_fiber_t*)cont;
+	const rb_thread_t *const th = GET_THREAD();
+#ifdef _WIN32
+	if (th && th->fiber != fib && cont->type != ROOT_FIBER_CONTEXT) {
+	    /* don't delete root fiber handle */
+	    if (fib->fib_handle) {
+		DeleteFiber(fib->fib_handle);
+	    }
+	}
+#else /* not WIN32 */
+	if (th && th->fiber != fib) {
+	    if (fib->ss_sp) {
+		if (cont->type == ROOT_FIBER_CONTEXT) {
+		    rb_bug("Illegal root fiber parameter");
+		}
+		munmap((void*)fib->ss_sp, fib->ss_size);
+	    }
+	}
+	else {
+	    /* It may reached here when finalize */
+	    /* TODO examine whether it is a bug */
+	    /* rb_bug("cont_free: release self"); */
+	}
+#endif
+    }
+#else /* not FIBER_USE_NATIVE */
+    ruby_xfree(cont->ensure_array);
+    RUBY_FREE_UNLESS_NULL(cont->machine.stack);
 #endif
 #ifdef __ia64
-	RUBY_FREE_UNLESS_NULL(cont->machine.register_stack);
+    RUBY_FREE_UNLESS_NULL(cont->machine.register_stack);
 #endif
-	RUBY_FREE_UNLESS_NULL(cont->vm_stack);
+    RUBY_FREE_UNLESS_NULL(cont->saved_vm_stack.ptr);
 
-	/* free rb_cont_t or rb_fiber_t */
-	ruby_xfree(ptr);
-    }
+    /* free rb_cont_t or rb_fiber_t */
+    ruby_xfree(ptr);
     RUBY_FREE_LEAVE("cont");
 }
 
@@ -277,13 +325,13 @@ cont_memsize(const void *ptr)
     size_t size = 0;
 
     size = sizeof(*cont);
-    if (cont->vm_stack) {
+    if (cont->saved_vm_stack.ptr) {
 #ifdef CAPTURE_JUST_VALID_VM_STACK
-	size_t n = (cont->vm_stack_slen + cont->vm_stack_clen);
+	size_t n = (cont->saved_vm_stack.slen + cont->saved_vm_stack.clen);
 #else
-	size_t n = cont->saved_thread.stack_size;
+	size_t n = cont->saved_thread.ec.vm_stack_size;
 #endif
-	size += n * sizeof(*cont->vm_stack);
+	size += n * sizeof(*cont->saved_vm_stack.ptr);
     }
 
     if (cont->machine.stack) {
@@ -297,8 +345,29 @@ cont_memsize(const void *ptr)
     return size;
 }
 
+static void
+fiber_verify(const rb_fiber_t *fib)
+{
+#if VM_CHECK_MODE > 0
+    switch (fib->status) {
+      case FIBER_RESUMED:
+	VM_ASSERT(fib->cont.saved_thread.ec.vm_stack == NULL);
+	break;
+      case FIBER_SUSPENDED:
+	VM_ASSERT(fib->cont.saved_thread.ec.vm_stack != NULL);
+	break;
+      case FIBER_CREATED:
+      case FIBER_TERMINATED:
+	/* TODO */
+	break;
+      default:
+	VM_UNREACHABLE(fiber_verify);
+    }
+#endif
+}
+
 void
-rb_fiber_mark_self(rb_fiber_t *fib)
+rb_fiber_mark_self(const rb_fiber_t *fib)
 {
     if (fib)
 	rb_gc_mark(fib->cont.self);
@@ -307,28 +376,26 @@ rb_fiber_mark_self(rb_fiber_t *fib)
 static void
 fiber_mark(void *ptr)
 {
+    rb_fiber_t *fib = ptr;
     RUBY_MARK_ENTER("cont");
-    if (ptr) {
-	rb_fiber_t *fib = ptr;
-	rb_fiber_mark_self(fib->prev);
-	cont_mark(&fib->cont);
-    }
+    fiber_verify(fib);
+    rb_gc_mark(fib->first_proc);
+    rb_fiber_mark_self(fib->prev);
+    cont_mark(&fib->cont);
     RUBY_MARK_LEAVE("cont");
 }
 
 static void
 fiber_free(void *ptr)
 {
+    rb_fiber_t *fib = ptr;
     RUBY_FREE_ENTER("fiber");
-    if (ptr) {
-	rb_fiber_t *fib = ptr;
-	if (fib->cont.type != ROOT_FIBER_CONTEXT &&
-	    fib->cont.saved_thread.local_storage) {
-	    st_free_table(fib->cont.saved_thread.local_storage);
-	}
-
-	cont_free(&fib->cont);
+    if (fib->cont.type != ROOT_FIBER_CONTEXT &&
+	fib->cont.saved_thread.ec.local_storage) {
+	st_free_table(fib->cont.saved_thread.ec.local_storage);
     }
+
+    cont_free(&fib->cont);
     RUBY_FREE_LEAVE("fiber");
 }
 
@@ -340,8 +407,8 @@ fiber_memsize(const void *ptr)
 
     size = sizeof(*fib);
     if (fib->cont.type != ROOT_FIBER_CONTEXT &&
-	fib->cont.saved_thread.local_storage != NULL) {
-	size += st_memsize(fib->cont.saved_thread.local_storage);
+	fib->cont.saved_thread.ec.local_storage != NULL) {
+	size += st_memsize(fib->cont.saved_thread.ec.local_storage);
     }
     size += cont_memsize(&fib->cont);
     return size;
@@ -413,24 +480,10 @@ cont_save_thread(rb_context_t *cont, rb_thread_t *th)
 {
     rb_thread_t *sth = &cont->saved_thread;
 
-    /* save thread context */
-    sth->stack = th->stack;
-    sth->stack_size = th->stack_size;
-    sth->local_storage = th->local_storage;
-    sth->cfp = th->cfp;
-    sth->safe_level = th->safe_level;
-    sth->raised_flag = th->raised_flag;
-    sth->state = th->state;
-    sth->status = th->status;
-    sth->tag = th->tag;
-    sth->protect_tag = th->protect_tag;
-    sth->errinfo = th->errinfo;
-    sth->first_proc = th->first_proc;
-    sth->root_lep = th->root_lep;
-    sth->root_svar = th->root_svar;
-    sth->ensure_list = th->ensure_list;
+    VM_ASSERT(th->status == THREAD_RUNNABLE);
 
-    sth->trace_arg = th->trace_arg;
+    /* save thread context */
+    sth->ec = th->ec;
 
     /* saved_thread->machine.stack_(start|end) should be NULL */
     /* because it may happen GC afterward */
@@ -450,9 +503,9 @@ cont_init(rb_context_t *cont, rb_thread_t *th)
     cont->saved_thread.self = th->self;
     cont->saved_thread.machine.stack_maxsize = th->machine.stack_maxsize;
     cont->saved_thread.fiber = th->fiber;
-    cont->saved_thread.local_storage = 0;
-    cont->saved_thread.local_storage_recursive_hash = Qnil;
-    cont->saved_thread.local_storage_recursive_hash_for_trace = Qnil;
+    cont->saved_thread.ec.local_storage = NULL;
+    cont->saved_thread.ec.local_storage_recursive_hash = Qnil;
+    cont->saved_thread.ec.local_storage_recursive_hash_for_trace = Qnil;
 }
 
 static rb_context_t *
@@ -470,11 +523,12 @@ cont_new(VALUE klass)
 }
 
 static VALUE
-cont_capture(volatile int *stat)
+cont_capture(volatile int *volatile stat)
 {
-    rb_context_t *cont;
+    rb_context_t *volatile cont;
     rb_thread_t *th = GET_THREAD();
     volatile VALUE contval;
+    rb_execution_context_t *ec = &th->ec;
 
     THREAD_MUST_BE_RUNNING(th);
     rb_vm_stack_to_heap(th);
@@ -482,16 +536,17 @@ cont_capture(volatile int *stat)
     contval = cont->self;
 
 #ifdef CAPTURE_JUST_VALID_VM_STACK
-    cont->vm_stack_slen = th->cfp->sp - th->stack;
-    cont->vm_stack_clen = th->stack + th->stack_size - (VALUE*)th->cfp;
-    cont->vm_stack = ALLOC_N(VALUE, cont->vm_stack_slen + cont->vm_stack_clen);
-    MEMCPY(cont->vm_stack, th->stack, VALUE, cont->vm_stack_slen);
-    MEMCPY(cont->vm_stack + cont->vm_stack_slen, (VALUE*)th->cfp, VALUE, cont->vm_stack_clen);
+    cont->saved_vm_stack.slen = ec->cfp->sp - ec->vm_stack;
+    cont->saved_vm_stack.clen = ec->vm_stack + ec->vm_stack_size - (VALUE*)ec->cfp;
+    cont->saved_vm_stack.ptr = ALLOC_N(VALUE, cont->saved_vm_stack.slen + cont->saved_vm_stack.clen);
+    MEMCPY(cont->saved_vm_stack.ptr, ec->vm_stack, VALUE, cont->saved_vm_stack.slen);
+    MEMCPY(cont->saved_vm_stack.ptr + cont->saved_vm_stack.slen,
+		(VALUE*)ec->cfp, VALUE, cont->saved_vm_stack.clen);
 #else
-    cont->vm_stack = ALLOC_N(VALUE, th->stack_size);
-    MEMCPY(cont->vm_stack, th->stack, VALUE, th->stack_size);
+    cont->saved_vm_stack.ptr = ALLOC_N(VALUE, ec->vm_stack_size);
+    MEMCPY(cont->saved_vm_stack.ptr, ec->vm_stack, VALUE, ec->vm_stack_size);
 #endif
-    cont->saved_thread.stack = NULL;
+    cont->saved_thread.ec.vm_stack = NULL;
 
     cont_save_machine_stack(th, cont);
 
@@ -500,10 +555,10 @@ cont_capture(volatile int *stat)
 	rb_ensure_list_t *p;
 	int size = 0;
 	rb_ensure_entry_t *entry;
-	for (p=th->ensure_list; p; p=p->next)
+	for (p=th->ec.ensure_list; p; p=p->next)
 	    size++;
 	entry = cont->ensure_array = ALLOC_N(rb_ensure_entry_t,size+1);
-	for (p=th->ensure_list; p; p=p->next) {
+	for (p=th->ec.ensure_list; p; p=p->next) {
 	    if (!p->entry.marker)
 		p->entry.marker = rb_ary_tmp_new(0); /* dummy object */
 	    *entry++ = p->entry;
@@ -528,53 +583,64 @@ cont_capture(volatile int *stat)
 }
 
 static inline void
+fiber_restore_thread(rb_thread_t *th, rb_fiber_t *fib)
+{
+    rb_thread_t *sth = &fib->cont.saved_thread;
+
+    th->ec = sth->ec;
+    sth->ec.vm_stack = NULL;
+    th->fiber = fib;
+
+    VM_ASSERT(th->ec.vm_stack != NULL);
+    VM_ASSERT(sth->status == THREAD_RUNNABLE);
+}
+
+
+static inline void
 cont_restore_thread(rb_context_t *cont)
 {
-    rb_thread_t *th = GET_THREAD(), *sth = &cont->saved_thread;
+    rb_thread_t *th = GET_THREAD();
 
     /* restore thread context */
     if (cont->type == CONTINUATION_CONTEXT) {
 	/* continuation */
-	rb_fiber_t *fib;
+	rb_thread_t *sth = &cont->saved_thread;
+	const rb_fiber_t *fib;
 
 	th->fiber = sth->fiber;
 	fib = th->fiber ? th->fiber : th->root_fiber;
 
-	if (fib && fib->cont.saved_thread.stack) {
-	    th->stack_size = fib->cont.saved_thread.stack_size;
-	    th->stack = fib->cont.saved_thread.stack;
+	if (fib && fib->cont.saved_thread.ec.vm_stack) {
+	    th->ec.vm_stack_size = fib->cont.saved_thread.ec.vm_stack_size;
+	    th->ec.vm_stack = fib->cont.saved_thread.ec.vm_stack;
 	}
 #ifdef CAPTURE_JUST_VALID_VM_STACK
-	MEMCPY(th->stack, cont->vm_stack, VALUE, cont->vm_stack_slen);
-	MEMCPY(th->stack + sth->stack_size - cont->vm_stack_clen,
-	       cont->vm_stack + cont->vm_stack_slen, VALUE, cont->vm_stack_clen);
+	MEMCPY(th->ec.vm_stack, cont->saved_vm_stack.ptr, VALUE, cont->saved_vm_stack.slen);
+	MEMCPY(th->ec.vm_stack + sth->ec.vm_stack_size - cont->saved_vm_stack.clen,
+	       cont->saved_vm_stack.ptr + cont->saved_vm_stack.slen, VALUE, cont->saved_vm_stack.clen);
 #else
-	MEMCPY(th->stack, cont->vm_stack, VALUE, sth->stack_size);
+	MEMCPY(th->ec.vm_stack, cont->saved_vm_stack.ptr, VALUE, sth->ec.vm_stack_size);
 #endif
+
+	/* other members of ec */
+	th->ec.cfp = sth->ec.cfp;
+	th->ec.safe_level = sth->ec.safe_level;
+	th->ec.raised_flag = sth->ec.raised_flag;
+	th->ec.tag = sth->ec.tag;
+	th->ec.protect_tag = sth->ec.protect_tag;
+	th->ec.root_lep = sth->ec.root_lep;
+	th->ec.root_svar = sth->ec.root_svar;
+	th->ec.ensure_list = sth->ec.ensure_list;
+	th->ec.errinfo = sth->ec.errinfo;
+	th->ec.trace_arg = sth->ec.trace_arg;
+
+	VM_ASSERT(th->ec.vm_stack != NULL);
+	VM_ASSERT(sth->status == THREAD_RUNNABLE);
     }
     else {
 	/* fiber */
-	th->stack = sth->stack;
-	sth->stack = NULL;
-	th->stack_size = sth->stack_size;
-	th->local_storage = sth->local_storage;
-	th->local_storage_recursive_hash = sth->local_storage_recursive_hash;
-	th->local_storage_recursive_hash_for_trace = sth->local_storage_recursive_hash_for_trace;
-	th->fiber = (rb_fiber_t*)cont;
+	fiber_restore_thread(th, (rb_fiber_t*)cont);
     }
-
-    th->cfp = sth->cfp;
-    th->safe_level = sth->safe_level;
-    th->raised_flag = sth->raised_flag;
-    th->state = sth->state;
-    th->status = sth->status;
-    th->tag = sth->tag;
-    th->protect_tag = sth->protect_tag;
-    th->errinfo = sth->errinfo;
-    th->first_proc = sth->first_proc;
-    th->root_lep = sth->root_lep;
-    th->root_svar = sth->root_svar;
-    th->ensure_list = sth->ensure_list;
 }
 
 #if FIBER_USE_NATIVE
@@ -694,19 +760,15 @@ fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib)
 {
     rb_thread_t *th = GET_THREAD(), *sth = &newfib->cont.saved_thread;
 
-    if (newfib->status != RUNNING) {
-	fiber_initialize_machine_stack_context(newfib, th->vm->default_params.fiber_machine_stack_size);
-    }
-
     /* restore thread context */
-    cont_restore_thread(&newfib->cont);
+    fiber_restore_thread(th, newfib);
     th->machine.stack_maxsize = sth->machine.stack_maxsize;
     if (sth->machine.stack_end && (newfib != oldfib)) {
 	rb_bug("fiber_setcontext: sth->machine.stack_end has non zero value");
     }
 
     /* save  oldfib's machine stack */
-    if (oldfib->status != TERMINATED) {
+    if (!FIBER_TERMINATED_P(oldfib)) {
 	STACK_GROW_DIR_DETECTION;
 	SET_MACHINE_STACK_END(&th->machine.stack_end);
 	if (STACK_DIR_UPPER(0, 1)) {
@@ -1069,7 +1131,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
     if (cont->saved_thread.self != th->self) {
 	rb_raise(rb_eRuntimeError, "continuation called across threads");
     }
-    if (cont->saved_thread.protect_tag != th->protect_tag) {
+    if (cont->saved_thread.ec.protect_tag != th->ec.protect_tag) {
 	rb_raise(rb_eRuntimeError, "continuation called across stack rewinding barrier");
     }
     if (cont->saved_thread.fiber) {
@@ -1077,13 +1139,11 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
 	    rb_raise(rb_eRuntimeError, "continuation called across fiber");
 	}
     }
-    rollback_ensure_stack(contval, th->ensure_list, cont->ensure_array);
+    rollback_ensure_stack(contval, th->ec.ensure_list, cont->ensure_array);
 
     cont->argc = argc;
     cont->value = make_passing_arg(argc, argv);
 
-    /* restore `tracing' context. see [Feature #4347] */
-    th->trace_arg = cont->saved_thread.trace_arg;
     cont_restore_0(cont, &contval);
     return Qnil; /* unreachable */
 }
@@ -1102,8 +1162,9 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *  the programmer and not the VM.
  *
  *  As opposed to other stackless light weight concurrency models, each fiber
- *  comes with a small 4KB stack. This enables the fiber to be paused from deeply
- *  nested function calls within the fiber block.
+ *  comes with a stack.  This enables the fiber to be paused from deeply
+ *  nested function calls within the fiber block.  See the ruby(1)
+ *  manpage to configure the size of the fiber stack(s).
  *
  *  When a fiber is created it will not run automatically. Rather it must
  *  be explicitly asked to run using the <code>Fiber#resume</code> method.
@@ -1182,7 +1243,10 @@ fiber_t_alloc(VALUE fibval)
     fib->cont.type = FIBER_CONTEXT;
     cont_init(&fib->cont, th);
     fib->prev = NULL;
-    fib->status = CREATED;
+
+    /* fib->status == 0 == CREATED
+     * So that we don't need to set status: fiber_status_set(fib, FIBER_CREATED); */
+    VM_ASSERT(FIBER_CREATED_P(fib));
 
     DATA_PTR(fibval) = fib;
 
@@ -1210,14 +1274,14 @@ fiber_init(VALUE fibval, VALUE proc)
     rb_thread_t *cth = GET_THREAD();
 
     /* initialize cont */
-    cont->vm_stack = 0;
+    cont->saved_vm_stack.ptr = NULL;
 
-    th->stack = NULL;
-    th->stack_size = 0;
+    th->ec.vm_stack = NULL;
+    th->ec.vm_stack_size = 0;
 
-    th->stack_size = cth->vm->default_params.fiber_vm_stack_size / sizeof(VALUE);
-    th->stack = ALLOC_N(VALUE, th->stack_size);
-    th->cfp = (void *)(th->stack + th->stack_size);
+    th->ec.vm_stack_size = cth->vm->default_params.fiber_vm_stack_size / sizeof(VALUE);
+    th->ec.vm_stack = ALLOC_N(VALUE, th->ec.vm_stack_size);
+    th->ec.cfp = (void *)(th->ec.vm_stack + th->ec.vm_stack_size);
 
     rb_vm_push_frame(th,
 		     NULL,
@@ -1226,16 +1290,16 @@ fiber_init(VALUE fibval, VALUE proc)
 		     VM_BLOCK_HANDLER_NONE,
 		     0, /* specval */
 		     NULL, /* pc */
-		     th->stack, /* sp */
+		     th->ec.vm_stack, /* sp */
 		     0, /* local_size */
 		     0);
 
-    th->tag = 0;
-    th->local_storage = st_init_numtable();
-    th->local_storage_recursive_hash = Qnil;
-    th->local_storage_recursive_hash_for_trace = Qnil;
+    th->ec.tag = NULL;
+    th->ec.local_storage = NULL;
+    th->ec.local_storage_recursive_hash = Qnil;
+    th->ec.local_storage_recursive_hash_for_trace = Qnil;
 
-    th->first_proc = proc;
+    fib->first_proc = proc;
 
 #if !FIBER_USE_NATIVE
     MEMCPY(&cont->jmpbuf, &cth->root_jmpbuf, rb_jmpbuf_t, 1);
@@ -1265,32 +1329,35 @@ rb_fiber_start(void)
     rb_thread_t *th = GET_THREAD();
     rb_fiber_t *fib = th->fiber;
     rb_proc_t *proc;
-    int state;
+    enum ruby_tag_type state;
+
+    VM_ASSERT(FIBER_RESUMED_P(fib));
 
     TH_PUSH_TAG(th);
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
 	rb_context_t *cont = &VAR_FROM_MEMORY(fib)->cont;
 	int argc;
 	const VALUE *argv, args = cont->value;
-	GetProcPtr(cont->saved_thread.first_proc, proc);
+	GetProcPtr(fib->first_proc, proc);
 	argv = (argc = cont->argc) > 1 ? RARRAY_CONST_PTR(args) : &args;
 	cont->value = Qnil;
-	th->errinfo = Qnil;
-	th->root_lep = rb_vm_ep_local_ep(vm_block_ep(&proc->block));
-	th->root_svar = Qfalse;
-	fib->status = RUNNING;
+	th->ec.errinfo = Qnil;
+	th->ec.root_lep = rb_vm_proc_local_ep(fib->first_proc);
+	th->ec.root_svar = Qfalse;
 
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, Qnil);
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
 	cont->value = rb_vm_invoke_proc(th, proc, argc, argv, VM_BLOCK_HANDLER_NONE);
     }
     TH_POP_TAG();
 
     if (state) {
+	VM_ASSERT(FIBER_RESUMED_P(fib));
+
 	if (state == TAG_RAISE || state == TAG_FATAL) {
-	    rb_threadptr_pending_interrupt_enque(th, th->errinfo);
+	    rb_threadptr_pending_interrupt_enque(th, th->ec.errinfo);
 	}
 	else {
-	    VALUE err = rb_vm_make_jump_tag_but_local_jump(state, th->errinfo);
+	    VALUE err = rb_vm_make_jump_tag_but_local_jump(state, th->ec.errinfo);
 	    if (!NIL_P(err))
 		rb_threadptr_pending_interrupt_enque(th, err);
 	}
@@ -1298,7 +1365,7 @@ rb_fiber_start(void)
     }
 
     rb_fiber_terminate(fib);
-    rb_bug("rb_fiber_start: unreachable");
+    VM_UNREACHABLE(rb_fiber_start);
 }
 
 static rb_fiber_t *
@@ -1313,8 +1380,8 @@ root_fiber_alloc(rb_thread_t *th)
     fib->fib_handle = ConvertThreadToFiber(0);
 #endif
 #endif
-    fib->status = RUNNING;
-
+    fiber_status_set(fib, FIBER_RESUMED); /* skip CREATED */
+    th->root_fiber = th->fiber = fib;
     return fib;
 }
 
@@ -1323,9 +1390,9 @@ fiber_current(void)
 {
     rb_thread_t *th = GET_THREAD();
     if (th->fiber == 0) {
-	/* save root */
 	rb_fiber_t *fib = root_fiber_alloc(th);
-	th->root_fiber = th->fiber = fib;
+	/* Running thread object has stack management responsibility */
+	fib->cont.saved_thread.ec.vm_stack = NULL;
     }
     return th->fiber;
 }
@@ -1366,10 +1433,21 @@ fiber_store(rb_fiber_t *next_fib, rb_thread_t *th)
 	cont_save_thread(&fib->cont, th);
     }
     else {
-	/* create current fiber */
+	/* create root fiber */
 	fib = root_fiber_alloc(th);
-	th->root_fiber = th->fiber = fib;
     }
+
+    VM_ASSERT(FIBER_RESUMED_P(fib) || FIBER_TERMINATED_P(fib));
+    VM_ASSERT(FIBER_RUNNABLE_P(next_fib));
+
+#if FIBER_USE_NATIVE
+    if (FIBER_CREATED_P(next_fib)) {
+	fiber_initialize_machine_stack_context(next_fib, th->vm->default_params.fiber_machine_stack_size);
+    }
+#endif
+
+    if (FIBER_RESUMED_P(fib)) fiber_status_set(fib, FIBER_SUSPENDED);
+    fiber_status_set(next_fib, FIBER_RESUMED);
 
 #if FIBER_USE_NATIVE
     fiber_setcontext(next_fib, fib);
@@ -1405,14 +1483,14 @@ fiber_store(rb_fiber_t *next_fib, rb_thread_t *th)
 	if (fib->cont.argc == -1) rb_exc_raise(fib->cont.value);
 	if (next_fib->cont.value == Qundef) {
 	    cont_restore_0(&next_fib->cont, &next_fib->cont.value);
-	    rb_bug("rb_fiber_resume: unreachable");
+	    VM_UNREACHABLE(fiber_store);
 	}
 	return fib->cont.value;
     }
     else {
 	VALUE undef = Qundef;
 	cont_restore_0(&next_fib->cont, &undef);
-	rb_bug("rb_fiber_resume: unreachable");
+	VM_UNREACHABLE(fiber_store);
     }
 #endif /* FIBER_USE_NATIVE */
 }
@@ -1434,43 +1512,46 @@ fiber_switch(rb_fiber_t *fib, int argc, const VALUE *argv, int is_resume)
     if (cont->saved_thread.self != th->self) {
 	rb_raise(rb_eFiberError, "fiber called across threads");
     }
-    else if (cont->saved_thread.protect_tag != th->protect_tag) {
+    else if (cont->saved_thread.ec.protect_tag != th->ec.protect_tag) {
 	rb_raise(rb_eFiberError, "fiber called across stack rewinding barrier");
     }
-    else if (fib->status == TERMINATED) {
+    else if (FIBER_TERMINATED_P(fib)) {
 	value = rb_exc_new2(rb_eFiberError, "dead fiber called");
 
-	if (th->fiber->status != TERMINATED) rb_exc_raise(value);
+	if (!FIBER_TERMINATED_P(th->fiber)) {
+	    rb_exc_raise(value);
+	    VM_UNREACHABLE(fiber_switch);
+	}
+	else {
+	    /* th->fiber is also dead => switch to root fiber */
+	    /* (this means we're being called from rb_fiber_terminate, */
+	    /* and the terminated fiber's return_fiber() is already dead) */
+	    VM_ASSERT(FIBER_SUSPENDED_P(th->root_fiber));
 
-	/* th->fiber is also dead => switch to root fiber */
-	/* (this means we're being called from rb_fiber_terminate, */
-	/* and the terminated fiber's return_fiber() is already dead) */
-	cont = &th->root_fiber->cont;
-	cont->argc = -1;
-	cont->value = value;
+	    cont = &th->root_fiber->cont;
+	    cont->argc = -1;
+	    cont->value = value;
 #if FIBER_USE_NATIVE
-	fiber_setcontext(th->root_fiber, th->fiber);
+	    fiber_setcontext(th->root_fiber, th->fiber);
 #else
-	cont_restore_0(cont, &value);
+	    cont_restore_0(cont, &value);
 #endif
-	/* unreachable */
+	    VM_UNREACHABLE(fiber_switch);
+	}
     }
 
     if (is_resume) {
 	fib->prev = fiber_current();
     }
-    else {
-	/* restore `tracing' context. see [Feature #4347] */
-	th->trace_arg = cont->saved_thread.trace_arg;
-    }
+
+    VM_ASSERT(FIBER_RUNNABLE_P(fib));
 
     cont->argc = argc;
     cont->value = make_passing_arg(argc, argv);
-
     value = fiber_store(fib, th);
     RUBY_VM_CHECK_INTS(th);
 
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, Qnil);
+    EXEC_EVENT_HOOK(th, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
 
     return value;
 }
@@ -1487,7 +1568,9 @@ static void
 rb_fiber_terminate(rb_fiber_t *fib)
 {
     VALUE value = fib->cont.value;
-    fib->status = TERMINATED;
+    VM_ASSERT(FIBER_RESUMED_P(fib));
+
+    fiber_status_set(fib, FIBER_TERMINATED);
 #if FIBER_USE_NATIVE && !defined(_WIN32)
     /* Ruby must not switch to other thread until storing terminated_machine_stack */
     terminated_machine_stack.ptr = fib->ss_sp;
@@ -1525,11 +1608,10 @@ rb_fiber_yield(int argc, const VALUE *argv)
 void
 rb_fiber_reset_root_local_storage(VALUE thval)
 {
-    rb_thread_t *th;
+    rb_thread_t *th = rb_thread_ptr(thval);
 
-    GetThreadPtr(thval, th);
     if (th->root_fiber && th->root_fiber != th->fiber) {
-	th->local_storage = th->root_fiber->cont.saved_thread.local_storage;
+	th->ec.local_storage = th->root_fiber->cont.saved_thread.ec.local_storage;
     }
 }
 
@@ -1545,9 +1627,9 @@ rb_fiber_reset_root_local_storage(VALUE thval)
 VALUE
 rb_fiber_alive_p(VALUE fibval)
 {
-    rb_fiber_t *fib;
+    const rb_fiber_t *fib;
     GetFiberPtr(fibval, fib);
-    return fib->status != TERMINATED ? Qtrue : Qfalse;
+    return FIBER_TERMINATED_P(fib) ? Qfalse : Qtrue;
 }
 
 /*
@@ -1655,7 +1737,26 @@ rb_fiber_s_current(VALUE klass)
     return rb_fiber_current();
 }
 
+/*
+ * call-seq:
+ *   fiber.to_s   -> string
+ *
+ * Returns fiber information string.
+ *
+ */
 
+static VALUE
+fiber_to_s(VALUE fibval)
+{
+    const rb_fiber_t *fib;
+    const rb_proc_t *proc;
+    char status_info[0x10];
+
+    GetFiberPtr(fibval, fib);
+    GetProcPtr(fib->first_proc, proc);
+    snprintf(status_info, 0x10, " (%s)", fiber_status_name(fib->status));
+    return rb_block_to_s(fibval, &proc->block, status_info);
+}
 
 /*
  *  Document-class: FiberError
@@ -1692,6 +1793,8 @@ Init_Cont(void)
     rb_define_singleton_method(rb_cFiber, "yield", rb_fiber_s_yield, -1);
     rb_define_method(rb_cFiber, "initialize", rb_fiber_init, 0);
     rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);
+    rb_define_method(rb_cFiber, "to_s", fiber_to_s, 0);
+    rb_define_alias(rb_cFiber, "inspect", "to_s");
 }
 
 RUBY_SYMBOL_EXPORT_BEGIN

@@ -82,8 +82,7 @@ class ACL
     # Creates a Regexp to match an address.
 
     def dot_pat(str)
-      exp = "^" + dot_pat_str(str) + "$"
-      Regexp.new(exp)
+      /\A#{dot_pat_str(str)}\z/
     end
 
     public

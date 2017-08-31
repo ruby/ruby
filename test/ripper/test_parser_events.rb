@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 begin
   require_relative 'dummyparser'
   require 'test/unit'
@@ -172,8 +173,14 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def test_operator_ambiguous
     thru_operator_ambiguous = false
-    parse('a=1; a %[]', :on_operator_ambiguous) {thru_operator_ambiguous = true}
+    token = syntax = nil
+    parse('a=1; a %[]', :on_operator_ambiguous) {|*a|
+      thru_operator_ambiguous = true
+      _, token, syntax = *a
+    }
     assert_equal true, thru_operator_ambiguous
+    assert_equal :%, token
+    assert_equal "string literal", syntax
   end
 
   def test_array   # array literal
@@ -463,23 +470,46 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_mlhs_add_star = false
     tree = parse("a, *b = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_match(/mlhs_add_star\(mlhs_add\(mlhs_new\(\),a\),b\)/, tree)
+    assert_include(tree, "massign([a,*b]")
     thru_mlhs_add_star = false
     tree = parse("a, *b, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_match(/mlhs_add\(mlhs_add_star\(mlhs_add\(mlhs_new\(\),a\),b\),mlhs_add\(mlhs_new\(\),c\)\)/, tree, bug2232)
+    assert_include(tree, "massign([a,*b,c]", bug2232)
     thru_mlhs_add_star = false
     tree = parse("a, *, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_match(/mlhs_add\(mlhs_add_star\(mlhs_add\(mlhs_new\(\),a\)\),mlhs_add\(mlhs_new\(\),c\)\)/, tree, bug4364)
+    assert_include(tree, "massign([a,*,c]", bug4364)
     thru_mlhs_add_star = false
     tree = parse("*b, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_match(/mlhs_add\(mlhs_add_star\(mlhs_new\(\),b\),mlhs_add\(mlhs_new\(\),c\)\)/, tree, bug4364)
+    assert_include(tree, "massign([*b,c]", bug4364)
     thru_mlhs_add_star = false
     tree = parse("*, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_match(/mlhs_add\(mlhs_add_star\(mlhs_new\(\)\),mlhs_add\(mlhs_new\(\),c\)\)/, tree, bug4364)
+    assert_include(tree, "massign([*,c],", bug4364)
+  end
+
+  def test_mlhs_add_post
+    thru_mlhs_add_post = false
+    tree = parse("a, *b = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal false, thru_mlhs_add_post
+    assert_include(tree, "massign([a,*b],")
+    thru_massign_add_post = false
+    tree = parse("a, *b, c = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "massign([a,*b,c],")
+    thru_mlhs_add_post = false
+    tree = parse("a, *, c = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "massign([a,*,c],")
+    thru_mlhs_add_post = false
+    tree = parse("*b, c = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "massign([*b,c],")
+    thru_mlhs_add_post = false
+    tree = parse("*, c = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "massign([*,c],")
   end
 
   def test_mlhs_new
@@ -863,7 +893,85 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_params = false
     parse('a {|**x|}', :on_params) {|_, *v| thru_params = true; arg = v}
     assert_equal true, thru_params
-    assert_equal [nil, nil, nil, nil, nil, "x", nil], arg
+    assert_equal [nil, nil, nil, nil, nil, "**x", nil], arg
+  end
+
+  def test_params_mlhs
+    thru_mlhs = false
+    tree = parse("proc {|(a, b)|}", :on_mlhs_paren) {thru_mlhs = true}
+    assert_equal true, thru_mlhs
+    assert_include(tree, "[mlhs([a,b])]")
+  end
+
+  def test_params_mlhs_add
+    thru_mlhs_add = false
+    tree = parse("proc {|(a, b)|}", :on_mlhs_add) {thru_mlhs_add = true}
+    assert_equal true, thru_mlhs_add
+    assert_include(tree, "[mlhs([a,b])]")
+  end
+
+  def test_params_mlhs_add_star
+    thru_mlhs_add_star = false
+    tree = parse("proc {|(a, *b)|}", :on_mlhs_add_star) {thru_mlhs_add_star = true}
+    assert_equal true, thru_mlhs_add_star
+    assert_include(tree, "[mlhs([a,*b])]")
+    thru_mlhs_add_star = false
+    tree = parse("proc {|(a, *b, c)|}", :on_mlhs_add_star) {thru_mlhs_add_star = true}
+    assert_equal true, thru_mlhs_add_star
+    assert_include(tree, "[mlhs([a,*b,c])]")
+    thru_mlhs_add_star = false
+    tree = parse("proc {|(a, *, c)|}", :on_mlhs_add_star) {thru_mlhs_add_star = true}
+    assert_equal true, thru_mlhs_add_star
+    assert_include(tree, "[mlhs([a,*,c])]")
+    thru_mlhs_add_star = false
+    tree = parse("proc {|(*b, c)|}", :on_mlhs_add_star) {thru_mlhs_add_star = true}
+    assert_equal true, thru_mlhs_add_star
+    assert_include(tree, "[mlhs([*b,c])]")
+    thru_mlhs_add_star = false
+    tree = parse("proc {|(*b)|}", :on_mlhs_add_star) {thru_mlhs_add_star = true}
+    assert_equal true, thru_mlhs_add_star
+    assert_include(tree, "[mlhs([*b])]")
+  end
+
+  def test_params_mlhs_add_post
+    thru_mlhs_add_post = false
+    tree = parse("proc {|(a, *b)|}", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal false, thru_mlhs_add_post
+    assert_include(tree, "mlhs([a,*b])")
+    thru_mlhs_add_post = false
+    tree = parse("proc {|(a, *b, c)|}", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "mlhs([a,*b,c])")
+    thru_mlhs_add_post = false
+    tree = parse("proc {|(a, *, c)|}", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "mlhs([a,*,c])")
+    thru_mlhs_add_post = false
+    tree = parse("proc {|(*b, c)|}", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "mlhs([*b,c])")
+    thru_mlhs_add_post = false
+    tree = parse("proc {|(*, c)|}", :on_mlhs_add_post) {thru_mlhs_add_post = true}
+    assert_equal true, thru_mlhs_add_post
+    assert_include(tree, "mlhs([*,c])")
+  end
+
+  def test_params_mlhs_new
+    thru_mlhs_new = false
+    tree = parse("proc {|(a, b)|}", :on_mlhs_new) {thru_mlhs_new = true}
+    assert_equal true, thru_mlhs_new
+    assert_include(tree, "[mlhs([a,b])]")
+  end
+
+  def test_params_mlhs_paren
+    thru_mlhs_paren = 0
+    tree = parse("proc {|(a, b)|}", :on_mlhs_paren) {thru_mlhs_paren += 1}
+    assert_equal 1, thru_mlhs_paren
+    assert_include(tree, "[mlhs([a,b])]")
+    thru_mlhs_paren = 0
+    tree = parse("proc {|((a, b))|}", :on_mlhs_paren) {thru_mlhs_paren += 1}
+    assert_equal 2, thru_mlhs_paren
+    assert_include(tree, "[mlhs([a,b])]")
   end
 
   def test_paren
@@ -969,6 +1077,15 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_rest_param = false
     parse('def a(*x) end', :on_rest_param) {thru_rest_param = true}
     assert_equal true, thru_rest_param
+  end
+
+  def test_kwrest_param
+    thru_kwrest = false
+    parse('def a(**) end', :on_kwrest_param) {|n, val| thru_kwrest = val}
+    assert_equal nil, thru_kwrest
+    thru_kwrest = false
+    parse('def a(**x) end', :on_kwrest_param) {|n, val| thru_kwrest = val}
+    assert_equal "x", thru_kwrest
   end
 
   def test_retry

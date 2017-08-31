@@ -5,6 +5,7 @@ if defined?(OpenSSL::TestUtils)
 
 class OpenSSL::TestX509Request < OpenSSL::TestCase
   def setup
+    super
     @rsa1024 = OpenSSL::TestUtils::TEST_KEY_RSA1024
     @rsa2048 = OpenSSL::TestUtils::TEST_KEY_RSA2048
     @dsa256  = OpenSSL::TestUtils::TEST_KEY_DSA256
@@ -139,12 +140,17 @@ class OpenSSL::TestX509Request < OpenSSL::TestCase
     req.version = 1
     assert_equal(false, req.verify(@rsa1024))
   rescue OpenSSL::X509::RequestError
-    skip
+    pend
   end if defined?(OpenSSL::Digest::DSS1)
 
   def test_sign_and_verify_dsa_md5
     assert_raise(OpenSSL::X509::RequestError){
       issue_csr(0, @dn, @dsa512, OpenSSL::Digest::MD5.new) }
+  end
+
+  def test_dup
+    req = issue_csr(0, @dn, @rsa1024, OpenSSL::Digest::SHA1.new)
+    assert_equal(req.to_der, req.dup.to_der)
   end
 
   private

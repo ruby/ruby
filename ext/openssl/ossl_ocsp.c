@@ -321,12 +321,17 @@ static VALUE
 ossl_ocspreq_add_certid(VALUE self, VALUE certid)
 {
     OCSP_REQUEST *req;
-    OCSP_CERTID *id;
+    OCSP_CERTID *id, *id_new;
 
     GetOCSPReq(self, req);
     GetOCSPCertId(certid, id);
-    if(!OCSP_request_add0_id(req, OCSP_CERTID_dup(id)))
-	ossl_raise(eOCSPError, NULL);
+
+    if (!(id_new = OCSP_CERTID_dup(id)))
+	ossl_raise(eOCSPError, "OCSP_CERTID_dup");
+    if (!OCSP_request_add0_id(req, id_new)) {
+	OCSP_CERTID_free(id_new);
+	ossl_raise(eOCSPError, "OCSP_request_add0_id");
+    }
 
     return self;
 }
@@ -368,14 +373,16 @@ ossl_ocspreq_get_certid(VALUE self)
  *
  * Signs this OCSP request using +cert+, +key+ and optional +digest+. If
  * +digest+ is not specified, SHA-1 is used. +certs+ is an optional Array of
- * additional certificates that will be included in the request. If +certs+ is
- * not specified, flag OpenSSL::OCSP::NOCERTS is set. Pass an empty array to
- * include only the signer certificate.
+ * additional certificates which are included in the request in addition to
+ * the signer certificate. Note that if +certs+ is nil or not given, flag
+ * OpenSSL::OCSP::NOCERTS is enabled. Pass an empty array to include only the
+ * signer certificate.
  *
- * +flags+ can include:
- * OpenSSL::OCSP::NOCERTS::    don't include certificates
+ * +flags+ can be a bitwise OR of the following constants:
+ *
+ * OpenSSL::OCSP::NOCERTS::
+ *   Don't include any certificates in the request. +certs+ will be ignored.
  */
-
 static VALUE
 ossl_ocspreq_sign(int argc, VALUE *argv, VALUE self)
 {
@@ -399,7 +406,7 @@ ossl_ocspreq_sign(int argc, VALUE *argv, VALUE self)
     else
 	md = GetDigestPtr(digest);
     if (NIL_P(certs))
-	flags |= OCSP_NOCERTS;
+	flg |= OCSP_NOCERTS;
     else
 	x509s = ossl_x509_ary2sk(certs);
 
@@ -435,7 +442,7 @@ ossl_ocspreq_verify(int argc, VALUE *argv, VALUE self)
     x509s = ossl_x509_ary2sk(certs);
     result = OCSP_request_verify(req, x509s, x509st, flg);
     sk_X509_pop_free(x509s, X509_free);
-    if (!result)
+    if (result <= 0)
 	ossl_clear_error();
 
     return result > 0 ? Qtrue : Qfalse;
@@ -856,13 +863,11 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
 	X509_EXTENSION *x509ext;
 
 	for(i = 0; i < RARRAY_LEN(ext); i++){
-	    x509ext = DupX509ExtPtr(RARRAY_AREF(ext, i));
+	    x509ext = GetX509ExtPtr(RARRAY_AREF(ext, i));
 	    if(!OCSP_SINGLERESP_add_ext(single, x509ext, -1)){
-		X509_EXTENSION_free(x509ext);
 		error = 1;
 		goto err;
 	    }
-	    X509_EXTENSION_free(x509ext);
 	}
     }
 
@@ -911,7 +916,7 @@ ossl_ocspbres_get_status(VALUE self)
 	status = OCSP_single_get0_status(single, &reason, &revtime,
 					 &thisupd, &nextupd);
 	if(status < 0) continue;
-	if(!(cid = OCSP_CERTID_dup(OCSP_SINGLERESP_get0_id(single))))
+	if(!(cid = OCSP_CERTID_dup((OCSP_CERTID *)OCSP_SINGLERESP_get0_id(single)))) /* FIXME */
 	    ossl_raise(eOCSPError, NULL);
 	ary = rb_ary_new();
 	rb_ary_push(ary, ossl_ocspcertid_new(cid));
@@ -1065,9 +1070,57 @@ ossl_ocspbres_verify(int argc, VALUE *argv, VALUE self)
     x509st = GetX509StorePtr(store);
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
     x509s = ossl_x509_ary2sk(certs);
+#if (OPENSSL_VERSION_NUMBER < 0x1000202fL) || defined(LIBRESSL_VERSION_NUMBER)
+    /*
+     * OpenSSL had a bug that it doesn't use the certificates in x509s for
+     * verifying the chain. This can be a problem when the response is signed by
+     * a certificate issued by an intermediate CA.
+     *
+     *       root_ca
+     *         |
+     *   intermediate_ca
+     *         |-------------|
+     *     end_entity    ocsp_signer
+     *
+     * When the certificate hierarchy is like this, and the response contains
+     * only ocsp_signer certificate, the following code wrongly fails.
+     *
+     *   store = OpenSSL::X509::Store.new; store.add_cert(root_ca)
+     *   basic_response.verify([intermediate_ca], store)
+     *
+     * So add the certificates in x509s to the embedded certificates list first.
+     *
+     * This is fixed in OpenSSL 0.9.8zg, 1.0.0s, 1.0.1n, 1.0.2b. But it still
+     * exists in LibreSSL 2.1.10, 2.2.9, 2.3.6, 2.4.1.
+     */
+    if (!(flg & (OCSP_NOCHAIN | OCSP_NOVERIFY)) &&
+	sk_X509_num(x509s) && sk_X509_num(bs->certs)) {
+	int i;
+
+	bs = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_BASICRESP), bs);
+	if (!bs) {
+	    sk_X509_pop_free(x509s, X509_free);
+	    ossl_raise(eOCSPError, "ASN1_item_dup");
+	}
+
+	for (i = 0; i < sk_X509_num(x509s); i++) {
+	    if (!OCSP_basic_add1_cert(bs, sk_X509_value(x509s, i))) {
+		sk_X509_pop_free(x509s, X509_free);
+		OCSP_BASICRESP_free(bs);
+		ossl_raise(eOCSPError, "OCSP_basic_add1_cert");
+	    }
+	}
+	result = OCSP_basic_verify(bs, x509s, x509st, flg);
+	OCSP_BASICRESP_free(bs);
+    }
+    else {
+	result = OCSP_basic_verify(bs, x509s, x509st, flg);
+    }
+#else
     result = OCSP_basic_verify(bs, x509s, x509st, flg);
+#endif
     sk_X509_pop_free(x509s, X509_free);
-    if (!result)
+    if (result <= 0)
 	ossl_clear_error();
 
     return result > 0 ? Qtrue : Qfalse;
@@ -1228,7 +1281,7 @@ ossl_ocspsres_get_certid(VALUE self)
     OCSP_CERTID *id;
 
     GetOCSPSingleRes(self, sres);
-    id = OCSP_CERTID_dup(OCSP_SINGLERESP_get0_id(sres));
+    id = OCSP_CERTID_dup((OCSP_CERTID *)OCSP_SINGLERESP_get0_id(sres)); /* FIXME */
 
     return ossl_ocspcertid_new(id);
 }
@@ -1549,15 +1602,15 @@ ossl_ocspcid_get_issuer_name_hash(VALUE self)
 {
     OCSP_CERTID *id;
     ASN1_OCTET_STRING *name_hash;
-    char *hexbuf;
+    VALUE ret;
 
     GetOCSPCertId(self, id);
     OCSP_id_get0_info(&name_hash, NULL, NULL, NULL, id);
 
-    if (string2hex(name_hash->data, name_hash->length, &hexbuf, NULL) < 0)
-	ossl_raise(eOCSPError, "string2hex");
+    ret = rb_str_new(NULL, name_hash->length * 2);
+    ossl_bin2hex(name_hash->data, RSTRING_PTR(ret), name_hash->length);
 
-    return ossl_buf2str(hexbuf, name_hash->length * 2);
+    return ret;
 }
 
 /*
@@ -1572,15 +1625,15 @@ ossl_ocspcid_get_issuer_key_hash(VALUE self)
 {
     OCSP_CERTID *id;
     ASN1_OCTET_STRING *key_hash;
-    char *hexbuf;
+    VALUE ret;
 
     GetOCSPCertId(self, id);
     OCSP_id_get0_info(NULL, NULL, &key_hash, NULL, id);
 
-    if (string2hex(key_hash->data, key_hash->length, &hexbuf, NULL) < 0)
-	ossl_raise(eOCSPError, "string2hex");
+    ret = rb_str_new(NULL, key_hash->length * 2);
+    ossl_bin2hex(key_hash->data, RSTRING_PTR(ret), key_hash->length);
 
-    return ossl_buf2str(hexbuf, key_hash->length * 2);
+    return ret;
 }
 
 /*
@@ -1639,6 +1692,11 @@ ossl_ocspcid_to_der(VALUE self)
 void
 Init_ossl_ocsp(void)
 {
+#if 0
+    mOSSL = rb_define_module("OpenSSL");
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
+#endif
+
     /*
      * OpenSSL::OCSP implements Online Certificate Status Protocol requests
      * and responses.

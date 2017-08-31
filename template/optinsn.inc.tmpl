@@ -13,18 +13,42 @@
  */
 
 static INSN *
-insn_operands_unification(INSN *insnobj){
+insn_operands_unification(INSN *insnobj)
+{
 #ifdef OPT_OPERANDS_UNIFICATION
-  /* optimize rule */
-  switch(insnobj->insn_id){
+    /* optimize rule */
+    switch(insnobj->insn_id){
+%     opt_insns_map.each do |originsn, optinsns|
+      case BIN(<%=originsn.name%>):
+%       optinsns.each {|opti|
+	if (
+%         opti.defopes.each_with_index {|opinfo, i|
+%           next if opinfo[1] == '*'
+	    insnobj->operands[<%=i%>] == <%=val_as_type(opinfo)%> &&
+%         }
+	    1) {
+%         idx = 0
+%         opti.defopes.each_with_index {|opinfo, n|
+%           if opinfo[1] == '*'
+%             if idx != n
+	    insnobj->operands[<%=idx%>] = insnobj->operands[<%=n%>];
+%             end
+%             idx += 1
+%           end
+% 	  }
+	    insnobj->insn_id = BIN(<%=opti.name%>);
+	    insnobj->operand_size = <%=idx%>;
+	    break;
+	}
+%       }
+	break;
+%     end
 
-<%= rule %>
-
-  default:
-    /* do nothing */;
-    break;
-  }
+      default:
+	/* do nothing */;
+	break;
+    }
 #endif
-  return insnobj;
+    return insnobj;
 }
 

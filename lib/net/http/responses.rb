@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 # :stopdoc:
+# https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
 class Net::HTTPUnknownResponse < Net::HTTPResponse
   HAS_BODY = true
   EXCEPTION_TYPE = Net::HTTPError
@@ -31,7 +32,9 @@ end
 class Net::HTTPSwitchProtocol < Net::HTTPInformation     # 101
   HAS_BODY = false
 end
-# 102 - RFC 2518; removed in RFC 4918
+class Net::HTTPProcessing < Net::HTTPInformation         # 102
+  HAS_BODY = false
+end
 
 class Net::HTTPOK < Net::HTTPSuccess                            # 200
   HAS_BODY = true
@@ -57,7 +60,9 @@ end
 class Net::HTTPMultiStatus < Net::HTTPSuccess                   # 207 - RFC 4918
   HAS_BODY = true
 end
-# 208 Already Reported - RFC 5842; experimental
+class Net::HTTPAlreadyReported < Net::HTTPSuccess               # 208 - RFC 5842
+  HAS_BODY = true
+end
 class Net::HTTPIMUsed < Net::HTTPSuccess                        # 226 - RFC 3229
   HAS_BODY = true
 end
@@ -147,6 +152,9 @@ class Net::HTTPExpectationFailed < Net::HTTPClientError             # 417
 end
 # 418 I'm a teapot - RFC 2324; a joke RFC
 # 420 Enhance Your Calm - Twitter
+class Net::HTTPMisdirectedRequest < Net::HTTPClientError            # 421 - RFC 7540
+  HAS_BODY = true
+end
 class Net::HTTPUnprocessableEntity < Net::HTTPClientError           # 422 - RFC 4918
   HAS_BODY = true
 end
@@ -169,7 +177,7 @@ end
 class Net::HTTPRequestHeaderFieldsTooLarge < Net::HTTPClientError   # 431 - RFC 6585
   HAS_BODY = true
 end
-class Net::HTTPUnavailableForLegalReasons < Net::HTTPClientError    # 451
+class Net::HTTPUnavailableForLegalReasons < Net::HTTPClientError    # 451 - RFC 7725
   HAS_BODY = true
 end
 # 444 No Response - Nginx
@@ -195,13 +203,19 @@ end
 class Net::HTTPVersionNotSupported < Net::HTTPServerError           # 505
   HAS_BODY = true
 end
-# 506 Variant Also Negotiates - RFC 2295; experimental
+class Net::HTTPVariantAlsoNegotiates < Net::HTTPServerError         # 506
+  HAS_BODY = true
+end
 class Net::HTTPInsufficientStorage < Net::HTTPServerError           # 507 - RFC 4918
   HAS_BODY = true
 end
-# 508 Loop Detected - RFC 5842; experimental
+class Net::HTTPLoopDetected < Net::HTTPServerError                  # 508 - RFC 5842
+  HAS_BODY = true
+end
 # 509 Bandwidth Limit Exceeded - Apache bw/limited extension
-# 510 Not Extended - RFC 2774; experimental
+class Net::HTTPNotExtended < Net::HTTPServerError                   # 510 - RFC 2774
+  HAS_BODY = true
+end
 class Net::HTTPNetworkAuthenticationRequired < Net::HTTPServerError # 511 - RFC 6585
   HAS_BODY = true
 end
@@ -217,6 +231,7 @@ class Net::HTTPResponse
   CODE_TO_OBJ = {
     '100' => Net::HTTPContinue,
     '101' => Net::HTTPSwitchProtocol,
+    '102' => Net::HTTPProcessing,
 
     '200' => Net::HTTPOK,
     '201' => Net::HTTPCreated,
@@ -226,6 +241,7 @@ class Net::HTTPResponse
     '205' => Net::HTTPResetContent,
     '206' => Net::HTTPPartialContent,
     '207' => Net::HTTPMultiStatus,
+    '208' => Net::HTTPAlreadyReported,
     '226' => Net::HTTPIMUsed,
 
     '300' => Net::HTTPMultipleChoices,
@@ -255,6 +271,7 @@ class Net::HTTPResponse
     '415' => Net::HTTPUnsupportedMediaType,
     '416' => Net::HTTPRequestedRangeNotSatisfiable,
     '417' => Net::HTTPExpectationFailed,
+    '421' => Net::HTTPMisdirectedRequest,
     '422' => Net::HTTPUnprocessableEntity,
     '423' => Net::HTTPLocked,
     '424' => Net::HTTPFailedDependency,
@@ -262,6 +279,7 @@ class Net::HTTPResponse
     '428' => Net::HTTPPreconditionRequired,
     '429' => Net::HTTPTooManyRequests,
     '431' => Net::HTTPRequestHeaderFieldsTooLarge,
+    '451' => Net::HTTPUnavailableForLegalReasons,
 
     '500' => Net::HTTPInternalServerError,
     '501' => Net::HTTPNotImplemented,
@@ -269,7 +287,10 @@ class Net::HTTPResponse
     '503' => Net::HTTPServiceUnavailable,
     '504' => Net::HTTPGatewayTimeOut,
     '505' => Net::HTTPVersionNotSupported,
+    '506' => Net::HTTPVariantAlsoNegotiates,
     '507' => Net::HTTPInsufficientStorage,
+    '508' => Net::HTTPLoopDetected,
+    '510' => Net::HTTPNotExtended,
     '511' => Net::HTTPNetworkAuthenticationRequired,
   }
 end

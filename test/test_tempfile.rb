@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'test/unit'
 require 'tempfile'
 require 'thread'
@@ -18,6 +18,10 @@ class TestTempfile < Test::Unit::TestCase
     if @tempfile
       @tempfile.close!
     end
+  end
+
+  def test_leackchecker
+    assert_instance_of(Tempfile, Tempfile.allocate)
   end
 
   def test_basic
@@ -243,11 +247,18 @@ puts Tempfile.new('foo').path
     assert_equal 5, t.size
   end
 
+  def test_size_on_empty_file
+    t = tempfile("foo")
+    t.write("")
+    t.close
+    assert_equal 0, t.size
+  end
+
   def test_concurrency
     threads = []
     tempfiles = []
-    lock = Mutex.new
-    cond = ConditionVariable.new
+    lock = Thread::Mutex.new
+    cond = Thread::ConditionVariable.new
     start = false
 
     4.times do
@@ -332,6 +343,13 @@ puts Tempfile.new('foo').path
       assert_file.exist?(path)
     }
     assert_file.not_exist?(path)
+
+    Tempfile.create("tempfile-create") {|f|
+      path = f.path
+      f.close
+      File.unlink(f.path)
+    }
+    assert_file.not_exist?(path)
   end
 
   def test_create_without_block
@@ -344,6 +362,15 @@ puts Tempfile.new('foo').path
   ensure
     f.close if f && !f.closed?
     File.unlink path if path
+  end
+
+  def test_create_default_basename
+    path = nil
+    Tempfile.create {|f|
+      path = f.path
+      assert_file.exist?(path)
+    }
+    assert_file.not_exist?(path)
   end
 end
 

@@ -25,18 +25,20 @@ $(LIBFFI_DIR)/Makefile:
 	$(Q) $(MAKEDIRS) $(LIBFFI_DIR)
 	$(Q) $(CONFIGURE_LIBFFI)
 
-build-libffi: $(LIBFFI_A)
 build-libffi $(LIBFFI_A):
-	$(Q) $(SUBMAKE_LIBFFI)
+	$(Q) $(SUBMAKE_PRE) $(MAKE) $(SUBMAKE_ARG)
 
+clean-none:
 clean-libffi:
-	$(Q) $(SUBMAKE_LIBFFI) clean
+	$(Q) $(SUBMAKE_PRE) $(MAKE) $(SUBMAKE_ARG) clean
 
+distclean-none:
 distclean-libffi:
-	$(Q) $(SUBMAKE_LIBFFI) distclean
+	$(Q) $(SUBMAKE_PRE) $(MAKE) $(SUBMAKE_ARG) distclean
 	$(Q) $(RM) $(LIBFFI_DIR)/local.exp
 	$(Q) $(RUBY) -rfileutils -e "FileUtils.rmdir(Dir.glob(ARGV[0]+'/**/{,.*/}'), :parents=>true)" $(LIBFFI_DIR)
 
+realclean-none:
 realclean-libffi:
 	$(Q) $(RMALL) $(LIBFFI_DIR)
 
@@ -58,6 +60,7 @@ closure.o: $(hdrdir)/ruby/encoding.h
 closure.o: $(hdrdir)/ruby/intern.h
 closure.o: $(hdrdir)/ruby/io.h
 closure.o: $(hdrdir)/ruby/missing.h
+closure.o: $(hdrdir)/ruby/onigmo.h
 closure.o: $(hdrdir)/ruby/oniguruma.h
 closure.o: $(hdrdir)/ruby/ruby.h
 closure.o: $(hdrdir)/ruby/st.h
@@ -139,6 +142,7 @@ pointer.o: $(hdrdir)/ruby/encoding.h
 pointer.o: $(hdrdir)/ruby/intern.h
 pointer.o: $(hdrdir)/ruby/io.h
 pointer.o: $(hdrdir)/ruby/missing.h
+pointer.o: $(hdrdir)/ruby/onigmo.h
 pointer.o: $(hdrdir)/ruby/oniguruma.h
 pointer.o: $(hdrdir)/ruby/ruby.h
 pointer.o: $(hdrdir)/ruby/st.h

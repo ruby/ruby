@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 begin
   require 'ripper'
   require 'test/unit'
@@ -58,6 +58,21 @@ eot
     eos
 
     assert_equal clear_pos(sexp1), clear_pos(sexp2)
+  end
+
+  def test_params_mlhs
+    sexp = Ripper.sexp("proc {|(w, *x, y), z|}")
+    _, ((mlhs, w, (rest, x), y), z) = search_sexp(:params, sexp)
+    assert_equal(:mlhs, mlhs)
+    assert_equal(:@ident, w[0])
+    assert_equal("w", w[1])
+    assert_equal(:rest_param, rest)
+    assert_equal(:@ident, x[0])
+    assert_equal("x", x[1])
+    assert_equal(:@ident, y[0])
+    assert_equal("y", y[1])
+    assert_equal(:@ident, z[0])
+    assert_equal("z", z[1])
   end
 
   def search_sexp(sym, sexp)

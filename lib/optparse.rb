@@ -1386,7 +1386,8 @@ XXX
         default_style = Switch::NoArgument
         default_pattern, conv = search(:atype, FalseClass) unless default_pattern
         ldesc << "--no-#{q}"
-        long << 'no-' + (q = q.downcase)
+        (q = q.downcase).tr!('_', '-')
+        long << "no-#{q}"
         nolong << q
       when /^--\[no-\]([^\[\]=\s]*)(.+)?/
         q, a = $1, $2
@@ -1396,10 +1397,11 @@ XXX
           default_pattern, conv = search(:atype, o) unless default_pattern
         end
         ldesc << "--[no-]#{q}"
-        long << (o = q.downcase)
+        (o = q.downcase).tr!('_', '-')
+        long << o
         not_pattern, not_conv = search(:atype, FalseClass) unless not_style
         not_style = Switch::NoArgument
-        nolong << 'no-' + o
+        nolong << "no-#{o}"
       when /^--([^\[\]=\s]*)(.+)?/
         q, a = $1, $2
         if a
@@ -1408,7 +1410,8 @@ XXX
           default_pattern, conv = search(:atype, o) unless default_pattern
         end
         ldesc << "--#{q}"
-        long << (o = q.downcase)
+        (o = q.downcase).tr!('_', '-')
+        long << o
       when /^-(\[\^?\]?(?:[^\\\]]|\\.)*\])(.+)?/
         q, a = $1, $2
         o = notwice(Object, klass, 'type')
@@ -1538,6 +1541,7 @@ XXX
         # long option
         when /\A--([^=]*)(?:=(.*))?/m
           opt, rest = $1, $2
+          opt.tr!('_', '-')
           begin
             sw, = complete(:long, opt, true)
           rescue ParseError
@@ -1649,11 +1653,11 @@ XXX
   # Wrapper method for getopts.rb.
   #
   #   params = ARGV.getopts("ab:", "foo", "bar:", "zot:Z;zot option")
-  #   # params[:a] = true   # -a
-  #   # params[:b] = "1"    # -b1
-  #   # params[:foo] = "1"  # --foo
-  #   # params[:bar] = "x"  # --bar x
-  #   # params[:zot] = "z"  # --zot Z
+  #   # params["a"] = true   # -a
+  #   # params["b"] = "1"    # -b1
+  #   # params["foo"] = "1"  # --foo
+  #   # params["bar"] = "x"  # --bar x
+  #   # params["zot"] = "z"  # --zot Z
   #
   def getopts(*args)
     argv = Array === args.first ? args.shift : default_argv
@@ -1740,16 +1744,16 @@ XXX
   def candidate(word)
     list = []
     case word
+    when '-'
+      long = short = true
     when /\A--/
       word, arg = word.split(/=/, 2)
       argpat = Completion.regexp(arg, false) if arg and !arg.empty?
       long = true
-    when /\A-(!-)/
-      short = true
     when /\A-/
-      long = short = true
+      short = true
     end
-    pat = Completion.regexp(word, true)
+    pat = Completion.regexp(word, long)
     visit(:each_option) do |opt|
       next unless Switch === opt
       opts = (long ? opt.long : []) + (short ? opt.short : [])
@@ -1838,7 +1842,7 @@ XXX
   #
   # Float number format, and converts to Float.
   #
-  float = "(?:#{decimal}(?:\\.(?:#{decimal})?)?|\\.#{decimal})(?:E[-+]?#{decimal})?"
+  float = "(?:#{decimal}(?=(.)?)(?:\\.(?:#{decimal})?)?|\\.#{decimal})(?:E[-+]?#{decimal})?"
   floatpat = %r"\A[-+]?#{float}\z"io
   accept(Float, floatpat) {|s,| s.to_f if s}
 
@@ -1847,11 +1851,13 @@ XXX
   # for float format, and Rational for rational format.
   #
   real = "[-+]?(?:#{octal}|#{float})"
-  accept(Numeric, /\A(#{real})(?:\/(#{real}))?\z/io) {|s, d, n|
+  accept(Numeric, /\A(#{real})(?:\/(#{real}))?\z/io) {|s, d, f, n,|
     if n
       Rational(d, n)
-    elsif s
-      eval(s)
+    elsif f
+      Float(s)
+    else
+      Integer(s)
     end
   }
 
@@ -1861,7 +1867,7 @@ XXX
   DecimalInteger = /\A[-+]?#{decimal}\z/io
   accept(DecimalInteger, DecimalInteger) {|s,|
     begin
-      Integer(s)
+      Integer(s, 10)
     rescue ArgumentError
       raise OptionParser::InvalidArgument, s
     end if s
@@ -1885,10 +1891,14 @@ XXX
   # integer format, Float for float format.
   #
   DecimalNumeric = floatpat     # decimal integer is allowed as float also.
-  accept(DecimalNumeric, floatpat) {|s,|
+  accept(DecimalNumeric, floatpat) {|s, f|
     begin
-      eval(s)
-    rescue SyntaxError
+      if f
+        Float(s)
+      else
+        Integer(s)
+      end
+    rescue ArgumentError
       raise OptionParser::InvalidArgument, s
     end if s
   }
@@ -2147,4 +2157,5 @@ end
 # ARGV is arguable by OptionParser
 ARGV.extend(OptionParser::Arguable)
 
-OptParse = OptionParser
+# An alias for OptionParser.
+OptParse = OptionParser  # :nodoc:

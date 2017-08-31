@@ -163,7 +163,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     fetcher = Gem::RemoteFetcher.new nil
     @fetcher = fetcher
     def fetcher.request(uri, request_class, last_modified = nil)
-      raise SocketError, "tarded"
+      raise SocketError, "oops"
     end
 
     uri = 'http://gems.example.com/yaml'
@@ -171,7 +171,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       fetcher.fetch_size uri
     end
 
-    assert_equal "SocketError: tarded (#{uri})", e.message
+    assert_equal "SocketError: oops (#{uri})", e.message
   end
 
   def test_no_proxy
@@ -230,6 +230,21 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     uri = URI.parse "http://example.com/foo"
     target = MiniTest::Mock.new
     target.expect :target, "badexample.com"
+
+    dns = MiniTest::Mock.new
+    dns.expect :getresource, target, [String, Object]
+
+    fetch = Gem::RemoteFetcher.new nil, dns
+    assert_equal URI.parse("http://example.com/foo"), fetch.api_endpoint(uri)
+
+    target.verify
+    dns.verify
+  end
+
+  def test_api_endpoint_ignores_trans_domain_values_that_end_with_original_in_path
+    uri = URI.parse "http://example.com/foo"
+    target = MiniTest::Mock.new
+    target.expect :target, "evil.com/a.example.com"
 
     dns = MiniTest::Mock.new
     dns.expect :getresource, target, [String, Object]
@@ -687,6 +702,23 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     assert_equal "too many redirects (#{url})", e.message
   end
 
+  def test_fetch_http_redirects_without_location
+    fetcher = Gem::RemoteFetcher.new nil
+    @fetcher = fetcher
+    url = 'http://gems.example.com/redirect'
+
+    def fetcher.request(uri, request_class, last_modified = nil)
+      res = Net::HTTPMovedPermanently.new nil, 301, nil
+      res
+    end
+
+    e = assert_raises Gem::RemoteFetcher::FetchError do
+      fetcher.fetch_http URI.parse(url)
+    end
+
+    assert_equal "redirecting but no redirect location was given (#{url})", e.message
+  end
+
   def test_fetch_http_with_additional_headers
     ENV["http_proxy"] = @proxy_uri
     ENV["no_proxy"] = URI::parse(@server_uri).host
@@ -1036,4 +1068,3 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
 end
-

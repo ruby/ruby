@@ -368,6 +368,11 @@ commands = {
     unless i["changesets"]
       abort "You don't have view_changesets permission"
     end
+    unless i["custom_fields"]
+      puts "The specified ticket \##{@issue} seems to be a feature ticket"
+      @issue = nil
+      next
+    end
     id = "##{i["id"]}".color(*PRIORITIES[i["priority"]["name"]])
     sio = StringIO.new
     sio.puts <<eom
@@ -419,7 +424,11 @@ eom
       begin
         res.value
       rescue
-        $stderr.puts "deployed redmine doesn't have https://github.com/ruby/bugs.ruby-lang.org/commit/01fbba60d68cb916ddbccc8a8710e68c5217171d\nask naruse or hsbt"
+        if $!.respond_to?(:response) && $!.response.is_a?(Net::HTTPConflict)
+          $stderr.puts "the revision has already related to the ticket"
+        else
+          $stderr.puts "deployed redmine doesn't have https://github.com/ruby/bugs.ruby-lang.org/commit/01fbba60d68cb916ddbccc8a8710e68c5217171d\nask naruse or hsbt"
+        end
         next
       end
       puts res.body
@@ -432,7 +441,7 @@ eom
 
   "backport" => proc{|args|
     # this feature implies backport command which wraps tool/merger.rb
-    raise CommandSyntexError unless args.empty?
+    raise CommandSyntaxError unless args.empty?
     unless @issue
       puts "ticket not selected"
       next
@@ -475,7 +484,7 @@ eom
       res = http.get(uri.path)
       data = JSON(res.body)
       h = data["issue"]["custom_fields"].find{|x|x["id"]==5}
-      if h and val = h["value"]
+      if h and val = h["value"] and val != ""
         case val[/(?:\A|, )#{Regexp.quote TARGET_VERSION}: ([^,]+)/, 1]
         when 'REQUIRED', 'UNKNOWN', 'DONTNEED', 'WONTFIX'
           val[$~.offset(1)[0]...$~.offset(1)[1]] = 'DONE'
@@ -488,7 +497,7 @@ eom
           raise "unknown status '#$1'"
         end
       else
-        val = '#{TARGET_VERSION}: DONE'
+        val = "#{TARGET_VERSION}: DONE"
       end
 
       data = { "issue" => { "custom_fields" => [ {"id"=>5, "value" => val} ] } }

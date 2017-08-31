@@ -17,7 +17,7 @@
   font-weight: 400;
   src: local("Source Code Pro"),
        local("SourceCodePro-Regular"),
-       url("fonts/SourceCodePro-Regular.ttf") format("truetype");
+       url("../fonts/SourceCodePro-Regular.ttf") format("truetype");
 }
 
 @font-face {
@@ -26,7 +26,7 @@
   font-weight: 700;
   src: local("Source Code Pro Bold"),
        local("SourceCodePro-Bold"),
-       url("fonts/SourceCodePro-Bold.ttf") format("truetype");
+       url("../fonts/SourceCodePro-Bold.ttf") format("truetype");
 }
 
 /*
@@ -46,7 +46,7 @@
   font-weight: 300;
   src: local("Lato Light"),
        local("Lato-Light"),
-       url("fonts/Lato-Light.ttf") format("truetype");
+       url("../fonts/Lato-Light.ttf") format("truetype");
 }
 
 @font-face {
@@ -55,7 +55,7 @@
   font-weight: 300;
   src: local("Lato Light Italic"),
        local("Lato-LightItalic"),
-       url("fonts/Lato-LightItalic.ttf") format("truetype");
+       url("../fonts/Lato-LightItalic.ttf") format("truetype");
 }
 
 @font-face {
@@ -64,7 +64,7 @@
   font-weight: 700;
   src: local("Lato Regular"),
        local("Lato-Regular"),
-       url("fonts/Lato-Regular.ttf") format("truetype");
+       url("../fonts/Lato-Regular.ttf") format("truetype");
 }
 
 @font-face {
@@ -73,7 +73,7 @@
   font-weight: 700;
   src: local("Lato Italic"),
        local("Lato-Italic"),
-       url("fonts/Lato-RegularItalic.ttf") format("truetype");
+       url("../fonts/Lato-RegularItalic.ttf") format("truetype");
 }
 
 /*

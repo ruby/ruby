@@ -36,6 +36,10 @@ cygruby*.def
 extconf.h
 y.output
 y.tab.c
+*.gcda
+*.gcno
+*.gcov
+lcov*.info
 
 # /
 /*-fake.rb
@@ -82,6 +86,7 @@ y.tab.c
 /goruby
 /id.[ch]
 /largefile.h
+/lcov-out
 /lex.c
 /libruby*.*
 /miniprelude.c
@@ -108,6 +113,7 @@ y.tab.c
 /ruby-runner
 /ruby-runner.h
 /ruby-man.rd.gz
+/run.gdb
 /sizes.c
 /test.rb
 /tmp
@@ -119,6 +125,7 @@ y.tab.c
 /yasmdata.rb
 
 # /benchmark/
+/benchmark/bm_require.data
 /benchmark/bmx_*.rb
 /benchmark/fasta.output.*
 /benchmark/wc.input
@@ -126,6 +133,7 @@ y.tab.c
 /enc/*.def
 /enc/*.exp
 /enc/*.lib
+/enc/jis/props.h
 /enc/unicode/data
 
 # /enc/trans/
@@ -137,14 +145,12 @@ y.tab.c
 
 # /ext/
 /ext/extinit.c
+/ext/configure-ext.mk
+/ext/*/exts.mk
 
 # /ext/-test-/win32/dln/
 /ext/-test-/win32/dln/dlntest.exp
 /ext/-test-/win32/dln/dlntest.lib
-
-# /ext/dl/callback/
-/ext/dl/callback/callback-*.c
-/ext/dl/callback/callback.c
 
 # /ext/etc/
 /ext/etc/constdefs.h
@@ -154,6 +160,7 @@ y.tab.c
 
 # /ext/rbconfig/
 /ext/rbconfig/sizeof/sizes.c
+/ext/rbconfig/sizeof/limits.c
 
 # /ext/ripper/
 /ext/ripper/eventids1.c
@@ -167,15 +174,9 @@ y.tab.c
 /ext/socket/constdefs.h
 /ext/socket/constdefs.c
 
-# /ext/tk/
-/ext/tk/config_list
-
 # /gems
 /gems/*.gem
-
-# /spec/
-/spec/mspec
-/spec/rubyspec
+/gems/*-*
 
 # /tool/
 /tool/config.guess

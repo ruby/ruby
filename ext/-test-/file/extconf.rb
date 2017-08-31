@@ -5,6 +5,7 @@ headers = %w[sys/param.h sys/mount.h sys/vfs.h].select {|h| have_header(h)}
 if have_type("struct statfs", headers)
   have_struct_member("struct statfs", "f_fstypename", headers)
   have_struct_member("struct statfs", "f_type", headers)
+  have_struct_member("struct statfs", "f_flags", headers)
 end
 
 headers = %w[sys/statvfs.h].select {|h| have_header(h)}

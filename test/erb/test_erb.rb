@@ -197,6 +197,30 @@ EOS
     assert_equal(ans, erb.result)
   end
 
+  def test_trim_line1_with_carriage_return
+    erb = @erb.new("<% 3.times do %>\r\nline\r\n<% end %>\r\n", nil, '>')
+    assert_equal("line\r\n" * 3, erb.result)
+
+    erb = @erb.new("<% 3.times do %>\r\nline\r\n<% end %>\r\n", nil, '%>')
+    assert_equal("line\r\n" * 3, erb.result)
+  end
+
+  def test_trim_line2_with_carriage_return
+    erb = @erb.new("<% 3.times do %>\r\nline\r\n<% end %>\r\n", nil, '<>')
+    assert_equal("line\r\n" * 3, erb.result)
+
+    erb = @erb.new("<% 3.times do %>\r\nline\r\n<% end %>\r\n", nil, '%<>')
+    assert_equal("line\r\n" * 3, erb.result)
+  end
+
+  def test_explicit_trim_line_with_carriage_return
+    erb = @erb.new("<%- 3.times do -%>\r\nline\r\n<%- end -%>\r\n", nil, '-')
+    assert_equal("line\r\n" * 3, erb.result)
+
+    erb = @erb.new("<%- 3.times do -%>\r\nline\r\n<%- end -%>\r\n", nil, '%-')
+    assert_equal("line\r\n" * 3, erb.result)
+  end
+
   class Foo; end
 
   def test_def_class
@@ -464,6 +488,10 @@ EOS
 
     assert_equal("%A5%B5%A5%F3%A5%D7%A5%EB",
                  ERB::Util.url_encode("\xA5\xB5\xA5\xF3\xA5\xD7\xA5\xEB".force_encoding("EUC-JP")))
+
+    assert_equal("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~",
+                 ERB::Util.url_encode("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"),
+                 "should not escape any unreserved characters, as per RFC3986 Section 2.3")
   end
 
   def test_percent_after_etag
@@ -535,6 +563,36 @@ EOS
       erb = @erb.new("<%#frozen-string-literal: #{flag}%><%=''.frozen?%>")
       assert_equal(flag, erb.result)
     end
+  end
+
+  def test_result_with_hash
+    erb = @erb.new("<%= foo %>")
+    assert_equal("1", erb.result_with_hash(foo: "1"))
+  end
+
+  def test_result_with_hash_does_not_use_caller_local_variables
+    erb = @erb.new("<%= foo %>")
+    foo = 1
+    assert_raise(NameError) { erb.result_with_hash({}) }
+    assert_equal("1", erb.result_with_hash(foo: foo))
+  end
+
+  def test_result_with_hash_does_not_modify_caller_binding
+    erb = @erb.new("<%= foo %>")
+    erb.result_with_hash(foo: "1")
+    assert_equal(false, binding.local_variable_defined?(:foo))
+  end
+
+  def test_result_with_hash_does_not_modify_toplevel_binding
+    erb = @erb.new("<%= foo %>")
+    erb.result_with_hash(foo: "1")
+    assert_equal(false, TOPLEVEL_BINDING.local_variable_defined?(:foo))
+  end
+
+  # This depends on the behavior that #local_variable_set raises TypeError by invalid key.
+  def test_result_with_hash_with_invalid_keys_raises_type_error
+    erb = @erb.new("<%= 1 %>")
+    assert_raise(TypeError) { erb.result_with_hash({ 1 => "1" }) }
   end
 end
 

@@ -8,8 +8,6 @@ module Fiddle
   class TestHandle < TestCase
     include Fiddle
 
-    include Test::Unit::Assertions
-
     def test_safe_handle_open
       t = Thread.new do
         $SAFE = 1

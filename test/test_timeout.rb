@@ -5,7 +5,7 @@ require 'thread'
 
 class TestTimeout < Test::Unit::TestCase
   def test_queue
-    q = Queue.new
+    q = Thread::Queue.new
     assert_raise(Timeout::Error, "[ruby-dev:32935]") {
       Timeout.timeout(0.01) { q.pop }
     }
@@ -63,6 +63,11 @@ class TestTimeout < Test::Unit::TestCase
     end
     assert_raise_with_message(err, 'execution expired') do
       Timeout.timeout 0.01, err do
+        sleep 3
+      end
+    end
+    assert_raise_with_message(err, /connection to ruby-lang.org expired/) do
+      Timeout.timeout 0.01, err, "connection to ruby-lang.org expired" do
         sleep 3
       end
     end

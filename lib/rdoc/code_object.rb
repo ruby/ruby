@@ -70,13 +70,6 @@ class RDoc::CodeObject
   attr_reader :metadata
 
   ##
-  # Offset in #file where this CodeObject was defined
-  #--
-  # TODO character or byte?
-
-  attr_accessor :offset
-
-  ##
   # Sets the parent CodeObject
 
   attr_writer :parent
@@ -150,8 +143,7 @@ class RDoc::CodeObject
                  else
                    # HACK correct fix is to have #initialize create @comment
                    #      with the correct encoding
-                   if String === @comment and
-                      Object.const_defined? :Encoding and @comment.empty? then
+                   if String === @comment and @comment.empty? then
                      @comment.force_encoding comment.encoding
                    end
                    @comment
@@ -427,4 +419,3 @@ class RDoc::CodeObject
   end
 
 end
-

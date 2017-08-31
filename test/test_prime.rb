@@ -140,17 +140,14 @@ class TestPrime < Test::Unit::TestCase
     end
 
     def test_prime?
-      # zero and unit
-      assert_not_predicate(0, :prime?)
-      assert_not_predicate(1, :prime?)
+      PRIMES.each do |p|
+        assert_predicate(p, :prime?)
+      end
 
-      # small primes
-      assert_predicate(2, :prime?)
-      assert_predicate(3, :prime?)
-
-      # squared prime
-      assert_not_predicate(4, :prime?)
-      assert_not_predicate(9, :prime?)
+      composites = (0..PRIMES.last).to_a - PRIMES
+      composites.each do |c|
+        assert_not_predicate(c, :prime?)
+      end
 
       # mersenne numbers
       assert_predicate((2**31-1), :prime?)
@@ -177,20 +174,22 @@ class TestPrime < Test::Unit::TestCase
   def test_eratosthenes_works_fine_after_timeout
     sieve = Prime::EratosthenesSieve.instance
     sieve.send(:initialize)
+    # simulates that Timeout.timeout interrupts Prime::EratosthenesSieve#compute_primes
+    class << Integer
+      alias_method :org_sqrt, :sqrt
+    end
     begin
-      # simulates that Timeout.timeout interrupts Prime::EratosthenesSieve#extend_table
-      def sieve.Integer(n)
-        n = super(n)
+      def Integer.sqrt(n)
         sleep 10 if /compute_primes/ =~ caller.first
-        return n
+        org_sqrt(n)
       end
-
       assert_raise(Timeout::Error) do
         Timeout.timeout(0.5) { Prime.each(7*37){} }
       end
     ensure
-      class << sieve
-        remove_method :Integer
+      class << Integer
+        alias_method :sqrt, :org_sqrt
+        remove_method :org_sqrt
       end
     end
 

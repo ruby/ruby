@@ -1,47 +1,56 @@
 .\"Ruby is copyrighted by Yukihiro Matsumoto <matz@netlab.jp>.
-.Dd July 10, 2013
-.Dt RI(1) "" "Ruby Programmers Reference Guide"
+.Dd April 20, 2017
+.Dt RI \&1 "Ruby Programmer's Reference Guide"
 .Os UNIX
 .Sh NAME
 .Nm ri
 .Nd Ruby API reference front end
 .Sh SYNOPSIS
 .Nm
-.Op Fl Ti
-.Op Fl d Ar directory
-.Op Fl f Ar format
-.Op Fl -list-doc-dirs
+.Op Fl ahilTv
+.Op Fl d Ar DIRNAME
+.Op Fl f Ar FORMAT
+.Op Fl w Ar WIDTH
+.Op Fl - Ns Oo Cm no- Oc Ns Cm pager
+.Op Fl -server Ns Oo = Ns Ar PORT Oc
+.Op Fl - Ns Oo Cm no- Oc Ns Cm list-doc-dirs
 .Op Fl -no-standard-docs
 .Op Fl - Ns Oo Cm no- Oc Ns Bro Cm system Ns | Ns Cm site Ns | Ns Cm gems Ns | Ns Cm home Brc
-.Op Fl - Ns Oo Cm no- Oc Ns Cm use-cache
-.Op Fl -width Ns = Ns Ar width
-.Op Ar target ...
+.Op Fl - Ns Oo Cm no- Oc Ns Cm profile
+.Op Fl -dump Ns = Ns Ar CACHE
+.Op Ar name ...
 .Sh DESCRIPTION
 .Nm
-is a CLI front end for the Ruby API reference.
-You can search and read API reference for classes and methods with
+is a command-line front end for the Ruby API reference.
+You can search and read the API reference for classes and methods with
 .Nm .
 .Pp
 .Nm
 is a part of Ruby.
 .Pp
-.Ar target
-can be one of the following forms:
+.Ar name
+can be:
 .Bl -diag -offset indent
-.It Class
-for classes
-.It Class::method
-for class methods
-.It Class#method
-for instance methods
-.It Class.method
-for both class and instance methods
-.It method
-for both class and instance methods
+.It Class | Module | Module::Class
+.Pp
+.It Class::method | Class#method | Class.method | method
+.Pp
+.It gem_name: | gem_name:README | gem_name:History
 .El
 .Pp
-All class names may be abbreviated to their minimum unambiguous form. If a name
-is ambiguous, all valid options will be listed.
+All class names may be abbreviated to their minimum unambiguous form.
+If a name is ambiguous, all valid options will be listed.
+.Pp
+A
+.Ql \&.
+matches either class or instance methods, while #method
+matches only instance and ::method matches only class methods.
+.Pp
+README and other files may be displayed by prefixing them with the gem name
+they're contained in.  If the gem name is followed by a
+.Ql \&:
+all files in the gem will be shown.
+The file name extension may be omitted where it is unambiguous.
 .Pp
 For example:
 .Bd -literal -offset indent
@@ -49,133 +58,190 @@ ri Fil
 ri File
 ri File.new
 ri zip
+ri rdoc:README
 .Ed
 .Pp
-Note that shell quoting may be required for method names containing
-punctuation:
+Note that shell quoting or escaping may be required for method names
+containing punctuation:
 .Bd -literal -offset indent
 ri 'Array.[]'
-ri compact\!
+ri compact\e!
 .Ed
+.Pp
+To see the default directories
+.Nm
+will search, run:
+.Bd -literal -offset indent
+ri --list-doc-dirs
+.Ed
+.Pp
+Specifying the
+.Fl -system , Fl -site , Fl -home , Fl -gems ,
+or
+.Fl -doc-dir
+options will limit
+.Nm
+to searching only the specified directories.
+.Pp
+.Nm
+options may be set in the
+.Ev RI
+environment variable.
+.Pp
+The
+.Nm
+pager can be set with the
+.Ev RI_PAGER
+environment variable or the
+.Ev PAGER
+environment variable.
+.Pp
 .Sh OPTIONS
 .Bl -tag -width "1234567890123" -compact
 .Pp
-.It Fl -version
-Prints the version of
-.Nm .
+.It Fl i
+.It Fl - Ns Oo Cm no- Oc Ns Cm interactive
+In interactive mode you can repeatedly
+look up methods with autocomplete.
+.Pp
+.It Fl a
+.It Fl - Ns Oo Cm no- Oc Ns Cm all
+Show all documentation for a class or module.
+.Pp
+.It Fl l
+.It Fl - Ns Oo Cm no- Oc Ns Cm list
+List classes
+.Nm
+knows about.
+.Pp
+.It Fl - Ns Oo Cm no- Oc Ns Cm pager
+Send output to a pager,
+rather than directly to stdout.
 .Pp
 .It Fl T
-.It Fl -no-pager
-Send output directly to stdout, rather than to a pager.
+Synonym for
+.Fl -no-pager .
 .Pp
-.It Fl d Ar directory
-.It Fl -doc-dir Ns = Ns Ar directory
-List of directories from which to source documentation in addition to the standard
-directories.  May be repeated.
+.It Fl w Ar WIDTH
+.It Fl -width Ns = Ns Ar WIDTH
+Set the width of the output.
+.Pp
+.It Fl -server Ns Oo = Ns Ar PORT Oc
+Run RDoc server on the given port.
+The default port is\~8214.
 .Pp
 .It Fl f Ar FORMAT
-.It Fl -fmt Ar FORMAT
-.It Fl -format Ns = Ns FORMAT
-Format to use when displaying output:
+.It Fl -format Ns = Ns Ar FORMAT
+Use the selected formatter.
+The default formatter is
+.Li bs
+for paged output and
+.Li ansi
+otherwise.
+Valid formatters are:
+.Li ansi , Li bs , Li markdown , Li rdoc .
 .Pp
-ansi, bs, html, plain, simple
+.It Fl h
+.It Fl -help
+Show help and exit.
 .Pp
-Use 'bs' (backspace) with most pager programs. To use ANSI, either disable the
-pager or tell the pager to allow control characters.
+.It Fl v
+.It Fl -version
+Output version information and exit.
+.El
 .Pp
-.It Fl i
-.It Fl -interactive
-This makes
+Data source options:
+.Bl -tag -width "1234567890123" -compact
+.Pp
+.It Fl - Ns Oo Cm no- Oc Ns Cm list-doc-dirs
+List the directories from which
 .Nm
-go into interactive mode.
+will source documentation on stdout and exit.
 .Pp
-When
-.Nm
-is in interactive mode it will allow the user to disambiguate lists of
-methods in case multiple methods match against a method search string.  It also
-will allow the user to enter in a method name (with auto-completion, if readline
-is supported) when viewing a class.
-.Pp
-.It Fl -list-doc-dirs
-List the directories from which ri will source documentation on stdout and exit.
+.It Fl d Ar DIRNAME
+.It Fl -doc-dir Ns = Ns Ar DIRNAME
+List of directories from which to source
+documentation in addition to the standard
+directories.  May be repeated.
 .Pp
 .It Fl -no-standard-docs
 Do not include documentation from the Ruby standard library,
 .Pa site_lib ,
 installed gems, or
 .Pa ~/.rdoc .
-.Pp
-Equivalent to specifying the options
-.Fl -no-system , Fl -no-site , Fl -no-gems ,
-and
-.Fl -no-home .
+Use with
+.Fl -doc-dir .
 .Pp
 .It Fl - Ns Oo Cm no- Oc Ns Cm system
 Include documentation from Ruby's standard library.  Defaults to true.
 .Pp
 .It Fl - Ns Oo Cm no- Oc Ns Cm site
- Include documentation from libraries installed in site_lib. Defaults to true.
+Include documentation from libraries installed in
+.Pa site_lib .
+Defaults to true.
 .Pp
 .It Fl - Ns Oo Cm no- Oc Ns Cm gems
-Include documentation from RubyGems. Defaults to true.
+Include documentation from RubyGems.  Defaults to true.
 .Pp
 .It Fl - Ns Oo Cm no- Oc Ns Cm home
-Include documentation stored in ~/.rdoc.  Defaults to true.
+Include documentation stored in
+.Pa ~/.rdoc .
+Defaults to true.
+.El
 .Pp
-.It Fl - Ns Oo Cm no- Oc Ns Cm use-cache
-Whether or not to use
-.Nm Ns
-.Ns 's cache. True by default.
+Debug options:
+.Bl -tag -width "1234567890123" -compact
 .Pp
-.It Fl w Ar width
-.It Fl -width Ns = Ns Ar width
-Set the width of the output.
+.It Fl - Ns Oo Cm no- Oc Ns Cm profile
+Run with the Ruby profiler.
 .Pp
+.It Fl -dump Ns = Ns Ar CACHE
+Dump data from an ri cache or data file.
 .El
 .Pp
 .Sh ENVIRONMENT
 .Bl -tag -width "USERPROFILE" -compact
 .Pp
 .It Ev RI
-Additional options.
+Options to prepend to those specified on the command-line.
 .Pp
+.It Ev RI_PAGER
 .It Ev PAGER
-Used as the name of pager program for displaying.
+Pager program to use for displaying.
 .Pp
 .It Ev HOME
 .It Ev USERPROFILE
 .It Ev HOMEPATH
-Path to user's home directory.
+Path to the user's home directory.
 .El
 .Pp
 .Sh FILES
 .Bl -tag -width "USERPROFILE" -compact
 .Pp
-.It Pa ~/.ri
-Caches recently referenced documents here.
-.Pp
 .It Pa ~/.rdoc
-Searches user-wide documents here.
+Path for ri data in the user's home directory.
 .Pp
 .El
 .Pp
 .Sh SEE ALSO
-.Xr ruby 1
-.Xr rdoc 1
+.Xr ruby 1 ,
+.Xr rdoc 1 ,
 .Xr gem 1
 .Pp
 .Sh REPORTING BUGS
 .Bl -bullet
-.Li Security vulnerabilities should be reported via an email to
-.Aq security@ruby-lang.org Ns
-.Li .
+.It
+Security vulnerabilities should be reported via an email to
+.Mt security@ruby-lang.org .
 Reported problems will be published after being fixed.
 .Pp
-.Li And you can report other bugs and feature requests via the
-Ruby Issue Tracking System (http://bugs.ruby-lang.org).
+.It
+Other bugs and feature requests can be reported via the
+Ruby Issue Tracking System
+.Pq Lk https://bugs.ruby-lang.org/ .
 Do not report security vulnerabilities
-via the system because it publishes the vulnerabilities immediately.
+via this system because it publishes the vulnerabilities immediately.
 .El
 .Sh AUTHORS
-Written by Dave Thomas
-.Aq dave@pragmaticprogrammer.com
+Written by
+.An Dave Thomas Aq dave@pragmaticprogrammer.com .

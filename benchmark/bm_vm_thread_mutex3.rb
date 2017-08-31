@@ -1,7 +1,7 @@
 # 1000 threads, one mutex
 
 require 'thread'
-m = Mutex.new
+m = Thread::Mutex.new
 r = 0
 max = 2000
 (1..max).map{

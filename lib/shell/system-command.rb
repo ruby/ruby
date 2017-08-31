@@ -16,13 +16,13 @@ class Shell
   class SystemCommand < Filter
     def initialize(sh, command, *opts)
       if t = opts.find{|opt| !opt.kind_of?(String) && opt.class}
-        Shell.Fail Error::TypeError, t.class, "String"
+        Shell.Fail TypeError, t.class, "String"
       end
       super(sh)
       @command = command
       @opts = opts
 
-      @input_queue = Queue.new
+      @input_queue = Thread::Queue.new
       @pid = nil
 
       sh.process_controller.add_schedule(self)

@@ -16,7 +16,7 @@ require "irb/cmd/nop.rb"
 # :stopdoc:
 module IRB
   module ExtendCommand
-    class Help<Nop
+    class Help < Nop
       begin
         Ri = RDoc::RI::Driver.new
       rescue SystemExit

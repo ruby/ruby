@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'psych/scalar_scanner'
 require 'psych/class_loader'
 require 'psych/exception'
@@ -70,11 +70,11 @@ module Psych
             o.value
           end
         when '!ruby/object:BigDecimal'
-          require 'bigdecimal'
+          require 'bigdecimal' unless defined? BigDecimal
           class_loader.big_decimal._load o.value
         when "!ruby/object:DateTime"
           class_loader.date_time
-          require 'date'
+          require 'date' unless defined? DateTime
           @ss.parse_time(o.value).to_datetime
         when '!ruby/encoding'
           ::Encoding.find o.value
@@ -380,11 +380,6 @@ module Psych
 
         if o.respond_to?(:init_with)
           o.init_with c
-        elsif o.respond_to?(:yaml_initialize)
-          if $VERBOSE
-            warn "Implementing #{o.class}#yaml_initialize is deprecated, please implement \"init_with(coder)\""
-          end
-          o.yaml_initialize c.tag, c.map
         else
           h.each { |k,v| o.instance_variable_set(:"@#{k}", v) }
         end

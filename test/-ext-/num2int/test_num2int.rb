@@ -2,33 +2,29 @@
 require 'test/unit'
 require '-test-/num2int'
 require '-test-/integer'
+require 'rbconfig/sizeof'
 
 class TestNum2int < Test::Unit::TestCase
-  SHRT_MIN = -32768
-  SHRT_MAX = 32767
-  USHRT_MAX = 65535
+  l = RbConfig::LIMITS
 
-  INT_MIN = -2147483648
-  INT_MAX = 2147483647
-  UINT_MAX = 4294967295
+  SHRT_MIN = l["SHRT_MIN"]
+  SHRT_MAX = l["SHRT_MAX"]
+  USHRT_MAX = l["USHRT_MAX"]
 
-  case [0].pack('L!').size
-  when 4
-    LONG_MAX = 2147483647
-    LONG_MIN = -2147483648
-    ULONG_MAX = 4294967295
-  when 8
-    LONG_MAX = 9223372036854775807
-    LONG_MIN = -9223372036854775808
-    ULONG_MAX = 18446744073709551615
-  end
+  INT_MIN = l["INT_MIN"]
+  INT_MAX = l["INT_MAX"]
+  UINT_MAX = l["UINT_MAX"]
 
-  LLONG_MAX = 9223372036854775807
-  LLONG_MIN = -9223372036854775808
-  ULLONG_MAX = 18446744073709551615
+  LONG_MAX = l["LONG_MAX"]
+  LONG_MIN = l["LONG_MIN"]
+  ULONG_MAX = l["ULONG_MAX"]
 
-  FIXNUM_MAX = LONG_MAX/2
-  FIXNUM_MIN = LONG_MIN/2
+  LLONG_MAX = l["LLONG_MAX"]
+  LLONG_MIN = l["LLONG_MIN"]
+  ULLONG_MAX = l["ULLONG_MAX"]
+
+  FIXNUM_MAX = l["FIXNUM_MAX"]
+  FIXNUM_MIN = l["FIXNUM_MIN"]
 
   def fix2big(n)
     10000000000000000000000000000.coerce(n)[0]

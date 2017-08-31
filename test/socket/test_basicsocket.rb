@@ -3,6 +3,7 @@
 begin
   require "socket"
   require "test/unit"
+  require "io/nonblock"
 rescue LoadError
 end
 
@@ -97,7 +98,7 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
   end
 
   def socks
-    sserv = TCPServer.new(0)
+    sserv = TCPServer.new('localhost', 0)
     ssock = nil
     t = Thread.new { ssock = sserv.accept }
     csock = TCPSocket.new('localhost', sserv.addr[1])
@@ -150,6 +151,58 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
       assert_instance_of BasicSocket, s
       s.autoclose = false
       sock.close
+    end
+  end
+
+  def test_read_write_nonblock
+    socks do |sserv, ssock, csock|
+      set_nb = true
+      buf = String.new
+      if ssock.respond_to?(:nonblock?)
+        assert_not_predicate(ssock, :nonblock?)
+        assert_not_predicate(csock, :nonblock?)
+
+        # Linux may use MSG_DONTWAIT to avoid setting O_NONBLOCK
+        if RUBY_PLATFORM.match?(/linux/) && Socket.const_defined?(:MSG_DONTWAIT)
+          set_nb = false
+        end
+      end
+      assert_equal :wait_readable, ssock.read_nonblock(1, buf, exception: false)
+      assert_equal 5, csock.write_nonblock('hello')
+      IO.select([ssock])
+      assert_same buf, ssock.read_nonblock(5, buf, exception: false)
+      assert_equal 'hello', buf
+      buf = '*' * 16384
+      n = 0
+
+      case w = csock.write_nonblock(buf, exception: false)
+      when Integer
+        n += w
+      when :wait_writable
+        break
+      end while true
+
+      assert_equal :wait_writable, w
+      assert_raise(IO::WaitWritable) { loop { csock.write_nonblock(buf) } }
+      assert_operator n, :>, 0
+      assert_not_predicate(csock, :nonblock?, '[Feature #13362]') unless set_nb
+      csock.close
+
+      case r = ssock.read_nonblock(16384, buf, exception: false)
+      when String
+        next
+      when nil
+        break
+      when :wait_readable
+        IO.select([ssock], nil, nil, 10) or
+          flunk 'socket did not become readable'
+      else
+        flunk "unexpected read_nonblock return: #{r.inspect}"
+      end while true
+
+      assert_raise(EOFError) { ssock.read_nonblock(1) }
+
+      assert_not_predicate(ssock, :nonblock?) unless set_nb
     end
   end
 end if defined?(BasicSocket)

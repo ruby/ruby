@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # tempfile - manipulates temporary files
 #
@@ -147,7 +147,7 @@ class Tempfile < DelegateClass(File)
   end
 
   def _close    # :nodoc:
-    @tmpfile.close unless @tmpfile.closed?
+    @tmpfile.close
   end
   protected :_close
 
@@ -227,7 +227,7 @@ class Tempfile < DelegateClass(File)
     if !@tmpfile.closed?
       @tmpfile.size # File#size calls rb_io_flush_raw()
     else
-      File.size?(@tmpfile.path)
+      File.size(@tmpfile.path)
     end
   end
   alias length size
@@ -252,7 +252,7 @@ class Tempfile < DelegateClass(File)
 
       warn "removing #{@tmpfile.path}..." if $DEBUG
 
-      @tmpfile.close unless @tmpfile.closed?
+      @tmpfile.close
       begin
         File.unlink(@tmpfile.path)
       rescue Errno::ENOENT
@@ -323,7 +323,7 @@ end
 #      ... do something with f ...
 #   end
 #
-def Tempfile.create(basename, tmpdir=nil, mode: 0, **options)
+def Tempfile.create(basename="", tmpdir=nil, mode: 0, **options)
   tmpfile = nil
   Dir::Tmpname.create(basename, tmpdir, options) do |tmpname, n, opts|
     mode |= File::RDWR|File::CREAT|File::EXCL
@@ -334,8 +334,18 @@ def Tempfile.create(basename, tmpdir=nil, mode: 0, **options)
     begin
       yield tmpfile
     ensure
-      tmpfile.close if !tmpfile.closed?
-      File.unlink tmpfile
+      unless tmpfile.closed?
+        if File.identical?(tmpfile, tmpfile.path)
+          unlinked = File.unlink tmpfile.path rescue nil
+        end
+        tmpfile.close
+      end
+      unless unlinked
+        begin
+          File.unlink tmpfile.path
+        rescue Errno::ENOENT
+        end
+      end
     end
   else
     tmpfile

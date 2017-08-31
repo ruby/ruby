@@ -176,6 +176,15 @@ class TestCSV::DataConverters < TestCSV
                   @parser.shift.fields )
   end
 
+  def test_custom_converter_with_blank_field
+    converter = lambda { |field| field.nil? }
+    row = nil
+    assert_nothing_raised(Exception) do
+      row = CSV.parse_line('nil,', converters: converter)
+    end
+    assert_equal([false, true], row);
+  end
+
   def test_shortcut_interface
     assert_equal( ["Numbers", ":integer", 1, ":float", 3.015],
                   CSV.parse_line(@data, converters: :numeric) )

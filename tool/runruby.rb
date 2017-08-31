@@ -67,11 +67,16 @@ end
 libs << File.expand_path("lib", srcdir)
 config["bindir"] = abs_archdir
 
-env = {}
+env = {
+  # Test with the smallest possible machine stack sizes.
+  # These values are clamped to machine-dependent minimum values in vm_core.h
+  'RUBY_THREAD_MACHINE_STACK_SIZE' => '1',
+  'RUBY_FIBER_MACHINE_STACK_SIZE' => '1',
+}
 
 runner = File.join(abs_archdir, "ruby-runner#{config['EXEEXT']}")
-runner = File.expand_path(ruby) unless File.exist?(runner)
-env["RUBY"] = runner
+runner = nil unless File.exist?(runner)
+env["RUBY"] = runner || File.expand_path(ruby)
 env["PATH"] = [abs_archdir, ENV["PATH"]].compact.join(File::PATH_SEPARATOR)
 
 if e = ENV["RUBYLIB"]
@@ -84,21 +89,22 @@ if File.file?(libruby_so)
   if e = config['LIBPATHENV'] and !e.empty?
     env[e] = [abs_archdir, ENV[e]].compact.join(File::PATH_SEPARATOR)
   end
-  if e = config['PRELOADENV']
-    e = nil if e.empty?
-    e ||= "LD_PRELOAD" if /linux/ =~ RUBY_PLATFORM
-  end
-  if e
-    env[e] = [libruby_so, ENV[e]].compact.join(File::PATH_SEPARATOR)
+  unless runner
+    if e = config['PRELOADENV']
+      e = nil if e.empty?
+      e ||= "LD_PRELOAD" if /linux/ =~ RUBY_PLATFORM
+    end
+    if e
+      env[e] = [libruby_so, ENV[e]].compact.join(File::PATH_SEPARATOR)
+    end
   end
 end
 
 ENV.update env
 
-cmd = [ruby]
+cmd = [runner || ruby]
 cmd.concat(ARGV)
 cmd.unshift(*precommand) unless precommand.empty?
-cmd.push(:close_others => false)
 
 if show
   require 'shellwords'
@@ -106,4 +112,4 @@ if show
   puts Shellwords.join(cmd)
 end
 
-exec(*cmd)
+exec(*cmd, close_others: false)

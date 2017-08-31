@@ -14,7 +14,11 @@
 #define BIN(n) YARVINSN_##n
 
 enum ruby_vminsn_type {
-<%= insns %>
-  VM_INSTRUCTION_SIZE            = <%= @insns.size %>
+% @insns.each do |insn|
+    BIN(<%=insn.name%>),
+% end
+    VM_INSTRUCTION_SIZE
 };
 
+#define ASSERT_VM_INSTRUCTION_SIZE(array) \
+    STATIC_ASSERT(numberof_##array, numberof(array) == VM_INSTRUCTION_SIZE)

@@ -6,6 +6,7 @@ if defined?(OpenSSL::TestUtils)
 
 class OpenSSL::TestX509Name < OpenSSL::TestCase
   def setup
+    super
     @obj_type_tmpl = Hash.new(OpenSSL::ASN1::PRINTABLESTRING)
     @obj_type_tmpl.update(OpenSSL::X509::Name::OBJECT_TYPE_TEMPLATE)
   end
@@ -345,15 +346,30 @@ class OpenSSL::TestX509Name < OpenSSL::TestCase
   def test_hash
     dn = "/DC=org/DC=ruby-lang/CN=www.ruby-lang.org"
     name = OpenSSL::X509::Name.parse(dn)
-    d = Digest::MD5.digest(name.to_der)
+    d = OpenSSL::Digest::MD5.digest(name.to_der)
     expected = (d[0].ord & 0xff) | (d[1].ord & 0xff) << 8 | (d[2].ord & 0xff) << 16 | (d[3].ord & 0xff) << 24
     assert_equal(expected, name_hash(name))
     #
     dn = "/DC=org/DC=ruby-lang/CN=baz.ruby-lang.org"
     name = OpenSSL::X509::Name.parse(dn)
-    d = Digest::MD5.digest(name.to_der)
+    d = OpenSSL::Digest::MD5.digest(name.to_der)
     expected = (d[0].ord & 0xff) | (d[1].ord & 0xff) << 8 | (d[2].ord & 0xff) << 16 | (d[3].ord & 0xff) << 24
     assert_equal(expected, name_hash(name))
+  end
+
+  def test_equality
+    name0 = OpenSSL::X509::Name.new([["DC", "org"], ["DC", "ruby-lang"], ["CN", "bar.ruby-lang.org"]])
+    name1 = OpenSSL::X509::Name.new([["DC", "org"], ["DC", "ruby-lang"], ["CN", "bar.ruby-lang.org"]])
+    name2 = OpenSSL::X509::Name.new([["DC", "org"], ["DC", "ruby-lang"], ["CN", "baz.ruby-lang.org"]])
+    assert_equal true, name0 == name1
+    assert_equal true, name0.eql?(name1)
+    assert_equal false, name0 == name2
+    assert_equal false, name0.eql?(name2)
+  end
+
+  def test_dup
+    name = OpenSSL::X509::Name.parse("/CN=ruby-lang.org")
+    assert_equal(name.to_der, name.dup.to_der)
   end
 end
 

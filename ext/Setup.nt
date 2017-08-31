@@ -26,6 +26,5 @@ socket
 stringio
 strscan
 #syslog
-#tk
 win32ole
 #zlib

@@ -229,14 +229,14 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
     if(rb_scan_args(argc, argv, "02", &arg, &pass) == 0) {
 	rsa = RSA_new();
     }
-    else if (FIXNUM_P(arg)) {
-	rsa = rsa_generate(FIX2INT(arg), NIL_P(pass) ? RSA_F4 : NUM2ULONG(pass));
+    else if (RB_INTEGER_TYPE_P(arg)) {
+	rsa = rsa_generate(NUM2INT(arg), NIL_P(pass) ? RSA_F4 : NUM2ULONG(pass));
 	if (!rsa) ossl_raise(eRSAError, NULL);
     }
     else {
 	pass = ossl_pem_passwd_value(pass);
 	arg = ossl_to_der_if_possible(arg);
-	in = ossl_obj2bio(arg);
+	in = ossl_obj2bio(&arg);
 	rsa = PEM_read_bio_RSAPrivateKey(in, NULL, ossl_pem_passwd_cb, (void *)pass);
 	if (!rsa) {
 	    OSSL_BIO_reset(in);
@@ -335,7 +335,7 @@ ossl_rsa_is_private(VALUE self)
  *
  * Outputs this keypair in PEM encoding.  If +cipher+ and +pass_phrase+ are
  * given they will be used to encrypt the key.  +cipher+ must be an
- * OpenSSL::Cipher::Cipher instance.
+ * OpenSSL::Cipher instance.
  */
 static VALUE
 ossl_rsa_export(int argc, VALUE *argv, VALUE self)
@@ -383,7 +383,7 @@ static VALUE
 ossl_rsa_to_der(VALUE self)
 {
     RSA *rsa;
-    int (*i2d_func)_((const RSA*, unsigned char**));
+    int (*i2d_func)(const RSA *, unsigned char **);
     unsigned char *p;
     long len;
     VALUE str;
@@ -392,7 +392,7 @@ ossl_rsa_to_der(VALUE self)
     if (RSA_HAS_PRIVATE(rsa))
 	i2d_func = i2d_RSAPrivateKey;
     else
-	i2d_func = (int (*)(const RSA*, unsigned char**))i2d_RSA_PUBKEY;
+	i2d_func = (int (*)(const RSA *, unsigned char **))i2d_RSA_PUBKEY;
     if((len = i2d_func(rsa, NULL)) <= 0)
 	ossl_raise(eRSAError, NULL);
     str = rb_str_new(0, len);
@@ -403,8 +403,6 @@ ossl_rsa_to_der(VALUE self)
 
     return str;
 }
-
-#define ossl_rsa_buf_size(rsa) (RSA_size(rsa)+16)
 
 /*
  * call-seq:
@@ -429,7 +427,7 @@ ossl_rsa_public_encrypt(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11", &buffer, &padding);
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
-    str = rb_str_new(0, ossl_rsa_buf_size(rsa));
+    str = rb_str_new(0, RSA_size(rsa));
     buf_len = RSA_public_encrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
 				 (unsigned char *)RSTRING_PTR(str), rsa, pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);
@@ -461,7 +459,7 @@ ossl_rsa_public_decrypt(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11", &buffer, &padding);
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
-    str = rb_str_new(0, ossl_rsa_buf_size(rsa));
+    str = rb_str_new(0, RSA_size(rsa));
     buf_len = RSA_public_decrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
 				 (unsigned char *)RSTRING_PTR(str), rsa, pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);
@@ -495,7 +493,7 @@ ossl_rsa_private_encrypt(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11", &buffer, &padding);
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
-    str = rb_str_new(0, ossl_rsa_buf_size(rsa));
+    str = rb_str_new(0, RSA_size(rsa));
     buf_len = RSA_private_encrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
 				  (unsigned char *)RSTRING_PTR(str), rsa, pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);
@@ -529,7 +527,7 @@ ossl_rsa_private_decrypt(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11", &buffer, &padding);
     pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
-    str = rb_str_new(0, ossl_rsa_buf_size(rsa));
+    str = rb_str_new(0, RSA_size(rsa));
     buf_len = RSA_private_decrypt(RSTRING_LENINT(buffer), (unsigned char *)RSTRING_PTR(buffer),
 				  (unsigned char *)RSTRING_PTR(str), rsa, pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);
@@ -620,7 +618,7 @@ ossl_rsa_to_public_key(VALUE self)
     GetPKeyRSA(self, pkey);
     /* err check performed by rsa_instance */
     rsa = RSAPublicKey_dup(EVP_PKEY_get0_RSA(pkey));
-    obj = rsa_instance(CLASS_OF(self), rsa);
+    obj = rsa_instance(rb_obj_class(self), rsa);
     if (obj == Qfalse) {
 	RSA_free(rsa);
 	ossl_raise(eRSAError, NULL);
@@ -656,21 +654,45 @@ ossl_rsa_blinding_off(VALUE self)
 }
  */
 
+/*
+ * Document-method: OpenSSL::PKey::RSA#set_key
+ * call-seq:
+ *   rsa.set_key(n, e, d) -> self
+ *
+ * Sets +n+, +e+, +d+ for the RSA instance.
+ */
 OSSL_PKEY_BN_DEF3(rsa, RSA, key, n, e, d)
+/*
+ * Document-method: OpenSSL::PKey::RSA#set_factors
+ * call-seq:
+ *   rsa.set_factors(p, q) -> self
+ *
+ * Sets +p+, +q+ for the RSA instance.
+ */
 OSSL_PKEY_BN_DEF2(rsa, RSA, factors, p, q)
+/*
+ * Document-method: OpenSSL::PKey::RSA#set_crt_params
+ * call-seq:
+ *   rsa.set_crt_params(dmp1, dmq1, iqmp) -> self
+ *
+ * Sets +dmp1+, +dmq1+, +iqmp+ for the RSA instance. They are calculated by
+ * <tt>d mod (p - 1)</tt>, <tt>d mod (q - 1)</tt> and <tt>q^(-1) mod p</tt>
+ * respectively.
+ */
 OSSL_PKEY_BN_DEF3(rsa, RSA, crt_params, dmp1, dmq1, iqmp)
 
 /*
  * INIT
  */
-#define DefRSAConst(x) rb_define_const(cRSA, #x,INT2FIX(RSA_##x))
+#define DefRSAConst(x) rb_define_const(cRSA, #x, INT2NUM(RSA_##x))
 
 void
 Init_ossl_rsa(void)
 {
 #if 0
-    mOSSL = rb_define_module("OpenSSL"); /* let rdoc know about mOSSL and mPKey */
     mPKey = rb_define_module_under(mOSSL, "PKey");
+    cPKey = rb_define_class_under(mPKey, "PKey", rb_cObject);
+    ePKeyError = rb_define_class_under(mPKey, "PKeyError", eOSSLError);
 #endif
 
     /* Document-class: OpenSSL::PKey::RSAError
@@ -684,7 +706,7 @@ Init_ossl_rsa(void)
     /* Document-class: OpenSSL::PKey::RSA
      *
      * RSA is an asymmetric public key algorithm that has been formalized in
-     * RFC 3447. It is in widespread use in public key infrastuctures (PKI)
+     * RFC 3447. It is in widespread use in public key infrastructures (PKI)
      * where certificates (cf. OpenSSL::X509::Certificate) often are issued
      * on the basis of a public/private RSA key pair. RSA is used in a wide
      * field of applications such as secure (symmetric) key exchange, e.g.

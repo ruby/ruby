@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 # = net/pop.rb
 #
 # Copyright (c) 1999-2007 Yukihiro Matsumoto.
@@ -14,7 +14,7 @@
 # Ruby Distribute License.
 #
 # NOTE: You can find Japanese version of this document at:
-# http://www.ruby-lang.org/ja/man/html/net_pop.html
+# http://docs.ruby-lang.org/ja/latest/library/net=2fpop.html
 #
 #   $Id$
 #
@@ -168,8 +168,8 @@ module Net
   #     require 'net/pop'
   #
   #     # Use APOP authentication if $isapop == true
-  #     pop = Net::POP3.APOP($is_apop).new('apop.example.com', 110)
-  #     pop.start(YourAccount', 'YourPassword') do |pop|
+  #     pop = Net::POP3.APOP($isapop).new('apop.example.com', 110)
+  #     pop.start('YourAccount', 'YourPassword') do |pop|
   #       # Rest of the code is the same.
   #     end
   #
@@ -550,15 +550,15 @@ module Net
         context.set_params(@ssl_params)
         s = OpenSSL::SSL::SSLSocket.new(s, context)
         s.sync_close = true
-        s.connect
+        ssl_socket_connect(s, @open_timeout)
         if context.verify_mode != OpenSSL::SSL::VERIFY_NONE
           s.post_connection_check(@address)
         end
       end
-      @socket = InternetMessageIO.new(s)
+      @socket = InternetMessageIO.new(s,
+                                      read_timeout: @read_timeout,
+                                      debug_output: @debug_output)
       logging "POP session started: #{@address}:#{@port} (#{@apop ? 'APOP' : 'POP'})"
-      @socket.read_timeout = @read_timeout
-      @socket.debug_output = @debug_output
       on_connect
       @command = POP3Command.new(@socket)
       if apop?
@@ -570,7 +570,7 @@ module Net
     ensure
       # Authentication failed, clean up connection.
       unless @started
-        s.close if s and not s.closed?
+        s.close if s
         @socket = nil
         @command = nil
       end
@@ -601,7 +601,7 @@ module Net
     ensure
       @started = false
       @command = nil
-      @socket.close if @socket and not @socket.closed?
+      @socket.close if @socket
       @socket = nil
     end
     private :do_finish
@@ -771,7 +771,7 @@ module Net
     # === Example without block
     #
     #     POP3.start('pop.example.com', 110,
-    #                'YourAccount, 'YourPassword') do |pop|
+    #                'YourAccount', 'YourPassword') do |pop|
     #       n = 1
     #       pop.mails.each do |popmail|
     #         File.open("inbox/#{n}", 'w') do |f|
@@ -785,7 +785,7 @@ module Net
     # === Example with block
     #
     #     POP3.start('pop.example.com', 110,
-    #                'YourAccount, 'YourPassword') do |pop|
+    #                'YourAccount', 'YourPassword') do |pop|
     #       n = 1
     #       pop.mails.each do |popmail|
     #         File.open("inbox/#{n}", 'w') do |f|
@@ -844,7 +844,7 @@ module Net
     # === Example
     #
     #     POP3.start('pop.example.com', 110,
-    #                'YourAccount, 'YourPassword') do |pop|
+    #                'YourAccount', 'YourPassword') do |pop|
     #       n = 1
     #       pop.mails.each do |popmail|
     #         File.open("inbox/#{n}", 'w') do |f|

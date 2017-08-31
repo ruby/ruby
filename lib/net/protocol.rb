@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # = net/protocol.rb
 #
@@ -34,6 +34,24 @@ module Net # :nodoc:
         end
       End
     end
+
+    def ssl_socket_connect(s, timeout)
+      if timeout
+        while true
+          raise Net::OpenTimeout if timeout <= 0
+          start = Process.clock_gettime Process::CLOCK_MONOTONIC
+          # to_io is required because SSLSocket doesn't have wait_readable yet
+          case s.connect_nonblock(exception: false)
+          when :wait_readable; s.to_io.wait_readable(timeout)
+          when :wait_writable; s.to_io.wait_writable(timeout)
+          else; break
+          end
+          timeout -= Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
+        end
+      else
+        s.connect
+      end
+    end
   end
 
 
@@ -61,12 +79,12 @@ module Net # :nodoc:
 
 
   class BufferedIO   #:nodoc: internal use only
-    def initialize(io)
+    def initialize(io, read_timeout: 60, continue_timeout: nil, debug_output: nil)
       @io = io
-      @read_timeout = 60
-      @continue_timeout = nil
-      @debug_output = nil
-      @rbuf = ''
+      @read_timeout = read_timeout
+      @continue_timeout = continue_timeout
+      @debug_output = debug_output
+      @rbuf = ''.dup
     end
 
     attr_reader :io
@@ -96,17 +114,19 @@ module Net # :nodoc:
 
     public
 
-    def read(len, dest = '', ignore_eof = false)
+    def read(len, dest = ''.dup, ignore_eof = false)
       LOG "reading #{len} bytes..."
       read_bytes = 0
       begin
         while read_bytes + @rbuf.size < len
-          dest << (s = rbuf_consume(@rbuf.size))
+          s = rbuf_consume(@rbuf.size)
           read_bytes += s.size
+          dest << s
           rbuf_fill
         end
-        dest << (s = rbuf_consume(len - read_bytes))
+        s = rbuf_consume(len - read_bytes)
         read_bytes += s.size
+        dest << s
       rescue EOFError
         raise unless ignore_eof
       end
@@ -114,13 +134,14 @@ module Net # :nodoc:
       dest
     end
 
-    def read_all(dest = '')
+    def read_all(dest = ''.dup)
       LOG 'reading all...'
       read_bytes = 0
       begin
         while true
-          dest << (s = rbuf_consume(@rbuf.size))
+          s = rbuf_consume(@rbuf.size)
           read_bytes += s.size
+          dest << s
           rbuf_fill
         end
       rescue EOFError
@@ -153,7 +174,9 @@ module Net # :nodoc:
     def rbuf_fill
       case rv = @io.read_nonblock(BUFSIZE, exception: false)
       when String
-        return @rbuf << rv
+        @rbuf << rv
+        rv.clear
+        return
       when :wait_readable
         @io.to_io.wait_readable(@read_timeout) or raise Net::ReadTimeout
         # continue looping
@@ -163,8 +186,7 @@ module Net # :nodoc:
         @io.to_io.wait_writable(@read_timeout) or raise Net::ReadTimeout
         # continue looping
       when nil
-        # callers do not care about backtrace, so avoid allocating for it
-        raise EOFError, 'end of file reached', []
+        raise EOFError, 'end of file reached'
       end while true
     end
 
@@ -236,7 +258,7 @@ module Net # :nodoc:
 
 
   class InternetMessageIO < BufferedIO   #:nodoc: internal use only
-    def initialize(io)
+    def initialize(*)
       super
       @wbuf = nil
     end
@@ -313,7 +335,7 @@ module Net # :nodoc:
     end
 
     def using_each_crlf_line
-      @wbuf = ''
+      @wbuf = ''.dup
       yield
       if not @wbuf.empty?   # unterminated last line
         write0 dot_stuff(@wbuf.chomp) + "\r\n"

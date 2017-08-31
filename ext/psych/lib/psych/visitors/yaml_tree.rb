@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'psych/tree_builder'
 require 'psych/scalar_scanner'
 require 'psych/class_loader'
@@ -51,15 +51,6 @@ module Psych
         class_loader = ClassLoader.new
         ss           = ScalarScanner.new class_loader
         new(emitter, ss, options)
-      end
-
-      def self.new emitter = nil, ss = nil, options = nil
-        return super if emitter && ss && options
-
-        if $VERBOSE
-          warn "This API is deprecated, please pass an emitter, scalar scanner, and options or call #{self}.create() (#{caller.first})"
-        end
-        create emitter, ss
       end
 
       def initialize emitter, ss, options
@@ -139,24 +130,6 @@ module Psych
           return @emitter.alias anchor
         end
 
-        if target.respond_to?(:to_yaml)
-          begin
-            loc = target.method(:to_yaml).source_location.first
-            if loc !~ /(syck\/rubytypes.rb|psych\/core_ext.rb)/
-              unless target.respond_to?(:encode_with)
-                if $VERBOSE
-                  warn "implementing to_yaml is deprecated, please implement \"encode_with\""
-                end
-
-                target.to_yaml(:nodump => true)
-              end
-            end
-          rescue
-            # public_method or source_location might be overridden,
-            # and it's OK to skip it since it's only to emit a warning
-          end
-        end
-
         if target.respond_to?(:encode_with)
           dump_coder target
         else
@@ -190,6 +163,8 @@ module Psych
         dump_ivars o
         @emitter.end_mapping
       end
+
+      alias :visit_Delegator :visit_Object
 
       def visit_Struct o
         tag = ['!ruby/struct', o.class.name].compact.join(':')
@@ -336,7 +311,7 @@ module Psych
         end
 
         is_primitive = o.class == ::String
-        ivars = find_ivars o, is_primitive
+        ivars = is_primitive ? [] : o.instance_variables
 
         if ivars.empty?
           unless is_primitive
@@ -346,7 +321,7 @@ module Psych
           end
           @emitter.scalar o, nil, tag, plain, quote, style
         else
-          maptag = '!ruby/string'
+          maptag = '!ruby/string'.dup
           maptag << ":#{o.class}" unless o.class == ::String
 
           register o, @emitter.start_mapping(nil, maptag, false, Nodes::Mapping::BLOCK)
@@ -403,12 +378,16 @@ module Psych
 
       def visit_Array o
         if o.class == ::Array
-          register o, @emitter.start_sequence(nil, nil, true, Nodes::Sequence::BLOCK)
-          o.each { |c| accept c }
-          @emitter.end_sequence
+          visit_Enumerator o
         else
           visit_array_subclass o
         end
+      end
+
+      def visit_Enumerator o
+        register o, @emitter.start_sequence(nil, nil, true, Nodes::Sequence::BLOCK)
+        o.each { |c| accept c }
+        @emitter.end_sequence
       end
 
       def visit_NilClass o
@@ -436,15 +415,9 @@ module Psych
       end
 
       private
-      # FIXME: Remove the index and count checks in Psych 3.0
-      NULL         = "\x00"
-      BINARY_RANGE = "\x00-\x7F"
-      WS_RANGE     = "^ -~\t\r\n"
 
       def binary? string
-        (string.encoding == Encoding::ASCII_8BIT && !string.ascii_only?) ||
-          string.index(NULL) ||
-          string.count(BINARY_RANGE, WS_RANGE).fdiv(string.length) > 0.3
+        string.encoding == Encoding::ASCII_8BIT && !string.ascii_only?
       end
 
       def visit_array_subclass o
@@ -527,24 +500,6 @@ module Psych
         end
       end
 
-      # FIXME: remove this method once "to_yaml_properties" is removed
-      def find_ivars target, is_primitive=false
-        begin
-          loc = target.method(:to_yaml_properties).source_location.first
-          unless loc.start_with?(Psych::DEPRECATED) || loc.end_with?('rubytypes.rb')
-            if $VERBOSE
-              warn "#{loc}: to_yaml_properties is deprecated, please implement \"encode_with(coder)\""
-            end
-            return target.to_yaml_properties
-          end
-        rescue
-          # public_method or source_location might be overridden,
-          # and it's OK to skip it since it's only to emit a warning.
-        end
-
-        is_primitive ? [] : target.instance_variables
-      end
-
       def register target, yaml_obj
         @st.register target, yaml_obj
         yaml_obj
@@ -586,9 +541,7 @@ module Psych
       end
 
       def dump_ivars target
-        ivars = find_ivars target
-
-        ivars.each do |iv|
+        target.instance_variables.each do |iv|
           @emitter.scalar("#{iv.to_s.sub(/^@/, '')}", nil, nil, true, false, Nodes::Scalar::ANY)
           accept target.instance_variable_get(iv)
         end

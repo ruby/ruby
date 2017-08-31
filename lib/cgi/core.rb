@@ -1,9 +1,16 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #--
 # Methods for generating HTML, parsing CGI-related parameters, and
 # generating HTTP responses.
 #++
 class CGI
+  unless const_defined?(:Util)
+    module Util
+      @@accept_charset = "UTF-8" # :nodoc:
+    end
+    include Util
+    extend Util
+  end
 
   $CGI_ENV = ENV    # for FCGI support
 
@@ -146,7 +153,7 @@ class CGI
   #               "language"   => "ja",
   #               "expires"    => Time.now + 30,
   #               "cookie"     => [cookie1, cookie2],
-  #               "my_header1" => "my_value"
+  #               "my_header1" => "my_value",
   #               "my_header2" => "my_value")
   #
   # This method does not perform charset conversion.
@@ -182,7 +189,7 @@ class CGI
   alias :header :http_header
 
   def _header_for_string(content_type) #:nodoc:
-    buf = ''
+    buf = ''.dup
     if nph?()
       buf << "#{$CGI_ENV['SERVER_PROTOCOL'] || 'HTTP/1.0'} 200 OK#{EOL}"
       buf << "Date: #{CGI.rfc1123_date(Time.now)}#{EOL}"
@@ -198,7 +205,7 @@ class CGI
   private :_header_for_string
 
   def _header_for_hash(options)  #:nodoc:
-    buf = ''
+    buf = ''.dup
     ## add charset to option['type']
     options['type'] ||= 'text/html'
     charset = options.delete('charset')
@@ -480,7 +487,7 @@ class CGI
       @files = {}
       boundary_rexp = /--#{Regexp.quote(boundary)}(#{EOL}|--)/
       boundary_size = "#{EOL}--#{boundary}#{EOL}".bytesize
-      buf = ''
+      buf = ''.dup
       bufsize = 10 * 1024
       max_count = MAX_MULTIPART_COUNT
       n = 0
@@ -535,12 +542,12 @@ class CGI
         body.rewind
         ## original filename
         /Content-Disposition:.* filename=(?:"(.*?)"|([^;\r\n]*))/i.match(head)
-        filename = $1 || $2 || ''
+        filename = $1 || $2 || ''.dup
         filename = CGI.unescape(filename) if unescape_filename?()
         body.instance_variable_set(:@original_filename, filename.taint)
         ## content type
         /Content-Type: (.*)/i.match(head)
-        (content_type = $1 || '').chomp!
+        (content_type = $1 || ''.dup).chomp!
         body.instance_variable_set(:@content_type, content_type.taint)
         ## query parameter name
         /Content-Disposition:.* name=(?:"(.*?)"|([^;\r\n]*))/i.match(head)
@@ -589,7 +596,7 @@ class CGI
       else
         begin
           require 'stringio'
-          body = StringIO.new("".force_encoding(Encoding::ASCII_8BIT))
+          body = StringIO.new("".b)
         rescue LoadError
           require 'tempfile'
           body = Tempfile.new('CGI', encoding: Encoding::ASCII_8BIT)
@@ -700,7 +707,7 @@ class CGI
         if value
           return value
         elsif defined? StringIO
-          StringIO.new("".force_encoding(Encoding::ASCII_8BIT))
+          StringIO.new("".b)
         else
           Tempfile.new("CGI",encoding: Encoding::ASCII_8BIT)
         end
@@ -734,7 +741,7 @@ class CGI
   #
   #   CGI.accept_charset = "EUC-JP"
   #
-  @@accept_charset="UTF-8"
+  @@accept_charset="UTF-8" if false # needed for rdoc?
 
   # Return the accept character set for all new CGI instances.
   def self.accept_charset

@@ -33,26 +33,6 @@ module RDoc::Parser::RubyTools
 
     tk = nil if TkEND_OF_SCRIPT === tk
 
-    if TkSYMBEG === tk then
-      set_token_position tk.line_no, tk.char_no
-
-      case tk1 = get_tk
-      when TkId, TkOp, TkSTRING, TkDSTRING, TkSTAR, TkAMPER then
-        if tk1.respond_to?(:name) then
-          tk = Token(TkSYMBOL).set_text(":" + tk1.name)
-        else
-          tk = Token(TkSYMBOL).set_text(":" + tk1.text)
-        end
-
-        # remove the identifier we just read to replace it with a symbol
-        @token_listeners.each do |obj|
-          obj.pop_token
-        end if @token_listeners
-      else
-        tk = tk1
-      end
-    end
-
     # inform any listeners of our shiny new token
     @token_listeners.each do |obj|
       obj.add_token(tk)

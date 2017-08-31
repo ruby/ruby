@@ -60,7 +60,7 @@ EOF
 
   def test_flag_xlist_inbox
     parser = Net::IMAP::ResponseParser.new
-	response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
+    response = parser.parse(<<EOF.gsub(/\n/, "\r\n").taint)
 * XLIST (\\Inbox) "." "INBOX"
 EOF
     assert_equal [:Inbox], response.data.attr
@@ -290,5 +290,33 @@ EOF
     assert_equal("ATTACHMENT", body.parts[1].disposition.dsp_type)
     assert_equal("test.xml", body.parts[1].disposition.param["FILENAME"])
     assert_equal(nil, body.parts[1].language)
+  end
+
+  # [Bug #13649]
+  def test_status
+    parser = Net::IMAP::ResponseParser.new
+    response = parser.parse("* STATUS INBOX (UIDNEXT 1 UIDVALIDITY 1234)\r\n")
+    assert_equal("STATUS", response.name)
+    assert_equal("INBOX", response.data.mailbox)
+    assert_equal(1234, response.data.attr["UIDVALIDITY"])
+    response = parser.parse("* STATUS INBOX (UIDNEXT 1 UIDVALIDITY 1234) \r\n")
+    assert_equal("STATUS", response.name)
+    assert_equal("INBOX", response.data.mailbox)
+    assert_equal(1234, response.data.attr["UIDVALIDITY"])
+  end
+
+  # [Bug #10119]
+  def test_msg_att_modseq_data
+    parser = Net::IMAP::ResponseParser.new
+    response = parser.parse("* 1 FETCH (FLAGS (\Seen) MODSEQ (12345) UID 5)\r\n")
+    assert_equal(12345, response.data.attr["MODSEQ"])
+  end
+
+  def test_continuation_request_without_response_text
+    parser = Net::IMAP::ResponseParser.new
+    response = parser.parse("+\r\n")
+    assert_instance_of(Net::IMAP::ContinuationRequest, response)
+    assert_equal(nil, response.data.code)
+    assert_equal("", response.data.text)
   end
 end

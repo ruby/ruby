@@ -165,7 +165,7 @@ class TestRDocRdBlockParser < RDoc::TestCase
       assert_equal expected, parse(str)
       io
     end
-    tf.close! if tf.respond_to? :close!
+    tf.close!
   end
 
   def test_parse_heading

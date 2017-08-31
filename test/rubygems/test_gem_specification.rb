@@ -1260,7 +1260,7 @@ dependencies: []
       s.version = '1'
     end
 
-    spec.instance_variable_set :@licenses, :blah
+    spec.instance_variable_set :@licenses, (class << (Object.new);self;end)
     spec.loaded_from = '/path/to/file'
 
     e = assert_raises Gem::FormatException do
@@ -2985,7 +2985,37 @@ Did you mean 'Ruby'?
       @a1.validate
     end
 
-    assert_equal 'invalid value for attribute name: ":json"', e.message
+    assert_equal 'invalid value for attribute name: ":json" must be a string', e.message
+
+    @a1.name = []
+    e = assert_raises Gem::InvalidSpecificationException do
+      @a1.validate
+    end
+    assert_equal "invalid value for attribute name: \"[]\" must be a string", e.message
+
+    @a1.name = ""
+    e = assert_raises Gem::InvalidSpecificationException do
+      @a1.validate
+    end
+    assert_equal "invalid value for attribute name: \"\" must include at least one letter", e.message
+
+    @a1.name = "12345"
+    e = assert_raises Gem::InvalidSpecificationException do
+      @a1.validate
+    end
+    assert_equal "invalid value for attribute name: \"12345\" must include at least one letter", e.message
+
+    @a1.name = "../malicious"
+    e = assert_raises Gem::InvalidSpecificationException do
+      @a1.validate
+    end
+    assert_equal "invalid value for attribute name: \"../malicious\" can only include letters, numbers, dashes, and underscores", e.message
+
+    @a1.name = "\ba\t"
+    e = assert_raises Gem::InvalidSpecificationException do
+      @a1.validate
+    end
+    assert_equal "invalid value for attribute name: \"\\ba\\t\" can only include letters, numbers, dashes, and underscores", e.message
   end
 
   def test_validate_non_nil
@@ -3080,7 +3110,7 @@ Did you mean 'Ruby'?
         end
       end
 
-      err = 'specification_version must be a Integer (did you mean version?)'
+      err = 'specification_version must be an Integer (did you mean version?)'
       assert_equal err, e.message
     end
   end
@@ -3387,6 +3417,13 @@ end
     assert_raises Gem::MissingSpecError do
       Gem::Specification.find_by_name "monkeys"
     end
+  end
+
+  def test_find_by_name_with_only_prereleases
+    q = util_spec "q", "2.a"
+    install_specs q
+
+    assert Gem::Specification.find_by_name "q"
   end
 
   def test_find_by_name_prerelease

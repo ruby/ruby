@@ -1,0 +1,148 @@
+# -*- makefile -*-
+V = 0
+Q1 = $(V:1=)
+Q = $(Q1:0=@)
+ECHO1 = $(V:1=@:)
+ECHO = $(ECHO1:0=@echo)
+<%
+require './rbconfig'
+macros = {}
+deps = []
+notes = {}
+rubies = []
+exeext = RbConfig::CONFIG['EXEEXT']
+gnumake = false
+opt = OptionParser.new do |o|
+  o.on('--gnumake=BOOL') {|v| gnumake = v == 'yes'}
+  o.order!(ARGV)
+end
+contpat = /(?>(?>[^\\\n]|\\.)*\\\n)*(?>[^\\\n]|\\.)*/
+Dir.glob("{ext,gems}/*/exts.mk") do |e|
+  gem = /\Agems(?=\/)/ =~ e
+  s = File.read(e)
+  s.scan(/^(extensions|SUBMAKEOPTS|EXT[A-Z]+|MFLAGS|NOTE_[A-Z]+)[ \t]*=[ \t]*(#{contpat})$/o) do |n, v|
+    v.gsub!(/\\\n[ \t]*/, ' ')
+    next if v.empty?
+    next if gem and n != "extensions"
+    v = v.split
+    m = macros[n] ||= []
+    case n
+    when "LIBS"
+      m.concat(v)
+    else
+      macros[n] = m | v
+    end
+  end
+  if gem
+    r = ""
+  else
+    r = s[/^all static: (.+)$/, 1]
+    deps << $&
+    rubies |= r.split if r
+    r = "(?:#{Regexp.new(r)})|"
+  end
+  s.scan(%r"^(ext/\S+)/[^/\s:]+:[ \t]*\1/static$|
+            ^(?:#{r}
+              all|static|install(?:-(?:so|rb))?|
+              (?:dist|real)?clean
+             ):.+$
+           "x) do
+    deps << $&.sub(/ +note$/, '')
+  end
+  s.scan(%r"^(note(?:-\w+)?):(:)?[ \t]*(#{contpat})\n((?:\t.+\n)*)"o) do |(t, m, d, n)|
+    note = (notes[t] ||= [[m||""], []])
+    note[0] |= d.split(/(?:\\\n|[ \t])[ \t]*/)
+    n = n.split(/^/)
+    if m
+      note[1].concat(n)
+    else
+      note[1] |= n
+    end
+  end
+end
+deps.uniq!
+if objs = macros["EXTOBJS"] and objs.any? {|e|e.start_with?("ext/extinit.")}
+  objs.delete_if {|e|e.start_with?("dmyext.")}
+end
+macros.default = [].freeze
+class Array
+  def fold(h, w = 70)
+    return "" if empty?
+    w -= h
+    ret = [s = String.new]
+    each do |e|
+      if s.size + e.size + 1 > w
+        ret << (s = String.new)
+      end
+      s << " " << e
+    end
+    ret.join(" \\\n" + "\t" * (h / 8) + " " * (h % 8))
+  end
+end
+@erbout = _erbout
+def self.column
+  w = 0
+  @erbout[/^.*\z/].scan(/\t|([^\t]+)/) {|s,| w += (s ? s.size : 8 - w % 8)}
+  w
+end
+targets = %w[all static install install-so install-rb clean distclean realclean]
+objext = RbConfig::CONFIG["OBJEXT"]
+if gnumake
+  submake = "$(MAKE) -C $(@D)"
+else
+  submake = "cd $(@D) && "
+  exec = RbConfig::CONFIG["exec"] and !exec.empty? and submake << exec << " "
+  submake << "$(MAKE)"
+  mflags = " $(MFLAGS)"
+end
+-%>
+% macros.each_pair do |k, v|
+<%=k%> =<%= v.fold(column) %>
+% end
+% RbConfig::MAKEFILE_CONFIG.keys.grep(/RM/) do |k|
+<%=k%> = <%=RbConfig::MAKEFILE_CONFIG[k]%>
+% end
+
+all:
+static:
+
+clean:
+	-$(Q)$(RM) ext/extinit.<%= objext %>
+distclean:
+	-$(Q)$(RM) ext/extinit.c
+
+% deps.each do |d|
+<%= d %>
+% end
+
+% rubies.each do |ruby|
+<%= ruby %>:
+	$(Q)$(MAKE)<%=mflags%> $(SUBMAKEOPTS) $@
+% end
+% if rubies.size > 1
+<%= rubies[1..-1].join(' ')%>: <%= rubies[0] %>
+% end
+
+libencs:
+	$(Q)$(MAKE)<%=mflags%> -f enc.mk V=$(V) $@
+ext/extinit.<%=objext%>:
+	$(Q)$(MAKE)<%=mflags%> V=$(V) EXTINITS="$(EXTINITS)" $@
+
+% targets.product(macros["extensions"].map {|e|e.chomp("/.")}) do |t, e|
+<%=e%>/<%=t%>:
+%   if /^(dist|real)clean$/ =~ t
+	$(ECHO) $(@F)ing $(@D)
+%   end
+	$(Q)<%= submake %><%=mflags%> V=$(V) $(@F)
+%   if /^(dist|real)clean$/ =~ t
+	$(Q)$(RMDIRS) $(@D)
+%   end
+% end
+
+extso:
+	@echo EXTSO=$(EXTSO)
+
+% notes.each_pair do |k, (d, n)|
+<%= k %>:<%= d.join(' ') %>
+<%= n.join("") %>
+% end

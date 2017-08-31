@@ -1,6 +1,6 @@
 # -*- rdoc -*-
 
-= NEWS for Ruby 2.4.0
+= NEWS for Ruby 2.5.0
 
 This document is a list of user visible feature changes made between
 releases except for bug fixes.
@@ -10,182 +10,175 @@ reference information is supplied with.  For a full list of changes
 with all sufficient information, see the ChangeLog file or Redmine
 (e.g. <tt>https://bugs.ruby-lang.org/issues/$FEATURE_OR_BUG_NUMBER</tt>)
 
-== Changes since the 2.3.0 release
+== Changes since the 2.4.0 release
 
 === Language changes
 
-* Multiple assignment in conditional expression is now allowed.
-  [Feature #10617]
+* Top-level constant look-up is removed.  [Feature #11547]
+
+* rescue/else/ensure are allowed inside do/end blocks.  [Feature #12906]
 
 === Core classes updates (outstanding ones only)
 
 * Array
 
-  * Array#max and Array#min.  [Feature #12172]
-    This may cause a tiny incompatibility: if you redefine
-    Enumerable#max and call max to an Array, your redefinition will be
-    now ignored.  You should also redefine Array#max.
-
-  * Array#sum  [Feature #12217]
-    This is different from Enumerable#sum in that Array#sum doesn't depend on
-    the definition of each method.
+  * Array#append  [Feature #12746]
+  * Array#prepend  [Feature #12746]
 
 * Dir
 
-  * Dir.empty?.  [Feature #10121]
-
-* Enumerable
-
-  * Enumerable#sum  [Feature #12217]
-  * Enumerable#uniq  [Feature #11090]
-
-* Enumerator::Lazy
-
-  * Enumerator::Lazy#uniq  [Feature #11090]
+  * Dir.glob provides new optional keyword argument, :base.
+    [Feature #13056]
+  * Dir.children  [Feature #11302]
+  * Dir.each_child  [Feature #11302]
 
 * File
 
-  * File.empty?.  [Feature #9969]
+  * :newline option to File.open implies text mode now.  [Bug #13350]
+  * File#path now raises an IOError for files opened with
+    File::Constants::TMPFILE option. [Feature #13568]
 
-* Float
+* Hash
 
-  * Float#ceil, Float#floor, and Float#truncate now take an optional
-    digits, as well as Float#round.  [Feature #12245]
+  * Hash#transform_keys  [Feature #13583]
+  * Hash#transform_keys!  [Feature #13583]
+
+* IO
+
+  * IO#pread  [Feature #4532]
+  * IO#pwrite  [Feature #4532]
+
+* IOError
+
+  * exception message "stream closed" is changed  [Bug #13405]
 
 * Integer
 
-  * Integer#ceil, Integer#floor, and Integer#truncate now take an optional
-    digits, as well as Integer#round.  [Feature #12245]
-
-  * Fixnum and Bignum are unified into Integer  [Feature #12005]
-
-  * Integer#digits for extracting columns of place-value notation [Feature #12447]
+  * Integer.sqrt  [Feature #13219]
+  * Integer#step does no longer rescue exceptions when given
+    a step value which cannot be compared with #> to 0. [Feature #7688]
+  * Integer#{round,floor,ceil,truncate} now always return an Integer.
+    [Bug #13420]
 
 * Kernel
 
-  * Kernel#clone now takes an optional keyword argument, freeze flag.
-    [Feature #12300]
+  * Kernel#yield_self  [Feature #6721]
+
+* Numeric
+
+  * Numerical comparison operators (<,<=,>=,>) no longer rescue exceptions
+    of #coerce. Return nil in #coerce if the coercion is impossible.
+    [Feature #7688]
+
+* Process
+
+  * Precision of Process.times is improved if getrusage(2) exists. [Feature #11952]
+
+* Range
+  * Range#initialize no longer rescue exceptions when comparing begin and
+    end with #<=> and raise a "bad value for range" ArgumentError
+    but instead let the exception from the #<=> call go through.
+    [Feature #7688]
 
 * Regexp
-
-  * Regexp#match? [Feature #8110]
-    This returns bool and doesn't save backref.
-
-* RubyVM::Env
-
-  * RubyVM::Env was removed.
+  * Update Onigmo 6.1.1.
+    * Support absent operator https://github.com/k-takata/Onigmo/issues/82
 
 * String
 
-  * String#upcase, String#downcase, String#capitalize, String#swapcase and
-    their bang variants work for all of Unicode, and are no longer limited
-    to ASCII. Supported encodings are UTF-8, UTF-16BE/LE, UTF-32BE/LE, and
-    ISO-8859-1~16. Variations are available with options. See the documentation
-    of String#downcase for details. [Feature #10085]
-
-  * String.new(capacity: size) [Feature #12024]
-
-* Symbol
-
-  * Symbol#match now returns MatchData.  [Bug #11991]
-
-  * Symbol#upcase, Symbol#downcase, Symbol#capitalize, and Symbol#swapcase now
-    work for all of Unicode. See the documentation of String#downcase
-    for details. [Feature #10085]
-
-* MatchData
-
-  * MatchData#named_captures [Feature #11999]
-  * MatchData#values_at supports named captures [Feature #9179]
+  * String#-@ deduplicates unfrozen strings.  Already-frozen
+    strings remain unchanged for compatibility.  [Feature #13077]
+  * -"literal" (String#-@) optimized to return the same object
+    (same as "literal".freeze in Ruby 2.1+) [Feature #13295]
+  * String#{casecmp,casecmp?} now return nil for non-string arguments
+    instead of raising a TypeError. [Bug #13312]
+  * String#delete_prefix is added to remove prefix [Feature #12694]
+  * String#delete_prefix! is added to remove prefix destructively [Feature #12694]
+  * String#delete_suffix is added to remove suffix [Feature #13665]
+  * String#delete_suffix! is added to remove suffix destructively [Feature #13665]
+  * String#each_grapheme_cluster and String#grapheme_clusters is added to
+    enumerate grapheme clusters [Feature #13780]
 
 * Thread
 
-  * Thread#report_on_exception and Thread.report_on_exception
-    [Feature #6647]
+  * Thread#fetch  [Feature #13009]
+
+  * Description set by Thread#name= is now visible on Windows 10.
 
 === Stdlib updates (outstanding ones only)
 
-* CSV
+* ERB
+  * Add ERB#result_with_hash to render a template with local variables passed
+    with a Hash object. [Feature #8631]
 
-  * Add a liberal_parsing option. [Feature #11839]
+  * Carriage returns are changed to be trimmed properly if trim_mode is specified
+    and used. Duplicated newlines will be removed on Windows. [Bug #5339] [Bug #11464]
 
-* Logger
+* Net::HTTP
+  * Add more HTTP status classes
 
-	* Allow specifying logger parameters in constructor such
-	  as level, progname, datetime_format, formatter. [Feature #12224]
-	* Add shift_period_suffix option. [Feature #10772]
+  * Net::HTTP::STATUS_CODES is added as HTTP Status Code Repository [Misc #12935]
 
-* optparse
+  * Net::HTTP#proxy_user and Net::HTTP#proxy_pass now reflects http_proxy
+    environment variable if the system's environment variable is multiuser
+    safe. [Bug #12921]
 
-  * Add an into option. [Feature #11191]
+* RbConfig
+  * New constants:
+    * RbConfig::LIMITS is added to provide the limits of C types.
+
+* Set
+  * Add Set#to_s as alias to #inspect [Feature #13676]
+
+* WEBrick
+
+  * Add Server Name Indication (SNI) support [Feature #13729]
 
 === Compatibility issues (excluding feature bug fixes)
 
-* Array#sum and Enumerable#sum are implemented.  [Feature #12217]
-  Ruby itself has no compatibility problem because Ruby didn't have sum method
-  for arrays before Ruby 2.4.
-  However many third party gems, activesupport, facets, simple_stats, etc,
-  defines sum method.  These implementations are mostly compatible but
-  there are subtle differences.
-  Ruby's sum method should be mostly compatible but it is impossible to
-  be perfectly compatible with all of them.
+* BasicSocket#read_nonblock and BasicSocket#write_nonblock no
+  longer sets the O_NONBLOCK file description flag as side effect
+  (on Linux only) [Feature #13362]
 
-* Fixnum and Bignum are unified into Integer  [Feature #12005]
-  Fixnum class and Bignum class is removed.
-  Integer class is changed from abstract class to concrete class.
-  For example, 0 is an instance of Integer: 0.class returns Integer.
-  The constants Fixnum and Bignum is bound to Integer.
-  So obj.kind_of?(Fixnum) works as obj.kind_of?(Integer).
-  At C-level, Fixnum object and Bignum object should be distinguished by
-  FIXNUM_P(obj) and RB_TYPE_P(obj, T_BIGNUM).
-  RUBY_INTEGER_UNIFICATION can be used to detect this feature.
-  ruby-2.4.0-preview1 (temporally) removes rb_cFixnum and rb_cBignum
-  to check the effect of incompatibility.
-  (rb_cFixnum and rb_cBignum may be defined as rb_cInteger later if
-  compilation failure of extension library is too big problem.)
+* Net::HTTP
+  * Net::HTTP#start now pass :ENV to p_addr by default. [Bug #13351]
+    To avoid this, pass nil explicitly.
 
-* String/Symbol#upcase/downcase/swapcase/capitalize(!) now work for all of
-  Unicode, not only for ASCII. [Feature #10085]
-  No change is needed if the data is in ASCII anyway or if the limitation
-  to ASCII was only tolerated while waiting for a more extensive implementation.
-  A change (using the :ascii option) is needed in cases where Unicode data
-  is processed, but the operation has to be limited to ASCII only.
-  A good example of this are internationalized domain names.
+* Random.raw_seed renamed to become Random.urandom.  It is now
+  applicable to non-seeding purposes due to [Bug #9569].
+
+* Socket::Ifaddr#vhid is added [Feature #13803]
+
+* ConditionVariable, Queue and SizedQueue reimplemented for speed.
+  They no longer subclass Struct. [Feature #13552]
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
-* Time
-
-  * Time#to_time now preserves timezone.  [Bug #12271]
-
-* DateTime
-
-  * DateTime#to_time now preserves timezone.  [Bug #12189]
-
-* thread
-
-  * the extension library is removed.  Till 2.0 it was a pure ruby script
-    "thread.rb", which has precedence over "thread.so", and has been provided
-    in $LOADED_FEATURES since 2.1.
+* mathn.rb
+  Removed from stdlib. [Feature #10169]
 
 === C API updates
 
-* ruby_show_version() will no longer exits the process, if
-  RUBY_SHOW_COPYRIGHT_TO_DIE is set to 0.  This will be the default in
-  the future.
-
 === Supported platform changes
-
-* FreeBSD < 4 is no longer supported
 
 === Implementation improvements
 
-* In some condition, `[x, y].max` and `[x, y].min` are optimized
-  so that a temporal array is not created.  The concrete condition is
-  an implementation detail: currently, the array literal must have no
-  splat, must have at least one expression but literal, the length must
-  be <= 0x100, and Array#max and min must not be redefined.  It will work
-  in most casual and real-life use case where it is written with intent
-  to `Math.max(x, y)`.
+* (This might not be a "user visible feature change" but) Hash class's
+  hash function is now SipHash13. [Feature #13017]
 
-* Thread deadlock detection now shows their backtrace and dependency. [Feature #8214]
+* SecureRandom now prefers OS-provided sources than OpenSSL. [Bug #9569]
+
+* Mutex rewritten to be smaller and faster [Feature #13517]
+
+=== Miscellaneous changes
+
+* Print backtrace and error message in reverse order if STDERR is unchanged and a tty.
+  [Feature #8661] [experimental]
+
+* configure option --with-ext now mandates its arguments.  So for
+  instance if you run ./configure --with-ext=openssl,+ then the
+  openssl library is guaranteed compiled, otherwise the build fails
+  abnormally.
+
+  Note however to always add the ",+" at the end of the argument.
+  Otherwise nothing but openssl are built.  [Feature #13302]

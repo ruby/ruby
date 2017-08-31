@@ -7,6 +7,7 @@ wait_for_single_fd.o: $(hdrdir)/ruby/encoding.h
 wait_for_single_fd.o: $(hdrdir)/ruby/intern.h
 wait_for_single_fd.o: $(hdrdir)/ruby/io.h
 wait_for_single_fd.o: $(hdrdir)/ruby/missing.h
+wait_for_single_fd.o: $(hdrdir)/ruby/onigmo.h
 wait_for_single_fd.o: $(hdrdir)/ruby/oniguruma.h
 wait_for_single_fd.o: $(hdrdir)/ruby/ruby.h
 wait_for_single_fd.o: $(hdrdir)/ruby/st.h

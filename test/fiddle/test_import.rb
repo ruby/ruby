@@ -19,7 +19,7 @@ module Fiddle
     extern "double atof(string)"
     extern "unsigned long strtoul(char*, char **, int)"
     extern "int qsort(void*, unsigned long, unsigned long, void*)"
-    extern "int fprintf(FILE*, char*)"
+    extern "int fprintf(FILE*, char*)" rescue nil
     extern "int gettimeofday(timeval*, timezone*)" rescue nil
 
     BoundQsortCallback = bind("void *bound_qsort_callback(void*, void*)"){|ptr1,ptr2| ptr1[0] <=> ptr2[0]}
@@ -45,7 +45,7 @@ module Fiddle
 
   class TestImport < TestCase
     def test_ensure_call_dlload
-      err = assert_raises(RuntimeError) do
+      err = assert_raise(RuntimeError) do
         Class.new do
           extend Importer
           extern "void *strcpy(char*, char*)"
@@ -84,7 +84,7 @@ module Fiddle
     end
 
     def test_io()
-      if( RUBY_PLATFORM != BUILD_RUBY_PLATFORM )
+      if( RUBY_PLATFORM != BUILD_RUBY_PLATFORM ) || !defined?(LIBC.fprintf)
         return
       end
       io_in,io_out = IO.pipe()

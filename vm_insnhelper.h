@@ -41,13 +41,13 @@ extern VALUE ruby_vm_const_missing_count;
 /* deal with registers                                    */
 /**********************************************************/
 
-#define REG_CFP (reg_cfp)
-#define REG_PC  (REG_CFP->pc)
-#define REG_SP  (REG_CFP->sp)
-#define REG_EP  (REG_CFP->ep)
+#define VM_REG_CFP (reg_cfp)
+#define VM_REG_PC  (VM_REG_CFP->pc)
+#define VM_REG_SP  (VM_REG_CFP->sp)
+#define VM_REG_EP  (VM_REG_CFP->ep)
 
 #define RESTORE_REGS() do { \
-  REG_CFP = th->cfp; \
+    VM_REG_CFP = th->ec.cfp; \
 } while (0)
 
 #define REG_A   reg_a
@@ -74,28 +74,28 @@ enum vm_regan_acttype {
 #endif
 
 /* PC */
-#define GET_PC()           (COLLECT_USAGE_REGISTER_HELPER(PC, GET, REG_PC))
-#define SET_PC(x)          (REG_PC = (COLLECT_USAGE_REGISTER_HELPER(PC, SET, (x))))
+#define GET_PC()           (COLLECT_USAGE_REGISTER_HELPER(PC, GET, VM_REG_PC))
+#define SET_PC(x)          (VM_REG_PC = (COLLECT_USAGE_REGISTER_HELPER(PC, SET, (x))))
 #define GET_CURRENT_INSN() (*GET_PC())
 #define GET_OPERAND(n)     (GET_PC()[(n)])
-#define ADD_PC(n)          (SET_PC(REG_PC + (n)))
-#define JUMP(dst)          (REG_PC += (dst))
+#define ADD_PC(n)          (SET_PC(VM_REG_PC + (n)))
+#define JUMP(dst)          (VM_REG_PC += (dst))
 
 /* frame pointer, environment pointer */
-#define GET_CFP()  (COLLECT_USAGE_REGISTER_HELPER(CFP, GET, REG_CFP))
-#define GET_EP()   (COLLECT_USAGE_REGISTER_HELPER(EP, GET, REG_EP))
-#define SET_EP(x)  (REG_EP = (COLLECT_USAGE_REGISTER_HELPER(EP, SET, (x))))
+#define GET_CFP()  (COLLECT_USAGE_REGISTER_HELPER(CFP, GET, VM_REG_CFP))
+#define GET_EP()   (COLLECT_USAGE_REGISTER_HELPER(EP, GET, VM_REG_EP))
+#define SET_EP(x)  (VM_REG_EP = (COLLECT_USAGE_REGISTER_HELPER(EP, SET, (x))))
 #define GET_LEP()  (VM_EP_LEP(GET_EP()))
 
 /* SP */
-#define GET_SP()   (COLLECT_USAGE_REGISTER_HELPER(SP, GET, REG_SP))
-#define SET_SP(x)  (REG_SP  = (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
-#define INC_SP(x)  (REG_SP += (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
-#define DEC_SP(x)  (REG_SP -= (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
+#define GET_SP()   (COLLECT_USAGE_REGISTER_HELPER(SP, GET, VM_REG_SP))
+#define SET_SP(x)  (VM_REG_SP  = (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
+#define INC_SP(x)  (VM_REG_SP += (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
+#define DEC_SP(x)  (VM_REG_SP -= (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
 #define SET_SV(x)  (*GET_SP() = (x))
   /* set current stack value as x */
 
-#define GET_SP_COUNT() (REG_SP - th->stack)
+#define GET_SP_COUNT() (VM_REG_SP - th->ec.vm_stack)
 
 /* instruction sequence C struct */
 #define GET_ISEQ() (GET_CFP()->iseq)
@@ -166,6 +166,8 @@ enum vm_regan_acttype {
 #else
 #define FLONUM_2_P(a, b) 0
 #endif
+#define FLOAT_HEAP_P(x) (!SPECIAL_CONST_P(x) && RBASIC_CLASS(x) == rb_cFloat)
+#define FLOAT_INSTANCE_P(x) (FLONUM_P(x) || FLOAT_HEAP_P(x))
 
 #ifndef USE_IC_FOR_SPECIALIZED_METHOD
 #define USE_IC_FOR_SPECIALIZED_METHOD 1
@@ -194,34 +196,55 @@ THROW_DATA_NEW(VALUE val, const rb_control_frame_t *cf, VALUE st)
     return (struct vm_throw_data *)rb_imemo_new(imemo_throw_data, val, (VALUE)cf, st, 0);
 }
 
-static inline void
-THROW_DATA_CATCH_FRAME_SET(struct vm_throw_data *obj, const rb_control_frame_t *cfp)
-{
-    obj->catch_frame = cfp;
-}
-
-static inline void
-THROW_DATA_STATE_SET(struct vm_throw_data *obj, int st)
-{
-    obj->throw_state = (VALUE)st;
-}
-
 static inline VALUE
 THROW_DATA_VAL(const struct vm_throw_data *obj)
 {
+    VM_ASSERT(THROW_DATA_P(obj));
     return obj->throw_obj;
 }
 
 static inline const rb_control_frame_t *
 THROW_DATA_CATCH_FRAME(const struct vm_throw_data *obj)
 {
+    VM_ASSERT(THROW_DATA_P(obj));
     return obj->catch_frame;
 }
 
-static int
+static inline int
 THROW_DATA_STATE(const struct vm_throw_data *obj)
 {
+    VM_ASSERT(THROW_DATA_P(obj));
     return (int)obj->throw_state;
+}
+
+static inline int
+THROW_DATA_CONSUMED_P(const struct vm_throw_data *obj)
+{
+    VM_ASSERT(THROW_DATA_P(obj));
+    return obj->flags & THROW_DATA_CONSUMED;
+}
+
+static inline void
+THROW_DATA_CATCH_FRAME_SET(struct vm_throw_data *obj, const rb_control_frame_t *cfp)
+{
+    VM_ASSERT(THROW_DATA_P(obj));
+    obj->catch_frame = cfp;
+}
+
+static inline void
+THROW_DATA_STATE_SET(struct vm_throw_data *obj, int st)
+{
+    VM_ASSERT(THROW_DATA_P(obj));
+    obj->throw_state = (VALUE)st;
+}
+
+static inline void
+THROW_DATA_CONSUMED_SET(struct vm_throw_data *obj)
+{
+    if (THROW_DATA_P(obj) &&
+	THROW_DATA_STATE(obj) == TAG_BREAK) {
+	obj->flags |= THROW_DATA_CONSUMED;
+    }
 }
 
 #endif /* RUBY_INSNHELPER_H */

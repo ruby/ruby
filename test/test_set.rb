@@ -705,15 +705,44 @@ class TC_Set < Test::Unit::TestCase
   end
 
   def test_inspect
-    set1 = Set[1]
-
-    assert_equal('#<Set: {1}>', set1.inspect)
+    set1 = Set[1, 2]
+    assert_equal('#<Set: {1, 2}>', set1.inspect)
 
     set2 = Set[Set[0], 1, 2, set1]
-    assert_equal(false, set2.inspect.include?('#<Set: {...}>'))
+    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2}>}>', set2.inspect)
 
     set1.add(set2)
-    assert_equal(true, set1.inspect.include?('#<Set: {...}>'))
+    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2, #<Set: {...}>}>}>', set2.inspect)
+  end
+
+  def test_to_s
+    set1 = Set[1, 2]
+    assert_equal('#<Set: {1, 2}>', set1.to_s)
+
+    set2 = Set[Set[0], 1, 2, set1]
+    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2}>}>', set2.to_s)
+
+    set1.add(set2)
+    assert_equal('#<Set: {#<Set: {0}>, 1, 2, #<Set: {1, 2, #<Set: {...}>}>}>', set2.to_s)
+  end
+
+  def test_compare_by_identity
+    a1, a2 = "a", "a"
+    b1, b2 = "b", "b"
+    c = "c"
+    array = [a1, b1, c, a2, b2]
+
+    iset = Set.new.compare_by_identity
+    assert_send([iset, :compare_by_identity?])
+    iset.merge(array)
+    assert_equal(5, iset.size)
+    assert_equal(array.map(&:object_id).sort, iset.map(&:object_id).sort)
+
+    set = Set.new
+    assert_not_send([set, :compare_by_identity?])
+    set.merge(array)
+    assert_equal(3, set.size)
+    assert_equal(array.uniq.sort, set.sort)
   end
 end
 

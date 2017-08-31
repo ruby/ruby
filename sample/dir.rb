@@ -3,7 +3,7 @@
 dirp = Dir.open(".")
 for f in dirp
   case f
-  when /^\./, /~$/, /\.o/
+  when /\A\./, /~\z/, /\.o/
     # do not print
   else
     print f, "\n"

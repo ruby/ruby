@@ -176,6 +176,50 @@ void Init_Blah(void) {
     assert_equal 'This is a writer', writer.comment.text
   end
 
+  def test_do_attr_rb_attr_2
+    content = <<-EOF
+void Init_Blah(void) {
+  cBlah = rb_define_class("Blah", rb_cObject);
+
+  /*
+   * This is an accessor
+   */
+  rb_attr(cBlah, rb_intern_const("accessor"), 1, 1, Qfalse);
+
+  /*
+   * This is a reader
+   */
+  rb_attr(cBlah, rb_intern_const("reader"), 1, 0, Qfalse);
+
+  /*
+   * This is a writer
+   */
+  rb_attr(cBlah, rb_intern_const("writer"), 0, 1, Qfalse);
+}
+    EOF
+
+    klass = util_get_class content, 'cBlah'
+
+    attrs = klass.attributes
+    assert_equal 3, attrs.length, attrs.inspect
+
+    accessor = attrs.shift
+    assert_equal 'accessor',            accessor.name
+    assert_equal 'RW',                  accessor.rw
+    assert_equal 'This is an accessor', accessor.comment.text
+    assert_equal @top_level,            accessor.file
+
+    reader = attrs.shift
+    assert_equal 'reader',           reader.name
+    assert_equal 'R',                reader.rw
+    assert_equal 'This is a reader', reader.comment.text
+
+    writer = attrs.shift
+    assert_equal 'writer',           writer.name
+    assert_equal 'W',                writer.rw
+    assert_equal 'This is a writer', writer.comment.text
+  end
+
   def test_do_attr_rb_define_attr
     content = <<-EOF
 void Init_Blah(void) {
@@ -1095,7 +1139,6 @@ Init_Foo(void) {
     assert_equal 'my_method', other_function.name
     assert_equal 'a comment for rb_other_function', other_function.comment.text
     assert_equal '()', other_function.params
-    assert_equal 118, other_function.offset
     assert_equal 8, other_function.line
 
     code = other_function.token_stream.first.text
@@ -1129,7 +1172,6 @@ Init_Foo(void) {
     assert_equal 'my_method', other_function.name
     assert_equal 'a comment for other_function', other_function.comment.text
     assert_equal '()', other_function.params
-    assert_equal 39, other_function.offset
     assert_equal 4, other_function.line
 
     code = other_function.token_stream.first.text
@@ -1358,7 +1400,6 @@ rb_m(int argc, VALUE *argv, VALUE obj) {
 
     assert_equal 'm', m.name
     assert_equal @top_level, m.file
-    assert_equal 115, m.offset
     assert_equal 7, m.line
 
     assert_equal '(p1)', m.params

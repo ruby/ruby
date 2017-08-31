@@ -7,6 +7,7 @@ capacity.o: $(hdrdir)/ruby/encoding.h
 capacity.o: $(hdrdir)/ruby/intern.h
 capacity.o: $(hdrdir)/ruby/io.h
 capacity.o: $(hdrdir)/ruby/missing.h
+capacity.o: $(hdrdir)/ruby/onigmo.h
 capacity.o: $(hdrdir)/ruby/oniguruma.h
 capacity.o: $(hdrdir)/ruby/ruby.h
 capacity.o: $(hdrdir)/ruby/st.h
@@ -21,6 +22,7 @@ coderange.o: $(hdrdir)/ruby/defines.h
 coderange.o: $(hdrdir)/ruby/encoding.h
 coderange.o: $(hdrdir)/ruby/intern.h
 coderange.o: $(hdrdir)/ruby/missing.h
+coderange.o: $(hdrdir)/ruby/onigmo.h
 coderange.o: $(hdrdir)/ruby/oniguruma.h
 coderange.o: $(hdrdir)/ruby/ruby.h
 coderange.o: $(hdrdir)/ruby/st.h
@@ -34,6 +36,7 @@ cstr.o: $(hdrdir)/ruby/encoding.h
 cstr.o: $(hdrdir)/ruby/intern.h
 cstr.o: $(hdrdir)/ruby/io.h
 cstr.o: $(hdrdir)/ruby/missing.h
+cstr.o: $(hdrdir)/ruby/onigmo.h
 cstr.o: $(hdrdir)/ruby/oniguruma.h
 cstr.o: $(hdrdir)/ruby/ruby.h
 cstr.o: $(hdrdir)/ruby/st.h
@@ -59,6 +62,7 @@ enc_associate.o: $(hdrdir)/ruby/defines.h
 enc_associate.o: $(hdrdir)/ruby/encoding.h
 enc_associate.o: $(hdrdir)/ruby/intern.h
 enc_associate.o: $(hdrdir)/ruby/missing.h
+enc_associate.o: $(hdrdir)/ruby/onigmo.h
 enc_associate.o: $(hdrdir)/ruby/oniguruma.h
 enc_associate.o: $(hdrdir)/ruby/ruby.h
 enc_associate.o: $(hdrdir)/ruby/st.h
@@ -72,6 +76,7 @@ enc_str_buf_cat.o: $(hdrdir)/ruby/defines.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/encoding.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/intern.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/missing.h
+enc_str_buf_cat.o: $(hdrdir)/ruby/onigmo.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/oniguruma.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/ruby.h
 enc_str_buf_cat.o: $(hdrdir)/ruby/st.h
@@ -129,6 +134,7 @@ normalize.o: $(hdrdir)/ruby/encoding.h
 normalize.o: $(hdrdir)/ruby/intern.h
 normalize.o: $(hdrdir)/ruby/io.h
 normalize.o: $(hdrdir)/ruby/missing.h
+normalize.o: $(hdrdir)/ruby/onigmo.h
 normalize.o: $(hdrdir)/ruby/oniguruma.h
 normalize.o: $(hdrdir)/ruby/ruby.h
 normalize.o: $(hdrdir)/ruby/st.h
@@ -143,6 +149,7 @@ qsort.o: $(hdrdir)/ruby/defines.h
 qsort.o: $(hdrdir)/ruby/encoding.h
 qsort.o: $(hdrdir)/ruby/intern.h
 qsort.o: $(hdrdir)/ruby/missing.h
+qsort.o: $(hdrdir)/ruby/onigmo.h
 qsort.o: $(hdrdir)/ruby/oniguruma.h
 qsort.o: $(hdrdir)/ruby/ruby.h
 qsort.o: $(hdrdir)/ruby/st.h

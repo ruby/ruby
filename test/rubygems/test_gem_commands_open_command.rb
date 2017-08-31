@@ -24,7 +24,8 @@ class TestGemCommandsOpenCommand < Gem::TestCase
     @cmd.options[:args] = %w[foo]
     @cmd.options[:editor] = "#{Gem.ruby} -e0 --"
 
-    spec = gem 'foo'
+    gem 'foo', '1.0.0'
+    spec = gem 'foo', '1.0.1'
     mock = MiniTest::Mock.new
     mock.expect(:call, true, [spec.full_gem_path])
 

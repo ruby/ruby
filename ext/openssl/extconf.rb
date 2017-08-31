@@ -33,20 +33,62 @@ end
 Logging::message "=== Checking for system dependent stuff... ===\n"
 have_library("nsl", "t_open")
 have_library("socket", "socket")
-have_header("assert.h")
 
 Logging::message "=== Checking for required stuff... ===\n"
-if $mingw
-  have_library("wsock32")
-  have_library("gdi32")
+result = pkg_config("openssl") && have_header("openssl/ssl.h")
+
+def find_openssl_library
+  if $mswin || $mingw
+    # required for static OpenSSL libraries
+    have_library("gdi32") # OpenSSL <= 1.0.2 (for RAND_screen())
+    have_library("crypt32")
+  end
+
+  return false unless have_header("openssl/ssl.h")
+
+  ret = have_library("crypto", "CRYPTO_malloc") &&
+    have_library("ssl", "SSL_new")
+  return ret if ret
+
+  if $mswin
+    # OpenSSL >= 1.1.0: libcrypto.lib and libssl.lib.
+    if have_library("libcrypto", "CRYPTO_malloc") &&
+        have_library("libssl", "SSL_new")
+      return true
+    end
+
+    # OpenSSL <= 1.0.2: libeay32.lib and ssleay32.lib.
+    if have_library("libeay32", "CRYPTO_malloc") &&
+        have_library("ssleay32", "SSL_new")
+      return true
+    end
+
+    # LibreSSL: libcrypto-##.lib and libssl-##.lib, where ## is the ABI version
+    # number. We have to find the version number out by scanning libpath.
+    libpath = $LIBPATH.dup
+    libpath |= ENV["LIB"].split(File::PATH_SEPARATOR)
+    libpath.map! { |d| d.tr(File::ALT_SEPARATOR, File::SEPARATOR) }
+
+    ret = [
+      ["crypto", "CRYPTO_malloc"],
+      ["ssl", "SSL_new"]
+    ].all? do |base, func|
+      result = false
+      libs = ["lib#{base}-[0-9][0-9]", "lib#{base}-[0-9][0-9][0-9]"]
+      libs = Dir.glob(libs.map{|l| libpath.map{|d| File.join(d, l + ".*")}}.flatten).map{|path| File.basename(path, ".*")}.uniq
+      libs.each do |lib|
+        result = have_library(lib, func)
+        break if result
+      end
+      result
+    end
+    return ret if ret
+  end
+  return false
 end
 
-result = pkg_config("openssl") && have_header("openssl/ssl.h")
 unless result
-  result = have_header("openssl/ssl.h")
-  result &&= %w[crypto libeay32].any? {|lib| have_library(lib, "CRYPTO_malloc")}
-  result &&= %w[ssl ssleay32].any? {|lib| have_library(lib, "SSL_new")}
-  unless result
+  unless find_openssl_library
     Logging::message "=== Checking for required stuff failed. ===\n"
     Logging::message "Makefile wasn't created. Fix the errors above.\n"
     exit 1
@@ -60,21 +102,17 @@ unless result
   raise "OpenSSL 0.9.8 or later required."
 end
 
-unless OpenSSL.check_func("SSL_library_init()", "openssl/ssl.h")
+if /darwin/ =~ RUBY_PLATFORM and !OpenSSL.check_func("SSL_library_init()", "openssl/ssl.h")
   raise "Ignore OpenSSL broken by Apple.\nPlease use another openssl. (e.g. using `configure --with-openssl-dir=/path/to/openssl')"
 end
 
 Logging::message "=== Checking for OpenSSL features... ===\n"
 # compile options
 
-# check OPENSSL_NO_{SSL2,SSL3_METHOD} macro: on some environment, these symbols
-# exist even if compiled with no-ssl2 or no-ssl3-method.
-unless have_macro("OPENSSL_NO_SSL2", "openssl/opensslconf.h")
-  have_func("SSLv2_method")
-end
-unless have_macro("OPENSSL_NO_SSL3_METHOD", "openssl/opensslconf.h")
-  have_func("SSLv3_method")
-end
+# SSLv2 and SSLv3 may be removed in future versions of OpenSSL, and even macros
+# like OPENSSL_NO_SSL2 may not be defined.
+have_func("SSLv2_method")
+have_func("SSLv3_method")
 have_func("TLSv1_1_method")
 have_func("TLSv1_2_method")
 have_func("RAND_egd")
@@ -87,6 +125,7 @@ engines.each { |name|
 # added in 0.9.8X
 have_func("EVP_CIPHER_CTX_new")
 have_func("EVP_CIPHER_CTX_free")
+OpenSSL.check_func_or_macro("SSL_CTX_clear_options", "openssl/ssl.h")
 
 # added in 1.0.0
 have_func("ASN1_TIME_adj")
@@ -101,6 +140,7 @@ have_func("i2d_ASN1_SET_ANY")
 have_func("SSL_SESSION_cmp") # removed
 OpenSSL.check_func_or_macro("SSL_set_tlsext_host_name", "openssl/ssl.h")
 have_struct_member("CRYPTO_THREADID", "ptr", "openssl/crypto.h")
+have_func("EVP_PKEY_get0")
 
 # added in 1.0.1
 have_func("SSL_CTX_set_next_proto_select_cb")
@@ -147,11 +187,11 @@ have_func("EVP_PKEY_up_ref")
 OpenSSL.check_func_or_macro("SSL_CTX_set_tmp_ecdh_callback", "openssl/ssl.h") # removed
 OpenSSL.check_func_or_macro("SSL_CTX_set_min_proto_version", "openssl/ssl.h")
 have_func("SSL_CTX_get_security_level")
+have_func("X509_get0_notBefore")
+have_func("SSL_SESSION_get_protocol_version")
 
 Logging::message "=== Checking done. ===\n"
 
 create_header
-create_makefile("openssl") {|conf|
-  conf << "THREAD_MODEL = #{CONFIG["THREAD_MODEL"]}\n"
-}
+create_makefile("openssl")
 Logging::message "Done.\n"

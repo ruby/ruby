@@ -49,11 +49,20 @@ class TestWEBrickCookie < Test::Unit::TestCase
 
     data = "hoge=moge; __div__session=9865ecfd514be7f7"
     cookies = WEBrick::Cookie.parse(data)
+    assert_equal(2, cookies.size)
     assert_equal(0, cookies[0].version)
     assert_equal("hoge", cookies[0].name)
     assert_equal("moge", cookies[0].value)
     assert_equal("__div__session", cookies[1].name)
     assert_equal("9865ecfd514be7f7", cookies[1].value)
+
+    # don't allow ,-separator
+    data = "hoge=moge, __div__session=9865ecfd514be7f7"
+    cookies = WEBrick::Cookie.parse(data)
+    assert_equal(1, cookies.size)
+    assert_equal(0, cookies[0].version)
+    assert_equal("hoge", cookies[0].name)
+    assert_equal("moge, __div__session=9865ecfd514be7f7", cookies[0].value)
   end
 
   def test_parse_no_whitespace

@@ -33,7 +33,7 @@
 
 OnigEncodingDefine(windows_31j, Windows_31J) = {
   mbc_enc_len,
-  "Windows-31J",   /* name */
+  "Windows-31J", /* name */
   2,             /* max byte length */
   1,             /* min byte length */
   onigenc_is_mbc_newline_0x0a,
@@ -48,9 +48,9 @@ OnigEncodingDefine(windows_31j, Windows_31J) = {
   get_ctype_code_range,
   left_adjust_char_head,
   is_allowed_reverse_match,
+  onigenc_ascii_only_case_map,
   0,
   ONIGENC_FLAG_NONE,
-  onigenc_ascii_only_case_map,
 };
 /*
  * Name: Windows-31J

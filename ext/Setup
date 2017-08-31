@@ -23,8 +23,6 @@
 #json
 #json/generator
 #json/parser
-#mathn/complex
-#mathn/rational
 #nkf
 #objspace
 #openssl
@@ -40,8 +38,6 @@
 #stringio
 #strscan
 #syslog
-#tk
-#tk/tkutil
 #win32
 #win32ole
 #zlib

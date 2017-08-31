@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'strscan'
 
 module Psych
@@ -10,7 +10,6 @@ module Psych
 
     # Taken from http://yaml.org/type/float.html
     FLOAT = /^(?:[-+]?([0-9][0-9_,]*)?\.[0-9]*([eE][-+][0-9]+)?(?# base 10)
-              |[-+]?[0-9][0-9_,]*(:[0-5]?[0-9])+\.[0-9_]*(?# base 60)
               |[-+]?\.(inf|Inf|INF)(?# infinity)
               |\.(nan|NaN|NAN)(?# not a number))$/x
 
@@ -83,13 +82,13 @@ module Psych
         else
           @symbol_cache[string] = class_loader.symbolize(string.sub(/^:/, ''))
         end
-      when /^[-+]?[0-9][0-9_]*(:[0-5]?[0-9])+$/
+      when /^[-+]?[0-9][0-9_]*(:[0-5]?[0-9]){1,2}$/
         i = 0
         string.split(':').each_with_index do |n,e|
           i += (n.to_i * 60 ** (e - 2).abs)
         end
         i
-      when /^[-+]?[0-9][0-9_]*(:[0-5]?[0-9])+\.[0-9_]*$/
+      when /^[-+]?[0-9][0-9_]*(:[0-5]?[0-9]){1,2}\.[0-9_]*$/
         i = 0
         string.split(':').each_with_index do |n,e|
           i += (n.to_f * 60 ** (e - 2).abs)
@@ -100,7 +99,7 @@ module Psych
           @string_cache[string] = true
           string
         else
-          Float(string.gsub(/[,_]|\.$/, ''))
+          Float(string.gsub(/[,_]|\.([Ee]|$)/, '\1'))
         end
       else
         int = parse_int string.gsub(/[,_]/, '')
@@ -144,7 +143,7 @@ module Psych
         offset += ((tz[1] || 0) * 60)
       end
 
-      klass.at((time - offset).to_i, us)
+      klass.new(yy, m, dd, hh, mm, ss+us/(1_000_000r), offset)
     end
   end
 end

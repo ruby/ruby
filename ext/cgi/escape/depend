@@ -6,6 +6,7 @@ escape.o: $(hdrdir)/ruby/defines.h
 escape.o: $(hdrdir)/ruby/encoding.h
 escape.o: $(hdrdir)/ruby/intern.h
 escape.o: $(hdrdir)/ruby/missing.h
+escape.o: $(hdrdir)/ruby/onigmo.h
 escape.o: $(hdrdir)/ruby/oniguruma.h
 escape.o: $(hdrdir)/ruby/ruby.h
 escape.o: $(hdrdir)/ruby/st.h

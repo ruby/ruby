@@ -196,7 +196,7 @@ url_unreserved_char(unsigned char c)
       case 'A': case 'B': case 'C': case 'D': case 'E': case 'F': case 'G': case 'H': case 'I': case 'J':
       case 'K': case 'L': case 'M': case 'N': case 'O': case 'P': case 'Q': case 'R': case 'S': case 'T':
       case 'U': case 'V': case 'W': case 'X': case 'Y': case 'Z':
-      case '-': case '.': case '_':
+      case '-': case '.': case '_': case '~':
         return 1;
       default:
         break;
@@ -252,7 +252,8 @@ optimized_unescape(VALUE str, VALUE encoding)
     long i, len, beg = 0;
     VALUE dest = 0;
     const char *cstr;
-    int cr, origenc, encidx = rb_to_encoding_index(encoding);
+    rb_encoding *enc = rb_to_encoding(encoding);
+    int cr, origenc, encidx = rb_enc_to_index(enc);
 
     len  = RSTRING_LEN(str);
     cstr = RSTRING_PTR(str);

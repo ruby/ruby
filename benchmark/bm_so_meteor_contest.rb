@@ -155,7 +155,7 @@ class Rotation
 
   # given a set of directions places the piece (as defined by a set of directions) on the board at
   # a location that will not take it off the edge
-  def get_values ( directions )
+  def get_values( directions )
     start = start_adjust(directions)
     values = [ start ]
     directions.each do | direction |

@@ -12,7 +12,7 @@ ripper.o: ripper.c
 .y.c:
 	$(ECHO) compiling compiler $<
 	$(Q) $(BISON) -t -v -oy.tab.c $<
-	$(Q) sed -f $(top_srcdir)/tool/ytab.sed -e "/^#/s!y\.tab\.c!$@!" y.tab.c > $@
+	$(Q) sed -e "/^#/s!y\.tab\.c!$@!" -f $(top_srcdir)/tool/ytab.sed y.tab.c > $@
 	@$(RM) y.tab.c
 
 all: check
@@ -20,7 +20,8 @@ static: check
 
 ripper.y: $(srcdir)/tools/preproc.rb $(top_srcdir)/parse.y
 	$(ECHO) extracting $@ from $(top_srcdir)/parse.y
-	$(Q) $(RUBY) $(top_srcdir)/tool/id2token.rb --path-separator=.$(PATH_SEPARATOR)./ --vpath=$(VPATH) id.h $(top_srcdir)/parse.y > ripper.tmp.y
+	$(Q) $(RUBY) $(top_srcdir)/tool/id2token.rb --path-separator=.$(PATH_SEPARATOR)./ \
+		--vpath=$(VPATH)$(PATH_SEPARATOR)$(top_srcdir) id.h $(top_srcdir)/parse.y > ripper.tmp.y
 	$(Q) $(RUBY) $(srcdir)/tools/preproc.rb ripper.tmp.y --output=$@
 	$(Q) $(RM) ripper.tmp.y
 
@@ -55,6 +56,7 @@ ripper.o: $(hdrdir)/ruby/encoding.h
 ripper.o: $(hdrdir)/ruby/intern.h
 ripper.o: $(hdrdir)/ruby/io.h
 ripper.o: $(hdrdir)/ruby/missing.h
+ripper.o: $(hdrdir)/ruby/onigmo.h
 ripper.o: $(hdrdir)/ruby/oniguruma.h
 ripper.o: $(hdrdir)/ruby/regex.h
 ripper.o: $(hdrdir)/ruby/ruby.h

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # test_scanner_events.rb
 #
@@ -105,10 +105,14 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  Ripper.lex("1r\n2i\n3ri\n4.2r\n5.6ri")
      assert_equal [[[1, 0], :on_heredoc_beg, "<<~EOS"],
                    [[1, 6], :on_nl, "\n"],
+                   [[2, 0], :on_ignored_sp, "  "],
                    [[2, 2], :on_tstring_content, "heredoc\n"],
                    [[3, 0], :on_heredoc_end, "EOS"]
                  ],
                  Ripper.lex("<<~EOS\n  heredoc\nEOS")
+    assert_equal [[[1, 0], :on_tstring_beg, "'"],
+                  [[1, 1], :on_tstring_content, "foo"]],
+                 Ripper.lex("'foo")
   end
 
   def test_location
@@ -131,10 +135,12 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
     assert_location %Q["a\nb\r\nc"]
     assert_location "print(<<""EOS)\nheredoc\nEOS\n"
     assert_location "print(<<-\"EOS\")\nheredoc\n     EOS\n"
+    assert_location "'foo'"
+    assert_location "'foo"
   end
 
   def assert_location(src)
-    buf = ''
+    buf = ''.dup
     Ripper.lex(src).each do |pos, type, tok|
       line, col = *pos
       assert_equal buf.count("\n") + 1, line,

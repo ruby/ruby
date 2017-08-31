@@ -34,33 +34,15 @@ static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 
 #define EXCL(r) RTEST(RANGE_EXCL(r))
 
-static VALUE
-range_failed(void)
-{
-    rb_raise(rb_eArgError, "bad value for range");
-    return Qnil;		/* dummy */
-}
-
-static VALUE
-range_check(VALUE *args)
-{
-    return rb_funcall(args[0], id_cmp, 1, args[1]);
-}
-
 static void
 range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
 {
-    VALUE args[2];
-
-    args[0] = beg;
-    args[1] = end;
-
     if (!FIXNUM_P(beg) || !FIXNUM_P(end)) {
 	VALUE v;
 
-	v = rb_rescue(range_check, (VALUE)args, range_failed, 0);
+	v = rb_funcall(beg, id_cmp, 1, end);
 	if (NIL_P(v))
-	    range_failed();
+	    rb_raise(rb_eArgError, "bad value for range");
     }
 
     RANGE_SET_EXCL(range, exclude_end);
@@ -80,6 +62,7 @@ rb_range_new(VALUE beg, VALUE end, int exclude_end)
 static void
 range_modify(VALUE range)
 {
+    rb_check_frozen(range);
     /* Ranges are immutable, so that they should be initialized only once. */
     if (RANGE_EXCL(range) != Qnil) {
 	rb_name_err_raise("`initialize' called twice", range, ID2SYM(idInitialize));
@@ -226,7 +209,7 @@ range_eql(VALUE range, VALUE obj)
 
 /*
  * call-seq:
- *   rng.hash    -> fixnum
+ *   rng.hash    -> integer
  *
  * Compute a hash-code for this range. Two ranges with equal
  * begin and end points (using <code>eql?</code>), and the same
@@ -911,7 +894,8 @@ range_last(int argc, VALUE *argv, VALUE range)
  *     rng.min(n) {| a,b | block }   -> array
  *
  *  Returns the minimum value in the range. Returns +nil+ if the begin
- *  value of the range is larger than the end value.
+ *  value of the range is larger than the end value. Returns +nil+ if
+ *  the begin value of an exclusive range is equal to the end value.
  *
  *  Can be given an optional block to override the default comparison
  *  method <code>a <=> b</code>.
@@ -930,9 +914,10 @@ range_min(int argc, VALUE *argv, VALUE range)
 	return range_first(argc, argv, range);
     }
     else {
+	struct cmp_opt_data cmp_opt = { 0, 0 };
 	VALUE b = RANGE_BEG(range);
 	VALUE e = RANGE_END(range);
-	int c = rb_cmpint(rb_funcall(b, id_cmp, 1, e), b, e);
+	int c = OPTIMIZED_CMP(b, e, cmp_opt);
 
 	if (c > 0 || (c == 0 && EXCL(range)))
 	    return Qnil;
@@ -948,7 +933,8 @@ range_min(int argc, VALUE *argv, VALUE range)
  *     rng.max(n) {| a,b | block }   -> obj
  *
  *  Returns the maximum value in the range. Returns +nil+ if the begin
- *  value of the range larger than the end value.
+ *  value of the range larger than the end value. Returns +nil+ if
+ *  the begin value of an exclusive range is equal to the end value.
  *
  *  Can be given an optional block to override the default comparison
  *  method <code>a <=> b</code>.
@@ -966,8 +952,9 @@ range_max(int argc, VALUE *argv, VALUE range)
 	return rb_call_super(argc, argv);
     }
     else {
+	struct cmp_opt_data cmp_opt = { 0, 0 };
 	VALUE b = RANGE_BEG(range);
-	int c = rb_cmpint(rb_funcall(b, id_cmp, 1, e), b, e);
+	int c = OPTIMIZED_CMP(b, e, cmp_opt);
 
 	if (c > 0)
 	    return Qnil;
@@ -1228,22 +1215,27 @@ range_dumper(VALUE range)
 static VALUE
 range_loader(VALUE range, VALUE obj)
 {
+    VALUE beg, end, excl;
+
     if (!RB_TYPE_P(obj, T_OBJECT) || RBASIC(obj)->klass != rb_cObject) {
         rb_raise(rb_eTypeError, "not a dumped range object");
     }
 
     range_modify(range);
-    RANGE_SET_BEG(range, rb_ivar_get(obj, id_beg));
-    RANGE_SET_END(range, rb_ivar_get(obj, id_end));
-    RANGE_SET_EXCL(range, rb_ivar_get(obj, id_excl));
+    beg = rb_ivar_get(obj, id_beg);
+    end = rb_ivar_get(obj, id_end);
+    excl = rb_ivar_get(obj, id_excl);
+    if (!NIL_P(excl)) {
+	range_init(range, beg, end, RBOOL(RTEST(excl)));
+    }
     return range;
 }
 
 static VALUE
 range_alloc(VALUE klass)
 {
-  /* rb_struct_alloc_noinit itself should not be used because
-   * rb_marshal_define_compat uses equality of allocation function */
+    /* rb_struct_alloc_noinit itself should not be used because
+     * rb_marshal_define_compat uses equality of allocation function */
     return rb_struct_alloc_noinit(klass);
 }
 

@@ -543,7 +543,8 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 			if (off < 0) {
 				off = -off;
 				sign = -1;
-			} else {
+			}
+			else {
 				sign = +1;
 			}
                         switch (colons) {
@@ -582,7 +583,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				goto unknown;
                         }
 			i = snprintf(s, endp - s, (padding == ' ' ? "%+*ld" : "%+.*ld"),
-				     precision + 1, sign * (off / 3600));
+				     precision + (padding == ' '), sign * (off / 3600));
 			if (i < 0) goto err;
 			if (sign < 0 && off < 3600) {
 				*(padding == ' ' ? s + i - 2 : s) = '-';
@@ -820,7 +821,8 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
                                         VALUE args[2], result;
                                         args[0] = INT2FIX(precision);
                                         args[1] = subsec;
-                                        result = rb_str_format(2, args, rb_str_new2("%0*d"));
+                                        result = rb_str_format(2, args,
+                                                      rb_fstring_cstr("%0*d"));
                                         (void)strlcpy(s, StringValueCStr(result), endp-s);
                                         s += precision;
                                 }

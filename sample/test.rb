@@ -1,2 +1,2 @@
-# backword compatibility for chkbuild
+# backward compatibility for chkbuild
 require_relative '../basictest/test'

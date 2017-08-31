@@ -1,10 +1,15 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
+require 'psych/versions'
 case RUBY_ENGINE
 when 'jruby'
   require 'psych_jars'
   org.jruby.ext.psych.PsychLibrary.new.load(JRuby.runtime, false)
 else
-  require 'psych.so'
+  begin
+    require "#{RUBY_VERSION[/\d+\.\d+/]}/psych.so"
+  rescue LoadError
+    require 'psych.so'
+  end
 end
 require 'psych/nodes'
 require 'psych/streaming'
@@ -16,7 +21,6 @@ require 'psych/omap'
 require 'psych/set'
 require 'psych/coder'
 require 'psych/core_ext'
-require 'psych/deprecated'
 require 'psych/stream'
 require 'psych/json/tree_builder'
 require 'psych/json/stream'
@@ -223,9 +227,6 @@ require 'psych/class_loader'
 #   # => "a"
 
 module Psych
-  # The version is Psych you're using
-  VERSION         = '2.1.0'
-
   # The version of libyaml Psych is using
   LIBYAML_VERSION = Psych.libyaml_version.join '.'
 

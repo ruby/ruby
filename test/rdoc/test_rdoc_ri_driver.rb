@@ -282,7 +282,7 @@ class TestRDocRIDriver < RDoc::TestCase
     assert_equal expected, out
   end
 
-  def test_add_method_overriden
+  def test_add_method_overridden
     util_multi_store
 
     out = doc
@@ -646,7 +646,7 @@ class TestRDocRIDriver < RDoc::TestCase
     assert_match %r%^=== Implementation from Foo%, out
   end
 
-  def test_display_method_overriden
+  def test_display_method_overridden
     util_multi_store
 
     out, = capture_io do
@@ -832,6 +832,38 @@ Foo::Bar#bother
     assert_raises RDoc::RI::Driver::NotFoundError do
       @driver.expand_class 'F::B'
     end
+  end
+
+  def test_expand_class_2
+    @store1 = RDoc::RI::Store.new @home_ri, :home
+
+    @top_level = @store1.add_file 'file.rb'
+
+    @cFoo = @top_level.add_class RDoc::NormalClass, 'Foo'
+    @mFox = @top_level.add_module RDoc::NormalModule, 'Fox'
+    @cFoo_Bar = @cFoo.add_class RDoc::NormalClass, 'Bar'
+    @store1.save
+
+    @driver.stores = [@store1]
+    assert_raises RDoc::RI::Driver::NotFoundError do
+      @driver.expand_class 'F'
+    end
+    assert_equal 'Foo::Bar',  @driver.expand_class('F::Bar')
+    assert_equal 'Foo::Bar',  @driver.expand_class('F::B')
+  end
+
+  def test_expand_class_3
+    @store1 = RDoc::RI::Store.new @home_ri, :home
+
+    @top_level = @store1.add_file 'file.rb'
+
+    @cFoo = @top_level.add_class RDoc::NormalClass, 'Foo'
+    @mFox = @top_level.add_module RDoc::NormalModule, 'FooBar'
+    @store1.save
+
+    @driver.stores = [@store1]
+
+    assert_equal 'Foo',  @driver.expand_class('Foo')
   end
 
   def test_expand_name
@@ -1423,10 +1455,10 @@ Foo::Bar#bother
     @inherit = @cFoo.add_method RDoc::AnyMethod.new(nil, 'inherit')
     @inherit.record_location @top_level
 
-    # overriden by Bar in multi_store
-    @overriden = @cFoo.add_method RDoc::AnyMethod.new(nil, 'override')
-    @overriden.comment = 'must not be displayed in Bar#override'
-    @overriden.record_location @top_level
+    # overridden by Bar in multi_store
+    @overridden = @cFoo.add_method RDoc::AnyMethod.new(nil, 'override')
+    @overridden.comment = 'must not be displayed in Bar#override'
+    @overridden.record_location @top_level
 
     @store1.save
 
@@ -1434,4 +1466,3 @@ Foo::Bar#bother
   end
 
 end
-

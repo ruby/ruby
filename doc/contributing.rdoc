@@ -11,7 +11,7 @@ trying out beta releases with your applications.
 == How To Report
 
 If you've encountered a bug in Ruby please report it to the redmine issue
-tracker available at {bugs.ruby-lang.org}[http://bugs.ruby-lang.org/].  Do not
+tracker available at {bugs.ruby-lang.org}[https://bugs.ruby-lang.org/].  Do not
 report security vulnerabilities here, there is a {separate
 channel}[rdoc-label:label-Reporting+Security+Issues] for them.
 
@@ -25,7 +25,7 @@ on your ticket.
 
   If you aren't already using the latest version, try installing a newer
   stable release. See
-  {Downloading Ruby}[http://www.ruby-lang.org/en/downloads/].
+  {Downloading Ruby}[https://www.ruby-lang.org/en/downloads/].
 * Look to see if anyone already reported your issue, try
   {searching on redmine}[https://bugs.ruby-lang.org/projects/ruby-trunk/issues]
   for your problem.
@@ -94,7 +94,7 @@ affect many users. There is a private mailing list that all security issues
 should be reported to and will be handled discretely. Email the
 mailto:security@ruby-lang.org list and the problem will be published after
 fixes have been released. You can also encrypt the issue using {the PGP public
-key}[http://www.ruby-lang.org/security.asc] for the list.
+key}[https://www.ruby-lang.org/security.asc] for the list.
 
 == Reporting Other Issues
 
@@ -253,7 +253,7 @@ CRuby uses subversion for source control, you can find installation
 instructions and lots of great info to learn subversion on the
 {svnbook.red-bean.com}[http://svnbook.red-bean.com/]. For other resources see
 the {ruby-core documentation on
-ruby-lang.org}[http://www.ruby-lang.org/en/community/ruby-core/].
+ruby-lang.org}[https://www.ruby-lang.org/en/community/ruby-core/].
 
 This guide will use git for contributing.  The {git
 homepage}[http://git-scm.com/] has installation instructions with links to

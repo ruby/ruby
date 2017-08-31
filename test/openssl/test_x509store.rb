@@ -5,6 +5,7 @@ if defined?(OpenSSL::TestUtils)
 
 class OpenSSL::TestX509Store < OpenSSL::TestCase
   def setup
+    super
     @rsa1024 = OpenSSL::TestUtils::TEST_KEY_RSA1024
     @rsa2048 = OpenSSL::TestUtils::TEST_KEY_RSA2048
     @dsa256  = OpenSSL::TestUtils::TEST_KEY_DSA256
@@ -33,8 +34,33 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     OpenSSL::TestUtils.issue_crl(*args)
   end
 
+  def test_add_file
+    ca_exts = [
+      ["basicConstraints", "CA:TRUE", true],
+      ["keyUsage", "cRLSign,keyCertSign", true],
+    ]
+    cert1 = issue_cert(@ca1, @rsa1024, 1, ca_exts, nil, nil)
+    cert2 = issue_cert(@ca2, @rsa2048, 1, ca_exts, nil, nil)
+    tmpfile = Tempfile.open { |f| f << cert1.to_pem << cert2.to_pem; f }
+
+    store = OpenSSL::X509::Store.new
+    assert_equal false, store.verify(cert1)
+    assert_equal false, store.verify(cert2)
+    store.add_file(tmpfile.path)
+    assert_equal true, store.verify(cert1)
+    assert_equal true, store.verify(cert2)
+
+    # OpenSSL < 1.1.1 leaks an error on a duplicate certificate
+    assert_nothing_raised { store.add_file(tmpfile.path) }
+    assert_equal [], OpenSSL.errors
+  ensure
+    tmpfile and tmpfile.close!
+  end
+
   def test_verify
-    now = Time.at(Time.now.to_i)
+    # OpenSSL uses time(2) while Time.now uses clock_gettime(CLOCK_REALTIME),
+    # and there may be difference.
+    now = Time.now - 3
     ca_exts = [
       ["basicConstraints","CA:TRUE",true],
       ["keyUsage","cRLSign,keyCertSign",true],
@@ -42,18 +68,15 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     ee_exts = [
       ["keyUsage","keyEncipherment,digitalSignature",true],
     ]
-    ca1_cert = issue_cert(@ca1, @rsa2048, 1, now, now+3600, ca_exts,
-                          nil, nil, OpenSSL::Digest::SHA1.new)
-    ca2_cert = issue_cert(@ca2, @rsa1024, 2, now, now+1800, ca_exts,
-                          ca1_cert, @rsa2048, OpenSSL::Digest::SHA1.new)
-    ee1_cert = issue_cert(@ee1, @dsa256, 10, now, now+1800, ee_exts,
-                          ca2_cert, @rsa1024, OpenSSL::Digest::SHA1.new)
-    ee2_cert = issue_cert(@ee2, @dsa512, 20, now, now+1800, ee_exts,
-                          ca2_cert, @rsa1024, OpenSSL::Digest::SHA1.new)
-    ee3_cert = issue_cert(@ee2, @dsa512, 30, now-100, now-1, ee_exts,
-                          ca2_cert, @rsa1024, OpenSSL::Digest::SHA1.new)
-    ee4_cert = issue_cert(@ee2, @dsa512, 40, now+1000, now+2000, ee_exts,
-                          ca2_cert, @rsa1024, OpenSSL::Digest::SHA1.new)
+    ca1_cert = issue_cert(@ca1, @rsa2048, 1, ca_exts, nil, nil)
+    ca2_cert = issue_cert(@ca2, @rsa1024, 2, ca_exts, ca1_cert, @rsa2048,
+                          not_after: now+1800)
+    ee1_cert = issue_cert(@ee1, @dsa256, 10, ee_exts, ca2_cert, @rsa1024)
+    ee2_cert = issue_cert(@ee2, @dsa512, 20, ee_exts, ca2_cert, @rsa1024)
+    ee3_cert = issue_cert(@ee2, @dsa512, 30,  ee_exts, ca2_cert, @rsa1024,
+                          not_before: now-100, not_after: now-1)
+    ee4_cert = issue_cert(@ee2, @dsa512, 40, ee_exts, ca2_cert, @rsa1024,
+                          not_before: now+1000, not_after: now+2000,)
 
     revoke_info = []
     crl1   = issue_crl(revoke_info, 1, now, now+1800, [],
@@ -194,9 +217,9 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
   end
 
   def test_set_errors
+    return if OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10100000
     now = Time.now
-    ca1_cert = issue_cert(@ca1, @rsa2048, 1, now, now+3600, [],
-                          nil, nil, OpenSSL::Digest::SHA1.new)
+    ca1_cert = issue_cert(@ca1, @rsa2048, 1, [], nil, nil)
     store = OpenSSL::X509::Store.new
     store.add_cert(ca1_cert)
     assert_raise(OpenSSL::X509::StoreError){
@@ -221,6 +244,13 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
         store.add_crl(crl2) # add CRL issued by same CA twice.
       }
     end
+  end
+
+  def test_dup
+    store = OpenSSL::X509::Store.new
+    assert_raise(NoMethodError) { store.dup }
+    ctx = OpenSSL::X509::StoreContext.new(store)
+    assert_raise(NoMethodError) { ctx.dup }
   end
 end
 

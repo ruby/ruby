@@ -34,7 +34,9 @@ Yukihiro Matsumoto (matz)
 
 Zachary Scott (zzak)
 
-== Library Maintainers
+== Standard Library Maintainers
+
+=== Libraries
 
 [lib/English.rb]
   _unmaintained_
@@ -46,12 +48,6 @@ Zachary Scott (zzak)
   _unmaintained_
 [lib/cgi.rb, lib/cgi/*]
   Takeyuki Fujioka (xibbar)
-[lib/cmath.rb]
-  _unmaintained_
-[lib/csv.rb]
-  James Edward Gray II (jeg2)
-[lib/date.rb, lib/date/*]
-  Tadayoshi Funaba (tadf)
 [lib/drb.rb, lib/drb/*]
   Masatoshi SEKI (seki)
 [lib/debug.rb]
@@ -61,9 +57,7 @@ Zachary Scott (zzak)
 [lib/e2mmap.rb]
   Keiju ISHITSUKA (keiju)
 [lib/erb.rb]
-  Masatoshi SEKI (seki)
-[lib/fileutils.rb]
-  _unmaintained_
+  Masatoshi SEKI (seki), Takashi Kokubun (k0kubun)
 [lib/find.rb]
   Kazuki Tsujimoto (ktsj)
 [lib/forwardable.rb]
@@ -76,8 +70,6 @@ Zachary Scott (zzak)
   Keiju ISHITSUKA (keiju)
 [lib/logger.rb]
   Naotoshi Seo (sonots)
-[lib/mathn.rb]
-  Keiju ISHITSUKA (keiju)
 [lib/matrix.rb]
   Marc-Andre Lafortune (marcandre)
 [lib/mkmf.rb]
@@ -122,10 +114,6 @@ Zachary Scott (zzak)
   _unmaintained_
 [lib/racc/*]
   Aaron Patterson (tenderlove)
-[lib/rbconfig/*]
-  _unmaintained_
-[lib/rdoc.rb, lib/rdoc/*]
-  Eric Hodel (drbrain)
 [lib/resolv-replace.rb]
   Tanaka Akira (akr)
 [lib/resolv.rb]
@@ -137,9 +125,7 @@ Zachary Scott (zzak)
 [lib/rss.rb, lib/rss/*]
   Kouhei Sutou (kou)
 [lib/rubygems.rb, lib/ubygems.rb, lib/rubygems/*]
-  Eric Hodel (drbrain)
-[lib/scanf.rb]
-  David A. Black (dblack)
+  Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
 [lib/set.rb]
   Akinori MUSHA (knu)
 [lib/securerandom.rb]
@@ -174,59 +160,31 @@ Zachary Scott (zzak)
   YAMADA, Akira (akira)
 [lib/weakref.rb]
   _unmaintained_
-[lib/webrick.rb, lib/webrick/*]
-  Hiroshi Nakamura (nahi)
 [lib/yaml.rb, lib/yaml/*]
-  Aaron Patterson (tenderlove)
+  Aaron Patterson (tenderlove), Hiroshi SHIBATA (hsbt)
 
-== Extension Maintainers
+=== Extensions
 
-[ext/bigdecimal]
-  Kenta Murata (mrkn)
 [ext/cgi]
   Nobuyoshi Nakada (nobu)
 [ext/continuation]
   Koichi Sasada (ko1)
 [ext/coverage]
   Yusuke Endoh (mame)
-[ext/date]
-  _unmaintained_
-[ext/dbm]
-  _unmaintained_
 [ext/digest, ext/digest/*]
   Akinori MUSHA (knu)
-[ext/etc]
-  _unmaintained_
-[ext/fcntl]
-  _unmaintained_
 [ext/fiber]
   Koichi Sasada (ko1)
-[ext/fiddle]
-  Aaron Patterson (tenderlove)
-[ext/gdbm]
-  Yukihiro Matsumoto (matz)
-[ext/io/console]
-  Nobuyuki Nakada (nobu)
 [ext/io/nonblock]
   Nobuyuki Nakada (nobu)
 [ext/io/wait]
   Nobuyuki Nakada (nobu)
-[ext/json]
-  NARUSE, Yui (naruse)
-[ext/mathn/complex]
-  Keiju ISHITSUKA (keiju)
-[ext/mathn/rational]
-  Keiju ISHITSUKA (keiju)
 [ext/nkf]
   NARUSE, Yui (narse)
 [ext/objspace]
   _unmaintained_
-[ext/openssl]
-  Kazuki Yamaguchi (rhe)
 [ext/pathname]
   Tanaka Akira (akr)
-[ext/psych]
-  Aaron Patterson (tenderlove)
 [ext/pty]
   _unmaintained_
 [ext/racc]
@@ -235,22 +193,85 @@ Zachary Scott (zzak)
   TAKAO Kouji (kouji)
 [ext/ripper]
   _unmaintained_
-[ext/sdbm]
-  Yukihiro Matsumoto (matz)
 [ext/socket]
   * Tanaka Akira (akr)
   * API change needs matz's approval
-[ext/stringio]
-  Nobuyuki Nakada (nobu)
-[ext/strscan]
-  _unmaintained_
 [ext/syslog]
   Akinori MUSHA (knu)
-[ext/tk]
-  Hidetoshi NAGAI (nagai)
 [ext/win32]
   NAKAMURA Usaku (usa)
 [ext/win32ole]
   Masaki Suketa (suke)
+
+== Default gems Maintainers
+
+=== Libraries
+
+[lib/cmath.rb]
+  _unmaintained_
+[lib/csv.rb]
+  James Edward Gray II (jeg2)
+[lib/fileutils.rb]
+  _unmaintained_
+[lib/rdoc.rb, lib/rdoc/*]
+  Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
+  https://github.com/rdoc/rdoc
+[lib/scanf.rb]
+  David A. Black (dblack)
+[lib/webrick.rb, lib/webrick/*]
+  Eric Wong (normalperson)
+  https://bugs.ruby-lang.org/
+
+=== Extensions
+
+[ext/bigdecimal]
+  Kenta Murata (mrkn)
+  https://github.com/ruby/bigdecimal
+[ext/date]
+  _unmaintained_
+[ext/dbm]
+  _unmaintained_
+[ext/etc]
+  _unmaintained_
+[ext/fcntl]
+  _unmaintained_
+[ext/fiddle]
+  Aaron Patterson (tenderlove)
+[ext/gdbm]
+  Yukihiro Matsumoto (matz)
+[ext/io/console]
+  Nobuyuki Nakada (nobu)
+[ext/json]
+  NARUSE, Yui (naruse), Hiroshi SHIBATA (hsbt)
+  https://github.com/flori/json
+[ext/openssl]
+  Kazuki Yamaguchi (rhe)
+  https://github.com/ruby/openssl
+[ext/psych]
+  Aaron Patterson (tenderlove), Hiroshi SHIBATA(hsbt)
+  https://github.com/ruby/psych
+[ext/sdbm]
+  Yukihiro Matsumoto (matz)
+[ext/stringio]
+  Nobuyuki Nakada (nobu)
+[ext/strscan]
+  _unmaintained_
 [ext/zlib]
   _unmaintained_
+
+== Bundled gems upstream repositories
+
+[did_you_mean]
+  https://github.com/yuki24/did_you_mean
+[minitest]
+  https://github.com/seattlerb/minitest
+[net-telnet]
+  https://github.com/ruby/net-telnet
+[power_assert]
+  https://github.com/k-tsj/power_assert
+[rake]
+  https://github.com/ruby/rake
+[test-unit]
+  https://github.com/test-unit/test-unit
+[xmlrpc]
+  https://github.com/ruby/xmlrpc

@@ -30,11 +30,23 @@
 #include "regenc.h"
 #include "iso_8859.h"
 
+static OnigCodePoint utf32le_mbc_to_code(const UChar* p, const UChar* end, OnigEncoding enc);
 static int
-utf32le_mbc_enc_len(const UChar* p ARG_UNUSED, const OnigUChar* e ARG_UNUSED,
-		    OnigEncoding enc ARG_UNUSED)
+utf32le_mbc_enc_len(const UChar* p ARG_UNUSED, const OnigUChar* e,
+		    OnigEncoding enc)
 {
-  return 4;
+  if (e < p) {
+    return ONIGENC_CONSTRUCT_MBCLEN_INVALID();
+  }
+  else if (e-p < 4) {
+    return ONIGENC_CONSTRUCT_MBCLEN_NEEDMORE(4-(int)(e-p));
+  }
+  else {
+    OnigCodePoint c = utf32le_mbc_to_code(p, e, enc);
+    if (!UNICODE_VALID_CODEPOINT_P(c))
+      return ONIGENC_CONSTRUCT_MBCLEN_INVALID();
+    return ONIGENC_CONSTRUCT_MBCLEN_CHARFOUND(4);
+  }
 }
 
 static int
@@ -187,8 +199,8 @@ OnigEncodingDefine(utf_32le, UTF_32LE) = {
   onigenc_utf16_32_get_ctype_code_range,
   utf32le_left_adjust_char_head,
   onigenc_always_false_is_allowed_reverse_match,
+  onigenc_unicode_case_map,
   0,
   ONIGENC_FLAG_UNICODE,
-  onigenc_unicode_case_map,
 };
 ENC_ALIAS("UCS-4LE", "UTF-32LE")

@@ -181,6 +181,16 @@ class TestException < Test::Unit::TestCase
     }
   end
 
+  def test_throw_false
+    bug12743 = '[ruby-core:77229] [Bug #12743]'
+    e = assert_raise_with_message(UncaughtThrowError, /false/, bug12743) {
+      Thread.start {
+        throw false
+      }.join
+    }
+    assert_same(false, e.tag, bug12743)
+  end
+
   def test_else_no_exception
     begin
       assert(true)
@@ -594,6 +604,30 @@ end.join
   rescue SystemStackError
   end
 
+  def test_machine_stackoverflow_by_trace
+    assert_normal_exit("#{<<-"begin;"}\n#{<<~"end;"}", timeout: 60)
+    begin;
+      require 'timeout'
+      require 'tracer'
+      class HogeError < StandardError
+        def to_s
+          message.upcase        # disable tailcall optimization
+        end
+      end
+      Tracer.stdout = open(IO::NULL, "w")
+      begin
+        Timeout.timeout(5) do
+          Tracer.on
+          HogeError.new.to_s
+        end
+      rescue Timeout::Error
+        # ok. there are no SEGV or critical error
+      rescue SystemStackError => e
+        # ok.
+      end
+    end;
+  end
+
   def test_cause
     msg = "[Feature #8257]"
     cause = nil
@@ -698,6 +732,56 @@ end.join
     assert_nil(e.cause.cause)
   end
 
+  def test_cause_thread_no_cause
+    bug12741 = '[ruby-core:77222] [Bug #12741]'
+
+    x = Thread.current
+    a = false
+    y = Thread.start do
+      Thread.pass until a
+      x.raise "stop"
+    end
+
+    begin
+      raise bug12741
+    rescue
+      e = assert_raise_with_message(RuntimeError, "stop") do
+        a = true
+        sleep 1
+      end
+    end
+    assert_nil(e.cause)
+  ensure
+    y.join
+  end
+
+  def test_cause_thread_with_cause
+    bug12741 = '[ruby-core:77222] [Bug #12741]'
+
+    x = Thread.current
+    q = Queue.new
+    y = Thread.start do
+      q.pop
+      begin
+        raise "caller's cause"
+      rescue
+        x.raise "stop"
+      end
+    end
+
+    begin
+      raise bug12741
+    rescue
+      e = assert_raise_with_message(RuntimeError, "stop") do
+        q.push(true)
+        sleep 1
+      end
+    ensure
+      y.join
+    end
+    assert_equal("caller's cause", e.cause.message)
+  end
+
   def test_unknown_option
     bug = '[ruby-core:63203] [Feature #8257] should pass unknown options'
 
@@ -717,6 +801,33 @@ end.join
 
     e = assert_raise(exc, bug) {raise exc, {}}
     assert_equal({}, e.arg, bug)
+  end
+
+  def test_circular_cause
+    bug13043 = '[ruby-core:78688] [Bug #13043]'
+    begin
+      begin
+        raise "error 1"
+      ensure
+        orig_error = $!
+        begin
+          raise "error 2"
+        rescue => err
+          raise orig_error
+        end
+      end
+    rescue => x
+    end
+    assert_equal(orig_error, x)
+    assert_equal(orig_error, err.cause)
+    assert_nil(orig_error.cause, bug13043)
+  end
+
+  def test_cause_with_frozen_exception
+    exc = ArgumentError.new("foo").freeze
+    assert_raise_with_message(ArgumentError, exc.message) {
+      raise exc, cause: RuntimeError.new("bar")
+    }
   end
 
   def test_anonymous_message
@@ -854,5 +965,119 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
         module_function :foo
       end
     end
+  end
+
+  def capture_warning_warn
+    verbose = $VERBOSE
+    warning = []
+
+    ::Warning.class_eval do
+      alias_method :warn2, :warn
+      remove_method :warn
+
+      define_method(:warn) do |str|
+        warning << str
+      end
+    end
+
+    $VERBOSE = true
+    yield
+
+    return warning
+  ensure
+    $VERBOSE = verbose
+
+    ::Warning.class_eval do
+      remove_method :warn
+      alias_method :warn, :warn2
+      remove_method :warn2
+    end
+  end
+
+  def test_warning_warn
+    warning = capture_warning_warn {@a}
+    assert_match(/instance variable @a not initialized/, warning[0])
+
+    assert_equal(["a\nz\n"], capture_warning_warn {warn "a\n", "z"})
+    assert_equal([],         capture_warning_warn {warn})
+    assert_equal(["\n"],     capture_warning_warn {warn ""})
+  end
+
+  def test_warning_warn_invalid_argument
+    assert_raise(TypeError) do
+      ::Warning.warn nil
+    end
+    assert_raise(TypeError) do
+      ::Warning.warn 1
+    end
+    assert_raise(Encoding::CompatibilityError) do
+      ::Warning.warn "\x00a\x00b\x00c".force_encoding("utf-16be")
+    end
+  end
+
+  def test_warning_warn_circular_require_backtrace
+    warning = nil
+    path = nil
+    Tempfile.create(%w[circular .rb]) do |t|
+      path = t.path
+      basename = File.basename(path)
+      t.puts "require '#{basename}'"
+      t.close
+      $LOAD_PATH.push(File.dirname(t))
+      warning = capture_warning_warn {require basename}
+    ensure
+      $LOAD_PATH.pop
+      $LOADED_FEATURES.delete(t)
+    end
+    assert_equal(1, warning.size)
+    assert_match(/circular require/, warning.first)
+    assert_match(/^\tfrom #{Regexp.escape(path)}:1:/, warning.first)
+  end
+
+  def test_undefined_backtrace
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      class Exception
+        undef backtrace
+      end
+
+      assert_raise(RuntimeError) {
+        raise RuntimeError, "hello"
+      }
+    end;
+  end
+
+  def test_redefined_backtrace
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      $exc = nil
+
+      class Exception
+        undef backtrace
+        def backtrace
+          $exc = self
+        end
+      end
+
+      e = assert_raise(RuntimeError) {
+        raise RuntimeError, "hello"
+      }
+      assert_same(e, $exc)
+    end;
+  end
+
+  def test_wrong_backtrace
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      class Exception
+        undef backtrace
+        def backtrace(a)
+        end
+      end
+
+      assert_raise(RuntimeError) {
+        raise RuntimeError, "hello"
+      }
+    end;
   end
 end

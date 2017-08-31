@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'helper'
 
 module Psych
@@ -119,19 +119,6 @@ module Psych
       assert_equal @wups, w
       assert_equal 1, w.foo
       assert_equal 2, w.bar
-    end
-
-    def test_to_yaml_properties
-      class << @wups
-        def to_yaml_properties
-          [:@foo]
-        end
-      end
-
-      w = Psych.load(Psych.dump(@wups))
-      assert_equal @wups, w
-      assert_equal 1, w.foo
-      assert_nil w.bar
     end
 
     def test_psych_syntax_error

@@ -2,6 +2,7 @@
 require 'webrick'
 require 'zlib'
 require 'erb'
+require 'uri'
 
 require 'rubygems'
 require 'rubygems/rdoc'
@@ -68,7 +69,7 @@ class Gem::Server
         <h1>Summary</h1>
   <p>There are <%=values["gem_count"]%> gems installed:</p>
   <p>
-  <%= values["specs"].map { |v| "<a href\"##{u v["name"]}\">#{h v["name"]}</a>" }.join ', ' %>.
+  <%= values["specs"].map { |v| "<a href=\"##{u v["name"]}\">#{h v["name"]}</a>" }.join ', ' %>.
   <h1>Gems</h1>
 
   <dl>
@@ -81,20 +82,20 @@ class Gem::Server
     <b><%=h spec["name"]%> <%=h spec["version"]%></b>
 
     <% if spec["ri_installed"] || spec["rdoc_installed"] then %>
-      <a href="<%=u spec["doc_path"]%>">[rdoc]</a>
+      <a href="<%=spec["doc_path"]%>">[rdoc]</a>
     <% else %>
       <span title="rdoc not installed">[rdoc]</span>
     <% end %>
 
     <% if spec["homepage"] then %>
-      <a href="<%=u spec["homepage"]%>" title="<%=h spec["homepage"]%>">[www]</a>
+      <a href="<%=uri_encode spec["homepage"]%>" title="<%=h spec["homepage"]%>">[www]</a>
     <% else %>
       <span title="no homepage available">[www]</span>
     <% end %>
 
     <% if spec["has_deps"] then %>
      - depends on
-      <%= spec["dependencies"].map { |v| "<a href=\"##{u v["name"]}>#{h v["name"]}</a>" }.join ', ' %>.
+      <%= spec["dependencies"].map { |v| "<a href=\"##{u v["name"]}\">#{h v["name"]}</a>" }.join ', ' %>.
     <% end %>
     </dt>
     <dd>
@@ -455,6 +456,12 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     end.max
   end
 
+  def uri_encode(str)
+    str.gsub(URI::UNSAFE) do |match|
+      match.each_byte.map { |c| sprintf('%%%02X', c.ord) }.join
+    end
+  end
+
   def doc_root gem_name
     if have_rdoc_4_plus? then
       "/doc_root/#{u gem_name}/"
@@ -650,7 +657,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
       "only_one_executable" => true,
       "full_name" => "rubygems-#{Gem::VERSION}",
       "has_deps" => false,
-      "homepage" => "http://docs.rubygems.org/",
+      "homepage" => "http://guides.rubygems.org/",
       "name" => 'rubygems',
       "ri_installed" => true,
       "summary" => "RubyGems itself",

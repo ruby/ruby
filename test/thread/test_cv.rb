@@ -4,6 +4,9 @@ require 'thread'
 require 'tmpdir'
 
 class TestConditionVariable < Test::Unit::TestCase
+  ConditionVariable = Thread::ConditionVariable
+  Mutex = Thread::Mutex
+
   def test_initialized
     assert_raise(TypeError) {
       ConditionVariable.allocate.wait(nil)
@@ -215,7 +218,7 @@ INPUT
     end
 
     condvar = DumpableCV.new
-    assert_raise_with_message(TypeError, /internal Array/, bug9674) do
+    assert_raise(TypeError, bug9674) do
       Marshal.dump(condvar)
     end
   end

@@ -103,7 +103,7 @@ End
         end
 
         FINALIZER = proc do
-          M.module_eval do
+          M.module_eval(__FILE__, "", __LINE__) do
           end
         end
 

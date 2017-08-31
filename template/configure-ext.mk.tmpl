@@ -1,0 +1,44 @@
+V = 0
+Q1 = $(V:1=)
+Q = $(Q1:0=@)
+ECHO1 = $(V:1=@:)
+ECHO = $(ECHO1:0=@echo)
+
+<%
+srcdir = miniruby = script_args = nil
+opt = OptionParser.new do |o|
+  o.on('--srcdir=SRCDIR') {|v| srcdir = v}
+  o.on('--miniruby=MINIRUBY') {|v| miniruby = v}
+  o.on('--script-args=MINIRUBY') {|v| script_args = v}
+  o.order!(ARGV)
+end
+srcdir ||= File.dirname(File.dirname(__FILE__))
+exts = {}
+[
+  ["exts", "ext", "--extstatic $(EXTSTATIC)"],
+  ["gems", "gems", "--no-extstatic"],
+].each do |t, d, o|
+  exts[t] = [o, Dir.glob("#{srcdir}/#{d}/*/").map {|n| n[(srcdir.size+1)..-2]}]
+end
+%>
+MINIRUBY = <%=miniruby%>
+SCRIPT_ARGS = <%=script_args%>
+EXTMK_ARGS = $(SCRIPT_ARGS) --gnumake=$(gnumake) --extflags="$(EXTLDFLAGS)" \
+	   --make-flags='MINIRUBY=$(MINIRUBY)'
+
+all: exts gems
+exts:
+gems:
+
+% exts.each do |t, (o, dirs)|
+%   dirs.each do |d|
+<%=t%>: <%=d%>/exts.mk
+<%=d%>/exts.mk: FORCE
+	$(Q)$(MINIRUBY) $(srcdir)/ext/extmk.rb --make='$(MAKE)' \
+		--command-output=$@ $(EXTMK_ARGS) <%=o%> \
+		-- configure $(@D)
+%   end
+% end
+
+.PHONY: FORCE all exts gems
+FORCE:

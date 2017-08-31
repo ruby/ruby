@@ -10,5 +10,11 @@ class TestBignum < Test::Unit::TestCase
         assert_equal(0, Bug::Bignum.zero(i), "#{bug8204} Bignum.zero(#{i})")
       end
     end
+
+    def test_zero?
+      (0..10).each do |i|
+        assert_equal(true, Bug::Bignum.zero(i).zero?)
+      end
+    end
   end
 end

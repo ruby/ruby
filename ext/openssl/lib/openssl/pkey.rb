@@ -4,6 +4,7 @@ module OpenSSL
     if defined?(OpenSSL::PKey::DH)
 
     class DH
+      # :nodoc:
       DEFAULT_1024 = new <<-_end_of_pem_
 -----BEGIN DH PARAMETERS-----
 MIGHAoGBAJ0lOVy0VIr/JebWn0zDwY2h+rqITFOpdNr6ugsgvkDXuucdcChhYExJ
@@ -12,6 +13,7 @@ T4h7KZ/2zmjvV+eF8kBUHBJAojUlzxKj4QeO2x20FP9X5xmNUXeDAgEC
 -----END DH PARAMETERS-----
       _end_of_pem_
 
+      # :nodoc:
       DEFAULT_2048 = new <<-_end_of_pem_
 -----BEGIN DH PARAMETERS-----
 MIIBCAKCAQEA7E6kBrYiyvmKAMzQ7i8WvwVk9Y/+f8S7sCTN712KkK3cqd1jhJDY
@@ -24,6 +26,7 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
       _end_of_pem_
     end
 
+    # :nodoc:
     DEFAULT_TMP_DH_CALLBACK = lambda { |ctx, is_export, keylen|
       warn "using default DH parameters." if $VERBOSE
       case keylen

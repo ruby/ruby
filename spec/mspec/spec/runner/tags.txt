@@ -1,0 +1,4 @@
+fail(broken):Some#method? works
+incomplete(20%):The#best method ever
+benchmark(0.01825):The#fastest method today
+extended():"Multi-line\ntext\ntag"

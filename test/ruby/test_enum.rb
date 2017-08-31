@@ -184,8 +184,8 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(nil, @empty.inject() {9})
   end
 
-  FIXNUM_MIN = Integer::FIXNUM_MIN
-  FIXNUM_MAX = Integer::FIXNUM_MAX
+  FIXNUM_MIN = RbConfig::LIMITS['FIXNUM_MIN']
+  FIXNUM_MAX = RbConfig::LIMITS['FIXNUM_MAX']
 
   def test_inject_array_mul
     assert_equal(nil, [].inject(:*))
@@ -194,11 +194,6 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(3, [].inject(3, :*))
     assert_equal(15, [5].inject(3, :*))
     assert_equal(105, [5, 7].inject(3, :*))
-  end
-
-  def assert_float_equal(e, v, msg=nil)
-    assert_equal(Float, v.class, msg)
-    assert_equal(e, v, msg)
   end
 
   def test_inject_array_plus
@@ -218,15 +213,43 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(2.0+3.0i, [2.0, 3.0i].inject(:+))
   end
 
-  def test_inject_array_plus_redefined
-    assert_separately([], <<-"end;")
-      class Integer
-        undef :+
-        def +(x)
-          0
+  def test_inject_array_op_redefined
+    assert_separately([], "#{<<~"end;"}\n""end")
+    all_assertions_foreach("", *%i[+ * / - %]) do |op|
+      bug = '[ruby-dev:49510] [Bug#12178] should respect redefinition'
+      begin
+        Integer.class_eval do
+          alias_method :orig, op
+          define_method(op) do |x|
+            0
+          end
+        end
+        assert_equal(0, [1,2,3].inject(op), bug)
+      ensure
+        Integer.class_eval do
+          undef_method op
+          alias_method op, :orig
         end
       end
-      assert_equal(0, [1,2,3].inject(:+), "[ruby-dev:49510] [Bug#12178]")
+    end;
+  end
+
+  def test_inject_array_op_private
+    assert_separately([], "#{<<~"end;"}\n""end")
+    all_assertions_foreach("", *%i[+ * / - %]) do |op|
+      bug = '[ruby-core:81349] [Bug #13592] should respect visibility'
+      assert_raise_with_message(NoMethodError, /private method/, bug) do
+        begin
+          Integer.class_eval do
+            private op
+          end
+          [1,2,3].inject(op)
+        ensure
+          Integer.class_eval do
+            public op
+          end
+        end
+      end
     end;
   end
 
@@ -581,6 +604,22 @@ class TestEnumerable < Test::Unit::TestCase
       [o, o, o].sort_by {|x| x }
       c.call
     end
+
+    assert_raise_with_message(RuntimeError, /reentered/) do
+      i = 0
+      c = nil
+      o = Object.new
+      class << o; self; end.class_eval do
+        define_method(:<=>) do |x|
+          callcc {|c2| c ||= c2 }
+          i += 1
+          0
+        end
+      end
+      [o, o].min(1)
+      assert_operator(i, :<=, 5, "infinite loop")
+      c.call
+    end
   end
 
   def test_reverse_each
@@ -611,6 +650,12 @@ class TestEnumerable < Test::Unit::TestCase
 
     e = @obj.chunk {|elt| :_foo }
     assert_raise(RuntimeError) { e.to_a }
+
+    e = @obj.chunk.with_index {|elt, i| elt - i }
+    assert_equal([[1, [1, 2, 3]],
+                  [-2, [1, 2]]], e.to_a)
+
+    assert_equal(4, (0..3).chunk.size)
   end
 
   def test_slice_before
@@ -792,6 +837,10 @@ class TestEnumerable < Test::Unit::TestCase
     lambda2 = ->(x, i) { [x.upcase, i] }
     assert_equal([['A',0], ['B',1], ['C',2], ['D',3], ['E',4]],
       @obj.each_with_index.map(&lambda2))
+
+    hash = { a: 'hoge', b: 'fuga' }
+    lambda = -> (k, v) { "#{k}:#{v}" }
+    assert_equal ["a:hoge", "b:fuga"], hash.map(&lambda)
   end
 
   def test_flat_map
@@ -897,13 +946,10 @@ class TestEnumerable < Test::Unit::TestCase
     assert_float_equal(large_number+(small_number*10), [large_number, *[small_number]*10].each.sum)
     assert_float_equal(large_number+(small_number*10), [large_number/1r, *[small_number]*10].each.sum)
     assert_float_equal(large_number+(small_number*11), [small_number, large_number/1r, *[small_number]*10].each.sum)
+    assert_float_equal(small_number, [large_number, small_number, -large_number].each.sum)
 
     assert_equal("abc", ["a", "b", "c"].each.sum(""))
     assert_equal([1, [2], 3], [[1], [[2]], [3]].each.sum([]))
-
-    assert_separately(%w[-rmathn], <<-EOS, ignore_stderr: true)
-      assert_equal(6, [1r, 2, 3r].each.sum)
-    EOS
   end
 
   def test_hash_sum
@@ -935,5 +981,6 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([[1896, "Athens"], [1900, "Paris"], [1904, "Chicago"], [1908, "Rome"]],
                  olympics.uniq{|k,v| v})
     assert_equal([1, 2, 3, 4, 5, 10], (1..100).uniq{|x| (x**2) % 10 }.first(6))
+    assert_equal([1, [1, 2]], Foo.new.to_enum.uniq)
   end
 end

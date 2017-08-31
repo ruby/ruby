@@ -85,6 +85,9 @@ class TestOptionParser::Acceptable < TestOptionParser
     assert_equal(%w"", no_error {@opt.parse!(%w"--numeric 1/2")})
     assert_equal(Rational(1, 2), @numeric)
 
+    assert_equal(%w"", no_error {@opt.parse!(%w"--numeric 010")})
+    assert_equal(8, @numeric)
+
     assert_equal(%w"", no_error {@opt.parse!(%w"--numeric 1.2/2.3")})
     assert_equal(Rational(12, 23), @numeric)
 
@@ -108,15 +111,15 @@ class TestOptionParser::Acceptable < TestOptionParser
     assert_equal(%w"", no_error {@opt.parse!(%w"--decimal-integer 10")})
     assert_equal(10, @decimal_integer)
 
+    assert_equal(%w"", no_error {@opt.parse!(%w"--decimal-integer 010")})
+    assert_equal(10, @decimal_integer)
+
+    assert_equal(%w"", no_error {@opt.parse!(%w"--decimal-integer 09")})
+    assert_equal(9, @decimal_integer)
+
     assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--decimal-integer 0b1")
     end
-
-    e = assert_raise(OptionParser::InvalidArgument) do
-      @opt.parse!(%w"--decimal-integer 09")
-    end
-
-    assert_equal("invalid argument: --decimal-integer 09", e.message)
 
     assert_raise(OptionParser::InvalidArgument) do
       @opt.parse!(%w"--decimal-integer x")

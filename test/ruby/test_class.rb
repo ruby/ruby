@@ -297,7 +297,8 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_cannot_reinitialize_class_with_initialize_copy # [ruby-core:50869]
-    assert_in_out_err([], <<-'end;', ["Object"], [])
+    assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", ["Object"], [])
+    begin;
       class Class
         def initialize_copy(*); super; end
       end
@@ -579,7 +580,8 @@ class TestClass < Test::Unit::TestCase
       m.module_eval "class #{n}; end"
     }
 
-    assert_separately([], <<-"end;")
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
+    begin;
       Date = (class C\u{1f5ff}; self; end).new
       assert_raise_with_message(TypeError, /C\u{1f5ff}/) {
         require 'date'
@@ -588,22 +590,24 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_should_not_expose_singleton_class_without_metaclass
-    assert_normal_exit %q{
+    assert_normal_exit "#{<<~"begin;"}\n#{<<~'end;'}", '[Bug #11740]'
+    begin;
       klass = Class.new(Array)
       # The metaclass of +klass+ should handle #bla since it should inherit methods from meta:meta:Array
       def (Array.singleton_class).bla; :bla; end
       hidden = ObjectSpace.each_object(Class).find { |c| klass.is_a? c and c.inspect.include? klass.inspect }
       raise unless hidden.nil?
-    }, '[Bug #11740]'
+    end;
 
-    assert_normal_exit %q{
+    assert_normal_exit "#{<<~"begin;"}\n#{<<~'end;'}", '[Bug #11740]'
+    begin;
       klass = Class.new(Array)
       klass.singleton_class
       # The metaclass of +klass+ should handle #bla since it should inherit methods from meta:meta:Array
       def (Array.singleton_class).bla; :bla; end
       hidden = ObjectSpace.each_object(Class).find { |c| klass.is_a? c and c.inspect.include? klass.inspect }
       raise if hidden.nil?
-    }, '[Bug #11740]'
+    end;
 
   end
 end

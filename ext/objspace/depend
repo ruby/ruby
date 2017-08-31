@@ -8,6 +8,7 @@ object_tracing.o: $(hdrdir)/ruby/encoding.h
 object_tracing.o: $(hdrdir)/ruby/intern.h
 object_tracing.o: $(hdrdir)/ruby/io.h
 object_tracing.o: $(hdrdir)/ruby/missing.h
+object_tracing.o: $(hdrdir)/ruby/onigmo.h
 object_tracing.o: $(hdrdir)/ruby/oniguruma.h
 object_tracing.o: $(hdrdir)/ruby/ruby.h
 object_tracing.o: $(hdrdir)/ruby/st.h
@@ -24,6 +25,7 @@ objspace.o: $(hdrdir)/ruby/encoding.h
 objspace.o: $(hdrdir)/ruby/intern.h
 objspace.o: $(hdrdir)/ruby/io.h
 objspace.o: $(hdrdir)/ruby/missing.h
+objspace.o: $(hdrdir)/ruby/onigmo.h
 objspace.o: $(hdrdir)/ruby/oniguruma.h
 objspace.o: $(hdrdir)/ruby/re.h
 objspace.o: $(hdrdir)/ruby/regex.h
@@ -46,6 +48,7 @@ objspace_dump.o: $(hdrdir)/ruby/encoding.h
 objspace_dump.o: $(hdrdir)/ruby/intern.h
 objspace_dump.o: $(hdrdir)/ruby/io.h
 objspace_dump.o: $(hdrdir)/ruby/missing.h
+objspace_dump.o: $(hdrdir)/ruby/onigmo.h
 objspace_dump.o: $(hdrdir)/ruby/oniguruma.h
 objspace_dump.o: $(hdrdir)/ruby/ruby.h
 objspace_dump.o: $(hdrdir)/ruby/st.h

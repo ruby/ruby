@@ -4,6 +4,7 @@ require 'test_helper'
 require 'stringio'
 require 'tempfile'
 require 'ostruct'
+require 'bigdecimal'
 
 class JSONParserTest < Test::Unit::TestCase
   include JSON
@@ -106,6 +107,11 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal 1.0/0, parse('Infinity', :allow_nan => true)
     assert_raise(ParserError) { parse('-Infinity') }
     assert_equal -1.0/0, parse('-Infinity', :allow_nan => true)
+  end
+
+  def test_parse_bigdecimals
+    assert_equal(BigDecimal,                                 JSON.parse('{"foo": 9.01234567890123456789}', decimal_class: BigDecimal)["foo"].class)
+    assert_equal(BigDecimal.new("0.901234567890123456789E1"),JSON.parse('{"foo": 9.01234567890123456789}', decimal_class: BigDecimal)["foo"]      )
   end
 
   if Array.method_defined?(:permutation)

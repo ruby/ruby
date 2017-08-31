@@ -7,17 +7,17 @@
 static inline void
 vm_passed_block_handler_set(rb_thread_t *th, VALUE block_handler)
 {
-    VM_ASSERT(vm_block_handler_verify(block_handler));
+    vm_block_handler_verify(block_handler);
     th->passed_block_handler = block_handler;
 }
 
 static inline void
 pass_passed_block_handler(rb_thread_t *th)
 {
-    VALUE block_handler = rb_vm_frame_block_handler(th->cfp);
-    VM_ASSERT(vm_block_handler_verify(block_handler));
+    VALUE block_handler = rb_vm_frame_block_handler(th->ec.cfp);
+    vm_block_handler_verify(block_handler);
     vm_passed_block_handler_set(th, block_handler);
-    VM_ENV_FLAGS_SET(th->cfp->ep, VM_FRAME_FLAG_PASSED);
+    VM_ENV_FLAGS_SET(th->ec.cfp->ep, VM_FRAME_FLAG_PASSED);
 }
 
 #define PASS_PASSED_BLOCK_HANDLER_TH(th) pass_passed_block_handler(th)
@@ -131,17 +131,18 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 #define TH_PUSH_TAG(th) do { \
   rb_thread_t * const _th = (th); \
   struct rb_vm_tag _tag; \
-  _tag.tag = 0; \
-  _tag.prev = _th->tag;
+  _tag.state = TAG_NONE; \
+  _tag.tag = Qundef; \
+  _tag.prev = _th->ec.tag;
 
 #define TH_POP_TAG() \
-  _th->tag = _tag.prev; \
+  _th->ec.tag = _tag.prev; \
 } while (0)
 
 #define TH_TMPPOP_TAG() \
-  _th->tag = _tag.prev
+  _th->ec.tag = _tag.prev
 
-#define TH_REPUSH_TAG() (void)(_th->tag = &_tag)
+#define TH_REPUSH_TAG() (void)(_th->ec.tag = &_tag)
 
 #define PUSH_TAG() TH_PUSH_TAG(GET_THREAD())
 #define POP_TAG()      TH_POP_TAG()
@@ -156,21 +157,38 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 # define VAR_NOCLOBBERED(var) var
 #endif
 
-/* clear th->state, and return the value */
+#if defined(USE_UNALIGNED_MEMBER_ACCESS) && USE_UNALIGNED_MEMBER_ACCESS && \
+    defined(__clang__)
+# define UNALIGNED_MEMBER_ACCESS(expr) __extension__({ \
+    _Pragma("GCC diagnostic push"); \
+    _Pragma("GCC diagnostic ignored \"-Waddress-of-packed-member\""); \
+    typeof(expr) unaligned_member_access_result = (expr); \
+    _Pragma("GCC diagnostic pop"); \
+    unaligned_member_access_result; \
+})
+#else
+# define UNALIGNED_MEMBER_ACCESS(expr) expr
+#endif
+#define UNALIGNED_MEMBER_PTR(ptr, mem) UNALIGNED_MEMBER_ACCESS(&(ptr)->mem)
+
+#undef RB_OBJ_WRITE
+#define RB_OBJ_WRITE(a, slot, b) UNALIGNED_MEMBER_ACCESS(rb_obj_write((VALUE)(a), (VALUE *)(slot), (VALUE)(b), __FILE__, __LINE__))
+
+/* clear th->ec.tag->state, and return the value */
 static inline int
 rb_threadptr_tag_state(rb_thread_t *th)
 {
-    int state = th->state;
-    th->state = 0;
+    enum ruby_tag_type state = th->ec.tag->state;
+    th->ec.tag->state = TAG_NONE;
     return state;
 }
 
-NORETURN(static inline void rb_threadptr_tag_jump(rb_thread_t *, int));
+NORETURN(static inline void rb_threadptr_tag_jump(rb_thread_t *, enum ruby_tag_type st));
 static inline void
-rb_threadptr_tag_jump(rb_thread_t *th, int st)
+rb_threadptr_tag_jump(rb_thread_t *th, enum ruby_tag_type st)
 {
-    th->state = st;
-    ruby_longjmp(th->tag->buf, 1);
+    th->ec.tag->state = st;
+    ruby_longjmp(th->ec.tag->buf, 1);
 }
 
 /*
@@ -264,10 +282,11 @@ enum {
 };
 int rb_threadptr_set_raised(rb_thread_t *th);
 int rb_threadptr_reset_raised(rb_thread_t *th);
-#define rb_thread_raised_set(th, f)   ((th)->raised_flag |= (f))
-#define rb_thread_raised_reset(th, f) ((th)->raised_flag &= ~(f))
-#define rb_thread_raised_p(th, f)     (((th)->raised_flag & (f)) != 0)
-#define rb_thread_raised_clear(th)    ((th)->raised_flag = 0)
+#define rb_thread_raised_set(th, f)   ((th)->ec.raised_flag |= (f))
+#define rb_thread_raised_reset(th, f) ((th)->ec.raised_flag &= ~(f))
+#define rb_thread_raised_p(th, f)     (((th)->ec.raised_flag & (f)) != 0)
+#define rb_thread_raised_clear(th)    ((th)->ec.raised_flag = 0)
+int rb_threadptr_stack_check(rb_thread_t *th);
 
 VALUE rb_f_eval(int argc, const VALUE *argv, VALUE self);
 VALUE rb_make_exception(int argc, const VALUE *argv);
@@ -291,6 +310,11 @@ VALUE rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, VALUE block_
 void rb_vm_set_progname(VALUE filename);
 void rb_thread_terminate_all(void);
 VALUE rb_vm_cbase(void);
+
+/* vm_backtrace.c */
+VALUE rb_threadptr_backtrace_object(rb_thread_t *th);
+VALUE rb_threadptr_backtrace_str_ary(rb_thread_t *th, long lev, long n);
+VALUE rb_threadptr_backtrace_location_ary(rb_thread_t *th, long lev, long n);
 
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
 # ifdef HAVE_MBLEN

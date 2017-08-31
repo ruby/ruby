@@ -9,6 +9,20 @@ class TestRange < Test::Unit::TestCase
     assert_equal((0..2), Range.new(0, 2))
     assert_equal((0..2), Range.new(0, 2, false))
     assert_equal((0...2), Range.new(0, 2, true))
+
+    assert_raise(ArgumentError) { (1.."3") }
+
+    obj = Object.new
+    def obj.<=>(other)
+      raise RuntimeError, "cmp"
+    end
+    assert_raise_with_message(RuntimeError, "cmp") { (obj..3) }
+  end
+
+  def test_frozen_initialize
+    r = Range.allocate
+    r.freeze
+    assert_raise(RuntimeError){r.__send__(:initialize, 1, 2)}
   end
 
   def test_range_string
@@ -102,6 +116,16 @@ class TestRange < Test::Unit::TestCase
     s = Marshal.dump(r)
     r = Marshal.load(s)
     assert_nothing_raised { r.instance_eval { initialize 5, 6} }
+  end
+
+  def test_marshal
+    r = 1..2
+    assert_equal(r, Marshal.load(Marshal.dump(r)))
+    r = 1...2
+    assert_equal(r, Marshal.load(Marshal.dump(r)))
+    s = Marshal.dump(r)
+    s.sub!(/endi./n, 'end0')
+    assert_raise(ArgumentError) {Marshal.load(s)}
   end
 
   def test_bad_value
@@ -521,20 +545,22 @@ class TestRange < Test::Unit::TestCase
     assert_in_delta(7.0, (0.0..10).bsearch {|x| 7.0 - x })
   end
 
-  def check_bsearch_values(range, search)
+  def check_bsearch_values(range, search, a)
     from, to = range.begin, range.end
     cmp = range.exclude_end? ? :< : :<=
+    r = nil
 
-    # (0) trivial test
-    r = Range.new(to, from, range.exclude_end?).bsearch do |x|
-      fail "#{to}, #{from}, #{range.exclude_end?}, #{x}"
-    end
-    assert_equal nil, r
+    a.for "(0) trivial test" do
+      r = Range.new(to, from, range.exclude_end?).bsearch do |x|
+        fail "#{to}, #{from}, #{range.exclude_end?}, #{x}"
+      end
+      assert_nil r
 
-    r = (to...to).bsearch do
-      fail
+      r = (to...to).bsearch do
+        fail
+      end
+      assert_nil r
     end
-    assert_equal nil, r
 
     # prepare for others
     yielded = []
@@ -543,46 +569,53 @@ class TestRange < Test::Unit::TestCase
       val >= search
     end
 
-    # (1) log test
-    max = case from
-          when Float then 65
-          when Integer then Math.log(to-from+(range.exclude_end? ? 0 : 1), 2).to_i + 1
-          end
-    assert_operator yielded.size, :<=, max
-
-    # (2) coverage test
-    expect =  if search < from
-                from
-              elsif search.send(cmp, to)
-                search
-              else
-                nil
-              end
-    assert_equal expect, r
-
-    # (3) uniqueness test
-    assert_equal nil, yielded.uniq!
-
-    # (4) end of range test
-    case
-    when range.exclude_end?
-      assert_not_include yielded, to
-      assert_not_equal r, to
-    when search >= to
-      assert_include yielded, to
-      assert_equal search == to ? to : nil, r
+    a.for "(1) log test" do
+      max = case from
+            when Float then 65
+            when Integer then Math.log(to-from+(range.exclude_end? ? 0 : 1), 2).to_i + 1
+            end
+      assert_operator yielded.size, :<=, max
     end
 
-    # start of range test
-    if search <= from
-      assert_include yielded, from
-      assert_equal from, r
+    a.for "(2) coverage test" do
+      expect = case
+               when search < from
+                 from
+               when search.send(cmp, to)
+                 search
+               else
+                 nil
+               end
+      assert_equal expect, r
     end
 
-    # (5) out of range test
-    yielded.each do |val|
-      assert_operator from, :<=, val
-      assert_send [val, cmp, to]
+    a.for "(3) uniqueness test" do
+      assert_nil yielded.uniq!
+    end
+
+    a.for "(4) end of range test" do
+      case
+      when range.exclude_end?
+        assert_not_include yielded, to
+        assert_not_equal r, to
+      when search >= to
+        assert_include yielded, to
+        assert_equal search == to ? to : nil, r
+      end
+    end
+
+    a.for "(5) start of range test" do
+      if search <= from
+        assert_include yielded, from
+        assert_equal from, r
+      end
+    end
+
+    a.for "(6) out of range test" do
+      yielded.each do |val|
+        assert_operator from, :<=, val
+        assert_send [val, cmp, to]
+      end
     end
   end
 
@@ -590,10 +623,12 @@ class TestRange < Test::Unit::TestCase
     ints   = [-1 << 100, -123456789, -42, -1, 0, 1, 42, 123456789, 1 << 100]
     floats = [-Float::INFINITY, -Float::MAX, -42.0, -4.2, -Float::EPSILON, -Float::MIN, 0.0, Float::MIN, Float::EPSILON, Math::PI, 4.2, 42.0, Float::MAX, Float::INFINITY]
 
-    [ints, floats].each do |values|
-      values.combination(2).to_a.product(values).each do |(from, to), search|
-        check_bsearch_values(from..to, search)
-        check_bsearch_values(from...to, search)
+    all_assertions do |a|
+      [ints, floats].each do |values|
+        values.combination(2).to_a.product(values).each do |(from, to), search|
+          check_bsearch_values(from..to, search, a)
+          check_bsearch_values(from...to, search, a)
+        end
       end
     end
   end
@@ -611,17 +646,6 @@ class TestRange < Test::Unit::TestCase
     assert_equal(nil, (bignum...bignum+ary.size).bsearch {|i| false })
 
     assert_raise(TypeError) { ("a".."z").bsearch {} }
-  end
-
-  def test_bsearch_with_mathn
-    assert_separately ['-r', 'mathn'], %q{
-      msg = '[ruby-core:25740]'
-      answer = (1..(1 << 100)).bsearch{|x|
-        assert_predicate(x, :integer?, msg)
-        x >= 42
-      }
-      assert_equal(42, answer, msg)
-    }, ignore_stderr: true
   end
 
   def test_each_no_blockarg

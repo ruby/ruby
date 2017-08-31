@@ -110,7 +110,7 @@ class Gem::RemoteFetcher
     else
       target = res.target.to_s.strip
 
-      if /\.#{Regexp.quote(host)}\z/ =~ target
+      if URI("http://" + target).host.end_with?(".#{host}")
         return URI.parse "#{uri.scheme}://#{target}#{uri.path}"
       end
 
@@ -260,6 +260,9 @@ class Gem::RemoteFetcher
          Net::HTTPTemporaryRedirect then
       raise FetchError.new('too many redirects', uri) if depth > 10
 
+      unless location = response['Location']
+        raise FetchError.new("redirecting but no redirect location was given", uri)
+      end
       location = URI.parse response['Location']
 
       if https?(uri) && !https?(location)

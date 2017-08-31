@@ -184,17 +184,63 @@ class TestDir < Test::Unit::TestCase
     end
   end
 
-  def assert_entries(entries)
+  if Process.const_defined?(:RLIMIT_NOFILE)
+    def test_glob_too_may_open_files
+      assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}", chdir: @root)
+      begin;
+        n = 16
+        Process.setrlimit(Process::RLIMIT_NOFILE, n)
+        files = []
+        begin
+          n.times {files << File.open('b')}
+        rescue Errno::EMFILE, Errno::ENFILE => e
+        end
+        assert_raise(e.class) {
+          Dir.glob('*')
+        }
+      end;
+    end
+  end
+
+  def test_glob_base
+    files = %w[a/foo.c c/bar.c]
+    files.each {|n| File.write(File.join(@root, n), "")}
+    assert_equal(files, Dir.glob("*/*.c", base: @root).sort)
+    assert_equal(files, Dir.chdir(@root) {Dir.glob("*/*.c", base: ".").sort})
+    assert_equal(%w[foo.c], Dir.chdir(@root) {Dir.glob("*.c", base: "a").sort})
+    assert_equal(files, Dir.chdir(@root) {Dir.glob("*/*.c", base: "").sort})
+    assert_equal(files, Dir.chdir(@root) {Dir.glob("*/*.c", base: nil).sort})
+  end
+
+  def test_glob_base_dir
+    files = %w[a/foo.c c/bar.c]
+    files.each {|n| File.write(File.join(@root, n), "")}
+    assert_equal(files, Dir.open(@root) {|d| Dir.glob("*/*.c", base: d)}.sort)
+    assert_equal(%w[foo.c], Dir.chdir(@root) {Dir.open("a") {|d| Dir.glob("*", base: d)}})
+  end
+
+  def assert_entries(entries, children_only = false)
     entries.sort!
-    assert_equal(%w(. ..) + ("a".."z").to_a, entries)
+    expected = ("a".."z").to_a
+    expected = %w(. ..) + expected unless children_only
+    assert_equal(expected, entries)
   end
 
   def test_entries
     assert_entries(Dir.open(@root) {|dir| dir.entries})
+    assert_entries(Dir.entries(@root).to_a)
   end
 
   def test_foreach
     assert_entries(Dir.foreach(@root).to_a)
+  end
+
+  def test_children
+    assert_entries(Dir.children(@root), true)
+  end
+
+  def test_each_child
+    assert_entries(Dir.each_child(@root).to_a, true)
   end
 
   def test_dir_enc
@@ -289,8 +335,6 @@ class TestDir < Test::Unit::TestCase
     ENV.delete("HOME")
     ENV.delete("LOGDIR")
 
-    assert_raise(ArgumentError) { Dir.home }
-    assert_raise(ArgumentError) { Dir.home("") }
     ENV["HOME"] = @nodir
     assert_nothing_raised(ArgumentError) {
       assert_equal(@nodir, Dir.home)
@@ -354,4 +398,18 @@ class TestDir < Test::Unit::TestCase
     assert_raise(Errno::ENOENT) {Dir.empty?(@nodir)}
     assert_not_send([Dir, :empty?, File.join(@root, "b")])
   end
+
+  def test_glob_gc_for_fd
+    assert_separately(["-C", @root], "#{<<-"begin;"}\n#{<<-"end;"}", timeout: 3)
+    begin;
+      Process.setrlimit(Process::RLIMIT_NOFILE, 50)
+      begin
+        tap {tap {tap {(0..100).map {open(IO::NULL)}}}}
+      rescue Errno::EMFILE
+      end
+      list = Dir.glob("*").sort
+      assert_not_empty(list)
+      assert_equal([*"a".."z"], list)
+    end;
+  end if defined?(Process::RLIMIT_NOFILE)
 end

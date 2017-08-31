@@ -2,7 +2,7 @@
 require 'win32ole'
 url = 'http://www.ruby-lang.org/'
 ie = WIN32OLE.new('InternetExplorer.Application')
-ie.visible = TRUE
+ie.visible = true
 ie.gohome
 print "Now navigate Ruby home page... Please enter."
 gets

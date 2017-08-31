@@ -1,5 +1,5 @@
 # -*- ruby -*-
-load "./rbconfig.rb"
+require "./rbconfig" unless defined?(RbConfig)
 load File.dirname(__FILE__) + '/rubyspec/default.mspec'
 OBJDIR = File.expand_path("spec/rubyspec/optional/capi/ext")
 class MSpecScript
@@ -18,8 +18,46 @@ class MSpecScript
   set :prefix, File.expand_path('rubyspec', File.dirname(__FILE__))
   set :flags, %W[
     -I#{srcdir}/lib
-    -I#{srcdir}
-    -I#{srcdir}/#{config['EXTOUT']}/common
     #{srcdir}/tool/runruby.rb --archdir=#{Dir.pwd} --extout=#{config['EXTOUT']}
+    --
   ]
+end
+
+module MSpecScript::JobServer
+  def cores(max = 1)
+    if max > 1 and /(?:\A|\s)--jobserver-(?:auth|fds)=(\d+),(\d+)/ =~ ENV["MAKEFLAGS"]
+      cores = 1
+      begin
+        r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
+        w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
+        jobtokens = r.read_nonblock(max - 1)
+        cores = jobtokens.size
+        if cores > 0
+          cores += 1
+          jobserver = w
+          w = nil
+          at_exit {
+            jobserver.print(jobtokens)
+            jobserver.close
+          }
+          MSpecScript::JobServer.module_eval do
+            remove_method :cores
+            define_method(:cores) do
+              cores
+            end
+          end
+          return cores
+        end
+      rescue Errno::EBADF
+      ensure
+        r&.close
+        w&.close
+      end
+    end
+    super
+  end
+end
+
+class MSpecScript
+  prepend JobServer
 end

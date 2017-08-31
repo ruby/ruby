@@ -137,6 +137,14 @@ class TestCSV::Interface < TestCSV
     end
   end
 
+  def test_open_handles_prematurely_closed_file_descriptor_gracefully
+    assert_nothing_raised(Exception) do
+      CSV.open(@path) do |csv|
+        csv.close
+      end
+    end
+  end
+
   ### Test Write Interface ###
 
   def test_generate
@@ -166,6 +174,9 @@ class TestCSV::Interface < TestCSV
     assert_not_nil(line)
     assert_instance_of(String, line)
     assert_equal("1;2;3\n", line)
+
+    line = CSV.generate_line(%w"1 2", row_sep: nil)
+    assert_equal("1,2", line)
   end
 
   def test_write_header_detection
@@ -289,6 +300,19 @@ class TestCSV::Interface < TestCSV
                            col_sep:    "|",
                            converters: :all ) do |csv|
       csv.each { |line| assert_equal(lines.shift, line.to_hash) }
+    end
+  end
+
+  def test_write_headers_empty
+    File.unlink(@path)
+
+    CSV.open( @path, "wb", headers:       "b|a|c",
+                           write_headers: true,
+                           col_sep:       "|" ) do |csv|
+    end
+
+    File.open(@path, "rb") do |f|
+      assert_equal("b|a|c", f.gets.strip)
     end
   end
 

@@ -175,7 +175,9 @@ typedef	struct __sFILE {
 	short	_flags;		/* flags, below; this FILE is free if 0 */
 	short	_file;		/* fileno, if Unix descriptor, else -1 */
 	struct	__sbuf _bf;	/* the buffer (at least 1 byte, if !NULL) */
+#if 0
 	size_t	_lbfsize;	/* 0 or -_bf._size, for inline putc */
+#endif
 	int	(*vwrite)(/* struct __sFILE*, struct __suio * */);
 	const char *(*vextra)(/* struct __sFILE*, size_t, void*, long*, int */);
 } FILE;
@@ -558,9 +560,9 @@ BSD_vfprintf(FILE *fp, const char *fmt0, va_list ap)
 	int fprec = 0;		/* floating point precision */
 	char expstr[7];		/* buffer for exponent string */
 #endif
-	u_long UNINITIALIZED_VAR(ulval); /* integer arguments %[diouxX] */
+	u_long MAYBE_UNUSED(ulval); /* integer arguments %[diouxX] */
 #ifdef _HAVE_SANE_QUAD_
-	u_quad_t UNINITIALIZED_VAR(uqval); /* %q integers */
+	u_quad_t MAYBE_UNUSED(uqval); /* %q integers */
 #endif /* _HAVE_SANE_QUAD_ */
 	int base;		/* base for [diouxX] conversion */
 	int dprec;		/* a copy of prec if [diouxX], 0 otherwise */
@@ -1119,11 +1121,11 @@ number:			if ((dprec = prec) >= 0)
 		 */
 		fieldsz = size;
 long_len:
-		if (sign)
-			fieldsz++;
-		if (flags & HEXPREFIX)
-			fieldsz += 2;
 		realsz = dprec > fieldsz ? dprec : fieldsz;
+		if (sign)
+			realsz++;
+		if (flags & HEXPREFIX)
+			realsz += 2;
 
 		/* right-adjusting blank padding */
 		if ((flags & (LADJUST|ZEROPAD)) == 0)
@@ -1145,10 +1147,6 @@ long_len:
 
 		/* leading zeroes from decimal precision */
 		PAD_L(dprec - fieldsz, zeroes);
-		if (sign)
-			fieldsz--;
-		if (flags & HEXPREFIX)
-			fieldsz -= 2;
 
 		/* the string or number proper */
 #ifdef FLOATING_POINT

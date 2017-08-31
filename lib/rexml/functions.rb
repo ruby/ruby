@@ -8,9 +8,27 @@ module REXML
   # Therefore, in XML, "local-name()" is identical (and actually becomes)
   # "local_name()"
   module Functions
+    @@available_functions = {}
     @@context = nil
     @@namespace_context = {}
     @@variables = {}
+
+    INTERNAL_METHODS = [
+      :namespace_context,
+      :namespace_context=,
+      :variables,
+      :variables=,
+      :context=,
+      :get_namespace,
+      :send,
+    ]
+    class << self
+      def singleton_method_added(name)
+        unless INTERNAL_METHODS.include?(name)
+          @@available_functions[name] = true
+        end
+      end
+    end
 
     def Functions::namespace_context=(x) ; @@namespace_context=x ; end
     def Functions::variables=(x) ; @@variables=x ; end
@@ -205,8 +223,8 @@ module REXML
 
       # Now, get the bounds.  The XPath bounds are 1..length; the ruby bounds
       # are 0..length.  Therefore, we have to offset the bounds by one.
-      ruby_start = ruby_start.round - 1
-      ruby_length = ruby_length.round
+      ruby_start = round(ruby_start) - 1
+      ruby_length = round(ruby_length)
 
       if ruby_start < 0
        ruby_length += ruby_start unless infinite_length
@@ -376,10 +394,13 @@ module REXML
     end
 
     def Functions::round( number )
+      number = number(number)
       begin
-        number(number).round
+        neg = number.negative?
+        number = number.abs.round(half: :up)
+        neg ? -number : number
       rescue FloatDomainError
-        number(number)
+        number
       end
     end
 
@@ -387,9 +408,14 @@ module REXML
       node.node_type == :processing_instruction
     end
 
-    def Functions::method_missing( id )
-      puts "METHOD MISSING #{id.id2name}"
-      XPath.match( @@context[:node], id.id2name )
+    def Functions::send(name, *args)
+      if @@available_functions[name.to_sym]
+        super
+      else
+        # TODO: Maybe, this is not XPath spec behavior.
+        # This behavior must be reconsidered.
+        XPath.match(@@context[:node], name.to_s)
+      end
     end
   end
 end

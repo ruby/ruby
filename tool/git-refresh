@@ -1,0 +1,43 @@
+#!/bin/sh
+set -e
+
+if (cd -P .) 2>/dev/null; then
+    CHDIR='cd -P'
+else
+    CHDIR='cd'
+fi
+
+quiet=
+branch=
+
+until [ $# = 0 ]; do
+    case "$1" in
+	--) shift; break;;
+	-C|--directory) shift; $CHDIR "$1";;
+	-C*) $CHDIR `expr "$1" : '-C\(.*\)'`;;
+	--directory=*) $CHDIR `expr "$1" : '[^=]*=\(.*\)'`;;
+	-q) quiet=1;;
+	-b|--branch) shift; branch="$1";;
+	-b*) branch=`expr "$1" : '-b\(.*\)'`;;
+	--branch=*) branch=`expr "$1" : '[^=]*=\(.*\)'`;;
+	-*) echo "unknown option: $1" 1>&2; exit 1;;
+	*) break;;
+    esac
+    shift
+done
+
+url="$1"
+dir="$2"
+shift 2
+[ x"$branch" = x ] && unset branch || :
+if [ -d "$dir" ]; then
+    echo updating `expr "/$dir/" : '.*/\([^/][^/]*\)/'` ...
+    [ $quiet ] || set -x
+    $CHDIR "$dir"
+    ${branch+git} ${branch+fetch} ${branch+"$@"}
+    exec git ${branch+checkout} "${branch-pull}" "$@"
+else
+    echo retrieving `expr "/$dir/" : '.*/\([^/][^/]*\)/'` ...
+    [ $quiet ] || set -x
+    exec git clone ${branch+--branch} ${branch+"$branch"} "$url" "$dir" "$@"
+fi

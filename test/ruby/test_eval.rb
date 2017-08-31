@@ -271,11 +271,9 @@ class TestEval < Test::Unit::TestCase
     eval 'while false; bad = true; print "foo\n" end'
     assert(!bad)
 
-    assert(eval('TRUE'))
+    assert(eval('Object'))
     assert(eval('true'))
-    assert(!eval('NIL'))
     assert(!eval('nil'))
-    assert(!eval('FALSE'))
     assert(!eval('false'))
 
     $foo = 'assert(true)'
@@ -505,6 +503,14 @@ class TestEval < Test::Unit::TestCase
     assert_same a, b
   end
 
+  def test_fstring_instance_eval
+    bug = "[ruby-core:78116] [Bug #12930]".freeze
+    assert_same bug, (bug.instance_eval {self})
+    assert_raise(RuntimeError) {
+      bug.instance_eval {@ivar = true}
+    }
+  end
+
   def test_gced_binding_block
     assert_normal_exit %q{
       def m
@@ -518,5 +524,15 @@ class TestEval < Test::Unit::TestCase
       0.times.to_a
       b.eval('yield')
     }, '[Bug #10368]'
+  end
+
+  def test_return_in_eval_proc
+    x = proc {eval("return :ng")}
+    assert_raise(LocalJumpError) {x.call}
+  end
+
+  def test_return_in_eval_lambda
+    x = lambda {eval("return :ok")}
+    assert_equal(:ok, x.call)
   end
 end

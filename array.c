@@ -16,6 +16,7 @@
 #include "ruby/st.h"
 #include "probes.h"
 #include "id.h"
+#include "debug_counter.h"
 
 #ifndef ARRAY_DEBUG
 # define NDEBUG
@@ -24,7 +25,8 @@
 
 VALUE rb_cArray;
 
-static ID id_cmp, id_div, id_power;
+/* for OPTIMIZED_CMP: */
+#define id_cmp idCmp
 
 #define ARY_DEFAULT_SIZE 16
 #define ARY_MAX_SIZE (LONG_MAX / (int)sizeof(VALUE))
@@ -379,8 +381,11 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
 		}
 	    }
 	}
+	rb_ary_modify(ary);
     }
-    rb_ary_modify(ary);
+    else {
+	rb_ary_modify_check(ary);
+    }
     capa = ARY_CAPA(ary);
     if (new_len > capa) {
 	ary_double_capa(ary, new_len);
@@ -515,17 +520,23 @@ VALUE
 }
 
 VALUE
-rb_ary_new_from_values(long n, const VALUE *elts)
+rb_ary_tmp_new_from_values(VALUE klass, long n, const VALUE *elts)
 {
     VALUE ary;
 
-    ary = rb_ary_new2(n);
+    ary = ary_new(klass, n);
     if (n > 0 && elts) {
 	ary_memcpy(ary, 0, n, elts);
 	ARY_SET_LEN(ary, n);
     }
 
     return ary;
+}
+
+VALUE
+rb_ary_new_from_values(long n, const VALUE *elts)
+{
+    return rb_ary_tmp_new_from_values(rb_cArray, n, elts);
 }
 
 VALUE
@@ -547,7 +558,11 @@ void
 rb_ary_free(VALUE ary)
 {
     if (ARY_OWNS_HEAP_P(ary)) {
+	RB_DEBUG_COUNTER_INC(obj_ary_ptr);
 	ruby_sized_xfree((void *)ARY_HEAP_PTR(ary), ARY_HEAP_SIZE(ary));
+    }
+    else {
+	RB_DEBUG_COUNTER_INC(obj_ary_embed);
     }
 }
 
@@ -555,7 +570,7 @@ RUBY_FUNC_EXPORTED size_t
 rb_ary_memsize(VALUE ary)
 {
     if (ARY_OWNS_HEAP_P(ary)) {
-	return RARRAY(ary)->as.heap.aux.capa * sizeof(VALUE);
+	return ARY_CAPA(ary) * sizeof(VALUE);
     }
     else {
 	return 0;
@@ -628,13 +643,13 @@ rb_assoc_new(VALUE car, VALUE cdr)
 static VALUE
 to_ary(VALUE ary)
 {
-    return rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
+    return rb_convert_type_with_id(ary, T_ARRAY, "Array", idTo_ary);
 }
 
 VALUE
 rb_check_array_type(VALUE ary)
 {
-    return rb_check_convert_type(ary, T_ARRAY, "Array", "to_ary");
+    return rb_check_convert_type_with_id(ary, T_ARRAY, "Array", idTo_ary);
 }
 
 /*
@@ -896,7 +911,10 @@ ary_take_first_or_last(int argc, const VALUE *argv, VALUE ary, enum ary_take_pos
  *  expression returns the array itself, so several appends
  *  may be chained together.
  *
- *     [ 1, 2 ] << "c" << "d" << [ 3, 4 ]
+ *     a = [ 1, 2 ]
+ *     a << "c" << "d" << [ 3, 4 ]
+ *             #=>  [ 1, 2, "c", "d", [ 3, 4 ] ]
+ *     a
  *             #=>  [ 1, 2, "c", "d", [ 3, 4 ] ]
  *
  */
@@ -1382,8 +1400,9 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary)
  *  +default+ value.
  *
  *  Alternatively, if a block is given it will only be executed when an
- *  invalid +index+ is referenced.  Negative values of +index+ count from the
- *  end of the array.
+ *  invalid +index+ is referenced.
+ *
+ *  Negative values of +index+ count from the end of the array.
  *
  *     a = [ 11, 22, 33, 44 ]
  *     a.fetch(1)               #=> 22
@@ -1450,9 +1469,8 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_index(int argc, VALUE *argv, VALUE ary)
 {
-    const VALUE *ptr;
     VALUE val;
-    long i, len;
+    long i;
 
     if (argc == 0) {
 	RETURN_ENUMERATOR(ary, 0, 0);
@@ -1467,20 +1485,11 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
     val = argv[0];
     if (rb_block_given_p())
 	rb_warn("given block not used");
-    len = RARRAY_LEN(ary);
-    ptr = RARRAY_CONST_PTR(ary);
-    for (i=0; i<len; i++) {
-	VALUE e = ptr[i];
-	switch (rb_equal_opt(e, val)) {
-	  case Qundef:
-	    if (!rb_equal(e, val)) break;
-	  case Qtrue:
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	VALUE e = RARRAY_AREF(ary, i);
+	if (rb_equal(e, val)) {
 	    return LONG2NUM(i);
-	  case Qfalse:
-	    continue;
 	}
-	len = RARRAY_LEN(ary);
-	ptr = RARRAY_CONST_PTR(ary);
     }
     return Qnil;
 }
@@ -1512,7 +1521,6 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
 {
-    const VALUE *ptr;
     VALUE val;
     long i = RARRAY_LEN(ary), len;
 
@@ -1531,21 +1539,11 @@ rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
     val = argv[0];
     if (rb_block_given_p())
 	rb_warn("given block not used");
-    ptr = RARRAY_CONST_PTR(ary);
     while (i--) {
-	VALUE e = ptr[i];
-	switch (rb_equal_opt(e, val)) {
-	  case Qundef:
-	    if (!rb_equal(e, val)) break;
-	  case Qtrue:
+	VALUE e = RARRAY_AREF(ary, i);
+	if (rb_equal(e, val)) {
 	    return LONG2NUM(i);
-	  case Qfalse:
-	    continue;
 	}
-	if (i > (len = RARRAY_LEN(ary))) {
-	    i = len;
-	}
-	ptr = RARRAY_CONST_PTR(ary);
     }
     return Qnil;
 }
@@ -1560,10 +1558,10 @@ rb_ary_to_ary(VALUE obj)
 }
 
 static void
-rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
+rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
 {
-    long rlen;
     long olen;
+    long rofs;
 
     if (len < 0) rb_raise(rb_eIndexError, "negative length (%ld)", len);
     olen = RARRAY_LEN(ary);
@@ -1578,14 +1576,11 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	len = olen - beg;
     }
 
-    if (rpl == Qundef) {
-	rlen = 0;
+    {
+	const VALUE *optr = RARRAY_CONST_PTR(ary);
+	rofs = (rptr >= optr && rptr < optr + olen) ? rptr - optr : -1;
     }
-    else {
-	rpl = rb_ary_to_ary(rpl);
-	rlen = RARRAY_LEN(rpl);
-	olen = RARRAY_LEN(ary);	/* ary may be resized in rpl.to_ary too */
-    }
+
     if (beg >= olen) {
 	VALUE target_ary;
 	if (beg > ARY_MAX_SIZE - rlen) {
@@ -1595,7 +1590,8 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	len = beg + rlen;
 	ary_mem_clear(ary, olen, beg - olen);
 	if (rlen > 0) {
-	    ary_memcpy0(ary, beg, rlen, RARRAY_CONST_PTR(rpl), target_ary);
+	    if (rofs != -1) rptr = RARRAY_CONST_PTR(ary) + rofs;
+	    ary_memcpy0(ary, beg, rlen, rptr, target_ary);
 	}
 	ARY_SET_LEN(ary, len);
     }
@@ -1618,10 +1614,10 @@ rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 	    ARY_SET_LEN(ary, alen);
 	}
 	if (rlen > 0) {
-	    MEMMOVE(RARRAY_PTR(ary) + beg, RARRAY_CONST_PTR(rpl), VALUE, rlen);
+	    if (rofs != -1) rptr = RARRAY_CONST_PTR(ary) + rofs;
+	    MEMMOVE(RARRAY_PTR(ary) + beg, rptr, VALUE, rlen);
 	}
     }
-    RB_GC_GUARD(rpl);
 }
 
 void
@@ -1724,13 +1720,13 @@ static VALUE
 rb_ary_aset(int argc, VALUE *argv, VALUE ary)
 {
     long offset, beg, len;
+    VALUE rpl;
 
     if (argc == 3) {
 	rb_ary_modify_check(ary);
 	beg = NUM2LONG(argv[0]);
 	len = NUM2LONG(argv[1]);
-	rb_ary_splice(ary, beg, len, argv[2]);
-	return argv[2];
+	goto range;
     }
     rb_check_arity(argc, 2, 2);
     rb_ary_modify_check(ary);
@@ -1740,8 +1736,11 @@ rb_ary_aset(int argc, VALUE *argv, VALUE ary)
     }
     if (rb_range_beg_len(argv[0], &beg, &len, RARRAY_LEN(ary), 1)) {
 	/* check if idx is Range */
-	rb_ary_splice(ary, beg, len, argv[1]);
-	return argv[1];
+      range:
+	rpl = rb_ary_to_ary(argv[argc-1]);
+	rb_ary_splice(ary, beg, len, RARRAY_CONST_PTR(rpl), RARRAY_LEN(rpl));
+	RB_GC_GUARD(rpl);
+	return argv[argc-1];
     }
 
     offset = NUM2LONG(argv[0]);
@@ -1773,15 +1772,20 @@ rb_ary_insert(int argc, VALUE *argv, VALUE ary)
 
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     rb_ary_modify_check(ary);
-    if (argc == 1) return ary;
     pos = NUM2LONG(argv[0]);
+    if (argc == 1) return ary;
     if (pos == -1) {
 	pos = RARRAY_LEN(ary);
     }
-    if (pos < 0) {
+    else if (pos < 0) {
+	long minpos = -RARRAY_LEN(ary) - 1;
+	if (pos < minpos) {
+	    rb_raise(rb_eIndexError, "index %ld too small for array; minimum: %ld",
+		     pos, minpos);
+	}
 	pos++;
     }
-    rb_ary_splice(ary, pos, 0, rb_ary_new4(argc - 1, argv + 1));
+    rb_ary_splice(ary, pos, 0, argv + 1, argc - 1);
     return ary;
 }
 
@@ -1988,7 +1992,10 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result, int *first)
 	if (RB_TYPE_P(val, T_STRING)) {
 	  str_join:
 	    rb_str_buf_append(result, val);
-	    *first = FALSE;
+	    if (*first) {
+		rb_enc_copy(result, val);
+		*first = FALSE;
+	    }
 	}
 	else if (RB_TYPE_P(val, T_ARRAY)) {
 	    obj = val;
@@ -1999,6 +2006,7 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result, int *first)
 	    else {
 		VALUE args[4];
 
+		*first = FALSE;
 		args[0] = val;
 		args[1] = sep;
 		args[2] = result;
@@ -2012,17 +2020,13 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result, int *first)
 		val = tmp;
 		goto str_join;
 	    }
-	    tmp = rb_check_convert_type(val, T_ARRAY, "Array", "to_ary");
+	    tmp = rb_check_array_type(val);
 	    if (!NIL_P(tmp)) {
 		obj = val;
 		val = tmp;
 		goto ary_join;
 	    }
 	    val = rb_obj_as_string(val);
-	    if (*first) {
-		rb_enc_copy(result, val);
-		*first = FALSE;
-	    }
 	    goto str_join;
 	}
     }
@@ -2073,11 +2077,16 @@ rb_ary_join(VALUE ary, VALUE sep)
  *
  *  Returns a string created by converting each element of the array to
  *  a string, separated by the given +separator+.
- *  If the +separator+ is +nil+, it uses current $,.
- *  If both the +separator+ and $, are nil, it uses empty string.
+ *  If the +separator+ is +nil+, it uses current <code>$,</code>.
+ *  If both the +separator+ and <code>$,</code> are +nil+,
+ *  it uses an empty string.
  *
  *     [ "a", "b", "c" ].join        #=> "abc"
  *     [ "a", "b", "c" ].join("-")   #=> "a-b-c"
+ *
+ *  For nested arrays, join is applied recursively:
+ *
+ *     [ "a", [1, 2, [:x, :y]], "b" ].join("-")   #=> "a-1-2-x-y-b"
  */
 
 static VALUE
@@ -2389,9 +2398,12 @@ sort_1(const void *ap, const void *bp, void *dummy)
     struct ary_sort_data *data = dummy;
     VALUE retval = sort_reentered(data->ary);
     VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
+    VALUE args[2];
     int n;
 
-    retval = rb_yield_values(2, a, b);
+    args[0] = a;
+    args[1] = b;
+    retval = rb_yield_values2(2, args);
     n = rb_cmpint(retval, a, b);
     sort_reentered(data->ary);
     return n;
@@ -2412,6 +2424,9 @@ sort_2(const void *ap, const void *bp, void *dummy)
     }
     if (STRING_P(a) && STRING_P(b) && CMP_OPTIMIZABLE(data->cmp_opt, String)) {
 	return rb_str_cmp(a, b);
+    }
+    if (RB_FLOAT_TYPE_P(a) && CMP_OPTIMIZABLE(data->cmp_opt, Float)) {
+	return rb_float_cmp(a, b);
     }
 
     retval = rb_funcallv(a, id_cmp, 1, &b);
@@ -2435,11 +2450,14 @@ sort_2(const void *ap, const void *bp, void *dummy)
  *  an integer less than 0 when +b+ follows +a+, +0+ when +a+ and +b+
  *  are equivalent, or an integer greater than 0 when +a+ follows +b+.
  *
- *  See also Enumerable#sort_by.
+ *  The result is not guaranteed to be stable.  When the comparison of two
+ *  elements returns +0+, the order of the elements is unpredictable.
  *
- *     a = [ "d", "a", "e", "c", "b" ]
- *     a.sort!                    #=> ["a", "b", "c", "d", "e"]
- *     a.sort! { |x,y| y <=> x }  #=> ["e", "d", "c", "b", "a"]
+ *     ary = [ "d", "a", "e", "c", "b" ]
+ *     ary.sort!                     #=> ["a", "b", "c", "d", "e"]
+ *     ary.sort! { |a, b| b <=> a }  #=> ["e", "d", "c", "b", "a"]
+ *
+ *  See also Enumerable#sort_by.
  */
 
 VALUE
@@ -2516,12 +2534,14 @@ rb_ary_sort_bang(VALUE ary)
  *  an integer less than 0 when +b+ follows +a+, +0+ when +a+ and +b+
  *  are equivalent, or an integer greater than 0 when +a+ follows +b+.
  *
+ *  The result is not guaranteed to be stable.  When the comparison of two
+ *  elements returns +0+, the order of the elements is unpredictable.
+ *
+ *     ary = [ "d", "a", "e", "c", "b" ]
+ *     ary.sort                     #=> ["a", "b", "c", "d", "e"]
+ *     ary.sort { |a, b| b <=> a }  #=> ["e", "d", "c", "b", "a"]
  *
  *  See also Enumerable#sort_by.
- *
- *     a = [ "d", "a", "e", "c", "b" ]
- *     a.sort                    #=> ["a", "b", "c", "d", "e"]
- *     a.sort { |x,y| y <=> x }  #=> ["e", "d", "c", "b", "a"]
  */
 
 VALUE
@@ -2673,8 +2693,12 @@ sort_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, dummy))
  *  Sorts +self+ in place using a set of keys generated by mapping the
  *  values in +self+ through the given block.
  *
+ *  The result is not guaranteed to be stable.  When two keys are equal,
+ *  the order of the corresponding elements is unpredictable.
+ *
  *  If no block is given, an Enumerator is returned instead.
  *
+ *  See also Enumerable#sort_by.
  */
 
 static VALUE
@@ -2876,13 +2900,15 @@ select_bang_ensure(VALUE a)
     long len = RARRAY_LEN(ary);
     long i1 = arg->len[0], i2 = arg->len[1];
 
-    if (i2 < i1) {
+    if (i2 < len && i2 < i1) {
+	long tail = 0;
 	if (i1 < len) {
+	    tail = len - i1;
 	    RARRAY_PTR_USE(ary, ptr, {
-		    MEMMOVE(ptr + i2, ptr + i1, VALUE, len - i1);
+		    MEMMOVE(ptr + i2, ptr + i1, VALUE, tail);
 		});
 	}
-	ARY_SET_LEN(ary, len - i1 + i2);
+	ARY_SET_LEN(ary, i2 + tail);
     }
     return ary;
 }
@@ -3116,7 +3142,7 @@ rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
 	if (len == 0) return rb_ary_new2(0);
 	arg2 = rb_ary_new4(len, RARRAY_CONST_PTR(ary)+pos);
 	RBASIC_SET_CLASS(arg2, rb_obj_class(ary));
-	rb_ary_splice(ary, pos, len, Qundef);
+	rb_ary_splice(ary, pos, len, 0, 0);
 	return arg2;
     }
 
@@ -3622,31 +3648,61 @@ rb_ary_plus(VALUE x, VALUE y)
     return z;
 }
 
-/*
- *  call-seq:
- *     ary.concat(other_ary)   -> ary
- *
- *  Appends the elements of +other_ary+ to +self+.
- *
- *     [ "a", "b" ].concat( ["c", "d"] ) #=> [ "a", "b", "c", "d" ]
- *     a = [ 1, 2, 3 ]
- *     a.concat( [ 4, 5 ] )
- *     a                                 #=> [ 1, 2, 3, 4, 5 ]
- *
- *  See also Array#+.
- */
-
-VALUE
-rb_ary_concat(VALUE x, VALUE y)
+static VALUE
+ary_append(VALUE x, VALUE y)
 {
-    rb_ary_modify_check(x);
-    y = to_ary(y);
-    if (RARRAY_LEN(y) > 0) {
-	rb_ary_splice(x, RARRAY_LEN(x), 0, y);
+    long n = RARRAY_LEN(y);
+    if (n > 0) {
+	rb_ary_splice(x, RARRAY_LEN(x), 0, RARRAY_CONST_PTR(y), n);
     }
     return x;
 }
 
+/*
+ *  call-seq:
+ *     ary.concat(other_ary1, other_ary2,...)   -> ary
+ *
+ *  Appends the elements of +other_ary+s to +self+.
+ *
+ *     [ "a", "b" ].concat( ["c", "d"] ) #=> [ "a", "b", "c", "d" ]
+ *     [ "a" ].concat( ["b"], ["c", "d"] ) #=> [ "a", "b", "c", "d" ]
+ *     [ "a" ].concat #=> [ "a" ]
+ *
+ *     a = [ 1, 2, 3 ]
+ *     a.concat( [ 4, 5 ] )
+ *     a                                 #=> [ 1, 2, 3, 4, 5 ]
+ *
+ *     a = [ 1, 2 ]
+ *     a.concat(a, a)                    #=> [1, 2, 1, 2, 1, 2]
+ *
+ *  See also Array#+.
+ */
+
+static VALUE
+rb_ary_concat_multi(int argc, VALUE *argv, VALUE ary)
+{
+    rb_ary_modify_check(ary);
+
+    if (argc == 1) {
+	rb_ary_concat(ary, argv[0]);
+    }
+    else if (argc > 1) {
+	int i;
+	VALUE args = rb_ary_tmp_new(argc);
+	for (i = 0; i < argc; i++) {
+	    rb_ary_concat(args, argv[i]);
+	}
+	ary_append(ary, args);
+    }
+
+    return ary;
+}
+
+VALUE
+rb_ary_concat(VALUE x, VALUE y)
+{
+    return ary_append(x, to_ary(y));
+}
 
 /*
  *  call-seq:
@@ -3875,7 +3931,7 @@ rb_ary_eql(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary.hash   -> fixnum
+ *     ary.hash   -> integer
  *
  *  Compute a hash-code for this array.
  *
@@ -3899,7 +3955,7 @@ rb_ary_hash(VALUE ary)
 	h = rb_hash_uint(h, NUM2LONG(n));
     }
     h = rb_hash_end(h);
-    return LONG2FIX(h);
+    return ST2FIX(h);
 }
 
 /*
@@ -3922,11 +3978,7 @@ rb_ary_includes(VALUE ary, VALUE item)
 
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	e = RARRAY_AREF(ary, i);
-	switch (rb_equal_opt(e, item)) {
-	  case Qundef:
-	    if (rb_equal(e, item)) return Qtrue;
-	    break;
-	  case Qtrue:
+	if (rb_equal(e, item)) {
 	    return Qtrue;
 	}
     }
@@ -4051,12 +4103,12 @@ ary_make_hash_by(VALUE ary)
 static inline void
 ary_recycle_hash(VALUE hash)
 {
+    assert(RBASIC_CLASS(hash) == 0);
     if (RHASH(hash)->ntbl) {
 	st_table *tbl = RHASH(hash)->ntbl;
-	RHASH(hash)->ntbl = 0;
 	st_free_table(tbl);
     }
-    RB_GC_GUARD(hash);
+    rb_gc_force_recycle(hash);
 }
 
 /*
@@ -4555,7 +4607,7 @@ flatten(VALUE ary, int level, int *modified)
 
     st_free_table(memo);
 
-    RBASIC_SET_CLASS(result, rb_class_of(ary));
+    RBASIC_SET_CLASS(result, rb_obj_class(ary));
     return result;
 }
 
@@ -4753,6 +4805,7 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
     VALUE opts, randgen = rb_cRandom;
     long n, len, i, j, k, idx[10];
     long rnds[numberof(idx)];
+    long memo_threshold;
 
     if (OPTHASH_GIVEN_P(opts)) {
 	VALUE rnd;
@@ -4812,6 +4865,11 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 	}
 	return rb_ary_new_from_args(3, RARRAY_AREF(ary, i), RARRAY_AREF(ary, j), RARRAY_AREF(ary, k));
     }
+    memo_threshold =
+	len < 2560 ? len / 128 :
+	len < 5120 ? len / 64 :
+	len < 10240 ? len / 32 :
+	len / 16;
     if (n <= numberof(idx)) {
 	long sorted[numberof(idx)];
 	sorted[0] = idx[0] = rnds[0];
@@ -4830,6 +4888,38 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 		ptr_result[i] = RARRAY_AREF(ary, idx[i]);
 	    }
 	});
+    }
+    else if (n <= memo_threshold / 2) {
+	long max_idx = 0;
+#undef RUBY_UNTYPED_DATA_WARNING
+#define RUBY_UNTYPED_DATA_WARNING 0
+	VALUE vmemo = Data_Wrap_Struct(0, 0, 0, st_free_table);
+	st_table *memo = st_init_numtable_with_size(n);
+	DATA_PTR(vmemo) = memo;
+	result = rb_ary_new_capa(n);
+	RARRAY_PTR_USE(result, ptr_result, {
+	    for (i=0; i<n; i++) {
+		long r = RAND_UPTO(len-i) + i;
+		ptr_result[i] = r;
+		if (r > max_idx) max_idx = r;
+	    }
+	    len = RARRAY_LEN(ary);
+	    if (len <= max_idx) n = 0;
+	    else if (n > len) n = len;
+	    RARRAY_PTR_USE(ary, ptr_ary, {
+		for (i=0; i<n; i++) {
+		    long j2 = j = ptr_result[i];
+		    long i2 = i;
+		    st_data_t value;
+		    if (st_lookup(memo, (st_data_t)i, &value)) i2 = (long)value;
+		    if (st_lookup(memo, (st_data_t)j, &value)) j2 = (long)value;
+		    st_insert(memo, (st_data_t)j, (st_data_t)i2);
+		    ptr_result[i] = ptr_ary[j2];
+		}
+	    });
+	});
+	DATA_PTR(vmemo) = 0;
+	st_free_table(memo);
     }
     else {
 	result = rb_ary_dup(ary);
@@ -4863,7 +4953,7 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
     mul = NUM2LONG(n);
     if (mul <= 0) return INT2FIX(0);
     n = LONG2FIX(mul);
-    return rb_funcallv(rb_ary_length(self), '*', 1, &n);
+    return rb_fix_mul_fix(rb_ary_length(self), n);
 }
 
 /*
@@ -4989,10 +5079,16 @@ permute0(const long n, const long r, long *const p, char *const used, const VALU
 static VALUE
 descending_factorial(long from, long how_many)
 {
-    VALUE cnt = LONG2FIX(how_many >= 0);
-    while (how_many-- > 0) {
-	VALUE v = LONG2FIX(from--);
-	cnt = rb_funcallv(cnt, '*', 1, &v);
+    VALUE cnt;
+    if (how_many > 0) {
+	cnt = LONG2FIX(from);
+	while (--how_many > 0) {
+	    long v = --from;
+	    cnt = rb_int_mul(cnt, LONG2FIX(v));
+	}
+    }
+    else {
+	cnt = LONG2FIX(how_many == 0);
     }
     return cnt;
 }
@@ -5000,16 +5096,23 @@ descending_factorial(long from, long how_many)
 static VALUE
 binomial_coefficient(long comb, long size)
 {
-    VALUE r, v;
+    VALUE r;
+    long i;
     if (comb > size-comb) {
 	comb = size-comb;
     }
     if (comb < 0) {
 	return LONG2FIX(0);
     }
-    r = descending_factorial(size, comb);
-    v = descending_factorial(comb, comb);
-    return rb_funcallv(r, id_div, 1, &v);
+    else if (comb == 0) {
+	return LONG2FIX(1);
+    }
+    r = LONG2FIX(size);
+    for (i = 1; i < comb; ++i) {
+	r = rb_int_mul(r, LONG2FIX(size - i));
+	r = rb_int_idiv(r, LONG2FIX(i + 1));
+    }
+    return r;
 }
 
 static VALUE
@@ -5157,7 +5260,7 @@ rb_ary_combination(VALUE ary, VALUE num)
 	rb_yield(rb_ary_new2(0));
     }
     else if (n == 1) {
-	for (i = 0; i < len; i++) {
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
 	    rb_yield(rb_ary_new3(1, RARRAY_AREF(ary, i)));
 	}
     }
@@ -5214,14 +5317,14 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
 {
     long n = RARRAY_LEN(ary);
     long k = NUM2LONG(RARRAY_AREF(args, 0));
-    VALUE v;
 
     if (k < 0) {
 	return LONG2FIX(0);
     }
-
-    v = LONG2NUM(k);
-    return rb_funcallv(LONG2NUM(n), id_power, 1, &v);
+    if (n <= 0) {
+	return LONG2FIX(!k);
+    }
+    return rb_int_positive_pow(n, (unsigned long)k);
 }
 
 /*
@@ -5356,7 +5459,7 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
 	rb_yield(rb_ary_new2(0));
     }
     else if (n == 1) {
-	for (i = 0; i < len; i++) {
+	for (i = 0; i < RARRAY_LEN(ary); i++) {
 	    rb_yield(rb_ary_new3(1, RARRAY_AREF(ary, i)));
 	}
     }
@@ -5637,7 +5740,7 @@ rb_ary_any_p(VALUE ary)
  *
  *   a.dig(0, 1, 1)                    #=> 3
  *   a.dig(1, 2, 3)                    #=> nil
- *   a.dig(0, 0, 0)                    #=> TypeError: Fixnum does not have #dig method
+ *   a.dig(0, 0, 0)                    #=> TypeError: Integer does not have #dig method
  *   [42, {foo: :bar}].dig(1, :foo)    #=> :bar
  */
 
@@ -5649,6 +5752,26 @@ rb_ary_dig(int argc, VALUE *argv, VALUE self)
     if (!--argc) return self;
     ++argv;
     return rb_obj_dig(argc, argv, self, Qnil);
+}
+
+static inline VALUE
+finish_exact_sum(long n, VALUE r, VALUE v, int z)
+{
+    if (n != 0)
+        v = rb_fix_plus(LONG2FIX(n), v);
+    if (r != Qundef) {
+	/* r can be an Integer when mathn is loaded */
+	if (FIXNUM_P(r))
+	    v = rb_fix_plus(r, v);
+	else if (RB_TYPE_P(r, T_BIGNUM))
+	    v = rb_big_plus(r, v);
+	else
+	    v = rb_rational_plus(r, v);
+    }
+    else if (!n && z) {
+        v = rb_fix_plus(LONG2FIX(0), v);
+    }
+    return v;
 }
 
 /*
@@ -5681,14 +5804,15 @@ rb_ary_dig(int argc, VALUE *argv, VALUE self)
  *   ["a", "b", "c"].sum("")            #=> "abc"
  *   [[1], [[2]], [3]].sum([])          #=> [1, [2], 3]
  *
- * However, Array#join and Array#flatten is faster than Array#sum.
+ * However, Array#join and Array#flatten is faster than Array#sum for
+ * array of strings and array of arrays.
  *
  *   ["a", "b", "c"].join               #=> "abc"
  *   [[1], [[2]], [3]].flatten(1)       #=> [1, [2], 3]
  *
  *
  * Array#sum method may not respect method redefinition of "+" methods
- * such as Fixnum#+.
+ * such as Integer#+.
  *
  */
 
@@ -5731,41 +5855,24 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
         else
             goto not_exact;
     }
-    if (n != 0)
-        v = rb_fix_plus(LONG2FIX(n), v);
-    if (r != Qundef) {
-        /* r can be a Integer when mathn is loaded */
-        if (FIXNUM_P(r))
-            v = rb_fix_plus(r, v);
-        else if (RB_TYPE_P(r, T_BIGNUM))
-            v = rb_big_plus(r, v);
-        else
-            v = rb_rational_plus(r, v);
-    }
+    v = finish_exact_sum(n, r, v, argc!=0);
     return v;
 
   not_exact:
-    if (n != 0)
-        v = rb_fix_plus(LONG2FIX(n), v);
-    if (r != Qundef) {
-        /* r can be a Integer when mathn is loaded */
-        if (FIXNUM_P(r))
-            v = rb_fix_plus(r, v);
-        else if (RB_TYPE_P(r, T_BIGNUM))
-            v = rb_big_plus(r, v);
-        else
-            v = rb_rational_plus(r, v);
-    }
+    v = finish_exact_sum(n, r, v, i!=0);
 
     if (RB_FLOAT_TYPE_P(e)) {
-        /* Kahan's compensated summation algorithm */
+        /*
+         * Kahan-Babuska balancing compensated summation algorithm
+         * See http://link.springer.com/article/10.1007/s00607-005-0139-x
+         */
         double f, c;
 
         f = NUM2DBL(v);
         c = 0.0;
         goto has_float_value;
         for (; i < RARRAY_LEN(ary); i++) {
-            double x, y, t;
+            double x, t;
             e = RARRAY_AREF(ary, i);
             if (block_given)
                 e = rb_yield(e);
@@ -5781,11 +5888,14 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
             else
                 goto not_float;
 
-            y = x - c;
-            t = f + y;
-            c = (t - f) - y;
+            t = f + x;
+            if (fabs(f) >= fabs(x))
+                c += ((f - t) + x);
+            else
+                c += ((x - t) + f);
             f = t;
         }
+        f += c;
         return DBL2NUM(f);
 
       not_float:
@@ -5836,7 +5946,8 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
  *  This method is safe to use with mutable objects such as hashes, strings or
  *  other arrays:
  *
- *     Array.new(4) { Hash.new } #=> [{}, {}, {}, {}]
+ *     Array.new(4) { Hash.new }  #=> [{}, {}, {}, {}]
+ *     Array.new(4) {|i| i.to_s } #=> ["0", "1", "2", "3"]
  *
  *  This is also a quick way to build up multi-dimensional arrays:
  *
@@ -6072,12 +6183,14 @@ Init_Array(void)
     rb_define_method(rb_cArray, "fetch", rb_ary_fetch, -1);
     rb_define_method(rb_cArray, "first", rb_ary_first, -1);
     rb_define_method(rb_cArray, "last", rb_ary_last, -1);
-    rb_define_method(rb_cArray, "concat", rb_ary_concat, 1);
+    rb_define_method(rb_cArray, "concat", rb_ary_concat_multi, -1);
     rb_define_method(rb_cArray, "<<", rb_ary_push, 1);
     rb_define_method(rb_cArray, "push", rb_ary_push_m, -1);
+    rb_define_alias(rb_cArray,  "append", "push");
     rb_define_method(rb_cArray, "pop", rb_ary_pop_m, -1);
     rb_define_method(rb_cArray, "shift", rb_ary_shift_m, -1);
     rb_define_method(rb_cArray, "unshift", rb_ary_unshift_m, -1);
+    rb_define_alias(rb_cArray,  "prepend", "unshift");
     rb_define_method(rb_cArray, "insert", rb_ary_insert, -1);
     rb_define_method(rb_cArray, "each", rb_ary_each, 0);
     rb_define_method(rb_cArray, "each_index", rb_ary_each_index, 0);
@@ -6160,8 +6273,5 @@ Init_Array(void)
     rb_define_method(rb_cArray, "dig", rb_ary_dig, -1);
     rb_define_method(rb_cArray, "sum", rb_ary_sum, -1);
 
-    id_cmp = rb_intern("<=>");
     id_random = rb_intern("random");
-    id_div = rb_intern("div");
-    id_power = rb_intern("**");
 }

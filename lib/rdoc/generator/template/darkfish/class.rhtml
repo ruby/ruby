@@ -26,8 +26,6 @@
   </section>
 
   <% klass.each_section do |section, constants, attributes| %>
-  <% constants = constants.select { |const| const.display? } %>
-  <% attributes = attributes.select { |attr| attr.display? } %>
   <section id="<%= section.aref %>" class="documentation-section">
     <% if section.title then %>
     <header class="documentation-section-title">

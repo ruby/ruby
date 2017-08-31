@@ -1,0 +1,97 @@
+%#  -*- c -*-
+% limits = %w[
+%   FIXNUM
+%   CHAR   SCHAR   UCHAR  WCHAR
+%          SHRT    USHRT
+%          INT     UINT
+%          LONG    ULONG
+%          LLONG   ULLONG
+%          INT8    UINT8  INT_LEAST8  UINT_LEAST8  INT_FAST8  UINT_FAST8
+%          INT16   UINT16 INT_LEAST16 UINT_LEAST16 INT_FAST16 UINT_FAST16
+%          INT32   UINT32 INT_LEAST32 UINT_LEAST32 INT_FAST32 UINT_FAST32
+%          INT64   UINT64 INT_LEAST64 UINT_LEAST64 INT_FAST64 UINT_FAST64
+%          INT128  UINT128
+%          INTMAX  UINTMAX
+%          INTPTR  UINTPTR
+%          SSZIE   SIZE
+%          PTRDIFF
+% ]
+%
+% verbatim_integers = %w[
+%   FLT_RADIX
+%   FLT_ROUNDS
+%   FLT_EVAL_METHOD
+%   FLT_MANT_DIG    DBL_MANT_DIG    LDBL_MANT_DIG
+%   FLT_DIG         DBL_DIG         LDBL_DIG
+%   FLT_MIN_EXP     DBL_MIN_EXP     LDBL_MIN_EXP
+%   FLT_MIN_10_EXP  DBL_MIN_10_EXP  LDBL_MIN_10_EXP
+%   FLT_MAX_EXP     DBL_MAX_EXP     LDBL_MAX_EXP
+%   FLT_MAX_10_EXP  DBL_MAX_10_EXP  LDBL_MAX_10_EXP
+%   FLT_DECIMAL_DIG DBL_DECIMAL_DIG LDBL_DECIMAL_DIG DECIMAL_DIG
+%   FLT_HAS_SUBNORM DBL_HAS_SUBNORM LDBL_HAS_SUBNORM
+% ]
+%
+% # Beware; Ruby cannot handle LDBL_MAX.
+% verbatim_doubles = %w[
+%   FLT_MAX      DBL_MAX
+%   FLT_EPSILON  DBL_EPSILON
+%   FLT_MIN      DBL_MIN
+%   FLT_TRUE_MIN DBL_TRUE_MIN
+% ]
+%
+#include <limits.h>
+#include "ruby/ruby.h"
+#ifdef HAVE_STDINT_H
+# include <stdint.h>
+#endif
+#ifdef HAVE_INTTYPES_H
+# include <stdint.h>
+#endif
+#ifdef HAVE_FLOAT_H
+# include <float.h>
+#endif
+
+void
+Init_limits(void)
+{
+    VALUE h = rb_hash_new();
+    rb_define_const(rb_define_module("RbConfig"), "LIMITS", h);
+
+#ifdef HAVE_LONG_LONG
+#ifndef ULLONG_MAX
+#define ULLONG_MAX ((unsigned LONG_LONG)LLONG_MAX*2+1)
+#endif
+#define MAX2NUM(name) ULL2NUM(name ## _MAX)
+#define MIN2NUM(name)  LL2NUM(name ## _MIN)
+#else
+#define MAX2NUM(name) ULONG2NUM(name ## _MAX)
+#define MIN2NUM(name)  LONG2NUM(name ## _MIN)
+#endif
+#define DEFINE(k, v) rb_hash_aset(h, rb_str_new_cstr(#k), v)
+
+% limits.each do |type|
+#ifdef <%= type %>_MAX
+    DEFINE(<%= type %>_MAX, MAX2NUM(<%= type %>));
+#endif
+#ifdef <%= type %>_MIN
+    DEFINE(<%= type %>_MIN, MIN2NUM(<%= type %>));
+#endif
+% end
+
+% verbatim_integers.each do |name|
+#ifdef <%= name %>
+    DEFINE(<%= name %>, LONG2NUM(<%= name %>));
+#endif
+% end
+
+% verbatim_doubles.each do |name|
+#ifdef <%= name %>
+    DEFINE(<%= name %>, DBL2NUM(<%= name %>));
+#endif
+% end
+
+#undef DEFINE
+#undef MIN2NUM
+#undef MAX2NUM
+    OBJ_FREEZE(h);
+}

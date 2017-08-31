@@ -157,11 +157,11 @@ default:                        \
 
 #endif
 
-#define VM_SP_CNT(th, sp) ((sp) - (th)->stack)
+#define VM_SP_CNT(th, sp) ((sp) - (th)->ec.vm_stack)
 
 #if OPT_CALL_THREADED_CODE
 #define THROW_EXCEPTION(exc) do { \
-    th->errinfo = (VALUE)(exc); \
+    th->ec.errinfo = (VALUE)(exc); \
     return 0; \
 } while (0)
 #else

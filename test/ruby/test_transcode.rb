@@ -363,7 +363,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u00BF", "\xBF", 'windows-1255') # ¿
     check_both_ways("\u05B0", "\xC0", 'windows-1255') # ְ
     check_both_ways("\u05B9", "\xC9", 'windows-1255') # ֹ
-    assert_raise(Encoding::UndefinedConversionError) { "\xCA".encode("utf-8", 'windows-1255') }
+    check_both_ways("\u05BA", "\xCA", 'windows-1255') # ֺ
     check_both_ways("\u05BB", "\xCB", 'windows-1255') # ֻ
     check_both_ways("\u05BF", "\xCF", 'windows-1255') # ֿ
     check_both_ways("\u05C0", "\xD0", 'windows-1255') # ׀
@@ -996,6 +996,92 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u2116", "\xEF", 'CP855') # №
     check_both_ways("\u00AD", "\xF0", 'CP855') # soft hyphen
     check_both_ways("\u00A0", "\xFF", 'CP855') # non-breaking space
+  end
+
+  def test_ill_formed_utf_8_replace
+    fffd1 = "\uFFFD".encode 'UTF-16BE'
+    fffd2 = "\uFFFD\uFFFD".encode 'UTF-16BE'
+    fffd3 = "\uFFFD\uFFFD\uFFFD".encode 'UTF-16BE'
+    fffd4 = "\uFFFD\uFFFD\uFFFD\uFFFD".encode 'UTF-16BE'
+    fffd5 = "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD".encode 'UTF-16BE'
+    fffd6 = "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD".encode 'UTF-16BE'
+
+    assert_equal fffd1, "\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xC3".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xDF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xE0".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xE0\xA0".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xE0\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xE1".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xEC".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xE1\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xEC\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+
+    assert_equal fffd2, "\xC0\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xC0\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xC1\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xC1\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xE0\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xE0\x9F".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xE0\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xE0\x9F\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xED\xA0".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xED\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xED\xA0\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xED\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xF0\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xF0\x8F".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xF0\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xF0\x8F\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xF0\x80\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xF0\x8F\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xF4\x90".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xF4\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xF4\x90\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xF4\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xF4\x90\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xF4\xBF\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xF5\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xF7\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xF5\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xF7\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xF5\x80\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xF7\xBF\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xF8".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xFB".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xF8\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xFB\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xF8\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xFB\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xF8\x80\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xFB\xBF\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd5, "\xF8\x80\x80\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd5, "\xFB\xBF\xBF\xBF\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xFC".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xFD".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xFC\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xFD\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xFC\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xFD\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xFC\x80\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xFD\xBF\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd5, "\xFC\x80\x80\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd5, "\xFD\xBF\xBF\xBF\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd6, "\xFC\x80\x80\x80\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd6, "\xFD\xBF\xBF\xBF\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xFE".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd1, "\xFF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xFE\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd2, "\xFF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xFE\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd3, "\xFF\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xFE\x80\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd4, "\xFF\xBF\xBF\xBF".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd5, "\xFE\x80\x80\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd5, "\xFF\xBF\xBF\xBF\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd6, "\xFE\x80\x80\x80\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
+    assert_equal fffd6, "\xFF\xBF\xBF\xBF\x80\x80".encode("utf-16be", "utf-8", invalid: :replace)
   end
 
   def check_utf_16_both_ways(utf8, raw)

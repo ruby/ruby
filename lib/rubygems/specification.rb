@@ -108,6 +108,8 @@ class Gem::Specification < Gem::BasicSpecification
 
   private_constant :LOAD_CACHE if defined? private_constant
 
+  VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/ # :nodoc:
+
   # :startdoc:
 
   ##
@@ -723,6 +725,9 @@ class Gem::Specification < Gem::BasicSpecification
   def self._all # :nodoc:
     unless defined?(@@all) && @@all then
       @@all = stubs.map(&:to_spec)
+      if @@all.any?(&:nil?) # TODO: remove once we're happy
+        raise "pid: #{$$} nil spec! included in #{stubs.inspect}"
+      end
 
       # After a reset, make sure already loaded specs
       # are still marked as activated.
@@ -943,6 +948,7 @@ class Gem::Specification < Gem::BasicSpecification
   # -- wilsonb
 
   def self.all= specs
+    raise "nil spec!" if specs.any?(&:nil?) # TODO: remove once we're happy
     @@stubs_by_name = specs.group_by(&:name)
     @@all = @@stubs = specs
   end
@@ -2102,7 +2108,7 @@ class Gem::Specification < Gem::BasicSpecification
     if $DEBUG
       super
     else
-      "#<#{self.class}:0x#{__id__.to_s(16)} #{full_name}>"
+      "#{super[0..-2]} #{full_name}>"
     end
   end
 
@@ -2668,9 +2674,15 @@ class Gem::Specification < Gem::BasicSpecification
       end
     end
 
-    unless String === name then
+    if !name.is_a?(String) then
       raise Gem::InvalidSpecificationException,
-            "invalid value for attribute name: \"#{name.inspect}\""
+            "invalid value for attribute name: \"#{name.inspect}\" must be a string"
+    elsif name !~ /[a-zA-Z]/ then
+      raise Gem::InvalidSpecificationException,
+            "invalid value for attribute name: #{name.dump} must include at least one letter"
+    elsif name !~ VALID_NAME_PATTERN then
+      raise Gem::InvalidSpecificationException,
+            "invalid value for attribute name: #{name.dump} can only include letters, numbers, dashes, and underscores"
     end
 
     if raw_require_paths.empty? then
@@ -2698,7 +2710,7 @@ class Gem::Specification < Gem::BasicSpecification
 
     unless specification_version.is_a?(Integer)
       raise Gem::InvalidSpecificationException,
-            'specification_version must be a Integer (did you mean version?)'
+            'specification_version must be an Integer (did you mean version?)'
     end
 
     case platform

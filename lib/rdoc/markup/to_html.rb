@@ -383,9 +383,12 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   # Returns true if text is valid ruby syntax
 
   def parseable? text
+    verbose, $VERBOSE = $VERBOSE, nil
     eval("BEGIN {return true}\n#{text}")
   rescue SyntaxError
     false
+  ensure
+    $VERBOSE = verbose
   end
 
   ##

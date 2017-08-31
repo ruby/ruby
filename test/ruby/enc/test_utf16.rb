@@ -56,59 +56,71 @@ EOT
   # tests start
 
   def test_utf16be_valid_encoding
-    [
-      "\x00\x00",
-      "\xd7\xff",
-      "\xd8\x00\xdc\x00",
-      "\xdb\xff\xdf\xff",
-      "\xe0\x00",
-      "\xff\xff",
-    ].each {|s|
-      s.force_encoding("utf-16be")
-      assert_equal(true, s.valid_encoding?, "#{encdump s}.valid_encoding?")
-    }
-    [
-      "\x00",
-      "\xd7",
-      "\xd8\x00",
-      "\xd8\x00\xd8\x00",
-      "\xdc\x00",
-      "\xdc\x00\xd8\x00",
-      "\xdc\x00\xdc\x00",
-      "\xe0",
-      "\xff",
-    ].each {|s|
-      s.force_encoding("utf-16be")
-      assert_equal(false, s.valid_encoding?, "#{encdump s}.valid_encoding?")
-    }
+    all_assertions do |a|
+      [
+        "\x00\x00",
+        "\xd7\xff",
+        "\xd8\x00\xdc\x00",
+        "\xdb\xff\xdf\xff",
+        "\xe0\x00",
+        "\xff\xff",
+      ].each {|s|
+        s.force_encoding("utf-16be")
+        a.for(s) {
+          assert_predicate(s, :valid_encoding?, "#{encdump s}.valid_encoding?")
+        }
+      }
+      [
+        "\x00",
+        "\xd7",
+        "\xd8\x00",
+        "\xd8\x00\xd8\x00",
+        "\xdc\x00",
+        "\xdc\x00\xd8\x00",
+        "\xdc\x00\xdc\x00",
+        "\xe0",
+        "\xff",
+      ].each {|s|
+        s.force_encoding("utf-16be")
+        a.for(s) {
+          assert_not_predicate(s, :valid_encoding?, "#{encdump s}.valid_encoding?")
+        }
+      }
+    end
   end
 
   def test_utf16le_valid_encoding
-    [
-      "\x00\x00",
-      "\xff\xd7",
-      "\x00\xd8\x00\xdc",
-      "\xff\xdb\xff\xdf",
-      "\x00\xe0",
-      "\xff\xff",
-    ].each {|s|
-      s.force_encoding("utf-16le")
-      assert_equal(true, s.valid_encoding?, "#{encdump s}.valid_encoding?")
-    }
-    [
-      "\x00",
-      "\xd7",
-      "\x00\xd8",
-      "\x00\xd8\x00\xd8",
-      "\x00\xdc",
-      "\x00\xdc\x00\xd8",
-      "\x00\xdc\x00\xdc",
-      "\xe0",
-      "\xff",
-    ].each {|s|
-      s.force_encoding("utf-16le")
-      assert_equal(false, s.valid_encoding?, "#{encdump s}.valid_encoding?")
-    }
+    all_assertions do |a|
+      [
+        "\x00\x00",
+        "\xff\xd7",
+        "\x00\xd8\x00\xdc",
+        "\xff\xdb\xff\xdf",
+        "\x00\xe0",
+        "\xff\xff",
+      ].each {|s|
+        s.force_encoding("utf-16le")
+        a.for(s) {
+          assert_predicate(s, :valid_encoding?, "#{encdump s}.valid_encoding?")
+        }
+      }
+      [
+        "\x00",
+        "\xd7",
+        "\x00\xd8",
+        "\x00\xd8\x00\xd8",
+        "\x00\xdc",
+        "\x00\xdc\x00\xd8",
+        "\x00\xdc\x00\xdc",
+        "\xe0",
+        "\xff",
+      ].each {|s|
+        s.force_encoding("utf-16le")
+        a.for(s) {
+          assert_not_predicate(s, :valid_encoding?, "#{encdump s}.valid_encoding?")
+        }
+      }
+    end
   end
 
   def test_strftime

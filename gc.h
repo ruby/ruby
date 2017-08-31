@@ -90,6 +90,9 @@ const char *rb_obj_info(VALUE obj);
 const char *rb_raw_obj_info(char *buff, const int buff_size, VALUE obj);
 void rb_obj_info_dump(VALUE obj);
 
+struct rb_thread_struct;
+int rb_threadptr_during_gc(struct rb_thread_struct *th);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /* exports for objspace module */

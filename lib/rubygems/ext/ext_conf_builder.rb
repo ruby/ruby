@@ -27,9 +27,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
     # TODO: Make this unconditional when rubygems no longer supports Ruby 1.9.x.
     tmp_dest = get_relative_path(tmp_dest) unless Gem.win_platform? && RUBY_VERSION <= '2.0'
 
-    t = nil
     Tempfile.open %w"siteconf .rb", "." do |siteconf|
-      t = siteconf
       siteconf.puts "require 'rbconfig'"
       siteconf.puts "dest_path = #{tmp_dest.dump}"
       %w[sitearchdir sitelibdir].each do |dir|
@@ -37,7 +35,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
         siteconf.puts "RbConfig::CONFIG['#{dir}'] = dest_path"
       end
 
-      siteconf.flush
+      siteconf.close
 
       destdir = ENV["DESTDIR"]
 
@@ -48,9 +46,11 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
           run cmd, results
         ensure
           if File.exist? 'mkmf.log'
-            results << "To see why this extension failed to compile, please check" \
-              " the mkmf.log which can be found here:\n"
-            results << "  " + File.join(dest_path, 'mkmf.log') + "\n"
+            unless $?.success? then
+              results << "To see why this extension failed to compile, please check" \
+                " the mkmf.log which can be found here:\n"
+              results << "  " + File.join(dest_path, 'mkmf.log') + "\n"
+            end
             FileUtils.mv 'mkmf.log', dest_path
           end
           siteconf.unlink
@@ -76,9 +76,9 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
         end
       ensure
         ENV["DESTDIR"] = destdir
+        siteconf.close!
       end
     end
-    t.unlink if t and t.path
 
     results
   ensure

@@ -7,6 +7,7 @@ stringio.o: $(hdrdir)/ruby/encoding.h
 stringio.o: $(hdrdir)/ruby/intern.h
 stringio.o: $(hdrdir)/ruby/io.h
 stringio.o: $(hdrdir)/ruby/missing.h
+stringio.o: $(hdrdir)/ruby/onigmo.h
 stringio.o: $(hdrdir)/ruby/oniguruma.h
 stringio.o: $(hdrdir)/ruby/ruby.h
 stringio.o: $(hdrdir)/ruby/st.h

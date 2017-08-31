@@ -22,13 +22,14 @@
 #define MAX_POSBUF 128
 
 #define VM_CFP_CNT(th, cfp) \
-  ((rb_control_frame_t *)((th)->stack + (th)->stack_size) - (rb_control_frame_t *)(cfp))
+  ((rb_control_frame_t *)((th)->ec.vm_stack + (th)->ec.vm_stack_size) - \
+   (rb_control_frame_t *)(cfp))
 
 static void
 control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     ptrdiff_t pc = -1;
-    ptrdiff_t ep = cfp->ep - th->stack;
+    ptrdiff_t ep = cfp->ep - th->ec.vm_stack;
     char ep_in_heap = ' ';
     char posbuf[MAX_POSBUF+1];
     int line = 0;
@@ -38,7 +39,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 
     const rb_callable_method_entry_t *me;
 
-    if (ep < 0 || (size_t)ep > th->stack_size) {
+    if (ep < 0 || (size_t)ep > th->ec.vm_stack_size) {
 	ep = (ptrdiff_t)cfp->ep;
 	ep_in_heap = 'p';
     }
@@ -58,12 +59,6 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	break;
       case VM_FRAME_MAGIC_CFUNC:
 	magic = "CFUNC";
-	break;
-      case VM_FRAME_MAGIC_PROC:
-	magic = "PROC";
-	break;
-      case VM_FRAME_MAGIC_LAMBDA:
-	magic = "LAMBDA";
 	break;
       case VM_FRAME_MAGIC_IFUNC:
 	magic = "IFUNC";
@@ -91,7 +86,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     }
 
     if (cfp->iseq != 0) {
-#define RUBY_VM_IFUNC_P(ptr)        (RB_TYPE_P((VALUE)(ptr), T_IMEMO) && imemo_type((VALUE)ptr) == imemo_ifunc)
+#define RUBY_VM_IFUNC_P(ptr) imemo_type_p((VALUE)ptr, imemo_ifunc)
 	if (RUBY_VM_IFUNC_P(cfp->iseq)) {
 	    iseq_name = "<ifunc>";
 	}
@@ -106,7 +101,7 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
 	    iseq_name = RSTRING_PTR(cfp->iseq->body->location.label);
 	    line = rb_vm_get_sourceline(cfp);
 	    if (line) {
-		snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(cfp->iseq->body->location.path), line);
+		snprintf(posbuf, MAX_POSBUF, "%s:%d", RSTRING_PTR(rb_iseq_path(cfp->iseq)), line);
 	    }
 	}
     }
@@ -117,14 +112,14 @@ control_frame_dump(rb_thread_t *th, rb_control_frame_t *cfp)
     }
 
     fprintf(stderr, "c:%04"PRIdPTRDIFF" ",
-	    ((rb_control_frame_t *)(th->stack + th->stack_size) - cfp));
+	    ((rb_control_frame_t *)(th->ec.vm_stack + th->ec.vm_stack_size) - cfp));
     if (pc == -1) {
 	fprintf(stderr, "p:---- ");
     }
     else {
 	fprintf(stderr, "p:%04"PRIdPTRDIFF" ", pc);
     }
-    fprintf(stderr, "s:%04"PRIdPTRDIFF" ", cfp->sp - th->stack);
+    fprintf(stderr, "s:%04"PRIdPTRDIFF" ", cfp->sp - th->ec.vm_stack);
     fprintf(stderr, ep_in_heap == ' ' ? "e:%06"PRIdPTRDIFF" " : "E:%06"PRIxPTRDIFF" ", ep % 10000);
     fprintf(stderr, "%-6s", magic);
     if (line) {
@@ -150,12 +145,12 @@ rb_vmdebug_stack_dump_raw(rb_thread_t *th, rb_control_frame_t *cfp)
     VALUE *p, *st, *t;
 
     fprintf(stderr, "-- stack frame ------------\n");
-    for (p = st = th->stack; p < sp; p++) {
+    for (p = st = th->ec.vm_stack; p < sp; p++) {
 	fprintf(stderr, "%04ld (%p): %08"PRIxVALUE, (long)(p - st), p, *p);
 
 	t = (VALUE *)*p;
-	if (th->stack <= t && t < sp) {
-	    fprintf(stderr, " (= %ld)", (long)((VALUE *)GC_GUARDED_PTR_REF(t) - th->stack));
+	if (th->ec.vm_stack <= t && t < sp) {
+	    fprintf(stderr, " (= %ld)", (long)((VALUE *)GC_GUARDED_PTR_REF(t) - th->ec.vm_stack));
 	}
 
 	if (p == ep)
@@ -167,7 +162,7 @@ rb_vmdebug_stack_dump_raw(rb_thread_t *th, rb_control_frame_t *cfp)
 
     fprintf(stderr, "-- Control frame information "
 	    "-----------------------------------------------\n");
-    while ((void *)cfp < (void *)(th->stack + th->stack_size)) {
+    while ((void *)cfp < (void *)(th->ec.vm_stack + th->ec.vm_stack_size)) {
 	control_frame_dump(th, cfp);
 	cfp++;
     }
@@ -178,7 +173,7 @@ void
 rb_vmdebug_stack_dump_raw_current(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_vmdebug_stack_dump_raw(th, th->cfp);
+    rb_vmdebug_stack_dump_raw(th, th->ec.cfp);
 }
 
 void
@@ -217,19 +212,18 @@ rb_vmdebug_proc_dump_raw(rb_proc_t *proc)
 void
 rb_vmdebug_stack_dump_th(VALUE thval)
 {
-    rb_thread_t *th;
-    GetThreadPtr(thval, th);
-    rb_vmdebug_stack_dump_raw(th, th->cfp);
+    rb_thread_t *target_th = rb_thread_ptr(thval);
+    rb_vmdebug_stack_dump_raw(target_th, target_th->ec.cfp);
 }
 
 #if VMDEBUG > 2
 
 /* copy from vm.c */
-static VALUE *
+static const VALUE *
 vm_base_ptr(rb_control_frame_t *cfp)
 {
     rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-    VALUE *bp = prev_cfp->sp + iseq->body->local_table_size + VM_ENV_DATA_SIZE;
+    const VALUE *bp = prev_cfp->sp + cfp->iseq->body->local_table_size + VM_ENV_DATA_SIZE;
 
     if (cfp->iseq->body->type == ISEQ_TYPE_METHOD) {
 	bp += 1;
@@ -240,15 +234,15 @@ vm_base_ptr(rb_control_frame_t *cfp)
 static void
 vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 {
-    int i, argc = 0, local_size = 0;
+    int i, argc = 0, local_table_size = 0;
     VALUE rstr;
     VALUE *sp = cfp->sp;
-    VALUE *ep = cfp->ep;
+    const VALUE *ep = cfp->ep;
 
     if (VM_FRAME_RUBYFRAME_P(cfp)) {
-	rb_iseq_t *iseq = cfp->iseq;
+	const rb_iseq_t *iseq = cfp->iseq;
 	argc = iseq->body->param.lead_num;
-	local_size = iseq->body->local_size;
+	local_table_size = iseq->body->local_table_size;
     }
 
     /* stack trace header */
@@ -257,15 +251,12 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_TOP   ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_BLOCK ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_CLASS ||
-	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_PROC  ||
-	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_LAMBDA||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_CFUNC ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_IFUNC ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_EVAL  ||
 	VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_RESCUE)
     {
-
-	VALUE *ptr = ep - local_size;
+	const VALUE *ptr = ep - local_table_size;
 
 	control_frame_dump(th, cfp);
 
@@ -274,7 +265,7 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 	    fprintf(stderr, "  arg   %2d: %8s (%p)\n", i, StringValueCStr(rstr),
 		   (void *)ptr++);
 	}
-	for (; i < local_size - 1; i++) {
+	for (; i < local_table_size - 1; i++) {
 	    rstr = rb_inspect(*ptr);
 	    fprintf(stderr, "  local %2d: %8s (%p)\n", i, StringValueCStr(rstr),
 		   (void *)ptr++);
@@ -282,14 +273,19 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 
 	ptr = vm_base_ptr(cfp);
 	for (; ptr < sp; ptr++, i++) {
-	    if (*ptr == Qundef) {
+	    switch (TYPE(*ptr)) {
+	      case T_UNDEF:
 		rstr = rb_str_new2("undef");
-	    }
-	    else {
+		break;
+	      case T_IMEMO:
+		rstr = rb_str_new2("imemo"); /* TODO: can put mode detail information */
+		break;
+	      default:
 		rstr = rb_inspect(*ptr);
+		break;
 	    }
 	    fprintf(stderr, "  stack %2d: %8s (%"PRIdPTRDIFF")\n", i, StringValueCStr(rstr),
-		    (ptr - th->stack));
+		    (ptr - th->ec.vm_stack));
 	}
     }
     else if (VM_FRAME_FINISHED_P(cfp)) {
@@ -309,34 +305,32 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 void
 rb_vmdebug_debug_print_register(rb_thread_t *th)
 {
-    rb_control_frame_t *cfp = th->cfp;
+    rb_control_frame_t *cfp = th->ec.cfp;
     ptrdiff_t pc = -1;
-    ptrdiff_t ep = cfp->ep - th->stack;
+    ptrdiff_t ep = cfp->ep - th->ec.vm_stack;
     ptrdiff_t cfpi;
 
     if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	pc = cfp->pc - cfp->iseq->body->iseq_encoded;
     }
 
-    if (ep < 0 || (size_t)ep > th->stack_size) {
+    if (ep < 0 || (size_t)ep > th->ec.vm_stack_size) {
 	ep = -1;
     }
 
-    cfpi = ((rb_control_frame_t *)(th->stack + th->stack_size)) - cfp;
+    cfpi = ((rb_control_frame_t *)(th->ec.vm_stack + th->ec.vm_stack_size)) - cfp;
     fprintf(stderr, "  [PC] %04"PRIdPTRDIFF", [SP] %04"PRIdPTRDIFF", [EP] %04"PRIdPTRDIFF", [CFP] %04"PRIdPTRDIFF"\n",
-	    pc, (cfp->sp - th->stack), ep, cfpi);
+	    pc, (cfp->sp - th->ec.vm_stack), ep, cfpi);
 }
 
 void
 rb_vmdebug_thread_dump_regs(VALUE thval)
 {
-    rb_thread_t *th;
-    GetThreadPtr(thval, th);
-    rb_vmdebug_debug_print_register(th);
+    rb_vmdebug_debug_print_register(rb_thread_ptr(thval));
 }
 
 void
-rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp,VALUE *_pc)
+rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp, const VALUE *_pc)
 {
     const rb_iseq_t *iseq = cfp->iseq;
 
@@ -348,7 +342,7 @@ rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp,VALUE *_pc)
 	    printf(" ");
 	}
 	printf("| ");
-	if(0)printf("[%03ld] ", (long)(cfp->sp - th->stack));
+	if(0)printf("[%03ld] ", (long)(cfp->sp - th->ec.vm_stack));
 
 	/* printf("%3"PRIdPTRDIFF" ", VM_CFP_CNT(th, cfp)); */
 	if (pc >= 0) {
@@ -383,7 +377,7 @@ rb_vmdebug_debug_print_post(rb_thread_t *th, rb_control_frame_t *cfp
 
 #if VMDEBUG > 2
     /* stack_dump_thobj(th); */
-    vm_stack_dump_each(th, th->cfp);
+    vm_stack_dump_each(th, th->ec.cfp);
 
 #if OPT_STACK_CACHING
     {
@@ -402,10 +396,8 @@ rb_vmdebug_debug_print_post(rb_thread_t *th, rb_control_frame_t *cfp
 VALUE
 rb_vmdebug_thread_dump_state(VALUE self)
 {
-    rb_thread_t *th;
-    rb_control_frame_t *cfp;
-    GetThreadPtr(self, th);
-    cfp = th->cfp;
+    rb_thread_t *th = rb_thread_ptr(self);
+    rb_control_frame_t *cfp = th->ec.cfp;
 
     fprintf(stderr, "Thread state dump:\n");
     fprintf(stderr, "pc : %p, sp : %p\n", (void *)cfp->pc, (void *)cfp->sp);
@@ -469,10 +461,14 @@ darwin_sigtramp:
 	unw_set_reg(&cursor, UNW_X86_64_R13, uctx->uc_mcontext->__ss.__r13);
 	unw_set_reg(&cursor, UNW_X86_64_R14, uctx->uc_mcontext->__ss.__r14);
 	unw_set_reg(&cursor, UNW_X86_64_R15, uctx->uc_mcontext->__ss.__r15);
-	ip = *(unw_word_t*)uctx->uc_mcontext->__ss.__rsp;
-	unw_set_reg(&cursor, UNW_REG_IP, ip);
-	trace[n++] = (void *)uctx->uc_mcontext->__ss.__rip;
+	ip = uctx->uc_mcontext->__ss.__rip;
+	if (!ip || (((char*)ip)[-2] == 0x0f && ((char*)ip)[-1] == 5)) {
+	    /* NULL reference or signal received in syscall */
+	    trace[n++] = (void *)ip;
+	    ip = *(unw_word_t*)uctx->uc_mcontext->__ss.__rsp;
+	}
 	trace[n++] = (void *)ip;
+	unw_set_reg(&cursor, UNW_REG_IP, ip);
     }
     while (unw_step(&cursor) > 0) {
 	unw_get_reg(&cursor, UNW_REG_IP, &ip);
@@ -918,43 +914,6 @@ rb_dump_machine_register(const ucontext_t *ctx)
 # define rb_dump_machine_register(ctx) ((void)0)
 #endif /* HAVE_PRINT_MACHINE_REGISTERS */
 
-static void
-preface_dump(void)
-{
-#if defined __APPLE__
-    static const char msg[] = ""
-	"-- Crash Report log information "
-	"--------------------------------------------\n"
-	"   See Crash Report log file under the one of following:\n"
-	"     * ~/Library/Logs/CrashReporter\n"
-	"     * /Library/Logs/CrashReporter\n"
-	"     * ~/Library/Logs/DiagnosticReports\n"
-	"     * /Library/Logs/DiagnosticReports\n"
-	"   for more details.\n"
-	"Don't forget to include the above Crash Report log file in bug reports.\n"
-	"\n";
-    const char *const endmsg = msg + sizeof(msg) - 1;
-    const char *p = msg;
-#define RED "\033[;31;1;7m"
-#define GREEN "\033[;32;7m"
-#define RESET "\033[m"
-
-    if (isatty(fileno(stderr))) {
-	const char *e = strchr(p, '\n');
-	const int w = (int)(e - p);
-	do {
-	    int i = (int)(e - p);
-	    fputs(*p == ' ' ? GREEN : RED, stderr);
-	    fwrite(p, 1, e - p, stderr);
-	    for (; i < w; ++i) fputc(' ', stderr);
-	    fputs(RESET, stderr);
-	    fputc('\n', stderr);
-	} while ((p = e + 1) < endmsg && (e = strchr(p, '\n')) != 0 && e > p + 1);
-    }
-    fwrite(p, 1, endmsg - p, stderr);
-#endif
-}
-
 void
 rb_vm_bugreport(const void *ctx)
 {
@@ -967,8 +926,6 @@ rb_vm_bugreport(const void *ctx)
     enum {other_runtime_info = 0};
 #endif
     const rb_vm_t *const vm = GET_VM();
-
-    preface_dump();
 
     if (vm) {
 	SDR();
@@ -1075,5 +1032,27 @@ rb_vm_bugreport(const void *ctx)
 	    fprintf(stderr, "\n");
 	}
 #endif /* __FreeBSD__ */
+    }
+}
+
+#ifdef NON_SCALAR_THREAD_ID
+const char *ruby_fill_thread_id_string(rb_nativethread_id_t thid, rb_thread_id_string_t buf);
+#endif
+
+void
+rb_vmdebug_stack_dump_all_threads(void)
+{
+    rb_vm_t *vm = GET_THREAD()->vm;
+    rb_thread_t *th = NULL;
+
+    list_for_each(&vm->living_threads, th, vmlt_node) {
+#ifdef NON_SCALAR_THREAD_ID
+	rb_thread_id_string_t buf;
+	ruby_fill_thread_id_string(th->thread_id, buf);
+	fprintf(stderr, "th: %p, native_id: %s\n", th, buf);
+#else
+	fprintf(stderr, "th: %p, native_id: %p\n", th, (void *)th->thread_id);
+#endif
+	rb_vmdebug_stack_dump_raw(th, th->ec.cfp);
     }
 }

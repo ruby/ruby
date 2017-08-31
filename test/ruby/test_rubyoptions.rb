@@ -48,7 +48,7 @@ class TestRubyOptions < Test::Unit::TestCase
     end
 
     assert_in_out_err(%w(-p -l -a -e) + ['p [$-p, $-l, $-a]'],
-                      "foo\nbar\nbaz\n") do |r, e|
+                      "foo\nbar\nbaz") do |r, e|
       assert_equal(
         [ '[true, true, true]', 'foo',
           '[true, true, true]', 'bar',
@@ -56,6 +56,7 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_equal([], e)
     end
   end
+
 
   def test_warning
     save_rubyopt = ENV['RUBYOPT']
@@ -184,6 +185,8 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(-0141 -e) + ["print gets"], "foo\nbar\0baz", %w(foo ba), [])
 
     assert_in_out_err(%w(-0e) + ["print gets"], "foo\nbar\0baz", %W(foo bar\0), [])
+
+    assert_in_out_err(%w(-00 -e) + ["p gets, gets"], "foo\nbar\n\nbaz\nzot\n\n\n", %w("foo\nbar\n\n" "baz\nzot\n\n"), [])
   end
 
   def test_autosplit
@@ -325,7 +328,7 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err([], "#! /test_r_u_b_y_test_r_u_b_y_options_foobarbazqux -foo -bar\r\np 1\r\n",
                       [], /: no Ruby script found in input/)
 
-    warning = /mswin|mingw/ =~ RUBY_PLATFORM ? [] : /shebang line ends with \\r/
+    warning = /mswin|mingw/ =~ RUBY_PLATFORM ? [] : /shebang line ending with \\r/
     assert_in_out_err([{'RUBYOPT' => nil}], "#!ruby -KU -Eutf-8\r\np \"\u3042\"\r\n",
                       ["\"\u3042\""], warning,
                       encoding: Encoding::UTF_8)
@@ -335,6 +338,8 @@ class TestRubyOptions < Test::Unit::TestCase
                       %w[4], [], bug4118)
     assert_in_out_err(%w[-x], "#!/bin/sh\n""#!shebang\n""#!ruby\n""puts __LINE__\n",
                       %w[4], [], bug4118)
+
+    assert_ruby_status(%w[], "#! ruby -- /", '[ruby-core:82267] [Bug #13786]')
   end
 
   def test_sflag
@@ -448,8 +453,9 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_notfound
     notexist = "./notexist.rb"
-    rubybin = EnvUtil.rubybin.dup
-    rubybin.gsub!(%r(/), '\\') if /mswin|mingw/ =~ RUBY_PLATFORM
+    dir, *rubybin = RbConfig::CONFIG.values_at('bindir', 'RUBY_INSTALL_NAME', 'EXEEXT')
+    rubybin = "#{dir}/#{rubybin.join('')}"
+    rubybin.tr!('/', '\\') if /mswin|mingw/ =~ RUBY_PLATFORM
     rubybin = Regexp.quote(rubybin)
     pat = Regexp.quote(notexist)
     bug1573 = '[ruby-core:23717]'
@@ -587,6 +593,11 @@ class TestRubyOptions < Test::Unit::TestCase
         (?:.*\n)?
         For\sdetails:\shttp:\/\/.*\.ruby-lang\.org/.*\n
         \n
+        (?:
+          \[IMPORTANT\]\n
+          (?:.+\n)+
+          \n
+        )?
       )x,
     ]
     ExpectedStderrList << additional if additional

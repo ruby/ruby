@@ -112,8 +112,7 @@ VALUE rb_iseqw_line_trace_specify(VALUE iseqval, VALUE pos, VALUE set);
 VALUE rb_iseqw_new(const rb_iseq_t *iseq);
 const rb_iseq_t *rb_iseqw_to_iseq(VALUE iseqw);
 
-VALUE rb_iseq_path(const rb_iseq_t *iseq);
-VALUE rb_iseq_absolute_path(const rb_iseq_t *iseq);
+VALUE rb_iseq_absolute_path(const rb_iseq_t *iseq); /* obsolete */
 VALUE rb_iseq_label(const rb_iseq_t *iseq);
 VALUE rb_iseq_base_label(const rb_iseq_t *iseq);
 VALUE rb_iseq_first_lineno(const rb_iseq_t *iseq);
@@ -152,7 +151,21 @@ struct iseq_catch_table_entry {
 	CATCH_TYPE_REDO   = INT2FIX(5),
 	CATCH_TYPE_NEXT   = INT2FIX(6)
     } type;
+
+    /*
+     * iseq type:
+     *   CATCH_TYPE_RESCUE, CATCH_TYPE_ENSURE:
+     *     use iseq as continuation.
+     *
+     *   CATCH_TYPE_BREAK (iter):
+     *     use iseq as key.
+     *
+     *   CATCH_TYPE_BREAK (while), CATCH_TYPE_RETRY,
+     *   CATCH_TYPE_REDO, CATCH_TYPE_NEXT:
+     *     NULL.
+     */
     const rb_iseq_t *iseq;
+
     unsigned int start;
     unsigned int end;
     unsigned int cont;

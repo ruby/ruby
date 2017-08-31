@@ -6,6 +6,7 @@ end
 
 if defined? GDBM
   require 'test/unit'
+  require 'envutil' unless defined?(EnvUtil)
   require 'tmpdir'
   require 'fileutils'
 

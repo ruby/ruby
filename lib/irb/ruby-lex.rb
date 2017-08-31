@@ -262,9 +262,18 @@ class RubyLex
   end
 
   def lex
-    until (((tk = token).kind_of?(TkNL) || tk.kind_of?(TkEND_OF_SCRIPT)) &&
-        !@continue or
-        tk.nil?)
+    continue = @continue
+    while tk = token
+      case tk
+      when TkNL, TkEND_OF_SCRIPT
+        @continue = continue unless continue.nil?
+        break unless @continue
+      when TkSPACE, TkCOMMENT
+      when TkSEMICOLON, TkBEGIN, TkELSE
+        @continue = continue = false
+      else
+        continue = nil
+      end
     end
     line = get_readed
     if line == "" and tk.kind_of?(TkEND_OF_SCRIPT) || tk.nil?
@@ -406,7 +415,7 @@ class RubyLex
       if @lex_state != EXPR_END && @lex_state != EXPR_CLASS &&
           (@lex_state != EXPR_ARG || @space_seen)
         c = peek(0)
-        if /\S/ =~ c && (/["'`]/ =~ c || /\w/ =~ c || c == "-" || c == "~")
+        if /[-~"'`\w]/ =~ c
           tk = identify_here_document
         end
       end
@@ -792,7 +801,7 @@ class RubyLex
           token_c = TkSymbol2Token[trans[1]]
           @lex_state = trans[0]
         else
-          if @lex_state != EXPR_FNAME
+          if @lex_state != EXPR_FNAME and peek(0) != ':'
             if ENINDENT_CLAUSE.include?(token)
               # check for ``class = val'' etc.
               valid = true

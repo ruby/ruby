@@ -60,6 +60,8 @@ module Timeout
   #         value of 0 or +nil+ will execute the block without any timeout.
   # +klass+:: Exception Class to raise if the block fails to terminate
   #           in +sec+ seconds.  Omitting will use the default, Timeout::Error
+  # +message+:: Error message to raise with Exception Class.
+  #             Omitting will use the default, "execution expired"
   #
   # Returns the result of the block *if* the block completed before
   # +sec+ seconds, otherwise throws an exception, based on the value of +klass+.
@@ -70,9 +72,9 @@ module Timeout
   # Note that this is both a method of module Timeout, so you can <tt>include
   # Timeout</tt> into your classes so they have a #timeout method, as well as
   # a module method, so you can call it directly as Timeout.timeout().
-  def timeout(sec, klass = nil)   #:yield: +sec+
+  def timeout(sec, klass = nil, message = nil)   #:yield: +sec+
     return yield(sec) if sec == nil or sec.zero?
-    message = "execution expired".freeze
+    message ||= "execution expired".freeze
     from = "from #{caller_locations(1, 1)[0]}" if $DEBUG
     e = Error
     bl = proc do |exception|

@@ -161,8 +161,6 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
  * OpenSSL::Engine.load. However, running cleanup before exit is recommended.
  *
  * Note that this is needed and works only in OpenSSL < 1.1.0.
- *
- * See also, https://www.openssl.org/docs/crypto/engine.html
  */
 static VALUE
 ossl_engine_s_cleanup(VALUE self)
@@ -229,21 +227,6 @@ ossl_engine_s_by_id(VALUE klass, VALUE id)
     return obj;
 }
 
-static VALUE
-ossl_engine_s_alloc(VALUE klass)
-{
-    ENGINE *e;
-    VALUE obj;
-
-    obj = NewEngine(klass);
-    if (!(e = ENGINE_new())) {
-       ossl_raise(eEngineError, NULL);
-    }
-    SetEngine(obj, e);
-
-    return obj;
-}
-
 /* Document-method: OpenSSL::Engine#id
  *
  * Get the id for this engine
@@ -304,7 +287,7 @@ ossl_engine_finish(VALUE self)
  * This returns an OpenSSL::Cipher by +name+, if it is available in this
  * engine.
  *
- * A EngineError will be raised if the cipher is unavailable.
+ * An EngineError will be raised if the cipher is unavailable.
  *
  *    e = OpenSSL::Engine.by_id("openssl")
  *     => #<OpenSSL::Engine id="openssl" name="Software engine support">
@@ -531,15 +514,19 @@ ossl_engine_inspect(VALUE self)
 void
 Init_ossl_engine(void)
 {
+#if 0
+    mOSSL = rb_define_module("OpenSSL");
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
+#endif
+
     cEngine = rb_define_class_under(mOSSL, "Engine", rb_cObject);
     eEngineError = rb_define_class_under(cEngine, "EngineError", eOSSLError);
 
-    rb_define_alloc_func(cEngine, ossl_engine_s_alloc);
+    rb_undef_alloc_func(cEngine);
     rb_define_singleton_method(cEngine, "load", ossl_engine_s_load, -1);
     rb_define_singleton_method(cEngine, "cleanup", ossl_engine_s_cleanup, 0);
     rb_define_singleton_method(cEngine, "engines", ossl_engine_s_engines, 0);
     rb_define_singleton_method(cEngine, "by_id", ossl_engine_s_by_id, 1);
-    rb_undef_method(CLASS_OF(cEngine), "new");
 
     rb_define_method(cEngine, "id", ossl_engine_get_id, 0);
     rb_define_method(cEngine, "name", ossl_engine_get_name, 0);

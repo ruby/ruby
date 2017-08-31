@@ -307,4 +307,18 @@ EOS
     b = Signal.list.keys.map(&:object_id).sort
     assert_equal a, b
   end
+
+  def test_self_stop
+    assert_ruby_status([], <<-'end;')
+      begin
+        fork{
+          sleep 1
+          Process.kill(:CONT, Process.ppid)
+        }
+        Process.kill(:STOP, Process.pid)
+      rescue NotImplementedError
+        # ok
+      end
+    end;
+  end
 end

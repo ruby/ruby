@@ -3344,7 +3344,7 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
  *   Convert LF to CR.
  * [:xml => :text]
  *   Escape as XML CharData.
- *   This form can be used as a HTML 4.0 #PCDATA.
+ *   This form can be used as an HTML 4.0 #PCDATA.
  *   - '&' -> '&amp;'
  *   - '<' -> '&lt;'
  *   - '>' -> '&gt;'
@@ -3352,7 +3352,7 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
  * [:xml => :attr]
  *   Escape as XML AttValue.
  *   The converted result is quoted as "...".
- *   This form can be used as a HTML 4.0 attribute value.
+ *   This form can be used as an HTML 4.0 attribute value.
  *   - '&' -> '&amp;'
  *   - '<' -> '&lt;'
  *   - '>' -> '&gt;'

@@ -1,37 +1,55 @@
 ---
 shallow_clone: true
-platform: x64
+platform:
+  - x64
+environment:
+  ruby_version: "23-%Platform%"
+  zlib_version: "1.2.11"
+  matrix:
+    - vs: "120"
 install:
-  - SET
-  - '"C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\vcvarsall.bat" amd64'
-  - SET PATH=\usr\local\bin;C:\Ruby22-x64\bin;C:\Ruby21-x64\Devkit\mingw\bin;%PATH%;C:\msys64\usr\bin
+  - chcp
+  - SET BITS=%Platform:x86=32%
+  - SET BITS=%BITS:x=%
+  - SET OPENSSL_DIR=c:\OpenSSL-Win%BITS%
+  - CALL SET vcvars=%%^VS%VS%COMNTOOLS^%%..\..\VC\vcvarsall.bat
+  - SET vcvars
+  - '"%vcvars%" %Platform:x64=amd64%'
+  - SET ruby_path=C:\Ruby%ruby_version:-x86=%
+  - SET PATH=\usr\local\bin;%ruby_path%\bin;%ruby_path%\Devkit\mingw\bin;%PATH%;C:\msys64\usr\bin
   - ruby --version
   - 'cl'
   - SET
+  - echo> Makefile srcdir=.
+  - echo>> Makefile MSC_VER=0
+  - echo>> Makefile RT=none
+  - echo>> Makefile RT_VER=0
+  - echo>> Makefile BUILTIN_ENCOBJS=nul
+  - type win32\Makefile.sub >> Makefile
+  - nmake %mflags% touch-unicode-files
+  - nmake %mflags% up incs UNICODE_FILES=.
+  - del Makefile
   - mkdir \usr\local\bin
   - mkdir \usr\local\include
   - mkdir \usr\local\lib
-  - ps: Start-FileDownload 'http://ftp.openbsd.org/pub/OpenBSD/LibreSSL/libressl-2.3.5-windows.zip'
-  - 7z x libressl-2.3.5-windows.zip
-  - copy libressl-2.3.5-windows\x64\libcrypto-37.lib \usr\local\lib\crypto.lib
-  - copy libressl-2.3.5-windows\x64\libssl-38.lib    \usr\local\lib\ssl.lib
-  - copy libressl-2.3.5-windows\x64\libcrypto-37.dll \usr\local\bin
-  - copy libressl-2.3.5-windows\x64\libssl-38.dll    \usr\local\bin
-  - xcopy /e libressl-2.3.5-windows\include          \usr\local\include
-  - ps: Start-FileDownload 'http://zlib.net/zlib128.zip'
-  - 7z x zlib128.zip
-  - cd zlib-1.2.8
-  - nmake -f win32/Makefile.msc
-  - copy zlib1.dll \usr\local\bin
-  - copy zlib.lib  \usr\local\lib
-  - copy zconf.h   \usr\local\include
-  - copy zlib.h    \usr\local\include
+  - appveyor DownloadFile https://downloads.sourceforge.net/project/libpng/zlib/%zlib_version%/zlib%zlib_version:.=%.zip
+  - 7z x -o%APPVEYOR_BUILD_FOLDER%\ext\zlib zlib%zlib_version:.=%.zip
+  - for %%I in (%OPENSSL_DIR%\*.dll) do mklink /h \usr\local\bin\%%~nxI %%I
+  - mkdir %Platform%-mswin_%vs%
+  - ps: Get-ChildItem "win32" -Recurse | foreach {$_.Attributes = 'Readonly'}
+  - ps: Get-Item $env:Platform"-mswin_"$env:vs | foreach {$_.Attributes = 'Normal'}
 build_script:
   - cd %APPVEYOR_BUILD_FOLDER%
-  - win32\configure.bat --without-ext=+,dbm,gdbm,readline,tk* --with-opt-dir=/usr/local
-  - nmake -l up
+  - cd %Platform%-mswin_%vs%
+  - ..\win32\configure.bat --without-ext=+,dbm,gdbm,readline --with-opt-dir=/usr/local --with-openssl-dir=%OPENSSL_DIR:\=/%
   - nmake -l
   - nmake install-nodoc
+  - \usr\bin\ruby -v -e "p :locale => Encoding.find('locale'), :filesystem => Encoding.find('filesystem')"
 test_script:
-  - nmake -l "OPTS=-v -q" btest
-  - nmake -l "OPTS=-v -q" test-basic
+  - set /a JOBS=%NUMBER_OF_PROCESSORS%
+  - nmake -l "TESTOPTS=-v -q" btest
+  - nmake -l "TESTOPTS=-v -q" test-basic
+  - nmake -l "TESTOPTS=-q -j%JOBS%" test-all
+  - nmake -l test-spec
+matrix:
+  fast_finish: true

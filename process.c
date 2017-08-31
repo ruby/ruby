@@ -172,7 +172,7 @@ static void check_gid_switch(void);
 #   define PREPARE_GETPWNAM \
     VALUE getpw_buf = 0
 #   define FINISH_GETPWNAM \
-    ALLOCV_END(getpw_buf)
+    (getpw_buf ? (void)rb_str_resize(getpw_buf, 0) : (void)0)
 #   define OBJ2UID1(id) obj2uid((id), &getpw_buf)
 #   define OBJ2UID(id) obj2uid0(id)
 static rb_uid_t obj2uid(VALUE id, VALUE *getpw_buf);
@@ -214,7 +214,7 @@ static rb_uid_t obj2uid(VALUE id);
 #   define PREPARE_GETGRNAM \
     VALUE getgr_buf = 0
 #   define FINISH_GETGRNAM \
-    ALLOCV_END(getgr_buf)
+    (getgr_buf ? (void)rb_str_resize(getgr_buf, 0) : (void)0)
 #   define OBJ2GID1(id) obj2gid((id), &getgr_buf)
 #   define OBJ2GID(id) obj2gid0(id)
 static rb_gid_t obj2gid(VALUE id, VALUE *getgr_buf);
@@ -405,7 +405,7 @@ parent_redirect_close(int fd)
 
 /*
  *  call-seq:
- *     Process.pid   -> fixnum
+ *     Process.pid   -> integer
  *
  *  Returns the process id of this process. Not available on all
  *  platforms.
@@ -422,7 +422,7 @@ get_pid(void)
 
 /*
  *  call-seq:
- *     Process.ppid   -> fixnum
+ *     Process.ppid   -> integer
  *
  *  Returns the process id of the parent of this process. Returns
  *  untrustworthy value on Win32/64. Not available on all platforms.
@@ -498,10 +498,10 @@ rb_last_status_clear(void)
 
 /*
  *  call-seq:
- *     stat.to_i     -> fixnum
- *     stat.to_int   -> fixnum
+ *     stat.to_i     -> integer
+ *     stat.to_int   -> integer
  *
- *  Returns the bits in _stat_ as a <code>Fixnum</code>. Poking
+ *  Returns the bits in _stat_ as a <code>Integer</code>. Poking
  *  around in these bits is platform dependent.
  *
  *     fork { exit 0xab }         #=> 26566
@@ -519,7 +519,7 @@ pst_to_i(VALUE st)
 
 /*
  *  call-seq:
- *     stat.pid   -> fixnum
+ *     stat.pid   -> integer
  *
  *  Returns the process ID that this status object represents.
  *
@@ -646,7 +646,7 @@ pst_equal(VALUE st1, VALUE st2)
 
 /*
  *  call-seq:
- *     stat & num   -> fixnum
+ *     stat & num   -> integer
  *
  *  Logical AND of the bits in _stat_ with <em>num</em>.
  *
@@ -667,7 +667,7 @@ pst_bitand(VALUE st1, VALUE st2)
 
 /*
  *  call-seq:
- *     stat >> num   -> fixnum
+ *     stat >> num   -> integer
  *
  *  Shift the bits in _stat_ right <em>num</em> places.
  *
@@ -709,7 +709,7 @@ pst_wifstopped(VALUE st)
 
 /*
  *  call-seq:
- *     stat.stopsig   -> fixnum or nil
+ *     stat.stopsig   -> integer or nil
  *
  *  Returns the number of the signal that caused _stat_ to stop
  *  (or +nil+ if self is not stopped).
@@ -748,7 +748,7 @@ pst_wifsignaled(VALUE st)
 
 /*
  *  call-seq:
- *     stat.termsig   -> fixnum or nil
+ *     stat.termsig   -> integer or nil
  *
  *  Returns the number of the signal that caused _stat_ to
  *  terminate (or +nil+ if self was not terminated by an
@@ -789,7 +789,7 @@ pst_wifexited(VALUE st)
 
 /*
  *  call-seq:
- *     stat.exitstatus   -> fixnum or nil
+ *     stat.exitstatus   -> integer or nil
  *
  *  Returns the least significant eight bits of the return code of
  *  _stat_. Only available if <code>exited?</code> is
@@ -936,9 +936,9 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
 
 /*
  *  call-seq:
- *     Process.wait()                     -> fixnum
- *     Process.wait(pid=-1, flags=0)      -> fixnum
- *     Process.waitpid(pid=-1, flags=0)   -> fixnum
+ *     Process.wait()                     -> integer
+ *     Process.wait(pid=-1, flags=0)      -> integer
+ *     Process.waitpid(pid=-1, flags=0)   -> integer
  *
  *  Waits for a child process to exit, returns its process id, and
  *  sets <code>$?</code> to a <code>Process::Status</code> object
@@ -1247,7 +1247,9 @@ proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
     UNREACHABLE;
 #else
     char **argv;
+#ifndef _WIN32
     char **envp;
+#endif
 
     argv = ARGVSTR2ARGV(argv_str);
 
@@ -1256,12 +1258,16 @@ proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
 	return -1;
     }
 
+#ifdef _WIN32
+    rb_w32_uaspawn(P_OVERLAY, prog, argv);
+#else
     envp = envp_str ? (char **)RSTRING_PTR(envp_str) : NULL;
     if (envp_str)
         execve(prog, argv, envp); /* async-signal-safe */
     else
         execv(prog, argv); /* async-signal-safe (since SUSv4) */
     preserving_errno(try_with_sh(prog, argv, envp)); /* try_with_sh() is async-signal-safe. */
+#endif
     return -1;
 #endif
 }
@@ -1344,6 +1350,7 @@ mark_exec_arg(void *ptr)
     rb_gc_mark(eargp->fd_open);
     rb_gc_mark(eargp->fd_dup2_child);
     rb_gc_mark(eargp->env_modification);
+    rb_gc_mark(eargp->path_env);
     rb_gc_mark(eargp->chdir_dir);
 }
 
@@ -1479,7 +1486,7 @@ check_exec_redirect_fd(VALUE v, int iskey)
         else
             goto wrong;
     }
-    else if (!NIL_P(tmp = rb_check_convert_type(v, T_FILE, "IO", "to_io"))) {
+    else if (!NIL_P(tmp = rb_check_convert_type_with_id(v, T_FILE, "IO", idTo_io))) {
         rb_io_t *fptr;
         GetOpenFile(tmp, fptr);
         if (fptr->tied_io_for_writing)
@@ -1627,7 +1634,35 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
 }
 
 #if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
-static int rlimit_type_by_lname(const char *name);
+static int rlimit_type_by_sym(VALUE key);
+
+static void
+rb_execarg_addopt_rlimit(struct rb_execarg *eargp, int rtype, VALUE val)
+{
+    VALUE ary = eargp->rlimit_limits;
+    VALUE tmp, softlim, hardlim;
+    if (eargp->rlimit_limits == Qfalse)
+	ary = eargp->rlimit_limits = hide_obj(rb_ary_new());
+    else
+	ary = eargp->rlimit_limits;
+    tmp = rb_check_array_type(val);
+    if (!NIL_P(tmp)) {
+	if (RARRAY_LEN(tmp) == 1)
+	    softlim = hardlim = rb_to_int(rb_ary_entry(tmp, 0));
+	else if (RARRAY_LEN(tmp) == 2) {
+	    softlim = rb_to_int(rb_ary_entry(tmp, 0));
+	    hardlim = rb_to_int(rb_ary_entry(tmp, 1));
+	}
+	else {
+	    rb_raise(rb_eArgError, "wrong exec rlimit option");
+	}
+    }
+    else {
+	softlim = hardlim = rb_to_int(val);
+    }
+    tmp = hide_obj(rb_ary_new3(3, INT2NUM(rtype), softlim, hardlim));
+    rb_ary_push(ary, tmp);
+}
 #endif
 
 int
@@ -1636,12 +1671,19 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
 
     ID id;
-#if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
-    int rtype;
-#endif
 
     switch (TYPE(key)) {
       case T_SYMBOL:
+#if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
+        {
+            int rtype = rlimit_type_by_sym(key);
+            if (rtype != -1) {
+                rb_execarg_addopt_rlimit(eargp, rtype, val);
+                RB_GC_GUARD(execarg_obj);
+                return ST_CONTINUE;
+            }
+        }
+#endif
         if (!(id = rb_check_id(&key))) return ST_STOP;
 #ifdef HAVE_SETPGID
         if (id == id_pgroup) {
@@ -1671,35 +1713,6 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
             }
             eargp->new_pgroup_given = 1;
             eargp->new_pgroup_flag = RTEST(val) ? 1 : 0;
-        }
-        else
-#endif
-#if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
-        if (strncmp("rlimit_", rb_id2name(id), 7) == 0 &&
-            (rtype = rlimit_type_by_lname(rb_id2name(id)+7)) != -1) {
-            VALUE ary = eargp->rlimit_limits;
-            VALUE tmp, softlim, hardlim;
-            if (eargp->rlimit_limits == Qfalse)
-                ary = eargp->rlimit_limits = hide_obj(rb_ary_new());
-            else
-                ary = eargp->rlimit_limits;
-            tmp = rb_check_array_type(val);
-            if (!NIL_P(tmp)) {
-                if (RARRAY_LEN(tmp) == 1)
-                    softlim = hardlim = rb_to_int(rb_ary_entry(tmp, 0));
-                else if (RARRAY_LEN(tmp) == 2) {
-                    softlim = rb_to_int(rb_ary_entry(tmp, 0));
-                    hardlim = rb_to_int(rb_ary_entry(tmp, 1));
-                }
-                else {
-                    rb_raise(rb_eArgError, "wrong exec rlimit option");
-                }
-            }
-            else {
-                softlim = hardlim = rb_to_int(val);
-            }
-            tmp = hide_obj(rb_ary_new3(3, INT2NUM(rtype), softlim, hardlim));
-            rb_ary_push(ary, tmp);
         }
         else
 #endif
@@ -1804,7 +1817,7 @@ check_exec_options_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
     VALUE execarg_obj = (VALUE)arg;
     if (rb_execarg_addopt(execarg_obj, key, val) != ST_CONTINUE) {
 	if (SYMBOL_P(key))
-	    rb_raise(rb_eArgError, "wrong exec option symbol: %"PRIsVALUE,
+	    rb_raise(rb_eArgError, "wrong exec option symbol: % "PRIsVALUE,
 		     key);
 	rb_raise(rb_eArgError, "wrong exec option");
     }
@@ -1923,12 +1936,19 @@ rb_execarg_extract_options(VALUE execarg_obj, VALUE opthash)
     return args[1];
 }
 
+#ifdef ENV_IGNORECASE
+#define ENVMATCH(s1, s2) (STRCASECMP((s1), (s2)) == 0)
+#else
+#define ENVMATCH(n1, n2) (strcmp((n1), (n2)) == 0)
+#endif
+
 static int
 check_exec_env_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
 {
     VALUE key = (VALUE)st_key;
     VALUE val = (VALUE)st_val;
-    VALUE env = (VALUE)arg;
+    VALUE env = ((VALUE *)arg)[0];
+    VALUE *path = &((VALUE *)arg)[1];
     char *k;
 
     k = StringValueCStr(key);
@@ -1941,20 +1961,25 @@ check_exec_env_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
     key = EXPORT_STR(key);
     if (!NIL_P(val)) val = EXPORT_STR(val);
 
+    if (ENVMATCH(k, PATH_ENV)) {
+	*path = val;
+    }
     rb_ary_push(env, hide_obj(rb_assoc_new(key, val)));
 
     return ST_CONTINUE;
 }
 
 static VALUE
-rb_check_exec_env(VALUE hash)
+rb_check_exec_env(VALUE hash, VALUE *path)
 {
-    VALUE env;
+    VALUE env[2];
 
-    env = hide_obj(rb_ary_new());
+    env[0] = hide_obj(rb_ary_new());
+    env[1] = Qfalse;
     st_foreach(rb_hash_tbl_raw(hash), check_exec_env_i, (st_data_t)env);
+    *path = env[1];
 
-    return env;
+    return env[0];
 }
 
 static VALUE
@@ -2060,7 +2085,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
         rb_check_exec_options(opthash, execarg_obj);
     }
     if (!NIL_P(env)) {
-        env = rb_check_exec_env(env);
+        env = rb_check_exec_env(env, &eargp->path_env);
         eargp->env_modification = env;
     }
 
@@ -2184,7 +2209,10 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
 
     if (!eargp->use_shell) {
 	const char *abspath;
-        abspath = dln_find_exe_r(RSTRING_PTR(eargp->invoke.cmd.command_name), 0, fbuf, sizeof(fbuf));
+	const char *path_env = 0;
+	if (RTEST(eargp->path_env)) path_env = RSTRING_PTR(eargp->path_env);
+	abspath = dln_find_exe_r(RSTRING_PTR(eargp->invoke.cmd.command_name),
+				 path_env, fbuf, sizeof(fbuf));
 	if (abspath)
 	    eargp->invoke.cmd.command_abspath = rb_str_new_cstr(abspath);
 	else
@@ -2265,7 +2293,7 @@ void
 rb_execarg_setenv(VALUE execarg_obj, VALUE env)
 {
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
-    env = !NIL_P(env) ? rb_check_exec_env(env) : Qfalse;
+    env = !NIL_P(env) ? rb_check_exec_env(env, &eargp->path_env) : Qfalse;
     eargp->env_modification = env;
 }
 
@@ -2375,7 +2403,7 @@ rb_execarg_parent_start1(VALUE execarg_obj)
         }
         else {
             envtbl = rb_const_get(rb_cObject, id_ENV);
-            envtbl = rb_convert_type(envtbl, T_HASH, "Hash", "to_hash");
+            envtbl = rb_convert_type_with_id(envtbl, T_HASH, "Hash", idTo_hash);
         }
         hide_obj(envtbl);
         if (envopts != Qfalse) {
@@ -3646,8 +3674,8 @@ rb_fork_ruby(int *status)
 #if defined(HAVE_WORKING_FORK) && !defined(CANNOT_FORK_WITH_PTHREAD)
 /*
  *  call-seq:
- *     Kernel.fork  [{ block }]   -> fixnum or nil
- *     Process.fork [{ block }]   -> fixnum or nil
+ *     Kernel.fork  [{ block }]   -> integer or nil
+ *     Process.fork [{ block }]   -> integer or nil
  *
  *  Creates a subprocess. If a block is specified, that block is run
  *  in the subprocess, and the subprocess terminates with a status of
@@ -3750,7 +3778,7 @@ rb_f_exit_bang(int argc, VALUE *argv, VALUE obj)
 void
 rb_exit(int status)
 {
-    if (GET_THREAD()->tag) {
+    if (GET_THREAD()->ec.tag) {
 	VALUE args[2];
 
 	args[0] = INT2NUM(status);
@@ -3835,8 +3863,10 @@ rb_f_abort(int argc, const VALUE *argv)
 {
     rb_check_arity(argc, 0, 1);
     if (argc == 0) {
-	if (!NIL_P(GET_THREAD()->errinfo)) {
-	    ruby_error_print();
+	rb_thread_t *th = GET_THREAD();
+	VALUE errinfo = th->ec.errinfo;
+	if (!NIL_P(errinfo)) {
+	    rb_threadptr_error_print(th, errinfo);
 	}
 	rb_exit(EXIT_FAILURE);
     }
@@ -4188,7 +4218,7 @@ rb_f_system(int argc, VALUE *argv)
  *
  *    pid = spawn(command, :umask=>077)
  *
- *  The :in, :out, :err, a fixnum, an IO and an array key specifies a redirection.
+ *  The :in, :out, :err, an integer, an IO and an array key specifies a redirection.
  *  The redirection maps a file descriptor in the child process.
  *
  *  For example, stderr can be merged into stdout as follows:
@@ -4346,7 +4376,7 @@ rb_f_spawn(int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     sleep([duration])    -> fixnum
+ *     sleep([duration])    -> integer
  *
  *  Suspends the current thread for _duration_ seconds (which may be any number,
  *  including a +Float+ with fractional seconds). Returns the actual number of
@@ -4529,7 +4559,7 @@ static rb_pid_t ruby_setsid(void);
 #endif
 /*
  *  call-seq:
- *     Process.setsid   -> fixnum
+ *     Process.setsid   -> integer
  *
  *  Establishes this process as a new session and process group
  *  leader, with no controlling tty. Returns the session id. Not
@@ -4583,7 +4613,7 @@ ruby_setsid(void)
 #ifdef HAVE_GETPRIORITY
 /*
  *  call-seq:
- *     Process.getpriority(kind, integer)   -> fixnum
+ *     Process.getpriority(kind, integer)   -> integer
  *
  *  Gets the scheduling priority for specified process, process group,
  *  or user. <em>kind</em> indicates the kind of entity to find: one
@@ -4648,13 +4678,13 @@ proc_setpriority(VALUE obj, VALUE which, VALUE who, VALUE prio)
 
 #if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
 static int
-rlimit_resource_name2int(const char *name, int casetype)
+rlimit_resource_name2int(const char *name, long len, int casetype)
 {
     int resource;
     const char *p;
 #define RESCHECK(r) \
     do { \
-        if (STRCASECMP(name, #r) == 0) { \
+        if (len == rb_strlen_lit(#r) && STRCASECMP(name, #r) == 0) { \
             resource = RLIMIT_##r; \
             goto found; \
         } \
@@ -4757,21 +4787,40 @@ rlimit_resource_name2int(const char *name, int casetype)
 }
 
 static int
-rlimit_type_by_hname(const char *name)
+rlimit_type_by_hname(const char *name, long len)
 {
-    return rlimit_resource_name2int(name, 0);
+    return rlimit_resource_name2int(name, len, 0);
 }
 
 static int
-rlimit_type_by_lname(const char *name)
+rlimit_type_by_lname(const char *name, long len)
 {
-    return rlimit_resource_name2int(name, 1);
+    return rlimit_resource_name2int(name, len, 1);
+}
+
+static int
+rlimit_type_by_sym(VALUE key)
+{
+    VALUE name = rb_sym2str(key);
+    const char *rname = RSTRING_PTR(name);
+    long len = RSTRING_LEN(name);
+    int rtype = -1;
+    static const char prefix[] = "rlimit_";
+    enum {prefix_len = sizeof(prefix)-1};
+
+    if (len > prefix_len && strncmp(prefix, rname, prefix_len) == 0) {
+	rtype = rlimit_type_by_lname(rname + prefix_len, len - prefix_len);
+    }
+
+    RB_GC_GUARD(key);
+    return rtype;
 }
 
 static int
 rlimit_resource_type(VALUE rtype)
 {
     const char *name;
+    long len;
     VALUE v;
     int r;
 
@@ -4779,6 +4828,7 @@ rlimit_resource_type(VALUE rtype)
       case T_SYMBOL:
 	v = rb_sym2str(rtype);
 	name = RSTRING_PTR(v);
+	len = RSTRING_LEN(v);
         break;
 
       default:
@@ -4787,6 +4837,7 @@ rlimit_resource_type(VALUE rtype)
             rtype = v;
       case T_STRING:
             name = StringValueCStr(rtype);
+	    len = RSTRING_LEN(rtype);
             break;
         }
         /* fall through */
@@ -4796,11 +4847,11 @@ rlimit_resource_type(VALUE rtype)
         return NUM2INT(rtype);
     }
 
-    r = rlimit_type_by_hname(name);
+    r = rlimit_type_by_hname(name, len);
     if (r != -1)
         return r;
 
-    rb_raise(rb_eArgError, "invalid resource name: %"PRIsVALUE, rtype);
+    rb_raise(rb_eArgError, "invalid resource name: % "PRIsVALUE, rtype);
 
     UNREACHABLE;
 }
@@ -5008,21 +5059,19 @@ obj2uid(VALUE id
 	struct passwd pwbuf;
 	char *getpw_buf;
 	long getpw_buf_len;
+	int e;
 	if (!*getpw_tmp) {
 	    getpw_buf_len = GETPW_R_SIZE_INIT;
 	    if (getpw_buf_len < 0) getpw_buf_len = GETPW_R_SIZE_DEFAULT;
-	    getpw_buf = rb_alloc_tmp_buffer(getpw_tmp, getpw_buf_len);
+	    *getpw_tmp = rb_str_tmp_new(getpw_buf_len);
 	}
-	else {
-	    getpw_buf = RSTRING_PTR(*getpw_tmp);
-	    getpw_buf_len = rb_str_capacity(*getpw_tmp);
-	}
-	errno = ERANGE;
-	/* gepwnam_r() on MacOS X doesn't set errno if buffer size is insufficient */
-	while (getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr)) {
-	    int e = errno;
+	getpw_buf = RSTRING_PTR(*getpw_tmp);
+	getpw_buf_len = rb_str_capacity(*getpw_tmp);
+	rb_str_set_len(*getpw_tmp, getpw_buf_len);
+	errno = 0;
+	while ((e = getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr)) != 0) {
 	    if (e != ERANGE || getpw_buf_len >= GETPW_R_SIZE_LIMIT) {
-		rb_free_tmp_buffer(getpw_tmp);
+		rb_str_resize(*getpw_tmp, 0);
 		rb_syserr_fail(e, "getpwnam_r");
 	    }
 	    rb_str_modify_expand(*getpw_tmp, getpw_buf_len);
@@ -5087,21 +5136,19 @@ obj2gid(VALUE id
 	struct group grbuf;
 	char *getgr_buf;
 	long getgr_buf_len;
+	int e;
 	if (!*getgr_tmp) {
 	    getgr_buf_len = GETGR_R_SIZE_INIT;
 	    if (getgr_buf_len < 0) getgr_buf_len = GETGR_R_SIZE_DEFAULT;
-	    getgr_buf = rb_alloc_tmp_buffer(getgr_tmp, getgr_buf_len);
+	    *getgr_tmp = rb_str_tmp_new(getgr_buf_len);
 	}
-	else {
-	    getgr_buf = RSTRING_PTR(*getgr_tmp);
-	    getgr_buf_len = rb_str_capacity(*getgr_tmp);
-	}
-	errno = ERANGE;
-	/* gegrnam_r() on MacOS X doesn't set errno if buffer size is insufficient */
-	while (getgrnam_r(grpname, &grbuf, getgr_buf, getgr_buf_len, &grptr)) {
-	    int e = errno;
+	getgr_buf = RSTRING_PTR(*getgr_tmp);
+	getgr_buf_len = rb_str_capacity(*getgr_tmp);
+	rb_str_set_len(*getgr_tmp, getgr_buf_len);
+	errno = 0;
+	while ((e = getgrnam_r(grpname, &grbuf, getgr_buf, getgr_buf_len, &grptr)) != 0) {
 	    if (e != ERANGE || getgr_buf_len >= GETGR_R_SIZE_LIMIT) {
-		rb_free_tmp_buffer(getgr_tmp);
+		rb_str_resize(*getgr_tmp, 0);
 		rb_syserr_fail(e, "getgrnam_r");
 	    }
 	    rb_str_modify_expand(*getgr_tmp, getgr_buf_len);
@@ -5274,9 +5321,9 @@ p_sys_setresuid(VALUE obj, VALUE rid, VALUE eid, VALUE sid)
 
 /*
  *  call-seq:
- *     Process.uid           -> fixnum
- *     Process::UID.rid      -> fixnum
- *     Process::Sys.getuid   -> fixnum
+ *     Process.uid           -> integer
+ *     Process::UID.rid      -> integer
+ *     Process::Sys.getuid   -> integer
  *
  *  Returns the (real) user ID of this process.
  *
@@ -5360,7 +5407,7 @@ setreuid(rb_uid_t ruid, rb_uid_t euid)
 
 /*
  *  call-seq:
- *     Process::UID.change_privilege(user)   -> fixnum
+ *     Process::UID.change_privilege(user)   -> integer
  *
  *  Change the current process's real and effective user ID to that
  *  specified by _user_. Returns the new user ID. Not
@@ -5681,9 +5728,9 @@ p_sys_issetugid(VALUE obj)
 
 /*
  *  call-seq:
- *     Process.gid           -> fixnum
- *     Process::GID.rid      -> fixnum
- *     Process::Sys.getgid   -> fixnum
+ *     Process.gid           -> integer
+ *     Process::GID.rid      -> integer
+ *     Process::Sys.getgid   -> integer
  *
  *  Returns the (real) group ID for this process.
  *
@@ -5701,7 +5748,7 @@ proc_getgid(VALUE obj)
 #if defined(HAVE_SETRESGID) || defined(HAVE_SETREGID) || defined(HAVE_SETRGID) || defined(HAVE_SETGID)
 /*
  *  call-seq:
- *     Process.gid= fixnum   -> fixnum
+ *     Process.gid= integer   -> integer
  *
  *  Sets the group ID for this process.
  */
@@ -5909,7 +5956,7 @@ proc_initgroups(VALUE obj, VALUE uname, VALUE base_grp)
 #if defined(_SC_NGROUPS_MAX) || defined(NGROUPS_MAX)
 /*
  *  call-seq:
- *     Process.maxgroups   -> fixnum
+ *     Process.maxgroups   -> integer
  *
  *  Returns the maximum number of gids allowed in the supplemental
  *  group access list.
@@ -5929,7 +5976,7 @@ proc_getmaxgroups(VALUE obj)
 #ifdef HAVE_SETGROUPS
 /*
  *  call-seq:
- *     Process.maxgroups= fixnum   -> fixnum
+ *     Process.maxgroups= integer   -> integer
  *
  *  Sets the maximum number of gids allowed in the supplemental group
  *  access list.
@@ -6064,7 +6111,7 @@ setregid(rb_gid_t rgid, rb_gid_t egid)
 
 /*
  *  call-seq:
- *     Process::GID.change_privilege(group)   -> fixnum
+ *     Process::GID.change_privilege(group)   -> integer
  *
  *  Change the current process's real and effective group ID to that
  *  specified by _group_. Returns the new group ID. Not
@@ -6233,9 +6280,9 @@ p_gid_change_privilege(VALUE obj, VALUE id)
 
 /*
  *  call-seq:
- *     Process.euid           -> fixnum
- *     Process::UID.eid       -> fixnum
- *     Process::Sys.geteuid   -> fixnum
+ *     Process.euid           -> integer
+ *     Process::UID.eid       -> integer
+ *     Process::Sys.geteuid   -> integer
  *
  *  Returns the effective user ID for this process.
  *
@@ -6334,8 +6381,8 @@ rb_seteuid_core(rb_uid_t euid)
 
 /*
  *  call-seq:
- *     Process::UID.grant_privilege(user)   -> fixnum
- *     Process::UID.eid= user               -> fixnum
+ *     Process::UID.grant_privilege(user)   -> integer
+ *     Process::UID.eid= user               -> integer
  *
  *  Set the effective user ID, and if possible, the saved user ID of
  *  the process to the given _user_. Returns the new
@@ -6356,9 +6403,9 @@ p_uid_grant_privilege(VALUE obj, VALUE id)
 
 /*
  *  call-seq:
- *     Process.egid          -> fixnum
- *     Process::GID.eid      -> fixnum
- *     Process::Sys.geteid   -> fixnum
+ *     Process.egid          -> integer
+ *     Process::GID.eid      -> integer
+ *     Process::Sys.geteid   -> integer
  *
  *  Returns the effective group ID for this process. Not available on
  *  all platforms.
@@ -6377,7 +6424,7 @@ proc_getegid(VALUE obj)
 #if defined(HAVE_SETRESGID) || defined(HAVE_SETREGID) || defined(HAVE_SETEGID) || defined(HAVE_SETGID) || defined(_POSIX_SAVED_IDS)
 /*
  *  call-seq:
- *     Process.egid = fixnum   -> fixnum
+ *     Process.egid = integer   -> integer
  *
  *  Sets the effective group ID for this process. Not available on all
  *  platforms.
@@ -6464,8 +6511,8 @@ rb_setegid_core(rb_gid_t egid)
 
 /*
  *  call-seq:
- *     Process::GID.grant_privilege(group)    -> fixnum
- *     Process::GID.eid = group               -> fixnum
+ *     Process::GID.grant_privilege(group)    -> integer
+ *     Process::GID.eid = group               -> integer
  *
  *  Set the effective group ID, and if possible, the saved group ID of
  *  the process to the given _group_. Returns the new
@@ -6508,7 +6555,7 @@ p_uid_exchangeable(void)
 
 /*
  *  call-seq:
- *     Process::UID.re_exchange   -> fixnum
+ *     Process::UID.re_exchange   -> integer
  *
  *  Exchange real and effective user IDs and return the new effective
  *  user ID. Not available on all platforms.
@@ -6570,7 +6617,7 @@ p_gid_exchangeable(void)
 
 /*
  *  call-seq:
- *     Process::GID.re_exchange   -> fixnum
+ *     Process::GID.re_exchange   -> integer
  *
  *  Exchange real and effective group IDs and return the new effective
  *  group ID. Not available on all platforms.
@@ -6641,7 +6688,7 @@ p_uid_sw_ensure(rb_uid_t id)
 
 /*
  *  call-seq:
- *     Process::UID.switch              -> fixnum
+ *     Process::UID.switch              -> integer
  *     Process::UID.switch {|| block}   -> object
  *
  *  Switch the effective and real user IDs of the current process. If
@@ -6754,7 +6801,7 @@ p_gid_sw_ensure(rb_gid_t id)
 
 /*
  *  call-seq:
- *     Process::GID.switch              -> fixnum
+ *     Process::GID.switch              -> integer
  *     Process::GID.switch {|| block}   -> object
  *
  *  Switch the effective and real group IDs of the current process. If
@@ -6869,15 +6916,26 @@ get_clk_tck(void)
 VALUE
 rb_proc_times(VALUE obj)
 {
+    VALUE utime, stime, cutime, cstime, ret;
+#if defined(RUSAGE_SELF) && defined(RUSAGE_CHILDREN)
+    struct rusage usage_s, usage_c;
+
+    if (getrusage(RUSAGE_SELF, &usage_s) != 0 || getrusage(RUSAGE_CHILDREN, &usage_c) != 0)
+	rb_sys_fail("getrusage");
+    utime = DBL2NUM((double)usage_s.ru_utime.tv_sec + (double)usage_s.ru_utime.tv_usec/1e6);
+    stime = DBL2NUM((double)usage_s.ru_stime.tv_sec + (double)usage_s.ru_stime.tv_usec/1e6);
+    cutime = DBL2NUM((double)usage_c.ru_utime.tv_sec + (double)usage_c.ru_utime.tv_usec/1e6);
+    cstime = DBL2NUM((double)usage_c.ru_stime.tv_sec + (double)usage_c.ru_stime.tv_usec/1e6);
+#else
     const double hertz = get_clk_tck();
     struct tms buf;
-    VALUE utime, stime, cutime, cstime, ret;
 
     times(&buf);
     utime = DBL2NUM(buf.tms_utime / hertz);
     stime = DBL2NUM(buf.tms_stime / hertz);
     cutime = DBL2NUM(buf.tms_cutime / hertz);
     cstime = DBL2NUM(buf.tms_cstime / hertz);
+#endif
     ret = rb_struct_new(rb_cProcessTms, utime, stime, cutime, cstime);
     RB_GC_GUARD(utime);
     RB_GC_GUARD(stime);
@@ -6894,11 +6952,13 @@ typedef LONG_LONG timetick_int_t;
 #define TIMETICK_INT_MIN LLONG_MIN
 #define TIMETICK_INT_MAX LLONG_MAX
 #define TIMETICK_INT2NUM(v) LL2NUM(v)
+#define MUL_OVERFLOW_TIMETICK_P(a, b) MUL_OVERFLOW_LONG_LONG_P(a, b)
 #else
 typedef long timetick_int_t;
 #define TIMETICK_INT_MIN LONG_MIN
 #define TIMETICK_INT_MAX LONG_MAX
 #define TIMETICK_INT2NUM(v) LONG2NUM(v)
+#define MUL_OVERFLOW_TIMETICK_P(a, b) MUL_OVERFLOW_LONG_P(a, b)
 #endif
 
 CONSTFUNC(static timetick_int_t gcd_timetick_int(timetick_int_t, timetick_int_t));
@@ -7014,8 +7074,7 @@ timetick2integer(struct timetick *ttp,
         timetick_int_t t = ttp->giga_count * 1000000000 + ttp->count;
         for (i = 0; i < num_numerators; i++) {
             timetick_int_t factor = numerators[i];
-            if (MUL_OVERFLOW_SIGNED_INTEGER_P(factor, t,
-                        TIMETICK_INT_MIN, TIMETICK_INT_MAX))
+            if (MUL_OVERFLOW_TIMETICK_P(factor, t))
                 goto generic;
             t *= factor;
         }
@@ -7107,10 +7166,10 @@ get_mach_timebase_info(void)
  *  The supported constants depends on OS and version.
  *  Ruby provides following types of +clock_id+ if available.
  *
- *  [CLOCK_REALTIME] SUSv2 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 2.1
- *  [CLOCK_MONOTONIC] SUSv3 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 3.4
- *  [CLOCK_PROCESS_CPUTIME_ID] SUSv3 to 4, Linux 2.5.63, OpenBSD 5.4
- *  [CLOCK_THREAD_CPUTIME_ID] SUSv3 to 4, Linux 2.5.63, FreeBSD 7.1, OpenBSD 5.4
+ *  [CLOCK_REALTIME] SUSv2 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 2.1, macOS 10.12
+ *  [CLOCK_MONOTONIC] SUSv3 to 4, Linux 2.5.63, FreeBSD 3.0, NetBSD 2.0, OpenBSD 3.4, macOS 10.12
+ *  [CLOCK_PROCESS_CPUTIME_ID] SUSv3 to 4, Linux 2.5.63, OpenBSD 5.4, macOS 10.12
+ *  [CLOCK_THREAD_CPUTIME_ID] SUSv3 to 4, Linux 2.5.63, FreeBSD 7.1, OpenBSD 5.4, macOS 10.12
  *  [CLOCK_VIRTUAL] FreeBSD 3.0, OpenBSD 2.1
  *  [CLOCK_PROF] FreeBSD 3.0, OpenBSD 2.1
  *  [CLOCK_REALTIME_FAST] FreeBSD 8.1
@@ -7120,11 +7179,14 @@ get_mach_timebase_info(void)
  *  [CLOCK_MONOTONIC_FAST] FreeBSD 8.1
  *  [CLOCK_MONOTONIC_PRECISE] FreeBSD 8.1
  *  [CLOCK_MONOTONIC_COARSE] Linux 2.6.32
- *  [CLOCK_MONOTONIC_RAW] Linux 2.6.28
+ *  [CLOCK_MONOTONIC_RAW] Linux 2.6.28, macOS 10.12
+ *  [CLOCK_MONOTONIC_RAW_APPROX] macOS 10.12
  *  [CLOCK_BOOTTIME] Linux 2.6.39
  *  [CLOCK_BOOTTIME_ALARM] Linux 3.0
  *  [CLOCK_UPTIME] FreeBSD 7.0, OpenBSD 5.5
  *  [CLOCK_UPTIME_FAST] FreeBSD 8.1
+ *  [CLOCK_UPTIME_RAW] macOS 10.12
+ *  [CLOCK_UPTIME_RAW_APPROX] macOS 10.12
  *  [CLOCK_UPTIME_PRECISE] FreeBSD 8.1
  *  [CLOCK_SECOND] FreeBSD 8.1
  *
@@ -7779,69 +7841,104 @@ InitVM_process(void)
     rb_define_module_function(rb_mProcess, "times", rb_proc_times, 0);
 
 #ifdef CLOCK_REALTIME
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_REALTIME", CLOCKID2NUM(CLOCK_REALTIME));
 #elif defined(RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME)
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_REALTIME", RUBY_GETTIMEOFDAY_BASED_CLOCK_REALTIME);
 #endif
 #ifdef CLOCK_MONOTONIC
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", CLOCKID2NUM(CLOCK_MONOTONIC));
 #elif defined(RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC)
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC", RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC);
 #endif
 #ifdef CLOCK_PROCESS_CPUTIME_ID
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", CLOCKID2NUM(CLOCK_PROCESS_CPUTIME_ID));
 #elif defined(RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID)
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_PROCESS_CPUTIME_ID", RUBY_GETRUSAGE_BASED_CLOCK_PROCESS_CPUTIME_ID);
 #endif
 #ifdef CLOCK_THREAD_CPUTIME_ID
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_THREAD_CPUTIME_ID", CLOCKID2NUM(CLOCK_THREAD_CPUTIME_ID));
 #endif
 #ifdef CLOCK_VIRTUAL
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_VIRTUAL", CLOCKID2NUM(CLOCK_VIRTUAL));
 #endif
 #ifdef CLOCK_PROF
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_PROF", CLOCKID2NUM(CLOCK_PROF));
 #endif
 #ifdef CLOCK_REALTIME_FAST
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_REALTIME_FAST", CLOCKID2NUM(CLOCK_REALTIME_FAST));
 #endif
 #ifdef CLOCK_REALTIME_PRECISE
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_REALTIME_PRECISE", CLOCKID2NUM(CLOCK_REALTIME_PRECISE));
 #endif
 #ifdef CLOCK_REALTIME_COARSE
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_REALTIME_COARSE", CLOCKID2NUM(CLOCK_REALTIME_COARSE));
 #endif
 #ifdef CLOCK_REALTIME_ALARM
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_REALTIME_ALARM", CLOCKID2NUM(CLOCK_REALTIME_ALARM));
 #endif
 #ifdef CLOCK_MONOTONIC_FAST
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_FAST", CLOCKID2NUM(CLOCK_MONOTONIC_FAST));
 #endif
 #ifdef CLOCK_MONOTONIC_PRECISE
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_PRECISE", CLOCKID2NUM(CLOCK_MONOTONIC_PRECISE));
 #endif
 #ifdef CLOCK_MONOTONIC_RAW
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_RAW", CLOCKID2NUM(CLOCK_MONOTONIC_RAW));
 #endif
+#ifdef CLOCK_MONOTONIC_RAW_APPROX
+    /* see Process.clock_gettime */
+    rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_RAW_APPROX", CLOCKID2NUM(CLOCK_MONOTONIC_RAW_APPROX));
+#endif
 #ifdef CLOCK_MONOTONIC_COARSE
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_MONOTONIC_COARSE", CLOCKID2NUM(CLOCK_MONOTONIC_COARSE));
 #endif
 #ifdef CLOCK_BOOTTIME
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_BOOTTIME", CLOCKID2NUM(CLOCK_BOOTTIME));
 #endif
 #ifdef CLOCK_BOOTTIME_ALARM
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_BOOTTIME_ALARM", CLOCKID2NUM(CLOCK_BOOTTIME_ALARM));
 #endif
 #ifdef CLOCK_UPTIME
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_UPTIME", CLOCKID2NUM(CLOCK_UPTIME));
 #endif
 #ifdef CLOCK_UPTIME_FAST
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_UPTIME_FAST", CLOCKID2NUM(CLOCK_UPTIME_FAST));
 #endif
 #ifdef CLOCK_UPTIME_PRECISE
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_UPTIME_PRECISE", CLOCKID2NUM(CLOCK_UPTIME_PRECISE));
 #endif
+#ifdef CLOCK_UPTIME_RAW
+    /* see Process.clock_gettime */
+    rb_define_const(rb_mProcess, "CLOCK_UPTIME_RAW", CLOCKID2NUM(CLOCK_UPTIME_RAW));
+#endif
+#ifdef CLOCK_UPTIME_RAW_APPROX
+    /* see Process.clock_gettime */
+    rb_define_const(rb_mProcess, "CLOCK_UPTIME_RAW_APPROX", CLOCKID2NUM(CLOCK_UPTIME_RAW_APPROX));
+#endif
 #ifdef CLOCK_SECOND
+    /* see Process.clock_gettime */
     rb_define_const(rb_mProcess, "CLOCK_SECOND", CLOCKID2NUM(CLOCK_SECOND));
 #endif
     rb_define_module_function(rb_mProcess, "clock_gettime", rb_clock_gettime, -1);

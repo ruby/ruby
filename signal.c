@@ -238,9 +238,10 @@ signo2signm(int no)
 
 /*
  * call-seq:
- *     Signal.signame(signo)  ->  string
+ *     Signal.signame(signo)  ->  string or nil
  *
- *  convert signal number to signal name
+ *  Convert signal number to signal name.
+ *  Returns +nil+ if the signo is an invalid signal number.
  *
  *     Signal.trap("INT") { |signo| puts Signal.signame(signo) }
  *     Process.kill("INT", 0)
@@ -368,7 +369,7 @@ static void signal_enque(int sig);
 
 /*
  *  call-seq:
- *     Process.kill(signal, pid, ...)    -> fixnum
+ *     Process.kill(signal, pid, ...)    -> integer
  *
  *  Sends the given signal to the specified process id(s) if _pid_ is positive.
  *  If _pid_ is zero _signal_ is sent to all processes whose group ID is equal
@@ -494,7 +495,7 @@ rb_f_kill(int argc, const VALUE *argv)
 #ifdef SIGSTOP
 		  case SIGSTOP:
 #endif
-		    ruby_kill(pid, sig);
+		    kill(pid, sig);
 		    break;
 		  default:
 		    t = signal_ignored(sig);
@@ -628,9 +629,11 @@ ruby_signal(int signum, sighandler_t handler)
 	return SIG_ERR;
     }
     if (old.sa_flags & SA_SIGINFO)
-	return (sighandler_t)old.sa_sigaction;
+	handler = (sighandler_t)old.sa_sigaction;
     else
-	return old.sa_handler;
+	handler = old.sa_handler;
+    ASSUME(handler != SIG_ERR);
+    return handler;
 }
 
 sighandler_t
@@ -760,7 +763,7 @@ static const char *received_signal;
 #endif
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
-NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
+NORETURN(void rb_threadptr_stack_overflow(rb_thread_t *th, int crit));
 # if defined __HAIKU__
 #   define USE_UCONTEXT_REG 1
 # elif !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__ || defined __amd64__))
@@ -771,74 +774,107 @@ NORETURN(void ruby_thread_stack_overflow(rb_thread_t *th));
 # elif defined __FreeBSD__
 #   define USE_UCONTEXT_REG 1
 # endif
+#if defined(HAVE_PTHREAD_SIGMASK)
+# define ruby_sigunmask pthread_sigmask
+#elif defined(HAVE_SIGPROCMASK)
+# define ruby_sigunmask sigprocmask
+#endif
+static void
+reset_sigmask(int sig)
+{
+#if defined(ruby_sigunmask)
+    sigset_t mask;
+#endif
+    clear_received_signal();
+#if defined(ruby_sigunmask)
+    sigemptyset(&mask);
+    sigaddset(&mask, sig);
+    if (ruby_sigunmask(SIG_UNBLOCK, &mask, NULL)) {
+	rb_bug_errno(STRINGIZE(ruby_sigunmask)":unblock", errno);
+    }
+#endif
+}
+
 # ifdef USE_UCONTEXT_REG
 static void
-check_stack_overflow(const uintptr_t addr, const ucontext_t *ctx)
+check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
 {
     const DEFINE_MCONTEXT_PTR(mctx, ctx);
 # if defined __linux__
 #   if defined REG_RSP
     const greg_t sp = mctx->gregs[REG_RSP];
+    const greg_t bp = mctx->gregs[REG_RBP];
 #   else
     const greg_t sp = mctx->gregs[REG_ESP];
+    const greg_t bp = mctx->gregs[REG_EBP];
 #   endif
 # elif defined __APPLE__
 #   if defined(__LP64__)
     const uintptr_t sp = mctx->__ss.__rsp;
+    const uintptr_t bp = mctx->__ss.__rbp;
 #   else
     const uintptr_t sp = mctx->__ss.__esp;
+    const uintptr_t bp = mctx->__ss.__ebp;
 #   endif
 # elif defined __FreeBSD__
 #   if defined(__amd64__)
     const __register_t sp = mctx->mc_rsp;
+    const __register_t bp = mctx->mc_rbp;
 #   else
     const __register_t sp = mctx->mc_esp;
+    const __register_t bp = mctx->mc_ebp;
 #   endif
 # elif defined __HAIKU__
 #   if defined(__amd64__)
     const unsigned long sp = mctx->rsp;
+    const unsigned long bp = mctx->rbp;
 #   else
     const unsigned long sp = mctx->esp;
+    const unsigned long bp = mctx->ebp;
 #   endif
 # endif
     enum {pagesize = 4096};
     const uintptr_t sp_page = (uintptr_t)sp / pagesize;
+    const uintptr_t bp_page = (uintptr_t)bp / pagesize;
     const uintptr_t fault_page = addr / pagesize;
 
     /* SP in ucontext is not decremented yet when `push` failed, so
      * the fault page can be the next. */
-    if (sp_page == fault_page || sp_page == fault_page + 1) {
+    if (sp_page == fault_page || sp_page == fault_page + 1 ||
+	sp_page <= fault_page && fault_page <= bp_page) {
 	rb_thread_t *th = ruby_current_thread;
-	if ((uintptr_t)th->tag->buf / pagesize == sp_page) {
+	int crit = FALSE;
+	if ((uintptr_t)th->ec.tag->buf / pagesize <= fault_page + 1) {
 	    /* drop the last tag if it is close to the fault,
 	     * otherwise it can cause stack overflow again at the same
 	     * place. */
-	    th->tag = th->tag->prev;
+	    th->ec.tag = th->ec.tag->prev;
+	    crit = TRUE;
 	}
-	clear_received_signal();
-	ruby_thread_stack_overflow(th);
+	reset_sigmask(sig);
+	rb_threadptr_stack_overflow(th, crit);
     }
 }
 # else
 static void
-check_stack_overflow(const void *addr)
+check_stack_overflow(int sig, const void *addr)
 {
     int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
     rb_thread_t *th = ruby_current_thread;
     if (ruby_stack_overflowed_p(th, addr)) {
-	clear_received_signal();
-	ruby_thread_stack_overflow(th);
+	reset_sigmask(sig);
+	rb_threadptr_stack_overflow(th, FALSE);
     }
 }
 # endif
 # ifdef _WIN32
-#   define CHECK_STACK_OVERFLOW() check_stack_overflow(0)
+#   define CHECK_STACK_OVERFLOW() check_stack_overflow(sig, 0)
 # else
 #   define FAULT_ADDRESS info->si_addr
 #   ifdef USE_UCONTEXT_REG
-#     define CHECK_STACK_OVERFLOW() check_stack_overflow((uintptr_t)FAULT_ADDRESS, ctx)
+#     define CHECK_STACK_OVERFLOW() check_stack_overflow(sig, (uintptr_t)FAULT_ADDRESS, ctx)
 #   else
-#     define CHECK_STACK_OVERFLOW() check_stack_overflow(FAULT_ADDRESS)
+#     define CHECK_STACK_OVERFLOW() check_stack_overflow(sig, FAULT_ADDRESS)
 #   endif
 #   define MESSAGE_FAULT_ADDRESS " at %p", FAULT_ADDRESS
 # endif
@@ -957,7 +993,7 @@ signal_exec(VALUE cmd, int safe, int sig)
 {
     rb_thread_t *cur_th = GET_THREAD();
     volatile unsigned long old_interrupt_mask = cur_th->interrupt_mask;
-    int state;
+    enum ruby_tag_type state;
 
     /*
      * workaround the following race:
@@ -970,7 +1006,7 @@ signal_exec(VALUE cmd, int safe, int sig)
 
     cur_th->interrupt_mask |= TRAP_INTERRUPT_MASK;
     TH_PUSH_TAG(cur_th);
-    if ((state = EXEC_TAG()) == 0) {
+    if ((state = EXEC_TAG()) == TAG_NONE) {
 	VALUE signum = INT2NUM(sig);
 	rb_eval_cmd(cmd, rb_ary_new3(1, signum), safe);
     }
@@ -988,11 +1024,11 @@ void
 rb_trap_exit(void)
 {
     rb_vm_t *vm = GET_VM();
-    VALUE trap_exit = vm->trap_list[0].cmd;
+    VALUE trap_exit = vm->trap_list.cmd[0];
 
     if (trap_exit) {
-	vm->trap_list[0].cmd = 0;
-	signal_exec(trap_exit, vm->trap_list[0].safe, 0);
+	vm->trap_list.cmd[0] = 0;
+	signal_exec(trap_exit, vm->trap_list.safe[0], 0);
     }
 }
 
@@ -1000,8 +1036,8 @@ void
 rb_signal_exec(rb_thread_t *th, int sig)
 {
     rb_vm_t *vm = GET_VM();
-    VALUE cmd = vm->trap_list[sig].cmd;
-    int safe = vm->trap_list[sig].safe;
+    VALUE cmd = vm->trap_list.cmd[sig];
+    int safe = vm->trap_list.safe[sig];
 
     if (cmd == 0) {
 	switch (sig) {
@@ -1203,7 +1239,7 @@ trap(int sig, sighandler_t func, VALUE command)
     rb_vm_t *vm = GET_VM();
 
     /*
-     * Be careful. ruby_signal() and trap_list[sig].cmd must be changed
+     * Be careful. ruby_signal() and trap_list.cmd[sig] must be changed
      * atomically. In current implementation, we only need to don't call
      * RUBY_VM_CHECK_INTS().
      */
@@ -1214,7 +1250,7 @@ trap(int sig, sighandler_t func, VALUE command)
 	oldfunc = ruby_signal(sig, func);
 	if (oldfunc == SIG_ERR) rb_sys_fail_str(rb_signo2signm(sig));
     }
-    oldcmd = vm->trap_list[sig].cmd;
+    oldcmd = vm->trap_list.cmd[sig];
     switch (oldcmd) {
       case 0:
       case Qtrue:
@@ -1230,8 +1266,8 @@ trap(int sig, sighandler_t func, VALUE command)
 	break;
     }
 
-    vm->trap_list[sig].cmd = command;
-    vm->trap_list[sig].safe = rb_safe_level();
+    vm->trap_list.cmd[sig] = command;
+    vm->trap_list.safe[sig] = rb_safe_level();
 
     return oldcmd;
 }
@@ -1352,6 +1388,12 @@ sig_list(void)
     return h;
 }
 
+#define INSTALL_SIGHANDLER(cond, signame, signum) do {	\
+	static const char failed[] = "failed to install "signame" handler"; \
+	if (!(cond)) break; \
+	if (reserved_signal_p(signum)) rb_bug(failed); \
+	perror(failed); \
+    } while (0)
 static int
 install_sighandler(int signum, sighandler_t handler)
 {
@@ -1366,7 +1408,8 @@ install_sighandler(int signum, sighandler_t handler)
     return 0;
 }
 #ifndef __native_client__
-#  define install_sighandler(signum, handler) (install_sighandler(signum, handler) ? rb_bug(#signum) : (void)0)
+#  define install_sighandler(signum, handler) \
+    INSTALL_SIGHANDLER(install_sighandler(signum, handler), #signum, signum)
 #endif
 
 #if defined(SIGCLD) || defined(SIGCHLD)
@@ -1381,12 +1424,13 @@ init_sigchld(int sig)
 	ruby_signal(sig, oldfunc);
     }
     else {
-	GET_VM()->trap_list[sig].cmd = 0;
+	GET_VM()->trap_list.cmd[sig] = 0;
     }
     return 0;
 }
 #  ifndef __native_client__
-#    define init_sigchld(signum) (init_sigchld(signum) ? rb_bug(#signum) : (void)0)
+#    define init_sigchld(signum) \
+    INSTALL_SIGHANDLER(init_sigchld(signum), #signum, signum)
 #  endif
 #endif
 
@@ -1403,9 +1447,6 @@ ruby_sig_finalize(void)
 
 
 int ruby_enable_coredump = 0;
-#ifndef RUBY_DEBUG_ENV
-#define ruby_enable_coredump 0
-#endif
 
 /*
  * Many operating systems allow signals to be sent to running

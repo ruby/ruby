@@ -75,7 +75,7 @@ class Seq
 
   def initialize(v, name)
     @counter = v
-    @mutex = Mutex.new
+    @mutex = Thread::Mutex.new
     self.drb_name = name
   end
 
@@ -90,7 +90,7 @@ end
 class Front
   def initialize
     seq = Seq.new(0, 'seq')
-    mutex = Mutex.new
+    mutex = Thread::Mutex.new
     mutex.extend(DRbUndumped)
     mutex.extend(DRbNamedObject)
     mutex.drb_name = 'mutex'

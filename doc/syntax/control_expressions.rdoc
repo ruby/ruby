@@ -405,8 +405,8 @@ Use +next+ to skip the rest of the current iteration:
 
   p result # prints [2, nil, 6]
 
-+next+ accepts an argument that can be used the result of the current block
-iteration:
++next+ accepts an argument that can be used as the result of the current
+block iteration:
 
   result = [1, 2, 3].map do |value|
     next value if value.even?

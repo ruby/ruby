@@ -14,6 +14,8 @@ require 'pathname.so'
 
 class Pathname
 
+  # :stopdoc:
+
   # to_path is implemented so Pathname objects are usable with File.open, etc.
   TO_PATH = :to_path
 
@@ -378,7 +380,7 @@ class Pathname
       basename_list2.shift
     end
     r1 = chop_basename(prefix1)
-    if !r1 && /#{SEPARATOR_PAT}/o =~ File.basename(prefix1)
+    if !r1 && (r1 = /#{SEPARATOR_PAT}/o =~ File.basename(prefix1))
       while !basename_list2.empty? && basename_list2.first == '..'
         index_list2.shift
         basename_list2.shift

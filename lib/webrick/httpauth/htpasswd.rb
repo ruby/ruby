@@ -84,7 +84,7 @@ module WEBrick
           File::rename(tmp.path, output)
           renamed = true
         ensure
-          tmp.close if !tmp.closed?
+          tmp.close
           File.unlink(tmp.path) if !renamed
         end
       end

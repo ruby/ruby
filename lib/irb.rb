@@ -48,7 +48,6 @@ require "irb/locale"
 #
 #   Usage:  irb.rb [options] [programfile] [arguments]
 #     -f                Suppress read of ~/.irbrc
-#     -m                Bc mode (load mathn, fraction or matrix are available)
 #     -d                Set $DEBUG to true (same as `ruby -d')
 #     -r load-module    Same as `ruby -r'
 #     -I path           Specify $LOAD_PATH directory
@@ -90,7 +89,6 @@ require "irb/locale"
 # as follows in an +irb+ session:
 #
 #     IRB.conf[:IRB_NAME]="irb"
-#     IRB.conf[:MATH_MODE]=false
 #     IRB.conf[:INSPECT_MODE]=nil
 #     IRB.conf[:IRB_RC] = nil
 #     IRB.conf[:BACK_TRACE_LIMIT]=16
@@ -382,21 +380,7 @@ module IRB
     else
       irb = Irb.new
     end
-
-    @CONF[:IRB_RC].call(irb.context) if @CONF[:IRB_RC]
-    @CONF[:MAIN_CONTEXT] = irb.context
-
-    trap("SIGINT") do
-      irb.signal_handle
-    end
-
-    begin
-      catch(:IRB_EXIT) do
-        irb.eval_input
-      end
-    ensure
-      irb_at_exit
-    end
+    irb.run(@CONF)
   end
 
   # Calls each event hook of IRB.conf[:AT_EXIT] when the current session quits.
@@ -430,6 +414,24 @@ module IRB
       @scanner = RubyLex.new
       @scanner.exception_on_syntax_error = false
     end
+
+    def run(conf = IRB.conf)
+      conf[:IRB_RC].call(context) if conf[:IRB_RC]
+      conf[:MAIN_CONTEXT] = context
+
+      trap("SIGINT") do
+        signal_handle
+      end
+
+      begin
+        catch(:IRB_EXIT) do
+          eval_input
+        end
+      ensure
+        conf[:AT_EXIT].each{|hook| hook.call}
+      end
+    end
+
     # Returns the current context of this irb session
     attr_reader :context
     # The lexer used by this irb session
@@ -699,5 +701,14 @@ module IRB
       end
     end
     array.join("\n")
+  end
+end
+
+class Binding
+  # :nodoc:
+  undef irb if method_defined?(:irb)
+  def irb
+    IRB.setup(eval("__FILE__"))
+    IRB::Irb.new(IRB::WorkSpace.new(self)).run(IRB.conf)
   end
 end

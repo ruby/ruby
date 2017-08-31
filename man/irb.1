@@ -1,6 +1,6 @@
 .\"Ruby is copyrighted by Yukihiro Matsumoto <matz@netlab.jp>.
 .Dd November 15, 2012
-.Dt IRB(1) "" "Ruby Programmers Reference Guide"
+.Dt IRB \&1 "Ruby Programmer's Reference Guide"
 .Os UNIX
 .Sh NAME
 .Nm irb
@@ -69,9 +69,6 @@ Suppresses read of
 .It Fl -help
 Prints a summary of the options.
 .Pp
-.It Fl m
-Bc mode (load mathn, fraction or matrix are available)
-.Pp
 .It Fl r Ar library
 Same as `ruby -r'.
 Causes irb to load the library using require.
@@ -119,7 +116,7 @@ Sets internal debug level to n (not for popular use)
 .El
 .Pp
 .Sh ENVIRONMENT
-.Bl -tag -width "RUBYLIB_PREFIX" -compact
+.Bl -tag -compact
 .It Ev IRBRC
 .Pp
 .El
@@ -130,7 +127,7 @@ depends on same variables as
 .Xr ruby 1 .
 .Pp
 .Sh FILES
-.Bl -tag -width "RUBYLIB_PREFIX" -compact
+.Bl -tag -compact
 .It Pa ~/.irbrc
 Personal irb initialization.
 .Pp
@@ -159,15 +156,17 @@ Personal irb initialization.
 .Pp
 .Sh REPORTING BUGS
 .Bl -bullet
-.Li Security vulnerabilities should be reported via an email to
-.Aq security@ruby-lang.org Ns
-.Li .
+.It
+Security vulnerabilities should be reported via an email to
+.Mt security@ruby-lang.org .
 Reported problems will be published after being fixed.
 .Pp
-.Li And you can report other bugs and feature requests via the
-Ruby Issue Tracking System (http://bugs.ruby-lang.org).
+.It
+Other bugs and feature requests can be reported via the
+Ruby Issue Tracking System
+.Pq Lk https://bugs.ruby-lang.org/ .
 Do not report security vulnerabilities
-via the system because it publishes the vulnerabilities immediately.
+via this system because it publishes the vulnerabilities immediately.
 .El
 .Sh AUTHORS
 Written by Keiju ISHITSUKA.

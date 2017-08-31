@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 $LOAD_PATH.unshift "#{File.dirname(__FILE__)}/../.."
 require 'test/unit'
 
@@ -61,7 +61,7 @@ module Test
         begin
           th.join
         rescue IOError
-          raise unless ["stream closed","closed stream"].include? $!.message
+          raise unless /stream closed|closed stream/ =~ $!.message
         end
         i.close
 
@@ -152,8 +152,7 @@ module Test
       end
 
       def _report(res, *args) # :nodoc:
-        res = "#{res} #{args.pack("m0")}" unless args.empty?
-        @stdout.puts(res)
+        @stdout.write(args.empty? ? "#{res}\n" : "#{res} #{args.pack("m0")}\n")
       end
 
       def puke(klass, meth, e) # :nodoc:
@@ -163,6 +162,24 @@ module Test
           e = new_e
         end
         @partial_report << [klass.name, meth, e.is_a?(MiniTest::Assertion) ? e : ProxyError.new(e)]
+        super
+      end
+
+      def record(suite, method, assertions, time, error) # :nodoc:
+        case error
+        when nil
+        when MiniTest::Assertion, MiniTest::Skip
+          case error.cause
+          when nil, MiniTest::Assertion, MiniTest::Skip
+          else
+            bt = error.backtrace
+            error = error.class.new(error.message)
+            error.set_backtrace(bt)
+          end
+        else
+          error = ProxyError.new(error)
+        end
+        _report "record", Marshal.dump([suite.name, method, assertions, time, error])
         super
       end
     end

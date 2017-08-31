@@ -429,9 +429,20 @@ END
   def assert_fork_status(n, mesg, &block)
     IO.pipe do |r, w|
       (1..n).map do
-        p1 = fork {w.puts(block.call.to_s)}
-        _, st = Process.waitpid2(p1)
-        assert_send([st, :success?], mesg)
+        st = desc = nil
+        IO.pipe do |re, we|
+          p1 = fork {
+            re.close
+            STDERR.reopen(we)
+            w.puts(block.call.to_s)
+          }
+          we.close
+          err = Thread.start {re.read}
+          _, st = Process.waitpid2(p1)
+          desc = FailDesc[st, mesg, err.value]
+        end
+        assert(!st.signaled?, desc)
+        assert(st.success?, mesg)
         r.gets.strip
       end
     end
@@ -453,6 +464,10 @@ END
     assert_fork_status(1, bug5661) {stable.rand(4)}
     r1, r2 = *assert_fork_status(2, bug5661) {stable.rand}
     assert_equal(r1, r2, bug5661)
+
+    assert_fork_status(1, '[ruby-core:82100] [Bug #13753]') do
+      Random::DEFAULT.rand(4)
+    end
   rescue NotImplementedError
   end
 
@@ -550,17 +565,23 @@ END
     End
   end
 
-  def test_raw_seed
+  def test_urandom
     [0, 1, 100].each do |size|
-      v = Random.raw_seed(size)
+      v = Random.urandom(size)
       assert_kind_of(String, v)
       assert_equal(size, v.bytesize)
     end
   end
 
   def test_new_seed
-    v = Random.new_seed
-    assert_kind_of(Integer, v)
-    assert_operator(v.size, :>=, 16)
+    size = 0
+    n = 8
+    n.times do
+      v = Random.new_seed
+      assert_kind_of(Integer, v)
+      size += v.size
+    end
+    # probability of failure <= 1/256**8
+    assert_operator(size.fdiv(n), :>, 15)
   end
 end

@@ -5,6 +5,9 @@ require 'tmpdir'
 require 'timeout'
 
 class TestQueue < Test::Unit::TestCase
+  Queue = Thread::Queue
+  SizedQueue = Thread::SizedQueue
+
   def test_queue_initialized
     assert_raise(TypeError) {
       Queue.allocate.push(nil)
@@ -129,7 +132,7 @@ class TestQueue < Test::Unit::TestCase
   def test_thr_kill
     bug5343 = '[ruby-core:39634]'
     Dir.mktmpdir {|d|
-      timeout = 30
+      timeout = 60
       total_count = 250
       begin
         assert_normal_exit(<<-"_eom", bug5343, {:timeout => timeout, :chdir=>d})
@@ -275,7 +278,7 @@ class TestQueue < Test::Unit::TestCase
     end
 
     q = DumpableQueue.new
-    assert_raise_with_message(TypeError, /internal Array/, bug9674) do
+    assert_raise(TypeError, bug9674) do
       Marshal.dump(q)
     end
   end
@@ -515,8 +518,11 @@ class TestQueue < Test::Unit::TestCase
       end
     end
 
-    # No dead or finished threads
-    assert (consumers + producers).all?{|thr| thr.status =~ /\Arun|sleep\Z/}, 'no threads runnning'
+    # No dead or finished threads, give up to 10 seconds to start running
+    t = Time.now
+    Thread.pass until Time.now - t > 10 || (consumers + producers).all?{|thr| thr.status =~ /\A(?:run|sleep)\z/}
+
+    assert (consumers + producers).all?{|thr| thr.status =~ /\A(?:run|sleep)\z/}, 'no threads running'
 
     # just exercising the concurrency of the support methods.
     counter = Thread.new do
@@ -540,5 +546,22 @@ class TestQueue < Test::Unit::TestCase
 
     # don't leak this thread
     assert_nothing_raised{counter.join}
+  end
+
+  def test_queue_with_trap
+    assert_in_out_err([], <<-INPUT, %w(INT INT exit), [])
+      q = Queue.new
+      trap(:INT){
+        q.push 'INT'
+      }
+      Thread.new{
+        loop{
+          Process.kill :INT, $$
+        }
+      }
+      puts q.pop
+      puts q.pop
+      puts 'exit'
+    INPUT
   end
 end

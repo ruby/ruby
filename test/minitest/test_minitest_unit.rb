@@ -1645,7 +1645,7 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
     assert_equal expected, sample_test_case.test_methods
   end
 
-  def util_assert_triggered expected, klass = MiniTest::Assertion
+  def assert_triggered expected, klass = MiniTest::Assertion
     e = assert_raises klass do
       yield
     end
@@ -1656,6 +1656,7 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
 
     assert_equal expected, msg
   end
+  alias util_assert_triggered assert_triggered
 
   def util_msg exp, act, msg = nil
     s = "Expected: #{exp.inspect}\n  Actual: #{act.inspect}"

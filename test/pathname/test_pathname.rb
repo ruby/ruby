@@ -14,8 +14,8 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def self.get_linenum
-    if /:(\d+):/ =~ caller[1]
-      $1.to_i
+    if loc = caller_locations(2, 1)
+      loc[0].lineno
     else
       nil
     end
@@ -220,6 +220,8 @@ class TestPathname < Test::Unit::TestCase
   defassert(:plus, '../../c', '..', '../c')
 
   defassert(:plus, 'a//b/d//e', 'a//b/c', '../d//e')
+
+  defassert(:plus, '//foo/var/bar', '//foo/var', 'bar')
 
   def test_slash
     assert_kind_of(Pathname, Pathname("a") / Pathname("b"))
@@ -1209,6 +1211,20 @@ class TestPathname < Test::Unit::TestCase
       open("z", "w") {|f| }
       assert_equal(true, Pathname("z").zero?)
       assert_equal(false, Pathname("not-exist").zero?)
+    }
+  end
+
+  def test_empty?
+    with_tmpchdir('rubytest-pathname') {|dir|
+      open("nonemptyfile", "w") {|f| f.write "abc" }
+      open("emptyfile", "w") {|f| }
+      Dir.mkdir("nonemptydir")
+      open("nonemptydir/somefile", "w") {|f| }
+      Dir.mkdir("emptydir")
+      assert_equal(true, Pathname("emptyfile").empty?)
+      assert_equal(false, Pathname("nonemptyfile").empty?)
+      assert_equal(true, Pathname("emptydir").empty?)
+      assert_equal(false, Pathname("nonemptydir").empty?)
     }
   end
 

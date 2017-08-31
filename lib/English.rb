@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #  Include the English library file in a Ruby script, and you can
 #  reference the global variables such as \VAR{\$\_} using less
 #  cryptic names, listed in the following table.% \vref{tab:english}.
@@ -153,9 +153,7 @@ alias $CHILD_STATUS            $?
 # scope.
 alias $LAST_MATCH_INFO         $~
 
-# If set to any value apart from +nil+ or +false+, all pattern matches
-# will be case insensitive, string comparisons will ignore case, and
-# string hash values will be case insensitive. Deprecated
+# This variable is no longer effective. Deprecated.
 alias $IGNORECASE              $=
 
 # An array of strings containing the command-line

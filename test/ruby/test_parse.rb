@@ -484,21 +484,39 @@ class TestParse < Test::Unit::TestCase
   end
 
   def test_string
-    assert_raise(SyntaxError) do
-      eval '"\xg1"'
-    end
+    mesg = 'from the backslash through the invalid char'
 
-    assert_raise(SyntaxError) do
-      eval '"\u{1234"'
-    end
+    e = assert_syntax_error('"\xg1"', /hex escape/)
+    assert_equal('   ^', e.message.lines.last, mesg)
 
-    assert_raise(SyntaxError) do
-      eval '"\M1"'
-    end
+    e = assert_syntax_error('"\u{1234"', 'unterminated Unicode escape')
+    assert_equal('        ^', e.message.lines.last, mesg)
 
-    assert_raise(SyntaxError) do
-      eval '"\C1"'
-    end
+    e = assert_syntax_error('"\u{xxxx}"', 'invalid Unicode escape')
+    assert_equal('    ^', e.message.lines.last, mesg)
+
+    e = assert_syntax_error('"\u{xxxx', 'Unicode escape')
+    assert_pattern_list([
+                          /.*: invalid Unicode escape\n.*\n/,
+                          /    \^/,
+                          /\n/,
+                          /.*: unterminated Unicode escape\n.*\n/,
+                          /    \^/,
+                          /\n/,
+                          /.*: unterminated string.*\n.*\n/,
+                          /        \^/,
+                        ], e.message)
+
+    e = assert_syntax_error('"\M1"', /escape character syntax/)
+    assert_equal(' ^~~', e.message.lines.last, mesg)
+
+    e = assert_syntax_error('"\C1"', /escape character syntax/)
+    assert_equal(' ^~~', e.message.lines.last, mesg)
+
+    src = '"\xD0\u{90'"\n""000000000000000000000000"
+    assert_syntax_error(src, /:#{__LINE__}: unterminated/o)
+
+    assert_syntax_error('"\u{100000000}"', /invalid Unicode escape/)
 
     assert_equal("\x81", eval('"\C-\M-a"'))
     assert_equal("\177", eval('"\c?"'))
@@ -512,6 +530,8 @@ class TestParse < Test::Unit::TestCase
     assert_raise(SyntaxError) { eval("?\v") }
     assert_raise(SyntaxError) { eval("?\r") }
     assert_raise(SyntaxError) { eval("?\f") }
+    assert_raise(SyntaxError) { eval("?\f") }
+    assert_raise(SyntaxError) { eval(" ?a\x8a".force_encoding("utf-8")) }
     assert_equal("\u{1234}", eval("?\u{1234}"))
     assert_equal("\u{1234}", eval('?\u{1234}'))
   end
@@ -534,9 +554,6 @@ class TestParse < Test::Unit::TestCase
     end
     assert_nothing_raised(SyntaxError, bug) do
       assert_equal(sym, eval(':"foo\u{0}bar"'))
-    end
-    assert_raise(SyntaxError) do
-      eval ':"foo\u{}bar"'
     end
   end
 
@@ -762,6 +779,7 @@ x = __ENCODING__
     x = x = 1
     assert_nil eval("x; nil")
     assert_nil eval("1+1; nil")
+    assert_nil eval("1.+(1); nil")
     assert_nil eval("TestParse; nil")
     assert_nil eval("::TestParse; nil")
     assert_nil eval("x..x; nil")
@@ -863,8 +881,11 @@ x = __ENCODING__
   def test_unused_variable
     o = Object.new
     assert_warning(/assigned but unused variable/) {o.instance_eval("def foo; a=1; nil; end")}
+    assert_warning(/assigned but unused variable/) {o.instance_eval("def bar; a=1; a(); end")}
     a = "\u{3042}"
     assert_warning(/#{a}/) {o.instance_eval("def foo; #{a}=1; nil; end")}
+    o = Object.new
+    assert_warning(/assigned but unused variable/) {o.instance_eval("def foo; tap {a=1; a()}; end")}
   end
 
   def test_named_capture_conflict
@@ -872,6 +893,165 @@ x = __ENCODING__
     assert_warning('') {eval("a = 1; /(?<a>)/ =~ ''")}
     a = "\u{3042}"
     assert_warning('') {eval("#{a} = 1; /(?<#{a}>)/ =~ ''")}
+  end
+
+  def test_rescue_in_command_assignment
+    bug = '[ruby-core:75621] [Bug #12402]'
+    all_assertions(bug) do |a|
+      a.for("lhs = arg") do
+        v = bug
+        v = raise(bug) rescue "ok"
+        assert_equal("ok", v)
+      end
+      a.for("lhs op_asgn arg") do
+        v = 0
+        v += raise(bug) rescue 1
+        assert_equal(1, v)
+      end
+      a.for("lhs[] op_asgn arg") do
+        v = [0]
+        v[0] += raise(bug) rescue 1
+        assert_equal([1], v)
+      end
+      a.for("lhs.m op_asgn arg") do
+        k = Struct.new(:m)
+        v = k.new(0)
+        v.m += raise(bug) rescue 1
+        assert_equal(k.new(1), v)
+      end
+      a.for("lhs::m op_asgn arg") do
+        k = Struct.new(:m)
+        v = k.new(0)
+        v::m += raise(bug) rescue 1
+        assert_equal(k.new(1), v)
+      end
+      a.for("lhs.C op_asgn arg") do
+        k = Struct.new(:C)
+        v = k.new(0)
+        v.C += raise(bug) rescue 1
+        assert_equal(k.new(1), v)
+      end
+      a.for("lhs::C op_asgn arg") do
+        v = Class.new
+        v::C ||= raise(bug) rescue 1
+        assert_equal(1, v::C)
+      end
+      a.for("lhs = command") do
+        v = bug
+        v = raise bug rescue "ok"
+        assert_equal("ok", v)
+      end
+      a.for("lhs op_asgn command") do
+        v = 0
+        v += raise bug rescue 1
+        assert_equal(1, v)
+      end
+      a.for("lhs[] op_asgn command") do
+        v = [0]
+        v[0] += raise bug rescue 1
+        assert_equal([1], v)
+      end
+      a.for("lhs.m op_asgn command") do
+        k = Struct.new(:m)
+        v = k.new(0)
+        v.m += raise bug rescue 1
+        assert_equal(k.new(1), v)
+      end
+      a.for("lhs::m op_asgn command") do
+        k = Struct.new(:m)
+        v = k.new(0)
+        v::m += raise bug rescue 1
+        assert_equal(k.new(1), v)
+      end
+      a.for("lhs.C op_asgn command") do
+        k = Struct.new(:C)
+        v = k.new(0)
+        v.C += raise bug rescue 1
+        assert_equal(k.new(1), v)
+      end
+      a.for("lhs::C op_asgn command") do
+        v = Class.new
+        v::C ||= raise bug rescue 1
+        assert_equal(1, v::C)
+      end
+    end
+  end
+
+  def test_yyerror_at_eol
+    assert_syntax_error("    0b", /\^/)
+    assert_syntax_error("    0b\n", /\^/)
+  end
+
+  def test_error_def_in_argument
+    assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
+    begin;
+      assert_syntax_error("def f r:def d; def f 0end", /unexpected/)
+    end;
+
+    assert_syntax_error("def\nf(000)end", /^  \^~~/)
+    assert_syntax_error("def\nf(&)end", /^   \^/)
+  end
+
+  def test_method_location_in_rescue
+    bug = '[ruby-core:79388] [Bug #13181]'
+    obj, line = Object.new, __LINE__+1
+    def obj.location
+      #
+      raise
+    rescue
+      caller_locations(1, 1)[0]
+    end
+
+    assert_equal(line, obj.location.lineno, bug)
+  end
+
+  def test_negative_line_number
+    bug = '[ruby-core:80920] [Bug #13523]'
+    obj = Object.new
+    obj.instance_eval("def t(e = false);raise if e; __LINE__;end", "test", -100)
+    assert_equal(-100, obj.t, bug)
+    assert_equal(-100, obj.method(:t).source_location[1], bug)
+    e = assert_raise(RuntimeError) {obj.t(true)}
+    assert_equal(-100, e.backtrace_locations.first.lineno, bug)
+  end
+
+  def test_file_in_indented_heredoc
+    name = '[ruby-core:80987] [Bug #13540]' # long enough to be shared
+    assert_equal(name+"\n", eval("#{<<-"begin;"}\n#{<<-'end;'}", nil, name))
+    begin;
+      <<~HEREDOC
+        #{__FILE__}
+      HEREDOC
+    end;
+  end
+
+  def test_unexpected_token_error
+    assert_raise(SyntaxError) do
+      eval('"x"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+    end
+  end
+
+  def test_unexpected_token_after_numeric
+    assert_raise_with_message(SyntaxError, /^    \^~~\z/) do
+      eval('0000xyz')
+    end
+  end
+
+  def test_truncated_source_line
+    e = assert_raise_with_message(SyntaxError, /unexpected tIDENTIFIER/) do
+      eval("'0123456789012345678901234567890123456789' abcdefghijklmnopqrstuvwxyz0123456789 0123456789012345678901234567890123456789")
+    end
+    line = e.message.lines[1]
+    assert_operator(line, :start_with?, "...")
+    assert_operator(line, :end_with?, "...\n")
+  end
+
+  def test_unterminated_regexp_error
+    e = assert_raise(SyntaxError) do
+      eval("/x")
+    end.message
+    assert_match(/unterminated regexp meets end of file/, e)
+    assert_not_match(/unexpected tSTRING_END/, e)
   end
 
 =begin

@@ -242,7 +242,7 @@ class CSV
       @row = if headers.size >= fields.size
         headers.zip(fields)
       else
-        fields.zip(headers).map { |pair| pair.reverse! }
+        fields.zip(headers).each(&:reverse!)
       end
     end
 
@@ -267,7 +267,7 @@ class CSV
 
     # Returns the headers of this row.
     def headers
-      @row.map { |pair| pair.first }
+      @row.map(&:first)
     end
 
     #
@@ -431,7 +431,11 @@ class CSV
     #
     # This method returns the row for chaining.
     #
+    # If no block is given, an Enumerator is returned.
+    #
     def delete_if(&block)
+      block or return enum_for(__method__) { size }
+
       @row.delete_if(&block)
 
       self  # for chaining
@@ -447,21 +451,23 @@ class CSV
     #
     def fields(*headers_and_or_indices)
       if headers_and_or_indices.empty?  # return all fields--no arguments
-        @row.map { |pair| pair.last }
+        @row.map(&:last)
       else                              # or work like values_at()
-        headers_and_or_indices.inject(Array.new) do |all, h_or_i|
-          all + if h_or_i.is_a? Range
+        all = []
+        headers_and_or_indices.each do |h_or_i|
+          if h_or_i.is_a? Range
             index_begin = h_or_i.begin.is_a?(Integer) ? h_or_i.begin :
                                                         index(h_or_i.begin)
             index_end   = h_or_i.end.is_a?(Integer)   ? h_or_i.end :
                                                         index(h_or_i.end)
             new_range   = h_or_i.exclude_end? ? (index_begin...index_end) :
                                                 (index_begin..index_end)
-            fields.values_at(new_range)
+            all.concat(fields.values_at(new_range))
           else
-            [field(*Array(h_or_i))]
+            all << field(*Array(h_or_i))
           end
         end
+        return all
       end
     end
     alias_method :values_at, :fields
@@ -500,13 +506,15 @@ class CSV
 
     #
     # Yields each pair of the row as header and field tuples (much like
-    # iterating over a Hash).
+    # iterating over a Hash). This method returns the row for chaining.
+    #
+    # If no block is given, an Enumerator is returned.
     #
     # Support for Enumerable.
     #
-    # This method returns the row for chaining.
-    #
     def each(&block)
+      block or return enum_for(__method__) { size }
+
       @row.each(&block)
 
       self  # for chaining
@@ -526,8 +534,7 @@ class CSV
     # order and clobbers duplicate fields.
     #
     def to_hash
-      # flatten just one level of the internal Array
-      Hash[*@row.inject(Array.new) { |ary, pair| ary.push(*pair) }]
+      @row.to_h
     end
 
     #
@@ -535,7 +542,7 @@ class CSV
     #
     #   csv_row.fields.to_csv( options )
     #
-    def to_csv(options = Hash.new)
+    def to_csv(**options)
       fields.to_csv(options)
     end
     alias_method :to_s, :to_csv
@@ -822,15 +829,18 @@ class CSV
     #
     # This method returns the table for chaining.
     #
+    # If no block is given, an Enumerator is returned.
+    #
     def delete_if(&block)
+      block or return enum_for(__method__) { @mode == :row or @mode == :col_or_row ? size : headers.size }
+
       if @mode == :row or @mode == :col_or_row  # by index
         @table.delete_if(&block)
       else                                      # by header
-        to_delete = Array.new
-        headers.each_with_index do |header, i|
-          to_delete << header if block[[header, self[header]]]
+        deleted = []
+        headers.each do |header|
+          deleted << delete(header) if block[[header, self[header]]]
         end
-        to_delete.map { |header| delete(header) }
       end
 
       self  # for chaining
@@ -845,7 +855,11 @@ class CSV
     #
     # This method returns the table for chaining.
     #
+    # If no block is given, an Enumerator is returned.
+    #
     def each(&block)
+      block or return enum_for(__method__) { @mode == :col ? headers.size : size }
+
       if @mode == :col
         headers.each { |header| block[[header, self[header]]] }
       else
@@ -857,7 +871,8 @@ class CSV
 
     # Returns +true+ if all rows of this table ==() +other+'s rows.
     def ==(other)
-      @table == other.table
+      return @table == other.table if other.is_a? CSV::Table
+      @table == other
     end
 
     #
@@ -865,13 +880,11 @@ class CSV
     # then all of the field rows will follow.
     #
     def to_a
-      @table.inject([headers]) do |array, row|
-        if row.header_row?
-          array
-        else
-          array + [row.fields]
-        end
+      array = [headers]
+      @table.each do |row|
+        array.push(row.fields) unless row.header_row?
       end
+      return array
     end
 
     #
@@ -881,15 +894,12 @@ class CSV
     # This method assumes you want the Table.headers(), unless you explicitly
     # pass <tt>:write_headers => false</tt>.
     #
-    def to_csv(options = Hash.new)
-      wh = options.fetch(:write_headers, true)
-      @table.inject(wh ? [headers.to_csv(options)] : [ ]) do |rows, row|
-        if row.header_row?
-          rows
-        else
-          rows + [row.fields.to_csv(options)]
-        end
-      end.join('')
+    def to_csv(write_headers: true, **options)
+      array = write_headers ? [headers.to_csv(options)] : []
+      @table.each do |row|
+        array.push(row.fields.to_csv(options)) unless row.header_row?
+      end
+      return array.join('')
     end
     alias_method :to_s, :to_csv
 
@@ -1000,8 +1010,8 @@ class CSV
   HeaderConverters = {
     downcase: lambda { |h| h.encode(ConverterEncoding).downcase },
     symbol:   lambda { |h|
-      h.encode(ConverterEncoding).downcase.strip.gsub(/\s+/, "_").
-                                                 gsub(/\W+/, "").to_sym
+      h.encode(ConverterEncoding).downcase.gsub(/[^\s\w]+/, "").strip.
+                                           gsub(/\s+/, "_").to_sym
     }
   }
 
@@ -1047,14 +1057,14 @@ class CSV
   # If a block is given, the instance is passed to the block and the return
   # value becomes the return value of the block.
   #
-  def self.instance(data = $stdout, options = Hash.new)
+  def self.instance(data = $stdout, **options)
     # create a _signature_ for this method call, data object and options
     sig = [data.object_id] +
           options.values_at(*DEFAULT_OPTIONS.keys.sort_by { |sym| sym.to_s })
 
     # fetch or create the instance for this signature
     @@instances ||= Hash.new
-    instance    =   (@@instances[sig] ||= new(data, options))
+    instance = (@@instances[sig] ||= new(data, options))
 
     if block_given?
       yield instance  # run block, if given, returning result
@@ -1065,9 +1075,9 @@ class CSV
 
   #
   # :call-seq:
-  #   filter( options = Hash.new ) { |row| ... }
-  #   filter( input, options = Hash.new ) { |row| ... }
-  #   filter( input, output, options = Hash.new ) { |row| ... }
+  #   filter( **options ) { |row| ... }
+  #   filter( input, **options ) { |row| ... }
+  #   filter( input, output, **options ) { |row| ... }
   #
   # This method is a convenience for building Unix-like filters for CSV data.
   # Each row is yielded to the provided block which can alter it as needed.
@@ -1087,25 +1097,23 @@ class CSV
   # The <tt>:output_row_sep</tt> +option+ defaults to
   # <tt>$INPUT_RECORD_SEPARATOR</tt> (<tt>$/</tt>).
   #
-  def self.filter(*args)
+  def self.filter(input=nil, output=nil, **options)
     # parse options for input, output, or both
     in_options, out_options = Hash.new, {row_sep: $INPUT_RECORD_SEPARATOR}
-    if args.last.is_a? Hash
-      args.pop.each do |key, value|
-        case key.to_s
-        when /\Ain(?:put)?_(.+)\Z/
-          in_options[$1.to_sym] = value
-        when /\Aout(?:put)?_(.+)\Z/
-          out_options[$1.to_sym] = value
-        else
-          in_options[key]  = value
-          out_options[key] = value
-        end
+    options.each do |key, value|
+      case key.to_s
+      when /\Ain(?:put)?_(.+)\Z/
+        in_options[$1.to_sym] = value
+      when /\Aout(?:put)?_(.+)\Z/
+        out_options[$1.to_sym] = value
+      else
+        in_options[key]  = value
+        out_options[key] = value
       end
     end
     # build input and output wrappers
-    input  = new(args.shift || ARGF,    in_options)
-    output = new(args.shift || $stdout, out_options)
+    input  = new(input  || ARGF,    in_options)
+    output = new(output || $stdout, out_options)
 
     # read, yield, write
     input.each do |row|
@@ -1128,7 +1136,7 @@ class CSV
   # <tt>encoding: "UTF-32BE:UTF-8"</tt> would read UTF-32BE data from the file
   # but transcode it to UTF-8 before CSV parses it.
   #
-  def self.foreach(path, options = Hash.new, &block)
+  def self.foreach(path, **options, &block)
     return to_enum(__method__, path, options) unless block
     open(path, options) do |csv|
       csv.each(&block)
@@ -1137,8 +1145,8 @@ class CSV
 
   #
   # :call-seq:
-  #   generate( str, options = Hash.new ) { |csv| ... }
-  #   generate( options = Hash.new ) { |csv| ... }
+  #   generate( str, **options ) { |csv| ... }
+  #   generate( **options ) { |csv| ... }
   #
   # This method wraps a String you provide, or an empty default String, in a
   # CSV object which is passed to the provided block.  You can use the block to
@@ -1153,19 +1161,17 @@ class CSV
   # String to set the base Encoding for the output.  CSV needs this hint if you
   # plan to output non-ASCII compatible data.
   #
-  def self.generate(*args)
+  def self.generate(str=nil, **options)
     # add a default empty String, if none was given
-    if args.first.is_a? String
-      io = StringIO.new(args.shift)
+    if str
+      io = StringIO.new(str)
       io.seek(0, IO::SEEK_END)
-      args.unshift(io)
     else
-      encoding = args[-1][:encoding] if args.last.is_a?(Hash)
+      encoding = options[:encoding]
       str      = String.new
       str.force_encoding(encoding) if encoding
-      args.unshift(str)
     end
-    csv = new(*args)  # wrap
+    csv = new(str, options) # wrap
     yield csv         # yield for appending
     csv.string        # return final String
   end
@@ -1183,12 +1189,11 @@ class CSV
   # The <tt>:row_sep</tt> +option+ defaults to <tt>$INPUT_RECORD_SEPARATOR</tt>
   # (<tt>$/</tt>) when calling this method.
   #
-  def self.generate_line(row, options = Hash.new)
-    options  = {row_sep: $INPUT_RECORD_SEPARATOR}.merge(options)
-    encoding = options.delete(:encoding)
-    str      = String.new
-    if encoding
-      str.force_encoding(encoding)
+  def self.generate_line(row, **options)
+    options = {row_sep: $INPUT_RECORD_SEPARATOR}.merge(options)
+    str = String.new
+    if options[:encoding]
+      str.force_encoding(options[:encoding])
     elsif field = row.find { |f| not f.nil? }
       str.force_encoding(String(field).encoding)
     end
@@ -1197,10 +1202,10 @@ class CSV
 
   #
   # :call-seq:
-  #   open( filename, mode = "rb", options = Hash.new ) { |faster_csv| ... }
-  #   open( filename, options = Hash.new ) { |faster_csv| ... }
-  #   open( filename, mode = "rb", options = Hash.new )
-  #   open( filename, options = Hash.new )
+  #   open( filename, mode = "rb", **options ) { |faster_csv| ... }
+  #   open( filename, **options ) { |faster_csv| ... }
+  #   open( filename, mode = "rb", **options )
+  #   open( filename, **options )
   #
   # This method opens an IO object, and wraps that with CSV.  This is intended
   # as the primary interface for writing a CSV file.
@@ -1258,17 +1263,16 @@ class CSV
   # * truncate()
   # * tty?()
   #
-  def self.open(*args)
-    # find the +options+ Hash
-    options = if args.last.is_a? Hash then args.pop else Hash.new end
+  def self.open(filename, mode="r", **options)
     # wrap a File opened with the remaining +args+ with no newline
     # decorator
     file_opts = {universal_newline: false}.merge(options)
+
     begin
-      f = File.open(*args, file_opts)
+      f = File.open(filename, mode, file_opts)
     rescue ArgumentError => e
-      raise unless /needs binmode/ =~ e.message and args.size == 1
-      args << "rb"
+      raise unless /needs binmode/ =~ e.message and mode == "r"
+      mode = "rb"
       file_opts = {encoding: Encoding.default_external}.merge(file_opts)
       retry
     end
@@ -1293,14 +1297,14 @@ class CSV
 
   #
   # :call-seq:
-  #   parse( str, options = Hash.new ) { |row| ... }
-  #   parse( str, options = Hash.new )
+  #   parse( str, **options ) { |row| ... }
+  #   parse( str, **options )
   #
   # This method can be used to easily parse CSV out of a String.  You may either
   # provide a +block+ which will be called with each row of the String in turn,
   # or just use the returned Array of Arrays (when no +block+ is given).
   #
-  # You pass your +str+ to read from, and an optional +options+ Hash containing
+  # You pass your +str+ to read from, and an optional +options+ containing
   # anything CSV::new() understands.
   #
   def self.parse(*args, &block)
@@ -1323,7 +1327,7 @@ class CSV
   #
   # The +options+ parameter can be anything CSV::new() understands.
   #
-  def self.parse_line(line, options = Hash.new)
+  def self.parse_line(line, **options)
     new(line, options).shift
   end
 
@@ -1354,7 +1358,7 @@ class CSV
   #                     converters:        :numeric,
   #                     header_converters: :symbol }.merge(options) )
   #
-  def self.table(path, options = Hash.new)
+  def self.table(path, **options)
     read( path, { headers:           true,
                   converters:        :numeric,
                   header_converters: :symbol }.merge(options) )
@@ -1512,51 +1516,55 @@ class CSV
   # Options cannot be overridden in the instance methods for performance reasons,
   # so be sure to set what you want here.
   #
-  def initialize(data, options = Hash.new)
-    if data.nil?
-      raise ArgumentError.new("Cannot parse nil as CSV")
-    end
-
-    # build the options for this read/write
-    options = DEFAULT_OPTIONS.merge(options)
+  def initialize(data, col_sep: ",", row_sep: :auto, quote_char: '"', field_size_limit:   nil,
+                 converters: nil, unconverted_fields: nil, headers: false, return_headers: false,
+                 write_headers: nil, header_converters: nil, skip_blanks: false, force_quotes: false,
+                 skip_lines: nil, liberal_parsing: false, internal_encoding: nil, external_encoding: nil, encoding: nil)
+    raise ArgumentError.new("Cannot parse nil as CSV") if data.nil?
 
     # create the IO object we will read from
-    @io       = data.is_a?(String) ? StringIO.new(data) : data
+    @io = data.is_a?(String) ? StringIO.new(data) : data
     # honor the IO encoding if we can, otherwise default to ASCII-8BIT
-    @encoding = raw_encoding(nil) ||
-                ( if encoding = options.delete(:internal_encoding)
-                    case encoding
-                    when Encoding; encoding
-                    else Encoding.find(encoding)
-                    end
-                  end ) ||
-                ( case encoding = options.delete(:encoding)
-                  when Encoding; encoding
-                  when /\A[^:]+/; Encoding.find($&)
-                  end ) ||
+    internal_encoding = Encoding.find(internal_encoding) if internal_encoding
+    external_encoding = Encoding.find(external_encoding) if external_encoding
+    if encoding
+      encoding, = encoding.split(":", 2) if encoding.is_a?(String)
+      encoding = Encoding.find(encoding)
+    end
+    @encoding = raw_encoding(nil) || internal_encoding || encoding ||
                 Encoding.default_internal || Encoding.default_external
     #
     # prepare for building safe regular expressions in the target encoding,
     # if we can transcode the needed characters
     #
-    @re_esc   =   "\\".encode(@encoding).freeze rescue ""
-    @re_chars =   /#{%"[-\\]\\[\\.^$?*+{}()|# \r\n\t\f\v]".encode(@encoding)}/
+    @re_esc   = "\\".encode(@encoding).freeze rescue ""
+    @re_chars = /#{%"[-\\]\\[\\.^$?*+{}()|# \r\n\t\f\v]".encode(@encoding)}/
+    @unconverted_fields = unconverted_fields
 
-    init_separators(options)
-    init_parsers(options)
-    init_converters(options)
-    init_headers(options)
-    init_comments(options)
+    # Stores header row settings and loads header converters, if needed.
+    @use_headers    = headers
+    @return_headers = return_headers
+    @write_headers  = write_headers
 
-    @force_encoding = !!(encoding || options.delete(:encoding))
-    options.delete(:internal_encoding)
-    options.delete(:external_encoding)
-    unless options.empty?
-      raise ArgumentError, "Unknown options:  #{options.keys.join(', ')}."
-    end
+    # headers must be delayed until shift(), in case they need a row of content
+    @headers = nil
+
+    init_separators(col_sep, row_sep, quote_char, force_quotes)
+    init_parsers(skip_blanks, field_size_limit, liberal_parsing)
+    init_converters(converters, :@converters, :convert)
+    init_converters(header_converters, :@header_converters, :header_convert)
+    init_comments(skip_lines)
+
+    @force_encoding = !!encoding
 
     # track our own lineno since IO gets confused about line-ends is CSV fields
     @lineno = 0
+
+    # make sure headers have been assigned
+    if header_row? and [Array, String].include? @use_headers.class and @write_headers
+      parse_headers  # won't read data for Array or String
+      self << @headers
+    end
   end
 
   #
@@ -1642,7 +1650,7 @@ class CSV
   # The line number of the last row read from this file.  Fields with nested
   # line-end characters will not affect this count.
   #
-  attr_reader :lineno
+  attr_reader :lineno, :line
 
   ### IO and StringIO Delegation ###
 
@@ -1673,9 +1681,8 @@ class CSV
   #
   def <<(row)
     # make sure headers have been assigned
-    if header_row? and [Array, String].include? @use_headers.class
+    if header_row? and [Array, String].include? @use_headers.class and !@write_headers
       parse_headers  # won't read data for Array or String
-      self << @headers if @write_headers
     end
 
     # handle CSV::Row objects and Hashes
@@ -1721,7 +1728,7 @@ class CSV
   # converted field or the field itself.
   #
   def convert(name = nil, &converter)
-    add_converter(:converters, self.class::Converters, name, &converter)
+    add_converter(:@converters, self.class::Converters, name, &converter)
   end
 
   #
@@ -1736,7 +1743,7 @@ class CSV
   # effect.
   #
   def header_convert(name = nil, &converter)
-    add_converter( :header_converters,
+    add_converter( :@header_converters,
                    self.class::HeaderConverters,
                    name,
                    &converter )
@@ -1817,6 +1824,12 @@ class CSV
         return nil
       end
 
+      if in_extended_col
+        @line.concat(parse)
+      else
+        @line = parse.clone
+      end
+
       parse.sub!(@parsers[:line_end], "")
 
       if csv.empty?
@@ -1854,34 +1867,32 @@ class CSV
       parts.each do |part|
         if in_extended_col
           # If we are continuing a previous column
-          if part[-1] == @quote_char && part.count(@quote_char) % 2 != 0
+          if part.end_with?(@quote_char) && part.count(@quote_char) % 2 != 0
             # extended column ends
             csv.last << part[0..-2]
             if csv.last =~ @parsers[:stray_quote]
               raise MalformedCSVError,
                     "Missing or stray quote in line #{lineno + 1}"
             end
-            csv.last.gsub!(@quote_char * 2, @quote_char)
+            csv.last.gsub!(@double_quote_char, @quote_char)
             in_extended_col = false
           else
-            csv.last << part
-            csv.last << @col_sep
+            csv.last << part << @col_sep
           end
-        elsif part[0] == @quote_char
+        elsif part.start_with?(@quote_char)
           # If we are starting a new quoted column
           if part.count(@quote_char) % 2 != 0
             # start an extended column
-            csv             << part[1..-1]
-            csv.last        << @col_sep
+            csv << (part[1..-1] << @col_sep)
             in_extended_col =  true
-          elsif part[-1] == @quote_char
+          elsif part.end_with?(@quote_char)
             # regular quoted column
             csv << part[1..-2]
             if csv.last =~ @parsers[:stray_quote]
               raise MalformedCSVError,
                     "Missing or stray quote in line #{lineno + 1}"
             end
-            csv.last.gsub!(@quote_char * 2, @quote_char)
+            csv.last.gsub!(@double_quote_char, @quote_char)
           elsif @liberal_parsing
             csv << part
           else
@@ -1994,11 +2005,12 @@ class CSV
   #
   # This method also establishes the quoting rules used for CSV output.
   #
-  def init_separators(options)
+  def init_separators(col_sep, row_sep, quote_char, force_quotes)
     # store the selected separators
-    @col_sep    = options.delete(:col_sep).to_s.encode(@encoding)
-    @row_sep    = options.delete(:row_sep)  # encode after resolving :auto
-    @quote_char = options.delete(:quote_char).to_s.encode(@encoding)
+    @col_sep    = col_sep.to_s.encode(@encoding)
+    @row_sep    = row_sep # encode after resolving :auto
+    @quote_char = quote_char.to_s.encode(@encoding)
+    @double_quote_char = @quote_char * 2
 
     if @quote_char.length != 1
       raise ArgumentError, ":quote_char has to be a single character String"
@@ -2063,13 +2075,11 @@ class CSV
     @row_sep = @row_sep.to_s.encode(@encoding)
 
     # establish quoting rules
-    @force_quotes   = options.delete(:force_quotes)
-    do_quote        = lambda do |field|
-      field         = String(field)
+    @force_quotes = force_quotes
+    do_quote = lambda do |field|
+      field = String(field)
       encoded_quote = @quote_char.encode(field.encoding)
-      encoded_quote                                +
-      field.gsub(encoded_quote, encoded_quote * 2) +
-      encoded_quote
+      encoded_quote + field.gsub(encoded_quote, encoded_quote * 2) + encoded_quote
     end
     quotable_chars = encode_str("\r\n", @col_sep, @quote_char)
     @quote         = if @force_quotes
@@ -2093,11 +2103,11 @@ class CSV
   end
 
   # Pre-compiles parsers and stores them by name for access during reads.
-  def init_parsers(options)
+  def init_parsers(skip_blanks, field_size_limit, liberal_parsing)
     # store the parser behaviors
-    @skip_blanks      = options.delete(:skip_blanks)
-    @field_size_limit = options.delete(:field_size_limit)
-    @liberal_parsing  = options.delete(:liberal_parsing)
+    @skip_blanks      = skip_blanks
+    @field_size_limit = field_size_limit
+    @liberal_parsing  = liberal_parsing
 
     # prebuild Regexps for faster parsing
     esc_row_sep = escape_re(@row_sep)
@@ -2125,45 +2135,23 @@ class CSV
   # The <tt>:unconverted_fields</tt> option is also activated for
   # <tt>:converters</tt> calls, if requested.
   #
-  def init_converters(options, field_name = :converters)
-    if field_name == :converters
-      @unconverted_fields = options.delete(:unconverted_fields)
-    end
-
-    instance_variable_set("@#{field_name}", Array.new)
-
-    # find the correct method to add the converters
-    convert = method(field_name.to_s.sub(/ers\Z/, ""))
+  def init_converters(converters, ivar_name, convert_method)
+    converters = case converters
+                 when nil then []
+                 when Array then converters
+                 else [converters]
+                 end
+    instance_variable_set(ivar_name, [])
+    convert = method(convert_method)
 
     # load converters
-    unless options[field_name].nil?
-      # allow a single converter not wrapped in an Array
-      unless options[field_name].is_a? Array
-        options[field_name] = [options[field_name]]
-      end
-      # load each converter...
-      options[field_name].each do |converter|
-        if converter.is_a? Proc  # custom code block
-          convert.call(&converter)
-        else                     # by name
-          convert.call(converter)
-        end
+    converters.each do |converter|
+      if converter.is_a? Proc  # custom code block
+        convert.call(&converter)
+      else                     # by name
+        convert.call(converter)
       end
     end
-
-    options.delete(field_name)
-  end
-
-  # Stores header row settings and loads header converters, if needed.
-  def init_headers(options)
-    @use_headers    = options.delete(:headers)
-    @return_headers = options.delete(:return_headers)
-    @write_headers  = options.delete(:write_headers)
-
-    # headers must be delayed until shift(), in case they need a row of content
-    @headers = nil
-
-    init_converters(options, :header_converters)
   end
 
   # Stores the pattern of comments to skip from the provided options.
@@ -2172,9 +2160,9 @@ class CSV
   # Strings are converted to a Regexp.
   #
   # See also CSV.new
-  def init_comments(options)
-    @skip_lines = options.delete(:skip_lines)
-    @skip_lines = Regexp.new(@skip_lines) if @skip_lines.is_a? String
+  def init_comments(skip_lines)
+    @skip_lines = skip_lines
+    @skip_lines = Regexp.new(Regexp.escape(@skip_lines)) if @skip_lines.is_a? String
     if @skip_lines and not @skip_lines.respond_to?(:match)
       raise ArgumentError, ":skip_lines has to respond to matches"
     end
@@ -2189,7 +2177,7 @@ class CSV
   #
   def add_converter(var_name, const, name = nil, &converter)
     if name.nil?  # custom converter
-      instance_variable_get("@#{var_name}") << converter
+      instance_variable_get(var_name) << converter
     else          # named converter
       combo = const[name]
       case combo
@@ -2198,7 +2186,7 @@ class CSV
           add_converter(var_name, const, converter_name)
         end
       else        # individual named converter
-        instance_variable_get("@#{var_name}") << combo
+        instance_variable_get(var_name) << combo
       end
     end
   end
@@ -2216,7 +2204,7 @@ class CSV
 
     fields.map.with_index do |field, index|
       converters.each do |converter|
-        break if field.nil?
+        break if headers && field.nil?
         field = if converter.arity == 1  # straight field converter
           converter[field]
         else                             # FieldInfo converter
@@ -2278,7 +2266,7 @@ class CSV
     class << row
       attr_reader :unconverted_fields
     end
-    row.instance_eval { @unconverted_fields = fields }
+    row.instance_variable_set(:@unconverted_fields, fields)
     row
   end
 
@@ -2353,7 +2341,7 @@ class Array # :nodoc:
   #
   #   ["CSV", "data"].to_csv
   #     #=> "CSV,data\n"
-  def to_csv(options = Hash.new)
+  def to_csv(**options)
     CSV.generate_line(self, options)
   end
 end
@@ -2363,7 +2351,7 @@ class String # :nodoc:
   #
   #   "CSV,data".parse_csv
   #     #=> ["CSV", "data"]
-  def parse_csv(options = Hash.new)
+  def parse_csv(**options)
     CSV.parse_line(self, options)
   end
 end

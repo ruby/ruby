@@ -16,57 +16,61 @@
 #
 # is also a good place to look at.
 
-# Language specification.
 language: c
+dist: trusty
+
 sudo: false
 
-# Compilers.  Several  compilers are  provided in Travis,  so we try  them all.
-# The value set here is visible via $CC environment variable.
 compiler:
   - gcc
 
 os:
   - linux
 
-# Dependencies.  Some  header files are missing  in a Travis' worker  VM, so we
-# have  to install  them.  The  "1.9.1" here  is OK.   It is  the  most adopted
-# version string  for Debian/Ubuntu, and  no dependencies have been  changed so
-# far since the 1.9.1 release.
 before_install:
   - "CONFIG_FLAG="
-  - "JOBS='-j 4'"
+  - "JOBS=-j`nproc`"
 
-# Script is where the test runs.  Note  we just do "make test", not other tests
-# like  test-all, test-rubyspec.   This is  because  they take  too much  time,
-# enough for Travis to shut down the VM as being stalled.
 before_script:
+  - "echo JOBS=$JOBS"
   - "uname -a"
   - "uname -r"
   - "rm -fr .ext autom4te.cache"
   - "echo $TERM"
-  - "make -f common.mk BASERUBY=ruby MAKEDIRS='mkdir -p' srcdir=. update-config_files"
-  - "autoconf"
-  - "mkdir config_1st config_2nd"
-  - "./configure -C --disable-install-doc --with-gcc=$CC $CONFIG_FLAG"
-  - "cp -pr config.status .ext/include config_1st"
+  - "> config.status"
+  - "sed -f tool/prereq.status Makefile.in common.mk > Makefile"
+  - "make update-config_files"
+  - "make touch-unicode-files"
+  - "make -s $JOBS srcs UNICODE_FILES=."
+  - "requests=; for req in ${RUBYSPEC_PULL_REQUEST//,/ }; do
+      requests=\"$requests +refs/pull/$req/merge:\";
+    done"
+  - "${requests:+git -C spec/rubyspec -c user.email=none -c user.name=none pull --no-edit origin $requests}"
+  - "${requests:+git -C spec/rubyspec log --oneline origin/master..@}"
+  - "rm config.status Makefile rbconfig.rb .rbconfig.time"
+  - "mkdir build config_1st config_2nd"
+  - "chmod -R a-w ."
+  - "chmod u+w build config_1st config_2nd"
+  - "cd build"
+  - "../configure -C --disable-install-doc --with-gcc=$CC $CONFIG_FLAG"
+  - "cp -pr config.cache config.status .ext/include ../config_1st"
   - "make reconfig"
-  - "cp -pr config.status .ext/include config_2nd"
-  - "diff -ru config_1st config_2nd"
-  - "make after-update BASERUBY=ruby"
+  - "cp -pr config.cache config.status .ext/include ../config_2nd"
+  - "(cd .. && exec diff -ru config_1st config_2nd)"
   - "make -s $JOBS"
-  - "make update-rubyspec"
+
 script:
-  - "make test TESTOPTS=--color=never"
-  - "make test-all TESTOPTS='-q -j3 --color=never --job-status=normal'"
-  - "make test-rubyspec MSPECOPT=-fm"
+  - "make -s test TESTOPTS=--color=never"
+  - "make -s $JOBS test-all -o exts TESTOPTS='-q --color=never --job-status=normal'"
+  - "make -s $JOBS test-rubyspec MSPECOPT=-j"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
   only:
     - trunk
-    - ruby_2_1
     - ruby_2_2
     - ruby_2_3
+    - ruby_2_4
     - /^feature\//
     - /^bug\//
 
@@ -74,23 +78,21 @@ branches:
 notifications:
   irc:
     channels:
-      - "irc.freenode.org#ruby-core"
-      - "irc.freenode.org#ruby-ja"
+      - "chat.freenode.net#ruby-core"
+      - "chat.freenode.net#ruby-ja"
     on_success: change # [always|never|change] # default: always
     on_failure: always # [always|never|change] # default: always
     template:
       - "%{message} by @%{author}: See %{build_url}"
 
-  # Update ruby-head installed on Travis CI so other projects can test against it.
-  webhooks:
-    urls:
-      - "https://rubies.travis-ci.org/rebuild/ruby-head"
-    on_success: always
-    on_failure: never
+  slack:
+    secure: lbYVj0Th1AOxovf44zjMr7v6JgWVcsw4tmK3LhzbdpR6GnPHRkrFxDBykk+tE1346qJJ0YLlyFn3ib3Z4QyttIO00Sg6mqk8NGPjG7DrwUJ6o43Yd1ePZr80W+8Wz20/LVEOAhidJI3LANU2+bWa/VdcHtFT1/Cr+CMrdITD+tI=
+    on_pull_requests: false
+    on_success: change
+    on_failure: always
 
   email:
     - ko1c-failure@atdot.net
-    - shibata.hiroshi@gmail.com
 
 # Local Variables:
 # mode: YAML

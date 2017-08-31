@@ -27,9 +27,41 @@
     UNIFIED_insn_nameB, ...};
  */
 
-<%= unif_insns_each %>
-<%= unif_insns      %>
-<%= unif_insns_data %>
+% unif_insns_data = @insns.find_all {|insn| !insn.is_sc}.map do |insn|
+%   size = insn.unifs.size
+%   if size > 0
+%     name = "UNIFIED_#{insn.name}"
+%     insn.unifs.sort_by{|unif| -unif[1].size}.each_with_index do |(uni_insn, uni_insns), i|
+%       uni_insns = uni_insns[1..-1]
+static const int <%=name%>_<%=i%>[] = {
+    BIN(<%=uni_insn.name%>), <%=uni_insns.size + 2%>,
+    <% uni_insns.map{|e| -%>
+BIN(<%=e.name%>),<% -%>
+% }
+
+};
+%     end
+
+static const int *const <%=name%>[] = {(int *)<%=size+1%>,
+%     size.times do |e|
+    <%=name%>_<%=e%>,
+%     end
+};
+%     name
+%   end
+% end
+
+static const int *const *const unified_insns_data[] = {<%#-%>
+% unif_insns_data.each_with_index do |insn, i|
+%   if (i%8).zero?
+
+   <% -%>
+%   end
+ <%=insn || "0"%>,<%#-%>
+% end
+
+};
 
 #undef GET_INSN_NAME
 
+ASSERT_VM_INSTRUCTION_SIZE(unified_insns_data);

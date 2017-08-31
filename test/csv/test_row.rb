@@ -209,9 +209,20 @@ class TestCSV::Row < TestCSV
     # by header
     assert_equal(["C", 3], @row.delete("C"))
 
-    # using a block
+  end
+
+  def test_delete_if
     assert_equal(@row, @row.delete_if { |h, f| h == "A" and not f.nil? })
-    assert_equal([["A", nil]], @row.to_a)
+    assert_equal([["B", 2], ["C", 3], ["A", nil]], @row.to_a)
+  end
+
+  def test_delete_if_without_block
+    enum = @row.delete_if
+    assert_instance_of(Enumerator, enum)
+    assert_equal(@row.size, enum.size)
+
+    assert_equal(@row, enum.each { |h, f| h == "A" and not f.nil? })
+    assert_equal([["B", 2], ["C", 3], ["A", nil]], @row.to_a)
   end
 
   def test_fields
@@ -281,6 +292,16 @@ class TestCSV::Row < TestCSV
 
     # verify that we can chain the call
     assert_equal(@row, @row.each { })
+
+    # without block
+    ary = @row.to_a
+    enum = @row.each
+    assert_instance_of(Enumerator, enum)
+    assert_equal(@row.size, enum.size)
+    enum.each do |pair|
+      assert_equal(ary.first.first, pair.first)
+      assert_equal(ary.shift.last, pair.last)
+    end
   end
 
   def test_enumerable

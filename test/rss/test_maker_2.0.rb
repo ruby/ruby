@@ -390,7 +390,7 @@ module RSS
             item.description = "#{description}#{i}"
             item.author = "#{author}#{i}"
             item.comments = "#{comments}#{i}"
-            item.date = pubDate
+            item.date = pubDate - i
           end
         end
         maker.items.do_sort = true
@@ -402,8 +402,8 @@ module RSS
         assert_equal("#{description}#{i}", item.description)
         assert_equal("#{author}#{i}", item.author)
         assert_equal("#{comments}#{i}", item.comments)
-        assert_equal(pubDate, item.pubDate)
-        assert_equal(pubDate, item.date)
+        assert_equal(pubDate - i, item.pubDate)
+        assert_equal(pubDate - i, item.date)
       end
 
       rss = RSS::Maker.make("2.0") do |maker|

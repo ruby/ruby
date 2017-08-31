@@ -26,7 +26,10 @@ static const VALUE sc_insn_info[][SC_STATE_SIZE] = {
 <%= sc_insn_info %>
 };
 
+ASSERT_VM_INSTRUCTION_SIZE(sc_insn_info);
+
 static const VALUE sc_insn_next[] = {
 <%= sc_insn_next %>
 };
 
+ASSERT_VM_INSTRUCTION_SIZE(sc_insn_next);

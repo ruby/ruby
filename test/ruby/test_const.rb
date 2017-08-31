@@ -65,4 +65,8 @@ WARNING
 PRE
     assert_no_memory_leak(%w[-W0 -], '', code, 'redefined constant', timeout: 30)
   end
+
+  def test_toplevel_lookup
+    assert_raise(NameError, '[Feature #11547]') {TestConst::Object}
+  end
 end

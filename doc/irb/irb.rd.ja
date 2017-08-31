@@ -83,7 +83,6 @@ irb起動時に``~/.irbrc''を読み込みます. もし存在しない場合は
 できます.
 
   IRB.conf[:IRB_NAME]="irb"
-  IRB.conf[:MATH_MODE]=false
   IRB.conf[:USE_TRACER]=false
   IRB.conf[:USE_LOADER]=false
   IRB.conf[:IGNORE_SIGINT]=true
@@ -206,9 +205,6 @@ irb拡張コマンドは, 簡単な名前と頭に`irb_'をつけた名前と両
     false: 通常のprintで表示する.
     nil: 通常モードであれば, inspect modeとなり, mathモードの時は, non
 	 inspect modeとなる.
-
---- conf.math_mode
-    参照のみ. bcモード(分数, 行列の計算ができます)かどうか?
 
 --- conf.use_loader = true/false
     load/require時にirbのfile読み込み機能を用いるモードのスイッチ(デフォ
@@ -409,4 +405,3 @@ rubyでは, 以下のプログラムはエラーになります.
 % comment-end: "\n"
 % End:
 %
-

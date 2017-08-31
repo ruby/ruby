@@ -1,13 +1,15 @@
 # -*- coding: us-ascii -*-
-# frozen_string_literal: false
+# frozen_string_literal: true
 require "open3"
 require "timeout"
 require_relative "find_executable"
-require "rbconfig/sizeof"
-
-class Integer
-  FIXNUM_MIN = -(1 << (8 * RbConfig::SIZEOF['long'] - 2))
-  FIXNUM_MAX = (1 << (8 * RbConfig::SIZEOF['long'] - 2)) - 1
+begin
+  require 'rbconfig'
+rescue LoadError
+end
+begin
+  require "rbconfig/sizeof"
+rescue LoadError
 end
 
 module EnvUtil
@@ -40,12 +42,28 @@ module EnvUtil
   DEFAULT_SIGNALS = Signal.list
   DEFAULT_SIGNALS.delete("TERM") if /mswin|mingw/ =~ RUBY_PLATFORM
 
+  class << self
+    attr_accessor :subprocess_timeout_scale
+  end
+
+  def apply_timeout_scale(t)
+    if scale = EnvUtil.subprocess_timeout_scale
+      t * scale
+    else
+      t
+    end
+  end
+  module_function :apply_timeout_scale
+
   def invoke_ruby(args, stdin_data = "", capture_stdout = false, capture_stderr = false,
                   encoding: nil, timeout: 10, reprieve: 1, timeout_error: Timeout::Error,
                   stdout_filter: nil, stderr_filter: nil,
                   signal: :TERM,
                   rubybin: EnvUtil.rubybin,
                   **opt)
+    timeout = apply_timeout_scale(timeout)
+    reprieve = apply_timeout_scale(reprieve) if reprieve
+
     in_c, in_p = IO.pipe
     out_p, out_c = IO.pipe if capture_stdout
     err_p, err_c = IO.pipe if capture_stderr && capture_stderr != :merge_to_stdout
@@ -127,7 +145,7 @@ module EnvUtil
       th.kill if th
     end
     [in_c, in_p, out_c, out_p, err_c, err_p].each do |io|
-      io.close if io && !io.closed?
+      io&.close
     end
     [th_stdout, th_stderr].each do |th|
       th.join if th
@@ -141,7 +159,7 @@ module EnvUtil
   end
 
   def verbose_warning
-    class << (stderr = "")
+    class << (stderr = "".dup)
       alias write <<
     end
     stderr, $stderr, verbose, $VERBOSE = $stderr, stderr, $VERBOSE, true
@@ -219,9 +237,12 @@ module EnvUtil
   if /darwin/ =~ RUBY_PLATFORM
     DIAGNOSTIC_REPORTS_PATH = File.expand_path("~/Library/Logs/DiagnosticReports")
     DIAGNOSTIC_REPORTS_TIMEFORMAT = '%Y-%m-%d-%H%M%S'
-    def self.diagnostic_reports(signame, cmd, pid, now)
+    @ruby_install_name = RbConfig::CONFIG['RUBY_INSTALL_NAME']
+
+    def self.diagnostic_reports(signame, pid, now)
       return unless %w[ABRT QUIT SEGV ILL TRAP].include?(signame)
-      cmd = File.basename(cmd)
+      cmd = File.basename(rubybin)
+      cmd = @ruby_install_name if "ruby-runner#{RbConfig::CONFIG["EXEEXT"]}" == cmd
       path = DIAGNOSTIC_REPORTS_PATH
       timeformat = DIAGNOSTIC_REPORTS_TIMEFORMAT
       pat = "#{path}/#{cmd}_#{now.strftime(timeformat)}[-_]*.crash"
@@ -240,7 +261,7 @@ module EnvUtil
       nil
     end
   else
-    def self.diagnostic_reports(signame, cmd, pid, now)
+    def self.diagnostic_reports(signame, pid, now)
     end
   end
 
@@ -253,10 +274,7 @@ module EnvUtil
   end
 end
 
-begin
-  require 'rbconfig'
-rescue LoadError
-else
+if defined?(RbConfig)
   module RbConfig
     @ruby = EnvUtil.rubybin
     class << self
@@ -264,10 +282,7 @@ else
       attr_reader :ruby
     end
     dir = File.dirname(ruby)
-    name = File.basename(ruby, CONFIG['EXEEXT'])
     CONFIG['bindir'] = dir
-    CONFIG['ruby_install_name'] = name
-    CONFIG['RUBY_INSTALL_NAME'] = name
     Gem::ConfigMap[:bindir] = dir if defined?(Gem::ConfigMap)
   end
 end

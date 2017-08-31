@@ -95,19 +95,6 @@ GetX509ExtPtr(VALUE obj)
     return ext;
 }
 
-X509_EXTENSION *
-DupX509ExtPtr(VALUE obj)
-{
-    X509_EXTENSION *ext, *new;
-
-    SafeGetX509Ext(obj, ext);
-    if (!(new = X509_EXTENSION_dup(ext))) {
-	ossl_raise(eX509ExtError, NULL);
-    }
-
-    return new;
-}
-
 /*
  * Private
  */
@@ -189,20 +176,6 @@ ossl_x509extfactory_set_crl(VALUE self, VALUE crl)
 }
 
 static VALUE
-ossl_x509extfactory_set_config(VALUE self, VALUE config)
-{
-    X509V3_CTX *ctx;
-    CONF *conf;
-
-    GetX509ExtFactory(self, ctx);
-    rb_iv_set(self, "@config", config);
-    conf = GetConfigPtr(config);  /* NO DUP NEEDED */
-    X509V3_set_nconf(ctx, conf);
-
-    return config;
-}
-
-static VALUE
 ossl_x509extfactory_initialize(int argc, VALUE *argv, VALUE self)
 {
     /*X509V3_CTX *ctx;*/
@@ -225,12 +198,11 @@ ossl_x509extfactory_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * Array to X509_EXTENSION
- * Structure:
- * ["ln", "value", bool_critical] or
- * ["sn", "value", bool_critical] or
- * ["ln", "critical,value"] or the same for sn
- * ["ln", "value"] => not critical
+ * call-seq:
+ *   ef.create_ext(ln_or_sn, "value", critical = false) -> X509::Extension
+ *   ef.create_ext(ln_or_sn, "critical,value")          -> X509::Extension
+ *
+ * Creates a new X509::Extension with passed values. See also x509v3_config(5).
  */
 static VALUE
 ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
@@ -258,8 +230,11 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
     GetX509ExtFactory(self, ctx);
     obj = NewX509Ext(cX509Ext);
     rconf = rb_iv_get(self, "@config");
-    conf = NIL_P(rconf) ? NULL : GetConfigPtr(rconf);
+    conf = NIL_P(rconf) ? NULL : DupConfigPtr(rconf);
+    X509V3_set_nconf(ctx, conf);
     ext = X509V3_EXT_nconf_nid(conf, ctx, nid, RSTRING_PTR(valstr));
+    X509V3_set_ctx_nodb(ctx);
+    NCONF_free(conf);
     if (!ext){
 	ossl_raise(eX509ExtError, "%"PRIsVALUE" = %"PRIsVALUE, oid, valstr);
     }
@@ -324,18 +299,39 @@ ossl_x509ext_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
+ossl_x509ext_initialize_copy(VALUE self, VALUE other)
+{
+    X509_EXTENSION *ext, *ext_other, *ext_new;
+
+    rb_check_frozen(self);
+    GetX509Ext(self, ext);
+    SafeGetX509Ext(other, ext_other);
+
+    ext_new = X509_EXTENSION_dup(ext_other);
+    if (!ext_new)
+	ossl_raise(eX509ExtError, "X509_EXTENSION_dup");
+
+    SetX509Ext(self, ext_new);
+    X509_EXTENSION_free(ext);
+
+    return self;
+}
+
+static VALUE
 ossl_x509ext_set_oid(VALUE self, VALUE oid)
 {
     X509_EXTENSION *ext;
     ASN1_OBJECT *obj;
-    char *s;
 
-    s = StringValueCStr(oid);
-    obj = OBJ_txt2obj(s, 0);
-    if(!obj) obj = OBJ_txt2obj(s, 1);
-    if(!obj) ossl_raise(eX509ExtError, NULL);
     GetX509Ext(self, ext);
-    X509_EXTENSION_set_object(ext, obj);
+    obj = OBJ_txt2obj(StringValueCStr(oid), 0);
+    if (!obj)
+	ossl_raise(eX509ExtError, "OBJ_txt2obj");
+    if (!X509_EXTENSION_set_object(ext, obj)) {
+	ASN1_OBJECT_free(obj);
+	ossl_raise(eX509ExtError, "X509_EXTENSION_set_object");
+    }
+    ASN1_OBJECT_free(obj);
 
     return oid;
 }
@@ -346,17 +342,15 @@ ossl_x509ext_set_value(VALUE self, VALUE data)
     X509_EXTENSION *ext;
     ASN1_OCTET_STRING *asn1s;
 
+    GetX509Ext(self, ext);
     data = ossl_to_der_if_possible(data);
     StringValue(data);
-    if(!(asn1s = ASN1_OCTET_STRING_new())){
-	ossl_raise(eX509ExtError, NULL);
+    asn1s = X509_EXTENSION_get_data(ext);
+
+    if (!ASN1_OCTET_STRING_set(asn1s, (unsigned char *)RSTRING_PTR(data),
+			       RSTRING_LENINT(data))) {
+	ossl_raise(eX509ExtError, "ASN1_OCTET_STRING_set");
     }
-    if(!ASN1_STRING_set((ASN1_STRING *)asn1s, (unsigned char *)RSTRING_PTR(data), RSTRING_LENINT(data))){
-	ASN1_OCTET_STRING_free(asn1s);
-	ossl_raise(eX509ExtError, NULL);
-    }
-    GetX509Ext(self, ext);
-    X509_EXTENSION_set_data(ext, asn1s);
 
     return data;
 }
@@ -447,6 +441,12 @@ ossl_x509ext_to_der(VALUE obj)
 void
 Init_ossl_x509ext(void)
 {
+#if 0
+    mOSSL = rb_define_module("OpenSSL");
+    eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
+    mX509 = rb_define_module_under(mOSSL, "X509");
+#endif
+
     eX509ExtError = rb_define_class_under(mX509, "ExtensionError", eOSSLError);
 
     cX509ExtFactory = rb_define_class_under(mX509, "ExtensionFactory", rb_cObject);
@@ -458,18 +458,18 @@ Init_ossl_x509ext(void)
     rb_attr(cX509ExtFactory, rb_intern("subject_certificate"), 1, 0, Qfalse);
     rb_attr(cX509ExtFactory, rb_intern("subject_request"), 1, 0, Qfalse);
     rb_attr(cX509ExtFactory, rb_intern("crl"), 1, 0, Qfalse);
-    rb_attr(cX509ExtFactory, rb_intern("config"), 1, 0, Qfalse);
+    rb_attr(cX509ExtFactory, rb_intern("config"), 1, 1, Qfalse);
 
     rb_define_method(cX509ExtFactory, "issuer_certificate=", ossl_x509extfactory_set_issuer_cert, 1);
     rb_define_method(cX509ExtFactory, "subject_certificate=", ossl_x509extfactory_set_subject_cert, 1);
     rb_define_method(cX509ExtFactory, "subject_request=", ossl_x509extfactory_set_subject_req, 1);
     rb_define_method(cX509ExtFactory, "crl=", ossl_x509extfactory_set_crl, 1);
-    rb_define_method(cX509ExtFactory, "config=", ossl_x509extfactory_set_config, 1);
     rb_define_method(cX509ExtFactory, "create_ext", ossl_x509extfactory_create_ext, -1);
 
     cX509Ext = rb_define_class_under(mX509, "Extension", rb_cObject);
     rb_define_alloc_func(cX509Ext, ossl_x509ext_alloc);
     rb_define_method(cX509Ext, "initialize", ossl_x509ext_initialize, -1);
+    rb_define_copy_func(cX509Ext, ossl_x509ext_initialize_copy);
     rb_define_method(cX509Ext, "oid=", ossl_x509ext_set_oid, 1);
     rb_define_method(cX509Ext, "value=", ossl_x509ext_set_value, 1);
     rb_define_method(cX509Ext, "critical=", ossl_x509ext_set_critical, 1);

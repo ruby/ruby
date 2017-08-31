@@ -7,7 +7,7 @@ require "socket"
 class TestFileExhaustive < Test::Unit::TestCase
   DRIVE = Dir.pwd[%r'\A(?:[a-z]:|//[^/]+/[^/]+)'i]
   POSIX = /cygwin|mswin|bccwin|mingw|emx/ !~ RUBY_PLATFORM
-  NTFS = !(/cygwin|mingw|mswin|bccwin/ !~ RUBY_PLATFORM)
+  NTFS = !(/mingw|mswin|bccwin/ !~ RUBY_PLATFORM)
 
   def assert_incompatible_encoding
     d = "\u{3042}\u{3044}".encode("utf-16le")
@@ -118,7 +118,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     @symlinkfile = make_tmp_filename("symlinkfile")
     begin
       File.symlink(regular_file, @symlinkfile)
-    rescue NotImplementedError, Errno::EACCES
+    rescue NotImplementedError, Errno::EACCES, Errno::EPERM
       @symlinkfile = nil
     end
     @symlinkfile
@@ -744,12 +744,14 @@ class TestFileExhaustive < Test::Unit::TestCase
     when /darwin/
       ["\u{feff}", *"\u{2000}"..."\u{2100}"].each do |c|
         file = regular_file + c
+        full_path = File.expand_path(file)
+        mesg = proc {File.basename(full_path).dump}
         begin
           open(file) {}
         rescue
-          assert_equal(file, File.expand_path(file), c.dump)
+          assert_equal(file, full_path, mesg)
         else
-          assert_equal(regular_file, File.expand_path(file), c.dump)
+          assert_equal(regular_file, full_path, mesg)
         end
       end
     end
@@ -782,6 +784,8 @@ class TestFileExhaustive < Test::Unit::TestCase
     a = "#{drive}/\225\\\\"
     if File::ALT_SEPARATOR == '\\'
       [%W"cp437 #{drive}/\225", %W"cp932 #{drive}/\225\\"]
+    elsif File.directory?("#{@dir}/\\")
+      [%W"cp437 /\225", %W"cp932 /\225\\"]
     else
       [["cp437", a], ["cp932", a]]
     end.each do |cp, expected|
@@ -827,7 +831,6 @@ class TestFileExhaustive < Test::Unit::TestCase
       ENV["HOMEDRIVE"] = nil
       ENV["HOMEPATH"] = nil
       ENV["USERPROFILE"] = nil
-      assert_raise(ArgumentError) { File.expand_path("~") }
       ENV["HOME"] = "~"
       assert_raise(ArgumentError, bug3630) { File.expand_path("~") }
       ENV["HOME"] = "."
@@ -1138,6 +1141,20 @@ class TestFileExhaustive < Test::Unit::TestCase
         assert_equal(basename, File.basename(file + ".", ".*"))
         assert_equal(basename, File.basename(file + "::$DATA", ".*"))
       end
+    else
+      [regular_file, utf8_file].each do |file|
+        basename = File.basename(file)
+        assert_equal(basename + " ", File.basename(file + " "))
+        assert_equal(basename + ".", File.basename(file + "."))
+        assert_equal(basename + "::$DATA", File.basename(file + "::$DATA"))
+        assert_equal(basename + " ", File.basename(file + " ", ".test"))
+        assert_equal(basename + ".", File.basename(file + ".", ".test"))
+        assert_equal(basename + "::$DATA", File.basename(file + "::$DATA", ".test"))
+        assert_equal(basename, File.basename(file + ".", ".*"))
+        basename.chomp!(".test")
+        assert_equal(basename, File.basename(file + " ", ".*"))
+        assert_equal(basename, File.basename(file + "::$DATA", ".*"))
+      end
     end
     if File::ALT_SEPARATOR == '\\'
       a = "foo/\225\\\\"
@@ -1243,6 +1260,19 @@ class TestFileExhaustive < Test::Unit::TestCase
       end
     end
     assert_raise(Encoding::CompatibilityError, bug7168) {File.join(names)}
+  end
+
+  def test_join_with_changed_separator
+    assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
+    bug = '[ruby-core:79579] [Bug #13223]'
+    begin;
+      class File
+        remove_const :Separator
+        remove_const :SEPARATOR
+      end
+      GC.start
+      assert_equal("hello/world", File.join("hello", "world"), bug)
+    end;
   end
 
   def test_truncate

@@ -15,6 +15,17 @@ class TestSocket_UDPSocket < Test::Unit::TestCase
     assert_nothing_raised { UDPSocket.open(:AF_INET) {} }
   end
 
+  def test_inspect
+    UDPSocket.open() {|sock|
+      assert_match(/AF_INET\b/, sock.inspect)
+    }
+    if Socket.const_defined?(:AF_INET6)
+      UDPSocket.open(Socket::AF_INET6) {|sock|
+        assert_match(/AF_INET6\b/, sock.inspect)
+      }
+    end
+  end
+
   def test_connect
     s = UDPSocket.new
     host = Object.new

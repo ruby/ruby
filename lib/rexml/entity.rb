@@ -4,8 +4,6 @@ require 'rexml/source'
 require 'rexml/xmltokens'
 
 module REXML
-  # God, I hate DTDs.  I really do.  Why this idiot standard still
-  # plagues us is beyond me.
   class Entity < Child
     include XMLTokens
     PUBIDCHAR = "\x20\x0D\x0Aa-zA-Z0-9\\-()+,./:=?;!*@$_%#"

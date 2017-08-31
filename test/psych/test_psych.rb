@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'helper'
 
 require 'stringio'
@@ -84,7 +84,7 @@ class TestPsych < Psych::TestCase
 
   def test_dump_io
     hash = {'hello' => 'TGIF!'}
-    stringio = StringIO.new ''
+    stringio = StringIO.new ''.dup
     assert_equal stringio, Psych.dump(hash, stringio)
     assert_equal Psych.dump(hash), stringio.string
   end
@@ -98,8 +98,8 @@ class TestPsych < Psych::TestCase
     assert_equal Psych.libyaml_version.join('.'), Psych::LIBYAML_VERSION
   end
 
-  def test_load_documents
-    docs = Psych.load_documents("--- foo\n...\n--- bar\n...")
+  def test_load_stream
+    docs = Psych.load_stream("--- foo\n...\n--- bar\n...")
     assert_equal %w{ foo bar }, docs
   end
 
@@ -145,8 +145,9 @@ class TestPsych < Psych::TestCase
   end
 
   def test_load_file_with_fallback
-    t = Tempfile.create(['empty', 'yml'])
-    assert_equal Hash.new, Psych.load_file(t.path, Hash.new)
+    Tempfile.create(['empty', 'yml']) {|t|
+      assert_equal Hash.new, Psych.load_file(t.path, Hash.new)
+    }
   end
 
   def test_parse_file

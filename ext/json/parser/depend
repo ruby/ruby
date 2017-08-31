@@ -9,6 +9,7 @@ parser.o: $(hdrdir)/ruby/defines.h
 parser.o: $(hdrdir)/ruby/encoding.h
 parser.o: $(hdrdir)/ruby/intern.h
 parser.o: $(hdrdir)/ruby/missing.h
+parser.o: $(hdrdir)/ruby/onigmo.h
 parser.o: $(hdrdir)/ruby/oniguruma.h
 parser.o: $(hdrdir)/ruby/ruby.h
 parser.o: $(hdrdir)/ruby/st.h

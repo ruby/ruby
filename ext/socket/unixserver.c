@@ -17,6 +17,8 @@
  *
  * Creates a new UNIX server socket bound to _path_.
  *
+ *   require 'socket'
+ *
  *   serv = UNIXServer.new("/tmp/sock")
  *   s = serv.accept
  *   p s.read
