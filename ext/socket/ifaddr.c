@@ -256,6 +256,27 @@ ifaddr_dstaddr(VALUE self)
     return Qnil;
 }
 
+#ifdef HAVE_STRUCT_IF_DATA_IFI_VHID
+/*
+ * call-seq:
+ *   ifaddr.vhid => Integer
+ *
+ * Returns the vhid address of _ifaddr_.
+ * nil is returned if there is no vhid
+ */
+
+static VALUE
+ifaddr_vhid(VALUE self)
+{
+    rb_ifaddr_t *rifaddr = get_ifaddr(self);
+    struct ifaddrs *ifa = rifaddr->ifaddr;
+    if (ifa->ifa_data)
+        return (INT2FIX(((struct if_data*)ifa->ifa_data)->ifi_vhid));
+    else
+        return Qnil;
+}
+#endif
+
 static void
 ifaddr_inspect_flags(ifa_flags_t flags, VALUE result)
 {
@@ -453,6 +474,9 @@ rsock_init_sockifaddr(void)
     rb_define_method(rb_cSockIfaddr, "netmask", ifaddr_netmask, 0);
     rb_define_method(rb_cSockIfaddr, "broadaddr", ifaddr_broadaddr, 0);
     rb_define_method(rb_cSockIfaddr, "dstaddr", ifaddr_dstaddr, 0);
+#ifdef HAVE_STRUCT_IF_DATA_IFI_VHID
+    rb_define_method(rb_cSockIfaddr, "vhid", ifaddr_vhid, 0);
+#endif
 #endif
 
     rb_define_singleton_method(rb_cSocket, "getifaddrs", socket_s_getifaddrs, 0);

@@ -476,6 +476,7 @@ EOF
     have_func('inet_aton("", (struct in_addr *)0)', headers)
   have_func('getservbyport(0, "")', headers)
   have_func("getifaddrs((struct ifaddrs **)NULL)", headers)
+  have_struct_member("struct if_data", "ifi_vhid", headers) # FreeBSD
 
   have_func("getpeereid", headers)
 
