@@ -468,4 +468,16 @@ class TestFile < Test::Unit::TestCase
       assert_file.not_exist?(path)
     end
   end
+
+  def test_open_tempfile_path
+    Dir.mktmpdir(__method__.to_s) do |tmpdir|
+      File.open(tmpdir, File::RDWR | File::TMPFILE) do |io|
+        io.write "foo"
+        io.flush
+        assert_equal 3, io.size
+        assert_raise(IOError) { io.path }
+      end
+    end
+  end if File::Constants.const_defined?(:TMPFILE)
+
 end

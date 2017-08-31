@@ -379,7 +379,10 @@ apply2files(void (*func)(const char *, VALUE, void *), int argc, VALUE *argv, vo
  *  not normalize the name.
  *
  *  The pathname may not point the file corresponding to <i>file</i>.
- *  e.g. file has been moved, deleted, or created with <code>File::TMPFILE</code> option.
+ *  For instance, pathname becomes inaccurate when file has been moved or deleted.
+ *
+ *  This method raises <code>IOError</code> for a <i>file</i> created using
+ *  <code>File::Constants::TMPFILE</code> because they don't have a pathname.
  *
  *     File.new("testfile").path               #=> "testfile"
  *     File.new("/tmp/../tmp/xxx", "w").path   #=> "/tmp/../tmp/xxx"
@@ -393,7 +396,11 @@ rb_file_path(VALUE obj)
 
     fptr = RFILE(rb_io_taint_check(obj))->fptr;
     rb_io_check_initialized(fptr);
-    if (NIL_P(fptr->pathv)) return Qnil;
+
+    if (NIL_P(fptr->pathv)) {
+        rb_raise(rb_eIOError, "File is unnamed (TMPFILE?)");
+    }
+
     return rb_obj_taint(rb_str_dup(fptr->pathv));
 }
 

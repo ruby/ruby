@@ -5833,6 +5833,7 @@ static VALUE
 rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode,
 		     const convconfig_t *convconfig, mode_t perm)
 {
+    VALUE pathv;
     rb_io_t *fptr;
     convconfig_t cc;
     if (!convconfig) {
@@ -5848,8 +5849,15 @@ rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode,
     MakeOpenFile(io, fptr);
     fptr->mode = fmode;
     fptr->encs = *convconfig;
-    fptr->pathv = rb_str_new_frozen(filename);
-    fptr->fd = rb_sysopen(fptr->pathv, oflags, perm);
+    pathv = rb_str_new_frozen(filename);
+#ifdef O_TMPFILE
+    if (!(oflags & O_TMPFILE)) {
+        fptr->pathv = pathv;
+    }
+#else
+    fptr->pathv = pathv;
+#endif
+    fptr->fd = rb_sysopen(pathv, oflags, perm);
     io_check_tty(fptr);
     if (fmode & FMODE_SETENC_BY_BOM) io_set_encoding_by_bom(io);
 
