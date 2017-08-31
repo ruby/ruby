@@ -883,6 +883,33 @@ if OpenSSL::SSL::SSLContext::METHODS.include?(:TLSv1_2) && OpenSSL::SSL::SSLCont
 
 end
 
+if OpenSSL::SSL::SSLContext::METHODS.include?(:TLSv1_3) && OpenSSL::SSL::SSLContext::METHODS.include?(:TLSv1_2)
+
+  def test_tls_v1_3
+    start_server_version(:TLSv1_3) { |server, port|
+      server_connect(port, ctx) { |ssl| assert_equal("TLSv1.3", ssl.ssl_version) }
+    }
+  end if OpenSSL::OPENSSL_VERSION_NUMBER > 0x10001000
+
+  def test_forbid_tls_v1_2_for_client
+    ctx_proc = Proc.new { |ctx| ctx.options = OpenSSL::SSL::OP_ALL | OpenSSL::SSL::OP_NO_TLSv1_2 }
+    start_server_version(:SSLv23, ctx_proc) { |server, port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ssl_version = :TLSv1_2
+      assert_handshake_error { server_connect(port, ctx) }
+    }
+  end if defined?(OpenSSL::SSL::OP_NO_TLSv1_2)
+
+  def test_forbid_tls_v1_2_from_server
+    start_server_version(:TLSv1_2) { |server, port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.options = OpenSSL::SSL::OP_ALL | OpenSSL::SSL::OP_NO_TLSv1_2
+      assert_handshake_error { server_connect(port, ctx) }
+    }
+  end if defined?(OpenSSL::SSL::OP_NO_TLSv1_2)
+
+end
+
   def test_renegotiation_cb
     num_handshakes = 0
     renegotiation_cb = Proc.new { |ssl| num_handshakes += 1 }
