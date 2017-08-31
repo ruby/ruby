@@ -35,6 +35,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 * File
 
   * :newline option to File.open implies text mode now.  [Bug #13350]
+  * File#path now raises an IOError for files opened with
+    File::Constants::TMPFILE option. [Feature #13568]
 
 * Hash
 
