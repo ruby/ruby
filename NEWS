@@ -145,6 +145,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Random.raw_seed renamed to become Random.urandom.  It is now
   applicable to non-seeding purposes due to [Bug #9569].
 
+* Socket::Ifaddr#vhid is added [Feature #13803]
+
 * ConditionVariable, Queue and SizedQueue reimplemented for speed.
   They no longer subclass Struct. [Feature #13552]
 
