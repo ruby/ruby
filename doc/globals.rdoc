@@ -10,7 +10,7 @@ $'::   The string to the right of the last successful match.
 $+::   The highest group matched by the last successful match.
 $1::   The Nth group of the last successful match. May be > 1.
 $~::   The information about the last match in the current scope.
-$=::   The flag for case insensitive, nil by default.
+$=::   This variable is no longer effective. Deprecated.
 $/::   The input record separator, newline by default.
 $\::   The output record separator for the print and IO#write. Default is nil.
 $,::   The output field separator for the print and Array#join.
