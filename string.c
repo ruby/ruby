@@ -8081,6 +8081,117 @@ rb_str_codepoints(VALUE str)
     return rb_str_enumerate_codepoints(str, 1);
 }
 
+static VALUE
+rb_str_enumerate_grapheme_clusters(VALUE str, int wantarray)
+{
+    regex_t *reg_grapheme_cluster = NULL;
+    static regex_t *reg_grapheme_cluster_utf8 = NULL;
+    int encidx = ENCODING_GET(str);
+    rb_encoding *enc = rb_enc_from_index(encidx);
+    int unicode_p = rb_enc_unicode_p(enc);
+    const char *ptr, *end;
+    VALUE ary;
+
+    if (!unicode_p) {
+   return rb_str_enumerate_codepoints(str, wantarray);
+    }
+
+    /* synchronize */
+    if (encidx == rb_utf8_encindex() && reg_grapheme_cluster_utf8) {
+   reg_grapheme_cluster = reg_grapheme_cluster_utf8;
+    }
+    if (!reg_grapheme_cluster) {
+   const OnigUChar source[] = "\\X";
+   int r = onig_new(&reg_grapheme_cluster, source, source + sizeof(source) - 1,
+       ONIG_OPTION_DEFAULT, enc, OnigDefaultSyntax, NULL);
+   if (r) {
+       rb_bug("cannot compile grapheme cluster regexp");
+   }
+   if (encidx == rb_utf8_encindex()) {
+       reg_grapheme_cluster_utf8 = reg_grapheme_cluster;
+   }
+    }
+
+    ptr = RSTRING_PTR(str);
+    end = RSTRING_END(str);
+
+    if (rb_block_given_p()) {
+   if (wantarray) {
+#if STRING_ENUMERATORS_WANTARRAY
+       rb_warn("given block not used");
+       ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
+#else
+       rb_warning("passing a block to String#grapheme_clusters is deprecated");
+       wantarray = 0;
+#endif
+   }
+    }
+    else {
+   if (wantarray)
+       ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
+   else
+       return SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
+    }
+
+    while (ptr < end) {
+   VALUE grapheme_cluster;
+   OnigPosition len = onig_match(reg_grapheme_cluster,
+       (const OnigUChar *)ptr, (const OnigUChar *)end,
+       (const OnigUChar *)ptr, NULL, 0);
+   if (len == 0) break;
+   if (len < 0) {
+       break;
+   }
+   grapheme_cluster = rb_enc_str_new(ptr, len, enc);
+   if (wantarray)
+       rb_ary_push(ary, grapheme_cluster);
+   else
+       rb_yield(grapheme_cluster);
+   ptr += len;
+    }
+    if (wantarray)
+   return ary;
+    else
+   return str;
+}
+
+/*
+ *  call-seq:
+ *     str.each_grapheme_cluster {|cstr| block }    -> str
+ *     str.each_grapheme_cluster                    -> an_enumerator
+ *
+ *  Passes each grapheme cluster in <i>str</i> to the given block, or returns
+ *  an enumerator if no block is given.
+ *  Unlike String#each_char, this enumerates by grapheme clusters defined by
+ *  Unicode Standard Annex #29 http://unicode.org/reports/tr29/
+ *
+ *     "a\u0300".each_chars.to_a.size #=> 2
+ *     "a\u0300".each_grapheme_cluster.to_a.size #=> 1
+ *
+ */
+
+static VALUE
+rb_str_each_grapheme_cluster(VALUE str)
+{
+    return rb_str_enumerate_grapheme_clusters(str, 0);
+}
+
+/*
+ *  call-seq:
+ *     str.grapheme_clusters   -> an_array
+ *
+ *  Returns an array of grapheme clusters in <i>str</i>.  This is a shorthand
+ *  for <code>str.each_grapheme_cluster.to_a</code>.
+ *
+ *  If a block is given, which is a deprecated form, works the same as
+ *  <code>each_grapheme_cluster</code>.
+ */
+
+static VALUE
+rb_str_grapheme_clusters(VALUE str)
+{
+    return rb_str_enumerate_grapheme_clusters(str, 1);
+}
 
 static long
 chopped_length(VALUE str)
@@ -10492,6 +10603,7 @@ Init_String(void)
     rb_define_method(rb_cString, "bytes", rb_str_bytes, 0);
     rb_define_method(rb_cString, "chars", rb_str_chars, 0);
     rb_define_method(rb_cString, "codepoints", rb_str_codepoints, 0);
+    rb_define_method(rb_cString, "grapheme_clusters", rb_str_grapheme_clusters, 0);
     rb_define_method(rb_cString, "reverse", rb_str_reverse, 0);
     rb_define_method(rb_cString, "reverse!", rb_str_reverse_bang, 0);
     rb_define_method(rb_cString, "concat", rb_str_concat_multi, -1);
@@ -10547,6 +10659,7 @@ Init_String(void)
     rb_define_method(rb_cString, "each_byte", rb_str_each_byte, 0);
     rb_define_method(rb_cString, "each_char", rb_str_each_char, 0);
     rb_define_method(rb_cString, "each_codepoint", rb_str_each_codepoint, 0);
+    rb_define_method(rb_cString, "each_grapheme_cluster", rb_str_each_grapheme_cluster, 0);
 
     rb_define_method(rb_cString, "sum", rb_str_sum, -1);
 

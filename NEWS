@@ -94,6 +94,8 @@ with all sufficient information, see the ChangeLog file or Redmine
   * String#delete_prefix! is added to remove prefix destructively [Feature #12694]
   * String#delete_suffix is added to remove suffix [Feature #13665]
   * String#delete_suffix! is added to remove suffix destructively [Feature #13665]
+  * String#each_grapheme_cluster and String#grapheme_clusters is added to
+    enumerate grapheme clusters [Feature #13780]
 
 * Thread
 
