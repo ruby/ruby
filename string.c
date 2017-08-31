@@ -8093,66 +8093,66 @@ rb_str_enumerate_grapheme_clusters(VALUE str, int wantarray)
     VALUE ary;
 
     if (!unicode_p) {
-   return rb_str_enumerate_codepoints(str, wantarray);
+	return rb_str_enumerate_codepoints(str, wantarray);
     }
 
     /* synchronize */
     if (encidx == rb_utf8_encindex() && reg_grapheme_cluster_utf8) {
-   reg_grapheme_cluster = reg_grapheme_cluster_utf8;
+	reg_grapheme_cluster = reg_grapheme_cluster_utf8;
     }
     if (!reg_grapheme_cluster) {
-   const OnigUChar source[] = "\\X";
-   int r = onig_new(&reg_grapheme_cluster, source, source + sizeof(source) - 1,
-       ONIG_OPTION_DEFAULT, enc, OnigDefaultSyntax, NULL);
-   if (r) {
-       rb_bug("cannot compile grapheme cluster regexp");
-   }
-   if (encidx == rb_utf8_encindex()) {
-       reg_grapheme_cluster_utf8 = reg_grapheme_cluster;
-   }
+	const OnigUChar source[] = "\\X";
+	int r = onig_new(&reg_grapheme_cluster, source, source + sizeof(source) - 1,
+			 ONIG_OPTION_DEFAULT, enc, OnigDefaultSyntax, NULL);
+	if (r) {
+	    rb_bug("cannot compile grapheme cluster regexp");
+	}
+	if (encidx == rb_utf8_encindex()) {
+	    reg_grapheme_cluster_utf8 = reg_grapheme_cluster;
+	}
     }
 
     ptr = RSTRING_PTR(str);
     end = RSTRING_END(str);
 
     if (rb_block_given_p()) {
-   if (wantarray) {
+	if (wantarray) {
 #if STRING_ENUMERATORS_WANTARRAY
-       rb_warn("given block not used");
-       ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
+	    rb_warn("given block not used");
+	    ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
 #else
-       rb_warning("passing a block to String#grapheme_clusters is deprecated");
-       wantarray = 0;
+	    rb_warning("passing a block to String#grapheme_clusters is deprecated");
+	    wantarray = 0;
 #endif
-   }
+	}
     }
     else {
-   if (wantarray)
-       ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
-   else
-       return SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
+	if (wantarray)
+	    ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
+	else
+	    return SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
     }
 
     while (ptr < end) {
-   VALUE grapheme_cluster;
-   OnigPosition len = onig_match(reg_grapheme_cluster,
-       (const OnigUChar *)ptr, (const OnigUChar *)end,
-       (const OnigUChar *)ptr, NULL, 0);
-   if (len == 0) break;
-   if (len < 0) {
-       break;
-   }
-   grapheme_cluster = rb_enc_str_new(ptr, len, enc);
-   if (wantarray)
-       rb_ary_push(ary, grapheme_cluster);
-   else
-       rb_yield(grapheme_cluster);
-   ptr += len;
+	VALUE grapheme_cluster;
+	OnigPosition len = onig_match(reg_grapheme_cluster,
+				      (const OnigUChar *)ptr, (const OnigUChar *)end,
+				      (const OnigUChar *)ptr, NULL, 0);
+	if (len == 0) break;
+	if (len < 0) {
+	    break;
+	}
+	grapheme_cluster = rb_enc_str_new(ptr, len, enc);
+	if (wantarray)
+	    rb_ary_push(ary, grapheme_cluster);
+	else
+	    rb_yield(grapheme_cluster);
+	ptr += len;
     }
     if (wantarray)
-   return ary;
+	return ary;
     else
-   return str;
+	return str;
 }
 
 /*
