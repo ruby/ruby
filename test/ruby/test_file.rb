@@ -471,12 +471,18 @@ class TestFile < Test::Unit::TestCase
 
   def test_open_tempfile_path
     Dir.mktmpdir(__method__.to_s) do |tmpdir|
-      File.open(tmpdir, File::RDWR | File::TMPFILE) do |io|
-        io.write "foo"
-        io.flush
-        assert_equal 3, io.size
-        assert_raise(IOError) { io.path }
+      begin
+        io = File.open(tmpdir, File::RDWR | File::TMPFILE)
+      rescue Errno::EINVAL
+        skip 'O_TMPFILE not supported (EINVAL)'
       end
+
+      io.write "foo"
+      io.flush
+      assert_equal 3, io.size
+      assert_raise(IOError) { io.path }
+    ensure
+      io&.close
     end
   end if File::Constants.const_defined?(:TMPFILE)
 
