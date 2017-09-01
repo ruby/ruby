@@ -413,6 +413,7 @@ rb_vmdebug_thread_dump_state(VALUE self)
 # elif defined(__APPLE__) && defined(__x86_64__) && defined(HAVE_LIBUNWIND_H)
 #  define UNW_LOCAL_ONLY
 #  include <libunwind.h>
+#  include <sys/mman.h>
 #  undef backtrace
 int
 backtrace(void **trace, int size)
@@ -439,6 +440,8 @@ darwin_sigtramp:
     /* darwin's bundled libunwind doesn't support signal trampoline */
     {
 	ucontext_t *uctx;
+	char vec[1];
+	int r;
 	/* get _sigtramp's ucontext_t and set values to cursor
 	 * http://www.opensource.apple.com/source/Libc/Libc-825.25/i386/sys/_sigtramp.s
 	 * http://www.opensource.apple.com/source/libunwind/libunwind-35.1/src/unw_getcontext.s
@@ -462,8 +465,10 @@ darwin_sigtramp:
 	unw_set_reg(&cursor, UNW_X86_64_R14, uctx->uc_mcontext->__ss.__r14);
 	unw_set_reg(&cursor, UNW_X86_64_R15, uctx->uc_mcontext->__ss.__r15);
 	ip = uctx->uc_mcontext->__ss.__rip;
-	if (!ip || (((char*)ip)[-2] == 0x0f && ((char*)ip)[-1] == 5)) {
-	    /* NULL reference or signal received in syscall */
+	r = mincore((const void *)ip, 1, vec);
+	if (r || !vec[0] || memcmp((const char *)ip-2, "\x0f\x05", 2) == 0) {
+	    /* if segv is caused by invalid call or signal received in syscall */
+	    /* the frame is invalid; skip */
 	    trace[n++] = (void *)ip;
 	    ip = *(unw_word_t*)uctx->uc_mcontext->__ss.__rsp;
 	}
