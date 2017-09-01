@@ -1,9 +1,9 @@
 class Bundler::Thor
-  class Command < Struct.new(:name, :description, :long_description, :usage, :options, :disable_class_options)
+  class Command < Struct.new(:name, :description, :long_description, :usage, :options, :ancestor_name)
     FILE_REGEXP = /^#{Regexp.escape(File.dirname(__FILE__))}/
 
-    def initialize(name, description, long_description, usage, options = nil, disable_class_options = false)
-      super(name.to_s, description, long_description, usage, options || {}, disable_class_options)
+    def initialize(name, description, long_description, usage, options = nil)
+      super(name.to_s, description, long_description, usage, options || {})
     end
 
     def initialize_copy(other) #:nodoc:
@@ -39,13 +39,15 @@ class Bundler::Thor
     # Returns the formatted usage by injecting given required arguments
     # and required options into the given usage.
     def formatted_usage(klass, namespace = true, subcommand = false)
-      if namespace
+      if ancestor_name
+        formatted = "#{ancestor_name} ".dup # add space
+      elsif namespace
         namespace = klass.namespace
-        formatted = "#{namespace.gsub(/^(default)/, '')}:"
+        formatted = "#{namespace.gsub(/^(default)/, '')}:".dup
       end
-      formatted = "#{klass.namespace.split(':').last} " if subcommand
+      formatted ||= "#{klass.namespace.split(':').last} ".dup if subcommand
 
-      formatted ||= ""
+      formatted ||= "".dup
 
       # Add usage with required arguments
       formatted << if klass && !klass.arguments.empty?

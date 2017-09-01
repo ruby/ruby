@@ -205,7 +205,7 @@ class Bundler::Thor::Group
     alias_method :printable_tasks, :printable_commands
 
     def handle_argument_error(command, error, _args, arity) #:nodoc:
-      msg = "#{basename} #{command.name} takes #{arity} argument"
+      msg = "#{basename} #{command.name} takes #{arity} argument".dup
       msg << "s" if arity > 1
       msg << ", but it should not."
       raise error, msg

@@ -53,7 +53,13 @@ class Bundler::Thor
           replacement + '\0'
         end
 
-        replace!(/#{flag}/, content, config[:force])
+        if exists?
+          replace!(/#{flag}/, content, config[:force])
+        else
+          unless pretend?
+            raise Bundler::Thor::Error, "The file #{ destination } does not appear to exist"
+          end
+        end
       end
 
       def revoke!
@@ -91,8 +97,8 @@ class Bundler::Thor
       # Adds the content to the file.
       #
       def replace!(regexp, string, force)
-        return if base.options[:pretend]
-        content = File.binread(destination)
+        return if pretend?
+        content = File.read(destination)
         if force || !content.include?(replacement)
           content.gsub!(regexp, string)
           File.open(destination, "wb") { |file| file.write(content) }

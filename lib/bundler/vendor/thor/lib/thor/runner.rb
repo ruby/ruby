@@ -2,8 +2,6 @@ require "bundler/vendor/thor/lib/thor"
 require "bundler/vendor/thor/lib/thor/group"
 require "bundler/vendor/thor/lib/thor/core_ext/io_binary_read"
 
-require "fileutils"
-require "open-uri"
 require "yaml"
 require "digest/md5"
 require "pathname"
@@ -104,6 +102,7 @@ class Bundler::Thor::Runner < Bundler::Thor #:nodoc: # rubocop:disable ClassLeng
     if package == :file
       File.open(destination, "w") { |f| f.puts contents }
     else
+      require "fileutils"
       FileUtils.cp_r(name, destination)
     end
 
@@ -120,6 +119,7 @@ class Bundler::Thor::Runner < Bundler::Thor #:nodoc: # rubocop:disable ClassLeng
   def uninstall(name)
     raise Error, "Can't find module '#{name}'" unless thor_yaml[name]
     say "Uninstalling #{name}."
+    require "fileutils"
     FileUtils.rm_rf(File.join(thor_root, (thor_yaml[name][:filename]).to_s))
 
     thor_yaml.delete(name)
@@ -138,6 +138,7 @@ class Bundler::Thor::Runner < Bundler::Thor #:nodoc: # rubocop:disable ClassLeng
     self.options = options.merge("as" => name)
 
     if File.directory? File.expand_path(name)
+      require "fileutils"
       FileUtils.rm_rf(File.join(thor_root, old_filename))
 
       thor_yaml.delete(old_filename)
@@ -194,6 +195,7 @@ private
     yaml_file = File.join(thor_root, "thor.yml")
 
     unless File.exist?(yaml_file)
+      require "fileutils"
       FileUtils.mkdir_p(thor_root)
       yaml_file = File.join(thor_root, "thor.yml")
       FileUtils.touch(yaml_file)

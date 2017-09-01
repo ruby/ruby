@@ -48,12 +48,14 @@ class Bundler::Thor
 
       def invoke!
         invoke_with_conflict_check do
+          require "fileutils"
           ::FileUtils.mkdir_p(destination)
         end
       end
 
       def revoke!
         say_status :remove, :red
+        require "fileutils"
         ::FileUtils.rm_rf(destination) if !pretend? && exists?
         given_destination
       end
@@ -112,11 +114,17 @@ class Bundler::Thor
         if exists?
           on_conflict_behavior(&block)
         else
-          say_status :create, :green
           yield unless pretend?
+          say_status :create, :green
         end
 
         destination
+      rescue Errno::EISDIR, Errno::EEXIST
+        on_file_clash_behavior
+      end
+
+      def on_file_clash_behavior
+        say_status :file_clash, :red
       end
 
       # What to do when the destination file already exists.

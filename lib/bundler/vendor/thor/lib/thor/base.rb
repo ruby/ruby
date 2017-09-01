@@ -42,7 +42,7 @@ class Bundler::Thor
     # config<Hash>:: Configuration for this Bundler::Thor class.
     #
     def initialize(args = [], local_options = {}, config = {})
-      parse_options = config[:current_command] && config[:current_command].disable_class_options ? {} : self.class.class_options
+      parse_options = self.class.class_options
 
       # The start method splits inbound arguments at the first argument
       # that looks like an option (starts with - or --). It then calls
@@ -65,7 +65,8 @@ class Bundler::Thor
       # declared options from the array. This will leave us with
       # a list of arguments that weren't declared.
       stop_on_unknown = self.class.stop_on_unknown_option? config[:current_command]
-      opts = Bundler::Thor::Options.new(parse_options, hash_options, stop_on_unknown)
+      disable_required_check = self.class.disable_required_check? config[:current_command]
+      opts = Bundler::Thor::Options.new(parse_options, hash_options, stop_on_unknown, disable_required_check)
       self.options = opts.parse(array_options)
       self.options = config[:class_options].merge(options) if config[:class_options]
 
@@ -150,10 +151,31 @@ class Bundler::Thor
         !!check_unknown_options
       end
 
+      # If you want to raise an error when the default value of an option does not match
+      # the type call check_default_type!
+      # This is disabled by default for compatibility.
+      def check_default_type!
+        @check_default_type = true
+      end
+
+      def check_default_type #:nodoc:
+        @check_default_type ||= from_superclass(:check_default_type, false)
+      end
+
+      def check_default_type? #:nodoc:
+        !!check_default_type
+      end
+
       # If true, option parsing is suspended as soon as an unknown option or a
       # regular argument is encountered.  All remaining arguments are passed to
       # the command as regular arguments.
       def stop_on_unknown_option?(command_name) #:nodoc:
+        false
+      end
+
+      # If true, option set will not suspend the execution of the command when
+      # a required option is not provided.
+      def disable_required_check?(command_name) #:nodoc:
         false
       end
 
@@ -477,7 +499,8 @@ class Bundler::Thor
       alias_method :handle_no_task_error, :handle_no_command_error
 
       def handle_argument_error(command, error, args, arity) #:nodoc:
-        msg = "ERROR: \"#{basename} #{command.name}\" was called with "
+        name = [command.ancestor_name, command.name].compact.join(" ")
+        msg = "ERROR: \"#{basename} #{name}\" was called with ".dup
         msg << "no arguments"               if     args.empty?
         msg << "arguments " << args.inspect unless args.empty?
         msg << "\nUsage: #{banner(command).inspect}"
@@ -541,7 +564,7 @@ class Bundler::Thor
       # options<Hash>:: Described in both class_option and method_option.
       # scope<Hash>:: Options hash that is being built up
       def build_option(name, options, scope) #:nodoc:
-        scope[name] = Bundler::Thor::Option.new(name, options)
+        scope[name] = Bundler::Thor::Option.new(name, options.merge(:check_default_type => check_default_type?))
       end
 
       # Receives a hash of options, parse them and add to the scope. This is a

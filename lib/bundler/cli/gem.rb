@@ -141,9 +141,10 @@ module Bundler
       end
 
       executables.each do |file|
-        path = target.join(file)
-        executable = (path.stat.mode | 0o111)
-        path.chmod(executable)
+        SharedHelpers.filesystem_access(target.join(file)) do |path|
+          executable = (path.stat.mode | 0o111)
+          path.chmod(executable)
+        end
       end
 
       if Bundler.git_present?

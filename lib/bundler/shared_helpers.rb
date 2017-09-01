@@ -172,6 +172,17 @@ module Bundler
 
   private
 
+    def validate_bundle_path
+      return unless Bundler.bundle_path.to_s.include?(File::PATH_SEPARATOR)
+      message = "Your bundle path contains a '#{File::PATH_SEPARATOR}', " \
+                "which is the path separator for your system. Bundler cannot " \
+                "function correctly when the Bundle path contains the " \
+                "system's PATH separator. Please change your " \
+                "bundle path to not include '#{File::PATH_SEPARATOR}'." \
+                "\nYour current bundle path is '#{Bundler.bundle_path}'."
+      raise Bundler::PathError, message
+    end
+
     def find_gemfile
       given = ENV["BUNDLE_GEMFILE"]
       return given if given && !given.empty?
@@ -222,6 +233,7 @@ module Bundler
     end
 
     def set_path
+      validate_bundle_path
       paths = (ENV["PATH"] || "").split(File::PATH_SEPARATOR)
       paths.unshift "#{Bundler.bundle_path}/bin"
       ENV["PATH"] = paths.uniq.join(File::PATH_SEPARATOR)

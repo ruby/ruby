@@ -1,6 +1,3 @@
-require "tempfile"
-require "io/console" if RUBY_VERSION > "1.9.2"
-
 class Bundler::Thor
   module Shell
     class Basic
@@ -110,7 +107,7 @@ class Bundler::Thor
         status = set_color status, color, true if color
 
         buffer = "#{status}#{spaces}#{message}"
-        buffer << "\n" unless buffer.end_with?("\n")
+        buffer = "#{buffer}\n" unless buffer.end_with?("\n")
 
         stdout.print(buffer)
         stdout.flush
@@ -165,7 +162,7 @@ class Bundler::Thor
         colwidth = options[:colwidth]
         options[:truncate] = terminal_width if options[:truncate] == true
 
-        formats << "%-#{colwidth + 2}s" if colwidth
+        formats << "%-#{colwidth + 2}s".dup if colwidth
         start = colwidth ? 1 : 0
 
         colcount = array.max { |a, b| a.size <=> b.size }.size
@@ -177,9 +174,9 @@ class Bundler::Thor
           maximas << maxima
           formats << if index == colcount - 1
                        # Don't output 2 trailing spaces when printing the last column
-                       "%-s"
+                       "%-s".dup
                      else
-                       "%-#{maxima + 2}s"
+                       "%-#{maxima + 2}s".dup
                      end
         end
 
@@ -187,7 +184,7 @@ class Bundler::Thor
         formats << "%s"
 
         array.each do |row|
-          sentence = ""
+          sentence = "".dup
 
           row.each_with_index do |column, index|
             maxima = maximas[index]
@@ -255,6 +252,9 @@ class Bundler::Thor
           )
 
           case answer
+          when nil
+            say ""
+            return true
           when is?(:yes), is?(:force), ""
             return true
           when is?(:no), is?(:skip)
@@ -350,6 +350,7 @@ class Bundler::Thor
       def show_diff(destination, content) #:nodoc:
         diff_cmd = ENV["THOR_DIFF"] || ENV["RAILS_DIFF"] || "diff -u"
 
+        require "tempfile"
         Tempfile.open(File.basename(destination), File.dirname(destination)) do |temp|
           temp.write content
           temp.rewind
@@ -411,7 +412,7 @@ class Bundler::Thor
 
         return unless result
 
-        result.strip!
+        result = result.strip
 
         if default && result == ""
           default

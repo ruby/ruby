@@ -38,6 +38,7 @@ class Bundler::Thor
 
       def invoke!
         invoke_with_conflict_check do
+          require "fileutils"
           FileUtils.mkdir_p(File.dirname(destination))
           # Create a symlink by default
           config[:symbolic] = true if config[:symbolic].nil?

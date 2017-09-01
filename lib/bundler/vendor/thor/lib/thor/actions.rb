@@ -1,4 +1,3 @@
-require "fileutils"
 require "uri"
 require "bundler/vendor/thor/lib/thor/core_ext/io_binary_read"
 require "bundler/vendor/thor/lib/thor/actions/create_file"
@@ -141,7 +140,7 @@ class Bundler::Thor
         end
       end
 
-      message = "Could not find #{file.inspect} in any of your source paths. "
+      message = "Could not find #{file.inspect} in any of your source paths. ".dup
 
       unless self.class.source_root
         message << "Please invoke #{self.class.name}.source_root(PATH) with the PATH containing your templates. "
@@ -175,6 +174,7 @@ class Bundler::Thor
 
       # If the directory doesnt exist and we're not pretending
       if !File.exist?(destination_root) && !pretend
+        require "fileutils"
         FileUtils.mkdir_p(destination_root)
       end
 
@@ -182,6 +182,7 @@ class Bundler::Thor
         # In pretend mode, just yield down to the block
         block.arity == 1 ? yield(destination_root) : yield
       else
+        require "fileutils"
         FileUtils.cd(destination_root) { block.arity == 1 ? yield(destination_root) : yield }
       end
 
@@ -251,7 +252,9 @@ class Bundler::Thor
 
       say_status :run, desc, config.fetch(:verbose, true)
 
-      !options[:pretend] && config[:capture] ? `#{command}` : system(command.to_s)
+      unless options[:pretend]
+        config[:capture] ? `#{command}` : system(command.to_s)
+      end
     end
 
     # Executes a ruby script (taking into account WIN32 platform quirks).

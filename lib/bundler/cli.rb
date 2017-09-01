@@ -5,6 +5,9 @@ require "bundler/vendored_thor"
 module Bundler
   class CLI < Thor
     AUTO_INSTALL_CMDS = %w(show binstubs outdated exec open console licenses clean).freeze
+    PARSEABLE_COMMANDS = %w(
+      check config help exec platform show version
+    ).freeze
 
     def self.start(*)
       super
@@ -12,12 +15,14 @@ module Bundler
       Bundler.ui = UI::Shell.new
       raise e
     ensure
-      warn_on_outdated_bundler
       Bundler::SharedHelpers.print_major_deprecations!
     end
 
     def self.dispatch(*)
-      super {|i| i.send(:print_command) }
+      super do |i|
+        i.send(:print_command)
+        i.send(:warn_on_outdated_bundler)
+      end
     end
 
     def initialize(*args)
@@ -85,9 +90,6 @@ module Bundler
         super
       end
     end
-
-    # Ensure `bundle help --no-color` is valid
-    all_commands["help"].disable_class_options = false
 
     def self.handle_no_command_error(command, has_namespace = $thor_runner)
       if Bundler.feature_flag.plugins? && Bundler::Plugin.command?(command)
@@ -616,7 +618,7 @@ module Bundler
       _, _, config = @_initializer
       current_command = config[:current_command]
       command_name = current_command.name
-      return if %w(exec version check platform show help).include?(command_name)
+      return if PARSEABLE_COMMANDS.include?(command_name)
       command = ["bundle", command_name] + args
       options_to_print = options.dup
       options_to_print.delete_if do |k, v|
@@ -628,8 +630,13 @@ module Bundler
       Bundler.ui.info "Running `#{command * " "}` with bundler #{Bundler::VERSION}"
     end
 
-    def self.warn_on_outdated_bundler
+    def warn_on_outdated_bundler
       return if Bundler.settings[:disable_version_check]
+
+      _, _, config = @_initializer
+      current_command = config[:current_command]
+      command_name = current_command.name
+      return if PARSEABLE_COMMANDS.include?(command_name)
 
       latest = Fetcher::CompactIndex.
                new(nil, Source::Rubygems::Remote.new(URI("https://rubygems.org")), nil).
@@ -647,6 +654,5 @@ module Bundler
     rescue
       nil
     end
-    private_class_method :warn_on_outdated_bundler
   end
 end

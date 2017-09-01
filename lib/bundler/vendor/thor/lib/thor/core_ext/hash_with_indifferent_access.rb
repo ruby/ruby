@@ -51,6 +51,18 @@ class Bundler::Thor
         self
       end
 
+      def reverse_merge(other)
+        self.class.new(other).merge(self)
+      end
+
+      def reverse_merge!(other_hash)
+        replace(reverse_merge(other_hash))
+      end
+
+      def replace(other_hash)
+        super(other_hash)
+      end
+
       # Convert to a Hash with String keys.
       def to_hash
         Hash.new(default).merge!(self)

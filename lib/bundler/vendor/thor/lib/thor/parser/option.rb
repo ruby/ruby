@@ -5,6 +5,7 @@ class Bundler::Thor
     VALID_TYPES = [:boolean, :numeric, :hash, :array, :string]
 
     def initialize(name, options = {})
+      @check_default_type = options[:check_default_type]
       options[:required] = false unless options.key?(:required)
       super
       @lazy_default = options[:lazy_default]
@@ -80,12 +81,12 @@ class Bundler::Thor
 
     def usage(padding = 0)
       sample = if banner && !banner.to_s.empty?
-        "#{switch_name}=#{banner}"
+        "#{switch_name}=#{banner}".dup
       else
         switch_name
       end
 
-      sample = "[#{sample}]" unless required?
+      sample = "[#{sample}]".dup unless required?
 
       if boolean?
         sample << ", [#{dasherize('no-' + human_name)}]" unless (name == "force") || name.start_with?("no-")
@@ -110,7 +111,7 @@ class Bundler::Thor
 
     def validate!
       raise ArgumentError, "An option cannot be boolean and required." if boolean? && required?
-      validate_default_type!
+      validate_default_type! if @check_default_type
     end
 
     def validate_default_type!
@@ -127,8 +128,7 @@ class Bundler::Thor
         @default.class.name.downcase.to_sym
       end
 
-      # TODO: This should raise an ArgumentError in a future version of Bundler::Thor
-      warn "Expected #{@type} default value for '#{switch_name}'; got #{@default.inspect} (#{default_type})" unless default_type == @type
+      raise ArgumentError, "Expected #{@type} default value for '#{switch_name}'; got #{@default.inspect} (#{default_type})" unless default_type == @type
     end
 
     def dasherized?

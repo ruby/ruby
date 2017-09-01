@@ -18,19 +18,20 @@ class Bundler::Thor
         when Hash
           "--#{key} #{value.map { |k, v| "#{k}:#{v}" }.join(' ')}"
         when nil, false
-          ""
+          nil
         else
           "--#{key} #{value.inspect}"
         end
-      end.join(" ")
+      end.compact.join(" ")
     end
 
     # Takes a hash of Bundler::Thor::Option and a hash with defaults.
     #
     # If +stop_on_unknown+ is true, #parse will stop as soon as it encounters
     # an unknown option or a regular argument.
-    def initialize(hash_options = {}, defaults = {}, stop_on_unknown = false)
+    def initialize(hash_options = {}, defaults = {}, stop_on_unknown = false, disable_required_check = false)
       @stop_on_unknown = stop_on_unknown
+      @disable_required_check = disable_required_check
       options = hash_options.values
       super(options)
 
@@ -111,7 +112,7 @@ class Bundler::Thor
         end
       end
 
-      check_requirement!
+      check_requirement! unless @disable_required_check
 
       assigns = Bundler::Thor::CoreExt::HashWithIndifferentAccess.new(@assigns)
       assigns.freeze
@@ -188,7 +189,7 @@ class Bundler::Thor
           shift
           false
         else
-          true
+          !no_or_skip?(switch)
         end
       else
         @switches.key?(switch) || !no_or_skip?(switch)

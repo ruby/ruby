@@ -58,6 +58,7 @@ class Bundler::Thor
 
       def invoke!
         invoke_with_conflict_check do
+          require "fileutils"
           FileUtils.mkdir_p(File.dirname(destination))
           File.open(destination, "wb") { |f| f.write render }
         end
