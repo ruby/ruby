@@ -3302,7 +3302,7 @@ rb_str_to_dbl(VALUE str, int badcheck)
 	    rb_raise(rb_eArgError, "string for Float contains null byte");
 	}
 	if (s[len]) {		/* no sentinel somehow */
-	    char *p =  ALLOCV(v, len);
+	    char *p = ALLOCV(v, (size_t)len + 1);
 	    MEMCPY(p, s, char, len);
 	    p[len] = '\0';
 	    s = p;
