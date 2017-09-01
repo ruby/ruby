@@ -8049,7 +8049,25 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
 
     RB_OBJ_WRITE(iseq, &load_body->mark_ary, iseq_mark_ary_create((int)body->mark_ary));
 
-    RB_OBJ_WRITE(iseq, &load_body->location.pathobj,       ibf_load_location_str(load, body->location.pathobj));
+    {
+	VALUE realpath = Qnil, path = ibf_load_object(load, body->location.pathobj);
+	if (RB_TYPE_P(path, T_STRING)) {
+	    realpath = path = rb_fstring(path);
+	}
+	else if (RB_TYPE_P(path, T_ARRAY)) {
+	    VALUE pathobj = path;
+	    if (RARRAY_LEN(pathobj) != 2) {
+		rb_raise(rb_eRuntimeError, "path object size mismatch");
+	    }
+	    path = rb_fstring(RARRAY_AREF(pathobj, 0));
+	    realpath = rb_fstring(RARRAY_AREF(pathobj, 1));
+	}
+	else {
+	    rb_raise(rb_eRuntimeError, "unexpected path object");
+	}
+	rb_iseq_pathobj_set(iseq, path, realpath);
+    }
+
     RB_OBJ_WRITE(iseq, &load_body->location.base_label,    ibf_load_location_str(load, body->location.base_label));
     RB_OBJ_WRITE(iseq, &load_body->location.label,         ibf_load_location_str(load, body->location.label));
     load_body->location.first_lineno = body->location.first_lineno;
