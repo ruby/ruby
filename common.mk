@@ -1,4 +1,4 @@
-bunbin: $(PROGRAM) $(WPROGRAM)
+bin: $(PROGRAM) $(WPROGRAM)
 lib: $(LIBRUBY)
 dll: $(LIBRUBY_SO)
 
@@ -738,6 +738,7 @@ libencs: libenc libtrans
 encs enc trans libencs libenc libtrans: $(SHOWFLAGS) $(ENC_MK) $(LIBRUBY) $(PREP) PHONY
 	$(ECHO) making $@
 	$(Q) $(MAKE) $(MAKE_ENC) $@
+
 
 libenc enc: {$(VPATH)}encdb.h
 libtrans trans: {$(VPATH)}transdb.h
