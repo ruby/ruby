@@ -34,10 +34,6 @@ class Gem::Source::Lock < Gem::Source
     0 == (self <=> other)
   end
 
-  def hash # :nodoc:
-    @wrapped.hash ^ 3
-  end
-
   ##
   # Delegates to the wrapped source's fetch_spec method.
 
@@ -50,3 +46,4 @@ class Gem::Source::Lock < Gem::Source
   end
 
 end
+

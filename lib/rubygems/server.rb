@@ -573,11 +573,19 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     add_date res
 
     case req.request_uri.path
-    when %r|^/quick/(Marshal.#{Regexp.escape Gem.marshal_version}/)?(.*?)\.gemspec\.rz$| then
-      marshal_format, full_name = $1, $2
-      specs = Gem::Specification.find_all_by_full_name(full_name)
+    when %r|^/quick/(Marshal.#{Regexp.escape Gem.marshal_version}/)?(.*?)-([0-9.]+[^-]*?)(-.*?)?\.gemspec\.rz$| then
+      marshal_format, name, version, platform = $1, $2, $3, $4
+      specs = Gem::Specification.find_all_by_name name, version
 
-      selector = full_name.inspect
+      selector = [name, version, platform].map(&:inspect).join ' '
+
+      platform = if platform then
+                   Gem::Platform.new platform.sub(/^-/, '')
+                 else
+                   Gem::Platform::RUBY
+                 end
+
+      specs = specs.select { |s| s.platform == platform }
 
       if specs.empty? then
         res.status = 404

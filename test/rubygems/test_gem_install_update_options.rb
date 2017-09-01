@@ -121,10 +121,9 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   def test_security_policy_unknown
     @cmd.add_install_update_options
 
-    e = assert_raises OptionParser::InvalidArgument do
+    assert_raises OptionParser::InvalidArgument do
       @cmd.handle_options %w[-P UnknownSecurity]
     end
-    assert_includes e.message, "UnknownSecurity"
   end
 
   def test_user_install_enabled

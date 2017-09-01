@@ -51,11 +51,7 @@ class Gem::Requirement
   # If the input is "weird", the default version requirement is
   # returned.
 
-  def self.create *inputs
-    return new inputs if inputs.length > 1
-
-    input = inputs.shift
-
+  def self.create input
     case input
     when Gem::Requirement then
       input
