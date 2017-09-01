@@ -23,6 +23,16 @@ class TestCoverage < Test::Unit::TestCase
     end
   end
 
+  def test_coverage_running?
+    refute Coverage.running?
+    Coverage.start
+    assert Coverage.running?
+    Coverage.peek_result
+    assert Coverage.running?
+    Coverage.result
+    refute Coverage.running?
+  end
+
   def test_coverage_snapshot
     loaded_features = $".dup
 
