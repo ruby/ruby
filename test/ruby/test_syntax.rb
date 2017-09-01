@@ -986,7 +986,7 @@ eom
     begin;
       return; raise
       begin return; rescue SystemExit; exit false; end
-      begin return; ensure exit false; end
+      begin return; ensure puts "ensured"; end #=> ensured
       begin ensure return; end
       begin raise; ensure; return; end
       begin raise; rescue; return; end
