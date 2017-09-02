@@ -52,4 +52,10 @@ describe :getoptlong_get, shared: true do
       lambda { @opts.send(@method) }.should raise_error(GetoptLong::MissingArgument)
     end
   end
+
+  it "returns multiline argument" do
+    argv [ "--size=\n10k\n" ] do
+      @opts.send(@method).should == [ "--size", "\n10k\n" ]
+    end
+  end
 end
