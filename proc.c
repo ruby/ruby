@@ -1606,6 +1606,12 @@ method_name(VALUE obj)
  *     meth.original_name    -> symbol
  *
  *  Returns the original name of the method.
+ *
+ *    class C
+ *      def foo; end
+ *      alias bar foo
+ *    end
+ *    C.method(:bar).original_name # => :foo
  */
 
 static VALUE
