@@ -2468,7 +2468,7 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
     IDispatch *pDispatch;
     IClassFactory2 * pIClassFactory2;
     void *p;
-    static ID keyward_ids[1];
+    static ID keyword_ids[1];
     VALUE kwargs[1];
 
     rb_call_super(0, 0);
@@ -2501,10 +2501,10 @@ fole_initialize(int argc, VALUE *argv, VALUE self)
                   StringValuePtr(svr_name));
     }
 
-    if (!keyward_ids[0]) {
-        keyward_ids[0] = rb_intern_const("license");
+    if (!keyword_ids[0]) {
+        keyword_ids[0] = rb_intern_const("license");
     }
-    rb_get_kwargs(opts, keyward_ids, 0, 1, kwargs);
+    rb_get_kwargs(opts, keyword_ids, 0, 1, kwargs);
 
     if (kwargs[0] == Qundef) {
         /* get IDispatch interface */
