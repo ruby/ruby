@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 require File.expand_path("../../path.rb", __FILE__)
-require File.expand_path("../../../../lib/bundler/deprecate", __FILE__)
+begin
+  require File.expand_path("../../../../lib/bundler/deprecate", __FILE__)
+rescue LoadError
+  # for Ruby Core
+  require File.expand_path("../../../../../lib/bundler/deprecate", __FILE__)
+end
 include Spec::Path
 
 $LOAD_PATH.unshift(*Dir[Spec::Path.base_system_gems.join("gems/{artifice,rack,tilt,sinatra}-*/lib")].map(&:to_s))
