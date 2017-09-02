@@ -1611,7 +1611,7 @@ method_name(VALUE obj)
  *      def foo; end
  *      alias bar foo
  *    end
- *    C.method(:bar).original_name # => :foo
+ *    C.instance_method(:bar).original_name # => :foo
  */
 
 static VALUE
