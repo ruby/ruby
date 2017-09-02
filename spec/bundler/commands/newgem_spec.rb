@@ -171,7 +171,11 @@ RSpec.describe "bundle gem" do
 
     # This spec cannot have `git` avaiable in the test env
     before do
-      bundle_bin = File.expand_path("../../../exe/bundle", __FILE__)
+      if File.exist?(File.expand_path("../../../exe/bundle", __FILE__))
+        bundle_bin = File.expand_path("../../../exe/bundle", __FILE__)
+      else
+        bundle_bin = File.expand_path("../../../../bin/bundle", __FILE__)
+      end
       load_paths = [lib, spec]
       load_path_str = "-I#{load_paths.join(File::PATH_SEPARATOR)}"
 

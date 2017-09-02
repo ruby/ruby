@@ -224,7 +224,11 @@ module Bundler
       begin
         ENV["BUNDLE_BIN_PATH"] = Bundler.rubygems.bin_path("bundler", "bundle", VERSION)
       rescue Gem::GemNotFoundException
-        ENV["BUNDLE_BIN_PATH"] = File.expand_path("../../../exe/bundle", __FILE__)
+        if File.exist?(File.expand_path("../../../exe/bundle", __FILE__))
+          ENV["BUNDLE_BIN_PATH"] = File.expand_path("../../../exe/bundle", __FILE__)
+        else
+          ENV["BUNDLE_BIN_PATH"] = File.expand_path("../../../../bin/bundle", __FILE__)
+        end
       end
 
       # Set BUNDLE_GEMFILE
