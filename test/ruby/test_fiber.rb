@@ -363,6 +363,7 @@ class TestFiber < Test::Unit::TestCase
     assert_match(/suspended/, f.to_s)
     f.resume
     assert_match(/terminated/, f.to_s)
+    assert_match(/resumed/, Fiber.current.to_s)
   end
 end
 

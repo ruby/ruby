@@ -1753,8 +1753,15 @@ fiber_to_s(VALUE fibval)
     char status_info[0x10];
 
     GetFiberPtr(fibval, fib);
-    GetProcPtr(fib->first_proc, proc);
     snprintf(status_info, 0x10, " (%s)", fiber_status_name(fib->status));
+    if (!rb_obj_is_proc(fib->first_proc)) {
+	VALUE str = rb_any_to_s(fibval);
+	strlcat(status_info, ">", sizeof(status_info));
+	rb_str_set_len(str, RSTRING_LEN(str)-1);
+	rb_str_cat_cstr(str, status_info);
+	return str;
+    }
+    GetProcPtr(fib->first_proc, proc);
     return rb_block_to_s(fibval, &proc->block, status_info);
 }
 
