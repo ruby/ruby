@@ -6,67 +6,70 @@ require "envutil"
 
 class TestCoverage < Test::Unit::TestCase
   def test_result_without_start
-    assert_raise(RuntimeError) {Coverage.result}
+    assert_in_out_err(%w[-rcoverage], <<-"end;", [], /coverage measurement is not enabled/)
+      Coverage.result
+      p :NG
+    end;
   end
 
   def test_peek_result_without_start
-    assert_raise(RuntimeError) {Coverage.peek_result}
+    assert_in_out_err(%w[-rcoverage], <<-"end;", [], /coverage measurement is not enabled/)
+      Coverage.peek_result
+      p :NG
+    end;
   end
 
   def test_result_with_nothing
-    Coverage.start
-    result = Coverage.result
-    assert_kind_of(Hash, result)
-    result.each do |key, val|
-      assert_kind_of(String, key)
-      assert_kind_of(Array, val)
-    end
+    assert_in_out_err(%w[-rcoverage], <<-"end;", ["{}"], [])
+      Coverage.start
+      p Coverage.result
+    end;
   end
 
   def test_coverage_running?
-    refute Coverage.running?
-    Coverage.start
-    assert Coverage.running?
-    Coverage.peek_result
-    assert Coverage.running?
-    Coverage.result
-    refute Coverage.running?
+    assert_in_out_err(%w[-rcoverage], <<-"end;", ["false", "true", "true", "false"], [])
+      p Coverage.running?
+      Coverage.start
+      p Coverage.running?
+      Coverage.peek_result
+      p Coverage.running?
+      Coverage.result
+      p Coverage.running?
+    end;
   end
 
   def test_coverage_snapshot
-    loaded_features = $".dup
-
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
         File.open("test.rb", "w") do |f|
           f.puts <<-EOS
-            def TestCoverage.coverage_test_snapshot
+            def coverage_test_snapshot
               :ok
             end
           EOS
         end
 
-        Coverage.start
-        require tmp + '/test.rb'
-        cov = Coverage.peek_result[tmp + '/test.rb']
-        TestCoverage.coverage_test_snapshot
-        cov2 = Coverage.peek_result[tmp + '/test.rb']
-        assert_equal cov[1] + 1, cov2[1]
-        assert_equal cov2, Coverage.result[tmp + '/test.rb']
+        assert_in_out_err(%w[-rcoverage], <<-"end;", ["[1, 0, nil]", "[1, 1, nil]", "[1, 1, nil]"], [])
+          Coverage.start
+          tmp = Dir.pwd
+          require tmp + "/test.rb"
+          cov = Coverage.peek_result[tmp + "/test.rb"]
+          coverage_test_snapshot
+          cov2 = Coverage.peek_result[tmp + "/test.rb"]
+          p cov
+          p cov2
+          p Coverage.result[tmp + "/test.rb"]
+        end;
       }
     }
-  ensure
-    $".replace loaded_features
   end
 
   def test_restarting_coverage
-    loaded_features = $".dup
-
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
         File.open("test.rb", "w") do |f|
           f.puts <<-EOS
-            def TestCoverage.coverage_test_restarting
+            def coverage_test_restarting
               :ok
             end
           EOS
@@ -78,32 +81,32 @@ class TestCoverage < Test::Unit::TestCase
           EOS
         end
 
-        Coverage.start
-        require tmp + '/test.rb'
-        cov = { "#{tmp}/test.rb" => [1, 0, nil] }
-        assert_equal cov, Coverage.result
+        exp1 = { "#{tmp}/test.rb" => [1, 0, nil] }.inspect
+        exp2 = {}.inspect
+        exp3 = { "#{tmp}/test2.rb" => [1] }.inspect
+        assert_in_out_err(%w[-rcoverage], <<-"end;", [exp1, exp2, exp3], [])
+          Coverage.start
+          tmp = Dir.pwd
+          require tmp + "/test.rb"
+          p Coverage.result
 
-        # Restart coverage but '/test.rb' is required before restart,
-        # so coverage is not recorded.
-        Coverage.start
-        TestCoverage.coverage_test_restarting
-        assert_equal({}, Coverage.result)
+          # Restart coverage but '/test.rb' is required before restart,
+          # so coverage is not recorded.
+          Coverage.start
+          coverage_test_restarting
+          p Coverage.result
 
-        # Restart coverage and '/test2.rb' is required after restart,
-        # so coverage is recorded.
-        Coverage.start
-        require tmp + '/test2.rb'
-        cov = { "#{tmp}/test2.rb" => [1] }
-        assert_equal cov, Coverage.result
+          # Restart coverage and '/test2.rb' is required after restart,
+          # so coverage is recorded.
+          Coverage.start
+          require tmp + "/test2.rb"
+          p Coverage.result
+        end;
       }
     }
-  ensure
-    $".replace loaded_features
   end
 
   def test_big_code
-    loaded_features = $".dup
-
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
         File.open("test.rb", "w") do |f|
@@ -113,29 +116,27 @@ class TestCoverage < Test::Unit::TestCase
           f.puts "])"
         end
 
-        Coverage.start
-        require tmp + '/test.rb'
-        assert_equal 10003, Coverage.result[tmp + '/test.rb'].size
+        assert_in_out_err(%w[-rcoverage], <<-"end;", ["10003"], [])
+          Coverage.start
+          tmp = Dir.pwd
+          require tmp + '/test.rb'
+          p Coverage.result[tmp + '/test.rb'].size
+        end;
       }
     }
-  ensure
-    $".replace loaded_features
   end
 
   def test_nonpositive_linenumber
     bug12517 = '[ruby-core:76141] [Bug #12517]'
-    Coverage.start
-    EnvUtil.suppress_warning do
-      assert_nothing_raised(ArgumentError, bug12517) do
-        RubyVM::InstructionSequence.compile(":ok", nil, "<compiled>", 0)
-      end
-    end
-    assert_include Coverage.result, "<compiled>"
+    assert_in_out_err(%w[-rcoverage], <<-"end;", ['{"<compiled>"=>[nil]}'], [], bug12517)
+      Coverage.start
+      RubyVM::InstructionSequence.compile(":ok", nil, "<compiled>", 0)
+      p Coverage.result
+    end;
   end
 
   def test_eval
     bug13305 = '[ruby-core:80079] [Bug #13305]'
-    loaded_features = $".dup
 
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
@@ -153,15 +154,14 @@ class TestCoverage < Test::Unit::TestCase
           f.puts 'end'
         end
 
-        Coverage.start
-        require tmp + '/test.rb'
-        EnvUtil.suppress_warning do
+        assert_in_out_err(%w[-rcoverage], <<-"end;", ["[1, 1, 1, 400, nil, nil, nil, nil, nil, nil, nil]"], [], bug13305)
+          Coverage.start
+          tmp = Dir.pwd
+          require tmp + '/test.rb'
           add_method(Class.new)
-        end
-        assert_equal Coverage.result[tmp + "/test.rb"], [1, 1, 1, 400, nil, nil, nil, nil, nil, nil, nil], bug13305
+          p Coverage.result[tmp + "/test.rb"]
+        end;
       }
     }
-  ensure
-    $".replace loaded_features
   end
-end unless ENV['COVERAGE']
+end
