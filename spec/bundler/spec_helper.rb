@@ -10,6 +10,9 @@ require "digest/sha1"
 begin
   require "rubygems"
   spec = Gem::Specification.load("bundler.gemspec")
+  if spec.nil? # for Ruby core
+    spec = Gem::Specification.load("../../lib/bundler.gemspec")
+  end
   rspec = spec.dependencies.find {|d| d.name == "rspec" }
   gem "rspec", rspec.requirement.to_s
   require "rspec"
@@ -42,7 +45,13 @@ $debug = false
 
 Spec::Rubygems.setup
 FileUtils.rm_rf(Spec::Path.gem_repo1)
-ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -r#{Spec::Path.root}/spec/support/hax.rb"
+if File.exist? "#{Spec::Path.root}/spec/support/hax.rb"
+  hax_path = "#{Spec::Path.root}/spec/support/hax.rb"
+else
+  # for Ruby core
+  hax_path = "#{Spec::Path.root}/bundler/support/hax.rb"
+end
+ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -r#{hax_path}"
 ENV["BUNDLE_SPEC_RUN"] = "true"
 ENV["BUNDLE_PLUGINS"] = "true"
 
