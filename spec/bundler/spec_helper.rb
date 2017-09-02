@@ -11,7 +11,7 @@ begin
   require "rubygems"
   spec = Gem::Specification.load("bundler.gemspec")
   if spec.nil? # for Ruby core
-    spec = Gem::Specification.load("../../lib/bundler.gemspec")
+    spec = Gem::Specification.load("lib/bundler.gemspec")
   end
   rspec = spec.dependencies.find {|d| d.name == "rspec" }
   gem "rspec", rspec.requirement.to_s
