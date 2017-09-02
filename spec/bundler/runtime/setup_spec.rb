@@ -120,7 +120,7 @@ RSpec.describe "Bundler.setup" do
       lp.map! {|p| p.sub(/^#{system_gem_path}/, "") }
     end
 
-    it "puts loaded gems after -I and RUBYLIB" do
+    it "puts loaded gems after -I and RUBYLIB", :ruby_trunk do
       install_gemfile <<-G
         source "file://#{gem_repo1}"
         gem "rack"
@@ -145,7 +145,7 @@ RSpec.describe "Bundler.setup" do
       expect(rack_load_order).to be > 0
     end
 
-    it "orders the load path correctly when there are dependencies" do
+    it "orders the load path correctly when there are dependencies", :ruby_trunk do
       install_gemfile <<-G
         source "file://#{gem_repo1}"
         gem "rails"
@@ -759,7 +759,7 @@ end
     expect(out).to eq("yay")
   end
 
-  it "should clean $LOAD_PATH properly" do
+  it "should clean $LOAD_PATH properly", :ruby_trunk do
     gem_name = "very_simple_binary"
     full_gem_name = gem_name + "-1.0"
     ext_dir = File.join(tmp "extenstions", full_gem_name)

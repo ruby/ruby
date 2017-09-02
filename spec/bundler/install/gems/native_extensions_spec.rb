@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require "spec_helper"
 
-RSpec.describe "installing a gem with native extensions" do
+RSpec.describe "installing a gem with native extensions", :ruby_trunk do
   it "installs" do
     build_repo2 do
       build_gem "c_extension" do |s|

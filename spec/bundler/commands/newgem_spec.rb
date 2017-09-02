@@ -328,7 +328,7 @@ RSpec.describe "bundle gem" do
       end
 
       Dir.chdir(bundled_app(gem_name)) do
-        sys_exec("rake")
+        sys_exec(rake)
         expect(out).to include("SUCCESS")
       end
     end
@@ -613,7 +613,7 @@ RSpec.describe "bundle gem" do
       end
 
       Dir.chdir(bundled_app(gem_name)) do
-        sys_exec("rake")
+        sys_exec(rake)
         expect(out).to include("SUCCESS")
       end
     end

@@ -20,7 +20,7 @@ RSpec.describe "require 'bundler/gem_tasks'" do
 
   it "includes the relevant tasks" do
     with_gem_path_as(Spec::Path.base_system_gems.to_s) do
-      sys_exec "ruby -S rake -T"
+      sys_exec "#{rake} -T"
     end
 
     expect(err).to eq("")

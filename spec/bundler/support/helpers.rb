@@ -156,9 +156,18 @@ module Spec
         args = args.gsub(/(?=")/, "\\")
         args = %("#{args}")
       end
-      sys_exec("#{Gem.ruby} -rubygems -S gem --backtrace #{command} #{args}")
+      gem = ENV['BUNDLE_GEM'] || "#{Gem.ruby} -rubygems -S gem --backtrace"
+      sys_exec("#{gem} #{command} #{args}")
     end
     bang :gem_command
+
+    def rake
+      if ENV['BUNDLE_RUBY'] && ENV['BUNDLE_GEM']
+        "#{ENV['BUNDLE_RUBY']} #{ENV['GEM_PATH']}/bin/rake"
+      else
+        'rake'
+      end
+    end
 
     def sys_exec(cmd)
       Open3.popen3(cmd.to_s) do |stdin, stdout, stderr, wait_thr|

@@ -8,7 +8,7 @@ RSpec.describe "Bundler.with_env helpers" do
       bundle "install --path vendor/bundle"
     end
 
-    it "should return the PATH present before bundle was activated" do
+    it "should return the PATH present before bundle was activated", :ruby_trunk do
       code = "print Bundler.original_env['PATH']"
       path = `getconf PATH`.strip + "#{File::PATH_SEPARATOR}/foo"
       with_path_as(path) do
@@ -26,7 +26,7 @@ RSpec.describe "Bundler.with_env helpers" do
       end
     end
 
-    it "works with nested bundle exec invocations" do
+    it "works with nested bundle exec invocations", :ruby_trunk do
       create_file("exe.rb", <<-'RB')
         count = ARGV.first.to_i
         exit if count < 0
@@ -68,7 +68,7 @@ RSpec.describe "Bundler.with_env helpers" do
       expect(result).not_to include("-rbundler/setup")
     end
 
-    it "should clean up RUBYLIB" do
+    it "should clean up RUBYLIB", :ruby_trunk do
       code = "print Bundler.clean_env['RUBYLIB']"
       ENV["RUBYLIB"] = File.expand_path("../../../lib", __FILE__) + File::PATH_SEPARATOR + "/foo"
       result = bundle("exec ruby -e #{code.inspect}")
