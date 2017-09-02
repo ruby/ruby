@@ -71,11 +71,19 @@ module Spec
     end
 
     def lib
-      File.expand_path("../../../lib", __FILE__)
+      if File.exist?(File.expand_path("../../../lib", __FILE__))
+        File.expand_path("../../../lib", __FILE__)
+      else
+        File.expand_path("../../../../lib", __FILE__)
+      end
     end
 
     def spec
-      File.expand_path("../../../spec", __FILE__)
+      if File.exist?(File.expand_path("../../../spec", __FILE__))
+        File.expand_path("../../../spec", __FILE__)
+      else
+        File.expand_path("../../../bundler", __FILE__)
+      end
     end
 
     def bundle(cmd, options = {})
