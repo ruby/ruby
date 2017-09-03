@@ -49,7 +49,7 @@ if File.exist? "#{Spec::Path.root}/spec/support/hax.rb"
   hax_path = "#{Spec::Path.root}/spec/support/hax.rb"
 else
   # for Ruby core
-  hax_path = "#{Spec::Path.root}/bundler/support/hax.rb"
+  hax_path = "#{Spec::Path.root}/spec/bundler/support/hax.rb"
 end
 ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -r#{hax_path}"
 ENV["BUNDLE_SPEC_RUN"] = "true"

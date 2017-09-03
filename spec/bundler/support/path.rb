@@ -4,7 +4,12 @@ require "pathname"
 module Spec
   module Path
     def root
-      @root ||= Pathname.new(File.expand_path("../../..", __FILE__))
+      if File.exist?(File.expand_path("../../../bundler.gemspec", __FILE__))
+        root_path = File.expand_path("../../..", __FILE__)
+      else
+        root_path = File.expand_path("../../../..", __FILE__)
+      end
+      @root ||= Pathname.new(root_path)
     end
 
     def tmp(*path)
@@ -78,7 +83,12 @@ module Spec
     end
 
     def bundler_path
-      Pathname.new(File.expand_path("../../../lib", __FILE__))
+      if File.exist?(File.expand_path("../../../lib", __FILE__))
+        Pathname.new(File.expand_path("../../../lib", __FILE__))
+      else
+        # for Ruby core
+        Pathname.new(File.expand_path("../../../../lib", __FILE__))
+      end
     end
 
     def global_plugin_gem(*args)
