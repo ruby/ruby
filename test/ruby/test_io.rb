@@ -2836,7 +2836,7 @@ __END__
       end
     end
     a.each do |r, w|
-      w.write -"\n"
+      w.write(-"\n")
       w.close
       r.close
     end
