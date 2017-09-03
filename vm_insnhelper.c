@@ -3717,9 +3717,9 @@ vm_opt_regexpmatch1(VALUE recv, VALUE obj)
 static VALUE
 vm_opt_regexpmatch2(VALUE recv, VALUE obj)
 {
-    if (CLASS_OF(obj) == rb_cString &&
+    if (CLASS_OF(recv) == rb_cString &&
 	BASIC_OP_UNREDEFINED_P(BOP_MATCH, STRING_REDEFINED_OP_FLAG)) {
-	return rb_reg_match(recv, obj);
+	return rb_reg_match(obj, recv);
     }
     else {
 	return Qundef;
