@@ -116,7 +116,7 @@ RSpec.describe "The library itself" do
     end
   end
 
-  it "has no malformed whitespace" do
+  it "has no malformed whitespace", :ruby_trunk do
     exempt = /\.gitmodules|\.marshal|fixtures|vendor|ssl_certs|LICENSE/
     error_messages = []
     Dir.chdir(File.expand_path("../..", __FILE__)) do
@@ -129,7 +129,7 @@ RSpec.describe "The library itself" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "uses double-quotes consistently in specs" do
+  it "uses double-quotes consistently in specs", :ruby_trunk do
     included = /spec/
     error_messages = []
     Dir.chdir(File.expand_path("../", __FILE__)) do
@@ -141,7 +141,7 @@ RSpec.describe "The library itself" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "does not include any leftover debugging or development mechanisms" do
+  it "does not include any leftover debugging or development mechanisms", :ruby_trunk do
     exempt = %r{quality_spec.rb|support/helpers}
     error_messages = []
     Dir.chdir(File.expand_path("../", __FILE__)) do
@@ -153,7 +153,7 @@ RSpec.describe "The library itself" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "does not include any unresolved merge conflicts" do
+  it "does not include any unresolved merge conflicts", :ruby_trunk do
     error_messages = []
     exempt = %r{lock/lockfile_spec|quality_spec}
     Dir.chdir(File.expand_path("../", __FILE__)) do
@@ -165,7 +165,7 @@ RSpec.describe "The library itself" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "maintains language quality of the documentation" do
+  it "maintains language quality of the documentation", :ruby_trunk do
     included = /ronn/
     error_messages = []
     Dir.chdir(File.expand_path("../../man", __FILE__)) do
@@ -178,7 +178,7 @@ RSpec.describe "The library itself" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "maintains language quality of sentences used in source code" do
+  it "maintains language quality of sentences used in source code", :ruby_trunk do
     error_messages = []
     exempt = /vendor/
     Dir.chdir(File.expand_path("../../lib", __FILE__)) do
@@ -191,7 +191,7 @@ RSpec.describe "The library itself" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "documents all used settings" do
+  it "documents all used settings", :ruby_trunk do
     exemptions = %w(
       gem.coc
       gem.mit
@@ -224,7 +224,7 @@ RSpec.describe "The library itself" do
     expect(error_messages.sort).to be_well_formed
   end
 
-  it "can still be built" do
+  it "can still be built", :ruby_trunk do
     Dir.chdir(root) do
       begin
         gem_command! :build, "bundler.gemspec"
@@ -240,7 +240,7 @@ RSpec.describe "The library itself" do
     end
   end
 
-  it "does not contain any warnings" do
+  it "does not contain any warnings", :ruby_trunk do
     Dir.chdir(root.join("lib")) do
       exclusions = %w(
         bundler/capistrano.rb
