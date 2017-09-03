@@ -67,6 +67,7 @@ class TestCoverage < Test::Unit::TestCase
   def test_restarting_coverage
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
+        tmp = Dir.pwd
         File.open("test.rb", "w") do |f|
           f.puts <<-EOS
             def coverage_test_restarting
