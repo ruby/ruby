@@ -481,7 +481,7 @@ RSpec.describe "bundle exec" do
       if File.exist?(File.expand_path("../../../exe/bundler", __FILE__))
         bundle_bin = "../../exe/bundler"
       else
-        bundle_bin = "../../../bin/bundler"
+        bundle_bin = "../../bin/bundler"
       end
       bundle "exec ruby -e '`#{bundle_bin} -v`; puts $?.success?'"
       expect(out).to match("true")
@@ -679,7 +679,7 @@ __FILE__: #{path.to_s.inspect}
     end
   end
 
-  context "nested bundle exec" do
+  context "nested bundle exec", :ruby_trunk do
     let(:system_gems_to_install) { super() << :bundler }
 
     context "with shared gems disabled" do
