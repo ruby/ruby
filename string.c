@@ -8090,7 +8090,7 @@ rb_str_enumerate_grapheme_clusters(VALUE str, int wantarray)
     rb_encoding *enc = rb_enc_from_index(encidx);
     int unicode_p = rb_enc_unicode_p(enc);
     const char *ptr, *end;
-    VALUE ary;
+    VALUE MAYBE_UNUSED(ary);
 
     if (!unicode_p) {
 	return rb_str_enumerate_codepoints(str, wantarray);
