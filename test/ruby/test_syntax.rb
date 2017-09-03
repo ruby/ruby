@@ -1004,8 +1004,11 @@ eom
     assert_warn(/literal in condition/) do
       eval('1 if ""')
     end
-    assert_warn(/literal in condition/) do
+    assert_warn(/the regex literal matches \$_ implicitly/) do
       eval('1 if //')
+    end
+    assert_warn(/the regex literal matches \$_ implicitly/) do
+      eval('1 if !//')
     end
     assert_warn(/literal in condition/) do
       eval('1 if true..false')
@@ -1022,9 +1025,6 @@ eom
 
     assert_warn('') do
       eval('1 if !""')
-    end
-    assert_warn('') do
-      eval('1 if !//')
     end
     assert_warn('') do
       eval('1 if !(true..false)')

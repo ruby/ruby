@@ -2,16 +2,32 @@ require_relative '../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "Literal Regexps" do
-  it "matches against $_ (last input) in a conditional if no explicit matchee provided" do
-    -> {
-      eval <<-EOR
-      $_ = nil
-      (true if /foo/).should_not == true
+  ruby_version_is ""..."2.7" do
+    it "matches against $_ (last input) in a conditional if no explicit matchee provided" do
+      -> {
+        eval <<-EOR
+        $_ = nil
+        (true if /foo/).should_not == true
 
-      $_ = "foo"
-      (true if /foo/).should == true
-      EOR
-    }.should complain(/regex literal in condition/)
+        $_ = "foo"
+        (true if /foo/).should == true
+        EOR
+      }.should complain(/regex literal in condition/)
+    end
+  end
+
+  ruby_version_is "2.7" do
+    it "matches against $_ (last input) in a conditional if no explicit matchee provided" do
+      -> {
+        eval <<-EOR
+        $_ = nil
+        (true if /foo/).should_not == true
+
+        $_ = "foo"
+        (true if /foo/).should == true
+        EOR
+      }.should complain(/the regex literal matches \$_ implicitly/)
+    end
   end
 
   it "yields a Regexp" do
