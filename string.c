@@ -7582,7 +7582,8 @@ enumerator_wantarray(const char *method)
     return 1;
 }
 
-#define WANTARRAY(m) enumerator_wantarray(m)
+#define WANTARRAY(m, size) \
+    (enumerator_wantarray(m) ? rb_ary_new_capa(size) : 0)
 
 static const char *
 chomp_newline(const char *p, const char *e, rb_encoding *enc)
@@ -7598,14 +7599,13 @@ chomp_newline(const char *p, const char *e, rb_encoding *enc)
 }
 
 static VALUE
-rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
+rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
 {
     rb_encoding *enc;
     VALUE line, rs, orig = str, opts = Qnil, chomp = Qfalse;
     const char *ptr, *pend, *subptr, *subend, *rsptr, *hit, *adjusted;
     long pos, len, rslen;
     int rsnewline = 0;
-    VALUE ary = 0;
 
     if (rb_scan_args(argc, argv, "01:", &rs, &opts) == 0)
 	rs = rb_rs;
@@ -7618,11 +7618,8 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	chomp = (chomp != Qundef && RTEST(chomp));
     }
 
-    if (wantarray)
-	ary = rb_ary_new();
-
     if (NIL_P(rs)) {
-	if (wantarray) {
+	if (ary) {
 	    rb_ary_push(ary, str);
 	    return ary;
 	}
@@ -7669,7 +7666,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	    if (!subptr) break;
 	    line = rb_str_subseq(str, subptr - ptr,
 				 subend - subptr + (chomp ? 0 : rslen));
-	    if (wantarray) {
+	    if (ary) {
 		rb_ary_push(ary, line);
 	    }
 	    else {
@@ -7714,7 +7711,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	    }
 	}
 	line = rb_str_subseq(str, subptr - ptr, subend - subptr);
-	if (wantarray) {
+	if (ary) {
 	    rb_ary_push(ary, line);
 	}
 	else {
@@ -7729,7 +7726,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	    pend = chomp_newline(subptr, pend, enc);
 	}
 	line = rb_str_subseq(str, subptr - ptr, pend - subptr);
-	if (wantarray)
+	if (ary)
 	    rb_ary_push(ary, line);
 	else
 	    rb_yield(line);
@@ -7737,7 +7734,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
     }
 
   end:
-    if (wantarray)
+    if (ary)
 	return ary;
     else
 	return orig;
@@ -7800,7 +7797,8 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_lines(int argc, VALUE *argv, VALUE str)
 {
-    return rb_str_enumerate_lines(argc, argv, str, WANTARRAY("lines"));
+    VALUE ary = WANTARRAY("lines", 0);
+    return rb_str_enumerate_lines(argc, argv, str, ary);
 }
 
 static VALUE
@@ -7810,21 +7808,17 @@ rb_str_each_byte_size(VALUE str, VALUE args, VALUE eobj)
 }
 
 static VALUE
-rb_str_enumerate_bytes(VALUE str, int wantarray)
+rb_str_enumerate_bytes(VALUE str, VALUE ary)
 {
     long i;
-    VALUE ary;
-
-    if (wantarray)
-	ary = rb_ary_new2(RSTRING_LEN(str));
 
     for (i=0; i<RSTRING_LEN(str); i++) {
-	if (wantarray)
+	if (ary)
 	    rb_ary_push(ary, INT2FIX(RSTRING_PTR(str)[i] & 0xff));
 	else
 	    rb_yield(INT2FIX(RSTRING_PTR(str)[i] & 0xff));
     }
-    if (wantarray)
+    if (ary)
 	return ary;
     else
 	return str;
@@ -7866,7 +7860,8 @@ rb_str_each_byte(VALUE str)
 static VALUE
 rb_str_bytes(VALUE str)
 {
-    return rb_str_enumerate_bytes(str, WANTARRAY("bytes"));
+    VALUE ary = WANTARRAY("bytes", RSTRING_LEN(str));
+    return rb_str_enumerate_bytes(str, ary);
 }
 
 static VALUE
@@ -7876,28 +7871,24 @@ rb_str_each_char_size(VALUE str, VALUE args, VALUE eobj)
 }
 
 static VALUE
-rb_str_enumerate_chars(VALUE str, int wantarray)
+rb_str_enumerate_chars(VALUE str, VALUE ary)
 {
     VALUE orig = str;
     VALUE substr;
     long i, len, n;
     const char *ptr;
     rb_encoding *enc;
-    VALUE ary;
 
     str = rb_str_new_frozen(str);
     ptr = RSTRING_PTR(str);
     len = RSTRING_LEN(str);
     enc = rb_enc_get(str);
 
-    if (wantarray)
-	ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
-
     if (ENC_CODERANGE_CLEAN_P(ENC_CODERANGE(str))) {
 	for (i = 0; i < len; i += n) {
 	    n = rb_enc_fast_mbclen(ptr + i, ptr + len, enc);
 	    substr = rb_str_subseq(str, i, n);
-	    if (wantarray)
+	    if (ary)
 		rb_ary_push(ary, substr);
 	    else
 		rb_yield(substr);
@@ -7907,14 +7898,14 @@ rb_str_enumerate_chars(VALUE str, int wantarray)
 	for (i = 0; i < len; i += n) {
 	    n = rb_enc_mbclen(ptr + i, ptr + len, enc);
 	    substr = rb_str_subseq(str, i, n);
-	    if (wantarray)
+	    if (ary)
 		rb_ary_push(ary, substr);
 	    else
 		rb_yield(substr);
 	}
     }
     RB_GC_GUARD(str);
-    if (wantarray)
+    if (ary)
 	return ary;
     else
 	return orig;
@@ -7956,40 +7947,37 @@ rb_str_each_char(VALUE str)
 static VALUE
 rb_str_chars(VALUE str)
 {
-    return rb_str_enumerate_chars(str, WANTARRAY("chars"));
+    VALUE ary = WANTARRAY("chars", rb_str_strlen(str));
+    return rb_str_enumerate_chars(str, ary);
 }
 
 static VALUE
-rb_str_enumerate_codepoints(VALUE str, int wantarray)
+rb_str_enumerate_codepoints(VALUE str, VALUE ary)
 {
     VALUE orig = str;
     int n;
     unsigned int c;
     const char *ptr, *end;
     rb_encoding *enc;
-    VALUE ary = 0;
 
     if (single_byte_optimizable(str))
-	return rb_str_enumerate_bytes(str, wantarray);
+	return rb_str_enumerate_bytes(str, ary);
 
     str = rb_str_new_frozen(str);
     ptr = RSTRING_PTR(str);
     end = RSTRING_END(str);
     enc = STR_ENC_GET(str);
 
-    if (wantarray)
-	ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
-
     while (ptr < end) {
 	c = rb_enc_codepoint_len(ptr, end, &n, enc);
-	if (wantarray)
+	if (ary)
 	    rb_ary_push(ary, UINT2NUM(c));
 	else
 	    rb_yield(UINT2NUM(c));
 	ptr += n;
     }
     RB_GC_GUARD(str);
-    if (wantarray)
+    if (ary)
 	return ary;
     else
 	return orig;
@@ -8037,11 +8025,12 @@ rb_str_each_codepoint(VALUE str)
 static VALUE
 rb_str_codepoints(VALUE str)
 {
-    return rb_str_enumerate_codepoints(str, WANTARRAY("codepoints"));
+    VALUE ary = WANTARRAY("codepoints", rb_str_strlen(str));
+    return rb_str_enumerate_codepoints(str, ary);
 }
 
 static VALUE
-rb_str_enumerate_grapheme_clusters(VALUE str, int wantarray)
+rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
 {
     regex_t *reg_grapheme_cluster = NULL;
     static regex_t *reg_grapheme_cluster_utf8 = NULL;
@@ -8049,10 +8038,9 @@ rb_str_enumerate_grapheme_clusters(VALUE str, int wantarray)
     rb_encoding *enc = rb_enc_from_index(encidx);
     int unicode_p = rb_enc_unicode_p(enc);
     const char *ptr, *end;
-    VALUE ary = 0;
 
     if (!unicode_p) {
-	return rb_str_enumerate_chars(str, wantarray);
+	return rb_str_enumerate_chars(str, ary);
     }
 
     /* synchronize */
@@ -8074,9 +8062,6 @@ rb_str_enumerate_grapheme_clusters(VALUE str, int wantarray)
     ptr = RSTRING_PTR(str);
     end = RSTRING_END(str);
 
-    if (wantarray)
-	ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
-
     while (ptr < end) {
 	VALUE grapheme_cluster;
 	OnigPosition len = onig_match(reg_grapheme_cluster,
@@ -8087,13 +8072,13 @@ rb_str_enumerate_grapheme_clusters(VALUE str, int wantarray)
 	    break;
 	}
 	grapheme_cluster = rb_enc_str_new(ptr, len, enc);
-	if (wantarray)
+	if (ary)
 	    rb_ary_push(ary, grapheme_cluster);
 	else
 	    rb_yield(grapheme_cluster);
 	ptr += len;
     }
-    if (wantarray)
+    if (ary)
 	return ary;
     else
 	return str;
@@ -8135,7 +8120,8 @@ rb_str_each_grapheme_cluster(VALUE str)
 static VALUE
 rb_str_grapheme_clusters(VALUE str)
 {
-    return rb_str_enumerate_grapheme_clusters(str, WANTARRAY("grapheme_clusters"));
+    VALUE ary = WANTARRAY("grapheme_clusters", rb_str_strlen(str));
+    return rb_str_enumerate_grapheme_clusters(str, ary);
 }
 
 static long
