@@ -1,4 +1,8 @@
 # -*- ruby -*-
+$VERBOSE = false
+if (opt = ENV["RUBYOPT"]) and (opt = opt.dup).sub!(/(?:\A|\s)-w(?=\z|\s)/, '')
+  ENV["RUBYOPT"] = opt
+end
 require "./rbconfig" unless defined?(RbConfig)
 load File.dirname(__FILE__) + '/rubyspec/default.mspec'
 OBJDIR = File.expand_path("spec/rubyspec/optional/capi/ext")
