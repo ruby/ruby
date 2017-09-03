@@ -8093,7 +8093,7 @@ rb_str_enumerate_grapheme_clusters(VALUE str, int wantarray)
     VALUE MAYBE_UNUSED(ary);
 
     if (!unicode_p) {
-	return rb_str_enumerate_codepoints(str, wantarray);
+	return rb_str_enumerate_chars(str, wantarray);
     }
 
     /* synchronize */

@@ -903,6 +903,7 @@ CODE
 
     assert_equal ["\u000A", "\u0308"], "\u{a 308}".each_grapheme_cluster.to_a
     assert_equal ["\u000D", "\u0308"], "\u{d 308}".each_grapheme_cluster.to_a
+    assert_equal ["a", "b", "c"], "abc".b.each_grapheme_cluster.to_a
   end
 
   def test_grapheme_clusters
@@ -923,6 +924,7 @@ CODE
 
     assert_equal ["\u000A", "\u0308"], "\u{a 308}".grapheme_clusters
     assert_equal ["\u000D", "\u0308"], "\u{d 308}".grapheme_clusters
+    assert_equal ["a", "b", "c"], "abc".b.grapheme_clusters
   end
 
   def test_each_line
