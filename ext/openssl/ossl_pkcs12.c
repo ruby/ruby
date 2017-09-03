@@ -17,11 +17,6 @@
     if(!(p12)) ossl_raise(rb_eRuntimeError, "PKCS12 wasn't initialized."); \
 } while (0)
 
-#define SafeGetPKCS12(obj, p12) do { \
-    OSSL_Check_Kind((obj), cPKCS12); \
-    GetPKCS12((obj), (p12)); \
-} while (0)
-
 #define ossl_pkcs12_set_key(o,v)      rb_iv_set((o), "@key", (v))
 #define ossl_pkcs12_set_cert(o,v)     rb_iv_set((o), "@certificate", (v))
 #define ossl_pkcs12_set_ca_certs(o,v) rb_iv_set((o), "@ca_certs", (v))
@@ -72,7 +67,7 @@ ossl_pkcs12_initialize_copy(VALUE self, VALUE other)
 
     rb_check_frozen(self);
     GetPKCS12(self, p12_old);
-    SafeGetPKCS12(other, p12);
+    GetPKCS12(other, p12);
 
     p12_new = ASN1_dup((i2d_of_void *)i2d_PKCS12, (d2i_of_void *)d2i_PKCS12, (char *)p12);
     if (!p12_new)
@@ -89,20 +84,20 @@ ossl_pkcs12_initialize_copy(VALUE self, VALUE other)
  *    PKCS12.create(pass, name, key, cert [, ca, [, key_pbe [, cert_pbe [, key_iter [, mac_iter [, keytype]]]]]])
  *
  * === Parameters
- * * +pass+ - string
- * * +name+ - A string describing the key.
- * * +key+ - Any PKey.
- * * +cert+ - A X509::Certificate.
+ * * _pass_ - string
+ * * _name_ - A string describing the key.
+ * * _key_ - Any PKey.
+ * * _cert_ - A X509::Certificate.
  *   * The public_key portion of the certificate must contain a valid public key.
  *   * The not_before and not_after fields must be filled in.
- * * +ca+ - An optional array of X509::Certificate's.
- * * +key_pbe+ - string
- * * +cert_pbe+ - string
- * * +key_iter+ - integer
- * * +mac_iter+ - integer
- * * +keytype+ - An integer representing an MSIE specific extension.
+ * * _ca_ - An optional array of X509::Certificate's.
+ * * _key_pbe_ - string
+ * * _cert_pbe_ - string
+ * * _key_iter_ - integer
+ * * _mac_iter_ - integer
+ * * _keytype_ - An integer representing an MSIE specific extension.
  *
- * Any optional arguments may be supplied as nil to preserve the OpenSSL defaults.
+ * Any optional arguments may be supplied as +nil+ to preserve the OpenSSL defaults.
  *
  * See the OpenSSL documentation for PKCS12_create().
  */
@@ -161,8 +156,8 @@ ossl_pkcs12_s_create(int argc, VALUE *argv, VALUE self)
  *    PKCS12.new(str, pass) -> pkcs12
  *
  * === Parameters
- * * +str+ - Must be a DER encoded PKCS12 string.
- * * +pass+ - string
+ * * _str_ - Must be a DER encoded PKCS12 string.
+ * * _pass_ - string
  */
 static VALUE
 ossl_pkcs12_initialize(int argc, VALUE *argv, VALUE self)
@@ -252,7 +247,7 @@ Init_ossl_pkcs12(void)
     rb_define_singleton_method(cPKCS12, "create", ossl_pkcs12_s_create, -1);
 
     rb_define_alloc_func(cPKCS12, ossl_pkcs12_s_allocate);
-    rb_define_copy_func(cPKCS12, ossl_pkcs12_initialize_copy);
+    rb_define_method(cPKCS12, "initialize_copy", ossl_pkcs12_initialize_copy, 1);
     rb_attr(cPKCS12, rb_intern("key"), 1, 0, Qfalse);
     rb_attr(cPKCS12, rb_intern("certificate"), 1, 0, Qfalse);
     rb_attr(cPKCS12, rb_intern("ca_certs"), 1, 0, Qfalse);

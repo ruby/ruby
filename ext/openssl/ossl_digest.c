@@ -15,10 +15,6 @@
 	ossl_raise(rb_eRuntimeError, "Digest CTX wasn't initialized!"); \
     } \
 } while (0)
-#define SafeGetDigest(obj, ctx) do { \
-    OSSL_Check_Kind((obj), cDigest); \
-    GetDigest((obj), (ctx)); \
-} while (0)
 
 /*
  * Classes
@@ -46,7 +42,7 @@ static const rb_data_type_t ossl_digest_type = {
  * Public
  */
 const EVP_MD *
-GetDigestPtr(VALUE obj)
+ossl_evp_get_digestbyname(VALUE obj)
 {
     const EVP_MD *md;
     ASN1_OBJECT *oid = NULL;
@@ -65,7 +61,7 @@ GetDigestPtr(VALUE obj)
     } else {
         EVP_MD_CTX *ctx;
 
-        SafeGetDigest(obj, ctx);
+        GetDigest(obj, ctx);
 
         md = EVP_MD_CTX_md(ctx);
     }
@@ -106,15 +102,15 @@ VALUE ossl_digest_update(VALUE, VALUE);
  *  call-seq:
  *     Digest.new(string [, data]) -> Digest
  *
- * Creates a Digest instance based on +string+, which is either the ln
+ * Creates a Digest instance based on _string_, which is either the ln
  * (long name) or sn (short name) of a supported digest algorithm.
  *
- * If +data+ (a +String+) is given, it is used as the initial input to the
+ * If _data_ (a String) is given, it is used as the initial input to the
  * Digest instance, i.e.
  *
  *   digest = OpenSSL::Digest.new('sha256', 'digestdata')
  *
- * is equal to
+ * is equivalent to
  *
  *   digest = OpenSSL::Digest.new('sha256')
  *   digest.update('digestdata')
@@ -127,7 +123,7 @@ ossl_digest_initialize(int argc, VALUE *argv, VALUE self)
     VALUE type, data;
 
     rb_scan_args(argc, argv, "11", &type, &data);
-    md = GetDigestPtr(type);
+    md = ossl_evp_get_digestbyname(type);
     if (!NIL_P(data)) StringValue(data);
 
     TypedData_Get_Struct(self, EVP_MD_CTX, &ossl_digest_type, ctx);
@@ -158,7 +154,7 @@ ossl_digest_copy(VALUE self, VALUE other)
 	if (!ctx1)
 	    ossl_raise(eDigestError, "EVP_MD_CTX_new");
     }
-    SafeGetDigest(other, ctx2);
+    GetDigest(other, ctx2);
 
     if (!EVP_MD_CTX_copy(ctx1, ctx2)) {
 	ossl_raise(eDigestError, NULL);
@@ -448,7 +444,7 @@ Init_ossl_digest(void)
     rb_define_alloc_func(cDigest, ossl_digest_alloc);
 
     rb_define_method(cDigest, "initialize", ossl_digest_initialize, -1);
-    rb_define_copy_func(cDigest, ossl_digest_copy);
+    rb_define_method(cDigest, "initialize_copy", ossl_digest_copy, 1);
     rb_define_method(cDigest, "reset", ossl_digest_reset, 0);
     rb_define_method(cDigest, "update", ossl_digest_update, 1);
     rb_define_alias(cDigest, "<<", "update");

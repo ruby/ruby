@@ -26,32 +26,17 @@ ossl_obj2bio(volatile VALUE *pobj)
 }
 
 VALUE
-ossl_membio2str0(BIO *bio)
-{
-    VALUE ret;
-    BUF_MEM *buf;
-
-    BIO_get_mem_ptr(bio, &buf);
-    ret = rb_str_new(buf->data, buf->length);
-
-    return ret;
-}
-
-VALUE
-ossl_protect_membio2str(BIO *bio, int *status)
-{
-    return rb_protect((VALUE (*)(VALUE))ossl_membio2str0, (VALUE)bio, status);
-}
-
-VALUE
 ossl_membio2str(BIO *bio)
 {
     VALUE ret;
-    int status = 0;
+    int state;
+    BUF_MEM *buf;
 
-    ret = ossl_protect_membio2str(bio, &status);
+    BIO_get_mem_ptr(bio, &buf);
+    ret = ossl_str_new(buf->data, buf->length, &state);
     BIO_free(bio);
-    if(status) rb_jump_tag(status);
+    if (state)
+	rb_jump_tag(state);
 
     return ret;
 }

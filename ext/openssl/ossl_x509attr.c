@@ -23,10 +23,6 @@
 	ossl_raise(rb_eRuntimeError, "ATTR wasn't initialized!"); \
     } \
 } while (0)
-#define SafeGetX509Attr(obj, attr) do { \
-    OSSL_Check_Kind((obj), cX509Attr); \
-    GetX509Attr((obj), (attr)); \
-} while (0)
 
 /*
  * Classes
@@ -76,7 +72,7 @@ GetX509AttrPtr(VALUE obj)
 {
     X509_ATTRIBUTE *attr;
 
-    SafeGetX509Attr(obj, attr);
+    GetX509Attr(obj, attr);
 
     return attr;
 }
@@ -134,7 +130,7 @@ ossl_x509attr_initialize_copy(VALUE self, VALUE other)
 
     rb_check_frozen(self);
     GetX509Attr(self, attr);
-    SafeGetX509Attr(other, attr_other);
+    GetX509Attr(other, attr_other);
 
     attr_new = X509_ATTRIBUTE_dup(attr_other);
     if (!attr_new)
@@ -319,7 +315,7 @@ Init_ossl_x509attr(void)
     cX509Attr = rb_define_class_under(mX509, "Attribute", rb_cObject);
     rb_define_alloc_func(cX509Attr, ossl_x509attr_alloc);
     rb_define_method(cX509Attr, "initialize", ossl_x509attr_initialize, -1);
-    rb_define_copy_func(cX509Attr, ossl_x509attr_initialize_copy);
+    rb_define_method(cX509Attr, "initialize_copy", ossl_x509attr_initialize_copy, 1);
     rb_define_method(cX509Attr, "oid=", ossl_x509attr_set_oid, 1);
     rb_define_method(cX509Attr, "oid", ossl_x509attr_get_oid, 0);
     rb_define_method(cX509Attr, "value=", ossl_x509attr_set_value, 1);

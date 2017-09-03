@@ -1,12 +1,9 @@
 # frozen_string_literal: false
 require_relative 'utils'
-require 'base64'
 
-if defined?(OpenSSL::TestUtils)
+if defined?(OpenSSL) && defined?(OpenSSL::PKey::DSA)
 
 class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
-  DSA512 = OpenSSL::TestUtils::TEST_KEY_DSA512
-
   def test_private
     key = OpenSSL::PKey::DSA.new(256)
     assert(key.private?)
@@ -37,27 +34,27 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
   end
 
   def test_sign_verify
+    dsa512 = Fixtures.pkey("dsa512")
     data = "Sign me!"
     if defined?(OpenSSL::Digest::DSS1)
-      signature = DSA512.sign(OpenSSL::Digest::DSS1.new, data)
-      assert_equal true, DSA512.verify(OpenSSL::Digest::DSS1.new, signature, data)
+      signature = dsa512.sign(OpenSSL::Digest::DSS1.new, data)
+      assert_equal true, dsa512.verify(OpenSSL::Digest::DSS1.new, signature, data)
     end
 
-    return if OpenSSL::OPENSSL_VERSION_NUMBER <= 0x010000000
-    signature = DSA512.sign("SHA1", data)
-    assert_equal true, DSA512.verify("SHA1", signature, data)
+    signature = dsa512.sign("SHA1", data)
+    assert_equal true, dsa512.verify("SHA1", signature, data)
 
     signature0 = (<<~'end;').unpack("m")[0]
       MCwCFH5h40plgU5Fh0Z4wvEEpz0eE9SnAhRPbkRB8ggsN/vsSEYMXvJwjGg/
       6g==
     end;
-    assert_equal true, DSA512.verify("SHA256", signature0, data)
+    assert_equal true, dsa512.verify("SHA256", signature0, data)
     signature1 = signature0.succ
-    assert_equal false, DSA512.verify("SHA256", signature1, data)
+    assert_equal false, dsa512.verify("SHA256", signature1, data)
   end
 
   def test_sys_sign_verify
-    key = OpenSSL::TestUtils::TEST_KEY_DSA256
+    key = Fixtures.pkey("dsa256")
     data = 'Sign me!'
     digest = OpenSSL::Digest::SHA1.digest(data)
     sig = key.syssign(digest)
@@ -66,17 +63,18 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
 
   def test_DSAPrivateKey
     # OpenSSL DSAPrivateKey format; similar to RSAPrivateKey
+    dsa512 = Fixtures.pkey("dsa512")
     asn1 = OpenSSL::ASN1::Sequence([
       OpenSSL::ASN1::Integer(0),
-      OpenSSL::ASN1::Integer(DSA512.p),
-      OpenSSL::ASN1::Integer(DSA512.q),
-      OpenSSL::ASN1::Integer(DSA512.g),
-      OpenSSL::ASN1::Integer(DSA512.pub_key),
-      OpenSSL::ASN1::Integer(DSA512.priv_key)
+      OpenSSL::ASN1::Integer(dsa512.p),
+      OpenSSL::ASN1::Integer(dsa512.q),
+      OpenSSL::ASN1::Integer(dsa512.g),
+      OpenSSL::ASN1::Integer(dsa512.pub_key),
+      OpenSSL::ASN1::Integer(dsa512.priv_key)
     ])
     key = OpenSSL::PKey::DSA.new(asn1.to_der)
     assert_predicate key, :private?
-    assert_same_dsa DSA512, key
+    assert_same_dsa dsa512, key
 
     pem = <<~EOF
     -----BEGIN DSA PRIVATE KEY-----
@@ -89,14 +87,15 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     -----END DSA PRIVATE KEY-----
     EOF
     key = OpenSSL::PKey::DSA.new(pem)
-    assert_same_dsa DSA512, key
+    assert_same_dsa dsa512, key
 
-    assert_equal asn1.to_der, DSA512.to_der
-    assert_equal pem, DSA512.export
+    assert_equal asn1.to_der, dsa512.to_der
+    assert_equal pem, dsa512.export
   end
 
   def test_DSAPrivateKey_encrypted
     # key = abcdef
+    dsa512 = Fixtures.pkey("dsa512")
     pem = <<~EOF
     -----BEGIN DSA PRIVATE KEY-----
     Proc-Type: 4,ENCRYPTED
@@ -111,35 +110,36 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     -----END DSA PRIVATE KEY-----
     EOF
     key = OpenSSL::PKey::DSA.new(pem, "abcdef")
-    assert_same_dsa DSA512, key
+    assert_same_dsa dsa512, key
     key = OpenSSL::PKey::DSA.new(pem) { "abcdef" }
-    assert_same_dsa DSA512, key
+    assert_same_dsa dsa512, key
 
     cipher = OpenSSL::Cipher.new("aes-128-cbc")
-    exported = DSA512.to_pem(cipher, "abcdef\0\1")
-    assert_same_dsa DSA512, OpenSSL::PKey::DSA.new(exported, "abcdef\0\1")
+    exported = dsa512.to_pem(cipher, "abcdef\0\1")
+    assert_same_dsa dsa512, OpenSSL::PKey::DSA.new(exported, "abcdef\0\1")
     assert_raise(OpenSSL::PKey::DSAError) {
       OpenSSL::PKey::DSA.new(exported, "abcdef")
     }
   end
 
   def test_PUBKEY
+    dsa512 = Fixtures.pkey("dsa512")
     asn1 = OpenSSL::ASN1::Sequence([
       OpenSSL::ASN1::Sequence([
         OpenSSL::ASN1::ObjectId("DSA"),
         OpenSSL::ASN1::Sequence([
-          OpenSSL::ASN1::Integer(DSA512.p),
-          OpenSSL::ASN1::Integer(DSA512.q),
-          OpenSSL::ASN1::Integer(DSA512.g)
+          OpenSSL::ASN1::Integer(dsa512.p),
+          OpenSSL::ASN1::Integer(dsa512.q),
+          OpenSSL::ASN1::Integer(dsa512.g)
         ])
       ]),
       OpenSSL::ASN1::BitString(
-        OpenSSL::ASN1::Integer(DSA512.pub_key).to_der
+        OpenSSL::ASN1::Integer(dsa512.pub_key).to_der
       )
     ])
     key = OpenSSL::PKey::DSA.new(asn1.to_der)
     assert_not_predicate key, :private?
-    assert_same_dsa dup_public(DSA512), key
+    assert_same_dsa dup_public(dsa512), key
 
     pem = <<~EOF
     -----BEGIN PUBLIC KEY-----
@@ -152,10 +152,10 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     -----END PUBLIC KEY-----
     EOF
     key = OpenSSL::PKey::DSA.new(pem)
-    assert_same_dsa dup_public(DSA512), key
+    assert_same_dsa dup_public(dsa512), key
 
-    assert_equal asn1.to_der, dup_public(DSA512).to_der
-    assert_equal pem, dup_public(DSA512).export
+    assert_equal asn1.to_der, dup_public(dsa512).to_der
+    assert_equal pem, dup_public(dsa512).export
   end
 
   def test_read_DSAPublicKey_pem

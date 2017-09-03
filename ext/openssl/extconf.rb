@@ -91,60 +91,25 @@ unless result
   unless find_openssl_library
     Logging::message "=== Checking for required stuff failed. ===\n"
     Logging::message "Makefile wasn't created. Fix the errors above.\n"
-    exit 1
+    raise "OpenSSL library could not be found. You might want to use " \
+      "--with-openssl-dir=<dir> option to specify the prefix where OpenSSL " \
+      "is installed."
   end
 end
 
-result = checking_for("OpenSSL version is 0.9.8 or later") {
-  try_static_assert("OPENSSL_VERSION_NUMBER >= 0x00908000L", "openssl/opensslv.h")
-}
-unless result
-  raise "OpenSSL 0.9.8 or later required."
-end
-
-if /darwin/ =~ RUBY_PLATFORM and !OpenSSL.check_func("SSL_library_init()", "openssl/ssl.h")
-  raise "Ignore OpenSSL broken by Apple.\nPlease use another openssl. (e.g. using `configure --with-openssl-dir=/path/to/openssl')"
+unless checking_for("OpenSSL version is 1.0.1 or later") {
+    try_static_assert("OPENSSL_VERSION_NUMBER >= 0x10001000L", "openssl/opensslv.h") }
+  raise "OpenSSL >= 1.0.1 or LibreSSL is required"
 end
 
 Logging::message "=== Checking for OpenSSL features... ===\n"
 # compile options
-
-# SSLv2 and SSLv3 may be removed in future versions of OpenSSL, and even macros
-# like OPENSSL_NO_SSL2 may not be defined.
-have_func("SSLv2_method")
-have_func("SSLv3_method")
-have_func("TLSv1_1_method")
-have_func("TLSv1_2_method")
 have_func("RAND_egd")
 engines = %w{builtin_engines openbsd_dev_crypto dynamic 4758cca aep atalla chil
              cswift nuron sureware ubsec padlock capi gmp gost cryptodev aesni}
 engines.each { |name|
   OpenSSL.check_func_or_macro("ENGINE_load_#{name}", "openssl/engine.h")
 }
-
-# added in 0.9.8X
-have_func("EVP_CIPHER_CTX_new")
-have_func("EVP_CIPHER_CTX_free")
-OpenSSL.check_func_or_macro("SSL_CTX_clear_options", "openssl/ssl.h")
-
-# added in 1.0.0
-have_func("ASN1_TIME_adj")
-have_func("EVP_CIPHER_CTX_copy")
-have_func("EVP_PKEY_base_id")
-have_func("HMAC_CTX_copy")
-have_func("PKCS5_PBKDF2_HMAC")
-have_func("X509_NAME_hash_old")
-have_func("X509_STORE_CTX_get0_current_crl")
-have_func("X509_STORE_set_verify_cb")
-have_func("i2d_ASN1_SET_ANY")
-have_func("SSL_SESSION_cmp") # removed
-OpenSSL.check_func_or_macro("SSL_set_tlsext_host_name", "openssl/ssl.h")
-have_struct_member("CRYPTO_THREADID", "ptr", "openssl/crypto.h")
-have_func("EVP_PKEY_get0")
-
-# added in 1.0.1
-have_func("SSL_CTX_set_next_proto_select_cb")
-have_macro("EVP_CTRL_GCM_GET_TAG", ['openssl/evp.h']) && $defs.push("-DHAVE_AUTHENTICATED_ENCRYPTION")
 
 # added in 1.0.2
 have_func("EC_curve_nist2nid")
@@ -189,6 +154,7 @@ OpenSSL.check_func_or_macro("SSL_CTX_set_min_proto_version", "openssl/ssl.h")
 have_func("SSL_CTX_get_security_level")
 have_func("X509_get0_notBefore")
 have_func("SSL_SESSION_get_protocol_version")
+have_func("EVP_PBE_scrypt")
 
 Logging::message "=== Checking done. ===\n"
 

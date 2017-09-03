@@ -1,26 +1,18 @@
 # frozen_string_literal: false
 require_relative "utils"
 
-if defined?(OpenSSL::TestUtils)
+if defined?(OpenSSL)
 
 class OpenSSL::TestX509CRL < OpenSSL::TestCase
   def setup
     super
-    @rsa1024 = OpenSSL::TestUtils::TEST_KEY_RSA1024
-    @rsa2048 = OpenSSL::TestUtils::TEST_KEY_RSA2048
-    @dsa256  = OpenSSL::TestUtils::TEST_KEY_DSA256
-    @dsa512  = OpenSSL::TestUtils::TEST_KEY_DSA512
+    @rsa1024 = Fixtures.pkey("rsa1024")
+    @rsa2048 = Fixtures.pkey("rsa2048")
+    @dsa256  = Fixtures.pkey("dsa256")
+    @dsa512  = Fixtures.pkey("dsa512")
     @ca = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA")
     @ee1 = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=EE1")
     @ee2 = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=EE2")
-  end
-
-  def issue_crl(*args)
-    OpenSSL::TestUtils.issue_crl(*args)
-  end
-
-  def issue_cert(*args)
-    OpenSSL::TestUtils.issue_cert(*args)
   end
 
   def test_basic
@@ -196,7 +188,7 @@ class OpenSSL::TestX509CRL < OpenSSL::TestCase
 
     cert = issue_cert(@ca, @dsa512, 1, [], nil, nil)
     crl = issue_crl([], 1, Time.now, Time.now+1600, [],
-                    cert, @dsa512, OpenSSL::TestUtils::DSA_SIGNATURE_DIGEST.new)
+                    cert, @dsa512, OpenSSL::Digest::SHA1.new)
     assert_equal(false, crl_error_returns_false { crl.verify(@rsa1024) })
     assert_equal(false, crl_error_returns_false { crl.verify(@rsa2048) })
     assert_equal(false, crl.verify(@dsa256))

@@ -25,10 +25,6 @@
         ossl_raise(rb_eRuntimeError, "ENGINE wasn't initialized."); \
     } \
 } while (0)
-#define SafeGetEngine(obj, engine) do { \
-    OSSL_Check_Kind((obj), cEngine); \
-    GetPKCS7((obj), (engine)); \
-} while (0)
 
 /*
  * Classes
@@ -72,14 +68,13 @@ static const rb_data_type_t ossl_engine_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
 };
 
-/* Document-method: OpenSSL::Engine.load
- *
+/*
  * call-seq:
- *   load(enginename = nil)
+ *    OpenSSL::Engine.load(name = nil)
  *
- * This method loads engines. If +name+ is nil, then all builtin engines are
- * loaded. Otherwise, the given +name+, as a string,  is loaded if available to
- * your runtime, and returns true. If +name+ is not found, then nil is
+ * This method loads engines. If _name_ is nil, then all builtin engines are
+ * loaded. Otherwise, the given _name_, as a String,  is loaded if available to
+ * your runtime, and returns true. If _name_ is not found, then nil is
  * returned.
  *
  */
@@ -153,9 +148,9 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
 #endif /* HAVE_ENGINE_LOAD_BUILTIN_ENGINES */
 }
 
-/* Document-method: OpenSSL::Engine.cleanup
+/*
  * call-seq:
- *  OpenSSL::Engine.cleanup
+ *    OpenSSL::Engine.cleanup
  *
  * It is only necessary to run cleanup when engines are loaded via
  * OpenSSL::Engine.load. However, running cleanup before exit is recommended.
@@ -169,7 +164,9 @@ ossl_engine_s_cleanup(VALUE self)
     return Qnil;
 }
 
-/* Document-method: OpenSSL::Engine.engines
+/*
+ * call-seq:
+ *    OpenSSL::Engine.engines -> [engine, ...]
  *
  * Returns an array of currently loaded engines.
  */
@@ -193,17 +190,16 @@ ossl_engine_s_engines(VALUE klass)
     return ary;
 }
 
-/* Document-method: OpenSSL::Engine.by_id
- *
+/*
  * call-seq:
- *   by_id(name) -> engine
+ *    OpenSSL::Engine.by_id(name) -> engine
  *
- * Fetch the engine as specified by the +id+ String
+ * Fetches the engine as specified by the _id_ String.
  *
  *   OpenSSL::Engine.by_id("openssl")
  *    => #<OpenSSL::Engine id="openssl" name="Software engine support">
  *
- * See OpenSSL::Engine.engines for the currently loaded engines
+ * See OpenSSL::Engine.engines for the currently loaded engines.
  */
 static VALUE
 ossl_engine_s_by_id(VALUE klass, VALUE id)
@@ -227,9 +223,11 @@ ossl_engine_s_by_id(VALUE klass, VALUE id)
     return obj;
 }
 
-/* Document-method: OpenSSL::Engine#id
+/*
+ * call-seq:
+ *    engine.id -> string
  *
- * Get the id for this engine
+ * Gets the id for this engine.
  *
  *    OpenSSL::Engine.load
  *    OpenSSL::Engine.engines #=> [#<OpenSSL::Engine#>, ...]
@@ -244,9 +242,11 @@ ossl_engine_get_id(VALUE self)
     return rb_str_new2(ENGINE_get_id(e));
 }
 
-/* Document-method: OpenSSL::Engine#name
+/*
+ * call-seq:
+ *    engine.name -> string
  *
- * Get the descriptive name for this engine
+ * Get the descriptive name for this engine.
  *
  *    OpenSSL::Engine.load
  *    OpenSSL::Engine.engines #=> [#<OpenSSL::Engine#>, ...]
@@ -262,7 +262,9 @@ ossl_engine_get_name(VALUE self)
     return rb_str_new2(ENGINE_get_name(e));
 }
 
-/* Document-method: OpenSSL::Engine#finish
+/*
+ * call-seq:
+ *    engine.finish -> nil
  *
  * Releases all internal structural references for this engine.
  *
@@ -279,13 +281,12 @@ ossl_engine_finish(VALUE self)
     return Qnil;
 }
 
-/* Document-method: OpenSSL::Engine#cipher
- *
+/*
  * call-seq:
  *   engine.cipher(name) -> OpenSSL::Cipher
  *
- * This returns an OpenSSL::Cipher by +name+, if it is available in this
- * engine.
+ * Returns a new instance of OpenSSL::Cipher by _name_, if it is available in
+ * this engine.
  *
  * An EngineError will be raised if the cipher is unavailable.
  *
@@ -312,12 +313,11 @@ ossl_engine_get_cipher(VALUE self, VALUE name)
     return ossl_cipher_new(ciph);
 }
 
-/* Document-method: OpenSSL::Engine#digest
- *
+/*
  * call-seq:
  *   engine.digest(name) -> OpenSSL::Digest
  *
- * This returns an OpenSSL::Digest by +name+.
+ * Returns a new instance of OpenSSL::Digest by _name_.
  *
  * Will raise an EngineError if the digest is unavailable.
  *
@@ -345,12 +345,11 @@ ossl_engine_get_digest(VALUE self, VALUE name)
     return ossl_digest_new(md);
 }
 
-/* Document-method: OpenSSL::Engine#load_private_key
- *
+/*
  * call-seq:
  *    engine.load_private_key(id = nil, data = nil) -> OpenSSL::PKey
  *
- * Loads the given private key by +id+ and +data+.
+ * Loads the given private key identified by _id_ and _data_.
  *
  * An EngineError is raised of the OpenSSL::PKey is unavailable.
  *
@@ -375,12 +374,11 @@ ossl_engine_load_privkey(int argc, VALUE *argv, VALUE self)
     return obj;
 }
 
-/* Document-method: OpenSSL::Engine#load_public_key
- *
+/*
  * call-seq:
  *    engine.load_public_key(id = nil, data = nil) -> OpenSSL::PKey
  *
- * Loads the given private key by +id+ and +data+.
+ * Loads the given public key identified by _id_ and _data_.
  *
  * An EngineError is raised of the OpenSSL::PKey is unavailable.
  *
@@ -403,16 +401,15 @@ ossl_engine_load_pubkey(int argc, VALUE *argv, VALUE self)
     return ossl_pkey_new(pkey);
 }
 
-/* Document-method: OpenSSL::Engine#set_default
- *
+/*
  * call-seq:
  *    engine.set_default(flag)
  *
- * Set the defaults for this engine with the given +flag+.
+ * Set the defaults for this engine with the given _flag_.
  *
  * These flags are used to control combinations of algorithm methods.
  *
- * +flag+ can be one of the following, other flags are available depending on
+ * _flag_ can be one of the following, other flags are available depending on
  * your OS.
  *
  * [All flags]  0xFFFF
@@ -432,14 +429,13 @@ ossl_engine_set_default(VALUE self, VALUE flag)
     return Qtrue;
 }
 
-/* Document-method: OpenSSL::Engine#ctrl_cmd
- *
+/*
  * call-seq:
  *    engine.ctrl_cmd(command, value = nil) -> engine
  *
- * Send the given +command+ to this engine.
+ * Sends the given _command_ to this engine.
  *
- * Raises an EngineError if the +command+ fails.
+ * Raises an EngineError if the command fails.
  */
 static VALUE
 ossl_engine_ctrl_cmd(int argc, VALUE *argv, VALUE self)
@@ -469,7 +465,9 @@ ossl_engine_cmd_flag_to_name(int flag)
     }
 }
 
-/* Document-method: OpenSSL::Engine#cmds
+/*
+ * call-seq:
+ *    engine.cmds -> [["name", "description", "flags"], ...]
  *
  * Returns an array of command definitions for the current engine
  */
@@ -495,9 +493,11 @@ ossl_engine_get_cmds(VALUE self)
     return ary;
 }
 
-/* Document-method: OpenSSL::Engine#inspect
+/*
+ * call-seq:
+ *    engine.inspect -> string
  *
- * Pretty print this engine
+ * Pretty prints this engine.
  */
 static VALUE
 ossl_engine_inspect(VALUE self)

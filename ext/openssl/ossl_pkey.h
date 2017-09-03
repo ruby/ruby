@@ -34,10 +34,6 @@ extern const rb_data_type_t ossl_evp_pkey_type;
 	rb_raise(rb_eRuntimeError, "PKEY wasn't initialized!");\
     } \
 } while (0)
-#define SafeGetPKey(obj, pkey) do { \
-    OSSL_Check_Kind((obj), cPKey); \
-    GetPKey((obj), (pkey)); \
-} while (0)
 
 struct ossl_generate_cb_arg {
     int yield;

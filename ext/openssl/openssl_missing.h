@@ -12,53 +12,6 @@
 
 #include "ruby/config.h"
 
-/* added in 0.9.8X */
-#if !defined(HAVE_EVP_CIPHER_CTX_NEW)
-EVP_CIPHER_CTX *ossl_EVP_CIPHER_CTX_new(void);
-#  define EVP_CIPHER_CTX_new ossl_EVP_CIPHER_CTX_new
-#endif
-
-#if !defined(HAVE_EVP_CIPHER_CTX_FREE)
-void ossl_EVP_CIPHER_CTX_free(EVP_CIPHER_CTX *);
-#  define EVP_CIPHER_CTX_free ossl_EVP_CIPHER_CTX_free
-#endif
-
-#if !defined(HAVE_SSL_CTX_CLEAR_OPTIONS)
-#  define SSL_CTX_clear_options(ctx, op) ((ctx)->options &= ~(op))
-#endif
-
-/* added in 1.0.0 */
-#if !defined(HAVE_EVP_PKEY_BASE_ID)
-#  define EVP_PKEY_base_id(pkey) EVP_PKEY_type((pkey)->type)
-#endif
-
-#if !defined(HAVE_EVP_CIPHER_CTX_COPY)
-int ossl_EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *, const EVP_CIPHER_CTX *);
-#  define EVP_CIPHER_CTX_copy ossl_EVP_CIPHER_CTX_copy
-#endif
-
-#if !defined(HAVE_HMAC_CTX_COPY)
-int ossl_HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in);
-#  define HMAC_CTX_copy ossl_HMAC_CTX_copy
-#endif
-
-#if !defined(HAVE_X509_STORE_CTX_GET0_CURRENT_CRL)
-#  define X509_STORE_CTX_get0_current_crl(x) ((x)->current_crl)
-#endif
-
-#if !defined(HAVE_X509_STORE_SET_VERIFY_CB)
-#  define X509_STORE_set_verify_cb X509_STORE_set_verify_cb_func
-#endif
-
-#if !defined(HAVE_I2D_ASN1_SET_ANY)
-#  define i2d_ASN1_SET_ANY(sk, x) i2d_ASN1_SET_OF_ASN1_TYPE((sk), (x), \
-		i2d_ASN1_TYPE, V_ASN1_SET, V_ASN1_UNIVERSAL, 0)
-#endif
-
-#if !defined(HAVE_EVP_PKEY_GET0)
-#  define EVP_PKEY_get0(pk) (pk->pkey.ptr)
-#endif
-
 /* added in 1.0.2 */
 #if !defined(OPENSSL_NO_EC)
 #if !defined(HAVE_EC_CURVE_NIST2NID)
@@ -245,7 +198,7 @@ IMPL_PKEY_GETTER(EC_KEY, ec)
 #undef IMPL_KEY_ACCESSOR3
 #endif /* HAVE_OPAQUE_OPENSSL */
 
-#if defined(HAVE_AUTHENTICATED_ENCRYPTION) && !defined(EVP_CTRL_AEAD_GET_TAG)
+#if !defined(EVP_CTRL_AEAD_GET_TAG)
 #  define EVP_CTRL_AEAD_GET_TAG EVP_CTRL_GCM_GET_TAG
 #  define EVP_CTRL_AEAD_SET_TAG EVP_CTRL_GCM_SET_TAG
 #  define EVP_CTRL_AEAD_SET_IVLEN EVP_CTRL_GCM_SET_IVLEN

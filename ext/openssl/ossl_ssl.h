@@ -24,11 +24,6 @@
 	} \
 } while (0)
 
-#define SafeGetSSLSession(obj, sess) do { \
-	OSSL_Check_Kind((obj), cSSLSession); \
-	GetSSLSession((obj), (sess)); \
-} while (0)
-
 extern const rb_data_type_t ossl_ssl_type;
 extern const rb_data_type_t ossl_ssl_session_type;
 extern VALUE mSSL;

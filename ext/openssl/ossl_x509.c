@@ -20,15 +20,10 @@ ossl_x509_time_adjust(ASN1_TIME *s, VALUE time)
 {
     time_t sec;
 
-#if defined(HAVE_ASN1_TIME_ADJ)
     int off_days;
 
     ossl_time_split(time, &sec, &off_days);
     return X509_time_adj_ex(s, off_days, 0, &sec);
-#else
-    sec = time_to_time_t(time);
-    return X509_time_adj(s, 0, &sec);
-#endif
 }
 
 void
@@ -112,21 +107,15 @@ Init_ossl_x509(void)
     DefX509Const(V_FLAG_INHIBIT_MAP);
     /* Set by Store#flags= and StoreContext#flags=. */
     DefX509Const(V_FLAG_NOTIFY_POLICY);
-#if defined(X509_V_FLAG_EXTENDED_CRL_SUPPORT)
     /* Set by Store#flags= and StoreContext#flags=. Enables some additional
      * features including support for indirect signed CRLs. */
     DefX509Const(V_FLAG_EXTENDED_CRL_SUPPORT);
-#endif
-#if defined(X509_V_FLAG_USE_DELTAS)
     /* Set by Store#flags= and StoreContext#flags=. Uses delta CRLs. If not
      * specified, deltas are ignored. */
     DefX509Const(V_FLAG_USE_DELTAS);
-#endif
-#if defined(X509_V_FLAG_CHECK_SS_SIGNATURE)
     /* Set by Store#flags= and StoreContext#flags=. Enables checking of the
      * signature of the root self-signed CA. */
     DefX509Const(V_FLAG_CHECK_SS_SIGNATURE);
-#endif
 #if defined(X509_V_FLAG_TRUSTED_FIRST)
     /* Set by Store#flags= and StoreContext#flags=. When constructing a
      * certificate chain, search the Store first for the issuer certificate.
@@ -161,10 +150,8 @@ Init_ossl_x509(void)
     DefX509Const(PURPOSE_ANY);
     /* Set by Store#purpose=. OCSP helper. */
     DefX509Const(PURPOSE_OCSP_HELPER);
-#if defined(X509_PURPOSE_TIMESTAMP_SIGN)
     /* Set by Store#purpose=. Time stamps signer. */
     DefX509Const(PURPOSE_TIMESTAMP_SIGN);
-#endif
 
     DefX509Const(TRUST_COMPAT);
     DefX509Const(TRUST_SSL_CLIENT);
@@ -173,9 +160,7 @@ Init_ossl_x509(void)
     DefX509Const(TRUST_OBJECT_SIGN);
     DefX509Const(TRUST_OCSP_SIGN);
     DefX509Const(TRUST_OCSP_REQUEST);
-#if defined(X509_TRUST_TSA)
     DefX509Const(TRUST_TSA);
-#endif
 
     DefX509Default(CERT_AREA, cert_area);
     DefX509Default(CERT_DIR, cert_dir);

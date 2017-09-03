@@ -150,8 +150,8 @@ dh_generate(int size, int gen)
  * components alike.
  *
  * === Parameters
- * * +size+ is an integer representing the desired key size. Keys smaller than 1024 bits should be considered insecure.
- * * +generator+ is a small number > 1, typically 2 or 5.
+ * * _size_ is an integer representing the desired key size. Keys smaller than 1024 bits should be considered insecure.
+ * * _generator_ is a small number > 1, typically 2 or 5.
  *
  */
 static VALUE
@@ -181,15 +181,15 @@ ossl_dh_s_generate(int argc, VALUE *argv, VALUE klass)
  *   DH.new(size [, generator]) -> dh
  *
  * Either generates a DH instance from scratch or by reading already existing
- * DH parameters from +string+. Note that when reading a DH instance from
+ * DH parameters from _string_. Note that when reading a DH instance from
  * data that was encoded from a DH instance by using DH#to_pem or DH#to_der
  * the result will *not* contain a public/private key pair yet. This needs to
  * be generated using DH#generate_key! first.
  *
  * === Parameters
- * * +size+ is an integer representing the desired key size. Keys smaller than 1024 bits should be considered insecure.
- * * +generator+ is a small number > 1, typically 2 or 5.
- * * +string+ contains the DER or PEM encoded key.
+ * * _size_ is an integer representing the desired key size. Keys smaller than 1024 bits should be considered insecure.
+ * * _generator_ is a small number > 1, typically 2 or 5.
+ * * _string_ contains the DER or PEM encoded key.
  *
  * === Examples
  *  DH.new # -> dh
@@ -436,7 +436,7 @@ ossl_dh_to_text(VALUE self)
  *     dh.public_key -> aDH
  *
  * Returns a new DH instance that carries just the public information, i.e.
- * the prime +p+ and the generator +g+, but no public/private key yet. Such
+ * the prime _p_ and the generator _g_, but no public/private key yet. Such
  * a pair may be generated using DH#generate_key!. The "public key" needed
  * for a key exchange with DH#compute_key is considered as per-session
  * information and may be retrieved with DH#pub_key once a key pair has
@@ -526,7 +526,7 @@ ossl_dh_generate_key(VALUE self)
  * See DH_compute_key() for further information.
  *
  * === Parameters
- * * +pub_bn+ is a OpenSSL::BN, *not* the DH instance returned by
+ * * _pub_bn_ is a OpenSSL::BN, *not* the DH instance returned by
  *   DH#public_key as that contains the DH parameters only.
  */
 static VALUE
@@ -557,7 +557,7 @@ ossl_dh_compute_key(VALUE self, VALUE pub)
  * call-seq:
  *   dh.set_pqg(p, q, g) -> self
  *
- * Sets +p+, +q+, +g+ for the DH instance.
+ * Sets _p_, _q_, _g_ to the DH instance.
  */
 OSSL_PKEY_BN_DEF3(dh, DH, pqg, p, q, g)
 /*
@@ -565,7 +565,7 @@ OSSL_PKEY_BN_DEF3(dh, DH, pqg, p, q, g)
  * call-seq:
  *   dh.set_key(pub_key, priv_key) -> self
  *
- * Sets +pub_key+ and +priv_key+ for the DH instance. +priv_key+ may be nil.
+ * Sets _pub_key_ and _priv_key_ for the DH instance. _priv_key_ may be +nil+.
  */
 OSSL_PKEY_BN_DEF2(dh, DH, key, pub_key, priv_key)
 
@@ -618,7 +618,7 @@ Init_ossl_dh(void)
     cDH = rb_define_class_under(mPKey, "DH", cPKey);
     rb_define_singleton_method(cDH, "generate", ossl_dh_s_generate, -1);
     rb_define_method(cDH, "initialize", ossl_dh_initialize, -1);
-    rb_define_copy_func(cDH, ossl_dh_initialize_copy);
+    rb_define_method(cDH, "initialize_copy", ossl_dh_initialize_copy, 1);
     rb_define_method(cDH, "public?", ossl_dh_is_public, 0);
     rb_define_method(cDH, "private?", ossl_dh_is_private, 0);
     rb_define_method(cDH, "to_text", ossl_dh_to_text, 0);

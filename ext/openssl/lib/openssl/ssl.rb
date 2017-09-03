@@ -17,17 +17,35 @@ module OpenSSL
   module SSL
     class SSLContext
       DEFAULT_PARAMS = { # :nodoc:
-        :ssl_version => "SSLv23",
+        :min_version => OpenSSL::SSL::TLS1_VERSION,
         :verify_mode => OpenSSL::SSL::VERIFY_PEER,
         :verify_hostname => true,
         :options => -> {
           opts = OpenSSL::SSL::OP_ALL
           opts &= ~OpenSSL::SSL::OP_DONT_INSERT_EMPTY_FRAGMENTS
-          opts |= OpenSSL::SSL::OP_NO_COMPRESSION if defined?(OpenSSL::SSL::OP_NO_COMPRESSION)
-          opts |= OpenSSL::SSL::OP_NO_SSLv2 | OpenSSL::SSL::OP_NO_SSLv3
+          opts |= OpenSSL::SSL::OP_NO_COMPRESSION
           opts
         }.call
       }
+
+      if defined?(OpenSSL::PKey::DH)
+        DEFAULT_2048 = OpenSSL::PKey::DH.new <<-_end_of_pem_
+-----BEGIN DH PARAMETERS-----
+MIIBCAKCAQEA7E6kBrYiyvmKAMzQ7i8WvwVk9Y/+f8S7sCTN712KkK3cqd1jhJDY
+JbrYeNV3kUIKhPxWHhObHKpD1R84UpL+s2b55+iMd6GmL7OYmNIT/FccKhTcveab
+VBmZT86BZKYyf45hUF9FOuUM9xPzuK3Vd8oJQvfYMCd7LPC0taAEljQLR4Edf8E6
+YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
+1bNveX5wInh5GDx1FGhKBZ+s1H+aedudCm7sCgRwv8lKWYGiHzObSma8A86KG+MD
+7Lo5JquQ3DlBodj3IDyPrxIv96lvRPFtAwIBAg==
+-----END DH PARAMETERS-----
+        _end_of_pem_
+        private_constant :DEFAULT_2048
+
+        DEFAULT_TMP_DH_CALLBACK = lambda { |ctx, is_export, keylen| # :nodoc:
+          warn "using default DH parameters." if $VERBOSE
+          DEFAULT_2048
+        }
+      end
 
       if !(OpenSSL::OPENSSL_VERSION.start_with?("OpenSSL") &&
            OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10100000)
@@ -87,14 +105,18 @@ module OpenSSL
       #
       # The callback is invoked with an SSLSocket and a server name.  The
       # callback must return an SSLContext for the server name or nil.
-      attr_accessor :servername_cb if ExtConfig::HAVE_TLSEXT_HOST_NAME
+      attr_accessor :servername_cb
 
       # call-seq:
-      #    SSLContext.new => ctx
-      #    SSLContext.new(:TLSv1) => ctx
-      #    SSLContext.new("SSLv23_client") => ctx
+      #    SSLContext.new           -> ctx
+      #    SSLContext.new(:TLSv1)   -> ctx
+      #    SSLContext.new("SSLv23") -> ctx
       #
-      # You can get a list of valid methods with OpenSSL::SSL::SSLContext::METHODS
+      # Creates a new SSL context.
+      #
+      # If an argument is given, #ssl_version= is called with the value. Note
+      # that this form is deprecated. New applications should use #min_version=
+      # and #max_version= as necessary.
       def initialize(version = nil)
         self.options |= OpenSSL::SSL::OP_ALL
         self.ssl_version = version if version
@@ -106,8 +128,8 @@ module OpenSSL
       #
       # Sets saner defaults optimized for the use with HTTP-like protocols.
       #
-      # If a Hash +params+ is given, the parameters are overridden with it.
-      # The keys in +params+ must be assignment methods on SSLContext.
+      # If a Hash _params_ is given, the parameters are overridden with it.
+      # The keys in _params_ must be assignment methods on SSLContext.
       #
       # If the verify_mode is not VERIFY_NONE and ca_file, ca_path and
       # cert_store are not set then the system default certificate store is
@@ -122,6 +144,88 @@ module OpenSSL
         end
         return params
       end
+
+      # call-seq:
+      #    ctx.min_version = OpenSSL::SSL::TLS1_2_VERSION
+      #    ctx.min_version = :TLS1_2
+      #    ctx.min_version = nil
+      #
+      # Sets the lower bound on the supported SSL/TLS protocol version. The
+      # version may be specified by an integer constant named
+      # OpenSSL::SSL::*_VERSION, a Symbol, or +nil+ which means "any version".
+      #
+      # Be careful that you don't overwrite OpenSSL::SSL::OP_NO_{SSL,TLS}v*
+      # options by #options= once you have called #min_version= or
+      # #max_version=.
+      #
+      # === Example
+      #   ctx = OpenSSL::SSL::SSLContext.new
+      #   ctx.min_version = OpenSSL::SSL::TLS1_1_VERSION
+      #   ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+      #
+      #   sock = OpenSSL::SSL::SSLSocket.new(tcp_sock, ctx)
+      #   sock.connect # Initiates a connection using either TLS 1.1 or TLS 1.2
+      def min_version=(version)
+        set_minmax_proto_version(version, @max_proto_version ||= nil)
+        @min_proto_version = version
+      end
+
+      # call-seq:
+      #    ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+      #    ctx.max_version = :TLS1_2
+      #    ctx.max_version = nil
+      #
+      # Sets the upper bound of the supported SSL/TLS protocol version. See
+      # #min_version= for the possible values.
+      def max_version=(version)
+        set_minmax_proto_version(@min_proto_version ||= nil, version)
+        @max_proto_version = version
+      end
+
+      # call-seq:
+      #    ctx.ssl_version = :TLSv1
+      #    ctx.ssl_version = "SSLv23"
+      #
+      # Sets the SSL/TLS protocol version for the context. This forces
+      # connections to use only the specified protocol version. This is
+      # deprecated and only provided for backwards compatibility. Use
+      # #min_version= and #max_version= instead.
+      #
+      # === History
+      # As the name hints, this used to call the SSL_CTX_set_ssl_version()
+      # function which sets the SSL method used for connections created from
+      # the context. As of Ruby/OpenSSL 2.1, this accessor method is
+      # implemented to call #min_version= and #max_version= instead.
+      def ssl_version=(meth)
+        meth = meth.to_s if meth.is_a?(Symbol)
+        if /(?<type>_client|_server)\z/ =~ meth
+          meth = $`
+          if $VERBOSE
+            warn "#{caller(1)[0]}: method type #{type.inspect} is ignored"
+          end
+        end
+        version = METHODS_MAP[meth.intern] or
+          raise ArgumentError, "unknown SSL method `%s'" % meth
+        set_minmax_proto_version(version, version)
+        @min_proto_version = @max_proto_version = version
+      end
+
+      METHODS_MAP = {
+        SSLv23: 0,
+        SSLv2: OpenSSL::SSL::SSL2_VERSION,
+        SSLv3: OpenSSL::SSL::SSL3_VERSION,
+        TLSv1: OpenSSL::SSL::TLS1_VERSION,
+        TLSv1_1: OpenSSL::SSL::TLS1_1_VERSION,
+        TLSv1_2: OpenSSL::SSL::TLS1_2_VERSION,
+      }.freeze
+      private_constant :METHODS_MAP
+
+      # The list of available SSL/TLS methods. This constant is only provided
+      # for backwards compatibility.
+      METHODS = METHODS_MAP.flat_map { |name,|
+        [name, :"#{name}_client", :"#{name}_server"]
+      }.freeze
+      deprecate_constant :METHODS
     end
 
     module SocketForwarder
@@ -242,9 +346,7 @@ module OpenSSL
       include Buffering
       include SocketForwarder
 
-      if ExtConfig::HAVE_TLSEXT_HOST_NAME
-        attr_reader :hostname
-      end
+      attr_reader :hostname
 
       # The underlying IO object.
       attr_reader :io
@@ -317,7 +419,7 @@ module OpenSSL
       end
 
       def tmp_dh_callback
-        @context.tmp_dh_callback || OpenSSL::PKey::DEFAULT_TMP_DH_CALLBACK
+        @context.tmp_dh_callback || OpenSSL::SSL::SSLContext::DEFAULT_TMP_DH_CALLBACK
       end
 
       def tmp_ecdh_callback
@@ -341,8 +443,8 @@ module OpenSSL
       attr_accessor :start_immediately
 
       # Creates a new instance of SSLServer.
-      # * +srv+ is an instance of TCPServer.
-      # * +ctx+ is an instance of OpenSSL::SSL::SSLContext.
+      # * _srv_ is an instance of TCPServer.
+      # * _ctx_ is an instance of OpenSSL::SSL::SSLContext.
       def initialize(svr, ctx)
         @svr = svr
         @ctx = ctx

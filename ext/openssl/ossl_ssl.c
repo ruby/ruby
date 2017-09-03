@@ -46,54 +46,19 @@ static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
 	  id_i_verify_hostname;
 static ID id_i_io, id_i_context, id_i_hostname;
 
-/*
- * SSLContext class
- */
-static const struct {
-    const char *name;
-    SSL_METHOD *(*func)(void); /* FIXME: constify when dropping 0.9.8 */
-    int version;
-} ossl_ssl_method_tab[] = {
-#if defined(HAVE_SSL_CTX_SET_MIN_PROTO_VERSION)
-#define OSSL_SSL_METHOD_ENTRY(name, version) \
-    { #name,          (SSL_METHOD *(*)(void))TLS_method, version }, \
-    { #name"_server", (SSL_METHOD *(*)(void))TLS_server_method, version }, \
-    { #name"_client", (SSL_METHOD *(*)(void))TLS_client_method, version }
-#else
-#define OSSL_SSL_METHOD_ENTRY(name, version) \
-    { #name,          (SSL_METHOD *(*)(void))name##_method, version }, \
-    { #name"_server", (SSL_METHOD *(*)(void))name##_server_method, version }, \
-    { #name"_client", (SSL_METHOD *(*)(void))name##_client_method, version }
-#endif
-#if !defined(OPENSSL_NO_SSL2) && !defined(OPENSSL_NO_SSL2_METHOD) && defined(HAVE_SSLV2_METHOD)
-    OSSL_SSL_METHOD_ENTRY(SSLv2, SSL2_VERSION),
-#endif
-#if !defined(OPENSSL_NO_SSL3) && !defined(OPENSSL_NO_SSL3_METHOD) && defined(HAVE_SSLV3_METHOD)
-    OSSL_SSL_METHOD_ENTRY(SSLv3, SSL3_VERSION),
-#endif
-#if !defined(OPENSSL_NO_TLS1) && !defined(OPENSSL_NO_TLS1_METHOD)
-    OSSL_SSL_METHOD_ENTRY(TLSv1, TLS1_VERSION),
-#endif
-#if !defined(OPENSSL_NO_TLS1_1) && !defined(OPENSSL_NO_TLS1_1_METHOD) && defined(HAVE_TLSV1_1_METHOD)
-    OSSL_SSL_METHOD_ENTRY(TLSv1_1, TLS1_1_VERSION),
-#endif
-#if !defined(OPENSSL_NO_TLS1_2) && !defined(OPENSSL_NO_TLS1_2_METHOD) && defined(HAVE_TLSV1_2_METHOD)
-    OSSL_SSL_METHOD_ENTRY(TLSv1_2, TLS1_2_VERSION),
-#endif
-    OSSL_SSL_METHOD_ENTRY(SSLv23, 0),
-#undef OSSL_SSL_METHOD_ENTRY
-};
-
 static int ossl_ssl_ex_vcb_idx;
-static int ossl_ssl_ex_store_p;
 static int ossl_ssl_ex_ptr_idx;
+static int ossl_sslctx_ex_ptr_idx;
+#if !defined(HAVE_X509_STORE_UP_REF)
+static int ossl_sslctx_ex_store_p;
+#endif
 
 static void
 ossl_sslctx_free(void *ptr)
 {
     SSL_CTX *ctx = ptr;
 #if !defined(HAVE_X509_STORE_UP_REF)
-    if(ctx && SSL_CTX_get_ex_data(ctx, ossl_ssl_ex_store_p)== (void*)1)
+    if (ctx && SSL_CTX_get_ex_data(ctx, ossl_sslctx_ex_store_p))
 	ctx->cert_store = NULL;
 #endif
     SSL_CTX_free(ctx);
@@ -111,22 +76,24 @@ static VALUE
 ossl_sslctx_s_alloc(VALUE klass)
 {
     SSL_CTX *ctx;
-    long mode = SSL_MODE_ENABLE_PARTIAL_WRITE |
-	SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER;
+    long mode = 0 |
+	SSL_MODE_ENABLE_PARTIAL_WRITE |
+	SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER |
+	SSL_MODE_RELEASE_BUFFERS;
     VALUE obj;
 
-#ifdef SSL_MODE_RELEASE_BUFFERS
-    mode |= SSL_MODE_RELEASE_BUFFERS;
-#endif
-
     obj = TypedData_Wrap_Struct(klass, &ossl_sslctx_type, 0);
+#if OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(LIBRESSL_VERSION_NUMBER)
+    ctx = SSL_CTX_new(TLS_method());
+#else
     ctx = SSL_CTX_new(SSLv23_method());
+#endif
     if (!ctx) {
         ossl_raise(eSSLError, "SSL_CTX_new");
     }
     SSL_CTX_set_mode(ctx, mode);
     RTYPEDDATA_DATA(obj) = ctx;
-    SSL_CTX_set_ex_data(ctx, ossl_ssl_ex_ptr_idx, (void*)obj);
+    SSL_CTX_set_ex_data(ctx, ossl_sslctx_ex_ptr_idx, (void *)obj);
 
 #if !defined(OPENSSL_NO_EC) && defined(HAVE_SSL_CTX_SET_ECDH_AUTO)
     /* We use SSL_CTX_set1_curves_list() to specify the curve used in ECDH. It
@@ -143,49 +110,89 @@ ossl_sslctx_s_alloc(VALUE klass)
     return obj;
 }
 
+static int
+parse_proto_version(VALUE str)
+{
+    int i;
+    static const struct {
+	const char *name;
+	int version;
+    } map[] = {
+	{ "SSL2", SSL2_VERSION },
+	{ "SSL3", SSL3_VERSION },
+	{ "TLS1", TLS1_VERSION },
+	{ "TLS1_1", TLS1_1_VERSION },
+	{ "TLS1_2", TLS1_2_VERSION },
+#ifdef TLS1_3_VERSION
+	{ "TLS1_3", TLS1_3_VERSION },
+#endif
+    };
+
+    if (NIL_P(str))
+	return 0;
+    if (RB_INTEGER_TYPE_P(str))
+	return NUM2INT(str);
+
+    if (SYMBOL_P(str))
+	str = rb_sym2str(str);
+    StringValue(str);
+    for (i = 0; i < numberof(map); i++)
+	if (!strncmp(map[i].name, RSTRING_PTR(str), RSTRING_LEN(str)))
+	    return map[i].version;
+    rb_raise(rb_eArgError, "unrecognized version %+"PRIsVALUE, str);
+}
+
 /*
  * call-seq:
- *    ctx.ssl_version = :TLSv1
- *    ctx.ssl_version = "SSLv23_client"
+ *    ctx.set_minmax_proto_version(min, max) -> nil
  *
- * Sets the SSL/TLS protocol version for the context. This forces connections to
- * use only the specified protocol version.
- *
- * You can get a list of valid versions with OpenSSL::SSL::SSLContext::METHODS
+ * Sets the minimum and maximum supported protocol versions. See #min_version=
+ * and #max_version=.
  */
 static VALUE
-ossl_sslctx_set_ssl_version(VALUE self, VALUE ssl_method)
+ossl_sslctx_set_minmax_proto_version(VALUE self, VALUE min_v, VALUE max_v)
 {
     SSL_CTX *ctx;
-    const char *s;
-    VALUE m = ssl_method;
-    int i;
+    int min, max;
 
     GetSSLCTX(self, ctx);
-    if (RB_TYPE_P(ssl_method, T_SYMBOL))
-	m = rb_sym2str(ssl_method);
-    s = StringValueCStr(m);
-    for (i = 0; i < numberof(ossl_ssl_method_tab); i++) {
-        if (strcmp(ossl_ssl_method_tab[i].name, s) == 0) {
-#if defined(HAVE_SSL_CTX_SET_MIN_PROTO_VERSION)
-	    int version = ossl_ssl_method_tab[i].version;
-#endif
-	    SSL_METHOD *method = ossl_ssl_method_tab[i].func();
+    min = parse_proto_version(min_v);
+    max = parse_proto_version(max_v);
 
-	    if (SSL_CTX_set_ssl_version(ctx, method) != 1)
-		ossl_raise(eSSLError, "SSL_CTX_set_ssl_version");
+#ifdef HAVE_SSL_CTX_SET_MIN_PROTO_VERSION
+    if (!SSL_CTX_set_min_proto_version(ctx, min))
+	ossl_raise(eSSLError, "SSL_CTX_set_min_proto_version");
+    if (!SSL_CTX_set_max_proto_version(ctx, max))
+	ossl_raise(eSSLError, "SSL_CTX_set_max_proto_version");
+#else
+    {
+	unsigned long sum = 0, opts = 0;
+	int i;
+	static const struct {
+	    int ver;
+	    unsigned long opts;
+	} options_map[] = {
+	    { SSL2_VERSION, SSL_OP_NO_SSLv2 },
+	    { SSL3_VERSION, SSL_OP_NO_SSLv3 },
+	    { TLS1_VERSION, SSL_OP_NO_TLSv1 },
+	    { TLS1_1_VERSION, SSL_OP_NO_TLSv1_1 },
+	    { TLS1_2_VERSION, SSL_OP_NO_TLSv1_2 },
+# if defined(TLS1_3_VERSION)
+	    { TLS1_3_VERSION, SSL_OP_NO_TLSv1_3 },
+# endif
+	};
 
-#if defined(HAVE_SSL_CTX_SET_MIN_PROTO_VERSION)
-	    if (!SSL_CTX_set_min_proto_version(ctx, version))
-		ossl_raise(eSSLError, "SSL_CTX_set_min_proto_version");
-	    if (!SSL_CTX_set_max_proto_version(ctx, version))
-		ossl_raise(eSSLError, "SSL_CTX_set_max_proto_version");
-#endif
-	    return ssl_method;
-        }
+	for (i = 0; i < numberof(options_map); i++) {
+	    sum |= options_map[i].opts;
+	    if (min && min > options_map[i].ver || max && max < options_map[i].ver)
+		opts |= options_map[i].opts;
+	}
+	SSL_CTX_clear_options(ctx, sum);
+	SSL_CTX_set_options(ctx, opts);
     }
+#endif
 
-    ossl_raise(rb_eArgError, "unknown SSL method `%"PRIsVALUE"'.", m);
+    return Qnil;
 }
 
 static VALUE
@@ -380,13 +387,10 @@ ossl_sslctx_session_get_cb(SSL *ssl, unsigned char *buf, int len, int *copy)
 {
     VALUE ary, ssl_obj, ret_obj;
     SSL_SESSION *sess;
-    void *ptr;
     int state = 0;
 
     OSSL_Debug("SSL SESSION get callback entered");
-    if ((ptr = SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx)) == NULL)
-    	return NULL;
-    ssl_obj = (VALUE)ptr;
+    ssl_obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
     ary = rb_ary_new2(2);
     rb_ary_push(ary, ssl_obj);
     rb_ary_push(ary, rb_str_new((const char *)buf, len));
@@ -399,7 +403,7 @@ ossl_sslctx_session_get_cb(SSL *ssl, unsigned char *buf, int len, int *copy)
     if (!rb_obj_is_instance_of(ret_obj, cSSLSession))
         return NULL;
 
-    SafeGetSSLSession(ret_obj, sess);
+    GetSSLSession(ret_obj, sess);
     *copy = 1;
 
     return sess;
@@ -424,14 +428,11 @@ static int
 ossl_sslctx_session_new_cb(SSL *ssl, SSL_SESSION *sess)
 {
     VALUE ary, ssl_obj, sess_obj;
-    void *ptr;
     int state = 0;
 
     OSSL_Debug("SSL SESSION new callback entered");
 
-    if ((ptr = SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx)) == NULL)
-    	return 1;
-    ssl_obj = (VALUE)ptr;
+    ssl_obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
     sess_obj = rb_obj_alloc(cSSLSession);
     SSL_SESSION_up_ref(sess);
     DATA_PTR(sess_obj) = sess;
@@ -473,14 +474,18 @@ static void
 ossl_sslctx_session_remove_cb(SSL_CTX *ctx, SSL_SESSION *sess)
 {
     VALUE ary, sslctx_obj, sess_obj;
-    void *ptr;
     int state = 0;
+
+    /*
+     * This callback is also called for all sessions in the internal store
+     * when SSL_CTX_free() is called.
+     */
+    if (rb_during_gc())
+	return;
 
     OSSL_Debug("SSL SESSION remove callback entered");
 
-    if ((ptr = SSL_CTX_get_ex_data(ctx, ossl_ssl_ex_ptr_idx)) == NULL)
-    	return;
-    sslctx_obj = (VALUE)ptr;
+    sslctx_obj = (VALUE)SSL_CTX_get_ex_data(ctx, ossl_sslctx_ex_ptr_idx);
     sess_obj = rb_obj_alloc(cSSLSession);
     SSL_SESSION_up_ref(sess);
     DATA_PTR(sess_obj) = sess;
@@ -516,7 +521,6 @@ ossl_sslctx_add_extra_chain_cert_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arg))
 
 static VALUE ossl_sslctx_setup(VALUE self);
 
-#ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
 static VALUE
 ossl_call_servername_cb(VALUE ary)
 {
@@ -551,16 +555,13 @@ static int
 ssl_servername_cb(SSL *ssl, int *ad, void *arg)
 {
     VALUE ary, ssl_obj;
-    void *ptr;
     int state = 0;
     const char *servername = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
 
     if (!servername)
         return SSL_TLSEXT_ERR_OK;
 
-    if ((ptr = SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx)) == NULL)
-    	return SSL_TLSEXT_ERR_ALERT_FATAL;
-    ssl_obj = (VALUE)ptr;
+    ssl_obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
     ary = rb_ary_new2(2);
     rb_ary_push(ary, ssl_obj);
     rb_ary_push(ary, rb_str_new2(servername));
@@ -573,18 +574,13 @@ ssl_servername_cb(SSL *ssl, int *ad, void *arg)
 
     return SSL_TLSEXT_ERR_OK;
 }
-#endif
 
 static void
 ssl_renegotiation_cb(const SSL *ssl)
 {
     VALUE ssl_obj, sslctx_obj, cb;
-    void *ptr;
 
-    if ((ptr = SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx)) == NULL)
-	ossl_raise(eSSLError, "SSL object could not be retrieved");
-    ssl_obj = (VALUE)ptr;
-
+    ssl_obj = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
     sslctx_obj = rb_attr_get(ssl_obj, id_i_context);
     cb = rb_attr_get(sslctx_obj, id_i_renegotiation_cb);
     if (NIL_P(cb)) return;
@@ -592,7 +588,7 @@ ssl_renegotiation_cb(const SSL *ssl)
     (void) rb_funcall(cb, rb_intern("call"), 1, ssl_obj);
 }
 
-#if defined(HAVE_SSL_CTX_SET_NEXT_PROTO_SELECT_CB) || \
+#if !defined(OPENSSL_NO_NEXTPROTONEG) || \
     defined(HAVE_SSL_CTX_SET_ALPN_SELECT_CB)
 static VALUE
 ssl_npn_encode_protocol_i(VALUE cur, VALUE encoded)
@@ -677,7 +673,7 @@ ssl_npn_select_cb_common(SSL *ssl, VALUE cb, const unsigned char **out,
 }
 #endif
 
-#ifdef HAVE_SSL_CTX_SET_NEXT_PROTO_SELECT_CB
+#ifndef OPENSSL_NO_NEXTPROTONEG
 static int
 ssl_npn_advertise_cb(SSL *ssl, const unsigned char **out, unsigned int *outlen,
 		     void *arg)
@@ -737,7 +733,11 @@ ossl_sslctx_get_options(VALUE self)
 {
     SSL_CTX *ctx;
     GetSSLCTX(self, ctx);
-    return LONG2NUM(SSL_CTX_get_options(ctx));
+    /*
+     * Do explicit cast because SSL_CTX_get_options() returned (signed) long in
+     * OpenSSL before 1.1.0.
+     */
+    return ULONG2NUM((unsigned long)SSL_CTX_get_options(ctx));
 }
 
 /*
@@ -756,7 +756,7 @@ ossl_sslctx_set_options(VALUE self, VALUE options)
     if (NIL_P(options)) {
 	SSL_CTX_set_options(ctx, SSL_OP_ALL);
     } else {
-	SSL_CTX_set_options(ctx, NUM2LONG(options));
+	SSL_CTX_set_options(ctx, NUM2ULONG(options));
     }
 
     return self;
@@ -820,7 +820,7 @@ ossl_sslctx_setup(VALUE self)
 	 *   X509_STORE_free() doesn't care it.
 	 *   So we won't increment it but mark it by ex_data.
 	 */
-        SSL_CTX_set_ex_data(ctx, ossl_ssl_ex_store_p, (void *)1);
+        SSL_CTX_set_ex_data(ctx, ossl_sslctx_ex_store_p, ctx);
 #else /* Fixed in OpenSSL 1.0.2; bff9ce4db38b (master), 5b4b9ce976fc (1.0.2) */
 	X509_STORE_up_ref(store);
 #endif
@@ -891,7 +891,7 @@ ossl_sslctx_setup(VALUE self)
     val = rb_attr_get(self, id_i_verify_depth);
     if(!NIL_P(val)) SSL_CTX_set_verify_depth(ctx, NUM2INT(val));
 
-#ifdef HAVE_SSL_CTX_SET_NEXT_PROTO_SELECT_CB
+#ifndef OPENSSL_NO_NEXTPROTONEG
     val = rb_attr_get(self, id_i_npn_protocols);
     if (!NIL_P(val)) {
 	VALUE encoded = ssl_encode_npn_protocols(val);
@@ -946,13 +946,11 @@ ossl_sslctx_setup(VALUE self)
 	OSSL_Debug("SSL SESSION remove callback added");
     }
 
-#ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
     val = rb_attr_get(self, id_i_servername_cb);
     if (!NIL_P(val)) {
         SSL_CTX_set_tlsext_servername_callback(ctx, ssl_servername_cb);
 	OSSL_Debug("SSL TLSEXT servername callback added");
     }
-#endif
 
     return Qtrue;
 }
@@ -989,12 +987,7 @@ ossl_sslctx_get_ciphers(VALUE self)
     int i, num;
 
     GetSSLCTX(self, ctx);
-    if(!ctx){
-        rb_warning("SSL_CTX is not initialized.");
-        return Qnil;
-    }
     ciphers = SSL_CTX_get_ciphers(ctx);
-
     if (!ciphers)
         return rb_ary_new();
 
@@ -1204,7 +1197,7 @@ ossl_sslctx_set_security_level(VALUE self, VALUE value)
  *  call-seq:
  *     ctx.session_add(session) -> true | false
  *
- * Adds +session+ to the session cache.
+ * Adds _session_ to the session cache.
  */
 static VALUE
 ossl_sslctx_session_add(VALUE self, VALUE arg)
@@ -1213,7 +1206,7 @@ ossl_sslctx_session_add(VALUE self, VALUE arg)
     SSL_SESSION *sess;
 
     GetSSLCTX(self, ctx);
-    SafeGetSSLSession(arg, sess);
+    GetSSLSession(arg, sess);
 
     return SSL_CTX_add_session(ctx, sess) == 1 ? Qtrue : Qfalse;
 }
@@ -1222,7 +1215,7 @@ ossl_sslctx_session_add(VALUE self, VALUE arg)
  *  call-seq:
  *     ctx.session_remove(session) -> true | false
  *
- * Removes +session+ from the session cache.
+ * Removes _session_ from the session cache.
  */
 static VALUE
 ossl_sslctx_session_remove(VALUE self, VALUE arg)
@@ -1231,7 +1224,7 @@ ossl_sslctx_session_remove(VALUE self, VALUE arg)
     SSL_SESSION *sess;
 
     GetSSLCTX(self, ctx);
-    SafeGetSSLSession(arg, sess);
+    GetSSLSession(arg, sess);
 
     return SSL_CTX_remove_session(ctx, sess) == 1 ? Qtrue : Qfalse;
 }
@@ -1358,9 +1351,9 @@ ossl_sslctx_get_session_cache_stats(VALUE self)
 
 /*
  *  call-seq:
- *     ctx.flush_sessions(time | nil) -> self
+ *     ctx.flush_sessions(time) -> self
  *
- * Removes sessions in the internal cache that have expired at +time+.
+ * Removes sessions in the internal cache that have expired at _time_.
  */
 static VALUE
 ossl_sslctx_flush_sessions(int argc, VALUE *argv, VALUE self)
@@ -1422,10 +1415,10 @@ ossl_ssl_s_alloc(VALUE klass)
  *    SSLSocket.new(io) => aSSLSocket
  *    SSLSocket.new(io, ctx) => aSSLSocket
  *
- * Creates a new SSL socket from +io+ which must be a real IO object (not an
+ * Creates a new SSL socket from _io_ which must be a real IO object (not an
  * IO-like object that responds to read/write).
  *
- * If +ctx+ is provided the SSL Sockets initial params will be taken from
+ * If _ctx_ is provided the SSL Sockets initial params will be taken from
  * the context.
  *
  * The OpenSSL::Buffering module provides additional IO methods.
@@ -1485,7 +1478,7 @@ ossl_ssl_setup(VALUE self)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
     rb_io_check_writable(fptr);
-    if (!SSL_set_fd(ssl, TO_SOCKET(FPTR_TO_FD(fptr))))
+    if (!SSL_set_fd(ssl, TO_SOCKET(fptr->fd)))
 	ossl_raise(eSSLError, "SSL_set_fd");
 
     return Qtrue;
@@ -1528,6 +1521,9 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
     int ret, ret2;
     VALUE cb_state;
     int nonblock = opts != Qfalse;
+#if defined(SSL_R_CERTIFICATE_VERIFY_FAILED)
+    unsigned long err;
+#endif
 
     rb_ivar_set(self, ID_callback_state, Qnil);
 
@@ -1551,16 +1547,33 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
 	case SSL_ERROR_WANT_WRITE:
             if (no_exception_p(opts)) { return sym_wait_writable; }
             write_would_block(nonblock);
-            rb_io_wait_writable(FPTR_TO_FD(fptr));
+            rb_io_wait_writable(fptr->fd);
             continue;
 	case SSL_ERROR_WANT_READ:
             if (no_exception_p(opts)) { return sym_wait_readable; }
             read_would_block(nonblock);
-            rb_io_wait_readable(FPTR_TO_FD(fptr));
+            rb_io_wait_readable(fptr->fd);
             continue;
 	case SSL_ERROR_SYSCALL:
 	    if (errno) rb_sys_fail(funcname);
 	    ossl_raise(eSSLError, "%s SYSCALL returned=%d errno=%d state=%s", funcname, ret2, errno, SSL_state_string_long(ssl));
+#if defined(SSL_R_CERTIFICATE_VERIFY_FAILED)
+	case SSL_ERROR_SSL:
+	    err = ERR_peek_last_error();
+	    if (ERR_GET_LIB(err) == ERR_LIB_SSL &&
+		ERR_GET_REASON(err) == SSL_R_CERTIFICATE_VERIFY_FAILED) {
+		const char *err_msg = ERR_reason_error_string(err),
+		      *verify_msg = X509_verify_cert_error_string(SSL_get_verify_result(ssl));
+		if (!err_msg)
+		    err_msg = "(null)";
+		if (!verify_msg)
+		    verify_msg = "(null)";
+		ossl_clear_error(); /* let ossl_raise() not append message */
+		ossl_raise(eSSLError, "%s returned=%d errno=%d state=%s: %s (%s)",
+			   funcname, ret2, errno, SSL_state_string_long(ssl),
+			   err_msg, verify_msg);
+	    }
+#endif
 	default:
 	    ossl_raise(eSSLError, "%s returned=%d errno=%d state=%s", funcname, ret2, errno, SSL_state_string_long(ssl));
 	}
@@ -1693,8 +1706,6 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
     io = rb_attr_get(self, id_i_io);
     GetOpenFile(io, fptr);
     if (ssl_started(ssl)) {
-	if(!nonblock && SSL_pending(ssl) <= 0)
-	    rb_thread_wait_fd(FPTR_TO_FD(fptr));
 	for (;;){
 	    nread = SSL_read(ssl, RSTRING_PTR(str), RSTRING_LENINT(str));
 	    switch(ssl_get_error(ssl, nread)){
@@ -1706,12 +1717,12 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 	    case SSL_ERROR_WANT_WRITE:
 		if (no_exception_p(opts)) { return sym_wait_writable; }
                 write_would_block(nonblock);
-                rb_io_wait_writable(FPTR_TO_FD(fptr));
+                rb_io_wait_writable(fptr->fd);
                 continue;
 	    case SSL_ERROR_WANT_READ:
 		if (no_exception_p(opts)) { return sym_wait_readable; }
                 read_would_block(nonblock);
-                rb_io_wait_readable(FPTR_TO_FD(fptr));
+                rb_io_wait_readable(fptr->fd);
 		continue;
 	    case SSL_ERROR_SYSCALL:
 		if (!ERR_peek_error()) {
@@ -1756,7 +1767,7 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
  *    ssl.sysread(length) => string
  *    ssl.sysread(length, buffer) => buffer
  *
- * Reads +length+ bytes from the SSL connection.  If a pre-allocated +buffer+
+ * Reads _length_ bytes from the SSL connection.  If a pre-allocated _buffer_
  * is provided the data will be written into it.
  */
 static VALUE
@@ -1775,7 +1786,7 @@ ossl_ssl_read(int argc, VALUE *argv, VALUE self)
  * block.  If "exception: false" is passed, this method returns a symbol of
  * :wait_readable, :wait_writable, or nil, rather than raising an exception.
  *
- * Reads +length+ bytes from the SSL connection.  If a pre-allocated +buffer+
+ * Reads _length_ bytes from the SSL connection.  If a pre-allocated _buffer_
  * is provided the data will be written into it.
  */
 static VALUE
@@ -1812,12 +1823,12 @@ ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
 	    case SSL_ERROR_WANT_WRITE:
 		if (no_exception_p(opts)) { return sym_wait_writable; }
                 write_would_block(nonblock);
-                rb_io_wait_writable(FPTR_TO_FD(fptr));
+                rb_io_wait_writable(fptr->fd);
                 continue;
 	    case SSL_ERROR_WANT_READ:
 		if (no_exception_p(opts)) { return sym_wait_readable; }
                 read_would_block(nonblock);
-                rb_io_wait_readable(FPTR_TO_FD(fptr));
+                rb_io_wait_readable(fptr->fd);
                 continue;
 	    case SSL_ERROR_SYSCALL:
 		if (errno) rb_sys_fail(0);
@@ -1845,7 +1856,7 @@ ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
  * call-seq:
  *    ssl.syswrite(string) => Integer
  *
- * Writes +string+ to the SSL connection.
+ * Writes _string_ to the SSL connection.
  */
 static VALUE
 ossl_ssl_write(VALUE self, VALUE str)
@@ -1857,7 +1868,7 @@ ossl_ssl_write(VALUE self, VALUE str)
  * call-seq:
  *    ssl.syswrite_nonblock(string) => Integer
  *
- * Writes +string+ to the SSL connection in a non-blocking manner.  Raises an
+ * Writes _string_ to the SSL connection in a non-blocking manner.  Raises an
  * SSLError if writing would block.
  */
 static VALUE
@@ -2001,22 +2012,21 @@ ossl_ssl_get_version(VALUE self)
 }
 
 /*
-* call-seq:
-*    ssl.cipher => [name, version, bits, alg_bits]
-*
-* The cipher being used for the current connection
-*/
+ * call-seq:
+ *    ssl.cipher -> nil or [name, version, bits, alg_bits]
+ *
+ * Returns the cipher suite actually used in the current session, or nil if
+ * no session has been established.
+ */
 static VALUE
 ossl_ssl_get_cipher(VALUE self)
 {
     SSL *ssl;
-    SSL_CIPHER *cipher;
+    const SSL_CIPHER *cipher;
 
     GetSSL(self, ssl);
-
-    cipher = (SSL_CIPHER *)SSL_get_current_cipher(ssl);
-
-    return ossl_ssl_cipher_to_ary(cipher);
+    cipher = SSL_get_current_cipher(ssl);
+    return cipher ? ossl_ssl_cipher_to_ary(cipher) : Qnil;
 }
 
 /*
@@ -2062,7 +2072,7 @@ ossl_ssl_pending(VALUE self)
  * call-seq:
  *    ssl.session_reused? -> true | false
  *
- * Returns true if a reused session was negotiated during the handshake.
+ * Returns +true+ if a reused session was negotiated during the handshake.
  */
 static VALUE
 ossl_ssl_session_reused(VALUE self)
@@ -2087,7 +2097,7 @@ ossl_ssl_set_session(VALUE self, VALUE arg1)
     SSL_SESSION *sess;
 
     GetSSL(self, ssl);
-    SafeGetSSLSession(arg1, sess);
+    GetSSLSession(arg1, sess);
 
     if (SSL_set_session(ssl, sess) != 1)
         ossl_raise(eSSLError, "SSL_set_session");
@@ -2095,7 +2105,6 @@ ossl_ssl_set_session(VALUE self, VALUE arg1)
     return arg1;
 }
 
-#ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
 /*
  * call-seq:
  *    ssl.hostname = hostname -> hostname
@@ -2122,7 +2131,6 @@ ossl_ssl_set_hostname(VALUE self, VALUE arg)
 
     return arg;
 }
-#endif
 
 /*
  * call-seq:
@@ -2166,7 +2174,7 @@ ossl_ssl_get_client_ca_list(VALUE self)
     return ossl_x509name_sk2ary(ca);
 }
 
-# ifdef HAVE_SSL_CTX_SET_NEXT_PROTO_SELECT_CB
+# ifndef OPENSSL_NO_NEXTPROTONEG
 /*
  * call-seq:
  *    ssl.npn_protocol => String | nil
@@ -2242,9 +2250,6 @@ ossl_ssl_tmp_key(VALUE self)
 void
 Init_ossl_ssl(void)
 {
-    int i;
-    VALUE ary;
-
 #if 0
     mOSSL = rb_define_module("OpenSSL");
     eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
@@ -2254,9 +2259,20 @@ Init_ossl_ssl(void)
 
     ID_callback_state = rb_intern("callback_state");
 
-    ossl_ssl_ex_vcb_idx = SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_vcb_idx",0,0,0);
-    ossl_ssl_ex_store_p = SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_store_p",0,0,0);
-    ossl_ssl_ex_ptr_idx = SSL_get_ex_new_index(0,(void *)"ossl_ssl_ex_ptr_idx",0,0,0);
+    ossl_ssl_ex_vcb_idx = SSL_get_ex_new_index(0, (void *)"ossl_ssl_ex_vcb_idx", 0, 0, 0);
+    if (ossl_ssl_ex_vcb_idx < 0)
+	ossl_raise(rb_eRuntimeError, "SSL_get_ex_new_index");
+    ossl_ssl_ex_ptr_idx = SSL_get_ex_new_index(0, (void *)"ossl_ssl_ex_ptr_idx", 0, 0, 0);
+    if (ossl_ssl_ex_ptr_idx < 0)
+	ossl_raise(rb_eRuntimeError, "SSL_get_ex_new_index");
+    ossl_sslctx_ex_ptr_idx = SSL_CTX_get_ex_new_index(0, (void *)"ossl_sslctx_ex_ptr_idx", 0, 0, 0);
+    if (ossl_sslctx_ex_ptr_idx < 0)
+	ossl_raise(rb_eRuntimeError, "SSL_CTX_get_ex_new_index");
+#if !defined(HAVE_X509_STORE_UP_REF)
+    ossl_sslctx_ex_store_p = SSL_CTX_get_ex_new_index(0, (void *)"ossl_sslctx_ex_store_p", 0, 0, 0);
+    if (ossl_sslctx_ex_store_p < 0)
+	ossl_raise(rb_eRuntimeError, "SSL_CTX_get_ex_new_index");
+#endif
 
     /* Document-module: OpenSSL::SSL
      *
@@ -2272,7 +2288,7 @@ Init_ossl_ssl(void)
      * This module contains configuration information about the SSL extension,
      * for example if socket support is enabled, or the host name TLS extension
      * is enabled.  Constants in this module will always be defined, but contain
-     * `true` or `false` values depending on the configuration of your OpenSSL
+     * +true+ or +false+ values depending on the configuration of your OpenSSL
      * installation.
      */
     mSSLExtConfig = rb_define_module_under(mOSSL, "ExtConfig");
@@ -2356,12 +2372,12 @@ Init_ossl_ssl(void)
      * A callback for additional certificate verification.  The callback is
      * invoked for each certificate in the chain.
      *
-     * The callback is invoked with two values.  +preverify_ok+ indicates
-     * indicates if the verification was passed (true) or not (false).
-     * +store_context+ is an OpenSSL::X509::StoreContext containing the
+     * The callback is invoked with two values.  _preverify_ok_ indicates
+     * indicates if the verification was passed (+true+) or not (+false+).
+     * _store_context_ is an OpenSSL::X509::StoreContext containing the
      * context used for certificate verification.
      *
-     * If the callback returns false, the chain verification is immediately
+     * If the callback returns +false+, the chain verification is immediately
      * stopped and a bad_certificate alert is then sent.
      */
     rb_attr(cSSLContext, rb_intern("verify_callback"), 1, 1, Qfalse);
@@ -2428,7 +2444,7 @@ Init_ossl_ssl(void)
     /*
      * A callback invoked when a new session was negotiated.
      *
-     * The callback is invoked with an SSLSocket.  If false is returned the
+     * The callback is invoked with an SSLSocket.  If +false+ is returned the
      * session will be removed from the internal cache.
      */
     rb_attr(cSSLContext, rb_intern("session_new_cb"), 1, 1, Qfalse);
@@ -2440,17 +2456,7 @@ Init_ossl_ssl(void)
      */
     rb_attr(cSSLContext, rb_intern("session_remove_cb"), 1, 1, Qfalse);
 
-#ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
     rb_define_const(mSSLExtConfig, "HAVE_TLSEXT_HOST_NAME", Qtrue);
-#else
-    rb_define_const(mSSLExtConfig, "HAVE_TLSEXT_HOST_NAME", Qfalse);
-#endif
-
-#ifdef TLS_DH_anon_WITH_AES_256_GCM_SHA384
-    rb_define_const(mSSLExtConfig, "TLS_DH_anon_WITH_AES_256_GCM_SHA384", Qtrue);
-#else
-    rb_define_const(mSSLExtConfig, "TLS_DH_anon_WITH_AES_256_GCM_SHA384", Qfalse);
-#endif
 
     /*
      * A callback invoked whenever a new handshake is initiated. May be used
@@ -2474,7 +2480,7 @@ Init_ossl_ssl(void)
      *   end
      */
     rb_attr(cSSLContext, rb_intern("renegotiation_cb"), 1, 1, Qfalse);
-#ifdef HAVE_SSL_CTX_SET_NEXT_PROTO_SELECT_CB
+#ifndef OPENSSL_NO_NEXTPROTONEG
     /*
      * An Enumerable of Strings. Each String represents a protocol to be
      * advertised as the list of supported protocols for Next Protocol
@@ -2540,7 +2546,8 @@ Init_ossl_ssl(void)
 
     rb_define_alias(cSSLContext, "ssl_timeout", "timeout");
     rb_define_alias(cSSLContext, "ssl_timeout=", "timeout=");
-    rb_define_method(cSSLContext, "ssl_version=", ossl_sslctx_set_ssl_version, 1);
+    rb_define_private_method(cSSLContext, "set_minmax_proto_version",
+			     ossl_sslctx_set_minmax_proto_version, 2);
     rb_define_method(cSSLContext, "ciphers",     ossl_sslctx_get_ciphers, 0);
     rb_define_method(cSSLContext, "ciphers=",    ossl_sslctx_set_ciphers, 1);
     rb_define_method(cSSLContext, "ecdh_curves=", ossl_sslctx_set_ecdh_curves, 1);
@@ -2608,14 +2615,6 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLContext, "options",     ossl_sslctx_get_options, 0);
     rb_define_method(cSSLContext, "options=",     ossl_sslctx_set_options, 1);
 
-    ary = rb_ary_new2(numberof(ossl_ssl_method_tab));
-    for (i = 0; i < numberof(ossl_ssl_method_tab); i++) {
-        rb_ary_push(ary, ID2SYM(rb_intern(ossl_ssl_method_tab[i].name)));
-    }
-    rb_obj_freeze(ary);
-    /* The list of available SSL/TLS methods */
-    rb_define_const(cSSLContext, "METHODS", ary);
-
     /*
      * Document-class: OpenSSL::SSL::SSLSocket
      */
@@ -2649,67 +2648,120 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLSocket, "session=",    ossl_ssl_set_session, 1);
     rb_define_method(cSSLSocket, "verify_result", ossl_ssl_get_verify_result, 0);
     rb_define_method(cSSLSocket, "client_ca", ossl_ssl_get_client_ca_list, 0);
-#ifdef HAVE_SSL_SET_TLSEXT_HOST_NAME
     /* #hostname is defined in lib/openssl/ssl.rb */
     rb_define_method(cSSLSocket, "hostname=", ossl_ssl_set_hostname, 1);
-#endif
 # ifdef HAVE_SSL_GET_SERVER_TMP_KEY
     rb_define_method(cSSLSocket, "tmp_key", ossl_ssl_tmp_key, 0);
 # endif
 # ifdef HAVE_SSL_CTX_SET_ALPN_SELECT_CB
     rb_define_method(cSSLSocket, "alpn_protocol", ossl_ssl_alpn_protocol, 0);
 # endif
-# ifdef HAVE_SSL_CTX_SET_NEXT_PROTO_SELECT_CB
+# ifndef OPENSSL_NO_NEXTPROTONEG
     rb_define_method(cSSLSocket, "npn_protocol", ossl_ssl_npn_protocol, 0);
 # endif
 #endif
 
-#define ossl_ssl_def_const(x) rb_define_const(mSSL, #x, LONG2NUM(SSL_##x))
+    rb_define_const(mSSL, "VERIFY_NONE", INT2NUM(SSL_VERIFY_NONE));
+    rb_define_const(mSSL, "VERIFY_PEER", INT2NUM(SSL_VERIFY_PEER));
+    rb_define_const(mSSL, "VERIFY_FAIL_IF_NO_PEER_CERT", INT2NUM(SSL_VERIFY_FAIL_IF_NO_PEER_CERT));
+    rb_define_const(mSSL, "VERIFY_CLIENT_ONCE", INT2NUM(SSL_VERIFY_CLIENT_ONCE));
 
-    ossl_ssl_def_const(VERIFY_NONE);
-    ossl_ssl_def_const(VERIFY_PEER);
-    ossl_ssl_def_const(VERIFY_FAIL_IF_NO_PEER_CERT);
-    ossl_ssl_def_const(VERIFY_CLIENT_ONCE);
-    /* Introduce constants included in OP_ALL.  These constants are mostly for
-     * unset some bits in OP_ALL such as;
-     *   ctx.options = OP_ALL & ~OP_DONT_INSERT_EMPTY_FRAGMENTS
+    rb_define_const(mSSL, "OP_ALL", ULONG2NUM(SSL_OP_ALL));
+    rb_define_const(mSSL, "OP_LEGACY_SERVER_CONNECT", ULONG2NUM(SSL_OP_LEGACY_SERVER_CONNECT));
+#ifdef SSL_OP_TLSEXT_PADDING /* OpenSSL 1.0.1h and OpenSSL 1.0.2 */
+    rb_define_const(mSSL, "OP_TLSEXT_PADDING", ULONG2NUM(SSL_OP_TLSEXT_PADDING));
+#endif
+#ifdef SSL_OP_SAFARI_ECDHE_ECDSA_BUG /* OpenSSL 1.0.1f and OpenSSL 1.0.2 */
+    rb_define_const(mSSL, "OP_SAFARI_ECDHE_ECDSA_BUG", ULONG2NUM(SSL_OP_SAFARI_ECDHE_ECDSA_BUG));
+#endif
+#ifdef SSL_OP_ALLOW_NO_DHE_KEX /* OpenSSL 1.1.1 */
+    rb_define_const(mSSL, "OP_ALLOW_NO_DHE_KEX", ULONG2NUM(SSL_OP_ALLOW_NO_DHE_KEX));
+#endif
+    rb_define_const(mSSL, "OP_DONT_INSERT_EMPTY_FRAGMENTS", ULONG2NUM(SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS));
+    rb_define_const(mSSL, "OP_NO_TICKET", ULONG2NUM(SSL_OP_NO_TICKET));
+    rb_define_const(mSSL, "OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION", ULONG2NUM(SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION));
+    rb_define_const(mSSL, "OP_NO_COMPRESSION", ULONG2NUM(SSL_OP_NO_COMPRESSION));
+    rb_define_const(mSSL, "OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION", ULONG2NUM(SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION));
+#ifdef SSL_OP_NO_ENCRYPT_THEN_MAC /* OpenSSL 1.1.1 */
+    rb_define_const(mSSL, "OP_NO_ENCRYPT_THEN_MAC", ULONG2NUM(SSL_OP_NO_ENCRYPT_THEN_MAC));
+#endif
+    rb_define_const(mSSL, "OP_CIPHER_SERVER_PREFERENCE", ULONG2NUM(SSL_OP_CIPHER_SERVER_PREFERENCE));
+    rb_define_const(mSSL, "OP_TLS_ROLLBACK_BUG", ULONG2NUM(SSL_OP_TLS_ROLLBACK_BUG));
+#ifdef SSL_OP_NO_RENEGOTIATION /* OpenSSL 1.1.1 */
+    rb_define_const(mSSL, "OP_NO_RENEGOTIATION", ULONG2NUM(SSL_OP_NO_RENEGOTIATION));
+#endif
+    rb_define_const(mSSL, "OP_CRYPTOPRO_TLSEXT_BUG", ULONG2NUM(SSL_OP_CRYPTOPRO_TLSEXT_BUG));
+
+    rb_define_const(mSSL, "OP_NO_SSLv3", ULONG2NUM(SSL_OP_NO_SSLv3));
+    rb_define_const(mSSL, "OP_NO_TLSv1", ULONG2NUM(SSL_OP_NO_TLSv1));
+    rb_define_const(mSSL, "OP_NO_TLSv1_1", ULONG2NUM(SSL_OP_NO_TLSv1_1));
+    rb_define_const(mSSL, "OP_NO_TLSv1_2", ULONG2NUM(SSL_OP_NO_TLSv1_2));
+#ifdef SSL_OP_NO_TLSv1_3 /* OpenSSL 1.1.1 */
+    rb_define_const(mSSL, "OP_NO_TLSv1_3", ULONG2NUM(SSL_OP_NO_TLSv1_3));
+#endif
+
+    /* SSL_OP_* flags for DTLS */
+#if 0
+    rb_define_const(mSSL, "OP_NO_QUERY_MTU", ULONG2NUM(SSL_OP_NO_QUERY_MTU));
+    rb_define_const(mSSL, "OP_COOKIE_EXCHANGE", ULONG2NUM(SSL_OP_COOKIE_EXCHANGE));
+    rb_define_const(mSSL, "OP_CISCO_ANYCONNECT", ULONG2NUM(SSL_OP_CISCO_ANYCONNECT));
+#endif
+
+    /* Deprecated in OpenSSL 1.1.0. */
+    rb_define_const(mSSL, "OP_MICROSOFT_SESS_ID_BUG", ULONG2NUM(SSL_OP_MICROSOFT_SESS_ID_BUG));
+    /* Deprecated in OpenSSL 1.1.0. */
+    rb_define_const(mSSL, "OP_NETSCAPE_CHALLENGE_BUG", ULONG2NUM(SSL_OP_NETSCAPE_CHALLENGE_BUG));
+    /* Deprecated in OpenSSL 0.9.8q and 1.0.0c. */
+    rb_define_const(mSSL, "OP_NETSCAPE_REUSE_CIPHER_CHANGE_BUG", ULONG2NUM(SSL_OP_NETSCAPE_REUSE_CIPHER_CHANGE_BUG));
+    /* Deprecated in OpenSSL 1.0.1h and 1.0.2. */
+    rb_define_const(mSSL, "OP_SSLREF2_REUSE_CERT_TYPE_BUG", ULONG2NUM(SSL_OP_SSLREF2_REUSE_CERT_TYPE_BUG));
+    /* Deprecated in OpenSSL 1.1.0. */
+    rb_define_const(mSSL, "OP_MICROSOFT_BIG_SSLV3_BUFFER", ULONG2NUM(SSL_OP_MICROSOFT_BIG_SSLV3_BUFFER));
+    /* Deprecated in OpenSSL 0.9.7h and 0.9.8b. */
+    rb_define_const(mSSL, "OP_MSIE_SSLV2_RSA_PADDING", ULONG2NUM(SSL_OP_MSIE_SSLV2_RSA_PADDING));
+    /* Deprecated in OpenSSL 1.1.0. */
+    rb_define_const(mSSL, "OP_SSLEAY_080_CLIENT_DH_BUG", ULONG2NUM(SSL_OP_SSLEAY_080_CLIENT_DH_BUG));
+    /* Deprecated in OpenSSL 1.1.0. */
+    rb_define_const(mSSL, "OP_TLS_D5_BUG", ULONG2NUM(SSL_OP_TLS_D5_BUG));
+    /* Deprecated in OpenSSL 1.1.0. */
+    rb_define_const(mSSL, "OP_TLS_BLOCK_PADDING_BUG", ULONG2NUM(SSL_OP_TLS_BLOCK_PADDING_BUG));
+    /* Deprecated in OpenSSL 1.1.0. */
+    rb_define_const(mSSL, "OP_SINGLE_ECDH_USE", ULONG2NUM(SSL_OP_SINGLE_ECDH_USE));
+    /* Deprecated in OpenSSL 1.1.0. */
+    rb_define_const(mSSL, "OP_SINGLE_DH_USE", ULONG2NUM(SSL_OP_SINGLE_DH_USE));
+    /* Deprecated in OpenSSL 1.0.1k and 1.0.2. */
+    rb_define_const(mSSL, "OP_EPHEMERAL_RSA", ULONG2NUM(SSL_OP_EPHEMERAL_RSA));
+    /* Deprecated in OpenSSL 1.1.0. */
+    rb_define_const(mSSL, "OP_NO_SSLv2", ULONG2NUM(SSL_OP_NO_SSLv2));
+    /* Deprecated in OpenSSL 1.0.1. */
+    rb_define_const(mSSL, "OP_PKCS1_CHECK_1", ULONG2NUM(SSL_OP_PKCS1_CHECK_1));
+    /* Deprecated in OpenSSL 1.0.1. */
+    rb_define_const(mSSL, "OP_PKCS1_CHECK_2", ULONG2NUM(SSL_OP_PKCS1_CHECK_2));
+    /* Deprecated in OpenSSL 1.1.0. */
+    rb_define_const(mSSL, "OP_NETSCAPE_CA_DN_BUG", ULONG2NUM(SSL_OP_NETSCAPE_CA_DN_BUG));
+    /* Deprecated in OpenSSL 1.1.0. */
+    rb_define_const(mSSL, "OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG", ULONG2NUM(SSL_OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG));
+
+
+    /*
+     * SSL/TLS version constants. Used by SSLContext#min_version= and
+     * #max_version=
      */
-    ossl_ssl_def_const(OP_MICROSOFT_SESS_ID_BUG);
-    ossl_ssl_def_const(OP_NETSCAPE_CHALLENGE_BUG);
-    ossl_ssl_def_const(OP_NETSCAPE_REUSE_CIPHER_CHANGE_BUG);
-    ossl_ssl_def_const(OP_SSLREF2_REUSE_CERT_TYPE_BUG);
-    ossl_ssl_def_const(OP_MICROSOFT_BIG_SSLV3_BUFFER);
-    ossl_ssl_def_const(OP_MSIE_SSLV2_RSA_PADDING);
-    ossl_ssl_def_const(OP_SSLEAY_080_CLIENT_DH_BUG);
-    ossl_ssl_def_const(OP_TLS_D5_BUG);
-    ossl_ssl_def_const(OP_TLS_BLOCK_PADDING_BUG);
-    ossl_ssl_def_const(OP_DONT_INSERT_EMPTY_FRAGMENTS);
-    ossl_ssl_def_const(OP_ALL);
-    ossl_ssl_def_const(OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
-    ossl_ssl_def_const(OP_SINGLE_ECDH_USE);
-    ossl_ssl_def_const(OP_SINGLE_DH_USE);
-    ossl_ssl_def_const(OP_EPHEMERAL_RSA);
-    ossl_ssl_def_const(OP_CIPHER_SERVER_PREFERENCE);
-    ossl_ssl_def_const(OP_TLS_ROLLBACK_BUG);
-    ossl_ssl_def_const(OP_NO_SSLv2);
-    ossl_ssl_def_const(OP_NO_SSLv3);
-    ossl_ssl_def_const(OP_NO_TLSv1);
-#if defined(SSL_OP_NO_TLSv1_1)
-    ossl_ssl_def_const(OP_NO_TLSv1_1);
+    /* SSL 2.0 */
+    rb_define_const(mSSL, "SSL2_VERSION", INT2NUM(SSL2_VERSION));
+    /* SSL 3.0 */
+    rb_define_const(mSSL, "SSL3_VERSION", INT2NUM(SSL3_VERSION));
+    /* TLS 1.0 */
+    rb_define_const(mSSL, "TLS1_VERSION", INT2NUM(TLS1_VERSION));
+    /* TLS 1.1 */
+    rb_define_const(mSSL, "TLS1_1_VERSION", INT2NUM(TLS1_1_VERSION));
+    /* TLS 1.2 */
+    rb_define_const(mSSL, "TLS1_2_VERSION", INT2NUM(TLS1_2_VERSION));
+#ifdef TLS1_3_VERSION /* OpenSSL 1.1.1 */
+    /* TLS 1.3 */
+    rb_define_const(mSSL, "TLS1_3_VERSION", INT2NUM(TLS1_3_VERSION));
 #endif
-#if defined(SSL_OP_NO_TLSv1_2)
-    ossl_ssl_def_const(OP_NO_TLSv1_2);
-#endif
-#if defined(SSL_OP_NO_TICKET)
-    ossl_ssl_def_const(OP_NO_TICKET);
-#endif
-#if defined(SSL_OP_NO_COMPRESSION)
-    ossl_ssl_def_const(OP_NO_COMPRESSION);
-#endif
-    ossl_ssl_def_const(OP_PKCS1_CHECK_1);
-    ossl_ssl_def_const(OP_PKCS1_CHECK_2);
-    ossl_ssl_def_const(OP_NETSCAPE_CA_DN_BUG);
-    ossl_ssl_def_const(OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG);
+
 
     sym_exception = ID2SYM(rb_intern("exception"));
     sym_wait_readable = ID2SYM(rb_intern("wait_readable"));

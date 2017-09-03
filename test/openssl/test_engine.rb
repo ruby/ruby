@@ -1,8 +1,9 @@
 # frozen_string_literal: false
 require_relative 'utils'
 
-class OpenSSL::TestEngine < OpenSSL::TestCase
+if defined?(OpenSSL) && defined?(OpenSSL::Engine)
 
+class OpenSSL::TestEngine < OpenSSL::TestCase
   def test_engines_free # [ruby-dev:44173]
     with_openssl <<-'end;'
       OpenSSL::Engine.load("openssl")
@@ -95,5 +96,6 @@ class OpenSSL::TestEngine < OpenSSL::TestCase
       cipher.update(data) + cipher.final
     end
   end
+end
 
-end if defined?(OpenSSL::TestUtils) && defined?(OpenSSL::Engine)
+end

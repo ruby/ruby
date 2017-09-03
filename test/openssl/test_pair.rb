@@ -1,61 +1,45 @@
 # frozen_string_literal: false
 require_relative 'utils'
-
-if defined?(OpenSSL::TestUtils)
-
-require 'socket'
 require_relative 'ut_eof'
 
-module OpenSSL::SSLPairM
-  def server
-    host = "127.0.0.1"
-    port = 0
-    ctx = OpenSSL::SSL::SSLContext.new()
-    ctx.ciphers = "ADH"
-    ctx.security_level = 0
-    ctx.tmp_dh_callback = proc { OpenSSL::TestUtils::TEST_KEY_DH1024 }
-    tcps = create_tcp_server(host, port)
-    ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
-    return ssls
-  end
+if defined?(OpenSSL)
 
-  def client(port)
-    host = "127.0.0.1"
-    ctx = OpenSSL::SSL::SSLContext.new()
-    ctx.ciphers = "ADH"
-    ctx.security_level = 0
-    s = create_tcp_client(host, port)
-    ssl = OpenSSL::SSL::SSLSocket.new(s, ctx)
-    ssl.connect
-    ssl.sync_close = true
-    ssl
+module OpenSSL::SSLPairM
+  def setup
+    svr_dn = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
+    ee_exts = [
+      ["keyUsage", "keyEncipherment,digitalSignature", true],
+    ]
+    @svr_key = OpenSSL::TestUtils::Fixtures.pkey("rsa1024")
+    @svr_cert = issue_cert(svr_dn, @svr_key, 1, ee_exts, nil, nil)
   end
 
   def ssl_pair
-    ssls = server
+    host = "127.0.0.1"
+    tcps = create_tcp_server(host, 0)
+    port = tcps.connect_address.ip_port
+
     th = Thread.new {
+      sctx = OpenSSL::SSL::SSLContext.new
+      sctx.cert = @svr_cert
+      sctx.key = @svr_key
+      sctx.tmp_dh_callback = proc { OpenSSL::TestUtils::Fixtures.pkey_dh("dh1024") }
+      ssls = OpenSSL::SSL::SSLServer.new(tcps, sctx)
       ns = ssls.accept
       ssls.close
       ns
     }
-    port = ssls.to_io.local_address.ip_port
-    c = client(port)
+
+    tcpc = create_tcp_client(host, port)
+    c = OpenSSL::SSL::SSLSocket.new(tcpc)
+    c.connect
     s = th.value
-    if block_given?
-      begin
-        yield c, s
-      ensure
-        c.close unless c.closed?
-        s.close unless s.closed?
-      end
-    else
-      return c, s
-    end
+
+    yield c, s
   ensure
-    if th&.alive?
-      th.kill
-      th.join
-    end
+    tcpc&.close
+    tcps&.close
+    s&.close
   end
 end
 
@@ -85,23 +69,27 @@ end
 
 module OpenSSL::TestEOF1M
   def open_file(content)
-    s1, s2 = ssl_pair
-    th = Thread.new { s2 << content; s2.close }
-    yield s1
-  ensure
-    th.join if th
-    s1.close
+    ssl_pair { |s1, s2|
+      begin
+        th = Thread.new { s2 << content; s2.close }
+        yield s1
+      ensure
+        th&.join
+      end
+    }
   end
 end
 
 module OpenSSL::TestEOF2M
   def open_file(content)
-    s1, s2 = ssl_pair
-    th = Thread.new { s1 << content; s1.close }
-    yield s2
-  ensure
-    th.join if th
-    s2.close
+    ssl_pair { |s1, s2|
+      begin
+        th = Thread.new { s1 << content; s1.close }
+        yield s2
+      ensure
+        th&.join
+      end
+    }
   end
 end
 
@@ -186,6 +174,27 @@ module OpenSSL::TestPairM
       s1.puts
       s1.close
       assert_equal("\n", s2.read)
+    }
+  end
+
+  def test_multibyte_read_write
+    # German a umlaut
+    auml = [%w{ C3 A4 }.join('')].pack('H*')
+    auml.force_encoding(Encoding::UTF_8)
+    bsize = auml.bytesize
+
+    ssl_pair { |s1, s2|
+      assert_equal bsize, s1.write(auml)
+      read = s2.read(bsize)
+      assert_equal Encoding::ASCII_8BIT, read.encoding
+      assert_equal bsize, read.bytesize
+      assert_equal auml, read.force_encoding(Encoding::UTF_8)
+
+      s1.puts(auml)
+      read = s2.gets
+      assert_equal Encoding::ASCII_8BIT, read.encoding
+      assert_equal bsize + 1, read.bytesize
+      assert_equal auml + "\n", read.force_encoding(Encoding::UTF_8)
     }
   end
 
@@ -354,9 +363,9 @@ module OpenSSL::TestPairM
 
   def test_connect_accept_nonblock_no_exception
     ctx2 = OpenSSL::SSL::SSLContext.new
-    ctx2.ciphers = "ADH"
-    ctx2.security_level = 0
-    ctx2.tmp_dh_callback = proc { OpenSSL::TestUtils::TEST_KEY_DH1024 }
+    ctx2.cert = @svr_cert
+    ctx2.key = @svr_key
+    ctx2.tmp_dh_callback = proc { OpenSSL::TestUtils::Fixtures.pkey_dh("dh1024") }
 
     sock1, sock2 = tcp_pair
 
@@ -365,8 +374,6 @@ module OpenSSL::TestPairM
     assert_equal :wait_readable, accepted
 
     ctx1 = OpenSSL::SSL::SSLContext.new
-    ctx1.ciphers = "ADH"
-    ctx1.security_level = 0
     s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
     th = Thread.new do
       rets = []
@@ -404,9 +411,9 @@ module OpenSSL::TestPairM
 
   def test_connect_accept_nonblock
     ctx = OpenSSL::SSL::SSLContext.new()
-    ctx.ciphers = "ADH"
-    ctx.security_level = 0
-    ctx.tmp_dh_callback = proc { OpenSSL::TestUtils::TEST_KEY_DH1024 }
+    ctx.cert = @svr_cert
+    ctx.key = @svr_key
+    ctx.tmp_dh_callback = proc { OpenSSL::TestUtils::Fixtures.pkey_dh("dh1024") }
 
     sock1, sock2 = tcp_pair
 
@@ -428,8 +435,6 @@ module OpenSSL::TestPairM
 
     sleep 0.1
     ctx = OpenSSL::SSL::SSLContext.new()
-    ctx.ciphers = "ADH"
-    ctx.security_level = 0
     s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx)
     begin
       sleep 0.2

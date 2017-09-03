@@ -73,7 +73,7 @@ ossl_spki_alloc(VALUE klass)
  *    SPKI.new([request]) => spki
  *
  * === Parameters
- * * +request+ - optional raw request, either in PEM or DER format.
+ * * _request_ - optional raw request, either in PEM or DER format.
  */
 static VALUE
 ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
@@ -198,7 +198,7 @@ ossl_spki_get_public_key(VALUE self)
  *    spki.public_key = pub => pkey
  *
  * === Parameters
- * * +pub+ - the public key to be set for this instance
+ * * _pub_ - the public key to be set for this instance
  *
  * Sets the public key to be associated with the SPKI, an instance of
  * OpenSSL::PKey. This should be the public key corresponding to the
@@ -243,7 +243,7 @@ ossl_spki_get_challenge(VALUE self)
  *    spki.challenge = str => string
  *
  * === Parameters
- * * +str+ - the challenge string to be set for this instance
+ * * _str_ - the challenge string to be set for this instance
  *
  * Sets the challenge to be associated with the SPKI. May be used by the
  * server, e.g. to prevent replay.
@@ -268,8 +268,8 @@ ossl_spki_set_challenge(VALUE self, VALUE str)
  *    spki.sign(key, digest) => spki
  *
  * === Parameters
- * * +key+ - the private key to be used for signing this instance
- * * +digest+ - the digest to be used for signing this instance
+ * * _key_ - the private key to be used for signing this instance
+ * * _digest_ - the digest to be used for signing this instance
  *
  * To sign an SPKI, the private key corresponding to the public key set
  * for this instance should be used, in addition to a digest algorithm in
@@ -284,7 +284,7 @@ ossl_spki_sign(VALUE self, VALUE key, VALUE digest)
     const EVP_MD *md;
 
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
-    md = GetDigestPtr(digest);
+    md = ossl_evp_get_digestbyname(digest);
     GetSPKI(self, spki);
     if (!NETSCAPE_SPKI_sign(spki, pkey, md)) {
 	ossl_raise(eSPKIError, NULL);
@@ -298,7 +298,7 @@ ossl_spki_sign(VALUE self, VALUE key, VALUE digest)
  *    spki.verify(key) => boolean
  *
  * === Parameters
- * * +key+ - the public key to be used for verifying the SPKI signature
+ * * _key_ - the public key to be used for verifying the SPKI signature
  *
  * Returns +true+ if the signature is valid, +false+ otherwise. To verify an
  * SPKI, the public key contained within the SPKI should be used.

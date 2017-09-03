@@ -172,8 +172,8 @@ rsa_generate(int size, unsigned long exp)
  *   RSA.generate(size)           => RSA instance
  *   RSA.generate(size, exponent) => RSA instance
  *
- * Generates an RSA keypair.  +size+ is an integer representing the desired key
- * size.  Keys smaller than 1024 should be considered insecure.  +exponent+ is
+ * Generates an RSA keypair.  _size_ is an integer representing the desired key
+ * size.  Keys smaller than 1024 should be considered insecure.  _exponent_ is
  * an odd number normally 3, 17, or 65537.
  */
 static VALUE
@@ -203,12 +203,12 @@ ossl_rsa_s_generate(int argc, VALUE *argv, VALUE klass)
  *   RSA.new(encoded_key)              => RSA instance
  *   RSA.new(encoded_key, pass_phrase) => RSA instance
  *
- * Generates or loads an RSA keypair.  If an integer +key_size+ is given it
+ * Generates or loads an RSA keypair.  If an integer _key_size_ is given it
  * represents the desired key size.  Keys less than 1024 bits should be
  * considered insecure.
  *
- * A key can instead be loaded from an +encoded_key+ which must be PEM or DER
- * encoded.  A +pass_phrase+ can be used to decrypt the key.  If none is given
+ * A key can instead be loaded from an _encoded_key_ which must be PEM or DER
+ * encoded.  A _pass_phrase_ can be used to decrypt the key.  If none is given
  * OpenSSL will prompt for the pass phrase.
  *
  * = Examples
@@ -295,7 +295,7 @@ ossl_rsa_initialize_copy(VALUE self, VALUE other)
  * call-seq:
  *   rsa.public? => true
  *
- * The return value is always true since every private key is also a public
+ * The return value is always +true+ since every private key is also a public
  * key.
  */
 static VALUE
@@ -333,8 +333,8 @@ ossl_rsa_is_private(VALUE self)
  *   rsa.to_pem([cipher, pass_phrase]) => PEM-format String
  *   rsa.to_s([cipher, pass_phrase]) => PEM-format String
  *
- * Outputs this keypair in PEM encoding.  If +cipher+ and +pass_phrase+ are
- * given they will be used to encrypt the key.  +cipher+ must be an
+ * Outputs this keypair in PEM encoding.  If _cipher_ and _pass_phrase_ are
+ * given they will be used to encrypt the key.  _cipher_ must be an
  * OpenSSL::Cipher instance.
  */
 static VALUE
@@ -350,7 +350,7 @@ ossl_rsa_export(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "02", &cipher, &pass);
 
     if (!NIL_P(cipher)) {
-	ciph = GetCipherPtr(cipher);
+	ciph = ossl_evp_get_cipherbyname(cipher);
 	pass = ossl_pem_passwd_value(pass);
     }
     if (!(out = BIO_new(BIO_s_mem()))) {
@@ -409,7 +409,7 @@ ossl_rsa_to_der(VALUE self)
  *   rsa.public_encrypt(string)          => String
  *   rsa.public_encrypt(string, padding) => String
  *
- * Encrypt +string+ with the public key.  +padding+ defaults to PKCS1_PADDING.
+ * Encrypt _string_ with the public key.  _padding_ defaults to PKCS1_PADDING.
  * The encrypted string output can be decrypted using #private_decrypt.
  */
 static VALUE
@@ -441,8 +441,8 @@ ossl_rsa_public_encrypt(int argc, VALUE *argv, VALUE self)
  *   rsa.public_decrypt(string)          => String
  *   rsa.public_decrypt(string, padding) => String
  *
- * Decrypt +string+, which has been encrypted with the private key, with the
- * public key.  +padding+ defaults to PKCS1_PADDING.
+ * Decrypt _string_, which has been encrypted with the private key, with the
+ * public key.  _padding_ defaults to PKCS1_PADDING.
  */
 static VALUE
 ossl_rsa_public_decrypt(int argc, VALUE *argv, VALUE self)
@@ -473,7 +473,7 @@ ossl_rsa_public_decrypt(int argc, VALUE *argv, VALUE self)
  *   rsa.private_encrypt(string)          => String
  *   rsa.private_encrypt(string, padding) => String
  *
- * Encrypt +string+ with the private key.  +padding+ defaults to PKCS1_PADDING.
+ * Encrypt _string_ with the private key.  _padding_ defaults to PKCS1_PADDING.
  * The encrypted string output can be decrypted using #public_decrypt.
  */
 static VALUE
@@ -507,8 +507,8 @@ ossl_rsa_private_encrypt(int argc, VALUE *argv, VALUE self)
  *   rsa.private_decrypt(string)          => String
  *   rsa.private_decrypt(string, padding) => String
  *
- * Decrypt +string+, which has been encrypted with the public key, with the
- * private key.  +padding+ defaults to PKCS1_PADDING.
+ * Decrypt _string_, which has been encrypted with the public key, with the
+ * private key.  _padding_ defaults to PKCS1_PADDING.
  */
 static VALUE
 ossl_rsa_private_decrypt(int argc, VALUE *argv, VALUE self)
@@ -659,7 +659,7 @@ ossl_rsa_blinding_off(VALUE self)
  * call-seq:
  *   rsa.set_key(n, e, d) -> self
  *
- * Sets +n+, +e+, +d+ for the RSA instance.
+ * Sets _n_, _e_, _d_ for the RSA instance.
  */
 OSSL_PKEY_BN_DEF3(rsa, RSA, key, n, e, d)
 /*
@@ -667,7 +667,7 @@ OSSL_PKEY_BN_DEF3(rsa, RSA, key, n, e, d)
  * call-seq:
  *   rsa.set_factors(p, q) -> self
  *
- * Sets +p+, +q+ for the RSA instance.
+ * Sets _p_, _q_ for the RSA instance.
  */
 OSSL_PKEY_BN_DEF2(rsa, RSA, factors, p, q)
 /*
@@ -675,7 +675,7 @@ OSSL_PKEY_BN_DEF2(rsa, RSA, factors, p, q)
  * call-seq:
  *   rsa.set_crt_params(dmp1, dmq1, iqmp) -> self
  *
- * Sets +dmp1+, +dmq1+, +iqmp+ for the RSA instance. They are calculated by
+ * Sets _dmp1_, _dmq1_, _iqmp_ for the RSA instance. They are calculated by
  * <tt>d mod (p - 1)</tt>, <tt>d mod (q - 1)</tt> and <tt>q^(-1) mod p</tt>
  * respectively.
  */
@@ -717,7 +717,7 @@ Init_ossl_rsa(void)
 
     rb_define_singleton_method(cRSA, "generate", ossl_rsa_s_generate, -1);
     rb_define_method(cRSA, "initialize", ossl_rsa_initialize, -1);
-    rb_define_copy_func(cRSA, ossl_rsa_initialize_copy);
+    rb_define_method(cRSA, "initialize_copy", ossl_rsa_initialize_copy, 1);
 
     rb_define_method(cRSA, "public?", ossl_rsa_is_public, 0);
     rb_define_method(cRSA, "private?", ossl_rsa_is_private, 0);

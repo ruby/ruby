@@ -23,10 +23,6 @@
 	ossl_raise(rb_eRuntimeError, "EXT wasn't initialized!"); \
     } \
 } while (0)
-#define SafeGetX509Ext(obj, ext) do { \
-    OSSL_Check_Kind((obj), cX509Ext); \
-    GetX509Ext((obj), (ext)); \
-} while (0)
 #define MakeX509ExtFactory(klass, obj, ctx) do { \
     (obj) = TypedData_Wrap_Struct((klass), &ossl_x509extfactory_type, 0); \
     if (!((ctx) = OPENSSL_malloc(sizeof(X509V3_CTX)))) \
@@ -90,7 +86,7 @@ GetX509ExtPtr(VALUE obj)
 {
     X509_EXTENSION *ext;
 
-    SafeGetX509Ext(obj, ext);
+    GetX509Ext(obj, ext);
 
     return ext;
 }
@@ -263,15 +259,15 @@ ossl_x509ext_alloc(VALUE klass)
 
 /*
  * call-seq:
- *    OpenSSL::X509::Extension.new asn1
- *    OpenSSL::X509::Extension.new name, value
- *    OpenSSL::X509::Extension.new name, value, critical
+ *    OpenSSL::X509::Extension.new(der)
+ *    OpenSSL::X509::Extension.new(oid, value)
+ *    OpenSSL::X509::Extension.new(oid, value, critical)
  *
  * Creates an X509 extension.
  *
- * The extension may be created from +asn1+ data or from an extension +name+
- * and +value+.  The +name+ may be either an OID or an extension name.  If
- * +critical+ is true the extension is marked critical.
+ * The extension may be created from _der_ data or from an extension _oid_
+ * and _value_.  The _oid_ may be either an OID or an extension name.  If
+ * _critical_ is +true+ the extension is marked critical.
  */
 static VALUE
 ossl_x509ext_initialize(int argc, VALUE *argv, VALUE self)
@@ -305,7 +301,7 @@ ossl_x509ext_initialize_copy(VALUE self, VALUE other)
 
     rb_check_frozen(self);
     GetX509Ext(self, ext);
-    SafeGetX509Ext(other, ext_other);
+    GetX509Ext(other, ext_other);
 
     ext_new = X509_EXTENSION_dup(ext_other);
     if (!ext_new)
@@ -469,7 +465,7 @@ Init_ossl_x509ext(void)
     cX509Ext = rb_define_class_under(mX509, "Extension", rb_cObject);
     rb_define_alloc_func(cX509Ext, ossl_x509ext_alloc);
     rb_define_method(cX509Ext, "initialize", ossl_x509ext_initialize, -1);
-    rb_define_copy_func(cX509Ext, ossl_x509ext_initialize_copy);
+    rb_define_method(cX509Ext, "initialize_copy", ossl_x509ext_initialize_copy, 1);
     rb_define_method(cX509Ext, "oid=", ossl_x509ext_set_oid, 1);
     rb_define_method(cX509Ext, "value=", ossl_x509ext_set_value, 1);
     rb_define_method(cX509Ext, "critical=", ossl_x509ext_set_critical, 1);

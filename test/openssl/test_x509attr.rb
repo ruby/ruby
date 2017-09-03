@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require_relative "utils"
 
-if defined?(OpenSSL::TestUtils)
+if defined?(OpenSSL)
 
 class OpenSSL::TestX509Attribute < OpenSSL::TestCase
   def test_new

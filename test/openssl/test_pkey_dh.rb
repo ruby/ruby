@@ -1,28 +1,10 @@
 # frozen_string_literal: false
 require_relative 'utils'
 
-if defined?(OpenSSL::TestUtils)
+if defined?(OpenSSL) && defined?(OpenSSL::PKey::DH)
 
 class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
-  DH1024 = OpenSSL::TestUtils::TEST_KEY_DH1024
-
   NEW_KEYLEN = 256
-
-  def test_DEFAULT_parameters
-    list = {
-      1024 => OpenSSL::PKey::DH::DEFAULT_1024,
-      2048 => OpenSSL::PKey::DH::DEFAULT_2048,
-    }
-
-    list.each do |expected_size, dh|
-      assert_equal expected_size, dh.p.num_bits
-      assert_predicate dh.p, :prime?
-      result, remainder = (dh.p - 1) / 2
-      assert_predicate result, :prime?
-      assert_equal 0, remainder
-      assert_no_key dh
-    end
-  end
 
   def test_new
     dh = OpenSSL::PKey::DH.new(NEW_KEYLEN)
@@ -37,12 +19,13 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end
 
   def test_DHparams
+    dh1024 = Fixtures.pkey_dh("dh1024")
     asn1 = OpenSSL::ASN1::Sequence([
-      OpenSSL::ASN1::Integer(DH1024.p),
-      OpenSSL::ASN1::Integer(DH1024.g)
+      OpenSSL::ASN1::Integer(dh1024.p),
+      OpenSSL::ASN1::Integer(dh1024.g)
     ])
     key = OpenSSL::PKey::DH.new(asn1.to_der)
-    assert_same_dh dup_public(DH1024), key
+    assert_same_dh dup_public(dh1024), key
 
     pem = <<~EOF
     -----BEGIN DH PARAMETERS-----
@@ -52,14 +35,14 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     -----END DH PARAMETERS-----
     EOF
     key = OpenSSL::PKey::DH.new(pem)
-    assert_same_dh dup_public(DH1024), key
+    assert_same_dh dup_public(dh1024), key
 
-    assert_equal asn1.to_der, DH1024.to_der
-    assert_equal pem, DH1024.export
+    assert_equal asn1.to_der, dh1024.to_der
+    assert_equal pem, dh1024.export
   end
 
   def test_public_key
-    dh = OpenSSL::TestUtils::TEST_KEY_DH1024
+    dh = Fixtures.pkey_dh("dh1024")
     public_key = dh.public_key
     assert_no_key(public_key) #implies public_key.public? is false!
     assert_equal(dh.to_der, public_key.to_der)
@@ -67,14 +50,14 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end
 
   def test_generate_key
-    dh = OpenSSL::TestUtils::TEST_KEY_DH1024.public_key # creates a copy
+    dh = Fixtures.pkey_dh("dh1024").public_key # creates a copy
     assert_no_key(dh)
     dh.generate_key!
     assert_key(dh)
   end
 
   def test_key_exchange
-    dh = OpenSSL::TestUtils::TEST_KEY_DH1024
+    dh = Fixtures.pkey_dh("dh1024")
     dh2 = dh.public_key
     dh.generate_key!
     dh2.generate_key!

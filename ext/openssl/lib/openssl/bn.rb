@@ -27,8 +27,9 @@ module OpenSSL
 end # OpenSSL
 
 ##
+#--
 # Add double dispatch to Integer
-#
+#++
 class Integer
   # Casts an Integer as an OpenSSL::BN
   #

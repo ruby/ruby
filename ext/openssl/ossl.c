@@ -92,22 +92,40 @@ OSSL_IMPL_SK2ARY(x509crl, X509_CRL)
 OSSL_IMPL_SK2ARY(x509name, X509_NAME)
 
 static VALUE
-ossl_str_new(int size)
+ossl_str_new_i(VALUE size)
 {
-    return rb_str_new(0, size);
+    return rb_str_new(NULL, (long)size);
+}
+
+VALUE
+ossl_str_new(const char *ptr, long len, int *pstate)
+{
+    VALUE str;
+    int state;
+
+    str = rb_protect(ossl_str_new_i, len, &state);
+    if (pstate)
+	*pstate = state;
+    if (state) {
+	if (!pstate)
+	    rb_set_errinfo(Qnil);
+	return Qnil;
+    }
+    if (ptr)
+	memcpy(RSTRING_PTR(str), ptr, len);
+    return str;
 }
 
 VALUE
 ossl_buf2str(char *buf, int len)
 {
     VALUE str;
-    int status = 0;
+    int state;
 
-    str = rb_protect((VALUE (*)(VALUE))ossl_str_new, len, &status);
-    if(!NIL_P(str)) memcpy(RSTRING_PTR(str), buf, len);
+    str = ossl_str_new(buf, len, &state);
     OPENSSL_free(buf);
-    if(status) rb_jump_tag(status);
-
+    if (state)
+	rb_jump_tag(state);
     return str;
 }
 
@@ -220,7 +238,7 @@ VALUE eOSSLError;
 /*
  * Convert to DER string
  */
-ID ossl_s_to_der;
+static ID ossl_s_to_der;
 
 VALUE
 ossl_to_der(VALUE obj)
@@ -248,18 +266,15 @@ static VALUE
 ossl_make_error(VALUE exc, const char *fmt, va_list args)
 {
     VALUE str = Qnil;
-    const char *msg;
-    long e;
+    unsigned long e;
 
-    e = ERR_peek_last_error();
     if (fmt) {
 	str = rb_vsprintf(fmt, args);
     }
+    e = ERR_peek_last_error();
     if (e) {
-	if (dOSSL == Qtrue) /* FULL INFO */
-	    msg = ERR_error_string(e, NULL);
-	else
-	    msg = ERR_reason_error_string(e);
+	const char *msg = ERR_reason_error_string(e);
+
 	if (NIL_P(str)) {
 	    if (msg) str = rb_str_new_cstr(msg);
 	}
@@ -267,8 +282,8 @@ ossl_make_error(VALUE exc, const char *fmt, va_list args)
 	    if (RSTRING_LEN(str)) rb_str_cat2(str, ": ");
 	    rb_str_cat2(str, msg ? msg : "(null)");
 	}
+	ossl_clear_error();
     }
-    ossl_clear_error();
 
     if (NIL_P(str)) str = rb_str_new(0, 0);
     return rb_exc_new3(exc, str);
@@ -319,7 +334,8 @@ ossl_clear_error(void)
  *
  * See any remaining errors held in queue.
  *
- * Any errors you see here are probably due to a bug in ruby's OpenSSL implementation.
+ * Any errors you see here are probably due to a bug in Ruby's OpenSSL
+ * implementation.
  */
 VALUE
 ossl_get_errors(void)
@@ -382,6 +398,23 @@ ossl_debug_set(VALUE self, VALUE val)
 }
 
 /*
+ * call-seq
+ *   OpenSSL.fips_mode -> true | false
+ */
+static VALUE
+ossl_fips_mode_get(VALUE self)
+{
+
+#ifdef OPENSSL_FIPS
+    VALUE enabled;
+    enabled = FIPS_mode() ? Qtrue : Qfalse;
+    return enabled;
+#else
+    return Qfalse;
+#endif
+}
+
+/*
  * call-seq:
  *   OpenSSL.fips_mode = boolean -> boolean
  *
@@ -413,6 +446,72 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
     return enabled;
 #endif
 }
+
+#if defined(OSSL_DEBUG)
+#if !defined(LIBRESSL_VERSION_NUMBER) && \
+    (OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(OPENSSL_NO_CRYPTO_MDEBUG) || \
+     defined(CRYPTO_malloc_debug_init))
+/*
+ * call-seq:
+ *   OpenSSL.mem_check_start -> nil
+ *
+ * Calls CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON). Starts tracking memory
+ * allocations. See also OpenSSL.print_mem_leaks.
+ *
+ * This is available only when built with a capable OpenSSL and --enable-debug
+ * configure option.
+ */
+static VALUE
+mem_check_start(VALUE self)
+{
+	CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
+	return Qnil;
+}
+
+/*
+ * call-seq:
+ *   OpenSSL.print_mem_leaks -> true | false
+ *
+ * For debugging the Ruby/OpenSSL library. Calls CRYPTO_mem_leaks_fp(stderr).
+ * Prints detected memory leaks to standard error. This cleans the global state
+ * up thus you cannot use any methods of the library after calling this.
+ *
+ * Returns +true+ if leaks detected, +false+ otherwise.
+ *
+ * This is available only when built with a capable OpenSSL and --enable-debug
+ * configure option.
+ *
+ * === Example
+ *   OpenSSL.mem_check_start
+ *   NOT_GCED = OpenSSL::PKey::RSA.new(256)
+ *
+ *   END {
+ *     GC.start
+ *     OpenSSL.print_mem_leaks # will print the leakage
+ *   }
+ */
+static VALUE
+print_mem_leaks(VALUE self)
+{
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+    int ret;
+#endif
+
+    BN_CTX_free(ossl_bn_ctx);
+    ossl_bn_ctx = NULL;
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000
+    ret = CRYPTO_mem_leaks_fp(stderr);
+    if (ret < 0)
+	ossl_raise(eOSSLError, "CRYPTO_mem_leaks_fp");
+    return ret ? Qfalse : Qtrue;
+#else
+    CRYPTO_mem_leaks_fp(stderr);
+    return Qnil;
+#endif
+}
+#endif
+#endif
 
 #if !defined(HAVE_OPENSSL_110_THREADING_API)
 /**
@@ -461,19 +560,11 @@ ossl_dyn_destroy_callback(struct CRYPTO_dynlock_value *l, const char *file, int 
     OPENSSL_free(l);
 }
 
-#ifdef HAVE_CRYPTO_THREADID_PTR
 static void ossl_threadid_func(CRYPTO_THREADID *id)
 {
     /* register native thread id */
     CRYPTO_THREADID_set_pointer(id, (void *)rb_nativethread_self());
 }
-#else
-static unsigned long ossl_thread_id(void)
-{
-    /* before OpenSSL 1.0, this is 'unsigned long' */
-    return (unsigned long)rb_nativethread_self();
-}
-#endif
 
 static void Init_ossl_locks(void)
 {
@@ -491,11 +582,7 @@ static void Init_ossl_locks(void)
 	rb_nativethread_lock_initialize(&ossl_locks[i]);
     }
 
-#ifdef HAVE_CRYPTO_THREADID_PTR
     CRYPTO_THREADID_set_callback(ossl_threadid_func);
-#else
-    CRYPTO_set_id_callback(ossl_thread_id);
-#endif
     CRYPTO_set_locking_callback(ossl_lock_callback);
     CRYPTO_set_dynlock_create_callback(ossl_dyn_create_callback);
     CRYPTO_set_dynlock_lock_callback(ossl_dyn_lock_callback);
@@ -505,7 +592,7 @@ static void Init_ossl_locks(void)
 
 /*
  * OpenSSL provides SSL, TLS and general purpose cryptography.  It wraps the
- * OpenSSL[http://www.openssl.org/] library.
+ * OpenSSL[https://www.openssl.org/] library.
  *
  * = Examples
  *
@@ -1057,7 +1144,7 @@ Init_openssl(void)
     rb_define_const(mOSSL, "OPENSSL_VERSION_NUMBER", INT2NUM(OPENSSL_VERSION_NUMBER));
 
     /*
-     * Boolean indicating whether OpenSSL is FIPS-enabled or not
+     * Boolean indicating whether OpenSSL is FIPS-capable or not
      */
     rb_define_const(mOSSL, "OPENSSL_FIPS",
 #ifdef OPENSSL_FIPS
@@ -1067,6 +1154,7 @@ Init_openssl(void)
 #endif
 		   );
 
+    rb_define_module_function(mOSSL, "fips_mode", ossl_fips_mode_get, 0);
     rb_define_module_function(mOSSL, "fips_mode=", ossl_fips_mode_set, 1);
 
     /*
@@ -1106,7 +1194,6 @@ Init_openssl(void)
     Init_ossl_ns_spki();
     Init_ossl_pkcs12();
     Init_ossl_pkcs7();
-    Init_ossl_pkcs5();
     Init_ossl_pkey();
     Init_ossl_rand();
     Init_ossl_ssl();
@@ -1114,15 +1201,41 @@ Init_openssl(void)
     Init_ossl_ocsp();
     Init_ossl_engine();
     Init_ossl_asn1();
-}
+    Init_ossl_kdf();
 
 #if defined(OSSL_DEBUG)
-/*
- * Check if all symbols are OK with 'make LDSHARED=gcc all'
- */
-int
-main(int argc, char *argv[])
-{
-    return 0;
+    /*
+     * For debugging Ruby/OpenSSL. Enable only when built with --enable-debug
+     */
+#if !defined(LIBRESSL_VERSION_NUMBER) && \
+    (OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(OPENSSL_NO_CRYPTO_MDEBUG) || \
+     defined(CRYPTO_malloc_debug_init))
+    rb_define_module_function(mOSSL, "mem_check_start", mem_check_start, 0);
+    rb_define_module_function(mOSSL, "print_mem_leaks", print_mem_leaks, 0);
+
+#if defined(CRYPTO_malloc_debug_init) /* <= 1.0.2 */
+    CRYPTO_malloc_debug_init();
+#endif
+
+#if defined(V_CRYPTO_MDEBUG_ALL) /* <= 1.0.2 */
+    CRYPTO_set_mem_debug_options(V_CRYPTO_MDEBUG_ALL);
+#endif
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000 /* <= 1.0.2 */
+    {
+	int i;
+	/*
+	 * See crypto/ex_data.c; call def_get_class() immediately to avoid
+	 * allocations. 15 is the maximum number that is used as the class index
+	 * in OpenSSL 1.0.2.
+	 */
+	for (i = 0; i <= 15; i++) {
+	    if (CRYPTO_get_ex_new_index(i, 0, (void *)"ossl-mdebug-dummy", 0, 0, 0) < 0)
+		rb_raise(rb_eRuntimeError, "CRYPTO_get_ex_new_index for "
+			 "class index %d failed", i);
+	}
+    }
+#endif
+#endif
+#endif
 }
-#endif /* OSSL_DEBUG */

@@ -1,3 +1,34 @@
+Version 2.1.0.beta1
+===================
+
+Notable changes
+---------------
+
+* Support for OpenSSL versions before 1.0.1 is removed.
+  [[GitHub #86]](https://github.com/ruby/openssl/pull/86)
+* OpenSSL::BN#negative?, #+@, and #-@ are added.
+* OpenSSL::SSL::SSLSocket#connect raises a more informative exception when
+  certificate verification fails.
+  [[GitHub #99]](https://github.com/ruby/openssl/pull/99)
+* OpenSSL::KDF module is newly added. Support for scrypt is added.
+  [[GitHub #109]](https://github.com/ruby/openssl/pull/109)
+* OpenSSL.fips_mode is added. We have had the setter, but not the getter.
+  [[GitHub #125]](https://github.com/ruby/openssl/pull/125)
+* OpenSSL::OCSP::Request#signed? is added.
+* OpenSSL::ASN1 handles the indefinite length form better. OpenSSL::ASN1.decode
+  no longer wrongly treats the end-of-contents octets as part of the content.
+  OpenSSL::ASN1::ASN1Data#infinite_length is renamed to #indefinite_length.
+  [[GitHub #98]](https://github.com/ruby/openssl/pull/98)
+* OpenSSL::X509::Name#add_entry now accepts two additional keyword arguments
+  'loc' and 'set'.
+  [[GitHub #94]](https://github.com/ruby/openssl/issues/94)
+* OpenSSL::SSL::SSLContext#min_version= and #max_version= are added.
+  [[GitHub #142]](https://github.com/ruby/openssl/pull/142)
+* OpenSSL::X509::Name#to_utf8 is added.
+  [[GitHub #26]](https://github.com/ruby/openssl/issues/26)
+  [[GitHub #143]](https://github.com/ruby/openssl/pull/143)
+
+
 Version 2.0.5
 =============
 

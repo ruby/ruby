@@ -23,10 +23,6 @@
 	ossl_raise(rb_eRuntimeError, "CRL wasn't initialized!"); \
     } \
 } while (0)
-#define SafeGetX509CRL(obj, crl) do { \
-    OSSL_Check_Kind((obj), cX509CRL); \
-    GetX509CRL((obj), (crl)); \
-} while (0)
 
 /*
  * Classes
@@ -56,18 +52,7 @@ GetX509CRLPtr(VALUE obj)
 {
     X509_CRL *crl;
 
-    SafeGetX509CRL(obj, crl);
-
-    return crl;
-}
-
-X509_CRL *
-DupX509CRLPtr(VALUE obj)
-{
-    X509_CRL *crl;
-
-    SafeGetX509CRL(obj, crl);
-    X509_CRL_up_ref(crl);
+    GetX509CRL(obj, crl);
 
     return crl;
 }
@@ -137,7 +122,7 @@ ossl_x509crl_copy(VALUE self, VALUE other)
     rb_check_frozen(self);
     if (self == other) return self;
     GetX509CRL(self, a);
-    SafeGetX509CRL(other, b);
+    GetX509CRL(other, b);
     if (!(crl = X509_CRL_dup(b))) {
 	ossl_raise(eX509CRLError, NULL);
     }
@@ -223,10 +208,14 @@ static VALUE
 ossl_x509crl_get_last_update(VALUE self)
 {
     X509_CRL *crl;
+    const ASN1_TIME *time;
 
     GetX509CRL(self, crl);
+    time = X509_CRL_get0_lastUpdate(crl);
+    if (!time)
+	return Qnil;
 
-    return asn1time_to_time(X509_CRL_get0_lastUpdate(crl));
+    return asn1time_to_time(time);
 }
 
 static VALUE
@@ -250,10 +239,14 @@ static VALUE
 ossl_x509crl_get_next_update(VALUE self)
 {
     X509_CRL *crl;
+    const ASN1_TIME *time;
 
     GetX509CRL(self, crl);
+    time = X509_CRL_get0_nextUpdate(crl);
+    if (!time)
+	return Qnil;
 
-    return asn1time_to_time(X509_CRL_get0_nextUpdate(crl));
+    return asn1time_to_time(time);
 }
 
 static VALUE
@@ -354,7 +347,7 @@ ossl_x509crl_sign(VALUE self, VALUE key, VALUE digest)
 
     GetX509CRL(self, crl);
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
-    md = GetDigestPtr(digest);
+    md = ossl_evp_get_digestbyname(digest);
     if (!X509_CRL_sign(crl, pkey, md)) {
 	ossl_raise(eX509CRLError, NULL);
     }
@@ -520,7 +513,7 @@ Init_ossl_x509crl(void)
 
     rb_define_alloc_func(cX509CRL, ossl_x509crl_alloc);
     rb_define_method(cX509CRL, "initialize", ossl_x509crl_initialize, -1);
-    rb_define_copy_func(cX509CRL, ossl_x509crl_copy);
+    rb_define_method(cX509CRL, "initialize_copy", ossl_x509crl_copy, 1);
 
     rb_define_method(cX509CRL, "version", ossl_x509crl_get_version, 0);
     rb_define_method(cX509CRL, "version=", ossl_x509crl_set_version, 1);

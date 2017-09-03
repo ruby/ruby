@@ -92,7 +92,7 @@ pkey_new0(EVP_PKEY *pkey)
     case EVP_PKEY_DH:
 	return ossl_dh_new(pkey);
 #endif
-#if !defined(OPENSSL_NO_EC) && (OPENSSL_VERSION_NUMBER >= 0x0090802fL)
+#if !defined(OPENSSL_NO_EC)
     case EVP_PKEY_EC:
 	return ossl_ec_new(pkey);
 #endif
@@ -123,15 +123,15 @@ ossl_pkey_new(EVP_PKEY *pkey)
  *     OpenSSL::PKey.read(string [, pwd ]) -> PKey
  *     OpenSSL::PKey.read(io [, pwd ]) -> PKey
  *
- * Reads a DER or PEM encoded string from +string+ or +io+ and returns an
+ * Reads a DER or PEM encoded string from _string_ or _io_ and returns an
  * instance of the appropriate PKey class.
  *
  * === Parameters
- * * +string+ is a DER- or PEM-encoded string containing an arbitrary private
+ * * _string+ is a DER- or PEM-encoded string containing an arbitrary private
  *   or public key.
- * * +io+ is an instance of +IO+ containing a DER- or PEM-encoded
+ * * _io_ is an instance of IO containing a DER- or PEM-encoded
  *   arbitrary private or public key.
- * * +pwd+ is an optional password in case +string+ or +file+ is an encrypted
+ * * _pwd_ is an optional password in case _string_ or _io_ is an encrypted
  *   PEM resource.
  */
 static VALUE
@@ -207,7 +207,7 @@ GetPKeyPtr(VALUE obj)
 {
     EVP_PKEY *pkey;
 
-    SafeGetPKey(obj, pkey);
+    GetPKey(obj, pkey);
 
     return pkey;
 }
@@ -220,7 +220,7 @@ GetPrivPKeyPtr(VALUE obj)
     if (rb_funcallv(obj, id_private_q, 0, NULL) != Qtrue) {
 	ossl_raise(rb_eArgError, "Private key is needed.");
     }
-    SafeGetPKey(obj, pkey);
+    GetPKey(obj, pkey);
 
     return pkey;
 }
@@ -230,7 +230,7 @@ DupPKeyPtr(VALUE obj)
 {
     EVP_PKEY *pkey;
 
-    SafeGetPKey(obj, pkey);
+    GetPKey(obj, pkey);
     EVP_PKEY_up_ref(pkey);
 
     return pkey;
@@ -259,7 +259,7 @@ ossl_pkey_alloc(VALUE klass)
  *      PKeyClass.new -> self
  *
  * Because PKey is an abstract class, actually calling this method explicitly
- * will raise a +NotImplementedError+.
+ * will raise a NotImplementedError.
  */
 static VALUE
 ossl_pkey_initialize(VALUE self)
@@ -274,10 +274,10 @@ ossl_pkey_initialize(VALUE self)
  *  call-seq:
  *      pkey.sign(digest, data) -> String
  *
- * To sign the +String+ +data+, +digest+, an instance of OpenSSL::Digest, must
- * be provided. The return value is again a +String+ containing the signature.
+ * To sign the String _data_, _digest_, an instance of OpenSSL::Digest, must
+ * be provided. The return value is again a String containing the signature.
  * A PKeyError is raised should errors occur.
- * Any previous state of the +Digest+ instance is irrelevant to the signature
+ * Any previous state of the Digest instance is irrelevant to the signature
  * outcome, the digest instance is reset to its initial state during the
  * operation.
  *
@@ -298,7 +298,7 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
     int result;
 
     pkey = GetPrivPKeyPtr(self);
-    md = GetDigestPtr(digest);
+    md = ossl_evp_get_digestbyname(digest);
     StringValue(data);
     str = rb_str_new(0, EVP_PKEY_size(pkey));
 
@@ -326,12 +326,12 @@ ossl_pkey_sign(VALUE self, VALUE digest, VALUE data)
  *  call-seq:
  *      pkey.verify(digest, signature, data) -> String
  *
- * To verify the +String+ +signature+, +digest+, an instance of
+ * To verify the String _signature_, _digest_, an instance of
  * OpenSSL::Digest, must be provided to re-compute the message digest of the
- * original +data+, also a +String+. The return value is +true+ if the
+ * original _data_, also a String. The return value is +true+ if the
  * signature is valid, +false+ otherwise. A PKeyError is raised should errors
  * occur.
- * Any previous state of the +Digest+ instance is irrelevant to the validation
+ * Any previous state of the Digest instance is irrelevant to the validation
  * outcome, the digest instance is reset to its initial state during the
  * operation.
  *
@@ -353,7 +353,7 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
 
     GetPKey(self, pkey);
     pkey_check_public_key(pkey);
-    md = GetDigestPtr(digest);
+    md = ossl_evp_get_digestbyname(digest);
     StringValue(sig);
     siglen = RSTRING_LENINT(sig);
     StringValue(data);

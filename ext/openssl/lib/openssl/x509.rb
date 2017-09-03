@@ -139,7 +139,13 @@ module OpenSSL
         end
 
         def parse_openssl(str, template=OBJECT_TYPE_TEMPLATE)
-          ary = str.scan(/\s*([^\/,]+)\s*/).collect{|i| i[0].split("=", 2) }
+          if str.start_with?("/")
+            # /A=B/C=D format
+            ary = str[1..-1].split("/").map { |i| i.split("=", 2) }
+          else
+            # Comma-separated
+            ary = str.split(",").map { |i| i.strip.split("=", 2) }
+          end
           self.new(ary, template)
         end
 
