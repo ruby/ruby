@@ -41,7 +41,13 @@ RSpec.describe "bundle gem" do
       user = bundleuser
     EOF
     @git_config_location = ENV["GIT_CONFIG"]
-    path = "#{File.expand_path("../../tmp", File.dirname(__FILE__))}/test_git_config.txt"
+    if File.exist?(File.expand_path("../../tmp", __FILE__))
+      tmp_path = "../../tmp"
+    else
+      # for Ruby Core
+      tmp_path = "../../../tmp"
+    end
+    path = "#{File.expand_path(tmp_path, File.dirname(__FILE__))}/test_git_config.txt"
     File.open(path, "w") {|f| f.write(git_config_content) }
     ENV["GIT_CONFIG"] = path
   end
