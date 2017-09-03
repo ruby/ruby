@@ -1161,7 +1161,7 @@ end
       expect(out).to eq("undefined\nconstant")
     end
 
-    describe "default gem activation" do
+    describe "default gem activation", :ruby_trunk do
       let(:exemptions) do
         if Gem::Version.new(Gem::VERSION) >= Gem::Version.new("2.7") || ENV["RGV"] == "master"
           []
