@@ -7568,6 +7568,22 @@ rb_str_split(VALUE str, const char *sep0)
     return rb_str_split_m(1, &sep, str);
 }
 
+static int
+enumerator_wantarray(const char *method)
+{
+    if (rb_block_given_p()) {
+#if STRING_ENUMERATORS_WANTARRAY
+	rb_warn("given block not used");
+#else
+	rb_warning("passing a block to String#%s is deprecated", method);
+	return 0;
+#endif
+    }
+    return 1;
+}
+
+#define WANTARRAY(m) enumerator_wantarray(m)
+
 static const char *
 chomp_newline(const char *p, const char *e, rb_encoding *enc)
 {
@@ -7602,23 +7618,8 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 	chomp = (chomp != Qundef && RTEST(chomp));
     }
 
-    if (rb_block_given_p()) {
-	if (wantarray) {
-#if STRING_ENUMERATORS_WANTARRAY
-	    rb_warn("given block not used");
-	    ary = rb_ary_new();
-#else
-	    rb_warning("passing a block to String#lines is deprecated");
-	    wantarray = 0;
-#endif
-	}
-    }
-    else {
-	if (wantarray)
-	    ary = rb_ary_new();
-	else
-	    return SIZED_ENUMERATOR(str, argc, argv, 0);
-    }
+    if (wantarray)
+	ary = rb_ary_new();
 
     if (NIL_P(rs)) {
 	if (wantarray) {
@@ -7780,6 +7781,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 static VALUE
 rb_str_each_line(int argc, VALUE *argv, VALUE str)
 {
+    RETURN_SIZED_ENUMERATOR(str, argc, argv, 0);
     return rb_str_enumerate_lines(argc, argv, str, 0);
 }
 
@@ -7798,7 +7800,7 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_lines(int argc, VALUE *argv, VALUE str)
 {
-    return rb_str_enumerate_lines(argc, argv, str, 1);
+    return rb_str_enumerate_lines(argc, argv, str, WANTARRAY("lines"));
 }
 
 static VALUE
@@ -7811,25 +7813,10 @@ static VALUE
 rb_str_enumerate_bytes(VALUE str, int wantarray)
 {
     long i;
-    VALUE MAYBE_UNUSED(ary);
+    VALUE ary;
 
-    if (rb_block_given_p()) {
-	if (wantarray) {
-#if STRING_ENUMERATORS_WANTARRAY
-	    rb_warn("given block not used");
-	    ary = rb_ary_new();
-#else
-	    rb_warning("passing a block to String#bytes is deprecated");
-	    wantarray = 0;
-#endif
-	}
-    }
-    else {
-	if (wantarray)
-	    ary = rb_ary_new2(RSTRING_LEN(str));
-	else
-	    return SIZED_ENUMERATOR(str, 0, 0, rb_str_each_byte_size);
-    }
+    if (wantarray)
+	ary = rb_ary_new2(RSTRING_LEN(str));
 
     for (i=0; i<RSTRING_LEN(str); i++) {
 	if (wantarray)
@@ -7861,6 +7848,7 @@ rb_str_enumerate_bytes(VALUE str, int wantarray)
 static VALUE
 rb_str_each_byte(VALUE str)
 {
+    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_byte_size);
     return rb_str_enumerate_bytes(str, 0);
 }
 
@@ -7878,7 +7866,7 @@ rb_str_each_byte(VALUE str)
 static VALUE
 rb_str_bytes(VALUE str)
 {
-    return rb_str_enumerate_bytes(str, 1);
+    return rb_str_enumerate_bytes(str, WANTARRAY("bytes"));
 }
 
 static VALUE
@@ -7895,30 +7883,15 @@ rb_str_enumerate_chars(VALUE str, int wantarray)
     long i, len, n;
     const char *ptr;
     rb_encoding *enc;
-    VALUE MAYBE_UNUSED(ary);
+    VALUE ary;
 
     str = rb_str_new_frozen(str);
     ptr = RSTRING_PTR(str);
     len = RSTRING_LEN(str);
     enc = rb_enc_get(str);
 
-    if (rb_block_given_p()) {
-	if (wantarray) {
-#if STRING_ENUMERATORS_WANTARRAY
-	    rb_warn("given block not used");
-	    ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
-#else
-	    rb_warning("passing a block to String#chars is deprecated");
-	    wantarray = 0;
-#endif
-	}
-    }
-    else {
-	if (wantarray)
-	    ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
-	else
-	    return SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
-    }
+    if (wantarray)
+	ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
 
     if (ENC_CODERANGE_CLEAN_P(ENC_CODERANGE(str))) {
 	for (i = 0; i < len; i += n) {
@@ -7965,6 +7938,7 @@ rb_str_enumerate_chars(VALUE str, int wantarray)
 static VALUE
 rb_str_each_char(VALUE str)
 {
+    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
     return rb_str_enumerate_chars(str, 0);
 }
 
@@ -7982,9 +7956,8 @@ rb_str_each_char(VALUE str)
 static VALUE
 rb_str_chars(VALUE str)
 {
-    return rb_str_enumerate_chars(str, 1);
+    return rb_str_enumerate_chars(str, WANTARRAY("chars"));
 }
-
 
 static VALUE
 rb_str_enumerate_codepoints(VALUE str, int wantarray)
@@ -7994,7 +7967,7 @@ rb_str_enumerate_codepoints(VALUE str, int wantarray)
     unsigned int c;
     const char *ptr, *end;
     rb_encoding *enc;
-    VALUE MAYBE_UNUSED(ary);
+    VALUE ary = 0;
 
     if (single_byte_optimizable(str))
 	return rb_str_enumerate_bytes(str, wantarray);
@@ -8004,23 +7977,8 @@ rb_str_enumerate_codepoints(VALUE str, int wantarray)
     end = RSTRING_END(str);
     enc = STR_ENC_GET(str);
 
-    if (rb_block_given_p()) {
-	if (wantarray) {
-#if STRING_ENUMERATORS_WANTARRAY
-	    rb_warn("given block not used");
-	    ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
-#else
-	    rb_warning("passing a block to String#codepoints is deprecated");
-	    wantarray = 0;
-#endif
-	}
-    }
-    else {
-	if (wantarray)
-	    ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
-	else
-	    return SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
-    }
+    if (wantarray)
+	ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
 
     while (ptr < end) {
 	c = rb_enc_codepoint_len(ptr, end, &n, enc);
@@ -8060,6 +8018,7 @@ rb_str_enumerate_codepoints(VALUE str, int wantarray)
 static VALUE
 rb_str_each_codepoint(VALUE str)
 {
+    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
     return rb_str_enumerate_codepoints(str, 0);
 }
 
@@ -8078,7 +8037,7 @@ rb_str_each_codepoint(VALUE str)
 static VALUE
 rb_str_codepoints(VALUE str)
 {
-    return rb_str_enumerate_codepoints(str, 1);
+    return rb_str_enumerate_codepoints(str, WANTARRAY("codepoints"));
 }
 
 static VALUE
@@ -8090,7 +8049,7 @@ rb_str_enumerate_grapheme_clusters(VALUE str, int wantarray)
     rb_encoding *enc = rb_enc_from_index(encidx);
     int unicode_p = rb_enc_unicode_p(enc);
     const char *ptr, *end;
-    VALUE MAYBE_UNUSED(ary);
+    VALUE ary = 0;
 
     if (!unicode_p) {
 	return rb_str_enumerate_chars(str, wantarray);
@@ -8115,23 +8074,8 @@ rb_str_enumerate_grapheme_clusters(VALUE str, int wantarray)
     ptr = RSTRING_PTR(str);
     end = RSTRING_END(str);
 
-    if (rb_block_given_p()) {
-	if (wantarray) {
-#if STRING_ENUMERATORS_WANTARRAY
-	    rb_warn("given block not used");
-	    ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
-#else
-	    rb_warning("passing a block to String#grapheme_clusters is deprecated");
-	    wantarray = 0;
-#endif
-	}
-    }
-    else {
-	if (wantarray)
-	    ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
-	else
-	    return SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
-    }
+    if (wantarray)
+	ary = rb_ary_new_capa(str_strlen(str, enc)); /* str's enc*/
 
     while (ptr < end) {
 	VALUE grapheme_cluster;
@@ -8173,6 +8117,7 @@ rb_str_enumerate_grapheme_clusters(VALUE str, int wantarray)
 static VALUE
 rb_str_each_grapheme_cluster(VALUE str)
 {
+    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
     return rb_str_enumerate_grapheme_clusters(str, 0);
 }
 
@@ -8190,7 +8135,7 @@ rb_str_each_grapheme_cluster(VALUE str)
 static VALUE
 rb_str_grapheme_clusters(VALUE str)
 {
-    return rb_str_enumerate_grapheme_clusters(str, 1);
+    return rb_str_enumerate_grapheme_clusters(str, WANTARRAY("grapheme_clusters"));
 }
 
 static long
