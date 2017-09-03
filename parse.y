@@ -5237,9 +5237,12 @@ coverage(VALUE fname, int n)
 {
     VALUE coverages = rb_get_coverages();
     if (RTEST(coverages) && RBASIC(coverages)->klass == 0) {
-	VALUE lines = n > 0 ? rb_ary_tmp_new_fill(n) : rb_ary_tmp_new(0);
-	rb_hash_aset(coverages, fname, lines);
-	return lines;
+	VALUE coverage = rb_default_coverage(n);
+	VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
+
+	rb_hash_aset(coverages, fname, coverage);
+
+	return lines == Qnil ? Qfalse : lines;
     }
     return 0;
 }

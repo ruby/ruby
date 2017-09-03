@@ -566,6 +566,7 @@ typedef struct rb_vm_struct {
 
     VALUE verbose, debug, orig_progname, progname;
     VALUE coverages;
+    int coverage_mode;
 
     VALUE defined_module_hash;
 
@@ -1686,7 +1687,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 int rb_thread_check_trap_pending(void);
 
 extern VALUE rb_get_coverages(void);
-extern void rb_set_coverages(VALUE);
+extern void rb_set_coverages(VALUE, int);
 extern void rb_reset_coverages(void);
 
 void rb_postponed_job_flush(rb_vm_t *vm);

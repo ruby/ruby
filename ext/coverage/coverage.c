@@ -24,7 +24,7 @@ rb_coverage_start(VALUE klass)
     if (!RTEST(coverages)) {
 	coverages = rb_hash_new();
 	rb_obj_hide(coverages);
-	rb_set_coverages(coverages);
+	rb_set_coverages(coverages, COVERAGE_TARGET_LINES);
     }
     return Qnil;
 }
@@ -35,9 +35,12 @@ coverage_peek_result_i(st_data_t key, st_data_t val, st_data_t h)
     VALUE path = (VALUE)key;
     VALUE coverage = (VALUE)val;
     VALUE coverages = (VALUE)h;
-    coverage = rb_ary_dup(coverage);
-    rb_ary_freeze(coverage);
-    rb_hash_aset(coverages, path, coverage);
+    VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
+    if (lines) {
+	lines = rb_ary_dup(lines);
+	rb_ary_freeze(lines);
+    }
+    rb_hash_aset(coverages, path, lines);
     return ST_CONTINUE;
 }
 

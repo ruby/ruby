@@ -1677,11 +1677,19 @@ VALUE rb_struct_lookup(VALUE s, VALUE idx);
 struct timeval rb_time_timeval(VALUE);
 
 /* thread.c */
+#define COVERAGE_INDEX_LINES    0
+#define COVERAGE_INDEX_BRANCHES 1
+#define COVERAGE_INDEX_METHODS  2
+#define COVERAGE_TARGET_LINES    1
+#define COVERAGE_TARGET_BRANCHES 2
+#define COVERAGE_TARGET_METHODS  4
+
 VALUE rb_obj_is_mutex(VALUE obj);
 VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);
 void rb_thread_execute_interrupts(VALUE th);
 void rb_clear_trace_func(void);
 VALUE rb_get_coverages(void);
+VALUE rb_default_coverage(int);
 VALUE rb_thread_shield_new(void);
 VALUE rb_thread_shield_wait(VALUE self);
 VALUE rb_thread_shield_release(VALUE self);

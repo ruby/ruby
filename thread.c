@@ -4090,13 +4090,17 @@ static int
 clear_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
 {
     int i;
-    VALUE lines = (VALUE)val;
+    VALUE coverage = (VALUE)val;
+    VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
 
-    for (i = 0; i < RARRAY_LEN(lines); i++) {
-	if (RARRAY_AREF(lines, i) != Qnil) {
-	    RARRAY_ASET(lines, i, INT2FIX(0));
+    if (lines) {
+	for (i = 0; i < RARRAY_LEN(lines); i++) {
+	    if (RARRAY_AREF(lines, i) != Qnil) {
+		RARRAY_ASET(lines, i, INT2FIX(0));
+	    }
 	}
     }
+
     return ST_CONTINUE;
 }
 
@@ -4970,17 +4974,20 @@ update_coverage(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
 {
     VALUE coverage = rb_iseq_coverage(GET_THREAD()->ec.cfp->iseq);
     if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
-	long line = rb_sourceline() - 1;
-	long count;
-	VALUE num;
-	if (line >= RARRAY_LEN(coverage)) { /* no longer tracked */
-	    return;
-	}
-	num = RARRAY_AREF(coverage, line);
-	if (!FIXNUM_P(num)) return;
-	count = FIX2LONG(num) + 1;
-	if (POSFIXABLE(count)) {
-	    RARRAY_ASET(coverage, line, LONG2FIX(count));
+	VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
+	if (lines) {
+	    long line = rb_sourceline() - 1;
+	    long count;
+	    VALUE num;
+	    if (line >= RARRAY_LEN(lines)) { /* no longer tracked */
+		return;
+	    }
+	    num = RARRAY_AREF(lines, line);
+	    if (!FIXNUM_P(num)) return;
+	    count = FIX2LONG(num) + 1;
+	    if (POSFIXABLE(count)) {
+		RARRAY_ASET(lines, line, LONG2FIX(count));
+	    }
 	}
     }
 }
@@ -4992,9 +4999,10 @@ rb_get_coverages(void)
 }
 
 void
-rb_set_coverages(VALUE coverages)
+rb_set_coverages(VALUE coverages, int mode)
 {
     GET_VM()->coverages = coverages;
+    GET_VM()->coverage_mode = mode;
     rb_add_event_hook(update_coverage, RUBY_EVENT_COVERAGE, Qnil);
 }
 
@@ -5003,7 +5011,8 @@ static int
 reset_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
 {
     VALUE coverage = (VALUE)val;
-    rb_ary_clear(coverage);
+    VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
+    rb_ary_clear(lines);
     return ST_CONTINUE;
 }
 
@@ -5014,6 +5023,31 @@ rb_reset_coverages(void)
     st_foreach(rb_hash_tbl_raw(coverages), reset_coverage_i, 0);
     GET_VM()->coverages = Qfalse;
     rb_remove_event_hook(update_coverage);
+}
+
+VALUE
+rb_default_coverage(int n)
+{
+    VALUE coverage = rb_ary_tmp_new_fill(3);
+    VALUE lines = Qfalse, branches = Qfalse, methods = Qfalse;
+    int mode = GET_VM()->coverage_mode;
+
+    if (mode & COVERAGE_TARGET_LINES) {
+	lines = n > 0 ? rb_ary_tmp_new_fill(n) : rb_ary_tmp_new(0);
+    }
+    RARRAY_ASET(coverage, COVERAGE_INDEX_LINES, lines);
+
+    if (mode & COVERAGE_TARGET_BRANCHES) {
+	/* not implemented yet */
+    }
+    RARRAY_ASET(coverage, COVERAGE_INDEX_BRANCHES, branches);
+
+    if (mode & COVERAGE_TARGET_METHODS) {
+	/* not implemented yet */
+    }
+    RARRAY_ASET(coverage, COVERAGE_INDEX_METHODS, methods);
+
+    return coverage;
 }
 
 VALUE
