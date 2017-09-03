@@ -129,7 +129,7 @@ class TestCoverage < Test::Unit::TestCase
 
   def test_nonpositive_linenumber
     bug12517 = '[ruby-core:76141] [Bug #12517]'
-    assert_in_out_err(%w[-rcoverage], <<-"end;", ['{"<compiled>"=>[nil]}'], [], bug12517)
+    assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", ['{"<compiled>"=>[nil]}'], [], bug12517)
       Coverage.start
       RubyVM::InstructionSequence.compile(":ok", nil, "<compiled>", 0)
       p Coverage.result
@@ -155,7 +155,7 @@ class TestCoverage < Test::Unit::TestCase
           f.puts 'end'
         end
 
-        assert_in_out_err(%w[-rcoverage], <<-"end;", ["[1, 1, 1, 400, nil, nil, nil, nil, nil, nil, nil]"], [], bug13305)
+        assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", ["[1, 1, 1, 400, nil, nil, nil, nil, nil, nil, nil]"], [], bug13305)
           Coverage.start
           tmp = Dir.pwd
           require tmp + '/test.rb'
