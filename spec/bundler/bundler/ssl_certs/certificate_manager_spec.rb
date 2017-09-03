@@ -17,7 +17,7 @@ RSpec.describe Bundler::SSLCerts::CertificateManager do
 
   after do
     rubygems_dir = File.join(root.to_s, "lib", "rubygems")
-    FileUtils.rm_rf(rubygems_dir)
+    FileUtils.rm_rf(rubygems_dir) if !(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"]) # Ignored when Ruby Core
   end
 
   describe "#update_from" do
