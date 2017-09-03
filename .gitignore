@@ -181,7 +181,6 @@ lcov*.info
 
 # /spec/bundler
 /.rspec_status
-/spec/tmp
 /spec/rspec
 
 # /tool/
