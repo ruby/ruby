@@ -77,11 +77,7 @@ module Spec
     end
 
     def spec
-      if File.exist?(File.expand_path("../../../spec", __FILE__))
-        File.expand_path("../../../spec", __FILE__)
-      else
-        File.expand_path("../../../bundler", __FILE__)
-      end
+      File.expand_path(Spec::Path.spec.to_s, __FILE__)
     end
 
     def bundle(cmd, options = {})

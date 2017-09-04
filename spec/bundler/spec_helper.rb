@@ -45,13 +45,7 @@ $debug = false
 
 Spec::Rubygems.setup
 FileUtils.rm_rf(Spec::Path.gem_repo1)
-if File.exist? "#{Spec::Path.root}/spec/support/hax.rb"
-  hax_path = "#{Spec::Path.root}/spec/support/hax.rb"
-else
-  # for Ruby core
-  hax_path = "#{Spec::Path.root}/spec/bundler/support/hax.rb"
-end
-ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -r#{hax_path}"
+ENV["RUBYOPT"] = "#{ENV["RUBYOPT"]} -r#{Spec::Path.spec}/support/hax.rb"
 ENV["BUNDLE_SPEC_RUN"] = "true"
 ENV["BUNDLE_PLUGINS"] = "true"
 
