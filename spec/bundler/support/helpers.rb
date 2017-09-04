@@ -1,4 +1,6 @@
 # frozen_string_literal: true
+require File.expand_path("../path.rb", __FILE__)
+
 module Spec
   module Helpers
     def reset!
@@ -71,11 +73,7 @@ module Spec
     end
 
     def lib
-      if File.exist?(File.expand_path("../../../lib", __FILE__))
-        File.expand_path("../../../lib", __FILE__)
-      else
-        File.expand_path("../../../../lib", __FILE__)
-      end
+      File.expand_path("#{Spec::Path.root}/lib", __FILE__)
     end
 
     def spec

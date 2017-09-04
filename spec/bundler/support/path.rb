@@ -83,12 +83,7 @@ module Spec
     end
 
     def bundler_path
-      if File.exist?(File.expand_path("../../../lib", __FILE__))
-        Pathname.new(File.expand_path("../../../lib", __FILE__))
-      else
-        # for Ruby core
-        Pathname.new(File.expand_path("../../../../lib", __FILE__))
-      end
+      Pathname.new(File.expand_path("#{root}/lib", __FILE__))
     end
 
     def global_plugin_gem(*args)
