@@ -7585,6 +7585,21 @@ enumerator_wantarray(const char *method)
 #define WANTARRAY(m, size) \
     (enumerator_wantarray(m) ? rb_ary_new_capa(size) : 0)
 
+static inline int
+enumerator_element(VALUE ary, VALUE e)
+{
+    if (ary) {
+	rb_ary_push(ary, e);
+	return 0;
+    }
+    else {
+	rb_yield(e);
+	return 1;
+    }
+}
+
+#define ENUM_ELEM(ary, e) enumerator_element(ary, e)
+
 static const char *
 chomp_newline(const char *p, const char *e, rb_encoding *enc)
 {
@@ -7619,12 +7634,10 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
     }
 
     if (NIL_P(rs)) {
-	if (ary) {
-	    rb_ary_push(ary, str);
+	if (!ENUM_ELEM(ary, str)) {
 	    return ary;
 	}
 	else {
-	    rb_yield(str);
 	    return orig;
 	}
     }
@@ -7666,11 +7679,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
 	    if (!subptr) break;
 	    line = rb_str_subseq(str, subptr - ptr,
 				 subend - subptr + (chomp ? 0 : rslen));
-	    if (ary) {
-		rb_ary_push(ary, line);
-	    }
-	    else {
-		rb_yield(line);
+	    if (ENUM_ELEM(ary, line)) {
 		str_mod_check(str, ptr, len);
 	    }
 	    subptr = eol = NULL;
@@ -7711,11 +7720,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
 	    }
 	}
 	line = rb_str_subseq(str, subptr - ptr, subend - subptr);
-	if (ary) {
-	    rb_ary_push(ary, line);
-	}
-	else {
-	    rb_yield(line);
+	if (ENUM_ELEM(ary, line)) {
 	    str_mod_check(str, ptr, len);
 	}
 	subptr = hit;
@@ -7726,10 +7731,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
 	    pend = chomp_newline(subptr, pend, enc);
 	}
 	line = rb_str_subseq(str, subptr - ptr, pend - subptr);
-	if (ary)
-	    rb_ary_push(ary, line);
-	else
-	    rb_yield(line);
+	ENUM_ELEM(ary, line);
 	RB_GC_GUARD(str);
     }
 
@@ -7813,10 +7815,7 @@ rb_str_enumerate_bytes(VALUE str, VALUE ary)
     long i;
 
     for (i=0; i<RSTRING_LEN(str); i++) {
-	if (ary)
-	    rb_ary_push(ary, INT2FIX(RSTRING_PTR(str)[i] & 0xff));
-	else
-	    rb_yield(INT2FIX(RSTRING_PTR(str)[i] & 0xff));
+	ENUM_ELEM(ary, INT2FIX(RSTRING_PTR(str)[i] & 0xff));
     }
     if (ary)
 	return ary;
@@ -7874,7 +7873,6 @@ static VALUE
 rb_str_enumerate_chars(VALUE str, VALUE ary)
 {
     VALUE orig = str;
-    VALUE substr;
     long i, len, n;
     const char *ptr;
     rb_encoding *enc;
@@ -7887,21 +7885,13 @@ rb_str_enumerate_chars(VALUE str, VALUE ary)
     if (ENC_CODERANGE_CLEAN_P(ENC_CODERANGE(str))) {
 	for (i = 0; i < len; i += n) {
 	    n = rb_enc_fast_mbclen(ptr + i, ptr + len, enc);
-	    substr = rb_str_subseq(str, i, n);
-	    if (ary)
-		rb_ary_push(ary, substr);
-	    else
-		rb_yield(substr);
+	    ENUM_ELEM(ary, rb_str_subseq(str, i, n));
 	}
     }
     else {
 	for (i = 0; i < len; i += n) {
 	    n = rb_enc_mbclen(ptr + i, ptr + len, enc);
-	    substr = rb_str_subseq(str, i, n);
-	    if (ary)
-		rb_ary_push(ary, substr);
-	    else
-		rb_yield(substr);
+	    ENUM_ELEM(ary, rb_str_subseq(str, i, n));
 	}
     }
     RB_GC_GUARD(str);
@@ -7970,10 +7960,7 @@ rb_str_enumerate_codepoints(VALUE str, VALUE ary)
 
     while (ptr < end) {
 	c = rb_enc_codepoint_len(ptr, end, &n, enc);
-	if (ary)
-	    rb_ary_push(ary, UINT2NUM(c));
-	else
-	    rb_yield(UINT2NUM(c));
+	ENUM_ELEM(ary, UINT2NUM(c));
 	ptr += n;
     }
     RB_GC_GUARD(str);
@@ -8063,7 +8050,6 @@ rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
     end = RSTRING_END(str);
 
     while (ptr < end) {
-	VALUE grapheme_cluster;
 	OnigPosition len = onig_match(reg_grapheme_cluster,
 				      (const OnigUChar *)ptr, (const OnigUChar *)end,
 				      (const OnigUChar *)ptr, NULL, 0);
@@ -8071,11 +8057,7 @@ rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
 	if (len < 0) {
 	    break;
 	}
-	grapheme_cluster = rb_enc_str_new(ptr, len, enc);
-	if (ary)
-	    rb_ary_push(ary, grapheme_cluster);
-	else
-	    rb_yield(grapheme_cluster);
+	ENUM_ELEM(ary, rb_enc_str_new(ptr, len, enc));
 	ptr += len;
     }
     if (ary)
