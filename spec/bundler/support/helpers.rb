@@ -90,13 +90,7 @@ module Spec
 
       options["no-color"] = true unless options.key?("no-color") || cmd.to_s =~ /\A(e|ex|exe|exec|conf|confi|config)(\s|\z)/
 
-      if File.exist?(File.expand_path("../../../exe/bundle", __FILE__))
-        bundle_path = File.expand_path("../../../exe/bundle", __FILE__)
-      else
-        # for Ruby core
-        bundle_path = File.expand_path("../../../../bin/bundle", __FILE__)
-      end
-      bundle_bin = options.delete("bundle_bin") || bundle_path
+      bundle_bin = options.delete("bundle_bin") || File.expand_path("#{Spec::Path.bin_path}/bundle", __FILE__)
 
       if system_bundler = options.delete(:system_bundler)
         bundle_bin = "-S bundle"
@@ -126,21 +120,13 @@ module Spec
     bang :bundle
 
     def bundler(cmd, options = {})
-      if File.exist?(File.expand_path("../../../exe/bundler", __FILE__))
-        options["bundle_bin"] = File.expand_path("../../../exe/bundler", __FILE__)
-      else
-        options["bundle_bin"] = File.expand_path("../../../../bin/bundler", __FILE__)
-      end
+      options["bundle_bin"] = File.expand_path("#{Spec::Path.bin_path}/bundler", __FILE__)
       bundle(cmd, options)
     end
 
     def bundle_ruby(options = {})
-    if File.exist?(File.expand_path("../../../exe/bundle_ruby", __FILE__))
-      options["bundle_bin"] = File.expand_path("../../../exe/bundle_ruby", __FILE__)
-    else
-      options["bundle_bin"] = File.expand_path("../../../../bin/bundle_ruby", __FILE__)
-    end
-    bundle("", options)
+      options["bundle_bin"] = File.expand_path("#{Spec::Path.bin_path}/bundle_ruby", __FILE__)
+      bundle("", options)
     end
 
     def ruby(ruby, options = {})
