@@ -12,7 +12,7 @@ module Spec
       @root ||= Pathname.new(root_path)
     end
 
-    def bin_path
+    def bin
       if !!(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
         # for Ruby Core
         bin_path = File.expand_path("#{root}/bin", __FILE__)

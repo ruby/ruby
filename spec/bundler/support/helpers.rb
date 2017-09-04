@@ -90,7 +90,7 @@ module Spec
 
       options["no-color"] = true unless options.key?("no-color") || cmd.to_s =~ /\A(e|ex|exe|exec|conf|confi|config)(\s|\z)/
 
-      bundle_bin = options.delete("bundle_bin") || File.expand_path("#{Spec::Path.bin_path}/bundle", __FILE__)
+      bundle_bin = options.delete("bundle_bin") || File.expand_path("#{Spec::Path.bin}/bundle", __FILE__)
 
       if system_bundler = options.delete(:system_bundler)
         bundle_bin = "-S bundle"
@@ -120,12 +120,12 @@ module Spec
     bang :bundle
 
     def bundler(cmd, options = {})
-      options["bundle_bin"] = File.expand_path("#{Spec::Path.bin_path}/bundler", __FILE__)
+      options["bundle_bin"] = File.expand_path("#{Spec::Path.bin}/bundler", __FILE__)
       bundle(cmd, options)
     end
 
     def bundle_ruby(options = {})
-      options["bundle_bin"] = File.expand_path("#{Spec::Path.bin_path}/bundle_ruby", __FILE__)
+      options["bundle_bin"] = File.expand_path("#{Spec::Path.bin}/bundle_ruby", __FILE__)
       bundle("", options)
     end
 

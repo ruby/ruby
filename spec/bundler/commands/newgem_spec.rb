@@ -171,7 +171,7 @@ RSpec.describe "bundle gem" do
 
     # This spec cannot have `git` avaiable in the test env
     before do
-      bundle_bin = File.expand_path("#{Spec::Path.bin_path}/bundle", __FILE__)
+      bundle_bin = File.expand_path("#{Spec::Path.bin}/bundle", __FILE__)
       load_paths = [lib, spec]
       load_path_str = "-I#{load_paths.join(File::PATH_SEPARATOR)}"
 

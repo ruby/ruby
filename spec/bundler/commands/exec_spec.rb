@@ -62,7 +62,7 @@ RSpec.describe "bundle exec" do
   it "handles --keep-file-descriptors" do
     require "tempfile"
 
-    bundle_bin = File.expand_path("#{Spec::Path.bin_path}/bundle", __FILE__)
+    bundle_bin = File.expand_path("#{Spec::Path.bin}/bundle", __FILE__)
 
     command = Tempfile.new("io-test")
     command.sync = true
