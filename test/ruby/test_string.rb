@@ -919,6 +919,8 @@ CODE
     assert_equal ["\u000A", "\u0308"], "\u{a 308}".each_grapheme_cluster.to_a
     assert_equal ["\u000D", "\u0308"], "\u{d 308}".each_grapheme_cluster.to_a
     assert_equal ["a", "b", "c"], "abc".b.each_grapheme_cluster.to_a
+    s = ("x"+"\u{10ABCD}"*250000)
+    assert_empty(s.each_grapheme_cluster {s.clear})
   end
 
   def test_grapheme_clusters

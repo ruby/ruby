@@ -8019,6 +8019,7 @@ rb_str_codepoints(VALUE str)
 static VALUE
 rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
 {
+    VALUE orig = str;
     regex_t *reg_grapheme_cluster = NULL;
     static regex_t *reg_grapheme_cluster_utf8 = NULL;
     int encidx = ENCODING_GET(str);
@@ -8046,6 +8047,7 @@ rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
 	}
     }
 
+    if (!ary) str = rb_str_new_frozen(str);
     ptr = RSTRING_PTR(str);
     end = RSTRING_END(str);
 
@@ -8060,10 +8062,11 @@ rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
 	ENUM_ELEM(ary, rb_enc_str_new(ptr, len, enc));
 	ptr += len;
     }
+    RB_GC_GUARD(str);
     if (ary)
 	return ary;
     else
-	return str;
+	return orig;
 }
 
 /*
