@@ -258,12 +258,7 @@ module Spec
       gem_repo = options.fetch(:gem_repo) { gem_repo1 }
       gems.each do |g|
         path = if g == :bundler
-          if File.exist?("#{root}/bundler.gemspec")
-            gemspec_path = "#{root}/bundler.gemspec"
-          else
-            gemspec_path = "#{root}/lib/bundler.gemspec"
-          end
-          Dir.chdir(root) { gem_command! :build, gemspec_path }
+          Dir.chdir(root) { gem_command! :build, Spec::Path.gemspec.to_s }
           bundler_path = root + "bundler-#{Bundler::VERSION}.gem"
         elsif g.to_s =~ %r{\A/.*\.gem\z}
           g

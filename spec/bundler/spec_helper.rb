@@ -6,13 +6,11 @@ require "bundler/psyched_yaml"
 require "fileutils"
 require "uri"
 require "digest/sha1"
+require File.expand_path("../support/path.rb", __FILE__)
 
 begin
   require "rubygems"
-  spec = Gem::Specification.load("bundler.gemspec")
-  if spec.nil? # for Ruby core
-    spec = Gem::Specification.load("lib/bundler.gemspec")
-  end
+  spec = Gem::Specification.load(Spec::Path.gemspec.to_s)
   rspec = spec.dependencies.find {|d| d.name == "rspec" }
   gem "rspec", rspec.requirement.to_s
   require "rspec"

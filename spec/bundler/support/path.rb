@@ -12,6 +12,16 @@ module Spec
       @root ||= Pathname.new(root_path)
     end
 
+    def gemspec
+      if !!(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
+        # for Ruby Core
+        gemspec_path = File.expand_path("#{root}/lib/bundler.gemspec", __FILE__)
+      else
+        gemspec_path = File.expand_path("#{root}/bundler.gemspec", __FILE__)
+      end
+      @gemspec ||= Pathname.new(gemspec_path)
+    end
+
     def bin
       if !!(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
         # for Ruby Core
