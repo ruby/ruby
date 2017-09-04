@@ -50,4 +50,22 @@ class TestIONonblock < Test::Unit::TestCase
     assert_equal(4097, result.size)
     true
   end
+
+  def test_nonblock
+    IO.pipe {|r, w|
+      assert_equal(false, w.nonblock?)
+      w.nonblock do
+        assert_equal(true, w.nonblock?)
+        w.nonblock(false) do
+          assert_equal(false, w.nonblock?)
+          w.nonblock(false) do
+            assert_equal(false, w.nonblock?)
+          end
+          assert_equal(false, w.nonblock?)
+        end
+        assert_equal(true, w.nonblock?)
+      end
+      assert_equal(false, w.nonblock?)
+    }
+  end
 end if IO.method_defined?(:nonblock)
