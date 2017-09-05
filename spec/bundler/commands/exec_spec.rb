@@ -474,12 +474,7 @@ RSpec.describe "bundle exec" do
       Bundler.rubygems.extend(Monkey)
       G
       bundle "install --deployment"
-      if File.exist?(File.expand_path("../../../exe/bundler", __FILE__))
-        bundle_bin = "../../exe/bundler"
-      else
-        bundle_bin = "../../bin/bundler"
-      end
-      bundle "exec ruby -e '`#{bundle_bin} -v`; puts $?.success?'"
+      bundle "exec ruby -e '`#{Spec::Path.bin}/bundler -v`; puts $?.success?'"
       expect(out).to match("true")
     end
   end
