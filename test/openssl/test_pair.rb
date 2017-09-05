@@ -238,44 +238,42 @@ module OpenSSL::TestPairM
     }
   end
 
-  def write_nonblock(socket, meth, str)
-    ret = socket.send(meth, str)
-    ret.is_a?(Symbol) ? 0 : ret
-  end
-
-  def write_nonblock_no_ex(socket, str)
-    ret = socket.write_nonblock str, exception: false
-    ret.is_a?(Symbol) ? 0 : ret
-  end
-
   def test_write_nonblock
     ssl_pair {|s1, s2|
-      n = 0
-      begin
-        n += write_nonblock s1, :write_nonblock, "a" * 100000
-        n += write_nonblock s1, :write_nonblock, "b" * 100000
-        n += write_nonblock s1, :write_nonblock, "c" * 100000
-        n += write_nonblock s1, :write_nonblock, "d" * 100000
-        n += write_nonblock s1, :write_nonblock, "e" * 100000
-        n += write_nonblock s1, :write_nonblock, "f" * 100000
-      rescue IO::WaitWritable
+      assert_equal 3, s1.write_nonblock("foo")
+      assert_equal "foo", s2.read(3)
+
+      data = "x" * 16384
+      written = 0
+      while true
+        begin
+          written += s1.write_nonblock(data)
+        rescue IO::WaitWritable, IO::WaitReadable
+          break
+        end
       end
-      s1.close
-      assert_equal(n, s2.read.length)
+      assert written > 0
+      assert_equal written, s2.read(written).bytesize
     }
   end
 
   def test_write_nonblock_no_exceptions
     ssl_pair {|s1, s2|
-      n = 0
-      n += write_nonblock_no_ex s1, "a" * 100000
-      n += write_nonblock_no_ex s1, "b" * 100000
-      n += write_nonblock_no_ex s1, "c" * 100000
-      n += write_nonblock_no_ex s1, "d" * 100000
-      n += write_nonblock_no_ex s1, "e" * 100000
-      n += write_nonblock_no_ex s1, "f" * 100000
-      s1.close
-      assert_equal(n, s2.read.length)
+      assert_equal 3, s1.write_nonblock("foo", exception: false)
+      assert_equal "foo", s2.read(3)
+
+      data = "x" * 16384
+      written = 0
+      while true
+        case ret = s1.write_nonblock(data, exception: false)
+        when :wait_readable, :wait_writable
+          break
+        else
+          written += ret
+        end
+      end
+      assert written > 0
+      assert_equal written, s2.read(written).bytesize
     }
   end
 
