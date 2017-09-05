@@ -2,7 +2,7 @@
 require "spec_helper"
 
 RSpec.describe "bundle install with install-time dependencies" do
-  it "installs gems with implicit rake dependencies", :ruby_trunk do
+  it "installs gems with implicit rake dependencies", :ruby_repo do
     install_gemfile <<-G
       source "file://#{gem_repo1}"
       gem "with_implicit_rake_dep"
@@ -49,7 +49,7 @@ RSpec.describe "bundle install with install-time dependencies" do
       expect(the_bundle).to include_gems "net_b 1.0"
     end
 
-    it "installs plugins depended on by other plugins", :ruby_trunk do
+    it "installs plugins depended on by other plugins", :ruby_repo do
       install_gemfile <<-G
         source "file://#{gem_repo1}"
         gem "net_a"
@@ -58,7 +58,7 @@ RSpec.describe "bundle install with install-time dependencies" do
       expect(the_bundle).to include_gems "net_a 1.0", "net_b 1.0"
     end
 
-    it "installs multiple levels of dependencies", :ruby_trunk do
+    it "installs multiple levels of dependencies", :ruby_repo do
       install_gemfile <<-G
         source "file://#{gem_repo1}"
         gem "net_c"

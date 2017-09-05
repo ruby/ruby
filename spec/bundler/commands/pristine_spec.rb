@@ -40,7 +40,7 @@ RSpec.describe "bundle pristine" do
       expect(changes_txt).to_not be_file
     end
 
-    it "does not delete the bundler gem", :ruby_trunk do
+    it "does not delete the bundler gem", :ruby_repo do
       system_gems :bundler
       bundle! "install"
       bundle! "pristine", :system_bundler => true

@@ -67,7 +67,7 @@ RSpec.shared_examples "bundle install --standalone" do
     include_examples "common functionality"
   end
 
-  describe "with gems with native extension", :ruby_trunk do
+  describe "with gems with native extension", :ruby_repo do
     before do
       install_gemfile <<-G, :standalone => true
         source "file://#{gem_repo1}"
