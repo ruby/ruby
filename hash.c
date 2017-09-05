@@ -432,6 +432,15 @@ rb_hash_new(void)
     return hash_alloc(rb_cHash);
 }
 
+VALUE
+rb_hash_new_with_size(st_index_t size)
+{
+    VALUE ret = rb_hash_new();
+    if (size)
+        RHASH(ret)->ntbl = st_init_table_with_size(&objhash, size);
+    return ret;
+}
+
 static VALUE
 hash_dup(VALUE hash, VALUE klass, VALUE flags)
 {
@@ -1927,7 +1936,7 @@ rb_hash_transform_values(VALUE hash)
     VALUE result;
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    result = rb_hash_new();
+    result = rb_hash_new_with_size(RHASH_SIZE(hash));
     if (!RHASH_EMPTY_P(hash)) {
         rb_hash_foreach(hash, transform_values_i, result);
     }

@@ -2694,7 +2694,7 @@ m_core_hash_from_ary(VALUE self, VALUE ary)
 static VALUE
 core_hash_from_ary(VALUE ary)
 {
-    VALUE hash = rb_hash_new();
+    VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
 
     RUBY_DTRACE_CREATE_HOOK(HASH, (Check_Type(ary, T_ARRAY), RARRAY_LEN(ary)));
     return core_hash_merge_ary(hash, ary);

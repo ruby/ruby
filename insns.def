@@ -496,7 +496,7 @@ newhash
 {
     RUBY_DTRACE_CREATE_HOOK(HASH, num);
 
-    val = rb_hash_new();
+    val = rb_hash_new_with_size(num / 2);
 
     if (num) {
         rb_hash_bulk_insert(num, STACK_ADDR_FROM_TOP(num), val);
