@@ -67,5 +67,6 @@ class TestIONonblock < Test::Unit::TestCase
       end
       assert_equal(false, w.nonblock?)
     }
+  rescue NotImplementedError
   end
 end if IO.method_defined?(:nonblock)
