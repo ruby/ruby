@@ -4,10 +4,10 @@ require "pathname"
 module Spec
   module Path
     def root
-      if File.exist?(File.expand_path("../../../bundler.gemspec", __FILE__))
-        root_path = File.expand_path("../../..", __FILE__)
-      else
+      if !!(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
         root_path = File.expand_path("../../../..", __FILE__)
+      else
+        root_path = File.expand_path("../../..", __FILE__)
       end
       @root ||= Pathname.new(root_path)
     end
