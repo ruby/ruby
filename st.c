@@ -2102,42 +2102,84 @@ st_rehash(st_table *tab)
 }
 
 #ifdef RUBY
-/* Mimics ruby's { foo => bar } syntax. This function is placed here
-   because it touches table internals and write barriers at once. */
-void
-rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
+static st_data_t
+st_stringify(VALUE key)
+{
+    return (rb_obj_class(key) == rb_cString) ?
+        rb_str_new_frozen(key) : key;
+}
+
+static void
+st_insert_single(st_table *tab, VALUE hash, VALUE key, VALUE val)
+{
+    st_data_t k = st_stringify(key);
+    st_table_entry e;
+    e.hash = do_hash(k, tab);
+    e.key = k;
+    e.record = val;
+
+    tab->entries[tab->entries_bound++] = e;
+    tab->num_entries++;
+    RB_OBJ_WRITTEN(hash, Qundef, k);
+    RB_OBJ_WRITTEN(hash, Qundef, val);
+}
+
+static void
+st_insert_linear(st_table *tab, long argc, const VALUE *argv, VALUE hash)
+{
+    long i;
+
+    for (i = 0; i < argc; /* */) {
+        st_data_t k = st_stringify(argv[i++]);
+        st_data_t v = argv[i++];
+        st_insert(tab, k, v);
+        RB_OBJ_WRITTEN(hash, Qundef, k);
+        RB_OBJ_WRITTEN(hash, Qundef, v);
+    }
+}
+
+static void
+st_insert_generic(st_table *tab, long argc, const VALUE *argv, VALUE hash)
 {
     int i;
-    st_table *tab;
-
-    st_assert(argc % 2);
-    if (! argc)
-        return;
-    if (! RHASH(hash)->ntbl)
-        rb_hash_tbl_raw(hash);
-    tab = RHASH(hash)->ntbl;
-
-    /* make room */
-    st_expand_table(tab, tab->num_entries + argc);
 
     /* push elems */
     for (i = 0; i < argc; /* */) {
         VALUE key = argv[i++];
         VALUE val = argv[i++];
-        st_data_t k = (rb_obj_class(key) == rb_cString) ?
-            rb_str_new_frozen(key) : key;
-        st_table_entry e;
-        e.hash = do_hash(k, tab);
-        e.key = k;
-        e.record = val;
-
-        tab->entries[tab->entries_bound++] = e;
-        tab->num_entries++;
-        RB_OBJ_WRITTEN(hash, Qundef, k);
-        RB_OBJ_WRITTEN(hash, Qundef, val);
+        st_insert_single(tab, hash, key, val);
     }
 
     /* reindex */
     st_rehash(tab);
+}
+
+/* Mimics ruby's { foo => bar } syntax. This function is placed here
+   because it touches table internals and write barriers at once. */
+void
+rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
+{
+    st_index_t n;
+    st_table *tab = RHASH(hash)->ntbl;
+
+    st_assert(argc % 2);
+    if (! argc)
+        return;
+    if (! tab) {
+        VALUE tmp = rb_hash_new_with_size(argc / 2);
+        RBASIC_CLEAR_CLASS(tmp);
+        RHASH(hash)->ntbl = tab = RHASH(tmp)->ntbl;
+        RHASH(tmp)->ntbl = NULL;
+    }
+    n = tab->num_entries + argc / 2;
+    st_expand_table(tab, n);
+    if (UNLIKELY(tab->num_entries))
+        st_insert_generic(tab, argc, argv, hash);
+    else if (argc <= 2)
+        st_insert_single(tab, hash, argv[0], argv[1]);
+    else if (tab->bin_power <= MAX_POWER2_FOR_TABLES_WITHOUT_BINS)
+        st_insert_linear(tab, argc, argv, hash);
+    else
+        st_insert_generic(tab, argc, argv, hash);
 }
 #endif
