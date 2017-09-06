@@ -81,7 +81,7 @@ with all sufficient information, see the ChangeLog file or Redmine
     [Feature #7688]
 
 * Regexp
-  * Update Onigmo 6.1.1.
+  * Update to Onigmo 6.1.1.
     * Support absent operator https://github.com/k-takata/Onigmo/issues/82
 
 * String
@@ -98,6 +98,8 @@ with all sufficient information, see the ChangeLog file or Redmine
   * String#delete_suffix! is added to remove suffix destructively [Feature #13665]
   * String#each_grapheme_cluster and String#grapheme_clusters is added to
     enumerate grapheme clusters [Feature #13780]
+
+* Regexp/String: Updated Unicode version from 9.0.0 to 10.0.0 [Feature #13685]
 
 * Thread
 
