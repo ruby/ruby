@@ -737,7 +737,7 @@ typedef char rb_thread_id_string_t[sizeof(rb_nativethread_id_t) * 2 + 3];
 
 typedef struct rb_fiber_struct rb_fiber_t;
 
-typedef struct rb_thread_context_struct {
+typedef struct rb_execution_context_struct {
     /* execution information */
     VALUE *vm_stack;		/* must free, must mark */
     size_t vm_stack_size;       /* size in word (byte size / sizeof(VALUE)) */
