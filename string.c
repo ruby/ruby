@@ -8079,7 +8079,7 @@ rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
  *  Unlike String#each_char, this enumerates by grapheme clusters defined by
  *  Unicode Standard Annex #29 http://unicode.org/reports/tr29/
  *
- *     "a\u0300".each_chars.to_a.size #=> 2
+ *     "a\u0300".each_char.to_a.size #=> 2
  *     "a\u0300".each_grapheme_cluster.to_a.size #=> 1
  *
  */
