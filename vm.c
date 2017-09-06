@@ -2365,18 +2365,15 @@ rb_thread_recycle_stack_release(VALUE *stack)
 
 void rb_fiber_mark_self(rb_fiber_t *fib);
 
-void
-rb_thread_mark(void *ptr)
+static void
+rb_execution_context_mark(const rb_execution_context_t *ec)
 {
-    rb_thread_t *th = ptr;
-    RUBY_MARK_ENTER("thread");
-
     /* mark VM stack */
-    if (th->ec.vm_stack) {
-	VALUE *p = th->ec.vm_stack;
-	VALUE *sp = th->ec.cfp->sp;
-	rb_control_frame_t *cfp = th->ec.cfp;
-	rb_control_frame_t *limit_cfp = (void *)(th->ec.vm_stack + th->ec.vm_stack_size);
+    if (ec->vm_stack) {
+	VALUE *p = ec->vm_stack;
+	VALUE *sp = ec->cfp->sp;
+	rb_control_frame_t *cfp = ec->cfp;
+	rb_control_frame_t *limit_cfp = (void *)(ec->vm_stack + ec->vm_stack_size);
 
 	rb_gc_mark_values((long)(sp - p), p);
 
@@ -2393,6 +2390,21 @@ rb_thread_mark(void *ptr)
 	}
     }
 
+    RUBY_MARK_UNLESS_NULL(ec->errinfo);
+    RUBY_MARK_UNLESS_NULL(ec->root_svar);
+    rb_mark_tbl(ec->local_storage);
+    RUBY_MARK_UNLESS_NULL(ec->local_storage_recursive_hash);
+    RUBY_MARK_UNLESS_NULL(ec->local_storage_recursive_hash_for_trace);
+}
+
+void
+rb_thread_mark(void *ptr)
+{
+    rb_thread_t *th = ptr;
+    RUBY_MARK_ENTER("thread");
+
+    rb_execution_context_mark(&th->ec);
+
     /* mark machine stack */
     if (GET_THREAD() != th && th->machine.stack_start && th->machine.stack_end) {
 	rb_gc_mark_machine_stack(th);
@@ -2407,25 +2419,16 @@ rb_thread_mark(void *ptr)
 
     RUBY_MARK_UNLESS_NULL(th->thgroup);
     RUBY_MARK_UNLESS_NULL(th->value);
-    RUBY_MARK_UNLESS_NULL(th->ec.errinfo);
     RUBY_MARK_UNLESS_NULL(th->pending_interrupt_queue);
     RUBY_MARK_UNLESS_NULL(th->pending_interrupt_mask_stack);
-    RUBY_MARK_UNLESS_NULL(th->ec.root_svar);
     RUBY_MARK_UNLESS_NULL(th->top_self);
     RUBY_MARK_UNLESS_NULL(th->top_wrapper);
     rb_fiber_mark_self(th->fiber);
     rb_fiber_mark_self(th->root_fiber);
     RUBY_MARK_UNLESS_NULL(th->stat_insn_usage);
     RUBY_MARK_UNLESS_NULL(th->last_status);
-
     RUBY_MARK_UNLESS_NULL(th->locking_mutex);
-
-    rb_mark_tbl(th->ec.local_storage);
-    RUBY_MARK_UNLESS_NULL(th->ec.local_storage_recursive_hash);
-    RUBY_MARK_UNLESS_NULL(th->ec.local_storage_recursive_hash_for_trace);
-
     RUBY_MARK_UNLESS_NULL(th->name);
-
     rb_vm_trace_mark_event_hooks(&th->event_hooks);
 
     RUBY_MARK_LEAVE("thread");
