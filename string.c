@@ -8027,7 +8027,7 @@ rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
     int unicode_p = rb_enc_unicode_p(enc);
     const char *ptr, *end;
 
-    if (!unicode_p) {
+    if (!unicode_p || single_byte_optimizable(str)) {
 	return rb_str_enumerate_chars(str, ary);
     }
 
