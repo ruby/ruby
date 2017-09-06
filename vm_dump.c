@@ -289,7 +289,7 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 	}
     }
     else if (VM_FRAME_FINISHED_P(cfp)) {
-	if ((th)->stack + (th)->stack_size > (VALUE *)(cfp + 1)) {
+	if ((th)->ec.vm_stack + (th)->ec.vm_stack_size > (VALUE *)(cfp + 1)) {
 	    vm_stack_dump_each(th, cfp + 1);
 	}
 	else {
