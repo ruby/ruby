@@ -101,10 +101,10 @@ VM_CFP_IN_HEAP_P(const rb_thread_t *th, const rb_control_frame_t *cfp)
 }
 
 static int
-VM_EP_IN_HEAP_P(const rb_thread_t *th, const VALUE *ep)
+VM_EP_IN_HEAP_P(const rb_execution_context_t *ec, const VALUE *ep)
 {
-    const VALUE *start = th->ec.vm_stack;
-    const VALUE *end = (VALUE *)th->ec.cfp;
+    const VALUE *start = ec->vm_stack;
+    const VALUE *end = (VALUE *)ec->cfp;
     VM_ASSERT(start != NULL);
 
     if (start <= ep && ep < end) {
@@ -116,9 +116,9 @@ VM_EP_IN_HEAP_P(const rb_thread_t *th, const VALUE *ep)
 }
 
 int
-vm_ep_in_heap_p_(const rb_thread_t *th, const VALUE *ep)
+vm_ep_in_heap_p_(const rb_execution_context_t *ec, const VALUE *ep)
 {
-    if (VM_EP_IN_HEAP_P(th, ep)) {
+    if (VM_EP_IN_HEAP_P(ec, ep)) {
 	VALUE envval = ep[VM_ENV_DATA_INDEX_ENV]; /* VM_ENV_ENVVAL(ep); */
 
 	if (envval != Qundef) {
@@ -138,7 +138,7 @@ vm_ep_in_heap_p_(const rb_thread_t *th, const VALUE *ep)
 int
 rb_vm_ep_in_heap_p(const VALUE *ep)
 {
-    return vm_ep_in_heap_p_(GET_THREAD(), ep);
+    return vm_ep_in_heap_p_(&GET_THREAD()->ec, ep);
 }
 #endif
 
@@ -813,7 +813,7 @@ rb_proc_create_from_captured(VALUE klass,
     VALUE procval = rb_proc_alloc(klass);
     rb_proc_t *proc = RTYPEDDATA_DATA(procval);
 
-    VM_ASSERT(VM_EP_IN_HEAP_P(GET_THREAD(), captured->ep));
+    VM_ASSERT(VM_EP_IN_HEAP_P(&GET_THREAD()->ec, captured->ep));
 
     /* copy block */
     RB_OBJ_WRITE(procval, &proc->block.as.captured.self, captured->self);
@@ -855,7 +855,7 @@ rb_proc_create(VALUE klass, const struct rb_block *block,
     VALUE procval = rb_proc_alloc(klass);
     rb_proc_t *proc = RTYPEDDATA_DATA(procval);
 
-    VM_ASSERT(VM_EP_IN_HEAP_P(GET_THREAD(), vm_block_ep(block)));
+    VM_ASSERT(VM_EP_IN_HEAP_P(&GET_THREAD()->ec, vm_block_ep(block)));
     rb_vm_block_copy(procval, &proc->block, block);
     vm_block_type_set(&proc->block, block->type);
     proc->safe_level = safe_level;
@@ -880,7 +880,7 @@ rb_vm_make_proc_lambda(rb_thread_t *th, const struct rb_captured_block *captured
 	rb_control_frame_t *cfp = VM_CAPTURED_BLOCK_TO_CFP(captured);
 	vm_make_env_object(th, cfp);
     }
-    VM_ASSERT(VM_EP_IN_HEAP_P(th, captured->ep));
+    VM_ASSERT(VM_EP_IN_HEAP_P(&th->ec, captured->ep));
     VM_ASSERT(imemo_type_p(captured->code.val, imemo_iseq) ||
 	      imemo_type_p(captured->code.val, imemo_ifunc));
 
@@ -2380,7 +2380,7 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 	while (cfp != limit_cfp) {
 #if VM_CHECK_MODE > 0
 	    const VALUE *ep = cfp->ep;
-	    VM_ASSERT(!!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) == vm_ep_in_heap_p_(GET_THREAD(), ep));
+	    VM_ASSERT(!!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) == vm_ep_in_heap_p_(ec, ep));
 #endif
 	    rb_gc_mark(cfp->self);
 	    rb_gc_mark((VALUE)cfp->iseq);
