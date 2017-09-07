@@ -85,7 +85,7 @@ class String
     split('')
   end
 
-  (Array.instance_methods - instance_methods - [:to_ary, :transpose, :flatten, :flatten!, :compact, :compact!, :assoc, :rassoc]).each{|meth|
+  (Array.instance_methods - instance_methods - %i[to_ary transpose flatten flatten! compact compact! assoc rassoc]).each{|meth|
     eval "
     def #{meth}(*args, &block)
       a = to_a
