@@ -6593,6 +6593,11 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	ret->last == saved_last_element &&
 	((INSN *)saved_last_element)->insn_id == BIN(trace)) {
 	POP_ELEMENT(ret);
+	/* remove trace(coverage) */
+	if (((INSN *)ret->last)->insn_id == BIN(trace)) {
+	    POP_ELEMENT(ret);
+	    RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), line - 1, Qnil);
+	}
     }
 
     debug_node_end();
