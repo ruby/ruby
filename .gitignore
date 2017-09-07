@@ -116,6 +116,7 @@ lcov*.info
 /run.gdb
 /sizes.c
 /test.rb
+/test-coverage.dat
 /tmp
 /transdb.h
 /uncommon.mk
