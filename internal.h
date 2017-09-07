@@ -372,8 +372,6 @@ ntz_intptr(uintptr_t x)
 VALUE rb_int128t2big(int128_t n);
 #endif
 
-#define ST2FIX(h) LONG2FIX((long)(h))
-
 static inline long
 rb_overflowed_fix_to_int(long x)
 {

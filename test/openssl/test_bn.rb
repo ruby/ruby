@@ -270,6 +270,7 @@ class OpenSSL::TestBN < OpenSSL::TestCase
     assert_equal(1, @e1.cmp(-999))
     assert_equal(0, @e1.ucmp(999))
     assert_equal(0, @e1.ucmp(-999))
+    assert_instance_of(String, @e1.hash.to_s)
   end
 end
 
