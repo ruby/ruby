@@ -5,6 +5,7 @@ module Spec
   module Path
     def root
       if !!(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
+        # for Ruby Core
         root_path = File.expand_path("../../../..", __FILE__)
       else
         root_path = File.expand_path("../../..", __FILE__)
@@ -15,31 +16,31 @@ module Spec
     def gemspec
       if !!(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
         # for Ruby Core
-        gemspec_path = File.expand_path("#{root}/lib/bundler.gemspec", __FILE__)
+        gemspec_path = File.expand_path(root.join("lib/bundler.gemspec"), __FILE__)
       else
-        gemspec_path = File.expand_path("#{root}/bundler.gemspec", __FILE__)
+        gemspec_path = File.expand_path(root.join("bundler.gemspec"), __FILE__)
       end
       @gemspec ||= Pathname.new(gemspec_path)
     end
 
-    def bin
+    def bindir
       if !!(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
         # for Ruby Core
-        bin_path = File.expand_path("#{root}/bin", __FILE__)
+        bin_path = File.expand_path(root.join("bin"), __FILE__)
       else
-        bin_path = File.expand_path("#{root}/exe", __FILE__)
+        bin_path = File.expand_path(root.join("exe"), __FILE__)
       end
-      @bin ||= Pathname.new(bin_path)
+      @bindir ||= Pathname.new(bin_path)
     end
 
-    def spec
+    def spec_dir
       if !!(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
         # for Ruby Core
-        spec_path = File.expand_path("#{root}/spec/bundler", __FILE__)
+        spec_path = File.expand_path(root.join("spec/bundler"), __FILE__)
       else
-        spec_path = File.expand_path("#{root}/spec", __FILE__)
+        spec_path = File.expand_path(root.join("spec"), __FILE__)
       end
-      @spec ||= Pathname.new(spec_path)
+      @spec_dir ||= Pathname.new(spec_path)
     end
 
     def tmp(*path)
@@ -113,7 +114,7 @@ module Spec
     end
 
     def bundler_path
-      Pathname.new(File.expand_path("#{root}/lib", __FILE__))
+      Pathname.new(File.expand_path(root.join("lib"), __FILE__))
     end
 
     def global_plugin_gem(*args)

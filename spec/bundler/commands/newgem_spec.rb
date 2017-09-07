@@ -41,7 +41,7 @@ RSpec.describe "bundle gem" do
       user = bundleuser
     EOF
     @git_config_location = ENV["GIT_CONFIG"]
-    path = "#{File.expand_path(Spec::Path.tmp, File.dirname(__FILE__))}/test_git_config.txt"
+    path = "#{File.expand_path(tmp, File.dirname(__FILE__))}/test_git_config.txt"
     File.open(path, "w") {|f| f.write(git_config_content) }
     ENV["GIT_CONFIG"] = path
   end
@@ -171,11 +171,10 @@ RSpec.describe "bundle gem" do
 
     # This spec cannot have `git` avaiable in the test env
     before do
-      bundle_bin = File.expand_path("#{Spec::Path.bin}/bundle", __FILE__)
       load_paths = [lib, spec]
       load_path_str = "-I#{load_paths.join(File::PATH_SEPARATOR)}"
 
-      sys_exec "PATH=\"\" #{Gem.ruby} #{load_path_str} #{bundle_bin} gem #{gem_name}"
+      sys_exec "PATH=\"\" #{Gem.ruby} #{load_path_str} #{bindir.join("bundle")} gem #{gem_name}"
     end
 
     it "creates the gem without the need for git" do
