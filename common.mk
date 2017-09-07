@@ -252,7 +252,11 @@ objs: $(ALLOBJS)
 
 GORUBY = go$(RUBY_INSTALL_NAME)
 golf: $(LIBRUBY) $(GOLFOBJS) PHONY
-	$(Q) $(MAKE) $(mflags) MAINOBJ="$(GOLFOBJS)" PROGRAM=$(GORUBY)$(EXEEXT) program
+	$(Q) $(MAKE) $(mflags) \
+		MAINOBJ=goruby.$(OBJEXT) \
+		EXTOBJS="golf_prelude.$(OBJEXT) $(EXTOBJS)" \
+		PROGRAM=$(GORUBY)$(EXEEXT) \
+	program
 capi: $(CAPIOUT)/.timestamp PHONY
 
 $(CAPIOUT)/.timestamp: Doxyfile $(PREP)
