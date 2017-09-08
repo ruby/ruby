@@ -1479,7 +1479,7 @@ fiber_store(rb_fiber_t *next_fib, rb_thread_t *th)
     cont_save_machine_stack(th, &fib->cont);
     if (ruby_setjmp(fib->cont.jmpbuf)) {
 	/* restored */
-	fib = th->fiber;
+	fib = th->ec.fiber;
 	if (fib->cont.argc == -1) rb_exc_raise(fib->cont.value);
 	if (next_fib->cont.value == Qundef) {
 	    cont_restore_0(&next_fib->cont, &next_fib->cont.value);
