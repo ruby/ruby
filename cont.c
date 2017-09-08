@@ -248,7 +248,7 @@ cont_mark(void *ptr)
 	    const rb_thread_t *th = rb_thread_ptr(cont->saved_thread.self);
 	    const rb_fiber_t *fib = (rb_fiber_t*)cont;
 
-	    if ((th->ec.fiber != fib) && FIBER_SUSPENDED_P(fib)) {
+	    if ((th->ec.fiber != fib) && !FIBER_TERMINATED_P(fib)) {
 		rb_gc_mark_locations(cont->machine.stack,
 				     cont->machine.stack + cont->machine.stack_size);
 	    }

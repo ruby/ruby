@@ -217,6 +217,17 @@ class TestFiber < Test::Unit::TestCase
     }, bug4612
   end
 
+  def test_mark_fiber
+    bug13875 = '[ruby-core:82681]'
+
+    assert_normal_exit %q{
+      GC.stress = true
+      up = 1.upto(10)
+      down = 10.downto(1)
+      up.zip(down) {|a, b| a + b == 11 or fail 'oops'}
+    }, bug13875
+  end
+
   def test_no_valid_cfp
     bug5083 = '[ruby-dev:44208]'
     assert_equal([], Fiber.new(&Module.method(:nesting)).resume, bug5083)
