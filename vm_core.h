@@ -765,6 +765,8 @@ typedef struct rb_execution_context_struct {
 
     /* ensure & callcc */
     rb_ensure_list_t *ensure_list;
+
+    rb_fiber_t *fiber;
 } rb_execution_context_t;
 
 typedef struct rb_thread_struct {
@@ -847,7 +849,6 @@ typedef struct rb_thread_struct {
     rb_hook_list_t event_hooks;
 
     /* fiber */
-    rb_fiber_t *fiber;
     rb_fiber_t *root_fiber;
     rb_jmpbuf_t root_jmpbuf;
 

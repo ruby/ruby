@@ -2395,6 +2395,7 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
     rb_mark_tbl(ec->local_storage);
     RUBY_MARK_UNLESS_NULL(ec->local_storage_recursive_hash);
     RUBY_MARK_UNLESS_NULL(ec->local_storage_recursive_hash_for_trace);
+    rb_fiber_mark_self(ec->fiber);
 }
 
 void
@@ -2423,7 +2424,6 @@ rb_thread_mark(void *ptr)
     RUBY_MARK_UNLESS_NULL(th->pending_interrupt_mask_stack);
     RUBY_MARK_UNLESS_NULL(th->top_self);
     RUBY_MARK_UNLESS_NULL(th->top_wrapper);
-    rb_fiber_mark_self(th->fiber);
     rb_fiber_mark_self(th->root_fiber);
     RUBY_MARK_UNLESS_NULL(th->stat_insn_usage);
     RUBY_MARK_UNLESS_NULL(th->last_status);
