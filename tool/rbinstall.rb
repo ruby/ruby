@@ -758,10 +758,10 @@ def install_default_gem(dir, srcdir)
   end
 end
 
-install?(:ext, :comm, :gem, :'bundle-gems') do
+install?(:ext, :comm, :gem, :'bundled-gems') do
   gem_dir = Gem.default_dir
   directories = Gem.ensure_gem_subdirectories(gem_dir, :mode => $dir_mode)
-  prepare "bundle gems", gem_dir, directories
+  prepare "bundled gems", gem_dir, directories
   install_dir = with_destdir(gem_dir)
   installed_gems = {}
   options = {
@@ -819,7 +819,7 @@ install?(:ext, :comm, :gem, :'bundle-gems') do
     # fix .gemspec permissions
     File.chmod($data_mode, *Dir.glob(install_dir+"/specifications/*.gemspec"))
   else
-    puts "skip installing bundle gems because of lacking zlib"
+    puts "skip installing bundled gems because of lacking zlib"
   end
 end
 
