@@ -114,7 +114,7 @@ ARCH = $(MACHINE)
 DEBUGFLAGS = -Zi
 !endif
 !if "$(RUBY_DEVEL)" == "yes"
-DEBUGFLAGS = $(DEBUGFLAGS) -DRUBY_DEVEL=1
+XCFLAGS = $(XCFLAGS) -DRUBY_DEVEL=1
 !endif
 !if !defined(OPTFLAGS)
 !if $(MSC_VER) < 1400
