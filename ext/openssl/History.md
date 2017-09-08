@@ -1,3 +1,16 @@
+Version 2.0.5
+=============
+
+Bug fixes
+---------
+
+* Reading a PEM/DER-encoded private key or certificate from an IO object did
+  not work properly on mswin platforms.
+  [[ruby/openssl#128]](https://github.com/ruby/openssl/issues/128)
+* Broken length check in the PEM passphrase callback is fixed.
+* It failed to compile when OpenSSL is configured without TLS 1.0 support.
+
+
 Version 2.0.4
 =============
 

@@ -161,7 +161,7 @@ ossl_x509_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
     }
     arg = ossl_to_der_if_possible(arg);
-    in = ossl_obj2bio(arg);
+    in = ossl_obj2bio(&arg);
     x509 = PEM_read_bio_X509(in, &x, NULL, NULL);
     DATA_PTR(self) = x;
     if (!x509) {

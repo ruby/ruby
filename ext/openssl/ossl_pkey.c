@@ -144,7 +144,7 @@ ossl_pkey_new_from_data(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11", &data, &pass);
     pass = ossl_pem_passwd_value(pass);
 
-    bio = ossl_obj2bio(data);
+    bio = ossl_obj2bio(&data);
     if (!(pkey = d2i_PrivateKey_bio(bio, NULL))) {
 	OSSL_BIO_reset(bio);
 	if (!(pkey = PEM_read_bio_PrivateKey(bio, NULL, ossl_pem_passwd_cb, (void *)pass))) {

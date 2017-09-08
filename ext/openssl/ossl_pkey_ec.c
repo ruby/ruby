@@ -217,7 +217,7 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
 	BIO *in;
 
 	pass = ossl_pem_passwd_value(pass);
-	in = ossl_obj2bio(arg);
+	in = ossl_obj2bio(&arg);
 
 	ec = PEM_read_bio_ECPrivateKey(in, NULL, ossl_pem_passwd_cb, (void *)pass);
 	if (!ec) {
@@ -775,7 +775,7 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
             if ((group = EC_GROUP_dup(arg1_group)) == NULL)
                 ossl_raise(eEC_GROUP, "EC_GROUP_dup");
         } else {
-            BIO *in = ossl_obj2bio(arg1);
+            BIO *in = ossl_obj2bio(&arg1);
 
             group = PEM_read_bio_ECPKParameters(in, NULL, NULL, NULL);
             if (!group) {
@@ -1381,7 +1381,7 @@ static VALUE ossl_ec_point_initialize(int argc, VALUE *argv, VALUE self)
 
             point = EC_POINT_bn2point(group, bn, NULL, ossl_bn_ctx);
         } else {
-            BIO *in = ossl_obj2bio(arg1);
+            BIO *in = ossl_obj2bio(&arg1);
 
 /* BUG: finish me */
 

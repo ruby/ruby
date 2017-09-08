@@ -48,7 +48,7 @@ tddwpBAEDjcwMzA5NTYzMTU1MzAwpQMCARM=
     Timeout.timeout(5) do
       start_server do |server, port|
         sock = TCPSocket.new("127.0.0.1", port)
-        ctx = OpenSSL::SSL::SSLContext.new("TLSv1")
+        ctx = OpenSSL::SSL::SSLContext.new
         ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
         ssl.sync_close = true
         ssl.connect
@@ -157,9 +157,7 @@ __EOS__
     start_server do |server, port|
       2.times do
         sock = TCPSocket.new("127.0.0.1", port)
-        # Debian's openssl 0.9.8g-13 failed at assert(ssl.session_reused?),
-        # when use default SSLContext. [ruby-dev:36167]
-        ctx = OpenSSL::SSL::SSLContext.new("TLSv1")
+        ctx = OpenSSL::SSL::SSLContext.new
         ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
         ssl.sync_close = true
         ssl.session = last_session if last_session

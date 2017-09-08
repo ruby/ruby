@@ -222,7 +222,7 @@ ossl_dh_initialize(int argc, VALUE *argv, VALUE self)
     }
     else {
 	arg = ossl_to_der_if_possible(arg);
-	in = ossl_obj2bio(arg);
+	in = ossl_obj2bio(&arg);
 	dh = PEM_read_bio_DHparams(in, NULL, NULL, NULL);
 	if (!dh){
 	    OSSL_BIO_reset(in);
