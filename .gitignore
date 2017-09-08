@@ -179,6 +179,10 @@ lcov*.info
 /gems/*.gem
 /gems/*-*
 
+# /spec/bundler
+/.rspec_status
+/spec/rspec
+
 # /tool/
 /tool/config.guess
 /tool/config.sub
