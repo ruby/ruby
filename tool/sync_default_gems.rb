@@ -1,6 +1,7 @@
 # sync following repositories to ruby repository
 #
 # * https://github.com/rubygems/rubygems
+# * https://github.com/bundler/bundler
 # * https://github.com/ruby/rdoc
 # * https://github.com/flori/json
 # * https://github.com/ruby/psych
@@ -25,6 +26,7 @@
 
 $repositories = {
   rubygems: 'rubygems/rubygems',
+  bundler: 'bundler/bundler',
   rdoc: 'ruby/rdoc',
   json: 'flori/json',
   psych: 'ruby/psych',
@@ -63,6 +65,12 @@ def sync_default_gems(gem)
     `cp -r ../../rubygems/rubygems/lib/ubygems.rb ./lib`
     `cp -r ../../rubygems/rubygems/test/rubygems ./test`
     `cp ../../rubygems/rubygems/LICENSE.txt ./lib/rubygems`
+  when "bundler"
+    `rm -rf lib/bundler* bin/bundler bin/bundle bin/bundle_ruby spec/bundler`
+    `cp -r ../../bundler/bundler/lib/bundler* ./lib`
+    `cp -r ../../bundler/bundler/exe/bundle* ./bin`
+    `cp ../../bundler/bundler/bundler.gemspec ./lib`
+    `cp ../../bundler/bundler/spec spec/bundler
   when "rdoc"
     `rm -rf lib/rdoc* test/rdoc`
     `cp -rf ../rdoc/lib/rdoc* ./lib`

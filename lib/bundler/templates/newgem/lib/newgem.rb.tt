@@ -1,0 +1,12 @@
+require "<%= config[:namespaced_path] %>/version"
+<%- if config[:ext] -%>
+require "<%= config[:namespaced_path] %>/<%= config[:underscored_name] %>"
+<%- end -%>
+
+<%- config[:constant_array].each_with_index do |c, i| -%>
+<%= "  " * i %>module <%= c %>
+<%- end -%>
+<%= "  " * config[:constant_array].size %># Your code goes here...
+<%- (config[:constant_array].size-1).downto(0) do |i| -%>
+<%= "  " * i %>end
+<%- end -%>

@@ -474,6 +474,20 @@ ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 
 enc/encinit.$(OBJEXT): enc/encinit.c $(SETUP)
 
+test-bundler-precheck: $(arch)-fake.rb programs
+
+test-bundler-prepare:
+	GEM_HOME=$(srcdir)/spec/rspec GEM_PATH=$(srcdir)/spec/rspec \
+		$(XRUBY) "$(srcdir)/bin/gem" install --no-ri --no-rdoc --conservative 'rspec:~> 3.5'
+test-bundler: $(TEST_RUNNABLE)-test-bundler
+yes-test-bundler: test-bundler-precheck test-bundler-prepare
+	$(gnumake_recursive)$(Q) \
+		GEM_HOME=spec/rspec GEM_PATH=spec/rspec \
+		BUNDLE_RUBY="$(abspath ./ruby) -I$(abspath $(srcdir)/lib) -I$(abspath .) -I$(abspath $(EXTOUT)/common) -I$(abspath $(EXTOUT)/$(arch))" \
+		BUNDLE_GEM="$(abspath ./ruby) -I$(abspath $(srcdir)/lib) -I$(abspath .) -I$(abspath $(EXTOUT)/common) -I$(abspath $(EXTOUT)/$(arch)) -rubygems $(abspath $(srcdir)/bin/gem) --backtrace" \
+		$(XRUBY) -C $(srcdir) -Ispec/bundler "spec/rspec/bin/rspec" --format progress spec/bundler
+no-test-bundler:
+
 update-src::
 	@$(CHDIR) "$(srcdir)" && LC_TIME=C exec $(VCSUP)
 
