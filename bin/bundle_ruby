@@ -1,15 +1,12 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require "bundler/shared_helpers"
-
-Bundler::SharedHelpers.major_deprecation(2, "the bundle_ruby executable has been removed in favor of `bundle platform --ruby`")
-
 Signal.trap("INT") { exit 1 }
 
 require "bundler/errors"
 require "bundler/ruby_version"
 require "bundler/ruby_dsl"
+require "bundler/shared_helpers"
 
 module Bundler
   class Dsl
@@ -44,6 +41,8 @@ module Bundler
     end
   end
 end
+
+Bundler::SharedHelpers.major_deprecation("the bundle_ruby executable has been removed in favor of `bundle platform --ruby`")
 
 dsl = Bundler::Dsl.new
 begin
