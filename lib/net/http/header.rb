@@ -42,7 +42,7 @@ module Net::HTTPHeader
       @header.delete key.downcase
       return val
     end
-    @header[key.downcase] = [val]
+    set_field(key, val)
   end
 
   # [Ruby 1.8.3]
@@ -62,9 +62,37 @@ module Net::HTTPHeader
   #
   def add_field(key, val)
     if @header.key?(key.downcase)
-      @header[key.downcase].push val
+      append_field_value(@header[key.downcase], val)
     else
+      set_field(key, val)
+    end
+  end
+
+  private def set_field(key, val)
+    case val
+    when Enumerable
+      ary = []
+      append_field_value(ary, val)
+      @header[key.downcase] = ary
+    else
+      val = val.to_s
+      if /[\r\n]/.match?(val)
+        raise ArgumentError, 'header field value cannnot include CR/LF'
+      end
       @header[key.downcase] = [val]
+    end
+  end
+
+  private def append_field_value(ary, val)
+    case val
+    when Enumerable
+      val.each{|x| append_field_value(ary, x)}
+    else
+      val = val.to_s
+      if /[\r\n]/.match?(val)
+        raise ArgumentError, 'header field value cannnot include CR/LF'
+      end
+      ary.push val
     end
   end
 
