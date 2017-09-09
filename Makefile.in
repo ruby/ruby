@@ -476,9 +476,9 @@ enc/encinit.$(OBJEXT): enc/encinit.c $(SETUP)
 
 test-bundler-precheck: $(arch)-fake.rb programs
 
-test-bundler-prepare:
-	GEM_HOME=$(srcdir)/spec/rspec GEM_PATH=$(srcdir)/spec/rspec \
-		$(XRUBY) "$(srcdir)/bin/gem" install --no-ri --no-rdoc --conservative 'rspec:~> 3.5'
+test-bundler-prepare: test-bundler-precheck
+	$(XRUBY) -C "$(srcdir)" bin/gem install --no-ri --no-rdoc \
+		--install-dir spec/rspec --conservative 'rspec:~> 3.5'
 test-bundler: $(TEST_RUNNABLE)-test-bundler
 yes-test-bundler: test-bundler-precheck test-bundler-prepare
 	$(gnumake_recursive)$(Q) \
