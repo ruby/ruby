@@ -1,3 +1,9 @@
+Sat Sep  9 21:08:24 2017  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/psych/yaml: update libyaml to 0.1.7.
+
+	* ext/psych/psych.gemspec: bump version to 2.0.8.1.
+
 Tue Mar 28 15:39:26 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	configure.in: syscall is deprecated on macOS
