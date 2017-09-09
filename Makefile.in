@@ -479,13 +479,14 @@ test-bundler-precheck: $(arch)-fake.rb programs
 test-bundler-prepare: test-bundler-precheck
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-ri --no-rdoc \
 		--install-dir spec/rspec --conservative 'rspec:~> 3.5'
+
+RSPECOPTS = --format progress
+BUNDLER_SPECS = $(srcdir)/spec/bundler
 test-bundler: $(TEST_RUNNABLE)-test-bundler
-yes-test-bundler: test-bundler-precheck test-bundler-prepare
+yes-test-bundler: test-bundler-prepare
 	$(gnumake_recursive)$(Q) \
-		GEM_HOME=spec/rspec GEM_PATH=spec/rspec \
-		BUNDLE_RUBY="$(abspath ./ruby) -I$(abspath $(srcdir)/lib) -I$(abspath .) -I$(abspath $(EXTOUT)/common) -I$(abspath $(EXTOUT)/$(arch))" \
-		BUNDLE_GEM="$(abspath ./ruby) -I$(abspath $(srcdir)/lib) -I$(abspath .) -I$(abspath $(EXTOUT)/common) -I$(abspath $(EXTOUT)/$(arch)) -rubygems $(abspath $(srcdir)/bin/gem) --backtrace" \
-		$(XRUBY) -C $(srcdir) -Ispec/bundler "spec/rspec/bin/rspec" --format progress spec/bundler
+	$(XRUBY) -C $(srcdir) -Ispec/bundler spec/rspec/bin/rspec \
+		$(RSPECOPTS) $(BUNDLER_SPECS)
 no-test-bundler:
 
 update-src::
