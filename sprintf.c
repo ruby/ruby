@@ -1261,21 +1261,29 @@ ruby_ultoa(unsigned long val, char *endp, int base, int flags)
     return BSD__ultoa(val, endp, base, octzero, xdigs);
 }
 
+static int ruby_do_vsnprintf(char *str, size_t n, const char *fmt, va_list ap);
+
 int
 ruby_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
+{
+    if (str && (ssize_t)n < 1)
+	return (EOF);
+    return ruby_do_vsnprintf(str, n, fmt, ap);
+}
+
+static int
+ruby_do_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
 {
     int ret;
     rb_printf_buffer f;
 
-    if ((int)n < 1)
-	return (EOF);
     f._flags = __SWR | __SSTR;
     f._bf._base = f._p = (unsigned char *)str;
-    f._bf._size = f._w = n - 1;
+    f._bf._size = f._w = str ? (n - 1) : 0;
     f.vwrite = BSD__sfvwrite;
     f.vextra = 0;
     ret = (int)BSD_vfprintf(&f, fmt, ap);
-    *f._p = 0;
+    if (str) *f._p = 0;
     return ret;
 }
 
@@ -1285,11 +1293,11 @@ ruby_snprintf(char *str, size_t n, char const *fmt, ...)
     int ret;
     va_list ap;
 
-    if ((int)n < 1)
+    if (str && (ssize_t)n < 1)
 	return (EOF);
 
     va_start(ap, fmt);
-    ret = ruby_vsnprintf(str, n, fmt, ap);
+    ret = ruby_do_vsnprintf(str, n, fmt, ap);
     va_end(ap);
     return ret;
 }

@@ -184,4 +184,8 @@ class Test_SPrintf < Test::Unit::TestCase
     assert_equal("  a", Bug::Printf.("s", "a", width: 3, prec: 3)[0])
     assert_equal("a  ", Bug::Printf.("s", "a", minus: true, width: 3, prec: 3)[0])
   end
+
+  def test_snprintf_count
+    assert_equal(3, Bug::Printf.sncount("foo"))
+  end
 end

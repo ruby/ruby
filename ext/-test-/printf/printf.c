@@ -90,6 +90,13 @@ printf_test_call(int argc, VALUE *argv, VALUE self)
     return rb_assoc_new(result, rb_usascii_str_new_cstr(format));
 }
 
+static VALUE
+snprintf_count(VALUE self, VALUE str)
+{
+    int n = ruby_snprintf(NULL, 0, "%s", StringValueCStr(str));
+    return INT2FIX(n);
+}
+
 void
 Init_printf(void)
 {
@@ -98,4 +105,5 @@ Init_printf(void)
     rb_define_singleton_method(m, "v", printf_test_v, 1);
     rb_define_singleton_method(m, "q", printf_test_q, 1);
     rb_define_singleton_method(m, "call", printf_test_call, -1);
+    rb_define_singleton_method(m, "sncount", snprintf_count, 1);
 }
