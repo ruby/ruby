@@ -500,7 +500,6 @@ gcov:
 
 lcov:
 	$(Q) $(BASERUBY) $(srcdir)/tool/run-lcov.rb
-	$(Q) genhtml --ignore-errors source lcov-c-all.info -o lcov-out
 
 update-doclie:
 	$(Q) $(srcdir)/tool/git-refresh -C $(srcdir)/coverage $(Q1:0=-q) \

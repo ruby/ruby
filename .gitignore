@@ -82,6 +82,8 @@ lcov*.info
 /goruby
 /id.[ch]
 /largefile.h
+/lcov-c-out
+/lcov-rb-out
 /lcov-out
 /lex.c
 /libruby*.*
