@@ -13,6 +13,7 @@
 *.log
 *.o
 *.obj
+*.old
 *.orig
 *.pdb
 *.rej
@@ -31,7 +32,6 @@
 .ppack
 .svn
 Makefile
-Makefile.old
 cygruby*.def
 extconf.h
 y.output
@@ -50,12 +50,8 @@ lcov*.info
 /*.rc
 /*_prelude.c
 /COPYING.LIB
-/ChangeLog-*
-/ChangeLog.pre-alpha
-/ChangeLog.pre1_1
 /Doxyfile
 /GNUmakefile
-/GNUmakefile.old
 /README.atheos
 /README.fat-patch
 /README.v6
@@ -102,6 +98,7 @@ lcov*.info
 /ppack
 /prelude.c
 /preview
+/probes.dmyh
 /probes.h
 /rbconfig.rb
 /rename2.h
