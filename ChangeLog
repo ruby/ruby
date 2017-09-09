@@ -1,3 +1,15 @@
+Sat Sep  9 22:50:10 2017  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	A HTTP Header value must not contain CR or LF.
+	to_str -> to_s
+
+	* lib/net/http/header.rb (set_field): `val` can not have `to_str`.
+
+Sat Sep  9 22:42:22 2017  Kouhei Sutou  <kou@cozmixng.org>
+
+	* REXML: Fix a bug that unexpected methods can be called as a XPath
+	  function. [HackerOne:249295] Reported by Andrea Jegher. Thanks!!!
+
 Sat Sep  9 22:16:01 2017  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems: fix several vulnerabilities in RubyGems; bump to version
