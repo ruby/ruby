@@ -693,6 +693,11 @@ class Gem::Installer
       unpack or File.writable?(gem_home)
   end
 
+  def verify_spec_name
+    return if spec.name =~ Gem::Specification::VALID_NAME_PATTERN
+    raise Gem::InstallError, "#{spec} has an invalid name"
+  end
+
   ##
   # Return the text for an application file.
 
@@ -811,6 +816,8 @@ TEXT
     verify_gem_home options[:unpack]
 
     ensure_loadable_spec
+
+    verify_spec_name
 
     if options[:install_as_default]
       Gem.ensure_default_gem_subdirectories gem_home

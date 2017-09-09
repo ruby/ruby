@@ -2974,7 +2974,37 @@ Did you mean 'Ruby'?
       @a1.validate
     end
 
-    assert_equal 'invalid value for attribute name: ":json"', e.message
+    assert_equal 'invalid value for attribute name: ":json" must be a string', e.message
+
+    @a1.name = []
+    e = assert_raises Gem::InvalidSpecificationException do
+      @a1.validate
+    end
+    assert_equal "invalid value for attribute name: \"[]\" must be a string", e.message
+
+    @a1.name = ""
+    e = assert_raises Gem::InvalidSpecificationException do
+      @a1.validate
+    end
+    assert_equal "invalid value for attribute name: \"\" must include at least one letter", e.message
+
+    @a1.name = "12345"
+    e = assert_raises Gem::InvalidSpecificationException do
+      @a1.validate
+    end
+    assert_equal "invalid value for attribute name: \"12345\" must include at least one letter", e.message
+
+    @a1.name = "../malicious"
+    e = assert_raises Gem::InvalidSpecificationException do
+      @a1.validate
+    end
+    assert_equal "invalid value for attribute name: \"../malicious\" can only include letters, numbers, dashes, and underscores", e.message
+
+    @a1.name = "\ba\t"
+    e = assert_raises Gem::InvalidSpecificationException do
+      @a1.validate
+    end
+    assert_equal "invalid value for attribute name: \"\\ba\\t\" can only include letters, numbers, dashes, and underscores", e.message
   end
 
   def test_validate_non_nil

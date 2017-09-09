@@ -1,3 +1,8 @@
+Sat Sep  9 22:16:01 2017  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems: fix several vulnerabilities in RubyGems; bump to version
+	  2.5.2.1. [Backport #13842]
+
 Wed Aug  9 22:27:23 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_syntax.rb (test_invalid_{break,next}): use

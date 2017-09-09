@@ -36,6 +36,10 @@ Without the wrapping, the text might not look good in the RSS feed.
     assert_equal expected, format_text(text, 78)
   end
 
+  def test_format_removes_nonprintable_characters
+    assert_equal "text with weird .. stuff .", format_text("text with weird \x1b\x02 stuff \x7f", 40)
+  end
+
   def test_min3
     assert_equal 1, min3(1, 1, 1)
     assert_equal 1, min3(1, 1, 2)
@@ -73,5 +77,12 @@ Without the wrapping, the text might not look good in the RSS feed.
     assert_equal 2, levenshtein_distance("zentest", "ZenTest")
     assert_equal 7, levenshtein_distance("xxxxxxx", "ZenTest")
     assert_equal 7, levenshtein_distance("zentest", "xxxxxxx")
+  end
+
+  def test_truncate_text
+    assert_equal "abc", truncate_text("abc", "desc")
+    assert_equal "Truncating desc to 2 characters:\nab", truncate_text("abc", "desc", 2)
+    s = "ab" * 500_001
+    assert_equal "Truncating desc to 1,000,000 characters:\n#{s[0, 1_000_000]}", truncate_text(s, "desc", 1_000_000)
   end
 end
