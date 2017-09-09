@@ -606,8 +606,10 @@ random_seed(void)
  * call-seq: Random.urandom(size) -> string
  *
  * Returns a string, using platform providing features.
- * Returned value expected to be a cryptographically secure
+ * Returned value is expected to be a cryptographically secure
  * pseudo-random number in binary form.
+ * This method returns nil if the feature provided by platform
+ * failed to prepare the result.
  *
  * In 2017, Linux manpage random(7) writes that "no cryptographic
  * primitive available today can hope to promise more than 256 bits of
