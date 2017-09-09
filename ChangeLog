@@ -1,3 +1,16 @@
+Sat Sep  9 23:05:31 2017  Kazuki Yamaguchi <k@rhe.jp>
+
+	asn1: fix out-of-bounds read in decoding constructed objects
+
+	* OpenSSL::ASN1.{decode,decode_all,traverse}: have a bug of
+	  out-of-bounds read. int_ossl_asn1_decode0_cons() does not give the
+	  correct available length to ossl_asn1_decode() when decoding the
+	  inner components of a constructed object. This can cause
+	  out-of-bounds read if a crafted input given.
+
+	Reference: https://hackerone.com/reports/170316
+	https://github.com/ruby/openssl/commit/1648afef33c1d97fb203c82291b8a61269e85d3b
+
 Sat Sep  9 22:57:24 2017  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/json: bump to version 1.8.3.1. [Backport #13853]

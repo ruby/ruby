@@ -870,19 +870,18 @@ int_ossl_asn1_decode0_cons(unsigned char **pp, long max_len, long length,
 {
     VALUE value, asn1data, ary;
     int infinite;
-    long off = *offset;
+    long available_len, off = *offset;
 
     infinite = (j == 0x21);
     ary = rb_ary_new();
 
-    while (length > 0 || infinite) {
+    available_len = infinite ? max_len : length;
+    while (available_len > 0) {
 	long inner_read = 0;
-	value = ossl_asn1_decode0(pp, max_len, &off, depth + 1, yield, &inner_read);
+	value = ossl_asn1_decode0(pp, available_len, &off, depth + 1, yield, &inner_read);
 	*num_read += inner_read;
-	max_len -= inner_read;
+	available_len -= inner_read;
 	rb_ary_push(ary, value);
-	if (length > 0)
-	    length -= inner_read;
 
 	if (infinite &&
 	    NUM2INT(ossl_asn1_get_tag(value)) == V_ASN1_EOC &&
@@ -973,7 +972,7 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, int depth,
     if(j & V_ASN1_CONSTRUCTED) {
 	*pp += hlen;
 	off += hlen;
-	asn1data = int_ossl_asn1_decode0_cons(pp, length, len, &off, depth, yield, j, tag, tag_class, &inner_read);
+	asn1data = int_ossl_asn1_decode0_cons(pp, length - hlen, len, &off, depth, yield, j, tag, tag_class, &inner_read);
 	inner_read += hlen;
     }
     else {
