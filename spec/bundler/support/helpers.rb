@@ -104,7 +104,7 @@ module Spec
       load_path_str = "-I#{load_path.join(File::PATH_SEPARATOR)}"
 
       env = (options.delete(:env) || {}).map {|k, v| "#{k}='#{v}'" }.join(" ")
-      env["PATH"].gsub!("#{Path.root}/exe", "") if env["PATH"] && system_bundler
+      env["PATH"].gsub!(Path.bindir, "") if env["PATH"] && system_bundler
       args = options.map do |k, v|
         v == true ? " --#{k}" : " --#{k} #{v}" if v
       end.join

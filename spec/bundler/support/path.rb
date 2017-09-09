@@ -4,43 +4,20 @@ require "pathname"
 module Spec
   module Path
     def root
-      if !!(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
-        # for Ruby Core
-        root_path = File.expand_path("../../../..", __FILE__)
-      else
-        root_path = File.expand_path("../../..", __FILE__)
-      end
-      @root ||= Pathname.new(root_path)
+      @root ||=
+        Pathname.new(for_ruby_core? ? "../../../.." : "../../..").expand_path(__FILE__)
     end
 
     def gemspec
-      if !!(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
-        # for Ruby Core
-        gemspec_path = File.expand_path(root.join("lib/bundler.gemspec"), __FILE__)
-      else
-        gemspec_path = File.expand_path(root.join("bundler.gemspec"), __FILE__)
-      end
-      @gemspec ||= Pathname.new(gemspec_path)
+      @gemspec ||= root.join(for_ruby_core? ? "lib/bundler.gemspec" : "bundler.gemspec")
     end
 
     def bindir
-      if !!(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
-        # for Ruby Core
-        bin_path = File.expand_path(root.join("bin"), __FILE__)
-      else
-        bin_path = File.expand_path(root.join("exe"), __FILE__)
-      end
-      @bindir ||= Pathname.new(bin_path)
+      @bindir ||= root.join(for_ruby_core? ? "bin" : "exe")
     end
 
     def spec_dir
-      if !!(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
-        # for Ruby Core
-        spec_path = File.expand_path(root.join("spec/bundler"), __FILE__)
-      else
-        spec_path = File.expand_path(root.join("spec"), __FILE__)
-      end
-      @spec_dir ||= Pathname.new(spec_path)
+      @spec_dir ||= root.join(for_ruby_core? ? "spec/bundler" : "spec")
     end
 
     def tmp(*path)
@@ -130,5 +107,14 @@ module Spec
     end
 
     extend self
+
+    private
+    def for_ruby_core?
+      if @for_ruby_core.nil?
+        @for_ruby_core = true & (ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
+      else
+        @for_ruby_core
+      end
+    end
   end
 end
