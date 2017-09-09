@@ -1,3 +1,7 @@
+Sat Sep  9 22:57:24 2017  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/json: bump to version 1.8.3.1. [Backport #13853]
+
 Sat Sep  9 22:50:10 2017  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	A HTTP Header value must not contain CR or LF.
