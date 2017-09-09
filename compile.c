@@ -7123,13 +7123,11 @@ static int
 int_param(int *dst, VALUE param, VALUE sym)
 {
     VALUE val = rb_hash_aref(param, sym);
-    switch (TYPE(val)) {
-      case T_NIL:
-	return FALSE;
-      case T_FIXNUM:
+    if (FIXNUM_P(val)) {
 	*dst = FIX2INT(val);
 	return TRUE;
-      default:
+    }
+    else if (!NIL_P(val)) {
 	rb_raise(rb_eTypeError, "invalid %+"PRIsVALUE" Fixnum: %+"PRIsVALUE,
 		 sym, val);
     }
@@ -7251,8 +7249,7 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 #undef INT_PARAM
     }
 
-    switch (TYPE(arg_opt_labels)) {
-      case T_ARRAY:
+    if (RB_TYPE_P(arg_opt_labels, T_ARRAY)) {
 	len = RARRAY_LENINT(arg_opt_labels);
 	iseq->body->param.flags.has_opt = !!(len - 1 >= 0);
 
@@ -7268,19 +7265,16 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
 	    iseq->body->param.opt_num = len - 1;
 	    iseq->body->param.opt_table = opt_table;
 	}
-      case T_NIL:
-	break;
-      default:
+    }
+    else if (!NIL_P(arg_opt_labels)) {
 	rb_raise(rb_eTypeError, ":opt param is not an array: %+"PRIsVALUE,
 		 arg_opt_labels);
     }
 
-    switch (TYPE(keywords)) {
-      case T_ARRAY:
+    if (RB_TYPE_P(keywords, T_ARRAY)) {
 	iseq->body->param.keyword = iseq_build_kw(iseq, params, keywords);
-      case T_NIL:
-	break;
-      default:
+    }
+    else if (!NIL_P(keywords)) {
 	rb_raise(rb_eTypeError, ":keywords param is not an array: %+"PRIsVALUE,
 		 keywords);
     }
