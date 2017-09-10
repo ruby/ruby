@@ -382,7 +382,7 @@ BigDecimal_hash(VALUE self)
 	hash ^= rb_memhash(p->frac, sizeof(BDIGIT)*p->Prec);
 	hash += p->exponent;
     }
-    return INT2FIX(hash);
+    return ST2FIX(hash);
 }
 
 /*

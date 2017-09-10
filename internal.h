@@ -330,8 +330,6 @@ ntz_intptr(uintptr_t x)
 VALUE rb_int128t2big(int128_t n);
 #endif
 
-#define ST2FIX(h) LONG2FIX((long)(h))
-
 
 /* arguments must be Fixnum */
 static inline VALUE
