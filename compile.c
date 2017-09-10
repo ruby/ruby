@@ -6594,7 +6594,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	((INSN *)saved_last_element)->insn_id == BIN(trace)) {
 	POP_ELEMENT(ret);
 	/* remove trace(coverage) */
-	if (((INSN *)ret->last)->insn_id == BIN(trace)) {
+	if (IS_INSN_ID(ret->last, trace) &&
+	    (FIX2LONG(OPERAND_AT(ret->last, 0)) & RUBY_EVENT_COVERAGE)) {
 	    POP_ELEMENT(ret);
 	    RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), line - 1, Qnil);
 	}

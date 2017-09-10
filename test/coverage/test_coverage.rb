@@ -165,4 +165,14 @@ class TestCoverage < Test::Unit::TestCase
       }
     }
   end
+
+  def test_nocoverage_optimized_line
+    assert_ruby_status(%w[], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      def foo(x)
+        x # optimized away
+        nil
+      end
+    end;
+  end
 end
