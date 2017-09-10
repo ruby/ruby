@@ -3967,14 +3967,14 @@ init_mark_stack(mark_stack_t *stack)
 /* Marking */
 
 #ifdef __ia64
-#define SET_STACK_END (SET_MACHINE_STACK_END(&th->machine.stack_end), th->machine.register_stack_end = rb_ia64_bsp())
+#define SET_STACK_END (SET_MACHINE_STACK_END(&ec->machine.stack_end), ec->machine.register_stack_end = rb_ia64_bsp())
 #else
-#define SET_STACK_END SET_MACHINE_STACK_END(&th->machine.stack_end)
+#define SET_STACK_END SET_MACHINE_STACK_END(&ec->machine.stack_end)
 #endif
 
-#define STACK_START (th->machine.stack_start)
-#define STACK_END (th->machine.stack_end)
-#define STACK_LEVEL_MAX (th->machine.stack_maxsize/sizeof(VALUE))
+#define STACK_START (ec->machine.stack_start)
+#define STACK_END (ec->machine.stack_end)
+#define STACK_LEVEL_MAX (ec->machine.stack_maxsize/sizeof(VALUE))
 
 #if STACK_GROW_DIRECTION < 0
 # define STACK_LENGTH  (size_t)(STACK_START - STACK_END)
@@ -4000,7 +4000,7 @@ ruby_get_stack_grow_direction(volatile VALUE *addr)
 size_t
 ruby_stack_length(VALUE **p)
 {
-    rb_thread_t *th = GET_THREAD();
+    rb_execution_context_t *ec = &GET_THREAD()->ec;
     SET_STACK_END;
     if (p) *p = STACK_UPPER(STACK_END, STACK_START, STACK_END);
     return STACK_LENGTH;
@@ -4018,13 +4018,14 @@ ruby_stack_length(VALUE **p)
 static int
 stack_check(rb_thread_t *th, int water_mark)
 {
+    rb_execution_context_t *ec = &th->ec;
     int ret;
     SET_STACK_END;
     ret = STACK_LENGTH > STACK_LEVEL_MAX - water_mark;
 #ifdef __ia64
     if (!ret) {
-        ret = (VALUE*)rb_ia64_bsp() - th->machine.register_stack_start >
-              th->machine.register_stack_maxsize/sizeof(VALUE) - water_mark;
+        ret = (VALUE*)rb_ia64_bsp() - ec->machine.register_stack_start >
+	    ec->machine.register_stack_maxsize/sizeof(VALUE) - water_mark;
     }
 #endif
     return ret;
@@ -4235,11 +4236,11 @@ mark_const_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
      ((start) = STACK_END, (end) = STACK_START) : ((start) = STACK_START, (end) = STACK_END+(appendix)))
 #endif
 
-static void mark_stack_locations(rb_objspace_t *objspace, rb_thread_t *th,
+static void mark_stack_locations(rb_objspace_t *objspace, const rb_execution_context_t *ec,
 				 const VALUE *stack_start, const VALUE *stack_end);
 
 static void
-mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
+mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec)
 {
     union {
 	rb_jmp_buf j;
@@ -4259,29 +4260,29 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_thread_t *th)
 
     mark_locations_array(objspace, save_regs_gc_mark.v, numberof(save_regs_gc_mark.v));
 
-    mark_stack_locations(objspace, th, stack_start, stack_end);
+    mark_stack_locations(objspace, ec, stack_start, stack_end);
 }
 
 void
-rb_gc_mark_machine_stack(rb_thread_t *th)
+rb_gc_mark_machine_stack(const rb_execution_context_t *ec)
 {
-    rb_objspace_t *objspace = rb_objspace_of(th->vm);
+    rb_objspace_t *objspace = &rb_objspace;
     VALUE *stack_start, *stack_end;
 
     GET_STACK_BOUNDS(stack_start, stack_end, 0);
-    mark_stack_locations(objspace, th, stack_start, stack_end);
+    mark_stack_locations(objspace, ec, stack_start, stack_end);
 }
 
 static void
-mark_stack_locations(rb_objspace_t *objspace, rb_thread_t *th,
+mark_stack_locations(rb_objspace_t *objspace, const rb_execution_context_t *ec,
 		     const VALUE *stack_start, const VALUE *stack_end)
 {
 
     gc_mark_locations(objspace, stack_start, stack_end);
 #ifdef __ia64
     gc_mark_locations(objspace,
-		      th->machine.register_stack_start,
-		      th->machine.register_stack_end);
+		      ec->machine.register_stack_start,
+		      ec->machine.register_stack_end);
 #endif
 #if defined(__mc68000__)
     gc_mark_locations(objspace,
@@ -4774,6 +4775,7 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
 {
     struct gc_list *list;
     rb_thread_t *th = GET_THREAD();
+    rb_execution_context_t *ec = &th->ec;
 
 #if PRINT_ROOT_TICKS
     tick_t start_tick = tick();
@@ -4820,7 +4822,7 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
     mark_tbl(objspace, finalizer_table);
 
     MARK_CHECKPOINT("machine_context");
-    mark_current_machine_context(objspace, th);
+    mark_current_machine_context(objspace, &th->ec);
 
     MARK_CHECKPOINT("encodings");
     rb_gc_mark_encodings();

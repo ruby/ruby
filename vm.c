@@ -2390,6 +2390,15 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 	}
     }
 
+    /* mark machine stack */
+    if (&GET_THREAD()->ec != ec &&
+	ec->machine.stack_start && ec->machine.stack_end) {
+	rb_gc_mark_machine_stack(ec);
+	rb_gc_mark_locations((VALUE *)&ec->machine.regs,
+			     (VALUE *)(&ec->machine.regs) +
+			     sizeof(ec->machine.regs) / sizeof(VALUE));
+    }
+
     RUBY_MARK_UNLESS_NULL(ec->errinfo);
     RUBY_MARK_UNLESS_NULL(ec->root_svar);
     rb_mark_tbl(ec->local_storage);
@@ -2405,14 +2414,6 @@ rb_thread_mark(void *ptr)
     RUBY_MARK_ENTER("thread");
 
     rb_execution_context_mark(&th->ec);
-
-    /* mark machine stack */
-    if (GET_THREAD() != th && th->machine.stack_start && th->machine.stack_end) {
-	rb_gc_mark_machine_stack(th);
-	rb_gc_mark_locations((VALUE *)&th->machine.regs,
-			     (VALUE *)(&th->machine.regs) +
-			     sizeof(th->machine.regs) / sizeof(VALUE));
-    }
 
     /* mark ruby objects */
     RUBY_MARK_UNLESS_NULL(th->first_proc);

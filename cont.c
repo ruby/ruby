@@ -430,18 +430,18 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
 {
     size_t size;
 
-    SET_MACHINE_STACK_END(&th->machine.stack_end);
+    SET_MACHINE_STACK_END(&th->ec.machine.stack_end);
 #ifdef __ia64
     th->machine.register_stack_end = rb_ia64_bsp();
 #endif
 
-    if (th->machine.stack_start > th->machine.stack_end) {
-	size = cont->machine.stack_size = th->machine.stack_start - th->machine.stack_end;
-	cont->machine.stack_src = th->machine.stack_end;
+    if (th->ec.machine.stack_start > th->ec.machine.stack_end) {
+	size = cont->machine.stack_size = th->ec.machine.stack_start - th->ec.machine.stack_end;
+	cont->machine.stack_src = th->ec.machine.stack_end;
     }
     else {
-	size = cont->machine.stack_size = th->machine.stack_end - th->machine.stack_start;
-	cont->machine.stack_src = th->machine.stack_start;
+	size = cont->machine.stack_size = th->ec.machine.stack_end - th->ec.machine.stack_start;
+	cont->machine.stack_src = th->ec.machine.stack_start;
     }
 
     if (cont->machine.stack) {
@@ -485,13 +485,15 @@ cont_save_thread(rb_context_t *cont, rb_thread_t *th)
     /* save thread context */
     sth->ec = th->ec;
 
+#if FIBER_USE_NATIVE
     /* saved_thread->machine.stack_(start|end) should be NULL */
     /* because it may happen GC afterward */
-    sth->machine.stack_start = 0;
-    sth->machine.stack_end = 0;
+    sth->ec.machine.stack_start = NULL;
+    sth->ec.machine.stack_end = NULL;
 #ifdef __ia64
-    sth->machine.register_stack_start = 0;
-    sth->machine.register_stack_end = 0;
+    sth->ec.machine.register_stack_start = NULL;
+    sth->ec.machine.register_stack_end = NULL;
+#endif
 #endif
 }
 
@@ -501,7 +503,6 @@ cont_init(rb_context_t *cont, rb_thread_t *th)
     /* save thread context */
     cont_save_thread(cont, th);
     cont->saved_thread.self = th->self;
-    cont->saved_thread.machine.stack_maxsize = th->machine.stack_maxsize;
 
     cont->saved_thread.ec.local_storage = NULL;
     cont->saved_thread.ec.local_storage_recursive_hash = Qnil;
@@ -651,7 +652,7 @@ fiber_set_stack_location(void)
     VALUE *ptr;
 
     SET_MACHINE_STACK_END(&ptr);
-    th->machine.stack_start = (void*)(((VALUE)ptr & RB_PAGE_MASK) + STACK_UPPER((void *)&ptr, 0, RB_PAGE_SIZE));
+    th->ec.machine.stack_start = (void*)(((VALUE)ptr & RB_PAGE_MASK) + STACK_UPPER((void *)&ptr, 0, RB_PAGE_SIZE));
 }
 
 static VOID CALLBACK
@@ -730,7 +731,7 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
 	    rb_raise(rb_eFiberError, "can't create fiber");
 	}
     }
-    sth->machine.stack_maxsize = size;
+    sth->ec.machine.stack_maxsize = size;
 #else /* not WIN32 */
     ucontext_t *context = &fib->context;
     char *ptr;
@@ -744,8 +745,8 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
     fib->ss_sp = ptr;
     fib->ss_size = size;
     makecontext(context, rb_fiber_start, 0);
-    sth->machine.stack_start = (VALUE*)(ptr + STACK_DIR_UPPER(0, size));
-    sth->machine.stack_maxsize = size - RB_PAGE_SIZE;
+    sth->ec.machine.stack_start = (VALUE*)(ptr + STACK_DIR_UPPER(0, size));
+    sth->ec.machine.stack_maxsize = size - RB_PAGE_SIZE;
 #endif
 #ifdef __ia64
     sth->machine.register_stack_maxsize = sth->machine.stack_maxsize;
@@ -757,33 +758,31 @@ NOINLINE(static void fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib));
 static void
 fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib)
 {
-    rb_thread_t *th = GET_THREAD(), *sth = &newfib->cont.saved_thread;
+    rb_thread_t *th = GET_THREAD();
+
+    /* save  oldfib's machine stack / TODO: is it needd? */
+    if (!FIBER_TERMINATED_P(oldfib)) {
+	STACK_GROW_DIR_DETECTION;
+	SET_MACHINE_STACK_END(&th->ec.machine.stack_end);
+	if (STACK_DIR_UPPER(0, 1)) {
+	    oldfib->cont.machine.stack_size = th->ec.machine.stack_start - th->ec.machine.stack_end;
+	    oldfib->cont.machine.stack = th->ec.machine.stack_end;
+	}
+	else {
+	    oldfib->cont.machine.stack_size = th->ec.machine.stack_end - th->ec.machine.stack_start;
+	    oldfib->cont.machine.stack = th->ec.machine.stack_start;
+	}
+    }
+
+    /* exchange machine_stack_start between oldfib and newfib */
+    oldfib->cont.saved_thread.ec.machine.stack_start = th->ec.machine.stack_start;
+
+    /* oldfib->machine.stack_end should be NULL */
+    oldfib->cont.saved_thread.ec.machine.stack_end = NULL;
 
     /* restore thread context */
     fiber_restore_thread(th, newfib);
-    th->machine.stack_maxsize = sth->machine.stack_maxsize;
-    if (sth->machine.stack_end && (newfib != oldfib)) {
-	rb_bug("fiber_setcontext: sth->machine.stack_end has non zero value");
-    }
 
-    /* save  oldfib's machine stack */
-    if (!FIBER_TERMINATED_P(oldfib)) {
-	STACK_GROW_DIR_DETECTION;
-	SET_MACHINE_STACK_END(&th->machine.stack_end);
-	if (STACK_DIR_UPPER(0, 1)) {
-	    oldfib->cont.machine.stack_size = th->machine.stack_start - th->machine.stack_end;
-	    oldfib->cont.machine.stack = th->machine.stack_end;
-	}
-	else {
-	    oldfib->cont.machine.stack_size = th->machine.stack_end - th->machine.stack_start;
-	    oldfib->cont.machine.stack = th->machine.stack_start;
-	}
-    }
-    /* exchange machine_stack_start between oldfib and newfib */
-    oldfib->cont.saved_thread.machine.stack_start = th->machine.stack_start;
-    th->machine.stack_start = sth->machine.stack_start;
-    /* oldfib->machine.stack_end should be NULL */
-    oldfib->cont.saved_thread.machine.stack_end = 0;
 #ifndef _WIN32
     if (!newfib->context.uc_stack.ss_sp && th->root_fiber != newfib) {
 	rb_bug("non_root_fiber->context.uc_stac.ss_sp should not be NULL");
@@ -1791,7 +1790,7 @@ Init_Cont(void)
 #else /* not WIN32 */
     pagesize = sysconf(_SC_PAGESIZE);
 #endif
-    SET_MACHINE_STACK_END(&th->machine.stack_end);
+    SET_MACHINE_STACK_END(&th->ec.machine.stack_end);
 #endif
 
     rb_cFiber = rb_define_class("Fiber", rb_cObject);

@@ -138,8 +138,8 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
     do {							\
 	FLUSH_REGISTER_WINDOWS;					\
 	RB_GC_SAVE_MACHINE_REGISTER_STACK(th);			\
-	setjmp((th)->machine.regs);				\
-	SET_MACHINE_STACK_END(&(th)->machine.stack_end);	\
+	setjmp((th)->ec.machine.regs);				\
+	SET_MACHINE_STACK_END(&(th)->ec.machine.stack_end);	\
     } while (0)
 
 #define GVL_UNLOCK_BEGIN() do { \
@@ -525,9 +525,9 @@ thread_cleanup_func_before_exec(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
     th->status = THREAD_KILLED;
-    th->machine.stack_start = th->machine.stack_end = 0;
+    th->ec.machine.stack_start = th->ec.machine.stack_end = NULL;
 #ifdef __ia64
-    th->machine.register_stack_start = th->machine.register_stack_end = 0;
+    th->ec.machine.register_stack_start = th->ec.machine.register_stack_end = NULL;
 #endif
 }
 
@@ -613,9 +613,9 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 
     ruby_thread_set_native(th);
 
-    th->machine.stack_start = stack_start;
+    th->ec.machine.stack_start = stack_start;
 #ifdef __ia64
-    th->machine.register_stack_start = register_stack_start;
+    th->ec.machine.register_stack_start = register_stack_start;
 #endif
     thread_debug("thread start: %p\n", (void *)th);
 

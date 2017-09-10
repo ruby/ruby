@@ -767,6 +767,19 @@ typedef struct rb_execution_context_struct {
     rb_ensure_list_t *ensure_list;
 
     rb_fiber_t *fiber;
+
+    /* for GC */
+    struct {
+	VALUE *stack_start;
+	VALUE *stack_end;
+	size_t stack_maxsize;
+#ifdef __ia64
+	VALUE *register_stack_start;
+	VALUE *register_stack_end;
+	size_t register_stack_maxsize;
+#endif
+	jmp_buf regs;
+    } machine;
 } rb_execution_context_t;
 
 typedef struct rb_thread_struct {
@@ -828,19 +841,6 @@ typedef struct rb_thread_struct {
     VALUE first_proc;
     VALUE first_args;
     VALUE (*first_func)(ANYARGS);
-
-    /* for GC */
-    struct {
-	VALUE *stack_start;
-	VALUE *stack_end;
-	size_t stack_maxsize;
-#ifdef __ia64
-	VALUE *register_stack_start;
-	VALUE *register_stack_end;
-	size_t register_stack_maxsize;
-#endif
-	jmp_buf regs;
-    } machine;
 
     /* statistics data for profiler */
     VALUE stat_insn_usage;
@@ -1543,7 +1543,7 @@ void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE
 #define rb_vm_register_special_exception(sp, e, m) \
     rb_vm_register_special_exception_str(sp, e, rb_usascii_str_new_static((m), (long)rb_strlen_lit(m)))
 
-void rb_gc_mark_machine_stack(rb_thread_t *th);
+void rb_gc_mark_machine_stack(const rb_execution_context_t *ec);
 
 int rb_autoloading_value(VALUE mod, ID id, VALUE* value);
 
