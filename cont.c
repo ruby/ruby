@@ -1444,6 +1444,12 @@ fiber_store(rb_fiber_t *next_fib, rb_thread_t *th)
 #endif
 
     if (FIBER_RESUMED_P(fib)) fiber_status_set(fib, FIBER_SUSPENDED);
+
+#if FIBER_USE_NATIVE == 0
+    /* should (re-)allocate stack are before fib->status change to pass fiber_verify() */
+    cont_save_machine_stack(th, &fib->cont);
+#endif
+
     fiber_status_set(next_fib, FIBER_RESUMED);
 
 #if FIBER_USE_NATIVE
@@ -1473,7 +1479,6 @@ fiber_store(rb_fiber_t *next_fib, rb_thread_t *th)
     return fib->cont.value;
 
 #else /* FIBER_USE_NATIVE */
-    cont_save_machine_stack(th, &fib->cont);
     if (ruby_setjmp(fib->cont.jmpbuf)) {
 	/* restored */
 	fib = th->ec.fiber;
