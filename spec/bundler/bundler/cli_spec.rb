@@ -15,7 +15,8 @@ RSpec.describe "bundle executable" do
 
   it "looks for a binary and executes it if it's named bundler-<task>" do
     File.open(tmp("bundler-testtasks"), "w", 0o755) do |f|
-      f.puts "#!/usr/bin/env ruby\nputs 'Hello, world'\n"
+      ruby = ENV['BUNDLE_RUBY'] || "/usr/bin/env ruby"
+      f.puts "#!#{ruby}\nputs 'Hello, world'\n"
     end
 
     with_path_added(tmp) do
