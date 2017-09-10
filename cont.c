@@ -760,7 +760,7 @@ fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib)
 {
     rb_thread_t *th = GET_THREAD();
 
-    /* save  oldfib's machine stack / TODO: is it needd? */
+    /* save oldfib's machine stack / TODO: is it needed? */
     if (!FIBER_TERMINATED_P(oldfib)) {
 	STACK_GROW_DIR_DETECTION;
 	SET_MACHINE_STACK_END(&th->ec.machine.stack_end);
