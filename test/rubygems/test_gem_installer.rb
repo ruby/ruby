@@ -62,7 +62,12 @@ if ARGV.first
   end
 end
 
+if Gem.respond_to?(:activate_bin_path)
 load Gem.activate_bin_path('a', 'executable', version)
+else
+gem "a", version
+load Gem.bin_path("a", "executable", version)
+end
     EOF
 
     wrapper = @installer.app_script_text 'executable'

@@ -86,7 +86,7 @@ is too hard to use.
       name = Array(options[:name])
     else
       args = options[:args].to_a
-      name = options[:exact] ? args : args.map{|arg| /#{arg}/i }
+      name = options[:exact] ? args.map{|arg| /\A#{Regexp.escape(arg)}\Z/ } : args.map{|arg| /#{arg}/i }
     end
 
     prerelease = options[:prerelease]

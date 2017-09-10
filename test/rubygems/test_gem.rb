@@ -75,6 +75,29 @@ class TestGem < Gem::TestCase
     end
   end
 
+  def test_self_finish_resolve_respects_loaded_specs
+    save_loaded_features do
+      a1 = new_spec "a", "1", "b" => "> 0"
+      b1 = new_spec "b", "1", "c" => ">= 1"
+      b2 = new_spec "b", "2", "c" => ">= 2"
+      c1 = new_spec "c", "1"
+      c2 = new_spec "c", "2"
+
+      install_specs c1, c2, b1, b2, a1
+
+      a1.activate
+      c1.activate
+
+      assert_equal %w(a-1 c-1), loaded_spec_names
+      assert_equal ["b (> 0)"], unresolved_names
+
+      Gem.finish_resolve
+
+      assert_equal %w(a-1 b-1 c-1), loaded_spec_names
+      assert_equal [], unresolved_names
+    end
+  end
+
   def test_self_install
     spec_fetcher do |f|
       f.gem  'a', 1
@@ -492,7 +515,7 @@ class TestGem < Gem::TestCase
     skip if RUBY_VERSION <= "1.8.7"
 
     cwd = File.expand_path("test/rubygems", @@project_dir)
-    $LOAD_PATH.unshift cwd
+    actual_load_path = $LOAD_PATH.unshift(cwd).dup
 
     discover_path = File.join 'lib', 'sff', 'discover.rb'
 
@@ -518,12 +541,12 @@ class TestGem < Gem::TestCase
     expected = [
       File.expand_path('test/rubygems/sff/discover.rb', @@project_dir),
       File.join(foo1.full_gem_path, discover_path)
-    ]
+    ].sort
 
-    assert_equal expected, Gem.find_files('sff/discover')
-    assert_equal expected, Gem.find_files('sff/**.rb'), '[ruby-core:31730]'
+    assert_equal expected, Gem.find_files('sff/discover').sort
+    assert_equal expected, Gem.find_files('sff/**.rb').sort, '[ruby-core:31730]'
   ensure
-    assert_equal cwd, $LOAD_PATH.shift unless RUBY_VERSION <= "1.8.7"
+    assert_equal cwd, actual_load_path.shift unless RUBY_VERSION <= "1.8.7"
   end
 
   def test_self_find_latest_files

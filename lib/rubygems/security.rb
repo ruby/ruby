@@ -455,7 +455,7 @@ module Gem::Security
 
   ##
   # Creates a new key pair of the specified +length+ and +algorithm+.  The
-  # default is a 2048 bit RSA key.
+  # default is a 3072 bit RSA key.
 
   def self.create_key length = KEY_LENGTH, algorithm = KEY_ALGORITHM
     algorithm.new length
