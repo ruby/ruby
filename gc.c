@@ -2734,12 +2734,14 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
     } saved;
     rb_thread_t *const th = GET_THREAD();
 #define RESTORE_FINALIZER() (\
+	th->cfp = saved.cfp, \
 	rb_set_safe_level_force(saved.safe), \
 	rb_set_errinfo(saved.errinfo))
 
     saved.safe = rb_safe_level();
     saved.errinfo = rb_errinfo();
     saved.objid = nonspecial_obj_id(obj);
+    saved.cfp = th->cfp;
     saved.finished = 0;
 
     TH_PUSH_TAG(th);
