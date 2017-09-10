@@ -1,3 +1,8 @@
+Sun Sep 10 10:10:05 2017  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* lib/rubygems: fix several vulnerabilities in RubyGems; bump to version
+	  2.4.5.3. [Backport #13842]
+
 Sat Sep  9 21:08:24 2017  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/psych/yaml: update libyaml to 0.1.7.
