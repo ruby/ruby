@@ -217,7 +217,7 @@ else
     if l.empty?
       l = IO.popen %w'svn log ' + r + [q] do |f|
         f.read
-      end.sub(/\A-+\nr.*\n/, '').sub(/\n-+\n\z/, '').gsub(/^./, "\t\\&")
+      end.sub(/\A-+\nr.*/, '').sub(/\n-+\n\z/, '').gsub(/^./, "\t\\&")
     end
     log_svn << l
 
@@ -247,7 +247,7 @@ else
 
   version_up
   f = Tempfile.new 'merger.rb'
-  f.printf "merge revision(s) %s:%s\n", revstr, tickets
+  f.printf "merge revision(s) %s:%s", revstr, tickets
   f.write log_svn
   f.flush
   f.close
