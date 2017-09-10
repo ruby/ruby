@@ -5497,7 +5497,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	    const rb_iseq_t *parent_iseq = is->body->parent_iseq;
 	    enum iseq_type parent_type;
 
-	    if (type == ISEQ_TYPE_TOP || type == ISEQ_TYPE_MAIN) {
+	    if (type == ISEQ_TYPE_TOP) {
 		LABEL *splabel = NEW_LABEL(line);
 		ADD_LABEL(ret, splabel);
 		ADD_ADJUST(ret, line, 0);
@@ -5505,7 +5505,7 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 		ADD_INSN(ret, line, leave);
 		ADD_ADJUST_RESTORE(ret, splabel);
 	    }
-	    else if ((type == ISEQ_TYPE_RESCUE || type == ISEQ_TYPE_ENSURE) &&
+	    else if ((type == ISEQ_TYPE_RESCUE || type == ISEQ_TYPE_ENSURE || type == ISEQ_TYPE_MAIN) &&
 		     parent_iseq &&
 		     ((parent_type = parent_iseq->body->type) == ISEQ_TYPE_TOP ||
 		      parent_type == ISEQ_TYPE_MAIN)) {
