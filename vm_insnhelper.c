@@ -197,18 +197,18 @@ vm_check_frame(VALUE type,
 #endif /* VM_CHECK_MODE > 0 */
 
 static inline rb_control_frame_t *
-vm_push_frame(rb_thread_t *th,
-	      const rb_iseq_t *iseq,
-	      VALUE type,
-	      VALUE self,
-	      VALUE specval,
-	      VALUE cref_or_me,
-	      const VALUE *pc,
-	      VALUE *sp,
-	      int local_size,
-	      int stack_max)
+vm_push_frame_(rb_execution_context_t *ec,
+	       const rb_iseq_t *iseq,
+	       VALUE type,
+	       VALUE self,
+	       VALUE specval,
+	       VALUE cref_or_me,
+	       const VALUE *pc,
+	       VALUE *sp,
+	       int local_size,
+	       int stack_max)
 {
-    rb_control_frame_t *const cfp = th->ec.cfp - 1;
+    rb_control_frame_t *const cfp = ec->cfp - 1;
     int i;
 
     vm_check_frame(type, specval, cref_or_me, iseq);
@@ -217,7 +217,7 @@ vm_push_frame(rb_thread_t *th,
     /* check stack overflow */
     CHECK_VM_STACK_OVERFLOW0(cfp, sp, local_size + stack_max);
 
-    th->ec.cfp = cfp;
+    ec->cfp = cfp;
 
     /* setup new frame */
     cfp->pc = (VALUE *)pc;
@@ -254,8 +254,23 @@ vm_push_frame(rb_thread_t *th,
     return cfp;
 }
 
+static rb_control_frame_t *
+vm_push_frame(rb_thread_t *th,
+	      const rb_iseq_t *iseq,
+	      VALUE type,
+	      VALUE self,
+	      VALUE specval,
+	      VALUE cref_or_me,
+	      const VALUE *pc,
+	      VALUE *sp,
+	      int local_size,
+	      int stack_max)
+{
+    return vm_push_frame_(&th->ec, iseq, type, self, specval, cref_or_me, pc, sp, local_size, stack_max);
+}
+
 rb_control_frame_t *
-rb_vm_push_frame(rb_thread_t *th,
+rb_vm_push_frame(rb_execution_context_t *ec,
 		 const rb_iseq_t *iseq,
 		 VALUE type,
 		 VALUE self,
@@ -266,7 +281,7 @@ rb_vm_push_frame(rb_thread_t *th,
 		 int local_size,
 		 int stack_max)
 {
-    return vm_push_frame(th, iseq, type, self, specval, cref_or_me, pc, sp, local_size, stack_max);
+    return vm_push_frame_(ec, iseq, type, self, specval, cref_or_me, pc, sp, local_size, stack_max);
 }
 
 /* return TRUE if the frame is finished */

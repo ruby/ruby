@@ -2365,7 +2365,7 @@ rb_thread_recycle_stack_release(VALUE *stack)
 
 void rb_fiber_mark_self(rb_fiber_t *fib);
 
-static void
+void
 rb_execution_context_mark(const rb_execution_context_t *ec)
 {
     /* mark VM stack */
