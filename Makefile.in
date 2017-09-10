@@ -481,12 +481,12 @@ test-bundler-prepare: test-bundler-precheck
 		--install-dir spec/rspec --conservative 'rspec:~> 3.5'
 
 RSPECOPTS = --format progress
-BUNDLER_SPECS = $(srcdir)/spec/bundler
+BUNDLER_SPECS =
 test-bundler: $(TEST_RUNNABLE)-test-bundler
 yes-test-bundler: test-bundler-prepare
 	$(gnumake_recursive)$(Q) \
 	$(XRUBY) -C $(srcdir) -Ispec/bundler spec/rspec/bin/rspec \
-		$(RSPECOPTS) $(BUNDLER_SPECS)
+		$(RSPECOPTS) spec/bundler/$(BUNDLER_SPECS)
 no-test-bundler:
 
 update-src::
