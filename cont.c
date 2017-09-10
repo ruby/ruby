@@ -485,15 +485,13 @@ cont_save_thread(rb_context_t *cont, rb_thread_t *th)
     /* save thread context */
     sth->ec = th->ec;
 
-#if FIBER_USE_NATIVE
-    /* saved_thread->machine.stack_(start|end) should be NULL */
+    /* saved_thread->machine.stack_end should be NULL */
     /* because it may happen GC afterward */
-    sth->ec.machine.stack_start = NULL;
     sth->ec.machine.stack_end = NULL;
+
 #ifdef __ia64
     sth->ec.machine.register_stack_start = NULL;
     sth->ec.machine.register_stack_end = NULL;
-#endif
 #endif
 }
 
