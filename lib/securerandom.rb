@@ -206,53 +206,6 @@ module Random::Formatter
     s
   end
 
-=begin
-  # SecureRandom.random_number generates a random number.
-  #
-  # If a positive integer is given as _n_,
-  # +SecureRandom.random_number+ returns an integer, such that:
-  # +0 <= SecureRandom.random_number(n) < n+.
-  #
-  #   p SecureRandom.random_number(100) #=> 15
-  #   p SecureRandom.random_number(100) #=> 88
-  #
-  # If 0 is given or an argument is not given,
-  # +SecureRandom.random_number+ returns a float, such that:
-  # +0.0 <= SecureRandom.random_number() < 1.0+.
-  #
-  #   p SecureRandom.random_number #=> 0.596506046187744
-  #   p SecureRandom.random_number #=> 0.350621695741409
-  #
-  def random_number(n=0)
-    if 0 < n
-      if defined? OpenSSL::BN
-        OpenSSL::BN.rand_range(n).to_i
-      else
-        hex = n.to_s(16)
-        hex = '0' + hex if (hex.length & 1) == 1
-        bin = [hex].pack("H*")
-        mask = bin[0].ord
-        mask |= mask >> 1
-        mask |= mask >> 2
-        mask |= mask >> 4
-        begin
-          rnd = random_bytes(bin.length)
-          rnd[0] = (rnd[0].ord & mask).chr
-        end until rnd < bin
-        rnd.unpack("H*")[0].hex
-      end
-    else
-      # assumption: Float::MANT_DIG <= 64
-      if defined? OpenSSL::BN
-        i64 = OpenSSL::BN.rand(64, -1).to_i
-      else
-        i64 = random_bytes(8).unpack("Q")[0]
-      end
-      Math.ldexp(i64 >> (64-Float::MANT_DIG), -Float::MANT_DIG)
-    end
-  end
-=end
-
   # SecureRandom.uuid generates a random v4 UUID (Universally Unique IDentifier).
   #
   #   p SecureRandom.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
