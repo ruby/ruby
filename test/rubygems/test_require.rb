@@ -301,6 +301,23 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w(default-2.0.0.0), loaded_spec_names
   end
 
+  def test_realworld_default_gem
+    skip "no default gems on ruby < 2.0" unless RUBY_VERSION >= "2"
+    begin
+      gem 'json'
+    rescue Gem::MissingSpecError
+      skip "default gems are only available after ruby installation"
+    end
+
+    cmd = <<-RUBY
+      $stderr = $stdout
+      require "json"
+      puts Gem.loaded_specs["json"].default_gem?
+    RUBY
+    output = Gem::Util.popen(Gem.ruby, "-e", cmd).strip
+    assert_equal "true", output
+  end
+
   def test_default_gem_and_normal_gem
     default_gem_spec = new_default_spec("default", "2.0.0.0",
                                         nil, "default/gem.rb")
