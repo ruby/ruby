@@ -109,6 +109,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Stdlib updates (outstanding ones only)
 
+* Bundler
+
+  * Add Bundler to Standard Library. [Feature #12733]
+
 * ERB
   * Add ERB#result_with_hash to render a template with local variables passed
     with a Hash object. [Feature #8631]
