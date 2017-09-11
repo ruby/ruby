@@ -1035,17 +1035,15 @@ define print_lineno
 end
 
 define check_method_entry
-  # get $immeo and $can_be_svar and return $me
   set $imemo = (struct RBasic *)$arg0
-  set $can_be_svar = $arg1
   if $imemo != RUBY_Qfalse
     set $type = ($imemo->flags >> 12) & 0x07
     if $type == imemo_ment
       set $me = (rb_callable_method_entry_t *)$imemo
     else
     if $type == imemo_svar
-      set $imemo == ((struct vm_svar *)$imemo)->cref_or_me
-      check_method_entry $imemo 0
+      set $imemo = ((struct vm_svar *)$imemo)->cref_or_me
+      check_method_entry $imemo
     end
     end
   end
@@ -1089,18 +1087,40 @@ define output_id
   end
 end
 
+define output_pathobj
+  set $flags = ((struct RBasic*)($arg0))->flags
+  if ($flags & RUBY_T_MASK) == RUBY_T_STRING
+    output_string $arg0
+  end
+  if ($flags & RUBY_T_MASK) == RUBY_T_ARRAY
+    if $flags & RUBY_FL_USER1
+      set $str = ((struct RArray*)($arg0))->as.ary[0]
+    else
+      set $str = ((struct RArray*)($arg0))->as.heap.ptr[0]
+    end
+      output_string $str
+  end
+end
+
 define rb_ps_thread
   set $ps_thread = (struct RTypedData*)$arg0
   set $ps_thread_th = (rb_thread_t*)$ps_thread->data
   printf "* #<Thread:%p rb_thread_t:%p native_thread:%p>\n", \
     $ps_thread, $ps_thread_th, $ps_thread_th->thread_id
   set $cfp = $ps_thread_th->ec.cfp
-  set $cfpend = (rb_control_frame_t *)($ps_thread_th->ec.stack + $ps_thread_th->ec.stack_size)-1
+  set $cfpend = (rb_control_frame_t *)($ps_thread_th->ec.vm_stack + $ps_thread_th->ec.vm_stack_size)-1
   while $cfp < $cfpend
     if $cfp->iseq
+      if !((VALUE)$cfp->iseq & RUBY_IMMEDIATE_MASK) && (((imemo_ifunc << RUBY_FL_USHIFT) | RUBY_T_IMEMO)==$cfp->iseq->flags & ((imemo_mask << RUBY_FL_USHIFT) | RUBY_T_MASK))
+        printf "ifunc "
+        set print symbol-filename on
+        output/a $cfp->iseq.body
+        set print symbol-filename off
+        printf "\n"
+      else
       if $cfp->pc
         set $location = $cfp->iseq->body->location
-        output_string $location.path
+        output_pathobj $location.pathobj
         printf ":"
         print_lineno $cfp
         printf ":in `"
@@ -1108,6 +1128,7 @@ define rb_ps_thread
         printf "'\n"
       else
         printf "???.rb:???:in `???'\n"
+      end
       end
     else
       # if VM_FRAME_TYPE($cfp->flag) == VM_FRAME_MAGIC_CFUNC
@@ -1119,7 +1140,7 @@ define rb_ps_thread
         set $env_specval = $ep[-1]
         set $env_me_cref = $ep[-2]
         while ($env_specval & 0x02) != 0
-          check_method_entry $env_me_cref 0
+          check_method_entry $env_me_cref
           if $me != 0
             loop_break
           end
@@ -1128,7 +1149,7 @@ define rb_ps_thread
           set $env_me_cref = $ep[-2]
         end
         if $me == 0
-          check_method_entry $env_me_cref 1
+          check_method_entry $env_me_cref
         end
         set print symbol-filename on
         output/a $me->def->body.cfunc.func
