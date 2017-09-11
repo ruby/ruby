@@ -2,6 +2,6 @@ did_you_mean 1.1.2
 minitest 5.10.3
 net-telnet 0.1.1
 power_assert 1.1.0
-rake 12.0.0
+rake 12.1.0
 test-unit 3.2.5
 xmlrpc 0.3.0
