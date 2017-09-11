@@ -52,7 +52,7 @@ module SecureRandom
     end
 
     def gen_random(n)
-      ret = Random.urandom(n)
+      ret = Random.urandom(1)
       if ret.nil?
         begin
           require 'openssl'
@@ -67,10 +67,6 @@ module SecureRandom
           end
           return gen_random(n)
         end
-      elsif ret.length != n
-        raise NotImplementedError, \
-              "Unexpected partial read from random device: " \
-              "only #{ret.length} for #{n} bytes"
       else
         @rng_chooser.synchronize do
           class << self
