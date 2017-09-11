@@ -62,30 +62,6 @@ module URI
       super(tmp)
     end
 
-=begin
-    #
-    # == Description
-    #
-    # Create a new URI::HTTP object from generic URI components as per
-    # RFC 2396. No HTTP-specific syntax checking (as per RFC 1738) is
-    # performed.
-    #
-    # Arguments are +scheme+, +userinfo+, +host+, +port+, +registry+, +path+,
-    # +opaque+, +query+ and +fragment+, in that order.
-    #
-    # Example:
-    #
-    #     uri = URI::HTTP.new("http", nil, "www.example.com", nil, nil,
-    #                         "/path", nil, "query", "fragment")
-    #
-    #
-    # See also URI::Generic.new
-    #
-    def initialize(*arg)
-      super(*arg)
-    end
-=end
-
     #
     # == Description
     #
