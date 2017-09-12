@@ -1,4 +1,10 @@
-require_relative "lib/rdoc"
+# -*- encoding: utf-8 -*-
+begin
+  require_relative "lib/rdoc"
+rescue LoadError
+  # for Ruby repository
+  require_relative "../rdoc"
+end
 
 Gem::Specification.new do |s|
   s.name = "rdoc"
