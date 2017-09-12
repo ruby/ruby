@@ -445,6 +445,18 @@ define output_string
   end
 end
 
+define print_string
+  set $flags = ((struct RBasic*)($arg0))->flags
+  set $len = ($flags & RUBY_FL_USER1) ? \
+          ((struct RString*)($arg0))->as.heap.len : \
+          (($flags & (RUBY_FL_USER2|RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5|RUBY_FL_USER6)) >> RUBY_FL_USHIFT+2)
+  if $len > 0
+    printf "%s", *(char *)(($flags & RUBY_FL_USER1) ? \
+	    ((struct RString*)($arg0))->as.heap.ptr : \
+	    ((struct RString*)($arg0))->as.ary) @ $len
+  end
+end
+
 define rp_string
   output_string $arg0
   printf " bytesize:%ld ", $len
@@ -1049,7 +1061,7 @@ define check_method_entry
   end
 end
 
-define output_id
+define print_id
   set $id = $arg0
   # rb_id_to_serial
   if $id > tLAST_OP_ID
@@ -1081,16 +1093,16 @@ define output_id
           set $arylen = $ary->as.heap.len
         end
         set $result = $aryptr[($serial % ID_ENTRY_UNIT) * ID_ENTRY_SIZE + $t]
-        output_string $result
+        print_string $result
       end
     end
   end
 end
 
-define output_pathobj
+define print_pathobj
   set $flags = ((struct RBasic*)($arg0))->flags
   if ($flags & RUBY_T_MASK) == RUBY_T_STRING
-    output_string $arg0
+    print_string $arg0
   end
   if ($flags & RUBY_T_MASK) == RUBY_T_ARRAY
     if $flags & RUBY_FL_USER1
@@ -1098,7 +1110,7 @@ define output_pathobj
     else
       set $str = ((struct RArray*)($arg0))->as.heap.ptr[0]
     end
-      output_string $str
+      printf "%s", $str
   end
 end
 
@@ -1112,7 +1124,7 @@ define rb_ps_thread
   while $cfp < $cfpend
     if $cfp->iseq
       if !((VALUE)$cfp->iseq & RUBY_IMMEDIATE_MASK) && (((imemo_ifunc << RUBY_FL_USHIFT) | RUBY_T_IMEMO)==$cfp->iseq->flags & ((imemo_mask << RUBY_FL_USHIFT) | RUBY_T_MASK))
-        printf "ifunc "
+        printf "%d:ifunc ", $cfpend-$cfp
         set print symbol-filename on
         output/a $cfp->iseq.body
         set print symbol-filename off
@@ -1120,14 +1132,15 @@ define rb_ps_thread
       else
       if $cfp->pc
         set $location = $cfp->iseq->body->location
-        output_pathobj $location.pathobj
+        printf "%d:", $cfpend-$cfp
+        print_pathobj $location.pathobj
         printf ":"
         print_lineno $cfp
         printf ":in `"
-        output_string $location.label
+        print_string $location.label
         printf "'\n"
       else
-        printf "???.rb:???:in `???'\n"
+        printf "%d: ???.rb:???:in `???'\n", $cfpend-$cfp
       end
       end
     else
@@ -1151,15 +1164,16 @@ define rb_ps_thread
         if $me == 0
           check_method_entry $env_me_cref
         end
+        printf "%d:", $cfpend-$cfp
         set print symbol-filename on
         output/a $me->def->body.cfunc.func
         set print symbol-filename off
         set $mid = $me->def->original_id
         printf ":in `"
-        output_id $mid
+        print_id $mid
         printf "'\n"
       else
-        printf "unknown_frame:???:in `???'\n"
+        printf "%d:unknown_frame:???:in `???'\n", $cfpend-$cfp
       end
     end
     set $cfp = $cfp + 1
