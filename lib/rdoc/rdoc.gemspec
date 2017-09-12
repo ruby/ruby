@@ -1,4 +1,4 @@
-# -*- encoding: utf-8 -*-
+# -*- coding: utf-8 -*-
 begin
   require_relative "lib/rdoc"
 rescue LoadError
@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
   s.name = "rdoc"
   s.version = RDoc::VERSION
   s.date = "2017-09-12"
-  
+
   s.authors = [
     "Eric Hodel",
     "Dave Thomas",
