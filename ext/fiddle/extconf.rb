@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'mkmf'
 
 # :stopdoc:
@@ -41,12 +41,12 @@ begin
   libffi.lib = "#{libffi.builddir}/.libs"
   libffi.a = "#{libffi.lib}/libffi_convenience.#{$LIBEXT}"
   nowarn = CONFIG.merge("warnflags"=>"")
-  libffi.cflags = RbConfig.expand("$(CFLAGS)", nowarn)
+  libffi.cflags = RbConfig.expand("$(CFLAGS)".dup, nowarn)
   ver = ver[/libffi-(.*)/, 1]
 
   FileUtils.mkdir_p(libffi.dir)
   libffi.opt = CONFIG['configure_args'][/'(-C)'/, 1]
-  libffi.ldflags = RbConfig.expand("$(LDFLAGS) #{libpathflag([relative_from($topdir, "..")])} #{$LIBRUBYARG}")
+  libffi.ldflags = RbConfig.expand("$(LDFLAGS) #{libpathflag([relative_from($topdir, "..")])} #{$LIBRUBYARG}".dup)
   libffi.arch = RbConfig::CONFIG['host']
   if $mswin
     unless find_executable(as = /x64/ =~ libffi.arch ? "ml64" : "ml")
@@ -77,7 +77,7 @@ begin
   args << libffi.opt if libffi.opt
   args.concat %W[
       CC=#{cc} CFLAGS=#{libffi.cflags}
-      CXX=#{cxx} CXXFLAGS=#{RbConfig.expand("$(CXXFLAGS)", nowarn)}
+      CXX=#{cxx} CXXFLAGS=#{RbConfig.expand("$(CXXFLAGS)".dup, nowarn)}
       LD=#{ld} LDFLAGS=#{libffi.ldflags}
   ]
 

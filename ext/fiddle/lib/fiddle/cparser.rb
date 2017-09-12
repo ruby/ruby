@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 module Fiddle
   # A mixin that provides methods for parsing C struct and prototype signatures.
   #

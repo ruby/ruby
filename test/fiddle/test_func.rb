@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 begin
   require_relative 'helper'
 rescue LoadError
@@ -16,7 +16,7 @@ module Fiddle
       assert_raise(SecurityError) do
         Thread.new {
           $SAFE = 1
-          f.call("uname -rs".taint)
+          f.call("uname -rs".dup.taint)
         }.join
       end
     end

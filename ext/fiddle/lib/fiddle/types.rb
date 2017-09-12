@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 module Fiddle
   # Adds Windows type aliases to the including class for use with
   # Fiddle::Importer.

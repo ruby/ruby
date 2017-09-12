@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 begin
   require_relative 'helper'
 rescue LoadError
@@ -11,7 +11,7 @@ module Fiddle
     def test_safe_handle_open
       t = Thread.new do
         $SAFE = 1
-        Fiddle::Handle.new(LIBC_SO.taint)
+        Fiddle::Handle.new(LIBC_SO.dup.taint)
       end
       assert_raise(SecurityError) { t.value }
     end
@@ -20,7 +20,7 @@ module Fiddle
       t = Thread.new do
         h = Fiddle::Handle.new(LIBC_SO)
         $SAFE = 1
-        h["qsort".taint]
+        h["qsort".dup.taint]
       end
       assert_raise(SecurityError) { t.value }
     end
