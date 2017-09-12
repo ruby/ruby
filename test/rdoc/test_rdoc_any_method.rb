@@ -74,7 +74,7 @@ method(a, b) { |c, d| ... }
 
   def test_markup_code
     tokens = [
-      RDoc::RubyToken::TkCONSTANT. new(0, 0, 0, 'CONSTANT'),
+      { :line_no => 0, :char_no => 0, :kind => :on_const, :text => 'CONSTANT' },
     ]
 
     @c2_a.collect_tokens

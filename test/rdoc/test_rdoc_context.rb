@@ -719,6 +719,7 @@ class TestRDocContext < XrefTestCase
 
     assert_equal [@pub, @prot, @priv], @vis.method_list
     assert_equal [@apub, @aprot, @apriv], @vis.attributes
+    assert_equal [@cpub, @cpriv], @vis.constants
   end
 
   def test_remove_invisible_nodoc
@@ -728,6 +729,7 @@ class TestRDocContext < XrefTestCase
 
     assert_equal [@pub, @prot, @priv], @vis.method_list
     assert_equal [@apub, @aprot, @apriv], @vis.attributes
+    assert_equal [@cpub, @cpriv], @vis.constants
   end
 
   def test_remove_invisible_protected
@@ -737,6 +739,7 @@ class TestRDocContext < XrefTestCase
 
     assert_equal [@pub, @prot], @vis.method_list
     assert_equal [@apub, @aprot], @vis.attributes
+    assert_equal [@cpub], @vis.constants
   end
 
   def test_remove_invisible_public
@@ -746,6 +749,7 @@ class TestRDocContext < XrefTestCase
 
     assert_equal [@pub], @vis.method_list
     assert_equal [@apub], @vis.attributes
+    assert_equal [@cpub], @vis.constants
   end
 
   def test_remove_invisible_public_force
@@ -755,11 +759,13 @@ class TestRDocContext < XrefTestCase
     @prot.force_documentation = true
     @apriv.force_documentation = true
     @aprot.force_documentation = true
+    @cpriv.force_documentation = true
 
     @vis.remove_invisible :public
 
     assert_equal [@pub, @prot, @priv], @vis.method_list
     assert_equal [@apub, @aprot, @apriv], @vis.attributes
+    assert_equal [@cpub, @cpriv], @vis.constants
   end
 
   def test_remove_invisible_in_protected
@@ -922,6 +928,9 @@ class TestRDocContext < XrefTestCase
     @aprot = RDoc::Attr.new nil, 'prot', 'RW', nil
     @apriv = RDoc::Attr.new nil, 'priv', 'RW', nil
 
+    @cpub  = RDoc::Constant.new 'CONST_PUBLIC', nil, nil
+    @cpriv = RDoc::Constant.new 'CONST_PRIVATE', nil, nil
+
     @vis = RDoc::NormalClass.new 'Vis'
     @vis.add_method @pub
     @vis.add_method @prot
@@ -931,11 +940,16 @@ class TestRDocContext < XrefTestCase
     @vis.add_attribute @aprot
     @vis.add_attribute @apriv
 
+    @vis.add_constant @cpub
+    @vis.add_constant @cpriv
+
     @prot.visibility = :protected
     @priv.visibility = :private
 
     @aprot.visibility = :protected
     @apriv.visibility = :private
+
+    @cpriv.visibility = :private
   end
 
 end

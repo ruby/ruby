@@ -666,8 +666,7 @@ class RDoc::Parser::C < RDoc::Parser
 
       #meth_obj.params = params
       meth_obj.start_collecting_tokens
-      tk = RDoc::RubyToken::Token.new nil, 1, 1
-      tk.set_text body
+      tk = { :line_no => 1, :char_no => 1, :text => body }
       meth_obj.add_token tk
       meth_obj.comment = comment
       meth_obj.line    = file_content[0, offset].count("\n") + 1
@@ -684,8 +683,7 @@ class RDoc::Parser::C < RDoc::Parser
       find_modifiers comment, meth_obj
 
       meth_obj.start_collecting_tokens
-      tk = RDoc::RubyToken::Token.new nil, 1, 1
-      tk.set_text body
+      tk = { :line_no => 1, :char_no => 1, :text => body }
       meth_obj.add_token tk
       meth_obj.comment = comment
       meth_obj.line    = file_content[0, offset].count("\n") + 1

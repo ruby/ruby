@@ -200,10 +200,12 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
 
     content = if verbatim.ruby? or parseable? text then
                 begin
-                  tokens = RDoc::RubyLex.tokenize text, @options
+                  tokens = RDoc::RipperStateLex.parse text
                   klass  = ' class="ruby"'
 
-                  RDoc::TokenStream.to_html tokens
+                  result = RDoc::TokenStream.to_html tokens
+                  result = result + "\n" unless "\n" == result[-1]
+                  result
                 rescue RDoc::RubyLex::Error
                   CGI.escapeHTML text
                 end
@@ -212,7 +214,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
               end
 
     if @options.pipe then
-      @res << "\n<pre><code>#{CGI.escapeHTML text}</code></pre>\n"
+      @res << "\n<pre><code>#{CGI.escapeHTML text}\n</code></pre>\n"
     else
       @res << "\n<pre#{klass}>#{content}</pre>\n"
     end

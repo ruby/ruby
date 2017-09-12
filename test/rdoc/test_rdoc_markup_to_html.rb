@@ -452,6 +452,9 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   end
 
   def test_accept_verbatim_nl_after_backslash
+    # TODO: Remove "skip" after the issue is resolved: https://github.com/jruby/jruby/issues/4787
+    # This "skip" is for strange behavior around escaped newline on JRuby
+    skip if defined? JRUBY_VERSION
     verb = @RM::Verbatim.new("a = 1 if first_flag_var and \\\n", "  this_is_flag_var\n")
 
     @to.start_accepting

@@ -1079,6 +1079,7 @@ class RDoc::Context < RDoc::CodeObject
     return if [:private, :nodoc].include? min_visibility
     remove_invisible_in @method_list, min_visibility
     remove_invisible_in @attributes, min_visibility
+    remove_invisible_in @constants, min_visibility
   end
 
   ##
@@ -1162,6 +1163,17 @@ class RDoc::Context < RDoc::CodeObject
   def set_visibility_for(methods, visibility, singleton = false)
     methods_matching methods, singleton do |m|
       m.visibility = visibility
+    end
+  end
+
+  ##
+  # Given an array +names+ of constants, set the visibility of each constant to
+  # +visibility+
+
+  def set_constant_visibility_for(names, visibility)
+    names.each do |name|
+      constant = @constants_hash[name] or next
+      constant.visibility = visibility
     end
   end
 

@@ -86,7 +86,7 @@ class TestRDocConstant < XrefTestCase
     assert_equal top_level,      loaded.file
     assert_equal 'Klass::CONST', loaded.full_name
     assert_equal 'CONST',        loaded.name
-    assert_nil                   loaded.visibility
+    assert_equal :public,        loaded.visibility
     assert_equal cm,             loaded.parent
     assert_equal section,        loaded.section
   end
@@ -114,7 +114,7 @@ class TestRDocConstant < XrefTestCase
     assert_equal top_level,      loaded.file
     assert_equal 'Klass::CONST', loaded.full_name
     assert_equal 'CONST',        loaded.name
-    assert_nil                   loaded.visibility
+    assert_equal :public,        loaded.visibility
     assert_equal cm,             loaded.parent
     assert_equal section,        loaded.section
 
@@ -146,7 +146,7 @@ class TestRDocConstant < XrefTestCase
     assert_equal top_level,      loaded.file
     assert_equal 'Klass::CONST', loaded.full_name
     assert_equal 'CONST',        loaded.name
-    assert_nil                   loaded.visibility
+    assert_equal :public,        loaded.visibility
     assert_equal cm,             loaded.parent
     assert_equal section,        loaded.section
 

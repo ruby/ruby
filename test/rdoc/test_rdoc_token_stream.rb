@@ -5,17 +5,17 @@ class TestRDocTokenStream < RDoc::TestCase
 
   def test_class_to_html
     tokens = [
-      RDoc::RubyToken::TkCONSTANT. new(0, 0, 0, 'CONSTANT'),
-      RDoc::RubyToken::TkDEF.      new(0, 0, 0, 'KW'),
-      RDoc::RubyToken::TkIVAR.     new(0, 0, 0, 'IVAR'),
-      RDoc::RubyToken::TkOp.       new(0, 0, 0, 'Op'),
-      RDoc::RubyToken::TkId.       new(0, 0, 0, 'Id'),
-      RDoc::RubyToken::TkNode.     new(0, 0, 0, 'Node'),
-      RDoc::RubyToken::TkCOMMENT.  new(0, 0, 0, 'COMMENT'),
-      RDoc::RubyToken::TkREGEXP.   new(0, 0, 0, 'REGEXP'),
-      RDoc::RubyToken::TkSTRING.   new(0, 0, 0, 'STRING'),
-      RDoc::RubyToken::TkVal.      new(0, 0, 0, 'Val'),
-      RDoc::RubyToken::TkBACKSLASH.new(0, 0, 0, '\\'),
+      { :line_no => 0, :char_no => 0, :kind => :on_const, :text => 'CONSTANT' },
+      { :line_no => 0, :char_no => 0, :kind => :on_kw, :text => 'KW' },
+      { :line_no => 0, :char_no => 0, :kind => :on_ivar, :text => 'IVAR' },
+      { :line_no => 0, :char_no => 0, :kind => :on_op, :text => 'Op' },
+      { :line_no => 0, :char_no => 0, :kind => :on_ident, :text => 'Id' },
+      { :line_no => 0, :char_no => 0, :kind => :on_backref, :text => 'Node' },
+      { :line_no => 0, :char_no => 0, :kind => :on_comment, :text => 'COMMENT' },
+      { :line_no => 0, :char_no => 0, :kind => :on_regexp, :text => 'REGEXP' },
+      { :line_no => 0, :char_no => 0, :kind => :on_tstring, :text => 'STRING' },
+      { :line_no => 0, :char_no => 0, :kind => :on_int, :text => 'Val' },
+      { :line_no => 0, :char_no => 0, :kind => :on_unknown, :text => '\\' }
     ]
 
     expected = [

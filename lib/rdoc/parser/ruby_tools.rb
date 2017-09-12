@@ -5,8 +5,6 @@
 
 module RDoc::Parser::RubyTools
 
-  include RDoc::RubyToken
-
   ##
   # Adds a token listener +obj+, but you should probably use token_listener
 
@@ -22,16 +20,25 @@ module RDoc::Parser::RubyTools
     tk = nil
 
     if @tokens.empty? then
-      tk = @scanner.token
-      @read.push @scanner.get_readed
-      puts "get_tk1 => #{tk.inspect}" if $TOKEN_DEBUG
+      if @scanner_point >= @scanner.size
+        return nil
+      else
+        tk = @scanner[@scanner_point]
+        @scanner_point += 1
+        @read.push tk[:text]
+        puts "get_tk1 => #{tk.inspect}" if $TOKEN_DEBUG
+      end
     else
       @read.push @unget_read.shift
       tk = @tokens.shift
       puts "get_tk2 => #{tk.inspect}" if $TOKEN_DEBUG
     end
 
-    tk = nil if TkEND_OF_SCRIPT === tk
+    if tk == nil || :on___end__ == tk[:kind]
+      tk = nil
+    end
+
+    return nil unless tk
 
     # inform any listeners of our shiny new token
     @token_listeners.each do |obj|
@@ -102,19 +109,24 @@ module RDoc::Parser::RubyTools
     @tokens     = []
     @unget_read = []
     @nest = 0
+    @scanner_point = 0
+  end
+
+  def tk_nl?(tk)
+    :on_nl == tk[:kind] or :on_ignored_nl == tk[:kind]
   end
 
   ##
   # Skips whitespace tokens including newlines if +skip_nl+ is true
 
-  def skip_tkspace(skip_nl = true) # HACK dup
+  def skip_tkspace(skip_nl = true)
     tokens = []
 
-    while TkSPACE === (tk = get_tk) or (skip_nl and TkNL === tk) do
-      tokens.push tk
+    while (tk = get_tk) and (:on_sp == tk[:kind] or (skip_nl and tk_nl?(tk))) do
+      tokens.push(tk)
     end
 
-    unget_tk tk
+    unget_tk(tk)
     tokens
   end
 
