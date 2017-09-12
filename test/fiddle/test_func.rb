@@ -38,7 +38,7 @@ module Fiddle
     def test_string
       stress, GC.stress = GC.stress, true
       f = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
-      buff = "000"
+      buff = +"000"
       str = f.call(buff, "123")
       assert_equal("123", buff)
       assert_equal("123", str.to_s)
