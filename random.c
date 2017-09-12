@@ -624,7 +624,8 @@ random_raw_seed(VALUE self, VALUE size)
     long n = NUM2ULONG(size);
     VALUE buf = rb_str_new(0, n);
     if (n == 0) return buf;
-    if (fill_random_bytes(RSTRING_PTR(buf), n, FALSE)) return Qnil;
+    if (fill_random_bytes(RSTRING_PTR(buf), n, FALSE))
+	rb_raise(rb_eRuntimeError, "failed to get urandom");
     return buf;
 }
 
