@@ -24,6 +24,7 @@ module OpenSSL::SSLPairM
       sctx.cert = @svr_cert
       sctx.key = @svr_key
       sctx.tmp_dh_callback = proc { OpenSSL::TestUtils::Fixtures.pkey_dh("dh1024") }
+      sctx.options |= OpenSSL::SSL::OP_NO_COMPRESSION
       ssls = OpenSSL::SSL::SSLServer.new(tcps, sctx)
       ns = ssls.accept
       ssls.close
