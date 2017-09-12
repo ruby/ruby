@@ -2297,8 +2297,6 @@ class CSV
     chunks.map { |chunk| chunk.encode(@encoding.name) }.join('')
   end
 
-  private
-
   #
   # Returns the encoding of the internal IO object or the +default+ if the
   # encoding cannot be determined.
