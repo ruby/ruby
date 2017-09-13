@@ -1,5 +1,10 @@
 # frozen_string_literal: false
-require 'io/console/size'
+begin
+  require 'io/console/size'
+rescue LoadError
+  # for JRuby
+  require 'io/console'
+end
 
 ##
 # Stats printer that prints just the files being documented with a progress
@@ -23,7 +28,8 @@ class RDoc::Stats::Normal < RDoc::Stats::Quiet
 
     # Print a progress bar, but make sure it fits on a single line. Filename
     # will be truncated if necessary.
-    terminal_width = IO.console_size[1].to_i.nonzero? || 80
+    size = IO.respond_to?(:console_size) ? IO.console_size : IO.console.winsize
+    terminal_width = size[1].to_i.nonzero? || 80
     max_filename_size = terminal_width - progress_bar.size
 
     if filename.size > max_filename_size then
