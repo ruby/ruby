@@ -298,13 +298,15 @@ class TestRubyOptions < Test::Unit::TestCase
       @verbose = $VERBOSE
       $VERBOSE = nil
 
-      ENV['PATH'] = File.dirname(t.path)
+      path, name = *File.split(t.path)
 
-      assert_in_out_err(%w(-S) + [File.basename(t.path)], "", %w(1), [])
+      ENV['PATH'] = (path_orig && RbConfig::CONFIG['LIBPATHENV'] == 'PATH') ?
+          [path, path_orig].join(File::PATH_SEPARATOR) : path
+      assert_in_out_err(%w(-S) + [name], "", %w(1), [])
+      ENV['PATH'] = path_orig
 
-      ENV['RUBYPATH'] = File.dirname(t.path)
-
-      assert_in_out_err(%w(-S) + [File.basename(t.path)], "", %w(1), [])
+      ENV['RUBYPATH'] = path
+      assert_in_out_err(%w(-S) + [name], "", %w(1), [])
     }
 
   ensure
