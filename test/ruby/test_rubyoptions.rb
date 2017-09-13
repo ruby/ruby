@@ -298,11 +298,15 @@ class TestRubyOptions < Test::Unit::TestCase
       @verbose = $VERBOSE
       $VERBOSE = nil
 
-      ENV['PATH'] = File.dirname(t.path)
+      ENV['PATH'] = path_orig ?
+        path_orig + File::PATH_SEPARATOR + File.dirname(t.path) :
+        File.dirname(t.path)
 
       assert_in_out_err(%w(-S) + [File.basename(t.path)], "", %w(1), [])
 
-      ENV['RUBYPATH'] = File.dirname(t.path)
+      ENV['RUBYPATH'] = rubypath_orig ?
+        rubypath_orig + File::PATH_SEPARATOR + File.dirname(t.path) :
+        File.dirname(t.path)
 
       assert_in_out_err(%w(-S) + [File.basename(t.path)], "", %w(1), [])
     }
