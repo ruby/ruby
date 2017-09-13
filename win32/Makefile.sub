@@ -917,6 +917,8 @@ s,@OUTFLAG@,$(OUTFLAG),;t t
 s,@COUTFLAG@,$(COUTFLAG),;t t
 s,@CSRCFLAG@,$(CSRCFLAG),;t t
 s,@CPPOUTFILE@,-P,;t t
+s,@PRELOADENV@,,;t t
+s,@LIBPATHENV@,PATH,;t t
 s,@LIBPATHFLAG@, -libpath:%s,;t t
 s,@RPATHFLAG@,,;t t
 s,@LIBARG@,%s.lib,;t t
