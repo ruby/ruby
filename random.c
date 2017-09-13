@@ -608,7 +608,7 @@ random_seed(void)
  * Returns a string, using platform providing features.
  * Returned value is expected to be a cryptographically secure
  * pseudo-random number in binary form.
- * This method returns nil if the feature provided by platform
+ * This method raises a RuntimeError if the feature provided by platform
  * failed to prepare the result.
  *
  * In 2017, Linux manpage random(7) writes that "no cryptographic
