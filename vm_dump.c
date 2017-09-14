@@ -442,7 +442,7 @@ darwin_sigtramp:
 	ucontext_t *uctx;
 	char vec[1];
 	int r;
-	/* get _sigtramp's ucontext_t and set values to cursor
+	/* get previous frame information from %rbx at _sigtramp and set values to cursor
 	 * http://www.opensource.apple.com/source/Libc/Libc-825.25/i386/sys/_sigtramp.s
 	 * http://www.opensource.apple.com/source/libunwind/libunwind-35.1/src/unw_getcontext.s
 	 */
@@ -465,8 +465,35 @@ darwin_sigtramp:
 	unw_set_reg(&cursor, UNW_X86_64_R14, uctx->uc_mcontext->__ss.__r14);
 	unw_set_reg(&cursor, UNW_X86_64_R15, uctx->uc_mcontext->__ss.__r15);
 	ip = uctx->uc_mcontext->__ss.__rip;
+
+	/* There's 4 cases for SEGV:
+	 * (1) called invalid address
+	 * (2) read or write invalid address
+	 * (3) received signal
+	 *
+	 * Detail:
+	 * (1) called invalid address
+	 * In this case, saved ip is invalid address.
+	 * It needs to just save the address for the information,
+	 * skip the frame, and restore the frame calling the
+	 * invalid address from %rsp.
+	 * The problem is how to check whether the ip is valid or not.
+	 * This code uses mincore(2) and assume the address's page is
+	 * incore/referenced or not reflects the problem.
+	 * Note that High Sierra's mincore(2) may return -128.
+	 * (2) read or write invalid address
+	 * saved ip is valid. just restart backtracing.
+	 * (3) received signal in user space
+	 * Same as (2).
+	 * (4) received signal in kernel
+	 * In this case saved ip points just after syscall, but registers are
+	 * already overwriten by kernel. To fix register consistency,
+	 * skip libc's kernel wrapper.
+	 * To detect this case, just previous two bytes of ip is "\x0f\x05",
+	 * syscall instruction of x86_64.
+	 */
 	r = mincore((const void *)ip, 1, vec);
-	if (r || !vec[0] || memcmp((const char *)ip-2, "\x0f\x05", 2) == 0) {
+	if (r || vec[0] <= 0 || memcmp((const char *)ip-2, "\x0f\x05", 2) == 0) {
 	    /* if segv is caused by invalid call or signal received in syscall */
 	    /* the frame is invalid; skip */
 	    trace[n++] = (void *)ip;
