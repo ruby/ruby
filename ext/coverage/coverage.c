@@ -11,6 +11,8 @@
 #include "ruby.h"
 #include "vm_core.h"
 
+static int current_mode;
+
 /*
  * call-seq:
  *    Coverage.start  => nil
@@ -18,13 +20,49 @@
  * Enables coverage measurement.
  */
 static VALUE
-rb_coverage_start(VALUE klass)
+rb_coverage_start(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE coverages = rb_get_coverages();
+    VALUE coverages, opt;
+    int mode, experimental_mode_enabled = 1;
+
+    {
+        const char *e = getenv("COVERAGE_EXPERIMENTAL_MODE");
+        if (!e || !*e) experimental_mode_enabled = 0;
+    }
+
+    if (!experimental_mode_enabled)
+	rb_error_arity(argc, 0, 0);
+    rb_scan_args(argc, argv, "01", &opt);
+
+    if (argc == 0) {
+	mode = 0; /* compatible mode */
+    }
+    else if (opt == ID2SYM(rb_intern("all"))) {
+	mode = COVERAGE_TARGET_LINES | COVERAGE_TARGET_BRANCHES | COVERAGE_TARGET_METHODS;
+    }
+    else {
+	mode = 0;
+	if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("lines")))))
+	    mode |= COVERAGE_TARGET_LINES;
+	if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("branches")))))
+	    mode |= COVERAGE_TARGET_BRANCHES;
+	if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("methods")))))
+	    mode |= COVERAGE_TARGET_METHODS;
+	if (mode == 0) {
+	    rb_raise(rb_eRuntimeError, "no measuring target is specified");
+	}
+    }
+
+    coverages = rb_get_coverages();
     if (!RTEST(coverages)) {
 	coverages = rb_hash_new();
 	rb_obj_hide(coverages);
-	rb_set_coverages(coverages, COVERAGE_TARGET_LINES);
+	current_mode = mode;
+	if (mode == 0) mode = COVERAGE_TARGET_LINES;
+	rb_set_coverages(coverages, mode);
+    }
+    else if (current_mode != mode) {
+	rb_raise(rb_eRuntimeError, "cannot change the measuring target during coverage measurement");
     }
     return Qnil;
 }
@@ -35,12 +73,37 @@ coverage_peek_result_i(st_data_t key, st_data_t val, st_data_t h)
     VALUE path = (VALUE)key;
     VALUE coverage = (VALUE)val;
     VALUE coverages = (VALUE)h;
-    VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
-    if (lines) {
-	lines = rb_ary_dup(lines);
+    if (current_mode == 0) {
+	/* compatible mode */
+	VALUE lines = rb_ary_dup(RARRAY_AREF(coverage, COVERAGE_INDEX_LINES));
 	rb_ary_freeze(lines);
+	coverage = lines;
     }
-    rb_hash_aset(coverages, path, lines);
+    else {
+	VALUE h = rb_hash_new();
+	VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
+	VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
+	VALUE methods = RARRAY_AREF(coverage, COVERAGE_INDEX_METHODS);
+
+	if (lines) {
+	    lines = rb_ary_dup(lines);
+	    rb_ary_freeze(lines);
+	    rb_hash_aset(h, ID2SYM(rb_intern("lines")), lines);
+	}
+
+	if (branches) {
+	    rb_hash_aset(h, ID2SYM(rb_intern("branches")), branches);
+	}
+
+	if (methods) {
+	    rb_hash_aset(h, ID2SYM(rb_intern("methods")), methods);
+	}
+
+	rb_hash_freeze(h);
+	coverage = h;
+    }
+
+    rb_hash_aset(coverages, path, coverage);
     return ST_CONTINUE;
 }
 
@@ -49,6 +112,11 @@ coverage_peek_result_i(st_data_t key, st_data_t val, st_data_t h)
  *     Coverage.peek_result  => hash
  *
  * Returns a hash that contains filename as key and coverage array as value.
+ *
+ *   {
+ *     "file.rb" => [1, 2, nil],
+ *     ...
+ *   }
  */
 static VALUE
 rb_coverage_peek_result(VALUE klass)
@@ -129,7 +197,7 @@ void
 Init_coverage(void)
 {
     VALUE rb_mCoverage = rb_define_module("Coverage");
-    rb_define_module_function(rb_mCoverage, "start", rb_coverage_start, 0);
+    rb_define_module_function(rb_mCoverage, "start", rb_coverage_start, -1);
     rb_define_module_function(rb_mCoverage, "result", rb_coverage_result, 0);
     rb_define_module_function(rb_mCoverage, "peek_result", rb_coverage_peek_result, 0);
     rb_define_module_function(rb_mCoverage, "running?", rb_coverage_running, 0);
