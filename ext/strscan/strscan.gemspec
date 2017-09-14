@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.description = "Provides lexical scanning operations on a String."
 
   s.require_path = %w{lib}
-  s.files = %w{depend extconf.rb strscan.c}
+  s.files = %w{ext/strscan/extconf.rb ext/strscan/strscan.c ext/strscan/regenc.h ext/strscan/regint.h}
   s.extensions = %w{extconf.rb}
   s.required_ruby_version = ">= 2.5.0dev"
 
@@ -15,4 +15,6 @@ Gem::Specification.new do |s|
   s.email = [nil]
   s.homepage = "https://www.ruby-lang.org"
   s.license = "BSD-2-Clause"
+
+  s.add_development_dependency "rake-compiler"
 end

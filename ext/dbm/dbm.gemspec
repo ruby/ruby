@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 Gem::Specification.new do |s|
   s.name = "dbm"
-  s.version = '0.5.1'
+  s.version = '1.0.0.beta1'
   s.date = '2017-02-08'
   s.summary = "Provides a wrapper for the UNIX-style Database Manager Library"
   s.description = "Provides a wrapper for the UNIX-style Database Manager Library"
@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
 
   s.authors = ["Yukihiro Matsumoto"]
   s.email = ["matz@ruby-lang.org"]
-  s.homepage = "https://www.ruby-lang.org"
+  s.homepage = "https://github.com/ruby/dbm"
   s.license = "BSD-2-Clause"
 
   s.add_development_dependency "rake-compiler"

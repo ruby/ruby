@@ -1,18 +1,25 @@
+# coding: utf-8
 # frozen_string_literal: true
-Gem::Specification.new do |s|
-  s.name = "zlib"
-  s.version = '0.0.1'
-  s.date = '2017-02-03'
-  s.summary = "An interface for zlib."
-  s.description = "An interface for zlib."
+Gem::Specification.new do |spec|
+  spec.name          = "zlib"
+  spec.version       = "0.1.0"
+  spec.date          = '2017-09-13'
+  spec.authors       = ["Yukihiro Matsumoto", "UENO Katsuhiro"]
+  spec.email         = ["matz@ruby-lang.org", nil]
 
-  s.require_path = %w{lib}
-  s.files = %w{depend extconf.rb zlib.c}
-  s.extensions = %w{extconf.rb}
-  s.required_ruby_version = ">= 2.5.0dev"
+  spec.summary       = %q{Ruby interface for the zlib compression/decompression library}
+  spec.description   = %q{Ruby interface for the zlib compression/decompression library}
+  spec.homepage      = "https://github.com/ruby/zlib"
+  spec.license       = "BSD-2-Clause"
 
-  s.authors = ["UENO Katsuhiro"]
-  s.email = [nil]
-  s.homepage = "https://www.ruby-lang.org"
-  s.license = "BSD-2-Clause"
+  spec.files         = [".gitignore", ".travis.yml", "Gemfile", "LICENSE.txt", "README.md", "Rakefile", "bin/console", "bin/setup", "ext/zlib/extconf.rb", "ext/zlib/zlib.c", "zlib.gemspec"]
+  spec.bindir        = "exe"
+  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+  spec.require_paths = ["lib"]
+  spec.extensions    = "ext/zlib/extconf.rb"
+  spec.required_ruby_version = ">= 2.5.0dev"
+
+  spec.add_development_dependency "bundler"
+  spec.add_development_dependency "rake"
+  spec.add_development_dependency "rake-compiler"
 end
