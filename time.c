@@ -3650,7 +3650,7 @@ time_plus(VALUE time1, VALUE time2)
  *     time - other_time -> float
  *     time - numeric    -> time
  *
- *  Difference --- Returns a new Time object that represents the difference
+ *  Difference --- Returns a difference in seconds as a Float
  *  between _time_ and +other_time+, or subtracts the given number
  *  of seconds in +numeric+ from _time_.
  *
