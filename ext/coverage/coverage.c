@@ -73,19 +73,20 @@ branch_coverage(VALUE branches)
     VALUE ret = rb_hash_new();
     VALUE structure = rb_ary_dup(RARRAY_AREF(branches, 0));
     VALUE counters = rb_ary_dup(RARRAY_AREF(branches, 1));
-    int i, j, id = 0;
+    int i, j;
+    long id = 0;
 
     for (i = 0; i < RARRAY_LEN(structure); i++) {
 	VALUE branches = RARRAY_AREF(structure, i);
 	VALUE base_type = RARRAY_AREF(branches, 0);
 	VALUE base_lineno = RARRAY_AREF(branches, 1);
 	VALUE children = rb_hash_new();
-	rb_hash_aset(ret, rb_ary_new_from_args(3, base_type, INT2FIX(id++), base_lineno), children);
+	rb_hash_aset(ret, rb_ary_new_from_args(3, base_type, LONG2FIX(id++), base_lineno), children);
 	for (j = 2; j < RARRAY_LEN(branches); j += 3) {
 	    VALUE target_label = RARRAY_AREF(branches, j);
 	    VALUE target_lineno = RARRAY_AREF(branches, j + 1);
 	    int idx = FIX2INT(RARRAY_AREF(branches, j + 2));
-	    rb_hash_aset(children, rb_ary_new_from_args(3, target_label, INT2FIX(id++), target_lineno), RARRAY_AREF(counters, idx));
+	    rb_hash_aset(children, rb_ary_new_from_args(3, target_label, LONG2FIX(id++), target_lineno), RARRAY_AREF(counters, idx));
 	}
     }
 
@@ -96,13 +97,14 @@ static VALUE
 method_coverage(VALUE methods)
 {
     VALUE ret = rb_hash_new();
-    int i, id = 0;
+    int i;
+    long id = 0;
 
     for (i = 0; i < RARRAY_LEN(methods); ) {
 	VALUE method_name = RARRAY_AREF(methods, i++);
 	VALUE lineno = RARRAY_AREF(methods, i++);
 	VALUE counter = RARRAY_AREF(methods, i++);
-	rb_hash_aset(ret, rb_ary_new_from_args(3, method_name, INT2FIX(id++), lineno), counter);
+	rb_hash_aset(ret, rb_ary_new_from_args(3, method_name, LONG2FIX(id++), lineno), counter);
     }
 
     return ret;
