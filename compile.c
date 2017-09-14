@@ -2195,6 +2195,22 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 }
 
 static int
+iseq_pop_newarray(rb_iseq_t *iseq, INSN *iobj)
+{
+    switch (OPERAND_AT(iobj, 0)) {
+      case INT2FIX(0): /* empty array */
+	REMOVE_ELEM(&iobj->link);
+	return TRUE;
+      case INT2FIX(1): /* single element array */
+	REMOVE_ELEM(&iobj->link);
+	return FALSE;
+      default:
+	iobj->insn_id = BIN(adjuststack);
+	return TRUE;
+    }
+}
+
+static int
 iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcallopt)
 {
     INSN *iobj = (INSN *)list;
@@ -2418,14 +2434,22 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 			    OPERAND_AT(pobj, 0) == Qfalse :
 			    FALSE);
 		}
-		else if (IS_INSN_ID(pobj, putstring) || IS_INSN_ID(pobj, duparray)) {
+		else if (IS_INSN_ID(pobj, putstring) ||
+			 IS_INSN_ID(pobj, duparray) ||
+			 IS_INSN_ID(pobj, newarray)) {
 		    cond = IS_INSN_ID(iobj, branchif);
 		}
 		else if (IS_INSN_ID(pobj, putnil)) {
 		    cond = !IS_INSN_ID(iobj, branchif);
 		}
 		else break;
-		REMOVE_ELEM(iobj->link.prev);
+		if (prev_dup || !IS_INSN_ID(pobj, newarray)) {
+		    REMOVE_ELEM(iobj->link.prev);
+		}
+		else if (!iseq_pop_newarray(iseq, pobj)) {
+		    pobj = new_insn_core(iseq, pobj->line_no, BIN(pop), 0, NULL);
+		    INSERT_ELEM_NEXT(&iobj->link, &pobj->link);
+		}
 		if (cond) {
 		    iobj->insn_id = BIN(jump);
 		    goto again;
@@ -2452,10 +2476,14 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	if (IS_INSN(prev)) {
 	    enum ruby_vminsn_type previ = ((INSN *)prev)->insn_id;
 	    if (previ == BIN(putobject) || previ == BIN(putnil) ||
-		previ == BIN(putself) || previ == BIN(putstring)) {
+		previ == BIN(putself) || previ == BIN(putstring) ||
+		previ == BIN(duparray)) {
 		/* just push operand or static value and pop soon, no
 		 * side effects */
 		REMOVE_ELEM(prev);
+		REMOVE_ELEM(&iobj->link);
+	    }
+	    else if (previ == BIN(newarray) && iseq_pop_newarray(iseq, (INSN*)prev)) {
 		REMOVE_ELEM(&iobj->link);
 	    }
 	}
