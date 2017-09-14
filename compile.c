@@ -251,6 +251,32 @@ struct iseq_compile_data_ensure_node_stack {
 	  ADD_INSN2((seq), (line), trace2, INT2FIX(RUBY_EVENT_COVERAGE), INT2FIX(COVERAGE_INDEX_LINES)); \
       } \
   } while (0)
+#define DECL_BRANCH_BASE(branches, line, type) \
+  do { \
+      if (ISEQ_COVERAGE(iseq) && \
+	  ISEQ_BRANCH_COVERAGE(iseq) && \
+	  (line) > 0) { \
+	  VALUE structure = RARRAY_AREF(ISEQ_BRANCH_COVERAGE(iseq), 0); \
+	  branches = rb_ary_tmp_new(0); \
+	  rb_ary_push(structure, branches); \
+	  rb_ary_push(branches, ID2SYM(rb_intern(type))); \
+	  rb_ary_push(branches, INT2FIX(line)); \
+      } \
+  } while (0)
+#define ADD_TRACE_BRANCH_COVERAGE(seq, line, type, branches) \
+  do { \
+      if (ISEQ_COVERAGE(iseq) && \
+	  ISEQ_BRANCH_COVERAGE(iseq) && \
+	  (line) > 0) { \
+	  VALUE counters = RARRAY_AREF(ISEQ_BRANCH_COVERAGE(iseq), 1); \
+	  long counter_idx = RARRAY_LEN(counters); \
+	  rb_ary_push(counters, INT2FIX(0)); \
+	  rb_ary_push(branches, ID2SYM(rb_intern(type))); \
+	  rb_ary_push(branches, INT2FIX(line)); \
+	  rb_ary_push(branches, INT2FIX(counter_idx)); \
+	  ADD_INSN2((seq), (line), trace2, INT2FIX(RUBY_EVENT_COVERAGE), INT2FIX(counter_idx * 16 + COVERAGE_INDEX_BRANCHES)); \
+      } \
+  } while (0)
 
 #define ADD_TRACE(seq, line, event) \
   do { \
@@ -4145,6 +4171,7 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
     DECL_ANCHOR(then_seq);
     DECL_ANCHOR(else_seq);
     LABEL *then_label, *else_label, *end_label;
+    VALUE branches;
 
     INIT_ANCHOR(cond_seq);
     INIT_ANCHOR(then_seq);
@@ -4160,8 +4187,15 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
 
     ADD_SEQ(ret, cond_seq);
 
+    if (then_label->refcnt && else_label->refcnt) {
+	DECL_BRANCH_BASE(branches, line, "if");
+    }
+
     if (then_label->refcnt) {
 	ADD_LABEL(ret, then_label);
+	if (else_label->refcnt) {
+	    ADD_TRACE_BRANCH_COVERAGE(ret, node->nd_body ? nd_line(node->nd_body) : line, "then", branches);
+	}
 	ADD_SEQ(ret, then_seq);
 	end_label = NEW_LABEL(line);
 	ADD_INSNL(ret, line, jump, end_label);
@@ -4169,6 +4203,9 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
 
     if (else_label->refcnt) {
 	ADD_LABEL(ret, else_label);
+	if (then_label->refcnt) {
+	    ADD_TRACE_BRANCH_COVERAGE(ret, node->nd_else ? nd_line(node->nd_else) : line, "else", branches);
+	}
 	ADD_SEQ(ret, else_seq);
     }
 

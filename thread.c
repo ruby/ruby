@@ -4093,12 +4093,19 @@ clear_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
     int i;
     VALUE coverage = (VALUE)val;
     VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
+    VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
 
     if (lines) {
 	for (i = 0; i < RARRAY_LEN(lines); i++) {
 	    if (RARRAY_AREF(lines, i) != Qnil) {
 		RARRAY_ASET(lines, i, INT2FIX(0));
 	    }
+	}
+    }
+    if (branches) {
+	VALUE counters = RARRAY_AREF(branches, 1);
+	for (i = 0; i < RARRAY_LEN(counters); i++) {
+	    RARRAY_ASET(counters, i, INT2FIX(0));
 	}
     }
 
@@ -4975,7 +4982,8 @@ update_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
 {
     VALUE coverage = rb_iseq_coverage(GET_THREAD()->ec.cfp->iseq);
     if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
-	switch (FIX2INT(trace_arg->data)) {
+	long arg = FIX2INT(trace_arg->data);
+	switch (arg % 16) {
 	  case COVERAGE_INDEX_LINES: {
 	    VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
 	    if (lines) {
@@ -4990,6 +4998,20 @@ update_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
 		count = FIX2LONG(num) + 1;
 		if (POSFIXABLE(count)) {
 		    RARRAY_ASET(lines, line, LONG2FIX(count));
+		}
+	    }
+	    break;
+	  }
+	  case COVERAGE_INDEX_BRANCHES: {
+	    VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
+	    if (branches) {
+		long count;
+		long idx = arg / 16;
+		VALUE counters = RARRAY_AREF(branches, 1);
+		VALUE num = RARRAY_AREF(counters, idx);
+		count = FIX2LONG(num) + 1;
+		if (POSFIXABLE(count)) {
+		    RARRAY_ASET(counters, idx, LONG2FIX(count));
 		}
 	    }
 	    break;
@@ -5018,7 +5040,9 @@ reset_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
 {
     VALUE coverage = (VALUE)val;
     VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
-    rb_ary_clear(lines);
+    VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
+    if (lines) rb_ary_clear(lines);
+    if (branches) rb_ary_clear(branches);
     return ST_CONTINUE;
 }
 
@@ -5044,7 +5068,22 @@ rb_default_coverage(int n)
     RARRAY_ASET(coverage, COVERAGE_INDEX_LINES, lines);
 
     if (mode & COVERAGE_TARGET_BRANCHES) {
-	/* not implemented yet */
+	branches = rb_ary_tmp_new_fill(2);
+	/* internal data structures for branch coverage:
+	 *
+	 * [[base_type, base_lineno,
+	 *   target_type_1, target_lineno_1, target_counter_index_1,
+	 *   target_type_2, target_lineno_2, target_counter_index_2, ...],
+	 *  ...]
+	 *
+	 * Example: [[:case, 1,
+	 *            :when, 2, 0,
+	 *            :when, 3, 1, ...],
+	 *           ...]
+	 */
+	RARRAY_ASET(branches, 0, rb_ary_tmp_new(0));
+	/* branch execution counters */
+	RARRAY_ASET(branches, 1, rb_ary_tmp_new(0));
     }
     RARRAY_ASET(coverage, COVERAGE_INDEX_BRANCHES, branches);
 

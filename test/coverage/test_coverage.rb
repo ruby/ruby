@@ -175,4 +175,31 @@ class TestCoverage < Test::Unit::TestCase
       end
     end;
   end
+
+  def test_branch_coverage_for_if_statement
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        File.open("test.rb", "w") do |f|
+          f.puts 'def foo(x)'
+          f.puts '  if x == 0'
+          f.puts '    0'
+          f.puts '  else'
+          f.puts '    1'
+          f.puts '  end'
+          f.puts 'end'
+          f.puts 'foo(0)'
+          f.puts 'foo(0)'
+          f.puts 'foo(1)'
+        end
+
+        assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", ["{:branches=>{[:if, 0, 2]=>{[:then, 1, 3]=>2, [:else, 2, 5]=>1}}}"], [])
+          ENV["COVERAGE_EXPERIMENTAL_MODE"] = "true"
+          Coverage.start(branches: true)
+          tmp = Dir.pwd
+          require tmp + '/test.rb'
+          p Coverage.result[tmp + "/test.rb"]
+        end;
+      }
+    }
+  end
 end

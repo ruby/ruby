@@ -67,6 +67,31 @@ rb_coverage_start(int argc, VALUE *argv, VALUE klass)
     return Qnil;
 }
 
+static VALUE
+branch_coverage(VALUE branches)
+{
+    VALUE ret = rb_hash_new();
+    VALUE structure = rb_ary_dup(RARRAY_AREF(branches, 0));
+    VALUE counters = rb_ary_dup(RARRAY_AREF(branches, 1));
+    int i, j, id = 0;
+
+    for (i = 0; i < RARRAY_LEN(structure); i++) {
+	VALUE branches = RARRAY_AREF(structure, i);
+	VALUE base_type = RARRAY_AREF(branches, 0);
+	VALUE base_lineno = RARRAY_AREF(branches, 1);
+	VALUE children = rb_hash_new();
+	rb_hash_aset(ret, rb_ary_new_from_args(3, base_type, INT2FIX(id++), base_lineno), children);
+	for (j = 2; j < RARRAY_LEN(branches); j += 3) {
+	    VALUE target_label = RARRAY_AREF(branches, j);
+	    VALUE target_lineno = RARRAY_AREF(branches, j + 1);
+	    int idx = FIX2INT(RARRAY_AREF(branches, j + 2));
+	    rb_hash_aset(children, rb_ary_new_from_args(3, target_label, INT2FIX(id++), target_lineno), RARRAY_AREF(counters, idx));
+	}
+    }
+
+    return ret;
+}
+
 static int
 coverage_peek_result_i(st_data_t key, st_data_t val, st_data_t h)
 {
@@ -92,7 +117,7 @@ coverage_peek_result_i(st_data_t key, st_data_t val, st_data_t h)
 	}
 
 	if (branches) {
-	    rb_hash_aset(h, ID2SYM(rb_intern("branches")), branches);
++	    rb_hash_aset(h, ID2SYM(rb_intern("branches")), branch_coverage(branches));
 	}
 
 	if (methods) {
