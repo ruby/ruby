@@ -4178,8 +4178,11 @@ number_literal_p(NODE *n)
 }
 
 static int
-compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
+compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped, const enum node_type type)
 {
+    NODE *node_body = type == NODE_IF ? node->nd_body : node->nd_else;
+    NODE *node_else = type == NODE_IF ? node->nd_else : node->nd_body;
+
     const int line = nd_line(node);
     DECL_ANCHOR(cond_seq);
     DECL_ANCHOR(then_seq);
@@ -4196,19 +4199,19 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
 
     compile_branch_condition(iseq, cond_seq, node->nd_cond,
 			     then_label, else_label);
-    CHECK(COMPILE_(then_seq, "then", node->nd_body, popped));
-    CHECK(COMPILE_(else_seq, "else", node->nd_else, popped));
+    CHECK(COMPILE_(then_seq, "then", node_body, popped));
+    CHECK(COMPILE_(else_seq, "else", node_else, popped));
 
     ADD_SEQ(ret, cond_seq);
 
     if (then_label->refcnt && else_label->refcnt) {
-	DECL_BRANCH_BASE(branches, line, "if");
+	DECL_BRANCH_BASE(branches, line, type == NODE_IF ? "if" : "unless");
     }
 
     if (then_label->refcnt) {
 	ADD_LABEL(ret, then_label);
 	if (else_label->refcnt) {
-	    ADD_TRACE_BRANCH_COVERAGE(ret, node->nd_body ? nd_line(node->nd_body) : line, "then", branches);
+	    ADD_TRACE_BRANCH_COVERAGE(ret, node_body ? nd_line(node_body) : line, type == NODE_IF ? "then" : "else", branches);
 	}
 	ADD_SEQ(ret, then_seq);
 	end_label = NEW_LABEL(line);
@@ -4218,7 +4221,7 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
     if (else_label->refcnt) {
 	ADD_LABEL(ret, else_label);
 	if (then_label->refcnt) {
-	    ADD_TRACE_BRANCH_COVERAGE(ret, node->nd_else ? nd_line(node->nd_else) : line, "else", branches);
+	    ADD_TRACE_BRANCH_COVERAGE(ret, node_else ? nd_line(node_else) : line, type == NODE_IF ? "else" : "then", branches);
 	}
 	ADD_SEQ(ret, else_seq);
     }
@@ -4936,7 +4939,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	break;
       }
       case NODE_IF:
-	CHECK(compile_if(iseq, ret, node, popped));
+      case NODE_UNLESS:
+	CHECK(compile_if(iseq, ret, node, popped, type));
 	break;
       case NODE_CASE:
 	CHECK(compile_case(iseq, ret, node, popped));

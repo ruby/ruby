@@ -186,13 +186,19 @@ class TestCoverage < Test::Unit::TestCase
           f.puts '  else'
           f.puts '    1'
           f.puts '  end'
+          f.puts ''
+          f.puts '  unless x == 0'
+          f.puts '    0'
+          f.puts '  else'
+          f.puts '    1'
+          f.puts '  end'
           f.puts 'end'
           f.puts 'foo(0)'
           f.puts 'foo(0)'
           f.puts 'foo(1)'
         end
 
-        assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", ["{:branches=>{[:if, 0, 2]=>{[:then, 1, 3]=>2, [:else, 2, 5]=>1}}}"], [])
+        assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", ["{:branches=>{[:if, 0, 2]=>{[:then, 1, 3]=>2, [:else, 2, 5]=>1}, [:unless, 3, 8]=>{[:else, 4, 11]=>2, [:then, 5, 9]=>1}}}"], [])
           ENV["COVERAGE_EXPERIMENTAL_MODE"] = "true"
           Coverage.start(branches: true)
           tmp = Dir.pwd

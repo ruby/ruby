@@ -200,6 +200,16 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	F_NODE(nd_else, "else clause");
 	break;
 
+      case NODE_UNLESS:
+	ANN("unless statement");
+	ANN("format: unless [nd_cond] then [nd_body] else [nd_else] end");
+	ANN("example: unless x == 1 then foo else bar end");
+	F_NODE(nd_cond, "condition expr");
+	F_NODE(nd_body, "then clause");
+	LAST_NODE;
+	F_NODE(nd_else, "else clause");
+	break;
+
       case NODE_CASE:
 	ANN("case statement");
 	ANN("format: case [nd_head]; [nd_body]; end");

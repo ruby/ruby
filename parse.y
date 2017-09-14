@@ -352,7 +352,8 @@ static NODE *cond_gen(struct parser_params*,NODE*,int);
 #define new_nil() NEW_NIL()
 static NODE *new_if_gen(struct parser_params*,NODE*,NODE*,NODE*);
 #define new_if(cc,left,right) new_if_gen(parser, (cc), (left), (right))
-#define new_unless(cc,left,right) new_if_gen(parser, (cc), (right), (left))
+static NODE *new_unless_gen(struct parser_params*,NODE*,NODE*,NODE*);
+#define new_unless(cc,left,right) new_unless_gen(parser, (cc), (left), (right))
 static NODE *logop_gen(struct parser_params*,enum node_type,NODE*,NODE*);
 #define logop(id,node1,node2) \
     logop_gen(parser, ((id)==idAND||(id)==idANDOP)?NODE_AND:NODE_OR, \
@@ -9533,6 +9534,7 @@ value_expr_gen(struct parser_params *parser, NODE *node)
 	    break;
 
 	  case NODE_IF:
+	  case NODE_UNLESS:
 	    if (!node->nd_body) {
 		node = node->nd_else;
 		break;
@@ -9711,6 +9713,7 @@ reduce_nodes_gen(struct parser_params *parser, NODE **body)
 	    body = &node->nd_end->nd_head;
 	    break;
 	  case NODE_IF:
+	  case NODE_UNLESS:
 	    if (subnodes(nd_body, nd_else)) break;
 	    return;
 	  case NODE_CASE:
@@ -9911,6 +9914,14 @@ new_if_gen(struct parser_params *parser, NODE *cc, NODE *left, NODE *right)
     if (!cc) return right;
     cc = cond0(parser, cc, FALSE);
     return newline_node(NEW_IF(cc, left, right));
+}
+
+static NODE*
+new_unless_gen(struct parser_params *parser, NODE *cc, NODE *left, NODE *right)
+{
+    if (!cc) return right;
+    cc = cond0(parser, cc, FALSE);
+    return newline_node(NEW_UNLESS(cc, left, right));
 }
 
 static NODE*
