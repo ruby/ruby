@@ -280,4 +280,29 @@ class TestCoverage < Test::Unit::TestCase
       }
     }
   end
+
+  def test_method_coverage
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        File.open("test.rb", "w") do |f|
+          f.puts 'def foo; end'
+          f.puts 'def bar'
+          f.puts 'end'
+          f.puts 'def baz; end'
+          f.puts ''
+          f.puts 'foo'
+          f.puts 'foo'
+          f.puts 'bar'
+        end
+
+        assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", ["{:methods=>{[:foo, 0, 1]=>2, [:bar, 1, 2]=>1, [:baz, 2, 4]=>0}}"], [])
+          ENV["COVERAGE_EXPERIMENTAL_MODE"] = "true"
+          Coverage.start(methods: true)
+          tmp = Dir.pwd
+          require tmp + '/test.rb'
+          p Coverage.result[tmp + "/test.rb"]
+        end;
+      }
+    }
+  end
 end

@@ -92,6 +92,22 @@ branch_coverage(VALUE branches)
     return ret;
 }
 
+static VALUE
+method_coverage(VALUE methods)
+{
+    VALUE ret = rb_hash_new();
+    int i, id;
+
+    for (i = 0; i < RARRAY_LEN(methods); ) {
+	VALUE method_name = RARRAY_AREF(methods, i++);
+	VALUE lineno = RARRAY_AREF(methods, i++);
+	VALUE counter = RARRAY_AREF(methods, i++);
+	rb_hash_aset(ret, rb_ary_new_from_args(3, method_name, INT2FIX(id++), lineno), counter);
+    }
+
+    return ret;
+}
+
 static int
 coverage_peek_result_i(st_data_t key, st_data_t val, st_data_t h)
 {
@@ -121,7 +137,7 @@ coverage_peek_result_i(st_data_t key, st_data_t val, st_data_t h)
 	}
 
 	if (methods) {
-	    rb_hash_aset(h, ID2SYM(rb_intern("methods")), methods);
+	    rb_hash_aset(h, ID2SYM(rb_intern("methods")), method_coverage(methods));
 	}
 
 	rb_hash_freeze(h);

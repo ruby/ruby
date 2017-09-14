@@ -4094,6 +4094,7 @@ clear_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
     VALUE coverage = (VALUE)val;
     VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
     VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
+    VALUE methods = RARRAY_AREF(coverage, COVERAGE_INDEX_METHODS);
 
     if (lines) {
 	for (i = 0; i < RARRAY_LEN(lines); i++) {
@@ -4106,6 +4107,11 @@ clear_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
 	VALUE counters = RARRAY_AREF(branches, 1);
 	for (i = 0; i < RARRAY_LEN(counters); i++) {
 	    RARRAY_ASET(counters, i, INT2FIX(0));
+	}
+    }
+    if (methods) {
+	for (i = 2; i < RARRAY_LEN(methods); i += 3) {
+	    RARRAY_ASET(methods, i, INT2FIX(0));
 	}
     }
 
@@ -5016,6 +5022,19 @@ update_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
 	    }
 	    break;
 	  }
+	  case COVERAGE_INDEX_METHODS: {
+	    VALUE methods = RARRAY_AREF(coverage, COVERAGE_INDEX_METHODS);
+	    if (methods) {
+		long count;
+		long idx = arg / 16 * 3 + 2;
+		VALUE num = RARRAY_AREF(methods, idx);
+		count = FIX2LONG(num) + 1;
+		if (POSFIXABLE(count)) {
+		    RARRAY_ASET(methods, idx, LONG2FIX(count));
+		}
+	    }
+	    break;
+	  }
 	}
     }
 }
@@ -5088,7 +5107,14 @@ rb_default_coverage(int n)
     RARRAY_ASET(coverage, COVERAGE_INDEX_BRANCHES, branches);
 
     if (mode & COVERAGE_TARGET_METHODS) {
-	/* not implemented yet */
+	methods = rb_ary_tmp_new(0);
+	/* internal data structures for method coverage:
+	 *
+	 * [symbol_of_method_name, lineno_of_method_head, counter,
+	 *  ...]
+	 *
+	 * Example: [:foobar, 1, 0, ...]
+	 */
     }
     RARRAY_ASET(coverage, COVERAGE_INDEX_METHODS, methods);
 
