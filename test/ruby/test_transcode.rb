@@ -2094,17 +2094,19 @@ class TestTranscode < Test::Unit::TestCase
 
   def test_valid_dummy_encoding
     bug9314 = '[ruby-core:59354] [Bug #9314]'
-    assert_separately(%W[- -- #{bug9314}], <<-'end;')
-    bug = ARGV.shift
-    result = assert_nothing_raised(TypeError, bug) {break "test".encode(Encoding::UTF_16)}
-    assert_equal("\xFE\xFF\x00t\x00e\x00s\x00t", result.b, bug)
-    result = assert_nothing_raised(TypeError, bug) {break "test".encode(Encoding::UTF_32)}
-    assert_equal("\x00\x00\xFE\xFF\x00\x00\x00t\x00\x00\x00e\x00\x00\x00s\x00\x00\x00t", result.b, bug)
+    assert_separately(%W[- -- #{bug9314}], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      bug = ARGV.shift
+      result = assert_nothing_raised(TypeError, bug) {break "test".encode(Encoding::UTF_16)}
+      assert_equal("\xFE\xFF\x00t\x00e\x00s\x00t", result.b, bug)
+      result = assert_nothing_raised(TypeError, bug) {break "test".encode(Encoding::UTF_32)}
+      assert_equal("\x00\x00\xFE\xFF\x00\x00\x00t\x00\x00\x00e\x00\x00\x00s\x00\x00\x00t", result.b, bug)
     end;
   end
 
   def test_loading_race
-    assert_separately([], <<-'end;') #do
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
       bug11277 = '[ruby-dev:49106] [Bug #11277]'
       num = 2
       th = (0...num).map do |i|
@@ -2119,6 +2121,17 @@ class TestTranscode < Test::Unit::TestCase
       expected = "\xa4\xa2".force_encoding(Encoding::EUC_JP)
       assert_equal([expected]*num, result, bug11277)
     end;
+  end
+
+  def test_scrub_encode_with_coderange
+    bug = '[ruby-core:82674] [Bug #13874]'
+    s = "\xe5".b
+    u = Encoding::UTF_8
+    assert_equal("?", s.encode(u, u, invalid: :replace, replace: "?"),
+                 "should replace invalid byte")
+    assert_predicate(s, :valid_encoding?, "any char is valid in binary")
+    assert_equal("?", s.encode(u, u, invalid: :replace, replace: "?"),
+                 "#{bug} coderange should not have side effects")
   end
 
   def test_universal_newline

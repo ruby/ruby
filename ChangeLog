@@ -1,3 +1,10 @@
+Thu Sep 14 13:26:31 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	string.c: fix false coderange
+
+	* string.c (rb_enc_str_scrub): enc can differ from the actual encoding
+	  of the string, the cached coderange is useless then. [Bug #13874]
+
 Thu Sep 14 13:24:51 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	parse.y: primary should not be 0

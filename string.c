@@ -8723,6 +8723,8 @@ str_compat_and_valid(VALUE str, rb_encoding *enc)
     return str;
 }
 
+static VALUE enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr);
+
 /**
  * @param str the string to be scrubbed
  * @param repl the replacement character
@@ -8731,13 +8733,25 @@ str_compat_and_valid(VALUE str, rb_encoding *enc)
 VALUE
 rb_str_scrub(VALUE str, VALUE repl)
 {
-    return rb_enc_str_scrub(STR_ENC_GET(str), str, repl);
+    rb_encoding *enc = STR_ENC_GET(str);
+    return enc_str_scrub(enc, str, repl, ENC_CODERANGE(str));
 }
 
 VALUE
 rb_enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl)
 {
-    int cr = ENC_CODERANGE(str);
+    int cr = ENC_CODERANGE_UNKNOWN;
+    if (enc == STR_ENC_GET(str)) {
+	/* cached coderange makes sense only when enc equals the
+	 * actual encoding of str */
+	cr = ENC_CODERANGE(str);
+    }
+    return enc_str_scrub(enc, str, repl, cr);
+}
+
+static VALUE
+enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
+{
     int encidx;
     VALUE buf = Qnil;
     const char *rep;
