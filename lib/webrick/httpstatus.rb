@@ -23,10 +23,6 @@ module WEBrick
     ##
     # Root of the HTTP status class hierarchy
     class Status < StandardError
-      def initialize(*args) # :nodoc:
-        args[0] = AccessLog.escape(args[0]) unless args.empty?
-        super(*args)
-      end
       class << self
         attr_reader :code, :reason_phrase # :nodoc:
       end
