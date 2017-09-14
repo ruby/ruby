@@ -10937,7 +10937,7 @@ static VALUE ripper_parser_set_yydebug(VALUE self, VALUE flag);
 
 /*
  *  call-seq:
- *    ripper#error?   -> Boolean
+ *    ripper.error?   -> Boolean
  *
  *  Return true if parsed source has errors.
  */
@@ -10953,7 +10953,7 @@ ripper_error_p(VALUE vparser)
 
 /*
  *  call-seq:
- *    ripper#end_seen?   -> Boolean
+ *    ripper.end_seen?   -> Boolean
  *
  *  Return true if parsed source ended by +\_\_END\_\_+.
  */
@@ -10968,7 +10968,7 @@ rb_parser_end_seen_p(VALUE vparser)
 
 /*
  *  call-seq:
- *    ripper#encoding   -> encoding
+ *    ripper.encoding   -> encoding
  *
  *  Return encoding of the source.
  */
@@ -11361,7 +11361,7 @@ ripper_ensure(VALUE parser_v)
 
 /*
  *  call-seq:
- *    ripper#parse
+ *    ripper.parse
  *
  *  Start parsing and returns the value of the root action.
  */
@@ -11388,7 +11388,7 @@ ripper_parse(VALUE self)
 
 /*
  *  call-seq:
- *    ripper#column   -> Integer
+ *    ripper.column   -> Integer
  *
  *  Return column number of current parsing line.
  *  This number starts from 0.
@@ -11410,7 +11410,7 @@ ripper_column(VALUE self)
 
 /*
  *  call-seq:
- *    ripper#filename   -> String
+ *    ripper.filename   -> String
  *
  *  Return current parsing filename.
  */
@@ -11428,7 +11428,7 @@ ripper_filename(VALUE self)
 
 /*
  *  call-seq:
- *    ripper#lineno   -> Integer
+ *    ripper.lineno   -> Integer
  *
  *  Return line number of current parsing line.
  *  This number starts from 1.
