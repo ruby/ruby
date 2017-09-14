@@ -17,6 +17,10 @@ class TestRipper::Ripper < Test::Unit::TestCase
     assert_nil @ripper.column
   end
 
+  def test_state
+    assert_nil @ripper.state
+  end
+
   def test_encoding
     assert_equal Encoding::UTF_8, @ripper.encoding
     ripper = Ripper.new('# coding: iso-8859-15')

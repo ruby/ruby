@@ -11446,6 +11446,25 @@ ripper_lineno(VALUE self)
     return INT2NUM(ruby_sourceline);
 }
 
+/*
+ *  call-seq:
+ *    ripper.state   -> Integer
+ *
+ *  Return scanner state of current token.
+ */
+static VALUE
+ripper_state(VALUE self)
+{
+    struct parser_params *parser;
+
+    TypedData_Get_Struct(self, struct parser_params, &parser_data_type, parser);
+    if (!ripper_initialized_p(parser)) {
+	rb_raise(rb_eArgError, "method called for uninitialized object");
+    }
+    if (NIL_P(parser->parsing_thread)) return Qnil;
+    return INT2NUM(lex_state);
+}
+
 #ifdef RIPPER_DEBUG
 /* :nodoc: */
 static VALUE
@@ -11493,6 +11512,7 @@ InitVM_ripper(void)
     rb_define_method(Ripper, "column", ripper_column, 0);
     rb_define_method(Ripper, "filename", ripper_filename, 0);
     rb_define_method(Ripper, "lineno", ripper_lineno, 0);
+    rb_define_method(Ripper, "state", ripper_state, 0);
     rb_define_method(Ripper, "end_seen?", rb_parser_end_seen_p, 0);
     rb_define_method(Ripper, "encoding", rb_parser_encoding, 0);
     rb_define_method(Ripper, "yydebug", rb_parser_get_yydebug, 0);
@@ -11507,6 +11527,10 @@ InitVM_ripper(void)
     rb_define_singleton_method(Ripper, "dedent_string", parser_dedent_string, 2);
     rb_define_private_method(Ripper, "dedent_string", parser_dedent_string, 2);
 
+<% @exprs.each do |expr, desc| -%>
+    /* <%=desc%> */
+    rb_define_const(Ripper, "<%=expr%>", INT2NUM(<%=expr%>));
+<% end %>
     ripper_init_eventids1_table(Ripper);
     ripper_init_eventids2_table(Ripper);
 

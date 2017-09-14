@@ -40,6 +40,7 @@ def main
 end
 
 def prelude(f, out)
+  @exprs = {}
   while line = f.gets
     case line
     when %r</\*%%%\*/>
@@ -56,6 +57,16 @@ def prelude(f, out)
     when /\A%type/
       out << line.sub(/<\w+>/, '<val>')
     else
+      if (/^enum lex_state_(?:bits|e) \{/ =~ line)..(/^\}/ =~ line)
+        case line
+        when /^\s*(EXPR_\w+),\s+\/\*(.+)\*\//
+          @exprs[$1.chomp("_bit")] = $2.strip
+        when /^\s*(EXPR_\w+)\s+=\s+(.+)$/
+          name = $1
+          val = $2.chomp(",")
+          @exprs[name] = "equals to " + (val.start_with?("(") ? "<tt>#{val}</tt>" : "+#{val}+")
+        end
+      end
       out << line
     end
   end
@@ -84,9 +95,12 @@ def grammar(f, out)
 end
 
 def usercode(f, out)
-  while line = f.gets
-    out << line
-  end
+  require 'erb'
+  compiler = ERB::Compiler.new('%-')
+  compiler.put_cmd = compiler.insert_cmd = "out.<<"
+  lineno = f.lineno
+  src, = compiler.compile(f.read)
+  eval(src, binding, f.path, lineno)
 end
 
 main

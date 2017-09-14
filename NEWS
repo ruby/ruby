@@ -133,6 +133,13 @@ with all sufficient information, see the ChangeLog file or Redmine
   * New constants:
     * RbConfig::LIMITS is added to provide the limits of C types.
 
+* Ripper
+  * New method:
+    * Ripper#state is added to tell the state of scanner. [Feature #13686]
+
+  * New constants:
+    * Ripper::EXPR_BEG and so on for Ripper#state.
+
 * Set
   * Add Set#to_s as alias to #inspect [Feature #13676]
 
