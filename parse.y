@@ -2687,6 +2687,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_CASE(0, $3);
+			nd_set_line($3, $<num>1);
 		    /*%
 			$$ = dispatch2(case, Qnil, $3);
 		    %*/
@@ -2937,6 +2938,10 @@ k_until		: keyword_until
 k_case		: keyword_case
 		    {
 			token_info_push("case");
+		    /*%%%*/
+			$<num>$ = ruby_sourceline;
+		    /*%
+		    %*/
 		    }
 		;
 

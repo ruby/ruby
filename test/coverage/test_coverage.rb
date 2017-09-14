@@ -270,7 +270,7 @@ class TestCoverage < Test::Unit::TestCase
           f.puts 'foo(2)'
         end
 
-        assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", ["{:branches=>{[:case, 0, 2]=>{[:when, 1, 4]=>2, [:when, 2, 6]=>0, [:else, 3, 2]=>1}, [:case, 4, 14]=>{[:when, 5, 11]=>2, [:when, 6, 13]=>0, [:else, 7, 14]=>1}, [:case, 8, 16]=>{[:when, 9, 18]=>2, [:when, 10, 20]=>0, [:else, 11, 22]=>1}, [:case, 12, 32]=>{[:when, 13, 27]=>2, [:when, 14, 29]=>0, [:else, 15, 31]=>1}}}"], [])
+        assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", ["{:branches=>{[:case, 0, 2]=>{[:when, 1, 4]=>2, [:when, 2, 6]=>0, [:else, 3, 2]=>1}, [:case, 4, 9]=>{[:when, 5, 11]=>2, [:when, 6, 13]=>0, [:else, 7, 9]=>1}, [:case, 8, 16]=>{[:when, 9, 18]=>2, [:when, 10, 20]=>0, [:else, 11, 22]=>1}, [:case, 12, 25]=>{[:when, 13, 27]=>2, [:when, 14, 29]=>0, [:else, 15, 31]=>1}}}"], [])
           ENV["COVERAGE_EXPERIMENTAL_MODE"] = "true"
           Coverage.start(branches: true)
           tmp = Dir.pwd
