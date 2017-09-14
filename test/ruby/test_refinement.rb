@@ -1656,6 +1656,23 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_refined_method_alias_warning
+    c = Class.new do
+      def t; :t end
+      def f; :f end
+    end
+    Module.new do
+      refine(c) do
+        alias foo t
+      end
+    end
+    assert_warning('', '[ruby-core:82385] [Bug #13817] refined method is not redefined') do
+      c.class_eval do
+        alias foo f
+      end
+    end
+  end
+
   private
 
   def eval_using(mod, s)
