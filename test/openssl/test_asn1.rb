@@ -595,6 +595,29 @@ rEzBQ0F9dUyqQ9gyRg8KHhDfv9HzT1d/rnUZMkoombwYBRIUChGCYV0GnJcan2Zm
     assert_equal(false, asn1.value[3].infinite_length)
   end
 
+  def test_decode_constructed_overread
+    test = %w{ 31 06 31 02 30 02 05 00 }
+    #                          ^ <- invalid
+    raw = [test.join].pack("H*")
+    ret = []
+    assert_raise(OpenSSL::ASN1::ASN1Error) {
+      OpenSSL::ASN1.traverse(raw) { |x| ret << x }
+    }
+    assert_equal 2, ret.size
+    assert_equal 17, ret[0][6]
+    assert_equal 17, ret[1][6]
+
+    test = %w{ 31 80 30 03 00 00 }
+    #                    ^ <- invalid
+    raw = [test.join].pack("H*")
+    ret = []
+    assert_raise(OpenSSL::ASN1::ASN1Error) {
+      OpenSSL::ASN1.traverse(raw) { |x| ret << x }
+    }
+    assert_equal 1, ret.size
+    assert_equal 17, ret[0][6]
+  end
+
   private
 
   def assert_universal(tag, asn1)
