@@ -1,6 +1,7 @@
 require "coverage"
 
-Coverage.start
+ENV["COVERAGE_EXPERIMENTAL_MODE"] = "true"
+Coverage.start(lines: true, branches: true, methods: true)
 
 TEST_COVERAGE_DATA_FILE = "test-coverage.dat"
 
@@ -8,19 +9,35 @@ def merge_coverage_data(res1, res2)
   res1.each do |path, cov1|
     cov2 = res2[path]
     if cov2
-      cov1.each_with_index do |count1, i|
+      cov1[:lines].each_with_index do |count1, i|
         next unless count1
-        if cov2[i]
-          cov2[i] += count1
+        add_count(cov2[:lines], i, count1)
+      end
+      cov1[:branches].each do |base_key, targets1|
+        if cov2[:branches][base_key]
+          targets1.each do |target_key, count1|
+            add_count(cov2[:branches][base_key], target_key, count1)
+          end
         else
-          cov2[i] = count1
+          cov2[:branches][base_key] = targets1
         end
+      end
+      cov1[:methods].each do |key, count1|
+        add_count(cov2[:methods], key, count1)
       end
     else
       res2[path] = cov1
     end
   end
   res2
+end
+
+def add_count(h, key, count)
+  if h[key]
+    h[key] += count
+  else
+    h[key] = count
+  end
 end
 
 def save_coverage_data(res1)
@@ -49,7 +66,7 @@ def invoke_simplecov_formatter
   res.each do |path, cov|
     next unless path.start_with?(base_dir)
     next if path.start_with?(File.join(base_dir, "test"))
-    simplecov_result[path] = cov
+    simplecov_result[path] = cov[:lines]
   end
 
   res = SimpleCov::Result.new(simplecov_result)

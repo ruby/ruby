@@ -1148,7 +1148,7 @@ q.pop
       end
       Process.wait2(f.pid)
     end
-    unless th.join(EnvUtil.apply_timeout_scale(3))
+    unless th.join(EnvUtil.apply_timeout_scale(30))
       Process.kill(:QUIT, f.pid)
       Process.kill(:KILL, f.pid) unless th.join(EnvUtil.apply_timeout_scale(1))
     end
