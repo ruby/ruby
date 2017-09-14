@@ -1623,7 +1623,6 @@ class RDoc::Parser::Ruby < RDoc::Parser
   def parse_rescue
     skip_tkspace false
 
-    nest = 0
     while tk = get_tk
       case tk[:kind]
       when :on_nl, :on_semicolon, :on_comment then
