@@ -1,3 +1,13 @@
+Fri Sep 15 05:40:40 2017  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	fix --with-gmp (broken by r57490)
+
+	Looking at the generated shell script (also the autoconf manual), it
+	seems AC_SEARCH_LIBS() m4 macro does not define HAVE_LIBsomething C
+	preprocessor macros, unlike AC_CHECK_LIB() which does define them.
+	This previous change effectively killed building with GMP because
+	building that mode depends on existence of HAVE_LIBGMP. [Bug #13402]
+
 Thu Sep 14 20:25:55 2017  Yusuke Endoh  <mame@ruby-lang.org>
 
 	lib/webrick/log.rb: sanitize any type of logs
