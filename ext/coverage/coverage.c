@@ -117,7 +117,7 @@ coverage_peek_result_i(st_data_t key, st_data_t val, st_data_t h)
 	}
 
 	if (branches) {
-+	    rb_hash_aset(h, ID2SYM(rb_intern("branches")), branch_coverage(branches));
+	    rb_hash_aset(h, ID2SYM(rb_intern("branches")), branch_coverage(branches));
 	}
 
 	if (methods) {
