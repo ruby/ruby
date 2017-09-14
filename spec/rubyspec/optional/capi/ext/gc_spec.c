@@ -30,6 +30,13 @@ static VALUE gc_spec_rb_gc_disable() {
 }
 #endif
 
+#ifdef HAVE_RB_GC
+static VALUE gc_spec_rb_gc() {
+  rb_gc();
+  return Qnil;
+}
+#endif
+
 
 void Init_gc_spec(void) {
   VALUE cls;
@@ -52,6 +59,10 @@ void Init_gc_spec(void) {
 
 #ifdef HAVE_RB_GC_DISABLE
   rb_define_method(cls, "rb_gc_disable", gc_spec_rb_gc_disable, 0);
+#endif
+
+#ifdef HAVE_RB_GC
+  rb_define_method(cls, "rb_gc", gc_spec_rb_gc, 0);
 #endif
 
 }

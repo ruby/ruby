@@ -40,6 +40,20 @@ describe "C-API Proc function" do
       @prc.source_location.should == nil
     end
   end
+
+  describe "rb_proc_arity" do
+    it "returns the correct arity" do
+      prc = Proc.new {|a,b,c|}
+      @p.rb_proc_arity(prc).should == 3
+    end
+  end
+
+  describe "rb_proc_call" do
+    it "calls the Proc" do
+      prc = Proc.new {|a,b| a * b }
+      @p.rb_proc_call(prc, [6, 7]).should == 42
+    end
+  end
 end
 
 describe "C-API when calling Proc.new from a C function" do

@@ -24,6 +24,11 @@ describe :time_params, shared: true do
       Time.send(@method, 2000, 2, 3, 4, 5, 0)
   end
 
+  it "accepts a too big day of the month by going to the next month" do
+    Time.send(@method, 1999, 2, 31).should ==
+      Time.send(@method, 1999, 3, 3)
+  end
+
   it "raises a TypeError if the year is nil" do
     lambda { Time.send(@method, nil) }.should raise_error(TypeError)
   end

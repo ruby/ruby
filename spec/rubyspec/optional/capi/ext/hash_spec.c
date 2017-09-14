@@ -23,6 +23,12 @@ VALUE hash_spec_rb_hash_dup(VALUE self, VALUE hash) {
 }
 #endif
 
+#ifdef HAVE_RB_HASH_FETCH
+VALUE hash_spec_rb_hash_fetch(VALUE self, VALUE hash, VALUE key) {
+  return rb_hash_fetch(hash, key);
+}
+#endif
+
 #ifdef HAVE_RB_HASH_FREEZE
 VALUE hash_spec_rb_hash_freeze(VALUE self, VALUE hash) {
   return rb_hash_freeze(hash);
@@ -173,6 +179,10 @@ void Init_hash_spec(void) {
 
 #ifdef HAVE_RB_HASH_DELETE_IF
   rb_define_method(cls, "rb_hash_delete_if", hash_spec_rb_hash_delete_if, 1);
+#endif
+
+#ifdef HAVE_RB_HASH_FETCH
+  rb_define_method(cls, "rb_hash_fetch", hash_spec_rb_hash_fetch, 2);
 #endif
 
 #ifdef HAVE_RB_HASH_FOREACH

@@ -29,6 +29,21 @@ VALUE range_spec_rb_range_values(VALUE self, VALUE range) {
 }
 #endif
 
+#ifdef HAVE_RB_RANGE_BEG_LEN
+VALUE range_spec_rb_range_beg_len(VALUE self, VALUE range, VALUE begpv, VALUE lenpv, VALUE lenv, VALUE errv) {
+  long begp = FIX2LONG(begpv);
+  long lenp = FIX2LONG(lenpv);
+  long len = FIX2LONG(lenv);
+  long err = FIX2LONG(errv);
+  VALUE ary = rb_ary_new();
+  VALUE res = rb_range_beg_len(range, &begp, &lenp, len, err);
+  rb_ary_store(ary, 0, LONG2FIX(begp));
+  rb_ary_store(ary, 1, LONG2FIX(lenp));
+  rb_ary_store(ary, 2, res);
+  return ary;
+}
+#endif
+
 void Init_range_spec(void) {
   VALUE cls;
   cls = rb_define_class("CApiRangeSpecs", rb_cObject);
@@ -39,6 +54,10 @@ void Init_range_spec(void) {
 
 #ifdef HAVE_RB_RANGE_VALUES
   rb_define_method(cls, "rb_range_values", range_spec_rb_range_values, 1);
+#endif
+
+#ifdef HAVE_RB_RANGE_BEG_LEN
+  rb_define_method(cls, "rb_range_beg_len", range_spec_rb_range_beg_len, 5);
 #endif
 }
 

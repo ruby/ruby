@@ -228,6 +228,22 @@ describe "C-API String function" do
     end
   end
 
+  describe "rb_tainted_str_new" do
+    it "creates a new tainted String" do
+      newstring = @s.rb_tainted_str_new("test", 4)
+      newstring.should == "test"
+      newstring.tainted?.should be_true
+    end
+  end
+
+  describe "rb_tainted_str_new2" do
+    it "creates a new tainted String" do
+      newstring = @s.rb_tainted_str_new2("test")
+      newstring.should == "test"
+      newstring.tainted?.should be_true
+    end
+  end
+
   describe "rb_str_append" do
     it "appends a string to another string" do
       @s.rb_str_append("Hello", " Goodbye").should == "Hello Goodbye"

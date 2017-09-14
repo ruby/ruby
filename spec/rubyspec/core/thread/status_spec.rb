@@ -41,4 +41,20 @@ describe "Thread#status" do
   it "reports aborting on a killed thread after sleep" do
     ThreadSpecs.status_of_dying_thread_after_sleep.status.should == 'aborting'
   end
+
+  it "reports aborting on an externally killed thread that sleeps" do
+    q = Queue.new
+    t = Thread.new do
+      begin
+        q.push nil
+        sleep
+      ensure
+        q.push Thread.current.status
+      end
+    end
+    q.pop
+    t.kill
+    t.join
+    q.pop.should == 'aborting'
+  end
 end

@@ -53,9 +53,12 @@ describe :getoptlong_get, shared: true do
     end
   end
 
-  it "returns multiline argument" do
-    argv [ "--size=\n10k\n" ] do
-      @opts.send(@method).should == [ "--size", "\n10k\n" ]
+  ruby_version_is "2.5" do
+    # https://bugs.ruby-lang.org/issues/13858
+    it "returns multiline argument" do
+      argv [ "--size=\n10k\n" ] do
+        @opts.send(@method).should == [ "--size", "\n10k\n" ]
+      end
     end
   end
 end

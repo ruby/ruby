@@ -17,9 +17,12 @@ describe "The -e command line option" do
     ruby_exe("puts __FILE__", escape: false).chomp.should == "-e"
   end
 
+  it "uses '-e' in $0" do
+    system(*ruby_exe, '-e', 'exit $0 == "-e"').should == true
+  end
+
   #needs to test return => LocalJumpError
 
-quarantine! do # For some unknown reason, running these under `bundle exec` or with -rbundler/setup fails
   describe "with -n and a Fixnum range" do
     before :each do
       @script = "-ne 'print if %s' #{fixture(__FILE__, "conditional_range.txt")}"
@@ -35,5 +38,4 @@ quarantine! do # For some unknown reason, running these under `bundle exec` or w
       ruby_exe(nil, args: (@script % "2...2")).should == "2\n3\n4\n5\n"
     end
   end
-end
 end

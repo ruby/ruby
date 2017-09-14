@@ -27,6 +27,14 @@ ruby/spec is known to be tested in these implementations for every commit:
 * [TruffleRuby](https://github.com/graalvm/truffleruby) on Travis
 * [Opal](https://github.com/opal/opal/tree/master/spec) on Travis
 
+ruby/spec describes the behavior of Ruby 2.2 and more recent Ruby versions.
+More precisely, every latest stable MRI release [passes](https://rubyci.org/) all specs of ruby/spec
+(latest 2.2.x, 2.3.x, 2.4.x, etc).
+
+For older specs try these commits:
+* Ruby 2.0.0-p647 - [Suite](https://github.com/ruby/spec/commit/245862558761d5abc676843ef74f86c9bcc8ea8d) using [MSpec](https://github.com/ruby/mspec/commit/f90efa068791064f955de7a843e96e2d7d3041c2) (may encounter 2 failures)
+* Ruby 2.1.9 - [Suite](https://github.com/ruby/spec/commit/f029e65241374386077ac500add557ae65069b55) using [MSpec](https://github.com/ruby/mspec/commit/55568ea3918c6380e64db8c567d732fa5781efed)
+
 ### Running the specs
 
 First, clone this repository:

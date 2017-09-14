@@ -74,23 +74,21 @@ describe :process_exit, shared: true do
 end
 
 describe :process_exit!, shared: true do
-  with_feature :fork do
-    it "exits with the given status" do
-      pid = Process.fork { @object.exit!(1) }
-      pid, status = Process.waitpid2(pid)
-      status.exitstatus.should == 1
-    end
+  it "exits with the given status" do
+    out = ruby_exe("#{@object}.send(:exit!, 21)", args: '2>&1')
+    out.should == ""
+    $?.exitstatus.should == 21
+  end
 
-    it "exits when called from a thread" do
-      pid = Process.fork do
-        Thread.new { @object.exit!(1) }.join
+  it "exits when called from a thread" do
+    out = ruby_exe("Thread.new { #{@object}.send(:exit!, 21) }.join; sleep", args: '2>&1')
+    out.should == ""
+    $?.exitstatus.should == 21
+  end
 
-        # Do not let the main thread complete
-        sleep
-      end
-
-      pid, status = Process.waitpid2(pid)
-      status.exitstatus.should == 1
-    end
+  it "exits when called from a fiber" do
+    out = ruby_exe("Fiber.new { #{@object}.send(:exit!, 21) }.resume", args: '2>&1')
+    out.should == ""
+    $?.exitstatus.should == 21
   end
 end

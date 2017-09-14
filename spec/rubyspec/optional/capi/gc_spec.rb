@@ -41,4 +41,14 @@ describe "CApiGCSpecs" do
     end
   end
 
+  describe "rb_gc" do
+
+    it "increases gc count" do
+      gc_count = GC.count
+      @f.rb_gc
+      GC.count.should > gc_count
+    end
+
+  end
+
 end

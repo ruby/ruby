@@ -342,4 +342,20 @@ describe "Module#prepend" do
     child_class.new.foo(ary)
     ary.should == [3, 2, 1]
   end
+
+  describe "called on a module" do
+    describe "included into a class"
+    it "does not obscure the module's methods from reflective access" do
+      mod = Module.new do
+        def foo; end
+      end
+      cls = Class.new do
+        include mod
+      end
+      pre = Module.new
+      mod.prepend pre
+
+      cls.instance_methods.should include(:foo)
+    end
+  end
 end
