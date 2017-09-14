@@ -4389,6 +4389,7 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped, co
     LABEL *prev_end_label = ISEQ_COMPILE_DATA(iseq)->end_label;
     LABEL *prev_redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label;
     int prev_loopval_popped = ISEQ_COMPILE_DATA(iseq)->loopval_popped;
+    VALUE branches;
 
     struct iseq_compile_data_ensure_node_stack enl;
 
@@ -4419,6 +4420,8 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped, co
     if (tmp_label) ADD_LABEL(ret, tmp_label);
 
     ADD_LABEL(ret, redo_label);
+    DECL_BRANCH_BASE(branches, line, type == NODE_WHILE ? "while" : "until");
+    ADD_TRACE_BRANCH_COVERAGE(ret, node->nd_body ? nd_line(node->nd_body) : line, "body", branches);
     CHECK(COMPILE_POPPED(ret, "while body", node->nd_body));
     ADD_LABEL(ret, next_label);	/* next */
 

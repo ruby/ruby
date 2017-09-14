@@ -202,4 +202,28 @@ class TestCoverage < Test::Unit::TestCase
       }
     }
   end
+
+  def test_branch_coverage_for_while_statement
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        File.open("test.rb", "w") do |f|
+          f.puts 'x = 3'
+          f.puts 'while x > 0'
+          f.puts '  x -= 1'
+          f.puts 'end'
+          f.puts 'until x == 10'
+          f.puts '  x += 1'
+          f.puts 'end'
+        end
+
+        assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", ["{:branches=>{[:while, 0, 2]=>{[:body, 1, 3]=>3}, [:until, 2, 5]=>{[:body, 3, 6]=>10}}}"], [])
+          ENV["COVERAGE_EXPERIMENTAL_MODE"] = "true"
+          Coverage.start(branches: true)
+          tmp = Dir.pwd
+          require tmp + '/test.rb'
+          p Coverage.result[tmp + "/test.rb"]
+        end;
+      }
+    }
+  end
 end
