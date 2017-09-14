@@ -1,3 +1,10 @@
+Thu Sep 14 20:36:54 2017  Yusuke Endoh  <mame@ruby-lang.org>
+
+	lib/webrick/log.rb: sanitize any type of logs
+
+	It had failed to sanitize some type of exception messages.  Reported and
+	patched by Yusuke Endoh (mame) at https://hackerone.com/reports/223363
+
 Thu Sep 14 20:33:52 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	Fix space flag when Inf/NaN and width==3
