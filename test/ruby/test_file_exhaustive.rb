@@ -3,6 +3,7 @@ require "test/unit"
 require "fileutils"
 require "tmpdir"
 require "socket"
+require '-test-/file'
 
 class TestFileExhaustive < Test::Unit::TestCase
   DRIVE = Dir.pwd[%r'\A(?:[a-z]:|//[^/]+/[^/]+)'i]
@@ -572,7 +573,13 @@ class TestFileExhaustive < Test::Unit::TestCase
       t2 = File.open(file) {|f| f.atime}
       assert_kind_of(Time, t1)
       assert_kind_of(Time, t2)
-      assert_equal(t1, t2)
+      # High Sierra's APFS can handle nano-sec precise.
+      # t1 value is difference from t2 on APFS.
+      if Bug::File::Fs.fsname(Dir.tmpdir) == "apfs"
+        assert_equal(t1.to_i, t2.to_i)
+      else
+        assert_equal(t1, t2)
+      end
     end
     assert_raise(Errno::ENOENT) { File.atime(nofile) }
   end
@@ -749,6 +756,8 @@ class TestFileExhaustive < Test::Unit::TestCase
         begin
           open(file) {}
         rescue
+          # High Sierra's APFS cannot use filenames with undefined character
+          next if Bug::File::Fs.fsname(Dir.tmpdir) == "apfs"
           assert_equal(file, full_path, mesg)
         else
           assert_equal(regular_file, full_path, mesg)
