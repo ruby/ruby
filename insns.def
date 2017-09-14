@@ -732,6 +732,23 @@ trace
 		    (flag & (RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN)) ? TOPN(0) : Qundef);
 }
 
+/**
+  @c setting
+  @e trace
+  @j trace 用の命令。
+ */
+DEFINE_INSN
+trace2
+(rb_num_t nf, VALUE data)
+()
+()
+{
+    rb_event_flag_t flag = (rb_event_flag_t)nf;
+
+    vm_dtrace(flag, th);
+    EXEC_EVENT_HOOK(th, flag, GET_SELF(), 0, 0, 0 /* id and klass are resolved at callee */, data);
+}
+
 /**********************************************************/
 /* deal with control flow 1: class/module                 */
 /**********************************************************/
