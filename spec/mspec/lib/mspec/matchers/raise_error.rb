@@ -5,16 +5,18 @@ class RaiseErrorMatcher
     @exception = exception
     @message = message
     @block = block
+    @actual = nil
   end
 
   def matches?(proc)
     @result = proc.call
     return false
-  rescue Exception => @actual
-    if matching_exception?(@actual)
+  rescue Exception => actual
+    @actual = actual
+    if matching_exception?(actual)
       return true
     else
-      raise @actual
+      raise actual
     end
   end
 
@@ -54,7 +56,7 @@ class RaiseErrorMatcher
   def failure_message
     message = ["Expected #{format_expected_exception}"]
 
-    if @actual then
+    if @actual
       message << "but got #{format_exception(@actual)}"
     else
       message << "but no exception was raised (#{@result.pretty_inspect.chomp} was returned)"

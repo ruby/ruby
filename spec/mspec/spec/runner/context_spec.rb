@@ -9,7 +9,7 @@ require 'mspec/runner/example'
 describe ContextState, "#describe" do
   before :each do
     @state = ContextState.new "C#m"
-    @proc = lambda {|*| ScratchPad.record :a }
+    @proc = proc { ScratchPad.record :a }
     ScratchPad.clear
   end
 

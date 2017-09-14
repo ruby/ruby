@@ -20,17 +20,18 @@ IMPLS = {
 
 MSPEC = ARGV.delete('--mspec')
 
-# Assuming the rubyspec repo is a sibling of the mspec repo
-RUBYSPEC_REPO = File.expand_path("../../../../rubyspec", __FILE__)
-raise RUBYSPEC_REPO unless Dir.exist?(RUBYSPEC_REPO)
+MSPEC_REPO = File.expand_path("../../..", __FILE__)
+raise MSPEC_REPO if !Dir.exist?(MSPEC_REPO) or !Dir.exist?("#{MSPEC_REPO}/.git")
 
-MSPEC_REPO = File.expand_path("../../../../mspec", __FILE__)
-raise MSPEC_REPO if MSPEC && !Dir.exist?(MSPEC_REPO)
+# Assuming the rubyspec repo is a sibling of the mspec repo
+RUBYSPEC_REPO = File.expand_path("../rubyspec", MSPEC_REPO)
+raise RUBYSPEC_REPO unless Dir.exist?(RUBYSPEC_REPO)
 
 SOURCE_REPO = MSPEC ? MSPEC_REPO : RUBYSPEC_REPO
 
 NOW = Time.now
 
+BRIGHT_RED = "\e[31;1m"
 BRIGHT_YELLOW = "\e[33;1m"
 RESET = "\e[0m"
 
@@ -123,8 +124,14 @@ def rebase_commits(impl)
 
     rebased = impl.rebased_branch
     if branch?(rebased)
-      puts "#{BRIGHT_YELLOW}#{rebased} already exists, assuming it correct#{RESET}"
-      sh "git", "checkout", rebased
+      last_commit = Time.at(Integer(`git log -n 1 --format='%ct' #{rebased}`))
+      days_since_last_commit = (NOW-last_commit) / 86400
+      if days_since_last_commit > 7
+        abort "#{BRIGHT_RED}#{rebased} exists but last commit is old (#{last_commit}), delete the branch if it was merged#{RESET}"
+      else
+        puts "#{BRIGHT_YELLOW}#{rebased} already exists, last commit on #{last_commit}, assuming it correct#{RESET}"
+        sh "git", "checkout", rebased
+      end
     else
       sh "git", "checkout", impl.name
 
@@ -141,7 +148,7 @@ def rebase_commits(impl)
       commit_date = Time.at(Integer(commit_timestamp))
       days_since_last_merge = (NOW-commit_date) / 86400
       if days_since_last_merge > 60
-        raise "#{days_since_last_merge} since last merge, probably wrong commit"
+        raise "#{days_since_last_merge.floor} days since last merge, probably wrong commit"
       end
 
       puts "Rebasing..."

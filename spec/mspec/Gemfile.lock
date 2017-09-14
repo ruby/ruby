@@ -1,8 +1,3 @@
-PATH
-  remote: .
-  specs:
-    mspec (1.8.0)
-
 GEM
   remote: https://rubygems.org/
   specs:
@@ -22,9 +17,8 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  mspec!
   rake (~> 10.0)
   rspec (~> 2.14.1)
 
 BUNDLED WITH
-   1.10.2
+   1.14.5

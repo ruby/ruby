@@ -2,8 +2,14 @@ sudo: false
 language: ruby
 script:
   - bundle exec rspec
-rvm:
-  - 2.2.7
-  - 2.3.4
-  - 2.4.1
-  - ruby-head
+matrix:
+  include:
+  - rvm: 2.2.7
+  - rvm: 2.3.4
+  - rvm: 2.4.1
+  - rvm: ruby-head
+  - jdk: oraclejdk8
+    install:
+      - curl -L https://github.com/graalvm/truffleruby/releases/download/vm-enterprise-0.27/truffleruby-testing-0.27.tar.gz | tar xz
+      - source truffleruby/setup_env
+      - bundle install

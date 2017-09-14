@@ -1,4 +1,5 @@
 require 'mspec/expectations/expectations'
+require 'mspec/helpers/warning'
 
 module Mock
   def self.reset
@@ -57,10 +58,12 @@ module Mock
       meta.__send__ :alias_method, key.first, sym
     end
 
-    meta.class_eval {
-      define_method(sym) do |*args, &block|
-        Mock.verify_call self, sym, *args, &block
-      end
+    suppress_warning {
+      meta.class_eval {
+        define_method(sym) do |*args, &block|
+          Mock.verify_call self, sym, *args, &block
+        end
+      }
     }
 
     proxy = MockProxy.new type
@@ -179,7 +182,9 @@ module Mock
       meta = obj.singleton_class
 
       if mock_respond_to? obj, replaced, true
-        meta.__send__ :alias_method, sym, replaced
+        suppress_warning do
+          meta.__send__ :alias_method, sym, replaced
+        end
         meta.__send__ :remove_method, replaced
       else
         meta.__send__ :remove_method, sym

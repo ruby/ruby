@@ -38,6 +38,10 @@ class MSpecScript
   end
 
   def initialize
+    if RUBY_VERSION < '2.2'
+      abort "MSpec needs Ruby 2.2 or more recent"
+    end
+
     config[:formatter] = nil
     config[:includes]  = []
     config[:excludes]  = []

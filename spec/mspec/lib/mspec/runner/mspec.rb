@@ -2,6 +2,9 @@ require 'mspec/runner/context'
 require 'mspec/runner/exception'
 require 'mspec/runner/tag'
 
+module MSpec
+end
+
 class MSpecEnv
   include MSpec
 end
@@ -399,4 +402,7 @@ module MSpec
     file = tags_file
     File.delete file if File.exist? file
   end
+
+  # Initialize @env
+  setup_env
 end

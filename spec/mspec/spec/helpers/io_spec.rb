@@ -60,9 +60,9 @@ describe Object, "#new_fd" do
     rm_r @name
   end
 
-  it "returns a Fixnum that can be used to create an IO instance" do
+  it "returns a Integer that can be used to create an IO instance" do
     fd = new_fd @name
-    fd.should be_an_instance_of(Fixnum)
+    fd.should be_kind_of(Integer)
 
     @io = IO.new fd, fmode('w:utf-8')
     @io.sync = true
@@ -74,7 +74,7 @@ describe Object, "#new_fd" do
   it "accepts an options Hash" do
     FeatureGuard.stub(:enabled?).and_return(true)
     fd = new_fd @name, { :mode => 'w:utf-8' }
-    fd.should be_an_instance_of(Fixnum)
+    fd.should be_kind_of(Integer)
 
     @io = IO.new fd, fmode('w:utf-8')
     @io.sync = true

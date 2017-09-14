@@ -1,4 +1,4 @@
 source 'https://rubygems.org'
 
-# Specify your gem's dependencies in mspec.gemspec
-gemspec
+gem "rake", "~> 10.0"
+gem "rspec", "~> 2.14.1"

@@ -1,5 +1,4 @@
 require 'mspec/runner/formatters/spinner'
-require 'yaml'
 
 class MultiFormatter < SpinnerFormatter
   def initialize(out=nil)
@@ -10,6 +9,8 @@ class MultiFormatter < SpinnerFormatter
   end
 
   def aggregate_results(files)
+    require 'yaml'
+
     @timer.finish
     @exceptions = []
 
