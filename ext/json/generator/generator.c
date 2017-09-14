@@ -301,7 +301,7 @@ static char *fstrndup(const char *ptr, unsigned long len) {
   char *result;
   if (len <= 0) return NULL;
   result = ALLOC_N(char, len);
-  memccpy(result, ptr, 0, len);
+  memcpy(result, ptr, len);
   return result;
 }
 
@@ -1055,7 +1055,7 @@ static VALUE cState_indent_set(VALUE self, VALUE indent)
         }
     } else {
         if (state->indent) ruby_xfree(state->indent);
-        state->indent = strdup(RSTRING_PTR(indent));
+        state->indent = fstrndup(RSTRING_PTR(indent), len);
         state->indent_len = len;
     }
     return Qnil;
@@ -1093,7 +1093,7 @@ static VALUE cState_space_set(VALUE self, VALUE space)
         }
     } else {
         if (state->space) ruby_xfree(state->space);
-        state->space = strdup(RSTRING_PTR(space));
+        state->space = fstrndup(RSTRING_PTR(space), len);
         state->space_len = len;
     }
     return Qnil;
@@ -1129,7 +1129,7 @@ static VALUE cState_space_before_set(VALUE self, VALUE space_before)
         }
     } else {
         if (state->space_before) ruby_xfree(state->space_before);
-        state->space_before = strdup(RSTRING_PTR(space_before));
+        state->space_before = fstrndup(RSTRING_PTR(space_before), len);
         state->space_before_len = len;
     }
     return Qnil;
@@ -1166,7 +1166,7 @@ static VALUE cState_object_nl_set(VALUE self, VALUE object_nl)
         }
     } else {
         if (state->object_nl) ruby_xfree(state->object_nl);
-        state->object_nl = strdup(RSTRING_PTR(object_nl));
+        state->object_nl = fstrndup(RSTRING_PTR(object_nl), len);
         state->object_nl_len = len;
     }
     return Qnil;
@@ -1201,7 +1201,7 @@ static VALUE cState_array_nl_set(VALUE self, VALUE array_nl)
         }
     } else {
         if (state->array_nl) ruby_xfree(state->array_nl);
-        state->array_nl = strdup(RSTRING_PTR(array_nl));
+        state->array_nl = fstrndup(RSTRING_PTR(array_nl), len);
         state->array_nl_len = len;
     }
     return Qnil;

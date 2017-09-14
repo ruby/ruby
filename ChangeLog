@@ -1,3 +1,7 @@
+Thu Sep 14 20:44:26 2017  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	* ext/json: bump to version 1.8.1.1. [Backport #13853]
+
 Thu Sep 14 20:39:39 2017  Kazuki Yamaguchi <k@rhe.jp>
 
 	asn1: fix out-of-bounds read in decoding constructed objects
