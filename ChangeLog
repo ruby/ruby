@@ -1,3 +1,15 @@
+Thu Sep 14 20:33:52 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	Fix space flag when Inf/NaN and width==3
+
+	* sprintf.c (rb_str_format): while "% 2f" and "% 4f" result in " Inf"
+	  and " Inf" respectively, "% 3f" results in "Inf" (no space).
+
+	Refactor "%f" % Inf/NaN
+
+	* sprintf.c (rb_str_format): as for non-finite float, calculate the
+	  exact needed size with the space flag.
+
 Sun Sep 10 10:10:05 2017  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* lib/rubygems: fix several vulnerabilities in RubyGems; bump to version
