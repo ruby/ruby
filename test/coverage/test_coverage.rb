@@ -226,4 +226,58 @@ class TestCoverage < Test::Unit::TestCase
       }
     }
   end
+
+  def test_branch_coverage_for_case_statement
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        File.open("test.rb", "w") do |f|
+          f.puts 'def foo(x)'
+          f.puts '  case x'
+          f.puts '  when 0'
+          f.puts '    0'
+          f.puts '  when 1'
+          f.puts '    1'
+          f.puts '  end'
+          f.puts ''
+          f.puts '  case'
+          f.puts '  when x == 0'
+          f.puts '    0'
+          f.puts '  when x == 1'
+          f.puts '    1'
+          f.puts '  end'
+          f.puts ''
+          f.puts '  case x'
+          f.puts '  when 0'
+          f.puts '    0'
+          f.puts '  when 1'
+          f.puts '    1'
+          f.puts '  else'
+          f.puts '    :other'
+          f.puts '  end'
+          f.puts ''
+          f.puts '  case'
+          f.puts '  when x == 0'
+          f.puts '    0'
+          f.puts '  when x == 1'
+          f.puts '    1'
+          f.puts '  else'
+          f.puts '    :other'
+          f.puts '  end'
+          f.puts 'end'
+          f.puts ''
+          f.puts 'foo(0)'
+          f.puts 'foo(0)'
+          f.puts 'foo(2)'
+        end
+
+        assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", ["{:branches=>{[:case, 0, 2]=>{[:when, 1, 4]=>2, [:when, 2, 6]=>0, [:else, 3, 2]=>1}, [:case, 4, 14]=>{[:when, 5, 11]=>2, [:when, 6, 13]=>0, [:else, 7, 14]=>1}, [:case, 8, 16]=>{[:when, 9, 18]=>2, [:when, 10, 20]=>0, [:else, 11, 22]=>1}, [:case, 12, 32]=>{[:when, 13, 27]=>2, [:when, 14, 29]=>0, [:else, 15, 31]=>1}}}"], [])
+          ENV["COVERAGE_EXPERIMENTAL_MODE"] = "true"
+          Coverage.start(branches: true)
+          tmp = Dir.pwd
+          require tmp + '/test.rb'
+          p Coverage.result[tmp + "/test.rb"]
+        end;
+      }
+    }
+  end
 end
