@@ -6405,7 +6405,7 @@ d_lite_hash(VALUE self)
     h[2] = m_df(dat);
     h[3] = m_sf(dat);
     v = rb_memhash(h, sizeof(h));
-    return LONG2FIX(v);
+    return LONG2FIX((long)v);
 }
 
 #include "date_tmx.h"

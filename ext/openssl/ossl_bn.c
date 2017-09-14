@@ -912,7 +912,7 @@ ossl_bn_hash(VALUE self)
 	ossl_raise(eBNError, NULL);
     }
 
-    hash = INT2FIX(rb_memhash(buf, len));
+    hash = LONG2FIX((long)rb_memhash(buf, len));
     xfree(buf);
 
     return hash;

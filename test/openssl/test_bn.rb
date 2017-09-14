@@ -56,6 +56,25 @@ class OpenSSL::TestBN < Test::Unit::TestCase
     assert_equal(bn1.hash, bn2.hash)
     assert_not_equal(bn3.hash, bn1.hash)
   end
+
+  def test_comparison
+    e1 = OpenSSL::BN.new(999.to_s(16), 16)
+    e3 = OpenSSL::BN.new((2**107-1).to_s(16), 16)
+    assert_equal(false, e1 == nil)
+    assert_equal(false, e1 == -999)
+    assert_equal(true, e1 == 999)
+    assert_equal(true, e1 == 999.to_bn)
+    assert_equal(false, e1.eql?(nil))
+    assert_equal(false, e1.eql?(999))
+    assert_equal(true, e1.eql?(999.to_bn))
+    assert_equal(e1.hash, 999.to_bn.hash)
+    assert_not_equal(e1.hash, e3.hash)
+    assert_equal(0, e1.cmp(999))
+    assert_equal(1, e1.cmp(-999))
+    assert_equal(0, e1.ucmp(999))
+    assert_equal(0, e1.ucmp(-999))
+    assert_instance_of(String, e1.hash.to_s)
+  end
 end
 
 end
