@@ -96,7 +96,7 @@ static VALUE
 method_coverage(VALUE methods)
 {
     VALUE ret = rb_hash_new();
-    int i, id;
+    int i, id = 0;
 
     for (i = 0; i < RARRAY_LEN(methods); ) {
 	VALUE method_name = RARRAY_AREF(methods, i++);
