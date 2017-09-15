@@ -13,31 +13,37 @@ extern "C" {
 #endif
 
 #ifdef HAVE_RB_ST
+# if SIZEOF_LONG == SIZEOF_VOIDP
+#   define ST2NUM(x) ULONG2NUM(x)
+#else
+#   define ST2NUM(x) ULL2NUM(x)
+#endif
+
 VALUE st_spec_st_init_numtable(VALUE self) {
   st_table *tbl = st_init_numtable();
-  int entries = tbl->num_entries;
+  st_index_t entries = tbl->num_entries;
   st_free_table(tbl);
-  return INT2FIX(entries);
+  return ST2NUM(entries);
 }
 
 VALUE st_spec_st_init_numtable_with_size(VALUE self) {
   st_table *tbl = st_init_numtable_with_size(128);
-  int entries = tbl->num_entries;
+  st_index_t entries = tbl->num_entries;
   st_free_table(tbl);
-  return INT2FIX(entries);
+  return ST2NUM(entries);
 }
 
 VALUE st_spec_st_insert(VALUE self) {
-  int entries;
+  st_index_t entries;
   st_table *tbl = st_init_numtable_with_size(128);
   st_insert(tbl, 1, 1);
   entries = tbl->num_entries;
   st_free_table(tbl);
-  return INT2FIX(entries);
+  return ST2NUM(entries);
 }
 
 static int sum(st_data_t key, st_data_t value, st_data_t arg) {
-  *(int*)arg += value;
+  *(int*)arg += (int)value;
   return ST_CONTINUE;
 }
 
@@ -58,7 +64,11 @@ VALUE st_spec_st_lookup(VALUE self) {
   st_insert(tbl, 2, 4);
   st_lookup(tbl, (st_data_t)7, &result);
   st_free_table(tbl);
-  return INT2FIX(result);
+#if SIZEOF_LONG == SIZEOF_VOIDP
+  return ULONG2NUM(result);
+#else
+  return ULL2NUM(result);
+#endif
 }
 
 #endif

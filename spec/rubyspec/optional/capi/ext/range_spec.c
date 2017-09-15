@@ -34,7 +34,7 @@ VALUE range_spec_rb_range_beg_len(VALUE self, VALUE range, VALUE begpv, VALUE le
   long begp = FIX2LONG(begpv);
   long lenp = FIX2LONG(lenpv);
   long len = FIX2LONG(lenv);
-  long err = FIX2LONG(errv);
+  int err = FIX2INT(errv);
   VALUE ary = rb_ary_new();
   VALUE res = rb_range_beg_len(range, &begp, &lenp, len, err);
   rb_ary_store(ary, 0, LONG2FIX(begp));

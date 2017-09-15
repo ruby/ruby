@@ -17,15 +17,15 @@ static VALUE fixnum_spec_FIX2UINT(VALUE self, VALUE value) {
 
 #ifdef HAVE_RB_FIX2UINT
 static VALUE fixnum_spec_rb_fix2uint(VALUE self, VALUE value) {
-  unsigned int i = rb_fix2uint(value);
-  return UINT2NUM(i);
+  unsigned long i = rb_fix2uint(value);
+  return ULONG2NUM(i);
 }
 #endif
 
 #ifdef HAVE_RB_FIX2INT
 static VALUE fixnum_spec_rb_fix2int(VALUE self, VALUE value) {
-  int i = rb_fix2int(value);
-  return INT2NUM(i);
+  long i = rb_fix2int(value);
+  return LONG2NUM(i);
 }
 #endif
 
