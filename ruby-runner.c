@@ -40,11 +40,9 @@ main(int argc, char **argv)
     if (strlen(p) < namesize - 1) {
 	argv[0] = malloc(p - arg0 + namesize);
 	memcpy(argv[0], arg0, p - arg0);
-	memcpy(argv[0] + (p - arg0), rubypath + dirsize, namesize);
+	p = argv[0] + (p - arg0);
     }
-    else {
-	memcpy(p, rubyname, namesize);
-    }
+    memcpy(p, rubyname, namesize);
 
     execv(rubypath, argv);
     return -1;
