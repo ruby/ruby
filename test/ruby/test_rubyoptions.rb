@@ -298,7 +298,7 @@ class TestRubyOptions < Test::Unit::TestCase
       @verbose = $VERBOSE
       $VERBOSE = nil
 
-      path, name = *File.split(t.path)
+      path, name = File.split(t.path)
 
       ENV['PATH'] = (path_orig && RbConfig::CONFIG['LIBPATHENV'] == 'PATH') ?
           [path, path_orig].join(File::PATH_SEPARATOR) : path
