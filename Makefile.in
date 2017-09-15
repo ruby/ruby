@@ -265,7 +265,7 @@ $(ruby_pc):
 ruby-runner.h: template/ruby-runner.h.in
 		@./config.status --file=$@:$(srcdir)/template/$(@F).in
 
-ruby-runner$(EXEEXT): ruby-runner.c ruby-runner.h
+bin/$(PROGRAM): ruby-runner.c ruby-runner.h
 	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(CPPFLAGS) -DRUBY_INSTALL_NAME=$(RUBY_INSTALL_NAME) $(LDFLAGS) $(LIBS) $(OUTFLAG)$@ $<
 
 $(RBCONFIG): $(PREP)
@@ -417,7 +417,7 @@ clean-local::
 	$(Q)$(RM) ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output \
 		enc/encinit.c enc/encinit.$(OBJEXT)
 	-$(Q)$(RM) $(pkgconfig_DATA)
-	-$(Q)$(RMALL) ruby-runner$(EXEEXT) ruby-runner.h *.dSYM
+	-$(Q)$(RMALL) bin/$(PROGRAM) ruby-runner.h *.dSYM
 
 distclean-local::
 	$(Q)$(RM) ext/config.cache $(RBCONFIG) Doxyfile

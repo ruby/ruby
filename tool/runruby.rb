@@ -74,14 +74,14 @@ env = {
   'RUBY_FIBER_MACHINE_STACK_SIZE' => '1',
 }
 
-runner = File.join(abs_archdir, "ruby-runner#{config['EXEEXT']}")
+runner = File.join(abs_archdir, "bin/ruby#{config['EXEEXT']}")
 runner = nil unless File.exist?(runner)
 abs_ruby = runner || File.expand_path(ruby)
 env["RUBY"] = abs_ruby
 env["GEM_PATH"] = env["GEM_HOME"] = File.expand_path("spec/rspec", srcdir)
 env["BUNDLE_RUBY"] = abs_ruby
 env["BUNDLE_GEM"] = "#{abs_ruby} -rrubygems #{srcdir}/bin/gem --backtrace"
-env["PATH"] = [abs_archdir, ENV["PATH"]].compact.join(File::PATH_SEPARATOR)
+env["PATH"] = [File.dirname(abs_ruby), abs_archdir, ENV["PATH"]].compact.join(File::PATH_SEPARATOR)
 
 if e = ENV["RUBYLIB"]
   libs |= e.split(File::PATH_SEPARATOR)

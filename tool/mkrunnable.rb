@@ -115,8 +115,8 @@ rubyw_install_name = config["rubyw_install_name"]
 goruby_install_name = "go" + ruby_install_name
 [ruby_install_name, rubyw_install_name, goruby_install_name].map do |ruby|
   ruby += exeext
-  if ruby and !ruby.empty?
-    ln_relative(ruby, "#{bindir}/#{ruby}")
+  if ruby and !ruby.empty? and !File.file?(target = "#{bindir}/#{ruby}")
+    ln_relative(ruby, target)
   end
 end
 so = config["LIBRUBY_SO"]

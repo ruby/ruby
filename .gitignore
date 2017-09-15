@@ -130,6 +130,8 @@ lcov*.info
 /benchmark/fasta.output.*
 /benchmark/wc.input
 
+/bin/ruby
+
 /enc/*.def
 /enc/*.exp
 /enc/*.lib
