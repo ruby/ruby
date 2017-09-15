@@ -4195,7 +4195,7 @@ f_arglist	: '(' f_args rparen
 		|   {
 			$<num>$ = parser->in_kwarg;
 			parser->in_kwarg = 1;
-			lex_state |= EXPR_LABEL; /* force for args */
+			SET_LEX_STATE(lex_state|EXPR_LABEL); /* force for args */
 		    }
 		    f_args term
 		    {
@@ -8478,8 +8478,8 @@ parser_yylex(struct parser_params *parser)
       case '[':
 	paren_nest++;
 	if (IS_AFTER_OPERATOR()) {
-	    SET_LEX_STATE(EXPR_ARG);
 	    if ((c = nextc()) == ']') {
+		SET_LEX_STATE(EXPR_ARG);
 		if ((c = nextc()) == '=') {
 		    return tASET;
 		}
@@ -8487,7 +8487,7 @@ parser_yylex(struct parser_params *parser)
 		return tAREF;
 	    }
 	    pushback(c);
-	    lex_state |= EXPR_LABEL;
+	    SET_LEX_STATE(EXPR_ARG|EXPR_LABEL);
 	    return '[';
 	}
 	else if (IS_BEG()) {
@@ -8521,8 +8521,7 @@ parser_yylex(struct parser_params *parser)
 	    c = tLBRACE;      /* hash */
 	COND_PUSH(0);
 	CMDARG_PUSH(0);
-	SET_LEX_STATE(EXPR_BEG);
-	if (c != tLBRACE_ARG) lex_state |= EXPR_LABEL;
+	SET_LEX_STATE(c == tLBRACE_ARG ? EXPR_BEG : EXPR_BEG|EXPR_LABEL);
 	if (c != tLBRACE) command_start = TRUE;
 	return c;
 
