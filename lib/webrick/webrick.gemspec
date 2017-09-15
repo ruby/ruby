@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
 
   s.authors = ["TAKAHASHI Masayoshi", "GOTOU YUUZOU"]
   s.email = [nil, nil]
-  s.homepage = "https://www.ruby-lang.org"
+  s.homepage = "https://github.com/ruby/webrick"
   s.license = "BSD-2-Clause"
 
   s.add_development_dependency "rake"

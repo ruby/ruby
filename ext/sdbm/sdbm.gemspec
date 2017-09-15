@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
 
   s.authors = ["Yukihiro Matsumoto"]
   s.email = ["matz@ruby-lang.org"]
-  s.homepage = "https://www.ruby-lang.org"
+  s.homepage = "https://github.com/ruby/sdbm"
   s.license = "BSD-2-Clause"
 
   s.add_development_dependency "test-unit"

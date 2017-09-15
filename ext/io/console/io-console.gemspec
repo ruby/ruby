@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
   s.email = "nobu@ruby-lang.org"
   s.description = "add console capabilities to IO instances."
   s.required_ruby_version = ">= 2.0.0"
-  s.homepage = "https://www.ruby-lang.org"
+  s.homepage = "https://github.com/ruby/io-console"
   s.authors = ["Nobu Nakada"]
   s.require_path = %[lib]
   s.files = %w[ext/io/console/console.c ext/io/console/extconf.rb lib/console/size.rb ext/io/console/win32_vk.inc]

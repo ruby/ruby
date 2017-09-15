@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
 
   s.authors = ["Minero Aoki"]
   s.email = [nil]
-  s.homepage = "https://www.ruby-lang.org"
+  s.homepage = "https://github.com/ruby/strscan"
   s.license = "BSD-2-Clause"
 
   s.add_development_dependency "rake-compiler"
