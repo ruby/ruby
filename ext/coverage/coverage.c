@@ -42,6 +42,8 @@ rb_coverage_start(int argc, VALUE *argv, VALUE klass)
     }
     else {
 	mode = 0;
+	opt = rb_convert_type(opt, T_HASH, "Hash", "to_hash");
+
 	if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("lines")))))
 	    mode |= COVERAGE_TARGET_LINES;
 	if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("branches")))))
