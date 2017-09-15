@@ -55,11 +55,11 @@ describe "Dir.mkdir" do
   end
 
   it "raises Errno::EEXIST if the specified directory already exists" do
-    lambda { Dir.mkdir(File.dirname(__FILE__)) }.should raise_error(Errno::EEXIST)
+    lambda { Dir.mkdir("#{DirSpecs.mock_dir}/dir") }.should raise_error(Errno::EEXIST)
   end
 
   it "raises Errno::EEXIST if the argument points to the existing file" do
-    lambda { Dir.mkdir(__FILE__) }.should raise_error(Errno::EEXIST)
+    lambda { Dir.mkdir("#{DirSpecs.mock_dir}/file_one.ext") }.should raise_error(Errno::EEXIST)
   end
 end
 
