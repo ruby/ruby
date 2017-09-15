@@ -503,7 +503,7 @@ module Net   #:nodoc:
     def HTTP.post(url, data, header = nil)
       start(url.hostname, url.port,
             :use_ssl => url.scheme == 'https' ) {|http|
-        http.post(url.path, data, header)
+        http.post(url, data, header)
       }
     end
 

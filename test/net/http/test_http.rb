@@ -431,12 +431,13 @@ module TestNetHTTP_version_1_1_methods
   end
 
   def test_s_post
-    url = "http://#{config('host')}:#{config('port')}/"
+    url = "http://#{config('host')}:#{config('port')}/?q=a"
     res = Net::HTTP.post(
               URI.parse(url),
               "a=x")
     assert_equal "application/x-www-form-urlencoded", res["Content-Type"]
     assert_equal "a=x", res.body
+    assert_equal url, res["X-request-uri"]
 
     res = Net::HTTP.post(
               URI.parse(url),
