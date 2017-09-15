@@ -466,7 +466,7 @@ darwin_sigtramp:
 	unw_set_reg(&cursor, UNW_X86_64_R15, uctx->uc_mcontext->__ss.__r15);
 	ip = uctx->uc_mcontext->__ss.__rip;
 
-	/* There's 4 cases for SEGV:
+	/* There're 4 cases for SEGV:
 	 * (1) called invalid address
 	 * (2) read or write invalid address
 	 * (3) received signal
@@ -487,7 +487,7 @@ darwin_sigtramp:
 	 * Same as (2).
 	 * (4) received signal in kernel
 	 * In this case saved ip points just after syscall, but registers are
-	 * already overwriten by kernel. To fix register consistency,
+	 * already overwritten by kernel. To fix register consistency,
 	 * skip libc's kernel wrapper.
 	 * To detect this case, just previous two bytes of ip is "\x0f\x05",
 	 * syscall instruction of x86_64.
