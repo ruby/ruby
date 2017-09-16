@@ -1612,6 +1612,15 @@ class TestFileUtils < Test::Unit::TestCase
 
     subdir = 'data/sub/dir'
     mkdir_p(subdir)
+    File.write("#{subdir}/file", '')
+    msg = "should fail to remove non-empty directory"
+    assert_raise(Errno::ENOTEMPTY, Errno::EEXIST, msg) {
+      rmdir(subdir)
+    }
+    assert_raise(Errno::ENOTEMPTY, Errno::EEXIST, msg) {
+      rmdir(subdir, parents: true)
+    }
+    File.unlink("#{subdir}/file")
     assert_nothing_raised(Errno::ENOENT) {
       rmdir(subdir, parents: true)
     }

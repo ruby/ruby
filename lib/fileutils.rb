@@ -245,15 +245,15 @@ module FileUtils
     fu_output_message "rmdir #{parents ? '-p ' : ''}#{list.join ' '}" if verbose
     return if noop
     list.each do |dir|
-      begin
-        Dir.rmdir(dir = remove_trailing_slash(dir))
-        if parents
+      Dir.rmdir(dir = remove_trailing_slash(dir))
+      if parents
+        begin
           until (parent = File.dirname(dir)) == '.' or parent == dir
             dir = parent
             Dir.rmdir(dir)
           end
+        rescue Errno::ENOTEMPTY, Errno::EEXIST, Errno::ENOENT
         end
-      rescue Errno::ENOTEMPTY, Errno::EEXIST, Errno::ENOENT
       end
     end
   end
