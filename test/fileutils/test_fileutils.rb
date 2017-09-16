@@ -1621,6 +1621,12 @@ class TestFileUtils < Test::Unit::TestCase
       rmdir(subdir, parents: true)
     }
     File.unlink("#{subdir}/file")
+    assert_raise(Errno::ENOENT) {
+      rmdir("#{subdir}/nonexistent")
+    }
+    assert_raise(Errno::ENOENT) {
+      rmdir("#{subdir}/nonexistent", parents: true)
+    }
     assert_nothing_raised(Errno::ENOENT) {
       rmdir(subdir, parents: true)
     }
