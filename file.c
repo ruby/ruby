@@ -4121,7 +4121,8 @@ ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encodin
  *  call-seq:
  *     File.basename(file_name [, suffix] )  ->  base_name
  *
- *  Returns the last component of the filename given in <i>file_name</i>,
+ *  Returns the last component of the filename given in
+ *  <i>file_name</i> (after first stripping trailing separators),
  *  which can be formed using both <code>File::SEPARATOR</code> and
  *  <code>File::ALT_SEPARATOR</code> as the separator when
  *  <code>File::ALT_SEPARATOR</code> is not <code>nil</code>. If
@@ -4184,9 +4185,10 @@ rb_file_s_basename(int argc, VALUE *argv)
  *     File.dirname(file_name)  ->  dir_name
  *
  *  Returns all components of the filename given in <i>file_name</i>
- *  except the last one. The filename can be formed using both
- *  <code>File::SEPARATOR</code> and <code>File::ALT_SEPARATOR</code> as the
- *  separator when <code>File::ALT_SEPARATOR</code> is not <code>nil</code>.
+ *  except the last one (after first stripping trailing separators).
+ *  The filename can be formed using both <code>File::SEPARATOR</code>
+ *  and <code>File::ALT_SEPARATOR</code> as the separator when
+ *  <code>File::ALT_SEPARATOR</code> is not <code>nil</code>.
  *
  *     File.dirname("/home/gumby/work/ruby.rb")   #=> "/home/gumby/work"
  */
