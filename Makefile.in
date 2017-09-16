@@ -265,9 +265,6 @@ $(ruby_pc):
 ruby-runner.h: template/ruby-runner.h.in
 		@./config.status --file=$@:$(srcdir)/template/$(@F).in
 
-bin/$(PROGRAM): ruby-runner.c ruby-runner.h
-	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(CPPFLAGS) -DRUBY_INSTALL_NAME=$(@F) $(LDFLAGS) $(LIBS) $(OUTFLAG)$@ $<
-
 $(RBCONFIG): $(PREP)
 
 rbconfig.rb: $(RBCONFIG)

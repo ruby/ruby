@@ -777,6 +777,13 @@ $(PLATFORM_D):
 	$(Q) $(MAKEDIRS) $(PLATFORM_DIR) $(@D)
 	@exit > $@
 
+bin/$(PROGRAM): ruby-runner.c ruby-runner.h $(TIMESTAMPDIR)/.bin.time
+	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(CPPFLAGS) -DRUBY_INSTALL_NAME=$(@F) $(LDFLAGS) $(LIBS) $(OUTFLAG)$@ $<
+
+$(TIMESTAMPDIR)/.bin.time:
+	$(Q) $(MAKEDIRS) bin $(@D)
+	$(Q) exit > $@
+
 $(BUILTIN_ENCOBJS) $(BUILTIN_TRANSOBJS): $(ENC_TRANS_D)
 
 $(ENC_TRANS_D):
