@@ -74,7 +74,7 @@ env = {
   'RUBY_FIBER_MACHINE_STACK_SIZE' => '1',
 }
 
-runner = File.join(abs_archdir, "bin/ruby#{config['EXEEXT']}")
+runner = File.join(abs_archdir, "exe/ruby#{config['EXEEXT']}")
 runner = nil unless File.exist?(runner)
 abs_ruby = runner || File.expand_path(ruby)
 env["RUBY"] = abs_ruby
