@@ -119,6 +119,21 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal :a3c, :"a#{1+2}c"
   end
 
+  def test_dsymbol_redefined_intern
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      class String
+        alias _intern intern
+        def intern
+          "<#{upcase}>"
+        end
+      end
+      mesg = "literal symbol should not be affected by method redefinition"
+      str = "foo"
+      assert_equal(:foo, :"#{str}", mesg)
+    end;
+  end
+
   def test_xstring
     assert_equal "foo\n", `echo foo`
     s = 'foo'
