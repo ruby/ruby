@@ -341,10 +341,11 @@ def package(vcs, rev, destdir, tmp = nil)
       mk << <<-'APPEND'
 
 prereq: clean-cache $(CLEAN_CACHE)
-clean-cache $(CLEAN_CACHE): extract-gems
+clean-cache $(CLEAN_CACHE): after-update
 touch-unicode-files: _touch-unicode-files
 update-download:: touch-unicode-files
 update-download:: update-gems
+after-update:: extract-gems
 extract-gems: update-gems
 update-gems:
 _touch-unicode-files:
