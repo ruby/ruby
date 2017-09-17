@@ -2805,35 +2805,6 @@ AC_CACHE_CHECK(for external int daylight, rb_cv_have_daylight,
 AS_IF([test "$rb_cv_have_daylight" = yes], [
   AC_DEFINE(HAVE_DAYLIGHT)
 ])
-AC_DEFUN([RUBY_CHECK_VARTYPE], [dnl
-AC_CACHE_CHECK([for external $1], AS_TR_SH(rb_cv_var_$1),
-  [AS_TR_SH(rb_cv_var_$1)=no
-  AC_TRY_COMPILE([
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 1
-#endif
-$2
-;
-const volatile void *volatile t;],
-    [t = &(&$1)[0];],
-    [for t in $3; do
-      AC_TRY_COMPILE([
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 1
-#endif
-$2
-;
-extern $t $1;
-const volatile void *volatile t;],
-        [t = &(&$1)[0];],
-        [AS_TR_SH(rb_cv_var_$1)=$t; break])
-    done])])
-AS_IF([test "${AS_TR_SH(rb_cv_var_$1)}" != no], [
-  AC_DEFINE(AS_TR_CPP(HAVE_VAR_$1))
-  AC_DEFINE_UNQUOTED(AS_TR_CPP(TYPEOF_VAR_$1), ${AS_TR_SH(rb_cv_var_$1)})
-])])
-RUBY_CHECK_VARTYPE(timezone, [@%:@include <time.h>], [long int])
-RUBY_CHECK_VARTYPE(altzone, [@%:@include <time.h>], [long int])
 
 AC_CACHE_CHECK(for negative time_t for gmtime(3), rb_cv_negative_time_t,
   [AC_TRY_RUN([
