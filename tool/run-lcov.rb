@@ -63,7 +63,7 @@ def gen_rb_lcov(file)
 
       # function coverage
       total = covered = 0
-      cov[:methods].each do |(name, lineno), count|
+      cov[:methods].each do |(name, _, lineno), count|
         f.puts "FN:#{ lineno },#{ name }"
         total += 1
         covered += 1 if count > 0
@@ -88,7 +88,7 @@ def gen_rb_lcov(file)
       # branch coverage
       total = covered = 0
       id = 0
-      cov[:branches].each do |(base_type, base_lineno), targets|
+      cov[:branches].each do |(base_type, _, base_lineno), targets|
         i = 0
         targets.each do |(target_type, target_lineno), count|
           f.puts "BRDA:#{ base_lineno },#{ id },#{ i },#{ count }"
