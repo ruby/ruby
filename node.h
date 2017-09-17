@@ -285,8 +285,6 @@ typedef struct RNode {
 #define nd_set_line(n,l) \
     RNODE(n)->flags=((RNODE(n)->flags&~((VALUE)(-1)<<NODE_LSHIFT))|((VALUE)((l)&NODE_LMASK)<<NODE_LSHIFT))
 
-#define nd_refinements_  nd_reserved
-
 #define nd_head  u1.node
 #define nd_alen  u2.argc
 #define nd_next  u3.node
