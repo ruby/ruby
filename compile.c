@@ -2509,6 +2509,14 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	}
     }
 
+    if (IS_INSN_ID(iobj, tostring)) {
+	LINK_ELEMENT *next = iobj->link.next;
+	if (IS_INSN(next) && IS_INSN_ID(next, concatstrings) &&
+	    OPERAND_AT(next, 0) == INT2FIX(1)) {
+	    REMOVE_ELEM(next);
+	}
+    }
+
     if (do_tailcallopt &&
 	(IS_INSN_ID(iobj, send) ||
 	 IS_INSN_ID(iobj, opt_aref_with) ||
