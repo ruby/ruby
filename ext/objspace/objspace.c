@@ -203,7 +203,7 @@ type2sym(enum ruby_value_type i)
  *
  *  Note that this information is incomplete.  You need to deal with
  *  this information as only a *HINT*.  Especially, total size of
- *  T_DATA may not right size.
+ *  T_DATA may be wrong.
  *
  *  It returns a hash as:
  *    {:TOTAL=>1461154, :T_CLASS=>158280, :T_MODULE=>20672, :T_STRING=>527249, ...}
@@ -231,13 +231,6 @@ count_objects_size(int argc, VALUE *argv, VALUE os)
     }
 
     rb_objspace_each_objects(cos_i, &counts[0]);
-
-    if (hash == Qnil) {
-        hash = rb_hash_new();
-    }
-    else if (!RHASH_EMPTY_P(hash)) {
-        st_foreach(RHASH_TBL(hash), set_zero_i, hash);
-    }
 
     for (i = 0; i <= T_MASK; i++) {
 	if (counts[i]) {
@@ -313,13 +306,6 @@ count_symbols(int argc, VALUE *argv, VALUE os)
     size_t immortal_symbols = rb_sym_immortal_count();
     rb_objspace_each_objects(cs_i, &dynamic_counts);
 
-    if (hash == Qnil) {
-        hash = rb_hash_new();
-    }
-    else if (!RHASH_EMPTY_P(hash)) {
-        st_foreach(RHASH_TBL(hash), set_zero_i, hash);
-    }
-
     rb_hash_aset(hash, ID2SYM(rb_intern("mortal_dynamic_symbol")),   SIZET2NUM(dynamic_counts.mortal));
     rb_hash_aset(hash, ID2SYM(rb_intern("immortal_dynamic_symbol")), SIZET2NUM(dynamic_counts.immortal));
     rb_hash_aset(hash, ID2SYM(rb_intern("immortal_static_symbol")),  SIZET2NUM(immortal_symbols - dynamic_counts.immortal));
@@ -379,13 +365,6 @@ count_nodes(int argc, VALUE *argv, VALUE os)
     }
 
     rb_objspace_each_objects(cn_i, &nodes[0]);
-
-    if (hash == Qnil) {
-        hash = rb_hash_new();
-    }
-    else if (!RHASH_EMPTY_P(hash)) {
-        st_foreach(RHASH_TBL(hash), set_zero_i, hash);
-    }
 
     for (i=0; i<NODE_LAST; i++) {
 	if (nodes[i] != 0) {

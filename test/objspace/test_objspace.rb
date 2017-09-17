@@ -61,9 +61,19 @@ class TestObjSpace < Test::Unit::TestCase
     res = ObjectSpace.count_objects_size
     assert_not_empty(res)
     assert_operator(res[:TOTAL], :>, 0)
+  end
+
+  def test_count_objects_size_with_hash
     arg = {}
     ObjectSpace.count_objects_size(arg)
     assert_not_empty(arg)
+    arg = {:TOTAL => 1 }
+    ObjectSpace.count_objects_size(arg)
+    assert_not_empty(arg)
+  end
+
+  def test_count_objects_size_with_wrong_type
+    assert_raise(TypeError) { ObjectSpace.count_objects_size(0) }
   end
 
   def test_count_nodes
