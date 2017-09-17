@@ -4216,7 +4216,7 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped, cons
     DECL_ANCHOR(then_seq);
     DECL_ANCHOR(else_seq);
     LABEL *then_label, *else_label, *end_label;
-    VALUE branches;
+    VALUE branches = 0;
 
     INIT_ANCHOR(cond_seq);
     INIT_ANCHOR(then_seq);
@@ -4274,7 +4274,7 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
     VALUE literals = rb_hash_new();
     int line;
     enum node_type type;
-    VALUE branches;
+    VALUE branches = 0;
 
     INIT_ANCHOR(head);
     INIT_ANCHOR(body_seq);
@@ -4385,7 +4385,7 @@ compile_when(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
     NODE *orig_node = node;
     LABEL *endlabel;
     DECL_ANCHOR(body_seq);
-    VALUE branches;
+    VALUE branches = 0;
 
     DECL_BRANCH_BASE(branches, nd_line(node), "case");
 
@@ -4445,7 +4445,7 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped, co
     LABEL *prev_end_label = ISEQ_COMPILE_DATA(iseq)->end_label;
     LABEL *prev_redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label;
     int prev_loopval_popped = ISEQ_COMPILE_DATA(iseq)->loopval_popped;
-    VALUE branches;
+    VALUE branches = 0;
 
     struct iseq_compile_data_ensure_node_stack enl;
 
