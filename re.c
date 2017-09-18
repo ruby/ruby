@@ -88,14 +88,6 @@ rb_memcicmp(const void *x, const void *y, long len)
     return 0;
 }
 
-#undef rb_memcmp
-
-int
-rb_memcmp(const void *p1, const void *p2, long len)
-{
-    return memcmp(p1, p2, len);
-}
-
 #ifdef HAVE_MEMMEM
 static inline long
 rb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long n)
