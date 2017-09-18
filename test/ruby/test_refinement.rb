@@ -1961,6 +1961,19 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
+  class ToString
+    c = self
+    using Module.new {refine(c) {def to_s; "ok"; end}}
+    def string
+      "#{self}"
+    end
+  end
+
+  def test_tostring
+    assert_equal("ok", ToString.new.string)
+    assert_predicate(ToString.new.taint.string, :tainted?)
+  end
+
   private
 
   def eval_using(mod, s)

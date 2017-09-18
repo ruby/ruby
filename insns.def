@@ -356,10 +356,11 @@ concatstrings
 DEFINE_INSN
 tostring
 ()
-(VALUE val)
+(VALUE val, VALUE str)
 (VALUE val)
 {
-    val = rb_obj_as_string(val);
+    VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
+    val = rb_obj_as_string_result(str, val);
 }
 
 /**
@@ -1033,6 +1034,23 @@ branchnil
 ()
 {
     if (NIL_P(val)) {
+	RUBY_VM_CHECK_INTS(th);
+	JUMP(dst);
+    }
+}
+
+/**
+  @c jump
+  @e if val is type, set PC to (PC + dst).
+  @j もし val が type ならば、PC を (PC + dst) にする。
+ */
+DEFINE_INSN
+branchiftype
+(rb_num_t type, OFFSET dst)
+(VALUE val)
+()
+{
+    if (TYPE(val) == (int)type) {
 	RUBY_VM_CHECK_INTS(th);
 	JUMP(dst);
     }

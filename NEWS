@@ -18,6 +18,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * rescue/else/ensure are allowed inside do/end blocks.  [Feature #12906]
 
+* refinements take place in string interpolations.  [Feature #13812]
+
 === Core classes updates (outstanding ones only)
 
 * Array
