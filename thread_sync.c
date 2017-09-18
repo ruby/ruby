@@ -861,6 +861,13 @@ queue_do_pop(VALUE self, struct rb_queue *q, int should_block)
     return rb_ary_shift(q->que);
 }
 
+static VALUE
+queue_do_peek(VALUE self, struct rb_queue *q)
+{
+  check_array(self, q->que);
+  return rb_ary_entry(q->que, 0);
+}
+
 static int
 queue_pop_should_block(int argc, const VALUE *argv)
 {
@@ -891,6 +898,18 @@ rb_queue_pop(int argc, VALUE *argv, VALUE self)
 {
     int should_block = queue_pop_should_block(argc, argv);
     return queue_do_pop(self, queue_ptr(self), should_block);
+}
+
+/*
+ * Document-method: Queue#peek
+ *
+ * Fetches an object at the head of queue, without removing it.
+ */
+
+static VALUE
+rb_queue_peek(VALUE self)
+{
+    return queue_do_peek(self, queue_ptr(self));
 }
 
 /*
@@ -1407,6 +1426,7 @@ Init_thread_sync(void)
     rb_define_method(rb_cQueue, "closed?", rb_queue_closed_p, 0);
     rb_define_method(rb_cQueue, "push", rb_queue_push, 1);
     rb_define_method(rb_cQueue, "pop", rb_queue_pop, -1);
+    rb_define_method(rb_cQueue, "peek", rb_queue_peek, 0);
     rb_define_method(rb_cQueue, "empty?", rb_queue_empty_p, 0);
     rb_define_method(rb_cQueue, "clear", rb_queue_clear, 0);
     rb_define_method(rb_cQueue, "length", rb_queue_length, 0);

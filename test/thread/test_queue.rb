@@ -97,6 +97,18 @@ class TestQueue < Test::Unit::TestCase
     end
   end
 
+  def test_queue_peek
+    q = Queue.new
+    q.push(1)
+    q.push(2)
+    assert_equal(1, q.peek)
+    assert_equal(1, q.peek)
+    assert_equal(1, q.pop)
+    assert_equal(2, q.peek)
+    assert_equal(2, q.pop)
+    assert_equal(nil, q.peek)
+  end
+
   def test_sized_queue_pop_interrupt
     q = SizedQueue.new(1)
     t1 = Thread.new { q.pop }
