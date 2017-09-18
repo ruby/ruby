@@ -1741,4 +1741,25 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  tp_return_value(:f_break_in_rescue),
                  '[Bug #13369]'
   end
+
+  def test_trace_point_raising_exception_in_bmethod_call
+    bug13705 = '[ruby-dev:50162]'
+    assert_normal_exit %q{
+      define_method(:m) {}
+
+      tp = TracePoint.new(:call) do
+        raise ''
+      end
+
+      tap do
+        tap do
+          begin
+            tp.enable
+            m
+          rescue
+          end
+        end
+      end
+    }, bug13705
+  end
 end

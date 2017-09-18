@@ -990,7 +990,7 @@ invoke_bmethod(rb_thread_t *th, const rb_iseq_t *iseq, VALUE self, const struct 
     int arg_size = iseq->body->param.size;
     VALUE ret;
 
-    vm_push_frame(th, iseq, type | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_BMETHOD, self,
+    vm_push_frame(th, iseq, type | VM_FRAME_FLAG_BMETHOD, self,
 		  VM_GUARDED_PREV_EP(captured->ep),
 		  (VALUE)me,
 		  iseq->body->iseq_encoded + opt_pc,
@@ -1000,6 +1000,7 @@ invoke_bmethod(rb_thread_t *th, const rb_iseq_t *iseq, VALUE self, const struct 
 
     RUBY_DTRACE_METHOD_ENTRY_HOOK(th, me->owner, me->def->original_id);
     EXEC_EVENT_HOOK(th, RUBY_EVENT_CALL, self, me->def->original_id, me->called_id, me->owner, Qnil);
+    VM_ENV_FLAGS_SET(th->ec.cfp->ep, VM_FRAME_FLAG_FINISH);
     ret = vm_exec(th);
     EXEC_EVENT_HOOK(th, RUBY_EVENT_RETURN, self, me->def->original_id, me->called_id, me->owner, ret);
     RUBY_DTRACE_METHOD_RETURN_HOOK(th, me->owner, me->def->original_id);
