@@ -5060,8 +5060,10 @@ reset_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
     VALUE coverage = (VALUE)val;
     VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
     VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
+    VALUE methods = RARRAY_AREF(coverage, COVERAGE_INDEX_METHODS);
     if (lines) rb_ary_clear(lines);
     if (branches) rb_ary_clear(branches);
+    if (methods) rb_ary_clear(methods);
     return ST_CONTINUE;
 }
 
