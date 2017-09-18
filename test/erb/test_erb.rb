@@ -197,6 +197,30 @@ EOS
     assert_equal(ans, erb.result)
   end
 
+  def test_trim_line1_with_carriage_return
+    erb = @erb.new("<% 3.times do %>\r\nline\r\n<% end %>\r\n", nil, '>')
+    assert_equal("line\r\n" * 3, erb.result)
+
+    erb = @erb.new("<% 3.times do %>\r\nline\r\n<% end %>\r\n", nil, '%>')
+    assert_equal("line\r\n" * 3, erb.result)
+  end
+
+  def test_trim_line2_with_carriage_return
+    erb = @erb.new("<% 3.times do %>\r\nline\r\n<% end %>\r\n", nil, '<>')
+    assert_equal("line\r\n" * 3, erb.result)
+
+    erb = @erb.new("<% 3.times do %>\r\nline\r\n<% end %>\r\n", nil, '%<>')
+    assert_equal("line\r\n" * 3, erb.result)
+  end
+
+  def test_explicit_trim_line_with_carriage_return
+    erb = @erb.new("<%- 3.times do -%>\r\nline\r\n<%- end -%>\r\n", nil, '-')
+    assert_equal("line\r\n" * 3, erb.result)
+
+    erb = @erb.new("<%- 3.times do -%>\r\nline\r\n<%- end -%>\r\n", nil, '%-')
+    assert_equal("line\r\n" * 3, erb.result)
+  end
+
   class Foo; end
 
   def test_def_class

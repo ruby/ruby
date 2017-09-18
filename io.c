@@ -693,10 +693,10 @@ rb_io_set_write_io(VALUE io, VALUE w)
 
 /*
  *  call-seq:
- *     IO.try_convert(obj)  ->  io or nil
+ *     IO.try_convert(obj)  -> io or nil
  *
  *  Try to convert <i>obj</i> into an IO, using to_io method.
- *  Returns converted IO or nil if <i>obj</i> cannot be converted
+ *  Returns converted IO or +nil+ if <i>obj</i> cannot be converted
  *  for any reason.
  *
  *     IO.try_convert(STDOUT)     #=> STDOUT
@@ -1654,7 +1654,7 @@ interpret_seek_whence(VALUE vwhence)
 
 /*
  *  call-seq:
- *     ios.seek(amount, whence=IO::SEEK_SET)  ->  0
+ *     ios.seek(amount, whence=IO::SEEK_SET)  -> 0
  *
  *  Seeks to a given offset <i>anInteger</i> in the stream according to
  *  the value of <i>whence</i>:
@@ -2077,7 +2077,7 @@ rb_io_inspect(VALUE obj)
 
 /*
  *  call-seq:
- *     ios.to_io  ->  ios
+ *     ios.to_io  -> ios
  *
  *  Returns <em>ios</em>.
  */
@@ -2571,10 +2571,12 @@ io_getpartial(int argc, VALUE *argv, VALUE io, VALUE opts, int nonblock)
  *  Reads at most <i>maxlen</i> bytes from the I/O stream.
  *  It blocks only if <em>ios</em> has no data immediately available.
  *  It doesn't block if some data available.
- *  If the optional <i>outbuf</i> argument is present,
+ *
+ *  If the optional _outbuf_ argument is present,
  *  it must reference a String, which will receive the data.
- *  The <i>outbuf</i> will contain only the received data after the method call
+ *  The _outbuf_ will contain only the received data after the method call
  *  even if it is not empty at the beginning.
+ *
  *  It raises <code>EOFError</code> on end of file.
  *
  *  readpartial is designed for streams such as pipe, socket, tty, etc.
@@ -2731,66 +2733,67 @@ io_write_nonblock(VALUE io, VALUE str, VALUE ex)
  *  call-seq:
  *     ios.read([length [, outbuf]])    -> string, outbuf, or nil
  *
- *  Reads <i>length</i> bytes from the I/O stream.
+ *  Reads _length_ bytes from the I/O stream.
  *
- *  <i>length</i> must be a non-negative integer or <code>nil</code>.
+ *  _length_ must be a non-negative integer or +nil+.
  *
- *  If <i>length</i> is a positive integer,
- *  it tries to read <i>length</i> bytes without any conversion (binary mode).
- *  It returns <code>nil</code> or a string whose length is 1 to <i>length</i> bytes.
- *  <code>nil</code> means it met EOF at beginning.
- *  The 1 to <i>length</i>-1 bytes string means it met EOF after reading the result.
- *  The <i>length</i> bytes string means it doesn't meet EOF.
- *  The resulted string is always ASCII-8BIT encoding.
+ *  If _length_ is a positive integer, +read+ tries to read
+ *  _length_ bytes without any conversion (binary mode).
+ *  It returns +nil+ if an EOF is encountered before anything can be read.
+ *  Fewer than _length_ bytes are returned if an EOF is encountered during
+ *  the read.
+ *  In the case of an integer _length_, the resulting string is always
+ *  in ASCII-8BIT encoding.
  *
- *  If <i>length</i> is omitted or is <code>nil</code>,
- *  it reads until EOF and the encoding conversion is applied.
- *  It returns a string even if EOF is met at beginning.
+ *  If _length_ is omitted or is +nil+, it reads until EOF
+ *  and the encoding conversion is applied, if applicable.
+ *  A string is returned even if EOF is encountered before any data is read.
  *
- *  If <i>length</i> is zero, it returns <code>""</code>.
+ *  If _length_ is zero, it returns an empty string (<code>""</code>).
  *
- *  If the optional <i>outbuf</i> argument is present, it must reference
- *  a String, which will receive the data.
- *  The <i>outbuf</i> will contain only the received data after the method call
+ *  If the optional _outbuf_ argument is present,
+ *  it must reference a String, which will receive the data.
+ *  The _outbuf_ will contain only the received data after the method call
  *  even if it is not empty at the beginning.
  *
- *  At end of file, it returns <code>nil</code> or <code>""</code>
- *  depend on <i>length</i>.
- *  <code><i>ios</i>.read()</code> and
- *  <code><i>ios</i>.read(nil)</code> returns <code>""</code>.
- *  <code><i>ios</i>.read(<i>positive-integer</i>)</code> returns <code>nil</code>.
+ *  When this method is called at end of file, it returns +nil+
+ *  or <code>""</code>, depending on _length_:
+ *  +read+, <code>read(nil)</code>, and <code>read(0)</code> return
+ *  <code>""</code>,
+ *  <code>read(<i>positive_integer</i>)</code> returns +nil+.
  *
  *     f = File.new("testfile")
  *     f.read(16)   #=> "This is line one"
  *
- *     # reads whole file
- *     open("file") {|f|
- *       data = f.read # This returns a string even if the file is empty.
- *       ...
- *     }
+ *     # read whole file
+ *     open("file") do |f|
+ *       data = f.read   # This returns a string even if the file is empty.
+ *       # ...
+ *     end
  *
- *     # iterate over fixed length records.
- *     open("fixed-record-file") {|f|
+ *     # iterate over fixed length records
+ *     open("fixed-record-file") do |f|
  *       while record = f.read(256)
- *         ...
+ *         # ...
  *       end
- *     }
+ *     end
  *
- *     # iterate over variable length records.
- *     # record is prefixed by 32-bit length.
- *     open("variable-record-file") {|f|
+ *     # iterate over variable length records,
+ *     # each record is prefixed by its 32-bit length
+ *     open("variable-record-file") do |f|
  *       while len = f.read(4)
- *         len = len.unpack("N")[0] # 32-bit length
- *         record = f.read(len) # This returns a string even if len is 0.
+ *         len = len.unpack("N")[0]   # 32-bit length
+ *         record = f.read(len)       # This returns a string even if len is 0.
  *       end
- *     }
+ *     end
  *
- *  Note that this method behaves like fread() function in C.
- *  This means it retry to invoke read(2) system call to read data with the specified length (or until EOF).
- *  This behavior is preserved even if <i>ios</i> is non-blocking mode.
+ *  Note that this method behaves like the fread() function in C.
+ *  This means it retries to invoke read(2) system calls to read data
+ *  with the specified length (or until EOF).
+ *  This behavior is preserved even if <i>ios</i> is in non-blocking mode.
  *  (This method is non-blocking flag insensitive as other methods.)
- *  If you need the behavior like single read(2) system call,
- *  consider readpartial, read_nonblock and sysread.
+ *  If you need the behavior like a single read(2) system call,
+ *  consider #readpartial, #read_nonblock, and #sysread.
  */
 
 static VALUE
@@ -3275,12 +3278,12 @@ rb_io_gets_internal(VALUE io)
  *     ios.gets(sep, limit) -> string or nil
  *
  *  Reads the next ``line'' from the I/O stream; lines are separated by
- *  <i>sep</i>. A separator of <code>nil</code> reads the entire
+ *  <i>sep</i>. A separator of +nil+ reads the entire
  *  contents, and a zero-length separator reads the input a paragraph at
  *  a time (two successive newlines in the input separate paragraphs).
  *  The stream must be opened for reading or an <code>IOError</code>
  *  will be raised. The line read in will be returned and also assigned
- *  to <code>$_</code>. Returns <code>nil</code> if called at end of
+ *  to <code>$_</code>. Returns +nil+ if called at end of
  *  file.  If the first argument is an integer, or optional second
  *  argument is given, the returning string would not be longer than the
  *  given value in bytes.
@@ -3403,7 +3406,7 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *
  *  Reads all of the lines in <em>ios</em>, and returns them in
  *  <i>anArray</i>. Lines are separated by the optional <i>sep</i>. If
- *  <i>sep</i> is <code>nil</code>, the rest of the stream is returned
+ *  <i>sep</i> is +nil+, the rest of the stream is returned
  *  as a single record.  If the first argument is an integer, or
  *  optional second argument is given, the returning string would not be
  *  longer than the given value in bytes. The stream must be opened for
@@ -3438,15 +3441,15 @@ io_readlines(const struct getline_arg *arg, VALUE io)
 
 /*
  *  call-seq:
- *     ios.each(sep=$/) {|line| block }         -> ios
- *     ios.each(limit) {|line| block }          -> ios
- *     ios.each(sep,limit) {|line| block }      -> ios
- *     ios.each(...)                            -> an_enumerator
+ *     ios.each(sep=$/)          {|line| block } -> ios
+ *     ios.each(limit)           {|line| block } -> ios
+ *     ios.each(sep, limit)      {|line| block } -> ios
+ *     ios.each(...)                             -> an_enumerator
  *
- *     ios.each_line(sep=$/) {|line| block }    -> ios
- *     ios.each_line(limit) {|line| block }     -> ios
- *     ios.each_line(sep,limit) {|line| block } -> ios
- *     ios.each_line(...)                       -> an_enumerator
+ *     ios.each_line(sep=$/)     {|line| block } -> ios
+ *     ios.each_line(limit)      {|line| block } -> ios
+ *     ios.each_line(sep, limit) {|line| block } -> ios
+ *     ios.each_line(...)                        -> an_enumerator
  *
  *  Executes the block for every line in <em>ios</em>, where lines are
  *  separated by <i>sep</i>. <em>ios</em> must be opened for
@@ -3833,7 +3836,7 @@ rb_io_codepoints(VALUE io)
  *     ios.getc   -> string or nil
  *
  *  Reads a one-character string from <em>ios</em>. Returns
- *  <code>nil</code> if called at end of file.
+ *  +nil+ if called at end of file.
  *
  *     f = File.new("testfile")
  *     f.getc   #=> "h"
@@ -3882,7 +3885,7 @@ rb_io_readchar(VALUE io)
  *     ios.getbyte   -> integer or nil
  *
  *  Gets the next 8-bit byte (0..255) from <em>ios</em>. Returns
- *  <code>nil</code> if called at end of file.
+ *  +nil+ if called at end of file.
  *
  *     f = File.new("testfile")
  *     f.getbyte   #=> 84
@@ -3936,7 +3939,7 @@ rb_io_readbyte(VALUE io)
 /*
  *  call-seq:
  *     ios.ungetbyte(string)   -> nil
- *     ios.ungetbyte(integer)   -> nil
+ *     ios.ungetbyte(integer)  -> nil
  *
  *  Pushes back bytes (passed as a parameter) onto <em>ios</em>,
  *  such that a subsequent buffered read will return it. Only one byte
@@ -4764,10 +4767,12 @@ rb_io_syswrite(VALUE io, VALUE str)
  *  Reads <i>maxlen</i> bytes from <em>ios</em> using a low-level
  *  read and returns them as a string.  Do not mix with other methods
  *  that read from <em>ios</em> or you may get unpredictable results.
- *  If the optional <i>outbuf</i> argument is present, it must reference
- *  a String, which will receive the data.
- *  The <i>outbuf</i> will contain only the received data after the method call
+ *
+ *  If the optional _outbuf_ argument is present,
+ *  it must reference a String, which will receive the data.
+ *  The _outbuf_ will contain only the received data after the method call
  *  even if it is not empty at the beginning.
+ *
  *  Raises <code>SystemCallError</code> on error and
  *  <code>EOFError</code> at end of file.
  *
@@ -4894,7 +4899,6 @@ rb_io_ascii8bit_binmode(VALUE io)
  *  - newline conversion disabled
  *  - encoding conversion disabled
  *  - content is treated as ASCII-8BIT
- *
  */
 
 static VALUE
@@ -6307,7 +6311,7 @@ pipe_close(VALUE io)
  *  the block will be run in two separate processes: once in the parent,
  *  and once in a child. The parent process will be passed the pipe
  *  object as a parameter to the block, the child version of the block
- *  will be passed <code>nil</code>, and the child's standard in and
+ *  will be passed +nil+, and the child's standard in and
  *  standard out will be connected to the parent through the pipe. Not
  *  available on all platforms.
  *
@@ -6315,7 +6319,7 @@ pipe_close(VALUE io)
  *     p f.readlines
  *     f.close
  *     puts "Parent is #{Process.pid}"
- *     IO.popen("date") { |f| puts f.gets }
+ *     IO.popen("date") {|f| puts f.gets }
  *     IO.popen("-") {|f| $stderr.puts "#{Process.pid} is here, f is #{f.inspect}"}
  *     p $?
  *     IO.popen(%w"sed -e s|^|<foo>| -e s&$&;zot;&", "r+") {|f|
@@ -6463,7 +6467,7 @@ rb_open_file(int argc, const VALUE *argv, VALUE io)
  *
  *  call-seq:
  *     IO.open(fd, mode="r" [, opt])                -> io
- *     IO.open(fd, mode="r" [, opt]) { |io| block } -> obj
+ *     IO.open(fd, mode="r" [, opt]) {|io| block }  -> obj
  *
  *  With no associated block, <code>IO.open</code> is a synonym for IO.new.  If
  *  the optional code block is given, it will be passed +io+ as an argument,
@@ -6575,7 +6579,7 @@ check_pipe_command(VALUE filename_or_command)
  *  parent.  If the command is not <code>"-"</code>, the subprocess runs the
  *  command.
  *
- *  When the subprocess is ruby (opened via <code>"|-"</code>), the +open+
+ *  When the subprocess is Ruby (opened via <code>"|-"</code>), the +open+
  *  call returns +nil+.  If a block is associated with the open call, that
  *  block will run twice --- once in the parent and once in the child.
  *
@@ -6608,7 +6612,7 @@ check_pipe_command(VALUE filename_or_command)
  *  Open a subprocess running the same Ruby program:
  *
  *     f = open("|-", "w+")
- *     if f == nil
+ *     if f.nil?
  *       puts "in Child"
  *       exit
  *     else
@@ -7013,16 +7017,16 @@ rb_f_printf(int argc, VALUE *argv)
  *     ios.print               -> nil
  *     ios.print(obj, ...)     -> nil
  *
- *  Writes the given object(s) to <em>ios</em>. Returns <code>nil</code>.
+ *  Writes the given object(s) to <em>ios</em>. Returns +nil+.
  *
  *  The stream must be opened for writing.
  *  Each given object that isn't a string will be converted by calling
  *  its <code>to_s</code> method.
  *  When called without arguments, prints the contents of <code>$_</code>.
  *
- *  If the output field separator (<code>$,</code>) is not <code>nil</code>,
+ *  If the output field separator (<code>$,</code>) is not +nil+,
  *  it is inserted between objects.
- *  If the output record separator (<code>$\\</code>) is not <code>nil</code>,
+ *  If the output record separator (<code>$\\</code>) is not +nil+,
  *  it is appended to the output.
  *
  *     $stdout.print("This is ", 100, " percent.\n")
@@ -7128,8 +7132,8 @@ rb_io_putc(VALUE io, VALUE ch)
  *
  *    $stdout.putc(int)
  *
- * Refer to the documentation for IO#putc for important information regarding
- * multi-byte characters.
+ *  Refer to the documentation for IO#putc for important information regarding
+ *  multi-byte characters.
  */
 
 static VALUE
@@ -7181,14 +7185,17 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
  *  call-seq:
  *     ios.puts(obj, ...)    -> nil
  *
- *  Writes the given object(s) to <em>ios</em> as with <code>IO#print</code>.
+ *  Writes the given object(s) to <em>ios</em>.
  *  Writes a newline after any that do not already end
- *  with a newline sequence.
+ *  with a newline sequence. Returns +nil+.
  *
+ *  The stream must be opened for writing.
  *  If called with an array argument, writes each element on a new line.
+ *  Each given object that isn't a string or array will be converted
+ *  by calling its +to_s+ method.
  *  If called without arguments, outputs a single newline.
  *
- *     $stdout.puts("this", "is", "a", "test")
+ *     $stdout.puts("this", "is", ["a", "test"])
  *
  *  <em>produces:</em>
  *
@@ -7196,6 +7203,9 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
  *     is
  *     a
  *     test
+ *
+ *  Note that +puts+ always uses newlines and is not affected
+ *  by the output record separator (<code>$\\</code>).
  */
 
 VALUE
@@ -7607,7 +7617,7 @@ rb_io_make_open_file(VALUE obj)
  *  converted from +int_enc+ to +ext_enc+ upon output.  See Encoding for
  *  further details of transcoding on input and output.
  *
- *  If "BOM|UTF-8", "BOM|UTF-16LE" or "BOM|UTF16-BE" are used, ruby checks for
+ *  If "BOM|UTF-8", "BOM|UTF-16LE" or "BOM|UTF16-BE" are used, Ruby checks for
  *  a Unicode BOM in the input document to help determine the encoding.  For
  *  UTF-16 encodings the file open mode must be binary.  When present, the BOM
  *  is stripped and the external encoding from the BOM is used.  When the BOM
@@ -7634,7 +7644,7 @@ rb_io_make_open_file(VALUE obj)
  *    Internal encoding for the IO.  "-" is a synonym for the default internal
  *    encoding.
  *
- *    If the value is nil no conversion occurs.
+ *    If the value is +nil+ no conversion occurs.
  *
  *  :encoding ::
  *    Specifies external and internal encodings as "extern:intern".
@@ -7962,7 +7972,7 @@ argf_set_lineno(VALUE argf, VALUE val)
 
 /*
  *  call-seq:
- *     ARGF.lineno -> integer
+ *     ARGF.lineno  -> integer
  *
  *  Returns the current line number of ARGF as a whole. This value
  *  can be set manually with +ARGF.lineno=+.
@@ -8230,9 +8240,9 @@ static VALUE argf_gets(int, VALUE *, VALUE);
 
 /*
  *  call-seq:
- *     gets(sep=$/)    -> string or nil
- *     gets(limit)     -> string or nil
- *     gets(sep,limit) -> string or nil
+ *     gets(sep=$/)     -> string or nil
+ *     gets(limit)      -> string or nil
+ *     gets(sep, limit) -> string or nil
  *
  *  Returns (and assigns to <code>$_</code>) the next line from the list
  *  of files in +ARGV+ (or <code>$*</code>), or from standard input if
@@ -8244,8 +8254,8 @@ static VALUE argf_gets(int, VALUE *, VALUE);
  *  divided by two consecutive newlines.  If the first argument is an
  *  integer, or optional second argument is given, the returning string
  *  would not be longer than the given value in bytes.  If multiple
- *  filenames are present in +ARGV+, +gets(nil)+ will read the contents
- *  one file at a time.
+ *  filenames are present in +ARGV+, <code>gets(nil)</code> will read
+ *  the contents one file at a time.
  *
  *     ARGV << "testfile"
  *     print while gets
@@ -8278,8 +8288,9 @@ rb_f_gets(int argc, VALUE *argv, VALUE recv)
  *
  *  Returns the next line from the current file in +ARGF+.
  *
- *  By default lines are assumed to be separated by +$/+; to use a different
- *  character as a separator, supply it as a +String+ for the _sep_ argument.
+ *  By default lines are assumed to be separated by <code>$/</code>;
+ *  to use a different character as a separator, supply it as a +String+
+ *  for the _sep_ argument.
  *
  *  The optional _limit_ argument specifies how many characters of each line
  *  to return. By default all characters are returned.
@@ -8352,10 +8363,11 @@ rb_f_readline(int argc, VALUE *argv, VALUE recv)
  *
  *  Returns the next line from the current file in +ARGF+.
  *
- *  By default lines are assumed to be separated by +$/+; to use a different
- *  character as a separator, supply it as a +String+ for the _sep_ argument.
+ *  By default lines are assumed to be separated by <code>$/</code>;
+ *  to use a different character as a separator, supply it as a +String+
+ *  for the _sep_ argument.
  *
- *  The optional  _limit_ argument specifies how many characters of each line
+ *  The optional _limit_ argument specifies how many characters of each line
  *  to return. By default all characters are returned.
  *
  *  An +EOFError+ is raised at the end of the file.
@@ -8379,9 +8391,9 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
 
 /*
  *  call-seq:
- *     readlines(sep=$/)    -> array
- *     readlines(limit)     -> array
- *     readlines(sep,limit) -> array
+ *     readlines(sep=$/)     -> array
+ *     readlines(limit)      -> array
+ *     readlines(sep, limit) -> array
  *
  *  Returns an array containing the lines returned by calling
  *  <code>Kernel.gets(<i>sep</i>)</code> until the end of file.
@@ -8801,13 +8813,13 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     IO.select(read_array [, write_array [, error_array [, timeout]]]) -> array  or  nil
+ *     IO.select(read_array [, write_array [, error_array [, timeout]]]) -> array or nil
  *
  *  Calls select(2) system call.
  *  It monitors given arrays of <code>IO</code> objects, waits until one or more
  *  of <code>IO</code> objects are ready for reading, are ready for writing,
  *  and have pending exceptions respectively, and returns an array that
- *  contains arrays of those IO objects.  It will return <code>nil</code>
+ *  contains arrays of those IO objects.  It will return +nil+
  *  if optional <i>timeout</i> value is given and no <code>IO</code> object
  *  is ready in <i>timeout</i> seconds.
  *
@@ -9401,13 +9413,14 @@ rb_io_fcntl(int argc, VALUE *argv, VALUE io)
  *
  *     hello
  *
- *
  *  Calling +syscall+ on a platform which does not have any way to
  *  an arbitrary system function just fails with NotImplementedError.
  *
- * Note::
- *   +syscall+ is essentially unsafe and unportable. Feel free to shoot your foot.
- *   DL (Fiddle) library is preferred for safer and a bit more portable programming.
+ *  *Note:*
+ *  +syscall+ is essentially unsafe and unportable.
+ *  Feel free to shoot your foot.
+ *  The DL (Fiddle) library is preferred for safer and a bit
+ *  more portable programming.
  */
 
 static VALUE
@@ -10126,12 +10139,11 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *     IO.binwrite(name, string, [offset] )   => integer
- *     IO.binwrite(name, string, [offset], open_args )   => integer
+ *     IO.binwrite(name, string, [offset] )             -> integer
+ *     IO.binwrite(name, string, [offset], open_args )  -> integer
  *
  *  Same as <code>IO.write</code> except opening the file in binary mode
  *  and ASCII-8BIT encoding ("wb:ASCII-8BIT").
- *
  */
 
 static VALUE
@@ -10208,7 +10220,7 @@ nogvl_wait_for_single_fd(int fd, short events)
     fds.fd = fd;
     fds.events = events;
 
-    return poll(&fds, 1, 0);
+    return poll(&fds, 1, -1);
 }
 
 static int
@@ -10868,7 +10880,7 @@ rb_io_s_copy_stream(int argc, VALUE *argv, VALUE io)
  *     io.external_encoding   -> encoding
  *
  *  Returns the Encoding object that represents the encoding of the file.
- *  If io is write mode and no encoding is specified, returns <code>nil</code>.
+ *  If _io_ is in write mode and no encoding is specified, returns +nil+.
  */
 
 static VALUE
@@ -10893,7 +10905,7 @@ rb_io_external_encoding(VALUE io)
  *     io.internal_encoding   -> encoding
  *
  *  Returns the Encoding of the internal string if conversion is
- *  specified.  Otherwise returns nil.
+ *  specified.  Otherwise returns +nil+.
  */
 
 static VALUE
@@ -10968,7 +10980,7 @@ global_argf_p(VALUE arg)
  *
  *  To set the external encoding use +ARGF.set_encoding+.
  *
- * For example:
+ *  For example:
  *
  *     ARGF.external_encoding  #=>  #<Encoding:UTF-8>
  *
@@ -10993,7 +11005,7 @@ argf_external_encoding(VALUE argf)
  *  is returned. Otherwise, if +Encoding.default_external+ has been set, that
  *  value is returned. Failing that, if a default external encoding was
  *  specified on the command-line, that value is used. If the encoding is
- *  unknown, nil is returned.
+ *  unknown, +nil+ is returned.
  */
 static VALUE
 argf_internal_encoding(VALUE argf)
@@ -11026,7 +11038,7 @@ argf_internal_encoding(VALUE argf)
  *
  *  If the external encoding and the internal encoding are specified, the
  *  optional +Hash+ argument can be used to adjust the conversion process. The
- *  structure of this hash is explained in the +String#encode+ documentation.
+ *  structure of this hash is explained in the String#encode documentation.
  *
  *  For example:
  *
@@ -11073,10 +11085,10 @@ argf_tell(VALUE argf)
 
 /*
  *  call-seq:
- *     ARGF.seek(amount, whence=IO::SEEK_SET)  ->  0
+ *     ARGF.seek(amount, whence=IO::SEEK_SET)  -> 0
  *
  *  Seeks to offset _amount_ (an +Integer+) in the +ARGF+ stream according to
- *  the value of _whence_. See +IO#seek+ for further details.
+ *  the value of _whence_. See IO#seek for further details.
  */
 static VALUE
 argf_seek_m(int argc, VALUE *argv, VALUE argf)
@@ -11221,22 +11233,28 @@ argf_eof(VALUE argf)
  *  called without arguments the contents of this pseudo file are returned in
  *  their entirety.
  *
- *  _length_ must be a non-negative integer or nil. If it is a positive
- *  integer, +read+ tries to read at most _length_ bytes. It returns nil
- *  if an EOF was encountered before anything could be read. Fewer than
- *  _length_ bytes may be returned if an EOF is encountered during the read.
+ *  _length_ must be a non-negative integer or +nil+.
  *
- *  If _length_ is omitted or is _nil_, it reads until EOF. A String is
- *  returned even if EOF is encountered before any data is read.
+ *  If _length_ is a positive integer, +read+ tries to read
+ *  _length_ bytes without any conversion (binary mode).
+ *  It returns +nil+ if an EOF is encountered before anything can be read.
+ *  Fewer than _length_ bytes are returned if an EOF is encountered during
+ *  the read.
+ *  In the case of an integer _length_, the resulting string is always
+ *  in ASCII-8BIT encoding.
  *
- *  If _length_ is zero, it returns _""_.
+ *  If _length_ is omitted or is +nil+, it reads until EOF
+ *  and the encoding conversion is applied, if applicable.
+ *  A string is returned even if EOF is encountered before any data is read.
  *
- *  If the optional _outbuf_ argument is present, it must reference a String,
- *  which will receive the data.
- *  The <i>outbuf</i> will contain only the received data after the method call
+ *  If _length_ is zero, it returns an empty string (<code>""</code>).
+ *
+ *  If the optional _outbuf_ argument is present,
+ *  it must reference a String, which will receive the data.
+ *  The _outbuf_ will contain only the received data after the method call
  *  even if it is not empty at the beginning.
  *
- * For example:
+ *  For example:
  *
  *     $ echo "small" > small.txt
  *     $ echo "large" > large.txt
@@ -11247,8 +11265,11 @@ argf_eof(VALUE argf)
  *     ARGF.read(2)   #=> "sm"
  *     ARGF.read(0)   #=> ""
  *
- *  Note that this method behaves like fread() function in C.  If you need the
- *  behavior like read(2) system call, consider +ARGF.readpartial+.
+ *  Note that this method behaves like the fread() function in C.
+ *  This means it retries to invoke read(2) system calls to read data
+ *  with the specified length.
+ *  If you need the behavior like a single read(2) system call,
+ *  consider ARGF#readpartial or ARGF#read_nonblock.
  */
 
 static VALUE
@@ -11323,7 +11344,7 @@ static VALUE argf_getpartial(int argc, VALUE *argv, VALUE argf, VALUE opts,
  *
  *  If the optional _outbuf_ argument is present,
  *  it must reference a String, which will receive the data.
- *  The <i>outbuf</i> will contain only the received data after the method call
+ *  The _outbuf_ will contain only the received data after the method call
  *  even if it is not empty at the beginning.
  *
  *  It raises <code>EOFError</code> on end of ARGF stream.
@@ -11599,13 +11620,13 @@ argf_block_call_line(ID mid, int argc, VALUE *argv, VALUE argf)
 
 /*
  *  call-seq:
- *     ARGF.each(sep=$/)            {|line| block }  -> ARGF
- *     ARGF.each(sep=$/,limit)      {|line| block }  -> ARGF
- *     ARGF.each(...)                                -> an_enumerator
+ *     ARGF.each(sep=$/)             {|line| block }  -> ARGF
+ *     ARGF.each(sep=$/, limit)      {|line| block }  -> ARGF
+ *     ARGF.each(...)                                 -> an_enumerator
  *
- *     ARGF.each_line(sep=$/)       {|line| block }  -> ARGF
- *     ARGF.each_line(sep=$/,limit) {|line| block }  -> ARGF
- *     ARGF.each_line(...)                           -> an_enumerator
+ *     ARGF.each_line(sep=$/)        {|line| block }  -> ARGF
+ *     ARGF.each_line(sep=$/, limit) {|line| block }  -> ARGF
+ *     ARGF.each_line(...)                            -> an_enumerator
  *
  *  Returns an enumerator which iterates over each line (separated by _sep_,
  *  which defaults to your platform's newline character) of each file in
@@ -11671,7 +11692,7 @@ argf_lines(int argc, VALUE *argv, VALUE argf)
  *
  *  If no block is given, an enumerator is returned instead.
  *
- * For example:
+ *  For example:
  *
  *     ARGF.bytes.to_a  #=> [35, 32, ... 95, 10]
  *
@@ -11701,8 +11722,8 @@ argf_bytes(VALUE argf)
 
 /*
  *  call-seq:
- *     ARGF.each_char  {|char| block }  -> ARGF
- *     ARGF.each_char                   -> an_enumerator
+ *     ARGF.each_char {|char| block }  -> ARGF
+ *     ARGF.each_char                  -> an_enumerator
  *
  *  Iterates over each character of each file in +ARGF+.
  *
@@ -11740,8 +11761,8 @@ argf_chars(VALUE argf)
 
 /*
  *  call-seq:
- *     ARGF.each_codepoint  {|codepoint| block }  -> ARGF
- *     ARGF.each_codepoint                   -> an_enumerator
+ *     ARGF.each_codepoint {|codepoint| block }  -> ARGF
+ *     ARGF.each_codepoint                       -> an_enumerator
  *
  *  Iterates over each codepoint of each file in +ARGF+.
  *
@@ -11816,8 +11837,8 @@ argf_filename_getter(ID id, VALUE *var)
  *  call-seq:
  *     ARGF.file  -> IO or File object
  *
- *  Returns the current file as an +IO+ or +File+ object. #<IO:<STDIN>> is
- *  returned when the current file is STDIN.
+ *  Returns the current file as an +IO+ or +File+ object.
+ *  <code>#<IO:<STDIN>></code> is returned when the current file is STDIN.
  *
  *  For example:
  *
@@ -11862,10 +11883,10 @@ argf_binmode_m(VALUE argf)
  *  call-seq:
  *     ARGF.binmode?  -> true or false
  *
- *  Returns true if +ARGF+ is being read in binary mode; false otherwise. (To
- *  enable binary mode use +ARGF.binmode+.
+ *  Returns true if +ARGF+ is being read in binary mode; false otherwise.
+ *  To enable binary mode use +ARGF.binmode+.
  *
- * For example:
+ *  For example:
  *
  *     ARGF.binmode?  #=> false
  *     ARGF.binmode
@@ -11884,7 +11905,7 @@ argf_binmode_p(VALUE argf)
  *  Sets the current file to the next file in ARGV. If there aren't any more
  *  files it has no effect.
  *
- * For example:
+ *  For example:
  *
  *     $ ruby argf.rb foo bar
  *     ARGF.filename  #=> "foo"
@@ -11909,7 +11930,7 @@ argf_skip(VALUE argf)
  *  no more files to open, just closes the current file. +STDIN+ will not be
  *  closed.
  *
- * For example:
+ *  For example:
  *
  *     $ ruby argf.rb foo bar
  *
@@ -11962,7 +11983,7 @@ argf_to_s(VALUE argf)
  *     ARGF.inplace_mode  -> String
  *
  *  Returns the file extension appended to the names of modified files under
- *  inplace-edit mode. This value can be set using +ARGF.inplace_mode=+ or
+ *  in-place edit mode. This value can be set using +ARGF.inplace_mode=+ or
  *  passing the +-i+ switch to the Ruby binary.
  */
 static VALUE
@@ -11982,7 +12003,7 @@ opt_i_get(ID id, VALUE *var)
  *  call-seq:
  *     ARGF.inplace_mode = ext  -> ARGF
  *
- *  Sets the filename extension for in place editing mode to the given String.
+ *  Sets the filename extension for in-place editing mode to the given String.
  *  Each file being edited has this value appended to its filename. The
  *  modified file is saved under this new name.
  *
@@ -11995,8 +12016,8 @@ opt_i_get(ID id, VALUE *var)
  *        print line.sub("foo","bar")
  *      end
  *
- * Each line of _file.txt_ has the first occurrence of "foo" replaced with
- * "bar", then the new line is written out to _file.txt.bak_.
+ *  Each line of _file.txt_ has the first occurrence of "foo" replaced with
+ *  "bar", then the new line is written out to _file.txt.bak_.
  */
 static VALUE
 argf_inplace_mode_set(VALUE argf, VALUE val)
@@ -12158,8 +12179,8 @@ rb_readwrite_syserr_fail(enum rb_io_wait_readwrite writable, int n, const char *
  *    File.open("/etc/hosts") {|f| f.close; f.read }
  *      #=> IOError: closed stream
  *
- * Note that some IO failures raise +SystemCallError+s and these are not
- * subclasses of IOError:
+ * Note that some IO failures raise <code>SystemCallError</code>s
+ * and these are not subclasses of IOError:
  *
  *    File.open("does/not/exist")
  *      #=> Errno::ENOENT: No such file or directory - does/not/exist
@@ -12172,7 +12193,7 @@ rb_readwrite_syserr_fail(enum rb_io_wait_readwrite writable, int n, const char *
  * methods exist in two forms,
  *
  * one that returns +nil+ when the end of file is reached, the other
- * raises EOFError +EOFError+.
+ * raises +EOFError+.
  *
  * +EOFError+ is a subclass of +IOError+.
  *

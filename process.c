@@ -172,7 +172,7 @@ static void check_gid_switch(void);
 #   define PREPARE_GETPWNAM \
     VALUE getpw_buf = 0
 #   define FINISH_GETPWNAM \
-    ALLOCV_END(getpw_buf)
+    (getpw_buf ? (void)rb_str_resize(getpw_buf, 0) : (void)0)
 #   define OBJ2UID1(id) obj2uid((id), &getpw_buf)
 #   define OBJ2UID(id) obj2uid0(id)
 static rb_uid_t obj2uid(VALUE id, VALUE *getpw_buf);
@@ -214,7 +214,7 @@ static rb_uid_t obj2uid(VALUE id);
 #   define PREPARE_GETGRNAM \
     VALUE getgr_buf = 0
 #   define FINISH_GETGRNAM \
-    ALLOCV_END(getgr_buf)
+    (getgr_buf ? (void)rb_str_resize(getgr_buf, 0) : (void)0)
 #   define OBJ2GID1(id) obj2gid((id), &getgr_buf)
 #   define OBJ2GID(id) obj2gid0(id)
 static rb_gid_t obj2gid(VALUE id, VALUE *getgr_buf);
@@ -1634,7 +1634,35 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
 }
 
 #if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
-static int rlimit_type_by_lname(const char *name);
+static int rlimit_type_by_sym(VALUE key);
+
+static void
+rb_execarg_addopt_rlimit(struct rb_execarg *eargp, int rtype, VALUE val)
+{
+    VALUE ary = eargp->rlimit_limits;
+    VALUE tmp, softlim, hardlim;
+    if (eargp->rlimit_limits == Qfalse)
+	ary = eargp->rlimit_limits = hide_obj(rb_ary_new());
+    else
+	ary = eargp->rlimit_limits;
+    tmp = rb_check_array_type(val);
+    if (!NIL_P(tmp)) {
+	if (RARRAY_LEN(tmp) == 1)
+	    softlim = hardlim = rb_to_int(rb_ary_entry(tmp, 0));
+	else if (RARRAY_LEN(tmp) == 2) {
+	    softlim = rb_to_int(rb_ary_entry(tmp, 0));
+	    hardlim = rb_to_int(rb_ary_entry(tmp, 1));
+	}
+	else {
+	    rb_raise(rb_eArgError, "wrong exec rlimit option");
+	}
+    }
+    else {
+	softlim = hardlim = rb_to_int(val);
+    }
+    tmp = hide_obj(rb_ary_new3(3, INT2NUM(rtype), softlim, hardlim));
+    rb_ary_push(ary, tmp);
+}
 #endif
 
 int
@@ -1643,12 +1671,19 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
 
     ID id;
-#if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
-    int rtype;
-#endif
 
     switch (TYPE(key)) {
       case T_SYMBOL:
+#if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
+        {
+            int rtype = rlimit_type_by_sym(key);
+            if (rtype != -1) {
+                rb_execarg_addopt_rlimit(eargp, rtype, val);
+                RB_GC_GUARD(execarg_obj);
+                return ST_CONTINUE;
+            }
+        }
+#endif
         if (!(id = rb_check_id(&key))) return ST_STOP;
 #ifdef HAVE_SETPGID
         if (id == id_pgroup) {
@@ -1678,35 +1713,6 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
             }
             eargp->new_pgroup_given = 1;
             eargp->new_pgroup_flag = RTEST(val) ? 1 : 0;
-        }
-        else
-#endif
-#if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
-        if (strncmp("rlimit_", rb_id2name(id), 7) == 0 &&
-            (rtype = rlimit_type_by_lname(rb_id2name(id)+7)) != -1) {
-            VALUE ary = eargp->rlimit_limits;
-            VALUE tmp, softlim, hardlim;
-            if (eargp->rlimit_limits == Qfalse)
-                ary = eargp->rlimit_limits = hide_obj(rb_ary_new());
-            else
-                ary = eargp->rlimit_limits;
-            tmp = rb_check_array_type(val);
-            if (!NIL_P(tmp)) {
-                if (RARRAY_LEN(tmp) == 1)
-                    softlim = hardlim = rb_to_int(rb_ary_entry(tmp, 0));
-                else if (RARRAY_LEN(tmp) == 2) {
-                    softlim = rb_to_int(rb_ary_entry(tmp, 0));
-                    hardlim = rb_to_int(rb_ary_entry(tmp, 1));
-                }
-                else {
-                    rb_raise(rb_eArgError, "wrong exec rlimit option");
-                }
-            }
-            else {
-                softlim = hardlim = rb_to_int(val);
-            }
-            tmp = hide_obj(rb_ary_new3(3, INT2NUM(rtype), softlim, hardlim));
-            rb_ary_push(ary, tmp);
         }
         else
 #endif
@@ -1811,7 +1817,7 @@ check_exec_options_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
     VALUE execarg_obj = (VALUE)arg;
     if (rb_execarg_addopt(execarg_obj, key, val) != ST_CONTINUE) {
 	if (SYMBOL_P(key))
-	    rb_raise(rb_eArgError, "wrong exec option symbol: %"PRIsVALUE,
+	    rb_raise(rb_eArgError, "wrong exec option symbol: % "PRIsVALUE,
 		     key);
 	rb_raise(rb_eArgError, "wrong exec option");
     }
@@ -4670,13 +4676,13 @@ proc_setpriority(VALUE obj, VALUE which, VALUE who, VALUE prio)
 
 #if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
 static int
-rlimit_resource_name2int(const char *name, int casetype)
+rlimit_resource_name2int(const char *name, long len, int casetype)
 {
     int resource;
     const char *p;
 #define RESCHECK(r) \
     do { \
-        if (STRCASECMP(name, #r) == 0) { \
+        if (len == rb_strlen_lit(#r) && STRCASECMP(name, #r) == 0) { \
             resource = RLIMIT_##r; \
             goto found; \
         } \
@@ -4779,21 +4785,40 @@ rlimit_resource_name2int(const char *name, int casetype)
 }
 
 static int
-rlimit_type_by_hname(const char *name)
+rlimit_type_by_hname(const char *name, long len)
 {
-    return rlimit_resource_name2int(name, 0);
+    return rlimit_resource_name2int(name, len, 0);
 }
 
 static int
-rlimit_type_by_lname(const char *name)
+rlimit_type_by_lname(const char *name, long len)
 {
-    return rlimit_resource_name2int(name, 1);
+    return rlimit_resource_name2int(name, len, 1);
+}
+
+static int
+rlimit_type_by_sym(VALUE key)
+{
+    VALUE name = rb_sym2str(key);
+    const char *rname = RSTRING_PTR(name);
+    long len = RSTRING_LEN(name);
+    int rtype = -1;
+    static const char prefix[] = "rlimit_";
+    enum {prefix_len = sizeof(prefix)-1};
+
+    if (len > prefix_len && strncmp(prefix, rname, prefix_len) == 0) {
+	rtype = rlimit_type_by_lname(rname + prefix_len, len - prefix_len);
+    }
+
+    RB_GC_GUARD(key);
+    return rtype;
 }
 
 static int
 rlimit_resource_type(VALUE rtype)
 {
     const char *name;
+    long len;
     VALUE v;
     int r;
 
@@ -4801,6 +4826,7 @@ rlimit_resource_type(VALUE rtype)
       case T_SYMBOL:
 	v = rb_sym2str(rtype);
 	name = RSTRING_PTR(v);
+	len = RSTRING_LEN(v);
         break;
 
       default:
@@ -4809,6 +4835,7 @@ rlimit_resource_type(VALUE rtype)
             rtype = v;
       case T_STRING:
             name = StringValueCStr(rtype);
+	    len = RSTRING_LEN(rtype);
             break;
         }
         /* fall through */
@@ -4818,11 +4845,11 @@ rlimit_resource_type(VALUE rtype)
         return NUM2INT(rtype);
     }
 
-    r = rlimit_type_by_hname(name);
+    r = rlimit_type_by_hname(name, len);
     if (r != -1)
         return r;
 
-    rb_raise(rb_eArgError, "invalid resource name: %"PRIsVALUE, rtype);
+    rb_raise(rb_eArgError, "invalid resource name: % "PRIsVALUE, rtype);
 
     UNREACHABLE;
 }
@@ -5033,18 +5060,17 @@ obj2uid(VALUE id
 	if (!*getpw_tmp) {
 	    getpw_buf_len = GETPW_R_SIZE_INIT;
 	    if (getpw_buf_len < 0) getpw_buf_len = GETPW_R_SIZE_DEFAULT;
-	    getpw_buf = rb_alloc_tmp_buffer(getpw_tmp, getpw_buf_len);
+	    *getpw_tmp = rb_str_tmp_new(getpw_buf_len);
 	}
-	else {
-	    getpw_buf = RSTRING_PTR(*getpw_tmp);
-	    getpw_buf_len = rb_str_capacity(*getpw_tmp);
-	}
+	getpw_buf = RSTRING_PTR(*getpw_tmp);
+	getpw_buf_len = rb_str_capacity(*getpw_tmp);
+	rb_str_set_len(*getpw_tmp, getpw_buf_len);
 	errno = ERANGE;
 	/* gepwnam_r() on MacOS X doesn't set errno if buffer size is insufficient */
 	while (getpwnam_r(usrname, &pwbuf, getpw_buf, getpw_buf_len, &pwptr)) {
 	    int e = errno;
 	    if (e != ERANGE || getpw_buf_len >= GETPW_R_SIZE_LIMIT) {
-		rb_free_tmp_buffer(getpw_tmp);
+		rb_str_resize(*getpw_tmp, 0);
 		rb_syserr_fail(e, "getpwnam_r");
 	    }
 	    rb_str_modify_expand(*getpw_tmp, getpw_buf_len);
@@ -5112,18 +5138,17 @@ obj2gid(VALUE id
 	if (!*getgr_tmp) {
 	    getgr_buf_len = GETGR_R_SIZE_INIT;
 	    if (getgr_buf_len < 0) getgr_buf_len = GETGR_R_SIZE_DEFAULT;
-	    getgr_buf = rb_alloc_tmp_buffer(getgr_tmp, getgr_buf_len);
+	    *getgr_tmp = rb_str_tmp_new(getgr_buf_len);
 	}
-	else {
-	    getgr_buf = RSTRING_PTR(*getgr_tmp);
-	    getgr_buf_len = rb_str_capacity(*getgr_tmp);
-	}
+	getgr_buf = RSTRING_PTR(*getgr_tmp);
+	getgr_buf_len = rb_str_capacity(*getgr_tmp);
+	rb_str_set_len(*getgr_tmp, getgr_buf_len);
 	errno = ERANGE;
 	/* gegrnam_r() on MacOS X doesn't set errno if buffer size is insufficient */
 	while (getgrnam_r(grpname, &grbuf, getgr_buf, getgr_buf_len, &grptr)) {
 	    int e = errno;
 	    if (e != ERANGE || getgr_buf_len >= GETGR_R_SIZE_LIMIT) {
-		rb_free_tmp_buffer(getgr_tmp);
+		rb_str_resize(*getgr_tmp, 0);
 		rb_syserr_fail(e, "getgrnam_r");
 	    }
 	    rb_str_modify_expand(*getgr_tmp, getgr_buf_len);

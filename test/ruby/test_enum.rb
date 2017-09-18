@@ -798,6 +798,10 @@ class TestEnumerable < Test::Unit::TestCase
     lambda2 = ->(x, i) { [x.upcase, i] }
     assert_equal([['A',0], ['B',1], ['C',2], ['D',3], ['E',4]],
       @obj.each_with_index.map(&lambda2))
+
+    hash = { a: 'hoge', b: 'fuga' }
+    lambda = -> (k, v) { "#{k}:#{v}" }
+    assert_equal ["a:hoge", "b:fuga"], hash.map(&lambda)
   end
 
   def test_flat_map
@@ -942,5 +946,6 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([[1896, "Athens"], [1900, "Paris"], [1904, "Chicago"], [1908, "Rome"]],
                  olympics.uniq{|k,v| v})
     assert_equal([1, 2, 3, 4, 5, 10], (1..100).uniq{|x| (x**2) % 10 }.first(6))
+    assert_equal([1, [1, 2]], Foo.new.to_enum.uniq)
   end
 end

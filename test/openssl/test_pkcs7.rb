@@ -51,7 +51,7 @@ class OpenSSL::TestPKCS7 < OpenSSL::TestCase
     assert_equal(@ee1_cert.serial, signers[0].serial)
     assert_equal(@ee1_cert.issuer.to_s, signers[0].issuer.to_s)
 
-    # Normaly OpenSSL tries to translate the supplied content into canonical
+    # Normally OpenSSL tries to translate the supplied content into canonical
     # MIME format (e.g. a newline character is converted into CR+LF).
     # If the content is a binary, PKCS7::BINARY flag should be used.
 

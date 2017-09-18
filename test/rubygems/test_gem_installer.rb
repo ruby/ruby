@@ -62,7 +62,12 @@ if ARGV.first
   end
 end
 
+if Gem.respond_to?(:activate_bin_path)
 load Gem.activate_bin_path('a', 'executable', version)
+else
+gem "a", version
+load Gem.bin_path("a", "executable", version)
+end
     EOF
 
     wrapper = @installer.app_script_text 'executable'
@@ -1440,6 +1445,26 @@ gem 'other', version
       end
       assert_equal 'old_rubygems_required requires RubyGems version < 0. ' +
         "Try 'gem update --system' to update RubyGems itself.", e.message
+    end
+  end
+
+  def test_pre_install_checks_malicious_name
+    spec = util_spec '../malicious', '1'
+    def spec.full_name # so the spec is buildable
+      "malicious-1"
+    end
+    def spec.validate; end
+
+    util_build_gem spec
+
+    gem = File.join(@gemhome, 'cache', spec.file_name)
+
+    use_ui @ui do
+      @installer = Gem::Installer.at gem
+      e = assert_raises Gem::InstallError do
+        @installer.pre_install_checks
+      end
+      assert_equal '#<Gem::Specification name=../malicious version=1> has an invalid name', e.message
     end
   end
 

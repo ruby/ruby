@@ -29,6 +29,8 @@
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
 
+#define ISEQ_TYPE_ONCE_GUARD ISEQ_TYPE_DEFINED_GUARD
+
 #define FIXNUM_INC(n, i) ((n)+(INT2FIX(i)&~FIXNUM_FLAG))
 #define FIXNUM_OR(n, i) ((n)|INT2FIX(i))
 
@@ -64,6 +66,7 @@ typedef struct iseq_label_data {
     int refcnt;
     unsigned int set: 1;
     unsigned int rescued: 2;
+    unsigned int unremovable: 1;
 } LABEL;
 
 typedef struct iseq_insn_data {
@@ -288,13 +291,15 @@ r_value(VALUE value)
 #define ADD_ADJUST_RESTORE(seq, label) \
   ADD_ELEM((seq), (LINK_ELEMENT *) new_adjust_body(iseq, (label), -1))
 
+#define LABEL_UNREMOVABLE(label) \
+    ((label) ? (LABEL_REF(label), (label)->unremovable=1) : 0)
 #define ADD_CATCH_ENTRY(type, ls, le, iseqv, lc) do {				\
     VALUE _e = rb_ary_new3(5, (type),						\
 			   (VALUE)(ls) | 1, (VALUE)(le) | 1,			\
 			   (VALUE)(iseqv), (VALUE)(lc) | 1);			\
-    if (ls) LABEL_REF(ls);							\
-    if (le) LABEL_REF(le);							\
-    if (lc) LABEL_REF(lc);							\
+    LABEL_UNREMOVABLE(ls);							\
+    LABEL_UNREMOVABLE(le);							\
+    LABEL_UNREMOVABLE(lc);							\
     rb_ary_push(ISEQ_COMPILE_DATA(iseq)->catch_table_ary, freeze_hide_obj(_e));	\
 } while (0)
 
@@ -1032,7 +1037,7 @@ new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line)
     adjust->link.next = 0;
     adjust->label = label;
     adjust->line_no = line;
-    if (label) LABEL_REF(label);
+    LABEL_UNREMOVABLE(label);
     return adjust;
 }
 
@@ -2013,8 +2018,29 @@ replace_destination(INSN *dobj, INSN *nobj)
 static int
 remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 {
-    int removed = 0;
+    LINK_ELEMENT *first = i, *end;
+
+    if (!i) return 0;
     while (i) {
+	if (IS_INSN(i)) {
+	    if (IS_INSN_ID(i, jump) || IS_INSN_ID(i, leave)) {
+		break;
+	    }
+	}
+	else if (IS_LABEL(i)) {
+	    if (((LABEL *)i)->unremovable) return 0;
+	    if (((LABEL *)i)->refcnt > 0) {
+		if (i == first) return 0;
+		i = i->prev;
+		break;
+	    }
+	}
+	else return 0;
+	i = i->next;
+    }
+    end = i;
+    i = first;
+    do {
 	if (IS_INSN(i)) {
 	    struct rb_iseq_constant_body *body = iseq->body;
 	    VALUE insn = INSN_OF(i);
@@ -2033,15 +2059,9 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 		}
 	    }
 	}
-	else if (IS_LABEL(i)) {
-	    if (((LABEL *)i)->refcnt > 0) break;
-	}
-	else break;
 	REMOVE_ELEM(i);
-	removed = 1;
-	i = i->next;
-    }
-    return removed;
+    } while ((i != end) && (i = i->next) != 0);
+    return 1;
 }
 
 static int
@@ -2216,7 +2236,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 			    OPERAND_AT(pobj, 0) == Qfalse :
 			    FALSE);
 		}
-		else if (IS_INSN_ID(pobj, putstring)) {
+		else if (IS_INSN_ID(pobj, putstring) || IS_INSN_ID(pobj, duparray)) {
 		    cond = IS_INSN_ID(iobj, branchif);
 		}
 		else if (IS_INSN_ID(pobj, putnil)) {
@@ -2874,18 +2894,8 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *cond,
       case NODE_LIT:		/* NODE_LIT is always not true */
       case NODE_TRUE:
       case NODE_STR:
-      case NODE_DSTR:
-      case NODE_XSTR:
-      case NODE_DXSTR:
-      case NODE_DREGX:
-      case NODE_DREGX_ONCE:
-      case NODE_DSYM:
-      case NODE_ARRAY:
       case NODE_ZARRAY:
-      case NODE_HASH:
       case NODE_LAMBDA:
-      case NODE_DEFN:
-      case NODE_DEFS:
 	/* printf("useless condition eliminate (%s)\n",  ruby_node_name(nd_type(cond))); */
 	ADD_INSNL(ret, nd_line(cond), jump, then_label);
 	break;
@@ -4655,8 +4665,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	CHECK(COMPILE_POPPED(ensr, "ensure ensr", node->nd_ensr));
 	last = ensr->last;
 	last_leave = last && IS_INSN(last) && IS_INSN_ID(last, leave);
-	if (!popped && last_leave)
-	    popped = 1;
 
 	er.begin = lstart;
 	er.end = lend;
@@ -4664,13 +4672,16 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	push_ensure_entry(iseq, &enl, &er, node->nd_ensr);
 
 	ADD_LABEL(ret, lstart);
-	CHECK(COMPILE_(ret, "ensure head", node->nd_head, popped));
+	CHECK(COMPILE_(ret, "ensure head", node->nd_head, (popped | last_leave)));
 	ADD_LABEL(ret, lend);
 	if (ensr->anchor.next == 0) {
 	    ADD_INSN(ret, line, nop);
 	}
 	else {
 	    ADD_SEQ(ret, ensr);
+	    if (!popped && last_leave) {
+		ADD_INSN(ret, line, putnil);
+	    }
 	}
 	ADD_LABEL(ret, lcont);
 	if (last_leave) ADD_INSN(ret, line, pop);
@@ -5484,13 +5495,25 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	if (is) {
 	    enum iseq_type type = is->body->type;
 	    const rb_iseq_t *parent_iseq = is->body->parent_iseq;
-	    enum iseq_type parent_type = parent_iseq ? parent_iseq->body->type : type;
+	    enum iseq_type parent_type;
 
-	    if (type == ISEQ_TYPE_TOP || type == ISEQ_TYPE_MAIN ||
-		((type == ISEQ_TYPE_RESCUE || type == ISEQ_TYPE_ENSURE) &&
-		 (parent_type == ISEQ_TYPE_TOP || parent_type == ISEQ_TYPE_MAIN))) {
+	    if (type == ISEQ_TYPE_TOP) {
+		LABEL *splabel = NEW_LABEL(line);
+		ADD_LABEL(ret, splabel);
+		ADD_ADJUST(ret, line, 0);
 		ADD_INSN(ret, line, putnil);
 		ADD_INSN(ret, line, leave);
+		ADD_ADJUST_RESTORE(ret, splabel);
+	    }
+	    else if ((type == ISEQ_TYPE_RESCUE || type == ISEQ_TYPE_ENSURE || type == ISEQ_TYPE_MAIN) &&
+		     parent_iseq &&
+		     ((parent_type = parent_iseq->body->type) == ISEQ_TYPE_TOP ||
+		      parent_type == ISEQ_TYPE_MAIN)) {
+		ADD_INSN(ret, line, putnil);
+		ADD_INSN1(ret, line, throw, INT2FIX(TAG_RETURN));
+		if (popped) {
+		    ADD_INSN(ret, line, pop);
+		}
 	    }
 	    else {
 		LABEL *splabel = 0;
@@ -5782,7 +5805,8 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int poppe
 	int ic_index = iseq->body->is_size++;
 	NODE *dregx_node = NEW_NODE(NODE_DREGX, node->u1.value, node->u2.value, node->u3.value);
 	NODE *block_node = NEW_NODE(NODE_SCOPE, 0, dregx_node, 0);
-	const rb_iseq_t * block_iseq = NEW_CHILD_ISEQ(block_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, line);
+	const rb_iseq_t *block_iseq = NEW_CHILD_ISEQ(block_node, make_name_for_block(iseq),
+						     ISEQ_TYPE_ONCE_GUARD, line);
 
 	ADD_INSN2(ret, line, once, block_iseq, INT2FIX(ic_index));
 

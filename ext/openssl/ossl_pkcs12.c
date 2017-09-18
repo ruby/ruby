@@ -178,7 +178,7 @@ ossl_pkcs12_initialize(int argc, VALUE *argv, VALUE self)
 
     if(rb_scan_args(argc, argv, "02", &arg, &pass) == 0) return self;
     passphrase = NIL_P(pass) ? NULL : StringValueCStr(pass);
-    in = ossl_obj2bio(arg);
+    in = ossl_obj2bio(&arg);
     d2i_PKCS12_bio(in, &pkcs);
     DATA_PTR(self) = pkcs;
     BIO_free(in);

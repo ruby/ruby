@@ -920,4 +920,14 @@ class TestObject < Test::Unit::TestCase
       num.times {a.clone.set}
     end;
   end
+
+  def test_clone_object_should_not_be_old
+    assert_normal_exit <<-EOS, '[Bug #13775]'
+      b = proc { }
+      10.times do |i|
+        b.clone
+        GC.start
+      end
+    EOS
+  end
 end

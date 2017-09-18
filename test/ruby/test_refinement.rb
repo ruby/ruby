@@ -1886,6 +1886,37 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal("Parent -> Child", SuperToModule::Child.test, bug)
   end
 
+  def test_include_refinement
+    bug = '[ruby-core:79632] [Bug #13236] cannot include refinement module'
+    r = nil
+    m = Module.new do
+      r = refine(String) {def test;:ok end}
+    end
+    assert_raise_with_message(ArgumentError, /refinement/, bug) do
+      m.module_eval {include r}
+    end
+    assert_raise_with_message(ArgumentError, /refinement/, bug) do
+      m.module_eval {prepend r}
+    end
+  end
+
+  def test_refined_method_alias_warning
+    c = Class.new do
+      def t; :t end
+      def f; :f end
+    end
+    Module.new do
+      refine(c) do
+        alias foo t
+      end
+    end
+    assert_warning('', '[ruby-core:82385] [Bug #13817] refined method is not redefined') do
+      c.class_eval do
+        alias foo f
+      end
+    end
+  end
+
   private
 
   def eval_using(mod, s)

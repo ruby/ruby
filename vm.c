@@ -90,6 +90,8 @@ VM_CFP_IN_HEAP_P(const rb_thread_t *th, const rb_control_frame_t *cfp)
 {
     const VALUE *start = th->stack;
     const VALUE *end = (VALUE *)th->stack + th->stack_size;
+    VM_ASSERT(start != NULL);
+
     if (start <= (VALUE *)cfp && (VALUE *)cfp < end) {
 	return FALSE;
     }
@@ -103,6 +105,8 @@ VM_EP_IN_HEAP_P(const rb_thread_t *th, const VALUE *ep)
 {
     const VALUE *start = th->stack;
     const VALUE *end = (VALUE *)th->cfp;
+    VM_ASSERT(start != NULL);
+
     if (start <= ep && ep < end) {
 	return FALSE;
     }
@@ -1601,29 +1605,72 @@ vm_frametype_name(const rb_control_frame_t *cfp)
 }
 #endif
 
-static void
-hook_before_rewind(rb_thread_t *th, rb_control_frame_t *cfp, int will_finish_vm_exec)
+static VALUE
+frame_return_value(const struct vm_throw_data *err)
 {
+    if (THROW_DATA_P(err) &&
+	THROW_DATA_STATE(err) == TAG_BREAK &&
+	THROW_DATA_CONSUMED_P(err) == FALSE) {
+	return THROW_DATA_VAL(err);
+    }
+    else {
+	return Qnil;
+    }
+}
+
+#if 0
+/* for debug */
+static const char *
+frame_name(const rb_control_frame_t *cfp)
+{
+    unsigned long type = VM_FRAME_TYPE(cfp);
+#define C(t) if (type == VM_FRAME_MAGIC_##t) return #t
+    C(METHOD);
+    C(BLOCK);
+    C(CLASS);
+    C(TOP);
+    C(CFUNC);
+    C(PROC);
+    C(IFUNC);
+    C(EVAL);
+    C(LAMBDA);
+    C(RESCUE);
+    C(DUMMY);
+#undef C
+    return "unknown";
+}
+#endif
+
+static void
+hook_before_rewind(rb_thread_t *th, const rb_control_frame_t *cfp, int will_finish_vm_exec, int state, struct vm_throw_data *err)
+{
+    if (state == TAG_RAISE && RBASIC_CLASS(err) == rb_eSysStackError) {
+	return;
+    }
     switch (VM_FRAME_TYPE(th->cfp)) {
       case VM_FRAME_MAGIC_METHOD:
 	RUBY_DTRACE_METHOD_RETURN_HOOK(th, 0, 0);
-	EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_RETURN, th->cfp->self, 0, 0, 0, Qnil);
+	EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_RETURN, th->cfp->self, 0, 0, 0, frame_return_value(err));
+	THROW_DATA_CONSUMED_SET(err);
 	break;
       case VM_FRAME_MAGIC_BLOCK:
       case VM_FRAME_MAGIC_LAMBDA:
 	if (VM_FRAME_BMETHOD_P(th->cfp)) {
-	    EXEC_EVENT_HOOK(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, 0, Qnil);
+	    EXEC_EVENT_HOOK(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, 0, frame_return_value(err));
 
 	    if (!will_finish_vm_exec) {
 		/* kick RUBY_EVENT_RETURN at invoke_block_from_c() for bmethod */
 		EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_RETURN, th->cfp->self,
 					      rb_vm_frame_method_entry(th->cfp)->def->original_id,
 					      rb_vm_frame_method_entry(th->cfp)->called_id,
-					      rb_vm_frame_method_entry(th->cfp)->owner, Qnil);
+					      rb_vm_frame_method_entry(th->cfp)->owner,
+					      frame_return_value(err));
 	    }
+	    THROW_DATA_CONSUMED_SET(err);
 	}
 	else {
-	    EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, 0, Qnil);
+	    EXEC_EVENT_HOOK_AND_POP_FRAME(th, RUBY_EVENT_B_RETURN, th->cfp->self, 0, 0, 0, frame_return_value(err));
+	    THROW_DATA_CONSUMED_SET(err);
 	}
 	break;
       case VM_FRAME_MAGIC_CLASS:
@@ -1786,10 +1833,11 @@ vm_exec(rb_thread_t *th)
 				}
 			    }
 			}
-			if (!catch_iseq) {
+			if (catch_iseq == NULL) {
 			    th->errinfo = Qnil;
 			    result = THROW_DATA_VAL(err);
-			    hook_before_rewind(th, th->cfp, TRUE);
+			    THROW_DATA_CATCH_FRAME_SET(err, cfp + 1);
+			    hook_before_rewind(th, th->cfp, TRUE, state, err);
 			    rb_vm_pop_frame(th);
 			    goto finish_vme;
 			}
@@ -1931,8 +1979,7 @@ vm_exec(rb_thread_t *th)
 	    goto vm_loop_start;
 	}
 	else {
-	    /* skip frame */
-	    hook_before_rewind(th, th->cfp, FALSE);
+	    hook_before_rewind(th, th->cfp, FALSE, state, err);
 
 	    if (VM_FRAME_FINISHED_P(th->cfp)) {
 		rb_vm_pop_frame(th);
@@ -2272,7 +2319,7 @@ static int thread_recycle_stack_count = 0;
 static VALUE *
 thread_recycle_stack(size_t size)
 {
-    if (thread_recycle_stack_count) {
+    if (thread_recycle_stack_count > 0) {
 	/* TODO: check stack size if stack sizes are variable */
 	return thread_recycle_stack_slot[--thread_recycle_stack_count];
     }
@@ -2288,6 +2335,8 @@ thread_recycle_stack(size_t size)
 void
 rb_thread_recycle_stack_release(VALUE *stack)
 {
+    VM_ASSERT(stack != NULL);
+
 #if USE_THREAD_DATA_RECYCLE
     if (thread_recycle_stack_count < RECYCLE_MAX) {
 	thread_recycle_stack_slot[thread_recycle_stack_count++] = stack;
@@ -2371,6 +2420,10 @@ thread_free(void *ptr)
 
     if (ptr) {
 	th = ptr;
+	if (th->stack != NULL) {
+	    rb_thread_recycle_stack_release(th->stack);
+	    th->stack = NULL;
+	}
 
 	if (!th->root_fiber) {
 	    RUBY_FREE_UNLESS_NULL(th->stack);
@@ -2477,7 +2530,6 @@ th_init(rb_thread_t *th, VALUE self)
     th->status = THREAD_RUNNABLE;
     th->errinfo = Qnil;
     th->last_status = Qnil;
-    th->waiting_fd = -1;
     th->root_svar = Qfalse;
     th->local_storage_recursive_hash = Qnil;
     th->local_storage_recursive_hash_for_trace = Qnil;

@@ -582,7 +582,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				goto unknown;
                         }
 			i = snprintf(s, endp - s, (padding == ' ' ? "%+*ld" : "%+.*ld"),
-				     precision + 1, sign * (off / 3600));
+				     precision + (padding == ' '), sign * (off / 3600));
 			if (i < 0) goto err;
 			if (sign < 0 && off < 3600) {
 				*(padding == ' ' ? s + i - 2 : s) = '-';

@@ -2102,6 +2102,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal([0], a.insert(1))
     assert_equal([0, 1], a.insert(1, 1))
     assert_raise(ArgumentError) { a.insert }
+    assert_raise(TypeError) { a.insert(Object.new) }
     assert_equal([0, 1, 2], a.insert(-1, 2))
     assert_equal([0, 1, 3, 2], a.insert(-2, 3))
     assert_raise(RuntimeError) { [0].freeze.insert(0)}

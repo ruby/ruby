@@ -490,4 +490,55 @@ EOS
     bug11816 = '[ruby-core:74993] [Bug #11816]'
     assert_ruby_status([], 'nil&.foo &&= false', bug11816)
   end
+
+  def test_branch_condition_backquote
+    bug = '[ruby-core:80740] [Bug #13444] redefined backquote should be called'
+    class << self
+      def `(s)
+        @q = s
+        @r
+      end
+    end
+
+    @q = nil
+    @r = nil
+    assert_equal("bar", ("bar" unless `foo`), bug)
+    assert_equal("foo", @q, bug)
+
+    @q = nil
+    @r = true
+    assert_equal("bar", ("bar" if `foo`), bug)
+    assert_equal("foo", @q, bug)
+
+    @q = nil
+    @r = "z"
+    assert_equal("bar", ("bar" if `foo#{@r}`))
+    assert_equal("fooz", @q, bug)
+  end
+
+  def test_branch_condition_def
+    bug = '[ruby-core:80740] [Bug #13444] method should be defined'
+    c = Class.new do
+      raise "bug" unless def t;:ok;end
+    end
+    assert_nothing_raised(NoMethodError, bug) do
+      assert_equal(:ok, c.new.t)
+    end
+  end
+
+  def test_branch_condition_defs
+    bug = '[ruby-core:80740] [Bug #13444] singleton method should be defined'
+    raise "bug" unless def self.t;:ok;end
+    assert_nothing_raised(NameError, bug) do
+      assert_equal(:ok, t)
+    end
+  end
+
+  def test_retry_label_in_unreachable_chunk
+    bug = '[ruby-core:81272] [Bug #13578]'
+    assert_valid_syntax("#{<<-"begin;"}\n#{<<-"end;"}", bug)
+    begin;
+      def t; if false; case 42; when s {}; end; end; end
+    end;
+  end
 end

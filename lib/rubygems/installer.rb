@@ -214,7 +214,7 @@ class Gem::Installer
 
       ruby_executable = true
       existing = io.read.slice(%r{
-          ^(
+          ^\s*(
             gem \s |
             load \s Gem\.bin_path\( |
             load \s Gem\.activate_bin_path\(
@@ -697,10 +697,17 @@ class Gem::Installer
       unpack or File.writable?(gem_home)
   end
 
+  def verify_spec_name
+    return if spec.name =~ Gem::Specification::VALID_NAME_PATTERN
+    raise Gem::InstallError, "#{spec} has an invalid name"
+  end
+
   ##
   # Return the text for an application file.
 
   def app_script_text(bin_file_name)
+    # note that the `load` lines cannot be indented, as old RG versions match
+    # against the beginning of the line
     return <<-TEXT
 #{shebang bin_file_name}
 #
@@ -723,7 +730,12 @@ if ARGV.first
   end
 end
 
+if Gem.respond_to?(:activate_bin_path)
 load Gem.activate_bin_path('#{spec.name}', '#{bin_file_name}', version)
+else
+gem #{spec.name.dump}, version
+load Gem.bin_path(#{spec.name.dump}, #{bin_file_name.dump}, version)
+end
 TEXT
   end
 
@@ -815,6 +827,8 @@ TEXT
     verify_gem_home options[:unpack]
 
     ensure_loadable_spec
+
+    verify_spec_name
 
     if options[:install_as_default]
       Gem.ensure_default_gem_subdirectories gem_home

@@ -849,14 +849,23 @@ rb_include_class_new(VALUE module, VALUE super)
 
 static int include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super);
 
+static void
+ensure_includable(VALUE klass, VALUE module)
+{
+    rb_frozen_class_p(klass);
+    Check_Type(module, T_MODULE);
+    if (!NIL_P(rb_refinement_module_get_refined_class(module))) {
+	rb_raise(rb_eArgError, "refinement module is not allowed");
+    }
+    OBJ_INFECT(klass, module);
+}
+
 void
 rb_include_module(VALUE klass, VALUE module)
 {
     int changed = 0;
 
-    rb_frozen_class_p(klass);
-    Check_Type(module, T_MODULE);
-    OBJ_INFECT(klass, module);
+    ensure_includable(klass, module);
 
     changed = include_modules_at(klass, RCLASS_ORIGIN(klass), module, TRUE);
     if (changed < 0)
@@ -966,9 +975,7 @@ rb_prepend_module(VALUE klass, VALUE module)
     VALUE origin;
     int changed = 0;
 
-    rb_frozen_class_p(klass);
-    Check_Type(module, T_MODULE);
-    OBJ_INFECT(klass, module);
+    ensure_includable(klass, module);
 
     origin = RCLASS_ORIGIN(klass);
     if (origin == klass) {
@@ -1917,8 +1924,8 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
     va_list vargs;
     int f_var = 0, f_hash = 0, f_block = 0;
     int n_lead = 0, n_opt = 0, n_trail = 0, n_mand;
-    int argi = 0;
-    VALUE hash = Qnil;
+    int argi = 0, last_idx = -1;
+    VALUE hash = Qnil, last_hash = 0;
 
     if (ISDIGIT(*p)) {
 	n_lead = *p - '0';
@@ -1969,7 +1976,8 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 	    hash = rb_check_hash_type(last);
 	    if (!NIL_P(hash)) {
 		VALUE opts = rb_extract_keywords(&hash);
-		if (!hash) argc--;
+		if (!(last_hash = hash)) argc--;
+		else last_idx = argc - 1;
 		hash = opts ? opts : Qnil;
 	    }
 	}
@@ -1977,14 +1985,14 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
     /* capture leading mandatory arguments */
     for (i = n_lead; i-- > 0; ) {
 	var = va_arg(vargs, VALUE *);
-	if (var) *var = argv[argi];
+	if (var) *var = (argi == last_idx) ? last_hash : argv[argi];
 	argi++;
     }
     /* capture optional arguments */
     for (i = n_opt; i-- > 0; ) {
 	var = va_arg(vargs, VALUE *);
 	if (argi < argc - n_trail) {
-	    if (var) *var = argv[argi];
+	    if (var) *var = (argi == last_idx) ? last_hash : argv[argi];
 	    argi++;
 	}
 	else {
@@ -1997,7 +2005,11 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
 
 	var = va_arg(vargs, VALUE *);
 	if (0 < n_var) {
-	    if (var) *var = rb_ary_new4(n_var, &argv[argi]);
+	    if (var) {
+		int f_last = (last_idx + 1 == argc - n_trail);
+		*var = rb_ary_new4(n_var-f_last, &argv[argi]);
+		if (f_last) rb_ary_push(*var, last_hash);
+	    }
 	    argi += n_var;
 	}
 	else {
@@ -2007,7 +2019,7 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
     /* capture trailing mandatory arguments */
     for (i = n_trail; i-- > 0; ) {
 	var = va_arg(vargs, VALUE *);
-	if (var) *var = argv[argi];
+	if (var) *var = (argi == last_idx) ? last_hash : argv[argi];
 	argi++;
     }
     /* capture an option hash - phase 2: assignment */

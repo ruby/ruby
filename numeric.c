@@ -168,7 +168,8 @@ static int int_round_zero_p(VALUE num, int ndigits);
 VALUE rb_int_floor(VALUE num, int ndigits);
 VALUE rb_int_ceil(VALUE num, int ndigits);
 static VALUE flo_to_i(VALUE num);
-static int float_invariant_round(double number, int ndigits, VALUE *num);
+static int float_round_overflow(int ndigits, int binexp);
+static int float_round_underflow(int ndigits, int binexp);
 
 static ID id_coerce, id_div, id_divmod;
 #define id_to_i idTo_i
@@ -1945,28 +1946,30 @@ static VALUE
 flo_floor(int argc, VALUE *argv, VALUE num)
 {
     double number, f;
-    long val;
     int ndigits = 0;
 
     if (rb_check_arity(argc, 0, 1)) {
 	ndigits = NUM2INT(argv[0]);
     }
-    if (ndigits < 0) {
-	return rb_int_floor(flo_to_i(num), ndigits);
-    }
     number = RFLOAT_VALUE(num);
+    if (number == 0.0) {
+	return ndigits > 0 ? DBL2NUM(number) : INT2FIX(0);
+    }
     if (ndigits > 0) {
-	if (float_invariant_round(number, ndigits, &num)) return num;
+	int binexp;
+	frexp(number, &binexp);
+	if (float_round_overflow(ndigits, binexp)) return num;
+	if (number > 0.0 && float_round_underflow(ndigits, binexp))
+	    return DBL2NUM(0.0);
 	f = pow(10, ndigits);
 	f = floor(number * f) / f;
 	return DBL2NUM(f);
     }
-    f = floor(number);
-    if (!FIXABLE(f)) {
-	return rb_dbl2big(f);
+    else {
+	num = dbl2ival(floor(number));
+	if (ndigits < 0) num = rb_int_floor(num, ndigits);
+	return num;
     }
-    val = (long)f;
-    return LONG2FIX(val);
 }
 
 /*
@@ -2006,18 +2009,27 @@ flo_ceil(int argc, VALUE *argv, VALUE num)
     int ndigits = 0;
 
     if (rb_check_arity(argc, 0, 1)) {
-       ndigits = NUM2INT(argv[0]);
+	ndigits = NUM2INT(argv[0]);
     }
     number = RFLOAT_VALUE(num);
-    if (ndigits < 0) {
-	return rb_int_ceil(dbl2ival(ceil(number)), ndigits);
+    if (number == 0.0) {
+	return ndigits > 0 ? DBL2NUM(number) : INT2FIX(0);
     }
-    if (ndigits == 0) {
-	return dbl2ival(ceil(number));
+    if (ndigits > 0) {
+	int binexp;
+	frexp(number, &binexp);
+	if (float_round_overflow(ndigits, binexp)) return num;
+	if (number < 0.0 && float_round_underflow(ndigits, binexp))
+	    return DBL2NUM(0.0);
+	f = pow(10, ndigits);
+	f = ceil(number * f) / f;
+	return DBL2NUM(f);
     }
-    if (float_invariant_round(number, ndigits, &num)) return num;
-    f = pow(10, ndigits);
-    return DBL2NUM(ceil(number * f) / f);
+    else {
+	num = dbl2ival(ceil(number));
+	if (ndigits < 0) num = rb_int_ceil(num, ndigits);
+	return num;
+    }
 }
 
 static int
@@ -2241,27 +2253,33 @@ flo_round(int argc, VALUE *argv, VALUE num)
 	ndigits = NUM2INT(nd);
     }
     mode = rb_num_get_rounding_option(opt);
+    number = RFLOAT_VALUE(num);
+    if (number == 0.0) {
+	return ndigits > 0 ? DBL2NUM(number) : INT2FIX(0);
+    }
     if (ndigits < 0) {
 	return rb_int_round(flo_to_i(num), ndigits, mode);
     }
-    number  = RFLOAT_VALUE(num);
     if (ndigits == 0) {
 	x = ROUND_CALL(mode, round, (number, 1.0));
 	return dbl2ival(x);
     }
-    if (float_invariant_round(number, ndigits, &num)) return num;
-    f = pow(10, ndigits);
-    x = ROUND_CALL(mode, round, (number, f));
-    return DBL2NUM(x / f);
+    if (isfinite(number)) {
+	int binexp;
+	frexp(number, &binexp);
+	if (float_round_overflow(ndigits, binexp)) return num;
+	if (float_round_underflow(ndigits, binexp)) return DBL2NUM(0);
+	f = pow(10, ndigits);
+	x = ROUND_CALL(mode, round, (number, f));
+	return DBL2NUM(x / f);
+    }
+    return num;
 }
 
 static int
-float_invariant_round(double number, int ndigits, VALUE *num)
+float_round_overflow(int ndigits, int binexp)
 {
     enum {float_dig = DBL_DIG+2};
-    int binexp;
-
-    frexp(number, &binexp);
 
 /* Let `exp` be such that `number` is written as:"0.#{digits}e#{exp}",
    i.e. such that  10 ** (exp - 1) <= |number| < 10 ** exp
@@ -2280,12 +2298,16 @@ float_invariant_round(double number, int ndigits, VALUE *num)
 	So if ndigits + floor(binexp/(4 or 3)) >= float_dig, the result is number
 	If ndigits + ceil(binexp/(3 or 4)) < 0 the result is 0
 */
-    if (isinf(number) || isnan(number) ||
-	(ndigits >= float_dig - (binexp > 0 ? binexp / 4 : binexp / 3 - 1))) {
+    if (ndigits >= float_dig - (binexp > 0 ? binexp / 4 : binexp / 3 - 1)) {
 	return TRUE;
     }
+    return FALSE;
+}
+
+static int
+float_round_underflow(int ndigits, int binexp)
+{
     if (ndigits < - (binexp > 0 ? binexp / 3 + 1 : binexp / 4)) {
-	*num = DBL2NUM(0);
 	return TRUE;
     }
     return FALSE;

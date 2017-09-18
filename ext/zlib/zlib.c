@@ -72,6 +72,7 @@ struct zstream_run_args;
 static void zstream_init(struct zstream*, const struct zstream_funcs*);
 static void zstream_expand_buffer(struct zstream*);
 static void zstream_expand_buffer_into(struct zstream*, unsigned long);
+static int zstream_expand_buffer_non_stream(struct zstream *z);
 static void zstream_append_buffer(struct zstream*, const Bytef*, long);
 static VALUE zstream_detach_buffer(struct zstream*);
 static VALUE zstream_shift_buffer(struct zstream*, long);
@@ -527,7 +528,6 @@ rb_zlib_crc_table(VALUE obj)
 struct zstream {
     unsigned long flags;
     VALUE buf;
-    long buf_filled;
     VALUE input;
     z_stream stream;
     const struct zstream_funcs {
@@ -550,6 +550,7 @@ struct zstream {
 #define ZSTREAM_IS_FINISHED(z) ((z)->flags & ZSTREAM_FLAG_FINISHED)
 #define ZSTREAM_IS_CLOSING(z)  ((z)->flags & ZSTREAM_FLAG_CLOSING)
 #define ZSTREAM_IS_GZFILE(z)   ((z)->flags & ZSTREAM_FLAG_GZFILE)
+#define ZSTREAM_BUF_FILLED(z)  (NIL_P((z)->buf) ? 0 : RSTRING_LEN((z)->buf))
 
 #define ZSTREAM_EXPAND_BUFFER_OK          0
 
@@ -599,7 +600,6 @@ zstream_init(struct zstream *z, const struct zstream_funcs *func)
 {
     z->flags = 0;
     z->buf = Qnil;
-    z->buf_filled = 0;
     z->input = Qnil;
     z->stream.zalloc = zlib_mem_alloc;
     z->stream.zfree = zlib_mem_free;
@@ -624,11 +624,11 @@ zstream_expand_buffer(struct zstream *z)
     }
 
     if (!ZSTREAM_IS_GZFILE(z) && rb_block_given_p()) {
-	if (z->buf_filled >= ZSTREAM_AVAIL_OUT_STEP_MAX) {
+	long buf_filled = ZSTREAM_BUF_FILLED(z);
+	if (buf_filled >= ZSTREAM_AVAIL_OUT_STEP_MAX) {
 	    int state = 0;
 	    VALUE self = (VALUE)z->stream.opaque;
 
-	    rb_str_resize(z->buf, z->buf_filled);
 	    rb_obj_reveal(z->buf, rb_cString);
 	    OBJ_INFECT(z->buf, self);
 
@@ -644,23 +644,11 @@ zstream_expand_buffer(struct zstream *z)
 	}
 	else {
 	    zstream_expand_buffer_into(z,
-		    ZSTREAM_AVAIL_OUT_STEP_MAX - z->buf_filled);
+		    ZSTREAM_AVAIL_OUT_STEP_MAX - buf_filled);
 	}
     }
     else {
-	if (RSTRING_LEN(z->buf) - z->buf_filled >= ZSTREAM_AVAIL_OUT_STEP_MAX) {
-	    z->stream.avail_out = ZSTREAM_AVAIL_OUT_STEP_MAX;
-	}
-	else {
-	    long inc = z->buf_filled / 2;
-	    if (inc < ZSTREAM_AVAIL_OUT_STEP_MIN) {
-		inc = ZSTREAM_AVAIL_OUT_STEP_MIN;
-	    }
-	    rb_str_resize(z->buf, z->buf_filled + inc);
-	    z->stream.avail_out = (inc < ZSTREAM_AVAIL_OUT_STEP_MAX) ?
-		(int)inc : ZSTREAM_AVAIL_OUT_STEP_MAX;
-	}
-	z->stream.next_out = (Bytef*)RSTRING_PTR(z->buf) + z->buf_filled;
+	zstream_expand_buffer_non_stream(z);
     }
 }
 
@@ -670,15 +658,14 @@ zstream_expand_buffer_into(struct zstream *z, unsigned long size)
     if (NIL_P(z->buf)) {
 	/* I uses rb_str_new here not rb_str_buf_new because
 	   rb_str_buf_new makes a zero-length string. */
-	z->buf = rb_str_new(0, size);
-	z->buf_filled = 0;
+	z->buf = rb_str_buf_new(size);
 	z->stream.next_out = (Bytef*)RSTRING_PTR(z->buf);
 	z->stream.avail_out = MAX_UINT(size);
 	rb_obj_hide(z->buf);
     }
     else if (z->stream.avail_out != size) {
-	rb_str_resize(z->buf, z->buf_filled + size);
-	z->stream.next_out = (Bytef*)RSTRING_PTR(z->buf) + z->buf_filled;
+	rb_str_modify_expand(z->buf, size);
+	z->stream.next_out = (Bytef*)RSTRING_END(z->buf);
 	z->stream.avail_out = MAX_UINT(size);
     }
 }
@@ -695,34 +682,24 @@ zstream_expand_buffer_protect(void *ptr)
 }
 
 static int
-zstream_expand_buffer_without_gvl(struct zstream *z)
+zstream_expand_buffer_non_stream(struct zstream *z)
 {
-    char * new_str;
-    long inc, len;
+    long inc, len = ZSTREAM_BUF_FILLED(z);
 
-    if (RSTRING_LEN(z->buf) - z->buf_filled >= ZSTREAM_AVAIL_OUT_STEP_MAX) {
+    if (rb_str_capacity(z->buf) - len >= ZSTREAM_AVAIL_OUT_STEP_MAX) {
 	z->stream.avail_out = ZSTREAM_AVAIL_OUT_STEP_MAX;
     }
     else {
-	inc = z->buf_filled / 2;
+	inc = len / 2;
 	if (inc < ZSTREAM_AVAIL_OUT_STEP_MIN) {
 	    inc = ZSTREAM_AVAIL_OUT_STEP_MIN;
 	}
 
-	len = z->buf_filled + inc;
-
-	new_str = ruby_xrealloc(RSTRING(z->buf)->as.heap.ptr, len + 1);
-
-	/* from rb_str_resize */
-	RSTRING(z->buf)->as.heap.ptr = new_str;
-	RSTRING(z->buf)->as.heap.ptr[len] = '\0'; /* sentinel */
-	RSTRING(z->buf)->as.heap.len =
-	    RSTRING(z->buf)->as.heap.aux.capa = len;
-
+	rb_str_modify_expand(z->buf, inc);
 	z->stream.avail_out = (inc < ZSTREAM_AVAIL_OUT_STEP_MAX) ?
 	    (int)inc : ZSTREAM_AVAIL_OUT_STEP_MAX;
     }
-    z->stream.next_out = (Bytef*)RSTRING_PTR(z->buf) + z->buf_filled;
+    z->stream.next_out = (Bytef*)RSTRING_END(z->buf);
 
     return ZSTREAM_EXPAND_BUFFER_OK;
 }
@@ -733,15 +710,14 @@ zstream_append_buffer(struct zstream *z, const Bytef *src, long len)
     if (NIL_P(z->buf)) {
 	z->buf = rb_str_buf_new(len);
 	rb_str_buf_cat(z->buf, (const char*)src, len);
-	z->buf_filled = len;
 	z->stream.next_out = (Bytef*)RSTRING_PTR(z->buf);
 	z->stream.avail_out = 0;
 	rb_obj_hide(z->buf);
 	return;
     }
 
-    if (RSTRING_LEN(z->buf) < z->buf_filled + len) {
-	rb_str_resize(z->buf, z->buf_filled + len);
+    if ((long)rb_str_capacity(z->buf) < ZSTREAM_BUF_FILLED(z) + len) {
+	rb_str_modify_expand(z->buf, len);
 	z->stream.avail_out = 0;
     }
     else {
@@ -752,9 +728,8 @@ zstream_append_buffer(struct zstream *z, const Bytef *src, long len)
 	    z->stream.avail_out = 0;
 	}
     }
-    memcpy(RSTRING_PTR(z->buf) + z->buf_filled, src, len);
-    z->buf_filled += len;
-    z->stream.next_out = (Bytef*)RSTRING_PTR(z->buf) + z->buf_filled;
+    rb_str_cat(z->buf, (const char *)src, len);
+    z->stream.next_out = (Bytef*)RSTRING_END(z->buf);
 }
 
 #define zstream_append_buffer2(z,v) \
@@ -777,14 +752,12 @@ zstream_detach_buffer(struct zstream *z)
     }
     else {
 	dst = z->buf;
-	rb_str_resize(dst, z->buf_filled);
 	rb_obj_reveal(dst, rb_cString);
     }
 
     OBJ_INFECT(dst, self);
 
     z->buf = Qnil;
-    z->buf_filled = 0;
     z->stream.next_out = 0;
     z->stream.avail_out = 0;
 
@@ -800,18 +773,20 @@ static VALUE
 zstream_shift_buffer(struct zstream *z, long len)
 {
     VALUE dst;
-    long buflen;
+    char *bufptr;
+    long buflen = ZSTREAM_BUF_FILLED(z);
 
-    if (z->buf_filled <= len) {
+    if (buflen <= len) {
 	return zstream_detach_buffer(z);
     }
 
-    dst = rb_str_new(RSTRING_PTR(z->buf), len);
-    z->buf_filled -= len;
-    memmove(RSTRING_PTR(z->buf), RSTRING_PTR(z->buf) + len,
-	    z->buf_filled);
-    z->stream.next_out = (Bytef*)RSTRING_PTR(z->buf) + z->buf_filled;
-    buflen = RSTRING_LEN(z->buf) - z->buf_filled;
+    bufptr = RSTRING_PTR(z->buf);
+    dst = rb_str_new(bufptr, len);
+    buflen -= len;
+    memmove(bufptr, bufptr + len, buflen);
+    rb_str_set_len(z->buf, buflen);
+    z->stream.next_out = (Bytef*)RSTRING_END(z->buf);
+    buflen = (long)rb_str_capacity(z->buf) - ZSTREAM_BUF_FILLED(z);
     if (buflen > ZSTREAM_AVAIL_OUT_STEP_MAX) {
 	buflen = ZSTREAM_AVAIL_OUT_STEP_MAX;
     }
@@ -823,13 +798,17 @@ zstream_shift_buffer(struct zstream *z, long len)
 static void
 zstream_buffer_ungets(struct zstream *z, const Bytef *b, unsigned long len)
 {
-    if (NIL_P(z->buf) || RSTRING_LEN(z->buf) - z->buf_filled == 0) {
+    char *bufptr;
+    long filled;
+
+    if (NIL_P(z->buf) || (long)rb_str_capacity(z->buf) <= ZSTREAM_BUF_FILLED(z)) {
 	zstream_expand_buffer_into(z, len);
     }
 
-    memmove(RSTRING_PTR(z->buf) + len, RSTRING_PTR(z->buf), z->buf_filled);
-    memmove(RSTRING_PTR(z->buf), b, len);
-    z->buf_filled+=len;
+    RSTRING_GETMEM(z->buf, bufptr, filled);
+    memmove(bufptr + len, bufptr, filled);
+    memmove(bufptr, b, len);
+    rb_str_set_len(z->buf, filled + len);
     if (z->stream.avail_out > 0) {
 	if (len > z->stream.avail_out) len = z->stream.avail_out;
 	z->stream.next_out+=len;
@@ -840,17 +819,8 @@ zstream_buffer_ungets(struct zstream *z, const Bytef *b, unsigned long len)
 static void
 zstream_buffer_ungetbyte(struct zstream *z, int c)
 {
-    if (NIL_P(z->buf) || RSTRING_LEN(z->buf) - z->buf_filled == 0) {
-	zstream_expand_buffer(z);
-    }
-
-    memmove(RSTRING_PTR(z->buf) + 1, RSTRING_PTR(z->buf), z->buf_filled);
-    RSTRING_PTR(z->buf)[0] = (char)c;
-    z->buf_filled++;
-    if (z->stream.avail_out > 0) {
-	z->stream.next_out++;
-	z->stream.avail_out--;
-    }
+    Bytef cc = (Bytef)c;
+    zstream_buffer_ungets(z, &cc, 1);
 }
 
 static void
@@ -927,7 +897,6 @@ zstream_reset(struct zstream *z)
     }
     z->flags = ZSTREAM_FLAG_READY;
     z->buf = Qnil;
-    z->buf_filled = 0;
     z->stream.next_out = 0;
     z->stream.avail_out = 0;
     zstream_reset_input(z);
@@ -968,7 +937,7 @@ zstream_run_func(void *ptr)
     while (!args->interrupt) {
 	n = z->stream.avail_out;
 	err = z->func->run(&z->stream, flush);
-	z->buf_filled += n - z->stream.avail_out;
+	rb_str_set_len(z->buf, ZSTREAM_BUF_FILLED(z) + (n - z->stream.avail_out));
 
 	if (err == Z_STREAM_END) {
 	    z->flags &= ~ZSTREAM_FLAG_IN_STREAM;
@@ -997,7 +966,7 @@ zstream_run_func(void *ptr)
 							(void *)z);
 	}
 	else {
-	    state = zstream_expand_buffer_without_gvl(z);
+	    state = zstream_expand_buffer_non_stream(z);
 	}
 
 	if (state) {
@@ -1577,7 +1546,6 @@ rb_deflate_init_copy(VALUE self, VALUE orig)
     }
     z1->input = NIL_P(z2->input) ? Qnil : rb_str_dup(z2->input);
     z1->buf   = NIL_P(z2->buf)   ? Qnil : rb_str_dup(z2->buf);
-    z1->buf_filled = z2->buf_filled;
     z1->flags = z2->flags;
 
     return self;
@@ -1761,23 +1729,26 @@ rb_deflate_params(VALUE obj, VALUE v_level, VALUE v_strategy)
     int level, strategy;
     int err;
     uInt n;
+    long filled;
 
     level = ARG_LEVEL(v_level);
     strategy = ARG_STRATEGY(v_strategy);
 
     n = z->stream.avail_out;
     err = deflateParams(&z->stream, level, strategy);
-    z->buf_filled += n - z->stream.avail_out;
+    filled = n - z->stream.avail_out;
     while (err == Z_BUF_ERROR) {
 	rb_warning("deflateParams() returned Z_BUF_ERROR");
 	zstream_expand_buffer(z);
+	rb_str_set_len(z->buf, RSTRING_LEN(z->buf) + filled);
 	n = z->stream.avail_out;
 	err = deflateParams(&z->stream, level, strategy);
-	z->buf_filled += n - z->stream.avail_out;
+	filled = n - z->stream.avail_out;
     }
     if (err != Z_OK) {
 	raise_zlib_error(err, z->stream.msg);
     }
+    rb_str_set_len(z->buf, RSTRING_LEN(z->buf) + filled);
 
     return Qnil;
 }
@@ -2230,7 +2201,7 @@ struct gzfile {
 #define GZFILE_FLAG_FOOTER_FINISHED  (ZSTREAM_FLAG_UNUSED << 2)
 
 #define GZFILE_IS_FINISHED(gz) \
-    (ZSTREAM_IS_FINISHED(&(gz)->z) && (gz)->z.buf_filled == 0)
+    (ZSTREAM_IS_FINISHED(&(gz)->z) && ZSTREAM_BUF_FILLED(&(gz)->z) == 0)
 
 #define GZFILE_READ_SIZE  2048
 
@@ -2356,7 +2327,7 @@ gzfile_write_raw(struct gzfile *gz)
 {
     VALUE str;
 
-    if (gz->z.buf_filled > 0) {
+    if (ZSTREAM_BUF_FILLED(&gz->z) > 0) {
 	str = zstream_detach_buffer(&gz->z);
 	OBJ_TAINT(str);  /* for safe */
 	rb_funcall(gz->io, id_write, 1, str);
@@ -2689,9 +2660,9 @@ gzfile_read_more(struct gzfile *gz)
 			Z_SYNC_FLUSH);
 	    RB_GC_GUARD(str);
 	}
-	if (gz->z.buf_filled > 0) break;
+	if (ZSTREAM_BUF_FILLED(&gz->z) > 0) break;
     }
-    return gz->z.buf_filled;
+    return ZSTREAM_BUF_FILLED(&gz->z);
 }
 
 static void
@@ -2732,7 +2703,7 @@ gzfile_fill(struct gzfile *gz, long len)
         rb_raise(rb_eArgError, "negative length %ld given", len);
     if (len == 0)
 	return 0;
-    while (!ZSTREAM_IS_FINISHED(&gz->z) && gz->z.buf_filled < len) {
+    while (!ZSTREAM_IS_FINISHED(&gz->z) && ZSTREAM_BUF_FILLED(&gz->z) < len) {
 	gzfile_read_more(gz);
     }
     if (GZFILE_IS_FINISHED(gz)) {
@@ -2741,7 +2712,7 @@ gzfile_fill(struct gzfile *gz, long len)
 	}
 	return -1;
     }
-    return len < gz->z.buf_filled ? len : gz->z.buf_filled;
+    return len < ZSTREAM_BUF_FILLED(&gz->z) ? len : ZSTREAM_BUF_FILLED(&gz->z);
 }
 
 static VALUE
@@ -2776,7 +2747,7 @@ gzfile_readpartial(struct gzfile *gz, long len, VALUE outbuf)
             return outbuf;
         }
     }
-    while (!ZSTREAM_IS_FINISHED(&gz->z) && gz->z.buf_filled == 0) {
+    while (!ZSTREAM_IS_FINISHED(&gz->z) && ZSTREAM_BUF_FILLED(&gz->z) == 0) {
 	gzfile_read_more(gz);
     }
     if (GZFILE_IS_FINISHED(gz)) {
@@ -2830,7 +2801,7 @@ gzfile_getc(struct gzfile *gz)
     int len;
 
     len = rb_enc_mbmaxlen(gz->enc);
-    while (!ZSTREAM_IS_FINISHED(&gz->z) && gz->z.buf_filled < len) {
+    while (!ZSTREAM_IS_FINISHED(&gz->z) && ZSTREAM_BUF_FILLED(&gz->z) < len) {
 	gzfile_read_more(gz);
     }
     if (GZFILE_IS_FINISHED(gz)) {
@@ -2848,7 +2819,7 @@ gzfile_getc(struct gzfile *gz)
 	    gz->cbuf = ALLOC_N(char, GZFILE_CBUF_CAPA);
 	}
         ss = sp = (const unsigned char*)RSTRING_PTR(gz->z.buf);
-        se = sp + gz->z.buf_filled;
+        se = sp + ZSTREAM_BUF_FILLED(&gz->z);
         ds = dp = (unsigned char *)gz->cbuf;
         de = (unsigned char *)ds + GZFILE_CBUF_CAPA;
         (void)rb_econv_convert(gz->ec, &sp, se, &dp, de, ECONV_PARTIAL_INPUT|ECONV_AFTER_OUTPUT);
@@ -3422,7 +3393,14 @@ static VALUE
 rb_gzfile_total_out(VALUE obj)
 {
     struct gzfile *gz = get_gzfile(obj);
-    return rb_uint2inum(gz->z.stream.total_out - gz->z.buf_filled);
+    uLong total_out = gz->z.stream.total_out;
+    long buf_filled = ZSTREAM_BUF_FILLED(&gz->z);
+
+    if (total_out >= (uLong)buf_filled) {
+        return rb_uint2inum(total_out - buf_filled);
+    } else {
+        return LONG2FIX(-(buf_filled - (long)total_out));
+    }
 }
 
 /*
@@ -3996,7 +3974,7 @@ gzreader_skip_linebreaks(struct gzfile *gz)
     char *p;
     int n;
 
-    while (gz->z.buf_filled == 0) {
+    while (ZSTREAM_BUF_FILLED(&gz->z) == 0) {
 	if (GZFILE_IS_FINISHED(gz)) return;
 	gzfile_read_more(gz);
     }
@@ -4004,10 +3982,10 @@ gzreader_skip_linebreaks(struct gzfile *gz)
     p = RSTRING_PTR(gz->z.buf);
 
     while (n++, *(p++) == '\n') {
-	if (n >= gz->z.buf_filled) {
+	if (n >= ZSTREAM_BUF_FILLED(&gz->z)) {
 	    str = zstream_detach_buffer(&gz->z);
 	    gzfile_calc_crc(gz, str);
-	    while (gz->z.buf_filled == 0) {
+	    while (ZSTREAM_BUF_FILLED(&gz->z) == 0) {
 		if (GZFILE_IS_FINISHED(gz)) return;
 		gzfile_read_more(gz);
 	    }
@@ -4031,7 +4009,7 @@ static long
 gzreader_charboundary(struct gzfile *gz, long n)
 {
     char *s = RSTRING_PTR(gz->z.buf);
-    char *e = s + gz->z.buf_filled;
+    char *e = s + ZSTREAM_BUF_FILLED(&gz->z);
     char *p = rb_enc_left_char_head(s, s + n, e, gz->enc);
     long l = p - s;
     if (l < n) {
@@ -4126,9 +4104,9 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
 	gzreader_skip_linebreaks(gz);
     }
 
-    while (gz->z.buf_filled < rslen) {
+    while (ZSTREAM_BUF_FILLED(&gz->z) < rslen) {
 	if (ZSTREAM_IS_FINISHED(&gz->z)) {
-	    if (gz->z.buf_filled > 0) gz->lineno++;
+	    if (ZSTREAM_BUF_FILLED(&gz->z) > 0) gz->lineno++;
 	    return gzfile_read(gz, rslen);
 	}
 	gzfile_read_more(gz);
@@ -4138,13 +4116,13 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
     n = rslen;
     for (;;) {
 	long filled;
-	if (n > gz->z.buf_filled) {
+	if (n > ZSTREAM_BUF_FILLED(&gz->z)) {
 	    if (ZSTREAM_IS_FINISHED(&gz->z)) break;
 	    gzfile_read_more(gz);
 	    p = RSTRING_PTR(gz->z.buf) + n - rslen;
 	}
 	if (!rspara) rscheck(rsptr, rslen, rs);
-	filled = gz->z.buf_filled;
+	filled = ZSTREAM_BUF_FILLED(&gz->z);
 	if (limit > 0 && filled >= limit) {
 	    filled = limit;
 	}
@@ -4161,7 +4139,7 @@ gzreader_gets(int argc, VALUE *argv, VALUE obj)
 	    p++, n++;
 	}
     }
-    if (maxlen > 1 && n == limit && (gz->z.buf_filled > n || !ZSTREAM_IS_FINISHED(&gz->z))) {
+    if (maxlen > 1 && n == limit && (ZSTREAM_BUF_FILLED(&gz->z) > n || !ZSTREAM_IS_FINISHED(&gz->z))) {
 	n = gzreader_charboundary(gz, n);
     }
 

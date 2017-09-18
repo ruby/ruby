@@ -129,7 +129,7 @@ try_convert_to_bn(VALUE obj)
     if (rb_obj_is_kind_of(obj, cBN))
 	return obj;
     if (RB_INTEGER_TYPE_P(obj)) {
-	newobj = NewBN(cBN); /* Handle potencial mem leaks */
+	newobj = NewBN(cBN); /* Handle potential mem leaks */
 	bn = integer_to_bnptr(obj, NULL);
 	SetBN(newobj, bn);
     }
@@ -953,7 +953,7 @@ ossl_bn_hash(VALUE self)
 	ossl_raise(eBNError, NULL);
     }
 
-    hash = INT2FIX(rb_memhash(buf, len));
+    hash = ST2FIX(rb_memhash(buf, len));
     xfree(buf);
 
     return hash;

@@ -496,11 +496,13 @@ static VALUE
 enum_collect(VALUE obj)
 {
     VALUE ary;
+    int min_argc, max_argc;
 
     RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
 
     ary = rb_ary_new();
-    rb_block_call(obj, id_each, 0, 0, collect_i, ary);
+    min_argc = rb_block_min_max_arity(&max_argc);
+    rb_lambda_call(obj, id_each, 0, 0, collect_i, min_argc, max_argc, ary);
 
     return ary;
 }
@@ -3845,6 +3847,7 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
 static VALUE
 uniq_func(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 {
+    ENUM_WANT_SVALUE();
     rb_hash_add_new_element(hash, i, i);
     return Qnil;
 }
@@ -3852,6 +3855,7 @@ uniq_func(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 static VALUE
 uniq_iter(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 {
+    ENUM_WANT_SVALUE();
     rb_hash_add_new_element(hash, rb_yield_values2(argc, argv), i);
     return Qnil;
 }

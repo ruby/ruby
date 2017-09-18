@@ -1039,13 +1039,13 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 
 	    while (escape_cfp < eocfp) {
 		if (escape_cfp->ep == ep) {
-		    const VALUE epc = escape_cfp->pc - escape_cfp->iseq->body->iseq_encoded;
-		    const rb_iseq_t * const iseq = escape_cfp->iseq;
-		    const struct iseq_catch_table * const ct = iseq->body->catch_table;
-		    const int ct_size = ct->size;
-		    int i;
+		    const rb_iseq_t *const iseq = escape_cfp->iseq;
+		    const VALUE epc = escape_cfp->pc - iseq->body->iseq_encoded;
+		    const struct iseq_catch_table *const ct = iseq->body->catch_table;
+		    unsigned int i;
 
-		    for (i=0; i<ct_size; i++) {
+		    if (!ct) break;
+		    for (i=0; i < ct->size; i++) {
 			const struct iseq_catch_table_entry * const entry = &ct->entries[i];
 
 			if (entry->type == CATCH_TYPE_BREAK && entry->start < epc && entry->end >= epc) {
@@ -1080,6 +1080,7 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 	const VALUE *current_ep = GET_EP();
 	const VALUE *target_lep = VM_EP_LEP(current_ep);
 	int in_class_frame = 0;
+	int toplevel = 1;
 	escape_cfp = reg_cfp;
 
 	while (escape_cfp < eocfp) {
@@ -1098,6 +1099,7 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 
 	    if (lep == target_lep) {
 		if (VM_FRAME_TYPE(escape_cfp) == VM_FRAME_MAGIC_LAMBDA) {
+		    toplevel = 0;
 		    if (in_class_frame) {
 			/* lambda {class A; ... return ...; end} */
 			goto valid_return;
@@ -1112,6 +1114,20 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 			    }
 			    tep = VM_ENV_PREV_EP(tep);
 			}
+		    }
+		}
+		else if (VM_FRAME_RUBYFRAME_P(escape_cfp)) {
+		    switch (escape_cfp->iseq->body->type) {
+		      case ISEQ_TYPE_TOP:
+		      case ISEQ_TYPE_MAIN:
+			if (toplevel) goto valid_return;
+			break;
+		      case ISEQ_TYPE_EVAL:
+		      case ISEQ_TYPE_CLASS:
+			toplevel = 0;
+			break;
+		      default:
+			break;
 		    }
 		}
 	    }

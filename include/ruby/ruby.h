@@ -1190,7 +1190,7 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
 #define TypedData_Get_Struct(obj,type,data_type,sval) \
     ((sval) = (type*)rb_check_typeddata((obj), (data_type)))
 
-#define RSTRUCT_LEN(st)         rb_struct_size(st)
+#define RSTRUCT_LEN(st)         NUM2LONG(rb_struct_size(st))
 #define RSTRUCT_PTR(st)         rb_struct_ptr(st)
 #define RSTRUCT_SET(st, idx, v) rb_struct_aset(st, INT2NUM(idx), (v))
 #define RSTRUCT_GET(st, idx)    rb_struct_aref(st, INT2NUM(idx))
@@ -1575,6 +1575,9 @@ rb_num2char_inline(VALUE x)
 #define NUM2CHR(x) RB_NUM2CHR(x)
 #define CHR2FIX(x) RB_CHR2FIX(x)
 
+#define RB_ST2FIX(h) RB_LONG2FIX((long)(h))
+#define ST2FIX(h) RB_ST2FIX(h)
+
 #define RB_ALLOC_N(type,n) ((type*)ruby_xmalloc2((size_t)(n),sizeof(type)))
 #define RB_ALLOC(type) ((type*)ruby_xmalloc(sizeof(type)))
 #define RB_ZALLOC_N(type,n) ((type*)ruby_xcalloc((size_t)(n),sizeof(type)))
@@ -1618,7 +1621,7 @@ static inline void *
 rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
 {
     size_t cnt = (size_t)count;
-    if (elsize % sizeof(VALUE) == 0) {
+    if (elsize == sizeof(VALUE)) {
 	if (RB_UNLIKELY(cnt > LONG_MAX / sizeof(VALUE))) {
 	    ruby_malloc_size_overflow(cnt, elsize);
 	}
@@ -2007,7 +2010,8 @@ rb_special_const_p(VALUE obj)
 static inline void
 rb_clone_setup(VALUE clone, VALUE obj)
 {
-    rb_obj_setup(clone, rb_singleton_class_clone(obj), RBASIC(obj)->flags);
+    rb_obj_setup(clone, rb_singleton_class_clone(obj),
+                 RBASIC(obj)->flags & ~(FL_PROMOTED0|FL_PROMOTED1|FL_FINALIZE));
     rb_singleton_class_attached(RBASIC_CLASS(clone), clone);
     if (RB_FL_TEST(obj, RUBY_FL_EXIVAR)) rb_copy_generic_ivar(clone, obj);
 }
@@ -2257,29 +2261,16 @@ ALWAYS_INLINE(static int rb_scan_args_trail_idx(const char *fmt));
 static inline int
 rb_scan_args_trail_idx(const char *fmt)
 {
-    return (rb_scan_args_lead_p(fmt) ?
-	    (rb_scan_args_isdigit(fmt[1]) || fmt[1]=='*')+1 :
-	    (fmt[0]=='*'));
-}
-
-ALWAYS_INLINE(static int rb_scan_args_trail_p(const char *fmt));
-static inline int
-rb_scan_args_trail_p(const char *fmt)
-{
-    return (rb_scan_args_lead_p(fmt) ?
-	    (rb_scan_args_isdigit(fmt[1]) || fmt[1]=='*') &&
-	    rb_scan_args_isdigit(fmt[2]) :
-	    fmt[0]=='*' && rb_scan_args_isdigit(fmt[1]));
+    const int idx = rb_scan_args_var_idx(fmt);
+    return idx+(fmt[idx]=='*');
 }
 
 ALWAYS_INLINE(static int rb_scan_args_n_trail(const char *fmt));
 static inline int
 rb_scan_args_n_trail(const char *fmt)
 {
-    return (rb_scan_args_lead_p(fmt) ?
-	    ((rb_scan_args_isdigit(fmt[1]) || fmt[1]=='*') &&
-	     rb_scan_args_isdigit(fmt[2]) ? fmt[2]-'0' : 0) :
-	    (fmt[0]=='*' && rb_scan_args_isdigit(fmt[1]) ? fmt[1]-'0' : 0));
+    const int idx = rb_scan_args_trail_idx(fmt);
+    return (rb_scan_args_isdigit(fmt[idx]) ? fmt[idx]-'0' : 0);
 }
 
 ALWAYS_INLINE(static int rb_scan_args_hash_idx(const char *fmt));
@@ -2342,8 +2333,8 @@ rb_scan_args_set(int argc, const VALUE *argv,
 		 int f_var, int f_hash, int f_block,
 		 VALUE *vars[])
 {
-    int i, argi = 0, vari = 0;
-    VALUE *var, hash = Qnil;
+    int i, argi = 0, vari = 0, last_idx = -1;
+    VALUE *var, hash = Qnil, last_hash = 0;
     const int n_mand = n_lead + n_trail;
 
     /* capture an option hash - phase 1: pop */
@@ -2361,7 +2352,8 @@ rb_scan_args_set(int argc, const VALUE *argv,
 	    hash = rb_check_hash_type(last);
 	    if (!RB_NIL_P(hash)) {
 		VALUE opts = rb_extract_keywords(&hash);
-		if (!hash) argc--;
+		if (!(last_hash = hash)) argc--;
+		else last_idx = argc - 1;
 		hash = opts ? opts : Qnil;
 	    }
 	}
@@ -2372,14 +2364,14 @@ rb_scan_args_set(int argc, const VALUE *argv,
     /* capture leading mandatory arguments */
     for (i = n_lead; i-- > 0; ) {
 	var = vars[vari++];
-	if (var) *var = argv[argi];
+	if (var) *var = (argi == last_idx) ? last_hash : argv[argi];
 	argi++;
     }
     /* capture optional arguments */
     for (i = n_opt; i-- > 0; ) {
 	var = vars[vari++];
 	if (argi < argc - n_trail) {
-	    if (var) *var = argv[argi];
+	    if (var) *var = (argi == last_idx) ? last_hash : argv[argi];
 	    argi++;
 	}
 	else {
@@ -2392,7 +2384,11 @@ rb_scan_args_set(int argc, const VALUE *argv,
 
 	var = vars[vari++];
 	if (0 < n_var) {
-	    if (var) *var = rb_ary_new4(n_var, &argv[argi]);
+	    if (var) {
+		int f_last = (last_idx + 1 == argc - n_trail);
+		*var = rb_ary_new4(n_var-f_last, &argv[argi]);
+		if (f_last) rb_ary_push(*var, last_hash);
+	    }
 	    argi += n_var;
 	}
 	else {
@@ -2402,7 +2398,7 @@ rb_scan_args_set(int argc, const VALUE *argv,
     /* capture trailing mandatory arguments */
     for (i = n_trail; i-- > 0; ) {
 	var = vars[vari++];
-	if (var) *var = argv[argi];
+	if (var) *var = (argi == last_idx) ? last_hash : argv[argi];
 	argi++;
     }
     /* capture an option hash - phase 2: assignment */

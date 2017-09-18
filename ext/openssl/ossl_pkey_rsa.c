@@ -236,7 +236,7 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
     else {
 	pass = ossl_pem_passwd_value(pass);
 	arg = ossl_to_der_if_possible(arg);
-	in = ossl_obj2bio(arg);
+	in = ossl_obj2bio(&arg);
 	rsa = PEM_read_bio_RSAPrivateKey(in, NULL, ossl_pem_passwd_cb, (void *)pass);
 	if (!rsa) {
 	    OSSL_BIO_reset(in);
@@ -706,7 +706,7 @@ Init_ossl_rsa(void)
     /* Document-class: OpenSSL::PKey::RSA
      *
      * RSA is an asymmetric public key algorithm that has been formalized in
-     * RFC 3447. It is in widespread use in public key infrastuctures (PKI)
+     * RFC 3447. It is in widespread use in public key infrastructures (PKI)
      * where certificates (cf. OpenSSL::X509::Certificate) often are issued
      * on the basis of a public/private RSA key pair. RSA is used in a wide
      * field of applications such as secure (symmetric) key exchange, e.g.

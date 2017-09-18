@@ -16,6 +16,8 @@ class TestFloat < Test::Unit::TestCase
     assert_in_delta(13.4 % 1, 0.4, 0.0001)
     assert_equal(36893488147419111424,
                  36893488147419107329.0.to_i)
+    assert_equal(1185151044158398820374743613440,
+                 1.1851510441583988e+30.to_i)
   end
 
   def nan_test(x,y)
@@ -455,6 +457,8 @@ class TestFloat < Test::Unit::TestCase
   end
 
   def test_floor_with_precision
+    assert_equal(+0.0, +0.001.floor(1))
+    assert_equal(-0.1, -0.001.floor(1))
     assert_equal(1.100, 1.111.floor(1))
     assert_equal(1.110, 1.111.floor(2))
     assert_equal(11110, 11119.9.floor(-1))
@@ -482,6 +486,8 @@ class TestFloat < Test::Unit::TestCase
   end
 
   def test_ceil_with_precision
+    assert_equal(+0.1, +0.001.ceil(1))
+    assert_equal(-0.0, -0.001.ceil(1))
     assert_equal(1.200, 1.111.ceil(1))
     assert_equal(1.120, 1.111.ceil(2))
     assert_equal(11120, 11111.1.ceil(-1))

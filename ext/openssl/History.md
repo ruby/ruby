@@ -1,3 +1,63 @@
+Version 2.0.5
+=============
+
+Bug fixes
+---------
+
+* Reading a PEM/DER-encoded private key or certificate from an IO object did
+  not work properly on mswin platforms.
+  [[ruby/openssl#128]](https://github.com/ruby/openssl/issues/128)
+* Broken length check in the PEM passphrase callback is fixed.
+* It failed to compile when OpenSSL is configured without TLS 1.0 support.
+
+
+Version 2.0.4
+=============
+
+Bug fixes
+---------
+
+* It now compiles with LibreSSL without renaming on Windows (mswin).
+* A workaround for the error queue leak of X509_load_cert_crl_file() that
+  causes random errors is added.
+  [[Bug #11033]](https://bugs.ruby-lang.org/issues/11033)
+
+
+Version 2.0.3
+=============
+
+Bug fixes
+---------
+
+* OpenSSL::ASN1::Constructive#each which was broken by 2.0.0 is fixed.
+  [[ruby/openssl#96]](https://github.com/ruby/openssl/pull/96)
+* Fixed build with static OpenSSL libraries on Windows.
+  [[Bug #13080]](https://bugs.ruby-lang.org/issues/13080)
+* OpenSSL::X509::Name#eql? which was broken by 2.0.0 is fixed.
+
+
+Version 2.0.2
+=============
+
+Bug fixes
+---------
+
+* Fix build with early 0.9.8 series which did not have SSL_CTX_clear_options().
+  [ruby-core:78693]
+
+
+Version 2.0.1
+=============
+
+Bug fixes
+---------
+
+* A GC issue around OpenSSL::BN is fixed.
+  [[ruby/openssl#87]](https://github.com/ruby/openssl/issues/87)
+* OpenSSL::ASN1 now parses BER encoding of GeneralizedTime without seconds.
+  [[ruby/openssl#88]](https://github.com/ruby/openssl/pull/88)
+
+
 Version 2.0.0
 =============
 
@@ -23,7 +83,8 @@ Supported platforms
 Notable changes
 ---------------
 
-* Add support for OpenSSL 1.1.0. [[Feature #12324]](https://bugs.ruby-lang.org/issues/12324)
+* Add support for OpenSSL 1.1.0.
+  [[Feature #12324]](https://bugs.ruby-lang.org/issues/12324)
 * Add support for LibreSSL
 
 * OpenSSL::Cipher

@@ -809,6 +809,23 @@ AC_DEFUN([RUBY_TRY_LDFLAGS], [
 ])
 
 : ${DLDFLAGS="$LDFLAGS"}
+: ${RPATHFLAG=''}
+rpathflag=''
+AS_IF([test x"${RPATHFLAG}" = x], [
+    AS_CASE(["$target_os"],
+	[hpux*], [AS_IF([test "$rb_cv_prog_gnu_ld" = no], [rpathflag='+b '])],
+	[aix*], [rpathflag='-blibpath:'],
+	[for rpathflag in -R "-rpath "; do
+	    AS_CASE("$rpathflag",
+		    [*" "], [AS_CASE(["${linker_flag}"],
+				     [*,], [rpathflag=`echo "$rpathflag" | tr ' ' ,`])])
+	    rpathflag="${linker_flag}${rpathflag}"
+	    RUBY_TRY_LDFLAGS([${rpathflag}.], [], [rpathflag=])
+	    AS_IF([test "x${rpathflag}" != x], [])
+        done])
+], [
+    rpathflag=`echo "$RPATHFLAG" | sed 's/%.*//'`
+])
 
 AS_CASE([$RUBY_PATCHLEVEL], [-*],
 	[particular_werror_flags=yes], [particular_werror_flags=no])
@@ -1035,7 +1052,7 @@ AC_ARG_WITH(opt-dir,
 	[
 		val=`echo "$PATH_SEPARATOR$withval" | sed "s|$PATH_SEPARATOR\([[^$PATH_SEPARATOR]*]\)| -I\1/include|g;s/^ //"`
 		CPPFLAGS="$CPPFLAGS $val"
-		val=`echo "$PATH_SEPARATOR$withval" | sed "s|$PATH_SEPARATOR\([[^$PATH_SEPARATOR]*]\)| -L\1/lib|g;s/^ //"`
+		val=`echo "$PATH_SEPARATOR$withval" | sed "s|$PATH_SEPARATOR\([[^$PATH_SEPARATOR]*]\)| -L\1/lib${rpathflag:+ $rpathflag\\\\1/lib}|g;s/^ //"`
 		LDFLAGS="$LDFLAGS $val"
 		LDFLAGS_OPTDIR="$val"
 		OPT_DIR="$withval"
@@ -1100,6 +1117,12 @@ AS_CASE(["$target_os"],
 		    ],
 		    [macosx_10_5=yes], [macosx_10_5=no])
 		AC_MSG_RESULT($macosx_10_5)
+		AS_IF([test "${target_os@%:@darwin}" -ge 16], [
+		    ac_cv_func___syscall=no
+		    ac_cv_func_syscall=no
+		    ac_cv_header_sys_syscall_h=no
+		    ac_cv_header_syscall_h=no
+		])
 		if test $macosx_10_5 = yes; then
 		    ac_cv_func_getcontext=no
 		    ac_cv_func_setcontext=no
@@ -1380,15 +1403,15 @@ AC_ARG_WITH([gmp],
 AS_IF([test "x$with_gmp" != xno],
   [AC_CHECK_HEADERS(gmp.h)
    AS_IF([test "x$ac_cv_header_gmp_h" != xno],
-     AC_CHECK_LIB([gmp], [__gmpz_init]))
-   with_gmp="$ac_cv_lib_gmp___gmpz_init"
-   AS_IF([test -z "$with_gmp"], [with_gmp=no])])
+     AC_SEARCH_LIBS([__gmpz_init], [gmp],
+       [AC_DEFINE(HAVE_LIBGMP, 1)]))])
 
 AC_ARG_WITH([jemalloc],
   [AS_HELP_STRING([--with-jemalloc],[use jemalloc allocator])],
   [with_jemalloc=$withval], [with_jemalloc=no])
 AS_IF([test "x$with_jemalloc" = xyes],[
-  AC_CHECK_LIB([jemalloc], [malloc_conf], [], [with_jemalloc=no])
+  AC_SEARCH_LIBS([malloc_conf], [jemalloc],
+    [AC_DEFINE(HAVE_LIBJEMALLOC, 1)], [with_jemalloc=no])
   AC_CHECK_HEADER(jemalloc/jemalloc.h, [
     AC_DEFINE(RUBY_ALTERNATIVE_MALLOC_HEADER, [<jemalloc/jemalloc.h>])
   ])
@@ -3310,7 +3333,6 @@ AC_SUBST(LIBEXT)dnl
 AC_SUBST(ASMEXT, S)dnl
 
 STATIC=
-: ${PATHFLAG=''}
 
 if test "$with_dln_a_out" != yes; then
   rb_cv_dlopen=unknown
@@ -3349,9 +3371,6 @@ if test "$with_dln_a_out" != yes; then
 			: ${LDSHARED='$(LD) -b'}
 			XLDFLAGS="$XLDFLAGS -Wl,-E"
 			: ${LIBPATHENV=SHLIB_PATH}
-			if test "$rb_cv_prog_gnu_ld" = no; then
-			    RPATHFLAG=' +b %1$-s'
-			fi
 			rb_cv_dlopen=yes],
 	[solaris*], [	if test "$GCC" = yes; then
 			    : ${LDSHARED='$(CC) -shared'}
@@ -3422,7 +3441,6 @@ if test "$with_dln_a_out" != yes; then
                         TRY_LINK='$(CC) $(LDFLAGS) -oconftest $(INCFLAGS) -I$(hdrdir) $(CPPFLAGS)'
                         TRY_LINK="$TRY_LINK"' $(CFLAGS) $(src) $(LIBPATH) $(LOCAL_LIBS) $(LIBS)'
 			: ${LIBPATHENV=LIBPATH}
-			RPATHFLAG=" ${linker_flag}-blibpath:%1\$-s:${prefix}/lib:${LIBPATH:-/usr/lib:/lib}"
 			rb_cv_dlopen=yes],
 	[nto-qnx*], [	DLDFLAGS="$DLDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"
 			: ${LDSHARED='$(LD) -Bshareable -x'}
@@ -3458,21 +3476,11 @@ if test "$with_dln_a_out" != yes; then
       ])
   fi
 
-  if test "$enable_rpath" = yes; then
-    if test x"${RPATHFLAG}" = x; then
-      for rpathflag in -R "-rpath "; do
-	AS_CASE("$rpathflag",
-		[*" "], [AS_CASE(["${linker_flag}"],
-				 [*,], [rpathflag=`echo "$rpathflag" | tr ' ' ,`])])
-	rpathflag="${linker_flag}${rpathflag}"
-	RUBY_TRY_LDFLAGS([${rpathflag}.], [], [rpathflag=])
-	if test "x${rpathflag}" != x; then
+  AS_IF([test "$enable_rpath:${RPATHFLAG}" = yes:], [
+      AS_IF([test "x$rpathflag" != x], [
 	  RPATHFLAG=" ${rpathflag}%1\$-s"
-	  break
-	fi
-      done
-    fi
-  fi
+      ])
+  ])
 fi
 if test "${LDSHAREDXX}" = ""; then
     AS_CASE(["${LDSHARED}"],
@@ -4202,12 +4210,6 @@ AS_CASE(["$target_os"],
     [nacl], [
 	FIRSTMAKEFILE=GNUmakefile:nacl/GNUmakefile.in
 	])
-
-AS_CASE(["$with_gmp: $SOLIBS "], [no:* | *' -lgmp '*|*' $(LIBS) '*], [],
-	[SOLIBS="-lgmp $SOLIBS"])
-
-AS_CASE(["$with_jemalloc: $LIBS "], [no:* | *' -ljemalloc '*], [],
-	[LIBS="-ljemalloc $LIBS"])
 
 MINIOBJS="$MINIDLNOBJ"
 

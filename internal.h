@@ -330,8 +330,6 @@ ntz_intptr(uintptr_t x)
 VALUE rb_int128t2big(int128_t n);
 #endif
 
-#define ST2FIX(h) LONG2FIX((long)(h))
-
 
 /* arguments must be Fixnum */
 static inline VALUE
@@ -776,6 +774,8 @@ struct vm_svar {
 
 /* THROW_DATA */
 
+#define THROW_DATA_CONSUMED IMEMO_FL_USER0
+
 struct vm_throw_data {
     VALUE flags;
     VALUE reserved;
@@ -784,19 +784,34 @@ struct vm_throw_data {
     VALUE throw_state;
 };
 
-#define THROW_DATA_P(err) RB_TYPE_P((err), T_IMEMO)
+#define THROW_DATA_P(err) RB_TYPE_P(((VALUE)err), T_IMEMO)
 
 /* IFUNC */
+
+struct vm_ifunc_argc {
+#if SIZEOF_INT * 2 > SIZEOF_VALUE
+    int min: (SIZEOF_VALUE * CHAR_BIT) / 2;
+    int max: (SIZEOF_VALUE * CHAR_BIT) / 2;
+#else
+    int min, max;
+#endif
+};
 
 struct vm_ifunc {
     VALUE flags;
     VALUE reserved;
     VALUE (*func)(ANYARGS);
     const void *data;
-    ID id;
+    struct vm_ifunc_argc argc;
 };
 
 #define IFUNC_NEW(a, b, c) ((struct vm_ifunc *)rb_imemo_new(imemo_ifunc, (VALUE)(a), (VALUE)(b), (VALUE)(c), 0))
+struct vm_ifunc *rb_vm_ifunc_new(VALUE (*func)(ANYARGS), const void *data, int min_argc, int max_argc);
+static inline struct vm_ifunc *
+rb_vm_ifunc_proc_new(VALUE (*func)(ANYARGS), const void *data)
+{
+    return rb_vm_ifunc_new(func, data, 0, UNLIMITED_ARGUMENTS);
+}
 
 /* MEMO */
 
@@ -1333,8 +1348,9 @@ ID rb_id_attrget(ID id);
 VALUE rb_proc_location(VALUE self);
 st_index_t rb_hash_proc(st_index_t hash, VALUE proc);
 int rb_block_arity(void);
+int rb_block_min_max_arity(int *max);
 VALUE rb_func_proc_new(rb_block_call_func_t func, VALUE val);
-VALUE rb_func_lambda_new(rb_block_call_func_t func, VALUE val);
+VALUE rb_func_lambda_new(rb_block_call_func_t func, VALUE val, int min_argc, int max_argc);
 
 /* process.c */
 #define RB_MAX_GROUPS (65536)
@@ -1424,7 +1440,6 @@ VALUE rb_strftime(const char *format, size_t format_len, rb_encoding *enc,
 #endif
 
 /* string.c */
-void Init_frozen_strings(void);
 VALUE rb_fstring(VALUE);
 VALUE rb_fstring_new(const char *ptr, long len);
 #define rb_fstring_lit(str) rb_fstring_new((str), rb_strlen_lit(str))
@@ -1594,6 +1609,9 @@ VALUE rb_check_funcall_default(VALUE, ID, int, const VALUE *, VALUE);
 VALUE rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, int *stateptr);
 VALUE rb_yield_1(VALUE val);
 VALUE rb_yield_lambda(VALUE values);
+VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
+		     rb_block_call_func_t bl_proc, int min_argc, int max_argc,
+		     VALUE data2);
 
 /* vm_insnhelper.c */
 VALUE rb_equal_opt(VALUE obj1, VALUE obj2);

@@ -2809,6 +2809,28 @@ __END__
     end;
   end
 
+  def test_single_exception_on_close
+    a = []
+    t = []
+    10.times do
+      r, w = IO.pipe
+      a << [r, w]
+      t << Thread.new do
+        while r.gets
+        end rescue IOError
+        Thread.current.pending_interrupt?
+      end
+    end
+    a.each do |r, w|
+      w.write -"\n"
+      w.close
+      r.close
+    end
+    t.each do |th|
+      assert_equal false, th.value, '[ruby-core:81581] [Bug #13632]'
+    end
+  end
+
   def test_open_mode
     feature4742 = "[ruby-core:36338]"
     bug6055 = '[ruby-dev:45268]'

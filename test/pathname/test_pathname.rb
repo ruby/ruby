@@ -14,8 +14,8 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def self.get_linenum
-    if /:(\d+):/ =~ caller[1]
-      $1.to_i
+    if loc = caller_locations(2, 1)
+      loc[0].lineno
     else
       nil
     end
@@ -220,6 +220,8 @@ class TestPathname < Test::Unit::TestCase
   defassert(:plus, '../../c', '..', '../c')
 
   defassert(:plus, 'a//b/d//e', 'a//b/c', '../d//e')
+
+  defassert(:plus, '//foo/var/bar', '//foo/var', 'bar')
 
   def test_slash
     assert_kind_of(Pathname, Pathname("a") / Pathname("b"))

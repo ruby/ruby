@@ -1448,6 +1448,8 @@ lazy_init_block_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
 #define LAZY_MEMO_PACKED_P(memo) ((memo)->memo_flags & LAZY_MEMO_PACKED)
 #define LAZY_MEMO_SET_BREAK(memo) ((memo)->memo_flags |= LAZY_MEMO_BREAK)
 #define LAZY_MEMO_SET_VALUE(memo, value) MEMO_V2_SET(memo, value)
+#define LAZY_MEMO_SET_PACKED(memo) ((memo)->memo_flags |= LAZY_MEMO_PACKED)
+#define LAZY_MEMO_RESET_PACKED(memo) ((memo)->memo_flags &= ~LAZY_MEMO_PACKED)
 
 static VALUE
 lazy_init_yielder(VALUE val, VALUE m, int argc, VALUE *argv)
@@ -1743,6 +1745,7 @@ lazy_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_inde
 {
     VALUE value = lazyenum_yield_values(proc_entry, result);
     LAZY_MEMO_SET_VALUE(result, value);
+    LAZY_MEMO_RESET_PACKED(result);
     return result;
 }
 
@@ -1913,6 +1916,7 @@ lazy_grep_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long mem
     if (!RTEST(chain)) return 0;
     value = rb_proc_call_with_block(entry->proc, 1, &(result->memo_value), Qnil);
     LAZY_MEMO_SET_VALUE(result, value);
+    LAZY_MEMO_RESET_PACKED(result);
 
     return result;
 }

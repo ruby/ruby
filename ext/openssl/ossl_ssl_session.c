@@ -49,7 +49,7 @@ static VALUE ossl_ssl_session_initialize(VALUE self, VALUE arg1)
 		if ((ctx = SSL_get1_session(ssl)) == NULL)
 			ossl_raise(eSSLSession, "no session available");
 	} else {
-		BIO *in = ossl_obj2bio(arg1);
+		BIO *in = ossl_obj2bio(&arg1);
 
 		ctx = PEM_read_bio_SSL_SESSION(in, NULL, NULL, NULL);
 

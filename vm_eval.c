@@ -1203,7 +1203,7 @@ rb_iterate(VALUE (* it_proc)(VALUE), VALUE data1,
 	   VALUE (* bl_proc)(ANYARGS), VALUE data2)
 {
     return rb_iterate0(it_proc, data1,
-		       bl_proc ? IFUNC_NEW(bl_proc, data2, rb_frame_this_func()) : 0,
+		       bl_proc ? rb_vm_ifunc_proc_new(bl_proc, (void *)data2) : 0,
 		       GET_THREAD());
 }
 
@@ -1234,6 +1234,23 @@ rb_block_call(VALUE obj, ID mid, int argc, const VALUE * argv,
     arg.argc = argc;
     arg.argv = argv;
     return rb_iterate(iterate_method, (VALUE)&arg, bl_proc, data2);
+}
+
+VALUE
+rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
+	       rb_block_call_func_t bl_proc, int min_argc, int max_argc,
+	       VALUE data2)
+{
+    struct iter_method_arg arg;
+    struct vm_ifunc *block;
+
+    if (!bl_proc) rb_raise(rb_eArgError, "NULL lambda function");
+    arg.obj = obj;
+    arg.mid = mid;
+    arg.argc = argc;
+    arg.argv = argv;
+    block = rb_vm_ifunc_new(bl_proc, (void *)data2, min_argc, max_argc);
+    return rb_iterate0(iterate_method, (VALUE)&arg, block, GET_THREAD());
 }
 
 static VALUE

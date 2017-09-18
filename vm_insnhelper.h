@@ -194,18 +194,6 @@ THROW_DATA_NEW(VALUE val, const rb_control_frame_t *cf, VALUE st)
     return (struct vm_throw_data *)rb_imemo_new(imemo_throw_data, val, (VALUE)cf, st, 0);
 }
 
-static inline void
-THROW_DATA_CATCH_FRAME_SET(struct vm_throw_data *obj, const rb_control_frame_t *cfp)
-{
-    obj->catch_frame = cfp;
-}
-
-static inline void
-THROW_DATA_STATE_SET(struct vm_throw_data *obj, int st)
-{
-    obj->throw_state = (VALUE)st;
-}
-
 static inline VALUE
 THROW_DATA_VAL(const struct vm_throw_data *obj)
 {
@@ -218,10 +206,38 @@ THROW_DATA_CATCH_FRAME(const struct vm_throw_data *obj)
     return obj->catch_frame;
 }
 
-static int
+static inline int
 THROW_DATA_STATE(const struct vm_throw_data *obj)
 {
     return (int)obj->throw_state;
+}
+
+static inline int
+THROW_DATA_CONSUMED_P(const struct vm_throw_data *obj)
+{
+    VM_ASSERT(THROW_DATA_P(obj));
+    return obj->flags & THROW_DATA_CONSUMED;
+}
+
+static inline void
+THROW_DATA_CATCH_FRAME_SET(struct vm_throw_data *obj, const rb_control_frame_t *cfp)
+{
+    obj->catch_frame = cfp;
+}
+
+static inline void
+THROW_DATA_STATE_SET(struct vm_throw_data *obj, int st)
+{
+    obj->throw_state = (VALUE)st;
+}
+
+static inline void
+THROW_DATA_CONSUMED_SET(struct vm_throw_data *obj)
+{
+    if (THROW_DATA_P(obj) &&
+	THROW_DATA_STATE(obj) == TAG_BREAK) {
+	obj->flags |= THROW_DATA_CONSUMED;
+    }
 }
 
 #endif /* RUBY_INSNHELPER_H */
