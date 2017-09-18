@@ -514,7 +514,7 @@ CODE
   end
 
   def test_concat_literals
-    s="."*50; "#{s}x".encoding
+    s="." * 50
     assert_equal(Encoding::UTF_8, "#{s}x".encoding)
   end
 
