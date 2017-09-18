@@ -633,7 +633,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 		    }
 		    nextvalue = rb_hash_default_value(hash, sym);
 		    if (NIL_P(nextvalue)) {
-			rb_enc_raise(enc, rb_eKeyError, "key%.*s not found", len, start);
+			rb_key_err_raise(rb_enc_sprintf(enc, "key%.*s not found", len, start), hash, sym);
 		    }
 		}
 		if (term == '}') goto format_s;

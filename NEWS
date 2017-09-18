@@ -109,6 +109,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Description set by Thread#name= is now visible on Windows 10.
 
+* KeyError
+
+  * KeyError#receiver [Feature #12063]
+  * KeyError#key      [Feature #12063]
+
 === Stdlib updates (outstanding ones only)
 
 * Bundler
