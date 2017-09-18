@@ -815,7 +815,7 @@ VALUE rb_mErrno;
 static VALUE rb_eNOERROR;
 
 static ID id_new, id_cause, id_message, id_backtrace;
-static ID id_name, id_args, id_Errno, id_errno, id_i_path;
+static ID id_name, id_key, id_args, id_Errno, id_errno, id_i_path;
 static ID id_receiver, id_iseq, id_local_variables;
 static ID id_private_call_p;
 extern ID ruby_static_id_status;
@@ -1547,6 +1547,37 @@ rb_invalid_str(const char *str, const char *type)
     rb_raise(rb_eArgError, "invalid value for %s: %+"PRIsVALUE, type, s);
 }
 
+static VALUE
+key_err_receiver(VALUE self)
+{
+    VALUE recv;
+
+    recv = rb_ivar_lookup(self, id_receiver, Qundef);
+    if (recv != Qundef) return recv;
+    rb_raise(rb_eArgError, "no receiver is available");
+}
+
+static VALUE
+key_err_key(VALUE self)
+{
+    VALUE key;
+
+    key = rb_ivar_lookup(self, id_key, Qundef);
+    if (key != Qundef) return key;
+    rb_raise(rb_eArgError, "no key is available");
+}
+
+VALUE
+rb_key_err_new(VALUE mesg, VALUE recv, VALUE key)
+{
+    VALUE exc = rb_obj_alloc(rb_eKeyError);
+    rb_ivar_set(exc, id_mesg, mesg);
+    rb_ivar_set(exc, id_bt, Qnil);
+    rb_ivar_set(exc, id_key, key);
+    rb_ivar_set(exc, id_receiver, recv);
+    return exc;
+}
+
 /*
  * call-seq:
  *   SyntaxError.new([msg])  -> syntax_error
@@ -2161,6 +2192,8 @@ Init_Exception(void)
     rb_eArgError      = rb_define_class("ArgumentError", rb_eStandardError);
     rb_eIndexError    = rb_define_class("IndexError", rb_eStandardError);
     rb_eKeyError      = rb_define_class("KeyError", rb_eIndexError);
+    rb_define_method(rb_eKeyError, "receiver", key_err_receiver, 0);
+    rb_define_method(rb_eKeyError, "key", key_err_key, 0);
     rb_eRangeError    = rb_define_class("RangeError", rb_eStandardError);
 
     rb_eScriptError = rb_define_class("ScriptError", rb_eException);
@@ -2216,6 +2249,7 @@ Init_Exception(void)
     id_message = rb_intern_const("message");
     id_backtrace = rb_intern_const("backtrace");
     id_name = rb_intern_const("name");
+    id_key = rb_intern_const("key");
     id_args = rb_intern_const("args");
     id_receiver = rb_intern_const("receiver");
     id_private_call_p = rb_intern_const("private_call?");

@@ -452,7 +452,10 @@ class TestSprintf < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, "named<key2> after numbered") {sprintf("%1$<key2>s", :key => "value")}
     assert_raise_with_message(ArgumentError, "named<key2> after unnumbered(2)") {sprintf("%s%s%<key2>s", "foo", "bar", :key => "value")}
     assert_raise_with_message(ArgumentError, "named<key2> after <key>") {sprintf("%<key><key2>s", :key => "value")}
-    assert_raise_with_message(KeyError, "key<key> not found") {sprintf("%<key>s", {})}
+    h = {}
+    e = assert_raise_with_message(KeyError, "key<key> not found") {sprintf("%<key>s", h)}
+    assert_same(h, e.receiver)
+    assert_equal(:key, e.key)
   end
 
   def test_named_untyped_enc

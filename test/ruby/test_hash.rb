@@ -531,6 +531,8 @@ class TestHash < Test::Unit::TestCase
     e = assert_raise(KeyError) { @h.fetch('gumby'*20) }
     assert_match(/key not found: "gumbygumby/, e.message)
     assert_match(/\.\.\.\z/, e.message)
+    assert_same(@h, e.receiver)
+    assert_equal('gumby'*20, e.key)
   end
 
   def test_key2?
@@ -591,9 +593,11 @@ class TestHash < Test::Unit::TestCase
     assert_equal(4, res.length)
     assert_equal %w( three two one nil ), res
 
-    assert_raise KeyError do
+    e = assert_raise KeyError do
       @h.fetch_values(3, 'invalid')
     end
+    assert_same(@h, e.receiver)
+    assert_equal('invalid', e.key)
 
     res = @h.fetch_values(3, 'invalid') { |k| k.upcase }
     assert_equal %w( three INVALID ), res

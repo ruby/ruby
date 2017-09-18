@@ -1156,6 +1156,9 @@ VALUE rb_name_err_new(VALUE mesg, VALUE recv, VALUE method);
     rb_exc_raise(rb_name_err_new(mesg, recv, name))
 #define rb_name_err_raise(mesg, recv, name) \
     rb_name_err_raise_str(rb_fstring_cstr(mesg), (recv), (name))
+VALUE rb_key_err_new(VALUE mesg, VALUE recv, VALUE name);
+#define rb_key_err_raise(mesg, recv, name) \
+    rb_exc_raise(rb_key_err_new(mesg, recv, name))
 NORETURN(void ruby_deprecated_internal_feature(const char *));
 #define DEPRECATED_INTERNAL_FEATURE(func) \
     (ruby_deprecated_internal_feature(func), UNREACHABLE)
