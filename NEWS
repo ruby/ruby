@@ -114,6 +114,11 @@ with all sufficient information, see the ChangeLog file or Redmine
   * KeyError#receiver [Feature #12063]
   * KeyError#key      [Feature #12063]
 
+* KeyError
+
+  * KeyError#receiver [Feature #12063]
+  * KeyError#key      [Feature #12063]
+
 === Stdlib updates (outstanding ones only)
 
 * Bundler
