@@ -1404,6 +1404,8 @@ str_shared_replace(VALUE str, VALUE str2)
     }
 }
 
+VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
+
 VALUE
 rb_obj_as_string(VALUE obj)
 {
@@ -1413,6 +1415,12 @@ rb_obj_as_string(VALUE obj)
 	return obj;
     }
     str = rb_funcall(obj, idTo_s, 0);
+    return rb_obj_as_string_result(str, obj);
+}
+
+VALUE
+rb_obj_as_string_result(VALUE str, VALUE obj)
+{
     if (!RB_TYPE_P(str, T_STRING))
 	return rb_any_to_s(obj);
     if (!FL_TEST_RAW(str, RSTRING_FSTR) && FL_ABLE(obj))

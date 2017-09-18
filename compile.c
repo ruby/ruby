@@ -6180,7 +6180,15 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	    ADD_INSN(ret, line, pop);
 	}
 	else {
+	    const unsigned int flag = VM_CALL_FCALL;
+	    LABEL *isstr = NEW_LABEL(line);
+	    ADD_INSN(ret, line, dup);
+	    ADD_INSN2(ret, line, branchiftype, INT2FIX(T_STRING), isstr);
+	    LABEL_REF(isstr);
+	    ADD_INSN(ret, line, dup);
+	    ADD_SEND_R(ret, line, idTo_s, INT2FIX(0), NULL, INT2FIX(flag), NULL);
 	    ADD_INSN(ret, line, tostring);
+	    ADD_LABEL(ret, isstr);
 	}
 	break;
       }
