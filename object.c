@@ -3818,10 +3818,6 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
  *        super unless DELEGATE.include? name
  *        ::Kernel.send(name, *args, &block)
  *      end
- *
- *      def respond_to_missing?(name, include_private = false)
- *        DELEGATE.include?(name) or super
- *      end
  *    end
  *
  *  Access to classes and modules from the Ruby standard library can be
