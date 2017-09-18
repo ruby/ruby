@@ -29,9 +29,6 @@
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
 
-rb_control_frame_t *
-  FUNC_FASTCALL(rb_vm_str_intern)(rb_thread_t *, rb_control_frame_t *);
-
 #define ISEQ_TYPE_ONCE_GUARD ISEQ_TYPE_DEFINED_GUARD
 
 #define FIXNUM_INC(n, i) ((n)+(INT2FIX(i)&~FIXNUM_FLAG))
@@ -6582,7 +6579,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
       case NODE_DSYM:{
 	compile_dstr(iseq, ret, node);
 	if (!popped) {
-	    ADD_INSN1(ret, line, opt_call_c_function, rb_vm_str_intern);
+	    ADD_INSN(ret, line, intern);
 	}
 	else {
 	    ADD_INSN(ret, line, pop);

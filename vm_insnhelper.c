@@ -2794,13 +2794,6 @@ FUNC_FASTCALL(rb_vm_opt_struct_aset)(rb_thread_t *th, rb_control_frame_t *reg_cf
     return reg_cfp;
 }
 
-rb_control_frame_t *
-FUNC_FASTCALL(rb_vm_str_intern)(rb_thread_t *th, rb_control_frame_t *reg_cfp)
-{
-    TOPN(0) = rb_str_intern(TOPN(0));
-    return reg_cfp;
-}
-
 /* defined insn */
 
 static enum defined_type

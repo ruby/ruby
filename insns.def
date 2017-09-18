@@ -400,6 +400,20 @@ toregexp
 
 /**
   @c put
+  @e intern str to Symbol and push it.
+  @j 文字列 str をシンボルに変換してスタックにプッシュする。
+ */
+DEFINE_INSN
+intern
+()
+(VALUE str)
+(VALUE sym)
+{
+    sym = rb_str_intern(str);
+}
+
+/**
+  @c put
   @e put new array initialized with num values on the stack.
   @j 新しい配列をスタック上の num 個の値で初期化して生成しプッシュする。
  */
