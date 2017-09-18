@@ -961,7 +961,7 @@ rb_queue_pop(int argc, VALUE *argv, VALUE self)
  *
  * Fetches an object at the head of queue, without removing it.
  * Using this method and pop is thread unsafe, so use peek and pop
- * from just one thread.
+ * from just one thread, or with Mutex
  */
 
 static VALUE
