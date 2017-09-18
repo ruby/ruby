@@ -47,6 +47,33 @@ class Ripper
 
   class Lexer < ::Ripper   #:nodoc: internal use only
     Elem = Struct.new(:pos, :event, :tok, :state)
+    class Elem
+      class List < ::Array
+        def inspect
+          [pos, event, tok, Ripper.lex_state_name(state)].inspect
+        end
+
+        def pretty_print(q) # :nodoc:
+          q.group(1, '[', ']') {
+            q.pp pos
+            q.comma_breakable
+            q.pp event
+            q.comma_breakable
+            q.pp tok
+            q.comma_breakable
+            q.text(Ripper.lex_state_name(state))
+          }
+        end
+
+        def pretty_print_cycle(q) # :nodoc:
+          q.text('[...]')
+        end
+      end
+
+      def to_a
+        List[*values]
+      end
+    end
 
     def tokenize
       parse().sort_by(&:pos).map(&:tok)

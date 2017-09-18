@@ -568,6 +568,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_parser_reg_compile(struct parser_params* parser, VALUE str, int options);
 int rb_reg_fragment_setenc(struct parser_params*, VALUE, int);
 enum lex_state_e rb_parser_trace_lex_state(struct parser_params *, enum lex_state_e, enum lex_state_e, int);
+VALUE rb_parser_lex_state_name(enum lex_state_e state);
 void rb_parser_show_bitstack(struct parser_params *, stack_type, const char *, int);
 PRINTF_ARGS(void rb_parser_fatal(struct parser_params *parser, const char *fmt, ...), 2, 3);
 RUBY_SYMBOL_EXPORT_END
@@ -9191,6 +9192,12 @@ rb_parser_trace_lex_state(struct parser_params *parser, enum lex_state_e from,
     return to;
 }
 
+VALUE
+rb_parser_lex_state_name(enum lex_state_e state)
+{
+    return append_lex_state_name(state, rb_str_new(0, 0));
+}
+
 static void
 append_bitstack_value(stack_type stack, VALUE mesg)
 {
@@ -11484,6 +11491,11 @@ ripper_value(VALUE self, VALUE obj)
 }
 #endif
 
+static VALUE
+ripper_lex_state_name(VALUE self, VALUE state)
+{
+    return rb_parser_lex_state_name(NUM2INT(state));
+}
 
 void
 Init_ripper(void)
@@ -11525,6 +11537,8 @@ InitVM_ripper(void)
 
     rb_define_singleton_method(Ripper, "dedent_string", parser_dedent_string, 2);
     rb_define_private_method(Ripper, "dedent_string", parser_dedent_string, 2);
+
+    rb_define_singleton_method(Ripper, "lex_state_name", ripper_lex_state_name, 1);
 
 <% @exprs.each do |expr, desc| -%>
     /* <%=desc%> */
