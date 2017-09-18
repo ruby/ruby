@@ -582,9 +582,11 @@ AS_CASE(["$target_cpu-$target_os"], [[i[3-6]86*]], [
 	 ])])
 
 AS_CASE(["$target_os"], [darwin*], [
+if libtool 2>&1 | grep no_warning_for_no_symbols > /dev/null; then
   ac_cv_prog_ac_ct_RANLIB=:
   ac_cv_prog_ac_ct_AR='libtool -static'
   rb_cv_arflags='-no_warning_for_no_symbols -o'
+fi
 ])
 AC_CHECK_TOOL(RANLIB, ranlib, :)
 AC_CHECK_TOOL(AR, ar)
