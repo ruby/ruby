@@ -200,6 +200,23 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(false, set.include?(true))
   end
 
+  def test_eqq
+    set = Set[1,2,3]
+
+    assert_equal(true, set === 1)
+    assert_equal(true, set === 2)
+    assert_equal(true, set === 3)
+    assert_equal(false, set === 0)
+    assert_equal(false, set === nil)
+
+    set = Set["1",nil,"2",nil,"0","1",false]
+    assert_equal(true, set === nil)
+    assert_equal(true, set === false)
+    assert_equal(true, set === "1")
+    assert_equal(false, set === 0)
+    assert_equal(false, set === true)
+  end
+
   def test_superset?
     set = Set[1,2,3]
 
