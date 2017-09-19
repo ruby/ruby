@@ -149,7 +149,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Set
   * Add Set#to_s as alias to #inspect [Feature #13676]
-  * Add Set#=== as alias to #inspect [Feature #13801]
+  * Add Set#=== as alias to #include? [Feature #13801]
 
 * WEBrick
 
