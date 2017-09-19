@@ -62,7 +62,7 @@ RSpec.describe "install with --deployment or --frozen" do
     expect(exitstatus).to eq(0) if exitstatus
   end
 
-  it "works when you bundle exec bundle", :ruby_repo do
+  it "works when you bundle exec bundle" do
     bundle :install
     bundle "install --deployment"
     bundle "exec bundle check"
