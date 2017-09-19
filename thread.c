@@ -637,19 +637,20 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    else if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
 		/* exit on main_thread. */
 	    }
-	    else if (th->vm->thread_abort_on_exception ||
-		     th->abort_on_exception || RTEST(ruby_debug)) {
-		/* exit on main_thread */
-	    }
-	    else if (th->report_on_exception) {
-		VALUE mesg = rb_thread_to_s(th->self);
-		rb_str_cat_cstr(mesg, " terminated with exception:\n");
-		rb_write_error_str(mesg);
-		rb_threadptr_error_print(th, errinfo);
-		errinfo = Qnil;
-	    }
 	    else {
-		errinfo = Qnil;
+		if (th->report_on_exception) {
+		    VALUE mesg = rb_thread_to_s(th->self);
+		    rb_str_cat_cstr(mesg, " terminated with exception:\n");
+		    rb_write_error_str(mesg);
+		    rb_threadptr_error_print(th, errinfo);
+		}
+		if (th->vm->thread_abort_on_exception ||
+		    th->abort_on_exception || RTEST(ruby_debug)) {
+		    /* exit on main_thread */
+		}
+		else {
+		    errinfo = Qnil;
+		}
 	    }
 	    th->value = Qnil;
 	}
