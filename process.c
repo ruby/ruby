@@ -3530,24 +3530,24 @@ disable_child_handler_fork_child(struct child_handler_disabler_state *old, char 
     int ret;
 
     for (sig = 1; sig < NSIG; sig++) {
-            sig_t handler = signal(sig, SIG_DFL);
+	sig_t handler = signal(sig, SIG_DFL);
 
-            if (handler == SIG_ERR && errno == EINVAL) {
-                continue; /* Ignore invalid signal number */
-            }
-            if (handler == SIG_ERR) {
-                ERRMSG("signal to obtain old action");
-                return -1;
-            }
+	if (handler == SIG_ERR && errno == EINVAL) {
+	    continue; /* Ignore invalid signal number */
+	}
+	if (handler == SIG_ERR) {
+	    ERRMSG("signal to obtain old action");
+	    return -1;
+	}
 #ifdef SIGPIPE
-            if (sig == SIGPIPE) {
-                continue;
-            }
+	if (sig == SIGPIPE) {
+	    continue;
+	}
 #endif
-            /* it will be reset to SIG_DFL at execve time, instead */
-            if (handler == SIG_IGN) {
-                signal(sig, SIG_IGN);
-            }
+	/* it will be reset to SIG_DFL at execve time, instead */
+	if (handler == SIG_IGN) {
+	    signal(sig, SIG_IGN);
+	}
     }
 
     ret = sigprocmask(SIG_SETMASK, &old->sigmask, NULL); /* async-signal-safe */
