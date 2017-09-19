@@ -104,7 +104,12 @@ This is what you need to do to compile and install Ruby:
     interpreter works well. If you see the message "`check succeeded`", your
     ruby works as it should (hopefully).
 
-8.  Run '`make install`'
+8.  Optionally, Run `make update-gems` and `make extract-gems`
+
+    If you want to install bundled gems, run `make update-gems` and
+    `extract-gems` before run `make install`.
+
+9.  Run '`make install`'
 
     This command will create the following directories and install files into
     them.
