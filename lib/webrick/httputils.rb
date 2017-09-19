@@ -69,6 +69,7 @@ module WEBrick
       "jpeg"  => "image/jpeg",
       "jpg"   => "image/jpeg",
       "js"    => "application/javascript",
+      "json"  => "application/json",
       "lha"   => "application/octet-stream",
       "lzh"   => "application/octet-stream",
       "mov"   => "video/quicktime",
