@@ -1054,6 +1054,17 @@ x = __ENCODING__
     assert_not_match(/unexpected tSTRING_END/, e)
   end
 
+  def test_lparenarg
+    o = Struct.new(:x).new
+    def o.i(x)
+      self.x = x
+    end
+    o.instance_eval {i (-1.3).abs}
+    assert_equal(1.3, o.x)
+    o.instance_eval {i = 0; i (-1.3).abs}
+    assert_equal(1.3, o.x)
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}

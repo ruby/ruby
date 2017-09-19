@@ -8468,7 +8468,7 @@ parser_yylex(struct parser_params *parser)
 			"an argument list, not a decomposed argument");
 	}
 	else if (lex_state == (EXPR_END|EXPR_LABEL) && space_seen) {
-	    rb_warning0("don't put space before argument parentheses");
+	    c = tLPAREN_ARG;
 	}
 	paren_nest++;
 	COND_PUSH(0);
