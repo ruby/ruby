@@ -193,13 +193,13 @@ module WEBrick
       begin
         while fds = IO::select([ua, os])
           if fds[0].member?(ua)
-            buf = ua.sysread(1024);
+            buf = ua.readpartial(1024);
             @logger.debug("CONNECT: #{buf.bytesize} byte from User-Agent")
-            os.syswrite(buf)
+            os.write(buf)
           elsif fds[0].member?(os)
-            buf = os.sysread(1024);
+            buf = os.readpartial(1024);
             @logger.debug("CONNECT: #{buf.bytesize} byte from #{host}:#{port}")
-            ua.syswrite(buf)
+            ua.write(buf)
           end
         end
       rescue
