@@ -13,10 +13,11 @@ extern "C" {
 #endif
 
 #ifdef HAVE_RB_ST
-# if SIZEOF_LONG == SIZEOF_VOIDP
-#   define ST2NUM(x) ULONG2NUM(x)
+
+#if SIZEOF_LONG == SIZEOF_VOIDP
+#  define ST2NUM(x) ULONG2NUM(x)
 #else
-#   define ST2NUM(x) ULL2NUM(x)
+#  define ST2NUM(x) ULL2NUM(x)
 #endif
 
 VALUE st_spec_st_init_numtable(VALUE self) {
