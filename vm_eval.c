@@ -315,8 +315,6 @@ check_funcall_exec(struct rescue_funcall_args *args)
 			     args->me, args->argc, args->argv);
 }
 
-#define PRIV Qfalse	 /* TODO: for rubyspec now, should be Qtrue */
-
 static VALUE
 check_funcall_failed(struct rescue_funcall_args *args, VALUE e)
 {
@@ -361,7 +359,7 @@ check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc
     VALUE ret = Qundef;
 
     ret = basic_obj_respond_to_missing(th, klass, recv,
-				       ID2SYM(mid), PRIV);
+				       ID2SYM(mid), Qtrue);
     if (!RTEST(ret)) return def;
     args.respond = respond > 0;
     args.respond_to_missing = (ret != Qundef);

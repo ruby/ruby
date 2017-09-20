@@ -111,18 +111,34 @@ describe "Array#flatten" do
       lambda { [@obj].flatten }.should raise_error(TypeError)
     end
 
+    ruby_version_is ""..."2.5" do
+      it "calls respond_to_missing?(:to_ary, false) to try coercing" do
+        def @obj.respond_to_missing?(*args) ScratchPad << args; false end
+        [@obj].flatten.should == [@obj]
+        ScratchPad.recorded.should == [[:to_ary, false]]
+      end
+    end
+
+    ruby_version_is "2.5" do
+      it "calls respond_to_missing?(:to_ary, true) to try coercing" do
+        def @obj.respond_to_missing?(*args) ScratchPad << args; false end
+        [@obj].flatten.should == [@obj]
+        ScratchPad.recorded.should == [[:to_ary, true]]
+      end
+    end
+
     it "does not call #to_ary if not defined when #respond_to_missing? returns false" do
-      def @obj.respond_to_missing?(*args) ScratchPad << args; false end
+      def @obj.respond_to_missing?(name, priv) ScratchPad << name; false end
 
       [@obj].flatten.should == [@obj]
-      ScratchPad.recorded.should == [[:to_ary, false]]
+      ScratchPad.recorded.should == [:to_ary]
     end
 
     it "calls #to_ary if not defined when #respond_to_missing? returns true" do
-      def @obj.respond_to_missing?(*args) ScratchPad << args; true end
+      def @obj.respond_to_missing?(name, priv) ScratchPad << name; true end
 
       lambda { [@obj].flatten }.should raise_error(NoMethodError)
-      ScratchPad.recorded.should == [[:to_ary, false]]
+      ScratchPad.recorded.should == [:to_ary]
     end
 
     it "calls #method_missing if defined" do
