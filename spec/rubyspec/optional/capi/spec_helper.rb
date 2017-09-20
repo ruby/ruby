@@ -55,25 +55,8 @@ def compile_extension(name)
         $stderr.puts output if debug
       end
 
-      make = ENV['MAKE']
-      make ||= (RbConfig::CONFIG['host_os'].include?("mswin") ? "nmake" : "make")
-      if File.basename(make, ".*").casecmp?("nmake")
-        # suppress logo of nmake.exe to stderr
-        ENV["MAKEFLAGS"] = "l#{ENV["MAKEFLAGS"]}"
-      end
-
-      opts = {}
-      if /(?:\A|\s)--jobserver-(?:auth|fds)=(\d+),(\d+)/ =~ ENV["MAKEFLAGS"]
-        begin
-          r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
-          w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
-        rescue Errno::EBADF
-        else
-          opts[r] = r
-          opts[w] = w
-        end
-      end
       # Do not capture stderr as we want to show compiler warnings
+      make, opts = setup_make
       output = IO.popen([make, "V=1", "DESTDIR=", opts], &:read)
       raise "#{make} failed:\n#{output}" unless $?.success?
       $stderr.puts output if debug
@@ -86,6 +69,31 @@ def compile_extension(name)
 
   File.chmod(0755, lib)
   lib
+end
+
+def setup_make
+  make = ENV['MAKE']
+  make ||= (RbConfig::CONFIG['host_os'].include?("mswin") ? "nmake" : "make")
+  make_flags = ENV["MAKEFLAGS"] || ''
+
+  # suppress logo of nmake.exe to stderr
+  if File.basename(make, ".*").downcase == "nmake" and !make_flags.include?("l")
+    ENV["MAKEFLAGS"] = "l#{make_flags}"
+  end
+
+  opts = {}
+  if /(?:\A|\s)--jobserver-(?:auth|fds)=(\d+),(\d+)/ =~ make_flags
+    begin
+      r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
+      w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
+    rescue Errno::EBADF
+    else
+      opts[r] = r
+      opts[w] = w
+    end
+  end
+
+  [make, opts]
 end
 
 def load_extension(name)
