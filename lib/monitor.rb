@@ -204,6 +204,20 @@ module MonitorMixin
   end
 
   #
+  # Returns true if this monitor is locked by any thread
+  #
+  def mon_locked?
+    @mon_mutex.locked?
+  end
+
+  #
+  # Returns true if this monitor is locked by current thread.
+  #
+  def mon_owned?
+    @mon_mutex.locked? && @mon_owner == Thread.current
+  end
+
+  #
   # Enters exclusive section and executes the block.  Leaves the exclusive
   # section automatically when the block exits.  See example under
   # +MonitorMixin+.
