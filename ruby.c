@@ -240,13 +240,21 @@ usage(const char *name, int help)
 	M("-h",		   "",			   "show this message, --help for more info"),
     };
     static const struct message help_msg[] = {
-	M("--copyright",                   "", "print the copyright"),
-	M("--enable=feature[,...]",	   ", --disable=feature[,...]",
-	  "enable or disable features"),
-	M("--external-encoding=encoding",  ", --internal-encoding=encoding",
+	M("--copyright",                            "", "print the copyright"),
+	M("--dump={insns|parsetree|...}[,...]",     "",
+          "dump debug information. see below for available dump list"),
+	M("--enable={gems|rubyopt|...}[,...]", ", --disable={gems|rubyopt|...}[,...]",
+	  "enable or disable features. see below for available features"),
+	M("--external-encoding=encoding",           ", --internal-encoding=encoding",
 	  "specify the default external or internal character encoding"),
-	M("--version",                     "", "print the version"),
-	M("--help",			   "", "show this message, -h for short message"),
+	M("--version",                              "", "print the version"),
+	M("--help",			            "", "show this message, -h for short message"),
+    };
+    static const struct message dumps[] = {
+	M("insns",                  "", "instruction sequences"),
+	M("yydebug",                "", "yydebug of yacc parser generator"),
+	M("parsetree",              "", "AST"),
+	M("parsetree_with_comment", "", "AST with comments"),
     };
     static const struct message features[] = {
 	M("gems",    "",        "rubygems (default: "DEFAULT_RUBYGEMS_ENABLED")"),
@@ -266,6 +274,9 @@ usage(const char *name, int help)
 
     for (i = 0; i < numberof(help_msg); ++i)
 	SHOW(help_msg[i]);
+    puts("Dump List:");
+    for (i = 0; i < numberof(dumps); ++i)
+	SHOW(dumps[i]);
     puts("Features:");
     for (i = 0; i < numberof(features); ++i)
 	SHOW(features[i]);
