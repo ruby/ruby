@@ -262,13 +262,7 @@ module Net
       @ssl_handshake_timeout = options[:ssl_handshake_timeout]
       @read_timeout = options[:read_timeout] || 60
       if host
-        if options[:port]
-          connect(host, options[:port] || FTP_PORT)
-        else
-          # spec/ruby/library/net/ftp/initialize_spec.rb depends on
-          # the number of arguments passed to connect....
-          connect(host)
-        end
+        connect(host, options[:port] || FTP_PORT)
         if options[:username]
           login(options[:username], options[:password], options[:account])
         end
