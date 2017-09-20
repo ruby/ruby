@@ -6256,13 +6256,34 @@ parser_peek_variable_name(struct parser_params *parser)
     return 0;
 }
 
+#define IS_ARG() IS_lex_state(EXPR_ARG_ANY)
+#define IS_END() IS_lex_state(EXPR_END_ANY)
+#define IS_BEG() (IS_lex_state(EXPR_BEG_ANY) || IS_lex_state_all(EXPR_ARG|EXPR_LABELED))
+#define IS_SPCARG(c) (IS_ARG() && space_seen && !ISSPACE(c))
+#define IS_LABEL_POSSIBLE() (\
+	(IS_lex_state(EXPR_LABEL|EXPR_ENDFN) && !cmd_state) || \
+	IS_ARG())
+#define IS_LABEL_SUFFIX(n) (peek_n(':',(n)) && !peek_n(':', (n)+1))
+#define IS_AFTER_OPERATOR() IS_lex_state(EXPR_FNAME | EXPR_DOT)
+
 static inline enum yytokentype
 parser_string_term(struct parser_params *parser, int func)
 {
-    if (!(func & STR_FUNC_REGEXP)) return tSTRING_END;
-    set_yylval_num(regx_options());
-    dispatch_scan_event(tREGEXP_END);
-    return tREGEXP_END;
+    rb_gc_force_recycle((VALUE)lex_strterm);
+    lex_strterm = 0;
+    if (func & STR_FUNC_REGEXP) {
+	set_yylval_num(regx_options());
+	dispatch_scan_event(tREGEXP_END);
+	SET_LEX_STATE(EXPR_END|EXPR_ENDARG);
+	return tREGEXP_END;
+    }
+    if ((func & STR_FUNC_LABEL) && IS_LABEL_SUFFIX(0)) {
+	nextc();
+	SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
+	return tLABEL_END;
+    }
+    SET_LEX_STATE(EXPR_END|EXPR_ENDARG);
+    return tSTRING_END;
 }
 
 static enum yytokentype
@@ -6275,6 +6296,8 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
     rb_encoding *enc = current_enc;
 
     if (func & STR_FUNC_TERM) {
+	SET_LEX_STATE(EXPR_END|EXPR_ENDARG);
+	lex_strterm = 0;
 	return func & STR_FUNC_REGEXP ? tREGEXP_END : tSTRING_END;
     }
     c = nextc();
@@ -6660,11 +6683,14 @@ parser_here_document(struct parser_params *parser, NODE *here)
 #endif
       restore:
 	heredoc_restore(lex_strterm);
+	lex_strterm = 0;
 	return 0;
     }
     if (was_bol() && whole_match_p(eos, len, indent)) {
 	dispatch_heredoc_end();
 	heredoc_restore(lex_strterm);
+	lex_strterm = 0;
+	SET_LEX_STATE(EXPR_END);
 	return tSTRING_END;
     }
 
@@ -7157,16 +7183,6 @@ parser_prepare(struct parser_params *parser)
     parser->enc = rb_enc_get(lex_lastline);
     parser->token_info_enabled = !compile_for_eval && RTEST(ruby_verbose);
 }
-
-#define IS_ARG() IS_lex_state(EXPR_ARG_ANY)
-#define IS_END() IS_lex_state(EXPR_END_ANY)
-#define IS_BEG() (IS_lex_state(EXPR_BEG_ANY) || IS_lex_state_all(EXPR_ARG|EXPR_LABELED))
-#define IS_SPCARG(c) (IS_ARG() && space_seen && !ISSPACE(c))
-#define IS_LABEL_POSSIBLE() (\
-	(IS_lex_state(EXPR_LABEL|EXPR_ENDFN) && !cmd_state) || \
-	IS_ARG())
-#define IS_LABEL_SUFFIX(n) (peek_n(':',(n)) && !peek_n(':', (n)+1))
-#define IS_AFTER_OPERATOR() IS_lex_state(EXPR_FNAME | EXPR_DOT)
 
 #ifndef RIPPER
 #define ambiguous_operator(tok, op, syn) ( \
@@ -7912,32 +7928,12 @@ parser_yylex(struct parser_params *parser)
     int token_seen = parser->token_seen;
 
     if (lex_strterm) {
-	enum yytokentype token;
 	if (nd_type(lex_strterm) == NODE_HEREDOC) {
-	    token = here_document(lex_strterm);
-	    if (token == tSTRING_END) {
-		lex_strterm = 0;
-		SET_LEX_STATE(EXPR_END);
-	    }
+	    return here_document(lex_strterm);
 	}
 	else {
-	    token = parse_string(lex_strterm);
-	    if ((token == tSTRING_END) && (lex_strterm->nd_func & STR_FUNC_LABEL)) {
-		if (((IS_lex_state(EXPR_BEG | EXPR_ENDFN) && !COND_P()) || IS_ARG()) &&
-		    IS_LABEL_SUFFIX(0)) {
-		    nextc();
-		    token = tLABEL_END;
-		}
-	    }
-	    if (token == tSTRING_END || token == tREGEXP_END || token == tLABEL_END) {
-		const enum lex_state_e next_state =
-		    token == tLABEL_END ? EXPR_BEG|EXPR_LABEL : EXPR_END|EXPR_ENDARG;
-		rb_gc_force_recycle((VALUE)lex_strterm);
-		lex_strterm = 0;
-		SET_LEX_STATE(next_state);
-	    }
+	    return parse_string(lex_strterm);
 	}
-	return token;
     }
     cmd_state = command_start;
     command_start = FALSE;
