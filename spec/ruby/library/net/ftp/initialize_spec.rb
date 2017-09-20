@@ -5,6 +5,10 @@ describe "Net::FTP#initialize" do
   before :each do
     @ftp = Net::FTP.allocate
     @ftp.stub!(:connect)
+    @port_args = []
+    ruby_version_is "2.5" do
+      @port_args << 21
+    end
   end
 
   it "is private" do
@@ -44,14 +48,14 @@ describe "Net::FTP#initialize" do
 
   describe "when passed host" do
     it "tries to connect to the passed host" do
-      @ftp.should_receive(:connect).with("localhost")
+      @ftp.should_receive(:connect).with("localhost", *@port_args)
       @ftp.send(:initialize, "localhost")
     end
   end
 
   describe "when passed host, user" do
     it "tries to connect to the passed host" do
-      @ftp.should_receive(:connect).with("localhost")
+      @ftp.should_receive(:connect).with("localhost", *@port_args)
       @ftp.send(:initialize, "localhost")
     end
 
@@ -63,7 +67,7 @@ describe "Net::FTP#initialize" do
 
   describe "when passed host, user, password" do
     it "tries to connect to the passed host" do
-      @ftp.should_receive(:connect).with("localhost")
+      @ftp.should_receive(:connect).with("localhost", *@port_args)
       @ftp.send(:initialize, "localhost")
     end
 
@@ -75,7 +79,7 @@ describe "Net::FTP#initialize" do
 
   describe "when passed host, user" do
     it "tries to connect to the passed host" do
-      @ftp.should_receive(:connect).with("localhost")
+      @ftp.should_receive(:connect).with("localhost", *@port_args)
       @ftp.send(:initialize, "localhost")
     end
 
