@@ -3633,7 +3633,7 @@ rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), voi
 }
 
 static rb_pid_t
-retry_fork_ruby(int *status)
+retry_fork_ruby(int *status, struct child_handler_disabler_state *old)
 {
     rb_pid_t pid;
     int try_gc = 1;
@@ -3641,10 +3641,12 @@ retry_fork_ruby(int *status)
     while (1) {
         prefork();
         before_fork_ruby();
+        disable_child_handler_before_fork(old);
         pid = fork();
         if (pid == 0) /* fork succeed, child process */
             return pid;
         preserving_errno(after_fork_ruby());
+        preserving_errno(disable_child_handler_fork_parent(old));
         if (0 < pid) /* fork succeed, parent process */
             return pid;
         /* fork failed */
@@ -3657,14 +3659,16 @@ rb_pid_t
 rb_fork_ruby(int *status)
 {
     rb_pid_t pid;
+    struct child_handler_disabler_state old;
 
     if (status) *status = 0;
 
-    pid = retry_fork_ruby(status);
+    pid = retry_fork_ruby(status, &old);
     if (pid < 0)
         return pid;
     if (!pid) {
         after_fork_ruby();
+        disable_child_handler_fork_parent(&old); /* yes, bad name */
     }
     return pid;
 }
