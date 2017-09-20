@@ -9,16 +9,16 @@ To run rspec for bundler:
 make test-bundler
 ```
 
-# spec/rubyspec
+# spec/ruby
 
 ruby/spec (https://github.com/ruby/spec/) is
 a test suite for the Ruby language.
 
-Once a month, @eregon merges the in-tree copy under spec/rubyspec
+Once a month, @eregon merges the in-tree copy under spec/ruby
 with the upstream repository, preserving the commits and history.
 The same happens for other implementations such as JRuby and TruffleRuby.
 
-Feel welcome to modify the in-tree spec/rubyspec.
+Feel welcome to modify the in-tree spec/ruby.
 This is the purpose of the in-tree copy,
 to facilitate contributions to ruby/spec for MRI developers.
 
@@ -34,36 +34,36 @@ Currently, the only module which is MRI-specific is `RubyVM`.
 
 To run all specs:
 ```bash
-make test-rubyspec
+make test-spec
 ```
 
 Extra arguments can be added via `MSPECOPT`.
 For instance, to show the help:
 ```bash
-make test-rubyspec MSPECOPT=-h
+make test-spec MSPECOPT=-h
 ```
 
 You can also run the specs in parallel, which is currently experimental.
 It takes around 10s instead of 60s on a quad-core laptop.
 ```bash
-make test-rubyspec MSPECOPT=-j
+make test-spec MSPECOPT=-j
 ```
 
 To run a specific test, add its path to the command:
 ```bash
-make test-rubyspec MSPECOPT=spec/rubyspec/language/for_spec.rb
+make test-spec MSPECOPT=spec/ruby/language/for_spec.rb
 ```
 
 If ruby trunk is your current `ruby` in `$PATH`, you can also run `mspec` directly:
 ```bash
 # change ruby to trunk
 ruby -v # => trunk
-spec/mspec/bin/mspec spec/rubyspec/language/for_spec.rb
+spec/mspec/bin/mspec spec/ruby/language/for_spec.rb
 ```
 
 ## ruby/spec and test/
 
-The main difference between a "spec" under spec/rubyspec and
+The main difference between a "spec" under spec/ruby and
 a test under test/ is that specs are documenting what they test.
 This is extremely valuable when reading these tests, as it
 helps to quickly understand what specific behavior is tested,
@@ -87,4 +87,4 @@ describe "The for expression" do
 end
 ```
 
-For more details, see spec/rubyspec/CONTRIBUTING.md.
+For more details, see spec/ruby/CONTRIBUTING.md.

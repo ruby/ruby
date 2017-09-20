@@ -265,7 +265,7 @@ module Net
         if options[:port]
           connect(host, options[:port] || FTP_PORT)
         else
-          # spec/rubyspec/library/net/ftp/initialize_spec.rb depends on
+          # spec/ruby/library/net/ftp/initialize_spec.rb depends on
           # the number of arguments passed to connect....
           connect(host)
         end

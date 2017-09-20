@@ -658,7 +658,7 @@ lib/rdoc/generator/template/darkfish/css/fonts.css:
     http://scripts.sil.org/OFL
 
 spec/mspec:
-spec/rubyspec:
+spec/ruby:
 
     Copyright (c) 2008 Engine Yard, Inc. All rights reserved.
 
