@@ -50,10 +50,12 @@ class Ripper
     class Elem
       class List < ::Array
         def inspect
+          pos, event, tok, state = self
           [pos, event, tok, Ripper.lex_state_name(state)].inspect
         end
 
         def pretty_print(q) # :nodoc:
+          pos, event, tok, state = self
           q.group(1, '[', ']') {
             q.pp pos
             q.comma_breakable
