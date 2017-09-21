@@ -1019,7 +1019,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     warning = nil
     path = nil
     Tempfile.create(%w[circular .rb]) do |t|
-      path = t.path
+      path = File.realpath(t.path)
       basename = File.basename(path)
       t.puts "require '#{basename}'"
       t.close
