@@ -3775,8 +3775,29 @@ rb_file_s_absolute_path(int argc, const VALUE *argv)
     return rb_file_absolute_path(argv[0], argc > 1 ? argv[1] : Qnil);
 }
 
-static void
-realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE loopcheck, int strict, int last)
+#ifdef __native_client__
+VALUE
+rb_realpath_internal(VALUE basedir, VALUE path, int strict)
+{
+    return path;
+}
+
+VALUE
+rb_check_realpath(VALUE basedir, VALUE path)
+{
+    return path;
+}
+#else
+enum rb_realpath_mode {
+    RB_REALPATH_CHECK,
+    RB_REALPATH_DIR,
+    RB_REALPATH_STRICT,
+    RB_REALPATH_MODE_MAX
+};
+
+static int
+realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved,
+	     VALUE loopcheck, enum rb_realpath_mode mode, int last)
 {
     const char *pend = unresolved + strlen(unresolved);
     rb_encoding *enc = rb_enc_get(*resolvedp);
@@ -3817,6 +3838,10 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE l
             checkval = rb_hash_aref(loopcheck, testpath);
             if (!NIL_P(checkval)) {
                 if (checkval == ID2SYM(resolving)) {
+		    if (mode == RB_REALPATH_CHECK) {
+			errno = ELOOP;
+			return -1;
+		    }
                     rb_syserr_fail_path(ELOOP, testpath);
                 }
                 else {
@@ -3833,8 +3858,9 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE l
 #endif
                 if (ret == -1) {
 		    int e = errno;
+		    if (mode == RB_REALPATH_CHECK) return -1;
 		    if (e == ENOENT) {
-                        if (strict || !last || *unresolved_firstsep)
+			if (mode == RB_REALPATH_STRICT || !last || *unresolved_firstsep)
 			    rb_syserr_fail_path(e, testpath);
                         *resolvedp = testpath;
                         break;
@@ -3863,7 +3889,9 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE l
 			*resolvedp = link;
 			*prefixlenp = link_prefixlen;
 		    }
-		    realpath_rec(prefixlenp, resolvedp, link_names, loopcheck, strict, *unresolved_firstsep == '\0');
+		    if (realpath_rec(prefixlenp, resolvedp, link_names,
+				     loopcheck, mode, !*unresolved_firstsep))
+			return -1;
 		    RB_GC_GUARD(link_orig);
 		    rb_hash_aset(loopcheck, testpath, rb_str_dup_frozen(*resolvedp));
                 }
@@ -3877,17 +3905,11 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE l
             }
         }
     }
+    return 0;
 }
 
-#ifdef __native_client__
-VALUE
-rb_realpath_internal(VALUE basedir, VALUE path, int strict)
-{
-    return path;
-}
-#else
-VALUE
-rb_realpath_internal(VALUE basedir, VALUE path, int strict)
+static VALUE
+rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode)
 {
     long prefixlen;
     VALUE resolved;
@@ -3955,11 +3977,16 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
     }
 
     loopcheck = rb_hash_new();
-    if (curdir_names)
-        realpath_rec(&prefixlen, &resolved, curdir_names, loopcheck, 1, 0);
-    if (basedir_names)
-        realpath_rec(&prefixlen, &resolved, basedir_names, loopcheck, 1, 0);
-    realpath_rec(&prefixlen, &resolved, path_names, loopcheck, strict, 1);
+    if (curdir_names) {
+	if (realpath_rec(&prefixlen, &resolved, curdir_names, loopcheck, mode, 0))
+	    return Qnil;
+    }
+    if (basedir_names) {
+	if (realpath_rec(&prefixlen, &resolved, basedir_names, loopcheck, mode, 0))
+	    return Qnil;
+    }
+    if (realpath_rec(&prefixlen, &resolved, path_names, loopcheck, mode, 1))
+	return Qnil;
 
     if (origenc != rb_enc_get(resolved)) {
 	if (rb_enc_str_asciionly_p(resolved)) {
@@ -3972,6 +3999,20 @@ rb_realpath_internal(VALUE basedir, VALUE path, int strict)
 
     OBJ_TAINT(resolved);
     return resolved;
+}
+
+VALUE
+rb_realpath_internal(VALUE basedir, VALUE path, int strict)
+{
+    const enum rb_realpath_mode mode =
+	strict ? RB_REALPATH_STRICT : RB_REALPATH_DIR;
+    return rb_check_realpath_internal(basedir, path, mode);
+}
+
+VALUE
+rb_check_realpath(VALUE basedir, VALUE path)
+{
+    return rb_check_realpath_internal(basedir, path, RB_REALPATH_CHECK);
 }
 #endif
 
