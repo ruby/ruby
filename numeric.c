@@ -3065,9 +3065,9 @@ rb_num2ll(VALUE val)
     if (FIXNUM_P(val)) return (LONG_LONG)FIX2LONG(val);
 
     else if (RB_TYPE_P(val, T_FLOAT)) {
-	if (RFLOAT_VALUE(val) < LLONG_MAX_PLUS_ONE
-            && (LLONG_MIN_MINUS_ONE_IS_LESS_THAN(RFLOAT_VALUE(val)))) {
-	    return (LONG_LONG)(RFLOAT_VALUE(val));
+	double d = RFLOAT_VALUE(val);
+	if (d < LLONG_MAX_PLUS_ONE && (LLONG_MIN_MINUS_ONE_IS_LESS_THAN(d))) {
+	    return (LONG_LONG)d;
 	}
 	else {
 	    FLOAT_OUT_OF_RANGE(val, "long long");
@@ -3097,11 +3097,11 @@ rb_num2ull(VALUE val)
 	return (LONG_LONG)FIX2LONG(val); /* this is FIX2LONG, intended */
     }
     else if (RB_TYPE_P(val, T_FLOAT)) {
-	if (RFLOAT_VALUE(val) < ULLONG_MAX_PLUS_ONE
-            && LLONG_MIN_MINUS_ONE_IS_LESS_THAN(RFLOAT_VALUE(val))) {
-            if (0 <= RFLOAT_VALUE(val))
-                return (unsigned LONG_LONG)(RFLOAT_VALUE(val));
-	    return (unsigned LONG_LONG)(LONG_LONG)(RFLOAT_VALUE(val));
+	double d = RFLOAT_VALUE(val);
+	if (d < ULLONG_MAX_PLUS_ONE && LLONG_MIN_MINUS_ONE_IS_LESS_THAN(d)) {
+	    if (0 <= d)
+		return (unsigned LONG_LONG)d;
+	    return (unsigned LONG_LONG)(LONG_LONG)d;
 	}
 	else {
 	    FLOAT_OUT_OF_RANGE(val, "unsigned long long");
@@ -3983,13 +3983,13 @@ fix_pow(VALUE x, VALUE y)
 	return rb_big_pow(x, y);
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
-	if (RFLOAT_VALUE(y) == 0.0) return DBL2NUM(1.0);
+	double dy = RFLOAT_VALUE(y);
+	if (dy == 0.0) return DBL2NUM(1.0);
 	if (a == 0) {
-	    return DBL2NUM(RFLOAT_VALUE(y) < 0 ? INFINITY : 0.0);
+	    return DBL2NUM(dy < 0 ? INFINITY : 0.0);
 	}
 	if (a == 1) return DBL2NUM(1.0);
 	{
-	    double dy = RFLOAT_VALUE(y);
 	    if (a < 0 && dy != round(dy))
 		return num_funcall1(rb_complex_raw1(x), idPow, y);
 	    return DBL2NUM(pow((double)a, dy));
