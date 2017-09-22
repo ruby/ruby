@@ -693,6 +693,10 @@ class TestBignum < Test::Unit::TestCase
     o = Object.new
     def o.coerce(x); [x, 2**100]; end
     assert_equal((2**200).to_f, (2**300).fdiv(o))
+    o = Object.new
+    def o.coerce(x); [self, x]; end
+    def o.fdiv(x); 1; end
+    assert_equal(1.0, (2**300).fdiv(o))
   end
 
   def test_singleton_method
