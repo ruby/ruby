@@ -1342,7 +1342,7 @@ rb_complex_finite_p(VALUE self)
 
 /*
  * call-seq:
- *    cmp.infinite?  ->  nil or 1 or -1
+ *    cmp.infinite?  ->  nil or 1
  *
  * Returns values corresponding to the value of +cmp+'s magnitude:
  *
@@ -1365,7 +1365,7 @@ rb_complex_infinite_p(VALUE self)
     if (RB_FLOAT_TYPE_P(magnitude)) {
 	const double f = RFLOAT_VALUE(magnitude);
 	if (isinf(f)) {
-	    return INT2FIX(f < 0 ? -1 : 1);
+	    return ONE;
 	}
 	return Qnil;
     }
