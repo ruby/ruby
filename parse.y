@@ -7842,7 +7842,7 @@ parse_ident(struct parser_params *parser, int c, int cmd_state)
 	tokadd(c);
     }
     else {
-	result = ISUPPER(tok()[0]) ? tCONSTANT : tIDENTIFIER;
+	result = tCONSTANT;	/* assume provisionally */
 	pushback(c);
     }
     tokfix();
@@ -7909,6 +7909,7 @@ parse_ident(struct parser_params *parser, int c, int cmd_state)
     }
 
     ident = tokenize_ident(parser, last_state);
+    if (result == tCONSTANT && is_local_id(ident)) result = tIDENTIFIER;
     if (!IS_lex_state_for(last_state, EXPR_DOT|EXPR_FNAME) &&
 	(result == tIDENTIFIER) && /* not EXPR_FNAME, not attrasgn */
 	lvar_defined(ident)) {
