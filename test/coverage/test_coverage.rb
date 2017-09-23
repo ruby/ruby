@@ -176,160 +176,152 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
-  def test_branch_coverage_for_if_statement
+  def assert_coverage(code, opt, stdout)
+    stdout = [stdout] unless stdout.is_a?(Array)
+    stdout = stdout.map {|s| s.to_s }
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
-        File.open("test.rb", "w") do |f|
-          f.puts 'def foo(x)'
-          f.puts '  if x == 0'
-          f.puts '    0'
-          f.puts '  else'
-          f.puts '    1'
-          f.puts '  end'
-          f.puts ''
-          f.puts '  unless x == 0'
-          f.puts '    0'
-          f.puts '  else'
-          f.puts '    1'
-          f.puts '  end'
-          f.puts 'end'
-          f.puts 'foo(0)'
-          f.puts 'foo(0)'
-          f.puts 'foo(1)'
-        end
+        File.write("test.rb", code)
 
-        assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", ["{:branches=>{[:if, 0, 2]=>{[:then, 1, 3]=>2, [:else, 2, 5]=>1}, [:unless, 3, 8]=>{[:else, 4, 11]=>2, [:then, 5, 9]=>1}}}"], [])
+        assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", stdout, [])
           ENV["COVERAGE_EXPERIMENTAL_MODE"] = "true"
-          Coverage.start(branches: true)
+          Coverage.start(#{ opt })
           tmp = Dir.pwd
           require tmp + '/test.rb'
           p Coverage.result[tmp + "/test.rb"]
         end;
       }
     }
+  end
+
+  def test_branch_coverage_for_if_statement
+    result = {
+      :branches => {
+        [:if    , 0, 2] => {[:then, 1,  3]=>2, [:else, 2, 5]=>1},
+        [:unless, 3, 8] => {[:else, 4, 11]=>2, [:then, 5, 9]=>1},
+      }
+    }
+    assert_coverage(<<-"end;", { branches: true }, result)
+      def foo(x)
+        if x == 0
+          0
+        else
+          1
+        end
+
+        unless x == 0
+          0
+        else
+          1
+        end
+      end
+
+      foo(0)
+      foo(0)
+      foo(1)
+    end;
   end
 
   def test_branch_coverage_for_while_statement
-    Dir.mktmpdir {|tmp|
-      Dir.chdir(tmp) {
-        File.open("test.rb", "w") do |f|
-          f.puts 'x = 3'
-          f.puts 'while x > 0'
-          f.puts '  x -= 1'
-          f.puts 'end'
-          f.puts 'until x == 10'
-          f.puts '  x += 1'
-          f.puts 'end'
-        end
-
-        assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", ["{:branches=>{[:while, 0, 2]=>{[:body, 1, 3]=>3}, [:until, 2, 5]=>{[:body, 3, 6]=>10}}}"], [])
-          ENV["COVERAGE_EXPERIMENTAL_MODE"] = "true"
-          Coverage.start(branches: true)
-          tmp = Dir.pwd
-          require tmp + '/test.rb'
-          p Coverage.result[tmp + "/test.rb"]
-        end;
+    result = {
+      :branches => {
+        [:while, 0, 2] => {[:body, 1, 3]=> 3},
+        [:until, 2, 5] => {[:body, 3, 6]=>10},
       }
     }
+    assert_coverage(<<-"end;", { branches: true }, result)
+      x = 3
+      while x > 0
+        x -= 1
+      end
+      until x == 10
+        x += 1
+      end
+    end;
   end
 
   def test_branch_coverage_for_case_statement
-    Dir.mktmpdir {|tmp|
-      Dir.chdir(tmp) {
-        File.open("test.rb", "w") do |f|
-          f.puts 'def foo(x)'
-          f.puts '  case x'
-          f.puts '  when 0'
-          f.puts '    0'
-          f.puts '  when 1'
-          f.puts '    1'
-          f.puts '  end'
-          f.puts ''
-          f.puts '  case'
-          f.puts '  when x == 0'
-          f.puts '    0'
-          f.puts '  when x == 1'
-          f.puts '    1'
-          f.puts '  end'
-          f.puts ''
-          f.puts '  case x'
-          f.puts '  when 0'
-          f.puts '    0'
-          f.puts '  when 1'
-          f.puts '    1'
-          f.puts '  else'
-          f.puts '    :other'
-          f.puts '  end'
-          f.puts ''
-          f.puts '  case'
-          f.puts '  when x == 0'
-          f.puts '    0'
-          f.puts '  when x == 1'
-          f.puts '    1'
-          f.puts '  else'
-          f.puts '    :other'
-          f.puts '  end'
-          f.puts 'end'
-          f.puts ''
-          f.puts 'foo(0)'
-          f.puts 'foo(0)'
-          f.puts 'foo(2)'
-        end
-
-        assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", ["{:branches=>{[:case, 0, 2]=>{[:when, 1, 4]=>2, [:when, 2, 6]=>0, [:else, 3, 2]=>1}, [:case, 4, 9]=>{[:when, 5, 11]=>2, [:when, 6, 13]=>0, [:else, 7, 9]=>1}, [:case, 8, 16]=>{[:when, 9, 18]=>2, [:when, 10, 20]=>0, [:else, 11, 22]=>1}, [:case, 12, 25]=>{[:when, 13, 27]=>2, [:when, 14, 29]=>0, [:else, 15, 31]=>1}}}"], [])
-          ENV["COVERAGE_EXPERIMENTAL_MODE"] = "true"
-          Coverage.start(branches: true)
-          tmp = Dir.pwd
-          require tmp + '/test.rb'
-          p Coverage.result[tmp + "/test.rb"]
-        end;
+    result = {
+      :branches => {
+        [:case,  0,  2] => {[:when,  1,  4]=>2, [:when,  2,  6]=>0, [:else,  3,  2]=>1},
+        [:case,  4,  9] => {[:when,  5, 11]=>2, [:when,  6, 13]=>0, [:else,  7,  9]=>1},
+        [:case,  8, 16] => {[:when,  9, 18]=>2, [:when, 10, 20]=>0, [:else, 11, 22]=>1},
+        [:case, 12, 25] => {[:when, 13, 27]=>2, [:when, 14, 29]=>0, [:else, 15, 31]=>1},
       }
     }
+    assert_coverage(<<-"end;", { branches: true }, result)
+      def foo(x)
+        case x
+        when 0
+          0
+        when 1
+          1
+        end
+
+        case
+        when x == 0
+          0
+        when x == 1
+          1
+        end
+
+        case x
+        when 0
+          0
+        when 1
+          1
+        else
+          :other
+        end
+
+        case
+        when x == 0
+          0
+        when x == 1
+          1
+        else
+          :other
+        end
+      end
+
+      foo(0)
+      foo(0)
+      foo(2)
+    end;
   end
 
   def test_branch_coverage_for_safe_method_invocation
-    Dir.mktmpdir {|tmp|
-      Dir.chdir(tmp) {
-        File.open("test.rb", "w") do |f|
-          f.puts 'a = 10'
-          f.puts 'b = nil'
-          f.puts 'a&.abs'
-          f.puts 'b&.hoo'
-        end
-
-        assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", ["{:branches=>{[:\"&.\", 0, 3]=>{[:then, 1, 3]=>1, [:else, 2, 3]=>0}, [:\"&.\", 3, 4]=>{[:then, 4, 4]=>0, [:else, 5, 4]=>1}}}"], [])
-          ENV["COVERAGE_EXPERIMENTAL_MODE"] = "true"
-          Coverage.start(branches: true)
-          tmp = Dir.pwd
-          require tmp + '/test.rb'
-          p Coverage.result[tmp + "/test.rb"]
-        end;
+    result = {
+      :branches=>{
+        [:"&.", 0, 3] => {[:then, 1, 3]=>1, [:else, 2, 3]=>0},
+        [:"&.", 3, 4] => {[:then, 4, 4]=>0, [:else, 5, 4]=>1},
       }
     }
+    assert_coverage(<<-"end;", { branches: true }, result)
+      a = 10
+      b = nil
+      a&.abs
+      b&.hoo
+    end;
   end
 
   def test_method_coverage
-    Dir.mktmpdir {|tmp|
-      Dir.chdir(tmp) {
-        File.open("test.rb", "w") do |f|
-          f.puts 'def foo; end'
-          f.puts 'def bar'
-          f.puts 'end'
-          f.puts 'def baz; end'
-          f.puts ''
-          f.puts 'foo'
-          f.puts 'foo'
-          f.puts 'bar'
-        end
-
-        assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", ["{:methods=>{[:foo, 0, 1]=>2, [:bar, 1, 2]=>1, [:baz, 2, 4]=>0}}"], [])
-          ENV["COVERAGE_EXPERIMENTAL_MODE"] = "true"
-          Coverage.start(methods: true)
-          tmp = Dir.pwd
-          require tmp + '/test.rb'
-          p Coverage.result[tmp + "/test.rb"]
-        end;
+    result = {
+      :methods => {
+        [:foo, 0, 1] => 2,
+        [:bar, 1, 2] => 1,
+        [:baz, 2, 4] => 0,
       }
     }
+    assert_coverage(<<-"end;", { methods: true }, result)
+      def foo; end
+      def bar
+      end
+      def baz; end
+
+      foo
+      foo
+      bar
+    end;
   end
 end
