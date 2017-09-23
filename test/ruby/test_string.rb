@@ -1686,6 +1686,11 @@ CODE
     }
   end
 
+  def test_split_dupped
+    s = "abc"
+    s.split("b", 1).map(&:upcase!)
+    assert_equal("abc", s)
+  end
   def test_squeeze
     assert_equal(S("abc"), S("aaabbbbccc").squeeze)
     assert_equal(S("aa bb cc"), S("aa   bb      cc").squeeze(S(" ")))
