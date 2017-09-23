@@ -7371,7 +7371,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	else if (lim == 1) {
 	    if (RSTRING_LEN(str) == 0)
 		return rb_ary_new2(0);
-	    return rb_ary_new3(1, str);
+	    return rb_ary_new3(1, rb_str_dup(str));
 	}
 	i = 1;
     }
@@ -9124,7 +9124,7 @@ rb_str_partition(VALUE str, VALUE sep)
 	pos = rb_reg_search(sep, str, 0, 0);
 	if (pos < 0) {
 	  failed:
-	    return rb_ary_new3(3, str, str_new_empty(str), str_new_empty(str));
+	    return rb_ary_new3(3, rb_str_dup(str), str_new_empty(str), str_new_empty(str));
 	}
 	sep = rb_str_subpat(str, sep, INT2FIX(0));
 	if (pos == 0 && RSTRING_LEN(sep) == 0) goto failed;
@@ -9177,7 +9177,7 @@ rb_str_rpartition(VALUE str, VALUE sep)
 	pos = rb_str_rindex(str, sep, pos);
     }
     if (pos < 0) {
-	return rb_ary_new3(3, str_new_empty(str), str_new_empty(str), str);
+       return rb_ary_new3(3, str_new_empty(str), str_new_empty(str), rb_str_dup(str));
     }
     if (regex) {
 	sep = rb_reg_nth_match(0, rb_backref_get());
