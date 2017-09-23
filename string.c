@@ -7371,7 +7371,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	else if (lim == 1) {
 	    if (RSTRING_LEN(str) == 0)
 		return rb_ary_new2(0);
-	    return rb_ary_new3(1, str);
+	    return rb_ary_new3(1, rb_str_dup(str));
 	}
 	i = 1;
     }
