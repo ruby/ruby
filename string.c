@@ -9177,7 +9177,7 @@ rb_str_rpartition(VALUE str, VALUE sep)
 	pos = rb_str_rindex(str, sep, pos);
     }
     if (pos < 0) {
-	return rb_ary_new3(3, str_new_empty(str), str_new_empty(str), str);
+       return rb_ary_new3(3, str_new_empty(str), str_new_empty(str), rb_str_dup(str));
     }
     if (regex) {
 	sep = rb_reg_nth_match(0, rb_backref_get());

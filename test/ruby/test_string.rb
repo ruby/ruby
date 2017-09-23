@@ -2445,6 +2445,11 @@ CODE
     bug8138 = '[ruby-dev:47183]'
     assert_equal(["\u30E6\u30FC\u30B6@\u30C9\u30E1", ".", "\u30A4\u30F3"],
       "\u30E6\u30FC\u30B6@\u30C9\u30E1.\u30A4\u30F3".rpartition(/[@.]/), bug8138)
+
+    bug = '[ruby-core:82911]'
+    hello = "hello"
+    hello.rpartition("hi").map(&:upcase!)
+    assert_equal("hello", hello, bug)
   end
 
   def test_setter
