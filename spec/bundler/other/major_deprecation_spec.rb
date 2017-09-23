@@ -30,7 +30,7 @@ RSpec.describe "major deprecations" do
     G
   end
 
-  describe "bundle_ruby" do
+  describe "bundle_ruby", :ruby_repo do
     it "prints a deprecation" do
       bundle_ruby
       out.gsub! "\nruby #{RUBY_VERSION}", ""
