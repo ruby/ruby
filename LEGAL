@@ -603,7 +603,8 @@ ext/nkf/nkf-utf8/utf8tbl.c:
        You don't have to ask before copying, redistribution or publishing.
        THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE.
 
-ext/psych, test/psych:
+ext/psych:
+test/psych:
 
   Copyright 2009 Aaron Patterson, et al.
 
@@ -727,7 +728,10 @@ spec/ruby:
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
     OTHER DEALINGS IN THE SOFTWARE.
 
-lib/rubygems.rb, lib/ubygems.rb, lib/rubygems/*, test/rubygems:
+lib/rubygems.rb:
+lib/ubygems.rb:
+lib/rubygems:
+test/rubygems:
 
   RubyGems is copyrighted free software by Chad Fowler, Rich Kilmer, Jim
   Weirich and others.  You can redistribute it and/or modify it under
@@ -783,7 +787,10 @@ lib/rubygems.rb, lib/ubygems.rb, lib/rubygems/*, test/rubygems:
      WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
      PURPOSE.
 
-lib/bundler, lib/bundler.rb, lib/bundler.gemspec, spec/bundler:
+lib/bundler:
+lib/bundler.rb:
+lib/bundler.gemspec:
+spec/bundler:
 
   Portions copyright (c) 2010 Andre Arko
   Portions copyright (c) 2009 Engine Yard
