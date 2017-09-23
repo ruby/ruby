@@ -5581,7 +5581,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	*/
 	DECL_ANCHOR(recv);
 	DECL_ANCHOR(args);
-	LABEL *lskip = 0;
+	LABEL *else_label = 0;
+	LABEL *end_label = 0;
+	VALUE branches = 0;
 	ID mid = node->nd_mid;
 	VALUE argc;
 	unsigned int flag = 0;
@@ -5660,9 +5662,13 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	if (type == NODE_CALL || type == NODE_OPCALL || type == NODE_QCALL) {
 	    CHECK(COMPILE(recv, "recv", node->nd_recv));
 	    if (type == NODE_QCALL) {
-		lskip = NEW_LABEL(line);
+		else_label = NEW_LABEL(line);
+		end_label = NEW_LABEL(line);
+
+		DECL_BRANCH_BASE(branches, nd_line(node), "&.");
 		ADD_INSN(recv, line, dup);
-		ADD_INSNL(recv, line, branchnil, lskip);
+		ADD_INSNL(recv, line, branchnil, else_label);
+		ADD_TRACE_BRANCH_COVERAGE(recv, nd_line(node), "then", branches);
 	    }
 	}
 	else if (type == NODE_FCALL || type == NODE_VCALL) {
@@ -5694,8 +5700,11 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 
 	ADD_SEND_R(ret, line, mid, argc, parent_block, INT2FIX(flag), keywords);
 
-	if (lskip) {
-	    ADD_LABEL(ret, lskip);
+	if (else_label && end_label) {
+	    ADD_INSNL(ret, line, jump, end_label);
+	    ADD_LABEL(ret, else_label);
+	    ADD_TRACE_BRANCH_COVERAGE(ret, nd_line(node), "else", branches);
+	    ADD_LABEL(ret, end_label);
 	}
 	if (popped) {
 	    ADD_INSN(ret, line, pop);

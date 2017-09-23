@@ -287,6 +287,27 @@ class TestCoverage < Test::Unit::TestCase
     }
   end
 
+  def test_branch_coverage_for_safe_method_invocation
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        File.open("test.rb", "w") do |f|
+          f.puts 'a = 10'
+          f.puts 'b = nil'
+          f.puts 'a&.abs'
+          f.puts 'b&.hoo'
+        end
+
+        assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", ["{:branches=>{[:\"&.\", 0, 3]=>{[:then, 1, 3]=>1, [:else, 2, 3]=>0}, [:\"&.\", 3, 4]=>{[:then, 4, 4]=>0, [:else, 5, 4]=>1}}}"], [])
+          ENV["COVERAGE_EXPERIMENTAL_MODE"] = "true"
+          Coverage.start(branches: true)
+          tmp = Dir.pwd
+          require tmp + '/test.rb'
+          p Coverage.result[tmp + "/test.rb"]
+        end;
+      }
+    }
+  end
+
   def test_method_coverage
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
