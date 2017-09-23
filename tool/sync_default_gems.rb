@@ -93,6 +93,7 @@ def sync_default_gems(gem)
     `cp -rf ../psych/test/psych ./test`
     `rm -rf ext/psych/lib/org ext/psych/lib/psych.jar ext/psych/lib/psych_jars.rb`
     `rm -rf ext/psych/lib/psych.{bundle,so} ext/psych/lib/{2.0,2.1,2.2,2.3,2.4}`
+    `rm -f ext/psych/yaml/LICENSE`
     `cp ../psych/psych.gemspec ext/psych/`
     `git checkout ext/psych/depend`
   when "fileutils"
