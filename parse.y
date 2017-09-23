@@ -1181,6 +1181,7 @@ stmt_or_begin	: stmt
 			$$ = dispatch1(BEGIN, $4);
 		    %*/
 		    }
+		;
 
 stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    {
