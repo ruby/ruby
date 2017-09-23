@@ -2420,7 +2420,12 @@ CODE
     end
 
     assert_equal(["\u30E6\u30FC\u30B6", "@", "\u30C9\u30E1.\u30A4\u30F3"],
-      "\u30E6\u30FC\u30B6@\u30C9\u30E1.\u30A4\u30F3".partition(/[@.]/))
+                 "\u30E6\u30FC\u30B6@\u30C9\u30E1.\u30A4\u30F3".partition(/[@.]/))
+
+    bug = '[ruby-core:82911]'
+    hello = "hello"
+    hello.partition("hi").map(&:upcase!)
+    assert_equal("hello", hello, bug)
   end
 
   def test_rpartition
