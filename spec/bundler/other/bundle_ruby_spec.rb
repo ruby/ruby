@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require "spec_helper"
 
-RSpec.describe "bundle_ruby" do
+RSpec.describe "bundle_ruby", :ruby_repo do
   context "without patchlevel" do
     it "returns the ruby version" do
       gemfile <<-G
