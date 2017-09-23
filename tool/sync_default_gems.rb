@@ -64,7 +64,6 @@ def sync_default_gems(gem)
     `cp -r ../../rubygems/rubygems/lib/rubygems* ./lib`
     `cp -r ../../rubygems/rubygems/lib/ubygems.rb ./lib`
     `cp -r ../../rubygems/rubygems/test/rubygems ./test`
-    `cp ../../rubygems/rubygems/LICENSE.txt ./lib/rubygems`
   when "bundler"
     `rm -rf lib/bundler* bin/bundler bin/bundle bin/bundle_ruby spec/bundler`
     `cp -r ../../bundler/bundler/lib/bundler* ./lib`
