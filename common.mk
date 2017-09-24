@@ -777,9 +777,15 @@ $(PLATFORM_D):
 	$(Q) $(MAKEDIRS) $(PLATFORM_DIR) $(@D)
 	@exit > $@
 
-exe/$(PROGRAM): ruby-runner.c ruby-runner.h exe/.time
+exe/$(PROGRAM): ruby-runner.c ruby-runner.h exe/.time miniruby$(EXEEXT)
 	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(CPPFLAGS) -DRUBY_INSTALL_NAME=$(@F) $(LDFLAGS) $(LIBS) $(OUTFLAG)$@ $<
-	$(Q) $(@) -e 'ARGV[0]=="ruby" or File.symlink(ARGV[0], ARGV[1]+"/ruby")' $(@F) $(@D)
+	$(Q) ./miniruby$(EXEEXT) \
+	    -e 'prog, dest = ARGV; dest += "/ruby"' \
+	    -e 'unless prog=="ruby"' \
+	    -e '  begin File.unlink(dest); rescue Errno::ENOENT; end' \
+	    -e '  File.symlink(prog, dest)' \
+	    -e 'end' \
+	$(@F) $(@D)
 
 exe/.time:
 	$(Q) $(MAKEDIRS) exe $(@D)
