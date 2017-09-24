@@ -290,7 +290,7 @@ class TestGc < Test::Unit::TestCase
     base_length = GC.stat[:heap_eden_pages]
     (base_length * 500).times{ 'a' }
     GC.start
-    assert_in_delta base_length, (v = GC.stat[:heap_eden_pages]), 2,
+    assert_in_epsilon base_length, (v = GC.stat[:heap_eden_pages]), 1/8r,
            "invalid heap expanding (base_length: #{base_length}, GC.stat[:heap_eden_pages]: #{v})"
 
     a = []
