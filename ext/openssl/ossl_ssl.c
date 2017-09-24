@@ -1694,20 +1694,26 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
     }
 
     ilen = NUM2INT(len);
-    if(NIL_P(str)) str = rb_str_new(0, ilen);
-    else{
-        StringValue(str);
-        rb_str_modify(str);
-        rb_str_resize(str, ilen);
+    if (NIL_P(str))
+	str = rb_str_new(0, ilen);
+    else {
+	StringValue(str);
+	if (RSTRING_LEN(str) >= ilen)
+	    rb_str_modify(str);
+	else
+	    rb_str_modify_expand(str, ilen - RSTRING_LEN(str));
     }
-    if(ilen == 0) return str;
+    OBJ_TAINT(str);
+    rb_str_set_len(str, 0);
+    if (ilen == 0)
+	return str;
 
     GetSSL(self, ssl);
     io = rb_attr_get(self, id_i_io);
     GetOpenFile(io, fptr);
     if (ssl_started(ssl)) {
 	for (;;){
-	    nread = SSL_read(ssl, RSTRING_PTR(str), RSTRING_LENINT(str));
+	    nread = SSL_read(ssl, RSTRING_PTR(str), ilen);
 	    switch(ssl_get_error(ssl, nread)){
 	    case SSL_ERROR_NONE:
 		goto end;
@@ -1757,8 +1763,6 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 
   end:
     rb_str_set_len(str, nread);
-    OBJ_TAINT(str);
-
     return str;
 }
 

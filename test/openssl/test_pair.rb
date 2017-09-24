@@ -218,7 +218,7 @@ module OpenSSL::TestPairM
       assert_nothing_raised("[ruby-core:20298]") { ret = s2.read_nonblock(10) }
       assert_equal("def\n", ret)
       s1.close
-      sleep 0.1
+      IO.select([s2])
       assert_raise(EOFError) { s2.read_nonblock(10) }
     }
   end
@@ -234,8 +234,32 @@ module OpenSSL::TestPairM
       assert_nothing_raised("[ruby-core:20298]") { ret = s2.read_nonblock(10, exception: false) }
       assert_equal("def\n", ret)
       s1.close
-      sleep 0.1
+      IO.select([s2])
       assert_equal(nil, s2.read_nonblock(10, exception: false))
+    }
+  end
+
+  def test_read_with_outbuf
+    ssl_pair { |s1, s2|
+      s1.write("abc\n")
+      buf = ""
+      ret = s2.read(2, buf)
+      assert_same ret, buf
+      assert_equal "ab", ret
+
+      buf = "garbage"
+      ret = s2.read(2, buf)
+      assert_same ret, buf
+      assert_equal "c\n", ret
+
+      buf = "garbage"
+      assert_equal :wait_readable, s2.read_nonblock(100, buf, exception: false)
+      assert_equal "", buf
+
+      s1.close
+      buf = "garbage"
+      assert_equal nil, s2.read(100, buf)
+      assert_equal "", buf
     }
   end
 
