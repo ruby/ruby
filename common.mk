@@ -779,6 +779,7 @@ $(PLATFORM_D):
 
 exe/$(PROGRAM): ruby-runner.c ruby-runner.h exe/.time
 	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(CPPFLAGS) -DRUBY_INSTALL_NAME=$(@F) $(LDFLAGS) $(LIBS) $(OUTFLAG)$@ $<
+	$(Q) $(@) -e 'ARGV[0]=="ruby" or File.symlink(ARGV[0], ARGV[1]+"/ruby")' $(@F) $(@D)
 
 exe/.time:
 	$(Q) $(MAKEDIRS) exe $(@D)
