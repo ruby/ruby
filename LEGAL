@@ -729,7 +729,6 @@ spec/ruby:
     OTHER DEALINGS IN THE SOFTWARE.
 
 lib/rubygems.rb:
-lib/ubygems.rb:
 lib/rubygems:
 test/rubygems:
 

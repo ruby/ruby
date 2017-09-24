@@ -60,9 +60,8 @@ def sync_default_gems(gem)
 
   case gem
   when "rubygems"
-    `rm -rf lib/rubygems* lib/ubygems.rb test/rubygems`
+    `rm -rf lib/rubygems* test/rubygems`
     `cp -r ../../rubygems/rubygems/lib/rubygems* ./lib`
-    `cp -r ../../rubygems/rubygems/lib/ubygems.rb ./lib`
     `cp -r ../../rubygems/rubygems/test/rubygems ./test`
   when "bundler"
     `rm -rf lib/bundler* bin/bundler bin/bundle bin/bundle_ruby spec/bundler`
