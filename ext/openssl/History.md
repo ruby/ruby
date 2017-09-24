@@ -29,6 +29,26 @@ Notable changes
   [[GitHub #143]](https://github.com/ruby/openssl/pull/143)
 
 
+Version 2.0.6
+=============
+
+Bug fixes
+---------
+
+* The session_remove_cb set to an OpenSSL::SSL::SSLContext is no longer called
+  during GC.
+* A possible deadlock in OpenSSL::SSL::SSLSocket#sysread is fixed.
+  [[GitHub #139]](https://github.com/ruby/openssl/pull/139)
+* OpenSSL::BN#hash could return an unnormalized fixnum value on Windows.
+  [[Bug #13877]](https://bugs.ruby-lang.org/issues/13877)
+* OpenSSL::SSL::SSLSocket#sysread and #sysread_nonblock set the length of the
+  destination buffer String to 0 on error.
+  [[GitHub #153]](https://github.com/ruby/openssl/pull/153)
+* Possible deadlock is fixed. This happened only when built with older versions
+  of OpenSSL (before 1.1.0) or LibreSSL.
+  [[GitHub #155]](https://github.com/ruby/openssl/pull/155)
+
+
 Version 2.0.5
 =============
 

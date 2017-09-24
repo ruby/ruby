@@ -305,7 +305,7 @@ ossl_x509name_to_s(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * call-seq;
+ * call-seq:
  *    name.to_utf8 -> string
  *
  * Returns an UTF-8 representation of the distinguished name, as specified
