@@ -178,6 +178,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 * mathn.rb
   Removed from stdlib. [Feature #10169]
 
+* Rubygems
+  * Removed "ubygems.rb" file from stdlib. It's needless after the Ruby 1.9.
+
 === C API updates
 
 === Supported platform changes
