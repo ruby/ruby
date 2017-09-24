@@ -677,7 +677,7 @@ rb_load_protect(VALUE fname, int wrap, int *pstate)
     }
     POP_TAG();
 
-    if (state != TAG_NONE) state = rb_load_internal0(GET_THREAD(), path, wrap);
+    if (state == TAG_NONE) state = rb_load_internal0(GET_THREAD(), path, wrap);
     if (state != TAG_NONE) *pstate = state;
 }
 
