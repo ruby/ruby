@@ -1466,9 +1466,8 @@ class TestGem < Gem::TestCase
     ENV['RUBYGEMS_GEMDEPS'] = "-"
 
     path = File.join @tempdir, "gem.deps.rb"
-    cmd = [Gem.ruby.dup.untaint, "-I#{LIB_PATH.untaint}"]
+    cmd = [Gem.ruby.dup.untaint, "-I#{LIB_PATH.untaint}", "-rrubygems"]
     if RUBY_VERSION < '1.9'
-      cmd << "-rubygems"
       cmd << "-e 'puts Gem.loaded_specs.values.map(&:full_name).sort'"
       cmd = cmd.join(' ')
     else
@@ -1509,9 +1508,8 @@ class TestGem < Gem::TestCase
     Dir.mkdir "sub1"
 
     path = File.join @tempdir, "gem.deps.rb"
-    cmd = [Gem.ruby.dup.untaint, "-Csub1", "-I#{LIB_PATH.untaint}"]
+    cmd = [Gem.ruby.dup.untaint, "-Csub1", "-I#{LIB_PATH.untaint}", "-rrubygems"]
     if RUBY_VERSION < '1.9'
-      cmd << "-rubygems"
       cmd << "-e 'puts Gem.loaded_specs.values.map(&:full_name).sort'"
       cmd = cmd.join(' ')
     else
