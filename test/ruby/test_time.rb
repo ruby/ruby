@@ -236,6 +236,17 @@ class TestTime < Test::Unit::TestCase
     assert_equal(1, Time.at(0, 0.001).nsec)
   end
 
+  def test_at_with_unit
+    assert_equal(123456789, Time.at(0, 123456789, :nanosecond).nsec)
+    assert_equal(123456789, Time.at(0, 123456789, :nsec).nsec)
+    assert_equal(123456000, Time.at(0, 123456, :microsecond).nsec)
+    assert_equal(123456000, Time.at(0, 123456, :usec).nsec)
+    assert_equal(123000000, Time.at(0, 123, :millisecond).nsec)
+    assert_raise(ArgumentError){ Time.at(0, 1, 2) }
+    assert_raise(ArgumentError){ Time.at(0, 1, :invalid) }
+    assert_raise(ArgumentError){ Time.at(0, 1, nil) }
+  end
+
   def test_at_rational
     assert_equal(1, Time.at(Rational(1,1) / 1000000000).nsec)
     assert_equal(1, Time.at(1167609600 + Rational(1,1) / 1000000000).nsec)

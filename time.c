@@ -36,6 +36,7 @@
 
 static ID id_divmod, id_submicro, id_nano_num, id_nano_den, id_offset, id_zone;
 static ID id_quo, id_div;
+static ID id_nanosecond, id_microsecond, id_millisecond, id_nsec, id_usec;
 
 #define NDIV(x,y) (-(-((x)+1)/(y))-1)
 #define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
@@ -2347,11 +2348,32 @@ time_s_now(VALUE klass)
     return rb_class_new_instance(0, NULL, klass);
 }
 
+static int
+get_scale(VALUE unit) {
+    if (unit == ID2SYM(id_nanosecond) || unit == ID2SYM(id_nsec)) {
+        return 1000000000;
+    }
+    else if (unit == ID2SYM(id_microsecond) || unit == ID2SYM(id_usec)) {
+        return 1000000;
+    }
+    else if (unit == ID2SYM(id_millisecond)) {
+        return 1000;
+    }
+    else {
+        rb_raise(rb_eArgError, "unexpected unit: %"PRIsVALUE, unit);
+    }
+}
+
 /*
  *  call-seq:
  *     Time.at(time) -> time
  *     Time.at(seconds_with_frac) -> time
  *     Time.at(seconds, microseconds_with_frac) -> time
+ *     Time.at(seconds, milliseconds, :millisecond) -> time
+ *     Time.at(seconds, microseconds, :usec) -> time
+ *     Time.at(seconds, microseconds, :microsecond) -> time
+ *     Time.at(seconds, nanoseconds, :nsec) -> time
+ *     Time.at(seconds, nanoseconds, :nanosecond) -> time
  *
  *  Creates a new Time object with the value given by +time+,
  *  the given number of +seconds_with_frac+, or
@@ -2362,24 +2384,26 @@ time_s_now(VALUE klass)
  *
  *  If a numeric argument is given, the result is in local time.
  *
- *     Time.at(0)                           #=> 1969-12-31 18:00:00 -0600
- *     Time.at(Time.at(0))                  #=> 1969-12-31 18:00:00 -0600
- *     Time.at(946702800)                   #=> 1999-12-31 23:00:00 -0600
- *     Time.at(-284061600)                  #=> 1960-12-31 00:00:00 -0600
- *     Time.at(946684800.2).usec            #=> 200000
- *     Time.at(946684800, 123456.789).nsec  #=> 123456789
+ *     Time.at(0)                                #=> 1969-12-31 18:00:00 -0600
+ *     Time.at(Time.at(0))                       #=> 1969-12-31 18:00:00 -0600
+ *     Time.at(946702800)                        #=> 1999-12-31 23:00:00 -0600
+ *     Time.at(-284061600)                       #=> 1960-12-31 00:00:00 -0600
+ *     Time.at(946684800.2).usec                 #=> 200000
+ *     Time.at(946684800, 123456.789).nsec       #=> 123456789
+ *     Time.at(946684800, 123456789, :nsec).nsec  #=> 123456789
  */
 
 static VALUE
 time_s_at(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE time, t;
+    VALUE time, t, unit = Qundef;
     wideval_t timew;
 
-    if (rb_scan_args(argc, argv, "11", &time, &t) == 2) {
+    if (rb_scan_args(argc, argv, "12", &time, &t, &unit) >= 2) {
+        int scale = argc == 3 ? get_scale(unit) : 1000000;
         time = num_exact(time);
         t = num_exact(t);
-        timew = wadd(rb_time_magnify(v2w(time)), wmulquoll(v2w(t), TIME_SCALE, 1000000));
+        timew = wadd(rb_time_magnify(v2w(time)), wmulquoll(v2w(t), TIME_SCALE, scale));
         t = time_new_timew(klass, timew);
     }
     else if (IsTimeval(time)) {
@@ -4819,6 +4843,11 @@ Init_Time(void)
     id_nano_den = rb_intern("nano_den");
     id_offset = rb_intern("offset");
     id_zone = rb_intern("zone");
+    id_nanosecond = rb_intern("nanosecond");
+    id_microsecond = rb_intern("microsecond");
+    id_millisecond = rb_intern("millisecond");
+    id_nsec = rb_intern("nsec");
+    id_usec = rb_intern("usec");
 
     rb_cTime = rb_define_class("Time", rb_cObject);
     rb_include_module(rb_cTime, rb_mComparable);
