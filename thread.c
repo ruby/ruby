@@ -4277,8 +4277,8 @@ thgroup_list(VALUE group)
  *  New threads can still be started in an enclosed ThreadGroup.
  *
  *     ThreadGroup::Default.enclose        #=> #<ThreadGroup:0x4029d914>
- *     thr = Thread::new { Thread.stop }   #=> #<Thread:0x402a7210 sleep>
- *     tg = ThreadGroup::new               #=> #<ThreadGroup:0x402752d4>
+ *     thr = Thread.new { Thread.stop }    #=> #<Thread:0x402a7210 sleep>
+ *     tg = ThreadGroup.new                #=> #<ThreadGroup:0x402752d4>
  *     tg.add thr
  *     #=> ThreadError: can't move from the enclosed thread group
  */
