@@ -254,6 +254,7 @@ AC_SUBST(MAJOR)
 AC_SUBST(MINOR)
 AC_SUBST(TEENY)
 AC_SUBST(RUBY_PROGRAM_VERSION)
+AC_SUBST(RUBY_API_VERSION, '$(MAJOR).$(MINOR)')
 RUBY_PATCHLEVEL=`sed -n 's/^#define RUBY_PATCHLEVEL //p' $srcdir/version.h`
 AC_DEFINE(CANONICALIZATION_FOR_MATHN)
 dnl checks for alternative programs
@@ -3849,11 +3850,11 @@ AS_CASE("$enable_shared", [yes], [
 
   AS_CASE(["$target_os"],
     [sunos4*], [
-	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
+	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(RUBY_API_VERSION) lib$(RUBY_SO_NAME).so'
 	],
     [linux* | gnu* | k*bsd*-gnu | atheos* | kopensolaris*-gnu | haiku*], [
-	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)' "$LDFLAGS_OPTDIR"])
-	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
+	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,lib$(RUBY_SO_NAME).so.$(RUBY_API_VERSION)' "$LDFLAGS_OPTDIR"])
+	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(RUBY_API_VERSION) lib$(RUBY_SO_NAME).so'
 	AS_IF([test "$load_relative" = yes], [
 	    libprefix="'\$\${ORIGIN}/../${libdir_basename}'"
 	    LIBRUBY_RPATHFLAGS="-Wl,-rpath,${libprefix}"
@@ -3896,7 +3897,7 @@ AS_CASE("$enable_shared", [yes], [
     [hpux*], [
 	XLDFLAGS="$XLDFLAGS "'-Wl,+s,+b,$(libdir)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).sl.$(RUBY_PROGRAM_VERSION)'
-	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).sl.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).sl'
+	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).sl.$(RUBY_API_VERSION) lib$(RUBY_SO_NAME).sl'
 	],
     [aix*], [
 	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ["${linker_flag}-bnoentry" "$XLDFLAGS" "$LDFLAGS_OPTDIR"])
@@ -3909,8 +3910,8 @@ AS_CASE("$enable_shared", [yes], [
 	    libprefix="@executable_path/../${libdir_basename}"
 	    LIBRUBY_RELATIVE=yes
 	])
-	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-install_name '${libprefix}'/$(LIBRUBY_SO)'
-	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-compatibility_version $(MAJOR).$(MINOR)'
+	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-install_name '${libprefix}'/lib$(RUBY_BASE_NAME).$(RUBY_API_VERSION).dylib'
+	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-compatibility_version $(RUBY_API_VERSION)'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-current_version $(RUBY_PROGRAM_VERSION)'
 	AS_IF([test "$visibility_option" = ld], [
 	    LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,_Init_*'
@@ -3919,7 +3920,7 @@ AS_CASE("$enable_shared", [yes], [
 	])
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "' $(XLDFLAGS)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).dylib'
-	LIBRUBY_ALIASES='lib$(RUBY_BASE_NAME).$(MAJOR).$(MINOR).dylib lib$(RUBY_INSTALL_NAME).dylib'
+	LIBRUBY_ALIASES='lib$(RUBY_BASE_NAME).$(RUBY_API_VERSION).dylib lib$(RUBY_INSTALL_NAME).dylib'
 	SOLIBS='$(LIBS)'
 	],
     [interix*], [
