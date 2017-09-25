@@ -18,10 +18,32 @@ def backup_gcda_files(gcda_files)
   end
 end
 
+def run_lcov(*args)
+  system("lcov", "--rc", "lcov_branch_coverage=1", *args)
+end
+
 $info_files = []
-def run_lcov(dir, info)
+def run_lcov_capture(dir, info)
   $info_files << info
-  system("lcov", "-c", "-d", dir, "--rc", "lcov_branch_coverage=1", "-o", info)
+  run_lcov("--capture", "-d", dir, "-o", info)
+end
+
+def run_lcov_merge(files, info)
+  run_lcov(*files.flat_map {|f| ["--add-tracefile", f] }, "-o", info)
+end
+
+def run_lcov_remove(info_src, info_out)
+  dirs = %w(/tmp/* /usr/*)
+  %w(
+    test/*
+    ext/-test-/*
+    ext/nkf/nkf-utf8/nkf.c
+  ).each {|f| dirs << File.join(File.dirname(__dir__), f) }
+  run_lcov("--remove", info_src, *dirs, "-o", info_out)
+end
+
+def run_genhtml(info, out)
+  system("genhtml", "--branch-coverage", "--ignore-errors", "source", info, "-o", out)
 end
 
 def gen_rb_lcov(file)
@@ -88,9 +110,9 @@ def gen_rb_lcov(file)
       # branch coverage
       total = covered = 0
       id = 0
-      cov[:branches].each do |(base_type, _, base_lineno), targets|
+      cov[:branches].each do |(_base_type, _, base_lineno), targets|
         i = 0
-        targets.each do |(target_type, target_lineno), count|
+        targets.each do |(_target_type, _target_lineno), count|
           f.puts "BRDA:#{ base_lineno },#{ id },#{ i },#{ count }"
           total += 1
           covered += 1 if count > 0
@@ -113,25 +135,28 @@ backup_gcda_files(rubyspec_temp_gcda_files) do
   if ext_gcda_files != []
     backup_gcda_files(ext_gcda_files) do
       info = "lcov-root.info"
-      run_lcov(".", info)
+      run_lcov_capture(".", info)
     end
   end
   ext_gcda_files.group_by {|f| f.descend.to_a[1] }.each do |key, files|
     info = "lcov-#{ key.to_s.gsub(File::Separator, "-") }.info"
-    run_lcov(key.to_s, info)
+    run_lcov_capture(key.to_s, info)
   end
 end
 if $info_files != []
-  system("lcov", *$info_files.flat_map {|f| ["-a", f] }, "--rc", "lcov_branch_coverage=1", "-o", "lcov-c-all.info")
-  system("genhtml", "--branch-coverage", "--ignore-errors", "source", "lcov-c-all.info", "-o", "lcov-c-out")
+  run_lcov_merge($info_files, "lcov-c-all.info")
+  run_lcov_remove("lcov-c-all.info", "lcov-c-all-filtered.info")
+  run_genhtml("lcov-c-all-filtered.info", "lcov-c-out")
 end
 
 if File.readable?("test-coverage.dat")
   gen_rb_lcov("test-coverage.dat")
-  system("genhtml", "--branch-coverage", "--ignore-errors", "source", "lcov-rb-all.info", "-o", "lcov-rb-out")
+  run_lcov_remove("lcov-rb-all.info", "lcov-rb-all-filtered.info")
+  run_genhtml("lcov-rb-all-filtered.info", "lcov-rb-out")
 end
 
 if File.readable?("lcov-c-all.info") && File.readable?("lcov-rb-all.info")
-  system("lcov", "-a", "lcov-c-all.info", "-a", "lcov-rb-all.info", "--rc", "lcov_branch_coverage=1", "-o", "lcov-all.info") || raise
-  system("genhtml", "--branch-coverage", "--ignore-errors", "source", "lcov-all.info", "-o", "lcov-out")
+  run_lcov_merge(%w(lcov-c-all.info lcov-rb-all.info), "lcov-all.info")
+  run_lcov_remove("lcov-all.info", "lcov-all-filtered.info")
+  run_genhtml("lcov-all-filtered.info", "lcov-out")
 end
