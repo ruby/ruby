@@ -3,7 +3,7 @@ shallow_clone: true
 platform:
   - x64
 environment:
-  ruby_version: "23-%Platform%"
+  ruby_version: "24-%Platform%"
   zlib_version: "1.2.11"
   matrix:
     - vs: "120"
