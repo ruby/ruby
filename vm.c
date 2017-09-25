@@ -1450,6 +1450,7 @@ rb_vm_make_jump_tag_but_local_jump(int state, VALUE val)
     return make_localjump_error(mesg, val, state);
 }
 
+#if 0
 void
 rb_vm_jump_tag_but_local_jump(int state)
 {
@@ -1457,6 +1458,7 @@ rb_vm_jump_tag_but_local_jump(int state)
     if (!NIL_P(exc)) rb_exc_raise(exc);
     JUMP_TAG(state);
 }
+#endif
 
 NORETURN(static void vm_iter_break(rb_thread_t *th, VALUE val));
 
