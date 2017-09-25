@@ -109,6 +109,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Description set by Thread#name= is now visible on Windows 10.
 
+* Time
+
+  * Time#at receives 3rd argument which specifies the unit of 2nd argument.
+    [Feature #13919]
+
 * KeyError
 
   * KeyError#receiver [Feature #12063]
