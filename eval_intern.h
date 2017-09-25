@@ -299,7 +299,9 @@ NORETURN(void rb_print_undef(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_print_undef_str(VALUE, VALUE));
 NORETURN(void rb_print_inaccessible(VALUE, ID, rb_method_visibility_t));
 NORETURN(void rb_vm_localjump_error(const char *,VALUE, int));
+#if 0
 NORETURN(void rb_vm_jump_tag_but_local_jump(int));
+#endif
 NORETURN(void rb_raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv,
 				      VALUE obj, int call_status));
 
