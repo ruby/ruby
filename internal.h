@@ -115,7 +115,7 @@ extern "C" {
 /* __builtin_mul_overflow_p can take bitfield */
 /* and GCC permits bitfields for integers other than int */
 #define MUL_OVERFLOW_FIXNUM_P(a, b) ({ \
-    struct { SIGNED_VALUE fixnum : SIZEOF_VALUE * CHAR_BIT - 1; } c; \
+    struct { long fixnum : SIZEOF_LONG * CHAR_BIT - 1; } c; \
     __builtin_mul_overflow_p((a), (b), c.fixnum); \
 })
 #else
