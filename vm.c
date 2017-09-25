@@ -1421,33 +1421,33 @@ rb_vm_localjump_error(const char *mesg, VALUE value, int reason)
 VALUE
 rb_vm_make_jump_tag_but_local_jump(int state, VALUE val)
 {
-    VALUE result = Qnil;
+    const char *mesg;
 
+    switch (state) {
+      case TAG_RETURN:
+	mesg = "unexpected return";
+	break;
+      case TAG_BREAK:
+	mesg = "unexpected break";
+	break;
+      case TAG_NEXT:
+	mesg = "unexpected next";
+	break;
+      case TAG_REDO:
+	mesg = "unexpected redo";
+	val = Qnil;
+	break;
+      case TAG_RETRY:
+	mesg = "retry outside of rescue clause";
+	val = Qnil;
+	break;
+      default:
+	return Qnil;
+    }
     if (val == Qundef) {
 	val = GET_THREAD()->ec.tag->retval;
     }
-    switch (state) {
-      case 0:
-	break;
-      case TAG_RETURN:
-	result = make_localjump_error("unexpected return", val, state);
-	break;
-      case TAG_BREAK:
-	result = make_localjump_error("unexpected break", val, state);
-	break;
-      case TAG_NEXT:
-	result = make_localjump_error("unexpected next", val, state);
-	break;
-      case TAG_REDO:
-	result = make_localjump_error("unexpected redo", Qnil, state);
-	break;
-      case TAG_RETRY:
-	result = make_localjump_error("retry outside of rescue clause", Qnil, state);
-	break;
-      default:
-	break;
-    }
-    return result;
+    return make_localjump_error(mesg, val, state);
 }
 
 void
