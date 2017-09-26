@@ -354,7 +354,7 @@ class TestCSV::Features < TestCSV
   end
 
   def test_comment_rows_are_ignored_with_heredoc
-    c = csv = CSV.new(<<~EOL, skip_lines: ".")
+    c = CSV.new(<<~EOL, skip_lines: ".")
     1,foo
     .2,bar
     3,baz
