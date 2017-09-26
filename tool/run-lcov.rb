@@ -1,6 +1,7 @@
 #!ruby
 require "pathname"
 require "open3"
+require "tmpdir"
 
 def backup_gcda_files(gcda_files)
   gcda_files = gcda_files.map do |gcda|
@@ -33,9 +34,9 @@ def run_lcov_merge(files, info)
 end
 
 def run_lcov_remove(info_src, info_out)
-  dirs = %w(/tmp/* /usr/*)
+  dirs = %w(/usr/*)
+  dirs << File.join(Dir.tmpdir, "*")
   %w(
-    tmp/*
     test/*
     ext/-test-/*
     ext/nkf/nkf-utf8/nkf.c
