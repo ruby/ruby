@@ -711,6 +711,8 @@ Dataから派生しない場合には, 必ずrb_undef_alloc_func(klass)
 
 rb_data_type_tは次のように定義されています．
 
+  typedef struct rb_data_type_struct rb_data_type_t;
+
   struct rb_data_type_struct {
           const char *wrap_struct_name;
           struct {
