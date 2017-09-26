@@ -35,6 +35,7 @@ end
 def run_lcov_remove(info_src, info_out)
   dirs = %w(/tmp/* /usr/*)
   %w(
+    tmp/*
     test/*
     ext/-test-/*
     ext/nkf/nkf-utf8/nkf.c
