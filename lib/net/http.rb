@@ -670,6 +670,7 @@ module Net   #:nodoc:
       @open_timeout = 60
       @read_timeout = 60
       @continue_timeout = nil
+      @max_retries = 1
       @debug_output = nil
 
       @proxy_from_env = false
@@ -735,6 +736,21 @@ module Net   #:nodoc:
     # seconds. If the HTTP object cannot read data in this many seconds,
     # it raises a Net::ReadTimeout exception. The default value is 60 seconds.
     attr_reader :read_timeout
+
+    # Maximum number of times to retry an idempotent request in case of
+    # Net::ReadTimeout, IOError, EOFError, Errno::ECONNRESET,
+    # Errno::ECONNABORTED, Errno::EPIPE, OpenSSL::SSL, Timeout::Error
+    # Should be non-negative integer number. Zero means no retries.
+    # The default value is 1.
+    def max_retries=(retries)
+      retries = retries.to_int
+      if retries < 0
+        raise ArgumentError, 'max_retries should be non-negative integer number'
+      end
+      @max_retries = retries
+    end
+
+    attr_reader :max_retries
 
     # Setter for the read_timeout attribute.
     def read_timeout=(sec)
@@ -1477,7 +1493,7 @@ module Net   #:nodoc:
              # avoid a dependency on OpenSSL
              defined?(OpenSSL::SSL) ? OpenSSL::SSL::SSLError : IOError,
              Timeout::Error => exception
-        if count == 0 && IDEMPOTENT_METHODS_.include?(req.method)
+        if count < max_retries && IDEMPOTENT_METHODS_.include?(req.method)
           count += 1
           @socket.close if @socket
           D "Conn close because of error #{exception}, and retry"
