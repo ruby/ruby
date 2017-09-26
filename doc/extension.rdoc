@@ -658,6 +658,8 @@ If it doesn't, you have to call rb_undef_alloc_func(klass).
 rb_data_type_t is defined like this.  Let's take a look at each
 member of the struct.
 
+  typedef struct rb_data_type_struct rb_data_type_t;
+
   struct rb_data_type_struct {
           const char *wrap_struct_name;
           struct {
