@@ -347,10 +347,6 @@ class ERB
       end
       attr_reader :value
       alias :to_s :value
-
-      def empty?
-        @value.empty?
-      end
     end
 
     class Scanner # :nodoc:
