@@ -86,6 +86,10 @@ class TestERBCore < Test::Unit::TestCase
     @erb = ERB
   end
 
+  def test_version
+    assert_equal(String, @erb.version.class)
+  end
+
   def test_core
     _test_core(nil)
     _test_core(0)
@@ -221,6 +225,18 @@ EOS
     assert_equal("line\r\n" * 3, erb.result)
   end
 
+  def test_run
+    out = StringIO.new
+    orig, $stdout = $stdout, out
+
+    num = 3
+    @erb.new('<%= num * 3 %>').run(binding)
+
+    $stdout = orig
+    out.rewind
+    assert_equal('9', out.read)
+  end
+
   class Foo; end
 
   def test_def_class
@@ -318,6 +334,12 @@ EOS
        klass.new.my_error
     }
     assert_match(/\Atest fname:1\b/, e.backtrace[0])
+  end
+
+  def test_def_module
+    klass = Class.new
+    klass.include ERB.new('<%= val %>').def_module('render(val)')
+    assert_equal('1', klass.new.render(1))
   end
 
   def test_escape
