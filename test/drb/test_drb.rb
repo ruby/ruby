@@ -315,9 +315,9 @@ class TestDRbLarge < Test::Unit::TestCase
     ary = ["Hello, World"] * 10240
     assert_equal(10240, @there.size(ary))
     assert_equal(ary[0..ary.length].inject(:+), @there.sum(ary))
-    assert_raise (TypeError) {@there.multiply(ary)}
-    assert_raise (TypeError) {@there.avg(ary)}
-    assert_raise (TypeError) {@there.median(ary)}
+    assert_raise(TypeError) {@there.multiply(ary)}
+    assert_raise(TypeError) {@there.avg(ary)}
+    assert_raise(TypeError) {@there.median(ary)}
   end
 
   def test_03_large_ary
