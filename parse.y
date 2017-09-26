@@ -8458,15 +8458,15 @@ parser_yylex(struct parser_params *parser)
 	if (IS_BEG()) {
 	    c = tLPAREN;
 	}
-	else if (IS_SPCARG(-1)) {
+	else if (!space_seen) {
+	    /* foo( ... ) => method call, no ambiguity */
+	}
+	else if (IS_ARG() || IS_lex_state_all(EXPR_END|EXPR_LABEL)) {
 	    c = tLPAREN_ARG;
 	}
-	else if (IS_lex_state(EXPR_ENDFN) && space_seen && !lambda_beginning_p()) {
+	else if (IS_lex_state(EXPR_ENDFN) && !lambda_beginning_p()) {
 	    rb_warning0("parentheses after method name is interpreted as "
 			"an argument list, not a decomposed argument");
-	}
-	else if (lex_state == (EXPR_END|EXPR_LABEL) && space_seen) {
-	    c = tLPAREN_ARG;
 	}
 	paren_nest++;
 	COND_PUSH(0);
