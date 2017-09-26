@@ -1045,6 +1045,56 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
     }
   end
 
+  class MockSocket
+    attr_reader :count
+    def initialize(success_after: nil)
+      @success_after = success_after
+      @count = 0
+    end
+    def close
+    end
+    def closed?
+    end
+    def write(_)
+    end
+    def readline
+      @count += 1
+      if @success_after && @success_after <= @count
+        "HTTP/1.1 200 OK"
+      else
+        raise Errno::ECONNRESET
+      end
+    end
+    def readuntil(*_)
+      ""
+    end
+    def read_all(_)
+    end
+  end
+
+  def test_http_retry_success
+    start {|http|
+      socket = MockSocket.new(success_after: 10)
+      http.instance_variable_set(:@socket, socket)
+      assert_equal 0, socket.count
+      http.max_retries = 10
+      res = http.get('/')
+      assert_equal 10, socket.count
+      assert_kind_of Net::HTTPResponse, res
+      assert_kind_of String, res.body
+    }
+  end
+
+  def test_http_retry_failed
+    start {|http|
+      socket = MockSocket.new
+      http.instance_variable_set(:@socket, socket)
+      http.max_retries = 10
+      assert_raise(Errno::ECONNRESET){ http.get('/') }
+      assert_equal 11, socket.count
+    }
+  end
+
   def test_keep_alive_server_close
     def @server.run(sock)
       sock.close
