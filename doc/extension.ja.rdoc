@@ -781,8 +781,8 @@ RUBY_TYPED_WB_PROTECTED ::
   メソッドの実装に適切にライトバリアを挿入する責任があります．
   さもなくばRubyは実行時にクラッシュする可能性があります．
 
-  ライトバリアについてはdoc/extension.rdocのAppendix D
-  "Generational GC"も参照してください．
+  ライトバリアについてはdoc/extension.ja.rdocのAppendix D
+  "世代別GC"も参照してください．
 
 
 Cの構造体の割当と対応するオブジェクトの生成を同時に行うマク
