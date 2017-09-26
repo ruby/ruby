@@ -27,6 +27,7 @@
 #include "internal.h"
 #include "ruby/io.h"
 #include "ruby/util.h"
+#include "ruby/thread.h"
 #include "dln.h"
 #include "encindex.h"
 
@@ -1022,21 +1023,50 @@ rb_stat_inspect(VALUE self)
     return str;
 }
 
+typedef struct no_gvl_stat_data {
+    struct stat *st;
+    union {
+	const char *path;
+	int fd;
+    } file;
+} no_gvl_stat_data;
+
+static VALUE
+no_gvl_fstat(void *data)
+{
+    no_gvl_stat_data *arg = data;
+    return (VALUE)fstat(arg->file.fd, arg->st);
+}
+
+static void *
+no_gvl_stat(void * data)
+{
+    no_gvl_stat_data *arg = data;
+    return (void *)(VALUE)STAT(arg->file.path, arg->st);
+}
+
 static int
 rb_stat(VALUE file, struct stat *st)
 {
     VALUE tmp;
+    VALUE result;
+    no_gvl_stat_data data;
 
+    data.st = st;
     tmp = rb_check_convert_type_with_id(file, T_FILE, "IO", idTo_io);
     if (!NIL_P(tmp)) {
 	rb_io_t *fptr;
 
 	GetOpenFile(tmp, fptr);
-	return fstat(fptr->fd, st);
+	data.file.fd = fptr->fd;
+	result = rb_thread_io_blocking_region(no_gvl_fstat, &data, fptr->fd);
+	return (int)result;
     }
     FilePathValue(file);
     file = rb_str_encode_ospath(file);
-    return STAT(StringValueCStr(file), st);
+    data.file.path = StringValueCStr(file);
+    result = (VALUE)rb_thread_call_without_gvl(no_gvl_stat, &data, RUBY_UBF_IO, NULL);
+    return (int)result;
 }
 
 #ifdef _WIN32
