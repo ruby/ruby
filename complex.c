@@ -253,6 +253,22 @@ f_finite_p(VALUE x)
     return RTEST(rb_funcallv(x, id_finite_p, 0, 0));
 }
 
+VALUE rb_flo_is_infinite_p(VALUE num);
+inline static VALUE
+f_infinite_p(VALUE x)
+{
+    if (RB_INTEGER_TYPE_P(x)) {
+        return Qnil;
+    }
+    else if (RB_FLOAT_TYPE_P(x)) {
+	return rb_flo_is_infinite_p(x);
+    }
+    else if (RB_TYPE_P(x, T_RATIONAL)) {
+        return Qnil;
+    }
+    return rb_funcallv(x, id_infinite_p, 0, 0);
+}
+
 inline static int
 f_kind_of_p(VALUE x, VALUE c)
 {
@@ -1367,21 +1383,12 @@ rb_complex_finite_p(VALUE self)
 static VALUE
 rb_complex_infinite_p(VALUE self)
 {
-    VALUE magnitude = nucomp_abs(self);
+    get_dat1(self);
 
-    if (FINITE_TYPE_P(magnitude)) {
+    if (NIL_P(f_infinite_p(dat->real)) && NIL_P(f_infinite_p(dat->imag))) {
 	return Qnil;
     }
-    if (RB_FLOAT_TYPE_P(magnitude)) {
-	const double f = RFLOAT_VALUE(magnitude);
-	if (isinf(f)) {
-	    return ONE;
-	}
-	return Qnil;
-    }
-    else {
-	return rb_funcall(magnitude, id_infinite_p, 0);
-    }
+    return ONE;
 }
 
 /* :nodoc: */
