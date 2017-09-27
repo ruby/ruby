@@ -850,6 +850,9 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(1, Complex(-1, Float::INFINITY).infinite?)
     assert_equal(1, Complex(1, -Float::INFINITY).infinite?)
     assert_equal(1, Complex(-1, -Float::INFINITY).infinite?)
+    assert_nil(Complex(Float::MAX, 0.0).infinite?)
+    assert_nil(Complex(0.0, Float::MAX).infinite?)
+    assert_nil(Complex(Float::MAX, Float::MAX).infinite?)
   end
 
   def test_supp
