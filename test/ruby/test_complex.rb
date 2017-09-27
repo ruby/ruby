@@ -832,6 +832,9 @@ class Complex_Test < Test::Unit::TestCase
     assert_predicate(-1-1i, :finite?)
     assert_not_predicate(Float::INFINITY + 1i, :finite?)
     assert_not_predicate(Complex(1, Float::INFINITY), :finite?)
+    assert_predicate(Complex(Float::MAX, 0.0), :finite?)
+    assert_predicate(Complex(0.0, Float::MAX), :finite?)
+    assert_predicate(Complex(Float::MAX, Float::MAX), :finite?)
   end
 
   def test_infinite_p
