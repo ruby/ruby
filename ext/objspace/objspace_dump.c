@@ -105,7 +105,7 @@ static inline const char *
 obj_type(VALUE obj)
 {
     switch (BUILTIN_TYPE(obj)) {
-#define CASE_TYPE(type) case T_##type: return #type; break
+#define CASE_TYPE(type) case T_##type: return #type
 	CASE_TYPE(NONE);
 	CASE_TYPE(NIL);
 	CASE_TYPE(OBJECT);
@@ -196,17 +196,17 @@ static const char *
 imemo_name(int imemo)
 {
     switch(imemo) {
-#define TYPE_STR(t) case(imemo_##t): return #t; break;
-	TYPE_STR(env)
-	TYPE_STR(cref)
-	TYPE_STR(svar)
-	TYPE_STR(throw_data)
-	TYPE_STR(ifunc)
-	TYPE_STR(memo)
-	TYPE_STR(ment)
-	TYPE_STR(iseq)
-	default:
-	    return "unknown";
+#define TYPE_STR(t) case(imemo_##t): return #t
+	TYPE_STR(env);
+	TYPE_STR(cref);
+	TYPE_STR(svar);
+	TYPE_STR(throw_data);
+	TYPE_STR(ifunc);
+	TYPE_STR(memo);
+	TYPE_STR(ment);
+	TYPE_STR(iseq);
+      default:
+	return "unknown";
 #undef TYPE_STR
     }
 }
@@ -241,8 +241,8 @@ dump_object(VALUE obj, struct dump_config *dc)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_NONE:
-	  dump_append(dc, "}\n");
-	  return;
+	dump_append(dc, "}\n");
+	return;
 
       case T_NODE:
 	dump_append(dc, ", \"node_type\":\"%s\"", ruby_node_name(nd_type(obj)));
