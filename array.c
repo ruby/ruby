@@ -2561,12 +2561,12 @@ static VALUE rb_ary_bsearch_index(VALUE ary);
  *  By using binary search, finds a value from this array which meets
  *  the given condition in O(log n) where n is the size of the array.
  *
- *  You can use this method in two use cases: a find-minimum mode and
+ *  You can use this method in two modes: a find-minimum mode and
  *  a find-any mode.  In either case, the elements of the array must be
  *  monotone (or sorted) with respect to the block.
  *
- *  In find-minimum mode (this is a good choice for typical use case),
- *  the block must return true or false, and there must be an index i
+ *  In find-minimum mode (this is a good choice for typical use cases),
+ *  the block must always return true or false, and there must be an index i
  *  (0 <= i <= ary.size) so that:
  *
  *  - the block returns false for any element whose index is less than
@@ -2584,7 +2584,7 @@ static VALUE rb_ary_bsearch_index(VALUE ary);
  *     ary.bsearch {|x| x >= 100 } #=> nil
  *
  *  In find-any mode (this behaves like libc's bsearch(3)), the block
- *  must return a number, and there must be two indices i and j
+ *  must always return a number, and there must be two indices i and j
  *  (0 <= i <= j <= ary.size) so that:
  *
  *  - the block returns a positive number for ary[k] if 0 <= k < i,
@@ -2625,8 +2625,8 @@ rb_ary_bsearch(VALUE ary)
  *  By using binary search, finds an index of a value from this array which
  *  meets the given condition in O(log n) where n is the size of the array.
  *
- *  It supports two modes, depending on the nature of the block and they are
- *  exactly the same as in the case of #bsearch method with the only difference
+ *  It supports two modes, depending on the nature of the block. They are
+ *  exactly the same as in the case of the #bsearch method, with the only difference
  *  being that this method returns the index of the element instead of the
  *  element itself. For more details consult the documentation for #bsearch.
  */
