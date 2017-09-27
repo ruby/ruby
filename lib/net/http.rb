@@ -739,7 +739,8 @@ module Net   #:nodoc:
 
     # Maximum number of times to retry an idempotent request in case of
     # Net::ReadTimeout, IOError, EOFError, Errno::ECONNRESET,
-    # Errno::ECONNABORTED, Errno::EPIPE, OpenSSL::SSL, Timeout::Error
+    # Errno::ECONNABORTED, Errno::EPIPE, OpenSSL::SSL::SSLError,
+    # Timeout::Error.
     # Should be non-negative integer number. Zero means no retries.
     # The default value is 1.
     def max_retries=(retries)
