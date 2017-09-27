@@ -1763,8 +1763,8 @@ flo_is_infinite_p(VALUE num)
  *  i.e. it is not infinite and Float#nan? is +false+.
  */
 
-static VALUE
-flo_is_finite_p(VALUE num)
+VALUE
+rb_flo_is_finite_p(VALUE num)
 {
     double value = RFLOAT_VALUE(num);
 
@@ -5592,7 +5592,7 @@ Init_Numeric(void)
 
     rb_define_method(rb_cFloat, "nan?",      flo_is_nan_p, 0);
     rb_define_method(rb_cFloat, "infinite?", flo_is_infinite_p, 0);
-    rb_define_method(rb_cFloat, "finite?",   flo_is_finite_p, 0);
+    rb_define_method(rb_cFloat, "finite?",   rb_flo_is_finite_p, 0);
     rb_define_method(rb_cFloat, "next_float", flo_next_float, 0);
     rb_define_method(rb_cFloat, "prev_float", flo_prev_float, 0);
     rb_define_method(rb_cFloat, "positive?", flo_positive_p, 0);
