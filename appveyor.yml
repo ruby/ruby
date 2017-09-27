@@ -16,7 +16,7 @@ install:
   - SET vcvars
   - '"%vcvars%" %Platform:x64=amd64%'
   - SET ruby_path=C:\Ruby%ruby_version:-x86=%
-  - SET PATH=\usr\local\bin;%ruby_path%\bin;%ruby_path%\Devkit\mingw\bin;%PATH%;C:\msys64\usr\bin
+  - SET PATH=\usr\local\bin;%ruby_path%\bin;%PATH%;C:\msys64\mingw64\bin;C:\msys64\usr\bin
   - ruby --version
   - 'cl'
   - SET
@@ -32,7 +32,7 @@ install:
   - mkdir \usr\local\bin
   - mkdir \usr\local\include
   - mkdir \usr\local\lib
-  - appveyor DownloadFile https://downloads.sourceforge.net/project/libpng/zlib/%zlib_version%/zlib%zlib_version:.=%.zip
+  - appveyor DownloadFile https://zlib.net/zlib%zlib_version:.=%.zip
   - 7z x -o%APPVEYOR_BUILD_FOLDER%\ext\zlib zlib%zlib_version:.=%.zip
   - for %%I in (%OPENSSL_DIR%\*.dll) do mklink /h \usr\local\bin\%%~nxI %%I
   - mkdir %Platform%-mswin_%vs%
