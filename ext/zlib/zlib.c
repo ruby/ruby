@@ -451,7 +451,7 @@ rb_zlib_adler32(int argc, VALUE *argv, VALUE klass)
 static VALUE
 rb_zlib_adler32_combine(VALUE klass, VALUE adler1, VALUE adler2, VALUE len2)
 {
-  return ULONG2NUM(
+    return ULONG2NUM(
 	adler32_combine(NUM2ULONG(adler1), NUM2ULONG(adler2), NUM2LONG(len2)));
 }
 #else
@@ -489,7 +489,7 @@ rb_zlib_crc32(int argc, VALUE *argv, VALUE klass)
 static VALUE
 rb_zlib_crc32_combine(VALUE klass, VALUE crc1, VALUE crc2, VALUE len2)
 {
-  return ULONG2NUM(
+    return ULONG2NUM(
 	crc32_combine(NUM2ULONG(crc1), NUM2ULONG(crc2), NUM2LONG(len2)));
 }
 #else
@@ -644,7 +644,7 @@ zstream_expand_buffer(struct zstream *z)
 	}
 	else {
 	    zstream_expand_buffer_into(z,
-		    ZSTREAM_AVAIL_OUT_STEP_MAX - buf_filled);
+				       ZSTREAM_AVAIL_OUT_STEP_MAX - buf_filled);
 	}
     }
     else {
@@ -1381,7 +1381,7 @@ rb_zstream_data_type(VALUE obj)
 static VALUE
 rb_zstream_adler(VALUE obj)
 {
-	return rb_uint2inum(get_zstream(obj)->stream.adler);
+    return rb_uint2inum(get_zstream(obj)->stream.adler);
 }
 
 /*
@@ -2673,7 +2673,7 @@ gzfile_calc_crc(struct gzfile *gz, VALUE str)
     }
     else {
 	gz->crc = checksum_long(crc32, gz->crc, (Bytef*)RSTRING_PTR(str) + gz->ungetc,
-			RSTRING_LEN(str) - gz->ungetc);
+				RSTRING_LEN(str) - gz->ungetc);
 	gz->ungetc = 0;
     }
 }
@@ -4370,9 +4370,9 @@ zlib_gunzip(VALUE klass, VALUE src)
     gzfile_read_header(gz);
     dst = zstream_detach_buffer(&gz->z);
     gzfile_calc_crc(gz, dst);
-	    if (!ZSTREAM_IS_FINISHED(&gz->z)) {
-		rb_raise(cGzError, "unexpected end of file");
-	    }
+    if (!ZSTREAM_IS_FINISHED(&gz->z)) {
+	rb_raise(cGzError, "unexpected end of file");
+    }
     if (NIL_P(gz->z.input))
 	rb_raise(cNoFooter, "footer is not found");
     gzfile_check_footer(gz);

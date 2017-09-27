@@ -504,7 +504,7 @@ void Init_syslog(void)
     rb_define_syslog_facility(LOG_NEWS);
 #endif
 #ifdef LOG_NTP
-   rb_define_syslog_facility(LOG_NTP);
+    rb_define_syslog_facility(LOG_NTP);
 #endif
 #ifdef LOG_SECURITY
     rb_define_syslog_facility(LOG_SECURITY);

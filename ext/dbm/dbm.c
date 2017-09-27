@@ -191,24 +191,24 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
     }
 
     if (dbm) {
-    /*
-     * History of dbm_pagfno() and dbm_dirfno() in ndbm and its compatibles.
-     * (dbm_pagfno() and dbm_dirfno() is not standardized.)
-     *
-     * 1986: 4.3BSD provides ndbm.
-     *       It provides dbm_pagfno() and dbm_dirfno() as macros.
-     * 1991: gdbm-1.5 provides them as functions.
-     *       They returns a same descriptor.
-     *       (Earlier releases may have the functions too.)
-     * 1991: Net/2 provides Berkeley DB.
-     *       It doesn't provide dbm_pagfno() and dbm_dirfno().
-     * 1992: 4.4BSD Alpha provides Berkeley DB with dbm_dirfno() as a function.
-     *       dbm_pagfno() is a macro as DBM_PAGFNO_NOT_AVAILABLE.
-     * 1997: Berkeley DB 2.0 is released by Sleepycat Software, Inc.
-     *       It defines dbm_pagfno() and dbm_dirfno() as macros.
-     * 2011: gdbm-1.9 creates a separate dir file.
-     *       dbm_pagfno() and dbm_dirfno() returns different descriptors.
-     */
+	/*
+	 * History of dbm_pagfno() and dbm_dirfno() in ndbm and its compatibles.
+	 * (dbm_pagfno() and dbm_dirfno() is not standardized.)
+	 *
+	 * 1986: 4.3BSD provides ndbm.
+	 *       It provides dbm_pagfno() and dbm_dirfno() as macros.
+	 * 1991: gdbm-1.5 provides them as functions.
+	 *       They returns a same descriptor.
+	 *       (Earlier releases may have the functions too.)
+	 * 1991: Net/2 provides Berkeley DB.
+	 *       It doesn't provide dbm_pagfno() and dbm_dirfno().
+	 * 1992: 4.4BSD Alpha provides Berkeley DB with dbm_dirfno() as a function.
+	 *       dbm_pagfno() is a macro as DBM_PAGFNO_NOT_AVAILABLE.
+	 * 1997: Berkeley DB 2.0 is released by Sleepycat Software, Inc.
+	 *       It defines dbm_pagfno() and dbm_dirfno() as macros.
+	 * 2011: gdbm-1.9 creates a separate dir file.
+	 *       dbm_pagfno() and dbm_dirfno() returns different descriptors.
+	 */
 #if defined(HAVE_DBM_PAGFNO)
         rb_fd_fix_cloexec(dbm_pagfno(dbm));
 #endif
@@ -217,8 +217,8 @@ fdbm_initialize(int argc, VALUE *argv, VALUE obj)
 #endif
 
 #if defined(RUBYDBM_DB_HEADER) && defined(HAVE_TYPE_DBC)
-    /* Disable Berkeley DB error messages such as:
-     * DB->put: attempt to modify a read-only database */
+	/* Disable Berkeley DB error messages such as:
+	 * DB->put: attempt to modify a read-only database */
         ((DBC*)dbm)->dbp->set_errfile(((DBC*)dbm)->dbp, NULL);
 #endif
     }
