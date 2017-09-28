@@ -97,6 +97,16 @@ class TestNetHTTP < Test::Unit::TestCase
     end
   end
 
+  def test_proxy_address_no_proxy
+    clean_http_proxy_env do
+      http = Net::HTTP.new 'hostname.example', nil, 'proxy.example', nil, nil, nil, 'example'
+      assert_nil http.proxy_address
+
+      http = Net::HTTP.new '10.224.1.1', nil, 'proxy.example', nil, nil, nil, 'example,10.224.0.0/22'
+      assert_nil http.proxy_address
+    end
+  end
+
   def test_proxy_from_env_ENV
     clean_http_proxy_env do
       ENV['http_proxy'] = 'http://proxy.example:8000'
