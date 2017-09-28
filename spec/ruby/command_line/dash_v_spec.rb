@@ -6,8 +6,7 @@ describe "The -v command line option" do
 
   describe "when used alone" do
     it "prints version and ends" do
-      version = ruby_exe(nil, args: '--version')
-      ruby_exe(nil, args: '-v').should == version
+      ruby_exe(nil, args: '-v').include?(RUBY_DESCRIPTION).should == true
     end
   end
 end

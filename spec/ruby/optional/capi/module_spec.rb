@@ -339,4 +339,14 @@ describe "CApiModule" do
       @m.rb_class2name(CApiModuleSpecs::M).should == "CApiModuleSpecs::M"
     end
   end
+
+  describe "rb_mod_ancestors" do
+    it "returns an array of ancestors" do
+      one = Module.new
+      two = Module.new do
+        include one
+      end
+      @m.rb_mod_ancestors(two).should == [two, one]
+    end
+  end
 end

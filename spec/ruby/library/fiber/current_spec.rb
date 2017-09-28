@@ -10,7 +10,7 @@ with_feature :fiber_library do
       # We can always transfer to the root Fiber; it will never die
       5.times do
         root.transfer.should be_nil
-        root.alive?.should_not be_false #Workaround for bug #1547
+        root.alive?.should be_true
       end
     end
 
@@ -19,39 +19,31 @@ with_feature :fiber_library do
         this = Fiber.current
         this.should be_an_instance_of(Fiber)
         this.should == fiber
-        this.alive?.should_not be_false # Workaround for bug #1547
+        this.alive?.should be_true
       end
       fiber.resume
     end
 
     it "returns the current Fiber when called from a Fiber that transferred to another" do
-
       states = []
       fiber = Fiber.new do
         states << :fiber
         this = Fiber.current
         this.should be_an_instance_of(Fiber)
-        this.should === fiber
-        this.alive?.should_not be_false # Workaround for bug #1547
+        this.should == fiber
+        this.alive?.should be_true
       end
 
       fiber2 = Fiber.new do
         states << :fiber2
         fiber.transfer
-        this = Fiber.current
-        this.should be_an_instance_of(Fiber)
-        this.should === fiber2
-        this.alive?.should_not be_false # Workaround for bug #1547
+        flunk
       end
 
       fiber3 = Fiber.new do
         states << :fiber3
         fiber2.transfer
-        this = Fiber.current
-        this.should be_an_instance_of(Fiber)
-        this.should === fiber3
-        this.alive?.should_not be_false # Workaround for bug #1547
-        fiber2.transfer
+        flunk
       end
 
       fiber3.resume

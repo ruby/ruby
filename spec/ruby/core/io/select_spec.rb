@@ -108,6 +108,7 @@ describe "IO.select when passed nil for timeout" do
     end
 
     Thread.pass while t.status && t.status != "sleep"
+    t.join unless t.status
     t.status.should == "sleep"
     t.kill
     t.join
