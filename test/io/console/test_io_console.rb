@@ -200,6 +200,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       m.print "a"
       s.iflush
       m.print "b\n"
+      m.flush
       assert_equal("b\n", s.readpartial(10))
     }
   end
@@ -209,6 +210,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       s.print "a"
       s.oflush # oflush may be issued after "a" is already sent.
       s.print "b"
+      s.flush
       assert_include(["b", "ab"], m.readpartial(10))
     }
   end
@@ -218,6 +220,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       m.print "a"
       s.ioflush
       m.print "b\n"
+      m.flush
       assert_equal("b\n", s.readpartial(10))
     }
   end
@@ -227,6 +230,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       s.print "a"
       s.ioflush # ioflush may be issued after "a" is already sent.
       s.print "b"
+      s.flush
       assert_include(["b", "ab"], m.readpartial(10))
     }
   end
