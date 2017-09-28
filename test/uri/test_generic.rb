@@ -906,6 +906,23 @@ class URI::TestGeneric < Test::Unit::TestCase
     }
   end
 
+  def test_use_proxy_p
+    [
+      ['example.com', nil, 80, '', true],
+      ['example.com', nil, 80, 'example.com:80', false],
+      ['example.com', nil, 80, 'example.org,example.com:80,example.net', false],
+      ['foo.example.com', nil, 80, 'example.com', false],
+      ['foo.example.com', nil, 80, 'example.com:80', false],
+      ['foo.example.com', nil, 80, 'example.com:443', true],
+      ['127.0.0.1', '127.0.0.1', 80, '10.224.0.0/22', true],
+      ['10.224.1.1', '10.224.1.1', 80, '10.224.1.1', false],
+      ['10.224.1.1', '10.224.1.1', 80, '10.224.0.0/22', false],
+    ].each do |hostname, addr, port, no_proxy, expected|
+      assert_equal expected, URI::Generic.use_proxy?(hostname, addr, port, no_proxy),
+        "use_proxy?('#{hostname}', '#{addr}', #{port}, '#{no_proxy}')"
+    end
+  end
+
   class CaseInsensitiveEnv
     def initialize(h={})
       @h = {}

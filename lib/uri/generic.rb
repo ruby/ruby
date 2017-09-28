@@ -10,6 +10,8 @@
 #
 
 require 'uri/common'
+autoload :IPSocket, 'socket'
+autoload :IPAddr, 'ipaddr'
 
 module URI
 
@@ -1527,7 +1529,6 @@ module URI
       end
 
       if self.hostname
-        require 'socket'
         begin
           addr = IPSocket.getaddress(self.hostname)
           return nil if /\A127\.|\A::1\z/ =~ addr
@@ -1537,23 +1538,26 @@ module URI
 
       name = 'no_proxy'
       if no_proxy = env[name] || env[name.upcase]
-        no_proxy.scan(/(?!\.)([^:,\s]+)(?::(\d+))?/) {|host, port|
-          if (!port || self.port == port.to_i)
-            if /(\A|\.)#{Regexp.quote host}\z/i =~ self.host
-              return nil
-            elsif addr
-              require 'ipaddr'
-              return nil if
-                begin
-                  IPAddr.new(host)
-                rescue IPAddr::InvalidAddressError
-                  next
-                end.include?(addr)
-            end
-          end
-        }
+        return nil unless URI::Generic.use_proxy?(self.hostname, addr, self.port, no_proxy)
       end
       URI.parse(proxy_uri)
+    end
+
+    def self.use_proxy?(hostname, addr, port, no_proxy) # :nodoc:
+      no_proxy.scan(/(?!\.)([^:,\s]+)(?::(\d+))?/) {|p_host, p_port|
+        if !p_port || port == p_port.to_i
+          if /(\A|\.)#{Regexp.quote p_host}\z/i =~ hostname
+            return false
+          elsif addr
+            begin
+              return false if IPAddr.new(p_host).include?(addr)
+            rescue IPAddr::InvalidAddressError
+              next
+            end
+          end
+        end
+      }
+      true
     end
   end
 end
