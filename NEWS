@@ -66,6 +66,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Kernel#yield_self  [Feature #6721]
 
+* Net::HTTP
+
+  * Net::HTTP.new supports no_proxy parameter [Feature #11195]
+
 * Numeric
 
   * Numerical comparison operators (<,<=,>=,>) no longer rescue exceptions

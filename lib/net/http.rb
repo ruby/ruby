@@ -629,10 +629,11 @@ module Net   #:nodoc:
     #
     # If you are connecting to a custom proxy, +p_addr+ the DNS name or IP
     # address of the proxy host, +p_port+ the port to use to access the proxy,
-    # and +p_user+ and +p_pass+ the username and password if authorization is
-    # required to use the proxy.
+    # +p_user+ and +p_pass+ the username and password if authorization is
+    # required to use the proxy, and p_no_proxy spcifies hosts which doesn't
+    # use the proxy.
     #
-    def HTTP.new(address, port = nil, p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil)
+    def HTTP.new(address, port = nil, p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil, p_no_proxy = nil)
       http = super address, port
 
       if proxy_class? then # from Net::HTTP::Proxy()
@@ -644,6 +645,10 @@ module Net   #:nodoc:
       elsif p_addr == :ENV then
         http.proxy_from_env = true
       else
+        if p_addr && p_no_proxy && !URI::Generic.use_proxy?(p_addr, p_addr, p_port, p_no_proxy)
+          p_addr = nil
+          p_port = nil
+        end
         http.proxy_address = p_addr
         http.proxy_port    = p_port || default_port
         http.proxy_user    = p_user
