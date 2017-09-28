@@ -3995,7 +3995,7 @@ rb_ary_includes_by_eql(VALUE ary, VALUE item)
 
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	e = RARRAY_AREF(ary, i);
-	if (rb_eql(e, item)) {
+	if (rb_eql(item, e)) {
 	    return Qtrue;
 	}
     }
@@ -4152,6 +4152,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
     VALUE hash;
     long i;
 
+    ary2 = to_ary(ary2);
     ary3 = rb_ary_new();
 
     if (RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
@@ -4161,7 +4162,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
 	    rb_ary_push(ary3, elt);
 	}
     } else {
-	hash = ary_make_hash(to_ary(ary2));
+	hash = ary_make_hash(ary2);
 
 	for (i=0; i<RARRAY_LEN(ary1); i++) {
 	    if (st_lookup(rb_hash_tbl_raw(hash), RARRAY_AREF(ary1, i), 0)) continue;
@@ -4198,14 +4199,15 @@ rb_ary_and(VALUE ary1, VALUE ary2)
 
     ary2 = to_ary(ary2);
     ary3 = rb_ary_new();
+
     if (RARRAY_LEN(ary2) == 0) return ary3;
 
     if (RARRAY_LEN(ary1) <= SMALL_ARRAY_LEN && RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
 	for (i=0; i<RARRAY_LEN(ary1); i++) {
-	    VALUE elt = rb_ary_elt(ary1, i);
-	    if (!rb_ary_includes_by_eql(ary2, elt)) continue;
-	    if (rb_ary_includes_by_eql(ary3, elt)) continue;
-	    rb_ary_push(ary3, elt);
+	    v = RARRAY_AREF(ary1, i);
+	    if (!rb_ary_includes_by_eql(ary2, v)) continue;
+	    if (rb_ary_includes_by_eql(ary3, v)) continue;
+	    rb_ary_push(ary3, v);
 	}
     } else {
 	hash = ary_make_hash(ary2);
