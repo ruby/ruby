@@ -2,7 +2,16 @@ require File.expand_path('../../../../spec_helper', __FILE__)
 require 'set'
 
 describe "SortedSet#to_a" do
-  it "returns an array containing elements of self" do
-    SortedSet[1, 2, 3].to_a.sort.should == [1, 2, 3]
+  it "returns an array containing elements" do
+    set = SortedSet.new [1, 2, 3]
+    set.to_a.should == [1, 2, 3]
+  end
+
+  it "returns a sorted array containing elements" do
+    set = SortedSet[2, 3, 1]
+    set.to_a.should == [1, 2, 3]
+
+    set = SortedSet.new [5, 6, 4, 4]
+    set.to_a.should == [4, 5, 6]
   end
 end

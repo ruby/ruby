@@ -152,6 +152,12 @@ static VALUE module_specs_rbclass2name(VALUE self, VALUE klass) {
 }
 #endif
 
+#ifdef HAVE_RB_MOD_ANCESTORS
+static VALUE module_specs_rb_mod_ancestors(VALUE self, VALUE klass) {
+  return rb_mod_ancestors(klass);
+}
+#endif
+
 void Init_module_spec(void) {
   VALUE cls;
 
@@ -244,6 +250,10 @@ void Init_module_spec(void) {
 
 #ifdef HAVE_RB_CLASS2NAME
   rb_define_method(cls, "rb_class2name", module_specs_rbclass2name, 1);
+#endif
+
+#ifdef HAVE_RB_MOD_ANCESTORS
+  rb_define_method(cls, "rb_mod_ancestors", module_specs_rb_mod_ancestors, 1);
 #endif
 }
 
