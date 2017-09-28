@@ -52,6 +52,7 @@ describe "Array#&" do
     obj1.should_receive(:hash).at_least(1).and_return(0)
     obj2.should_receive(:hash).at_least(1).and_return(0)
     obj1.should_receive(:eql?).at_least(1).and_return(true)
+    obj2.should_receive(:eql?).at_least(1).and_return(true)
 
     ([obj1] & [obj2]).should == [obj1]
     ([obj1, obj1, obj2, obj2] & [obj2]).should == [obj1]

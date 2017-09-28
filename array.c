@@ -30,6 +30,7 @@ VALUE rb_cArray;
 
 #define ARY_DEFAULT_SIZE 16
 #define ARY_MAX_SIZE (LONG_MAX / (int)sizeof(VALUE))
+#define SMALL_ARRAY_LEN 16
 
 # define ARY_SHARED_P(ary) \
     (assert(!FL_TEST((ary), ELTS_SHARED) || !FL_TEST((ary), RARRAY_EMBED_FLAG)), \
@@ -3986,6 +3987,22 @@ rb_ary_includes(VALUE ary, VALUE item)
 }
 
 
+VALUE
+rb_ary_includes_by_eql(VALUE ary, VALUE item)
+{
+    long i;
+    VALUE e;
+
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	e = RARRAY_AREF(ary, i);
+	if (rb_eql(item, e)) {
+	    return Qtrue;
+	}
+    }
+    return Qfalse;
+}
+
+
 static VALUE
 recursive_cmp(VALUE ary1, VALUE ary2, int recur)
 {
@@ -4135,14 +4152,24 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
     VALUE hash;
     long i;
 
-    hash = ary_make_hash(to_ary(ary2));
+    ary2 = to_ary(ary2);
     ary3 = rb_ary_new();
 
-    for (i=0; i<RARRAY_LEN(ary1); i++) {
-	if (st_lookup(rb_hash_tbl_raw(hash), RARRAY_AREF(ary1, i), 0)) continue;
-	rb_ary_push(ary3, rb_ary_elt(ary1, i));
+    if (RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
+	for (i=0; i<RARRAY_LEN(ary1); i++) {
+	    VALUE elt = rb_ary_elt(ary1, i);
+	    if (rb_ary_includes_by_eql(ary2, elt)) continue;
+	    rb_ary_push(ary3, elt);
+	}
+    } else {
+	hash = ary_make_hash(ary2);
+
+	for (i=0; i<RARRAY_LEN(ary1); i++) {
+	    if (st_lookup(rb_hash_tbl_raw(hash), RARRAY_AREF(ary1, i), 0)) continue;
+	    rb_ary_push(ary3, rb_ary_elt(ary1, i));
+	}
+	ary_recycle_hash(hash);
     }
-    ary_recycle_hash(hash);
     return ary3;
 }
 
@@ -4172,18 +4199,29 @@ rb_ary_and(VALUE ary1, VALUE ary2)
 
     ary2 = to_ary(ary2);
     ary3 = rb_ary_new();
-    if (RARRAY_LEN(ary2) == 0) return ary3;
-    hash = ary_make_hash(ary2);
-    table = rb_hash_tbl_raw(hash);
 
-    for (i=0; i<RARRAY_LEN(ary1); i++) {
-	v = RARRAY_AREF(ary1, i);
-	vv = (st_data_t)v;
-	if (st_delete(table, &vv, 0)) {
+    if (RARRAY_LEN(ary2) == 0) return ary3;
+
+    if (RARRAY_LEN(ary1) <= SMALL_ARRAY_LEN && RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
+	for (i=0; i<RARRAY_LEN(ary1); i++) {
+	    v = RARRAY_AREF(ary1, i);
+	    if (!rb_ary_includes_by_eql(ary2, v)) continue;
+	    if (rb_ary_includes_by_eql(ary3, v)) continue;
 	    rb_ary_push(ary3, v);
 	}
+    } else {
+	hash = ary_make_hash(ary2);
+	table = rb_hash_tbl_raw(hash);
+
+	for (i=0; i<RARRAY_LEN(ary1); i++) {
+	    v = RARRAY_AREF(ary1, i);
+	    vv = (st_data_t)v;
+	    if (st_delete(table, &vv, 0)) {
+		rb_ary_push(ary3, v);
+	    }
+	}
+	ary_recycle_hash(hash);
     }
-    ary_recycle_hash(hash);
 
     return ary3;
 }
@@ -4218,16 +4256,30 @@ rb_ary_or(VALUE ary1, VALUE ary2)
     long i;
 
     ary2 = to_ary(ary2);
-    hash = ary_make_hash(ary1);
-
-    for (i=0; i<RARRAY_LEN(ary2); i++) {
-	VALUE elt = RARRAY_AREF(ary2, i);
-	if (!st_update(RHASH_TBL_RAW(hash), (st_data_t)elt, ary_hash_orset, (st_data_t)elt)) {
-	    RB_OBJ_WRITTEN(hash, Qundef, elt);
+    if (RARRAY_LEN(ary1) + RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
+	ary3 = rb_ary_new();
+	for (i=0; i<RARRAY_LEN(ary1); i++) {
+	    VALUE elt = rb_ary_elt(ary1, i);
+	    if (rb_ary_includes_by_eql(ary3, elt)) continue;
+	    rb_ary_push(ary3, elt);
 	}
+	for (i=0; i<RARRAY_LEN(ary2); i++) {
+	    VALUE elt = rb_ary_elt(ary2, i);
+	    if (rb_ary_includes_by_eql(ary3, elt)) continue;
+	    rb_ary_push(ary3, elt);
+	}
+    } else {
+	hash = ary_make_hash(ary1);
+	for (i=0; i<RARRAY_LEN(ary2); i++) {
+	    VALUE elt = RARRAY_AREF(ary2, i);
+	    if (!st_update(RHASH_TBL_RAW(hash), (st_data_t)elt, ary_hash_orset, (st_data_t)elt)) {
+		RB_OBJ_WRITTEN(hash, Qundef, elt);
+	    }
+	}
+	ary3 = rb_hash_values(hash);
+	ary_recycle_hash(hash);
     }
-    ary3 = rb_hash_values(hash);
-    ary_recycle_hash(hash);
+
     return ary3;
 }
 
