@@ -13,7 +13,6 @@ IMPLS = {
   mri: {
     git: "https://github.com/ruby/ruby.git",
     master: "trunk",
-    prefix: "spec/rubyspec",
     merge_message: "Update to ruby/spec@",
   },
 }
@@ -71,8 +70,7 @@ class RubyImplementation
   end
 
   def prefix
-    return "spec/mspec" if MSPEC
-    @data[:prefix] || "spec/ruby"
+    MSPEC ? "spec/mspec" : "spec/ruby"
   end
 
   def rebased_branch

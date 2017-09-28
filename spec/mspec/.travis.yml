@@ -1,5 +1,8 @@
 sudo: false
 language: ruby
+before_script:
+  # https://github.com/travis-ci/travis-ci/issues/8408
+  - unset _JAVA_OPTIONS
 script:
   - bundle exec rspec
 matrix:
