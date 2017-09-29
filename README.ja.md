@@ -78,7 +78,7 @@ Ruby拡張モジュールについて話し合うruby-extメーリングリス�
 
 以下の手順で行ってください．
 
-1.  もし `configure` ファイルが見つからない，もしくは `configure.in` より古いようなら， `autoconf` を実行して
+1.  もし `configure` ファイルが見つからない，もしくは `configure.ac` より古いようなら， `autoconf` を実行して
     新しく `configure` を生成する
 
 2.  `configure` を実行して `Makefile` などを生成する
