@@ -1597,6 +1597,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 	    {
 		VALUE buf = infected_str_new(0, send - s, str);
 		char *ptr = RSTRING_PTR(buf), *ss = s;
+		int csum = 0;
 		int c1, c2;
 
 		while (s < send) {
@@ -1608,18 +1609,19 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 			    if ((c1 = hex2num(*s)) == -1) break;
 			    if (++s == send) break;
 			    if ((c2 = hex2num(*s)) == -1) break;
-			    *ptr++ = castchar(c1 << 4 | c2);
+			    csum |= *ptr++ = castchar(c1 << 4 | c2);
 			}
 		    }
 		    else {
-			*ptr++ = *s;
+			csum |= *ptr++ = *s;
 		    }
 		    s++;
 		    ss = s;
 		}
 		rb_str_set_len(buf, ptr - RSTRING_PTR(buf));
 		rb_str_buf_cat(buf, ss, send-ss);
-		ENCODING_CODERANGE_SET(buf, rb_ascii8bit_encindex(), ENC_CODERANGE_VALID);
+		csum = ISASCII(csum) ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID;
+		ENCODING_CODERANGE_SET(buf, rb_ascii8bit_encindex(), csum);
 		UNPACK_PUSH(buf);
 	    }
 	    break;
