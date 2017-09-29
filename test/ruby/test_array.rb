@@ -224,6 +224,13 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[],     @cls[ 1, 2, 3 ]    & @cls[ 4, 5, 6 ])
   end
 
+  def test_AND_big_array # '&'
+    assert_equal(@cls[1, 3], @cls[ 1, 1, 3, 5 ]*64 & @cls[ 1, 2, 3 ]*64)
+    assert_equal(@cls[],     @cls[ 1, 1, 3, 5 ]*64 & @cls[ ])
+    assert_equal(@cls[],     @cls[  ]           & @cls[ 1, 2, 3 ]*64)
+    assert_equal(@cls[],     @cls[ 1, 2, 3 ]*64 & @cls[ 4, 5, 6 ]*64)
+  end
+
   def test_MUL # '*'
     assert_equal(@cls[], @cls[]*3)
     assert_equal(@cls[1, 1, 1], @cls[1]*3)
@@ -258,6 +265,18 @@ class TestArray < Test::Unit::TestCase
     #assert_equal(@cls[1],  @cls[1, 2, 1] - @cls[2])
     assert_equal(@cls[1, 1],  @cls[1, 2, 1] - @cls[2])
     assert_equal(@cls[1, 2, 3], @cls[1, 2, 3] - @cls[4, 5, 6])
+  end
+
+  def test_MINUS_big_array # '-'
+    assert_equal(@cls[1]*64, @cls[1, 2, 3, 4, 5]*64 - @cls[2, 3, 4, 5]*64)
+    # Ruby 1.8 feature change
+    #assert_equal(@cls[1], @cls[1, 2, 1, 3, 1, 4, 1, 5]*64 - @cls[2, 3, 4, 5]*64)
+    assert_equal(@cls[1, 1, 1, 1]*64, @cls[1, 2, 1, 3, 1, 4, 1, 5]*64 - @cls[2, 3, 4, 5]*64)
+    a = @cls[]
+    1000.times { a << 1 }
+    assert_equal(1000, a.length)
+    #assert_equal(@cls[1], a - @cls[2])
+   assert_equal(@cls[1] * 1000, a - @cls[2])
   end
 
   def test_LSHIFT # '<<'
@@ -1835,6 +1854,31 @@ class TestArray < Test::Unit::TestCase
       break [new("1"), new("2")]
     end
     assert_equal([obj1], [obj1]|[obj2])
+  end
+
+  def test_OR_big_in_order
+    obj1, obj2 = Class.new do
+      attr_reader :name
+      def initialize(name) @name = name; end
+      def inspect; "test_OR_in_order(#{@name})"; end
+      def hash; 0; end
+      def eql?(a) true; end
+      break [new("1"), new("2")]
+    end
+    assert_equal([obj1], [obj1]*64|[obj2]*64)
+  end
+
+  def test_OR_big_array # '|'
+    assert_equal(@cls[1,2], @cls[1]*64 | @cls[2]*64)
+    assert_equal(@cls[1,2], @cls[1, 2]*64 | @cls[1, 2]*64)
+
+    a = (1..64).to_a
+    b = (1..128).to_a
+    c = a | b
+    assert_equal(c, b)
+    assert_not_same(c, b)
+    assert_equal((1..64).to_a, a)
+    assert_equal((1..128).to_a, b)
   end
 
   def test_combination
