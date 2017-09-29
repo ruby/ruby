@@ -25,10 +25,10 @@ conditions = {
 #endif
 
 % end
+extern void Init_limits(void);
 void
 Init_sizeof(void)
 {
-    extern void Init_limits();
     VALUE s = rb_hash_new();
     rb_define_const(rb_define_module("RbConfig"), "SIZEOF", s);
 
