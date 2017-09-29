@@ -45,8 +45,8 @@ describe "Array#|" do
 
     obj1 = mock('1')
     obj2 = mock('2')
-    obj1.should_receive(:hash).at_least(1).and_return(0)
-    obj2.should_receive(:hash).at_least(1).and_return(0)
+    obj1.stub!(:hash).and_return(0)
+    obj2.stub!(:hash).and_return(0)
     obj2.should_receive(:eql?).at_least(1).and_return(true)
 
     ([obj1] | [obj2]).should == [obj1]
@@ -54,8 +54,8 @@ describe "Array#|" do
 
     obj1 = mock('3')
     obj2 = mock('4')
-    obj1.should_receive(:hash).at_least(1).and_return(0)
-    obj2.should_receive(:hash).at_least(1).and_return(0)
+    obj1.stub!(:hash).and_return(0)
+    obj2.stub!(:hash).and_return(0)
     obj2.should_receive(:eql?).at_least(1).and_return(false)
 
     ([obj1] | [obj2]).should == [obj1, obj2]
@@ -74,7 +74,7 @@ describe "Array#|" do
 
   it "properly handles an identical item even when its #eql? isn't reflexive" do
     x = mock('x')
-    x.should_receive(:hash).at_least(1).and_return(42)
+    x.stub!(:hash).and_return(42)
     x.stub!(:eql?).and_return(false) # Stubbed for clarity and latitude in implementation; not actually sent by MRI.
 
     ([x] | [x]).should == [x]
