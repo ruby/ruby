@@ -6637,7 +6637,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	}
     }
 
-    if (cr == ENC_CODERANGE_VALID)
+    if (cr == ENC_CODERANGE_VALID && rb_enc_asciicompat(e1))
 	cr = ENC_CODERANGE_7BIT;
     str_modify_keep_cr(str);
     s = RSTRING_PTR(str); send = RSTRING_END(str);
