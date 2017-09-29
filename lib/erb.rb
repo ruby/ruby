@@ -994,7 +994,7 @@ class ERB
     #
     def url_encode(s)
       s.to_s.b.gsub(/[^a-zA-Z0-9_\-.~]/n) { |m|
-        sprintf("%%%02X", m.unpack("C")[0])
+        sprintf("%%%02X", m.unpack1("C"))
       }
     end
     alias u url_encode
