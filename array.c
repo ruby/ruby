@@ -2180,7 +2180,7 @@ static VALUE
 rb_ary_to_h(VALUE ary)
 {
     long i;
-    VALUE hash = rb_hash_new();
+    VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary));
     for (i=0; i<RARRAY_LEN(ary); i++) {
 	const VALUE elt = rb_ary_elt(ary, i);
 	const VALUE key_value_pair = rb_check_array_type(elt);
@@ -4081,9 +4081,10 @@ ary_add_hash(VALUE hash, VALUE ary)
 }
 
 static inline VALUE
-ary_tmp_hash_new(void)
+ary_tmp_hash_new(VALUE ary)
 {
-    VALUE hash = rb_hash_new();
+    long size = RARRAY_LEN(ary);
+    VALUE hash = rb_hash_new_with_size(size);
 
     RBASIC_CLEAR_CLASS(hash);
     return hash;
@@ -4092,7 +4093,7 @@ ary_tmp_hash_new(void)
 static VALUE
 ary_make_hash(VALUE ary)
 {
-    VALUE hash = ary_tmp_hash_new();
+    VALUE hash = ary_tmp_hash_new(ary);
     return ary_add_hash(hash, ary);
 }
 
@@ -4111,7 +4112,7 @@ ary_add_hash_by(VALUE hash, VALUE ary)
 static VALUE
 ary_make_hash_by(VALUE ary)
 {
-    VALUE hash = ary_tmp_hash_new();
+    VALUE hash = ary_tmp_hash_new(ary);
     return ary_add_hash_by(hash, ary);
 }
 
