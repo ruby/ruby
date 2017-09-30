@@ -5,10 +5,6 @@ AC_CONFIG_AUX_DIR(tool)
 
 AC_PREREQ(2.67)
 
-AC_DEFUN([RUBY_PREREQ_AC],
-	[m4_if(m4_version_compare(m4_defn([m4_PACKAGE_VERSION]), [$1]), [-1],
-		AC_MSG_ERROR([Autoconf version ]$1[ or higher is required]$2))])
-
 AC_DISABLE_OPTION_CHECKING
 
 AC_ARG_VAR([cflags], [additional CFLAGS])
