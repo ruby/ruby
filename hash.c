@@ -348,7 +348,6 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
     }
     switch (status) {
       case ST_DELETE:
-	FL_SET(arg->hash, HASH_DELETED);
 	return ST_DELETE;
       case ST_CONTINUE:
 	break;
@@ -368,12 +367,7 @@ hash_foreach_ensure_rollback(VALUE hash)
 static VALUE
 hash_foreach_ensure(VALUE hash)
 {
-    if (--RHASH_ITER_LEV(hash) == 0) {
-	if (FL_TEST(hash, HASH_DELETED)) {
-	    st_cleanup_safe(RHASH(hash)->ntbl, (st_data_t)Qundef);
-	    FL_UNSET(hash, HASH_DELETED);
-	}
-    }
+    RHASH_ITER_LEV(hash)--;
     return 0;
 }
 
@@ -1107,11 +1101,6 @@ rb_hash_delete_entry(VALUE hash, VALUE key)
 
     if (!RHASH(hash)->ntbl) {
 	return Qundef;
-    }
-    else if (RHASH_ITER_LEV(hash) > 0 &&
-	     (st_delete_safe(RHASH(hash)->ntbl, &ktmp, &val, (st_data_t)Qundef))) {
-	FL_SET(hash, HASH_DELETED);
-	return (VALUE)val;
     }
     else if (st_delete(RHASH(hash)->ntbl, &ktmp, &val)) {
 	return (VALUE)val;
@@ -2120,7 +2109,7 @@ rb_hash_keys(VALUE hash)
 
 	rb_gc_writebarrier_remember(keys);
 	RARRAY_PTR_USE(keys, ptr, {
-	    size = st_keys_check(table, ptr, size, Qundef);
+	    size = st_keys(table, ptr, size);
 	});
 	rb_ary_set_len(keys, size);
     }
@@ -2164,7 +2153,7 @@ rb_hash_values(VALUE hash)
 
 	rb_gc_writebarrier_remember(values);
 	RARRAY_PTR_USE(values, ptr, {
-	    size = st_values_check(table, ptr, size, Qundef);
+	    size = st_values(table, ptr, size);
 	});
 	rb_ary_set_len(values, size);
     }
