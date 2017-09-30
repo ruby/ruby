@@ -1961,6 +1961,27 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
+  def test_using_wrong_argument
+    bug = '[ruby-dev:50270] [Bug #13956]'
+    pattern = /expected Module/
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    bug = ""#{bug.dump}
+    pattern = /#{pattern}/
+    begin;
+      assert_raise_with_message(TypeError, pattern, bug) {
+        using(1) do end
+      }
+    end;
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    bug = ""#{bug.dump}
+    pattern = /#{pattern}/
+    begin;
+      assert_raise_with_message(TypeError, pattern, bug) {
+        Module.new {using(1) {}}
+      }
+    end;
+  end
+
   class ToString
     c = self
     using Module.new {refine(c) {def to_s; "ok"; end}}

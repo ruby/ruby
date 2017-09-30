@@ -1482,6 +1482,7 @@ static void
 ignored_block(VALUE module, const char *klass)
 {
     const char *anon = "";
+    Check_Type(module, T_MODULE);
     if (!RTEST(rb_search_class_path(module))) {
 	anon = ", maybe for Module.new";
     }
