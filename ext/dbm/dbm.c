@@ -339,8 +339,6 @@ fdbm_key(VALUE obj, VALUE valstr)
     ExportStringValue(valstr);
     len = RSTRING_LEN(valstr);
     if (TOO_LONG(len)) return Qnil;
-    val.dptr = RSTRING_PTR(valstr);
-    val.dsize = (DSIZE_TYPE)len;
 
     GetDBM2(obj, dbmp, dbm);
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
