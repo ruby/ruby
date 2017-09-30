@@ -1872,6 +1872,11 @@ CODE
 
     assert_equal("!", " ".succ)
     assert_equal("", "".succ)
+
+    bug = '[ruby-core:83062] [Bug #13952]'
+    s = "\xff".b
+    assert_not_predicate(s, :ascii_only?)
+    assert_predicate(s.succ, :ascii_only?, bug)
   end
 
   def test_succ!
