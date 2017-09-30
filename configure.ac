@@ -1109,9 +1109,6 @@ AS_CASE(["$target_os"],
   enable_pthread=yes
   ])
 
-AC_ARG_ENABLE(pthread,
-       AS_HELP_STRING([--enable-pthread], [obsolete, and ignored]))
-
 dnl Checks for libraries.
 AS_CASE(["$target_os"],[*bsd*|dragonfly*],[],[ac_cv_func_daemon=no])
 
