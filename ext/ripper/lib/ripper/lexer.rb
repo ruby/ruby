@@ -50,8 +50,7 @@ class Ripper
     class Elem
       class List < ::Array
         def inspect
-          pos, event, tok, state = self
-          [pos, event, tok, Ripper.lex_state_name(state)].inspect
+          super.sub!(/\d+(?=\]\z)/, Ripper.lex_state_name(self[3]))
         end
 
         def pretty_print(q) # :nodoc:
