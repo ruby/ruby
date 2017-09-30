@@ -24,7 +24,7 @@
 #define DSIZE_TYPE TYPEOF_DATUM_DSIZE
 #if SIZEOF_DATUM_DSIZE > SIZEOF_INT
 # define RSTRING_DSIZE(s) RSTRING_LEN(s)
-# define TOO_LONG(n) 0
+# define TOO_LONG(n) ((void)(n),0)
 #else
 # define RSTRING_DSIZE(s) RSTRING_LENINT(s)
 # define TOO_LONG(n) ((long)(+(DSIZE_TYPE)(n)) != (n))
