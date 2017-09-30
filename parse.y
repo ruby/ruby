@@ -11324,7 +11324,7 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
 	OBJ_FREEZE(fname);
     }
     else {
-        StringValue(fname);
+	StringValueCStr(fname);
 	fname = rb_str_new_frozen(fname);
     }
     parser_initialize(parser);

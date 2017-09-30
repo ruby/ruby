@@ -150,6 +150,7 @@ static VALUE mSyslog_close(VALUE self)
 static VALUE mSyslog_open(int argc, VALUE *argv, VALUE self)
 {
     VALUE ident, opt, fac;
+    const char *ident_ptr;
 
     if (syslog_opened) {
         rb_raise(rb_eRuntimeError, "syslog already open");
@@ -160,8 +161,9 @@ static VALUE mSyslog_open(int argc, VALUE *argv, VALUE self)
     if (NIL_P(ident)) {
         ident = rb_gv_get("$0");
     }
-    SafeStringValue(ident);
-    syslog_ident = strdup(RSTRING_PTR(ident));
+    ident_ptr = StringValueCStr(ident);
+    rb_check_safe_obj(ident);
+    syslog_ident = strdup(ident_ptr);
 
     if (NIL_P(opt)) {
 	syslog_options = LOG_PID | LOG_CONS;

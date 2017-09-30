@@ -192,8 +192,8 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
 	    name = rb_str_export_to_enc(name, encoding);
 	    value = rb_str_export_to_enc(value, encoding);
 
-	    tail->handle = (yaml_char_t *)RSTRING_PTR(name);
-	    tail->prefix = (yaml_char_t *)RSTRING_PTR(value);
+	    tail->handle = (yaml_char_t *)StringValueCStr(name);
+	    tail->prefix = (yaml_char_t *)StringValueCStr(value);
 
 	    tail++;
 	}
