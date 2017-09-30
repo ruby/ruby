@@ -16,11 +16,9 @@ AC_ARG_VAR([cppflags], [additional CPPFLAGS])
 AC_ARG_VAR([cxxflags], [additional CXXFLAGS])
 
 AC_DEFUN([RUBY_RM_RECURSIVE], [
-m4_if(m4_version_compare(m4_defn([m4_PACKAGE_VERSION]), [2.70]), [-1], [
+m4_version_prereq([2.70], [-1], [
 # suppress error messages, rm: cannot remove 'conftest.dSYM', from
 # AC_EGREP_CPP with CFLAGS=-g on Darwin.
-#
-# TODO: remove this hack when AC_PREREQ() becomes 2.70 or later.
 AS_CASE([$build_os], [darwin*], [
 rm() {
     rm_recursive=''
