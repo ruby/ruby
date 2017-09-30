@@ -334,7 +334,7 @@ rb_gdbm_fetch2(GDBM_FILE dbm, VALUE keystr)
     datum key;
     long len;
 
-    StringValue(keystr);
+    ExportStringValue(keystr);
     len = RSTRING_LEN(keystr);
     if (TOO_LONG(len)) return Qnil;
     key.dptr = RSTRING_PTR(keystr);
@@ -450,7 +450,7 @@ fgdbm_key(VALUE obj, VALUE valstr)
     GDBM_FILE dbm;
     VALUE keystr, valstr2;
 
-    StringValue(valstr);
+    ExportStringValue(valstr);
     GetDBM2(obj, dbmp, dbm);
     for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
          keystr = rb_gdbm_nextkey(dbm, keystr)) {
@@ -538,7 +538,7 @@ rb_gdbm_delete(VALUE obj, VALUE keystr)
     long len;
 
     rb_gdbm_modify(obj);
-    StringValue(keystr);
+    ExportStringValue(keystr);
     len = RSTRING_LEN(keystr);
     if (TOO_LONG(len)) return Qnil;
     key.dptr = RSTRING_PTR(keystr);
@@ -725,8 +725,8 @@ fgdbm_store(VALUE obj, VALUE keystr, VALUE valstr)
     GDBM_FILE dbm;
 
     rb_gdbm_modify(obj);
-    StringValue(keystr);
-    StringValue(valstr);
+    ExportStringValue(keystr);
+    ExportStringValue(valstr);
 
     key.dptr = RSTRING_PTR(keystr);
     key.dsize = RSTRING_LENINT(keystr);
@@ -991,7 +991,7 @@ fgdbm_has_key(VALUE obj, VALUE keystr)
     GDBM_FILE dbm;
     long len;
 
-    StringValue(keystr);
+    ExportStringValue(keystr);
     len = RSTRING_LENINT(keystr);
     if (TOO_LONG(len)) return Qfalse;
     key.dptr = RSTRING_PTR(keystr);
@@ -1018,7 +1018,7 @@ fgdbm_has_value(VALUE obj, VALUE valstr)
     GDBM_FILE dbm;
     VALUE keystr, valstr2;
 
-    StringValue(valstr);
+    ExportStringValue(valstr);
     GetDBM2(obj, dbmp, dbm);
     for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
          keystr = rb_gdbm_nextkey(dbm, keystr)) {
