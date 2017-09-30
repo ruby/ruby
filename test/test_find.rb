@@ -297,6 +297,23 @@ class TestFind < Test::Unit::TestCase
     }
   end
 
+  def test_to_path
+    c = Class.new {
+      def initialize(path)
+        @path = path
+      end
+
+      def to_path
+        @path
+      end
+    }
+    Dir.mktmpdir {|d|
+      a = []
+      Find.find(c.new(d)) {|f| a << f }
+      assert_equal([d], a)
+    }
+  end
+
   class TestInclude < Test::Unit::TestCase
     include Find
 
