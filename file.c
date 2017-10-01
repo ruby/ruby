@@ -2873,6 +2873,19 @@ rb_file_s_unlink(int argc, VALUE *argv, VALUE klass)
     return apply2files(unlink_internal, argc, argv, 0);
 }
 
+struct rename_args {
+    const char *src;
+    const char *dst;
+};
+
+static void *
+no_gvl_rename(void *ptr)
+{
+    struct rename_args *ra = ptr;
+
+    return (void *)(VALUE)rename(ra->src, ra->dst);
+}
+
 /*
  *  call-seq:
  *     File.rename(old_name, new_name)   -> 0
@@ -2886,19 +2899,20 @@ rb_file_s_unlink(int argc, VALUE *argv, VALUE klass)
 static VALUE
 rb_file_s_rename(VALUE klass, VALUE from, VALUE to)
 {
-    const char *src, *dst;
+    struct rename_args ra;
     VALUE f, t;
 
     FilePathValue(from);
     FilePathValue(to);
     f = rb_str_encode_ospath(from);
     t = rb_str_encode_ospath(to);
-    src = StringValueCStr(f);
-    dst = StringValueCStr(t);
+    ra.src = StringValueCStr(f);
+    ra.dst = StringValueCStr(t);
 #if defined __CYGWIN__
     errno = 0;
 #endif
-    if (rename(src, dst) < 0) {
+    if ((int)(VALUE)rb_thread_call_without_gvl(no_gvl_rename, &ra,
+					 RUBY_UBF_IO, 0) < 0) {
 	int e = errno;
 #if defined DOSISH
 	switch (e) {
