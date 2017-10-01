@@ -1174,9 +1174,11 @@ UNICODE_PROPERTY_FILES =  \
 
 update-unicode: $(UNICODE_FILES)
 
+CACHE_DIR = $(srcdir)/.downloaded-cache
 UNICODE_DOWNLOAD = \
-	$(BASERUBY) -C "$(srcdir)" tool/downloader.rb \
-	    -d $(UNICODE_DATA_DIR) \
+	$(BASERUBY) $(srcdir)/tool/downloader.rb \
+	    --cache-dir=$(CACHE_DIR) \
+	    -d $(srcdir)/$(UNICODE_DATA_DIR) \
 	    -p $(UNICODE_VERSION)/ucd \
 	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode
 
