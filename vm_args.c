@@ -239,7 +239,7 @@ args_kw_argv_to_hash(struct args_info *args)
     const struct rb_call_info_kw_arg *kw_arg = args->kw_arg;
     const VALUE *const passed_keywords = kw_arg->keywords;
     const int kw_len = kw_arg->keyword_len;
-    VALUE h = rb_hash_new();
+    VALUE h = rb_hash_new_with_size(kw_len);
     const int kw_start = args->argc - kw_len;
     const VALUE * const kw_argv = args->argv + kw_start;
     int i;
@@ -257,11 +257,11 @@ args_kw_argv_to_hash(struct args_info *args)
 static void
 args_stored_kw_argv_to_hash(struct args_info *args)
 {
-    VALUE h = rb_hash_new();
     int i;
     const struct rb_call_info_kw_arg *kw_arg = args->kw_arg;
     const VALUE *const passed_keywords = kw_arg->keywords;
     const int passed_keyword_len = kw_arg->keyword_len;
+    VALUE h = rb_hash_new_with_size(passed_keyword_len);
 
     for (i=0; i<passed_keyword_len; i++) {
 	rb_hash_aset(h, passed_keywords[i], args->kw_argv[i]);
@@ -365,7 +365,7 @@ static VALUE
 make_rest_kw_hash(const VALUE *passed_keywords, int passed_keyword_len, const VALUE *kw_argv)
 {
     int i;
-    VALUE obj = rb_hash_new();
+    VALUE obj = rb_hash_new_with_size(passed_keyword_len);
 
     for (i=0; i<passed_keyword_len; i++) {
 	if (kw_argv[i] != Qundef) {
@@ -780,7 +780,7 @@ vm_caller_setup_arg_kw(rb_control_frame_t *cfp, struct rb_calling_info *calling,
     struct rb_call_info_with_kwarg *ci_kw = (struct rb_call_info_with_kwarg *)ci;
     const VALUE *const passed_keywords = ci_kw->kw_arg->keywords;
     const int kw_len = ci_kw->kw_arg->keyword_len;
-    const VALUE h = rb_hash_new();
+    const VALUE h = rb_hash_new_with_size(kw_len);
     VALUE *sp = cfp->sp;
     int i;
 

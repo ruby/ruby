@@ -794,7 +794,7 @@ rb_struct_to_a(VALUE s)
 static VALUE
 rb_struct_to_h(VALUE s)
 {
-    VALUE h = rb_hash_new();
+    VALUE h = rb_hash_new_with_size(RSTRUCT_LEN(s));
     VALUE members = rb_struct_members(s);
     long i;
 
