@@ -3394,43 +3394,50 @@ str_casecmp_p(VALUE str1, VALUE str2)
 static long
 rb_strseq_index(VALUE str, VALUE sub, long offset, int in_byte)
 {
-    const char *s, *sptr, *e;
-    long pos, len, slen;
+    const char *str_ptr, *str_ptr_end, *sub_ptr, *search_start;
+    long pos, str_len, sub_len, search_len;
     int single_byte = single_byte_optimizable(str);
     rb_encoding *enc;
 
     enc = rb_enc_check(str, sub);
     if (is_broken_string(sub)) return -1;
 
-    len = (in_byte || single_byte) ? RSTRING_LEN(str) : str_strlen(str, enc); /* rb_enc_check */
-    slen = in_byte ? RSTRING_LEN(sub) : str_strlen(sub, enc); /* rb_enc_check */
-    if (offset < 0) {
-	offset += len;
-	if (offset < 0) return -1;
-    }
-    if (len - offset < slen) return -1;
+    str_ptr = RSTRING_PTR(str);
+    str_ptr_end = RSTRING_END(str);
+    str_len = RSTRING_LEN(str);
+    sub_ptr = RSTRING_PTR(sub);
+    sub_len = RSTRING_LEN(sub);
 
-    s = RSTRING_PTR(str);
-    e = RSTRING_END(str);
-    if (offset) {
-	if (!in_byte) offset = str_offset(s, e, offset, enc, single_byte);
-	s += offset;
+    if (str_len < sub_len) return -1;
+
+    if (offset != 0) {
+	long str_len_char, sub_len_char;
+	str_len_char = (in_byte || single_byte) ? str_len : str_strlen(str, enc);
+	sub_len_char = in_byte ? sub_len : str_strlen(sub, enc);
+	if (offset < 0) {
+	    offset += str_len_char;
+	    if (offset < 0) return -1;
+	}
+	if (str_len_char - offset < sub_len_char) return -1;
+	if (!in_byte) offset = str_offset(str_ptr, str_ptr_end, offset, enc, single_byte);
+	str_ptr += offset;
     }
-    if (slen == 0) return offset;
+    if (sub_len == 0) return offset;
+
     /* need proceed one character at a time */
-    sptr = RSTRING_PTR(sub);
-    slen = RSTRING_LEN(sub);
-    len = RSTRING_LEN(str) - offset;
+
+    search_start = str_ptr;
+    search_len = RSTRING_LEN(str) - offset;
     for (;;) {
 	const char *t;
-	pos = rb_memsearch(sptr, slen, s, len, enc);
+	pos = rb_memsearch(sub_ptr, sub_len, search_start, search_len, enc);
 	if (pos < 0) return pos;
-	t = rb_enc_right_char_head(s, s+pos, e, enc);
-	if (t == s + pos) break;
-	len -= t - s;
-	if (len <= 0) return -1;
-	offset += t - s;
-	s = t;
+	t = rb_enc_right_char_head(search_start, search_start+pos, str_ptr_end, enc);
+	if (t == search_start + pos) break;
+	search_len -= t - search_start;
+	if (search_len <= 0) return -1;
+	offset += t - search_start;
+	search_start = t;
     }
     return pos + offset;
 }
