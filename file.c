@@ -358,7 +358,7 @@ static VALUE
 apply2files(void (*func)(const char *, VALUE, void *), int argc, VALUE *argv, void *arg)
 {
     long i;
-    volatile VALUE path;
+    VALUE path;
 
     for (i=0; i<argc; i++) {
 	const char *s;
@@ -3902,7 +3902,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved,
 #ifdef HAVE_READLINK
                 if (S_ISLNK(sbuf.st_mode)) {
 		    VALUE link;
-		    volatile VALUE link_orig = Qnil;
+		    VALUE link_orig = Qnil;
 		    const char *link_prefix, *link_names;
                     long link_prefixlen;
                     rb_hash_aset(loopcheck, testpath, ID2SYM(resolving));
@@ -3943,9 +3943,9 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode
 {
     long prefixlen;
     VALUE resolved;
-    volatile VALUE unresolved_path;
+    VALUE unresolved_path;
     VALUE loopcheck;
-    volatile VALUE curdir = Qnil;
+    VALUE curdir = Qnil;
 
     rb_encoding *enc, *origenc;
     char *path_names = NULL, *basedir_names = NULL, *curdir_names = NULL;
@@ -4028,6 +4028,8 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode
     }
 
     OBJ_TAINT(resolved);
+    RB_GC_GUARD(unresolved_path);
+    RB_GC_GUARD(curdir);
     return resolved;
 }
 
