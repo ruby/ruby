@@ -1995,6 +1995,21 @@ class TestRefinement < Test::Unit::TestCase
     assert_predicate(ToString.new.taint.string, :tainted?)
   end
 
+  class ToSymbol
+    c = self
+    using Module.new {refine(c) {def intern; "<#{upcase}>"; end}}
+    def symbol
+      :"#{@string}"
+    end
+    def initialize(string)
+      @string = string
+    end
+  end
+
+  def test_dsym_literal
+    assert_equal(:foo, ToSymbol.new("foo").symbol)
+  end
+
   private
 
   def eval_using(mod, s)
