@@ -1010,6 +1010,18 @@ rb_yield_values2(int argc, const VALUE *argv)
 }
 
 VALUE
+rb_yield_assoc_or_values(VALUE key, VALUE value)
+{
+    if (rb_block_arity() > 1) {
+	VALUE argv[2] = { key, value };
+	return rb_yield_0(2, argv);
+    }
+    else {
+	return rb_yield_1(rb_assoc_new(key, value));
+    }
+}
+
+VALUE
 rb_yield_splat(VALUE values)
 {
     VALUE tmp = rb_check_array_type(values);
