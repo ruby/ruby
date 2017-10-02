@@ -2915,13 +2915,11 @@ rb_file_s_rename(VALUE klass, VALUE from, VALUE to)
 					 RUBY_UBF_IO, 0) < 0) {
 	int e = errno;
 #if defined DOSISH
-	const char *src = StringValueCStr(f);
-	const char *dst = StringValueCStr(t);
 	switch (e) {
 	  case EEXIST:
-	    if (chmod(dst, 0666) == 0 &&
-		unlink(dst) == 0 &&
-		rename(src, dst) == 0)
+	    if (chmod(ra.dst, 0666) == 0 &&
+		unlink(ra.dst) == 0 &&
+		rename(ra.src, ra.dst) == 0)
 		return INT2FIX(0);
 	}
 #endif
