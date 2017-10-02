@@ -820,9 +820,9 @@ reg_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
 static VALUE
 rb_reg_named_captures(VALUE re)
 {
-    VALUE hash = rb_hash_new();
-    rb_reg_check(re);
-    onig_foreach_name(RREGEXP_PTR(re), reg_named_captures_iter, (void*)hash);
+    regex_t *reg = (rb_reg_check(re), RREGEXP_PTR(re));
+    VALUE hash = rb_hash_new_with_size(onig_number_of_names(reg));
+    onig_foreach_name(reg, reg_named_captures_iter, (void*)hash);
     return hash;
 }
 
