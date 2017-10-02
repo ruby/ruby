@@ -6735,7 +6735,7 @@ static const char *type_name(int type, VALUE obj);
 static void
 gc_count_add_each_types(VALUE hash, const char *name, const size_t *types)
 {
-    VALUE result = rb_hash_new();
+    VALUE result = rb_hash_new_with_size(T_MASK);
     int i;
     for (i=0; i<T_MASK; i++) {
 	const char *type = type_name(i, 0);

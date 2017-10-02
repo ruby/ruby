@@ -7203,7 +7203,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 		      case TS_CDHASH:
 			{
 			    int i;
-			    VALUE map = rb_hash_new();
+			    VALUE map = rb_hash_new_with_size(RARRAY_LEN(op)/2);
 
 			    rb_hash_tbl_raw(map)->type = &cdhash_type;
 			    op = rb_convert_type_with_id(op, T_ARRAY, "Array", idTo_ary);
@@ -8525,7 +8525,7 @@ static VALUE
 ibf_load_object_hash(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
     const struct ibf_object_hash *hash = IBF_OBJBODY(struct ibf_object_hash, offset);
-    VALUE obj = rb_hash_new();
+    VALUE obj = rb_hash_new_with_size(hash->len);
     int i;
 
     for (i=0; i<hash->len; i++) {
