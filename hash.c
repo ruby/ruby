@@ -1775,7 +1775,17 @@ rb_hash_each_key(VALUE hash)
 static int
 each_pair_i(VALUE key, VALUE value)
 {
-    rb_yield_assoc_or_values(key, value);
+    rb_yield(rb_assoc_new(key, value));
+    return ST_CONTINUE;
+}
+
+static int
+each_pair_i_fast(VALUE key, VALUE value)
+{
+    VALUE argv[2];
+    argv[0] = key;
+    argv[1] = value;
+    rb_yield_values2(2, argv);
     return ST_CONTINUE;
 }
 
@@ -1805,7 +1815,10 @@ static VALUE
 rb_hash_each_pair(VALUE hash)
 {
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    rb_hash_foreach(hash, each_pair_i, 0);
+    if (rb_block_arity() > 1)
+	rb_hash_foreach(hash, each_pair_i_fast, 0);
+    else
+	rb_hash_foreach(hash, each_pair_i, 0);
     return hash;
 }
 
@@ -2896,7 +2909,18 @@ rb_init_identtable_with_size(st_index_t size)
 static int
 any_p_i(VALUE key, VALUE value, VALUE arg)
 {
-    VALUE ret = rb_yield_assoc_or_values(key, value);
+    VALUE ret = rb_yield(rb_assoc_new(key, value));
+    if (RTEST(ret)) {
+	*(VALUE *)arg = Qtrue;
+	return ST_STOP;
+    }
+    return ST_CONTINUE;
+}
+
+static int
+any_p_i_fast(VALUE key, VALUE value, VALUE arg)
+{
+    VALUE ret = rb_yield_values(2, key, value);
     if (RTEST(ret)) {
 	*(VALUE *)arg = Qtrue;
 	return ST_STOP;
@@ -2921,7 +2945,10 @@ rb_hash_any_p(VALUE hash)
 	/* yields pairs, never false */
 	return Qtrue;
     }
-    rb_hash_foreach(hash, any_p_i, (VALUE)&ret);
+    if (rb_block_arity() > 1)
+	rb_hash_foreach(hash, any_p_i_fast, (VALUE)&ret);
+    else
+	rb_hash_foreach(hash, any_p_i, (VALUE)&ret);
     return ret;
 }
 
@@ -3767,8 +3794,15 @@ env_each_pair(VALUE ehash)
     }
     FREE_ENVIRON(environ);
 
-    for (i=0; i<RARRAY_LEN(ary); i+=2) {
-	rb_yield_assoc_or_values(RARRAY_AREF(ary, i), RARRAY_AREF(ary, i+1));
+    if (rb_block_arity() > 1) {
+	for (i=0; i<RARRAY_LEN(ary); i+=2) {
+	    rb_yield_values(2, RARRAY_AREF(ary, i), RARRAY_AREF(ary, i+1));
+	}
+    }
+    else {
+	for (i=0; i<RARRAY_LEN(ary); i+=2) {
+	    rb_yield(rb_assoc_new(RARRAY_AREF(ary, i), RARRAY_AREF(ary, i+1)));
+	}
     }
     return ehash;
 }

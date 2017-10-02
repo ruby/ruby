@@ -1768,7 +1768,6 @@ VALUE rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv
 VALUE rb_check_funcall_default(VALUE, ID, int, const VALUE *, VALUE);
 VALUE rb_yield_1(VALUE val);
 VALUE rb_yield_force_blockarg(VALUE values);
-VALUE rb_yield_assoc_or_values(VALUE key, VALUE value);
 VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
 		     rb_block_call_func_t bl_proc, int min_argc, int max_argc,
 		     VALUE data2);
