@@ -310,6 +310,12 @@ class TestArgf < Test::Unit::TestCase
     };
   end
 
+  def test_inplace_invalid_backup
+    assert_raise(ArgumentError, '[ruby-dev:50272] [Bug #13960]') {
+      ARGF.inplace_mode = "a\0"
+    }
+  end
+
   def test_encoding
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#

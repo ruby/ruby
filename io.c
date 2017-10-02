@@ -12224,10 +12224,10 @@ argf_inplace_mode_set(VALUE argf, VALUE val)
 	ARGF.inplace = 0;
     }
     else {
-	StringValue(val);
+	const char *suffix = StringValueCStr(val);
 	if (ARGF.inplace) free(ARGF.inplace);
 	ARGF.inplace = 0;
-	ARGF.inplace = strdup(RSTRING_PTR(val));
+	ARGF.inplace = strdup(suffix);
     }
     return argf;
 }
