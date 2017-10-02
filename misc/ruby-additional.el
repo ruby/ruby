@@ -162,11 +162,11 @@ Emacs to Ruby."
        "Insert indented here document code block"
        (interactive "P")
        (let ((c (if arg "~" "-")))
-	 (insert "\"#{<<" c "\"begin\;\"}\\n#{<<" c "'end;'}\""))
+	 (insert "\"#{<<" c "\"{#\"}\\n#{<<" c "'};'}\""))
        (end-of-line)
        (if (eobp) (insert "\n") (forward-char))
        (indent-region (point)
-		      (progn (insert "begin;\n" "end;\n") (point)))
+		      (progn (insert "{#\n" "};\n") (point)))
        (beginning-of-line 0))
      (define-key ruby-mode-map "\C-cH" 'ruby-insert-heredoc-code-block)
      ))
