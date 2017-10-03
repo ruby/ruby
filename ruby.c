@@ -2226,7 +2226,7 @@ just_before_input(void)
      * point that it can safely take a snapshot of this ruby process.
      *
      * This must be carefully placed.  According to AFL's manual we
-     * have to chose where (1) no threads except main one are run yet,
+     * have to choose where (1) no threads except main one are run yet,
      * (2) no timers are registered yet, (3) no file descriptors are
      * created yet, or (4) no input has read. @shyouhei thinks that in
      * case of ruby such place can only be at the right beginning of
