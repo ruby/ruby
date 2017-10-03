@@ -1085,6 +1085,7 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
   def test_http_retry_success
     start {|http|
       socket = MockSocket.new(success_after: 10)
+      http.instance_variable_get(:@socket).close
       http.instance_variable_set(:@socket, socket)
       assert_equal 0, socket.count
       http.max_retries = 10
@@ -1098,6 +1099,7 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
   def test_http_retry_failed
     start {|http|
       socket = MockSocket.new
+      http.instance_variable_get(:@socket).close
       http.instance_variable_set(:@socket, socket)
       http.max_retries = 10
       assert_raise(Errno::ECONNRESET){ http.get('/') }
