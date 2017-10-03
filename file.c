@@ -1883,9 +1883,7 @@ check3rdbyte(VALUE fname, int mode)
 {
     struct stat st;
 
-    FilePathValue(fname);
-    fname = rb_str_encode_ospath(fname);
-    if (STAT(StringValueCStr(fname), &st) < 0) return Qfalse;
+    if (rb_stat(fname, &st) < 0) return Qfalse;
     if (st.st_mode & mode) return Qtrue;
     return Qfalse;
 }
