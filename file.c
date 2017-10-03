@@ -1181,6 +1181,27 @@ rb_io_stat(VALUE obj)
     return rb_stat_new(&st);
 }
 
+#ifdef HAVE_LSTAT
+static void *
+no_gvl_lstat(void *ptr)
+{
+    no_gvl_stat_data *arg = ptr;
+    return (void *)(VALUE)lstat(arg->file.path, arg->st);
+}
+
+static int
+lstat_without_gvl(const char *path, struct stat *st)
+{
+    no_gvl_stat_data data;
+
+    data.file.path = path;
+    data.st = st;
+
+    return (int)(VALUE)rb_thread_call_without_gvl(no_gvl_lstat, &data,
+						    RUBY_UBF_IO, NULL);
+}
+#endif /* HAVE_LSTAT */
+
 /*
  *  call-seq:
  *     File.lstat(file_name)   -> stat
@@ -1203,7 +1224,7 @@ rb_file_s_lstat(VALUE klass, VALUE fname)
 
     FilePathValue(fname);
     fname = rb_str_encode_ospath(fname);
-    if (lstat(StringValueCStr(fname), &st) == -1) {
+    if (lstat_without_gvl(StringValueCStr(fname), &st) == -1) {
 	rb_sys_fail_path(fname);
     }
     return rb_stat_new(&st);
@@ -1237,7 +1258,7 @@ rb_file_lstat(VALUE obj)
     GetOpenFile(obj, fptr);
     if (NIL_P(fptr->pathv)) return Qnil;
     path = rb_str_encode_ospath(fptr->pathv);
-    if (lstat(RSTRING_PTR(path), &st) == -1) {
+    if (lstat_without_gvl(RSTRING_PTR(path), &st) == -1) {
 	rb_sys_fail_path(fptr->pathv);
     }
     return rb_stat_new(&st);
@@ -1449,7 +1470,7 @@ rb_file_symlink_p(VALUE obj, VALUE fname)
 
     FilePathValue(fname);
     fname = rb_str_encode_ospath(fname);
-    if (lstat(StringValueCStr(fname), &st) < 0) return Qfalse;
+    if (lstat_without_gvl(StringValueCStr(fname), &st) < 0) return Qfalse;
     if (S_ISLNK(st.st_mode)) return Qtrue;
 #endif
 
@@ -2081,7 +2102,7 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
 
     FilePathValue(fname);
     fname = rb_str_encode_ospath(fname);
-    if (lstat(StringValueCStr(fname), &st) == -1) {
+    if (lstat_without_gvl(StringValueCStr(fname), &st) == -1) {
 	rb_sys_fail_path(fname);
     }
 
@@ -3628,7 +3649,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	struct stat st;
 	p = (char *)s;
 	len = strlen(p);
-	if (lstat(buf, &st) == 0 && S_ISLNK(st.st_mode)) {
+	if (lstat_without_gvl(buf, &st) == 0 && S_ISLNK(st.st_mode)) {
 	    is_symlink = 1;
 	    if (len > 4 && STRCASECMP(p + len - 4, ".lnk") != 0) {
 		lnk_added = 1;
@@ -3896,7 +3917,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved,
 #ifdef __native_client__
                 ret = stat(RSTRING_PTR(testpath), &sbuf);
 #else
-                ret = lstat(RSTRING_PTR(testpath), &sbuf);
+                ret = lstat_without_gvl(RSTRING_PTR(testpath), &sbuf);
 #endif
                 if (ret == -1) {
 		    int e = errno;
