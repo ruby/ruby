@@ -1915,7 +1915,7 @@ undef_list	: fitem
 		    /*%%%*/
 			$$ = NEW_UNDEF($1);
 		    /*%
-			$$ = rb_ary_new3(1, $1);
+			$$ = rb_ary_new3(1, get_value($1));
 		    %*/
 		    }
 		| undef_list ',' {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
@@ -1923,7 +1923,7 @@ undef_list	: fitem
 		    /*%%%*/
 			$$ = block_append($1, NEW_UNDEF($4));
 		    /*%
-			rb_ary_push($1, $4);
+			rb_ary_push($1, get_value($4));
 		    %*/
 		    }
 		;
@@ -3310,14 +3310,14 @@ bv_decls	: bvar
 		    /*%c%*/
 		    /*%c
 		    {
-			$$ = rb_ary_new3(1, $1);
+			$$ = rb_ary_new3(1, get_value($1));
 		    }
 		    %*/
 		| bv_decls ',' bvar
 		    /*%c%*/
 		    /*%c
 		    {
-			rb_ary_push($1, $3);
+			rb_ary_push($1, get_value($3));
 		    }
 		    %*/
 		;
@@ -3630,7 +3630,7 @@ exc_list	: arg_value
 		    /*%%%*/
 			$$ = NEW_LIST($1);
 		    /*%
-			$$ = rb_ary_new3(1, $1);
+			$$ = rb_ary_new3(1, get_value($1));
 		    %*/
 		    }
 		| mrhs
@@ -4400,7 +4400,7 @@ f_arg		: f_arg_item
 		    /*%c%*/
 		    /*%c
 		    {
-			$$ = rb_ary_new3(1, $1);
+			$$ = rb_ary_new3(1, get_value($1));
 		    }
 		    c%*/
 		| f_arg ',' f_arg_item
@@ -4411,7 +4411,7 @@ f_arg		: f_arg_item
 			$$->nd_next = block_append($$->nd_next, $3->nd_next);
 			rb_gc_force_recycle((VALUE)$3);
 		    /*%
-			$$ = rb_ary_push($1, $3);
+			$$ = rb_ary_push($1, get_value($3));
 		    %*/
 		    }
 		;
@@ -4433,7 +4433,7 @@ f_kw		: f_label arg_value
 		    /*%%%*/
 			$$ = new_kw_arg($$);
 		    /*%
-			$$ = rb_assoc_new($$, $2);
+			$$ = rb_assoc_new(get_value($$), get_value($1));
 		    %*/
 		    }
 		| f_label
@@ -4443,7 +4443,7 @@ f_kw		: f_label arg_value
 		    /*%%%*/
 			$$ = new_kw_arg($$);
 		    /*%
-			$$ = rb_assoc_new($$, 0);
+			$$ = rb_assoc_new(get_value($$), 0);
 		    %*/
 		    }
 		;
@@ -4454,7 +4454,7 @@ f_block_kw	: f_label primary_value
 		    /*%%%*/
 			$$ = new_kw_arg($$);
 		    /*%
-			$$ = rb_assoc_new($$, $2);
+			$$ = rb_assoc_new(get_value($$), get_value($2));
 		    %*/
 		    }
 		| f_label
@@ -4463,7 +4463,7 @@ f_block_kw	: f_label primary_value
 		    /*%%%*/
 			$$ = new_kw_arg($$);
 		    /*%
-			$$ = rb_assoc_new($$, 0);
+			$$ = rb_assoc_new(get_value($$), 0);
 		    %*/
 		    }
 		;
@@ -4473,7 +4473,7 @@ f_block_kwarg	: f_block_kw
 		    /*%%%*/
 			$$ = $1;
 		    /*%
-			$$ = rb_ary_new3(1, $1);
+			$$ = rb_ary_new3(1, get_value($1));
 		    %*/
 		    }
 		| f_block_kwarg ',' f_block_kw
@@ -4481,7 +4481,7 @@ f_block_kwarg	: f_block_kw
 		    /*%%%*/
 			$$ = kwd_append($1, $3);
 		    /*%
-			$$ = rb_ary_push($1, $3);
+			$$ = rb_ary_push($1, get_value($3));
 		    %*/
 		    }
 		;
@@ -4492,7 +4492,7 @@ f_kwarg		: f_kw
 		    /*%%%*/
 			$$ = $1;
 		    /*%
-			$$ = rb_ary_new3(1, $1);
+			$$ = rb_ary_new3(1, get_value($1));
 		    %*/
 		    }
 		| f_kwarg ',' f_kw
@@ -4500,7 +4500,7 @@ f_kwarg		: f_kw
 		    /*%%%*/
 			$$ = kwd_append($1, $3);
 		    /*%
-			$$ = rb_ary_push($1, $3);
+			$$ = rb_ary_push($1, get_value($3));
 		    %*/
 		    }
 		;
@@ -4536,7 +4536,7 @@ f_opt		: f_arg_asgn '=' arg_value
 		    /*%%%*/
 			$$ = NEW_OPT_ARG(0, $$);
 		    /*%
-			$$ = rb_assoc_new($$, $3);
+			$$ = rb_assoc_new(get_value($$), get_value($3));
 		    %*/
 		    }
 		;
@@ -4548,7 +4548,7 @@ f_block_opt	: f_arg_asgn '=' primary_value
 		    /*%%%*/
 			$$ = NEW_OPT_ARG(0, $$);
 		    /*%
-			$$ = rb_assoc_new($$, $3);
+			$$ = rb_assoc_new(get_value($$), get_value($3));
 		    %*/
 		    }
 		;
@@ -4558,7 +4558,7 @@ f_block_optarg	: f_block_opt
 		    /*%%%*/
 			$$ = $1;
 		    /*%
-			$$ = rb_ary_new3(1, $1);
+			$$ = rb_ary_new3(1, get_value($1));
 		    %*/
 		    }
 		| f_block_optarg ',' f_block_opt
@@ -4572,7 +4572,7 @@ f_block_optarg	: f_block_opt
 			opts->nd_next = $3;
 			$$ = $1;
 		    /*%
-			$$ = rb_ary_push($1, $3);
+			$$ = rb_ary_push($1, get_value($3));
 		    %*/
 		    }
 		;
@@ -4582,7 +4582,7 @@ f_optarg	: f_opt
 		    /*%%%*/
 			$$ = $1;
 		    /*%
-			$$ = rb_ary_new3(1, $1);
+			$$ = rb_ary_new3(1, get_value($1));
 		    %*/
 		    }
 		| f_optarg ',' f_opt
@@ -4596,7 +4596,7 @@ f_optarg	: f_opt
 			opts->nd_next = $3;
 			$$ = $1;
 		    /*%
-			$$ = rb_ary_push($1, $3);
+			$$ = rb_ary_push($1, get_value($3));
 		    %*/
 		    }
 		;
@@ -4719,7 +4719,7 @@ assocs		: assoc
 		    /*%c%*/
 		    /*%c
 		    {
-			$$ = rb_ary_new3(1, $1);
+			$$ = rb_ary_new3(1, get_value($1));
 		    }
 		    %*/
 		| assocs ',' assoc
@@ -4741,7 +4741,7 @@ assocs		: assoc
 			}
 			$$ = assocs;
 		    /*%
-			$$ = rb_ary_push($1, $3);
+			$$ = rb_ary_push($1, get_value($3));
 		    %*/
 		    }
 		;
