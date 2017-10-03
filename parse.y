@@ -681,6 +681,10 @@ static void ripper_error_gen(struct parser_params *parser);
 #define ID2VAL(id) STATIC_ID2SYM(id)
 #define TOKEN2VAL(t) ID2VAL(TOKEN2ID(t))
 #define TOKEN2EID(t) ID2SYM(TOKEN2ID_OR(t, ripper_token2eventid(t)))
+#define KWD2EID(t) \
+    ripper_new_yylval(keyword_##t, \
+		      ID2SYM(#t[0]=='_' ? rb_intern("_"#t) : rb_intern(#t)), \
+		      0)
 
 #define arg_new() dispatch0(args_new)
 #define arg_add(l,a) dispatch2(args_add, (l), (a))
@@ -738,6 +742,7 @@ static VALUE parser_heredoc_dedent(struct parser_params*,VALUE);
 #define ID2VAL(id) ((VALUE)(id))
 #define TOKEN2VAL(t) ID2VAL(t)
 #define TOKEN2EID(t) (t)
+#define KWD2EID(t) keyword_##t
 #endif /* RIPPER */
 
 #ifndef RIPPER
@@ -4116,13 +4121,13 @@ user_variable	: tIDENTIFIER
 		| tCVAR
 		;
 
-keyword_variable: keyword_nil {ifndef_ripper($$ = keyword_nil);}
-		| keyword_self {ifndef_ripper($$ = keyword_self);}
-		| keyword_true {ifndef_ripper($$ = keyword_true);}
-		| keyword_false {ifndef_ripper($$ = keyword_false);}
-		| keyword__FILE__ {ifndef_ripper($$ = keyword__FILE__);}
-		| keyword__LINE__ {ifndef_ripper($$ = keyword__LINE__);}
-		| keyword__ENCODING__ {ifndef_ripper($$ = keyword__ENCODING__);}
+keyword_variable: keyword_nil {$$ = KWD2EID(nil);}
+		| keyword_self {$$ = KWD2EID(self);}
+		| keyword_true {$$ = KWD2EID(true);}
+		| keyword_false {$$ = KWD2EID(false);}
+		| keyword__FILE__ {$$ = KWD2EID(_FILE__);}
+		| keyword__LINE__ {$$ = KWD2EID(_LINE__);}
+		| keyword__ENCODING__ {$$ = KWD2EID(_ENCODING__);}
 		;
 
 var_ref		: user_variable
