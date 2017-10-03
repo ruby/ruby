@@ -199,11 +199,16 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def test_assign_error_backref
     thru_assign_error = false
-    parse('$` = 1', :on_assign_error) {thru_assign_error = true}
+    result =
+      parse('$` = 1', :on_assign_error) {thru_assign_error = true}
     assert_equal true, thru_assign_error
+    assert_equal '[assign(assign_error(var_field($`)),1)]', result
+
     thru_assign_error = false
-    parse('$`, _ = 1', :on_assign_error) {thru_assign_error = true}
+    result =
+      parse('$`, _ = 1', :on_assign_error) {thru_assign_error = true}
     assert_equal true, thru_assign_error
+    assert_equal '[massign([assign_error(var_field($`)),_],1)]', result
   end
 
   def test_assign_error_const_qualified
