@@ -836,11 +836,7 @@ static void token_info_pop_gen(struct parser_params*, const char *token, size_t 
     const struct vtable *vars;
 }
 
-/*%%%*/
-%token
-/*%
-%token <val>
-%*/
+%token <id>
 	keyword_class
 	keyword_module
 	keyword_def
@@ -920,10 +916,10 @@ static void token_info_pop_gen(struct parser_params*, const char *token, size_t 
 %type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post mlhs_inner
 %type <id>   fsym keyword_variable user_variable sym symbol operation operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
-%type <id>   f_kwrest f_label f_arg_asgn call_op call_op2
+%type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords
 /*%%%*/
 /*%
-%type <val> program reswords then do
+%type <val> program then do
 %*/
 %token END_OF_INPUT 0	"end-of-input"
 %token tUPLUS		RUBY_TOKEN(UPLUS)  "unary+"
@@ -1882,11 +1878,7 @@ fname		: tIDENTIFIER
 		| reswords
 		    {
 			SET_LEX_STATE(EXPR_ENDFN);
-		    /*%%%*/
-			$$ = $<id>1;
-		    /*%
 			$$ = $1;
-		    %*/
 		    }
 		;
 
