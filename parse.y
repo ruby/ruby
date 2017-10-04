@@ -636,16 +636,13 @@ static int lvar_defined_gen(struct parser_params*, ID);
 #define nd_paren(node) (char)((node)->u2.id >> CHAR_BIT*2)
 #define nd_nest u3.cnt
 
-#define TOKEN2ID_OR(tok, or) ( \
+#define TOKEN2ID(tok) ( \
     tTOKEN_LOCAL_BEGIN<(tok)&&(tok)<tTOKEN_LOCAL_END ? TOKEN2LOCALID(tok) : \
     tTOKEN_INSTANCE_BEGIN<(tok)&&(tok)<tTOKEN_INSTANCE_END ? TOKEN2INSTANCEID(tok) : \
     tTOKEN_GLOBAL_BEGIN<(tok)&&(tok)<tTOKEN_GLOBAL_END ? TOKEN2GLOBALID(tok) : \
     tTOKEN_CONST_BEGIN<(tok)&&(tok)<tTOKEN_CONST_END ? TOKEN2CONSTID(tok) : \
     tTOKEN_CLASS_BEGIN<(tok)&&(tok)<tTOKEN_CLASS_END ? TOKEN2CLASSID(tok) : \
     tTOKEN_ATTRSET_BEGIN<(tok)&&(tok)<tTOKEN_ATTRSET_END ? TOKEN2ATTRSETID(tok) : \
-    or)
-
-#define TOKEN2ID(tok) TOKEN2ID_OR(tok, \
     ((tok) / ((tok)<tPRESERVED_ID_END && ((tok)>=128 || rb_ispunct(tok)))))
 
 /****** Ripper *******/
@@ -680,7 +677,6 @@ static void ripper_error_gen(struct parser_params *parser);
 
 #define ID2VAL(id) STATIC_ID2SYM(id)
 #define TOKEN2VAL(t) ID2VAL(TOKEN2ID(t))
-#define TOKEN2EID(t) ID2SYM(TOKEN2ID_OR(t, ripper_token2eventid(t)))
 #define KWD2EID(t) \
     ripper_new_yylval(keyword_##t, \
 		      ID2SYM(#t[0]=='_' ? rb_intern("_"#t) : rb_intern(#t)), \
@@ -741,7 +737,6 @@ static VALUE parser_heredoc_dedent(struct parser_params*,VALUE);
 #else
 #define ID2VAL(id) ((VALUE)(id))
 #define TOKEN2VAL(t) ID2VAL(t)
-#define TOKEN2EID(t) (t)
 #define KWD2EID(t) keyword_##t
 #endif /* RIPPER */
 
@@ -1928,36 +1923,36 @@ undef_list	: fitem
 		    }
 		;
 
-op		: '|'		{ $$ = TOKEN2EID('|'); }
-		| '^'		{ $$ = TOKEN2EID('^'); }
-		| '&'		{ $$ = TOKEN2EID('&'); }
-		| tCMP		{ $$ = TOKEN2EID(tCMP); }
-		| tEQ		{ $$ = TOKEN2EID(tEQ); }
-		| tEQQ		{ $$ = TOKEN2EID(tEQQ); }
-		| tMATCH	{ $$ = TOKEN2EID(tMATCH); }
-		| tNMATCH	{ $$ = TOKEN2EID(tNMATCH); }
-		| '>'		{ $$ = TOKEN2EID('>'); }
-		| tGEQ		{ $$ = TOKEN2EID(tGEQ); }
-		| '<'		{ $$ = TOKEN2EID('<'); }
-		| tLEQ		{ $$ = TOKEN2EID(tLEQ); }
-		| tNEQ		{ $$ = TOKEN2EID(tNEQ); }
-		| tLSHFT	{ $$ = TOKEN2EID(tLSHFT); }
-		| tRSHFT	{ $$ = TOKEN2EID(tRSHFT); }
-		| '+'		{ $$ = TOKEN2EID('+'); }
-		| '-'		{ $$ = TOKEN2EID('-'); }
-		| '*'		{ $$ = TOKEN2EID('*'); }
-		| tSTAR		{ $$ = TOKEN2EID('*'); }
-		| '/'		{ $$ = TOKEN2EID('/'); }
-		| '%'		{ $$ = TOKEN2EID('%'); }
-		| tPOW		{ $$ = TOKEN2EID(tPOW); }
-		| tDSTAR	{ $$ = TOKEN2EID(tDSTAR); }
-		| '!'		{ $$ = TOKEN2EID('!'); }
-		| '~'		{ $$ = TOKEN2EID('~'); }
-		| tUPLUS	{ $$ = TOKEN2EID(tUPLUS); }
-		| tUMINUS	{ $$ = TOKEN2EID(tUMINUS); }
-		| tAREF		{ $$ = TOKEN2EID(tAREF); }
-		| tASET		{ $$ = TOKEN2EID(tASET); }
-		| '`'		{ $$ = TOKEN2EID('`'); }
+op		: '|'		{ ifndef_ripper($$ = '|'); }
+		| '^'		{ ifndef_ripper($$ = '^'); }
+		| '&'		{ ifndef_ripper($$ = '&'); }
+		| tCMP		{ ifndef_ripper($$ = tCMP); }
+		| tEQ		{ ifndef_ripper($$ = tEQ); }
+		| tEQQ		{ ifndef_ripper($$ = tEQQ); }
+		| tMATCH	{ ifndef_ripper($$ = tMATCH); }
+		| tNMATCH	{ ifndef_ripper($$ = tNMATCH); }
+		| '>'		{ ifndef_ripper($$ = '>'); }
+		| tGEQ		{ ifndef_ripper($$ = tGEQ); }
+		| '<'		{ ifndef_ripper($$ = '<'); }
+		| tLEQ		{ ifndef_ripper($$ = tLEQ); }
+		| tNEQ		{ ifndef_ripper($$ = tNEQ); }
+		| tLSHFT	{ ifndef_ripper($$ = tLSHFT); }
+		| tRSHFT	{ ifndef_ripper($$ = tRSHFT); }
+		| '+'		{ ifndef_ripper($$ = '+'); }
+		| '-'		{ ifndef_ripper($$ = '-'); }
+		| '*'		{ ifndef_ripper($$ = '*'); }
+		| tSTAR		{ ifndef_ripper($$ = '*'); }
+		| '/'		{ ifndef_ripper($$ = '/'); }
+		| '%'		{ ifndef_ripper($$ = '%'); }
+		| tPOW		{ ifndef_ripper($$ = tPOW); }
+		| tDSTAR	{ ifndef_ripper($$ = tDSTAR); }
+		| '!'		{ ifndef_ripper($$ = '!'); }
+		| '~'		{ ifndef_ripper($$ = '~'); }
+		| tUPLUS	{ ifndef_ripper($$ = tUPLUS); }
+		| tUMINUS	{ ifndef_ripper($$ = tUMINUS); }
+		| tAREF		{ ifndef_ripper($$ = tAREF); }
+		| tASET		{ ifndef_ripper($$ = tASET); }
+		| '`'		{ ifndef_ripper($$ = '`'); }
 		;
 
 reswords	: keyword__LINE__ | keyword__FILE__ | keyword__ENCODING__
