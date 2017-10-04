@@ -194,7 +194,10 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   end
 
   def test_assign_error
-    # for test_coverage
+    thru_assign_error = false
+    result = parse('self = 1', :on_assign_error) {thru_assign_error = true}
+    assert_equal true, thru_assign_error
+    assert_equal '[assign(assign_error(var_field(self)),1)]', result
   end
 
   def test_assign_error_backref
@@ -208,29 +211,47 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     result =
       parse('$`, _ = 1', :on_assign_error) {thru_assign_error = true}
     assert_equal true, thru_assign_error
-    assert_equal '[massign([assign_error(var_field($`)),_],1)]', result
+    assert_equal '[massign([assign_error(var_field($`)),var_field(_)],1)]', result
   end
 
   def test_assign_error_const_qualified
     thru_assign_error = false
-    parse('self::X = 1', :on_assign_error) {thru_assign_error = true}
+    result =
+      parse('self::X = 1', :on_assign_error) {thru_assign_error = true}
     assert_equal false, thru_assign_error
-    parse("def m\n self::X = 1\nend", :on_assign_error) {thru_assign_error = true}
-    assert_equal true, thru_assign_error
+    assert_equal "[assign(const_path_field(ref(self),X),1)]", result
+
     thru_assign_error = false
-    parse("def m\n self::X, a = 1, 2\nend", :on_assign_error) {thru_assign_error = true}
+    result =
+      parse("def m\n self::X = 1\nend", :on_assign_error) {thru_assign_error = true}
     assert_equal true, thru_assign_error
+    assert_include result, "assign_error(const_path_field(ref(self),X))"
+
+    thru_assign_error = false
+    result =
+      parse("def m\n self::X, a = 1, 2\nend", :on_assign_error) {thru_assign_error = true}
+    assert_equal true, thru_assign_error
+    assert_include result, "assign_error(const_path_field(ref(self),X))"
   end
 
   def test_assign_error_const
     thru_assign_error = false
-    parse('X = 1', :on_assign_error) {thru_assign_error = true}
+    result = parse('X = 1', :on_assign_error) {thru_assign_error = true}
     assert_equal false, thru_assign_error
-    parse("def m\n X = 1\nend", :on_assign_error) {thru_assign_error = true}
-    assert_equal true, thru_assign_error
+    assert_equal "[assign(var_field(X),1)]", result
+
     thru_assign_error = false
-    parse("def m\n X, a = 1, 2\nend", :on_assign_error) {thru_assign_error = true}
+    result = parse('X, a = 1, 2', :on_assign_error) {thru_assign_error = true}
+    assert_equal false, thru_assign_error
+    assert_include result, "massign([var_field(X),var_field(a)],"
+
+    result = parse("def m\n X = 1\nend", :on_assign_error) {thru_assign_error = true}
     assert_equal true, thru_assign_error
+    assert_include result, "assign_error(var_field(X))"
+    thru_assign_error = false
+    result = parse("def m\n X, a = 1, 2\nend", :on_assign_error) {thru_assign_error = true}
+    assert_equal true, thru_assign_error
+    assert_include result, "assign_error(var_field(X))"
   end
 
   def test_assign_error_const_toplevel
@@ -475,46 +496,46 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     thru_mlhs_add_star = false
     tree = parse("a, *b = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_include(tree, "massign([a,*b]")
+    assert_include(tree, "massign([var_field(a),*var_field(b)]")
     thru_mlhs_add_star = false
     tree = parse("a, *b, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_include(tree, "massign([a,*b,c]", bug2232)
+    assert_include(tree, "massign([var_field(a),*var_field(b),var_field(c)]", bug2232)
     thru_mlhs_add_star = false
     tree = parse("a, *, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_include(tree, "massign([a,*,c]", bug4364)
+    assert_include(tree, "massign([var_field(a),*,var_field(c)]", bug4364)
     thru_mlhs_add_star = false
     tree = parse("*b, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_include(tree, "massign([*b,c]", bug4364)
+    assert_include(tree, "massign([*var_field(b),var_field(c)]", bug4364)
     thru_mlhs_add_star = false
     tree = parse("*, c = 1, 2", :on_mlhs_add_star) {thru_mlhs_add_star = true}
     assert_equal true, thru_mlhs_add_star
-    assert_include(tree, "massign([*,c],", bug4364)
+    assert_include(tree, "massign([*,var_field(c)],", bug4364)
   end
 
   def test_mlhs_add_post
     thru_mlhs_add_post = false
     tree = parse("a, *b = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
     assert_equal false, thru_mlhs_add_post
-    assert_include(tree, "massign([a,*b],")
+    assert_include(tree, "massign([var_field(a),*var_field(b)],")
     thru_massign_add_post = false
     tree = parse("a, *b, c = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
     assert_equal true, thru_mlhs_add_post
-    assert_include(tree, "massign([a,*b,c],")
+    assert_include(tree, "massign([var_field(a),*var_field(b),var_field(c)],")
     thru_mlhs_add_post = false
     tree = parse("a, *, c = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
     assert_equal true, thru_mlhs_add_post
-    assert_include(tree, "massign([a,*,c],")
+    assert_include(tree, "massign([var_field(a),*,var_field(c)],")
     thru_mlhs_add_post = false
     tree = parse("*b, c = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
     assert_equal true, thru_mlhs_add_post
-    assert_include(tree, "massign([*b,c],")
+    assert_include(tree, "massign([*var_field(b),var_field(c)],")
     thru_mlhs_add_post = false
     tree = parse("*, c = 1, 2", :on_mlhs_add_post) {thru_mlhs_add_post = true}
     assert_equal true, thru_mlhs_add_post
-    assert_include(tree, "massign([*,c],")
+    assert_include(tree, "massign([*,var_field(c)],")
   end
 
   def test_mlhs_new
