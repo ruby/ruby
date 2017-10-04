@@ -75,6 +75,18 @@ eot
     assert_equal("z", z[1])
   end
 
+  def test_def_fname
+    sexp = Ripper.sexp("def t; end")
+    _, (type, fname,) = search_sexp(:def, sexp)
+    assert_equal(:@ident, type)
+    assert_equal("t", fname)
+
+    sexp = Ripper.sexp("def <<; end")
+    _, (type, fname,) = search_sexp(:def, sexp)
+    assert_equal(:@op, type)
+    assert_equal("<<", fname)
+  end
+
   def search_sexp(sym, sexp)
     return sexp if !sexp or sexp[0] == sym
     sexp.find do |e|
