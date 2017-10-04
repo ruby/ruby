@@ -548,7 +548,8 @@ static VALUE new_xstring_gen(struct parser_params *, VALUE);
 static VALUE const_decl_gen(struct parser_params *parser, VALUE path);
 #define const_decl(path) const_decl_gen(parser, path)
 
-#define var_field(n) dispatch1(var_field, (n))
+static VALUE var_field_gen(struct parser_params *parser, VALUE a);
+#define var_field(a) var_field_gen(parser, (a))
 static VALUE assign_error_gen(struct parser_params *parser, VALUE a);
 #define assign_error(a) assign_error_gen(parser, (a))
 #define backref_assign_error(n, a) assign_error(a)
@@ -1711,11 +1712,11 @@ mlhs_post	: mlhs_item
 
 mlhs_node	: user_variable
 		    {
-			$$ = assignable($1, 0);
+			$$ = assignable(var_field($1), 0);
 		    }
 		| keyword_variable
 		    {
-			$$ = assignable($1, 0);
+			$$ = assignable(var_field($1), 0);
 		    }
 		| primary_value '[' opt_call_args rbracket
 		    {
@@ -1766,20 +1767,18 @@ mlhs_node	: user_variable
 
 lhs		: user_variable
 		    {
-			$$ = assignable($1, 0);
+			$$ = assignable(var_field($1), 0);
 		    /*%%%*/
 			if (!$$) $$ = NEW_BEGIN(0);
 		    /*%
-			$$ = dispatch1(var_field, $$);
 		    %*/
 		    }
 		| keyword_variable
 		    {
-			$$ = assignable($1, 0);
+			$$ = assignable(var_field($1), 0);
 		    /*%%%*/
 			if (!$$) $$ = NEW_BEGIN(0);
 		    /*%
-			$$ = dispatch1(var_field, $$);
 		    %*/
 		    }
 		| primary_value '[' opt_call_args rbracket
@@ -4142,19 +4141,11 @@ var_ref		: user_variable
 
 var_lhs		: user_variable
 		    {
-			$$ = assignable($1, 0);
-		    /*%%%*/
-		    /*%
-			$$ = dispatch1(var_field, $$);
-		    %*/
+			$$ = assignable(var_field($1), 0);
 		    }
 		| keyword_variable
 		    {
-			$$ = assignable($1, 0);
-		    /*%%%*/
-		    /*%
-			$$ = dispatch1(var_field, $$);
-		    %*/
+			$$ = assignable(var_field($1), 0);
 		    }
 		;
 
@@ -9258,8 +9249,8 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val)
 {
 #ifdef RIPPER
     ID id = get_id(lhs);
-# define assignable_result(x) get_value(lhs)
-# define parser_yyerror(parser, x) assign_error_gen(parser, lhs)
+# define assignable_result(x) (lhs)
+# define parser_yyerror(parser, x) (lhs = assign_error_gen(parser, lhs))
 #else
 # define assignable_result(x) (x)
 #endif
@@ -10296,7 +10287,8 @@ static VALUE
 const_decl_gen(struct parser_params *parser, VALUE path)
 {
     if (in_def || in_single) {
-	assign_error(path);
+	path = dispatch1(assign_error, path);
+	ripper_error();
     }
     return path;
 }
@@ -10307,6 +10299,12 @@ assign_error_gen(struct parser_params *parser, VALUE a)
     a = dispatch1(assign_error, a);
     ripper_error();
     return a;
+}
+
+static VALUE
+var_field_gen(struct parser_params *parser, VALUE a)
+{
+    return ripper_new_yylval(get_id(a), dispatch1(var_field, a), 0);
 }
 #endif
 
