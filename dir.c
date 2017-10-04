@@ -13,6 +13,7 @@
 
 #include "internal.h"
 #include "encindex.h"
+#include "ruby/thread.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -722,6 +723,8 @@ fundamental_encoding_p(rb_encoding *enc)
 #else
 # define READDIR(dir, enc) readdir((dir))
 #endif
+
+/* safe to use without GVL */
 static int
 to_be_skipped(const struct dirent *dp)
 {
@@ -2982,6 +2985,46 @@ rb_dir_exists_p(VALUE obj, VALUE fname)
     return rb_file_directory_p(obj, fname);
 }
 
+static void *
+gc_for_fd_with_gvl(void *ptr)
+{
+    int *e = ptr;
+
+    return (void *)(rb_gc_for_fd(*e) ? Qtrue : Qfalse);
+}
+
+static void *
+nogvl_dir_empty_p(void *ptr)
+{
+    const char *path = ptr;
+    DIR *dir = opendir(path);
+    struct dirent *dp;
+    VALUE result = Qtrue;
+
+    if (!dir) {
+	int e = errno;
+	switch ((int)(VALUE)rb_thread_call_with_gvl(gc_for_fd_with_gvl, &e)) {
+	  default:
+	    dir = opendir(path);
+	    if (dir) break;
+	    e = errno;
+	    /* fall through */
+	  case 0:
+	    if (e == ENOTDIR) return (void *)Qfalse;
+	    errno = e; /* for rb_sys_fail_path */
+	    return (void *)Qundef;
+	}
+    }
+    while ((dp = READDIR(dir, NULL)) != NULL) {
+	if (!to_be_skipped(dp)) {
+	    result = Qfalse;
+	    break;
+	}
+    }
+    closedir(dir);
+    return (void *)result;
+}
+
 /*
  * call-seq:
  *   Dir.empty?(path_name)  ->  true or false
@@ -2992,9 +3035,7 @@ rb_dir_exists_p(VALUE obj, VALUE fname)
 static VALUE
 rb_dir_s_empty_p(VALUE obj, VALUE dirname)
 {
-    DIR *dir;
-    struct dirent *dp;
-    VALUE result = Qtrue, orig;
+    VALUE result, orig;
     const char *path;
     enum {false_on_notdir = 1};
 
@@ -3023,28 +3064,11 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
     }
 #endif
 
-    dir = opendir(path);
-    if (!dir) {
-	int e = errno;
-	switch (rb_gc_for_fd(e)) {
-	  default:
-	    dir = opendir(path);
-	    if (dir) break;
-	    e = errno;
-	    /* fall through */
-	  case 0:
-	    if (false_on_notdir && e == ENOTDIR) return Qfalse;
-	    rb_syserr_fail_path(e, orig);
-	}
+    result = (VALUE)rb_thread_call_without_gvl(nogvl_dir_empty_p, (void *)path,
+					    RUBY_UBF_IO, 0);
+    if (result == Qundef) {
+	rb_sys_fail_path(orig);
     }
-    errno = 0;
-    while ((dp = READDIR(dir, NULL)) != NULL) {
-	if (!to_be_skipped(dp)) {
-	    result = Qfalse;
-	    break;
-	}
-    }
-    closedir(dir);
     return result;
 }
 
