@@ -7952,6 +7952,11 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
  *  mode and permission bits are platform dependent; on Unix systems, see
  *  open(2) and chmod(2) man pages for details.
  *
+ *  The new File object is buffered mode (or non-sync mode), unless
+ *  +filename+ is a tty.
+ *  See IO#flush, IO#fsync, IO#fdatasync, and <code>IO#sync=</code>
+ *  about sync mode.
+ *
  *  === Examples
  *
  *    f = File.new("testfile", "r")
