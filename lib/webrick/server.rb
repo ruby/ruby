@@ -255,7 +255,6 @@ module WEBrick
       sock = nil
       begin
         sock = svr.accept
-        sock.sync = true
         Utils::set_non_blocking(sock)
       rescue Errno::ECONNRESET, Errno::ECONNABORTED,
              Errno::EPROTO, Errno::EINVAL
