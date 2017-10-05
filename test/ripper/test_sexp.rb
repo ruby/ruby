@@ -87,6 +87,15 @@ eot
     assert_equal("<<", fname)
   end
 
+  def test_defs_fname
+    sexp = Ripper.sexp("def self.t; end")
+    _, recv, _, (type, fname) = search_sexp(:defs, sexp)
+    assert_equal(:var_ref, recv[0], recv)
+    assert_equal([:@kw, "self", [1, 4]], recv[1], recv)
+    assert_equal(:@ident, type)
+    assert_equal("t", fname)
+  end
+
   def search_sexp(sym, sexp)
     return sexp if !sexp or sexp[0] == sym
     sexp.find do |e|
