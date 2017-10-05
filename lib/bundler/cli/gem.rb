@@ -82,7 +82,7 @@ module Bundler
         config[:test] = test_framework
         config[:test_framework_version] = TEST_FRAMEWORK_VERSIONS[test_framework]
 
-        templates.merge!(".travis.yml.tt" => ".travis.yml")
+        templates.merge!("travis.yml.tt" => ".travis.yml")
 
         case test_framework
         when "rspec"
