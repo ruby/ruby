@@ -15,8 +15,16 @@ Gem::Specification.new do |s|
 
   s.authors = ["TAKAHASHI Masayoshi", "GOTOU YUUZOU"]
   s.email = [nil, nil]
-  s.homepage = "https://github.com/ruby/webrick"
+  s.homepage = "https://www.ruby-lang.org"
   s.license = "BSD-2-Clause"
+
+  if s.respond_to?(:metadata=)
+    s.metadata = {
+      "bug_tracker_uri" => "https://bugs.ruby-lang.org/projects/ruby-trunk/issues"
+      "homepage_uri" => "https://www.ruby-lang.org",
+      "source_code_uri" => "https://svn.ruby-lang.org/repos/ruby"
+    }
+  end
 
   s.add_development_dependency "rake"
 end
