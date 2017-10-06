@@ -20,7 +20,7 @@ class Gem::Ext::RakeBuilder < Gem::Ext::Builder
     rake = ENV['rake']
 
     rake ||= begin
-               "#{Gem.ruby} -rubygems #{Gem.bin_path('rake', 'rake')}"
+               "#{Gem.ruby} -rrubygems #{Gem.bin_path('rake', 'rake')}"
              rescue Gem::Exception
              end
 
