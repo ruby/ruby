@@ -51,7 +51,7 @@ Init_op_tbl(void)
     }
 }
 
-enum {ID_ENTRY_UNIT = 512};
+static const int ID_ENTRY_UNIT = 512;
 
 enum id_entry_type {
     ID_ENTRY_STR,
