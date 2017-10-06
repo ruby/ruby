@@ -1470,7 +1470,8 @@ check_match(VALUE pattern, VALUE target, enum vm_check_match_type type)
 	}
 	/* fall through */
       case VM_CHECKMATCH_TYPE_CASE: {
-	const rb_callable_method_entry_t *me = rb_callable_method_entry_with_refinements(CLASS_OF(pattern), idEqq);
+	const rb_callable_method_entry_t *me =
+	    rb_callable_method_entry_with_refinements(CLASS_OF(pattern), idEqq, NULL);
 	if (me) {
 	    return vm_call0(GET_THREAD(), pattern, idEqq, 1, &target, me);
 	}
@@ -2042,7 +2043,7 @@ vm_call_opt_send(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb_calling
 	DEC_SP(1);
     }
 
-    cc->me = rb_callable_method_entry_with_refinements(CLASS_OF(calling->recv), ci->mid);
+    cc->me = rb_callable_method_entry_with_refinements(CLASS_OF(calling->recv), ci->mid, NULL);
     ci->flag = VM_CALL_FCALL | VM_CALL_OPT_SEND;
     return vm_call_method(th, reg_cfp, calling, ci, cc);
 }
@@ -2085,7 +2086,7 @@ vm_call_method_missing(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb_c
     cc_entry = *orig_cc;
     cc_entry.me =
 	rb_callable_method_entry_without_refinements(CLASS_OF(calling->recv),
-						     idMethodMissing);
+						     idMethodMissing, NULL);
     cc = &cc_entry;
 
     calling->argc = argc;

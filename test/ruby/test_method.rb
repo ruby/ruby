@@ -876,6 +876,16 @@ class TestMethod < Test::Unit::TestCase
     m = m.super_method
     assert_equal(c1, m.owner, Feature9781)
     assert_same(o, m.receiver, Feature9781)
+
+    c1 = Class.new {def foo; end}
+    c2 = Class.new(c1) {include m1; include m2}
+    m = c2.instance_method(:foo)
+    assert_equal(m2, m.owner)
+    m = m.super_method
+    assert_equal(m1, m.owner)
+    m = m.super_method
+    assert_equal(c1, m.owner)
+    assert_nil(m.super_method)
   end
 
   def test_super_method_removed
