@@ -1943,7 +1943,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	    else {
 		rb_raise(rb_eTypeError,
 			 "bind argument must be a subclass of % "PRIsVALUE,
-			 rb_class_name(method->me->owner));
+			 method->me->owner);
 	    }
 	}
 	rb_method_entry_set(mod, id, method->me, scope_visi->method_visi);
@@ -2245,7 +2245,7 @@ umethod_bind(VALUE method, VALUE recv)
 	}
 	else {
 	    rb_raise(rb_eTypeError, "bind argument must be an instance of % "PRIsVALUE,
-		     rb_class_name(methclass));
+		     methclass);
 	}
     }
 
@@ -2568,17 +2568,13 @@ method_inspect(VALUE method)
 {
     struct METHOD *data;
     VALUE str;
-    const char *s;
     const char *sharp = "#";
     VALUE mklass;
     VALUE defined_class;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    str = rb_str_buf_new2("#<");
+    str = rb_sprintf("#<% "PRIsVALUE": ", rb_obj_class(method));
     OBJ_INFECT_RAW(str, method);
-    s = rb_obj_classname(method);
-    rb_str_buf_cat2(str, s);
-    rb_str_buf_cat2(str, ": ");
 
     mklass = data->klass;
 
@@ -2612,11 +2608,9 @@ method_inspect(VALUE method)
 	}
     }
     else {
-	rb_str_buf_append(str, rb_class_name(mklass));
+	rb_str_buf_append(str, rb_inspect(mklass));
 	if (defined_class != mklass) {
-	    rb_str_buf_cat2(str, "(");
-	    rb_str_buf_append(str, rb_class_name(defined_class));
-	    rb_str_buf_cat2(str, ")");
+	    rb_str_catf(str, "(% "PRIsVALUE")", defined_class);
 	}
     }
     rb_str_buf_cat2(str, sharp);
