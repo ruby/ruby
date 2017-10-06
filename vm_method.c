@@ -863,31 +863,31 @@ method_entry_resolve_refinement(VALUE klass, ID id, int with_refinement, VALUE *
 }
 
 const rb_method_entry_t *
-rb_method_entry_with_refinements(VALUE klass, ID id)
+rb_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
-    return method_entry_resolve_refinement(klass, id, TRUE, NULL);
+    return method_entry_resolve_refinement(klass, id, TRUE, defined_class_ptr);
 }
 
 const rb_callable_method_entry_t *
-rb_callable_method_entry_with_refinements(VALUE klass, ID id)
+rb_callable_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
-    VALUE defined_class;
-    const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, TRUE, &defined_class);
-    return prepare_callable_method_entry(defined_class, id, me);
+    VALUE defined_class, *dcp = defined_class_ptr ? defined_class_ptr : &defined_class;
+    const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, TRUE, dcp);
+    return prepare_callable_method_entry(*dcp, id, me);
 }
 
 const rb_method_entry_t *
-rb_method_entry_without_refinements(VALUE klass, ID id)
+rb_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
-    return method_entry_resolve_refinement(klass, id, FALSE, NULL);
+    return method_entry_resolve_refinement(klass, id, FALSE, defined_class_ptr);
 }
 
 const rb_callable_method_entry_t *
-rb_callable_method_entry_without_refinements(VALUE klass, ID id)
+rb_callable_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
-    VALUE defined_class;
-    const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, FALSE, &defined_class);
-    return prepare_callable_method_entry(defined_class, id, me);
+    VALUE defined_class, *dcp = defined_class_ptr ? defined_class_ptr : &defined_class;
+    const rb_method_entry_t *me = method_entry_resolve_refinement(klass, id, FALSE, dcp);
+    return prepare_callable_method_entry(*dcp, id, me);
 }
 
 static const rb_method_entry_t *
@@ -1067,7 +1067,7 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
 int
 rb_method_boundp(VALUE klass, ID id, int ex)
 {
-    const rb_method_entry_t *me = rb_method_entry_without_refinements(klass, id);
+    const rb_method_entry_t *me = rb_method_entry_without_refinements(klass, id, NULL);
 
     if (me != 0) {
 	if ((ex & ~BOUND_RESPONDS) &&
@@ -1307,7 +1307,7 @@ check_definition(VALUE mod, VALUE mid, rb_method_visibility_t visi)
     const rb_method_entry_t *me;
     ID id = rb_check_id(&mid);
     if (!id) return Qfalse;
-    me = rb_method_entry_without_refinements(mod, id);
+    me = rb_method_entry_without_refinements(mod, id, NULL);
     if (me) {
 	if (METHOD_ENTRY_VISI(me) == visi) return Qtrue;
     }

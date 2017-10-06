@@ -29,6 +29,7 @@ const rb_cref_t *rb_vm_cref_in_context(VALUE self, VALUE cbase);
 struct METHOD {
     const VALUE recv;
     const VALUE klass;
+    const VALUE iclass;
     const rb_method_entry_t * const me;
     /* for bound methods, `me' should be rb_callable_method_entry_t * */
 };
@@ -1313,6 +1314,7 @@ bm_mark(void *ptr)
     struct METHOD *data = ptr;
     rb_gc_mark(data->recv);
     rb_gc_mark(data->klass);
+    rb_gc_mark(data->iclass);
     rb_gc_mark((VALUE)data->me);
 }
 
@@ -1380,7 +1382,7 @@ mnew_missing(VALUE klass, VALUE obj, ID id, VALUE mclass)
 }
 
 static VALUE
-mnew_internal(const rb_method_entry_t *me, VALUE klass,
+mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
 	      VALUE obj, ID id, VALUE mclass, int scope, int error)
 {
     struct METHOD *data;
@@ -1406,24 +1408,21 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass,
 	if (me->defined_class) {
 	    VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->defined_class));
 	    id = me->def->original_id;
-	    me = (rb_method_entry_t *)rb_callable_method_entry_without_refinements(klass, id);
+	    me = (rb_method_entry_t *)rb_callable_method_entry_without_refinements(klass, id, &iclass);
 	}
 	else {
 	    VALUE klass = RCLASS_SUPER(me->owner);
 	    id = me->def->original_id;
-	    me = rb_method_entry_without_refinements(klass, id);
+	    me = rb_method_entry_without_refinements(klass, id, &iclass);
 	}
 	goto again;
-    }
-
-    while (klass != me->owner && (FL_TEST(klass, FL_SINGLETON) || RB_TYPE_P(klass, T_ICLASS))) {
-	klass = RCLASS_SUPER(klass);
     }
 
     method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
 
     RB_OBJ_WRITE(method, &data->recv, obj);
     RB_OBJ_WRITE(method, &data->klass, klass);
+    RB_OBJ_WRITE(method, &data->iclass, iclass);
     RB_OBJ_WRITE(method, &data->me, me);
 
     OBJ_INFECT(method, klass);
@@ -1431,24 +1430,25 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass,
 }
 
 static VALUE
-mnew_from_me(const rb_method_entry_t *me, VALUE klass,
+mnew_from_me(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
 	     VALUE obj, ID id, VALUE mclass, int scope)
 {
-    return mnew_internal(me, klass, obj, id, mclass, scope, TRUE);
+    return mnew_internal(me, klass, iclass, obj, id, mclass, scope, TRUE);
 }
 
 static VALUE
 mnew(VALUE klass, VALUE obj, ID id, VALUE mclass, int scope)
 {
     const rb_method_entry_t *me;
+    VALUE iclass = Qnil;
 
     if (obj == Qundef) { /* UnboundMethod */
-	me = rb_method_entry_without_refinements(klass, id);
+	me = rb_method_entry_without_refinements(klass, id, &iclass);
     }
     else {
-	me = (rb_method_entry_t *)rb_callable_method_entry_without_refinements(klass, id);
+	me = (rb_method_entry_t *)rb_callable_method_entry_without_refinements(klass, id, &iclass);
     }
-    return mnew_from_me(me, klass, obj, id, mclass, scope);
+    return mnew_from_me(me, klass, iclass, obj, id, mclass, scope);
 }
 
 static inline VALUE
@@ -1778,7 +1778,7 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
 	vid = ID2SYM(id);
 	goto undef;
     }
-    return mnew_from_me(me, klass, obj, id, rb_cMethod, FALSE);
+    return mnew_from_me(me, klass, klass, obj, id, rb_cMethod, FALSE);
 }
 
 /*
@@ -2694,15 +2694,18 @@ static VALUE
 method_super_method(VALUE method)
 {
     const struct METHOD *data;
-    VALUE super_class;
+    VALUE super_class, iclass;
+    ID mid;
     const rb_method_entry_t *me;
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
-    super_class = RCLASS_SUPER(RCLASS_ORIGIN(method_entry_defined_class(data->me)));
+    iclass = data->iclass;
+    super_class = RCLASS_SUPER(RCLASS_ORIGIN(iclass));
+    mid = data->me->called_id;
     if (!super_class) return Qnil;
-    me = (rb_method_entry_t *)rb_callable_method_entry_without_refinements(super_class, data->me->called_id);
+    me = (rb_method_entry_t *)rb_callable_method_entry_without_refinements(super_class, mid, &iclass);
     if (!me) return Qnil;
-    return mnew_internal(me, super_class, data->recv, data->me->called_id, rb_obj_class(method), FALSE, FALSE);
+    return mnew_internal(me, me->owner, iclass, data->recv, mid, rb_obj_class(method), FALSE, FALSE);
 }
 
 /*
