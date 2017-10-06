@@ -1196,5 +1196,13 @@ if defined? Zlib
       src = %w[1f8b080000000000000].pack("H*")
       assert_raise(Zlib::GzipFile::Error){ Zlib.gunzip(src) }
     end
+
+    def test_gunzip_no_memory_leak
+      assert_no_memory_leak(%[-rzlib], "#{<<~"{#"}", "#{<<~'};'}")
+      d = Zlib.gzip("data")
+      {#
+        10_000.times {Zlib.gunzip(d)}
+      };
+    end
   end
 end

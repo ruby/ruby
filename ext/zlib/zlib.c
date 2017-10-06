@@ -4287,7 +4287,7 @@ zlib_s_gzip(int argc, VALUE *argv, VALUE klass)
     struct gzfile *gz = &gz0;
     long len;
     int err;
-    VALUE src, opts, level=Qnil, strategy=Qnil;
+    VALUE src, opts, level=Qnil, strategy=Qnil, guard, ret;
 
     if (OPTHASH_GIVEN_P(opts)) {
 	ID keyword_ids[2];
@@ -4311,6 +4311,7 @@ zlib_s_gzip(int argc, VALUE *argv, VALUE klass)
     if (err != Z_OK) {
 	raise_zlib_error(err, gz->z.stream.msg);
     }
+    guard = TypedData_Wrap_Struct(0, &gzfile_data_type, gz);
     ZSTREAM_READY(&gz->z);
     gzfile_make_header(gz);
     len = RSTRING_LEN(src);
@@ -4320,7 +4321,10 @@ zlib_s_gzip(int argc, VALUE *argv, VALUE klass)
 	zstream_run(&gz->z, ptr, len, Z_NO_FLUSH);
     }
     gzfile_close(gz, 0);
-    return zstream_detach_buffer(&gz->z);
+    ret = zstream_detach_buffer(&gz->z);
+    zstream_end(&gz->z);
+    DATA_PTR(guard) = 0;
+    return ret;
 }
 
 static void
@@ -4329,6 +4333,14 @@ zlib_gunzip_end(struct gzfile *gz)
     gz->z.flags |= ZSTREAM_FLAG_CLOSING;
     gzfile_check_footer(gz);
     zstream_end(&gz->z);
+}
+
+static void
+zlib_gunzip_guard_end(VALUE guard)
+{
+    struct gzfile *gz = DATA_PTR(guard);
+    DATA_PTR(guard) = 0;
+    gz->end(gz);
 }
 
 /*
@@ -4356,6 +4368,7 @@ zlib_gunzip(VALUE klass, VALUE src)
     struct gzfile *gz = &gz0;
     int err;
     VALUE dst;
+    VALUE guard;
 
     StringValue(src);
 
@@ -4364,6 +4377,7 @@ zlib_gunzip(VALUE klass, VALUE src)
     if (err != Z_OK) {
 	raise_zlib_error(err, gz->z.stream.msg);
     }
+    guard = TypedData_Wrap_Struct(0, &gzfile_data_type, gz);
     gz->io = Qundef;
     gz->z.input = src;
     ZSTREAM_READY(&gz->z);
@@ -4371,11 +4385,14 @@ zlib_gunzip(VALUE klass, VALUE src)
     dst = zstream_detach_buffer(&gz->z);
     gzfile_calc_crc(gz, dst);
     if (!ZSTREAM_IS_FINISHED(&gz->z)) {
+	zlib_gunzip_guard_end(guard);
 	rb_raise(cGzError, "unexpected end of file");
     }
-    if (NIL_P(gz->z.input))
+    if (NIL_P(gz->z.input)) {
+	zlib_gunzip_guard_end(guard);
 	rb_raise(cNoFooter, "footer is not found");
-    gzfile_check_footer(gz);
+    }
+    zlib_gunzip_guard_end(guard);
     return dst;
 }
 
