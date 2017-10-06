@@ -398,12 +398,7 @@ define rp_id
       end
     end
     printf "(%ld): ", $id
-    set $str = lookup_id_str($id)
-    if $str
-      rp_string $str
-    else
-      echo undef\n
-    end
+    print_id $id
   end
   end
   end
@@ -1093,7 +1088,11 @@ define print_id
           set $arylen = $ary->as.heap.len
         end
         set $result = $aryptr[($serial % ID_ENTRY_UNIT) * ID_ENTRY_SIZE + $t]
-        print_string $result
+	if $result != RUBY_Qnil
+          print_string $result
+	else
+	  echo undef\n
+	end
       end
     end
   end
