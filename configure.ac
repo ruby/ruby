@@ -4523,8 +4523,18 @@ AC_ARG_WITH(mantype,
 			[AC_MSG_ERROR(invalid man type: $withval)])
 		])
 AS_IF([test -z "$MANTYPE"], [
-	AC_PATH_PROGS(NROFF, nroff awf, /bin/false, "/usr/bin:/usr/ucb")
-	AS_IF([${NROFF} -mdoc ${srcdir}/man/ruby.1 >/dev/null 2>&1], [
+	dnl Looks for nroff with -mdoc support.
+	AC_CACHE_VAL([ac_cv_path_NROFF], [
+		AC_PATH_PROGS_FEATURE_CHECK([NROFF],
+			[nroff awf mandoc],
+			[$ac_path_NROFF -mdoc ${srcdir}/man/ruby.1 \
+				>/dev/null 2>&1 &&
+				ac_cv_path_NROFF=$ac_path_NROFF \
+				ac_path_NROFF_found=:],
+			[], ["/usr/bin:/usr/ucb"]
+		)
+	])
+	AS_IF([test -n "$ac_cv_path_NROFF"], [
 		MANTYPE=doc
 	], [
 		MANTYPE=man
