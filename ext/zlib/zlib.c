@@ -4245,6 +4245,14 @@ rb_gzreader_external_encoding(VALUE self)
     return rb_enc_from_encoding(get_gzfile(self)->enc);
 }
 
+static VALUE
+zlib_gzip_ensure(VALUE arg)
+{
+    struct gzfile *gz = (struct gzfile *)arg;
+    rb_rescue((VALUE(*)())gz->end, arg, NULL, Qnil);
+    return Qnil;
+}
+
 static void
 zlib_gzip_end(struct gzfile *gz)
 {
@@ -4257,6 +4265,7 @@ zlib_gzip_end(struct gzfile *gz)
 #define OPTHASH_GIVEN_P(opts) \
     (argc > 0 && !NIL_P((opts) = rb_check_hash_type(argv[argc-1])) && (--argc, 1))
 static ID id_level, id_strategy;
+static VALUE zlib_gzip_run(VALUE arg);
 
 /*
  * call-seq:
@@ -4285,9 +4294,8 @@ zlib_s_gzip(int argc, VALUE *argv, VALUE klass)
 {
     struct gzfile gz0;
     struct gzfile *gz = &gz0;
-    long len;
     int err;
-    VALUE src, opts, level=Qnil, strategy=Qnil, guard, ret;
+    VALUE src, opts, level=Qnil, strategy=Qnil, args[2];
 
     if (OPTHASH_GIVEN_P(opts)) {
 	ID keyword_ids[2];
@@ -4309,10 +4317,23 @@ zlib_s_gzip(int argc, VALUE *argv, VALUE klass)
     err = deflateInit2(&gz->z.stream, gz->level, Z_DEFLATED,
 		       -MAX_WBITS, DEF_MEM_LEVEL, ARG_STRATEGY(strategy));
     if (err != Z_OK) {
+	zlib_gzip_end(gz);
 	raise_zlib_error(err, gz->z.stream.msg);
     }
-    guard = TypedData_Wrap_Struct(0, &gzfile_data_type, gz);
     ZSTREAM_READY(&gz->z);
+    args[0] = (VALUE)gz;
+    args[1] = src;
+    return rb_ensure(zlib_gzip_run, (VALUE)args, zlib_gzip_ensure, (VALUE)gz);
+}
+
+static VALUE
+zlib_gzip_run(VALUE arg)
+{
+    VALUE *args = (VALUE *)arg;
+    struct gzfile *gz = (struct gzfile *)args[0];
+    VALUE src = args[1];
+    long len;
+
     gzfile_make_header(gz);
     len = RSTRING_LEN(src);
     if (len > 0) {
@@ -4321,27 +4342,17 @@ zlib_s_gzip(int argc, VALUE *argv, VALUE klass)
 	zstream_run(&gz->z, ptr, len, Z_NO_FLUSH);
     }
     gzfile_close(gz, 0);
-    ret = zstream_detach_buffer(&gz->z);
-    zstream_end(&gz->z);
-    DATA_PTR(guard) = 0;
-    return ret;
+    return zstream_detach_buffer(&gz->z);
 }
 
 static void
 zlib_gunzip_end(struct gzfile *gz)
 {
     gz->z.flags |= ZSTREAM_FLAG_CLOSING;
-    gzfile_check_footer(gz);
     zstream_end(&gz->z);
 }
 
-static void
-zlib_gunzip_guard_end(VALUE guard)
-{
-    struct gzfile *gz = DATA_PTR(guard);
-    DATA_PTR(guard) = 0;
-    gz->end(gz);
-}
+static VALUE zlib_gunzip_run(VALUE arg);
 
 /*
  * call-seq:
@@ -4367,8 +4378,6 @@ zlib_gunzip(VALUE klass, VALUE src)
     struct gzfile gz0;
     struct gzfile *gz = &gz0;
     int err;
-    VALUE dst;
-    VALUE guard;
 
     StringValue(src);
 
@@ -4377,22 +4386,28 @@ zlib_gunzip(VALUE klass, VALUE src)
     if (err != Z_OK) {
 	raise_zlib_error(err, gz->z.stream.msg);
     }
-    guard = TypedData_Wrap_Struct(0, &gzfile_data_type, gz);
     gz->io = Qundef;
     gz->z.input = src;
     ZSTREAM_READY(&gz->z);
+    return rb_ensure(zlib_gunzip_run, (VALUE)gz, zlib_gzip_ensure, (VALUE)gz);
+}
+
+static VALUE
+zlib_gunzip_run(VALUE arg)
+{
+    struct gzfile *gz = (struct gzfile *)arg;
+    VALUE dst;
+
     gzfile_read_header(gz);
     dst = zstream_detach_buffer(&gz->z);
     gzfile_calc_crc(gz, dst);
     if (!ZSTREAM_IS_FINISHED(&gz->z)) {
-	zlib_gunzip_guard_end(guard);
 	rb_raise(cGzError, "unexpected end of file");
     }
     if (NIL_P(gz->z.input)) {
-	zlib_gunzip_guard_end(guard);
 	rb_raise(cNoFooter, "footer is not found");
     }
-    zlib_gunzip_guard_end(guard);
+    gzfile_check_footer(gz);
     return dst;
 }
 
