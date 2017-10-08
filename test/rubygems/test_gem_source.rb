@@ -228,6 +228,15 @@ class TestGemSource < Gem::TestCase
     assert_equal(-1, remote.   <=>(no_uri),    'remote <=> no_uri')
   end
 
+  def test_spaceship_order_is_preserved_when_uri_differs
+    sourceA = Gem::Source.new "http://example.com/a"
+    sourceB = Gem::Source.new "http://example.com/b"
+
+    assert_equal( 0, sourceA. <=>(sourceA), 'sourceA <=> sourceA')
+    assert_equal( 1, sourceA. <=>(sourceB), 'sourceA <=> sourceB')
+    assert_equal( 1, sourceB. <=>(sourceA), 'sourceB <=> sourceA')
+  end
+
   def test_update_cache_eh
     assert @source.update_cache?
   end

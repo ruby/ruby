@@ -41,6 +41,11 @@ class TestGemVersion < Gem::TestCase
     assert_equal v('1.1'), Gem::Version.create(ver)
   end
 
+  def test_class_correct
+    assert_equal true,  Gem::Version.correct?("5.1")
+    assert_equal false, Gem::Version.correct?("an incorrect version")
+  end
+
   def test_class_new_subclass
     v1 = Gem::Version.new '1'
     v2 = V.new '1'
@@ -65,7 +70,8 @@ class TestGemVersion < Gem::TestCase
   def test_hash
     assert_equal v("1.2").hash, v("1.2").hash
     refute_equal v("1.2").hash, v("1.3").hash
-    refute_equal v("1.2").hash, v("1.2.0").hash
+    assert_equal v("1.2").hash, v("1.2.0").hash
+    assert_equal v("1.2.pre.1").hash, v("1.2.0.pre.1.0").hash
   end
 
   def test_initialize
@@ -76,18 +82,23 @@ class TestGemVersion < Gem::TestCase
     assert_version_equal "1", 1
   end
 
-  def test_initialize_bad
-    %W[
+  def test_initialize_invalid
+    invalid_versions = %W[
       junk
       1.0\n2.0
       1..2
       1.2\ 3.4
-    ].each do |bad|
-      e = assert_raises ArgumentError, bad do
-        Gem::Version.new bad
+    ]
+
+    # DON'T TOUCH THIS WITHOUT CHECKING CVE-2013-4287
+    invalid_versions << "2.3422222.222.222222222.22222.ads0as.dasd0.ddd2222.2.qd3e."
+
+    invalid_versions.each do |invalid|
+      e = assert_raises ArgumentError, invalid do
+        Gem::Version.new invalid
       end
 
-      assert_equal "Malformed version number string #{bad}", e.message, bad
+      assert_equal "Malformed version number string #{invalid}", e.message, invalid
     end
   end
 
@@ -104,6 +115,9 @@ class TestGemVersion < Gem::TestCase
     assert_prerelease "1.2.d.42"
 
     assert_prerelease '1.A'
+
+    assert_prerelease '1-1'
+    assert_prerelease '1-a'
 
     refute_prerelease "1.2.0"
     refute_prerelease "2.9"
@@ -160,6 +174,12 @@ class TestGemVersion < Gem::TestCase
     assert_equal         [9,8,7], v("9.8.7").segments
   end
 
+  def test_canonical_segments
+    assert_equal [1], v("1.0.0").canonical_segments
+    assert_equal [1, "a", 1], v("1.0.0.a.1.0").canonical_segments
+    assert_equal [1, 2, 3, "pre", 1], v("1.2.3-1").canonical_segments
+  end
+
   # Asserts that +version+ is a prerelease.
 
   def assert_prerelease version
@@ -189,6 +209,7 @@ class TestGemVersion < Gem::TestCase
 
   def assert_version_equal expected, actual
     assert_equal v(expected), v(actual)
+    assert_equal v(expected).hash, v(actual).hash, "since #{actual} == #{expected}, they must have the same hash"
   end
 
   # Assert that two versions are eql?. Checks both directions.

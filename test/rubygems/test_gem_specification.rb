@@ -1586,7 +1586,7 @@ dependencies: []
       refute @ext.contains_requirable_file? 'nonexistent'
     end
 
-    expected = "Ignoring ext-1 because its extensions are not built.  " +
+    expected = "Ignoring ext-1 because its extensions are not built. " +
                "Try: gem pristine ext --version 1\n"
 
     assert_equal expected, err
@@ -2748,14 +2748,6 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     util_setup_validate
 
     Dir.chdir @tempdir do
-      @a1.email = ""
-
-      use_ui @ui do
-        @a1.validate
-      end
-
-      assert_match "#{w}:  no email specified\n", @ui.error, "error"
-
       @a1.email = "FIxxxXME (your e-mail)".sub(/xxx/, "")
 
       e = assert_raises Gem::InvalidSpecificationException do
@@ -2975,6 +2967,43 @@ WARNING:  license value 'ruby' is invalid.  Use a license identifier from
 http://spdx.org/licenses or 'Nonstandard' for a nonstandard license.
 Did you mean 'Ruby'?
     warning
+  end
+
+  def test_validate_empty_files
+    util_setup_validate
+
+    use_ui @ui do
+      # we have to set all of these for #files to be empty
+      @a1.files = []
+      @a1.test_files = []
+      @a1.executables = []
+
+      @a1.validate
+    end
+
+    assert_match "no files specified", @ui.error
+  end
+
+  def test_validate_empty_homepage
+    util_setup_validate
+
+    use_ui @ui do
+      @a1.homepage = nil
+      @a1.validate
+    end
+
+    assert_match "no homepage specified", @ui.error
+  end
+
+  def test_validate_empty_summary
+    util_setup_validate
+
+    use_ui @ui do
+      @a1.summary = nil
+      @a1.validate
+    end
+
+    assert_match "no summary specified", @ui.error
   end
 
   def test_validate_name
@@ -3252,7 +3281,11 @@ Did you mean 'Ruby'?
     Dir.chdir @tempdir do
       @m1 = quick_gem 'm', '1' do |s|
         s.files = %w[lib/code.rb]
-        s.metadata = { 'one' => "two", 'two' => "three" }
+        s.metadata = {
+          "one"          => "two",
+          "home"         => "three",
+          "homepage_uri" => "https://example.com/user/repo"
+        }
       end
 
       use_ui @ui do
@@ -3326,6 +3359,23 @@ Did you mean 'Ruby'?
       end
 
       assert_equal "metadata value too large (1025 > 1024)", e.message
+    end
+  end
+
+  def test_metadata_link_validation_fails
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @m2 = quick_gem 'm', '2' do |s|
+        s.files = %w[lib/code.rb]
+        s.metadata = { 'homepage_uri' => 'http:/example.com' }
+      end
+
+      e = assert_raises Gem::InvalidSpecificationException do
+        @m2.validate
+      end
+
+      assert_equal "metadata['homepage_uri'] has invalid link: \"http:/example.com\"", e.message
     end
   end
 
@@ -3404,6 +3454,31 @@ end
 
   def test_missing_extensions_eh_none
     refute @a1.missing_extensions?
+  end
+
+  def test_find_all_by_full_name
+    pl = Gem::Platform.new 'i386-linux'
+
+    a1 = util_spec "a", "1"
+    a1_pre = util_spec "a", "1.0.0.pre.1"
+    a_1_platform = util_spec("a", "1") {|s| s.platform = pl }
+    a_b_1 = util_spec "a-b", "1"
+    a_b_1_platform = util_spec("a-b", "1") {|s| s.platform = pl }
+
+    a_b_1_1 = util_spec "a-b-1", "1"
+    a_b_1_1_platform = util_spec("a-b-1", "1") {|s| s.platform = pl }
+
+    install_specs(a1, a1_pre, a_1_platform, a_b_1, a_b_1_platform,
+                  a_b_1_1, a_b_1_1_platform)
+
+    assert_equal [a1], Gem::Specification.find_all_by_full_name("a-1")
+    assert_equal [a1_pre], Gem::Specification.find_all_by_full_name("a-1.0.0.pre.1")
+    assert_equal [a_1_platform], Gem::Specification.find_all_by_full_name("a-1-x86-linux")
+    assert_equal [a_b_1_1], Gem::Specification.find_all_by_full_name("a-b-1-1")
+    assert_equal [a_b_1_1_platform], Gem::Specification.find_all_by_full_name("a-b-1-1-x86-linux")
+
+    assert_equal [], Gem::Specification.find_all_by_full_name("monkeys")
+    assert_equal [], Gem::Specification.find_all_by_full_name("a-1-foo")
   end
 
   def test_find_by_name

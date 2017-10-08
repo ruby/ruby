@@ -683,6 +683,32 @@ class TestGemResolver < Gem::TestCase
     assert_resolves_to [b1, c1, d2], r
   end
 
+  def test_sorts_by_source_then_version
+    sourceA = Gem::Source.new 'http://example.com/a'
+    sourceB = Gem::Source.new 'http://example.com/b'
+    sourceC = Gem::Source.new 'http://example.com/c'
+
+    spec_A_1 = new_spec 'some-dep', '0.0.1'
+    spec_A_2 = new_spec 'some-dep', '1.0.0'
+    spec_B_1 = new_spec 'some-dep', '0.0.1'
+    spec_B_2 = new_spec 'some-dep', '0.0.2'
+    spec_C_1 = new_spec 'some-dep', '0.1.0'
+
+    set = StaticSet.new [
+      Gem::Resolver::SpecSpecification.new(nil, spec_B_1, sourceB),
+      Gem::Resolver::SpecSpecification.new(nil, spec_B_2, sourceB),
+      Gem::Resolver::SpecSpecification.new(nil, spec_C_1, sourceC),
+      Gem::Resolver::SpecSpecification.new(nil, spec_A_2, sourceA),
+      Gem::Resolver::SpecSpecification.new(nil, spec_A_1, sourceA),
+    ]
+
+    dependency = make_dep 'some-dep', '> 0'
+
+    resolver = Gem::Resolver.new [dependency], set
+
+    assert_resolves_to [spec_B_2], resolver
+  end
+
   def test_select_local_platforms
     r = Gem::Resolver.new nil, nil
 

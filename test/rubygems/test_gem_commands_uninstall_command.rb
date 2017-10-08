@@ -279,5 +279,17 @@ WARNING:  Use your OS package manager to uninstall vendor gems
     RbConfig::CONFIG['vendordir'] = orig_vendordir
   end
 
+  def test_execute_with_gem_not_installed
+    @cmd.options[:args] = ['d']
+
+    use_ui ui do
+      @cmd.execute
+    end
+
+    output = ui.output.split "\n"
+    
+    assert_equal output.first, "Gem 'd' is not installed"
+  end
+
 end
 

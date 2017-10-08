@@ -66,7 +66,7 @@ If no gems are named all gems in GEM_HOME are cleaned.
       clean_gems
     end
 
-    say "Clean Up Complete"
+    say "Clean up complete"
 
     verbose do
       skipped = @default_gems.map { |spec| spec.full_name }

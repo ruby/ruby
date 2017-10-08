@@ -367,7 +367,7 @@ platform.
     elsif possibilities.size > 1 then
       alert_warning "Ambiguous command #{command_name} (#{possibilities.join(', ')})"
     else
-      alert_warning "Unknown command #{command_name}.  Try: gem help commands"
+      alert_warning "Unknown command #{command_name}. Try: gem help commands"
     end
   end
 

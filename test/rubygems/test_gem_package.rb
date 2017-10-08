@@ -1,4 +1,4 @@
-# coding: UTF-8
+# coding: utf-8
 # frozen_string_literal: true
 
 require 'rubygems/package/tar_test_case'
@@ -84,7 +84,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       io.write spec.to_yaml
     end
 
-    metadata_sha1   = Digest::SHA1.hexdigest s.string
+    metadata_sha256 = Digest::SHA256.hexdigest s.string
     metadata_sha512 = Digest::SHA512.hexdigest s.string
 
     expected = {
@@ -95,9 +95,9 @@ class TestGemPackage < Gem::Package::TarTestCase
     }
 
     if defined?(OpenSSL::Digest) then
-      expected['SHA1'] = {
-        'metadata.gz' => metadata_sha1,
-        'data.tar.gz' => Digest::SHA1.hexdigest(tar),
+      expected['SHA256'] = {
+        'metadata.gz' => metadata_sha256,
+        'data.tar.gz' => Digest::SHA256.hexdigest(tar),
       }
     end
 

@@ -15,7 +15,7 @@ class TestGemResolverConflict < Gem::TestCase
 
     dep = Gem::Resolver::DependencyRequest.new dep('net-ssh', '>= 2.0.13'), nil
 
-    spec = quick_spec 'net-ssh', '2.2.2'
+    spec = util_spec 'net-ssh', '2.2.2'
     active =
       Gem::Resolver::ActivationRequest.new spec, dep
 

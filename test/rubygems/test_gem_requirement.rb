@@ -30,6 +30,12 @@ class TestGemRequirement < Gem::TestCase
     assert_requirement_equal "= 2", v(2)
   end
 
+  def test_create
+    assert_equal req("= 1"), Gem::Requirement.create("= 1")
+    assert_equal req(">= 1.2", "<= 1.3"), Gem::Requirement.create([">= 1.2", "<= 1.3"])
+    assert_equal req(">= 1.2", "<= 1.3"), Gem::Requirement.create(">= 1.2", "<= 1.3")
+  end
+
   def test_empty_requirements_is_none
     r = Gem::Requirement.new
     assert_equal true, r.none?

@@ -58,6 +58,9 @@ module Gem
     private
 
     def build_message
+      if name == "bundler" && message = Gem::BundlerVersionFinder.missing_version_message
+        return message
+      end
       names = specs.map(&:full_name)
       "Could not find '#{name}' (#{requirement}) - did find: [#{names.join ','}]\n"
     end

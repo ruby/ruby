@@ -170,7 +170,7 @@ class TestGemCommand < Gem::TestCase
     @cmd.add_option('-f', '--file FILE', 'File option') do |value, options|
       options[:help] = true
     end
-    @cmd.add_option('--silent', 'Silence rubygems output') do |value, options|
+    @cmd.add_option('--silent', 'Silence RubyGems output') do |value, options|
       options[:silent] = true
     end
     assert @cmd.handles?(['-x'])

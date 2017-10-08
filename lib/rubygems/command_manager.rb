@@ -58,6 +58,8 @@ class Gem::CommandManager
     :rdoc,
     :search,
     :server,
+    :signin,
+    :signout,
     :sources,
     :specification,
     :stale,
@@ -161,7 +163,7 @@ class Gem::CommandManager
       say Gem::VERSION
       terminate_interaction 0
     when /^-/ then
-      alert_error "Invalid option: #{args.first}.  See 'gem --help'."
+      alert_error "Invalid option: #{args.first}. See 'gem --help'."
       terminate_interaction 1
     else
       cmd_name = args.shift.downcase

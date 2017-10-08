@@ -2,11 +2,20 @@
 require 'rubygems/command'
 require 'rubygems/installer'
 require 'rubygems/version_option'
+require 'rubygems/security_option'
 require 'rubygems/remote_fetcher'
+
+# forward-declare
+
+module Gem::Security # :nodoc:
+  class Policy # :nodoc:
+  end
+end
 
 class Gem::Commands::UnpackCommand < Gem::Command
 
   include Gem::VersionOption
+  include Gem::SecurityOption
 
   def initialize
     require 'fileutils'
@@ -24,6 +33,7 @@ class Gem::Commands::UnpackCommand < Gem::Command
       options[:spec] = true
     end
 
+    add_security_option
     add_version_option
   end
 
@@ -63,6 +73,8 @@ command help for an example.
   # at the same time.)
 
   def execute
+    security_policy = options[:security_policy]
+
     get_all_gem_names.each do |name|
       dependency = Gem::Dependency.new name, options[:version]
       path = get_path dependency
@@ -73,7 +85,7 @@ command help for an example.
       end
 
       if @options[:spec] then
-        spec, metadata = get_metadata path
+        spec, metadata = get_metadata path, security_policy
 
         if metadata.nil? then
           alert_error "--spec is unsupported on '#{name}' (old format gem)"
@@ -89,7 +101,7 @@ command help for an example.
         basename = File.basename path, '.gem'
         target_dir = File.expand_path basename, options[:target]
 
-        package = Gem::Package.new path
+        package = Gem::Package.new path, security_policy
         package.extract_files target_dir
 
         say "Unpacked gem: '#{target_dir}'"
@@ -158,8 +170,8 @@ command help for an example.
   #--
   # TODO move to Gem::Package as #raw_spec or something
 
-  def get_metadata path
-    format = Gem::Package.new path
+  def get_metadata path, security_policy = nil
+    format = Gem::Package.new path, security_policy
     spec = format.spec
 
     metadata = nil

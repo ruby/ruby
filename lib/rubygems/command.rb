@@ -527,7 +527,7 @@ class Gem::Command
   end
 
   add_common_option("--silent",
-                    "Silence rubygems output") do |value, options|
+                    "Silence RubyGems output") do |value, options|
     options[:silent] = true
   end
 
