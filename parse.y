@@ -4408,7 +4408,7 @@ f_kw		: f_label arg_value
 		    /*%%%*/
 			$$ = new_kw_arg($$);
 		    /*%
-			$$ = rb_assoc_new(get_value($$), get_value($1));
+			$$ = rb_assoc_new(get_value($$), get_value($2));
 		    %*/
 		    }
 		| f_label
