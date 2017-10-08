@@ -188,9 +188,8 @@ class Gem::StubSpecification < Gem::BasicSpecification
 
   def to_spec
     @spec ||= if @data then
-                Gem.loaded_specs.values.find { |spec|
-                  spec.name == name and spec.version == version
-                }
+                loaded = Gem.loaded_specs[name]
+                loaded if loaded && loaded.version == version
               end
 
     @spec ||= Gem::Specification.load(loaded_from)

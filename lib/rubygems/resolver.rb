@@ -230,8 +230,28 @@ class Gem::Resolver
       exc.errors = @set.errors
       raise exc
     end
-    possibles.sort_by { |s| [s.source, s.version, Gem::Platform.local =~ s.platform ? 1 : 0] }.
-      map { |s| ActivationRequest.new s, dependency, [] }
+
+    sources = []
+
+    groups = Hash.new { |hash, key| hash[key] = [] }
+
+    # create groups & sources in the same loop
+    sources = possibles.map { |spec|
+      source = spec.source
+      groups[source] << spec
+      source
+    }.uniq.reverse
+
+    activation_requests = []
+
+    sources.each do |source|
+      groups[source].
+        sort_by { |spec| [spec.version, Gem::Platform.local =~ spec.platform ? 1 : 0] }.
+        map { |spec| ActivationRequest.new spec, dependency, [] }.
+        each { |activation_request| activation_requests << activation_request }
+    end
+
+    activation_requests
   end
 
   def dependencies_for(specification)

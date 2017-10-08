@@ -125,14 +125,14 @@ extensions will be restored.
         next
       end
 
-      unless spec.extensions.empty? or options[:extensions] then
+      unless spec.extensions.empty? or options[:extensions] or options[:only_executables] then
         say "Skipped #{spec.full_name}, it needs to compile an extension"
         next
       end
 
       gem = spec.cache_file
 
-      unless File.exist? gem then
+      unless File.exist? gem or options[:only_executables] then
         require 'rubygems/remote_fetcher'
 
         say "Cached gem for #{spec.full_name} not found, attempting to fetch..."
@@ -157,16 +157,19 @@ extensions will be restored.
           install_defaults.to_s['--env-shebang']
         end
 
-      installer = Gem::Installer.at(gem,
-                                     :wrappers => true,
-                                     :force => true,
-                                     :install_dir => spec.base_dir,
-                                     :env_shebang => env_shebang,
-                                     :build_args => spec.build_args)
-
+      installer_options = { 
+        :wrappers => true,
+        :force => true,
+        :install_dir => spec.base_dir,
+        :env_shebang => env_shebang,
+        :build_args => spec.build_args,
+      }
+      
       if options[:only_executables] then
+        installer = Gem::Installer.for_spec(spec, installer_options)
         installer.generate_bin
       else
+        installer = Gem::Installer.at(gem, installer_options)
         installer.install
       end
 

@@ -255,22 +255,21 @@ is too hard to use.
         name_tuples.map { |n| n.version }.uniq
       else
         platforms.sort.reverse.map do |version, pls|
-          if pls == [Gem::Platform::RUBY] then
-            if options[:domain] == :remote || specs.all? { |spec| spec.is_a? Gem::Source }
-              version
-            else
-              spec = specs.select { |s| s.version == version }
-              if spec.first.default_gem?
-                "default: #{version}"
-              else
-                version
-              end
+          out = version.to_s
+
+          if options[:domain] == :local
+            default = specs.any? do |s|
+              !s.is_a?(Gem::Source) && s.version == version && s.default_gem?
             end
-          else
-            ruby = pls.delete Gem::Platform::RUBY
-            platform_list = [ruby, *pls.sort].compact
-            "#{version} #{platform_list.join ' '}"
+            out = "default: #{out}" if default
           end
+
+          if pls != [Gem::Platform::RUBY] then
+            platform_list = [pls.delete(Gem::Platform::RUBY), *pls.sort].compact
+            out = platform_list.unshift(out).join(' ')
+          end
+
+          out
         end
       end
 

@@ -555,7 +555,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       nil
     end
 
-    assert_equal nil, fetcher.fetch_path(@uri + 'foo.gz', Time.at(0))
+    assert_nil fetcher.fetch_path(@uri + 'foo.gz', Time.at(0))
   end
 
   def test_fetch_path_io_error
@@ -621,7 +621,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       nil
     end
 
-    assert_equal nil, fetcher.fetch_path(URI.parse(@gem_repo), Time.at(0))
+    assert_nil fetcher.fetch_path(URI.parse(@gem_repo), Time.at(0))
   end
 
   def test_implicit_no_proxy

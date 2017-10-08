@@ -71,7 +71,7 @@ class TestStubSpecification < Gem::TestCase
         refute stub.contains_requirable_file? 'nonexistent'
       end
 
-      expected = "Ignoring stub_e-2 because its extensions are not built.  " +
+      expected = "Ignoring stub_e-2 because its extensions are not built. " +
                  "Try: gem pristine stub_e --version 2\n"
 
       assert_equal expected, err
@@ -91,6 +91,12 @@ class TestStubSpecification < Gem::TestCase
 
   def test_lib_dirs_glob
     stub = stub_without_extension
+
+    assert_equal File.join(stub.full_gem_path, 'lib'), stub.lib_dirs_glob
+  end
+
+  def test_lib_dirs_glob_with_extension
+    stub = stub_with_extension
 
     assert_equal File.join(stub.full_gem_path, 'lib'), stub.lib_dirs_glob
   end

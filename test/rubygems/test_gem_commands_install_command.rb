@@ -96,6 +96,39 @@ class TestGemCommandsInstallCommand < Gem::TestCase
     assert_match "1 gem installed", @ui.output
   end
 
+  def test_execute_local_transitive_prerelease
+    specs = spec_fetcher do |fetcher|
+      fetcher.download 'a', 2, 'b' => "2.a", 'c' => '3'
+      fetcher.download 'b', '2.a'
+      fetcher.download 'c', '3'
+    end
+
+    @cmd.options[:domain] = :local
+
+    FileUtils.mv specs['a-2'].cache_file, @tempdir
+    FileUtils.mv specs['b-2.a'].cache_file, @tempdir
+    FileUtils.mv specs['c-3'].cache_file, @tempdir
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      orig_dir = Dir.pwd
+      begin
+        Dir.chdir @tempdir
+        FileUtils.rm_r [@gemhome, "gems"]
+        assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+          @cmd.execute
+        end
+      ensure
+        Dir.chdir orig_dir
+      end
+    end
+
+    assert_equal %w[a-2 b-2.a c-3], @cmd.installed_specs.map { |spec| spec.full_name }.sort
+
+    assert_match "3 gems installed", @ui.output
+  end
+
   def test_execute_no_user_install
     skip 'skipped on MS Windows (chmod has no effect)' if win_platform?
 
@@ -588,7 +621,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       done_installing = true
     end
 
-    spec = quick_spec 'a', 2
+    spec = util_spec 'a', 2
 
     util_build_gem spec
 
@@ -616,7 +649,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_install_gem_ignore_dependencies_specific_file
-    spec = quick_spec 'a', 2
+    spec = util_spec 'a', 2
 
     util_build_gem spec
 

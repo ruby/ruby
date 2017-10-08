@@ -30,6 +30,7 @@ require 'stringio'
 #     s.email       = 'rubycoder@example.com'
 #     s.files       = ["lib/example.rb"]
 #     s.homepage    = 'https://rubygems.org/gems/example'
+#     s.metadata    = { "source_code_uri" => "https://github.com/example/example" }
 #   end
 #
 # Starting in RubyGems 2.0, a Specification can hold arbitrary
@@ -157,16 +158,20 @@ class Gem::Specification < Gem::BasicSpecification
     :summary                   => nil,
     :test_files                => [],
     :version                   => nil,
-  }
+  }.freeze
 
-  Dupable = { } # :nodoc:
+  INITIALIZE_CODE_FOR_DEFAULTS = { } # :nodoc:
 
   @@default_value.each do |k,v|
-    case v
-    when Time, Numeric, Symbol, true, false, nil
-      Dupable[k] = false
+    INITIALIZE_CODE_FOR_DEFAULTS[k] = case v
+    when [], {}, true, false, nil, Numeric, Symbol
+      v.inspect
+    when String
+      v.dump
+    when Numeric
+       "default_value(:#{k})"
     else
-      Dupable[k] = true
+       "default_value(:#{k}).dup"
     end
   end
 
@@ -209,34 +214,6 @@ class Gem::Specification < Gem::BasicSpecification
   attr_reader :version
 
   ##
-  # Paths in the gem to add to <code>$LOAD_PATH</code> when this gem is
-  # activated.
-  #--
-  # See also #require_paths
-  #++
-  # If you have an extension you do not need to add <code>"ext"</code> to the
-  # require path, the extension build process will copy the extension files
-  # into "lib" for you.
-  #
-  # The default value is <code>"lib"</code>
-  #
-  # Usage:
-  #
-  #   # If all library files are in the root directory...
-  #   spec.require_paths = ['.']
-
-  def require_paths=(val)
-    @require_paths = Array(val)
-  end
-
-  ##
-  # The version of RubyGems used to create this gem.
-  #
-  # Do not set this, it is set automatically when the gem is packaged.
-
-  attr_accessor :rubygems_version
-
-  ##
   # A short summary of this gem's description.  Displayed in `gem list -d`.
   #
   # The #description should be more detailed than the summary.
@@ -246,6 +223,42 @@ class Gem::Specification < Gem::BasicSpecification
   #   spec.summary = "This is a small summary of my gem"
 
   attr_reader :summary
+
+  ##
+  # Files included in this gem.  You cannot append to this accessor, you must
+  # assign to it.
+  #
+  # Only add files you can require to this list, not directories, etc.
+  #
+  # Directories are automatically stripped from this list when building a gem,
+  # other non-files cause an error.
+  #
+  # Usage:
+  #
+  #   require 'rake'
+  #   spec.files = FileList['lib/**/*.rb',
+  #                         'bin/*',
+  #                         '[A-Z]*',
+  #                         'test/**/*'].to_a
+  #
+  #   # or without Rake...
+  #   spec.files = Dir['lib/**/*.rb'] + Dir['bin/*']
+  #   spec.files += Dir['[A-Z]*'] + Dir['test/**/*']
+  #   spec.files.reject! { |fn| fn.include? "CVS" }
+
+  def files
+    # DO NOT CHANGE TO ||= ! This is not a normal accessor. (yes, it sucks)
+    # DOC: Why isn't it normal? Why does it suck? How can we fix this?
+    @files = [@files,
+              @test_files,
+              add_bindir(@executables),
+              @extra_rdoc_files,
+              @extensions,
+             ].flatten.compact.uniq.sort
+  end
+
+  ######################################################################
+  # :section: Recommended gemspec attributes
 
   ##
   # Singular writer for #authors
@@ -268,6 +281,148 @@ class Gem::Specification < Gem::BasicSpecification
   def authors= value
     @authors = Array(value).flatten.grep(String)
   end
+
+  ##
+  # A long description of this gem
+  #
+  # The description should be more detailed than the summary but not
+  # excessively long.  A few paragraphs is a recommended length with no
+  # examples or formatting.
+  #
+  # Usage:
+  #
+  #   spec.description = <<-EOF
+  #     Rake is a Make-like program implemented in Ruby. Tasks and
+  #     dependencies are specified in standard Ruby syntax.
+  #   EOF
+
+  attr_reader :description
+
+  ##
+  # A contact email address (or addresses) for this gem
+  #
+  # Usage:
+  #
+  #   spec.email = 'john.jones@example.com'
+  #   spec.email = ['jack@example.com', 'jill@example.com']
+
+  attr_accessor :email
+
+  ##
+  # The URL of this gem's home page
+  #
+  # Usage:
+  #
+  #   spec.homepage = 'https://github.com/ruby/rake'
+
+  attr_accessor :homepage
+
+  ##
+  # The license for this gem.
+  #
+  # The license must be no more than 64 characters.
+  #
+  # This should just be the name of your license. The full text of the license
+  # should be inside of the gem (at the top level) when you build it.
+  #
+  # The simplest way, is to specify the standard SPDX ID
+  # https://spdx.org/licenses/ for the license.
+  # Ideally you should pick one that is OSI (Open Source Initiative)
+  # http://opensource.org/licenses/alphabetical approved.
+  #
+  # The most commonly used OSI approved licenses are MIT and Apache-2.0.
+  # GitHub also provides a license picker at http://choosealicense.com/.
+  #
+  # You should specify a license for your gem so that people know how they are
+  # permitted to use it, and any restrictions you're placing on it.  Not
+  # specifying a license means all rights are reserved; others have no rights
+  # to use the code for any purpose.
+  #
+  # You can set multiple licenses with #licenses=
+  #
+  # Usage:
+  #   spec.license = 'MIT'
+
+  def license=o
+    self.licenses = [o]
+  end
+
+  ##
+  # The license(s) for the library.
+  #
+  # Each license must be a short name, no more than 64 characters.
+  #
+  # This should just be the name of your license. The full
+  # text of the license should be inside of the gem when you build it.
+  #
+  # See #license= for more discussion
+  #
+  # Usage:
+  #   spec.licenses = ['MIT', 'GPL-2.0']
+
+  def licenses= licenses
+    @licenses = Array licenses
+  end
+
+  ##
+  # The metadata holds extra data for this gem that may be useful to other
+  # consumers and is settable by gem authors without requiring an update to
+  # the rubygems software.
+  #
+  # Metadata items have the following restrictions:
+  #
+  # * The metadata must be a Hash object
+  # * All keys and values must be Strings
+  # * Keys can be a maximum of 128 bytes and values can be a maximum of 1024
+  #   bytes
+  # * All strings must be UTF-8, no binary data is allowed
+  #
+  # You can use metadata to specify links to your gem's homepage, codebase,
+  # documentation, wiki, mailing list, issue tracker and changelog.
+  #
+  #   s.metadata = {
+  #     "bug_tracker_uri"   => "https://example.com/user/bestgemever/issues",
+  #     "changelog_uri"     => "https://example.com/user/bestgemever/CHANGELOG.md",
+  #     "documentation_uri" => "https://www.example.info/gems/bestgemever/0.0.1",
+  #     "homepage_uri"      => "https://bestgemever.example.io",
+  #     "mailing_list_uri"  => "https://groups.example.com/bestgemever",
+  #     "source_code_uri"   => "https://example.com/user/bestgemever",
+  #     "wiki_uri"          => "https://example.com/user/bestgemever/wiki"
+  #   }
+  #
+  # These links will be used on your gem's page on rubygems.org and must pass
+  # validation against following regex.
+  #
+  #   %r{\Ahttps?:\/\/([^\s:@]+:[^\s:@]*@)?[A-Za-z\d\-]+(\.[A-Za-z\d\-]+)+\.?(:\d{1,5})?([\/?]\S*)?\z}
+
+  attr_accessor :metadata
+
+  ######################################################################
+  # :section: Optional gemspec attributes
+
+  ##
+  # The path in the gem for executable scripts.  Usually 'bin'
+  #
+  # Usage:
+  #
+  #   spec.bindir = 'bin'
+
+  attr_accessor :bindir
+
+  ##
+  # The certificate chain used to sign this gem.  See Gem::Security for
+  # details.
+
+  attr_accessor :cert_chain
+
+  ##
+  # A message that gets displayed after the gem is installed.
+  #
+  # Usage:
+  #
+  #   spec.post_install_message = "Thanks for installing!"
+
+  attr_accessor :post_install_message
 
   ##
   # The platform this gem runs on.
@@ -327,103 +482,25 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Files included in this gem.  You cannot append to this accessor, you must
-  # assign to it.
+  # Paths in the gem to add to <code>$LOAD_PATH</code> when this gem is
+  # activated.
+  #--
+  # See also #require_paths
+  #++
+  # If you have an extension you do not need to add <code>"ext"</code> to the
+  # require path, the extension build process will copy the extension files
+  # into "lib" for you.
   #
-  # Only add files you can require to this list, not directories, etc.
-  #
-  # Directories are automatically stripped from this list when building a gem,
-  # other non-files cause an error.
+  # The default value is <code>"lib"</code>
   #
   # Usage:
   #
-  #   require 'rake'
-  #   spec.files = FileList['lib/**/*.rb',
-  #                         'bin/*',
-  #                         '[A-Z]*',
-  #                         'test/**/*'].to_a
-  #
-  #   # or without Rake...
-  #   spec.files = Dir['lib/**/*.rb'] + Dir['bin/*']
-  #   spec.files += Dir['[A-Z]*'] + Dir['test/**/*']
-  #   spec.files.reject! { |fn| fn.include? "CVS" }
+  #   # If all library files are in the root directory...
+  #   spec.require_paths = ['.']
 
-  def files
-    # DO NOT CHANGE TO ||= ! This is not a normal accessor. (yes, it sucks)
-    # DOC: Why isn't it normal? Why does it suck? How can we fix this?
-    @files = [@files,
-              @test_files,
-              add_bindir(@executables),
-              @extra_rdoc_files,
-              @extensions,
-             ].flatten.compact.uniq.sort
+  def require_paths=(val)
+    @require_paths = Array(val)
   end
-
-  ######################################################################
-  # :section: Optional gemspec attributes
-
-  ##
-  # The path in the gem for executable scripts.  Usually 'bin'
-  #
-  # Usage:
-  #
-  #   spec.bindir = 'bin'
-
-  attr_accessor :bindir
-
-  ##
-  # The certificate chain used to sign this gem.  See Gem::Security for
-  # details.
-
-  attr_accessor :cert_chain
-
-  ##
-  # A long description of this gem
-  #
-  # The description should be more detailed than the summary but not
-  # excessively long.  A few paragraphs is a recommended length with no
-  # examples or formatting.
-  #
-  # Usage:
-  #
-  #   spec.description = <<-EOF
-  #     Rake is a Make-like program implemented in Ruby. Tasks and
-  #     dependencies are specified in standard Ruby syntax.
-  #   EOF
-
-  attr_reader :description
-
-  ##
-  # :category: Recommended gemspec attributes
-  #
-  # A contact email address (or addresses) for this gem
-  #
-  # Usage:
-  #
-  #   spec.email = 'john.jones@example.com'
-  #   spec.email = ['jack@example.com', 'jill@example.com']
-
-  attr_accessor :email
-
-  ##
-  # :category: Recommended gemspec attributes
-  #
-  # The URL of this gem's home page
-  #
-  # Usage:
-  #
-  #   spec.homepage = 'https://github.com/ruby/rake'
-
-  attr_accessor :homepage
-
-  ##
-  # A message that gets displayed after the gem is installed.
-  #
-  # Usage:
-  #
-  #   spec.post_install_message = "Thanks for installing!"
-
-  attr_accessor :post_install_message
 
   ##
   # The version of Ruby required by this gem
@@ -436,30 +513,16 @@ class Gem::Specification < Gem::BasicSpecification
   attr_reader :required_rubygems_version
 
   ##
+  # The version of RubyGems used to create this gem.
+  #
+  # Do not set this, it is set automatically when the gem is packaged.
+
+  attr_accessor :rubygems_version
+
+  ##
   # The key used to sign this gem.  See Gem::Security for details.
 
   attr_accessor :signing_key
-
-  ##
-  # :attr_accessor: metadata
-  #
-  # The metadata holds extra data for this gem that may be useful to other
-  # consumers and is settable by gem authors without requiring an update to
-  # the rubygems software.
-  #
-  # Metadata items have the following restrictions:
-  #
-  # * The metadata must be a Hash object
-  # * All keys and values must be Strings
-  # * Keys can be a maximum of 128 bytes and values can be a maximum of 1024
-  #   bytes
-  # * All strings must be UTF-8, no binary data is allowed
-  #
-  # To add metadata for the location of a issue tracker:
-  #
-  #   s.metadata = { "issue_tracker" => "https://example/issues" }
-
-  attr_accessor :metadata
 
   ##
   # Adds a development dependency named +gem+ with +requirements+ to this
@@ -473,7 +536,7 @@ class Gem::Specification < Gem::BasicSpecification
   # activated when a gem is required.
 
   def add_development_dependency(gem, *requirements)
-    add_dependency_with_type(gem, :development, *requirements)
+    add_dependency_with_type(gem, :development, requirements)
   end
 
   ##
@@ -484,7 +547,7 @@ class Gem::Specification < Gem::BasicSpecification
   #   spec.add_runtime_dependency 'example', '~> 1.1', '>= 1.1.4'
 
   def add_runtime_dependency(gem, *requirements)
-    add_dependency_with_type(gem, :runtime, *requirements)
+    add_dependency_with_type(gem, :runtime, requirements)
   end
 
   ##
@@ -554,56 +617,6 @@ class Gem::Specification < Gem::BasicSpecification
 
   def installed_by_version= version # :nodoc:
     @installed_by_version = Gem::Version.new version
-  end
-
-  ##
-  # :category: Recommended gemspec attributes
-  #
-  # The license for this gem.
-  #
-  # The license must be no more than 64 characters.
-  #
-  # This should just be the name of your license. The full text of the license
-  # should be inside of the gem (at the top level) when you build it.
-  #
-  # The simplest way, is to specify the standard SPDX ID
-  # https://spdx.org/licenses/ for the license.
-  # Ideally you should pick one that is OSI (Open Source Initiative)
-  # http://opensource.org/licenses/alphabetical approved.
-  #
-  # The most commonly used OSI approved licenses are MIT and Apache-2.0.
-  # GitHub also provides a license picker at http://choosealicense.com/.
-  #
-  # You should specify a license for your gem so that people know how they are
-  # permitted to use it, and any restrictions you're placing on it.  Not
-  # specifying a license means all rights are reserved; others have no rights
-  # to use the code for any purpose.
-  #
-  # You can set multiple licenses with #licenses=
-  #
-  # Usage:
-  #   spec.license = 'MIT'
-
-  def license=o
-    self.licenses = [o]
-  end
-
-  ##
-  # :category: Recommended gemspec attributes
-  # The license(s) for the library.
-  #
-  # Each license must be a short name, no more than 64 characters.
-  #
-  # This should just be the name of your license. The full
-  # text of the license should be inside of the gem when you build it.
-  #
-  # See #license= for more discussion
-  #
-  # Usage:
-  #   spec.licenses = ['MIT', 'GPL-2.0']
-
-  def licenses= licenses
-    @licenses = Array licenses
   end
 
   ##
@@ -885,7 +898,7 @@ class Gem::Specification < Gem::BasicSpecification
   # properly sorted.
 
   def self.add_spec spec
-    warn "Gem::Specification.add_spec is deprecated and will be removed in Rubygems 3.0" unless Gem::Deprecate.skip
+    warn "Gem::Specification.add_spec is deprecated and will be removed in RubyGems 3.0" unless Gem::Deprecate.skip
     # TODO: find all extraneous adds
     # puts
     # p :add_spec => [spec.full_name, caller.reject { |s| s =~ /minitest/ }]
@@ -910,7 +923,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Adds multiple specs to the known specifications.
 
   def self.add_specs *specs
-    warn "Gem::Specification.add_specs is deprecated and will be removed in Rubygems 3.0" unless Gem::Deprecate.skip
+    warn "Gem::Specification.add_specs is deprecated and will be removed in RubyGems 3.0" unless Gem::Deprecate.skip
 
     raise "nil spec!" if specs.any?(&:nil?) # TODO: remove once we're happy
 
@@ -1023,6 +1036,13 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
+  # Returns every spec that has the given +full_name+
+
+  def self.find_all_by_full_name(full_name)
+    stubs.select {|s| s.full_name == full_name }.map(&:to_spec)
+  end
+
+  ##
   # Find the best specification matching a +name+ and +requirements+. Raises
   # if the dependency doesn't resolve to a valid specification.
 
@@ -1040,6 +1060,7 @@ class Gem::Specification < Gem::BasicSpecification
   def self.find_by_path path
     path = path.dup.freeze
     spec = @@spec_with_requirable_file[path] ||= (stubs.find { |s|
+      next unless Gem::BundlerVersionFinder.compatible?(s)
       s.contains_requirable_file? path
     } || NOT_FOUND)
     spec.to_spec
@@ -1051,7 +1072,9 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self.find_inactive_by_path path
     stub = stubs.find { |s|
-      s.contains_requirable_file? path unless s.activated?
+      next if s.activated?
+      next unless Gem::BundlerVersionFinder.compatible?(s)
+      s.contains_requirable_file? path
     }
     stub && stub.to_spec
   end
@@ -1250,7 +1273,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Removes +spec+ from the known specs.
 
   def self.remove_spec spec
-    warn "Gem::Specification.remove_spec is deprecated and will be removed in Rubygems 3.0" unless Gem::Deprecate.skip
+    warn "Gem::Specification.remove_spec is deprecated and will be removed in RubyGems 3.0" unless Gem::Deprecate.skip
     _all.delete spec
     stubs.delete_if { |s| s.full_name == spec.full_name }
     (@@stubs_by_name[spec.name] || []).delete_if { |s| s.full_name == spec.full_name }
@@ -1520,7 +1543,7 @@ class Gem::Specification < Gem::BasicSpecification
   # +requirements+.  Valid types are currently <tt>:runtime</tt> and
   # <tt>:development</tt>.
 
-  def add_dependency_with_type(dependency, type, *requirements)
+  def add_dependency_with_type(dependency, type, requirements)
     requirements = if requirements.empty? then
                      Gem::Requirement.default
                    else
@@ -2026,6 +2049,20 @@ class Gem::Specification < Gem::BasicSpecification
     yaml_initialize coder.tag, coder.map
   end
 
+
+
+  eval <<-RB, binding, __FILE__, __LINE__ + 1
+    def set_nil_attributes_to_nil
+      #{@@nil_attributes.map {|key| "@#{key} = nil" }.join "; "}
+    end
+    private :set_nil_attributes_to_nil
+
+    def set_not_nil_attributes_to_default_values
+      #{@@non_nil_attributes.map {|key| "@#{key} = #{INITIALIZE_CODE_FOR_DEFAULTS[key]}" }.join ";"}
+    end
+    private :set_not_nil_attributes_to_default_values
+  RB
+
   ##
   # Specification constructor. Assigns the default values to the attributes
   # and yields itself for further initialization.  Optionally takes +name+ and
@@ -2041,15 +2078,8 @@ class Gem::Specification < Gem::BasicSpecification
     @original_platform = nil
     @installed_by_version = nil
 
-    @@nil_attributes.each do |key|
-      instance_variable_set "@#{key}", nil
-    end
-
-    @@non_nil_attributes.each do |key|
-      default = default_value(key)
-      value = Dupable[key] ? default.dup : default
-      instance_variable_set "@#{key}", value
-    end
+    set_nil_attributes_to_nil
+    set_not_nil_attributes_to_default_values
 
     @new_platform = Gem::Platform::RUBY
 
@@ -2746,29 +2776,7 @@ class Gem::Specification < Gem::BasicSpecification
               'metadata must be a hash'
     end
 
-    metadata.keys.each do |k|
-      if !k.kind_of?(String)
-        raise Gem::InvalidSpecificationException,
-                'metadata keys must be a String'
-      end
-
-      if k.size > 128
-        raise Gem::InvalidSpecificationException,
-                "metadata key too large (#{k.size} > 128)"
-      end
-    end
-
-    metadata.values.each do |k|
-      if !k.kind_of?(String)
-        raise Gem::InvalidSpecificationException,
-                'metadata values must be a String'
-      end
-
-      if k.size > 1024
-        raise Gem::InvalidSpecificationException,
-                "metadata value too large (#{k.size} > 1024)"
-      end
-    end
+    validate_metadata
 
     licenses.each { |license|
       if license.length > 64
@@ -2822,7 +2830,7 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
 
     # Warnings
 
-    %w[author email homepage summary].each do |attribute|
+    %w[author homepage summary files].each do |attribute|
       value = self.send attribute
       warning "no #{attribute} specified" if value.nil? or value.empty?
     end
@@ -2852,6 +2860,48 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
   ensure
     if $! or @warnings > 0 then
       alert_warning "See http://guides.rubygems.org/specification-reference/ for help"
+    end
+  end
+
+  def validate_metadata
+    url_validation_regex = %r{\Ahttps?:\/\/([^\s:@]+:[^\s:@]*@)?[A-Za-z\d\-]+(\.[A-Za-z\d\-]+)+\.?(:\d{1,5})?([\/?]\S*)?\z}
+    link_keys = %w(
+      bug_tracker_uri
+      changelog_uri
+      documentation_uri
+      homepage_uri
+      mailing_list_uri
+      source_code_uri
+      wiki_uri
+    )
+
+    metadata.each do|key, value|
+      if !key.kind_of?(String)
+        raise Gem::InvalidSpecificationException,
+                "metadata keys must be a String"
+      end
+
+      if key.size > 128
+        raise Gem::InvalidSpecificationException,
+                "metadata key too large (#{key.size} > 128)"
+      end
+
+      if !value.kind_of?(String)
+        raise Gem::InvalidSpecificationException,
+                "metadata values must be a String"
+      end
+
+      if value.size > 1024
+        raise Gem::InvalidSpecificationException,
+                "metadata value too large (#{value.size} > 1024)"
+      end
+
+      if link_keys.include? key
+        if value !~ url_validation_regex
+          raise Gem::InvalidSpecificationException,
+                 "metadata['#{key}'] has invalid link: #{value.inspect}"
+        end
+      end
     end
   end
 

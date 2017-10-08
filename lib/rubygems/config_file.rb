@@ -336,6 +336,15 @@ if you believe they were disclosed to a third party.
     load_api_keys # reload
   end
 
+  ##
+  # Remove the +~/.gem/credentials+ file to clear all the current sessions.
+
+  def unset_api_key!
+    return false unless File.exist?(credentials_path)
+
+    File.delete(credentials_path)
+  end
+
   def load_file(filename)
     Gem.load_yaml
 
@@ -419,31 +428,11 @@ if you believe they were disclosed to a third party.
   # to_yaml only overwrites things you can't override on the command line.
   def to_yaml # :nodoc:
     yaml_hash = {}
-    yaml_hash[:backtrace] = if @hash.key?(:backtrace)
-                              @hash[:backtrace]
-                            else
-                              DEFAULT_BACKTRACE
-                            end
-
-    yaml_hash[:bulk_threshold] = if @hash.key?(:bulk_threshold)
-                                   @hash[:bulk_threshold]
-                                 else
-                                   DEFAULT_BULK_THRESHOLD
-                                 end
-
+    yaml_hash[:backtrace] = @hash.fetch(:backtrace, DEFAULT_BACKTRACE)
+    yaml_hash[:bulk_threshold] = @hash.fetch(:bulk_threshold, DEFAULT_BULK_THRESHOLD)
     yaml_hash[:sources] = Gem.sources.to_a
-
-    yaml_hash[:update_sources] = if @hash.key?(:update_sources)
-                                   @hash[:update_sources]
-                                 else
-                                   DEFAULT_UPDATE_SOURCES
-                                 end
-
-    yaml_hash[:verbose] = if @hash.key?(:verbose)
-                            @hash[:verbose]
-                          else
-                            DEFAULT_VERBOSITY
-                          end
+    yaml_hash[:update_sources] = @hash.fetch(:update_sources, DEFAULT_UPDATE_SOURCES)
+    yaml_hash[:verbose] = @hash.fetch(:verbose, DEFAULT_VERBOSITY)
 
     yaml_hash[:ssl_verify_mode] =
       @hash[:ssl_verify_mode] if @hash.key? :ssl_verify_mode

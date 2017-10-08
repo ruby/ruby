@@ -753,7 +753,7 @@ end
         @gda.ruby RUBY_VERSION, :engine => 'jruby', :engine_version => '1.7.4'
       end
 
-      assert_equal 'Your ruby engine is ruby, but your gem.deps.rb requires jruby',
+      assert_equal 'Your Ruby engine is ruby, but your gem.deps.rb requires jruby',
                    e.message
     end
   end
@@ -764,7 +764,7 @@ end
         @gda.ruby RUBY_VERSION, :engine => 'jruby', :engine_version => '1.7.4'
       end
 
-      assert_equal 'Your ruby engine version is jruby 1.7.6, but your gem.deps.rb requires jruby 1.7.4',
+      assert_equal 'Your Ruby engine version is jruby 1.7.6, but your gem.deps.rb requires jruby 1.7.4',
                    e.message
     end
   end
@@ -774,7 +774,7 @@ end
       @gda.ruby RUBY_VERSION, :engine => 'jruby'
     end
 
-    assert_equal 'you must specify engine_version along with the ruby engine',
+    assert_equal 'You must specify engine_version along with the Ruby engine',
                  e.message
   end
 

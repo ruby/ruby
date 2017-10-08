@@ -83,7 +83,7 @@ class Gem::Request
                  e.message =~ / -- openssl$/
 
     raise Gem::Exception.new(
-            'Unable to require openssl, install OpenSSL and rebuild ruby (preferred) or use non-HTTPS sources')
+            'Unable to require openssl, install OpenSSL and rebuild Ruby (preferred) or use non-HTTPS sources')
   end
 
   def self.verify_certificate store_context

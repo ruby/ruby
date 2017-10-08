@@ -130,6 +130,70 @@ Added '/CN=alternate/DC=example'
     assert_path_exists File.join(@tempdir, 'gem-public_cert.pem')
   end
 
+  def test_execute_build_bad_email_address
+    passphrase = 'Foo bar'
+    email = "nobody@"
+
+    @cmd.handle_options %W[--build #{email}]
+
+    @build_ui = Gem::MockGemUi.new "#{passphrase}\n#{passphrase}"
+
+    use_ui @build_ui do
+
+      e = assert_raises Gem::CommandLineError do
+        @cmd.execute
+      end
+
+      assert_equal "Invalid email address #{email}",
+        e.message
+
+      refute_path_exists File.join(@tempdir, 'gem-private_key.pem')
+      refute_path_exists File.join(@tempdir, 'gem-public_cert.pem')
+    end
+  end
+
+  def test_execute_build_expiration_days
+    passphrase = 'Foo bar'
+
+    @cmd.handle_options %W[
+      --build nobody@example.com
+      --days 26
+      ]
+
+    @build_ui = Gem::MockGemUi.new "#{passphrase}\n#{passphrase}"
+
+    use_ui @build_ui do
+      @cmd.execute
+    end
+
+    output = @build_ui.output.squeeze("\n").split "\n"
+
+    assert_equal "Passphrase for your Private Key:  ",
+                 output.shift
+    assert_equal "Please repeat the passphrase for your Private Key:  ",
+                 output.shift
+    assert_equal "Certificate: #{File.join @tempdir, 'gem-public_cert.pem'}",
+                 output.shift
+    assert_equal "Private Key: #{File.join @tempdir, 'gem-private_key.pem'}",
+                 output.shift
+
+    assert_equal "Don't forget to move the key file to somewhere private!",
+                 output.shift
+
+    assert_empty output
+    assert_empty @build_ui.error
+
+    assert_path_exists File.join(@tempdir, 'gem-private_key.pem')
+    assert_path_exists File.join(@tempdir, 'gem-public_cert.pem')
+
+    pem = File.read("#{@tempdir}/gem-public_cert.pem")
+    cert = OpenSSL::X509::Certificate.new(pem)
+
+    test = (cert.not_after - cert.not_before).to_i / (24 * 60 * 60)
+    assert_equal(test, 26)
+
+  end
+
   def test_execute_build_bad_passphrase_confirmation
     passphrase = 'Foo bar'
     passphrase_confirmation = 'Fu bar'

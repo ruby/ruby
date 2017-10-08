@@ -637,6 +637,25 @@ EOF
     assert_equal expected, @ui.output
   end
 
+  def test_execute_show_default_gems_with_platform
+    a1 = new_default_spec 'a', 1
+    a1.platform = 'java'
+    install_default_specs a1
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    expected = <<-EOF
+
+*** LOCAL GEMS ***
+
+a (default: 1 java)
+EOF
+
+    assert_equal expected, @ui.output
+  end
+
   def test_execute_default_details
     spec_fetcher do |fetcher|
       fetcher.spec 'a', 2

@@ -183,7 +183,7 @@ EOF
     return if @spec.extensions.empty?
 
     if @build_args.empty?
-      say "Building native extensions.  This could take a while..."
+      say "Building native extensions. This could take a while..."
     else
       say "Building native extensions with: '#{@build_args.join ' '}'"
       say "This could take a while..."

@@ -222,7 +222,7 @@ class TestGemServer < Gem::TestCase
     assert_equal 404, @res.status, @res.body
     assert_match %r| \d\d:\d\d:\d\d |, @res['date']
     assert_equal 'text/plain', @res['content-type']
-    assert_equal 'No gems found matching "z" "9" nil', @res.body
+    assert_equal 'No gems found matching "z-9"', @res.body
     assert_equal 404, @res.status
   end
 
@@ -288,6 +288,23 @@ class TestGemServer < Gem::TestCase
 
     spec = Marshal.load Gem.inflate(@res.body)
     assert_equal 'a-b', spec.name
+    assert_equal v('3.a'), spec.version
+  end
+
+  def test_quick_marshal_a_b_1_3_a_gemspec_rz
+    quick_gem 'a-b-1', '3.a'
+
+    data = StringIO.new "GET /quick/Marshal.#{Gem.marshal_version}/a-b-1-3.a.gemspec.rz HTTP/1.0\r\n\r\n"
+    @req.parse data
+
+    @server.quick @req, @res
+
+    assert_equal 200, @res.status, @res.body
+    assert @res['date']
+    assert_equal 'application/x-deflate', @res['content-type']
+
+    spec = Marshal.load Gem.inflate(@res.body)
+    assert_equal 'a-b-1', spec.name
     assert_equal v('3.a'), spec.version
   end
 
