@@ -1,7 +1,6 @@
 require 'webrick'
 require 'drb/drb'
 require 'drb/http0'
-require 'thread'
 
 module DRb
   module HTTP0

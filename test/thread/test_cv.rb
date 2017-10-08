@@ -1,6 +1,5 @@
 # frozen_string_literal: false
 require 'test/unit'
-require 'thread'
 require 'tmpdir'
 
 class TestConditionVariable < Test::Unit::TestCase
@@ -94,8 +93,6 @@ class TestConditionVariable < Test::Unit::TestCase
 
   def test_condvar_wait_deadlock
     assert_in_out_err([], <<-INPUT, /\Afatal\nNo live threads left\. Deadlock/, [])
-      require "thread"
-
       mutex = Mutex.new
       cv = ConditionVariable.new
 

@@ -65,7 +65,6 @@ static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t volatile *t
  *
  *  Example:
  *
- *    require 'thread'
  *    semaphore = Mutex.new
  *
  *    a = Thread.new {
@@ -673,8 +672,7 @@ queue_closed_result(VALUE self, struct rb_queue *q)
  *
  *  Example:
  *
- *	require 'thread'
- *    	queue = Queue.new
+ *	queue = Queue.new
  *
  *	producer = Thread.new do
  *	  5.times do |i|
@@ -1210,8 +1208,6 @@ struct rb_condvar {
  *  resource becomes available.
  *
  *  Example:
- *
- *    require 'thread'
  *
  *    mutex = Mutex.new
  *    resource = ConditionVariable.new

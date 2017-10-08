@@ -10,9 +10,6 @@
 #
 # --
 
-
-require 'thread'
-
 # = mutex_m.rb
 #
 # When 'mutex_m' is required, any object that extends or includes Mutex_m will

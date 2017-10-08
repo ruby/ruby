@@ -91,7 +91,6 @@ module WEBrick
 
     ###########
 
-    require "thread"
     require "timeout"
     require "singleton"
 

@@ -9,7 +9,6 @@
 #
 # $IPR: server.rb,v 1.62 2003/07/22 19:20:43 gotoyuzo Exp $
 
-require 'thread'
 require 'socket'
 require 'webrick/config'
 require 'webrick/log'

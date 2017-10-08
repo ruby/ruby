@@ -35,7 +35,6 @@ How to play.
  | 2
 =end
 
-require 'thread.rb'
 require 'drb/drb'
 
 module DRbNamedObject

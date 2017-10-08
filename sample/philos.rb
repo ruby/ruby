@@ -1,7 +1,6 @@
 #
 # The Dining Philosophers - thread example
 #
-require "thread"
 
 srand
 #srand

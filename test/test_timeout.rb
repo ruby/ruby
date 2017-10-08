@@ -1,7 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'timeout'
-require 'thread'
 
 class TestTimeout < Test::Unit::TestCase
   def test_queue

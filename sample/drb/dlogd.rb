@@ -4,7 +4,6 @@
 =end
 
 require 'drb/drb'
-require 'thread'
 
 class Logger
   def initialize(fname)

@@ -9,7 +9,6 @@ require "test/unit"
 require "tempfile"
 require "timeout"
 require "tmpdir"
-require "thread"
 require "io/nonblock"
 
 class TestSocket_UNIXSocket < Test::Unit::TestCase

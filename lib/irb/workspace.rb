@@ -39,8 +39,6 @@ EOF
 
         when 2	# binding in loaded file(thread use)
           unless defined? BINDING_QUEUE
-            require "thread"
-
             IRB.const_set(:BINDING_QUEUE, Thread::SizedQueue.new(1))
             Thread.abort_on_exception = true
             Thread.start do

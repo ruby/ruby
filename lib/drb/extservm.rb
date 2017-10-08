@@ -5,7 +5,6 @@
 =end
 
 require 'drb/drb'
-require 'thread'
 require 'monitor'
 
 module DRb

@@ -1,6 +1,5 @@
 # frozen_string_literal: false
 require 'test/unit'
-require 'thread'
 require 'mutex_m'
 
 class TestMutexM < Test::Unit::TestCase

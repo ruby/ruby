@@ -47,7 +47,6 @@
 #   Translation of presentation on Ruby by Masatoshi Seki.
 
 require 'socket'
-require 'thread'
 require 'io/wait'
 require 'drb/eq'
 

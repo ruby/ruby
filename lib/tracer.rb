@@ -2,7 +2,6 @@
 #--
 # $Release Version: 0.3$
 # $Revision: 1.12 $
-require "thread"
 
 ##
 # Outputs a source level execution trace of a Ruby program.

@@ -1,6 +1,5 @@
 # frozen_string_literal: false
 require "monitor"
-require "thread"
 
 require "test/unit"
 

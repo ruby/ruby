@@ -1,7 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'tempfile'
-require 'thread'
 
 class TestAutoload < Test::Unit::TestCase
   def test_autoload_so

@@ -10,7 +10,6 @@
 #
 #
 IRB.fail CantShiftToMultiIrbMode unless defined?(Thread)
-require "thread"
 
 module IRB
   class JobManager
