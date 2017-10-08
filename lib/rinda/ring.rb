@@ -4,7 +4,6 @@
 #
 require 'drb/drb'
 require 'rinda/rinda'
-require 'thread'
 require 'ipaddr'
 
 module Rinda

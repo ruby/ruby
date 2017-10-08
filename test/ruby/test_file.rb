@@ -1,7 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'tempfile'
-require "thread"
 require "-test-/file"
 require_relative 'ut_eof'
 

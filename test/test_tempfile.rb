@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 require 'test/unit'
 require 'tempfile'
-require 'thread'
 
 class TestTempfile < Test::Unit::TestCase
   def initialize(*)

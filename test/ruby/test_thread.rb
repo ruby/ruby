@@ -1,7 +1,6 @@
 # -*- coding: us-ascii -*-
 # frozen_string_literal: false
 require 'test/unit'
-require 'thread'
 
 class TestThread < Test::Unit::TestCase
   class Thread < ::Thread
@@ -966,7 +965,6 @@ _eom
 
   def test_main_thread_status_at_exit
     assert_in_out_err([], <<-'INPUT', ["false false aborting"], [])
-require 'thread'
 q = Thread::Queue.new
 Thread.new(Thread.current) {|mth|
   begin

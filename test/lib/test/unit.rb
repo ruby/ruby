@@ -452,8 +452,7 @@ module Test
           return
         end
 
-        # Require needed things for parallel running
-        require 'thread'
+        # Require needed thing for parallel running
         require 'timeout'
         @tasks = @files.dup # Array of filenames.
         @need_quit = false

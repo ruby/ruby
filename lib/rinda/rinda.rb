@@ -1,6 +1,5 @@
 # frozen_string_literal: false
 require 'drb/drb'
-require 'thread'
 
 ##
 # A module to implement the Linda distributed computing paradigm in Ruby.

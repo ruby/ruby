@@ -9,8 +9,6 @@
 #
 # $IPR: abstract.rb,v 1.24 2003/07/11 11:16:46 gotoyuzo Exp $
 
-require 'thread'
-
 require 'webrick/htmlutils'
 require 'webrick/httputils'
 require 'webrick/httpstatus'

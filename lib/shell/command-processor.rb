@@ -11,7 +11,6 @@
 #
 
 require "e2mmap"
-require "thread"
 
 require "shell/error"
 require "shell/filter"

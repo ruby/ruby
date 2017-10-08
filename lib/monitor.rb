@@ -7,8 +7,6 @@
 # You can freely distribute/modify this library.
 #
 
-require 'thread'
-
 #
 # In concurrent programming, a monitor is an object or module intended to be
 # used safely by more than one thread.  The defining characteristic of a

@@ -1,6 +1,5 @@
 # frozen_string_literal: false
 require 'test/unit'
-require 'thread'
 require 'tempfile'
 
 class TestBacktrace < Test::Unit::TestCase

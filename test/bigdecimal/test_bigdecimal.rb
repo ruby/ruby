@@ -2,8 +2,6 @@
 require_relative "testbase"
 require 'bigdecimal/math'
 
-require 'thread'
-
 class TestBigDecimal < Test::Unit::TestCase
   include TestBigDecimalBase
 

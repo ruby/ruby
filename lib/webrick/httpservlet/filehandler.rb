@@ -9,7 +9,6 @@
 #
 # $IPR: filehandler.rb,v 1.44 2003/06/07 01:34:51 gotoyuzo Exp $
 
-require 'thread'
 require 'time'
 
 require 'webrick/htmlutils'
