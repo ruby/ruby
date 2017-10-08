@@ -7,10 +7,10 @@ class TestGemCommandsSigninCommand < Gem::TestCase
 
   def setup
     super
-    
+
     Gem.configuration.rubygems_api_key = nil
     Gem.configuration.api_keys.clear
-    
+
     @cmd = Gem::Commands::SigninCommand.new
   end
 
@@ -19,7 +19,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     File.delete(credentials_path)  if File.exist?(credentials_path)
     super
   end
-  
+
   def test_execute_when_not_already_signed_in
     sign_in_ui = util_capture() { @cmd.execute }
     assert_match %r{Signed in.}, sign_in_ui.output
@@ -29,11 +29,11 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     host            = 'http://some-gemcutter-compatible-host.org'
     sign_in_ui      = util_capture(nil, host) { @cmd.execute }
     old_credentials = YAML.load_file Gem.configuration.credentials_path
-    
+
     sign_in_ui      = util_capture(nil, host) { @cmd.execute }
     new_credentials = YAML.load_file Gem.configuration.credentials_path
-    
-    assert_equal old_credentials[host], new_credentials[host]    
+
+    assert_equal old_credentials[host], new_credentials[host]
   end
 
   def test_execute_when_already_signed_in_with_different_host
@@ -57,15 +57,15 @@ class TestGemCommandsSigninCommand < Gem::TestCase
 
     api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
     credentials = YAML.load_file Gem.configuration.credentials_path
-    assert_equal api_key, credentials[host]    
+    assert_equal api_key, credentials[host]
   end
-  
+
   def test_execute_with_valid_creds_set_for_default_host
     util_capture {@cmd.execute}
-    
+
     api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf040453903'
     credentials = YAML.load_file Gem.configuration.credentials_path
-    
+
     assert_equal api_key, credentials[:rubygems_api_key]
   end
 
