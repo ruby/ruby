@@ -96,6 +96,20 @@ eot
     assert_equal("t", fname)
   end
 
+  def test_named_with_default
+    sexp = Ripper.sexp("def hello(bln: true, int: 1, str: 'str', sym: :sym) end")
+    named = String.new
+    search_sexp(:params, sexp)[5].each { |i| named << "#{i}\n" }  # join flattens
+    exp = "#{<<-"{#"}#{<<~'};'}"
+    {#
+      [[:@label, "bln:", [1, 10]], [:var_ref, [:@kw, "true", [1, 15]]]]
+      [[:@label, "int:", [1, 21]], [:@int, "1", [1, 26]]]
+      [[:@label, "str:", [1, 29]], [:string_literal, [:string_content, [:@tstring_content, "str", [1, 35]]]]]
+      [[:@label, "sym:", [1, 41]], [:symbol_literal, [:symbol, [:@ident, "sym", [1, 47]]]]]
+    };
+    assert_equal(exp, named)
+  end
+
   def search_sexp(sym, sexp)
     return sexp if !sexp or sexp[0] == sym
     sexp.find do |e|
