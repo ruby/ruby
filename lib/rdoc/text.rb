@@ -6,16 +6,6 @@
 require 'strscan'
 
 ##
-# For RDoc::Text#snippet
-
-begin
-  gem 'json'
-rescue NameError => e # --disable-gems
-  raise unless e.name == :gem
-rescue Gem::LoadError
-end
-
-##
 # Methods for manipulating comment text
 
 module RDoc::Text
