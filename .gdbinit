@@ -399,6 +399,7 @@ define rp_id
     end
     printf "(%ld): ", $id
     print_id $id
+    echo \n
   end
   end
   end
@@ -1091,7 +1092,7 @@ define print_id
 	if $result != RUBY_Qnil
           print_string $result
 	else
-	  echo undef\n
+	  echo undef
 	end
       end
     end
