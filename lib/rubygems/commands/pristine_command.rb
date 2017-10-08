@@ -157,14 +157,14 @@ extensions will be restored.
           install_defaults.to_s['--env-shebang']
         end
 
-      installer_options = { 
+      installer_options = {
         :wrappers => true,
         :force => true,
         :install_dir => spec.base_dir,
         :env_shebang => env_shebang,
         :build_args => spec.build_args,
       }
-      
+
       if options[:only_executables] then
         installer = Gem::Installer.for_spec(spec, installer_options)
         installer.generate_bin

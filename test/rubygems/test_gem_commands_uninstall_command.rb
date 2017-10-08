@@ -287,7 +287,7 @@ WARNING:  Use your OS package manager to uninstall vendor gems
     end
 
     output = ui.output.split "\n"
-    
+
     assert_equal output.first, "Gem 'd' is not installed"
   end
 
