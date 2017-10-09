@@ -240,55 +240,6 @@ class TestDRbSafe1 < TestDRbAry
   end
 end
 
-class TestDRbEval # < Test::Unit::TestCase
-  def setup
-    super
-    @ext = DRbService.ext_service('ut_eval.rb')
-    @there = @ext.front
-  end
-
-  def teardown
-    @ext.stop_service if @ext
-  end
-
-  def test_01_safe1_safe4_eval
-    assert_raise(SecurityError) do
-      @there.method_missing(:instance_eval, 'ENV.inspect')
-    end
-
-    assert_raise(SecurityError) do
-      @there.method_missing(:send, :eval, 'ENV.inspect')
-    end
-
-    remote_class = @there.remote_class
-
-    assert_raise(SecurityError) do
-      remote_class.class_eval('ENV.inspect')
-    end
-
-    assert_raise(SecurityError) do
-      remote_class.module_eval('ENV.inspect')
-    end
-
-    four = @there.four
-    assert_equal(1, four.method_missing(:send, :eval, '1'))
-
-    remote_class = four.remote_class
-
-    assert_equal(1, remote_class.class_eval('1'))
-
-    assert_equal(1, remote_class.module_eval('1'))
-
-    assert_raise(SecurityError) do
-      remote_class.class_eval('ENV = {}')
-    end
-
-    assert_raise(SecurityError) do
-      remote_class.module_eval('ENV = {}')
-    end
-  end
-end
-
 class TestDRbLarge < Test::Unit::TestCase
   include DRbBase
 
