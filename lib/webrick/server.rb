@@ -167,7 +167,7 @@ module WEBrick
           while @status == :Running
             begin
               sp = shutdown_pipe[0]
-              if svrs = IO.select([sp, *@listeners], nil, nil, 2.0)
+              if svrs = IO.select([sp, *@listeners])
                 if svrs[0].include? sp
                   # swallow shutdown pipe
                   buf = String.new
