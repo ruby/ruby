@@ -45,7 +45,7 @@ class TestObjSpace < Test::Unit::TestCase
     argf.inplace_mode = nil
     size = ObjectSpace.memsize_of(argf)
     argf.inplace_mode = "inplace_mode_suffix"
-    assert_equal(size + 20, ObjectSpace.memsize_of(argf))
+    assert_equal(size, ObjectSpace.memsize_of(argf))
   end
 
   def test_memsize_of_all

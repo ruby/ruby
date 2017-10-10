@@ -344,6 +344,29 @@ class TestArgf < Test::Unit::TestCase
     $stdout = stdout
   end
 
+  def test_inplace_suffix_encoding
+    base = "argf-\u{30c6 30b9 30c8}"
+    name = "#{@tmpdir}/#{base}"
+    suffix = "-bak"
+    File.write(name, "foo")
+    stdout = $stdout
+    argf = ARGF.class.new(name)
+    argf.inplace_mode = suffix.encode(Encoding::UTF_16LE)
+    begin
+      argf.each do |s|
+        puts "+"+s
+      end
+    ensure
+      $stdout.close unless $stdout == stdout
+      $stdout = stdout
+    end
+    assert_file.exist?(name)
+    assert_equal("+foo\n", File.read(name))
+    assert_file.not_exist?(name+"-")
+    assert_file.exist?(name+suffix)
+    assert_equal("foo", File.read(name+suffix))
+  end
+
   def test_encoding
     ruby('-e', "#{<<~"{#"}\n#{<<~'};'}", @t1.path, @t2.path, @t3.path) do |f|
       {#

@@ -181,7 +181,7 @@ struct argf {
     long last_lineno;		/* $. */
     long lineno;
     VALUE argv;
-    char *inplace;
+    VALUE inplace;
     struct rb_io_enc_t encs;
     int8_t init_p, next_p, binmode;
 };
@@ -8067,15 +8067,8 @@ argf_mark(void *ptr)
     rb_gc_mark(p->filename);
     rb_gc_mark(p->current_file);
     rb_gc_mark(p->argv);
+    rb_gc_mark(p->inplace);
     rb_gc_mark(p->encs.ecopts);
-}
-
-static void
-argf_free(void *ptr)
-{
-    struct argf *p = ptr;
-    xfree(p->inplace);
-    xfree(p);
 }
 
 static size_t
@@ -8083,13 +8076,12 @@ argf_memsize(const void *ptr)
 {
     const struct argf *p = ptr;
     size_t size = sizeof(*p);
-    if (p->inplace) size += strlen(p->inplace) + 1;
     return size;
 }
 
 static const rb_data_type_t argf_type = {
     "ARGF",
-    {argf_mark, argf_free, argf_memsize},
+    {argf_mark, RUBY_TYPED_DEFAULT_FREE, argf_memsize},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -8131,11 +8123,6 @@ argf_initialize_copy(VALUE argf, VALUE orig)
     if (!OBJ_INIT_COPY(argf, orig)) return argf;
     ARGF = argf_of(orig);
     ARGF.argv = rb_obj_dup(ARGF.argv);
-    if (ARGF.inplace) {
-	const char *inplace = ARGF.inplace;
-	ARGF.inplace = 0;
-	ARGF.inplace = ruby_strdup(inplace);
-    }
     return argf;
 }
 
@@ -8278,10 +8265,14 @@ argf_next_argv(VALUE argf)
 		    }
 		    fstat(fr, &st);
 		    str = filename;
-		    if (*ARGF.inplace) {
+		    if (!NIL_P(ARGF.inplace)) {
+			VALUE suffix = ARGF.inplace;
 			str = rb_str_dup(str);
-			rb_str_cat2(str, ARGF.inplace);
-			/* TODO: encoding of ARGF.inplace */
+			if (NIL_P(rb_str_cat_conv_enc_opts(str, RSTRING_LEN(str),
+							   RSTRING_PTR(suffix), RSTRING_LEN(suffix),
+							   rb_enc_get(suffix), 0, Qnil))) {
+			    rb_str_append(str, suffix);
+			}
 #ifdef NO_SAFE_RENAME
 			(void)close(fr);
 			(void)unlink(RSTRING_PTR(str));
@@ -12191,7 +12182,8 @@ static VALUE
 argf_inplace_mode_get(VALUE argf)
 {
     if (!ARGF.inplace) return Qnil;
-    return rb_str_new2(ARGF.inplace);
+    if (NIL_P(ARGF.inplace)) return rb_str_new(0, 0);
+    return rb_str_dup(ARGF.inplace);
 }
 
 static VALUE
@@ -12227,14 +12219,13 @@ argf_inplace_mode_set(VALUE argf, VALUE val)
 	rb_insecure_operation();
 
     if (!RTEST(val)) {
-	if (ARGF.inplace) free(ARGF.inplace);
-	ARGF.inplace = 0;
+	ARGF.inplace = Qfalse;
+    }
+    else if (StringValueCStr(val), !RSTRING_LEN(val)) {
+	ARGF.inplace = Qnil;
     }
     else {
-	const char *suffix = StringValueCStr(val);
-	if (ARGF.inplace) free(ARGF.inplace);
-	ARGF.inplace = 0;
-	ARGF.inplace = strdup(suffix);
+	ARGF.inplace = rb_str_new_frozen(val);
     }
     return argf;
 }
@@ -12248,15 +12239,13 @@ opt_i_set(VALUE val, ID id, VALUE *var)
 const char *
 ruby_get_inplace_mode(void)
 {
-    return ARGF.inplace;
+    return RSTRING_PTR(ARGF.inplace);
 }
 
 void
 ruby_set_inplace_mode(const char *suffix)
 {
-    if (ARGF.inplace) free(ARGF.inplace);
-    ARGF.inplace = 0;
-    if (suffix) ARGF.inplace = strdup(suffix);
+    ARGF.inplace = !suffix ? Qfalse : !*suffix ? Qnil : rb_fstring_cstr(suffix);
 }
 
 /*
