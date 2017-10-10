@@ -376,7 +376,11 @@ class RDoc::Parser::Ruby < RDoc::Parser
       unless :on_const == name_t[:kind] || :on_ident == name_t[:kind]
         raise RDoc::Error, "Invalid class or module definition: #{given_name}"
       end
-      given_name << '::' << name_t[:text]
+      if prev_container == container and !ignore_constants
+        given_name = name_t[:text]
+      else
+        given_name << '::' << name_t[:text]
+      end
     end
 
     skip_tkspace false
@@ -872,21 +876,17 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     return unless name =~ /^\w+$/
 
-    eq_tk = get_tk
-
-    if :on_op == eq_tk[:kind] && '::' == eq_tk[:text] then
-      unget_tk eq_tk
+    if :on_op == peek_tk[:kind] && '::' == peek_tk[:text] then
       unget_tk tk
 
       container, name_t, = get_class_or_module container, ignore_constants
 
       name = name_t[:text]
-
-      eq_tk = get_tk
     end
 
     is_array_or_hash = false
-    if eq_tk && :on_lbracket == eq_tk[:kind]
+    if peek_tk && :on_lbracket == peek_tk[:kind]
+      get_tk
       nest = 1
       while bracket_tk = get_tk
         case bracket_tk[:kind]
@@ -898,14 +898,13 @@ class RDoc::Parser::Ruby < RDoc::Parser
         end
       end
       skip_tkspace false
-      eq_tk = get_tk
       is_array_or_hash = true
     end
 
-    unless eq_tk && :on_op == eq_tk[:kind] && '=' == eq_tk[:text] then
-      unget_tk eq_tk
+    unless peek_tk && :on_op == peek_tk[:kind] && '=' == peek_tk[:text] then
       return false
     end
+    get_tk
 
     value = ''
     con = RDoc::Constant.new name, value, comment

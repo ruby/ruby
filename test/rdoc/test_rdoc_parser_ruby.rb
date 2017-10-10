@@ -778,12 +778,13 @@ end
 
   def test_parse_class_lower_name_warning
     @options.verbosity = 2
-    out, err = capture_io do
+    stds = capture_io do
       util_parser "class foo\nend"
       tk = @parser.get_tk
       @parser.parse_class @top_level, RDoc::Parser::Ruby::NORMAL, tk, @comment
     end
-    assert_match /Expected class name or '<<'\. Got/, err
+    err = stds[1]
+    assert_match(/Expected class name or '<<'\. Got/, err)
   end
 
   def test_parse_multi_ghost_methods
@@ -1359,6 +1360,52 @@ A::B::C = 1
     assert_equal 'comment', c.comment
   end
 
+  def test_parse_class_the_same_of_outside
+    util_parser <<-RUBY
+module A
+  class A::B
+  end
+end
+    RUBY
+
+    @parser.scan
+
+    assert_includes @store.modules_hash, 'A'
+    module_a = @store.find_module_named 'A'
+    refute_empty module_a.classes_hash
+    assert_includes module_a.classes_hash, 'B'
+    refute_includes module_a.classes_hash, 'A'
+  end
+
+  def test_parse_constant_the_same_of_outside
+    util_parser <<-RUBY
+module A
+  class B
+    class C
+    end
+  end
+
+  def self.foo
+    A::B::C
+  end
+end
+    RUBY
+
+    expected = <<EXPECTED
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">foo</span>
+  <span class="ruby-constant">A</span><span class="ruby-operator">::</span><span class="ruby-constant">B</span><span class="ruby-operator">::</span><span class="ruby-constant">C</span>
+<span class="ruby-keyword">end</span>
+EXPECTED
+    expected = expected.rstrip
+
+    @parser.scan
+
+    module_a = @store.find_module_named 'A'
+    foo = module_a.method_list.first
+    markup_code = foo.markup_code.sub(/^.*\n/, '')
+    assert_equal expected, markup_code
+  end
+
   def test_parse_constant_with_bracket
     util_parser <<-RUBY
 class Klass
@@ -1379,8 +1426,6 @@ end
     klass = @store.find_class_named 'Klass'
     klass2 = @store.find_class_named 'Klass2'
     klass3 = @store.find_class_named 'Klass3'
-    constant = klass2.find_module_named 'CONSTANT'
-    constant2 = klass3.find_module_named 'CONSTANT_2'
     assert_equal klass, klass2.constants.first.is_alias_for
     refute_equal klass, klass3.constants.first.is_alias_for
     assert_nil klass3.find_module_named 'CONSTANT_2'
@@ -2561,14 +2606,14 @@ class Foo
 end
 RUBY
 
-    expected = <<EXPTECTED
+    expected = <<EXPECTED
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">blah</span>()
   <span class="ruby-keyword">for</span> <span class="ruby-identifier">i</span> <span class="ruby-keyword">in</span> (<span class="ruby-identifier">k</span>)<span class="ruby-operator">...</span><span class="ruby-identifier">n</span> <span class="ruby-keyword">do</span>
   <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">for</span> <span class="ruby-identifier">i</span> <span class="ruby-keyword">in</span> (<span class="ruby-identifier">k</span>)<span class="ruby-operator">...</span><span class="ruby-identifier">n</span>
   <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span>
-EXPTECTED
+EXPECTED
     expected = expected.rstrip
 
     @parser.scan
@@ -2578,7 +2623,7 @@ EXPTECTED
 
     blah = foo.method_list.first
     markup_code = blah.markup_code.sub(/^.*\n/, '')
-    assert_equal markup_code, expected
+    assert_equal expected, markup_code
   end
 
   def test_parse_statements_postfix_if_after_heredocbeg
@@ -2592,12 +2637,12 @@ class Foo
 end
 RUBY
 
-    expected = <<EXPTECTED
+    expected = <<EXPECTED
   <span class="ruby-keyword">def</span> <span class="ruby-identifier">blah</span>()
     <span class="ruby-identifier">&lt;&lt;-EOM</span> <span class="ruby-keyword">if</span> <span class="ruby-keyword">true</span>
 <span class="ruby-value"></span><span class="ruby-identifier">    EOM</span>
   <span class="ruby-keyword">end</span>
-EXPTECTED
+EXPECTED
     expected = expected.rstrip
 
     @parser.scan
@@ -2617,9 +2662,9 @@ class Foo
 end
 RUBY
 
-    expected = <<EXPTECTED
+    expected = <<EXPECTED
 <span class="ruby-keyword">def</span> <span class="ruby-identifier">blah</span>() <span class="ruby-regexp">/bar/</span> <span class="ruby-keyword">end</span>
-EXPTECTED
+EXPECTED
     expected = expected.rstrip
 
     @parser.scan
@@ -2647,14 +2692,14 @@ class Foo
 end
 RUBY
 
-    expected = <<EXPTECTED
+    expected = <<EXPECTED
 <p>doc
 
 <pre class="ruby"><span class="ruby-comment">=begin
 test embdoc
 =end</span>
 </pre>
-EXPTECTED
+EXPECTED
 
     @parser.scan
 
@@ -2663,7 +2708,7 @@ EXPTECTED
 
     blah = foo.method_list.first
     markup_comment = blah.search_record[6]
-    assert_equal markup_comment, expected
+    assert_equal expected, markup_comment
   end
 
   def test_parse_require_dynamic_string
@@ -3639,7 +3684,7 @@ end
     @parser.scan
 
     c = @store.find_class_named 'C'
-    const_a, const_b, const_c, const_d = c.constants.sort_by(&:name)
+    const_a, const_b, const_c = c.constants.sort_by(&:name)
 
     assert_equal 'CONST_A', const_a.name
     assert_equal :public, const_a.visibility

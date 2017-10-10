@@ -89,6 +89,15 @@ method(a, b) { |c, d| ... }
     assert_equal '', @c2_a.markup_code
   end
 
+  def test_markup_code_with_variable_expansion
+    m = RDoc::AnyMethod.new nil, 'method'
+    m.parent = @c1
+    m.block_params = '"Hello, #{world}", yield_arg'
+    m.params = 'a'
+
+    assert_equal '(a) { |"Hello, #{world}", yield_arg| ... }', m.param_seq
+  end
+
   def test_marshal_dump
     @store.path = Dir.tmpdir
     top_level = @store.add_file 'file.rb'

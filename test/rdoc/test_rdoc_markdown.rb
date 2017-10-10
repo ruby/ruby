@@ -973,6 +973,14 @@ and an extra note.[^2]
     assert_equal '<b>_emphasis_</b>', @parser.strong('_emphasis_')
   end
 
+  def test_code_fence_with_unintended_array
+    doc = parse '```<ruby>```'
+
+    expected = doc(verb('<ruby>'))
+
+    assert_equal expected, doc
+  end
+
   def parse text
     @parser.parse text
   end
