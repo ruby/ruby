@@ -149,7 +149,6 @@ module RDoc
   autoload :KNOWN_CLASSES,  'rdoc/known_classes'
 
   autoload :RipperStateLex, 'rdoc/parser/ripper_state_lex'
-  autoload :RubyToken,      'rdoc/ruby_token'
   autoload :TokenStream,    'rdoc/token_stream'
 
   autoload :Comment,        'rdoc/comment'
