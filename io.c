@@ -136,6 +136,8 @@ off_t __syscall(quad_t number, ...);
 #ifdef _WIN32
 #undef open
 #define open	rb_w32_uopen
+#undef rename
+#define rename(f, t)	rb_w32_urename((f), (t))
 #endif
 
 VALUE rb_cIO;
@@ -8249,8 +8251,8 @@ argf_next_argv(VALUE argf)
       retry:
 	if (RARRAY_LEN(ARGF.argv) > 0) {
 	    VALUE filename = rb_ary_shift(ARGF.argv);
-	    StringValueCStr(filename);
-	    ARGF.filename = rb_str_encode_ospath(filename);
+	    FilePathValue(filename);
+	    ARGF.filename = filename;
 	    fn = StringValueCStr(filename);
 	    if (RSTRING_LEN(filename) == 1 && fn[0] == '-') {
 		ARGF.current_file = rb_stdin;
