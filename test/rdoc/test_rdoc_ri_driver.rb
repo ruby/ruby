@@ -969,6 +969,27 @@ Foo::Bar#bother
     assert_equal 'nonexistent', e.name
   end
 
+  def test_did_you_mean
+    skip 'skip test with did_you_men' unless defined? DidYouMean::SpellChecker
+
+    util_ancestors_store
+
+    e = assert_raises RDoc::RI::Driver::NotFoundError do
+      @driver.lookup_method 'Foo.i_methdo'
+    end
+    assert_equal "Nothing known about Foo.i_methdo\nDid you mean?  i_method", e.message
+
+    e = assert_raises RDoc::RI::Driver::NotFoundError do
+      @driver.lookup_method 'Foo#i_methdo'
+    end
+    assert_equal "Nothing known about Foo#i_methdo\nDid you mean?  i_method", e.message
+
+    e = assert_raises RDoc::RI::Driver::NotFoundError do
+      @driver.lookup_method 'Foo::i_methdo'
+    end
+    assert_equal "Nothing known about Foo::i_methdo\nDid you mean?  c_method", e.message
+  end
+
   def test_formatter
     tty = Object.new
     def tty.tty?() true; end

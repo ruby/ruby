@@ -206,7 +206,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
                   result = RDoc::TokenStream.to_html tokens
                   result = result + "\n" unless "\n" == result[-1]
                   result
-                rescue RDoc::RubyLex::Error
+                rescue
                   CGI.escapeHTML text
                 end
               else

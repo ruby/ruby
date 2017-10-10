@@ -276,8 +276,7 @@ class RDoc::AnyMethod < RDoc::MethodAttr
       # &block
       params.sub!(/,?\s*&\w+/, '')
 
-      block = @block_params.gsub(/\s*\#.*/, '')
-      block = block.tr("\n", " ").squeeze(" ")
+      block = @block_params.tr("\n", " ").squeeze(" ")
       if block[0] == ?(
         block.sub!(/^\(/, '').sub!(/\)/, '')
       end

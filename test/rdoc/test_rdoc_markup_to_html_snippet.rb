@@ -494,9 +494,9 @@ be guessed, raises an error if +name+ couldn't be guessed.
     rdoc = <<-RDOC
 = \RDoc - Ruby Documentation System
 
-* {RDoc Project Page}[https://github.com/rdoc/rdoc/]
-* {RDoc Documentation}[https://rdoc.github.io/rdoc]
-* {RDoc Bug Tracker}[https://github.com/rdoc/rdoc/issues]
+* {RDoc Project Page}[https://github.com/ruby/rdoc]
+* {RDoc Documentation}[https://ruby.github.io/rdoc]
+* {RDoc Bug Tracker}[https://github.com/ruby/rdoc/issues]
 
 == DESCRIPTION:
 
