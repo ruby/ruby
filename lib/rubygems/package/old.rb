@@ -101,7 +101,7 @@ class Gem::Package::Old < Gem::Package
       header << line
     end
 
-    YAML.load header
+    Gem::SafeYAML.safe_load header
   end
 
   ##
