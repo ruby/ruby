@@ -925,7 +925,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
     bug7774 = '[ruby-dev:46908]'
     src = %q{
       tp = TracePoint.new(:raise) do |tp|
-        next unless target_thread?g
         tp.binding
       end
       tp.enable do
