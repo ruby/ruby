@@ -1287,7 +1287,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	    hptr = NULL;
 	}
 	else {
-	    strncpy(hbuf, StringValuePtr(host), sizeof(hbuf));
+	    strncpy(hbuf, StringValueCStr(host), sizeof(hbuf));
 	    hbuf[sizeof(hbuf) - 1] = '\0';
 	    hptr = hbuf;
 	}
@@ -1301,7 +1301,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
 	    pptr = pbuf;
 	}
 	else {
-	    strncpy(pbuf, StringValuePtr(port), sizeof(pbuf));
+	    strncpy(pbuf, StringValueCStr(port), sizeof(pbuf));
 	    pbuf[sizeof(pbuf) - 1] = '\0';
 	    pptr = pbuf;
 	}
