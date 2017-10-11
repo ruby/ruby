@@ -5948,7 +5948,7 @@ proc_setgroups(VALUE obj, VALUE ary)
 static VALUE
 proc_initgroups(VALUE obj, VALUE uname, VALUE base_grp)
 {
-    if (initgroups(StringValuePtr(uname), OBJ2GID(base_grp)) != 0) {
+    if (initgroups(StringValueCStr(uname), OBJ2GID(base_grp)) != 0) {
 	rb_sys_fail(0);
     }
     return proc_getgroups(obj);
