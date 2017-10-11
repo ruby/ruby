@@ -10,7 +10,7 @@ require 'rbconfig'
 require 'thread'
 
 module Gem
-  VERSION = "2.6.13"
+  VERSION = "2.6.14"
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -675,7 +675,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     unless test_syck
       begin
-        gem 'psych', '>= 1.2.1'
+        gem 'psych', '>= 2.0.0'
       rescue Gem::LoadError
         # It's OK if the user does not have the psych gem installed.  We will
         # attempt to require the stdlib version
@@ -699,6 +699,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     end
 
     require 'yaml'
+    require 'rubygems/safe_yaml'
 
     # If we're supposed to be using syck, then we may have to force
     # activate it via the YAML::ENGINE API.
