@@ -450,6 +450,17 @@ class TestRubyOptions < Test::Unit::TestCase
             t.flush
             assert_in_out_err(["-w", t.path], "", [], [], '[ruby-core:25442]')
           end
+
+          a.for("BOM with #{b}") do
+            err = ["#{t.path}:2: warning: mismatched indentations at '#{e}' with '#{k}' at 1"]
+            t.rewind
+            t.truncate(0)
+            t.print "\u{feff}"
+            t.puts src
+            t.flush
+            assert_in_out_err(["-w", t.path], "", [], err)
+            assert_in_out_err(["-wr", t.path, "-e", ""], "", [], err)
+          end
         end
       end
     end
