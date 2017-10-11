@@ -2991,7 +2991,9 @@ rb_file_s_umask(int argc, VALUE *argv)
 #endif
 #ifdef FILE_ALT_SEPARATOR
 #define isdirsep(x) ((x) == '/' || (x) == FILE_ALT_SEPARATOR)
+# ifdef DOSISH
 static const char file_alt_separator[] = {FILE_ALT_SEPARATOR, '\0'};
+# endif
 #else
 #define isdirsep(x) ((x) == '/')
 #endif
