@@ -925,6 +925,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     bug7774 = '[ruby-dev:46908]'
     src = %q{
       tp = TracePoint.new(:raise) do |tp|
+        next unless target_thread?g
         tp.binding
       end
       tp.enable do
@@ -1492,6 +1493,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
   def test_tracepoint_callee_id
     events = []
     capture_events = Proc.new{|tp|
+      next unless target_thread?
       events << [tp.event, tp.method_id, tp.callee_id]
     }
 
@@ -1748,6 +1750,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
       define_method(:m) {}
 
       tp = TracePoint.new(:call) do
+        next unless target_thread?
         raise ''
       end
 
