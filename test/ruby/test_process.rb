@@ -2339,4 +2339,12 @@ EOS
       assert_equal pid, Timeout.timeout(30) { Process.wait(pid) }
     end;
   end
+
+  if Process.respond_to?(:initgroups)
+    def test_initgroups
+      assert_raise(ArgumentError) do
+        Process.initgroups("\0", 0)
+      end
+    end
+  end
 end
