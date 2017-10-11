@@ -162,7 +162,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 * RDoc
 
   * Update RDoc 6.0.0.beta3.
-    * Change lexer IRB based one to Ripper. It much improves the speed of generating document.
+    * Replaced IRB based lexer with Ripper. It much improves the speed of generating document.
     * https://github.com/ruby/rdoc/pull/512
 
 * Rubygems
