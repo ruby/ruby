@@ -429,6 +429,7 @@ end
 if load_relative or /\s/ =~ bindir
   PROLOG_SCRIPT = <<EOS
 #!/bin/sh\n# -*- ruby -*-
+_=_\\\n=begin
 bindir="#{load_relative ? '${0%/*}' : bindir.gsub(/\"/, '\\\\"')}"
 EOS
   if CONFIG["LIBRUBY_RELATIVE"] != 'yes' and libpathenv = CONFIG["LIBPATHENV"]
@@ -438,7 +439,7 @@ libdir="#{load_relative ? '${bindir%/bin}/lib' : libdir.gsub(/\"/, '\\\\"')}"
 export #{libpathenv}="$libdir${#{libpathenv}:+#{pathsep}$#{libpathenv}}"
 EOS
   end
-  PROLOG_SCRIPT << %Q[exec "$bindir/#{ruby_install_name}" -x "$0" "$@"\n]
+  PROLOG_SCRIPT << %Q[exec "$bindir/#{ruby_install_name}" "-x" "$0" "$@"\n=end\n]
 else
   PROLOG_SCRIPT = nil
 end
