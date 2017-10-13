@@ -329,7 +329,13 @@ rb_warn_m(int argc, VALUE *argv, VALUE exc)
 	    rb_io_puts(argc, argv, str);
 	    RBASIC_SET_CLASS(str, rb_cString);
 	}
-	rb_write_warning_str(str);
+	if (exc == rb_mWarning) {
+	    rb_must_asciicompat(str);
+	    rb_write_error_str(str);
+	}
+	else {
+	    rb_write_warning_str(str);
+	}
     }
     return Qnil;
 }

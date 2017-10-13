@@ -1034,6 +1034,20 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_match(/^\tfrom #{Regexp.escape(path)}:1:/, warning.first)
   end
 
+  def test_warning_warn_super
+    assert_in_out_err(%[-W0], "#{<<~"{#"}\n#{<<~'};'}", [], /instance variable @a not initialized/)
+    {#
+      module Warning
+        def warn(message)
+          super
+        end
+      end
+
+      $VERBOSE = true
+      @a
+    };
+  end
+
   def test_undefined_backtrace
     assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
