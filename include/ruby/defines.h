@@ -268,7 +268,16 @@ void xfree(void*);
 #endif
 
 #ifndef EXTERN
-#define EXTERN RUBY_EXTERN	/* deprecated */
+# if defined __GNUC__
+#   define EXTERN _Pragma("message \"EXTERN is deprecated, use RUBY_EXTERN instead\""); \
+    RUBY_EXTERN
+# elif defined _MSC_VER
+#   define EXTERN __pragma(message(__FILE__"("STRINGIZE(__LINE__)"): warning: "\
+				   "EXTERN is deprecated, use RUBY_EXTERN instead")); \
+    RUBY_EXTERN
+# else
+#   define EXTERN <-<-"EXTERN is deprecated, use RUBY_EXTERN instead"->->
+# endif
 #endif
 
 #ifndef RUBY_MBCHAR_MAXSIZE
