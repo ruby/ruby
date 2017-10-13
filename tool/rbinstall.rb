@@ -426,26 +426,36 @@ install?(:doc, :capi) do
   install_recursive "doc/capi", docdir+"/capi", :mode => $data_mode
 end
 
-if load_relative or /\s/ =~ bindir
-  PROLOG_SCRIPT = <<EOS
-#!/bin/sh\n# -*- ruby -*-
-_=_\\\n=begin
+prolog_script = <<EOS
 bindir="#{load_relative ? '${0%/*}' : bindir.gsub(/\"/, '\\\\"')}"
 EOS
-  if CONFIG["LIBRUBY_RELATIVE"] != 'yes' and libpathenv = CONFIG["LIBPATHENV"]
-    pathsep = File::PATH_SEPARATOR
-    PROLOG_SCRIPT << <<EOS
-libdir="#{load_relative ? '${bindir%/bin}/lib' : libdir.gsub(/\"/, '\\\\"')}"
+if CONFIG["LIBRUBY_RELATIVE"] != 'yes' and libpathenv = CONFIG["LIBPATHENV"]
+  pathsep = File::PATH_SEPARATOR
+  prolog_script << <<EOS
+libdir="#{load_relative ? '$\{bindir%/bin\}/lib' : libdir.gsub(/\"/, '\\\\"')}"
 export #{libpathenv}="$libdir${#{libpathenv}:+#{pathsep}$#{libpathenv}}"
 EOS
-  end
-  PROLOG_SCRIPT << %Q[exec "$bindir/#{ruby_install_name}" "-x" "$0" "$@"\n=end\n]
-else
-  PROLOG_SCRIPT = nil
 end
+prolog_script << %Q[exec "$bindir/#{ruby_install_name}" "-x" "$0" "$@"\n]
+PROLOG_SCRIPT = {}
+PROLOG_SCRIPT["exe"] = "#!#{bindir}/#{ruby_install_name}"
+PROLOG_SCRIPT["cmd"] = <<EOS
+:""||{ ""=> %q<-*- ruby -*-
+@"%~dp0#{ruby_install_name}" -x "%~f0" %*
+@exit /b %ERRORLEVEL%
+};{#\n#{prolog_script.gsub(/(?=\n)/, ' #')}>,\n}
+EOS
+PROLOG_SCRIPT.default = (load_relative || /\s/ =~ bindir) ?
+                          <<EOS : PROLOG_SCRIPT["exe"]
+#!/bin/sh
+# -*- ruby -*-
+_=_\\
+=begin
+#{prolog_script}=end
+EOS
 
 $script_installer = Struct.new(:ruby_shebang, :ruby_bin, :ruby_install_name,
-                               :stub, :trans, :prebatch, :postbatch) do
+                               :stub, :trans) do
   ruby_shebang = File.join(bindir, ruby_install_name)
   if File::ALT_SEPARATOR
     ruby_bin = ruby_shebang.tr(File::SEPARATOR, File::ALT_SEPARATOR)
@@ -477,18 +487,17 @@ $script_installer = Struct.new(:ruby_shebang, :ruby_bin, :ruby_install_name,
   else
     trans = proc {|base| base}
   end
-  prebatch = ':""||{ ""=> %q<-*- ruby -*-'"\n"
-  postbatch = PROLOG_SCRIPT ? "};{\n#{PROLOG_SCRIPT.sub(/\A(?:#.*\n)*/, '')}" : ''
-  postbatch << ">,\n}\n"
-  postbatch.gsub!(/(?=\n)/, ' #')
 
   def prolog(shebang)
-    if PROLOG_SCRIPT and !$cmdtype
-      shebang.sub!(/\A(\#!.*?ruby\b)?/) {PROLOG_SCRIPT + ($1 || "#!ruby\n")}
-    else
-      shebang.sub!(/\A(\#!.*?ruby\b)?/) {"#!" + ruby_shebang + ($1 ? "" : "\n")}
-    end
     shebang.sub!(/\r$/, '')
+    script = PROLOG_SCRIPT[$cmdtype]
+    shebang.sub!(/\A(\#!.*?ruby\b)?/) do
+      if script.end_with?("\n")
+        script + ($1 || "#!ruby\n")
+      else
+        $1 ? script : "#{script}\n"
+      end
+    end
     shebang
   end
 
@@ -507,18 +516,13 @@ $script_installer = Struct.new(:ruby_shebang, :ruby_bin, :ruby_install_name,
       case $cmdtype
       when "exe"
         stub + shebang + body
-      when "cmd"
-        prebatch + <<"/EOH" << postbatch << shebang << body
-@"%~dp0#{ruby_install_name}" -x "%~f0" %*
-@exit /b %ERRORLEVEL%
-/EOH
       else
         shebang + body
       end
     end
   end
 
-  break new(ruby_shebang, ruby_bin, ruby_install_name, stub, trans, prebatch, postbatch)
+  break new(ruby_shebang, ruby_bin, ruby_install_name, stub, trans)
 end
 
 install?(:local, :comm, :bin, :'bin-comm') do
