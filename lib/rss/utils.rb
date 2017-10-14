@@ -132,9 +132,9 @@ module RSS
           value
         else
           case value.to_s
-          when /\Ayes\z/i
+          when /\Aexplicit\z|\Ayes\z/i
             true
-          when /\Aclean\z/i
+          when /\Aclean\z|\Ano\z/i
             false
           else
             nil
