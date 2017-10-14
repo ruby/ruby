@@ -55,7 +55,7 @@ if [ "$color" = always -o \( "$color" = auto -a -t 1 \) ]; then
 		msg_unchanged=`expr ":$TEST_COLORS:" : ".*:pass=\([^:]*\):"` || :
 		msg_updated=`expr ":$TEST_COLORS:" : ".*:fail=\([^:]*\):"` || :
 	    fi
-	    msg_unchanged="${msg_begin}${msg_unchanged:-32;1}m"
+	    msg_unchanged="${msg_begin}${msg_unchanged:-32}m"
 	    msg_updated="${msg_begin}${msg_updated:-31;1}m"
 	    msg_reset="${msg_begin}m"
 	    ;;
