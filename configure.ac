@@ -3589,7 +3589,6 @@ AS_IF([test "$dln_a_out_works" = yes], [
     [hpux*], [
 	DLEXT=sl],
     [darwin*], [
-	RUBY_APPEND_OPTION(XLDFLAGS, [-Wl,-u,_objc_msgSend])
 	DLEXT=bundle],
     [cygwin*|mingw*|*djgpp*], [
 	LOAD_RELATIVE=1
