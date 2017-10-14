@@ -3589,6 +3589,7 @@ AS_IF([test "$dln_a_out_works" = yes], [
     [hpux*], [
 	DLEXT=sl],
     [darwin*], [
+	SOEXT=dylib
 	DLEXT=bundle],
     [cygwin*|mingw*|*djgpp*], [
 	LOAD_RELATIVE=1
@@ -3596,6 +3597,8 @@ AS_IF([test "$dln_a_out_works" = yes], [
     [
 	DLEXT=so])
 ])
+: ${SOEXT='$(DLEXT)'}
+AC_SUBST(SOEXT)
 AS_IF([test "$rb_cv_dlopen:$load_relative" = yes:yes], [
     AS_IF([test "$ac_cv_func_dladdr" = yes], [
 	LOAD_RELATIVE=1
@@ -3786,10 +3789,10 @@ AC_ARG_WITH(soname,
 	        RUBY_SO_NAME='$(RUBY_BASE_NAME).$(RUBY_PROGRAM_VERSION)'
 	    ],
 	    [cygwin*], [
-	        RUBY_SO_NAME='$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)0'
+	        RUBY_SO_NAME='$(RUBY_BASE_NAME)$(RUBY_API_VERSION:.=)0'
 	    ],
 	    [mingw*], [
-		RUBY_SO_NAME="${rb_cv_msvcrt}"'-$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)0'
+		RUBY_SO_NAME="${rb_cv_msvcrt}"'-$(RUBY_BASE_NAME)$(RUBY_API_VERSION:.=)0'
 		AS_IF([test x"${target_cpu}" != xi386], [
 		    RUBY_SO_NAME="${target_cpu}-${RUBY_SO_NAME}"
 		])
@@ -3799,8 +3802,9 @@ AC_ARG_WITH(soname,
 
 LIBRUBY_LDSHARED=$LDSHARED
 LIBRUBY_DLDFLAGS=$DLDFLAGS
-LIBRUBY_SO='lib$(RUBY_SO_NAME).so.$(RUBY_PROGRAM_VERSION)'
-LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so'
+LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT).$(RUBY_PROGRAM_VERSION)'
+LIBRUBY_SONAME='lib$(RUBY_SO_NAME).$(SOEXT).$(RUBY_API_VERSION)'
+LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).$(SOEXT)'
 ENABLE_SHARED=no
 
 AC_ARG_ENABLE(shared,
@@ -3840,11 +3844,11 @@ AS_CASE("$enable_shared", [yes], [
 
   AS_CASE(["$target_os"],
     [sunos4*], [
-	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(RUBY_API_VERSION) lib$(RUBY_SO_NAME).so'
+	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
 	],
     [linux* | gnu* | k*bsd*-gnu | atheos* | kopensolaris*-gnu | haiku*], [
-	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,lib$(RUBY_SO_NAME).so.$(RUBY_API_VERSION)' "$LDFLAGS_OPTDIR"])
-	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(RUBY_API_VERSION) lib$(RUBY_SO_NAME).so'
+	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,$(LIBRUBY_SONAME)' "$LDFLAGS_OPTDIR"])
+	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
 	AS_IF([test "$load_relative" = yes], [
 	    libprefix="'\$\${ORIGIN}/../${libdir_basename}'"
 	    LIBRUBY_RPATHFLAGS="-Wl,-rpath,${libprefix}"
@@ -3853,7 +3857,8 @@ AS_CASE("$enable_shared", [yes], [
 	],
     [freebsd*|dragonfly*], [
 	SOLIBS='$(LIBS)'
-	LIBRUBY_SO='lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR)'
+	LIBRUBY_SONAME='lib$(RUBY_SO_NAME).$(SOEXT).$(RUBY_API_VERSION:.=)'
+	LIBRUBY_SO='$(LIBRUBY_SONAME)'
 	AS_IF([test "$rb_cv_binary_elf" != "yes" ], [
 	    LIBRUBY_SO="$LIBRUBY_SO.\$(TEENY)"
 	    LIBRUBY_ALIASES=''
@@ -3861,22 +3866,24 @@ AS_CASE("$enable_shared", [yes], [
 	],
     [netbsd*], [
 	SOLIBS='$(LIBS)'
-	LIBRUBY_SO='lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR).$(TEENY)'
-	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR)' "$LDFLAGS_OPTDIR"])
+	LIBRUBY_SONAME='lib$(RUBY_SO_NAME).$(SOEXT).$(RUBY_API_VERSION:.=)'
+	LIBRUBY_SO='$(LIBRUBY_SONAME).$(TEENY)'
+	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,$(LIBRUBY_SONAME)' "$LDFLAGS_OPTDIR"])
 	AS_IF([test "$rb_cv_binary_elf" = yes], [ # ELF platforms
-	   LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR)$(MINOR) lib$(RUBY_SO_NAME).so'
+	   LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
 	], [	# a.out platforms
 	   LIBRUBY_ALIASES=""
 	])
 	],
     [openbsd*|mirbsd*], [
 	SOLIBS='$(LIBS)'
-	LIBRUBY_SO='lib$(RUBY_SO_NAME).so.$(MAJOR).'`expr ${MINOR} \* 10 + ${TEENY}`
+	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR).'`expr ${MINOR} \* 10 + ${TEENY}`
 	],
     [solaris*], [
 	SOLIBS='$(LIBS)'
-	LIBRUBY_SO='lib$(RUBY_SO_NAME).so.$(MAJOR)'
-	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(RUBY_PROGRAM_VERSION) lib$(RUBY_SO_NAME).so'
+	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR)'
+	LIBRUBY_SONAME='lib$(RUBY_SO_NAME).$(SOEXT).$(RUBY_PROGRAM_VERSION)'
+	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
 	AS_IF([test "$GCC" = yes], [
 	    LIBRUBY_DLDFLAGS="$DLDFLAGS "'-Wl,-h,$(@F)'
 	], [
@@ -3886,8 +3893,7 @@ AS_CASE("$enable_shared", [yes], [
 	],
     [hpux*], [
 	XLDFLAGS="$XLDFLAGS "'-Wl,+s,+b,$(libdir)'
-	LIBRUBY_SO='lib$(RUBY_SO_NAME).sl.$(RUBY_PROGRAM_VERSION)'
-	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).sl.$(RUBY_API_VERSION) lib$(RUBY_SO_NAME).sl'
+	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
 	],
     [aix*], [
 	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ["${linker_flag}-bnoentry" "$XLDFLAGS" "$LDFLAGS_OPTDIR"])
@@ -3900,7 +3906,7 @@ AS_CASE("$enable_shared", [yes], [
 	    libprefix="@executable_path/../${libdir_basename}"
 	    LIBRUBY_RELATIVE=yes
 	])
-	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-install_name '${libprefix}'/lib$(RUBY_BASE_NAME).$(RUBY_API_VERSION).dylib'
+	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS -install_name ${libprefix}"'/$(LIBRUBY_SONAME)'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-compatibility_version $(RUBY_API_VERSION)'
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-current_version $(RUBY_PROGRAM_VERSION)'
 	AS_IF([test "$visibility_option" = ld], [
@@ -3909,8 +3915,9 @@ AS_CASE("$enable_shared", [yes], [
 	    LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,*_threadptr_*'
 	])
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "' $(XLDFLAGS)'
-	LIBRUBY_SO='lib$(RUBY_SO_NAME).dylib'
-	LIBRUBY_ALIASES='lib$(RUBY_BASE_NAME).$(RUBY_API_VERSION).dylib lib$(RUBY_INSTALL_NAME).dylib'
+	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT)'
+	LIBRUBY_SONAME='lib$(RUBY_BASE_NAME).$(RUBY_API_VERSION).$(SOEXT)'
+	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_INSTALL_NAME).$(SOEXT)'
 	SOLIBS='$(LIBS)'
 	],
     [interix*], [
@@ -4297,6 +4304,7 @@ AC_SUBST(RUBYW_INSTALL_NAME)
 AC_SUBST(RUBY_SO_NAME)
 AC_SUBST(LIBRUBY_A)
 AC_SUBST(LIBRUBY_SO)
+AC_SUBST(LIBRUBY_SONAME)
 AC_SUBST(LIBRUBY_ALIASES)
 AC_SUBST(LIBRUBY)
 AC_SUBST(LIBRUBYARG)
