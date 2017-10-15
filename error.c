@@ -2016,7 +2016,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *     RuntimeError: can't modify frozen Array
  *
- *  Kernel.raise will raise a RuntimeError if no Exception class is
+ *  Kernel#raise will raise a RuntimeError if no Exception class is
  *  specified.
  *
  *     raise "ouch"
