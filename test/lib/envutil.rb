@@ -59,7 +59,7 @@ module EnvUtil
                   encoding: nil, timeout: 10, reprieve: 1, timeout_error: Timeout::Error,
                   stdout_filter: nil, stderr_filter: nil,
                   signal: :TERM,
-                  rubybin: EnvUtil.rubybin,
+                  rubybin: EnvUtil.rubybin, precommand: nil,
                   **opt)
     timeout = apply_timeout_scale(timeout)
     reprieve = apply_timeout_scale(reprieve) if reprieve
@@ -81,7 +81,7 @@ module EnvUtil
       child_env.update(args.shift)
     end
     args = [args] if args.kind_of?(String)
-    pid = spawn(child_env, rubybin, *args, **opt)
+    pid = spawn(child_env, *precommand, rubybin, *args, **opt)
     in_c.close
     out_c.close if capture_stdout
     err_c.close if capture_stderr && capture_stderr != :merge_to_stdout
