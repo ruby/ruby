@@ -3789,10 +3789,10 @@ AC_ARG_WITH(soname,
 	        RUBY_SO_NAME='$(RUBY_BASE_NAME).$(RUBY_PROGRAM_VERSION)'
 	    ],
 	    [cygwin*], [
-	        RUBY_SO_NAME='$(RUBY_BASE_NAME)$(RUBY_API_VERSION:.=)0'
+	        RUBY_SO_NAME='$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)0'
 	    ],
 	    [mingw*], [
-		RUBY_SO_NAME="${rb_cv_msvcrt}"'-$(RUBY_BASE_NAME)$(RUBY_API_VERSION:.=)0'
+		RUBY_SO_NAME="${rb_cv_msvcrt}"'-$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)0'
 		AS_IF([test x"${target_cpu}" != xi386], [
 		    RUBY_SO_NAME="${target_cpu}-${RUBY_SO_NAME}"
 		])
@@ -3857,7 +3857,7 @@ AS_CASE("$enable_shared", [yes], [
 	],
     [freebsd*|dragonfly*], [
 	SOLIBS='$(LIBS)'
-	LIBRUBY_SONAME='lib$(RUBY_SO_NAME).$(SOEXT).$(RUBY_API_VERSION:.=)'
+	LIBRUBY_SONAME='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR)$(MINOR)'
 	LIBRUBY_SO='$(LIBRUBY_SONAME)'
 	AS_IF([test "$rb_cv_binary_elf" != "yes" ], [
 	    LIBRUBY_SO="$LIBRUBY_SO.\$(TEENY)"
@@ -3866,7 +3866,7 @@ AS_CASE("$enable_shared", [yes], [
 	],
     [netbsd*], [
 	SOLIBS='$(LIBS)'
-	LIBRUBY_SONAME='lib$(RUBY_SO_NAME).$(SOEXT).$(RUBY_API_VERSION:.=)'
+	LIBRUBY_SONAME='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR)$(MINOR)'
 	LIBRUBY_SO='$(LIBRUBY_SONAME).$(TEENY)'
 	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,$(LIBRUBY_SONAME)' "$LDFLAGS_OPTDIR"])
 	AS_IF([test "$rb_cv_binary_elf" = yes], [ # ELF platforms
