@@ -274,7 +274,7 @@ class Tempfile < DelegateClass(File)
     # object will be automatically closed after the block terminates.
     # The call returns the value of the block.
     #
-    # In any case, all arguments (+*args+) will be passed to Tempfile.new.
+    # In any case, all arguments (<code>*args</code>) will be passed to Tempfile.new.
     #
     #   Tempfile.open('foo', '/home/temp') do |f|
     #      ... do something with f ...
@@ -317,7 +317,7 @@ end
 # the temporary file is removed after the block terminates.
 # The call returns the value of the block.
 #
-# In any case, all arguments (+*args+) will be treated as Tempfile.new.
+# In any case, all arguments (<code>**options</code>) will be treated as Tempfile.new.
 #
 #   Tempfile.create('foo', '/home/temp') do |f|
 #      ... do something with f ...
