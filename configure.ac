@@ -3593,11 +3593,12 @@ AS_IF([test "$dln_a_out_works" = yes], [
 	DLEXT=bundle],
     [cygwin*|mingw*|*djgpp*], [
 	LOAD_RELATIVE=1
+	SOEXT=dll
 	DLEXT=so],
     [
 	DLEXT=so])
 ])
-: ${SOEXT='$(DLEXT)'}
+: ${SOEXT="${DLEXT}"}
 AC_SUBST(SOEXT)
 AS_IF([test "$rb_cv_dlopen:$load_relative" = yes:yes], [
     AS_IF([test "$ac_cv_func_dladdr" = yes], [
