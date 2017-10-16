@@ -835,6 +835,9 @@ class Complex_Test < Test::Unit::TestCase
     assert_predicate(Complex(Float::MAX, 0.0), :finite?)
     assert_predicate(Complex(0.0, Float::MAX), :finite?)
     assert_predicate(Complex(Float::MAX, Float::MAX), :finite?)
+    assert_not_predicate(Complex(Float::NAN, 0), :finite?)
+    assert_not_predicate(Complex(0, Float::NAN), :finite?)
+    assert_not_predicate(Complex(Float::NAN, Float::NAN), :finite?)
   end
 
   def test_infinite_p
@@ -853,6 +856,9 @@ class Complex_Test < Test::Unit::TestCase
     assert_nil(Complex(Float::MAX, 0.0).infinite?)
     assert_nil(Complex(0.0, Float::MAX).infinite?)
     assert_nil(Complex(Float::MAX, Float::MAX).infinite?)
+    assert_nil(Complex(Float::NAN, 0).infinite?)
+    assert_nil(Complex(0, Float::NAN).infinite?)
+    assert_nil(Complex(Float::NAN, Float::NAN).infinite?)
   end
 
   def test_supp
