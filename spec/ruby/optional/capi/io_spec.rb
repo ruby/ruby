@@ -234,7 +234,7 @@ describe "C-API IO function" do
     end
   end
 
-  describe "rb_io_wait_writeable" do
+  describe "rb_io_wait_writable" do
     it "returns false if there is no error condition" do
       @o.rb_io_wait_writable(@w_io).should be_false
     end
