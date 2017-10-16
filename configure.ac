@@ -3857,8 +3857,8 @@ AS_CASE("$enable_shared", [yes], [
 	],
     [freebsd*|dragonfly*], [
 	SOLIBS='$(LIBS)'
-	LIBRUBY_SONAME='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR)$(MINOR)'
-	LIBRUBY_SO='$(LIBRUBY_SONAME)'
+	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR)$(MINOR)'
+	LIBRUBY_SONAME='$(LIBRUBY_SO)'
 	AS_IF([test "$rb_cv_binary_elf" != "yes" ], [
 	    LIBRUBY_SO="$LIBRUBY_SO.\$(TEENY)"
 	    LIBRUBY_ALIASES=''
@@ -3867,7 +3867,7 @@ AS_CASE("$enable_shared", [yes], [
     [netbsd*], [
 	SOLIBS='$(LIBS)'
 	LIBRUBY_SONAME='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR)$(MINOR)'
-	LIBRUBY_SO='$(LIBRUBY_SONAME).$(TEENY)'
+	LIBRUBY_SO="${LIBRUBY_SONAME}"'.$(TEENY)'
 	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,$(LIBRUBY_SONAME)' "$LDFLAGS_OPTDIR"])
 	AS_IF([test "$rb_cv_binary_elf" = yes], [ # ELF platforms
 	   LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
