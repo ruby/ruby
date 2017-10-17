@@ -484,6 +484,22 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	F_NODE(nd_value, "rvalue");
 	break;
 
+      case NODE_OP_CDECL:
+	ANN("constant declaration with operator");
+	ANN("format: [nd_head](constant) [nd_aid]= [nd_value]");
+	ANN("example: A::B ||= 1");
+	F_NODE(nd_head, "variable");
+	F_CUSTOM1(nd_aid, "operator") {
+	    switch (node->nd_aid) {
+	      case 0: A("0 (||)"); break;
+	      case 1: A("1 (&&)"); break;
+	      default: A_ID(node->nd_mid);
+	    }
+	};
+	LAST_NODE;
+	F_NODE(nd_value, "rvalue");
+        break;
+
       case NODE_CALL:
       case NODE_OPCALL:
 	ANN("method invocation");
