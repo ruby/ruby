@@ -317,7 +317,8 @@ end
 # the temporary file is removed after the block terminates.
 # The call returns the value of the block.
 #
-# In any case, all arguments (<code>**options</code>) will be treated as Tempfile.new.
+# In any case, all arguments (+basename+, +tmpdir+, +mode+, and
+# <code>**options</code>) will be treated as Tempfile.new.
 #
 #   Tempfile.create('foo', '/home/temp') do |f|
 #      ... do something with f ...
