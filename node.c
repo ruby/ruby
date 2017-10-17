@@ -420,12 +420,12 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("format: [nd_else]::[nd_vid](constant) = [nd_value]");
 	ANN("example: X = foo");
 	if (node->nd_vid) {
-	   F_ID(nd_vid, "constant");
-	   F_MSG(nd_else, "extension", "not used");
+	    F_ID(nd_vid, "constant");
+	    F_MSG(nd_else, "extension", "not used");
 	}
 	else {
-	   F_MSG(nd_vid, "constant", "0 (see extension field)");
-	   F_NODE(nd_else, "extension");
+	    F_MSG(nd_vid, "constant", "0 (see extension field)");
+	    F_NODE(nd_else, "extension");
 	}
 	LAST_NODE;
 	F_NODE(nd_value, "rvalue");
@@ -437,12 +437,12 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("example: ary[1] += foo");
 	F_NODE(nd_recv, "receiver");
 	F_CUSTOM1(nd_mid, "operator") {
-	   switch (node->nd_mid) {
-	     case 0: A("0 (||)"); break;
-	     case 1: A("1 (&&)"); break;
-	     default: A_ID(node->nd_mid);
-	   }
-	};
+	    switch (node->nd_mid) {
+	      case 0: A("0 (||)"); break;
+	      case 1: A("1 (&&)"); break;
+	      default: A_ID(node->nd_mid);
+	    }
+	}
 	F_NODE(nd_args->nd_head, "index");
 	LAST_NODE;
 	F_NODE(nd_args->nd_body, "rvalue");
@@ -495,7 +495,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	      case 1: A("1 (&&)"); break;
 	      default: A_ID(node->nd_mid);
 	    }
-	};
+	}
 	LAST_NODE;
 	F_NODE(nd_value, "rvalue");
         break;
