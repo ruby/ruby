@@ -420,11 +420,11 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("format: [nd_else]::[nd_vid](constant) = [nd_value]");
 	ANN("example: X = foo");
 	if (node->nd_vid) {
-	   F_ID(nd_vid, "variable");
+	   F_ID(nd_vid, "constant");
 	   F_MSG(nd_else, "extension", "not used");
 	}
 	else {
-	   F_MSG(nd_vid, "variable", "0 (see extension field)");
+	   F_MSG(nd_vid, "constant", "0 (see extension field)");
 	   F_NODE(nd_else, "extension");
 	}
 	LAST_NODE;
@@ -488,7 +488,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("constant declaration with operator");
 	ANN("format: [nd_head](constant) [nd_aid]= [nd_value]");
 	ANN("example: A::B ||= 1");
-	F_NODE(nd_head, "variable");
+	F_NODE(nd_head, "constant");
 	F_CUSTOM1(nd_aid, "operator") {
 	    switch (node->nd_aid) {
 	      case 0: A("0 (||)"); break;
@@ -597,28 +597,31 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("local variable reference");
 	ANN("format: [nd_vid](lvar)");
 	ANN("example: x");
-	goto var;
+	F_ID(nd_vid, "local variable");
+	break;
       case NODE_DVAR:
 	ANN("dynamic variable reference");
 	ANN("format: [nd_vid](dvar)");
 	ANN("example: 1.times { x = 1; x }");
-	goto var;
+	F_ID(nd_vid, "local variable");
+	break;
       case NODE_IVAR:
 	ANN("instance variable reference");
 	ANN("format: [nd_vid](ivar)");
 	ANN("example: @x");
-	goto var;
+	F_ID(nd_vid, "instance variable");
+	break;
       case NODE_CONST:
 	ANN("constant reference");
 	ANN("format: [nd_vid](constant)");
 	ANN("example: X");
-	goto var;
+	F_ID(nd_vid, "constant");
+	break;
       case NODE_CVAR:
 	ANN("class variable reference");
 	ANN("format: [nd_vid](cvar)");
 	ANN("example: @@x");
-      var:
-	F_ID(nd_vid, "local variable");
+	F_ID(nd_vid, "class variable");
 	break;
 
       case NODE_GVAR:
