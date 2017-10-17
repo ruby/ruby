@@ -236,6 +236,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     @fetcher     = nil
 
     Bundler.ui                     = Bundler::UI::Silent.new
+    @back_ui                       = Gem::DefaultUserInteraction.ui
     @ui                            = Gem::MockGemUi.new
     # This needs to be a new instance since we call use_ui(@ui) when we want to
     # capture output
@@ -420,6 +421,8 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     Gem::Specification._clear_load_cache
     Gem::Specification.unresolved_deps.clear
     Gem::refresh
+
+    @back_ui.close
   end
 
   def common_installer_setup
