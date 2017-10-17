@@ -4539,6 +4539,42 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped, co
 }
 
 static int
+compile_iter(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
+{
+    const int line = nd_line(node);
+    const rb_iseq_t *prevblock = ISEQ_COMPILE_DATA(iseq)->current_block;
+    LABEL *retry_label = NEW_LABEL(line);
+    LABEL *retry_end_l = NEW_LABEL(line);
+    const rb_iseq_t *child_iseq;
+
+    ADD_LABEL(ret, retry_label);
+    if (nd_type(node) == NODE_FOR) {
+	CHECK(COMPILE(ret, "iter caller (for)", node->nd_iter));
+
+	ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq =
+	    NEW_CHILD_ISEQ(node->nd_body, make_name_for_block(iseq),
+			   ISEQ_TYPE_BLOCK, line);
+	ADD_SEND_WITH_BLOCK(ret, line, idEach, INT2FIX(0), child_iseq);
+    }
+    else {
+	ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq =
+	    NEW_CHILD_ISEQ(node->nd_body, make_name_for_block(iseq),
+			   ISEQ_TYPE_BLOCK, line);
+	CHECK(COMPILE(ret, "iter caller", node->nd_iter));
+    }
+    ADD_LABEL(ret, retry_end_l);
+
+    if (popped) {
+	ADD_INSN(ret, line, pop);
+    }
+
+    ISEQ_COMPILE_DATA(iseq)->current_block = prevblock;
+
+    ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, child_iseq, retry_end_l);
+    return COMPILE_OK;
+}
+
+static int
 compile_break(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped)
 {
     const int line = nd_line(node);
@@ -5016,39 +5052,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	    ADD_LABEL(ret, not_single);
 	    break;
 	}
-      case NODE_ITER:{
-	const rb_iseq_t *prevblock = ISEQ_COMPILE_DATA(iseq)->current_block;
-	LABEL *retry_label = NEW_LABEL(line);
-	LABEL *retry_end_l = NEW_LABEL(line);
-	const rb_iseq_t *child_iseq;
-
-	ADD_LABEL(ret, retry_label);
-	if (nd_type(node) == NODE_FOR) {
-	    CHECK(COMPILE(ret, "iter caller (for)", node->nd_iter));
-
-	    ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq =
-	      NEW_CHILD_ISEQ(node->nd_body, make_name_for_block(iseq),
-							       ISEQ_TYPE_BLOCK, line);
-	    ADD_SEND_WITH_BLOCK(ret, line, idEach, INT2FIX(0), child_iseq);
-	}
-	else {
-	    ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq =
-	      NEW_CHILD_ISEQ(node->nd_body, make_name_for_block(iseq),
-							       ISEQ_TYPE_BLOCK, line);
-	    CHECK(COMPILE(ret, "iter caller", node->nd_iter));
-	}
-	ADD_LABEL(ret, retry_end_l);
-
-	if (popped) {
-	    ADD_INSN(ret, line, pop);
-	}
-
-	ISEQ_COMPILE_DATA(iseq)->current_block = prevblock;
-
-	ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, child_iseq, retry_end_l);
-
+      case NODE_ITER:
+	CHECK(compile_iter(iseq, ret, node, popped));
 	break;
-      }
       case NODE_BREAK:
 	CHECK(compile_break(iseq, ret, node, popped));
 	break;
