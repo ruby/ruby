@@ -328,9 +328,9 @@ module Net
       return Timeout.timeout(@open_timeout, OpenTimeout) {
         if defined? SOCKSSocket and ENV["SOCKS_SERVER"]
           @passive = true
-          sock = SOCKSSocket.open(host, port)
+          SOCKSSocket.open(host, port)
         else
-          sock = Socket.tcp(host, port)
+          Socket.tcp(host, port)
         end
       }
     end
