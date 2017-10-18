@@ -295,15 +295,12 @@ module WEBrick
           end
           if sock.respond_to?(:sync_close=) && @config[:SSLStartImmediately]
             WEBrick::Utils.timeout(@config[:RequestTimeout]) do
-
-              # we must call OpenSSL::SSL::SSLSocket#accept_nonblock until
-              # it stop returning wait_* symbols:
-              case ret = sock.accept_nonblock(exception: false)
-              when :wait_readable, :wait_writable
-                sock.to_io.__send__(ret)
-              else
-                break
-              end while true
+              begin
+                sock.accept # OpenSSL::SSL::SSLSocket#accept
+              rescue Errno::ECONNRESET, Errno::ECONNABORTED,
+                     Errno::EPROTO, Errno::EINVAL
+                return
+              end
             end
           end
           call_callback(:AcceptCallback, sock)
