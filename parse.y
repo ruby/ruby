@@ -914,7 +914,7 @@ static void token_info_pop_gen(struct parser_params*, const char *token, size_t 
 %type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post mlhs_inner
 %type <id>   fsym keyword_variable user_variable sym symbol operation operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
-%type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords
+%type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop
 /*%%%*/
 /*%
 %type <val> program then do
@@ -2093,21 +2093,9 @@ arg		: lhs '=' arg_rhs
 		    {
 			$$ = call_bin_op($1, idCmp, $3);
 		    }
-		| arg '>' arg
+		| arg relop arg   %prec '>'
 		    {
-			$$ = call_bin_op($1, '>', $3);
-		    }
-		| arg tGEQ arg
-		    {
-			$$ = call_bin_op($1, idGE, $3);
-		    }
-		| arg '<' arg
-		    {
-			$$ = call_bin_op($1, '<', $3);
-		    }
-		| arg tLEQ arg
-		    {
-			$$ = call_bin_op($1, idLE, $3);
+			$$ = call_bin_op($1, $2, $3);
 		    }
 		| arg tEQ arg
 		    {
@@ -2176,6 +2164,12 @@ arg		: lhs '=' arg_rhs
 		    {
 			$$ = $1;
 		    }
+		;
+
+relop		: '>'  {$$ = '>';}
+		| '<'  {$$ = '<';}
+		| tGEQ {$$ = idGE;}
+		| tLEQ {$$ = idLE;}
 		;
 
 arg_value	: arg
