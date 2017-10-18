@@ -5202,11 +5202,13 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
     int zombie_objects = 0;
 
     for (i=0; i<page->total_slots; i++) {
-	VALUE obj = (VALUE)&page->start[i];
-	if (RBASIC(obj) == 0) free_objects++;
-	if (BUILTIN_TYPE(obj) == T_ZOMBIE) zombie_objects++;
-	if (RVALUE_PAGE_UNCOLLECTIBLE(page, obj) && RVALUE_PAGE_WB_UNPROTECTED(page, obj)) has_remembered_shady = TRUE;
-	if (RVALUE_PAGE_MARKING(page, obj)) {
+	VALUE val = (VALUE)&page->start[i];
+	if (RBASIC(val) == 0) free_objects++;
+	if (BUILTIN_TYPE(val) == T_ZOMBIE) zombie_objects++;
+	if (RVALUE_PAGE_UNCOLLECTIBLE(page, val) && RVALUE_PAGE_WB_UNPROTECTED(page, val)) {
+	    has_remembered_shady = TRUE;
+	}
+	if (RVALUE_PAGE_MARKING(page, val)) {
 	    has_remembered_old = TRUE;
 	    rememberd_old_objects++;
 	}
@@ -5216,9 +5218,9 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
 	page->flags.has_remembered_objects == FALSE && has_remembered_old == TRUE) {
 
 	for (i=0; i<page->total_slots; i++) {
-	    VALUE obj = (VALUE)&page->start[i];
-	    if (RVALUE_PAGE_MARKING(page, obj)) {
-		fprintf(stderr, "marking -> %s\n", obj_info(obj));
+	    VALUE val = (VALUE)&page->start[i];
+	    if (RVALUE_PAGE_MARKING(page, val)) {
+		fprintf(stderr, "marking -> %s\n", obj_info(val));
 	    }
 	}
 	rb_bug("page %p's has_remembered_objects should be false, but there are remembered old objects (%d). %s",
