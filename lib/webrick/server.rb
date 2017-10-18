@@ -297,13 +297,13 @@ module WEBrick
             WEBrick::Utils.timeout(@config[:RequestTimeout]) do
 
               # we must call OpenSSL::SSL::SSLSocket#accept_nonblock until
-              # it stop returning wait_* symbols:
-              case ret = sock.accept_nonblock(exception: false)
-              when :wait_readable, :wait_writable
-                sock.to_io.__send__(ret)
-              else
-                break
-              end while true
+              # it stop returning wait_* symbols or wait_* methods return !nil:
+              begin
+                ret = sock.accept_nonblock(exception: false)
+                if ret == :wait_readable || ret == :wait_writable
+                  break unless sock.to_io.__send__(ret).nil?
+                end
+              end until ret == sock
             end
           end
           call_callback(:AcceptCallback, sock)
