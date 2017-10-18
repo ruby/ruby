@@ -1069,6 +1069,14 @@ x = __ENCODING__
     assert_equal(1.3, o.x)
   end
 
+  def test_serial_comparison
+    assert_warning(/comparison '<' after/) do
+      $VERBOSE = true
+      x = 1
+      eval("if false; 0 < x < 2; end")
+    end
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}

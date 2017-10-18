@@ -773,6 +773,7 @@ static ID id_warn, id_warning, id_gets;
 # define WARN_S_L(s,l) STR_NEW(s,l)
 # define WARN_S(s) STR_NEW2(s)
 # define WARN_I(i) INT2NUM(i)
+# define WARN_ID(i) rb_id2str(i)
 # define PRIsWARN "s"
 # define WARN_ARGS(fmt,n) parser->value, id_warn, n, rb_usascii_str_new_lit(fmt)
 # define WARN_ARGS_L(l,fmt,n) WARN_ARGS(fmt,n)
@@ -795,6 +796,7 @@ PRINTF_ARGS(static void ripper_compile_error(struct parser_params*, const char *
 # define WARN_S_L(s,l) s
 # define WARN_S(s) s
 # define WARN_I(i) i
+# define WARN_ID(i) rb_id2name(i)
 # define PRIsWARN PRIsVALUE
 # define WARN_ARGS(fmt,n) WARN_ARGS_L(ruby_sourceline,fmt,n)
 # define WARN_ARGS_L(l,fmt,n) ruby_sourcefile, (l), (fmt)
@@ -896,7 +898,7 @@ static void token_info_pop_gen(struct parser_params*, const char *token, size_t 
 %type <node> literal numeric simple_numeric dsym cpath
 %type <node> top_compstmt top_stmts top_stmt
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
-%type <node> expr_value arg_value primary_value fcall
+%type <node> expr_value arg_value primary_value fcall rel_expr
 %type <node> if_tail opt_else case_body cases opt_rescue exc_list exc_var opt_ensure
 %type <node> args call_args opt_call_args
 %type <node> paren_args opt_paren_args args_tail opt_args_tail block_args_tail opt_block_args_tail
@@ -2093,10 +2095,7 @@ arg		: lhs '=' arg_rhs
 		    {
 			$$ = call_bin_op($1, idCmp, $3);
 		    }
-		| arg relop arg   %prec '>'
-		    {
-			$$ = call_bin_op($1, $2, $3);
-		    }
+		| rel_expr   %prec tCMP
 		| arg tEQ arg
 		    {
 			$$ = call_bin_op($1, idEq, $3);
@@ -2170,6 +2169,17 @@ relop		: '>'  {$$ = '>';}
 		| '<'  {$$ = '<';}
 		| tGEQ {$$ = idGE;}
 		| tLEQ {$$ = idLE;}
+		;
+
+rel_expr	: arg relop arg   %prec '>'
+		    {
+			$$ = call_bin_op($1, $2, $3);
+		    }
+		| rel_expr relop arg   %prec '>'
+		    {
+			rb_warning1("comparison '%s' after comparison", WARN_ID($2));
+			$$ = call_bin_op($1, $2, $3);
+		    }
 		;
 
 arg_value	: arg
