@@ -1119,11 +1119,11 @@ enumerator_size(VALUE obj)
 	for (i = 0; i < RARRAY_LEN(e->procs); i++) {
 	    VALUE proc = RARRAY_AREF(e->procs, i);
 	    struct proc_entry *entry = proc_entry_ptr(proc);
-	    lazyenum_size_func *size = entry->fn->size;
-	    if (!size) {
+	    lazyenum_size_func *size_fn = entry->fn->size;
+	    if (!size_fn) {
 		return Qnil;
 	    }
-	    receiver = (*size)(proc, receiver);
+	    receiver = (*size_fn)(proc, receiver);
 	}
 	return receiver;
     }

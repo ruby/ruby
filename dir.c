@@ -2154,8 +2154,8 @@ glob_helper(
 		}
 #if USE_NAME_ON_FS == USE_NAME_ON_FS_REAL_BASENAME
 		if ((*cur)->type == ALPHA) {
-		    long base = pathlen + (dirsep != 0);
-		    buf = replace_real_basename(buf, base, enc, IF_NORMALIZE_UTF8PATH(1)+0,
+		    buf = replace_real_basename(buf, pathlen + (dirsep != 0), enc,
+						IF_NORMALIZE_UTF8PATH(1)+0,
 						flags, &new_pathtype);
 		    if (!buf) break;
 		}

@@ -3946,11 +3946,11 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved,
 		    link_names = skipprefixroot(link_prefix, link_prefix + RSTRING_LEN(link), rb_enc_get(link));
 		    link_prefixlen = link_names - link_prefix;
 		    if (link_prefixlen > 0) {
-			rb_encoding *enc, *linkenc = rb_enc_get(link);
+			rb_encoding *tmpenc, *linkenc = rb_enc_get(link);
 			link_orig = link;
 			link = rb_str_subseq(link, 0, link_prefixlen);
-			enc = rb_enc_check(*resolvedp, link);
-			if (enc != linkenc) link = rb_str_conv_enc(link, linkenc, enc);
+			tmpenc = rb_enc_check(*resolvedp, link);
+			if (tmpenc != linkenc) link = rb_str_conv_enc(link, linkenc, tmpenc);
 			*resolvedp = link;
 			*prefixlenp = link_prefixlen;
 		    }

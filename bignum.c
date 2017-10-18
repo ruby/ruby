@@ -903,8 +903,6 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
     }
 
     if ((flags & INTEGER_PACK_2COMP) && (sign < 0 && numwords != 0)) {
-        unsigned char *buf;
-
         int word_num_partialbits;
         size_t word_num_fullbytes;
 

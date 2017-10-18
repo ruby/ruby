@@ -876,10 +876,13 @@ AS_IF([test "$GCC:${warnflags+set}:no" = yes::no], [
 		 -Werror=implicit-function-declaration \
 		 -Werror=division-by-zero \
 		 -Werror=deprecated-declarations \
+		 -Werror=misleading-indentation \
 		 -Wno-packed-bitfield-compat \
 		 -Wsuggest-attribute=noreturn \
 		 -Wsuggest-attribute=format \
 		 -Wimplicit-fallthrough=0 \
+		 -Werror=duplicated-cond \
+		 -Werror=restrict \
 		 $extra_warning \
 		 ; do
 	AS_IF([test "$particular_werror_flags" != yes], [

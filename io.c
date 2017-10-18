@@ -3575,9 +3575,9 @@ io_getc(rb_io_t *fptr, rb_encoding *enc)
     VALUE str;
 
     if (NEED_READCONV(fptr)) {
-        VALUE str = Qnil;
 	rb_encoding *read_enc = io_read_encoding(fptr);
 
+	str = Qnil;
 	SET_BINARY_MODE(fptr);
         make_readconv(fptr, 0);
 
