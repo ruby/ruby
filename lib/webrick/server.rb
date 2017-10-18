@@ -294,13 +294,13 @@ module WEBrick
             raise
           end
           if sock.respond_to?(:sync_close=) && @config[:SSLStartImmediately]
-            WEBrick::Utils.timeout(@config[:RequestTimeout]) do
-              begin
+            begin
+              WEBrick::Utils.timeout(@config[:RequestTimeout]) do
                 sock.accept # OpenSSL::SSL::SSLSocket#accept
-              rescue Errno::ECONNRESET, Errno::ECONNABORTED,
-                     Errno::EPROTO, Errno::EINVAL
-                return
               end
+            rescue Errno::ECONNRESET, Errno::ECONNABORTED,
+                   Errno::EPROTO, Errno::EINVAL
+              return
             end
           end
           call_callback(:AcceptCallback, sock)
