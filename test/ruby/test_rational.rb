@@ -59,7 +59,6 @@ class Rational_Test < Test::Unit::TestCase
 
   def test_freeze
     c = Rational(1)
-    c.freeze
     assert_predicate(c, :frozen?)
     assert_instance_of(String, c.to_s)
   end
@@ -639,12 +638,10 @@ class Rational_Test < Test::Unit::TestCase
 
   def test_marshal
     c = Rational(1,2)
-    c.instance_eval{@ivar = 9}
 
     s = Marshal.dump(c)
     c2 = Marshal.load(s)
     assert_equal(c, c2)
-    assert_equal(9, c2.instance_variable_get(:@ivar))
     assert_instance_of(Rational, c2)
 
     assert_raise(TypeError){
@@ -657,7 +654,6 @@ class Rational_Test < Test::Unit::TestCase
 
     bug3656 = '[ruby-core:31622]'
     c = Rational(1,2)
-    c.freeze
     assert_predicate(c, :frozen?)
     result = c.marshal_load([2,3]) rescue :fail
     assert_equal(:fail, result, bug3656)
