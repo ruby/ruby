@@ -549,6 +549,13 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_setproctitle
     skip "platform dependent feature" unless defined?(PSCMD) and PSCMD
 
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    {#
+      assert_raise(ArgumentError) do
+        Process.setproctitle("hello\0")
+      end
+    };
+
     with_tmpchdir do
       write_file("test-script", "$_0 = $0.dup; Process.setproctitle('hello world'); $0 == $_0 or Process.setproctitle('$0 changed!'); sleep 60")
 

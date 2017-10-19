@@ -2052,6 +2052,8 @@ proc_argv0(VALUE process)
     return rb_orig_progname;
 }
 
+static VALUE ruby_setproctitle(VALUE title);
+
 /*
  *  call-seq:
  *     Process.setproctitle(string)  -> string
@@ -2072,10 +2074,14 @@ proc_argv0(VALUE process)
 static VALUE
 proc_setproctitle(VALUE process, VALUE title)
 {
-    StringValue(title);
+    return ruby_setproctitle(title);
+}
 
-    setproctitle("%.*s", RSTRING_LENINT(title), RSTRING_PTR(title));
-
+static VALUE
+ruby_setproctitle(VALUE title)
+{
+    const char *ptr = StringValueCStr(title);
+    setproctitle("%.*s", RSTRING_LENINT(title), ptr);
     return title;
 }
 
@@ -2085,7 +2091,7 @@ set_arg0(VALUE val, ID id)
     if (origarg.argv == 0)
 	rb_raise(rb_eRuntimeError, "$0 not initialized");
 
-    rb_progname = rb_str_new_frozen(proc_setproctitle(rb_mProcess, val));
+    rb_progname = rb_str_new_frozen(ruby_setproctitle(val));
 }
 
 static inline VALUE
