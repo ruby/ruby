@@ -659,6 +659,14 @@ e"
     end
   end
 
+  def test_dedented_heredoc_expr_at_beginning
+    result = "  a\n" \
+             '#{1}'"\n"
+    expected = "  a\n" \
+             '#{1}'"\n"
+    assert_dedented_heredoc(expected, result)
+  end
+
   def test_lineno_after_heredoc
     bug7559 = '[ruby-dev:46737]'
     expected, _, actual = __LINE__, <<eom, __LINE__

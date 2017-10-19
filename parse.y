@@ -6732,6 +6732,12 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	newtok();
 	if (c == '#') {
 	    int t = parser_peek_variable_name(parser);
+	    if (heredoc_line_indent != -1) {
+		if (heredoc_indent > heredoc_line_indent) {
+		    heredoc_indent = heredoc_line_indent;
+		}
+		heredoc_line_indent = -1;
+	    }
 	    if (t) return t;
 	    tokadd('#');
 	    c = nextc();

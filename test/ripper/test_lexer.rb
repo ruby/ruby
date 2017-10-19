@@ -70,4 +70,24 @@ class TestRipper::Lexer < Test::Unit::TestCase
     ]
     assert_equal expect, Ripper.lex(src).map {|e| e[1]}
   end
+
+  def test_expr_at_beginning_in_heredoc
+    src = <<~'E'
+    <<~B
+      a
+    #{1}
+    B
+    E
+    expect = %I[
+      on_heredoc_beg
+      on_nl
+      on_tstring_content
+      on_embexpr_beg
+      on_int
+      on_embexpr_end
+      on_tstring_content
+      on_heredoc_end
+    ]
+    assert_equal expect, Ripper.lex(src).map {|e| e[1]}
+  end
 end
