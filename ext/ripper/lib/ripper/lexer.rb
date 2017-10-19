@@ -98,7 +98,7 @@ class Ripper
       ignored_sp = []
       heredoc = @buf.last
       heredoc.each_with_index do |e, i|
-        if Elem === e and e.event == :on_tstring_content
+        if Elem === e and e.event == :on_tstring_content and e.pos[1].zero?
           tok = e.tok.dup if w > 0 and /\A\s/ =~ e.tok
           if (n = dedent_string(e.tok, w)) > 0
             if e.tok.empty?
