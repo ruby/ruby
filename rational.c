@@ -410,6 +410,7 @@ nurat_s_new_internal(VALUE klass, VALUE num, VALUE den)
 
     RRATIONAL_SET_NUM(obj, num);
     RRATIONAL_SET_DEN(obj, den);
+    OBJ_FREEZE_RAW(obj);
 
     return (VALUE)obj;
 }
@@ -1855,6 +1856,7 @@ nurat_loader(VALUE self, VALUE a)
     nurat_canonicalize(&num, &den);
     RRATIONAL_SET_NUM(dat, num);
     RRATIONAL_SET_DEN(dat, den);
+    OBJ_FREEZE_RAW(self);
 
     return self;
 }

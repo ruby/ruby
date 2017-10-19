@@ -298,6 +298,7 @@ nucomp_s_new_internal(VALUE klass, VALUE real, VALUE imag)
 
     RCOMPLEX_SET_REAL(obj, real);
     RCOMPLEX_SET_IMAG(obj, imag);
+    OBJ_FREEZE_RAW(obj);
 
     return (VALUE)obj;
 }
@@ -1406,6 +1407,7 @@ nucomp_loader(VALUE self, VALUE a)
 
     RCOMPLEX_SET_REAL(dat, rb_ivar_get(a, id_i_real));
     RCOMPLEX_SET_IMAG(dat, rb_ivar_get(a, id_i_imag));
+    OBJ_FREEZE_RAW(self);
 
     return self;
 }
