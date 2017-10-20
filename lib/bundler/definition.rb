@@ -167,7 +167,7 @@ module Bundler
     def specs
       @specs ||= begin
         begin
-          specs = resolve.materialize(Bundler.settings[:cache_all_platforms] ? dependencies : requested_dependencies)
+          specs = resolve.materialize(requested_dependencies)
         rescue GemNotFound => e # Handle yanked gem
           gem_name, gem_version = extract_gem_info(e)
           locked_gem = @locked_specs[gem_name].last
