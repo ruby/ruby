@@ -110,6 +110,18 @@ class TestStubSpecification < Gem::TestCase
     assert_equal code_rb, stub.matches_for_glob('code*').first
   end
 
+  def test_matches_for_glob_with_bundler_inline
+    stub = stub_with_extension
+    code_rb = File.join stub.gem_dir, 'lib', 'code.rb'
+    FileUtils.mkdir_p File.dirname code_rb
+    FileUtils.touch code_rb
+
+    stub.stub(:raw_require_paths, nil) do
+      assert_equal code_rb, stub.matches_for_glob('code*').first
+    end
+  end
+
+
   def test_missing_extensions_eh
     stub = stub_with_extension do |s|
       extconf_rb = File.join s.gem_dir, s.extensions.first
