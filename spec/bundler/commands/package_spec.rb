@@ -203,6 +203,25 @@ RSpec.describe "bundle package" do
       bundle "package --all-platforms"
       expect(bundled_app("vendor/cache/rack-1.0.0.gem")).to exist
     end
+
+    it "does not attempt to install gems in without groups" do
+      install_gemfile! <<-G, forgotten_command_line_options(:without => "wo")
+        source "file:#{gem_repo1}"
+        gem "rack"
+        group :wo do
+          gem "weakling"
+        end
+      G
+
+      bundle! :package, "all-platforms" => true
+      expect(bundled_app("vendor/cache/weakling-0.0.3.gem")).to exist
+      expect(the_bundle).to include_gem "rack 1.0"
+      expect(the_bundle).not_to include_gem "weakling"
+
+      bundle! :install, forgotten_command_line_options(:without => "wo")
+      expect(the_bundle).to include_gem "rack 1.0"
+      expect(the_bundle).not_to include_gem "weakling"
+    end
   end
 
   context "with --frozen" do
