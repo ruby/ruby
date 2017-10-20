@@ -134,8 +134,8 @@ class Time
     def zone_offset(zone, year=self.now.year)
       off = nil
       zone = zone.upcase
-      if /\A([+-])(\d\d):?(\d\d)\z/ =~ zone
-        off = ($1 == '-' ? -1 : 1) * ($2.to_i * 60 + $3.to_i) * 60
+      if /\A([+-])(\d\d)(:?)(\d\d)(?:\3(\d\d))?\z/ =~ zone
+        off = ($1 == '-' ? -1 : 1) * (($2.to_i * 60 + $4.to_i) * 60 + $5.to_i)
       elsif /\A[+-]\d\d\z/ =~ zone
         off = zone.to_i * 3600
       elsif ZoneOffset.include?(zone)
