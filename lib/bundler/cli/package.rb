@@ -27,10 +27,7 @@ module Bundler
     def install
       require_relative "install"
       options = self.options.dup
-      if Bundler.settings[:cache_all_platforms]
-        options["local"] = false
-        options["update"] = true
-      end
+      options["local"] = false if Bundler.settings[:cache_all_platforms]
       Bundler::CLI::Install.new(options).run
     end
 
