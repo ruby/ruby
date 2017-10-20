@@ -205,22 +205,32 @@ RSpec.describe "bundle package" do
     end
 
     it "does not attempt to install gems in without groups" do
+      build_repo4 do
+        build_gem "uninstallable", "2.0" do |s|
+          s.add_development_dependency "rake"
+          s.extensions << "Rakefile"
+          s.write "Rakefile", "task(:default) { raise 'CANNOT INSTALL' }"
+        end
+      end
+
       install_gemfile! <<-G, forgotten_command_line_options(:without => "wo")
         source "file:#{gem_repo1}"
         gem "rack"
         group :wo do
           gem "weakling"
+          gem "uninstallable", :source => "file:#{gem_repo4}"
         end
       G
 
       bundle! :package, "all-platforms" => true
       expect(bundled_app("vendor/cache/weakling-0.0.3.gem")).to exist
+      expect(bundled_app("vendor/cache/uninstallable-2.0.gem")).to exist
       expect(the_bundle).to include_gem "rack 1.0"
-      expect(the_bundle).not_to include_gem "weakling"
+      expect(the_bundle).not_to include_gems "weakling", "uninstallable"
 
       bundle! :install, forgotten_command_line_options(:without => "wo")
       expect(the_bundle).to include_gem "rack 1.0"
-      expect(the_bundle).not_to include_gem "weakling"
+      expect(the_bundle).not_to include_gems "weakling", "uninstallable"
     end
   end
 
