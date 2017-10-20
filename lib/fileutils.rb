@@ -412,7 +412,7 @@ module FileUtils
   def copy_entry(src, dest, preserve = false, dereference_root = false, remove_destination = false)
     Entry_.new(src, nil, dereference_root).wrap_traverse(proc do |ent|
       destent = Entry_.new(dest, ent.rel, false)
-      File.unlink destent.path if remove_destination && File.file?(destent.path)
+      File.unlink destent.path if remove_destination && (File.file?(destent.path) || File.symlink?(destent.path))
       ent.copy destent.path
     end, proc do |ent|
       destent = Entry_.new(dest, ent.rel, false)
