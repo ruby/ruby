@@ -439,6 +439,7 @@ typedef struct RVALUE {
 	    struct rb_method_entry_struct ment;
 	    const rb_iseq_t iseq;
 	    rb_env_t env;
+	    struct rb_imemo_alloc_struct alloc;
 	} imemo;
 	struct {
 	    struct RBasic basic;
@@ -2354,6 +2355,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	    GC_ASSERT(VM_ENV_ESCAPED_P(RANY(obj)->as.imemo.env.ep));
 	    xfree((VALUE *)RANY(obj)->as.imemo.env.env);
 	    break;
+	  case imemo_alloc:
+	    xfree(RANY(obj)->as.imemo.alloc.ptr);
+	    break;
 	  default:
 	    break;
 	}
@@ -3282,6 +3286,9 @@ obj_memsize_of(VALUE obj, int use_all_types)
       case T_RATIONAL:
       case T_COMPLEX:
       case T_IMEMO:
+	if (imemo_type_p(obj, imemo_alloc)) {
+	    size += RANY(obj)->as.imemo.alloc.cnt * sizeof(VALUE);
+	}
 	break;
 
       case T_FLOAT:
@@ -4523,6 +4530,11 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
 	return;
       case imemo_iseq:
 	rb_iseq_mark((rb_iseq_t *)obj);
+	return;
+      case imemo_alloc:
+	rb_gc_mark_locations(RANY(obj)->as.imemo.alloc.ptr,
+			     RANY(obj)->as.imemo.alloc.ptr + RANY(obj)->as.imemo.alloc.cnt);
+	rb_gc_mark(RANY(obj)->as.imemo.alloc.next);
 	return;
 #if VM_CHECK_MODE > 0
       default:
@@ -8104,14 +8116,16 @@ ruby_mimfree(void *ptr)
 void *
 rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
 {
-    NODE *s;
+    VALUE s;
+    rb_imemo_alloc_t *a;
     void *ptr;
 
-    s = rb_node_newnode(NODE_ALLOCA, 0, 0, 0);
+    s = rb_imemo_new(imemo_alloc, 0, 0, 0, 0);
     ptr = ruby_xmalloc0(size);
-    s->u1.value = (VALUE)ptr;
-    s->u3.cnt = cnt;
-    *store = (VALUE)s;
+    a = (rb_imemo_alloc_t*)s;
+    a->ptr = (VALUE*)ptr;
+    a->cnt = cnt;
+    *store = s;
     return ptr;
 }
 
@@ -9360,6 +9374,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 		  IMEMO_NAME(memo);
 		  IMEMO_NAME(ment);
 		  IMEMO_NAME(iseq);
+		  IMEMO_NAME(alloc);
 #undef IMEMO_NAME
 	      }
 	      snprintf(buff, buff_size, "%s %s", buff, imemo_name);

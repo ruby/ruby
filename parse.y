@@ -170,7 +170,7 @@ typedef struct token_info {
                      token
 */
 struct parser_params {
-    NODE *heap;
+    rb_imemo_alloc_t *heap;
 
     YYSTYPE *lval;
 
@@ -11517,15 +11517,15 @@ rb_parser_set_yydebug(VALUE self, VALUE flag)
 #ifndef RIPPER
 #ifdef YYMALLOC
 #define HEAPCNT(n, size) ((n) * (size) / sizeof(YYSTYPE))
-#define NEWHEAP() rb_node_newnode(NODE_ALLOCA, 0, (VALUE)parser->heap, 0)
-#define ADD2HEAP(n, c, p) ((parser->heap = (n))->u1.node = (p), \
-			   (n)->u3.cnt = (c), (p))
+#define NEWHEAP() rb_imemo_new(imemo_alloc, 0, (VALUE)parser->heap, 0, 0)
+#define ADD2HEAP(n, c, p) ((parser->heap = (n))->ptr = (p), \
+			   (n)->cnt = (c), (p))
 
 void *
 rb_parser_malloc(struct parser_params *parser, size_t size)
 {
     size_t cnt = HEAPCNT(1, size);
-    NODE *n = NEWHEAP();
+    rb_imemo_alloc_t *n = NEWHEAP();
     void *ptr = xmalloc(size);
 
     return ADD2HEAP(n, cnt, ptr);
@@ -11535,7 +11535,7 @@ void *
 rb_parser_calloc(struct parser_params *parser, size_t nelem, size_t size)
 {
     size_t cnt = HEAPCNT(nelem, size);
-    NODE *n = NEWHEAP();
+    rb_imemo_alloc_t *n = NEWHEAP();
     void *ptr = xcalloc(nelem, size);
 
     return ADD2HEAP(n, cnt, ptr);
@@ -11544,17 +11544,17 @@ rb_parser_calloc(struct parser_params *parser, size_t nelem, size_t size)
 void *
 rb_parser_realloc(struct parser_params *parser, void *ptr, size_t size)
 {
-    NODE *n;
+    rb_imemo_alloc_t *n;
     size_t cnt = HEAPCNT(1, size);
 
     if (ptr && (n = parser->heap) != NULL) {
 	do {
-	    if (n->u1.node == ptr) {
-		n->u1.node = ptr = xrealloc(ptr, size);
-		if (n->u3.cnt) n->u3.cnt = cnt;
+	    if (n->ptr == ptr) {
+		n->ptr = ptr = xrealloc(ptr, size);
+		if (n->cnt) n->cnt = cnt;
 		return ptr;
 	    }
-	} while ((n = n->u2.node) != NULL);
+	} while ((n = n->next) != NULL);
     }
     n = NEWHEAP();
     ptr = xrealloc(ptr, size);
@@ -11564,15 +11564,15 @@ rb_parser_realloc(struct parser_params *parser, void *ptr, size_t size)
 void
 rb_parser_free(struct parser_params *parser, void *ptr)
 {
-    NODE **prev = &parser->heap, *n;
+    rb_imemo_alloc_t **prev = &parser->heap, *n;
 
     while ((n = *prev) != NULL) {
-	if (n->u1.node == ptr) {
-	    *prev = n->u2.node;
+	if (n->ptr == ptr) {
+	    *prev = n->next;
 	    rb_gc_force_recycle((VALUE)n);
 	    break;
 	}
-	prev = &n->u2.node;
+	prev = &n->next;
     }
     xfree(ptr);
 }

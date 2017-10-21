@@ -468,7 +468,6 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_ERRINFO);
 		COUNT_NODE(NODE_DEFINED);
 		COUNT_NODE(NODE_POSTEXE);
-		COUNT_NODE(NODE_ALLOCA);
 		COUNT_NODE(NODE_BMETHOD);
 		COUNT_NODE(NODE_DSYM);
 		COUNT_NODE(NODE_ATTRASGN);
@@ -626,6 +625,7 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
 	imemo_type_ids[5] = rb_intern("imemo_memo");
 	imemo_type_ids[6] = rb_intern("imemo_ment");
 	imemo_type_ids[7] = rb_intern("imemo_iseq");
+	imemo_type_ids[8] = rb_intern("imemo_alloc");
     }
 
     rb_objspace_each_objects(count_imemo_objects_i, (void *)hash);

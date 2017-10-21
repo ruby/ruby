@@ -844,7 +844,8 @@ enum imemo_type {
     imemo_memo       = 5,
     imemo_ment       = 6,
     imemo_iseq       = 7,
-    imemo_mask       = 0x07
+    imemo_alloc      = 8,
+    imemo_mask       = 0x0f
 };
 
 static inline enum imemo_type
@@ -869,12 +870,12 @@ imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
 }
 
 /* FL_USER0 to FL_USER2 is for type */
-#define IMEMO_FL_USHIFT (FL_USHIFT + 3)
-#define IMEMO_FL_USER0 FL_USER3
-#define IMEMO_FL_USER1 FL_USER4
-#define IMEMO_FL_USER2 FL_USER5
-#define IMEMO_FL_USER3 FL_USER6
-#define IMEMO_FL_USER4 FL_USER7
+#define IMEMO_FL_USHIFT (FL_USHIFT + 4)
+#define IMEMO_FL_USER0 FL_USER4
+#define IMEMO_FL_USER1 FL_USER5
+#define IMEMO_FL_USER2 FL_USER6
+#define IMEMO_FL_USER3 FL_USER7
+#define IMEMO_FL_USER4 FL_USER8
 
 /* CREF in method.h */
 
@@ -928,6 +929,14 @@ rb_vm_ifunc_proc_new(VALUE (*func)(ANYARGS), const void *data)
 {
     return rb_vm_ifunc_new(func, data, 0, UNLIMITED_ARGUMENTS);
 }
+
+typedef struct rb_imemo_alloc_struct {
+    VALUE flags;
+    VALUE reserved;
+    VALUE *ptr; /* malloc'ed buffer */
+    VALUE next; /* next imemo */
+    size_t cnt; /* buffer size in VALUE */
+} rb_imemo_alloc_t;
 
 /* MEMO */
 
