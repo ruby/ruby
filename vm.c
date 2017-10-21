@@ -295,10 +295,6 @@ static VALUE vm_invoke_bmethod(rb_thread_t *th, rb_proc_t *proc, VALUE self,
 static VALUE vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
 			    int argc, const VALUE *argv, VALUE block_handler);
 
-static rb_serial_t ruby_vm_global_method_state = 1;
-static rb_serial_t ruby_vm_global_constant_state = 1;
-static rb_serial_t ruby_vm_class_serial = 1;
-
 #include "vm_insnhelper.h"
 #include "vm_exec.h"
 #include "vm_insnhelper.c"
@@ -324,6 +320,9 @@ VALUE ruby_vm_const_missing_count = 0;
 rb_thread_t *ruby_current_thread = 0;
 rb_vm_t *ruby_current_vm = 0;
 rb_event_flag_t ruby_vm_event_flags;
+rb_serial_t ruby_vm_global_method_state = 1;
+rb_serial_t ruby_vm_global_constant_state = 1;
+rb_serial_t ruby_vm_class_serial = 1;
 
 static void thread_free(void *ptr);
 
