@@ -635,7 +635,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     #    Array of String
     # :REG_DWORD, REG_DWORD_BIG_ENDIAN, REG_QWORD
     #    Integer
-    # :REG_BINARY
+    # :REG_BINARY, REG_NONE
     #    String (contains binary data)
     #
     # When rtype is specified, the value type must be included by
@@ -652,7 +652,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         [ type, data.encode(name.encoding, WCHAR).chop ]
       when REG_MULTI_SZ
         [ type, data.encode(name.encoding, WCHAR).split(/\0/) ]
-      when REG_BINARY
+      when REG_BINARY, REG_NONE
         [ type, data ]
       when REG_DWORD
         [ type, API.unpackdw(data) ]
@@ -748,7 +748,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       when REG_MULTI_SZ
         data = data.to_a.map {|s| s.encode(WCHAR)}.join(WCHAR_NUL) << WCHAR_NUL
         termsize = WCHAR_SIZE
-      when REG_BINARY
+      when REG_BINARY, REG_NONE
         data = data.to_s
       when REG_DWORD
         data = API.packdw(data.to_i)
