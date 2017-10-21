@@ -222,9 +222,49 @@ module Random::Formatter
     "%08x-%04x-%04x-%04x-%04x%08x" % ary
   end
 
-  private
-  def gen_random(n)
+  private def gen_random(n)
     self.bytes(n)
+  end
+
+  # SecureRandom.choose generates a string that randomly draws from a
+  # source array of characters.
+  #
+  # The argument _source_ specifies the array of characters from which
+  # to generate the string.
+  # The argument _n_ specifies the length, in characters, of the string to be
+  # generated.
+  #
+  # The result may contain whatever characters are in the source array.
+  #
+  #   p SecureRandom.choose([*'l'..'r']) #=> "lmrqpoonmmlqlron"
+  #   p SecureRandom.choose([*'0'..'9'], 5) #=> "27309"
+  #
+  # If a secure random number generator is not available,
+  # +NotImplementedError+ is raised.
+  private def choose(source, n)
+    size = source.size
+    n.times.map {source[random_number(size)]}.join('')
+  end
+
+  ALPHANUMERIC = [*'A'..'Z', *'a'..'z', *'0'..'9']
+  # SecureRandom.alphanumeric generates a random alphanumeric string.
+  #
+  # The argument _n_ specifies the length, in characters, of the alphanumeric
+  # string to be generated.
+  #
+  # If _n_ is not specified or is nil, 16 is assumed.
+  # It may be larger in the future.
+  #
+  # The result may contain A-Z, a-z and 0-9.
+  #
+  #   p SecureRandom.alphanumeric #=> "2BuBuLf3WfSKyQbR"
+  #   p SecureRandom.alphanumeric(10) #=> "i6K93NdqiH"
+  #
+  # If a secure random number generator is not available,
+  # +NotImplementedError+ is raised.
+  def alphanumeric(n=nil)
+    n = 16 if n.nil?
+    choose(ALPHANUMERIC, n)
   end
 end
 
