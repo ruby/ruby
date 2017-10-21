@@ -531,9 +531,6 @@ module IRB
             end
             print "Maybe IRB bug!\n" if irb_bug
           end
-          if $SAFE > 2
-            abort "Error: irb does not work for $SAFE level higher than 2"
-          end
         end
       end
     end
