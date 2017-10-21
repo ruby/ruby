@@ -150,6 +150,10 @@ with all sufficient information, see the ChangeLog file or Redmine
     environment variable if the system's environment variable is multiuser
     safe. [Bug #12921]
 
+* Pathname
+  * New method:
+    * Pathname#glob [Feature #7360]
+
 * RbConfig
   * New constants:
     * RbConfig::LIMITS is added to provide the limits of C types.

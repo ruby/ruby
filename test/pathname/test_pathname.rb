@@ -1250,6 +1250,19 @@ class TestPathname < Test::Unit::TestCase
     assert_kind_of(Pathname, wd)
   end
 
+  def test_glob
+    with_tmpchdir('rubytest-pathname') {|dir|
+      Dir.mkdir("d")
+      open("d/f", "w") {|f| f.write "abc" }
+      Dir.mkdir("d/e")
+      assert_equal([Pathname("d/e"), Pathname("d/f")], Pathname("d").glob("*").sort)
+      a = []
+      Pathname("d").glob("*") {|path| a << path }
+      a.sort!
+      assert_equal([Pathname("d/e"), Pathname("d/f")], a)
+    }
+  end
+
   def test_entries
     with_tmpchdir('rubytest-pathname') {|dir|
       open("a", "w") {}
