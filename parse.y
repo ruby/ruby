@@ -442,6 +442,7 @@ static NODE *node_assign_gen(struct parser_params*,NODE*,NODE*,int);
 #define node_assign(node1, node2, column) node_assign_gen(parser, (node1), (node2), (column))
 
 static NODE *new_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rhs, int column);
+#define new_op_assign(lhs, op, rhs, column) new_op_assign_gen(parser, (lhs), (op), (rhs), (column))
 static NODE *new_attr_op_assign_gen(struct parser_params *parser, NODE *lhs, ID atype, ID attr, ID op, NODE *rhs, int column);
 #define new_attr_op_assign(lhs, type, attr, op, rhs, column) new_attr_op_assign_gen(parser, (lhs), (type), (attr), (op), (rhs), (column))
 static NODE *new_const_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rhs, int column);
@@ -600,6 +601,7 @@ static VALUE new_qcall_gen(struct parser_params *parser, VALUE q, VALUE r, VALUE
 
 #define new_nil() Qnil
 static VALUE new_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE op, VALUE rhs, int column);
+#define new_op_assign(lhs, op, rhs, column) new_op_assign_gen(parser, (lhs), (op), (rhs), (column))
 static VALUE new_attr_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE type, VALUE attr, VALUE op, VALUE rhs);
 #define new_attr_op_assign(lhs, type, attr, op, rhs, column) new_attr_op_assign_gen(parser, (lhs), (type), (attr), (op), (rhs))
 #define new_const_op_assign(lhs, op, rhs, column) new_op_assign(lhs, op, rhs, column)
@@ -633,8 +635,6 @@ static VALUE assign_error_gen(struct parser_params *parser, VALUE a);
 static VALUE parser_reg_compile(struct parser_params*, VALUE, int, VALUE *);
 
 #endif /* !RIPPER */
-
-#define new_op_assign(lhs, op, rhs, column) new_op_assign_gen(parser, (lhs), (op), (rhs), (column))
 
 RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_parser_reg_compile(struct parser_params* parser, VALUE str, int options);
