@@ -212,7 +212,7 @@ class TestNetHTTPS < Test::Unit::TestCase
     http.verify_callback = Proc.new do |preverify_ok, store_ctx|
       true
     end
-    @log_tester = lambda {|log| assert_not_equal([], log) }
+    @log_tester = lambda {|_| }
     ex = assert_raise(OpenSSL::SSL::SSLError){
       http.request_get("/") {|res| }
     }
