@@ -180,6 +180,7 @@ lcov*.info
 
 # /gems
 /gems/*.gem
+/gems/src
 /gems/*-*
 
 # /spec/bundler
