@@ -9447,9 +9447,9 @@ new_postarg_gen(struct parser_params *parser, NODE *i, NODE *v, int column)
 static NODE *
 new_cdecl_gen(struct parser_params *parser, ID v, NODE *val, NODE *path, int column)
 {
-    NODE *cdecl = NEW_CDECL(v, val, path);
-    nd_set_column(cdecl, column);
-    return cdecl;
+    NODE *nd_cdecl = NEW_CDECL(v, val, path);
+    nd_set_column(nd_cdecl, column);
+    return nd_cdecl;
 }
 
 static NODE *
