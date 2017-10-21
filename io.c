@@ -11017,7 +11017,12 @@ copy_stream_finalize(VALUE arg)
  *     IO.copy_stream(src, dst, copy_length, src_offset)
  *
  *  IO.copy_stream copies <i>src</i> to <i>dst</i>.
- *  <i>src</i> and <i>dst</i> is either a filename or an IO.
+ *  <i>src</i> and <i>dst</i> is either a filename or an IO-like object.
+ *  IO-like object for <i>src</i> should have <code>readpartial</code> or
+ *  <code>read</code> method.
+ *  IO-like object for <i>dst</i> should have <code>write</code> method.
+ *  (Specialized mechanisms, such as sendfile system call, may be used
+ *  on appropriate situation.)
  *
  *  This method returns the number of bytes copied.
  *
