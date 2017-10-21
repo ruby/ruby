@@ -151,7 +151,7 @@ with all sufficient information, see the ChangeLog file or Redmine
     * IPAddr#private? [Feature #11666]
     * IPAddr#link_local? [Feature #10912]
   * IPAddr now rejects invalid address mask. [Bug #13399]
-  * IPAddr#ipv4_compat and #ipv4_compat? are deprecated. [#Bug 13769]
+  * IPAddr#ipv4_compat and #ipv4_compat? are deprecated. [Bug #13769]
 
 * Net::HTTP
   * Add more HTTP status classes
