@@ -3609,8 +3609,17 @@ rb_Array(VALUE val)
  *  Returns +arg+ as an Array.
  *
  *  First tries to call <code>to_ary</code> on +arg+, then <code>to_a</code>.
+ *  If +arg+ does not respond to <code>to_ary</code> or <code>to_a</code>,
+ *  returns an Array of length 1 containing +arg+.
  *
- *     Array(1..5)   #=> [1, 2, 3, 4, 5]
+ *  If <code>to_ary</code> or <code>to_a</code> returns something other than
+ *  an Array, raises a <code>TypeError</code>.
+ *
+ *     Array(["a", "b"])  #=> ["a", "b"]
+ *     Array(1..5)        #=> [1, 2, 3, 4, 5]
+ *     Array(key: :value) #=> [[:key, :value]]
+ *     Array(nil)         #=> []
+ *     Array(1)           #=> [1]
  */
 
 static VALUE
