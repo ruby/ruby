@@ -157,6 +157,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 * RbConfig
   * New constants:
     * RbConfig::LIMITS is added to provide the limits of C types.
+      This is available when rbconfig/sizeof is required.
 
 * Ripper
   * New method:
