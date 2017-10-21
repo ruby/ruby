@@ -47,6 +47,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Hash#transform_keys  [Feature #13583]
   * Hash#transform_keys!  [Feature #13583]
+  * Hash#slice  [Feature #8499]
 
 * IO
 
