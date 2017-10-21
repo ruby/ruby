@@ -723,6 +723,11 @@ class SortedSet < Set
             (@keys = @hash.keys).sort! unless @keys
             @keys
           end
+
+          def freeze
+            to_a
+            super
+          end
         END
       end
       module_eval {
