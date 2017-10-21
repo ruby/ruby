@@ -264,8 +264,32 @@ struct rb_call_cache {
 #define GetCoreDataFromValue(obj, type, ptr) ((ptr) = CoreDataFromValue((obj), type))
 
 typedef struct rb_iseq_location_struct {
-    VALUE pathobj;      /* String (path) or Array [path, realpath]. Frozen. */
+    /*! Filename
+     *
+     * String (path) or Array [path, realpath]. Frozen.
+     * */
+    VALUE pathobj;
+    /*!
+     * Example:
+     *
+     * ```
+     * test.rb:2:in `block (2 levels) in foo': unhandled exception
+     * test.rb:2:in `block (2 levels) in <class:Foo>': unhandled exception
+     * ```
+     *
+     * `foo', `<class:Foo>' are base labels.
+     */
     VALUE base_label;   /* String */
+    /*!
+     * Example:
+     *
+     * ```
+     * test.rb:2:in `block (2 levels) in foo': unhandled exception
+     * test.rb:2:in `block (2 levels) in <class:Foo>': unhandled exception
+     * ```
+     *
+     * `block (2 levels) in foo', `block (2 levels) in <class:Foo>' are labels.
+     */
     VALUE label;        /* String */
     VALUE first_lineno; /* TODO: may be unsigned short */
 } rb_iseq_location_t;
@@ -298,6 +322,7 @@ pathobj_realpath(VALUE pathobj)
 }
 
 struct rb_iseq_constant_body {
+    /*! instruction sequence type */
     enum iseq_type {
 	ISEQ_TYPE_TOP,
 	ISEQ_TYPE_METHOD,
@@ -308,10 +333,10 @@ struct rb_iseq_constant_body {
 	ISEQ_TYPE_EVAL,
 	ISEQ_TYPE_MAIN,
 	ISEQ_TYPE_DEFINED_GUARD
-    } type;              /* instruction sequence type */
+    } type;
 
     unsigned int iseq_size;
-    const VALUE *iseq_encoded; /* encoded iseq (insn addr and operands) */
+    const VALUE *iseq_encoded; /*!< encoded iseq (insn addr and operands) */
 
     /**
      * parameter information
@@ -385,34 +410,38 @@ struct rb_iseq_constant_body {
 
     rb_iseq_location_t location;
 
-    /* insn info, must be freed */
+    /*! insn info such as position and line_no, must be freed */
     const struct iseq_line_info_entry *line_info_table;
 
     const ID *local_table;		/* must free */
 
-    /* catch table */
+    /*! catch table */
     const struct iseq_catch_table *catch_table;
 
-    /* for child iseq */
+    /*! for child iseq */
     const struct rb_iseq_struct *parent_iseq;
-    struct rb_iseq_struct *local_iseq; /* local_iseq->flip_cnt can be modified */
+    /*! local_iseq->flip_cnt can be modified */
+    struct rb_iseq_struct *local_iseq;
 
     union iseq_inline_storage_entry *is_entries;
     struct rb_call_info *ci_entries; /* struct rb_call_info ci_entries[ci_size];
-				      * struct rb_call_info_with_kwarg cikw_entries[ci_kw_size];
-				      * So that:
-				      * struct rb_call_info_with_kwarg *cikw_entries = &body->ci_entries[ci_size];
-				      */
-    struct rb_call_cache *cc_entries; /* size is ci_size = ci_kw_size */
+                                     * struct rb_call_info_with_kwarg cikw_entries[ci_kw_size];
+                                     * So that:
+                                     * struct rb_call_info_with_kwarg *cikw_entries = &body->ci_entries[ci_size];
+                                     */
+    /*! size is ci_size = ci_kw_size */
+    struct rb_call_cache *cc_entries;
 
-    VALUE mark_ary;     /* Array: includes operands which should be GC marked */
+    /*! Array: includes operands which should be GC marked */
+    VALUE mark_ary;
 
     unsigned int local_table_size;
     unsigned int is_size;
     unsigned int ci_size;
     unsigned int ci_kw_size;
     unsigned int line_info_size;
-    unsigned int stack_max; /* for stack overflow check */
+    /*! for stack overflow check */
+    unsigned int stack_max;
 };
 
 /* T_IMEMO/iseq */
@@ -660,15 +689,15 @@ struct rb_block {
 };
 
 typedef struct rb_control_frame_struct {
-    const VALUE *pc;		/* cfp[0] */
-    VALUE *sp;			/* cfp[1] */
-    const rb_iseq_t *iseq;	/* cfp[2] */
-    VALUE self;			/* cfp[3] / block[0] */
-    const VALUE *ep;		/* cfp[4] / block[1] */
-    const void *block_code;     /* cfp[5] / block[2] */ /* iseq or ifunc */
+    const VALUE *pc;		/*!< cfp[0], program counter */
+    VALUE *sp;			/*!< cfp[1], stack pointer */
+    const rb_iseq_t *iseq;	/*!< cfp[2], pointer to instruction sequence. this is not set (NULL) for C methods */
+    VALUE self;			/*!< cfp[3] / block[0] */
+    const VALUE *ep;		/*!< cfp[4] / block[1], environment pointer, referring to where local variables for the current method are located on the stack. */
+    const void *block_code;     /*!< cfp[5] / block[2], the block if given, iseq or ifunc */
 
 #if VM_DEBUG_BP_CHECK
-    VALUE *bp_check;		/* cfp[6] */
+    VALUE *bp_check;		/*!< cfp[6] */
 #endif
 } rb_control_frame_t;
 
