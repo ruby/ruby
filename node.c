@@ -1034,7 +1034,6 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	F_NODE(nd_body, "body");
 	return;
 
-      case NODE_IASGN2:
       case NODE_CVDECL:
       case NODE_ARGS_AUX:
       case NODE_TO_ARY:
@@ -1154,7 +1153,6 @@ rb_gc_mark_node(NODE *obj)
       case NODE_DASGN:
       case NODE_DASGN_CURR:
       case NODE_IASGN:
-      case NODE_IASGN2:
       case NODE_CVASGN:
       case NODE_COLON3:
       case NODE_OPT_N:
