@@ -2646,9 +2646,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
                 &wcmdname, 1, lcid, &DispID);
         SysFreeString(wcmdname);
         if(FAILED(hr)) {
-            ole_raise(hr, rb_eNoMethodError,
-                    "unknown property or method: `%s'",
-                    StringValuePtr(cmd));
+            return rb_eNoMethodError;
         }
     }
 
@@ -2850,7 +2848,11 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
 static VALUE
 fole_invoke(int argc, VALUE *argv, VALUE self)
 {
-    return ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET, FALSE);
+    VALUE v = ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET, FALSE);
+    if (v == rb_eNoMethodError) {
+        return rb_call_super(argc, argv);
+    }
+    return v;
 }
 
 static VALUE
@@ -2863,8 +2865,7 @@ ole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types, USHORT dispkind)
     VARIANT result;
     DISPPARAMS dispParams;
     VARIANTARG* realargs = NULL;
-    int i, j;
-    VALUE obj = Qnil;
+    int i, j; VALUE obj = Qnil;
     VALUE tp, param;
     VALUE v;
     VARTYPE vt;
@@ -3118,7 +3119,11 @@ fole_setproperty2(VALUE self, VALUE dispid, VALUE args, VALUE types)
 static VALUE
 fole_setproperty_with_bracket(int argc, VALUE *argv, VALUE self)
 {
-    return ole_invoke(argc, argv, self, DISPATCH_PROPERTYPUT, TRUE);
+    VALUE v = ole_invoke(argc, argv, self, DISPATCH_PROPERTYPUT, TRUE);
+    if (v == rb_eNoMethodError) {
+        return rb_call_super(argc, argv);
+    }
+    return v;
 }
 
 /*
@@ -3137,7 +3142,11 @@ fole_setproperty_with_bracket(int argc, VALUE *argv, VALUE self)
 static VALUE
 fole_setproperty(int argc, VALUE *argv, VALUE self)
 {
-    return ole_invoke(argc, argv, self, DISPATCH_PROPERTYPUT, FALSE);
+    VALUE v = ole_invoke(argc, argv, self, DISPATCH_PROPERTYPUT, FALSE);
+    if (v == rb_eNoMethodError) {
+        return rb_call_super(argc, argv);
+    }
+    return v;
 }
 
 /*
@@ -3159,7 +3168,11 @@ fole_setproperty(int argc, VALUE *argv, VALUE self)
 static VALUE
 fole_getproperty_with_bracket(int argc, VALUE *argv, VALUE self)
 {
-    return ole_invoke(argc, argv, self, DISPATCH_PROPERTYGET, TRUE);
+    VALUE v = ole_invoke(argc, argv, self, DISPATCH_PROPERTYGET, TRUE);
+    if (v == rb_eNoMethodError) {
+        return rb_call_super(argc, argv);
+    }
+    return v;
 }
 
 static VALUE
@@ -3342,11 +3355,11 @@ fole_each(VALUE self)
 static VALUE
 fole_missing(int argc, VALUE *argv, VALUE self)
 {
-    VALUE mid, sym;
+    VALUE mid, org_mid, sym, v;
     const char* mname;
     long n;
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
-    mid = argv[0];
+    mid = org_mid = argv[0];
     sym = rb_check_symbol(&mid);
     if (!NIL_P(sym)) mid = rb_sym2str(sym);
     mname = StringValueCStr(mid);
@@ -3362,7 +3375,12 @@ fole_missing(int argc, VALUE *argv, VALUE self)
     }
     else {
         argv[0] = rb_enc_associate(rb_str_dup(mid), cWIN32OLE_enc);
-        return ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET, FALSE);
+        v = ole_invoke(argc, argv, self, DISPATCH_METHOD|DISPATCH_PROPERTYGET, FALSE);
+        if (v == rb_eNoMethodError) {
+            argv[0] = org_mid;
+            return rb_call_super(argc, argv);
+        }
+        return v;
     }
 }
 
