@@ -816,6 +816,8 @@ module Net   #:nodoc:
       :@key,
       :@ssl_timeout,
       :@ssl_version,
+      :@min_version,
+      :@max_version,
       :@verify_callback,
       :@verify_depth,
       :@verify_mode,
@@ -829,6 +831,8 @@ module Net   #:nodoc:
       :key,
       :ssl_timeout,
       :ssl_version,
+      :min_version,
+      :max_version,
       :verify_callback,
       :verify_depth,
       :verify_mode,
@@ -862,6 +866,12 @@ module Net   #:nodoc:
 
     # Sets the SSL version.  See OpenSSL::SSL::SSLContext#ssl_version=
     attr_accessor :ssl_version
+
+    # Sets the minimum SSL version.  See OpenSSL::SSL::SSLContext#min_version=
+    attr_accessor :min_version
+
+    # Sets the maximum SSL version.  See OpenSSL::SSL::SSLContext#max_version=
+    attr_accessor :max_version
 
     # Sets the verify callback for the server certification verification.
     attr_accessor :verify_callback

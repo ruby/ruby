@@ -74,6 +74,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Net::HTTP
 
   * Net::HTTP.new supports no_proxy parameter [Feature #11195]
+  * Net::HTTP#min_version/max_version [Feature #9450]
 
 * Numeric
 
