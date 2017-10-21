@@ -9366,7 +9366,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	      break;
 	  }
 	  case T_IMEMO: {
-	      const char *imemo_name = NULL;
+	      const char *imemo_name;
 	      switch (imemo_type(obj)) {
 #define IMEMO_NAME(x) case imemo_##x: imemo_name = #x; break;
 		  IMEMO_NAME(env);
