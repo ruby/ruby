@@ -6226,11 +6226,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 	}
 	break;
       }
-      case NODE_DREGX_ONCE:{
+      case NODE_SCOPE:{
 	int ic_index = iseq->body->is_size++;
-	NODE *dregx_node = NEW_NODE(NODE_DREGX, node->u1.value, node->u2.value, node->u3.value);
-	NODE *block_node = NEW_NODE(NODE_SCOPE, 0, dregx_node, 0);
-	const rb_iseq_t *block_iseq = NEW_CHILD_ISEQ(block_node, make_name_for_block(iseq),
+	const rb_iseq_t *block_iseq = NEW_CHILD_ISEQ(node, make_name_for_block(iseq),
 						     ISEQ_TYPE_ONCE_GUARD, line);
 
 	ADD_INSN2(ret, line, once, block_iseq, INT2FIX(ic_index));
