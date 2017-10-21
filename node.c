@@ -1039,7 +1039,6 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
       case NODE_ARGS_AUX:
       case NODE_TO_ARY:
       case NODE_BLOCK_ARG:
-      case NODE_ALLOCA:
       case NODE_BMETHOD:
       case NODE_LAST:
 	break;
@@ -1075,9 +1074,6 @@ rb_gc_free_node(VALUE obj)
 	    xfree(RNODE(obj)->nd_ainfo);
 	}
 	break;
-      case NODE_ALLOCA:
-	xfree(RNODE(obj)->u1.node);
-	break;
     }
 }
 
@@ -1095,9 +1091,6 @@ rb_node_memsize(VALUE obj)
 	if (RNODE(obj)->nd_ainfo) {
 	    size += sizeof(*RNODE(obj)->nd_ainfo);
 	}
-	break;
-      case NODE_ALLOCA:
-	size += RNODE(obj)->nd_cnt * sizeof(VALUE);
 	break;
     }
     return size;
@@ -1222,11 +1215,6 @@ rb_gc_mark_node(NODE *obj)
       case NODE_FALSE:
       case NODE_ERRINFO:
       case NODE_BLOCK_ARG:
-	break;
-      case NODE_ALLOCA:
-	rb_gc_mark_locations((VALUE*)RNODE(obj)->u1.value,
-			     (VALUE*)RNODE(obj)->u1.value + RNODE(obj)->u3.cnt);
-	rb_gc_mark(RNODE(obj)->u2.value);
 	break;
 
       default:		/* unlisted NODE */
