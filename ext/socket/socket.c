@@ -983,6 +983,7 @@ sock_sockaddr(struct sockaddr *addr, socklen_t len)
  * call-seq:
  *   Socket.gethostbyname(hostname) => [official_hostname, alias_hostnames, address_family, *address_list]
  *
+ * Use Addrinfo.getaddrinfo instead.
  * This method is deprecated since following reasons:
  *
  * - The 3rd element of result is the address family of the first address.
@@ -1010,6 +1011,7 @@ sock_s_gethostbyname(VALUE obj, VALUE host)
  * call-seq:
  *   Socket.gethostbyaddr(address_string [, address_family]) => hostent
  *
+ * Use Addrinfo#getnameinfo instead.
  * This method is deprecated since following reasons:
  *
  * - Uncommon address representation:
