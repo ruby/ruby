@@ -215,6 +215,10 @@ __EOS__
     end
   end
 
+  # Skipping tests that use session_remove_cb by default because it may cause
+  # deadlock.
+  TEST_SESSION_REMOVE_CB = ENV["OSSL_TEST_ALL"] == "1"
+
   def test_ctx_client_session_cb
     pend "TLS 1.2 is not supported" unless tls12_supported?
 
@@ -227,11 +231,13 @@ __EOS__
         sock, sess = ary
         called[:new] = [sock, sess]
       }
-      ctx.session_remove_cb = lambda { |ary|
-        ctx, sess = ary
-        called[:remove] = [ctx, sess]
-        # any resulting value is OK (ignored)
-      }
+      if TEST_SESSION_REMOVE_CB
+        ctx.session_remove_cb = lambda { |ary|
+          ctx, sess = ary
+          called[:remove] = [ctx, sess]
+          # any resulting value is OK (ignored)
+        }
+      end
 
       server_connect_with_session(port, ctx, nil) { |ssl|
         assert_equal(1, ctx.session_cache_stats[:cache_num])
@@ -239,7 +245,9 @@ __EOS__
         assert_equal([ssl, ssl.session], called[:new])
         assert(ctx.session_remove(ssl.session))
         assert(!ctx.session_remove(ssl.session))
-        assert_equal([ctx, ssl.session], called[:remove])
+        if TEST_SESSION_REMOVE_CB
+          assert_equal([ctx, ssl.session], called[:remove])
+        end
       }
     end
   end
@@ -275,10 +283,12 @@ __EOS__
         last_server_session = sess
       }
 
-      ctx.session_remove_cb = lambda { |ary|
-        _ctx, sess = ary
-        called[:remove] = sess
-      }
+      if TEST_SESSION_REMOVE_CB
+        ctx.session_remove_cb = lambda { |ary|
+          _ctx, sess = ary
+          called[:remove] = sess
+        }
+      end
     }
     start_server(ctx_proc: ctx_proc) do |port|
       connections = 0
@@ -290,7 +300,9 @@ __EOS__
       assert_nil called[:get]
       assert_not_nil called[:new]
       assert_equal sess0.id, called[:new].id
-      assert_nil called[:remove]
+      if TEST_SESSION_REMOVE_CB
+        assert_nil called[:remove]
+      end
       called.clear
 
       # Internal cache hit
@@ -302,12 +314,16 @@ __EOS__
       }
       assert_nil called[:get]
       assert_nil called[:new]
-      assert_nil called[:remove]
+      if TEST_SESSION_REMOVE_CB
+        assert_nil called[:remove]
+      end
       called.clear
 
       sctx.flush_sessions(Time.now + 10000)
-      assert_not_nil called[:remove]
-      assert_equal sess0.id, called[:remove].id
+      if TEST_SESSION_REMOVE_CB
+        assert_not_nil called[:remove]
+        assert_equal sess0.id, called[:remove].id
+      end
       called.clear
 
       # External cache hit
@@ -325,12 +341,16 @@ __EOS__
       assert_equal sess0.id, sess2.id
       assert_equal sess0.id, called[:get]
       assert_nil called[:new]
-      assert_nil called[:remove]
+      if TEST_SESSION_REMOVE_CB
+        assert_nil called[:remove]
+      end
       called.clear
 
       sctx.flush_sessions(Time.now + 10000)
-      assert_not_nil called[:remove]
-      assert_equal sess0.id, called[:remove].id
+      if TEST_SESSION_REMOVE_CB
+        assert_not_nil called[:remove]
+        assert_equal sess0.id, called[:remove].id
+      end
       called.clear
 
       # Cache miss
@@ -344,7 +364,9 @@ __EOS__
       assert_equal sess0.id, called[:get]
       assert_not_nil called[:new]
       assert_equal sess3.id, called[:new].id
-      assert_nil called[:remove]
+      if TEST_SESSION_REMOVE_CB
+        assert_nil called[:remove]
+      end
     end
   end
 
