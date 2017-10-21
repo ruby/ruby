@@ -227,7 +227,7 @@ Capture groups can be referred to by name when defined with the
 constructs.
 
     /\$(?<dollars>\d+)\.(?<cents>\d+)/.match("$3.67")
-        => #<MatchData "$3.67" dollars:"3" cents:"67">
+        #=> #<MatchData "$3.67" dollars:"3" cents:"67">
     /\$(?<dollars>\d+)\.(?<cents>\d+)/.match("$3.67")[:dollars] #=> "3"
 
 Named groups can be backreferenced with <tt>\k<</tt><i>name</i><tt>></tt>,
@@ -607,9 +607,9 @@ regexp's encoding can be explicitly fixed by supplying
 <tt>Regexp.new</tt>:
 
     r = Regexp.new("a".force_encoding("iso-8859-1"),Regexp::FIXEDENCODING)
-    r =~"a\u3042"
-       #=> Encoding::CompatibilityError: incompatible encoding regexp match
-            (ISO-8859-1 regexp with UTF-8 string)
+    r =~ "a\u3042"
+       # raises Encoding::CompatibilityError: incompatible encoding regexp match
+       #         (ISO-8859-1 regexp with UTF-8 string)
 
 == Special global variables
 
