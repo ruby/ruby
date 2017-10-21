@@ -345,12 +345,16 @@ class VCS
 
     def self.get_revisions(path, srcdir = nil)
       gitcmd = [COMMAND]
+      desc = cmd_read_at(srcdir, [gitcmd + %w[describe --tags --match REV_*]])
+      if /\AREV_(\d+)(?:-(\d+)-g\h+)?\Z/ =~ desc
+        last = ($1.to_i + $2.to_i).to_s
+      end
       logcmd = gitcmd + %W[log -n1 --date=iso]
-      logcmd << "--grep=^ *git-svn-id: .*@[0-9][0-9]*"
+      logcmd << "--grep=^ *git-svn-id: .*@[0-9][0-9]*" unless last
       idpat = /git-svn-id: .*?@(\d+) \S+\Z/
       log = cmd_read_at(srcdir, [logcmd])
       commit = log[/\Acommit (\w+)/, 1]
-      last = log[idpat, 1]
+      last ||= log[idpat, 1]
       if path
         cmd = logcmd
         cmd += [path] unless path == '.'
