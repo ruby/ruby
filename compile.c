@@ -3557,7 +3557,6 @@ compile_massign_opt(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	  case NODE_DASGN:
 	  case NODE_DASGN_CURR:
 	  case NODE_IASGN:
-	  case NODE_IASGN2:
 	  case NODE_CVASGN:
 	    MEMORY(ln->nd_vid);
 	    break;
@@ -5161,8 +5160,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
 		  ((VALUE)node->nd_entry | 1));
 	break;
       }
-      case NODE_IASGN:
-      case NODE_IASGN2:{
+      case NODE_IASGN:{
 	CHECK(COMPILE(ret, "lvalue", node->nd_value));
 	if (!popped) {
 	    ADD_INSN(ret, line, dup);
