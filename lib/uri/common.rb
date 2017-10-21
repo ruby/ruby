@@ -100,7 +100,7 @@ module URI
     #   # => "@%3F@%21"
     #
     def escape(*arg)
-      warn "#{caller(1)[0]}: warning: URI.escape is obsolete" if $VERBOSE
+      warn "#{caller(1, 1)[0]}: warning: URI.escape is obsolete" if $VERBOSE
       DEFAULT_PARSER.escape(*arg)
     end
     alias encode escape
@@ -132,7 +132,7 @@ module URI
     #   # => "http://example.com/?a=\t\r"
     #
     def unescape(*arg)
-      warn "#{caller(1)[0]}: warning: URI.unescape is obsolete" if $VERBOSE
+      warn "#{caller(1, 1)[0]}: warning: URI.unescape is obsolete" if $VERBOSE
       DEFAULT_PARSER.unescape(*arg)
     end
     alias decode unescape
@@ -300,7 +300,7 @@ module URI
   #   # => ["http://foo.example.com/bla", "mailto:test@example.com"]
   #
   def self.extract(str, schemes = nil, &block)
-    warn "#{caller(1)[0]}: warning: URI.extract is obsolete" if $VERBOSE
+    warn "#{caller(1, 1)[0]}: warning: URI.extract is obsolete" if $VERBOSE
     DEFAULT_PARSER.extract(str, schemes, &block)
   end
 
@@ -336,7 +336,7 @@ module URI
   #   end
   #
   def self.regexp(schemes = nil)
-    warn "#{caller(1)[0]}: warning: URI.regexp is obsolete" if $VERBOSE
+    warn "#{caller(1, 1)[0]}: warning: URI.regexp is obsolete" if $VERBOSE
     DEFAULT_PARSER.make_regexp(schemes)
   end
 

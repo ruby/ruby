@@ -310,7 +310,7 @@ class IPAddr
 
   # Returns true if the ipaddr is an IPv4-compatible IPv6 address.
   def ipv4_compat?
-    warn "#{caller(1)[0]}: warning: IPAddr\##{__callee__} is obsolete" if $VERBOSE
+    warn "#{caller(1, 1)[0]}: warning: IPAddr\##{__callee__} is obsolete" if $VERBOSE
     _ipv4_compat?
   end
 
@@ -336,7 +336,7 @@ class IPAddr
   # Returns a new ipaddr built by converting the native IPv4 address
   # into an IPv4-compatible IPv6 address.
   def ipv4_compat
-    warn "#{caller(1)[0]}: warning: IPAddr\##{__callee__} is obsolete" if $VERBOSE
+    warn "#{caller(1, 1)[0]}: warning: IPAddr\##{__callee__} is obsolete" if $VERBOSE
     if !ipv4?
       raise InvalidAddressError, "not an IPv4 address"
     end

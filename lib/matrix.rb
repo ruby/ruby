@@ -1246,7 +1246,7 @@ class Matrix
   # deprecated; use Matrix#determinant
   #
   def determinant_e
-    warn "#{caller(1)[0]}: warning: Matrix#determinant_e is deprecated; use #determinant"
+    warn "#{caller(1, 1)[0]}: warning: Matrix#determinant_e is deprecated; use #determinant"
     determinant
   end
   alias det_e determinant_e
@@ -1304,7 +1304,7 @@ class Matrix
   # deprecated; use Matrix#rank
   #
   def rank_e
-    warn "#{caller(1)[0]}: warning: Matrix#rank_e is deprecated; use #rank"
+    warn "#{caller(1, 1)[0]}: warning: Matrix#rank_e is deprecated; use #rank"
     rank
   end
 
@@ -1490,17 +1490,17 @@ class Matrix
   end
 
   def elements_to_f
-    warn "#{caller(1)[0]}: warning: Matrix#elements_to_f is deprecated, use map(&:to_f)"
+    warn "#{caller(1, 1)[0]}: warning: Matrix#elements_to_f is deprecated, use map(&:to_f)"
     map(&:to_f)
   end
 
   def elements_to_i
-    warn "#{caller(1)[0]}: warning: Matrix#elements_to_i is deprecated, use map(&:to_i)"
+    warn "#{caller(1, 1)[0]}: warning: Matrix#elements_to_i is deprecated, use map(&:to_i)"
     map(&:to_i)
   end
 
   def elements_to_r
-    warn "#{caller(1)[0]}: warning: Matrix#elements_to_r is deprecated, use map(&:to_r)"
+    warn "#{caller(1, 1)[0]}: warning: Matrix#elements_to_r is deprecated, use map(&:to_r)"
     map(&:to_r)
   end
 
@@ -2142,17 +2142,17 @@ class Vector
   end
 
   def elements_to_f
-    warn "#{caller(1)[0]}: warning: Vector#elements_to_f is deprecated"
+    warn "#{caller(1, 1)[0]}: warning: Vector#elements_to_f is deprecated"
     map(&:to_f)
   end
 
   def elements_to_i
-    warn "#{caller(1)[0]}: warning: Vector#elements_to_i is deprecated"
+    warn "#{caller(1, 1)[0]}: warning: Vector#elements_to_i is deprecated"
     map(&:to_i)
   end
 
   def elements_to_r
-    warn "#{caller(1)[0]}: warning: Vector#elements_to_r is deprecated"
+    warn "#{caller(1, 1)[0]}: warning: Vector#elements_to_r is deprecated"
     map(&:to_r)
   end
 

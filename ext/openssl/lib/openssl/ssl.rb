@@ -201,7 +201,7 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
         if /(?<type>_client|_server)\z/ =~ meth
           meth = $`
           if $VERBOSE
-            warn "#{caller(1)[0]}: method type #{type.inspect} is ignored"
+            warn "#{caller(1, 1)[0]}: method type #{type.inspect} is ignored"
           end
         end
         version = METHODS_MAP[meth.intern] or
