@@ -844,14 +844,14 @@ enum imemo_type {
     imemo_memo       = 5,
     imemo_ment       = 6,
     imemo_iseq       = 7,
-    imemo_alloc      = 8,
-    imemo_mask       = 0x0f
+    imemo_alloc      = 8
 };
+#define IMEMO_MASK   0x0f
 
 static inline enum imemo_type
 imemo_type(VALUE imemo)
 {
-    return (RBASIC(imemo)->flags >> FL_USHIFT) & imemo_mask;
+    return (RBASIC(imemo)->flags >> FL_USHIFT) & IMEMO_MASK;
 }
 
 static inline int
@@ -859,7 +859,7 @@ imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
 {
     if (LIKELY(!RB_SPECIAL_CONST_P(imemo))) {
 	/* fixed at compile time if imemo_type is given. */
-	const VALUE mask = (imemo_mask << FL_USHIFT) | RUBY_T_MASK;
+	const VALUE mask = (IMEMO_MASK << FL_USHIFT) | RUBY_T_MASK;
 	const VALUE expected_type = (imemo_type << FL_USHIFT) | T_IMEMO;
 	/* fixed at runtime. */
 	return expected_type == (RBASIC(imemo)->flags & mask);
