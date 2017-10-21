@@ -155,7 +155,7 @@ Instead, the argument will be returned:
   end
 
   p(a = 5) # prints 5
-  
+
 The actual return value will be returned when invoking the method directly:
 
   p send(:a=, 5) # prints 6
