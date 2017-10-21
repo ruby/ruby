@@ -243,7 +243,31 @@ module Random::Formatter
   # +NotImplementedError+ is raised.
   private def choose(source, n)
     size = source.size
-    n.times.map {source[random_number(size)]}.join('')
+    m = 1
+    limit = size
+    while limit * size <= 0x100000000
+      limit *= size
+      m += 1
+    end
+    result = ''.dup
+    while m <= n
+      rs = random_number(limit)
+      is = rs.digits(size)
+      (m-is.length).times { is << 0 }
+      result << source.values_at(*is).join('')
+      n -= m
+    end
+    if 0 < n
+      rs = random_number(limit)
+      is = rs.digits(size)
+      if is.length < n
+        (n-is.length).times { is << 0 }
+      else
+        is.pop while n < is.length
+      end
+      result.concat source.values_at(*is).join('')
+    end
+    result
   end
 
   ALPHANUMERIC = [*'A'..'Z', *'a'..'z', *'0'..'9']
