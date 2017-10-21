@@ -869,7 +869,7 @@ imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
     }
 }
 
-/* FL_USER0 to FL_USER2 is for type */
+/* FL_USER0 to FL_USER3 is for type */
 #define IMEMO_FL_USHIFT (FL_USHIFT + 4)
 #define IMEMO_FL_USER0 FL_USER4
 #define IMEMO_FL_USER1 FL_USER5
