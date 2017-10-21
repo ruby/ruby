@@ -1004,6 +1004,13 @@ sock_s_gethostbyname(VALUE obj, VALUE host)
  *
  *   p Socket.gethostbyaddr([221,186,184,68].pack("CCCC"))
  *   #=> ["carbon.ruby-lang.org", [], 2, "\xDD\xBA\xB8D"]
+ *
+ *   p Socket.gethostbyaddr([127,0,0,1].pack("CCCC"))
+ *   ["localhost", [], 2, "\x7F\x00\x00\x01"]
+ *   p Socket.gethostbyaddr(([0]*15+[1]).pack("C"*16))
+ *   #=> ["localhost", ["ip6-localhost", "ip6-loopback"], 10,
+ *        "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01"]
+ *
  */
 static VALUE
 sock_s_gethostbyaddr(int argc, VALUE *argv)
