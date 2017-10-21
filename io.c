@@ -10287,8 +10287,8 @@ io_s_write(int argc, VALUE *argv, int binary)
  *  Opens the file, optionally seeks to the given <i>offset</i>, writes
  *  <i>string</i>, then returns the length written.
  *  <code>write</code> ensures the file is closed before returning.
- *  If <i>offset</i> is not given, the file is truncated.  Otherwise,
- *  it is not truncated.
+ *  If <i>offset</i> is not given in write mode, the file is truncated.
+ *  Otherwise, it is not truncated.
  *
  *    IO.write("testfile", "0123456789", 20)  #=> 10
  *    # File could contain:  "This is line one\nThi0123456789two\nThis is line three\nAnd so on...\n"
