@@ -2903,15 +2903,30 @@ rb_str_append(VALUE str, VALUE str2)
     return rb_str_buf_append(str, str2);
 }
 
+#define MIN_PRE_ALLOC_SIZE 48
+
 VALUE
 rb_str_concat_literals(size_t num, const VALUE *strary)
 {
     VALUE str;
-    size_t i;
+    size_t i, s;
+    long len = 1;
 
-    if (!num) return rb_str_new(0, 0);
-    str = rb_str_resurrect(strary[0]);
-    for (i = 1; i < num; ++i) {
+    if (UNLIKELY(!num)) return rb_str_new(0, 0);
+    if (UNLIKELY(num == 1)) return rb_str_resurrect(strary[0]);
+
+    for (i = 0; i < num; ++i) { len += RSTRING_LEN(strary[i]); }
+    if (LIKELY(len < MIN_PRE_ALLOC_SIZE)) {
+	str = rb_str_resurrect(strary[0]);
+	s = 1;
+    }
+    else {
+	str = rb_str_buf_new(len);
+	rb_enc_copy(str, strary[0]);
+	s = 0;
+    }
+
+    for (i = s; i < num; ++i) {
 	const VALUE v = strary[i];
 	int encidx = ENCODING_GET(v);
 
