@@ -837,10 +837,10 @@ struct RIMemo {
 
 enum imemo_type {
     imemo_env        = 0,
-    imemo_cref       = 1,
-    imemo_svar       = 2,
+    imemo_cref       = 1, /*!< class reference */
+    imemo_svar       = 2, /*!< special variable */
     imemo_throw_data = 3,
-    imemo_ifunc      = 4,
+    imemo_ifunc      = 4, /*!< iterator function */
     imemo_memo       = 5,
     imemo_ment       = 6,
     imemo_iseq       = 7,
@@ -877,22 +877,21 @@ imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
 #define IMEMO_FL_USER3 FL_USER7
 #define IMEMO_FL_USER4 FL_USER8
 
-/* CREF in method.h */
+/* CREF (Class REFerence) is defined in method.h */
 
-/* SVAR */
-
+/*! SVAR (Special VARiable) */
 struct vm_svar {
     VALUE flags;
-    const VALUE cref_or_me;
+    const VALUE cref_or_me; /*!< class reference or rb_method_entry_t */
     const VALUE lastline;
     const VALUE backref;
     const VALUE others;
 };
 
-/* THROW_DATA */
 
 #define THROW_DATA_CONSUMED IMEMO_FL_USER0
 
+/*! THROW_DATA */
 struct vm_throw_data {
     VALUE flags;
     VALUE reserved;
@@ -903,7 +902,7 @@ struct vm_throw_data {
 
 #define THROW_DATA_P(err) RB_TYPE_P((VALUE)(err), T_IMEMO)
 
-/* IFUNC */
+/* IFUNC (Internal FUNCtion) */
 
 struct vm_ifunc_argc {
 #if SIZEOF_INT * 2 > SIZEOF_VALUE
@@ -914,6 +913,7 @@ struct vm_ifunc_argc {
 #endif
 };
 
+/*! IFUNC (Internal FUNCtion) */
 struct vm_ifunc {
     VALUE flags;
     VALUE reserved;
@@ -938,8 +938,10 @@ typedef struct rb_imemo_alloc_struct {
     size_t cnt; /* buffer size in VALUE */
 } rb_imemo_alloc_t;
 
-/* MEMO */
-
+/*! MEMO
+ *
+ * @see imemo_type
+ * */
 struct MEMO {
     VALUE flags;
     VALUE reserved;

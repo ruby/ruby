@@ -37,6 +37,7 @@ typedef struct rb_scope_visi_struct {
     unsigned int module_func : 1;
 } rb_scope_visibility_t;
 
+/*! CREF (Class REFerence) */
 typedef struct rb_cref_struct {
     VALUE flags;
     const VALUE refinements;
@@ -98,18 +99,18 @@ METHOD_ENTRY_FLAGS_COPY(rb_method_entry_t *dst, const rb_method_entry_t *src)
 }
 
 typedef enum {
-    VM_METHOD_TYPE_ISEQ,
-    VM_METHOD_TYPE_CFUNC,
-    VM_METHOD_TYPE_ATTRSET,
-    VM_METHOD_TYPE_IVAR,
+    VM_METHOD_TYPE_ISEQ,      /*!< Ruby method */
+    VM_METHOD_TYPE_CFUNC,     /*!< C method */
+    VM_METHOD_TYPE_ATTRSET,   /*!< attr_writer or attr_accessor */
+    VM_METHOD_TYPE_IVAR,      /*!< attr_reader or attr_accessor */
     VM_METHOD_TYPE_BMETHOD,
     VM_METHOD_TYPE_ZSUPER,
     VM_METHOD_TYPE_ALIAS,
     VM_METHOD_TYPE_UNDEF,
     VM_METHOD_TYPE_NOTIMPLEMENTED,
-    VM_METHOD_TYPE_OPTIMIZED, /* Kernel#send, Proc#call, etc */
-    VM_METHOD_TYPE_MISSING,   /* wrapper for method_missing(id) */
-    VM_METHOD_TYPE_REFINED,
+    VM_METHOD_TYPE_OPTIMIZED, /*!< Kernel#send, Proc#call, etc */
+    VM_METHOD_TYPE_MISSING,   /*!< wrapper for method_missing(id) */
+    VM_METHOD_TYPE_REFINED,   /*!< refinement */
 
     END_OF_ENUMERATION(VM_METHOD_TYPE)
 } rb_method_type_t;
@@ -120,8 +121,8 @@ typedef struct rb_iseq_struct rb_iseq_t;
 #endif
 
 typedef struct rb_method_iseq_struct {
-    const rb_iseq_t * const iseqptr;              /* should be separated from iseqval */
-    rb_cref_t * const cref;                       /* should be marked */
+    const rb_iseq_t * const iseqptr; /*!< iseq pointer, should be separated from iseqval */
+    rb_cref_t * const cref;          /*!< class reference, should be marked */
 } rb_method_iseq_t; /* check rb_add_method_iseq() when modify the fields */
 
 typedef struct rb_method_cfunc_struct {
