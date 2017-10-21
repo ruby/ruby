@@ -98,6 +98,54 @@ class IPAddr
   # Raised when the address is an invalid length.
   class InvalidPrefixError < InvalidAddressError; end
 
+  # The netmask part of the IP address
+  class Netmask
+    attr_reader :family, :netmask
+    # Create a new IPAddr::Netmask object. Normally you wouldn't call this
+    # yourself, but rather let IPAddr#mask_addr create this for you
+    def initialize(netmask, family)
+      case family
+      when Socket::AF_INET
+        if netmask < 0 or netmask > IN4MASK
+          raise InvalidPrefixError, "invalid prefix length"
+        end
+      when Socket::AF_INET6
+        if netmask < 0 or netmask > IN6MASK
+          raise InvalidPrefixError, "invalid prefix length"
+        end
+      else
+        raise AddressFamilyError, "unsupported address family: #{family}"
+      end
+      @netmask = netmask
+      @family = family
+    end
+
+    def ==(other)
+      return false if other.class != self.class
+      other.family == @family and other.netmask == @netmask
+    end
+
+    # Compares the ipaddr with another.
+    def <=>(other)
+      return nil if other.class != self.class
+
+      return nil if other.family != @family
+
+      return @netmask <=> other.netmask
+    end
+    include Comparable
+
+    # Return the range as cidr notation ("192.168.1.2/24" => 24)
+    def cidr
+      @netmask.to_s(2).count("1")
+    end
+
+    # Return the range as a string ("192.268.1.2/255.255.255.0" => "255.255.255.0")
+    def to_s
+      return IPAddr.stringify_addr(@netmask, @family)
+    end
+  end
+
   # Returns the address family of this IP address.
   attr_reader :family
 
@@ -146,13 +194,21 @@ class IPAddr
     return self.clone.set(addr_mask(~@addr))
   end
 
-  # Returns true if two ipaddrs are equal.
+  # Returns true if two ipaddrs are equal. Does not include the
+  # mask_addr in the check.
   def ==(other)
     other = coerce_other(other)
   rescue
     false
   else
     @family == other.family && @addr == other.to_i
+  end
+
+  # Returns true if two ipaddrs are equal, including their
+  # mask_addrs
+  def equal_with_mask?(other)
+    other = coerce_other(other)
+    return self == other && self.mask_addr == other.mask_addr
   end
 
   # Returns a new ipaddr built by masking IP address with the given
@@ -232,7 +288,7 @@ class IPAddr
   # Returns a string containing the IP address representation in
   # canonical form.
   def to_string
-    return _to_string(@addr)
+    return self.class.stringify_addr(@addr, @family)
   end
 
   # Returns a network byte ordered string form of the IP address.
@@ -355,6 +411,11 @@ class IPAddr
     return ([@addr, @mask_addr].hash << 1) | (ipv4? ? 0 : 1)
   end
 
+  # Returns the network mask of the IPAddr as an IPAddr::Netmask object
+  def mask_addr
+    return Netmask.new(@mask_addr, @family)
+  end
+
   # Creates a Range object for the network address.
   def to_range
     begin_addr = (@addr & @mask_addr)
@@ -383,7 +444,7 @@ class IPAddr
       raise AddressFamilyError, "unsupported address family"
     end
     return sprintf("#<%s: %s:%s/%s>", self.class.name,
-                   af, _to_string(@addr), _to_string(@mask_addr))
+                   af, self.class.stringify_addr(@addr, @family), self.mask_addr.to_s)
   end
 
   protected
@@ -597,8 +658,9 @@ class IPAddr
     end
   end
 
-  def _to_string(addr)
-    case @family
+  # Convert an internal address to a string representation
+  def self.stringify_addr(addr, family)
+    case family
     when Socket::AF_INET
       return (0..3).map { |i|
         (addr >> (24 - 8 * i)) & 0xff
