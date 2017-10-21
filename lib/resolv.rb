@@ -2603,7 +2603,7 @@ class Resolv
     def each_address(name)
       name = Resolv::DNS::Name.create(name)
 
-      return unless name.to_a.last == 'local'
+      return unless name.to_a.last.to_s == 'local'
 
       super(name)
     end
