@@ -9379,6 +9379,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 		IMEMO_NAME(iseq);
 		IMEMO_NAME(alloc);
 #undef IMEMO_NAME
+	      default: UNREACHABLE;
 	    }
 	    snprintf(buff, buff_size, "%s %s", buff, imemo_name);
 
