@@ -78,7 +78,7 @@ runner = File.join(abs_archdir, "exe/ruby#{config['EXEEXT']}")
 runner = nil unless File.exist?(runner)
 abs_ruby = runner || File.expand_path(ruby)
 env["RUBY"] = abs_ruby
-env["GEM_PATH"] = env["GEM_HOME"] = File.expand_path("spec/rspec", srcdir)
+env["GEM_PATH"] = env["GEM_HOME"] = File.expand_path(".bundle", srcdir)
 env["BUNDLE_RUBY"] = abs_ruby
 env["BUNDLE_GEM"] = "#{abs_ruby} -rrubygems #{srcdir}/bin/gem --backtrace"
 env["PATH"] = [File.dirname(abs_ruby), abs_archdir, ENV["PATH"]].compact.join(File::PATH_SEPARATOR)
