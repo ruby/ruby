@@ -57,7 +57,7 @@ class IO
         STDOUT.flush
       end
       if mat=e_pat.match(buf) then
-        result = [buf,*mat.to_a[1..-1]]
+        result = [buf,*mat.captures]
         break
       end
     end
