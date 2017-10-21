@@ -474,6 +474,20 @@ ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 
 enc/encinit.$(OBJEXT): enc/encinit.c $(SETUP)
 
+test-bundled-gems-precheck: $(arch)-fake.rb programs
+
+yes-test-bundled-gems-prepare: test-bundled-gems-precheck
+	$(Q) $(BASERUBY) $(srcdir)/tool/fetch-bundled_gems.rb $(srcdir)
+	$(XRUBY) -C "$(srcdir)" bin/gem install --no-ri --no-rdoc \
+		--install-dir spec/rspec --conservative 'minitest:~> 5' 'test-unit' 'rake' 'hoe' 'yard' 'packnga'
+
+test-bundled-gems: $(TEST_RUNNABLE)-test-bundled-gems
+yes-test-bundled-gems: yes-test-bundled-gems-prepare
+	for gem in minitest test-unit xmlrpc net-telnet did_you_mean power_assert rake; do \
+	  $(XRUBY) -C $(srcdir)/gems/src/$$gem -Ilib ../../../spec/rspec/bin/rake; \
+	done
+no-test-bundled-gems:
+
 test-bundler-precheck: $(arch)-fake.rb programs
 
 yes-test-bundler-prepare: test-bundler-precheck
