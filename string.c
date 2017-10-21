@@ -5179,7 +5179,7 @@ rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
  *     str.gsub(pattern) {|match| block }   -> new_str
  *     str.gsub(pattern)                    -> enumerator
  *
- *  Returns a copy of <i>str</i> with the <em>all</em> occurrences of
+ *  Returns a copy of <i>str</i> with <em>all</em> occurrences of
  *  <i>pattern</i> substituted for the second argument. The <i>pattern</i> is
  *  typically a <code>Regexp</code>; if given as a <code>String</code>, any
  *  regular expression metacharacters it contains will be interpreted
