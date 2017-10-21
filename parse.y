@@ -9267,12 +9267,7 @@ new_regexp_gen(struct parser_params *parser, NODE *node, int options, int column
 	node = NEW_NODE(NODE_DSTR, STR_NEW0(), 1, new_list(node, column));
 	nd_set_column(node, column);
       case NODE_DSTR:
-	if (options & RE_OPTION_ONCE) {
-	    nd_set_type(node, NODE_DREGX_ONCE);
-	}
-	else {
-	    nd_set_type(node, NODE_DREGX);
-	}
+	nd_set_type(node, NODE_DREGX);
 	node->nd_cflag = options & RE_OPTION_MASK;
 	if (!NIL_P(node->nd_lit)) reg_fragment_check(node->nd_lit, options);
 	for (list = (prev = node)->nd_next; list; list = list->nd_next) {
@@ -9302,6 +9297,9 @@ new_regexp_gen(struct parser_params *parser, NODE *node, int options, int column
 	    VALUE src = node->nd_lit;
 	    nd_set_type(node, NODE_LIT);
 	    node->nd_lit = reg_compile(src, options);
+	}
+	if (options & RE_OPTION_ONCE) {
+	    node = NEW_NODE(NODE_SCOPE, 0, node, 0);
 	}
 	break;
     }
