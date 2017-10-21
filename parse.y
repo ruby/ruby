@@ -600,8 +600,8 @@ static VALUE new_qcall_gen(struct parser_params *parser, VALUE q, VALUE r, VALUE
 #define new_command(m,a) dispatch2(command, (m), (a));
 
 #define new_nil() Qnil
-static VALUE new_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE op, VALUE rhs, int column);
-#define new_op_assign(lhs, op, rhs, column) new_op_assign_gen(parser, (lhs), (op), (rhs), (column))
+static VALUE new_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE op, VALUE rhs);
+#define new_op_assign(lhs, op, rhs, column) new_op_assign_gen(parser, (lhs), (op), (rhs))
 static VALUE new_attr_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE type, VALUE attr, VALUE op, VALUE rhs);
 #define new_attr_op_assign(lhs, type, attr, op, rhs, column) new_attr_op_assign_gen(parser, (lhs), (type), (attr), (op), (rhs))
 #define new_const_op_assign(lhs, op, rhs, column) new_op_assign(lhs, op, rhs, column)
@@ -10764,7 +10764,7 @@ const_decl_gen(struct parser_params *parser, NODE *path, int column)
 }
 #else
 static VALUE
-new_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE op, VALUE rhs, int column)
+new_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE op, VALUE rhs)
 {
     return dispatch3(opassign, lhs, op, rhs);
 }
