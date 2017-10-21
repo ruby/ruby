@@ -643,10 +643,9 @@ class SortedSet < Set
     def setup   # :nodoc:
       @@setup and return
 
-      module_eval {
-        # a hack to shut up warning
-        alias old_init initialize
-      }
+      # a hack to shut up warning
+      alias_method :old_init, :initialize
+
       begin
         require 'rbtree'
 
@@ -730,10 +729,9 @@ class SortedSet < Set
           end
         END
       end
-      module_eval {
-        # a hack to shut up warning
-        remove_method :old_init
-      }
+
+      # a hack to shut up warning
+      remove_method :old_init
 
       @@setup = true
     end
