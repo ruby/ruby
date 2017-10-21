@@ -9342,65 +9342,65 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 		     (int)RARRAY_LEN(obj));
 	    break;
 	  case T_STRING: {
-	      snprintf(buff, buff_size, "%s %s", buff, RSTRING_PTR(obj));
-	      break;
+	    snprintf(buff, buff_size, "%s %s", buff, RSTRING_PTR(obj));
+	    break;
 	  }
 	  case T_CLASS: {
-	      VALUE class_path = rb_class_path_cached(obj);
-	      if (!NIL_P(class_path)) {
-		  snprintf(buff, buff_size, "%s %s", buff, RSTRING_PTR(class_path));
-	      }
-	      break;
+	    VALUE class_path = rb_class_path_cached(obj);
+	    if (!NIL_P(class_path)) {
+		snprintf(buff, buff_size, "%s %s", buff, RSTRING_PTR(class_path));
+	    }
+	    break;
 	  }
 	  case T_DATA: {
-	      const rb_iseq_t *iseq;
-	      if (rb_obj_is_proc(obj) && (iseq = vm_proc_iseq(obj)) != NULL) {
-		  rb_raw_iseq_info(buff, buff_size, iseq);
-	      }
-	      else {
-		  const char * const type_name = rb_objspace_data_type_name(obj);
-		  if (type_name) {
-		      snprintf(buff, buff_size, "%s %s", buff, type_name);
-		  }
-	      }
-	      break;
+	    const rb_iseq_t *iseq;
+	    if (rb_obj_is_proc(obj) && (iseq = vm_proc_iseq(obj)) != NULL) {
+		rb_raw_iseq_info(buff, buff_size, iseq);
+	    }
+	    else {
+		const char * const type_name = rb_objspace_data_type_name(obj);
+		if (type_name) {
+		    snprintf(buff, buff_size, "%s %s", buff, type_name);
+		}
+	    }
+	    break;
 	  }
 	  case T_IMEMO: {
-	      const char *imemo_name;
-	      switch (imemo_type(obj)) {
+	    const char *imemo_name;
+	    switch (imemo_type(obj)) {
 #define IMEMO_NAME(x) case imemo_##x: imemo_name = #x; break;
-		  IMEMO_NAME(env);
-		  IMEMO_NAME(cref);
-		  IMEMO_NAME(svar);
-		  IMEMO_NAME(throw_data);
-		  IMEMO_NAME(ifunc);
-		  IMEMO_NAME(memo);
-		  IMEMO_NAME(ment);
-		  IMEMO_NAME(iseq);
-		  IMEMO_NAME(alloc);
+		IMEMO_NAME(env);
+		IMEMO_NAME(cref);
+		IMEMO_NAME(svar);
+		IMEMO_NAME(throw_data);
+		IMEMO_NAME(ifunc);
+		IMEMO_NAME(memo);
+		IMEMO_NAME(ment);
+		IMEMO_NAME(iseq);
+		IMEMO_NAME(alloc);
 #undef IMEMO_NAME
-	      }
-	      snprintf(buff, buff_size, "%s %s", buff, imemo_name);
+	    }
+	    snprintf(buff, buff_size, "%s %s", buff, imemo_name);
 
-	      switch (imemo_type(obj)) {
-		case imemo_ment: {
-		    const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
-		    snprintf(buff, buff_size, "%s (called_id: %s, type: %s, alias: %d, owner: %s, defined_class: %s)", buff,
-			     rb_id2name(me->called_id),
-			     method_type_name(me->def->type),
-			     me->def->alias_count,
-			     obj_info(me->owner),
-			     obj_info(me->defined_class));
-		    break;
-		}
-		case imemo_iseq: {
-		    const rb_iseq_t *iseq = (const rb_iseq_t *)obj;
-		    rb_raw_iseq_info(buff, buff_size, iseq);
-		    break;
-		}
-		default:
-		  break;
+	    switch (imemo_type(obj)) {
+	      case imemo_ment: {
+		const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
+		snprintf(buff, buff_size, "%s (called_id: %s, type: %s, alias: %d, owner: %s, defined_class: %s)", buff,
+			 rb_id2name(me->called_id),
+			 method_type_name(me->def->type),
+			 me->def->alias_count,
+			 obj_info(me->owner),
+			 obj_info(me->defined_class));
+		break;
 	      }
+	      case imemo_iseq: {
+		const rb_iseq_t *iseq = (const rb_iseq_t *)obj;
+		rb_raw_iseq_info(buff, buff_size, iseq);
+		break;
+	      }
+	      default:
+		break;
+	    }
 	  }
 	  default:
 	    break;
