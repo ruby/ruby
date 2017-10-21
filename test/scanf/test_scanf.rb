@@ -258,6 +258,7 @@ module ScanfTests
       [ "%G", "+3.25e2", [325.0] ],
       [ "%f", "3.z", [3.0] ],
       [ "%a", "0X1P+10", [1024.0] ],
+      [ "%a", "0X1P10", [1024.0] ],
       [ "%A", "0x1.deadbeefp+99", [1.1851510441583988e+30] ],
 
 # Testing embedded matches including literal '[' behavior
