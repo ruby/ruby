@@ -1723,6 +1723,11 @@ CODE
 
     bug5536 = '[ruby-core:40623]'
     assert_raise(TypeError, bug5536) {S("str").start_with? :not_convertible_to_string}
+
+    assert_equal(true, "hello".start_with?(/hel/))
+    assert_equal("hel", $&)
+    assert_equal(false, "hello".start_with?(/el/))
+    assert_nil($&)
   end
 
   def test_strip
