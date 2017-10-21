@@ -3,6 +3,7 @@
 
 static VALUE rb_cPathname;
 static ID id_at_path, id_to_path;
+static ID id_base;
 static ID id_ENOTDIR, id_atime, id_basename, id_binread, id_binwrite,
     id_birthtime, id_blockdev_p, id_chardev_p, id_chmod, id_chown,
     id_ctime, id_directory_p, id_dirname, id_empty_p, id_entries,
@@ -1021,7 +1022,7 @@ path_empty_p(VALUE self)
 }
 
 static VALUE
-glob_i(RB_BLOCK_CALL_FUNC_ARGLIST(elt, klass))
+s_glob_i(RB_BLOCK_CALL_FUNC_ARGLIST(elt, klass))
 {
     return rb_yield(rb_class_new_instance(1, &elt, klass));
 }
@@ -1042,7 +1043,7 @@ path_s_glob(int argc, VALUE *argv, VALUE klass)
 
     n = rb_scan_args(argc, argv, "11", &args[0], &args[1]);
     if (rb_block_given_p()) {
-        return rb_block_call(rb_cDir, id_glob, n, args, glob_i, klass);
+        return rb_block_call(rb_cDir, id_glob, n, args, s_glob_i, klass);
     }
     else {
         VALUE ary;
@@ -1052,6 +1053,54 @@ path_s_glob(int argc, VALUE *argv, VALUE klass)
         for (i = 0; i < RARRAY_LEN(ary); i++) {
             VALUE elt = RARRAY_AREF(ary, i);
             elt = rb_class_new_instance(1, &elt, klass);
+            rb_ary_store(ary, i, elt);
+        }
+        return ary;
+    }
+}
+
+static VALUE
+glob_i(RB_BLOCK_CALL_FUNC_ARGLIST(elt, self))
+{
+    elt = rb_funcall(self, '+', 1, elt);
+    return rb_yield(elt);
+}
+
+/*
+ * Returns or yields Pathname objects.
+ *
+ *  Pathname("ruby-2.4.2").glob("R*.md")
+ *  #=> [#<Pathname:ruby-2.4.2/README.md>, #<Pathname:ruby-2.4.2/README.ja.md>]
+ *
+ * See Dir.glob.
+ * This method uses base: argument of Dir.glob.
+ */
+static VALUE
+path_glob(int argc, VALUE *argv, VALUE self)
+{
+    VALUE args[3];
+    int n;
+
+    n = rb_scan_args(argc, argv, "11", &args[0], &args[1]);
+    if (n == 1)
+      args[1] = INT2FIX(0);
+
+    args[2] = rb_hash_new();
+    rb_hash_aset(args[2], ID2SYM(id_base), get_strpath(self));
+
+    n = 3;
+
+    if (rb_block_given_p()) {
+        return rb_block_call(rb_cDir, id_glob, n, args, glob_i, self);
+    }
+    else {
+        VALUE ary;
+        long i;
+        ary = rb_funcallv(rb_cDir, id_glob, n, args);
+        ary = rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
+        for (i = 0; i < RARRAY_LEN(ary); i++) {
+            VALUE elt = RARRAY_AREF(ary, i);
+            elt = rb_funcall(self, '+', 1, elt);
             rb_ary_store(ary, i, elt);
         }
         return ary;
@@ -1485,6 +1534,7 @@ Init_pathname(void)
     rb_define_singleton_method(rb_cPathname, "glob", path_s_glob, -1);
     rb_define_singleton_method(rb_cPathname, "getwd", path_s_getwd, 0);
     rb_define_singleton_method(rb_cPathname, "pwd", path_s_getwd, 0);
+    rb_define_method(rb_cPathname, "glob", path_glob, -1);
     rb_define_method(rb_cPathname, "entries", path_entries, 0);
     rb_define_method(rb_cPathname, "mkdir", path_mkdir, -1);
     rb_define_method(rb_cPathname, "rmdir", path_rmdir, 0);
@@ -1505,6 +1555,7 @@ InitVM_pathname(void)
     id_ENOTDIR = rb_intern("ENOTDIR");
     id_atime = rb_intern("atime");
     id_basename = rb_intern("basename");
+    id_base = rb_intern("base");
     id_binread = rb_intern("binread");
     id_binwrite = rb_intern("binwrite");
     id_birthtime = rb_intern("birthtime");
