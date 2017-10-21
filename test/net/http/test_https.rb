@@ -212,11 +212,11 @@ class TestNetHTTPS < Test::Unit::TestCase
     http.verify_callback = Proc.new do |preverify_ok, store_ctx|
       true
     end
-    @log_tester = lambda {|log| assert_match(/SSLv3 read client hello/, log[0] ) }
+    @log_tester = lambda {|log| assert_not_equal([], log) }
     ex = assert_raise(OpenSSL::SSL::SSLError){
       http.request_get("/") {|res| }
     }
-    assert_match(/no protocols available/, ex.message)
+    assert_match(/\ASSL_connect returned=1 errno=0 /, ex.message)
   end
 
 end if defined?(OpenSSL::SSL)
