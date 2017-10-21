@@ -378,7 +378,9 @@ class Set
   # Returns an enumerator if no block is given.
   def collect!
     block_given? or return enum_for(__method__) { size }
-    replace(self.class.new(self) { |o| yield(o) })
+    set = self.class.new
+    each { |o| set << yield(o) }
+    replace(set)
   end
   alias map! collect!
 
