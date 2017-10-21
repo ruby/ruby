@@ -934,7 +934,7 @@ typedef struct rb_imemo_alloc_struct {
     VALUE flags;
     VALUE reserved;
     VALUE *ptr; /* malloc'ed buffer */
-    VALUE next; /* next imemo */
+    struct rb_imemo_alloc_struct *next; /* next imemo */
     size_t cnt; /* buffer size in VALUE */
 } rb_imemo_alloc_t;
 

@@ -4532,10 +4532,14 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
 	rb_iseq_mark((rb_iseq_t *)obj);
 	return;
       case imemo_alloc:
-	rb_gc_mark_locations(RANY(obj)->as.imemo.alloc.ptr,
-			     RANY(obj)->as.imemo.alloc.ptr + RANY(obj)->as.imemo.alloc.cnt);
-	rb_gc_mark(RANY(obj)->as.imemo.alloc.next);
+	{
+	    const rb_imemo_alloc_t *m = &RANY(obj)->as.imemo.alloc;
+	    do {
+		rb_gc_mark_locations(m->ptr, m->ptr + m->cnt);
+	    } while ((m = m->next) != NULL);
+	}
 	return;
+      case imemo_mask: break;
 #if VM_CHECK_MODE > 0
       default:
 	VM_UNREACHABLE(gc_mark_imemo);
@@ -9376,6 +9380,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 		  IMEMO_NAME(iseq);
 		  IMEMO_NAME(alloc);
 #undef IMEMO_NAME
+		case imemo_mask: break;
 	      }
 	      snprintf(buff, buff_size, "%s %s", buff, imemo_name);
 
