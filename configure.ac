@@ -627,6 +627,7 @@ AS_CASE(["$target_os"],
 	RT_VER=`echo "$rb_cv_msvcrt" | tr -cd [0-9]`
 	test "$RT_VER" = "" && RT_VER=60
 	AC_DEFINE_UNQUOTED(RUBY_MSVCRT_VERSION, $RT_VER)
+	sysconfdir=
     ])
     : ${enable_shared=yes}
     ],
