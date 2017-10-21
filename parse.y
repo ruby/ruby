@@ -11517,7 +11517,7 @@ rb_parser_set_yydebug(VALUE self, VALUE flag)
 #ifndef RIPPER
 #ifdef YYMALLOC
 #define HEAPCNT(n, size) ((n) * (size) / sizeof(YYSTYPE))
-#define NEWHEAP() rb_imemo_new(imemo_alloc, 0, (VALUE)parser->heap, 0, 0)
+#define NEWHEAP() (rb_imemo_alloc_t *)rb_imemo_new(imemo_alloc, 0, (VALUE)parser->heap, 0, 0)
 #define ADD2HEAP(n, c, p) ((parser->heap = (n))->ptr = (p), \
 			   (n)->cnt = (c), (p))
 
