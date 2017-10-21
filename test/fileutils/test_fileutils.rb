@@ -309,7 +309,7 @@ class TestFileUtils < Test::Unit::TestCase
     chmod 0755, 'tmp/cptmp'
     cp 'tmp/cptmp', 'tmp/cptmp2'
 
-    assert_equal_filemode('tmp/cptmp', 'tmp/cptmp2', bug4507, ~File.umask)
+    assert_equal_filemode('tmp/cptmp', 'tmp/cptmp2', bug4507, mask: ~File.umask)
   end
 
   def test_cp_preserve_permissions_dir
