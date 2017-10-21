@@ -983,7 +983,17 @@ sock_sockaddr(struct sockaddr *addr, socklen_t len)
  * call-seq:
  *   Socket.gethostbyname(hostname) => [official_hostname, alias_hostnames, address_family, *address_list]
  *
- * Obtains the host information for _hostname_.
+ * This method is deprecated since following reasons:
+ *
+ * - The 3rd element of result is the address family of the first address.
+ *   The address families of rest addresses are not returned.
+ * - Uncommon address representation:
+ *   4/16-bytes binary string to represent IPv4/IPv6 address.
+ * - gethostbyname() is may take long time and it may block other threads.
+ *   (GVL cannot be released since gethostbyname() is not thread safe.)
+ * - This method uses gethostbyname() function already removed from POSIX.
+ *
+ * This method obtains the host information for _hostname_.
  *
  *   p Socket.gethostbyname("hal") #=> ["localhost", ["hal"], 2, "\x7F\x00\x00\x01"]
  *
@@ -1000,7 +1010,15 @@ sock_s_gethostbyname(VALUE obj, VALUE host)
  * call-seq:
  *   Socket.gethostbyaddr(address_string [, address_family]) => hostent
  *
- * Obtains the host information for _address_.
+ * This method is deprecated since following reasons:
+ *
+ * - Uncommon address representation:
+ *   4/16-bytes binary string to represent IPv4/IPv6 address.
+ * - gethostbyaddr() is may take long time and it may block other threads.
+ *   (GVL cannot be released since gethostbyname() is not thread safe.)
+ * - This method uses gethostbyname() function already removed from POSIX.
+ *
+ * This method obtains the host information for _address_.
  *
  *   p Socket.gethostbyaddr([221,186,184,68].pack("CCCC"))
  *   #=> ["carbon.ruby-lang.org", [], 2, "\xDD\xBA\xB8D"]
