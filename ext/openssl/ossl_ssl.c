@@ -2457,6 +2457,10 @@ Init_ossl_ssl(void)
      * A callback invoked when a session is removed from the internal cache.
      *
      * The callback is invoked with an SSLContext and a Session.
+     *
+     * IMPORTANT NOTE: It is currently not possible to use this safely in a
+     * multi-threaded application. The callback is called inside a global lock
+     * and it can randomly cause deadlock on Ruby thread switching.
      */
     rb_attr(cSSLContext, rb_intern("session_remove_cb"), 1, 1, Qfalse);
 
