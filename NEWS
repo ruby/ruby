@@ -134,6 +134,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Add Bundler to Standard Library. [Feature #12733]
 
+* DRb
+  * ACL::ACLEntry.new no longer suppresses IPAddr::InvalidPrefixError.
+
 * ERB
   * Add ERB#result_with_hash to render a template with local variables passed
     with a Hash object. [Feature #8631]

@@ -49,6 +49,9 @@ class ACL
     # +str+ may be "*" or "all" to match any address, an IP address string
     # to match a specific address, an IP address mask per IPAddr, or one
     # containing "*" to match part of an IPv4 address.
+    #
+    # IPAddr::InvalidPrefixError may be raised when an IP network
+    # address with an invalid netmask/prefix is given.
 
     def initialize(str)
       if str == '*' or str == 'all'
@@ -58,6 +61,10 @@ class ACL
       else
         begin
           @pat = [:ip, IPAddr.new(str)]
+        rescue IPAddr::InvalidPrefixError
+          # In this case, `str` shouldn't be a host name pattern
+          # because it contains a slash.
+          raise
         rescue ArgumentError
           @pat = [:name, dot_pat(str)]
         end
