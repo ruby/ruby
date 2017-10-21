@@ -3280,9 +3280,9 @@ rb_io_gets_internal(VALUE io)
 
 /*
  *  call-seq:
- *     ios.gets(sep=$/)     -> string or nil
- *     ios.gets(limit)      -> string or nil
- *     ios.gets(sep, limit) -> string or nil
+ *     ios.gets(sep=$/ [, getline_args])     -> string or nil
+ *     ios.gets(limit [, getline_args])      -> string or nil
+ *     ios.gets(sep, limit [, getline_args]) -> string or nil
  *
  *  Reads the next ``line'' from the I/O stream; lines are separated by
  *  <i>sep</i>. A separator of +nil+ reads the entire
@@ -3384,9 +3384,9 @@ rb_io_set_lineno(VALUE io, VALUE lineno)
 
 /*
  *  call-seq:
- *     ios.readline(sep=$/)     -> string
- *     ios.readline(limit)      -> string
- *     ios.readline(sep, limit) -> string
+ *     ios.readline(sep=$/ [, getline_args])     -> string
+ *     ios.readline(limit [, getline_args])      -> string
+ *     ios.readline(sep, limit [, getline_args]) -> string
  *
  *  Reads a line as with <code>IO#gets</code>, but raises an
  *  <code>EOFError</code> on end of file.
@@ -3407,20 +3407,23 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
 
 /*
  *  call-seq:
- *     ios.readlines(sep=$/)     -> array
- *     ios.readlines(limit)      -> array
- *     ios.readlines(sep, limit) -> array
+ *     ios.readlines(sep=$/ [, getline_args])     -> array
+ *     ios.readlines(limit [, getline_args])      -> array
+ *     ios.readlines(sep, limit [, getline_args]) -> array
  *
  *  Reads all of the lines in <em>ios</em>, and returns them in
  *  <i>anArray</i>. Lines are separated by the optional <i>sep</i>. If
  *  <i>sep</i> is +nil+, the rest of the stream is returned
- *  as a single record.  If the first argument is an integer, or
+ *  as a single record.
+ *  If the first argument is an integer, or
  *  optional second argument is given, the returning string would not be
  *  longer than the given value in bytes. The stream must be opened for
  *  reading or an <code>IOError</code> will be raised.
  *
  *     f = File.new("testfile")
  *     f.readlines[0]   #=> "This is line one\n"
+ *
+ *  See <code>IO.readlines</code> for detail about getline_args.
  */
 
 static VALUE
@@ -3448,14 +3451,14 @@ io_readlines(const struct getline_arg *arg, VALUE io)
 
 /*
  *  call-seq:
- *     ios.each(sep=$/)          {|line| block } -> ios
- *     ios.each(limit)           {|line| block } -> ios
- *     ios.each(sep, limit)      {|line| block } -> ios
+ *     ios.each(sep=$/ [, getline_args])          {|line| block } -> ios
+ *     ios.each(limit [, getline_args])           {|line| block } -> ios
+ *     ios.each(sep, limit [, getline_args])      {|line| block } -> ios
  *     ios.each(...)                             -> an_enumerator
  *
- *     ios.each_line(sep=$/)     {|line| block } -> ios
- *     ios.each_line(limit)      {|line| block } -> ios
- *     ios.each_line(sep, limit) {|line| block } -> ios
+ *     ios.each_line(sep=$/ [, getline_args])     {|line| block } -> ios
+ *     ios.each_line(limit [, getline_args])      {|line| block } -> ios
+ *     ios.each_line(sep, limit [, getline_args]) {|line| block } -> ios
  *     ios.each_line(...)                        -> an_enumerator
  *
  *  Executes the block for every line in <em>ios</em>, where lines are
@@ -3473,6 +3476,8 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *     2: This is line two
  *     3: This is line three
  *     4: And so on...
+ *
+ *  See <code>IO.readlines</code> for detail about getline_args.
  */
 
 static VALUE
@@ -8253,9 +8258,9 @@ static VALUE argf_gets(int, VALUE *, VALUE);
 
 /*
  *  call-seq:
- *     gets(sep=$/)     -> string or nil
- *     gets(limit)      -> string or nil
- *     gets(sep, limit) -> string or nil
+ *     gets(sep=$/ [, getline_args])     -> string or nil
+ *     gets(limit [, getline_args])      -> string or nil
+ *     gets(sep, limit [, getline_args]) -> string or nil
  *
  *  Returns (and assigns to <code>$_</code>) the next line from the list
  *  of files in +ARGV+ (or <code>$*</code>), or from standard input if
@@ -8295,9 +8300,9 @@ rb_f_gets(int argc, VALUE *argv, VALUE recv)
 
 /*
  *  call-seq:
- *     ARGF.gets(sep=$/)     -> string or nil
- *     ARGF.gets(limit)      -> string or nil
- *     ARGF.gets(sep, limit) -> string or nil
+ *     ARGF.gets(sep=$/ [, getline_args])     -> string or nil
+ *     ARGF.gets(limit [, getline_args])      -> string or nil
+ *     ARGF.gets(sep, limit [, getline_args]) -> string or nil
  *
  *  Returns the next line from the current file in +ARGF+.
  *
@@ -8307,6 +8312,8 @@ rb_f_gets(int argc, VALUE *argv, VALUE recv)
  *
  *  The optional _limit_ argument specifies how many characters of each line
  *  to return. By default all characters are returned.
+ *
+ *  See <code>IO.readlines</code> for detail about getline_args.
  *
  */
 static VALUE
@@ -9827,9 +9834,9 @@ io_s_foreach(struct getline_arg *arg)
 
 /*
  *  call-seq:
- *     IO.foreach(name, sep=$/ [, open_args]) {|line| block }     -> nil
- *     IO.foreach(name, limit [, open_args]) {|line| block }      -> nil
- *     IO.foreach(name, sep, limit [, open_args]) {|line| block } -> nil
+ *     IO.foreach(name, sep=$/ [, getline_args, open_args]) {|line| block }     -> nil
+ *     IO.foreach(name, limit [, getline_args, open_args]) {|line| block }      -> nil
+ *     IO.foreach(name, sep, limit [, getline_args, open_args]) {|line| block } -> nil
  *     IO.foreach(...)                                            -> an_enumerator
  *
  *  Executes the block for every line in the named I/O port, where lines
@@ -9847,7 +9854,8 @@ io_s_foreach(struct getline_arg *arg)
  *     GOT And so on...
  *
  *  If the last argument is a hash, it's the keyword argument to open.
- *  See <code>IO.read</code> for detail.
+ *  See <code>IO.readlines</code> for detail about getline_args.
+ *  And see also <code>IO.read</code> for detail about open_args.
  *
  */
 
@@ -9877,9 +9885,9 @@ io_s_readlines(struct getline_arg *arg)
 
 /*
  *  call-seq:
- *     IO.readlines(name, sep=$/ [, open_args])     -> array
- *     IO.readlines(name, limit [, open_args])      -> array
- *     IO.readlines(name, sep, limit [, open_args]) -> array
+ *     IO.readlines(name, sep=$/ [, getline_args, open_args])     -> array
+ *     IO.readlines(name, limit [, getline_args, open_args])      -> array
+ *     IO.readlines(name, sep, limit [, getline_args, open_args]) -> array
  *
  *  Reads the entire file specified by <i>name</i> as individual
  *  lines, and returns those lines in an array. Lines are separated by
@@ -9889,7 +9897,16 @@ io_s_readlines(struct getline_arg *arg)
  *     a[0]   #=> "This is line one\n"
  *
  *  If the last argument is a hash, it's the keyword argument to open.
- *  See <code>IO.read</code> for detail.
+ *
+ *  === Option for getline
+ *
+ *  The options hash accepts the following keys:
+ *
+ *  :chomp::
+ *    Specifies the boolean. It will remove \n, \r, and \r\n
+ *    from the end of each lines if it's true
+ *
+ *  And see also <code>IO.read</code> for detail about open_args.
  *
  */
 

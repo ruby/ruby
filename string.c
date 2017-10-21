@@ -7616,14 +7616,16 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, int wantarray)
 
 /*
  *  call-seq:
- *     str.each_line(separator=$/) {|substr| block }   -> str
- *     str.each_line(separator=$/)                     -> an_enumerator
+ *     str.each_line(separator=$/ [, getline_args]) {|substr| block } -> str
+ *     str.each_line(separator=$/ [, getline_args])                   -> an_enumerator
  *
  *  Splits <i>str</i> using the supplied parameter as the record
  *  separator (<code>$/</code> by default), passing each substring in
  *  turn to the supplied block.  If a zero-length record separator is
  *  supplied, the string is split into paragraphs delimited by
  *  multiple successive newlines.
+ *
+ *  See <code>IO.readlines</code> for detail about getline_args.
  *
  *  If no block is given, an enumerator is returned instead.
  *
