@@ -58,9 +58,10 @@ if defined?(WIN32OLE)
 
     def test_no_method_error
       exc = assert_raise(NoMethodError) {
-          @dict1.non_exist_method
+        @dict1.non_exist_method
       }
       assert_match(/non_exist_method/, exc.message)
+      assert_kind_of(WIN32OLE, exc.receiver)
     end
 
     def test_ole_methods
