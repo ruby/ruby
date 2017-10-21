@@ -108,6 +108,7 @@ module OpenURI
     :ssl_verify_mode => nil,
     :ftp_active_mode => false,
     :redirect => true,
+    :encoding => nil,
   }
 
   def OpenURI.check_options(options) # :nodoc:
@@ -140,6 +141,12 @@ module OpenURI
     if /\Arb?(?:\Z|:([^:]+))/ =~ mode
       encoding, = $1,Encoding.find($1) if $1
       mode = nil
+    end
+    if options.has_key? :encoding
+      if !encoding.nil?
+        raise ArgumentError, "encoding specified twice"
+      end
+      encoding = Encoding.find(options[:encoding])
     end
 
     unless mode == nil ||
