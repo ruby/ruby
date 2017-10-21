@@ -4,22 +4,22 @@
 # What's Ruby
 
 Ruby is the interpreted scripting language for quick and easy object-oriented
-programming.  It has many features to process text files and to do system
-management tasks (as in Perl).  It is simple, straight-forward, and
+programming. It has many features to process text files and to do system
+management tasks (as in Perl). It is simple, straight-forward, and
 extensible.
 
 ## Features of Ruby
 
 *   Simple Syntax
 *   **Normal** Object-oriented Features (e.g. class, method calls)
-*   **Advanced** Object-oriented Features (e.g. Mix-in, Singleton-method)
+*   **Advanced** Object-oriented Features (e.g. mix-in, singleton-method)
 *   Operator Overloading
 *   Exception Handling
 *   Iterators and Closures
 *   Garbage Collection
 *   Dynamic Loading of Object Files (on some architectures)
 *   Highly Portable (works on many Unix-like/POSIX compatible platforms as
-    well as Windows, Mac OS X, Haiku, etc.) cf.
+    well as Windows, macOS, Haiku, etc.) cf.
     https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/SupportedPlatforms
 
 
@@ -43,7 +43,7 @@ Or if you are using git then use the following command:
 
     $ git clone git://github.com/ruby/ruby.git
 
-There are some other branches under development.  Try the following command
+There are some other branches under development. Try the following command
 to see the list of branches:
 
     $ svn ls https://svn.ruby-lang.org/repos/ruby/branches/
@@ -72,7 +72,7 @@ in the mail body (not subject) to the address
 
 This is what you need to do to compile and install Ruby:
 
-1.  If you want to use Microsoft Visual C++ to compile ruby, read
+1.  If you want to use Microsoft Visual C++ to compile Ruby, read
     [win32/README.win32](win32/README.win32) instead of this document.
 
 2.  If `./configure` does not exist or is older than `configure.ac`, run
@@ -81,7 +81,7 @@ This is what you need to do to compile and install Ruby:
 3.  Run `./configure`, which will generate `config.h` and `Makefile`.
 
     Some C compiler flags may be added by default depending on your
-    environment.  Specify `optflags=..` and `warnflags=..` as necessary to
+    environment. Specify `optflags=..` and `warnflags=..` as necessary to
     override them.
 
 4.  Edit `defines.h` if you need. Usually this step will not be needed.
@@ -102,7 +102,7 @@ This is what you need to do to compile and install Ruby:
 
 7.  Optionally, run '`make check`' to check whether the compiled Ruby
     interpreter works well. If you see the message "`check succeeded`", your
-    ruby works as it should (hopefully).
+    Ruby works as it should (hopefully).
 
 8.  Optionally, Run `make update-gems` and `make extract-gems`
 
@@ -138,10 +138,10 @@ This is what you need to do to compile and install Ruby:
     **NOTE**: teeny of the API version may be different from one of Ruby's
     program version
 
-    You may have to be a super user to install ruby.
+    You may have to be a super user to install Ruby.
 
 
-If you fail to compile ruby, please send the detailed error report with the
+If you fail to compile Ruby, please send the detailed error report with the
 error log and machine/OS type, to help others.
 
 Some extension libraries may not get compiled because of lack of necessary
