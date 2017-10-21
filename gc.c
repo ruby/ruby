@@ -4539,7 +4539,6 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
 	    } while ((m = m->next) != NULL);
 	}
 	return;
-      case imemo_mask: break;
 #if VM_CHECK_MODE > 0
       default:
 	VM_UNREACHABLE(gc_mark_imemo);
@@ -9367,7 +9366,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	      break;
 	  }
 	  case T_IMEMO: {
-	      const char *imemo_name;
+	      const char *imemo_name = NULL;
 	      switch (imemo_type(obj)) {
 #define IMEMO_NAME(x) case imemo_##x: imemo_name = #x; break;
 		  IMEMO_NAME(env);
@@ -9380,7 +9379,6 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 		  IMEMO_NAME(iseq);
 		  IMEMO_NAME(alloc);
 #undef IMEMO_NAME
-		case imemo_mask: break;
 	      }
 	      snprintf(buff, buff_size, "%s %s", buff, imemo_name);
 
