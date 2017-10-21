@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 #
 # Ruby Benchmark driver
 #
