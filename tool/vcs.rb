@@ -359,7 +359,7 @@ class VCS
         cmd = logcmd
         cmd += [path] unless path == '.'
         log = cmd_read_at(srcdir, [cmd])
-        changed = log[idpat, 1]
+        changed = log[idpat, 1] || last
       else
         changed = last
       end
