@@ -604,6 +604,24 @@ class TestOpenURI < Test::Unit::TestCase
         assert_equal(content_ej, f.read)
         assert_equal("text/plain", f.content_type)
         assert_equal("euc-jp", f.charset)
+        assert_equal(Encoding::EUC_JP, f.read.encoding)
+      }
+      open("#{url}/ej/", 'r:utf-8') {|f|
+        # override charset with encoding option
+        assert_equal(content_ej.dup.force_encoding('utf-8'), f.read)
+        assert_equal("text/plain", f.content_type)
+        assert_equal("euc-jp", f.charset)
+        assert_equal(Encoding::UTF_8, f.read.encoding)
+      }
+      open("#{url}/ej/", :encoding=>'utf-8') {|f|
+        # override charset with encoding option
+        assert_equal(content_ej.dup.force_encoding('utf-8'), f.read)
+        assert_equal("text/plain", f.content_type)
+        assert_equal("euc-jp", f.charset)
+        assert_equal(Encoding::UTF_8, f.read.encoding)
+      }
+      assert_raise(ArgumentError) {
+        open("#{url}/ej/", 'r:utf-8', :encoding=>'utf-8') {|f| }
       }
       open("#{url}/nc/") {|f|
         assert_equal("aa", f.read)
