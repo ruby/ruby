@@ -363,6 +363,8 @@ struct iseq_compile_data_ensure_node_stack {
 #define IS_LABEL(link) ((link)->type == ISEQ_ELEMENT_LABEL)
 #define IS_ADJUST(link) ((link)->type == ISEQ_ELEMENT_ADJUST)
 #define IS_INSN_ID(iobj, insn) (INSN_OF(iobj) == BIN(insn))
+#define IS_NEXT_INSN_ID(link, insn) \
+    ((link)->next && IS_INSN((link)->next) && IS_INSN_ID((link)->next, insn))
 
 /* error */
 #if CPDEBUG > 0
@@ -2213,7 +2215,7 @@ iseq_pop_newarray(rb_iseq_t *iseq, INSN *iobj)
 static int
 iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcallopt)
 {
-    INSN *iobj = (INSN *)list;
+    INSN *const iobj = (INSN *)list;
   again:
     if (IS_INSN_ID(iobj, jump)) {
 	INSN *niobj, *diobj, *piobj;
@@ -2567,6 +2569,40 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    }
 	    else {
 		ci->flag |= VM_CALL_TAILCALL;
+	    }
+	}
+    }
+
+    if (IS_INSN_ID(iobj, dup)) {
+	if (IS_NEXT_INSN_ID(&iobj->link, setlocal)) {
+	    LINK_ELEMENT *set1 = iobj->link.next, *set2 = NULL;
+	    if (IS_NEXT_INSN_ID(set1, setlocal)) {
+		set2 = set1->next;
+		if (OPERAND_AT(set1, 0) == OPERAND_AT(set2, 0) &&
+		    OPERAND_AT(set1, 1) == OPERAND_AT(set2, 1)) {
+		    REMOVE_ELEM(set1);
+		    REMOVE_ELEM(&iobj->link);
+		}
+	    }
+	    else if (IS_NEXT_INSN_ID(set1, dup) &&
+		     IS_NEXT_INSN_ID(set1->next, setlocal)) {
+		set2 = set1->next->next;
+		if (OPERAND_AT(set1, 0) == OPERAND_AT(set2, 0) &&
+		    OPERAND_AT(set1, 1) == OPERAND_AT(set2, 1)) {
+		    REMOVE_ELEM(set1->next);
+		    REMOVE_ELEM(set2);
+		}
+	    }
+	}
+    }
+
+    if (IS_INSN_ID(iobj, getlocal)) {
+	if (IS_NEXT_INSN_ID(&iobj->link, setlocal)) {
+	    LINK_ELEMENT *set1 = iobj->link.next;
+	    if (OPERAND_AT(iobj, 0) == OPERAND_AT(set1, 0) &&
+		OPERAND_AT(iobj, 1) == OPERAND_AT(set1, 1)) {
+		REMOVE_ELEM(set1);
+		REMOVE_ELEM(&iobj->link);
 	    }
 	}
     }
@@ -5132,18 +5168,19 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
       case NODE_DASGN:
       case NODE_DASGN_CURR:{
 	int idx, lv, ls;
+	ID id = node->nd_vid;
 	CHECK(COMPILE(ret, "dvalue", node->nd_value));
-	debugi("dassn id", rb_id2str(node->nd_vid) ? node->nd_vid : '*');
+	debugi("dassn id", rb_id2str(id) ? id : '*');
 
 	if (!popped) {
 	    ADD_INSN(ret, line, dup);
 	}
 
-	idx = get_dyna_var_idx(iseq, node->nd_vid, &lv, &ls);
+	idx = get_dyna_var_idx(iseq, id, &lv, &ls);
 
 	if (idx < 0) {
 	    COMPILE_ERROR(ERROR_ARGS "NODE_DASGN(_CURR): unknown id (%"PRIsVALUE")",
-			  rb_id2str(node->nd_vid));
+			  rb_id2str(id));
 	    goto ng;
 	}
 	ADD_SETLOCAL(ret, line, ls - idx, lv);
