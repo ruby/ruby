@@ -10489,6 +10489,113 @@ nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
     return 0;
 }
 
+#if defined __linux__ && defined __NR_copy_file_range
+#  define USE_COPY_FILE_RANGE
+#endif
+
+#ifdef USE_COPY_FILE_RANGE
+
+static ssize_t
+simple_copy_file_range(int in_fd, off_t *in_offset, int out_fd, off_t *out_offset, size_t count, unsigned int flags)
+{
+    return syscall(__NR_copy_file_range, in_fd, in_offset, out_fd, out_offset, count, flags);
+}
+
+static int
+nogvl_copy_file_range(struct copy_stream_struct *stp)
+{
+    struct stat src_stat, dst_stat;
+    ssize_t ss;
+    int ret;
+
+    off_t copy_length, src_offset, *src_offset_ptr;
+
+    ret = fstat(stp->src_fd, &src_stat);
+    if (ret == -1) {
+        stp->syserr = "fstat";
+        stp->error_no = errno;
+        return -1;
+    }
+    if (!S_ISREG(src_stat.st_mode))
+        return 0;
+
+    ret = fstat(stp->dst_fd, &dst_stat);
+    if (ret == -1) {
+        stp->syserr = "fstat";
+        stp->error_no = errno;
+        return -1;
+    }
+
+    src_offset = stp->src_offset;
+    if (src_offset != (off_t)-1) {
+	src_offset_ptr = &src_offset;
+    }
+    else {
+	src_offset_ptr = NULL; /* if src_offset_ptr is NULL, then bytes are read from in_fd starting from the file offset */
+    }
+
+    copy_length = stp->copy_length;
+    if (copy_length == (off_t)-1) {
+	if (src_offset == (off_t)-1) {
+	    off_t current_offset;
+            errno = 0;
+            current_offset = lseek(stp->src_fd, 0, SEEK_CUR);
+            if (current_offset == (off_t)-1 && errno) {
+                stp->syserr = "lseek";
+                stp->error_no = errno;
+                return -1;
+            }
+	    copy_length = src_stat.st_size - current_offset;
+	}
+	else {
+	    copy_length = src_stat.st_size - src_offset;
+	}
+    }
+
+  retry_copy_file_range:
+# if SIZEOF_OFF_T > SIZEOF_SIZE_T
+    /* we are limited by the 32-bit ssize_t return value on 32-bit */
+    ss = (copy_length > (off_t)SSIZE_MAX) ? SSIZE_MAX : (ssize_t)copy_length;
+# else
+    ss = (ssize_t)copy_length;
+# endif
+    ss = simple_copy_file_range(stp->src_fd, src_offset_ptr, stp->dst_fd, NULL, ss, 0);
+    if (0 < ss) {
+        stp->total += ss;
+        copy_length -= ss;
+        if (0 < copy_length) {
+            goto retry_copy_file_range;
+        }
+    }
+    if (ss == -1) {
+	if (maygvl_copy_stream_continue_p(0, stp)) {
+            goto retry_copy_file_range;
+	}
+        switch (errno) {
+	  case EINVAL:
+#ifdef ENOSYS
+	  case ENOSYS:
+#endif
+#ifdef EXDEV
+	  case EXDEV: /* in_fd and out_fd are not on the same filesystem */
+#endif
+            return 0;
+	  case EAGAIN:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+	  case EWOULDBLOCK:
+#endif
+            if (nogvl_copy_stream_wait_write(stp) == -1)
+                return -1;
+            goto retry_copy_file_range;
+        }
+        stp->syserr = "copy_file_range";
+        stp->error_no = errno;
+        return -1;
+    }
+    return 1;
+}
+#endif
+
 #ifdef HAVE_SENDFILE
 
 # ifdef __linux__
@@ -10785,6 +10892,12 @@ nogvl_copy_stream_func(void *arg)
     struct copy_stream_struct *stp = (struct copy_stream_struct *)arg;
 #ifdef USE_SENDFILE
     int ret;
+#endif
+
+#ifdef USE_COPY_FILE_RANGE
+    ret = nogvl_copy_file_range(stp);
+    if (ret != 0)
+	goto finish; /* error or success */
 #endif
 
 #ifdef USE_SENDFILE
