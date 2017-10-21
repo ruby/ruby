@@ -445,7 +445,7 @@ class TestFileUtils < Test::Unit::TestCase
     File.symlink 'tmp/src/dir', 'tmp/src/a'
     cp_r 'tmp/src', 'tmp/dest/', remove_destination: true
     cp_r 'tmp/src', 'tmp/dest/', remove_destination: true
-  end
+  end if have_symlink?
 
   def test_mv
     check_singleton :mv
@@ -1453,7 +1453,7 @@ class TestFileUtils < Test::Unit::TestCase
     touch 'tmp/src'
     copy_entry 'tmp/src', 'tmp/dest', false, false, true
     assert_file_exist 'tmp/dest'
-  end
+  end if have_symlink?
 
   def test_copy_file
     check_singleton :copy_file
