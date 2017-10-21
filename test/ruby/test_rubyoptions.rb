@@ -935,4 +935,20 @@ class TestRubyOptions < Test::Unit::TestCase
       end
     end
   end
+
+  def test___dir__encoding
+    with_tmpchdir do
+      testdir = "\u30c6\u30b9\u30c8"
+      Dir.mkdir(testdir)
+      Dir.chdir(testdir) do
+        open("test.rb", "w") do |f|
+          f.puts <<-END
+            p __FILE__.encoding == __dir__.encoding
+          END
+        end
+        r, = EnvUtil.invoke_ruby("test.rb", "", true)
+        assert_equal "true", r.chomp, "the encoding of __FILE__ and __dir__ should be same"
+      end
+    end
+  end
 end

@@ -1737,6 +1737,11 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	VALUE path = Qnil;
 	if (!opt->e_script && strcmp(opt->script, "-")) {
 	    path = rb_realpath_internal(Qnil, script_name, 1);
+#if UTF8_PATH
+	    if (uenc != lenc) {
+		path = str_conv_enc(path, uenc, lenc);
+	    }
+#endif
 	}
 	base_block = toplevel_context(toplevel_binding);
 	iseq = rb_iseq_new_main(tree, opt->script_name, path, vm_block_iseq(base_block));
