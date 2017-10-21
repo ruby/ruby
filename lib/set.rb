@@ -634,6 +634,7 @@ end
 #
 class SortedSet < Set
   @@setup = false
+  @@mutex = Mutex.new
 
   class << self
     def [](*ary)        # :nodoc:
@@ -643,97 +644,98 @@ class SortedSet < Set
     def setup   # :nodoc:
       @@setup and return
 
-      # a hack to shut up warning
-      alias_method :old_init, :initialize
+      @@mutex.synchronize do
+        # a hack to shut up warning
+        alias_method :old_init, :initialize
 
-      begin
-        require 'rbtree'
+        begin
+          require 'rbtree'
 
-        module_eval <<-END, __FILE__, __LINE__+1
-          def initialize(*args)
-            @hash = RBTree.new
-            super
-          end
+          module_eval <<-END, __FILE__, __LINE__+1
+            def initialize(*args)
+              @hash = RBTree.new
+              super
+            end
 
-          def add(o)
-            o.respond_to?(:<=>) or raise ArgumentError, "value must respond to <=>"
-            super
-          end
-          alias << add
-        END
-      rescue LoadError
-        module_eval <<-END, __FILE__, __LINE__+1
-          def initialize(*args)
-            @keys = nil
-            super
-          end
+            def add(o)
+              o.respond_to?(:<=>) or raise ArgumentError, "value must respond to <=>"
+              super
+            end
+            alias << add
+          END
+        rescue LoadError
+          module_eval <<-END, __FILE__, __LINE__+1
+            def initialize(*args)
+              @keys = nil
+              super
+            end
 
-          def clear
-            @keys = nil
-            super
-          end
+            def clear
+              @keys = nil
+              super
+            end
 
-          def replace(enum)
-            @keys = nil
-            super
-          end
+            def replace(enum)
+              @keys = nil
+              super
+            end
 
-          def add(o)
-            o.respond_to?(:<=>) or raise ArgumentError, "value must respond to <=>"
-            @keys = nil
-            super
-          end
-          alias << add
+            def add(o)
+              o.respond_to?(:<=>) or raise ArgumentError, "value must respond to <=>"
+              @keys = nil
+              super
+            end
+            alias << add
 
-          def delete(o)
-            @keys = nil
-            @hash.delete(o)
-            self
-          end
+            def delete(o)
+              @keys = nil
+              @hash.delete(o)
+              self
+            end
 
-          def delete_if
-            block_given? or return enum_for(__method__) { size }
-            n = @hash.size
-            super
-            @keys = nil if @hash.size != n
-            self
-          end
+            def delete_if
+              block_given? or return enum_for(__method__) { size }
+              n = @hash.size
+              super
+              @keys = nil if @hash.size != n
+              self
+            end
 
-          def keep_if
-            block_given? or return enum_for(__method__) { size }
-            n = @hash.size
-            super
-            @keys = nil if @hash.size != n
-            self
-          end
+            def keep_if
+              block_given? or return enum_for(__method__) { size }
+              n = @hash.size
+              super
+              @keys = nil if @hash.size != n
+              self
+            end
 
-          def merge(enum)
-            @keys = nil
-            super
-          end
+            def merge(enum)
+              @keys = nil
+              super
+            end
 
-          def each(&block)
-            block or return enum_for(__method__) { size }
-            to_a.each(&block)
-            self
-          end
+            def each(&block)
+              block or return enum_for(__method__) { size }
+              to_a.each(&block)
+              self
+            end
 
-          def to_a
-            (@keys = @hash.keys).sort! unless @keys
-            @keys
-          end
+            def to_a
+              (@keys = @hash.keys).sort! unless @keys
+              @keys
+            end
 
-          def freeze
-            to_a
-            super
-          end
-        END
+            def freeze
+              to_a
+              super
+            end
+          END
+        end
+        # a hack to shut up warning
+        remove_method :old_init
+
+        @@setup = true
       end
-
-      # a hack to shut up warning
-      remove_method :old_init
-
-      @@setup = true
     end
   end
 
