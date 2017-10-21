@@ -8293,6 +8293,11 @@ chompped_length(VALUE str, VALUE rs)
     return len;
 }
 
+/*!
+ * Returns the seperator for arguments of rb_str_chomp.
+ *
+ * @return returns rb_ps ($/) as default, the default value of rb_ps ($/) is "\n".
+ */
 static VALUE
 chomp_rs(int argc, const VALUE *argv)
 {
@@ -9273,6 +9278,15 @@ rb_str_end_with(int argc, VALUE *argv, VALUE str)
     return Qfalse;
 }
 
+/*!
+ * Returns the length of the <i>prefix</i> to be deleted in the given <i>str</i>,
+ * returning 0 if <i>str</i> does not start with the <i>prefix</i>.
+ *
+ * @param str the target
+ * @param prefix the prefix
+ * @retval 0 if the given <i>str</i> does not start with the given <i>prefix</i>
+ * @retval Positive-Integer otherwise
+ */
 static long
 deleted_prefix_length(VALUE str, VALUE prefix)
 {
@@ -9339,6 +9353,15 @@ rb_str_delete_prefix(VALUE str, VALUE prefix)
     return rb_str_subseq(str, prefixlen, RSTRING_LEN(str) - prefixlen);
 }
 
+/*!
+ * Returns the length of the <i>suffix</i> to be deleted in the given <i>str</i>,
+ * returning 0 if <i>str</i> does not end with the <i>suffix</i>.
+ *
+ * @param str the target
+ * @param suffix the suffix
+ * @retval 0 if the given <i>str</i> does not end with the given suffix</i>
+ * @retval Positive-Integer otherwise
+ */
 static long
 deleted_suffix_length(VALUE str, VALUE suffix)
 {
