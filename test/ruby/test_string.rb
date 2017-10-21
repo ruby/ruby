@@ -620,6 +620,11 @@ CODE
     assert_raise(RuntimeError) { 'foo'.freeze.concat('bar') }
   end
 
+  def test_concat_literals
+    s="." * 50
+    assert_equal(Encoding::UTF_8, "#{s}x".encoding)
+  end
+
   def test_count
     a = S("hello world")
     assert_equal(5, a.count(S("lo")))
