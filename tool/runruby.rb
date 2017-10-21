@@ -106,6 +106,14 @@ end
 
 ENV.update env
 
+if ENV['RUNRUBY_USE_GDB'] == 'true'
+  if File.exist?('run.gdb')
+    precommand = %w'gdb -x run.gdb --args'
+  else
+    precommand = %w'gdb --args'
+  end
+end
+
 cmd = [runner || ruby]
 cmd.concat(ARGV)
 cmd.unshift(*precommand) unless precommand.empty?
