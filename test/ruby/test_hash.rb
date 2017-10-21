@@ -1006,6 +1006,14 @@ class TestHash < Test::Unit::TestCase
     assert_equal(nil, h.select!{true})
   end
 
+  def test_slice
+    h = @cls[1=>2,3=>4,5=>6]
+    assert_equal({1=>2, 3=>4}, h.slice(1, 3))
+    assert_equal({}, h.slice(7))
+    assert_equal({}, h.slice)
+    assert_equal({}, {}.slice)
+  end
+
   def test_clear2
     assert_equal({}, @cls[1=>2,3=>4,5=>6].clear)
     h = @cls[1=>2,3=>4,5=>6]
