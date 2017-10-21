@@ -12,7 +12,11 @@
 #ifndef RUBY_INSNHELPER_H
 #define RUBY_INSNHELPER_H
 
+RUBY_SYMBOL_EXPORT_BEGIN
+
 extern VALUE ruby_vm_const_missing_count;
+
+RUBY_SYMBOL_EXPORT_END
 
 #if VM_COLLECT_USAGE_DETAILS
 #define COLLECT_USAGE_INSN(insn)           vm_collect_usage_insn(insn)

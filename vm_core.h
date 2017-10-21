@@ -1570,9 +1570,14 @@ VALUE rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, enum ruby_
 /* for thread */
 
 #if RUBY_VM_THREAD_MODEL == 2
+
+RUBY_SYMBOL_EXPORT_BEGIN
+
 extern rb_thread_t *ruby_current_thread;
 extern rb_vm_t *ruby_current_vm;
 extern rb_event_flag_t ruby_vm_event_flags;
+
+RUBY_SYMBOL_EXPORT_END
 
 #define GET_VM() ruby_current_vm
 #define GET_THREAD() ruby_current_thread
