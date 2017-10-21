@@ -88,6 +88,7 @@ class ACLEntryTest < Test::Unit::TestCase
 
     assert_raise(IPAddr::InvalidPrefixError) {
       ACL::ACLEntry.new('192.168.0.0/33')
+      ACL::ACLEntry.new('192.168.0.0/255.255.0.255')
     }
   end
 
