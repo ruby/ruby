@@ -24,8 +24,8 @@
  */
 
 #define PUT_BREAK(emitter)                                                      \
-    (FLUSH(emitter)                                                             \
-     && ((emitter->line_break == YAML_CR_BREAK ?                                \
+    (FLUSH(emitter) ?                                                             \
+      ((emitter->line_break == YAML_CR_BREAK ?                                \
              (*(emitter->buffer.pointer++) = (yaml_char_t) '\r') :              \
           emitter->line_break == YAML_LN_BREAK ?                                \
              (*(emitter->buffer.pointer++) = (yaml_char_t) '\n') :              \
@@ -34,7 +34,7 @@
               *(emitter->buffer.pointer++) = (yaml_char_t) '\n') : 0),          \
          emitter->column = 0,                                                   \
          emitter->line ++,                                                      \
-         1))
+         1) : 0)
 
 /*
  * Copy a character from a string into buffer.
