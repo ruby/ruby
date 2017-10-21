@@ -155,6 +155,17 @@ class TestOpen3 < Test::Unit::TestCase
     assert(s.success?)
   end
 
+  def test_capture3_stdin_data_io
+    IO.pipe {|r, w|
+      w.write "i"
+      w.close
+      o, e, s = Open3.capture3(RUBY, '-e', 'i=STDIN.read; print i+"o"; STDOUT.flush; STDERR.print i+"e"', :stdin_data=>r)
+      assert_equal("io", o)
+      assert_equal("ie", e)
+      assert(s.success?)
+    }
+  end
+
   def test_capture3_flip
     o, e, s = Open3.capture3(RUBY, '-e', 'STDOUT.sync=true; 1000.times { print "o"*1000; STDERR.print "e"*1000 }')
     assert_equal("o"*1000000, o)
@@ -168,10 +179,30 @@ class TestOpen3 < Test::Unit::TestCase
     assert(s.success?)
   end
 
+  def test_capture2_stdin_data_io
+    IO.pipe {|r, w|
+      w.write "i"
+      w.close
+      o, s = Open3.capture2(RUBY, '-e', 'i=STDIN.read; print i+"o"', :stdin_data=>r)
+      assert_equal("io", o)
+      assert(s.success?)
+    }
+  end
+
   def test_capture2e
     oe, s = Open3.capture2e(RUBY, '-e', 'i=STDIN.read; print i+"o"; STDOUT.flush; STDERR.print i+"e"', :stdin_data=>"i")
     assert_equal("ioie", oe)
     assert(s.success?)
+  end
+
+  def test_capture2e_stdin_data_io
+    IO.pipe {|r, w|
+      w.write "i"
+      w.close
+      oe, s = Open3.capture2e(RUBY, '-e', 'i=STDIN.read; print i+"o"; STDOUT.flush; STDERR.print i+"e"', :stdin_data=>r)
+      assert_equal("ioie", oe)
+      assert(s.success?)
+    }
   end
 
   def test_capture3_stdin_data
