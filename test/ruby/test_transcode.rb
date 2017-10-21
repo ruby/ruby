@@ -484,7 +484,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u2580", "\xDF", 'IBM775') # ▀
     check_both_ways("\u00D3", "\xE0", 'IBM775') # Ó
     check_both_ways("\u2019", "\xEF", 'IBM775') # ’
-    check_both_ways("\u00AD", "\xF0", 'IBM775') # osft hyphen
+    check_both_ways("\u00AD", "\xF0", 'IBM775') # soft hyphen
     check_both_ways("\u00A0", "\xFF", 'IBM775') # non-breaking space
   end
 
@@ -503,7 +503,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u2580", "\xDF", 'IBM852') # ▀
     check_both_ways("\u00D3", "\xE0", 'IBM852') # Ó
     check_both_ways("\u00B4", "\xEF", 'IBM852') # ´
-    check_both_ways("\u00AD", "\xF0", 'IBM852') # osft hyphen
+    check_both_ways("\u00AD", "\xF0", 'IBM852') # soft hyphen
     check_both_ways("\u00A0", "\xFF", 'IBM852') # non-breaking space
   end
 
@@ -522,7 +522,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u2580", "\xDF", 'IBM855') # ▀
     check_both_ways("\u042F", "\xE0", 'IBM855') # Я
     check_both_ways("\u2116", "\xEF", 'IBM855') # №
-    check_both_ways("\u00AD", "\xF0", 'IBM855') # osft hyphen
+    check_both_ways("\u00AD", "\xF0", 'IBM855') # soft hyphen
     check_both_ways("\u00A0", "\xFF", 'IBM855') # non-breaking space
   end
 
