@@ -1039,6 +1039,9 @@ x = __ENCODING__
     assert_raise_with_message(SyntaxError, /^    \^~~\z/) do
       eval('0000xyz')
     end
+    assert_raise_with_message(SyntaxError, /^    \^~~\z/) do
+      eval('1.2i1.1')
+    end
   end
 
   def test_truncated_source_line
