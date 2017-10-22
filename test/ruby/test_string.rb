@@ -673,7 +673,7 @@ CODE
     assert_equal("a".hash, "a\u0101".delete("\u0101").hash, '[ruby-talk:329267]')
     assert_equal(true, "a\u0101".delete("\u0101").ascii_only?)
     assert_equal(true, "a\u3041".delete("\u3041").ascii_only?)
-    assert_equal(false, "a\u3041\u3042".tr("\u3041", "a").ascii_only?)
+    assert_equal(false, "a\u3041\u3042".delete("\u3041").ascii_only?)
 
     assert_equal("a", "abc\u{3042 3044 3046}".delete("^a"))
     assert_equal("bc\u{3042 3044 3046}", "abc\u{3042 3044 3046}".delete("a"))
