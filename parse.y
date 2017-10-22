@@ -9453,9 +9453,9 @@ new_cdecl_gen(struct parser_params *parser, ID v, NODE *val, NODE *path, int col
 static NODE *
 new_scope_gen(struct parser_params *parser, NODE *a, NODE *b, int column)
 {
-   NODE *scope = NEW_SCOPE(a, b);
-   nd_set_column(scope, column);
-   return scope;
+    NODE *scope = NEW_SCOPE(a, b);
+    nd_set_column(scope, column);
+    return scope;
 }
 
 static NODE *
