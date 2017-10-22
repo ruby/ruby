@@ -197,8 +197,10 @@ class TestCoverage < Test::Unit::TestCase
   def test_branch_coverage_for_if_statement
     result = {
       :branches => {
-        [:if    , 0, 2, 2] => {[:then, 1,  3, 4]=>2, [:else, 2, 5, 4]=>1},
-        [:unless, 3, 8, 2] => {[:else, 4, 11, 4]=>2, [:then, 5, 9, 4]=>1},
+        [:if    , 0,  2, 2] => {[:then,  1,  3, 4]=>2, [:else,  2,  5, 4]=>1},
+        [:unless, 3,  8, 2] => {[:else,  4, 11, 4]=>2, [:then,  5,  9, 4]=>1},
+        [:if    , 6, 14, 2] => {[:then,  7, 15, 4]=>2, [:else,  8, 14, 2]=>1},
+        [:unless, 9, 18, 2] => {[:else, 10, 18, 2]=>2, [:then, 11, 19, 4]=>1},
       }
     }
     assert_coverage(<<~"end;", { branches: true }, result)
@@ -213,6 +215,14 @@ class TestCoverage < Test::Unit::TestCase
           0
         else
           1
+        end
+
+        if x == 0
+          0
+        end
+
+        unless x == 0
+          0
         end
       end
 
