@@ -1118,7 +1118,12 @@ class TestHash < Test::Unit::TestCase
     assert_equal([1, "one", 2, 2, "two", 3, 3, ["three"]], a.flatten(2))
     assert_equal([1, "one", 2, 2, "two", 3, 3, "three"], a.flatten(3))
     assert_equal([1, "one", 2, 2, "two", 3, 3, "three"], a.flatten(-1))
-    assert_raise(TypeError){ a.flatten(Object) }
+    assert_raise(TypeError){ a.flatten(nil) }
+  end
+
+  def test_flatten_arity
+    a =  @cls[1=> "one", 2 => [2,"two"], 3 => [3, ["three"]]]
+    assert_raise(ArgumentError){ a.flatten(1, 2) }
   end
 
   def test_callcc

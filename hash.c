@@ -2787,17 +2787,23 @@ rb_hash_flatten(int argc, VALUE *argv, VALUE hash)
 {
     VALUE ary;
 
+    rb_check_arity(argc, 0, 1);
+
     if (argc) {
-	int level = NUM2INT(*argv);
+	int level = NUM2INT(argv[0]);
+
 	if (level == 0) return rb_hash_to_a(hash);
 
 	ary = rb_ary_new_capa(RHASH_SIZE(hash) * 2);
 	rb_hash_foreach(hash, flatten_i, ary);
-	if (level - 1 > 0) {
-	    *argv = INT2FIX(level - 1);
-	    rb_funcallv(ary, id_flatten_bang, argc, argv);
+	level--;
+
+	if (level > 0) {
+	    VALUE ary_flatten_level = INT2FIX(level);
+	    rb_funcallv(ary, id_flatten_bang, 1, &ary_flatten_level);
 	}
 	else if (level < 0) {
+	    /* flatten recursively */
 	    rb_funcallv(ary, id_flatten_bang, 0, 0);
 	}
     }
