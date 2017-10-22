@@ -25,6 +25,7 @@ module WEBrick
     class Status < StandardError
       class << self
         attr_reader :code, :reason_phrase # :nodoc:
+        alias to_i code # :nodoc:
       end
 
       # Returns the HTTP status code
