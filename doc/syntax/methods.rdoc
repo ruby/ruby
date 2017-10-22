@@ -147,14 +147,14 @@ evaluated.
     1 + 1  # this expression is never evaluated
   end
 
-Note that for assignment methods the return value will be ignored when using the assignment syntax.
-Instead, the argument will be returned:
+Note that for assignment methods the return value will be ignored when using
+the assignment syntax.  Instead, the argument will be returned:
 
   def a=(value)
     return 1 + value
   end
 
-  p(a = 5) # prints 5
+  p(self.a = 5) # prints 5
 
 The actual return value will be returned when invoking the method directly:
 
