@@ -3574,11 +3574,6 @@ rb_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src)
     memcpy(dst->fdset, src->fdset, size);
 }
 
-#ifdef __native_client__
-int select(int nfds, fd_set *readfds, fd_set *writefds,
-           fd_set *exceptfds, struct timeval *timeout);
-#endif
-
 int
 rb_fd_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_fdset_t *exceptfds, struct timeval *timeout)
 {
