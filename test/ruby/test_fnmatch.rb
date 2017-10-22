@@ -108,6 +108,10 @@ class TestFnmatch < Test::Unit::TestCase
     feature5422 = '[ruby-core:40037]'
     assert_file.for(feature5422).not_fnmatch?( "{.g,t}*", ".gem")
     assert_file.for(feature5422).fnmatch?("{.g,t}*", ".gem", File::FNM_EXTGLOB)
+
+    assert_file.fnmatch?("{,.}*", ".gem", File::FNM_EXTGLOB)
+    assert_file.not_fnmatch?("{}*", ".gem", File::FNM_EXTGLOB)
+    assert_file.not_fnmatch?("{.}*", ".gem")
   end
 
   def test_unmatched_encoding
