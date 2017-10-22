@@ -1301,6 +1301,7 @@ help: PHONY
 	"  exts:            builds extensions" \
 	"  main:            builds encodings, extensions and ruby" \
 	"  docs:            builds documents" \
+	"  install-capi:    builds C API documents" \
 	"  run:             runs test.rb by miniruby" \
 	"  runruby:         runs test.rb by ruby you just built" \
 	"  gdb:             runs test.rb by miniruby under gdb" \
