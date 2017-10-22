@@ -357,7 +357,7 @@ static VALUE
 count_nodes(int argc, VALUE *argv, VALUE os)
 {
     size_t nodes[NODE_LAST+1];
-    size_t i;
+    enum node_type i;
     VALUE hash = setup_hash(argc, argv);
 
     for (i = 0; i <= NODE_LAST; i++) {
@@ -370,10 +370,11 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 	if (nodes[i] != 0) {
 	    VALUE node;
 	    switch (i) {
-#define COUNT_NODE(n) case n: node = ID2SYM(rb_intern(#n)); break;
+#define COUNT_NODE(n) case n: node = ID2SYM(rb_intern(#n)); goto set
 		COUNT_NODE(NODE_SCOPE);
 		COUNT_NODE(NODE_BLOCK);
 		COUNT_NODE(NODE_IF);
+		COUNT_NODE(NODE_UNLESS);
 		COUNT_NODE(NODE_CASE);
 		COUNT_NODE(NODE_WHEN);
 		COUNT_NODE(NODE_OPT_N);
@@ -405,8 +406,10 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_OP_ASGN_OR);
 		COUNT_NODE(NODE_OP_CDECL);
 		COUNT_NODE(NODE_CALL);
+		COUNT_NODE(NODE_OPCALL);
 		COUNT_NODE(NODE_FCALL);
 		COUNT_NODE(NODE_VCALL);
+		COUNT_NODE(NODE_QCALL);
 		COUNT_NODE(NODE_SUPER);
 		COUNT_NODE(NODE_ZSUPER);
 		COUNT_NODE(NODE_ARRAY);
@@ -468,8 +471,10 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_PRELUDE);
 		COUNT_NODE(NODE_LAMBDA);
 #undef COUNT_NODE
-	      default: node = INT2FIX(i);
+	      case NODE_LAST: break;
 	    }
+	    UNREACHABLE;
+	  set:
 	    rb_hash_aset(hash, node, SIZET2NUM(nodes[i]));
 	}
     }
