@@ -477,6 +477,19 @@ class Set
     @hash.eql?(o.instance_variable_get(:@hash))
   end
 
+  # Resets the internal state after modification to existing elements
+  # and returns self.
+  #
+  # Elements will be reindexed and deduplicated.
+  def reset
+    if @hash.respond_to?(:rehash)
+      @hash.rehash # This should perform frozenness check.
+    else
+      raise "can't modify frozen #{self.class.name}" if frozen?
+    end
+    self
+  end
+
   # Returns true if obj is a member of the set, and false otherwise.
   #
   # Used in case statements:
@@ -729,6 +742,11 @@ class SortedSet < Set
 
             def freeze
               to_a
+              super
+            end
+
+            def rehash
+              @keys = nil
               super
             end
           END
