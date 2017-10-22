@@ -890,6 +890,7 @@ x = __ENCODING__
     assert_warning(/#{a}/) {o.instance_eval("def foo; #{a}=1; nil; end")}
     o = Object.new
     assert_warning(/assigned but unused variable/) {o.instance_eval("def foo; tap {a=1; a()}; end")}
+    assert_warning('') {o.instance_eval("def bar; a=a=1; nil; end")}
   end
 
   def test_named_capture_conflict

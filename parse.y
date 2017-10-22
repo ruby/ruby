@@ -9927,6 +9927,33 @@ splat_array(NODE* node)
     return 0;
 }
 
+static void
+mark_lvar_used(struct parser_params *parser, NODE *rhs)
+{
+    ID *vidp = NULL;
+    if (!rhs) return;
+    switch (nd_type(rhs)) {
+      case NODE_LASGN:
+	if (local_id_ref(rhs->nd_vid, vidp)) {
+	    if (vidp) *vidp |= LVAR_USED;
+	}
+	break;
+      case NODE_DASGN:
+      case NODE_DASGN_CURR:
+	if (dvar_defined_ref(rhs->nd_vid, vidp)) {
+	    if (vidp) *vidp |= LVAR_USED;
+	}
+	break;
+#if 0
+      case NODE_MASGN:
+	for (rhs = rhs->nd_head; rhs; rhs = rhs->nd_next) {
+	    mark_lvar_used(parser, rhs->nd_head);
+	}
+	break;
+#endif
+    }
+}
+
 static NODE *
 node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs, int column)
 {
@@ -10006,6 +10033,13 @@ value_expr_gen(struct parser_params *parser, NODE *node)
 	    cond = 1;
 	    node = node->nd_2nd;
 	    break;
+
+	  case NODE_LASGN:
+	  case NODE_DASGN:
+	  case NODE_DASGN_CURR:
+	  case NODE_MASGN:
+	    mark_lvar_used(parser, node);
+	    return TRUE;
 
 	  default:
 	    return TRUE;
