@@ -99,12 +99,10 @@ free_sdbm(void *ptr)
 static size_t
 memsize_dbm(const void *ptr)
 {
-    size_t size = 0;
     const struct dbmdata *dbmp = ptr;
-    if (dbmp) {
-	size += sizeof(*dbmp);
-	if (dbmp->di_dbm) size += sizeof(DBM);
-    }
+    size_t size = sizeof(*dbmp);
+    if (dbmp->di_dbm)
+	size += sizeof(DBM);
     return size;
 }
 
