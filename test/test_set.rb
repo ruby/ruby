@@ -761,6 +761,19 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(3, set.size)
     assert_equal(array.uniq.sort, set.sort)
   end
+
+  def test_reset
+    [Set, Class.new(Set)].each { |klass|
+      a = [1, 2]
+      b = [1]
+      set = klass.new([a, b])
+
+      b << 2
+      set.reset
+
+      assert_equal(klass.new([a]), set, klass.name)
+    }
+  end
 end
 
 class TC_SortedSet < Test::Unit::TestCase
