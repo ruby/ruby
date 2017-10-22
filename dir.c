@@ -355,55 +355,56 @@ fnmatch_helper(
 	    goto failed;
 	  }
 
-	  case '{': if (flags & FNM_EXTGLOB) {
-			size_t len = pend - p;
-			char *buf = FNMATCH_ALLOC_N(char, len);
-			const char *rbrace = NULL;
-			while (p < pend) {
-			    const char *t = ++p;
-			    int nest = 0;
-			    while (p < pend && !(*p == ',' && nest == 0)) {
-				if (*p == '{') nest++;
-				if (*p == '}') {
-				    if (nest == 0) {
-					if (!rbrace) rbrace = p;
-					goto rest;
-				    }
-				    nest--;
-				}
-				if (*p == '\\' && escape) {
-				    if (++p >= pend) break;
-				}
-				Inc(p, pend, enc);
+	  case '{':
+	    if (flags & FNM_EXTGLOB) {
+		size_t len = pend - p;
+		char *buf = FNMATCH_ALLOC_N(char, len);
+		const char *rbrace = NULL;
+		while (p < pend) {
+		    const char *t = ++p;
+		    int nest = 0;
+		    while (p < pend && !(*p == ',' && nest == 0)) {
+			if (*p == '{') nest++;
+			if (*p == '}') {
+			    if (nest == 0) {
+				if (!rbrace) rbrace = p;
+				goto rest;
 			    }
-			    if (!rbrace) {
-				rbrace = p;
-				while (rbrace < pend && !(*rbrace == '}' && nest == 0)) {
-				    if (*rbrace == '{') nest++;
-				    if (*rbrace == '}') nest--;
-				    if (*rbrace == '\\' && escape) {
-					if (++p >= pend) break;
-				    }
-				    Inc(rbrace, pend, enc);
-				}
-			    }
-rest:
-			    memcpy(buf, t, p-t);
-			    buf[p-t]=0;
-			    strlcpy(buf+(p-t), rbrace+1, len-(p-t));
-			    {
-				const char *pp = buf, *ss = s;
-				r = fnmatch_helper((const char **)&pp, &ss, flags|FNM_DOTMATCH, enc);
-			    }
-			    if (r == 0) {
-				p = buf;
-				FNMATCH_FREE(buf);
-				RETURN(0);
-			    }
-			    if (p >= rbrace) break;
+			    nest--;
 			}
-			FNMATCH_FREE(buf);
+			if (*p == '\\' && escape) {
+			    if (++p >= pend) break;
+			}
+			Inc(p, pend, enc);
 		    }
+		    if (!rbrace) {
+			rbrace = p;
+			while (rbrace < pend && !(*rbrace == '}' && nest == 0)) {
+			    if (*rbrace == '{') nest++;
+			    if (*rbrace == '}') nest--;
+			    if (*rbrace == '\\' && escape) {
+				if (++p >= pend) break;
+			    }
+			    Inc(rbrace, pend, enc);
+			}
+		    }
+		  rest:
+		    memcpy(buf, t, p-t);
+		    buf[p-t]=0;
+		    strlcpy(buf+(p-t), rbrace+1, len-(p-t));
+		    {
+			const char *pp = buf, *ss = s;
+			r = fnmatch_helper((const char **)&pp, &ss, flags|FNM_DOTMATCH, enc);
+		    }
+		    if (r == 0) {
+			p = buf;
+			FNMATCH_FREE(buf);
+			RETURN(0);
+		    }
+		    if (p >= rbrace) break;
+		}
+		FNMATCH_FREE(buf);
+	    }
 	}
 
 	/* ordinary */
