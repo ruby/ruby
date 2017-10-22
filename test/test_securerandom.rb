@@ -146,7 +146,7 @@ end
   def test_alphanumeric
     65.times do |n|
       an = @it.alphanumeric(n)
-      assert_match(/^[0-9a-zA-Z]*$/, an)
+      assert_match(/\A[0-9a-zA-Z]*\z/, an)
       assert_equal(n, an.length)
     end
   end
