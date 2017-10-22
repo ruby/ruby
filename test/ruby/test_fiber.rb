@@ -234,7 +234,7 @@ class TestFiber < Test::Unit::TestCase
     assert_instance_of(Class, Fiber.new(&Class.new.method(:undef_method)).resume(:to_s), bug5083)
   end
 
-  def test_prohibit_resume_transfered_fiber
+  def test_prohibit_resume_transferred_fiber
     assert_raise(FiberError){
       root_fiber = Fiber.current
       f = Fiber.new{

@@ -3586,7 +3586,7 @@ __END__
           after = ObjectSpace.count_objects(res)[:T_STRING]
           assert_equal before, after,
             'no strings left over after write [ruby-core:78898] [Bug #13085]'
-          assert_not_predicate buf, :frozen?, 'no inadvertant freeze'
+          assert_not_predicate buf, :frozen?, 'no inadvertent freeze'
           assert_equal buf.bytesize, n, 'IO#write wrote expected size'
           assert_equal s, n, 'IO#syswrite wrote expected size'
         end

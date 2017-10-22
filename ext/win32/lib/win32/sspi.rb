@@ -73,7 +73,7 @@ module Win32
 			end
 		end
 
-		# Creates binary representaiton of a SecBufferDesc structure,
+		# Creates binary representations of a SecBufferDesc structure,
 		# including the SecBuffer contained inside.
 		class SecurityBuffer
 

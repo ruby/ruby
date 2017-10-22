@@ -446,7 +446,7 @@ class BasicSocket < IO
 
   # Linux-specific optimizations to avoid fcntl for IO#read_nonblock
   # and IO#write_nonblock using MSG_DONTWAIT
-  # Do other platforms suport MSG_DONTWAIT reliably?
+  # Do other platforms support MSG_DONTWAIT reliably?
   if RUBY_PLATFORM =~ /linux/ && Socket.const_defined?(:MSG_DONTWAIT)
     def read_nonblock(len, str = nil, exception: true) # :nodoc:
       case rv = __recv_nonblock(len, 0, str, exception)
