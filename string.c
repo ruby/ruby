@@ -2949,7 +2949,7 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
  *  Concatenates the given object(s) to <i>str</i>. If an object is an
  *  <code>Integer</code>, it is considered a codepoint and converted
  *  to a character before concatenation.
-
+ *
  *  +concat+ can take multiple arguments, and all the arguments are concatenated
  *  in order.  See String#<<, which takes a single argument.
  *
@@ -2980,7 +2980,7 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
     return str;
 }
 
- /*
+/*
  *  call-seq:
  *     str << obj      -> str
  *     str << integer  -> str
