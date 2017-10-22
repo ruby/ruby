@@ -155,7 +155,7 @@ class TestDir < Test::Unit::TestCase
     open(File.join(@root, "}}{}"), "wb") {}
     open(File.join(@root, "}}a"), "wb") {}
     assert_equal(%w(}}{} }}a).map {|f| File.join(@root, f)}, Dir.glob(File.join(@root, '}}{\{\},a}')))
-    assert_equal(%w(}}{} }}a b c).map {|f| File.join(@root, f)}, Dir.glob(File.join(@root, '{\}\}{\{\},a},b,c}')))
+    assert_equal(%w(}}{} }}a b c).map {|f| File.join(@root, f)}.sort, Dir.glob(File.join(@root, '{\}\}{\{\},a},b,c}')).sort)
   end
 
   def test_glob_recursive

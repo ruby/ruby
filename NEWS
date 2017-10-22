@@ -31,6 +31,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Dir.glob provides new optional keyword argument, :base.
     [Feature #13056]
+  * Dir.glob with FNM_EXTGLOB is optimized [Feature #13873]
+    The order of resulted array is changed in some cases.
   * Dir.children  [Feature #11302]
   * Dir.each_child  [Feature #11302]
 
