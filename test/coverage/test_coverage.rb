@@ -197,12 +197,13 @@ class TestCoverage < Test::Unit::TestCase
   def test_branch_coverage_for_if_statement
     result = {
       :branches => {
-        [:if    ,  0,  2, 2] => {[:then,  1,  3, 4]=>2, [:else,  2,  5, 4]=>1},
-        [:unless,  3,  8, 2] => {[:else,  4, 11, 4]=>2, [:then,  5,  9, 4]=>1},
-        [:if    ,  6, 14, 2] => {[:then,  7, 15, 4]=>2, [:else,  8, 14, 2]=>1},
-        [:unless,  9, 18, 2] => {[:else, 10, 18, 2]=>2, [:then, 11, 19, 4]=>1},
-        [:if    , 12, 22, 2] => {[:then, 13, 22, 2]=>2, [:else, 14, 22, 2]=>1},
-        [:unless, 15, 23, 2] => {[:else, 16, 23, 2]=>2, [:then, 17, 23, 2]=>1},
+        [:if    ,  0,  2, 2] => {[:then,  1,  3,  4]=>2, [:else,  2,  5,  4]=>1},
+        [:unless,  3,  8, 2] => {[:else,  4, 11,  4]=>2, [:then,  5,  9,  4]=>1},
+        [:if    ,  6, 14, 2] => {[:then,  7, 15,  4]=>2, [:else,  8, 14,  2]=>1},
+        [:unless,  9, 18, 2] => {[:else, 10, 18,  2]=>2, [:then, 11, 19,  4]=>1},
+        [:if    , 12, 22, 2] => {[:then, 13, 22,  2]=>2, [:else, 14, 22,  2]=>1},
+        [:unless, 15, 23, 2] => {[:else, 16, 23,  2]=>2, [:then, 17, 23,  2]=>1},
+        [:if    , 18, 25, 2] => {[:then, 19, 25, 11]=>2, [:else, 20, 25, 15]=>1},
       }
     }
     assert_coverage(<<~"end;", { branches: true }, result)
@@ -229,6 +230,8 @@ class TestCoverage < Test::Unit::TestCase
 
         0 if x == 0
         0 unless x == 0
+
+        x == 0 ? 0 : 1
       end
 
       foo(0)
