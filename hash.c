@@ -2899,10 +2899,16 @@ rb_hash_compact_bang(VALUE hash)
 static VALUE
 rb_hash_compare_by_id(VALUE hash)
 {
+    st_table *identtable;
     if (rb_hash_compare_by_id_p(hash)) return hash;
-    rb_hash_modify(hash);
-    RHASH(hash)->ntbl->type = &identhash;
-    rb_hash_rehash(hash);
+    rb_hash_modify_check(hash);
+
+    identtable = rb_init_identtable_with_size(RHASH_SIZE(hash));
+    rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)identtable);
+    if (RHASH(hash)->ntbl)
+	st_free_table(RHASH(hash)->ntbl);
+    RHASH(hash)->ntbl = identtable;
+
     return hash;
 }
 
