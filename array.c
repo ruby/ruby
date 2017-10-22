@@ -1284,21 +1284,29 @@ rb_ary_subseq(VALUE ary, long beg, long len)
 VALUE
 rb_ary_aref(int argc, const VALUE *argv, VALUE ary)
 {
-    VALUE arg;
+    rb_check_arity(argc, 1, 2);
+    if (argc == 2) {
+	return rb_ary_aref2(ary, argv[0], argv[1]);
+    }
+    return rb_ary_aref1(ary, argv[0]);
+}
+
+VALUE
+rb_ary_aref2(VALUE ary, VALUE b, VALUE e)
+{
+    long beg = NUM2LONG(b);
+    long len = NUM2LONG(e);
+    if (beg < 0) {
+	beg += RARRAY_LEN(ary);
+    }
+    return rb_ary_subseq(ary, beg, len);
+}
+
+VALUE
+rb_ary_aref1(VALUE ary, VALUE arg)
+{
     long beg, len;
 
-    if (argc == 2) {
-	beg = NUM2LONG(argv[0]);
-	len = NUM2LONG(argv[1]);
-	if (beg < 0) {
-	    beg += RARRAY_LEN(ary);
-	}
-	return rb_ary_subseq(ary, beg, len);
-    }
-    if (argc != 1) {
-	rb_scan_args(argc, argv, "11", NULL, NULL);
-    }
-    arg = argv[0];
     /* special case - speeding up */
     if (FIXNUM_P(arg)) {
 	return rb_ary_entry(ary, FIX2LONG(arg));
