@@ -197,8 +197,8 @@ class TestCoverage < Test::Unit::TestCase
   def test_branch_coverage_for_if_statement
     result = {
       :branches => {
-        [:if    , 0, 2] => {[:then, 1,  3]=>2, [:else, 2, 5]=>1},
-        [:unless, 3, 8] => {[:else, 4, 11]=>2, [:then, 5, 9]=>1},
+        [:if    , 0, 2, 8] => {[:then, 1,  3, 10]=>2, [:else, 2, 5, 10]=>1},
+        [:unless, 3, 8, 8] => {[:else, 4, 11, 10]=>2, [:then, 5, 9, 10]=>1},
       }
     }
     assert_coverage(<<-"end;", { branches: true }, result)
@@ -225,8 +225,8 @@ class TestCoverage < Test::Unit::TestCase
   def test_branch_coverage_for_while_statement
     result = {
       :branches => {
-        [:while, 0, 2] => {[:body, 1, 3]=> 3},
-        [:until, 2, 5] => {[:body, 3, 6]=>10},
+        [:while, 0, 2, 6] => {[:body, 1, 3, 8]=> 3},
+        [:until, 2, 5, 6] => {[:body, 3, 6, 8]=>10},
       }
     }
     assert_coverage(<<-"end;", { branches: true }, result)
@@ -243,10 +243,10 @@ class TestCoverage < Test::Unit::TestCase
   def test_branch_coverage_for_case_statement
     result = {
       :branches => {
-        [:case,  0,  2] => {[:when,  1,  4]=>2, [:when,  2,  6]=>0, [:else,  3,  2]=>1},
-        [:case,  4,  9] => {[:when,  5, 11]=>2, [:when,  6, 13]=>0, [:else,  7,  9]=>1},
-        [:case,  8, 16] => {[:when,  9, 18]=>2, [:when, 10, 20]=>0, [:else, 11, 22]=>1},
-        [:case, 12, 25] => {[:when, 13, 27]=>2, [:when, 14, 29]=>0, [:else, 15, 31]=>1},
+        [:case,  0,  2, 8] => {[:when,  1,  4, 10]=>2, [:when,  2,  6, 10]=>0, [:else,  3,  2,  8]=>1},
+        [:case,  4,  9, 8] => {[:when,  5, 11, 10]=>2, [:when,  6, 13, 10]=>0, [:else,  7,  9,  8]=>1},
+        [:case,  8, 16, 8] => {[:when,  9, 18, 10]=>2, [:when, 10, 20, 10]=>0, [:else, 11, 22, 10]=>1},
+        [:case, 12, 25, 8] => {[:when, 13, 27, 10]=>2, [:when, 14, 29, 10]=>0, [:else, 15, 31, 10]=>1},
       }
     }
     assert_coverage(<<-"end;", { branches: true }, result)
@@ -293,8 +293,8 @@ class TestCoverage < Test::Unit::TestCase
   def test_branch_coverage_for_safe_method_invocation
     result = {
       :branches=>{
-        [:"&.", 0, 3] => {[:then, 1, 3]=>1, [:else, 2, 3]=>0},
-        [:"&.", 3, 4] => {[:then, 4, 4]=>0, [:else, 5, 4]=>1},
+        [:"&.", 0, 3, 6] => {[:then, 1, 3, 6]=>1, [:else, 2, 3, 6]=>0},
+        [:"&.", 3, 4, 6] => {[:then, 4, 4, 6]=>0, [:else, 5, 4, 6]=>1},
       }
     }
     assert_coverage(<<-"end;", { branches: true }, result)
