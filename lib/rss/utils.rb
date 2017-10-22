@@ -125,16 +125,16 @@ module RSS
       [true, false].include?(args[0]) and args[1].is_a?(Hash)
     end
 
-    module YesCleanOther
+    module ExplicitCleanOther
       module_function
       def parse(value)
         if [true, false, nil].include?(value)
           value
         else
           case value.to_s
-          when /\Ayes\z/i
+          when /\Aexplicit|yes|true\z/i
             true
-          when /\Aclean\z/i
+          when /\Aclean|no|false\z/i
             false
           else
             nil

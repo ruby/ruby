@@ -51,7 +51,7 @@ module RSS
 
     ELEMENT_INFOS = [["author"],
                      ["block", :yes_other],
-                     ["explicit", :yes_clean_other],
+                     ["explicit", :explicit_clean_other],
                      ["keywords", :csv],
                      ["subtitle"],
                      ["summary"]]

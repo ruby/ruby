@@ -279,10 +279,20 @@ module RSS
     def assert_maker_itunes_explicit(maker_readers, feed_readers=nil)
       _wrap_assertion do
         feed_readers ||= maker_readers
-        _assert_maker_itunes_explicit(true, "yes", maker_readers, feed_readers)
+        _assert_maker_itunes_explicit(true, "explicit",
+                                      maker_readers, feed_readers)
+        _assert_maker_itunes_explicit(true, "yes",
+                                      maker_readers, feed_readers)
+        _assert_maker_itunes_explicit(true, "true",
+                                      maker_readers, feed_readers)
         _assert_maker_itunes_explicit(false, "clean",
                                       maker_readers, feed_readers)
-        _assert_maker_itunes_explicit(nil, "no", maker_readers, feed_readers)
+        _assert_maker_itunes_explicit(false, "no",
+                                      maker_readers, feed_readers)
+        _assert_maker_itunes_explicit(false, "false",
+                                      maker_readers, feed_readers)
+        _assert_maker_itunes_explicit(nil, "invalid",
+                                      maker_readers, feed_readers)
       end
     end
 
