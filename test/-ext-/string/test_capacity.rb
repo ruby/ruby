@@ -8,7 +8,7 @@ class Test_StringCapacity < Test::Unit::TestCase
     Bug::String.capacity(str)
   end
 
-  def test_capacity_embeded
+  def test_capacity_embedded
     size = RbConfig::SIZEOF['void*'] * 3 - 1
     assert_equal size, capa('foo')
   end

@@ -315,7 +315,7 @@ class IMAPTest < Test::Unit::TestCase
       imap.idle(0.2) do |res|
         responses.push(res)
       end
-      # There is no gurantee that this thread has received all the responses,
+      # There is no guarantee that this thread has received all the responses,
       # so check the response length.
       if responses.length > 0
         assert_instance_of(Net::IMAP::ContinuationRequest, responses[0])
@@ -328,7 +328,7 @@ class IMAPTest < Test::Unit::TestCase
           end
         end
       end
-      # Also, there is no gurantee that the server thread has stored
+      # Also, there is no guarantee that the server thread has stored
       # all the requests into the array, so check the length.
       if requests.length > 0
         assert_equal("RUBY0001 IDLE\r\n", requests[0])

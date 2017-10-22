@@ -89,7 +89,7 @@ class TestClass < Test::Unit::TestCase
     end
   end
 
-  def test_instanciate_singleton_class
+  def test_instantiate_singleton_class
     c = class << Object.new; self; end
     assert_raise(TypeError) { c.new }
   end

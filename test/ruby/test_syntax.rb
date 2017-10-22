@@ -1041,7 +1041,7 @@ eom
       begin;
         tap do
           result << :begin
-          raise "An exception occured!"
+          raise "An exception occurred!"
         ensure
           result << :ensure
         end
@@ -1057,7 +1057,7 @@ eom
       begin;
         tap do
           result << :begin
-          raise "An exception occured!"
+          raise "An exception occurred!"
         rescue
           result << :rescue
         else

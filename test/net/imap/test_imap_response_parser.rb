@@ -247,7 +247,7 @@ EOF
     assert_equal("AUTH=PLAIN", response.data.last)
   end
 
-  def test_mixed_boundry
+  def test_mixed_boundary
     parser = Net::IMAP::ResponseParser.new
     response = parser.parse("* 2688 FETCH (UID 179161 BODYSTRUCTURE (" \
                             "(\"TEXT\" \"PLAIN\" (\"CHARSET\" \"iso-8859-1\") NIL NIL \"QUOTED-PRINTABLE\" 200 4 NIL NIL NIL)" \

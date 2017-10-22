@@ -544,7 +544,7 @@ class TestPathname < Test::Unit::TestCase
   defassert(:pathsubext, 'lex.yy.o', 'lex.yy.c', '.o')
   defassert(:pathsubext, 'fooaa.o', 'fooaa', '.o')
   defassert(:pathsubext, 'd.e/aa.o', 'd.e/aa', '.o')
-  defassert(:pathsubext, 'long_enough.bug-3664', 'long_enough.not_to_be_embeded[ruby-core:31640]', '.bug-3664')
+  defassert(:pathsubext, 'long_enough.bug-3664', 'long_enough.not_to_be_embedded[ruby-core:31640]', '.bug-3664')
 
   def test_sub_matchdata
     result = Pathname("abc.gif").sub(/\..*/) {

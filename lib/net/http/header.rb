@@ -77,7 +77,7 @@ module Net::HTTPHeader
     else
       val = val.to_s
       if /[\r\n]/n.match?(val.b)
-        raise ArgumentError, 'header field value cannnot include CR/LF'
+        raise ArgumentError, 'header field value cannot include CR/LF'
       end
       @header[key.downcase] = [val]
     end
@@ -90,7 +90,7 @@ module Net::HTTPHeader
     else
       val = val.to_s
       if /[\r\n]/n.match?(val.b)
-        raise ArgumentError, 'header field value cannnot include CR/LF'
+        raise ArgumentError, 'header field value cannot include CR/LF'
       end
       ary.push val
     end
