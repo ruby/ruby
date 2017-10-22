@@ -317,7 +317,7 @@ module WEBrick
         end
 
         if base = path_info.first
-          if base == "/"
+          if base == "/" or base == ""
             if file = search_index_file(req, res)
               shift_path_info(req, res, path_info, file)
               call_callback(:FileCallback, req, res)
@@ -409,7 +409,7 @@ module WEBrick
         unless @options[:FancyIndexing]
           raise HTTPStatus::Forbidden, "no access permission to `#{req.path}'"
         end
-        local_path = res.filename
+        local_path = res.filename.dup.force_encoding(Encoding.find("filesystem"))
         list = Dir::entries(local_path).collect{|name|
           next if name == "." || name == ".."
           next if nondisclosure_name?(name)
@@ -501,7 +501,7 @@ module WEBrick
           s =  "<TR><TD class=\"name\"><A HREF=\"#{HTTPUtils::escape(name)}#{query if name.end_with?('/')}\">#{HTMLUtils::escape(dname)}</A></TD>"
           s << "<TD class=\"mtime\">" << (time ? time.strftime("%Y/%m/%d %H:%M") : "") << "</TD>"
           s << "<TD class=\"size\">" << (size >= 0 ? size.to_s : "-") << "</TD></TR>\n"
-          res.body << s
+          res.body << s.force_encoding(res.body.encoding)
         }
         res.body << "</TBODY></TABLE>"
         res.body << "<HR>"
