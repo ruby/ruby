@@ -114,21 +114,18 @@ static void
 free_dbm(void *ptr)
 {
     struct dbmdata *dbmp = ptr;
-    if (dbmp) {
-        if (dbmp->di_dbm) gdbm_close(dbmp->di_dbm);
-        xfree(dbmp);
-    }
+    if (dbmp->di_dbm)
+	gdbm_close(dbmp->di_dbm);
+    xfree(dbmp);
 }
 
 static size_t
 memsize_dbm(const void *ptr)
 {
-    size_t size = 0;
     const struct dbmdata *dbmp = ptr;
-    if (dbmp) {
-	size += sizeof(*dbmp);
-	if (dbmp->di_dbm) size += DBM_SIZEOF_DBM;
-    }
+    size_t size = sizeof(*dbmp);
+    if (dbmp->di_dbm)
+	size += DBM_SIZEOF_DBM;
     return size;
 }
 
