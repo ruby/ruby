@@ -1578,7 +1578,7 @@ io_binwritev(struct iovec *iov, int iovcnt, rb_io_t *fptr)
         errno = EAGAIN;
     }
     if (rb_io_wait_writable(fptr->fd)) {
-        rb_io_check_closed(fptr);
+	rb_io_check_closed(fptr);
 	goto retry;
     }
 
@@ -1636,7 +1636,7 @@ io_writev(int argc, VALUE *argv, VALUE io)
     io = GetWriteIO(io);
     tmp = rb_io_check_io(io);
     if (NIL_P(tmp)) {
-	/* port is not IO, call writev method for it. */
+	/* port is not IO, call write method for it. */
 	return rb_funcallv(io, id_write, argc, argv);
     }
     io = tmp;
@@ -1662,7 +1662,7 @@ io_writev(int argc, VALUE *argv, VALUE io)
     io = GetWriteIO(io);
     tmp = rb_io_check_io(io);
     if (NIL_P(tmp)) {
-	/* port is not IO, call writev method for it. */
+	/* port is not IO, call write method for it. */
 	return rb_funcallv(io, id_write, argc, argv);
     }
     io = tmp;
