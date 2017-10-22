@@ -2597,12 +2597,16 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
     }
 
     if (IS_INSN_ID(iobj, getlocal)) {
-	if (IS_NEXT_INSN_ID(&iobj->link, setlocal)) {
-	    LINK_ELEMENT *set1 = iobj->link.next;
+	LINK_ELEMENT *niobj = &iobj->link;
+	if (IS_NEXT_INSN_ID(niobj, dup)) {
+	    niobj = niobj->next;
+	}
+	if (IS_NEXT_INSN_ID(niobj, setlocal)) {
+	    LINK_ELEMENT *set1 = niobj->next;
 	    if (OPERAND_AT(iobj, 0) == OPERAND_AT(set1, 0) &&
 		OPERAND_AT(iobj, 1) == OPERAND_AT(set1, 1)) {
 		REMOVE_ELEM(set1);
-		REMOVE_ELEM(&iobj->link);
+		REMOVE_ELEM(niobj);
 	    }
 	}
     }
