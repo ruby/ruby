@@ -1654,9 +1654,10 @@ static VALUE
 io_writev(int argc, VALUE *argv, VALUE io)
 {
     rb_io_t *fptr;
-    long n, total;
+    long n;
     VALUE str, tmp, total = INT2FIX(0);
     int nosync;
+    int i;
 
     io = GetWriteIO(io);
     tmp = rb_io_check_io(io);
