@@ -9088,15 +9088,17 @@ new_qcall_gen(struct parser_params* parser, ID atype, NODE *recv, ID mid, NODE *
     return qcall;
 }
 
+#define nd_once_body(node) (nd_type(node) == NODE_SCOPE ? (node)->nd_body : node)
 static NODE*
 match_op_gen(struct parser_params *parser, NODE *node1, NODE *node2, int column)
 {
+    NODE *n;
+
     value_expr(node1);
     value_expr(node2);
-    if (node1) {
-	switch (nd_type(node1)) {
+    if (node1 && (n = nd_once_body(node1)) != 0) {
+	switch (nd_type(n)) {
 	  case NODE_DREGX:
-	  case NODE_DREGX_ONCE:
 	    {
 		NODE *match = NEW_MATCH2(node1, node2);
 		nd_set_column(match, column);
@@ -9104,8 +9106,8 @@ match_op_gen(struct parser_params *parser, NODE *node1, NODE *node2, int column)
 	    }
 
 	  case NODE_LIT:
-	    if (RB_TYPE_P(node1->nd_lit, T_REGEXP)) {
-		const VALUE lit = node1->nd_lit;
+	    if (RB_TYPE_P(n->nd_lit, T_REGEXP)) {
+		const VALUE lit = n->nd_lit;
 		NODE *match = NEW_MATCH2(node1, node2);
 		match->nd_args = reg_named_capture_assign(lit, column);
 		nd_set_column(match, column);
@@ -9114,18 +9116,17 @@ match_op_gen(struct parser_params *parser, NODE *node1, NODE *node2, int column)
 	}
     }
 
-    if (node2) {
+    if (node2 && (n = nd_once_body(node2)) != 0) {
         NODE *match3;
 
-	switch (nd_type(node2)) {
+	switch (nd_type(n)) {
 	  case NODE_DREGX:
-	  case NODE_DREGX_ONCE:
 	    match3 = NEW_MATCH3(node2, node1);
 	    nd_set_column(match3, column);
 	    return match3;
 
 	  case NODE_LIT:
-	    if (RB_TYPE_P(node2->nd_lit, T_REGEXP)) {
+	    if (RB_TYPE_P(n->nd_lit, T_REGEXP)) {
 		match3 = NEW_MATCH3(node2, node1);
 		nd_set_column(match3, column);
 		return match3;
@@ -10021,7 +10022,7 @@ void_expr_gen(struct parser_params *parser, NODE *node)
 
     if (!RTEST(ruby_verbose)) return;
 
-    if (!node) return;
+    if (!node || !(node = nd_once_body(node))) return;
     switch (nd_type(node)) {
       case NODE_OPCALL:
 	switch (node->nd_mid) {
@@ -10064,7 +10065,6 @@ void_expr_gen(struct parser_params *parser, NODE *node)
       case NODE_STR:
       case NODE_DSTR:
       case NODE_DREGX:
-      case NODE_DREGX_ONCE:
 	useless = "a literal";
 	break;
       case NODE_COLON2:
@@ -10277,13 +10277,13 @@ static int
 literal_node(NODE *node)
 {
     if (!node) return 1;	/* same as NODE_NIL */
+    if (!(node = nd_once_body(node))) return 1;
     switch (nd_type(node)) {
       case NODE_LIT:
       case NODE_STR:
       case NODE_DSTR:
       case NODE_EVSTR:
       case NODE_DREGX:
-      case NODE_DREGX_ONCE:
       case NODE_DSYM:
 	return 2;
       case NODE_TRUE:
@@ -10298,6 +10298,7 @@ static NODE*
 cond0(struct parser_params *parser, NODE *node, int method_op, int column)
 {
     if (node == 0) return 0;
+    if (!(node = nd_once_body(node))) return 0;
     assign_in_cond(parser, node);
 
     switch (nd_type(node)) {
@@ -10308,7 +10309,6 @@ cond0(struct parser_params *parser, NODE *node, int method_op, int column)
 	break;
 
       case NODE_DREGX:
-      case NODE_DREGX_ONCE:
 	{
 	    NODE *match;
 	    if (!method_op)
