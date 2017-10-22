@@ -714,11 +714,6 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("format: [nd_lit]");
 	ANN("example: /foo#{ bar }baz/");
 	goto dlit;
-      case NODE_DREGX_ONCE:
-	ANN("regexp literal with interpolation and once flag");
-	ANN("format: [nd_lit]");
-	ANN("example: /foo#{ bar }baz/o");
-	goto dlit;
       case NODE_DSYM:
 	ANN("symbol literal with interpolation");
 	ANN("format: [nd_lit]");
@@ -1111,7 +1106,6 @@ rb_gc_mark_node(NODE *obj)
       case NODE_DSTR:
       case NODE_DXSTR:
       case NODE_DREGX:
-      case NODE_DREGX_ONCE:
       case NODE_ENSURE:
       case NODE_CALL:
       case NODE_DEFS:
