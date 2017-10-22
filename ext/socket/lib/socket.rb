@@ -336,6 +336,7 @@ class BasicSocket < IO
   # === Parameters
   # * +maxlen+ - the number of bytes to receive from the socket
   # * +flags+ - zero or more of the +MSG_+ options
+  # * +buf+ - destination String buffer
   # * +options+ - keyword hash, supporting `exception: false`
   #
   # === Example
