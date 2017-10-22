@@ -1035,7 +1035,6 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	return;
 
       case NODE_ARGS_AUX:
-      case NODE_BMETHOD:
       case NODE_LAST:
 	break;
     }

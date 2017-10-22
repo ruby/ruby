@@ -212,8 +212,6 @@ enum node_type {
 #define NODE_DEFINED     NODE_DEFINED
     NODE_POSTEXE,
 #define NODE_POSTEXE     NODE_POSTEXE
-    NODE_BMETHOD,
-#define NODE_BMETHOD     NODE_BMETHOD
     NODE_DSYM,
 #define NODE_DSYM        NODE_DSYM
     NODE_ATTRASGN,
@@ -441,7 +439,6 @@ typedef struct RNode {
 #define NEW_DEFINED(e) NEW_NODE(NODE_DEFINED,e,0,0)
 #define NEW_PREEXE(b) NEW_SCOPE(b)
 #define NEW_POSTEXE(b) NEW_NODE(NODE_POSTEXE,0,b,0)
-#define NEW_BMETHOD(b) NEW_NODE(NODE_BMETHOD,0,0,b)
 #define NEW_ATTRASGN(r,m,a) NEW_NODE(NODE_ATTRASGN,r,m,a)
 #define NEW_PRELUDE(p,b,o) NEW_NODE(NODE_PRELUDE,p,b,o)
 
