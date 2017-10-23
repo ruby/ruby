@@ -56,6 +56,7 @@ with all sufficient information, see the ChangeLog file or Redmine
   * IO#pread  [Feature #4532]
   * IO#pwrite  [Feature #4532]
   * IO#copy_stream tries copy offload with copy_file_range(2) [Feature #13867]
+  * IO#write accepts multiple arguments  [Feature #9323]
 
 * IOError
 
