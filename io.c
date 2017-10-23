@@ -1593,10 +1593,6 @@ io_fwritev(int argc, VALUE *argv, rb_io_t *fptr)
     VALUE v1, v2, str, tmp, *tmp_array;
     struct iovec *iov;
 
-    if (iovcnt > IOV_MAX) {
-	rb_raise(rb_eArgError, "too many items (IOV_MAX: %d)", IOV_MAX);
-    }
-
     iov = ALLOCV_N(struct iovec, v1, iovcnt);
     tmp_array = ALLOCV_N(VALUE, v2, argc);
 
@@ -1625,13 +1621,15 @@ io_fwritev(int argc, VALUE *argv, rb_io_t *fptr)
 
     return n;
 }
+#endif /* HAVE_WRITEV */
 
 static VALUE
 io_writev(int argc, VALUE *argv, VALUE io)
 {
     rb_io_t *fptr;
     long n;
-    VALUE tmp;
+    VALUE tmp, total = INT2FIX(0);
+    int i, cnt = 1;
 
     io = GetWriteIO(io);
     tmp = rb_io_check_io(io);
@@ -1644,48 +1642,20 @@ io_writev(int argc, VALUE *argv, VALUE io)
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
 
-    n = io_fwritev(argc, argv, fptr);
-    if (n == -1L) rb_sys_fail_path(fptr->pathv);
-
-    return LONG2FIX(n);
-}
+    for (i = 0; i < argc; i += cnt) {
+#ifdef HAVE_WRITEV
+	if ((cnt = argc - i) >= IOV_MAX) cnt = IOV_MAX-1;
+	n = io_fwritev(cnt, &argv[i], fptr);
 #else
-static VALUE
-io_writev(int argc, VALUE *argv, VALUE io)
-{
-    rb_io_t *fptr;
-    long n;
-    VALUE str, tmp, total = INT2FIX(0);
-    int nosync;
-    int i;
-
-    io = GetWriteIO(io);
-    tmp = rb_io_check_io(io);
-    if (NIL_P(tmp)) {
-	/* port is not IO, call write method for it. */
-	return rb_funcallv(io, id_write, argc, argv);
-    }
-    io = tmp;
-
-    GetOpenFile(io, fptr);
-    rb_io_check_writable(fptr);
-
-    for (i = 0; i < argc; i++) {
 	/* sync at last item */
-	if (i == argc-1)
-	    nosync = 0;
-	else
-	    nosync = 1;
-
-	str = argv[i];
-	n = io_fwrite(str, fptr, nosync);
+	n = io_fwrite(argv[i], fptr, (i < argc-1));
+#endif
 	if (n == -1L) rb_sys_fail_path(fptr->pathv);
 	total = rb_fix_plus_fix(LONG2FIX(n), total);
     }
 
     return total;
 }
-#endif /* HAVE_WRITEV */
 
 /*
  *  call-seq:
@@ -1708,13 +1678,6 @@ io_writev(int argc, VALUE *argv, VALUE io)
 static VALUE
 io_write_m(int argc, VALUE *argv, VALUE io)
 {
-#ifdef HAVE_WRITEV
-    rb_check_arity(argc, 1, IOV_MAX-1);
-#else
-    /* in many environments, IOV_MAX is 1024 */
-    rb_check_arity(argc, 1, 1023);
-#endif
-
     if (argc > 1) {
 	return io_writev(argc, argv, io);
     }
