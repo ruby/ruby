@@ -1226,19 +1226,13 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_write_with_many_arguments
-    pipe(proc do |w|
-      w.write(*(["a"] * 1023))
-      w.close
-    end, proc do |r|
-      assert_equal("a" * 1023, r.read)
-    end)
-  end
-
-  def test_write_with_too_many_arguments
-    with_pipe do |r, w|
-      assert_raise(ArgumentError) do
-        w.write(*(["a"] * 1024))
-      end
+    [1023, 1024].each do |n|
+      pipe(proc do |w|
+        w.write(*(["a"] * n))
+        w.close
+      end, proc do |r|
+        assert_equal("a" * n, r.read)
+      end)
     end
   end
 
