@@ -216,7 +216,8 @@ class TestNetHTTPS < Test::Unit::TestCase
     ex = assert_raise(OpenSSL::SSL::SSLError){
       http.request_get("/") {|res| }
     }
-    assert_match(/\ASSL_connect returned=1 errno=0 /, ex.message)
+    re_msg = /\ASSL_connect returned=1 errno=0 |SSL_CTX_set_max_proto_version/
+    assert_match(re_msg, ex.message)
   end
 
 end if defined?(OpenSSL::SSL)
