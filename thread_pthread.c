@@ -836,8 +836,9 @@ native_thread_init_stack(rb_thread_t *th)
 	size_t size;
 
 	if (get_stack(&start, &size) == 0) {
-	    th->ec.machine.stack_start = start;
-	    th->ec.machine.stack_maxsize = size;
+	    uintptr_t diff = (uintptr_t)start - (uintptr_t)&curr;
+	    th->ec.machine.stack_start = (VALUE *)&curr;
+	    th->ec.machine.stack_maxsize = size - diff;
 	}
 #elif defined get_stack_of
 	if (!th->ec.machine.stack_maxsize) {
