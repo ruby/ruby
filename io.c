@@ -120,13 +120,6 @@
 off_t __syscall(quad_t number, ...);
 #endif
 
-#ifdef __native_client__
-# undef F_GETFD
-# ifdef NACL_NEWLIB
-#  undef HAVE_IOCTL
-# endif
-#endif
-
 #define IO_RBUF_CAPA_MIN  8192
 #define IO_CBUF_CAPA_MIN  (128*1024)
 #define IO_RBUF_CAPA_FOR(fptr) (NEED_READCONV(fptr) ? IO_CBUF_CAPA_MIN : IO_RBUF_CAPA_MIN)
@@ -9439,14 +9432,6 @@ typedef long fcntl_arg_t;
 #else
 /* posix */
 typedef int fcntl_arg_t;
-#endif
-
-#if defined __native_client__ && !defined __GLIBC__
-// struct flock is currently missing the NaCl newlib headers
-// TODO(sbc): remove this once it gets added.
-#undef F_GETLK
-#undef F_SETLK
-#undef F_SETLKW
 #endif
 
 static long
