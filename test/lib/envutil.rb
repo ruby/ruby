@@ -160,7 +160,7 @@ module EnvUtil
 
   def verbose_warning
     class << (stderr = "".dup)
-      alias write <<
+      alias write concat
     end
     stderr, $stderr, verbose, $VERBOSE = $stderr, stderr, $VERBOSE, true
     yield stderr

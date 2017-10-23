@@ -339,7 +339,8 @@ module OpenSSL::Buffering
   # Writes _s_ to the stream.  If the argument is not a String it will be
   # converted using +.to_s+ method.  Returns the number of bytes written.
 
-  def write(s)
+  def write(*s)
+    s = s.size == 1 ? s[0] : s.join("")
     do_write(s)
     s.bytesize
   end
