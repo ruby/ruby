@@ -211,6 +211,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Add Server Name Indication (SNI) support [Feature #13729]
 
+* Zlilb
+  * Zlib::GzipWriter#write accepts multiple arguments
+
 === Compatibility issues (excluding feature bug fixes)
 
 * BasicSocket#read_nonblock and BasicSocket#write_nonblock no

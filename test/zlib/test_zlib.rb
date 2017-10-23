@@ -1057,6 +1057,14 @@ if defined? Zlib
       }
     end
 
+    def test_puts
+      Tempfile.create("test_zlib_gzip_writer_puts") {|t|
+        t.close
+        Zlib::GzipWriter.open(t.path) {|gz| gz.puts("foo") }
+        assert_equal("foo\n", Zlib::GzipReader.open(t.path) {|gz| gz.read })
+      }
+    end
+
     def test_writer_wrap
       Tempfile.create("test_zlib_gzip_writer_wrap") {|t|
         t.binmode
