@@ -89,120 +89,6 @@ target_cpu=x64
 ])
 ])
 
-AC_DEFUN([RUBY_NACL],
-[
- AS_CASE(["${host_os}"],
-[nacl], [
-  ac_cv_exeext=.nexe
-  host_vendor=chromium
-  ac_cv_host=chromium
-  AC_MSG_CHECKING([wheather \$NACL_SDK_ROOT is set])
-  AS_IF([test x"${NACL_SDK_ROOT}" = x], [
-    AC_MSG_RESULT([no])
-    AC_MSG_ERROR([You need to set \$NACL_SDK_ROOT environment variable to build for NativeClient])
-  ])
-  AC_MSG_RESULT([yes])
-
-  nacl_cv_build_variant=glibc
-  AC_ARG_WITH(newlib,
-              AS_HELP_STRING([--with-newlib], [uses newlib version of NativeClient SDK]),
-              [AS_CASE([$withval],
-                       [no], [nacl_cv_build_variant=glibc],
-                       [yes], [nacl_cv_build_variant=newlib])])
-
-  AS_CASE(["$target_cpu"],
-          [x86_64], [nacl_cv_cpu_nick=x86
-                     nacl_cv_cpu_nick2=x86_64],
-          [i?86], [nacl_cv_cpu_nick=x86
-                   nacl_cv_cpu_nick2=x86_32],
-          [le32], [nacl_cv_cpu_nick=pnacl
-                   nacl_cv_cpu_nick2=pnacl
-                   ac_cv_exeext=.pexe],
-          [nacl_cv_cpu_nick=$target_cpu])
-  AS_CASE(["$build_os"],
-          [linux*], [nacl_cv_os_nick=linux],
-          [darwin*], [nacl_cv_os_nick=mac],
-          [cygwin*|mingw*], [nacl_cv_os_nick=win],
-          [nacl_cv_os_nick=$build_os])
-
-  host="$host_cpu-chromium-$host_os-"
-  ac_tool_prefix="$host_cpu-nacl-"
-
-  AC_MSG_CHECKING([NativeClient toolchain])
-  AS_IF([test x"$nacl_cv_cpu_nick" = xpnacl], [
-    NACL_TOOLCHAIN="${nacl_cv_os_nick}_pnacl"
-    ac_tool_prefix=pnacl-
-  ], [test -d \
-    "${NACL_SDK_ROOT}/toolchain/${nacl_cv_os_nick}_${nacl_cv_cpu_nick}_${nacl_cv_build_variant}"], [
-    NACL_TOOLCHAIN="${nacl_cv_os_nick}_${nacl_cv_cpu_nick}_${nacl_cv_build_variant}"
-  ], [test -d \
-    "${NACL_SDK_ROOT}/toolchain/${nacl_cv_os_nick}_x86_${nacl_cv_cpu_nick}/${nacl_cv_build_variant}"], [
-    NACL_TOOLCHAIN="${nacl_cv_os_nick}_x86_${nacl_cv_cpu_nick}/${nacl_cv_build_variant}"
-  ], [
-    AS_CASE(
-      ["${nacl_cv_build_variant}"],
-      [glibc], [AS_IF([test \
-        -d "${NACL_SDK_ROOT}/toolchain/${nacl_cv_os_nick}_${nacl_cv_cpu_nick}_newlib" \
-        -a -d "${NACL_SDK_ROOT}/toolchain/${nacl_cv_os_nick}_${nacl_cv_cpu_nick}"], [
-        NACL_TOOLCHAIN="${nacl_cv_os_nick}_${nacl_cv_cpu_nick}"
-      ])],
-      [newlib], [ NACL_TOOLCHAIN="${nacl_cv_os_nick}_${nacl_cv_cpu_nick}" ])
-  ])
-  AS_IF([test ! -e "${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/${ac_tool_prefix}gcc"], [
-    AS_IF([test "${build_cpu}" = i686 -a -e "${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/nacl-gcc"], [
-      ac_tool_prefix=nacl-
-    ])
-    AS_IF([test "${build_cpu}" = x86_64 -a -e "${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/nacl-gcc"], [
-      ac_tool_prefix=nacl64-
-    ])
-  ])
-  AS_IF([test -z "${NACL_TOOLCHAIN}"], [
-    AC_MSG_ERROR([Unrecognized --host and --build combination or NaCl SDK is not installed])
-  ])
-  AC_MSG_RESULT(${NACL_TOOLCHAIN})
-
-  AC_MSG_CHECKING([path to SDK])
-  AS_IF([! echo -- "${PATH}" | grep -F "${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/bin" > /dev/null], [
-    PATH="${PATH}:${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/bin"
-  ])
-  AC_MSG_RESULT(${NACL_SDK_ROOT}/toolchain/${NACL_TOOLCHAIN}/bin)
-
-  RUBY_APPEND_OPTIONS(XCFLAGS, '-I$(NACL_SDK_ROOT)/include')
-  AS_IF([test x"${nacl_cv_cpu_nick}" = xpnacl], [
-    RUBY_APPEND_OPTIONS(XCFLAGS, '-isystem $(NACL_SDK_ROOT)/include/pnacl')
-  ], [test x"${nacl_cv_build_variant}" = xnewlib], [
-    RUBY_APPEND_OPTIONS(XCFLAGS, '-isystem $(NACL_SDK_ROOT)/include/newlib')
-  ])
-
-  AC_MSG_CHECKING([nacl library path])
-  AS_IF([test -d "${NACL_SDK_ROOT}/lib/${nacl_cv_build_variant}_${nacl_cv_cpu_nick2}/Release"], [
-    nacl_cv_libpath="${nacl_cv_build_variant}_${nacl_cv_cpu_nick2}"
-  ], [test -d "${NACL_SDK_ROOT}/lib/${nacl_cv_cpu_nick2}/Release"], [
-    nacl_cv_libpath="${nacl_cv_cpu_nick2}"
-  ], [
-    AC_MSG_ERROR([not found])
-  ])
-  AC_MSG_RESULT([${nacl_cv_libpath}])
-  RUBY_APPEND_OPTIONS(XLDFLAGS, '-L$(NACL_SDK_ROOT)/'"lib/${nacl_cv_libpath}/Release")
-
-  AC_SUBST(NACL_TOOLCHAIN)
-  AC_SUBST(NACL_SDK_ROOT)
-  AC_SUBST(NACL_SDK_VARIANT, "${nacl_cv_build_variant}")
-  AC_SUBST(NACL_LIB_PATH, "${nacl_cv_libpath}")
-  AC_CHECK_TOOLS(CC, [clang gcc])
-  AC_CHECK_TOOLS(CXX, [clang++ g++])
-])])
-
-AC_DEFUN([RUBY_NACL_CHECK_PEPPER_TYPES],
-[AS_CASE(["${host_os}"],
-[nacl], [
- AC_CHECK_TYPES([struct PPB_Core, struct PPB_Messaging, struct PPB_Var,
-              struct PPB_URLLoader, struct PPB_URLRequestInfo,
-              struct PPB_URLResponseInfo, struct PPB_FileRef,
-              struct PPP_Instance])
-])
-])
-
 AC_DEFUN([RUBY_CPPOUTFILE],
 [AC_CACHE_CHECK(whether ${CPP} accepts -o, rb_cv_cppoutfile,
 [save_CPPFLAGS="$CPPFLAGS"
@@ -472,7 +358,6 @@ AS_IF([test -z "${CXXFLAGS+set}"], [
     cxxflags="$cxxflags "'${optflags} ${debugflags} ${warnflags}'
 ])
 
-RUBY_NACL
 AS_CASE(["$host_os:$build_os"],
 [darwin*:darwin*], [
     AC_CHECK_TOOLS(CC, [clang gcc cc])
@@ -707,7 +592,6 @@ AS_IF([test "$cross_compiling:$ac_cv_prog_DTRACE" = no: -a -n "$ac_tool_prefix"]
 
 AC_CHECK_PROGS(DOT, dot)
 AC_CHECK_PROGS(DOXYGEN, doxygen)
-AS_CASE(["${host_os}"], [nacl], [AC_PATH_PROG(PYTHON, python)])
 
 AC_CHECK_PROG(PKG_CONFIG, pkg-config, [pkg-config], [], [],
     [`"$as_dir/$ac_word$ac_exec_ext" --print-errors --version > /dev/null 2>&1 || echo "$as_dir/$ac_word$ac_exec_ext"`])
@@ -931,20 +815,16 @@ AC_ARG_WITH(compress-debug-sections,
 	[compress_debug_sections=$withval], [compress_debug_sections=])
 
 AS_IF([test "$GCC" = yes], [
-    # NaCl's glibc build generates undefined references to __memset_chk.
-    # TODO(sbc): Remove this once NaCl's glibc is fixed.
-    AS_CASE(["$target_os"], [nacl], [], [
-      # -D_FORTIFY_SOURCE
-      # When defined _FORTIFY_SOURCE, glibc enables some additional sanity
-      # argument check. The performance drop is very little and Ubuntu enables
-      # _FORTIFY_SOURCE=2 by default. So, let's support it for protecting us from
-      # a mistake of silly C extensions.
-      RUBY_TRY_CFLAGS(-D_FORTIFY_SOURCE=2, [RUBY_APPEND_OPTION(XCFLAGS, -D_FORTIFY_SOURCE=2)])
-   ])
+    # -D_FORTIFY_SOURCE
+    # When defined _FORTIFY_SOURCE, glibc enables some additional sanity
+    # argument check. The performance drop is very little and Ubuntu enables
+    # _FORTIFY_SOURCE=2 by default. So, let's support it for protecting us from
+    # a mistake of silly C extensions.
+    RUBY_TRY_CFLAGS(-D_FORTIFY_SOURCE=2, [RUBY_APPEND_OPTION(XCFLAGS, -D_FORTIFY_SOURCE=2)])
 
     # -fstack-protector
     AS_CASE(["$target_os"],
-    [mingw*|nacl], [
+    [mingw*], [
 	stack_protector=no
     ])
     AS_IF([test -z "${stack_protector+set}"], [
@@ -1003,7 +883,7 @@ AS_IF([test "$GCC" = yes], [
 	AC_DEFINE(RUBY_MINGW64_BROKEN_FREXP_MODF)
       ])
     ],
-    [cygwin*|darwin*|netbsd*|nacl], [
+    [cygwin*|darwin*|netbsd*], [
       # need lgamma_r(), finite()
     ],
     [
@@ -1042,7 +922,7 @@ AS_IF([test "$GCC" = yes], [
     ], [
 	RUBY_TRY_LDFLAGS([-Wl,-unexported_symbol,_Init_*], [visibility_option=ld], [visibility_option=no])
     ])
-    test "$visibility_option" = no -o "$host_os" = nacl || OBJCOPY=:
+    test "$visibility_option" = no || OBJCOPY=:
 ])
 
 AS_IF([test "$GCC" = yes], [
@@ -1358,14 +1238,6 @@ main()
 [aix*],[	LIBS="-lm $LIBS"
 		ac_cv_func_round=no
 		],
-[nacl], [
-  LIBS="-lm $LIBS"
-  AS_IF([test "${nacl_cv_build_variant}" = "newlib"], [
-    RUBY_APPEND_OPTION(CPPFLAGS, -DNACL_NEWLIB)
-  ], [
-    RUBY_APPEND_OPTION(XCFLAGS, -fPIC)
-  ])
-  ],
 [	LIBS="-lm $LIBS"])
 
 AC_CHECK_LIB(crypt, crypt)      # glibc (GNU/Linux, GNU/Hurd, GNU/kFreeBSD)
@@ -2219,8 +2091,6 @@ RUBY_DEFINT(uint128_t, 16, unsigned)
 RUBY_DEFINT(intptr_t, void*)
 RUBY_DEFINT(uintptr_t, void*, unsigned)
 RUBY_DEFINT(ssize_t, size_t, [], [@%:@include <sys/types.h>])	dnl may differ from int, so not use AC_TYPE_SSIZE_T.
-
-RUBY_NACL_CHECK_PEPPER_TYPES
 
 AC_CACHE_CHECK(for stack end address, rb_cv_stack_end_address,
 [rb_cv_stack_end_address=no
@@ -3083,17 +2953,12 @@ AS_IF([test x"$enable_pthread" = xyes], [
 	AC_DEFINE(NON_SCALAR_THREAD_ID)
     ])
     AC_CHECK_FUNCS(sched_yield pthread_attr_setinheritsched \
-	pthread_attr_get_np pthread_attr_getstack\
+	pthread_attr_get_np pthread_attr_getstack pthread_attr_init \
 	pthread_get_stackaddr_np pthread_get_stacksize_np \
 	thr_stksegment pthread_stackseg_np pthread_getthrds_np \
 	pthread_cond_init pthread_condattr_setclock pthread_condattr_init \
 	pthread_sigmask pthread_setname_np pthread_set_name_np)
     AS_CASE(["$target_os"],[aix*],[ac_cv_func_pthread_getattr_np=no],[AC_CHECK_FUNCS(pthread_getattr_np)])
-    AS_IF([test "${host_os}" = "nacl"], [
-      ac_cv_func_pthread_attr_init=no
-    ], [
-      AC_CHECK_FUNCS(pthread_attr_init)
-    ])
     set_current_thread_name=
     AS_IF([test "$ac_cv_func_pthread_setname_np" = yes], [
 	AC_CACHE_CHECK([arguments of pthread_setname_np], [rb_cv_func_pthread_setname_np_arguments],
@@ -3265,7 +3130,7 @@ AS_IF([test "$rb_cv_binary_elf" = yes], [
 ])
 
 AS_CASE(["$target_os"],
-[linux* | gnu* | k*bsd*-gnu | bsdi* | kopensolaris*-gnu | nacl], [
+[linux* | gnu* | k*bsd*-gnu | bsdi* | kopensolaris*-gnu], [
     AS_IF([test "$rb_cv_binary_elf" = no], [
 	with_dln_a_out=yes
     ], [
@@ -3409,7 +3274,6 @@ AS_IF([test "$with_dln_a_out" != yes], [
 	[hiuxmpp], [	: ${LDSHARED='$(LD) -r'}],
 	[atheos*], [	: ${LDSHARED='$(CC) -shared'}
 			rb_cv_dlopen=yes],
-        [nacl], [ LDSHARED='$(CC) -shared' ],
 	[	: ${LDSHARED='$(LD)'}])
   AC_MSG_RESULT($rb_cv_dlopen)
 
@@ -3722,20 +3586,6 @@ AS_IF([test x"$cross_compiling" = xyes], [
   BOOTSTRAPRUBY='$(BASERUBY)'
   TEST_RUNNABLE=no
   CROSS_COMPILING=yes
-
-  AS_IF([test "$host_os" = "nacl"], [
-      AS_IF([test "$build_cpu" = "$host_cpu" || test "${nacl_cv_cpu_nick}" = "x86" -a "$host_cpu" = "i686"], [
-          nacl_cv_sel_ldr='`$(MINIRUBY) $(srcdir)/nacl/nacl-config.rb sel_ldr`'
-          nacl_cv_irt_core='`$(MINIRUBY) $(srcdir)/nacl/nacl-config.rb irt_core`'
-          nacl_cv_runnable_ld='`$(MINIRUBY) $(srcdir)/nacl/nacl-config.rb runnable_ld`'
-          nacl_cv_host_lib='`$(MINIRUBY) $(srcdir)/nacl/nacl-config.rb host_lib`'
-          TEST_RUNNABLE=yes
-          BTESTRUBY="${nacl_cv_sel_ldr} -a -B ${nacl_cv_irt_core} -w 1:3 -w 2:4"
-          BTESTRUBY="$BTESTRUBY -- ${nacl_cv_runnable_ld} --library-path ${nacl_cv_host_lib}"
-          BTESTRUBY="$BTESTRUBY `pwd`/"'miniruby$(EXEEXT) -I`cd $(srcdir)/lib; pwd` -I.'
-          BTESTRUBY="$BTESTRUBY"' -I$(EXTOUT)/common 3>&1 4>&2 1>/dev/null 2>/dev/null '
-      ])
-  ])
 ], [
   MINIRUBY='./miniruby$(EXEEXT) -I$(srcdir)/lib -I.'
   MINIRUBY="$MINIRUBY"' -I$(EXTOUT)/common'
@@ -3938,11 +3788,6 @@ AS_CASE("$enable_shared", [yes], [
   AC_ARG_ENABLE(pie,
           AS_HELP_STRING([--disable-pie], [disable PIE feature]),
           [pie=$enableval], [pie=])
-  AS_CASE(["$target_os"],
-  [nacl], [
-    # -pie implies -shared for NaCl.
-    pie=no
-  ])
   AS_IF([test "$GCC" = yes -a -z "$EXTSTATIC" -a "x$pie" != xno], [
     RUBY_TRY_CFLAGS(-fPIE, [pie=yes], [pie=no])
     AS_IF([test "$pie" = yes], [
@@ -4184,10 +4029,8 @@ AS_CASE(["$target_os"],
 	AS_CASE(["$YACC"],[*yacc*], [
 	    XCFLAGS="$XCFLAGS -DYYMAXDEPTH=300"
 	    YACC="$YACC -Nl40000 -Nm40000"
-	])],
-    [nacl], [
-	FIRSTMAKEFILE=GNUmakefile:nacl/GNUmakefile.in
 	])
+])
 
 MINIOBJS="$MINIDLNOBJ"
 
@@ -4472,7 +4315,6 @@ AS_IF([test "${universal_binary-no}" = yes ], [
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "universal."RUBY_PLATFORM_CPU"-"RUBY_PLATFORM_OS)
 ], [
     arch="${target_cpu}-${target_os}"
-    AS_CASE(["$arch"], [le32-nacl], [arch="pnacl"])
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "$arch")
 ])
 

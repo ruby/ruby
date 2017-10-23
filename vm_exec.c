@@ -50,7 +50,7 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 
 #if OPT_STACK_CACHING
 #if 0
-#elif __GNUC__ && __x86_64__ && !defined(__native_client__)
+#elif __GNUC__ && __x86_64__
     DECL_SC_REG(VALUE, a, "12");
     DECL_SC_REG(VALUE, b, "13");
 #else
@@ -66,11 +66,7 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 
 #elif defined(__GNUC__) && defined(__x86_64__)
     DECL_SC_REG(const VALUE *, pc, "14");
-# if defined(__native_client__)
-    DECL_SC_REG(rb_control_frame_t *, cfp, "13");
-# else
     DECL_SC_REG(rb_control_frame_t *, cfp, "15");
-# endif
 #define USE_MACHINE_REGS 1
 
 #elif defined(__GNUC__) && defined(__powerpc64__)
