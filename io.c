@@ -1534,7 +1534,7 @@ io_binwritev(struct iovec *iov, int iovcnt, rb_io_t *fptr)
     }
     else {
 	iov++;
-	iovcnt--;
+	if (!--iovcnt) return 0;
     }
 
   retry:
@@ -1557,25 +1557,25 @@ io_binwritev(struct iovec *iov, int iovcnt, rb_io_t *fptr)
 		fptr->wbuf.len -= r;
 	    }
 	    else {
+		written_len -= fptr->wbuf.len;
 		fptr->wbuf.off = 0;
 		fptr->wbuf.len = 0;
 	    }
 	}
-	if (written_len == total) return written_len;
+	if (written_len == total) return total;
 
-	for (i = 0; i < iovcnt; i++) {
-	    if (r > (ssize_t)iov[i].iov_len) {
-		r -= iov[i].iov_len;
-		iov[i].iov_len = 0;
-            }
-	    else {
-		iov[i].iov_base = (char *)iov[i].iov_base + r;
-		iov[i].iov_len  -= r;
-		break;
-	    }
+	while (r >= (ssize_t)iov->iov_len) {
+	    /* iovcnt > 0 */
+	    r -= iov->iov_len;
+	    iov->iov_len = 0;
+	    iov++;
+	    if (!--iovcnt) return total;
+	    /* defensive check: written_len should == total */
 	}
+	iov->iov_base = (char *)iov->iov_base + r;
+	iov->iov_len -= r;
 
-        errno = EAGAIN;
+	errno = EAGAIN;
     }
     if (rb_io_wait_writable(fptr->fd)) {
 	rb_io_check_closed(fptr);

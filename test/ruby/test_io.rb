@@ -1236,6 +1236,16 @@ class TestIO < Test::Unit::TestCase
       open(file, "rb") do |r|
         assert_equal([line, line, "\n"], r.readlines)
       end
+
+      line = "x"*99+"\n"
+      open(file, "wb") do |w|
+        w.write(line*81)        # 8100 bytes
+        assert_equal(100, w.write("a"*99, "\n"))
+      end
+      open(file, "rb") do |r|
+        81.times {assert_equal(line, r.gets)}
+        assert_equal("a"*99+"\n", r.gets)
+      end
     end
   end
 
