@@ -237,6 +237,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Supported platform changes
 
+* Drop to support NaCl platform
+  * https://bugs.chromium.org/p/chromium/issues/detail?id=239656#c160
+
 === Implementation improvements
 
 * (This might not be a "user visible feature change" but) Hash class's

@@ -41,10 +41,6 @@
 # define VALGRIND_MAKE_MEM_UNDEFINED(p, n) 0
 #endif
 
-#if defined(__native_client__) && defined(NACL_NEWLIB)
-# include "nacl/signal.h"
-#endif
-
 extern ID ruby_static_id_signo;
 #define id_signo ruby_static_id_signo
 
@@ -1407,10 +1403,9 @@ install_sighandler(int signum, sighandler_t handler)
     }
     return 0;
 }
-#ifndef __native_client__
+
 #  define install_sighandler(signum, handler) \
     INSTALL_SIGHANDLER(install_sighandler(signum, handler), #signum, signum)
-#endif
 
 #if defined(SIGCLD) || defined(SIGCHLD)
 static int
@@ -1428,10 +1423,9 @@ init_sigchld(int sig)
     }
     return 0;
 }
-#  ifndef __native_client__
+
 #    define init_sigchld(signum) \
     INSTALL_SIGHANDLER(init_sigchld(signum), #signum, signum)
-#  endif
 #endif
 
 void

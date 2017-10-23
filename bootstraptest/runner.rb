@@ -261,12 +261,6 @@ rescue Exception => err
   error err.message, message
 end
 
-# NativeClient is special.  The binary is cross-compiled.  But runs on the build environment.
-# So RUBY_PLATFORM in this process is not useful to detect it.
-def nacl?
-  @ruby and File.basename(@ruby.split(/\s/).first)['sel_ldr']
-end
-
 def assert_check(testsrc, message = '', opt = '', **argh)
   show_progress(message) {
     result = get_result_string(testsrc, opt, **argh)

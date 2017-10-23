@@ -132,10 +132,6 @@
 #endif
 #endif
 
-#ifdef __native_client__
-#undef OPT_DIRECT_THREADED_CODE
-#endif
-
 /* call threaded code */
 #if    OPT_CALL_THREADED_CODE
 #if    OPT_DIRECT_THREADED_CODE

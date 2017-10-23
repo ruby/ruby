@@ -27,9 +27,6 @@
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
 #endif
-#if defined(__native_client__) && defined(NACL_NEWLIB)
-# include "nacl/select.h"
-#endif
 #if defined(HAVE_SYS_TIME_H)
 #include <sys/time.h>
 #endif
@@ -64,7 +61,7 @@ static struct {
 #define USE_MONOTONIC_COND 0
 #endif
 
-#if defined(HAVE_POLL) && defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL) && defined(O_NONBLOCK) && !defined(__native_client__)
+#if defined(HAVE_POLL) && defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL) && defined(O_NONBLOCK)
 /* The timer thread sleeps while only one Ruby thread is running. */
 # define USE_SLEEPY_TIMER_THREAD 1
 #else
@@ -460,9 +457,7 @@ Init_native_thread(void)
 #ifdef USE_UBF_LIST
     native_mutex_initialize(&ubf_list_lock);
 #endif
-#ifndef __native_client__
     posix_signal(SIGVTALRM, null_func);
-#endif
 }
 
 static void

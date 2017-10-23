@@ -72,16 +72,6 @@ int flock(int, int);
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#if defined(__native_client__)
-# if defined(NACL_NEWLIB)
-#  include "nacl/utime.h"
-#  include "nacl/stat.h"
-#  include "nacl/unistd.h"
-# else
-#  undef HAVE_UTIMENSAT
-# endif
-#endif
-
 #ifdef HAVE_SYS_MKDEV_H
 #include <sys/mkdev.h>
 #endif
@@ -1320,15 +1310,6 @@ rb_group_member(GETGROUPS_T gid)
 
 #if defined(S_IXGRP) && !defined(_WIN32) && !defined(__CYGWIN__)
 #define USE_GETEUID 1
-#endif
-
-#ifdef __native_client__
-// Although the NaCl toolchain contain eaccess() is it not yet
-// overridden by nacl_io.
-// TODO(sbc): Remove this once eaccess() is wired up correctly
-// in NaCl.
-# undef HAVE_EACCESS
-# undef USE_GETEUID
 #endif
 
 #ifndef HAVE_EACCESS
@@ -3846,19 +3827,6 @@ rb_file_s_absolute_path(int argc, const VALUE *argv)
     return rb_file_absolute_path(argv[0], argc > 1 ? argv[1] : Qnil);
 }
 
-#ifdef __native_client__
-VALUE
-rb_realpath_internal(VALUE basedir, VALUE path, int strict)
-{
-    return path;
-}
-
-VALUE
-rb_check_realpath(VALUE basedir, VALUE path)
-{
-    return path;
-}
-#else
 enum rb_realpath_mode {
     RB_REALPATH_CHECK,
     RB_REALPATH_DIR,
@@ -3922,11 +3890,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved,
             else {
                 struct stat sbuf;
                 int ret;
-#ifdef __native_client__
-                ret = stat(RSTRING_PTR(testpath), &sbuf);
-#else
                 ret = lstat_without_gvl(RSTRING_PTR(testpath), &sbuf);
-#endif
                 if (ret == -1) {
 		    int e = errno;
 		    if (mode == RB_REALPATH_CHECK) return -1;
@@ -4087,7 +4051,6 @@ rb_check_realpath(VALUE basedir, VALUE path)
 {
     return rb_check_realpath_internal(basedir, path, RB_REALPATH_CHECK);
 }
-#endif
 
 /*
  * call-seq:

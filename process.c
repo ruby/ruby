@@ -61,13 +61,6 @@
 #include "ruby/st.h"
 
 #include <sys/stat.h>
-#if defined(__native_client__) && defined(NACL_NEWLIB)
-# include <sys/unistd.h>
-# include "nacl/stat.h"
-# include "nacl/unistd.h"
-# include "nacl/resource.h"
-# undef HAVE_ISSETUGID
-#endif
 
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -1219,7 +1212,7 @@ security(const char *str)
     }
 }
 
-#if defined(HAVE_WORKING_FORK) && !defined(__native_client__)
+#if defined(HAVE_WORKING_FORK)
 
 /* try_with_sh and exec_with_sh should be async-signal-safe. Actually it is.*/
 #define try_with_sh(prog, argv, envp) ((saved_errno == ENOEXEC) ? exec_with_sh((prog), (argv), (envp)) : (void)0)
@@ -1242,10 +1235,6 @@ exec_with_sh(const char *prog, char **argv, char **envp)
 static int
 proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
 {
-#ifdef __native_client__
-    rb_notimplement();
-    UNREACHABLE;
-#else
     char **argv;
 #ifndef _WIN32
     char **envp;
@@ -1269,17 +1258,12 @@ proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
     preserving_errno(try_with_sh(prog, argv, envp)); /* try_with_sh() is async-signal-safe. */
 #endif
     return -1;
-#endif
 }
 
 /* This function should be async-signal-safe.  Actually it is. */
 static int
 proc_exec_sh(const char *str, VALUE envp_str)
 {
-#ifdef __native_client__
-    rb_notimplement();
-    UNREACHABLE;
-#else
     const char *s;
 
     s = str;
@@ -1315,7 +1299,6 @@ proc_exec_sh(const char *str, VALUE envp_str)
 #endif
     return -1;
 #endif	/* _WIN32 */
-#endif
 }
 
 int
