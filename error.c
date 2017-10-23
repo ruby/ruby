@@ -300,6 +300,15 @@ end_with_asciichar(VALUE str, int c)
 	rb_str_end_with_asciichar(str, c);
 }
 
+static VALUE
+warning_write(int argc, VALUE *argv, VALUE buf)
+{
+    while (argc-- > 0) {
+	rb_str_append(buf, *argv++);
+    }
+    return buf;
+}
+
 /*
  * call-seq:
  *    warn(msg, ...)   -> nil
@@ -2246,7 +2255,7 @@ Init_Exception(void)
     rb_extend_object(rb_mWarning, rb_mWarning);
 
     rb_cWarningBuffer = rb_define_class_under(rb_mWarning, "buffer", rb_cString);
-    rb_define_method(rb_cWarningBuffer, "write", rb_str_append, 1);
+    rb_define_method(rb_cWarningBuffer, "write", warning_write, -1);
 
     rb_define_global_function("warn", rb_warn_m, -1);
 
