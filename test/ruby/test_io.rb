@@ -1225,6 +1225,20 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
+  def test_write_with_multiple_arguments_and_buffer
+    mkcdtmpdir do
+      line = "x"*9+"\n"
+      file = "test.out"
+      open(file, "wb") do |w|
+        w.write(line)
+        assert_equal(11, w.write(line, "\n"))
+      end
+      open(file, "rb") do |r|
+        assert_equal([line, line, "\n"], r.readlines)
+      end
+    end
+  end
+
   def test_write_with_many_arguments
     [1023, 1024].each do |n|
       pipe(proc do |w|

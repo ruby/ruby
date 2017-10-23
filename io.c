@@ -1518,8 +1518,8 @@ io_binwritev(struct iovec *iov, int iovcnt, rb_io_t *fptr)
     }
 
     if (fptr->wbuf.ptr && fptr->wbuf.len) {
-	if (fptr->wbuf.off + fptr->wbuf.len + total <= fptr->wbuf.capa) {
-	    long offset = fptr->wbuf.off;
+	long offset = fptr->wbuf.off + fptr->wbuf.len;
+	if (offset + total <= fptr->wbuf.capa) {
 	    for (i = 1; i < iovcnt; i++) {
 		memcpy(fptr->wbuf.ptr+offset, iov[i].iov_base, iov[i].iov_len);
 		offset += iov[i].iov_len;
