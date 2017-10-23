@@ -75,7 +75,7 @@ class TestLogDevice < Test::Unit::TestCase
     #
     logdev = d(LogExcnRaiser.new)
     class << (stderr = '')
-      alias write <<
+      alias write concat
     end
     $stderr, stderr = stderr, $stderr
     begin

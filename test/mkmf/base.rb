@@ -49,11 +49,11 @@ module TestMkmf::Base
     def filter(&block)
       @filter = block
     end
-    def write(s)
+    def write(*s)
       if @out
-        @buffer << s
+        @buffer.concat(*s)
       elsif @origin
-        @origin << s
+        @origin.write(*s)
       end
     end
   end
