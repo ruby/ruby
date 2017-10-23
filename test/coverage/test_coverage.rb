@@ -243,8 +243,10 @@ class TestCoverage < Test::Unit::TestCase
   def test_branch_coverage_for_while_statement
     result = {
       :branches => {
-        [:while, 0, 2, 0] => {[:body, 1, 3, 2]=> 3},
-        [:until, 2, 5, 0] => {[:body, 3, 6, 2]=>10},
+        [:while, 0,  2, 0] => {[:body, 1,  3, 2]=> 3},
+        [:until, 2,  5, 0] => {[:body, 3,  6, 2]=>10},
+        [:while, 4, 10, 0] => {[:body, 5, 10, 0]=> 3},
+        [:until, 6, 11, 0] => {[:body, 7, 11, 0]=>10},
       }
     }
     assert_coverage(<<~"end;", { branches: true }, result)
@@ -255,6 +257,10 @@ class TestCoverage < Test::Unit::TestCase
       until x == 10
         x += 1
       end
+
+      y = 3
+      y -= 1 while y > 0
+      y += 1 until y == 10
     end;
   end
 
