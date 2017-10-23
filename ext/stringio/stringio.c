@@ -35,6 +35,7 @@ struct StringIO {
 
 static VALUE strio_init(int, VALUE *, struct StringIO *, VALUE);
 static VALUE strio_unget_bytes(struct StringIO *, const char *, long);
+static long strio_write(VALUE self, VALUE str);
 
 #define IS_STRIO(obj) (rb_typeddata_is_kind_of((obj), &strio_data_type))
 #define error_inval(msg) (rb_syserr_fail(EINVAL, msg))
@@ -1256,6 +1257,17 @@ strio_readlines(int argc, VALUE *argv, VALUE self)
  * Returns the number of bytes written.  See IO#write.
  */
 static VALUE
+strio_write_m(int argc, VALUE *argv, VALUE self)
+{
+    long len = 0;
+    while (argc-- > 0) {
+	/* StringIO can't exceed long limit */
+	len += strio_write(self, *argv++);
+    }
+    return LONG2NUM(len);
+}
+
+static long
 strio_write(VALUE self, VALUE str)
 {
     struct StringIO *ptr = writable(self);
@@ -1271,7 +1283,7 @@ strio_write(VALUE self, VALUE str)
 	str = rb_str_conv_enc(str, enc2, enc);
     }
     len = RSTRING_LEN(str);
-    if (len == 0) return INT2FIX(0);
+    if (len == 0) return 0;
     check_modifiable(ptr);
     olen = RSTRING_LEN(ptr->string);
     if (ptr->flags & FMODE_APPEND) {
@@ -1294,7 +1306,7 @@ strio_write(VALUE self, VALUE str)
     OBJ_INFECT(ptr->string, self);
     RB_GC_GUARD(str);
     ptr->pos += len;
-    return LONG2NUM(len);
+    return len;
 }
 
 /*
@@ -1668,7 +1680,7 @@ Init_stringio(void)
     rb_define_method(StringIO, "readlines", strio_readlines, -1);
     rb_define_method(StringIO, "read", strio_read, -1);
 
-    rb_define_method(StringIO, "write", strio_write, 1);
+    rb_define_method(StringIO, "write", strio_write_m, -1);
     rb_define_method(StringIO, "putc", strio_putc, 1);
 
     /*

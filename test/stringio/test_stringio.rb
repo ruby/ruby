@@ -206,6 +206,16 @@ class TestStringIO < Test::Unit::TestCase
     }
   end
 
+  def test_write_with_multiple_arguments
+    s = ""
+    f = StringIO.new(s, "w")
+    f.write("foo", "bar")
+    f.close
+    assert_equal("foobar", s)
+  ensure
+    f.close unless f.closed?
+  end
+
   def test_set_encoding
     bug10285 = '[ruby-core:65240] [Bug #10285]'
     f = StringIO.new()
