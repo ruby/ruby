@@ -1651,7 +1651,7 @@ io_writev(int argc, VALUE *argv, VALUE io)
 	n = io_fwrite(argv[i], fptr, (i < argc-1));
 #endif
 	if (n == -1L) rb_sys_fail_path(fptr->pathv);
-	total = rb_fix_plus_fix(LONG2FIX(n), total);
+	total = rb_fix_plus(LONG2FIX(n), total);
     }
 
     return total;
