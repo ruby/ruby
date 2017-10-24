@@ -20,7 +20,7 @@
 # See Net::HTTP for an overview and examples.
 #
 
-require 'net/protocol'
+require_relative 'protocol'
 require 'uri'
 
 module Net   #:nodoc:
@@ -1628,17 +1628,17 @@ module Net   #:nodoc:
 
 end
 
-require 'net/http/exceptions'
+require_relative 'http/exceptions'
 
-require 'net/http/header'
+require_relative 'http/header'
 
-require 'net/http/generic_request'
-require 'net/http/request'
-require 'net/http/requests'
+require_relative 'http/generic_request'
+require_relative 'http/request'
+require_relative 'http/requests'
 
-require 'net/http/response'
-require 'net/http/responses'
+require_relative 'http/response'
+require_relative 'http/responses'
 
-require 'net/http/proxy_delta'
+require_relative 'http/proxy_delta'
 
-require 'net/http/backward'
+require_relative 'http/backward'
