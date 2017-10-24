@@ -256,6 +256,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Mutex rewritten to be smaller and faster [Feature #13517]
 
+* Performance of block passing using block parameters is improved by
+  lazy Proc allocation [Feature #14045]
+
 === Miscellaneous changes
 
 * Print backtrace and error message in reverse order if STDERR is unchanged and a tty.
