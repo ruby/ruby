@@ -349,16 +349,18 @@ ignored_char_p(const char *p, const char *e, rb_encoding *enc)
 
 #define apply2args(n) (rb_check_arity(argc, n, UNLIMITED_ARGUMENTS), argc-=n)
 
+struct apply_filename {
+    const char *ptr;
+    VALUE path;
+};
+
 struct apply_arg {
     int i;
     int argc;
     int errnum;
     int (*func)(const char *, void *);
     void *arg;
-    struct {
-	const char *ptr;
-	VALUE path;
-    } fn[1]; /* flexible array */
+    struct apply_filename fn[1]; /* flexible array */
 };
 
 static void *
@@ -384,9 +386,8 @@ static VALUE
 apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
 {
     VALUE v;
-    VALUE tmp = Qfalse;
-    size_t size = sizeof(const char *) + sizeof(VALUE);
-    const long len = (long)(sizeof(struct apply_arg) + (size * argc) - size);
+    const size_t size = sizeof(struct apply_filename);
+    const long len = (long)(offsetof(struct apply_arg, fn) + (size * argc));
     struct apply_arg *aa = ALLOCV(v, len);
 
     aa->errnum = 0;
@@ -394,24 +395,12 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
     aa->arg = arg;
     aa->func = func;
 
-    /*
-     * aa is on-stack for small argc, we must ensure paths are marked
-     * for large argv if aa is on the heap.
-     */
-    if (v) {
-	tmp = rb_ary_tmp_new(argc);
-    }
-
     for (aa->i = 0; aa->i < argc; aa->i++) {
 	VALUE path = rb_get_path(argv[aa->i]);
 
 	path = rb_str_encode_ospath(path);
 	aa->fn[aa->i].ptr = RSTRING_PTR(path);
 	aa->fn[aa->i].path = path;
-
-	if (tmp != Qfalse) {
-	    rb_ary_push(tmp, path);
-	}
     }
 
     rb_thread_call_without_gvl(no_gvl_apply2files, aa, RUBY_UBF_IO, 0);
@@ -425,10 +414,6 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
     }
     if (v) {
 	ALLOCV_END(v);
-    }
-    if (tmp != Qfalse) {
-	rb_ary_clear(tmp);
-	rb_gc_force_recycle(tmp);
     }
     return LONG2FIX(argc);
 }
