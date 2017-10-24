@@ -628,8 +628,7 @@ VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
  *
  * This is typically "/etc", but is modified by the prefix used when Ruby was
  * compiled. For example, if Ruby is built and installed in /usr/local, returns
- * "/usr/local/etc" on other than Windows.  On Windows, this returns system
- * provided directory always.
+ * "/usr/local/etc".
  */
 static VALUE
 etc_sysconfdir(VALUE obj)

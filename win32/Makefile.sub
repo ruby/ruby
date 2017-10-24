@@ -829,6 +829,7 @@ s,@bindir@,$${exec_prefix}/bin,;t t
 s,@sbindir@,$${exec_prefix}/sbin,;t t
 s,@libexecdir@,$${exec_prefix}/libexec,;t t
 s,@datadir@,$${prefix}/share,;t t
+s,@sysconfdir@,$${prefix}/etc,;t t
 s,@sharedstatedir@,/etc,;t t
 s,@localstatedir@,/var,;t t
 s,@libdir@,$${exec_prefix}/$(libdir_basename),;t t
