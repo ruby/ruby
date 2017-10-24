@@ -930,12 +930,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("attr assignment");
 	ANN("format: [nd_recv].[nd_mid] = [nd_args]");
 	ANN("example: struct.field = foo");
-	if (node->nd_recv == (NODE *) 1) {
-	    F_MSG(nd_recv, "receiver", "1 (self)");
-	}
-	else {
-	    F_NODE(nd_recv, "receiver");
-	}
+	F_NODE(nd_recv, "receiver");
 	F_ID(nd_mid, "method name");
 	LAST_NODE;
 	F_NODE(nd_args, "arguments");
