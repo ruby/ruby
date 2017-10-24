@@ -359,6 +359,26 @@ rb_vm_env_write(const VALUE *ep, int index, VALUE v)
     vm_env_write(ep, index, v);
 }
 
+VALUE
+rb_vm_bh_to_procval(rb_thread_t *th, VALUE block_handler)
+{
+    if (block_handler == VM_BLOCK_HANDLER_NONE) {
+	return Qnil;
+    }
+    else {
+	switch (vm_block_handler_type(block_handler)) {
+	  case block_handler_type_iseq:
+	  case block_handler_type_ifunc:
+	    return rb_vm_make_proc(th, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc);
+	  case block_handler_type_symbol:
+	    return rb_sym_to_proc(VM_BH_TO_SYMBOL(block_handler));
+	  case block_handler_type_proc:
+	    return VM_BH_TO_PROC(block_handler);
+	  default:
+	    VM_UNREACHABLE(rb_vm_bh_to_procval);
+	}
+    }
+}
 
 /* svar */
 

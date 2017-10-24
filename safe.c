@@ -65,17 +65,25 @@ safe_getter(void)
 static void
 safe_setter(VALUE val)
 {
-    int level = NUM2INT(val);
     rb_thread_t *th = GET_THREAD();
+    int current_level = th->ec.safe_level;
+    int level = NUM2INT(val);
 
-    if (level < th->ec.safe_level) {
+    if (level == current_level) {
+	return;
+    }
+    else if (level < current_level) {
 	rb_raise(rb_eSecurityError,
 		 "tried to downgrade safe level from %d to %d",
-		 th->ec.safe_level, level);
+		 current_level, level);
     }
-    if (level > SAFE_LEVEL_MAX) {
+    else if (level > SAFE_LEVEL_MAX) {
 	rb_raise(rb_eArgError, "$SAFE=2 to 4 are obsolete");
     }
+
+    /* block parameters */
+    rb_vm_stack_to_heap(th);
+
     th->ec.safe_level = level;
 }
 

@@ -477,24 +477,7 @@ static inline void
 args_setup_block_parameter(rb_thread_t *th, struct rb_calling_info *calling, VALUE *locals)
 {
     VALUE block_handler = calling->block_handler;
-    VALUE blockval = Qnil;
-
-    if (block_handler != VM_BLOCK_HANDLER_NONE) {
-
-	switch (vm_block_handler_type(block_handler)) {
-	  case block_handler_type_iseq:
-	  case block_handler_type_ifunc:
-	    blockval = rb_vm_make_proc(th, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc);
-	    break;
-	  case block_handler_type_symbol:
-	    blockval = rb_sym_to_proc(VM_BH_TO_SYMBOL(block_handler));
-	    break;
-	  case block_handler_type_proc:
-	    blockval = VM_BH_TO_PROC(block_handler);
-	    break;
-	}
-    }
-    *locals = blockval;
+    *locals = rb_vm_bh_to_procval(th, block_handler);
 }
 
 struct fill_values_arg {
@@ -683,7 +666,12 @@ setup_parameters_complex(rb_thread_t * const th, const rb_iseq_t * const iseq,
     }
 
     if (iseq->body->param.flags.has_block) {
-	args_setup_block_parameter(th, calling, locals + iseq->body->param.block_start);
+	if (iseq->body->local_iseq == iseq) {
+	    /* Do nothing */
+	}
+	else {
+	    args_setup_block_parameter(th, calling, locals + iseq->body->param.block_start);
+	}
     }
 
 #if 0
@@ -843,27 +831,29 @@ vm_caller_setup_arg_block(const rb_thread_t *th, rb_control_frame_t *reg_cfp,
     if (ci->flag & VM_CALL_ARGS_BLOCKARG) {
 	VALUE block_code = *(--reg_cfp->sp);
 
-	if (NIL_P(block_code)) {
+	if ((ci->flag & VM_CALL_ARGS_BLOCKARG_BLOCKPARAM) &&
+	    !VM_ENV_FLAGS(VM_CF_LEP(reg_cfp), VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM)) {
+	    calling->block_handler = VM_CF_BLOCK_HANDLER(reg_cfp);
+	}
+	else if (NIL_P(block_code)) {
 	    calling->block_handler = VM_BLOCK_HANDLER_NONE;
 	}
-	else {
-	    if (SYMBOL_P(block_code) && rb_method_basic_definition_p(rb_cSymbol, idTo_proc)) {
-		const rb_cref_t *cref = vm_env_cref(reg_cfp->ep);
-		if (cref && !NIL_P(cref->refinements)) {
-		    VALUE ref = cref->refinements;
-		    VALUE func = rb_hash_lookup(ref, block_code);
-		    if (NIL_P(func)) {
-			/* TODO: limit cached funcs */
-			func = rb_func_proc_new(refine_sym_proc_call, block_code);
-			rb_hash_aset(ref, block_code, func);
-		    }
-		    block_code = func;
+	else if (SYMBOL_P(block_code) && rb_method_basic_definition_p(rb_cSymbol, idTo_proc)) {
+	    const rb_cref_t *cref = vm_env_cref(reg_cfp->ep);
+	    if (cref && !NIL_P(cref->refinements)) {
+		VALUE ref = cref->refinements;
+		VALUE func = rb_hash_lookup(ref, block_code);
+		if (NIL_P(func)) {
+		    /* TODO: limit cached funcs */
+		    func = rb_func_proc_new(refine_sym_proc_call, block_code);
+		    rb_hash_aset(ref, block_code, func);
 		}
-		calling->block_handler = block_code;
+		block_code = func;
 	    }
-	    else {
-		calling->block_handler = vm_to_proc(block_code);
-	    }
+	    calling->block_handler = block_code;
+	}
+	else {
+	    calling->block_handler = vm_to_proc(block_code);
 	}
     }
     else if (blockiseq != NULL) { /* likely */

@@ -300,15 +300,11 @@ struct iseq_compile_data_ensure_node_stack {
       } \
   } while (0)
 
-#define ADD_GETLOCAL(seq, line, idx, level) \
-  do { \
-      ADD_INSN2((seq), (line), getlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level)); \
-  } while (0)
+static void iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int idx, int level);
+static void iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int idx, int level);
 
-#define ADD_SETLOCAL(seq, line, idx, level) \
-  do { \
-      ADD_INSN2((seq), (line), setlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level)); \
-  } while (0)
+#define ADD_GETLOCAL(seq, line, idx, level) iseq_add_getlocal(iseq, (seq), (line), (idx), (level))
+#define ADD_SETLOCAL(seq, line, idx, level) iseq_add_setlocal(iseq, (seq), (line), (idx), (level))
 
 /* add label */
 #define ADD_LABEL(seq, label) \
@@ -976,6 +972,18 @@ LIST_SIZE_ZERO(LINK_ANCHOR *const anchor)
     }
 }
 
+static int
+LIST_SIZE_ONE(const LINK_ANCHOR *const anchor)
+{
+    if (anchor->anchor.next != NULL &&
+	anchor->anchor.next->next == NULL) {
+	return 1;
+    }
+    else {
+	return 0;
+    }
+}
+
 /*
  * anc1: e1, e2, e3
  * anc2: e4, e5
@@ -1297,6 +1305,47 @@ get_dyna_var_idx(const rb_iseq_t *iseq, ID id, int *level, int *ls)
     *ls = iseq->body->local_table_size;
     return idx;
 }
+
+static int
+iseq_local_block_param_p(const rb_iseq_t *iseq, unsigned int idx, unsigned int level)
+{
+    while (level > 0) {
+	iseq = iseq->body->parent_iseq;
+	level--;
+    }
+    if (iseq->body->local_iseq == iseq && /* local variables */
+	iseq->body->param.flags.has_block &&
+	iseq->body->local_table_size - iseq->body->param.block_start == idx) {
+	return TRUE;
+    }
+    else {
+	return FALSE;
+    }
+}
+
+static void
+iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int idx, int level)
+{
+    if (iseq_local_block_param_p(iseq, idx, level)) {
+	ADD_INSN2(seq, line, getblockparam, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+    }
+    else {
+	ADD_INSN2(seq, line, getlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+    }
+}
+
+static void
+iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int idx, int level)
+{
+    if (iseq_local_block_param_p(iseq, idx, level)) {
+	ADD_INSN2(seq, line, setblockparam, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+    }
+    else {
+	ADD_INSN2(seq, line, setlocal, INT2FIX((idx) + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+    }
+}
+
+
 
 static void
 iseq_calc_param_size(rb_iseq_t *iseq)
@@ -4173,6 +4222,16 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, NODE *argn,
     }
 
     if (*flag & VM_CALL_ARGS_BLOCKARG) {
+	if (LIST_SIZE_ONE(arg_block)) {
+	    LINK_ELEMENT *elem = FIRST_ELEMENT(arg_block);
+	    if (elem->type == ISEQ_ELEMENT_INSN) {
+		INSN *iobj = (INSN *)elem;
+		if (iobj->insn_id == BIN(getblockparam)) {
+		    iobj->insn_id = BIN(getlocal);
+		    *flag |= VM_CALL_ARGS_BLOCKARG_BLOCKPARAM;
+		}
+	    }
+	}
 	ADD_SEQ(args, arg_block);
     }
     return argc;
