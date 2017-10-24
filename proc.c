@@ -408,7 +408,7 @@ get_local_variable_ptr(const rb_env_t **envp, ID lid)
 			    VM_ENV_FLAGS_SET(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM);
 			}
 		    }
-		    
+
 		    *envp = env;
 		    return &env->env[i];
 		}
