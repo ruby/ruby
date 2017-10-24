@@ -8806,7 +8806,6 @@ fixpos(NODE *node, NODE *orig)
 {
     if (!node) return;
     if (!orig) return;
-    if (orig == (NODE*)1) return;
     nd_set_line(node, nd_line(orig));
 }
 
