@@ -32,8 +32,6 @@ enum node_type {
 #define NODE_CASE        NODE_CASE
     NODE_WHEN,
 #define NODE_WHEN        NODE_WHEN
-    NODE_OPT_N,
-#define NODE_OPT_N       NODE_OPT_N
     NODE_WHILE,
 #define NODE_WHILE       NODE_WHILE
     NODE_UNTIL,
@@ -353,7 +351,6 @@ typedef struct RNode {
 #define NEW_UNLESS(c,t,e) NEW_NODE(NODE_UNLESS,c,t,e)
 #define NEW_CASE(h,b) NEW_NODE(NODE_CASE,h,b,0)
 #define NEW_WHEN(c,t,e) NEW_NODE(NODE_WHEN,c,t,e)
-#define NEW_OPT_N(b) NEW_NODE(NODE_OPT_N,0,b,0)
 #define NEW_WHILE(c,b,n) NEW_NODE(NODE_WHILE,c,b,n)
 #define NEW_UNTIL(c,b,n) NEW_NODE(NODE_UNTIL,c,b,n)
 #define NEW_FOR(v,i,b) NEW_NODE(NODE_FOR,v,b,i)
