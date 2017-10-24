@@ -126,6 +126,11 @@ int flock(int, int);
 # define TO_OSPATH(str) (str)
 #endif
 
+/* utime may fail if time is out-of-range for the FS [ruby-dev:38277] */
+#if defined DOSISH || defined __CYGWIN__
+#  define UTIME_EINVAL
+#endif
+
 VALUE rb_cFile;
 VALUE rb_mFileTest;
 VALUE rb_cStat;
@@ -344,20 +349,87 @@ ignored_char_p(const char *p, const char *e, rb_encoding *enc)
 
 #define apply2args(n) (rb_check_arity(argc, n, UNLIMITED_ARGUMENTS), argc-=n)
 
-static VALUE
-apply2files(void (*func)(const char *, VALUE, void *), int argc, VALUE *argv, void *arg)
-{
-    long i;
-    VALUE path;
+struct apply_arg {
+    int i;
+    int argc;
+    int errnum;
+    int (*func)(const char *, void *);
+    void *arg;
+    struct {
+	const char *ptr;
+	VALUE path;
+    } fn[1]; /* flexible array */
+};
 
-    for (i=0; i<argc; i++) {
-	const char *s;
-	path = rb_get_path(argv[i]);
-	path = rb_str_encode_ospath(path);
-	s = RSTRING_PTR(path);
-	(*func)(s, path, arg);
+static void *
+no_gvl_apply2files(void *ptr)
+{
+    struct apply_arg *aa = ptr;
+
+    for (aa->i = 0; aa->i < aa->argc; aa->i++) {
+	if (aa->func(aa->fn[aa->i].ptr, aa->arg) < 0) {
+	    aa->errnum = errno;
+	    break;
+	}
+    }
+    return 0;
+}
+
+#ifdef UTIME_EINVAL
+NORETURN(static void utime_failed(struct apply_arg *));
+static int utime_internal(const char *, void *);
+#endif
+
+static VALUE
+apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
+{
+    VALUE v;
+    VALUE tmp = Qfalse;
+    size_t size = sizeof(const char *) + sizeof(VALUE);
+    const long len = (long)(sizeof(struct apply_arg) + (size * argc) - size);
+    struct apply_arg *aa = ALLOCV(v, len);
+
+    aa->errnum = 0;
+    aa->argc = argc;
+    aa->arg = arg;
+    aa->func = func;
+
+    /*
+     * aa is on-stack for small argc, we must ensure paths are marked
+     * for large argv if aa is on the heap.
+     */
+    if (v) {
+	tmp = rb_ary_tmp_new(argc);
     }
 
+    for (aa->i = 0; aa->i < argc; aa->i++) {
+	VALUE path = rb_get_path(argv[aa->i]);
+
+	path = rb_str_encode_ospath(path);
+	aa->fn[aa->i].ptr = RSTRING_PTR(path);
+	aa->fn[aa->i].path = path;
+
+	if (tmp != Qfalse) {
+	    rb_ary_push(tmp, path);
+	}
+    }
+
+    rb_thread_call_without_gvl(no_gvl_apply2files, aa, RUBY_UBF_IO, 0);
+    if (aa->errnum) {
+#ifdef UTIME_EINVAL
+	if (func == utime_internal) {
+	    utime_failed(aa);
+	}
+#endif
+	rb_syserr_fail_path(aa->errnum, aa->fn[aa->i].path);
+    }
+    if (v) {
+	ALLOCV_END(v);
+    }
+    if (tmp != Qfalse) {
+	rb_ary_clear(tmp);
+	rb_gc_force_recycle(tmp);
+    }
     return LONG2FIX(argc);
 }
 
@@ -2328,11 +2400,10 @@ rb_file_size(VALUE obj)
     return OFFT2NUM(st.st_size);
 }
 
-static void
-chmod_internal(const char *path, VALUE pathv, void *mode)
+static int
+chmod_internal(const char *path, void *mode)
 {
-    if (chmod(path, *(int *)mode) < 0)
-	rb_sys_fail_path(pathv);
+    return chmod(path, *(int *)mode);
 }
 
 /*
@@ -2404,11 +2475,10 @@ rb_file_chmod(VALUE obj, VALUE vmode)
 }
 
 #if defined(HAVE_LCHMOD)
-static void
-lchmod_internal(const char *path, VALUE pathv, void *mode)
+static int
+lchmod_internal(const char *path, void *mode)
 {
-    if (lchmod(path, (int)(VALUE)mode) < 0)
-	rb_sys_fail_path(pathv);
+    return lchmod(path, (int)(VALUE)mode);
 }
 
 /*
@@ -2458,12 +2528,11 @@ struct chown_args {
     rb_gid_t group;
 };
 
-static void
-chown_internal(const char *path, VALUE pathv, void *arg)
+static int
+chown_internal(const char *path, void *arg)
 {
     struct chown_args *args = arg;
-    if (chown(path, args->owner, args->group) < 0)
-	rb_sys_fail_path(pathv);
+    return chown(path, args->owner, args->group);
 }
 
 /*
@@ -2535,12 +2604,11 @@ rb_file_chown(VALUE obj, VALUE owner, VALUE group)
 }
 
 #if defined(HAVE_LCHOWN)
-static void
-lchown_internal(const char *path, VALUE pathv, void *arg)
+static int
+lchown_internal(const char *path, void *arg)
 {
     struct chown_args *args = arg;
-    if (lchown(path, args->owner, args->group) < 0)
-	rb_sys_fail_path(pathv);
+    return lchown(path, args->owner, args->group);
 }
 
 /*
@@ -2574,16 +2642,22 @@ struct utime_args {
     VALUE atime, mtime;
 };
 
-#if defined DOSISH || defined __CYGWIN__
-NORETURN(static void utime_failed(VALUE, const struct timespec *, VALUE, VALUE));
+#ifdef UTIME_EINVAL
+NORETURN(static void utime_failed(struct apply_arg *));
 
 static void
-utime_failed(VALUE path, const struct timespec *tsp, VALUE atime, VALUE mtime)
+utime_failed(struct apply_arg *aa)
 {
-    int e = errno;
-    if (tsp && e == EINVAL) {
+    int e = aa->errnum;
+    VALUE path = aa->fn[aa->i].path;
+    struct utime_args *ua = aa->arg;
+
+    if (ua->tsp && e == EINVAL) {
 	VALUE e[2], a = Qnil, m = Qnil;
 	int d = 0;
+	VALUE atime = ua->atime;
+	VALUE mtime = ua->mtime;
+
 	if (!NIL_P(atime)) {
 	    a = rb_inspect(atime);
 	}
@@ -2608,14 +2682,12 @@ utime_failed(VALUE path, const struct timespec *tsp, VALUE atime, VALUE mtime)
     }
     rb_syserr_fail_path(e, path);
 }
-#else
-#define utime_failed(path, tsp, atime, mtime) rb_sys_fail_path(path)
 #endif
 
 #if defined(HAVE_UTIMES)
 
-static void
-utime_internal(const char *path, VALUE pathv, void *arg)
+static int
+utime_internal(const char *path, void *arg)
 {
     struct utime_args *v = arg;
     const struct timespec *tsp = v->tsp;
@@ -2630,9 +2702,9 @@ utime_internal(const char *path, VALUE pathv, void *arg)
                 try_utimensat = 0;
                 goto no_utimensat;
             }
-            utime_failed(pathv, tsp, v->atime, v->mtime);
+            return -1; /* calls utime_failed */
         }
-        return;
+        return 0;
     }
 no_utimensat:
 #endif
@@ -2644,8 +2716,7 @@ no_utimensat:
         tvbuf[1].tv_usec = (int)(tsp[1].tv_nsec / 1000);
         tvp = tvbuf;
     }
-    if (utimes(path, tvp) < 0)
-	utime_failed(pathv, tsp, v->atime, v->mtime);
+    return utimes(path, tvp);
 }
 
 #else
@@ -2657,8 +2728,8 @@ struct utimbuf {
 };
 #endif
 
-static void
-utime_internal(const char *path, VALUE pathv, void *arg)
+static int
+utime_internal(const char *path, void *arg)
 {
     struct utime_args *v = arg;
     const struct timespec *tsp = v->tsp;
@@ -2668,8 +2739,7 @@ utime_internal(const char *path, VALUE pathv, void *arg)
         utbuf.modtime = tsp[1].tv_sec;
         utp = &utbuf;
     }
-    if (utime(path, utp) < 0)
-	utime_failed(pathv, tsp, v->atime, v->mtime);
+    return utime(path, utp);
 }
 
 #endif
@@ -2850,11 +2920,10 @@ rb_readlink(VALUE path, rb_encoding *enc)
 #define rb_file_s_readlink rb_f_notimplement
 #endif
 
-static void
-unlink_internal(const char *path, VALUE pathv, void *arg)
+static int
+unlink_internal(const char *path, void *arg)
 {
-    if (unlink(path) < 0)
-	rb_sys_fail_path(pathv);
+    return unlink(path);
 }
 
 /*
