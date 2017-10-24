@@ -11278,7 +11278,7 @@ parser_append_options(struct parser_params *parser, NODE *node)
 					 rb_intern("chomp!"), 0, 0), node, 0);
 	}
 
-	node = NEW_OPT_N(node);
+	node = NEW_WHILE(NEW_VCALL(idGets), node, 1);
     }
 
     return node;

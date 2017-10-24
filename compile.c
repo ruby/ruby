@@ -4517,7 +4517,7 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped, co
     ISEQ_COMPILE_DATA(iseq)->loopval_popped = 0;
     push_ensure_entry(iseq, &enl, NULL, NULL);
 
-    if (type == NODE_OPT_N || node->nd_state == 1) {
+    if (node->nd_state == 1) {
 	ADD_INSNL(ret, line, jump, next_label);
     }
     else {
@@ -4541,16 +4541,10 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popped, co
 	compile_branch_condition(iseq, ret, node->nd_cond,
 				 redo_label, end_label);
     }
-    else if (type == NODE_UNTIL) {
+    else {
 	/* until */
 	compile_branch_condition(iseq, ret, node->nd_cond,
 				 end_label, redo_label);
-    }
-    else {
-	ADD_CALL_RECEIVER(ret, line);
-	ADD_CALL(ret, line, idGets, INT2FIX(0));
-	ADD_INSNL(ret, line, branchif, redo_label);
-	/* opt_n */
     }
 
     ADD_LABEL(ret, end_label);
@@ -5103,7 +5097,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, NODE *node, int popp
       case NODE_WHEN:
 	CHECK(compile_when(iseq, ret, node, popped));
 	break;
-      case NODE_OPT_N:
       case NODE_WHILE:
       case NODE_UNTIL:
 	CHECK(compile_loop(iseq, ret, node, popped, type));

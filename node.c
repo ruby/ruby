@@ -230,11 +230,6 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	F_NODE(nd_next, "next when clause");
 	return;
 
-      case NODE_OPT_N:
-	ANN("wrapper for -n option");
-	ANN("format: ruby -ne '[nd_body]' (nd_cond is `gets')");
-	ANN("example: ruby -ne 'p $_'");
-	goto loop;
       case NODE_WHILE:
 	ANN("while statement");
 	ANN("format: while [nd_cond]; [nd_body]; end");
@@ -1152,7 +1147,6 @@ rb_gc_mark_node(NODE *obj)
       case NODE_IASGN:
       case NODE_CVASGN:
       case NODE_COLON3:
-      case NODE_OPT_N:
       case NODE_EVSTR:
       case NODE_UNDEF:
       case NODE_POSTEXE:
