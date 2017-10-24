@@ -575,4 +575,69 @@ class TestRubyOptimization < Test::Unit::TestCase
       def t; if false; case 42; when s {}; end; end; end
     end;
   end
+
+  def bptest_yield &b
+    yield
+  end
+
+  def bptest_yield_pass &b
+    bptest_yield(&b)
+  end
+
+  def bptest_bp_value &b
+    b
+  end
+
+  def bptest_bp_pass_bp_value &b
+    bptest_bp_value(&b)
+  end
+
+  def bptest_binding &b
+    binding
+  end
+
+  def bptest_set &b
+    b = Proc.new{2}
+  end
+
+  def test_block_parameter
+    assert_equal(1, bptest_yield{1})
+    assert_equal(1, bptest_yield_pass{1})
+    assert_equal(1, send(:bptest_yield){1})
+
+    assert_equal(Proc, bptest_bp_value{}.class)
+    assert_equal nil, bptest_bp_value
+    assert_equal(Proc, bptest_bp_pass_bp_value{}.class)
+    assert_equal nil, bptest_bp_pass_bp_value
+
+    assert_equal Proc, bptest_binding{}.local_variable_get(:b).class
+
+    assert_equal 2, bptest_set{1}.call
+  end
+
+  def test_block_parameter_should_not_create_objects
+    assert_separately [], <<-END
+      #
+      def foo &b
+      end
+      h1 = {}; h2 = {}
+      ObjectSpace.count_objects(h1) # reharsal
+      ObjectSpace.count_objects(h1)
+      foo{}
+      ObjectSpace.count_objects(h2)
+
+      assert_equal 0, h2[:TOTAL] - h1[:TOTAL]
+    END
+  end
+
+  def test_block_parameter_should_restore_safe_level
+    assert_separately [], <<-END
+      #
+      def foo &b
+        $SAFE = 1
+        b.call
+      end
+      assert_equal 0, foo{$SAFE}
+    END
+  end
 end
