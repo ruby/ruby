@@ -448,8 +448,7 @@ VALUE rb_parser_encoding(VALUE);
 VALUE rb_parser_get_yydebug(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
 VALUE rb_parser_dump_tree(NODE *node, int comment);
-NODE *rb_parser_append_print(VALUE, NODE *);
-NODE *rb_parser_while_loop(VALUE, NODE *, int, int);
+void rb_parser_set_options(VALUE, int, int, int, int);
 
 NODE *rb_parser_compile_cstr(VALUE, const char*, const char*, int, int);
 NODE *rb_parser_compile_string(VALUE, const char*, VALUE, int);

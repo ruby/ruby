@@ -1646,6 +1646,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     /* need to acquire env from toplevel_binding each time, since it
      * may update after eval() */
 
+    base_block = toplevel_context(toplevel_binding);
+    rb_parser_set_context(parser, base_block, TRUE);
+    rb_parser_set_options(parser, opt->do_print, opt->do_loop, opt->do_line, opt->do_split);
+
     if (opt->e_script) {
 	VALUE progname = rb_progname;
 	rb_encoding *eenc;
@@ -1669,15 +1673,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	    require_libraries(&opt->req_list);
 	}
         ruby_set_script_name(progname);
-
-	base_block = toplevel_context(toplevel_binding);
-	rb_parser_set_context(parser, base_block, TRUE);
 	tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
     else {
 	VALUE f;
-	base_block = toplevel_context(toplevel_binding);
-	rb_parser_set_context(parser, base_block, TRUE);
 	f = open_load_file(script_name, &opt->xflag);
 	tree = load_file(parser, opt->script_name, f, 1, opt);
     }
@@ -1715,11 +1714,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	if (!dump) return Qtrue;
     }
 
-    if (opt->do_print) {
-	tree = rb_parser_append_print(parser, tree);
-    }
     if (opt->do_loop) {
-	tree = rb_parser_while_loop(parser, tree, opt->do_line, opt->do_split);
 	rb_define_global_function("sub", rb_f_sub, -1);
 	rb_define_global_function("gsub", rb_f_gsub, -1);
 	rb_define_global_function("chop", rb_f_chop, 0);

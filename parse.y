@@ -234,6 +234,11 @@ struct parser_params {
 #ifndef RIPPER
     /* Ruby core only */
 
+    unsigned int do_print: 1;
+    unsigned int do_loop: 1;
+    unsigned int do_chomp: 1;
+    unsigned int do_split: 1;
+
     NODE *eval_tree_begin;
     NODE *eval_tree;
     VALUE error_buffer;
@@ -5398,6 +5403,8 @@ vtable_included(const struct vtable * tbl, ID id)
 static void parser_prepare(struct parser_params *parser);
 
 #ifndef RIPPER
+static NODE *parser_append_options(struct parser_params *parser, NODE *node);
+
 static VALUE
 debug_lines(VALUE fname)
 {
@@ -5492,10 +5499,11 @@ yycompile0(VALUE arg)
     else {
 	VALUE opt = parser->compile_option;
 	NODE *prelude;
+	NODE *body = parser_append_options(parser, tree->nd_body);
 	if (!opt) opt = rb_obj_hide(rb_ident_hash_new());
 	rb_hash_aset(opt, rb_sym_intern_ascii_cstr("coverage_enabled"), cov);
-	prelude = NEW_PRELUDE(ruby_eval_tree_begin, tree->nd_body, opt);
-	nd_set_column(prelude, nd_column(tree->nd_body));
+	prelude = NEW_PRELUDE(ruby_eval_tree_begin, body, opt);
+	nd_set_column(prelude, nd_column(body));
 	tree->nd_body = prelude;
     }
     return (VALUE)tree;
@@ -11237,78 +11245,43 @@ parser_reg_compile(struct parser_params* parser, VALUE str, int options, VALUE *
 #endif
 
 #ifndef RIPPER
-NODE*
-rb_parser_append_print(VALUE vparser, NODE *node)
+void
+rb_parser_set_options(VALUE vparser, int print, int loop, int chomp, int split)
 {
-    NODE *prelude = 0;
-    NODE *scope = node;
     struct parser_params *parser;
-
-    if (!node) return node;
-
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
-
-    node = node->nd_body;
-
-    if (nd_type(node) == NODE_PRELUDE) {
-	prelude = node;
-	node = node->nd_body;
-    }
-
-    node = block_append(node,
-			new_fcall(rb_intern("print"),
-				  NEW_ARRAY(new_gvar(idLASTLINE, 0)), 0),
-			0);
-    if (prelude) {
-	prelude->nd_body = node;
-	scope->nd_body = prelude;
-    }
-    else {
-	scope->nd_body = node;
-    }
-
-    return scope;
+    parser->do_print = print;
+    parser->do_loop = loop;
+    parser->do_chomp = chomp;
+    parser->do_split = split;
 }
 
-NODE *
-rb_parser_while_loop(VALUE vparser, NODE *node, int chomp, int split)
+static NODE *
+parser_append_options(struct parser_params *parser, NODE *node)
 {
-    NODE *prelude = 0;
-    NODE *scope = node;
-    struct parser_params *parser;
-
-    if (!node) return node;
-
-    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
-
-    node = node->nd_body;
-
-    if (nd_type(node) == NODE_PRELUDE) {
-	prelude = node;
-	node = node->nd_body;
-    }
-    if (split) {
-	node = block_append(NEW_GASGN(rb_intern("$F"),
-				      new_call(new_gvar(idLASTLINE, 0),
-					       rb_intern("split"), 0, 0)),
-			    node, 0);
-    }
-    if (chomp) {
-	node = block_append(new_call(new_gvar(idLASTLINE, 0),
-				     rb_intern("chomp!"), 0, 0), node, 0);
+    if (parser->do_print) {
+	node = block_append(node,
+			    new_fcall(rb_intern("print"),
+				      NEW_ARRAY(new_gvar(idLASTLINE, 0)), 0),
+			    0);
     }
 
-    node = NEW_OPT_N(node);
+    if (parser->do_loop) {
+	if (parser->do_split) {
+	    node = block_append(NEW_GASGN(rb_intern("$F"),
+					  new_call(new_gvar(idLASTLINE, 0),
+						   rb_intern("split"), 0, 0)),
+				node, 0);
+	}
+	if (parser->do_chomp) {
+	    node = block_append(new_call(new_gvar(idLASTLINE, 0),
+					 rb_intern("chomp!"), 0, 0), node, 0);
+	}
 
-    if (prelude) {
-	prelude->nd_body = node;
-	scope->nd_body = prelude;
-    }
-    else {
-	scope->nd_body = node;
+	node = NEW_OPT_N(node);
     }
 
-    return scope;
+    return node;
 }
 
 void
