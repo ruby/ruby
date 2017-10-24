@@ -57,6 +57,8 @@ const union {
         RUBY_NODE_LSHIFT    = NODE_LSHIFT,
         RUBY_NODE_FL_NEWLINE   = NODE_FL_NEWLINE
     } various;
+    enum imemo_type             imemo_types;
+    enum {RUBY_IMEMO_MASK = IMEMO_MASK} imemo_mask;
 } ruby_dummy_gdb_enums;
 
 const SIGNED_VALUE RUBY_NODE_LMASK = NODE_LMASK;
