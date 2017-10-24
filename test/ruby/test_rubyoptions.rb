@@ -346,6 +346,21 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_ruby_status(%w[], "#! ruby -- /", '[ruby-core:82267] [Bug #13786]')
   end
 
+  def test_flag_in_shebang
+    Tempfile.create(%w"pflag .rb") do |script|
+      code = "#!ruby -p"
+      script.puts(code)
+      script.close
+      assert_in_out_err([script.path, script.path], '', [code])
+    end
+    Tempfile.create(%w"sflag .rb") do |script|
+      script.puts("#!ruby -s")
+      script.puts("p $abc")
+      script.close
+      assert_in_out_err([script.path, "-abc=foo"], '', ['"foo"'])
+    end
+  end
+
   def test_sflag
     assert_in_out_err(%w(- -abc -def=foo -ghi-jkl -- -xyz),
                       "#!ruby -s\np [$abc, $def, $ghi_jkl, defined?($xyz)]\n",
