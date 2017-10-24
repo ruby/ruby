@@ -475,45 +475,51 @@ rb_type_str(enum ruby_value_type type)
 #undef type_case
 }
 
+NORETURN(static void uncallable_object(VALUE recv, ID mid));
+static void
+uncallable_object(VALUE recv, ID mid)
+{
+    VALUE flags;
+    int type;
+    const char *typestr;
+    VALUE mname = rb_id2str(mid);
+
+    if (SPECIAL_CONST_P(recv)) {
+	rb_raise(rb_eNotImpError,
+		 "method `%"PRIsVALUE"' called on unexpected immediate object (%p)",
+		 mname, (void *)recv);
+    }
+    else if ((flags = RBASIC(recv)->flags) == 0) {
+	rb_raise(rb_eNotImpError,
+		 "method `%"PRIsVALUE"' called on terminated object (%p)",
+		 mname, (void *)recv);
+    }
+    else if (!(typestr = rb_type_str(type = BUILTIN_TYPE(recv)))) {
+	rb_raise(rb_eNotImpError,
+		 "method `%"PRIsVALUE"' called on broken T_?""?""?(0x%02x) object"
+		 " (%p flags=0x%"PRIxVALUE")",
+		 mname, type, (void *)recv, flags);
+    }
+    else if (T_OBJECT <= type && type < T_NIL) {
+	rb_raise(rb_eNotImpError,
+		 "method `%"PRIsVALUE"' called on hidden %s object"
+		 " (%p flags=0x%"PRIxVALUE")",
+		 mname, typestr, (void *)recv, flags);
+    }
+    else {
+	rb_raise(rb_eNotImpError,
+		 "method `%"PRIsVALUE"' called on unexpected %s object"
+		 " (%p flags=0x%"PRIxVALUE")",
+		 mname, typestr, (void *)recv, flags);
+    }
+}
+
 static inline const rb_callable_method_entry_t *
 rb_search_method_entry(VALUE recv, ID mid)
 {
     VALUE klass = CLASS_OF(recv);
 
-    if (!klass) {
-        VALUE flags;
-        if (SPECIAL_CONST_P(recv)) {
-            rb_raise(rb_eNotImpError,
-                     "method `%"PRIsVALUE"' called on unexpected immediate object (%p)",
-                     rb_id2str(mid), (void *)recv);
-        }
-        flags = RBASIC(recv)->flags;
-        if (flags == 0) {
-            rb_raise(rb_eNotImpError,
-                     "method `%"PRIsVALUE"' called on terminated object"
-                     " (%p flags=0x%"PRIxVALUE")",
-                     rb_id2str(mid), (void *)recv, flags);
-        }
-        else {
-            int type = BUILTIN_TYPE(recv);
-            const char *typestr = rb_type_str(type);
-            if (typestr && T_OBJECT <= type && type < T_NIL)
-                rb_raise(rb_eNotImpError,
-                         "method `%"PRIsVALUE"' called on hidden %s object"
-                         " (%p flags=0x%"PRIxVALUE")",
-                         rb_id2str(mid), typestr, (void *)recv, flags);
-            if (typestr)
-                rb_raise(rb_eNotImpError,
-                         "method `%"PRIsVALUE"' called on unexpected %s object"
-                         " (%p flags=0x%"PRIxVALUE")",
-                         rb_id2str(mid), typestr, (void *)recv, flags);
-            else
-                rb_raise(rb_eNotImpError,
-                         "method `%"PRIsVALUE"' called on broken T_???" "(0x%02x) object"
-                         " (%p flags=0x%"PRIxVALUE")",
-                         rb_id2str(mid), type, (void *)recv, flags);
-        }
-    }
+    if (!klass) uncallable_object(recv, mid);
     return rb_callable_method_entry(klass, mid);
 }
 
