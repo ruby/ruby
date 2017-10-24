@@ -1648,7 +1648,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
     base_block = toplevel_context(toplevel_binding);
     rb_parser_set_context(parser, base_block, TRUE);
-    rb_parser_set_options(parser, opt->do_print, opt->do_loop, opt->do_line, opt->do_split);
 
     if (opt->e_script) {
 	VALUE progname = rb_progname;
@@ -1673,6 +1672,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	    require_libraries(&opt->req_list);
 	}
         ruby_set_script_name(progname);
+	rb_parser_set_options(parser, opt->do_print, opt->do_loop,
+			      opt->do_line, opt->do_split);
 	tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
     else {
@@ -1885,6 +1886,8 @@ load_file_internal(VALUE argp_v)
     else {
 	enc = rb_utf8_encoding();
     }
+    rb_parser_set_options(parser, opt->do_print, opt->do_loop,
+			  opt->do_line, opt->do_split);
     if (NIL_P(f)) {
 	f = rb_str_new(0, 0);
 	rb_enc_associate(f, enc);
