@@ -470,9 +470,10 @@ rb_type_str(enum ruby_value_type type)
       type_case(T_NODE)
       type_case(T_ICLASS)
       type_case(T_ZOMBIE)
-      default: return NULL;
+      case T_MASK: break;
     }
 #undef type_case
+    return NULL;
 }
 
 NORETURN(static void uncallable_object(VALUE recv, ID mid));
