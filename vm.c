@@ -932,7 +932,7 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     const rb_env_t *env;
     rb_thread_t *th = GET_THREAD();
     const rb_iseq_t *base_iseq, *iseq;
-    NODE *node = 0;
+    NODE *node = 0, tmp_node;
     ID minibuf[4], *dyns = minibuf;
     VALUE idtmp = 0;
 
@@ -945,7 +945,8 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
 
     dyns[0] = dyncount;
     MEMCPY(dyns + 1, dynvars, ID, dyncount);
-    node = NEW_NODE(NODE_SCOPE, dyns, 0, 0);
+    node = &tmp_node;
+    rb_node_init(node, NODE_SCOPE, (VALUE)dyns, 0, 0);
 
     if (base_iseq) {
 	iseq = rb_iseq_new(node, base_iseq->body->location.label, path, realpath, base_iseq, ISEQ_TYPE_EVAL);

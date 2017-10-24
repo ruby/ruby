@@ -3963,11 +3963,14 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	int line = nd_line(node);
 	LABEL *lstart = NEW_LABEL(line);
 	LABEL *lend = NEW_LABEL(line);
-	const rb_iseq_t *rescue = NEW_CHILD_ISEQ(NEW_NIL(),
-						 rb_str_concat(rb_str_new2
-							       ("defined guard in "),
-							       iseq->body->location.label),
-						 ISEQ_TYPE_DEFINED_GUARD, 0);
+	const rb_iseq_t *rescue;
+	NODE tmp_node, *node = &tmp_node;
+	rb_node_init(node, NODE_NIL, 0, 0, 0);
+	rescue = NEW_CHILD_ISEQ(node,
+				rb_str_concat(rb_str_new2
+					      ("defined guard in "),
+					      iseq->body->location.label),
+				ISEQ_TYPE_DEFINED_GUARD, 0);
 	lstart->rescued = LABEL_RESCUE_BEG;
 	lend->rescued = LABEL_RESCUE_END;
 	APPEND_LABEL(ret, lcur, lstart);
