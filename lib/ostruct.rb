@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # = ostruct.rb: OpenStruct implementation
 #
@@ -308,25 +308,20 @@ class OpenStruct
   # Returns a string containing a detailed summary of the keys and values.
   #
   def inspect
-    str = "#<#{self.class}"
-
     ids = (Thread.current[InspectKey] ||= [])
     if ids.include?(object_id)
-      return str << ' ...>'
-    end
-
-    ids << object_id
-    begin
-      first = true
-      for k,v in @table
-        str << "," unless first
-        first = false
-        str << " #{k}=#{v.inspect}"
+      detail = ' ...'
+    else
+      ids << object_id
+      begin
+        detail = @table.map do |key, value|
+          " #{key}=#{value.inspect}"
+        end.join(',')
+      ensure
+        ids.pop
       end
-      return str << '>'
-    ensure
-      ids.pop
     end
+    ['#<', self.class, detail, '>'].join
   end
   alias :to_s :inspect
 

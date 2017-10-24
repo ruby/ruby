@@ -52,12 +52,14 @@ class TC_OpenStruct < Test::Unit::TestCase
     foo.bar = 1
     foo.baz = 2
     assert_equal("#<OpenStruct bar=1, baz=2>", foo.inspect)
+    assert_equal(false, foo.inspect.frozen?)
 
     foo = OpenStruct.new
     foo.bar = OpenStruct.new
     assert_equal('#<OpenStruct bar=#<OpenStruct>>', foo.inspect)
     foo.bar.foo = foo
     assert_equal('#<OpenStruct bar=#<OpenStruct foo=#<OpenStruct ...>>>', foo.inspect)
+    assert_equal(false, foo.inspect.frozen?)
   end
 
   def test_frozen
