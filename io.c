@@ -11856,8 +11856,8 @@ argf_readpartial(int argc, VALUE *argv, VALUE argf)
 
 /*
  *  call-seq:
- *     ARGF.read_nonblock(maxlen)              -> string
- *     ARGF.read_nonblock(maxlen, outbuf)      -> outbuf
+ *     ARGF.read_nonblock(maxlen[, options])              -> string
+ *     ARGF.read_nonblock(maxlen, outbuf[, options])      -> outbuf
  *
  *  Reads at most _maxlen_ bytes from the ARGF stream in non-blocking mode.
  */
