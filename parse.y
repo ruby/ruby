@@ -332,6 +332,12 @@ parser_set_line(NODE *n, int l)
     nd_set_line(n, l);
 }
 
+static inline void
+rb_discard_node(NODE *n)
+{
+    rb_gc_force_recycle((VALUE)n);
+}
+
 #ifndef RIPPER
 static inline void
 set_line_body(NODE *body, int line)
@@ -4565,7 +4571,7 @@ f_arg		: f_arg_item
 			$$ = $1;
 			$$->nd_plen++;
 			$$->nd_next = block_append($$->nd_next, $3->nd_next, @1.first_column);
-			rb_gc_force_recycle((VALUE)$3);
+			rb_discard_node($3);
 		    /*%
 			$$ = rb_ary_push($1, get_value($3));
 		    %*/
@@ -6441,7 +6447,7 @@ parser_peek_variable_name(struct parser_params *parser)
 static inline enum yytokentype
 parser_string_term(struct parser_params *parser, int func)
 {
-    rb_gc_force_recycle((VALUE)lex_strterm);
+    rb_discard_node(lex_strterm);
     lex_strterm = 0;
     if (func & STR_FUNC_REGEXP) {
 	set_yylval_num(regx_options());
@@ -6619,7 +6625,7 @@ parser_heredoc_restore(struct parser_params *parser, NODE *here)
     heredoc_end = ruby_sourceline;
     ruby_sourceline = nd_line(here);
     dispose_string(here->nd_lit);
-    rb_gc_force_recycle((VALUE)here);
+    rb_discard_node(here);
     token_flush(parser);
 }
 
@@ -8979,11 +8985,11 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail, int col
 	if (htype == NODE_STR) {
 	    if (!literal_concat0(parser, lit, tail->nd_lit)) {
 	      error:
-		rb_gc_force_recycle((VALUE)head);
-		rb_gc_force_recycle((VALUE)tail);
+		rb_discard_node(head);
+		rb_discard_node(tail);
 		return 0;
 	    }
-	    rb_gc_force_recycle((VALUE)tail);
+	    rb_discard_node(tail);
 	}
 	else {
 	    list_append(head, tail, column);
@@ -8995,7 +9001,7 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail, int col
 	    if (!literal_concat0(parser, head->nd_lit, tail->nd_lit))
 		goto error;
 	    tail->nd_lit = head->nd_lit;
-	    rb_gc_force_recycle((VALUE)head);
+	    rb_discard_node(head);
 	    head = tail;
 	}
 	else if (NIL_P(tail->nd_lit)) {
@@ -9003,7 +9009,7 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail, int col
 	    head->nd_alen += tail->nd_alen - 1;
 	    head->nd_next->nd_end->nd_next = tail->nd_next;
 	    head->nd_next->nd_end = tail->nd_next->nd_end;
-	    rb_gc_force_recycle((VALUE)tail);
+	    rb_discard_node(tail);
 	}
 	else if (htype == NODE_DSTR && (headlast = head->nd_next->nd_end->nd_head) &&
 		 nd_type(headlast) == NODE_STR) {
@@ -9280,8 +9286,8 @@ new_regexp_gen(struct parser_params *parser, NODE *node, int options, int column
 		    }
 		    rb_str_resize(tail, 0);
 		    prev->nd_next = list->nd_next;
-		    rb_gc_force_recycle((VALUE)list->nd_head);
-		    rb_gc_force_recycle((VALUE)list);
+		    rb_discard_node(list->nd_head);
+		    rb_discard_node(list);
 		    list = prev;
 		}
 		else {
