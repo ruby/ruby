@@ -12,8 +12,10 @@ have_func("uname((struct utsname *)NULL)", headers)
 have_func("getlogin")
 have_func("getpwent")
 have_func("getgrent")
-sysconfdir = RbConfig.expand(RbConfig::CONFIG["sysconfdir"].dup, "prefix"=>"", "DESTDIR"=>"")
-$defs.push("-DSYSCONFDIR=#{Shellwords.escape(sysconfdir.dump)}")
+if (sysconfdir = RbConfig::CONFIG["sysconfdir"] and
+    !RbConfig.expand(sysconfdir.dup, "prefix"=>"", "DESTDIR"=>"").empty?)
+  $defs.push("-DSYSCONFDIR=#{Shellwords.escape(sysconfdir.dump)}")
+end
 
 have_func("sysconf")
 have_func("confstr")
