@@ -2458,6 +2458,22 @@ End
     end)
   end
 
+  def test_puts_old_write
+    capture = String.new
+    def capture.write(str)
+      self << str
+    end
+
+    capture.clear
+    assert_warning(/[.#]write is outdated/) do
+      stdout, $stdout = $stdout, capture
+      puts "hey"
+    ensure
+      $stdout = stdout
+    end
+    assert_equal("hey\n", capture)
+  end
+
   def test_display
     pipe(proc do |w|
       "foo".display(w)
