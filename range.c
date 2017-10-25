@@ -987,11 +987,22 @@ rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp)
 	excl = EXCL(range);
     }
     else {
+	VALUE x;
+#if 0
+	/* TODO: fix spec/mspec/lib/mspec/mocks/mock.rb:Mock.verify_call */
+	b = rb_check_funcall(range, id_beg, 0, 0);
+	if (b == Qundef) return (int)Qfalse;
+	e = rb_check_funcall(range, id_end, 0, 0);
+	if (e == Qundef) return (int)Qfalse;
+#else
 	if (!rb_respond_to(range, id_beg)) return (int)Qfalse;
 	if (!rb_respond_to(range, id_end)) return (int)Qfalse;
 	b = rb_funcall(range, id_beg, 0);
 	e = rb_funcall(range, id_end, 0);
-	excl = RTEST(rb_funcall(range, rb_intern("exclude_end?"), 0));
+#endif
+	x = rb_check_funcall(range, rb_intern("exclude_end?"), 0, 0);
+	if (x == Qundef) return (int)Qfalse;
+	excl = RTEST(x);
     }
     *begp = b;
     *endp = e;
