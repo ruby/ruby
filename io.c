@@ -7640,15 +7640,15 @@ rb_f_puts(int argc, VALUE *argv, VALUE recv)
 void
 rb_p(VALUE obj) /* for debug print within C code */
 {
-    VALUE str = rb_obj_as_string(rb_inspect(obj));
+    VALUE args[2];
+    args[0] = rb_obj_as_string(rb_inspect(obj));
+    args[1] = rb_default_rs;
     if (RB_TYPE_P(rb_stdout, T_FILE) &&
         rb_method_basic_definition_p(CLASS_OF(rb_stdout), id_write)) {
-        io_write(rb_stdout, str, 1);
-        io_write(rb_stdout, rb_default_rs, 0);
+	io_writev(2, args, rb_stdout);
     }
     else {
-        rb_io_write(rb_stdout, str);
-        rb_io_write(rb_stdout, rb_default_rs);
+	rb_io_writev(rb_stdout, 2, args);
     }
 }
 
