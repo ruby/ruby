@@ -4774,6 +4774,7 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const 
 
         LINK_ELEMENT *insn_element = LAST_ELEMENT(pre);
         iobj = (INSN *)get_prev_insn((INSN *)insn_element); /* send insn */
+	ASSUME(iobj);
         ELEM_REMOVE(LAST_ELEMENT(pre));
         ELEM_REMOVE((LINK_ELEMENT *)iobj);
         pre->last = iobj->link.prev;
