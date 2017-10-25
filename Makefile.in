@@ -479,7 +479,7 @@ test-bundled-gems-precheck: $(arch)-fake.rb programs
 yes-test-bundled-gems-prepare: test-bundled-gems-precheck
 	$(Q) $(BASERUBY) $(srcdir)/tool/fetch-bundled_gems.rb $(srcdir)
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-ri --no-rdoc \
-		--install-dir .bundle --conservative 'minitest:~> 5' 'test-unit' 'rake' 'hoe' 'yard' 'packnga'
+		--install-dir .bundle --conservative 'minitest:~> 5' 'test-unit' 'rake' 'hoe' 'yard' 'pry' 'packnga'
 
 test-bundled-gems: $(TEST_RUNNABLE)-test-bundled-gems
 yes-test-bundled-gems: yes-test-bundled-gems-prepare
