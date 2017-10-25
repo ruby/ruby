@@ -236,7 +236,7 @@ module Random::Formatter
   #
   # The result may contain whatever characters are in the source array.
   #
-  #   p SecureRandom.choose([*'l'..'r']) #=> "lmrqpoonmmlqlron"
+  #   p SecureRandom.choose([*'l'..'r'], 16) #=> "lmrqpoonmmlqlron"
   #   p SecureRandom.choose([*'0'..'9'], 5) #=> "27309"
   #
   # If a secure random number generator is not available,
