@@ -2446,6 +2446,7 @@ End
   end
 
   def test_puts_parallel
+    skip "not portable"
     pipe(proc do |w|
       threads = []
       100.times do
