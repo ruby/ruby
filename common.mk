@@ -1519,6 +1519,7 @@ debug.$(OBJEXT): {$(VPATH)}ruby_assert.h
 debug.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 debug.$(OBJEXT): {$(VPATH)}st.h
 debug.$(OBJEXT): {$(VPATH)}subst.h
+debug.$(OBJEXT): {$(VPATH)}symbol.h
 debug.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 debug.$(OBJEXT): {$(VPATH)}thread_native.h
 debug.$(OBJEXT): {$(VPATH)}util.h

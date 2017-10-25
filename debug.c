@@ -15,6 +15,7 @@
 #include "vm_debug.h"
 #include "eval_intern.h"
 #include "vm_core.h"
+#include "symbol.h"
 #include "id.h"
 
 /* for gdb */
@@ -59,6 +60,7 @@ const union {
     } various;
     enum imemo_type             imemo_types;
     enum {RUBY_IMEMO_MASK = IMEMO_MASK} imemo_mask;
+    struct RSymbol *symbol_ptr;
 } ruby_dummy_gdb_enums;
 
 const SIGNED_VALUE RUBY_NODE_LMASK = NODE_LMASK;
