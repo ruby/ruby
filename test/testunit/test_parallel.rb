@@ -34,8 +34,12 @@ module TestParallel
         end
       end
     ensure
-      @worker_in.close
-      @worker_out.close
+      begin
+        @worker_in.close
+        @worker_out.close
+      rescue Errno::EPIPE
+        # may already broken and rescue'ed in above code
+      end
     end
 
     def test_run
