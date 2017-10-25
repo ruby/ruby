@@ -4301,16 +4301,16 @@ rb_ary_or(VALUE ary1, VALUE ary2)
  *  first form assumes all objects implement <code>Comparable</code>;
  *  the second uses the block to return <em>a <=> b</em>.
  *
- *     a = %w(albatross dog horse)
- *     a.max                                   #=> "horse"
- *     a.max { |a, b| a.length <=> b.length }  #=> "albatross"
+ *     ary = %w(albatross dog horse)
+ *     ary.max                                   #=> "horse"
+ *     ary.max { |a, b| a.length <=> b.length }  #=> "albatross"
  *
  *  If the +n+ argument is given, maximum +n+ elements are returned
  *  as an array.
  *
- *     a = %w[albatross dog horse]
- *     a.max(2)                                  #=> ["horse", "dog"]
- *     a.max(2) {|a, b| a.length <=> b.length }  #=> ["albatross", "horse"]
+ *     ary = %w[albatross dog horse]
+ *     ary.max(2)                                  #=> ["horse", "dog"]
+ *     ary.max(2) {|a, b| a.length <=> b.length }  #=> ["albatross", "horse"]
  */
 static VALUE
 rb_ary_max(int argc, VALUE *argv, VALUE ary)
@@ -4356,16 +4356,16 @@ rb_ary_max(int argc, VALUE *argv, VALUE ary)
  *  first form assumes all objects implement <code>Comparable</code>;
  *  the second uses the block to return <em>a <=> b</em>.
  *
- *     a = %w(albatross dog horse)
- *     a.min                                   #=> "albatross"
- *     a.min { |a, b| a.length <=> b.length }  #=> "dog"
+ *     ary = %w(albatross dog horse)
+ *     ary.min                                   #=> "albatross"
+ *     ary.min { |a, b| a.length <=> b.length }  #=> "dog"
  *
  *  If the +n+ argument is given, minimum +n+ elements are returned
  *  as an array.
  *
- *     a = %w[albatross dog horse]
- *     a.min(2)                                  #=> ["albatross", "dog"]
- *     a.min(2) {|a, b| a.length <=> b.length }  #=> ["dog", "horse"]
+ *     ary = %w[albatross dog horse]
+ *     ary.min(2)                                  #=> ["albatross", "dog"]
+ *     ary.min(2) {|a, b| a.length <=> b.length }  #=> ["dog", "horse"]
  */
 static VALUE
 rb_ary_min(int argc, VALUE *argv, VALUE ary)
