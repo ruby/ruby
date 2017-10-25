@@ -1686,6 +1686,16 @@ rb_io_write(VALUE io, VALUE str)
     return rb_funcallv(io, id_write, 1, &str);
 }
 
+static VALUE
+rb_io_writev(VALUE io, int argc, VALUE *argv)
+{
+    if (argc > 1 && rb_obj_method_arity(io, id_write) == 1) {
+	do rb_io_write(io, *argv++); while (--argc);
+	return argv[0];		/* unused right now */
+    }
+    return rb_funcallv(io, id_write, argc, argv);
+}
+
 /*
  *  call-seq:
  *     ios << obj     -> ios
@@ -7572,8 +7582,8 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
 VALUE
 rb_io_puts(int argc, const VALUE *argv, VALUE out)
 {
-    int i;
-    VALUE line;
+    int i, n;
+    VALUE line, args[2];
 
     /* if no argument given, print newline. */
     if (argc == 0) {
@@ -7590,11 +7600,13 @@ rb_io_puts(int argc, const VALUE *argv, VALUE out)
 	}
 	line = rb_obj_as_string(argv[i]);
       string:
-	rb_io_write(out, line);
+	n = 0;
+	args[n++] = line;
 	if (RSTRING_LEN(line) == 0 ||
             !rb_str_end_with_asciichar(line, '\n')) {
-	    rb_io_write(out, rb_default_rs);
+	    args[n++] = rb_default_rs;
 	}
+	rb_io_writev(out, n, args);
     }
 
     return Qnil;
