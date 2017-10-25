@@ -667,16 +667,17 @@ rb_iseq_compile_node(rb_iseq_t *iseq, NODE *node)
 	(*ifunc->func)(iseq, ret, ifunc->data);
     }
     else {
+	const char *m;
+#define INVALID_ISEQ_TYPE(type) \
+	ISEQ_TYPE_##type: m = #type; goto invalid_iseq_type
 	switch (iseq->body->type) {
-	  case ISEQ_TYPE_METHOD:
-	  case ISEQ_TYPE_CLASS:
-	  case ISEQ_TYPE_BLOCK:
-	  case ISEQ_TYPE_EVAL:
-	  case ISEQ_TYPE_MAIN:
-	  case ISEQ_TYPE_TOP:
-	    COMPILE_ERROR(ERROR_ARGS "compile/should not be reached: %s:%d",
-			  __FILE__, __LINE__);
-	    return COMPILE_NG;
+	  case INVALID_ISEQ_TYPE(METHOD);
+	  case INVALID_ISEQ_TYPE(CLASS);
+	  case INVALID_ISEQ_TYPE(BLOCK);
+	  case INVALID_ISEQ_TYPE(EVAL);
+	  case INVALID_ISEQ_TYPE(MAIN);
+	  case INVALID_ISEQ_TYPE(TOP);
+#undef INVALID_ISEQ_TYPE /* invalid iseq types end */
 	  case ISEQ_TYPE_RESCUE:
 	    iseq_set_exception_local_table(iseq);
 	    CHECK(COMPILE(ret, "rescue", node));
@@ -690,7 +691,10 @@ rb_iseq_compile_node(rb_iseq_t *iseq, NODE *node)
 	    CHECK(COMPILE(ret, "defined guard", node));
 	    break;
 	  default:
-	    COMPILE_ERROR(ERROR_ARGS "unknown scope");
+	    COMPILE_ERROR(ERROR_ARGS "unknown scope: %d", iseq->body->type);
+	    return COMPILE_NG;
+	  invalid_iseq_type:
+	    COMPILE_ERROR(ERROR_ARGS "compile/ISEQ_TYPE_%s should not be reached", m);
 	    return COMPILE_NG;
 	}
     }
