@@ -322,7 +322,7 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
 
     while ((ret = open(pathname, flags, mode)) == -1) {
         int e = errno;
-        if (e != EAGAIN && e != EWOULDBLOCK) break;
+        if ((e != EAGAIN) && (e != EWOULDBLOCK)) break;
         if (retry_count++ >= retry_max_count) break;
 
         sleep(retry_interval);
@@ -3082,7 +3082,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
 	    int e = errno;
             if (!nonblock && fptr_wait_readable(fptr))
                 goto again;
-	    if (nonblock && (e == EWOULDBLOCK || e == EAGAIN)) {
+	    if (nonblock && ((e == EWOULDBLOCK) || (e == EAGAIN))) {
                 if (no_exception)
                     return sym_wait_readable;
                 else
@@ -3218,7 +3218,7 @@ io_read_nonblock(rb_execution_context_t *ec, VALUE io, VALUE length, VALUE str, 
         n = read_internal_locktmp(str, &iis);
         if (n < 0) {
 	    int e = errno;
-	    if ((e == EWOULDBLOCK || e == EAGAIN)) {
+	    if ((e == EWOULDBLOCK) || (e == EAGAIN)) {
                 if (!ex) return sym_wait_readable;
 		rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE,
 					 e, "read would block");
@@ -3260,7 +3260,7 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
 
     if (n < 0) {
 	int e = errno;
-	if (e == EWOULDBLOCK || e == EAGAIN) {
+	if ((e == EWOULDBLOCK) || (e == EAGAIN)) {
             if (!ex) {
 		return sym_wait_writable;
 	    }
