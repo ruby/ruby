@@ -163,7 +163,7 @@ module Mock
     end
 
     if sym.to_sym == :respond_to?
-      mock_respond_to? obj, compare
+      mock_respond_to? obj, *args
     else
       SpecExpectation.fail_with("Mock '#{name_or_inspect obj}': method #{sym}\n",
                             "called with unexpected arguments (#{Array(compare).join(' ')})")
