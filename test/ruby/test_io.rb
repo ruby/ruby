@@ -2445,6 +2445,19 @@ End
     end)
   end
 
+  def test_puts_parallel
+    pipe(proc do |w|
+      threads = []
+      100.times do
+        threads << Thread.new { w.puts "hey" }
+      end
+      threads.each(&:join)
+      w.close
+    end, proc do |r|
+      assert_equal("hey\n" * 100, r.read)
+    end)
+  end
+
   def test_display
     pipe(proc do |w|
       "foo".display(w)
