@@ -1131,10 +1131,11 @@ update-gems: PHONY
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -I./tool -rdownloader -answ \
 	    -e 'gem, ver = *$$F' \
-	    -e 'old = Dir.glob("#{gem}-*.gem")' \
+	    -e 'old = Dir.glob("gems/#{gem}-*.gem")' \
 	    -e 'gem = "#{gem}-#{ver}.gem"' \
 	    -e 'Downloader::RubyGems.download(gem, "gems", nil) and' \
-	    -e 'File.unlink(*(old-[gem]))' \
+	    -e 'old.delete("gems/#{gem}") and' \
+	    -e 'File.unlink(*old) and FileUtils.rm_rf(old.map{|n|n.chomp(".gem")})' \
 	    gems/bundled_gems
 
 extract-gems: PHONY
