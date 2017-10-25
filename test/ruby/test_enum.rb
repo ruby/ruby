@@ -966,6 +966,19 @@ class TestEnumerable < Test::Unit::TestCase
     assert_int_equal(5, (2..0).sum(5))
     assert_int_equal(2, (2..2).sum)
     assert_int_equal(42, (2...2).sum(42))
+
+    not_a_range = Class.new do
+      include Enumerable # Defines the `#sum` method
+      def each
+        yield 2
+        yield 4
+        yield 6
+      end
+
+      def begin; end
+      def end; end
+    end
+    assert_equal(12, not_a_range.new.sum)
   end
 
   def test_uniq

@@ -387,7 +387,7 @@ class TestRange < Test::Unit::TestCase
     assert_raise(TypeError) { [][o] }
     class << o; attr_accessor :end end
     o.end = 0
-    assert_raise(NoMethodError) { [][o] }
+    assert_raise(TypeError) { [][o] }
     def o.exclude_end=(v) @exclude_end = v end
     def o.exclude_end?() @exclude_end end
     o.exclude_end = false
