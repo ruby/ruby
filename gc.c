@@ -8118,6 +8118,7 @@ rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
     void *ptr;
 
     s = rb_imemo_new(imemo_alloc, 0, 0, 0, 0);
+    rb_gc_writebarrier_unprotect(s);
     ptr = ruby_xmalloc0(size);
     a = (rb_imemo_alloc_t*)s;
     a->ptr = (VALUE*)ptr;
