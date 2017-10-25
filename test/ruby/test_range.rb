@@ -393,6 +393,9 @@ class TestRange < Test::Unit::TestCase
     o.exclude_end = false
     assert_nil([0][o])
     assert_raise(RangeError) { [0][o] = 1 }
+    class << o
+      private :begin, :end
+    end
     o.begin = 10
     o.end = 10
     assert_nil([0][o])
