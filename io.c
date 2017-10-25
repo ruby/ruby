@@ -1690,6 +1690,13 @@ static VALUE
 rb_io_writev(VALUE io, int argc, VALUE *argv)
 {
     if (argc > 1 && rb_obj_method_arity(io, id_write) == 1) {
+	if (io != rb_stderr && RTEST(ruby_verbose)) {
+	    VALUE klass = CLASS_OF(io);
+	    char sep = FL_TEST(klass, FL_SINGLETON) ? (klass = io, '.') : '#';
+	    rb_warning("%+"PRIsVALUE"%c""write is outdated interface"
+		       " which accepts just one argument",
+		       klass, sep);
+	}
 	do rb_io_write(io, *argv++); while (--argc);
 	return argv[0];		/* unused right now */
     }
