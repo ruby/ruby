@@ -1670,7 +1670,7 @@ rb_nogvl(void *(*func)(void *), void *data1,
     int saved_errno = 0;
     VALUE ubf_th = Qfalse;
 
-    if (ubf == RUBY_UBF_IO || ubf == RUBY_UBF_PROCESS) {
+    if ((ubf == RUBY_UBF_IO) || (ubf == RUBY_UBF_PROCESS)) {
 	ubf = ubf_select;
 	data2 = th;
     }
