@@ -1367,6 +1367,7 @@ vm_assert_env(VALUE obj)
 }
 #endif
 
+RBIMPL_ATTR_NONNULL((1))
 static inline VALUE
 VM_ENV_ENVVAL(const VALUE *ep)
 {
@@ -1376,6 +1377,7 @@ VM_ENV_ENVVAL(const VALUE *ep)
     return envval;
 }
 
+RBIMPL_ATTR_NONNULL((1))
 static inline const rb_env_t *
 VM_ENV_ENVVAL_PTR(const VALUE *ep)
 {

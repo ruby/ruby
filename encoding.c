@@ -496,6 +496,7 @@ set_base_encoding(struct enc_table *enc_table, int index, rb_encoding *base)
 {
     rb_encoding *enc = enc_table->list[index].enc;
 
+    ASSUME(enc);
     enc_table->list[index].base = base;
     if (ENC_DUMMY_P(base)) ENC_SET_DUMMY((rb_raw_encoding *)enc);
     return enc;
@@ -758,7 +759,9 @@ rb_encdb_alias(const char *alias, const char *orig)
 void
 rb_encdb_set_unicode(int index)
 {
-    ((rb_raw_encoding *)rb_enc_from_index(index))->flags |= ONIGENC_FLAG_UNICODE;
+    rb_raw_encoding *enc = (rb_raw_encoding *)rb_enc_from_index(index);
+    ASSUME(enc);
+    enc->flags |= ONIGENC_FLAG_UNICODE;
 }
 
 static void
