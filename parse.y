@@ -11528,7 +11528,7 @@ rb_parser_set_yydebug(VALUE self, VALUE flag)
 #ifndef RIPPER
 #ifdef YYMALLOC
 #define HEAPCNT(n, size) ((n) * (size) / sizeof(YYSTYPE))
-#define NEWHEAP() (rb_imemo_alloc_t *)rb_imemo_new(imemo_alloc, 0, (VALUE)parser->heap, 0, 0)
+#define NEWHEAP() rb_imemo_alloc_new(0, (VALUE)parser->heap, 0, 0)
 #define ADD2HEAP(n, c, p) ((parser->heap = (n))->ptr = (p), \
 			   (n)->cnt = (c), (p))
 
@@ -11538,7 +11538,6 @@ rb_parser_malloc(struct parser_params *parser, size_t size)
     size_t cnt = HEAPCNT(1, size);
     rb_imemo_alloc_t *n = NEWHEAP();
     void *ptr = xmalloc(size);
-    rb_gc_writebarrier_unprotect((VALUE)n);
 
     return ADD2HEAP(n, cnt, ptr);
 }
@@ -11549,7 +11548,6 @@ rb_parser_calloc(struct parser_params *parser, size_t nelem, size_t size)
     size_t cnt = HEAPCNT(nelem, size);
     rb_imemo_alloc_t *n = NEWHEAP();
     void *ptr = xcalloc(nelem, size);
-    rb_gc_writebarrier_unprotect((VALUE)n);
 
     return ADD2HEAP(n, cnt, ptr);
 }
@@ -11571,7 +11569,6 @@ rb_parser_realloc(struct parser_params *parser, void *ptr, size_t size)
     }
     n = NEWHEAP();
     ptr = xrealloc(ptr, size);
-    rb_gc_writebarrier_unprotect((VALUE)n);
     return ADD2HEAP(n, cnt, ptr);
 }
 

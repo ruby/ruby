@@ -8110,20 +8110,25 @@ ruby_mimfree(void *ptr)
     free(mem);
 }
 
+rb_imemo_alloc_t *
+rb_imemo_alloc_new(VALUE v1, VALUE v2, VALUE v3, VALUE v0)
+{
+    VALUE s = rb_imemo_new(imemo_alloc, v1, v2, v3, v0);
+    rb_gc_writebarrier_unprotect(s);
+    return (rb_imemo_alloc_t *)s;
+}
+
 void *
 rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
 {
-    VALUE s;
-    rb_imemo_alloc_t *a;
+    rb_imemo_alloc_t *s;
     void *ptr;
 
-    s = rb_imemo_new(imemo_alloc, 0, 0, 0, 0);
-    rb_gc_writebarrier_unprotect(s);
+    s = rb_imemo_alloc_new(0, 0, 0, 0);
     ptr = ruby_xmalloc0(size);
-    a = (rb_imemo_alloc_t*)s;
-    a->ptr = (VALUE*)ptr;
-    a->cnt = cnt;
-    *store = s;
+    s->ptr = (VALUE*)ptr;
+    s->cnt = cnt;
+    *store = (VALUE)s;
     return ptr;
 }
 
