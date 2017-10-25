@@ -476,8 +476,10 @@ enc/encinit.$(OBJEXT): enc/encinit.c $(SETUP)
 
 test-bundled-gems-precheck: $(arch)-fake.rb programs
 
-yes-test-bundled-gems-prepare: test-bundled-gems-precheck
-	$(Q) $(BASERUBY) $(srcdir)/tool/fetch-bundled_gems.rb $(srcdir)
+test-bundled-gems-fetch: $(PREP)
+	$(Q) $(BASERUBY) -C $(srcdir)/gems ../tool/fetch-bundled_gems.rb src bundled_gems
+
+yes-test-bundled-gems-prepare: test-bundled-gems-precheck test-bundled-gems-fetch
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-ri --no-rdoc \
 		--install-dir .bundle --conservative 'minitest:~> 5' 'test-unit' 'rake' 'hoe' 'yard' 'pry' 'packnga'
 
