@@ -263,7 +263,7 @@ $(CAPIOUT)/.timestamp: Doxyfile $(PREP)
 	$(Q) $(MAKEDIRS) "$(@D)"
 	$(ECHO) generating capi
 	-$(Q) $(DOXYGEN) -b
-	$(Q) $(MINIRUBY) -e 'File.open(ARGV[0], "w"){|f| f.puts(Time.now)}' "$@"
+	$(Q) $(MINIRUBY) -e 'File.open(ARGV[0], "w"){'"|f|"' f.puts(Time.now)}' "$@"
 
 Doxyfile: $(srcdir)/template/Doxyfile.tmpl $(PREP) $(srcdir)/tool/generic_erb.rb $(RBCONFIG)
 	$(ECHO) generating $@
@@ -1135,7 +1135,8 @@ update-gems: PHONY
 	    -e 'gem = "#{gem}-#{ver}.gem"' \
 	    -e 'Downloader::RubyGems.download(gem, "gems", nil) and' \
 	    -e 'old.delete("gems/#{gem}") and' \
-	    -e 'File.unlink(*old) and FileUtils.rm_rf(old.map{|n|n.chomp(".gem")})' \
+	    -e 'File.unlink(*old) and' \
+	    -e 'FileUtils.rm_rf(old.map{'"|n|"'n.chomp(".gem")})' \
 	    gems/bundled_gems
 
 extract-gems: PHONY
@@ -1149,7 +1150,7 @@ extract-gems: PHONY
 update-bundled_gems: PHONY
 	$(Q) $(RUNRUBY) -rrubygems \
 	    -pla \
-	    -e '$$_=Gem::SpecFetcher.fetcher.detect(:latest) {|s|' \
+	    -e '$$_=Gem::SpecFetcher.fetcher.detect(:latest) {'"|s|" \
 	    -e   'if s.platform=="ruby"&&s.name==$$F[0]' \
 	    -e     'break [s.name, s.version, *$$F[2..-1]].join(" ")' \
 	    -e   'end' \
