@@ -1612,11 +1612,10 @@ module Net   #:nodoc:
     private
 
     def addr_port
-      if use_ssl?
-        address() + (port == HTTP.https_default_port ? '' : ":#{port()}")
-      else
-        address() + (port == HTTP.http_default_port ? '' : ":#{port()}")
-      end
+      addr = address
+      addr = "[#{addr}]" if addr.include?(":")
+      default_port = use_ssl? ? HTTP.https_default_port : HTTP.http_default_port
+      default_port == port ? addr : "#{addr}:#{port}"
     end
 
     def D(msg)

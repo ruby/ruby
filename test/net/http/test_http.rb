@@ -59,6 +59,33 @@ class TestNetHTTP < Test::Unit::TestCase
     end
   end
 
+  def test_addr_port
+    http = Net::HTTP.new 'hostname.example', nil, nil
+    addr_port = http.__send__ :addr_port
+    assert_equal 'hostname.example', addr_port
+
+    http.use_ssl = true
+    addr_port = http.__send__ :addr_port
+    assert_equal 'hostname.example:80', addr_port
+
+    http = Net::HTTP.new '203.0.113.1', nil, nil
+    addr_port = http.__send__ :addr_port
+    assert_equal '203.0.113.1', addr_port
+
+    http.use_ssl = true
+    addr_port = http.__send__ :addr_port
+    assert_equal '203.0.113.1:80', addr_port
+
+    http = Net::HTTP.new '2001:db8::1', nil, nil
+    addr_port = http.__send__ :addr_port
+    assert_equal '[2001:db8::1]', addr_port
+
+    http.use_ssl = true
+    addr_port = http.__send__ :addr_port
+    assert_equal '[2001:db8::1]:80', addr_port
+
+  end
+
   def test_edit_path
     http = Net::HTTP.new 'hostname.example', nil, nil
 
