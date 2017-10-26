@@ -87,7 +87,7 @@ vm_call0_cfunc_with_frame(rb_thread_t* th, struct rb_calling_info *calling, cons
 
 	CHECK_CFP_CONSISTENCY("vm_call0_cfunc_with_frame");
 	VM_PROFILE_UP(C2C_POPF);
-	rb_vm_pop_frame(th);
+	rb_vm_pop_frame(th->ec);
     }
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, me->def->original_id, mid, me->owner, val);
     RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, me->owner, me->def->original_id);

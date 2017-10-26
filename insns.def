@@ -996,7 +996,7 @@ leave
 
     RUBY_VM_CHECK_INTS(th);
 
-    if (vm_pop_frame(th, GET_CFP(), GET_EP())) {
+    if (vm_pop_frame(th->ec, GET_CFP(), GET_EP())) {
 #if OPT_CALL_THREADED_CODE
 	th->retval = val;
 	return 0;
