@@ -345,7 +345,7 @@ rb_vm_env_write(const VALUE *ep, int index, VALUE v)
 }
 
 VALUE
-rb_vm_bh_to_procval(rb_thread_t *th, VALUE block_handler)
+rb_vm_bh_to_procval(rb_execution_context_t *ec, VALUE block_handler)
 {
     if (block_handler == VM_BLOCK_HANDLER_NONE) {
 	return Qnil;
@@ -354,7 +354,7 @@ rb_vm_bh_to_procval(rb_thread_t *th, VALUE block_handler)
 	switch (vm_block_handler_type(block_handler)) {
 	  case block_handler_type_iseq:
 	  case block_handler_type_ifunc:
-	    return rb_vm_make_proc(th->ec, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc);
+	    return rb_vm_make_proc(ec, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc);
 	  case block_handler_type_symbol:
 	    return rb_sym_to_proc(VM_BH_TO_SYMBOL(block_handler));
 	  case block_handler_type_proc:

@@ -95,7 +95,7 @@ getblockparam
     VM_ASSERT(VM_ENV_LOCAL_P(ep));
 
     if (!VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM)) {
-	val = rb_vm_bh_to_procval(th, VM_ENV_BLOCK_HANDLER(ep));
+	val = rb_vm_bh_to_procval(th->ec, VM_ENV_BLOCK_HANDLER(ep));
 	vm_env_write(ep, -(int)idx, val);
 	VM_ENV_FLAGS_SET(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM);
     }
