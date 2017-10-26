@@ -1182,16 +1182,16 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
     dbg_context.backtrace_size = RARRAY_LEN(dbg_context.backtrace);
     dbg_context.contexts = collect_caller_bindings(th);
 
-    TH_PUSH_TAG(th);
+    EC_PUSH_TAG(th->ec);
     if ((state = EXEC_TAG()) == TAG_NONE) {
 	result = (*func)(&dbg_context, data);
     }
-    TH_POP_TAG();
+    EC_POP_TAG();
 
     /* invalidate bindings? */
 
     if (state) {
-	TH_JUMP_TAG(th, state);
+	EC_JUMP_TAG(th->ec, state);
     }
 
     return result;

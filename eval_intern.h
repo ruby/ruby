@@ -128,24 +128,24 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
       rb_fiber_start(); \
   } while (0)
 
-#define TH_PUSH_TAG(th) do { \
-  rb_thread_t * const _th = (th); \
+#define EC_PUSH_TAG(ec) do { \
+  rb_execution_context_t * const _ec = (ec); \
   struct rb_vm_tag _tag; \
   _tag.state = TAG_NONE; \
   _tag.tag = Qundef; \
-  _tag.prev = _th->ec->tag;
+  _tag.prev = _ec->tag;
 
-#define TH_POP_TAG() \
-  _th->ec->tag = _tag.prev; \
+#define EC_POP_TAG() \
+  _ec->tag = _tag.prev; \
 } while (0)
 
-#define TH_TMPPOP_TAG() \
-  _th->ec->tag = _tag.prev
+#define EC_TMPPOP_TAG() \
+  _ec->tag = _tag.prev
 
-#define TH_REPUSH_TAG() (void)(_th->ec->tag = &_tag)
+#define EC_REPUSH_TAG() (void)(_ec->tag = &_tag)
 
-#define PUSH_TAG() TH_PUSH_TAG(GET_THREAD())
-#define POP_TAG()      TH_POP_TAG()
+#define PUSH_TAG() EC_PUSH_TAG(GET_EC())
+#define POP_TAG()  EC_POP_TAG()
 
 #if defined __GNUC__ && __GNUC__ == 4 && (__GNUC_MINOR__ >= 6 && __GNUC_MINOR__ <= 8)
 # define VAR_FROM_MEMORY(var) __extension__(*(__typeof__(var) volatile *)&(var))
@@ -176,34 +176,34 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 
 /* clear th->ec->tag->state, and return the value */
 static inline int
-rb_threadptr_tag_state(rb_thread_t *th)
+rb_threadptr_tag_state(const rb_execution_context_t *ec)
 {
-    enum ruby_tag_type state = th->ec->tag->state;
-    th->ec->tag->state = TAG_NONE;
+    enum ruby_tag_type state = ec->tag->state;
+    ec->tag->state = TAG_NONE;
     return state;
 }
 
-NORETURN(static inline void rb_threadptr_tag_jump(rb_thread_t *, enum ruby_tag_type st));
+NORETURN(static inline void rb_ec_tag_jump(rb_execution_context_t *ec, enum ruby_tag_type st));
 static inline void
-rb_threadptr_tag_jump(rb_thread_t *th, enum ruby_tag_type st)
+rb_ec_tag_jump(rb_execution_context_t *ec, enum ruby_tag_type st)
 {
-    th->ec->tag->state = st;
-    ruby_longjmp(th->ec->tag->buf, 1);
+    ec->tag->state = st;
+    ruby_longjmp(ec->tag->buf, 1);
 }
 
 /*
   setjmp() in assignment expression rhs is undefined behavior
   [ISO/IEC 9899:1999] 7.13.1.1
 */
-#define TH_EXEC_TAG() \
-    (ruby_setjmp(_tag.buf) ? rb_threadptr_tag_state(VAR_FROM_MEMORY(_th)) : (TH_REPUSH_TAG(), 0))
+#define EC_EXEC_TAG() \
+    (ruby_setjmp(_tag.buf) ? rb_threadptr_tag_state(VAR_FROM_MEMORY(_ec)) : (EC_REPUSH_TAG(), 0))
 
 #define EXEC_TAG() \
-  TH_EXEC_TAG()
+  EC_EXEC_TAG()
 
-#define TH_JUMP_TAG(th, st) rb_threadptr_tag_jump(th, st)
+#define EC_JUMP_TAG(ec, st) rb_ec_tag_jump(ec, st)
 
-#define JUMP_TAG(st) TH_JUMP_TAG(GET_THREAD(), (st))
+#define JUMP_TAG(st) EC_JUMP_TAG(GET_EC(), (st))
 
 #define INTERNAL_EXCEPTION_P(exc) FIXNUM_P(exc)
 

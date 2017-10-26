@@ -285,11 +285,11 @@ exec_hooks_protected(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t
 
     /* TODO: Support !RUBY_EVENT_HOOK_FLAG_SAFE hooks */
 
-    TH_PUSH_TAG(th);
-    if ((state = TH_EXEC_TAG()) == TAG_NONE) {
+    EC_PUSH_TAG(th->ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	exec_hooks_body(th, list, trace_arg);
     }
-    TH_POP_TAG();
+    EC_POP_TAG();
 
     if (raised) {
 	rb_threadptr_set_raised(th);
@@ -354,7 +354,7 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 		    }
 		    rb_vm_pop_frame(th->ec);
 		}
-		TH_JUMP_TAG(th, state);
+		EC_JUMP_TAG(th->ec, state);
 	    }
 	}
     }
@@ -388,11 +388,11 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
 
     raised = rb_threadptr_reset_raised(th);
 
-    TH_PUSH_TAG(th);
-    if ((state = TH_EXEC_TAG()) == TAG_NONE) {
+    EC_PUSH_TAG(th->ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	result = (*func)(arg);
     }
-    TH_POP_TAG();
+    EC_POP_TAG();
 
     if (raised) {
 	rb_threadptr_set_raised(th);
@@ -405,7 +405,7 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
 #if defined RUBY_USE_SETJMPEX && RUBY_USE_SETJMPEX
 	RB_GC_GUARD(result);
 #endif
-	TH_JUMP_TAG(th, state);
+	EC_JUMP_TAG(th->ec, state);
     }
 
     return result;
@@ -1600,7 +1600,7 @@ rb_postponed_job_flush(rb_vm_t *vm)
     /* mask POSTPONED_JOB dispatch */
     th->interrupt_mask |= block_mask;
     {
-	TH_PUSH_TAG(th);
+	EC_PUSH_TAG(th->ec);
 	if (EXEC_TAG() == TAG_NONE) {
 	    int index;
 	    while ((index = vm->postponed_job_index) > 0) {
@@ -1610,7 +1610,7 @@ rb_postponed_job_flush(rb_vm_t *vm)
 		}
 	    }
 	}
-	TH_POP_TAG();
+	EC_POP_TAG();
     }
     /* restore POSTPONED_JOB mask */
     th->interrupt_mask &= ~(saved_mask ^ block_mask);

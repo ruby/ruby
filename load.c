@@ -599,7 +599,7 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 	rb_extend_object(th->top_self, th->top_wrapper);
     }
 
-    TH_PUSH_TAG(th);
+    EC_PUSH_TAG(th->ec);
     state = EXEC_TAG();
     if (state == TAG_NONE) {
 	NODE *node;
@@ -617,7 +617,7 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 	}
 	rb_iseq_eval(iseq);
     }
-    TH_POP_TAG();
+    EC_POP_TAG();
 
 #if !defined __GNUC__
     th = th0;
@@ -649,7 +649,7 @@ rb_load_internal(VALUE fname, int wrap)
     int state = rb_load_internal0(curr_th, fname, wrap);
     if (state) {
 	if (state == TAG_RAISE) rb_exc_raise(curr_th->ec->errinfo);
-	TH_JUMP_TAG(curr_th, state);
+	EC_JUMP_TAG(curr_th->ec, state);
     }
 }
 
@@ -975,7 +975,7 @@ rb_require_internal(VALUE fname, int safe)
     path = rb_str_encode_ospath(fname);
     RUBY_DTRACE_HOOK(REQUIRE_ENTRY, RSTRING_PTR(fname));
 
-    TH_PUSH_TAG(th);
+    EC_PUSH_TAG(th->ec);
     saved.safe = rb_safe_level();
     if ((state = EXEC_TAG()) == TAG_NONE) {
 	long handle;
@@ -1014,7 +1014,7 @@ rb_require_internal(VALUE fname, int safe)
 	    }
 	}
     }
-    TH_POP_TAG();
+    EC_POP_TAG();
     load_unlock(ftptr, !state);
 
     rb_set_safe_level_force(saved.safe);

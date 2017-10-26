@@ -2114,16 +2114,16 @@ call_method_data_safe(rb_thread_t *th, const struct METHOD *data,
     VALUE result = Qnil;	/* OK */
     enum ruby_tag_type state;
 
-    TH_PUSH_TAG(th);
-    if ((state = TH_EXEC_TAG()) == TAG_NONE) {
+    EC_PUSH_TAG(th->ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	/* result is used only if state == 0, no exceptions is caught. */
 	/* otherwise it doesn't matter even if clobbered. */
 	NO_CLOBBERED(result) = call_method_data(th, data, argc, argv, passed_procval);
     }
-    TH_POP_TAG();
+    EC_POP_TAG();
     rb_set_safe_level_force(safe);
     if (state)
-	TH_JUMP_TAG(th, state);
+	EC_JUMP_TAG(th->ec, state);
     return result;
 }
 

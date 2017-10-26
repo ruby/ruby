@@ -686,7 +686,7 @@ enum rb_thread_status {
 typedef RUBY_JMP_BUF rb_jmpbuf_t;
 
 /*
-  the members which are written in TH_PUSH_TAG() should be placed at
+  the members which are written in EC_PUSH_TAG() should be placed at
   the beginning and the end, so that entire region is accessible.
 */
 struct rb_vm_tag {

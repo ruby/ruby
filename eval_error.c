@@ -174,8 +174,8 @@ rb_threadptr_error_print(rb_thread_t *volatile th, volatile VALUE errinfo)
 	return;
     rb_thread_raised_clear(th);
 
-    TH_PUSH_TAG(th);
-    if (TH_EXEC_TAG() == TAG_NONE) {
+    EC_PUSH_TAG(th->ec);
+    if (EC_EXEC_TAG() == TAG_NONE) {
 	errat = rb_get_backtrace(errinfo);
     }
     else if (errat == Qundef) {
@@ -201,7 +201,7 @@ rb_threadptr_error_print(rb_thread_t *volatile th, volatile VALUE errinfo)
 	print_backtrace(eclass, errat, FALSE);
     }
   error:
-    TH_POP_TAG();
+    EC_POP_TAG();
     th->ec->errinfo = errinfo;
     rb_thread_raised_set(th, raised_flag);
 }

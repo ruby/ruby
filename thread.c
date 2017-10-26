@@ -490,8 +490,8 @@ rb_thread_terminate_all(void)
     /* unlock all locking mutexes */
     rb_threadptr_unlock_all_locking_mutexes(th);
 
-    TH_PUSH_TAG(th);
-    if (TH_EXEC_TAG() == TAG_NONE) {
+    EC_PUSH_TAG(th->ec);
+    if (EC_EXEC_TAG() == TAG_NONE) {
       retry:
 	thread_debug("rb_thread_terminate_all (main thread: %p)\n", (void *)th);
 	terminate_all(vm, th);
@@ -518,7 +518,7 @@ rb_thread_terminate_all(void)
 	    goto retry;
 	}
     }
-    TH_POP_TAG();
+    EC_POP_TAG();
 }
 
 static void
@@ -625,7 +625,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	thread_debug("thread start (get lock): %p\n", (void *)th);
 	rb_thread_set_current(th);
 
-	TH_PUSH_TAG(th);
+	EC_PUSH_TAG(th->ec);
 	if ((state = EXEC_TAG()) == TAG_NONE) {
 	    SAVE_ROOT_JMPBUF(th, thread_do_start(th, args));
 	}
@@ -666,7 +666,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    /* treat with normal error object */
 	    rb_threadptr_raise(main_th, 1, &errinfo);
 	}
-	TH_POP_TAG();
+	EC_POP_TAG();
 
 	/* locking_mutex must be Qfalse */
 	if (th->locking_mutex != Qfalse) {
@@ -1445,20 +1445,20 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
     wfd.th = th;
     list_add(&vm->waiting_fds, &wfd.wfd_node);
 
-    TH_PUSH_TAG(th);
+    EC_PUSH_TAG(th->ec);
     if ((state = EXEC_TAG()) == TAG_NONE) {
 	BLOCKING_REGION({
 	    val = func(data1);
 	    saved_errno = errno;
 	}, ubf_select, th, FALSE);
     }
-    TH_POP_TAG();
+    EC_POP_TAG();
 
     /* must be deleted before jump */
     list_del(&wfd.wfd_node);
 
     if (state) {
-	TH_JUMP_TAG(th, state);
+	EC_JUMP_TAG(th->ec, state);
     }
     /* TODO: check func() */
     RUBY_VM_CHECK_INTS_BLOCKING(th);
@@ -1878,11 +1878,11 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
 	RUBY_VM_SET_INTERRUPT(th);
     }
 
-    TH_PUSH_TAG(th);
+    EC_PUSH_TAG(th->ec);
     if ((state = EXEC_TAG()) == TAG_NONE) {
 	r = rb_yield(Qnil);
     }
-    TH_POP_TAG();
+    EC_POP_TAG();
 
     rb_ary_pop(th->pending_interrupt_mask_stack);
     if (!rb_threadptr_pending_interrupt_empty_p(th)) {
@@ -1893,7 +1893,7 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
     RUBY_VM_CHECK_INTS(th);
 
     if (state) {
-	TH_JUMP_TAG(th, state);
+	EC_JUMP_TAG(th->ec, state);
     }
 
     return r;
@@ -2008,7 +2008,7 @@ rb_threadptr_to_kill(rb_thread_t *th)
     th->status = THREAD_RUNNABLE;
     th->to_kill = 1;
     th->ec->errinfo = INT2FIX(TAG_FATAL);
-    TH_JUMP_TAG(th, TAG_FATAL);
+    EC_JUMP_TAG(th->ec, TAG_FATAL);
 }
 
 static inline rb_atomic_t

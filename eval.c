@@ -169,7 +169,7 @@ ruby_cleanup(volatile int ex)
 
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
-    TH_PUSH_TAG(th);
+    EC_PUSH_TAG(th->ec);
     if ((state = EXEC_TAG()) == TAG_NONE) {
 	SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(th); });
 
@@ -224,7 +224,7 @@ ruby_cleanup(volatile int ex)
 
     /* unlock again if finalizer took mutexes. */
     rb_threadptr_unlock_all_locking_mutexes(GET_THREAD());
-    TH_POP_TAG();
+    EC_POP_TAG();
     rb_thread_stop_timer_thread();
     ruby_vm_destruct(GET_VM());
     if (state) ruby_default_signal(state);
@@ -241,13 +241,13 @@ ruby_exec_internal(void *n)
 
     if (!n) return 0;
 
-    TH_PUSH_TAG(th);
+    EC_PUSH_TAG(th->ec);
     if ((state = EXEC_TAG()) == TAG_NONE) {
 	SAVE_ROOT_JMPBUF(th, {
 	    rb_iseq_eval_main(iseq);
 	});
     }
-    TH_POP_TAG();
+    EC_POP_TAG();
     return state;
 }
 
@@ -479,7 +479,7 @@ exc_setup_message(rb_thread_t *th, VALUE mesg, VALUE *cause)
 
     if (NIL_P(mesg)) {
 	mesg = th->ec->errinfo;
-	if (INTERNAL_EXCEPTION_P(mesg)) TH_JUMP_TAG(th, TAG_FATAL);
+	if (INTERNAL_EXCEPTION_P(mesg)) EC_JUMP_TAG(th->ec, TAG_FATAL);
 	nocause = 1;
     }
     if (NIL_P(mesg)) {
@@ -508,7 +508,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
     if ((file && !NIL_P(mesg)) || (cause != Qundef))  {
 	volatile int state = 0;
 
-	TH_PUSH_TAG(th);
+	EC_PUSH_TAG(th->ec);
 	if (EXEC_TAG() == TAG_NONE && !(state = rb_threadptr_set_raised(th))) {
 	    VALUE bt = rb_get_backtrace(mesg);
 	    if (!NIL_P(bt) || cause == Qundef) {
@@ -526,7 +526,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	    }
 	    rb_threadptr_reset_raised(th);
 	}
-	TH_POP_TAG();
+	EC_POP_TAG();
 	if (state) goto fatal;
     }
 
@@ -539,7 +539,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	enum ruby_tag_type state;
 
 	mesg = e;
-	TH_PUSH_TAG(th);
+	EC_PUSH_TAG(th->ec);
 	if ((state = EXEC_TAG()) == TAG_NONE) {
 	    th->ec->errinfo = Qnil;
 	    e = rb_obj_as_string(mesg);
@@ -558,13 +558,13 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	    }
 	    warn_print_str(e);
 	}
-	TH_POP_TAG();
+	EC_POP_TAG();
 	if (state == TAG_FATAL && th->ec->errinfo == exception_error) {
 	    th->ec->errinfo = mesg;
 	}
 	else if (state) {
 	    rb_threadptr_reset_raised(th);
-	    TH_JUMP_TAG(th, state);
+	    EC_JUMP_TAG(th->ec, state);
 	}
     }
 
@@ -572,7 +572,7 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
       fatal:
 	th->ec->errinfo = exception_error;
 	rb_threadptr_reset_raised(th);
-	TH_JUMP_TAG(th, TAG_FATAL);
+	EC_JUMP_TAG(th->ec, TAG_FATAL);
     }
 
     if (tag != TAG_FATAL) {
@@ -599,7 +599,7 @@ rb_longjmp(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
     mesg = exc_setup_message(th, mesg, &cause);
     setup_exception(th, tag, mesg, cause);
     rb_thread_raised_clear(th);
-    TH_JUMP_TAG(th, tag);
+    EC_JUMP_TAG(th->ec, tag);
 }
 
 static VALUE make_exception(int argc, const VALUE *argv, int isstr);
@@ -902,8 +902,8 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
     volatile VALUE e_info = th->ec->errinfo;
     va_list args;
 
-    TH_PUSH_TAG(th);
-    if ((state = TH_EXEC_TAG()) == TAG_NONE) {
+    EC_PUSH_TAG(th->ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
       retry_entry:
 	result = (*b_proc) (data1);
     }
@@ -942,9 +942,9 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 	    }
 	}
     }
-    TH_POP_TAG();
+    EC_POP_TAG();
     if (state)
-	TH_JUMP_TAG(th, state);
+	EC_JUMP_TAG(th->ec, state);
 
     return result;
 }
@@ -1000,10 +1000,10 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
 
     protect_tag.prev = th->ec->protect_tag;
 
-    TH_PUSH_TAG(th);
+    EC_PUSH_TAG(th->ec);
     th->ec->protect_tag = &protect_tag;
     MEMCPY(&org_jmpbuf, &(th)->root_jmpbuf, rb_jmpbuf_t, 1);
-    if ((state = TH_EXEC_TAG()) == TAG_NONE) {
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	SAVE_ROOT_JMPBUF(th, result = (*proc) (data));
     }
     else {
@@ -1011,7 +1011,7 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
     }
     MEMCPY(&(th)->root_jmpbuf, &org_jmpbuf, rb_jmpbuf_t, 1);
     th->ec->protect_tag = protect_tag.prev;
-    TH_POP_TAG();
+    EC_POP_TAG();
 
     if (pstate != NULL) *pstate = state;
     return result;
@@ -1044,11 +1044,11 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
     ensure_list.entry.data2 = data2;
     ensure_list.next = th->ec->ensure_list;
     th->ec->ensure_list = &ensure_list;
-    TH_PUSH_TAG(th);
+    EC_PUSH_TAG(th->ec);
     if ((state = EXEC_TAG()) == TAG_NONE) {
 	result = (*b_proc) (data1);
     }
-    TH_POP_TAG();
+    EC_POP_TAG();
     errinfo = th->ec->errinfo;
     if (!NIL_P(errinfo) && !RB_TYPE_P(errinfo, T_OBJECT)) {
 	th->ec->errinfo = Qnil;
@@ -1057,7 +1057,7 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
     (*ensure_list.entry.e_proc)(ensure_list.entry.data2);
     th->ec->errinfo = errinfo;
     if (state)
-	TH_JUMP_TAG(th, state);
+	EC_JUMP_TAG(th->ec, state);
     return result;
 }
 
