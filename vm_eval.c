@@ -851,7 +851,7 @@ static VALUE *
 current_vm_stack_arg(rb_thread_t *th, const VALUE *argv)
 {
     rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->ec->cfp);
-    if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, prev_cfp)) return NULL;
+    if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th->ec, prev_cfp)) return NULL;
     if (prev_cfp->sp + 1 != argv) return NULL;
     return prev_cfp->sp + 1;
 }
@@ -1296,7 +1296,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	    base_block = &bind->block;
 	}
 	else {
-	    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec->cfp);
+	    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th->ec, th->ec->cfp);
 
 	    if (cfp != 0) {
 		block.as.captured = *VM_CFP_TO_CAPTURED_BLOCK(cfp);
@@ -1340,7 +1340,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 
 	/* save new env */
 	if (bind && iseq->body->local_table_size > 0) {
-	    vm_bind_update_env(scope, bind, vm_make_env_object(th, th->ec->cfp));
+	    vm_bind_update_env(scope, bind, vm_make_env_object(th->ec, th->ec->cfp));
 	}
     }
 

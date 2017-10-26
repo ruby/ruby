@@ -369,7 +369,7 @@ rb_vm_bh_to_procval(rb_thread_t *th, VALUE block_handler)
 	switch (vm_block_handler_type(block_handler)) {
 	  case block_handler_type_iseq:
 	  case block_handler_type_ifunc:
-	    return rb_vm_make_proc(th, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc);
+	    return rb_vm_make_proc(th->ec, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc);
 	  case block_handler_type_symbol:
 	    return rb_sym_to_proc(VM_BH_TO_SYMBOL(block_handler));
 	  case block_handler_type_proc:
@@ -1085,7 +1085,7 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 	       const int flag, const rb_num_t level, const VALUE throwobj)
 {
     const rb_control_frame_t *escape_cfp = NULL;
-    const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(th); /* end of control frame pointer */
+    const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(th->ec); /* end of control frame pointer */
 
     if (flag != 0) {
 	/* do nothing */
@@ -2160,7 +2160,7 @@ current_method_entry(rb_thread_t *th, rb_control_frame_t *cfp)
 
 	do {
 	    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-	    if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {
+	    if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th->ec, cfp)) {
 		/* TODO: orphan block */
 		return top_cfp;
 	    }
@@ -2528,7 +2528,7 @@ vm_block_handler_to_proc(rb_thread_t *th, VALUE block_handler)
 	    break;
 	  case block_handler_type_iseq:
 	  case block_handler_type_ifunc:
-	    blockarg = rb_vm_make_proc(th, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc);
+	    blockarg = rb_vm_make_proc(th->ec, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc);
 	    break;
 	}
     }
@@ -2772,8 +2772,8 @@ vm_invoke_block(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb_calling_
 static VALUE
 vm_make_proc_with_iseq(const rb_iseq_t *blockiseq)
 {
-    rb_thread_t *th = GET_THREAD();
-    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec->cfp);
+    const rb_execution_context_t *ec = GET_EC();
+    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
     struct rb_captured_block *captured;
 
     if (cfp == 0) {
@@ -2783,7 +2783,7 @@ vm_make_proc_with_iseq(const rb_iseq_t *blockiseq)
     captured = VM_CFP_TO_CAPTURED_BLOCK(cfp);
     captured->code.iseq = blockiseq;
 
-    return rb_vm_make_proc(th, captured, rb_cProc);
+    return rb_vm_make_proc(ec, captured, rb_cProc);
 }
 
 static VALUE

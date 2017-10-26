@@ -735,7 +735,7 @@ static void
 fill_path_and_lineno(rb_trace_arg_t *trace_arg)
 {
     if (trace_arg->path == Qundef) {
-	rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(trace_arg->th, trace_arg->cfp);
+	rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(trace_arg->th->ec, trace_arg->cfp);
 
 	if (cfp) {
 	    trace_arg->path = rb_iseq_path(cfp->iseq);
