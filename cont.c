@@ -83,8 +83,8 @@ enum context_type {
 struct cont_saved_vm_stack {
     VALUE *ptr;
 #ifdef CAPTURE_JUST_VALID_VM_STACK
-    size_t slen;  /* length of stack (head of th->ec->vm_stack) */
-    size_t clen;  /* length of control frames (tail of th->ec->vm_stack) */
+    size_t slen;  /* length of stack (head of ec->vm_stack) */
+    size_t clen;  /* length of control frames (tail of ec->vm_stack) */
 #endif
 };
 
