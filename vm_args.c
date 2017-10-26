@@ -477,7 +477,7 @@ static inline void
 args_setup_block_parameter(rb_thread_t *th, struct rb_calling_info *calling, VALUE *locals)
 {
     VALUE block_handler = calling->block_handler;
-    *locals = rb_vm_bh_to_procval(th, block_handler);
+    *locals = rb_vm_bh_to_procval(th->ec, block_handler);
 }
 
 struct fill_values_arg {

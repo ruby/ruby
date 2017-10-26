@@ -384,8 +384,6 @@ bind_eval(int argc, VALUE *argv, VALUE bindval)
     return rb_f_eval(argc+1, args, Qnil /* self will be searched in eval */);
 }
 
-VALUE rb_vm_bh_to_procval(rb_thread_t *th, VALUE block_handler);
-
 static const VALUE *
 get_local_variable_ptr(const rb_env_t **envp, ID lid)
 {
@@ -404,7 +402,7 @@ get_local_variable_ptr(const rb_env_t **envp, ID lid)
 			(unsigned int)iseq->body->param.block_start == i) {
 			const VALUE *ep = env->ep;
 			if (!VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM)) {
-			    RB_OBJ_WRITE(env, &env->env[i], rb_vm_bh_to_procval(GET_THREAD(), VM_ENV_BLOCK_HANDLER(ep)));
+			    RB_OBJ_WRITE(env, &env->env[i], rb_vm_bh_to_procval(GET_EC(), VM_ENV_BLOCK_HANDLER(ep)));
 			    VM_ENV_FLAGS_SET(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM);
 			}
 		    }
