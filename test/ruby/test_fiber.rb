@@ -184,6 +184,7 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_fiber_transfer_segv
+    skip
     assert_normal_exit %q{
       require 'fiber'
       f2 = nil
