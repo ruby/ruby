@@ -706,7 +706,7 @@ tpptr(VALUE tpval)
 static rb_trace_arg_t *
 get_trace_arg(void)
 {
-    rb_trace_arg_t *trace_arg = GET_THREAD()->ec->trace_arg;
+    rb_trace_arg_t *trace_arg = GET_EC()->trace_arg;
     if (trace_arg == 0) {
 	rb_raise(rb_eRuntimeError, "access from outside");
     }
@@ -1310,7 +1310,7 @@ static VALUE
 tracepoint_inspect(VALUE self)
 {
     rb_tp_t *tp = tpptr(self);
-    rb_trace_arg_t *trace_arg = GET_THREAD()->ec->trace_arg;
+    rb_trace_arg_t *trace_arg = GET_EC()->trace_arg;
 
     if (trace_arg) {
 	switch (trace_arg->event) {

@@ -1480,7 +1480,7 @@ extern void rb_vmdebug_stack_dump_raw(rb_thread_t *, rb_control_frame_t *);
 extern void rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp, const VALUE *_pc);
 extern void rb_vmdebug_debug_print_post(rb_thread_t *th, rb_control_frame_t *cfp);
 
-#define SDR() rb_vmdebug_stack_dump_raw(GET_THREAD(), GET_THREAD()->ec->cfp)
+#define SDR() rb_vmdebug_stack_dump_raw(GET_THREAD(), GET_EC()->cfp)
 #define SDR2(cfp) rb_vmdebug_stack_dump_raw(GET_THREAD(), (cfp))
 void rb_vm_bugreport(const void *);
 NORETURN(void rb_bug_context(const void *, const char *fmt, ...));

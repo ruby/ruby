@@ -1539,8 +1539,8 @@ vm_base_ptr(const rb_control_frame_t *cfp)
 #if VM_DEBUG_BP_CHECK
 	if (bp != cfp->bp_check) {
 	    fprintf(stderr, "bp_check: %ld, bp: %ld\n",
-		    (long)(cfp->bp_check - GET_THREAD()->ec->vm_stack),
-		    (long)(bp - GET_THREAD()->ec->vm_stack));
+		    (long)(cfp->bp_check - GET_EC()->vm_stack),
+		    (long)(bp - GET_EC()->vm_stack));
 	    rb_bug("vm_base_ptr: unreachable");
 	}
 #endif

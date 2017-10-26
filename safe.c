@@ -34,13 +34,13 @@ ruby_safe_level_2_warning(void)
 int
 rb_safe_level(void)
 {
-    return GET_THREAD()->ec->safe_level;
+    return GET_EC()->safe_level;
 }
 
 void
 rb_set_safe_level_force(int safe)
 {
-    GET_THREAD()->ec->safe_level = safe;
+    GET_EC()->safe_level = safe;
 }
 
 void

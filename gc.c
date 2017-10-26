@@ -4008,7 +4008,7 @@ ruby_get_stack_grow_direction(volatile VALUE *addr)
 size_t
 ruby_stack_length(VALUE **p)
 {
-    rb_execution_context_t *ec = GET_THREAD()->ec;
+    rb_execution_context_t *ec = GET_EC();
     SET_STACK_END;
     if (p) *p = STACK_UPPER(STACK_END, STACK_START, STACK_END);
     return STACK_LENGTH;

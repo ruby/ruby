@@ -129,7 +129,7 @@ static void
 ruby_finalize_1(void)
 {
     ruby_sig_finalize();
-    GET_THREAD()->ec->errinfo = Qnil;
+    GET_EC()->errinfo = Qnil;
     rb_gc_call_finalizer_at_exit();
 }
 
@@ -1102,7 +1102,7 @@ frame_called_id(rb_control_frame_t *cfp)
 ID
 rb_frame_this_func(void)
 {
-    return frame_func_id(GET_THREAD()->ec->cfp);
+    return frame_func_id(GET_EC()->cfp);
 }
 
 /*!
@@ -1119,7 +1119,7 @@ rb_frame_this_func(void)
 ID
 rb_frame_callee(void)
 {
-    return frame_called_id(GET_THREAD()->ec->cfp);
+    return frame_called_id(GET_EC()->cfp);
 }
 
 static rb_control_frame_t *
@@ -1794,7 +1794,7 @@ rb_set_errinfo(VALUE err)
     if (!NIL_P(err) && !rb_obj_is_kind_of(err, rb_eException)) {
 	rb_raise(rb_eTypeError, "assigning non-exception to $!");
     }
-    GET_THREAD()->ec->errinfo = err;
+    GET_EC()->errinfo = err;
 }
 
 static VALUE
