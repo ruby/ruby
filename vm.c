@@ -2763,8 +2763,7 @@ core_hash_merge_kwd(int argc, VALUE *argv)
     VALUE hash, kw;
     rb_check_arity(argc, 1, 2);
     hash = argv[0];
-    kw = argv[argc-1];
-    kw = rb_convert_type_with_id(kw, T_HASH, "Hash", idTo_hash);
+    kw = rb_to_hash_type(argv[argc-1]);
     if (argc < 2) hash = kw;
     rb_hash_foreach(kw, argc < 2 ? kwcheck_i : kwmerge_i, hash);
     return hash;

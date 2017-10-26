@@ -7058,7 +7058,7 @@ register_label(rb_iseq_t *iseq, struct st_table *labels_table, VALUE obj)
 {
     LABEL *label = 0;
     st_data_t tmp;
-    obj = rb_convert_type_with_id(obj, T_SYMBOL, "Symbol", idTo_sym);
+    obj = rb_to_symbol_type(obj);
 
     if (st_lookup(labels_table, obj, &tmp) == 0) {
 	label = NEW_LABEL(0);
@@ -7111,8 +7111,7 @@ iseq_build_from_ary_exception(rb_iseq_t *iseq, struct st_table *labels_table,
 	LABEL *lstart, *lend, *lcont;
 	unsigned int sp;
 
-	v = rb_convert_type_with_id(RARRAY_AREF(exception, i), T_ARRAY,
-					 "Array", idTo_ary);
+	v = rb_to_array_type(RARRAY_AREF(exception, i));
 	if (RARRAY_LEN(v) != 6) {
 	    rb_raise(rb_eSyntaxError, "wrong exception entry");
 	}
@@ -7300,7 +7299,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			}
 			break;
 		      case TS_GENTRY:
-			op = rb_convert_type_with_id(op, T_SYMBOL, "Symbol", idTo_sym);
+			op = rb_to_symbol_type(op);
 			argv[j] = (VALUE)rb_global_entry(SYM2ID(op));
 			break;
 		      case TS_IC:
@@ -7316,8 +7315,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			argv[j] = Qfalse;
 			break;
 		      case TS_ID:
-			argv[j] = rb_convert_type_with_id(op, T_SYMBOL,
-						  "Symbol", idTo_sym);
+			argv[j] = rb_to_symbol_type(op);
 			break;
 		      case TS_CDHASH:
 			{
@@ -7325,7 +7323,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			    VALUE map = rb_hash_new_with_size(RARRAY_LEN(op)/2);
 
 			    rb_hash_tbl_raw(map)->type = &cdhash_type;
-			    op = rb_convert_type_with_id(op, T_ARRAY, "Array", idTo_ary);
+			    op = rb_to_array_type(op);
 			    for (i=0; i<RARRAY_LEN(op); i+=2) {
 				VALUE key = RARRAY_AREF(op, i);
 				VALUE sym = RARRAY_AREF(op, i+1);
@@ -7367,8 +7365,8 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
     return iseq_setup(iseq, anchor);
 }
 
-#define CHECK_ARRAY(v)   rb_convert_type_with_id((v), T_ARRAY, "Array", idTo_ary)
-#define CHECK_SYMBOL(v)  rb_convert_type_with_id((v), T_SYMBOL, "Symbol", idTo_sym)
+#define CHECK_ARRAY(v)   rb_to_array_type(v)
+#define CHECK_SYMBOL(v)  rb_to_symbol_type(v)
 
 static int
 int_param(int *dst, VALUE param, VALUE sym)

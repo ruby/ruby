@@ -10166,7 +10166,7 @@ open_key_args(int argc, VALUE *argv, VALUE opt, struct foreach_arg *arg)
 	VALUE args;
 	long n;
 
-	v = rb_convert_type_with_id(v, T_ARRAY, "Array", idTo_ary);
+	v = rb_to_array_type(v);
 	n = RARRAY_LEN(v) + 1;
 #if SIZEOF_LONG > SIZEOF_INT
 	if (n > INT_MAX) {

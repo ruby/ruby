@@ -641,11 +641,12 @@ rb_assoc_new(VALUE car, VALUE cdr)
     return rb_ary_new3(2, car, cdr);
 }
 
-static VALUE
-to_ary(VALUE ary)
+VALUE
+rb_to_array_type(VALUE ary)
 {
     return rb_convert_type_with_id(ary, T_ARRAY, "Array", idTo_ary);
 }
+#define to_ary rb_to_array_type
 
 VALUE
 rb_check_array_type(VALUE ary)
