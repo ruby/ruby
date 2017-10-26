@@ -2017,6 +2017,13 @@ rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0)
     return newobj_of(v0, flags, v1, v2, v3, TRUE);
 }
 
+rb_imemo_alloc_t *
+rb_imemo_alloc_new(VALUE v1, VALUE v2, VALUE v3, VALUE v0)
+{
+    VALUE flags = T_IMEMO | (imemo_alloc << FL_USHIFT);
+    return (rb_imemo_alloc_t *)newobj_of(v0, flags, v1, v2, v3, FALSE);
+}
+
 #if IMEMO_DEBUG
 VALUE
 rb_imemo_new_debug(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0, const char *file, int line)
@@ -8108,14 +8115,6 @@ ruby_mimfree(void *ptr)
     mem = mem - 1;
 #endif
     free(mem);
-}
-
-rb_imemo_alloc_t *
-rb_imemo_alloc_new(VALUE v1, VALUE v2, VALUE v3, VALUE v0)
-{
-    VALUE s = rb_imemo_new(imemo_alloc, v1, v2, v3, v0);
-    rb_gc_writebarrier_unprotect(s);
-    return (rb_imemo_alloc_t *)s;
 }
 
 void *
