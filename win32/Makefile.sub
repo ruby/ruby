@@ -1097,6 +1097,13 @@ $(RCFILES): $(RBCONFIG) $(srcdir)/revision.h $(srcdir)/win32/resource.rb
 			-so_name=$(RUBY_SO_NAME) \
 			. $(icondirs) $(win_srcdir)
 
+test-bundled-gems-run:
+	$(Q) for /f %G in ($(srcdir)/gems/bundled_gems) do @( \
+	  echo testing %G gem & \
+	  $(XRUBY) -C $(srcdir)/gems/src/%G -Ilib ../../../.bundle/bin/rake || \
+	  exit /b %STATUS% \
+	)
+
 $(ruby_pc): $(RBCONFIG)
 	@$(BOOTSTRAPRUBY) $(srcdir)/tool/expand-config.rb \
 		-output=$@ -mode=$(INSTALL_DATA_MODE) -config=rbconfig.rb \

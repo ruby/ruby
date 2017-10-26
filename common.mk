@@ -1157,6 +1157,21 @@ update-bundled_gems: PHONY
 	     "$(srcdir)/gems/bundled_gems" | \
 	"$(IFCHANGE)" "$(srcdir)/gems/bundled_gems" -
 
+test-bundled-gems-precheck: $(arch)-fake.rb programs
+
+test-bundled-gems-fetch: $(PREP)
+	$(Q) $(BASERUBY) -C $(srcdir)/gems ../tool/fetch-bundled_gems.rb src bundled_gems
+
+test-bundled-gems-prepare: test-bundled-gems-precheck test-bundled-gems-fetch
+	$(XRUBY) -C "$(srcdir)" bin/gem install --no-ri --no-rdoc \
+		--install-dir .bundle --conservative 'minitest:~> 5' 'test-unit' 'rake' 'hoe' 'yard' 'pry' 'packnga'
+
+PREPARE_BUNDLED_GEMS = test-bundled-gems-prepare
+test-bundled-gems: $(TEST_RUNNABLE)-test-bundled-gems
+yes-test-bundled-gems: test-bundled-gems-run
+no-test-bundled-gems:
+test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
+
 test-bundler-precheck: $(arch)-fake.rb programs
 
 yes-test-bundler-prepare: test-bundler-precheck
