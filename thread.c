@@ -4981,7 +4981,7 @@ rb_check_deadlock(rb_vm_t *vm)
 static void
 update_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
 {
-    VALUE coverage = rb_iseq_coverage(GET_THREAD()->ec->cfp->iseq);
+    VALUE coverage = rb_iseq_coverage(GET_EC()->cfp->iseq);
     if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
 	long arg = FIX2INT(trace_arg->data);
 	switch (arg % 16) {

@@ -815,7 +815,7 @@ rb_proc_create_from_captured(VALUE klass,
     VALUE procval = rb_proc_alloc(klass);
     rb_proc_t *proc = RTYPEDDATA_DATA(procval);
 
-    VM_ASSERT(VM_EP_IN_HEAP_P(GET_THREAD()->ec, captured->ep));
+    VM_ASSERT(VM_EP_IN_HEAP_P(GET_EC(), captured->ep));
 
     /* copy block */
     RB_OBJ_WRITE(procval, &proc->block.as.captured.self, captured->self);
@@ -857,7 +857,7 @@ rb_proc_create(VALUE klass, const struct rb_block *block,
     VALUE procval = rb_proc_alloc(klass);
     rb_proc_t *proc = RTYPEDDATA_DATA(procval);
 
-    VM_ASSERT(VM_EP_IN_HEAP_P(GET_THREAD()->ec, vm_block_ep(block)));
+    VM_ASSERT(VM_EP_IN_HEAP_P(GET_EC(), vm_block_ep(block)));
     rb_vm_block_copy(procval, &proc->block, block);
     vm_block_type_set(&proc->block, block->type);
     proc->safe_level = safe_level;
@@ -1447,7 +1447,7 @@ rb_vm_make_jump_tag_but_local_jump(int state, VALUE val)
 	return Qnil;
     }
     if (val == Qundef) {
-	val = GET_THREAD()->ec->tag->retval;
+	val = GET_EC()->tag->retval;
     }
     return make_localjump_error(mesg, val, state);
 }
@@ -3293,7 +3293,7 @@ vm_analysis_operand(int insn, int n, VALUE op)
 	HASH_ASET(ihash, INT2FIX(n), ophash);
     }
     /* intern */
-    valstr = rb_insn_operand_intern(GET_THREAD()->ec->cfp->iseq, insn, n, op, 0, 0, 0, 0);
+    valstr = rb_insn_operand_intern(GET_EC()->cfp->iseq, insn, n, op, 0, 0, 0, 0);
 
     /* set count */
     if ((cv = rb_hash_aref(ophash, valstr)) == Qnil) {
@@ -3406,7 +3406,7 @@ vm_collect_usage_operand(int insn, int n, VALUE op)
     if (RUBY_DTRACE_INSN_OPERAND_ENABLED()) {
 	VALUE valstr;
 
-	valstr = rb_insn_operand_intern(GET_THREAD()->ec->cfp->iseq, insn, n, op, 0, 0, 0, 0);
+	valstr = rb_insn_operand_intern(GET_EC()->cfp->iseq, insn, n, op, 0, 0, 0, 0);
 
 	RUBY_DTRACE_INSN_OPERAND(RSTRING_PTR(valstr), rb_insns_name(insn));
 	RB_GC_GUARD(valstr);
