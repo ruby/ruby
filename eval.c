@@ -1062,7 +1062,7 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
 }
 
 static ID
-frame_func_id(rb_control_frame_t *cfp)
+frame_func_id(const rb_control_frame_t *cfp)
 {
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
@@ -1158,13 +1158,13 @@ prev_frame_func(void)
 ID
 rb_frame_last_func(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->ec->cfp;
+    const rb_execution_context_t *ec = GET_EC();
+    const rb_control_frame_t *cfp = ec->cfp;
     ID mid;
 
     while (!(mid = frame_func_id(cfp)) &&
 	   (cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp),
-	    !RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)));
+	    !RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(ec, cfp)));
     return mid;
 }
 
@@ -1722,10 +1722,10 @@ top_using(VALUE self, VALUE module)
 }
 
 static const VALUE *
-errinfo_place(rb_thread_t *th)
+errinfo_place(const rb_thread_t *th)
 {
-    rb_control_frame_t *cfp = th->ec->cfp;
-    rb_control_frame_t *end_cfp = RUBY_VM_END_CONTROL_FRAME(th);
+    const rb_control_frame_t *cfp = th->ec->cfp;
+    const rb_control_frame_t *end_cfp = RUBY_VM_END_CONTROL_FRAME(th->ec);
 
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
 	if (VM_FRAME_RUBYFRAME_P(cfp)) {

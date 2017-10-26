@@ -7602,9 +7602,9 @@ rb_local_defined(ID id, const struct rb_block *base_block)
 static int
 caller_location(VALUE *path, VALUE *realpath)
 {
-    const rb_thread_t *const th = GET_THREAD();
+    const rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *const cfp =
-	rb_vm_get_ruby_level_next_cfp(th, th->ec->cfp);
+        rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 
     if (cfp) {
 	int line = rb_vm_get_sourceline(cfp);

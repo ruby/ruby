@@ -427,9 +427,9 @@ backtrace_each(rb_thread_t *th,
 	       void (*iter_cfunc)(void *arg, const rb_control_frame_t *cfp, ID mid),
 	       void *arg)
 {
-    rb_control_frame_t *last_cfp = th->ec->cfp;
-    rb_control_frame_t *start_cfp = RUBY_VM_END_CONTROL_FRAME(th);
-    rb_control_frame_t *cfp;
+    const rb_control_frame_t *last_cfp = th->ec->cfp;
+    const rb_control_frame_t *start_cfp = RUBY_VM_END_CONTROL_FRAME(th->ec);
+    const rb_control_frame_t *cfp;
     ptrdiff_t size, i;
 
     /*                <- start_cfp (end control frame)
@@ -1246,8 +1246,8 @@ int
 rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
 {
     int i;
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->ec->cfp, *end_cfp = RUBY_VM_END_CONTROL_FRAME(th);
+    const rb_execution_context_t *ec = GET_EC();
+    const rb_control_frame_t *cfp = ec->cfp, *end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
     const rb_callable_method_entry_t *cme;
 
     for (i=0; i<limit && cfp != end_cfp;) {

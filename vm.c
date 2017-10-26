@@ -38,7 +38,7 @@ rb_vm_search_cf_from_ep(const rb_thread_t * const th, const rb_control_frame_t *
 	return NULL;
     }
     else {
-	const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(th); /* end of control frame pointer */
+	const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(th->ec); /* end of control frame pointer */
 
 	while (cfp < eocfp) {
 	    if (cfp->ep == ep) {
@@ -290,7 +290,7 @@ static void vm_collect_usage_insn(int insn);
 static void vm_collect_usage_register(int reg, int isset);
 #endif
 
-static VALUE vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp);
+static VALUE vm_make_env_object(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
 
 static VALUE vm_invoke_bmethod(rb_thread_t *th, rb_proc_t *proc, VALUE self,
 			       int argc, const VALUE *argv, VALUE block_handler);
@@ -480,14 +480,14 @@ vm_set_main_stack(rb_thread_t *th, const rb_iseq_t *iseq)
 
     /* save binding */
     if (iseq->body->local_table_size > 0) {
-	vm_bind_update_env(toplevel_binding, bind, vm_make_env_object(th, th->ec->cfp));
+	vm_bind_update_env(toplevel_binding, bind, vm_make_env_object(th->ec, th->ec->cfp));
     }
 }
 
 rb_control_frame_t *
 rb_vm_get_binding_creatable_next_cfp(const rb_thread_t *th, const rb_control_frame_t *cfp)
 {
-    while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {
+    while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th->ec, cfp)) {
 	if (cfp->iseq) {
 	    return (rb_control_frame_t *)cfp;
 	}
@@ -497,9 +497,10 @@ rb_vm_get_binding_creatable_next_cfp(const rb_thread_t *th, const rb_control_fra
 }
 
 rb_control_frame_t *
-rb_vm_get_ruby_level_next_cfp(const rb_thread_t *th, const rb_control_frame_t *cfp)
+rb_vm_get_ruby_level_next_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
-    while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {
+    if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(ec, cfp)) bp();
+    while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(ec, cfp)) {
 	if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	    return (rb_control_frame_t *)cfp;
 	}
@@ -517,7 +518,7 @@ vm_get_ruby_level_caller_cfp(const rb_thread_t *th, const rb_control_frame_t *cf
 
     cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 
-    while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {
+    while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th->ec, cfp)) {
 	if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	    return (rb_control_frame_t *)cfp;
 	}
@@ -616,12 +617,12 @@ check_env_value(const rb_env_t *env)
 }
 
 static void
-vm_block_handler_escape(rb_thread_t *th, VALUE block_handler, VALUE *procvalptr)
+vm_block_handler_escape(const rb_execution_context_t *ec, VALUE block_handler, VALUE *procvalptr)
 {
     switch (vm_block_handler_type(block_handler)) {
       case block_handler_type_ifunc:
       case block_handler_type_iseq:
-	*procvalptr = rb_vm_make_proc(th, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc);
+	*procvalptr = rb_vm_make_proc(ec, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc);
 	return;
 
       case block_handler_type_symbol:
@@ -634,7 +635,7 @@ vm_block_handler_escape(rb_thread_t *th, VALUE block_handler, VALUE *procvalptr)
 }
 
 static VALUE
-vm_make_env_each(rb_thread_t *const th, rb_control_frame_t *const cfp)
+vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *const cfp)
 {
     VALUE blockprocval = Qfalse;
     const VALUE * const ep = cfp->ep;
@@ -658,7 +659,7 @@ vm_make_env_each(rb_thread_t *const th, rb_control_frame_t *const cfp)
 		VM_ASSERT(prev_cfp->ep != NULL);
 	    }
 
-	    vm_make_env_each(th, prev_cfp);
+	    vm_make_env_each(ec, prev_cfp);
 	    VM_FORCE_WRITE_SPECIAL_CONST(&ep[VM_ENV_DATA_INDEX_SPECVAL], VM_GUARDED_PREV_EP(prev_cfp->ep));
 	}
     }
@@ -666,7 +667,7 @@ vm_make_env_each(rb_thread_t *const th, rb_control_frame_t *const cfp)
 	VALUE block_handler = VM_ENV_BLOCK_HANDLER(ep);
 
 	if (block_handler != VM_BLOCK_HANDLER_NONE) {
-	    vm_block_handler_escape(th, block_handler, &blockprocval);
+	    vm_block_handler_escape(ec, block_handler, &blockprocval);
 	    VM_STACK_ENV_WRITE(ep, VM_ENV_DATA_INDEX_SPECVAL, blockprocval);
 	}
     }
@@ -718,9 +719,9 @@ vm_make_env_each(rb_thread_t *const th, rb_control_frame_t *const cfp)
 }
 
 static VALUE
-vm_make_env_object(rb_thread_t *th, rb_control_frame_t *cfp)
+vm_make_env_object(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
 {
-    VALUE envval = vm_make_env_each(th, cfp);
+    VALUE envval = vm_make_env_each(ec, cfp);
 
     if (PROCDEBUG) {
 	check_env_value((const rb_env_t *)envval);
@@ -734,7 +735,7 @@ rb_vm_stack_to_heap(rb_thread_t *th)
 {
     rb_control_frame_t *cfp = th->ec->cfp;
     while ((cfp = rb_vm_get_binding_creatable_next_cfp(th, cfp)) != 0) {
-	vm_make_env_object(th, cfp);
+	vm_make_env_object(th->ec, cfp);
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
 }
@@ -867,27 +868,27 @@ rb_proc_create(VALUE klass, const struct rb_block *block,
 }
 
 VALUE
-rb_vm_make_proc(rb_thread_t *th, const struct rb_captured_block *captured, VALUE klass)
+rb_vm_make_proc(const rb_execution_context_t *ec, const struct rb_captured_block *captured, VALUE klass)
 {
-    return rb_vm_make_proc_lambda(th, captured, klass, FALSE);
+    return rb_vm_make_proc_lambda(ec, captured, klass, FALSE);
 }
 
 VALUE
-rb_vm_make_proc_lambda(rb_thread_t *th, const struct rb_captured_block *captured, VALUE klass, int8_t is_lambda)
+rb_vm_make_proc_lambda(const rb_execution_context_t *ec, const struct rb_captured_block *captured, VALUE klass, int8_t is_lambda)
 {
     VALUE procval;
 
     if (!VM_ENV_ESCAPED_P(captured->ep)) {
 	rb_control_frame_t *cfp = VM_CAPTURED_BLOCK_TO_CFP(captured);
-	vm_make_env_object(th, cfp);
+	vm_make_env_object(ec, cfp);
     }
-    VM_ASSERT(VM_EP_IN_HEAP_P(th->ec, captured->ep));
+    VM_ASSERT(VM_EP_IN_HEAP_P(ec, captured->ep));
     VM_ASSERT(imemo_type_p(captured->code.val, imemo_iseq) ||
 	      imemo_type_p(captured->code.val, imemo_ifunc));
 
     procval = rb_proc_create_from_captured(klass, captured,
 					   imemo_type(captured->code.val) == imemo_iseq ? block_type_iseq : block_type_ifunc,
-					   (int8_t)th->ec->safe_level, FALSE, is_lambda);
+					   (int8_t)ec->safe_level, FALSE, is_lambda);
     return procval;
 }
 
@@ -897,7 +898,7 @@ VALUE
 rb_vm_make_binding(rb_thread_t *th, const rb_control_frame_t *src_cfp)
 {
     rb_control_frame_t *cfp = rb_vm_get_binding_creatable_next_cfp(th, src_cfp);
-    rb_control_frame_t *ruby_level_cfp = rb_vm_get_ruby_level_next_cfp(th, src_cfp);
+    rb_control_frame_t *ruby_level_cfp = rb_vm_get_ruby_level_next_cfp(th->ec, src_cfp);
     VALUE bindval, envval;
     rb_binding_t *bind;
 
@@ -906,7 +907,7 @@ rb_vm_make_binding(rb_thread_t *th, const rb_control_frame_t *src_cfp)
     }
 
     while (1) {
-	envval = vm_make_env_object(th, cfp);
+	envval = vm_make_env_object(th->ec, cfp);
 	if (cfp == ruby_level_cfp) {
 	    break;
 	}
@@ -961,7 +962,7 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     ALLOCV_END(idtmp);
 
     vm_set_eval_stack(th, iseq, 0, base_block);
-    vm_bind_update_env(bindval, bind, envval = vm_make_env_object(th, th->ec->cfp));
+    vm_bind_update_env(bindval, bind, envval = vm_make_env_object(th->ec, th->ec->cfp));
     rb_vm_pop_frame(th);
 
     env = (const rb_env_t *)envval;
@@ -1193,7 +1194,7 @@ vm_normal_frame(rb_thread_t *th, rb_control_frame_t *cfp)
 {
     while (cfp->pc == 0) {
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-	if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp)) {
+	if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th->ec, cfp)) {
 	    return 0;
 	}
     }
@@ -1257,8 +1258,8 @@ rb_lastline_set(VALUE val)
 VALUE
 rb_sourcefilename(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec->cfp);
+    const rb_execution_context_t *ec = GET_EC();
+    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 
     if (cfp) {
 	return rb_iseq_path(cfp->iseq);
@@ -1271,8 +1272,8 @@ rb_sourcefilename(void)
 const char *
 rb_sourcefile(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec->cfp);
+    const rb_execution_context_t *ec = GET_EC();
+    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 
     if (cfp) {
 	return RSTRING_PTR(rb_iseq_path(cfp->iseq));
@@ -1285,8 +1286,8 @@ rb_sourcefile(void)
 int
 rb_sourceline(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec->cfp);
+    const rb_execution_context_t *ec = GET_EC();
+    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 
     if (cfp) {
 	return rb_vm_get_sourceline(cfp);
@@ -1299,8 +1300,8 @@ rb_sourceline(void)
 VALUE
 rb_source_location(int *pline)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec->cfp);
+    const rb_execution_context_t *ec = GET_EC();
+    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 
     if (cfp) {
 	if (pline) *pline = rb_vm_get_sourceline(cfp);
@@ -1323,21 +1324,20 @@ rb_source_loc(int *pline)
 rb_cref_t *
 rb_vm_cref(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec->cfp);
+    const rb_execution_context_t *ec = GET_EC();
+    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 
     if (cfp == NULL) {
 	return NULL;
     }
-
     return rb_vm_get_cref(cfp->ep);
 }
 
 rb_cref_t *
 rb_vm_cref_replace_with_duplicated_cref(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec->cfp);
+    const rb_execution_context_t *ec = GET_EC();
+    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
     rb_cref_t *cref = vm_cref_replace_with_duplicated_cref(cfp->ep);
     return cref;
 }
@@ -1345,8 +1345,8 @@ rb_vm_cref_replace_with_duplicated_cref(void)
 const rb_cref_t *
 rb_vm_cref_in_context(VALUE self, VALUE cbase)
 {
-    rb_thread_t *th = GET_THREAD();
-    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec->cfp);
+    const rb_execution_context_t *ec = GET_EC();
+    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
     const rb_cref_t *cref;
     if (cfp->self != self) return NULL;
     if (!vm_env_cref_by_cref(cfp->ep)) return NULL;
@@ -1370,8 +1370,8 @@ debug_cref(rb_cref_t *cref)
 VALUE
 rb_vm_cbase(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec->cfp);
+    const rb_execution_context_t *ec = GET_EC();
+    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 
     if (cfp == 0) {
 	rb_raise(rb_eRuntimeError, "Can't call on top of Fiber or Thread");

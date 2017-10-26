@@ -1297,10 +1297,9 @@ name_err_initialize(int argc, VALUE *argv, VALUE self)
     rb_call_super(argc, argv);
     rb_ivar_set(self, id_name, name);
     {
-	rb_thread_t *th = GET_THREAD();
+	const rb_execution_context_t *ec = GET_EC();
 	rb_control_frame_t *cfp =
-	    rb_vm_get_ruby_level_next_cfp(th,
-				    RUBY_VM_PREVIOUS_CONTROL_FRAME(th->ec->cfp));
+	    rb_vm_get_ruby_level_next_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(ec->cfp));
 	if (cfp) iseqw = rb_iseqw_new(cfp->iseq);
     }
     rb_ivar_set(self, id_iseq, iseqw);
