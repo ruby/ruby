@@ -129,7 +129,7 @@ static void
 ruby_finalize_1(void)
 {
     ruby_sig_finalize();
-    GET_THREAD()->ec.errinfo = Qnil;
+    GET_THREAD()->ec->errinfo = Qnil;
     rb_gc_call_finalizer_at_exit();
 }
 
@@ -174,8 +174,8 @@ ruby_cleanup(volatile int ex)
 	SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(th); });
 
       step_0: step++;
-	errs[1] = th->ec.errinfo;
-	th->ec.safe_level = 0;
+	errs[1] = th->ec->errinfo;
+	th->ec->safe_level = 0;
 	ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
 
 	SAVE_ROOT_JMPBUF(th, ruby_finalize_0());
@@ -184,7 +184,7 @@ ruby_cleanup(volatile int ex)
 	/* protect from Thread#raise */
 	th->status = THREAD_KILLED;
 
-	errs[0] = th->ec.errinfo;
+	errs[0] = th->ec->errinfo;
 	SAVE_ROOT_JMPBUF(th, rb_thread_terminate_all());
     }
     else {
@@ -194,7 +194,7 @@ ruby_cleanup(volatile int ex)
 	}
 	if (ex == 0) ex = state;
     }
-    th->ec.errinfo = errs[1];
+    th->ec->errinfo = errs[1];
     sysex = error_handle(ex);
 
     state = 0;
@@ -203,7 +203,7 @@ ruby_cleanup(volatile int ex)
 
 	if (!RTEST(err)) continue;
 
-	/* th->ec.errinfo contains a NODE while break'ing */
+	/* th->ec->errinfo contains a NODE while break'ing */
 	if (THROW_DATA_P(err)) continue;
 
 	if (rb_obj_is_kind_of(err, rb_eSystemExit)) {
@@ -237,7 +237,7 @@ ruby_exec_internal(void *n)
 {
     volatile int state;
     rb_iseq_t *iseq = (rb_iseq_t *)n;
-    rb_thread_t *th = GET_THREAD();
+    rb_thread_t * volatile th = GET_THREAD();
 
     if (!n) return 0;
 
@@ -478,7 +478,7 @@ exc_setup_message(rb_thread_t *th, VALUE mesg, VALUE *cause)
     int nocause = 0;
 
     if (NIL_P(mesg)) {
-	mesg = th->ec.errinfo;
+	mesg = th->ec->errinfo;
 	if (INTERNAL_EXCEPTION_P(mesg)) TH_JUMP_TAG(th, TAG_FATAL);
 	nocause = 1;
     }
@@ -531,19 +531,19 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
     }
 
     if (!NIL_P(mesg)) {
-	th->ec.errinfo = mesg;
+	th->ec->errinfo = mesg;
     }
 
-    if (RTEST(ruby_debug) && !NIL_P(e = th->ec.errinfo) &&
+    if (RTEST(ruby_debug) && !NIL_P(e = th->ec->errinfo) &&
 	!rb_obj_is_kind_of(e, rb_eSystemExit)) {
 	enum ruby_tag_type state;
 
 	mesg = e;
 	TH_PUSH_TAG(th);
 	if ((state = EXEC_TAG()) == TAG_NONE) {
-	    th->ec.errinfo = Qnil;
+	    th->ec->errinfo = Qnil;
 	    e = rb_obj_as_string(mesg);
-	    th->ec.errinfo = mesg;
+	    th->ec->errinfo = mesg;
 	    if (file && line) {
 		e = rb_sprintf("Exception `%"PRIsVALUE"' at %s:%d - %"PRIsVALUE"\n",
 			       rb_obj_class(mesg), file, line, e);
@@ -559,8 +559,8 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 	    warn_print_str(e);
 	}
 	TH_POP_TAG();
-	if (state == TAG_FATAL && th->ec.errinfo == exception_error) {
-	    th->ec.errinfo = mesg;
+	if (state == TAG_FATAL && th->ec->errinfo == exception_error) {
+	    th->ec->errinfo = mesg;
 	}
 	else if (state) {
 	    rb_threadptr_reset_raised(th);
@@ -570,14 +570,14 @@ setup_exception(rb_thread_t *th, int tag, volatile VALUE mesg, VALUE cause)
 
     if (rb_threadptr_set_raised(th)) {
       fatal:
-	th->ec.errinfo = exception_error;
+	th->ec->errinfo = exception_error;
 	rb_threadptr_reset_raised(th);
 	TH_JUMP_TAG(th, TAG_FATAL);
     }
 
     if (tag != TAG_FATAL) {
-	RUBY_DTRACE_HOOK(RAISE, rb_obj_classname(th->ec.errinfo));
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_RAISE, th->ec.cfp->self, 0, 0, 0, mesg);
+	RUBY_DTRACE_HOOK(RAISE, rb_obj_classname(th->ec->errinfo));
+	EXEC_EVENT_HOOK(th, RUBY_EVENT_RAISE, th->ec->cfp->self, 0, 0, 0, mesg);
     }
 }
 
@@ -797,7 +797,7 @@ void
 rb_raise_jump(VALUE mesg, VALUE cause)
 {
     rb_thread_t *th = GET_THREAD();
-    const rb_control_frame_t *cfp = th->ec.cfp;
+    const rb_control_frame_t *cfp = th->ec->cfp;
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
     VALUE klass = me->owner;
     VALUE self = cfp->self;
@@ -835,7 +835,7 @@ int
 rb_block_given_p(void)
 {
     rb_thread_t *th = GET_THREAD();
-    if (rb_vm_frame_block_handler(th->ec.cfp) == VM_BLOCK_HANDLER_NONE) {
+    if (rb_vm_frame_block_handler(th->ec->cfp) == VM_BLOCK_HANDLER_NONE) {
 	return FALSE;
     }
     else {
@@ -896,10 +896,10 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 	   VALUE (* r_proc) (ANYARGS), VALUE data2, ...)
 {
     enum ruby_tag_type state;
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *volatile cfp = th->ec.cfp;
+    rb_thread_t * volatile th = GET_THREAD();
+    rb_control_frame_t *volatile cfp = th->ec->cfp;
     volatile VALUE result = Qfalse;
-    volatile VALUE e_info = th->ec.errinfo;
+    volatile VALUE e_info = th->ec->errinfo;
     va_list args;
 
     TH_PUSH_TAG(th);
@@ -911,7 +911,7 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 	/* escape from r_proc */
 	if (state == TAG_RETRY) {
 	    state = 0;
-	    th->ec.errinfo = Qnil;
+	    th->ec->errinfo = Qnil;
 	    result = Qfalse;
 	    goto retry_entry;
 	}
@@ -925,7 +925,7 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 
 	    va_init_list(args, data2);
 	    while ((eclass = va_arg(args, VALUE)) != 0) {
-		if (rb_obj_is_kind_of(th->ec.errinfo, eclass)) {
+		if (rb_obj_is_kind_of(th->ec->errinfo, eclass)) {
 		    handle = TRUE;
 		    break;
 		}
@@ -936,9 +936,9 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 		result = Qnil;
 		state = 0;
 		if (r_proc) {
-		    result = (*r_proc) (data2, th->ec.errinfo);
+		    result = (*r_proc) (data2, th->ec->errinfo);
 		}
-		th->ec.errinfo = e_info;
+		th->ec->errinfo = e_info;
 	    }
 	}
     }
@@ -993,15 +993,15 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
 {
     volatile VALUE result = Qnil;
     volatile enum ruby_tag_type state;
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *volatile cfp = th->ec.cfp;
+    rb_thread_t * volatile th = GET_THREAD();
+    rb_control_frame_t *volatile cfp = th->ec->cfp;
     struct rb_vm_protect_tag protect_tag;
     rb_jmpbuf_t org_jmpbuf;
 
-    protect_tag.prev = th->ec.protect_tag;
+    protect_tag.prev = th->ec->protect_tag;
 
     TH_PUSH_TAG(th);
-    th->ec.protect_tag = &protect_tag;
+    th->ec->protect_tag = &protect_tag;
     MEMCPY(&org_jmpbuf, &(th)->root_jmpbuf, rb_jmpbuf_t, 1);
     if ((state = TH_EXEC_TAG()) == TAG_NONE) {
 	SAVE_ROOT_JMPBUF(th, result = (*proc) (data));
@@ -1010,7 +1010,7 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
 	rb_vm_rewind_cfp(th, cfp);
     }
     MEMCPY(&(th)->root_jmpbuf, &org_jmpbuf, rb_jmpbuf_t, 1);
-    th->ec.protect_tag = protect_tag.prev;
+    th->ec->protect_tag = protect_tag.prev;
     TH_POP_TAG();
 
     if (pstate != NULL) *pstate = state;
@@ -1037,25 +1037,25 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
     int state;
     volatile VALUE result = Qnil;
     VALUE errinfo;
-    rb_thread_t *const th = GET_THREAD();
+    rb_thread_t *const volatile th = GET_THREAD();
     rb_ensure_list_t ensure_list;
     ensure_list.entry.marker = 0;
     ensure_list.entry.e_proc = e_proc;
     ensure_list.entry.data2 = data2;
-    ensure_list.next = th->ec.ensure_list;
-    th->ec.ensure_list = &ensure_list;
+    ensure_list.next = th->ec->ensure_list;
+    th->ec->ensure_list = &ensure_list;
     TH_PUSH_TAG(th);
     if ((state = EXEC_TAG()) == TAG_NONE) {
 	result = (*b_proc) (data1);
     }
     TH_POP_TAG();
-    errinfo = th->ec.errinfo;
+    errinfo = th->ec->errinfo;
     if (!NIL_P(errinfo) && !RB_TYPE_P(errinfo, T_OBJECT)) {
-	th->ec.errinfo = Qnil;
+	th->ec->errinfo = Qnil;
     }
-    th->ec.ensure_list=ensure_list.next;
+    th->ec->ensure_list=ensure_list.next;
     (*ensure_list.entry.e_proc)(ensure_list.entry.data2);
-    th->ec.errinfo = errinfo;
+    th->ec->errinfo = errinfo;
     if (state)
 	TH_JUMP_TAG(th, state);
     return result;
@@ -1102,7 +1102,7 @@ frame_called_id(rb_control_frame_t *cfp)
 ID
 rb_frame_this_func(void)
 {
-    return frame_func_id(GET_THREAD()->ec.cfp);
+    return frame_func_id(GET_THREAD()->ec->cfp);
 }
 
 /*!
@@ -1119,15 +1119,15 @@ rb_frame_this_func(void)
 ID
 rb_frame_callee(void)
 {
-    return frame_called_id(GET_THREAD()->ec.cfp);
+    return frame_called_id(GET_THREAD()->ec->cfp);
 }
 
 static rb_control_frame_t *
 previous_frame(rb_thread_t *th)
 {
-    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->ec.cfp);
+    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->ec->cfp);
     /* check if prev_cfp can be accessible */
-    if ((void *)(th->ec.vm_stack + th->ec.vm_stack_size) == (void *)(prev_cfp)) {
+    if ((void *)(th->ec->vm_stack + th->ec->vm_stack_size) == (void *)(prev_cfp)) {
         return 0;
     }
     return prev_cfp;
@@ -1159,7 +1159,7 @@ ID
 rb_frame_last_func(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->ec.cfp;
+    rb_control_frame_t *cfp = th->ec->cfp;
     ID mid;
 
     while (!(mid = frame_func_id(cfp)) &&
@@ -1439,7 +1439,7 @@ rb_mod_refine(VALUE module, VALUE klass)
        id_refined_class, id_defined_at;
     VALUE refinements, activated_refinements;
     rb_thread_t *th = GET_THREAD();
-    VALUE block_handler = rb_vm_frame_block_handler(th->ec.cfp);
+    VALUE block_handler = rb_vm_frame_block_handler(th->ec->cfp);
 
     if (block_handler == VM_BLOCK_HANDLER_NONE) {
 	rb_raise(rb_eArgError, "no block given");
@@ -1724,7 +1724,7 @@ top_using(VALUE self, VALUE module)
 static const VALUE *
 errinfo_place(rb_thread_t *th)
 {
-    rb_control_frame_t *cfp = th->ec.cfp;
+    rb_control_frame_t *cfp = th->ec->cfp;
     rb_control_frame_t *end_cfp = RUBY_VM_END_CONTROL_FRAME(th);
 
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
@@ -1751,7 +1751,7 @@ get_thread_errinfo(rb_thread_t *th)
 	return *ptr;
     }
     else {
-	return th->ec.errinfo;
+	return th->ec->errinfo;
     }
 }
 
@@ -1777,7 +1777,7 @@ VALUE
 rb_errinfo(void)
 {
     rb_thread_t *th = GET_THREAD();
-    return th->ec.errinfo;
+    return th->ec->errinfo;
 }
 
 /*! Sets the current exception (\c $!) to the given value
@@ -1794,7 +1794,7 @@ rb_set_errinfo(VALUE err)
     if (!NIL_P(err) && !rb_obj_is_kind_of(err, rb_eException)) {
 	rb_raise(rb_eTypeError, "assigning non-exception to $!");
     }
-    GET_THREAD()->ec.errinfo = err;
+    GET_THREAD()->ec->errinfo = err;
 }
 
 static VALUE

@@ -1678,8 +1678,8 @@ opt_call_c_function
     reg_cfp = (funcptr)(th, reg_cfp);
 
     if (reg_cfp == 0) {
-	VALUE err = th->ec.errinfo;
-	th->ec.errinfo = Qnil;
+	VALUE err = th->ec->errinfo;
+	th->ec->errinfo = Qnil;
 	THROW_EXCEPTION(err);
     }
 

@@ -427,7 +427,7 @@ backtrace_each(rb_thread_t *th,
 	       void (*iter_cfunc)(void *arg, const rb_control_frame_t *cfp, ID mid),
 	       void *arg)
 {
-    rb_control_frame_t *last_cfp = th->ec.cfp;
+    rb_control_frame_t *last_cfp = th->ec->cfp;
     rb_control_frame_t *start_cfp = RUBY_VM_END_CONTROL_FRAME(th);
     rb_control_frame_t *cfp;
     ptrdiff_t size, i;
@@ -439,7 +439,7 @@ backtrace_each(rb_thread_t *th,
      *  top frame
      *  ...
      *  2nd frame     <- lev:0
-     *  current frame <- th->ec.cfp
+     *  current frame <- th->ec->cfp
      */
 
     start_cfp =
@@ -1172,12 +1172,12 @@ VALUE
 rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
 {
     rb_debug_inspector_t dbg_context;
-    rb_thread_t *th = GET_THREAD();
+    rb_thread_t * volatile th = GET_THREAD();
     enum ruby_tag_type state;
     volatile VALUE MAYBE_UNUSED(result);
 
     dbg_context.th = th;
-    dbg_context.cfp = dbg_context.th->ec.cfp;
+    dbg_context.cfp = dbg_context.th->ec->cfp;
     dbg_context.backtrace = rb_threadptr_backtrace_location_ary(th, 0, 0);
     dbg_context.backtrace_size = RARRAY_LEN(dbg_context.backtrace);
     dbg_context.contexts = collect_caller_bindings(th);
@@ -1247,7 +1247,7 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
 {
     int i;
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->ec.cfp, *end_cfp = RUBY_VM_END_CONTROL_FRAME(th);
+    rb_control_frame_t *cfp = th->ec->cfp, *end_cfp = RUBY_VM_END_CONTROL_FRAME(th);
     const rb_callable_method_entry_t *cme;
 
     for (i=0; i<limit && cfp != end_cfp;) {

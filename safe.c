@@ -34,13 +34,13 @@ ruby_safe_level_2_warning(void)
 int
 rb_safe_level(void)
 {
-    return GET_THREAD()->ec.safe_level;
+    return GET_THREAD()->ec->safe_level;
 }
 
 void
 rb_set_safe_level_force(int safe)
 {
-    GET_THREAD()->ec.safe_level = safe;
+    GET_THREAD()->ec->safe_level = safe;
 }
 
 void
@@ -48,11 +48,11 @@ rb_set_safe_level(int level)
 {
     rb_thread_t *th = GET_THREAD();
 
-    if (level > th->ec.safe_level) {
+    if (level > th->ec->safe_level) {
 	if (level > SAFE_LEVEL_MAX) {
 	    rb_raise(rb_eArgError, "$SAFE=2 to 4 are obsolete");
 	}
-	th->ec.safe_level = level;
+	th->ec->safe_level = level;
     }
 }
 
@@ -66,7 +66,7 @@ static void
 safe_setter(VALUE val)
 {
     rb_thread_t *th = GET_THREAD();
-    int current_level = th->ec.safe_level;
+    int current_level = th->ec->safe_level;
     int level = NUM2INT(val);
 
     if (level == current_level) {
@@ -84,7 +84,7 @@ safe_setter(VALUE val)
     /* block parameters */
     rb_vm_stack_to_heap(th);
 
-    th->ec.safe_level = level;
+    th->ec->safe_level = level;
 }
 
 void

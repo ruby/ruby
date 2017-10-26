@@ -304,31 +304,31 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
     rb_thread_t *th = trace_arg->th;
 
     if (trace_arg->event & RUBY_INTERNAL_EVENT_MASK) {
-	if (th->ec.trace_arg && (th->ec.trace_arg->event & RUBY_INTERNAL_EVENT_MASK)) {
+	if (th->ec->trace_arg && (th->ec->trace_arg->event & RUBY_INTERNAL_EVENT_MASK)) {
 	    /* skip hooks because this thread doing INTERNAL_EVENT */
 	}
 	else {
-	    rb_trace_arg_t *prev_trace_arg = th->ec.trace_arg;
+	    rb_trace_arg_t *prev_trace_arg = th->ec->trace_arg;
 	    th->vm->trace_running++;
-	    th->ec.trace_arg = trace_arg;
+	    th->ec->trace_arg = trace_arg;
 	    exec_hooks_unprotected(th, &th->event_hooks, trace_arg);
 	    exec_hooks_unprotected(th, &th->vm->event_hooks, trace_arg);
-	    th->ec.trace_arg = prev_trace_arg;
+	    th->ec->trace_arg = prev_trace_arg;
 	    th->vm->trace_running--;
 	}
     }
     else {
-	if (th->ec.trace_arg == NULL && /* check reentrant */
+	if (th->ec->trace_arg == NULL && /* check reentrant */
 	    trace_arg->self != rb_mRubyVMFrozenCore /* skip special methods. TODO: remove it. */) {
-	    const VALUE errinfo = th->ec.errinfo;
-	    const VALUE old_recursive = th->ec.local_storage_recursive_hash;
+	    const VALUE errinfo = th->ec->errinfo;
+	    const VALUE old_recursive = th->ec->local_storage_recursive_hash;
 	    int state = 0;
 
-	    th->ec.local_storage_recursive_hash = th->ec.local_storage_recursive_hash_for_trace;
-	    th->ec.errinfo = Qnil;
+	    th->ec->local_storage_recursive_hash = th->ec->local_storage_recursive_hash_for_trace;
+	    th->ec->errinfo = Qnil;
 
 	    th->vm->trace_running++;
-	    th->ec.trace_arg = trace_arg;
+	    th->ec->trace_arg = trace_arg;
 	    {
 		/* thread local traces */
 		state = exec_hooks_protected(th, &th->event_hooks, trace_arg);
@@ -338,19 +338,19 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 		state = exec_hooks_protected(th, &th->vm->event_hooks, trace_arg);
 		if (state) goto terminate;
 
-		th->ec.errinfo = errinfo;
+		th->ec->errinfo = errinfo;
 	    }
 	  terminate:
-	    th->ec.trace_arg = NULL;
+	    th->ec->trace_arg = NULL;
 	    th->vm->trace_running--;
 
-	    th->ec.local_storage_recursive_hash_for_trace = th->ec.local_storage_recursive_hash;
-	    th->ec.local_storage_recursive_hash = old_recursive;
+	    th->ec->local_storage_recursive_hash_for_trace = th->ec->local_storage_recursive_hash;
+	    th->ec->local_storage_recursive_hash = old_recursive;
 
 	    if (state) {
 		if (pop_p) {
-		    if (VM_FRAME_FINISHED_P(th->ec.cfp)) {
-			th->ec.tag = th->ec.tag->prev;
+		    if (VM_FRAME_FINISHED_P(th->ec->cfp)) {
+			th->ec->tag = th->ec->tag->prev;
 		    }
 		    rb_vm_pop_frame(th);
 		}
@@ -379,12 +379,12 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
     VALUE result = Qnil;
     rb_thread_t *volatile th = GET_THREAD();
     enum ruby_tag_type state;
-    const int tracing = th->ec.trace_arg ? 1 : 0;
+    const int volatile tracing = th->ec->trace_arg ? 1 : 0;
     rb_trace_arg_t dummy_trace_arg;
     dummy_trace_arg.event = 0;
 
     if (!tracing) th->vm->trace_running++;
-    if (!th->ec.trace_arg) th->ec.trace_arg = &dummy_trace_arg;
+    if (!th->ec->trace_arg) th->ec->trace_arg = &dummy_trace_arg;
 
     raised = rb_threadptr_reset_raised(th);
 
@@ -398,7 +398,7 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
 	rb_threadptr_set_raised(th);
     }
 
-    if (th->ec.trace_arg == &dummy_trace_arg) th->ec.trace_arg = 0;
+    if (th->ec->trace_arg == &dummy_trace_arg) th->ec->trace_arg = 0;
     if (!tracing) th->vm->trace_running--;
 
     if (state) {
@@ -706,7 +706,7 @@ tpptr(VALUE tpval)
 static rb_trace_arg_t *
 get_trace_arg(void)
 {
-    rb_trace_arg_t *trace_arg = GET_THREAD()->ec.trace_arg;
+    rb_trace_arg_t *trace_arg = GET_THREAD()->ec->trace_arg;
     if (trace_arg == 0) {
 	rb_raise(rb_eRuntimeError, "access from outside");
     }
@@ -1310,7 +1310,7 @@ static VALUE
 tracepoint_inspect(VALUE self)
 {
     rb_tp_t *tp = tpptr(self);
-    rb_trace_arg_t *trace_arg = GET_THREAD()->ec.trace_arg;
+    rb_trace_arg_t *trace_arg = GET_THREAD()->ec->trace_arg;
 
     if (trace_arg) {
 	switch (trace_arg->event) {
@@ -1591,12 +1591,12 @@ rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, 
 void
 rb_postponed_job_flush(rb_vm_t *vm)
 {
-    rb_thread_t *th = GET_THREAD();
+    rb_thread_t * volatile th = GET_THREAD();
     const unsigned long block_mask = POSTPONED_JOB_INTERRUPT_MASK|TRAP_INTERRUPT_MASK;
-    unsigned long saved_mask = th->interrupt_mask & block_mask;
-    VALUE saved_errno = th->ec.errinfo;
+    volatile unsigned long saved_mask = th->interrupt_mask & block_mask;
+    VALUE volatile saved_errno = th->ec->errinfo;
 
-    th->ec.errinfo = Qnil;
+    th->ec->errinfo = Qnil;
     /* mask POSTPONED_JOB dispatch */
     th->interrupt_mask |= block_mask;
     {
@@ -1614,5 +1614,5 @@ rb_postponed_job_flush(rb_vm_t *vm)
     }
     /* restore POSTPONED_JOB mask */
     th->interrupt_mask &= ~(saved_mask ^ block_mask);
-    th->ec.errinfo = saved_errno;
+    th->ec->errinfo = saved_errno;
 }

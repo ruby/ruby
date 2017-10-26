@@ -1721,7 +1721,6 @@ VALUE rb_uninterruptible(VALUE (*b_proc)(ANYARGS), VALUE data);
 VALUE rb_mutex_owned_p(VALUE self);
 
 /* thread_pthread.c, thread_win32.c */
-void Init_native_thread(void);
 int rb_divert_reserved_fd(int fd);
 
 /* transcode.c */

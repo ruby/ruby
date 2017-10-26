@@ -525,7 +525,7 @@ die(void)
 
     abort();
 }
-
+#include <stdio.h>
 void
 rb_bug(const char *fmt, ...)
 {
@@ -1300,7 +1300,7 @@ name_err_initialize(int argc, VALUE *argv, VALUE self)
 	rb_thread_t *th = GET_THREAD();
 	rb_control_frame_t *cfp =
 	    rb_vm_get_ruby_level_next_cfp(th,
-				    RUBY_VM_PREVIOUS_CONTROL_FRAME(th->ec.cfp));
+				    RUBY_VM_PREVIOUS_CONTROL_FRAME(th->ec->cfp));
 	if (cfp) iseqw = rb_iseqw_new(cfp->iseq);
     }
     rb_ivar_set(self, id_iseq, iseqw);

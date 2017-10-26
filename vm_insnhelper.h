@@ -54,7 +54,7 @@ RUBY_SYMBOL_EXPORT_END
 #define VM_REG_EP  (VM_REG_CFP->ep)
 
 #define RESTORE_REGS() do { \
-    VM_REG_CFP = th->ec.cfp; \
+    VM_REG_CFP = th->ec->cfp; \
 } while (0)
 
 #define REG_A   reg_a
@@ -102,7 +102,7 @@ enum vm_regan_acttype {
 #define SET_SV(x)  (*GET_SP() = (x))
   /* set current stack value as x */
 
-#define GET_SP_COUNT() (VM_REG_SP - th->ec.vm_stack)
+#define GET_SP_COUNT() (VM_REG_SP - th->ec->vm_stack)
 
 /* instruction sequence C struct */
 #define GET_ISEQ() (GET_CFP()->iseq)
