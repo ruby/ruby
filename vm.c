@@ -138,9 +138,9 @@ vm_ep_in_heap_p_(const rb_execution_context_t *ec, const VALUE *ep)
 int
 rb_vm_ep_in_heap_p(const VALUE *ep)
 {
-    rb_thread_t *th = GET_THREAD();
-    if (th->ec->vm_stack == NULL) return TRUE;
-    return vm_ep_in_heap_p_(th->ec, ep);
+    const rb_execution_context_t *ec = GET_EC();
+    if (ec->vm_stack == NULL) return TRUE;
+    return vm_ep_in_heap_p_(ec, ep);
 }
 #endif
 
