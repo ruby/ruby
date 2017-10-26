@@ -127,7 +127,7 @@ module Observable
   #          Observable
   def add_observer(observer, func=:update)
     @observer_peers = {} unless defined? @observer_peers
-    unless observer.respond_to? func
+    unless observer.respond_to?(func)
       raise NoMethodError, "observer does not respond to `#{func}'"
     end
     @observer_peers[observer] = func
@@ -139,7 +139,7 @@ module Observable
   #
   # +observer+:: An observer of this Observable
   def delete_observer(observer)
-    @observer_peers.delete observer if defined? @observer_peers
+    @observer_peers.delete(observer) if defined? @observer_peers
   end
 
   #
@@ -153,11 +153,7 @@ module Observable
   # Return the number of observers associated with this object.
   #
   def count_observers
-    if defined? @observer_peers
-      @observer_peers.size
-    else
-      0
-    end
+    (defined? @observer_peers) ? @observer_peers.size : 0
   end
 
   #
@@ -175,11 +171,7 @@ module Observable
   # #notify_observers call.
   #
   def changed?
-    if defined? @observer_state and @observer_state
-      true
-    else
-      false
-    end
+    (defined? @observer_state and @observer_state) ? true : false
   end
 
   #
@@ -194,11 +186,10 @@ module Observable
     if defined? @observer_state and @observer_state
       if defined? @observer_peers
         @observer_peers.each do |k, v|
-          k.send v, *arg
+          k.send(v, *arg)
         end
       end
       @observer_state = false
     end
   end
-
 end
