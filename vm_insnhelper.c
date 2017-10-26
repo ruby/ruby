@@ -271,22 +271,22 @@ rb_vm_push_frame(rb_execution_context_t *ec,
 
 /* return TRUE if the frame is finished */
 static inline int
-vm_pop_frame(rb_thread_t *th, rb_control_frame_t *cfp, const VALUE *ep)
+vm_pop_frame(rb_execution_context_t *ec, rb_control_frame_t *cfp, const VALUE *ep)
 {
     VALUE flags = ep[VM_ENV_DATA_INDEX_FLAGS];
 
     if (VM_CHECK_MODE >= 4) rb_gc_verify_internal_consistency();
     if (VMDEBUG == 2)       SDR();
 
-    th->ec->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    ec->cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 
     return flags & VM_FRAME_FLAG_FINISH;
 }
 
 void
-rb_vm_pop_frame(rb_thread_t *th)
+rb_vm_pop_frame(rb_execution_context_t *ec)
 {
-    vm_pop_frame(th, th->ec->cfp, th->ec->cfp->ep);
+    vm_pop_frame(ec, ec->cfp, ec->cfp->ep);
 }
 
 /* method dispatch */
@@ -1691,7 +1691,7 @@ vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_
 	}
     }
 
-    vm_pop_frame(th, cfp, cfp->ep);
+    vm_pop_frame(th->ec, cfp, cfp->ep);
     cfp = th->ec->cfp;
 
     sp_orig = sp = cfp->sp;
@@ -1925,7 +1925,7 @@ vm_call_cfunc_with_frame(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb
 
     CHECK_CFP_CONSISTENCY("vm_call_cfunc");
 
-    rb_vm_pop_frame(th);
+    rb_vm_pop_frame(th->ec);
 
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, me->def->original_id, ci->mid, me->owner, val);
     RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, me->owner, me->def->original_id);
@@ -2551,7 +2551,7 @@ vm_yield_with_cfunc(rb_thread_t *th,
 		  (VALUE)me,
 		  0, th->ec->cfp->sp, 0, 0);
     val = (*ifunc->func)(arg, ifunc->data, argc, argv, blockarg);
-    rb_vm_pop_frame(th);
+    rb_vm_pop_frame(th->ec);
 
     return val;
 }

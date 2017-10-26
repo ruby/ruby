@@ -803,7 +803,7 @@ rb_raise_jump(VALUE mesg, VALUE cause)
     VALUE self = cfp->self;
     ID mid = me->called_id;
 
-    rb_vm_pop_frame(th);
+    rb_vm_pop_frame(th->ec);
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, self, me->def->original_id, mid, klass, Qnil);
 
     rb_longjmp(th, TAG_RAISE, mesg, cause);

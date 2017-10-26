@@ -698,7 +698,7 @@ raise_argument_error(rb_thread_t *th, const rb_iseq_t *iseq, const VALUE exc)
 		      iseq->body->iseq_encoded,
 		      th->ec->cfp->sp, 0, 0 /* stack_max */);
 	at = rb_threadptr_backtrace_object(th);
-	rb_vm_pop_frame(th);
+	rb_vm_pop_frame(th->ec);
     }
     else {
 	at = rb_threadptr_backtrace_object(th);
