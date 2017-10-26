@@ -421,14 +421,14 @@ backtrace_alloc(VALUE klass)
 }
 
 static void
-backtrace_each(rb_thread_t *th,
+backtrace_each(const rb_execution_context_t *ec,
 	       void (*init)(void *arg, size_t size),
 	       void (*iter_iseq)(void *arg, const rb_control_frame_t *cfp),
 	       void (*iter_cfunc)(void *arg, const rb_control_frame_t *cfp, ID mid),
 	       void *arg)
 {
-    const rb_control_frame_t *last_cfp = th->ec->cfp;
-    const rb_control_frame_t *start_cfp = RUBY_VM_END_CONTROL_FRAME(th->ec);
+    const rb_control_frame_t *last_cfp = ec->cfp;
+    const rb_control_frame_t *start_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
     const rb_control_frame_t *cfp;
     ptrdiff_t size, i;
 
@@ -439,7 +439,7 @@ backtrace_each(rb_thread_t *th,
      *  top frame
      *  ...
      *  2nd frame     <- lev:0
-     *  current frame <- th->ec->cfp
+     *  current frame <- ec->cfp
      */
 
     start_cfp =
@@ -457,7 +457,7 @@ backtrace_each(rb_thread_t *th,
 
     /* SDR(); */
     for (i=0, cfp = start_cfp; i<size; i++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
-	/* fprintf(stderr, "cfp: %d\n", (rb_control_frame_t *)(th->stack + th->stack_size) - cfp); */
+	/* fprintf(stderr, "cfp: %d\n", (rb_control_frame_t *)(ec->vm_stack + ec->vm_stack_size) - cfp); */
 	if (cfp->iseq) {
 	    if (cfp->pc) {
 		iter_iseq(arg, cfp);
@@ -517,7 +517,7 @@ rb_threadptr_backtrace_object(rb_thread_t *th)
     struct bt_iter_arg arg;
     arg.prev_loc = 0;
 
-    backtrace_each(th,
+    backtrace_each(th->ec,
 		   bt_init,
 		   bt_iter_iseq,
 		   bt_iter_cfunc,
@@ -726,7 +726,7 @@ vm_backtrace_print(FILE *fp)
 
     arg.func = oldbt_print;
     arg.data = (void *)fp;
-    backtrace_each(GET_THREAD(),
+    backtrace_each(GET_EC(),
 		   oldbt_init,
 		   oldbt_iter_iseq,
 		   oldbt_iter_cfunc,
@@ -759,7 +759,7 @@ rb_backtrace_print_as_bugreport(void)
     arg.func = oldbt_bugreport;
     arg.data = (int *)&i;
 
-    backtrace_each(GET_THREAD(),
+    backtrace_each(GET_EC(),
 		   oldbt_init,
 		   oldbt_iter_iseq,
 		   oldbt_iter_cfunc,
@@ -802,7 +802,7 @@ rb_backtrace_each(VALUE (*iter)(VALUE recv, VALUE str), VALUE output)
     parg.output = output;
     arg.func = oldbt_print_to;
     arg.data = &parg;
-    backtrace_each(GET_THREAD(),
+    backtrace_each(GET_EC(),
 		   oldbt_init,
 		   oldbt_iter_iseq,
 		   oldbt_iter_cfunc,
@@ -1141,7 +1141,7 @@ collect_caller_bindings(rb_thread_t *th)
 
     data.ary = rb_ary_new();
 
-    backtrace_each(th,
+    backtrace_each(th->ec,
 		   collect_caller_bindings_init,
 		   collect_caller_bindings_iseq,
 		   collect_caller_bindings_cfunc,
