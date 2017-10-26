@@ -1044,6 +1044,12 @@ rb_sym_intern_ascii_cstr(const char *ptr)
     return rb_sym_intern_ascii(ptr, strlen(ptr));
 }
 
+VALUE
+rb_to_symbol_type(VALUE obj)
+{
+    return rb_convert_type_with_id(obj, T_SYMBOL, "Symbol", idTo_sym);
+}
+
 static ID
 attrsetname_to_attr_id(VALUE name)
 {

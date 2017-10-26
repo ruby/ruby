@@ -1037,6 +1037,7 @@ VALUE rb_ary_at(VALUE, VALUE);
 VALUE rb_ary_aref1(VALUE ary, VALUE i);
 VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
 size_t rb_ary_memsize(VALUE);
+VALUE rb_to_array_type(VALUE obj);
 #ifdef __GNUC__
 #define rb_ary_new_from_args(n, ...) \
     __extension__ ({ \
@@ -1268,6 +1269,7 @@ long rb_dbl_long_hash(double d);
 st_table *rb_init_identtable(void);
 st_table *rb_init_identtable_with_size(st_index_t size);
 VALUE rb_hash_compare_by_id_p(VALUE hash);
+VALUE rb_to_hash_type(VALUE obj);
 
 #define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h)
 VALUE rb_hash_keys(VALUE hash);
@@ -1686,6 +1688,7 @@ VALUE rb_sym_intern_ascii_cstr(const char *ptr);
 	rb_sym_intern_ascii_cstr(ptr); \
 })
 #endif
+VALUE rb_to_symbol_type(VALUE obj);
 
 /* struct.c */
 VALUE rb_struct_init_copy(VALUE copy, VALUE s);

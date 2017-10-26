@@ -2386,7 +2386,7 @@ rb_execarg_parent_start1(VALUE execarg_obj)
         }
         else {
             envtbl = rb_const_get(rb_cObject, id_ENV);
-            envtbl = rb_convert_type_with_id(envtbl, T_HASH, "Hash", idTo_hash);
+            envtbl = rb_to_hash_type(envtbl);
         }
         hide_obj(envtbl);
         if (envopts != Qfalse) {

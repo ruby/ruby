@@ -712,11 +712,12 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
     return hash;
 }
 
-static VALUE
-to_hash(VALUE hash)
+VALUE
+rb_to_hash_type(VALUE hash)
 {
     return rb_convert_type_with_id(hash, T_HASH, "Hash", idTo_hash);
 }
+#define to_hash rb_to_hash_type
 
 VALUE
 rb_check_hash_type(VALUE hash)

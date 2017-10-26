@@ -520,10 +520,10 @@ rb_iseq_load_iseq(VALUE fname)
     return NULL;
 }
 
-#define CHECK_ARRAY(v)   rb_convert_type_with_id((v), T_ARRAY, "Array", idTo_ary)
-#define CHECK_HASH(v)    rb_convert_type_with_id((v), T_HASH, "Hash", idTo_hash)
-#define CHECK_STRING(v)  rb_convert_type_with_id((v), T_STRING, "String", idTo_str)
-#define CHECK_SYMBOL(v)  rb_convert_type_with_id((v), T_SYMBOL, "Symbol", idTo_sym)
+#define CHECK_ARRAY(v)   rb_to_array_type(v)
+#define CHECK_HASH(v)    rb_to_hash_type(v)
+#define CHECK_STRING(v)  rb_str_to_str(v)
+#define CHECK_SYMBOL(v)  rb_to_symbol_type(v)
 static inline VALUE CHECK_INTEGER(VALUE v) {(void)NUM2LONG(v); return v;}
 
 static enum iseq_type
