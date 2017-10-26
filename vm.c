@@ -449,7 +449,7 @@ vm_set_top_stack(rb_thread_t *th, const rb_iseq_t *iseq)
     }
 
     /* for return */
-    vm_push_frame(th, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH, th->top_self,
+    vm_push_frame(th->ec, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH, th->top_self,
 		  VM_BLOCK_HANDLER_NONE,
 		  (VALUE)vm_cref_new_toplevel(th), /* cref or me */
 		  iseq->body->iseq_encoded, th->ec->cfp->sp,
@@ -459,7 +459,7 @@ vm_set_top_stack(rb_thread_t *th, const rb_iseq_t *iseq)
 static void
 vm_set_eval_stack(rb_thread_t * th, const rb_iseq_t *iseq, const rb_cref_t *cref, const struct rb_block *base_block)
 {
-    vm_push_frame(th, iseq, VM_FRAME_MAGIC_EVAL | VM_FRAME_FLAG_FINISH,
+    vm_push_frame(th->ec, iseq, VM_FRAME_MAGIC_EVAL | VM_FRAME_FLAG_FINISH,
 		  vm_block_self(base_block), VM_GUARDED_PREV_EP(vm_block_ep(base_block)),
 		  (VALUE)cref, /* cref or me */
 		  iseq->body->iseq_encoded,
@@ -976,7 +976,7 @@ invoke_block(rb_thread_t *th, const rb_iseq_t *iseq, VALUE self, const struct rb
 {
     int arg_size = iseq->body->param.size;
 
-    vm_push_frame(th, iseq, type | VM_FRAME_FLAG_FINISH, self,
+    vm_push_frame(th->ec, iseq, type | VM_FRAME_FLAG_FINISH, self,
 		  VM_GUARDED_PREV_EP(captured->ep),
 		  (VALUE)cref, /* cref or method */
 		  iseq->body->iseq_encoded + opt_pc,
@@ -993,7 +993,7 @@ invoke_bmethod(rb_thread_t *th, const rb_iseq_t *iseq, VALUE self, const struct 
     int arg_size = iseq->body->param.size;
     VALUE ret;
 
-    vm_push_frame(th, iseq, type | VM_FRAME_FLAG_BMETHOD, self,
+    vm_push_frame(th->ec, iseq, type | VM_FRAME_FLAG_BMETHOD, self,
 		  VM_GUARDED_PREV_EP(captured->ep),
 		  (VALUE)me,
 		  iseq->body->iseq_encoded + opt_pc,
@@ -1990,7 +1990,7 @@ vm_exec(rb_thread_t *th)
 
 	    /* push block frame */
 	    cfp->sp[0] = (VALUE)err;
-	    vm_push_frame(th, catch_iseq, VM_FRAME_MAGIC_RESCUE,
+	    vm_push_frame(th->ec, catch_iseq, VM_FRAME_MAGIC_RESCUE,
 			  cfp->self,
 			  VM_GUARDED_PREV_EP(cfp->ep),
 			  0, /* cref or me */
@@ -2108,7 +2108,7 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
     const rb_iseq_t *iseq = rb_iseq_new(0, filename, filename, Qnil, 0, ISEQ_TYPE_TOP);
     VALUE val;
 
-    vm_push_frame(th, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH,
+    vm_push_frame(th->ec, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH,
 		  recv, block_handler,
 		  (VALUE)vm_cref_new_toplevel(th), /* cref or me */
 		  0, reg_cfp->sp, 0, 0);
@@ -2546,7 +2546,7 @@ th_init(rb_thread_t *th, VALUE self)
 
     th->ec->cfp = (void *)(th->ec->vm_stack + th->ec->vm_stack_size);
 
-    vm_push_frame(th, 0 /* dummy iseq */, VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_CFRAME /* dummy frame */,
+    vm_push_frame(th->ec, 0 /* dummy iseq */, VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_CFRAME /* dummy frame */,
 		  Qnil /* dummy self */, VM_BLOCK_HANDLER_NONE /* dummy block ptr */,
 		  0 /* dummy cref/me */,
 		  0 /* dummy pc */, th->ec->vm_stack, 0, 0);

@@ -197,16 +197,16 @@ vm_check_frame(VALUE type,
 #endif /* VM_CHECK_MODE > 0 */
 
 static inline rb_control_frame_t *
-vm_push_frame_(rb_execution_context_t *ec,
-	       const rb_iseq_t *iseq,
-	       VALUE type,
-	       VALUE self,
-	       VALUE specval,
-	       VALUE cref_or_me,
-	       const VALUE *pc,
-	       VALUE *sp,
-	       int local_size,
-	       int stack_max)
+vm_push_frame(rb_execution_context_t *ec,
+	      const rb_iseq_t *iseq,
+	      VALUE type,
+	      VALUE self,
+	      VALUE specval,
+	      VALUE cref_or_me,
+	      const VALUE *pc,
+	      VALUE *sp,
+	      int local_size,
+	      int stack_max)
 {
     rb_control_frame_t *const cfp = ec->cfp - 1;
     int i;
@@ -254,21 +254,6 @@ vm_push_frame_(rb_execution_context_t *ec,
     return cfp;
 }
 
-static rb_control_frame_t *
-vm_push_frame(rb_thread_t *th,
-	      const rb_iseq_t *iseq,
-	      VALUE type,
-	      VALUE self,
-	      VALUE specval,
-	      VALUE cref_or_me,
-	      const VALUE *pc,
-	      VALUE *sp,
-	      int local_size,
-	      int stack_max)
-{
-    return vm_push_frame_(th->ec, iseq, type, self, specval, cref_or_me, pc, sp, local_size, stack_max);
-}
-
 rb_control_frame_t *
 rb_vm_push_frame(rb_execution_context_t *ec,
 		 const rb_iseq_t *iseq,
@@ -281,7 +266,7 @@ rb_vm_push_frame(rb_execution_context_t *ec,
 		 int local_size,
 		 int stack_max)
 {
-    return vm_push_frame_(ec, iseq, type, self, specval, cref_or_me, pc, sp, local_size, stack_max);
+    return vm_push_frame(ec, iseq, type, self, specval, cref_or_me, pc, sp, local_size, stack_max);
 }
 
 /* return TRUE if the frame is finished */
@@ -1674,7 +1659,7 @@ vm_call_iseq_setup_normal(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_ca
     VALUE *sp = argv + param_size;
     cfp->sp = argv - 1 /* recv */;
 
-    vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL, calling->recv,
+    vm_push_frame(th->ec, iseq, VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL, calling->recv,
 		  calling->block_handler, (VALUE)me,
 		  iseq->body->iseq_encoded + opt_pc, sp,
 		  local_size - param_size,
@@ -1720,7 +1705,7 @@ vm_call_iseq_setup_tailcall(rb_thread_t *th, rb_control_frame_t *cfp, struct rb_
 	*sp++ = src_argv[i];
     }
 
-    vm_push_frame(th, iseq, VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL | finish_flag,
+    vm_push_frame(th->ec, iseq, VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL | finish_flag,
 		  calling->recv, calling->block_handler, (VALUE)me,
 		  iseq->body->iseq_encoded + opt_pc, sp,
 		  iseq->body->local_table_size - iseq->body->param.size,
@@ -1928,7 +1913,7 @@ vm_call_cfunc_with_frame(rb_thread_t *th, rb_control_frame_t *reg_cfp, struct rb
     RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, me->owner, me->def->original_id);
     EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, me->def->original_id, ci->mid, me->owner, Qundef);
 
-    vm_push_frame(th, NULL, VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL, recv,
+    vm_push_frame(th->ec, NULL, VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL, recv,
 		  block_handler, (VALUE)me,
 		  0, th->ec->cfp->sp, 0, 0);
 
@@ -2559,7 +2544,7 @@ vm_yield_with_cfunc(rb_thread_t *th,
 
     blockarg = vm_block_handler_to_proc(th, block_handler);
 
-    vm_push_frame(th, (const rb_iseq_t *)captured->code.ifunc,
+    vm_push_frame(th->ec, (const rb_iseq_t *)captured->code.ifunc,
 		  VM_FRAME_MAGIC_IFUNC | VM_FRAME_FLAG_CFRAME,
 		  self,
 		  VM_GUARDED_PREV_EP(captured->ep),
@@ -2676,7 +2661,7 @@ vm_invoke_iseq_block(rb_thread_t *th, rb_control_frame_t *reg_cfp,
 
     SET_SP(rsp);
 
-    vm_push_frame(th, iseq,
+    vm_push_frame(th->ec, iseq,
 		  VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0),
 		  captured->self,
 		  VM_GUARDED_PREV_EP(captured->ep), 0,
