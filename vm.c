@@ -2415,6 +2415,8 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 }
 
 void rb_fiber_mark_self(rb_fiber_t *fib);
+void rb_threadptr_root_fiber_setup(rb_thread_t *th);
+void rb_threadptr_root_fiber_release(rb_thread_t *th);
 
 void
 rb_thread_mark(void *ptr)
@@ -2433,7 +2435,7 @@ rb_thread_mark(void *ptr)
     RUBY_MARK_UNLESS_NULL(th->pending_interrupt_mask_stack);
     RUBY_MARK_UNLESS_NULL(th->top_self);
     RUBY_MARK_UNLESS_NULL(th->top_wrapper);
-    rb_fiber_mark_self(th->root_fiber);
+    if (th->root_fiber) rb_fiber_mark_self(th->root_fiber);
     RUBY_MARK_UNLESS_NULL(th->stat_insn_usage);
     RUBY_MARK_UNLESS_NULL(th->last_status);
     RUBY_MARK_UNLESS_NULL(th->locking_mutex);
@@ -2456,12 +2458,7 @@ thread_free(void *ptr)
 	rb_bug("thread_free: keeping_mutexes must be NULL (%p:%p)", (void *)th, (void *)th->keeping_mutexes);
     }
 
-    if (th->ec->local_storage) {
-	st_free_table(th->ec->local_storage);
-    }
-
-    if (th->ec == ruby_current_execution_context_ptr)
-        ruby_current_execution_context_ptr = NULL;
+    rb_threadptr_root_fiber_release(th);
 
     if (th->vm && th->vm->main_thread == th) {
 	RUBY_GC_INFO("main thread\n");
@@ -2524,8 +2521,6 @@ thread_alloc(VALUE klass)
 
     return obj;
 }
-
-void rb_threadptr_root_fiber_setup(rb_thread_t *th);
 
 static void
 th_init(rb_thread_t *th, VALUE self)

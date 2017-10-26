@@ -440,6 +440,7 @@ fiber_free(void *ptr)
 {
     rb_fiber_t *fib = ptr;
     RUBY_FREE_ENTER("fiber");
+
     if (fib->cont.saved_ec.local_storage) {
 	st_free_table(fib->cont.saved_ec.local_storage);
     }
@@ -1476,7 +1477,6 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     fib->cont.thread_ptr = th;
     fiber_status_set(fib, FIBER_RESUMED); /* skip CREATED */
     th->ec = &fib->cont.saved_ec;
-    th->root_fiber = th->ec->fiber = fib;
 #if FIBER_USE_NATIVE
 #ifdef _WIN32
     if (fib->fib_handle == 0) {
@@ -1484,6 +1484,24 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     }
 #endif
 #endif
+}
+
+void
+rb_threadptr_root_fiber_release(rb_thread_t *th)
+{
+    if (th->root_fiber) {
+	/* ignore. A root fiber object will free th->ec */
+    }
+    else {
+	VM_ASSERT(th->ec->fiber->cont.type == ROOT_FIBER_CONTEXT);
+	VM_ASSERT(th->ec->fiber->cont.self == 0);
+	fiber_free(th->ec->fiber);
+
+	if (th->ec == ruby_current_execution_context_ptr) {
+	    ruby_current_execution_context_ptr = NULL;
+	}
+	th->ec = NULL;
+    }
 }
 
 static inline rb_fiber_t*
