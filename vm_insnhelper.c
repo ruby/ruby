@@ -1105,7 +1105,7 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 	    else {
 		ep = VM_ENV_PREV_EP(ep);
 		base_iseq = base_iseq->body->parent_iseq;
-		escape_cfp = rb_vm_search_cf_from_ep(th, escape_cfp, ep);
+		escape_cfp = rb_vm_search_cf_from_ep(th->ec, escape_cfp, ep);
 		VM_ASSERT(escape_cfp->iseq == base_iseq);
 	    }
 	}
@@ -1157,7 +1157,7 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 	    ep = VM_ENV_PREV_EP(ep);
 	}
 
-	escape_cfp = rb_vm_search_cf_from_ep(th, reg_cfp, ep);
+	escape_cfp = rb_vm_search_cf_from_ep(th->ec, reg_cfp, ep);
     }
     else if (state == TAG_RETURN) {
 	const VALUE *current_ep = GET_EP();
