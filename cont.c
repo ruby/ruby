@@ -1521,7 +1521,10 @@ return_fiber(void)
     rb_fiber_t *prev = fib->prev;
 
     if (!prev) {
-	rb_fiber_t *root_fiber = GET_THREAD()->root_fiber;
+	rb_thread_t *th = GET_THREAD();
+	rb_fiber_t *root_fiber = th->root_fiber;
+
+	VM_ASSERT(root_fiber != NULL);
 
 	if (root_fiber == fib) {
 	    rb_raise(rb_eFiberError, "can't yield from root fiber");
@@ -1622,6 +1625,9 @@ fiber_switch(rb_fiber_t *fib, int argc, const VALUE *argv, int is_resume)
     VALUE value;
     rb_context_t *cont = &fib->cont;
     rb_thread_t *th = GET_THREAD();
+
+    /* make sure the root_fiber object is available */
+    if (th->root_fiber == NULL) root_fiber_alloc(th);
 
     if (th->ec->fiber == fib) {
 	/* ignore fiber context switch
