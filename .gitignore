@@ -186,7 +186,6 @@ lcov*.info
 
 # /spec/bundler
 /.rspec_status
-/spec/rspec
 
 # /tool/
 /tool/config.guess
