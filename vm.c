@@ -86,10 +86,10 @@ rb_vm_frame_block_handler(const rb_control_frame_t *cfp)
 
 #if VM_CHECK_MODE > 0
 static int
-VM_CFP_IN_HEAP_P(const rb_thread_t *th, const rb_control_frame_t *cfp)
+VM_CFP_IN_HEAP_P(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
-    const VALUE *start = th->ec->vm_stack;
-    const VALUE *end = (VALUE *)th->ec->vm_stack + th->ec->vm_stack_size;
+    const VALUE *start = ec->vm_stack;
+    const VALUE *end = (VALUE *)ec->vm_stack + ec->vm_stack_size;
     VM_ASSERT(start != NULL);
 
     if (start <= (VALUE *)cfp && (VALUE *)cfp < end) {
@@ -147,7 +147,7 @@ rb_vm_ep_in_heap_p(const VALUE *ep)
 static struct rb_captured_block *
 VM_CFP_TO_CAPTURED_BLOCK(const rb_control_frame_t *cfp)
 {
-    VM_ASSERT(!VM_CFP_IN_HEAP_P(GET_THREAD(), cfp));
+    VM_ASSERT(!VM_CFP_IN_HEAP_P(GET_EC(), cfp));
     return (struct rb_captured_block *)&cfp->self;
 }
 
@@ -155,7 +155,7 @@ static rb_control_frame_t *
 VM_CAPTURED_BLOCK_TO_CFP(const struct rb_captured_block *captured)
 {
     rb_control_frame_t *cfp = ((rb_control_frame_t *)((VALUE *)(captured) - 3));
-    VM_ASSERT(!VM_CFP_IN_HEAP_P(GET_THREAD(), cfp));
+    VM_ASSERT(!VM_CFP_IN_HEAP_P(GET_EC(), cfp));
     VM_ASSERT(sizeof(rb_control_frame_t)/sizeof(VALUE) == 6 + VM_DEBUG_BP_CHECK ? 1 : 0);
     return cfp;
 }
