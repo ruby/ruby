@@ -1157,6 +1157,21 @@ update-bundled_gems: PHONY
 	     "$(srcdir)/gems/bundled_gems" | \
 	"$(IFCHANGE)" "$(srcdir)/gems/bundled_gems" -
 
+test-bundler-precheck: $(arch)-fake.rb programs
+
+yes-test-bundler-prepare: test-bundler-precheck
+	$(XRUBY) -C "$(srcdir)" bin/gem install --no-ri --no-rdoc \
+		--install-dir .bundle --conservative 'rspec:~> 3.5'
+
+RSPECOPTS = --format progress
+BUNDLER_SPECS =
+test-bundler: $(TEST_RUNNABLE)-test-bundler
+yes-test-bundler: yes-test-bundler-prepare
+	$(gnumake_recursive)$(Q) \
+	$(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/rspec \
+		$(RSPECOPTS) spec/bundler/$(BUNDLER_SPECS)
+no-test-bundler:
+
 UNICODE_FILES = $(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_SRC_DATA_DIR)/CompositionExclusions.txt \
 		$(UNICODE_SRC_DATA_DIR)/NormalizationTest.txt \
