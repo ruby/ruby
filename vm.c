@@ -32,13 +32,13 @@ VM_EP_LEP(const VALUE *ep)
 }
 
 static inline const rb_control_frame_t *
-rb_vm_search_cf_from_ep(const rb_thread_t * const th, const rb_control_frame_t *cfp, const VALUE * const ep)
+rb_vm_search_cf_from_ep(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, const VALUE * const ep)
 {
     if (!ep) {
 	return NULL;
     }
     else {
-	const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(th->ec); /* end of control frame pointer */
+	const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(ec); /* end of control frame pointer */
 
 	while (cfp < eocfp) {
 	    if (cfp->ep == ep) {
@@ -1478,7 +1478,7 @@ vm_iter_break(rb_thread_t *th, VALUE val)
 {
     rb_control_frame_t *cfp = next_not_local_frame(th->ec->cfp);
     const VALUE *ep = VM_CF_PREV_EP(cfp);
-    const rb_control_frame_t *target_cfp = rb_vm_search_cf_from_ep(th, cfp, ep);
+    const rb_control_frame_t *target_cfp = rb_vm_search_cf_from_ep(th->ec, cfp, ep);
 
 #if 0				/* raise LocalJumpError */
     if (!target_cfp) {
