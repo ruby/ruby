@@ -429,7 +429,7 @@ class TestEnv < Test::Unit::TestCase
   if /mswin|mingw/ =~ RUBY_PLATFORM
     def test_win32_blocksize
       keys = []
-      len = 32767 - ENV.to_a.flatten.inject(0) {|r,e| r + e.bytesize + 1}
+      len = 32767 - ENV.to_a.flatten.inject(1) {|r,e| r + e.bytesize + 1}
       val = "bar" * 1000
       key = nil
       while (len -= val.size + (key="foo#{len}").size + 2) > 0
