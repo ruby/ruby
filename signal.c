@@ -1001,18 +1001,18 @@ signal_exec(VALUE cmd, int safe, int sig)
 	return;
 
     cur_th->interrupt_mask |= TRAP_INTERRUPT_MASK;
-    TH_PUSH_TAG(cur_th);
+    EC_PUSH_TAG(cur_th->ec);
     if ((state = EXEC_TAG()) == TAG_NONE) {
 	VALUE signum = INT2NUM(sig);
 	rb_eval_cmd(cmd, rb_ary_new3(1, signum), safe);
     }
-    TH_POP_TAG();
+    EC_POP_TAG();
     cur_th = GET_THREAD();
     cur_th->interrupt_mask = old_interrupt_mask;
 
     if (state) {
 	/* XXX: should be replaced with rb_threadptr_pending_interrupt_enque() */
-	TH_JUMP_TAG(cur_th, state);
+	EC_JUMP_TAG(cur_th->ec, state);
     }
 }
 

@@ -1408,7 +1408,7 @@ rb_fiber_start(void)
     VM_ASSERT(th->ec == ruby_current_execution_context_ptr);
     VM_ASSERT(FIBER_RESUMED_P(fib));
 
-    TH_PUSH_TAG(th);
+    EC_PUSH_TAG(th->ec);
     if ((state = EXEC_TAG()) == TAG_NONE) {
 	rb_context_t *cont = &VAR_FROM_MEMORY(fib)->cont;
 	int argc;
@@ -1423,7 +1423,7 @@ rb_fiber_start(void)
 	EXEC_EVENT_HOOK(th, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
 	cont->value = rb_vm_invoke_proc(th, proc, argc, argv, VM_BLOCK_HANDLER_NONE);
     }
-    TH_POP_TAG();
+    EC_POP_TAG();
 
     if (state) {
 	VM_ASSERT(FIBER_RESUMED_P(fib));

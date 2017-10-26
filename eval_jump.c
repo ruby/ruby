@@ -118,7 +118,7 @@ rb_exec_end_proc(void)
     rb_thread_t *th = GET_THREAD();
     volatile VALUE errinfo = th->ec->errinfo;
 
-    TH_PUSH_TAG(th);
+    EC_PUSH_TAG(th->ec);
     if ((state = EXEC_TAG()) == TAG_NONE) {
       again:
 	exec_end_procs_chain(&ephemeral_end_procs, &th->ec->errinfo);
@@ -126,13 +126,13 @@ rb_exec_end_proc(void)
     }
     else {
 	VAR_INITIALIZED(th);
-	TH_TMPPOP_TAG();
+	EC_TMPPOP_TAG();
 	error_handle(state);
 	if (!NIL_P(th->ec->errinfo)) errinfo = th->ec->errinfo;
-	TH_REPUSH_TAG();
+	EC_REPUSH_TAG();
 	goto again;
     }
-    TH_POP_TAG();
+    EC_POP_TAG();
 
     rb_set_safe_level_force(safe);
     th->ec->errinfo = errinfo;

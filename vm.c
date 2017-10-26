@@ -1150,17 +1150,17 @@ vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, VALUE self,
     enum ruby_tag_type state;
     volatile int stored_safe = th->ec->safe_level;
 
-    TH_PUSH_TAG(th);
+    EC_PUSH_TAG(th->ec);
     if ((state = EXEC_TAG()) == TAG_NONE) {
 	th->ec->safe_level = proc->safe_level;
 	val = invoke_block_from_c_proc(th, proc, self, argc, argv, passed_block_handler, proc->is_lambda);
     }
-    TH_POP_TAG();
+    EC_POP_TAG();
 
     th->ec->safe_level = stored_safe;
 
     if (state) {
-	TH_JUMP_TAG(th, state);
+	EC_JUMP_TAG(th->ec, state);
     }
     return val;
 }
@@ -1487,7 +1487,7 @@ vm_iter_break(rb_thread_t *th, VALUE val)
 #endif
 
     th->ec->errinfo = (VALUE)THROW_DATA_NEW(val, target_cfp, TAG_BREAK);
-    TH_JUMP_TAG(th, TAG_BREAK);
+    EC_JUMP_TAG(th->ec, TAG_BREAK);
 }
 
 void
@@ -1791,7 +1791,8 @@ vm_exec(rb_thread_t *th)
     VALUE initial = 0;
     struct vm_throw_data *err;
 
-    TH_PUSH_TAG(th);
+    EC_PUSH_TAG(th->ec);
+
     _tag.retval = Qnil;
     if ((state = EXEC_TAG()) == TAG_NONE) {
       vm_loop_start:
@@ -2010,8 +2011,8 @@ vm_exec(rb_thread_t *th)
 	    if (VM_FRAME_FINISHED_P(th->ec->cfp)) {
 		rb_vm_pop_frame(th->ec);
 		th->ec->errinfo = (VALUE)err;
-		TH_TMPPOP_TAG();
-		TH_JUMP_TAG(th, state);
+		EC_TMPPOP_TAG();
+		EC_JUMP_TAG(th->ec, state);
 	    }
 	    else {
 		rb_vm_pop_frame(th->ec);
@@ -2020,7 +2021,7 @@ vm_exec(rb_thread_t *th)
 	}
     }
   finish_vme:
-    TH_POP_TAG();
+    EC_POP_TAG();
     return result;
 }
 

@@ -43,7 +43,7 @@ threadptr_stack_overflow(rb_thread_t *th, int setup)
 	rb_ivar_set(mesg, idBt_locations, at);
     }
     th->ec->errinfo = mesg;
-    TH_JUMP_TAG(th, TAG_RAISE);
+    EC_JUMP_TAG(th->ec, TAG_RAISE);
 }
 
 static void
@@ -59,7 +59,7 @@ rb_threadptr_stack_overflow(rb_thread_t *th, int crit)
     if (crit || rb_during_gc()) {
 	th->ec->raised_flag = RAISED_STACKOVERFLOW;
 	th->ec->errinfo = th->vm->special_exceptions[ruby_error_stackfatal];
-	TH_JUMP_TAG(th, TAG_RAISE);
+	EC_JUMP_TAG(th->ec, TAG_RAISE);
     }
 #ifdef USE_SIGALTSTACK
     threadptr_stack_overflow(th, TRUE);
