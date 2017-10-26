@@ -140,10 +140,8 @@ ruby_thread_set_native(rb_thread_t *th)
 }
 
 void
-Init_native_thread(void)
+Init_native_thread(rb_thread_t *th)
 {
-    rb_thread_t *th = GET_THREAD();
-
     ruby_native_thread_key = TlsAlloc();
     ruby_thread_set_native(th);
     DuplicateHandle(GetCurrentProcess(),
@@ -546,8 +544,8 @@ native_thread_init_stack(rb_thread_t *th)
     size = end - base;
     space = size / 5;
     if (space > 1024*1024) space = 1024*1024;
-    th->ec.machine.stack_start = (VALUE *)end - 1;
-    th->ec.machine.stack_maxsize = size - space;
+    th->ec->machine.stack_start = (VALUE *)end - 1;
+    th->ec->machine.stack_maxsize = size - space;
 }
 
 #ifndef InterlockedExchangePointer
@@ -575,7 +573,7 @@ thread_start_func_1(void *th_ptr)
     thread_debug("thread created (th: %p, thid: %p, event: %p)\n", th,
 		 th->thread_id, th->native_thread_data.interrupt_event);
 
-    thread_start_func_2(th, th->ec.machine.stack_start, rb_ia64_bsp());
+    thread_start_func_2(th, th->ec->machine.stack_start, rb_ia64_bsp());
 
     w32_close_handle(thread_id);
     thread_debug("thread deleted (th: %p)\n", th);

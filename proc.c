@@ -333,7 +333,7 @@ VALUE
 rb_binding_new(void)
 {
     rb_thread_t *th = GET_THREAD();
-    return rb_vm_make_binding(th, th->ec.cfp);
+    return rb_vm_make_binding(th, th->ec->cfp);
 }
 
 /*
@@ -698,7 +698,7 @@ proc_new(VALUE klass, int8_t is_lambda)
 {
     VALUE procval;
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->ec.cfp;
+    rb_control_frame_t *cfp = th->ec->cfp;
     VALUE block_handler;
 
     if ((block_handler = rb_vm_frame_block_handler(cfp)) == VM_BLOCK_HANDLER_NONE) {
@@ -1049,7 +1049,7 @@ rb_block_arity(void)
 {
     int min, max;
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->ec.cfp;
+    rb_control_frame_t *cfp = th->ec->cfp;
     VALUE block_handler = rb_vm_frame_block_handler(cfp);
     struct rb_block block;
 
@@ -1082,7 +1082,7 @@ int
 rb_block_min_max_arity(int *max)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->ec.cfp;
+    rb_control_frame_t *cfp = th->ec->cfp;
     VALUE block_handler = rb_vm_frame_block_handler(cfp);
     struct rb_block block;
 
@@ -1911,7 +1911,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	body = rb_block_lambda();
 #else
 	rb_thread_t *th = GET_THREAD();
-	VALUE block_handler = rb_vm_frame_block_handler(th->ec.cfp);
+	VALUE block_handler = rb_vm_frame_block_handler(th->ec->cfp);
 	if (block_handler == VM_BLOCK_HANDLER_NONE) rb_raise(rb_eArgError, proc_without_block);
 
 	switch (vm_block_handler_type(block_handler)) {

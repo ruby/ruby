@@ -69,7 +69,7 @@ set_backtrace(VALUE info, VALUE bt)
 static void
 error_print(rb_thread_t *th)
 {
-    rb_threadptr_error_print(th, th->ec.errinfo);
+    rb_threadptr_error_print(th, th->ec->errinfo);
 }
 
 static void
@@ -167,7 +167,7 @@ void
 rb_threadptr_error_print(rb_thread_t *volatile th, volatile VALUE errinfo)
 {
     volatile VALUE errat = Qundef;
-    volatile int raised_flag = th->ec.raised_flag;
+    volatile int raised_flag = th->ec->raised_flag;
     volatile VALUE eclass = Qundef, emesg = Qundef;
 
     if (NIL_P(errinfo))
@@ -202,7 +202,7 @@ rb_threadptr_error_print(rb_thread_t *volatile th, volatile VALUE errinfo)
     }
   error:
     TH_POP_TAG();
-    th->ec.errinfo = errinfo;
+    th->ec->errinfo = errinfo;
     rb_thread_raised_set(th, raised_flag);
 }
 
@@ -304,7 +304,7 @@ error_handle(int ex)
 	warn_print("unexpected throw\n");
 	break;
       case TAG_RAISE: {
-	VALUE errinfo = th->ec.errinfo;
+	VALUE errinfo = th->ec->errinfo;
 	if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
 	    status = sysexit_status(errinfo);
 	}

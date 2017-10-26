@@ -139,8 +139,8 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
     do {							\
 	FLUSH_REGISTER_WINDOWS;					\
 	RB_GC_SAVE_MACHINE_REGISTER_STACK(th);			\
-	setjmp((th)->ec.machine.regs);				\
-	SET_MACHINE_STACK_END(&(th)->ec.machine.stack_end);	\
+	setjmp((th)->ec->machine.regs);				\
+	SET_MACHINE_STACK_END(&(th)->ec->machine.stack_end);	\
     } while (0)
 
 #define GVL_UNLOCK_BEGIN() do { \
@@ -526,9 +526,9 @@ thread_cleanup_func_before_exec(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
     th->status = THREAD_KILLED;
-    th->ec.machine.stack_start = th->ec.machine.stack_end = NULL;
+    th->ec->machine.stack_start = th->ec->machine.stack_end = NULL;
 #ifdef __ia64
-    th->ec.machine.register_stack_start = th->ec.machine.register_stack_end = NULL;
+    th->ec->machine.register_stack_start = th->ec->machine.register_stack_end = NULL;
 #endif
 }
 
@@ -581,9 +581,9 @@ thread_do_start(rb_thread_t *th, VALUE args)
     if (!th->first_func) {
 	rb_proc_t *proc;
 	GetProcPtr(th->first_proc, proc);
-	th->ec.errinfo = Qnil;
-	th->ec.root_lep = rb_vm_proc_local_ep(th->first_proc);
-	th->ec.root_svar = Qfalse;
+	th->ec->errinfo = Qnil;
+	th->ec->root_lep = rb_vm_proc_local_ep(th->first_proc);
+	th->ec->root_svar = Qfalse;
 	EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
 	th->value = rb_vm_invoke_proc(th, proc,
 				      (int)RARRAY_LEN(args), RARRAY_CONST_PTR(args),
@@ -614,9 +614,9 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 
     ruby_thread_set_native(th);
 
-    th->ec.machine.stack_start = stack_start;
+    th->ec->machine.stack_start = stack_start;
 #ifdef __ia64
-    th->ec.machine.register_stack_start = register_stack_start;
+    th->ec->machine.register_stack_start = register_stack_start;
 #endif
     thread_debug("thread start: %p\n", (void *)th);
 
@@ -630,7 +630,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    SAVE_ROOT_JMPBUF(th, thread_do_start(th, args));
 	}
 	else {
-	    errinfo = th->ec.errinfo;
+	    errinfo = th->ec->errinfo;
 	    if (state == TAG_FATAL) {
 		/* fatal error within this thread, need to stop whole script */
 	    }
@@ -696,8 +696,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	rb_threadptr_unlock_all_locking_mutexes(th);
 	rb_check_deadlock(th->vm);
 
-	rb_thread_recycle_stack_release(th->ec.vm_stack);
-	th->ec.vm_stack = NULL;
+	rb_fiber_close(th->ec->fiber);
     }
     native_mutex_lock(&th->vm->thread_destruct_lock);
     /* make sure vm->running_thread never point me after this point.*/
@@ -923,8 +922,8 @@ thread_join(rb_thread_t *target_th, double delay)
     thread_debug("thread_join: success (thid: %"PRI_THREAD_ID")\n",
 		 thread_id_str(target_th));
 
-    if (target_th->ec.errinfo != Qnil) {
-	VALUE err = target_th->ec.errinfo;
+    if (target_th->ec->errinfo != Qnil) {
+	VALUE err = target_th->ec->errinfo;
 
 	if (FIXNUM_P(err)) {
 	    switch (err) {
@@ -935,7 +934,7 @@ thread_join(rb_thread_t *target_th, double delay)
 		rb_bug("thread_join: Fixnum (%d) should not reach here.", FIX2INT(err));
 	    }
 	}
-	else if (THROW_DATA_P(target_th->ec.errinfo)) {
+	else if (THROW_DATA_P(target_th->ec->errinfo)) {
 	    rb_bug("thread_join: THROW_DATA should not reach here.");
 	}
 	else {
@@ -1437,7 +1436,7 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
 {
     volatile VALUE val = Qundef; /* shouldn't be used */
     rb_vm_t *vm = GET_VM();
-    rb_thread_t *th = GET_THREAD();
+    rb_thread_t *volatile th = GET_THREAD();
     volatile int saved_errno = 0;
     enum ruby_tag_type state;
     struct waiting_fd wfd;
@@ -1858,7 +1857,7 @@ static VALUE
 rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
 {
     VALUE mask;
-    rb_thread_t *th = GET_THREAD();
+    rb_thread_t * volatile th = GET_THREAD();
     volatile VALUE r = Qnil;
     enum ruby_tag_type state;
 
@@ -2008,7 +2007,7 @@ rb_threadptr_to_kill(rb_thread_t *th)
     rb_threadptr_pending_interrupt_clear(th);
     th->status = THREAD_RUNNABLE;
     th->to_kill = 1;
-    th->ec.errinfo = INT2FIX(TAG_FATAL);
+    th->ec->errinfo = INT2FIX(TAG_FATAL);
     TH_JUMP_TAG(th, TAG_FATAL);
 }
 
@@ -2031,7 +2030,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
     rb_atomic_t interrupt;
     int postponed_job_interrupt = 0;
 
-    if (th->ec.raised_flag) return;
+    if (th->ec->raised_flag) return;
 
     while ((interrupt = threadptr_get_interrupts(th)) != 0) {
 	int sig;
@@ -2095,7 +2094,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	    if (th->status == THREAD_RUNNABLE)
 		th->running_time_us += TIME_QUANTUM_USEC;
 
-	    EXEC_EVENT_HOOK(th, RUBY_INTERNAL_EVENT_SWITCH, th->ec.cfp->self,
+	    EXEC_EVENT_HOOK(th, RUBY_INTERNAL_EVENT_SWITCH, th->ec->cfp->self,
 			    0, 0, 0, Qundef);
 
 	    rb_thread_schedule_limits(limits_us);
@@ -2172,20 +2171,20 @@ rb_threadptr_signal_exit(rb_thread_t *th)
 int
 rb_threadptr_set_raised(rb_thread_t *th)
 {
-    if (th->ec.raised_flag & RAISED_EXCEPTION) {
+    if (th->ec->raised_flag & RAISED_EXCEPTION) {
 	return 1;
     }
-    th->ec.raised_flag |= RAISED_EXCEPTION;
+    th->ec->raised_flag |= RAISED_EXCEPTION;
     return 0;
 }
 
 int
 rb_threadptr_reset_raised(rb_thread_t *th)
 {
-    if (!(th->ec.raised_flag & RAISED_EXCEPTION)) {
+    if (!(th->ec->raised_flag & RAISED_EXCEPTION)) {
 	return 0;
     }
-    th->ec.raised_flag &= ~RAISED_EXCEPTION;
+    th->ec->raised_flag &= ~RAISED_EXCEPTION;
     return 1;
 }
 
@@ -2822,8 +2821,8 @@ rb_thread_status(VALUE thread)
     rb_thread_t *target_th = rb_thread_ptr(thread);
 
     if (rb_threadptr_dead(target_th)) {
-	if (!NIL_P(target_th->ec.errinfo) &&
-	    !FIXNUM_P(target_th->ec.errinfo)) {
+	if (!NIL_P(target_th->ec->errinfo) &&
+	    !FIXNUM_P(target_th->ec->errinfo)) {
 	    return Qnil;
 	}
 	else {
@@ -2907,7 +2906,7 @@ rb_thread_stop_p(VALUE thread)
 static VALUE
 rb_thread_safe_level(VALUE thread)
 {
-    return INT2NUM(rb_thread_ptr(thread)->ec.safe_level);
+    return INT2NUM(rb_thread_ptr(thread)->ec->safe_level);
 }
 
 /*
@@ -2994,11 +2993,11 @@ static VALUE
 threadptr_local_aref(rb_thread_t *th, ID id)
 {
     if (id == recursive_key) {
-	return th->ec.local_storage_recursive_hash;
+	return th->ec->local_storage_recursive_hash;
     }
     else {
 	st_data_t val;
-	st_table *local_storage = th->ec.local_storage;
+	st_table *local_storage = th->ec->local_storage;
 
 	if (local_storage != NULL && st_lookup(local_storage, id, &val)) {
 	    return (VALUE)val;
@@ -3102,10 +3101,10 @@ rb_thread_fetch(int argc, VALUE *argv, VALUE self)
     id = rb_check_id(&key);
 
     if (id == recursive_key) {
-	return target_th->ec.local_storage_recursive_hash;
+	return target_th->ec->local_storage_recursive_hash;
     }
-    else if (id && target_th->ec.local_storage &&
-	     st_lookup(target_th->ec.local_storage, id, &val)) {
+    else if (id && target_th->ec->local_storage &&
+	     st_lookup(target_th->ec->local_storage, id, &val)) {
 	return val;
     }
     else if (block_given) {
@@ -3123,11 +3122,11 @@ static VALUE
 threadptr_local_aset(rb_thread_t *th, ID id, VALUE val)
 {
     if (id == recursive_key) {
-	th->ec.local_storage_recursive_hash = val;
+	th->ec->local_storage_recursive_hash = val;
 	return val;
     }
     else {
-	st_table *local_storage = th->ec.local_storage;
+	st_table *local_storage = th->ec->local_storage;
 
 	if (NIL_P(val)) {
 	    if (!local_storage) return Qnil;
@@ -3136,7 +3135,7 @@ threadptr_local_aset(rb_thread_t *th, ID id, VALUE val)
 	}
 	else {
 	    if (local_storage == NULL) {
-		th->ec.local_storage = local_storage = st_init_numtable();
+		th->ec->local_storage = local_storage = st_init_numtable();
 	    }
 	    st_insert(local_storage, id, val);
 	    return val;
@@ -3249,7 +3248,7 @@ static VALUE
 rb_thread_key_p(VALUE self, VALUE key)
 {
     ID id = rb_check_id(&key);
-    st_table *local_storage = rb_thread_ptr(self)->ec.local_storage;
+    st_table *local_storage = rb_thread_ptr(self)->ec->local_storage;
 
     if (!id || local_storage == NULL) {
 	return Qfalse;
@@ -3292,7 +3291,7 @@ rb_thread_alone(void)
 static VALUE
 rb_thread_keys(VALUE self)
 {
-    st_table *local_storage = rb_thread_ptr(self)->ec.local_storage;
+    st_table *local_storage = rb_thread_ptr(self)->ec->local_storage;
     VALUE ary = rb_ary_new();
 
     if (local_storage) {
@@ -4481,13 +4480,13 @@ rb_thread_shield_destroy(VALUE self)
 static VALUE
 threadptr_recursive_hash(rb_thread_t *th)
 {
-    return th->ec.local_storage_recursive_hash;
+    return th->ec->local_storage_recursive_hash;
 }
 
 static void
 threadptr_recursive_hash_set(rb_thread_t *th, VALUE hash)
 {
-    th->ec.local_storage_recursive_hash = hash;
+    th->ec->local_storage_recursive_hash = hash;
 }
 
 ID rb_frame_last_func(void);
@@ -4982,7 +4981,7 @@ rb_check_deadlock(rb_vm_t *vm)
 static void
 update_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
 {
-    VALUE coverage = rb_iseq_coverage(GET_THREAD()->ec.cfp->iseq);
+    VALUE coverage = rb_iseq_coverage(GET_THREAD()->ec->cfp->iseq);
     if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
 	long arg = FIX2INT(trace_arg->data);
 	switch (arg % 16) {

@@ -778,12 +778,14 @@ typedef struct rb_execution_context_struct {
     } machine;
 } rb_execution_context_t;
 
+void ec_set_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t size);
+
 typedef struct rb_thread_struct {
     struct list_node vmlt_node;
     VALUE self;
     rb_vm_t *vm;
 
-    rb_execution_context_t ec;
+    rb_execution_context_t *ec;
 
     VALUE last_status; /* $? */
 
@@ -1237,7 +1239,7 @@ VALUE rb_vm_frame_block_handler(const rb_control_frame_t *cfp);
 #define RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp) ((cfp)+1)
 #define RUBY_VM_NEXT_CONTROL_FRAME(cfp) ((cfp)-1)
 #define RUBY_VM_END_CONTROL_FRAME(th) \
-  ((rb_control_frame_t *)((th)->ec.vm_stack + (th)->ec.vm_stack_size))
+  ((rb_control_frame_t *)((th)->ec->vm_stack + (th)->ec->vm_stack_size))
 #define RUBY_VM_VALID_CONTROL_FRAME_P(cfp, ecfp) \
   ((void *)(ecfp) > (void *)(cfp))
 #define RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th, cfp) \
@@ -1469,7 +1471,7 @@ extern void rb_vmdebug_stack_dump_raw(rb_thread_t *, rb_control_frame_t *);
 extern void rb_vmdebug_debug_print_pre(rb_thread_t *th, rb_control_frame_t *cfp, const VALUE *_pc);
 extern void rb_vmdebug_debug_print_post(rb_thread_t *th, rb_control_frame_t *cfp);
 
-#define SDR() rb_vmdebug_stack_dump_raw(GET_THREAD(), GET_THREAD()->ec.cfp)
+#define SDR() rb_vmdebug_stack_dump_raw(GET_THREAD(), GET_THREAD()->ec->cfp)
 #define SDR2(cfp) rb_vmdebug_stack_dump_raw(GET_THREAD(), (cfp))
 void rb_vm_bugreport(const void *);
 NORETURN(void rb_bug_context(const void *, const char *fmt, ...));
@@ -1569,19 +1571,62 @@ VALUE rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, enum ruby_
 /* for thread */
 
 #if RUBY_VM_THREAD_MODEL == 2
-
 RUBY_SYMBOL_EXPORT_BEGIN
 
-extern rb_thread_t *ruby_current_thread;
-extern rb_vm_t *ruby_current_vm;
+extern rb_vm_t *ruby_current_vm_ptr;
+extern rb_execution_context_t *ruby_current_execution_context_ptr;
 extern rb_event_flag_t ruby_vm_event_flags;
 
 RUBY_SYMBOL_EXPORT_END
 
-#define GET_VM() ruby_current_vm
-#define GET_THREAD() ruby_current_thread
+#define GET_VM()     ruby_current_vm()
+#define GET_THREAD() ruby_current_thread()
+#define GET_EC()     ruby_current_execution_context()
 
-#define rb_thread_set_current_raw(th) (void)(ruby_current_thread = (th))
+rb_thread_t *rb_fiberptr_thread_ptr(const rb_fiber_t *fib);
+
+static inline rb_thread_t *
+rb_ec_thread_ptr(const rb_execution_context_t *ec)
+{
+    return rb_fiberptr_thread_ptr(ec->fiber);
+}
+
+static inline rb_vm_t *
+rb_ec_vm_ptr(const rb_execution_context_t *ec)
+{
+    const rb_thread_t *th = rb_fiberptr_thread_ptr(ec->fiber);
+    if (th) {
+	return rb_fiberptr_thread_ptr(ec->fiber)->vm;
+    }
+    else {
+	return NULL;
+    }
+}
+
+static inline rb_execution_context_t *
+ruby_current_execution_context(void)
+{
+    return ruby_current_execution_context_ptr;
+}
+
+static inline rb_thread_t *
+ruby_current_thread(void)
+{
+    const rb_execution_context_t *ec = GET_EC();
+    return rb_ec_thread_ptr(ec);
+}
+
+static inline rb_vm_t *
+ruby_current_vm(void)
+{
+    VM_ASSERT(ruby_current_vm_ptr == NULL ||
+	      ruby_current_execution_context_ptr == NULL ||
+	      rb_ec_thread_ptr(GET_EC()) == NULL ||
+	      rb_ec_vm_ptr(GET_EC()) == ruby_current_vm_ptr);
+    return ruby_current_vm_ptr;
+}
+
+#define rb_thread_set_current_raw(th) (void)(ruby_current_execution_context_ptr = (th)->ec)
 #define rb_thread_set_current(th) do { \
     if ((th)->vm->running_thread != (th)) { \
 	(th)->running_time_us = 0; \
@@ -1622,11 +1667,14 @@ void rb_threadptr_pending_interrupt_enque(rb_thread_t *th, VALUE v);
 int rb_threadptr_pending_interrupt_active_p(rb_thread_t *th);
 void rb_threadptr_error_print(rb_thread_t *volatile th, volatile VALUE errinfo);
 void rb_execution_context_mark(const rb_execution_context_t *ec);
+void rb_fiber_close(rb_fiber_t *fib);
+void Init_native_thread(rb_thread_t *th);
 
 #define RUBY_VM_CHECK_INTS(th) ruby_vm_check_ints(th)
 static inline void
 ruby_vm_check_ints(rb_thread_t *th)
 {
+    VM_ASSERT(th->ec == ruby_current_execution_context_ptr);
     if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(th))) {
 	rb_threadptr_execute_interrupts(th, 0);
     }
@@ -1669,7 +1717,7 @@ ruby_exec_event_hook_orig(rb_thread_t *const th, const rb_event_flag_t flag,
 	struct rb_trace_arg_struct trace_arg;
 	trace_arg.event = flag;
 	trace_arg.th = th;
-	trace_arg.cfp = th->ec.cfp;
+	trace_arg.cfp = th->ec->cfp;
 	trace_arg.self = self;
 	trace_arg.id = id;
 	trace_arg.called_id = called_id;

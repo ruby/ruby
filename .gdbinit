@@ -1119,8 +1119,8 @@ define rb_ps_thread
   set $ps_thread_th = (rb_thread_t*)$ps_thread->data
   printf "* #<Thread:%p rb_thread_t:%p native_thread:%p>\n", \
     $ps_thread, $ps_thread_th, $ps_thread_th->thread_id
-  set $cfp = $ps_thread_th->ec.cfp
-  set $cfpend = (rb_control_frame_t *)($ps_thread_th->ec.vm_stack + $ps_thread_th->ec.vm_stack_size)-1
+  set $cfp = $ps_thread_th->ec->cfp
+  set $cfpend = (rb_control_frame_t *)($ps_thread_th->ec->vm_stack + $ps_thread_th->ec.vm_stack_size)-1
   while $cfp < $cfpend
     if $cfp->iseq
       if !((VALUE)$cfp->iseq & RUBY_IMMEDIATE_MASK) && (((imemo_ifunc << RUBY_FL_USHIFT) | RUBY_T_IMEMO)==$cfp->iseq->flags & ((RUBY_IMEMO_MASK << RUBY_FL_USHIFT) | RUBY_T_MASK))

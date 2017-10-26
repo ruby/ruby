@@ -3765,7 +3765,7 @@ rb_f_exit_bang(int argc, VALUE *argv, VALUE obj)
 void
 rb_exit(int status)
 {
-    if (GET_THREAD()->ec.tag) {
+    if (GET_THREAD()->ec->tag) {
 	VALUE args[2];
 
 	args[0] = INT2NUM(status);
@@ -3851,7 +3851,7 @@ rb_f_abort(int argc, const VALUE *argv)
     rb_check_arity(argc, 0, 1);
     if (argc == 0) {
 	rb_thread_t *th = GET_THREAD();
-	VALUE errinfo = th->ec.errinfo;
+	VALUE errinfo = th->ec->errinfo;
 	if (!NIL_P(errinfo)) {
 	    rb_threadptr_error_print(th, errinfo);
 	}

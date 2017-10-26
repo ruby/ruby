@@ -264,7 +264,7 @@ method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, 
 
 		def->body.attr.id = (ID)(VALUE)opts;
 
-		cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec.cfp);
+		cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec->cfp);
 
 		if (cfp && (line = rb_vm_get_sourceline(cfp))) {
 		    VALUE location = rb_ary_new3(2, rb_iseq_path(cfp->iseq), INT2FIX(line));
@@ -1089,7 +1089,7 @@ static rb_method_visibility_t
 rb_scope_visibility_get(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec.cfp);
+    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec->cfp);
 
     if (!vm_env_cref_by_cref(cfp->ep)) {
 	return METHOD_VISI_PUBLIC;
@@ -1103,7 +1103,7 @@ static int
 rb_scope_module_func_check(void)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec.cfp);
+    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th, th->ec->cfp);
 
     if (!vm_env_cref_by_cref(cfp->ep)) {
 	return FALSE;

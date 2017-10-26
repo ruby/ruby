@@ -1812,7 +1812,7 @@ rb_objspace_set_event_hook(const rb_event_flag_t event)
 static void
 gc_event_hook_body(rb_thread_t *th, rb_objspace_t *objspace, const rb_event_flag_t event, VALUE data)
 {
-    EXEC_EVENT_HOOK(th, event, th->ec.cfp->self, 0, 0, 0, data);
+    EXEC_EVENT_HOOK(th, event, th->ec->cfp->self, 0, 0, 0, data);
 }
 
 #define gc_event_hook_available_p(objspace) ((objspace)->flags.has_hook)
@@ -2784,16 +2784,16 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
 	long finished;
 	int safe;
     } saved;
-    rb_thread_t *const th = GET_THREAD();
+    rb_thread_t *const volatile th = GET_THREAD();
 #define RESTORE_FINALIZER() (\
-	th->ec.cfp = saved.cfp, \
+	th->ec->cfp = saved.cfp, \
 	rb_set_safe_level_force(saved.safe), \
 	rb_set_errinfo(saved.errinfo))
 
     saved.safe = rb_safe_level();
     saved.errinfo = rb_errinfo();
     saved.objid = nonspecial_obj_id(obj);
-    saved.cfp = th->ec.cfp;
+    saved.cfp = th->ec->cfp;
     saved.finished = 0;
 
     TH_PUSH_TAG(th);
@@ -4001,7 +4001,7 @@ ruby_get_stack_grow_direction(volatile VALUE *addr)
 size_t
 ruby_stack_length(VALUE **p)
 {
-    rb_execution_context_t *ec = &GET_THREAD()->ec;
+    rb_execution_context_t *ec = GET_THREAD()->ec;
     SET_STACK_END;
     if (p) *p = STACK_UPPER(STACK_END, STACK_START, STACK_END);
     return STACK_LENGTH;
@@ -4019,7 +4019,7 @@ ruby_stack_length(VALUE **p)
 static int
 stack_check(rb_thread_t *th, int water_mark)
 {
-    rb_execution_context_t *ec = &th->ec;
+    rb_execution_context_t *ec = th->ec;
     int ret;
     SET_STACK_END;
     ret = STACK_LENGTH > STACK_LEVEL_MAX - water_mark;
@@ -4784,7 +4784,7 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
 {
     struct gc_list *list;
     rb_thread_t *th = GET_THREAD();
-    rb_execution_context_t *ec = &th->ec;
+    rb_execution_context_t *ec = th->ec;
 
 #if PRINT_ROOT_TICKS
     tick_t start_tick = tick();
@@ -4831,7 +4831,7 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
     mark_tbl(objspace, finalizer_table);
 
     MARK_CHECKPOINT("machine_context");
-    mark_current_machine_context(objspace, &th->ec);
+    mark_current_machine_context(objspace, th->ec);
 
     MARK_CHECKPOINT("encodings");
     rb_gc_mark_encodings();
@@ -7712,7 +7712,7 @@ rb_memerror(void)
 	rb_thread_raised_set(th, RAISED_NOMEMORY);
 	exc = ruby_vm_special_exception_copy(exc);
     }
-    th->ec.errinfo = exc;
+    th->ec->errinfo = exc;
     TH_JUMP_TAG(th, TAG_RAISE);
 }
 

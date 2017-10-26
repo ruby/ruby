@@ -663,7 +663,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, c
     }
 
     if (!node) {
-	rb_exc_raise(th->ec.errinfo);
+	rb_exc_raise(th->ec->errinfo);
     }
     else {
 	INITIALIZED VALUE label = parent ?
@@ -870,7 +870,7 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
     parser = rb_parser_new();
     rb_parser_set_context(parser, NULL, FALSE);
     node = rb_parser_compile_file_path(parser, file, f, NUM2INT(line));
-    if (!node) exc = GET_THREAD()->ec.errinfo;
+    if (!node) exc = GET_THREAD()->ec->errinfo;
 
     rb_io_close(f);
     if (!node) rb_exc_raise(exc);
