@@ -3326,16 +3326,16 @@ vm_case_dispatch(CDHASH hash, OFFSET else_offset, VALUE key)
 }
 
 NORETURN(static void
-	 vm_stack_consistency_error(rb_thread_t *,
+	 vm_stack_consistency_error(const rb_execution_context_t *ec,
 				    const rb_control_frame_t *,
 				    const VALUE *));
 static void
-vm_stack_consistency_error(rb_thread_t *th,
+vm_stack_consistency_error(const rb_execution_context_t *ec,
 			   const rb_control_frame_t *cfp,
 			   const VALUE *bp)
 {
-    const ptrdiff_t nsp = VM_SP_CNT(th, cfp->sp);
-    const ptrdiff_t nbp = VM_SP_CNT(th, bp);
+    const ptrdiff_t nsp = VM_SP_CNT(ec, cfp->sp);
+    const ptrdiff_t nbp = VM_SP_CNT(ec, bp);
     static const char stack_consistency_error[] =
 	"Stack consistency error (sp: %"PRIdPTRDIFF", bp: %"PRIdPTRDIFF")";
 #if defined RUBY_DEVEL

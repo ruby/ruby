@@ -990,7 +990,7 @@ leave
     if (OPT_CHECKED_RUN) {
 	const VALUE *const bp = vm_base_ptr(reg_cfp);
 	if (reg_cfp->sp != bp) {
-	    vm_stack_consistency_error(th, reg_cfp, bp);
+	    vm_stack_consistency_error(th->ec, reg_cfp, bp);
 	}
     }
 
