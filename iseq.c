@@ -641,9 +641,9 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, c
 #else
 # define INITIALIZED /* volatile */
 #endif
-    NODE *(*parse)(VALUE vparser, VALUE fname, VALUE file, int start);
+    ast_t *(*parse)(VALUE vparser, VALUE fname, VALUE file, int start);
     int ln;
-    NODE *INITIALIZED node;
+    ast_t *INITIALIZED ast;
 
     /* safe results first */
     make_compile_option(&option, opt);
@@ -659,18 +659,20 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, c
     {
 	const VALUE parser = rb_parser_new();
 	rb_parser_set_context(parser, base_block, FALSE);
-	node = (*parse)(parser, file, src, ln);
+	ast = (*parse)(parser, file, src, ln);
     }
 
-    if (!node) {
+    if (!ast->root) {
+	rb_ast_dispose(ast);
 	rb_exc_raise(th->ec->errinfo);
     }
     else {
 	INITIALIZED VALUE label = parent ?
 	    parent->body->location.label :
 	    rb_fstring_cstr("<compiled>");
-	iseq = rb_iseq_new_with_opt(node, label, file, realpath, line,
+	iseq = rb_iseq_new_with_opt(ast->root, label, file, realpath, line,
 				    parent, type, &option);
+	rb_ast_dispose(ast);
     }
 
     return iseq;
@@ -851,8 +853,8 @@ static VALUE
 iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
 {
     VALUE file, line = INT2FIX(1), opt = Qnil;
-    VALUE parser, f, exc = Qnil;
-    const NODE *node;
+    VALUE parser, f, exc = Qnil, ret;
+    ast_t *ast;
     rb_compile_option_t option;
     int i;
 
@@ -869,18 +871,23 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
 
     parser = rb_parser_new();
     rb_parser_set_context(parser, NULL, FALSE);
-    node = rb_parser_compile_file_path(parser, file, f, NUM2INT(line));
-    if (!node) exc = GET_EC()->errinfo;
+    ast = rb_parser_compile_file_path(parser, file, f, NUM2INT(line));
+    if (!ast->root) exc = GET_EC()->errinfo;
 
     rb_io_close(f);
-    if (!node) rb_exc_raise(exc);
+    if (!ast->root) {
+	rb_ast_dispose(ast);
+	rb_exc_raise(exc);
+    }
 
     make_compile_option(&option, opt);
 
-    return iseqw_new(rb_iseq_new_with_opt(node, rb_fstring_cstr("<main>"),
-					  file,
-					  rb_realpath_internal(Qnil, file, 1),
-					  line, NULL, ISEQ_TYPE_TOP, &option));
+    ret = iseqw_new(rb_iseq_new_with_opt(ast->root, rb_fstring_cstr("<main>"),
+					 file,
+					 rb_realpath_internal(Qnil, file, 1),
+					 line, NULL, ISEQ_TYPE_TOP, &option));
+    rb_ast_dispose(ast);
+    return ret;
 }
 
 /*
