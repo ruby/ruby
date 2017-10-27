@@ -740,7 +740,7 @@ defined
 (VALUE v)
 (VALUE val)
 {
-    val = vm_defined(th, GET_CFP(), op_type, obj, needstr, v);
+    val = vm_defined(th->ec, GET_CFP(), op_type, obj, needstr, v);
 }
 
 /**
