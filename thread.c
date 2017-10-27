@@ -585,7 +585,7 @@ thread_do_start(rb_thread_t *th, VALUE args)
 	th->ec->root_lep = rb_vm_proc_local_ep(th->first_proc);
 	th->ec->root_svar = Qfalse;
 	EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
-	th->value = rb_vm_invoke_proc(th, proc,
+	th->value = rb_vm_invoke_proc(th->ec, proc,
 				      (int)RARRAY_LEN(args), RARRAY_CONST_PTR(args),
 				      VM_BLOCK_HANDLER_NONE);
 	EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
