@@ -343,6 +343,8 @@ rb_discard_node(NODE *n)
     rb_gc_force_recycle((VALUE)n);
 }
 
+#define add_mark_object(obj) (void)(obj)
+
 #ifndef RIPPER
 static inline void
 set_line_body(NODE *body, int line)
@@ -3941,7 +3943,7 @@ symbol_list	: /* none */
 			}
 			else {
 			    nd_set_type($2, NODE_LIT);
-			    $2->nd_lit = rb_str_intern($2->nd_lit);
+			    add_mark_object($2->nd_lit = rb_str_intern($2->nd_lit));
 			}
 			$$ = list_append($1, $2, @1.first_column);
 		    /*%
@@ -4020,8 +4022,8 @@ qsym_list	: /* none */
 		    /*%%%*/
 			VALUE lit;
 			lit = $2->nd_lit;
-			$2->nd_lit = ID2SYM(rb_intern_str(lit));
 			nd_set_type($2, NODE_LIT);
+			add_mark_object($2->nd_lit = ID2SYM(rb_intern_str(lit)));
 			$$ = list_append($1, $2, @1.first_column);
 			nd_set_column($2, @1.first_column);
 		    /*%
@@ -4240,7 +4242,7 @@ numeric 	: simple_numeric
 		    {
 		    /*%%%*/
 			$$ = $2;
-			$$->nd_lit = negate_lit($$->nd_lit);
+			add_mark_object($$->nd_lit = negate_lit($$->nd_lit));
 		    /*%
 			$$ = dispatch2(unary, ID2VAL(idUMinus), $2);
 		    %*/
@@ -4920,7 +4922,7 @@ assoc		: arg_value tASSOC arg_value
 		    /*%%%*/
 			if (nd_type($1) == NODE_STR) {
 			    nd_set_type($1, NODE_LIT);
-			    $1->nd_lit = rb_fstring($1->nd_lit);
+			    add_mark_object($1->nd_lit = rb_fstring($1->nd_lit));
 			}
 			$$ = list_append(new_list($1, @1.first_column), $3, @1.first_column);
 		    /*%
@@ -5503,6 +5505,7 @@ yycompile0(VALUE arg)
 	if (!opt) opt = rb_obj_hide(rb_ident_hash_new());
 	rb_hash_aset(opt, rb_sym_intern_ascii_cstr("coverage_enabled"), cov);
 	prelude = NEW_PRELUDE(ruby_eval_tree_begin, body, opt);
+	add_mark_object(opt);
 	nd_set_column(prelude, nd_column(body));
 	tree->nd_body = prelude;
     }
@@ -6480,6 +6483,7 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
     int paren = nd_paren(quote);
     int c, space = 0;
     rb_encoding *enc = current_enc;
+    VALUE lit;
 
     if (func & STR_FUNC_TERM) {
 	SET_LEX_STATE(EXPR_END|EXPR_ENDARG);
@@ -6530,7 +6534,8 @@ parser_parse_string(struct parser_params *parser, NODE *quote)
     }
 
     tokfix();
-    set_yylval_str(STR_NEW3(tok(), toklen(), enc, func));
+    add_mark_object(lit = STR_NEW3(tok(), toklen(), enc, func));
+    set_yylval_str(lit);
     flush_string_content(enc);
 
     return tSTRING_CONTENT;
@@ -6544,6 +6549,7 @@ parser_heredoc_identifier(struct parser_params *parser)
     long len;
     int newline = 0;
     int indent = 0;
+    VALUE lit;
 
     if (c == '-') {
 	c = nextc();
@@ -6608,10 +6614,11 @@ parser_heredoc_identifier(struct parser_params *parser)
     dispatch_scan_event(tHEREDOC_BEG);
     len = lex_p - lex_pbeg;
     lex_goto_eol(parser);
+    add_mark_object(lit = STR_NEW(tok(), toklen()));
     lex_strterm = rb_node_newnode(NODE_HEREDOC,
-				  STR_NEW(tok(), toklen()),	/* nd_lit */
-				  len,				/* nd_nth */
-				  lex_lastline);		/* nd_orig */
+				  lit,			/* nd_lit */
+				  len,			/* nd_nth */
+				  lex_lastline);	/* nd_orig */
     parser_set_line(lex_strterm, ruby_sourceline);
     token_flush(parser);
     heredoc_indent = indent;
@@ -6794,6 +6801,7 @@ parser_set_number_literal(struct parser_params *parser, VALUE v,
 	type = tIMAGINARY;
     }
     set_yylval_literal(v);
+    add_mark_object(v);
     SET_LEX_STATE(EXPR_END|EXPR_ENDARG);
     return type;
 }
@@ -6911,6 +6919,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	    lex_goto_eol(parser);
 	    if (heredoc_indent > 0) {
 		set_yylval_str(str);
+		add_mark_object(str);
 		flush_string_content(enc);
 		return tSTRING_CONTENT;
 	    }
@@ -6945,8 +6954,10 @@ parser_here_document(struct parser_params *parser, NODE *here)
 		goto restore;
 	    }
 	    if (c != '\n') {
+		VALUE lit;
 	      flush:
-		set_yylval_str(STR_NEW3(tok(), toklen(), enc, func));
+		add_mark_object(lit = STR_NEW3(tok(), toklen(), enc, func));
+		set_yylval_str(lit);
 		flush_string_content(enc);
 		return tSTRING_CONTENT;
 	    }
@@ -6968,6 +6979,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
     heredoc_restore(lex_strterm);
     lex_strterm = NEW_STRTERM(func | STR_FUNC_TERM, 0, 0);
     set_yylval_str(str);
+    add_mark_object(str);
     return tSTRING_CONTENT;
 }
 
@@ -7642,6 +7654,7 @@ parse_qmark(struct parser_params *parser, int space_seen)
 {
     rb_encoding *enc;
     register int c;
+    VALUE lit;
 
     if (IS_END()) {
 	SET_LEX_STATE(EXPR_VALUE);
@@ -7724,7 +7737,8 @@ parse_qmark(struct parser_params *parser, int space_seen)
 	tokadd(c);
     }
     tokfix();
-    set_yylval_str(STR_NEW3(tok(), toklen(), enc, 0));
+    add_mark_object(lit = STR_NEW3(tok(), toklen(), enc, 0));
+    set_yylval_str(lit);
     SET_LEX_STATE(EXPR_END);
     return tCHAR;
 }
@@ -9264,6 +9278,7 @@ static NODE *
 new_regexp_gen(struct parser_params *parser, NODE *node, int options, int column)
 {
     NODE *list, *prev;
+    VALUE lit;
 
     if (!node) {
 	return new_lit(reg_compile(STR_NEW0(), options), column);
@@ -9273,11 +9288,12 @@ new_regexp_gen(struct parser_params *parser, NODE *node, int options, int column
 	{
 	    VALUE src = node->nd_lit;
 	    nd_set_type(node, NODE_LIT);
-	    node->nd_lit = reg_compile(src, options);
+	    add_mark_object(node->nd_lit = reg_compile(src, options));
 	}
 	break;
       default:
-	node = NEW_NODE(NODE_DSTR, STR_NEW0(), 1, new_list(node, column));
+	add_mark_object(lit = STR_NEW0());
+	node = NEW_NODE(NODE_DSTR, lit, 1, new_list(node, column));
 	nd_set_column(node, column);
       case NODE_DSTR:
 	nd_set_type(node, NODE_DREGX);
@@ -9309,7 +9325,7 @@ new_regexp_gen(struct parser_params *parser, NODE *node, int options, int column
 	if (!node->nd_next) {
 	    VALUE src = node->nd_lit;
 	    nd_set_type(node, NODE_LIT);
-	    node->nd_lit = reg_compile(src, options);
+	    add_mark_object(node->nd_lit = reg_compile(src, options));
 	}
 	if (options & RE_OPTION_ONCE) {
 	    node = NEW_NODE(NODE_SCOPE, 0, node, 0);
@@ -9323,6 +9339,7 @@ static NODE *
 new_lit_gen(struct parser_params *parser, VALUE sym, int column)
 {
     NODE *lit = NEW_LIT(sym);
+    add_mark_object(sym);
     nd_set_column(lit, column);
     return lit;
 }
@@ -9339,6 +9356,7 @@ static NODE *
 new_str_gen(struct parser_params *parser, VALUE str, int column)
 {
     NODE *nd_str = NEW_STR(str);
+    add_mark_object(str);
     nd_set_column(nd_str, column);
     return nd_str;
 }
@@ -9411,6 +9429,7 @@ static NODE *
 new_dstr_gen(struct parser_params *parser, VALUE str, int column)
 {
     NODE *dstr = NEW_DSTR(str);
+    add_mark_object(str);
     nd_set_column(dstr, column);
     return dstr;
 }
@@ -9502,7 +9521,9 @@ static NODE *
 new_xstring_gen(struct parser_params *parser, NODE *node, int column)
 {
     if (!node) {
-	NODE *xstr = NEW_XSTR(STR_NEW0());
+	VALUE lit = STR_NEW0();
+	NODE *xstr = NEW_XSTR(lit);
+	add_mark_object(lit);
 	nd_set_column(xstr, column);
 	return xstr;
     }
@@ -10645,7 +10666,7 @@ dsym_node_gen(struct parser_params *parser, NODE *node, int column)
 	break;
       case NODE_STR:
 	lit = node->nd_lit;
-	node->nd_lit = ID2SYM(rb_intern_str(lit));
+	add_mark_object(node->nd_lit = ID2SYM(rb_intern_str(lit)));
 	nd_set_type(node, NODE_LIT);
 	break;
       default:
