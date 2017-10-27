@@ -430,6 +430,9 @@ static inline void rsock_maybe_wait_fd(int fd) { }
 #  define MSG_DONTWAIT_RELIABLE 0
 #endif
 
+VALUE rsock_read_nonblock(VALUE sock, VALUE length, VALUE buf, VALUE ex);
+VALUE rsock_write_nonblock(VALUE sock, VALUE buf, VALUE ex);
+
 #if !defined HAVE_INET_NTOP && ! defined _WIN32
 const char *inet_ntop(int, const void *, char *, size_t);
 #elif defined __MINGW32__
