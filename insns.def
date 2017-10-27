@@ -998,7 +998,7 @@ leave
 
     if (vm_pop_frame(ec, GET_CFP(), GET_EP())) {
 #if OPT_CALL_THREADED_CODE
-	th->retval = val;
+	rb_ec_thread_ptr(ec)->retval = val;
 	return 0;
 #else
 	return val;
