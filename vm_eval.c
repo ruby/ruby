@@ -258,7 +258,7 @@ stack_check(rb_thread_t *th)
     if (!rb_thread_raised_p(th, RAISED_STACKOVERFLOW) &&
 	rb_threadptr_stack_check(th)) {
 	rb_thread_raised_set(th, RAISED_STACKOVERFLOW);
-	rb_threadptr_stack_overflow(th, FALSE);
+	rb_ec_stack_overflow(th->ec, FALSE);
     }
 }
 
