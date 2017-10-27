@@ -230,7 +230,7 @@ getconstant
 (VALUE klass)
 (VALUE val)
 {
-    val = vm_get_ev_const(th, klass, id, 0);
+    val = vm_get_ev_const(th->ec, klass, id, 0);
 }
 
 /**

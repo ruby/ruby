@@ -808,14 +808,14 @@ vm_get_iclass(rb_control_frame_t *cfp, VALUE klass)
 }
 
 static inline VALUE
-vm_get_ev_const(rb_thread_t *th, VALUE orig_klass, ID id, int is_defined)
+vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, int is_defined)
 {
     void rb_const_warn_if_deprecated(const rb_const_entry_t *ce, VALUE klass, ID id);
     VALUE val;
 
     if (orig_klass == Qnil) {
 	/* in current lexical scope */
-	const rb_cref_t *root_cref = rb_vm_get_cref(th->ec->cfp->ep);
+	const rb_cref_t *root_cref = rb_vm_get_cref(ec->cfp->ep);
 	const rb_cref_t *cref;
 	VALUE klass = Qnil;
 
@@ -861,10 +861,10 @@ vm_get_ev_const(rb_thread_t *th, VALUE orig_klass, ID id, int is_defined)
 
 	/* search self */
 	if (root_cref && !NIL_P(CREF_CLASS(root_cref))) {
-	    klass = vm_get_iclass(th->ec->cfp, CREF_CLASS(root_cref));
+	    klass = vm_get_iclass(ec->cfp, CREF_CLASS(root_cref));
 	}
 	else {
-	    klass = CLASS_OF(th->ec->cfp->self);
+	    klass = CLASS_OF(ec->cfp->self);
 	}
 
 	if (is_defined) {
@@ -2849,7 +2849,7 @@ vm_defined(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE
       }
       case DEFINED_CONST:
 	klass = v;
-	if (vm_get_ev_const(th, klass, SYM2ID(obj), 1)) {
+	if (vm_get_ev_const(th->ec, klass, SYM2ID(obj), 1)) {
 	    expr_type = DEFINED_CONST;
 	}
 	break;
