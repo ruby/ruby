@@ -36,11 +36,10 @@ typedef enum call_type {
 } call_type;
 
 static VALUE send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope);
-
-static VALUE vm_call0_body(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv);
+static VALUE vm_call0_body(rb_execution_context_t* ec, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv);
 
 static VALUE
-vm_call0(rb_thread_t* th, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me)
+vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me)
 {
     struct rb_calling_info calling_entry, *calling;
     struct rb_call_info ci_entry;
@@ -56,11 +55,11 @@ vm_call0(rb_thread_t* th, VALUE recv, ID id, int argc, const VALUE *argv, const 
     calling->recv = recv;
     calling->argc = argc;
 
-    return vm_call0_body(th, calling, &ci_entry, &cc_entry, argv);
+    return vm_call0_body(ec, calling, &ci_entry, &cc_entry, argv);
 }
 
 static VALUE
-vm_call0_cfunc_with_frame(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv)
+vm_call0_cfunc_with_frame(rb_execution_context_t* ec, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv)
 {
     VALUE val;
     const rb_callable_method_entry_t *me = cc->me;
@@ -71,12 +70,12 @@ vm_call0_cfunc_with_frame(rb_thread_t* th, struct rb_calling_info *calling, cons
     ID mid = ci->mid;
     VALUE block_handler = calling->block_handler;
 
-    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, me->owner, me->def->original_id);
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, recv, me->def->original_id, mid, me->owner, Qnil);
+    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(rb_ec_thread_ptr(ec), me->owner, me->def->original_id);
+    EXEC_EVENT_HOOK(rb_ec_thread_ptr(ec), RUBY_EVENT_C_CALL, recv, me->def->original_id, mid, me->owner, Qnil);
     {
-	rb_control_frame_t *reg_cfp = th->ec->cfp;
+	rb_control_frame_t *reg_cfp = ec->cfp;
 
-	vm_push_frame(th->ec, 0, VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL, recv,
+	vm_push_frame(ec, 0, VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL, recv,
 		      block_handler, (VALUE)me,
 		      0, reg_cfp->sp, 0, 0);
 
@@ -87,33 +86,33 @@ vm_call0_cfunc_with_frame(rb_thread_t* th, struct rb_calling_info *calling, cons
 
 	CHECK_CFP_CONSISTENCY("vm_call0_cfunc_with_frame");
 	VM_PROFILE_UP(C2C_POPF);
-	rb_vm_pop_frame(th->ec);
+	rb_vm_pop_frame(ec);
     }
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, recv, me->def->original_id, mid, me->owner, val);
-    RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, me->owner, me->def->original_id);
+    EXEC_EVENT_HOOK(rb_ec_thread_ptr(ec), RUBY_EVENT_C_RETURN, recv, me->def->original_id, mid, me->owner, val);
+    RUBY_DTRACE_CMETHOD_RETURN_HOOK(rb_ec_thread_ptr(ec), me->owner, me->def->original_id);
 
     return val;
 }
 
 static VALUE
-vm_call0_cfunc(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv)
+vm_call0_cfunc(rb_execution_context_t *ec, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv)
 {
-    return vm_call0_cfunc_with_frame(th, calling, ci, cc, argv);
+    return vm_call0_cfunc_with_frame(ec, calling, ci, cc, argv);
 }
 
 /* `ci' should point temporal value (on stack value) */
 static VALUE
-vm_call0_body(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv)
+vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv)
 {
     VALUE ret;
 
-    calling->block_handler = vm_passed_block_handler(th);
+    calling->block_handler = vm_passed_block_handler(rb_ec_thread_ptr(ec));
 
   again:
     switch (cc->me->def->type) {
       case VM_METHOD_TYPE_ISEQ:
 	{
-	    rb_control_frame_t *reg_cfp = th->ec->cfp;
+	    rb_control_frame_t *reg_cfp = ec->cfp;
 	    int i;
 
 	    CHECK_VM_STACK_OVERFLOW(reg_cfp, calling->argc + 1);
@@ -123,13 +122,13 @@ vm_call0_body(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_
 		*reg_cfp->sp++ = argv[i];
 	    }
 
-	    vm_call_iseq_setup(th, reg_cfp, calling, ci, cc);
-	    VM_ENV_FLAGS_SET(th->ec->cfp->ep, VM_FRAME_FLAG_FINISH);
-	    return vm_exec(th); /* CHECK_INTS in this function */
+	    vm_call_iseq_setup(ec, reg_cfp, calling, ci, cc);
+	    VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);
+	    return vm_exec(rb_ec_thread_ptr(ec)); /* CHECK_INTS in this function */
 	}
       case VM_METHOD_TYPE_NOTIMPLEMENTED:
       case VM_METHOD_TYPE_CFUNC:
-	ret = vm_call0_cfunc(th, calling, ci, cc, argv);
+	ret = vm_call0_cfunc(ec, calling, ci, cc, argv);
 	goto success;
       case VM_METHOD_TYPE_ATTRSET:
 	rb_check_arity(calling->argc, 1, 1);
@@ -140,7 +139,7 @@ vm_call0_body(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_
 	ret = rb_attr_get(calling->recv, cc->me->def->body.attr.id);
 	goto success;
       case VM_METHOD_TYPE_BMETHOD:
-	ret = vm_call_bmethod_body(th, calling, ci, cc, argv);
+	ret = vm_call_bmethod_body(ec, calling, ci, cc, argv);
 	goto success;
       case VM_METHOD_TYPE_ZSUPER:
       case VM_METHOD_TYPE_REFINED:
@@ -163,7 +162,7 @@ vm_call0_body(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_
 		ret = method_missing(calling->recv, ci->mid, calling->argc, argv, ex);
 		goto success;
 	    }
-	    RUBY_VM_CHECK_INTS(th);
+	    RUBY_VM_CHECK_INTS(rb_ec_thread_ptr(ec));
 	    goto again;
 	}
       case VM_METHOD_TYPE_ALIAS:
@@ -171,7 +170,7 @@ vm_call0_body(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_
 	goto again;
       case VM_METHOD_TYPE_MISSING:
 	{
-	    vm_passed_block_handler_set(th, calling->block_handler);
+	    vm_passed_block_handler_set(rb_ec_thread_ptr(ec), calling->block_handler);
 	    return method_missing(calling->recv, ci->mid, calling->argc,
 				  argv, MISSING_NOENTRY);
 	}
@@ -184,7 +183,7 @@ vm_call0_body(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_
 	    {
 		rb_proc_t *proc;
 		GetProcPtr(calling->recv, proc);
-		ret = rb_vm_invoke_proc(th, proc, calling->argc, argv, calling->block_handler);
+		ret = rb_vm_invoke_proc(rb_ec_thread_ptr(ec), proc, calling->argc, argv, calling->block_handler);
 		goto success;
 	    }
 	  default:
@@ -198,14 +197,14 @@ vm_call0_body(rb_thread_t* th, struct rb_calling_info *calling, const struct rb_
     return Qundef;
 
   success:
-    RUBY_VM_CHECK_INTS(th);
+    RUBY_VM_CHECK_INTS(rb_ec_thread_ptr(ec));
     return ret;
 }
 
 VALUE
 rb_vm_call(rb_thread_t *th, VALUE recv, VALUE id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me)
 {
-    return vm_call0(th, recv, id, argc, argv, me);
+    return vm_call0(th->ec, recv, id, argc, argv, me);
 }
 
 static inline VALUE
@@ -230,7 +229,7 @@ vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
 	return method_missing(recv, id, argc, argv, MISSING_SUPER);
     }
     else {
-	return vm_call0(th, recv, id, argc, argv, me);
+	return vm_call0(th->ec, recv, id, argc, argv, me);
     }
 }
 
@@ -292,7 +291,7 @@ rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
 	return method_missing(recv, mid, argc, argv, call_status);
     }
     stack_check(th);
-    return vm_call0(th, recv, mid, argc, argv, me);
+    return vm_call0(th->ec, recv, mid, argc, argv, me);
 }
 
 struct rescue_funcall_args {
@@ -410,7 +409,7 @@ rb_check_funcall_default(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE 
 	return ret;
     }
     stack_check(th);
-    return vm_call0(th, recv, mid, argc, argv, me);
+    return vm_call0(th->ec, recv, mid, argc, argv, me);
 }
 
 VALUE
@@ -436,7 +435,7 @@ rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
     }
     stack_check(th);
     (*hook)(TRUE, recv, mid, argc, argv, arg);
-    return vm_call0(th, recv, mid, argc, argv, me);
+    return vm_call0(th->ec, recv, mid, argc, argv, me);
 }
 
 static const char *
@@ -726,7 +725,7 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missin
     me = rb_callable_method_entry(klass, idMethodMissing);
     if (!me || METHOD_ENTRY_BASIC(me)) goto missing;
     vm_passed_block_handler_set(th, block_handler);
-    result = vm_call0(th, obj, idMethodMissing, argc, argv, me);
+    result = vm_call0(th->ec, obj, idMethodMissing, argc, argv, me);
     if (work) ALLOCV_END(work);
     return result;
 }

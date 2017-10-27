@@ -233,7 +233,8 @@ struct rb_calling_info {
 };
 
 struct rb_call_cache;
-typedef VALUE (*vm_call_handler)(struct rb_thread_struct *th, struct rb_control_frame_struct *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);
+struct rb_execution_context_struct;
+typedef VALUE (*vm_call_handler)(struct rb_execution_context_struct *ec, struct rb_control_frame_struct *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);
 
 struct rb_call_cache {
     /* inline cache: keys */
