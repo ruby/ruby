@@ -22,7 +22,7 @@ static inline VALUE vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *
 static inline VALUE vm_yield_force_blockarg(rb_thread_t *th, VALUE args);
 static VALUE vm_exec(rb_thread_t *th);
 static void vm_set_eval_stack(rb_thread_t * th, const rb_iseq_t *iseq, const rb_cref_t *cref, const struct rb_block *base_block);
-static int vm_collect_local_variables_in_heap(rb_thread_t *th, const VALUE *dfp, const struct local_var_list *vars);
+static int vm_collect_local_variables_in_heap(const VALUE *dfp, const struct local_var_list *vars);
 
 static VALUE rb_eUncaughtThrow;
 static ID id_result, id_tag, id_value;
@@ -2079,9 +2079,8 @@ static VALUE
 rb_f_local_variables(void)
 {
     struct local_var_list vars;
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp =
-	vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(th->ec->cfp));
+    rb_execution_context_t *ec = GET_EC();
+    rb_control_frame_t *cfp = vm_get_ruby_level_caller_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(ec->cfp));
     unsigned int i;
 
     local_var_list_init(&vars);
@@ -2095,7 +2094,7 @@ rb_f_local_variables(void)
 	    /* block */
 	    const VALUE *ep = VM_CF_PREV_EP(cfp);
 
-	    if (vm_collect_local_variables_in_heap(th, ep, &vars)) {
+	    if (vm_collect_local_variables_in_heap(ep, &vars)) {
 		break;
 	    }
 	    else {
@@ -2136,9 +2135,9 @@ rb_f_local_variables(void)
 VALUE
 rb_f_block_given_p(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->ec->cfp;
-    cfp = vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
+    rb_execution_context_t *ec = GET_EC();
+    rb_control_frame_t *cfp = ec->cfp;
+    cfp = vm_get_ruby_level_caller_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
 
     if (cfp != NULL && VM_CF_BLOCK_HANDLER(cfp) != VM_BLOCK_HANDLER_NONE) {
 	return Qtrue;
@@ -2151,9 +2150,9 @@ rb_f_block_given_p(void)
 VALUE
 rb_current_realfilepath(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->ec->cfp;
-    cfp = vm_get_ruby_level_caller_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
+    const rb_execution_context_t *ec = GET_EC();
+    rb_control_frame_t *cfp = ec->cfp;
+    cfp = vm_get_ruby_level_caller_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
     if (cfp != 0) return rb_iseq_realpath(cfp->iseq);
     return Qnil;
 }
