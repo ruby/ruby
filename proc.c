@@ -384,6 +384,8 @@ bind_eval(int argc, VALUE *argv, VALUE bindval)
     return rb_f_eval(argc+1, args, Qnil /* self will be searched in eval */);
 }
 
+VALUE rb_vm_bh_to_procval(rb_execution_context_t *ec, VALUE block_handler);
+
 static const VALUE *
 get_local_variable_ptr(const rb_env_t **envp, ID lid)
 {
