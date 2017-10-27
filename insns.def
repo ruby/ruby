@@ -969,7 +969,7 @@ invokeblock
     calling.block_handler = VM_BLOCK_HANDLER_NONE;
     calling.recv = GET_SELF();
 
-    val = vm_invoke_block(th, GET_CFP(), &calling, ci);
+    val = vm_invoke_block(th->ec, GET_CFP(), &calling, ci);
     if (val == Qundef) {
 	RESTORE_REGS();
 	NEXT_INSN();

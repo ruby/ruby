@@ -1499,7 +1499,7 @@ void rb_iseq_pathobj_set(const rb_iseq_t *iseq, VALUE path, VALUE realpath);
 
 int rb_thread_method_id_and_class(rb_thread_t *th, ID *idp, ID *called_idp, VALUE *klassp);
 
-VALUE rb_vm_invoke_proc(rb_thread_t *th, rb_proc_t *proc, int argc, const VALUE *argv, VALUE block_handler);
+VALUE rb_vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, int argc, const VALUE *argv, VALUE block_handler);
 VALUE rb_vm_make_proc_lambda(const rb_execution_context_t *ec, const struct rb_captured_block *captured, VALUE klass, int8_t is_lambda);
 VALUE rb_vm_make_proc(const rb_execution_context_t *ec, const struct rb_captured_block *captured, VALUE klass);
 VALUE rb_vm_make_binding(rb_thread_t *th, const rb_control_frame_t *src_cfp);

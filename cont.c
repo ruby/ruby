@@ -1422,7 +1422,7 @@ rb_fiber_start(void)
 	th->ec->root_svar = Qfalse;
 
 	EXEC_EVENT_HOOK(th, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
-	cont->value = rb_vm_invoke_proc(th, proc, argc, argv, VM_BLOCK_HANDLER_NONE);
+	cont->value = rb_vm_invoke_proc(th->ec, proc, argc, argv, VM_BLOCK_HANDLER_NONE);
     }
     EC_POP_TAG();
 

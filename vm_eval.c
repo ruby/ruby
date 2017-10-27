@@ -16,10 +16,10 @@ struct local_var_list {
 };
 
 static inline VALUE method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missing_reason call_status);
-static inline VALUE vm_yield_with_cref(rb_thread_t *th, int argc, const VALUE *argv, const rb_cref_t *cref, int is_lambda);
-static inline VALUE vm_yield(rb_thread_t *th, int argc, const VALUE *argv);
-static inline VALUE vm_yield_with_block(rb_thread_t *th, int argc, const VALUE *argv, VALUE block_handler);
-static inline VALUE vm_yield_force_blockarg(rb_thread_t *th, VALUE args);
+static inline VALUE vm_yield_with_cref(rb_execution_context_t *ec, int argc, const VALUE *argv, const rb_cref_t *cref, int is_lambda);
+static inline VALUE vm_yield(rb_execution_context_t *ec, int argc, const VALUE *argv);
+static inline VALUE vm_yield_with_block(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE block_handler);
+static inline VALUE vm_yield_force_blockarg(rb_execution_context_t *ec, VALUE args);
 static VALUE vm_exec(rb_thread_t *th);
 static void vm_set_eval_stack(rb_thread_t * th, const rb_iseq_t *iseq, const rb_cref_t *cref, const struct rb_block *base_block);
 static int vm_collect_local_variables_in_heap(const VALUE *dfp, const struct local_var_list *vars);
@@ -183,7 +183,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 	    {
 		rb_proc_t *proc;
 		GetProcPtr(calling->recv, proc);
-		ret = rb_vm_invoke_proc(rb_ec_thread_ptr(ec), proc, calling->argc, argv, calling->block_handler);
+		ret = rb_vm_invoke_proc(ec, proc, calling->argc, argv, calling->block_handler);
 		goto success;
 	    }
 	  default:
@@ -966,7 +966,7 @@ rb_f_public_send(int argc, VALUE *argv, VALUE recv)
 static inline VALUE
 rb_yield_0(int argc, const VALUE * argv)
 {
-    return vm_yield(GET_THREAD(), argc, argv);
+    return vm_yield(GET_EC(), argc, argv);
 }
 
 VALUE
@@ -1031,13 +1031,13 @@ rb_yield_splat(VALUE values)
 VALUE
 rb_yield_force_blockarg(VALUE values)
 {
-    return vm_yield_force_blockarg(GET_THREAD(), values);
+    return vm_yield_force_blockarg(GET_EC(), values);
 }
 
 VALUE
 rb_yield_block(VALUE val, VALUE arg, int argc, const VALUE *argv, VALUE blockarg)
 {
-    return vm_yield_with_block(GET_THREAD(), argc, argv,
+    return vm_yield_with_block(GET_EC(), argc, argv,
 			       NIL_P(blockarg) ? VM_BLOCK_HANDLER_NONE : blockarg);
 }
 
@@ -1544,8 +1544,8 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
 static VALUE
 yield_under(VALUE under, VALUE self, int argc, const VALUE *argv)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->ec->cfp;
+    rb_execution_context_t *ec = GET_EC();
+    rb_control_frame_t *cfp = ec->cfp;
     VALUE block_handler = VM_CF_BLOCK_HANDLER(cfp);
     VALUE new_block_handler = 0;
     const struct rb_captured_block *captured = NULL;
@@ -1579,18 +1579,18 @@ yield_under(VALUE under, VALUE self, int argc, const VALUE *argv)
 	new_captured.self = self;
 	ep = captured->ep;
 
-	VM_FORCE_WRITE_SPECIAL_CONST(&VM_CF_LEP(th->ec->cfp)[VM_ENV_DATA_INDEX_SPECVAL], new_block_handler);
+	VM_FORCE_WRITE_SPECIAL_CONST(&VM_CF_LEP(ec->cfp)[VM_ENV_DATA_INDEX_SPECVAL], new_block_handler);
     }
 
-    cref = vm_cref_push(th->ec, under, ep, TRUE);
-    return vm_yield_with_cref(th, argc, argv, cref, is_lambda);
+    cref = vm_cref_push(ec, under, ep, TRUE);
+    return vm_yield_with_cref(ec, argc, argv, cref, is_lambda);
 }
 
 VALUE
 rb_yield_refine_block(VALUE refinement, VALUE refinements)
 {
-    rb_thread_t *th = GET_THREAD();
-    VALUE block_handler = VM_CF_BLOCK_HANDLER(th->ec->cfp);
+    rb_execution_context_t *ec = GET_EC();
+    VALUE block_handler = VM_CF_BLOCK_HANDLER(ec->cfp);
 
     if (vm_block_handler_type(block_handler) != block_handler_type_iseq) {
 	rb_bug("rb_yield_refine_block: an iseq block is required");
@@ -1600,11 +1600,11 @@ rb_yield_refine_block(VALUE refinement, VALUE refinements)
 	struct rb_captured_block new_captured = *captured;
 	VALUE new_block_handler = VM_BH_FROM_ISEQ_BLOCK(&new_captured);
 	const VALUE *ep = captured->ep;
-	rb_cref_t *cref = vm_cref_push(th->ec, refinement, ep, TRUE);
+	rb_cref_t *cref = vm_cref_push(ec, refinement, ep, TRUE);
 	CREF_REFINEMENTS_SET(cref, refinements);
-	VM_FORCE_WRITE_SPECIAL_CONST(&VM_CF_LEP(th->ec->cfp)[VM_ENV_DATA_INDEX_SPECVAL], new_block_handler);
+	VM_FORCE_WRITE_SPECIAL_CONST(&VM_CF_LEP(ec->cfp)[VM_ENV_DATA_INDEX_SPECVAL], new_block_handler);
 	new_captured.self = refinement;
-	return vm_yield_with_cref(th, 0, NULL, cref, FALSE);
+	return vm_yield_with_cref(ec, 0, NULL, cref, FALSE);
     }
 }
 
