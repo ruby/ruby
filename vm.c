@@ -1794,7 +1794,7 @@ vm_exec(rb_thread_t *th)
     _tag.retval = Qnil;
     if ((state = EXEC_TAG()) == TAG_NONE) {
       vm_loop_start:
-	result = vm_exec_core(th, initial);
+	result = vm_exec_core(th->ec, initial);
 	VM_ASSERT(th->ec->tag == &_tag);
 	if ((state = _tag.state) != TAG_NONE) {
 	    err = (struct vm_throw_data *)result;
