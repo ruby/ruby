@@ -95,7 +95,7 @@ VALUE iseq_ibf_load_extra_data(VALUE str);
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /* compile.c */
-VALUE rb_iseq_compile_node(rb_iseq_t *iseq, NODE *node);
+VALUE rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node);
 int rb_iseq_translate_threaded_code(rb_iseq_t *iseq);
 VALUE *rb_iseq_original_iseq(const rb_iseq_t *iseq);
 void rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc,

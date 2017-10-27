@@ -455,7 +455,7 @@ make_compile_option_value(rb_compile_option_t *option)
 }
 
 rb_iseq_t *
-rb_iseq_new(NODE *node, VALUE name, VALUE path, VALUE realpath,
+rb_iseq_new(const NODE *node, VALUE name, VALUE path, VALUE realpath,
 	    const rb_iseq_t *parent, enum iseq_type type)
 {
     return rb_iseq_new_with_opt(node, name, path, realpath, INT2FIX(0), parent, type,
@@ -463,14 +463,14 @@ rb_iseq_new(NODE *node, VALUE name, VALUE path, VALUE realpath,
 }
 
 rb_iseq_t *
-rb_iseq_new_top(NODE *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent)
+rb_iseq_new_top(const NODE *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent)
 {
     return rb_iseq_new_with_opt(node, name, path, realpath, INT2FIX(0), parent, ISEQ_TYPE_TOP,
 				&COMPILE_OPTION_DEFAULT);
 }
 
 rb_iseq_t *
-rb_iseq_new_main(NODE *node, VALUE path, VALUE realpath, const rb_iseq_t *parent)
+rb_iseq_new_main(const NODE *node, VALUE path, VALUE realpath, const rb_iseq_t *parent)
 {
     return rb_iseq_new_with_opt(node, rb_fstring_cstr("<main>"),
 				path, realpath, INT2FIX(0),
@@ -492,7 +492,7 @@ iseq_translate(rb_iseq_t *iseq)
 }
 
 rb_iseq_t *
-rb_iseq_new_with_opt(NODE *node, VALUE name, VALUE path, VALUE realpath,
+rb_iseq_new_with_opt(const NODE *node, VALUE name, VALUE path, VALUE realpath,
 		     VALUE first_lineno, const rb_iseq_t *parent,
 		     enum iseq_type type, const rb_compile_option_t *option)
 {
@@ -852,7 +852,7 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
 {
     VALUE file, line = INT2FIX(1), opt = Qnil;
     VALUE parser, f, exc = Qnil;
-    NODE *node;
+    const NODE *node;
     rb_compile_option_t option;
     int i;
 
