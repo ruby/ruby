@@ -434,6 +434,7 @@ typedef struct RVALUE {
 	    const rb_iseq_t iseq;
 	    rb_env_t env;
 	    struct rb_imemo_alloc_struct alloc;
+	    ast_t ast;
 	} imemo;
 	struct {
 	    struct RBasic basic;
@@ -2358,6 +2359,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	    break;
 	  case imemo_alloc:
 	    xfree(RANY(obj)->as.imemo.alloc.ptr);
+	    break;
+	  case imemo_ast:
+	    rb_ast_free(&RANY(obj)->as.imemo.ast);
 	    break;
 	  default:
 	    break;
@@ -4539,6 +4543,9 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
 		rb_gc_mark_locations(m->ptr, m->ptr + m->cnt);
 	    } while ((m = m->next) != NULL);
 	}
+	return;
+      case imemo_ast:
+	rb_ast_mark(&RANY(obj)->as.imemo.ast);
 	return;
 #if VM_CHECK_MODE > 0
       default:

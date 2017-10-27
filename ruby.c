@@ -177,7 +177,7 @@ cmdline_options_init(ruby_cmdline_options_t *opt)
     return opt;
 }
 
-static NODE *load_file(VALUE parser, VALUE fname, VALUE f, int script,
+static ast_t *load_file(VALUE parser, VALUE fname, VALUE f, int script,
 		       ruby_cmdline_options_t *opt);
 static VALUE open_load_file(VALUE fname_v, int *xflag);
 static void forbid_setid(const char *, const ruby_cmdline_options_t *);
@@ -1461,7 +1461,7 @@ rb_f_chomp(int argc, VALUE *argv)
 static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
-    NODE *tree = 0;
+    ast_t *ast = 0;
     VALUE parser;
     VALUE script_name;
     const rb_iseq_t *iseq;
@@ -1674,12 +1674,12 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         ruby_set_script_name(progname);
 	rb_parser_set_options(parser, opt->do_print, opt->do_loop,
 			      opt->do_line, opt->do_split);
-	tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
+	ast = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
     else {
 	VALUE f;
 	f = open_load_file(script_name, &opt->xflag);
-	tree = load_file(parser, opt->script_name, f, 1, opt);
+	ast = load_file(parser, opt->script_name, f, 1, opt);
     }
     ruby_set_script_name(opt->script_name);
     if (dump & DUMP_BIT(yydebug)) {
@@ -1704,7 +1704,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	rb_enc_set_default_internal(Qnil);
     rb_stdio_set_default_encoding();
 
-    if (!tree) return Qfalse;
+    if (!ast->root) {
+	rb_ast_dispose(ast);
+	return Qfalse;
+    }
 
     process_sflag(&opt->sflag);
     opt->xflag = 0;
@@ -1723,10 +1726,13 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     }
 
     if (dump & (DUMP_BIT(parsetree)|DUMP_BIT(parsetree_with_comment))) {
-	rb_io_write(rb_stdout, rb_parser_dump_tree(tree, dump & DUMP_BIT(parsetree_with_comment)));
+	rb_io_write(rb_stdout, rb_parser_dump_tree(ast->root, dump & DUMP_BIT(parsetree_with_comment)));
 	rb_io_flush(rb_stdout);
 	dump &= ~DUMP_BIT(parsetree)&~DUMP_BIT(parsetree_with_comment);
-	if (!dump) return Qtrue;
+	if (!dump) {
+	    rb_ast_dispose(ast);
+	    return Qtrue;
+	}
     }
 
     {
@@ -1740,7 +1746,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
 	}
 	base_block = toplevel_context(toplevel_binding);
-	iseq = rb_iseq_new_main(tree, opt->script_name, path, vm_block_iseq(base_block));
+	iseq = rb_iseq_new_main(ast->root, opt->script_name, path, vm_block_iseq(base_block));
+	rb_ast_dispose(ast);
     }
 
     if (dump & DUMP_BIT(insns)) {
@@ -1790,7 +1797,7 @@ load_file_internal(VALUE argp_v)
     ruby_cmdline_options_t *opt = argp->opt;
     VALUE f = argp->f;
     int line_start = 1;
-    NODE *tree = 0;
+    ast_t *ast = 0;
     rb_encoding *enc;
     ID set_encoding;
 
@@ -1894,7 +1901,7 @@ load_file_internal(VALUE argp_v)
 	return (VALUE)rb_parser_compile_string_path(parser, orig_fname, f, line_start);
     }
     rb_funcall(f, set_encoding, 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
-    tree = rb_parser_compile_file_path(parser, orig_fname, f, line_start);
+    ast = rb_parser_compile_file_path(parser, orig_fname, f, line_start);
     rb_funcall(f, set_encoding, 1, rb_parser_encoding(parser));
     if (script && rb_parser_end_seen_p(parser)) {
 	/*
@@ -1912,7 +1919,7 @@ load_file_internal(VALUE argp_v)
 	rb_define_global_const("DATA", f);
 	argp->f = Qnil;
     }
-    return (VALUE)tree;
+    return (VALUE)ast;
 }
 
 static VALUE
@@ -2004,7 +2011,7 @@ restore_load_file(VALUE arg)
     return Qnil;
 }
 
-static NODE *
+static ast_t *
 load_file(VALUE parser, VALUE fname, VALUE f, int script, ruby_cmdline_options_t *opt)
 {
     struct load_file_arg arg;
@@ -2013,8 +2020,8 @@ load_file(VALUE parser, VALUE fname, VALUE f, int script, ruby_cmdline_options_t
     arg.script = script;
     arg.opt = opt;
     arg.f = f;
-    return (NODE *)rb_ensure(load_file_internal, (VALUE)&arg,
-			     restore_load_file, (VALUE)&arg);
+    return (ast_t *)rb_ensure(load_file_internal, (VALUE)&arg,
+			      restore_load_file, (VALUE)&arg);
 }
 
 void *
