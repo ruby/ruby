@@ -239,7 +239,6 @@ struct parser_params {
     unsigned int do_chomp: 1;
     unsigned int do_split: 1;
 
-    ast_t *ast;
     NODE *eval_tree_begin;
     NODE *eval_tree;
     VALUE error_buffer;
@@ -339,26 +338,14 @@ parser_set_line(NODE *n, int l)
 }
 
 static inline void
-rb_discard_node_gen(struct parser_params *parser, NODE *n)
+rb_discard_node(NODE *n)
 {
-#ifndef RIPPER
-    rb_ast_delete_node(parser->ast, n);
-#else
     rb_gc_force_recycle((VALUE)n);
-#endif
 }
-#define rb_discard_node(n) rb_discard_node_gen(parser, (n))
+
+#define add_mark_object(obj) (void)(obj)
 
 #ifndef RIPPER
-static inline void
-add_mark_object_gen(struct parser_params *parser, VALUE obj)
-{
-    if (!SPECIAL_CONST_P(obj)) {
-	rb_ast_add_mark_object(parser->ast, obj);
-    }
-}
-#define add_mark_object(obj) add_mark_object_gen(parser, (obj))
-
 static inline void
 set_line_body(NODE *body, int line)
 {
@@ -587,8 +574,6 @@ static NODE *parser_heredoc_dedent(struct parser_params*,NODE*);
 #define get_value(val) (val)
 #else  /* RIPPER */
 #define NODE_RIPPER NODE_CDECL
-
-#define add_mark_object(obj) (void)(obj)
 
 static inline VALUE
 ripper_new_yylval(ID a, VALUE b, VALUE c)
@@ -2865,7 +2850,6 @@ primary		: literal
 				break;
 			    }
 			}
-			add_mark_object((VALUE)rb_imemo_alloc_new((VALUE)tbl, 0, 0, 0));
 			scope = NEW_NODE(NODE_SCOPE, tbl, $8, args);
 			nd_set_column(scope, @1.first_column);
 			tbl[0] = 1; tbl[1] = id;
@@ -5589,55 +5573,52 @@ lex_getline(struct parser_params *parser)
 static const rb_data_type_t parser_data_type;
 
 #ifndef RIPPER
-static ast_t*
+static NODE*
 parser_compile_string(VALUE vparser, VALUE fname, VALUE s, int line)
 {
     struct parser_params *parser;
-    ast_t *ast;
+    NODE *node;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
-    parser->ast = ast = rb_ast_new();
-
     lex_gets = lex_get_str;
     lex_gets_ptr = 0;
     lex_input = rb_str_new_frozen(s);
     lex_pbeg = lex_p = lex_pend = 0;
 
-    ast->root = yycompile(parser, fname, line);
-    parser->ast = 0;
+    node = yycompile(parser, fname, line);
     RB_GC_GUARD(vparser); /* prohibit tail call optimization */
 
-    return ast;
+    return node;
 }
 
-ast_t*
+NODE*
 rb_compile_string(const char *f, VALUE s, int line)
 {
     must_be_ascii_compatible(s);
     return parser_compile_string(rb_parser_new(), rb_filesystem_str_new_cstr(f), s, line);
 }
 
-ast_t*
+NODE*
 rb_parser_compile_string(VALUE vparser, const char *f, VALUE s, int line)
 {
     return rb_parser_compile_string_path(vparser, rb_filesystem_str_new_cstr(f), s, line);
 }
 
-ast_t*
+NODE*
 rb_parser_compile_string_path(VALUE vparser, VALUE f, VALUE s, int line)
 {
     must_be_ascii_compatible(s);
     return parser_compile_string(vparser, f, s, line);
 }
 
-ast_t*
+NODE*
 rb_compile_cstr(const char *f, const char *s, int len, int line)
 {
     VALUE str = rb_str_new(s, len);
     return parser_compile_string(rb_parser_new(), rb_filesystem_str_new_cstr(f), str, line);
 }
 
-ast_t*
+NODE*
 rb_parser_compile_cstr(VALUE vparser, const char *f, const char *s, int len, int line)
 {
     VALUE str = rb_str_new(s, len);
@@ -5652,7 +5633,7 @@ lex_io_gets(struct parser_params *parser, VALUE io)
     return rb_io_gets_internal(io);
 }
 
-ast_t*
+NODE*
 rb_compile_file(const char *f, VALUE file, int start)
 {
     VALUE vparser = rb_parser_new();
@@ -5660,30 +5641,27 @@ rb_compile_file(const char *f, VALUE file, int start)
     return rb_parser_compile_file(vparser, f, file, start);
 }
 
-ast_t*
+NODE*
 rb_parser_compile_file(VALUE vparser, const char *f, VALUE file, int start)
 {
     return rb_parser_compile_file_path(vparser, rb_filesystem_str_new_cstr(f), file, start);
 }
 
-ast_t*
+NODE*
 rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE file, int start)
 {
     struct parser_params *parser;
-    ast_t *ast;
+    NODE *node;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
-    parser->ast = ast = rb_ast_new();
-
     lex_gets = lex_io_gets;
     lex_input = file;
     lex_pbeg = lex_p = lex_pend = 0;
 
-    ast->root = yycompile(parser, fname, start);
-    parser->ast = 0;
+    node = yycompile(parser, fname, start);
     RB_GC_GUARD(vparser); /* prohibit tail call optimization */
 
-    return ast;
+    return node;
 }
 #endif  /* !RIPPER */
 
@@ -6182,11 +6160,8 @@ parser_regx_options(struct parser_params *parser)
 }
 
 static void
-dispose_string(struct parser_params *parser, VALUE str)
+dispose_string(VALUE str)
 {
-#ifndef RIPPER
-    rb_ast_delete_mark_object(parser->ast, str);
-#endif
     rb_str_free(str);
     rb_gc_force_recycle(str);
 }
@@ -6664,7 +6639,7 @@ parser_heredoc_restore(struct parser_params *parser, NODE *here)
     lex_p = lex_pbeg + here->nd_nth;
     heredoc_end = ruby_sourceline;
     ruby_sourceline = nd_line(here);
-    dispose_string(parser, here->nd_lit);
+    dispose_string(here->nd_lit);
     rb_discard_node(here);
     token_flush(parser);
 }
@@ -6950,7 +6925,7 @@ parser_here_document(struct parser_params *parser, NODE *here)
 	    }
 	    if (nextc() == -1) {
 		if (str) {
-		    dispose_string(parser, str);
+		    dispose_string(str);
 		    str = 0;
 		}
 		goto error;
@@ -8825,10 +8800,7 @@ yylex(YYSTYPE *lval, YYLTYPE *yylloc, struct parser_params *parser)
 static NODE*
 node_newnode(struct parser_params *parser, enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 {
-    NODE *n = rb_ast_newnode(parser->ast);
-
-    rb_node_init(n, type, a0, a1, a2);
-
+    NODE *n = (rb_node_newnode)(type, a0, a1, a2);
     nd_set_line(n, ruby_sourceline);
     /* mark not cared column to -1 */
     nd_set_column(n, -1);
@@ -10618,7 +10590,6 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b, int column
     NODE *node;
 
     args = ZALLOC(struct rb_args_info);
-    add_mark_object((VALUE)rb_imemo_alloc_new((VALUE)args, 0, 0, 0));
     node = NEW_NODE(NODE_ARGS, 0, 0, args);
     nd_set_column(node, column);
     if (parser->error_p) return node;
@@ -10988,9 +10959,6 @@ local_tbl_gen(struct parser_params *parser)
     }
     if (--j < cnt) REALLOC_N(buf, ID, (cnt = j) + 1);
     buf[0] = cnt;
-
-    add_mark_object((VALUE)rb_imemo_alloc_new((VALUE)buf, 0, 0, 0));
-
     return buf;
 }
 #endif
@@ -11382,16 +11350,18 @@ parser_mark(void *ptr)
 {
     struct parser_params *parser = (struct parser_params*)ptr;
 
+    rb_gc_mark((VALUE)lex_strterm);
     rb_gc_mark(lex_input);
     rb_gc_mark(lex_lastline);
     rb_gc_mark(lex_nextline);
     rb_gc_mark(ruby_sourcefile_string);
 #ifndef RIPPER
+    rb_gc_mark((VALUE)ruby_eval_tree_begin);
+    rb_gc_mark((VALUE)ruby_eval_tree);
     rb_gc_mark(ruby_debug_lines);
     rb_gc_mark(parser->compile_option);
     rb_gc_mark(parser->error_buffer);
 #else
-    rb_gc_mark((VALUE)lex_strterm);
     rb_gc_mark(parser->delayed);
     rb_gc_mark(parser->value);
     rb_gc_mark(parser->result);

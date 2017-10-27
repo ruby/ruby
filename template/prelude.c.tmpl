@@ -121,14 +121,10 @@ prelude_eval(VALUE code, VALUE name, int line)
 	FALSE, /* int debug_frozen_string_literal; */
     };
 
-    ast_t *ast = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
-    if (!ast->root) {
-	rb_ast_dispose(ast);
-	rb_exc_raise(rb_errinfo());
-    }
-    rb_iseq_eval(rb_iseq_new_with_opt(ast->root, name, name, Qnil, INT2FIX(line),
+    NODE *node = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
+    if (!node) rb_exc_raise(rb_errinfo());
+    rb_iseq_eval(rb_iseq_new_with_opt(node, name, name, Qnil, INT2FIX(line),
 				      NULL, ISEQ_TYPE_TOP, &optimization));
-    rb_ast_dispose(ast);
 }
 % end
 
