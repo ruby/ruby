@@ -1046,31 +1046,31 @@ vm_setinstancevariable(VALUE obj, ID id, VALUE val, IC ic)
 }
 
 static VALUE
-vm_throw_continue(rb_thread_t *th, VALUE err)
+vm_throw_continue(const rb_execution_context_t *ec, VALUE err)
 {
     /* continue throw */
 
     if (FIXNUM_P(err)) {
-	th->ec->tag->state = FIX2INT(err);
+	ec->tag->state = FIX2INT(err);
     }
     else if (SYMBOL_P(err)) {
-	th->ec->tag->state = TAG_THROW;
+	ec->tag->state = TAG_THROW;
     }
     else if (THROW_DATA_P(err)) {
-	th->ec->tag->state = THROW_DATA_STATE((struct vm_throw_data *)err);
+	ec->tag->state = THROW_DATA_STATE((struct vm_throw_data *)err);
     }
     else {
-	th->ec->tag->state = TAG_RAISE;
+	ec->tag->state = TAG_RAISE;
     }
     return err;
 }
 
 static VALUE
-vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ruby_tag_type state,
+vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_cfp, enum ruby_tag_type state,
 	       const int flag, const rb_num_t level, const VALUE throwobj)
 {
     const rb_control_frame_t *escape_cfp = NULL;
-    const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(th->ec); /* end of control frame pointer */
+    const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(ec); /* end of control frame pointer */
 
     if (flag != 0) {
 	/* do nothing */
@@ -1090,7 +1090,7 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 	    else {
 		ep = VM_ENV_PREV_EP(ep);
 		base_iseq = base_iseq->body->parent_iseq;
-		escape_cfp = rb_vm_search_cf_from_ep(th->ec, escape_cfp, ep);
+		escape_cfp = rb_vm_search_cf_from_ep(ec, escape_cfp, ep);
 		VM_ASSERT(escape_cfp->iseq == base_iseq);
 	    }
 	}
@@ -1142,7 +1142,7 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 	    ep = VM_ENV_PREV_EP(ep);
 	}
 
-	escape_cfp = rb_vm_search_cf_from_ep(th->ec, reg_cfp, ep);
+	escape_cfp = rb_vm_search_cf_from_ep(ec, reg_cfp, ep);
     }
     else if (state == TAG_RETURN) {
 	const VALUE *current_ep = GET_EP();
@@ -1215,12 +1215,12 @@ vm_throw_start(rb_thread_t *const th, rb_control_frame_t *const reg_cfp, enum ru
 	rb_bug("isns(throw): unsupport throw type");
     }
 
-    th->ec->tag->state = state;
+    ec->tag->state = state;
     return (VALUE)THROW_DATA_NEW(throwobj, escape_cfp, state);
 }
 
 static VALUE
-vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
+vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 	 rb_num_t throw_state, VALUE throwobj)
 {
     const int state = (int)(throw_state & VM_THROW_STATE_MASK);
@@ -1228,10 +1228,10 @@ vm_throw(rb_thread_t *th, rb_control_frame_t *reg_cfp,
     const rb_num_t level = throw_state >> VM_THROW_LEVEL_SHIFT;
 
     if (state != 0) {
-	return vm_throw_start(th, reg_cfp, state, flag, level, throwobj);
+	return vm_throw_start(ec, reg_cfp, state, flag, level, throwobj);
     }
     else {
-	return vm_throw_continue(th, throwobj);
+	return vm_throw_continue(ec, throwobj);
     }
 }
 
