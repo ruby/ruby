@@ -1583,7 +1583,7 @@ yield_under(VALUE under, VALUE self, int argc, const VALUE *argv)
 	VM_FORCE_WRITE_SPECIAL_CONST(&VM_CF_LEP(th->ec->cfp)[VM_ENV_DATA_INDEX_SPECVAL], new_block_handler);
     }
 
-    cref = vm_cref_push(th, under, ep, TRUE);
+    cref = vm_cref_push(th->ec, under, ep, TRUE);
     return vm_yield_with_cref(th, argc, argv, cref, is_lambda);
 }
 
@@ -1601,7 +1601,7 @@ rb_yield_refine_block(VALUE refinement, VALUE refinements)
 	struct rb_captured_block new_captured = *captured;
 	VALUE new_block_handler = VM_BH_FROM_ISEQ_BLOCK(&new_captured);
 	const VALUE *ep = captured->ep;
-	rb_cref_t *cref = vm_cref_push(th, refinement, ep, TRUE);
+	rb_cref_t *cref = vm_cref_push(th->ec, refinement, ep, TRUE);
 	CREF_REFINEMENTS_SET(cref, refinements);
 	VM_FORCE_WRITE_SPECIAL_CONST(&VM_CF_LEP(th->ec->cfp)[VM_ENV_DATA_INDEX_SPECVAL], new_block_handler);
 	new_captured.self = refinement;
@@ -1613,7 +1613,7 @@ rb_yield_refine_block(VALUE refinement, VALUE refinements)
 static VALUE
 eval_under(VALUE under, VALUE self, VALUE src, VALUE file, int line)
 {
-    rb_cref_t *cref = vm_cref_push(GET_THREAD(), under, NULL, SPECIAL_CONST_P(self) && !NIL_P(under));
+    rb_cref_t *cref = vm_cref_push(GET_EC(), under, NULL, SPECIAL_CONST_P(self) && !NIL_P(under));
     SafeStringValue(src);
     return eval_string_with_cref(self, src, Qnil, cref, file, line);
 }

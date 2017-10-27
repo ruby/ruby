@@ -387,7 +387,7 @@ vm_svar_valid_p(VALUE svar)
 #endif
 
 static inline struct vm_svar *
-lep_svar(rb_execution_context_t *ec, const VALUE *lep)
+lep_svar(const rb_execution_context_t *ec, const VALUE *lep)
 {
     VALUE svar;
 
@@ -404,7 +404,7 @@ lep_svar(rb_execution_context_t *ec, const VALUE *lep)
 }
 
 static inline void
-lep_svar_write(rb_execution_context_t *ec, const VALUE *lep, const struct vm_svar *svar)
+lep_svar_write(const rb_execution_context_t *ec, const VALUE *lep, const struct vm_svar *svar)
 {
     VM_ASSERT(vm_svar_valid_p((VALUE)svar));
 
@@ -417,7 +417,7 @@ lep_svar_write(rb_execution_context_t *ec, const VALUE *lep, const struct vm_sva
 }
 
 static VALUE
-lep_svar_get(rb_execution_context_t *ec, const VALUE *lep, rb_num_t key)
+lep_svar_get(const rb_execution_context_t *ec, const VALUE *lep, rb_num_t key)
 {
     const struct vm_svar *svar = lep_svar(ec, lep);
 
@@ -448,7 +448,7 @@ svar_new(VALUE obj)
 }
 
 static void
-lep_svar_set(rb_execution_context_t *ec, const VALUE *lep, rb_num_t key, VALUE val)
+lep_svar_set(const rb_execution_context_t *ec, const VALUE *lep, rb_num_t key, VALUE val)
 {
     struct vm_svar *svar = lep_svar(ec, lep);
 
@@ -475,7 +475,7 @@ lep_svar_set(rb_execution_context_t *ec, const VALUE *lep, rb_num_t key, VALUE v
 }
 
 static inline VALUE
-vm_getspecial(rb_execution_context_t *ec, const VALUE *lep, rb_num_t key, rb_num_t type)
+vm_getspecial(const rb_execution_context_t *ec, const VALUE *lep, rb_num_t key, rb_num_t type)
 {
     VALUE val;
 
@@ -734,7 +734,7 @@ rb_vm_rewrite_cref(rb_cref_t *cref, VALUE old_klass, VALUE new_klass, rb_cref_t 
 }
 
 static rb_cref_t *
-vm_cref_push(rb_thread_t *th, VALUE klass, const VALUE *ep, int pushed_by_eval)
+vm_cref_push(const rb_execution_context_t *ec, VALUE klass, const VALUE *ep, int pushed_by_eval)
 {
     rb_cref_t *prev_cref = NULL;
 
@@ -742,7 +742,7 @@ vm_cref_push(rb_thread_t *th, VALUE klass, const VALUE *ep, int pushed_by_eval)
 	prev_cref = vm_env_cref(ep);
     }
     else {
-	rb_control_frame_t *cfp = vm_get_ruby_level_caller_cfp(th->ec, th->ec->cfp);
+	rb_control_frame_t *cfp = vm_get_ruby_level_caller_cfp(ec, ec->cfp);
 
 	if (cfp) {
 	    prev_cref = vm_env_cref(cfp->ep);
