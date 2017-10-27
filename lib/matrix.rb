@@ -81,6 +81,8 @@ end
 # * #singular?
 # * #square?
 # * #symmetric?
+# * #reflexive?
+# * #antisymmetric?
 # * #unitary?
 # * #upper_triangular?
 # * #zero?
@@ -870,6 +872,30 @@ class Matrix
     Matrix.Raise ErrDimensionMismatch unless square?
     each_with_index(:strict_upper) do |e, row, col|
       return false if e != rows[col][row]
+    end
+    true
+  end
+
+  #
+  # Returns +true+ if this is a antisymmetric matrix.
+  # Raises an error if matrix is not square.
+  #
+  def antisymmetric?
+    Matrix.Raise ErrDimensionMismatch unless square?
+    each_with_index(:strict_upper) do |e, row, col|
+      return false if e == rows[col][row]
+    end
+    true
+  end
+
+  #
+  # Returns +true+ if this is a reflexive matrix.
+  # Raises an error if matrix is not square.
+  #
+  def reflexive?
+    Matrix.Raise ErrDimensionMismatch unless square?
+    self.each(:diagonal) do |e|
+      return false if e != 1
     end
     true
   end
