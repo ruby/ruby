@@ -844,8 +844,7 @@ enum imemo_type {
     imemo_memo       = 5,
     imemo_ment       = 6,
     imemo_iseq       = 7,
-    imemo_alloc      = 8,
-    imemo_ast        = 9
+    imemo_alloc      = 8
 };
 #define IMEMO_MASK   0x0f
 
